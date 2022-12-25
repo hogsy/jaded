@@ -81,7 +81,7 @@ typedef bool2type<false> false_t;
 #endif
 
 template< typename T >
-class alignof
+class rs_alignof
 {
     struct helper
     {
@@ -575,7 +575,7 @@ public:
     {
         // Make sure that the alignment for type T is not worse
         // than our declared alignment.
-        detail::rs_static_assert<( AlignmentT >= detail::alignof<T>::value )> const align_test;
+        detail::rs_static_assert<( AlignmentT >= detail::rs_alignof<T>::value )> const align_test;
         static_cast<void>(align_test);
 
         // If T won't throw in copy c'tor then we don't need to use an unwinder object.
@@ -607,7 +607,7 @@ public:
     template< typename T >
     inline void pop( T & t ) // throw(...)
     {
-        detail::rs_static_assert<( AlignmentT >= detail::alignof<T>::value )> const align_test;
+        detail::rs_static_assert<( AlignmentT >= detail::rs_alignof<T>::value )> const align_test;
         static_cast<void>(align_test);
 
         // If we are debugging the stack, then in push() we pushed a pointer
@@ -631,7 +631,7 @@ public:
     template< typename T >
     inline void pop( REGEX_VC6(detail::type2type<T> COMMA int) ) // throw(type_error,...)
     {
-        detail::rs_static_assert<( AlignmentT >= detail::alignof<T>::value )> const align_test;
+        detail::rs_static_assert<( AlignmentT >= detail::rs_alignof<T>::value )> const align_test;
         static_cast<void>(align_test);
 
         // If we are debugging the stack, then in push() we pushed a pointer
@@ -653,7 +653,7 @@ public:
     template< typename T >
     inline bool pop( std::nothrow_t const & ) // throw()
     {
-        detail::rs_static_assert<( AlignmentT >= detail::alignof<T>::value )> const align_test;
+        detail::rs_static_assert<( AlignmentT >= detail::rs_alignof<T>::value )> const align_test;
         static_cast<void>(align_test);
 
         // If we are debugging the stack, then in push() we pushed a pointer
@@ -674,7 +674,7 @@ public:
     template< typename T >
     inline T & top( REGEX_VC6(detail::type2type<T>) ) const // throw(type_error,...)
     {
-        detail::rs_static_assert<( AlignmentT >= detail::alignof<T>::value )> const align_test;
+        detail::rs_static_assert<( AlignmentT >= detail::rs_alignof<T>::value )> const align_test;
         static_cast<void>(align_test);
 
         if( RuntimeTypeCheckT )
