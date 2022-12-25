@@ -50,8 +50,8 @@
 extern LONG ediSND_l_GetGlobalVol(void);
 extern LONG ediSND_l_GetGlobalPan(void);
 #else
-extern "C"LONG ediSND_l_GetGlobalVol(void);
-extern "C"LONG ediSND_l_GetGlobalPan(void);
+extern "C" LONG ediSND_l_GetGlobalVol(void);
+extern "C" LONG ediSND_l_GetGlobalPan(void);
 #endif
 
 /*$4

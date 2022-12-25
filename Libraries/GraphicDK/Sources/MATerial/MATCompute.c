@@ -566,7 +566,6 @@ void MAT_VUDecompress(MAT_tdst_MTLevel *p_tdstCompressedUV, MAT_tdst_Decompresse
 	//GDI_gpst_CurDD_SPR.pst_ComputingBuffers->Current = GDI_gpst_CurDD_SPR.pst_ComputingBuffers->ast_UV;
 	if ( UVWave )//&& NumberMat+1 == LevelUVWave )
 	{
-		int i;
 		MDF_tdst_Modifier		*pst_Modifier;
 		OBJ_tdst_GameObject					*_pst_GO;
 		UVTexWave_tdst_Modifier *p_UVTexWave;

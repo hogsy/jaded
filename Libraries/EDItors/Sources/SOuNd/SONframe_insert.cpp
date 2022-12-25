@@ -111,7 +111,7 @@ void ESON_cl_Frame::Insert_OnOpen(ULONG _ulFat)
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	EDIA_cl_SndInsert	*poInsert;
 	CString				o_Temp;
-	EDIA_cl_FileDialog	o_File("Choose File", 0, 0, 1, NULL, "*"EDI_Csz_ExtSoundInsert",*"EDI_Csz_ExtSoundFade);
+	EDIA_cl_FileDialog	o_File("Choose File", 0, 0, 1, NULL, "*" EDI_Csz_ExtSoundInsert ",*" EDI_Csz_ExtSoundFade);
 	int					ulFatIndex;
 	SND_tdst_Insert		*pInsert;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

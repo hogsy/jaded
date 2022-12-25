@@ -723,7 +723,7 @@ void EPFB_cl_Frame::CommonVss(int _i_Type)
  */
 void EPFB_cl_Frame::Prefab_MoveToMap( WOR_tdst_World *_pst_World, OBJ_tdst_Prefab *_pst_Prefab )
 {
-	EDIA_cl_FileDialog	o_DialogFile("Choose world File", 0, 0, 1, NULL, "*"EDI_Csz_ExtWorld );
+	EDIA_cl_FileDialog	o_DialogFile("Choose world File", 0, 0, 1, NULL, "*" EDI_Csz_ExtWorld );
 	ULONG				ul_Dir, ul_File;
 	CString				o_Temp;
 	
@@ -804,7 +804,7 @@ void EPFB_cl_Frame::Prefab_MoveToMap_MoveObject( OBJ_tdst_GameObject *_pst_GO, c
 	if (ul_Index == BIG_C_InvalidIndex) return;
 	BIG_ComputeFullName( BIG_ParentFile(ul_Index), sz_PathSrc );
 	
-	sprintf( sz_PathDst, "%s/"EDI_Csz_Path_GameObject, _sz_NewPath );
+	sprintf( sz_PathDst, "%s/" EDI_Csz_Path_GameObject, _sz_NewPath );
 	BIG_MoveFile( sz_PathDst, sz_PathSrc, BIG_NameFile( ul_Index ) );
 
 	if(_pst_GO->pst_Base && _pst_GO->pst_Base->pst_Visu)

@@ -118,7 +118,7 @@ extern AI_tdst_Node *AI_dum(AI_tdst_Node *);
 #define DEFINE_FIELD(a, b, c, d, e, f) b = a,
 #define DEFINE_KEYWORD(a, b, c, d) b = a,
 #define DEFINE_FUNCTION(a, b, c, d, e, f, g, h, i, j) b = a,
-typedef enum
+enum
 {
 #include "Categs/AIdefcateg.h"
 #include "Types/AIdeftyp.h"

@@ -2279,7 +2279,7 @@ void ESON_cl_View::OnParentNotify(UINT message, LONG lParam)
 				if(mpo_Editor->mst_Ini.i_FilterInstance & ESON_C_InstDisplayVol)
 				{
 					if(mpo_Editor->mst_Ini.i_Option & ESON_Cte_DispEffVol)
-						o_Menu.AppendMenu(MF_BYCOMMAND | MF_CHECKED, 15, "Eff-"ESON_STR_Csz_TitleVolume);
+						o_Menu.AppendMenu(MF_BYCOMMAND | MF_CHECKED, 15, "Eff-" ESON_STR_Csz_TitleVolume);
 					else
 						o_Menu.AppendMenu(MF_BYCOMMAND | MF_CHECKED, 15, ESON_STR_Csz_TitleVolume);
 				}

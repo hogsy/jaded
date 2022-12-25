@@ -315,7 +315,7 @@ extern void MEM_FreeFromEnd(void *_pv_block);
 #endif
 #define MEM_SetNextType(a) 
 
-typedef enum MEM_Type
+enum MEM_Type
 {
 	MEM_td_Undefined,
 	MEM_td_Geometry,

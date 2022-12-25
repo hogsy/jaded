@@ -763,7 +763,7 @@ int GFX_i_AnotherFlare_Render(void *p_Data)
 			else
 			{
 				MATH_tdst_Vector	CX2;
-				float				H, u, Hh, x; 
+				float				H, Hh, x; 
 				
 				MATH_AddVector( &CX2, &CP, &X2 );
 				H = MATH_f_DotProduct( &X2, &pst_Data->st_Sight);

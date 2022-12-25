@@ -736,8 +736,8 @@ void ESON_cl_Frame::Sound_SetSpy(BOOL _b_UseSelected)
 							0,
 							1,
 							EDI_Csz_Path_Audio,
-							"*"EDI_Csz_ExtSoundFile ",*"EDI_Csz_ExtLoadingSound ",*"EDI_Csz_ExtSModifier ",*"EDI_Csz_ExtSoundMusic ",*"
-								EDI_Csz_ExtSoundAmbience ",*"EDI_Csz_ExtSoundDialog
+							"*" EDI_Csz_ExtSoundFile ",*" EDI_Csz_ExtLoadingSound ",*" EDI_Csz_ExtSModifier ",*" EDI_Csz_ExtSoundMusic ",*"
+								EDI_Csz_ExtSoundAmbience ",*" EDI_Csz_ExtSoundDialog
 						);
 	CString				o_Temp;
 	BIG_INDEX			ul_Index;

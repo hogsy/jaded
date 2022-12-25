@@ -1927,7 +1927,6 @@ void OBJ_GameObject_Rename(OBJ_tdst_GameObject *pst_GO, char *asz_Name)
 	char				asz_Path[BIG_C_MaxLenPath];
 	char				asz_Name1[BIG_C_MaxLenPath];
     char				asz_OldName[BIG_C_MaxLenPath];
-    char				sz_Msg[ 512 ];
 	LINK_tdst_Pointer	*p2;
 	BOOL				isNewFileName = TRUE;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -1945,6 +1944,7 @@ void OBJ_GameObject_Rename(OBJ_tdst_GameObject *pst_GO, char *asz_Name)
 	/* Rename file */
 	BIG_ComputeFullName(BIG_ParentFile(ul_Index), asz_Path);
 #ifdef JADEFUSION
+	char sz_Msg[512];
 	sprintf( sz_Msg, "[%08X] Rename: %s -> %s", BIG_FileKey(ul_Index), BIG_NameFile(ul_Index), asz_Name),
     LINK_PrintStatusMsg( sz_Msg );
 #else

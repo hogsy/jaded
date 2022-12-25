@@ -216,7 +216,7 @@ void ESON_cl_Frame::SModifier_CloseCurrent(BOOL b_refresh)
 void ESON_cl_Frame::SModifier_Open(void)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	EDIA_cl_FileDialog	o_File("Choose File", 0, 0, 1, NULL, "*"EDI_Csz_ExtSModifier);
+	EDIA_cl_FileDialog	o_File("Choose File", 0, 0, 1, NULL, "*" EDI_Csz_ExtSModifier);
 	CString				o_Temp;
 	BIG_INDEX			ul_Index;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

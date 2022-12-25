@@ -1895,7 +1895,6 @@ void GEO_SKN_DestroyObjPonderation(GEO_tdst_ObjectPonderation *p_ObjPond)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	ULONG   ul_MatrixCounter;
-	int		i;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	if (!p_ObjPond) return;
 

@@ -1636,7 +1636,7 @@ void ETEXT_cl_Scroll::EditCel(void)
 		else if(i == 2)
 		{
 			/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-			EDIA_cl_FileDialog	o_DialogFile("Choose dialog file", 0, 0, 1, NULL, "*"EDI_Csz_ExtSoundDialog);
+			EDIA_cl_FileDialog	o_DialogFile("Choose dialog file", 0, 0, 1, NULL, "*" EDI_Csz_ExtSoundDialog);
 			CString				o;
 			/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -1950,7 +1950,7 @@ void ETEXT_cl_Scroll::EditCel(void)
 		else if(i == 2)
 		{
 			/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-			EDIA_cl_FileDialog	o_DialogFile("Choose File", 0, 0, 1, NULL, "*"EDI_Csz_ExtGameObject);
+			EDIA_cl_FileDialog	o_DialogFile("Choose File", 0, 0, 1, NULL, "*" EDI_Csz_ExtGameObject);
 			CString				o;
 			/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

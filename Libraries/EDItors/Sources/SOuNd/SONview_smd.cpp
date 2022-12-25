@@ -1709,7 +1709,7 @@ void ESON_cl_ViewSmd::OnFadeInChange(void)
 									0,
 									1,
 									NULL,
-									"*"EDI_Csz_ExtSoundInsert ",*"EDI_Csz_ExtSoundFade
+									"*" EDI_Csz_ExtSoundInsert ",*" EDI_Csz_ExtSoundFade
 								);
 	CString						o_Temp;
 	ULONG						ul_Index;
@@ -2995,8 +2995,8 @@ void ESON_cl_ViewSmd::OnPlayListAdd(void)
 									0,
 									1,
 									NULL,
-									"*"EDI_Csz_ExtSoundFile ",*"EDI_Csz_ExtLoadingSound ",*"EDI_Csz_ExtSoundMusic ",*"EDI_Csz_ExtSoundAmbience
-										",*"EDI_Csz_ExtSoundDialog
+									"*" EDI_Csz_ExtSoundFile ",*" EDI_Csz_ExtLoadingSound ",*" EDI_Csz_ExtSoundMusic ",*" EDI_Csz_ExtSoundAmbience
+										",*" EDI_Csz_ExtSoundDialog
 								);
 	CString						o_Temp;
 	ULONG						ul_Index;

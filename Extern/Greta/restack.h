@@ -53,8 +53,8 @@ namespace detail
 
 // For compile-time assertions that generate
 // no run-time overhead.
-template< bool f > struct static_assert;
-template<>         struct static_assert<true> { static_assert() {} };
+template< bool f > struct rs_static_assert;
+template<>         struct rs_static_assert<true> { rs_static_assert() {} };
 
 // Work-around for a template-template parameter problem on VC7.0
 template< typename T > struct type2type { typedef T type; };
@@ -553,7 +553,7 @@ public:
     ~hetero_stack() // throw()
     {
         // AlignmentT must be a power of two
-        detail::static_assert< detail::is_power_of_two<AlignmentT>::value > const align_test;
+        detail::rs_static_assert< detail::is_power_of_two<AlignmentT>::value > const align_test;
 
         // Call any destructors for objects still on the stack
         if( RuntimeTypeCheckT && ! AssumePodT )
@@ -575,7 +575,7 @@ public:
     {
         // Make sure that the alignment for type T is not worse
         // than our declared alignment.
-        detail::static_assert<( AlignmentT >= detail::alignof<T>::value )> const align_test;
+        detail::rs_static_assert<( AlignmentT >= detail::alignof<T>::value )> const align_test;
         static_cast<void>(align_test);
 
         // If T won't throw in copy c'tor then we don't need to use an unwinder object.
@@ -607,7 +607,7 @@ public:
     template< typename T >
     inline void pop( T & t ) // throw(...)
     {
-        detail::static_assert<( AlignmentT >= detail::alignof<T>::value )> const align_test;
+        detail::rs_static_assert<( AlignmentT >= detail::alignof<T>::value )> const align_test;
         static_cast<void>(align_test);
 
         // If we are debugging the stack, then in push() we pushed a pointer
@@ -631,7 +631,7 @@ public:
     template< typename T >
     inline void pop( REGEX_VC6(detail::type2type<T> COMMA int) ) // throw(type_error,...)
     {
-        detail::static_assert<( AlignmentT >= detail::alignof<T>::value )> const align_test;
+        detail::rs_static_assert<( AlignmentT >= detail::alignof<T>::value )> const align_test;
         static_cast<void>(align_test);
 
         // If we are debugging the stack, then in push() we pushed a pointer
@@ -653,7 +653,7 @@ public:
     template< typename T >
     inline bool pop( std::nothrow_t const & ) // throw()
     {
-        detail::static_assert<( AlignmentT >= detail::alignof<T>::value )> const align_test;
+        detail::rs_static_assert<( AlignmentT >= detail::alignof<T>::value )> const align_test;
         static_cast<void>(align_test);
 
         // If we are debugging the stack, then in push() we pushed a pointer
@@ -674,7 +674,7 @@ public:
     template< typename T >
     inline T & top( REGEX_VC6(detail::type2type<T>) ) const // throw(type_error,...)
     {
-        detail::static_assert<( AlignmentT >= detail::alignof<T>::value )> const align_test;
+        detail::rs_static_assert<( AlignmentT >= detail::alignof<T>::value )> const align_test;
         static_cast<void>(align_test);
 
         if( RuntimeTypeCheckT )
@@ -693,7 +693,7 @@ public:
     // Fetch the type_info for the element at the top of the stack
     std::type_info const & top_type() const // throw()
     {
-        detail::static_assert< RuntimeTypeCheckT > const type_check;
+        detail::rs_static_assert< RuntimeTypeCheckT > const type_check;
         static_cast<void>(type_check);
 
         byte_t * pti = m_current - aligned_sizeof<vtable_ptr>::no_rtti;
@@ -730,7 +730,7 @@ public:
     // Safe long jump; does call destructors if RuntimeTypeCheckT is true.
     void safe_long_jump( void *const jump_ptr ) // throw()
     {
-        detail::static_assert< RuntimeTypeCheckT > const type_check;
+        detail::rs_static_assert< RuntimeTypeCheckT > const type_check;
         static_cast<void>(type_check);
 
         while( m_current != jump_ptr )

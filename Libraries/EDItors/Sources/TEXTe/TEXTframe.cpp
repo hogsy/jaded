@@ -1557,7 +1557,7 @@ void ETEXT_cl_Frame::OnBankOpen(ULONG ul_Index)
 	if(ul_Index == BIG_C_InvalidIndex)
 	{
 		/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-		EDIA_cl_FileDialog	o_File("Choose File", 0, 0, 1, NULL, "*"EDI_Csz_ExtTextLang);
+		EDIA_cl_FileDialog	o_File("Choose File", 0, 0, 1, NULL, "*" EDI_Csz_ExtTextLang);
 		CString				o_Temp;
 		/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

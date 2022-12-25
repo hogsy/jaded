@@ -75,7 +75,7 @@ typedef struct	ESON_tdst_IniOld_
 #ifdef JADEFUSION
 extern float SND_gf_AutoVolumeOff;
 #else
-extern "C"float SND_gf_AutoVolumeOff;
+extern "C" float SND_gf_AutoVolumeOff;
 #endif
 
 /*$4

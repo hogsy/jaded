@@ -968,7 +968,7 @@ void EACT_cl_View::OnNewAction(void)
 	CListCtrl			*plist;
 	BIG_INDEX			ul_Index;
 	CString				o_Temp;
-	EDIA_cl_FileDialog	o_File("Choose Action", 0, 0, 1, NULL, "*"EDI_Csz_ExtAction);
+	EDIA_cl_FileDialog	o_File("Choose Action", 0, 0, 1, NULL, "*" EDI_Csz_ExtAction);
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
     o_File.mb_UseFavorite = TRUE;
@@ -2033,7 +2033,7 @@ void EACT_cl_View::OnHoleAction(void)
 void EACT_cl_View::OnBrowseAnim(void)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	EDIA_cl_FileDialog	o_File("Choose Anim", 0, 0, 1, NULL, "*"EDI_Csz_ExtEventAllsTracks);
+	EDIA_cl_FileDialog	o_File("Choose Anim", 0, 0, 1, NULL, "*" EDI_Csz_ExtEventAllsTracks);
 	CString				o_Temp;
 	BIG_INDEX			ul_Index;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -2068,7 +2068,7 @@ void EACT_cl_View::OnBrowseAnim(void)
 void EACT_cl_View::OnBrowseShape(void)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	EDIA_cl_FileDialog	o_File("Choose Shape", 0, 0, 1, NULL, "*"EDI_Csz_ExtShape);
+	EDIA_cl_FileDialog	o_File("Choose Shape", 0, 0, 1, NULL, "*" EDI_Csz_ExtShape);
 	CString				o_Temp;
 	BIG_INDEX			ul_Index;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
