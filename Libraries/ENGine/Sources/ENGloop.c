@@ -1,0 +1,2450 @@
+/*$T ENGloop.c GC! 1.081 07/03/02 11:04:38 */
+
+
+/*$6
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ */
+
+
+#include "Precomp.h"
+#include "BASe/CLIbrary/CLIwin.h"
+#include "TABles/TABles.h"
+#include "BIGfiles/BIGfat.h"
+#include "BIGfiles/BIGio.h"
+#include "ENGine/Sources/ENGvars.h"
+#include "ENGine/Sources/ENGinit.h"
+#include "ENGine/Sources/ENGmsg.h"
+#include "ENGine/Sources/ENGloop.h"
+#include "ENGine/Sources/ENGcall.h"
+#include "ENGine/Sources/WORld/WORrender.h"
+#include "ENGine/Sources/WORld/WORstruct.h"
+#include "ENGine/Sources/WORld/WORaccess.h"
+#include "ENGine/Sources/WORld/WORinit.h"
+#include "AIinterp/Sources/AIdebug.h"
+#include "AIinterp/Sources/AIengine.h"
+#include "LINks/LINKmsg.h"
+#include "BASe/MEMory/MEM.h"
+#include "BASe/MEMory/MEMpro.h"
+#include "BIGfiles/LOAding/LOAdefs.h"
+#include "NETwork/sources/NET.h"
+#if defined(_XBOX) || defined(_XENON)
+#include "GX8/Gx8GPUMon.h"
+#endif
+#if defined(_XBOX)
+#include "DEModisk/DEModisk.h"
+#endif
+
+#if defined(_XENON)
+#include "Xenon/MenuManager/MenuManager.h"
+#include "Xenon/Live/RichPresence.h"
+#include "Xenon/Live/Notifications.h"
+#include "Xenon/Live/Achievements.h"
+#include "Xenon/Live/Session.h"
+#include "Xenon/Profile/Profile.h"
+#endif
+
+#ifdef JADEFUSION
+#include "BASe/BENch/BENch.h"
+#endif
+/*$2- editor ---------------------------------------------------------------------------------------------------------*/
+
+#ifdef ACTIVE_EDITORS
+#include "BASe/ERRors/ERRasser.h"
+#include "EDIerrid.h"
+#include "LINKs/LINKtoed.h"
+#include "EDItors/Sources/SOuNd/SONutil.h"
+#endif /* ACTIVE_EDITORS */
+
+/*$2- PS2 + GC -------------------------------------------------------------------------------------------------------*/
+
+//#if defined(PSX2_TARGET) || defined(_GAMECUBE) || defined(_XBOX)
+#include "INOut/INOjoystick.h"
+//#endif
+#if defined(PSX2_TARGET) || defined(_GAMECUBE)
+#include "MEMory/MEMpro.h"
+#endif
+
+/*$2- XBOX -------------------------------------------------------------------------------------------------------*/
+
+#if defined(_XBOX)
+#include <D3d8perf.h>
+#include "xbdm.h"
+#include "GX8/RASter/Gx8_CheatFlags.h"
+#endif
+
+/*$2------------------------------------------------------------------------------------------------------------------*/
+#if defined(_XENON_RENDER)
+#include "XenonGraphics/XeBufferMgr.h"
+#include "XenonGraphics/XeRenderer.h"
+#include "XenonGraphics/XeSimpleRenderer.h"
+#include "XenonGraphics/XeGDInterface.h"
+
+#include "XenonGraphics/XeTrigger.h"
+#endif
+
+#include "BASe/BENch/BENch.h"
+#include "INOut/INOkeyboard.h"
+#include "INOut/INO.h"
+#include "SouND/Sources/SND.h"
+#include "SouND/Sources/SNDstream.h"
+#include "TIMer/TIMdefs.h"
+#include "TIMer/PROfiler/PROdefs.h"
+#include "TIMer/PROfiler/PROdisplay.h"
+#include "TIMer/PROfiler/PROPS2.h"
+#include "TEXture/TEXprocedural.h"
+#include "TEXture/TEXanimated.h"
+
+#ifdef JADEFUSION
+/*$2- XENON PROFILING ---------------------------------------------------------------------------------------------*/
+#include "XenonGraphics/XeProfiling.h"
+
+
+extern int	g_iReinitPauseDelay;
+extern BOOL	g_iReinitPauseScheduled;
+extern void	AI_EvalFunc_WORPause_C(int world, ULONG ul_ID);
+#endif
+/*$4
+ ***********************************************************************************************************************
+    prototypes
+ ***********************************************************************************************************************
+ */
+
+void	DisplayAttach(GDI_tdst_DisplayData *);
+void	s_CheckResetRequest(void);
+void	s_HandleWinMessages(void);
+void	ENG_ForceStartRasters(void);
+extern	void FOGDYN_Reset(void);
+
+/*$4
+ ***********************************************************************************************************************
+ ***********************************************************************************************************************
+ */
+
+#ifdef PSX2_TARGET
+#include "SDK/Sources/IOP/RPC_Manager.h"
+/*$off*/
+BOOL ps2INO_b_Joystick_IsButtonDown(INO_tden_ButtonId _id);
+
+#define Mb_Cnd_Exit						(  ps2INO_b_Joystick_IsButtonDown( e_SEL) \
+										&& ps2INO_b_Joystick_IsButtonDown( e_R3) )
+
+#define Mb_Cnd_WorldsReset				(  ps2INO_b_Joystick_IsButtonDown( e_SEL) \
+										&& ps2INO_b_Joystick_IsButtonDown( e_START)\
+										&& ps2INO_b_Joystick_IsButtonDown( e_L1)\
+										&& ps2INO_b_Joystick_IsButtonDown( e_R1)\
+										&& ps2INO_b_Joystick_IsButtonDown( e_L2)\
+										&& ps2INO_b_Joystick_IsButtonDown( e_R2) )
+
+#define Mb_Cnd_RastersDisplay			(  ps2INO_b_Joystick_IsButtonDown( e_SEL) \
+										&& ps2INO_b_Joystick_IsButtonDown( e_TRIANGLE) )
+
+#define Mb_Cnd_RastersChangeCateg		(  ps2INO_b_Joystick_IsButtonDown( e_SEL) \
+										&& ps2INO_b_Joystick_IsButtonDown( e_CIRCLE) )
+
+#define Mb_Cnd_RastersChangeSubCateg	(  ps2INO_b_Joystick_IsButtonDown( e_SEL) \
+										&& ps2INO_b_Joystick_IsButtonDown( e_CROSS) )
+
+#define Mb_Cnd_RastersChangeName		(  ps2INO_b_Joystick_IsButtonDown( e_SEL) \
+										&& ps2INO_b_Joystick_IsButtonDown( e_SQUARE) )
+
+#define Mb_Cnd_PROPS2RastersDisplay		(	ps2INO_b_Joystick_IsButtonDown( e_SEL) \
+										&& ps2INO_b_Joystick_IsButtonDown( e_L2) \
+										&& ps2INO_b_Joystick_IsButtonDown( e_TRIANGLE) )
+
+#define Mb_Cnd_PROPS2RastersChange		(	ps2INO_b_Joystick_IsButtonDown( e_SEL) \
+										&& ps2INO_b_Joystick_IsButtonDown( e_L2) \
+										&& ps2INO_b_Joystick_IsButtonDown( e_CIRCLE) )
+
+#define Mb_Cnd_BIGioRastersDisplay		(	ps2INO_b_Joystick_IsButtonDown( e_SEL) \
+										&& ps2INO_b_Joystick_IsButtonDown( e_R1) \
+										&& ps2INO_b_Joystick_IsButtonDown( e_TRIANGLE) )
+#define Mb_Cnd_PROPS2RastersReset		(	ps2INO_b_Joystick_IsButtonDown( e_L3) \
+										&& ps2INO_b_Joystick_IsButtonDown( e_SEL) \
+										&& ps2INO_b_Joystick_IsButtonDown( e_R3) )
+#define Mb_Cnd_LoadingTime				(  ps2INO_b_Joystick_IsButtonDown( e_L3) \
+										&& ps2INO_b_Joystick_IsButtonDown( e_L2) \
+										&& ps2INO_b_Joystick_IsButtonDown( e_R2) )
+/*$on*/
+
+/*$2------------------------------------------------------------------------------------------------------------------*/
+
+extern BOOL ps2INO_b_Joystick_IsValid(void);
+extern void ps2SND_RefreshStatus(void);
+
+/*$2------------------------------------------------------------------------------------------------------------------*/
+
+#endif
+
+/*$4
+ ***********************************************************************************************************************
+ ***********************************************************************************************************************
+ */
+
+extern void MEM_Defrag(int single);
+extern void SOFT_ZList_Clear(void);
+extern void MSG_GlobalReinit(void);
+
+#if defined ( PCWIN_TOOL )
+extern void GDI_ChangeInterface(GDI_tdst_DisplayData *, ULONG ulNew);
+extern int  GDI_gi_GDIType;
+#endif
+
+/*$4
+ ***********************************************************************************************************************
+ ***********************************************************************************************************************
+ */
+
+BOOL		sgb_DisplayRasters = FALSE;
+BOOL		sbg_FirstDisp = FALSE;
+extern UINT SPG2_gb_Recompute;
+#ifndef ACTIVE_EDITORS
+BOOL		sgb_FullScreen = FALSE;
+int			sgi_FullScreenRes = 0;
+#else
+BOOL		sgb_EngineRender = TRUE;
+#endif
+BOOL		ENG_gb_ForceAttach = FALSE;
+BOOL		ENG_gb_NeedToReinit = FALSE;
+#if defined(USE_DOUBLE_RENDERING) || defined(PSX2_TARGET)
+ULONG		ENG_gp_DoubleRendering = 0;
+ULONG		ENG_gp_DoubleRenderingLocker = 0;
+#endif
+
+ULONG		ENG_gp_CameraCutHasBeenDetected = 0;
+
+extern float TIM_gf_SynchroFrequency;
+float TIM_gf_MainClockForTextureScrolling = 0.0f;
+#ifndef PSX2_TARGET
+HWND			ENG_h_Rasters = 0;
+#endif
+#ifdef _FINAL_
+float			ENG_gf_TimeFinal;
+BOOL			ENG_gb_Raster = FALSE;
+#endif
+#ifdef _GAMECUBE
+#include <dolphin/os.h>
+#endif
+
+#ifdef JADEFUSION
+extern BOOL ENG_gb_InPause;
+#endif
+
+/*$4
+ ***********************************************************************************************************************
+    MESSAGES
+ ***********************************************************************************************************************
+ */
+
+#ifdef PSX2_TARGET
+u_int			SavedStack;
+
+/*
+ =======================================================================================================================
+ =======================================================================================================================
+ */
+void ENG_EngineWithStack_in_Spr(void)
+{
+	SavedStack = GetSP();
+	SetSP(0x70000000 + 0x4000);
+	ENG_gp_Engine();
+	SetSP(SavedStack);
+}
+
+#if defined _FINAL_ || !defined GSP_PS2_BENCH
+#else /* !_FINAL_ */
+extern u_int	StackInit;
+extern u_int	StackMax;
+extern u_int	StackEngine;
+extern u_int	StackEngineMax;
+extern u_int	StackDisplay;
+extern u_int	StackDisplayMax;
+extern u_int	StackGO;
+extern void		Gsp_InitStack(void);
+extern u_int	Gsp_GetStackSize(void);
+#endif /* !_FINAL_ */
+
+#else /* !PSX2_TARGET */
+#endif /* !PSX2_TARGET */
+
+/*
+ =======================================================================================================================
+ =======================================================================================================================
+ */
+void DisplayAttach(GDI_tdst_DisplayData *_pst_DD)
+{
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+	static char asz_PrevName[100] = "";
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+	/* Attach world to display data : create texture */
+	if(MAI_gst_MainHandles.pst_World)
+	{
+		if
+		(
+			(_pst_DD->pst_World == NULL)
+		||	(_pst_DD->pst_World != MAI_gst_MainHandles.pst_World)
+		||	(L_strcmp(MAI_gst_MainHandles.pst_World->sz_Name, asz_PrevName))
+		||	(ENG_gb_ForceAttach)
+		)
+		{
+			ENG_gb_ForceAttach = FALSE;
+			L_strcpy(asz_PrevName, MAI_gst_MainHandles.pst_World->sz_Name);
+
+			/* GDI_ChangeInterface( _pst_DD, 1 ); */
+			GDI_l_AttachWorld(_pst_DD, MAI_gst_MainHandles.pst_World);
+
+			_pst_DD->pst_World = MAI_gst_MainHandles.pst_World;
+
+			/* Copy default camera into view 0 viewpoint */
+#ifdef ACTIVE_EDITORS
+			CAM_SetObjectMatrixFromCam
+			(
+				&_pst_DD->pst_World->pst_View->st_ViewPoint,
+				&_pst_DD->pst_World->st_CameraPosSave
+			);
+#endif
+		}
+	}
+}
+
+/*
+ =======================================================================================================================
+ =======================================================================================================================
+ */
+static void s_Display(HWND h, GDI_tdst_DisplayData *_pst_DD)
+{
+	/*~~~~~~~~~~~~~~~~~~~~~~~~*/
+	extern void MEM_Defrag(int);
+	/*~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+#ifdef JADEFUSION
+    if(!g_oXeRenderer.IsGDKParallelized())
+    {
+
+    #if defined(_XENON_RENDERER_USETHREAD)
+	    g_oXeRenderer.PrepareThreadForNewFrame();
+    #endif
+     
+        // both cpu (engine) and present frame are done... compute rasters
+    #if defined(_XENON) && defined(XE_BENCH)
+    #define AR_SMOOTH 0.95f
+
+        LARGE_INTEGER TicksPerSecond;
+        QueryPerformanceFrequency( &TicksPerSecond );
+        DOUBLE fTicksPerMicroSeconds = (DOUBLE)TicksPerSecond.QuadPart*0.000001;
+
+        // raster computation for engine, gdk and present frame
+        for (int i=XE_StartRaster; i<XE_StartRaster+3; i++)
+        {
+            RastersSmooth[i] = RastersSmooth[i] * AR_SMOOTH + (float)(Rasters[i]/fTicksPerMicroSeconds ) * (1.0f - AR_SMOOTH);
+            Rasters[i] = 0;
+            PIXAddNamedCounter(
+                RastersSmooth[i]/1000.0f,
+                RasterDescriptors[i].Name
+                );
+        }
+    #endif
+    }
+#endif
+
+	/* Attach world */
+#ifdef JADEFUSION
+	_GSP_BeginRaster(XE_StartRaster+1);
+#endif
+
+	DisplayAttach(_pst_DD);
+
+ 
+	GDI_BeforeDisplay(_pst_DD);
+
+	_pst_DD->pst_World = MAI_gst_MainHandles.pst_World;
+	if(_pst_DD->pst_World)
+	{
+ 
+#ifdef PSX2_TARGET
+		_pst_DD->pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas = GDI_gpst_CurDD;
+		WOR_Render(_pst_DD->pst_World, _pst_DD);
+#elif defined(_GAMECUBE)
+		_pst_DD->pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas = GDI_gpst_CurDD;
+		WOR_Render(_pst_DD->pst_World, _pst_DD);
+#else
+		_pst_DD->pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas = _pst_DD;
+		WOR_Render(_pst_DD->pst_World, _pst_DD);
+#endif
+	}
+
+#ifdef JADEFUSION
+    _GSP_EndRaster(XE_StartRaster+1);
+
+	if(g_oXeRenderer.IsGDKParallelized())
+    {
+
+    #if defined(_XENON_RENDERER_USETHREAD)
+        g_oXeRenderer.PrepareThreadForNewFrame();
+    #endif
+
+        // both cpu (engine) and present frame are done... compute rasters
+    #if defined(_XENON) && defined(XE_BENCH)
+    #define AR_SMOOTH 0.95f
+
+        LARGE_INTEGER TicksPerSecond;
+        QueryPerformanceFrequency( &TicksPerSecond );
+        DOUBLE fTicksPerMicroSeconds = (DOUBLE)TicksPerSecond.QuadPart*0.000001;
+
+        // raster computation for engine, gdk and present frame
+        for (int i=XE_StartRaster; i<XE_StartRaster+3; i++)
+        {
+            RastersSmooth[i] = (int64)(RastersSmooth[i] * AR_SMOOTH + (float)(Rasters[i]/fTicksPerMicroSeconds ) * (1.0f - AR_SMOOTH));
+            Rasters[i] = 0;
+            PIXAddNamedCounter(
+                RastersSmooth[i]/1000.0f,
+                RasterDescriptors[i].Name
+                );
+        }
+    #endif
+
+    }
+#endif
+	GDI_AfterDisplay(_pst_DD);
+ 
+}
+
+#ifdef _GAMECUBE
+void	    GC_s_CheckResetRequest(void);
+volatile BOOL GC_b_PuttonResetPushed = FALSE;
+volatile int  GC_gi_ResetCall = 0;
+volatile BOOL GC_b_ResetShortCutPresent = FALSE;
+volatile BOOL GC_b_ShouldInstallResetCallBack = TRUE;
+volatile ULONG GC_ul_ValidFrameBufferNb = 0;
+
+extern BOOL INO_gb_Writing;
+
+
+BOOL GC_b_IsExiting()
+{
+	return GC_b_PuttonResetPushed || GC_gi_ResetCall || ENG_gb_ExitApplication;
+}
+
+void GC_ResetCallBack()
+{
+	GC_b_ShouldInstallResetCallBack = TRUE;
+	if (OSGetResetButtonState())
+		GC_b_PuttonResetPushed = TRUE;
+}
+
+
+/*
+ =======================================================================================================================
+ =======================================================================================================================
+ */
+ 
+#define GC_bCanResetNow() (!INO_gb_Writing && GC_ul_ValidFrameBufferNb >= 4)
+ 
+void GC_s_CheckResetRequest(void)
+{
+	
+	// The reset callback is installed so that bink can know that the reset button has been pushed.
+	if (GC_b_ShouldInstallResetCallBack)
+	{
+		GC_b_ShouldInstallResetCallBack = FALSE;
+		OSSetResetCallback(&GC_ResetCallBack);
+	}
+
+    if(GC_bCanResetNow())
+    {
+        switch(GC_gi_ResetCall)
+        {
+        case 1:
+            ENG_gb_ExitApplication = TRUE; 
+            GC_gi_ResetCall=0;
+            break;
+            
+        case 2:
+			GC_b_PuttonResetPushed = FALSE;
+			ENG_gb_ExitApplication = TRUE;		
+            GC_gi_ResetCall=0;
+			break;
+			
+        default:
+            GC_gi_ResetCall=0;
+            break;
+        }
+    }
+
+	if(ENG_gb_ExitApplication)
+	{
+		/*~~*/
+		int i;
+		extern void GXI_FlushComplete ();
+		/*~~*/
+
+        if(!GC_bCanResetNow())
+        {
+            GC_gi_ResetCall = 1;
+            ENG_gb_ExitApplication = FALSE;
+            return;
+        }
+        
+        // Really start reset.
+		for(i = 0; i < PAD_MAX_CONTROLLERS; i++)
+		{
+			PADRecalibrate(PAD_CHAN0_BIT >> i);
+		}
+		
+		GXI_FlushComplete ();
+		
+		OSResetSystem(OS_RESET_RESTART, 0, FALSE);		
+	}
+
+	if(OSGetResetButtonState())
+		GC_b_PuttonResetPushed = TRUE;	
+	
+	if(GC_b_PuttonResetPushed)
+	{
+		if(!OSGetResetButtonState())
+		{
+            if(!GC_bCanResetNow())
+            {
+                GC_gi_ResetCall = 2;
+            }
+            else
+            {
+				GC_b_PuttonResetPushed = FALSE;
+				ENG_gb_ExitApplication = TRUE;		
+			}
+		}
+	}
+}
+
+#endif
+
+/*
+ =======================================================================================================================
+ =======================================================================================================================
+ */
+void s_CheckResetRequest(void)
+{
+#ifdef _GAMECUBE
+	GC_s_CheckResetRequest();
+#endif
+}
+
+/*
+ =======================================================================================================================
+ =======================================================================================================================
+ */
+static void s_InitBeforeTrame(void)
+{
+	s_CheckResetRequest();
+
+#ifndef ACTIVE_EDITORS
+	ENG_gp_Display = s_Display;
+#else
+	ENG_gp_Display = NULL;
+#endif
+	ENG_gp_Input = INO_Update;
+	if(UNI_Status() != UNI_Cuc_Ready)
+	{
+		switch(UNI_Status())
+		{
+		case UNI_Cuc_Reset:
+			PROPS2_StartRaster(&PROPS2_gst_AI_Reset);
+			AI_Reset();
+			PROPS2_StopRaster(&PROPS2_gst_AI_Reset);
+
+			PROPS2_StartRaster(&PROPS2_gst_WOR_Universe_Open);
+			WOR_Universe_Open(BIG_UniverseKey());
+			PROPS2_StopRaster(&PROPS2_gst_WOR_Universe_Open);
+			break;
+
+		default:
+			PROPS2_StartRaster(&PROPS2_gst_ENG_ReinitOneWorld);
+			AI_ReinitUniverse();
+			ENG_ReinitOneWorld(MAI_gst_MainHandles.pst_World, UNI_Status());
+			PROPS2_StopRaster(&PROPS2_gst_ENG_ReinitOneWorld);
+			break;
+		}
+
+		UNI_Status() = UNI_Cuc_Ready;
+	}
+
+#if defined(_DEBUG) && ( defined(ACTIVE_EDITORS) || defined(PCWIN_TOOL) )
+#ifndef MEM_OPT
+	if(ENG_gb_TestMemory) MEM_CheckAllocatedBlocks(0);
+#endif
+#endif
+}
+
+/*
+ =======================================================================================================================
+ =======================================================================================================================
+ */
+static void s_DesInitAfterTrame(void)
+{
+}
+
+/*
+ =======================================================================================================================
+ =======================================================================================================================
+ */
+static BOOL sfnb_EndGame(void)
+{
+	if(ENG_gb_ExitApplication) 
+	{
+		return TRUE;
+	}
+	if(ENG_gb_ForceEndEngine) 
+	{
+		return TRUE;
+	}
+	return FALSE;
+}
+
+/*
+ =======================================================================================================================
+    Aim:    Handles windows messages while the engine is running
+
+    Note:   It is here that youy can edit while the engine is running
+ =======================================================================================================================
+ */
+void s_HandleWinMessages(void)
+{
+#if defined(PSX2_TARGET) || defined(_GAMECUBE) || defined(_XBOX) || defined(_XENON)
+	return;
+
+	/*~~~~~~~~~~~~~~~~~~~~~~~*/
+#else	/* PS2 + GC + XBOX */
+	MSG		msg;
+	float	f_StartTimeEditors;
+	/*~~~~~~~~~~~~~~~~~~~~~~~*/
+
+	/* Windows messages */
+	PRO_StartTrameRaster(&ENG_gpst_RasterEng_WinMsg);
+	f_StartTimeEditors = TIM_f_Clock_TrueRead();
+
+#ifdef ACTIVE_EDITORS
+	sgb_EngineRender = FALSE;
+	while(PeekMessage(&msg, 0, 0, 0xFFFFFFFF, PM_REMOVE))
+	{
+		if(!LINK_b_ProcessEngineWndMsg(&msg)) break;
+		if(!LINK_PreTranslateMessage(&msg))
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+
+		if
+		(
+			((GetAsyncKeyState(VK_LBUTTON) < 0) || (GetAsyncKeyState(VK_RBUTTON) < 0))
+		&&	(GetAsyncKeyState(VK_SPACE) >= 0)
+		) break;
+	}
+
+	sgb_EngineRender = TRUE;
+#else /* EDITOR */
+	while(PeekMessage(&msg, 0, 0, 0xFFFFFFFF, PM_REMOVE))
+	{
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
+
+#endif /* EDITOR */
+	TIM_gf_EditorTime += (TIM_f_Clock_TrueRead() - f_StartTimeEditors);
+
+	PRO_StopTrameRaster(&ENG_gpst_RasterEng_WinMsg);
+#endif /* PSX2_TARGET +GC */
+}
+
+/*$2
+ -----------------------------------------------------------------------------------------------------------------------
+ -----------------------------------------------------------------------------------------------------------------------
+ */
+
+#ifdef PSX2_TARGET
+
+/*
+ =======================================================================================================================
+ =======================================================================================================================
+ */
+static void PS2_s_EngineCheat(void)
+{
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+#ifdef RASTERS_ON
+	PRO_tdst_TrameRaster	*pst_Categ;
+#endif
+	static int				init = 0;
+	LONG					mask;
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+	return; // Philippe -> Kinkong bug P0
+
+	if(!ps2INO_b_Joystick_IsValid()) return;
+
+	/* refresh for 1st frame */
+	if(!init)
+	{
+		init++;
+		return;
+	}
+
+	mask = INO_l_JoystickMask;
+	INO_l_JoystickMask = -1;
+	
+	
+
+	if(Mb_Cnd_LoadingTime)
+	{
+		LOA_DisplayDuration();
+		while(Mb_Cnd_LoadingTime)
+		{
+			INO_Joystick_Update();
+		}
+
+		INO_l_JoystickMask = mask;
+		return;
+	}
+
+	if(Mb_Cnd_PROPS2RastersReset)
+	{
+		PROPS2_Init(1);
+		while(Mb_Cnd_PROPS2RastersReset)
+		{
+			INO_Joystick_Update();
+		}
+
+		INO_l_JoystickMask = mask;
+		return;
+	}
+
+	if(Mb_Cnd_BIGioRastersDisplay)
+	{
+		BIGio_PrintRasters();
+		while(Mb_Cnd_BIGioRastersDisplay)
+		{
+			INO_Joystick_Update();
+		}
+	}
+
+	if(Mb_Cnd_PROPS2RastersDisplay)
+	{
+		PROPS2_PrintRaster();
+		while(Mb_Cnd_PROPS2RastersDisplay)
+		{
+			INO_Joystick_Update();
+		}
+
+		INO_l_JoystickMask = mask;
+		return;
+	}
+
+	if(Mb_Cnd_PROPS2RastersChange)
+	{
+		PROPS2_ChangeDisplay();
+		while(Mb_Cnd_PROPS2RastersChange)
+		{
+			INO_Joystick_Update();
+		}
+
+		INO_l_JoystickMask = mask;
+		return;
+	}
+
+	if(Mb_Cnd_Exit)
+	{
+		ENG_gb_ExitApplication = TRUE;
+		printf("-Exit- command received\n");
+		while(Mb_Cnd_Exit)
+		{
+			INO_Joystick_Update();
+		}
+	}
+
+#ifdef RASTERS_ON
+
+	/* display rasters */
+	if(Mb_Cnd_RastersDisplay)
+	{
+		printf("-Display Rasters- command received\n");
+		sgb_DisplayRasters = sgb_DisplayRasters ? FALSE : TRUE;
+		while(Mb_Cnd_RastersDisplay)
+		{
+			INO_Joystick_Update();
+		}
+
+		mpst_CurrentCategory = _PRO_gpst_FirstTrameRaster;
+		mpst_CurrentSubCategory = NULL;
+		mpst_CurrentName = NULL;
+		INO_l_JoystickMask = mask;
+		return;
+	}
+
+	/* Rasters : Change categ */
+	if(Mb_Cnd_RastersChangeCateg)
+	{
+		printf("-Change Rasters Categ- command received\n");
+		if(sgb_DisplayRasters)
+		{
+			pst_Categ = mpst_CurrentCategory;
+			if(!pst_Categ)
+				pst_Categ = _PRO_gpst_FirstTrameRaster;
+			else
+			{
+				do
+				{
+					pst_Categ = pst_Categ->pst_NextRaster;
+					if(!pst_Categ) pst_Categ = _PRO_gpst_FirstTrameRaster;
+				} while
+				(
+					(pst_Categ != mpst_CurrentCategory)
+				&&	(!L_strcmpi(pst_Categ->psz_Category, mpst_CurrentCategory->psz_Category))
+				);
+			}
+
+			mpst_CurrentCategory = pst_Categ;
+		}
+
+		while(Mb_Cnd_RastersChangeCateg)
+		{
+			INO_Joystick_Update();
+		}
+
+		INO_l_JoystickMask = mask;
+		return;
+	}
+
+	/* Rasters : Change sub */
+	if(Mb_Cnd_RastersChangeSubCateg)
+	{
+		printf("-Change Rasters Sub Categ- command received\n");
+		if(sgb_DisplayRasters)
+		{
+			pst_Categ = mpst_CurrentSubCategory;
+			if(!pst_Categ)
+				pst_Categ = _PRO_gpst_FirstTrameRaster;
+			else
+			{
+				do
+				{
+					pst_Categ = pst_Categ->pst_NextRaster;
+					if(!pst_Categ) pst_Categ = _PRO_gpst_FirstTrameRaster;
+				} while
+				(
+					(pst_Categ != mpst_CurrentSubCategory)
+				&&	(!L_strcmpi(pst_Categ->psz_SubCategory, mpst_CurrentSubCategory->psz_SubCategory))
+				);
+			}
+
+			mpst_CurrentSubCategory = pst_Categ;
+		}
+
+		while(Mb_Cnd_RastersChangeSubCateg)
+		{
+			INO_Joystick_Update();
+		}
+
+		INO_l_JoystickMask = mask;
+		return;
+	}
+
+	/* Rasters : Change name */
+	if(Mb_Cnd_RastersChangeName)
+	{
+		printf("-Change Rasters Name- command received\n");
+		if(sgb_DisplayRasters)
+		{
+			pst_Categ = mpst_CurrentName;
+			if(!pst_Categ)
+				pst_Categ = _PRO_gpst_FirstTrameRaster;
+			else
+			{
+				do
+				{
+					pst_Categ = pst_Categ->pst_NextRaster;
+					if(!pst_Categ) pst_Categ = _PRO_gpst_FirstTrameRaster;
+				} while((pst_Categ != mpst_CurrentName) && (!L_strcmpi(pst_Categ->psz_Name, mpst_CurrentName->psz_Name)));
+			}
+
+			mpst_CurrentName = pst_Categ;
+		}
+
+		while(Mb_Cnd_RastersChangeName)
+		{
+			INO_Joystick_Update();
+		}
+
+		INO_l_JoystickMask = mask;
+		return;
+	}
+
+#endif /* RASTER */
+
+	INO_l_JoystickMask = mask;
+}
+
+/*$2
+ -----------------------------------------------------------------------------------------------------------------------
+ -----------------------------------------------------------------------------------------------------------------------
+ */
+
+#elif defined(_GAMECUBE)
+#define Mb_Cnd_WorldsReset	(INO_b_Joystick_IsButtonDown(e_L1) && INO_b_Joystick_IsButtonDown(e_START))
+#define Mb_Cnd_ConsoleReset (GC_b_ResetShortCutPresent)
+#define Mb_Cnd_PadRecalibrate (INO_b_Joystick_IsButtonDown(e_TRIANGLE) && INO_b_Joystick_IsButtonDown(e_CIRCLE) && INO_b_Joystick_IsButtonDown(e_START))
+#define Mb_Cnd_OpenMenu (INO_b_Joystick_IsButtonDown(e_CIRCLE) && INO_b_Joystick_IsButtonDown(e_TRIANGLE))
+
+/*
+ =======================================================================================================================
+ =======================================================================================================================
+ */
+extern int GXI_gb_MenuMode; 
+void GC_s_EngineCheat(void)
+{
+}
+
+
+#elif defined(_XBOX) || defined(_XENON)
+
+#if defined(_XENON)
+
+// ***********
+//    Xenon
+// ***********
+
+// display rasters : Back + Y + left trigger
+#define Mb_Cnd_RastersDisplay				(  INO_b_Joystick_IsButtonDown(eXeButton_Back) \
+											&& INO_b_Joystick_IsButtonDown(eXeButton_Y) \
+											&& INO_b_Joystick_IsButtonDown(eXeButton_Trigger_Left) )
+
+// reset map : Back + A + left trigger
+#define Mb_Cnd_WorldsReset					(  INO_b_Joystick_IsButtonDown(eXeButton_Back) \
+											&& INO_b_Joystick_IsButtonDown(eXeButton_A) \
+											&& INO_b_Joystick_IsButtonDown(eXeButton_Trigger_Left) )
+
+// change rasters category : Back + down + left trigger
+#define Mb_Cnd_RastersChangeCateg			(  INO_b_Joystick_IsButtonDown(eXeButton_Back) \
+											&& INO_b_Joystick_IsButtonDown(eXeButton_DPad_Down) \
+											&& INO_b_Joystick_IsButtonDown(eXeButton_Trigger_Left) )
+
+// test backface : Back + B + right trigger
+#define Mb_Cnd_RastersTestBackFace			(  INO_b_Joystick_IsButtonDown(eXeButton_Back) \
+											&& INO_b_Joystick_IsButtonDown(eXeButton_B) \
+											&& INO_b_Joystick_IsButtonDown(eXeButton_Trigger_Right) )
+
+// display wired : Back + A + right trigger
+#define Mb_Cnd_RastersDisplayWired			(  INO_b_Joystick_IsButtonDown(eXeButton_Back) \
+											&& INO_b_Joystick_IsButtonDown(eXeButton_A) \
+											&& INO_b_Joystick_IsButtonDown(eXeButton_Trigger_Right) )
+
+// depth read before flip : Back + Y + right trigger
+#define Mb_Cnd_RastersDepthReadBeforeFlip	(  INO_b_Joystick_IsButtonDown(eXeButton_Back) \
+											&& INO_b_Joystick_IsButtonDown(eXeButton_Y) \
+											&& INO_b_Joystick_IsButtonDown(eXeButton_Trigger_Right) )
+#else
+
+// **********
+//    Xbox
+// **********
+
+// display rasters : Back + black + left trigger
+#define Mb_Cnd_RastersDisplay			(  INO_b_Joystick_IsButtonDown(e_Back) \
+										&& INO_b_Joystick_IsButtonDown(e_ButtonBlack) \
+										&& INO_b_Joystick_IsButtonDown(e_LeftTrigger) )
+
+// reset map : Back + A + left trigger
+#define Mb_Cnd_WorldsReset				(  INO_b_Joystick_IsButtonDown(e_Back) \
+										&& INO_b_Joystick_IsButtonDown(e_ButtonA) \
+										&& INO_b_Joystick_IsButtonDown(e_LeftTrigger) )
+
+// change rasters category : Back + down + left trigger
+#define Mb_Cnd_RastersChangeCateg		(  INO_b_Joystick_IsButtonDown(e_Back) \
+										&& INO_b_Joystick_IsButtonDown(e_DPadDown) \
+										&& INO_b_Joystick_IsButtonDown(e_LeftTrigger) )
+
+// test backface : Back + B + right trigger
+#define Mb_Cnd_RastersTestBackFace		(  INO_b_Joystick_IsButtonDown(e_Back) \
+										&& INO_b_Joystick_IsButtonDown(e_ButtonB) \
+										&& INO_b_Joystick_IsButtonDown(e_RightTrigger) )
+
+// display wired : Back + A + right trigger
+#define Mb_Cnd_RastersDisplayWired		(  INO_b_Joystick_IsButtonDown(e_Back) \
+										&& INO_b_Joystick_IsButtonDown(e_ButtonA) \
+										&& INO_b_Joystick_IsButtonDown(e_RightTrigger) )
+
+// depth read before flip : Back + Y + right trigger
+#define Mb_Cnd_RastersDepthReadBeforeFlip ( INO_b_Joystick_IsButtonDown(e_Back) \
+										&& INO_b_Joystick_IsButtonDown(e_ButtonY) \
+										&& INO_b_Joystick_IsButtonDown(e_RightTrigger) )
+
+#endif
+
+static void XB_s_EngineCheat(void)
+{
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+#ifdef RASTERS_ON
+	PRO_tdst_TrameRaster	*pst_Categ;
+#endif
+	TAB_tdst_PFelem			*pst_CurrentElem;
+	TAB_tdst_PFelem			*pst_EndElem;
+	WOR_tdst_World			*pst_World;
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+	/* Reinit all worlds */
+	if (Mb_Cnd_WorldsReset)
+	{
+		SOFT_ZList_Clear();
+		MSG_GlobalReinit();
+		AI_ReinitUniverse();
+		pst_CurrentElem = TAB_pst_PFtable_GetFirstElem(&WOR_gst_Universe.st_WorldsTable);
+		pst_EndElem = TAB_pst_PFtable_GetLastElem(&WOR_gst_Universe.st_WorldsTable);
+		for( ; pst_CurrentElem <= pst_EndElem; pst_CurrentElem++)
+		{
+			pst_World = (WOR_tdst_World *) pst_CurrentElem->p_Pointer;
+			if(TAB_b_IsAHole(pst_World)) continue;
+			ENG_ReinitOneWorld(pst_World, UNI_Cuc_TotalInit);
+		}
+
+		while (Mb_Cnd_WorldsReset)
+			INO_Joystick_Update();
+	}
+
+#ifdef RASTERS_ON
+
+	/* Display rasters */
+
+	if (Mb_Cnd_RastersDisplay)
+	{
+		if(!sbg_FirstDisp)
+		{
+			sbg_FirstDisp = TRUE;
+		}
+		else
+		{
+			sgb_DisplayRasters = sgb_DisplayRasters ? FALSE : TRUE;
+			if(!sgb_DisplayRasters) sbg_FirstDisp = FALSE;
+
+
+			mpst_CurrentCategory = _PRO_gpst_FirstTrameRaster;
+			mpst_CurrentSubCategory = NULL;
+			mpst_CurrentName = NULL;
+		}
+
+		while (Mb_Cnd_RastersDisplay)
+			INO_Joystick_Update();
+	}
+
+
+    // swap Test back face flag
+	if (Mb_Cnd_RastersTestBackFace)
+	{
+		if(MAI_gst_MainHandles.pst_World && MAI_gst_MainHandles.pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas)
+		{
+			if(((GDI_tdst_DisplayData *) MAI_gst_MainHandles.pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas)->ul_DrawMask & GDI_Cul_DM_TestBackFace)
+			{
+				((GDI_tdst_DisplayData *) MAI_gst_MainHandles.pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas)->ul_DrawMask &= ~GDI_Cul_DM_TestBackFace;
+			}
+			else
+			{
+				((GDI_tdst_DisplayData *) MAI_gst_MainHandles.pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas)->ul_DrawMask |= GDI_Cul_DM_TestBackFace;
+			}
+		}
+
+		while (Mb_Cnd_RastersTestBackFace)
+			INO_Joystick_Update();
+	}
+
+	// Wire
+	if (Mb_Cnd_RastersDisplayWired)
+	{
+		if(MAI_gst_MainHandles.pst_World && MAI_gst_MainHandles.pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas)
+		{
+			if(((GDI_tdst_DisplayData *) MAI_gst_MainHandles.pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas)->ul_DrawMask & GDI_Cul_DM_NotWired)
+			{
+				((GDI_tdst_DisplayData *) MAI_gst_MainHandles.pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas)->ul_DrawMask &= ~GDI_Cul_DM_NotWired;
+			}
+			else
+			{
+				((GDI_tdst_DisplayData *) MAI_gst_MainHandles.pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas)->ul_DrawMask |= GDI_Cul_DM_NotWired;
+			}
+		}
+
+		while (Mb_Cnd_RastersDisplayWired)
+			INO_Joystick_Update();
+	}
+
+    // Depth Read Before Flip
+	if (Mb_Cnd_RastersDepthReadBeforeFlip)
+	{
+		if(MAI_gst_MainHandles.pst_World && MAI_gst_MainHandles.pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas)
+		{
+			if(((GDI_tdst_DisplayData *) MAI_gst_MainHandles.pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas)->ul_DisplayFlags & GDI_cul_DF_DepthReadBeforeFlip)
+			{
+				((GDI_tdst_DisplayData *) MAI_gst_MainHandles.pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas)->ul_DisplayFlags &= ~GDI_cul_DF_DepthReadBeforeFlip;
+			}
+			else
+			{
+				((GDI_tdst_DisplayData *) MAI_gst_MainHandles.pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas)->ul_DisplayFlags |= GDI_cul_DF_DepthReadBeforeFlip;
+			}
+		}
+
+		while (Mb_Cnd_RastersDepthReadBeforeFlip)
+			INO_Joystick_Update();
+	}
+
+	// Rasters : Change name
+	if (Mb_Cnd_RastersChangeCateg)
+	{
+		if(sgb_DisplayRasters)
+		{
+			pst_Categ = mpst_CurrentName;
+			if(!pst_Categ)
+				pst_Categ = _PRO_gpst_FirstTrameRaster;
+			else
+			{
+				do
+				{
+					pst_Categ = pst_Categ->pst_NextRaster;
+					if(!pst_Categ) pst_Categ = _PRO_gpst_FirstTrameRaster;
+				} while((pst_Categ != mpst_CurrentName) && (!L_strcmpi(pst_Categ->psz_Name, mpst_CurrentName->psz_Name)));
+			}
+
+			mpst_CurrentName = pst_Categ;
+		}
+
+		while (Mb_Cnd_RastersChangeCateg)
+			INO_Joystick_Update();
+	}
+
+#endif // RASTERS_ON
+}
+
+#else	/* GC + PS2 + _XBOX */
+
+/*$2
+ -----------------------------------------------------------------------------------------------------------------------
+ -----------------------------------------------------------------------------------------------------------------------
+ */
+
+/*
+ =======================================================================================================================
+ =======================================================================================================================
+ */
+static void win32_s_EngineCheat(void)
+{
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+#ifdef RASTERS_ON
+	PRO_tdst_TrameRaster	*pst_Categ;
+#endif
+#ifndef ACTIVE_EDITORS
+	TAB_tdst_PFelem			*pst_CurrentElem;
+	TAB_tdst_PFelem			*pst_EndElem;
+	WOR_tdst_World			*pst_World;
+#endif
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+	/* Full screen */
+#ifndef ACTIVE_EDITORS
+
+	/* Reinit all worlds */
+	if(GetAsyncKeyState(VK_F6) < 0)
+	{
+		SOFT_ZList_Clear();
+		MSG_GlobalReinit();
+		AI_ReinitUniverse();
+		pst_CurrentElem = TAB_pst_PFtable_GetFirstElem(&WOR_gst_Universe.st_WorldsTable);
+		pst_EndElem = TAB_pst_PFtable_GetLastElem(&WOR_gst_Universe.st_WorldsTable);
+		for(pst_CurrentElem; pst_CurrentElem <= pst_EndElem; pst_CurrentElem++)
+		{
+			pst_World = (WOR_tdst_World *) pst_CurrentElem->p_Pointer;
+			if(TAB_b_IsAHole(pst_World)) continue;
+			ENG_ReinitOneWorld(pst_World, UNI_Cuc_TotalInit);
+		}
+
+		while(GetAsyncKeyState(VK_F6) < 0);
+	}
+
+#endif
+	if((GetAsyncKeyState(VK_F10) < 0) && (GetAsyncKeyState(VK_SHIFT) < 0) && (GetAsyncKeyState(VK_CONTROL) < 0))
+	{
+		/*~~~~~~~~~~~~~~~~~~~~~*/
+		extern int	AI2C_ai2Ccan;
+		/*~~~~~~~~~~~~~~~~~~~~~*/
+
+		if(AI2C_ai2Ccan == 0)
+			AI2C_ai2Ccan = 1;
+		else
+			AI2C_ai2Ccan = 0;
+		while(GetAsyncKeyState(VK_F10) < 0);
+	}
+
+	/* Display rasters */
+#ifdef RASTERS_ON
+	if(GetAsyncKeyState(VK_F1) < 0)
+	{
+		if(!sbg_FirstDisp)
+		{
+			sbg_FirstDisp = TRUE;
+			while(GetAsyncKeyState(VK_F1) < 0);
+		}
+		else
+		{
+			sgb_DisplayRasters = sgb_DisplayRasters ? FALSE : TRUE;
+			if(!sgb_DisplayRasters) sbg_FirstDisp = FALSE;
+			while(GetAsyncKeyState(VK_F1) < 0);
+			mpst_CurrentCategory = _PRO_gpst_FirstTrameRaster;
+			mpst_CurrentSubCategory = NULL;
+			mpst_CurrentName = NULL;
+			if(ENG_h_Rasters) InvalidateRect(ENG_h_Rasters, NULL, TRUE);
+		}
+	}
+
+#ifndef ACTIVE_EDITORS
+
+	/* swap Test back face flag */
+	if(GetAsyncKeyState(VK_F2) < 0)
+	{
+		if(MAI_gst_MainHandles.pst_World && MAI_gst_MainHandles.pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas)
+		{
+			if(((GDI_tdst_DisplayData *) MAI_gst_MainHandles.pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas)->ul_DrawMask & GDI_Cul_DM_TestBackFace)
+			{
+				((GDI_tdst_DisplayData *) MAI_gst_MainHandles.pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas)->ul_DrawMask &= ~GDI_Cul_DM_TestBackFace;
+			}
+			else
+			{
+				((GDI_tdst_DisplayData *) MAI_gst_MainHandles.pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas)->ul_DrawMask |= GDI_Cul_DM_TestBackFace;
+			}
+		}
+
+		while(GetAsyncKeyState(VK_F2) < 0);
+	}
+
+	/* Wire */
+	if(GetAsyncKeyState(VK_F3) < 0)
+	{
+		if(MAI_gst_MainHandles.pst_World && MAI_gst_MainHandles.pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas)
+		{
+			if(((GDI_tdst_DisplayData *) MAI_gst_MainHandles.pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas)->ul_DrawMask & GDI_Cul_DM_NotWired)
+			{
+				((GDI_tdst_DisplayData *) MAI_gst_MainHandles.pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas)->ul_DrawMask &= ~GDI_Cul_DM_NotWired;
+			}
+			else
+			{
+				((GDI_tdst_DisplayData *) MAI_gst_MainHandles.pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas)->ul_DrawMask |= GDI_Cul_DM_NotWired;
+			}
+		}
+
+		while(GetAsyncKeyState(VK_F3) < 0);
+	}
+
+	/* Wire */
+	if(GetAsyncKeyState(VK_F5) < 0)
+	{
+		if(MAI_gst_MainHandles.pst_World && MAI_gst_MainHandles.pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas)
+		{
+			if(((GDI_tdst_DisplayData *) MAI_gst_MainHandles.pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas)->ul_DisplayFlags & GDI_cul_DF_DepthReadBeforeFlip)
+			{
+				((GDI_tdst_DisplayData *) MAI_gst_MainHandles.pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas)->ul_DisplayFlags &= ~GDI_cul_DF_DepthReadBeforeFlip;
+			}
+			else
+			{
+				((GDI_tdst_DisplayData *) MAI_gst_MainHandles.pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas)->ul_DisplayFlags |= GDI_cul_DF_DepthReadBeforeFlip;
+			}
+		}
+
+		while(GetAsyncKeyState(VK_F5) < 0);
+	}
+
+#if defined ( PCWIN_TOOL )
+    if (GetAsyncKeyState( VK_F11 ) < 0 )
+	{
+		GDI_gi_GDIType = 1 - GDI_gi_GDIType;
+		GDI_ChangeInterface
+		(
+			((GDI_tdst_DisplayData *) MAI_gst_MainHandles.pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas),
+			GDI_gi_GDIType
+		);
+		while(GetAsyncKeyState(VK_F11) < 0);
+	}
+#endif
+
+#endif
+	/* Rasters : Change name */
+	if(GetAsyncKeyState(VK_F4) < 0)
+	{
+		if(sgb_DisplayRasters)
+		{
+			pst_Categ = mpst_CurrentName;
+			if(!pst_Categ)
+				pst_Categ = _PRO_gpst_FirstTrameRaster;
+			else
+			{
+				do
+				{
+					pst_Categ = pst_Categ->pst_NextRaster;
+					if(!pst_Categ) pst_Categ = _PRO_gpst_FirstTrameRaster;
+				} while((pst_Categ != mpst_CurrentName) && (!L_strcmpi(pst_Categ->psz_Name, mpst_CurrentName->psz_Name)));
+			}
+
+			mpst_CurrentName = pst_Categ;
+		}
+
+		while(GetAsyncKeyState(VK_F4) < 0);
+		if(ENG_h_Rasters) InvalidateRect(ENG_h_Rasters, NULL, TRUE);
+	}
+
+#endif
+}
+
+#endif /* GAMECUBE + PS2 + XBOX */
+
+/*
+ =======================================================================================================================
+ =======================================================================================================================
+ */
+static void s_EngineCheat(void)
+{
+
+#if defined(PSX2_TARGET)
+	PS2_s_EngineCheat();
+#elif defined(_GAMECUBE)
+	GC_s_EngineCheat();
+#elif defined(_XBOX) || defined(_XENON)
+	XB_s_EngineCheat();
+#else
+	win32_s_EngineCheat();
+#endif
+
+}
+
+/*$2
+ -----------------------------------------------------------------------------------------------------------------------
+ -----------------------------------------------------------------------------------------------------------------------
+ */
+
+#if defined(PSX2_TARGET)
+
+/*
+ =======================================================================================================================
+ =======================================================================================================================
+ */
+void PS2_ResetWorld(void)
+{
+	TAB_tdst_PFelem *pst_CurrentElem;
+	TAB_tdst_PFelem *pst_EndElem;
+	WOR_tdst_World	*pst_World;
+	
+	LOA_InitLoadRaster();
+	SOFT_ZList_Clear();
+	MSG_GlobalReinit();
+	AI_ReinitUniverse();
+	pst_CurrentElem = TAB_pst_PFtable_GetFirstElem(&WOR_gst_Universe.st_WorldsTable);
+	pst_EndElem = TAB_pst_PFtable_GetLastElem(&WOR_gst_Universe.st_WorldsTable);
+	for(; pst_CurrentElem <= pst_EndElem; pst_CurrentElem++)
+	{
+		pst_World = (WOR_tdst_World *) pst_CurrentElem->p_Pointer;
+		if(TAB_b_IsAHole(pst_World)) continue;
+		ENG_ReinitOneWorld(pst_World, UNI_Cuc_TotalInit);
+	}
+
+	printf("-- reset world --\n");
+}
+
+static void PS2_s_EngineCheatFinal(void)
+{
+#ifndef _FINAL_ 
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+	static int		init = 0;
+	LONG			mask;
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+	if(!ps2INO_b_Joystick_IsValid()) return;
+
+	/* refresh for 1st frame */
+	if(!init)
+	{
+		init++;
+		return;
+	}
+
+	mask = INO_l_JoystickMask;
+	INO_l_JoystickMask = -1;
+
+	/* Reinit all worlds */
+	/*
+	if(Mb_Cnd_WorldsReset)
+	{
+		while(Mb_Cnd_WorldsReset)
+		{
+			INO_Joystick_Update();
+		}
+		
+		PS2_ResetWorld();
+
+		init = 0;
+		return;
+	}*/
+
+	INO_l_JoystickMask = mask;
+#endif	
+}
+
+#elif defined(_GAMECUBE)
+
+/*
+ =======================================================================================================================
+ =======================================================================================================================
+ */
+static void GC_s_EngineCheatFinal(void)
+{
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+	TAB_tdst_PFelem *pst_CurrentElem;
+	TAB_tdst_PFelem *pst_EndElem;
+	WOR_tdst_World	*pst_World;
+	static int		init = 0;
+	LONG			mask;
+	BOOL			INO_b_Joystick_IsButtonDown(LONG _l_ButtonIndex);
+	static u64		duration1 = 0;
+	static u64		u64_LastCall = 0;
+	u64				u64_CurrentDT, u64_CurrentCall;
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+	if(!init)
+	{
+		init++;
+		return;
+	}
+	
+	u64_CurrentCall = OSTicksToMicroseconds(OSGetTime());
+	u64_CurrentDT = u64_CurrentCall - u64_LastCall;
+	u64_LastCall = u64_CurrentCall;
+
+
+
+	mask = INO_l_JoystickMask;
+	INO_l_JoystickMask = -1;
+
+
+#ifndef _FINAL_	
+	if(Mb_Cnd_OpenMenu)
+	{
+	    
+		//while(Mb_Cnd_OpenMenu)
+		{
+			INO_Joystick_Update();
+		}
+		GXI_gb_MenuMode=1;
+	}
+
+#endif	
+	
+
+	if(Mb_Cnd_ConsoleReset)
+	{
+		if(!ENG_gb_ExitApplication)
+		{
+			duration1 += u64_CurrentDT;
+
+			// up to 0.5s => record the reset command
+			if(duration1 > 500000)
+			{
+		        if(INO_gb_Writing)
+		        {
+		            GC_gi_ResetCall = 1;
+		        }
+		        else
+		        {
+	            	ENG_gb_ExitApplication = TRUE;
+	            }
+				duration1=0;
+			}
+		}
+	}
+	else
+	{
+		duration1 = 0;
+	}
+
+	INO_l_JoystickMask = mask;
+}
+
+#elif defined(ACTIVE_EDITORS)
+
+/*
+ =======================================================================================================================
+ =======================================================================================================================
+ */
+static void EDI_s_EngineCheatFinal(void)
+{
+}
+
+#elif defined(_XBOX) || defined(_XENON)
+static void XB_s_EngineCheatFinal(void)
+{
+}
+
+#else
+
+/*
+ =======================================================================================================================
+ =======================================================================================================================
+ */
+static void win32_s_EngineCheatFinal(void)
+{
+	/*~~~~~~~~~~~~*/
+	int		i;
+	DEVMODE devMode;
+	LONG	l_Width, l_Height;
+	/*~~~~~~~~~~~~*/
+
+	/* Fullscreen */
+	if((GetAsyncKeyState(VK_MENU) < 0) && (GetAsyncKeyState(VK_RETURN) < 0))
+	{
+		if ( sgi_FullScreenRes != 3 ) // (!sgb_FullScreen)
+		{
+			sgb_FullScreen = TRUE;
+			sgi_FullScreenRes++;
+#ifdef JADEFUSION
+#if defined(PCWIN_TOOL)
+            if (GDI_b_IsXenonGraphics())
+            {
+                GDI_ReadaptDisplay(GDI_gpst_CurDD, MAI_gst_MainHandles.h_DisplayWindow);
+            }
+            else
+#endif
+#endif
+            {
+			switch(sgi_FullScreenRes )
+			{
+			case 1:	l_Width = 640; l_Height = 480; break;
+			case 2: l_Width = 800; l_Height = 600; break;
+			case 3: l_Width = 1024; l_Height = 768; break;
+			//case 4: l_Width = 1280; l_Height = 1024; break;
+			}
+			for(i = 0;; i++)
+			{
+				if(!EnumDisplaySettings(NULL, i, &devMode)) break;
+				if
+				(
+					((LONG) devMode.dmBitsPerPel == 32)
+				&&	((LONG) devMode.dmPelsWidth == l_Width)
+				&&	((LONG) devMode.dmPelsHeight == l_Height)
+				)
+				{
+					if (i > 1 )
+					{
+						ChangeDisplaySettings(NULL, 0);
+						ShowWindow(MAI_gh_MainWindow, SW_NORMAL);
+					}
+					ChangeDisplaySettings(&devMode, CDS_FULLSCREEN);
+					ShowWindow(MAI_gh_MainWindow, SW_SHOWMAXIMIZED);
+					return;
+				}
+			}
+		}
+		}
+		else
+		{
+			sgb_FullScreen = FALSE;
+			sgi_FullScreenRes = 0;
+			ChangeDisplaySettings(NULL, 0);
+			ShowWindow(MAI_gh_MainWindow, SW_NORMAL);
+			MoveWindow(MAI_gh_MainWindow, 0, 0, 640, 480, TRUE);
+		}
+
+		while((GetAsyncKeyState(VK_MENU) < 0) || (GetAsyncKeyState(VK_RETURN) < 0));
+	}
+
+	/* Cheatcodes */
+#ifdef _FINAL_
+	if(GetAsyncKeyState(VK_CONTROL) >= 0) return;
+	if(GetAsyncKeyState(VK_SPACE) >= 0) return;
+
+	if(GetAsyncKeyState(VK_F1) < 0)
+	{
+		ENG_gb_Raster = ENG_gb_Raster ? FALSE : TRUE;
+		while(GetAsyncKeyState(VK_F1) < 0);
+	}
+
+#endif
+}
+
+#endif /* PS2 + GC */
+
+/*
+ =======================================================================================================================
+ =======================================================================================================================
+ */
+void s_EngineCheatFinal(void)
+{
+#if defined(PSX2_TARGET)
+	PS2_s_EngineCheatFinal();
+#elif defined(_GAMECUBE)
+	GC_s_EngineCheatFinal();
+#elif defined(ACTIVE_EDITORS)
+	EDI_s_EngineCheatFinal();
+#elif defined(_XBOX) || defined(_XENON)
+	XB_s_EngineCheatFinal();
+#else
+	win32_s_EngineCheatFinal();
+#endif
+}
+
+/*$4
+ ***********************************************************************************************************************
+ ***********************************************************************************************************************
+ */
+
+#ifndef _FINAL_
+
+/*
+ =======================================================================================================================
+ =======================================================================================================================
+ */
+static void s_DisplayRasters(void)
+{
+	/*~~~~~~~~~~~*/
+#if (!defined(PSX2_TARGET) && !defined(_GAMECUBE) && !defined(_XBOX) && !defined(_XENON))
+	char	az[50];
+	RECT	r;
+#endif
+	/*~~~~~~~~~~~*/
+
+#ifdef RASTERS_ON
+
+#if defined(_XBOX) || defined(_XENON)
+// rasters are displayed in function GDI_BeforeDisplay(...)
+#else // _XBOX
+
+#ifdef PSX2_TARGET
+	if(!sgb_DisplayRasters) return;
+	PRO_OneTrameEnding(0);
+
+	/*~~~~~~~~~~~~~~~~*/
+#else
+#ifdef _GAMECUBE
+#else
+	WNDCLASS	x_Class;
+	HDC			hdc;
+	/*~~~~~~~~~~~~~~~~*/
+
+	if(!ENG_h_Rasters)
+	{
+		x_Class.style = 0;
+		x_Class.lpfnWndProc = DefWindowProc;
+		x_Class.cbClsExtra = 0;
+		x_Class.cbWndExtra = 0;
+		x_Class.hInstance = GetModuleHandle(NULL);
+		x_Class.hIcon = NULL;
+		x_Class.hCursor = NULL;
+		x_Class.hbrBackground = CreateSolidBrush(GetSysColor(COLOR_BTNFACE));
+		x_Class.lpszMenuName = NULL;
+		x_Class.lpszClassName = "Rasters";
+		RegisterClass(&x_Class);
+
+		ENG_h_Rasters = CreateWindowEx
+			(
+				WS_EX_CLIENTEDGE | WS_EX_TOOLWINDOW,
+				"Rasters",
+				"Rasters",
+				WS_CAPTION | WS_POPUP | WS_BORDER | WS_THICKFRAME,
+				5,
+				5,
+				150,
+				50,
+				MAI_gh_MainWindow,
+				0,
+				GetModuleHandle(NULL),
+				0
+			);
+	}
+
+	hdc = GetDC(ENG_h_Rasters);
+	if(!sgb_DisplayRasters)
+	{
+		if(sbg_FirstDisp)
+		{
+			/*~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+			extern float	TIM_gf_realdt;
+			/*~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+			SetBkColor(hdc, GetSysColor(COLOR_BTNFACE));
+			ShowWindow(ENG_h_Rasters, SW_SHOW);
+			if(TIM_gf_dt * TIM_gf_SynchroFrequency > 1.0f) SetTextColor(hdc, RGB(255, 0, 0));
+			sprintf(az, "%f", TIM_gf_dt * TIM_gf_SynchroFrequency);
+			r.left = r.top = 5;
+			r.right = r.bottom = 100;
+			DrawText(hdc, az, strlen(az), &r, 0);
+
+			sprintf(az, "%f", TIM_gf_realdt * TIM_gf_SynchroFrequency);
+			r.top += 20;
+			r.bottom += 20;
+			DrawText(hdc, az, strlen(az), &r, 0);
+		}
+		else
+		{
+			ShowWindow(ENG_h_Rasters, SW_HIDE);
+		}
+
+		ReleaseDC(ENG_h_Rasters, hdc);
+		return;
+	}
+
+	PRO_OneTrameEnding(ENG_h_Rasters, hdc, 0);
+	ReleaseDC(ENG_h_Rasters, hdc);
+#endif
+#endif
+#endif // _XBOX
+#endif // RASTERS_ON
+
+}
+
+#endif /* _FINAL_ */
+
+/*
+ =======================================================================================================================
+ =======================================================================================================================
+ */
+void ENG_ForceStartRasters(void)
+{
+	/*~~*/
+#ifdef RASTERS_ON
+	int i;
+	/*~~*/
+
+	ENG_gpst_RasterEng_EngineDt.uw_StartCount = 0;
+	ENG_gpst_RasterEng_EngineRealDt.uw_StartCount = 0;
+	ENG_gpst_RasterEng_EngineFrames.uw_StartCount = 0;
+	ENG_gpst_RasterEng_Synchro.uw_StartCount = 0;
+	ENG_gpst_RasterEng_WinMsg.uw_StartCount = 0;
+	ENG_gpst_RasterEng_Input.uw_StartCount = 0;
+	ENG_gpst_RasterEng_Display.uw_StartCount = 0;
+	ENG_gpst_RasterEng_Activation.uw_StartCount = 0;
+	ENG_gpst_RasterEng_Visibility.uw_StartCount = 0;
+	ENG_gpst_RasterEng_TablesManager.uw_StartCount = 0;
+	ENG_gpst_RasterEng_EOTcreation.uw_StartCount = 0;
+	ENG_gpst_RasterEng_AI.uw_StartCount = 0;
+	ENG_gpst_RasterEng_Events.uw_StartCount = 0;
+	ENG_gpst_RasterEng_SnP.uw_StartCount = 0;
+	ENG_gpst_RasterEng_ANI.uw_StartCount = 0;
+	ENG_gpst_RasterEng_DYN.uw_StartCount = 0;
+	ENG_gpst_RasterEng_COL.uw_StartCount = 0;
+	ENG_gpst_RasterEng_ODE_COL.uw_StartCount = 0;
+	ENG_gpst_RasterEng_ODE_SOLVER.uw_StartCount = 0;
+	ENG_gpst_RasterEng_REC.uw_StartCount = 0;
+	ENG_gpst_RasterEng_OneCall.uw_StartCount = 0;
+	ENG_gpst_RasterEng_OneLoop.uw_StartCount = 0;
+
+	for(i = 0; i < ENG_C_NbUserRasters; i++) ENG_gapst_RasterEng_User[i].uw_StartCount = 0;
+
+#ifdef ACTIVE_EDITORS
+	ENG_gpst_RasterEng_Editors.uw_StartCount = 0;
+	ENG_gpst_RasterEng_EditorRaster.uw_StartCount = 0;
+	ENG_gpst_RasterEng_EditorsDt.uw_StartCount = 0;
+#endif
+#endif
+}
+
+void ENG_vEmergencyFreeMem()
+{
+#ifdef _GAMECUBE
+	if (MEM_uGetFreeMemSize(&MEM_gst_MemoryInfo) < 500000)
+	{
+		extern void SPG2_FreeUnusedCachedData();
+		SPG2_vEmergencyFreeMem();
+	}
+	GXI_FreeTmpDLBuff();
+#endif // _GAMECUBE
+}
+
+
+/*
+ =======================================================================================================================
+    Aim:    One frame of the engine main loop
+ =======================================================================================================================
+ */
+static void s_OneTrame(void)
+{
+#if defined(_XENON_PROFILE)
+    XEResetProfile();
+#endif
+#ifdef JADEFUSION
+	/* start profiling */
+	g_oXeProfileManager.BeginProfiling();
+#endif
+
+#if (defined( _XBOX ) || defined( _XENON )) && defined( FAST_CAP )
+    __int64 StartTime, StopTime;
+    static __int64 TimeThresholdMS = 30;
+    static int DumpCount = 0;
+    static int waitFrame = 2;
+    char DumpName[64];
+    bool fastCapEnabled_Stop = false;
+
+	if( g_FastCapEnabled )
+	{
+        if( waitFrame > 0 )
+        {
+            waitFrame--;
+        }
+        else
+        {
+            fastCapEnabled_Stop = true;
+            waitFrame = 2;
+            sprintf(DumpName, "D:\\foo%d.cap", DumpCount);
+
+            DmStartProfiling(DumpName, 0);
+
+#if defined(_XENON)
+            StartTime = TIM_ul_GetLowPartTimerInternalCounter();
+#else
+
+            __asm
+            {
+                rdtsc
+                mov DWORD PTR[StartTime],eax
+                mov DWORD PTR[StartTime+4],edx
+            }
+#endif
+		}
+	}
+#endif  // (defined( _XBOX ) | defined( _XENON) ) && defined( FAST_CAP )
+
+
+#ifdef _FINAL_
+	if(ENG_gb_Raster) ENG_gf_TimeFinal = TIM_f_Clock_TrueRead();
+#endif
+	PRO_StartTrameRaster(&ENG_gpst_RasterEng_OneLoop);
+	s_HandleWinMessages();
+
+    
+
+	/*
+	 * We update the main clock (it calculates the time between two frames and the
+	 * time since last reset of the main clock )
+	 */
+	TIM_Clock_Update();
+	if(ENG_gb_NeedToReinit)
+	{
+		/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+		WOR_tdst_World	*pst_World;
+		TAB_tdst_PFelem *pst_CurrentElem;
+		TAB_tdst_PFelem *pst_EndElem;
+		/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+    
+		SOFT_ZList_Clear();
+		MSG_GlobalReinit();
+		AI_ReinitUniverse();
+
+#ifdef _XENON_RENDER
+		Xe_InvalidateRenderLists();
+#endif
+
+		pst_CurrentElem = TAB_pst_PFtable_GetFirstElem(&WOR_gst_Universe.st_WorldsTable);
+		pst_EndElem = TAB_pst_PFtable_GetLastElem(&WOR_gst_Universe.st_WorldsTable);
+		for(; pst_CurrentElem <= pst_EndElem; pst_CurrentElem++)
+		{
+    
+	
+			pst_World = (WOR_tdst_World *) pst_CurrentElem->p_Pointer;
+			if(TAB_b_IsAHole(pst_World)) continue;
+	
+			ENG_ReinitOneWorld(pst_World, UNI_Cuc_TotalInit);
+	
+    
+		}
+#ifdef JADEFUSION
+		void SPG2Holder_Modifier_Prepare();
+        SPG2Holder_Modifier_Prepare();
+#endif	
+	}
+
+    
+	ENG_gb_NeedToReinit = FALSE;
+
+#ifdef JADEFUSION
+	// Handle Pause Delay
+
+	if (g_iReinitPauseDelay > 0)
+	{
+		g_iReinitPauseDelay--;
+	}
+
+	if (g_iReinitPauseScheduled && (g_iReinitPauseDelay == 0))
+	{
+		AI_EvalFunc_WORPause_C(0, 0xFFFFFFFF);
+		g_iReinitPauseScheduled	= FALSE;
+	}
+#endif
+#ifndef _FINAL_
+	
+	s_EngineCheat();
+	
+#endif
+
+	
+    
+#ifndef ACTIVE_EDITORS
+	s_EngineCheatFinal();
+#endif
+	
+    
+#if defined(PSX2_TARGET)
+
+	/* updating IOP state */
+	_GSP_BeginRaster(40);
+	eeRPC_FlushCommandAfterEngine();
+	_GSP_EndRaster(40);
+#endif
+    
+	
+	/* Read inputs */
+	_GSP_BeginRaster(15);
+
+	if(ENG_gp_Input && (!ENG_gb_ForcePauseEngine))    
+	{
+	
+	
+		PRO_StartTrameRaster(&ENG_gpst_RasterEng_Input);
+		PROPS2_StartRaster(&PROPS2_gst_ENG_gp_Input);
+	
+		ENG_gp_Input();
+	
+		PROPS2_StopRaster(&PROPS2_gst_ENG_gp_Input);
+		PRO_StopTrameRaster(&ENG_gpst_RasterEng_Input);
+	}
+	
+    
+
+	NET_ServerUpdate();
+	NET_PlayerUpdate();
+
+	_GSP_EndRaster(15);
+
+	/* Engine */
+#if defined(PSX2_TARGET) || defined(_GAMECUBE) || defined(_XBOX) || defined(_XENON)
+	MAI_gst_MainHandles.pst_DisplayData = GDI_gpst_CurDD;
+#endif
+	
+    	_GSP_BeginRaster(18);
+#ifdef JADEFUSION
+		_GSP_BeginRaster(XE_StartRaster);
+#endif
+		if((ENG_gp_Engine) && (!ENG_gb_ForcePauseEngine))
+	{
+	
+		PRO_StartTrameRaster(&ENG_gpst_RasterEng_OneCall);
+		PROPS2_StartRaster(&PROPS2_gst_ENG_gp_Engine);
+	
+		ENG_gp_Engine();
+	
+		PROPS2_StopRaster(&PROPS2_gst_ENG_gp_Engine);
+		PRO_StopTrameRaster(&ENG_gpst_RasterEng_OneCall);
+	
+	}
+#ifdef JADEFUSION
+        _GSP_EndRaster(XE_StartRaster);
+#endif
+		_GSP_EndRaster(18);
+#if defined(PSX2_TARGET) || defined(_GAMECUBE) || defined(_XBOX) || defined(_XENON)
+	MAI_gst_MainHandles.pst_DisplayData = GDI_gpst_CurDD;
+#endif
+#ifdef PSX2_TARGET
+	{
+		extern void GSP_Bink_EndLoad_Bis();		
+		GSP_Bink_EndLoad_Bis();		
+	}
+#endif
+	/* Display */
+#ifndef JADEFUSION	
+	_GSP_BeginRaster(19);
+#endif
+#if 0 // (camera tests)
+	{
+		/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+		MATH_tdst_Matrix			*p_Supramat,Loc;
+		WOR_tdst_World				*_pst_World;
+		/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+		_pst_World = GDI_gpst_CurDD->pst_World;
+		if(_pst_World) 
+		{
+			p_Supramat = &GDI_gpst_CurDD->st_Camera.st_Matrix;
+
+			if(_pst_World->pst_View)
+			{
+				p_Supramat = &_pst_World->pst_View->st_ViewPoint;
+			}
+
+			MATH_CopyMatrix(&Loc, p_Supramat);
+#define LIMIT_UP 0.5f
+			if (Loc.Jz < -LIMIT_UP)
+			{
+				float NewJZ;
+				NewJZ = 0.5f *(Loc.Jz + LIMIT_UP) - LIMIT_UP;
+				
+				Loc.Jz = NewJZ;
+				MATH_NormalizeVector(MATH_pst_GetYAxis(&Loc),MATH_pst_GetYAxis(&Loc));
+				Loc.Jz = NewJZ;
+				MATH_NormalizeVector(MATH_pst_GetYAxis(&Loc),MATH_pst_GetYAxis(&Loc));
+				Loc.Jz = NewJZ;
+				MATH_NormalizeVector(MATH_pst_GetYAxis(&Loc),MATH_pst_GetYAxis(&Loc));
+				MATH_CrossProduct(MATH_pst_GetZAxis(&Loc),MATH_pst_GetYAxis(&Loc),MATH_pst_GetXAxis(&Loc));
+				MATH_CopyMatrix(p_Supramat, &Loc);
+			}
+			if (Loc.Jz > LIMIT_UP)
+			{
+				float NewJZ;
+				NewJZ = 0.5f *(Loc.Jz - LIMIT_UP) + LIMIT_UP;
+				
+				Loc.Jz = NewJZ;
+				MATH_NormalizeVector(MATH_pst_GetYAxis(&Loc),MATH_pst_GetYAxis(&Loc));
+				Loc.Jz = NewJZ;
+				MATH_NormalizeVector(MATH_pst_GetYAxis(&Loc),MATH_pst_GetYAxis(&Loc));
+				Loc.Jz = NewJZ;
+				MATH_NormalizeVector(MATH_pst_GetYAxis(&Loc),MATH_pst_GetYAxis(&Loc));
+				MATH_CrossProduct(MATH_pst_GetZAxis(&Loc),MATH_pst_GetYAxis(&Loc),MATH_pst_GetXAxis(&Loc));
+				MATH_CopyMatrix(p_Supramat, &Loc);
+			}
+		}
+		
+	}
+#endif	
+
+#ifdef JADEFUSION
+	bool bUsingSimpleRenderer = false;
+#ifdef _XENON
+	bUsingSimpleRenderer = g_oXeSimpleRenderer.IsActive();
+#endif
+
+	if(ENG_gp_Display && MAI_gst_MainHandles.pst_DisplayData && !bUsingSimpleRenderer)
+#else
+	if(ENG_gp_Display && MAI_gst_MainHandles.pst_DisplayData)
+#endif
+	{
+	
+		PRO_StartTrameRaster(&ENG_gpst_RasterEng_Display);
+		PROPS2_StartRaster(&PROPS2_gst_ENG_gp_Display);
+		{
+#ifdef USE_DOUBLE_RENDERING		
+			//xenon ?? extern UINT WOR_DetectCameraCut(GDI_tdst_DisplayData *_pst_DD);
+			extern u_int WOR_DetectCameraCut(GDI_tdst_DisplayData *_pst_DD);
+			extern void WOR_DoubleRenderingCompute(GDI_tdst_DisplayData *_pst_DD , ULONG Mode , float fFactor);
+			ENG_gp_CameraCutHasBeenDetected = 0;
+	
+    
+			if (WOR_DetectCameraCut(MAI_gst_MainHandles.pst_DisplayData))
+			{
+				ENG_gp_DoubleRenderingLocker = 0x4;
+				ENG_gp_CameraCutHasBeenDetected = 1;
+			}
+    
+
+			if (ENG_gp_DoubleRenderingLocker) 
+			{
+				ENG_gp_DoubleRenderingLocker--;
+				WOR_DoubleRenderingCompute(MAI_gst_MainHandles.pst_DisplayData , 101 , 0.0f); // Save
+			}
+    
+				
+			if (ENG_gp_DoubleRendering && (!ENG_gp_DoubleRenderingLocker))
+			{
+				u_int CounterR;
+				float SaveRLIScale;
+				
+				ULONG SaveRLIColor;
+				
+				SaveRLIScale = MAI_gst_MainHandles.pst_DisplayData->f_RLIScale;
+				SaveRLIColor = MAI_gst_MainHandles.pst_DisplayData->ul_RLIColorDest;
+				
+				CounterR = ENG_gp_DoubleRendering;
+				TIM_gf_dt /= (float)(ENG_gp_DoubleRendering + 1);
+				for (CounterR = 0 ; CounterR < ENG_gp_DoubleRendering ; CounterR++)
+				{
+				
+#ifdef PSX2_TARGET				
+                    {
+                        extern BOOL ps2INO_b_Port0IsKo(void);
+                        extern void INO_Joystick_Update(void);
+                        
+    					if(ps2INO_b_Port0IsKo())
+    					    INO_Joystick_Update();
+    			    }
+#endif					    
+					    
+					MAI_gst_MainHandles.pst_DisplayData->ul_DisplayInfo &= ~(GDI_Cul_DI_DoubleRendering_K | GDI_Cul_DI_DoubleRendering_I);
+					MAI_gst_MainHandles.pst_DisplayData->ul_DisplayInfo |= GDI_Cul_DI_DoubleRendering_I;
+    
+					WOR_DoubleRenderingCompute(MAI_gst_MainHandles.pst_DisplayData , CounterR , (float)(CounterR + 1) / (float)(ENG_gp_DoubleRendering + 1));
+    
+					TIM_gf_MainClockForTextureScrolling += TIM_gf_dt;
+					MAI_gst_MainHandles.pst_DisplayData->f_RLIScale = SaveRLIScale;
+					MAI_gst_MainHandles.pst_DisplayData->ul_RLIColorDest = SaveRLIColor;
+					ENG_gp_Display(MAI_gst_MainHandles.h_DisplayWindow, MAI_gst_MainHandles.pst_DisplayData);
+					/* textures update */
+					if(MAI_gst_MainHandles.pst_DisplayData)
+					{
+    
+						_GSP_BeginRaster(20);
+						TEX_Procedural_Update(MAI_gst_MainHandles.pst_DisplayData);
+						TEX_Anim_Update(MAI_gst_MainHandles.pst_DisplayData);
+						_GSP_EndRaster(20);
+    
+					}
+					
+				}
+    
+				MAI_gst_MainHandles.pst_DisplayData->ul_DisplayInfo &= ~(GDI_Cul_DI_DoubleRendering_K | GDI_Cul_DI_DoubleRendering_I);
+				MAI_gst_MainHandles.pst_DisplayData->ul_DisplayInfo |= GDI_Cul_DI_DoubleRendering_K;
+				WOR_DoubleRenderingCompute(MAI_gst_MainHandles.pst_DisplayData , 100 , 1.0f); // 100 Mean K
+    
+				TIM_gf_MainClockForTextureScrolling += TIM_gf_dt;
+				MAI_gst_MainHandles.pst_DisplayData->f_RLIScale = SaveRLIScale;
+				MAI_gst_MainHandles.pst_DisplayData->ul_RLIColorDest = SaveRLIColor;
+				ENG_gp_Display(MAI_gst_MainHandles.h_DisplayWindow, MAI_gst_MainHandles.pst_DisplayData);
+				
+				MAI_gst_MainHandles.pst_DisplayData->ul_DisplayInfo &= ~(GDI_Cul_DI_DoubleRendering_K|GDI_Cul_DI_DoubleRendering_I);
+				TIM_gf_dt *= (float)(ENG_gp_DoubleRendering + 1);
+			} else
+#else
+			{
+#ifdef JADEFUSION
+				extern UINT WOR_DetectCameraCut(GDI_tdst_DisplayData*);
+#else
+				extern u_int WOR_DetectCameraCut(GDI_tdst_DisplayData *_pst_DD);
+#endif
+				ENG_gp_CameraCutHasBeenDetected = 0;
+				if (WOR_DetectCameraCut(MAI_gst_MainHandles.pst_DisplayData))
+				{
+					ENG_gp_CameraCutHasBeenDetected = 1;
+				}
+			}
+#endif			
+            {
+		    	TIM_gf_MainClockForTextureScrolling += TIM_gf_dt;
+				ENG_gp_Display(MAI_gst_MainHandles.h_DisplayWindow, MAI_gst_MainHandles.pst_DisplayData);
+			}
+		}
+		
+#if defined(_XBOX)
+		// Render the frame again if the PIX tool is running and has 
+		// requested us to repeat the frame. Note that we don't move, but
+		// rather re-render the scene exactly as before.
+		if( TRUE == D3DPERF_QueryRepeatFrame() )
+		{
+			ENG_gp_Display(MAI_gst_MainHandles.h_DisplayWindow, MAI_gst_MainHandles.pst_DisplayData);
+		}
+#endif	// defined(_XBOX)
+
+		PROPS2_StopRaster(&PROPS2_gst_ENG_gp_Display);
+		PRO_StopTrameRaster(&ENG_gpst_RasterEng_Display);
+	}
+	
+
+	if (TIM_gf_MainClockForTextureScrolling > 1024.0f) TIM_gf_MainClockForTextureScrolling -= 1024.0f;
+#ifdef JADEFUSION
+#if defined(_XENON)
+
+	// process any notification we may have received
+	g_XeNotificationManager.CheckForNotifications( );
+	g_XeProfile.Pump( );
+
+	// update after specified delay, no need to flood the Xbox Live service
+	static float fPrevTime = 0.0f;
+	const float fCurTime = TIM_gf_MainClock;
+
+	if( fCurTime - fPrevTime > 1.0f )
+	{
+		// save new tick count
+		fPrevTime = fCurTime;
+
+		// do session processing
+		//g_XeLiveSession.UpdateSession( );
+
+		// check if we need to update rich presence or achievements on Live server
+		UpdateRichPresence( );
+		UpdateAchievements( );
+	}
+
+#ifdef _DEBUG
+    // JFP: Removing this reboot option for now since it conflicts with the debug menu.
+    /*
+	// check if user wants to reboot
+	if( INO_b_Joystick_IsButtonDown( eXeButton_Trigger_Left   ) &&
+		INO_b_Joystick_IsButtonDown( eXeButton_Trigger_Right  ) &&
+		INO_b_Joystick_IsButtonDown( eXeButton_Shoulder_Right ) )
+	{
+		DmReboot( DMBOOT_WARM ); // Reboot the dev kit
+	}
+    */
+#endif // _DEBUG
+
+#endif // defined(_XENON)
+#else
+	_GSP_EndRaster(19);
+#endif
+	/* Sound & textures */
+	if(MAI_gst_MainHandles.pst_DisplayData)
+	{
+    
+	
+		_GSP_BeginRaster(25);
+		SND_Update(&MAI_gst_MainHandles.pst_DisplayData->st_Camera.st_Matrix);
+		_GSP_EndRaster(25);
+
+	
+    
+		_GSP_BeginRaster(20);
+		TEX_Procedural_Update(MAI_gst_MainHandles.pst_DisplayData);
+		_GSP_EndRaster(20);
+    
+	
+
+		TEX_Anim_Update(MAI_gst_MainHandles.pst_DisplayData);
+	}
+	
+	FOGDYN_Reset();
+
+	
+
+	/* Inform editors that a trame is ending... This will not display the rasters ! */
+#ifdef ACTIVE_EDITORS
+	PRO_StartTrameRaster(&ENG_gpst_RasterEng_Editors);
+	LINK_OneTrameEnding();
+	PRO_StopTrameRaster(&ENG_gpst_RasterEng_Editors);
+	ENG_bg_FirstFrameSpeedRun = FALSE;
+#endif /* ACTIVE_EDITORS */
+
+#if defined(PSX2_TARGET)
+
+    
+	/* updating IOP state */
+	_GSP_BeginRaster(40);
+	eeRPC_FlushCommandAfterEngine();
+	_GSP_EndRaster(40);
+
+    
+	_GSP_BeginRaster(25);
+	ps2SND_RefreshStatus();
+	_GSP_EndRaster(25);
+#endif
+
+
+	
+    
+	/* Display rasters (engine mode) */
+	PRO_StartTrameRaster(&ENG_gpst_RasterEng_EditorRaster);
+#ifndef _FINAL_
+	s_DisplayRasters();
+#endif
+	
+    
+
+#ifdef ACTIVE_EDITORS
+	LINK_DisplayRasters();
+#endif
+	PRO_StopTrameRaster(&ENG_gpst_RasterEng_EditorRaster);
+    
+	
+
+
+#ifndef ACTIVE_EDITORS
+	MEM_Defrag(1);	
+#endif
+    
+	
+
+#ifdef _DEBUG
+    {
+        void MEM_dbg_FindLastAllocatedCluster(void);
+        MEM_dbg_FindLastAllocatedCluster();
+    }
+#endif
+
+#ifndef _FINAL_
+#ifdef MEM_OPT
+	{
+		void MEM_vConditionnallyLogHeap();
+		MEM_vConditionnallyLogHeap();
+	}
+#endif // MEM_OPT
+#endif // _FINAL
+	    
+	// Try to free memory if free memory is scarce.
+	ENG_vEmergencyFreeMem();
+
+	/* End of loop */
+	PRO_StopTrameRaster(&ENG_gpst_RasterEng_OneLoop);
+
+#ifdef JADEFUSION
+	/* stop profiling */
+	g_oXeProfileManager.EndProfiling();
+
+	/* Test all triggers */
+	g_XeTriggerManager.b_Test();
+#endif
+#if (defined( _XBOX ) || defined( _XENON )) && defined( FAST_CAP )
+    if( fastCapEnabled_Stop )
+    {
+        g_FastCapEnabled = false;
+#if defined(_XENON)
+            StopTime = TIM_ul_GetLowPartTimerInternalCounter();
+#else
+        __asm
+        {
+            rdtsc
+            mov DWORD PTR[StopTime],eax
+            mov DWORD PTR[StopTime+4],edx
+        }
+#endif
+        DmStopProfiling();
+
+        if ( StopTime - StartTime > 733333i64*TimeThresholdMS )
+        {
+            DumpCount++;
+        }
+    }
+#endif  // (defined( _XBOX ) || defined( _XENON )) && defined( FAST_CAP )
+#ifdef JADEFUSION
+#if (defined(ACTIVE_EDITORS) || defined(PCWIN_TOOL)) && defined(_XENON_PROFILE)
+    static bool bKeyDown = false;
+    if (!bKeyDown && GetAsyncKeyState(VK_RCONTROL) & 0x8000)
+    {
+        XEDumpProfile();
+        bKeyDown = true;
+    }
+    else if (bKeyDown && ((GetAsyncKeyState(VK_RCONTROL) & 0x8000) == 0))
+    {
+        bKeyDown = false;
+    }
+#endif
+#endif
+}
+
+/*
+ =======================================================================================================================
+    Aim:    The engine main loop...
+ =======================================================================================================================
+ */
+
+
+void ENG_Loop(void)
+{
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+#ifdef ACTIVE_EDITORS
+	static float	f_StartTimeEngineStopped = 0;
+#endif
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+	ENG_gb_EngineRunning = TRUE;
+
+_Try_
+#ifdef ACTIVE_EDITORS
+
+	/* If we enter the engine loop again, we mesure the total time spend in the editors */
+	if(f_StartTimeEngineStopped) TIM_gf_EditorTime += (TIM_f_Clock_TrueRead() - f_StartTimeEngineStopped);
+
+	/* When break or step by step, change context */
+	if(AI_gb_ExitByBreak && !AI_gb_ErrorWhenBreak) L_longjmp(AI_gst_ContextIn, 1);
+	AI_gb_ExitByBreak = FALSE;
+	AI_gb_ErrorWhenBreak = FALSE;
+
+	/* When a break is raised, go here */
+	if(L_setjmp(AI_gst_ContextOut) == 1)
+	{
+		ENG_gb_AIRunning = FALSE;
+		ENG_gb_EngineRunning = FALSE;
+#ifdef ACTIVE_EDITORS
+		ESON_PauseAll(TRUE);
+#else
+		SND_StopAll(0);
+#endif
+		f_StartTimeEngineStopped = TIM_f_Clock_TrueRead();
+		_Return_(;);
+	}
+
+#endif
+	ENG_gb_ExitApplication = FALSE;
+	ENG_gb_ForceEndEngine = FALSE;
+	ENG_gb_ForcePauseEngine = FALSE;
+
+	ENG_ForceStartRasters();
+
+	INO_Joystick_Acquire();
+
+#if defined(_XBOX)
+	//yo deactive because call 2 times >>>>DEM_InitDemoDisk();
+	DEM_StartTimer();
+#endif
+
+	while(!sfnb_EndGame())
+	{
+	    
+#if defined(_XBOX)
+		Gx8_ResetFrameMon();
+		Gx8_ResetGPUMon();
+
+		Gx8_StartFrameMon();
+#endif
+        
+#if defined(_XENON)
+		g_MenuManager.Tick(TIM_gf_dt);
+#endif
+       
+		s_InitBeforeTrame();
+		s_OneTrame();
+		s_DesInitAfterTrame();
+
+		
+#if defined(_XBOX)
+		Gx8_StopFrameMon();
+
+		Gx8_AdaptToFramerate(Gx8_GetFrameTiming(), Gx8_GetGPUTiming());
+#endif
+
+#ifdef ACTIVE_EDITORS
+		if(ENG_gb_OneStepEngine) break;
+#endif
+
+#if defined(_XBOX)
+		DEM_ManageDemoDisk();
+#endif
+	}
+
+_Catch_
+#ifdef ACTIVE_EDITORS
+	AI_gb_ExitByBreak = FALSE;
+	AI_gb_ErrorWhenBreak = TRUE;
+#endif
+_End_
+#ifdef ACTIVE_EDITORS
+
+	INO_Joystick_Unacquire();
+
+	/* Reset step info */
+	ENG_gb_OneStepEngine = FALSE;
+	ENG_gb_AIRunning = FALSE;
+
+	/*
+	 * We stop the engine (F5 just pressed), so we start mesuring the time spend
+	 * without the engine running
+	 */
+	f_StartTimeEngineStopped = TIM_f_Clock_TrueRead();
+#endif
+#ifdef ACTIVE_EDITORS
+	ESON_PauseAll(TRUE);
+#else
+	SND_StreamPrefetchFlushAll();
+	SND_StopAll(0);
+#endif
+	ENG_gb_EngineRunning = FALSE;
+
+	s_CheckResetRequest();
+}
+
+/*$4
+ ***********************************************************************************************************************
+    EOF
+ ***********************************************************************************************************************
+ */
+

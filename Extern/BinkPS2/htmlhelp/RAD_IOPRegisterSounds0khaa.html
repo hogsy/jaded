@@ -1,0 +1,57 @@
+<!-- This page was created with the RAD auto-doc generator. -->
+<!doctype html public "-//w3c//dtd html 3.2 final//en">
+<html>
+<head>
+<title>RAD_IOPRegisterSoundCallback</title>
+<meta http-equiv="content-type" content="text/html; charset=iso8859-1">
+<meta name="ms.locale" content="en-us">
+<meta name="description" content="registers a sound data structure to call your sound interrupt callback.">
+<meta name="ms-hkwd" content="RAD_IOPRegisterSoundCallback">
+<link rel="stylesheet" title="default" href="reference.css" type="text/css" media="screen">
+</head>
+<body topmargin="0">
+<table cellspacing=0 cellpadding=0 class=bar width=100% height=25>
+<tr class=bar>
+<td class=bar>
+<i>&nbsp;<a href="index.html" class=trn>Bink SDK 1.7b</a></i>
+</td>
+</tr>
+</table>
+<h1>RAD_IOPRegisterSoundCallback</h1>
+<p>The function  <b>RAD_IOPRegisterSoundCallback</b> registers a sound data structure to call your sound interrupt callback.</p>
+<table width=100% cellspacing=0 class=pre>
+<tr class=pre>
+<td class=pre>
+<pre><b><a href="S32.html" class=trn>S32</a> <a href="RAD_IOPRegisterSounds0khaa.html" class=trn>RAD_IOPRegisterSoundCallback</a>(</b>
+<b>&nbsp;&nbsp;<a href="RAD_IOP_SOUND_DATA.html" class=trn>RAD_IOP_SOUND_DATA</a>&nbsp;*</b><i>sound_data</i>
+<b>);</b></pre>
+</td>
+</tr>
+</table>
+<h4>Out Parameters</h4>
+<dl>
+<dt><i>sound_data</i></dt>
+<dd>Specifies the sound callback information.</dd>
+</dl>
+<h4>Returns</h4>
+<p>Returns non-zero if the sound callback was registered, or zero on failure.</p>
+<h4>Discussion</h4>
+<p>This function registers a sound callback structure to call a sound interrupt callback. The sound callbacks won't actually start until a call to <a href="RAD_IOPStartSound.html">RAD_IOPStartSound</a>. </p><p>This structure must remain valid until the sound callback is unregistered with the <a href="RAD_IOPUnregisterSougjf8da.html">RAD_IOPUnregisterSoundCallback</a> function. </p><p>The sound callback function is called at interrupt time, so make sure your code is interrupt safe. </p><p>Each time your sound callback is made, you must overwrite or mix sound data into the buffer that is specified by the <a href="RAD_IOP_SOUND_DATA.html#address">address</a> and <a href="RAD_IOP_SOUND_DATA.html#length">length</a> fields in the <a href="RAD_IOP_SOUND_DATA.html#sound_data">sound_data</a> structure. The <a href="RAD_IOP_SOUND_DATA.html#overwrite">overwrite</a> flag in the <a href="RAD_IOP_SOUND_DATA.html#sound_data">sound_data</a> structure says whether you should copy your data directly into the buffer (if overwrite is true), or whether you should mix your data into the buffer (if overwrite is false). To mix, just add your S16 values with the S16 values that are already in the buffer (clamping at -32768 and 32767). </p><p>The buffer is always a 48,000 Hz, 16-bit, stereo buffer formatted in the Sony style of 256 left samples, followed by 256 right samples. The length will always be a multiple of 512 samples. </p>
+<p>
+<br>
+<b>Group:</b>
+<a href="The RAD_IOP API for mhntme.html">The RAD_IOP API for the Sony PS2</a><br>
+<b>Related Functions:</b>
+<a href="RAD_IOPStartSound.html">RAD_IOPStartSound</a>, <a href="RAD_IOPUnregisterSougjf8da.html">RAD_IOPUnregisterSoundCallback</a>, <a href="RAD_IOPUnregisterTimgf40df.html">RAD_IOPUnregisterTimerCallback</a><br>
+<b>Related Basic Types:</b>
+<a href="S32.html">S32</a><br>
+<b>Related Structures:</b>
+<a href="RAD_IOP_SOUND_DATA.html">RAD_IOP_SOUND_DATA</a></p>
+<p align=center>
+<a href="mailto:Bink3@radgametools.com">For technical support, e-mail Bink3@radgametools.com</a>
+<br>
+<a href="http://www.radgametools.com/bnkmain.htm?from=help1.7b">&#169; Copyright 1994-2004 RAD Game Tools, Inc. All Rights Reserved.</a>
+</p>
+<br>
+</body>
+</html>

@@ -1,0 +1,596 @@
+/*GEO_LIGHTCUT_GEO.c*/
+
+/*
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+*/
+
+#include"Precomp.h"
+#ifdef ACTIVE_EDITORS
+
+#include"BASe/BAStypes.h"
+#include"BASe/MEMory/MEM.h"
+#include"BASe/CLIbrary/CLIstr.h"
+#include"BASe/CLIbrary/CLIfile.h"
+#include"BIGfiles/SAVing/SAVdefs.h"
+#include"BIGfiles/LOAding/LOAdefs.h"
+#include"LINks/LINKtoed.h"
+#include"LINks/LINKstruct.h"
+
+#include"ENGine/Sources/OBJects/OBJstruct.h"
+#include"ENGine/Sources/OBJects/OBJconst.h"
+#include"ENGine/Sources/OBJects/OBJorient.h"
+#include"ENGine/Sources/OBJects/OBJBoundingVolume.h"
+#include"ENGine/Sources/WORld/WORstruct.h"
+
+#include"GDInterface/GDInterface.h"
+#include"GDInterface/GDIrasters.h"
+#include"SELection/SELection.h"
+#include"GRObject/GROstruct.h"
+#include"GRObject/GROedit.h"
+#include"GEOmetric/GEOobject.h"
+#include"GEOmetric/GEOobjectcomputing.h"
+#include"GEOmetric/GEOobjectaccess.h"
+#include"GEOmetric/GEODebugObject.h"
+#include"GEOmetric/GEOsubobject.h"
+#include"GEOmetric/GEO_LIGHTCUT.h"
+
+#include<math.h>
+#include<STDLIB.H>
+#include"../dlls/MAD_loadsave/Sources/MAD_STRUCT_V0.h"
+#include"../dlls/MAD_mem/Sources/MAD_mem.h"
+#include"GEOmetric/GEO_LODCmpt.h"
+void GLV_InitIndex(tdst_GLV*p_stGLV,ULONG F,ULONG Base,ULONG A,ULONG B,ULONG C)
+{
+	p_stGLV->p_stFaces[F].Index[0]=A + Base;
+	p_stGLV->p_stFaces[F].Index[2]=B + Base;
+	p_stGLV->p_stFaces[F].Index[1]=C + Base;
+	p_stGLV->p_stFaces[F].Nghbr[0]=0xffffffff;
+	p_stGLV->p_stFaces[F].Nghbr[1]=0xffffffff;
+	p_stGLV->p_stFaces[F].Nghbr[2]=0xffffffff;
+}
+void GLV_InitVectorSphere(tdst_GLV*p_stGLV,MATHD_tdst_Vector *pDst,GLV_Scalar x,GLV_Scalar y,GLV_Scalar z,MATHD_tdst_Vector *p_Center , GLV_Scalar Radius)
+{
+	pDst->x = x * Radius + p_Center->x;
+	pDst->y = y * Radius + p_Center->y;
+	pDst->z = z * Radius + p_Center->z;
+}
+void GLV_CreateSphere(tdst_GLV*p_stGLV , ULONG ulFlags, ULONG lightNum , MATHD_tdst_Vector *p_Center , GLV_Scalar Radius)
+{
+	ULONG Counter , Of, Op;
+	Of = p_stGLV->ulNumberOfFaces;
+	Op = p_stGLV->ulNumberOfPoints;
+	GLV_SetNumbers(p_stGLV , p_stGLV->ulNumberOfPoints + 162, 0 , p_stGLV->ulNumberOfFaces + 320 , 5);
+	for (Counter = Of ; Counter < p_stGLV->ulNumberOfFaces; Counter ++)
+	{
+		p_stGLV->p_stFaces[Counter].ulMARK = lightNum;
+		p_stGLV->p_stFaces[Counter].ulFlags = ulFlags;
+	}
+	Counter=Op;
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.0000f,-1.0000f,0.0000f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.8944f,-0.4472f,0.0000f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.2764f,-0.4472f,0.8507f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.7236f,-0.4472f,0.5257f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.7236f,-0.4472f,-0.5257f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.2764f,-0.4472f,-0.8507f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.7236f,0.4472f,0.5257f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.2764f,0.4472f,0.8507f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.8944f,0.4472f,-0.0000f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.2764f,0.4472f,-0.8507f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.7236f,0.4472f,-0.5257f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.0000f,1.0000f,-0.0000f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.2733f,-0.9619f,0.0000f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.5257f,-0.8507f,0.0000f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.7382f,-0.6746f,0.0000f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.0844f,-0.9619f,0.2599f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.1625f,-0.8507f,0.5000f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.2281f,-0.6746f,0.7020f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.2211f,-0.9619f,0.1606f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.4253f,-0.8507f,0.3090f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.5972f,-0.6746f,0.4339f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.2211f,-0.9619f,-0.1606f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.4253f,-0.8507f,-0.3090f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.5972f,-0.6746f,-0.4339f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.0844f,-0.9619f,-0.2599f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.1625f,-0.8507f,-0.5000f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.2281f,-0.6746f,-0.7020f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.8226f,-0.5057f,0.2599f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.6882f,-0.5257f,0.5000f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.5014f,-0.5057f,0.7020f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.0070f,-0.5057f,0.8627f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.2629f,-0.5257f,0.8090f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.5128f,-0.5057f,0.6938f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.8183f,-0.5057f,0.2733f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.8507f,-0.5257f,-0.0000f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.8183f,-0.5057f,-0.2733f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.5128f,-0.5057f,-0.6938f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.2629f,-0.5257f,-0.8090f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.0070f,-0.5057f,-0.8627f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.5014f,-0.5057f,-0.7020f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.6882f,-0.5257f,-0.5000f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.8226f,-0.5057f,-0.2599f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.9593f,-0.2325f,0.1606f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.9511f,0.0000f,0.3090f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.8705f,0.2325f,0.4339f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.1437f,-0.2325f,0.9619f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.0000f,0.0000f,1.0000f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.1437f,0.2325f,0.9619f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.8705f,-0.2325f,0.4339f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.9511f,0.0000f,0.3090f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.9593f,0.2325f,0.1606f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.6816f,-0.2325f,-0.6938f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.5878f,-0.0000f,-0.8090f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.4492f,0.2325f,-0.8627f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.4492f,-0.2325f,-0.8627f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.5878f,-0.0000f,-0.8090f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.6816f,0.2325f,-0.6938f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.9593f,-0.2325f,-0.1606f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.9511f,-0.0000f,-0.3090f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.8705f,0.2325f,-0.4339f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.4492f,-0.2325f,0.8627f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.5878f,0.0000f,0.8090f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.6816f,0.2325f,0.6938f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.6816f,-0.2325f,0.6938f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.5878f,0.0000f,0.8090f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.4492f,0.2325f,0.8627f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.8705f,-0.2325f,-0.4339f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.9511f,-0.0000f,-0.3090f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.9593f,0.2325f,-0.1606f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.1437f,-0.2325f,-0.9619f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.0000f,-0.0000f,-1.0000f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.1437f,0.2325f,-0.9619f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.5128f,0.5057f,0.6938f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.2629f,0.5257f,0.8090f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.0070f,0.5057f,0.8627f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.5014f,0.5057f,0.7020f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.6882f,0.5257f,0.5000f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.8226f,0.5057f,0.2599f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.8226f,0.5057f,-0.2599f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.6882f,0.5257f,-0.5000f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.5014f,0.5057f,-0.7020f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.0070f,0.5057f,-0.8627f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.2629f,0.5257f,-0.8090f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.5128f,0.5057f,-0.6938f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.8183f,0.5057f,-0.2733f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.8507f,0.5257f,0.0000f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.8183f,0.5057f,0.2733f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.2211f,0.9619f,0.1606f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.4253f,0.8507f,0.3090f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.5972f,0.6746f,0.4339f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.0844f,0.9619f,0.2599f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.1625f,0.8507f,0.5000f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.2281f,0.6746f,0.7020f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.2733f,0.9619f,-0.0000f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.5257f,0.8507f,-0.0000f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.7382f,0.6746f,-0.0000f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.0844f,0.9619f,-0.2599f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.1625f,0.8507f,-0.5000f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.2281f,0.6746f,-0.7020f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.2211f,0.9619f,-0.1606f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.4253f,0.8507f,-0.3090f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.5972f,0.6746f,-0.4339f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.3618f,-0.8944f,0.2629f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.6179f,-0.7404f,0.2647f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.4427f,-0.7404f,0.5058f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.1382f,-0.8944f,0.4253f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.0608f,-0.7404f,0.6694f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.3443f,-0.7404f,0.5773f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.4472f,-0.8944f,0.0000f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.6554f,-0.7404f,0.1490f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.6554f,-0.7404f,-0.1490f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.1382f,-0.8944f,-0.4253f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.3443f,-0.7404f,-0.5773f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.0608f,-0.7404f,-0.6694f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.3618f,-0.8944f,-0.2629f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.4427f,-0.7404f,-0.5058f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.6179f,-0.7404f,-0.2647f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,1.0000f,0.0000f,0.0000f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.9554f,0.2551f,-0.1490f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.9554f,0.2551f,0.1490f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.3090f,0.0000f,0.9511f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.4370f,0.2551f,0.8625f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.1535f,0.2551f,0.9547f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.8090f,0.0000f,0.5878f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.6853f,0.2551f,0.6821f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.8605f,0.2551f,0.4410f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.8090f,-0.0000f,-0.5878f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.8605f,0.2551f,-0.4410f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.6853f,0.2551f,-0.6821f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.3090f,-0.0000f,-0.9511f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.1535f,0.2551f,-0.9547f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.4370f,0.2551f,-0.8625f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.8090f,0.0000f,0.5878f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.6853f,-0.2551f,0.6821f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.8605f,-0.2551f,0.4410f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.3090f,0.0000f,0.9511f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.4370f,-0.2551f,0.8625f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.1535f,-0.2551f,0.9547f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-1.0000f,-0.0000f,-0.0000f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.9554f,-0.2551f,-0.1490f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.9554f,-0.2551f,0.1490f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.3090f,-0.0000f,-0.9511f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.1535f,-0.2551f,-0.9547f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.4370f,-0.2551f,-0.8625f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.8090f,-0.0000f,-0.5878f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.8605f,-0.2551f,-0.4410f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.6853f,-0.2551f,-0.6821f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.1382f,0.8944f,0.4253f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.0608f,0.7404f,0.6694f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.3443f,0.7404f,0.5773f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.3618f,0.8944f,0.2629f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.6179f,0.7404f,0.2647f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.4427f,0.7404f,0.5058f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.3618f,0.8944f,-0.2629f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.4427f,0.7404f,-0.5058f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,-0.6179f,0.7404f,-0.2647f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.1382f,0.8944f,-0.4253f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.3443f,0.7404f,-0.5773f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.0608f,0.7404f,-0.6694f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.4472f,0.8944f,0.0000f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.6554f,0.7404f,0.1490f,p_Center,Radius);
+	GLV_InitVectorSphere(p_stGLV,&p_stGLV->p_stPoints[Counter++].P3D,0.6554f,0.7404f,-0.1490f,p_Center,Radius);
+
+	Counter=Of;
+	GLV_InitIndex(p_stGLV,Counter++,Op,0,12,15);
+	GLV_InitIndex(p_stGLV,Counter++,Op,12,13,102);
+	GLV_InitIndex(p_stGLV,Counter++,Op,12,102,15);
+	GLV_InitIndex(p_stGLV,Counter++,Op,15,102,16);
+	GLV_InitIndex(p_stGLV,Counter++,Op,13,14,103);
+	GLV_InitIndex(p_stGLV,Counter++,Op,13,103,102);
+	GLV_InitIndex(p_stGLV,Counter++,Op,102,103,104);
+	GLV_InitIndex(p_stGLV,Counter++,Op,102,104,16);
+	GLV_InitIndex(p_stGLV,Counter++,Op,16,104,17);
+	GLV_InitIndex(p_stGLV,Counter++,Op,14,1,27);
+	GLV_InitIndex(p_stGLV,Counter++,Op,14,27,103);
+	GLV_InitIndex(p_stGLV,Counter++,Op,103,27,28);
+	GLV_InitIndex(p_stGLV,Counter++,Op,103,28,104);
+	GLV_InitIndex(p_stGLV,Counter++,Op,104,28,29);
+	GLV_InitIndex(p_stGLV,Counter++,Op,104,29,17);
+	GLV_InitIndex(p_stGLV,Counter++,Op,17,29,2);
+	GLV_InitIndex(p_stGLV,Counter++,Op,0,15,18);
+	GLV_InitIndex(p_stGLV,Counter++,Op,15,16,105);
+	GLV_InitIndex(p_stGLV,Counter++,Op,15,105,18);
+	GLV_InitIndex(p_stGLV,Counter++,Op,18,105,19);
+	GLV_InitIndex(p_stGLV,Counter++,Op,16,17,106);
+	GLV_InitIndex(p_stGLV,Counter++,Op,16,106,105);
+	GLV_InitIndex(p_stGLV,Counter++,Op,105,106,107);
+	GLV_InitIndex(p_stGLV,Counter++,Op,105,107,19);
+	GLV_InitIndex(p_stGLV,Counter++,Op,19,107,20);
+	GLV_InitIndex(p_stGLV,Counter++,Op,17,2,30);
+	GLV_InitIndex(p_stGLV,Counter++,Op,17,30,106);
+	GLV_InitIndex(p_stGLV,Counter++,Op,106,30,31);
+	GLV_InitIndex(p_stGLV,Counter++,Op,106,31,107);
+	GLV_InitIndex(p_stGLV,Counter++,Op,107,31,32);
+	GLV_InitIndex(p_stGLV,Counter++,Op,107,32,20);
+	GLV_InitIndex(p_stGLV,Counter++,Op,20,32,3);
+	GLV_InitIndex(p_stGLV,Counter++,Op,0,18,21);
+	GLV_InitIndex(p_stGLV,Counter++,Op,18,19,108);
+	GLV_InitIndex(p_stGLV,Counter++,Op,18,108,21);
+	GLV_InitIndex(p_stGLV,Counter++,Op,21,108,22);
+	GLV_InitIndex(p_stGLV,Counter++,Op,19,20,109);
+	GLV_InitIndex(p_stGLV,Counter++,Op,19,109,108);
+	GLV_InitIndex(p_stGLV,Counter++,Op,108,109,110);
+	GLV_InitIndex(p_stGLV,Counter++,Op,108,110,22);
+	GLV_InitIndex(p_stGLV,Counter++,Op,22,110,23);
+	GLV_InitIndex(p_stGLV,Counter++,Op,20,3,33);
+	GLV_InitIndex(p_stGLV,Counter++,Op,20,33,109);
+	GLV_InitIndex(p_stGLV,Counter++,Op,109,33,34);
+	GLV_InitIndex(p_stGLV,Counter++,Op,109,34,110);
+	GLV_InitIndex(p_stGLV,Counter++,Op,110,34,35);
+	GLV_InitIndex(p_stGLV,Counter++,Op,110,35,23);
+	GLV_InitIndex(p_stGLV,Counter++,Op,23,35,4);
+	GLV_InitIndex(p_stGLV,Counter++,Op,0,21,24);
+	GLV_InitIndex(p_stGLV,Counter++,Op,21,22,111);
+	GLV_InitIndex(p_stGLV,Counter++,Op,21,111,24);
+	GLV_InitIndex(p_stGLV,Counter++,Op,24,111,25);
+	GLV_InitIndex(p_stGLV,Counter++,Op,22,23,112);
+	GLV_InitIndex(p_stGLV,Counter++,Op,22,112,111);
+	GLV_InitIndex(p_stGLV,Counter++,Op,111,112,113);
+	GLV_InitIndex(p_stGLV,Counter++,Op,111,113,25);
+	GLV_InitIndex(p_stGLV,Counter++,Op,25,113,26);
+	GLV_InitIndex(p_stGLV,Counter++,Op,23,4,36);
+	GLV_InitIndex(p_stGLV,Counter++,Op,23,36,112);
+	GLV_InitIndex(p_stGLV,Counter++,Op,112,36,37);
+	GLV_InitIndex(p_stGLV,Counter++,Op,112,37,113);
+	GLV_InitIndex(p_stGLV,Counter++,Op,113,37,38);
+	GLV_InitIndex(p_stGLV,Counter++,Op,113,38,26);
+	GLV_InitIndex(p_stGLV,Counter++,Op,26,38,5);
+	GLV_InitIndex(p_stGLV,Counter++,Op,0,24,12);
+	GLV_InitIndex(p_stGLV,Counter++,Op,24,25,114);
+	GLV_InitIndex(p_stGLV,Counter++,Op,24,114,12);
+	GLV_InitIndex(p_stGLV,Counter++,Op,12,114,13);
+	GLV_InitIndex(p_stGLV,Counter++,Op,25,26,115);
+	GLV_InitIndex(p_stGLV,Counter++,Op,25,115,114);
+	GLV_InitIndex(p_stGLV,Counter++,Op,114,115,116);
+	GLV_InitIndex(p_stGLV,Counter++,Op,114,116,13);
+	GLV_InitIndex(p_stGLV,Counter++,Op,13,116,14);
+	GLV_InitIndex(p_stGLV,Counter++,Op,26,5,39);
+	GLV_InitIndex(p_stGLV,Counter++,Op,26,39,115);
+	GLV_InitIndex(p_stGLV,Counter++,Op,115,39,40);
+	GLV_InitIndex(p_stGLV,Counter++,Op,115,40,116);
+	GLV_InitIndex(p_stGLV,Counter++,Op,116,40,41);
+	GLV_InitIndex(p_stGLV,Counter++,Op,116,41,14);
+	GLV_InitIndex(p_stGLV,Counter++,Op,14,41,1);
+	GLV_InitIndex(p_stGLV,Counter++,Op,1,57,42);
+	GLV_InitIndex(p_stGLV,Counter++,Op,57,58,117);
+	GLV_InitIndex(p_stGLV,Counter++,Op,57,117,42);
+	GLV_InitIndex(p_stGLV,Counter++,Op,42,117,43);
+	GLV_InitIndex(p_stGLV,Counter++,Op,58,59,118);
+	GLV_InitIndex(p_stGLV,Counter++,Op,58,118,117);
+	GLV_InitIndex(p_stGLV,Counter++,Op,117,118,119);
+	GLV_InitIndex(p_stGLV,Counter++,Op,117,119,43);
+	GLV_InitIndex(p_stGLV,Counter++,Op,43,119,44);
+	GLV_InitIndex(p_stGLV,Counter++,Op,59,10,84);
+	GLV_InitIndex(p_stGLV,Counter++,Op,59,84,118);
+	GLV_InitIndex(p_stGLV,Counter++,Op,118,84,85);
+	GLV_InitIndex(p_stGLV,Counter++,Op,118,85,119);
+	GLV_InitIndex(p_stGLV,Counter++,Op,119,85,86);
+	GLV_InitIndex(p_stGLV,Counter++,Op,119,86,44);
+	GLV_InitIndex(p_stGLV,Counter++,Op,44,86,6);
+	GLV_InitIndex(p_stGLV,Counter++,Op,2,60,45);
+	GLV_InitIndex(p_stGLV,Counter++,Op,60,61,120);
+	GLV_InitIndex(p_stGLV,Counter++,Op,60,120,45);
+	GLV_InitIndex(p_stGLV,Counter++,Op,45,120,46);
+	GLV_InitIndex(p_stGLV,Counter++,Op,61,62,121);
+	GLV_InitIndex(p_stGLV,Counter++,Op,61,121,120);
+	GLV_InitIndex(p_stGLV,Counter++,Op,120,121,122);
+	GLV_InitIndex(p_stGLV,Counter++,Op,120,122,46);
+	GLV_InitIndex(p_stGLV,Counter++,Op,46,122,47);
+	GLV_InitIndex(p_stGLV,Counter++,Op,62,6,72);
+	GLV_InitIndex(p_stGLV,Counter++,Op,62,72,121);
+	GLV_InitIndex(p_stGLV,Counter++,Op,121,72,73);
+	GLV_InitIndex(p_stGLV,Counter++,Op,121,73,122);
+	GLV_InitIndex(p_stGLV,Counter++,Op,122,73,74);
+	GLV_InitIndex(p_stGLV,Counter++,Op,122,74,47);
+	GLV_InitIndex(p_stGLV,Counter++,Op,47,74,7);
+	GLV_InitIndex(p_stGLV,Counter++,Op,3,63,48);
+	GLV_InitIndex(p_stGLV,Counter++,Op,63,64,123);
+	GLV_InitIndex(p_stGLV,Counter++,Op,63,123,48);
+	GLV_InitIndex(p_stGLV,Counter++,Op,48,123,49);
+	GLV_InitIndex(p_stGLV,Counter++,Op,64,65,124);
+	GLV_InitIndex(p_stGLV,Counter++,Op,64,124,123);
+	GLV_InitIndex(p_stGLV,Counter++,Op,123,124,125);
+	GLV_InitIndex(p_stGLV,Counter++,Op,123,125,49);
+	GLV_InitIndex(p_stGLV,Counter++,Op,49,125,50);
+	GLV_InitIndex(p_stGLV,Counter++,Op,65,7,75);
+	GLV_InitIndex(p_stGLV,Counter++,Op,65,75,124);
+	GLV_InitIndex(p_stGLV,Counter++,Op,124,75,76);
+	GLV_InitIndex(p_stGLV,Counter++,Op,124,76,125);
+	GLV_InitIndex(p_stGLV,Counter++,Op,125,76,77);
+	GLV_InitIndex(p_stGLV,Counter++,Op,125,77,50);
+	GLV_InitIndex(p_stGLV,Counter++,Op,50,77,8);
+	GLV_InitIndex(p_stGLV,Counter++,Op,4,66,51);
+	GLV_InitIndex(p_stGLV,Counter++,Op,66,67,126);
+	GLV_InitIndex(p_stGLV,Counter++,Op,66,126,51);
+	GLV_InitIndex(p_stGLV,Counter++,Op,51,126,52);
+	GLV_InitIndex(p_stGLV,Counter++,Op,67,68,127);
+	GLV_InitIndex(p_stGLV,Counter++,Op,67,127,126);
+	GLV_InitIndex(p_stGLV,Counter++,Op,126,127,128);
+	GLV_InitIndex(p_stGLV,Counter++,Op,126,128,52);
+	GLV_InitIndex(p_stGLV,Counter++,Op,52,128,53);
+	GLV_InitIndex(p_stGLV,Counter++,Op,68,8,78);
+	GLV_InitIndex(p_stGLV,Counter++,Op,68,78,127);
+	GLV_InitIndex(p_stGLV,Counter++,Op,127,78,79);
+	GLV_InitIndex(p_stGLV,Counter++,Op,127,79,128);
+	GLV_InitIndex(p_stGLV,Counter++,Op,128,79,80);
+	GLV_InitIndex(p_stGLV,Counter++,Op,128,80,53);
+	GLV_InitIndex(p_stGLV,Counter++,Op,53,80,9);
+	GLV_InitIndex(p_stGLV,Counter++,Op,5,69,54);
+	GLV_InitIndex(p_stGLV,Counter++,Op,69,70,129);
+	GLV_InitIndex(p_stGLV,Counter++,Op,69,129,54);
+	GLV_InitIndex(p_stGLV,Counter++,Op,54,129,55);
+	GLV_InitIndex(p_stGLV,Counter++,Op,70,71,130);
+	GLV_InitIndex(p_stGLV,Counter++,Op,70,130,129);
+	GLV_InitIndex(p_stGLV,Counter++,Op,129,130,131);
+	GLV_InitIndex(p_stGLV,Counter++,Op,129,131,55);
+	GLV_InitIndex(p_stGLV,Counter++,Op,55,131,56);
+	GLV_InitIndex(p_stGLV,Counter++,Op,71,9,81);
+	GLV_InitIndex(p_stGLV,Counter++,Op,71,81,130);
+	GLV_InitIndex(p_stGLV,Counter++,Op,130,81,82);
+	GLV_InitIndex(p_stGLV,Counter++,Op,130,82,131);
+	GLV_InitIndex(p_stGLV,Counter++,Op,131,82,83);
+	GLV_InitIndex(p_stGLV,Counter++,Op,131,83,56);
+	GLV_InitIndex(p_stGLV,Counter++,Op,56,83,10);
+	GLV_InitIndex(p_stGLV,Counter++,Op,6,62,44);
+	GLV_InitIndex(p_stGLV,Counter++,Op,62,61,132);
+	GLV_InitIndex(p_stGLV,Counter++,Op,62,132,44);
+	GLV_InitIndex(p_stGLV,Counter++,Op,44,132,43);
+	GLV_InitIndex(p_stGLV,Counter++,Op,61,60,133);
+	GLV_InitIndex(p_stGLV,Counter++,Op,61,133,132);
+	GLV_InitIndex(p_stGLV,Counter++,Op,132,133,134);
+	GLV_InitIndex(p_stGLV,Counter++,Op,132,134,43);
+	GLV_InitIndex(p_stGLV,Counter++,Op,43,134,42);
+	GLV_InitIndex(p_stGLV,Counter++,Op,60,2,29);
+	GLV_InitIndex(p_stGLV,Counter++,Op,60,29,133);
+	GLV_InitIndex(p_stGLV,Counter++,Op,133,29,28);
+	GLV_InitIndex(p_stGLV,Counter++,Op,133,28,134);
+	GLV_InitIndex(p_stGLV,Counter++,Op,134,28,27);
+	GLV_InitIndex(p_stGLV,Counter++,Op,134,27,42);
+	GLV_InitIndex(p_stGLV,Counter++,Op,42,27,1);
+	GLV_InitIndex(p_stGLV,Counter++,Op,7,65,47);
+	GLV_InitIndex(p_stGLV,Counter++,Op,65,64,135);
+	GLV_InitIndex(p_stGLV,Counter++,Op,65,135,47);
+	GLV_InitIndex(p_stGLV,Counter++,Op,47,135,46);
+	GLV_InitIndex(p_stGLV,Counter++,Op,64,63,136);
+	GLV_InitIndex(p_stGLV,Counter++,Op,64,136,135);
+	GLV_InitIndex(p_stGLV,Counter++,Op,135,136,137);
+	GLV_InitIndex(p_stGLV,Counter++,Op,135,137,46);
+	GLV_InitIndex(p_stGLV,Counter++,Op,46,137,45);
+	GLV_InitIndex(p_stGLV,Counter++,Op,63,3,32);
+	GLV_InitIndex(p_stGLV,Counter++,Op,63,32,136);
+	GLV_InitIndex(p_stGLV,Counter++,Op,136,32,31);
+	GLV_InitIndex(p_stGLV,Counter++,Op,136,31,137);
+	GLV_InitIndex(p_stGLV,Counter++,Op,137,31,30);
+	GLV_InitIndex(p_stGLV,Counter++,Op,137,30,45);
+	GLV_InitIndex(p_stGLV,Counter++,Op,45,30,2);
+	GLV_InitIndex(p_stGLV,Counter++,Op,8,68,50);
+	GLV_InitIndex(p_stGLV,Counter++,Op,68,67,138);
+	GLV_InitIndex(p_stGLV,Counter++,Op,68,138,50);
+	GLV_InitIndex(p_stGLV,Counter++,Op,50,138,49);
+	GLV_InitIndex(p_stGLV,Counter++,Op,67,66,139);
+	GLV_InitIndex(p_stGLV,Counter++,Op,67,139,138);
+	GLV_InitIndex(p_stGLV,Counter++,Op,138,139,140);
+	GLV_InitIndex(p_stGLV,Counter++,Op,138,140,49);
+	GLV_InitIndex(p_stGLV,Counter++,Op,49,140,48);
+	GLV_InitIndex(p_stGLV,Counter++,Op,66,4,35);
+	GLV_InitIndex(p_stGLV,Counter++,Op,66,35,139);
+	GLV_InitIndex(p_stGLV,Counter++,Op,139,35,34);
+	GLV_InitIndex(p_stGLV,Counter++,Op,139,34,140);
+	GLV_InitIndex(p_stGLV,Counter++,Op,140,34,33);
+	GLV_InitIndex(p_stGLV,Counter++,Op,140,33,48);
+	GLV_InitIndex(p_stGLV,Counter++,Op,48,33,3);
+	GLV_InitIndex(p_stGLV,Counter++,Op,9,71,53);
+	GLV_InitIndex(p_stGLV,Counter++,Op,71,70,141);
+	GLV_InitIndex(p_stGLV,Counter++,Op,71,141,53);
+	GLV_InitIndex(p_stGLV,Counter++,Op,53,141,52);
+	GLV_InitIndex(p_stGLV,Counter++,Op,70,69,142);
+	GLV_InitIndex(p_stGLV,Counter++,Op,70,142,141);
+	GLV_InitIndex(p_stGLV,Counter++,Op,141,142,143);
+	GLV_InitIndex(p_stGLV,Counter++,Op,141,143,52);
+	GLV_InitIndex(p_stGLV,Counter++,Op,52,143,51);
+	GLV_InitIndex(p_stGLV,Counter++,Op,69,5,38);
+	GLV_InitIndex(p_stGLV,Counter++,Op,69,38,142);
+	GLV_InitIndex(p_stGLV,Counter++,Op,142,38,37);
+	GLV_InitIndex(p_stGLV,Counter++,Op,142,37,143);
+	GLV_InitIndex(p_stGLV,Counter++,Op,143,37,36);
+	GLV_InitIndex(p_stGLV,Counter++,Op,143,36,51);
+	GLV_InitIndex(p_stGLV,Counter++,Op,51,36,4);
+	GLV_InitIndex(p_stGLV,Counter++,Op,10,59,56);
+	GLV_InitIndex(p_stGLV,Counter++,Op,59,58,144);
+	GLV_InitIndex(p_stGLV,Counter++,Op,59,144,56);
+	GLV_InitIndex(p_stGLV,Counter++,Op,56,144,55);
+	GLV_InitIndex(p_stGLV,Counter++,Op,58,57,145);
+	GLV_InitIndex(p_stGLV,Counter++,Op,58,145,144);
+	GLV_InitIndex(p_stGLV,Counter++,Op,144,145,146);
+	GLV_InitIndex(p_stGLV,Counter++,Op,144,146,55);
+	GLV_InitIndex(p_stGLV,Counter++,Op,55,146,54);
+	GLV_InitIndex(p_stGLV,Counter++,Op,57,1,41);
+	GLV_InitIndex(p_stGLV,Counter++,Op,57,41,145);
+	GLV_InitIndex(p_stGLV,Counter++,Op,145,41,40);
+	GLV_InitIndex(p_stGLV,Counter++,Op,145,40,146);
+	GLV_InitIndex(p_stGLV,Counter++,Op,146,40,39);
+	GLV_InitIndex(p_stGLV,Counter++,Op,146,39,54);
+	GLV_InitIndex(p_stGLV,Counter++,Op,54,39,5);
+	GLV_InitIndex(p_stGLV,Counter++,Op,11,90,87);
+	GLV_InitIndex(p_stGLV,Counter++,Op,90,91,147);
+	GLV_InitIndex(p_stGLV,Counter++,Op,90,147,87);
+	GLV_InitIndex(p_stGLV,Counter++,Op,87,147,88);
+	GLV_InitIndex(p_stGLV,Counter++,Op,91,92,148);
+	GLV_InitIndex(p_stGLV,Counter++,Op,91,148,147);
+	GLV_InitIndex(p_stGLV,Counter++,Op,147,148,149);
+	GLV_InitIndex(p_stGLV,Counter++,Op,147,149,88);
+	GLV_InitIndex(p_stGLV,Counter++,Op,88,149,89);
+	GLV_InitIndex(p_stGLV,Counter++,Op,92,7,74);
+	GLV_InitIndex(p_stGLV,Counter++,Op,92,74,148);
+	GLV_InitIndex(p_stGLV,Counter++,Op,148,74,73);
+	GLV_InitIndex(p_stGLV,Counter++,Op,148,73,149);
+	GLV_InitIndex(p_stGLV,Counter++,Op,149,73,72);
+	GLV_InitIndex(p_stGLV,Counter++,Op,149,72,89);
+	GLV_InitIndex(p_stGLV,Counter++,Op,89,72,6);
+	GLV_InitIndex(p_stGLV,Counter++,Op,11,93,90);
+	GLV_InitIndex(p_stGLV,Counter++,Op,93,94,150);
+	GLV_InitIndex(p_stGLV,Counter++,Op,93,150,90);
+	GLV_InitIndex(p_stGLV,Counter++,Op,90,150,91);
+	GLV_InitIndex(p_stGLV,Counter++,Op,94,95,151);
+	GLV_InitIndex(p_stGLV,Counter++,Op,94,151,150);
+	GLV_InitIndex(p_stGLV,Counter++,Op,150,151,152);
+	GLV_InitIndex(p_stGLV,Counter++,Op,150,152,91);
+	GLV_InitIndex(p_stGLV,Counter++,Op,91,152,92);
+	GLV_InitIndex(p_stGLV,Counter++,Op,95,8,77);
+	GLV_InitIndex(p_stGLV,Counter++,Op,95,77,151);
+	GLV_InitIndex(p_stGLV,Counter++,Op,151,77,76);
+	GLV_InitIndex(p_stGLV,Counter++,Op,151,76,152);
+	GLV_InitIndex(p_stGLV,Counter++,Op,152,76,75);
+	GLV_InitIndex(p_stGLV,Counter++,Op,152,75,92);
+	GLV_InitIndex(p_stGLV,Counter++,Op,92,75,7);
+	GLV_InitIndex(p_stGLV,Counter++,Op,11,96,93);
+	GLV_InitIndex(p_stGLV,Counter++,Op,96,97,153);
+	GLV_InitIndex(p_stGLV,Counter++,Op,96,153,93);
+	GLV_InitIndex(p_stGLV,Counter++,Op,93,153,94);
+	GLV_InitIndex(p_stGLV,Counter++,Op,97,98,154);
+	GLV_InitIndex(p_stGLV,Counter++,Op,97,154,153);
+	GLV_InitIndex(p_stGLV,Counter++,Op,153,154,155);
+	GLV_InitIndex(p_stGLV,Counter++,Op,153,155,94);
+	GLV_InitIndex(p_stGLV,Counter++,Op,94,155,95);
+	GLV_InitIndex(p_stGLV,Counter++,Op,98,9,80);
+	GLV_InitIndex(p_stGLV,Counter++,Op,98,80,154);
+	GLV_InitIndex(p_stGLV,Counter++,Op,154,80,79);
+	GLV_InitIndex(p_stGLV,Counter++,Op,154,79,155);
+	GLV_InitIndex(p_stGLV,Counter++,Op,155,79,78);
+	GLV_InitIndex(p_stGLV,Counter++,Op,155,78,95);
+	GLV_InitIndex(p_stGLV,Counter++,Op,95,78,8);
+	GLV_InitIndex(p_stGLV,Counter++,Op,11,99,96);
+	GLV_InitIndex(p_stGLV,Counter++,Op,99,100,156);
+	GLV_InitIndex(p_stGLV,Counter++,Op,99,156,96);
+	GLV_InitIndex(p_stGLV,Counter++,Op,96,156,97);
+	GLV_InitIndex(p_stGLV,Counter++,Op,100,101,157);
+	GLV_InitIndex(p_stGLV,Counter++,Op,100,157,156);
+	GLV_InitIndex(p_stGLV,Counter++,Op,156,157,158);
+	GLV_InitIndex(p_stGLV,Counter++,Op,156,158,97);
+	GLV_InitIndex(p_stGLV,Counter++,Op,97,158,98);
+	GLV_InitIndex(p_stGLV,Counter++,Op,101,10,83);
+	GLV_InitIndex(p_stGLV,Counter++,Op,101,83,157);
+	GLV_InitIndex(p_stGLV,Counter++,Op,157,83,82);
+	GLV_InitIndex(p_stGLV,Counter++,Op,157,82,158);
+	GLV_InitIndex(p_stGLV,Counter++,Op,158,82,81);
+	GLV_InitIndex(p_stGLV,Counter++,Op,158,81,98);
+	GLV_InitIndex(p_stGLV,Counter++,Op,98,81,9);
+	GLV_InitIndex(p_stGLV,Counter++,Op,11,87,99);
+	GLV_InitIndex(p_stGLV,Counter++,Op,87,88,159);
+	GLV_InitIndex(p_stGLV,Counter++,Op,87,159,99);
+	GLV_InitIndex(p_stGLV,Counter++,Op,99,159,100);
+	GLV_InitIndex(p_stGLV,Counter++,Op,88,89,160);
+	GLV_InitIndex(p_stGLV,Counter++,Op,88,160,159);
+	GLV_InitIndex(p_stGLV,Counter++,Op,159,160,161);
+	GLV_InitIndex(p_stGLV,Counter++,Op,159,161,100);
+	GLV_InitIndex(p_stGLV,Counter++,Op,100,161,101);
+	GLV_InitIndex(p_stGLV,Counter++,Op,89,6,86);
+	GLV_InitIndex(p_stGLV,Counter++,Op,89,86,160);
+	GLV_InitIndex(p_stGLV,Counter++,Op,160,86,85);
+	GLV_InitIndex(p_stGLV,Counter++,Op,160,85,161);
+	GLV_InitIndex(p_stGLV,Counter++,Op,161,85,84);
+	GLV_InitIndex(p_stGLV,Counter++,Op,161,84,101);
+	GLV_InitIndex(p_stGLV,Counter++,Op,101,84,10);
+}
+#define GLV_ConeDIsc 50
+void GLV_CreateCone(tdst_GLV*p_stGLV , ULONG ulFlags , ULONG lightNum , MATHD_tdst_Vector *p_Center , MATHD_tdst_Vector *pDirection , GLV_Scalar Alpha , GLV_Scalar Lenght)
+{
+	ULONG Counter , Of, Op;
+	MATHD_tdst_Vector stX,stY,stZ;
+	Of = p_stGLV->ulNumberOfFaces;
+	Op = p_stGLV->ulNumberOfPoints;
+	GLV_SetNumbers(p_stGLV , p_stGLV->ulNumberOfPoints + 1 + GLV_ConeDIsc, 0 , p_stGLV->ulNumberOfFaces + GLV_ConeDIsc , 5);
+	p_stGLV->p_stPoints[Op].P3D = *p_Center;
+	/* Create Disc */
+	MATHD_InitVector(&stZ , 0.0f , 0.0f , 1.0f );
+	MATHD_CrossProduct(&stX , &stZ , pDirection);
+	MATHD_CrossProduct(&stY , &stX , pDirection);
+	MATHD_SetNormVector(&stX , &stX , Lenght * (GLV_Scalar)sin(Alpha));
+	MATHD_SetNormVector(&stY , &stY , Lenght * (GLV_Scalar)sin(Alpha));
+	MATHD_SetNormVector(&stZ , pDirection , - Lenght * (GLV_Scalar)cos(Alpha));
+	for (Counter = 0 ; Counter < GLV_ConeDIsc; Counter ++)
+	{
+		MATHD_tdst_Vector st1;
+		MATHD_AddVector(&st1 , p_Center , &stZ );
+		MATHD_AddScaleVector(&st1 , &st1 , &stX , (GLV_Scalar)cos (3.1415927f * 2.0f * (float)Counter/(float)GLV_ConeDIsc));
+		MATHD_AddScaleVector(&st1 , &st1 , &stY , (GLV_Scalar)sin (3.1415927f * 2.0f * (float)Counter/(float)GLV_ConeDIsc));
+		p_stGLV->p_stPoints[Counter + Op + 1].P3D = st1;
+	}
+
+	for (Counter = 0 ; Counter < GLV_ConeDIsc ; Counter ++)
+	{
+		p_stGLV->p_stFaces[Counter + Of].ulMARK = lightNum;
+		p_stGLV->p_stFaces[Counter + Of].ulFlags = ulFlags;
+		p_stGLV->p_stFaces[Counter + Of].Nghbr[0]=p_stGLV->p_stFaces[Counter + Of].Nghbr[1]=p_stGLV->p_stFaces[Counter + Of].Nghbr[2]=0xffffffff;
+
+		p_stGLV->p_stFaces[Counter + Of].Index[0] = Op;
+		p_stGLV->p_stFaces[Counter + Of].Index[1] = Op + Counter + 1;
+		if (Counter == GLV_ConeDIsc - 1)
+			p_stGLV->p_stFaces[Counter + Of].Index[2] = Op + 1;
+		else
+			p_stGLV->p_stFaces[Counter + Of].Index[2] = Op + Counter + 2;
+	}
+}
+#endif
+

@@ -1,0 +1,31 @@
+; //VU0 microcode for lcp implementation
+ 
+; //Jose M. Jimeno.
+
+.global dSolveL1Program ; // to be used inside lcp.cpp 
+
+.p2align 4  ; //This aligns the following data to quadword alignment
+ 
+.DmaPackVif 1   ; //specifies that the DMA tag will be packed with VIFcodes
+
+
+; //________________________________________________________
+
+dSolveL1Program:
+
+
+DMAend *
+ 
+ 
+MPG 0, *        ; Upload program to address 0.  Size will be the difference
+                ; between the address of .EndMPG directive and the address of
+                ; the MPG directive.
+ 
+.vu     ; //Must be used immediately before defining a VU microprogam
+ 
+.include "dsolve1.vsm"                       
+ 
+.EndMPG
+.EndDmaData
+
+; //________________________________________________________

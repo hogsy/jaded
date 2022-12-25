@@ -1,0 +1,63 @@
+<!-- This page was created with the RAD auto-doc generator. -->
+<!doctype html public "-//w3c//dtd html 3.2 final//en">
+<html>
+<head>
+<title>RAD_IOPStartTimer</title>
+<meta http-equiv="content-type" content="text/html; charset=iso8859-1">
+<meta name="ms.locale" content="en-us">
+<meta name="description" content="starts calling a previously registered timer callback.">
+<meta name="ms-hkwd" content="RAD_IOPStartTimer">
+<link rel="stylesheet" title="default" href="reference.css" type="text/css" media="screen">
+</head>
+<body topmargin="0">
+<table cellspacing=0 cellpadding=0 class=bar width=100% height=25>
+<tr class=bar>
+<td class=bar>
+<i>&nbsp;<a href="index.html" class=trn>Bink SDK 1.7b</a></i>
+</td>
+</tr>
+</table>
+<h1>RAD_IOPStartTimer</h1>
+<p>The function  <b>RAD_IOPStartTimer</b> starts calling a previously registered timer callback.</p>
+<table width=100% cellspacing=0 class=pre>
+<tr class=pre>
+<td class=pre>
+<pre><b><a href="U32.html" class=trn>U32</a> <a href="RAD_IOPStartTimer.html" class=trn>RAD_IOPStartTimer</a>(</b>
+<b>&nbsp;&nbsp;<a href="RAD_IOP_TIMER_DATA.html" class=trn>RAD_IOP_TIMER_DATA</a>&nbsp;*</b><i>timer_data</i><b>,</b>
+<b>&nbsp;&nbsp;<a href="U32.html" class=trn>U32</a>&nbsp;</b><i>ms_between</i>
+<b>);</b></pre>
+</td>
+</tr>
+</table>
+<h4>In Parameters</h4>
+<dl>
+<dt><i>ms_between</i></dt>
+<dd>Specifies the millisecond between each call. For example, if you wanted a timer that is called 100 times per second, then you'd use 10 ms.</dd>
+</dl>
+<h4>Out Parameters</h4>
+<dl>
+<dt><i>timer_data</i></dt>
+<dd>Specifies the timer to control.</dd>
+</dl>
+<h4>Returns</h4>
+<p>Returns the current internal timer period (or zero if there was an error).</p>
+<h4>Discussion</h4>
+<p>This function tells RAD_IOP to start calling your timer callback. You can call it multiple times to change the timer period. </p><p>These timers are drift-free, that is, they keep track of the last time they were called and make sure the average millisecond period that you requested is maintained. </p><p>Internally, RAD_IOP only uses one hardware timer and set it's frequency to the faster timer that you request. So, if you request a 10 ms timer and a 5 ms timer, the internal timer will run at 5 ms, and the 10 ms will only be called every other time. </p>
+<p>
+<br>
+<b>Group:</b>
+<a href="The RAD_IOP API for mhntme.html">The RAD_IOP API for the Sony PS2</a><br>
+<b>Related Functions:</b>
+<a href="RAD_IOPPauseTimer.html">RAD_IOPPauseTimer</a>, <a href="RAD_IOPRegisterTimers0khaa.html">RAD_IOPRegisterTimerCallback</a>, <a href="RAD_IOPTIMERCALLBACK.html">RAD_IOPTIMERCALLBACK</a><br>
+<b>Related Basic Types:</b>
+<a href="U32.html">U32</a><br>
+<b>Related Structures:</b>
+<a href="RAD_IOP_TIMER_DATA.html">RAD_IOP_TIMER_DATA</a></p>
+<p align=center>
+<a href="mailto:Bink3@radgametools.com">For technical support, e-mail Bink3@radgametools.com</a>
+<br>
+<a href="http://www.radgametools.com/bnkmain.htm?from=help1.7b">&#169; Copyright 1994-2004 RAD Game Tools, Inc. All Rights Reserved.</a>
+</p>
+<br>
+</body>
+</html>

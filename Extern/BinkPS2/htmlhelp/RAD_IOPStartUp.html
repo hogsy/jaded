@@ -1,0 +1,66 @@
+<!-- This page was created with the RAD auto-doc generator. -->
+<!doctype html public "-//w3c//dtd html 3.2 final//en">
+<html>
+<head>
+<title>RAD_IOPStartUp</title>
+<meta http-equiv="content-type" content="text/html; charset=iso8859-1">
+<meta name="ms.locale" content="en-us">
+<meta name="description" content="opens the RAD_IOP API for use.">
+<meta name="ms-hkwd" content="RAD_IOPStartUp">
+<link rel="stylesheet" title="default" href="reference.css" type="text/css" media="screen">
+</head>
+<body topmargin="0">
+<table cellspacing=0 cellpadding=0 class=bar width=100% height=25>
+<tr class=bar>
+<td class=bar>
+<i>&nbsp;<a href="index.html" class=trn>Bink SDK 1.7b</a></i>
+</td>
+</tr>
+</table>
+<h1>RAD_IOPStartUp</h1>
+<p>The function  <b>RAD_IOPStartUp</b> opens the RAD_IOP API for use.</p>
+<table width=100% cellspacing=0 class=pre>
+<tr class=pre>
+<td class=pre>
+<pre><b><a href="S32.html" class=trn>S32</a> <a href="RAD_IOPStartUp.html" class=trn>RAD_IOPStartUp</a>(</b>
+<b>&nbsp;&nbsp;<a href="U32.html" class=trn>U32</a>&nbsp;</b><i>num_file_buffers</i><b>,</b>
+<b>&nbsp;&nbsp;<a href="S32.html" class=trn>S32</a>&nbsp;</b><i>command_handler_index</i><b>,</b>
+<b>&nbsp;&nbsp;<a href="VOID_PTR.html" class=trn>VOID_PTR</a>&nbsp;</b><i>IOP_memory</i><b>,</b>
+<b>&nbsp;&nbsp;<a href="SOUND_CORE_FLAGS.html" class=trn>SOUND_CORE_FLAGS</a>&nbsp;</b><i>sound_flags</i>
+<b>);</b></pre>
+</td>
+</tr>
+</table>
+<h4>In Parameters</h4>
+<dl>
+<dt><i>num_file_buffers</i></dt>
+<dd>Specifies the number of file buffers to use. This should be the maximum Bink or other files that you expect to be reading from at once. Each file buffer is 4096 bytes of EE memory.</dd>
+<dt><i>command_handler_index</i></dt>
+<dd>Specifies the index of the command handler to use. If you don't currently use command handlers, use -1 for the flag and we will set one up.</dd>
+<dt><i>IOP_memory</i></dt>
+<dd>Specifies an IOP address that is used for IOP side buffering. Use the <a href="RAD_IOPMemoryAmount.html">RAD_IOPMemoryAmount</a> function to query how large this buffer should be. You will usually use the sceSifAllocIopHeap function to allocate this memory.</dd>
+<dt><i>sound_flags</i></dt>
+<dd>Specifies the sound core to use.</dd>
+</dl>
+<h4>Returns</h4>
+<p>Returns non-zero for success, and zero for failure.</p>
+<h4>Discussion</h4>
+<p>This function starts up the RAD IOP API layer. It also starts up an internal IOP IRX to receive the calls you make. The RAD IOP layer is designed to do three things: </p><p>1) Asynchronous file I/O on the EE. You can request async file reads to execute in the background, and RAD_IOP will tell the IOP to go off and do them for you. You can then get a callback, or just check a status field to determine when the read completes. This is the API that Bink uses to do it's file I/O, but you can use it for your own I/O too. </p><p>2) PCM sound streaming. You can request that RAD_IOP start a streaming buffer, and it will call you back on an interrupt to fill the buffer. You simply copy your sound into the buffer in each interrupt. This is the API that Bink uses to play sound, but like the I/O API, you can use it to play your own sound as well. </p><p>3) Drift-free timer services. You can request that RAD_IOP start calling a function callback at a certain timer frequency. They are drift-free in the sense that we monitor how long between each callback and will call you less and more often to maintain the exact callback frequency you requested. </p><p>You can use these features with or with out Bink, and you can use all of these features, or just some of them. </p><p>Normally, when using this API just for Bink, you will simply call it with one file buffer, and one sound core flag, and then call <a href="BinkSoundUseRAD_IOP.html">BinkSoundUseRAD_IOP</a> to tell Bink which sound core you requested. </p><p>You can call the this startup routine multiple times, but only the first call configures the library. You need to call <a href="RAD_IOPShutDown.html">RAD_IOPShutDown</a> a matching number of times to shut the library down. </p>
+<p>
+<br>
+<b>Group:</b>
+<a href="The RAD_IOP API for mhntme.html">The RAD_IOP API for the Sony PS2</a><br>
+<b>Related Functions:</b>
+<a href="BinkSoundUseRAD_IOP.html">BinkSoundUseRAD_IOP</a>, <a href="RAD_IOPMemoryAmount.html">RAD_IOPMemoryAmount</a>, <a href="RAD_IOPShutDown.html">RAD_IOPShutDown</a><br>
+<b>Related Basic Types:</b>
+<a href="S32.html">S32</a>, <a href="SOUND_CORE_FLAGS.html">SOUND_CORE_FLAGS</a>, <a href="U32.html">U32</a>, <a href="VOID_PTR.html">VOID_PTR</a><br>
+<b>Related Structures:</b>
+<a href="RAD_IOP_SOUND_DATA.html">RAD_IOP_SOUND_DATA</a></p>
+<p align=center>
+<a href="mailto:Bink3@radgametools.com">For technical support, e-mail Bink3@radgametools.com</a>
+<br>
+<a href="http://www.radgametools.com/bnkmain.htm?from=help1.7b">&#169; Copyright 1994-2004 RAD Game Tools, Inc. All Rights Reserved.</a>
+</p>
+<br>
+</body>
+</html>

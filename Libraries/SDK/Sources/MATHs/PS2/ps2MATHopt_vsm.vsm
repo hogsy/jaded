@@ -1,0 +1,383 @@
+/*
+ * VU0 code, for micro mode
+ * used by MATH module
+ * VF01 to VF10 reserved for arguments
+ */
+	.global VU0_Label_FirstLine
+VU0_Label_FirstLine:
+ps2MATH_VU0_MicroCode:
+VU0_End: 
+		NOP[e]      NOP
+		NOP         NOP
+		
+	.global VU0_CompteDirLight_C
+VU0_CompteDirLight_C:
+	itof15 vf10,vf10			NOP
+	itof15 vf11,vf11			NOP
+	itof15 vf12,vf12			NOP
+	subw.xyzw vf10,vf10,vf00w	NOP
+	subw.xyzw vf11,vf11,vf00w	NOP
+	subw.xyzw vf12,vf12,vf00w	NOP
+	MULAx   ACC ,VF10,VF01x  	NOP		/* 4 Dot products */
+	MADDAy  ACC ,VF11,VF01y  	NOP		/* 4 Dot products */
+	MADDz   VF15,VF12,VF01z  	NOP		/* 4 Dot products */
+	MAXx.xyzw	VF15,VF15,VF00x	NOP
+	MULx.xyzw	VF20,VF02,VF15x	NOP		/* color 1 */
+	MULy.xyzw	VF21,VF02,VF15y	NOP		/* color 2 */
+	MULz.xyzw	VF22,VF02,VF15z	NOP		/* color 3 */
+	MULw.xyzw	VF23,VF02,VF15w	NOP		/* color 4 */
+	FTOI0 VF20,VF20				NOP
+	FTOI0 VF21,VF21				NOP
+	FTOI0 VF22,VF22				NOP
+	FTOI0[e] VF23,VF23			NOP
+	NOP         				NOP
+	.global VU0_ComputeParticules
+VU0_ComputeParticules:
+	add		VF10, VF01, VF19	NOP		;//speed + wind 
+	add		VF11, VF02, VF19	NOP
+	add		VF12, VF03, VF19	NOP
+	add		VF13, VF04, VF19	NOP
+	mulx   	VF10, VF10, VF14x	NOP	; // DT
+	mulx   	VF11, VF11, VF14x	NOP
+	mulx   	VF12, VF12, VF14x	NOP
+	mulx   	VF13, VF13, VF14x	NOP
+	add		VF05, VF05, VF10	NOP 	; // Pos + Speed 
+	add		VF06, VF06, VF11	NOP
+	add		VF07, VF07, VF12	NOP
+	add		VF08, VF08, VF13	NOP
+	mul    	VF01, VF01, VF18	NOP	;// Friction
+	mul    	VF02, VF02, VF18	NOP
+	mul    	VF03, VF03, VF18	NOP
+	mul    	VF04, VF04, VF18	NOP
+	subx	VF10, VF05, VF15x 	NOP 	;// Sub ground
+	subx	VF11, VF06, VF15x 	NOP 	;// Sub ground
+	subx	VF12, VF07, VF15x 	NOP 	;// Sub ground
+	subx	VF13, VF08, VF15x 	NOP 	;// Sub ground
+	mini.z	VF10, VF10, VF00z 	NOP	;// Ground
+	mini.z	VF11, VF11, VF00z	NOP
+	mini.z	VF12, VF12, VF00z	NOP
+	mini.z	VF13, VF13, VF00z	NOP
+	subz.z	VF05, VF05, VF10z	NOP
+	subz.z	VF06, VF06, VF11z	NOP
+	subz.z	VF07, VF07, VF12z	NOP
+	subz.z	VF08, VF08, VF13z	NOP
+	mulx.z 	VF10, VF10, VF17x	NOP
+	mulx.z 	VF11, VF11, VF17x	NOP
+	mulx.z 	VF12, VF12, VF17x	NOP
+	mulx.z 	VF13, VF13, VF17x	NOP
+	addx.z 	VF01, VF01, VF16x 	NOP;// Add Gravity to speed 
+	addx.z 	VF02, VF02, VF16x	NOP 	;// Add Gravity to speed 
+	addx.z 	VF03, VF03, VF16x 	NOP;// Add Gravity to speed 
+	addx.z 	VF04, VF04, VF16x 	NOP	;// Add Gravity to speed 
+	subz.z	VF01, VF01, VF10z	NOP
+	subz.z	VF02, VF02, VF11z	NOP
+	subz.z	VF03, VF03, VF12z	NOP
+	subz.z VF04, VF04, VF13z	NOP
+	NOP[e]         				NOP
+
+	.global VU0_CompteDirLight
+VU0_CompteDirLight:
+	MULAx   ACC ,VF10,VF01x  	NOP		/* 4 Dot products */
+	MADDAy  ACC ,VF11,VF01y  	NOP		/* 4 Dot products */
+	MADDz   VF15,VF12,VF01z  	NOP		/* 4 Dot products */
+
+	MAXx.xyzw	VF15,VF15,VF00x	NOP
+	
+	MULx.xyzw	VF20,VF02,VF15x	NOP		/* color 1 */
+	MULy.xyzw	VF21,VF02,VF15y	NOP		/* color 2 */
+	MULz.xyzw	VF22,VF02,VF15z	NOP		/* color 3 */
+	MULw.xyzw	VF23,VF02,VF15w	NOP		/* color 4 */
+	
+	FTOI0 VF20,VF20				NOP
+	FTOI0 VF21,VF21				NOP
+	FTOI0 VF22,VF22				NOP
+	FTOI0[e] VF23,VF23			NOP
+	NOP         				NOP
+		
+
+	.global vsm_MATH_GetRotationMatrix
+vsm_MATH_GetRotationMatrix:
+		SUB.w   VF01, VF01, VF01  NOP
+		SUB.w   VF02, VF02, VF02  NOP
+		SUB.w   VF03, VF03, VF03  NOP
+		SUB[e].xyzw   VF04, VF04, VF04  NOP
+		NOP                       NOP
+
+
+
+;// Matrix must be pre stored in VF10,VF11,VF12,VF13
+;// Entry Vector is in VF02
+;// Scale is in 		VF03w
+;// Result in VF01
+	.global 	Fast_MulMatrixVector
+Fast_MulMatrixVector:
+		MULAx.xyz  ACC, VF10, VF02x	NOP
+		MADDAy.xyz ACC, VF11, VF02y	NOP
+		MADDAz.xyz ACC, VF12, VF02z	NOP
+		MADDw.xyz VF01, VF13, VF00w	NOP
+		MULw.xyz VF01, VF01, VF02w	NOP
+		ADD[e].xyz VF01, VF04, VF01	NOP
+		NOP                       	NOP
+		
+	.global 	Fast_Skin
+Fast_Skin:
+		NOP								MOVE.xyzw VF10,VF15
+		MULAx.xyz  acc,  vf05, vf10x 	MOVE.xyzw VF01,VF02
+		MADDAy.xyz acc,  vf06, vf10y 	MOVE.xyzw VF11,VF16
+		MADDAz.xyz acc,  vf07, vf10z 	MOVE.xyzw VF12,VF17
+		MADDw.xyz 	vf10, vf08, vf00w	MOVE.xyzw VF13,VF18
+		MULx.xyz 	vf10, vf10, vf01x	NOP
+		ADD.xyz 	vf20, vf20, vf10	NOP
+		MULAx.xyz   acc,  vf05, vf11x	NOP
+		MADDAy.xyz  acc,  vf06, vf11y	NOP
+		MADDAz.xyz  acc,  vf07, vf11z	NOP
+		MADDw.xyz 	vf11, vf08, vf00w	NOP
+		MULy.xyz 	vf11, vf11, vf01y	NOP
+		ADD.xyz 	vf21, vf21, vf11	NOP
+		MULAx.xyz   acc,  vf05, vf12x	NOP
+		MADDAy.xyz  acc,  vf06, vf12y	NOP
+		MADDAz.xyz  acc,  vf07, vf12z	NOP
+		MADDw.xyz 	vf12, vf08, vf00w	NOP
+		MULz.xyz 	vf12, vf12, vf01z	NOP
+		ADD.xyz 	vf22, vf22, vf12	NOP
+		MULAx.xyz  acc,  vf05, vf13x	NOP
+		MADDAy.xyz acc,  vf06, vf13y	NOP
+		MADDAz.xyz acc,  vf07, vf13z	NOP
+		MADDw.xyz 	vf13, vf08, vf00w	NOP
+		MULw.xyz 	vf13, vf13, vf01w	NOP
+		ADD[e].xyz 	vf23, vf23, vf13	NOP
+		NOP								NOP
+										
+										
+;// Light center is in VF01				
+;// Light color	 is in VF02
+;// Light 1/(1/Near - 1/Far) if in VF03x
+;// Light -1/Far if in VF04x
+;// Point center is in VF10
+;// Point normal is in VF11
+;// Color result is in VF12
+
+	.global 	PS2_ComputeLightSperical_C
+PS2_ComputeLightSperical_C:
+		SUBw.xyzw	VF11,VF11,VF00w		NOP
+	.global 	PS2_ComputeLightSperical
+PS2_ComputeLightSperical:
+		SUB.xyz		VF20,VF01,VF10		WAITQ						; VF20 = Light->Point
+		ADDq.x 		VF09,VF00,Q			NOP							; VF09.x = sqr dist(OLight->OPoint)
+		MUL.xyz 	VF07,VF05,VF11		MOVE.xyzw VF29,VF07			; Dot product 
+		ADDx.x 		VF08,VF04,VF09x		MOVE.xyzw VF30,VF08
+		MULx.xyzw  	VF12,VF02,VF29x		NOP
+		MUL.xyz 	VF06,VF20,VF20		MOVE.xyzw VF05,VF20			; VF06 = sqr(Light->Point)
+		ADDy.x		VF07,VF07,VF07y		NOP
+		MUL.x  		VF08,VF08,VF03		NOP
+		MULx.xyzw  	VF12,VF12,VF30x		NOP
+		ADDy.x		VF06,VF06,VF06y		NOP
+		ADDz.x		VF07,VF07,VF07z		NOP
+		MAXx.x 		VF08,VF08,VF00x		NOP
+		FTOI0.xyzw  VF12,VF12			NOP
+		ADDz.x		VF06,VF06,VF06z		NOP							; VF06.x = sqr dist(Light->Point)
+		MAXx.x 		VF07,VF07,VF00x		NOP
+		MINIw.x 	VF08,VF08,VF00w		NOP
+		MULx[e].x 	VF07,VF07,VF09x		RSQRT Q,VF00w,VF06x
+		NOP                       		NOP
+
+										
+;// Light center is in VF01				
+;// Light color	 is in VF02
+;// Light 1/(1/Near - 1/Far) if in VF03x
+;// Light -1/Far if in VF04x
+;// Point center is in VF10
+;// Point normal is in VF11
+;// Color result is in VF12
+
+	.global 	PS2_ComputeLightSperical_PAINT
+PS2_ComputeLightSperical_PAINT:
+		SUB.xyz		VF20,VF01,VF10		WAITQ						; VF20 = Light->Point
+		ADDq.x 		VF09,VF00,Q			NOP							; VF09.x = sqr dist(OLight->OPoint)
+		MUL.xyz 	VF07,VF05,VF11		MOVE.xyzw VF29,VF07			; Dot product 
+		ADDx.x 		VF08,VF04,VF09x		MOVE.xyzw VF30,VF08
+		MULw.xyzw  	VF12,VF02,VF00w		NOP
+		MUL.xyz 	VF06,VF20,VF20		MOVE.xyzw VF05,VF20			; VF06 = sqr(Light->Point)
+		ADDy.x		VF07,VF07,VF07y		NOP
+		MUL.x  		VF08,VF08,VF03		NOP
+		MULx.xyzw  	VF12,VF12,VF30x		NOP
+		ADDy.x		VF06,VF06,VF06y		NOP
+		ADDz.x		VF07,VF07,VF07z		NOP
+		MAXx.x 		VF08,VF08,VF00x		NOP
+		FTOI0.xyzw  VF12,VF12			NOP
+		ADDz.x		VF06,VF06,VF06z		NOP							; VF06.x = sqr dist(Light->Point)
+		MAXx.x 		VF07,VF07,VF00x		NOP
+		MINIw.x 	VF08,VF08,VF00w		NOP
+		MULx[e].x 	VF07,VF07,VF09x		RSQRT Q,VF00w,VF06x
+		NOP                       		NOP
+
+
+;// Light center is in VF01				
+;// Light color	 is in VF02
+;// Light 1/(1/Near - 1/Far) if in VF03x
+;// Light -1/Far if in VF04x
+;// Point center is in VF10
+;// Point normal is in VF11
+;// Color result is in VF12
+;// VF14 = Light dir
+;// VF13 = Light -> Point normed
+;// VF25 = x= DotProdAdd, y = DotProdMul
+;VF13,VF14,VF15,VF16,VF17,VF18,VF19,VF25,VF26,VF27,VF28
+
+
+	.global 	PS2_ComputeLightSpot
+PS2_ComputeLightSpot:
+		SUB.xyz		VF20,VF01,VF10		WAITQ						; VF20 = Light->Point
+		ADDq.x 		VF09,VF00,Q			NOP							; VF09.x = sqr dist(OLight->OPoint)
+		MUL.xyz 	VF07,VF05,VF11		MOVE.xyzw VF29,VF07			; Dot product 
+		
+		MULx.xyz	VF13,VF05,VF09x		NOP		
+		
+		ADDx.x 		VF08,VF04,VF09x		MOVE.xyzw VF30,VF08
+		MULx.xyz  	VF12,VF02,VF29x		NOP
+		MUL.xyz 	VF06,VF20,VF20		MOVE.xyzw VF05,VF20			; VF06 = sqr(Light->Point)
+		
+		MUL.xyz		VF15,VF13,VF14		NOP							;
+		
+		ADDy.x		VF07,VF07,VF07y		NOP
+		MUL.x  		VF08,VF08,VF03		NOP
+		MULx.xyz  	VF12,VF12,VF30x		NOP
+		ADDy.x		VF06,VF06,VF06y		NOP
+		ADDz.x		VF07,VF07,VF07z		NOP
+		MAXx.x 		VF08,VF08,VF00x		NOP
+		FTOI0.xyzw  VF12,VF12			NOP
+		ADDz.x		VF06,VF06,VF06z		NOP							; VF06.x = sqr dist(Light->Point)
+		MAXx.x 		VF07,VF07,VF00x		NOP
+		MINIw.x 	VF08,VF08,VF00w		RSQRT Q,VF00w,VF06x
+		ADDy.x		VF15,VF15,VF15y		NOP
+		ADDz.x		VF15,VF15,VF15z		NOP
+		ADDx.x		VF15,VF15,VF25x		NOP
+		MULy.x		VF15,VF15,VF25y		NOP
+ 		MAXx.x 		VF15,VF15,VF00x		NOP
+		MINIw.x 	VF15,VF15,VF00w		NOP
+		MULx.x		VF08,VF08,VF15x		NOP
+		MULx[e].x 	VF07,VF07,VF09x		NOP
+		NOP                       		NOP
+
+
+;// Cam coord is in VF01
+;// Point coord is in VF02
+;// Point Normal is in VF03
+;// Normales result is in VF04
+
+	.global 	PS2_ComputeSpecular
+PS2_ComputeSpecular:
+		
+
+		MUL.xyz		VF21,VF20,VF08		RSQRT Q,VF00w,VF22x
+		MULx.xyz	VF26,VF07,VF27x		LOI -2.0
+		SUB.xyz		VF25,VF02,VF01		NOP
+		ADDy.x		VF21,VF21,VF21y		MOVE.xyz VF07,VF08
+		ADD.xyz		VF26,VF26,VF28		NOP
+		MUL.xyz		VF22,VF25,VF25		NOP
+		ADDz.x		VF21,VF21,VF21z		MOVE.xyz VF28,VF20
+		MULx.xyz	VF04,VF26,VF09x		NOP
+		ADDy.x		VF22,VF22,VF22y		MOVE.xyz VF08,VF03
+		MULI.x		VF27,VF21,I		NOP
+		ADDz.x		VF22,VF22,VF22z		MOVE.xyz VF20,VF25
+		ADDq[e].x 	VF09,VF00,Q		NOP
+		NOP                       		NOP
+		
+		
+	.global vsm_Special_MulMatMat
+vsm_Special_MulMatMat:
+    MULx.xyzw VF21, VF21, VF00x   NOP
+    MULx.xyzw VF22, VF22, VF00x   NOP
+    MULx.xyzw VF23, VF23, VF00x   NOP
+    MULx.xyzw VF24, VF24, VF00x   NOP
+    MULw.xyz VF01, VF01, VF01w   NOP
+    MULw.xyz VF11, VF11, VF11w   NOP
+    MULw.xyz VF12, VF12, VF12w   NOP
+    MULw.xyz VF13, VF13, VF13w   NOP
+    MULw.xyz VF02, VF02, VF02w   NOP
+    MULw.xyz VF03, VF03, VF03w   NOP
+    MULAx.xyz  ACC, VF11, VF01x   NOP
+    MADDAy.xyz ACC, VF12, VF01y   NOP
+    MADDAz.xyz ACC, VF13, VF01z   NOP
+    MADDw.xyz VF21, VF00, VF00w   NOP
+    MULAx.xyz  ACC, VF11, VF02x   NOP
+    MADDAy.xyz ACC, VF12, VF02y   NOP
+    MADDAz.xyz ACC, VF13, VF02z   NOP
+    MADDw.xyz VF22, VF00, VF00w   NOP
+    MULAx.xyz  ACC, VF11, VF03x   NOP
+    MADDAy.xyz ACC, VF12, VF03y   NOP
+    MADDAz.xyz ACC, VF13, VF03z   NOP
+    MADDw.xyz VF23, VF00, VF00w   NOP
+    MULAx.xyz  ACC, VF11, VF04x   NOP
+    MADDAy.xyz ACC, VF12, VF04y   NOP
+    MADDAz.xyz ACC, VF13, VF04z   NOP
+    MADDw[e].xyz VF24, VF14, VF00w   NOP
+    NOP                         NOP
+
+	.global vsm_Special_Scale
+vsm_Special_Scale:
+    MUL.xyz    VF01xyz, VF21xyz, VF21xyz NOP
+    MUL.xyz    VF02xyz, VF22xyz, VF22xyz NOP
+    MUL.xyz    VF03xyz, VF23xyz, VF23xyz NOP
+    NOP                         NOP
+    ADDy.x     VF01x, VF01x, VF01y NOP
+    ADDy.x     VF02x, VF02x, VF02y NOP
+    ADDy.x     VF03x, VF03x, VF03y NOP
+    NOP                         NOP
+    ADDz.x     VF01x, VF01x, VF01z NOP
+    ADDz.x     VF02x, VF02x, VF02z NOP
+    ADDz.x     VF03x, VF03x, VF03z NOP
+    NOP                         NOP
+    NOP                         SQRT       Q, VF01x
+    NOP                         NOP
+    NOP                         NOP
+    NOP                         NOP
+    NOP                         NOP
+    NOP                         NOP
+    NOP                         NOP
+    MULq.w     VF21w, VF00w, Q  NOP
+    NOP                         SQRT       Q, VF02x
+    NOP                         NOP
+    NOP                         NOP
+    NOP                         NOP
+    NOP                         NOP
+    NOP                         NOP
+    NOP                         NOP
+    MULq.w     VF22w, VF00w, Q  NOP
+    NOP                         SQRT       Q, VF03x
+    NOP                         NOP
+    NOP                         NOP
+    NOP                         NOP
+    NOP                         NOP
+    NOP                         NOP
+    NOP                         NOP
+    MULq.w  VF23w, VF00w, Q     NOP
+    NOP                         DIV Q, VF00w, VF21w
+    NOP                         NOP
+    NOP                         NOP
+    NOP                         NOP
+    NOP                         NOP
+    NOP                         NOP
+    NOP                         NOP
+    MULq.w  VF05w, VF00w, Q     NOP
+    NOP                         DIV Q, VF00w, VF22w
+    NOP                         NOP
+    NOP                         NOP
+    MULw.xyz    VF21xyz, VF21xyz, VF05w NOP
+    NOP                         NOP
+    NOP                         NOP
+    NOP                         NOP
+    MULq.w  VF06w, VF00w, Q     NOP
+    NOP                         DIV        Q, VF00w, VF23w
+    NOP                         NOP
+    NOP                         NOP
+    MULw.xyz    VF22xyz, VF22xyz, VF06w NOP
+    NOP                         NOP
+    NOP                         NOP
+    NOP                         NOP
+    MULq.w     VF07w, VF00w, Q  NOP
+    NOP                         NOP
+    NOP                         NOP
+    NOP                         NOP
+    MULw[e].xyz   VF23xyz, VF23xyz, VF07w NOP
+    NOP                         NOP

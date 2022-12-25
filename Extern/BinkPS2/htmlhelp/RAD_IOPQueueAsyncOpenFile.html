@@ -1,0 +1,57 @@
+<!-- This page was created with the RAD auto-doc generator. -->
+<!doctype html public "-//w3c//dtd html 3.2 final//en">
+<html>
+<head>
+<title>RAD_IOPQueueAsyncOpenFile</title>
+<meta http-equiv="content-type" content="text/html; charset=iso8859-1">
+<meta name="ms.locale" content="en-us">
+<meta name="description" content="asynchronously opens a file handle.">
+<meta name="ms-hkwd" content="RAD_IOPQueueAsyncOpenFile">
+<link rel="stylesheet" title="default" href="reference.css" type="text/css" media="screen">
+</head>
+<body topmargin="0">
+<table cellspacing=0 cellpadding=0 class=bar width=100% height=25>
+<tr class=bar>
+<td class=bar>
+<i>&nbsp;<a href="index.html" class=trn>Bink SDK 1.7b</a></i>
+</td>
+</tr>
+</table>
+<h1>RAD_IOPQueueAsyncOpenFile</h1>
+<p>The function  <b>RAD_IOPQueueAsyncOpenFile</b> asynchronously opens a file handle.</p>
+<table width=100% cellspacing=0 class=pre>
+<tr class=pre>
+<td class=pre>
+<pre><b><a href="S32.html" class=trn>S32</a> <a href="RAD_IOPQueueAsyncOpenFile.html" class=trn>RAD_IOPQueueAsyncOpenFile</a>(</b>
+<b>&nbsp;&nbsp;<a href="RAD_IOP_ASYNC_OPEN_DATA.html" class=trn>RAD_IOP_ASYNC_OPEN_DATA</a>&nbsp;*</b><i>open_data</i>
+<b>);</b></pre>
+</td>
+</tr>
+</table>
+<h4>Out Parameters</h4>
+<dl>
+<dt><i>open_data</i></dt>
+<dd>Specifies the input and output parameters for the open.</dd>
+</dl>
+<h4>Returns</h4>
+<p>Non-zero if the open was queued successfully, zero for failure.</p>
+<h4>Discussion</h4>
+<p>This function queues up a file open to happen in the background. You fill out the <a href="RAD_IOP_ASYNC_OPEN_DATA.html#name">name</a> field, and optionally the group and callback fields, and then call this function. </p><p>You can check for completion using the callback, or just poll on the <a href="RAD_IOP_STATUS_VALUES.html#status">status</a> field. If the status is set to <a href="RAD_IOP_STATUS_VALUES.html#RAD_IOP_STATUS_DONE">RAD_IOP_STATUS_DONE</a>, then the file_handle and size fields will be set correctly. </p><p>You should call <a href="RAD_IOPCloseFile.html">RAD_IOPCloseFile</a> to close any file handles opened with this function. </p><p>The file handle value is returned as one of two types. For CD or DVD files, it is the starting sector number or-ed with 0x80000000. For other files, it is just the value returned from the C runtime open function. This means that you don't have to use this routine at all (if you do your own opens, or you know the starting sector number of your file) - just pass these values directly into the read routines. </p><p>The open_data structure should remain valid until the operation is finished. That is, don't free the memory until the status is greater than or equal to RAD_IOP_STATUS_DONE. </p>
+<p>
+<br>
+<b>Group:</b>
+<a href="The RAD_IOP API for mhntme.html">The RAD_IOP API for the Sony PS2</a><br>
+<b>Related Functions:</b>
+<a href="RAD_IOPCloseFile.html">RAD_IOPCloseFile</a>, <a href="RAD_IOPQueueAsyncReaizd27a.html">RAD_IOPQueueAsyncReadAtBottom</a>, <a href="RAD_IOPQueueAsyncRea99pcaa.html">RAD_IOPQueueAsyncReadAtTop</a><br>
+<b>Related Basic Types:</b>
+<a href="BINK_OPEN_FLAGS.html">BINK_OPEN_FLAGS</a>, <a href="RAD_IOP_STATUS_VALUES.html">RAD_IOP_STATUS_VALUES</a>, <a href="S32.html">S32</a><br>
+<b>Related Structures:</b>
+<a href="RAD_IOP_ASYNC_OPEN_DATA.html">RAD_IOP_ASYNC_OPEN_DATA</a>, <a href="RAD_IOP_ASYNC_READ_DATA.html">RAD_IOP_ASYNC_READ_DATA</a></p>
+<p align=center>
+<a href="mailto:Bink3@radgametools.com">For technical support, e-mail Bink3@radgametools.com</a>
+<br>
+<a href="http://www.radgametools.com/bnkmain.htm?from=help1.7b">&#169; Copyright 1994-2004 RAD Game Tools, Inc. All Rights Reserved.</a>
+</p>
+<br>
+</body>
+</html>

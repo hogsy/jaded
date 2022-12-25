@@ -1,0 +1,417 @@
+/*$T ERRdefs.cpp GC!1.41 09/14/99 12:30:22 */
+
+/*
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ */
+#include "Precomp.h"
+
+#include "BASe/BASlog.h"
+#include "BASe/ERRors/ERRdefs.h"
+#include "BASe/CLIbrary/CLImem.h"
+#include "BASe/CLIbrary/CLIstr.h"
+
+#ifdef ACTIVE_EDITORS
+#include "EDImainframe.h"
+#include "LINKs/LINKmsg.h"
+#endif
+
+/*$4
+ ***************************************************************************************************
+    GLOBAL VARS
+ ***************************************************************************************************
+ */
+
+#ifdef ACTIVE_EDITORS
+_ERR_tdst_Exception *_ERR_gpst_LastException = NULL;
+OBJ_tdst_GameObject	*ERR_gpst_ContextGAO = NULL;
+char				*ERR_gpsz_ContextString = NULL;
+extern char         EDI_az_LogFileName[L_MAX_PATH];
+#endif
+BOOL                ERR_gb_Warning = FALSE;
+BOOL                ERR_gb_WarningBox = TRUE;
+BOOL				ERR_gb_Log = FALSE;
+
+CHAR                ERR_g_szFormatBuffer[ERR_BUFSIZEMSG];  // Buffer Used by ERR_vFormatMessage
+
+/*$4
+ ***************************************************************************************************
+    Functions
+ ***************************************************************************************************
+ */
+
+/*
+ ===================================================================================================
+    Aim:    Call when an assertion failed.
+
+    In:     _b_Assert           TRUE if it's an assert, FALSE for an error. Can't be TRUE in FINAL
+                                mode cause all assert are ignored.
+            _psz_File           Source file where error occured.
+            _i_Line             Source line where error occured.
+            _psz_Expression     Expression to print.
+            _psz_Text1          Other expression to print. Can be NULL.
+            _psz_Text2          Other expression to print. Can be NULL.
+            _b_Msg              TRUE to display a message box, FALSE to update log. 
+
+    Out:    Returns TRUE to make a breakpoint in debug mode, FALSE else.
+ ===================================================================================================
+ */
+#ifdef JADEFUSION
+extern BOOL ENG_gb_SlashL ;
+extern BOOL LOA_gb_SpeedMode ;
+extern char ENG_gaz_SlashL[1024];
+extern int	 ENG_gi_Map2;
+#else
+extern "C" BOOL ENG_gb_SlashL ;
+extern "C" BOOL LOA_gb_SpeedMode ;
+extern "C" char ENG_gaz_SlashL[1024];
+extern "C" int	 ENG_gi_Map2;
+#endif
+BOOL _ERR_fnb_AssertFailed
+(
+    BOOL    _b_Assert,
+    char    *_psz_File,
+    int     _i_Line,
+    char    *_psz_Expression,
+    char    *_psz_Text1,
+    char    *_psz_Text2,
+    BOOL    _b_Msg
+)
+{
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+    char    *psz_Temp;
+    char    *psz_Title;
+	BOOL	b_DispMsg;
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+
+
+/*#ifdef ACTIVE_EDITORS
+	if(!_b_Msg && ERR_gpst_ContextGAO)
+	{
+		char	az[500];
+		sprintf(az, "Error contextual object is %s", ERR_gpst_ContextGAO->sz_Name);
+        LINK_PrintStatusMsg(az);
+	}
+
+	if(!_b_Msg && ERR_gpsz_ContextString)
+	{
+		char	az[500];
+		sprintf(az, "Error contextual string is %s", ERR_gpsz_ContextString);
+        LINK_PrintStatusMsg(az);
+	}
+
+	ERR_gpst_ContextGAO = NULL;
+	ERR_gpsz_ContextString = NULL;
+#endif*/
+
+    /* Allocate a temporary buffer and fill it with the text. */
+	b_DispMsg = TRUE;
+    psz_Temp = NULL;
+    psz_Temp = (char *) L_malloc(2048L);
+    if(psz_Temp == NULL)
+    {
+        psz_Temp = "XXX";
+    }
+    else
+    {
+        *psz_Temp = '\0';
+
+        /* For an error, do not print expression in FINAL mode */
+#ifndef NDEBUG
+        if(_b_Msg && _b_Assert && _psz_Expression != NULL)
+        {
+            L_strcat(psz_Temp, _psz_Expression);
+        }
+        else if(!_b_Msg)
+            L_strcat(psz_Temp, "[WARNING] ");
+
+#endif /* NDEBUG */
+        if(_psz_Text1)
+        {
+#ifndef NDEBUG
+            if(_b_Msg && _b_Assert && _psz_Expression != NULL)
+            {
+                L_strcat(psz_Temp, "\n");
+                L_strcat(psz_Temp, "\n");
+            }
+
+#endif /* NDEBUG */
+            L_strcat(psz_Temp, _psz_Text1);
+            if(_psz_Text2)
+            {
+                L_strcat(psz_Temp, " (");
+            }
+        }
+
+        if(_psz_Text2)
+        {
+            L_strcat(psz_Temp, _psz_Text2);
+            if(_psz_Text1)
+            {
+                L_strcat(psz_Temp, ")");
+            }
+        }
+    }
+
+    /* Title. */
+    if(_b_Assert)
+    {
+        psz_Title = "Assertion failed (Press Shift + OK For A Breakpoint);";
+    }
+    else
+    {
+        psz_Title = "Error detected";
+    }
+
+	/* Log ? */
+#ifdef ACTIVE_EDITORS
+	if(ERR_gb_Log)
+	{
+		FILE *f;
+		f = fopen(EDI_az_LogFileName, "at");
+		if(!f) f = fopen(EDI_az_LogFileName, "wt");
+		fwrite(psz_Title, 1, strlen(psz_Title), f);
+		fwrite("  --  ", 1, 6, f);
+		fwrite(psz_Temp, 1, strlen(psz_Temp), f);
+		fwrite("\n\r", 1, 2, f);
+		fclose(f);
+		b_DispMsg = FALSE;
+	}
+#endif
+
+#if !defined(_XBOX) && !defined(_XENON)
+    /* Display error text. */
+    if(_b_Msg && b_DispMsg)
+    {
+#ifdef ACTIVE_EDITORS
+        M_MF()->MessageBox(psz_Temp, psz_Title, MB_OK | MB_ICONERROR);
+#else
+
+#if defined(_DEBUG) && defined(PCWIN_TOOL) 
+	{
+		if(ENG_gb_SlashL && LOA_gb_SpeedMode)
+		{
+			FILE *f;
+			f = fopen("binerr.log", "at");
+			if(!f) f = fopen("binerr.log", "wt");
+			fprintf(f, "## %s(%d):\n", _psz_File, _i_Line);
+			fprintf(f, "## \t%s %s\n\n", psz_Temp, psz_Title);
+			fclose(f);
+			ExitProcess(-1);
+		}
+	}
+#endif
+        MessageBox(NULL, psz_Temp, psz_Title, MB_OK | MB_ICONERROR);
+#endif
+    }
+#endif // _XBOX
+
+#ifdef ACTIVE_EDITORS
+    else if(b_DispMsg)
+    {
+        LINK_gul_ColorTxt = 0x000000FF;
+        LINK_PrintStatusMsg(psz_Temp);
+        LINK_gul_ColorTxt = 0;
+    }
+
+#endif
+
+#ifdef ACTIVE_EDITORS
+	if(_b_Assert)
+	{
+		extern void EDI_LogBug(char *);
+		EDI_LogBug(psz_Temp);
+	}
+#endif
+
+    /* Free temporary buffer. */
+    if(psz_Temp)
+    {
+        L_free(psz_Temp);
+    }
+
+    /* In engine mode, only assert in debug mode are not fatal. */
+#if !defined(ACTIVE_EDITORS)
+#ifdef _DEBUG
+    if((_b_Assert == FALSE) && _b_Msg)
+    {
+#endif /* _DEBUG */
+#if !defined(_XBOX) && !defined(_XENON)
+        L_exit(-1);
+#endif // _XBOX
+#ifdef _DEBUG
+    }
+
+#endif /* _DEBUG */
+#endif /* !ACTIVE_EDITORS */
+
+#if !defined(_XBOX) && !defined(_XENON)
+    /* If it was an assert, breakpoint is requested (only in debug mode). */
+    if(_b_Assert && (GetAsyncKeyState(VK_SHIFT) < 0)) return TRUE;
+#endif // _XBOX
+
+    return FALSE;
+}
+
+//------------------------------------------------------------------------
+//
+// Author           Jean-Sebastien Pelletier (Stephane Girard)
+// Date             30 Apr 1999
+// 
+// Prototype        ERR_vFormatMessage
+// Parameters       _szFormat : Printf format...
+// Return Type      CHAR * 
+// 
+// Description      Format a string using the printf syntax, then put
+//                  it in ERROR_g_szMessageBuffer and finally
+//                  return it.
+// 
+//------------------------------------------------------------------------
+CHAR * ERR_szFormatMessage(CHAR  *_szFormat, ...)
+{
+	va_list Marker;
+
+	// Preconditions
+	ERR_X_Assert(_szFormat != NULL);
+
+	// Processing the Variable Arguments
+	va_start(Marker, _szFormat);
+	_vsnprintf(ERR_g_szFormatBuffer, ERR_BUFSIZEMSG - 1, _szFormat, Marker);
+	va_end(Marker);
+	ERR_g_szFormatBuffer[ERR_BUFSIZEMSG - 1] = '\0';
+
+	return ERR_g_szFormatBuffer;
+}
+
+#if defined(ACTIVE_EDITORS)
+
+/*
+ ===================================================================================================
+ ===================================================================================================
+ */
+void ERR_LogPrint(const char *_s_Msg)
+{
+	if(ERR_gb_Log)
+	{
+		FILE *f;
+		f = fopen(EDI_az_LogFileName, "at");
+		if(!f) f = fopen(EDI_az_LogFileName, "wt");
+        fprintf(f,_s_Msg);
+		fclose(f);
+	}
+}
+
+
+/*
+ ===================================================================================================
+ ===================================================================================================
+ */
+void ERR_TestWarning(void)
+{
+    if(ERR_gb_Warning && ERR_gb_WarningBox)
+    {
+        if(M_MF()->MessageBox
+            (
+				"There's warning(s). Watch LOG window",
+                "Warning(s) detected",
+                MB_OKCANCEL | MB_ICONERROR
+            ) != IDOK)
+			ERR_gb_WarningBox = FALSE;
+    }
+
+    ERR_gb_Warning = FALSE;
+}
+
+/*
+ ===================================================================================================
+    Aim:    Call for the last exception. Will reset some things in editor mode to restore as
+            possible the application...
+ ===================================================================================================
+ */
+void ERR_LastException(void)
+{
+    /* Just in case a mousecapture is currently running... */
+    ReleaseCapture();
+
+    /* To just in case a window is currently locked */
+    if(M_MF())
+    {
+        for(int i = 0; i < M_MF()->mi_NumLockDisplay; i++)
+        {
+            if(M_MF()->mapo_LockWnd[i])
+            {
+                M_MF()->mapo_LockWnd[i]->SetRedraw(TRUE);
+            }
+
+            M_MF()->mai_LockCount[i] = 0;
+            M_MF()->mapo_LockWnd[i] = NULL;
+        }
+
+        M_MF()->mi_NumLockDisplay = 0;
+    }
+
+    EDI_gst_DragDrop.b_BeginDragDrop = FALSE;
+
+    /* Reset internal error handling */
+    _ERR_gpst_LastException = NULL;
+}
+
+#endif /* ACTIVE_EDITORS */
+
+#ifdef JADEFUSION
+#if defined(ACTIVE_EDITORS) || defined(PCWIN_TOOL) || (defined(_XENON) && defined(_DEBUG))
+
+// JFP: We got a shader compilation error that was much larger than 16384. Using 64k for now.
+#define XEERR_BUFSIZEMSG (65536)
+
+// ------------------------------------------------------------------------------------------------
+// Name   : ERR_OutputDebugString
+// Params : _sz_Format : Message format
+// RetVal : None
+// Descr. : Debug output
+// ------------------------------------------------------------------------------------------------
+void __stdcall ERR_OutputDebugString(CHAR* _sz_Format, ...)
+
+{
+    va_list         Marker;
+    CHAR            Buffer[XEERR_BUFSIZEMSG];
+
+    // Processing the Variable Arguments
+    va_start(Marker, _sz_Format);
+#if defined(_XENON)
+    vsprintf(Buffer, _sz_Format, Marker);
+#else
+_vsnprintf(Buffer, XEERR_BUFSIZEMSG, _sz_Format, Marker);
+#endif
+    va_end(Marker);
+
+    OutputDebugString(Buffer);
+}
+
+#endif // defined(ACTIVE_EDITORS) || (defined(_XENON) && defined(_DEBUG))
+#endif
+/*$4
+ ***************************************************************************************************
+    XBOX DEBUG
+ ***************************************************************************************************
+ */
+
+
+#if defined(_XBOX) || defined(_XENON) 
+#if defined (__cplusplus) && !defined(JADEFUSION)
+extern "C" {
+#endif
+
+#ifdef _DEBUG
+void xbERR_Print(char*sz_Log)
+{
+    OutputDebugStringA(sz_Log); 
+}
+#endif
+
+#if defined (__cplusplus) && !defined(JADEFUSION)
+}
+#endif
+#endif
+

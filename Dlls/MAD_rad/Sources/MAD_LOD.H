@@ -1,0 +1,1 @@
+unsigned long LOD_C_ComputeObjectLOD(MAD_GeometricObject * ObjectToDraw, unsigned long OriginalNumberOfPoints ,unsigned long(*SeprogressPos) (float F01));

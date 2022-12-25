@@ -1,0 +1,39 @@
+#pragma precompile_target "ode_Precomp_release.mch" 
+
+#include "../Jade/Prefix_release.h"
+#define dSINGLE
+#define PS2
+
+#define bool int
+#define false	0
+#define true	!(false)
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+asm void *ps2memmove(char*dst, char*src, int size);
+asm void *ps2memset(char *dst, unsigned char c, int size);
+asm void *ps2memcpy(char *dst, char*src, int size);
+#ifdef __cplusplus
+}
+#endif
+
+#define pAlloc	MEM_p_Alloc
+#define vFree	MEM_Free
+#define error(__a)	
+#define memset128(a, b, c) ps2memset((char*)(a), (unsigned char)(b), (int)(c))
+#define memcpy128(a, b, c) ps2memcpy((char*)(a), (char*)(b), (int)(c))
+#define MysceVu0ScaleVector sceVu0ScaleVector
+#define MysceVu0AddVector	sceVu0AddVector
+
+/*
+#ifdef alloca
+#undef alloca
+#endif
+
+#define alloca o_Alloc.my_alloca
+*/
+
+#include <libvu0.h>
+#include <alloca.h>

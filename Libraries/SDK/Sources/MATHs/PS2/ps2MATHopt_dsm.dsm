@@ -1,0 +1,36 @@
+/*
+ *   
+ */
+
+.include "vumacros.h"
+.global VU0_Label_FirstLine
+.global VU0_ComputeParticules
+.global ps2MATH_VU0_MicroCode_DmaTag
+.global ps2MATH_VU0_MicroData_DmaTag
+.global ps2MATH_vmask1
+.global ps2MATH_vmask2
+
+
+ps2MATH_VU0_MicroCode_DmaTag:
+DMAend *
+MPG 0, *
+.include "ps2MATHopt_vsm.vsm"
+.EndMPG
+.EndDmaData	
+
+
+ps2MATH_VU0_MicroData_DmaTag:
+DMAend *
+unpack 4, 4, V4_32, 0, *
+ps2MATH_midentity:
+fxyzw 1.0, 0.0, 0.0, 0.000000
+fxyzw 0.0, 1.0, 0.0, 0.000000
+fxyzw 0.0, 0.0, 1.0, 0.000000
+fxyzw 0.0, 0.0, 0.0, 1.000000
+ps2MATH_vmask1:
+ixyzw -1,  -1,  -1,  0
+ps2MATH_vmask2:
+fxyzw 0.0, 0.0, 0.0, 1.000000
+
+.EndUnpack
+.EndDmaData

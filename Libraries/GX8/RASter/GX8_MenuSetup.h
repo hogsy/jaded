@@ -1,0 +1,1 @@
+void Gsp_Setup(void *Dev);

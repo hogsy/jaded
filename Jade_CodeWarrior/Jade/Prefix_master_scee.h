@@ -1,0 +1,1 @@
+#define PSX2_MASTER_SCEE 

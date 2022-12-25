@@ -1,0 +1,57 @@
+;  dsolve1 - inner loop by SexMachine and Xodaboy
+; 
+;  float registers :
+;
+;  VF01 = Current ell[0] point
+;  VF02 = Current ell[1]point
+;  VF03 = Current ell[2]point
+;  VF04 = Current ell[3]point
+;
+;  VF05 = Current ex point
+;
+;  VF08 = ell[0] * ex[0] + ell[1] * ex[1] + ell[2] * ex[2] + ell[3] * ex[3] <- Z value
+;
+;  integer registers :
+;
+;  VI01 = Number of iterations
+;  VI02 = Starting address for ell array
+;  VI03 = Starting address for ex array
+
+				SUB.xyzw	VF09, VF09, VF09	NOP
+
+loop:
+
+;  Data (ell & ex) loading
+				NOP								LQI.xyzw	VF05, (VI03++)						;vf05=ex[0]
+				NOP								LQI.xyzw	VF01, (VI02++)						;vf01=ell[0]
+				NOP								LQI.xyzw	VF02, (VI02++)						;vf02=ell[1]
+				NOP								LQI.xyzw	VF03, (VI02++)						;vf03=ell[2]
+				NOP								LQI.xyzw	VF04, (VI02++)						;vf04=ell[3]
+
+;  Operations:
+
+				MULx.xyzw	VF01, VF01, VF05x	NOP												; VF01 = ell[0] * ex[0]
+				MULy.xyzw	VF02, VF02, VF05y	NOP												; VF02 = ell[1] * ex[1]
+				MULz.xyzw	VF03, VF03, VF05z	NOP												; VF03 = ell[2] * ex[2]
+				MULw.xyzw	VF04, VF04, VF05w	NOP												; VF04 = ell[3] * ex[3]
+
+				nop								nop
+				nop								nop
+				ADD.xyzw	VF06, VF01, VF02	NOP												; VF06 = ell[0] * ex[0] + ell[1] * ex[1]
+				ADD.xyzw	VF07, VF03, VF04	NOP												; VF07 = ell[2] * ex[2] + ell[3] * ex[3]
+
+				nop								nop
+				nop								nop
+				nop								nop
+				ADD.xyzw	VF08, VF07, VF06	NOP												; VF08 = ell[0] * ex[0] + ell[1] * ex[1] + ell[2] * ex[2] + ell[3] * ex[3]
+				nop								nop
+				nop								nop
+				nop								nop
+				ADD.xyzw	VF09, VF09, VF08	nop												; VF09 = SUM ();
+
+; next 
+				NOP								IADDI		VI01, VI01, -1						;vi01=vi01-1
+				NOP								NOP
+				NOP								IBGEZ		VI01, loop							;while(vi01>=0)
+				NOP								NOP
+				NOP[e]							NOP

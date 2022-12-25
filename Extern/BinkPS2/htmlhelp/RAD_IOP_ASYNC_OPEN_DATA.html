@@ -1,0 +1,72 @@
+<!-- This page was created with the RAD auto-doc generator. -->
+<!doctype html public "-//w3c//dtd html 3.2 final//en">
+<html>
+<head>
+<title>RAD_IOP_ASYNC_OPEN_DATA</title>
+<meta http-equiv="content-type" content="text/html; charset=iso8859-1">
+<meta name="ms.locale" content="en-us">
+<meta name="description" content="is a structure used with the RAD_IOPQueueAsyncOpenFile function.">
+<meta name="ms-hkwd" content="RAD_IOP_ASYNC_OPEN_DATA">
+<link rel="stylesheet" title="default" href="reference.css" type="text/css" media="screen">
+</head>
+<body topmargin="0">
+<table cellspacing=0 cellpadding=0 class=bar width=100% height=25>
+<tr class=bar>
+<td class=bar>
+<i>&nbsp;<a href="index.html" class=trn>Bink SDK 1.7b</a></i>
+</td>
+</tr>
+</table>
+<h1>RAD_IOP_ASYNC_OPEN_DATA</h1>
+<p>The structure  <b>RAD_IOP_ASYNC_OPEN_DATA</b> is a structure used with the RAD_IOPQueueAsyncOpenFile function.</p>
+<table width=100% cellspacing=0 class=pre>
+<tr class=pre>
+<td class=pre>
+<pre><b>struct <a href="RAD_IOP_ASYNC_OPEN_DATA.html" class=trn>RAD_IOP_ASYNC_OPEN_DATA</a>
+{
+&nbsp;&nbsp;<a href="CHAR_PTR.html" class=trn>CHAR_PTR</a></b><i> name</i><b>;
+&nbsp;&nbsp;<a href="RAD_IOPOPENCALLBACK.html" class=trn>RAD_IOPOPENCALLBACK</a></b><i> callback</i><b>;
+&nbsp;&nbsp;<a href="U32.html" class=trn>U32</a></b><i> group</i><b>;
+&nbsp;&nbsp;<a href="RAD_IOP_STATUS_VALUES.html" class=trn>RAD_IOP_STATUS_VALUES</a></b><i> status</i><b>;
+&nbsp;&nbsp;<a href="S32.html" class=trn>S32</a></b><i> file_handle</i><b>;
+&nbsp;&nbsp;<a href="U32.html" class=trn>U32</a></b><i> size</i><b>;
+};</b></pre>
+</td>
+</tr>
+</table>
+<h4>In Members</h4>
+<dl>
+<dt><i>name</i></dt>
+<dd>Specifies the file name to open. This should be preceded with "cdrom0:", "host0:", or "hdd0:". For CD or DVD files, the filename should also end with a ";1".</dd>
+<dt><i>callback</i></dt>
+<dd>Specifies a callback that should be made upon completion. If you don't want to be called back, then set this field to zero.</dd>
+<dt><i>group</i></dt>
+<dd>Optional. Specifies the group identifier of this open. The group id allows you to cancel I/Os for an entire group of requests, if necessary.</dd>
+</dl>
+<h4>Out Members</h4>
+<dl>
+<dt><i>status</i></dt>
+<dd>Contains the current status of the async open.</dd>
+<dt><i>file_handle</i></dt>
+<dd>Returns the open file handle, if status returns RAD_IOP_STATUS_DONE.</dd>
+<dt><i>size</i></dt>
+<dd>Returns the size of the open file.</dd>
+</dl>
+<h4>Discussion</h4>
+<p>This structure is both the input and the output of the RAD_IOPQueueAsyncOpenFile function. You fill out the in parameters, and the RAD_IOP returns the out parameters. </p><p>If you don't have a callback set, then you can spin on the status field and wait for it to go greater than or equal to <a href="RAD_IOP_STATUS_VALUES.html#RAD_IOP_STATUS_COMPLETE">RAD_IOP_STATUS_COMPLETE</a>. You then query the status for <a href="RAD_IOP_STATUS_VALUES.html#RAD_IOP_STATUS_DONE">RAD_IOP_STATUS_DONE</a> to determine if the open succeeded. </p>
+<p>
+<br>
+<b>Group:</b>
+<a href="The RAD_IOP API for mhntme.html">The RAD_IOP API for the Sony PS2</a><br>
+<b>Related Functions:</b>
+<a href="RAD_IOPOPENCALLBACK.html">RAD_IOPOPENCALLBACK</a>, <a href="RAD_IOPQueueAsyncOpenFile.html">RAD_IOPQueueAsyncOpenFile</a><br>
+<b>Related Basic Types:</b>
+<a href="CHAR_PTR.html">CHAR_PTR</a>, <a href="RAD_IOP_STATUS_VALUES.html">RAD_IOP_STATUS_VALUES</a>, <a href="S32.html">S32</a>, <a href="U32.html">U32</a></p>
+<p align=center>
+<a href="mailto:Bink3@radgametools.com">For technical support, e-mail Bink3@radgametools.com</a>
+<br>
+<a href="http://www.radgametools.com/bnkmain.htm?from=help1.7b">&#169; Copyright 1994-2004 RAD Game Tools, Inc. All Rights Reserved.</a>
+</p>
+<br>
+</body>
+</html>
