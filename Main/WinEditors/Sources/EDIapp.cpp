@@ -62,6 +62,9 @@
 #include <afxsock.h>		// MFC socket extensions
 #endif // #ifdef WIN32
 
+// to satisfy p4 crap - should remove p4 ~hogsy
+#undef _tzname
+extern "C" { char* _tzname[2]; }
 
 /*$4
  ***********************************************************************************************************************

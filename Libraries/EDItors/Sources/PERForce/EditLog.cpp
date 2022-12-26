@@ -42,7 +42,9 @@ CEditLog::CEditLog(
 	m_nTimerID		= 0;
 	m_nTimerDelay	= nTimerDelay;
 	::InitializeCriticalSection( &m_csLock );
-	SetEditCtrl( hEdit );
+	// this was causing a crash - some buggered pointer? 
+	// commenting it out doesn't break anything, so ~hogsy
+	//SetEditCtrl( hEdit );
 }
 
 CEditLog::~CEditLog(
