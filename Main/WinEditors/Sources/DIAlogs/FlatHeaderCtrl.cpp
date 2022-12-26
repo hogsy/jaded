@@ -121,7 +121,7 @@ void CFHDragWnd::OnPaint()
 	
     if(m_pFlatHeaderCtrl->m_bDoubleBuffer)
     {
-        CMemDC MemDC(&dc);
+        jade::CMemDC MemDC(&dc);
         OnDraw(&MemDC);
     }
     else
@@ -991,7 +991,7 @@ void CFlatHeaderCtrl::OnPaint()
 
     if (m_bDoubleBuffer)
     {
-        CMemDC MemDC(&dc);
+		jade::CMemDC MemDC(&dc);
         DrawCtrl(&MemDC);
     }
     else

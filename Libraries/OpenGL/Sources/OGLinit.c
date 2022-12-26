@@ -24,6 +24,9 @@
 #include "ENGine/Sources/WORld/WORinit.h"
 #include "ENGine/Sources/WORld/WORaccess.h"
 #endif
+
+#pragma comment(lib,"opengl32.lib")
+
 u32 Stats_ulNumberOfTRiangles = 0;
 u32 Stats_ulCallToDrawNb = 0;
 /*$4
