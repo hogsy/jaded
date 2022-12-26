@@ -9,10 +9,9 @@
 #ifndef     _MATHFLOAT_H_
 #define     _MATHFLOAT_H_
 
-#if defined(_XENON)
 #include <stdlib.h>
 #include <math.h>
-#endif
+
 #ifdef PSX2_TARGET
 #include "MATHs/PS2/ps2MATHfloat.h"
 #elif defined(_GAMECUBE)
