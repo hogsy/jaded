@@ -8,7 +8,10 @@
 
 
 #include "Precomp.h"
+
 #include <vector>
+#include <string>
+
 #include "BASe/BAStypes.h"
 #ifdef ACTIVE_EDITORS
 #include "LINKs/LINKmsg.h"

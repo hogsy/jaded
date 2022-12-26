@@ -695,7 +695,7 @@ void EVE_SetFlashMatrix(EVE_tdst_Event *_pst_Event,OBJ_tdst_GameObject *_pst_GO)
 void EEVE_cl_Frame::ChooseDialogForSoundPlayer(EEVE_cl_Track *_po_Track, EEVE_cl_Event *_po_Event, EVE_tdst_Event *_pst_Event)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	EDIA_cl_FileDialog	o_DialogFile("Choose dialog file", 0, 0, 1, NULL, "*"EDI_Csz_ExtSoundDialog);
+	EDIA_cl_FileDialog	o_DialogFile("Choose dialog file", 0, 0, 1, NULL, "*" EDI_Csz_ExtSoundDialog);
 	CString				o;
 	int					i_CurSoundIndex = -1;
 	unsigned long		ul_DialogFileKey, ul_DialogFileIndex;

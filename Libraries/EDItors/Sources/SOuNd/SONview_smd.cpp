@@ -1763,7 +1763,7 @@ void ESON_cl_ViewSmd::OnFadeIn(void)
 									0,
 									1,
 									NULL,
-									"*"EDI_Csz_ExtSoundInsert ",*"EDI_Csz_ExtSoundFade
+									"*" EDI_Csz_ExtSoundInsert ",*" EDI_Csz_ExtSoundFade
 								);
 	CString						o_Temp;
 	ULONG						ul_Index;
@@ -1829,7 +1829,7 @@ void ESON_cl_ViewSmd::OnFadeOutChange(void)
 									0,
 									1,
 									NULL,
-									"*"EDI_Csz_ExtSoundInsert ",*"EDI_Csz_ExtSoundFade
+									"*" EDI_Csz_ExtSoundInsert ",*" EDI_Csz_ExtSoundFade
 								);
 	CString						o_Temp;
 	ULONG						ul_Index;
@@ -1883,7 +1883,7 @@ void ESON_cl_ViewSmd::OnFadeOut(void)
 									0,
 									1,
 									NULL,
-									"*"EDI_Csz_ExtSoundInsert ",*"EDI_Csz_ExtSoundFade
+									"*" EDI_Csz_ExtSoundInsert ",*" EDI_Csz_ExtSoundFade
 								);
 	CString						o_Temp;
 	ULONG						ul_Index;
@@ -3398,7 +3398,7 @@ void ESON_cl_ViewSmd::OnInsertListAdd(void)
 									0,
 									1,
 									NULL,
-									"*"EDI_Csz_ExtSoundInsert ",*"EDI_Csz_ExtSoundFade
+									"*" EDI_Csz_ExtSoundInsert ",*" EDI_Csz_ExtSoundFade
 								);
 	CString						o_Temp;
 	ULONG						ul_Index;
