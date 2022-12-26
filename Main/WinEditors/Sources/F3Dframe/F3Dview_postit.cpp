@@ -95,7 +95,7 @@ void F3D_cl_View::PostItPath(char *dest, BOOL create)
 	pz = L_strlen(dest) + dest;
 	while(*pz != '/' && *pz != '\\') pz--;
 	if(pz) *pz = 0;
-	L_strcat(dest, "\\"EDI_Csz_Path_PostIt "\\");
+	L_strcat(dest, "\\" EDI_Csz_Path_PostIt "\\");
 
 	pz = dest;
 	while(*pz)
@@ -132,7 +132,7 @@ void F3D_cl_View::LoadPostIt(void)
 
 	numread = 0;
 	PostItPath(az);
-	L_strcat(az, "/*"EDI_Csz_PostIt);
+	L_strcat(az, "/*" EDI_Csz_PostIt);
 	if((l_Handle = L_findfirst(az, &st_FileInfos)) != -1)
 	{
 		do

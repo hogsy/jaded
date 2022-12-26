@@ -223,7 +223,7 @@ void EDIA_cl_MtxDialog::OnSelectVideoFile(void)
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	CString				o_Temp;
 	CEdit				*po_Edit;
-	EDIA_cl_FileDialog	o_File("Choose Video File", 0, 0, 1, EDI_Csz_Path_Textures, "*"EDI_Csz_ExtVideo1);
+	EDIA_cl_FileDialog	o_File("Choose Video File", 0, 0, 1, EDI_Csz_Path_Textures, "*" EDI_Csz_ExtVideo1);
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	if(o_File.DoModal() == IDOK)
@@ -277,8 +277,8 @@ void EDIA_cl_MtxDialog::OnSelectSoundFile(void)
 							0,
 							1,
 							EDI_Csz_Path_Audio,
-							"*"EDI_Csz_ExtSoundFile ",*"EDI_Csz_ExtLoadingSound ",*"EDI_Csz_ExtSoundMusic ",*"EDI_Csz_ExtSoundAmbience
-								",*"EDI_Csz_ExtSoundDialog
+							"*" EDI_Csz_ExtSoundFile ",*" EDI_Csz_ExtLoadingSound ",*" EDI_Csz_ExtSoundMusic ",*" EDI_Csz_ExtSoundAmbience
+								",*" EDI_Csz_ExtSoundDialog
 						);
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

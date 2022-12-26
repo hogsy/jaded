@@ -57,7 +57,7 @@
 extern BOOL SOFT_gb_WindowSel;
 extern SOFT_tdst_PickingBuffer *pPickForZCull;
 #else
-extern "C"BOOL SOFT_gb_WindowSel;
+extern "C" BOOL SOFT_gb_WindowSel;
 extern "C" SOFT_tdst_PickingBuffer *pPickForZCull;
 #endif
 /*$4

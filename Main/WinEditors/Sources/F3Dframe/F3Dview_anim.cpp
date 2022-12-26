@@ -52,7 +52,7 @@
 #ifdef JADEFUSION
 extern char SOFT_gac_BoneCurveStatus[64];
 #else
-extern "C"char SOFT_gac_BoneCurveStatus[64];
+extern "C" char SOFT_gac_BoneCurveStatus[64];
 #endif
 /*
  =======================================================================================================================
@@ -415,7 +415,7 @@ void F3D_cl_View::DeleteEvents(void)
 void F3D_cl_View::CreateAnimation(void)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	EDIA_cl_FileDialog		o_File("Animation file", 0, 0, 1, EDI_Csz_Path_Animation, "*"EDI_Csz_ExtEventAllsTracks);
+	EDIA_cl_FileDialog		o_File("Animation file", 0, 0, 1, EDI_Csz_Path_Animation, "*" EDI_Csz_ExtEventAllsTracks);
 	CString					o_Temp;
 	OBJ_tdst_GameObject		*pst_GO;
 	BIG_INDEX				ul_Fat;

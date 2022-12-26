@@ -61,7 +61,7 @@
 #ifdef JADEFUSION
 extern BOOL SOFT_gb_WindowSel;
 #else
-extern "C"BOOL SOFT_gb_WindowSel;
+extern "C" BOOL SOFT_gb_WindowSel;
 #endif
 /*$4
  ***********************************************************************************************************************

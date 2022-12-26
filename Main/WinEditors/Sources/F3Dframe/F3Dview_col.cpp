@@ -1587,7 +1587,7 @@ void F3D_cl_View::Zone_UpdateOK3(void)
 #ifdef JADEFUSION
 extern void COL_CreateGroFromCob(COL_tdst_Cob *);
 #else
-extern "C"void COL_CreateGroFromCob(COL_tdst_Cob *);
+extern "C" void COL_CreateGroFromCob(COL_tdst_Cob *);
 #endif
 /*
  =======================================================================================================================

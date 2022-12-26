@@ -70,7 +70,7 @@ void EVAV_SndKey_FillSelect(CWnd *_po_Wnd, EVAV_cl_ViewItem *_po_Data, void *_p_
 							0,
 							1,
 							NULL,
-							"*"EDI_Csz_ExtSoundFile ",*" EDI_Csz_ExtLoadingSound ",*" EDI_Csz_ExtSModifier ",*"EDI_Csz_ExtSoundMusic ",*"EDI_Csz_ExtSoundAmbience ",*"EDI_Csz_ExtSoundDialog
+							"*" EDI_Csz_ExtSoundFile ",*" EDI_Csz_ExtLoadingSound ",*" EDI_Csz_ExtSModifier ",*" EDI_Csz_ExtSoundMusic ",*" EDI_Csz_ExtSoundAmbience ",*" EDI_Csz_ExtSoundDialog
 						);
 	CString				o_Temp;
 	BIG_INDEX			ul_Index;

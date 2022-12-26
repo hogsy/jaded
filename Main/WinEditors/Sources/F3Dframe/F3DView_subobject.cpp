@@ -2463,7 +2463,7 @@ void F3D_cl_View::Selection_SubObject_AfterDetachFace( MATH_tdst_Matrix *_pst_Ma
             L_strcat( sz_Path, EDI_Csz_Path_GraphicObject );
             BIG_ul_CreateDir( sz_Path );
 
-            po_FileDlg = new EDIA_cl_FileDialog("Choose gro file", 3, FALSE, TRUE, sz_Path, "*"EDI_Csz_ExtGraphicObject);
+            po_FileDlg = new EDIA_cl_FileDialog("Choose gro file", 3, FALSE, TRUE, sz_Path, "*" EDI_Csz_ExtGraphicObject);
 
 			if(po_FileDlg->DoModal() != IDOK) 
             {
