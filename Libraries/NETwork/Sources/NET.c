@@ -15,7 +15,7 @@
 #include "NET.h"
 #include "NET_struct.h"
 #ifndef JADEFUSION
-#include "MATHs/MATHvector.h"
+#include "MATHs/MATH.h"
 #endif
 #include "TIMer/TIMdefs.h"
 
