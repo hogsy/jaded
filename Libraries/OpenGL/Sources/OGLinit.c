@@ -2572,13 +2572,16 @@ void OGL_SetDCPixelFormat(HDC _hDC)
 	*/
 
 #ifdef ACTIVE_EDITORS
-	if((l_PixelFormat == 2) && (bFirst))
+	DescribePixelFormat(_hDC, l_PixelFormat, sizeof(pfd), &pfd);
+	if ((pfd.cColorBits != 24) && (bFirst))
 	{
 		MessageBox
 		(
 			NULL,
-			"Your desktop must be configured in 32bits mode (True colors) for \n making OPENGL working properly.. \n\n Some graphics features will not be enabled \n\n Jade must be restarted for taking effect of your eventual modification.",
-			"Open GL warning",
+			"Your desktop must be configured in 24bit mode (True colors) for making OPENGL working properly.. \n\n"
+			"Some graphics features will not be enabled \n\n" 
+			"Jade must be restarted for taking effect of your eventual modification.",
+			"OpenGL warning",
 			MB_OK | MB_ICONWARNING | MB_TASKMODAL
 		);
 		bFirst = 0;
