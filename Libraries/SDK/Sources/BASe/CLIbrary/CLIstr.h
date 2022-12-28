@@ -131,6 +131,7 @@ extern void *ps2memcpy(char *dst, char*src, int size);
 #define L_memcpy	    memcpy
 #endif
 #endif	/* PSX2_TARGET */
+#define L_zero( PTR, SIZE ) L_memset( ( PTR ), 0, ( SIZE ) )
 
 /*$4
  ***********************************************************************************************************************
