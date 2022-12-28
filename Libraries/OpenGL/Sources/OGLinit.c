@@ -155,6 +155,7 @@ HRESULT OGL_l_Close(GDI_tdst_DisplayData *_pst_DD)
  =======================================================================================================================
  =======================================================================================================================
  */
+void OGL_InitAllShadows( void );
 LONG OGL_l_Init(HWND _hWnd, GDI_tdst_DisplayData *_pst_DD)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -194,7 +195,7 @@ LONG OGL_l_Init(HWND _hWnd, GDI_tdst_DisplayData *_pst_DD)
     {
         glLockArrays   = (PFNGLLOCKARRAYSEXTPROC)    wglGetProcAddress ("glLockArraysEXT");
         glUnlockArrays = (PFNGLUNLOCKARRAYSEXTPROC)  wglGetProcAddress ("glUnlockArraysEXT");
-        glEnableClientState(GL_VERTEX_ARRAY);
+        OGL_CALL( glEnableClientState(GL_VERTEX_ARRAY) );
     }	
 		
 	OGL_SetupRC(pst_SD);
@@ -211,6 +212,8 @@ LONG OGL_l_Init(HWND _hWnd, GDI_tdst_DisplayData *_pst_DD)
 	_pst_DD->OBJ_ALarm = 300;
     _pst_DD->SMALL_ALarm = 0; // Inactive by default.
 	_pst_DD->ColorCostIAThresh = 4;
+
+	OGL_InitAllShadows();
 
 	return S_OK;
 }
@@ -235,7 +238,7 @@ HRESULT OGL_l_ReadaptDisplay(HWND _hWnd, GDI_tdst_DisplayData *_pst_DD)
 
 		w = _pst_DD->st_Device.l_Width;
 		h = _pst_DD->st_Device.l_Height;
-		glViewport(0, (h - w) / 2, w, w);
+		OGL_CALL( glViewport(0, (h - w) / 2, w, w) );
 		return 1;
 	}
 
@@ -264,7 +267,7 @@ void OGL_Flip()
 
 	pst_SD = (OGL_tdst_SpecificData *) GDI_gpst_CurDD->pv_SpecificData;
 
-	glFinish();
+	OGL_CALL( glFinish() );
 	PRO_StartTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_Flip);
 
 	_SwapBuffers(pst_SD->h_DC);
@@ -309,15 +312,15 @@ void OGL_Clear(LONG _l_Buffer, ULONG _ul_Color)
 	}
 	color = (unsigned char *) &_ul_Color;
 
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-	glClearColor(((float) color[0]) / 255.0f, ((float) color[1]) / 255.0f, ((float) color[2]) / 255.0f, 0.0f);
+	OGL_CALL( glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE) );
+	OGL_CALL( glClearColor(((float) color[0]) / 255.0f, ((float) color[1]) / 255.0f, ((float) color[2]) / 255.0f, 0.0f) );
 
 	OGL_RS_DepthMask(&pst_SD->st_RS, 1);
 	l_Buffer = ((_l_Buffer & GDI_Cl_ColorBuffer) ? GL_COLOR_BUFFER_BIT : 0) | ((_l_Buffer & GDI_Cl_ZBuffer) ? GL_DEPTH_BUFFER_BIT : 0);
 
 	PRO_StartTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_Clear);
 	//glEnable(GL_SCISSOR_TEST);
-	glClear(l_Buffer);
+	OGL_CALL( glClear(l_Buffer) );
 	//glDisable(GL_SCISSOR_TEST);
 
     pst_SD->st_RS.l_LastTexture = -2;
@@ -334,7 +337,7 @@ void OGL_SetViewMatrix(MATH_tdst_Matrix *_pst_Matrix)
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	MATH_tdst_Matrix					st_OGLMatrix;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	glMatrixMode(GL_MODELVIEW);
+	OGL_CALL( glMatrixMode(GL_MODELVIEW) );
 
 	/*
 	 * YLT,if there is scale in the matrix, we need to put the scale (last column)
@@ -343,11 +346,11 @@ void OGL_SetViewMatrix(MATH_tdst_Matrix *_pst_Matrix)
 	if(MATH_b_TestScaleType(_pst_Matrix))
 	{
 		MATH_MakeOGLMatrix(&st_OGLMatrix, _pst_Matrix);
-		glLoadMatrixf((float *) &st_OGLMatrix);
+		OGL_CALL( glLoadMatrixf((float *) &st_OGLMatrix) );
 	}
 	else
 	{
-		glLoadMatrixf((float *) _pst_Matrix);
+		OGL_CALL( glLoadMatrixf((float *) _pst_Matrix) );
 	}
 }
 
@@ -432,7 +435,7 @@ void OGL_SetProjectionMatrix(CAM_tdst_Camera *_pst_Cam)
 #ifdef ACTIVE_EDITORS
 	wglMakeCurrent(pst_SD->h_DC, pst_SD->h_RC);
 #endif
-	glMatrixMode(GL_PROJECTION);
+	OGL_CALL( glMatrixMode(GL_PROJECTION) );
 
     if (_pst_Cam->ul_Flags & CAM_Cul_Flags_Ortho )
     {
@@ -485,7 +488,7 @@ void OGL_SetProjectionMatrix(CAM_tdst_Camera *_pst_Cam)
 
 			if(_pst_Cam->f_IsoFactor == 0)
 			{
-				glOrtho((1 - f) / 2, (1 + f) / 2, 0, 1, -_pst_Cam->f_NearPlane, -_pst_Cam->f_FarPlane);
+				OGL_CALL( glOrtho((1 - f) / 2, (1 + f) / 2, 0, 1, -_pst_Cam->f_NearPlane, -_pst_Cam->f_FarPlane) );
 			}
 			else
 			{
@@ -495,7 +498,7 @@ void OGL_SetProjectionMatrix(CAM_tdst_Camera *_pst_Cam)
 				t = f_Scale * 1;
 
 				//glOrtho(l, r, b, t, (_pst_Cam->f_NearPlane + _pst_Cam->f_IsoFactor), -_pst_Cam->f_FarPlane);
-                glOrtho(l, r, b, t, _pst_Cam->f_FarPlane, -_pst_Cam->f_FarPlane);
+                OGL_CALL( glOrtho(l, r, b, t, _pst_Cam->f_FarPlane, -_pst_Cam->f_FarPlane) );
 			}
 		}
 		else
@@ -524,7 +527,7 @@ void OGL_SetProjectionMatrix(CAM_tdst_Camera *_pst_Cam)
 		GDI_gpst_CurDD->st_Device.Vy = y;
 		GDI_gpst_CurDD->st_Device.Vw = w;
 		GDI_gpst_CurDD->st_Device.Vh = h;
-		glScissor(x, y ? y - 1 : 0, w + 2, h + 2);
+		OGL_CALL( glScissor(x, y ? y - 1 : 0, w + 2, h + 2) );
 
 		if (g_ul_BIG_SNAPSHOT_COUNTER)
 		{
@@ -533,80 +536,88 @@ void OGL_SetProjectionMatrix(CAM_tdst_Camera *_pst_Cam)
 			x -= ((g_ul_BIG_SNAPSHOT_COUNTER>> 2) & 3) * (w>>2);
 			y -= (g_ul_BIG_SNAPSHOT_COUNTER & 3) * (h>>2);
 		}
-		glViewport(x , y, w, h);
+		OGL_CALL( glViewport(x , y, w, h) );
 	}
 #else
-	glScissor(x, y, w, h);
-    glViewport(x , y, w, h);
+	OGL_CALL( glScissor(x, y, w, h) );
+    OGL_CALL( glViewport(x , y, w, h) );
 #endif
-	
-
 }
 
 
 #define SHADOW_TEX_MAX 16
 #define SHADOW_TEX_RESOLUTION 128
 
-GLuint		SHADOW_TEX_HANDLE[SHADOW_TEX_MAX + 1];
-GLclampf	SHADOW_TEX_Priority[SHADOW_TEX_MAX + 1];
-u32 Sdw_Tex_IsInit = 0;
+static GLuint SHADOW_TEX_HANDLE[SHADOW_TEX_MAX + 1];
+static GLclampf SHADOW_TEX_Priority[SHADOW_TEX_MAX + 1];
+static u32 Sdw_Tex_IsInit = 0;
 void OGL_ShadowBindTexture(u32 Value);
 void OGL_ShadowConstructor()
 {
-	u32 Counter;
-	Counter = SHADOW_TEX_MAX + 1;
-	for (Counter = 0 ; Counter < SHADOW_TEX_MAX + 1 ; Counter ++)
+	for (u32 Counter = 0 ; Counter < SHADOW_TEX_MAX + 1 ; Counter ++)
 	{
+		// Check we actually have valid texture handles before trying to clear them,
+		// probably safe just to check first slot ~hogsy
+		if ( SHADOW_TEX_HANDLE[Counter] != 0 )
+		{
+			OGL_CALL( glDeleteTextures( SHADOW_TEX_MAX + 1, SHADOW_TEX_HANDLE ) );
+		}
 		SHADOW_TEX_HANDLE[Counter] = 0xc0de2004;
 	}
 	Sdw_Tex_IsInit = 1;
 }
 
-u32 CurrentShadowTexture = 0;
+static u32 CurrentShadowTexture = 0;
 void OGL_ShadowBindTexture(u32 Value)
 {
-	u32 Dummy;
 	Value &= 0xffff;
 	if (SHADOW_TEX_MAX != Value) 
-		Value = (Value & (SHADOW_TEX_MAX - 1));
-	glEnable(GL_TEXTURE_2D);
+	{
+		Value = ( Value & ( SHADOW_TEX_MAX - 1 ) );
+	}
 
-#ifdef JADEFUSION
+	OGL_CALL( glEnable(GL_TEXTURE_2D) );
+
+	u32 Dummy;
 	if ((SHADOW_TEX_HANDLE[Value] == 0xc0de2004) || !glIsTexture(SHADOW_TEX_HANDLE[Value]) || !glAreTexturesResident(1,&SHADOW_TEX_HANDLE[Value],(GLboolean* )&Dummy ))
-#else
-	if ((SHADOW_TEX_HANDLE[Value] == 0xc0de2004) || !glIsTexture(SHADOW_TEX_HANDLE[Value]) || !glAreTexturesResident(1,&SHADOW_TEX_HANDLE[Value],&Dummy ))
-#endif
 	{
 		if (glIsTexture(SHADOW_TEX_HANDLE[Value]))
-			glDeleteTextures(1,&SHADOW_TEX_HANDLE[Value]);
-		glGenTextures(1, &SHADOW_TEX_HANDLE[Value]);
+		{
+			OGL_CALL( glDeleteTextures( 1, &SHADOW_TEX_HANDLE[ Value ] ) );
+		}
+		OGL_CALL( glGenTextures(1, &SHADOW_TEX_HANDLE[Value]) );
 		SHADOW_TEX_Priority[Value] = 1.0f;
-		glBindTexture(GL_TEXTURE_2D, SHADOW_TEX_HANDLE[Value]);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-		glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA,SHADOW_TEX_RESOLUTION,SHADOW_TEX_RESOLUTION, 0,GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BORDER,0);
-
-	} 
-	glBindTexture(GL_TEXTURE_2D, SHADOW_TEX_HANDLE[Value]);
+		OGL_CALL( glBindTexture(GL_TEXTURE_2D, SHADOW_TEX_HANDLE[Value]) );
+		OGL_CALL( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,GL_LINEAR) );
+		OGL_CALL( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,GL_LINEAR) );
+		OGL_CALL( glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA,SHADOW_TEX_RESOLUTION,SHADOW_TEX_RESOLUTION, 0,GL_RGBA, GL_UNSIGNED_BYTE, NULL) );
+		OGL_CALL( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP) );
+		OGL_CALL( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP) );
+	}
+	OGL_CALL( glBindTexture(GL_TEXTURE_2D, SHADOW_TEX_HANDLE[Value]) );
 }
 
 void OGL_ShadowImgSave(u32 TexNum)
 {
 	OGL_ShadowBindTexture(TexNum);
 //	glCopyTexSubImage2D(GL_TEXTURE_2D, 0 ,  0 , 0 , 0 , 0 , SHADOW_TEX_RESOLUTION, SHADOW_TEX_RESOLUTION);//*/
-	glCopyTexImage2D(GL_TEXTURE_2D, 0 , GL_RGBA, 0 , 0 , SHADOW_TEX_RESOLUTION, SHADOW_TEX_RESOLUTION, 0);
+	OGL_CALL( glCopyTexImage2D(GL_TEXTURE_2D, 0 , GL_RGBA, 0 , 0 , SHADOW_TEX_RESOLUTION, SHADOW_TEX_RESOLUTION, 0) );
 }
+
 void OGL_ShadowSelect(u32 TexNum)
 {
 	TexNum &= 0xffff;
 	if (SHADOW_TEX_MAX != TexNum) 
-		TexNum = (TexNum & (SHADOW_TEX_MAX - 1));
+	{
+		TexNum = ( TexNum & ( SHADOW_TEX_MAX - 1 ) );
+	}
+
 	if ((SHADOW_TEX_HANDLE[TexNum] != 0xc0de2004) && glIsTexture(SHADOW_TEX_HANDLE[TexNum]))
-	OGL_ShadowBindTexture(TexNum);
+	{
+		OGL_ShadowBindTexture( TexNum );
+	}
 }
+
 void OGL_ShadowImgLoad(u32 TexNum)
 {
 	u32 Color;
@@ -629,8 +640,9 @@ void OGL_ShadowImgLoad(u32 TexNum)
 	glEnd( );
 	glMatrixMode(GL_MODELVIEW);
 	glLoadMatrixf((float *) &st_SavedMatrix);
-	glDisable(GL_TEXTURE_2D);
+	OGL_CALL( glDisable(GL_TEXTURE_2D) );
 }
+
 extern void OGL_ES_PushState();
 extern void OGL_ES_PopState();
 void OGL_ShadowBegin(u32 TexNum)
@@ -651,13 +663,12 @@ void OGL_ShadowEnd()
 	OGL_ShadowImgLoad(SHADOW_TEX_MAX);
 	OGL_ES_PopState();
 }
+
 void OGL_InitAllShadows()
 {
-	u32 Counter;
-	Counter = SHADOW_TEX_MAX + 1;
-	glDeleteTextures(SHADOW_TEX_MAX + 1, SHADOW_TEX_HANDLE);
 	OGL_ShadowConstructor();
-	Counter = SHADOW_TEX_MAX + 1;
+
+	u32 Counter = SHADOW_TEX_MAX + 1;
  	while (Counter--)
 	{
 		OGL_ShadowBegin(Counter);
@@ -665,13 +676,12 @@ void OGL_InitAllShadows()
 	}//*/
 }
 
-u32 ProjectionisNotRestored ;
-MATH_tdst_Matrix					st_SavedProjection;
-GLint 								st_SavedViewport[4];
-GLint 								st_SavedScissor[4];
+static u32              ProjectionisNotRestored;
+static MATH_tdst_Matrix st_SavedProjection;
+static GLint            st_SavedViewport[ 4 ];
+static GLint            st_SavedScissor[ 4 ];
 void OGL_SetTextureTarget(ULONG Num , ULONG Clear)
 {
-
 	if(Num != 0xffffffff)
 	{
 		OGL_ShadowBegin(Num);
@@ -710,27 +720,27 @@ void OGL_SetViewMatrix_SDW(MATH_tdst_Matrix *_pst_Matrix , float *Limits)
 	MATH_SetIdentityMatrix(&st_OGLMatrix);
 	
 	ProjectionisNotRestored = 1;
-	glLoadMatrixf((GLfloat *)&st_OGLMatrix);
+	OGL_CALL( glLoadMatrixf((GLfloat *)&st_OGLMatrix) );
 
 	glMatrixMode(GL_PROJECTION);
 	glGetFloatv(GL_PROJECTION_MATRIX,(GLfloat *) &st_SavedProjection);
-	glLoadIdentity();
-	glOrtho(-1.0, 1.0, 1.0, -1.0f, -1.0, 1.0);
+	OGL_CALL( glLoadIdentity() );
+	OGL_CALL( glOrtho(-1.0, 1.0, 1.0, -1.0f, -1.0, 1.0) );
 
-	glMatrixMode(GL_MODELVIEW);
+	OGL_CALL( glMatrixMode(GL_MODELVIEW) );
 	{
 		MATH_MakeOGLMatrix(&st_OGLMatrix, _pst_Matrix);
 		st_OGLMatrix.Ix *= 1.f;
 		st_OGLMatrix.Jy *= 1.f;
 		st_OGLMatrix.Kz = 0.0f;
 		st_OGLMatrix.T.z = 0.99999f;
-		glLoadMatrixf((float *) &st_OGLMatrix);
+		OGL_CALL( glLoadMatrixf((float *) &st_OGLMatrix) );
 	}
 
-	glGetIntegerv(GL_VIEWPORT  ,  st_SavedViewport);
-	glGetIntegerv(GL_SCISSOR_BOX ,  st_SavedScissor);
-	glViewport(0, 0, SHADOW_TEX_RESOLUTION, SHADOW_TEX_RESOLUTION);
-	glScissor(0, 0, SHADOW_TEX_RESOLUTION, SHADOW_TEX_RESOLUTION);
+	OGL_CALL( glGetIntegerv(GL_VIEWPORT  ,  st_SavedViewport) );
+	OGL_CALL( glGetIntegerv(GL_SCISSOR_BOX ,  st_SavedScissor) );
+	OGL_CALL( glViewport(0, 0, SHADOW_TEX_RESOLUTION, SHADOW_TEX_RESOLUTION) );
+	OGL_CALL( glScissor(0, 0, SHADOW_TEX_RESOLUTION, SHADOW_TEX_RESOLUTION) );
 }
 
 /*
@@ -1265,7 +1275,7 @@ LONG OGL_l_DrawElementIndexedTriangles
 
 		    PRO_StartTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_Begin);
 			
-			glBegin(GL_TRIANGLES);
+			OGL_CALL( glBegin(GL_TRIANGLES) );
 		    PRO_StopTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_Begin);
 
 		    if(pst_Color == NULL)
@@ -1354,7 +1364,7 @@ LONG OGL_l_DrawElementIndexedTriangles
 		    }
 
 	    	PRO_StartTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_End);
-			glEnd();
+			OGL_CALL( glEnd() );
 
 		    PRO_StopTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_End);
         }
@@ -1437,7 +1447,7 @@ LONG OGL_l_DrawElementIndexedTriangles
 			for(; pStrip < pStripEnd; pStrip++)
 			{
 				PRO_StartTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_Begin);
-				glBegin(GL_TRIANGLE_STRIP/*GL_TRIANGLE_FAN/*GL_TRIANGLE_STRIP*/);
+				OGL_CALL( glBegin(GL_TRIANGLE_STRIP/*GL_TRIANGLE_FAN/*GL_TRIANGLE_STRIP*/) );
 				PRO_StopTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_Begin);
 
 				if(pst_Color == NULL)
@@ -1479,14 +1489,14 @@ LONG OGL_l_DrawElementIndexedTriangles
 						auw_Index = pStrip->pMinVertexDataList[i].auw_Index;
 						auw_UV = pStrip->pMinVertexDataList[i].auw_UV;
 
-						glTexCoord2fv(&_pst_UV[auw_UV].fU);
+						OGL_CALL( glTexCoord2fv(&_pst_UV[auw_UV].fU ));
 						OGL_SetColorRGBA(auw_Index);
-						glVertex3fv((float *) &_pst_Point[auw_Index]);
+						OGL_CALL( glVertex3fv((float *) &_pst_Point[auw_Index]) );
 					}
 				}
 
 				PRO_StartTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_End);
-				glEnd();
+				OGL_CALL( glEnd() );
 				PRO_StopTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_End);
 			}
 		}
@@ -1603,17 +1613,17 @@ void OGL_SetTextureBlending(ULONG _l_Texture, ULONG BM)
 		switch(Flag & (MAT_Cul_Flag_HideAlpha | MAT_Cul_Flag_HideColor))
 		{
 		case 0:
-			glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+			OGL_CALL( glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE) );
 			break;
 		case MAT_Cul_Flag_HideAlpha:
-			glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
+			OGL_CALL( glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE) );
 			break;
 		case MAT_Cul_Flag_HideColor:
-			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+			OGL_CALL( glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE) );
 			break;
 		case MAT_Cul_Flag_HideColor | MAT_Cul_Flag_HideAlpha:
 			// ShadowMode
-			glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
+			OGL_CALL( glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE) );
 			break;
 		}
 	}
@@ -1655,8 +1665,8 @@ void OGL_SetTextureBlending(ULONG _l_Texture, ULONG BM)
 		{
 		case MAT_Cc_Op_Copy:
 		case MAT_Cc_Op_Glow:
-			glDisable(GL_BLEND);
-			glBlendFunc(GL_ONE, GL_ZERO);
+			OGL_CALL( glDisable(GL_BLEND) );
+			OGL_CALL( glBlendFunc(GL_ONE, GL_ZERO) );
 			break;
 		case MAT_Cc_Op_Alpha:
 			if(MAT_GET_Blending(GDI_gpst_CurDD->LastBlendingMode) == MAT_Cc_Op_Copy) glEnable(GL_BLEND);
@@ -1706,15 +1716,15 @@ void OGL_SetTextureBlending(ULONG _l_Texture, ULONG BM)
 			break;
 		case MAT_Cc_Op_PSX2ShadowSpecific:
 			M4Edit_RestorePolygonOffset
-			glPolygonOffset( -0.91f, -1000.0f); 
+			OGL_CALL( glPolygonOffset( -0.91f, -1000.0f) ); 
 			glEnable(GL_POLYGON_OFFSET_FILL);
 			OGL_RS_DepthMask(&pst_SD->st_RS, 0);
 
 		case MAT_Cc_Op_Sub:
-			glFogfv(GL_FOG_COLOR, pst_SD->fFogColor);
+			OGL_CALL( glFogfv(GL_FOG_COLOR, pst_SD->fFogColor) );
 			if(MAT_GET_Blending(GDI_gpst_CurDD->LastBlendingMode) == MAT_Cc_Op_Copy) glEnable(GL_BLEND);
 			if(MAT_GET_Blending(GDI_gpst_CurDD->LastBlendingMode) == MAT_Cc_Op_Glow) glEnable(GL_BLEND);
-			glBlendFunc(GL_ZERO, GL_ONE_MINUS_SRC_COLOR);
+			OGL_CALL( glBlendFunc(GL_ZERO, GL_ONE_MINUS_SRC_COLOR) );
             // test bump
             //glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
 			break;
@@ -2044,7 +2054,7 @@ void OGL_l_DrawSPG2_2X(
 
 		fColorBlenderAcc = 255.0f;
 		fColorBlenderAdd = -fOoNumOfSeg * 255.0f;
-		glBegin(GL_TRIANGLE_STRIP);
+		OGL_CALL( glBegin(GL_TRIANGLE_STRIP) );
 		ulColor  =0 ;
 		if (p_stII->GlobalColor) 
 		{
@@ -2054,7 +2064,7 @@ void OGL_l_DrawSPG2_2X(
 		{
 			ulColor = *pColors++;
 		}
-		glColor4ubv((GLubyte *) &ulColor  );
+		OGL_CALL( glColor4ubv((GLubyte *) &ulColor  ) );
 
 		while (	Counter -- )
 		{
@@ -2229,7 +2239,7 @@ void OGL_l_DrawSPG2_SPRITES_2X(
 
 		}
 
-		glEnd();
+		OGL_CALL( glEnd() );
 	}
 }
 
@@ -2588,7 +2598,6 @@ void OGL_SetDCPixelFormat(HDC _hDC)
 	}
 
 #endif
-	OGL_InitAllShadows();
 }
 
 
@@ -2606,14 +2615,14 @@ void OGL_SetupRC(OGL_tdst_SpecificData *_pst_SD)
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-	glClearColor(1.0f, .5f, .25f, 1.0f);
+	OGL_CALL( glClearColor(1.0f, .5f, .25f, 1.0f) );
 
 	w = _pst_SD->rcViewportRect.right - _pst_SD->rcViewportRect.left;
 	h = _pst_SD->rcViewportRect.bottom - _pst_SD->rcViewportRect.top;
-	glViewport(0, (h - w) / 2, w, w);
+	OGL_CALL( glViewport(0, (h - w) / 2, w, w) );
 
 	/* Reset coordinate system */
-	glMatrixMode(GL_PROJECTION);
+	OGL_CALL( glMatrixMode(GL_PROJECTION) );
 
 	/* Establish clipping volume (left, right, bottom, top, near, far) */
 	_pst_SD->pst_ProjMatrix->Jy = -1.0f;
@@ -2621,7 +2630,7 @@ void OGL_SetupRC(OGL_tdst_SpecificData *_pst_SD)
 	_pst_SD->pst_ProjMatrix->T.z = -0.1f;
 	_pst_SD->pst_ProjMatrix->w = 0.0f;// MATRIX W!
 
-	glLoadMatrixf((float *) (_pst_SD->pst_ProjMatrix));
+	OGL_CALL( glLoadMatrixf((float *) (_pst_SD->pst_ProjMatrix)) );
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
