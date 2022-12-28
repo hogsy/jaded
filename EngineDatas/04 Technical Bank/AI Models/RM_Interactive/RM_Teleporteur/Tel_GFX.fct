@@ -1,0 +1,118 @@
+#include "Tel_defines.var"
+
+int		ti_i
+int		ti_gfx
+float	tf_coef
+
+for(ti_gfx = 0; ti_gfx < 2; ti_gfx++)
+{
+//	Str_DisplayTxtIntOnce("\cFF\\h0.08\GFX ", i_GFX_mode[ti_gfx], VIEW_3dWorldTo2d(0, v_FX_Apparition[ti_gfx]))
+	
+	switch( i_GFX_mode[ti_gfx] )
+	{
+		case Ci_GFX_mode_activation :
+			for (ti_i = 0; ti_i < Ci_gfx_nb; ti_i++)
+			{
+				av_gfx_line_Z[ti_i][ti_gfx] = v_FX_Apparition[ti_gfx]
+				av_gfx_line_Z[ti_i][ti_gfx] += cvector(MATH_RandFloat(-1.0, 1.0),  MATH_RandFloat(-1.0, 1.0), 0.0) * 2.0
+				av_gfx_line_Z[ti_i][ti_gfx].z += MATH_RandFloat(100.0, 150.0)
+				af_gfx_line_Z_speed[ti_i][ti_gfx] = MATH_RandFloat(-50.0, -150.0)
+		
+				i_GFX_Line[ti_i][ti_gfx] = GFX_Add(1)
+				GFX_FlagSet(i_GFX_Line[ti_i][ti_gfx] , 0, 1)
+				GFX_FlagSet(i_GFX_Line[ti_i][ti_gfx], 2, 1)
+				GFX_MaterialSet(i_GFX_Line[ti_i][ti_gfx], get_SFX_light_and_smoke, 3)
+				GFX_Setf(i_GFX_Line[ti_i][ti_gfx], 1000, 0.25)		// Epaisseur de la ligne
+				GFX_Seti(i_GFX_Line[ti_i][ti_gfx], 1100, 0xFFFF0000)		// Couleur de la ligne
+			}
+			
+			i_GFX_Halo[ti_gfx] = GFX_Add(21)
+			f_GFX_Halo_size[ti_gfx] = 0.0
+			GFX_FlagSet(i_GFX_Halo[ti_gfx], 4, 1)
+			GFX_MaterialSet(i_GFX_Halo[ti_gfx], get_SFX_light_and_smoke, 0)	
+			GFX_Setf(i_GFX_Halo[ti_gfx], 21002, 0.1)							// extraction par rapport au point de génération (vers la cam)
+			GFX_Seti(i_GFX_Halo[ti_gfx], 21103, 1)		
+			GFX_Seti(i_GFX_Halo[ti_gfx], 21101, 0xFFFF0000)
+			f_GFX_duree[ti_gfx] = 0.0
+			i_GFX_mode[ti_gfx] = Ci_GFX_mode_fade_in
+			break
+			
+		case Ci_GFX_mode_fade_in :
+			f_GFX_duree[ti_gfx] += TIME_GetDt()
+			tf_coef = f_GFX_duree[ti_gfx] / f_GFX_duree_max[ti_gfx]
+			
+			// augmentation du halo
+			GFX_Setv(i_GFX_Halo[ti_gfx], 21200, v_FX_Apparition[ti_gfx]) // + cvector(0.0, 0.0, 0.2 + (tf_coef * 2.0)))
+			f_GFX_Halo_size[ti_gfx] = MATH_FloatBlend(f_GFX_Halo_size[ti_gfx], tf_coef * 20.0, 5 * TIME_GetDt())
+			GFX_Setf(i_GFX_Halo[ti_gfx], 21000, f_GFX_Halo_size[ti_gfx])			// rayon du gfx
+			
+			// lignes
+			for (ti_i = 0; ti_i < Ci_gfx_nb; ti_i++)
+			{
+				av_gfx_line_Z[ti_i][ti_gfx].z += af_gfx_line_Z_speed[ti_i][ti_gfx] * TIME_GetDt()
+			
+				if (av_gfx_line_Z[ti_i][ti_gfx].z < v_FX_Apparition[ti_gfx].z)
+				{
+					av_gfx_line_Z[ti_i][ti_gfx] = v_FX_Apparition[ti_gfx]
+					av_gfx_line_Z[ti_i][ti_gfx] += cvector(MATH_RandFloat(-1.0, 1.0),  MATH_RandFloat(-1.0, 1.0), 0.0) * tf_coef * 8.0
+					av_gfx_line_Z[ti_i][ti_gfx].z += MATH_RandFloat(100.0, 150.0)
+					af_gfx_line_Z_speed[ti_i][ti_gfx] = MATH_RandFloat(-50.0, -150.0)
+				}
+			
+				GFX_Setv(i_GFX_Line[ti_i][ti_gfx], 1200, av_gfx_line_Z[ti_i][ti_gfx])		// Coordonnée de la position 3D du début du faisceau
+				GFX_Setv(i_GFX_Line[ti_i][ti_gfx], 1201, av_gfx_line_Z[ti_i][ti_gfx] + cvector(0.0, 0.0, -10.0))		// Coordonnée de la position 3D de la fin du faisceau
+			}
+			
+			if( f_GFX_duree[ti_gfx] > f_GFX_duree_max[ti_gfx] )
+				i_GFX_mode[ti_gfx] = Ci_GFX_mode_desactivation
+			break
+			
+		case Ci_GFX_mode_desactivation :
+			i_GFX_mode[ti_gfx] = Ci_GFX_mode_fade_out
+			f_GFX_duree[ti_gfx] = 0.0
+			break
+			
+		case Ci_GFX_mode_fade_out :
+			// diminution du halo
+			f_GFX_Halo_size[ti_gfx] = MATH_FloatBlend(f_GFX_Halo_size[ti_gfx], 0.0, 2.5 * TIME_GetDt())
+			GFX_Setf(i_GFX_Halo[ti_gfx], 21000, f_GFX_Halo_size[ti_gfx])			// rayon du gfx
+			
+			// lignes
+			for (ti_i = 0; ti_i < Ci_gfx_nb; ti_i++)
+			{
+				av_gfx_line_Z[ti_i][ti_gfx].z += af_gfx_line_Z_speed[ti_i][ti_gfx] * TIME_GetDt()
+				
+				if (av_gfx_line_Z[ti_i][ti_gfx].z < v_FX_Apparition[ti_gfx].z)
+				{
+					av_gfx_line_Z[ti_i][ti_gfx] = v_FX_Apparition[ti_gfx]
+					av_gfx_line_Z[ti_i][ti_gfx] += cvector(MATH_RandFloat(-1.0, 1.0),  MATH_RandFloat(-1.0, 1.0), 0.0) * tf_coef * 8.0
+					av_gfx_line_Z[ti_i][ti_gfx].z += MATH_RandFloat(100.0, 150.0)
+					af_gfx_line_Z_speed[ti_i][ti_gfx] = MATH_RandFloat(-50.0, -150.0)
+				}
+				
+				GFX_Setv(i_GFX_Line[ti_i][ti_gfx], 1200, av_gfx_line_Z[ti_i][ti_gfx])		// Coordonnée de la position 3D du début du faisceau
+				GFX_Setv(i_GFX_Line[ti_i][ti_gfx], 1201, av_gfx_line_Z[ti_i][ti_gfx] + cvector(0.0, 0.0, -10.0))		// Coordonnée de la position 3D de la fin du faisceau
+			}
+			
+			// fin du gfx
+			if( f_GFX_Halo_size[ti_gfx] < 0.2 )
+			{
+				i_GFX_mode[ti_gfx] = Ci_GFX_mode_off
+				
+				GFX_Del(i_GFX_Halo[ti_gfx])
+				i_GFX_Halo[ti_gfx] = -1
+				
+				for (ti_i = 0; ti_i < Ci_gfx_nb; ti_i++)
+				{
+					GFX_Del(i_GFX_Line[ti_i][ti_gfx])
+					i_GFX_Line[ti_i][ti_gfx] = -1
+				}
+			}
+			break
+			
+		case Ci_GFX_mode_off :
+			break
+	}
+}
+
+

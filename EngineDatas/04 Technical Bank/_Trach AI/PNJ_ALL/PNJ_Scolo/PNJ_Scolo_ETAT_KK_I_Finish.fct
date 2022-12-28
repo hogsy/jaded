@@ -1,0 +1,104 @@
+#include "PNJ_Scolo_defines.var"
+
+vector	tv_pos
+
+object	to_client
+
+// SORTIE ETAT ===================================================================
+if (i_flag_sortie_etat)
+{
+	AI_TrackChange(4, "PNJ_Scolo_After_ETAT")
+	AI_CBDel(o_kk_finish, CallBack_After_Blend, "PNJ_Scolo_callback_set_pos")
+	o_kk_finish = LNK_ThisClientGet(o_kk_finish,Ci_LNK_KKFINISH_ON_KONG, mid_kk_I_finish_LNK, faux, nofunc, nofunc, nofunc)
+	COL_ColSetActivationSet(C_bit_zde_corps, none)
+	if( i_kk_I_finish_kong_a_gagne )
+		Proc_KK_Scolo_Kong_a_Gagne()		// on a peut etre sauté la frame donc on blinde
+	
+	i_flag_sortie_etat = faux
+	return
+}
+
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_KKIFinish)
+{
+	// INTIALISATION
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_KKIFinish
+	
+	if (fct_last_etat)
+	{
+		i_flag_sortie_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = "PNJ_Scolo_ETAT_KK_I_Finish"
+
+	// LNK_Finish_ActionSet : c'est kong qui détermine si on commence en Ci_GrabKong_FinishSePlace ou Ci_GrabKong_FinishDeb
+	LNK_Finish_FinisherTypeSet(mid_kk_I_finish_LNK, Ci_GrabKong_Finished_BigScolo)
+
+	AI_TrackStop(4)
+	AI_CBAdd(o_kk_finish, CallBack_After_Blend, "PNJ_Scolo_callback_set_pos")
+	DYN_Off()
+	
+	COL_ColSetActivationSet(none, all)
+
+	f_time_start_etat = 0.0
+	i_kk_I_finish_paf = faux
+	i_kk_I_finish_kong_a_gagne = faux
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// ANALYSE ==============================================================
+AI_Execute("PNJ_Scolo_exec_check_vision")
+
+o_KK_Grabbed_actor = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_kong_LNK, vrai, nofunc, nofunc)
+if (o_KK_Grabbed_actor)
+	macro_change_etat("PNJ_Scolo_ETAT_Grabbed_By_Kong")
+
+to_client = LNK_ThisClientGet(o_kk_finish,Ci_LNK_KKFINISH_ON_KONG, mid_kk_I_finish_LNK, vrai, nofunc, nofunc, nofunc)
+if ( ! to_client )
+{
+	SND_RequestPlay(SND_ATTACK)
+	v_jump_dest_pos = @o_kong OBJ_PosGet()	
+	v_jump_dest_pos += @o_kong OBJ_SightGet() * 12.0
+	v_jump_dest_pos += @o_kong OBJ_HorizonGet() * MATH_RandFloat(-4.0, 4.0)
+	v_jump_dest_pos.z += 4.0
+	macro_change_etat("PNJ_Scolo_ETAT_Jump")
+}
+
+// COMPORTEMENT ==============================================================
+
+switch ( LNK_Finish_ActionGet(mid_kk_I_finish_LNK))
+{
+	case Ci_GrabKong_FinishSePlace :
+		break
+		
+	case Ci_GrabKong_FinishDeb :
+		break
+		
+	case	Ci_GrabKong_FinishFin :
+		break
+		
+	case Ci_GrabKong_FinishPerdu :		// KONG a perdu
+		break
+		
+	case Ci_GrabKong_FinishGagne :		// KONG a gagné
+		i_kk_I_finish_kong_a_gagne = vrai
+		if( @o_kk_finish ANI_CurrentFrameGet(0) > 98 )
+			Proc_KK_Scolo_Kong_a_Gagne()
+		break
+}
+
+tv_pos = @ao_modules[i_modules_nb - 1] OBJ_PosGet()
+tv_pos.z = MATH_FloatMax(tv_pos.z, OBJ_PosGet().z)
+
+if (COL_RayObject_Dist(tv_pos, -Cv_VerticalVector, 10.0, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable))
+{
+	v_ray_pos = MATH_VecBlend(v_ray_pos, COL_RayObject_PosGet(), 6.0 * TIME_GetDt())
+	v_ray_normal = MATH_VecBlendRotate(v_ray_normal, COL_RayObject_NormalGet(), 4.0 * TIME_GetDt())
+}

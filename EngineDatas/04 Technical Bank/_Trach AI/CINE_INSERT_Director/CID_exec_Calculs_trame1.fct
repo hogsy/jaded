@@ -1,0 +1,175 @@
+object	to_objet_camera, to_collision, to_tete
+vector	tv_POS_MODULE, tv_POS_CIBLE, tv_sight, tv_horizon
+vector	tv_vec_cam_cible, tv_pos_camgame, tv_crossprod
+float		tf_norme_vector, tf_distance, tf_focale, tf_coeff_focale
+int			ti_value_bone, ti_value_bone_cible
+object	to_mainactor
+
+to_mainactor = AI_MainActorGet(i_MainActor)
+
+	///////////////////////////// PREMIERE TRAME /////////////////////////////
+	////////////////////////////// orientation de l'acteur vers la cible //////////////////////////////////////////
+	if	( (i_flags_courants & F_flag_Oriente_acteur)
+		&& (o_acteur_cam1 != o_acteur_cible1) )
+	{	@o_acteur_cam1	OBJ_OrientTo(o_acteur_cible1)	}
+
+	// On va faire regarder la scène au héros
+//	if	(AI_MainActorGet(0) == to_mainactor)
+//	{	@to_mainactor des_o_acteur_suividesyeux = o_acteur_cible1	}
+
+	// Acteur_Cam : on va récupérer l'os de la tête
+	o_canal_cam = @o_acteur_cam1 ANI_CanalObjectGet(Anim_Canal_Tete)
+	if	( ! o_canal_cam)
+	{	o_canal_cam = o_acteur_cam1	}
+	tv_POS_CIBLE = @o_acteur_cible1 OBJ_PosGet() //+ @o_acteur_cible1 OBJ_SightGet()
+	tv_POS_MODULE = @o_canal_cam OBJ_PosGet()
+	// Tests pour exécuter ou pas la séquence
+	AI_Execute("CID_exec_Obstruction_test")
+	/////////////////////////////////////////// PREMIERE TRAME /////////////////////////////////////////////
+	/////////////////////////////////// On va choisir le coté "raccord" //////////////////////////////////////
+	/////////// Pour déterminer de quel côté de la scène se trouve la caméra /////////////////////////////
+	to_objet_camera = VIEW_GetObject(0)
+	tv_pos_camgame = @to_objet_camera OBJ_PosGet()
+	// Vecteur entre la caméra et l'acteur cible
+	tv_pos_camgame = tv_pos_camgame - tv_POS_MODULE
+	tv_vec_cam_cible = tv_POS_CIBLE - tv_POS_MODULE
+	// Calcul de la distance entre caméra et cible pour compenser focale et vecteur décalage
+	tf_distance = MATH_VecNorm(tv_vec_cam_cible)
+	f_norme_decalage = MATH_FloatLimit(tf_distance * 0.1, 0.1, 1)
+	// Vecteur orientation de l'acteur central (pour déterminer de quel côté la caméra se trouve)
+	tv_pos_camgame.z = 0
+	tv_vec_cam_cible.z = 0
+//	DBG_RenderVector(tv_POS_MODULE, tv_pos_camgame , 0xffffff00)
+//	DBG_RenderVector(tv_POS_MODULE, tv_vec_cam_cible, 0xff00ffff)
+	tv_crossprod = MATH_VecCrossProduct(tv_vec_cam_cible, tv_pos_camgame)
+	// tv_crossprod.Z : + signifie GAUCHE, - signifie DROITE
+
+	// F_flag_recalcul_focale je vais diviser la focale proportionnellement à la distance Cam/cible pour écraser un peu la pers
+	if	( (i_flags_courants & F_flag_recalcul_focale)
+	&& (o_acteur_cam1 != o_acteur_cible1) )
+	{
+		tf_distance = MATH_FloatLimit(tf_distance * 0.25, 1, 8)
+		tf_focale = f_VAL_CADRAGE [i_TYPE_CADRAGE][F_value_focal] / tf_distance
+		tf_coeff_focale = MATH_FloatLimit(tf_distance * 0.3, 1, 3)
+	}
+	else
+	{
+		tf_focale = f_VAL_CADRAGE [i_TYPE_CADRAGE][F_value_focal]
+		tf_coeff_focale = 1
+	}
+	///////////////////////////// CALCUL du décalage de la caméra ////////////////////////////
+	// Je récupère les valeurs de cadrage associées à ce type de plan
+	// Référence : Ligne entre l'acteur cam et l'acteur cible
+	tv_vec_cam_cible = -MATH_VecNormalize(tv_vec_cam_cible)
+	tv_sight = tv_vec_cam_cible * (f_VAL_CADRAGE [i_TYPE_CADRAGE][F_value_Y] * tf_coeff_focale)
+	@get_insert_camera OBJ_SightSet(tv_vec_cam_cible)
+	tv_horizon = @o_acteur_cam1 OBJ_HorizonGet() * ( ( f_VAL_CADRAGE [i_TYPE_CADRAGE][F_value_X] * MATH_FloatSign(tv_crossprod.z)) * tf_coeff_focale)
+	v_decalage = tv_sight + tv_horizon
+	v_decalage.z = f_VAL_CADRAGE [i_TYPE_CADRAGE][F_value_Z] * tf_coeff_focale
+	///////////////////////////// CALCUL du décalage de la caméra ////////////////////////////
+
+	///////////////////////////// CALCUL du décalage de la cible ////////////////////////////
+	tv_sight = -@o_acteur_cible1 OBJ_SightGet() * (f_VAL_CADRAGE [i_TYPE_CADRAGE][F_value_Y_cible] * tf_coeff_focale)
+	tv_horizon = @o_acteur_cible1 OBJ_HorizonGet() * ( ( f_VAL_CADRAGE [i_TYPE_CADRAGE][F_value_X_cible] * MATH_FloatSign(tv_crossprod.z)) * tf_coeff_focale)
+	v_decalage_cible = tv_sight + tv_horizon
+	v_decalage_cible.z = f_VAL_CADRAGE [i_TYPE_CADRAGE][F_value_Z_cible] * tf_coeff_focale
+	///////////////////////////// CALCUL du décalage de la cible ////////////////////////////
+
+	ti_value_bone = f_VAL_CADRAGE [i_TYPE_CADRAGE][F_value_bone]
+	ti_value_bone_cible = f_VAL_CADRAGE [i_TYPE_CADRAGE][F_value_bone_cible]
+	// Passage un peu con-con. Si je change de côté, il faut changer aussi certaines valeurs de bones
+	// On peut aussi imaginer d'autres cases dans le tableau f_VAL_CADRAGE, contenant les symétriques
+	if	(tv_POS_CIBLE.z < 0)
+	{
+		if	( (ti_value_bone == Anim_Canal_MainGauche)
+			||	(ti_value_bone == Anim_Canal_PiedGauche) )
+		{	ti_value_bone -= 20	}
+		if	( (ti_value_bone_cible == Anim_Canal_MainGauche)
+			||	(ti_value_bone_cible == Anim_Canal_PiedGauche) )
+		{	ti_value_bone_cible -= 20	}
+	}
+	// Acteur Cam : récupère l'os qui place la caméra
+	if	(ti_value_bone > -1)
+	{
+		if	(@o_acteur_cam1 OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Anims) )
+		{	o_canal_cam = @o_acteur_cam1 ANI_CanalObjectGet(ti_value_bone)	}
+		else
+		{
+			// Perso sans anims, je prends sa BV
+			o_canal_cam = o_acteur_cam1
+			tv_POS_MODULE = @o_acteur_cam1 BV_MaxGet() * 0.5
+			v_decalage.z += tv_POS_MODULE.z
+		}
+	}
+	else
+	{	o_canal_cam = o_acteur_cam1	}
+
+	// 1er Calcul de la position absolue v_POS_CAM
+	if	(i_flags_courants & F_flag_Placement_BM)
+	{
+		tv_POS_MODULE = @o_canal_cam OBJ_PosGet()
+		v_POS_CAM = @o_acteur_cam1 OBJ_PosGet() 
+		v_POS_CAM.z = tv_POS_MODULE.z
+		v_POS_CAM += v_decalage
+	}
+	else
+	{
+		tv_POS_MODULE = @o_canal_cam OBJ_PosGet()
+		v_POS_CAM = tv_POS_MODULE + v_decalage
+	}
+
+	// 1er Calcul de la position absolue v_POS_CIBLE
+	if	( (ti_value_bone_cible > -1)
+		&& (@o_acteur_cible1 OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Anims) ) )
+	{
+		// Acteur Cible : récupère l'os qui place la cible
+		o_canal_cible = @o_acteur_cible1 ANI_CanalObjectGet(ti_value_bone_cible)
+		// Calcul de la cible
+		v_POS_CIBLE = @o_canal_cible OBJ_PosGet() + (v_decalage_cible)
+	}
+	else
+	{
+		o_canal_cible = o_acteur_cible1
+		// Calcul de la cible
+		tv_POS_MODULE = @o_canal_cible BV_MaxGet()
+		tv_POS_MODULE.x = 0
+		tv_POS_MODULE.y = 0
+		v_POS_CIBLE = (@o_canal_cible OBJ_PosGet() + tv_POS_MODULE) + (v_decalage_cible * 2)//f_norme_decalage)
+	}
+	// 2e Calcul pour cibler entre les 2 acteurs
+	if	(i_flags_courants & F_flag_Cible_milieu)
+	{
+		tv_POS_CIBLE = tv_POS_MODULE - v_POS_CIBLE
+		tv_POS_CIBLE *= 0.5 //*= MATH_VecNorm(v_decalage)
+		DBG_RenderVector(v_POS_CIBLE, tv_POS_CIBLE, 0xff00ffff)
+		v_POS_CIBLE += tv_POS_CIBLE
+	}
+
+	// 2e Calcul de position pour tourner la caméra autour de l'acteur Cam
+	if	(i_flags_courants & F_flag_Rotation_axiale)
+	{
+		tv_POS_CIBLE = MATH_VecNormalize(tv_POS_MODULE - v_POS_CIBLE)
+		tv_POS_CIBLE += v_decalage //*= MATH_VecNorm(v_decalage)
+		v_POS_CAM = tv_POS_MODULE + tv_POS_CIBLE
+	}
+	//	tf_norme_vector = MATH_VecNorm(v_decalage)
+	// Tests pour exécuter ou pas la séquence
+	DBG_RenderVector(v_POS_CAM, v_POS_CIBLE-v_POS_CAM, 0xffff00ff)
+	AI_Execute("CID_exec_Visibility_test")
+	// Sauvegarde des valeurs
+	v_POS_CAM_old = v_POS_CAM
+	v_POS_CIBLE_old = v_POS_CIBLE
+	///////////////////////////// Positionne & oriente la caméra /////////////////////////////
+	@get_insert_camera OBJ_PosSet(v_POS_CAM)
+	@get_insert_camera OBJ_SightGeneralSet(v_POS_CIBLE - v_POS_CAM, Cv_VerticalVector)
+	@get_insert_camera OBJ_RotateLocalY(MATH_RandFloat(-0.1, 0.1))
+	@get_insert_camera VIEW_AssignObject(0)
+	VIEW_FocaleSet(0, tf_focale)
+	DBG_EraseAllVectors()
+	// Je passe en RALENTI pour plus de lisibilité
+	TIME_SpeedFactorSet(0.5)
+	// Je signale que je suis occupé
+	@get_camera OBJ_CapaSet(OBJ_Capa_0, 0)
+	OBJ_CapaSet(OBJ_Capa_8, 0)
+	// Pour le plan suivant
+	i_index_courant ++

@@ -1,0 +1,157 @@
+#include "PNJ_Bunny_Saucer_defines.var"
+
+Include_UltraProcedure_Header
+
+int				ti_i
+int				ti_val
+int				ti_link_nb
+
+vector		tv_X
+vector		tv_Y
+vector		tv_pos
+vector		tv_current_link
+vector		tv_next_link
+vector		tv_cross_link
+vector		tv_B_pos
+vector		tv_C_pos
+vector		tv_dest_sight
+vector		tv_dest_banking
+vector		tv_main_speed
+
+float			tf_wanted_traction
+float			tf_coef
+float			tf_speed_coef
+float			tf_main_speed
+float			tf_pond
+float			tf_best_pond
+
+object		to_last_wp	
+object		to_next_wp
+object		to_monture
+
+network		tn_net
+
+if (i_flag_sortie_etat)
+{
+	i_flag_sortie_etat = faux
+
+	return
+}
+
+if (i_etat_courant != ETAT_Crash)
+{
+	// INTIALISATION
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Crash
+	
+	if (fct_last_etat)
+	{
+		i_flag_sortie_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	fct_last_etat = AI_TrackCurGet()
+
+	if (i_SND_Move_Loop1 == -1)
+		i_SND_Move_Loop1 = SND_RequestPlayLoop(Ci_SND_Move_Loop1)
+	
+	DYN_Off()
+	COL_ColSetActivationSet(none, all)
+	COL_ColMapActivationSet(none, all)
+
+	COL_UnCollidableAdd(o_main_actor)
+
+	BV_MinSet(cvector(-5.0, -5.0, -5.0))
+	BV_MaxSet(cvector(5.0, 5.0, 5.0))
+
+//	if (o_bascule)
+//	{
+//		@o_bascule OBJ_PosSet(OBJ_PosGet())
+//		@o_bascule OBJ_BankingGeneralSet(OBJ_SightGet(), OBJ_BankingGet())
+//		@o_bascule COL_StartMatrixSet(OBJ_PosGet())
+//		@o_bascule OBJ_HierarchySet(OBJ_Me())
+//	}
+
+	// NEXT NEXT WP
+	v_spline_start_pos = OBJ_PosGet()
+	v_spline_start_axis = OBJ_SightGet()
+
+	v_spline_dest_pos = @o_start_wp OBJ_PosGet()
+	v_spline_dest_axis = Cv_VerticalVector
+
+	@o_bascule COL_RayObject_Dist(v_spline_dest_pos, -Cv_VerticalVector, 1000.0, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+	v_spline_dest_pos = COL_RayObject_PosGet()
+
+	f_spline_coef = 0.0
+	f_spline_segment_length = MATH_VecNorm(v_spline_dest_pos - v_spline_start_pos)
+
+	o_Rided_Actor = LNK_ServeurGet(Ci_LNK_RIDE_ON_NMI, mid_Rided_LNK_ID, faux, nofunc, nofunc)
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ===============================================================
+//EVENT_AddEventEnemy(OBJ_Me())
+EVENT_AddEventLockCam(OBJ_Me(), 0, OBJ_BankingGet())
+
+if (@o_main_actor OBJ_HierarchyGet() != o_bascule)
+	f_main_on_me_duration -= MATH_FloatMin(f_main_on_me_duration, TIME_GetDt())
+else
+	f_main_on_me_duration = 3.0
+	
+if (f_main_on_me_duration)
+	tf_wanted_traction = 2.0
+else
+	tf_wanted_traction = f_speed_max
+
+//v_spline_start_pos.z += MATH_FloatMin(v_spline_dest_pos.z - v_spline_start_pos.z, 5.0 * TIME_GetDt())
+
+if (tf_wanted_traction >= f_wanted_traction)
+	f_wanted_traction += MATH_FloatMin(tf_wanted_traction - f_wanted_traction, 20.0 * TIME_GetDt())
+else
+	f_wanted_traction -= MATH_FloatMin(f_wanted_traction - tf_wanted_traction, 20.0 * TIME_GetDt())
+
+f_spline_coef += f_wanted_traction * TIME_GetDt()
+if (f_spline_coef > f_spline_segment_length)
+{
+	for (ti_i = 0; ti_i < Total_Lum_Nb; ti_i++)
+	{
+		SpecialFlag_get(SF_Lum[ti_i], ti_val)
+		if ( ! ti_val )
+		{
+			Proc_RM_GenerateLums(1, OBJ_PosGet())
+			SpecialFlag_set(SF_Lum[ti_i])
+		}
+	}
+
+	OBJ_Destroy()
+}
+
+tv_B_pos = v_spline_start_pos
+tv_B_pos += v_spline_start_axis * f_spline_segment_length * 0.33
+
+tv_C_pos = v_spline_dest_pos
+tv_C_pos += v_spline_dest_axis * f_spline_segment_length * 0.33
+
+//DBG_RenderVector(v_spline_start_pos, v_spline_start_axis * f_spline_segment_length * 0.33, color_rouge)
+//DBG_RenderVector(v_spline_dest_pos, v_spline_dest_axis * f_spline_segment_length * 0.33, color_vert)
+MATH_LIB_Bezier_Display(30, v_spline_start_pos, tv_B_pos, tv_C_pos, v_spline_dest_pos, color_blanc)
+tv_pos = MATH_LIB_Bezier_Pos_Get(f_spline_coef / f_spline_segment_length, v_spline_start_pos, tv_B_pos, tv_C_pos, v_spline_dest_pos, tv_dest_sight)
+
+OBJ_PosSet(tv_pos)
+
+//tv_dest_banking = Cv_VerticalVector
+//if (f_time_start_etat < 1.0)
+//	tv_dest_banking = MATH_VecBlendRotate(OBJ_BankingGet(), tv_dest_banking, f_time_start_etat)
+tv_dest_banking = OBJ_BankingGet()
+OBJ_SightGeneralSet(tv_dest_sight, tv_dest_banking)
+
+OBJ_RotateLocalY(f_time_start_etat * TIME_GetDt())
+
+f_door_coef -= MATH_FloatMin(f_door_coef, TIME_GetDt())
+
+

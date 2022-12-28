@@ -1,0 +1,138 @@
+#include "ode_defs.var"
+
+int		i
+
+// -------- Si deja detruit alors je me detruit a l'init de la map ------------- (By FRED)
+if (i_SF_ODEStructCasse)
+{
+	int		ti_SF_AlreadyDead
+
+	i_SF_AlreadyCP = AI_SFDynGet(0, SF_MinById, SF_MaxById)		// Alloc
+
+	Super_SpecialFlag_get(i_SF_AlreadyCP, ti_SF_AlreadyDead)		// Test SF
+	if (ti_SF_AlreadyDead)																// Si SF = 1 alors DESTROY
+	{
+		// Elements ODE
+		i = 0
+		while(ao_ode_elements[i])
+		{	
+			@ao_ode_elements[i] OBJ_Destroy()
+			i++
+		}
+		OBJ_CapaSet(OBJ_Capa_15,none)
+		OBJ_Destroy()
+	}
+}
+
+
+// SET THE BV Automaticaly ============= FRED
+// Elements ODE
+if (f_ode_size)
+{
+	i = 0
+	while(ao_ode_elements[i])
+	{	
+		@ao_ode_elements[i] BV_MinSet(cvector(-f_ode_size, -f_ode_size, -f_ode_size))		// Set la taille BV Min et Max
+		@ao_ode_elements[i] BV_MaxSet(cvector(f_ode_size, f_ode_size, f_ode_size))			// Set la taille BV Min et Max
+		i++
+	}
+}
+// SET THE BV Automaticaly ============= FRED
+
+
+
+// ------- POS INIT DE L'ELEMENT POUR LE TEST ECROULEMENT
+if(o_element_test_ecroulement)
+	v_pos_init_element_test_ecroulement = @o_element_test_ecroulement OBJ_PosGet()
+else
+	v_pos_init_element_test_ecroulement = cvector(0,0,0)
+
+f_ttlaa_additional_random_cur = MATH_RandFloat(0,f_ttlaa_additional_random)
+
+// ------- DESACTIVATION PAR DEFAUT DES ELEMENTS ODE
+switch(i_mode_init)
+{
+	case ODE_Structure_Init_Inactif:
+		ODE_Structure_Activation_OnOFF(0)
+		ODE_Structure_Immovable_OnOFF(0)	
+		break
+		
+	case ODE_Structure_Init_Actif_Immovable:
+		ODE_Structure_Activation_OnOFF(1)
+		ODE_Structure_Immovable_OnOFF(1)		
+		break
+		
+	case ODE_Structure_Init_Actif_Pause:
+		ODE_Structure_Activation_OnOFF(1)
+		ODE_Structure_Pause_OnOFF(1)		
+		break
+	
+}
+
+// -------  ACTIVATION DE TOUS LES JOINTS
+ODE_Structure_Joint_Activation()
+
+// -------- VALEURS INITIALES DE LA VASE
+if(o_vase)
+{
+	if(!f_force_molesse_vase)
+		f_force_molesse_vase = 0.001
+	
+	@o_vase ODE_Setf(1,f_force_molesse_vase)	
+	
+	if(f_force_vitesse_enfoncement_vase == 0)
+		f_force_vitesse_enfoncement_vase = 10.0
+}
+if(o_vase2)
+{
+	if(!f_force_molesse_vase)
+		f_force_molesse_vase = 0.001
+	
+	@o_vase2 ODE_Setf(1,f_force_molesse_vase)	
+	
+	if(f_force_vitesse_enfoncement_vase == 0)
+		f_force_vitesse_enfoncement_vase = 10.0
+}
+// ------ OBJECT DE DESACTIVATION EN Z
+if(f_offset_z_desactivation && !o_z_desactivation)
+	o_z_desactivation = OBJ_Me()
+	
+// ------ PROJECTILE CINE
+if(o_projectile_cine)
+{
+	v_pos_init_projectile = @o_projectile_cine OBJ_PosGet()	
+}
+
+// ------ INIT SOUND
+i_instance_snd_rumble = -1
+f_percent_rumble = 1.0
+i_cur_num_instances_per_second = 0
+
+ai_instance_snd_whoosh[0] = 0
+ai_instance_snd_whoosh[1] = 0
+ai_instance_snd_whoosh[2] = 0
+ai_instance_snd_whoosh[3] = 0
+ai_instance_snd_whoosh[4] = 0
+ai_instance_snd_whoosh[5] = 0
+ai_instance_snd_whoosh[6] = 0
+ai_instance_snd_whoosh[7] = 0
+
+ai_instance_snd_whoosh[0] = -1
+ai_instance_snd_whoosh[1] = -1
+ai_instance_snd_whoosh[2] = -1
+ai_instance_snd_whoosh[3] = -1
+ai_instance_snd_whoosh[4] = -1
+ai_instance_snd_whoosh[5] = -1
+ai_instance_snd_whoosh[6] = -1
+ai_instance_snd_whoosh[7] = -1
+
+// ------ INIT GFX FEU
+i = 0
+while(ao_ode_elements[i])
+{
+	ai_gfx_feu_id[i] = -1
+	i ++
+}
+
+//------- PASSAGE MODE ATTENTE
+AI_TrackCurChange("ode_state_wait")

@@ -1,0 +1,82 @@
+#include "KR_defines.var"
+
+int					ti_i
+
+function			fct_current
+
+object			to_obj
+
+messageid		tmid_msg
+
+
+
+OBJ_CapaSet(CAPA_Mort, none)
+
+// Suppression des liens client-serveur
+for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+	to_obj = LNK_ServeurGet(ti_i, tmid_msg, faux, nofunc, nofunc)
+
+for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+	to_obj = LNK_ClientGet(ti_i, tmid_msg, faux, nofunc, nofunc, nofunc)
+
+LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, faux, nofunc, nofunc)
+LNK_ClientGet( Ci_LNK_KKFINISH_ON_KONG, mid_I_finish_LNK_ID, faux, nofunc, nofunc, nofunc)
+	
+
+KR_DelInterestMsg(faux)
+	
+i_etat_courant = -1
+fct_current = AI_TrackGet(Ci_Track_Etat)
+
+if (fct_current)
+{
+	i_sort_etat = vrai
+	AI_Execute(fct_current)
+}
+
+if (fct_last_etat)
+{
+	i_sort_etat = vrai
+	AI_Execute(fct_last_etat)
+}
+
+macro_change_tag_size(Cv_NullVector, Cv_NullVector)
+AI_Execute("KR_TRACK_tagoff")
+
+// SPECIAL FLAGS
+if (i_SF_NePasSeRejouerSiMort)
+	Super_SpecialFlag_set(i_SF_AlreadyDead_SFID)
+
+
+// GFX =====================================================================
+for (ti_i = 0; ti_i < 2; ti_i++)
+{
+	if (GFX_Feet_Smoke[ti_i] != -1)
+	{
+		GFX_Seti(GFX_Feet_Smoke[ti_i], 13106, 0)						// *number of sprite to generate
+		GFX_Feet_Smoke[ti_i] = -1
+	}
+}
+
+
+// EVENT LIFE
+if ( MSG_GlobalIsValid( ID_LIFE ))
+	MSG_GlobalDelete( ID_LIFE , C_EVENT_EOFDEL)
+
+// STATS
+KR_STATS_NMI_Killed(o_KONG)
+
+// SI JE SUIS REACTIVE
+for( ti_i = 0; ti_i < 5; ti_i++ )
+	AI_TrackStop(ti_i)
+
+
+// KER
+COL_UnCollidableReset()
+
+// SND RESPIRATION
+if( i_snd_respiration_loop != -1 )
+{
+	SND_Destroy(i_snd_respiration_loop)
+	i_snd_respiration_loop = -1
+}

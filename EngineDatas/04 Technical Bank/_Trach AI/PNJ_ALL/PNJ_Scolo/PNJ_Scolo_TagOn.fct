@@ -1,0 +1,31 @@
+#include "PNJ_Scolo_defines.var"
+
+#include "ROOT/EngineDatas/04 Technical Bank/AI Models/Global Library/exec_deplacements_tagon.fct"
+
+int			ti_state
+
+PNJ_Scolo_UncollideCheck()
+
+ti_state = -1
+
+switch(i_etat_courant)
+{
+//	case ETAT_mort:	
+//		ti_state = C_EVENT_EnemyState_Die
+//		break
+//
+	case ETAT_Meurt :
+		ti_state = C_EVENT_EnemyState_Neutral
+		break
+
+	case ETAT_Sol :	
+	case ETAT_Apparition :
+	case ETAT_Attaque :
+	case ETAT_Mur :
+	case ETAT_Snap :
+		ti_state = C_EVENT_EnemyState_Fight
+		break
+}
+
+if (ti_state != -1)
+	EVENT_AddEventEnemy(C_ID_Scolo, OBJ_Me(), ti_state)

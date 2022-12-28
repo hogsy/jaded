@@ -1,0 +1,107 @@
+//#include "KAnn_Defines.var"
+//
+//int ti_i
+//messageid tmid_interet
+//vector	tv_dist
+//
+//#define Cf_grenade_XY_friction				1.0
+//#define Cf_grenade_hauteur_impulsion	1.0
+//
+//// SORTIE ETAT ===================================================================
+//if (i_sort_etat)
+//{
+//	i_sort_etat = faux
+//	
+//	if (i_has_weapon)
+//	{
+//		i_has_weapon = 0
+//		ANI_ShapeSelect(Anim_Canal_Snap_MainD, 0)
+//		ANI_ShapeSelect(Anim_Canal_Snap_MainD+1, 0)
+//		ANI_ShapeSelect(Anim_Canal_Snap_MainD+2, 0)
+//	}
+//	
+//	return
+//}
+//
+//// INITIALISATION ETAT ==============================================================
+//if (i_etat_courant != ETAT_Action_Wait)
+//{
+//	i_dernier_etat = i_etat_courant
+//	i_etat_courant = ETAT_Action_Wait
+//
+//	if (fct_last_etat)
+//	{
+//		i_sort_etat = vrai
+//		AI_Execute(fct_last_etat)
+//	}
+//
+//	fct_last_etat = AI_TrackCurGet()
+//	
+//	// AUTORISATIONS DES GRABS
+//	for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+//		ai_SRV_ENABLE[ti_i] = faux
+//	ai_SRV_ENABLE[Ci_LNK_GRAB_RAPTOR]		= vrai
+//	ai_SRV_ENABLE[Ci_LNK_GRAB_TRANSPORTE]	= vrai
+//	ai_SRV_ENABLE[Ci_LNK_KKGRAB_OBJECT]	= vrai
+//	ai_SRV_ENABLE[Ci_LNK_INTERACTION]	= vrai
+//
+//	ACT_ActionSet(Ann_normal_attente)
+//
+//	f_time_start_etat = 0.0
+//	i_action_finished = 0
+//	o_vision_target = nobody
+//	
+//}
+//else
+//{
+//	f_time_start_etat += TIME_GetDt()
+//}
+//
+//
+//// ANALYSE =======================================================================================================
+//
+//AI_Execute("KAnn_exec_serveur_get")
+//if(ao_SRV[Ci_LNK_GRAB_RAPTOR])
+//	macro_change_etat("KAnn_ETAT_grabbed_raptor")
+//	
+//if(ao_SRV[Ci_LNK_GRAB_TRANSPORTE])
+//	macro_change_etat("KAnn_ETAT_grabbed_bat")
+//
+//if(ao_SRV[Ci_LNK_KKGRAB_OBJECT])
+//	macro_change_etat("KAnn_ETAT_grabbed_KK")
+//
+////if(ao_SRV[Ci_LNK_INTERACTION])
+////	macro_change_etat("KAnn_ETAT_attack_bat")
+//
+////if ( MATH_FloatNullEpsilon( @get_global f_time_KK_ANN_avant_la_mort))
+//{
+//	AI_Execute("KAnn_exec_CHECK_paf")
+//	if (o_paf_sender) 
+//		macro_change_etat("KAnn_ETAT_paf")
+//}
+//
+//i_action = @o_safe_wp OBJ_CapaGet() & WP_Capa_Action
+//if ( ! i_action)
+//{
+//	// if no action, go to next waypoint
+//	macro_change_etat("KAnn_ETAT_follow_network")	
+//}
+//
+//
+//// COMPORTEMENT =======================================================================================================
+//
+//// orientation
+//if (KAnn_Get_Interet(tmid_interet))
+//	o_vision_target = MSG_GlobalGetSender(tmid_interet)
+//else if (o_safe_wp.des_object1)
+//	o_vision_target = o_safe_wp.des_object1
+//else
+//	o_vision_target = o_KONG
+//
+//tv_dist = @o_vision_target OBJ_PosGet() - OBJ_PosGet()
+//tv_dist.z = 0.0
+//
+//MATH_VecNormalize(tv_dist)
+//
+//OBJ_SightSet(MATH_VecBlend(OBJ_SightGet(),tv_dist,TIME_GetDt()))
+//

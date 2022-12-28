@@ -1,0 +1,307 @@
+#include "PNJ_Volant_defines.var"
+
+int			ti_i
+int			ti_k
+int			ti_frame_num
+int			ti_flag_collision
+int			ti_flag_ok
+int			ti_action
+
+float		tf_angle
+float		tf_offset
+float		tf_bassin_offset
+float		tf_bassin_offset_min
+float		tf_bassin_offset_max
+float		tf_norm
+float		tf_coef
+float		tf_IK_coef
+float		tf_size_coef
+float		tf_ray_start_offset
+float		tf_dot_product
+
+vector	tv_pied_pos
+vector	tv_collide_pos
+vector	tv_ray_start
+vector	tv_ray_dir
+vector	tv_start_axis
+vector	tv_dest_axis
+vector	tv_ray_normale
+vector	tv_bassin_dest_pos
+vector	tv_rot_pivot_pos
+vector	tav_pied_pos[2]
+vector	tv_IK_bone_last_valid_sight[2]
+vector	tv_IK_bone_last_valid_banking[2]
+
+object	to_target
+object	to_bone
+
+//vector	tv_queue_banking
+//object	to_queue
+
+#define Cf_offset_min						-100.0
+#define Cf_offset_max						100.0
+#define Cf_walk_Z_blend_speed			12.0
+
+#define Ci_bone_pos_index				3
+
+//v_IK_ref_ground_pos = OBJ_PosGet()
+
+tf_coef = OBJ_LodVisGet() 
+if (tf_coef < 0.4) // || IO_KeyPressed(VK_SPACE))
+{
+	PNJ_Volant_Reset_IK()
+	return
+}
+
+tv_ray_dir = -v_virtual_banking
+
+//to_queue = ANI_CanalObjectGet(Anim_Canal_Queue)
+//tv_queue_banking = @to_queue OBJ_BankingGet()
+
+tf_size_coef = 1.0
+
+tf_ray_start_offset = 0.5
+
+// EST-CE QU'ON S'ADAPTE AU RELIEF DU SOL ??? =============================================================
+tf_bassin_offset = 0.0
+
+ti_action = ACT_ActionGet()
+
+tf_coef = DYN_SpeedGet()
+
+for (ti_i = 0; ti_i < 2; ti_i++)
+{
+	if (o_grab_actor)
+		i_flag_leg_IK[ti_i]	= vrai
+	else
+		i_flag_leg_IK[ti_i]	= i_col_flag_on_ground
+
+	if (! i_flag_leg_IK[ti_i] && ! f_IK_coef[ti_i])
+		continue
+
+	tv_IK_bone_last_valid_sight[ti_i] = @ao_IK_bones[ti_i][Ci_bone_pos_index] OBJ_SightGet()
+	tv_IK_bone_last_valid_banking[ti_i] = @ao_IK_bones[ti_i][Ci_bone_pos_index] OBJ_BankingGet()
+
+	tv_pied_pos = @ao_IK_bones[ti_i][Ci_bone_pos_index] OBJ_PosGet()
+
+	tv_ray_start = tv_pied_pos
+	tv_ray_start -= MATH_VecDotProduct(tv_ray_start - @ao_IK_bones[ti_i][0] OBJ_PosGet(), tv_ray_dir) * tv_ray_dir
+
+	if (o_grab_actor)
+	{
+		to_bone	= nobody
+	
+		if (@o_grab_actor AI_IsModel(get_PNJ_Quadri_Path))
+		{
+			if (f_grab_side_sign > 0.0)
+			{
+				if (ti_i)
+					to_bone = @o_grab_actor ANI_CanalObjectGet(4)
+				else
+					to_bone = @o_grab_actor ANI_CanalObjectGet(2)
+			}
+			else
+			{
+				if (ti_i)
+					to_bone = @o_grab_actor ANI_CanalObjectGet(2)
+				else
+					to_bone = @o_grab_actor ANI_CanalObjectGet(4)
+			}
+
+			tav_pied_pos[ti_i] = @to_bone OBJ_PosGet()
+			tav_pied_pos[ti_i] -= @to_bone OBJ_SightGet() * @o_grab_actor OBJ_ZoomGet() * 0.4
+	
+			@ao_IK_bones[ti_i][0] OBJ_Rotate_FromTo(@ao_IK_bones[ti_i][0]  MATH_VecGlobalToLocal(@ao_IK_bones[ti_i][3] OBJ_PosGet() - @ao_IK_bones[ti_i][0] OBJ_PosGet()), @ao_IK_bones[ti_i][0]  MATH_VecGlobalToLocal(tav_pied_pos[ti_i] - @ao_IK_bones[ti_i][0] OBJ_PosGet()))
+			
+			f_IK_Z_offset[ti_i] = MATH_FloatBlend(f_IK_Z_offset[ti_i], 0.0, Cf_walk_Z_blend_speed * TIME_GetDt())	
+	
+			v_IK_ground_normale[ti_i] = v_virtual_banking
+	
+			continue
+		}
+		else if (@o_grab_actor AI_IsModel(get_PNJ_Shark_path))
+		{
+			if (ti_i)
+				to_bone = @o_grab_actor ANI_CanalObjectGet(30)
+			else
+				to_bone = @o_grab_actor ANI_CanalObjectGet(1)
+
+			tav_pied_pos[ti_i] = @to_bone OBJ_PosGet()
+	
+			@ao_IK_bones[ti_i][0] OBJ_Rotate_FromTo(@ao_IK_bones[ti_i][0]  MATH_VecGlobalToLocal(@ao_IK_bones[ti_i][3] OBJ_PosGet() - @ao_IK_bones[ti_i][0] OBJ_PosGet()), @ao_IK_bones[ti_i][0]  MATH_VecGlobalToLocal(tav_pied_pos[ti_i] - @ao_IK_bones[ti_i][0] OBJ_PosGet()))
+			
+			f_IK_Z_offset[ti_i] = MATH_FloatBlend(f_IK_Z_offset[ti_i], 0.0, Cf_walk_Z_blend_speed * TIME_GetDt())	
+	
+			v_IK_ground_normale[ti_i] = v_virtual_banking
+	
+			continue
+		}
+		else if (@o_grab_actor AI_IsModel(get_PNJ_Snake_path))
+		{
+			if (@o_grab_actor ACT_HasActionKit())			
+			{
+				// SPIDER
+				to_bone = @o_grab_actor ANI_CanalObjectGet(Anim_Canal_Tete)
+				
+				tav_pied_pos[ti_i] = @to_bone OBJ_PosGet()
+
+				if (! ti_i)
+					tav_pied_pos[ti_i] -= @to_bone OBJ_BankingGet() * 1.0
+		
+				@ao_IK_bones[ti_i][0] OBJ_Rotate_FromTo(@ao_IK_bones[ti_i][0]  MATH_VecGlobalToLocal(@ao_IK_bones[ti_i][3] OBJ_PosGet() - @ao_IK_bones[ti_i][0] OBJ_PosGet()), @ao_IK_bones[ti_i][0]  MATH_VecGlobalToLocal(tav_pied_pos[ti_i] - @ao_IK_bones[ti_i][0] OBJ_PosGet()))
+				
+				f_IK_Z_offset[ti_i] = MATH_FloatBlend(f_IK_Z_offset[ti_i], 0.0, Cf_walk_Z_blend_speed * TIME_GetDt())	
+		
+				v_IK_ground_normale[ti_i] = v_virtual_banking
+		
+				continue
+			}
+		}
+	}
+
+	if (o_Rided_Actor)
+	{
+		ti_flag_collision = faux
+	
+		if (COL_RayObject_Dist(tv_ray_start, tv_ray_dir, f_IK_leg_length[ti_i], all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable))
+			ti_flag_collision = vrai
+		
+		if (ti_flag_collision)
+		{
+			// OK ON TOUCHE UN SOL, ON VA POUVOIR POSITIONNER EN IK ==============================================
+			tv_collide_pos = COL_RayObject_PosGet()
+			tv_ray_normale = COL_RayObject_NormalGet()
+	
+			DBG_RenderVector(tv_ray_start, tv_collide_pos - tv_ray_start, color_vert)
+			DBG_RenderVector(tv_collide_pos, tv_ray_normale * 0.5, color_jaune)
+			
+			tf_offset = MATH_VecDotProduct(tv_collide_pos - tv_ray_start, tv_ray_dir)
+			if (tf_offset >= tf_ray_start_offset)
+				ti_flag_collision = vrai
+			else
+				ti_flag_collision = faux
+		}
+		else
+		{
+			DBG_RenderVector(tv_ray_start, tv_ray_dir * f_IK_leg_length[ti_i], color_rouge)
+		}
+	}
+	else
+	{
+		tv_ray_normale = v_col_ground_normal
+		MATH_LIB_Intersection_Line_Plane(tv_ray_start, tv_ray_dir, v_col_ground_pos, tv_ray_normale, tf_offset, tv_collide_pos)
+
+		tf_offset = MATH_VecDotProduct(tv_collide_pos - tv_ray_start, tv_ray_dir)
+		if (tf_offset >= tf_ray_start_offset)
+			ti_flag_collision = vrai
+		else
+			ti_flag_collision = faux
+	}
+
+	f_IK_ground_coef[ti_i] = MATH_VecDotProduct(tv_pied_pos - v_IK_ref_ground_pos, v_virtual_banking)
+	f_IK_ground_coef[ti_i] = MATH_FloatLimit(f_IK_ground_coef[ti_i] - 0.7, 0.0, 1.0)
+	f_IK_ground_coef[ti_i] /= 0.3
+	f_IK_ground_coef[ti_i] = 1.0 - f_IK_ground_coef[ti_i]
+
+	if (ti_flag_collision)
+	{
+		v_IK_ground_normale[ti_i] = MATH_VecBlendRotate(v_IK_ground_normale[ti_i], tv_ray_normale, 4.0 * TIME_GetDt())
+		tf_offset = MATH_VecDotProduct(tv_collide_pos - v_IK_ref_ground_pos, tv_ray_dir)
+	}
+	else
+	{
+		v_IK_ground_normale[ti_i] = MATH_VecBlendRotate(v_IK_ground_normale[ti_i], v_col_ground_normal, 4.0 * TIME_GetDt())
+		tf_offset = 0.0	
+	}		
+		
+	if (tf_offset && tf_offset > f_IK_Z_offset[ti_i])
+		f_IK_Z_offset[ti_i] = tf_offset
+	else
+		f_IK_Z_offset[ti_i] = MATH_FloatBlend(f_IK_Z_offset[ti_i], tf_offset, Cf_walk_Z_blend_speed * TIME_GetDt())
+
+	tav_pied_pos[ti_i] = @ao_IK_bones[ti_i][Ci_bone_pos_index] OBJ_PosGet()
+	tav_pied_pos[ti_i] += tv_ray_dir * f_IK_Z_offset[ti_i]
+
+//	DBG_RenderVector(tav_pied_pos[ti_i], v_IK_ground_normale[ti_i], color_jaune)
+}
+
+tf_IK_coef = f_IK_coef[Ci_IK_pied_gauche]
+//tf_IK_coef = MATH_FloatMax(tf_IK_coef, f_IK_coef[Ci_IK_pied_droit])
+//tf_IK_coef = MATH_FloatMax(tf_IK_coef, f_IK_coef[Ci_IK_main_gauche])
+//tf_IK_coef = MATH_FloatMax(tf_IK_coef, f_IK_coef[Ci_IK_main_droite])
+
+//// DECALAGE EN Z DU BASSIN POUR QUE LES PIEDS PUISSENT TOUCHER LE SOL ====================================
+//tf_bassin_offset_min = Cf_Infinit
+//tf_bassin_offset_max = -Cf_Infinit
+//
+//for (ti_i = 0; ti_i < 2; ti_i++)
+//{
+//	if (f_IK_Z_offset[ti_i] < tf_bassin_offset_min)
+//		tf_bassin_offset_min = f_IK_Z_offset[ti_i]
+//
+//	if (f_IK_Z_offset[ti_i] > tf_bassin_offset_max)
+//		tf_bassin_offset_max = f_IK_Z_offset[ti_i]
+//}
+//
+//tf_bassin_offset = tf_bassin_offset_min
+//tf_bassin_offset += MATH_FloatMin(tf_bassin_offset_max - tf_bassin_offset_min, OBJ_ZoomGet() * 0.6)
+//
+//f_bassin_Z_offset	= MATH_FloatBlend(f_bassin_Z_offset, tf_bassin_offset, 8.0 * TIME_GetDt())
+//
+//tv_bassin_dest_pos = @o_bassin OBJ_PosGet()
+//tv_bassin_dest_pos += tv_ray_dir * (f_bassin_Z_offset * f_IK_coef[Ci_IK_pied_gauche])
+//
+//@o_bassin OBJ_PosSet(tv_bassin_dest_pos)
+
+// ON EXECUTE L'IK =============================================================================================================
+for (ti_i = 0; ti_i < 2; ti_i++)
+{
+	if (i_flag_leg_IK[ti_i])
+		f_IK_coef[ti_i] += MATH_FloatMin(1.0 - f_IK_coef[ti_i], TIME_GetDt() * 4.0)	
+	else if (f_IK_coef[ti_i])
+		f_IK_coef[ti_i] -= MATH_FloatMin(f_IK_coef[ti_i], 2.0 * TIME_GetDt())
+	else
+	{
+		v_IK_ground_normale[ti_i] = v_col_ground_normal
+		continue
+	}
+
+	f_IK_Z_offset[ti_i] *= f_IK_coef[ti_i]
+	f_IK_ground_coef[ti_i] *= f_IK_coef[ti_i]
+
+//	OBJ_LIB_IK_3_Bones(	ao_IK_bones[ti_i][0], ao_IK_bones[ti_i][1], ao_IK_bones[ti_i][2],
+//									af_IK_bones_length[ti_i][0], af_IK_bones_length[ti_i][1], af_IK_bones_length[ti_i][2], 
+//									tav_pied_pos[ti_i], -@ao_IK_bones[ti_i][0] OBJ_SightGet(), -@ao_IK_bones[ti_i][2] OBJ_BankingGet(),
+//									0.5, f_IK_coef[ti_i] )
+
+
+	OBJ_LIB_IK_3_Bones(	ao_IK_bones[ti_i][0], ao_IK_bones[ti_i][1], ao_IK_bones[ti_i][2],
+									af_IK_bones_length[ti_i][0], af_IK_bones_length[ti_i][1], af_IK_bones_length[ti_i][2], 
+									tav_pied_pos[ti_i], @ao_IK_bones[ti_i][0] OBJ_BankingGet(), -@ao_IK_bones[ti_i][2] OBJ_BankingGet(),
+									0.6, f_IK_coef[ti_i] )
+
+
+	if (o_grab_actor)
+	{
+		@ao_IK_bones[ti_i][Ci_bone_pos_index] OBJ_Rotate_FromTo(cvector(0.0, 1.0, 0.0), @ao_IK_bones[ti_i][Ci_bone_pos_index] MATH_VecGlobalToLocal(@o_bassin OBJ_PosGet() - @ao_IK_bones[ti_i][Ci_bone_pos_index]  OBJ_PosGet()))
+	}
+	else
+	{
+		@ao_IK_bones[ti_i][Ci_bone_pos_index] OBJ_BankingGeneralSet(
+			MATH_VecBlend(@ao_IK_bones[ti_i][Ci_bone_pos_index] OBJ_SightGet(), tv_IK_bone_last_valid_sight[ti_i], f_IK_coef[ti_i]) , 
+			MATH_VecBlend(@ao_IK_bones[ti_i][Ci_bone_pos_index] OBJ_BankingGet(), tv_IK_bone_last_valid_banking[ti_i], f_IK_coef[ti_i]) )
+	}
+
+//	if (f_IK_ground_coef[ti_i])
+//	{
+//		tv_start_axis = @ao_IK_bones[ti_i][Ci_bone_pos_index] MATH_VecGlobalToLocal(v_virtual_banking)
+//		
+//		tv_dest_axis = v_IK_ground_normale[ti_i]
+//		tv_dest_axis = MATH_VecInCone(tv_dest_axis, - @ao_IK_bones[ti_i][1] OBJ_BankingGet(), Cf_PiBy6, 1)
+//		tv_dest_axis = @ao_IK_bones[ti_i][Ci_bone_pos_index] MATH_VecGlobalToLocal(tv_dest_axis)
+//		tv_dest_axis = MATH_VecBlend(tv_start_axis, tv_dest_axis, f_IK_ground_coef[ti_i])
+//		@ao_IK_bones[ti_i][Ci_bone_pos_index] OBJ_Rotate_FromTo(tv_start_axis, tv_dest_axis)
+//	}
+}
+
+return

@@ -1,0 +1,214 @@
+#include "PNJ_Raptor_defines.var"
+
+int				ti_i
+int				ti_trame
+int				ti_flag_orient
+
+float			tf_interet
+float			tf_norm
+float			tf_jump_Z_max
+float			tf_time
+
+vector		tv_jump_dest_pos
+vector		tv_new_sight
+vector		tv_speed
+vector		tv_temp
+vector		tv_offset
+
+object		to_target
+object		to_collide_object
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+
+	i_flag_zde_fight_enable = faux
+	DYN_FrictionVectorSet(Cv_Raptor_friction)	
+
+	COL_UnCollidableReset()
+
+//	COL_ZoneSizeSet(C_zdm_pied, cvector(1.0, 1.0, 1.0))
+//	COL_ZonePosSet(C_zdm_pied, cvector(0.0, 0.0, 1.0))
+
+	if (i_etat_courant != ETAT_block)
+		o_block_actor = LNK_ClientGet(Ci_LNK_BLOCK_RAPTOR, mid_block_actor_LNK_ID, faux, nofunc, nofunc, nofunc)
+
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_terrasse)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_terrasse
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	ACT_ActionSet(Action_Saut_deb)
+
+//	COL_ZoneSizeSet(C_zdm_pied, cvector(0.5, 0.5, 0.5))
+//	COL_ZonePosSet(C_zdm_pied, cvector(0.0, 0.0, 0.5))
+
+	PNJ_Raptor_Uncollide_Humans()
+
+	i_flag_force_fail = faux
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =======================================================================================================
+AI_Execute("PNJ_Raptor_exec_check_sound")
+
+AI_Execute("PNJ_Raptor_exec_check_collision")
+
+AI_Execute("PNJ_Raptor_exec_check_vision")
+
+//AI_Execute("PNJ_Raptor_exec_check_best_interest")
+
+EVENT_InteretStatusSet(mid_best_interet, C_EVENT_InteretStatusLock)
+EVENT_LifeSet(mid_best_interet, 10.0)
+
+to_target = EVENT_InteretTargetGet(mid_best_interet)
+
+//i_flag_look = vrai
+//v_look_pos = @o_fight_actor COL_ZonePosGet(C_zde_corps)
+
+// COMPORTEMENT =================================================================================================
+ti_flag_orient = vrai
+
+if (ACT_ActionGet() == Action_Saut_deb)
+{
+	// DEBUT DU SAUT
+
+	AI_Execute("PNJ_Raptor_exec_check_paf")
+//	if (o_paf_actor)
+//		macro_change_etat("PNJ_Raptor_ETAT_paf")
+
+	if (ACT_ActionFinished())
+	{
+		ACT_ActionSet(Action_Saut_cycl)
+	
+		tv_jump_dest_pos = OBJ_PosGet()
+		tv_jump_dest_pos -= @to_target OBJ_PosGet()
+		tv_jump_dest_pos.z = 0.0
+		
+		tf_norm = MATH_VecDotProduct(tv_jump_dest_pos, tv_jump_dest_pos)
+		if (tf_norm)
+		{
+			tv_temp = DYN_LIB_ImpulsionGet_Friction(OBJ_PosGet(), @to_target OBJ_PosGet(), Cv_Raptor_Gravity, Cf_Raptor_jump_friction, tf_time, faux, 1.5)
+			DYN_SpeedSetVector(tv_temp)
+			DYN_FrictionVectorSet(Cv_Raptor_jump_friction)
+		}
+	}
+}
+else if (ACT_ActionGet() == Action_Saut_cycl)
+{
+	// ON EST EN L'AIR	
+	
+	if (! o_paf_actor)
+		AI_Execute("PNJ_Raptor_exec_check_paf")
+
+	if (@to_target ACT_CustomBitTest(0b1) || o_paf_actor != to_target)
+		i_flag_force_fail = vrai
+
+	to_collide_object	= nobody
+
+	if (COL_ZDE_ZDECollide(to_target, C_zde_corps, C_zde_corps))
+		to_collide_object = to_target
+	else if (COL_CollideType(COL_C_Ground))
+		to_collide_object = COL_ObjectGet(COL_C_Ground)
+//	else if (COL_CollideType(COL_C_Wall))
+//		to_collide_object = COL_ObjectGet(COL_C_Wall)
+//
+ 	if (to_collide_object)
+	{
+		ti_flag_orient = faux	
+	
+		DYN_FrictionVectorSet(Cv_Raptor_friction)
+		
+//		if (o_paf_actor)
+//		{
+//			ACT_ActionSet(Action_Saut_paf)
+//		}
+//		else 
+		{
+			if (!i_flag_force_fail && to_collide_object == to_target)
+				o_block_actor = LNK_ThisClientGet(to_target, Ci_LNK_BLOCK_RAPTOR, mid_block_actor_LNK_ID, vrai, nofunc, nofunc, nofunc)
+	
+//			if (o_block_actor)
+				ACT_ActionSet(Action_Saut_fin)
+//			else
+//				ACT_ActionSet(Action_Saut_echec)
+		}
+	}
+	else if (i_flag_force_fail)
+	{
+		tv_speed = DYN_SpeedGetVector()
+		tv_speed.z = 0.0
+		tf_norm = MATH_VecNorm(tv_speed)
+		tv_speed /= tf_norm
+	
+		tv_temp	= @to_target OBJ_PosGet() - OBJ_PosGet()
+		tv_temp.z = 0.0
+		tf_norm = MATH_VecNorm(tv_temp)
+		tv_temp /= tf_norm
+
+		tv_temp = MATH_VecInCone(tv_speed, -tv_temp, 3.0, 0)
+	
+		tv_speed = MATH_VecRotate(DYN_SpeedGetVector(), Cv_VerticalVector, MATH_VecAngle(tv_speed, tv_temp, Cv_VerticalVector))
+		DYN_SpeedSetVector(tv_speed)
+	}
+	else	
+	{
+		tv_speed = DYN_SpeedGetVector()
+		tv_speed.z = 0.0
+
+		tv_temp	= @to_target OBJ_PosGet() - OBJ_PosGet()
+		tv_temp.z = 0.0
+	
+		tv_speed = MATH_VecRotate(DYN_SpeedGetVector(), Cv_VerticalVector, MATH_VecAngle(tv_speed, tv_temp, Cv_VerticalVector))
+		DYN_SpeedSetVector(tv_speed)
+	}
+}
+else
+{
+	// FIN DU SAUT	
+
+	ti_flag_orient = faux
+
+	o_block_actor = LNK_ThisClientGet(o_block_actor, Ci_LNK_BLOCK_RAPTOR, mid_block_actor_LNK_ID, vrai, nofunc, nofunc, nofunc)
+
+	if (ACT_ActionFinished())
+	{
+		if (o_block_actor)
+			macro_change_etat("PNJ_Raptor_ETAT_block")
+		else
+			macro_change_etat(fct_main_etat)
+	}
+}
+if (ti_flag_orient)
+{
+	tv_new_sight = DYN_SpeedGetVector()
+	tv_new_sight.z = 0.0
+	
+	tf_norm = MATH_VecDotProduct(tv_new_sight, tv_new_sight)
+	if (tf_norm)
+	{
+		tf_norm = MATH_FloatSqrt(tf_norm)
+		tv_new_sight /= tf_norm
+	
+		tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_new_sight, 12.0 * TIME_GetDt())
+		OBJ_BankingGeneralSet(tv_new_sight, v_virtual_banking)
+	}
+}

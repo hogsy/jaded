@@ -1,0 +1,52 @@
+#include "RM_Lum_defines.var"
+
+vector	tv_sens
+
+object	to_canal
+
+// SORTIE ===================================================================
+if( i_etat_sortie )
+{
+	i_etat_sortie = faux
+	return
+}
+
+// ENTREE ===================================================================
+if( i_etat_courant != ETAT_FOLLOW )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_FOLLOW
+	if( fct_etat_last_track )
+	{
+		i_etat_sortie = vrai
+		AI_Execute(fct_etat_last_track)
+	}
+	f_etat_duree = 0.0
+	f_blend_distance = 0.0
+}
+else
+{
+	f_etat_duree += TIME_GetDt()
+	f_no_cage_duree += TIME_GetDt()
+}
+
+// ANALYSE ==================================================================
+
+// COMPORTEMENT ============================================================
+
+to_canal = @get_rayman ANI_CanalObjectGet(Anim_Canal_Torse)
+v_sens = OBJ_PosGet() - @to_canal OBJ_PosGet()
+
+// Deplacement a la con pour archiver un truc qui compile
+if ( f_etat_duree > Lum_Duree_Attente() )
+{
+	// RECUPERE
+	DBG_RenderVector(OBJ_PosGet(), - v_sens, color_rouge)
+	if ( MATH_VecDotProduct( v_sens, v_sens) <= 0.4)
+	{
+		AI_TrackCurChangeNow("RM_Lum_ETAT_absorbe")
+	}
+}
+
+OBJ_BankingGeneralSet( MATH_VecBlendRotate( OBJ_SightGet(), -v_sens, 5.0 * TIME_GetDt()), Cv_VerticalVector)
+

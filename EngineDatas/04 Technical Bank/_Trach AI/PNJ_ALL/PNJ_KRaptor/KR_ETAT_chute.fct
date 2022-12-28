@@ -1,0 +1,47 @@
+ #include "KR_defines.var"
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	DYN_GravitySet(Cv_NormalGravity)
+	DYN_FrictionVectorSet(Cv_Raptor_friction)
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_chute)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_chute
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	fct_last_etat = AI_TrackCurGet()
+	
+	DYN_GravitySet(Cv_NormalGravity * 3.0)
+	DYN_FrictionVectorSet(Cv_Raptor_friction_chute)	
+	f_time_start_etat = 0.0
+	ACT_ActionSet( Action_Fight_Saut_cycl)
+	
+	// SUPPRESSION DE L'INTERET (POUR L'ARRET DU TIMER DE MORT ANN)
+	KR_DelInterestMsg(vrai)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+if ( f_time_en_lair > 5.0)
+	OBJ_Destroy()
+
+if(COL_CollideType(COL_C_Ground))
+{
+	macro_change_etat("KR_ETAT_paf")			// gros paf réception sol
+}
+

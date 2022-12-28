@@ -1,0 +1,156 @@
+vector 		v, impulse
+float			f_time, f_dist, f_success
+message	msg
+int				i
+
+mf_TimeLeft -= TIME_GetDt()
+@get_global i_ennemi_counter_new[Ci_ennemi_counter_in_fight]++
+
+// orientation vers cible
+if (mo_Target)
+{
+	if(OBJ_SqrDist(mo_Target) < 4) return
+	v = @mo_Target OBJ_PosGet() - OBJ_PosGet()
+	MATH_VecSetHorzNormalize(v)
+	v = MATH_VecBlendRotate(OBJ_SightGet(), v, 10 * TIME_GetDt())
+	OBJ_SightGeneralSet( v, Cv_VerticalVector ) 
+	
+	for (i = 4; i >= 1; i--)
+		mav_TargetPos[ i ] = mav_TargetPos[ i - 1 ]
+	mav_TargetPos[ 0 ] = @mo_Target OBJ_PosGet()
+		
+	mv_TargetSpeed = (mav_TargetPos[ 0 ] - mav_TargetPos[ 1 ]) / TIME_GetDt()
+}
+
+
+// FRED - GESTION MASTER -------------------------
+if (o_master && OBJ_CapaTest(Capa_PNJ_Hide))
+{
+	// On me demande de rentrer
+	OBJ_CapaSet(none, Capa_PNJ_Attaque+Capa_PNJ_Hide)
+	mi_AttackState = 20			// Je passe dans le dernier etat
+	mf_TimeLeft = -1 					// Je rentre de suite en sqwizant tous les delais
+}
+// FRED - GESTION MASTER -------------------------
+
+// prepare attack
+if (mi_AttackState == 0)
+{
+	ACT_ActionSet(0)
+	mf_TimeLeft = mf_TimeBeforeAttack
+	mi_AttackState = 1
+	return
+}
+
+if ( mi_AttackState == 1 )
+{
+	if (mf_TimeLeft < 0 )
+		mi_AttackState = 2 
+	return
+}
+
+// attack
+if ( mi_AttackState == 2 )
+{
+	// do attack
+	ACT_ActionSet( 40 )
+	f_time_tir = TIME_Get()
+	mi_AttackState = 3
+	return
+}
+
+if (mi_AttackState == 3 )
+{
+	DYN_SpeedSetVector( Cv_NullVector )
+
+	i = ANI_CurrentFrameGet(0)
+	
+	if (mo_WeaponCur && TIME_Elapsed(f_time_tir, 0.86) ) // > ANI_CurrentFrameGet(0) > 51 ))
+	{
+		if (mo_Target)
+		{
+			v = @mo_Target OBJ_PosGet() + cvector( 0, 0, 1.5 )
+			v += mv_TargetSpeed * mf_JavelinTime
+
+			v -= OBJ_PosGet()
+			f_dist = MATH_VecNorm( v )
+			if ( (mf_LaunchDistanceMax > 0) && (f_dist > mf_LaunchDistanceMax ) )
+			{
+				v /= f_dist
+				v *= mf_LaunchDistanceMax
+			}
+			else // calcul du ratage possible
+			{		
+				if ( MATH_VecDotProduct(v/f_dist, @mo_Target OBJ_SightGet()) < -0.5 )
+					f_success = mf_LaunchSuccess
+				else
+					f_success = mf_BackLaunchSuccess
+				if ( MATH_RandFloat(0,1) >= f_success )
+				{
+					v += @mo_Target OBJ_SightGet() * MATH_RandFloat(0.5, 2)
+					v += @mo_Target OBJ_HorizonGet() * MATH_RandFloat( -1, 1 )
+				}
+			}
+			v += OBJ_PosGet()
+		}
+		else
+			v = @mo_WeaponCur OBJ_PosGet() + (10 * @mo_WeaponCur OBJ_SightGet() ) 
+		
+		//DYN_LIB_ImpulsionGet_Friction(vector tv_start_pos, vector tv_dest_pos, vector tv_gravity, float tf_friction, byref float tf_time, int ti_flag_Z_friction, float tf_hauteur_saut)
+		impulse = DYN_LIB_ImpulsionGet_Friction( @mo_WeaponCur OBJ_PosGet(), v, Cv_NormalGravity/10, 1.0, f_time, faux, 0.5)
+		mf_JavelinTime = f_time
+		
+		MSG_SetNull( msg )
+		msg.msg_id = msg_id_grenadelaunch
+		msg.msg_sender = OBJ_Me()
+		msg.msg_vec1 = impulse
+		msg.msg_vec2 = Cv_NormalGravity/10
+		msg.msg_vec3 = cvector(1.0, 1.0, 0.0)
+		@mo_WeaponCur MSG_Send( msg )
+		mo_WeaponCur = nobody
+		mi_HadWeapon = faux
+	}
+
+	if ( ACT_ActionFinished() )
+		mi_AttackState = 10
+}
+
+// after attack
+if (mi_AttackState == 10 ) 
+{
+	ACT_ActionSet( 0 )
+	mf_TimeLeft = mf_TimeAfterAttack
+	mi_AttackState = 11
+}
+
+if (mi_AttackState == 11 )
+{
+	if (mf_TimeLeft < 0)
+	{
+		mf_TimeLeft = mf_TimeBeforeHide
+		if (mf_TimeLeft == 0)
+		{
+			mi_AttackState = 0
+			mi_HadWeapon = vrai
+		}
+		else
+			mi_AttackState = 20
+	}
+	return
+}
+
+// back to hiding place
+if ( mi_AttackState == 20 )
+{
+	// FRED - GESTION MASTER -------------------------
+	if (o_master && OBJ_CapaTest(Capa_PNJ_Hide))
+	{
+		// On me demande de rentrer
+		OBJ_CapaSet(none, Capa_PNJ_Attaque+Capa_PNJ_Hide)
+		mf_TimeLeft = -1 					// Je rentre de suite en sqwizant tous les delais
+	}
+	// FRED - GESTION MASTER -------------------------
+	if (mf_TimeLeft < 0)
+		AI_TrackCurChange( "PNJInd_State_Hide" )
+	 return
+}

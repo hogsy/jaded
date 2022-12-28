@@ -1,0 +1,46 @@
+//set the textures initially to invisible
+
+o_Kong = AI_MainActorGet(C_ID_Kong)
+if( ! o_Kong )
+	return
+
+@o_empty_wayPoint OBJ_SightSet( MATH_VecNormalize(cvector(0,0,1)  + cvector(0.1, 0.1, 0.1)))
+
+for(j=0; j< i_number_sounds; j++)
+{
+	if(o_Ground_Impact_Textures[j] && o_WallPunch_Impact_Textures[j] && o_empty_wayPoint)
+	{
+	 	@o_Ground_Impact_Textures[j] 			OBJ_FlagInvisibleSet(1)
+		@o_WallPunch_Impact_Textures[j]  	OBJ_FlagInvisibleSet(1)
+		//@o_wallingTexture  OBJ_FlagInvisibleSet(1)
+	}
+
+}
+
+////copy walling GFX, since we need 2 copies, one for each foot...
+//for(j=0; j< i_number_sounds; j++)
+//{
+//	for(p =0; p< i_number_movements; p++)
+//	{
+//		for(l=0; l< i_number_GFX; l++)
+//		{
+//			if(o_MovementSoundID[j][p][l])
+//			{
+//				o_WallingLeftSoundID[j][p][l]					=		@o_MovementSoundID[j][p][l] OBJ_Duplicate( @o_MovementSoundID[j][p][l] OBJ_PosGet() + cvector(0.0,0.0,-100) )
+//				o_WallingLeft1SoundID[j][p][l]					=		@o_MovementSoundID[j][p][l] OBJ_Duplicate( @o_MovementSoundID[j][p][l] OBJ_PosGet() + cvector(0.0,0.0,-100) )
+//				o_WallingRight1SoundID[j][p][l]					=		@o_MovementSoundID[j][p][l] OBJ_Duplicate( @o_MovementSoundID[j][p][l] OBJ_PosGet() + cvector(0.0,0.0,-100) )
+//			}	
+//					
+//			if(f_MovementSoundID_Delay[j][p][l])	
+//			{						
+//				f_WallingLeftSoundID_Delay[j][p][l]			=		f_MovementSoundID_Delay[j][p][l]	
+//				f_WallingLeft1SoundID_Delay[j][p][l]		= 		f_MovementSoundID_Delay[j][p][l]	
+//				f_WallingRight1SoundID_Delay[j][p][l]		= 		f_MovementSoundID_Delay[j][p][l]	
+//			}			
+//		}		
+//	}	
+//}
+
+AI_TrackCurChange("Wall_Effect_ray_trace")
+
+

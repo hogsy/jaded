@@ -1,0 +1,178 @@
+#include "PNJ_Brontosaure_defs.var"
+
+int			ti_string_ID
+float		tf_wanted_speed
+float		tf_walk_speed
+float		tf_run_speed
+float		tf_walk_mult
+float		tf_run_mult
+float		tf_walk_freq
+float		tf_run_freq
+int			ti_action		
+float		tf_frequence
+vector	v0, v1
+float		tf_freq
+
+#define Cf_acceleration										4.0
+#define Cf_decceleration									2.0
+
+//--------( Sortie Etat )--------
+if (etat_i_quitte)
+{
+	etat_i_quitte = faux
+	return
+}
+
+//--------( Entrée Etat )--------
+if ( etat_i_courant != BRONTO_ETAT_walk )
+{
+	etat_i_endofpath = 0
+	etat_i_ancien = etat_i_courant
+	etat_i_courant = BRONTO_ETAT_walk
+		
+	//----( quitte état précédent )----
+	if ( etat_fct )
+	{
+		etat_i_quitte = vrai
+		AI_Execute( etat_fct )
+	}
+	
+	//--------( init variable )------------------------------------------------------------------------------------
+	etat_fct = AI_TrackCurGet()
+	etat_f_timer = 0
+	ACT_ActionSet( BRONTO_ACT_walk )
+	ACT_ActionFrequencySet( BRONTO_ACT_walk, 58 )
+	DYN_SpeedSetVector( Cv_NullVector )
+	return
+}
+
+//--------( timer )---------
+etat_f_timer += TIME_GetDt()
+
+//--------( speed )---------
+if ( troupe_o_orga )
+{
+	move_f_speed = (troupe_f_speed + troupe_f_speedadd) * troupe_f_speedfactor
+	
+	if (move_f_speed <= 0.1 )
+	{
+		f_wanted_speed = 0.0
+		macro_change_etat( "pnjbronto_wait" )
+	}
+	else
+	{
+		tf_wanted_speed = move_f_speed * 6.0
+
+		if (tf_wanted_speed > f_wanted_speed)
+			f_wanted_speed += MATH_FloatMin(tf_wanted_speed - f_wanted_speed, Cf_acceleration * TIME_GetDt())
+		else
+			f_wanted_speed -= MATH_FloatMin(f_wanted_speed - tf_wanted_speed, Cf_decceleration * TIME_GetDt())
+	
+//		ti_string_ID = STR_CreateText("Speed : ", VIEW_3dWorldTo2d(0, OBJ_PosGet() + cvector(0.0, 0.0, 5.0)), 0.0)
+//		STR_AppendFloat(ti_string_ID, f_wanted_speed, 2)
+
+		tf_wanted_speed = f_wanted_speed
+
+		tf_walk_speed = 3.26 * OBJ_ZoomGet()
+		tf_run_speed = 10.54 * OBJ_ZoomGet()
+
+		if (tf_wanted_speed < tf_walk_speed)
+		{
+			ti_action = BRONTO_ACT_walk
+			tf_frequence = tf_wanted_speed / tf_walk_speed
+		}
+		else if (tf_wanted_speed > tf_run_speed)
+		{
+			ti_action = BRONTO_ACT_run
+			tf_frequence = tf_wanted_speed / tf_run_speed
+		}
+		else
+		{
+			tf_walk_freq = tf_wanted_speed / tf_walk_speed
+			tf_run_freq = tf_wanted_speed / tf_run_speed
+		
+			if (tf_walk_freq >= 1.0)
+				tf_walk_mult = tf_walk_freq
+			else
+				tf_walk_mult = 1.0 / tf_walk_freq
+		
+			if (tf_run_freq >= 1.0)
+				tf_run_mult = tf_run_freq
+			else
+				tf_run_mult = 1.0 / tf_run_freq
+
+			// On prend l'action qui est la moins modifiée en terme de changement de fréquence
+			if (tf_walk_mult < tf_run_mult)
+			{
+				ti_action = BRONTO_ACT_walk
+				tf_frequence = tf_walk_freq
+			}
+			else
+			{
+				ti_action = BRONTO_ACT_run
+				tf_frequence = tf_run_freq
+			}
+		}
+
+		ACT_ActionSet(ti_action)
+		ACT_LIB_ActionFrequencyMultiply(tf_frequence)
+	
+//		if ( ACT_ActionGet() == BRONTO_ACT_walk )
+//		{
+//			if (move_f_speed > 1.1 )
+//				ACT_ActionSet( BRONTO_ACT_run)
+//		}
+//		else
+//		{
+//			if (move_f_speed <= 0.9 )
+//				ACT_ActionSet( BRONTO_ACT_walk )
+//		}
+//		
+//		if ( ACT_ActionGet() == BRONTO_ACT_walk )
+//			tf_freq = (58  * move_f_speed * 2) / f_Zoom
+//		else
+//			tf_freq = (64.0 * move_f_speed *  0.5) / f_Zoom
+//
+//		if (tf_freq < 1) tf_freq = 1
+//		if (tf_freq > 255) tf_freq = 255
+//		ANI_FrequencySet( 0, tf_freq)
+	}
+}
+else
+	move_f_speed = move_f_speedwalk 
+
+//--------( déplacement )--------
+AI_Execute( "pnjbronto_exec_move" )
+
+//--------( cible dépassée )--------
+if ( move_o_WP[ 0] )
+{
+	v0 = @move_o_WP[ 1 ] OBJ_PosGet()
+	v1 = v0 - OBJ_PosGet()
+	v0 -= @move_o_WP[ 0 ] OBJ_PosGet()
+	if (MATH_VecDotProduct(v0, v1) < 0)
+		move_i_neardest = 1
+}
+else
+{
+	v1 = @move_o_WP[ 1 ] OBJ_PosGet() - OBJ_PosGet()
+	v0 = OBJ_SightGet()
+	if (MATH_VecDotProduct(v0, v1) < 0)
+		move_i_neardest = 1
+}
+
+//--------( arrivée sur la cible )--------
+if ( move_i_neardest )
+{
+	move_o_WP[ 0 ] = 	move_o_WP[ 1 ]
+	move_o_WP[ 1 ] = 	move_o_WP[ 2 ]
+	if ( move_o_WP[ 1 ] == nobody )
+		macro_change_etat( "pnjbronto_wait" )
+
+	push (move_o_WP[ 1 ])
+	AI_Execute( "pnjbronto_exec_computewpwidth" )
+
+	move_o_WP[ 2 ] = WAY_NetNextWP( move_network,move_o_WP[ 1 ],0,0)
+	AI_Execute( "pnjbronto_exec_computemovedest" )
+}
+

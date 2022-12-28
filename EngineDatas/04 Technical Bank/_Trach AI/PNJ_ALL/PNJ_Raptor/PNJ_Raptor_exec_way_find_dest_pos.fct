@@ -1,0 +1,731 @@
+#include "PNJ_Raptor_defines.var"
+
+int					ti_i
+int					ti_index
+int					ti_flag_jump
+int					ti_flag_get_next_wp
+int					ti_flag_ok
+
+float				tf_dist
+float				tf_test_dist
+float				tf_norm
+
+object			to_cadavre
+object			to_nearest_wp
+object			to_start_wp
+object			to_dest_wp
+
+vector			tv_pos
+vector			tv_temp
+vector			tv_dest_pos
+vector			tv_best_sight
+
+int 				ti_wp_to_reach_nb
+int					ti_stop_when_nb
+object 			tao_wp_to_reach[100]
+
+color				tc_way_color
+
+#ifdef SHOW_RASTER
+DBG_StopRaster(8)
+DBG_StartRaster(1, "Recherche chemin")
+#endif
+
+if (o_next_wp && @o_next_wp OBJ_CapaTest(Ci_Capa_Exclusion))
+	o_next_wp = nobody
+
+if (o_current_wp && @o_current_wp OBJ_CapaTest(Ci_Capa_Exclusion))
+	o_current_wp = nobody
+
+switch(i_way_computation_mode)
+{
+//	case 666 :
+	case Ci_WAY_MODE_FIGHT :
+
+		if (i_way_computation_mode != i_way_computation_old_mode)
+		{
+			// INITIALISATION
+			i_way_computation_old_mode = i_way_computation_mode
+
+			PNJ_Raptor_Clean_Way()
+		}
+		
+//		if (i_SND_flag_leaving_requin_mode)
+//		{	
+//			if (i_perceived_best_actor_index != -1 && i_perceived_best_actor_index != i_perceived_main_actor_index)
+//			{
+//				i_SND_flag_leaving_requin_mode = faux
+//			}
+//			else if (f_me_to_main_dist < 20.0)
+//			{
+//				i_SND_flag_leaving_requin_mode = faux
+//				SND_RequestPlayOnObjCanal(Ci_SND_LeaveRequinMode, Anim_Canal_Tete)
+//				PNJ_Raptor_Roar_Mix()
+//				
+//				DBG_TraceObject(OBJ_Me())
+//				DBG_TraceString(" joue son cri en sortie de mode requin")
+//				DBG_TraceEOL()
+//			}
+//		}	
+
+		switch(raptor_type)
+		{
+			case C_ID_Raptor :
+				if (i_SND_flag_attaque_hors_champs)
+				{
+					if (f_me_to_main_dist < 8.0)
+					{
+						i_SND_flag_attaque_hors_champs = faux
+						PNJ_Raptor_Roar_Mix()
+					}
+				}
+				else if (i_perceived_best_actor_index == i_perceived_main_actor_index && f_me_to_main_dist < 15.0)
+				{
+					PNJ_Raptor_Roar_Mix()
+				}
+		
+			case C_ID_Galiminus :
+
+				if (i_SND_flag_1st_attack && f_me_to_main_dist < 30.0)
+				{
+					i_SND_flag_1st_attack = faux
+
+					if (TIME_Elapsed(@get_global  f_time_last_gali_annonce, 60.0))
+					{
+						@get_global f_time_last_gali_annonce = TIME_Get()
+						PNJ_Raptor_Roar_Mix()
+					}
+				}
+
+				break
+		}
+	
+		if (o_charogne_bone)
+			PNJ_Raptor_Reach_This_Position(@o_charogne_bone OBJ_PosGet(), i_target_territory_ID)
+		else
+			PNJ_Raptor_Reach_This_Position(EVENT_InteretPositionGet(mid_best_interet), i_target_territory_ID)
+
+		break
+
+	case Ci_WAY_MODE_CINE_VALA : 
+
+		if (i_way_computation_mode != i_way_computation_old_mode)
+		{
+			// INITIALISATION
+			i_way_computation_old_mode = i_way_computation_mode
+
+			PNJ_Raptor_Clean_Way()
+		}
+		
+		if (i_flag_in_my_net_cine_wp)
+			PNJ_Raptor_Reach_This_WP(o_cine_vala_wp)
+		else
+			PNJ_Raptor_Reach_This_Position(@o_cine_vala_wp OBJ_PosGet(), i_cine_vala_dest_territory)
+		break
+
+	case Ci_WAY_MODE_VALA :
+
+		if (i_way_computation_mode != i_way_computation_old_mode)
+		{
+			// INITIALISATION
+			i_way_computation_old_mode = i_way_computation_mode
+		
+			f_force_requin_mode_duration = 0.0	
+
+			PNJ_Raptor_Clean_Way()
+	
+			SND_RequestPlayOnObjCanal(Ci_SND_Kai, Anim_Canal_Tete)
+			
+			o_fuite_wp = nobody
+
+			i_flag_find_safe_pos = vrai
+		}
+
+		// VALA ?
+		if (MSG_GlobalIsValid(mid_vala))
+		{
+			o_fuite_wp = EVENT_Vala_WpGet(mid_vala)
+#ifndef _FINAL_
+			if (DBG_Log_Allowed)
+			{
+				DBG_TraceFloat(TIME_Get())
+				DBG_TraceString(" => ")
+				DBG_TraceObject(OBJ_Me())
+				DBG_TraceString(" a reçu un vala vers le WP ")
+				DBG_TraceObject(o_fuite_wp)
+				DBG_TraceEOL()
+			}
+#endif
+		}
+
+		// RECHERCHE DU POINT A ATTEINDRE
+
+		if ( ! o_fuite_wp || ! PNJ_Raptor_Territory_ID_Allowed(o_fuite_wp.des_int2) )
+		{
+			to_start_wp = PNJ_Raptor_Start_Wp_Get()
+
+			if (i_flag_in_my_territory || i_flag_force_fuite)
+				PNJ_Raptor_Fill_Flee_Wp_Array(&tao_wp_to_reach[0], ti_wp_to_reach_nb)
+			else
+				ti_wp_to_reach_nb = -1
+
+			ti_stop_when_nb = ti_wp_to_reach_nb
+
+			PNJ_Raptor_Dijkstra(to_start_wp, &tao_wp_to_reach[0], ti_wp_to_reach_nb, ti_stop_when_nb)
+		
+			if (i_flag_in_my_territory || i_flag_force_fuite)
+				o_fuite_wp = PNJ_Raptor_Nearest_Wp_Get(OBJ_PosGet(), Ci_Capa_Fuite, none, vrai)
+			else
+				o_fuite_wp = PNJ_Raptor_Nearest_Wp_Get(OBJ_PosGet(), all, none, faux)
+				
+			PNJ_Raptor_Dijkstra_Build_Way(o_fuite_wp)
+			
+			PNJ_Raptor_Dijkstra_Clean()
+
+#ifndef _FINAL_
+			if (o_fuite_wp == nobody)
+				DBG_Error("Pas de wp valide pour fuire ce territoire")
+
+			if (DBG_Log_Allowed)
+			{
+				if (i_flag_in_my_territory || i_flag_force_fuite)
+				{
+					DBG_TraceFloat(TIME_Get())
+					DBG_TraceString(" => ")
+					DBG_TraceObject(OBJ_Me())
+					if (i_flag_force_fuite)
+						DBG_TraceString(" fuit vers le WP ")
+					else
+						DBG_TraceString(" va attendre au WP ")
+					DBG_TraceObject(o_fuite_wp)
+					DBG_TraceEOL()
+				}
+				else
+				{
+					DBG_TraceFloat(TIME_Get())
+					DBG_TraceString(" => ")
+					DBG_TraceObject(OBJ_Me())
+					DBG_TraceString(" doit fuire le territoire ")
+					DBG_TraceInt(i_my_territory_ID)
+					DBG_TraceString(" (WP le plus poche => ")
+					DBG_TraceObject(o_fuite_wp)
+					DBG_TraceString(" parmis les wps des territoires ")
+					for (ti_i = 0; ti_i < i_net_territory_ID_nb; ti_i++)
+					{
+						if (PNJ_Raptor_Territory_Num_Allowed(ti_i))
+						{
+							DBG_TraceInt(ai_net_territory_ID[ti_i])
+							DBG_TraceString(" / ")
+						}
+					}
+					DBG_TraceEOL()
+				}
+			}
+#endif
+		}
+
+
+		PNJ_Raptor_Reach_This_WP(o_fuite_wp)
+		break
+		
+	case Ci_WAY_MODE_REACH_CACHE :
+
+		if (i_way_computation_mode != i_way_computation_old_mode)
+		{
+			// INITIALISATION
+			i_way_computation_old_mode = i_way_computation_mode
+		
+			PNJ_Raptor_Clean_Way()
+		}
+
+		PNJ_Raptor_Reach_This_WP(ao_net_hiding_place[ai_perceived_hiding_place_index[i_perceived_best_actor_index]])
+			
+		break
+
+	case Ci_WAY_MODE_BALADE :
+
+		if (! i_flag_in_my_territory && (! o_balade_1st_wp || ! PNJ_Raptor_Territory_ID_Allowed(o_balade_1st_wp.des_int2)))
+			PNJ_Raptor_Way_Reset()
+
+		if (i_way_computation_mode != i_way_computation_old_mode)
+		{
+			// INITIALISATION
+			i_way_computation_old_mode = i_way_computation_mode
+
+			if (o_next_wp && @o_next_wp OBJ_CapaTest(Ci_Capa_Balade))
+			{
+				// Le WP vers lequel j'allais est déjà un wp de balade
+				o_balade_1st_wp = o_next_wp
+			}
+			
+			PNJ_Raptor_Clean_Way()	
+		
+			if (o_balade_1st_wp == nobody)
+			{
+				if (i_flag_occluder_alllowed)
+				{
+					ti_index = PNJ_Raptor_Territory_Index_Get(i_my_territory_ID)
+					for (ti_i = 0; ti_i < ai_net_territory_wp_nb[ti_index]; ti_i++)
+					{
+						to_nearest_wp = ao_net_wp[ai_net_territory_first_wp_index[ti_index] + ti_i]
+						if (@to_nearest_wp OBJ_CapaTest(Ci_Capa_Use_Occluder))
+						{
+							o_balade_1st_wp = to_nearest_wp
+							break
+						}
+					}
+				}
+				else if (i_flag_dont_use_grid || ! i_flag_in_my_territory)
+				{
+					// Je suis sur le reseau, je recherche le wp de balade le plus proche
+					o_balade_1st_wp = PNJ_Raptor_Nearest_Wp_Get(OBJ_PosGet(), Ci_Capa_Balade, none, faux)
+				}
+				else
+				{
+					// Je suis sur la grille, je cherche le wp de balade accessible le plus proche
+					ti_index = PNJ_Raptor_Territory_Index_Get(i_my_territory_ID)
+					o_balade_1st_wp = ARR_LIB_NearestSightReachableWaypoint(&ao_net_wp[0], ai_net_territory_first_wp_index[ti_index], ai_net_territory_wp_nb[ti_index], OBJ_PosGet(), OBJ_SightGet(), -1.0, Ci_Capa_Balade, Ci_Capa_Out_Of_Grid | Ci_Capa_Exclusion, to_nearest_wp, 0, faux)
+					if (!o_balade_1st_wp)	
+						o_balade_1st_wp = to_nearest_wp
+				}
+		
+//				if (o_balade_1st_wp)
+//				{
+//					// C'est bon, on a trouvé un wp de balade
+//				}
+//				else
+//				{
+//					// Pas de wp de balade, je retourne à ma position initiale
+//					o_balade_1st_wp = PNJ_Raptor_Nearest_Wp_Get(OBJ_PosInitGet(), all, Ci_Capa_Out_Of_Grid)
+//				}
+			}
+		}
+
+		v_way_destpos = OBJ_PosGet()
+		i_dest_pos_territory_ID = i_my_territory_ID
+
+		if (o_balade_1st_wp)
+			PNJ_Raptor_Reach_This_WP(o_balade_1st_wp)
+			
+		break
+
+	case Ci_WAY_MODE_REQUIN :
+//	case Ci_WAY_MODE_FIGHT :
+
+		if (i_way_computation_mode != i_way_computation_old_mode)
+		{
+			// INITIALISATION
+			i_way_computation_old_mode = i_way_computation_mode
+
+			PNJ_Raptor_Clean_Way()
+
+			f_paf_jauge_requin = 0.0
+
+			if ( ! i_flag_dont_use_grid && ( ! i_flag_occluder_alllowed || i_my_territory_ID != i_occluder_territory ) )
+			{
+				// ON RECHERCHE LE WP LE PLUS TANGENT A MA DESTINATION COURANTE
+				tv_best_sight = v_way_destpos
+				tv_best_sight -= OBJ_PosGet()
+				tv_best_sight.z = 0.0
+				DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, tv_best_sight, color_rouge)
+				MATH_VecSetNormalize(tv_best_sight)
+				
+				tv_best_sight.z = tv_best_sight.x
+				tv_best_sight.x = tv_best_sight.y
+				tv_best_sight.y = - tv_best_sight.z
+				tv_best_sight.z = 0.0
+				tv_best_sight *= MATH_FloatSign(MATH_VecDotProduct(tv_best_sight, OBJ_SightGet()))
+	
+				ti_index = PNJ_Raptor_Territory_Index_Get(i_my_territory_ID)
+				o_next_wp = ARR_LIB_NearestSightReachableWaypoint(&ao_net_wp[0], ai_net_territory_first_wp_index[ti_index], ai_net_territory_wp_nb[ti_index], OBJ_PosGet(), tv_best_sight, 0.0, all, Ci_Capa_Stalk | Ci_Capa_Exclusion, to_nearest_wp, 0, vrai)
+				if (!o_next_wp)
+					o_next_wp = to_nearest_wp
+			}
+		}
+
+//		if ( ! i_flag_dont_use_grid )
+//		{
+//			if (PNJ_Raptor_Dodged_Pos_On_Requin_Way(o_next_wp, OBJ_PosGet(), @o_main_actor OBJ_PosGet(), OBJ_SightGet()))
+//			{	
+//				ti_index = PNJ_Raptor_Territory_Index_Get(i_my_territory_ID)
+//				o_next_wp = ARR_LIB_NearestSightReachableWaypoint(&ao_net_wp[0], ai_net_territory_first_wp_index[ti_index], ai_net_territory_wp_nb[ti_index], OBJ_PosGet(), OBJ_PosGet() - @o_main_actor OBJ_PosGet(), 0.0, all, Ci_Capa_Stalk | Ci_Capa_Exclusion, to_nearest_wp, 0)
+//				if (!o_next_wp)
+//					o_next_wp = to_nearest_wp
+//			}
+//		}
+
+		if (i_flag_occluder_alllowed && i_my_territory_ID == i_occluder_territory)
+		{
+			PNJ_Raptor_Clean_Way()
+
+			if ( ! WAY_LIB_In_Sphere(OBJ_PosGet() + Cv_VerticalVector, OBJ_SightGet(), COL_ZoneSizeGet(C_zdm_pied) + 0.1, v_way_destpos, 3.0, Cv_NullVector, Cv_NullVector, faux, v_way_destpos))
+				v_way_destpos = WAY_LIB_Get_Sphere_Pos(OBJ_PosGet() + Cv_VerticalVector, v_way_destpos, OBJ_SightGet(), COL_ZoneSizeGet(C_zdm_pied) + 0.1, v_way_destpos, 3.0, Cv_NullVector, Cv_NullVector, faux)
+
+			v_way_destpos -= OBJ_PosGet()
+			v_way_destpos.z = 0.0
+			MATH_VecSetNormalize(v_way_destpos)
+			v_way_destpos *= 5.0
+			v_way_destpos += OBJ_PosGet()
+
+#ifndef _FINAL_
+			if (DBG_Display_Way)
+				DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, v_way_destpos - (OBJ_PosGet() + Cv_VerticalVector), color_cyan)
+#endif
+
+//			tv_best_sight = v_way_destpos
+//			tv_best_sight -= OBJ_PosGet()
+//			tv_best_sight.z = 0.0
+//			MATH_VecSetNormalize(tv_best_sight)
+//			
+////			v_way_destpos -= tv_best_sight * 10.0
+//	
+//			tv_best_sight.z = tv_best_sight.x
+//			tv_best_sight.x = tv_best_sight.y
+//			tv_best_sight.y = - tv_best_sight.z
+//			tv_best_sight.z = 0.0
+//			tv_best_sight *= MATH_FloatSign(MATH_VecDotProduct(tv_best_sight, OBJ_SightGet()))
+//
+//			v_way_destpos += tv_best_sight * 5.0
+		}
+
+//		if (f_force_requin_mode_duration > 2.0)
+//			f_delay_before_next_shout_mix -= MATH_FloatMin(f_delay_before_next_shout_mix, TIME_GetDt())
+
+		switch(raptor_type)
+		{
+			case C_ID_Raptor :
+				if (i_SND_flag_attaque_hors_champs)
+				{
+					if (f_me_to_main_dist < 8.0)
+					{
+						i_SND_flag_attaque_hors_champs = faux
+						PNJ_Raptor_Roar_Mix()
+					}
+				}
+				else if (i_perceived_best_actor_index == i_perceived_main_actor_index && f_me_to_main_dist < 15.0)
+				{
+					PNJ_Raptor_Roar_Mix()
+				}
+		}
+
+		break
+		
+	case Ci_WAY_MODE_GRAB :
+
+		if (i_way_computation_mode != i_way_computation_old_mode)
+		{
+			// INITIALISATION
+			i_way_computation_old_mode = i_way_computation_mode
+
+			PNJ_Raptor_Clean_Way()
+		}
+
+		if (o_next_wp == nobody)
+		{
+			ti_index = PNJ_Raptor_Territory_Index_Get(i_my_territory_ID)
+			if (ti_index != -1)
+			{
+				if (i_flag_occluder_alllowed)
+				{
+					for (ti_i = 0; ti_i < ai_net_territory_wp_nb[ti_index]; ti_i++)
+					{
+						to_nearest_wp = ao_net_wp[ai_net_territory_first_wp_index[ti_index] + ti_i]
+						if (@to_nearest_wp OBJ_CapaTest(Ci_Capa_Use_Occluder))
+						{
+							o_next_wp = to_nearest_wp
+							break
+						}
+					}
+				}
+
+				if (!o_next_wp)
+				{
+					o_next_wp = ARR_LIB_NearestSightReachableWaypoint(&ao_net_wp[0], ai_net_territory_first_wp_index[ti_index], ai_net_territory_wp_nb[ti_index], OBJ_PosGet(), -OBJ_SightGet(), 0.0, all, Ci_Capa_Out_Of_Grid | Ci_Capa_Exclusion, to_nearest_wp, 0, vrai)
+					if (o_next_wp == nobody)
+						o_next_wp = to_nearest_wp
+				}
+			}
+		}
+
+		f_use_current_wp_action_duration = 0.0
+		
+		break
+		
+	case Ci_WAY_MODE_RODE : 
+
+		if (i_way_computation_mode != i_way_computation_old_mode)
+		{
+			// INITIALISATION
+			i_way_computation_old_mode = i_way_computation_mode
+			
+			i_flag_rode_come_back = vrai
+			
+			PNJ_Raptor_Clean_Way()
+		}
+		
+		if (i_flag_rode_come_back)
+			PNJ_Raptor_Reach_This_WP(ao_perceived_nearest_wp[i_perceived_best_actor_index])
+		else if (o_current_wp != ao_perceived_nearest_wp[i_perceived_best_actor_index] && OBJ_SqrDist(ao_perceived_nearest_wp[i_perceived_best_actor_index]) > 25.0)
+			i_flag_rode_come_back = vrai
+
+		f_delay_before_next_shout_mix -= MATH_FloatMin(f_delay_before_next_shout_mix, TIME_GetDt())
+
+		break
+}
+
+
+// ON A UN WP SUIVANT
+ti_flag_get_next_wp = faux
+
+switch(ACT_ActionGet())
+{
+	case Action_Demi_Tour_D_deb :
+	case Action_Demi_Tour_D_deb_tr_att :
+	case Action_Demi_Tour_G_deb :
+	case Action_Demi_Tour_G_deb_tr_att :
+	case Action_Demi_Tour_Rapide :
+	case Action_Demi_Tour_Rapide_tr_course :
+		if (!ACT_ActionFinished())
+			break
+
+	default:
+		if (f_use_current_wp_action_duration)
+		{
+			ti_flag_get_next_wp = faux
+		}
+		else if (o_next_wp && ( ! i_way_moving || (@o_next_wp OBJ_CapaTest(Ci_Capa_LD_Territory) || i_my_territory_ID == o_next_wp.des_int2)) )
+		{
+			tf_dist = OBJ_SqrDistHorz(o_next_wp)
+			if (tf_dist < 4.0)
+				ti_flag_get_next_wp = vrai
+		}
+}
+	
+if (ti_flag_get_next_wp && tf_dist > 0.01)
+{
+	// Si on n'est pas pile sur le wp, on regarde si on va pouvoir aller au wp suivant en ligne droite
+	// Si on ne peut pas, on continue de se rapprocher de ce wp
+	// C'est pour éviter de passer par des A* quand on passe des angles
+	ti_flag_ok = vrai
+
+	if (i_flag_dont_use_grid)
+		ti_flag_ok = faux
+	else if (i_way_wp_nb <= 2)
+		ti_flag_ok = faux
+	else if (@o_next_wp OBJ_CapaTest(Ci_Capa_Out_Of_Grid))
+		ti_flag_ok = faux
+	else if (WAY_LinkCapaGet(n_net, ao_way_wp[i_way_wp_nb - 1], ao_way_wp[i_way_wp_nb - 2]) & Ci_Capa_Link_Jump)
+		ti_flag_ok = faux
+	else if (i_way_moving && ! GRID_LIB_IsReachableFrom(OBJ_PosGet(), @ao_way_wp[i_way_wp_nb - 2] OBJ_PosGet(), 0b0, 0.0, faux, i_grid_width) )
+		ti_flag_get_next_wp = faux
+}
+
+while(ti_flag_get_next_wp)
+{
+	ti_flag_get_next_wp	= faux
+
+	to_start_wp	 = o_next_wp	
+
+	AI_Execute("PNJ_Raptor_exec_way_next_wp_get")
+
+	if (@o_current_wp OBJ_CapaTest(Ci_Capa_Teleport) && o_next_wp && o_current_wp != o_next_wp)
+		ti_flag_get_next_wp = vrai
+}
+
+if (o_next_wp)
+{
+	if (i_flag_dont_use_grid && ! (@o_next_wp OBJ_CapaTest(Ci_Capa_Out_Of_Grid)) && GRID_LIB_IsReachableFrom(OBJ_PosGet(), @o_next_wp OBJ_PosGet(), 0b0, 0.0, faux, i_grid_width))
+		i_flag_dont_use_grid = faux
+	
+	switch(i_way_computation_mode)
+	{
+		case Ci_WAY_MODE_REQUIN :
+			o_next_next_wp = PNJ_Raptor_Best_Requin_Wp_Get(o_next_wp, o_current_wp, v_way_destpos, @o_next_wp OBJ_PosGet(), @o_next_wp OBJ_PosGet() - OBJ_PosGet())
+			break
+	}
+	
+#ifndef _FINAL_
+	if (DBG_Display_Way)
+	{
+		switch(i_way_computation_mode)
+		{
+			case Ci_WAY_MODE_RODE :
+			
+				tc_way_color = color_rouge
+				tv_temp = cvector(0.0, 0.0, 1.1)
+	
+				DBG_RenderVector(OBJ_PosGet() + tv_temp, @o_next_wp OBJ_PosGet() - OBJ_PosGet(), tc_way_color)
+
+				for (ti_i = i_way_wp_nb - 1; ti_i > 0; ti_i--)
+					DBG_RenderVector(@ao_way_wp[ti_i] OBJ_PosGet() + tv_temp, @ao_way_wp[ti_i - 1] OBJ_PosGet() - @ao_way_wp[ti_i] OBJ_PosGet(), tc_way_color)
+		
+				break
+
+			case Ci_WAY_MODE_FIGHT :
+			
+				if (PNJ_Raptor_Can_Reach_Dest_Pos())
+				{
+					tc_way_color = color_vert
+					tv_temp = Cv_VerticalVector
+
+					if (i_way_wp_nb)
+						DBG_RenderVector(@ao_way_wp[0] OBJ_PosGet() + tv_temp, v_way_destpos - @ao_way_wp[0] OBJ_PosGet(), tc_way_color)
+				}
+				else
+				{
+					tc_way_color = color_rouge
+					tv_temp = cvector(0.0, 0.0, 1.1)
+				}
+	
+				DBG_RenderVector(v_way_destpos, Cv_VerticalVector * 10.0, tc_way_color)
+				DBG_RenderVector(OBJ_PosGet() + tv_temp, @o_next_wp OBJ_PosGet() - OBJ_PosGet(), tc_way_color)
+
+				for (ti_i = i_way_wp_nb - 1; ti_i > 0; ti_i--)
+					DBG_RenderVector(@ao_way_wp[ti_i] OBJ_PosGet() + tv_temp, @ao_way_wp[ti_i - 1] OBJ_PosGet() - @ao_way_wp[ti_i] OBJ_PosGet(), tc_way_color)
+		
+				break
+				
+			case Ci_WAY_MODE_REQUIN :
+
+				tc_way_color = color_cyan
+				DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, @o_next_wp OBJ_PosGet() - OBJ_PosGet(), tc_way_color)
+				tc_way_color = color_cyan
+				break
+
+			case Ci_WAY_MODE_BALADE :
+
+				tc_way_color = color_bleu
+
+				tv_temp = cvector(0.0, 0.0, 1.3)
+
+				if (o_next_wp)
+					DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, @o_next_wp OBJ_PosGet() - OBJ_PosGet(), tc_way_color)
+
+				for (ti_i = i_way_wp_nb - 1; ti_i > 0; ti_i--)
+					DBG_RenderVector(@ao_way_wp[ti_i] OBJ_PosGet() + tv_temp, @ao_way_wp[ti_i - 1] OBJ_PosGet() - @ao_way_wp[ti_i] OBJ_PosGet(), tc_way_color)
+
+				break
+
+			case Ci_WAY_MODE_VALA :
+			case Ci_WAY_MODE_CINE_VALA :
+			case Ci_WAY_MODE_REACH_CACHE :
+
+				tc_way_color = color_blanc
+				tv_temp = cvector(0.0, 0.0, 1.2)
+
+				DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, @o_next_wp OBJ_PosGet() - OBJ_PosGet(), tc_way_color)
+
+				for (ti_i = i_way_wp_nb - 1; ti_i > 0; ti_i--)
+					DBG_RenderVector(@ao_way_wp[ti_i] OBJ_PosGet() + tv_temp, @ao_way_wp[ti_i - 1] OBJ_PosGet() - @ao_way_wp[ti_i] OBJ_PosGet(), tc_way_color)
+		
+				break
+		}
+	}
+#endif
+
+	v_way_destpos = @o_next_wp OBJ_PosGet()
+	i_dest_pos_territory_ID = o_next_wp.des_int2
+}
+
+
+// EST-CE QUE LE LIEN EST UN LIEN DE SAUT ?
+ti_flag_jump = vrai
+if (f_wait_delay)
+	ti_flag_jump = faux
+else if (f_use_current_wp_action_duration)
+	ti_flag_jump = faux
+else if (!o_current_wp)
+	ti_flag_jump = faux
+else if (!o_next_wp)
+	ti_flag_jump = faux
+else if (o_current_wp == o_next_wp)
+	ti_flag_jump = faux
+else if (@o_current_wp OBJ_CapaTest(Ci_Capa_Stop))
+	ti_flag_jump = faux
+else if (OBJ_SqrDistHorz(o_current_wp) > 4.0)
+	ti_flag_jump = faux
+else if (! (@o_current_wp WAY_HasLinks(n_net, o_next_wp)))
+	ti_flag_jump = faux
+else if (! (WAY_LinkCapaGet(n_net, o_current_wp, o_next_wp) & Ci_Capa_Link_Jump))
+	ti_flag_jump = faux
+else if (! ACT_ActionFinished())
+{
+	switch(ACT_ActionGet())
+	{
+		case Action_Saut_fin :
+		case Action_Saut_fin_surplace :
+		case Action_Grosse_Reception :
+		case Action_Agonie_fin_lent :
+		case Action_Agonie_fin_rapide :
+		case Action_Demi_Tour_G_deb :
+		case Action_Demi_Tour_G_deb_tr_att :
+		case Action_Demi_Tour_D_deb :
+		case Action_Demi_Tour_D_deb_tr_att :
+		case Action_Demi_Tour_Rapide :
+		case Action_Demi_Tour_Rapide_tr_course :
+			ti_flag_jump = faux
+			break
+	}
+}
+
+if (ti_flag_jump)
+{
+	PNJ_Raptor_Update_Flag(o_next_wp)
+	
+	v_jump_dest_pos = v_way_destpos
+	v_jump_impulsion_banking = OBJ_BankingGet()
+
+	tv_temp = v_jump_dest_pos - OBJ_PosGet()
+	v_jump_reception_banking = MATH_VecCrossProduct(tv_temp, @o_next_wp OBJ_BankingGet())
+	v_jump_reception_banking = MATH_VecCrossProduct(v_jump_reception_banking, tv_temp)
+	tv_temp.z = 0.0
+	MATH_VecSetNormalize(tv_temp)
+	v_jump_reception_banking -= MATH_VecDotProduct(v_jump_reception_banking, tv_temp) * tv_temp
+	MATH_VecSetNormalize(v_jump_reception_banking)
+	
+//	DBG_RenderVector(v_jump_dest_pos, v_jump_reception_banking, color_bleu)
+
+	switch(raptor_type)
+	{
+		case C_ID_Tyranosaure :	
+			macro_change_etat("PNJ_Raptor_ETAT_VIRTUEL_enjambe")
+			break
+	
+		default:
+			macro_change_etat("PNJ_Raptor_ETAT_VIRTUEL_saut")
+	}
+}
+
+switch(i_etat_courant)
+{
+	case ETAT_ATTENTE :
+
+		if (!i_flag_in_my_territory)
+			i_flag_run = vrai
+//		else if (!i_flag_dont_use_grid)
+//			i_flag_run = faux
+		else if (!o_current_wp)
+			i_flag_run = faux
+		else if (!o_next_wp)
+			i_flag_run = faux
+		else if (! (@o_current_wp WAY_HasLinks(n_net, o_next_wp) ) )
+			i_flag_run = faux
+		else if (WAY_LinkCapaGet(n_net, o_current_wp, o_next_wp) & Ci_Capa_Link_Run)
+			i_flag_run = vrai
+		else 
+			i_flag_run = faux
+		
+		break
+	
+	case ETAT_VALA :	
+		i_flag_run = vrai
+		break
+}
+
+//if (o_current_wp && OBJ_SqrDistHorz(o_current_wp) > 4.0)
+//	o_current_wp = nobody
+
+#ifdef SHOW_RASTER
+DBG_StartRaster(8, "Comportement")
+DBG_StopRaster(1)
+#endif

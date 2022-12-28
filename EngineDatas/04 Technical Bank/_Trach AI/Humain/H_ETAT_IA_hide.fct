@@ -1,0 +1,779 @@
+#include "H_defines.var"
+
+object	to_nearest_wp
+object	to_nearest_wp1 
+object	to_player_nearest_wp
+object	to_obj
+object	to_next
+object	tao_hide[100]
+object	to_bestobj
+object	to_last_cache
+object	to_wp
+object	to_cache
+object	to_enn
+
+float		tf_sqr_hor_dist
+float		tf_temp
+float		tf_dot
+float		tf_bestdist
+float		tf_size_surface
+float		tf_sens
+float		tf_radius
+
+int			ti_txtcover
+int			ti_cpt
+int			ti_temp
+int			ti_danger_act
+int			ti_cache_safe
+int			ti_num
+int			ti_avance
+int			ti_capa, ti_capa1
+int			ti_type
+int			ti_force_attente
+int			ti_bouge
+int			ti_sortie
+int			ti_id
+int			ti_i
+int			ti_int
+int			ti_numero
+int			ti_flag_go_to_grid_center
+int			ti_ray_ground_sound_id
+int			ti_context
+int			ti_index
+int			ti_se_relever
+int			ti_rank
+int			ti_state
+int			ti_danger, ti_danger1
+int			ti_ok
+int			failed
+int			ti_chienchien
+int			ti_weapon
+
+vector	tv_offset
+vector	tv_temp, tv_temp1, tv_mem
+vector	tv_new_sight 
+vector	tv_pos_devant
+
+messageid	EVT_ID
+network		net_hide
+messageid	tmid_info
+
+#define DIST_MAX_CACHE	400
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	i_mur_en_face = -1
+	o_target_stimulus_hide = nobody
+	
+	// Reset occupation de la cache courante
+	if(o_hide_0D && @o_hide_0D OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct)
+		o_hide_0D.des_int2 = o_hide_0D.des_int2 - 1
+	o_hide_0D = nobody
+	i_flag_rush = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_IA_hide)
+{
+	@get_global i_progression_stress = faux
+	o_pref_target_stimulus_vis = nobody
+	f_time_capa_0 = 0
+	
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_IA_hide
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = AI_TrackCurGet()
+
+	for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+		ai_SRV_ENABLE[ti_i] = faux
+
+	// AUTORISATIONS DES GRABS
+	ai_SRV_ENABLE[Ci_LNK_GRAB_RAPTOR]	= vrai
+
+	// AUTORISATION DES AIDES
+	ai_SRV_ENABLE[Ci_LNK_INTERACTION] 		= vrai
+	ai_SRV_ENABLE[Ci_LNK_PSSS] 					= vrai
+
+	f_time_start_etat = 0.0
+	v_way_destpos = Cv_NullVector
+	v_pos_fuite = Cv_NullVector
+	o_hide_0D = nobody	
+	f_time_sortie_fight = 0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ========================================================================================================
+
+if(f_time_start_etat > 1.0) OBJ_CapaSet(OBJ_Capa_11, 0)	// Autorise demarrage script
+
+AI_Execute("H_exec_read_world")
+AI_Execute("H_exec_serveur_get")
+AI_Execute("H_exec_change_etat")
+AI_Execute("H_exec_ch_Stimulus_Paf")
+if (o_paf_sender) macro_change_etat("H_ETAT_IA_paf")
+
+// INTERACTION
+OBJ_Me().des_int1 = Ci_DISPLAY_PSSS
+	
+// Sortie du mode hide => mode fight
+ti_rank = -1
+EVT_ID = MSG_GlobalScan(C_EVENT_TYPE_Enemy, &ti_rank)
+ti_sortie = vrai
+while(MSG_GlobalIsValid(EVT_ID))
+{
+	to_obj = EVENT_PereGet( EVT_ID )
+	ti_state = EVENT_EnemyStateGet( EVT_ID )
+	if ((ti_state  == C_EVENT_EnemyState_Fight || ti_state  == C_EVENT_EnemyState_Wait) || ti_state  == C_EVENT_EnemyState_Neutral)
+	{
+		// Texte
+		if(@"univ" STATS[@"univ" STATS_WorldID][STATS_DureeMap] > 20)
+		{
+			if(i_id_humain == C_ID_Hayes && !i_has_trex)
+			{
+				if(TIME_Elapsed(Humains_BlaBlaFreq[TEXTE_PrevienDanger], 30))
+				{
+					if(!OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Hierarchy) )
+					{
+						if(ti_state == C_EVENT_EnemyState_Fight)
+							i_request_txt = GeneHay_C_warn_danger
+						else
+							i_request_txt = GeneHay_C_warn_danger_low
+					}
+				}
+				
+				Humains_BlaBlaFreq[TEXTE_PrevienDanger] = TIME_Get()
+			}						
+		}
+		
+		ti_sortie = faux
+	}
+	
+	EVT_ID = MSG_GlobalScan(C_EVENT_TYPE_Enemy, &ti_rank)
+}
+
+// Force le suivi
+if(i_force_suivi) macro_change_etat("H_ETAT_IA_suivi")
+if(i_force_hide) ti_sortie = faux
+
+if ( ti_sortie)
+{
+	f_time_sortie_fight += TIME_GetDt()
+	if(f_time_sortie_fight > hys_fight)
+	{
+		i_sortie_fight = vrai
+		macro_change_etat("H_ETAT_IA_suivi")
+	}
+}
+else
+{
+	f_time_sortie_fight = 0
+}
+
+// COMPORTEMENT ========================================================================================================
+
+ti_danger_act = EVENT_InfoCanGaoSeeGao(nobody, OBJ_Me(), tmid_info)
+
+// Opportunité de tir (on ne tire pas sur un ennemi dont on est caché)
+ComputeCibleAShooter( -1.0 )
+if(o_target_stimulus_vis && (f_time_start_etat > 0.5))
+{
+	if(EVENT_InfoCanGaoSeeGao(o_target_stimulus_vis, OBJ_Me(), tmid_info) || OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Hierarchy))
+	{
+		f_rand_rate = 50
+		AI_Execute("H_exec_validate_tir")
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// COVER ? 
+if(HL_TestCover()) macro_change_etat("H_ETAT_IA_MultiCover")
+	
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+// Cache hiérarchisée, on l'invalide régulièrement (radeau)
+if(o_hide_0D && @o_hide_0D OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Hierarchy))
+{
+	if(TIME_Elapsed(f_time_recompute_hide, 0.1))
+	{
+		f_time_recompute_hide = TIME_Get()
+		if(o_hide_0D && @o_hide_0D OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct)
+			o_hide_0D.des_int2 = o_hide_0D.des_int2 - 1
+		o_hide_0D = nobody
+		v_pos_fuite = Cv_NullVector
+	}
+}
+
+
+if(!o_hide_0D) v_pos_fuite = Cv_NullVector
+
+// La cache courante devient invalide, on la vire
+if((!o_hide_0D && !o_hide_0D_dangereux) || (o_hide_0D && @o_hide_0D OBJ_CapaTest(OBJ_Capa_0)))
+{
+	f_time_capa_0 += TIME_GetDt()
+	if(f_time_capa_0 > 2.0)
+	{
+	 	if(!i_in_fight && (i_id_humain == C_ID_Hayes))
+	 	{
+		 	if(H_SilenceDepuisMoi(3.0))
+		 	{
+				if(!OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Hierarchy))
+				{
+					if(!H_QQunBlesse())
+					{
+						AskText(TEXTE_CouvreNous, GeneHay_C_way_cleared, 90, nobody)
+					}
+				}
+			}
+		}
+	}
+		
+	if(f_time_capa_0 > 3.0)
+	{
+		if(o_hide_0D && @o_hide_0D OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct)
+			o_hide_0D.des_int2 = o_hide_0D.des_int2 - 1
+		o_hide_0D = nobody
+		v_pos_fuite = Cv_NullVector
+	}
+}
+else
+{
+	f_time_capa_0 = 0
+}
+
+ti_force_attente = faux
+ti_chienchien = faux
+
+ti_ok = faux
+ti_weapon = @"univ" i_weapon_ID[i_id_humain]
+if(ti_weapon && i_id_humain == C_ID_Hayes)
+{
+	if(BambouEnMain()) ti_ok = vrai
+	else if(@"univ" i_weapon_ammunition[ti_weapon][i_id_humain]) ti_ok = vrai
+	else if(@"univ" i_weapon_ammunition_reserve[ti_weapon][i_id_humain]) ti_ok = vrai
+}
+
+// si la cache nous dit de tenir la position, meme hayes s'y colle
+ti_ok = faux ////// TEMP TEMP TEMP TEMP ??????
+//if(ti_ok && !@get_global i_flag_rage && !@get_global i_progression_hayes_normal)
+//{
+//	to_obj = AI_MainActorGet(C_ID_Jack)
+//	ti_chienchien = vrai
+//	
+//	// Position actuelle dangereuse
+//	ti_danger = HL_PosDangereuseMe()
+//	if(!ti_danger && HasInteretOn(OBJ_Me(), to_enn)) ti_danger = vrai
+//	
+//	// Position de chienchien
+//	tv_temp = @to_obj OBJ_PosGet() - OBJ_PosGet()
+//	MATH_VecSetHorzNormalize(tv_temp)
+//	tv_temp = MATH_VecCrossProduct(tv_temp, @to_obj OBJ_SightGet())
+//	tf_sens = MATH_FloatSign(tv_temp.z)
+//	
+//	tv_temp = @to_obj OBJ_PosGet()
+//	tv_temp1 = tv_temp + (@to_obj OBJ_SightGet() * 6)
+//	tv_temp1 += (@to_obj OBJ_HorizonGet() * 2 * tf_sens)
+//	tv_pos_devant = GRID_LastPosValid(tv_temp, tv_temp1, faux)
+//	
+//	// Position de chienchien dangereuse
+//	ti_danger1 = HL_PosDangereuse(tv_pos_devant)
+//	tv_temp = tv_pos_devant - OBJ_PosGet()
+//	tf_temp = MATH_VecNorm(tv_temp)
+//	if((ti_danger1 && tf_temp < 8) || (ti_danger && tf_temp < 4 ))
+//	{
+//		if(i_ennemi_proche_type != C_ID_SwampCrawlerSmall)
+//		{
+//			tv_temp = @to_obj OBJ_PosGet()
+//			tv_temp1 = tv_temp + (@to_obj OBJ_SightGet() * 2)
+//			tv_temp1 += (@to_obj OBJ_HorizonGet() * 1 * tf_sens)
+//			tv_pos_devant = tv_temp1
+//			f_time_recule = 0.5	// Force le recul
+//		}
+//	}
+//	
+//	// Cherche d'une position de cache
+//	if(TIME_Elapsed(f_freq_hide_hayes, 0.5))
+//	{		
+//		f_freq_hide_hayes = TIME_Get()
+//		to_last_cache = o_hide_0D
+//		tv_mem = v_pos_fuite
+//		ti_type = i_cache_surface
+//		
+//		// Reset occupation de la cache courante
+//		if(o_hide_0D && @o_hide_0D OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct)
+//			o_hide_0D.des_int2 = o_hide_0D.des_int2 - 1
+//		o_hide_0D = nobody
+//	
+//		f_cherche_cache_max_dist = 10
+//		i_cherche_cache_visible = vrai
+//		f_time_search_hide = TIME_Get()
+//		o_ref_cache_0D = AI_MainActorGet(C_ID_Jack)
+//		
+//		if(OBJ_SqrDist(o_ref_cache_0D) < 15 * 15)
+//			AI_Execute("H_exec_ch_hide_0D")
+//			
+//		f_cherche_cache_max_dist = 0
+//		
+//		// Meme cache, on conserve l'ancienne position
+//		if(to_last_cache && to_last_cache == o_hide_0D && !i_flag_culled && OBJ_SqrDist(to_obj) <= 10 * 10)
+//		{
+//			if(o_hide_0D && @o_hide_0D OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct)
+//				o_hide_0D.des_int2 = o_hide_0D.des_int2 - 1
+//			if(to_last_cache && @to_last_cache OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct)
+//				to_last_cache.des_int2 = to_last_cache.des_int2 + 1
+//			o_hide_0D = to_last_cache
+//			v_pos_fuite = tv_mem
+//			i_cache_surface = ti_type
+//		}
+//	}
+//	
+//	// Pas de cache : on va devant	
+//	if(!o_hide_0D) 
+//	{
+//		to_obj = AI_MainActorGet(C_ID_Jack)
+//		v_pos_fuite = tv_pos_devant
+//		tv_temp = @to_obj OBJ_PosGet() - tv_pos_devant
+//		if(MATH_VecNorm(tv_temp) < 2) ti_force_attente = vrai
+//	}
+//}
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Si je n'ai pas encore de cache, j'en cherche une
+if(MATH_VecNull(v_pos_fuite))
+{
+	ForceChercheCache( )
+	
+	// Si on trouve une cache dans laquelle on est deja, inutile de bouger
+	if
+	(
+			o_hide_0D
+	&&	((i_cache_surface & 0xFF) == C_Cache_Surface)
+	&&	COL_Pivot_BVCollide(o_hide_0D)
+	&&	(MATH_VecNorm(v_pos_fuite - OBJ_PosGet()) < 2)
+	)
+	{
+		// Sauf si je dois tenir la position
+		if(!CacheTientLaPos(o_hide_0D))
+		{
+			v_pos_fuite = OBJ_PosGet()
+		}
+	}
+}
+
+// Si j''attend depuis un moment, je cherche une nouvelle cache (ou la meme si elle est tjs valide)
+// Sauf si je suis dans une surface (evite de bouger)
+// Sauf si je suis safe de tout le monde
+else if(!ti_chienchien && (f_time_attend > 1))
+{
+	if
+	(
+			((i_cache_surface & 0xFF) != C_Cache_Surface)
+	&&	((i_flag_danger)
+	&&	i_ch_cache_attend)
+	)
+	{
+		i_ch_cache_attend = faux
+		if(o_hide_0D && @o_hide_0D OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct)
+			o_hide_0D.des_int2 = o_hide_0D.des_int2 - 1
+		o_hide_0D = nobody
+		f_time_search_hide = TIME_Get()
+		AI_Execute("H_exec_ch_hide_0D")
+	}
+}
+else
+{
+	i_ch_cache_attend = vrai
+}
+
+// Sinon si ca fait un certain temps que j'ai ma cache, je réévalu le chemin pour eventuellement en changer
+if(o_hide_0D && TIME_Elapsed(f_time_search_hide, 1) && TIME_Elapsed(f_time_freq_danger, 0.5) && f_joy_norm)
+{
+	// Si je dois tenir la position, pas de test de danger
+	if(CacheTientLaPos(o_hide_0D))
+	{
+		ti_danger = faux
+	}
+	else
+	{
+		f_time_freq_danger = TIME_Get()
+		if(way_num_objs > 1) i_flag_test_danger_me = vrai
+		ti_danger = HL_CheminDangereux(v_pos_fuite)				
+	}
+	
+	if(ti_danger)
+	{
+		// Si mon chemin courant est dangereux, alors je cherche une nouvelle cache
+		// Si je suis safe, je m'arrette et j'attend
+		if(!i_flag_danger)
+		{
+			f_time_force_attend = 2.0
+		}
+		else
+		{
+			// Si je tracais sur un chemin dangereux, je regarde juste si y'a une cache
+			// safe libérée, sinon je conserve mon ancienne cache
+			if(o_hide_0D == o_hide_0D_dangereux)
+			{
+				tv_temp = v_pos_fuite	// Sauve cache courante
+				to_obj = o_hide_0D
+				f_time_search_hide = TIME_Get()
+				AI_Execute("H_exec_ch_hide_0D")
+				if(!o_hide_0D)
+				{
+					o_hide_0D = to_obj
+					v_pos_fuite = tv_temp
+					if(o_hide_0D && @o_hide_0D OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct)
+						o_hide_0D.des_int2 = o_hide_0D.des_int2 + 1
+					o_hide_0D_dangereux = o_hide_0D
+				}
+			}
+			
+			// Si je travais pas sur un chemin dangereux, je cherche une nouvelle cache, 
+			// meme dangereuse
+			else
+			{
+				ForceChercheCache()				
+			}
+		}
+	}
+	
+	// Pas de danger sur le chemin
+	else
+	{
+		o_hide_0D_dangereux = nobody
+	}
+}
+
+// Recherche d'une cache dans le sens de progession
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ti_avance = faux
+tv_temp = v_pos_fuite - OBJ_PosGet()
+tv_temp.z = 0
+
+// On attend depuis un certain temps
+if(o_hide_0D && (f_time_attend > 2)) 
+{
+	if(TIME_Elapsed(f_time_prog, 1))
+	{
+		f_time_prog = TIME_Get()
+		ti_avance = vrai
+	}
+}
+
+// Ou on est proche de notre destination actuelle, on est en mouvement rapide
+if((o_hide_0D && MATH_VecDotProduct(tv_temp, tv_temp) < 9) && f_joy_norm) 
+{
+	ti_avance = vrai
+}
+
+if(!o_hide_0D) ti_avance = faux
+if(ti_chienchien) ti_avance = faux
+
+// Donc au final, on peut progresser ou pas ?
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+if(ti_avance && !ti_force_attente)
+{
+	to_next = nobody
+	net_hide = @o_hide_0D WAY_NetOfObj()
+	if(net_hide)
+	{
+		ti_cache_safe = -1
+		ti_txtcover = 0
+		
+		// Une cache est privilégiée par le joueur
+		to_cache = @get_global o_cache_preferee
+		to_next = to_cache
+		
+		// Une cache safe dans le coin ?
+		if(!to_cache)
+		{
+			ChercheCacheSafe()
+			
+			// La plus proche
+			to_next = nobody
+			tf_temp = Cf_Infinit
+			for (ti_i = 0; ti_i < i_num_cache_safe; ti_i++)
+			{
+				to_wp = ao_cache_safe[ti_i]
+				if(OBJ_SqrDist(to_wp) < tf_temp)
+				{
+					to_next = to_wp
+					to_cache = to_wp
+					tf_temp = OBJ_SqrDist(to_wp)
+					ti_cache_safe = ti_i
+				}
+			}
+		}
+
+		// Chemin de cache pour y aller		
+		if(to_cache)
+		{
+			to_next = to_cache
+			if(o_hide_0D == to_next)
+			{
+				ti_i = (i_id_humain << 8) | NetNextWP_Mode_capa_aleatoire
+				to_next = WAY_NetNextWP(net_hide, to_cache, ti_i, @get_global i_capa_progession )					
+				if(to_next && @to_next OBJ_SqrDistHorz(AI_MainActorGet(C_ID_Jack)) > 25 * 25) to_next = nobody
+				
+//				if(to_next && !ti_danger_act) 
+//				{
+//					for(ti_i = 0; ti_i < C_ID_Marin_dernier; ti_i++)
+//					{
+//						if(ti_i == C_ID_Jack) continue
+//						if(ti_i == C_ID_Hayes) continue
+//						to_obj = @"univ" ao_AllHumains[ti_i]
+//						if(!to_obj) continue
+//						if(to_obj == OBJ_Me()) continue
+//						if(OBJ_SqrDist(to_obj) < 5 * 5)
+//						{
+//							ti_txtcover = Gene_C_call_team_cover
+//							break
+//						}
+//					}
+//					
+//					if(!ti_txtcover) ti_txtcover = Gene_C_call_cover
+//				}
+			}
+		}
+					
+		// On prend les liens rouges
+		if(!to_next && !to_cache)
+		{
+			i_num_cache_safe = 0
+			ti_i = (i_id_humain << 8) | NetNextWP_Mode_capa_aleatoire
+			to_next = WAY_NetNextWP(net_hide, o_hide_0D, ti_i, @get_global i_capa_progession )
+		}			
+					
+		// Y'en a une ?		
+		if(to_next)
+		{
+			if(!@to_next OBJ_CapaTest(OBJ_Capa_0))
+			{
+				// Si ca nous fait faire demi tour, on doit attendre
+				tv_temp = @to_next OBJ_PosGet() - OBJ_PosGet()
+				MATH_VecSetHorzNormalize(tv_temp)
+				if(MATH_VecDotProduct(tv_temp, OBJ_SightGet()) > 0.4 || f_time_attend > 2)
+				{
+					tv_temp = v_pos_fuite	// Sauve cache courante
+					to_obj =o_hide_0D
+					
+					o_in_cache_0D = to_next
+					if(o_hide_0D && @o_hide_0D OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct)
+						o_hide_0D.des_int2 = o_hide_0D.des_int2 - 1
+					o_hide_0D = nobody
+					tf_temp = f_time_search_hide
+					f_time_search_hide = TIME_Get()
+					AI_Execute("H_exec_ch_hide_0D")
+					
+					// Si je peux pas avancer, alors je remet tout comme avant
+					if(!o_hide_0D && to_obj)
+					{
+						// Si c'est une cache safe, je la vire de la liste pour en tester une autre
+						if(ti_cache_safe != -1) ao_cache_safe[ti_cache_safe] = nobody						
+						
+						f_time_search_hide = tf_temp
+						o_hide_0D = to_obj
+						v_pos_fuite = tv_temp
+						if(o_hide_0D && @o_hide_0D OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct)
+							o_hide_0D.des_int2 = o_hide_0D.des_int2 + 1
+					}
+					else if(ti_txtcover)
+					{
+						AskText(TEXTE_CouvreNous, ti_txtcover, 10, nobody)
+					}
+				}
+			}
+		}
+	}
+}
+
+// Si ma position courante est dangereuse, je cherche une nouvelle cache
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+if(o_hide_0D && i_flag_danger)
+{
+	// Au cas ou on rentre en hide alors qu'on était a l'arret, on n'invalide pas de suite
+	if(TIME_Elapsed(f_time_search_hide, 0.25) && f_time_start_etat > 0.5)
+	{
+		if(f_time_attend > 1)
+		{
+			if(CacheTientLaPos(o_hide_0D))
+			{
+			}
+			else
+			{
+				tv_temp = v_pos_fuite	// Sauve cache courante
+				to_obj = o_hide_0D
+				ti_temp = i_cache_surface
+				
+				// Si on est safe (?), on a le droit de reprendre le safe
+				if((i_cache_surface & 0xFF) == C_Cache_Surface)
+				{
+					if(o_hide_0D && @o_hide_0D OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct)
+						o_hide_0D.des_int2 = o_hide_0D.des_int2 - 1
+					o_hide_0D = nobody
+				}
+				
+				ForceChercheCache( )
+				
+				// Si jamais ca me fait prendre un chemin dangereux, alors je prefere
+				// rester sur place, sauf si une saloperie veut me bouffer
+				if(o_hide_0D_dangereux && !HasInteretOn(OBJ_Me(), to_enn, tf_radius))
+				{				
+					if(@o_hide_0D_dangereux OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct)
+						o_hide_0D_dangereux.des_int2 = o_hide_0D_dangereux.des_int2 + 1					
+					o_hide_0D = to_obj
+					v_pos_fuite = tv_temp
+					i_cache_surface = ti_temp
+					if(@o_hide_0D OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct)
+						o_hide_0D.des_int2 = o_hide_0D.des_int2 + 1
+					o_hide_0D_dangereux = nobody
+				}
+			}
+		}
+	}
+}
+
+// Deplacement
+if(ti_force_attente || MATH_VecNull(v_pos_fuite))
+{
+	v_way_destpos = OBJ_PosGet()
+	f_joy_norm = 0
+	v_joy_dir = OBJ_SightGet()		
+}
+
+// Si on attend, on attend au moins 1 seconde
+if(f_joy_norm && (f_time_attend && f_time_attend < 1.0))
+{
+	if(!i_flag_culled) 
+	{
+		v_way_destpos = OBJ_PosGet()
+		f_joy_norm = 0
+		v_joy_dir = OBJ_SightGet()
+		i_flag_disable_recul = vrai		
+	}
+}
+
+v_way_destpos = v_pos_fuite
+if(MATH_VecNull(v_way_destpos)) v_way_destpos = OBJ_PosGet()
+
+if(o_hide_0D)
+{
+	// Si personne ne peut m'atteindre, je passe en attitude cache
+	if(!ti_danger_act)
+	{
+		i_flag_cache = vrai
+	}
+	
+	// Pour un cache de surface, on a le droit de s'arreter des qu'on est dedant
+	else if((i_cache_surface & 0xFF) == C_Cache_Surface)
+	{
+		if(COL_Pivot_BVCollide(o_hide_0D))
+		{
+			i_flag_cache = vrai
+			i_flag_disable_sprint = vrai
+		}
+	}
+
+	// Pour une cache d'occlusion, on a le droit de s'arreter si on est proche
+	else	
+	{
+		tv_temp = v_pos_fuite - OBJ_PosGet()
+		tv_temp.z = 0
+		tf_temp = MATH_VecNorm(tv_temp)
+		if(tf_temp <= 2 && GRID_PosValid(OBJ_PosGet(), v_pos_fuite))
+		{
+			i_flag_cache = vrai
+		}
+	}
+}
+
+// si plus aucune cache, on repasse en suivi
+else if(!i_found_cache && f_time_capa_0 > 3.0)
+{
+	i_sortie_fight = vrai
+	macro_change_etat("H_ETAT_IA_suivi")
+}
+
+// Pas d'intention cache dans l'eau haute
+if(IsWater(i_ground_ID)) i_flag_cache = faux
+
+// Si on doit foncer vers la cache, interdiction de reculer sauf si proche de ma dest
+if(CacheFonceVersMoi(o_hide_0D))
+{
+	i_flag_cache = faux
+	tv_temp = v_way_destpos - OBJ_PosGet()
+	if(MATH_VecDotProduct(tv_temp, tv_temp) > 2 * 2) 
+	{
+		i_flag_disable_marche = vrai
+		i_flag_disable_recul = vrai
+	}
+		
+	f_min_dist_attend = 1.0
+}
+
+// Deplacement
+if(i_flag_danger && i_in_fight) i_flag_disable_marche = vrai
+if(i_flag_danger) f_min_dist_attend = 1.0
+if(OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Hierarchy)) f_min_dist_attend = 1.5
+CommonMove()
+
+///////////////////////////////////////////////
+if(o_hide_0D && o_hide_0D == o_last_hide_0D)
+{
+	if(@o_hide_0D AI_IsModel("Progression/PRG_CacheSafe") && @"Progression/PRG_CacheSafe" o_hide_0D multi_cache)
+	{
+		f_time_hide_0D += TIME_GetDt()
+		if(f_time_hide_0D > TIME_MODE_HIDE + i_rand_move_cache) 
+		{
+			if(o_hide_0D && @o_hide_0D OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct)
+				o_hide_0D.des_int2 = o_hide_0D.des_int2 - 1
+			o_in_cache_0D = o_hide_0D
+			o_hide_0D = nobody
+		}
+	}
+}
+else
+	f_time_hide_0D = 0
+o_last_hide_0D = o_hide_0D
+///////////////////////////////////////////////
+
+// Orientation
+if(!f_joy_norm)
+{
+	if(!f_time_start_etat) 
+		f_time_help_interdit = 1.0
+	else
+		f_time_help_interdit -= MATH_FloatMin(f_time_help_interdit, TIME_GetDt())
+	if(IntentionEnCache()) return
+}
+else
+{
+	i_mur_en_face = -1
+	if(!f_time_start_etat) 
+		f_time_help_interdit = 1.0
+	else
+		f_time_help_interdit -= MATH_FloatMin(f_time_help_interdit, TIME_GetDt())
+}
+
+// Anims
+///////////////////////////////////////////////
+AI_Execute("H_exec_select_action")
+

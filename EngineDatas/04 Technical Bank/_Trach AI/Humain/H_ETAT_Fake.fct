@@ -1,0 +1,69 @@
+Include_UltraProcedure_Header
+
+#include "H_defines.var"
+#include "H_action.var"
+
+int			ti_i
+int			ti_type_liaison
+
+vector	tv_temp
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_Fake)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Fake
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	// INTERACTION
+	for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+		ai_SRV_ENABLE[ti_i] = faux
+	ai_SRV_ENABLE[Ci_LNK_KKGRAB_OBJECT] = vrai
+	
+	f_pos_blend_coef = 1.0		// snap teleport !!!
+	
+	Proc_Joueur_Swap_to_3rd()
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// ANALYSE ==========================================================================================
+MACRO_READ_WORLD
+
+AI_Execute("H_exec_serveur_get")
+if( ! ao_SRV[Ci_LNK_KKGRAB_OBJECT] )
+{
+	macro_change_etat("H_ETAT_FPS")
+}
+
+// SHIFT MODE FPS SUR KONG ---------------------------------------------------------
+if( @get_global i_FPS_Shoulder_force_new_entry && ! IO_ButtonPressed(Jack_Joy_Viser) )
+	@get_global i_FPS_Shoulder_force_new_entry = faux		// bouton FSP relaché
+
+if( ! @get_global i_FPS_Shoulder_force_new_entry 
+	&& IO_ButtonPressed(Jack_Joy_Viser) 
+	&& ( ! IO_ButtonPressed(joy_button_R) || ! IO_ButtonPressed(joy_button_R2) || ! IO_ButtonPressed(joy_button_L2) ) )
+{
+	macro_change_etat("H_ETAT_FPS")
+}
+
+AI_Execute("H_exec_read_joy_reset")
+

@@ -1,0 +1,88 @@
+#include "KAnn_defines.var"
+
+object			to_torse
+vector 			tv_new_pos
+vector			tv_wp_pos
+vector			tv_lookat_pos
+object			to_gao
+object			to_target_tete
+object 			to_main
+vector			tv_pos
+
+// Herbes
+SPG2_AddSphere(OBJ_PosGet(), 2.0)
+
+
+// SUIVI REGARD ===========================================================
+//AI_Execute("KAnn_exec_IK_suivi_regard")
+
+
+// ZONE DE CORPS =========================================================
+to_torse = ANI_CanalObjectGet(Anim_Canal_Torse)
+if( ! to_torse )
+{
+	to_torse = ANI_CanalObjectGet(Anim_Canal_Tete)
+	COL_ZonePosSet(C_zde_corps, MATH_VecGlobalToLocal(@to_torse OBJ_PosGet() - OBJ_PosGet() - cvector(0,0,0.5)))
+}
+else
+{
+	COL_ZonePosSet(C_zde_corps, MATH_VecGlobalToLocal(@to_torse OBJ_PosGet() - OBJ_PosGet()))
+}
+
+// ajustement du z quand Ann varlape (grimpe de cote)
+if (i_etat_courant == ETAT_follow_network && f_delta_z)
+{
+	tv_wp_pos = @o_old_safe_wp OBJ_PosGet() 
+	tv_new_pos = OBJ_PosGet()
+
+	tv_new_pos.z = tv_wp_pos.z	+ f_delta_z
+	
+	tv_new_pos = MATH_VecBlend(OBJ_PosGet(),tv_new_pos,TIME_GetDt() )
+	OBJ_PosSet(tv_new_pos)
+}
+
+if( ! @get_global i_IK_NECK_Off )
+{
+	if (o_vision_target && i_suivi_regard )
+	{
+		to_target_tete = @o_vision_target ANI_CanalObjectGet(Anim_Canal_Tete)
+		
+		if (to_target_tete)
+			tv_lookat_pos = @to_target_tete OBJ_PosGet()
+		else
+			tv_lookat_pos = @o_vision_target OBJ_PosGet()
+	
+	 	OBJ_EyeFollowParamSet(Cf_1Degre * 75.0,-Cf_1Degre * 75.0,1000 ,1000 ,1000 ,1000 ,1000 )	
+		OBJ_EyeFollow(  tv_lookat_pos, 0.2, C_RT_flags_custom_limit_value )
+	}
+}
+
+// Positionnement du Projectile
+if( o_projectile && ! @o_projectile OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna) )
+{
+	to_main = ANI_CanalObjectGet(Anim_Canal_Annex1)
+
+	tv_pos = @to_main OBJ_PosGet()
+	tv_pos.z += 0.05
+	
+	if( f_projectile_blend_pos_coef != 1.0 )
+		f_projectile_blend_pos_coef = MATH_FloatMin(f_projectile_blend_pos_coef + (15 * TIME_GetDt()), 1.0)
+	
+	@o_projectile OBJ_PosSet(MATH_VecBlend(@o_projectile OBJ_PosGet(), tv_pos, f_projectile_blend_pos_coef))
+	@o_projectile OBJ_SightSet(MATH_VecBlendRotate(@o_projectile OBJ_SightGet(), @to_main OBJ_BankingGet(), f_projectile_blend_pos_coef))
+}
+
+// RAZ CAPA A MAINTENIR EN LD ================================
+if( i_DBG_display_LD_CAPA )
+{
+	if( OBJ_CapaTest(CAPA_Non_Grabable) )
+		Str_DisplayTextOnce("ANN : CAPA 3 Non_Grabable", cvector(0.1,0.8,0))
+	if( OBJ_CapaTest(CAPA_No_Stress_Muzik) )
+		Str_DisplayTextOnce("ANN : CAPA 6 No_Stress_Muzik", cvector(0.1,0.85,0))
+	if( OBJ_CapaTest(CAPA_Unlimited_Interaction_Fight) )
+		Str_DisplayTextOnce("ANN : CAPA 7 Unlimited_Interaction_Fight", cvector(0.1,0.9,0))
+}
+
+OBJ_CapaSet( none, CAPA_Non_Grabable)
+OBJ_CapaSet(none, CAPA_Unlimited_Interaction_Fight)
+OBJ_CapaSet(none, CAPA_No_Stress_Muzik)

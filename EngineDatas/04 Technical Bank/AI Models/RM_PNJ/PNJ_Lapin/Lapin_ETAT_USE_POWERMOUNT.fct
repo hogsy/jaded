@@ -1,0 +1,96 @@
+#include "PNJ_Lapin_defines.var"
+
+object	to_target
+
+
+// SORTIE ETAT ===================================================================
+if( i_sort_etat )
+{
+	f_powermount_use_delai = MATH_RandFloat(3.0,6.0)
+	Lapin_EXPRESSION(Cf_Expr_Mouth_Closed)
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if( i_etat_courant != ETAT_Lapin_USE_POWERMOUNT )
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Lapin_USE_POWERMOUNT
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	Lapin_DBG_Trace_String(DBG_Trace_Etat, "USE POWERMOUNT")
+	fct_previous_etat = fct_last_etat
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	Lapin_EXPRESSION(Cf_Expr_Mouth_Full)
+	ACT_ActionSet(Lapin_ACTION_Attente_Get())
+//	SND_RequestPlay(Ci_SND_F)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+if( ! o_RideMount_Actor )
+	MACRO_GO_IDLE(0)			// LIAISON COUPEE
+
+// STIMULI ===========================================================================
+o_Grabbed_Actor = LNK_ServeurGet(Ci_LNK_GRAB_EAGLE, mid_Grabbed_LNK_ID, vrai, nofunc, nofunc)
+if( o_Grabbed_Actor )
+	macro_change_etat("Lapin_ETAT_GRABBED")
+
+o_Rided_Actor = LNK_ServeurGet(Ci_LNK_RIDE_ON_NMI, mid_Rided_LNK_ID, vrai, nofunc, nofunc)
+if( o_Rided_Actor )
+	macro_change_etat("Lapin_ETAT_RIDED")
+
+AI_Execute("Lapin_exec_check_vision")
+
+MACRO_CHECK_PAFS
+
+if( Lapin_ROPE_Gogo_Mode() )
+	macro_change_etat("Lapin_ETAT_GOGO")
+
+MACRO_CHECK_CHUTE
+
+if( i_ventilo_flag )
+	macro_change_etat("Lapin_ETAT_ASPIRE")
+
+if( o_piege )
+	macro_change_etat("Lapin_ETAT_PIEGE")
+
+if( i_Beat_flag_danse )
+	macro_change_etat("Lapin_ETAT_DANSE")
+
+if( i_Beat_flag_alert )
+	macro_change_etat("Lapin_ETAT_BEAT_ALERT")
+
+AI_Execute("Lapin_exec_update_best_interest")
+
+if( ! MSG_GlobalIsValid(mid_best_interet) )
+	MACRO_GO_IDLE(0)
+
+to_target = EVENT_InteretTargetGet(mid_best_interet)
+if( ! to_target )
+	MACRO_GO_IDLE(0)
+
+if( f_time_start_etat > f_powermount_charge + 0.5 )		// délai après l'attaque
+	MACRO_GO_IDLE(0)
+
+Proc_Monture_ChargeAttack(o_RideMount_Actor, to_target)
+
+Lapin_INTERET_Attack()
+
+//// COMPORTEMENT ===================================================================
+//v_force_sight = v_way_destpos - OBJ_PosGet()
+//f_orient_speed = 10.0
+//AI_Execute("Lapin_exec_way_orientation")
+//
+
+
+OBJ_CapaSet(Obj_Capa_Fight, none)

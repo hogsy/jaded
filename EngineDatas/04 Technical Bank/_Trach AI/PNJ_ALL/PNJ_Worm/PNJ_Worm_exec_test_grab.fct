@@ -1,0 +1,54 @@
+#include "PNJ_Worm_defines.var"
+
+int				ti_flag_grab
+
+float			tf_dot_product
+float			tf_cone_length
+
+vector		tv_cone_origin
+vector		tv_hor_head_sight
+
+object		to_target
+
+if (ai_perceived_status[i_perceived_best_actor_index] & Ci_PERCEIVED_ALREADY_GRABBED)
+	return
+
+to_target = EVENT_InteretTargetGet(mid_best_interet)
+
+if (MATH_LIB_ZoneInCone(OBJ_PosGet(), OBJ_SightGet(), Cf_Cos30, 2.0, @to_target COL_ZonePosGet(C_zde_corps),  @to_target COL_ZoneSizeGet(C_zde_corps), vrai, tf_dot_product, 0, 0))
+{
+	// Est-ce qu'on peut attraper le perso ou est-ce qu'on doit juste le mordre ?
+	ti_flag_grab = vrai
+
+//	if (to_target == o_main_actor && i_grab_disable)
+//		ti_flag_grab = faux
+//		else if (to_target != o_main_actor && ! TIME_Elapsed(@get_global f_raptor_last_grab_time, delay_between_grab) )
+//			ti_flag_grab = faux
+
+
+	if (! TIME_Elapsed(@get_global f_raptor_last_grab_time, 4.0) )
+		ti_flag_grab = faux
+
+
+//	if (to_target == o_main_actor)
+//		i_grab_disable = MATH_Modulo(i_grab_disable + 1, 3)
+	
+	if (ti_flag_grab)
+	{
+		// Si le perso veut bien, on va se regarder dans le blanc des yeux puis je vais le bouffer !!!
+		o_grab_actor = LNK_ThisClientGet(to_target, Ci_LNK_GRAB_RAPTOR, mid_grab_actor_LNK_ID, vrai, "PNJ_Worm_exec_GRAB_init", nofunc, "PNJ_Worm_exec_GRAB_init")
+		if (o_grab_actor)
+		{
+			@get_global f_raptor_last_grab_time = TIME_Get()
+			macro_change_etat("PNJ_Worm_ETAT_GRAB")
+		}
+		else
+		{
+			ti_flag_grab = faux
+		}
+	}
+	
+//	if (!ti_flag_grab)
+//		EVENT_AddEventPaf(C_EVENT_FILTER_All, C_EVENT_PAF_Repousse | C_EVENT_PAF_ForceDir | C_EVENT_PAF_Tuant, OBJ_Me(), 0.01, to_target, PAF_Unit * 1000, OBJ_SightGet())
+}
+

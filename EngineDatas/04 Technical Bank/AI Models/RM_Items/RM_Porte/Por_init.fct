@@ -1,0 +1,33 @@
+#include "Por_Defines.var"
+
+int				ti_i
+object		to_gao
+int				ti_SF
+
+for (ti_i = 0;  ti_i< Ci_Porte_Nbr_Of_Element_Max; ti_i++)
+{
+	to_gao = o_porte_ferme[ti_i]
+	if (to_gao)
+	{
+		@to_gao OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_HasInitialPos,none)
+		v_porte_initpos[ti_i] = @to_gao OBJ_PosGet()
+		v_porte_initsight[ti_i] = @to_gao OBJ_SightGet()
+		v_porte_initbanking[ti_i] = @to_gao OBJ_BankingGet()
+	}
+}
+
+n_net = WAY_NetOfObj()
+
+i_etat = i_etat_init
+SF_ID = AI_SFDynGet(0, SF_MinById, SF_MaxById)			// Alloc
+SpecialFlag_get(SF_ID, ti_SF)
+if (ti_SF)
+	i_etat = 1 - i_etat_init
+
+if (i_dynOn)
+	DYN_On()
+
+if (i_etat == Ci_Porte_InitOuverte)
+	AI_TrackCurChangeNow("Por_Etat_Ouverte")
+else
+	AI_TrackCurChangeNow("Por_Etat_Ferme")

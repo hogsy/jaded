@@ -1,0 +1,76 @@
+// SELECT FIGHT ACTOR
+
+message	tmsg
+object		to_cur_fight_actor
+
+to_cur_fight_actor = o_fight_actor
+o_fight_actor = nobody
+
+
+if( o_paf_actor_to_target && Tri_Target_Check(o_paf_actor_to_target) )
+{
+	// vengeance !
+	o_fight_actor = o_paf_actor_to_target
+	i_paf_actor_to_target_flag = vrai
+}
+else if( AI_TriggerIsValid(Trig_Attaque) )
+{
+	// trigger -> attente trigger valide
+	if( ! to_cur_fight_actor  )
+	{
+		// DEBUT D'ATTAQUE uniquement (pas de changement de target pendant une attaque)
+		if( ! f_No_Attaque_Delai )
+		{
+			if( call_trigger(Trig_Attaque) )
+			{
+				if( Trig_Attaque_Type )
+				{
+					// Target Specifique
+					if( Tri_Target_Check(o_Target_Specifique) )
+					{
+						o_fight_actor = o_Target_Specifique
+					}
+				}
+				else
+				{
+					// Target GAO 5
+					tmsg = AI_TriggerGetMsg(Trig_Attaque)
+					Check_This_Gao5(tmsg.msg_gao5)
+					if( Tri_Target_Check(tmsg.msg_gao5) )
+					{
+						o_fight_actor = tmsg.msg_gao5
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		// conserver ma target ?
+		if( Tri_Target_Check(to_cur_fight_actor) )
+			o_fight_actor = to_cur_fight_actor
+	}
+}
+else
+{
+	// pas de trigger -> attaque autorisée
+	if( ! to_cur_fight_actor )
+	{
+		if( ! f_No_Attaque_Delai )
+		{
+			if( o_Joueur && Tri_Target_Check(o_Joueur) )
+				o_fight_actor = o_Joueur
+			else if( o_Kong && Tri_Target_Check(o_Kong) )
+				o_fight_actor = o_Kong
+			else if( o_Rayman && Tri_Target_Check(o_Rayman) )
+				o_fight_actor = o_Rayman
+		}
+	}
+	else
+	{
+		// conserver ma target ?
+		if( Tri_Target_Check(to_cur_fight_actor) )
+			o_fight_actor = to_cur_fight_actor
+	}
+}
+

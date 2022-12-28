@@ -1,0 +1,249 @@
+int			i, j
+int			inst
+vector	tv_separation, tv_alignement, tv_cohesion
+vector	tv_attirance
+vector	tv_temp, tv_temp1
+vector	tv_dest_pos
+object	to_obj
+float		tf_temp
+vector	tv_vert, tv_sight
+int			cpt, cpt1
+message	EVT_msg_filter
+messageid	EVT_ID
+int				ti_rank
+int			ti_GFX_Impact
+int			sect0, sect1, sect2, sect3
+
+// Generation
+if(!ao_obj[0])
+{
+	for(i = 0; i < num_oiseaux; i++)
+	{
+		tv_temp = OBJ_PosGet()
+		tf_temp = i 
+		tf_temp /= num_oiseaux
+		tv_temp.z += tf_temp
+		ao_obj[i] = @oiseau_reference OBJ_Duplicate(tv_temp)
+		
+			// Sectorisation...
+		SCT_GetOf( &sect0, &sect1, &sect2, &sect3)
+		@ao_obj[i] SCT_SetOf( sect0, sect1, sect2, sect3)
+
+		af_speed[i] = MATH_RandInt(min_speed, max_speed)
+		af_speed_rot[i] = MATH_RandFloat(min_speed_rot, max_speed_rot)
+	}
+}
+
+if(carotte)
+{
+	to_obj = carotte
+	tv_dest_pos = @to_obj OBJ_PosGet()
+}
+else
+{
+	to_obj = AI_MainActorGet(C_ID_Joueur)
+	if( ! to_obj )
+		to_obj = AI_MainActorGet(C_ID_Kong)
+	tv_dest_pos = @to_obj OBJ_PosGet()
+	tv_dest_pos.z += 5
+}
+
+for(i = 0; i < num_oiseaux; i++)
+{
+	if(i_mort[i])
+	{
+		i_mort[i]++
+		if(i_mort[i] > 100)
+		{
+			@ao_obj[i] OBJ_Destroy()
+			ao_obj[i]	 = ao_obj[num_oiseaux - 1]
+			i_mort[i] = i_mort[num_oiseaux - 1]
+			num_oiseaux--
+			i--
+			continue
+		}
+		
+		tv_temp = @ao_obj[i] OBJ_PosGet()
+		tv_temp.z -= 10 * TIME_GetDt()
+		@ao_obj[i] OBJ_PosSet(tv_temp)
+		@ao_obj[i] OBJ_RotateGlobalZ(10 * TIME_GetDt())
+		continue
+	}
+	
+	cpt = 0
+	tv_separation = Cv_NullVector
+	tv_alignement = Cv_NullVector
+	tv_cohesion = Cv_NullVector
+	cpt1 = 0
+	for(j = MATH_Modulo(i + 1, num_oiseaux); cpt1 < max_iter; j = MATH_Modulo(j + 1, num_oiseaux))
+	{
+		cpt1++
+		if(i == j) break
+		tv_temp = @ao_obj[j] OBJ_PosGet() - @ao_obj[i] OBJ_PosGet()
+		if(MATH_VecDotProduct(@ao_obj[i] OBJ_SightGet(), tv_temp) < 0) continue
+		if(@ao_obj[i] OBJ_SqrDist(ao_obj[j]) > distance  * distance) continue
+		
+		tv_temp = @ao_obj[i] OBJ_PosGet() - @ao_obj[j] OBJ_PosGet()
+		if(!MATH_VecNullEpsilon(tv_temp)) MATH_VecSetNorm(tv_temp, distance  - MATH_VecNorm(tv_temp))
+		tv_separation += tv_temp
+		
+		tv_alignement += @ao_obj[j] OBJ_SightGet()
+		
+		tv_cohesion += @ao_obj[j] OBJ_PosGet()
+		
+		cpt++
+	}
+	
+	// ROT
+	
+	// CONTRAINTE
+	tv_temp = tv_dest_pos
+	if(des_z_constraint)
+	{
+		tv_temp1 = @ao_obj[i] OBJ_SightGet()
+		if(tv_temp1.z < 0) tv_temp.z -= (tv_temp1.z * 2)
+		
+		tv_temp1 = @carotte OBJ_PosGet()
+		tf_temp = tv_temp1.z - @ao_obj[i] OBJ_PosGet().z
+		if(tf_temp > 0) 	tv_temp.z += (tf_temp * 2)
+	}	
+
+	tv_sight = Cv_NullVector
+	tv_attirance = tv_temp - @ao_obj[i] OBJ_PosGet()
+	if(!MATH_VecNullEpsilon(tv_attirance)) 
+	{
+		MATH_VecSetNormalize(tv_attirance)
+		tv_attirance *= attirance
+		tv_sight += tv_attirance
+	}
+	
+	if(cpt) tv_alignement /= cpt
+	if(!MATH_VecNullEpsilon(tv_alignement)) 
+	{
+		MATH_VecSetNormalize(tv_alignement)
+		tv_alignement *= alignement
+		tv_sight += tv_alignement
+	}
+	
+	if(cpt) 
+	{
+		tv_cohesion /= cpt
+		tv_cohesion -= @ao_obj[i] OBJ_PosGet()
+		if(!MATH_VecNullEpsilon(tv_cohesion)) 
+		{
+			MATH_VecSetNormalize(tv_cohesion)
+			tv_cohesion *= cohesion
+			tv_sight += tv_cohesion
+		}
+	}
+	
+	if(cpt) 
+	{
+		tv_separation /= cpt
+		if(!MATH_VecNullEpsilon(tv_separation)) 
+		{
+			MATH_VecSetNormalize(tv_separation)
+			tv_separation *= separation
+			tv_sight += tv_separation
+		}
+	}
+	
+	// sight
+	MATH_VecSetNormalize(tv_sight)
+	tv_temp1 = tv_sight
+	tv_temp = MATH_VecBlendRotate(@ao_obj[i] OBJ_SightGet(), tv_sight, af_speed_rot[i] * TIME_GetDt())
+	tv_temp.z = MATH_FloatBlend(@ao_obj[i] OBJ_SightGet().z, tv_sight.z, af_speed_rot[i] * TIME_GetDt() * 1.5)
+	tv_sight = tv_temp
+	MATH_VecNormalize(tv_sight)
+	
+	// rool
+	tf_temp = MATH_VecDotProduct(@ao_obj[i] OBJ_SightGet(), tv_temp1)
+	tf_temp = (1 - tf_temp) * 10
+	tv_temp = MATH_VecCrossProduct(@ao_obj[i] OBJ_SightGet(), tv_sight)
+	tf_temp = MATH_FloatMin(MATH_AbsFloat(tf_temp), 0.5) * MATH_FloatSign(tv_temp.z)
+	tv_vert = Cv_VerticalVector
+	tv_vert += @ao_obj[i] OBJ_HorizonGet() * tf_temp
+	tv_vert = MATH_VecBlendRotate(@ao_obj[i] OBJ_BankingGet(), tv_vert, af_speed_rot[i] * TIME_GetDt())
+	
+	@ao_obj[i] OBJ_SightGeneralSet(tv_sight, tv_vert)
+	
+	// TRANS
+	tv_temp = @ao_obj[i] OBJ_SightGet() * af_speed[i] * TIME_GetDt()	
+	tv_temp = @ao_obj[i] OBJ_PosGet() + tv_temp
+	
+	@ao_obj[i] OBJ_PosSet(tv_temp)
+	
+	// Battement ailes
+	if(f_rand_speed_aile[i] == 0) f_rand_speed_aile[i] = 1.0
+	f_time_bas_ailes[i] -= TIME_GetDt()
+	if(i_mode_aile[i])
+	{
+		f_rand_speed_aile[i] = MATH_RandFloat(0.6, 1.0)
+		@ao_obj[i] OBJ_MorphProgSet(0, 0)
+		if(f_time_bas_ailes[i] < 0)
+		{
+			i_mode_aile[i] = 0
+			f_time_bas_ailes[i] = MATH_RandInt(10, 20)
+		}
+	}
+	else
+	{
+		@ao_obj[i] OBJ_MorphProgSet(0, f_aile[i])
+		f_aile[i] += TIME_GetDt() * 10 * f_rand_speed_aile[i]
+		if(f_aile[i] > 10) 
+		{
+			f_aile[i] = 0
+			if(f_time_bas_ailes[i] < 0)
+			{
+				i_mode_aile[i] = 1
+				f_time_bas_ailes[i] = MATH_RandInt(3, 5)
+			}			
+		}
+	}
+	
+	//////////////////// PAF
+	MSG_SetNull( EVT_msg_filter)
+	EVT_msg_filter.msg_gao1 = ao_obj[i]
+	ti_rank = -1
+	EVT_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, EVT_msg_filter)
+	if(MSG_GlobalIsValid(EVT_ID))
+	{
+		i_mort[i] = 1
+		// Etincelles
+//		ti_GFX_Impact = GFX_Add(9)
+//		GFX_FlagSet(ti_GFX_Impact , 0, 1)
+//		GFX_FlagSet(ti_GFX_Impact , 2, 1)
+//		GFX_MaterialSet(ti_GFX_Impact , get_SFX_light_and_smoke, 3)
+//		GFX_Setf(ti_GFX_Impact, 9000, Cf_PiBy2)									// angle d'ouverture
+//		GFX_Setf(ti_GFX_Impact, 9001, 1.0)											// vitesse initiale minimum
+//		GFX_Setf(ti_GFX_Impact, 9002, 3.0)											// vitesse initiale maximum
+//		GFX_Setf(ti_GFX_Impact, 9003, 0.95 )											// friction
+//		GFX_Setf(ti_GFX_Impact, 9004, 1.2)											// épaisseur
+//		GFX_Setf(ti_GFX_Impact, 9005, 0.5)											// durée de vie minimum
+//		GFX_Setf(ti_GFX_Impact, 9006, 1.0)											// durée de vie maximum
+//		GFX_Setf(ti_GFX_Impact, 9007, 4.0 )											// multiplicateur de longueur
+//		GFX_Setf(ti_GFX_Impact, 9008, 0.005 )										// generation périod
+//		GFX_Setf(ti_GFX_Impact, 9009, 0.2)											// durée de mort minimun
+//		GFX_Setf(ti_GFX_Impact, 9010, 0.4)											// durée de mort maximun
+//		GFX_Seti(ti_GFX_Impact, 9100, 15)											// Nombre
+//		GFX_Seti(ti_GFX_Impact, 9102, 0b11000)									// Flags (1 => agrandissement centré)
+//		GFX_Setv(ti_GFX_Impact, 9200, @ao_obj[i] OBJ_PosGet())			// Origine des étincelles
+//		GFX_Setv(ti_GFX_Impact, 9201, cvector(0,0,1))								// Direction
+//		GFX_Setv(ti_GFX_Impact, 9202, cvector(0.0, 0.0, -2.0) )					// gravity
+//		GFX_Seti(ti_GFX_Impact, 9101, 0xFF0000FF)								// couleur		
+		
+//		@ao_obj[i] OBJ_Destroy()
+//		ao_obj[i]	 = ao_obj[num_oiseaux - 1]
+//		num_oiseaux--
+//		i--
+	}
+}
+
+
+f_time_sound -= TIME_GetDt()
+if(f_time_sound < 0)
+{
+	inst = SND_RequestPlay(0)
+	@ao_obj[MATH_RandInt(0, num_oiseaux)] SND_InstanceSetObj(inst)
+	f_time_sound = MATH_RandInt(5, 10)
+}

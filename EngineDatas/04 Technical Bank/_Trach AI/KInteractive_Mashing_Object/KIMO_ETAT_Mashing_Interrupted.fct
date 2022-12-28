@@ -1,0 +1,97 @@
+#include "KIMO_defines.var"
+
+int			ti_mashing_result
+int			ti_frame
+
+float		tf_frame
+float		tf_coef_down
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	o_mashing_actor = nobody
+	f_pourcentage_init = f_pourcentage
+	
+	i_sort_etat = faux	
+	return
+}
+
+
+// INITIALISATION ETAT ==============================================================
+if( i_etat_courant != ETAT_Mashing_Interupted )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Mashing_Interupted
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	i_mashing_LNK_accepte = faux
+	if( f_pourcentage == 0.0 )
+	{
+		ti_frame = ANI_CurrentFrameGet(0)
+		tf_frame = ti_frame
+		f_pourcentage = MATH_FloatMin(0.99, tf_frame / ANI_NbFrameGet(0))
+	}
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =======================================================================
+
+
+// COMPORTEMENT =================================================================	
+if( i_kit == Ci_Kmashing_Kit_06 )		// NYC Bus
+	tf_coef_down = 1.25
+else
+	tf_coef_down = 2.5
+
+if( ACT_ActionGet() == i_kit_Anim_Positionne )
+{
+	// la liaison a été coupée alors que KONG n'avait pas terminé le positionnement
+	f_pourcentage = MATH_FloatMax(0.0, f_pourcentage - (tf_coef_down * TIME_GetDt()) )
+	if( f_pourcentage == 0.0 )
+		macro_change_etat("KIMO_ETAT_Wait")
+	else
+		ANI_RatioSet(0, f_pourcentage)
+}
+else if( ACT_ActionGet() == i_kit_Anim_Challenge )
+{
+	// la liaison a été coupée pendant le challenge -> rembobine puis anim perdu
+	f_pourcentage = MATH_FloatMax(0.0, f_pourcentage - (tf_coef_down * TIME_GetDt()) )
+	if( f_pourcentage == 0.0 )
+		ACT_ActionSet(Ci_Action_perdu)
+	else
+		ANI_RatioSet(0, f_pourcentage)
+}
+else if( ACT_ActionGet() == i_kit_Anim_KK_Gagne )
+{
+	if( KIMO_Anim_KONG_Gagne() == -1 )
+	{
+		OBJ_Destroy()
+	}
+	OBJ_BankingGeneralSet(OBJ_SightGet(), MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 10 * TIME_GetDt()))
+}
+else if( ACT_ActionGet() == i_kit_Anim_KK_Perdu )
+{
+	if( KIMO_Anim_KONG_Perd() )
+		macro_change_etat("KIMO_ETAT_Wait")
+}
+else if( ACT_ActionGet() == i_kit_Anim_KK_Gagne_fixe )
+{
+	f_SFX_gen_delay -= MATH_FloatMin(f_SFX_gen_delay, TIME_GetDt())
+	if( f_SFX_gen_delay > 0.0 )
+	{
+		KIMO_SFXGlass(-1.0)
+		KIMO_SFXGlass(1.0)
+		OBJ_BankingGeneralSet(OBJ_SightGet(), MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 10 * TIME_GetDt()))
+	}
+	else
+		OBJ_FlagInactiveSet(1)
+}

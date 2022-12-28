@@ -1,0 +1,51 @@
+#include "Splinter_Bunny_defines.var"
+
+Include_UltraProcedure_Header
+
+if (i_flag_sortie_etat)
+{
+	i_flag_sortie_etat = faux
+	return
+}
+
+if (i_etat_courant != ETAT_Attente)
+{
+	// INTIALISATION
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Attente
+	
+	if (fct_last_etat)
+	{
+		i_flag_sortie_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	fct_last_etat = AI_TrackCurGet()
+	
+//	BV_MinSet(cvector(-20.0, -20.0, -20.0))
+//	BV_MaxSet(cvector(20.0, 20.0, 20.0))
+
+//	i_rided_module_index = 1
+//	f_rided_rope_coef = i_rided_module_index
+//	f_rided_rope_coef /= Ci_modules_nb
+//	
+//	f_speed = MATH_RandFloat(4.0, 6.0)
+
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ===============================================================
+o_Rided_Actor = LNK_ServeurGet(Ci_LNK_RIDE_ON_NMI, mid_Rided_LNK_ID, vrai, nofunc, nofunc)
+if (o_Rided_Actor)
+	macro_change_etat("Splinter_Bunny_ETAT_Rided")
+
+// COMPORTEMENT =========================================================
+f_dt = TIME_GetDt()
+av_modules_pos[0] = OBJ_PosGet()
+Splinter_Bunny_Rag_Doll()
+Splinter_Bunny_Display()

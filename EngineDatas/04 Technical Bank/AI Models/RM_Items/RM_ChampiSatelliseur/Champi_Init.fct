@@ -1,0 +1,15 @@
+
+int 				ti_indice
+object			to_cible
+
+to_cible = OBJ_Me()
+ti_indice = ARR_ObjSearch(&@get_list_manager ao_stream[0], @get_list_manager i_stream_nb, to_cible)
+if( ti_indice == -1 )
+{
+	@get_list_manager ao_stream[@get_list_manager i_stream_nb] = to_cible
+	@get_list_manager i_stream_nb++
+}
+
+o_tgt = AI_MainActorGet(0)
+
+AI_TrackCurChangeNow("Champi_track_WaitForPaf")

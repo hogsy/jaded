@@ -1,0 +1,120 @@
+#include "PNJ_SwampCrawlerSmall_defs.var"
+
+float		deltaz, prevspeed
+vector	sight, newsight
+int			flee
+object	to_gao 
+
+//--------( Sortie Etat )--------
+if (etat_i_quitte)
+{
+	etat_i_quitte = faux
+	return
+}
+
+//--------( Entrée Etat )--------
+if ( etat_i_courant != SCS_ETAT_swim )
+{
+	etat_i_ancien = etat_i_courant
+	etat_i_courant = SCS_ETAT_swim
+		
+	//----( quitte état précédent )----
+	if ( etat_fct )
+	{
+		etat_i_quitte = vrai
+		AI_Execute( etat_fct )
+	}
+	
+	//--------( init variable )------------------------------------------------------------------------------------
+	etat_fct = AI_TrackCurGet()
+	etat_f_timer = 0
+	ACT_ActionSet( SCS_ACT_water_swim )
+	ACT_ActionFrequencySet(SCS_ACT_water_swim , 32 *  (move_f_speed* 0.75))
+	return
+}
+
+//--------( timer )---------
+etat_f_timer += TIME_GetDt()
+
+#ifndef _FINAL_
+if ((i_debug_display || @get_global i_debug_all_swamp) && !@"univ" Engine)
+{
+	to_gao = ANI_CanalObjectGet(Anim_Canal_Tete)
+	Str_DisplayTextOnce("Retour WPStart", VIEW_3dWorldTo2d(0, @to_gao OBJ_PosGet()))
+}
+#endif
+
+//--------( déplacement )--------
+prevspeed = move_f_speed
+flee = faux
+if ( etat_f_timerswimafterhit > 0 )
+{
+	move_v_dest.z = move_f_Zsurface // + 0.2
+	move_f_speed = f_SpeedFlee
+	flee = vrai
+}
+else if (move_i_gotodeath || move_i_diewhenunderwater )
+{
+	move_f_speed = f_SpeedFlee
+	if (etat_f_timer < 5)
+		move_v_dest.z = move_f_Zsurface
+	else
+		move_v_dest.z = move_f_Zunderwater
+}
+else
+	move_f_speed = f_Speed
+	
+if ( flee )
+{
+	if ( ACT_ActionGet( ) != SCS_ACT_water_flee )
+		ACT_ActionSet( SCS_ACT_water_flee )
+}
+else
+{
+	if ( ACT_ActionGet( ) != SCS_ACT_water_swim )
+		ACT_ActionSet( SCS_ACT_water_swim )
+//	if ( move_f_speed != prevspeed )
+//		ACT_ActionFrequencySet(SCS_ACT_water_swim , 64 ) //32 * (move_f_speed/2.0))
+}
+
+
+move_f_speed *= MATH_FloatMax(0.1, MATH_VecDotProduct(OBJ_SightGet(), v_move_axis))	// Moins on est dans l'axe plus on ralentie...
+
+move_i_brakewhennear = 1
+move_i_ondule = 1
+move_i_remote = 0
+f_SpeedZ = 0.5
+AI_Execute( "SCS_exec_move" )
+
+//--------( arrivée sur la cible )--------
+if ( move_i_neardest )
+{
+	if ( move_i_diewhenunderwater || move_i_gotodeath || ((i_Type == SCS_Passage) && (move_v_dest == move_v_end )) )
+	{
+		stimul_o_pafby = nobody 
+		macro_change_etat( "SCS_dead" )
+	}
+	else
+		macro_change_etat( "SCS_wait" )
+}
+	
+//--------( cible en vue )--------
+if (stimul_i_attack && stimul_o_target && !etat_i_swimnoattack )
+	macro_change_etat( "SCS_attack" )
+
+//--------( se prend un paf )--------
+if ( stimul_i_paf )
+{
+	if (move_i_gotodeath || move_i_diewhenunderwater )  
+		macro_takeapaf( SCS_PAF_one )
+	else if ( !etat_i_swimnopaf )
+		macro_takeapaf( SCS_PAF_one )
+}
+	
+//--------( coule => disparition )--------
+if ( ( move_i_diewhenunderwater ) && (move_i_ground == 2 || (OBJ_PosGet().z < move_f_Zmiddle) ) )
+{
+	stimul_o_pafby = nobody
+	macro_change_etat( "SCS_dead" )
+}
+

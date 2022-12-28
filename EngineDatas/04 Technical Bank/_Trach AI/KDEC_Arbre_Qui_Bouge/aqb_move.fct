@@ -1,0 +1,32 @@
+#define Cf_contact_dist							4.0
+
+float			tf_dist
+float			tf_coef
+
+vector		tv_main_to_me
+vector		tv_wind
+
+//tf_dist = OBJ_SqrDistHorz(get_kong)
+tf_dist = OBJ_SqrDist(get_kong)
+
+if (tf_dist < 16.0|| f_kong_dist < f_sensibility )
+{
+
+	tv_main_to_me = OBJ_PosGet() - @get_kong OBJ_PosGet()
+//	tv_main_to_me.z = 0.0
+	tf_dist = MATH_FloatSqrt(tf_dist)
+	tv_main_to_me /= tf_dist
+
+	// POUR QUE LE COCOTIER SE RELEVE DOUCEMENT
+	if (tf_dist < f_kong_dist)
+		f_kong_dist = MATH_FloatBlend(f_kong_dist, tf_dist, 2.0 * TIME_GetDt())//tf_dist
+	else
+		f_kong_dist = MATH_FloatBlend(f_kong_dist, tf_dist, f_rigidite * TIME_GetDt())
+
+	tf_coef = f_kong_dist
+	tf_coef /= f_sensibility
+	tf_coef = 1.0 - tf_coef
+	tf_coef *= 0.5
+
+	OBJ_BankingSet(MATH_VecBlend(v_init_banking, tv_main_to_me, tf_coef))
+}

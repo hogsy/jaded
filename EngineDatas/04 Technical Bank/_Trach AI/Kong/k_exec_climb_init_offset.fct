@@ -1,0 +1,142 @@
+#include "k_define.var"
+
+// Calcule les offsets des différentes positions de saut
+
+int			ti_i
+int			ti_action_num
+int			ti_frame_nb
+int			ti_flag
+
+vector	tv_offset
+vector	tv_pos
+
+object	to_main_gauche
+object	to_main_droite
+object	to_bassin
+object	to_bone_supp
+
+//ti_flag = OBJ_FlagsControlGet() & OBJ_C_ControlFlag_AlwaysVisible
+//OBJ_FlagsControlSet(OBJ_C_ControlFlag_AlwaysVisible, none)
+//
+to_main_gauche = ANI_CanalObjectGet(Anim_Canal_MainGauche)
+to_main_droite = ANI_CanalObjectGet(Anim_Canal_MainDroite)
+to_bassin = ANI_CanalObjectGet(Anim_Canal_Bassin)
+to_bone_supp = ANI_CanalObjectGet(Anim_Canal_Snap_Bassin)
+for (ti_i = 0; ti_i < Ci_climb_jump_anim_nb; ti_i++)
+{
+	// IMPULSION
+	switch (ti_i)	
+	{
+		case 8 :
+		case 7 :
+		case 6 :
+			ti_action_num = Ci_Kanim_saute_deb
+			break
+		default:
+			ti_action_num = Ci_Kanim_impulsion + (ti_i * 2)
+	}
+
+	ACT_ActionSet(ti_action_num)	
+	ti_frame_nb = ANI_NbFrameGet(0)
+	ANI_CurrentFrameSet(0, ti_frame_nb - 1)
+	ACT_ActionSet(ti_action_num + 0x80000000)	
+
+
+	switch(ti_i)
+	{
+		case 1 :
+			tv_pos = @to_main_droite OBJ_PosGet()
+			break
+		case 2 :
+			tv_pos = @to_main_gauche OBJ_PosGet()
+			break
+		default:
+			tv_pos = @to_main_gauche OBJ_PosGet()
+			tv_pos -= @to_main_droite OBJ_PosGet()
+			tv_pos *= 0.5
+			tv_pos += @to_main_droite OBJ_PosGet()
+			break
+	}
+
+
+	tv_offset = tv_pos - OBJ_PosGet()
+//	macro_render_Vector(OBJ_PosGet(), tv_offset, color_rouge)
+	av_climb_hand_offset[ti_i][Ci_Climb_Offset_Impulsion] = MATH_VecGlobalToLocal(tv_offset)
+
+	switch (ti_i)	
+	{
+		case 11 :
+			ti_action_num = Ci_Kanim_Colonne_Att
+			break
+		case 10 :
+			ti_action_num = Ci_Kanim_Swing_Jump_D
+			break
+		case 9 :
+			ti_action_num = Ci_Kanim_Swing_Jump_G
+			break
+		case 8 :
+			ti_action_num = Ci_Kanim_Swing_Jump
+			break
+		case 6 :
+			ti_action_num = Ci_Kanim_saute_accroche
+			break
+		default:
+			ti_action_num = Ci_Kanim_jump + (ti_i * 2)
+	}
+
+	// SAUT
+	ACT_ActionSet(ti_action_num)
+	ti_frame_nb = ANI_NbFrameGet(0)
+	ACT_ActionFrameSet(ti_action_num,ti_frame_nb-1)
+	switch(ti_i)
+	{
+//		case 1 :
+//			tv_pos = @to_main_gauche OBJ_PosGet()
+//			break
+//		case 2 :
+//			tv_pos = @to_main_droite OBJ_PosGet()
+//			break
+		case 6 :
+		case 7 :
+			tv_pos = @to_main_gauche OBJ_PosGet()
+			tv_pos -= @to_main_droite OBJ_PosGet()
+			tv_pos *= 0.5
+			tv_pos += @to_main_droite OBJ_PosGet()
+			tv_pos += OBJ_SightGet() * 1.05
+			tv_pos.z += 1.8
+			break
+		case 8 :
+			tv_pos = @to_main_gauche OBJ_PosGet()
+			tv_pos += @to_main_gauche MATH_VecLocalToGlobal(Cv_KONG_Offset_Creux_MainGauche_Std)
+			break
+		case 9 :
+			tv_pos = @to_main_gauche OBJ_PosGet()
+			tv_pos += @to_main_gauche MATH_VecLocalToGlobal(Cv_KONG_Offset_Creux_MainGauche_Std)
+			break
+		case 10 :
+			tv_pos = @to_main_droite OBJ_PosGet()
+			tv_pos += @to_main_droite MATH_VecLocalToGlobal(Cv_KONG_Offset_Creux_MainDroite_Std)
+			break			
+		case 11 :
+			tv_pos = @to_bone_supp OBJ_PosGet()
+//			tv_pos += @to_main_droite MATH_VecLocalToGlobal(Cv_KONG_Offset_Creux_MainDroite_Std)
+			break			
+		default:
+//			tv_pos = @to_main_gauche OBJ_PosGet()
+//			tv_pos -= @to_main_droite OBJ_PosGet()
+//			tv_pos *= 0.5
+//			tv_pos += @to_main_droite OBJ_PosGet()
+//			break
+			tv_pos = @to_main_gauche OBJ_PosGet()
+			tv_pos += OBJ_SightGet()
+			break
+	}
+
+	tv_offset = tv_pos - OBJ_PosGet()
+	macro_render_Vector(OBJ_PosGet(), tv_offset, color_jaune)
+	av_climb_hand_offset[ti_i][Ci_Climb_Offset_Jump] = MATH_VecGlobalToLocal(tv_offset)
+}
+
+//if (! ti_flag)
+//	OBJ_FlagsControlSet(none, OBJ_C_ControlFlag_AlwaysVisible)
+	

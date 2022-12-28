@@ -1,0 +1,117 @@
+//M_DeclareInteraction_Common
+//M_DeclareInteraction_Kong
+//#include "KBC_Defines.var"
+//
+//object			to_finishClient 
+//object 			to_finishServer
+//
+//int					ti_tmp 
+//
+//messageid		tmid_vision
+//
+//
+//// SORTIE ETAT =========================================================================
+//if (i_sort_etat)
+//{
+//	i_sort_etat = faux
+//	
+//	if (o_bone_ride_KK)
+//		o_bone_ride_KK = LNK_ClientGet(Ci_LNK_RIDE_DINO, mid_bone_ride_KK_LNK_ID, faux, nofunc, nofunc, nofunc)
+//	
+//	i_finishing_state = Ci_FinishAttack_OFF
+//
+//	return
+//}
+//
+//// ENTREE ETAT =========================================================================
+//if (i_etat_courant != ETAT_KK_FinishAttack)
+//{
+//	i_etat_ancien = i_etat_courant
+//	i_etat_courant = ETAT_KK_FinishAttack
+//	
+//	if (fct_last_etat)
+//	{
+//		i_sort_etat = vrai
+//		AI_Execute(fct_last_etat)
+//	}
+//	fct_last_etat = AI_TrackCurGet()
+//	f_time_start_etat = 0.0
+//	
+//	// disable movement on Kong
+//	fn_InitInteractionRequest( m_interaction, OBJ_Me(), C_KongInteraction_ReadInput_Off )
+//	Dispatch_Interaction( o_kong, m_interaction )
+//	
+//	i_finishing_state  = Ci_FinishAttack_WaitForLink
+//	
+//	if( i_DBG_trace_etat )
+//	{
+//		DBG_TraceObject(OBJ_Me())
+//		DBG_TraceString(" : etat kk finish")
+//		DBG_TraceEOL()
+//	}
+//}
+//else
+//{
+//	f_time_start_etat += TIME_GetDt()
+//}
+//
+//KBC_Interet_Update(mid_interet_attaque, C_EVENT_InteretStatusRide, o_cible_attaque, tmid_vision)
+//
+//if (i_finishing_state ==  Ci_FinishAttack_WaitForLink)
+//{
+//	// the lucky bat on bone 0 is the leader!
+//	if (i_bone_id == 0)
+//	{
+//		to_finishClient = LNK_ThisClientGet(o_cible_attaque,Ci_LNK_KKFINISH_ON_KONG, mid_finish_LNK_ID, vrai, nofunc, nofunc, nofunc)
+//		if (MSG_GlobalIsValid(mid_finish_LNK_ID))
+//		{
+//			LNK_Finish_ActionSet( mid_finish_LNK_ID, Ci_GrabKong_FinishSePlace )
+//			LNK_Finish_FinisherTypeSet( mid_finish_LNK_ID, Ci_GrabKong_Finished_Raptors)
+//		}	
+//		else
+//		{
+//			DBG_Error("Could not initiate finished link with kong : case was not suppose to happen")
+//		}
+//	}
+//	else
+//	{
+//		ti_tmp = -1
+//		mid_finish_LNK_ID = MSG_GlobalScan(Ci_LNK_EVENT_OFFSET + Ci_LNK_KKFINISH_ON_KONG,&ti_tmp)
+//		if (MSG_GlobalIsValid(mid_finish_LNK_ID))
+//		{
+//			to_finishClient = LNK_ThisClientGet(o_cible_attaque,Ci_LNK_KKFINISH_ON_KONG, mid_finish_LNK_ID, vrai, nofunc, nofunc, nofunc)
+//		}
+//	}		
+//	
+//	if (MSG_GlobalIsValid(mid_finish_LNK_ID))
+//	{
+//		to_finishServer = LNK_ServeurGet(Ci_LNK_KKFINISH_ON_KONG, mid_finish_LNK_ID, vrai, nofunc, nofunc)
+//
+//		if (to_finishServer)
+//				i_finishing_state = Ci_FinishAttack_Finishing
+//
+//	}	
+//
+//}
+//else if (i_finishing_state == Ci_FinishAttack_Finishing)
+//{
+//	if ( MSG_GlobalIsValid(	mid_finish_LNK_ID ) )
+//	{
+//		to_finishClient = LNK_ThisClientGet(o_cible_attaque,Ci_LNK_KKFINISH_ON_KONG, mid_finish_LNK_ID, vrai, nofunc, nofunc, nofunc)
+//		to_finishServer = LNK_ServeurGet(Ci_LNK_KKFINISH_ON_KONG, mid_finish_LNK_ID, vrai, nofunc, nofunc)
+//	}
+//	// bring back Kong inputs if not done already
+//	if (to_finishServer == OBJ_Me())
+//	{
+//		fn_InitInteractionRequest( m_interaction, OBJ_Me(), C_KongInteraction_ReadInput_GetState )
+//		Dispatch_Interaction( o_kong, m_interaction )
+//		if (m_interaction.msg_int1 == 0)
+//		{
+//			// read input is off, we bring it back on
+//			fn_InitInteractionRequest( m_interaction, OBJ_Me(), C_KongInteraction_ReadInput_On )
+//			Dispatch_Interaction( o_kong, m_interaction )
+//		}
+//	}
+//}
+//
+//	

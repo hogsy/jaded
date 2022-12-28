@@ -1,0 +1,82 @@
+#include "PNJ_SwampCrawler_defs.var"
+
+int			enemy_state
+float		vision_visibility
+
+if (etat_i_courant == SCETAT_mort)
+	return
+
+// --------( timer )--------
+move_f_withouthunt -= TIME_GetDt()
+
+// --------( visu )--------
+switch ( etat_i_courant )
+{
+	case	SCETAT_ground	: 
+		vision_visibility = C_EVENT_Visibility_Full
+		enemy_state = C_EVENT_EnemyState_Quiet
+		break
+	
+	case	SCETAT_water : 
+		vision_visibility = C_EVENT_Visibility_InWater
+		enemy_state = C_EVENT_EnemyState_Quiet
+		break
+
+	case	SCETAT_gotowater	: 
+		vision_visibility = C_EVENT_Visibility_Full_Mvt
+		enemy_state = C_EVENT_EnemyState_Quiet
+		break
+
+	case	SCETAT_gotoground : 
+		vision_visibility = C_EVENT_Visibility_Full_Mvt
+		enemy_state = C_EVENT_EnemyState_Quiet
+		break
+
+	case	SCETAT_nage	 :
+		vision_visibility = C_EVENT_Visibility_InWater_Mvt
+		enemy_state = C_EVENT_EnemyState_Quiet
+		break
+		
+	case	SCETAT_hunt:
+		vision_visibility = C_EVENT_Visibility_InWater
+		enemy_state = C_EVENT_EnemyState_Fight
+		break
+		
+	case	SCETAT_fight	:
+		vision_visibility = C_EVENT_Visibility_InWater
+		enemy_state = C_EVENT_EnemyState_Fight
+		break
+		
+	default:
+		vision_visibility = C_EVENT_Visibility_Full
+		enemy_state = C_EVENT_EnemyState_Quiet
+		break
+}
+
+//--------( event ennemy )--------
+EVENT_AddEventEnemy( C_ID_SwampCrawler, OBJ_Me(), enemy_state)
+
+//--------( event vision )--------
+EVENT_AddEventVision
+( 
+	C_ID_SwampCrawler, 
+	0, 
+	OBJ_Me(), 
+	Cf_EVENT_Duree_1Trame, 
+	OBJ_PosGet(), 
+	vision_visibility, 
+	@"univ" Enemy_af_Radius[ C_ID_SwampCrawler ],
+	100.0, 
+	C_EVENT_CONTEXT_STANDARD, 
+	2,
+	life_f_cur / life_f_init
+)
+
+AI_Execute( "SC_check_stimuli" )
+
+if (Organizer )
+{
+	Org_o_StateAttack = nobody
+	if (	SCETAT_hunt)
+		Org_o_StateAttack = stimul_o_target
+}

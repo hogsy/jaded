@@ -1,0 +1,341 @@
+#include "MM_defines.var"
+
+vector		tv_temp
+
+object		to_wp
+object		to_wp_deb
+object		to_wp_fin
+
+int				ti_i
+int				ti_msg_nb
+int				ti_script_on
+
+message	tm_message
+
+float			tf_dist
+
+// occluders
+object			ao_occluder[10]
+float				af_occluder[10]
+int					ti_occluder_status
+object			to_occluder_jump
+vector			tv_test_occluder_dest_pos
+vector			tv_pos_occluder
+
+// interet
+object			to_gao
+int					ti_k
+
+vector			tv_pos
+
+
+if( i_etat_courant == ETAT_TEST )
+	return
+
+if( ! f_HP_cur )
+	return
+
+
+// PILE DE SCRIPTS =======================================================
+ti_i = 0
+ti_msg_nb = MSG_GetCount()
+while(ti_msg_nb)
+{
+	tm_message = MSG_Read(ti_i)
+	ti_i = ti_i
+	switch( tm_message.msg_id )
+	{
+		case CINE_MONSTREMARIN_MoveTo :
+			amsg_script[i_script_nb] = tm_message
+			i_script_nb++
+			break
+		
+		case CINE_MONSTREMARIN_Reset :
+			BigMonster_Script_Reset()
+			BigMonster_Script_Next()
+			if( i_DBG_trace_script )
+			{
+				DBG_TraceString("CINE_MONSTREMARIN_Reset")
+				DBG_TraceEOL()
+			}
+			break
+			
+		case CINE_MONSTREMARIN_Teleport :
+			amsg_script[i_script_nb] = tm_message
+			i_script_nb++
+			break
+			
+		case CINE_MONSTREMARIN_MoveInTime :
+			amsg_script[i_script_nb] = tm_message
+			i_script_nb++
+			break
+			
+		default:
+			break
+	}
+	ti_i++
+	ti_msg_nb--
+	
+	if( i_script_nb == i_script_indice && i_script_nb != 0 )
+		DBG_Error("Trop de scripts empilés, tableau pas assez grand dans l'IA du monstre marin")
+	
+	if( i_script_nb == Ci_script_nb )
+	{
+		i_script_nb = 0
+		DBG_Warning("Attention : le monstre a déjà empilé trop de messages !!!")
+	}
+}
+MSG_Clear()
+
+
+// SCRIPT SUIVANT ========================================================
+ti_script_on = faux
+if( i_script_next && i_script_indice != i_script_nb )
+{
+	// il y a des msg empilés et j'ai l'autorisation de passer au suivant	
+	if( i_DBG_trace_script )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : SCRIPT (n°")
+		DBG_TraceInt(i_script_indice)
+		DBG_TraceString(") ")
+	}
+	tm_message = amsg_script[i_script_indice]
+	switch( tm_message.msg_id )
+	{
+		case CINE_MONSTREMARIN_MoveInTime :
+			// DEPLACEMENT DANS UN TEMPS IMPARTI ---------------------------------------------
+			if( i_DBG_trace_script )
+			{
+				DBG_TraceString("CINE_MONSTREMARIN_MoveInTime")
+			}
+			ti_script_on = vrai
+			i_move_mode = Ci_move_mode_in_time
+			o_script_move_wp = tm_message.msg_gao1
+			if( i_DBG_trace_script )
+			{
+				DBG_TraceString(" vers ")
+				DBG_TraceObject(o_script_move_wp)
+			}
+			// DUREE DU DEPL
+			tv_temp = tm_message.msg_vec1
+			f_script_move_in_time_temps = tv_temp.x
+			f_script_move_in_time_cpt = f_script_move_in_time_temps
+			// CALCUL DE LA DISTANCE TOTALE A PARCOURIR
+			f_script_move_in_time_dist = 0.0
+			if( tm_message.msg_int1 == 0 )
+			{
+				// Déplacement direct vers le wp
+				i_attack_phase = Ci_attack_phase_orientation
+				if( i_DBG_trace_script )
+				{
+					DBG_TraceString(" (depl direct)")
+					DBG_TraceEOL()
+				}
+				tv_test_occluder_dest_pos = @o_script_move_wp OBJ_PosGet()
+				@o_dup_wp_occluder OBJ_PosSet(tv_test_occluder_dest_pos)
+				BigMonster_MovePosDestUpdate(tv_test_occluder_dest_pos)
+				f_script_move_in_time_dist += BigMonster_MoveDistGet(tv_test_occluder_dest_pos, OBJ_PosGet())
+			}
+			else
+			{
+				// Calcul d'une position intermédiaire
+				if( i_DBG_trace_script )
+				{
+					DBG_TraceString(" (depl avec position intermédiaire)")
+					DBG_TraceEOL()
+				}
+				
+				// 1 . vers le wp de positionnement ---------------------------------
+				i_attack_phase = Ci_attack_phase_vers_wp_temp
+				BigMonster_MovePosStartUpdate()
+				tv_test_occluder_dest_pos = BigMonster_GetIntermediatePosition(o_script_move_wp)
+				@o_dup_wp_occluder OBJ_PosSet(tv_test_occluder_dest_pos)
+				BigMonster_MovePosDestUpdate(tv_test_occluder_dest_pos)
+				f_script_move_in_time_dist += BigMonster_MoveDistGet(tv_test_occluder_dest_pos, OBJ_PosGet())
+				// 2 . vers le wp d'orientation ----------------------------------------
+				tv_test_occluder_dest_pos = @o_script_move_wp OBJ_PosGet()
+				f_script_move_in_time_dist += BigMonster_MoveDistGet(tv_test_occluder_dest_pos, @o_dup_wp_occluder OBJ_PosGet())
+			}
+			// CALCUL DE LA VITESSE
+ 			BigMonster_UpdateSpeed(f_script_move_in_time_dist / f_script_move_in_time_temps, 1.0)
+			break
+			
+		case CINE_MONSTREMARIN_Teleport :
+			// TELEPORT ------------------------------------------------------------------------------------------
+			if( i_DBG_trace_script )
+			{
+				DBG_TraceString("CINE_MONSTREMARIN_Teleport")
+			}
+			ti_script_on = vrai
+			i_move_mode = Ci_move_mode_teleport
+			o_script_move_wp = tm_message.msg_gao1	
+			if( i_DBG_trace_script )
+			{
+				DBG_TraceString(" vers ")
+				DBG_TraceObject(o_script_move_wp)
+				DBG_TraceEOL()
+			}
+			break
+			
+		case CINE_MONSTREMARIN_MoveTo :
+			// DEPLACEMENT ------------------------------------------------------------------------------------
+			if( i_DBG_trace_script )
+			{
+				DBG_TraceString("CINE_MONSTREMARIN_MoveTo")
+			}
+			ti_script_on = vrai
+			if( tm_message.msg_int1 == 0 )
+			{
+				// SPECIFIQUE MOVE DIRECT
+				i_move_mode = Ci_move_mode_direct
+				o_script_move_wp = tm_message.msg_gao1
+				if( i_DBG_trace_script )
+				{
+					DBG_TraceString(" move direct vers ")
+					DBG_TraceObject(o_script_move_wp)
+					DBG_TraceEOL()
+				}
+			}
+			else if( tm_message.msg_int1 == 1 )
+			{
+				// SPECIFIQUE MOVE VIA RESEAU
+				DBG_Error("Erreur : un message MoveViaReseau a été envoyé... remplacez-le par un move direct svp...")
+			}
+			else if( tm_message.msg_int1 == 2 || tm_message.msg_int1 == 3 || tm_message.msg_int1 == 4 )
+			{
+				// SPECIFIQUE ATTAQUE
+				if( tm_message.msg_int1 == 2 )
+				{
+					i_attack_mode = Ci_attack_mode_paf
+					i_attack_type = Ci_attack_type_ras_de_l_eau
+					if( i_DBG_trace_script )
+					{
+						DBG_TraceString(" move attaque paf (au ras de l'eau)")
+						DBG_TraceEOL()
+					}
+				}
+				else if( tm_message.msg_int1 == 3 )
+				{
+					i_attack_mode = Ci_attack_mode_grab
+					i_attack_type = Ci_attack_type_jump_horsdeleau
+					if( i_DBG_trace_script )
+					{
+						DBG_TraceString(" move attaque grab")
+						DBG_TraceEOL()
+					}
+				}
+				else if( tm_message.msg_int1 == 4 )
+				{
+					i_attack_mode = Ci_attack_mode_paf
+					i_attack_type = Ci_attack_type_renverse
+					if( i_DBG_trace_script )
+					{
+						DBG_TraceString(" move attaque paf (Renverse)")
+						DBG_TraceEOL()
+					}
+				}
+				else
+					DBG_Error("tm_message.msg_int1 inconnu ????")
+				
+				// cible -------------------------------
+				o_fight_actor = tm_message.msg_gao1
+				o_fight_move_wp = BigMonster_Attack_Init(o_fight_actor)
+				o_script_move_wp = o_fight_move_wp
+				o_script_move_after_attack_wp = tm_message.msg_gao2
+				if( ! o_script_move_after_attack_wp )
+					DBG_Error("Pas de o_script_move_after_attack_wp spécifié !!! (msg_gao2)")
+				else if( i_DBG_trace_script )
+				{
+					DBG_TraceObject(OBJ_Me())
+					DBG_TraceString(" : o_script_move_after_attack_wp = ")
+					DBG_TraceObject(o_script_move_after_attack_wp)
+					DBG_TraceEOL()
+				}
+				o_script_attack_marin_wp = tm_message.msg_gao3
+				if( ! o_script_attack_marin_wp )
+					DBG_Error("Pas de o_script_attack_marin_wp spécifié !!! (msg_gao3)")
+				else if( i_DBG_trace_script )
+				{
+					DBG_TraceObject(OBJ_Me())
+					DBG_TraceString(" : o_script_attack_marin_wp = ")
+					DBG_TraceObject(o_script_attack_marin_wp)
+					DBG_TraceEOL()
+				}
+				if( i_DBG_trace_script )
+				{
+					DBG_TraceObject(OBJ_Me())
+					DBG_TraceString(" : Cible = ")
+					DBG_TraceObject(o_script_move_wp)
+					DBG_TraceEOL()
+				}
+				if( i_attack_type == Ci_attack_type_renverse )
+				{
+					tv_pos = BigMonster_CalcPhaseWpPos()
+					@o_dup_wp_occluder OBJ_PosSet(tv_pos)
+					BigMonster_MovePosDestUpdate(tv_pos)
+				}
+				// radeau ? -------------------------
+				if( @o_fight_actor AI_IsModel(get_Interactive_Raft_path) )
+				{
+					i_attack_radeau_flag = vrai
+					for( ti_k = 0; ti_k < Ci_radeau_max_passager_nb; ti_k++)
+					{
+						to_gao = @get_Interactive_Raft_path o_fight_actor ao_Who[ti_k]
+						if( to_gao )
+						{
+							ao_interet_target[i_interet_target_nb] = to_gao
+							i_interet_target_nb++
+						}
+					}
+				}
+				else
+				{
+					i_interet_target_nb = 1
+					ao_interet_target[0] = o_fight_actor
+				}
+			}
+			
+			// VITESSE (COMMUN A TOUS LES MODES)
+			tv_temp = tm_message.msg_vec1
+			BigMonster_UpdateSpeed(tv_temp.x, tv_temp.y)
+			f_time_depl_attack_joueur = tv_temp.z		// délai d'attaque sur le joueur tombé à l'eau 
+			f_script_move_in_time_cpt = f_time_depl_attack_joueur
+			break
+			
+		default:
+			if( i_DBG_trace_script )
+			{
+				DBG_TraceString("??????")
+			}
+			DBG_Error("Message inattendu !!!")
+			break
+	}
+}
+
+
+// INIT NOUVEAU SCRIPT ==============================================
+if( ti_script_on )
+{	
+	i_script_indice++
+	i_script_next = faux		// on attend la fin de ce script pour passer au suivant
+	i_script_running = vrai
+	f_attaque_paf_dmg_cumul = 0.0		// raz au début d'une attaque, ou à chaque event
+	i_script_reinit_etat = vrai
+	BigMonster_MovePosStartUpdate()
+	if( i_move_mode == Ci_move_mode_in_time )
+	{
+		// test script suivant : attaque ?
+		tm_message = amsg_script[i_script_indice]
+		if( tm_message.msg_id == CINE_MONSTREMARIN_MoveTo )
+			o_fight_move_wp = tm_message.msg_gao1
+		else
+			o_fight_move_wp = nobody
+	}
+	if( i_script_indice == Ci_script_nb )
+	{
+		i_script_indice = 0
+		DBG_Warning("Attention : le monstre a déjà empilé trop de messages !!!")
+	}
+}
+

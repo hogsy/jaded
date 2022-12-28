@@ -1,0 +1,33 @@
+#include "K_define.var"
+
+//==============================================================================
+// TRACK SPECIALE  : POUR POUVOIR FAIRE UN AI_TrackCurChangeNow() SUR L'ETAT COURANT
+//==============================================================================
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_Kong_track_change )
+{
+//	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Kong_track_change
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	if( fct_track_change == nofunc )
+		DBG_Error("Appel de K_ETAT_track_change avec fct_track_change == nofunc ")
+}
+
+
+i_etat_courant = i_dernier_etat 	// comme ça l'init du prochain état ne se rendra pas compte qu'on est passé dans cet état temporaire
+macro_change_etat(fct_track_change)
+

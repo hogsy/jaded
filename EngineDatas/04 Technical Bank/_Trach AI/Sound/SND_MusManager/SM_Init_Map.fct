@@ -1,0 +1,57 @@
+#include "SM_Constants.var"
+
+TIME_Wait(0.1)	// FRED: Pour attendre les desactivations eventuelles (sectorisation et autre)
+
+// Init all instance --------------------------------------------------------------------------------------------------------
+int ti
+
+
+// force à 0
+//
+i_Injure_EndSilenceDuration  = 0
+//
+
+
+#ifndef _FINAL_
+if( ! OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Sound) )
+{
+	DBG_Error("THIS IA MUST HAVE A SOUND BANK")
+}
+#endif
+
+if( mi_1stRqDone == 0 )
+{
+	mi_1stRqDone = 1
+	for(ti=0; ti<SND_Cte_MusicSnkSize; ti++)
+	{
+		mai_MusicInstance[ti] = SND_Request(ti, 0)
+	}
+}
+
+for(ti=0; ti<Cte_FilterSize; ti++)
+{
+	mai_wait[ti] = 0
+	mai_fight[ti] = 0
+	mai_neutral[ti] = 0
+	mai_death[ti] = 0
+	mai_injured[ti] = 0
+}
+
+mi_InjureFxDone = 1
+MUS_InjureFxReset(0)
+
+mf_FightDuration = 0.0
+
+//------------------------------------------------------------------------------------------------------------------
+dbg_print(DBG_LV1, "map init : phase and type => init", nobody)
+
+SND_M_GetMusPhase = -1
+MUS_SetPhase(-1)
+SND_M_GetMusType = i_InitKit 
+
+
+//------------------------------------------------------------------------------------------------------------------
+AI_TrackChange(0, "SM_Scan_Jingle")
+AI_TrackChange(1, "SM_Scan_Phase_Kit")
+AI_TrackChange(2, "SM_Scheduler")
+AI_TrackChange(3, "SM_MusVolume")

@@ -1,0 +1,459 @@
+#include "_Projectile_Javelin_defs.var"
+
+vector			tv_normal
+vector			tv_impact_pos
+vector			tv_temp
+vector			tv_temp1
+vector			tv_real_sight
+vector			tv_pos
+vector			tv_posgrid
+
+object 			to_obj
+object			to_sender
+object			o
+
+int					ti_flag_ok
+int					ti_plug, ti_canal
+int					ti_snd, ti_forceplug
+float					ti_paf
+int					ti_what
+int					ti_ok
+int					ti_number
+int					ti_capa
+int					cpt_loop
+
+float				tf_temp, tf_dist, tf_range
+
+messageid		tmid_paf
+message		t_msg
+int					ti_can
+
+cpt_loop = 0
+
+//--------( Init )------------------------------------------
+if(mi_State != Ci_bambou_state_launch)
+{
+	// Position globale envoie
+	if(mo_LockObj) mv_LockObjGlobal = @mo_LockObj MATH_VecLocalToGlobal(mv_LockObj) + @mo_LockObj OBJ_PosGet()
+	
+	// si le javelot vient d une PluieDeLances, il ne devient visible qu au moment ou il est lance
+	if (OBJ_CapaGet() & OBJ_Capa_2)
+		OBJ_FlagInvisibleSet(0)
+}
+
+to_obj = AI_MainActorGet(C_ID_Joueur)
+if(!i_snd_done && OBJ_SqrDistHorz(to_obj) < 10 * 10)
+{
+	i_snd_done = vrai
+	if(mo_Sender == AI_MainActorGet(C_ID_Joueur))
+		SND_RequestPlay( SND_launch_jack )
+	else
+		SND_RequestPlay( SND_launch )
+}
+
+mi_State = Ci_bambou_state_launch
+
+ti_forceplug = faux
+ti_plug = faux
+o_plug_to = nobody
+o = nobody
+
+switch(mi_TypeLance)
+{ 
+case 0:	ti_what = Ci_weapon_ID_bambou break
+case 1:	ti_what = Ci_weapon_ID_ossement break
+//case 1:	ti_what = Ci_weapon_ID_bambou_moy break
+//case 2:	ti_what = Ci_weapon_ID_bambou_petit break
+}
+
+//---------( GFX )--------------------------------------------
+if ( mi_flamme )
+{
+	AI_Execute( "Javelin_GFX_fire1" )
+	f_fire_time = JAVELIN_FireTimeWhenFixed
+}
+
+//--------( Lancers de rayon sur les objects qui sont susceptibles d'avoir des obbox )--------------------
+if( !MATH_VecNullEpsilon(OBJ_PosGet() - v_last_pos) )
+{
+	tv_temp1 = mf_ContactPointDistance* OBJ_SightGet()
+//	tv_temp = v_last_pos + tv_temp1
+	tv_temp = v_last_pos + ( mf_ContactPointDistance * v_last_sight )
+	tv_temp1 += OBJ_PosGet() 
+	to_sender = mo_Sender
+	
+	if(AI_MainActorGet(C_ID_Joueur) == mo_Sender)
+		@mo_Sender OBJ_FlagsControlSet(OBJ_C_ControlFlag_RayInsensitive, 0)
+	
+JL_redorayafterwater:
+	DBG_RenderSphere( v_last_pos, 0.1, color_rose )
+	DBG_RenderSphere( tv_temp1, 0.1, color_rose ) 
+	DBG_RenderVector( tv_temp, tv_temp1 - tv_temp, color_rouge )
+	
+	if (to_sender)
+		to_obj = @to_sender COL_RayObject_Vector(tv_temp, tv_temp1 - tv_temp, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_visuel_and_bone_volumes)
+	else
+		to_obj = COL_RayObject_Vector(tv_temp, tv_temp1 - tv_temp, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_visuel_and_bone_volumes)
+	
+	if (to_obj && COL_RayObject_ActorGet() != to_sender) 
+	{
+		o_plug_to = to_obj
+		tv_impact_pos = COL_RayObject_PosGet()
+		to_obj = COL_RayObject_ActorGet()
+		i_plug_canal = COL_RayObject_CanalGet()
+		v_plug_normal = COL_RayObject_NormalGet()
+		o = to_obj
+		o_plug_to_master = to_obj
+		i_on_bone = faux
+		if(o_plug_to_master != o_plug_to) i_on_bone = vrai
+		OBJ_RegisterKill(o_plug_to_master, &o_plug_to_master)
+
+		EVENT_AddEventSound(C_EVENT_FILTER_Tir, OBJ_Me(), Cf_EVENT_Duree_1Trame, OBJ_PosGet(), 5.0)
+		
+		if(@to_obj AI_IsModel(get_Humain_path))
+		{
+			//i_GFX_impactcolor = 0xFF
+			SND_RequestPlay( SND_plante_flesh )
+			i_GFX_impactcolor = 0x04050E30
+			AI_Execute("Javelin_GFX_Impact")
+		}
+		else
+		{
+			ti_snd = COL_RayObject_SoundGet()
+
+			if ( @to_obj AI_IsModel("Objets/SwapArme") || @to_obj AI_IsModel(get_PNJ_Crab_path) )	// Object avec Module mais pas Humanoid. (FRED)
+				ti_snd = COL_C_Snd_Wood
+
+			if (ti_snd && ti_snd < COL_C_Snd_Number)
+				SND_RequestPlay( ti_snd )
+			else
+			{
+				ti_snd = SND_plante_dirt
+				ti_canal = COL_RayObject_CanalGet()
+				if (ti_canal != -1)
+				{
+					ti_snd = SND_plante_flesh
+					ti_forceplug = 1
+				}
+				SND_RequestPlay( ti_snd )
+			}
+			switch( ti_snd )
+			{
+				case COL_C_Snd_None :
+				case COL_C_Snd_Dirt :
+				case COL_C_Snd_Veget : 
+				case COL_C_Snd_Wood : 
+					i_GFX_impactcolor = 0xFF101010 // 15 //FFFFFF //202025 //808080
+					ti_plug = vrai
+					break
+				case COL_C_Snd_Flesh :
+					//i_GFX_impactcolor = 0xFF
+					i_GFX_impactcolor = 0x04050E30
+					ti_plug = vrai
+					break
+				case COL_C_Snd_Stone	: 
+				case COL_C_Snd_Steel	: 
+					i_GFX_impactcolor = 0xFF808080
+					AI_Execute("Javelin_GFX_Impact")
+					break
+				case COL_C_Snd_Water	:
+					if (o_bidoche)
+						@get_PNJ_Bidoche_path o_bidoche f_water_Z = tv_impact_pos.z
+					if(mi_flamme) SND_RequestPlay(17)
+					mi_flamme = 0
+					if (i_GFX_Fire != -1)
+					{
+						GFX_Seti( i_GFX_Fire, 13106, 0)	
+						i_GFX_Fire = -1
+					}
+					// teste si autre collision après surface de flotte
+					to_sender = o
+					o = nobody
+					v_last_pos = tv_impact_pos
+					cpt_loop++
+					if(cpt_loop < 2) goto JL_redorayafterwater
+					break
+			}
+		}
+	}
+	
+	if(AI_MainActorGet(C_ID_Joueur) == mo_Sender)
+		@mo_Sender OBJ_FlagsControlSet(0, OBJ_C_ControlFlag_RayInsensitive)
+		
+	tv_temp = OBJ_PosGet() - v_pos_de_lancement
+	tf_dist = MATH_VecDotProduct(tv_temp,tv_temp)
+	tf_range = @"univ" Weapon_af_pointblankrange[ ti_what  ]
+	if ( tf_dist < (tf_range * tf_range) ) 
+		ti_paf = @"univ" Weapon_af_Damage[ ti_what ][ 0 ]
+	else
+	{		
+		tf_range = @"univ" Weapon_af_middlerange[ ti_what ]
+		if ( tf_dist < (tf_range * tf_range) ) 
+			ti_paf = @"univ" Weapon_af_Damage[ ti_what ][ 1 ]
+		else
+		{
+			// si le javelot vient d une PluieDeLances, on laisse le plug a vrai peu
+			// importe la distance
+//			if (! (OBJ_CapaGet() & OBJ_Capa_2) && !ti_forceplug )
+//				ti_plug = faux
+				
+			ti_paf = @"univ" Weapon_af_Damage[ ti_what ][ 2 ]
+		}
+	}
+
+	// Pas de paf => pas de plug	
+	if(OBJ_CapaGet() & OBJ_Capa_6) ti_plug = faux
+	
+	if (mi_flamme)
+		ti_paf += 10
+}
+
+if (mo_Sender && o && @mo_Sender AI_IsModel(get_PNJ_KNative_path) && @o AI_IsModel(get_PNJ_KNative_path) )
+{
+	ti_plug = 0
+	o = nobody	
+}
+
+// Sur un crane, pas de plug, mais paf qd meme
+ti_can = vrai
+if(ti_plug && o_plug_to && o_plug_to_master && @o_plug_to_master AI_IsModel("Projectiles/Projectile"))
+	ti_can = faux
+	
+//---------( plug ? )---------
+if ( ti_plug  && i_cpt_plug < i_casse && ti_can)
+{
+	if(mi_TypeLance == 0 || mi_TypeLance == 1)
+		i_cpt_plug += 2
+	
+	tv_real_sight = OBJ_SightGet()
+	OBJ_PosSet( tv_impact_pos -  (OBJ_SightGet()*0.6) )
+		
+	ti_flag_ok = vrai
+	if (o_plug_to_master == o_plug_to)
+		ti_flag_ok = faux
+	else if (! @o_plug_to_master ACT_HasActionKit() )
+		ti_flag_ok = faux
+	else if (@o_plug_to_master AI_IsModel(get_PNJ_Bats_path))
+	{
+		switch(i_plug_canal)
+		{
+			case Anim_Canal_MainDroite :
+			case Anim_Canal_MainGauche :
+				ti_flag_ok = faux
+				break
+		}
+	}
+
+	if (ti_flag_ok)
+	{
+		tv_temp = @o_plug_to OBJ_PosGet()
+		tv_temp += @o_plug_to MATH_VecLocalToGlobal(@o_plug_to BV_OBBoxMinGet())
+		tv_temp += @o_plug_to MATH_VecLocalToGlobal(@o_plug_to BV_OBBoxMaxGet() - @o_plug_to BV_OBBoxMinGet()) * 0.5
+
+		if (MATH_AbsFloat(MATH_VecDotProduct(OBJ_SightGet(), @o_plug_to OBJ_BankingGet())) > Cf_Cos60)
+		{
+			tv_temp -= tv_impact_pos
+		}
+		else
+		{
+			tv_temp -= tv_impact_pos
+			tv_temp -= MATH_VecDotProduct(tv_temp, @o_plug_to OBJ_BankingGet()) * @o_plug_to OBJ_BankingGet()
+		}
+		
+		tv_temp = MATH_VecBlendRotate(OBJ_SightGet(), tv_temp, 0.5)
+		OBJ_SightSet(tv_temp)
+		OBJ_PosSet(tv_impact_pos)
+	}
+	
+	v_plug_local = @o_plug_to MATH_VecGlobalToLocal(OBJ_PosGet() - @o_plug_to OBJ_PosGet())
+	v_plug_sight = @o_plug_to MATH_VecGlobalToLocal(OBJ_SightGet())
+	v_plug_banking = @o_plug_to MATH_VecGlobalToLocal(OBJ_BankingGet())
+	
+	//DYN_Off()
+	DYN_SpeedSetVector( Cv_NullVector )
+	DYN_GravitySet( Cv_NullVector )
+	DYN_TractionSet( Cv_NullVector )
+	DYN_FrictionVectorSet( Cv_NullVector )
+
+	macro_del_callback_tir("Javelin_launch")
+	
+	if( ( ! @mo_Sender AI_IsModel(get_Humain_path) ) || ( o != AI_MainActorGet(C_ID_Joueur) ) )
+	{
+		tmid_paf = EVENT_AddEventPafCanal( C_EVENT_FILTER_All, C_PAF_KK_Javelin, mo_Sender, Cf_EVENT_Duree_1Trame, o, ti_canal, ti_paf, tv_real_sight, OBJ_PosGet())
+		EVENT_Gao2Set(tmid_paf, OBJ_Me() )
+	}
+	f_plug_timer = -1
+	mi_ColCount = 0
+
+	// send a message to master
+	if ( @o_plug_to_master OBJ_FlagsIdentityTest( OBJ_C_IdentityFlag_Msg ) )
+	{
+		MSG_SetNull( t_msg )
+		t_msg.msg_id = msg_id_projectile_plugto
+		t_msg.msg_gao1 = OBJ_Me()
+		@o_plug_to_master MSG_Send( t_msg )
+	}
+	
+	AI_RunContext(CTX_Normal )
+	macro_add_callback_after_cam("Javelin_Plug")
+	AI_Execute("Javelin_GFX_Impact")
+	AI_TrackCurStop()
+	return
+}
+else if(ti_plug)
+{
+	ti_paf /= 2
+	tv_real_sight = OBJ_SightGet()
+	if( ( ! @mo_Sender AI_IsModel(get_Humain_path) ) || ( o != AI_MainActorGet(C_ID_Joueur) ) )
+	{
+		tmid_paf = EVENT_AddEventPafCanal( C_EVENT_FILTER_All, C_PAF_KK_Javelin, mo_Sender, Cf_EVENT_Duree_1Trame, o, ti_canal, ti_paf, tv_real_sight, OBJ_PosGet())
+		EVENT_Gao2Set( tmid_paf, OBJ_Me() )
+	}
+	AI_Execute("Javelin_GFX_Impact")
+}	
+
+//---------( tomber trop bas ? )---------
+if ( MATH_AbsFloat( OBJ_PosGet().z - mf_ZInit) > 50)
+//	AI_Execute( "Javelin_destroy" )
+	OBJ_Destroy()
+
+//---------( choc )---------
+if ( o )
+{
+	// si OBJ_Capa_2, le javelin vient d une Pluie De Lances et est particulierement
+	// destructeur (sur jack seulement)
+	if (OBJ_CapaGet() & OBJ_Capa_2)
+	{
+		OBJ_CapaSet(0,OBJ_Capa_2)
+	}
+
+	// si capa3 est a vrai, le javelin ne doit pas faire de paf
+	if (! (OBJ_CapaGet() & OBJ_Capa_3) )
+	{
+		// Humain : si capa 5, alors un humain capa 1 peut paffer un humain non capa 1, et vice & versa
+		ti_ok = faux
+		if(!(OBJ_CapaGet() & OBJ_Capa_5)) ti_ok = vrai
+		if(@o AI_IsModel("KingKong/Humain"))
+		{
+			if(!@mo_Sender AI_IsModel("KingKong/Humain")) 
+				ti_ok = vrai
+			else
+			{
+				if(@mo_Sender OBJ_CapaTest(OBJ_Capa_1) && !@o OBJ_CapaTest(OBJ_Capa_1)) ti_ok = vrai
+				if(!@mo_Sender OBJ_CapaTest(OBJ_Capa_1) && @o OBJ_CapaTest(OBJ_Capa_1)) ti_ok = vrai
+			}
+		}
+		
+		if(OBJ_CapaGet() & OBJ_Capa_6) ti_ok = faux
+		if ( ti_ok )
+		{
+			if(i_cpt_plug < i_casse)
+			{
+				if( ( ! @mo_Sender AI_IsModel(get_Humain_path) ) || ( o != AI_MainActorGet(C_ID_Joueur) ) )
+				{
+					tmid_paf = EVENT_AddEventPafCanal( C_EVENT_FILTER_All, C_PAF_KK_Javelin, mo_Sender, Cf_EVENT_Duree_1Trame, o, ti_canal, ti_paf, OBJ_SightGet(), OBJ_PosGet())
+					EVENT_Gao2Set( tmid_paf, OBJ_Me() )
+				}
+			}
+			f_plug_timer = -1
+		}
+		OBJ_CapaSet(0,OBJ_Capa_3 | OBJ_Capa_5)
+	}
+	
+	
+	mi_ColCount = 0
+	COL_ColSetActivationSet( all, none)
+	OBJ_PosSet( v_last_pos )
+	tv_temp = DYN_SpeedGetVector() * 0.1
+	tv_normal = COL_RayObject_NormalGet()
+	if (MATH_VecNull(tv_normal))
+		tv_normal = -OBJ_SightGet()
+	tv_temp -= (2 * MATH_VecDotProduct(tv_temp,tv_normal) / MATH_VecDotProduct(tv_normal,tv_normal)) * tv_normal
+	DYN_SpeedSetVector( tv_temp )
+	DYN_GravitySet( Cv_NormalGravity )
+	macro_del_callback_tir("Javelin_launch")
+	AI_TrackChange(2, "Javelin_endofmove" )
+	return
+}
+
+// ----( si enflammé et sender = jack alors détection buisson )----
+if ( mi_flamme && (mo_Sender == AI_MainActorGet(C_ID_Joueur)) && GRID_Has(1))
+{
+	tv_temp = OBJ_PosGet() - v_last_pos
+	if ( MATH_AbsFloat( tv_temp.x ) > MATH_AbsFloat( tv_temp.y ) )
+		tf_temp = MATH_AbsFloat( tv_temp.x )
+	else if (MATH_AbsFloat( tv_temp.y ))
+		tf_temp = MATH_AbsFloat( tv_temp.y )
+	else
+		goto findecemerdier
+	
+	ti_number = tf_temp + 1
+	tv_temp /= tf_temp
+	tv_pos = v_last_pos
+	while ( ti_number > 0 )
+	{
+		tv_posgrid = GRID_PosGet( tv_pos )
+		if ( tv_posgrid != v_last_tested_grid_pos)
+		{
+			v_last_tested_grid_pos = tv_posgrid
+			tv_posgrid.z = tv_pos.z
+			
+			ti_capa = GRID_CapaGet(tv_posgrid )
+			if ( (ti_capa & tag_grid_terrain) == Ci_sol_herbe_ronce) 
+			{
+				GRID_CurrentSet(1)
+				ti_capa = GRID_CapaGet( tv_posgrid ) 
+				GRID_CurrentSet(0)
+				if(((ti_capa & tag_grid_terrain) == Ci_Grid2_Inflammable) && !(ti_capa & 64) && !(ti_capa & 128))
+				{
+					tv_posgrid.z = tv_pos.z
+					to_obj = COL_RayObject_Vector(tv_pos, cvector(0,0,-2), all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable )
+					DBG_RenderVector(tv_pos,cvector(0,0,-2),0xFF00)
+					if ( to_obj )
+					{
+						DYN_SpeedSetVector( Cv_NullVector )
+						DYN_GravitySet( Cv_NormalGravity )
+						macro_del_callback_tir("Javelin_launch")
+						AI_TrackChange(2, "Javelin_endofmove" )
+						COL_ColSetActivationSet( all, none)
+						return
+					}
+				}
+			}
+		}
+
+		tv_pos += tv_temp
+		ti_number--
+	}
+}
+findecemerdier:
+
+
+// Orientation -------------------------
+v_last_pos = OBJ_PosGet()
+v_last_sight = OBJ_SightGet()
+v_last_speed = DYN_SpeedGetVector()
+if ( !MATH_VecNull( v_last_speed ) )
+{
+	if( (OBJ_CapaGet() & OBJ_Capa_2) && mo_LockObj)
+	{
+		tv_temp = @mo_LockObj MATH_VecLocalToGlobal(mv_LockObj)
+		tv_temp += @mo_LockObj OBJ_PosGet()
+		
+		tv_temp1 = mv_LockObjGlobal - OBJ_PosGet()
+		if(MATH_VecDotProduct(tv_temp1, OBJ_SightGet()) > 0)
+		{
+			tf_temp = MATH_VecNorm(tv_temp - OBJ_PosGet())
+			tv_temp -= OBJ_PosGet()
+			MATH_VecSetNorm(tv_temp, MATH_VecNorm(v_last_speed))
+			v_last_speed = MATH_VecBlend(v_last_speed, tv_temp, 100 * TIME_GetDt())
+			v_last_speed = tv_temp
+			DYN_SpeedSetVector(v_last_speed)
+		}
+	}
+	
+	OBJ_SightSet( v_last_speed )
+}
+
+
+

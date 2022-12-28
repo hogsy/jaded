@@ -1,0 +1,156 @@
+#include"r_defines.var"
+
+vector	tv_temp, tv_axe
+object	to_main
+int			ti_crossable
+int			ti_i
+// SFX
+int			ti_cpt
+
+if( OBJ_Me() == get_rayman )
+{
+	AI_MainActorSet(0)		// "The One" :)
+	@"univ" ao_AllHumains[C_ID_Rayman] = OBJ_Me()
+	RM_Disguise_Add( RM_Disguise_RM, RM_POWER_DISGUISE_FULL)
+//	RM_Disguise_Set( RM_Disguise_Punk, RM_POWER_DISGUISE_FULL)
+//	RM_Disguise_Set( RM_Disguise_Funky, RM_POWER_DISGUISE_FULL)
+	Proc_RM_DisguiseReinit()
+	Proc_RM_CustomisationSet()
+}
+else
+{
+	OBJ_CapaSet(Capa_FAKE, none)
+	@get_rayman OBJ_CapaSet(Capa_DUPLICATED, none)
+	AI_PrioritySet(15)
+	if ( i_disguise_init == -1)
+		PROC_RM_SetDisguise(  RM_Disguise_RM)
+	else 
+	{
+		if ( i_disguise_init)
+			PROC_RM_SetDisguise( i_disguise_init)
+		else
+		{
+			for ( ti_i = 1; ti_i < RM_Disguise_Max; ti_i++)
+			{
+				if ( RM_Disguise_Get( ti_i))
+				{
+					PROC_RM_SetDisguise(ti_i)
+					break
+				}
+			}
+		}
+		@get_rayman PROC_RM_SetDisguise( RM_Disguise_RM)
+	}
+}
+
+
+DYN_RM_ON_OFF(vrai)
+
+GRAPPIN_Lenght_Update()
+	
+Rayman_Init_IK()
+
+AI_Execute("raym_exec_init_speed")
+
+// ANIMS INIT
+v_anim_hand_accroch_offset = cvector( 0.0, -0.2, 1.32)
+
+// ZDM Pied
+COL_ZoneSizeSet(C_zdm_pied,cvector(0.4,0.4,0.4))
+COL_ZonePosSet(C_zdm_pied,cvector(0.0,0.0,0.4))
+COL_ZoneSizeSet(C_zde_fight,cvector(0.6,0.6,0.6))
+COL_ZonePosSet(C_zde_fight,cvector(0.0,-0.7,0.8))
+
+// LIFE
+//ID_LIFE = EVENT_AddEventLife( Proc_RM_LifeMaxGet(), Proc_RM_ManaMaxGet(), 50.0)
+Proc_RM_LifeManaSet(Proc_RM_LifeMaxGet(), Proc_RM_ManaMaxGet())
+// RIDE
+o_ride_actor	= nobody
+i_ride_actor_ID = 0
+
+// GROUND
+v_ground_normale = Cv_VerticalVector
+v_force_GRAVITY = -Cv_VerticalVector
+v_speed_pos = OBJ_PosGet()
+
+// BV
+tv_temp = cvector(2.0, 2.0, 2.0) * OBJ_ZoomGet()
+BV_MinSet(-tv_temp)
+BV_MaxSet(tv_temp)
+
+// IK
+o_pied[0] = ANI_CanalObjectGet(60)
+o_pied[1] = ANI_CanalObjectGet(80)
+o_pied[2] = ANI_CanalObjectGet(63)
+o_pied[3] = ANI_CanalObjectGet(83)
+
+if (o_climb_target_wp == nobody)
+	o_climb_target_wp = @get_WP OBJ_Duplicate(OBJ_PosGet())
+
+if( o_grappin_dup_wp == nobody )
+	o_grappin_dup_wp = @get_WP OBJ_Duplicate(OBJ_PosGet())
+
+// init position balancier
+v_balancier_pos = OBJ_PosGet()
+v_balancier_pos.z -= 2.0
+
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------------
+// SFX
+//------------------------------------------------------------------------------------------------------------------------------------------------------------
+if (get_SFX_Speed_RM_particule)
+	for (ti_cpt = 0; ti_cpt < C_SFX_NB_SPEED_PARTICLES; ti_cpt++)
+	{
+//		if (o_speed_RM_particules[ti_cpt])
+//		if (faux)
+//		{
+			o_speed_RM_particules[ti_cpt] = @get_SFX_Speed_RM_particule OBJ_Duplicate(Cv_NullVector)
+			i_cpt_speed_particules[ti_cpt] = MATH_RandInt(0,25)
+			v_dir_speed_particules[ti_cpt] = cvector(0.0,1.0,0.0)
+			@o_speed_RM_particules[ti_cpt] OBJ_FlagInvisibleSet(faux)
+//		}
+	}
+//------------------------------------------------------------------------------------------------------------------------------------------------------------
+// SFX
+//------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+ACT_KitMerge( get_Kit_Danse, RM_Act_Danse_Att,RM_Act_Danse_FIN)
+
+COL_CrossableSet(Gmat_RM_Crossable_Default, none)
+COL_CrossableSet(none, Gmat_RM_Crossable_All_But_Rayman)
+if( OBJ_Me() == get_rayman )
+	COL_ColMapActivationSet( none, all)
+
+
+switch ( @"univ" i_RM_Current_Weapon_ID)
+{
+	 case RM_WEAPON_TYPE_GUN :
+		o_grab_dup = @get_ITEM_CarrotGun OBJ_Duplicate(OBJ_PosGet())
+		break
+	case  RM_WEAPON_TYPE_GRENADE :
+		o_grab_dup = @get_ITEM_GrenadeTimer OBJ_Duplicate(OBJ_PosGet())
+		break
+}
+
+if ( @"univ" i_RM_Current_Key_ID >= 1000)
+{
+	o_grab_dup_cle = @get_ITEM_Ptizetre OBJ_Duplicate(OBJ_PosGet())
+	@get_RM_Weapon_path o_grab_dup_cle i_Objectif_ID = @"univ" i_RM_Current_Key_ID - 1000
+}
+else if (  @"univ" i_RM_Current_Key_ID >= 100)
+{
+	o_grab_dup_cle = @get_ITEM_Clef OBJ_Duplicate(OBJ_PosGet())
+	@get_RM_Weapon_path o_grab_dup_cle i_key_type = @"univ" i_RM_Current_Key_ID - 100
+}
+
+
+// TRACKS
+AI_CBAdd(OBJ_Me(), CallBack_After_Blend, "raym_cb_AfterBlend")
+AI_CBAdd(OBJ_Me(), CallBack_After_Rec, "raym_cb_AfterRec")
+
+AI_TrackChange( 1,"raym_track_reflex")
+AI_TrackChange( 2,"raym_ETAT_main")
+AI_TrackChange( 4,"raym_track_end")
+AI_TrackCurStop()
+
+

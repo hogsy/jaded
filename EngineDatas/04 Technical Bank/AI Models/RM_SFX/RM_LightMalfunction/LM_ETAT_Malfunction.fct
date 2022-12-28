@@ -1,0 +1,56 @@
+#include "LM_Defines.var"
+
+int			ti_loop
+object	to_gao
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != LM_ETAT_Malfunction)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = LM_ETAT_Malfunction
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_etat_duree = 0.0
+}
+else
+	f_etat_duree += TIME_GetDt()
+	
+if (AI_TriggerIsValid(t_Failure) && !call_trigger(t_Failure))
+	AI_TrackCurChangeNow("LM_ETAT_Wait")
+	
+
+if (i_Light)
+{
+	for (ti_loop = 0; ti_loop < LM_Light_Nbr; ti_loop++)
+	{
+		to_gao = o_Light[ti_loop]
+		if (to_gao)
+		{
+			f_Light[ti_loop] -= MATH_FloatMin(TIME_GetDt(), f_Light[ti_loop])
+			if (	!f_Light[ti_loop])
+			{
+				f_Light[ti_loop] = MATH_RandFloat(0.01,0.06)
+				@to_gao OBJ_FlagInvisibleSet(MATH_RandInt(0,2))
+			}
+		}
+		else
+			break
+	}
+}
+	
+if (i_Alarme)
+{
+	f_amplitude = MATH_FloatMin(f_etat_duree, 1.0) * (0.7 * MATH_AbsFloat( MATH_Sin(TIME_Get()*3.5)))
+	AE_ColorBalance(f_amplitude, 0.5)
+}

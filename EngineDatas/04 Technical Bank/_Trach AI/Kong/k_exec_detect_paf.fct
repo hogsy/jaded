@@ -1,0 +1,202 @@
+#include "k_define.var"
+
+float					tf_puissance
+
+int						ti_rank
+int						ti_puissance
+int						ti_puissance_max
+int						ti_paf_valide
+int						ti_deja_un_paf_digwasai
+
+messageid			tmid_paf
+message			tm_filter
+
+vector				tv_pos
+
+object				to_canal
+object				to_paf_actor
+
+o_paf_actor = nobody
+
+if (i_flag_paf_check_done)
+	return
+
+i_flag_paf_check_done = vrai
+
+ti_deja_un_paf_digwasai = faux
+
+MSG_SetNull( tm_filter)
+tm_filter.msg_gao1 = OBJ_Me()
+
+ti_puissance_max = -1		// VINCE : il y a des pafs ciné qui envoient 0 dmg
+ti_rank = -1
+for(	tmid_paf = MSG_GlobalSearchIntGao( C_EVENT_TYPE_Paf, &ti_rank, tm_filter);
+		MSG_GlobalIsValid(tmid_paf);
+		tmid_paf = MSG_GlobalSearchIntGao( C_EVENT_TYPE_Paf, &ti_rank, tm_filter))
+{
+	// FILTRE
+	i_paf_type = EVENT_PafTypeGet(tmid_paf)
+	to_paf_actor = EVENT_PereGet(tmid_paf)
+	if( to_paf_actor == OBJ_Me() )
+		continue
+	if( to_paf_actor == o_Joueur && ( i_paf_type & C_PAF_KK_Repousse ) )
+		continue
+	if( i_disable_friendly_fire && to_paf_actor == o_Joueur )
+		continue
+	ti_paf_valide = faux
+	if ( i_paf_type & (C_PAF_KK_Micro | C_PAF_KK_Weapon | C_PAF_KK_Javelin) )
+	{
+		SND_RequestPlay(66)
+		v_IK_sens_bassin_paf = EVENT_PafDirGet( tmid_paf)
+		i_IK_bassin_paf = vrai
+		IO_PafSet( 50, 1)
+	}
+	
+	if( i_paf_type & C_PAF_KK_Piranha)
+	{
+		DBG_TraceString("KONG meurt à cause des piranha\n")
+		i_mode_mort = Ci_Kcamera_mort_piranha
+		macro_change_etat("k_ETAT_mort")
+	}
+
+
+	if ( i_paf_type & C_PAF_KK_Digwazai )
+	{
+		if( Proc_KK_RefusePaf() )
+			continue
+		if (TIME_Elapsed( f_paf_Digwazai_last, 4.0))
+			i_paf_Digwazai_cumul = 0
+		f_paf_Digwazai_last = TIME_Get()
+		i_paf_Digwazai_cumul ++
+		if ( ! ti_deja_un_paf_digwasai && ( i_paf_Digwazai_cumul > 3 || i_etat_courant == ETAT_Kong_grab_mashing ) )
+		{
+			ti_deja_un_paf_digwasai = vrai		// ne pas perdre 60 hp en 1 trame !!!!
+			o_paf_actor = EVENT_PereGet(tmid_paf)
+			v_paf_dir = EVENT_PafDirGet( tmid_paf)
+			MATH_VecSetHorzNormalize(v_paf_dir)
+			o_paf_actor = EVENT_PereGet(tmid_paf)
+			v_paf_position = EVENT_PafPositionGet(tmid_paf)
+			i_paf_Digwazai_cumul = 0
+			if( ! ( @"univ" Cheat_i_Flags & CHEAT_Invicible) )
+			{
+				PAF_Filtre_Rouge()
+				EVENT_LIFE_LifeChange( ID_LIFE, 30.0)				// Si blesse, la vie baissera
+			}
+			ti_paf_valide = vrai
+		}
+	}
+	else if( (i_paf_type & C_PAF_KK_Exit_Colmap) )
+	{
+		if( i_etat_courant == ETAT_Kong_grab_mashing )
+			o_paf_actor = nobody
+		else
+		{
+			v_paf_dir = EVENT_PafDirGet(tmid_paf)		// ne pas normaliser ce vecteur !!!!
+			o_paf_actor = EVENT_PereGet(tmid_paf)
+		}
+	}
+	else
+	{
+		if ( ! ( i_paf_type & C_PAF_KK_NON_DODGEABLE))
+		{
+			if ( @to_paf_actor AI_IsModel("PNJ_Pacifique/PNJ_Tank"))
+			{
+				if( @get_global i_Kong_ignore_paf )
+					continue
+				if( i_paf_mashing )
+					continue
+				switch( ACT_ActionGet() )
+				{
+					case Ci_Kanim_esquiveD :
+					case Ci_Kanim_esquiveG :
+						continue
+				}				
+			}
+			else if( Proc_KK_RefusePaf() )
+				continue
+		}
+
+		if ( ! ( i_paf_type & C_PAF_KK_Faible))
+			ti_paf_valide = vrai
+		
+		ti_puissance = EVENT_PafPuisGet(tmid_paf)
+		if( ti_puissance > ti_puissance_max && ! ( i_paf_type & C_PAF_KK_Micro))
+		{
+			tf_puissance = ti_puissance
+			if( ! ( @"univ" Cheat_i_Flags & CHEAT_Invicible) )
+			{
+				PAF_Filtre_Rouge()
+				EVENT_LIFE_LifeChange( ID_LIFE, tf_puissance)				// Si blesse, la vie baissera
+			}
+			ti_puissance_max = ti_puissance
+			v_paf_dir = EVENT_PafDirGet(tmid_paf)
+			if( MATH_VecNullToler(v_paf_dir, 0.1) )
+				v_paf_dir = - OBJ_SightGet()
+			else
+				MATH_VecSetHorzNormalize(v_paf_dir)
+			o_paf_actor = EVENT_PereGet(tmid_paf)
+			
+			v_paf_position = EVENT_PafPositionGet(tmid_paf)
+			i_paf_puissance = ti_puissance
+			f_paf_recul = EVENT_PafReculGet(tmid_paf)
+		}
+	}
+	
+	// PAF FX
+	if( i_paf_type != C_PAF_KK_Exit_Colmap )
+	{
+		int ti_nbr 
+		tv_pos = EVENT_PafPositionGet(tmid_paf)
+		if( MATH_VecNullEpsilon(tv_pos) )
+		{
+			to_canal = ANI_CanalObjectGet(Anim_Canal_Cou)
+			tv_pos = @to_canal OBJ_PosGet()
+		}
+
+		if ( i_paf_type & C_PAF_KK_Micro)
+			ti_nbr = 10
+		else
+			ti_nbr = 40
+
+		Proc_KK_SFX_Paf_Particules(tv_pos, EVENT_PafDirGet(tmid_paf), ti_nbr)
+	}
+	
+	// MORT EN MODE GLADIATOR
+	if( i_gladiator_on 
+	&& ti_paf_valide
+	&& i_paf_type != C_PAF_KK_Micro 	// un paf micro seul ne tue pas, un micro + autre chose si
+	&& i_paf_type != C_PAF_KK_Exit_Colmap )		// les pafs exit colmap ne tuent pas
+	{
+		// Gladiator
+		// Paf valide pour tuer
+		// 4s d immunité au début du mode
+		// On est pas en mashing
+		if( f_gladiator_timer < (Cf_Timer_gladiator - Cf_Timer_gladiator_invulnerabilite) )
+		{
+			i_mode_mort =  Ci_Kcamera_saut_mort_gladiator
+			macro_change_etat("k_ETAT_mort")
+		}
+		else
+			f_gladiator_timer = (Cf_Timer_gladiator - Cf_Timer_gladiator_invulnerabilite)	// 1 gros paf = suppr de l'invulnérabilité
+	}
+}
+
+// CHECK PAF DE LA COLONNE
+if ( o_colonne)
+{
+	MSG_SetNull( tm_filter)
+	tm_filter.msg_gao1 = o_colonne
+	ti_puissance_max = -1
+	ti_rank = -1
+	tmid_paf = MSG_GlobalSearchIntGao( C_EVENT_TYPE_Paf, &ti_rank, tm_filter)
+	if ( MSG_GlobalIsValid(tmid_paf))
+	{
+		i_paf_type = EVENT_PafTypeGet(tmid_paf)
+		i_paf_puissance = EVENT_PafPuisGet(tmid_paf)
+		v_paf_dir = EVENT_PafDirGet( tmid_paf)
+		MATH_VecSetHorzNormalize(v_paf_dir)
+		o_paf_actor = EVENT_PereGet(tmid_paf)
+		v_paf_position = EVENT_PafPositionGet(tmid_paf)
+	}
+}
+

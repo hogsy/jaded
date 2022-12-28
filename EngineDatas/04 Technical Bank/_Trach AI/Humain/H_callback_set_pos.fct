@@ -1,0 +1,379 @@
+#include "H_defines.var"
+#include "H_action.var"
+
+// CANAUX IA DU CRABE =====================================
+#define	Crab_Canal_PinceD				120
+#define	Crab_Canal_PinceG				140
+#define	Crab_Canal_Carapace			18
+#define	Crab_Canal_Snap_GrabD		125		// boîte à oeil pour le grab
+#define	Crab_Canal_Snap_GrabG		126		// boîte à oeil pour le grab
+
+int				ti_serveur_vision_ID
+int				ti_status
+int				ti_liaison_type
+
+float			tf_coef
+float			tf_sin
+float			tf_cote
+float			tf_blend_coef
+float			tf_vertical_offset
+
+vector		tv_pos
+vector		tv_new_sight
+vector		tv_new_banking
+vector		tv_temp
+vector		tv_temp1
+vector		tv_pivot_bassin
+vector		tv_offset
+
+object		to_serveur
+object		to_bone
+object		to_bone2
+object		to_head
+object		to_gao
+object		to_gao_cou
+object		to_gao_tete 
+object		to_camera
+
+to_camera = @get_global o_camera
+
+if (o_ride_bone)
+{
+	OBJ_PosSet(MATH_VecBlend(OBJ_PosGet(), @o_ride_bone OBJ_PosGet(), f_time_start_etat * 2.0))
+
+	tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), @o_ride_bone OBJ_SightGet(), f_time_start_etat * 2.0)
+	tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), @o_ride_bone OBJ_BankingGet(), f_time_start_etat * 2.0)
+	OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking)
+}
+// JE SUIS GRABBE PAR UN ENNEMI ======================================================================
+else if (MSG_GlobalIsValid(amid_SRV_LIAISON_ID[Ci_LNK_GRAB_RAPTOR]) && ao_SRV[Ci_LNK_GRAB_RAPTOR])
+{
+	ti_serveur_vision_ID	= LNK_GrabServeurVisionIDGet(amid_SRV_LIAISON_ID[Ci_LNK_GRAB_RAPTOR])
+
+	switch(ti_serveur_vision_ID)
+	{
+		case C_ID_Tyranosaure :
+				@get_camera_path to_camera f_specific_Z = 0.01
+				
+				OBJ_FlagInvisibleSet(vrai)
+			
+				to_bone = @ao_SRV[Ci_LNK_GRAB_RAPTOR]  ANI_CanalObjectGet(Anim_Canal_Tete)
+			
+				tv_pos = @to_bone OBJ_PosGet()
+				tv_pos += @to_bone OBJ_BankingGet()
+				tv_pos += @to_bone OBJ_SightGet()
+			
+				OBJ_PosSet(tv_pos)
+				OBJ_BankingGeneralSet(@to_bone OBJ_BankingGet(), Cv_VerticalVector)
+			
+				if (f_time_psss)
+					@to_camera OBJ_SightGeneralSet(MATH_VecBlendRotate(@to_camera OBJ_SightGet(), @to_bone OBJ_BankingGet(), 6.0 * TIME_GetDt()), Cv_VerticalVector)
+				else
+					@to_camera OBJ_SightGeneralSet(@to_bone OBJ_BankingGet(), Cv_VerticalVector)
+					
+			break
+
+		case C_ID_Raptor :
+			{
+				to_bone	= @ao_SRV[Ci_LNK_GRAB_RAPTOR] ANI_CanalObjectGet(Anim_Canal_Machoire)
+
+				v_grab_hand_pos = @to_bone OBJ_PosGet()
+				v_grab_hand_pos += @to_bone OBJ_BankingGet() * 0.85
+				v_grab_hand_pos -= @to_bone OBJ_SightGet() * 0.2
+
+				@get_camera_path to_camera f_specific_Z = 0.3
+
+//					to_bone = @ao_SRV[Ci_LNK_GRAB_RAPTOR] ANI_CanalObjectGet(Anim_Canal_Ventre)
+//					tv_new_sight = @to_bone OBJ_PosGet() - @to_camera OBJ_PosGet()
+
+				tv_new_sight = @ao_SRV[Ci_LNK_GRAB_RAPTOR] OBJ_PosGet()
+				tv_new_sight.z += 1.0
+				tv_new_sight -= @to_camera OBJ_PosGet()
+
+				tv_new_sight = MATH_VecRotate(tv_new_sight, Cv_VerticalVector, MATH_Sin(TIME_Get() * 5.0) * Cf_PiBy8)
+				tv_new_sight = MATH_VecBlendRotate(@get_camera OBJ_SightGet(), tv_new_sight, 3.0 * TIME_Get())
+				@to_camera OBJ_SightGeneralSet(tv_new_sight, Cv_VerticalVector)
+
+				AI_Execute("H_exec_grab_hand")
+			}
+			
+			break
+
+		case C_ID_Scorpion :
+		
+			to_bone	= @ao_SRV[Ci_LNK_GRAB_RAPTOR] ANI_CanalObjectGet(Anim_Canal_Tete)
+			v_grab_hand_pos = @to_bone OBJ_PosGet()
+			
+			v_grab_hand_pos += @to_bone OBJ_BankingGet() * (0.5 * @ao_SRV[Ci_LNK_GRAB_RAPTOR] OBJ_ZoomGet())
+
+			AI_Execute("H_exec_grab_hand")
+
+			to_bone = @ao_SRV[Ci_LNK_GRAB_RAPTOR] ANI_CanalObjectGet(Anim_Canal_Queue + 2)
+
+			@get_camera_path to_camera f_specific_Z = 0.5
+			
+			tv_new_sight = @to_bone OBJ_PosGet() - @to_camera OBJ_PosGet()
+//				tv_new_sight = MATH_VecBlendRotate(@to_camera OBJ_SightGet(), tv_new_sight, 6.0 * TIME_GetDt())
+			tv_new_sight = MATH_VecInCone(@to_camera OBJ_SightGet(), tv_new_sight, Cf_PiBy8, 0)
+			@to_camera OBJ_SightGeneralSet(tv_new_sight, Cv_VerticalVector)
+			
+			break
+
+		case C_ID_SwampCrawlerSmall :
+		
+			to_bone	= @ao_SRV[Ci_LNK_GRAB_RAPTOR] ANI_CanalObjectGet(Anim_Canal_Tete)
+
+			v_grab_hand_pos = @to_bone OBJ_PosGet()
+			v_grab_hand_pos += @to_bone OBJ_BankingGet() * 0.2
+			v_grab_hand_pos += @to_bone OBJ_SightGet() * 0.1
+							
+			@get_camera_path to_camera f_specific_Z = 0.5
+			
+			to_bone = @ao_SRV[Ci_LNK_GRAB_RAPTOR] ANI_CanalObjectGet(Anim_Canal_Tete)
+			tv_new_sight = @to_bone OBJ_PosGet() - @to_camera OBJ_PosGet()
+			tv_new_sight = MATH_VecRotate(tv_new_sight, Cv_VerticalVector, MATH_Sin(TIME_Get() * 5.0) * Cf_PiBy4)
+			tv_new_sight = MATH_VecBlendRotate(@get_camera OBJ_SightGet(), tv_new_sight, 3.0 * TIME_GetDt())
+			@to_camera OBJ_SightGeneralSet(tv_new_sight, Cv_VerticalVector)
+
+			AI_Execute("H_exec_grab_hand")
+			
+			break
+				
+		case C_ID_CrabeGeant :
+		case C_ID_CrabePetit :
+			tf_blend_coef = 0.5
+			if( f_grab_crab_coef == 0.0 )
+				f_grab_crab_bouche_dist = 4.0
+			f_grab_crab_coef = MATH_FloatMin(1.0, f_grab_crab_coef + ( tf_blend_coef * TIME_GetDt()))
+			f_grab_crab_bouche_dist = MATH_FloatMax(1.25, f_grab_crab_bouche_dist - (0.5 * TIME_GetDt()))
+			to_bone	= LNK_GrabBoneGet(amid_SRV_LIAISON_ID[Ci_LNK_GRAB_RAPTOR])
+			to_bone2 = @ao_SRV[Ci_LNK_GRAB_RAPTOR] ANI_CanalObjectGet(Crab_Canal_Carapace)
+			tv_pos = @to_bone OBJ_PosGet()
+			ti_status = LNK_GrabStatusGet(amid_SRV_LIAISON_ID[Ci_LNK_GRAB_RAPTOR])
+			switch( ti_status )
+			{
+				// PETIT CRABE QUI ME TRAINE (OU ME TIENT) AU SOL ==================================
+//				case Ci_Grab_Crab_Type_Traine_pas_encore :
+				case Ci_Grab_Crab_Type_Traine :
+				case Ci_Grab_Crab_Type_Traine_Mange :
+					v_grab_foot_axis = @ao_SRV[Ci_LNK_GRAB_RAPTOR] OBJ_SightGet()
+					v_grab_foot_pos = @ao_SRV[Ci_LNK_GRAB_RAPTOR] OBJ_PosGet()
+					v_grab_foot_pos -= v_grab_foot_axis * 0.3
+//					if( ti_status == Ci_Grab_Crab_Type_Traine_Mange )
+//						i_grab_foot_sight_enabled = faux
+//					else
+						i_grab_foot_sight_enabled = vrai
+					i_flag_rag_doll_test_Z = vrai
+					AI_Execute("H_exec_grab_foot")
+					break
+					
+				// CRABE GEANT QUI ME DEVORE ===================================================
+				case Ci_Grab_Crab_Type_Grab_Mange :
+					// SPECIFIQUE JACK : ORIENTATION ------------------------------------------------------------------------------------------
+					tv_pos = @to_bone2 OBJ_PosGet()
+					tv_pos += @to_bone2 OBJ_BankingGet() * - 1.0 
+					tv_pos += @to_bone2 OBJ_HorizonGet() * 0.0
+					tv_pos += @to_bone2 OBJ_SightGet() * f_grab_crab_bouche_dist
+					DBG_RenderVector(@to_bone2 OBJ_PosGet(), tv_pos - @to_bone2 OBJ_PosGet(), color_blanc)
+
+					// CAMERA --------------------------------------------------------------------------------------------------------------------------------
+					if( f_grab_time >= 0.5 )
+					{
+						if( to_bone == @ao_SRV[Ci_LNK_GRAB_RAPTOR] ANI_CanalObjectGet(Crab_Canal_PinceD) )
+							tf_cote = -1.0		// grab pince droite
+						else
+							tf_cote = 1.0		// grab pince gauche
+						tf_sin = - tf_cote * MATH_Sin(TIME_Get() * 5.0)
+						tv_new_sight = @to_bone2 OBJ_PosGet() - @to_camera OBJ_PosGet()
+						tv_new_sight = MATH_VecRotate(tv_new_sight, @to_camera OBJ_BankingGet(), tf_sin * Cf_PiBy4)
+						tv_new_sight = MATH_VecBlendRotate(@to_camera OBJ_SightGet(), tv_new_sight, 3.0 * TIME_GetDt())
+						
+						tf_sin = - tf_cote * MATH_Sin(TIME_Get() * 2.5)
+						tv_new_banking = Cv_VerticalVector
+						tv_new_banking = MATH_VecRotate(tv_new_banking, @to_camera OBJ_HorizonGet(), tf_sin * Cf_PiBy8)
+						tv_new_banking = MATH_VecBlendRotate(@to_camera OBJ_BankingGet(), tv_new_banking, 3.0 * TIME_GetDt())
+						
+						@to_camera OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking)
+					}
+					
+					// COMMUN JACK ET COMPAGNONS : POSITION --------------------------------------------------------------------------
+					v_grab_crab_pos = MATH_VecBlend(OBJ_PosGet(), tv_pos, f_grab_crab_coef)
+					OBJ_PosSet(v_grab_crab_pos)
+					DBG_RenderVector(@to_bone OBJ_PosGet(), v_grab_crab_pos - @to_bone OBJ_PosGet(), color_blanc)
+					break
+			}
+			break
+	}
+}
+// JE SUIS SUR KONG ======================================================================
+else if (MSG_GlobalIsValid(amid_SRV_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT]) && ao_SRV[Ci_LNK_KKGRAB_OBJECT])
+{
+	f_pos_blend_coef += MATH_FloatMin(1.0 - f_pos_blend_coef, 10.0 * TIME_GetDt())
+	DYN_SpeedSetVector(Cv_NullVector)
+	to_serveur = ao_SRV[Ci_LNK_KKGRAB_OBJECT]
+	to_bone = LNK_KKGrabObject_BoneGet(amid_SRV_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT])
+	ti_liaison_type = LNK_KKGrabObject_TypeGet(amid_SRV_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT])
+	switch ( ti_liaison_type )
+	{
+		case Ci_KKGrabObject_Attrappe_Attend :
+			f_pos_blend_coef = 0.0
+		case 	Ci_KKGrabObject_PoseSol :
+		case Ci_KKGrabObject_Attrappe_Dans_Main :
+			// KONG attrappe ANN
+			if ( ! to_bone)
+			{
+				f_pos_blend_coef = 0.0
+				break			// Pas de positionnement spécial
+			}
+			tv_pos = @to_bone OBJ_PosGet()
+			if( to_bone == @to_serveur ANI_CanalObjectGet(Anim_Canal_MainDroite) )
+			{
+				tv_pos += @to_bone MATH_VecLocalToGlobal(Cv_KONG_Offset_Creux_MainDroite_ANN)
+				OBJ_BankingGeneralSet(
+					MATH_VecBlendRotate(OBJ_SightGet(), - @to_bone OBJ_HorizonGet(), f_pos_blend_coef), 
+					MATH_VecBlendRotate(OBJ_BankingGet(), @to_bone OBJ_SightGet(), f_pos_blend_coef) )
+			}
+			else
+			{
+				tv_pos += @to_bone MATH_VecLocalToGlobal(Cv_KONG_Offset_Creux_MainGauche_ANN)
+				OBJ_BankingGeneralSet( 
+					MATH_VecBlendRotate( OBJ_SightGet(), @to_bone OBJ_HorizonGet(), f_pos_blend_coef), 
+					MATH_VecBlendRotate( OBJ_BankingGet(), @to_bone OBJ_SightGet(), f_pos_blend_coef) )
+			}
+			tv_pos = MATH_VecBlend(OBJ_PosGet(), tv_pos, f_pos_blend_coef)		// Blend position
+			OBJ_PosSet(tv_pos)
+			break
+		
+		case Ci_KKGrabObject_Pose_Epaule :
+			// KONG pose ANN sur son épaule après l'avoir attrapée
+			tv_pos = @to_bone OBJ_PosGet()
+			if( to_bone == @to_serveur ANI_CanalObjectGet(Anim_Canal_MainDroite) )
+			{
+				tv_pos += @to_bone MATH_VecLocalToGlobal(Cv_KONG_Offset_Creux_MainDroite_ANN)
+				OBJ_BankingGeneralSet( - @to_bone OBJ_HorizonGet(), @to_bone OBJ_SightGet())
+			}
+			else
+			{
+				tv_pos += @to_bone MATH_VecLocalToGlobal(Cv_KONG_Offset_Creux_MainGauche_ANN)
+				OBJ_BankingGeneralSet( @to_bone OBJ_HorizonGet(), @to_bone OBJ_SightGet())
+			}
+			OBJ_PosSet(tv_pos)
+			break
+			
+		case Ci_KKGrabObject_Porte_Epaule_TroncD :
+			//===========================================================================================
+			// TODO : modifier le positionnement de ANN !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			//===========================================================================================
+			
+			// KONG porte ANN sur son épaule et il tient un tronc sur la droite
+			tv_pos = MATH_VecBlend(OBJ_PosGet(), @to_bone OBJ_PosGet(), f_pos_blend_coef)		// Blend position
+			tv_pos += MATH_VecBlend(@to_bone MATH_VecLocalToGlobal(cvector(0.05,0.6,0)), Cv_NullVector, 1 - f_pos_blend_coef)
+			OBJ_PosSet(tv_pos)
+			to_bone = @to_serveur ANI_CanalObjectGet(Anim_Canal_Cou)
+			OBJ_BankingGeneralSet(
+				MATH_VecBlendRotate(OBJ_SightGet(), @to_bone OBJ_BankingGet(), f_pos_blend_coef), 
+				MATH_VecBlendRotate(OBJ_BankingGet(), - @to_bone OBJ_SightGet(), f_pos_blend_coef) )
+			break
+
+		case Ci_KKGrabObject_Porte_Epaule_TroncG :
+			//===========================================================================================
+			// TODO : modifier le positionnement de ANN !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			//===========================================================================================
+			
+			// KONG porte ANN sur son épaule et il tient un tronc sur la gauche
+			tv_pos = MATH_VecBlend(OBJ_PosGet(), @to_bone OBJ_PosGet(), f_pos_blend_coef)		// Blend position
+			tv_pos += MATH_VecBlend(@to_bone MATH_VecLocalToGlobal(cvector(0.05,0.6,0)), Cv_NullVector, 1 - f_pos_blend_coef)
+			OBJ_PosSet(tv_pos)
+			to_bone = @to_serveur ANI_CanalObjectGet(Anim_Canal_Cou)
+			OBJ_BankingGeneralSet(
+				MATH_VecBlendRotate(OBJ_SightGet(), @to_bone OBJ_BankingGet(), f_pos_blend_coef), 
+				MATH_VecBlendRotate(OBJ_BankingGet(), - @to_bone OBJ_SightGet(), f_pos_blend_coef) )
+			break
+
+		case Ci_KKGrabObject_Porte_Main :
+			// KONG porte ANN dans sa main
+			tv_pos = @to_bone OBJ_PosGet()
+			if( to_bone == @to_serveur ANI_CanalObjectGet(Anim_Canal_MainDroite) )
+			{
+				tv_pos += @to_bone MATH_VecLocalToGlobal(Cv_KONG_Offset_Creux_MainDroite_ANN + cvector(-0.5, 0.0, -0.3))
+				OBJ_PosSet(tv_pos)
+				OBJ_BankingGeneralSet( - @to_bone OBJ_HorizonGet(), @to_bone OBJ_SightGet())
+				OBJ_RotateLocalX(-Cf_PiBy6)
+			}
+			else
+			{
+				tv_pos += @to_bone MATH_VecLocalToGlobal(Cv_KONG_Offset_Creux_MainGauche_ANN + cvector(0.5, 0.0, -0.3))
+				OBJ_PosSet(tv_pos)
+				OBJ_BankingGeneralSet( @to_bone OBJ_HorizonGet(), @to_bone OBJ_SightGet())
+				OBJ_RotateLocalX(-Cf_PiBy6)
+			}
+			break
+			
+		case Ci_KKGrabObject_Depose :
+		case Ci_KKGrabObject_Lache :
+			// nada !!!
+			break
+			
+		case Ci_KKGrabObject_Porte_Epaule :
+			// KONG porte ANN sur son épaule et il ne tient pas de tronc
+			if( @get_global i_Player_is_Kong )
+			{
+				// indigène fake sur l'épaule
+				if( EVENT_LIFE_Est_Blesse(EVENT_LIFE_MSGID_Get(to_serveur) ) )
+					tv_offset = @to_bone MATH_VecLocalToGlobal(cvector(-0.3,0.35,0.15))
+				else
+					tv_offset = @to_bone MATH_VecLocalToGlobal(cvector(-0.3,0.35,0.15))
+			}
+			else if( @to_serveur Proc_KK_Test_Mode(ETAT_Kong_finished) )
+			{
+				to_bone = @to_serveur ANI_CanalObjectGet(Anim_Canal_DoigtD1)
+				switch( @get_global i_KNMI_finish_type )
+				{
+					case Ci_GrabKong_Finished_Bats :
+					case Ci_GrabKong_Finished_Scolo :
+						tv_offset = cvector(0,0,0.1)
+						break
+					case Ci_GrabKong_Finished_TREX :
+					default:
+						tv_offset = cvector(0,0,0.5)
+						break
+				}
+			}
+//			else if( EVENT_LIFE_Est_Blesse(EVENT_LIFE_MSGID_Get(to_serveur) ) )
+//				tv_offset = @to_bone MATH_VecLocalToGlobal(cvector(-0.5,-0.1,-1.0))
+			else if( @to_serveur Proc_KK_Test_Mode(ETAT_Kong_colonne) )
+				tv_offset = @to_bone MATH_VecLocalToGlobal(Kamera_FPS_Shoulder_Offset_Colonne)
+			else
+				tv_offset = @to_bone MATH_VecLocalToGlobal(Kamera_FPS_Shoulder_Offset_Std)
+			
+			tv_pos = MATH_VecBlend(OBJ_PosGet(), @to_bone OBJ_PosGet(), f_pos_blend_coef)		// Blend position
+			DBG_RenderVector(tv_pos, tv_offset, color_vert)
+			tv_pos += MATH_VecBlend(tv_offset, Cv_NullVector, 1 - f_pos_blend_coef)
+			OBJ_PosSet(tv_pos)
+			
+			// orientation
+//			to_bone = @to_serveur ANI_CanalObjectGet(Anim_Canal_Cou)
+//			OBJ_BankingGeneralSet(
+//				MATH_VecBlendRotate(OBJ_SightGet(), @to_bone OBJ_BankingGet(), f_pos_blend_coef), 
+//				MATH_VecBlendRotate(OBJ_BankingGet(), - @to_bone OBJ_SightGet(), f_pos_blend_coef) )
+			break
+	
+		default:
+			DBG_Error("Jack : type liaison KK Grab Object inconnu !!???")
+			tv_pos = @to_bone OBJ_PosGet()
+			OBJ_PosSet(tv_pos)
+			OBJ_BankingGeneralSet(@to_bone OBJ_BankingGet(), - @to_bone OBJ_SightGet())
+			break
+	}
+	
+	// POSITIONNEMENT DU VISUEL DU K INDIGENE ------------------------------
+	to_bone = @to_serveur ANI_CanalObjectGet(Anim_Canal_Cou)
+	@o_Indy3rd OBJ_PosSet(OBJ_PosGet())
+	@o_Indy3rd OBJ_BankingGeneralSet(
+		MATH_VecBlendRotate(OBJ_SightGet(), @to_bone OBJ_BankingGet(), f_pos_blend_coef), 
+		MATH_VecBlendRotate(OBJ_BankingGet(), - @to_bone OBJ_SightGet(), f_pos_blend_coef) )
+}
+
+// Mémoriser la nouvelle pos pour le jump !!!!
+COL_StartMatrixSet(OBJ_PosGet())
+// Mémoriser la nouvelle pos pour le jump !!!!

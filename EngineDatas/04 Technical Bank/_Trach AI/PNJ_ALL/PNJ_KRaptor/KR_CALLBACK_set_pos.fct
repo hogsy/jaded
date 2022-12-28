@@ -1,0 +1,258 @@
+
+#include "KR_defines.var"
+
+object	to_bone
+object	to_tete
+object	to_bassin 
+
+int			ti_canal 
+int			ti_grabType
+
+vector	tv_pos
+vector	tv_new_sight
+vector	tv_new_banking
+vector	tv_temp 
+vector 	tv_temp2
+
+
+// Dans la main de Kong ou dans la gueule de REX
+if (MSG_GlobalIsValid(mid_grabbed_by_Kong_LNK_ID) && o_grabbed_actor_KK)
+{
+	to_bone = LNK_GrabBoneGet(mid_grabbed_by_Kong_LNK_ID)
+	if( ! to_bone )
+	{
+		f_pos_blend_coef = 0.0
+		v_grabbed_pos_init_blend = OBJ_PosGet()
+	}
+	else
+	{
+		ti_grabType = LNK_GrabKong_TypeGet(mid_grabbed_by_Kong_LNK_ID)
+		switch( ti_grabType )
+		{
+			case Ci_GrabKong_Type_TRex_Choppe :
+			{
+				// Blend pour la position
+				tv_pos = MATH_VecBlend(OBJ_PosGet(), @to_bone OBJ_PosGet(), f_pos_blend_coef)
+				
+				// Blend pour le décalage bassin -> pieds
+				to_bassin = ANI_CanalObjectGet(Anim_Canal_Bassin)
+				tv_temp = OBJ_PosGet() - @to_bassin OBJ_PosGet()
+				tv_pos += MATH_VecBlend(tv_temp, Cv_NullVector, 1 - f_pos_blend_coef)
+				
+				// Blend pour l'offset
+				tv_pos += MATH_VecBlend(@to_bone MATH_VecLocalToGlobal(cvector(0.8, 0.0, 1.0)), Cv_NullVector, 1 - f_pos_blend_coef)
+				OBJ_PosSet(tv_pos)
+				
+				OBJ_BankingGeneralSet(
+						MATH_VecBlendRotate(OBJ_SightGet(), - @to_bone OBJ_HorizonGet(), f_pos_blend_coef), 
+						MATH_VecBlendRotate(OBJ_BankingGet(), - @to_bone OBJ_BankingGet(), f_pos_blend_coef) )
+				break
+			}
+			case Ci_GrabKong_Type_Petit :
+			{
+//				//===================================
+//				// values to use with Action_Normal_Attente
+//				tv_pos = MATH_VecBlend(v_grabbed_pos_init_blend, @to_bone OBJ_PosGet(), f_pos_blend_coef)
+//				tv_temp = Cv_NullVector
+//				tv_temp -= @to_bone OBJ_HorizonGet()
+//				tv_temp -= @to_bone OBJ_SightGet() * 0.2
+//				tv_temp += @to_bone OBJ_BankingGet() * 0.2			
+//				tv_pos += MATH_VecBlend( tv_temp, Cv_NullVector, 1 - f_pos_blend_coef )
+//				OBJ_PosSet(tv_pos)
+//				OBJ_BankingGeneralSet(
+//					MATH_VecBlendRotate(OBJ_SightGet(), @to_bone OBJ_SightGet(), f_pos_blend_coef), 
+//					MATH_VecBlendRotate(OBJ_BankingGet(), @to_bone OBJ_HorizonGet(), f_pos_blend_coef) )
+
+				//===================================
+				// values to use with Action_Normal_Attente
+				// jugé trop de poil :
+				// i = 0.507929		-0.020765	0.861149
+				// j = -0.839173	0.213702	0.500120
+				// k = -0.194414	-0.976678	0.091120
+				// t = -0.549239	0.949935	0.057929
+				// 2e essai:
+				// i = 0.635029		0.003255	0.772481
+				// j = -0.728195	0.336267	0.597207
+				// k = -0.257816	-0.941761	0.215909
+				// t = -0.293434	1.059472	-0.131531
+			
+				tv_new_sight = - @to_bone MATH_VecLocalToGlobal(cvector(-0.728195,0.336267,0.597207))
+				tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_new_sight, f_pos_blend_coef)
+
+				tv_new_banking = @to_bone MATH_VecLocalToGlobal(cvector(-0.257816,-0.941761,0.215909))
+				tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), tv_new_banking, f_pos_blend_coef)
+				
+				OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking)
+
+				tv_pos = @to_bone OBJ_PosGet() + @to_bone MATH_VecLocalToGlobal(cvector(-0.293434,1.059472,-0.131531))
+				//tv_pos = @to_bone OBJ_PosGet() + @to_bone MATH_VecLocalToGlobal(v_DBG_decal)
+		
+				tv_pos = MATH_VecBlend(v_grabbed_pos_init_blend, tv_pos,f_pos_blend_coef )
+				OBJ_PosSet(tv_pos) 
+				break
+			}
+			default:
+			{
+				DBG_Error("Positionnement du Raptor KK en afterblend : type GrabKong inconnu")
+				break
+			}
+		}
+	}
+}
+
+// Accroché a Kong apres une attaque
+if (MSG_GlobalIsValid(mid_bone_ride_KK_LNK_ID) && o_bone_ride_KK)
+{
+	f_pos_blend_coef_ride += MATH_FloatMin(1.0 - f_pos_blend_coef_ride, TIME_GetDt())
+	to_bone = LNK_GrabBoneGet(mid_bone_ride_KK_LNK_ID)
+	
+	// CALCUL DE L'ORIENTATION ET DE LA POSITION SELON LE BONE DE RIDE
+	if( ! to_bone )
+	{
+		DBG_Error("KBC set pos : pas de bone dans la liaison de ride !!!")
+	}
+	else if( i_etat_courant == ETAT_KK_ride )
+	{
+		switch ( i_ride_mode )
+		{
+			// Saut pour partir = pas d'orientation selon le bone, juste la position
+//			case Ci_ride_orientation_jump :
+//			case Ci_ride_grab_sur_kong_done :
+			case Ci_ride_grab_descend :
+			case Ci_ride_grab_impulsion :
+			case Ci_ride_grab_au_sol :
+				break
+			
+			// Accroché en ride : orientation + position
+			default: 
+				switch( LNK_GrabBoneIdGet(mid_bone_ride_KK_LNK_ID) )
+				{
+					case 1:		// BRAS GAUCHE
+						tv_new_sight = cvector( 1.9, -0.9, 0.339)
+						tv_new_sight = @to_bone MATH_VecLocalToGlobal(tv_new_sight)
+						tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_new_sight, f_pos_blend_coef_ride)
+		
+						tv_new_banking = cvector(-0.1425, 0.3248, -0.9350) 
+						tv_new_banking = @to_bone MATH_VecLocalToGlobal(tv_new_banking)
+						tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), tv_new_banking, f_pos_blend_coef_ride)					
+
+						tv_pos = cvector(-0.0491, 0.4429, 0.2857)
+						break
+						
+					case 2:			// BRAS DROIT
+						tv_new_sight = cvector(-0.0925, -0.936, 0.3393)
+						tv_new_sight = @to_bone MATH_VecLocalToGlobal(tv_new_sight)
+						tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_new_sight, f_pos_blend_coef_ride)
+		
+						tv_new_banking = cvector(-0.1425, 0.3248, -0.9350) 
+						tv_new_banking = @to_bone MATH_VecLocalToGlobal(tv_new_banking)
+						tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), tv_new_banking, f_pos_blend_coef_ride)					
+
+						tv_pos = cvector(-0.0491, 0.4429, 0.2857)
+						break
+						
+					default:
+						tv_new_sight = cvector(-0.1425, 0.3248, -0.9350) 
+						tv_new_sight = -@to_bone MATH_VecLocalToGlobal(tv_new_sight)
+						tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_new_sight, f_pos_blend_coef_ride)
+		
+						tv_new_banking 	= cvector(-0.0925, 0.9361, 0.3393)
+						tv_new_banking = @to_bone MATH_VecLocalToGlobal(tv_new_banking)
+						tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), tv_new_banking, f_pos_blend_coef_ride)
+
+						tv_pos = cvector(-0.0491, 0.4429, 0.2857)
+						break
+				}
+				OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking)
+				break
+		}
+		// Position
+		tv_pos = @to_bone OBJ_PosGet() + @to_bone MATH_VecLocalToGlobal(tv_pos)
+		tv_pos = MATH_VecBlend(OBJ_PosGet(), tv_pos, f_pos_blend_coef_ride)
+		OBJ_PosSet(tv_pos)
+	}
+	else if( i_etat_courant == ETAT_Finish_on_KONG )
+	{
+		if( DBG_IsObjSel() )
+		{
+			if( IO_KeyJustPressed(90) )
+			{
+				// 'Z' pour mémoriser les valeurs courantes
+				DBG_TraceString("Mémorisation des coordonées du RAPTOR positionné sur : ")
+				DBG_TraceObject(LNK_GrabBoneGet(mid_bone_ride_KK_LNK_ID))
+				DBG_TraceEOL()
+				
+				v_sight = @to_bone MATH_VecGlobalToLocal(OBJ_SightGet())
+				v_banking = @to_bone MATH_VecGlobalToLocal(OBJ_BankingGet())
+				tv_pos = OBJ_PosGet() - @to_bone OBJ_PosGet()
+				tv_pos = @to_bone MATH_VecGlobalToLocal(tv_pos)
+				f_X_pos = tv_pos.x
+				f_Y_pos = tv_pos.y
+				f_Z_pos = tv_pos.z
+			}
+			
+			tv_new_sight = @to_bone MATH_VecLocalToGlobal(v_sight)
+			tv_new_banking = @to_bone MATH_VecLocalToGlobal(v_banking)
+			tv_pos = @to_bone OBJ_PosGet() + @to_bone MATH_VecLocalToGlobal(cvector(f_X_pos, f_Y_pos, f_Z_pos))
+			
+			if( IO_KeyJustPressed(83) )
+			{
+				// 'S' pour trace les coordonées dans le log
+				DBG_TraceString("Trace des coordonées du RAPTOR positionné sur : ")
+				DBG_TraceObject(LNK_GrabBoneGet(mid_bone_ride_KK_LNK_ID))
+				DBG_TraceEOL()
+				DBG_TraceString("tv_new_sight = @to_bone MATH_VecLocalToGlobal(cvector")
+				DBG_TraceVector(v_sight)
+				DBG_TraceString(")")
+				DBG_TraceEOL()
+				DBG_TraceString("tv_new_banking = @to_bone MATH_VecLocalToGlobal(cvector")
+				DBG_TraceVector(v_banking)
+				DBG_TraceString(")")
+				DBG_TraceEOL()
+				DBG_TraceString("tv_pos = @to_bone OBJ_PosGet() + @to_bone MATH_VecLocalToGlobal(cvector(")
+				DBG_TraceFloat(f_X_pos)
+				DBG_TraceString(", ")
+				DBG_TraceFloat(f_Y_pos)
+				DBG_TraceString(", ")
+				DBG_TraceFloat(f_Z_pos)
+				DBG_TraceString("))")
+				DBG_TraceEOL()
+			}
+		}
+		else
+		{
+			tv_new_sight = OBJ_SightGet()
+			tv_new_banking = OBJ_BankingGet()
+			tv_pos = OBJ_PosGet()
+			if( to_bone == @o_KONG ANI_CanalObjectGet(Raptor_Finish_on_KONG_Canal_Fake_01) )
+			{
+				// version 01 : sur le côté droit
+				tv_new_sight = @to_bone MATH_VecLocalToGlobal(cvector(0.04090, -0.02122, 0.99894))
+				tv_new_banking = @to_bone MATH_VecLocalToGlobal(cvector(-0.85410, 0.51807, 0.04597))
+				tv_pos = @to_bone OBJ_PosGet() + @to_bone MATH_VecLocalToGlobal(cvector(-0.754503, -0.808112, 0.504123))
+				
+				// version 02 : dans le dos, penché sur le côté gauche
+//				tv_new_sight = @to_bone MATH_VecLocalToGlobal(cvector(-0.30659, -0.94547, 0.10996))
+//				tv_new_banking = @to_bone MATH_VecLocalToGlobal(cvector(0.91319, -0.32475, -0.24621))
+//				tv_pos = @to_bone OBJ_PosGet() + @to_bone MATH_VecLocalToGlobal(cvector(0.251764, 0.632165, 2.887589))
+			}
+			else if( to_bone == @o_KONG ANI_CanalObjectGet(Raptor_Finish_on_KONG_Canal_Fake_02) )
+			{
+				// version 01 : sur l'épaule gauche
+				tv_new_sight = @to_bone MATH_VecLocalToGlobal(cvector(0.06075, -0.93612, 0.34640))
+				tv_new_banking = @to_bone MATH_VecLocalToGlobal(cvector(-0.21032, 0.32725, 0.92124))
+				tv_pos = @to_bone OBJ_PosGet() + @to_bone MATH_VecLocalToGlobal(cvector(0.409952, 0.431124, 0.268744))
+			}
+		}
+		tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_new_sight, f_pos_blend_coef_ride)
+		tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), tv_new_banking, f_pos_blend_coef_ride)
+		OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking)
+		tv_pos += MATH_VecBlendRotate(OBJ_PosGet() - tv_pos, tv_new_banking * 0.01, f_pos_blend_coef_ride)
+		OBJ_PosSet(tv_pos) 
+	}
+	else
+	{
+		// ne rien faire (par exemple, en paf après un finish, la call back n'est pas encore coupée)
+	}
+}
+

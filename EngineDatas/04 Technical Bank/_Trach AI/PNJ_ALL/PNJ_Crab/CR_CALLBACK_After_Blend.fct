@@ -1,0 +1,189 @@
+#include "CR_defines.var"
+
+int					ti_i
+int					ti_k
+int					ti_carapace_feedback
+
+vector			tv_pos
+vector			tv_carapace_banking_perfect
+vector			tv_initial_N
+vector			tv_neutral_N
+vector			tv_X
+vector			tv_Y
+vector			tv_my_pos
+vector			tv_fa_pos
+
+float				tf_blend_current_to_neutral
+float				tf_dot
+float				tf_coef
+float				tf_diffZ
+float				tf_angle
+
+object			to_bone
+
+
+// POSITION DE GRAB ET DE LA ZDE FIGHT =====================================================
+tv_my_pos = OBJ_PosGet()
+tv_fa_pos = OBJ_PosGet()
+if( o_fight_actor )
+	tv_fa_pos = @o_fight_actor OBJ_PosGet()
+tf_diffZ = MATH_AbsFloat(tv_fa_pos.z - tv_my_pos.z)
+switch( ACT_ActionGet() )
+{
+	case ACTION_GrabDdeb :
+		to_bone = o_bone_pinceD
+		tv_pos = @to_bone OBJ_PosGet()
+		if( tf_diffZ > 0.5 )
+			tv_pos += 0.5 * @to_bone OBJ_HorizonGet()
+		break
+	
+	case ACTION_GrabGdeb :
+	default:
+		to_bone = o_bone_pinceG
+		tv_pos = @to_bone OBJ_PosGet()
+		if( tf_diffZ > 0.5 )
+			tv_pos += 0.5 * @to_bone OBJ_HorizonGet()
+		break
+}
+v_grab_pos = tv_pos
+//DBG_RenderVector(OBJ_PosGet(), tv_pos - OBJ_PosGet(), color_jaune)
+COL_ZonePosSet(C_zde_fight, MATH_VecGlobalToLocal(tv_pos - OBJ_PosGet()) / f_zoom)
+
+
+
+// INCLINAISON DE LA CARAPACE =========================================================
+
+// RECUP -----------------------------------------------------------------------------------------------------------------------------------
+v_carapace_banking_initial = @o_bone_pere MATH_VecLocalToGlobal(v_carapace_banking_initial)
+v_carapace_banking_neutral = @o_bone_pere MATH_VecLocalToGlobal(v_carapace_banking_neutral)
+v_carapace_banking_current = @o_bone_pere MATH_VecLocalToGlobal(v_carapace_banking_current)
+if( i_DBG_render_banking )
+	DBG_RenderVector(@o_bone_pere OBJ_PosGet(), v_carapace_banking_neutral, color_cyan)
+
+// INCLINAISON NEUTRE VERS INCLINAISON INITIALE (APRES UN PAF) -------------------------------------
+v_carapace_banking_neutral = MATH_VecBlendRotate(v_carapace_banking_neutral, v_carapace_banking_initial, f_blend_neutral_to_initial * TIME_GetDt())
+
+// TEST ANIM VULNERABLE -------------------------------------------------------------------------------------------------------
+if( ACT_CustomBitTest(CBit_Vulnerable_Devant) )
+	f_time_hyst_carapace = 0.0						// si l'anim demande de lever la tête
+//else if( CR_Strafe_Attaque_En_Cours() )
+//	f_time_hyst_carapace = 999.0						// attaque en strafe en cours -> on rebaisse la tête
+else if( i_etat_ancien == ETAT_PAF )
+	f_time_hyst_carapace = 999						// j'ai pris un paf je rebaisse la tête
+else if( i_etat_courant == ETAT_FIGHT )
+	f_time_hyst_carapace += TIME_GetDt()		// sinon si on est en fight, hystérésis temps pour rebaisser la tête
+else
+	f_time_hyst_carapace = 999						// sinon si on n'est pas en fight on rebaisse la tête
+
+
+// CARAPACE POSITION (IN)VULNERABLE -------------------------------------------------------------------------------
+if( CR_IsVulnerable() )
+{
+	// ouvre ta bouche...
+	if( i_modele == MODELE_Geant )
+		tf_angle = - 0.25 * Cf_PiBy8
+	else
+		tf_angle = - Cf_PiBy6
+//		tf_angle = - Cf_PiBy2
+	
+	tv_carapace_banking_perfect = MATH_VecRotate(v_carapace_banking_neutral, @o_bone_pere OBJ_HorizonGet(), tf_angle)
+	tf_blend_current_to_neutral = f_blend_current_to_neutral_vulnerable
+}
+else
+{
+	// ferme ta bouche...
+	if( i_modele == MODELE_Geant )
+		tf_angle = Cf_PiBy4
+	else
+		tf_angle = Cf_PiBy4
+	
+	tv_carapace_banking_perfect = MATH_VecRotate(v_carapace_banking_neutral, @o_bone_pere OBJ_HorizonGet(), tf_angle)
+
+	// TEST PAF EN COURS
+	tv_neutral_N = v_carapace_banking_neutral
+	if( ! MATH_VecNullEpsilon(tv_neutral_N) )
+		MATH_VecSetNormalize(tv_neutral_N)
+	tv_initial_N = v_carapace_banking_initial
+	if( ! MATH_VecNullEpsilon(tv_initial_N) )
+		MATH_VecSetNormalize(tv_initial_N)
+	if( i_DBG_render_banking )
+	{
+		DBG_RenderVector(@o_bone_pere OBJ_PosGet(), tv_neutral_N * (2 * f_zoom), color_jaune)
+		DBG_RenderVector(@o_bone_pere OBJ_PosGet(), tv_initial_N * (2 * f_zoom), color_vert)
+	}
+	tf_dot = MATH_VecDotProduct(tv_neutral_N, tv_initial_N)
+	if( tf_dot < f_dot_test_inclinaison_paf )
+		tf_blend_current_to_neutral = f_blend_current_to_neutral_invulnerable_paf
+	else
+		tf_blend_current_to_neutral = f_blend_current_to_neutral_invulnerable_no_paf
+}
+
+// INCLINAISON COURANTE VERS INCLINAISON NEUTRE -----------------------------------------------------------
+v_carapace_banking_current = MATH_VecBlendRotate(v_carapace_banking_current, tv_carapace_banking_perfect, tf_blend_current_to_neutral * TIME_GetDt())
+@o_bone_carapace OBJ_BankingGeneralSet(@o_bone_pere OBJ_SightGet(), v_carapace_banking_current)
+
+// BACKUP ---------------------------------------------------------------------------------------------------------------------------------
+v_carapace_banking_current = @o_bone_pere MATH_VecGlobalToLocal(v_carapace_banking_current)
+v_carapace_banking_neutral = @o_bone_pere MATH_VecGlobalToLocal(v_carapace_banking_neutral)
+v_carapace_banking_initial = @o_bone_pere MATH_VecGlobalToLocal(v_carapace_banking_initial)
+
+
+// ROTATION QUATERNION EN FONCTION DES ACCUMULATION DE PAFS ===============================
+ti_carapace_feedback = faux
+for (ti_i = 0; ti_i < 10; ti_i++)
+{
+	ti_k = MATH_Modulo(i_quat_index + ti_i, 10)
+
+	if (af_quat_time[ti_k] == -1.0)
+		continue	
+
+	tf_coef = TIME_Get() - af_quat_time[ti_k]
+	if (tf_coef < 1.0)	
+	{
+		tf_coef = MATH_FloatMin(tf_coef * 10.0, 1.0) * (1.0 - tf_coef)
+
+		tv_X = @o_bone_carapace MATH_VecGlobalToLocal(av_quat_start[ti_k])
+		tv_Y = @o_bone_carapace MATH_VecGlobalToLocal(av_quat_end[ti_k])
+
+		@o_bone_carapace OBJ_Rotate_FromTo(tv_X, MATH_VecBlend(tv_X, tv_Y, tf_coef * af_quat_coef[ti_k]))
+		ti_carapace_feedback = vrai
+	}
+	else
+	{
+		af_quat_time[ti_k] = -1.0
+	}
+}
+
+
+// CARAPACE PETIT CRABE - SPECIAL ANIMS MARCHE 45°
+if( ! ti_carapace_feedback )
+{
+	switch( ACT_ActionGet() )
+	{
+		case ACTION_TourneG45debut :
+		case ACTION_TourneG45marche :
+		case ACTION_TourneG45fin :
+			f_orientation_carapace_angle1 = MATH_FloatBlend(f_orientation_carapace_angle1, Cf_PiBy6, 5 * TIME_GetDt())
+			f_orientation_carapace_angle2 = MATH_FloatBlend(f_orientation_carapace_angle2, 0.0, 10 * TIME_GetDt())
+			break
+		case ACTION_TourneD45debut :
+		case ACTION_TourneD45marche :
+		case ACTION_TourneD45fin :
+			f_orientation_carapace_angle1 = MATH_FloatBlend(f_orientation_carapace_angle1, - Cf_PiBy6, 5 * TIME_GetDt())
+			f_orientation_carapace_angle2 = MATH_FloatBlend(f_orientation_carapace_angle2, 0.0, 10 * TIME_GetDt())
+			break
+		case ACTION_Intimidation :
+		case ACTION_AttackHaut :
+			f_orientation_carapace_angle1 = MATH_FloatBlend(f_orientation_carapace_angle1, 0.0, 10 * TIME_GetDt())
+			f_orientation_carapace_angle2 = MATH_FloatBlend(f_orientation_carapace_angle2, - Cf_PiBy8, 5 * TIME_GetDt())
+			break
+		default:
+			f_orientation_carapace_angle1 = MATH_FloatBlend(f_orientation_carapace_angle1, 0.0, 10 * TIME_GetDt())
+			f_orientation_carapace_angle2 = MATH_FloatBlend(f_orientation_carapace_angle2, 0.0, 10 * TIME_GetDt())
+			break
+	}
+	@o_bone_carapace OBJ_RotateLocalY(f_orientation_carapace_angle1)
+	//if( IO_KeyPressed(65))
+	@o_bone_carapace OBJ_RotateLocalX(f_orientation_carapace_angle2)
+}
+

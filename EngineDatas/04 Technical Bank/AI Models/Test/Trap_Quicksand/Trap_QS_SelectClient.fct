@@ -1,0 +1,22 @@
+messageid		tmid_proposition
+
+object			to_client
+
+float				tf_dist
+
+tmid_proposition = pop
+
+to_client = MSG_GlobalGetGao(tmid_proposition, CLIENT)
+
+tf_dist = OBJ_SqrDistHorz(to_client) 
+
+if (tf_dist < f_taille2 && ARR_ObjSearch( &ao_grab_client[0], i_grab_nb_target, to_client) == -1)
+{
+	// On valide cette élément à avec notre pondération
+	LNK_ServeurPondere(tmid_proposition, tf_dist)
+}
+else
+{
+	// On ne veut pas de ce client
+	LNK_ServeurRefuse(tmid_proposition)
+}

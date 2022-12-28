@@ -1,0 +1,360 @@
+#include "PNJ_Raptor_defines.var"
+
+int			ti_i
+int			ti_nb_wp
+int			ti_flag_teleport
+
+float		tf_norm
+float		tf_dot_product
+float		tf_ponderation
+float		tf_best_ponderation
+
+vector	tv_me_to_destpos
+vector	tv_me_to_wp
+vector	tv_best_sight
+
+object	to_last_wp
+object	to_next_wp
+
+// ON BACKUP LE DERNIER POINT ATTEINTt
+to_last_wp = o_current_wp
+
+PNJ_Raptor_Update_Flag(o_next_wp)
+
+o_current_wp = o_next_wp
+if (@o_current_wp OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_DesignStruct))
+	o_force_look_actor = o_current_wp.des_object1
+
+// COMMENT CHOISIT-ON LE WP SUIVANT ?
+switch(i_way_computation_mode)
+{
+	case Ci_WAY_MODE_CINE_VALA :
+
+		if (i_way_wp_nb)
+		{
+			// On enlève ce wp puisqu'il est atteint
+			i_way_wp_nb--
+			ao_way_wp[i_way_wp_nb] = nobody
+			
+			// On regarde si on a un wp suivant
+			if (i_way_wp_nb)
+				o_next_wp = ao_way_wp[i_way_wp_nb - 1]
+			else
+				o_next_wp = nobody
+				
+			// On regarde si on a un wp suivant du suivant
+			if (i_way_wp_nb > 1)
+				o_next_next_wp = ao_way_wp[i_way_wp_nb - 2]
+			else
+				o_next_next_wp = nobody
+		}
+	
+		break
+
+	case Ci_WAY_MODE_VALA :
+
+		// POINT D'ATTENTE ?
+		if (i_flag_find_safe_pos)
+		{
+			if (MSG_GlobalIsValid(mid_vala))
+			{
+				if (o_current_wp == EVENT_Vala_WpGet(mid_vala))
+				{
+					i_flag_find_safe_pos = faux
+					f_wait_delay = EVENT_Vala_DurationGet(mid_vala)
+				}
+			}
+			else if (@o_current_wp OBJ_CapaTest(Ci_Capa_Fuite))
+			{	
+				i_flag_find_safe_pos = faux
+				
+				if (@o_current_wp OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_DesignStruct))
+					f_wait_delay = o_current_wp.des_float1
+				else
+					f_wait_delay = 2.0
+			}
+		}
+
+		if (i_way_wp_nb)
+		{
+			// On enlève ce wp puisqu'il est atteint
+			i_way_wp_nb--
+			ao_way_wp[i_way_wp_nb] = nobody
+			
+			// On regarde si on a un wp suivant
+			if (i_way_wp_nb)
+				o_next_wp = ao_way_wp[i_way_wp_nb - 1]
+			else
+				o_next_wp = nobody
+				
+			// On regarde si on a un wp suivant du suivant
+			if (i_way_wp_nb > 1)
+				o_next_next_wp = ao_way_wp[i_way_wp_nb - 2]
+			else
+				o_next_next_wp = nobody
+		}
+	
+		break
+
+	case Ci_WAY_MODE_REACH_CACHE :
+
+		if (i_way_wp_nb)
+		{
+			// On enlève ce wp puisqu'il est atteint
+			i_way_wp_nb--
+			ao_way_wp[i_way_wp_nb] = nobody
+			
+			// On regarde si on a un wp suivant
+			if (i_way_wp_nb)
+				o_next_wp = ao_way_wp[i_way_wp_nb - 1]
+			else
+				o_next_wp = nobody
+				
+			// On regarde si on a un wp suivant du suivant
+			if (i_way_wp_nb > 1)
+				o_next_next_wp = ao_way_wp[i_way_wp_nb - 2]
+			else
+				o_next_next_wp = nobody
+		}
+
+		break
+		
+	case Ci_WAY_MODE_FIGHT :
+
+		if (to_last_wp != o_current_wp && @o_current_wp OBJ_CapaTest(Ci_Capa_Action_WP))
+			f_use_current_wp_action_duration = o_current_wp.des_float1
+
+		if (!i_way_wp_nb)
+		{
+			// On n'a pas de chemin
+		}
+		else if (i_way_wp_nb == 1 && ! PNJ_Raptor_Can_Reach_Dest_Pos())
+		{
+			// JE MEMORISE LE FAIT D'ETRE ALLE A UN POINT LE PLUS PROCHE D'UNE POSITION INACCESSIBLE
+			PNJ_Raptor_Memorise_Wp(o_current_wp)
+		}
+		else
+		{
+			// On enlève ce wp puisqu'il est atteint
+			i_way_wp_nb--
+			ao_way_wp[i_way_wp_nb] = nobody
+			
+			// On regarde si on a un wp suivant
+			if (i_way_wp_nb)
+				o_next_wp = ao_way_wp[i_way_wp_nb - 1]
+			else
+				o_next_wp = nobody
+				
+			// On regarde si on a un wp suivant du suivant
+			if (i_way_wp_nb > 1)
+				o_next_next_wp = ao_way_wp[i_way_wp_nb - 2]
+			else
+				o_next_next_wp = nobody
+		}
+	
+		break
+
+	case Ci_WAY_MODE_BALADE :	
+
+//		// POINT D'ATTENTE ?
+//		if (@o_current_wp OBJ_CapaTest(Ci_Capa_Fuite))
+//		{
+//			if (@o_current_wp OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_DesignStruct))
+//				f_wait_delay = o_current_wp.des_float1
+//			else
+//				f_wait_delay = 2.0
+//		}
+
+		if (to_last_wp != o_current_wp && @o_current_wp OBJ_CapaTest(Ci_Capa_Action_WP))
+			f_use_current_wp_action_duration = o_current_wp.des_float1
+
+		if (i_way_wp_nb)
+		{
+			// On enlève ce wp puisqu'il est atteint
+			if (ao_way_wp[i_way_wp_nb - 1] == o_balade_1st_wp)
+				o_balade_1st_wp = nobody
+		
+			i_way_wp_nb--
+			ao_way_wp[i_way_wp_nb] = nobody
+			
+			// On regarde si on a un wp suivant
+			if (i_way_wp_nb)
+				o_next_wp = ao_way_wp[i_way_wp_nb - 1]
+			else
+				o_next_wp = nobody
+				
+			// On regarde si on a un wp suivant du suivant
+			if (i_way_wp_nb > 1)
+				o_next_next_wp = ao_way_wp[i_way_wp_nb - 2]
+			else
+				o_next_next_wp = nobody
+		}
+
+		if (!i_way_wp_nb)
+		{
+			// MAINTENANT QU'ON A ATTEINT LE PREMIER WP DE NOTRE RESEAU DE BALADE, ON SE BALADE SUR LE RESEAU
+			o_next_wp = PNJ_Raptor_Balade_Wp_Get(o_current_wp, OBJ_PosGet(), OBJ_SightGet())
+			if (o_next_wp)	
+				o_next_next_wp = PNJ_Raptor_Balade_Wp_Get(o_next_wp, @o_next_wp OBJ_PosGet(), MATH_VecNormalize(@o_next_wp OBJ_PosGet() - @o_current_wp OBJ_PosGet()))
+		}
+		
+		break
+		
+	case Ci_WAY_MODE_REQUIN :
+
+		v_way_destpos = EVENT_InteretPositionGet(mid_best_interet)
+		i_dest_pos_territory_ID = i_target_territory_ID
+
+		o_next_wp = PNJ_Raptor_Best_Requin_Wp_Get(o_current_wp, to_last_wp, v_way_destpos, OBJ_PosGet(), OBJ_SightGet())
+		o_next_next_wp = PNJ_Raptor_Best_Requin_Wp_Get(o_next_wp, o_current_wp, v_way_destpos, @o_next_wp OBJ_PosGet(), MATH_VecNormalize(@o_next_wp OBJ_PosGet() - OBJ_PosGet()))
+
+		break
+
+	case Ci_WAY_MODE_GRAB :
+
+		tf_best_ponderation = Cf_Infinit
+
+		tv_best_sight = -OBJ_SightGet()
+
+		ti_nb_wp = WAY_GetNumLinks(n_net, o_current_wp)
+		for (ti_i = 0; ti_i < ti_nb_wp; ti_i++)
+		{
+			to_next_wp = WAY_NetNextWP(n_net, o_current_wp, 6, ti_i)
+			
+			if (PNJ_Raptor_Wp_Is_Invalid(to_next_wp))
+				continue
+	
+			// On ne prend pas les liens de sauts
+			if (PNJ_Raptor_Link_Is_Invalid(o_current_wp, to_next_wp))
+				continue
+
+			// On ne va pas vers les parties stalk du reseau
+			if (@to_next_wp OBJ_CapaTest(Ci_Capa_Stalk))
+				continue
+
+			// On reste sur la grille
+			if (@to_next_wp OBJ_CapaTest(Ci_Capa_Out_Of_Grid))
+				continue
+
+			if (to_next_wp == to_last_wp)
+			{
+				// On veut éviter de faire demi tour
+				tf_ponderation = 666666.0
+			}
+			else
+			{
+				tv_me_to_wp = @to_next_wp OBJ_PosGet() - OBJ_PosGet()
+				tv_me_to_wp.z = 0.0
+				
+				tf_norm = MATH_VecNorm(tv_me_to_wp)
+				if (tf_norm)
+					tv_me_to_wp /= tf_norm
+	
+				tf_dot_product = MATH_VecDotProduct(tv_me_to_wp, tv_best_sight)	
+				tf_ponderation = 2.0 - tf_dot_product
+			}
+		
+			if (tf_ponderation < tf_best_ponderation)
+			{
+				o_next_wp = to_next_wp
+				tf_best_ponderation = tf_ponderation
+			}
+		}
+
+		break
+
+	case Ci_WAY_MODE_RODE : 
+
+		if (i_way_wp_nb)
+		{
+			// On enlève ce wp puisqu'il est atteint
+			i_way_wp_nb--
+			ao_way_wp[i_way_wp_nb] = nobody
+			
+			// On regarde si on a un wp suivant
+			if (i_way_wp_nb)
+				o_next_wp = ao_way_wp[i_way_wp_nb - 1]
+			else
+				o_next_wp = nobody
+				
+			// On regarde si on a un wp suivant du suivant
+			if (i_way_wp_nb > 1)
+				o_next_next_wp = ao_way_wp[i_way_wp_nb - 2]
+			else
+				o_next_next_wp = nobody
+		}
+
+		if (!i_way_wp_nb)
+		{
+			i_flag_rode_come_back = faux
+			tf_best_ponderation = Cf_Infinit
+			o_next_next_wp = nobody
+
+//			tv_best_sight = OBJ_PosGet()
+//			tv_best_sight -= av_perceived_position[i_perceived_best_actor_index]
+//			MATH_VecSetNormalize(tv_best_sight)
+			
+			tv_best_sight = OBJ_SightGet()
+			
+			ti_nb_wp = WAY_GetNumLinks(n_net, o_current_wp)
+			for (ti_i = 0; ti_i < ti_nb_wp; ti_i++)
+			{
+				to_next_wp = WAY_NetNextWP(n_net, o_current_wp, 6, ti_i)
+				
+				if (PNJ_Raptor_Wp_Is_Invalid(to_next_wp))
+					continue
+		
+				// On ne prend pas les liens de sauts
+				if (PNJ_Raptor_Link_Is_Invalid(o_current_wp, to_next_wp))
+					continue
+
+				// On ne va pas vers les parties stalk du reseau
+				if (@to_next_wp OBJ_CapaTest(Ci_Capa_Stalk))
+					continue
+		
+				// On reste sur la grille
+				if (@to_next_wp OBJ_CapaTest(Ci_Capa_Out_Of_Grid))
+					continue
+	
+				if (to_next_wp == to_last_wp)
+				{
+					// On veut éviter de faire demi tour
+					tf_ponderation = 666666.0
+				}
+				else
+				{
+					tv_me_to_wp = @to_next_wp OBJ_PosGet() - OBJ_PosGet()
+					tv_me_to_wp.z = 0.0
+					
+					tf_norm = MATH_VecNorm(tv_me_to_wp)
+					if (tf_norm)
+						tv_me_to_wp /= tf_norm
+		
+					tf_dot_product = MATH_VecDotProduct(tv_me_to_wp, tv_best_sight)	
+					tf_ponderation = 2.0 - tf_dot_product
+				}
+			
+				if (tf_ponderation < tf_best_ponderation)
+				{
+					o_next_wp = to_next_wp
+					tf_best_ponderation = tf_ponderation
+				}
+			}
+		}
+	
+		break
+}
+
+if (@o_current_wp OBJ_CapaTest(Ci_Capa_Teleport) && o_next_wp && o_current_wp != o_next_wp)
+{
+	i_flag_teleport = vrai	
+
+	OBJ_PosSet(@o_next_wp OBJ_PosGet())
+	COL_StartMatrixSet(OBJ_PosGet())
+
+	OBJ_BankingGeneralSet(@o_next_wp OBJ_SightGet(), OBJ_BankingGet())
+	
+	v_way_destpos = @o_next_wp OBJ_PosGet()
+	i_dest_pos_territory_ID = o_next_wp.des_int2
+}
+

@@ -1,0 +1,173 @@
+//object	to_objet_camera, to_canal, o_gao_prio_sender, o_gao_prio_1
+//int		ti_rank, ti_index_total, ti_index2, ti_index_GOOD
+//int		ti_prio_event, ti_prio_plus_forte, ti_type_event
+//vector	tv_vector_temp, tv_vector_prio1, tv_vector_prio2
+//messageid ti_msgid_scan[10]
+//float		tf_distance1, tf_distance2
+//object	to_mainactor
+//
+//to_mainactor = AI_MainActorGet(i_MainActor)
+//
+//ti_rank = -1
+//ti_index_total = 0
+//ti_index2  = 0
+//ti_index_GOOD = 0
+//ti_prio_event = 0
+//
+//// Recupere les events du type FILMATION
+//ti_msgid_scan[ti_index_total] = MSG_GlobalScan(C_EVENT_TYPE_Filmation, &ti_rank)
+//while	( (MSG_GlobalIsValid(ti_msgid_scan[ti_index_total]))
+//	&& (ti_index_total < 4) )
+//{
+//	tmsg_pile[ti_index_total] = MSG_GlobalGetMsg(ti_msgid_scan[ti_index_total])
+//	ti_index_total ++
+//	ti_msgid_scan[ti_index_total] = MSG_GlobalScan(C_EVENT_TYPE_Filmation, &ti_rank)
+//}
+//// Exemples de messages FILMATION
+////	EVENT_AddEventFilmation(C_EVENT_Filmation_filter_PersoDetected, EVT_Pere, OBJ_Me(), Cf_EVENT_Duree_1Trame)
+////	EVENT_AddEventFilmation(C_EVENT_Filmation_filter_PersoAttacked, o_fight_actor, OBJ_Me(), Cf_EVENT_Duree_1Trame)
+//// Exemples de messages FILMATION
+//
+//// S'il n'y a aucun message présent, je laisse tomber
+//if	( ! ti_index_total)
+//{	return	}
+//
+//// Scan des valeurs de type
+//while	(ti_index2 < ti_index_total)
+//{
+//	// Valeurs des INT 1
+//	ti_prio_plus_forte = tmsg_pile [ti_index2].msg_int1
+//	i_tablo_PRIO [ti_index2] = ti_prio_plus_forte
+//	ti_index2 ++
+//}
+//ti_index2 = 0
+//ti_prio_plus_forte = 0
+//
+//// Scan des ACTIONS et affectation des PRIORITES
+//while	(ti_index2 < ti_index_total)
+//{
+//	// Si l'acteur = JACK, je m'arrête (temporaire)
+////	to_gao_temp = tmsg_pile[ti_index2].msg_sender
+////	if	(to_gao_temp == to_mainactor)
+////	{	return	}
+//	// Valeurs des ACTIONS = PRIORITES
+//	if	( (tmsg_pile [ti_index2].msg_int1 == C_EVENT_Filmation_filter_HumainGnaked)
+//		||	(tmsg_pile [ti_index2].msg_int1 == C_EVENT_Filmation_filter_HumainGnaked) )
+//	{	i_tablo_PRIO [ti_index2] += F_Prio_val_type_PAF	}
+//	else	if	( (tmsg_pile [ti_index2].msg_int1 == C_EVENT_Filmation_filter_PersoAttacked)
+//		||	(tmsg_pile [ti_index2].msg_int1 == 0) )
+//	{	i_tablo_PRIO [ti_index2] += F_Prio_val_type_ATTACK	}
+//	else	if	( (tmsg_pile [ti_index2].msg_int1 == C_EVENT_Filmation_filter_PersoDetected)
+//		||	(tmsg_pile [ti_index2].msg_int1 == 0) )
+//	{	i_tablo_PRIO [ti_index2] += F_Prio_val_type_WARNING	}
+//	else	if	( (tmsg_pile [ti_index2].msg_int1 == C_EVENT_Filmation_filter_HumainRide)
+//		||	(tmsg_pile [ti_index2].msg_int1 == C_EVENT_Filmation_filter_KongGrab) )
+//	{	i_tablo_PRIO [ti_index2] += F_Prio_val_type_DECOR	}
+//	ti_index2 ++
+//}
+//ti_index2 = 0
+//
+//// Scan des acteurs SENDER
+//while	(ti_index2 < ti_index_total)
+//{
+//	o_gao_prio_sender = tmsg_pile[ti_index2].msg_sender
+//	if	(o_gao_prio_sender)
+//	{
+//		if	( (des_o_ANN)
+//			&&	(o_gao_prio_sender == des_o_ANN) ) // En attendant la vraie ANN
+//			i_tablo_PRIO [ti_index2] += F_Prio_val_gao_ANN
+//		else	if	(o_gao_prio_sender == get_kong)
+//			i_tablo_PRIO [ti_index2] += F_Prio_val_gao_KONG
+//		else	if	(o_gao_prio_sender == to_mainactor)
+//			i_tablo_PRIO [ti_index2] += F_Prio_val_gao_JACK
+////		else	if	(o_gao_prio_sender == get_caillou)
+////			i_tablo_PRIO [ti_index2] += F_Prio_val_gao_Decors
+//		else
+//			i_tablo_PRIO [ti_index2] += F_Prio_val_gao_Marins
+//	}
+//	ti_index2 ++
+//}
+//ti_index2 = 0
+//
+//// Scan des acteurs GAO1
+//while	(ti_index2 < ti_index_total)
+//{
+//	o_gao_prio_1 = tmsg_pile[ti_index2].msg_gao1
+//	// Valeurs des GAO complémentaires
+//	if	(o_gao_prio_1)
+//	{
+//		if	( (des_o_ANN)
+//			&&	(o_gao_prio_1 == des_o_ANN) ) // En attendant la vraie ANN
+//			i_tablo_PRIO [ti_index2] += F_Prio_val_gao_ANN
+//		else	if	(o_gao_prio_1 == get_kong)
+//			i_tablo_PRIO [ti_index2] += F_Prio_val_gao_KONG
+//		else	if	(o_gao_prio_1 == to_mainactor)
+//			i_tablo_PRIO [ti_index2] += F_Prio_val_gao_JACK
+//		else	if	(o_gao_prio_1 == get_bullet)
+//			i_tablo_PRIO [ti_index2] += F_Prio_val_gao_Decors
+////		else	if	(o_gao_prio_1 == get_caillou)
+////			i_tablo_PRIO [ti_index2] += F_Prio_val_gao_Decors
+//		else
+//			i_tablo_PRIO [ti_index2] += F_Prio_val_gao_Marins
+//	}
+//	ti_index2 ++
+//}
+//ti_index2 = 0
+//
+//// Je vais scanner les prio pour désigner le meilleur EVT
+//while	(ti_index2 < ti_index_total)
+//{
+//	// TRI par les valeurs cumulées
+//	if	(i_tablo_PRIO [ti_index2] > ti_prio_plus_forte)
+//	{
+//		ti_prio_plus_forte = i_tablo_PRIO [ti_index2]
+//		// J'ai choisi l'index du message avec la plus forte priorité ti_index_GOOD
+//		ti_index_GOOD = ti_index2
+//	}
+//	ti_index2 ++
+//}
+//
+//	// Si un EVT antérieur avait une priorité égale ou supérieure && que l'insert n'est pas terminé,
+//	// je ne fais rien, je retourne à mon tri
+//	if	( (ti_prio_plus_forte <= i_PRIO_old)
+//		&& (@get_insert_director OBJ_CapaTest(OBJ_Capa_8)) )
+//	{	return	}
+//	else
+//	{	i_PRIO_old = ti_prio_plus_forte	}
+//
+//	//////////////////////////////////////////// Tests de distance ///////////////////////////////////////////////
+//	//	Si l'un ou l'autre des acteurs est trop loin de la caméra, j'élimine
+//	to_objet_camera = VIEW_GetObject(0)
+//	if	(o_gao_prio_sender)
+//	{	tf_distance1 = MATH_VecDistance(@o_gao_prio_sender OBJ_PosGet(), @to_objet_camera OBJ_PosGet())	}
+//	if	(o_gao_prio_1)
+//	{	tf_distance2 = MATH_VecDistance(@o_gao_prio_1 OBJ_PosGet(), @to_objet_camera OBJ_PosGet())	}
+////	if	( (tf_distance1 > 40) || (tf_distance2 > 40) )
+////	{	return	}
+//
+////	// Tests anti-répétitions
+////	// Si l'EVT concerne ANN, pas de restrictions
+////	if	( (o_gao_prio_sender != des_o_ANN)
+////		||	(o_gao_prio_1 != des_o_ANN) )
+////	{
+////		// Je temporise si le même acteur a déjà été filmé récemment
+////		// ou si le même type de situation doit se répéter
+////		if	(tmsg_pile[ti_index_GOOD].msg_int1 == @get_insert_manager i_type_event)
+////		{
+////			if	( (o_gao_prio_1 == @get_insert_director o_acteur_cible1)
+////				&& (o_gao_prio_sender == @get_insert_director o_acteur_cam1) )
+////			{
+////				if	( ! TIME_Elapsed(f_time_last_EVT, 20))
+////				{	return	}
+////			}
+////			else
+////			if	( ! TIME_Elapsed(f_time_last_EVT, 10))
+////			{	return	}
+////		}
+////	}
+//
+//// Je tiens le bon message prio !
+//msg_sorted = tmsg_pile [ti_index_GOOD]
+//@get_insert_manager MSG_Send(msg_sorted)
+//f_time_last_EVT = TIME_Get()
+//

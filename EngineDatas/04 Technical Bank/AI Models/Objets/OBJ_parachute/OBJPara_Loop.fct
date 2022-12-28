@@ -1,0 +1,127 @@
+vector 	tv_delta
+vector	v0, v1
+vector	tv_Pos, tv_PosPara
+float		norm0, norm1
+
+#define DT	0.01667
+
+mf_dt += TIME_GetDt()
+tv_delta = Cv_NullVector
+tv_Pos = OBJ_PosGet()
+if ( mi_state >= 1)
+{
+	while ( mf_dt > DT )
+	{
+		mv_Speed.z += mv_Gravity.z * DT
+		mv_SpeedPara.z += mv_Gravity.z * DT
+		
+		if (mi_state == 2)
+		{
+			if (mv_Speed.z - mv_SpeedPara.z >= 1 )
+			{
+				mv_Speed.x *= (mv_FrictionPara.x + mv_Friction.x) / 2
+				mv_Speed.y *= (mv_FrictionPara.y + mv_Friction.y) / 2
+				mv_Speed.z *= mv_Friction.z
+			}
+			else
+			{
+				mv_Speed.x *= mv_Friction.x
+				mv_Speed.y *= mv_Friction.y
+				mv_Speed.z *= mv_Friction.z
+			}
+		}
+		else
+		{
+			mv_Speed.x *= mv_Friction.x
+			mv_Speed.y *= mv_Friction.y
+			mv_Speed.z *= mv_Friction.z
+		}
+
+		
+		mv_Speed -= MATH_VecDotProduct( mv_Axe, mv_Speed) * mv_Axe
+		
+		mv_SpeedPara.x *= mv_FrictionPara.x
+		mv_SpeedPara.y *= mv_FrictionPara.y
+		mv_SpeedPara.z *= mv_FrictionPara.z
+		
+		mv_SpeedPara -= MATH_VecDotProduct( mv_Axe, mv_SpeedPara) * mv_Axe
+		
+		tv_Pos = OBJ_PosGet() + (mv_Speed * DT)
+		tv_PosPara = OBJ_PosGet() + (mf_HeightPara * OBJ_BankingGet()) + (mv_SpeedPara * DT)
+		
+		v0 = tv_Pos - tv_PosPara
+		norm0 = MATH_VecNorm( v0 )
+		if (norm0 > mf_HeightPara)
+		{
+			MATH_VecSetNorm( v0, mf_HeightPara )
+			tv_Pos = tv_PosPara + v0
+		}
+		OBJ_BankingGeneralSet( OBJ_SightGet(), -v0 )
+
+				
+		if (mi_state == 2)
+		{
+			norm0 = MATH_VecNorm( mv_Speed )
+			if ( norm0 > 0)
+			{
+				v1 = tv_Pos - OBJ_PosGet()
+				norm1 = MATH_VecNorm( v1 )
+				if (norm1 )
+					mv_Speed = (v1 / norm1) * norm0 * 0.95
+			}
+		}
+		
+		tv_delta += mv_Speed * DT
+		mf_dt -= DT
+	}
+}
+else
+{
+	while ( mf_dt > DT )
+	{
+		mv_Speed.x *= mv_Friction.x
+		mv_Speed.y *= mv_Friction.y
+		mv_Speed.z *= mv_Friction.z
+		
+		mv_Speed.z += mv_Gravity.z * DT
+		
+		tv_delta += mv_Speed * DT
+	
+		mf_dt -= DT
+	}
+}
+
+if (mi_state == 0)
+{
+	v0 = OBJ_PosGet() - @mo_Target OBJ_PosGet()
+	v0.z = 0
+	v1 = OBJ_PosGet() + (5 * tv_delta) - @mo_Target OBJ_PosGet()
+	v1.z = 0
+	if ( MATH_VecDotProduct( v0, v1) <= 0)
+	{
+		mi_state = 1
+		mf_morph = 1
+		mv_SpeedPara = mv_Speed
+	}
+	OBJ_PosSet( OBJ_PosGet() + tv_delta )
+}
+else if (mi_state == 1)
+{
+	mf_morph -= TIME_GetDt() * 2
+	if (mf_morph < 0)
+	{
+		mf_morph = 0
+		mi_state = 2
+		mv_Speed = mv_SpeedPara
+		//mv_Friction = (mv_Friction + mv_FrictionPara) / 2
+	}
+	OBJ_MorphProgSet(0, mf_morph )
+	OBJ_PosSet( tv_Pos )	
+}
+else
+	OBJ_PosSet( tv_Pos )
+
+
+if ( OBJ_PosGet().z < mf_zdeath )
+	OBJ_Destroy()
+	

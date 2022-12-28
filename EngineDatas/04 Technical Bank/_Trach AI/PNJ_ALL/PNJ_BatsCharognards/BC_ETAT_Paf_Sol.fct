@@ -1,0 +1,91 @@
+#include "BC_defines.var"
+
+
+// SORTIE ETAT ================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// ENTREE ETAT ================================================================
+if (i_etat_courant != ETAT_Paf_Sol )
+{
+	i_etat_ancien_ancien = i_etat_ancien
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Paf_Sol
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	BC_DBG_Trace_Etat("etat paf sol")
+	
+	ACT_ActionSet(ACTION_Paf_Sol)
+	AI_Execute("BC_exec_dyn_on")
+
+	// BACKUP DIRECTION DU PAF (SI PASSAGE EN PAF AIR) ========
+	v_last_paf_sight = v_sum_pafs_dir
+	if( MATH_VecNullToler(v_last_paf_sight, 0.1) )
+		v_last_paf_sight = OBJ_SightGet()
+	
+	// CADAVRES
+	o_cadavre = nobody
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// EMERGENCY ABORT =============================
+if( o_cible_attaque && ! BC_TargetActive(o_cible_attaque) )
+{
+	DBG_TraceObject(OBJ_Me())
+	DBG_TraceString(" : Target non active (")
+	DBG_TraceObject(o_cible_attaque)	
+	DBG_TraceString(")")
+	DBG_TraceEOL()	
+	
+	BC_Cadavre_Del(o_cible_attaque)
+	o_cible_attaque = nobody
+}
+
+// ANALYSE ================================================================
+
+
+// COMPORTEMENT  =========================================================
+
+i_flag_neck = faux
+
+if( ACT_ActionFinished() )
+{
+	if( f_HP && ! i_flag_agonie )
+	{
+		// vivant : peut se renvoller
+		if( o_cible_attaque )
+		{
+			BC_DBG_Trace_Etat_Paf("etat paf sol -> exec init ATTAQUE")
+			AI_Execute("BC_exec_init_attaque")
+		}
+		else
+		{
+			BC_DBG_Trace_Etat_Paf("etat paf sol -> exec init attente")
+			AI_Execute("BC_exec_init_attente")
+		}
+	}
+	else
+	{
+		i_paf_sol_mort_flag = vrai
+		
+		// mort : paf air - pour les test wp chute
+		v_sum_pafs_dir = v_last_paf_sight		// orientation de la bat en chutant
+		BC_DBG_Trace_Etat_Paf("etat paf sol -> etat paf air")
+		macro_change_etat("BC_ETAT_Paf_Air")
+		
+//		BC_DBG_Trace_Etat_Paf("etat paf sol -> etat chute libre (blindage sol)")
+//		macro_change_etat("BC_ETAT_Chute_Libre")
+	}
+}

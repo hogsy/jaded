@@ -1,0 +1,220 @@
+#include "KIGO_defines.var"
+
+int				ti_cote
+
+float			tf_rot, tf_rotx, tf_rotz
+float			tf_blend
+
+object		to_bone
+object		to_sender
+
+vector		tv_pos
+vector		tv_new_sight
+vector		tv_new_banking
+
+
+
+vector		tv_sight
+vector		tv_horizon
+vector		tv_banking
+vector		tv_me_to_essieu
+
+if ( i_grab_detail == Ci_mode_Roc && o_grabbed_actor_KK && @o_grabbed_actor_KK Proc_KK_Grabbed_Can_I_Posset())
+{
+	tv_pos = @o_grabbed_actor_KK Proc_KK_Grab_PosGet( 0 )
+	tv_sight = @o_grabbed_actor_KK Proc_KK_Grab_SightGet( 0 )
+	tv_banking = @o_grabbed_actor_KK  Proc_KK_Grab_BankingGet( 0 )
+
+	tv_horizon = @o_grabbed_actor_KK  Proc_KK_Grab_HorizonGet(0) //MATH_VecCrossProduct(tv_banking, tv_sight)
+
+	tv_pos -= 1.2 * tv_horizon
+	tv_pos -= 0.6 * OBJ_HorizonGet()
+	tv_pos -= 0.3 * tv_sight
+
+	OBJ_PosSet(tv_pos)
+	OBJ_SightGeneralSet(tv_horizon, tv_sight)
+}
+
+
+if ( i_grab_detail == Ci_mode_Roc )
+	return
+
+if ( i_grab_detail == Ci_mode_Tank)
+{
+	if (MSG_GlobalIsValid(mid_grabbed_by_Kong_LNK_ID))
+	{
+		// Dans la main deKong
+		to_sender = MSG_GlobalGetGao( mid_grabbed_by_Kong_LNK_ID, 0)
+		to_bone = LNK_GrabKong_BoneGet(mid_grabbed_by_Kong_LNK_ID)
+		if ( o_grabbed_actor_KK && @o_grabbed_actor_KK Proc_KK_Grabbed_Can_I_Posset())
+		{
+			tv_pos = @o_grabbed_actor_KK Proc_KK_Grab_PosGet( 0 )
+			tv_sight = @o_grabbed_actor_KK Proc_KK_Grab_SightGet( 0 )
+			tv_banking = @o_grabbed_actor_KK  Proc_KK_Grab_BankingGet( 0 )
+		
+			tv_horizon = @o_grabbed_actor_KK  Proc_KK_Grab_HorizonGet(0) //MATH_VecCrossProduct(tv_banking, tv_sight)
+		
+			tv_pos -= 3.2 * tv_horizon
+			tv_pos -= 0.6 * tv_sight
+//			tv_pos -= OBJ_SightGet() * 2.0
+			OBJ_PosSet(MATH_VecBlend(OBJ_PosGet(), tv_pos, f_time_start_etat * 2.0))
+			OBJ_SightGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), tv_horizon, f_time_start_etat * 2.0), MATH_VecBlendRotate(OBJ_BankingGet(), tv_sight, f_time_start_etat * 2.0))
+		}
+	}
+	return
+}
+
+if (MSG_GlobalIsValid(mid_grabbed_by_Kong_LNK_ID))
+{
+	// Dans la main deKong
+	to_sender = MSG_GlobalGetGao( mid_grabbed_by_Kong_LNK_ID, 0)
+	to_bone = LNK_GrabKong_BoneGet(mid_grabbed_by_Kong_LNK_ID)
+	if ( o_grabbed_actor_KK && @o_grabbed_actor_KK Proc_KK_Grabbed_Can_I_Posset())
+	{
+		if( i_grab_entite == Ci_Two_Handed )
+		{
+			// TRONC D'ARBRE
+			if( ( ! o_snap_bone ) || ( o_snap_bone != to_bone ) )
+			{
+				// pas encore grabbé ou changement de main -> coef position = 0.0
+				o_snap_bone = to_bone
+				f_snap_bone_pos_coef = 0.0
+			}
+			 tf_rotx = 0.0
+			 tf_rotz = 0.0
+			tv_pos = @to_bone OBJ_PosGet()
+			switch ( @to_sender ACT_ActionGet())
+			{
+				case 151 :		// grab
+				case 190 :
+				case 192 :
+				case 195 :
+				case 198 :
+				case 199 :
+				case 201 :
+				case 205 :
+					tv_pos += @to_bone MATH_VecLocalToGlobal( av_offset[i_TYPE][0])
+					ti_cote = 0
+					// COMMUN
+					tv_pos = MATH_VecBlend(OBJ_PosGet(), tv_pos, f_snap_bone_pos_coef)
+					OBJ_PosSet(tv_pos)
+						
+					tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), @to_bone OBJ_SightGet(), f_snap_bone_pos_coef)
+					tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), @to_bone OBJ_BankingGet(), f_snap_bone_pos_coef)
+					OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking)
+					// COMMUN
+					tf_rot = av_rotation[ i_TYPE][0].y
+					tf_rotx = av_rotation[ i_TYPE][0].x
+					tf_rotz = av_rotation[ i_TYPE][0].z
+					i_setpos_anim_paf = faux
+					break
+					
+				case 194 :
+					ti_cote = 0
+					tf_blend = @to_sender ANI_CurrentFrameGet(0) 
+					tf_blend /= ( @to_sender ANI_NbFrameGet(0) - 1.0)
+					tv_pos += @to_bone MATH_VecLocalToGlobal( MATH_VecBlend( av_offset[i_TYPE][0], av_offset[i_TYPE][1], tf_blend))
+					// COMMUN
+					tv_pos = MATH_VecBlend(OBJ_PosGet(), tv_pos, f_snap_bone_pos_coef)
+					OBJ_PosSet(tv_pos)
+						
+					tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), @to_bone OBJ_SightGet(), f_snap_bone_pos_coef)
+					tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), @to_bone OBJ_BankingGet(), f_snap_bone_pos_coef)
+					OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking)
+					// COMMUN
+					tf_rot = MATH_FloatBlend( av_rotation[ i_TYPE][0].y, av_rotation[ i_TYPE][1].y, tf_blend)
+					break
+				case 150 :		// grab
+				case 191 :
+				case 193 :
+				case 197 :
+				case 200 :
+				case 202 :
+					tv_pos += @to_bone MATH_VecLocalToGlobal( av_offset[i_TYPE][1])
+					ti_cote = 1
+					// COMMUN
+					tv_pos = MATH_VecBlend(OBJ_PosGet(), tv_pos, f_snap_bone_pos_coef)
+					OBJ_PosSet(tv_pos)
+						
+					tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), @to_bone OBJ_SightGet(), f_snap_bone_pos_coef)
+					tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), @to_bone OBJ_BankingGet(), f_snap_bone_pos_coef)
+					OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking)
+					// COMMUN
+					tf_rot = av_rotation[ i_TYPE][1].y
+					i_setpos_anim_paf = faux
+					break
+					
+				// pafs !!!! ===============================
+				case 39 : 
+				case 40 : 
+				case 41 : 
+				case 42 : 
+				case 43 : 
+				case 44 : 
+				case 45 : 
+				case 46 : 
+				case 47 : 
+					if( ! i_setpos_anim_paf )
+						f_snap_bone_pos_coef = 0.0
+						
+					tv_pos += @to_bone MATH_VecLocalToGlobal( av_offset[i_TYPE][1])
+					ti_cote = 1
+					// COMMUN
+					tv_pos = MATH_VecBlend(OBJ_PosGet(), tv_pos, f_snap_bone_pos_coef)
+					OBJ_PosSet(tv_pos)
+						
+					tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), - @to_bone OBJ_HorizonGet(), f_snap_bone_pos_coef)
+					tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), - @to_bone OBJ_BankingGet(), f_snap_bone_pos_coef)
+					OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking)
+					// COMMUN
+					tf_rot = av_rotation[ i_TYPE][1].y
+					i_setpos_anim_paf = vrai
+					break
+					
+				case 196 :
+					ti_cote = 1
+					tf_blend = @to_sender ANI_CurrentFrameGet(0) 
+					tf_blend /= (@to_sender ANI_NbFrameGet(0) - 1.0)
+					tv_pos += @to_bone MATH_VecLocalToGlobal( MATH_VecBlend( av_offset[i_TYPE][1], av_offset[i_TYPE][0], tf_blend))
+					// COMMUN
+					tv_pos = MATH_VecBlend(OBJ_PosGet(), tv_pos, f_snap_bone_pos_coef)
+					OBJ_PosSet(tv_pos)
+						
+					tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), @to_bone OBJ_SightGet(), f_snap_bone_pos_coef)
+					tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), @to_bone OBJ_BankingGet(), f_snap_bone_pos_coef)
+					OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking)
+					// COMMUN
+					tf_rot = MATH_FloatBlend( av_rotation[ i_TYPE][1].y, av_rotation[ i_TYPE][0].y, tf_blend)
+					i_setpos_anim_paf = faux
+					break
+					
+				default:
+					ti_cote = 0
+					i_setpos_anim_paf = faux
+					break
+			}
+
+//			// COMMUN
+//			tv_pos = MATH_VecBlend(OBJ_PosGet(), tv_pos, f_snap_bone_pos_coef)
+//			OBJ_PosSet(tv_pos)
+//				
+//			tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), @to_bone OBJ_SightGet(), f_snap_bone_pos_coef)
+//			tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), @to_bone OBJ_BankingGet(), f_snap_bone_pos_coef)
+//			OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking)
+//			// COMMUN
+			OBJ_RotateLocalX( tf_rotx)
+			OBJ_RotateLocalY( tf_rot)
+			OBJ_RotateLocalZ( tf_rotz)
+			f_snap_bone_pos_coef = MATH_FloatBlend(f_snap_bone_pos_coef, 1.0, 3 * TIME_GetDt())
+
+		}
+		else
+		{
+			// ARBUSTE
+			tv_pos = @to_bone OBJ_PosGet()
+			OBJ_PosSet( tv_pos)
+		}
+	}
+	// else pas encore de positionnement afterblend
+}
+

@@ -1,0 +1,25 @@
+message		tm_message
+vector		v_TempForMsg
+
+tm_message = MSG_Get()
+
+while ( tm_message.msg_id )
+{
+	//switch( tm_message.msg_id )
+	if ( tm_message.msg_gao1 )
+	{
+		o_cible							= tm_message.msg_gao1
+		mo_WaszaiTarget			= tm_message.msg_gao1
+		mo_WaszaiStaticTarget	= tm_message.msg_gao2
+		mi_IsDWZActive				= tm_message.msg_int1
+		
+		v_TempForMsg				= tm_message.msg_vec1
+		mf_InactiveDWZFreq			= v_TempForMsg.x
+		
+		mi_IsAccurate					= tm_message.msg_int2		// should the shots be accurate
+		
+		mi_IsExternalForceFire		= vrai
+	}
+	
+	tm_message = MSG_Get()
+}

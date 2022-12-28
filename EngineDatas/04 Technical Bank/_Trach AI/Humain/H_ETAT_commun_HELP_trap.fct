@@ -1,0 +1,159 @@
+#include "H_defines.var"
+
+
+int			ti_i
+int			ti_numero
+int			ti_index
+int			ti_flag_grab
+int			ti_context
+
+float		tf_dist
+float		tf_sign
+float		tv_val
+float		tf_offset
+float		tf_liferatio
+
+vector	tv_dest_pos
+vector	tv_temp
+
+object	to_trap
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	f_time_action_disable = 0.5
+	macro_change_tag_size(Cv_Humain_Tag_Size_V1,Cv_Humain_Tag_Size_V2)
+
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_commun_HELP_trap)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_commun_HELP_trap
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+		ai_SRV_ENABLE[ti_i] = faux
+
+	// AUTORISATIONS DES GRABS
+	ai_SRV_ENABLE[Ci_LNK_GRAB_CROCO]		= vrai
+	macro_SRV_enable_ICO()
+	ai_SRV_ENABLE[Ci_LNK_GRAB_TRAP]		= vrai
+	ai_SRV_ENABLE[Ci_LNK_GRAB_RAPTOR]	= vrai
+
+	// AUTORISATIONS DES BLOCKS
+	ai_SRV_ENABLE[Ci_LNK_BLOCK_RAPTOR]	= vrai
+
+	// AUTORISATION DES AIDES
+	ai_SRV_ENABLE[Ci_LNK_HELP_TRAP]		= vrai
+
+	DYN_SpeedSetVector( Cv_NullVector)
+	DYN_TractionSet( Cv_NullVector)
+	
+	ACT_ActionSet(Action_Normal_Attente)
+	
+	macro_change_tag_size(Cv_Humain_Tag_Size_V1/2,Cv_Humain_Tag_Size_V2/2)
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE  =====================================================================
+AI_Execute("H_exec_read_joy")
+
+AI_Execute("H_exec_read_world")
+
+// PAF
+AI_Execute("H_exec_ch_Stimulus_Paf")
+o_paf_sender = o_paf_sender
+
+if (o_paf_sender)
+	macro_change_etat("H_ETAT_commun_paf")
+
+if (joueur)
+	ai_SRV_ENABLE[Ci_LNK_HELP_TRAP] = i_flag_grab
+else
+	ai_SRV_ENABLE[Ci_LNK_HELP_TRAP] = vrai
+
+AI_Execute("H_exec_serveur_get")
+
+// JE SUIS BLOCKED
+if (ao_SRV[Ci_LNK_BLOCK_RAPTOR])
+	macro_change_etat("H_ETAT_commun_BLOCK_raptor")
+
+// JE SUIS GRABED
+if (ao_SRV[Ci_LNK_GRAB_RAPTOR])
+	macro_change_etat("H_ETAT_commun_GRAB_raptor")
+if (ao_SRV[Ci_LNK_GRAB_CROCO])
+	macro_change_etat("H_ETAT_commun_GRAB_croco")
+if (ao_SRV[Ci_LNK_GRAB_TRAP])
+	macro_change_etat("H_ETAT_commun_GRAB_trap")
+if (ao_SRV[Ci_LNK_GRAB_ICO])
+	macro_change_etat("H_ETAT_commun_GRAB_ico")
+
+if (ao_SRV[Ci_LNK_HELP_TRAP] == nobody)
+	macro_change_etat(fct_main_etat)
+
+// COMPORTEMENT ==============================================================
+tv_dest_pos = @ao_SRV[Ci_LNK_HELP_TRAP] OBJ_PosGet()
+tv_dest_pos += @ao_SRV[Ci_LNK_HELP_TRAP] OBJ_SightGet()
+
+v_way_destpos = tv_dest_pos
+	
+AI_Execute("H_exec_way_find")
+
+if (i_way_moving)
+{
+	v_joy_dir = v_way_case_dest
+	v_joy_dir -= OBJ_PosGet()
+	v_joy_dir.z = 0.0
+
+	f_joy_norm = MATH_VecNorm(v_joy_dir)
+	
+	i_flag_run = vrai
+}
+else
+{
+	i_flag_run = faux
+	f_joy_norm = 0.0
+
+	v_joy_dir = OBJ_PosGet() - @ao_SRV[Ci_LNK_HELP_TRAP] OBJ_PosGet()
+}
+
+
+if (f_joy_norm)
+{
+	AI_Execute("H_exec_select_action")
+	
+	if (MATH_Modulo(ACT_ActionGet(), 10) == 2)
+	{
+		// On court
+	//	ACT_ActionFrequencySet(ACT_ActionGet(), ACT_FrequencyGet(ACT_ActionGet(), ACT_ActionItemGet()) * MATH_FloatLimit(f_joy_norm, 1.0, 1.5))
+		ANI_FrequencySet(0, ACT_FrequencyGet( ACT_ActionGet(), ACT_ActionItemGet() ) * MATH_FloatLimit(f_joy_norm, 1.0, 1.5))
+	}
+}
+else
+{
+	OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), v_joy_dir, 8.0 * TIME_GetDt()), Cv_VerticalVector)	
+
+	ACT_ActionSet(Action_Herbe_Marche)
+	DYN_SpeedSetVector(Cv_NullVector)
+
+	ti_context = C_EVENT_CONTEXT_DEBOUT
+	ti_context += i_ground_ID * 10
+	tf_liferatio = @"univ" LIFE_HumainCur[ i_id_humain ] / @"univ" LIFE_HumainMax[ i_id_humain ] 
+	EVENT_AddEventVision( i_id_humain, C_EVENT_FILTER_Marin, OBJ_Me(), 0.001, OBJ_PosGet(), C_EVENT_Visibility_Full_Mvt, Cf_Rayon_De_Vision, f_interet, ti_context, 0, tf_liferatio)
+}

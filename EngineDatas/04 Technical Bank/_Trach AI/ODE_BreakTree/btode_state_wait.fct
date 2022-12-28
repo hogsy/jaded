@@ -1,0 +1,96 @@
+#include "btode_defs.var"
+
+float		tf_impulsion
+vector	tv_speed
+int			ti_trigger_unpaused
+int			ti_num_unpaused
+
+// IF MODE IS ACTIF/PAUSE, CHECK IF ONE ELEMENT OF THE STRUCTURE IS UNPAUSE TO SWITCH TO ACTIVE MODE
+ti_trigger_unpaused = 0
+
+if(i_mode_init == ODE_Structure_Init_Actif_Pause)
+{
+	if(BTODE_b_Structure_Is_UnPaused(ti_num_unpaused))
+		ti_trigger_unpaused = 1
+}
+
+i_trig_general_active = 0
+i_trig_paf_active = 0
+i_trig_projectile_active = 0
+AI_Execute("btode_check_trigger")
+
+// Rien ne s'est passé ... hop, je sors ...
+if
+(
+		! i_trig_general_active
+&& 	! i_trig_paf_active 
+&& 	! i_trig_projectile_active  
+&& 	! ti_trigger_unpaused 
+&& 	!(BTODE_Structure_TestElementRemoved())
+) 
+{
+	return
+}
+	
+// Gros Choc de début
+if(i_son_activation_autorise)
+	SND_RequestPlay(ODE_Sound_Choc_Activation)
+
+// Un Trigger a été activé ... 
+switch(i_mode_init)
+{
+	case ODE_Structure_Init_Inactif:
+	BTODE_Structure_Activation_OnOFF(1)
+	break
+	
+	case ODE_Structure_Init_Actif_Immovable:
+	BTODE_Structure_Activation_OnOFF(1)	
+	BTODE_Structure_Immovable_OnOFF(0)	
+	break
+
+	case ODE_Structure_Init_Actif_Pause:
+	BTODE_Structure_Activation_OnOFF(1)	
+	break
+	
+}
+
+// Trigger Projectile activé
+if(i_trig_projectile_active && o_projectile_cine)
+{
+	BTODE_Object_ImmovableOnOFF(o_projectile_cine, 0)
+	@o_projectile_cine ODE_Enable(1)
+	tv_speed = @o_projectile_cine OBJ_BankingGet()
+	tv_speed *= f_vitesse_init_projectile
+	
+	@o_projectile_cine ODE_Setv(0, tv_speed)
+}
+else
+{
+	if(o_projectile_cine)
+	{
+		@o_projectile_cine ODE_Enable(0)	
+		BTODE_Object_Kill(o_projectile_cine)
+	}
+}
+
+// Micro Impulsion sur PAF ?
+if(i_trig_paf_active && i_genere_impulsion_si_paf && o_element_paf)
+{
+	if(f_force_valeur_impulsion)
+		tf_impulsion = f_force_valeur_impulsion * MATH_RandFloat(0.7,1.1)
+	else
+		tf_impulsion = 1000.0 * MATH_RandFloat(0.7,1.1)
+	
+	@o_element_paf ODE_ForceAtPosSet(v_dir_paf * tf_impulsion, v_pos_paf)
+}
+
+
+// Je stock la date de l'activation de la structure pour le TimeToLive
+f_time_at_activation = TIME_Get()
+
+// Je passe en mode structure active ...
+//AI_TrackCurChange("ode_state_active")
+AI_TrackChange( C_Track_Main, "btode_state_active" )
+
+
+

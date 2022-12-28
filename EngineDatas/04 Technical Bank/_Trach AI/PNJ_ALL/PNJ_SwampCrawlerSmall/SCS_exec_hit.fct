@@ -1,0 +1,87 @@
+#include "PNJ_SwampCrawlerSmall_defs.var"
+
+int				ti_nb_obj
+int				ti_grab, ti_rank
+object		tao_obj[100], to_serveur
+float			tf_val
+vector		tv_temp
+message	tmsg_filter
+messageid	tmid_lnk	
+vector		tv_axis 
+COL_ColSetActivationSet(C_bit_zde_fight, none)	
+
+ti_grab = faux
+ti_nb_obj = COL_ZDE_ZDEListGet(&tao_obj[0], C_zde_fight, C_zde_corps, all, none, Ci_Filter_IdentityFlag)
+while (ti_nb_obj)
+{
+	ti_nb_obj--
+	if ( ( tao_obj[ti_nb_obj] != OBJ_Me()) && !AI_HaveSameModel( tao_obj[ti_nb_obj] ) )
+	{
+		tv_axis = @tao_obj[ti_nb_obj] COL_ZonePosGet(C_zde_corps) - COL_ZonePosGet(C_zde_fight)
+		tv_axis.z = 0
+		if (MATH_VecNullEpsilon(tv_axis))
+			tv_axis = OBJ_SightGet()
+		else
+			MATH_VecSetNormalize(tv_axis)
+
+		if (MATH_VecDotProduct( tv_axis, OBJ_SightGet()) > Cf_Cos40)
+		{
+			move_i_hit = vrai
+			if (tao_obj[ ti_nb_obj ] == stimul_o_target && i_Attack_CanGrab && stimul_i_cangrab )
+			{
+				// -----( attack is a grab ? )----
+//				if (MATH_RandFloat( 0, 1) < f_Attack_GrabRatio )
+				i_Attack_Nb++
+				if( i_Attack_Nb == i_Attack_Grab_Modulo )
+				{
+					i_Attack_Nb = 0
+					ti_grab = vrai
+				}
+				
+				// ----( déja grabbé )----
+				ti_rank = -1
+				MSG_SetNull(tmsg_filter)
+				tmsg_filter.msg_sender = tao_obj[ ti_nb_obj ]
+				tmid_lnk = MSG_GlobalSearchIntGao(Ci_LNK_EVENT_OFFSET + Ci_LNK_GRAB_RAPTOR, &ti_rank, tmsg_filter)
+				if (MSG_GlobalIsValid(tmid_lnk))
+				{
+					to_serveur = MSG_GlobalGetGao(tmid_lnk, SERVEUR)
+					if (to_serveur && to_serveur != OBJ_Me())
+						ti_grab = faux
+				}
+			}
+			if (!ti_grab)
+			{
+				EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_KK_Faible,  OBJ_Me(), 0.01, tao_obj[ti_nb_obj], 6.0 * PAF_Unit, OBJ_SightGet())
+				SND_RequestPlay(SCS_Snd_Bite)
+			}
+
+		}
+	}
+}
+
+if (move_i_hit)
+	COL_ColSetActivationSet(none, C_bit_zde_fight)
+	
+// ========[ GRAB ?? ]========
+if (!ti_grab) return
+
+// ----( ne pourra grabber que si il peut aller à reculons à sa position d'attaque )----
+//tv_temp = OBJ_PosGet() - move_v_attackstart
+//MATH_VecSetHorzNormalize( tv_temp )
+//if (MATH_VecDotProduct( tv_temp, OBJ_SightGet() ) < 0.8)
+//	goto SCS_exec_hit_nograbsogivepaf
+	
+// ----( le perso accepte le grab ? )----
+grab_o_actor = LNK_ThisClientGet( stimul_o_target, Ci_LNK_GRAB_RAPTOR, grab_mid_LNKID, vrai, "SCS_LNK_Grab_Init", nofunc, "SCS_LNK_Grab_Init")
+if (!grab_o_actor)
+	goto SCS_exec_hit_nograbsogivepaf
+
+macro_change_etat("SCS_grab")
+return
+
+
+SCS_exec_hit_nograbsogivepaf:
+	EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_KK_Faible, OBJ_Me(), 0.01, stimul_o_target, 6.0 * PAF_Unit, OBJ_SightGet())
+	SND_RequestPlay(SCS_Snd_Bite)
+

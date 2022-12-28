@@ -1,0 +1,271 @@
+//#include "PNJ_TREX_defines.var"
+//
+//int			ti_i
+//int			ti_sens
+//int			ti_action
+//int			ti_fin_etat
+//
+//object	to_head
+//object	to_canal
+//
+////float		tf_grab
+//float		tf_delta_grab
+//float		tf_dot
+//
+//// SORTIE ETAT ===================================================================
+//if (i_sort_etat)
+//{
+//	i_sort_etat = faux
+//	o_grabbed_actor = LNK_ClientGet(Ci_LNK_GrabStatus_TREX_TT, mid_grabbed_LNK_ID, faux, nofunc, nofunc, nofunc)
+//	COL_UnCollidableDel( o_grabbed_uncol)
+//	if ( i_snd_grab != -1)
+//	{
+//		SND_Stop( i_snd_grab)
+//		SND_Destroy( i_snd_grab)
+//	}
+//	i_snd_grab = -1
+//	COL_ColMapActivationSet( all, none)
+//	if ( !OBJ_FlagsIdentityTest( OBJ_C_IdentityFlag_Dyna))
+//	{
+//		DYN_On()
+//		DYN_FlagsSet(DYN_C_BasicForces + DYN_C_NeverDynamicFather + DYN_C_VectorFriction, none)
+//		DYN_GravitySet(Cv_NormalGravity)
+//		DYN_FrictionVectorSet(Cv_TREX_friction_marche)
+//	}
+//
+//	f_fight_time_start_etat = 0.0			// atente avant déplacement
+//	macro_reset_KK_joy
+//	return
+//}
+//
+//// INITIALISATION ETAT ==============================================================
+//if (i_etat_courant != ETAT_KK_grabbedVTR)
+//{
+//	i_dernier_etat = i_etat_courant
+//	i_etat_courant = ETAT_KK_grabbedVTR
+//	
+//	if (fct_last_etat)
+//	{
+//		i_sort_etat = vrai
+//		AI_Execute(fct_last_etat)
+//	}
+//
+//	fct_last_etat = AI_TrackCurGet()
+//	o_grabbed_uncol = o_grabbed_actor
+//	COL_UnCollidableAdd( o_grabbed_uncol)
+//	SND_RequestPlay(5)
+//	i_snd_grab = SND_Request( 6, C_SND_Request_3DSound)
+//	SND_PlayLooped(i_snd_grab, -1)
+//	// i_grabbed_position == 1
+//	v_grabbed_speed = @o_grabbed_actor DYN_SpeedGetVector()
+//	f_time_start_etat = 0.0
+//	to_canal = ANI_CanalObjectGet( Anim_Canal_Grab_MainD)
+//	MSG_GlobalSetGao( mid_grabbed_LNK_ID, to_canal, GAO4)
+//	to_canal = ANI_CanalObjectGet( Anim_Canal_Grab_MainG)
+//	MSG_GlobalSetGao( mid_grabbed_LNK_ID, to_canal, GAO5)
+//	i_grabbed_etat = Ci_grabbed_mode_VTR_attente	
+//	i_grabbed_impulsion = faux
+//	MSG_GlobalSetInt( mid_grabbed_LNK_ID, i_grabbed_etat, INT2)
+//
+//}
+//else
+//{
+//	f_time_start_etat += TIME_GetDt()
+//}
+//
+//// ANALYSE =======================================================================================================
+//
+//ti_fin_etat = faux
+//o_grabbed_actor = LNK_ServeurGet(Ci_LNK_KKGRAB_FORCE, mid_grabbed_LNK_ID, vrai, nofunc, nofunc)
+//if (o_grabbed_actor == nobody)
+//{
+//	if ( i_grabbed_etat == Ci_grabbed_mode_VTR_attente)
+//	{
+//		ti_fin_etat = vrai
+////		i_grabbed_etat = Ci_grabbed_mode_VTR_mord
+////		MSG_GlobalSetInt( mid_grabbed_LNK_ID, i_grabbed_etat, INT2)
+//	}
+//	else if( i_grabbed_etat == Ci_grabbed_mode_VTR_mord)
+//		ti_fin_etat = vrai
+//	else if ( i_grabbed_etat == Ci_grabbed_mode_VTR_pousse)
+//		ti_fin_etat = vrai
+//	else if ( i_grabbed_etat == Ci_grabbed_mode_VTR_croche)
+//		i_grabbed_etat = i_grabbed_etat // LAISSER L ACTION FINIR
+//	else if ( i_grabbed_etat == Ci_grabbed_mode_VTR_vol)
+//		i_grabbed_etat = i_grabbed_etat // LAISSER L ACTION FINIR
+//}
+//
+//// Detection du vide
+//macro_checkchute
+//
+//// COMPORTEMENT =======================================================================================================
+//
+//// LECTURE DU JOY ET CHOIX DES ACTIONS SIMULS + COMBO
+//LNK_GrabCurrentSet( mid_grabbed_LNK_ID, 0.0)
+////LNK_GrabDeltaUpdate( mid_grabbed_LNK_ID, TIME_GetDt())
+//
+//
+////v_grabbed_last_dir = Cv_NullVector
+////tf_delta_grab = TIME_GetDt()			// Vitesse de deplacement de la jauge de grab apres 5s le grab lache
+////
+////tf_dot = MATH_VecDotProduct( glob_joyvector_get, OBJ_SightGet())
+////if( tf_dot < -Cf_Cos45)
+////{
+////	// AVANCE : KONG POUSSE
+////	v_grabbed_last_dir = -OBJ_SightGet()
+////	ti_sens = Ci_grabbed_mode_VTR_pousse
+////	tf_delta_grab = 2.0  * TIME_GetDt()		// Le joueur force durée grab plus courte( épuisement ??)
+////}
+////
+////f_grabbed_time_grab += tf_delta_grab
+//
+//// DERAPER
+////if ( f_KK_joy_norm >= 0.4)
+////{
+////	if ( f_KK_joy_norm < 0.85 && i_KK_joy_sens == Ci_joy_KK_Pousse)
+////			DYN_SpeedSetVector( -OBJ_SightGet() * MATH_RandFloat( 0.0, 1.5))
+////	
+////	if ( i_KK_joy_sens == Ci_joy_KK_ForceD)
+////		DYN_SpeedSetVector( -OBJ_HorizonGet() * MATH_RandFloat( 0.0, 1.5))
+////	else if ( i_KK_joy_sens == Ci_joy_KK_ForceG)
+////		DYN_SpeedSetVector( OBJ_HorizonGet() * MATH_RandFloat( 0.0, 1.5))
+////	else if ( i_KK_joy_sens == Ci_joy_KK_Tire)
+////			DYN_SpeedSetVector( OBJ_SightGet() * MATH_RandFloat( 0.0, 1.5))
+////}	
+//
+//
+//
+//// LECTURE DU JOY ET CHOIX DES ACTIONS SIMULS + COMBO
+//AI_Execute("PNJ_TREX_exec_joy")
+//
+//ti_action = ACT_ActionGet()
+//
+//
+//// LECTURE DES ACTIONS SIMULS A JOUER
+////i_grabbed_etat = MSG_GlobalGetInt( mid_grabbed_LNK_ID, INT2)
+//
+//// ETATS
+//if ( i_grabbed_etat == Ci_grabbed_mode_VTR_attente)
+//{
+//	// -*-*-*- NEUTRE -*-*-*-
+//	if ( f_KK_joy_norm >= 0.2 &&
+//	( f_KK_joy_norm < 0.45 && i_KK_joy_sens == Ci_joy_KK_Pousse))
+//	{
+//		//déraper
+//		float tf_vol
+//		tf_vol = MATH_RandFloat( 0.0, 1.0)
+//		DYN_SpeedSetVector( -OBJ_SightGet() * (tf_vol * 1.5))
+////		SND_InsertVarSet( 2, tf_vol)
+//	}
+//	else if ( f_KK_joy_norm > 0.45)
+//	{
+//		if ( i_KK_joy_sens == Ci_joy_KK_Tire)
+//			i_grabbed_etat = Ci_grabbed_mode_VTR_attente
+//		else if ( i_KK_joy_sens == Ci_joy_KK_Pousse || i_KK_joy_sens2nd == Ci_joy_KK_Pousse)
+//		{
+//			i_grabbed_etat = Ci_grabbed_mode_VTR_pousse
+//			DYN_SpeedSetVector( Cv_NullVector)
+//		}
+//		else if ( i_KK_joy_sens == Ci_joy_KK_ForceD)
+//			i_grabbed_etat = Ci_grabbed_mode_VTR_attente
+//		else if ( i_KK_joy_sens == Ci_joy_KK_ForceG)
+//			i_grabbed_etat = Ci_grabbed_mode_VTR_attente
+//		MSG_GlobalSetInt( mid_grabbed_LNK_ID, i_grabbed_etat, INT2)
+//	}
+//	else
+//		MSG_GlobalSetInt( mid_grabbed_LNK_ID, Ci_grabbed_mode_VTR_attente, INT2)
+//	ACT_ActionSet( Action_Fight_GrabVTR_attente)
+//}
+//else if ( i_grabbed_etat == Ci_grabbed_mode_VTR_pousse)
+//{
+//	// -*-*-*- POUSSER -*-*-*-
+//	if ( ti_action == Action_Fight_GrabVTR_recul && ACT_ActionFinished())
+//	{
+//		if ( f_KK_joy_norm < 0.45 || i_KK_joy_sens != Ci_joy_KK_Pousse)
+//		{
+//			i_grabbed_etat = Ci_grabbed_mode_VTR_attente
+//			MSG_GlobalSetInt( mid_grabbed_LNK_ID, Ci_grabbed_mode_VTR_attente, INT2)
+//		}
+//		else
+//			ACT_ActionSet( Action_Fight_GrabVTR_recul)
+//	}
+//	else
+//		ACT_ActionSet( Action_Fight_GrabVTR_recul)
+//	if ( i_KK_joy_press_action)
+//	{
+//		if ( MATH_VecDotProduct( v_grabbed_joy_cercle_positon_reelle, @o_grabbed_uncol OBJ_SightGet()) < 0 )
+//		{
+//			i_grabbed_etat = Ci_grabbed_mode_VTR_croche
+//			MSG_GlobalSetInt( mid_grabbed_LNK_ID, i_grabbed_etat, INT2)
+////			DYN_Off()
+//		}
+//		else
+//		{
+//			i_grabbed_etat = Ci_grabbed_mode_VTR_mord
+//			MSG_GlobalSetInt( mid_grabbed_LNK_ID, i_grabbed_etat, INT2)
+//		}
+//	}
+//
+//}
+//else if ( i_grabbed_etat == Ci_grabbed_mode_VTR_croche)
+//{
+//	// -*-*-*- CROCHE PATTE ET DECOLLAGE -*-*-*-
+//	if ( ti_action == Action_Fight_GrabVTR_croche && ACT_ActionFinished())
+//	{
+//		if ( i_snd_grab != -1)
+//		{
+//			SND_Stop( i_snd_grab)
+//			SND_Destroy( i_snd_grab)
+//		}
+//		i_snd_grab = -1
+//		i_grabbed_etat = Ci_grabbed_mode_VTR_vol
+//	}
+//	else
+//		ACT_ActionSet( Action_Fight_GrabVTR_croche)
+//}
+//else if ( i_grabbed_etat == Ci_grabbed_mode_VTR_vol)
+//{
+//	// -*-*-*- VOL -*-*-*-
+//	if ( !i_grabbed_impulsion)
+//	{
+//		COL_ColMapActivationSet( none, all )
+//		ACT_ActionSet( Action_Fight_GrabVTR_vole)
+//		OBJ_PosSet( OBJ_PosGet() + cvector( 0.0, 0.0, 9.0))
+//		DYN_On ()
+//		DYN_FlagsSet(DYN_C_BasicForces + DYN_C_NeverDynamicFather + DYN_C_VectorFriction, none)
+//		DYN_GravitySet(Cv_NormalGravity)
+//		DYN_FrictionVectorSet(Cv_TREX_friction_marche)
+//		DYN_Impulsion( OBJ_PosGet() + (OBJ_SightGet() * 30.0), 2.0)
+//		i_grabbed_impulsion = vrai
+//	}
+//// 	if ( COL_CollideType( COL_C_Wall) || COL_CollideType( COL_C_Ground))
+////	{
+////		SND_RequestPlay(14)
+////		DYN_FrictionVectorSet(Cv_TREX_friction)
+////		f_ko_delay = 2.0
+////		macro_change_etat("PNJ_TREX_ETAT_KO_au_sol")
+////	}
+////	if ( ti_action != Action_Fight_GrabVTR_vole)
+////		ACT_ActionSet( Action_Fight_GrabVTR_vole)
+//}
+//else if ( i_grabbed_etat == Ci_grabbed_mode_VTR_mord)
+//{
+//	if (  ti_action == Action_Fight_GrabVTR_reculCrok && ACT_ActionFinished())
+//	{
+//		o_grabbed_actor = LNK_ServeurGet(Ci_LNK_KKGRAB_FORCE, mid_grabbed_LNK_ID, faux, nofunc, nofunc)
+////		EVENT_AddEventPaf( C_EVENT_FILTER_Object, C_EVENT_PAF_Contondant, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_grabbed_uncol, 0, -@o_grabbed_uncol OBJ_SightGet())
+//	}
+//	else
+//		ACT_ActionSet( Action_Fight_GrabVTR_reculCrok)
+//	if ( ANI_CurrentFrameGet(0) > 42 && o_grabbed_actor)
+//	{
+//		EVENT_AddEventPaf( C_EVENT_FILTER_Object, C_EVENT_PAF_Contondant, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_grabbed_uncol, 0, -@o_grabbed_uncol OBJ_SightGet())
+//	}
+//
+//}
+//
+//if ( ti_fin_etat)
+//{
+//	o_grabbed_actor = LNK_ServeurGet(Ci_LNK_KKGRAB_FORCE, mid_grabbed_LNK_ID, faux, nofunc, nofunc)
+//	macro_change_etat(fct_main_etat)
+//}

@@ -1,0 +1,60 @@
+#include "PNJ_Scorpion_defines.var"
+
+// SORTIE ETAT ====================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_FIGHT)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_FIGHT
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = AI_TrackCurGet()
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ========================================================================
+AI_Execute("PNJ_Scorpion_exec_check_vision")
+
+AI_Execute("PNJ_Scorpion_exec_check_paf")
+if (i_flag_paf_faible)
+	macro_change_etat("PNJ_Scorpion_ETAT_PAF")
+
+AI_Execute("PNJ_Scorpion_exec_check_shoot")
+
+AI_Execute("PNJ_Scorpion_exec_check_best_interet")
+
+if (i_perceived_best_actor_index == -1)
+	macro_change_etat("PNJ_Scorpion_ETAT_IDLE")
+	
+if (ai_perceived_status[i_perceived_best_actor_index] & Ci_PERCEIVED_ALREADY_GRABBED)
+	macro_change_etat("PNJ_Scorpion_ETAT_IDLE")
+
+if (ai_perceived_status[i_perceived_best_actor_index] & Ci_PERCEIVED_IS_DEAD)
+	macro_change_etat("PNJ_Scorpion_ETAT_DEVORE")
+
+// COMPORTEMENT ==================================================================
+AI_Execute("PNJ_Scorpion_exec_test_jump")
+AI_Execute("PNJ_Scorpion_exec_test_catch")
+AI_Execute("PNJ_Scorpion_exec_test_bite")
+
+v_way_destpos = EVENT_InteretPositionGet(mid_best_interet)
+AI_Execute("PNJ_Scorpion_exec_way_move")
+
+AI_Execute("PNJ_Scorpion_exec_select_action")

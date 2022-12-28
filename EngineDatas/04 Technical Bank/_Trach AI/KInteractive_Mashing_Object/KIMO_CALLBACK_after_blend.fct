@@ -1,0 +1,23 @@
+#include "KIMO_defines.var"
+
+vector		tv_speed
+
+// BUG CUMUL DE VITESSE EN SPEED
+
+switch( i_etat_courant )
+{
+	case ETAT_Wait :
+	case ETAT_Mashing :
+		if( OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna) )
+		{
+			tv_speed = DYN_SpeedGetVector()
+			if( tv_speed.z > 0.0 )
+				tv_speed.z = 0.0
+			DYN_SpeedSetVector(tv_speed)
+		}
+		break
+
+	case ETAT_Projete :
+	default:
+		break
+}

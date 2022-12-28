@@ -1,0 +1,251 @@
+
+#include "PluieDeLances_defines.var"
+
+int t_i, ti_recule, ti_au_repos, ti_etat_javelot
+object to_lance
+vector tv_impulse, tv_orient_vers_cible, tv_sight
+message tm_msg, tm_trigger 
+float tf_time, tf_dist, f_x, f_y, f_pourcent_distance
+int	i_IsStopped
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != Ci_etat_attaque)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = Ci_etat_attaque
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = AI_TrackCurGet()
+	
+	AI_Execute("PluieDeLances_exec_init_temps")
+	
+	i_lances_avant_paf = i_lances_avant_paf_move 
+	
+	if (i_lances_avant_paf  >= 0)
+		i_lances_avant_paf_courant =  i_lances_avant_paf 
+				
+	f_temps_avant_paf_courant = f_temps_avant_paf
+
+}
+
+// compteur de lance
+if ( (i_max_lance_a_lancer > 0 ) && (i_lance_lancee_compteur >= i_max_lance_a_lancer ) )
+	return
+
+// Permet de lancer la Zic Fight des que les lances se mettent en marche !
+SIG_Send(SIG_C_TYPE_FIGHT, OBJ_Me())
+
+tm_trigger = AI_TriggerGetMsg(tr_attaque)
+push(tm_trigger.msg_gao1)
+AI_Execute("PluieDeLances_exec_construit_liste_cibles")
+
+for (t_i = 0; t_i < Ci_nombre_max_d_emetteurs ; t_i++)
+{
+	if (ao_liste_emetteurs[t_i])
+	{
+		// si compteur est ecoule, il est temps de relancer
+		if (ao_liste_temps_emetteurs[t_i] < 0.0)
+		{	
+			//to_lance = ao_liste_lances[i_lance_courante]
+			
+			// new	
+			to_lance = @"_Basic/_Basic_Persos/DUP_Javelin" OBJ_Duplicate(OBJ_PosGet())
+			@to_lance OBJ_CapaSet(OBJ_Capa_7, none)		// Interdit ramasse compagnons
+			
+	//		@to_lance OBJ_CapaSet(OBJ_Capa_2, none)	
+			// enew
+						
+//			i_lance_courante++		
+//			if (i_lance_courante == i_nombre_de_lances)
+//			{
+//				i_lance_courante = 0
+//			}			
+			
+//			if (to_lance != nobody && @to_lance AI_IsModel("Projectiles/Projectile_Javelin"))	
+		    {
+//				ti_etat_javelot = @"Projectiles/Projectile_Javelin" to_lance mi_State
+//			
+//			    if (ti_etat_javelot  == Ci_bambou_state_launch || ti_etat_javelot == -1 )
+//					ti_au_repos = faux
+//				else
+//					ti_au_repos = vrai
+//	
+//				if (ti_au_repos)
+				{
+					o_cible = ao_cible_list[MATH_RandInt(0, i_nombre_cible)]
+
+					if (o_cible == AI_MainActorGet(C_ID_Joueur))
+					{
+						if (i_lances_avant_paf_just_changed)
+						{
+							i_lances_avant_paf_courant =  i_lances_avant_paf
+							i_lances_avant_paf_just_changed = faux	
+						}
+					}
+					
+//					if (@"Projectiles/Projectile_Javelin" to_lance i_GFX_Fire != -1)
+//					{
+//						GFX_Seti( @"Projectiles/Projectile_Javelin" to_lance i_GFX_Fire, 13106, 0)	
+//						@"Projectiles/Projectile_Javelin" to_lance i_GFX_Fire = -1
+//					}
+					
+//					@to_lance OBJ_FlagInvisibleSet(1)				
+// 					@to_lance OBJ_Reinit(1)	
+	
+					@to_lance OBJ_PosSet(@ao_liste_emetteurs[t_i] OBJ_PosGet())	
+				
+	 				tv_orient_vers_cible  = @o_cible OBJ_PosGet()
+					tv_sight = @o_cible OBJ_SightGet()	
+
+					if (MATH_VecDotProduct(@o_cible OBJ_SightGet(), @o_cible DYN_SpeedGetVector()) < 0.0)
+						ti_recule = vrai
+					else
+						ti_recule = faux
+						
+					i_IsStopped = faux
+					
+					if ( ti_recule )
+					{
+						f_pourcent_distance = f_fact_distance_cible_back
+					}
+					// si la cible ne bouge pas et que la distance ne doit pas diminuer en fonction du temps, on
+					// utilise un pourcentage de la distance totale
+					else if ( ! i_distance_diminue_avec_temps && @o_cible DYN_SpeedGet() < f_norme_vitesse_min)
+					{	
+						f_pourcent_distance = f_fact_distance_cible_stop
+						i_IsStopped = vrai
+					}
+					// si la cible ne bouge pas et que la distance doit diminuer avec le temps, on calcule
+					// dynamiquement le pourcentage a appliquer a la distance
+					else if ( i_distance_diminue_avec_temps && @o_cible DYN_SpeedGet() < f_norme_vitesse_min) 
+					{
+						f_pourcent_distance = i_lances_avant_paf_courant
+						f_pourcent_distance /= i_lances_avant_paf
+						f_pourcent_distance *= f_fact_distance_cible_stop
+						i_IsStopped = vrai
+					}
+					// sinon (la cible bouge), on prend la distance totale
+					else
+						f_pourcent_distance = 1.0
+					
+					// on tire a une position randomisee, qui est a f_distance_cible * f_pourcent_distance
+					// metres en avant de la cible
+					tv_orient_vers_cible += tv_sight * f_distance_cible * f_pourcent_distance
+					
+					//JIMI_NOTE: only count time towards special JPC attack when Jack is stopped
+					if ( !i_IsStopped )
+					{
+						mf_JPCAttackTimeStamp = TIME_Get()
+					}
+					
+					//JIMI_NOTE: special attack mode that JP Caro wanted for attacks to auto hit when Jack stands there for too long
+					if ( i_IsStopped && mi_IsSpecialJPCSystem && ( TIME_Get() - mf_JPCAttackTimeStamp > mf_TimeBetweenJPCAttacks ) )
+					{
+						mf_JPCAttackTimeStamp = TIME_Get()
+					}
+					else	//JIMI_NOTE: random radius on attack only on non-special JPC attacks
+					{
+						// on randomize en x et y selon un radius
+						f_x = 	MATH_RandFloat(-f_radius, f_radius)
+						f_y = 	MATH_RandFloat(-f_radius, f_radius) 
+						tv_orient_vers_cible.x += f_x
+						tv_orient_vers_cible.y += f_y
+					}
+										
+					tv_orient_vers_cible  -= @to_lance OBJ_PosGet()
+					tf_dist = MATH_VecNorm(tv_orient_vers_cible )
+					
+					// borne distance max
+					if ( tf_dist > f_max_distance )
+					{
+						tv_orient_vers_cible *= f_max_distance / tf_dist
+						tf_dist = f_max_distance
+					}
+			
+					tv_orient_vers_cible  += @to_lance OBJ_PosGet()
+		
+					tf_time = f_time
+
+					tv_impulse = DYN_LIB_ImpulsionGet_Friction( @to_lance OBJ_PosGet(), tv_orient_vers_cible, f_gravite, f_friction , tf_time, i_flag_Z_friction, f_hauteur)
+			
+					MSG_SetNull( tm_msg )
+					tm_msg.msg_id = msg_id_grenadelaunch
+					tm_msg.msg_sender = OBJ_Me()
+					tm_msg.msg_vec1 = tv_impulse  					// speed
+					tm_msg.msg_vec2 = Cv_NormalGravity/10		// grav
+					tm_msg.msg_vec3 = cvector(1.0, 1.0, 0.0)		// frict
+
+					// si le temps initial avant paf est ecoule, on lock sur la cible pour un 
+					// paf automatique (si cest Jack) a chaque n lance		     	
+		     		if ( AI_MainActorGet(C_ID_Joueur) == o_cible)
+		     		{
+		     			if (	f_temps_avant_paf_courant <= 0.0 && 
+			    				i_lances_avant_paf  >= 0 && 
+			     			i_lances_avant_paf_courant == 0)
+			     		{
+					    		tm_msg.msg_gao4 = @get_global o_camera			// lock sur cam, c est mortel!
+					    	}
+					    	else
+					    	{
+						    	// sinon, on ne fait pas de domage meme si on est paffer
+							@to_lance OBJ_CapaSet(OBJ_Capa_3, 0)
+						}
+				    	}
+			   				   
+			   		@get_Arme_Lance_path to_lance mi_flamme = i_flamme		  
+			    		@to_lance MSG_Send( tm_msg )
+				
+					@to_lance OBJ_CapaSet(OBJ_Capa_2, 0)
+
+					if (!i_fait_pafs)
+					{
+						@to_lance OBJ_CapaSet(OBJ_Capa_3, 0)
+					}
+
+					// on ne commence a compter les lances que lorsque le temps_avant_paf
+					// est ecoule
+					if (o_cible == AI_MainActorGet(C_ID_Joueur))
+					{
+						if (f_temps_avant_paf_courant <= 0.0)
+						{
+							if (i_lances_avant_paf  >= 0)
+							{
+								i_lances_avant_paf_courant --
+						
+								if (i_lances_avant_paf_courant < 0)
+									i_lances_avant_paf_courant = i_lances_avant_paf 
+							}
+				    		}	
+					}
+							    		
+					ao_liste_temps_emetteurs[t_i] = MATH_RandFloat(f_min_temps_entre_lances, f_max_temps_entre_lances )
+					
+					// compteur de lance
+					i_lance_lancee_compteur++
+					break
+				}
+			}
+		}
+		else
+		{
+			ao_liste_temps_emetteurs[t_i] -= TIME_GetDt()
+		}
+	}
+}
+
+if (f_temps_avant_paf_courant > 0)
+	f_temps_avant_paf_courant -=TIME_GetDt()
+

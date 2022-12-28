@@ -1,0 +1,66 @@
+#include "TXT_Encart_defs.var"
+
+
+int 		res, res2
+object	to_obj
+
+res = faux
+
+// Test Capa simple
+if ( OBJ_CapaTest( OBJ_Capa_1 ) )
+{
+	OBJ_CapaSet( 0, OBJ_Capa_0 | OBJ_Capa_1 )
+	OBJ_CapaSet( OBJ_Capa_2 | OBJ_Capa_3 , 0 ) 
+	AI_TrackCurChange( "TXTEncart_WaitForEnd" )
+	return
+}
+
+// --------( TYPE_HAYESPSSTABLE )--------
+if (mi_Type == TYPE_HAYESPSSTABLE )
+{
+	to_obj = @"univ" ao_AllHumains[ C_ID_Hayes ]
+	if (to_obj && (LIBHumains_GetPsstable( VIEW_GetObject(0) ) == to_obj))
+		res = vrai
+}
+// --------( TYPE_HAYESPSSTE )--------
+else if (mi_Type == TYPE_HAYESPSSTE )
+{
+	to_obj = @"univ" ao_AllHumains[ C_ID_Hayes ]
+	if ( LIBHumains_Psste( to_obj ) )
+		res = vrai
+}
+// --------( TYPE_GEN )--------
+else if ( mi_TriggerOn )
+{
+	// Test multi trigger
+	res = call_trigger( mt_TriggerOn0 )
+	
+	if (mi_TriggerOn> 1 )
+	{
+		if ( !( ( mt_TriggerOnOp_01 == OPor ) && res ) && !( ( mt_TriggerOnOp_01 == OPand ) && !res ) )
+		{
+			res2 = call_trigger( mt_TriggerOn1 )
+			if ( mt_TriggerOnOp_01 == OPxor )
+				res = res ^ res2
+			else
+				res = res2
+		}
+	}
+	if (mi_TriggerOn > 2 )
+	{
+		if ( !( ( mt_TriggerOnOp_12 == OPor ) && res ) && !( ( mt_TriggerOnOp_12 == OPand ) && !res ) )
+		{
+			res2 = call_trigger( mt_TriggerOn2 )
+			if ( mt_TriggerOnOp_12 == OPxor )
+				res = res ^ res2
+			else
+				res = res2
+		}
+	}
+}
+	
+if ( res )
+{
+	OBJ_CapaSet( OBJ_Capa_2 | OBJ_Capa_3 , 0 ) 
+	AI_TrackCurChange( "TXTEncart_WaitForEnd" )
+}

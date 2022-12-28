@@ -1,0 +1,230 @@
+#include "H_defines.var"
+
+int				ti_context
+int				ti_i
+int				ti_id
+int				ti_sortie
+
+float			tf_temp
+float			tf_liferatio
+float			tf_radius
+float			tf_temp1
+float			tf_fear
+float			tf_range
+float			tf_dist
+
+object		to_gao
+object		to_cible
+object		to_canal
+
+vector		tv_sight
+vector		tv_tir_depart, tv_tir_arrivee
+vector		tv_temp
+
+function		shoot
+
+// SORTIE ETAT ==================================================================
+if (i_sort_etat)
+{
+	f_time_enjoue = 5.0
+	i_sort_etat = faux
+	f_rand_rate = 0
+
+	i_tir_nb = 0
+	o_tir_target = nobody
+	v_tir_pos_help = Cv_NullVector
+
+	if (i_flag_add_shoot)
+	{
+		i_flag_add_shoot = faux
+		macro_del_callback_tir("H_callback_tir")
+	}
+	if (i_snd_tommygun != -1)
+	{
+		SND_Stop( i_snd_tommygun )
+		i_snd_tommygun = -1
+		SND_Stop( i_snd_tommygunB )
+		i_snd_tommygunB = -1
+		SND_RequestPlay( SND_Jack_TommygunEndLoop )
+		GFX_Weapon_TommygunRicochet = 0
+		if (GFX_Weapon_TommygunNextRicochet != -1)
+		{
+			SND_RequestPlay( SND_Jack_BulletNone + GFX_Weapon_TommygunNextRicochet )
+			GFX_Weapon_TommygunNextRicochet = -1
+		}
+	}
+
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_IA_tir)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_IA_tir
+	fct_prev_etat = fct_last_etat
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+		ai_SRV_ENABLE[ti_i] = faux
+
+	// AUTORISATIONS DES GRABS
+	ai_SRV_ENABLE[Ci_LNK_GRAB_RAPTOR]		= vrai
+	ai_SRV_ENABLE[Ci_LNK_PSSS]					= vrai
+
+	// AUTORISATION DES AIDES
+	ai_SRV_ENABLE[Ci_LNK_INTERACTION]		= vrai
+	
+	f_tir_time = 0.0
+	i_tir_nb = 0
+	f_time_start_etat = 0.0
+	f_hys_shoot = 0
+	
+//	AskText(TEXTE_Fighting, Gene_C_fighting, 30, nobody)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+f_time_last_shoot = TIME_Get()
+
+// ANALYSE ======================================================================
+
+// Pssss	
+OBJ_Me().des_int1 = Ci_DISPLAY_PSSS
+if(ao_SRV[Ci_LNK_PSSS])
+{
+	ForceRegardSurToujours(AI_MainActorGet(C_ID_Jack), 1.0)
+	ao_SRV[Ci_LNK_PSSS] = LNK_ServeurGet(Ci_LNK_PSSS, amid_SRV_LIAISON_ID[Ci_LNK_PSSS], faux, nofunc, nofunc)
+	if(i_in_fight)
+		i_request_txt = Gene_C_occupied_urg
+	else
+		i_request_txt = Gene_C_occupied_med
+}
+
+AI_Execute("H_exec_read_world")
+AI_Execute("H_exec_serveur_get")
+AI_Execute("H_exec_change_etat")
+AI_Execute("H_exec_ch_Stimulus_Paf")
+if (o_paf_sender) macro_change_etat("H_ETAT_IA_paf")
+
+// COMPORTEMENT ================================================================
+
+// Fin du tir ?
+ComputeCibleAShooter( f_dist_max_shoot )
+if(!o_target_stimulus_vis) 
+{
+	f_hys_shoot += TIME_GetDt()
+	if(f_time_start_etat < 2.0) return
+	if(f_hys_shoot < 2.0) return
+	macro_change_etat(fct_prev_etat)
+	return
+}
+
+// Interdiction pilotage arme	
+if(!AnimAutoriseTir() && !BambouEnMain()) 
+{
+	f_time_help_interdit = 2.0
+	macro_change_etat(fct_prev_etat)
+	return
+}
+
+HL_MakeShoot(shoot)
+if(shoot != nofunc) macro_change_etat(shoot)
+
+// BAMBOU => on ne peut ni tirer, ni se défendre, faut sortir un moment histoire de bouger éventuellement
+if(BambouEnMain())
+{
+	if(f_time_start_etat > 0.5)
+	{
+		f_time_disable_tir = 1.0
+		macro_change_etat(fct_prev_etat)
+	}
+	else
+	{
+		return
+	}
+}
+
+// Tir
+if(!i_flag_force_rate && i_pourcentage_rate && MATH_RandInt(1, 100) < i_pourcentage_rate)
+	i_flag_force_rate = vrai
+else if(!i_flag_force_rate && f_rand_rate && MATH_RandFloat(0, 100) <= f_rand_rate)
+	i_flag_force_rate = vrai
+else
+	i_flag_force_rate = faux
+	
+if(@get_global i_jack_grab || @"univ" LIFE_HumainEtat[C_ID_Jack] == Cf_Life_Agonisant)
+	i_flag_force_rate = faux
+	
+ti_id = EVENT_EnemyTypeGet(msgid_target_stimulus_vis)
+tf_radius = @"univ" Enemy_af_Radius[ti_id]
+tf_fear = @"univ" Enemy_af_ReaDist[ ti_id ] [ C_EnemyDist_Fear ]
+tf_range = @"univ" Weapon_af_range[ @"univ" i_weapon_ID [i_id_humain] ]
+
+// Retour en fight si on est suffisemment éloigné de notre cible
+if(f_time_start_etat > 2)
+{
+	tv_temp = @o_target_stimulus_vis OBJ_PosGet() - OBJ_PosGet()
+	tf_temp = MATH_VecNorm(tv_temp)
+	ti_sortie = faux
+	
+	switch(ti_id)
+	{
+		case C_ID_CrabePetit : tf_range = 6 break
+	}
+	
+	if(tf_temp > tf_range * 0.5) 
+	{
+		ti_sortie = vrai					// Je sors si je suis hors de porté
+	}
+	
+	if(i_dernier_etat != ETAT_IA_help && ti_id != C_ID_Galiminus)
+	{
+		if(tf_temp < tf_radius && !BambouEnMain()) 
+		{
+			ti_sortie = vrai					
+			f_time_disable_tir = 3		// Histoire de me barrer pendant un moment
+		}
+	}
+		
+	if(ti_sortie)
+	{
+		i_way_force_recompute = vrai
+		macro_change_etat(fct_prev_etat)
+	}
+}
+
+// Je reste sur place en tirant comme un couillon
+f_joy_norm = 0
+v_joy_dir = v_target_stimulus_vis - OBJ_PosGet()
+MATH_VecSetHorzNormalize(v_joy_dir)
+
+// Je recule si je suis dans la zone de peur + epsilon
+if(@"univ" Enemy_af_Danger[ti_id] == 1)
+	tf_dist = (tf_radius * tf_radius) + 2
+else
+	tf_dist = (tf_fear * tf_fear) + 4
+
+if(OBJ_SqrDist(o_target_stimulus_vis) < tf_dist)
+{
+	if(IsLoadingWeapon()) 
+		i_interrupt_charge = vrai	// Si je rechargeai, j'arrette des que possible pour pouvoir shooter
+		
+	// Je peux reculer ?
+	if(!GRID_Blocked(OBJ_PosGet() - OBJ_SightGet(), vrai) && !COL_CollideType(COL_C_Wall))
+	{
+		i_flag_recul = vrai
+		f_joy_norm = 1
+		f_time_force_attend = 1.0
+	}
+}
+
+AI_Execute("H_exec_select_action")

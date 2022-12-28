@@ -1,0 +1,34 @@
+float	tf_speed
+
+#ifndef _FINAL_  //   Debug -- Debug -- Debug -- Debug -- Debug -- Debug -- Debug -- Debug --
+
+if  (IO_KeyPressed(VK_CONTROL) && IO_KeyJustPressed (VK_NUMPAD1) )
+	f_cheat_speed = 0.1
+if  (IO_KeyPressed(VK_CONTROL) && IO_KeyJustPressed (VK_NUMPAD2) )
+	f_cheat_speed = 0.25
+if  (IO_KeyPressed(VK_CONTROL) && IO_KeyJustPressed (VK_NUMPAD3) )
+	f_cheat_speed = 0.5
+if  (IO_KeyPressed(VK_CONTROL) && IO_KeyJustPressed (VK_NUMPAD4) )
+	f_cheat_speed = 1
+if  (IO_KeyPressed(VK_CONTROL) && IO_KeyJustPressed (VK_NUMPAD5) )
+	f_cheat_speed = 2
+if  (IO_KeyPressed(VK_CONTROL) && IO_KeyJustPressed (VK_NUMPAD6) )
+	f_cheat_speed = 5
+	
+#endif 	 //   Debug -- Debug -- Debug -- Debug -- Debug -- Debug -- Debug -- Debug --
+
+
+if (f_cheat_speed==1)
+	tf_speed = f_game_speed
+else
+	tf_speed = f_cheat_speed
+
+f_old_old_game_speed = f_old_game_speed
+if (f_old_game_speed != tf_speed)
+{
+	TIME_SpeedFactorSet(tf_speed)
+	f_old_game_speed = tf_speed
+}
+f_game_speed = 1
+
+

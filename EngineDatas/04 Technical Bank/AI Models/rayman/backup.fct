@@ -1,0 +1,268 @@
+//#include "r_defines.var"
+//
+//int			ti_i
+//int			ti_tracte
+//int			ti_count
+//float		tf_dist
+//float		tf_norm
+//float		tf_friction
+//vector	tv_pos
+//vector	tv_temp
+//vector	tv_temp1
+//vector	tv_sight
+//vector	tv_speed
+//vector	tv_grappin_destpos
+//vector	tv_dir
+//vector	tv_dirN
+//vector	tv_force
+//vector	tv_friction
+//object	to_main
+//object	to_obj
+//
+//
+//// PAF FILTRE ROUGE =======================================================
+//@get_global Proc_AE_ColorBalanceSet(MATH_FloatBlend(@get_global Proc_AE_ColorBalance1Get(), @get_global Proc_AE_ColorBalance1DefaultGet(), 5.0 * TIME_GetDt()), 0.52)
+//@get_global Proc_AE_RemanenceSet(MATH_FloatBlend(@get_global Proc_AE_RemanenceGet(), @get_global Proc_AE_RemanenceDefaultGet(), 5.0 * TIME_GetDt()))
+//@get_global Proc_AE_BlackAndWhiteSet(MATH_FloatBlend(@get_global Proc_AE_BlackAndWhiteGet(), @get_global Proc_AE_BlackAndWhiteDefaultGet(), 5.0 * TIME_GetDt()))
+//
+//
+//// DYNA ==================================================================
+//if( ! OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna) )
+//	goto END_OF_DYNA
+//
+//// GRAPPIN ================================================================
+//i_grappin_tiptop_nb = 0
+//v_force_GRAPPIN = Cv_NullVector
+//if( o_grappin )
+//{
+//	to_main = ANI_CanalObjectGet(RM_Canal_Grappin)
+//	if( ! o_grappin_hotspot )
+//	{
+//		// GRAPPIN LIBRE -------------------------------------------------------------------------------------------------------
+//		
+//		@o_grappin DYN_SpeedSetVector(@o_grappin OBJ_SightGet() * Cf_Grappin_Speed)
+//		tv_dir = @o_grappin OBJ_PosGet() - @to_main OBJ_PosGet()
+//		tv_dirN = MATH_VecNormalize(tv_dir)
+//		if( MATH_VecNorm(tv_dir) > Cf_Grappin_NoHotSpot_LRayLength )
+//			GRAPPIN_Destroy()
+//	}
+//	else
+//	{
+//		// GRAPPIN LOCKE ------------------------------------------------------------------------------------------------------
+//		
+//		i_jump_copter = faux
+//		
+//		// Téléguidage
+//		f_grappin_blend += MATH_FloatMin(1 - f_grappin_blend, 5 * TIME_GetDt())
+//		if( f_grappin_blend == 1.0 )
+//			i_grappin_accroche = vrai
+//		tv_grappin_destpos = COMMON_GrappinPosGet(o_grappin_hotspot)
+//		tv_pos = MATH_VecBlend(@to_main OBJ_PosGet(), tv_grappin_destpos, f_grappin_blend)
+//		@o_grappin OBJ_PosSet(tv_pos)
+//		tv_speed = tv_grappin_destpos - @o_grappin OBJ_PosGet()
+//		if( MATH_VecNullToler(tv_speed, 0.1) )
+//			tv_speed = @o_grappin OBJ_SightGet()
+//		tv_sight = MATH_VecBlendRotate(@o_grappin OBJ_SightGet(), tv_speed, f_grappin_blend)
+//		@o_grappin OBJ_BankingGeneralSet(tv_sight, @o_grappin OBJ_BankingGet())
+//		
+//		// Obstacle(s) ? --------------------------------------------------------------------------------------------------------------
+//		tv_pos = @to_main OBJ_PosGet()
+//		tv_dir = @o_grappin OBJ_PosGet() - tv_pos
+//		tf_dist = MATH_VecNorm(tv_dir)
+//		tv_dirN = tv_dir / tf_dist
+//		
+//		switch( i_grappin_gfx_mode )
+//		{
+//			case Ci_grappin_gfx_mode_TipTop :
+//				// Check Obstacles w/ TipTop
+//				to_obj = COL_RayObject_Dist(tv_pos, tv_dirN, tf_dist, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+//				while( to_obj && to_obj != o_grappin_hotspot && i_grappin_tiptop_nb < (Ci_Grappin_TipTopNb - 1) )
+//				{
+//					tv_temp1 = COL_RayObject_NormalGet()
+//					DBG_RenderVector(tv_temp, tv_temp1, color_jaune)
+//					if( tv_temp1.z > Cf_Kong_Angle_Mur_sol )		// sol
+//						tv_dir.z = 0.0
+//					else
+//						tv_dir = Cv_VerticalVector
+//					tv_temp = COL_TipTopPointGet(tv_dir, Cf_Grappin_largeur, faux, vrai, vrai, vrai)
+//					tv_temp1 = COL_RayObject_EdgeNormalGet()
+//					DBG_RenderVector(tv_temp, tv_temp1, color_blanc)
+//					// save the collision
+//					av_grappin_tiptop[i_grappin_tiptop_nb] = tv_temp
+//					i_grappin_tiptop_nb++
+//					// next one
+//					tv_pos = tv_temp
+//					tv_dir = @o_grappin OBJ_PosGet() - tv_pos
+//					tf_dist = MATH_VecNorm(tv_dir)
+//					tv_dirN = tv_dir / tf_dist
+//					to_obj = COL_RayObject_Dist(tv_pos, tv_dirN, tf_dist, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+//				}
+//				// add the last segment
+//				av_grappin_tiptop[i_grappin_tiptop_nb] = @o_grappin OBJ_PosGet()
+//				i_grappin_tiptop_nb++
+//				break
+//				
+//			default:
+//				// Check Obstacles w/ LRay
+////				OBJ_FlagsControlSet(OBJ_C_ControlFlag_RayInsensitive, 0)
+////				@o_grappin_hotspot OBJ_FlagsControlSet(OBJ_C_ControlFlag_RayInsensitive, 0)
+////				to_obj = COL_RayObject_Dist(@to_main OBJ_PosGet(), MATH_VecNormalize(tv_dir), tf_dist, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_Crossable)
+////				OBJ_FlagsControlSet(0, OBJ_C_ControlFlag_RayInsensitive)
+////				@o_grappin_hotspot OBJ_FlagsControlSet(0, OBJ_C_ControlFlag_RayInsensitive)
+////				if( to_obj )
+////				{
+////					GRAPPIN_Destroy()
+////				}
+//				break
+//		}
+//		
+//		// GRAPPIN TRACTION ------------------------------------------------------------------------------------------------------
+//		
+//		if( o_grappin )		// Grappin pas détruit à cause des obstacles
+//		{
+//			if( i_grappin_accroche )	// Grappin tendu
+//			{
+//				tv_pos = @to_main OBJ_PosGet()
+//				tv_dir = @o_grappin OBJ_PosGet() - tv_pos
+//				tf_dist = MATH_VecNorm(tv_dir)
+//				tv_dirN = tv_dir / tf_dist
+//				if( tf_dist > f_grappin_dist_min_traction )
+//				{
+//					// Traction effectuée sur l'objet grappiné
+//					v_grappin_traction = tv_dirN 
+////					v_grappin_traction *= Cf_Traction_Grappin
+//					v_grappin_traction *= (tf_dist - f_grappin_dist_min_traction)
+//					v_grappin_traction *= (tf_dist - f_grappin_dist_min_traction)
+//					v_grappin_traction *= f_grappin_traction_mult
+//					COMMON_TractionAdd(o_grappin_hotspot, - v_grappin_traction)
+//					
+//					// Rayman accepte-t-il la traction du grappin ???
+//					ti_tracte = vrai
+//					if( o_ride_actor )
+//						ti_tracte = faux
+////					if( i_ground_flag )
+////						v_grappin_traction.z = 0.0
+//					if( MATH_FloatNullToler(DYN_SpeedGet(), 0.01) )		// à l'arrêt
+//					{
+//						if( v_grappin_traction.z < f_grappin_norm_Zmin_arret )
+//							v_grappin_traction.z = 0.0
+//					}
+//					if( i_ground_flag && MATH_VecNorm(v_grappin_traction) < f_grappin_norm_min_ground )
+//						ti_tracte = faux
+//					if( ti_tracte )
+//					{
+//						v_force_GRAPPIN = v_grappin_traction
+//						MATH_VecSetNorm(v_force_GRAPPIN, MATH_FloatMin(MATH_VecNorm(v_force_GRAPPIN), f_grappin_norm_max))
+//						DBG_RenderVector(@to_main OBJ_PosGet(), v_grappin_traction, color_cyan)
+//					}
+//					else
+//						v_grappin_traction = Cv_NullVector
+//				}
+//			}
+//		}
+//	}
+//}
+//
+//
+//// GRAPPIN GFX ---------------------------------------------------------------------------------------------------------------------------
+//switch( i_grappin_gfx_mode )
+//{
+//	case Ci_grappin_gfx_mode_Faisceau :
+//		if( o_grappin )
+//			GRAPPIN_GFX_Line()
+//		break
+//	case Ci_grappin_gfx_mode_Etincelles :
+//		if( o_grappin )
+//			GRAPPIN_GFX_Sparks()
+//		break
+//	case Ci_grappin_gfx_mode_TipTop :
+//		if( i_grappin_tiptop_nb )
+//			GRAPPIN_GFX_Line_TipTop()
+//		break
+//	case Ci_grappin_gfx_mode_Corde :
+//		if( o_grappin )
+//		{
+//			to_main = ANI_CanalObjectGet(RM_Canal_Grappin)
+//			GRAPPIN_GFX_Corde(@to_main OBJ_PosGet(), @o_grappin OBJ_PosGet())
+//		}
+//		break
+//	case Ci_grappin_gfx_mode_Eclair :
+//		if( o_grappin )
+//			GRAPPIN_GFX_Lightning()
+//		break
+//}
+//
+//// SOMME DES FORCE; FRICTION ET TRACTION ======================================
+//v_force_STREAM		= Cv_NullVector
+//if( ! i_ground_flag )
+//{
+//	tf_friction = Cf_DYN_Friction_Jump 
+//	DYN_FrictionVectorSet( Cv_DYN_Friction_Jump)
+//}
+//else if( ! MATH_VecNullEpsilon( v_force_ICE) )
+//{
+//	tf_friction = Cf_DYN_Friction_Ice 
+//	DYN_FrictionVectorSet( Cv_DYN_Friction_Ice)
+//}
+//else
+//{
+//	tf_friction = Cf_DYN_Friction
+//	DYN_FrictionVectorSet( Cv_DYN_Friction)
+//}
+//// modif joy perpendiculaire à l'axe du grappin
+//tf_norm = MATH_VecNorm(v_force_JOY)
+//if( i_grappin_accroche )
+//{
+//	if( ! MATH_VecNullToler(v_force_GRAPPIN, 0.01) && ! MATH_VecNullToler(v_force_JOY, 0.01) )
+//	{
+//		tv_temp = MATH_VecCrossProduct(MATH_VecNormalize(v_force_JOY), MATH_VecNormalize(v_force_GRAPPIN))
+//		v_force_JOY = MATH_VecCrossProduct(MATH_VecNormalize(v_force_GRAPPIN), tv_temp)
+//		MATH_VecSetNorm(v_force_JOY, 10.0)
+//	}
+//}
+//
+//tv_force = ( v_force_JOY + v_force_ICE + v_force_GRAPPIN + v_force_STREAM ) * tf_friction
+//DYN_TractionSet( tv_force)
+//
+//tv_friction = DYN_FrictionVectorGet()
+//if( i_grappin_accroche )
+//	tv_friction.z = f_grappin_frictionZ
+//DYN_FrictionVectorSet(tv_friction)
+//
+//if( i_grappin_reglage_DISPLAY )
+//{
+//	Str_DisplayTextOnce("joy = ", cvector(0.6,0.5,0))
+//	Str_DisplayFloatOnce(MATH_VecNorm(v_force_JOY), cvector(0.7,0.5,0))
+//	Str_DisplayTextOnce("grappin = ", cvector(0.6,0.55,0))
+//	Str_DisplayFloatOnce(MATH_VecNorm(v_force_GRAPPIN), cvector(0.7,0.55,0))
+//	if( o_grappin )
+//	{
+//		Str_DisplayTextOnce("dist = ", cvector(0.6,0.6,0))
+//		to_main = ANI_CanalObjectGet(RM_Canal_Grappin)
+//		Str_DisplayFloatOnce(MATH_VecNorm(@to_main OBJ_PosGet() - @o_grappin OBJ_PosGet()), cvector(0.7,0.6,0))
+//	}
+//}
+//
+//
+//// vitesse et rotation ajoutée =======================================================
+//if( ! MATH_VecNullEpsilon( v_add_speed) ) 
+//{
+//	tv_speed = DYN_SpeedGetVector()
+//	tv_speed += v_add_speed
+//	DYN_SpeedSetVector( tv_speed )
+//	v_add_speed = MATH_VecBlend(v_add_speed, Cv_NullVector, 5.0 * TIME_GetDt())
+//}
+//
+//
+//END_OF_DYNA:
+//
+//// RAZ flags & CAPAS ==========================================================
+//RESTORE_Cancel_Mouvment( )
+//OBJ_CapaSet( none, Capa_ZDE_Fight_ON)
+//f_speed_before_rec = DYN_SpeedGet()
+//
+//
+//// DISPLAY DEBUG INFOS =======================================================
+//AI_Execute("raym_exec_DBG")
+//
+//

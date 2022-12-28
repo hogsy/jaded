@@ -1,0 +1,138 @@
+#include "PNJ_mr_defines.var"
+
+float		tf_speed
+vector	tv_pos_A
+vector	tv_pos_B
+vector	tv_temp
+int			ti_flag_tension
+object	to_rope_gao
+vector	tv_banking
+object	to_target
+object	to_obstacle
+
+// SORTIE ETAT ===================================================================
+if( i_sort_etat )
+{
+	i_sort_etat = faux
+	DYN_SpeedSetVector(Cv_NullVector)
+	COL_ColMapActivationSet(all, none)
+	COL_ZoneSizeSet(C_zde_corps,cvector(1.0,1.0,1.0))
+	DYN_FrictionVectorSet(Cv_DYN_Friction)
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if( i_etat_courant != ETAT_PNJ_MR_Gogo )
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_PNJ_MR_Gogo
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	COL_ColMapActivationSet(none, all)
+	DYN_FrictionVectorSet(cvector(2.0,2.0,0.0))
+	
+	f_gogo_paf_timer = 0.0
+	v_gogo_last_speed = Cv_NullVector
+	f_gogo_last_speed = 0.0
+	f_gogo_chute_duree = 0.0
+	i_gogo_launch_target_checked = faux
+	OBJ_CapaSet(Obj_Capa_Fight,none)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+	f_gogo_paf_timer += TIME_GetDt()
+	if( f_gogo_paf_timer > 0.25 )
+	{
+		f_gogo_paf_timer = 0.0
+//		i_frappe_target_nb = 0		// refrapper les persos
+	}
+}
+
+// STIMULI ===========================================================================
+
+//AI_Execute("PNJ_mr_exec_check_paf")
+//if( i_flag_paf )
+//	macro_change_etat("Lapin_ETAT_PAF")
+
+tf_speed = MATH_VecSquareNorm(DYN_SpeedGetVector())
+
+to_rope_gao = ROBOT_ROPE_Get_Gao(tv_pos_A, tv_pos_B, ti_flag_tension)
+
+if( ROBOT_ROPE_Gogo_Mode() )
+{
+	// Toujours accroché
+	i_gogo_launch_target_checked = faux		// si je suis rechoppé alors que j'avais été expulsé
+}
+else
+{
+	// aide au tir !!!!
+	if( ! to_rope_gao && ! i_gogo_launch_target_checked )
+	{
+		i_gogo_launch_target_checked = vrai
+		DYN_SpeedSetVector(PNJ_MR_BestSpeedTarget(DYN_SpeedGetVector()))
+//		to_target = Lapin_BestTargetGet(DYN_SpeedGetVector())
+//		
+//		if( to_target && to_target != OBJ_Me())
+//		{
+//			tv_temp = @to_target OBJ_PosGet() - OBJ_PosGet()
+//			tf_speed = 50.0
+//			MATH_VecSetNorm(tv_temp, tf_speed)
+//			DYN_SpeedSetVector(tv_temp)
+//			DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, tv_temp, color_rouge)
+//			tv_temp = tv_temp
+//		}
+	}
+//	DYN_SpeedSetVector(tv_temp)
+
+//v_traction_GOGO = DYN_SpeedGetVector()*(1.0-(TIME_GetDt()*10.0))
+	v_traction_GOGO = MATH_VecBlend(v_traction_GOGO,Cv_NullVector,TIME_GetDt()*10.0)
+
+
+//if ( f_time_start_etat > 1.0 && tf_speed <= (f_move_speed/Cf_DYN_Friction) ) // 1.0 )
+	if(f_time_start_etat > 1.0 && tf_speed * 0.2 <= (f_move_speed/Cf_DYN_Friction) ) // 1.0 )
+	{
+		AI_TrackCurChangeNow("PNJ_MR_ETAT_Move")
+	}
+
+}
+
+if ( o_paf_actor)
+{
+	// Mode Paf
+	AI_TrackCurChangeNow("PNJ_MR_ETAT_Paf")	
+}
+
+// COMPORTEMENT ===================================================================
+v_gogo_last_speed = DYN_SpeedGetVector()
+f_gogo_last_speed = DYN_SpeedGet()
+
+if( to_rope_gao )
+	tv_banking = OBJ_PosGet() - @to_rope_gao OBJ_PosGet()
+else
+{
+	tv_banking = DYN_SpeedGetVector()
+	tv_banking.z = 0.0
+}
+//OBJ_BankingGeneralSet(	MATH_VecBlendRotate(OBJ_SightGet(), tv_banking, f_time_start_etat),
+//	MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, f_time_start_etat))
+
+v_Banking = MATH_VecBlend(v_Banking,@get_rayman OBJ_PosGet() - OBJ_PosGet(),f_time_start_etat*0.5)
+OBJ_BankingGeneralSet(Cv_VerticalVector, v_Banking)
+
+//if(COL_CollideType(COL_C_Wall))
+//{
+//	to_obstacle=COL_ObjectGet(COL_C_Wall)
+//	if(to_obstacle)
+//	{
+//		EVENT_AddEventPafCanal( C_EVENT_FILTER_Object, C_PAF_RM_Fort, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_obstacle, -1,10.0,(@to_obstacle OBJ_PosGet()-OBJ_PosGet())*50.0, OBJ_PosGet())
+//	}		 
+//}
+
+PNJ_MR_SEND_PAF(Cf_MR_Damage_GogoPaf,Ci_MR_ModePaf_Gogo,1.5)

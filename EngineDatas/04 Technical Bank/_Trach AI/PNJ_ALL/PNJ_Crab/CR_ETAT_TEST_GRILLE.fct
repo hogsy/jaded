@@ -1,0 +1,146 @@
+#define	Cf_front_delay			1.0
+
+
+vector	tv_me_to_target
+vector	tv_new_sight
+vector	tv_new_speed
+vector	tv_last_speed
+vector	tv_pos
+vector	tv_offset
+
+int			ti_main
+int			ti_sec
+int			ti_main_break
+int			ti_sec_break
+int			ti_main_new
+int			ti_sec_new
+int			i_case
+int			ti_test
+
+float		tf_speed
+
+if( ! o_target )
+	o_target = o_main_actor
+
+tv_pos = OBJ_PosGet()
+tv_me_to_target = @o_target OBJ_PosGet() - OBJ_PosGet()
+
+tv_new_sight = tv_me_to_target
+tv_new_speed = OBJ_SightGet()
+
+// Test de la grille pour la nouvelle trame
+i_grid[0] = CRAB_GRID_Check(tv_pos+cvector(-0.5, -1.5, 0.0), cvector(1.0, 0.0, 0.0), 2, 0, i_last_frontB, i_DBG_render_grille_check )
+i_grid[1] = CRAB_GRID_Check(tv_pos+cvector(-1.5, 0.5, 0.0), cvector(0.0, -1.0, 0.0), 2, 1, i_last_frontB, i_DBG_render_grille_check )
+i_grid[2] = CRAB_GRID_Check(tv_pos+cvector(0.5, 1.5, 0.0), cvector(-1.0, 0.0, 0.0), 2, 2, i_last_frontB, i_DBG_render_grille_check )
+i_grid[3] = CRAB_GRID_Check(tv_pos+cvector(1.5, -0.5, 0.0), cvector(0.0, 1.0, 0.0), 2, 3, i_last_frontB, i_DBG_render_grille_check )
+i_last_frontB = -1		// reset backup front lock trame précédente
+
+//   0
+// 3 - 1
+//   2
+
+// Si y a plus rien devant on reset le lock d'axe
+if( i_last_front != -1 && ! i_grid[i_last_front] )
+{
+	i_last_front = -1
+	i_last_side = -1
+}
+
+if( i_last_front == -1 )
+{
+	// Je ne suis pas locké en Axe. (Le front touche)
+	ti_main = CRAB_GRID_Get_Sight_ID(tv_me_to_target, ti_sec)
+	i_last_front = ti_main
+	i_last_sec = ti_sec
+}
+else
+{
+	// Je teste si maintenant la direction n'est pas dans mon dos
+	ti_main_break = CRAB_GRID_Get_Sight_ID(tv_me_to_target, ti_sec_break)
+	if( ti_main_break == MATH_Modulo(i_last_front+2,4) || ti_sec_break == MATH_Modulo(i_last_front+2,4) )
+	{
+		// Oui c'est dans mon dos donc j'update (BREAK STRAFF)
+		ti_main = ti_main_break
+		ti_sec = ti_sec_break
+	}
+	else
+	{
+		// Non, je garde les anciennes valeurs locké (KEEP STRAFF)
+		ti_main = i_last_front
+		ti_sec = i_last_sec
+	}
+}
+
+if (i_grid[ti_main])
+{
+	// il y a mur devant moi
+	i_last_frontB = ti_main			// backup front lock
+
+
+	// S'il n'y a pas de sens d'esquive de stocké, je prend celui que je prefere (side) sinon j'alterne (side opposé).
+	if (i_last_side == -1)
+		i_last_side = ti_sec												// Mon preferé
+	else if ( i_grid[i_last_side] )
+		i_last_side = MATH_Modulo(i_last_side + 2, 4)			// Mon symetrique
+
+	// Deplacement en SIDE (Straff)
+	tv_new_sight = v_grid_normale[ti_main]
+	tv_new_speed	= v_grid_normale[i_last_side]
+	
+	i_front_lock = ti_main
+	f_front_delay = Cf_front_delay
+}
+else
+{
+	// Il n'y a rien devant moi, je peux eventuellement longer a droite ou a gauche
+	ti_sec_new = ti_sec
+	ti_main_new = ti_main 
+
+	// Rajout sur les SIDEs du coin plus plus dans ma direction
+	f_front_delay -= MATH_FloatMin(f_front_delay, TIME_GetDt() ) 
+	if (f_front_delay)
+	{
+		// Je rajoute au side du coté ou je veux aller la case du coin
+		ti_test = ti_sec
+		if (ti_test == i_front_lock)
+			ti_test = ti_main
+
+		ti_sec_new = ti_test
+		ti_main_new = i_front_lock
+		
+		if (ti_main == i_front_lock || ti_sec == i_front_lock )
+		{
+			// Je rajoute a mon side la case qui est au coin de ti_sec et de i_front_lock
+			tv_offset = v_corner_pos[i_front_lock][ti_test]
+			DBG_RenderVector( GRID_PosGet(tv_pos + tv_offset) + cvector(0.03,0.03,0),cvector(0,0,100000),color_bleu)
+			i_case = CRAB_GRID_Check(tv_pos+tv_offset, cvector(0.0, 0.0, 0.0), 1, 0, -1, i_DBG_render_grille_check)		// test d'un case
+			i_grid[ti_test] += i_case
+		}
+		else
+			f_front_delay = 0.0		// Break on veut aller dans le dos du dernier lock
+	}
+
+	if (i_grid[ti_sec_new])
+	{
+		// il y a un mur de mon coté preféré, je le longe
+
+		// Deplacement en FRONT
+		tv_new_sight = v_grid_normale[ti_main_new]
+		tv_new_speed = tv_new_sight 
+	}
+}
+
+Str_DisplayVectorOnce(tv_me_to_target, cvector(0,0,0) )
+Str_DisplayIntOnce(ti_main, cvector(0,0.1,0) )
+Str_DisplayIntOnce(ti_sec, cvector(0.1,0.1,0) )
+
+DBG_RenderVector(OBJ_PosGet(),tv_new_sight * 10, color_vert)
+
+OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(),tv_new_sight, 3.0 * TIME_GetDt()),Cv_VerticalVector)
+tv_last_speed = DYN_SpeedGetVector()
+tf_speed = MATH_VecNorm(tv_last_speed)
+if (tf_speed)
+	tv_last_speed /= tf_speed
+	
+DYN_SpeedSetVector(MATH_VecBlendRotate(tv_last_speed,tv_new_speed, 1000.0 * TIME_GetDt()) * 3.0)
+

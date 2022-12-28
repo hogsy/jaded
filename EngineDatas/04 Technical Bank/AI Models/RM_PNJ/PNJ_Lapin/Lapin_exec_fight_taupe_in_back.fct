@@ -1,0 +1,60 @@
+#include "PNJ_Lapin_defines.var"
+
+object	to_target
+vector	tv_temp
+vector	tv_speed
+vector	tv_pos
+float		tf_dist
+
+if( ! Atk_Taupe_dans_le_Dos )
+	return
+
+if( f_taupe_in_back_delai )
+	return
+
+if ( ! i_flag_in_my_territory )
+	return
+
+if (i_perceived_best_actor_index == -1)
+	return
+
+to_target = ao_perceived_actor[i_perceived_best_actor_index]
+if( ! to_target )
+	return
+
+if( to_target != o_main_actor )
+	return
+
+if( i_Atk_Simultannees_main_nb > 1 )
+	return			// pas en groupe
+
+tv_pos = @to_target OBJ_PosGet()
+tv_temp = tv_pos - OBJ_PosGet()
+tf_dist = MATH_FloatSqrt(MATH_VecDotProduct(tv_temp, tv_temp))
+
+if( tf_dist > 10.0 )
+	return
+
+tv_temp = Proc_Vec_HorzNormalise(tv_temp, OBJ_SightGet())
+v_taupe_in_back_pos = @to_target OBJ_PosGet() 
+v_taupe_in_back_pos += (1.0 * tv_temp)
+v_taupe_in_back_pos.z = tv_pos.z
+tv_speed = @to_target DYN_SpeedGetVector()
+if( ! MATH_VecNullToler(tv_speed, 0.01) )
+	MATH_VecSetNormalize(tv_speed)
+tv_speed.z = 0.0
+v_taupe_in_back_pos += tv_speed
+DBG_RenderVector(OBJ_PosGet(), v_taupe_in_back_pos - OBJ_PosGet(), color_cyan)
+
+tv_pos = v_taupe_in_back_pos + cvector(0,0,4)
+tv_temp = cvector(0,0,-8)
+DBG_RenderVector(tv_pos, tv_temp, color_vert)
+if( ! COL_RayIsCut_Dist(tv_pos, tv_temp, 8.0, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable) )
+{
+	DBG_RenderVector(tv_pos, tv_temp, color_rouge)
+	return
+}
+
+i_taupe_in_back_flag = vrai
+macro_change_etat("Lapin_ETAT_TAUPE")
+

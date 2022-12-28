@@ -1,0 +1,9 @@
+v_PosRelative=MATH_VecRotate(v_PosRelative,Cv_VerticalVector,f_VitesseApproche*TIME_GetDt())
+v_PosRelative=MATH_VecBlend(v_PosRelative,Cv_NullVector,f_VitesseRotation*TIME_GetDt())
+OBJ_PosSet(@o_cible OBJ_PosGet()+v_PosRelative)
+
+if(MATH_VecNorm(@o_cible OBJ_PosGet()-OBJ_PosGet())<f_Near)
+{
+	EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_RM_Fort, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_cible, 10.0, @o_cible OBJ_PosGet() - OBJ_PosGet())
+	AI_TrackCurChangeNow("TJ2_Destroy")
+}

@@ -1,0 +1,38 @@
+#include "PNJ_Bunny_Saucer_defines.var"
+
+function		fct_current
+
+o_Rided_Actor = LNK_ServeurGet(Ci_LNK_RIDE_ON_NMI, mid_Rided_LNK_ID, faux, nofunc, nofunc)
+
+if (o_bascule)
+{
+	AI_CBDel(o_bascule, CallBack_After_Rec, "PNJ_Bunny_Saucer_callback_afterrec")
+	@o_bascule OBJ_Destroy()
+}
+
+COL_UnCollidableReset()
+
+OBJ_CapaSet(OBJ_Capa_15, none)
+
+i_etat_courant = -1
+
+fct_current = AI_TrackGet(Ci_Track_Etat)
+if (fct_current)
+{
+	i_flag_sortie_etat = vrai
+	AI_Execute(fct_current)
+}
+
+if (fct_last_etat)
+{
+	i_flag_sortie_etat = vrai
+	AI_Execute(fct_last_etat)
+}
+
+// SOUND
+PNJ_Bunny_Saucer_Clean_Sound()
+
+// GFX
+PNJ_Bunny_Saucer_Clean_GFX()
+
+

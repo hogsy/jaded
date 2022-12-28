@@ -1,0 +1,52 @@
+#include "Grenouille_defines.var"
+
+vector	tv_A
+vector	tv_B
+vector	tv_V0
+vector	tv_speed
+vector	tv_move
+
+//if (f_time > time)
+//{
+//	DYN_Off()
+//	AI_TrackCurStop()
+//}
+
+dyn_speed = DYN_SpeedGet()
+dyn_move = MATH_VecNorm(OBJ_PosGet() - v_init_pos)
+
+tv_V0 = v_impulsion
+
+// CALCUL VITESSE 
+tv_A = Cv_test_gravity / friction
+tv_B = (tv_A - tv_V0) * MATH_Exp(-f_time * friction)
+
+tv_speed = tv_A - tv_B
+
+if (DYN_FlagsGet() & DYN_C_VectorFriction && ! DYN_FrictionVectorGet().z)
+	tv_speed.z = v_impulsion.z + (Cv_test_gravity.z  * f_time)
+
+real_speed = MATH_VecNorm(tv_speed)
+
+// CALCUL DEPLACEMENT
+tv_move = tv_A * f_time
+tv_move -= (tv_A - tv_V0) / friction
+tv_move += tv_B / friction
+
+if (DYN_FlagsGet() & DYN_C_VectorFriction && ! DYN_FrictionVectorGet().z)
+{
+	tv_move.z = v_impulsion.z * f_time
+	tv_move.z += 0.5 * Cv_test_gravity.z * (f_time * f_time)
+}
+
+DBG_RenderVector(OBJ_PosGet() + cvector(0.0, 0.0, 0.05), DYN_SpeedGetVector(), color_jaune)
+DBG_RenderVector(v_init_pos + tv_move, tv_speed, color_cyan)
+
+real_move = MATH_VecNorm(tv_move)
+
+tv_move += v_init_pos
+tv_move .z = @dest_pos OBJ_PosGet().z
+DBG_RenderVector(tv_move, cvector(0.0, 0.0, hauteur_saut), color_rouge)
+
+f_time += TIME_GetDt()
+

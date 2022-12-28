@@ -1,0 +1,146 @@
+#include "Tri_defines.var"
+
+vector	tv_temp
+vector	tv_sight
+vector	tv_dest_pos
+
+float		tf_dist
+float		tf_dotS
+float		tf_dotH
+
+object	to_tete
+object	to_actor
+
+
+// SORTIE ETAT ==========================================
+if( i_etat_sortie )
+{
+	Tri_SND_Furax_Stop()	// interrompu
+	i_paf_actor_to_target_flag = faux
+	o_fight_actor = nobody
+	i_etat_sortie = faux
+	return
+}
+
+// ENTREE ETAT =========================================
+if( i_etat_courant != ETAT_FIGHT )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_FIGHT
+	if( fct_etat_ancien )
+	{
+		i_etat_sortie = vrai
+		AI_Execute(fct_etat_ancien)
+	}
+	fct_etat_ancien = AI_TrackCurGet()
+	f_etat_duree = 0.0
+
+	Tri_ActionSet(Action_Trot_10ms)
+	f_sight_blend = 0.0
+	i_Attaque_Done = faux
+}
+else
+{
+	f_etat_duree += TIME_GetDt()
+}
+
+// ANALYSE =============================================
+AI_Execute("Tri_exec_Check_Pafs")
+if( o_paf_actor )
+	macro_change_etat("Tri_ETAT_Paf")
+
+AI_Execute("Tri_exec_Select_Target")
+if( ! o_fight_actor )
+	macro_change_etat("Tri_ETAT_Idle")
+
+// COMPORTEMENT =======================================
+tv_sight = @o_fight_actor OBJ_PosGet() - OBJ_PosGet()
+tf_dist = MATH_VecNorm(tv_sight)
+tv_sight /= tf_dist
+tf_dotS = MATH_VecDotProduct(OBJ_SightGet(), tv_sight)
+tf_dotH = MATH_VecDotProduct(OBJ_HorizonGet(), tv_sight)
+
+// PASSAGE EN CHARGE -----------------------------
+
+// Contre-Attaque
+if( i_paf_actor_to_target_flag )
+{
+	switch( ACT_ActionGet() )
+	{
+		case Action_Charge :
+		case Action_CoupD :
+		case Action_CoupG :
+			break
+		default:
+			// charge le perso qui m'a paffé
+			Tri_ActionSet(Action_Charge)
+			SND_RequestPlay(Ci_SND_Charge)
+			// reset
+			o_paf_actor_to_target = nobody
+			break
+	}
+}
+
+
+// End or Cancel
+switch( ACT_ActionGet() )
+{
+	case Action_Trot_10ms :
+		if( tf_dotS > Cf_Cos35 )
+		{
+			Tri_ActionSet(Action_Furax)
+			f_furax_timer = MATH_RandFloat(1.0, 3.0)
+			Tri_SND_Furax_Start()
+		}
+		break
+		
+	case Action_Furax :
+		f_furax_timer -= MATH_FloatMin(f_furax_timer, TIME_GetDt())
+		if( ! f_furax_timer )
+		{
+			Tri_ActionSet(Action_Charge)
+			SND_RequestPlay(Ci_SND_Charge)
+			Tri_SND_Furax_Stop()
+		}
+		break
+		
+	case Action_CoupD :
+	case Action_CoupG :
+		if( ACT_ActionFinished() )
+			macro_change_etat("Tri_ETAT_Idle")
+		break
+		
+	case Action_Charge :
+		i_Attaque_Done = vrai
+		// détect dodge
+		if( ! i_paf_actor_to_target_flag && tf_dotS < 0 && tf_dist > 5.0 )
+			macro_change_etat("Tri_ETAT_Idle")
+		// Try to Hit
+		to_tete = ANI_CanalObjectGet(Anim_Canal_Tete)
+		tv_temp = @to_tete OBJ_PosGet() - OBJ_PosGet()
+		COL_ZonePosSet(C_zde_fight, MATH_VecGlobalToLocal(tv_temp) / OBJ_ZoomGet())
+		to_actor = o_fight_actor
+		if( o_Joueur && to_actor == o_Joueur && @o_Joueur Proc_KIndigene_Kong_LiaisonStatusGet() != Ci_Kong_KIndigene_LinkStatus_None )
+			to_actor = o_Kong
+		if( COL_ZDE_ZDECollide(to_actor, C_zde_fight, C_zde_corps) )
+		{
+			SND_RequestPlay(Ci_SND_Hit)
+			EVENT_AddEventPaf(C_EVENT_FILTER_Enemy, C_PAF_KK_Fort, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_actor, 2.0, OBJ_SightGet())
+			f_No_Attaque_Delai = 5.0 + MATH_RandFloat(0.0, 5.0)		// partir et ne pas réattaquer tout de suite
+			if( tf_dotH > 0 )
+				Tri_ActionSet(Action_CoupG)
+			else
+				Tri_ActionSet(Action_CoupD)
+		}
+		break
+}
+
+
+// ORIENTATION
+tv_dest_pos = @o_fight_actor OBJ_PosGet()
+DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, tv_sight * tf_dist, color_vert)
+if( Tri_Occluder_Test(tv_dest_pos, tv_sight) )
+	DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, tv_sight * tf_dist, color_rouge)
+f_sight_blend = MATH_FloatBlend(f_sight_blend, 5.0, 10.0 * TIME_GetDt())
+OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), tv_sight, f_sight_blend * TIME_GetDt()), macro_banking)
+

@@ -1,0 +1,154 @@
+#include "Interface_MenuInGame_defs.var"
+
+int			ti_Line
+int			ti_Count
+int			ti_SaveCur
+vector	tv_Pos
+int			tai_MenuId[ 10 ]
+float		taf_MenuHeight[ 10 ]
+float		taf_MenuDY[ 10 ]
+float		tf_TotalHeight
+int			ti_cheatmenuok
+int			ti_replay
+
+
+if (!mo_Texte) 
+	return
+if (!IntMIG_SetPageParams())
+	return
+
+#define  IntMIG_PageMain_AddMenuId( id, height, before, cheat )\
+{\
+	taf_MenuHeight[ ti_Count ] = height\
+	taf_MenuDY[ ti_Count ] = before\
+	if (cheat && !ti_cheatmenuok) { ti_cheatmenuok = 1 taf_MenuDY[ ti_Count ] += 0.1 }\
+	taf_MenuDY[ 0 ] = 0\
+ 	tf_TotalHeight += taf_MenuDY[ ti_Count ]\
+	tai_MenuId[ ti_Count ] = id\
+	ti_Count++\
+}
+
+ti_Line = 0
+ti_Count = 0
+tf_TotalHeight = 0
+ti_cheatmenuok = 0
+ti_replay = 0
+
+if ( ( @"univ" PROG_i_MapReplay ) && (IntMIG_HOF_GetPlayerScore( @"univ" PROG_i_MapReplayIndex ) != -1) )
+		ti_replay = 1
+
+if (( @"univ" MENU_ProfileIndex != -1 ) && !@"univ" PROG_i_MapReplay && !@"univ" PROG_i_FinAlternative )	
+	IntMIG_PageMain_AddMenuId( 1, 0, 0.08, 0 )	// SAVE
+IntMIG_PageMain_AddMenuId( 2, 0, 0.08, 0 ) 		// OPTION
+IntMIG_PageMain_AddMenuId( 3, 0, 0.08, 0 ) 		// QUIT GAME
+if ( ti_replay )	
+	IntMIG_PageMain_AddMenuId( 8, 0, 0.08, 0 ) 	// RETRY
+IntMIG_PageMain_AddMenuId( 4, 0, 0.08, 0 ) 		// RESUME
+if ( ti_replay ) 
+	IntMIG_PageMain_AddMenuId( 0, 0, 0.08, 0 ) 	// SCORE
+
+
+#ifndef _FINAL_
+if (@"univ" Cheat_i_Flags & CHEAT_MenuCheat ) IntMIG_PageMain_AddMenuId( 5, 0.0, 0.08, 0 )
+if (@"univ" Cheat_i_Flags & CHEAT_MenuReinit )IntMIG_PageMain_AddMenuId( 6, 0.0, 0.08, 0 )
+#endif
+if (@"univ" Cheat_i_Flags & CHEAT_MenuCheatFinal )IntMIG_PageMain_AddMenuId( 7, 0.0, 0.08, 0 )
+
+//------/ FIRST DISPLAY /---------------------------------
+if (INTMIG_EnterPage_Start || mi_Page_Refresh )
+{
+	// ----( retrieving last used menu )-----
+	if (mi_MainCur == -1)
+		mi_MainCur = 4
+	mi_Cur = 0
+	for ( ti_Line = 0; ti_Line < ti_Count; ti_Line++) 
+	{
+		if (tai_MenuId[ ti_Line ] == mi_MainCur )
+		{
+			mi_Cur = ti_Line
+			if ( AI_TrackCurGetNum() == 2 )
+				mi_ChangePageCur = mi_Cur
+			break
+		}
+	}
+
+	// ----( display )-----	
+	mi_Page_Refresh = 0
+	tv_Pos = cvector ( 0.5, 0.5 - (tf_TotalHeight / 2), 0 ) 
+	IntMIG_ResetTexte( mi_PageString, 30 )
+	for ( ti_Line = 0; ti_Line < ti_Count ; ti_Line++ )
+	{
+		tv_Pos.y += taf_MenuDY[ ti_Line ]
+		IntMIG_SetText( mi_PageString + ti_Line, INTMIG_TXG, INTMIG_TEXT_Main + tai_MenuId[ ti_Line ], tv_Pos,  taf_MenuHeight[ ti_Line ], 5, -1, INTMIG_Color_NotSel, 0 )
+	}
+	@mo_Texte OBJ_TextColorSet( mi_PageString + mi_Cur, 0, -1, INTMIG_Color_Sel )
+	
+	IntMIG_SetText( mi_PageString + ti_Count, INTMIG_TXG, INTMIG_TEXT_Xselect, cvector( 0.45, 0.95, 0),  0.0, 6, -1, 0xFFFFFF, 0 )
+	IntMIG_SetText( mi_PageString + ti_Count + 1, INTMIG_TXG, INTMIG_TEXT_Tback, cvector( 0.55, 0.95, 0),  0.0, 4, -1, 0xFFFFFF, 0 )
+	
+	tv_Pos = @mo_Texte OBJ_TextPivotGet( mi_PageString + mi_Cur )
+	tv_Pos.y += 0.04
+	IntMIG_SetText( mi_PageString + ti_Count + 2, INTMIG_TXG, INTMIG_TEXT_Souligne, tv_Pos,  0.0, 5, -1, INTMIG_Color_Sel, 0 )
+	
+	IntMIG_Text_FadeInMulti( mi_PageString, 10, 0.5, 0.0)
+}
+//------/ FIRST LOOP WHEN LEAVING /---------------------------------
+else if (INTMIG_LeavePage_Start)
+{
+	IntMIG_Text_FadeOutMulti( mi_PageString, 10, 0.5 )
+}
+
+IntMIG_RestorePageParams()
+
+if ( mi_Exit || mi_ChangePage || mi_Cheat )
+	return
+
+ti_SaveCur = mi_Cur
+IntMIG_UpdateCur_Vertical( ti_Count, 1 )
+if (mi_Cur != ti_SaveCur )
+{
+	IntMIG_PlaySound( INTMIG_SOUND_SELECTION )
+	IntMIG_Text_ChangeColor( mi_PageString + ti_SaveCur, INTMIG_Color_Sel, INTMIG_Color_NotSel, 0.25, 0.0 )
+	IntMIG_Text_ChangeColor( mi_PageString + mi_Cur, INTMIG_Color_NotSel, INTMIG_Color_Sel, 0.25, 0.0 )
+	tv_Pos = @mo_Texte OBJ_TextPivotGet( mi_PageString + mi_Cur )
+	tv_Pos.y += 0.04
+	@mo_Texte OBJ_TextPivotSet( mi_PageString+ ti_Count + 2, tv_Pos )
+}
+mi_MainCur = tai_MenuId[ mi_Cur ]
+
+
+if ( joy_cancel  )
+{
+	mi_ExitAsked = 1
+	return
+}
+	
+if ( joy_valide )
+{
+	switch ( mi_MainCur )
+	{
+		//case 0: INTMIG_ChangePage(  "IntMIG_Page_ScoreEnter" , 0 ) break
+		case 0:
+				if (@"univ" Cheat_i_Flags & CHEAT_CHEAT_CHEAT )
+					INTMIG_YesNoPage( INTMIG_OK_NOSCORECAUSECHEATINGAME )
+				else
+				{
+					mi_HOF_Map = @"univ" PROG_i_MapReplayIndex
+					mi_ScoreState = 0
+					mi_ScoreState_Old = 0
+					mi_ScoreSave = 0
+					INTMIG_ChangePage(  "IntMIG_Page_ScoreNew" , mi_Cur )
+				}
+				break
+
+		case 1: INTMIG_YesNoPage( INTMIG_YESNO_SAVEGAME ) break
+		case 2: INTMIG_ChangePage(  "IntMIG_Page_OptStart" , 0 ) break
+		case 3: INTMIG_YesNoPage( INTMIG_YESNO_SAVEBEFOREQUIT ) break
+		case 4: mi_ExitAsked = 1 break
+		case 5: INTMIG_ChangePage(  "IntMIG_Page_Cheat" , 0 ) break
+		case 6: 	IntMIG_TimeUnlock() WOR_Reinit() 	SND_M_SetGameMode(SND_Cte_ModePlaying) break
+		case 7: mi_OnlineCode = 0 INTMIG_ChangePage(  "IntMIG_Page_CheatFinal" , 0 ) break
+		case 8:  INTMIG_YesNoPage( INTMIG_YESNO_RETRYLOSEPROGRESS ) break
+	}
+	IntMIG_PlaySound( INTMIG_SOUND_VALIDE )
+}

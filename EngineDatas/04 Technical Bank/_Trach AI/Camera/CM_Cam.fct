@@ -1,0 +1,1083 @@
+//vector	tv_temp, tv_temp1, tv_temp2, tv_temp3
+//float		tf_hauteur, tf_temp
+//vector	tv_joy1
+//vector	tv_master_joy1
+//float		tf_speed_rot_x
+//float		tf_speed_rot_y
+//float		tf_speed_rot_ax
+//float		tf_focal
+//vector	tv_center_text_pos
+//float		tf_best_dist
+//int			ti_texte
+//object	to_shoot
+//int			i, ti_num
+//float		tf_dot, tf_bestdot
+//object	to_obj, to_bestobj, to_obj1
+//float		tf_bestdot1, tf_bestdot2
+//object	to_bestobj1, to_bestobj2
+//object	ao_obj[100]
+//int			ti_canal
+//vector	tv_bestpos
+//int			s1, s2, s3, s4
+//int			ti_weapon
+//float		tf_bestsight
+//object	to_bestsight
+//int			ti_bambou
+//int			ti_prio
+//int			ti_best_prio
+//object	to_shoot_real
+//object	to_texte
+//int			ti_color
+//object	to_obj2, to_obj3
+//messageid EVT_ID
+//int			ti_rank, j
+//
+//#define C_JoyTolX						0.15
+//#define C_JoyTolY						0.15
+//
+//#define SPEED_X_NORMAL			3.0 
+//#define SPEED_Y_NORMAL			1.75
+//#define SPEED_AX_NORMAL		1.2 
+//
+//#define SPEED_X_WEAPON			2.0 
+//#define SPEED_Y_WEAPON		1.75
+//#define SPEED_AX_WEAPON		1.2
+//
+//#define SPEED_X_LOCK				1.5//2.0
+//#define SPEED_Y_LOCK				1.31//1.0
+//#define SPEED_AX_LOCK			1.0
+//
+/////////////////////////////////////////////////////////////////////////////////////////
+////////// EFFET MARCHE
+/////////////////////////////////////////////////////////////////////////////////////////
+//effet_marche_hauteur = MATH_FloatBlend(effet_marche_hauteur, 0, 4 * TIME_GetDt())
+//effet_marche_vertical = MATH_VecBlend(effet_marche_vertical, Cv_VerticalVector, 4 * TIME_GetDt())
+//
+//if(
+//	(!@"KingKong/Humain" o_mf_actor i_flag_nage)&&
+//	(!@"KingKong/Humain" o_mf_actor i_flag_pousse)
+//  )
+//{
+//	tf_temp = @"KingKong/Humain" o_mf_actor f_real_speed
+//	if(@"KingKong/Humain" o_mf_actor i_flag_crouch && tf_temp > 1)
+//	{
+//		tf_temp = MATH_Sin(TIME_Get() * 10) * 0.06
+//		tv_temp = Cv_VerticalVector
+//		tv_temp += (OBJ_HorizonGet() * MATH_Sin(TIME_Get() * 5) * 0.03)
+//		effet_marche_vertical = MATH_VecBlend(effet_marche_vertical, tv_temp, 3 * TIME_GetDt())
+//		effet_marche_hauteur = MATH_FloatBlend(effet_marche_hauteur, tf_temp, 6 * TIME_GetDt())
+//	}
+//	else if(tf_temp > 1 && tf_temp < 3)
+//	{
+//		tf_temp = MATH_Sin(TIME_Get() * 10) * 0.03
+//		effet_marche_hauteur = MATH_FloatBlend(effet_marche_hauteur, tf_temp, 16 * TIME_GetDt())
+//	}
+//	else if(tf_temp > 3)
+//	{
+//		ti_bambou = faux
+//		switch(@"univ" i_weapon_ID[C_ID_Jack])
+//		{
+//			case Ci_weapon_ID_bambou :
+//			case Ci_weapon_ID_bambou_moy :
+//			case Ci_weapon_ID_bambou_petit :
+//			case Ci_weapon_ID_levier :
+//				ti_bambou = vrai
+//				break
+//		}
+//		
+//		if(@"KingKong/Humain" o_mf_actor i_flag_arme_basse && !ti_bambou)
+//		{
+//			tf_temp = MATH_Sin(TIME_Get() * 14) * 0.08
+//			effet_marche_hauteur = MATH_FloatBlend(effet_marche_hauteur, tf_temp, 16 * TIME_GetDt())
+//			tv_temp = Cv_VerticalVector
+//			tv_temp += (OBJ_HorizonGet() * MATH_Sin(TIME_Get() * 7) * 0.02)
+//			effet_marche_vertical = MATH_VecBlend(effet_marche_vertical, tv_temp, 3 * TIME_GetDt())
+//		}
+//		else
+//		{
+//			tf_temp = MATH_Sin(TIME_Get() * 15) * 0.04
+//			effet_marche_hauteur = MATH_FloatBlend(effet_marche_hauteur, tf_temp, 16 * TIME_GetDt())
+//			tv_temp = Cv_VerticalVector
+//			tv_temp += (OBJ_HorizonGet() * MATH_Sin(TIME_Get() * 8) * 0.005)
+//			effet_marche_vertical = MATH_VecBlend(effet_marche_vertical, tv_temp, 3 * TIME_GetDt())	
+//		}
+//	}
+//}
+//
+//if(!no_banking && @o_mf_actor OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Hierarchy))
+//{
+//	to_obj = @o_mf_actor OBJ_HierarchyGet()
+//	effet_marche_vertical = MATH_VecBlendRotate(OBJ_BankingGet(), @to_obj OBJ_BankingGet(), 5 * TIME_GetDt())
+//}
+//
+/////////////////////////////////////////////////////////////////////////////////////////
+//// CUT CAM MORT
+/////////////////////////////////////////////////////////////////////////////////////////
+//
+////if(IO_ButtonPressed(joy_button_R))
+////	@get_global o_cam_cut = @"univ" ao_AllHumains[C_ID_Hayes]
+////else
+////	@get_global o_cam_cut = nobody
+//
+//if(@get_global o_cam_cut)
+//{
+//	to_obj = @get_global o_cam_cut
+//	if(!@to_obj AI_IsModel("KingKong/Humain")) CUT_TREX = vrai
+//	if(!CUT_TREX)
+//	{
+//		j = 0
+//		for(i = 0; i < WOR_GetNumObject(0) + j; i++)
+//		{
+//			to_obj2 = WOR_GetObject(0, i)
+//			if(!to_obj2) { j++ continue }
+//			if(to_obj2 == to_obj) continue
+//			if(@to_obj2 OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Bone)) continue
+//			if(@to_obj2 AI_IsModel("SFX/SFX_ChangeFog")) @to_obj2 OBJ_FlagInactiveSet(vrai)
+//			if(@to_obj2 AI_IsModel("SFX/SFX_GodRays")) @to_obj2 OBJ_FlagInactiveSet(vrai)
+//			if(@to_obj2 AI_IsModel("little_actors/SnapeShape")) continue
+//			@to_obj2 OBJ_FlagInvisibleSet(vrai)
+//		}
+//	}
+//			
+//	if(CUT_cut)
+//	{
+//		to_obj = @get_global o_cam_cut
+//		if(!@to_obj AI_IsModel("KingKong/Humain")) CUT_TREX = vrai
+//		to_obj = @"univ" ao_AllHumains[C_ID_Jack]
+//		if(to_obj) @to_obj OBJ_FlagsControlSet(OBJ_C_ControlFlag_RayInsensitive, 0)
+//		to_obj = @"univ" ao_AllHumains[C_ID_Hayes]
+//		if(to_obj) @to_obj OBJ_FlagsControlSet(OBJ_C_ControlFlag_RayInsensitive, 0)
+//		to_obj = @"univ" ao_AllHumains[C_ID_Ann]
+//		if(to_obj) @to_obj OBJ_FlagsControlSet(OBJ_C_ControlFlag_RayInsensitive, 0)
+//		to_obj = @"univ" ao_AllHumains[C_ID_Jimmy]
+//		if(to_obj) @to_obj OBJ_FlagsControlSet(OBJ_C_ControlFlag_RayInsensitive, 0)
+//		to_obj = @"univ" ao_AllHumains[C_ID_Denham]
+//		if(to_obj) @to_obj OBJ_FlagsControlSet(OBJ_C_ControlFlag_RayInsensitive, 0)
+//		
+//		to_obj = @get_global o_cam_cut
+//		
+//		if(CUT_TREX)
+//		{
+//			tv_temp3 = @to_obj OBJ_HorizonGet()
+//			tv_temp3.z = -0.3
+//			MATH_VecSetNormalize(tv_temp3)
+//			CUT_dist = 6
+//		}
+//		else
+//		{
+////			ti_rank = -1
+////			EVT_ID = MSG_GlobalScan(C_EVENT_TYPE_Enemy, &ti_rank)
+////			while(MSG_GlobalIsValid(EVT_ID))
+////			{
+////				to_obj2 = EVENT_PereGet( EVT_ID )
+////				@to_obj2 OBJ_FlagInvisibleSet(vrai)
+////				@to_obj2 OBJ_FlagInactiveSet(vrai)
+////				EVT_ID = MSG_GlobalScan(C_EVENT_TYPE_Enemy, &ti_rank)
+////			}
+//
+////			tv_temp3 = -@to_obj OBJ_HorizonGet() - (@to_obj OBJ_SightGet() * 0.8)
+////			MATH_VecSetNormalize(tv_temp3)
+////			CUT_dist = 2
+//			to_obj = @to_obj ANI_CanalObjectGet(Anim_Canal_Tete)
+//			CUT_dist = 2
+//			tv_temp3 = MATH_VecNormalize(cvector(0,CUT_dist, CUT_Z))
+//		}
+//		
+//		if(CUT_dist == 2)
+//		{
+//			tv_bestpos = @to_obj OBJ_PosGet() + cvector(0.5,0.0,2)
+//		}
+//		else
+//		{
+//			tv_temp1 = @to_obj OBJ_PosGet() + cvector(0,0,1)
+//			tf_bestdot = 0
+//			tv_bestpos = Cv_NullVector
+//			for(i = 0; i < 10; i++)
+//			{
+//				tv_temp = MATH_VecRotate(tv_temp3, Cv_VerticalVector, i * Cf_PiBy8)
+//				to_obj1 = COL_RayObject_Dist(tv_temp1, tv_temp, CUT_dist, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+//				if(!to_obj1 || !CUT_TREX)
+//				{
+//					tv_bestpos = tv_temp1 + (tv_temp * CUT_dist)
+//					break
+//				}
+//				else
+//				{
+//					tv_temp2 = COL_RayObject_PosGet()
+//					tf_temp = MATH_VecNorm(tv_temp1 - tv_temp2)
+//					if(tf_temp > tf_bestdot)
+//					{
+//						tf_bestdot = tf_temp
+//						tv_bestpos = tv_temp2
+//					}
+//				}
+//			}
+//		}
+//		
+//		CUT_pos = tv_bestpos
+//	}
+//	
+//	tv_bestpos = CUT_pos
+//	if(!MATH_VecNull(tv_bestpos))
+//	{
+//		if(CUT_cut)
+//		{
+//			if(CUT_TREX)
+//				f_focal_jack = 1.2
+//			else
+//				f_focal_jack = 0.6
+//		}
+//			
+//		// Pos
+//		if(!CUT_cut) tv_bestpos = MATH_VecBlend(OBJ_PosGet(), tv_bestpos, 5 * TIME_GetDt())		
+//		OBJ_PosSet(tv_bestpos)
+//		
+//		// Rot
+//		if(CUT_TREX)
+//		{
+//			to_obj1 = @get_global o_cam_cut
+//			tv_temp = @to_obj1 OBJ_PosGet() + (@to_obj1 OBJ_BankingGet() * 2)
+//			tv_temp += (@to_obj1 OBJ_SightGet() * 2)
+//			tv_temp -= OBJ_PosGet()
+//		}
+//		else
+//		{
+//			to_obj1 = @get_global o_cam_cut 
+//			to_obj1 = @to_obj1 ANI_CanalObjectGet(Anim_Canal_Tete)
+//			tv_temp = @to_obj1 OBJ_PosGet() - OBJ_PosGet()
+//		}
+//		
+//		if(!CUT_cut)
+//		{
+//			if(CUT_TREX)
+//			{
+//				tv_temp1 = Cv_VerticalVector
+//				tv_temp = MATH_VecBlendRotate(OBJ_SightGet(), tv_temp, 8 * TIME_GetDt())
+//			}
+//			else
+//			{
+////				tv_temp1 = OBJ_BankingGet()
+////				tv_temp = MATH_VecBlendRotate(OBJ_SightGet(), tv_temp, 8 * TIME_GetDt())
+//				tv_temp1 = MATH_VecBlendRotate(OBJ_BankingGet(), OBJ_HorizonGet(), 0.25 * TIME_GetDt())
+//				tv_temp = MATH_VecBlendRotate(OBJ_SightGet(), tv_temp, 5 * TIME_GetDt())
+//			}
+//		}
+//		else
+//		{
+//			tv_temp1 = Cv_VerticalVector
+//		}
+//		
+//		OBJ_SightGeneralSet(tv_temp, tv_temp1)
+//		if(CUT_TREX)
+//			f_focal_jack = MATH_FloatBlend(f_focal_jack, 0.9, 2 * TIME_GetDt())
+//		else
+//			f_focal_jack = MATH_FloatBlend(f_focal_jack, 2.4, 0.05 * TIME_GetDt())
+//		
+//		// Secto
+//		if(1)//CUT_cut)
+//		{
+////			SCT_ResetAll()
+////			
+////			// Secteur objet
+////			to_obj1 = COL_RayObject_Dist(@to_obj OBJ_PosGet() + cvector(0,0,1), cvector(0,0,-1), 4, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+////			if(to_obj1)
+////			{
+////				@to_obj1 SCT_GetOf(&s1, &s2, &s3, &s4)
+////				if(s1) SCT_AddCurrent(s1)
+////				if(s2) SCT_AddCurrent(s2)
+////				if(s3) SCT_AddCurrent(s3)
+////				if(s4) SCT_AddCurrent(s4)
+////			}
+//			
+//			// Secteur camera
+//			to_obj1 = COL_RayObject_Dist(tv_bestpos, cvector(0,0,-1), 50, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+//			if(to_obj1)
+//			{
+//				@to_obj1 SCT_GetOf(&s1, &s2, &s3, &s4)
+////				if(s1) SCT_SetCurrent(s1)
+//				if(s1) SCT_AddCurrent(s1)
+//				if(s2) SCT_AddCurrent(s2)
+//				if(s3) SCT_AddCurrent(s3)
+//				if(s4) SCT_AddCurrent(s4)
+//			}
+//		}
+//		
+//		CUT_cut = faux
+//		to_obj = AI_MainActorGet(C_ID_Jack)
+//		if(@"univ" LIFE_HumainEtat[C_ID_Jack] != Life_ETAT_Mort)
+//			@to_obj OBJ_FlagInactiveSet(vrai)
+//		return
+//	}
+//}
+//
+//CUT_cut = vrai
+//
+/////////////////////////////////////////////////////////////////////////////////////////
+//// DANS LES YEUX DE QQUN
+/////////////////////////////////////////////////////////////////////////////////////////
+//
+//#ifndef _FINAL_
+//if(IO_ButtonPressed(joy_button_R2) && IO_ButtonPressed(joy_button_R) && IO_ButtonPressed(JoyPSX_Button_triangle) && IO_ButtonJustPressed(joy_button_StickL))
+//{
+//	if(@get_global o_cam_on)
+//	{
+//		@get_global o_cam_on = nobody
+//	}
+//	else
+//	{
+//		to_obj = @"univ" ao_AllHumains[C_ID_Denham]
+//		to_obj = @to_obj ANI_CanalObjectGet(Anim_Canal_Annex4)
+//		@get_global o_cam_on = to_obj
+//	}
+//}
+//
+////if(IO_ButtonPressed(joy_button_R))
+////	@get_global o_cam_on = @"univ" ao_AllHumains[C_ID_Hayes]
+////else
+////	@get_global o_cam_on = nobody
+//	
+//if(@get_global o_cam_on)
+//{
+////	o_mf_actor = @get_global o_cam_on
+//	AE_BlackAndWhite(1.0)
+//	AE_ColorBalance(0.2, 0.6)
+//	AE_Remanece(0.75)
+//	AE_BorderBrightness(0.3)
+//	to_obj = @get_global o_cam_on
+//	OBJ_PosSet(@to_obj OBJ_PosGet() + (@o_mf_actor OBJ_SightGet() * 0.2) + cvector(0,0,0.5))
+//	tv_temp = MATH_VecBlendRotate(OBJ_SightGet(), @to_obj OBJ_SightGet() + cvector(0,0,0.2), 4 * TIME_GetDt())
+//	tv_temp1 = MATH_VecBlendRotate(OBJ_BankingGet(), @to_obj OBJ_BankingGet(), 4 * TIME_GetDt())
+//	OBJ_SightGeneralSet(tv_temp, tv_temp1)
+//	return
+//}
+//else
+//{
+//	@get_global o_cam_on = nobody
+//	o_mf_actor = AI_MainActorGet(C_ID_Jack)
+//}
+//#endif
+//
+//////////////////////////////////////////////////////////////////////////////////////
+//// Angle orientation verticale cam animée
+//////////////////////////////////////////////////////////////////////////////////////
+//if(@"KingKong/Humain" o_mf_actor i_camera_animee)
+//{
+//	if(angle == 666)
+//	{
+//		angle = MATH_VecAngle(OBJ_BankingGet(), Cv_VerticalVector, OBJ_HorizonGet())
+//	}
+//	
+//	if(@"univ" LIFE_HumainEtat[C_ID_Jack] == Life_ETAT_Mort)
+//	{
+//		angle = 0
+//	}
+//}
+//
+//////////////////////////////////////////////////////////////////////////////////////
+//// FRED : Gestion d'interdiction du joy
+//////////////////////////////////////////////////////////////////////////////////////
+//tv_master_joy1 = IO_JoyGetMove1()
+//if(i_blok_x) tv_master_joy1.x = 0
+//if(@"KingKong/Humain" o_mf_actor  i_soin_en_cours) tv_master_joy1.x = 0
+//
+//if (i_disable_joy1)
+//{
+//	i_disable_joy1 = faux
+//	tv_master_joy1 = Cv_NullVector
+//}
+//if ( i_inverse_joy1)
+//{
+//	tv_master_joy1.y *= -1.0
+//}
+//
+//////////////////////////////////////////////////////////////////////////////////////
+//// Perso sous le viseur
+//////////////////////////////////////////////////////////////////////////////////////
+//to_shoot = @"KingKong/Humain" o_mf_actor o_tir_prefered
+//switch ( @"univ" i_weapon_ID[ C_ID_Jack ] )
+//{
+//	case Ci_weapon_ID_bambou :
+//	case Ci_weapon_ID_bambou_moy :
+//	case Ci_weapon_ID_bambou_petit :
+//	case Ci_weapon_ID_grenade :
+////		to_shoot = nobody
+//		break
+//}
+//
+//if(to_shoot &&  !(@to_shoot OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct)) to_shoot = nobody
+//if(to_shoot && to_shoot.des_int1 != Ci_DISPLAY_FIGHT && to_shoot.des_int1 != Ci_DISPLAY_FIGHTPROPOSE && to_shoot.des_int1 != Ci_DISPLAY_FIGHTBLOQUE) to_shoot = nobody
+//to_shoot_real = to_shoot
+//
+//////////////////////////////////////////////////////////////////////////////////////
+//// Si pas sous le viseur, alors info photo
+//////////////////////////////////////////////////////////////////////////////////////
+//if(!to_shoot && !@"KingKong/Humain" o_mf_actor i_flag_arme_basse)
+//{
+//	ti_num = COL_SightDistanceListGet(&ao_obj[0], OBJ_PosGet(), OBJ_SightGet(), 50, 0.1, OBJ_C_IdentityFlag_DesignStruct, 0, Ci_Filter_IdentityFlag, 100)
+//	tf_best_dist = 0
+//	while(ti_num)
+//	{	
+//		ti_num--
+//		to_obj = ao_obj[ti_num]
+//		
+//		// --------( interdit le main actor )--------
+//		if (o_mf_actor == to_obj ) continue
+//	
+//		// --------( interdit les objets sans designe struct ou avec des_int1 valable )--------
+//		if ( ! (@to_obj OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct)) 
+//			continue
+//		if ( ( to_obj.des_int1 != Ci_DISPLAY_FIGHT && to_obj.des_int1 != Ci_DISPLAY_FIGHTPROPOSE && to_obj.des_int1 != Ci_DISPLAY_FIGHTBLOQUE) )
+//			continue
+//			
+//		// --------( interdit les objets détruits )--------
+//		if( OBJ_HasBeenKilled( to_obj ) ) 
+//			continue
+//			
+//		// --------( type d'action possible sur l'objet )--------
+//		if( ! @to_obj OBJ_ModifierType(MDF_C_Modifier_InfoPhoto) )
+//			continue
+//		if( !CM_LockOk(ao_obj[ti_num], 1.0, 1.0) )
+//			continue
+//			
+//		tv_temp = @to_obj OBJ_InfoPhotoPivotGet() - OBJ_PosGet()
+//		tv_temp1 = tv_temp
+//		MATH_VecSetNormalize(tv_temp1)
+//		tf_dot = MATH_VecDotProduct(tv_temp1, OBJ_SightGet())
+//		if(tf_dot > tf_best_dist )
+//		{
+//			// Occlusion ? 
+//			tf_temp = MATH_VecNorm(tv_temp)
+//			tv_temp /= tf_temp
+//			to_obj1 = COL_RayObject_Dist(OBJ_PosGet(), tv_temp, tf_temp, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_visuel_and_bone_volumes)
+//			ti_canal = COL_RayObject_CanalGet()		
+//			if(ti_canal != -1) to_obj1 = COL_RayObject_ActorGet()
+//			if( !to_obj1 || to_obj1 == to_obj )
+//			{
+//				tf_best_dist = tf_dot
+//				to_shoot = to_obj
+//			}
+//		}
+//	}
+//}
+//
+//////////////////////////////////////////////////////////////////////////////////////
+//// Hauteur
+//////////////////////////////////////////////////////////////////////////////////////
+//if (f_specific_Z)
+//	tf_hauteur = f_specific_Z
+//else if(@"KingKong/Humain" o_mf_actor i_soin_en_cours)
+//	tf_hauteur = 1.4
+//else if(@"KingKong/Humain" o_mf_actor i_flag_crouch)
+//	tf_hauteur = 0.8
+//else if(@"KingKong/Humain" o_mf_actor i_flag_pousse)
+//	tf_hauteur = 1.45
+//else
+//	tf_hauteur = 1.6
+//if(i_mf_cut)
+//	f_blend_z = tf_hauteur
+//else
+//	f_blend_z = MATH_FloatBlend(f_blend_z, tf_hauteur, 5 * TIME_GetDt())
+//
+//////////////////////////////////////////////////////////////////////////////////////
+//// Position
+//////////////////////////////////////////////////////////////////////////////////////
+//tv_temp = @o_mf_actor OBJ_PosGet() + cvector(0,-0.02,f_blend_z + effet_marche_hauteur)
+//OBJ_PosSet(tv_temp)
+//
+//// MAT
+//COL_StartMatrixSet(OBJ_PosGet())
+//
+//////////////////////////////////////////////////////////////////////////////////////
+//// PSSS
+//////////////////////////////////////////////////////////////////////////////////////
+//
+//// Arret si degaine
+//if( @"KingKong/Humain" o_mf_actor i_flag_arme_haute )
+//{
+//	if(MSG_GlobalIsValid(msg_psss)) LNK_ThisClientGet(o_obj_lock, Ci_LNK_PSSS, msg_psss, faux, nofunc, nofunc, nofunc)
+//	o_obj_lock = nobody
+//}
+//
+//// Arret si bouge a gauche
+//tv_temp = IO_JoyGetMove()
+//if(MATH_AbsFloat(tv_temp.x) > 0.8 || MATH_AbsFloat(tv_temp.y) > 0.8)
+//{
+//	if(MSG_GlobalIsValid(msg_psss)) LNK_ThisClientGet(o_obj_lock, Ci_LNK_PSSS, msg_psss, faux, nofunc, nofunc, nofunc)
+//	o_obj_lock = nobody
+//}
+//
+//// Passage en psss
+//if
+//(
+//	IO_ButtonJustPressed(JoyPSX_Button_croix) && !IO_ButtonPressed(joy_button_L) && !IO_ButtonPressed(joy_button_L2)
+//	&& (@"univ" LIFE_HumainEtat[C_ID_Jack] != Life_ETAT_Mort)
+//)
+//{
+//	if(!o_obj_lock)
+//	{
+//		to_bestobj = nobody
+//		tf_bestdot = 0
+//		for(i = 0; i < C_ID_Marin_dernier; i++)
+//		{
+//			to_obj = @"univ" ao_AllHumains[i]
+//			if(!to_obj) continue
+//			if(!@"univ" ai_HumainIsHere[i]) continue
+//			if(i != C_ID_Ann && i != C_ID_Denham && i != C_ID_Jimmy && i != C_ID_Hayes) continue
+//			if(@to_obj OBJ_FlagsControlGet() & OBJ_C_ControlFlag_ForceInactive) continue
+//			if(@to_obj OBJ_FlagsControlGet() & OBJ_C_ControlFlag_ForceInvisible) continue
+//			if(@"KingKong/Humain" to_obj i_interdit_psss) continue
+//
+//			// Visible ?			
+//			to_obj1 = @to_obj ANI_CanalObjectGet(Anim_Canal_Torse)
+//			tv_temp = @to_obj1 OBJ_PosGet() - OBJ_PosGet()
+//			to_obj1 = COL_RayObject_Vector(OBJ_PosGet(), tv_temp, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_visuel)
+//			if(to_obj1 && to_obj1 != to_obj) continue
+//			
+//			tv_temp = @to_obj OBJ_PosGet() - OBJ_PosGet()
+//			MATH_VecSetHorzNormalize(tv_temp)
+//			tf_dot = MATH_VecDotProduct(tv_temp, OBJ_SightGet())
+//			if(tf_dot > tf_bestdot)
+//			{
+//				tf_bestdot = tf_dot
+//				to_bestobj = to_obj
+//			}
+//		}
+//		
+//		o_obj_lock = to_bestobj
+//
+//		// Echange direct ?
+//		if(o_obj_lock)
+//		{
+//			if(MATH_VecDotProduct(@o_mf_actor OBJ_SightGet(), @o_obj_lock OBJ_SightGet()) < -0.5)
+//			{
+//				if(@"KingKong/Humain" o_mf_actor f_real_speed < 1)
+//				{
+////					LNK_ThisClientGet(o_obj_lock, Ci_LNK_PSSS, msg_psss, vrai, nofunc, nofunc, nofunc)
+////					if(MSG_GlobalIsValid(msg_psss)) 
+////					{
+////						@o_obj_lock OBJ_CapaSet(OBJ_Capa_15, 0)
+////						o_obj_lock = nobody
+////					}
+//				}
+//			}
+//		}
+//	}
+//	else
+//	{
+//		LNK_ThisClientGet(o_obj_lock, Ci_LNK_PSSS, msg_psss, vrai, nofunc, nofunc, nofunc)
+//		if(MSG_GlobalIsValid(msg_psss)) @o_obj_lock OBJ_CapaSet(OBJ_Capa_15, 0)
+//	}
+//}
+//
+//if(o_obj_lock)
+//{
+//	tv_joy1 = tv_master_joy1
+//	if(MATH_AbsFloat(tv_joy1.x) > 0.8)
+//	{
+//		if(MSG_GlobalIsValid(msg_psss))
+//		{
+//			LNK_ThisClientGet(o_obj_lock, Ci_LNK_PSSS, msg_psss, faux, nofunc, nofunc, nofunc)
+//		}
+//		
+//		if(!i_wait_psss)
+//		{
+//			i_wait_psss = vrai
+//			tf_bestdot1 = 0
+//			tf_bestdot2 = 0
+//			to_bestobj1 = nobody
+//			to_bestobj2 = nobody
+//			for(i = 0; i < C_ID_Marin_dernier; i++)
+//			{
+//				to_obj = @"univ" ao_AllHumains[i]
+//				if(!to_obj) continue
+//				if(i != C_ID_Ann && i != C_ID_Denham && i != C_ID_Jimmy && i != C_ID_Hayes) continue
+//				if(!@"univ" ai_HumainIsHere[i]) continue
+//				if(to_obj == o_obj_lock) continue
+//				
+//				// Visible ?			
+//				to_obj1 = @to_obj ANI_CanalObjectGet(Anim_Canal_Torse)
+//				tv_temp1 = @to_obj1 OBJ_PosGet() - OBJ_PosGet()
+//				to_obj1 = COL_RayObject_Vector(OBJ_PosGet(), tv_temp1, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_visuel)
+//				if(to_obj1 && to_obj1 != to_obj) continue
+//				
+//				// De quel coté il est
+//				tv_temp = @to_obj OBJ_PosGet() - OBJ_PosGet()
+//				tv_temp1 = MATH_VecCrossProduct(tv_temp, OBJ_SightGet())
+//				
+//				MATH_VecSetNormalize(tv_temp)
+//				tf_dot = MATH_VecDotProduct(tv_temp, OBJ_SightGet())
+//				if(tv_temp1.z < 0 && tf_dot > tf_bestdot1)
+//				{
+//					tf_bestdot1 = tf_dot
+//					to_bestobj1 = to_obj
+//				}
+//				else if(tv_temp1.z > 0 && tf_dot > tf_bestdot2)
+//				{
+//					tf_bestdot2 = tf_dot
+//					to_bestobj2 = to_obj
+//				}
+//			}
+//			
+//			if(tv_joy1.x < 0 && tf_bestdot1 != -2)
+//				o_obj_lock = to_bestobj1
+//			else if(tv_joy1.x > 0 && tf_bestdot2 != -2)
+//				o_obj_lock = to_bestobj2
+//		}
+//	}
+//	else
+//	{
+//		i_wait_psss = faux
+//	}
+//}
+//
+//////////////////////////////////////////////////////////////////////////////////////
+//// Vitesse orientation
+//////////////////////////////////////////////////////////////////////////////////////
+//if(@"KingKong/Humain" o_mf_actor i_flag_cheat_move)
+//{
+//	tf_speed_rot_x = SPEED_X_NORMAL * 3
+//	tf_speed_rot_y = SPEED_Y_NORMAL * 3
+//	tf_speed_rot_ax = SPEED_AX_NORMAL * 3
+//}
+//else if(@"Kingkong/Humain" o_mf_actor i_flag_snipe)
+//{
+//	tf_speed_rot_x = SPEED_X_NORMAL * 0.2
+//	tf_speed_rot_y = SPEED_Y_NORMAL * 0.2
+//	tf_speed_rot_ax = 1.0
+//	if(!@"univ" i_weapon_ID[C_ID_Jack])
+//	{
+//		tf_speed_rot_x *= 1.5
+//		tf_speed_rot_y *= 1.5
+//	}
+//}
+//else if (@"Kingkong/Humain" o_mf_actor i_flag_arme_basse && !@"Kingkong/Humain" o_mf_actor i_wait_release_enjoue) 
+//{ 	
+//	tf_speed_rot_x = SPEED_X_NORMAL 	
+//	tf_speed_rot_y = SPEED_Y_NORMAL 
+//	tf_speed_rot_ax = SPEED_AX_NORMAL 	
+//} 
+//else if(to_shoot)
+//{
+//	tf_speed_rot_x = SPEED_X_LOCK	
+//	tf_speed_rot_y = SPEED_Y_LOCK 
+//	tf_speed_rot_ax = SPEED_AX_LOCK 	
+//}
+//else 
+//{ 	
+//	tf_speed_rot_x = SPEED_X_WEAPON 	
+//	tf_speed_rot_y = SPEED_Y_WEAPON 
+//	tf_speed_rot_ax = SPEED_AX_WEAPON  	
+//} 
+//
+//// Acceleration progressive
+//tv_joy1 = tv_master_joy1
+//tv_joy1.x = MATH_FloatLimit(tv_joy1.x, -1, 1)
+//tv_joy1.y = MATH_FloatLimit(tv_joy1.y, -1, 1)
+//if(MATH_AbsFloat(tv_joy1.x) > 0.95)
+//{
+//	if(!@"Kingkong/Humain" o_mf_actor i_flag_snipe)
+//		f_time_max_rot_x = MATH_FloatMin(f_time_max_rot_x + ( TIME_GetDt()), tf_speed_rot_ax)
+//	else
+//		f_time_max_rot_x = 0 // SEB: pas d'acceleration en mode precis !! //MATH_FloatMin(f_time_max_rot_x + (1 * TIME_GetDt()), 1.0)
+//	tf_speed_rot_x += (f_time_max_rot_x * f_time_max_rot_x) * f_time_max_rot_x
+//}
+//else
+//	f_time_max_rot_x = 0
+//f_time_max_rot_y = 0
+//
+//////////////////////////////////////////////////////////////////////////////////////
+//// Orientation
+//////////////////////////////////////////////////////////////////////////////////////
+//f_time_auto -= TIME_GetDt()
+//if(f_time_auto < 0) f_time_auto = 0
+//if(!o_obj_lock || @"KingKong/Humain" o_mf_actor i_camera_animee)
+//{
+//	tv_joy1 = tv_master_joy1
+//	tv_joy1.x = MATH_FloatLimit(tv_joy1.x, -1, 1)
+//	tv_joy1.y = MATH_FloatLimit(tv_joy1.y, -1, 1)
+//	
+//	if(MATH_AbsFloat(tv_joy1.x) > C_JoyTolX)
+//	{
+//		tv_joy1.x -= C_JoyTolX * MATH_FloatSign(tv_joy1.x)
+//		tv_joy1.x = (tv_joy1.x * tv_joy1.x) * MATH_FloatSign(tv_joy1.x)
+//		tv_joy1.x *= (TIME_GetDt() * tf_speed_rot_x)
+//		if(@"KingKong/Humain" o_mf_actor i_camera_animee)	
+//			@o_mf_actor OBJ_RotateGlobalZ(tv_joy1.x * @"univ" CAM_SensHoriz)	
+//		else
+//			OBJ_RotateGlobalZ(tv_joy1.x * @"univ" CAM_SensHoriz)	
+//	}
+//	
+//	if(MATH_AbsFloat(tv_joy1.y) > 0.3)
+//		f_time_auto = 1.0
+//		
+//	if(MATH_AbsFloat(tv_joy1.y) > C_JoyTolY)
+//	{
+//		tv_joy1.y -= C_JoyTolY * MATH_FloatSign(tv_joy1.y)
+//		tv_joy1.y = (tv_joy1.y * tv_joy1.y) * tv_joy1.y
+//		tv_joy1.y *= (TIME_GetDt() * tf_speed_rot_y)
+//		if(@"KingKong/Humain" o_mf_actor i_camera_animee)	
+//			angle += (tv_joy1.y * @"univ" CAM_SensVert) * 2
+//		OBJ_RotateLocalX(-tv_joy1.y * @"univ" CAM_SensVert)
+//	}
+//	
+//	// Contraintes sight
+//	if(@"KingKong/Humain" o_mf_actor i_camera_animee)	
+//		tv_temp = @o_mf_actor OBJ_SightGet()
+//	else
+//		tv_temp = OBJ_SightGet()
+//	if ( tv_temp.z > 0.95 )
+//	{
+//		tv_temp.z = 0
+//		MATH_VecSetNormalize( tv_temp )
+//		tv_temp *= 0.31225  // = sqrt( 1 - sqr(0.95) )
+//		tv_temp.z = 0.95
+//	}
+//	else if ( tv_temp.z < -0.95 )
+//	{
+//		tv_temp.z = 0
+//		MATH_VecSetNormalize( tv_temp )
+//		tv_temp *= 0.31225  // = sqrt( 1 - sqr(0.95) )
+//		tv_temp.z = -0.95
+//	}
+//}
+//else
+//{
+//	to_obj = @o_obj_lock ANI_CanalObjectGet(Anim_Canal_Tete)
+//	tv_temp = @to_obj OBJ_PosGet() + (OBJ_HorizonGet() * 0.1)
+//	tv_temp -= OBJ_PosGet()
+//	MATH_VecSetNormalize(tv_temp)
+//	tv_temp = MATH_VecBlendRotate(OBJ_SightGet(), tv_temp, 4 * TIME_GetDt())
+//}
+//
+//// Auto orientation de la cam en fonction du sol
+//if(!f_time_auto && @o_mf_actor COL_CollideType(COL_C_Ground))
+//{
+//	tv_temp2 = @o_mf_actor COL_NormalGet(COL_C_Ground)
+//	tv_temp2 = MATH_VecCrossProduct(OBJ_HorizonGet(), tv_temp2)
+//	tf_temp = @"KingKong/Humain" o_mf_actor f_real_speed
+//	tf_temp *= 0.2
+//	tv_temp.z = MATH_FloatBlend(tv_temp.z, tv_temp2.z, tf_temp * TIME_GetDt())
+//}
+//
+//// Auto orientation vers un compagnon blessé dans la mouise
+////for(i = C_ID_Ann; i <= C_ID_Jimmy; i++)
+////{
+////	if(!@"univ" ai_HumainIsHere[i]) continue
+////	to_obj = @"univ" ao_AllHumains[i]
+////	if(to_obj && @"KingKong/Humain" to_obj i_snd_injure != -1)
+////	{
+////		tf_temp = TIME_Get() - @"KingKong/Humain" to_obj f_time_agonisant
+////		if(tf_temp > 0.5 && tf_temp < 1.0)
+////		{
+////			tv_temp1 = (@to_obj OBJ_PosGet() + cvector(0,0,1)) - OBJ_PosGet()
+////			tv_temp = MATH_VecBlendRotate(OBJ_SightGet(), tv_temp1, 5 * TIME_GetDt())
+////		}
+////		
+////		break
+////	}
+////}
+//
+//// Cheat
+//if(@"KingKong/Humain" o_mf_actor i_flag_cheat_move) tv_temp.z = 0
+//OBJ_SightGeneralSet(tv_temp, effet_marche_vertical)
+//tv_temp.z = 0
+//@o_mf_actor OBJ_SightGeneralSet(tv_temp, Cv_VerticalVector)
+//
+//////////////////////////////////////////////////////////////////////////////////////
+//// Focal
+//////////////////////////////////////////////////////////////////////////////////////
+//OBJ_CapaSet(0, OBJ_Capa_1)
+//OBJ_CapaSet(0, OBJ_Capa_2)
+//if(@"Kingkong/Humain" o_mf_actor i_flag_snipe)
+//{
+//	if(@"Kingkong/Humain" o_mf_actor i_recharge_arme || @"Kingkong/Humain" o_mf_actor i_arme_shotgun)
+//		tf_focal = 1.2
+//	else if(@"univ" i_weapon_ID[	C_ID_Jack] == Ci_weapon_ID_sniper_rifle)
+//	{
+//		OBJ_CapaSet(OBJ_Capa_1, 0)
+//		OBJ_CapaSet(OBJ_Capa_2, 0)
+//		tf_focal = 0.3
+//	}
+//	else
+//	{
+//		tf_focal = 0.6 
+//		OBJ_CapaSet(OBJ_Capa_2, 0)
+//	}
+//}
+//else if(o_obj_lock)
+//{
+//	tv_temp = @o_obj_lock OBJ_PosGet() - OBJ_PosGet()
+//	tv_temp1 = tv_temp + (OBJ_HorizonGet() * 2.5)
+//	MATH_VecSetNormalize(tv_temp)
+//	MATH_VecSetNormalize(tv_temp1)
+//	tv_temp2 = MATH_VecCrossProduct(tv_temp, tv_temp1)
+//	tf_focal = MATH_VecAngle(tv_temp, tv_temp1, tv_temp2)
+//}
+//else
+//{
+//	tf_focal = 1.2
+//}
+//
+//if(i_mf_cut)
+//	f_focal_jack = tf_focal
+//else
+//	f_focal_jack = MATH_FloatBlend(f_focal_jack, tf_focal, 5 * TIME_GetDt())
+//
+//////////////////////////////////////////////////////////////////////////////////////
+//// CONTRAINTES GLOBALES
+//////////////////////////////////////////////////////////////////////////////////////
+//if(@get_global i_cam_blocked_rot)
+//{
+//	if(@get_global i_cam_mode_recal)
+//	{
+//		f_glob_sight = MATH_FloatBlend(f_glob_sight, 50, 0.5 * TIME_GetDt())
+//		tv_temp2 = MATH_VecBlendRotate(OBJ_SightGet(), @get_global v_cam_original_sight, f_glob_sight * TIME_GetDt())
+//	}
+//	else
+//	{
+//		tv_temp2 = OBJ_SightGet()
+//		
+//		tv_temp = tv_temp2
+//		MATH_VecSetHorzNormalize(tv_temp)
+//		tv_temp1 = @get_global v_cam_original_sight
+//		MATH_VecSetHorzNormalize(tv_temp1)
+//		
+//		tf_temp = MATH_VecAngle(tv_temp, tv_temp1, Cv_VerticalVector)
+//		if(MATH_AbsFloat(tf_temp) > @get_global f_cam_blocked_x)
+//		{
+//			tv_temp2 = MATH_VecRotate(tv_temp1, Cv_VerticalVector, @get_global f_cam_blocked_x * MATH_FloatSign(-tf_temp))
+//			tv_temp2.z = 0
+//			
+//			tv_temp1 = OBJ_SightGet()
+//			tv_temp1.z = 0
+//			
+//			MATH_VecSetNorm(tv_temp2, MATH_VecNorm(tv_temp1))
+//			
+//			tv_temp2.z = OBJ_SightGet().z
+//		}
+//		
+//		MATH_VecSetNormalize(tv_temp2)
+//		if(tv_temp2.z > @get_global f_cam_blocked_z)
+//			tv_temp2.z = @get_global f_cam_blocked_z
+//		if(tv_temp2.z < @get_global f_cam_blocked_mz)
+//			tv_temp2.z = @get_global f_cam_blocked_mz
+//	}
+//		
+//	OBJ_SightGeneralSet(tv_temp2, Cv_VerticalVector)
+//}
+//else
+//{
+//	f_glob_sight = 0
+//}
+//
+//////////////////////////////////////////////////////////////////////////////////////
+//// EFFET SHOOT
+//////////////////////////////////////////////////////////////////////////////////////
+//if(f_shoot_jack == -1 && i_just_shoot)
+//{
+//	f_shoot_jack = TIME_Get()
+//	v_shoot_dispers_cur.y = 0
+//	switch(@"univ" i_weapon_ID[C_ID_Jack])
+//	{
+//	case Ci_weapon_ID_tommy_gun :
+//		v_shoot_dispers_cur.x = MATH_RandInt(2, 3) * 0.1
+//		v_shoot_dispers_cur.y = MATH_RandInt(2, 3) * 0.1
+//		v_shoot_dispers_cur.z = MATH_RandInt(2, 5) * 0.1
+//		break
+//	case Ci_weapon_ID_shotgun :
+//		v_shoot_dispers_cur.x = MATH_RandInt(4, 8) * 0.1
+//		v_shoot_dispers_cur.y = MATH_RandInt(4, 8) * 0.1
+//		v_shoot_dispers_cur.z = MATH_RandInt(4, 8) * 0.1
+//		break
+//	case Ci_weapon_ID_sniper_rifle :
+//		v_shoot_dispers_cur.x = 0
+//		v_shoot_dispers_cur.y = 0
+//		v_shoot_dispers_cur.z = MATH_RandInt(2, 5) * 0.1
+//		break
+//	default:
+//		v_shoot_dispers_cur.x = MATH_RandInt(2, 5) * 0.1
+//		v_shoot_dispers_cur.y = MATH_RandInt(2, 5) * 0.1
+//		v_shoot_dispers_cur.z = MATH_RandInt(2, 5) * 0.1
+//		break
+//	}
+//	
+//	if(MATH_RandInt(0, 2) == 1) v_shoot_dispers_cur.x *= -1
+//	if(MATH_RandInt(0, 2) == 1) v_shoot_dispers_cur.y *= -1
+//	v_shoot_dispers_dst = -v_shoot_dispers_cur
+//}
+//else if(f_shoot_jack > 0)
+//{
+//	tv_temp = OBJ_SightGet()
+//	tv_temp += (MATH_VecLocalToGlobal(v_shoot_dispers_cur) * 0.01)
+//	OBJ_SightGeneralSet(tv_temp, Cv_VerticalVector)
+//	v_shoot_dispers_cur.z -= 5 * TIME_GetDt()
+//	switch(@"univ" i_weapon_ID[0])
+//	{
+//	case Ci_weapon_ID_tommy_gun :
+//		if(v_shoot_dispers_cur.z <= v_shoot_dispers_dst.z * 0.5) f_shoot_jack = 0
+//		break
+//	default:
+//		if(v_shoot_dispers_cur.z <= v_shoot_dispers_dst.z) f_shoot_jack = 0
+//		break	
+//	}
+//}
+//
+//i_just_shoot = faux
+//
+//////////////////////////////////////////////////////////////////////////////////////
+//// Affichage cible
+//////////////////////////////////////////////////////////////////////////////////////
+//tv_center_text_pos = cvector(0.497, 0.48, 0)
+//to_texte = @"univ" Texte_InGame
+//if (to_texte)
+//{
+//	if( @"KingKong/Humain" o_mf_actor i_flag_arme_haute && @"univ" CAM_Viseur && !@"KingKong/Humain" o_mf_actor i_flag_nage)
+//	{
+//		if(!(@"KingKong/Humain" o_mf_actor i_flag_snipe))
+//		{
+//			if(!to_shoot_real)
+//				ti_color = 0xFFd2f38b
+//			else 
+//			{
+//				tf_best_dist = @"univ" Weapon_af_range[ @"univ" i_weapon_ID[ C_ID_Jack ] ]
+//				if (OBJ_SqrDist( to_shoot ) < tf_best_dist * tf_best_dist)
+//					ti_color = 0xFF8080FF
+//				else
+//					ti_color = 0xFFd2f38b
+//			}
+//			
+//			//@to_texte OBJ_TextSet( STRINGAME_VISEUR,  "\p8\!" )
+//			@to_texte OBJ_TextSet( STRINGAME_VISEUR,  "\p13\ " )
+//			@to_texte OBJ_TextPivotSet( STRINGAME_VISEUR, cvector( 0.5, 0.5, 0 ) )
+//			@to_texte OBJ_TextFlagSet( STRINGAME_VISEUR, 21 )
+//			@to_texte OBJ_TextColorSet( STRINGAME_VISEUR, 0, -1, ti_color )
+//			@to_texte OBJ_TextSizeSet( STRINGAME_VISEUR, 0, -1, cvector( -1, 0,0))
+//		}
+//		else
+//		{
+//			@to_texte OBJ_TextSet( STRINGAME_VISEUR, "" )
+//		}
+//	}
+//	else
+//		@to_texte OBJ_TextSet( STRINGAME_VISEUR, "" )
+//}
+//	
+//////////////////////////////////////////////////////////////////////////////////////
+//// ACTION PRENDRE
+//////////////////////////////////////////////////////////////////////////////////////
+//o_obj_prendre = nobody
+//to_bestsight = nobody
+//
+//if( 
+//	!@"KingKong/Humain" o_mf_actor i_flag_arme_haute && 
+//	@o_mf_actor ACT_PartialActionFinished() && 
+//	!@"KingKong/Humain" o_mf_actor i_flag_nage && 
+//	(@"KingKong/Humain" o_mf_actor f_timer_notake == 0) &&
+//	(@"univ" LIFE_HumainEtat[C_ID_Jack] != Life_ETAT_Mort)
+//)
+//{
+//	ti_weapon = @"univ" i_weapon_ID[C_ID_Jack]
+//	to_bestsight = nobody
+//	tf_bestsight = -2
+//	ti_best_prio = -1000
+//	ti_num = COL_SightDistanceListGet(&ao_obj[0], OBJ_PosGet(), OBJ_SightGet(), 5, -1.0, OBJ_C_IdentityFlag_DesignStruct, 0, Ci_Filter_IdentityFlag, 100)
+//	while(ti_num)
+//	{	
+//		ti_num--
+//		to_obj = ao_obj[ti_num]
+//		
+//		if (o_mf_actor == to_obj ) continue
+//		if( OBJ_HasBeenKilled( to_obj ) ) continue
+//		if (
+//			(to_obj.des_int1 != Ci_DISPLAY_TAKE) &&
+//			(to_obj.des_int1 != Ci_DISPLAY_PUT))
+//			continue
+//
+//		if( ! @to_obj OBJ_ModifierType(MDF_C_Modifier_InfoPhoto) ) continue
+//		
+//		// Devant
+//		tv_temp = @to_obj OBJ_InfoPhotoPivotGet() - OBJ_PosGet()
+//		MATH_VecSetNormalize(tv_temp)
+//		
+//		tf_dot = MATH_VecDotProduct(tv_temp, OBJ_SightGet())
+//		if(tf_dot < 0.5) 
+//		{
+//			tv_temp = @to_obj OBJ_InfoPhotoPivotGet() - OBJ_PosGet()
+//			tv_temp.z = 0
+//			tf_temp = @to_obj OBJ_InfoPhotoRadiusGet()
+//			if(MATH_VecNorm(tv_temp) > tf_temp * 0.8)
+//				continue
+//		}
+//
+//		// Visible		
+//		tv_temp = @to_obj OBJ_InfoPhotoPivotGet() - OBJ_PosGet()
+//		to_obj1 = COL_RayObject_Vector(OBJ_PosGet(), tv_temp, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+//		if(to_obj1 && to_obj1 != to_obj) 
+//		{
+//			tv_temp = @to_obj OBJ_InfoPhotoPivotGet() - COL_RayObject_PosGet()
+//			if(MATH_VecDotProduct(tv_temp, tv_temp) > 1) continue
+//		}
+//		
+//		// Prio
+//		ti_prio = @to_obj OBJ_InfoPhotoMissionGet()
+//		if(tf_dot > tf_bestsight || (tf_dot > 0.8 && ti_prio > ti_best_prio))
+//		{
+//			ti_best_prio = ti_prio
+//			tf_bestsight = tf_dot
+//			to_bestsight = to_obj
+//			
+////			if ( (to_obj && @to_obj AI_IsModel("Objets/Munition")) || (to_obj.des_int1 != Ci_DISPLAY_TAKE) )
+////			{
+////				tf_bestsight = tf_dot
+////				to_bestsight = to_obj
+////			}
+////			else if(
+////				ti_weapon != Ci_weapon_ID_bambou && 
+////				ti_weapon != Ci_weapon_ID_bambou_moy &&
+////				ti_weapon != Ci_weapon_ID_bambou_petit &&
+////				ti_weapon != Ci_weapon_ID_levier &&
+////				ti_weapon != Ci_weapon_ID_grenade &&
+////				ti_weapon != Ci_weapon_ID_crane
+////			)
+////			{
+////				tf_bestsight = tf_dot
+////				to_bestsight = to_obj
+////			}
+//		}
+//		
+//		if(to_bestsight)
+//		{
+//			if(!IO_ButtonJustPressed(joy_button_R2) || !@"univ" i_weapon_ID[C_ID_Jack])
+//				o_obj_prendre = to_obj
+//		}
+//	}
+//}
+//
+//if(to_bestsight && IO_ButtonJustPressed(joy_button_R2) && !IO_ButtonPressed(joy_button_L2)) @to_bestsight OBJ_CapaSet(OBJ_Capa_15, 0)
+//@"KingKong/Humain" o_mf_actor i_flag_arme_basse_action = 0
+//
+//// Camera animée
+/////////////////////////////////////////////////////////
+//@get_camjack OBJ_PosSet(@o_mf_actor OBJ_PosGet())
+//@get_camjack OBJ_SightGeneralSet(@o_mf_actor OBJ_SightGet(), Cv_VerticalVector)
+//if(@"KingKong/Humain" o_mf_actor i_camera_animee)
+//{
+//	to_obj = @get_camjack ANI_CanalObjectGet(100)
+//	OBJ_PosSet(@to_obj OBJ_PosGet())
+//	OBJ_BankingGeneralSet(@to_obj OBJ_SightGet(), @to_obj OBJ_BankingGet())
+//	if(angle_max && angle_min)
+//	{
+//		if(angle > angle_max) angle = angle_max
+//		if(angle < angle_min) angle = angle_min
+//	}
+//	
+//	if(angle > 1) angle = 1
+//	if(angle < -1) angle = -1
+//	if(WOR_GetKey() != 0x08006177)
+//		OBJ_RotateLocalX(-angle)
+//}
+//else
+//{
+//	angle = 666
+//	@get_camjack OBJ_SightGeneralSet(@o_mf_actor OBJ_SightGet(), Cv_VerticalVector)
+//}

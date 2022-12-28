@@ -1,0 +1,455 @@
+#include "CR_defines.var"
+
+int					ti_crossable
+vector			tv_temp
+float				tf_DBG_HP_max
+tf_DBG_HP_max = 0.0
+
+
+// VINCE =========================================
+//i_DBG_NMI_State = 1
+//i_DBG_track_test = 1
+//i_DBG_trace_etat = faux
+//o_DBG_force_attack_gao = @"univ" ao_AllHumains[ C_ID_Denham ]
+//o_ignore_target = @"univ" ao_AllHumains[ C_ID_Jack ]
+//i_actif = 0
+//if( i_modele == MODELE_Geant )
+//	i_actif = 1
+//i_trig_attack_type = 1
+//o_attack_gao = @"univ" ao_AllHumains[ C_ID_Denham ]
+//o_ignore_target = nobody
+//i_petit_crabe_grab_ON = faux
+//else
+//	OBJ_Destroy()
+//tf_DBG_HP_max = 10.0
+//i_DBG_trace_etat = vrai
+//i_DBG_display_etat = vrai
+//if( ! i_DBG_no_crab_but_me )		OBJ_Destroy()
+//i_DBG_render_ground_normale = vrai
+//i_DBG_track_test = 1
+// VINCE =========================================
+
+if( ! i_actif )
+	OBJ_Destroy()
+
+// SPECIAL FLAGS
+if (i_SF_NePasSeRejouerSiMort)
+{
+	int		ti_SF_AlreadyDead
+	i_SF_AlreadyDead = AI_SFDynGet(0, SF_MinById, SF_MaxById)		// Alloc
+	Super_SpecialFlag_get(i_SF_AlreadyDead, ti_SF_AlreadyDead)			// Test SF
+	if (ti_SF_AlreadyDead)																	// Si SF = 1 alors DESTROY
+		OBJ_Destroy()
+}
+
+AI_RunContext(CTX_Normal)
+
+if( AI_GetCurSystem() != Ci_CurSystem_Editeur )
+{
+	// SI PAS EN EDITEUR
+	i_DBG_display_fight_stats = faux
+	i_DBG_display_all_infos = faux
+	i_DBG_render_grille_check = faux
+	i_DBG_render_ground_normale = faux
+	i_DBG_render_cone_strafe = faux
+	i_DBG_render_banking = faux
+	i_DBG_trace_soft_coll = faux
+	i_DBG_trace_etat = faux
+	i_DBG_trace_paf = faux
+	i_DBG_trace_move_infos = faux
+	i_DBG_track_GRID = faux
+	i_DBG_track_test = faux
+	i_DBG_render_cone_vision = faux
+	i_DBG_display_attack45_timer = faux
+	i_DBG_no_crab_but_me = faux
+	i_DBG_vague = faux
+	i_DBG_display_etat = faux
+	i_DBG_display_rot_coef = faux
+	i_DBG_force_cote_grab = 0
+	i_DBG_NMI_State = faux
+}
+
+// BONES
+o_bone_pere = ANI_CanalObjectGet(Crab_Canal_Pere)
+o_bone_carapace = ANI_CanalObjectGet(Crab_Canal_Carapace)			// bassin
+o_bone_pinceD = ANI_CanalObjectGet(Crab_Canal_PinceD)
+o_bone_pinceG = ANI_CanalObjectGet(Crab_Canal_PinceG)
+o_bone_patteD = ANI_CanalObjectGet(Crab_Canal_PatteD)
+o_bone_patteG = ANI_CanalObjectGet(Crab_Canal_PatteG)
+
+// INCLINAISON
+OBJ_BankingGeneralSet(OBJ_SightGet(), Cv_VerticalVector)
+v_carapace_banking_initial = @o_bone_pere MATH_VecGlobalToLocal(@o_bone_pere OBJ_BankingGet())
+v_carapace_banking_neutral = v_carapace_banking_initial
+v_carapace_banking_current = v_carapace_banking_initial
+
+// MODELE
+switch( i_modele )
+{
+	//====================================================================
+	case MODELE_Geant :
+	//====================================================================
+		i_id_modele = C_ID_CrabeGeant
+		f_zoom = 2.0
+		f_viande_max = 10.0
+		// distances
+		f_way_dist_position_fight_jack = 6.5		// distance de fight face à la cible
+		f_way_dist_position_fight_pnj = 6.5			// distance de fight face à la cible
+		if( ! f_way_dist_position_fight_strafe )		// distance de fight en arrivée strafe devant la cible
+			f_way_dist_position_fight_strafe = 3.5
+		if( ! f_way_dist_strafe_fight_rot )				// distance à partir de laquelle le crabe ne strafe plus en ligne droite mais en obliquant pour se tourner face à sa cible
+			f_way_dist_strafe_fight_rot = 20.0
+		if( ! f_way_dist_reset_intimid )
+			f_way_dist_reset_intimid = 8.0
+		if( ! f_way_dist_position_cadavre )
+			f_way_dist_position_cadavre = 3.0
+		f_strafe_requin_dist = 10.0
+		// attaques
+		i_grab = vrai		// les crabes géants grabbent
+		i_paf_to_send_type = C_PAF_KK_Fort
+		f_paf_to_send_timer = Paf_Moyen_Timer
+		f_delay_humain_last_paf_time = f_paf_to_send_timer - 1.0
+		f_attack_delay_min = 1.0
+		f_attack_delay_max = 2.0
+		if( ! f_dist_to_actor_change_target )
+			f_dist_to_actor_change_target = 8.0
+		f_dist_to_actor_change_target_network = 16.0
+		// pafs
+		f_HP_max = Cf_Crabe_Geant_Life_Max
+		f_paf_dmg_multiplicateur = Cf_Crabe_Geant_Dmg_Mult
+		f_paf_dmg_reduction = Cf_Crabe_Geant_Dmg_Reduc
+		f_paf_cumul_dmg = Cf_Crabe_Geant_Dmg_Cumul
+		f_paf_repousse_norm = 0.0
+		f_paf_grab_lache_norm = 10.0
+		f_paf_dyn_friction = 10.0
+		f_paf_dyn_min_norm = 0.2
+		f_paf_dyn_cumul_max = 10.0
+		// food chain
+		if( ! f_mange_paf_dmg )
+			f_mange_paf_dmg = Ci_paf_dmg_mange_cadavre_geant
+		if( ! f_mange_paf_delai )
+			f_mange_paf_delai = Cf_paf_delai_mange_cadavre_geant
+		f_time_mort = Cf_Mort_Duration_Geant
+		i_ODE = vrai
+		// GRILLE
+		i_grid_nb_case_check = 5
+		v_grid_check_offset[0] = cvector(-2.0, -3.0, 0.0)
+		v_grid_check_offset[1] = cvector(-3.0, 2.0, 0.0)
+		v_grid_check_offset[2] = cvector(2.0, 3.0, 0.0)
+		v_grid_check_offset[3] = cvector(3.0, -2.0, 0.0)
+		v_zdm_size = cvector(1.2, 1.2, 1.2)
+		// INCLINAISON CARAPACE
+		f_angle_inclinaison_max = ( Cf_Pi / 15 )
+		f_angle_inclinaison_max_shotgun = Cf_PiBy2
+		f_dot_test_inclinaison_paf = Cf_Cos10
+		f_blend_current_to_neutral_vulnerable = 3.5
+		f_blend_current_to_neutral_invulnerable_paf = 1.5
+		f_blend_current_to_neutral_invulnerable_no_paf = 3.5
+		f_blend_neutral_to_initial = 3.5
+		// TIMERS
+		f_strafe_requin_delay_min = 1.0
+		f_strafe_requin_delay_max = 3.0
+		f_strafe_requin_duration_min = 1.0
+		f_strafe_requin_duration_max = 2.0
+		f_attack_strafe_face_delay_min = 0.0
+		f_attack_strafe_face_delay_max = 0.0
+		f_attack_strafe_face_duration_min = 0.0
+		f_attack_strafe_face_duration_max = 0.0
+		f_intimidation_delay_min = 3.0
+		f_intimidation_delay_max = 5.0
+		f_way_dist_intimidation = 5.0
+		break
+	
+	//====================================================================
+	case MODELE_Petit :
+	//====================================================================
+		i_id_modele = C_ID_CrabePetit
+		f_zoom = 0.6
+		f_viande_max = 5.0
+		// distances
+		f_way_dist_position_fight_jack = 2.25		// distance de fight face à la cible
+		f_way_dist_position_fight_pnj = 2.5		// distance de fight face à la cible
+		if( ! f_way_dist_position_fight_strafe )		// distance de fight en arrivée strafe devant la cible
+			f_way_dist_position_fight_strafe = 1.25
+		if( ! f_way_dist_strafe_fight_rot )				// distance à partir de laquelle le crabe ne strafe plus en ligne droite mais en obliquant pour se tourner face à sa cible
+			f_way_dist_strafe_fight_rot = 7.0
+		if( ! f_way_dist_reset_intimid )
+			f_way_dist_reset_intimid = 15.0
+		if( ! f_way_dist_position_cadavre )
+			f_way_dist_position_cadavre = 1.0
+		f_strafe_requin_dist = 0.1
+		// attaques
+		if( i_petit_crabe_grab_ON )
+			i_grab = vrai		// spec LD
+		else
+			i_grab = faux		// les petits crabes ne grabbent pas
+		i_paf_to_send_type = C_PAF_KK_Faible
+		f_paf_to_send_timer = Paf_Faible_Timer
+		f_delay_humain_last_paf_time = f_paf_to_send_timer - 1.0
+		f_attack_delay_min = 0.5
+		f_attack_delay_max = 1.0
+		if( ! f_dist_to_actor_change_target )
+			f_dist_to_actor_change_target = 4.0
+		f_dist_to_actor_change_target_network = 8.0
+		// pafs
+		f_HP_max = Cf_Crabe_Petit_Life_Max
+		f_paf_dmg_multiplicateur = Cf_Crabe_Petit_Dmg_Mult
+		f_paf_dmg_reduction = Cf_Crabe_Petit_Dmg_Reduc
+		f_paf_cumul_dmg = Cf_Crabe_Petit_Dmg_Cumul
+		f_paf_repousse_norm = 12.0
+		f_paf_grab_lache_norm = 0.0
+		f_paf_dyn_friction = 12.0
+		f_paf_dyn_min_norm = 0.2
+		f_paf_dyn_cumul_max = 8.0
+		// food chain
+		if( ! f_mange_paf_dmg )
+			f_mange_paf_dmg = Ci_paf_dmg_mange_cadavre_petit
+		if( ! f_mange_paf_delai )
+			f_mange_paf_delai = Cf_paf_delai_mange_cadavre_petit
+		f_time_mort = Cf_Mort_Duration_Petit
+		f_attack_strafe_face_dist_trop_loin = 99.0
+		f_attack_strafe_face_dist_deb = 5.0
+		f_attack_strafe_face_dist_fin = 3.0
+		i_ODE = faux
+		// GRILLE
+		i_grid_nb_case_check = 2
+		v_grid_check_offset[0] = cvector(-0.5, -1.5, 0.0)
+		v_grid_check_offset[1] = cvector(-1.5, 0.5, 0.0)
+		v_grid_check_offset[2] = cvector(0.5, 1.5, 0.0)
+		v_grid_check_offset[3] = cvector(1.5, -0.5, 0.0)
+		v_zdm_size = cvector(1.5, 1.5, 1.5)
+		// INCLINAISON CARAPACE
+		f_angle_inclinaison_max = Cf_PiBy6
+		f_angle_inclinaison_max_shotgun = Cf_PiBy6
+		f_dot_test_inclinaison_paf = 0.0
+		f_blend_current_to_neutral_vulnerable = 5.0  // 3.5
+		f_blend_current_to_neutral_invulnerable_paf = 2.0
+		f_blend_current_to_neutral_invulnerable_no_paf = 2.0
+		f_blend_neutral_to_initial = 2.5
+		// TIMERS
+		f_strafe_requin_delay_min = 0.75
+		f_strafe_requin_delay_max = 1.5
+		f_strafe_requin_duration_min = 1.5
+		f_strafe_requin_duration_max = 2.5	
+		f_attack_strafe_face_delay_min = 1.0
+		f_attack_strafe_face_delay_max = 1.5
+		f_attack_strafe_face_duration_min = 1.5
+		f_attack_strafe_face_duration_max = 1.5
+		f_intimidation_delay_min = 4.0
+		f_intimidation_delay_max = 8.0
+		f_way_dist_intimidation = 5.0
+		break
+}
+
+// DISTANCES DE POSITION ET DE STRAFE
+f_way_dist_position_fight_jack = MATH_FloatMin(f_way_dist_position_fight_jack, f_way_dist_strafe_fight_rot)
+f_way_dist_position_fight_pnj = MATH_FloatMin(f_way_dist_position_fight_pnj, f_way_dist_strafe_fight_rot)
+f_way_dist_position_fight_strafe = MATH_FloatMin(f_way_dist_position_fight_strafe, f_way_dist_strafe_fight_rot)
+
+// REQUIN		// coef borné entre 0.0 et 1.0
+f_way_requin_coef = MATH_FloatMax(0.0, f_way_requin_coef)
+f_way_requin_coef = MATH_FloatMin(1.0, f_way_requin_coef)
+
+// BLINDAGE COSINUS
+if( f_way_cos_attack_strafe <= f_way_cos_strafe_exit )
+{
+	DBG_Error("ERREUR : f_way_cos_attack_strafe <= f_way_cos_strafe_exit")
+	OBJ_Destroy()
+}
+
+// COEFS DE ROTATION
+af_rotation_coef[Ci_rotation_coef_strafe][MODELE_Geant] = 1.5			// 1.0			// 3.0
+af_rotation_coef[Ci_rotation_coef_strafe][MODELE_Petit] = 6.0			// 6.0
+af_rotation_coef[Ci_rotation_coef_avance][MODELE_Geant] = 1.5		// 1.0		// 0.25
+af_rotation_coef[Ci_rotation_coef_avance][MODELE_Petit] = 1.0			// 0.5
+af_rotation_coef[Ci_rotation_coef_sur_place][MODELE_Geant] = 2.0	// 0.3	// 2.0
+af_rotation_coef[Ci_rotation_coef_sur_place][MODELE_Petit] = 1.0		// 4.0
+af_rotation_coef[Ci_rotation_coef_attente][MODELE_Geant] = 0.0		// 0.0
+af_rotation_coef[Ci_rotation_coef_attente][MODELE_Petit] = 0.0			// 0.0
+af_rotation_coef[Ci_rotation_coef_intimidation][MODELE_Geant] = 0.0	// 0.0
+af_rotation_coef[Ci_rotation_coef_intimidation][MODELE_Petit] = 0.0	// 0.0
+af_rotation_coef[Ci_rotation_coef_attaque][MODELE_Geant] = 2.0		// 1.0		// 1.0
+af_rotation_coef[Ci_rotation_coef_attaque][MODELE_Petit] = 1.0			// 2.0
+af_rotation_coef[Ci_rotation_coef_null][MODELE_Geant] = 0.0			// 0.0
+af_rotation_coef[Ci_rotation_coef_null][MODELE_Petit] = 0.0				// 0.0
+
+// COEFS DE VITESSE DES ANIMS
+af_speed_coef[Ci_avance_speed_coef][MODELE_Geant] = 0.6	// 0.75
+af_speed_coef[Ci_avance_speed_coef][MODELE_Petit] = 0.75
+af_speed_coef[Ci_avance_obstacle_speed_coef][MODELE_Geant] = 0.6	// 0.75
+af_speed_coef[Ci_avance_obstacle_speed_coef][MODELE_Petit] = 1.5		// 0.75
+af_speed_coef[Ci_avance_network_speed_coef][MODELE_Geant] = 0.6	// 0.75
+af_speed_coef[Ci_avance_network_speed_coef][MODELE_Petit] = 1.5
+af_speed_coef[Ci_strafe_requin_speed_coef][MODELE_Geant] = 0.55		// 0.7
+af_speed_coef[Ci_strafe_requin_speed_coef][MODELE_Petit] = 1.06
+af_speed_coef[Ci_strafe_attack_speed_coef][MODELE_Geant] = 0.55		// 0.7
+af_speed_coef[Ci_strafe_attack_speed_coef][MODELE_Petit] = 1.75
+af_speed_coef[Ci_strafe_network_speed_coef][MODELE_Geant] = 0.55	// 0.7
+af_speed_coef[Ci_strafe_network_speed_coef][MODELE_Petit] = 1.75
+af_speed_coef[Ci_strafe_obstacle_speed_coef][MODELE_Geant] = 0.55	// 0.7
+af_speed_coef[Ci_strafe_obstacle_speed_coef][MODELE_Petit] = 1.5		// 0.7
+af_speed_coef[Ci_intimidation_speed_coef][MODELE_Geant] = 1.5
+af_speed_coef[Ci_intimidation_speed_coef][MODELE_Petit] = 1.75
+
+// TERRITOIRE & CHANGE CIBLE
+if( ! o_change_target )
+	o_change_target = o_territoire
+
+// ZOOM
+OBJ_ZoomSet(f_zoom)
+
+
+// ZDE CORPS
+COL_SwapToSpecific(C_zde_corps)
+COL_ZonePosSet(C_zde_corps, cvector(0.0, 0.0, 1.75))
+COL_ZoneSizeSet(C_zde_corps, cvector(1.75, 1.75, 1.75))
+
+// ZDE FIGHT
+COL_SwapToSpecific(C_zde_fight)
+if( i_modele == MODELE_Geant )
+	COL_ZoneSizeSet(C_zde_fight, cvector(0.6,0.6,0.6))
+else
+	COL_ZoneSizeSet(C_zde_fight, cvector(2.0, 2.0, 2.0))
+
+// ZDM
+COL_SwapToSpecific(C_zdm_pied)
+COL_ZonePosSet(C_zdm_pied, cvector(0.0, 0.0, v_zdm_size.x))
+COL_ZoneSizeSet(C_zdm_pied, v_zdm_size)
+
+// ZDE ALL
+COL_ColSetActivationSet(all, none)			// active toutes les zde
+
+// CROSSABLE
+//COL_CrossableSet(none, all)
+//ti_crossable = Gmat_Jack_DefaultCrossable
+//ti_crossable |= Gmat_Jack_Face_eau
+//ti_crossable |= Gmat_Jack_Face_de_Bord
+//ti_crossable |= Gmat_Jack_BordHumain_TraversableNMI
+//ti_crossable |= Gmat_Jack_Crossable_All_But_TREX
+//ti_crossable |= Gmat_Jack_Crossable_All_But_RAPTORS
+//COL_CrossableSet(ti_crossable, none)
+COL_ColMapActivationSet(Gmat_KK_Crossable_Default, none)
+
+// désactivation de la colmap (collisions molles)
+COL_ColMapActivationSet(none,all)
+
+// BV
+tv_temp = cvector(4.0, 4.0, 4.0) * f_zoom
+BV_MinSet(-tv_temp)
+BV_MaxSet(tv_temp)
+
+// mission, info, bone bone lod min lod max frame min radius
+if( ! OBJ_ModifierType(MDF_C_Modifier_InfoPhoto) )
+	OBJ_InfoPhotoParamSet( 0, 0, 3, 3, 0.0, 0.0, 0.0, 2.5 * OBJ_ZoomGet())		// Bouée d'aide à la visée
+
+// HP & viande
+if( tf_DBG_HP_max > 0.0 )
+	f_HP_max = tf_DBG_HP_max
+f_HP_cur = f_HP_max
+f_viande_cur = f_viande_max
+
+// TAG
+CR_TagSize(vrai)
+
+// ACTORS
+o_main_actor = AI_MainActorGet(C_ID_Joueur)
+//o_Ann = @"univ" ao_AllHumains[ C_ID_Ann ]
+//o_Hayes = @"univ" ao_AllHumains[ C_ID_Hayes ]
+//o_Denham = @"univ" ao_AllHumains[ C_ID_Denham ]
+if( ! o_attack_gao )
+	o_attack_gao = o_main_actor
+
+// STRAFE
+CR_Strafe_Requin_Duration_Reset()
+CR_Strafe_Requin_Delay_Random()
+CR_Strafe_Attack_Face_Duration_Reset()
+CR_Strafe_Attack_Face_Delay_Reset()
+
+// DYNA
+AI_Execute("CR_exec_DYN_On")
+
+// OBBOX
+AI_Execute("CR_exec_OBBOX_Set")
+
+// CALLBACKS
+AI_CBAdd(OBJ_Me(), CallBack_Info, "CR_CALLBACK_Info")
+AI_CBAdd(OBJ_Me(), CallBack_After_Blend, "CR_CALLBACK_After_Blend")
+AI_CBAdd(OBJ_Me(), CallBack_WhenDestroy, "CR_CALLBACK_When_Destroy")
+AI_CBAdd(OBJ_Me(), CallBack_TagOn, "CR_CALLBACK_Tag_On")
+AI_CBAdd(OBJ_Me(), CallBack_TagOff, "CR_CALLBACK_Tag_Off")
+macro_add_callback_after_cam("CR_CALLBACK_After_Cam")
+
+OBJ_FlagInvisibleSet(faux)
+
+PNJ_Crab_Ulltra_Tag_Init()
+
+// RESEAU D'APPARITION ===========================================
+if( o_net_apparition_wp )
+{
+	net_apparition = @o_net_apparition_wp WAY_NetOfObj()
+	OBJ_PosSet(@o_net_apparition_wp OBJ_PosGet())
+	OBJ_BankingGeneralSet(@o_net_apparition_wp OBJ_SightGet(), Cv_VerticalVector)
+	COL_StartMatrixSet(OBJ_PosGet())
+	o_net_last_wp = o_net_apparition_wp		// déjà positionné sur le 1er wp
+	i_net_done_flag = faux							// parcours réseau pas accompli
+	CR_Net_Check_Attack_Enabled()
+}
+
+// paf dyn (après le positionnement si besoin de suivi réeau !!!)
+v_paf_dyn_pos = OBJ_PosGet()
+v_paf_dyn_speed = Cv_NullVector
+
+// structure design (pour les intéractions)
+OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_DesignStruct, none)
+if( OBJ_Me().des_int1 == 0 )
+{
+	if( i_HumanDontShootOnMe )
+		OBJ_Me().des_int1 = Ci_DISPLAY_FIGHTBLOQUE
+	else
+		OBJ_Me().des_int1 = Ci_DISPLAY_FIGHT
+}
+
+// GRILLE
+v_grid_normale[0] = cvector(0,-1,0)
+v_grid_normale[1] = cvector(-1,0,0)
+v_grid_normale[2] = cvector(0,1,0)
+v_grid_normale[3] = cvector(1,0,0)
+
+v_corner_pos[0][1] = cvector(-1.5,-1.5,0)
+v_corner_pos[1][0] = cvector(-1.5,-1.5,0)
+v_corner_pos[1][2] = cvector(-1.5,1.5,0)
+v_corner_pos[2][1] = cvector(-1.5,1.5,0)
+v_corner_pos[2][3] = cvector(1.5,1.5,0)
+v_corner_pos[3][2] = cvector(1.5,1.5,0)
+v_corner_pos[3][0] = cvector(1.5,-1.5,0)
+v_corner_pos[0][3] = cvector(1.5,-1.5,0)
+
+
+f_time_hyst_carapace = 999.0		// à l'init, le crabe n'est pas vulnérable
+
+// SOUND
+i_snd_eat = -1
+i_snd_grab = -1
+i_snd_move = -1
+i_snd_charge45 = -1
+
+i_snd_move = SND_Request(Ci_SND_Move, C_SND_Request_3DSound )
+i_snd_charge45 = SND_Request(Ci_SND_Charge45, C_SND_Request_3DSound )
+v_vitesse_last_pos = OBJ_PosGet()
+f_vitesse = 0.0
+
+// TRACKS
+AI_TrackChange(Ci_Track_TagOff, "CR_TRACK_Tag_Off")
+AI_TrackChange(Ci_Track_Reflex, "CR_TRACK_Reflex")
+AI_TrackChange(Ci_Track_TagOn, "CR_TRACK_Tag_On")
+
+//ACT_ActionSet(ACTION_GrabDdeb)
+//TIME_Wait(10.0)
+
+if( i_DBG_track_GRID )
+	macro_change_etat("CR_ETAT_TEST_GRILLE")
+else if( i_DBG_track_test )
+	macro_change_etat("CR_ETAT_TEST")
+else
+	macro_change_etat("CR_ETAT_IDLE")
+

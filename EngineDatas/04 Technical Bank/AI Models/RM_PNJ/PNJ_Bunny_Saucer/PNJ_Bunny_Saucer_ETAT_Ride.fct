@@ -1,0 +1,216 @@
+#include "PNJ_Bunny_Saucer_defines.var"
+
+Include_UltraProcedure_Header
+
+int				ti_i
+int				ti_link_nb
+
+vector		tv_X
+vector		tv_Y
+vector		tv_pos
+vector		tv_current_link
+vector		tv_next_link
+vector		tv_cross_link
+vector		tv_B_pos
+vector		tv_C_pos
+vector		tv_dest_sight
+vector		tv_main_speed
+
+float			tf_wanted_traction
+float			tf_coef
+float			tf_speed_coef
+float			tf_main_speed
+
+object		to_last_wp	
+object		to_next_wp
+object		to_monture
+
+network		tn_net
+
+if (i_flag_sortie_etat)
+{
+	i_flag_sortie_etat = faux
+	return
+}
+
+if (i_etat_courant != ETAT_Ride)
+{
+	// INTIALISATION
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Ride
+	
+	if (fct_last_etat)
+	{
+		i_flag_sortie_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	fct_last_etat = AI_TrackCurGet()
+	
+	DYN_Off()
+	COL_ColSetActivationSet(none, all)
+	COL_ColMapActivationSet(none, all)
+
+	COL_UnCollidableAdd(o_main_actor)
+
+	v_spline_start_pos = OBJ_PosGet()
+	v_spline_dest_pos = @o_start_wp OBJ_PosGet()
+
+	f_spline_segment_length = MATH_VecNorm(v_spline_dest_pos - v_spline_start_pos)
+
+	// NEXT NEXT WP
+	@o_start_wp OBJ_SightSet(@o_start_wp OBJ_PosGet() - OBJ_PosGet())
+	to_next_wp = @o_start_wp WAY_NetNextWP(@o_start_wp WAY_NetOfObj(), o_start_wp, NetNextWP_Mode_axe_de_visee, 0)
+
+	o_spline_next_wp = to_next_wp
+
+	v_spline_start_axis = OBJ_SightGet()
+
+	tv_current_link = v_spline_dest_pos - v_spline_start_pos
+	tv_current_link /= f_spline_segment_length
+	tv_next_link = MATH_VecNormalize(@to_next_wp OBJ_PosGet() - v_spline_dest_pos)
+	tv_cross_link = MATH_VecCrossProduct(-tv_current_link, tv_next_link)
+	
+	v_spline_dest_axis = MATH_VecBlendRotate(-tv_current_link, tv_next_link, 0.5)
+	v_spline_dest_axis = MATH_VecCrossProduct(v_spline_dest_axis, tv_cross_link)
+	MATH_VecSetNormalize(v_spline_dest_axis)
+
+	f_boost_duration = 1.0
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ===============================================================
+//EVENT_AddEventEnemy(OBJ_Me())
+EVENT_AddEventLockCam(OBJ_Me(), 0, OBJ_BankingGet())
+
+#ifndef _FINAL_
+PNJ_Bunny_Saucer_Render_Trajectory(color_rouge)
+#endif
+
+o_Rided_Actor = LNK_ServeurGet(Ci_LNK_RIDE_ON_NMI, mid_Rided_LNK_ID, vrai, nofunc, nofunc)
+if (o_Rided_Actor == o_main_actor )
+	macro_change_etat("PNJ_Bunny_Saucer_ETAT_Basic")
+
+to_monture = @o_main_actor PROC_RM_MontureGet()
+if (to_monture)
+	tv_main_speed = @to_monture DYN_SpeedGetVector()
+else
+	tv_main_speed = @o_main_actor DYN_SpeedGetVector()
+tv_main_speed.z = 0.0
+tf_main_speed = MATH_VecNorm(tv_main_speed)
+
+if (tf_main_speed < 5.0)
+	f_main_low_speed_duration += TIME_GetDt()
+else
+	f_main_low_speed_duration = 0.0
+
+//switch(mode)
+//{
+//	case Ci_Mode_Agressif :
+//
+//		if ( @o_main_actor PROC_RM_MontureIDGet() != C_ID_Scooter)
+//			macro_change_etat("PNJ_Bunny_Saucer_ETAT_Fight")
+//			
+//		break
+//		
+//	case Ci_Mode_Fuite :
+//		if (f_time_start_etat > 3.0 && f_main_low_speed_duration > 2.0)
+//			macro_change_etat("PNJ_Bunny_Saucer_ETAT_Fight")
+//		break
+//}
+
+OBJ_CapaSet(OBJ_Capa_0, none)
+
+tf_speed_coef = 1.0
+
+to_monture = @o_main_actor PROC_RM_MontureGet()
+if (to_monture)
+	tv_Y = @to_monture OBJ_PosGet()
+else
+	tv_Y = @o_main_actor OBJ_PosGet()
+tv_Y -= OBJ_PosGet()
+tf_coef = MATH_VecNorm(tv_Y)
+tf_coef = MATH_FloatMax(tf_coef - 5.0, 0.0)
+
+if ( tf_coef < 11.0 && ! f_delay_since_last_boost)
+ 	f_boost_duration = 0.5
+
+tf_coef /= 50.0
+
+if (PNJ_Bunny_Saucer_Get_Rope_Gao(tv_X))
+	tf_wanted_traction = 150.0
+else
+	tf_wanted_traction = MATH_FloatBlend(tf_main_speed + f_max_speed, 0.0, tf_coef)
+
+//tf_wanted_traction = 20.0
+
+f_spline_coef += tf_wanted_traction * TIME_GetDt()
+while (f_spline_coef > f_spline_segment_length)
+{
+	f_spline_coef -= f_spline_segment_length
+
+	v_spline_start_pos = @o_start_wp OBJ_PosGet()
+
+	to_last_wp	= o_start_wp
+
+	// NEXT WP
+	o_start_wp = o_spline_next_wp // WAY_NetNextWP(@o_start_wp WAY_NetOfObj(), o_start_wp, NetNextWP_Mode_aleatoire, 0)
+	v_spline_dest_pos = @o_start_wp OBJ_PosGet()
+	f_spline_segment_length = MATH_VecNorm(v_spline_dest_pos - v_spline_start_pos)
+
+	// NEXT NEXT WP
+	@o_start_wp OBJ_SightSet(@o_start_wp OBJ_PosGet() - OBJ_PosGet())
+
+	ti_link_nb = WAY_GetNumLinks(@o_start_wp WAY_NetOfObj(), o_start_wp)
+	for (ti_i = 0; ti_i < ti_link_nb; ti_i++)
+	{
+		to_next_wp = @o_start_wp WAY_NetNextWP(@o_start_wp WAY_NetOfObj(), o_start_wp, NetNextWP_Mode_choix_de_lindice, ti_i)
+		if (to_next_wp == to_last_wp)
+			continue
+	
+		o_spline_next_wp = to_next_wp
+		
+		if (MATH_RandInt(0, ti_link_nb))
+			break
+	}
+	
+	v_spline_start_axis = -v_spline_dest_axis
+
+	tv_current_link = v_spline_dest_pos - v_spline_start_pos
+	tv_current_link /= f_spline_segment_length
+	tv_next_link = MATH_VecNormalize(@o_spline_next_wp OBJ_PosGet() - v_spline_dest_pos)
+	tv_cross_link = MATH_VecCrossProduct(-tv_current_link, tv_next_link)
+	
+	v_spline_dest_axis = MATH_VecBlendRotate(-tv_current_link, tv_next_link, 0.5)
+	v_spline_dest_axis = MATH_VecCrossProduct(v_spline_dest_axis, tv_cross_link)
+	MATH_VecSetNormalize(v_spline_dest_axis)
+}
+
+
+tv_B_pos = v_spline_start_pos
+tv_B_pos += v_spline_start_axis * f_spline_segment_length * 0.33
+
+tv_C_pos = v_spline_dest_pos
+tv_C_pos += v_spline_dest_axis * f_spline_segment_length * 0.33
+
+//DBG_RenderVector(v_spline_start_pos, v_spline_start_axis * f_spline_segment_length * 0.33, color_rouge)
+//DBG_RenderVector(v_spline_dest_pos, v_spline_dest_axis * f_spline_segment_length * 0.33, color_vert)
+MATH_LIB_Bezier_Display(30, v_spline_start_pos, tv_B_pos, tv_C_pos, v_spline_dest_pos, color_blanc)
+tv_pos = MATH_LIB_Bezier_Pos_Get(f_spline_coef / f_spline_segment_length, v_spline_start_pos, tv_B_pos, tv_C_pos, v_spline_dest_pos, tv_dest_sight)
+
+OBJ_PosSet(tv_pos)
+OBJ_SightGeneralSet(tv_dest_sight, Cv_VerticalVector)
+
+
+//if (COL_Pivot_BVCollide(o_start_wp))
+//{
+//	f_boost_duration = 0.5
+//	@o_start_wp OBJ_SightSet(@o_start_wp OBJ_PosGet() - @o_main_actor OBJ_PosGet())
+//	o_start_wp = @o_start_wp WAY_NetNextWP(@o_start_wp WAY_NetOfObj(), o_start_wp, NetNextWP_Mode_axe_de_visee, 0)
+//}
+
+

@@ -1,0 +1,27 @@
+#include "KT_defines.var"
+
+int					ti_rank
+messageid		EVT_ID
+object			EVT_Pere
+
+if (i_flag_cadavres_check_done)
+	return
+
+i_flag_cadavres_check_done = vrai
+
+if( ! MATH_Modulo(@get_global i_frame_nbr, 10) )
+	return
+
+ti_rank = -1
+for (	EVT_ID = MSG_GlobalScan(C_EVENT_TYPE_Cadavre, &ti_rank);
+		MSG_GlobalIsValid(EVT_ID);
+		EVT_ID = MSG_GlobalScan(C_EVENT_TYPE_Cadavre, &ti_rank))
+{
+	EVT_Pere = EVENT_PereGet(EVT_ID)
+	if( KT_GaoDansMonTerritoire(EVT_Pere) )
+	{
+		if( KT_Cadavre_Test(EVT_Pere, EVT_ID) )
+			KT_Cadavre_Add(EVT_Pere)
+	}
+}
+

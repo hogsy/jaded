@@ -1,0 +1,48 @@
+vector	tv_pos
+float		tf_accel
+float		tf_dist
+vector	tv_objectif
+vector	tv_ortho
+
+f_delai_paf -= MATH_FloatMin(f_delai_paf, TIME_GetDt())
+
+if(o_cible)
+{
+	tf_dist = MATH_VecNorm(@o_cible OBJ_PosGet()-OBJ_PosGet())
+	if(tf_dist>f_Far)
+	{
+		tv_objectif=@o_cible OBJ_PosGet()-OBJ_PosGet()
+	}
+	else
+	{
+		if( ! f_delai_paf )
+		{
+			f_delai_paf = MATH_RandFloat(0.0,10.0)
+//			EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_RM_Fort, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_cible, 10.0, @o_cible OBJ_PosGet() - OBJ_PosGet())
+		}
+		if(tf_dist>f_Near)
+		{
+			tv_ortho=MATH_VecCrossProduct(@o_cible OBJ_PosGet()-OBJ_PosGet(),f_Sens*cvector(0.0,0.0,1.0))
+			tv_objectif=MATH_VecBlendRotate(@o_cible OBJ_PosGet()-OBJ_PosGet(),tv_ortho,1-((tf_dist-f_Near)/(f_Far-f_Near)))
+		}
+		else
+		{
+			tv_ortho=MATH_VecCrossProduct(@o_cible OBJ_PosGet()-OBJ_PosGet(),f_Sens*cvector(0.0,0.0,1.0))
+			tv_objectif=MATH_VecBlendRotate(OBJ_PosGet()-@o_cible OBJ_PosGet(),tv_ortho,tf_dist/f_Near)
+		}
+	}
+	
+	DBG_RenderVector(OBJ_PosGet(),tv_objectif,c_coul)
+	DBG_RenderCircle(@o_cible OBJ_PosGet(),f_Near,cvector(0.0,0.0,1.0),c_coul)
+	DBG_RenderCircle(@o_cible OBJ_PosGet(),f_Far,cvector(0.0,0.0,1.0),c_coul)
+
+	OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(),tv_objectif,TIME_GetDt()*f_VitesseRotate),cvector(0.0,0.0,1.0))
+	v_Acceleration = MATH_VecBlend(v_Acceleration,OBJ_SightGet() * f_VitesseDeplacement ,5.0*TIME_GetDt())
+	OBJ_PosSet( OBJ_PosGet() + ( v_Acceleration * TIME_GetDt() ) )
+}
+
+if( IO_KeyJustPressed(65) )
+	i_action = 1 - i_action
+ACT_ActionSet(i_action)
+
+

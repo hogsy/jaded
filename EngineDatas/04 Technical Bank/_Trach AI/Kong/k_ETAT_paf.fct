@@ -1,0 +1,397 @@
+#include"k_define.var"
+
+int			ti_i
+int			ti_trace_action
+int			ti_ind
+int			ti_paffe
+int			ti_col
+float		ti_puissance
+
+vector	tv_sight
+vector	tv_sens
+vector	tv_speed_vector
+
+float		tf_dot
+float		tf_norm
+float		tf_sign
+float		tf_speed_norm
+
+object	to_col_wall_object
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+//	@get_global i_FPS_Shoulder_disabled = faux		// réautorise le FPS sur l'épaule
+	if ( i_etat_courant != ETAT_Kong_track_change)
+	{
+		// Cas different du paf pendant le paf on reset
+		o_paf_actor = nobody
+		o_paf_actor_backup = nobody
+		i_frappe_coup = -1		// paffe avec son corps
+	}
+	if( i_paf_mashing )
+	{
+		COL_UnCollidableDel(o_paf_mashing_object)		// virer l'uncol avec le pilier
+		o_uncol_actor = o_paf_mashing_actor
+		o_paf_mashing_actor = nobody
+		i_uncol = vrai													// préparer la suppr d'uncol avec REX
+	}
+	DYN_FrictionVectorSet(Cv_NullVector)
+	i_paf_mashing = faux
+	i_paf_mashing_cine = faux
+	
+	f_ride_paf_time = 0.0	// Si l on prend un paf on reset le compteur de paf en ride pour éviter d'enchainer 2 pafs.
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_Kong_desequilibre) 
+{
+	i_etat_courant = ETAT_Kong_desequilibre
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	ETAT_PAF_REINIT:
+//	@get_global i_FPS_Shoulder_disabled = faux		// réautorise le FPS sur l'épaule
+	
+	// CAMERA CAMERA CAMERA
+	@get_global i_kong_camera_status = Ci_Kcamera_deplacement
+	// GRAB CLIENT ACCEPT
+	ai_SRV_ENABLE[Ci_LNK_KKFINISH_ON_KONG] = vrai
+	
+	o_paf_actor_backup = o_paf_actor
+	
+	// SELECTION DU COTE DU PAF
+	DBG_RenderVector(OBJ_PosGet() - ( v_paf_dir * 5 ) + cvector(0,0,3), v_paf_dir * 10, color_rouge)
+//	tv_sight = MATH_VecNormalize(MATH_VecCrossProduct( - v_look_sens_epaule, Cv_VerticalVector))
+//	tv_sight = v_look_direction
+
+//	DBG_RenderVector(OBJ_PosGet() + cvector(0,0,2), v_look_direction * 5, color_jaune)
+//	tv_sight = MATH_VecInCone(v_look_direction, OBJ_SightGet(), 2 * Cf_PiBy3, 0)
+//	tv_sight.z = 0.0
+//	MATH_VecSetNormalize(tv_sight)
+
+	tv_sight = OBJ_SightGet()
+	
+	DBG_RenderVector(OBJ_PosGet() + cvector(0,0,3), tv_sight * 5, color_vert)
+ 	tf_dot = MATH_VecDotProduct( tv_sight , v_paf_dir)
+
+	if( ! MATH_FloatNullEpsilon(f_paf_recul) )
+	{
+		v_add_speed = v_paf_dir * f_paf_recul
+		f_coef_recul = 0.0
+	}
+
+	// DIFFERENTS CAS SELON LA PUISSANCE
+	if( i_paf_mashing )
+	{
+		if( i_paf_mashing_cine )
+		{
+			// kong est projeté en arrière et tombe dans le vide
+			COL_CrossableSet(Gmat_KK_Cross_All_But_Kong_And_Raptors, none)
+			COL_CrossableSet(Gmat_KK_Cross_All_But_Kong_Only, none)
+			// ANIM CINE !!!! A CHARGER EN LD SI UN PAF ENVOYE EN CINE A LE TYPE C_PAF_KK_MashingCine = 512
+			ACT_ActionSet(Ci_Kanim_Cine_Paf_Mashing | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_No_Blend )
+		}
+		else
+			ACT_ActionSet(Ci_Kanim_Paf_Fort_Face | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_No_Blend )
+		i_paf_frame_lache_ann = 0
+		i_paf_recul_type = C_PAF_KK_Moyen
+		SND_RequestPlay( Ci_KSound_PafFort)
+		Proc_KK_Rumble_Fort()
+		COL_UnCollidableAdd(o_paf_mashing_actor)
+	}
+	else if( i_paf_type & C_PAF_KK_Fort )
+	{
+//		@get_global i_FPS_Shoulder_disabled = vrai		// interdit le FPS sru l'épaule
+		@get_global i_FPS_Shoulder_force_new_entry = vrai		// forcer à relacher le shift FPS 
+ 		i_paf_recul_type = C_PAF_KK_Moyen
+		if( tf_dot > Cf_Cos45 )
+		{
+			// paffé par derrière
+			ACT_ActionSet(Ci_Kanim_Paf_Fort_Dos | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_No_Blend )
+			i_paf_frame_lache_ann = 42
+		}
+		else if( tf_dot < -Cf_Cos45 )
+		{
+			// paffé de face
+			ACT_ActionSet(Ci_Kanim_Paf_Fort_Face | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_No_Blend )
+			i_paf_frame_lache_ann = 30
+		}
+		else
+		{
+			// paffé par les coté
+			tf_dot = MATH_VecDotProduct( - v_look_sens_epaule, v_paf_dir)
+ 			if( tf_dot > 0 )
+			{
+				ACT_ActionSet( Ci_Kanim_Paf_Fort_face_G | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_No_Blend )
+				i_paf_frame_lache_ann = 30
+			}
+			else
+			{
+				ACT_ActionSet( Ci_Kanim_Paf_Fort_face_D | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_No_Blend )
+				i_paf_frame_lache_ann = 20
+			}
+		}
+		SND_RequestPlay( Ci_KSound_PafFort)
+		Proc_KK_Rumble_Fort()
+//		COL_CrossableSet(Gmat_KK_Cross_All_But_Kong_And_Raptors, none)
+//		COL_CrossableSet(Gmat_KK_Cross_All_But_Kong_Only, none)
+	}
+	else if( i_paf_type & (C_PAF_KK_Moyen | C_PAF_KK_Digwazai) )
+	{
+		i_paf_recul_type = C_PAF_KK_Faible
+		if( tf_dot > Cf_Cos45 )
+		{
+			// paffé par derrière
+			ACT_ActionSet(Ci_Kanim_Paf_Dos | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_No_Blend )
+			i_paf_frame_lache_ann = 20
+		}
+		else if( tf_dot < -Cf_Cos45 )
+		{
+			// paffé de face
+			ACT_ActionSet(Ci_Kanim_Paf_Face | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_No_Blend )
+			i_paf_frame_lache_ann = 4
+		}
+		else
+		{
+			// paffé par les coté
+			tf_dot = MATH_VecDotProduct( - v_look_sens_epaule, v_paf_dir)
+			if( tf_dot > 0 )
+			{
+				ACT_ActionSet( Ci_Kanim_Paf_face_G | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_No_Blend )
+				i_paf_frame_lache_ann = 4
+			}
+			else
+			{
+				ACT_ActionSet( Ci_Kanim_Paf_face_D | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_No_Blend )
+ 				i_paf_frame_lache_ann = 4
+			}
+		}
+		SND_RequestPlay( Ci_KSound_PafNormal)
+		Proc_KK_Rumble_Moyen()
+	}
+	else if( i_paf_type & (C_PAF_KK_Faible | C_PAF_KK_Javelin) )
+	{
+		i_paf_recul_type = C_PAF_KK_Faible
+		ACT_ActionSet( Ci_Kanim_Paf_petite_morsure | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_No_Blend )
+		i_paf_frame_lache_ann = 999
+		
+		// RECUL + ROTATION
+		f_coef_recul = 0.0
+		GST_PAF_Trans_Rotate(OBJ_PosGet(), OBJ_SightGet(), v_paf_position, v_paf_dir, 5.0, v_add_speed, f_add_rotation)
+	}
+	else
+	{
+		DBG_Error("???????")
+	}
+	
+//	Fury_End
+	FURY_Paf_Decrease
+
+	i_frappe_coup = Ci_Frappe_Avec_Corps		// paffe avec son corps
+	v_paf_blend_direction = v_look_direction			// Orientation que devrait avoir Kong a cause du suivi du regard
+	v_paf_blend_direction.z = 0.0
+	MATH_VecSetNormalize( v_paf_blend_direction)
+	v_paf_sight = OBJ_SightGet()
+	f_paf_blend_compense = 0.0
+	f_paf_blend = 0.0
+	RIDE_Propose_Link()
+	i_paf_fall_on_ground_done = faux
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ============================================================================
+
+AI_Execute("k_exec_detect_paf")
+if ( o_paf_actor )
+{
+	o_paf_actor_backup = o_paf_actor
+	PAF_Test_ChangeEtatValid(fct_track_change)
+	if( fct_track_change != nofunc )
+	{
+		goto ETAT_PAF_REINIT
+	}
+}
+
+// GRAB KONG =======================================
+o_finish_actor= LNK_ServeurGet(Ci_LNK_KKFINISH_ON_KONG, mid_finish_LNK_ID, vrai, nofunc, nofunc)
+if (o_finish_actor && f_time_start_etat > 0.5 )
+	macro_change_etat("k_ETAT_finished")
+
+
+
+// SORTIES DU MODE ========================================================================
+if( ( ACT_ActionGet() != Ci_Kanim_Cine_Paf_Mashing || ACT_ActionFinished() ) && JUMP_Check_chute(faux) )
+	macro_change_etat("k_ETAT_jump")
+
+if( ACT_ActionGet() == Ci_Kanim_Paf_petite_morsure )
+{
+	if( (f_joy_norm && ANI_CurrentFrameGet(0) > 60) || ACT_ActionFinished() )
+	{
+		if ( i_GrabKong_Souche)
+			macro_change_etat("k_ETAT_main_souche")
+		else
+			macro_change_etat("k_ETAT_main")
+	}
+}
+else
+{
+	if( ACT_ActionFinished() 
+	|| (i_GrabKong_Souche && ACT_ActionItemGet()))
+	{
+		if ( i_GrabKong_Souche)
+			macro_change_etat("k_ETAT_main_souche")
+		else
+			macro_change_etat("k_ETAT_main")
+	}
+}
+
+
+// COMPORTEMENT ===========================================================================
+if( f_time_start_etat >= 0.25 )
+{
+	// PAFFER DERRIERE MOI QD JE SUIS ORIENTE ======================================================
+	ti_paffe = faux
+	switch( ACT_ActionGet() )
+	{
+		case Ci_Kanim_Paf_petite_morsure :
+			// pas de paf dans le dos
+			break
+			
+		case 	Ci_Kanim_Paf_Dos :
+			if( f_time_start_etat < 0.40 )
+				ti_paffe = vrai
+			break
+			
+		default:
+			if( f_time_start_etat < 0.70 )
+				ti_paffe = vrai
+			break
+	}
+	
+	if( ti_paffe )
+	{
+		tv_sens = OBJ_SightGet()
+		if( COL_BestAngleWallGaoGet( tv_sens, Cf_Cos30, &ti_col) )
+		{
+			// Mur de face
+			to_col_wall_object = COL_ObjectGet(COL_C_ReportIndex + ti_col)
+			if( to_col_wall_object )
+			{
+				if( to_col_wall_object != o_paf_actor_backup )
+				{
+//					DBG_TraceString("=== KONG paffe '")
+//					DBG_TraceObject(to_col_wall_object)
+//					DBG_TraceEOL()
+					ti_puissance = Cf_DMG_Normal
+					EVENT_AddEventPaf( C_EVENT_FILTER_Object, i_paf_recul_type, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_col_wall_object, ti_puissance, tv_sens)
+//					if( Proc_KK_EstUnEnnemiDeKong(to_col_wall_object) )
+//						STATS_IncAttack()
+				}
+			}
+		}
+		AI_Execute("k_exec_zdf_zdc")
+//		Str_DisplayTextOnce("paffe", Cv_NullVector)
+	}
+}
+
+// orientation pendant le paf
+if( i_paf_mashing )
+{
+	tv_speed_vector = DYN_SpeedGetVector()
+	tf_speed_norm = DYN_SpeedGet()
+	DYN_SpeedSetVector(tf_speed_norm * v_paf_mashing_sens)		// déjà normalisé
+	DBG_RenderVector(OBJ_PosGet() + (3*Cv_VerticalVector), v_paf_mashing_sens * 5, color_jaune)
+//	OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), tf_sign * v_paf_dir, 10.0 * TIME_GetDt()), Cv_VerticalVector)
+}
+else
+{
+	tf_sign = -1.0
+	switch( ACT_ActionGet() )
+	{
+		case Ci_Kanim_Paf_petite_morsure :
+			// pas d'orientation (le paf peut venir de dos (bat) ou de face (raptor)
+			break
+			
+		case Ci_Kanim_Paf_Fort_Face :
+			if( ! i_paf_fall_on_ground_done && ANI_CurrentFrameGet(0) > 5 )
+			{
+				i_paf_fall_on_ground_done = vrai
+				OBJ_CapaSet(Capa_Fall_On_Ground_PAF, none)
+			}
+			Proc_KK_DashImpact(2)
+			break
+			
+		case Ci_Kanim_Paf_Fort_face_D :
+			if( ! i_paf_fall_on_ground_done && ANI_CurrentFrameGet(0) > 20 )
+			{
+				i_paf_fall_on_ground_done = vrai
+				OBJ_CapaSet(Capa_Fall_On_Ground_PAF, none)
+			}
+			Proc_KK_DashImpact(2)
+			break
+			
+		case Ci_Kanim_Paf_Fort_face_G :
+			// on conserve l'orientation effectuée par l'anim
+			if( ! i_paf_fall_on_ground_done && ANI_CurrentFrameGet(0) > 20 )
+			{
+				i_paf_fall_on_ground_done = vrai
+				OBJ_CapaSet(Capa_Fall_On_Ground_PAF, none)
+			}
+			Proc_KK_DashImpact(3)
+			break
+			
+		case Ci_Kanim_Paf_Fort_Dos :
+			if( ! i_paf_fall_on_ground_done && ANI_CurrentFrameGet(0) > 35 )
+			{
+				i_paf_fall_on_ground_done = vrai
+				OBJ_CapaSet(Capa_Fall_On_Ground_PAF, none)
+			}
+			// pas de break !!!
+		case Ci_Kanim_Paf_Dos :
+			Proc_KK_DashImpact(1)
+			tf_sign = 1.0
+			OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), tf_sign * v_paf_dir, 10.0 * TIME_GetDt()), Cv_VerticalVector)
+			break
+			
+		case Ci_Kanim_Paf_face_G :
+		case Ci_Kanim_Paf_Face :
+			if ( ANI_CurrentFrameGet(0) > 15 && ! i_GrabKong_Souche)
+			{	
+				if ( i_flag_just_coup)
+				{
+					COUP_CHANGE_To_Combo1(10)
+					macro_change_etat("k_ETAT_main")				
+				}
+			}
+			OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), tf_sign * v_paf_dir, 10.0 * TIME_GetDt()), Cv_VerticalVector)
+			break	
+			
+		case Ci_Kanim_Paf_face_D :
+			if ( ANI_CurrentFrameGet(0) > 15 && ! i_GrabKong_Souche)
+			{	
+				if ( i_flag_just_coup)
+				{
+					COUP_CHANGE_To_Combo2(15)
+					macro_change_etat("k_ETAT_main")				
+				}
+			}
+		default:
+	//		tv_sight = tf_sign * v_paf_dir
+	//		f_paf_blend = MATH_FloatBlend(f_paf_blend, 5.0, 5 * TIME_GetDt())
+			OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), tf_sign * v_paf_dir, 10.0 * TIME_GetDt()), Cv_VerticalVector)
+			break	
+	}
+}
+

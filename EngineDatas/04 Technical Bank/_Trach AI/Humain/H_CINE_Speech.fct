@@ -1,0 +1,114 @@
+#include "H_defines.var"
+message	m_cine
+text			txt
+int				ti_i
+object		obj
+vector		tv_or
+
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	i_cine_close = vrai
+	return
+}
+
+m_cine = am_CineStack[0]
+
+if(i_etat_courant != ETAT_CINE_Speech)
+{
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	////////////// INTERACTION /////////////////////////
+	for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+		ai_SRV_ENABLE[ti_i] = faux
+	fct_main_etat = AI_TrackCurGet()
+	fct_last_etat = AI_TrackCurGet()
+	//////////////////////////////////////////////////////////////
+		
+	i_cine_speaking = faux
+	f_time_start_etat = 0
+	i_etat_courant = ETAT_CINE_Speech
+	SPEECH_M_RqOneText2Params(m_cine.msg_int4, m_cine.msg_int5)
+	f_time_fail_vala = 0
+} 
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+
+AI_Execute("H_exec_read_world")
+AI_Execute("H_exec_serveur_get")
+AI_Execute("H_exec_change_etat")
+AI_Execute("H_exec_ch_Stimulus_Paf")
+if (o_paf_sender) macro_change_etat("H_ETAT_IA_paf")
+OBJ_Me().des_int1 = Ci_DISPLAY_PSSS
+
+/////////////////////////////////////////////////////////////////////////////////
+
+// Regarde
+o_cine_regarde = m_cine.msg_gao2
+if(o_cine_regarde)
+{
+	o_cine_regarde = @o_cine_regarde ANI_CanalObjectGet(Anim_Canal_Tete)
+	if(!o_cine_regarde) o_cine_regarde = m_cine.msg_gao2
+	f_cine_regarde = 0.5
+}
+
+// A l'arret
+f_joy_norm = 0
+v_joy_dir = Cv_NullVector
+ 
+// Orientation vers gao
+if(m_cine.msg_gao2)
+{
+	i_flag_oriente_vers = vrai
+	obj = m_cine.msg_gao2
+	v_joy_dir = @obj OBJ_PosGet() - OBJ_PosGet()
+ 	MATH_VecSetHorzNormalize(v_joy_dir)
+ 	
+ 	tv_or = m_cine.msg_vec3
+ 	if((tv_or.x > 0.1) && MATH_VecDotProduct(OBJ_SightGet(), v_joy_dir) > TOLER_CINE_ORIENT) v_joy_dir = OBJ_SightGet()
+}
+
+// Pour etre sur que ca va etre joué
+if(f_time_fail_vala > 1.0)
+{
+	SPEECH_M_RqOneText2Params(m_cine.msg_int4, m_cine.msg_int5)
+	f_time_fail_vala = 0
+}
+
+// Arret
+if(m_cine.msg_int2 == 0)
+	i_cine_close = vrai
+else if(SPEECH_ObjectIsSpeaking(OBJ_Me()))
+	i_cine_speaking = vrai
+else if(i_cine_speaking)
+	i_cine_close = vrai
+else
+	f_time_fail_vala += TIME_GetDt()
+
+if(i_cine_close) 
+{
+	fct_last_etat = nofunc
+	i_etat_courant = 0
+}
+
+//// BLINDAGE
+if(f_time_start_etat > 15)
+	i_cine_close = vrai
+
+// Intention 
+f_joy_norm = 0
+if(WOR_GetKey() != 0x08008943)  v_joy_dir = Cv_NullVector
+CINE_IntentionArret(m_cine.msg_int3)
+
+if(!m_cine.msg_int3) f_time_attend += TIME_GetDt()
+
+AI_Execute("H_exec_select_action")
+//i_cine_action = -1

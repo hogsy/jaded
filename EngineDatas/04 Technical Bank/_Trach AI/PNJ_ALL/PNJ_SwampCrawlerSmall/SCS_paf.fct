@@ -1,0 +1,219 @@
+#include "PNJ_SwampCrawlerSmall_defs.var"
+
+vector	tv_sight
+vector	tv_pos
+vector	newsight
+vector	sight
+
+float		tf_z
+float		tf_coef
+
+int			ti_finish
+
+object	to_gao 
+
+//--------( Sortie Etat )--------
+if (etat_i_quitte)
+{
+	stimul_f_pafHPcumul = 0
+	etat_i_quitte = faux
+	return
+}
+
+//--------( Entrée Etat )--------
+if ( etat_i_courant != SCS_ETAT_paf )
+{
+	etat_i_ancien = etat_i_courant
+	etat_i_courant = SCS_ETAT_paf
+	stimul_f_pafHPcumul = 0
+
+	//----( quitte état précédent )----
+	if ( etat_fct )
+	{
+		etat_i_quitte = vrai
+		AI_Execute( etat_fct )
+	}
+SCS_paf_repaf:	
+	//--------( init variable )-----------------------------------
+	etat_fct = AI_TrackCurGet()
+	etat_f_timer = f_PafDelay
+	stimul_i_paf = faux
+	stimul_f_pafHPcumul += stimul_f_pafHP
+
+	//--------( loose life )-----------------------------------
+	if ( (etat_i_param == SCS_PAF_mort ) || ( EVENT_LIFE_CurLifeGet(ID_LIFE) <= stimul_f_pafHP ) )
+	{
+		SND_RequestPlay( SCS_Snd_PafDead )
+
+		f_time_splash = 1.0
+
+//		life_f_cur = 0
+		EVENT_LIFE_CurLifeSet(ID_LIFE, 0.0)
+		OBJ_CapaSet( OBJ_Capa_15,0)
+		// pour tester le paf dos stimul_v_pafdir = -stimul_v_pafdir
+		if (MATH_VecDotProduct( OBJ_SightGet(), -stimul_v_pafdir) > -0.5 )
+		{
+			ACT_ActionSet( SCS_ACT_paf_dead )
+			etat_i_state = 2
+		}
+		else
+		{
+			ACT_ActionSet( SCS_ACT_paf_deadback )
+			etat_i_state = 0
+		}
+	}
+	else
+	{
+		SND_RequestPlay( SCS_Snd_Paf )
+
+		f_time_splash = 0.5
+
+		if ( (stimul_f_pafHPcumul <= 4) && (stimul_i_paftype != C_PAF_KK_Repousse) )
+		{
+			etat_i_state = 3
+			etat_f_timer = 0.2
+			stimul_f_pafpuis *= 0.5
+//			MATH_VecRotate( OBJ_SightGet() , Cv_VerticalVector, 0.1 )
+//			OBJ_SightGeneralSet( MATH_VecRotate( OBJ_SightGet(), Cv_VerticalVector, 0.5 ), Cv_VerticalVector )
+//			//ACT_ActionSet( SCS_ACT_paf_water )
+		}
+		else
+		{
+			etat_i_state = 1
+			ACT_ActionSet( SCS_ACT_paf_water )
+		}
+//		life_f_cur -= stimul_f_pafHP
+		EVENT_LIFE_LifeChange(ID_LIFE, stimul_f_pafHP)
+	}
+
+	if( i_trace_paf )
+	{
+		DBG_TraceString("PAF : " )
+		DBG_TraceInt( stimul_f_pafHP )
+		DBG_TraceString(" (cumul) : " )
+		DBG_TraceInt( stimul_f_pafHPcumul )
+		DBG_TraceString(" LEFT : " )
+//		DBG_TraceInt( life_f_cur )
+		DBG_TraceFloat(EVENT_LIFE_CurLifeGet(ID_LIFE))
+		DBG_TraceEOL()
+	}
+}
+
+#ifndef _FINAL_
+if ((i_debug_display || @get_global i_debug_all_swamp) && !@"univ" Engine)
+{
+	to_gao = ANI_CanalObjectGet(Anim_Canal_Tete)
+	Str_DisplayTextOnce("\cFF00\PAF:\cFFFFFF\ Shooted by", VIEW_3dWorldTo2d(0, @to_gao OBJ_PosGet()))
+	Str_DisplayGaoOnce(stimul_o_pafby, VIEW_3dWorldTo2d(0, @to_gao OBJ_PosGet()) + cvector(0,0.03,0))
+}
+#endif
+
+f_time_splash -= MATH_FloatMin(f_time_splash,TIME_GetDt())
+if (f_time_splash)
+{
+	tv_pos = OBJ_PosGet()
+	tv_pos.z = GFX_traceZ
+	SCS_fct_GFX_SplashMove(tv_pos, f_time_splash * 0.5)
+}
+
+//--------( se reprend un paf )---------------------------------------------------------
+if ( stimul_i_paf && EVENT_LIFE_CurLifeGet(ID_LIFE) ) // life_f_cur )
+{
+	if (stimul_i_pafcanal == Anim_Canal_Tete)
+		stimul_f_pafHP *= 2
+	
+	if ( ( etat_i_state == 1 ) || (etat_i_state == 3) )
+		goto SCS_paf_repaf
+//	if ( (etat_i_state == 3) || (stimul_f_pafHP >= life_f_cur) )
+//	{
+//		etat_i_courant = -1
+//		macro_takeapaf( SCS_PAF_one )
+//	}
+}
+		
+//--------( déplacement )--------
+if (etat_i_state == 3 )
+{
+	tf_coef = etat_f_timer / 0.2
+	tf_coef *= tf_coef
+	tf_coef *= tf_coef
+	OBJ_RotateLocalZ( tf_coef * stimul_f_paf_rotspeed * TIME_GetDt() )
+
+	move_i_ondule = 0
+	move_i_remote = 0
+	f_SpeedZ = 0.5
+	AI_Execute( "SCS_exec_move" )
+//
+//	newsight = move_v_dest - OBJ_PosGet()
+//	sight = MATH_VecBlendRotate(OBJ_SightGet(), newsight, TIME_GetDt() )
+//	sight.z = 0
+//	if (!MATH_VecNull(sight) )
+//		OBJ_SightGeneralSet( sight, Cv_VerticalVector )
+}
+//else
+{
+	tv_pos = OBJ_PosGet() 
+	tv_pos += stimul_v_pafdir * ( stimul_f_pafpuis * TIME_GetDt() )
+	tf_z = move_f_Zsurface
+	if (tv_pos.z < tf_z )
+	{
+		tv_pos.z += TIME_GetDt()
+		if (tv_pos.z > tf_z) tv_pos.z = tf_z
+	}
+	else if (tv_pos.z > tf_z)
+	{
+		tv_pos.z -= TIME_GetDt()
+		if (tv_pos.z < tf_z) tv_pos.z = tf_z
+	}
+	
+	OBJ_PosSet( tv_pos )
+	stimul_f_pafpuis *= 0.95
+}
+
+if ( etat_i_state == 2 )
+{
+	if (ANI_RatioGet(0) < 0.5 )
+		OBJ_BankingGeneralSet( MATH_VecBlend( OBJ_SightGet(), -stimul_v_pafdir, 0.5), Cv_VerticalVector )
+}
+	
+//--------( fin de l'anim )---------------------------------------------------------
+ti_finish = 0
+if ( ( etat_i_state == 1) || ( etat_i_state == 3)) 
+{
+	if (( etat_i_state == 1) && ACT_ActionFinished() )
+	{
+		//ACT_ActionSet( SCS_ACT_water_wait )
+		ti_finish = 1
+	}
+	etat_f_timer -= TIME_GetDt()
+	if (etat_f_timer < 0)
+		ti_finish = 1
+}
+else
+{
+	if (ACT_ActionFinished() )
+		ti_finish = 1
+}
+
+
+if ( ti_finish )
+{
+	move_v_dest = move_v_repli
+	move_v_repli = move_v_start
+	move_v_start = move_v_dest
+	
+	move_v_dest.z = move_f_Zunderwater
+	
+	tv_sight = move_v_replisight
+	move_v_replisight = move_v_startsight
+	move_v_startsight = tv_sight	
+
+//	if ( life_f_cur <= 0)	
+	if( ! EVENT_LIFE_CurLifeGet(ID_LIFE) )
+		macro_change_etat( "SCS_dead" )
+	else 		
+	{
+		etat_i_swimnopaf = 1
+		macro_change_etat( "SCS_swim" )
+	}	
+}

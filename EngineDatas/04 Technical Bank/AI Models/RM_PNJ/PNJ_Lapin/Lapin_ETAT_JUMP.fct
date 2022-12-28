@@ -1,0 +1,290 @@
+#include "PNJ_Lapin_defines.var"
+
+int			ti_test_ground
+int			ti_test_ride
+int			ti_test_melee
+vector	tv_temp
+vector	tv_pos
+float		tf_time
+float		tf_amplitude
+float		tf_dist
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	o_RideMount_Nearest = nobody
+	i_flag_jump_to_ride_a_mount = faux
+	i_flag_jump_to_att_wp_anim = faux
+	if( i_flag_jump_to_keep_moving )
+	{
+//		DBG_EraseAllVectors()
+		f_jump_to_keep_moving = 0.25	//MATH_RandFloat(0.5, 1.0)
+		tv_temp = v_jump_dest_pos - OBJ_PosGet()
+		DBG_RenderVector(OBJ_PosGet(), tv_temp, color_bleu)
+		tf_dist = 1.5 * OBJ_ZoomGet()
+		tf_dist *= tf_dist
+		if( MATH_VecDotProduct(tv_temp,tv_temp) < tf_dist )
+			i_depl_jump_cpt = 0		// j'ai réussi mon saut pour avancer
+		
+		tv_temp = v_jump_start_pos - OBJ_PosGet()
+		tf_dist = 16.0
+		if( MATH_VecDotProduct(tv_temp,tv_temp) < tf_dist )
+			i_depl_jump_cpt = 0		// mon saut m'a fait bcp avancer
+	}
+	i_flag_jump_to_keep_moving = faux
+	i_flag_jump_taupe = faux
+	if( i_flag_jump_in_back )
+		f_jump_in_back_delai = MATH_RandFloat(10.0, 20.0)
+	i_flag_jump = faux
+	i_flag_jump_in_back_invincible = faux	// blindage... ?
+	tv_temp = v_jump_dest_pos - OBJ_PosGet()
+	if( MATH_VecDotProduct(tv_temp, tv_temp) < 4.0 )
+		i_depl_jump_cpt = 0		// raz cpt jump
+	Lapin_EXPRESSION(Cf_Expr_Mouth_Closed)
+	if( i_etat_courant != ETAT_Lapin_MELEE )
+	{
+		i_flag_jump_to_attack = faux
+		i_flag_jump_in_back = faux
+	}
+	if( o_RideMount_before_Taupe_backup )
+	{
+		@o_RideMount_before_Taupe_backup OBJ_FlagInactiveSet(faux)
+		@o_RideMount_before_Taupe_backup OBJ_FlagInvisibleSet(faux)
+		@o_RideMount_before_Taupe_backup OBJ_ZoomSet(f_RideMount_before_Taupe_zoom)
+		o_RideMount_before_Taupe_backup = nobody
+	}
+	i_taupe_in_back_flag = faux
+	i_flag_jump_to_danse = faux
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_Lapin_JUMP) 
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Lapin_JUMP
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	Lapin_DBG_Trace_String(DBG_Trace_Etat, "JUMP")
+	fct_previous_etat = fct_last_etat
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	f_time_sous_mode = 0.0
+	Lapin_ACTION_Set(Action_Jump_Impulsion)
+	
+	if( i_flag_jump_in_back || i_taupe_in_back_flag )		// speed pour attaquer dans le dos
+	{
+		i_flag_jump_in_back_invincible = vrai
+		Lapin_ACTION_RandomFreqSet(2.0, 2.0)
+	}
+	
+	if( MATH_VecNorm(v_jump_dest_pos) < 10.0 )
+	{
+		DBG_BreakPoint()
+	}
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+	f_time_sous_mode += TIME_GetDt()
+}
+
+// STIMULI ===========================================================================
+o_Grabbed_Actor = LNK_ServeurGet(Ci_LNK_GRAB_EAGLE, mid_Grabbed_LNK_ID, vrai, nofunc, nofunc)
+if( o_Grabbed_Actor )
+	macro_change_etat("Lapin_ETAT_GRABBED")
+
+o_Rided_Actor = LNK_ServeurGet(Ci_LNK_RIDE_ON_NMI, mid_Rided_LNK_ID, vrai, nofunc, nofunc)
+if( o_Rided_Actor )
+	macro_change_etat("Lapin_ETAT_RIDED")
+
+AI_Execute("Lapin_exec_check_vision")
+
+MACRO_CHECK_PAFS
+
+if( Lapin_ROPE_Gogo_Mode() )
+	macro_change_etat("Lapin_ETAT_GOGO")
+
+if( i_ventilo_flag )
+	macro_change_etat("Lapin_ETAT_ASPIRE")
+
+// chute
+switch( ACT_ActionGet() )
+{
+	case Action_Jump_Impulsion :
+	case Action_Jump_Reception :
+		break
+	default:
+		if( f_time_start_etat > 5.0 )
+		{
+			MACRO_CHECK_CHUTE
+		}
+		break
+}
+
+
+AI_Execute("Lapin_exec_update_best_interest")
+
+
+// COMPORTEMENT ===========================================================================
+ti_test_ground = vrai
+ti_test_ride = faux
+ti_test_melee = faux
+switch( ACT_ActionGet() )
+{
+	case Action_Jump_Impulsion :
+		ti_test_ground = faux
+		if( ACT_ActionFinished() )
+		{
+			if( o_RideMount_Actor )
+				Lapin_RIDEMOUNT_Cancel()		// couper le ride !!!
+			v_jump_start_pos = OBJ_PosGet()
+			OBJ_HierarchyReset()
+			f_jump_impulsion_time = TIME_Get()
+			DYN_TractionSet(Cv_NullVector)
+			i_flag_jump = vrai
+			if( i_flag_jump_precis )
+				DYN_FrictionVectorSet(Cv_DYN_Friction_Jump_Precis)
+			else
+				DYN_FrictionVectorSet(Cv_DYN_Friction_Jump)
+			if( i_flag_jump_taupe )
+				tf_amplitude = 8.0
+			else if( i_flag_jump_to_danse )
+			{
+				if( ! Lapin_DANSE_PosGet(v_jump_dest_pos) )
+					macro_change_etat("Lapin_ETAT_DANSE")		// finalement je reste sur place
+				else
+					tf_amplitude = 3.0
+			}
+			else if( i_flag_jump_to_ride_a_mount || i_flag_jump_to_attack || i_flag_jump_to_att_wp_anim )
+				tf_amplitude = 1.0
+			else if( i_flag_jump_in_back )
+				tf_amplitude = 2.0
+			else
+				tf_amplitude = 5.0
+			DBG_RenderVector(OBJ_PosGet(), v_jump_dest_pos - OBJ_PosGet(), color_bleu)
+			DYN_GravitySet(Cv_DYN_Gravity)
+			v_jump_impulsion_force = DYN_LIB_ImpulsionGet_Friction(OBJ_PosGet(), v_jump_dest_pos, DYN_GravityVectorGet(), Cf_DYN_Friction_Jump, tf_time, faux, tf_amplitude)
+			DBG_RenderVector(OBJ_PosGet(), v_jump_impulsion_force, color_jaune)
+			DBG_RenderVector(OBJ_PosGet(), v_jump_dest_pos - OBJ_PosGet(), color_blanc)
+			DYN_SpeedSetVector(v_jump_impulsion_force)
+			if( i_flag_jump_to_ride_a_mount )
+				Lapin_ACTION_Set(Action_Jump_Cycle)		// taupe ou pas
+			else if( i_flag_jump_taupe )
+			{
+				Lapin_ACTION_Set(Action_Jump_Taupe)
+				f_time_sous_mode = 0.0
+			}
+			else
+				Lapin_ACTION_Set(Action_Jump_Cycle)
+			SND_RequestPlay(Ci_SND_Jump_Impulsion)
+			Lapin_EXPRESSION(Cf_Expr_Mouth_Middle)
+		}
+		// orientation pendant l'impulsion
+		v_force_sight = v_jump_dest_pos - OBJ_PosGet()
+		f_orient_speed = 10.0
+		AI_Execute("Lapin_exec_way_orientation")
+		break
+	case Action_Jump_Cycle :
+		ti_test_melee = vrai
+		if( ACT_ActionFinished() )
+		{
+			Lapin_ACTION_Set(Action_Jump_Chute)
+			i_flag_jump_in_back_invincible = faux
+			if( o_RideMount_before_Taupe_backup )
+			{
+				@o_RideMount_before_Taupe_backup OBJ_FlagInvisibleSet(faux)
+				@o_RideMount_before_Taupe_backup OBJ_FlagInactiveSet(faux)
+				if( @o_RideMount_before_Taupe_backup OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna) )
+					@o_RideMount_before_Taupe_backup DYN_SpeedSetVector(Cv_NullVector)
+			}
+		}
+		break
+	case Action_Jump_Chute :
+		ti_test_ride = vrai
+		ti_test_melee = vrai
+	case Action_Jump_Taupe :
+		if( i_ground_flag )
+		{
+			i_flag_jump = faux
+			i_flag_jump_precis = faux
+			Lapin_ACTION_Set(Action_Jump_Reception)
+		}
+		// tombé dans l'eau !!!
+		if( i_is_in_water )
+			MACRO_GO_IDLE(0)
+		// jump to danse = snap dest pos (rayman peut bouger)
+		if( i_flag_jump_to_danse )
+		{
+			if( Lapin_DANSE_PosGet(tv_pos) )
+			{
+//				Str_DisplayTextOnce("\cFF00\\h0.1\SNAP", MACRO_2D)
+				OBJ_PosSet(MATH_VecBlend(OBJ_PosGet(), tv_pos, 5 * TIME_GetDt()))
+			}
+		}
+		break
+	case Action_Jump_Reception :
+		if( ACT_ActionFinished() || i_flag_jump_to_danse || ( i_flag_jump_to_att_wp_anim && Att_anim == Action_Attente_Ordi ) )
+		{
+			// jump to danse ou jump pour se mettre face à l'ordi = pas d'anim de réception
+			if( i_flag_jump_in_back )
+				macro_change_etat("Lapin_ETAT_MELEE")
+			else
+				MACRO_GO_IDLE(0)		// Apparition, Attente, Fight
+		}
+		break
+}
+
+
+// Test enchainement apparition
+if( o_App_next_wp && COL_Pivot_BVCollide(o_App_next_wp) )
+	o_App_next_wp = WAY_NetNextWP(WAY_App, o_App_next_wp, NetNextWP_Mode_aleatoire, none)
+
+
+// Test réception au sol
+if( ti_test_ground )
+{
+	if( v_speedgetvector.z <= 0.0 && COL_CollideType(COL_C_Ground) )
+	{
+		tv_temp = COL_NormalGet(COL_C_Ground)
+		if( tv_temp.z > 0.0 )
+			Lapin_ACTION_Set(Action_Jump_Reception)
+	}
+}
+
+// Test fight
+if( i_flag_jump_to_attack && ti_test_melee )
+	AI_Execute("Lapin_exec_fight_melee")
+
+// Test passage en ride
+if( ti_test_ride && i_flag_jump_to_ride_a_mount )
+{
+	o_RideMount_Actor = LNK_ThisClientGet(o_RideMount_Nearest, Ci_LNK_RIDE_ON_NMI, mid_RideMount_LNK_ID, vrai, nofunc, nofunc, nofunc)		
+	if( o_RideMount_Actor == o_RideMount_Nearest )
+	{
+		i_RideMount_ID = i_RideMount_Nearest_ID
+		o_RideMount_Nearest = nobody
+		macro_change_etat("Lapin_ETAT_RIDE_MOUNT")
+	}
+}
+
+// traction to keep moving ?
+if( i_flag_jump_to_keep_moving )
+	v_traction_exit_chute = 5.0 * OBJ_SightGet()
+
+// zoom de la monture qui sort du sol
+if( o_RideMount_before_Taupe_backup && ( @o_RideMount_before_Taupe_backup OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Visible ) )
+	@o_RideMount_before_Taupe_backup OBJ_ZoomSet(MATH_FloatBlend(@o_RideMount_before_Taupe_backup OBJ_ZoomGet(), f_RideMount_before_Taupe_zoom, 7.0 * TIME_GetDt()))
+
+// regard ?
+if( i_flag_jump_to_danse )
+{
+	i_flag_look = vrai
+	v_look_pos = v_jump_dest_pos
+}

@@ -1,0 +1,55 @@
+#include "CM_Defines.var"
+
+vector	tv_temp, tv_temp1, tv_temp2
+float 		tf_dot, tf_temp, tf_temp1
+vector	tv_joy1
+object	to_obj
+	
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Params
+AI_TrackChange(2, "CM_Meca_Jack")
+o_mf_actor = AI_MainActorGet(0)
+v_cur_pos_suivi = @o_mf_actor OBJ_PosGet()
+
+
+if(i_mode_cur != CM_ModeJack)
+{
+	i_mode_cur = CM_ModeJack
+}
+
+// Mode proche
+if(@get_global i_jack_camera_status == Ci_Jcamera_visee) 
+{
+	AI_TrackCurChangeNow("CM_Mode_Jack_Proche")
+}
+	
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Params : Distance ideale
+f_EvitementRay = 3.5
+f_BlendEvitementRay = 2
+f_blend_pos = MATH_FloatBlend(f_blend_pos, 50, TIME_GetDt())
+f_IdealDist = 4
+i_stick_zmax = vrai
+f_factor_blend_sight = 0.5
+
+// Params : Hauteur cam
+f_IdealZMin = 1.65
+f_IdealZMax = 2.0
+f_last_sign = 1
+af_FctIdeal_ZTgt[1] = 2
+af_FctIdeal_ZTgt[3] = 1.65
+
+// Params : X tgt
+af_FctIdeal_XTgt[1] = 0
+af_FctIdeal_XTgt[3] = 0
+
+// Sight
+AI_Execute("CM_Exec_SightJack")
+
+// Retour horiz fonction vitesse
+tf_temp = @o_mf_actor DYN_SpeedGet()
+f_angle_z = MATH_FloatBlend(f_angle_z, 0, (tf_temp * TIME_GetDt()) * 0.5)

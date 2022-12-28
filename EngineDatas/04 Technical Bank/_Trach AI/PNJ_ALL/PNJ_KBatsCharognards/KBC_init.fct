@@ -1,0 +1,524 @@
+#include "KBC_defines.var"
+
+object		to_head
+
+int				ti_i
+
+vector		tv_temp
+
+float			tf_HP_max_default
+float			tf_point_de_viande_default
+
+AI_CBAdd(OBJ_Me(), CallBack_WhenDestroy, "KBC_cb_when_destroy")
+
+
+// VINCE DEBUG =========================================================
+i_DBG_trace_etat = 0
+i_DBG_trace_beziers_ON = vrai
+i_DBG_render_fight_position = vrai
+// VINCE DEBUG ==========================================================
+
+// MAIN ACTORS ======================================================
+AI_Execute("KBC_exec_check_main_actors")
+
+// SPECIAL FLAGS
+if (i_SF_NePasSeRejouerSiMort)
+{
+	int		ti_SF_AlreadyDead
+	i_SF_AlreadyDead = AI_SFDynGet(0, SF_MinById, SF_MaxById)		// Alloc
+	Super_SpecialFlag_get(i_SF_AlreadyDead, ti_SF_AlreadyDead)			// Test SF
+	if (ti_SF_AlreadyDead)																	// Si SF = 1 alors DESTROY
+	{
+		OBJ_Destroy()
+	}
+}
+
+// RAZ VAR DBG SI PAS EN EDITEUR 
+if( AI_GetCurSystem() != Ci_CurSystem_Editeur )
+{
+	i_DBG_send_paf_OFF = faux
+	i_DBG_trace_beziers_ON = faux
+	f_DBG_freq_speed_coef = 1.0
+	i_DBG_look_pos = faux
+	i_DBG_look_all = faux
+	i_trace_paf = faux
+	i_DBG_trace_etat = faux
+	o_track_test_wp = nobody
+	f_DBG_KK_Ride_duration = 0.0
+	i_DBG_trace_etat = faux
+	i_nobody_but_me = faux
+	i_DBG_Finish_on_Kong_Forbidden = faux
+	i_DBG_render_fight_position = faux
+	i_DBG_display_interaction = faux
+	i_DBG_display_nest_wait_timer = faux
+	i_DBG_display_big_bat_kapa = faux
+	i_DBG_grabbed_liberation_disabled = faux
+}
+
+
+// NUMERO GLOBAL DE LA BAT =================
+i_global_bat_number = @get_global i_bats_count
+@get_global i_bats_count++
+
+f_wait_sinus_frequence = MATH_RandFloat(1.0, 3.0)
+
+
+// PUT@#!!!µ£$  DE SECTO !!! ====================
+i_frame_nb = 0
+if( ! OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Generated) )
+{
+	OBJ_FlagInvisibleSet(vrai)
+	meta( i_frame_nb < 2 )
+	{
+		i_frame_nb++
+	}
+}
+OBJ_FlagInvisibleSet(faux)
+
+ACT_DefaultTransition(15)
+
+i_big_bat = faux
+i_little_bat = faux
+switch( i_Bat_Model )
+{
+	case 0 :
+		break
+	case 1 :
+		i_big_bat = vrai
+		break
+	case 2 :
+		i_little_bat = vrai
+		break
+}
+
+if( i_big_bat )
+{
+	// GIANT BAT NOIRE ---------------------------------------------------
+	f_zoom = 2.0
+	tf_HP_max_default = 60.0
+	tf_point_de_viande_default = 0.0
+	f_paf_mange_delai = 1.0
+	f_paf_cumul_dmg = 8.0
+	
+	f_freq_speed_coef = 1.0
+	i_paf_to_send_type = C_PAF_KK_Fort
+	f_vitesse_fight_network = 25.0
+	f_vitesse_fight_approche = 35.0
+	f_vitesse_fight_remonte = 15.0
+	f_vitesse_move_ronde = 2.5
+	f_vitesse_move_network = 10.0
+	f_vitesse_move_grab = 12.0
+	i_nb_attaques_simultanees = 100
+	
+	// position
+//	f_attaque_pos_horiz_wait = 0.6		// 1.0
+//	f_attaque_pos_vert_wait = MATH_RandFloat(-0.2, 0.2)
+//	f_attaque_pos_horiz = 0.6
+//	f_attaque_pos_vert = MATH_RandFloat(-0.3, -0.4)
+//	f_attaque_pos_horiz_anim = f_attaque_pos_horiz
+//	f_attaque_pos_vert_anim = f_attaque_pos_vert
+	f_attaque_pos_delta = 2.0
+}
+else if( i_little_bat )
+{
+	// LITTLE BAT ROUGE ----------------------------------------
+	f_zoom = MATH_RandFloat(0.25, 0.40)
+	tf_HP_max_default = 5.0
+	tf_point_de_viande_default = 5.0
+	f_paf_mange_delai = 2.0
+	f_paf_cumul_dmg = 2.0
+	
+	f_freq_speed_coef = MATH_RandFloat(0.75, 1.25)
+	i_paf_to_send_type = C_PAF_KK_Faible
+	f_vitesse_fight_network = 12.0
+	f_vitesse_fight_approche = 12.0
+	f_vitesse_fight_remonte = 0.0
+	f_vitesse_move_ronde = 8.0
+	f_vitesse_move_network = 8.0
+	f_vitesse_move_grab = 12.0
+	i_nb_attaques_simultanees = 10			// 5
+	
+	// position
+//	f_attaque_pos_horiz_wait = 0.6		// 1.0
+//	f_attaque_pos_vert_wait = MATH_RandFloat(-0.2, 0.2)
+//	f_attaque_pos_horiz = 0.6
+//	f_attaque_pos_vert = MATH_RandFloat(-0.3, -0.4)
+//	f_attaque_pos_horiz_anim = f_attaque_pos_horiz
+//	f_attaque_pos_vert_anim = f_attaque_pos_vert
+	f_attaque_pos_delta = 0.3
+}
+else
+{
+	// STANDARD BAT ---------------------------------------------
+	f_zoom = MATH_RandFloat(0.80, 1.2)
+	tf_HP_max_default = 10.0
+	tf_point_de_viande_default = 10.0
+	f_paf_mange_delai = 1.0
+	f_paf_cumul_dmg = 4.0
+	
+	f_freq_speed_coef = MATH_RandFloat(0.75, 1.25)
+	i_paf_to_send_type = C_PAF_KK_Faible
+	f_vitesse_fight_network = 12.0
+	f_vitesse_fight_approche = 12.0
+	f_vitesse_fight_remonte = 0.0
+	f_vitesse_move_ronde = 8.0
+	f_vitesse_move_network = 8.0
+	f_vitesse_move_grab = 12.0
+	i_nb_attaques_simultanees = 10			// 5
+	
+	// position
+//	f_attaque_pos_horiz_wait = 0.6		// 1.0
+//	f_attaque_pos_vert_wait = MATH_RandFloat(-0.2, 0.2)
+//	f_attaque_pos_horiz = 0.6
+//	f_attaque_pos_vert = MATH_RandFloat(-0.3, -0.4)
+//	f_attaque_pos_horiz_anim = f_attaque_pos_horiz
+//	f_attaque_pos_vert_anim = f_attaque_pos_vert
+	f_attaque_pos_delta = 0.5
+}
+
+// POSITIONNEMENTS D'ATTAQUE =================================
+// structure = moment_attaque [modele : 0=grise, 1=noire, 2=rouge] [target : 0=kong, 1=jack & humains]
+// position d'attente
+af_attaque_pos_horiz_wait[0][0] = MATH_RandFloat(6.0, 8.0)
+af_attaque_pos_horiz_wait[0][1] = 6.0
+af_attaque_pos_horiz_wait[1][0] = MATH_RandFloat(6.0, 8.0)
+af_attaque_pos_horiz_wait[1][1] = 8.0
+af_attaque_pos_horiz_wait[2][0] = MATH_RandFloat(6.0, 8.0)
+af_attaque_pos_horiz_wait[2][1] = 0.6
+af_attaque_pos_vert_wait[0][0] = MATH_RandFloat(1.5, 3.0)
+af_attaque_pos_vert_wait[0][1] = 0.0
+af_attaque_pos_vert_wait[1][0] = MATH_RandFloat(1.5, 3.0)
+af_attaque_pos_vert_wait[1][1] = 2.5
+af_attaque_pos_vert_wait[2][0] = MATH_RandFloat(1.5, 3.0)
+af_attaque_pos_vert_wait[2][1] = MATH_RandFloat(-0.1, 0.2)
+// position pour lancer l'attaque
+af_attaque_pos_horiz[0][0] = 1.0
+af_attaque_pos_horiz[0][1] = 3.5
+af_attaque_pos_horiz[1][0] = 1.0
+af_attaque_pos_horiz[1][1] = 2.0
+af_attaque_pos_horiz[2][0] = 1.0
+af_attaque_pos_horiz[2][1] = 0.6
+af_attaque_pos_vert[0][0] = MATH_RandFloat(1.5, 3.0)
+af_attaque_pos_vert[0][1] = 0.0
+af_attaque_pos_vert[1][0] = MATH_RandFloat(1.5, 3.0)
+af_attaque_pos_vert[1][1] = 1.0
+af_attaque_pos_vert[2][0] = 1.0
+af_attaque_pos_vert[2][1] = MATH_RandFloat(0.0, -0.4)		// -0.3 à - 0.4
+// position pendant l'anim d'attaque
+af_attaque_pos_horiz_anim[0][0] = 1.0
+af_attaque_pos_horiz_anim[0][1] = 1.6
+af_attaque_pos_horiz_anim[1][0] = 1.0
+af_attaque_pos_horiz_anim[1][1] = 2.0
+af_attaque_pos_horiz_anim[2][0] = 1.0
+af_attaque_pos_horiz_anim[2][1] = 0.6
+af_attaque_pos_vert_anim[0][0] = MATH_RandFloat(1.5, 3.0)
+af_attaque_pos_vert_anim[0][1] = 0.0
+af_attaque_pos_vert_anim[1][0] = MATH_RandFloat(1.5, 3.0)
+af_attaque_pos_vert_anim[1][1] = 1.0
+af_attaque_pos_vert_anim[2][0] = 1.0
+af_attaque_pos_vert_anim[2][1] = MATH_RandFloat(0.0, -0.4)		// -0.3 à - 0.4
+
+
+
+
+// LIFE ============================================================
+if( f_HP_max == -1.0 )
+	f_HP_max = tf_HP_max_default
+else if( f_HP_max <= 0.0 )
+{
+	OBJ_Destroy()			// 0 hp ou moins -> destroy
+}
+f_HP_max *= PAF_Unit
+if( f_point_de_viande < 0.0 )
+	f_point_de_viande = tf_point_de_viande_default
+ID_LIFE = EVENT_AddEventLife(f_HP_max, f_HP_max, 0.0)
+
+
+// KK1 KBATS BACKUP -------
+//f_attaque_pos_horiz = 1.0	// 0.6
+//f_attaque_pos_vert = MATH_RandFloat(1.5, 3.0 ) // 3.75)
+//f_attaque_pos_horiz_wait = MATH_RandFloat(6.0, 8.0)
+//f_attaque_pos_vert_wait = MATH_RandFloat(1.5, 3.0 ) // 3.75)
+//f_attaque_pos_delta = 2.0
+// KK1 KBATS BACKUP -------
+
+f_delay_humain_last_paf_time = 0.5
+f_attaque_delai_change_wp = 2.5
+f_duree_min_dans_champ = 0.5
+f_duree_wait_hors_champ = 3.0
+f_paf_moyen_pause_time = 1.0
+f_time_attaque_fin_desynchro_delai_min = 0.15
+f_time_attaque_fin_desynchro_min = 0.25
+f_time_attaque_fin_desynchro_max = 0.5
+f_plongeon_abort_dist = 8.0
+f_plongeon_cos_min = Cf_Cos45
+f_plongeon_desynchro_time = 1.0
+f_freq_action_coef = f_freq_speed_coef
+f_vitesse_fight_contact = 4.0						// 10.0
+f_vitesse_fight_contact_recule = 8.0			// 12.0
+f_vitesse_fight_contact_horschamp = 8.0		// 12.0
+f_throw_dist = 20.0
+f_max_ride_delay = 20.0	
+
+// mode d'attaque
+if( i_LD_attack_config == Ci_LD_attack_config_1_bat_sur_2 )
+{
+	if( MATH_Modulo(i_global_bat_number, 2) )
+		i_LD_attack_config = Ci_LD_attack_config_paf
+	else
+		i_LD_attack_config = Ci_LD_attack_config_grab
+}
+
+// délai ne pas paffer tout de suite
+if( f_LD_attack_paf_delay > 0.0 )
+	f_attaque_delai = f_LD_attack_paf_delay
+else
+	f_attaque_delai = 2.0
+
+// INIT OLD POS
+v_old_pos = OBJ_PosGet()
+
+
+// INIT RESEAUX -----------------------------------------------------------------------------------------
+KBC_Networks_INIT()
+
+// BAT SPECIFIQUE KONG RIDE WALLING ------------------------------------------------
+if( i_KONG_ride_walling_bat )
+{
+	// pas de paf ni de random sur les vitesses
+	i_take_paf = faux
+	if( i_etat_init != Ci_etat_init_vol_ronde )
+		DBG_Error("i_KONG_ride_walling_bat & i_etat_init != 'en vol' => case not supported !!!")
+}
+
+
+// Zone choix de target
+if( ! o_zone_change_target )
+	o_zone_change_target = o_zone_activite
+
+// création des wp temporaires positionnés devant le bat à l'init
+o_tmp_obj_last = @get_WP OBJ_Duplicate(OBJ_PosGet() + MATH_VecLocalToGlobal(cvector(0,-5,0)))
+o_tmp_obj_next = @get_WP OBJ_Duplicate(OBJ_PosGet() + MATH_VecLocalToGlobal(cvector(0,-5,0)))
+
+// suppression du flag waypoint => obj invisibles
+@o_tmp_obj_last OBJ_FlagsIdentitySet(none,OBJ_C_IdentityFlag_Waypoints)
+@o_tmp_obj_next OBJ_FlagsIdentitySet(none,OBJ_C_IdentityFlag_Waypoints)
+
+// init position balancier
+v_balancier_pos = OBJ_PosGet()
+v_balancier_pos.z -= Cf_bras_de_levier
+
+OBJ_ZoomSet(f_zoom)
+
+if( ! OBJ_ModifierType(MDF_C_Modifier_InfoPhoto) )
+	OBJ_InfoPhotoParamSet( 0, 0, 3, 3, 0.0, 0.0, 0.0, 2.5 * OBJ_ZoomGet())		// Bouée d'aide à la visée
+
+tv_temp = cvector(3.0, 3.0, 3.0) * f_zoom
+BV_MinSet(-tv_temp) 
+BV_MaxSet(tv_temp)
+
+for (ti_i = 0; ti_i < Ci_head_bones_count; ti_i++)
+	ao_head_bones[ti_i] = ANI_CanalObjectGet(Anim_Canal_Tete + ti_i)
+
+AI_Execute("KBC_exec_set_obbox")		// Positionnement des OBBox
+
+// QUATERNION
+o_bassin = ANI_CanalObjectGet(Anim_Canal_Bassin)
+o_torse = ANI_CanalObjectGet(BAT_Canal_Torse)
+
+
+COL_SwapToSpecific(C_zde_fight)
+
+COL_SwapToSpecific(C_zde_corps)
+
+// ZDM Pied
+v_zdm_cur_offset = Cv_NullVector
+COL_SwapToSpecific(C_zdm_pied)
+COL_ZoneSizeSet(C_zdm_pied, Cv_ZDM_Air)
+COL_ZonePosSet(C_zdm_pied, cvector(0.0, 0.0, Cv_ZDM_Air.x))
+COL_ColSetActivationSet(C_bit_zdm_pied, none)			// active zdm pied
+
+// Suivi du Regard
+i_flag_neck = vrai		
+to_head = ANI_CanalObjectGet(Anim_Canal_Tete)
+v_look_head_pos = @to_head OBJ_PosGet()
+v_look_axis = @to_head OBJ_BankingGet()
+v_cur_look_pos = @to_head OBJ_BankingGet() + @to_head OBJ_PosGet()		// par défaut le bat regarde devant lui
+
+// structure design (pour les intéractions)
+OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_DesignStruct, none)
+if( OBJ_Me().des_int1 == 0 )
+{
+	// pas spécifié par un spawner
+	OBJ_Me().des_int1 = Ci_DISPLAY_FIGHT
+}
+
+AI_Execute("KBC_exec_network_test")
+
+if( ! o_attaque_gao_specifique )
+	o_attaque_gao_specifique = o_Kong
+
+// SON
+i_sound_fly_request = SND_Request( 12, C_SND_Request_3DSound )
+f_time_cri_presence = MATH_RandFloat(5.0, 10.0)
+
+i_ACTION_Vol_Standard = ACTION_Vol_cycle
+
+AI_Execute("KBC_exec_dyn_on")
+
+// MESSAGES
+OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_Msg, 0)
+AI_Execute("KBC_exec_check_msg")
+
+// DEPLACEMENT
+v_beziers_sight = OBJ_SightGet()
+v_beziers_banking = OBJ_BankingGet()
+v_softcol_pos_backup = OBJ_PosGet()
+
+// VISIBLE A L'INIT
+OBJ_FlagInvisibleSet(faux)
+
+// COLMAP
+//if( i_big_bat )
+//	COL_ColMapActivationSet(all, none)		// on allume les colmaps
+//else
+	COL_ColMapActivationSet(none, all)		// on éteind les colmaps
+COL_CrossableSet(Gmat_KK_Crossable_Default, none)
+COL_CrossableSet(none, Gmat_KK_Face_eau)	// ne traverse pas l'eau tant qu'elle est en vie (les piranhas c dangereux...)
+
+//if( i_big_bat && i_start_with_ann )
+//{
+//	TIME_Wait(0.025)		// laisser à ANN le temps de s'initialiser
+//	// ACTEUR EN PAUSE MAIS S EXECUTE !!! BLINDAGE
+//	meta ( OBJ_FlagsControlGet() & OBJ_C_ControlFlag_InPause) {}
+//	// ACTEUR EN PAUSE MAIS S EXECUTE !!! BLINDAGE
+//	KBC_InstantGrabAnn()
+//}
+
+
+
+
+// init position balancier
+v_balancier_pos = OBJ_PosGet()
+v_balancier_pos.z -= (Cf_bras_de_levier * f_zoom)
+
+f_anim_frequency_ref = 1.0
+f_anim_frequency_cur = 1.0
+
+f_contact_sin_desynchro = MATH_RandFloat(1.0, 3.0)
+
+//ACT_ActionSet(ACTION_Finished_SePositionne)
+//TIME_Wait(10)
+
+
+i_foodchain_eat_slots_free = i_foodchain_eat_slots_nb
+
+// HEURE & DELTA
+if( f_Heure_Debut || f_Heure_Fin )		// début ou fin != minuit donc on a uen plage horaire
+{
+	f_Heure_Debut += MATH_RandFloat(- f_Heure_delta, f_Heure_delta)
+	f_Heure_Debut = MATH_FloatLimit(f_Heure_Debut, 0.0, 23.99)
+	f_Heure_Fin += MATH_RandFloat(- f_Heure_delta, f_Heure_delta)
+	f_Heure_Fin = MATH_FloatLimit(f_Heure_Fin, 0.0, 23.99)
+}
+
+// CALLBACKS
+AI_CBAdd(OBJ_Me(), CallBack_Info, "KBC_cb_info")
+AI_CBAdd(OBJ_Me(), CallBack_After_Blend, "KBC_cb_afterblend")
+AI_CBAdd(OBJ_Me(), CallBack_Client, "KBC_cb_client")
+AI_CBAdd(OBJ_Me(), CallBack_SectoActOn, "KBC_cb_when_secto")
+macro_add_callback_after_cam("KBC_cb_aftercam")
+
+// ETAT INIT ? =========================================
+//if( i_big_bat && KBC_Test_Attaque() )
+//{
+//	AI_Execute("KBC_exec_init_attaque")		// une big bat spawnée
+//}
+//else
+{
+	switch( i_etat_init )
+	{
+		case Ci_etat_init_vol_ronde : 
+			ACT_ActionSet(i_ACTION_Vol_Standard)
+			KBC_action_frequency_set(Cf_freq_standard)
+			macro_change_etat("KBC_exec_init_attente")
+			break
+		
+		case Ci_etat_init_perchee : 
+			// init position balancier
+			v_balancier_pos = OBJ_PosGet()
+			v_balancier_pos.z += (Cf_bras_de_levier * f_zoom)
+			OBJ_SightGeneralSet(- Cv_VerticalVector, OBJ_BankingGet())
+			v_pendu_init_pos = OBJ_PosGet()
+			v_pendu_init_sight = OBJ_SightGet()
+			v_pendu_init_banking = OBJ_BankingGet()
+			macro_change_etat("KBC_ETAT_Wait_Perchee")
+			break
+		
+		case Ci_etat_init_cachee :
+			macro_change_etat("KBC_ETAT_Wait_Grotte")
+			break
+			
+		case Ci_etat_init_spawn_finish_IA :
+		case Ci_etat_init_spawn_finish_LD :
+			if( i_big_bat )
+				DBG_Error("vous n'avez pas le droit de spawner une big bat pour un finish sur kong !!!!")
+			i_DBG_trace_etat = 1
+			KBC_DBG_Trace(i_DBG_trace_etat, "***** JE SUIS UNE BAT SPAWNEE !!!! *****")
+			OBJ_FlagInvisibleSet(vrai)		// invisible tant que la liaison n'est pas établie
+			o_cible_attaque = o_Kong
+			i_spawned_bats = 0
+			macro_change_etat("KBC_exec_init_spawn_finish")
+			break
+			
+		case Ci_etat_init_waiting_for_finish :
+			if( ! i_big_bat )
+			{
+				DBG_Error("etat_init = waiting_for_finish and i'm not a big bat !!!")
+				OBJ_Destroy()
+			}
+			EVENT_LIFE_CurLifeSet(ID_LIFE, 0.0)
+			macro_change_etat("KBC_ETAT_BigBat_Sol_Wait_Finished")
+			break
+			
+		case Ci_etat_init_KamAttack :
+			if( i_big_bat )
+			{
+				DBG_Error("l'état init KamAttack est interdit aux bigs bats")
+				OBJ_Destroy()
+			}
+			macro_change_etat("KBC_exec_init_KamAttack")
+			break
+			
+		case Ci_etat_init_follower :
+			if( ! o_follow_gao )
+			{
+				DBG_Error("follower configuré sans o_follow_gao !!!")
+				OBJ_Destroy()
+			}
+			i_follower = vrai
+			i_follower_init = vrai
+			i_attaque_a_partir_des_wp = faux
+			f_follow_blend_coef = 1.0
+			if( MATH_VecNullToler(v_follow_offset, 0.5) )
+				v_follow_offset = cvector(
+					MATH_FloatSign(MATH_RandFloat(-1.0,1.0)) * MATH_RandFloat(1.25,3.0),
+					MATH_FloatSign(MATH_RandFloat(-1.0,1.0)) * MATH_RandFloat(1.25,3.0),
+					MATH_FloatSign(MATH_RandFloat(-1.0,1.0)) * MATH_RandFloat(1.25,3.0))
+			if( f_follow_sin_desynchro == 0.0 )
+				f_follow_sin_desynchro = MATH_RandFloat(0.5,3.0)
+			macro_change_etat("KBC_ETAT_Wait_Follower")
+			break
+			
+		case Ci_etat_init_track_test :
+			macro_change_etat("KBC_ETAT_TEST")
+			break
+	}
+}
+
+
+// TRACKS
+AI_TrackChange(Ci_Track_TagOff, "KBC_TAG_Off")
+AI_TrackChange(Ci_Track_TagOn, "KBC_TAG_On")
+AI_TrackCurChangeNow("KBC_reflex")
+

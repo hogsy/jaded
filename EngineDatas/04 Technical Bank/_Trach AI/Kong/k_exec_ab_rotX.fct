@@ -1,0 +1,241 @@
+#include "k_define.var"
+
+object			to_gao
+
+float				tf_angle
+
+int					ti_loop
+int					ti_i
+int					ti_contact_nb
+int					ti_ground
+
+vector			tav_ground_pos[3]
+vector			tav_normales[3]
+vector			tv_rot_axis
+vector			tv_ray_dir
+vector			tv_auto_walk_dir
+vector			tv_last_banking
+vector			tv_pos
+vector			tv_offset
+vector			tv_bank
+vector			tv_axis
+vector			tv_horiz
+
+#define	DISPLAY_VECTOR
+
+tv_last_banking = Cv_VerticalVector
+
+if (COL_ColSetActivationGet() & C_bit_zdm_pied && i_DBG_ROTX_ON)
+{
+	ti_contact_nb = 0
+
+	for (ti_i = 0; ti_i < 3; ti_i++)
+	{
+		tv_ray_dir = -Cv_VerticalVector
+	
+		tav_ground_pos[ti_i] = OBJ_PosGet()
+		tav_ground_pos[ti_i].z += 4.0
+	
+		switch(ti_i)
+		{
+			case 0 :
+				tav_ground_pos[ti_i] -= OBJ_SightGet() * 1.8 //3.2
+				tv_auto_walk_dir = OBJ_SightGet()
+				break
+			case 1 :
+				tav_ground_pos[ti_i] += OBJ_SightGet() * 1.4
+				tav_ground_pos[ti_i] -= OBJ_HorizonGet() * 1.5
+				tv_auto_walk_dir = OBJ_HorizonGet()
+				break
+			case 2 :
+				tav_ground_pos[ti_i] += OBJ_SightGet() * 1.4
+				tav_ground_pos[ti_i] += OBJ_HorizonGet() * 1.5
+				tv_auto_walk_dir = -OBJ_HorizonGet()
+				break
+		}
+
+		if (COL_RayObject_Dist(tav_ground_pos[ti_i], tv_ray_dir, 6.0, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable))
+//			&& COL_RayObject_NormalGet().z > Cf_Angle_Mur_sol)
+		{
+			ti_contact_nb++
+		
+			tv_pos = COL_RayObject_PosGet()
+#ifdef DISPLAY_VECTOR
+			macro_render_Vector(tav_ground_pos[ti_i], tv_pos - tav_ground_pos[ti_i], color_vert)
+#endif
+			if ( !MATH_VecNullEpsilon( tav_ground_pos[ti_i] - tv_pos))
+				tav_normales[ti_i] = COL_RayObject_NormalGet()		// Cas normal
+			else
+				tav_normales[ti_i] = -tv_ray_dir								// distance du LRAY nule: cas de colmap mathématique. prendre - le vecteur LRAY comme normale
+			tav_ground_pos[ti_i] = tv_pos
+			tai_ground_flag[ti_i] = vrai
+#ifdef DISPLAY_VECTOR
+			DBG_RenderVector(tv_pos, tav_normales[ti_i], color_cyan)
+#endif
+		}
+		else
+		{
+#ifdef DISPLAY_VECTOR
+			macro_render_Vector(tav_ground_pos[ti_i], tv_ray_dir * 6.0, color_rouge)
+#endif
+ 			v_auto_walk_dir = tv_auto_walk_dir
+			tai_ground_flag[ti_i] = faux
+		}
+	}
+	i_nb_gound_col = ti_contact_nb
+	if (ti_contact_nb == 3)
+	{
+#ifdef DISPLAY_VECTOR
+		macro_render_Vector(tav_ground_pos[0], tav_ground_pos[1] - tav_ground_pos[0], color_blanc)	
+		macro_render_Vector(tav_ground_pos[0], tav_ground_pos[2] - tav_ground_pos[0], color_blanc)	
+#endif
+			
+		tv_last_banking = MATH_VecCrossProduct(tav_ground_pos[1] - tav_ground_pos[0], tav_ground_pos[2] - tav_ground_pos[0])
+		if( ! MATH_VecNullToler(tv_last_banking, 0.01) )
+			MATH_VecSetNormalize(tv_last_banking)
+	}
+	else
+	{
+//		f_time_auto_walk = 0.1
+	}
+
+#ifdef DISPLAY_VECTOR	
+	macro_render_Vector(OBJ_PosGet(), tv_last_banking * 3.0, color_jaune)
+#endif
+
+	// DECALER KONG S IL  A LE CUL EN LAIR( SUR UN MURET)
+	v_glisse_add_speed = Cv_NullVector
+	if( tai_ground_flag[0] )
+	{
+		// le LRay derrière KONG touche le sol -> à plat ou en début de pente ou en pleine pente ou à cheval sur un mur/escalier
+		if( ( tai_ground_flag[1] && tav_ground_pos[0].z - tav_ground_pos[1].z > 2.0 )
+		|| ( tai_ground_flag[2] && tav_ground_pos[0].z - tav_ground_pos[2].z > 2.0 ) 
+		|| ( ! tai_ground_flag[1] && ! tai_ground_flag[2]) )
+		{
+			// le point de collision du LRay derrière KONG est + en hauteur que ceux de devant
+			// -> en début de pente ou en pleine pente ou à cheval sur un mur/escalier
+			if( ( tai_ground_flag[1] && MATH_VecDotProduct(tav_normales[0], tav_normales[1]) > Cf_Cos30 )
+			|| ( tai_ground_flag[2] && MATH_VecDotProduct(tav_normales[0], tav_normales[2]) > Cf_Cos30 ) 
+			|| ( ! tai_ground_flag[1] && ! tai_ground_flag[2]) )
+			{
+				// normales devant KONG et derrière KONG assez semblables -> en pleine pente ou à cheval sur un mur/escalier
+				if( MATH_VecDotProduct(tav_normales[0], Cv_VerticalVector) > 0.9 ) 
+				{
+					// la normale est quasiment verticale -> on est à cheval sur un mur/escalier
+
+//					v_glisse_add_speed = OBJ_SightGet()
+//					v_glisse_add_speed.z = 0.0
+//					if ( ! MATH_VecNullEpsilon( v_glisse_add_speed))
+//						 MATH_VecSetNorm(v_glisse_add_speed, MATH_FloatMax( 2.0, 16 - DYN_SpeedGet()))
+
+					if( ACT_ActionGet() == Ci_Kanim_Attente )
+						ACT_ActionSet(Ci_Kanim_courseD)		// anim pour faire avancer KONG
+				}
+			}
+		}
+	}
+//	else if  ( ! tai_ground_flag[1] && ! tai_ground_flag[2] && COL_CollideType(COL_C_Ground))
+//	{
+//		// COLLISOIN SOL MAIS 0 LRAY LE TOUCHE : GRAVITEE...
+//
+//		v_glisse_add_speed = cvector( 0.0, 0.0, -10.0)
+//	}
+
+	// UN SEUL LRAY TOUCHE TESTER SOUS KONG S IL Y A UN SOL SINON POUSSER KONG DANS LE VIDE
+	if ( ti_contact_nb == 1 && COL_CollideType(COL_C_Ground))
+	{
+		// 1 seul poitn de contact, lancé de rayon au barycentre des 3
+		tv_pos = tav_ground_pos[0] + tav_ground_pos[1] + tav_ground_pos[2]
+		tv_pos /= 3.0
+		if (!COL_RayObject_Dist( tv_pos, tv_ray_dir, 6.0, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable))
+		{
+			ti_i = 0
+			while ( !tai_ground_flag[ti_i])
+				ti_i++
+			tv_pos -= tav_ground_pos[ ti_i]
+//			v_glisse_add_speed = tv_pos
+//			v_glisse_add_speed.z = 0.0
+//			if ( ! MATH_VecNullEpsilon( v_glisse_add_speed))
+//				MATH_VecSetNorm(v_glisse_add_speed, MATH_FloatMax( 2.0, 16 - DYN_SpeedGet()))
+		}
+	}
+
+
+	// CHOIX BANKING ET SI KONG TOUCHE VRAIMENT LE SOL
+	ti_ground = faux
+	if (  COL_CollideType(COL_C_Ground))
+		ti_ground = vrai
+	else
+	{
+		// Eviter de décrocher en chute a cause d une pente.
+		if ( COL_RayObject_Dist( OBJ_PosGet(), -Cv_VerticalVector, 0.1, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable))
+			ti_ground = vrai
+	}
+
+	if ( COL_CollideType( COL_C_Ground + COL_C_SlipperyEdge))
+	{
+		tv_offset = OBJ_PosGet() - COL_CollidedPointGet( COL_C_Ground) 
+		if ( tv_offset.z < -COL_ZoneSizeGet(C_zdm_pied) * ( 1 - Cf_Cos30))
+			ti_ground = faux
+	}
+
+	if ( ! MATH_VecNullEpsilon(v_glisse_add_speed) )
+		v_last_banking = Cv_VerticalVector
+	else if ( ti_contact_nb == 3 || ti_ground)
+	{
+		if ( MATH_VecNullEpsilon( tv_last_banking ))
+			tv_last_banking = OBJ_BankingGet()
+		tv_last_banking -= MATH_VecDotProduct(tv_last_banking, OBJ_HorizonGet()) * OBJ_HorizonGet()
+		MATH_VecSetNormalize(tv_last_banking)
+	
+		v_last_banking = tv_last_banking
+		f_time_collide_ground = 0.0
+	}
+	else if (!f_time_change_zdm)
+	{
+		f_time_collide_ground += TIME_GetDt()
+	}
+ 
+	if (f_time_collide_ground > 0.1)
+		v_last_banking = Cv_VerticalVector
+}
+else
+{
+	v_last_banking = tv_last_banking
+}
+
+
+if (i_etat_courant >= ETAT_Kong_climb_impulsion)
+	return
+if ( ACT_DesignFlagTest( Ci_KACT_ASF_NoRotX))
+	return
+
+f_time_auto_walk -= MATH_FloatMin(f_time_auto_walk, TIME_GetDt())
+
+DBG_RenderVector(OBJ_PosGet(), v_last_banking, color_jaune)
+
+tf_angle = MATH_VecAngle(Cv_VerticalVector, v_last_banking, OBJ_HorizonGet())
+//tf_angle = MATH_FloatLimit(tf_angle, - 0.2, 0.2)
+f_angle = MATH_FloatBlend(f_angle, tf_angle, 12.0 * TIME_GetDt())
+
+v_last_banking = MATH_VecRotate(Cv_VerticalVector, OBJ_HorizonGet(), f_angle)
+
+tv_axis = @o_tete[4] OBJ_PosGet() - OBJ_PosGet()
+tv_axis = MATH_VecRotate(tv_axis, OBJ_HorizonGet(), f_angle)
+tv_axis += OBJ_PosGet()
+@o_tete[4] OBJ_PosSet(tv_axis)
+
+@o_tete[4] OBJ_RotateAroundVec(@o_tete[4] MATH_VecGlobalToLocal(OBJ_HorizonGet()), f_angle)
+
+//tv_axis = @o_tete[0] OBJ_BankingGet()
+//tv_axis.z = MATH_FloatLimit(tv_axis.z, -0.2, 0.2)
+//@o_tete[0] OBJ_Rotate_FromTo(cvector(0.0, 0.0, 1.0), @o_tete[0] MATH_VecGlobalToLocal(tv_axis))
+
+
+//Str_DisplayFloatOnce(f_angle, cvector(0.5,0.5,0.5))
+//tv_axis = @o_tete[4] OBJ_PosGet() - v_pos_zoneX
+//macro_render_Vector(v_pos_zoneX, tv_axis, color_rouge)
+//tv_axis = MATH_VecRotate(tv_axis, @o_tete[2] OBJ_HorizonGet(), f_angle)
+//macro_render_Vector(v_pos_zoneX, tv_axis, color_rose)
+//@o_tete[4] OBJ_PosSet( v_pos_zoneX + tv_axis )
+//@o_tete[4] OBJ_RotateLocalX(f_angle)

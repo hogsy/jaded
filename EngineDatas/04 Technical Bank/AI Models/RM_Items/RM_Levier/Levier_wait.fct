@@ -1,0 +1,234 @@
+#include "RM_Levier_defines.var"
+
+object	to_gao
+int			ti_gao_ID
+int			ti_rope_index
+float		tf_rope_length
+float		tf_rope_ratio
+float		tf_temp
+float		tf_force
+float		tf_force_add
+float		tf_dot
+float		tf_dot_valide
+float		tf_ratio
+vector	tv_offset_A
+vector	tv_offset_B
+vector	tv_pos
+vector	tv_force
+vector	tv_sight
+int			ti_add
+float		tf_coef_tire_max
+float		tf_coef_retour_max
+vector	tv_traction_A
+vector	tv_traction_B
+
+
+ti_add = faux
+tv_pos = VIEW_3dWorldTo2d(0,OBJ_PosGet())
+tv_pos += cvector(0,0.05,0)
+
+OBJ_CapaSet(none, CAPA_Rope + CAPA_RopeTendue + CAPA_RopeReady)
+
+if( OBJ_CapaTest(CAPA_Reussi) )
+{
+	f_levier_coef = MATH_FloatBlend(f_levier_coef, 1.0, f_ouverture_speed * TIME_GetDt())
+	if (!MATH_FloatNullToler(1.0 - f_levier_coef, 0.001))
+		OBJ_CapaSet(CAPA_RopeReady + CAPA_Rope, none)
+}
+//else if (OBJ_CapaTest(CAPA_Rembobine))
+//{
+//	f_levier_coef = MATH_FloatBlend(f_levier_coef, 0.0, 10 * TIME_GetDt())
+//	if (MATH_FloatNullToler(f_levier_coef, 0.01))
+//		OBJ_CapaSet(none, CAPA_Rembobine)
+//}
+else
+{
+	to_gao = @o_rope_manager Rope_Manager_Get_Linked_Gao(OBJ_Me(), tf_rope_length, tf_rope_ratio, tv_offset_A, tv_offset_B)
+	if( to_gao )
+	{
+		Proc_Mashing_Actor_Add(OBJ_Me())
+		OBJ_CapaSet(CAPA_Rope, none)
+		
+		ti_rope_index = @o_rope_manager Rope_Manager_Get_Corde_Index(to_gao, OBJ_Me())
+		if( @o_rope_manager Rope_Manager_RopeTendue(ti_rope_index) )
+			f_delai_tire += TIME_GetDt()
+		else if( ! i_levier_vertical && ! glob_joynorm_get )
+			f_delai_tire = 0.0		// levier horizontal et pas de joy => 0.0
+//		if( f_delai_tire )
+		if( f_delai_tire && ((o_deuxieme_levier == nobody) || @o_deuxieme_levier Proc_Levier_IsGrabbed()))
+		{
+			OBJ_CapaSet(CAPA_RopeTendue, none)
+			
+			// ID du perso qui me tire ?
+			ti_gao_ID = C_ID_Rayman		// 0
+			if( to_gao == @get_rayman PROC_RM_MontureGet() )
+				ti_gao_ID = @get_rayman PROC_RM_MontureIDGet()
+			
+			@o_rope_manager Rope_Manager_RopeLastTrameTractionGet(ti_rope_index, tv_traction_A, tv_traction_B)
+			tv_force = tv_traction_A		// Rayman ou monture
+//			tv_force.z = 0.0
+			tv_force *= -1.0
+			if( MATH_VecNullToler(tv_force, 0.01) )
+				tv_force = v_last_valid_force
+			if( ! MATH_VecNullToler(tv_force, 0.01) )
+			{
+				MATH_VecSetNormalize(tv_force)
+				v_last_valid_force = tv_force
+				DBG_RenderVector(HotSpot_PosGet(OBJ_Me()), tv_force, color_rouge)
+				
+				// sens d'ouverture
+				switch( i_type )
+				{
+					case Ci_Levier_Type_Porte_a_Clones_G :
+					case Ci_Levier_Type_Porte_a_Clones_D :
+						tv_sight = @o_levier OBJ_BankingGet()
+						break
+					default:
+						if( OBJ_CapaTest(CAPA_OPEN) )
+							tv_sight = OBJ_SightGet()
+						else
+							tv_sight = - OBJ_SightGet()
+						break
+				}
+//				tv_sight.z = 0.0
+				MATH_VecSetNormalize(tv_sight)
+				DBG_RenderVector(HotSpot_PosGet(OBJ_Me()), tv_sight, color_vert)
+				
+				tf_dot = MATH_VecDotProduct(tv_sight, tv_force)
+//				if( ! i_ignore_angle )
+//					tf_dot -= 0.5		// restriction angle
+				if( tf_dot > 0.0 )
+				{
+					tv_pos += cvector(0,0.05,0)
+					if( ti_gao_ID ) // une monture ou un perso autre que rayman
+						tf_coef_tire_max = 2.5 * f_coef_force_joueur
+					else
+						tf_coef_tire_max = 0.5 * f_coef_force_joueur
+					f_coef_tire = MATH_FloatBlend(f_coef_tire, tf_coef_tire_max, tf_coef_tire_max * TIME_GetDt())
+					f_levier_coef = MATH_FloatBlend(f_levier_coef, 1.0, f_coef_tire * TIME_GetDt())
+					ti_add = vrai
+					f_coef_retour = 0.0
+					
+					// réussi !
+					if( MATH_FloatNullToler(f_ouverture_limite - f_levier_coef, 0.025) )
+					{
+						OBJ_CapaSet(CAPA_RopeReady, none)
+						if ((o_deuxieme_levier == nobody) || @o_deuxieme_levier Proc_Levier_IsReady())
+						{
+							// switch open / close
+							if( OBJ_CapaTest(CAPA_OPEN) )
+							{
+								OBJ_CapaSet(none, CAPA_OPEN)
+								if( AI_TriggerIsValid(TrigExec_Ferme) )
+									call_trigger(TrigExec_Ferme)
+							}
+							else
+							{
+								OBJ_CapaSet(CAPA_OPEN, none)
+								if( AI_TriggerIsValid(TrigExec_Ouvre) )
+									call_trigger(TrigExec_Ouvre)
+							}
+							
+							// just done
+							OBJ_CapaSet(CAPA_Reussi, none)
+							HotSpot_Del_Obj(OBJ_Me())
+							SND_RequestPlay(SND_Tire_Reussi)
+							
+							if( @to_gao AI_IsModel(get_Rayman_Path) && ((o_deuxieme_levier == nobody) || (@o_deuxieme_levier OBJ_CapaTest(CAPA_Reussi))))		// Rayman et ses clones
+								@get_global i_grappin_hotspot_nmi_died = vrai		// cancel grappin
+						}
+						else
+						{
+							f_levier_coef = f_ouverture_limite
+//							f_delai_tire = 0.0
+//							OBJ_CapaSet(CAPA_Rembobine, none)
+						}
+					}
+				}
+				else
+					f_delai_tire = 0.0	// tire à l'opposé -> retour
+			}
+		}
+	}
+	else
+		f_delai_tire = 0.0		// plus de corde -> retour
+	if( ! ti_add )
+	{
+		if( ! f_delai_tire )
+		{
+			f_coef_retour = MATH_FloatBlend(f_coef_retour, f_coef_force_retour, f_coef_force_retour * TIME_GetDt())
+			f_levier_coef = MATH_FloatBlend(f_levier_coef, 0.0, f_coef_retour * TIME_GetDt())
+			f_delai_tire = 0.0
+			f_coef_tire = 0.0
+		}
+	}
+}
+
+// SND ===============================
+if (ti_add)
+{
+	// On tire
+	if ( i_snd_tire == -1 )
+		i_snd_tire = SND_RequestPlayLoop(SND_Tire_Loop)
+	if ( i_snd_tire != -1 )
+			SND_InsertVarSet(i_snd_tire,11, MATH_FloatMin(1.0, f_levier_coef*2.0))
+}
+else
+{
+	if ( i_snd_tire != -1 )
+	{
+		SND_Stop(i_snd_tire)
+		i_snd_tire = -1
+	}
+}
+// SND ===============================
+
+// SWITCH ?
+if( MATH_FloatNullToler(1.0 - f_levier_coef, 0.01) )
+	f_levier_coef = 1.0
+v_levier_axe_courant = MATH_VecBlend(v_levier_axe_init, v_levier_axe_open, f_levier_coef)
+@o_levier OBJ_SightGeneralSet(v_levier_axe_courant, @o_levier OBJ_BankingGet())
+// SWITCH ! 
+
+if ((f_levier_coef >= 1.0) && ((o_deuxieme_levier == nobody) || (!(@o_deuxieme_levier Proc_Levier_IsReady()))))
+{
+	OBJ_CapaSet(none, CAPA_RopeReady + CAPA_Rope)
+	i_position = 1 - i_position
+	if( i_one_shot )
+	{
+		i_flag_hotspot = faux
+		PROC_SFX_EXPLOSION_CARTOON(Proc_Levier_HotSpot_PosGet())
+		COL_ColMapActivationSet(none,all)
+		@o_levier OBJ_FlagInvisibleSet(vrai)
+		@o_levier OBJ_FlagInactiveSet(vrai)
+//		OBJ_FlagInvisibleSet(vrai)
+		SND_RequestPlay(SND_1shot_Crack)
+		f_snd_destroy_delai = 1.0
+		meta ( f_snd_destroy_delai > 0.0 )
+		{
+			f_snd_destroy_delai -= MATH_FloatMin(f_snd_destroy_delai, TIME_GetDt())
+		}
+		OBJ_FlagInactiveSet(vrai)
+		return
+	}
+	AI_TrackCurChangeNow("Levier_init")
+}
+
+DBG_RenderVector(@o_levier OBJ_PosGet(), v_levier_axe_init * 2.5, color_vert)
+DBG_RenderVector(@o_levier OBJ_PosGet(), v_levier_axe_open * 2.5, color_bleu)
+DBG_RenderVector(@o_levier OBJ_PosGet(), v_levier_axe_courant * 2.5, color_rouge)
+
+
+//if( @get_rayman i_DBG_HS )
+//{
+//	tv_pos = VIEW_3dWorldTo2d(0,OBJ_PosGet())
+//	Str_DisplayTxtFloatOnce("Coef   ", f_levier_coef, tv_pos)
+//	tv_pos += cvector(0,0.05,0)
+//	Str_DisplayTxtIntOnce("HS n° ", ARR_ObjSearch(&@get_list_manager ao_hotspot[0], @get_list_manager i_hotspot_nb, OBJ_Me()), tv_pos)
+//	Str_DisplayTxtIntOnce(" / ", @get_list_manager i_hotspot_nb, tv_pos + cvector(0.06,0,0))
+//}
+//
+//
+
+
+//Str_DisplayTxtFloatOnce("\h0.1\", f_delai_tire, VIEW_3dWorldTo2d(0,OBJ_PosGet()))

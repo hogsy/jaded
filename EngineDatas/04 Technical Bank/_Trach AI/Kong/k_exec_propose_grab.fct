@@ -1,0 +1,65 @@
+#include"k_define.var"
+
+float			tf_dist
+object		to_serveur
+messageid	tmid_proposition	
+vector		tv_temp
+int				ti_propose
+
+tmid_proposition = pop
+
+if((@"univ" Cheat_i_Flags & CHEAT_Invicible))
+{
+	LNK_ServeurRefuse(tmid_proposition)
+	return
+}
+
+ti_propose = faux
+
+to_serveur = MSG_GlobalGetGao(tmid_proposition, SERVEUR)
+
+tv_temp = OBJ_PosGet() - @to_serveur OBJ_PosGet()
+tf_dist = MATH_VecDotProduct(tv_temp, tv_temp)
+
+if( ! OBJ_CapaTest(Capa_Refuse_Ride_and_Grab) 
+	&& ( @get_global i_KongTriesToGrabABigScolo || ( ! Proc_KK_RAGE_Test() && ! f_finished_just_paf_delay_no_finished ) ) )
+{
+	// s'il n'y a pas la capa "la vie est un long fleuve tranquille" et que c'est moi qui veut grabber un big scolo ou que c'est ok alors...
+	if( @to_serveur AI_IsModel(get_PNJ_Scolo_Path) && @to_serveur Proc_KK_BigScolo() )
+	{
+		ti_propose = vrai			// BIG SCOLO : TOUJOURS ACCEPTER
+	}
+	else if( @to_serveur AI_IsModel(get_PNJ_KTREX_Path) )
+	{
+		if( MATH_VecDotProduct( OBJ_SightGet(), tv_temp) < 0.0 )
+			ti_propose = vrai		// TREX : ACCEPTER UNIQUEMENT DE FACE
+	}
+	else if( @to_serveur AI_IsModel(get_PNJ_KBats_path) || @to_serveur AI_IsModel(get_PNJ_KRaptor_path) || @to_serveur AI_IsModel(get_PNJ_Scolo_Path))
+	{
+		// SMALL BATS, RAPTORS & SMALL SCOLOS : ACCEPTER SI AU MOINS 3 RIDE ACTORS
+		if( Proc_KK_RIDE_Get_Actor_Nb_By_Model(to_serveur) >= 3 )
+		{
+			switch( i_etat_courant  )
+			{
+				case ETAT_Kong_accroch_mur :
+				case ETAT_Kong_walling :
+				case ETAT_Kong_jump :
+				case ETAT_Kong_grab_mashing :
+					break
+				default:
+					if( ! o_colonne )
+						ti_propose = vrai
+					break
+			}
+		}
+	}
+}
+
+if( ti_propose )
+{
+	LNK_ClientPropose(tmid_proposition, tf_dist)
+	MSG_GlobalSetGao(tmid_proposition, OBJ_Me(), GAO3)
+}
+else
+	LNK_ServeurRefuse(tmid_proposition)
+

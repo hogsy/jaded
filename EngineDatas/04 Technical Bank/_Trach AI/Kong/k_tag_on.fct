@@ -1,0 +1,461 @@
+#include "k_define.var"
+
+#define		Cf_ralenti_fixe_duree			0.2	// 0.3		// durée où le jeu reste avec la valeur de ralenti initiale
+#define		Cf_ralenti_annule_duree		1.0	// 0.3		// durée que le jeu met à revenir à la vraie vitesse
+
+float		tf_sign
+float		tf_rumble_coef
+float		tf_vrai_dt
+float		tf_speed 
+object	to_gao1
+object	to_gao2
+object	to_gao
+
+vector	tv_temp
+vector	tv_pos_zone
+vector	tv_normal
+vector	tv_speed
+vector	tv_2D_pos
+
+int			ti_i
+int			ti_rank
+messageid	EVT_ID 
+
+to_gao = ANI_CanalObjectGet(Anim_Canal_Tete)
+tv_2D_pos = VIEW_3dWorldTo2d(0, @to_gao OBJ_PosGet())
+
+v_last_hand_pos = OBJ_PosGet()
+v_last_hand_pos += v_climb_hand_offset
+
+v_last_hand_offset = v_climb_hand_offset 
+
+// vitesse et rotation ajoutée
+if( ! MATH_FloatNullEpsilon(1 - f_coef_recul) ) 
+{
+	DYN_SpeedSetVector( ( f_coef_recul * DYN_SpeedGetVector() ) + ( (1 - f_coef_recul) * v_add_speed ) )
+	DBG_RenderVector(OBJ_PosGet() + cvector(0.0,0.0,3.0), v_add_speed, color_blanc)
+	OBJ_RotateLocalZ( ( f_add_rotation * (1 - f_coef_recul) ) * 3.0 * TIME_GetDt())
+	f_coef_recul = MATH_FloatBlend(f_coef_recul, 1.0, 4.0 * TIME_GetDt())
+}
+
+// vitesse ajoutée (sort de la colmap de REX)
+//if( ! MATH_FloatNullEpsilon(1 - f_exit_colmap_coef_recul) ) 
+//{
+//	DYN_SpeedSetVector( (1 - f_exit_colmap_coef_recul) * v_exit_colmap_add_speed )
+//	DBG_RenderVector(OBJ_PosGet(), DYN_SpeedGetVector(), color_rouge)
+//	f_exit_colmap_coef_recul = MATH_FloatBlend(f_exit_colmap_coef_recul, 1.0, 20.0 * TIME_GetDt())
+//}
+
+// vitesse ajoutée (sort de la colmap de REX)
+if( ! MATH_VecNullEpsilon(v_exit_colmap_add_speed) )
+{
+	DYN_SpeedSetVector(v_exit_colmap_add_speed)
+	DBG_RenderVector(OBJ_PosGet() + cvector(0.0,0.0,3.0), v_exit_colmap_add_speed, color_cyan)
+	v_exit_colmap_add_speed = Cv_NullVector
+}
+
+// vitesse ajoutée (glisse pour sortir d'un escalier ou d'un muret)
+if( ! MATH_VecNullEpsilon(v_glisse_add_speed) ) 
+{
+	if ( i_etat_courant == ETAT_Kong_jump && o_jump_hotspot)
+		v_glisse_add_speed = Cv_NullVector
+	else
+		DYN_SpeedSetVector( DYN_SpeedGetVector() + v_glisse_add_speed )
+}
+
+
+// RAZ des persos paffés =================================
+if( i_test_zdf_zdc_done ) 
+	i_frappe_target_nb_backup = i_frappe_target_nb
+if( ( ! i_test_zdf_zdc_done ) && i_frappe_target_nb )
+	i_frappe_target_nb = 0
+i_test_zdf_zdc_done = faux
+
+
+// CAMERA -----------------------------------------------------------------
+if (o_fight_actor)
+{
+	@get_global mid_kong_camera_status = mid_fight_actor
+}
+// CAMERA -----------------------------------------------------------------
+
+
+// vitesse ajoutée
+//if( ! MATH_VecNullEpsilon( v_add_speed) )
+//{
+//	DYN_SpeedSetVector( DYN_SpeedGetVector() + v_add_speed)
+//	v_add_speed = MATH_VecBlend( v_add_speed, Cv_NullVector, 2.0 * TIME_GetDt())	
+//}
+
+
+// rotation ajoutée
+//if ( !MATH_FloatNullEpsilon( f_add_rotation))
+//{
+//	DBG_TraceFloat( f_add_rotation)
+//	DBG_TraceString("/")
+//	DBG_TraceFloat( f_add_rot_increment)
+//	DBG_TraceEOL()
+//	tf_sign = MATH_FloatSign(f_add_rotation)
+//	tf_sign *= f_add_rot_increment * TIME_GetDt()
+//	OBJ_RotateLocalZ( tf_sign)
+//	f_add_rotation -= tf_sign
+//	if ( MATH_FloatSign(f_add_rotation) * tf_sign <= 0)
+//		f_add_rotation = 0.0
+//	f_add_rot_increment = MATH_FloatBlend( f_add_rot_increment, 0.0, Cf_add_rot_amorti_blend * TIME_GetDt())
+//}
+//else
+//	f_add_rot_increment = Cf_add_rot_speed_init
+
+#include "ROOT/EngineDatas/04 Technical Bank/AI Models/Global Library/exec_deplacements_tagon.fct"
+
+AI_Execute("k_exec_set_zdm_pos")
+
+f_reflex_speed_old = f_reflex_speed  
+
+// --- RESET FIGHT VALUES ---
+if ( COUP_TryToHit( ))
+	i_try_to_hit_backup = vrai
+else
+	i_try_to_hit_backup = faux
+//OBJ_CapaSet( none, Capa_ZDE_Fight_ON )		// Capa pour dire zone de fight active pendant les coups
+OBJ_CapaSet( none, Capa_Buffer_X )		// Capa pour dire zone de memo X ON
+OBJ_CapaSet( none, Capa_Buffer_T)		// Capa pour dire zone de memo T ON
+OBJ_CapaSet( none, Capa_Buffer_C)		// Capa pour dire zone de memo C ON
+OBJ_CapaSet( none, Capa_Buffer_Interrupt)		// Capa pour dire zone d interruption est valide
+
+
+v_GrabKong_my_pos_before_rec = OBJ_PosGet()
+
+// KAMERA CUT POUR ANN ====================================================
+
+// Maintenir le plan un minimum de temps...
+if( ! TIME_Elapsed(f_Kamera_cut_ANN_time, Cf_Kamera_cut_ANN_duree_min) )
+	i_Kamera_cut_ANN_flag = vrai
+
+// Camera Extern...
+if( ao_CL[Ci_LNK_KKGRAB_OBJECT] || MSG_GlobalIsValid(amid_CL_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT]) )
+	i_Kamera_cut_ANN_flag_external = faux
+
+// Est ce qu'on veut une Camera Ann ?
+if( i_Kamera_cut_ANN_flag || i_Kamera_cut_ANN_flag_external)
+{
+	i_Kamera_cut_ANN_flag_external = faux
+	to_gao1 = @get_global o_camera
+	to_gao2 = @get_Kann_Path o_Joueur o_suivi_regard_object
+	if( to_gao2  && @to_gao2 AI_IsModel(get_KIntAnnAuSol_Path) )
+		to_gao2 = nobody
+	@get_Kamera_Path to_gao1 i_cc_cam_sur_ann = vrai
+	@get_Kamera_Path to_gao1 o_cc_ann_look_obj = to_gao2
+}
+
+// FURY ================================================================================
+AI_Execute("k_exec_fury")
+AI_Execute("k_exec_Speech")
+
+// POUR KONG QUI DOIT RESETER LES INFO CHAQUE TRAME
+Proc_KongFight_TargetReset()					
+STATS_IncDureeMap()							
+
+AI_Execute("k_DBG_ANIM")
+
+// KAMERA RUMBLE ======================================================================
+if( OBJ_CapaTest(Capa_KAMERA_Rumble) )
+{
+	OBJ_CapaSet(none, Capa_KAMERA_Rumble)
+	tf_rumble_coef = 1.0
+	if( ACT_ActionGet() == Ci_Kanim_Intimid_FinishFurieReward && ANI_CurrentFrameGet(0) > 320 )
+		tf_rumble_coef = 0.5
+	@get_Kamera Proc_Kam_RumbleSet(tf_rumble_coef / Cf_Rumble_Amplitude, 8.0)
+//	Str_DisplayTextOnce("RUMBLE", cvector(0.5,0.8,0.0))
+}
+
+// GESTION DES FACES TRAVERSABLES EN WALLING
+if (i_etat_courant != ETAT_Kong_walling && (COL_CrossableGet() & Gmat_KK_Crossable_Walling))
+{
+	if (COL_GMatReportGet(Gmat_KK_Crossable_Walling) == -1)
+		COL_CrossableSet( none, Gmat_KK_Crossable_Walling)
+	else if ( i_etat_courant != ETAT_Kong_jump )
+	{
+		tv_normal = COL_NormalGet( COL_C_ReportIndex + COL_GMatReportGet(Gmat_KK_Crossable_Walling))
+		tv_speed = DYN_SpeedGetVector()
+		tv_speed.z = 0.0
+		if ( MATH_VecDotProduct( tv_normal , tv_speed) > 0 )
+			DYN_SpeedSetVector( DYN_SpeedGetVector() + (tv_normal * 2.0) )
+		else
+			DYN_SpeedSetVector( tv_normal * 2.0)
+	}
+}
+
+// GESTION DES FACES TRAVERSABLES EN GROS PAF
+if( i_etat_courant != ETAT_Kong_desequilibre && (COL_CrossableGet() & Gmat_KK_Cross_All_But_Kong_And_Raptors) )
+{
+	if (COL_GMatReportGet(Gmat_KK_Cross_All_But_Kong_And_Raptors) == -1)
+		COL_CrossableSet( none, Gmat_KK_Cross_All_But_Kong_And_Raptors)
+}
+
+if( i_etat_courant != ETAT_Kong_desequilibre && (COL_CrossableGet() & Gmat_KK_Cross_All_But_Kong_Only) )
+{
+	if (COL_GMatReportGet(Gmat_KK_Cross_All_But_Kong_Only) == -1)
+		COL_CrossableSet( none, Gmat_KK_Cross_All_But_Kong_Only)
+}
+
+
+// TEST AFTER FX ===========================================
+//@get_global Proc_AE_BlackAndWhiteSet(afx_blackandwhite)
+//@get_global Proc_AE_ContrasteSet(afx_contraste)
+//@get_global Proc_AE_RemanenceSet(afx_remanance)
+//@get_global Proc_AE_ColorBalanceSet(afx_colorbalance1, afx_colorbalance2)
+//@get_global Proc_AE_MotionBlurSet(afx_blur)
+
+
+if (ACT_ActionGet() == 67)
+	DYN_SpeedSetVector( DYN_SpeedGetVector() * 1.5)
+
+
+// IK WALK
+i_flag_walk_IK[Ci_IK_pied_gauche]			= faux
+i_flag_walk_IK[Ci_IK_pied_droit]				= faux
+i_flag_walk_IK[Ci_IK_main_gauche]		= faux
+i_flag_walk_IK[Ci_IK_main_droite]			= faux
+
+i_flag_walk_IK[Ci_IK_pied_gauche]			= ACT_CustomBitTest(0b10000000)
+i_flag_walk_IK[Ci_IK_pied_droit]				= ACT_CustomBitTest(0b01000000)
+i_flag_walk_IK[Ci_IK_main_gauche]		= ACT_CustomBitTest(0b00100000)
+i_flag_walk_IK[Ci_IK_main_droite]			= ACT_CustomBitTest(0b00010000)
+
+
+i_flag_trample_old = i_flag_trample
+
+// DEBUG AFFICHAGE DES RIDERS
+#ifndef _FINAL_
+if( @"univ" i_cheat_page == 4 )
+{
+	tv_temp = cvector(0.65,0.7,0)
+	Str_DisplayTextOnce("=== Bone Riders ", tv_temp + cvector(0.07,0,0))
+	Str_DisplayIntOnce(i_rider_nb, tv_temp + cvector(0.25,0,0))
+	Str_DisplayTextOnce(" ===", tv_temp + cvector(0.27,0,0))
+	
+	tv_temp += cvector(0,0.05,0)
+	for( ti_i = 0; ti_i < Ci_Ride_Client_Nb; ti_i++ )
+	{
+		Str_DisplayTextOnce("[", tv_temp)
+		Str_DisplayIntOnce(ti_i, tv_temp + cvector(0.05,0,0))
+		Str_DisplayTextOnce("] = ", tv_temp + cvector(0.05,0,0))
+		to_gao = ao_bone_rider[ti_i]
+		if( to_gao )
+			Str_DisplayGaoOnce(to_gao, tv_temp + cvector(0.1,0,0))
+		tv_temp += cvector(0,0.05,0)
+	}
+}
+#endif
+
+// Permet de faire durer une action mashing meme apres le changemetn de mode(pour les musiques en général)
+f_GrabKong_SND_timer_exit -= MATH_FloatMin( f_GrabKong_SND_timer_exit, TIME_GetDt())
+
+//// GLADIATOR VERSION 1 ==============================================================================
+//if( i_gladiator_on && ! i_mode_mort )
+//{
+//	AFE_Border = MATH_FloatBlend(AFE_Border, 0.3, TIME_GetDt())
+//	if( TIME_Elapsed(f_gladiator_pulse, 0.5) && ! i_gladiator_pifpaf )
+//	{
+//		i_gladiator_pifpaf = vrai
+//		IO_PafSet(100, 1)
+//	}
+//	if(TIME_Elapsed(f_gladiator_pulse, 1.0))
+//	{
+//		IO_PafSet(100, 1)
+//		i_gladiator_pifpaf = faux
+//		f_gladiator_pulse = TIME_Get()
+//		LIBGFX_Fade(31, 0x00000000, 0x4f0000ff, 0.0, 0.5, 0.0, 2.0, 0.0, i_gladiator_prio_fade)
+//		i_gladiator_prio_fade++
+//	}
+//	if( f_gladiator_timer > 0.8 )
+//	{
+//		tf_speed = MATH_FloatMin( (Cf_Timer_gladiator - f_gladiator_timer) * 5.0, 0.0)
+//		@get_global Proc_AE_BrightnessSet( MATH_FloatBlend(-0.05, @get_global Proc_AE_BrightnessDefaultGet(), tf_speed))
+//		@get_global Proc_AE_ContrasteSet(MATH_FloatBlend(1.3, @get_global Proc_AE_ContrasteDefaultGet(), tf_speed))
+//		@get_global Proc_AE_MotionBlurSet(MATH_FloatBlend(0.5, @get_global Proc_AE_MotionBlurDefaultGet(), tf_speed))
+//		@get_global Proc_AE_ColorBalanceSet(MATH_FloatBlend(0.2441, @get_global Proc_AE_ColorBalance1DefaultGet(), tf_speed), 0.5)
+//		@get_global Proc_AE_RemanenceSet( MATH_FloatBlend(0.0, @get_global Proc_AE_RemanenceDefaultGet(), tf_speed))
+//	}
+//	else
+//	{
+//		tf_speed = 4.0 * TIME_GetDt()
+//		@get_global Proc_AE_BrightnessSet( MATH_FloatBlend(-0.05, @get_global Proc_AE_BrightnessDefaultGet(), tf_speed))
+//		@get_global Proc_AE_ContrasteSet(MATH_FloatBlend(1.3, @get_global Proc_AE_ContrasteDefaultGet(), tf_speed))
+//		@get_global Proc_AE_MotionBlurSet(MATH_FloatBlend(0.5, @get_global Proc_AE_MotionBlurDefaultGet(), tf_speed))
+//		@get_global Proc_AE_ColorBalanceSet(MATH_FloatBlend(0.2441, @get_global Proc_AE_ColorBalance1DefaultGet(), tf_speed), 0.5)
+//		@get_global Proc_AE_RemanenceSet( MATH_FloatBlend(0.0, @get_global Proc_AE_RemanenceDefaultGet(), tf_speed))
+//	}
+//	f_paf_afx_slow_motion_speed = 0.75
+//	AE_BorderBrightness(AFE_Border)
+//}
+//else if ( ! MATH_FloatNullEpsilon(AFE_Border) )
+//{
+//	AE_BorderBrightness(0.0)
+//	AFE_Border = 0.0
+//}
+
+
+//// GLADIATOR VERSION 2 ==============================================================================
+//if( i_gladiator_on && ! i_mode_mort )
+//{	
+//	AFE_Border = MATH_FloatBlend(AFE_Border, 0.35, TIME_GetDt())
+//	
+//	f_gladiator_pulse_border += TIME_GetDt()
+//	if(f_gladiator_pulse_border < 0.75)
+//		AFE_BorderColor = COLOR_Blend(AFE_BorderColor, 0x4F0000BF, TIME_GetDt())
+//	else if(f_gladiator_pulse_border < 1.5)
+//		AFE_BorderColor = COLOR_Blend(AFE_BorderColor, 0x4F000000, TIME_GetDt())
+//	else
+//		f_gladiator_pulse_border = 0
+//	
+//	if(TIME_Elapsed(f_gladiator_paf_agonisant, 0.5) && ! i_gladiator_pifpaf )
+//	{
+//		i_gladiator_pifpaf = vrai
+//		IO_PafSet(100, 1)
+//	}
+//	
+//	if(TIME_Elapsed(f_gladiator_paf_agonisant, 1.0))
+//	{
+//		IO_PafSet(100, 1)
+//		i_gladiator_pifpaf = faux
+//		f_gladiator_paf_agonisant= TIME_Get()
+//	}
+//	
+//	f_paf_afx_slow_motion_speed = 0.75
+//}
+//else
+//{
+//	AFE_Border = MATH_FloatBlend(AFE_Border, 0, TIME_GetDt())
+//	AFE_BorderColor = COLOR_Blend(AFE_BorderColor, 0, TIME_GetDt())
+//}
+//AE_BorderBrightness(AFE_Border)
+//AE_BorderColor(AFE_BorderColor)
+
+
+
+// GLADIATOR VERSION 3 LA DERNIERE ==============================================================================
+if( i_gladiator_on && ! i_mode_mort && @get_global i_Player_is_Kong )
+{
+	f_gladiator_pulse_border += TIME_GetDt()
+	if( f_gladiator_pulse_border < 0.5 )
+		f_gladiator_AFE_Border = MATH_FloatBlend(f_gladiator_AFE_Border, 0.35, f_gladiator_pulse_border / 0.5 )
+	else
+		f_gladiator_pulse_border = 0
+	
+	if(TIME_Elapsed(f_gladiator_paf_agonisant, 0.5) && ! i_gladiator_pifpaf )
+	{
+		i_gladiator_pifpaf = vrai
+		IO_PafSet(100, 1)
+	}
+	
+	if(TIME_Elapsed(f_gladiator_paf_agonisant, 1.0))
+	{
+		IO_PafSet(100, 1)
+		i_gladiator_pifpaf = faux
+		f_gladiator_paf_agonisant= TIME_Get()
+		f_gladiator_AFX_coef = 1.0
+	}
+	else
+		f_gladiator_AFX_coef = MATH_FloatBlend(f_gladiator_AFX_coef, 0.0, 1.5 * TIME_GetDt())
+	
+	f_paf_afx_slow_motion_speed = 0.75
+	
+	@get_global Proc_AE_ColorBalanceSet(MATH_FloatBlend(@get_global Proc_AE_ColorBalance1Get(), f_gladiator_colorbalance1 * f_gladiator_AFX_coef, 5.0 * TIME_GetDt()), f_gladiator_colorbalance2)
+	@get_global Proc_AE_RemanenceSet(MATH_FloatBlend(@get_global Proc_AE_RemanenceGet(), f_gladiator_remanance * f_gladiator_AFX_coef, 5.0 * TIME_GetDt()))
+	@get_global Proc_AE_BlackAndWhiteSet(MATH_FloatBlend(@get_global Proc_AE_BlackAndWhiteGet(), f_gladiator_blacknwhite * f_gladiator_AFX_coef, 5.0 * TIME_GetDt()))
+}
+else
+{
+	f_gladiator_AFX_coef = 0.0
+	f_gladiator_AFE_Border = MATH_FloatBlend(f_gladiator_AFE_Border, 0.0, TIME_GetDt())
+	c_gladiator_AFE_BorderColor = COLOR_Blend(c_gladiator_AFE_BorderColor, 0, TIME_GetDt())
+	
+	@get_global Proc_AE_ColorBalanceSet(MATH_FloatBlend(@get_global Proc_AE_ColorBalance1Get(), @get_global Proc_AE_ColorBalance1DefaultGet(), 5.0 * TIME_GetDt()), f_gladiator_colorbalance2)
+	@get_global Proc_AE_RemanenceSet(MATH_FloatBlend(@get_global Proc_AE_RemanenceGet(), @get_global Proc_AE_RemanenceDefaultGet(), 5.0 * TIME_GetDt()))
+	@get_global Proc_AE_BlackAndWhiteSet(MATH_FloatBlend(@get_global Proc_AE_BlackAndWhiteGet(), @get_global Proc_AE_BlackAndWhiteDefaultGet(), 5.0 * TIME_GetDt()))
+}
+AE_BorderBrightness(f_gladiator_AFE_Border)
+AE_BorderColor(c_gladiator_AFE_BorderColor)
+
+
+// IMPACT FLASH =======================================================================
+if( i_paf_afx_eclair_phase )
+{
+	f_paf_afx_eclair_brightness = 0.1
+	f_paf_afx_eclair_contraste = 1.5 
+	f_paf_afx_eclair_bw = 0.5
+	i_paf_afx_eclair_phase = 0
+	@get_global Proc_AE_BrightnessSet(f_paf_afx_eclair_brightness)
+	@get_global Proc_AE_ContrasteSet(f_paf_afx_eclair_contraste)
+	@get_global Proc_AE_BlackAndWhiteSet(f_paf_afx_eclair_bw)
+}
+
+
+// RALENTI ===============================================================================
+if( f_paf_afx_slow_motion_speed != 1.0 )
+{
+	@get_global f_game_speed = f_paf_afx_slow_motion_speed
+	tf_vrai_dt = (TIME_GetDt() / @get_global f_old_old_game_speed)
+	f_paf_afx_slow_motion_time += tf_vrai_dt
+	if( f_paf_afx_slow_motion_time > Cf_ralenti_fixe_duree )
+		f_paf_afx_slow_motion_speed += MATH_FloatMin(1.0 - f_paf_afx_slow_motion_speed, (1.0 / Cf_ralenti_annule_duree ) * tf_vrai_dt )
+}
+
+AI_Execute("k_exec_expression")
+
+//Str_DisplayTextOnce("i_paf_afx_done = ", cvector(0.4,0.9,0))
+//Str_DisplayIntOnce(i_paf_afx_done, cvector(0.6,0.9,0))
+//Str_DisplayTextOnce("i_fury_increased_this_action = ", cvector(0.3,0.95,0))
+//Str_DisplayIntOnce(i_fury_increased_this_action, cvector(0.61,0.95,0))
+
+i_finish_frame_last = ANI_CurrentFrameGet(0)		// Pour la procédure de détection de qui gagne les finish
+
+if ( ! i_joy_disable_control )
+{
+	tv_pos_zone = COL_ZonePosGet( C_zde_corps)
+	EVENT_AddEventVision(C_ID_Kong, C_EVENT_FILTER_KingKong, OBJ_Me(), Cf_EVENT_Duree_1Trame, tv_pos_zone, C_EVENT_Visibility_Full_Mvt, 5.0, Cf_Degre_Interet_Kong, C_EVENT_CONTEXT_STANDARD, 0, 1.0)
+}
+else
+{
+	ti_rank = -1
+	EVT_ID = MSG_GlobalScan(C_EVENT_TYPE_LockCam, &ti_rank)
+	while(MSG_GlobalIsValid(EVT_ID))
+	{
+		// J'ai Event Lock Cam
+		to_gao = EVENT_PereGet(EVT_ID)
+		if (@to_gao AI_IsModel(get_PNJ_KBats_path) && @to_gao KBC_IsABigBat())
+		{
+			tv_pos_zone = COL_ZonePosGet( C_zde_corps)
+			EVENT_AddEventVision(C_ID_Kong, C_EVENT_FILTER_KingKong, OBJ_Me(), Cf_EVENT_Duree_1Trame, tv_pos_zone, C_EVENT_Visibility_Full_Mvt, 5.0, Cf_Degre_Interet_Kong, C_EVENT_CONTEXT_STANDARD, 0, 1.0)
+			break
+		}
+		EVT_ID = MSG_GlobalScan(C_EVENT_TYPE_LockCam, &ti_rank)
+	}
+}
+
+
+// --- RESET FIGHT VALUES ---
+i_coup_retourne = faux								// On ne cancel pas le mouvement la prochaine trame
+i_coup_orient = faux									// On n oriente pas le coup la prochaine trame
+i_joy_disable_control = faux						// SI on veux desactiver le joy, on met a vrai a chaque trame
+if( OBJ_CapaTest(Capa_ZDE_Fight_ON) )
+	i_frappe_phase_before_zde_fight = faux		// ça y est on est dans la phase ZDE
+
+//if( i_frappe_phase_before_zde_fight )
+//	Str_DisplayTextOnce("before", cvector(0.5,0.45,0))
+
+#ifndef _FINAL_
+if( ! @get_global i_Player_is_Kong && @get_global i_AI_show_target )
+	Str_DisplayGaoOnce(o_fight_actor, tv_2D_pos)
+#endif
+
+
+// Game Speed : Proche de Jack ? ----------
+//if( o_Joueur )
+//	@o_Joueur Proc_KIndigene_CheckNearOfBigPerso(OBJ_Me(), 8.0)
+// Game Speed : Proche de Jack ? ----------
+
+i_LD_disable_Kong_move = faux
+

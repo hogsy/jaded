@@ -1,0 +1,75 @@
+#include "PNJ_Raptor_defines.var"
+
+int			ti_i
+
+float		tf_dist
+float		tf_delay
+
+vector	tv_temp
+
+object	to_target
+
+if (i_way_computation_mode != Ci_WAY_MODE_FIGHT)
+	return
+
+if (! MSG_GlobalIsValid(mid_best_interet))
+	return
+
+if (i_perceived_best_actor_index	== -1)
+	return
+
+if (! IsThis_ID_Humain(ai_perceived_ID[i_perceived_best_actor_index]))
+	return
+
+tf_delay = TIME_Get() - EVENT_InteretSeenTimeGet(mid_best_interet)
+if (tf_delay > 0.5)
+	return
+
+to_target = EVENT_InteretTargetGet(mid_best_interet)
+
+if (!to_target)
+	return
+
+switch(@to_target ACT_PartialActionGet())
+{
+	case 78 :
+	case 79 :
+		break
+		
+	default:
+		return
+}
+
+tv_temp = OBJ_PosGet()
+tv_temp -= @to_target OBJ_PosGet()
+tv_temp.z = 0.0
+
+tf_dist = MATH_VecDotProduct(tv_temp, tv_temp)
+
+if (tf_dist < 100.0)
+{
+	tf_dist = MATH_FloatSqrt(tf_dist)
+	tv_temp /= tf_dist
+
+	if (MATH_VecDotProduct(@to_target OBJ_SightGet(), tv_temp) > Cf_Cos60)
+	{	
+		if (! f_force_requin_mode_duration)
+		{
+			if (GRID_LIB_IsReachableFrom(OBJ_PosGet(), OBJ_PosGet() - (OBJ_SightGet() * 4.0), 0, 0.0, faux, i_grid_width))
+				f_force_intimide_duration = 2.0
+			else
+			{
+				i_flag_cri = vrai
+				i_SND_roar_index = 20
+			}
+		}
+
+		f_force_requin_mode_duration = MATH_FloatMax(f_force_requin_mode_duration, Cf_after_fear_force_requin_duration)
+	}
+	else
+	{
+		DBG_RenderVector(@to_target OBJ_PosGet() + Cv_VerticalVector, tv_temp * 1000.0, color_rouge)
+		f_force_requin_mode_duration = f_force_requin_mode_duration
+	}
+}
+

@@ -1,0 +1,1245 @@
+#include"k_define.var"
+
+#define	Fin_IK	\
+	ao_CL_GRABKONG[i_GrabKong_MainBloquee] = nobody	\
+	i_GrabKong_MainBloquee = -1										\
+	i_IK_end = vrai
+	
+#define	Frein( coef)		\
+{	float			t_dt				\
+	f_GrabKong_frein = 1.0 	\
+	t_dt = TIME_GetDt()			\
+	while ( t_dt > 0)				\
+	{									\
+		f_GrabKong_frein *= coef // Amortie en Fonction du DT a faire		\
+		t_dt -= 0.01666			\
+	}									\
+	v_GrabKong_speed_grab *= f_GrabKong_frein						\
+	LNK_GrabKong_SpeedVectorSet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee], v_GrabKong_speed_grab)	\
+}
+
+
+#define	Cf_Blend_Rotation_MAX	5.0
+#define	Cf_Blend_Acceleration		1.5
+#define	Cf_Blend_Contre				20.0
+#define	Cf_Blend_Desceleration	10.0
+
+#define	Cf_dist_aide_tir_min			10.07
+#define	Cf_dist_aide_tir_max		40.0
+	
+#define	Cf_Force_Sweep_Kong			10.0									// Force de Kong s'il lance le sweep
+#define	Cf_Sweep_speed_min			2.0
+
+#define	Ci_ChargeDuTrex					0b0001
+#define	Ci_ChargeDuTrexDeFace		0b0001
+#define	Ci_ChargeDuTrexDeCote		0b0101
+#define	Ci_ChargeDuTrexSWEEP		0b1001
+#define	Ci_ChargeDeKong				0b0010
+#define	Ci_ChargeDeKongDeFace		0b0010
+#define	Ci_ChargeDeKongDeCote		0b0110
+#define	Ci_ChargeDeKongSWEEP	0b1010
+
+
+#define	Cf_cercle_tps_debat									0.75			// Tps de debat avant ECHEC
+#define	Cf_debat_frein											0.965			// Freinage pendant que le TREX se debat
+// Reglage pour le cas REX charge Kong le stop de face
+#define	Cf_cercle_arret_tps_avt_frein						0.5			// Passage en sweep possible pendant ce delai + 0.151s du a l anim d accrochage
+#define	Cf_cercle_arret_entree_sweep_vitesse_min	8.0			
+#define	Cf_cercle_arret_vitesse_min_echec_grab		2.0			// si la vitesse passe sous cette limite echec: chute
+#define	Cf_cercle_arret_frein									0.970			// vitesse de freinage du couple
+#define	Cf_cercle_arret_angle_planchette				-Cf_Cos45	// Cos de l angle de detection planchette
+// Reglage pour le cas REX charge Kong l'attrape de cote
+#define	Cf_cercle_sweep_tps_degagement				0.5			// Passage en sweep possible pendant ce delai + 0.151s du a l anim d accrochage
+#define	Cf_cercle_sweep_angle_degagement			-Cf_Cos45	// Cos de l angle autorisation de degagement
+#define	Cf_cercle_sweep_cone_sortie					50.0			// Angle en degré dui cone de sortie
+// Reglage pour le cas KONG CHARGE le TREX de face
+#define	Cf_cercle_charge_tps_avt_frein					0.5			// Kong Pousse le TREX
+#define	Cf_cercle_charge_angle_retourne				Cf_Cos45	// Kong Retourne le TREX
+#define	Cf_cercle_charge_angleface						Cf_Cos45	// Angle de la zone : de face
+#define	Cf_cercle_charge_angle_degage					-Cf_Cos30	// Angle au dessus duquel on ne peux plus degager le TREX(car il traverserait Kong)
+
+
+#define	Cf_Sweep_Inertie_Freinage_Fury				0.90			// vitesse de freinage de la rotation de sweep en Fury
+#define	Cf_Sweep_Inertie_Freinage						0.95			// vitesse de freinage de la rotation de sweep 
+#define	Cf_Sweep_speed_Rot_Max						2.0			// vitesse max de rotation
+
+int			ai_bones[32]
+int			ti_col
+int			ti_rank
+int			ti_GrabKong_1_attrape_par_action
+int			ti_Interuption_Grab
+int			ti_status
+int			ti_action
+int			ti_valide
+int			ti_degagement
+int			ti_type
+int			ti_force_ejection_sweep
+int			ti_grab_ann
+int			ti_aide_tir_best_trex
+int			ti_aide_tir_cur_trex
+int			ti_nb_frame 
+float		ti_paf_puis
+int			ti_force_sweep
+int			ti_GrabSens 
+int			ti_jeter
+int			ti_collision_nb
+float		ti_puissance  
+int			ti_i
+int			ti_direct_exit
+
+float		tf_norm 
+float		tf_sign
+float		tf_norm_levier
+float		tf_dot
+float		tf_dot2
+float		tf_dot3
+float		tf_dist
+float		tf_blend
+float		tf_frame
+float  		tf_kong_loose_coef
+float		tf_percent
+float		tf_debut_controle
+float		tf_finish_timeout
+float		tf_rex_force_coef
+float		tf_rex_force_max
+float		tf_force_kong_just_mashing
+float		tf_secure_dt
+
+vector	tv_axis
+vector	tv_pos
+vector	tv_bras
+vector	tv_bras2
+vector	tv_target
+vector	tv_target2
+vector	tv_sens_lance
+vector	tv_sens
+vector	tv_sight
+vector	tv_axe
+vector	tv_temp
+vector	tv_temp2
+vector	tv_pos_ancrage
+vector	tv_speed
+vector	tv_speed_grab_target
+vector	tv_arm_pos
+vector	tv_dest_pos
+vector	tv_last_pos
+vector	tv_KT
+vector	tv_posA
+vector	tv_posB
+vector	tv_horizon
+vector	tv_paf_sight
+
+object	to_actor
+object	to_bone 
+object	to_tete 
+object	to_gao
+object	to_main
+object	to_bras
+object	to_module
+object	tao_zde_zde_list[40]
+object	to_temp_tracable
+object	to_hand 
+object	to_rider
+object	to_msg_sender
+
+messageid	tmid_NMI
+messageid	tmid_vis_ID
+messageid	tmid_life
+
+message	tm_msg
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux	
+	i_exit_mode = faux
+	i_GrabKong_attrape_jete = -1		// Cette variable est testé dans le reflex	
+
+	i_flag_grab_raptor_en_cours = faux
+	i_flag_positionne_souche = faux
+	
+	// TOUT COUPER
+	SND_GRAB_STOP
+	if( i_GrabKong_Souche )
+	{
+		switch( i_etat_courant )
+		{
+			case 	ETAT_Kong_desequilibre :		// on coupe pas en prenant un paf
+				i_GrabKong_posset_allowed = vrai
+				to_bone = ANI_CanalObjectGet( Anim_Canal_Snap_MainD)
+				LNK_GrabKong_BoneSet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab], to_bone)
+				break
+			case ETAT_Kong_depl_souche :	// on va se déplacer avec
+				break
+			default:
+				ao_CL_GRABKONG[i_GrabKong_MainActionGrab] = LNK_ClientGet(Ci_LNK_GRAB_KONG, amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab], faux, "k_exec_grab_object_param", nofunc, nofunc)
+				i_GrabKong_Souche = faux
+				i_GrabKong_posset_allowed = faux																			// Item grabbed ne se positionne pas encore
+				break
+		}
+	}
+	
+	if ( i_GrabKong_MainBloquee != -1)
+	{
+		if ( MSG_GlobalIsValid( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee]))
+		{
+			ao_CL_GRABKONG[i_GrabKong_MainBloquee] = LNK_ClientGet(Ci_LNK_GRAB_KONG, amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee], faux, "k_exec_grab_object_param", nofunc, nofunc)
+		}
+		Fin_IK               // que ce soit KONG ou REX qui coupe la liaison...
+	}
+	return
+}
+
+// RIDE SERVEUR ?
+RIDE_Propose_Link()
+
+ti_direct_exit = faux		// annule la demande de grab (le joueur a demandé de grabber alors qu'il a ANN dans la main et qu'il n'y a pas de wp)
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_Kong_grab) 
+{
+	i_etat_courant = ETAT_Kong_grab
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	fct_last_etat = AI_TrackCurGet()
+	
+	// CAMERA CAMERA CAMERA
+	@get_global i_kong_camera_status = Ci_Kcamera_deplacement	
+
+	// GRAB CLIENT ACCEPT
+	ai_SRV_ENABLE[Ci_LNK_KKFINISH_ON_KONG] = faux
+
+	i_GrabKong_mode = 0				// Mode jouage d anim de Grab par defaut
+
+	// Par defaut on ne va pas tenter de chopper le raptor 
+	i_GrabKong_raptor_test = faux
+	i_GrabKong_cote = faux
+	i_GrabKong_Dash = faux			// Je peux graber sans dash
+	
+	if( SWEEP_Init_choix_Grab_Ou_Lance())
+	{
+		// GRAB
+		i_flag_just_grab = faux 								// On vient de Grabber, on veut pas dégrabber
+		ti_type  = SWEEP_Init_Grab()
+		if ( i_GrabKong_Dash)
+		{
+			i_flag_trample = vrai
+			ACT_ActionSet( Ci_Kanim_Dash_Grab)
+			COUP_Orient( 0.0, 0.5, 0.0)
+			COUP_Set_Mode( C_Mode_Dash_To_Grab)
+			macro_change_etat( "k_ETAT_main")		// Grab Fini
+		}
+//		else if ( i_GrabKong_grabAnnAccepte)
+//			macro_change_etat( "k_ETAT_grab_ANN")						// Au final on grab ANN
+		else if ( ti_type & Ci_GrabKong_Type_Mashing)
+			macro_change_etat("k_ETAT_grab_mashing")				// changement de track hors procedure
+		f_coef_pied_d_appui = i_GrabKong_MainActionGrab			// Coef pied d'appui pour rotation pied
+	}
+	else
+	{
+		// THROW
+		f_GrabKong_dist_min_1m = SWEEP_Init_Lance_1_main( vrai)
+	}
+	
+	// VALEURS INITIALES NECESSAIRES
+	f_grab_blend_pos = 0.0
+	
+	f_GrabKong_blend_orient = 0.0
+	f_GrabKong_blend_pos = 0.0
+	i_GrabKong_Positionnement_Attrape = 0	// Par defaut il n y a pas de grab donc status QUO
+	i_GrabKong_1_attrape_par_action = faux
+	i_GrabKong_sweep_degagement = faux																	// Type de SWEPP particulier pour se degager de la trajectoire future du TREX quand Kong lance
+	v_GrabKong_attrape_orient = Cv_NullVector																// Null tant que pas defini pendant l accrochage
+	i_GrabKong_Throw = faux																						// Kong
+	i_GrabKong_send_PAF = faux																				// Passe a vrai si Kong frappe le REX en grab
+	i_GrabKong_je_vais_etre_jete = faux																		// Passe a vrai si le TREX va jeter Kong car grab trop long
+	
+	// Gab Ann sera testé 1 seule fois
+	i_GrabAnn_Tested = faux
+	// Rumble
+	f_rumble_power = 10.0
+	// KONG FINISH REX
+	i_finish_init = vrai
+	f_finish_frame = 0.0
+	f_time_start_etat = 0.0
+	f_finish_challenge_duration = 0.0
+	f_finish_force_kong = 0.0
+	f_finish_force_rex = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+	f_GrabKong_blend_pos += TIME_GetDt()
+}
+
+
+// ANALYSE =======================================================================
+
+// GRAB KONG =======================================
+o_finish_actor = LNK_ServeurGet(Ci_LNK_KKFINISH_ON_KONG, mid_finish_LNK_ID, vrai, nofunc, nofunc)
+if( o_finish_actor )
+{
+	if( LNK_Finish_FinisherTypeGet(mid_finish_LNK_ID) == Ci_GrabKong_Finished_BigScolo )
+	{
+		if( Proc_KK_RAGE_Test() || f_time_start_etat < 0.5 )
+			i_finished_big_scolo_kong_grab = vrai		// je passe en finished mais c moi qui ai grabbé le big scolo, et pas l'inverse
+	}
+	macro_change_etat("k_ETAT_finished")
+}	
+
+AI_Execute("k_exec_detect_paf")
+if ( o_paf_actor)
+{
+	PAF_Test_ChangeEtatValid(fct_track_change)
+	if( fct_track_change != nofunc )
+		macro_change_etat(fct_track_change)
+}
+
+if ( JUMP_Check_chute(vrai))
+	macro_change_etat("k_ETAT_jump")
+
+// CHECK END OF LIAISON
+if ( i_GrabKong_MainBloquee != -1)
+{
+	// Check de la liaison GRAB
+	if ( i_exit_mode)
+		ti_valide = faux		// Sortie de mode demandée on ne veux plus de liaison
+	else
+		ti_valide = vrai
+	if ( ao_CL_GRABKONG[i_GrabKong_MainBloquee])
+		ao_CL_GRABKONG[i_GrabKong_MainBloquee] = LNK_ThisClientGet( ao_CL_GRABKONG[i_GrabKong_MainBloquee], Ci_LNK_GRAB_KONG, amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee], ti_valide, "k_exec_grab_object_param", nofunc, nofunc)
+	else
+		ao_CL_GRABKONG[i_GrabKong_MainBloquee] = LNK_ClientGet(Ci_LNK_GRAB_KONG, amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee], ti_valide, "k_exec_grab_object_param", nofunc, nofunc)
+	if ( !ao_CL_GRABKONG[i_GrabKong_MainBloquee])
+	{
+		// LE Client a coupé la liaison
+		if ( ACT_ActionGet() == Ci_Kanim_Grab_recal)
+			i_exit_mode = vrai		// Lien rompu pendant la nim de choppe continuer de la jouer pour ke le joueur voit son action
+		if ( ! i_exit_mode)
+		{
+			// Degagement de laché de prise
+			if ( i_GrabKong_je_vais_etre_jete)
+			{
+//				tf_dot = MATH_VecDotProduct( OBJ_PosGet() - @o_GrabKong_Target OBJ_PosGet(), OBJ_HorizonGet())
+//				if ( tf_dot < 0)
+//					ACT_ActionSet(Ci_Kanim_GrabTT_pafG_byREX)		// A Gauche
+//				else
+//					ACT_ActionSet(Ci_Kanim_GrabTT_pafD_byREX)		// A Droite
+				ACT_ActionSet( Ci_Kanim_Paf_Face)
+				SND_RequestPlay( Ci_KSound_PafFort)
+				v_frappe_sight = Cv_NullVector
+				i_exit_mode = vrai
+			}
+			
+			// Lacher ANN : on informe ANN
+//			if(ao_CL[Ci_LNK_KKGRAB_OBJECT])
+//			{
+//				if( i_Grab_Torse_ANN )
+//				{
+//					i_Grab_Torse_ANN = faux
+//					i_Grab_Torse_Main = -1
+//				}
+//				LNK_KKGrabObject_TypeSet(amid_CL_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT], Ci_KKGrabObject_Lache)
+//			}
+		}
+		switch( ACT_ActionGet())
+		{
+			case Ci_Kanim_GrabTT_Frappe :
+				if ( !i_GrabKong_send_PAF && ANI_CurrentFrameGet( 0) > 18)
+				{
+					i_GrabKong_send_PAF = vrai 
+					ti_paf_puis = 10.0
+					Proc_KK_Send_Paf( C_EVENT_FILTER_Object, C_PAF_KK_Moyen + C_PAF_KK_Ecrasement , OBJ_Me(), Cf_EVENT_Duree_1Trame, o_GrabKong_Target, -1, ti_paf_puis, OBJ_SightGet(), COL_ZonePosGet( C_zde_fight) + (2.0 * OBJ_SightGet()))
+				}
+				break
+			case Ci_Kanim_Intimid_FinishFurieReward :
+			case Ci_Kanim_Intimid_FinishFurieCri :
+				i_exit_mode = faux // Forcer la sortie
+			default:
+		}	
+		// Si une anim spéciale est demandé pour finir le mode( i_exit_mode = vrai)  attendre qu'elle soit ternimée
+		if ( !i_exit_mode || ACT_ActionFinished())
+		{
+			i_IK_end = vrai
+			macro_change_etat( "k_ETAT_main")		// Grab Fini
+		}
+		else 
+		{
+			switch (ACT_ActionGet())
+			{
+				case Ci_Kanim_Grab_recal :
+					SND_GRAB_STOP
+					break
+				case Ci_Kanim_GrabTT_Frappe :
+					if ( ANI_CurrentFrameGet(0) > 16)
+						SND_GRAB_STOP
+				default:
+					SND_GRAB_STOP
+			}
+			
+			if ( !MATH_VecNullEpsilon( v_frappe_sight))
+				OBJ_BankingGeneralSet( MATH_VecBlendRotate( OBJ_SightGet(), v_frappe_sight, 8.0 * TIME_GetDt()), Cv_VerticalVector)
+			return
+		}
+	}
+}
+
+// COMPORTEMENT =================================================================	
+
+if ( f_GrabKong_blend_pos > 0.15)
+	OBJ_CapaSet(Capa_Anim_d_Attaque, none)	// Anim d attaque( info pour le TREX)
+
+
+// GESTION DU GRAB TREX	
+if( i_GrabKong_MainBloquee != -1)
+{
+	// Pour les brag flanc: utilisationd'un décalage.
+	ti_GrabSens = 0		// NEUTRE
+	to_tete = @ao_CL_GRABKONG[i_GrabKong_MainBloquee] ANI_CanalObjectGet( Anim_Canal_Tete)
+	ti_action = LNK_GrabKong_ActionGet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee])
+	switch( ti_action)
+	{
+		case Ci_GrabKong_ChuteVide :
+			i_exit_mode = vrai
+			ACT_ActionSet(Ci_Kanim_AttenteNo_Cycl) // Version sans cycl
+			break
+		case Ci_GrabKong_Attrape :
+			// LE TREX CHARGE
+			// PHASE DE POSITIONEMENT DE KONG SUR L INIT DU GRAB
+
+			// La vitesse est imposée par Kong qui Freine le mouvement
+			if ( ACT_ActionFinished())
+			{
+				i_GrabKong_positionnement_fini = vrai
+				i_GrabKong_Sens_cote = 0
+				SWEEP_Choix_Anim( 0) // 0 : Immobile	
+				LNK_GrabKong_AnimJeteSet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab],  ACT_ActionGet())
+			}				
+			tv_temp =  OBJ_PosGet() - @ao_CL_GRABKONG[i_GrabKong_MainBloquee] OBJ_PosGet()
+			MATH_VecSetHorzNormalize( tv_temp)
+
+			// KONG ATTRAPE LA CHARGE DU TREX DE FACE
+			i_GrabKong_Positionnement_Attrape = vrai	// TREX charge prise de face
+		
+			// ACTIVATION DE L IK
+			if ( i_IK_end &&  f_grab_blend_pos > 0.5)
+			{ 
+				i_IK_end = faux	// L IK s active donc par defaut elle est pas finie							
+				AI_CBAdd( o_GrabKong_Target, CallBack_After_Blend, "k_exec_Ik_GrabKong")	
+				SND_RequestPlay(14)
+			}
+
+			// DETECTION DU PASSAGE EN SWEEP
+			if( f_grab_blend_pos == 1.0 && i_GrabKong_positionnement_fini)
+			{ 
+				// Partir en SWEEP
+				tf_norm = MATH_FloatMax( MATH_VecNorm( v_GrabKong_speed_grab), Cf_Force_Sweep_Kong)
+				SWEEP_Change_To_Sweep( v_GrabKong_speed_grab, OBJ_HorizonGet(), OBJ_SightGet() * tf_norm, faux, faux)
+				i_SND_Grab_LoopA = SND_RequestPlayLoopOnObjCanal(54, Anim_Canal_MainDroite)
+				i_SND_Grab_LoopB = SND_RequestPlayLoopOnObjCanal(55, Anim_Canal_MainGauche)
+			}
+			f_grab_blend_pos = MATH_FloatMin( f_grab_blend_pos + ( f_GrabKong_BlendPosInit * TIME_GetDt()), 1.0)		// Blend de position et orientation idéale.
+			break
+
+		case Ci_GrabKong_SweepLastSecond :
+			ANI_FrequencySet(0, 110)
+		case Ci_GrabKong_SweepLance :
+		case Ci_GrabKong_Sweep :
+			//PHASE DE MOUVEMENT DU SYSTEME BINAIRE KONG FAIT SWEEP LE TREX
+			ti_Interuption_Grab = faux
+
+			// RUMBLE
+			if ( ti_action != Ci_GrabKong_SweepLastSecond)
+				f_rumble_power =  50.0
+			else
+				f_rumble_power += 150.0 * TIME_GetDt()
+			IO_PafSet( f_rumble_power, 1)
+			
+			if ( ti_action != Ci_GrabKong_SweepLance )
+			{
+				// Detect des coups
+				if ( i_flag_just_coup)
+				{
+					SWEEP_Change_To_Frappe( i_GrabKong_Sens_cote)
+					return
+				}
+				
+				// Detect du Lance // DANGER DANGER DANGER PRISE COTE
+				if ( i_flag_just_grab  || i_joy_flag_dash)
+				{
+					STATS_IncAttack()		// jeter le REX
+					if ( i_GrabKong_Sens_cote)
+						SWEEP_Change_To_Frappe( i_GrabKong_Sens_cote)
+					else
+						SWEEP_Change_To_LanceOrSweep()
+					return
+				}
+				
+				// Detect de la  Rage
+				if ( i_flag_just_Rage && EVENT_LIFE_Est_Blesse( EVENT_LIFE_MSGID_Get( ao_CL_GRABKONG[i_GrabKong_MainActionGrab])))
+				{
+					SWEEP_Change_To_MashSePlace( i_GrabKong_Sens_cote)
+					return
+				}
+			}
+			
+			// GRAB SUR LES COTES : IMMOBILE
+			if ( i_GrabKong_Sens_cote)
+				break
+		
+			// Speedvector modifié par la lecture du joy : le recupérer avant
+			tv_speed_grab_target = LNK_GrabKong_SpeedVectorGet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee])
+
+			// LECTURE DU JOY EN MODE VOLANT !!
+//			SWEEP_Rotate_Speed_And_Anim()
+			
+			if ( !i_GrabKong_sweep_degagement)
+			{
+				// Selon camera fight ou camera GENCAM
+				tv_temp = MATH_VecCrossProduct( OBJ_SightGet(), v_joy_sight)
+				if ( MATH_VecDotProduct( OBJ_SightGet(), v_joy_sight) < 0.0)
+					if ( MATH_VecNullEpsilon( tv_temp))
+						tv_temp = Cv_VerticalVector
+					else
+						MATH_VecSetNormalize( tv_temp)			
+
+				f_GrabKong_wheel = MATH_FloatMin( f_GrabKong_wheel + (TIME_GetDt() * 3.0), 1.0)		// Blend d'accelération de la rotation
+	
+				if ( !f_joy_norm)
+				{
+					// Freinage fonction du DT
+					if ( i_fury_on)
+						f_GrabKong_wheel_speed *= Amorti_Coef_Dt( Cf_Sweep_Inertie_Freinage_Fury)
+					else
+						f_GrabKong_wheel_speed *= Amorti_Coef_Dt(Cf_Sweep_Inertie_Freinage)
+					
+					f_GrabKong_wheel = 0.0
+					f_GrabKong_wheel_speed_invert = f_GrabKong_wheel_speed
+					
+					if ( !i_GrabKong_cote)
+					{
+						SWEEP_Choix_Anim( 0) // 0 : Immobile					
+					}
+					f_SND_Grab_insert = MATH_FloatBlend( f_SND_Grab_insert, 0.0, 1.5 * TIME_GetDt())
+				}
+				else if ( MATH_VecDotProduct( v_joy_sight_old, OBJ_HorizonGet())  *  MATH_VecDotProduct( v_joy_sight, OBJ_HorizonGet()) > 0)
+				{
+					// Acceleration fonction du DT
+					f_GrabKong_wheel_speed = MATH_FloatBlend( f_GrabKong_wheel_speed_invert, tv_temp.z * Cf_Sweep_speed_Rot_Max, f_GrabKong_wheel)   // 2.4
+					if ( !i_GrabKong_cote)
+					{
+						SWEEP_Choix_Anim( 1) // 1 : En deplacement
+					}
+					f_SND_Grab_insert = MATH_FloatBlend( f_SND_Grab_insert, 1.0, 2.5 * TIME_GetDt())
+				}
+				else 																	// Le volant tourne pas dans le bon sens
+				{ 
+					// Freinage fonction du DT
+					f_GrabKong_wheel_speed_invert = f_GrabKong_wheel_speed
+					f_GrabKong_wheel = 0.0
+					f_SND_Grab_insert = MATH_FloatBlend( f_SND_Grab_insert, 1.0, 2.5 * TIME_GetDt())
+				}
+				LNK_GrabKong_AnimJeteSet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab],  ACT_ActionGet())
+				SND_InsertVarSet( i_SND_Grab_LoopA, 11, f_SND_Grab_insert)
+
+			}
+			else
+			{
+				// Mode Ejection automatique
+				SWEEP_Choix_Anim( 1) // 1 : En deplacement
+				LNK_GrabKong_AnimJeteSet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab],  ACT_ActionGet())
+				tv_temp = MATH_VecCrossProduct( v_joy_sight_old, v_joy_sight)		// Sens du volant a cette trame
+				if ( !f_joy_norm || MATH_FloatNullEpsilon(f_GrabKong_wheel))
+				{
+					Frein( 0.990)			// Freinage fonction du DT
+				}
+				else if ( tv_temp.z * f_GrabKong_wheel > 0)			// Le Volant tourne toujours dans le bon sens
+				{
+					Frein( 1.005)				// Acceleration fonction du DT
+				}				
+			}
+			
+			// FREQUENCE ++ LA DERNIERE SECONDE
+			if( ti_action == Ci_GrabKong_SweepLastSecond )
+			{
+				ANI_FrequencySet(0, 110)
+			}
+
+			// CALCUL DE LA VITESSE DE ROTATION
+				
+			// Vitesse de rotation dépendante de la vitesse du TREX
+
+			// Vecteur Main Kong
+			tv_target = OBJ_SightGet() * LNK_GrabKong_ArmSizeGet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee])
+			tv_target.z = 0.0
+			tf_norm_levier = MATH_VecNorm( tv_target)
+			tv_target /= tf_norm_levier
+
+			if ( MATH_VecNullEpsilon( tv_speed_grab_target))
+				tv_temp = tv_target
+			else
+				tv_temp = MATH_VecNormalize(tv_speed_grab_target)
+			
+			tf_dot = MATH_VecDotProduct( tv_temp , tv_target)
+			if ( tf_dot < 0.0 && !MATH_VecNullEpsilon(v_GrabKong_speed_derape))
+			{
+				// Le Trex fonce trop sur nous on s'en écarte tout en voulant le faire tourner
+				tf_dot = (0.25 * tf_dot) + 1.0
+				tf_dot = 1.0
+				tv_temp2.x = tv_temp.y
+				tv_temp2.y = -tv_temp.x
+				tv_temp2.z = 0.0
+				tf_norm = MATH_VecNorm( v_GrabKong_speed_derape)
+				v_GrabKong_speed_derape -= 0.15 * tv_temp2 * tf_norm * MATH_VecDotProduct( tv_temp2 , tv_target)
+				MATH_VecSetNorm( v_GrabKong_speed_derape, tf_norm)
+			}
+			else
+				tf_dot = 1.0			
+			tf_norm = MATH_VecNorm( v_GrabKong_speed_grab)
+			f_GrabKong_blend_orient = tf_dot * 1.5 * MATH_ASin( tf_norm * TIME_GetDt() / (2 * tf_norm_levier))
+
+
+			// ROTATION
+			tv_last_pos = OBJ_PosGet() + (OBJ_SightGet() * LNK_GrabKong_ArmSizeGet(amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab]))
+
+			if  ( !i_GrabKong_sweep_degagement)
+				tv_sight = MATH_VecRotate( OBJ_SightGet(), Cv_VerticalVector, f_GrabKong_wheel_speed * TIME_GetDt()) // f_GrabKong_rot_sign * f_GrabKong_blend_orient )
+			else
+				tv_sight = MATH_VecRotate( OBJ_SightGet(), Cv_VerticalVector, f_GrabKong_rot_sign * f_GrabKong_blend_orient )
+
+			push(tv_sight)							// Axis Dest
+			push(80.0)								// Speed   80
+//			if ( f_GrabKong_wheel_speed > 0.0)
+//				push(1.0)			// Coef entre les deux pieds
+//			else
+//				push(0.0)			// Coef entre les deux pieds
+			push(0.5)			// Coef entre les deux pieds
+			AI_Execute("k_exec_2Feet_SightSet")	
+//
+			// TRANSLATION due a la fin de l amortie du la charge du Trex
+			OBJ_PosSet( OBJ_PosGet() +( v_GrabKong_speed_derape * TIME_GetDt()))
+
+			v_GrabKong_speed_derape *= Amorti_Coef_Dt(0.95) 	// Amortie en Fonction du DT
+			
+			DBG_RenderSphere( (OBJ_PosGet() + cvector( 0.0, 0.0, 3.0))
+			+ ( OBJ_SightGet() * LNK_GrabKong_ArmSizeGet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab])), 1.0, 0xD00000FF) 
+			// Tester le decrochage quand on est dans le ¼ de cercle
+			if ( i_GrabKong_sweep_degagement)
+			{
+				if ( !SWEEP_Check_Lance( 0))
+//				Sweep_pre_calculs	
+//				if (( MATH_VecDotProduct( tv_temp, v_GrabKong_axe ) < tf_dot 
+//				|| MATH_VecDotProduct( v_GrabKong_axe, tv_temp2 ) < tf_dot)
+//				&& !ti_force_sweep)
+				{	
+					//SWEEP DE DEGAGEMENT FINI : KONG PEUX LANCER LE TREX
+					if( f_GrabKong_rot_sign < 0)
+					{
+						// Jeter de coté
+						ACT_ActionSet( Ci_Kanim_Lache_D )	// Lacher
+						v_frappe_sight= -OBJ_HorizonGet()
+		
+					}
+					else
+					{
+						// Jeter de coté
+						ACT_ActionSet( Ci_Kanim_Lache_G )	// Lacher
+						v_frappe_sight= OBJ_HorizonGet()
+					}
+					SND_RequestPlay(16)
+					o_Throw_Target = nobody
+					SWEEP_Change_To_Lance( v_GrabKong_axe * Cf_Force_Jete, vrai, faux, vrai)
+					f_coef_pied_d_appui = i_GrabKong_MainActionGrab						// Coef pied d'appui pour rotation pied
+					v_frappe_speed = Cv_NullVector
+				} 		
+			}
+			break
+		case Ci_GrabKong_Frappe :
+			i_IK_end = vrai
+			v_frappe_sight = OBJ_SightGet()
+			i_exit_mode = vrai
+			break
+			
+		case Ci_GrabKong_Lance_SePositionne :
+			// Phase positionnement avant le lance
+			i_GrabKong_Positionnement_Attrape = faux
+			if ( ACT_ActionGet() != Ci_Kanim_GrabTT_att)
+			{
+				tf_frame = ANI_NbFrameGet(0)
+				tf_blend = ANI_CurrentFrameGet(0) / tf_frame
+				to_bone = @ao_CL_GRABKONG[i_GrabKong_MainBloquee] ANI_CanalObjectGet( 210)
+				OBJ_PosSet( MATH_VecBlend( v_GrabKong_init_grab, @to_bone OBJ_PosGet(), tf_blend))
+				OBJ_BankingGeneralSet( MATH_VecBlendRotate( OBJ_SightGet(), @to_bone OBJ_SightGet(), tf_blend), Cv_VerticalVector)
+			}
+			if ( ACT_ActionFinished())
+			{
+				v_frappe_sight = Cv_NullVector
+				ACT_ActionSet( i_GrabKong_Lance_Anim)	
+				SWEEP_Change_To_Lance( Cv_NullVector, faux, faux, vrai)
+				STATS_IncAttack()
+			}
+			break
+		case Ci_GrabKong_Lance :
+			i_GrabKong_Positionnement_Attrape = faux
+			if ( ANI_CurrentFrameGet(0) > 60)
+			{
+				i_GrabKong_Positionnement_Attrape = faux
+				Fin_IK				
+			}
+			break
+		case Ci_GrabKong_Repousse :
+			i_GrabKong_je_vais_etre_jete = vrai
+			i_GrabKong_cote = 0		// Pas de positionnement d anim
+			if ( ACT_ActionGet() != Ci_Kanim_GrabTT_att)
+				i_IK_end = vrai	// De profil il faut stoper l IK sinon les bras partent en vrac
+			break
+// FINISH MORSURE & FLANC
+		case Ci_GrabKong_FinishSePlace :
+			if ( i_last_request_txt != GeneKon_C_mashing_bite && ANI_CurrentFrameGet(0) > 40)
+				i_request_txt_forced = GeneKon_C_mashing_bite
+
+// PORKAS TEST FROML TREX POS		
+			to_bone = @ao_CL_GRABKONG[i_GrabKong_MainBloquee] ANI_CanalObjectGet( 210)
+			if ( MATH_VecNullEpsilon( v_finish_pos_init))
+			{
+				v_finish_pos_init = OBJ_PosGet()
+			}
+
+			OBJ_PosSet( MATH_VecBlend( v_finish_pos_init, @to_bone OBJ_PosGet(), MATH_FloatMin( 1.0, ANI_RatioGet(0) * 5.0)))
+			OBJ_BankingGeneralSet( MATH_VecBlendRotate( OBJ_SightGet(), @to_bone OBJ_SightGet(), 8.0 * TIME_GetDt())
+			, Cv_VerticalVector)
+// PORKAS TEST FROML TREX POS
+		case Ci_GrabKong_Flanc_MashSePlace :
+			// CAMERA -----------------------------------------------------------------
+			if ( !i_GrabKong_Sens_cote)
+				@get_Kamera Proc_Kam_FinishMode_Set( Ci_Kamera_Finish_id_MorsureTREX, OBJ_Me())	// Parametres pour le moment, le type de Finish et le perso de reference de ce finish (en principe KONG)
+			else if ( i_GrabKong_Sens_cote )
+				@get_Kamera Proc_Kam_FinishMode_Set( Ci_Kamera_Finish_id_FlancMashG + i_GrabKong_Sens_cote - 1, ao_CL_GRABKONG[i_GrabKong_MainBloquee])	// Parametres pour le moment, le type de Finish et le perso de reference de ce finish (en principe KONG)
+			// CAMERA -----------------------------------------------------------------
+
+			if ( ACT_ActionFinished())
+			{
+				SWEEP_Change_To_Mash( i_GrabKong_Sens_cote)
+				return
+			}
+			break
+		case Ci_GrabKong_Flanc_MashDeb :
+		case Ci_GrabKong_FinishDeb :
+			// CAMERA -----------------------------------------------------------------
+			if ( !i_GrabKong_Sens_cote)
+				@get_Kamera Proc_Kam_FinishMode_Set( Ci_Kamera_Finish_id_MorsureTREX, OBJ_Me())	// Parametres pour le moment, le type de Finish et le perso de reference de ce finish (en principe KONG)
+			else if ( i_GrabKong_Sens_cote )
+				@get_Kamera Proc_Kam_FinishMode_Set( Ci_Kamera_Finish_id_FlancMashG + i_GrabKong_Sens_cote - 1, ao_CL_GRABKONG[i_GrabKong_MainBloquee])	// Parametres pour le moment, le type de Finish et le perso de reference de ce finish (en principe KONG)
+			// CAMERA -----------------------------------------------------------------
+			ti_nb_frame = ANI_NbFrameGet(0)
+			f_SND_Grab_insert = f_finish_frame / ti_nb_frame
+			SND_InsertVarSet( i_SND_Grab_LoopA, 11, f_SND_Grab_insert)
+			// RUMBLE
+			if (i_flag_just_Rage_Any_Button || i_flag_just_grab)
+			{
+				tf_percent = Proc_KK_Mashing_Pct()
+				@get_Kamera Proc_Kam_RumbleSet(tf_percent / Cf_Rumble_Amplitude, 6.0)
+			}
+
+			// QUITTER LE GRAB GRACE A UN DASH
+			if  (i_flag_just_Action)
+			{
+//					if ( ti_action == Ci_GrabKong_FinishDeb)
+//					{
+					v_dash_direction = v_joy_sight_normalized
+					ACT_ActionSet( Ci_Kanim_dash + Ci_ActionSet_Force_FrameZero + Ci_ActionSet_Force_SameAction)
+					COUP_Orient( 0.0, 0.5, 0.0)
+					COUP_Set_Mode( C_Mode_Dash)
+					macro_change_etat( "k_ETAT_main")		// Grab Fini
+//					}
+//					else
+//					{
+//						v_frappe_sight = @ao_CL_GRABKONG[i_GrabKong_MainBloquee]  OBJ_PosGet() - OBJ_PosGet()
+//						COUP_CHANGE_To_Combo3()
+//						macro_change_etat( "k_ETAT_main")		// Grab Fini
+//					}
+			}
+			if( ti_action == Ci_GrabKong_Flanc_MashDeb )
+			{
+				// Finish Souleve
+				tf_debut_controle = 2.31
+				tf_finish_timeout = 5
+				tf_rex_force_max = 10.0
+				tf_rex_force_coef = 2.0
+				tf_force_kong_just_mashing = 3.50		// NEW Modif by Fred juste avant de nous lacher !!!! :) 	// 3.0
+			}
+			else
+			{
+				// Finish Morsure
+				tf_debut_controle = 1.57
+				tf_finish_timeout = 5
+				tf_rex_force_max = 12.0
+				tf_rex_force_coef = 2.0
+				tf_force_kong_just_mashing = 3.25		// 3.0
+			}
+			f_finish_challenge_duration += TIME_GetDt()
+			if( f_finish_challenge_duration < tf_debut_controle ) 
+			{
+				f_finish_frame = ANI_CurrentFrameGet(0)
+				i_SND_mash_advantage = 0
+				f_finish_force_rex = 3.0
+				f_finish_force_kong = 3.1
+			}
+ 			else
+			{
+				// DEBUT du CONTOLE JOUEUR
+				// TEST Frame FAILLED
+				if ( f_finish_frame <= 0.0)												// Je joueur a résisté l anim est revenu a la 1ere frame jouer Kong repousse
+				{
+					// FAILLED
+					i_finish_end = vrai					// Le TREX GANGE
+					SWEEP_Change_To_MashPerdu( i_GrabKong_Sens_cote)
+					return 
+				}
+
+				if ( !i_SND_mash_advantage && f_finish_frame > (ti_nb_frame * 0.75))
+				{
+					i_SND_mash_advantage = 1
+					SND_RequestPlay( 56)
+				}
+				else if ( i_SND_mash_advantage && f_finish_frame < (ti_nb_frame * 0.25))
+				{
+					i_SND_mash_advantage = 0
+				}
+				
+				// TIME OUT & PERTE TROP IMPORTANTE
+				if( (f_finish_force_kong - f_finish_force_rex) < -3.5 )
+					tf_finish_timeout = 0
+				
+				tf_secure_dt = MATH_FloatLimit(TIME_GetDt(), 0.016, 0.048)		// SECURE DT FOR LOW FRAMERATE !!!
+				
+				// NE PAS MONTER LA FORCE DE L'ENNEMI SI KONG EST FORT
+				if (f_finish_force_kong < 2.0)
+				{
+					#ifndef _FINAL_
+					if( @"univ" i_cheat_page == 4 )
+						Str_DisplayTextOnce("REX ++", cvector(0.4,0.65,0))
+					#endif
+					f_finish_force_rex = MATH_FloatMin(f_finish_force_rex + (tf_rex_force_coef * tf_secure_dt), tf_rex_force_max)
+				}
+				
+				// REDUCTION DE LA FORCE DE KONG
+				if( f_time_fury )
+				      tf_kong_loose_coef = 3.0		// 1.5
+				else
+				      tf_kong_loose_coef = 20.0	// 3.0
+				f_finish_force_kong = MATH_FloatMax(0,f_finish_force_kong - (tf_kong_loose_coef * tf_secure_dt))
+				
+				// GESTION DU BOUTON
+				if( f_finish_challenge_duration < (tf_debut_controle + tf_finish_timeout) )
+				{
+					#ifndef _FINAL_
+					if( @"univ" i_cheat_page == 4 )
+						Str_DisplayTextOnce("Wait for mashing...", cvector(0.4,0.7,0))
+					#endif
+					if( i_flag_just_Rage_Any_Button || i_flag_just_grab)
+					{
+						#ifndef _FINAL_
+						if( @"univ" i_cheat_page == 4 )
+							Str_DisplayTextOnce("Mashing !!!", cvector(0.4,0.75,0))
+						#endif
+						if ( i_flag_just_coup)
+							i_GrabKong_Mash_with_X = vrai
+						else
+							i_GrabKong_Mash_with_X = faux
+//							f_finish_force_kong = 8.0
+ 							f_finish_force_kong = tf_force_kong_just_mashing + ( 0.5 - ((f_finish_frame / ANI_NbFrameGet(0)) * 0.5) )
+						f_finish_force_rex = MATH_FloatMax(0,f_finish_force_rex - 0.5)
+					}
+				}
+					
+				#ifndef _FINAL_
+				if( @"univ" i_cheat_page == 4 )
+				{
+					Str_DisplayTextOnce("force kong = ", cvector(0.4,0.8,0))
+					Str_DisplayFloatOnce(f_finish_force_kong, cvector(0.55,0.8,0))
+					Str_DisplayTextOnce("force rex = ", cvector(0.4,0.85,0))
+					Str_DisplayFloatOnce(f_finish_force_rex, cvector(0.55,0.85,0))
+					Str_DisplayTextOnce("frame = ",cvector(0.4,0.9,0))
+					Str_DisplayFloatOnce(f_finish_frame, cvector(0.55,0.9,0))
+					Str_DisplayTextOnce(" / ",cvector(0.6,0.9,0))
+					Str_DisplayIntOnce(ANI_NbFrameGet(0), cvector(0.62,0.9,0))
+				}
+				#endif
+				
+				f_finish_frame += f_finish_force_kong
+				f_finish_frame -= f_finish_force_rex
+				if ( f_finish_frame > ANI_NbFrameGet(0))							// L anim se termine: jouer REX gagne
+				{
+					// FIn du FInish Kong Gagne
+					SWEEP_Change_To_MashGagne( i_GrabKong_Sens_cote)
+					return
+				}
+				else
+				{
+					// BUG DU PLAYER D ANIM BUG DU PLAYER D ANIM
+					if ( ACT_ActionFinished())
+						ACT_ActionSet(ACT_ActionGet() + Ci_ActionSet_Force_SameAction)	
+					// BUG DU PLAYER D ANIM BUG DU PLAYER D ANIM
+					ANI_RatioSet(0, f_finish_frame / ANI_NbFrameGet(0) )		
+					@ao_CL_GRABKONG[i_GrabKong_MainBloquee]  ANI_RatioSet(0, f_finish_frame / @ao_CL_GRABKONG[i_GrabKong_MainBloquee]  ANI_NbFrameGet(0) )		
+				}
+			}
+			break
+		case Ci_GrabKong_Flanc_MashCoup :
+			if ( SWEEP_Fin_ActionMash( 10, Ci_Kamera_Finish_id_FlancMashG + i_GrabKong_Sens_cote - 1, vrai))	// Frame fin son grab
+				return	
+			break	
+		case Ci_GrabKong_Flanc_MashPerdu :		
+			SWEEP_Fin_ActionMash( 78, Ci_Kamera_Finish_id_FlancMashG + i_GrabKong_Sens_cote - 1, faux)	// Frame fin son grab || Mode Cam
+			return					
+			break	
+		case Ci_GrabKong_Flanc_MashGagne :
+			SWEEP_Fin_ActionMash( 50, -1, vrai)
+			return
+			break
+		case Ci_GrabKong_FinishPerdu :
+			if ( SWEEP_Fin_ActionMash( 78, Ci_Kamera_Finish_id_MorsureTREX, faux))
+				return
+			break
+		case Ci_GrabKong_FinishGagne :
+			if ( SWEEP_Fin_ActionMash( 60, -1, faux))
+				return
+			break
+	}
+	
+	// ORIENTATION ET DEPLACEMENT EN PHASE ATTRAPE
+	
+	if ( i_GrabKong_cote)
+	{
+
+		to_bone = @ao_CL_GRABKONG[i_GrabKong_MainBloquee] ANI_CanalObjectGet( 210)
+		tv_pos = @to_bone OBJ_PosGet()
+
+		ti_action = ACT_ActionGet()
+		if ( ti_action == Ci_Kanim_Flanc_Deb || ti_action == (Ci_Kanim_Flanc_Deb + 10))
+		{
+			tf_frame = 15.0 //ANI_NbFrameGet(0)
+			tf_blend = MATH_FloatMin( 1.0, ANI_CurrentFrameGet(0) / tf_frame)
+			COL_ColSetActivationSet( none, C_bit_zdm_pied)
+			DYN_GravitySet(Cv_VerticalVector)
+		}
+		else
+		{
+			COL_ColSetActivationSet( C_bit_zdm_pied, none)
+			DYN_GravitySet(Cv_Kong_Gravity)
+			tf_blend = 1.0
+			tv_pos.z = MATH_FloatBlend( tv_pos.z, OBJ_PosGet().z, 4.0 * TIME_GetDt())
+		}
+		OBJ_PosSet( MATH_VecBlend( v_GrabKong_init_grab, tv_pos, tf_blend))
+		OBJ_BankingGeneralSet( MATH_VecBlendRotate( OBJ_SightGet(), @to_bone OBJ_SightGet(), tf_blend), Cv_VerticalVector)	
+	}		
+	else if ( i_GrabKong_Positionnement_Attrape ) 
+	{
+		tv_pos_ancrage = @ao_CL_GRABKONG[i_GrabKong_MainBloquee] OBJ_PosGet()
+		tv_pos_ancrage += LNK_GrabKong_AncrageVectorGet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab]) *  LNK_GrabKong_NeckSizeGet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab])
+		tv_pos = tv_pos_ancrage
+		tv_sens = v_Grab_Kong_Offset_init
+		DBG_RenderVector( tv_pos_ancrage, v_Grab_Kong_Offset_init, color_rouge)
+		tf_norm = MATH_FloatBlend( MATH_VecNorm(v_Grab_Kong_Offset_init) , LNK_GrabKong_ArmSizeGet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee]), f_grab_blend_pos)
+		MATH_VecSetNorm( tv_sens , tf_norm)
+		DBG_RenderVector( tv_pos_ancrage + cvector(0.0,0.0,0.5), tv_sens, color_bleu)
+//		tv_sens = MATH_VecBlend( v_Grab_Kong_Offset_init, MATH_VecInCone( tv_sens, LNK_GrabKong_AncrageVectorGet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab]), Cf_1Degre *135.0, 0), f_grab_blend_pos)
+		tv_sens = MATH_VecBlendRotate( tv_sens, MATH_VecInCone( tv_sens, LNK_GrabKong_AncrageVectorGet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab]), Cf_1Degre *135.0, 0), f_grab_blend_pos)
+		DBG_RenderVector( tv_pos_ancrage, tv_sens, color_rouge)
+		tv_pos += tv_sens
+		tv_pos.z = OBJ_PosGet().z
+		OBJ_PosSet( tv_pos)
+	
+		// Orientation
+		tv_temp = tv_pos_ancrage - OBJ_PosGet()
+		tv_temp.z = 0.0
+		if ( !MATH_VecNullEpsilon( tv_temp))
+		{
+			MATH_VecSetNormalize( tv_temp )
+			OBJ_BankingGeneralSet( MATH_VecBlendRotate( OBJ_SightGet(),  tv_temp, f_grab_blend_pos), Cv_VerticalVector)	
+		}
+	}
+}
+// DEPLACEMENT ET ORIENTATION DANS LE CAS D UN GRAB SIMPLE
+else if ( i_GrabKong_orient)
+{
+	push(v_frappe_sight)					// Axis Dest
+	push(8.0)								// Speed
+	push(f_coef_pied_d_appui)			// Coef entre les deux pieds
+	AI_Execute("k_exec_2Feet_SightSet")	
+}
+else if( ! ti_direct_exit )
+{
+	// FRED : Modif concervation du Z de la gravité
+	vector	tv_speedz
+	push(v_frappe_sight)					// Axis Dest
+	push(3.0)								// Speed
+	push(f_coef_pied_d_appui)			// Coef entre les deux pieds
+	AI_Execute("k_exec_2Feet_SightSet")	
+	tv_speedz = OBJ_SightGet() * MATH_VecNorm( v_frappe_speed)
+	tv_speedz.z = DYN_SpeedGetVector().z
+	if (DYN_SpeedGet() < MATH_VecNorm(v_frappe_speed))
+		DYN_SpeedSetVector(tv_speedz)
+	v_frappe_speed *= Amorti_Coef_Dt(0.95)
+}
+
+
+
+// -------------------------------------------------------------------------------
+// PARTIE COMMUNE GRAB SIMPLE ET GRAB TREX
+// ANIM ET DETECTION GRAB ET LANCER
+// -------------------------------------------------------------------------------
+if ( !i_GrabKong_mode)
+{
+	// JETER ET AIDE AU TIR
+	if ( i_GrabKong_attrape_jete == Ci_Jete && ao_CL_GRABKONG[i_GrabKong_MainActionGrab])
+//	&& (( f_time_start_etat > 0.46 && ACT_ActionGet() == Ci_Kanim_Jete_Tendu) 
+//	|| (f_time_start_etat > 0.23 && ACT_ActionGet() != Ci_Kanim_Jete_Tendu)
+//	|| (f_time_start_etat > 0.3 &&  ACT_ActionGet() Ci_Kanim_Jete_Tendu)))
+	{
+		ti_jeter = faux
+		switch ( ACT_ActionGet())
+		{
+			case Ci_Kanim_Jete_Tendu :
+				if ( f_time_start_etat > 0.46)
+					ti_jeter = vrai
+				break
+			case Ci_Kanim_Jete_2M :
+			case Ci_Kanim_souche_lance :
+				if ( f_time_start_etat > 0.55)
+					ti_jeter = vrai
+				break
+			default:
+				if ( f_time_start_etat > 0.30 ) // 0.57)
+					ti_jeter = vrai
+			
+		}
+		if ( ti_jeter || ACT_ActionFinished())
+		{
+			// JETER	
+			tv_sens_lance = v_frappe_sight			// sens du lancer mémorisé à l'init du mode
+			i_Grab_Torse_Main = -1					// libère la main
+			
+			// stats inc attack si nmi grabbé vivant
+			if( ao_CL_GRABKONG[i_GrabKong_MainActionGrab] )
+			{
+				if( ! Proc_KK_EstUnEnnemiDeKong(ao_CL_GRABKONG[i_GrabKong_MainActionGrab]) )
+					STATS_IncAttack()		// jète un tronc ou un rocher -> inc
+				else
+				{
+					tmid_life = EVENT_LIFE_MSGID_Get(ao_CL_GRABKONG[i_GrabKong_MainActionGrab])
+					if( MSG_GlobalIsValid(tmid_life) && EVENT_LIFE_CurLifeGet(tmid_life) > 0.0 )
+						STATS_IncAttack()		// jète un nmi vivant pour le blesser / tuer -> inc
+				}
+			}
+			
+//			if( o_Throw_Target && @ao_CL_GRABKONG[i_GrabKong_MainActionGrab] OBJ_SqrDistHorz( o_Throw_Target) < f_GrabKong_dist_min_1m * f_GrabKong_dist_min_1m)
+				SWEEP_Init_Lance_1_main( faux)	// Rechercher a nouveau une target
+//			else
+//				o_Throw_Target = nobody
+			if( o_Throw_Target )
+			{
+				LNK_GrabKong_LanceTargetSet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab], i_Throw_Target)	// Cible precise
+				to_tete = @o_Throw_Target ANI_CanalObjectGet(Anim_Canal_Tete)
+				if( ! to_tete )
+					to_tete = o_Throw_Target			// structures
+				tv_sens_lance = @to_tete OBJ_PosGet() - @o_Throw_Target OBJ_PosGet()
+			}
+			else
+				o_Throw_Target = nobody
+			LNK_GrabKong_LanceObjectSet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab], o_Throw_Target)	// Cible precisee
+			
+			SWEEP_Change_To_Lance( tv_sens_lance, vrai, faux, faux)
+			
+			if ( o_Throw_Target)
+			{
+				tm_msg.msg_id = msg_id_KK_send_projectile		
+				tm_msg.msg_sender = OBJ_Me()
+				@o_Throw_Target MSG_Send( tm_msg)
+			}
+		
+			i_GrabKong_Souche = faux
+			i_GrabKong_posset_allowed = faux																			// Item grabbed ne se positionne plus	
+		}
+	}
+	
+	// TENTER DE CHOPPER LE RAPTOR
+	if ( i_GrabKong_raptor_test  
+	&& f_time_start_etat > 0.26)
+	{
+		///////////////// KING KONG 2 ///////////// on peut déjà avoir ANN sur l'épaule
+		if( ao_CL[Ci_LNK_KKGRAB_OBJECT] )
+			i_GrabKong_grabAnnAccepte = faux
+		else
+		{
+			// on n'a pas Ann
+			if ( GRAB_ANN_Propose())
+				i_GrabKong_grabAnnAccepte = vrai
+			else
+				i_GrabKong_grabAnnAccepte = faux
+		}
+		
+		i_GrabKong_Type = Ci_GrabKong_Type_Petit + Ci_GrabKong_Type_Souche
+		v_grab_object_pos = OBJ_PosGet() + ( v_joy_sight * 4.0)				// Position du point de grab demandé
+		ai_SRV_ENABLE[Ci_LNK_KKFINISH_ON_KONG] = vrai		// CONTRE DU SCOLO : FINISH DOIT ETRE ACCEPTE
+		ao_CL_GRABKONG[i_GrabKong_MainActionGrab] = LNK_ClientGet(Ci_LNK_GRAB_KONG, amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab], vrai, "k_exec_grab_object_param", "k_exec_selection_grab", nofunc)
+		ai_SRV_ENABLE[Ci_LNK_KKFINISH_ON_KONG] = faux		// CONTRE DU SCOLO : FINISH
+		if ( ao_CL_GRABKONG[i_GrabKong_MainActionGrab])
+		{
+			// J'attrape un object léger : raptor
+			SND_RequestPlay(Ci_KSound_Accroche)	
+
+			i_GrabKong_raptor_test = faux 	// Grab reussi, ne plus tester
+			i_flag_grab_raptor_en_cours = vrai	// Le test de cette variable est avant pour permettre 1 trame avec le BoneSet a nobody -> init a 0 de la variable de blend de pos sur le raptor
+			ti_type = LNK_GrabKong_TypeGet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab])
+			if ( ti_type & Ci_GrabKong_Type_Petit)
+			{
+				// l'IK du bras activée
+				i_Grab_Torse_Main = i_GrabKong_MainActionGrab 
+				to_module = ANI_CanalObjectGet(Anim_Canal_MainDroite)
+				LNK_GrabKong_BoneSet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab], to_module)
+				// Orientation
+				v_frappe_sight = @ao_CL_GRABKONG[i_GrabKong_MainActionGrab] OBJ_PosGet() - OBJ_PosGet()
+				if( MATH_VecNullEpsilon( v_frappe_sight))
+					v_frappe_sight = OBJ_SightGet()
+				else
+					MATH_VecNormalize( v_frappe_sight)
+				i_GrabKong_posset_allowed = vrai
+			}
+			else if ( ti_type & Ci_GrabKong_Type_Souche)
+			{
+				// J'attrape une souche
+				i_GrabKong_Souche = vrai		// Rajout par FRED
+				// souche
+				i_flag_positionne_souche = vrai
+				// Lancer l anim d attrape mais rien a chopper
+				ACT_ActionSet( Ci_Kanim_Attrape_D + i_GrabKong_MainActionGrab)		// Attraper
+				// Orientation
+				v_frappe_sight = @ao_CL_GRABKONG[i_GrabKong_MainActionGrab] OBJ_PosGet() - OBJ_PosGet()
+				if( MATH_VecNullEpsilon( v_frappe_sight))
+					v_frappe_sight = OBJ_SightGet()
+				else
+					MATH_VecNormalize( v_frappe_sight)
+			}
+		}
+//		else if ( i_GrabKong_grabAnnAccepte )
+//		{
+//			i_GrabKong_grabAnnAccepte = vrai
+//			macro_change_etat( "k_ETAT_grab_ANN")						// Au final on grab ANN			
+//		}
+		else if( i_flag_just_grab && ANI_CurrentFrameGet(0) > 40.0)
+		{
+//			i_flag_just_grab = faux
+//			i_GrabKong_MainActionGrab = 0
+//			i_dernier_etat = -1
+//			fct_track_change = "k_ETAT_grab"
+//			macro_change_etat("K_ETAT_track_change")
+			
+			i_flag_just_grab = faux
+			i_GrabKong_MainActionGrab = 0
+			i_GrabKong_grabAnnAccepte = faux	
+//			if ( i_Grab_Torse_ANN || i_flag_just_pose_JACK )
+//			{
+//				// POSER JACK
+//				macro_change_etat( "k_ETAT_grab_ANN")
+//			}
+//			else
+			{
+				// GRAB STANDARD
+				i_dernier_etat = -1
+				fct_track_change = "k_ETAT_grab"
+				macro_change_etat("K_ETAT_track_change")
+			}
+		}
+		else
+		{
+			// GRAB sur un big scolo -> mode FINISHED
+			o_finish_actor = LNK_ServeurGet(Ci_LNK_KKFINISH_ON_KONG, mid_finish_LNK_ID, vrai, nofunc, nofunc)
+			if (o_finish_actor)
+			{
+				i_finished_big_scolo_kong_grab = vrai		// je passe en finished mais c moi qui ai grabbé le big scolo, et pas l'inverse
+				macro_change_etat("k_ETAT_finished")
+			}
+			else if ( f_time_start_etat > 0.5)
+			{
+				// RIEN DE GRABBER PAFFER LEs TRUCS SPECIFIQUES
+				ti_collision_nb = COL_ZDE_ZDEListGet( &tao_zde_zde_list[0], C_zde_fight, C_zde_corps, all, none, Ci_Filter_IdentityFlag)
+				for (ti_i = 0; ti_i < ti_collision_nb; ti_i++)
+				{
+					to_temp_tracable = tao_zde_zde_list[ti_i]
+					// Ne paffer que ce type d'nmi quand je recule à cause d'un paf que j'ai reçu
+					if( @to_temp_tracable OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI)
+					&& ( @to_temp_tracable AI_IsModel("Interactive_Objects/Kinteractive_ODE")
+						|| @to_temp_tracable AI_IsModel("PNJ_Predators/PNJ_Poursuite_NY")
+						|| @to_temp_tracable AI_IsModel( get_PNJ_KNative_path)
+						|| @to_temp_tracable AI_IsModel(get_KI_Decor_Path) ) )
+					{
+						to_hand = ANI_CanalObjectGet( Anim_Canal_MainGauche)
+						tv_sens = @to_hand OBJ_PosGet() - OBJ_PosGet()
+						tv_sens.z = 0.0
+						if ( !MATH_VecNullEpsilon( tv_sens))
+						{
+							MATH_VecSetNormalize(tv_sens)
+							tv_sens = MATH_VecRotate( tv_sens, Cv_VerticalVector, Cf_PiBy2)			
+						}
+						else
+						{
+							tv_horizon = OBJ_HorizonGet()
+							MATH_VecSetHorzNormalize(tv_horizon)
+							tv_paf_sight = MATH_VecCrossProduct(v_look_sens_epaule, Cv_VerticalVector)
+							MATH_VecSetHorzNormalize(tv_paf_sight)
+							tv_sens = MATH_VecBlendRotate(tv_paf_sight, -tv_horizon, 0.5)
+						}
+						tv_sens = MATH_VecInCone( tv_sens, OBJ_SightGet()+ OBJ_HorizonGet(), Cf_PiBy4, 0)
+						tv_pos = OBJ_PosGet()
+						ti_puissance  = Cf_DMG_Normal
+						Proc_KK_Send_Paf( C_EVENT_FILTER_Object,  C_PAF_KK_Fort, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_temp_tracable, -1, ti_puissance , OBJ_SightGet(), tv_pos)						
+					}
+				}
+			}
+			i_GrabAnn_Tested = vrai
+		}
+	}
+	if ( !ti_direct_exit)
+		 i_Grab_Torse_Actor = faux		// Pas d IK sur la main pendant l anim les anims de GRab
+
+	// POSITIONNEMENT DE LA SOUCHE DANS LA MAIN
+	if( i_flag_positionne_souche && f_time_start_etat > 0.5)
+	{
+		i_flag_positionne_souche = faux
+		to_bone = ANI_CanalObjectGet( Anim_Canal_MainDroite)			// souche main droite
+		LNK_GrabKong_BoneSet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab], to_bone)
+		i_GrabKong_posset_allowed = vrai
+	}
+	
+	// FAIRE PASSER LA SOUCHE DE LA MAIN_G AU SNAP MAIN_D
+	if( i_GrabKong_Souche && ACT_ActionFinished() )
+	{
+		// Kong vient de grabber une souche dans la main gauche et l'anim de grab est terminée -> la souche passe dans la main droite
+		if( LNK_GrabKong_BoneGet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab]) != ANI_CanalObjectGet(Anim_Canal_Snap_MainD) )
+		{
+			to_bone = ANI_CanalObjectGet( Anim_Canal_Snap_MainD)
+			LNK_GrabKong_BoneSet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab], to_bone)
+		}
+	}
+	
+	// DETECTION DE LA FIN DU MOUVEMENT
+	if ((i_GrabKong_MainBloquee != -1 && i_GrabKong_MainBloquee == i_GrabKong_MainActionGrab && i_GrabKong_attrape_jete != Ci_Repousse)
+	|| ACT_ActionFinished() || ti_direct_exit 
+	|| ( i_Grab_Torse_ANN	&& ACT_ActionItemGet() == 1))		// ANN reste dans la main
+	{
+		// Anim terminée repasser en mode de déplacement
+		if ( ao_CL_GRABKONG[i_GrabKong_MainActionGrab] && LNK_GrabKong_TypeGet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab]) == Ci_GrabKong_Type_Souche)
+		{
+			// SOUCHE GRAB PASSER EN MODE DEPLACEMENT AVEC SOUCHE
+			macro_change_etat( "k_ETAT_main_souche")		// Grab Fini
+		}
+		macro_change_etat( "k_ETAT_main")		// Grab Fini
+	}
+}

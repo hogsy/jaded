@@ -1,0 +1,227 @@
+#include "H_defines.var"
+
+int			ti_i
+int			ti_int
+
+object	to_obj 
+object	to_main_actor
+object	to_nearest_wp
+object	to_nearest_wp1
+object	to_player_nearest_wp
+object	tao_hide[100]
+float		tf_sqr_hor_dist
+
+int			ti_numero
+int			ti_flag_go_to_grid_center
+int			ti_ray_ground_sound_id
+int			ti_index
+
+vector	tv_offset
+vector	tv_temp
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_IA_fuite)
+{
+	i_etat_courant = ETAT_IA_fuite
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = AI_TrackCurGet()
+
+	for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+		ai_SRV_ENABLE[ti_i] = faux
+	
+	// AUTORISATIONS DES GRABS
+	ai_SRV_ENABLE[Ci_LNK_GRAB_CROCO]		= vrai
+	ai_SRV_ENABLE[Ci_LNK_GRAB_ICO]			= vrai
+	ai_SRV_ENABLE[Ci_LNK_GRAB_TRAP]		= vrai
+	ai_SRV_ENABLE[Ci_LNK_GRAB_RAPTOR]	= vrai
+
+	// AUTORISATIONS DES BLOCKS
+	ai_SRV_ENABLE[Ci_LNK_BLOCK_RAPTOR]	= vrai
+
+	// AUTORISATION VALA
+	ai_SRV_ENABLE[Ci_LNK_VALA]					= vrai
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ========================================================================================================
+AI_Execute("H_exec_ch_Stimulus_Paf")
+
+if (o_paf_sender)
+	macro_change_etat("H_ETAT_commun_paf")
+
+AI_Execute("H_exec_ch_Stimulus_Vision")
+//if (! o_target_stimulus_vis)
+//	macro_change_etat("H_ETAT_IA_suivi")
+
+AI_Execute("H_exec_read_world")
+
+// JE SUIS BLOCKED
+if (ao_SRV[Ci_LNK_BLOCK_RAPTOR])
+	macro_change_etat("H_ETAT_commun_BLOCK_raptor")
+
+// JE SUIS GRABED
+if (ao_SRV[Ci_LNK_GRAB_RAPTOR])
+	macro_change_etat("H_ETAT_commun_GRAB_raptor")
+if (ao_SRV[Ci_LNK_GRAB_CROCO])
+	macro_change_etat("H_ETAT_commun_GRAB_croco")
+if (ao_SRV[Ci_LNK_GRAB_TRAP])
+	macro_change_etat("H_ETAT_commun_GRAB_trap")
+if (ao_SRV[Ci_LNK_GRAB_ICO])
+	macro_change_etat("H_ETAT_commun_GRAB_ico")
+
+// VALA
+if (ao_SRV[Ci_LNK_VALA])
+	macro_change_etat("H_ETAT_IA_vala")
+
+AI_Execute("H_exec_serveur_get")
+
+AI_Execute("H_exec_ch_Stimulus_Interet")
+if (o_target_stimulus_interet == nobody)
+	macro_change_etat(fct_main_etat)
+
+
+// COMPORTEMENT =================================================================================================	
+to_main_actor = AI_MainActorGet(0)
+
+ti_flag_go_to_grid_center = vrai
+
+for( ti_int = 0; ti_int < @get_list_manager i_hide_0D_wp_nb; ti_int++)
+{
+	to_obj = @get_list_manager ao_hide_0D_wp[ti_int]
+	if (  !@to_obj OBJ_CapaTest( Capa_Cache_taken))
+		tao_hide[ti_int] = @get_list_manager ao_hide_0D_wp[ti_int]
+	else
+		tao_hide[ti_int] = nobody
+}
+ti_index = ARR_ObjNearestOfPoint(&tao_hide[0], @get_list_manager i_hide_0D_wp_nb, OBJ_PosGet())
+to_nearest_wp = @get_list_manager ao_hide_0D_wp[ti_index]
+
+ti_index = ARR_ObjNearestOfPoint(&@get_list_manager ao_herbe_moyenne_wp[0], @get_list_manager i_herbe_moyenne_wp_nb, OBJ_PosGet())
+to_nearest_wp1 = @get_list_manager ao_herbe_moyenne_wp[ti_index]
+
+if ( OBJ_SqrDistHorz( to_nearest_wp1) < OBJ_SqrDistHorz( to_nearest_wp))
+{
+	to_nearest_wp = to_nearest_wp1
+}
+
+
+if (i_ground_ID == Ci_sol_herbe)
+{
+	f_time_crouch = f_delay_crouch
+
+	i_flag_crouch = vrai
+	i_flag_run = faux
+
+//	if (i_followed_context / 10 == Ci_sol_herbe)
+//	{
+//		ti_index = ARR_ObjNearestOfPoint(&@get_list_manager ao_herbe_moyenne_wp[0], @get_list_manager i_herbe_moyenne_wp_nb, @to_main_actor OBJ_PosGet())
+//		to_player_nearest_wp = @get_list_manager ao_herbe_moyenne_wp[ti_index]
+//
+//	}
+//	else
+		to_player_nearest_wp = nobody
+			
+	if (to_nearest_wp == to_player_nearest_wp)
+	{
+		i_way_etage_dest = @to_main_actor OBJ_CapaGet() & DesHelpCapa_HauteurGrille
+		v_way_destpos = @to_main_actor  OBJ_PosGet()
+			
+		AI_Execute("H_exec_find_way")
+			
+		v_joy_dir = v_way_case_dest
+		v_joy_dir -= OBJ_PosGet()
+		v_joy_dir.z = 0.0
+	
+		f_joy_norm = MATH_VecNorm(v_joy_dir)
+	}
+	else
+	{
+		f_joy_norm = 0.0
+	}
+
+	if (i_way_moving && f_joy_norm)
+	{
+		v_joy_dir /= f_joy_norm
+		f_joy_norm = MATH_FloatLimit(f_joy_norm, 0.0, 1.0)
+	}
+	else
+	{
+		// On est arrivé, on se centre sur la case
+		v_joy_dir = v_way_case_dest
+		v_joy_dir -= OBJ_PosGet()
+		v_joy_dir.z = 0.0
+		
+		f_joy_norm = MATH_VecNorm(v_joy_dir)
+
+		if (f_joy_norm)
+			v_joy_dir /= f_joy_norm
+		else
+			v_joy_dir = OBJ_SightGet()
+		
+		if (f_joy_norm > 0.25)
+		{
+			f_joy_norm = MATH_FloatLimit(f_joy_norm, 0.0, 1.0)
+		}
+		else
+		{
+			f_joy_norm = 0.0
+		}
+	}
+}
+else
+{
+	i_flag_run = vrai
+	i_flag_crouch = faux
+
+	i_way_etage_dest = @to_nearest_wp OBJ_CapaGet() & DesHelpCapa_HauteurGrille
+	v_way_destpos = @to_nearest_wp OBJ_PosGet()
+
+	i_followed_ground_ID = GRID_CapaGet( @to_nearest_wp OBJ_PosGet())
+	AI_Execute("H_exec_find_way")		
+
+		
+	// Norm du joy simulé pour avoir la valeur du déplacement
+	v_joy_dir = v_way_case_dest
+	v_joy_dir -= OBJ_PosGet()
+	v_joy_dir.z = 0.0
+
+	f_joy_norm = MATH_VecNorm(v_joy_dir)
+	if (f_joy_norm > 0.25)
+	{
+		f_joy_norm = MATH_FloatLimit(f_joy_norm, 0.0, 1.0)
+	}
+	else
+	{
+		f_joy_norm = 0.0
+		i_hide_mode = Hide_Mode_Flee
+		macro_change_etat("H_ETAT_IA_hide")
+	}
+
+	if (i_way_moving && f_joy_norm)
+	{
+		v_joy_dir /= f_joy_norm
+		f_joy_norm = MATH_FloatLimit(f_joy_norm, 0.0, 1.0)
+	}
+}
+
+AI_Execute("H_exec_select_action")
+

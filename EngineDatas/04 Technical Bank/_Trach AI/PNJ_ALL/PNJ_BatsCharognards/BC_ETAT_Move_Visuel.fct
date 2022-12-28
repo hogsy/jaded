@@ -1,0 +1,164 @@
+#include "BC_defines.var"
+
+messageid		tmid_tmp					// event odeur de sang
+messageid		tmid_vision
+
+vector			tv_old_cible_pos			// blend progressif de la position de la charogne
+vector			tv_tmp_cible_pos			// blend progressif de la position de la charogne
+
+object			to_tete
+
+
+// SORTIE ETAT
+if (i_sort_etat)
+{
+	i_flag_reseau_array = faux
+	if( i_etat_courant != ETAT_Observe_Charogne )
+		BC_Charognard_Mode_Reset()
+	
+	i_sort_etat = faux
+	return
+}
+
+
+//======================================================
+// Position de la cible
+//======================================================
+
+//if( i_etat_courant != ETAT_Move_Visuel || i_force_reinit || ( TIME_Elapsed(f_time_check_charogne_pos, 2.0) && (i_reseau_wp_count > 1) ) )
+//if( TIME_Elapsed(f_time_check_charogne_pos, 2.0) && (i_reseau_wp_count > 1) )
+{
+//	// il reste du chemin à parcourir et le bat va re-checker la position de sa cible
+//	// exception : si le bat arrive à son dernier point, on ne recalcule pas
+//	f_time_check_charogne_pos = TIME_Get()
+
+	AI_Execute("BC_exec_calc_pos_suivi_visuel")				// MAJ coordonnées de la charogne
+}
+
+// blend vers la position de la cible (si elle bouge) (car le last_wp n'est pas recalculé)
+tv_old_cible_pos = v_cible_pos
+v_cible_pos = @o_cible OBJ_PosGet()
+v_cible_pos = MATH_VecBlend(tv_old_cible_pos, v_cible_pos, 5 * TIME_GetDt())
+
+v_dest_pos = v_cible_pos + v_decalage
+
+// suivi du regard
+i_flag_neck = vrai
+to_tete = @o_cible ANI_CanalObjectGet(Anim_Canal_Tete)
+if( ! to_tete )
+	to_tete = o_cible
+v_look_pos = @o_cible OBJ_PosGet()
+
+// test zone d'activité
+if( ! BC_Pos_in_BV(v_cible_pos, o_zone_activite) )
+{
+	if( i_DBG_trace_etat )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : ")
+		DBG_TraceObject(o_cible)
+		DBG_TraceString(" hors de ma BV...")
+		DBG_TraceEOL()
+	}
+	AI_Execute("BC_exec_init_attente")
+}
+
+if( o_cible && @o_cible AI_IsModel(get_PNJ_Bidoche_path) && @o_cible OBJ_CapaTest(CAPA_Bidoche_Snappee) )
+{
+	BC_DBG_Trace_Etat("ma proie était une bidoche qui vient d'être ramassée")
+	AI_Execute("BC_exec_init_attente")
+}
+
+// ENTREE ETAT
+if (i_etat_courant != ETAT_Move_Visuel ) // || i_force_reinit )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Move_Visuel
+//	i_force_reinit = faux
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	BC_ref_speed_set(Cf_speed_vol)
+	i_flag_reseau_array = vrai
+	i_force_test_inclinaison = vrai			// test d'inclinaison
+	i_flag_depl_wp_apres_reseau = faux
+	
+	f_obstacle_duration = 0.0		// check obstacle pour aller chopper de la bouffe
+	
+	BC_DBG_Trace_Etat("etat move visuel")
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// EMERGENCY ABORT =============================
+if( o_cible && ! BC_TargetActive(o_cible) )
+{
+	DBG_TraceObject(OBJ_Me())
+	DBG_TraceString(" : EMERGENCY ABORT : Target non active (")
+	DBG_TraceObject(o_cible )	
+	DBG_TraceString(")")
+	DBG_TraceEOL()	
+	o_cible = nobody
+	AI_Execute("BC_exec_init_attente")
+}
+
+
+// ANALYSE ============================================================
+
+// Vision ------------------------------------------------------------------------------------------
+if( BC_Seen_Actor_Test(o_cible, tmid_vision) )
+	BC_Interet_Update(mid_interet_charogne, C_EVENT_InteretStatusFoodchain, o_cible, tmid_vision)
+else
+{
+	if( i_DBG_trace_etat )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : ")
+		DBG_TraceObject(o_cible)
+		DBG_TraceString(" perdu de vue...")
+		DBG_TraceEOL()
+	}
+	AI_Execute("BC_exec_init_attente")
+}
+
+// Obstacle ----------------------------------------------------------------------------------
+AI_Execute("BC_exec_check_obstacle")
+if( i_flag_obstacle )
+{
+	if( i_DBG_trace_etat )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : un obstacle l'empeche d'atteindre ")
+		DBG_TraceObject(o_cible)
+		DBG_TraceEOL()
+	}
+	AI_Execute("BC_exec_init_attente")
+}
+
+// COMPORTEMENT ============================================================
+
+BC_select_action()
+
+if( i_reseau_wp_count == 1 )
+	i_flag_frein = vrai
+else
+	i_flag_frein = faux
+AI_Execute("BC_exec_MOVE_beziers")
+if( i_flag_depl_fini && ( ! i_reseau_wp_count ) )
+//if( MATH_VecNullToler(v_dest_pos - OBJ_PosGet(), 0.5) )
+{
+	if( o_cible )
+		macro_change_etat("BC_ETAT_Observe_Charogne")		// point d'observation atteint -> la bat observe la charogne
+	else
+		AI_Execute("BC_exec_init_attente")
+}
+

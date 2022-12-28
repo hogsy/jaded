@@ -1,0 +1,49 @@
+#include "PNJ_SwampCrawler_defs.var"
+
+vector	move_dir, move_dest, move_normal
+vector	sight
+float		dot, factor, fz
+
+//--------( Sortie Etat )--------
+if (etat_i_quitte)
+{
+	if ( etat_i_courant == SCETAT_water )
+		etat_f_timer = MATH_RandFloat(SCTIMER_waitafterpaf_min,SCTIMER_waitafterpaf_max)
+	etat_i_quitte = faux
+	return
+}
+
+//--------( Entrée Etat )--------
+if ( etat_i_courant != SCETAT_paf )
+{
+	etat_i_ancien = etat_i_courant
+	etat_i_courant = SCETAT_paf
+	
+	//----( quitte état précédent )----
+	if ( etat_fct )
+	{
+		etat_i_quitte = vrai
+		AI_Execute( etat_fct )
+	}
+	etat_fct = AI_TrackCurGet()
+	
+	if (etat_i_param == SCETATPARAM_PafFightMort)
+		life_f_cur = 0
+	else
+		life_f_cur--
+		
+	ACT_ActionSet( SCACT_paf_water )
+}
+
+//--------( fin de la nage par timer )--------
+if (ACT_ActionFinished() )
+{
+	if ( life_f_cur == 0)
+		macro_change_etat( "SC_etat_mort" )
+	else if (etat_i_param == SCETATPARAM_PafOne )
+		macro_change_etat( "SC_ETAT_waitinwater" )
+	else
+		//macro_change_etat( "SC_ETAT_hunt" )
+		macro_change_etat( "SC_ETAT_nage" )
+
+}	

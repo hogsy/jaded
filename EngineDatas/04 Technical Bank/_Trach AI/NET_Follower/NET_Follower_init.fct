@@ -1,0 +1,23 @@
+#include "NET_Follower_defines.var"
+
+object	to_corback 
+
+//OBJ_FlagInvisibleSet(vrai)
+
+//BV_MinSet(cvector(-1.0, -1.0, -1.0))
+//BV_MaxSet(cvector(1.0, 1.0, 1.0))
+
+// INITIALISATION RESEAU
+n_net = @o_1st_wp WAY_NetOfObj()
+
+DYN_On()
+if	( ! o_decl_actor_capa)
+	o_decl_actor_capa = OBJ_Me()
+
+// mission, info, bone bone lod min lod max frame min radius
+OBJ_InfoPhotoParamSet( 0, 0, -1, -1, 0.0, 0.0, 0.0, 0.0)
+
+AI_Execute("NET_Follower_exec_compute_network")
+
+AI_TrackCurChangeNow("NET_Follower_ETAT_wait")
+

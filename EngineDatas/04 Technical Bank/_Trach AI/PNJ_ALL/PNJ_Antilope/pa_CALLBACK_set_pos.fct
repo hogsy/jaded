@@ -1,0 +1,70 @@
+
+#include "PNJ_antilope_defines.var"
+
+object	to_bone
+object	to_tete
+object	to_bassin 
+
+int			ti_canal 
+int			ti_grabType
+
+vector	tv_pos
+vector	tv_new_sight
+vector	tv_new_banking
+vector	tv_temp 
+vector 	tv_temp2
+
+
+// Dans la main de Kong ou dans la gueule de REX
+if (MSG_GlobalIsValid(mid_grabbed_by_Kong_LNK_ID) && o_grabbed_actor_KK)
+{
+	to_bone = LNK_GrabBoneGet(mid_grabbed_by_Kong_LNK_ID)
+	if( ! to_bone )
+	{
+		f_pos_blend_coef = 0.0
+		v_grabbed_pos_init_blend = OBJ_PosGet()
+	}
+	else
+	{
+//				//===================================
+//				// values to use with Action_Normal_Attente
+//				tv_pos = MATH_VecBlend(v_grabbed_pos_init_blend, @to_bone OBJ_PosGet(), f_pos_blend_coef)
+//				tv_temp = Cv_NullVector
+//				tv_temp -= @to_bone OBJ_HorizonGet()
+//				tv_temp -= @to_bone OBJ_SightGet() * 0.2
+//				tv_temp += @to_bone OBJ_BankingGet() * 0.2			
+//				tv_pos += MATH_VecBlend( tv_temp, Cv_NullVector, 1 - f_pos_blend_coef )
+//				OBJ_PosSet(tv_pos)
+//				OBJ_BankingGeneralSet(
+//					MATH_VecBlendRotate(OBJ_SightGet(), @to_bone OBJ_SightGet(), f_pos_blend_coef), 
+//					MATH_VecBlendRotate(OBJ_BankingGet(), @to_bone OBJ_HorizonGet(), f_pos_blend_coef) )
+
+				//===================================
+				// values to use with Action_Normal_Attente
+				// jugé trop de poil :
+				// i = 0.507929		-0.020765	0.861149
+				// j = -0.839173	0.213702	0.500120
+				// k = -0.194414	-0.976678	0.091120
+				// t = -0.549239	0.949935	0.057929
+				// 2e essai:
+				// i = 0.635029		0.003255	0.772481
+				// j = -0.728195	0.336267	0.597207
+				// k = -0.257816	-0.941761	0.215909
+				// t = -0.293434	1.059472	-0.131531
+			
+				tv_new_sight = - @to_bone MATH_VecLocalToGlobal(cvector(-0.728195,0.336267,0.597207))
+				tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_new_sight, f_pos_blend_coef)
+
+				tv_new_banking = @to_bone MATH_VecLocalToGlobal(cvector(-0.257816,-0.941761,0.215909))
+				tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), tv_new_banking, f_pos_blend_coef)
+				
+				OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking)
+
+				tv_pos = @to_bone OBJ_PosGet() + @to_bone MATH_VecLocalToGlobal(cvector(-0.293434,1.059472,-0.131531))
+				//tv_pos = @to_bone OBJ_PosGet() + @to_bone MATH_VecLocalToGlobal(v_DBG_decal)
+		
+				tv_pos = MATH_VecBlend(v_grabbed_pos_init_blend, tv_pos,f_pos_blend_coef )
+				OBJ_PosSet(tv_pos) 
+
+	}
+}

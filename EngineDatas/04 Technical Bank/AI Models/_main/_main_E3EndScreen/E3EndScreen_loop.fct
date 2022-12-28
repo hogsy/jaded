@@ -1,0 +1,20 @@
+int i_exit
+
+i_exit = 0
+
+if(f_Timer > 6.5) OBJ_PosSet(OBJ_PosGet() - cvector(0, 0, 0.02 * TIME_GetDt()))
+
+f_Timer -= TIME_GetDt()
+if ( f_Timer < 4)
+	i_exit = 1
+
+if (IO_ButtonJustPressed( joy_button_A ) || IO_ButtonJustPressed( joy_button_Start ))
+	i_exit = 1
+	
+if ( i_exit )
+{
+	@"univ" load_world = vrai						// Ask Loading
+	@"univ" world_ID = 3							// Map ID
+	@"univ" world_entrance_ID = 0				// Entrée
+	@"univ" i_force_newgame_reinit = vrai		// Demande la reinit de variables (Engine)
+}

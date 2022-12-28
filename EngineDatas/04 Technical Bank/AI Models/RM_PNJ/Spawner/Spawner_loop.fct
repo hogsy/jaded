@@ -1,0 +1,110 @@
+#include "Spawner__defs.var" 
+
+int 			res, res2
+message	msg
+
+if ( AI_TriggerIsValid( mt_MaisArreteDonc ) && call_trigger( mt_MaisArreteDonc ) )
+	OBJ_CapaSet( OBJ_Capa_15, 0 )
+
+if (OBJ_CapaTest( OBJ_Capa_15 ) )
+	AI_TrackCurChangeNow( "Spawner_stop" )
+	
+if ( mi_Add_Done )
+{
+	if (LIBSpawner_StopAdditionnalGeneration() )
+		AI_TrackCurChangeNow( "Spawner_stop" )
+}
+
+AI_Execute( "Spawner_checkWP" )
+if ( mi_WPCur == -1)
+{
+	AI_Execute( "Spawner_chooseWP" )
+	return
+}
+
+// nombre d'ennemi encore actif
+AI_Execute( "Spawner_countgen" )
+
+// test si génération
+if ( mi_EnemyActive >= mi_MaxActive && !mi_TestOneTime )
+	return
+	
+// trigger
+if ( mi_TriggerTest )
+{
+	msg = AI_TriggerGetMsg( mt_GenTriggerTest )
+	msg.msg_sender = mao_WP[ mi_WPCur ]
+	AI_TriggerSetMsg(mt_GenTriggerTest, msg)
+	res = call_trigger( mt_GenTriggerTest )
+	
+	if (mi_TriggerTest > 1 )
+	{
+		if ( !( ( mi_GenTriggerBoolOp_01 == Spawner_or ) && res ) && !( ( mi_GenTriggerBoolOp_01 == Spawner_and ) && !res ) )
+		{
+			msg = AI_TriggerGetMsg( mt_GenTriggerTest1 )
+			msg.msg_sender = mao_WP[ mi_WPCur ]
+			AI_TriggerSetMsg(mt_GenTriggerTest1, msg)
+			res2 = call_trigger( mt_GenTriggerTest1 )
+			if ( mi_GenTriggerBoolOp_01 == Spawner_xor )
+				res = res ^ res2
+			else
+				res = res2
+		}
+	}
+	
+	if (mi_TriggerTest > 2 )
+	{
+		if ( !( ( mi_GenTriggerBoolOp_12 == Spawner_or ) && res ) && !( ( mi_GenTriggerBoolOp_12 == Spawner_and ) && !res ) )
+		{
+			msg = AI_TriggerGetMsg( mt_GenTriggerTest2 )
+			msg.msg_sender = mao_WP[ mi_WPCur ]
+			AI_TriggerSetMsg(mt_GenTriggerTest2, msg)
+			res2 = call_trigger( mt_GenTriggerTest2 )
+			if ( mi_GenTriggerBoolOp_12 == Spawner_xor )
+				res = res ^ res2
+			else
+				res = res2
+		}
+	}
+
+	if ( !res )
+	{
+		if (mi_WhenTriggerFalseChangeWP)
+		{
+			if (mi_GenWPSequential)
+				mi_WPCur = MATH_Modulo (mi_WPCur + 1, mi_WPNb )
+			else
+				mi_WPCur = -1
+		}
+		return
+	}
+	
+	if(mi_TestOneTime) mi_TriggerTest  = 0
+}
+
+if  ( mi_EnemyActive >= mi_MaxActive)
+	return
+
+// temps écoulé ?
+mf_TimeLeft  -= TIME_GetDt()
+if ( mf_TimeLeft  >= 0 )
+	return
+	
+// ok to generate
+for (mi_EnemyCur = 0; mi_EnemyCur < 16; mi_EnemyCur++)
+{
+	if ( mao_Enemy[ mi_EnemyCur ] == nobody)
+		break
+}
+if (mi_EnemyCur == 16 )
+	return
+	
+mf_TimeLeft = mf_WarnTime + mf_CallingTime
+mf_WatchTime = 0
+if ( mf_CallingTime > 0 )
+	mi_HeSeeMe = 0
+else
+	mi_HeSeeMe = 1
+	
+AI_TrackCurChange( "Spawner_generate" )
+

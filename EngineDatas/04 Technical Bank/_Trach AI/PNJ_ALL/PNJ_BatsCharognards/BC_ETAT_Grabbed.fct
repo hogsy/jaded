@@ -1,0 +1,98 @@
+#include "BC_defines.var"
+
+
+// SORTIE ETAT =================================================================
+if (i_sort_etat)
+{
+	AI_CBDel(o_predateur, CallBack_After_Blend, "BC_cb_set_pos")
+	COL_UnCollidableDel(o_predateur)
+	o_predateur = nobody
+	o_predateur_new = nobody
+	i_sort_etat = faux
+	return
+}
+
+
+// ENTREE ETAT =================================================================
+if (i_etat_courant != ETAT_Grabbed)
+{
+	i_etat_ancien_ancien = i_etat_ancien
+ 	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Grabbed
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	BC_DBG_Trace_Etat("etat grabbed")
+
+	o_predateur_new = o_predateur
+	COL_UnCollidableAdd(o_predateur)
+	AI_CBAdd(o_predateur, CallBack_After_Blend, "BC_cb_set_pos")
+
+	if (OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna))
+	{
+		DYN_SpeedSetVector(Cv_NullVector)
+		ACT_ActionSet(ACTION_Paf_Air_Important)
+	}
+
+	switch(LNK_GrabServeurVisionIDGet(mid_predateur))
+	{
+		case C_ID_Tyranosaure :
+			ACT_ActionSet(ACTION_Vol_Blesse)
+			ACT_LIB_ActionFrequencyMultiply(0.5)
+			break
+	}
+	
+	i_take_paf = faux
+	OBJ_CapaSet(CAPA_a_ete_Grabbee, none)
+	
+	// libération wp de chute
+	if( i_chute_reservation_flag )
+	{
+		i_chute_reservation_flag = faux
+		BC_Chute_WP_reservation_free(o_chute_bats_wp)
+	}
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+i_flag_neck = faux
+
+// EMERGENCY ABORT =============================
+if( o_predateur && ! BC_TargetActive(o_predateur) )
+{
+	DBG_TraceObject(OBJ_Me())
+	DBG_TraceString(" : EMERGENCY ABORT : PREDATEUR NON ACTIF(")
+	DBG_TraceObject(o_predateur )	
+	DBG_TraceString(") => JE MEURS")
+	DBG_TraceEOL()	
+	
+	OBJ_Destroy()
+}
+
+// ANALYSE  =====================================================================
+
+// MON PREDATEUR ME TUE
+AI_Execute("BC_exec_check_paf")
+if( i_paf_type & C_PAF_KK_KiTue )
+{
+	OBJ_Destroy()
+}
+
+
+// COMPORTEMENT ===============================================================
+switch(ACT_ActionGet())
+{
+	case ACTION_Paf_Air_Important :
+		if (ACT_ActionFinished())
+		{
+			ACT_ActionSet(ACTION_Paf_Air_Important | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_FrameZero )
+		}
+		break
+}
+

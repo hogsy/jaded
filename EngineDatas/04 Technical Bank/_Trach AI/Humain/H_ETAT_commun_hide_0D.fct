@@ -1,0 +1,125 @@
+#include "H_defines.var"
+
+int			ti_context
+int			ti_numero
+int			ti_i
+int			ti_se_relever 
+float		tf_liferatio
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	@o_hide_0D OBJ_CapaSet(none, Capa_Cache_taken)
+	o_hide_0D = nobody
+
+	macro_change_tag_size(Cv_Humain_Tag_Size_V1,Cv_Humain_Tag_Size_V2)
+
+	COL_ColSetActivationSet(C_bit_zde_corps, none)
+
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_commun_hide_0D)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_commun_hide_0D
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+		ai_SRV_ENABLE[ti_i] = faux
+		
+	macro_SRV_enable_ICO()
+
+	ACT_ActionSet(Action_Accroupi_Attente)
+	macro_change_tag_size(Cv_NullVector,Cv_NullVector)
+
+	COL_ColSetActivationSet(none, C_bit_zde_corps)
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ==========================================================================================
+AI_Execute("H_exec_serveur_get")
+
+if (ao_SRV[Ci_LNK_GRAB_ICO])
+	macro_change_etat("H_ETAT_commun_GRAB_ico")
+
+if (o_main_actor != @"univ" ao_AllHumains[Ci_Personnage_Jack])
+{
+	// KONG EST MAIN ACTOR
+}
+else if ( i_hide_mode == Hide_Mode_Hide)
+{
+	// Faire comme le lead
+	if (joueur)
+	{
+		AI_Execute("H_exec_read_joy")
+
+		if (!i_flag_crouch)
+			macro_change_etat(fct_main_etat)
+	}
+	else
+	{
+		AI_Execute("H_exec_main_context_get")
+		ti_context = MATH_Modulo(i_followed_context, 10)
+		if (ti_context != C_EVENT_CONTEXT_HIDE_0D)
+			macro_change_etat(fct_main_etat)
+	}
+}
+else if ( i_hide_mode == Hide_Mode_Flee && f_time_start_etat > 5.0)
+{
+	// On se décache selon N regles.
+	ti_se_relever = vrai
+	// Regle 1 : Si le lead est caché on reste caché
+	AI_Execute("H_exec_main_context_get")
+	ti_context = MATH_Modulo(i_followed_context, 10)
+	if ( ( ti_context == C_EVENT_CONTEXT_HIDE_0D
+	|| ti_context == C_EVENT_CONTEXT_PLAQUE)
+	|| (ti_context == C_EVENT_CONTEXT_ACCROUPI && (i_followed_context / 10) == Ci_sol_herbe))
+		ti_se_relever = faux	
+
+	// Regles pour les Trouillards
+	if ( i_confiance == 2)
+	{
+		// Regle 2 : Si l on voit un dyno on reste caché
+		AI_Execute("H_exec_ch_Stimulus_Vision")	
+		if ( o_target_stimulus_vis)
+			ti_se_relever = faux	
+		// Regle 3 : Si le lead est ciblé par un dyno on reste caché
+		AI_Execute("H_exec_ch_Stimulus_Interet")	
+		if ( o_target_stimulus_interet)
+			ti_se_relever = faux	
+	}
+	// Conséquence des regles.
+	if( ti_se_relever)
+		macro_change_etat("H_ETAT_IA_suivi")
+}
+
+// TEST ASSIST JACK TIR, si Caché(pas courageux), ne pas aider
+//AI_Execute("H_exec_ch_Stimulus_Tir")
+//if ( !MATH_VecNullEpsilon( v_tir_pos_help))
+//{
+//	macro_change_etat("H_ETAT_commun_action_tir")
+//}
+// COMPORTEMENT =====================================================================================
+
+OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), @o_hide_0D OBJ_SightGet(), 5.0 * TIME_GetDt()), Cv_VerticalVector)
+OBJ_PosSet(MATH_VecBlend(OBJ_PosGet(), @o_hide_0D OBJ_PosGet(), 8.0*TIME_GetDt()))
+
+ti_context = C_EVENT_CONTEXT_HIDE_0D
+ti_context += i_ground_ID * 10
+tf_liferatio = @"univ" LIFE_HumainCur[ i_id_humain ] / @"univ" LIFE_HumainMax[ i_id_humain ] 
+EVENT_AddEventVision( i_id_humain, C_EVENT_FILTER_Marin, OBJ_Me(), 0.001, OBJ_PosGet(), 0.0, Cf_Rayon_De_Vision, f_interet, ti_context, 0, tf_liferatio)

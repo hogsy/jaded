@@ -1,0 +1,117 @@
+#include "KAnn_Defines.var"
+
+#ifndef _FINAL_
+
+int				ti_type_liaison
+vector		tv_2D_pos
+string			str_texte
+object		to_canal
+
+
+// DEBUG LIAISON KONG ===============================================================
+if( i_DBG_display_KONG_link )
+{
+	if( o_grabbed_KK_actor && MSG_GlobalIsValid(amid_SRV_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT]) )
+	{
+		to_canal = ANI_CanalObjectGet(Anim_Canal_Tete)
+		tv_2D_pos = VIEW_3dWorldTo2d(0, @to_canal OBJ_PosGet())
+		ti_type_liaison = LNK_KKGrabObject_TypeGet(amid_SRV_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT])
+		switch( ti_type_liaison )
+		{
+			case Ci_KKGrabObject_Depose :
+				str_texte = "DEPOSE"
+				break
+			case Ci_KKGrabObject_Lache :
+				str_texte = "LACHE"
+				break
+			case Ci_KKGrabObject_Pose_Epaule :
+				str_texte = "POSE SUR EPAULE"
+				break
+			case Ci_KKGrabObject_Attrappe_Attend :
+				str_texte = "ATTRAPPE - ATTEND"
+				break
+			case Ci_KKGrabObject_Attrappe_Dans_Main :
+				str_texte = "ATTRAPPE - DANS LA MAIN"
+				break
+			case Ci_KKGrabObject_Porte_Epaule :
+				str_texte = "PORTE SUR EPAULE"
+				break
+			case Ci_KKGrabObject_Porte_Epaule_TroncD :
+				str_texte = "PORTE SUR EPAULE - TRONC MAIN D"
+				break
+			case Ci_KKGrabObject_Porte_Epaule_TroncG :
+				str_texte = "PORTE SUR EPAULE - TRONC MAIN G"
+				break
+			case Ci_KKGrabObject_Porte_Main :
+				str_texte = "PORTE DANS MAIN"
+				break
+			case Ci_KKGrabObject_PoseSol :
+				str_texte = "POSEE AU SOL"
+				break
+			default:
+				str_texte = "default !!!???"
+				break
+		}
+		Str_DisplayTextOnce(str_texte, tv_2D_pos  + cvector(0.025,0.0,0.0))
+	}
+}
+
+// DEBUG INTERACTION ======================================================================
+if( i_DBG_display_interaction )
+{
+	if( ao_SRV[Ci_LNK_INTERACTION] && MSG_GlobalIsValid(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION]) )
+	{
+		to_canal = ANI_CanalObjectGet(Anim_Canal_Tete)
+		tv_2D_pos = VIEW_3dWorldTo2d(0, @to_canal OBJ_PosGet())
+		ti_type_liaison = LNK_InteractionParamGet(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION])
+		
+		switch( ti_type_liaison )
+		{
+			case C_INTER_FIGHT_WAIT_FOR_ANN :
+				str_texte = "Wait For Ann"
+				break
+			case C_INTER_FIGHT_ANN_READY :
+				str_texte = "Ann Ready"
+				break
+			case C_INTER_FIGHT_ENNEMY_ATTACK : 
+				str_texte = "Enemy Attack"
+				break
+			case C_INTER_FIGHT_ENEMY_FAKE_ATTACK : 
+				if( @get_global i_KAnn_fake_attack_index == Ci_KAnn_fake_attack_a_droite )
+					str_texte = "Enemy Fake Attack à droite"
+				else
+					str_texte = "Enemy Fake Attack à gauche"
+				break
+			case C_INTER_FIGHT_ANN_ATTACKING : 
+				str_texte = "Ann Attaking"
+				break
+			case C_INTER_FIGHT_ANN_FAKING_ATTACK : 
+				str_texte = "Ann Faking Attack"
+				break
+//			case C_INTER_FIGHT_WAIT_FOR_ENEMY :
+//				str_texte = "Wait For Enemy"
+//				break
+			case C_INTER_FIGHT_ENEMY_READY :
+				str_texte = "Enemy Ready"
+				break
+			default:
+				str_texte = "default !!!???"
+				break
+		}
+		Str_DisplayTextOnce(str_texte, tv_2D_pos  + cvector(0.025,0.0,0.0))
+	}
+}
+
+
+// DEBUG DEATH MUSIK ==========================================================
+if( i_DBG_display_death_music )
+{
+	if( KAnn_Death_Timer_Is_Activated() || f_blend_injure != 0.0 )
+	{
+		Str_DisplayTextOnce("Injure Coef : ", cvector(0.4,0.05,0))
+		Str_DisplayFloatOnce(f_blend_injure, cvector(0.53,0.05,0))
+	}
+}
+
+#endif
+

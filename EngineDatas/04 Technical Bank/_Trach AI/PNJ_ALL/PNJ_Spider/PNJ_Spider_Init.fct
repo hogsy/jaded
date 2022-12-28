@@ -1,0 +1,138 @@
+#include "PNJ_Spider_defines.var"
+
+int		ti_i
+int		ti_k
+int		ti_crossable
+int sect0, sect1, sect2, sect3
+
+object	to_gao
+
+if (i_SF_NePasSeRejouerSiMort)
+{
+	int		ti_SF_AlreadyDead
+	i_SF_AlreadyDead = AI_SFDynGet(0, SF_MinById, SF_MaxById)		// Alloc
+	Super_SpecialFlag_get(i_SF_AlreadyDead, ti_SF_AlreadyDead)			// Test SF
+	if (ti_SF_AlreadyDead)																	// Si SF = 1 alors DESTROY
+		OBJ_Destroy()
+}
+
+OBJ_CapaSet(none, all)
+COL_ColMapActivationSet(none, all)
+
+i_frame_nb = 0
+
+// PUT@#!!!µ£$  DE SECTO !!!
+if (! OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Generated))
+{
+	OBJ_FlagInvisibleSet(vrai)
+
+	meta( i_frame_nb < 2)
+	{
+		i_frame_nb++
+	}
+}
+
+if (o_start_wp)
+{
+	n_net2 = @o_start_wp WAY_NetOfObj()
+	v_net_next_pos = @o_start_wp BV_RandomPosGet(0)
+}
+
+OBJ_FlagInvisibleSet(faux)
+
+AI_RunContext(CTX_AfterRec)
+
+AI_PrioritySet(128)
+
+if (! OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Generated) )
+{
+	@get_global f_spider_time_last_bite = -Cf_Infinit	
+
+	for (ti_i = 0; ti_i < number; ti_i++)
+	{
+		to_gao = OBJ_Duplicate(OBJ_PosGet() + cvector(MATH_RandFloat(-0.1, 0.1), MATH_RandFloat(-0.1, 0.1), MATH_RandFloat(-0.1, 0.1)))
+		@to_gao OBJ_FlagInvisibleSet(vrai)
+
+		@to_gao COL_StartMatrixSet(@to_gao OBJ_PosGet())
+
+		SCT_GetOf( &sect0, &sect1, &sect2, &sect3)
+		@to_gao SCT_SetOf( sect0, sect1, sect2, sect3)
+	}
+
+	for (ti_i = 0; ti_i < 30; ti_i++)
+		for (ti_k = 0; ti_k < 30; ti_k++)
+			@get_global af_spider_dist[ti_i][ti_k] = Cf_Infinit
+}
+
+
+v_init_pos = OBJ_PosGet()
+
+f_size_coef = MATH_RandFloat(1.2, 1.7)
+
+f_sqr_size_coef = Cf_spider_soft_col_dist
+f_sqr_size_coef *= f_sqr_size_coef
+
+OBJ_ZoomSet(f_size_coef)
+
+BV_MinSet(cvector(-0.5, -0.5, -0.5) * f_size_coef)
+BV_MaxSet(cvector(0.5, 0.5, 0.5) * f_size_coef)
+
+DYN_Off()
+
+COL_SwapToSpecific(C_zdm_pied)
+COL_ZoneFlagSet(C_zdm_pied, COL_C_Zone_NoScale, none)
+COL_ZoneSizeSet(C_zdm_pied, cvector(0.2, 0.2, 0.2))
+COL_ZonePosSet(C_zdm_pied, cvector(0.0, 0.0, 0.2))
+
+COL_CrossableSet(none, all)
+
+//ti_crossable = Gmat_Jack_DefaultCrossable
+//ti_crossable |= Gmat_Jack_Face_eau
+//ti_crossable |= Gmat_Jack_Face_de_Bord
+//ti_crossable |= Gmat_Jack_BordHumain_TraversableNMI
+//ti_crossable |= Gmat_Jack_Crossable_All_But_TREX
+//ti_crossable |= Gmat_Jack_Crossable_All_But_RAPTORS
+ti_crossable = Gmat_KK_Crossable_Default
+COL_CrossableSet(ti_crossable, none)
+
+COL_SwapToSpecific(C_zde_corps)
+COL_ZoneSizeSet(C_zde_corps, cvector(1.0, 1.0, 1.0))
+COL_ZonePosSet(C_zde_corps, Cv_NullVector)
+
+o_main_actor = AI_MainActorGet(C_ID_Joueur)
+
+AI_CBAdd(OBJ_Me(), CallBack_WhenDestroy,"PNJ_Spider_callback_WhenDestroy")
+AI_CBAdd(OBJ_Me(), CallBack_SectoActOn, "PNJ_Spider_callback_WhenSectoOn")
+AI_CBAdd(OBJ_Me(), CallBack_Info,"PNJ_Spider_callback_info")
+macro_add_callback_after_cam("PNJ_Spider_callback_aftercam")
+
+OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_DesignStruct,none)
+OBJ_Me().des_int1 = Ci_DISPLAY_FIGHT
+
+f_life = 2.0 * PAF_Unit
+//move_speed = MATH_RandFloat(3.5, 4.0)  //* f_size_coef
+move_speed = MATH_RandFloat(2.5, 3.0)  //* f_size_coef
+//move_speed = MATH_RandFloat(1.5, 2.0)  //* f_size_coef
+
+if (tutorial)
+	f_life = 1.0
+
+OBJ_InfoPhotoParamSet( 0, 0, 4, 4, 0.0, 0.0, 0.0, 1.5 * OBJ_ZoomGet())
+
+v_last_pos = OBJ_PosGet()
+
+f_lifecur = f_life
+
+OBJ_CapaSet(none, all)
+
+AI_TrackChange(Ci_Track_Reflex, "PNJ_Spider_Reflex")
+AI_TrackChange(Ci_Track_Etat, "PNJ_Spider_ETAT_Attente")
+//AI_TrackChange(Ci_Track_Etat, "PNJ_Spider_ETAT_Snap")
+
+AI_TrackChange(4, "PNJ_Spider_After_ETAT")
+
+////AI_TrackChange(Ci_Track_Etat, "PNJ_Spider_ETAT_Snap")
+//if (o_proie)
+//	AI_TrackChange(Ci_Track_Etat, "PNJ_Spider_ETAT_Grabbed")
+
+AI_TrackCurStop()

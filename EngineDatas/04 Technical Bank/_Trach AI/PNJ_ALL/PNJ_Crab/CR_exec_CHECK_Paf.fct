@@ -1,0 +1,609 @@
+#include "CR_defines.var"
+
+int					ti_rank
+int					ti_paf_canal
+int					ti_paf_type
+int					ti_j_ai_pris_un_paf
+int					ti_just_paf_grab_lache_flag
+int					ti_paf_qui_tue
+int					ti_shotgun_any
+int					ti_shotgun
+int					ti_zone_vulnerable
+int					ti_je_suis_mort_cette_trame
+int					ti_shotgun_canal
+
+message		tm_msg_filter
+
+messageid		tmid_paf_event
+messageid		tmid_vision_event
+
+float				tf_puissance
+float				tf_puissance_init
+float				tf_best_puissance
+float				tf_recul_norm
+float				tf_paf_max_norm
+float				tf_norm
+float				tf_HP_init
+float				tf1
+float				tf2
+float				tf_recul_max
+
+object			to_pere
+object			to_best_pere
+object			to_tmp
+object			to_paf_mortel_sender
+
+vector			tv_speed
+vector			tv_paf_dir
+vector			tv_2D_pos
+vector			tv_paf_position
+vector			tv_caparace_paf
+vector			tv_caparace_paf_cumul
+
+int					ti_tmp_paf_important_flag
+int					ti_tmp_paf_moyen_flag
+int					ti_tmp_paf_faible_flag
+
+
+if (i_paf_check_flag)
+	return
+
+o_paf_actor = nobody
+
+tf_HP_init = f_HP_cur
+
+i_paf_check_flag = vrai
+i_paf_main_actor_flag = faux
+v_paf_dir = Cv_NullVector
+to_best_pere = nobody
+tf_best_puissance = -100.0
+ti_j_ai_pris_un_paf = faux
+tv_caparace_paf_cumul = Cv_NullVector
+tv_caparace_paf = Cv_NullVector
+ti_shotgun_any = faux
+ti_je_suis_mort_cette_trame = faux
+to_paf_mortel_sender = nobody
+
+MSG_SetNull(tm_msg_filter)
+tm_msg_filter.msg_gao1 = OBJ_Me()
+ti_rank = -1
+
+i_paf_important_flag = faux
+i_paf_moyen_flag = faux
+i_paf_faible_flag = faux
+i_paf_repousse_flag = faux
+i_paf_grab_lache_flag = faux
+i_paf_lance_flag = faux
+i_paf_accumulation = faux
+i_paf_force_anim = faux
+ti_paf_type = 0
+
+for (	tmid_paf_event = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tm_msg_filter);
+		MSG_GlobalIsValid(tmid_paf_event);
+		tmid_paf_event = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tm_msg_filter)	)
+{
+	f_mort_delai_depuis_dernier_paf = 0.0
+	
+	// INFOS DU PAF
+	ti_tmp_paf_important_flag = faux
+	ti_tmp_paf_moyen_flag = faux
+	ti_tmp_paf_faible_flag = faux
+	ti_zone_vulnerable = faux
+	ti_shotgun = faux
+	
+	tv_paf_dir = EVENT_PafDirGet(tmid_paf_event)
+	ti_paf_type = EVENT_PafTypeGet(tmid_paf_event)
+	to_pere = EVENT_PereGet(tmid_paf_event)
+	
+	tf_puissance = EVENT_PafPuisGet(tmid_paf_event)
+	// GESTION PAF REPOUSSE =====================================================
+	if( ti_paf_type & C_PAF_KK_Repousse )
+	{
+		if( i_modele == MODELE_Geant || to_pere != o_main_actor )
+			tf_puissance = 0.0			// BLINDAGE CRABE GEANT et COMPAGNONS
+//		else if( ti_paf_type & C_EVENT_PAF_Feu )
+//			tf_puissance = 3.0			// BLINDAGE FEU
+		else
+		{
+			// BLINDAGE AUTRES
+			if( ti_paf_type & C_PAF_KK_Jacks_Punch )		// Poing
+			{
+				tf_puissance = 0
+			}
+			else if( tf_puissance == 1 )		// Crosse
+			{
+				tf_puissance = 0
+			}
+			else if( tf_puissance == 2 )		// Os
+			{
+				tf_puissance = 1
+			}
+			else if( tf_puissance == 3 )		// Lance
+			{
+				tf_puissance = 1
+			}
+			else
+			{
+				tf_puissance = 3.0			// FEU
+//				#ifndef _FINAL_
+//				DBG_Error("paf repousse avec des dmg incorrects !!!")
+//				DBG_TraceString("paf repousse avec des dmg incorrects : ")
+//				DBG_TraceInt(tf_puissance)
+//				DBG_TraceEOL()
+//				#endif
+			}
+		}
+	}
+	tf_puissance_init = tf_puissance
+	ti_paf_canal = EVENT_PafCanalGet(tmid_paf_event)
+	
+	tmid_vision_event = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility, to_pere, nobody)
+	tv_paf_position = EVENT_PafPositionGet( tmid_paf_event)
+//	DBG_RenderVector(OBJ_PosGet(), tv_paf_position - OBJ_PosGet(), color_blanc)
+//	DBG_RenderVector(tv_paf_position, Cv_VerticalVector, color_blanc)
+	
+	if( tf_puissance_init >= Cf_shotgun_paf_pointblank && tf_puissance_init < 1000.0 && ! ( ti_paf_type & C_PAF_KK_Javelin ) )
+	{
+		// shotgun ( + blindage sniper headshot + blindage lance enflammée )
+		ti_shotgun = vrai
+		ti_shotgun_any = vrai		// shotgun (pour l'inclinaison de la carapace)
+		ti_shotgun_canal = ti_paf_canal
+	}
+	
+	ti_just_paf_grab_lache_flag = faux
+	
+	// PAF VIANDE
+	if( ti_paf_type & C_PAF_KK_FoodChain )
+	{
+		f_viande_cur -= MATH_FloatMin(f_viande_cur, tf_puissance)
+		continue
+	}
+	else if( ! @to_pere AI_IsModel(get_Humain_path) )
+	{
+		if( i_modele == MODELE_Geant )
+			continue		// ignorer les pafs ODE & co pour le Crabe Géant
+		else
+			to_pere = o_main_actor		// les rochers ODE tombent et écrasent les petits crabes => on considère que c Jack
+	}
+	
+	ti_j_ai_pris_un_paf = vrai
+	
+	if( ! ( ti_paf_type & C_PAF_KK_Repousse ) )
+		f_time_last_paf = 0.0		// ne pas réattaquer tout de suite, sauf pour les pafs repousse
+
+	if( ! tf_HP_init )
+	{
+		if( ti_shotgun )
+			tv_speed = 40.0 * tv_paf_dir
+		else if( i_modele == MODELE_Petit )
+			tv_speed = tf_puissance_init * tv_paf_dir		// recul sur les petits crabes mort mais pas sur le gros
+		else
+			tv_speed = Cv_NullVector
+		goto PAF_FEEDBACK		// ne lit que les pafs viande une fois mort
+	}
+	
+	// FLAG PAF MAIN ACTOR
+	if( to_pere == o_main_actor && CR_Gao_in_BV(to_pere, o_territoire) )
+	{
+		i_paf_main_actor_flag = vrai
+	}
+	
+	// GRAB END CHECK
+//	if( MSG_GlobalIsValid(mid_grab) )
+//	{
+//		if( o_fight_actor != o_main_actor 	// Je grabbe un marin 
+//			|| to_pere != o_main_actor 		// un marin me tire dessus alors que je grabbe le joueur
+//			|| ( ti_paf_canal == Crab_Canal_Vulnerable_Devant && ACT_CustomBitTest(CBit_Vulnerable_Devant) ) )	// je grabbe le joueur et il me tire dedans
+//		{
+//			// ou un marin me tire dessus lors qua et il peut être libéré grâce à n'importe quel paf
+//			i_paf_grab_lache_flag = vrai
+//			ti_just_paf_grab_lache_flag = vrai
+//		}
+//	}
+	if( i_etat_courant == ETAT_GRAB )
+	{
+		i_paf_grab_lache_flag = vrai
+		ti_just_paf_grab_lache_flag = vrai
+		i_paf_moyen_flag = vrai
+	}
+	
+	if( i_DBG_trace_paf )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : paffé par : ")
+		DBG_TraceObject(to_pere)
+		DBG_TraceString(" (canal ")
+		DBG_TraceInt(ti_paf_canal)
+		DBG_TraceString(") ")
+	}
+	
+	// INCLINAISON CARAPACE
+	if( ti_paf_canal == Crab_Canal_Carapace || ti_paf_canal == Crab_Canal_Vulnerable_Devant || ti_paf_canal == Crab_Canal_Vulnerable_Derriere )
+	{
+		tv_caparace_paf = MATH_FloatMax(1.0, tf_puissance) * tv_paf_dir
+		DBG_RenderVector(tv_paf_position, tv_caparace_paf, color_rouge)
+		DBG_RenderVector(@o_bone_pere OBJ_PosGet(), tv_paf_position - @o_bone_pere OBJ_PosGet(), color_blanc)
+		tv_caparace_paf += tv_paf_position - @o_bone_pere OBJ_PosGet()
+		tv_caparace_paf_cumul +=  tv_caparace_paf		// pour avoir un minimum d'inclinaison même s'il y a 0 dmg
+	}
+	
+	// TEST ZONE VULNERABLE
+	if( ! ( ti_paf_type & C_PAF_KK_Repousse )	// pas de multiplicateur pour les repousse
+	&& to_pere == o_main_actor		// seul Jack bénéficie des multiplicateurs
+	&& ( ( ti_paf_canal == Crab_Canal_Vulnerable_Devant && ( ACT_CustomBitTest(CBit_Vulnerable_Devant) || f_time_hyst_carapace <= Cf_time_hyst_carapace ) )
+		|| ( ti_paf_canal == Crab_Canal_Vulnerable_Derriere && ( ACT_CustomBitTest(CBit_Vulnerable_Derriere) || f_time_hyst_carapace <= Cf_time_hyst_carapace ) )
+		|| ( f_time_hyst_carapace <= Cf_time_hyst_carapace && MATH_VecDotProduct(OBJ_SightGet(), @to_pere OBJ_PosGet() - OBJ_PosGet()) > 0 ) ) )
+	{
+		// VULNERABLE (canal + anim ou délai) ou shotgun de devant et délai
+		if( i_DBG_trace_paf )
+			DBG_TraceString(" : VULNERABLE !!! ")
+		
+		ti_zone_vulnerable = vrai
+		
+		// ANIM SPECIALE PAF JAVELOT DANS BOUCHE
+		if( ti_paf_type & C_PAF_KK_Javelin )
+		{
+			i_paf_lance_flag = vrai
+			if( i_modele == MODELE_Petit )
+				tf_puissance = f_HP_cur		// tue (lance ou os ou autre perforant)
+		}
+		
+		if( to_pere == o_main_actor )
+		{
+			// MULTIPLICATEUR
+			tf_puissance *= f_paf_dmg_multiplicateur
+			if( i_DBG_display_paf )
+			{
+				tv_2D_pos = VIEW_3dWorldTo2d(0, OBJ_PosGet())
+				Str_DisplayTextOnce("x ", tv_2D_pos + cvector(-0.17, -0.2, 0.0))
+				Str_DisplayFloatOnce(f_paf_dmg_multiplicateur, tv_2D_pos + cvector(-0.15, -0.2, 0.0))
+				Str_DisplayTextOnce(" !!!", tv_2D_pos + cvector(-0.10, -0.2, 0.0))
+			}
+		}
+	}
+	else
+	{
+		// PAS VULNERABLE
+		tf_puissance -= MATH_FloatMin(tf_puissance, f_paf_dmg_reduction)
+
+		// JAVELOT RESTE PLANTE UNIQUEMENT DANS LES ZONES SENSIBLES
+		if( ti_paf_type & C_PAF_KK_Javelin)
+		{
+			to_tmp = EVENT_Gao2Get(tmid_paf_event)						// dans le cas d'un paf par lance, l'objet lance est stocké dans le gao2 du message correspondant
+			macro_set_javelin_plug_timer(to_tmp, 0.0)
+		}
+	}
+	
+// 	if( ti_paf_type & C_EVENT_PAF_Repousse && i_modele == MODELE_Petit && ti_zone_vulnerable )
+//	{
+//		// repousse dans les yeux : referme
+//		i_paf_force_anim = vrai
+//		tf_puissance = 2.0
+//		tf_puissance_init = 2.0
+//	}
+
+	// POINTS DE VIE ET VISION
+	if( f_HP_cur && i_modele == MODELE_Geant && tf_puissance >= f_HP_cur && to_pere != o_main_actor )
+		tf_puissance = f_HP_cur - 1.0		// seul Jack peut tuer le crabe géant
+	
+	f_HP_cur -= MATH_FloatMin(f_HP_cur, tf_puissance)
+	if( tf_HP_init && ! f_HP_cur )
+	{
+		ti_paf_qui_tue	= vrai
+		ti_je_suis_mort_cette_trame = vrai
+		to_paf_mortel_sender = to_pere
+	}
+	else
+		ti_paf_qui_tue = faux
+	
+	// TYPE DE PAF =======================
+	if( ti_paf_type & C_PAF_KK_KiTue )
+	{
+		// PAF TUANT ------------------------------
+		tf_puissance = f_HP_cur
+		tv_speed = tv_paf_dir * 30.0
+	}
+	else if( ti_paf_type & C_PAF_KK_Repousse )
+	{
+		// PAF REPOUSSE -----------------------
+		if( i_modele == MODELE_Geant )
+		{
+			i_paf_repousse_flag = vrai
+			tf_puissance = 0.0
+			tv_speed = tv_paf_dir * f_paf_repousse_norm
+		}
+		else
+		{
+			if( ti_zone_vulnerable )
+			{
+				// repousse dans les yeux : referme
+				i_paf_force_anim = vrai
+				ti_tmp_paf_moyen_flag = vrai
+				tv_speed = tv_paf_dir * 15.0
+			}
+			else
+			{
+				// repousse sur le corps ou en position fermée => ouvre
+				i_paf_lance_flag = vrai
+				i_paf_force_anim = vrai
+				ti_tmp_paf_faible_flag = vrai
+				tv_speed = tv_paf_dir * 10.0
+			}
+		}
+	}
+	else
+	{
+		// PAF QUI PEUT FAIRE DES DMG ------------------------------------
+		if( i_modele == MODELE_Geant )
+		{
+			// GESTION PAF CRABE GEANT
+			if( ti_paf_qui_tue || tf_puissance >= 10.0)
+			{
+				i_paf_important_flag = vrai
+				ti_tmp_paf_important_flag = vrai
+				tv_speed = tv_paf_dir * 30.0
+			}
+			else if( tf_puissance >= 9.0)
+			{
+				i_paf_moyen_flag = vrai
+				ti_tmp_paf_moyen_flag = vrai
+				tv_speed = tv_paf_dir * 15.0
+			}
+			else
+			{
+				i_paf_faible_flag = vrai
+				ti_tmp_paf_faible_flag = vrai
+				tv_speed = tv_paf_dir * 1.5
+			}
+		}
+		else
+		{
+			// GESTION PAF PETIT CRABE
+			if( ! CR_IsVulnerable() )
+			{
+				// FERME
+				if( ti_paf_qui_tue || tf_puissance_init > 3 ) // 10 )
+				{
+					i_paf_important_flag = vrai
+					ti_tmp_paf_important_flag = vrai
+					tv_speed = tv_paf_dir * 30.0		// 20.0
+					i_paf_lance_flag = vrai			// OUVRE !!!!
+				}
+				else if( tf_puissance_init > 0 ) // 3 )
+				{
+					i_paf_moyen_flag = vrai
+					ti_tmp_paf_moyen_flag = vrai
+					tv_speed = tv_paf_dir * 20.0		// 10.0
+					i_paf_lance_flag = vrai			// OUVRE !!!!
+				}
+				else
+				{
+					i_paf_faible_flag = vrai
+					ti_tmp_paf_faible_flag = vrai
+					tv_speed = tv_paf_dir * 2.0
+				}
+			}
+			else
+			{
+				// OUVERT
+				if( ti_paf_qui_tue || tf_puissance > 3 ) // 9 )
+				{
+					i_paf_important_flag = vrai
+					ti_tmp_paf_important_flag = vrai
+					tv_speed = tv_paf_dir * 30.0		// 20.0
+					i_paf_lance_flag = vrai			// OUVRE !!!!
+				}
+				else if( tf_puissance > 0 ) // 3 )
+				{
+					i_paf_moyen_flag = vrai
+					ti_tmp_paf_moyen_flag = vrai
+					tv_speed = tv_paf_dir * 20.0		// 10.0
+					i_paf_lance_flag = vrai			// OUVRE !!!!
+				}
+				else
+				{
+					i_paf_faible_flag = vrai
+					ti_tmp_paf_faible_flag = vrai
+					tv_speed = tv_paf_dir * 2.0
+				}
+			}
+		}
+	}
+	
+	// TRACE + DISPLAY
+	if( i_DBG_display_paf )
+	{
+		tv_2D_pos = VIEW_3dWorldTo2d(0, OBJ_PosGet())
+		Str_DisplayFloatOnce(tf_puissance, tv_2D_pos + cvector(-0.05, -0.2, 0.0))
+	}
+	
+	if( i_DBG_trace_paf )
+	{
+		DBG_TraceFloat(tf_puissance)
+		DBG_TraceString(" dmg ")
+	}
+	
+	PAF_FEEDBACK:		// vecteur + pere + feedback
+	
+	v_paf_dir += tv_speed
+	if( i_modele == MODELE_Petit )
+		tf_recul_max = 20.0
+	else
+		tf_recul_max = 10.0
+	if( ! MATH_VecNullEpsilon(v_paf_dir) )
+		MATH_VecSetNorm(v_paf_dir, MATH_FloatMin(tf_recul_max, MATH_VecNorm(v_paf_dir)))
+	
+	// BEST PAF ???
+	if( ! to_best_pere || to_pere == o_main_actor || tf_puissance >= tf_best_puissance )
+	{
+		// c le main actor ou alors le paf est + puissant et je n'ai pas encore choisi le main actor
+		to_best_pere = to_pere
+		tf_best_puissance = tf_puissance
+	}
+	
+	// QUATERNION POUR CHAQUE PAF
+	if( TIME_Elapsed(f_quat_last_time, 0.15) && ( ti_shotgun || ti_paf_canal == Crab_Canal_Carapace || ti_paf_canal == Crab_Canal_Vulnerable_Devant || ti_paf_canal == Crab_Canal_Vulnerable_Derriere ) )
+	{
+		if( i_modele == MODELE_Geant )
+		{
+			if( f_HP_cur > 0.0 )
+			{
+				tf1 = 0.4
+				tf2 = 0.2
+			}
+			else
+			{
+				tf1 = 0.18
+				tf2 = 0.12
+			}
+			if (TIME_Elapsed(f_quat_last_time, 0.5))
+				af_quat_coef[i_quat_index] = tf1
+			else
+				af_quat_coef[i_quat_index] = tf2
+		}
+		else
+		{
+			if (TIME_Elapsed(f_quat_last_time, 0.5))
+			{
+				if( ti_tmp_paf_moyen_flag || ti_tmp_paf_important_flag || ti_shotgun )
+					af_quat_coef[i_quat_index] = 0.6
+				else if( ti_paf_type & C_PAF_KK_Repousse )
+					af_quat_coef[i_quat_index] = 0.4
+				else
+					af_quat_coef[i_quat_index] = 0.25
+			}
+			else
+				af_quat_coef[i_quat_index] = 0.25
+		}
+		
+		f_quat_last_time = TIME_Get()
+		af_quat_time[i_quat_index] = f_quat_last_time
+		
+		av_quat_start[i_quat_index] = EVENT_PafPositionGet(tmid_paf_event)
+		av_quat_start[i_quat_index] -= @o_bone_carapace OBJ_PosGet()
+		MATH_VecSetNormalize(av_quat_start[i_quat_index])
+		
+		av_quat_end[i_quat_index] = MATH_VecCrossProduct(tv_paf_dir, av_quat_start[i_quat_index])
+		av_quat_end[i_quat_index] = MATH_VecCrossProduct(av_quat_start[i_quat_index], av_quat_end[i_quat_index])
+		
+		MATH_VecSetNormalize(av_quat_end[i_quat_index])
+		
+		i_quat_index = MATH_Modulo(i_quat_index + 1, 10)
+	}
+}
+
+
+// STATS ================================
+if( ti_je_suis_mort_cette_trame )
+{
+	if (i_modele == MODELE_Geant)
+	{
+//		ODE_Enable(faux)
+		STATS_IncEnemyKilled_New(to_paf_mortel_sender, C_EnemyType_Crabe_Gros, 0)
+	}
+	else
+		STATS_IncEnemyKilled_New(to_paf_mortel_sender, C_EnemyType_Crabe, 0)
+}
+
+if( i_paf_important_flag )
+{
+	i_attaque45forcee_flag = vrai		// attaque 45° après un paf
+	i_paf_moyen_flag = faux
+	i_paf_faible_flag = faux
+	if( i_DBG_trace_paf )
+		DBG_TraceString(" paf IMPORTANT !!!")
+}
+
+if( i_paf_moyen_flag )
+{
+	i_attaque45forcee_flag = vrai		// attaque 45° après un paf
+	i_paf_faible_flag = faux
+	if( i_DBG_trace_paf )
+		DBG_TraceString(" paf moyen !!!")
+}
+
+// CUMUL DES PETIS PAFS ==========================================================
+if( i_paf_faible_flag )
+{
+	if( tf_puissance > 0.0 )
+		CR_Paf_Cumul_Add(tf_puissance_init)
+
+	if( CR_Paf_Cumul_Check_Cumul() )
+	{
+		i_attaque45forcee_flag = vrai		// attaque 45° après un paf
+		i_paf_faible_flag = faux
+		i_paf_accumulation = vrai
+		
+		MATH_VecSetNorm(v_paf_dir, MATH_FloatMax(MATH_VecNorm(v_paf_dir), 10.0) )
+		
+		if( i_DBG_trace_paf )
+			DBG_TraceString(" *** paf cumul ***")
+	}
+	else if( i_DBG_trace_paf )
+		DBG_TraceString(" paf faible")
+}
+
+// PAF ACTOR
+o_paf_actor = to_best_pere
+if( o_paf_actor && ! CR_Perceived_Actor_Add(o_paf_actor, tmid_vision_event) )
+	o_paf_actor = nobody
+if( o_paf_actor && CR_PafDynReculEnabled() )
+//if( ti_j_ai_pris_un_paf )
+{
+	// RECUL =======================================================================
+	tf_recul_norm = MATH_VecNorm(v_paf_dir)
+
+//	 if( i_paf_grab_lache_flag )
+//	 	tf_recul_norm = MATH_FloatMax(tf_recul_norm, f_paf_grab_lache_norm)
+	
+	if( tf_recul_norm )
+	{
+		tf_paf_max_norm = tf_recul_norm
+		if( i_paf_faible_flag )
+			tf_paf_max_norm = MATH_FloatMin(tf_recul_norm, f_paf_dyn_cumul_max)		// borne les reculs de cumul de petits pafs
+		
+		v_paf_dyn_speed += (tf_recul_norm * v_paf_dir)
+		tf_norm = MATH_VecNorm(v_paf_dyn_speed)
+		if (tf_norm)
+		{
+			v_paf_dyn_speed /= tf_norm
+			v_paf_dyn_speed *= MATH_FloatMin(tf_norm, tf_paf_max_norm)
+		}
+
+		v_paf_dyn_pos = OBJ_PosGet()
+	}
+}
+
+
+// ROTATION CRABE
+if( ti_j_ai_pris_un_paf )
+{
+	if( i_paf_main_actor_flag )
+	{
+		// n'intimide pas s'il vient de prendre un paf du joueur (mais des pnj oui)
+		CR_Intimidation_Delay_Random()
+	}
+	
+	if( i_modele == MODELE_Petit )
+	{
+		// pas pour un paf faible
+		f_paf_rotation_coef = 0.0
+		CR_Paf_Rotation_Add( OBJ_PosGet(), OBJ_SightGet(), tv_paf_position, v_paf_dir, f_paf_rotation_force)
+	}
+	
+	if( i_DBG_trace_paf )
+	{
+		DBG_TraceString(" HP = ")
+		DBG_TraceFloat(f_HP_cur)
+		DBG_TraceString(" / ")
+		DBG_TraceFloat(f_HP_max)
+		DBG_TraceEOL()
+	}
+	
+	// SHOTGUN => EXPLOSE !!!
+	if( ti_shotgun_any && i_modele == MODELE_Petit && ! f_HP_cur ) // && ! i_paf_explose )
+	{
+		CR_Explose_Init(ti_shotgun_canal, v_paf_dir)
+	}
+}
+

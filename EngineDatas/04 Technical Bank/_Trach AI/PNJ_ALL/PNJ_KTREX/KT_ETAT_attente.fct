@@ -1,0 +1,138 @@
+#include "KT_defines.var"
+
+//procedure_ultra int	LIb_Kong_Attack( object po_object);
+//Include_UltraProcedure_Header
+
+#define	Cf_Time_Force_Wait		0.5
+object	to_followed_actor
+object	to_collide_object
+object	to_camera
+
+float		tf_sqr_hor_dist
+float		tf_interet
+float		tf_delay_since_last_update
+
+int			ti_i
+int			ti_flag_go_to_grid_center
+int			ti_followed_ground_ID
+int			ti_flag_try_to_move
+
+vector	tv_offset
+vector	tv_temp
+
+float		tf_dot
+
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_attente)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_attente
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = AI_TrackCurGet()
+
+	ai_grabbed_availibility[ Ci_LNK_GRAB_KONG] = vrai
+	
+	f_time_start_etat = 0.0
+	
+	if ( i_attente_init )
+	{
+		i_attente_init = faux
+		switch (i_Init_glande)
+		{
+			case 0 :
+				ACT_ActionSet(Action_Normal_Attente)
+				break
+			case 1 :
+				ACT_ActionSet(Action_Mange)
+				break
+			case 2 :
+				ACT_ActionSet(Action_CriChain)
+				break	
+			case 3 :
+				ACT_ActionSet(Action_KO_au_sol)
+				break	
+		}
+	}
+	else
+		ACT_ActionSet(i_Anim_attente)
+	
+	// SUPPRESSION DE L'INTERET
+	if( MSG_GlobalIsValid(mid_best_interet) )
+		MSG_GlobalDelete(mid_best_interet, C_EVENT_EOFDEL)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =======================================================================================================
+
+// Detection du vide
+macro_checkchute
+
+// PAFS ============================================
+AI_Execute("KT_exec_check_paf")
+if (o_paf_actor)
+	macro_change_etat("KT_ETAT_paf")
+
+// Jack fait diversion
+Macro_Check_Paf_Jauge_Crier
+
+// GRAB KONG =======================================
+o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, vrai, nofunc, nofunc)
+if (o_grabbed_actor_KK)
+	macro_change_etat("KT_ETAT_Grabbed_by_Kong")
+
+
+// FOODCHAIN
+AI_Execute("KT_exec_check_cadavres")
+if( f_time_start_etat > 1.0 )
+{
+	// si REX a commencé à avancer vers Jack, test des cadavres
+	o_cadavre = KT_Cadavre_Nearest(faux)
+	if( o_cadavre )
+	{
+		i_attente_init = vrai		// refaire l'init glande
+		macro_change_etat("KT_ETAT_FoodChain")
+	}
+}
+
+
+// DETECT CIBLE =====================================
+AI_Execute("KT_exec_fight_actor_select")
+if( o_fight_actor )
+{
+	if ( ! i_hotspot_set)
+	{
+		i_hotspot_set = vrai
+		HotSpot_Add_Obj(OBJ_Me(), 1)
+	}
+//	if( o_fight_actor == o_ANN )
+//	{
+//		macro_change_etat("KT_ETAT_fight_ANN")
+//	}
+	if( o_fight_actor == o_Jack )
+	{
+		macro_change_etat("KT_ETAT_fight_JACK")
+	}
+	else if( o_fight_actor == o_Kong )
+	{
+		macro_change_etat("KT_ETAT_fight_KONG")
+	}
+}

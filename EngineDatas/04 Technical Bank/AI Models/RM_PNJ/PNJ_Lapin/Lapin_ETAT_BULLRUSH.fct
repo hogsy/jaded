@@ -1,0 +1,203 @@
+#include "PNJ_Lapin_defines.var"
+
+object	to_target
+vector	tv_temp
+float		tf_dist
+
+
+// SORTIE ETAT ===================================================================
+if( i_sort_etat )
+{
+	f_BullRush_last_time = TIME_Get()
+	Lapin_EXPRESSION(Cf_Expr_Mouth_Closed)
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if( i_etat_courant != ETAT_Lapin_BULLRUSH )
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Lapin_BULLRUSH
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	Lapin_DBG_Trace_String(DBG_Trace_Etat, "BULLRUSH")
+	fct_previous_etat = fct_last_etat
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	Lapin_ACTION_Set(Action_Fight_BullRush_Anounce)
+	SND_RequestPlay(Ci_SND_FIGHT_BullRush_Anounce)
+	i_BullRush_mode = 0
+	f_time_sous_mode = 0.0
+	i_frappe_target_nb = 0
+	i_BullRush_paf_flag = faux
+	f_BullRush_traction = 0.0
+	Lapin_EXPRESSION(Cf_Expr_Mouth_Full)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// STIMULI ===========================================================================
+o_Grabbed_Actor = LNK_ServeurGet(Ci_LNK_GRAB_EAGLE, mid_Grabbed_LNK_ID, vrai, nofunc, nofunc)
+if( o_Grabbed_Actor )
+	macro_change_etat("Lapin_ETAT_GRABBED")
+
+o_Rided_Actor = LNK_ServeurGet(Ci_LNK_RIDE_ON_NMI, mid_Rided_LNK_ID, vrai, nofunc, nofunc)
+if( o_Rided_Actor )
+	macro_change_etat("Lapin_ETAT_RIDED")
+
+AI_Execute("Lapin_exec_check_vision")
+
+MACRO_CHECK_PAFS
+
+if( Lapin_ROPE_Gogo_Mode() )
+	macro_change_etat("Lapin_ETAT_GOGO")
+
+MACRO_CHECK_CHUTE
+
+if( i_ventilo_flag )
+	macro_change_etat("Lapin_ETAT_ASPIRE")
+
+if( o_piege )
+	macro_change_etat("Lapin_ETAT_PIEGE")
+
+AI_Execute("Lapin_exec_update_best_interest")
+
+if( ! MSG_GlobalIsValid(mid_best_interet) )
+	MACRO_GO_IDLE(0)
+
+Lapin_INTERET_Attack()
+
+// COMPORTEMENT ===================================================================
+to_target = EVENT_InteretTargetGet(mid_best_interet)
+if( i_BullRush_paf_flag )
+{
+	o_paf_detect_actor = to_target
+	v_paf_detect_dir = MATH_VecNormalize(OBJ_PosGet() - @to_target OBJ_PosGet())
+	i_paf_detect_type = C_PAF_RM_Fort
+	f_GFX_smoke_delai = 0.0
+	f_GFX_ground_christophe_delai = 0.0
+	if( Fuite_Apres_BullRush )
+	{
+		Lapin_FUITE(to_target)
+	}
+	macro_change_etat("Lapin_ETAT_PAF")
+}
+
+switch( i_BullRush_mode )
+{
+	case 0 :		// Annonce
+		v_way_destpos = Cv_NullVector
+		f_time_sous_mode += TIME_GetDt()
+		if( f_time_sous_mode > 2.0 )
+		{
+			Lapin_ACTION_Set(Action_Fight_BullRush_Charge)
+			SND_RequestPlay(Ci_SND_FIGHT_BullRush_Charge)
+			i_BullRush_mode++
+			f_time_sous_mode = 0.0
+		}
+		// Regard ----------------------------------------------------------
+		i_flag_look = vrai
+		v_look_pos = @to_target OBJ_PosGet()
+		// orientation (sans déplacement)
+		v_force_sight = @to_target OBJ_PosGet() - OBJ_PosGet()
+		// gfx
+		f_GFX_smoke_delai = 1.0
+		v_GFX_ground_pos = OBJ_PosGet() - OBJ_SightGet()
+		break
+		
+	case 1 :		// Charge en cours
+		i_flag_zde_fight_enable = vrai
+		if( OBJ_SqrDistHorz(to_target) > 25.0 )
+			v_way_destpos = @to_target OBJ_PosGet()
+		else
+		{
+			i_BullRush_mode++
+			f_time_sous_mode = 0.0
+		}
+		// Water 
+		if( i_is_in_water )
+		{
+			Lapin_ACTION_Set(Action_Fight_BullRush_Derap)
+			i_BullRush_mode++		// j'ai dépassé ma destination
+			f_time_sous_mode = 0.0
+		}
+		// Regard ----------------------------------------------------------
+		i_flag_look = vrai
+		v_look_pos = v_way_destpos
+		// orientation
+		f_orient_speed = 0.5
+		// gfx
+		f_GFX_ground_christophe_delai = 1.0
+		v_GFX_ground_pos = OBJ_PosGet()
+		break
+		
+	case 2 : 	// Fin de la charge
+		i_flag_zde_fight_enable = vrai
+//		tv_temp = v_way_destpos - OBJ_PosGet()
+//		tv_temp.z = 0.0
+//		if( MATH_VecDotProduct(tv_temp,OBJ_SightGet()) < 0.0 )
+		v_way_destpos = OBJ_PosGet() + OBJ_SightGet()
+		if( i_is_in_water || MATH_VecDotProduct(OBJ_SightGet(), @to_target OBJ_PosGet() - OBJ_PosGet()) < 0.0 )
+		{
+			Lapin_ACTION_Set(Action_Fight_BullRush_Derap)
+			i_BullRush_mode++		// j'ai dépassé ma destination
+			f_time_sous_mode = 0.0
+		}
+		// Regard ----------------------------------------------------------
+		i_flag_look = vrai
+		v_look_pos = v_way_destpos
+		// orientation
+		f_orient_speed = 0.5
+		// gfx
+		f_GFX_ground_christophe_delai = 0.5
+		v_GFX_ground_pos = OBJ_PosGet()
+		break
+		
+	case 3 :		// je dérape
+		v_way_destpos = OBJ_PosGet() + OBJ_SightGet()
+		if( f_BullRush_traction < 0.1 )
+		{
+			Lapin_ACTION_Set(Action_Fight_BullRush_Search)
+			i_BullRush_mode++
+			f_time_sous_mode = 0.0
+		}
+		// Regard ----------------------------------------------------------
+		i_flag_look = vrai
+		v_look_pos = @to_target OBJ_PosGet()
+		// gfx
+		f_GFX_smoke_delai = 0.15
+		v_GFX_ground_pos = OBJ_PosGet() - OBJ_SightGet()
+		break
+		
+	case 4 :		// je reprend mes esprits
+		Lapin_EXPRESSION(Cf_Expr_Mouth_Closed)
+		v_way_destpos = Cv_NullVector
+		f_time_sous_mode += TIME_GetDt()
+		if( f_time_sous_mode > 2.0 )
+		{
+			if( Fuite_Apres_BullRush )
+			{
+				Lapin_FUITE(to_target)
+			}
+			MACRO_GO_IDLE(0)
+		}
+		// Regard ----------------------------------------------------------
+		i_flag_look = vrai
+		v_look_pos = @to_target OBJ_PosGet()
+		break
+}
+
+i_target_territory_ID = Lapin_PROC_POS_GET_TERRITORY_ID(v_way_destpos)
+AI_Execute("Lapin_exec_way_find")
+AI_Execute("Lapin_exec_way_move")
+AI_Execute("Lapin_exec_way_orientation")
+
+
+OBJ_CapaSet(Obj_Capa_Fight, none)

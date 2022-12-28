@@ -1,0 +1,152 @@
+vector 	tv_temp, tv_pos
+float		f_last_valid_water_Z
+vector	GX, GY, GZ
+int			ti_temp
+int 		LColor
+int 		RColor
+float		Largeur_A
+float		Largeur_B
+float		Largeur_C
+
+#define tf_Y_offset 0
+#define tf_left_coef 0.0
+#define tf_right_coef 0.0
+#define tf_Y_speed 0.0
+#define noiseprop 0.15
+#define Cf_Water_visual_offset 0
+#define LForce_Jet_SIDE 8
+#define RForce_Jet_SIDE 8
+#define LForce_Jet_UP 8
+#define RForce_Jet_UP 8
+
+if(des_i_alone) return
+if(des_i_chaloupe_jack) return
+if(des_i_mode_tomb) return
+
+Largeur_A = 1.0
+Largeur_B = 0.7
+Largeur_C = 0.5
+
+LColor = 0x00FFDFDF
+LColor |= 0x70000000
+RColor = LColor 
+
+if(GFX_Airtrace1 == -1)
+{
+	GFX_Airtrace1 = GFX_Add(12)
+	GFX_MaterialSet(GFX_Airtrace1, get_SFX_light_and_smoke, 8)	// met le materiau
+	
+	GFX_Seti(GFX_Airtrace1, 12100 , 6)												// Number of point per profile
+	GFX_Seti(GFX_Airtrace1, 12101 , 5) 											// Number of Link per profile
+	GFX_Seti(GFX_Airtrace1, 12102 , 16) 											// Number of profiles
+	
+	GFX_Seti(GFX_Airtrace1, 12103 , 1) 											// start
+	GFX_Seti(GFX_Airtrace1, 12111 , 8) 											// UTiler
+	GFX_Seti(GFX_Airtrace1, 12112 , 1) 											// Suit la flotte
+	
+	GFX_Setf(GFX_Airtrace1, 12004 , 6.0) 											// Segment lenght min
+	GFX_Setv(GFX_Airtrace1, 12202, cvector(0.2,0.2,0)) 						// Friction
+	
+	GFX_Seti(GFX_Airtrace1, 12105 , 0) 											// Actual LINK to set
+	GFX_Seti(GFX_Airtrace1, 12106 , 0) 											// Point A
+	GFX_Seti(GFX_Airtrace1, 12107 , 1) 											// Point B
+	
+	GFX_Setf(GFX_Airtrace1, 12001 , 0.0) 											// Point VA
+	GFX_Setf(GFX_Airtrace1, 12002 , 0.33) 										// Point VB
+		
+	GFX_Seti(GFX_Airtrace1, 12105 , 1) 											// Actual LINK to set
+	GFX_Seti(GFX_Airtrace1, 12106 , 1) 											// Point A
+	GFX_Seti(GFX_Airtrace1, 12107 , 2) 											// Point B
+	
+	GFX_Setf(GFX_Airtrace1, 12001 , 0.33) 											// Point VA
+	GFX_Setf(GFX_Airtrace1, 12002 , 0.66) 											// Point VB
+		
+	GFX_Seti(GFX_Airtrace1, 12105 , 2) 											// Actual LINK to set
+	GFX_Seti(GFX_Airtrace1, 12106 , 2) 											// Point A
+	GFX_Seti(GFX_Airtrace1, 12107 , 3) 											// Point B
+	
+	GFX_Setf(GFX_Airtrace1, 12001 , 0.66) 									// Point VA
+	GFX_Setf(GFX_Airtrace1, 12002 , 1.0) 										// Point VB
+	
+	GFX_Seti(GFX_Airtrace1, 12105 , 3) 											// Actual LINK to set
+	GFX_Seti(GFX_Airtrace1, 12106 , 3) 											// Point A
+	GFX_Seti(GFX_Airtrace1, 12107 , 4) 											// Point B
+	GFX_Setf(GFX_Airtrace1, 12001 , 0.5) 											// Point VA
+	GFX_Setf(GFX_Airtrace1, 12002 , 0.75) 											// Point VB
+	
+	GFX_Seti(GFX_Airtrace1, 12105 , 4) 											// Actual LINK to set
+	GFX_Seti(GFX_Airtrace1, 12106 , 4) 											// Point A
+	GFX_Seti(GFX_Airtrace1, 12107 , 5) 											// Point B
+	GFX_Setf(GFX_Airtrace1, 12001 , 0.75) 										// Point VA
+	GFX_Setf(GFX_Airtrace1, 12002 , 1.0) 											// Point VB
+		
+	GFX_FlagSet(GFX_Airtrace1, 0 , 1)
+	GFX_FlagSet(GFX_Airtrace1, 2 , 1)
+}
+	
+tv_temp = OBJ_PosGet() + (OBJ_SightGet() * 3)
+f_last_valid_water_Z = tv_temp.z - 1
+tv_pos = tv_temp
+
+// POSITIONNEMENT DES POINTS
+GFX_Seti(GFX_Airtrace1, 12104 , 0) 																								// Actual point to set
+GFX_Seti(GFX_Airtrace1, 12109 , LColor) 																							// Color
+GFX_Setv(GFX_Airtrace1, 12200, 									cvector(-Largeur_A, tf_Y_offset, Largeur_A * tf_left_coef)) 	// StartPos
+GFX_Setv(GFX_Airtrace1, 12201, 2.0 * (1.0 - noiseprop) * 	cvector(-LForce_Jet_SIDE * 1.5, tf_Y_speed, LForce_Jet_UP)) 	// Speed
+GFX_Setv(GFX_Airtrace1, 12208, 2.0 * noiseprop * 				cvector(-LForce_Jet_SIDE * 1.5, tf_Y_speed, LForce_Jet_UP)) 	// Random Speed
+GFX_Setf(GFX_Airtrace1, 12003, f_last_valid_water_Z + Cf_Water_visual_offset)										// Constraint ZMin
+
+GFX_Seti(GFX_Airtrace1, 12104 , 5) 																								// Actual point to set
+GFX_Seti(GFX_Airtrace1, 12109 , RColor) 																							// Color
+GFX_Setv(GFX_Airtrace1, 12200, 									cvector(Largeur_A, tf_Y_offset, Largeur_A * tf_right_coef))	// StartPos
+GFX_Setv(GFX_Airtrace1, 12201, 2.0 * (1.0 - noiseprop) * 	cvector(RForce_Jet_SIDE * 1.5, tf_Y_speed, RForce_Jet_UP)) 	// Speed
+GFX_Setv(GFX_Airtrace1, 12208, 2.0 * noiseprop * 				cvector(RForce_Jet_SIDE * 1.5, tf_Y_speed, RForce_Jet_UP)) 	// Random Speed
+GFX_Setf(GFX_Airtrace1, 12003, f_last_valid_water_Z + Cf_Water_visual_offset)										// Constraint ZMin
+
+GFX_Seti(GFX_Airtrace1, 12104 , 1) 																								// Actual point to set
+GFX_Seti(GFX_Airtrace1, 12109 , LColor) 																							// Color
+GFX_Setv(GFX_Airtrace1, 12200, 									cvector(-Largeur_B, tf_Y_offset, Largeur_B * tf_left_coef))		// StartPos
+GFX_Setv(GFX_Airtrace1, 12201, (1.0 - noiseprop) * 			cvector(-LForce_Jet_SIDE, tf_Y_speed, LForce_Jet_UP * 1.5))		// Speed
+GFX_Setv(GFX_Airtrace1, 12208, noiseprop * 					cvector(-LForce_Jet_SIDE, tf_Y_speed, LForce_Jet_UP * 1.5))	 	// Random Speed
+GFX_Setf(GFX_Airtrace1, 12003, f_last_valid_water_Z + Cf_Water_visual_offset)										// Constraint ZMin
+
+GFX_Seti(GFX_Airtrace1, 12104 , 4) 																							// Actual point to set
+GFX_Seti(GFX_Airtrace1, 12109 , RColor) 																							// Color
+GFX_Setv(GFX_Airtrace1, 12200, 									cvector(Largeur_B, tf_Y_offset, Largeur_B * tf_right_coef)) 	// StartPos
+GFX_Setv(GFX_Airtrace1, 12201, (1.0 - noiseprop) * 			cvector(RForce_Jet_SIDE, tf_Y_speed, RForce_Jet_UP * 1.5)) 	// Speed
+GFX_Setv(GFX_Airtrace1, 12208, noiseprop * 					cvector(RForce_Jet_SIDE, tf_Y_speed, RForce_Jet_UP * 1.5)) 	// Random Speed
+GFX_Setf(GFX_Airtrace1, 12003, f_last_valid_water_Z + Cf_Water_visual_offset) 										// Constraint ZMin
+
+GFX_Seti(GFX_Airtrace1, 12104 , 2) 																								// Actual point to set
+GFX_Seti(GFX_Airtrace1, 12109 , LColor) 																							// Color
+GFX_Setv(GFX_Airtrace1, 12200, 									cvector(-Largeur_C, tf_Y_offset, Largeur_C * tf_left_coef))		// StartPos
+GFX_Setv(GFX_Airtrace1, 12201, (1.0 - noiseprop) *			cvector(2, tf_Y_speed, 0)) 								// Speed
+GFX_Setv(GFX_Airtrace1, 12208, noiseprop * 					cvector(2, tf_Y_speed, 0)) 								// Random Speed
+GFX_Setv(GFX_Airtrace1, 12207, 									cvector(0, 0, 0)) 											// Random POS
+GFX_Setf(GFX_Airtrace1, 12003, f_last_valid_water_Z + Cf_Water_visual_offset)										// Constraint ZMin
+
+GFX_Seti(GFX_Airtrace1, 12104 , 3) 																								// Actual point to set
+GFX_Seti(GFX_Airtrace1, 12109 , RColor) 																							// Color
+GFX_Setv(GFX_Airtrace1, 12200, 									cvector(Largeur_C, tf_Y_offset, Largeur_C * tf_right_coef)) 		// StartPos
+GFX_Setv(GFX_Airtrace1, 12201, (1.0 - noiseprop) *			cvector(-2, tf_Y_speed, 0)) 							// Speed
+GFX_Setv(GFX_Airtrace1, 12208,	noiseprop * 					cvector(-2, tf_Y_speed, 0)) 							// Random Speed
+GFX_Setv(GFX_Airtrace1, 12207, 									cvector(0, 0, 0)) 											// Random POS
+GFX_Setf(GFX_Airtrace1, 12003, f_last_valid_water_Z + Cf_Water_visual_offset)										// Constraint ZMin
+
+GFX_Setf(GFX_Airtrace1, 12000 , -10.0) 									// Gravity
+
+GX = OBJ_HorizonGet()
+GY = OBJ_SightGet()
+GZ = Cv_VerticalVector
+	
+GFX_Setv(GFX_Airtrace1, 12203, GX) // GX
+GFX_Setv(GFX_Airtrace1, 12204, GY) // GY
+GFX_Setv(GFX_Airtrace1, 12205, GZ) // GZ
+GFX_Setv(GFX_Airtrace1, 12206, tv_pos) // GT
+
+// SI VUE INTERIEURE
+GFX_Seti(GFX_Airtrace1, 12103 , 1) // Start
+
+
+
+

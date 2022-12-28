@@ -1,0 +1,113 @@
+//
+#include "GOG_define.var"
+//
+//object		to_serveur, to_cible 
+//int				ti_status 
+//vector		tv_tir_pos, tv_pos 
+//float			tf_dist 
+//object		to_mainD
+//object		to_mainG
+//
+//// INIT ============================================================================
+//
+//if (i_etat_courant != Ci_GOG_ETAT_Grabbed_Force) 
+//{
+//	i_etat_courant = Ci_GOG_ETAT_Grabbed_Force
+//}
+//
+//
+//// ANALYSE =======================================================================
+//ti_status = i_grab_force_mode
+//to_serveur = LNK_ServeurGet(i_grabbed_filtre, mid_grabbed_LIAISON_ID, vrai, nofunc, nofunc)
+//if (to_serveur)
+//{
+//	// J'ai un serveur
+//	ti_status =  LNK_GrabStatusGet(mid_grabbed_LIAISON_ID)
+//	if (ti_status == Ci_LNK_GrabStatus_Lance)		// Je suis en lance donc je dois lacher la pierre en la lancant
+//		to_serveur = LNK_ServeurGet(i_grabbed_filtre, mid_grabbed_LIAISON_ID, faux, nofunc, nofunc)
+//}
+//
+//if (!to_serveur)
+//{
+//	DYN_GravitySet(Cv_NormalGravity)
+//
+//	if (ti_status == Ci_LNK_GrabStatus_Souleve)
+//	{
+//		DYN_SpeedSetVector( @o_grabbed_actor OBJ_SightGet()*5.0)
+//	}
+//	else if (ti_status == Ci_LNK_GrabStatus_Lance)
+//	{
+//		// Tir au centre du mode look
+//		to_cible = @o_grabbed_actor COL_RayObject_Dist( @get_camera OBJ_PosGet(), @get_camera OBJ_SightGet(), 50.0, all, none, 0, COL_C_Ray_on_visuel)
+//		if ( to_cible)
+//			tv_tir_pos = COL_RayObject_PosGet()
+//		else
+//			tv_tir_pos = @get_camera OBJ_PosGet() + ( @get_camera OBJ_SightGet() *  50.0)
+//	
+//		// Lancer
+//		tf_dist = MATH_VecDistance(tv_tir_pos, OBJ_PosGet())
+//		DYN_Impulsion( tv_tir_pos, 0.1 + ( tf_dist / 20) )
+//	}
+//	else if (ti_status == Ci_LNK_GrabStatus_AuSol)
+//	{
+//		AI_TrackCurChangeNow("GOG_mode_attente")
+//	}
+//
+//	// Gestion du NO COL -------------------------------------------------
+//	if (o_no_col_actor)
+//	{
+//		// Fin du NoCol 
+//		COL_UnCollidableDel(o_no_col_actor)
+//		o_no_col_actor = nobody
+//	}
+//	// Pas de collide tant que le perso est trop proche de moi
+//	o_no_col_actor = o_grabbed_actor
+//	COL_UnCollidableAdd(o_no_col_actor)
+//	// Gestion du NO COL -------------------------------------------------
+//
+//	AI_TrackCurChangeNow("GOG_mode_air")
+//}
+//
+//// COMPORTEMENT ==================================================================
+//
+//// Gestion des modes
+//ti_status =  LNK_GrabStatusGet(mid_grabbed_LIAISON_ID)
+//if (ti_status == Ci_LNK_GrabStatus_AuSol)
+//{
+//	// On ground
+//	if ( (glob_joynorm_get && MATH_VecDotProduct(glob_joyvector_get_normalized, @to_serveur OBJ_SightGet()) < -0.75) || IO_ButtonJustPressed(JoyPSX_Button_croix))
+//	{
+//		// On souleve
+//		i_grab_force_mode = Ci_LNK_GrabStatus_Souleve
+//		LNK_GrabStatusSet(mid_grabbed_LIAISON_ID, i_grab_force_mode)
+//
+//		// Collisions & meca
+//		COL_ColSetActivationSet(none,all)
+//		COL_ColMapActivationSet(none,all)
+//		DYN_GravitySet(Cv_NullVector)
+//	}
+//}
+//else if (ti_status == Ci_LNK_GrabStatus_Souleve)
+//{
+//	// En bout de bras
+//
+//	// Positionnement 
+//	to_mainD = @to_serveur ANI_CanalObjectGet(Anim_Canal_MainDroite)
+//	to_mainG = @to_serveur ANI_CanalObjectGet(Anim_Canal_MainGauche)
+//	tv_pos = (@to_mainD OBJ_PosGet() + @to_mainG OBJ_PosGet()) / 2
+//	OBJ_PosSet(tv_pos)
+//}
+//
+//
+//@o_snap_mainD OBJ_PosSet( OBJ_PosGet() - ( @to_serveur OBJ_HorizonGet() * 1.0))
+//@o_snap_mainG OBJ_PosSet( OBJ_PosGet() + ( @to_serveur OBJ_HorizonGet() * 1.0))
+//
+//@o_snap_mainD OBJ_SightGeneralSet( -@to_serveur OBJ_HorizonGet(), Cv_VerticalVector)
+//@o_snap_mainD OBJ_RotateGlobalZ( Cf_PiBy6)
+//@o_snap_mainG OBJ_SightGeneralSet( @to_serveur OBJ_HorizonGet(), -Cv_VerticalVector)
+//@o_snap_mainG OBJ_RotateGlobalZ( -Cf_PiBy6)
+//MSG_GlobalSetGao( mid_grabbed_LIAISON_ID, o_snap_mainD, GAO4)
+//MSG_GlobalSetGao( mid_grabbed_LIAISON_ID, o_snap_mainG, GAO5)
+//
+//
+//

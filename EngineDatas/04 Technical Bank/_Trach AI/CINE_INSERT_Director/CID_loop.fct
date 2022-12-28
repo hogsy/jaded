@@ -1,0 +1,122 @@
+object	to_canal, to_collision
+int			ti_nb_messages, ti_index
+vector	tv_vector_temp, tv_pos_module
+vector	tv_POS_CIBLE, tv_sight, tv_horizon, tv_pos_camgame, tv_delta_pos
+float		tf_norme_vector
+message	tmsg_sorted, tmsg_out
+int			ti_interruption
+object	to_mainactor
+
+to_mainactor = AI_MainActorGet(i_MainActor)
+
+ti_index = 0
+ti_interruption = 0
+ti_nb_messages = MSG_GetCount()
+
+// Recherche des messages arrivés
+while	(ti_nb_messages)
+{
+	// Recup
+	tmsg_sorted = MSG_Get()
+	ti_index = tmsg_sorted.msg_int1
+	m_message_in [ti_index] = tmsg_sorted
+	i_message = vrai
+	f_time_elapsed = 0
+	f_time = 0
+	i_index_courant = 0
+	if	(OBJ_CapaTest(OBJ_Capa_8))
+	{	ti_interruption = 1	}
+	ti_nb_messages = MSG_GetCount()
+}
+
+////////////////////////////////////////// Il y a déjà un plan INSERT en cours //////////////////////////////////////////////////////////
+if	(i_index_courant)
+{
+	// Passe à la routine de tests & calculs à chaque trame
+	AI_Execute("CID_exec_Calculs_chaquetrame")
+}
+
+// Rien à voir, circulez !
+if	( i_message == 0)
+{	return	}
+
+/////////////////////////////////////////// / DEBUT/FIN de chaque plan / ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+if	(f_time_elapsed >= f_time)
+{
+	to_collision = m_message_in[i_index_courant].msg_sender
+	// Test pour savoir si je suis au bout de la liste de messages et si le message courant contient des données
+	if	( ( ( (to_collision) && (@to_collision OBJ_IsValidGAO()) )
+		&& (i_index_courant <= 4) ) )
+	{
+		//////////////////////// Lecture du nouveau plan, car gao SENDER est valide ////////////////////////////////////////////////////////////////////////////
+		o_acteur_cam1 = m_message_in[i_index_courant].msg_sender
+		if	(m_message_in[i_index_courant].msg_gao1)
+		{	o_acteur_cible1 = m_message_in[i_index_courant].msg_gao1	}
+		else
+		{	o_acteur_cible1 = o_acteur_cam1	}
+		// Cadrage
+		i_TYPE_CADRAGE = m_message_in[i_index_courant].msg_int2
+//		i_TYPE_CADRAGE *= 2	// pour augmenter les plans possibles ?
+		if	(o_acteur_cam1 == get_kong)
+		{	i_TYPE_CADRAGE += 20	}
+		else	if	(@o_acteur_cam1 AI_IsModel("PNJ_Predators/PNJ_Raptor"))	// Remplacer par des tests de structures
+		{	i_TYPE_CADRAGE += 40	}
+
+		i_flags_courants = m_message_in[i_index_courant].msg_int3
+		// Valeurs diverses du plan
+		tv_vector_temp = m_message_in[i_index_courant].msg_vec1
+		// Durée du plan
+		f_time = tv_vector_temp.x
+		f_time_elapsed = 0
+	}
+	else
+	{
+		/////////////////// Plus de SENDER => FIN de la séquence ////////////////////////////////////////////////////////////////////////////////////////////////
+		i_index_courant = 0
+		i_message = faux
+		// Retour à la vitesse normale
+		TIME_SpeedFactorSet(1)
+		// Si j'avais effacé un objet, je le réaffiche
+//		if	(o_objet_collision)
+//		{	@o_objet_collision OBJ_FlagInvisibleSet(faux)	}
+//		o_objet_collision = nobody
+		// Je suis disponible pour une autre séquence
+		OBJ_CapaSet(0, OBJ_Capa_8)
+		@get_camera OBJ_CapaSet(0, OBJ_Capa_0)
+		// Je force la caméra dans le dos de JACK avant le retour au jeu
+		MSG_SetNull(tmsg_out)
+		tmsg_out.msg_id = 1	//CM_Cine_ForceAxis
+		tmsg_out.msg_int1 = vrai
+		tmsg_out.msg_vec1 = Cv_NullVector
+		@get_camera MSG_Send(tmsg_out)
+		i_InCut = faux
+		MSG_Clear()
+		m_message_in[0].msg_sender = nobody
+		m_message_in[1].msg_sender = nobody
+		m_message_in[2].msg_sender = nobody
+		m_message_in[3].msg_sender = nobody
+		m_message_in[4].msg_sender = nobody
+		return
+		//////////////////////////////////////////// FIN de la séquence /////////////////////////////////////////////////////////////////////////////////////////////////
+	}
+	// Si une série de plans est interrompue par une autre, je fais un flash blanc pour signaler la rupture de situation (texture pourrie pour l'instant)
+	if	(ti_interruption)
+	{
+		int	temp_int
+		GFX_Del(17)
+		temp_int = GFX_AddSorted(11, 17)
+		GFX_FlagSet(temp_int, 0, 1)          // active l'effet
+		GFX_FlagSet(temp_int, 2, 1 )          // met le flag materiau transparent a vrai
+		GFX_MaterialSet( temp_int, get_SFX_light_and_smoke, 24)     // met le materiau
+		GFX_Seti( temp_int, 11100, 0x00000000)        // couleur 0
+		GFX_Seti( temp_int, 11101, 0xffffffff)        // couleur 1
+		GFX_Setf( temp_int, 11000, 0.0)         // t0
+		GFX_Setf( temp_int, 11001, 0.0)         // t1
+		GFX_Setf( temp_int, 11002, 0.1)         // t2
+		GFX_Setf( temp_int, 11003, 0.15)         // t3
+		GFX_Setf( temp_int, 11004, 0)         // t4
+		i_InCut = faux
+	}
+	// Passe à la routine de tests & calculs de la première trame
+	AI_Execute("CID_exec_Calculs_trame1")
+}

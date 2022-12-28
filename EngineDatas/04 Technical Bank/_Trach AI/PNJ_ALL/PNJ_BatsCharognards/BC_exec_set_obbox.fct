@@ -1,0 +1,125 @@
+#include "BC_defines.var"
+
+object	to_bone
+
+float		tf_coef
+
+tf_coef = f_obbox_size_coef
+
+// Tête
+@ao_head_bones[0] BV_OBBoxMinSet(cvector(-0.15, -0.3, -0.05) * tf_coef)
+@ao_head_bones[0] BV_OBBoxMaxSet(cvector(0.15, 0.2, 0.4) * tf_coef)
+// Cou
+@ao_head_bones[1] BV_OBBoxMinSet(cvector(-0.209, -0.280, 0.0) * tf_coef)
+@ao_head_bones[1] BV_OBBoxMaxSet(cvector(0.209, 0.238, 0.4) * tf_coef)
+// Bosse
+@ao_head_bones[2] BV_OBBoxMinSet(cvector(-0.4, -0.208, -0.256) * tf_coef)
+@ao_head_bones[2] BV_OBBoxMaxSet(cvector(0.4, 0.208, 0.318) * tf_coef)
+// Torse
+to_bone = ANI_CanalObjectGet(BAT_canal_torse)
+@to_bone BV_OBBoxMinSet(cvector(-0.3, -0.5, 0.040) * tf_coef)
+@to_bone BV_OBBoxMaxSet(cvector(0.3, 0.25, 0.661) * tf_coef)
+// Ventre
+to_bone = ANI_CanalObjectGet(BAT_canal_ventre)
+@to_bone BV_OBBoxMinSet(cvector(-0.3, -0.3, -0.2) * tf_coef)
+@to_bone BV_OBBoxMaxSet(cvector(0.3, 0.3, 0.4) * tf_coef)
+// Bassin
+to_bone = ANI_CanalObjectGet(Anim_Canal_Bassin)
+@to_bone BV_OBBoxMinSet(cvector(-0.246, -0.195, -0.3) * tf_coef)
+@to_bone BV_OBBoxMaxSet(cvector(0.246, 0.195, 0.319) * tf_coef)
+// Cuisse Gauche
+to_bone = ANI_CanalObjectGet(Anim_Canal_CuisseGauche)
+@to_bone BV_OBBoxMinSet(cvector(-0.13, -0.15, -0.110) * tf_coef)
+@to_bone BV_OBBoxMaxSet(cvector(0.13, 0.15, 0.760) * tf_coef)
+// Cuisse Droite
+to_bone = ANI_CanalObjectGet(Anim_Canal_CuisseDroite)
+@to_bone BV_OBBoxMinSet(cvector(-0.13, -0.15, -0.110) * tf_coef)
+@to_bone BV_OBBoxMaxSet(cvector(0.13, 0.15, 0.760) * tf_coef)
+// Avant-Bras Gauche
+to_bone = ANI_CanalObjectGet(Ci_bat_canal_aileG)
+if( i_obbox_on )
+{
+	@to_bone OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_OBBox, none)
+	@to_bone BV_OBBoxMinSet(cvector(0.111, -1.672, -1) * tf_coef)
+	@to_bone BV_OBBoxMaxSet(cvector(0.161, 0.130, 1.5) * tf_coef)
+}
+else
+	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+// Avant-Bras Droit
+to_bone = ANI_CanalObjectGet(Ci_bat_canal_aileD)
+if( i_obbox_on )
+{
+	@to_bone OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_OBBox, none)
+	@to_bone BV_OBBoxMinSet(cvector(-0.185, -1.669, -1) * tf_coef)
+	@to_bone BV_OBBoxMaxSet(cvector(-0.135, 0.116, 1.5) * tf_coef)
+}
+else
+	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+// Jambes
+to_bone = ANI_CanalObjectGet(Anim_Canal_JambeGauche)
+@to_bone BV_OBBoxMinSet(cvector(-0.1, -0.1, -0.2) * tf_coef)
+@to_bone BV_OBBoxMaxSet(cvector(0.1, 0.1, 0.7) * tf_coef)
+to_bone = ANI_CanalObjectGet(Anim_Canal_JambeDroite)
+@to_bone BV_OBBoxMinSet(cvector(-0.1, -0.1, -0.2) * tf_coef)
+@to_bone BV_OBBoxMaxSet(cvector(0.1, 0.1, 0.7) * tf_coef)
+// Pieds
+to_bone = ANI_CanalObjectGet(Anim_Canal_PiedGauche)
+@to_bone BV_OBBoxMinSet(cvector(-0.1, -0.1, -0.2) * tf_coef)
+@to_bone BV_OBBoxMaxSet(cvector(0.1, 0.1, 0.7) * tf_coef)
+to_bone = ANI_CanalObjectGet(Anim_Canal_PiedDroit)
+@to_bone BV_OBBoxMinSet(cvector(-0.1, -0.1, -0.2) * tf_coef)
+@to_bone BV_OBBoxMaxSet(cvector(0.1, 0.1, 0.7) * tf_coef)
+
+
+
+// Désactivation des OBBox des autres canaux
+// Orteils
+to_bone = ANI_CanalObjectGet(Anim_Canal_OrteilGauche)
+@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+to_bone = ANI_CanalObjectGet(Anim_Canal_OrteilDroit)
+@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+// Epaules
+to_bone = ANI_CanalObjectGet(42)
+@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+to_bone = ANI_CanalObjectGet(22)
+@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+// Bras
+to_bone = ANI_CanalObjectGet(BAT_canal_brasG)			// Anim_Canal_BrasGauche
+@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+to_bone = ANI_CanalObjectGet(BAT_canal_brasD)			// Anim_Canal_BrasDroit
+@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+// Coudes
+to_bone = ANI_CanalObjectGet(140)
+@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+to_bone = ANI_CanalObjectGet(120)
+@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+// Griffes 01
+to_bone = ANI_CanalObjectGet(Anim_Canal_DoigtG1)
+@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+to_bone = ANI_CanalObjectGet(Anim_Canal_DoigtD1)
+@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+// Griffes 02
+to_bone = ANI_CanalObjectGet(144)
+@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+to_bone = ANI_CanalObjectGet(124)
+@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+// Machoire
+to_bone = ANI_CanalObjectGet(Anim_Canal_Machoire)
+@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+// Queue
+to_bone = ANI_CanalObjectGet(Anim_Canal_Queue + 0)
+if( to_bone )
+	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+to_bone = ANI_CanalObjectGet(Anim_Canal_Queue + 1)
+if( to_bone )
+	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+to_bone = ANI_CanalObjectGet(Anim_Canal_Queue + 2)
+if( to_bone )
+	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+to_bone = ANI_CanalObjectGet(Anim_Canal_Queue + 3)
+if( to_bone )
+	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+to_bone = ANI_CanalObjectGet(Anim_Canal_Queue + 4)
+if( to_bone )
+	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+

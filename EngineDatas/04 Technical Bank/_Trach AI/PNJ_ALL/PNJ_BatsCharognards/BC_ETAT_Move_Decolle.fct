@@ -1,0 +1,231 @@
+#include "BC_defines.var"
+
+vector		tv_sight
+vector		tv_normale
+vector		tv_temp
+vector		tv_pos
+
+int				ti_orientation
+int				ti_plafond
+
+float			tf_diffZ
+
+
+// SORTIE ETAT =========================================================
+if (i_sort_etat)
+{
+	i_flag_frein = faux
+	i_force_test_inclinaison = vrai
+	f_speed = 0.0
+	i_decolle_near_shoot_flag = faux
+	i_envol_check_jack_Z = faux
+	if( BC_Boss() && i_etat_ancien_ancien == ETAT_Fight_Pause )
+		f_boss_ronde_delai_take_paf = 2.0
+	i_sort_etat = faux
+	return
+}
+
+// ENTREE ETAT ==========================================================
+if (i_etat_courant != ETAT_Move_Decolle )
+{
+	i_etat_ancien_ancien = i_etat_ancien
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Move_Decolle
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	BC_DBG_Trace_Etat(" etat move decolle")
+	
+	if( MSG_GlobalIsValid(mid_grab_charogne) )
+		ACT_ActionSet(ACTION_Vol_Proie)							// le bat transporte une charogne
+	else
+		ACT_ActionSet(i_ACTION_Vol_Standard)						// le bat ne transporte pas de charogne
+	
+	macro_change_tag_size(Cv_NullVector, Cv_NullVector)		// TAG
+
+	// le bat se rend en vol direct au-dessus de lui (mais ne tourne pas la tête)
+	v_cible_pos = Cv_NullVector
+	
+	if( i_envol_check_jack_Z )
+	{
+		i_envol_palier = 0
+		tv_temp = @o_jack OBJ_PosGet()
+		tv_pos = OBJ_PosGet()
+		tv_pos.z = tv_temp.z		// mon Z au niveau de celui de Jack
+		if( i_modele == Ci_MODELE_Bat_Noire )
+			tv_pos.z += 8.0
+		else if( i_modele == Ci_MODELE_Bat_Grise )
+			tv_pos.z += 2.0
+		else
+			tv_pos.z += 1.0
+		tv_temp = tv_pos - OBJ_PosGet()
+//		tv_temp.z = MATH_AbsFloat(tv_temp.z)		// ne pas descendre (même si j'étais + haut que 5m)
+		if( tv_temp.z < 0.0  )
+			tv_temp.z = 0.0		// ne pas monter si c pas la peine, mais ne pas descendre non plus
+		if( MATH_VecNullToler(tv_temp, 0.1) )
+			tv_temp.z = 1.0
+		else
+			MATH_VecSetNorm(tv_temp, MATH_FloatMax(MATH_VecNorm(tv_temp), 1.0))		// monter d'au moins 1m
+		v_decalage = tv_temp
+	}
+	else if( i_envol_palier )
+	{
+		if( i_envol_palier == 1 )
+			v_decalage = cvector(0.0, 0.0, Ci_envol_palier_1st) * OBJ_ZoomGet()
+		else
+			v_decalage = cvector(0.0, 0.0, Ci_envol_palier_autre) * OBJ_ZoomGet()
+	}
+	else
+		v_decalage = cvector(0.0, 0.0, 2.0) * OBJ_ZoomGet()	
+	
+	v_dest_pos = OBJ_PosGet() + v_decalage
+	DBG_RenderVector(OBJ_PosGet(), v_decalage, color_blanc)
+	
+	if( MSG_GlobalIsValid(mid_grab_charogne) )
+	{
+		o_next_wp = WAY_WPNearestOfPos( OBJ_PosGet(), n_net, all, none, Ci_Filter_CBitsFlag)
+	}
+
+	if( i_etat_ancien != ETAT_Fight_Contact )
+		f_speed = 0.0
+	
+	BC_ref_speed_set(Cf_speed_decolle)
+	
+	if( i_etat_ancien == ETAT_Move_Atterrit || MSG_GlobalIsValid(mid_grab_charogne) )
+	{
+		BC_action_frequency_set(Cf_freq_decolle_lent)
+		i_flag_frein = vrai
+	}
+	else
+	{
+		BC_reset_attaque()
+		BC_action_frequency_set(Cf_freq_decolle_rapide)
+		i_flag_frein = faux
+	}
+	
+	DYN_Off()
+	
+	f_rot_blend_coef = 0.0				// coef de rotation du bat vers le réseau (grab transporte)
+	f_time_action = TIME_Get()		// le bat ne se tourne pas tout de suite
+	
+	if( ( i_etat_ancien == ETAT_Move_Atterrit ) && ( i_atterrissage_mode == Ci_atterrissage_nid_pause ) )
+		o_cible_depl = WAY_NetNextWP(n_net, o_wp_pause, 0, 0)
+	else
+		o_cible_depl = BC_Choix_Cible_Deplacement_Calme()				// raz pour le recalculer en décollant
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// COMPORTEMENT ======================================================================
+
+
+if( f_envol_wait )
+{
+	// attente avant de s'envoler
+	f_envol_wait = MATH_FloatMax(0.0, f_envol_wait - TIME_GetDt())
+	f_speed = 0.0
+}
+else
+{
+	f_speed_blend_coef = 0.5
+	AI_Execute("BC_exec_MOVE_vertical")
+	
+	ti_plafond = faux
+	if( COL_CollideType(COL_C_Ground) )
+	{
+		tv_normale = COL_NormalGet(COL_C_Ground)
+		if( tv_normale.z < 0 )
+			ti_plafond = vrai
+	}
+	
+	if( i_flag_depl_fini || ti_plafond )
+	{
+		// décollage terminé
+		if( ! ti_plafond && (i_envol_palier && i_envol_palier != Ci_envol_palier_nb) )
+		{
+			i_envol_palier++
+			i_flag_depl_fini = faux	// new !!!
+			v_dest_pos = OBJ_PosGet() + v_decalage
+			f_envol_wait = Cf_envol_wait_length
+		}
+		else
+		{
+			if( i_flag_cine )
+			{
+				i_flag_cine = faux
+				i_cine_close = vrai
+			}
+			else
+			{
+				// Retour sur le réseau de ronde
+				f_speed = 0.0
+				if( i_etat_ancien == ETAT_Move_Atterrit 
+					&& i_atterrissage_mode == Ci_atterrissage_nid_pause )
+				{
+					o_next_wp = WAY_NetNextWP(n_net, o_wp_pause, 0, 0)
+					o_ronde_next_wp = o_next_wp
+					macro_change_etat("BC_ETAT_Move_Ronde")
+					return
+				}
+				else
+				{
+					AI_Execute("BC_exec_init_attente")
+				}
+			}
+		}
+	}
+}
+
+
+// ORIENTATION ========================================================================
+
+// suivi du regard
+i_flag_neck = faux
+if( i_near_shoot_flag )
+{
+	// regarde dans la direction du perso qui a tiré
+	i_flag_neck = vrai
+	v_look_pos = v_decolle_near_shoot_pos
+}
+else if( MSG_GlobalIsValid(mid_grab_charogne) )
+{
+	// regarde le wp où elle va poser sa charogne
+	i_flag_neck = vrai
+	v_look_pos = @o_next_wp OBJ_PosGet()
+}
+
+// orientation
+if( ! MSG_GlobalIsValid(mid_grab_charogne) )
+{
+	if( TIME_Elapsed(f_time_action, 1.0) )
+		ti_orientation = vrai
+	else
+		ti_orientation = faux
+}
+else
+{
+	if( i_envol_palier > 1 )
+		ti_orientation = vrai
+	else
+		ti_orientation = faux
+}
+
+if( ti_orientation )
+{
+	// la bat n'a pas de proie ou elle a une proie et elle a décollé depuis + d'1 sec -> elle s'oriente vers sa destination
+	if( o_cible_depl )
+		tv_sight = @o_cible_depl OBJ_PosGet() - OBJ_PosGet()
+	else		// pas de réseau
+		tv_sight = v_perchee_init_pos - OBJ_PosGet()   // OBJ_SightGet()
+	
+	f_rot_blend_coef = MATH_FloatBlend(f_rot_blend_coef, 1.0, 1 * TIME_GetDt() )
+	OBJ_BankingGeneralSet( MATH_VecBlendRotate( OBJ_SightGet(), tv_sight, f_rot_blend_coef * TIME_GetDt()), Cv_VerticalVector )
+}
+

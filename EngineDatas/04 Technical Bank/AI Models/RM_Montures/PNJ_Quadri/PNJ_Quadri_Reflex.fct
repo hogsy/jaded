@@ -1,0 +1,14 @@
+f_delay_since_last_ground_col += TIME_GetDt()
+
+f_dash_duration -= MATH_FloatMin(f_dash_duration, TIME_GetDt())
+
+// TRACTION
+if( OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna) )
+{
+	DYN_FlagsSet(DYN_C_OptimizeColDisable, none)	
+
+	DYN_TractionSet(Cv_NullVector)
+//	DYN_TractionSet(v_Traction_Exterieure)
+}
+
+i_flag_jump = faux

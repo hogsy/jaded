@@ -1,0 +1,31 @@
+int			ti_i
+
+vector	tv_start_pos
+vector	tv_dest_pos
+
+o_last_wp = OBJ_Me()
+o_next_wp = WAY_NetNextWP(n_net, o_last_wp, 0, 0)
+
+SFX_NET_Fire_Compute_Network()
+
+v_GFX_last_pos = @o_last_wp OBJ_PosGet()
+v_GFX_next_pos = v_GFX_last_pos
+
+f_link_coef = 0.0
+f_link_length = MATH_VecNorm(@o_next_wp OBJ_PosGet() - @o_last_wp OBJ_PosGet())
+
+f_net_coef = f_net_length
+f_net_computed_length = 0.0
+
+for (ti_i = 0; f_net_computed_length < f_net_coef; ti_i++)
+{
+	f_net_computed_length += f_step_length
+	f_link_coef += f_step_length
+
+	v_GFX_last_pos = v_GFX_next_pos
+	v_GFX_next_pos = SFX_NET_Fire_Position_Get()
+
+	DBG_RenderVector(v_GFX_last_pos, v_GFX_next_pos - v_GFX_last_pos, color_blanc)
+}
+
+return

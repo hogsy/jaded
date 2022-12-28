@@ -1,0 +1,90 @@
+#include "PNJ_Lapin_defines.var"
+
+#define	Cf_dist_Atk_BullRush_TooClose		5.0
+#define	Cf_dist_Atk_BullRush_TooFar		30.0
+
+
+int			ti_i
+int			ti_flag_ok
+int			ti_interet_cpt
+
+float		tf_test_dist
+float		tf_dist
+float		tf_dist2
+float		tf_dot_product
+float		tf_sqr_dist
+float		tf_norm
+float		tf_me_to_target_dist
+
+vector	tv_temp
+vector	tv_sight
+vector	tv_pos
+vector	tv_me_to_target
+
+object	to_target
+
+i_cannot_BullRush = 0
+
+if( ! Atk_BullRush )
+	return
+
+if( o_RideMount_Actor )
+	return		// pas sur une monture !!!
+
+if( i_is_in_water )
+	return		// pas en nage !!!
+
+if( Mode_Compagnon )
+	return				// TEMP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	
+if ( ! i_flag_in_my_territory )
+	return
+
+if (i_perceived_best_actor_index == -1)
+	return
+
+to_target = ao_perceived_actor[i_perceived_best_actor_index]
+if( ! to_target )
+	return
+
+ti_flag_ok = faux
+
+
+tv_temp = @to_target OBJ_PosGet()
+tv_temp -= OBJ_PosGet()
+tf_dist = MATH_VecNorm(tv_temp)
+
+if( tf_dist > Cf_dist_Atk_BullRush_TooClose 
+	&& tf_dist < Cf_dist_Atk_BullRush_TooFar
+	&& MATH_VecDotProduct(OBJ_SightGet(), tv_temp) > 0.0 	// TEST SIGHT
+	&& tv_temp.z > -2.0 && tv_temp.z < 3.5 )		//  TEST Z
+{
+	tv_temp = @to_target OBJ_PosGet()
+	tv_temp -= OBJ_PosGet()
+	tv_temp.z = 0.0
+	if( MATH_VecDotProduct(tv_temp, v_look_virtual_sight) > Cf_Cos60 )
+		ti_flag_ok = vrai
+}
+
+if( ti_flag_ok )
+{
+	if( ! TIME_Elapsed(f_BullRush_last_time, 10.0) )
+	{
+		i_cannot_BullRush = Ci_cannot_BullRush_wait_delai
+		return
+	}
+
+	if( ! Lapin_Atk_Simultannees_IsValid(to_target, ti_interet_cpt) )
+	{
+		i_cannot_BullRush = Ci_cannot_BullRush_wait_atk_prio
+		return		// nb d'interet !!!!
+	}
+}
+
+// MUR ENTRE MOI ET MA CIBLE ?
+if (ti_flag_ok )
+{
+	if( Lapin_Target_Reachable(to_target) )
+		macro_change_etat("Lapin_ETAT_BULLRUSH")
+}
+

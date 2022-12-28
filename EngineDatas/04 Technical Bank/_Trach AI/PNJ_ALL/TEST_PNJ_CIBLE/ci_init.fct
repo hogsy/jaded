@@ -1,0 +1,59 @@
+#include "ci_defines.var"
+
+vector	tv_temp
+
+i_energiecur = i_energie
+v_pos_init = OBJ_PosGet()
+f_zoom_init = OBJ_ZoomGet()
+if (!f_zoom_init) f_zoom_init = 1
+
+// Snap info photo
+OBJ_InfoPhotoParamSet( 0, 0, -1, -1, 0.0, 0.0, 0.0, f_snap_radius * f_zoom_init)
+OBJ_InfoPhotoInfoOffsetSet(v_snap_offset)
+
+BV_MinSet(cvector(-10,-10,-10))
+BV_MaxSet(cvector(10,10,10))
+
+OBJ_FlagsControlSet(faux, OBJ_C_ControlFlag_RayInsensitive)
+
+if (COL_HasZDM())
+	COL_ColSetActivationSet(none, C_bit_zdm_pied)
+
+	
+if (o_1st_wp)
+{
+	n_network = @o_1st_wp WAY_NetOfObj()
+	if (!n_network)
+		DBG_Error("Manque le network")
+}
+
+AI_TrackChange(1,"ci_reflex")
+
+if (OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Generated))
+{
+	if (i_attaque_id>=0 || o_attaque_object) 
+	{
+		if (o_attaque_object)
+			o_attaque = o_attaque_object
+		else
+			o_attaque = @"univ" ao_AllHumains[i_attaque_id]
+
+		if (o_attaque)
+		{
+			COL_UnCollidableAdd( o_attaque )
+
+			if (i_attaque_type == Ci_attaque_jump )
+				AI_TrackCurChange("ci_3_attaque_jump")
+			else if ( (i_attaque_type == Ci_attaque_suivi ) || (i_attaque_type==Ci_attaque_cercle) )
+				AI_TrackCurChange("ci_3_attaque_suivre")
+			else
+				AI_TrackCurChange("ci_3_attaque_droite")
+		}
+	}
+	else if (o_deplacement_simple)
+		AI_TrackCurChange("ci_4_move")
+	else
+		AI_TrackCurChange("ci_5_wait")
+}
+else
+	AI_TrackCurChangeNow("ci_0_trigger")

@@ -1,0 +1,18 @@
+#include "PNJ_Raptor_defines.var"
+
+messageid		tmid_lnk
+
+tmid_lnk = pop
+
+// A l'init le baskstab n' a pas démarré
+LNK_BACKSTAB_Stop(tmid_lnk)
+
+switch(i_etat_courant)
+{
+	case	ETAT_A_TERRE :
+		LNK_BACKSTAB_TypeSet(tmid_lnk, Ci_BACKSTAB_FINISH)
+		break
+		
+	default:
+		LNK_BACKSTAB_TypeSet(tmid_lnk, Ci_BACKSTAB_BEHIND)
+}

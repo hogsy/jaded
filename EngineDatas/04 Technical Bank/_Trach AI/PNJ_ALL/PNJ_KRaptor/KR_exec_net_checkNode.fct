@@ -1,0 +1,41 @@
+#include "KR_defines.var"
+
+int ti_nextLinkChoice
+
+if ( ! o_net_nextNode)
+{
+	return
+}
+	
+if ( KR_NetNodeIsReached( o_net_nextNode, i_net_curLinkMove ) )
+{
+	int ti_tmpLinkMove
+
+	i_net_curNodeAction = KR_NetGetNodeAction(o_net_nextNode)
+	f_net_nodeActionTimer = KR_NetGetNodeActionTime(o_net_nextNode)
+	ti_nextLinkChoice = KR_NetGetNodeLinkChoiceType(o_net_nextNode)
+	
+	o_net_oldNode = o_net_nextNode
+	if (n_net_current_navnet)
+		o_net_nextNode = WAY_NetNextWP(n_net_current_navnet, o_net_nextNode, ti_nextLinkChoice, 0)
+	else
+		o_net_nextNode = nobody
+
+	if (o_net_nextNode)
+		ti_tmpLinkMove = KR_NetGetLinkMoveType(n_net_current_navnet, o_net_oldNode, o_net_nextNode)
+	else
+	{
+		// next network ?
+		if (i_net_curNodeAction == Ci_NETWORK_NODE_ACT_NextNetwork)
+			ti_tmpLinkMove = Ci_NETWORK_LINK_MOVE_DefaultOrLast
+		else
+			ti_tmpLinkMove = -1
+	}
+	
+	if (ti_tmpLinkMove != Ci_NETWORK_LINK_MOVE_DefaultOrLast)	
+		i_net_curLinkMove = ti_tmpLinkMove
+
+	KR_NetSetupLook()
+
+	i_net_justEnteredNode = vrai
+}

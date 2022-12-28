@@ -1,0 +1,49 @@
+#include "RM_Lums_Cage_defines.var"
+
+vector	tv_temp
+
+// SORTIE ===================================================================
+if( i_etat_sortie )
+{
+	AI_CBDel(o_grabbed_actor_cb, CallBack_After_Blend, "RM_Lums_Cage_cb_setpos")
+	o_grabbed_actor_cb = nobody
+	COL_ColSetActivationSet(C_bit_zdm_pied | C_bit_zde_corps, none)
+	i_etat_sortie = faux
+	return
+}
+
+// ENTREE ===================================================================
+if( i_etat_courant != ETAT_Grabbed )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Grabbed
+	if( fct_etat_last_track )
+	{
+		i_etat_sortie = vrai
+		AI_Execute(fct_etat_last_track)
+	}
+	fct_etat_last_track = AI_TrackCurGet()
+	f_etat_duree = 0.0
+	o_grabbed_actor_cb = o_grabbed_actor
+	AI_CBAdd(o_grabbed_actor_cb, CallBack_After_Blend, "RM_Lums_Cage_cb_setpos")
+	f_grabbed_coef = 0.0
+	COL_ColSetActivationSet(none, C_bit_zdm_pied | C_bit_zde_corps)
+}
+else
+{
+	f_etat_duree += TIME_GetDt()
+	f_grabbed_coef += MATH_FloatMin(1.0 - f_grabbed_coef, 5 * TIME_GetDt())
+}
+
+// ANALYSE =================================================================
+o_grabbed_actor = LNK_ServeurGet(Ci_LNK_GRAB_OBJECT, mid_grabbed_LNK_ID, vrai, nofunc, nofunc)
+if( ! o_grabbed_actor )
+{
+	tv_temp = - 1.0 * @o_grabbed_actor_cb OBJ_SightGet()
+	tv_temp += cvector(0,0,10)
+	DYN_SpeedSetVector(tv_temp)
+	macro_change_etat("RM_Lums_Cage_ETAT_Chute")
+}
+
+// COMPORTEMENT ===========================================================
+

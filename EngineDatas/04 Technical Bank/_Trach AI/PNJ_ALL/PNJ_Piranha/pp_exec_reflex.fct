@@ -1,0 +1,64 @@
+#include "PNJ_piranha_defines.var"
+
+int			ti_i
+int			ti_ok
+float		tf_waterZ
+vector	tv_pos
+vector	tv_offset
+vector	tv_temp
+
+
+// CHECK WATER Z
+WaterFunction(OBJ_PosGet(), f_waterZ, 1)
+
+// GFX
+
+// random pos in water
+ti_ok = faux
+while( ! ti_ok )
+{
+	tv_temp = @o_BV_Territoire BV_RandomPosGet(0)
+	if( IsInWater(tv_temp, tf_waterZ) )
+	{
+		tv_temp.z = tf_waterZ	// au niveau de l'eau
+		ti_ok = vrai
+	}
+}
+tv_pos = tv_temp
+
+// random offset
+tv_offset = cvector(MATH_RandFloat(-5.5,5.5),MATH_RandFloat(-5.5,5.5),0)
+//	switch ( i_etat_courant )
+//	{
+//		case ETAT_PP_KILL :
+//		case ETAT_PP_EAT :
+//		case ETAT_PP_MOVE :
+//			tv_offset.z = -0.2
+//			break
+//		case ETAT_PP_WAIT :
+//			tv_offset.z = -0.7
+//			break
+//	}
+tv_pos += tv_offset
+
+// GFX !!!
+Piranha_GFX_Splash(tv_pos)
+
+
+// BACKUP FOR STEF-------------------------------------------------------------
+//GFX_i_pop = MATH_Modulo( GFX_i_pop +1, 2) //11)
+//if( ! GFX_i_pop )
+//{
+//	switch ( i_etat_courant )
+//	{
+//		case ETAT_PP_KILL :
+//		case ETAT_PP_EAT :
+//		case ETAT_PP_MOVE :
+//			SCS_fct_GFX_Splash( OBJ_PosGet() + cvector(MATH_RandFloat(-5.5,5.5),MATH_RandFloat(-5.5,5.5),-0.2))
+//			break
+//		case ETAT_PP_WAIT :
+//			SCS_fct_GFX_Splash( OBJ_PosGet() + cvector(MATH_RandFloat(-5.5,5.5),MATH_RandFloat(-5.5,5.5),-0.7))
+//			break
+//}
+// BACKUP FOR STEF-------------------------------------------------------------
+

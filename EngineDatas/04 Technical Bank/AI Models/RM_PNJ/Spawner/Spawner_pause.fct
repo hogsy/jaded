@@ -1,0 +1,49 @@
+int 		ti_i
+object	to_obj
+
+if ( mi_DieWhenNoEnnemyLeft )
+{
+	// nombre d'ennemi encore actif
+	AI_Execute( "Spawner_countgen" )
+	if (mi_EnemyActive)
+		return
+}
+
+mf_TimeLeft -= TIME_GetDt()
+if (mf_TimeLeft > 0)
+	return
+	
+mf_TimeLeft = 0
+mi_EnemyCount = 0
+mi_WPCur = -1 //MATH_RandInt(0, mi_WPNb )
+
+if (mi_WaveNumber > 0)
+	mi_WaveNumber--
+	
+for (ti_i= 0; ti_i< mi_WPNb; ti_i++)
+	maf_WPTimer[ ti_i ] = 0
+
+	
+if (mi_UseEnemyPerWave)
+{
+	mi_CurWave++
+	if ( mai_EnemyPerWave[ mi_CurWave ] == 0 )
+		mi_CurWave = 0
+	mi_NbBeforeDying = mai_EnemyPerWave[mi_CurWave]
+}
+	
+//if ( mi_ForceHumainStress )
+//{
+////	for(ti_i = 0; ti_i < C_ID_Marin_dernier; ti_i++)
+//	for(ti_i = 0; ti_i < C_ID_Last_Compagnon; ti_i++)
+//	{
+//		to_obj = @"univ" ao_AllHumains[ti_i]
+//		if(!to_obj) continue
+//		@"KingKong/Humain" to_obj i_force_hide = faux
+//	}
+//}
+	
+OBJ_CapaSet( OBJ_Capa_0, 0 )
+AI_TrackCurChangeNow( "Spawner_loop" )
+
+

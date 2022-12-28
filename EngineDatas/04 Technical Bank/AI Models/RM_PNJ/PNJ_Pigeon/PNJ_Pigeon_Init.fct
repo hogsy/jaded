@@ -1,0 +1,39 @@
+
+int			ti_i
+
+vector	tv_pos
+
+object	to_gao
+
+if (o_start_wp == nobody)
+	DBG_Error("pas de network de vol ?!")
+	
+DYN_On()
+DYN_FlagsSet(DYN_C_BasicForces | DYN_C_HorizontalGrounds | DYN_C_NeverDynamicHierarchy | DYN_C_NeverDynamicFather, none)
+DYN_GravitySet(Cv_NormalGravity)
+
+n_travel_network = @o_start_wp WAY_NetOfObj()
+
+for (ti_i=0; ti_i < i_count - 1; ti_i++)
+{
+	tv_pos = OBJ_PosGet()
+	tv_pos.x += MATH_RandFloat(-f_boot_camp_size * 0.7, f_boot_camp_size * 0.7)
+	tv_pos.y += MATH_RandFloat(-f_boot_camp_size * 0.7, f_boot_camp_size * 0.7)
+	to_gao = OBJ_Duplicate(tv_pos)
+	@to_gao Proc_Pigeon_SetFather(OBJ_Me())
+	
+	tv_pos.x = MATH_RandFloat(-1.0, 1.0)
+	tv_pos.y = MATH_RandFloat(-1.0, 1.0)
+	tv_pos.z = 0.0
+	@to_gao OBJ_SightGeneralSet(tv_pos, Cv_VerticalVector)
+}
+
+if (o_father == nobody)
+	v_boot_camp = OBJ_PosGet()
+	
+f_flying_speed_normal = f_flying_speed
+
+AI_CBAdd(OBJ_Me(), CallBack_Client, "Pigeon_callback_Client")
+
+AI_TrackChange(1, "Pigeon_track_reflex")
+AI_TrackCurChangeNow("Pigeon_ETAT_au_sol")

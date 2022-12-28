@@ -1,0 +1,63 @@
+int			ti_flagdead, ti_flagstart
+int			ti_loop
+
+#include "AS_define.var"
+
+//AI_TrackCurChangeNow("AS_attaque")
+
+ti_flagdead = faux
+if ( AI_TriggerIsValid( t_DeadCondition ) )
+{
+	ti_flagdead = call_trigger( t_DeadCondition )
+	if (ti_flagdead)
+	{
+		// Desactive PNJ
+		i_flag_activation_status = faux
+		for (ti_loop = 0 ; ti_loop < i_nbr_PNJ_current ; ti_loop++)
+		{
+			// Desactive Invisible
+			@ao_pnj_list[ti_loop] OBJ_CapaSet(Capa_PNJ_Desactivate, none)
+		}
+		OBJ_CapaSet(Obj_Capa_Switch, none)
+		OBJ_Destroy()
+	}
+}
+
+
+if (!ti_flagdead && AI_TriggerIsValid( t_StartCondition ) )
+{
+	ti_flagstart = call_trigger( t_StartCondition )
+	if (	ti_flagstart )
+	{
+		// On lance les attaques
+		if (!i_flag_activation_status)
+		{
+			// Reactive les perso PNJ
+			i_flag_activation_status = vrai
+			for (ti_loop = 0 ; ti_loop < i_nbr_PNJ_current ; ti_loop++)
+			{
+				// Desactive Invisible
+				@ao_pnj_list[ti_loop] OBJ_FlagInactiveSet(faux)
+				@ao_pnj_list[ti_loop] OBJ_FlagInvisibleSet(faux)
+			}
+			TIME_Wait(0.05)
+		}
+		AI_TrackChange(3, "AS_attaque")
+	}
+	else
+	{
+		if (i_flag_activation_status)
+		{
+			// Desactive PNJ
+			i_flag_activation_status = faux
+			for (ti_loop = 0 ; ti_loop < i_nbr_PNJ_current ; ti_loop++)
+			{
+				// Desactive Invisible
+				@ao_pnj_list[ti_loop] OBJ_CapaSet(Capa_PNJ_Desactivate, none)
+			}
+		}
+		AI_TrackStop(3)
+	}
+}
+
+

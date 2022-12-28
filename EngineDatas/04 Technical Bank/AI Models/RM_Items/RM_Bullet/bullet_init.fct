@@ -1,0 +1,92 @@
+#include "RM_Bullet_defines.var"
+
+object	to_sender
+vector	tv_temp
+
+AI_RunContext(CallBack_After_Rec)
+
+DYN_On()
+DYN_FlagsSet( DYN_C_BasicForces + DYN_C_GlobalFriction, none)
+DYN_FrictionSet(0.0)
+
+COL_CrossableSet(Gmat_RM_Crossable_Default | Gmat_RM_Crossable_Weapons, none)
+
+tv_temp = OBJ_Me().des_vec1
+f_speed = Cf_speed + tv_temp.x
+DYN_SpeedSetVector(OBJ_SightGet() * f_speed)
+
+v_pos_old = OBJ_PosGet()
+
+if (GFX_Halo == -1)
+{
+//	GFX_Halo = GFX_Add(21)                                 	 	// création du halo
+//	GFX_MaterialSet(GFX_Halo, get_SFX_light_and_smoke,0) 	// affectation du matériau
+//	GFX_Seti(GFX_Halo, 21101, i_GFX_color)
+//	GFX_Seti(GFX_Halo, 21100, 4)
+//	GFX_Seti( GFX_Halo, 21104, 3) 		// Number
+//	if( ! f_GFX_taille )
+//		f_GFX_taille = MATH_RandFloat(0.25, 0.75)			// rayon
+//	GFX_Setf(GFX_Halo , 21000, f_GFX_taille)				// rayon du halo
+//	GFX_Seti( GFX_Halo, 21104, 3) 		// Number
+//	GFX_Setf( GFX_Halo, 21006, 1.0)  	// Angle
+//	GFX_Setf(GFX_Halo, 21004, f_GFX_taille * 10.0)  // taille du halo
+	
+	GFX_Halo = GFX_Add(21)
+	GFX_FlagSet(GFX_Halo, 4, 1)
+	GFX_MaterialSet(GFX_Halo , get_SFX_light_and_smoke, 0)	
+	GFX_Seti(GFX_Halo, 21100, 4)								// Flag : 4 => halo visible de dos
+	GFX_Seti(GFX_Halo, 21103, 1)								// 0 : Flare mural / 1 : Flare simple
+	if( ! f_GFX_taille )
+		f_GFX_taille = MATH_RandFloat(0.25, 0.75)			// rayon
+	GFX_Setf(GFX_Halo , 21000, f_GFX_taille)				// rayon du halo
+	GFX_Setf(GFX_Halo, 21002, f_GFX_extraction)			// extraction par rapport au point de génération (vers la cam)
+	GFX_Seti(GFX_Halo, 21101, i_GFX_color)
+
+
+	i_GFX = GFX_Add(1)
+	GFX_FlagSet(i_GFX , 0, 1)
+	GFX_FlagSet(i_GFX, 2, 1)
+	GFX_MaterialSet(i_GFX, get_SFX_light_and_smoke, 73)
+	GFX_Seti(i_GFX, 1100, 0xFFFFFFFF)						// Couleur de la ligne
+	f_GFX_taille = MATH_RandFloat(0.25, 0.75)				// rayon
+	GFX_Setf(i_GFX, 1000, f_GFX_taille * 0.75)				// Epaisseur de la ligne
+}
+
+GFX_Setv(GFX_Halo, 21200, v_pos_old)
+//GFX_Setv(GFX_Halo, 21201, @get_Kamera OBJ_BankingGet())
+
+if (i_GFX == -1)
+{
+//	i_GFX = GFX_Add(1)
+//	GFX_FlagSet(i_GFX , 0, 1)
+//	GFX_FlagSet(i_GFX, 2, 1)
+//	GFX_MaterialSet(i_GFX, get_SFX_light_and_smoke, 59)
+//	GFX_Seti(i_GFX, 1100, i_GFX_color)						// Couleur de la ligne
+//	if( ! f_GFX_taille )
+//		f_GFX_taille = MATH_RandFloat(0.25, 0.75)			// rayon
+//	GFX_Setf(i_GFX, 1000, f_GFX_taille * 0.75)				// Epaisseur de la ligne
+}
+
+GFX_Setv(i_GFX, 1200, OBJ_PosGet() + (OBJ_SightGet() * f_GFX_taille * f_long_GFX))		// Coordonnée de la position 3D du début du faisceau
+GFX_Setv(i_GFX, 1201, OBJ_PosGet())						// Coordonnée de la position 3D de la fin du faisceau
+
+//PROC_SFX_TRAINEE_PAF_GUN(i_GFX_Trainee_paf_gun, OBJ_PosGet())
+
+if( ! i_paf_type )
+	i_paf_type = C_PAF_RM_Gun + C_PAF_RM_Faible
+
+COL_SwapToSpecific(C_zde_fight)
+if( i_paf_type & C_PAF_RM_Fort )
+	COL_ZoneSizeSet(C_zde_fight, cvector(0.6,0.6,0.6))
+else
+	COL_ZoneSizeSet(C_zde_fight, cvector(0.4,0.4,0.4))
+
+// snd
+f_snd_dist_min *= f_snd_dist_min
+f_snd_dist_max *= f_snd_dist_max
+to_sender = OBJ_Me().des_object1
+if( to_sender == AI_MainActorGet(C_ID_Rayman) )
+	i_snd_near_rayman_done = vrai
+
+AI_TrackCurChange("bullet_go")		// not now !!!
+

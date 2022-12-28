@@ -1,0 +1,14 @@
+vector	v, sight, x, y
+
+if( !COL_CollideType(COL_C_Ground) )
+	return
+v = COL_NormalGet(COL_C_Ground)
+
+y = OBJ_SightGet()
+x = OBJ_HorizonGet()
+
+sight = MATH_VecCrossProduct(x, v)
+sight.x = y.x
+sight.y = y.y
+
+OBJ_SightGeneralSet(  sight, v )     

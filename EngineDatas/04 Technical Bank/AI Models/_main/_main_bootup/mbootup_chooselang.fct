@@ -1,0 +1,156 @@
+vector	tv_Pos
+vector	tv_Joy
+
+float		H
+
+int			ti_Texte, ti_Line, ti_title
+int 		ti_SaveCur, ti_Col
+float		tf_Val, tf_CenterY
+
+
+#define mainbootup_TXG					0x4902e423
+#define mainbootup_Title					0x4902E4A7
+#define mainbootup_LangName			0x4902E4C5
+
+
+#define	mainbootup_Color_Title			0xFFFFFFFF
+#define 	mainbootup_Color_Sel			0xFFFFFFFF
+#define 	mainbootup_Color_NotSel		0xFF606060
+
+if (lang_nb == 0)
+{
+	OBJ_TextSet( 0, "!! NO LANGAGE !!" )
+	mainbootup_CreateText_End( 0, cvector( 0.5, 0.5, 0), 2.0, 5, -1, 0xFF0000FF, 0, 1 )
+	return
+}
+
+// special pour Gamecube : pas de titre
+ti_title = 1
+tf_CenterY = 0.65
+if (AI_GetCurSystem() == 2 ) 
+{
+	tf_CenterY = 0.5
+	ti_title = 0
+}
+	
+// INIT
+if ( lang_cur == -1)
+{
+	lang_cur = 0
+	mf_Scroll = 0
+	
+	lang_screen_state = 0
+	mf_Timer = 0.5
+	mf_Timer2 = 0.5
+	if (lang_screen)
+	{
+		@lang_screen GFX_AddSorted( 17, INTDISPLAY_MENUBG )
+		GFX_FlagSet( INTDISPLAY_MENUBG, 0, 1)
+		GFX_FlagSet( INTDISPLAY_MENUBG, 2, 1)
+		@lang_screen OBJ_SightGeneralSet( cvector(1, 0, 0), cvector( 0, 1, 0) )
+		@lang_screen OBJ_ZoomSet( 1.0 )
+		@lang_screen OBJ_PosSet( cvector( 0, -1, 0 ) )
+		@lang_screen OBJ_FlagInvisibleSet( 0 )
+		@lang_screen MAT_ConstantSet( 0, 0)
+//		for (ti_Line = 0; ti_Line < 2; ti_Line++)
+//			@lang_screen MAT_MT_EnableLevel(1, ti_Line,0)
+	}
+}
+
+if ( mf_Scroll )
+{
+	mf_Scroll *= 0.9
+	if ( MATH_AbsFloat( mf_Scroll ) < 0.001)
+		mf_Scroll = 0
+}
+
+mf_Timer -= TIME_GetDt()
+mainbootup_DoLangScreen()
+
+if (mf_Timer2 > 0)
+{
+	mf_Timer2 -= TIME_GetDt()
+	if (mf_Timer2 < 0)
+		mf_Timer2 = 0
+	tv_Pos = cvector( 0.85, 0.38, 0)
+	ti_Col = COLOR_Blend( 0, 0xFFFFFFFF, (1 - (mf_Timer2 * 2) ) )
+	if (ti_title)
+	{
+		mainbootup_SetText( 0, mainbootup_TXG, mainbootup_Title + lang_default, tv_Pos,  0.0, 2, -1, ti_Col, 0, 1 )
+		OBJ_TextSet( 1, "  \P16\L\b1315\AM\P0\" )
+		mainbootup_CreateText_End( 1, tv_Pos,  0.0, 0, -1, ti_Col, 0, 0 )
+	}
+	OBJ_TextSet( 2, "  \P16\0" )
+	mainbootup_CreateText_End( 2, tv_Pos,  0.0, 4, -1, ti_Col, 0, 0 )
+	OBJ_TextSet( 3, "\P13\+" )
+	mainbootup_CreateText_End( 3, tv_Pos - cvector(0,0.03,0) ,  0.0, 6, -1, ti_Col, 0, 0 )
+
+}
+
+for (ti_Line = 4; ti_Line < 13; ti_Line++)
+{
+	OBJ_TextSet( ti_Line, "")
+}
+	
+tv_Pos = cvector( 0.85, 0.8, 0 )
+ti_Texte = 4
+for ( ti_Line = 0; ti_Line < lang_nb; ti_Line++ )
+{
+	tv_Pos.y = (ti_Line - lang_cur) * 0.07
+	tv_Pos.y += mf_Scroll
+	
+	if ( MATH_AbsFloat( tv_Pos.y ) > 0.3) continue
+	if ( MATH_AbsFloat( tv_Pos.y ) > 0.05) 
+	{
+		tf_Val = (0.3 - MATH_AbsFloat( tv_Pos.y )) * 4 
+		ti_Col = COLOR_Blend( 0, 0xFFA5918A, tf_Val * tf_Val )
+	}
+	else	
+	{
+		tf_Val = (0.05 - MATH_AbsFloat( tv_Pos.y )) * 20
+		ti_Col = COLOR_Blend( 0xFFA5918A, 0xFFFFFFFF, tf_Val )
+	}
+	ti_Col = COLOR_Blend( 0, ti_Col, (1 - (mf_Timer2 * 2) ) )
+	
+	tv_Pos.y += tf_CenterY
+	
+	if (ti_Line == lang_cur )
+	{
+		OBJ_TextPivotSet( 2, tv_Pos )
+		OBJ_TextPivotSet( 3, tv_Pos + cvector(0,0.03,0) )
+	}
+
+
+	mainbootup_SetText( ti_Texte, mainbootup_TXG, mainbootup_LangName + lang_index[ ti_Line ], tv_Pos, 0.0, 6, -1, ti_Col, 0, 1)
+	ti_Texte++
+}
+
+if (mf_Timer2 > 0)
+	return
+
+
+
+tv_Joy = IO_JoyGetMove()
+mainbootup_UpdateJoy( 0, -tv_Joy.y, IO_ButtonPressed( joy_button_Down ) )
+mainbootup_UpdateJoy( 1,  tv_Joy.y, IO_ButtonPressed( joy_button_Up ) )
+
+ti_SaveCur = lang_cur
+mainbootup_UpdateCur_Vertical( lang_nb, 0 )
+if (lang_cur != ti_SaveCur )
+{
+//	mainbootup_Text_ChangeColor( 1 + ti_SaveCur, mainbootup_Color_Sel, mainbootup_Color_NotSel, 0.25, 0.0 )
+//	mainbootup_Text_ChangeColor( 1 + lang_cur, mainbootup_Color_NotSel, mainbootup_Color_Sel, 0.25, 0.0 )
+	mf_Scroll = 0.07 * ( lang_cur - ti_SaveCur )
+	SND_RequestPlay( 10 )
+}
+
+if (IO_ButtonJustPressed( joy_button_A ))
+{
+	mainbootup_Text_FadeOutMulti(0, lang_nb + 1, 0.2 )
+	mf_Timer = 0.3
+	
+	SND_RequestPlay( 11 )
+	mainbootup_SetLangId( lang_index[ lang_cur ] )
+	AI_TrackCurChangeNow( "mbootup_memcard" )
+	return
+}

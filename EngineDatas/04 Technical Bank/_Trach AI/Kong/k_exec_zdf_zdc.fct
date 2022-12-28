@@ -1,0 +1,177 @@
+#include "k_define.var"
+
+// calcul du sens du paf
+int				ti_action
+int				ti_flag_tue_grab_torse_actor
+int				ti_zde_qui_paffe
+
+vector		tv_paf_sight
+vector		tv_horizon
+vector		tv_sens
+vector		tv_zde_old_pos
+
+object		to_hand
+object		to_main
+object		to_gao
+
+
+i_test_zdf_zdc_done = vrai
+ti_flag_tue_grab_torse_actor = faux
+
+// sens des épaules
+//DBG_RenderVector(v_pos_centre_epaules, v_look_sens_epaule * 5, color_vert)
+tv_paf_sight = MATH_VecCrossProduct(v_look_sens_epaule, Cv_VerticalVector)
+MATH_VecSetHorzNormalize(tv_paf_sight)
+if( MATH_VecDotProduct(tv_paf_sight, OBJ_SightGet()) < 0 )
+	tv_paf_sight *= -1
+//DBG_RenderVector(v_pos_centre_epaules, tv_paf_sight * 5, color_cyan)
+
+tv_horizon = OBJ_HorizonGet()
+MATH_VecSetHorzNormalize(tv_horizon)
+
+ti_action = ACT_ActionGet()
+switch(ti_action)
+{
+
+	case Ci_Kanim_Colonne_FrappeD :
+	case Ci_Kanim_Colonne_FrappeG :
+	case Ci_Kanim_frappeDr :							// Frappe sur le côté droit
+		to_main = ANI_CanalObjectGet( Anim_Canal_MainGauche)
+		tv_horizon = @to_main OBJ_PosGet()- OBJ_PosGet()
+		MATH_VecSetHorzNormalize(tv_horizon)		
+		tv_sens = tv_horizon
+		if( i_Grab_Torse_Main == 0 && ! i_Grab_Torse_ANN && ao_CL_GRABKONG[i_Grab_Torse_Main] )
+			ti_flag_tue_grab_torse_actor = vrai
+		break
+	case Ci_Kanim_frappeGa :						// Frappe sur le côté gauche
+		to_main = ANI_CanalObjectGet( Anim_Canal_MainDroite)
+		tv_horizon = @to_main OBJ_PosGet() - OBJ_PosGet()
+		MATH_VecSetHorzNormalize(tv_horizon)		
+		tv_sens = tv_horizon
+		if( i_Grab_Torse_Main == 1 && ! i_Grab_Torse_ANN && ao_CL_GRABKONG[i_Grab_Torse_Main] )
+			ti_flag_tue_grab_torse_actor = vrai
+		break
+	case Ci_Kanim_coup_C_2 :				// Bras droit frappe vers la droite
+
+		to_hand = ANI_CanalObjectGet( Anim_Canal_MainGauche)
+		tv_sens = @to_hand OBJ_PosGet() - OBJ_PosGet()
+		tv_sens.z = 0.0
+		if ( !MATH_VecNullEpsilon( tv_sens))
+		{
+			MATH_VecSetNormalize(tv_sens)
+			tv_sens = MATH_VecRotate( tv_sens, Cv_VerticalVector, Cf_PiBy2)			
+		}
+		else
+			tv_sens = MATH_VecBlendRotate(tv_paf_sight, - tv_horizon, 0.5)
+
+		tv_sens = MATH_VecInCone( tv_sens, OBJ_SightGet()+ OBJ_HorizonGet(), Cf_PiBy4, 0)
+//		Proc_KK_SFX_Impact_Mur()
+		if( i_Grab_Torse_Main == 1 && ! i_Grab_Torse_ANN && ao_CL_GRABKONG[i_Grab_Torse_Main] )
+			ti_flag_tue_grab_torse_actor = vrai
+		break
+	case Ci_Kanim_coup_C_1 :			// Bras droit frappe vers la gauche rapidemetn(nvlle anim)
+		to_hand = ANI_CanalObjectGet( Anim_Canal_MainGauche)
+		tv_sens = @to_hand OBJ_PosGet() - OBJ_PosGet()
+		tv_sens.z = 0.0
+		if ( !MATH_VecNullEpsilon( tv_sens))
+		{
+			MATH_VecSetNormalize(tv_sens)
+			tv_sens = MATH_VecRotate( tv_sens, Cv_VerticalVector, -Cf_PiBy2)			
+		}
+		else
+			tv_sens = MATH_VecBlendRotate(tv_paf_sight, tv_horizon, 0.5)
+		tv_sens = MATH_VecInCone( tv_sens, OBJ_SightGet(), Cf_PiBy2, 0)
+//		Proc_KK_SFX_Impact_Mur()
+		if( i_Grab_Torse_Main == 0 && ! i_Grab_Torse_ANN && ao_CL_GRABKONG[i_Grab_Torse_Main] )
+			ti_flag_tue_grab_torse_actor = vrai
+		break
+	case Ci_Kanim_coup_T_3 :				// Frappe a 2m devant
+		tv_sens = tv_paf_sight
+		Proc_KK_Impact_Sol2()
+		if( i_Grab_Torse_Main == 0 && ! i_Grab_Torse_ANN && ao_CL_GRABKONG[i_Grab_Torse_Main] )
+			ti_flag_tue_grab_torse_actor = vrai
+		break
+	
+	case Ci_Kanim_Swing_Hor_Balance :
+//	case Ci_Kanim_Swing_Hor_Balance_DemiT :
+		tv_sens = OBJ_SightGet()
+		break
+	case Ci_Kanim_saute_chutte :
+	case Ci_Kanim_saute_accroche :
+	case Ci_Kanim_saute_cycl :
+	case Ci_Kanim_coup_bas_cycl :				// Jump sur ennemi
+		tv_sens = tv_paf_sight
+		break
+	case Ci_Kanim_souche_frappe_droite :		// Tronc d'arbre porté sur la droite, frappe vers la gauche
+		tv_sens = MATH_VecBlendRotate(tv_paf_sight, tv_horizon, 0.5)
+		break
+	case Ci_Kanim_souche_frappe_gauche :		// Tronc d'arbre porté sur la gauche, frappe vers la droite
+		tv_sens = MATH_VecBlendRotate(tv_paf_sight, - tv_horizon, 0.5)
+		break
+	case Ci_Kanim_souche_frappe_face :			// Coup de face avec le tronc d'arbre
+		tv_sens = tv_paf_sight
+		LNK_GrabKong_NbCoupSet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab], LNK_GrabKong_NbCoupGet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab]) + 1)
+		break
+	case Ci_Kanim_Paf_Face :
+	case Ci_Kanim_Paf_face_D :
+	case Ci_Kanim_Paf_face_G :
+	case Ci_Kanim_Paf_Fort_Face :
+	case Ci_Kanim_Paf_Fort_face_D :
+	case Ci_Kanim_Paf_Fort_face_G :
+	case Ci_Kanim_Paf_Dos :
+	case Ci_Kanim_Paf_Fort_Dos :
+		if( o_paf_actor_backup )
+			tv_sens = OBJ_PosGet() - @o_paf_actor_backup OBJ_PosGet()
+		else
+			tv_sens = OBJ_SightGet()		// ne devrait jamais arriver
+		break
+	default: 
+		// Autre coup, non traité... ?
+//		DBG_BreakPoint()
+//		to_tete = ANI_CanalObjectGet(Anim_Canal_Tete)
+//		if ( f_joy_norm)
+//			tv_sens = v_joy_sight
+//		else if ( ( i_frappe_coup == 1 ) || ( i_frappe_coup == 2 ) )
+//			tv_sens = MATH_VecNormalize( ( @to_tete OBJ_BankingGet() + @to_tete OBJ_HorizonGet()) + Cv_VerticalVector)
+//		else
+//			tv_sens = MATH_VecNormalize( (@to_tete OBJ_BankingGet() - @to_tete OBJ_HorizonGet())  + Cv_VerticalVector)
+		tv_sens = tv_paf_sight
+		break
+}
+
+MATH_VecSetHorzNormalize(tv_sens)
+DBG_RenderVector(v_pos_centre_epaules, tv_sens * 5, color_rouge)
+
+ti_zde_qui_paffe = C_zde_fight
+if ( i_GrabKong_Souche )
+{
+	to_gao = ao_CL_GRABKONG[i_GrabKong_MainActionGrab]
+	if( to_gao )
+	{
+		if( @to_gao AI_IsModel(get_PNJ_Scolo_Path) )
+			ti_zde_qui_paffe = C_zde_corps
+	}
+}
+
+//Str_DisplayTextOnce("paffe", cvector(0.5,0.5,0))
+
+if( ACT_ActionGet() == Ci_Kanim_Dash_Attack )
+	COL_ZoneSizeSet(C_zde_fight, cvector(4.0, 4.0, 4.0))		// booster la taille du dash attack
+KONG_Test_ZDE_ZDE(ti_zde_qui_paffe, C_zde_tete, tv_sens, ti_flag_tue_grab_torse_actor, faux)
+KONG_Test_ZDE_ZDE(ti_zde_qui_paffe, C_zde_corps, tv_sens, ti_flag_tue_grab_torse_actor, faux)
+if( ACT_ActionGet() == Ci_Kanim_Dash_Attack )
+	COL_ZoneSizeSet(C_zde_fight, Cf_ZDE_SizeFight)
+
+// COUP Combo3 : repousse les ennemis autour qui n'ont pas pris le paf ecrase
+if( ACT_ActionGet() == Ci_Kanim_coup_T_3 )
+{
+	tv_zde_old_pos = COL_ZonePosGet(C_zde_fight)
+	tv_zde_old_pos -= OBJ_PosGet()
+	tv_zde_old_pos = MATH_VecGlobalToLocal(tv_zde_old_pos)
+	COL_ZonePosSet(C_zde_fight, cvector( 0.0, - 5.0, 3.0))
+	COL_ZoneSizeSet(C_zde_fight, cvector(5.0, 5.0, 5.0))
+	KONG_Test_ZDE_ZDE(C_zde_fight, C_zde_corps, Cv_NullVector, faux, vrai)
+	COL_ZonePosSet(C_zde_fight, tv_zde_old_pos)
+	COL_ZoneSizeSet(C_zde_fight, Cf_ZDE_SizeFight)
+}
+

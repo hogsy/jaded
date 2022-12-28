@@ -1,0 +1,48 @@
+int grid_capa
+
+grid_capa = GRID_CapaGet( compute_v_A ) & tag_grid_terrain
+if (grid_capa == Ci_sol_eau)
+	compute_i_res = 1
+else
+	compute_i_res = 0
+	
+
+//int			i_loop
+//vector	vAP, vBP, vAB
+//float		dot1, dot2
+
+
+//compute_v_B = compute_v_A
+//compute_v_B.x = home_f_xmax + 1
+//
+//IsInWater_retry:
+//
+//compute_i_nb = 0
+//for (i_loop = 0; i_loop  < home_net_nb; i_loop++)
+//{
+//	vAP = compute_v_A - home_link_start[ i_loop ]
+//	vBP = compute_v_B - home_link_start[ i_loop ]
+//	
+//	dot1 = MATH_VecDotProduct( vAP, home_link_norm[ i_loop ] )
+//	dot2 = MATH_VecDotProduct( vBP, home_link_norm[ i_loop ] )
+//	
+//	if ( (dot1 < 0 && dot2 >= 0) || (dot1 >= 0 && dot2 < 0) )
+//	{
+//		vAB = compute_v_B - compute_v_A
+//		
+//		dot1 = (home_link_vector[ i_loop ].y * vAB.x) - (home_link_vector[ i_loop ].x * vAB.y)
+//		if (dot1 != 0)
+//		{
+//			dot1 = (vAB.x * vAP.y) - (vAB.y * vAP.x) / dot1
+//			if ( ( dot1 == 0 ) || (dot1 == 1) )
+//			{
+//				compute_v_B.y += 0.1
+//				goto IsInWater_retry
+//			}
+//			if ( ( dot1 > 0 ) && (dot1 < 1) )
+//				compute_i_nb++
+//		}
+//	}
+//}
+//
+//compute_i_res = compute_i_nb & 1

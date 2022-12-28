@@ -1,0 +1,25 @@
+object	to_obj
+float		tf_speed
+vector	tv_temp
+
+AI_RunContext(CTX_AfterBlend)
+
+to_obj = AI_MainActorGet(C_ID_Joueur)
+if(@to_obj COL_Pivot_BVCollide(OBJ_Me()))
+{
+	tv_temp = OBJ_PosGet() - @to_obj OBJ_PosGet()
+	if(!MATH_VecNullEpsilon(tv_temp))
+	{
+		MATH_VecSetNormalize(tv_temp)
+		if(MATH_VecDotProduct(@to_obj OBJ_SightGet(), tv_temp) > 0)
+		{
+			tv_temp = OBJ_PosGet() - @get_camera OBJ_PosGet()
+			MATH_VecSetNormalize(tv_temp)
+			tf_speed = @get_Humain_path to_obj f_real_speed
+			tv_temp = MATH_VecBlendRotate(@get_camera OBJ_SightGet(), tv_temp, tf_speed * TIME_GetDt())
+			tv_temp.x = @get_camera OBJ_SightGet().x
+			tv_temp.y = @get_camera OBJ_SightGet().y
+			@get_camera OBJ_SightGeneralSet(tv_temp, @get_camera OBJ_BankingGet())
+		}
+	}
+}

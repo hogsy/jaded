@@ -1,0 +1,156 @@
+#include "KAnn_defines.var"
+
+int			ti_i
+int			ti_numero 
+int			ti_index
+int			ti_context
+int			ti_anim
+int			ti_grab_type
+
+float		tf_liferatio
+
+vector	tv_new_sight
+vector	tv_dest_pos
+vector	tv_me_to_dest
+
+object	to_bone
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	DYN_GravitySet( Cv_NormalGravity)
+	DYN_FrictionVectorSet(cvector(1.0, 1.0, 0.0))
+
+	COL_ColMapActivationSet(all, none)
+	COL_UnCollidableDel(o_grabbed_bat_actor)
+		
+	//if( ! ao_SRV[Ci_LNK_GRAB_TRANSPORTE] )
+		AI_CBDel(o_grabbed_bat_actor, CallBack_After_Blend, "KAnn_CALLBACK_set_pos")		// uniquement si le grab est coupé (pas en paf par exemple)
+	
+	o_grabbed_bat_actor = nobody
+	KAnn_Death_Timer_Reset()
+	
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_grabbed_bat)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_grabbed_bat
+
+	//----( pour fred : capa 0 à 1 indique pendant une trame que le perso s'est fait taper ou grabber )----
+	OBJ_CapaSet( OBJ_Capa_0, 0 )
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	// Envoie un message a SUN
+	EVENT_AddEventFilmation( C_EVENT_Filmation_filter_HumainGnaked, OBJ_Me(), ao_SRV[Ci_LNK_GRAB_RAPTOR], Cf_EVENT_Duree_1Trame)
+
+	for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+		ai_SRV_ENABLE[ti_i] = faux
+
+	ai_SRV_ENABLE[Ci_LNK_GRAB_TRANSPORTE] = vrai
+	ai_SRV_ENABLE[Ci_LNK_INTERACTION] = vrai
+
+	o_grabbed_bat_actor = ao_SRV[Ci_LNK_GRAB_TRANSPORTE]
+	COL_UnCollidableAdd(o_grabbed_bat_actor)	
+
+	AI_CBAdd(o_grabbed_bat_actor, CallBack_After_Blend, "KAnn_CALLBACK_set_pos")
+	
+	DYN_GravitySet( Cv_NullVector)		
+	DYN_SpeedSetVector( Cv_NullVector)
+	DYN_TractionSet( Cv_NullVector)
+	DYN_FrictionVectorSet(cvector(0.5, 0.5, 0.0))
+	
+	COL_ColMapActivationSet(none, all)
+	
+	f_time_start_etat = 0.0
+	
+	to_bone = @o_grabbed_bat_actor ANI_CanalObjectGet(Anim_Canal_OrteilDroit)
+	KAnn_Death_Timer_Reset()
+	v_grabbed_old_pos = OBJ_PosGet()
+	if( f_total_time < 1.0 )
+	{
+		f_pos_blend_coef = 1.0
+		i_grabbed_bat_afterblend_type = Ci_GrabTransporte_Type_Vole
+	}
+	else
+	{
+		f_pos_blend_coef = 0.0
+		i_grabbed_bat_afterblend_type = 0
+	}
+	
+	KAnn_Set_Safe_Wp(nobody)
+
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+	f_pos_blend_coef = MATH_FloatBlend(f_pos_blend_coef, 1.0, 7.0 * TIME_GetDt())
+}
+
+// ANALYSE  =====================================================================
+
+// SERVEURS ===================================================================
+AI_Execute("KAnn_exec_serveur_get")
+// INTERRUPTION BRUTALE DE LA LIAISON
+if (! ao_SRV[Ci_LNK_GRAB_TRANSPORTE])
+	macro_change_etat("KAnn_ETAT_follow_network")
+
+// CHECK FOR PAFS
+AI_Execute("KAnn_exec_CHECK_paf")
+if (o_paf_sender) 
+{
+	o_tumatuer = o_paf_sender		// rend tous les autres invisibles !!!
+	i_life_state = Life_ETAT_Mort
+//	i_grabbed_bat_death = vrai
+	macro_change_etat("KAnn_ETAT_paf")
+}
+
+
+// COMPORTEMENT ===============================================================
+
+// ACTION A JOUER
+ti_grab_type = LNK_GrabTransporte_TypeGet(amid_SRV_LIAISON_ID[Ci_LNK_GRAB_TRANSPORTE])
+switch (ti_grab_type)
+{
+	case Ci_GrabTransporte_Type_Vole :
+//		Str_DisplayTextOnce("En Vol", cvector(0.5,0.5,0))
+		if( ACT_ActionGet() != Ann_Grabbed_Bat_Vol )
+		{
+			ACT_ActionSet(Ann_Grabbed_Bat_Vol)
+			KAnn_Death_Timer_Reset()
+		}
+		break
+		
+	case Ci_GrabTransporte_Type_Atterrit :
+//		Str_DisplayTextOnce("Atterrit", cvector(0.5,0.5,0))
+		ACT_ActionSet(Ann_Grabbed_Bat_Attente)
+		break
+
+	case Ci_GrabTransporte_Type_Pose :
+//		Str_DisplayTextOnce("Posée", cvector(0.5,0.5,0))
+		AI_Execute("KAnn_exec_action_interaction_grabbed_bigbat")	
+		break		
+		
+	default:
+		Str_DisplayTextOnce("???", cvector(0.5,0.5,0))
+		break
+}
+
+f_bigbat_grabbed_scream_delay -= MATH_FloatMin(f_bigbat_grabbed_scream_delay, TIME_GetDt())
+if( ! f_bigbat_grabbed_scream_delay )
+{
+//	SPEECH_M_RqHuman	(C_ID_Ann, GeneKAnn_C_danger_grabbed)
+	f_bigbat_grabbed_scream_delay = MATH_RandFloat(8.0, 15.0)
+}
+

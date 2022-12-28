@@ -1,0 +1,482 @@
+#include "PNJ_Scorpion_defines.var"
+
+int					ti_i
+int					ti_rank
+int					ti_index
+int					ti_paf_canal
+int					ti_perceived_status
+int					ti_frame_nb
+int					ti_current_frame
+int					ti_flag_ok
+
+float				tf_puissance
+float				tf_puissance_mul
+
+vector			tv_speed
+vector			tv_bras_de_levier
+
+object			EVT_Pere
+object			EVT_Target
+object			to_bidoche
+
+message		tm_msg_filter
+
+messageid		tmid_paf_event
+messageid		tmid_vision_event
+messageid		tmid_invalid_event
+
+if (i_flag_paf_check_done)
+	return
+
+i_flag_paf_check_done = vrai
+
+MSG_GlobalSetInvalid(tmid_invalid_event)
+
+MSG_SetNull(tm_msg_filter)
+tm_msg_filter.msg_gao1 = OBJ_Me()
+ti_rank = -1
+
+i_flag_paf_important = faux
+i_flag_paf_moyen = faux
+i_flag_paf_faible = faux
+
+for (	tmid_paf_event = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tm_msg_filter);
+		MSG_GlobalIsValid(tmid_paf_event);
+		tmid_paf_event = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tm_msg_filter)	)
+{
+	i_paf_type = EVENT_PafTypeGet(tmid_paf_event)
+	EVT_Pere = EVENT_PereGet(tmid_paf_event)
+	tf_puissance = EVENT_PafPuisGet(tmid_paf_event)
+	if( EVT_Pere == AI_MainActorGet(C_ID_Kong) )
+		tf_puissance *= 5.0
+	v_paf_dir = EVENT_PafDirGet(tmid_paf_event)
+
+	if (i_paf_type == C_PAF_KK_FoodChain)
+	{
+		f_point_de_viande -= MATH_FloatMin(f_point_de_viande, tf_puissance)
+
+		if (TIME_Elapsed(f_quat_last_time, 0.5))
+			af_quat_coef[i_quat_index] = 0.4
+		else
+			af_quat_coef[i_quat_index] = 0.25
+
+		f_quat_last_time = TIME_Get()
+		af_quat_time[i_quat_index] = f_quat_last_time
+
+		av_quat_start[i_quat_index] = EVENT_PafPositionGet(tmid_paf_event)
+//		av_quat_start[i_quat_index] -= @o_queue_2 OBJ_PosGet()
+		av_quat_start[i_quat_index] -= @o_bassin OBJ_PosGet()
+		MATH_VecSetNormalize(av_quat_start[i_quat_index])
+
+		av_quat_end[i_quat_index] = MATH_VecCrossProduct(v_paf_dir, av_quat_start[i_quat_index])
+		av_quat_end[i_quat_index] = MATH_VecCrossProduct(av_quat_start[i_quat_index], av_quat_end[i_quat_index])
+
+		MATH_VecSetHorzNormalize(av_quat_end[i_quat_index])
+
+		i_quat_index = MATH_Modulo(i_quat_index + 1, 10)
+
+		continue
+	}
+
+	if (i_paf_type & C_PAF_KK_Fire)
+		tf_puissance = 1.0
+
+	if (i_paf_type & C_PAF_KK_Repousse)
+	{
+		if (i_etat_courant == ETAT_GRAB)
+		{	
+			i_flag_grab_hit_cpt++
+	
+			if (i_flag_grab_hit_cpt < 3 && ! (i_paf_type & C_PAF_KK_Fire))
+			{
+				if (TIME_Elapsed(f_time_last_paf_sound, 0.1))
+				{
+					f_time_last_paf_sound = TIME_Get()
+					
+					SND_RequestPlay(SND_PAF)
+				}
+	
+				continue
+			}
+		}
+		else if (i_paf_type & C_PAF_KK_Jacks_Punch)
+		{
+			continue
+		}
+
+		tf_puissance = 2.0
+		
+		// BIDOCHE ===============================================================
+		ti_flag_ok = vrai
+	
+		to_bidoche = @get_global o_bidoche_scorpion
+		if ( ! to_bidoche)
+			ti_flag_ok = faux
+		else if (i_modele != Ci_Modele_Petit)
+			ti_flag_ok = faux
+		else if (EVT_Pere != o_main_actor)
+			ti_flag_ok = faux
+ 		else if (@get_global o_bidoche_gao)
+			ti_flag_ok = faux
+ 		else if (@"univ" i_jack_cpt_plug >= PLUG_CASSE)
+			ti_flag_ok = faux
+ 		
+		if (ti_flag_ok)
+ 		{
+			to_bidoche = @to_bidoche OBJ_Duplicate(OBJ_PosGet())
+			@to_bidoche OBJ_BankingGeneralSet(OBJ_SightGet(), OBJ_BankingGet())
+			@to_bidoche OBJ_ZoomSet(OBJ_ZoomGet() * 5.0)
+			@get_global o_bidoche_gao = to_bidoche
+			@get_PNJ_Bidoche_path to_bidoche i_modules_pafed_index = MATH_RandInt(1, 4)
+			@get_PNJ_Bidoche_path to_bidoche f_size_coef = @to_bidoche OBJ_ZoomGet()
+			OBJ_Destroy()
+		}
+		// BIDOCHE ===============================================================
+	}
+
+	if ( ! f_lifecur && i_paf_type != (C_PAF_KK_Fire | C_PAF_KK_KiTue) )
+		continue
+	
+	ti_paf_canal = EVENT_PafCanalGet(tmid_paf_event)
+
+	tmid_vision_event = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility, EVT_Pere, nobody)
+	
+	tv_bras_de_levier = EVENT_PafPositionGet(tmid_paf_event)
+	tv_bras_de_levier -= OBJ_PosGet()
+	tv_bras_de_levier.z = 0.0
+	tv_bras_de_levier = MATH_VecCrossProduct(tv_bras_de_levier, v_paf_dir)
+
+	switch(ti_paf_canal)
+	{
+		// "TETE" en fait les deux permiers tronçons des crochets de la tête
+		case 21 :
+		case 41 :
+			tf_puissance_mul = 2.0
+			break	
+
+		// "QUEUE" en fait les deux crochets qui sont au bout de la queue
+		case 210 : 
+		case 220:
+			if (i_modele != Ci_Modele_Petit)
+			{
+				if (i_etat_courant == ETAT_GRAB)
+					tf_puissance_mul = 3.0
+				else
+					tf_puissance_mul = 2.0
+			}
+			break
+			
+		default:
+			tf_puissance_mul = 1.0
+			break
+	}
+
+	// POINTS DE VIE
+	PNJ_Scorpion_Remove_Life(tf_puissance * tf_puissance_mul, EVT_Pere)
+
+//	if (i_paf_type & C_EVENT_PAF_Blessant)
+//		PNJ_Scorpion_Minimise_Life(f_life * Cf_Life_Blesse, EVT_Pere)
+//
+//	if (i_paf_type & C_EVENT_PAF_Agonisant)
+//		PNJ_Scorpion_Minimise_Life(f_life * Cf_Life_Agonisant, EVT_Pere)
+//
+//	if (i_paf_type & (C_EVENT_PAF_Tuant | C_EVENT_PAF_Perforant) )
+//		PNJ_Scorpion_Minimise_Life(f_life * Cf_Life_Dead, EVT_Pere)
+	
+	if (i_paf_type & C_PAF_KK_KiTue )
+		PNJ_Scorpion_Minimise_Life(f_life * Cf_Life_Dead, EVT_Pere)
+
+	if (f_lifecur && TIME_Elapsed(f_time_last_paf_sound, f_delay_between_paf_sound))
+	{
+		f_time_last_paf_sound = TIME_Get()
+		f_delay_between_paf_sound = MATH_RandFloat(0.4, 0.6)
+		
+		SND_RequestPlay(SND_PAF)
+	}
+
+	if (i_paf_type & C_PAF_KK_Repousse)
+	{
+		i_flag_paf_faible = vrai	
+	
+		f_time_etat_phase = MATH_FloatMax(f_time_etat_phase, 0.5)
+
+		tv_speed = v_paf_dir * 10.0
+		tv_speed += DYN_SpeedGetVector()
+		DYN_SpeedSetVector(tv_speed)
+		
+		if (f_lifecur)	
+		{
+			ACT_ActionSet(Action_Paf + Ci_ActionSet_Force_SameAction)
+		}
+		else if (@get_global i_last_death_action_num == Action_Meurt_D)
+		{
+			@get_global i_last_death_action_num = Action_Meurt_G
+			ACT_ActionSet(Action_Meurt_G)
+		}
+		else
+		{
+			@get_global i_last_death_action_num = Action_Meurt_D
+			ACT_ActionSet(Action_Meurt_D)
+		}
+	}
+	else
+	{
+		f_jauge_accumulation += tf_puissance
+		
+		if (i_paf_type & C_PAF_KK_Fire)
+		{
+			i_flag_paf_moyen = vrai
+			tv_speed = v_paf_dir * 10.0
+		}	
+		else if (!f_lifecur || PNJ_Scorpion_Paf_Cumul_Check_Cumul() || tf_puissance > i_seuil_paf_important)
+		{
+			i_flag_paf_important = vrai
+			i_flag_paf_moyen = vrai
+			tv_speed = v_paf_dir * 30.0
+		}
+		else if (tf_puissance > i_seuil_paf_moyen)
+		{
+			i_flag_paf_moyen = vrai
+			tv_speed = v_paf_dir * 10.0
+		}
+		else
+		{
+			PNJ_Scorpion_Paf_Cumul_Add(tf_puissance)
+			tv_speed = v_paf_dir * 3.0
+		}
+	
+		tv_speed.z = MATH_FloatMin(tv_speed.z, 20.0)
+
+		i_flag_paf_faible = vrai
+	
+		switch(i_modele)
+		{
+			case Ci_Modele_Petit :
+	
+				if (f_lifecur)
+				{
+					switch(ACT_ActionGet())
+					{
+						case Action_Paf :
+							ti_current_frame = ANI_CurrentFrameGet(0)
+							ti_current_frame = MATH_FloatMin(ti_current_frame, 10)
+							ACT_ActionFrameSet(0, ti_current_frame)
+							ACT_ActionSet(Action_Paf + Ci_ActionSet_Force_SameAction)
+							break
+//							
+//						case Action_Paf_Rafale :
+//							ti_current_frame = ANI_CurrentFrameGet(0)
+//							ti_current_frame = MATH_FloatMin(ti_current_frame, 10)
+//							ACT_ActionFrameSet(0, ti_current_frame)
+//							ACT_ActionSet(Action_Paf_Rafale + Ci_ActionSet_Force_SameAction)
+//							break
+				
+						default:
+							ACT_ActionSet(Action_Paf)
+					  }
+				}
+				else if (@get_global i_last_death_action_num == Action_Meurt_D)
+				{
+					@get_global i_last_death_action_num = Action_Meurt_G
+					ACT_ActionSet(Action_Meurt_G)
+				}
+				else
+				{
+					@get_global i_last_death_action_num = Action_Meurt_D
+					ACT_ActionSet(Action_Meurt_D)
+				}
+	
+				tv_speed += DYN_SpeedGetVector()
+				DYN_SpeedSetVector(tv_speed)
+	
+				if (i_flag_paf_important)
+					f_paf_rot_speed = MATH_RandFloat(6.0, 12.0)
+				else if (i_flag_paf_moyen)
+					f_paf_rot_speed = MATH_RandFloat(2.0, 4.0)
+				else
+					f_paf_rot_speed = 0.4
+	
+				f_paf_rot_speed *= MATH_FloatSign(tv_bras_de_levier.z)
+
+				break
+	
+			case Ci_Modele_Standard :
+	
+				if (f_lifecur)
+				{
+					switch(ACT_ActionGet())
+					{
+						case Action_Paf :
+							ti_current_frame = ANI_CurrentFrameGet(0)
+							ti_current_frame = MATH_FloatMin(ti_current_frame, 10)
+							ACT_ActionFrameSet(0, ti_current_frame)
+							ACT_ActionSet(Action_Paf | Ci_ActionSet_Force_SameAction)
+							break
+				
+						default:
+							ACT_ActionSet(Action_Paf)
+					  }
+				}
+				else
+				{
+					switch(ACT_ActionGet())
+					{
+						case Action_Meurt_D :
+							ACT_ActionSet(Action_Meurt_G)
+							ANI_RatioSet(0, 0.5)
+//							ANI_CurrentFrameSet(0, ANI_CurrentFrameGet(0) >> 1)
+//							ACT_ActionSet(Action_Meurt_G | Ci_ActionSet_Force_SameAction)
+							break
+						case Action_Meurt_G :
+							ACT_ActionSet(Action_Meurt_D)
+							ANI_RatioSet(0, 0.5)
+//							ANI_CurrentFrameSet(0, ANI_CurrentFrameGet(0) >> 1)
+//							ACT_ActionSet(Action_Meurt_D | Ci__ActionSet_Force_SameAction)
+							break
+					
+						default:
+							if (@get_global i_last_death_action_num == Action_Meurt_D)
+							{
+								@get_global i_last_death_action_num = Action_Meurt_G
+								ACT_ActionSet(Action_Meurt_G)
+							}
+							else
+							{
+								@get_global i_last_death_action_num = Action_Meurt_D
+								ACT_ActionSet(Action_Meurt_D)
+							}
+					}
+				}
+	
+				if (i_flag_paf_moyen)
+				{
+					tv_speed *= 0.75
+					tv_speed += DYN_SpeedGetVector()
+					DYN_SpeedSetVector(tv_speed)
+				}
+	
+				if (i_flag_paf_important)
+				{
+					f_time_etat_phase = MATH_FloatMax(f_time_etat_phase, 2.0)
+					f_paf_rot_speed = MATH_RandFloat(4.0, 6.0)
+				}
+				else if (i_flag_paf_moyen)
+				{
+					f_time_etat_phase = MATH_FloatMax(f_time_etat_phase, 2.0)
+					f_paf_rot_speed = MATH_RandFloat(2.0, 4.0)
+				}
+				else
+				{
+					f_time_etat_phase = MATH_FloatMax(f_time_etat_phase, 0.5)
+					f_paf_rot_speed = 1.0
+				}
+	
+				f_paf_rot_speed *= MATH_FloatSign(tv_bras_de_levier.z)
+
+				break
+				
+			case Ci_Modele_Gros :
+	
+				if ( f_lifecur)
+				{
+					switch(ACT_ActionGet())
+					{
+						case Action_Paf :
+							ti_current_frame = ANI_CurrentFrameGet(0)
+							ti_current_frame = MATH_FloatMin(ti_current_frame, 10)
+							ACT_ActionFrameSet(0, ti_current_frame)
+							ACT_ActionSet(Action_Paf + Ci_ActionSet_Force_SameAction)
+							break
+//							
+//						case Action_Paf_Rafale :
+//							ti_current_frame = ANI_CurrentFrameGet(0)
+//							ti_current_frame = MATH_FloatMin(ti_current_frame, 10)
+//							ACT_ActionFrameSet(0, ti_current_frame)
+//							ACT_ActionSet(Action_Paf_Rafale + Ci_ActionSet_Force_SameAction)
+//							break
+				
+						default:
+							ACT_ActionSet(Action_Paf)
+					  }
+				}
+				else if (@get_global i_last_death_action_num == Action_Meurt_D)
+				{
+					@get_global i_last_death_action_num = Action_Meurt_G
+					ACT_ActionSet(Action_Meurt_G)
+				}
+				else
+				{
+					@get_global i_last_death_action_num = Action_Meurt_D
+					ACT_ActionSet(Action_Meurt_D)
+				}
+	
+				if (i_flag_paf_important)
+				{
+					f_paf_rot_speed = MATH_RandFloat(2.0, 4.0)
+					f_paf_rot_speed *= MATH_FloatSign(MATH_RandFloat(-1.0, 1.0))
+		
+					tv_speed *= 0.5
+					tv_speed += DYN_SpeedGetVector()
+					DYN_SpeedSetVector(tv_speed)
+				}
+	
+				if (! i_flag_paf_moyen && ! i_flag_paf_important)
+					i_flag_paf_faible = faux
+	
+				break
+		}
+	}
+
+	// TEST QUAT ===============================================================
+	if ( i_paf_type & (C_PAF_KK_Weapon | C_PAF_KK_Javelin) && TIME_Elapsed(f_quat_last_time, 0.15) )
+	{
+		if (TIME_Elapsed(f_quat_last_time, 0.5))
+			af_quat_coef[i_quat_index] = 0.4
+		else
+			af_quat_coef[i_quat_index] = 0.25
+
+		f_quat_last_time = TIME_Get()
+		af_quat_time[i_quat_index] = f_quat_last_time
+
+		av_quat_start[i_quat_index] = EVENT_PafPositionGet(tmid_paf_event)
+//		av_quat_start[i_quat_index] -= @o_queue_2 OBJ_PosGet()
+		av_quat_start[i_quat_index] -= @o_bassin OBJ_PosGet()
+		MATH_VecSetNormalize(av_quat_start[i_quat_index])
+
+		av_quat_end[i_quat_index] = MATH_VecCrossProduct(v_paf_dir, av_quat_start[i_quat_index])
+		av_quat_end[i_quat_index] = MATH_VecCrossProduct(av_quat_start[i_quat_index], av_quat_end[i_quat_index])
+
+		switch(i_etat_courant)
+		{
+			case ETAT_MORT :
+			case ETAT_FADE :
+				MATH_VecSetHorzNormalize(av_quat_end[i_quat_index])
+				break
+
+			default:
+				MATH_VecSetNormalize(av_quat_end[i_quat_index])
+		}
+
+		i_quat_index = MATH_Modulo(i_quat_index + 1, 10)
+	}
+
+	if (f_lifecur)
+	{
+		// ON AJOUTE CE PERSO A LA LISTE DES PERSOS PERCUS
+		ti_perceived_status = Ci_PERCEIVED_PAF
+		
+		if (i_paf_type & C_PAF_KK_Javelin)
+			ti_perceived_status = Ci_PERCEIVED_JAVELIN_PAF
+
+		ti_index = PNJ_Scorpion_Add_Perceived_Actor(EVT_Pere, ti_perceived_status, tmid_vision_event)
+	}
+	else
+	{
+		OBJ_CapaSet(OBJ_Capa_15, none)
+	}
+}
+
+//i_flag_paf_important = faux
+//i_flag_paf_moyen = faux
+//f_lifecur = f_life
+

@@ -1,0 +1,65 @@
+#include "IO_BentTree_Defines.var"
+
+int 			i_Index
+int 			i_IsTrackDone
+
+object 		o_CreationLocation
+object 		o_GFXSource
+message	m_Msg
+
+
+i_IsTrackDone = TRUE
+
+// for every location that should emit a "when-hit" particle, activate it here
+for ( i_Index = 0; i_Index < C_MaxHitPAGS; i_Index++ )
+{
+	// make sure there is a pag to play at the loc and that it isnt already playing
+	if ( mao_TreeHitParticleSystem[i_Index] && !mai_IsPAGActiveForLocation[i_Index] )
+	{
+		// check for a WP that is the location for this PAG
+		if ( mao_TreeHitPartSysLocation[i_Index] )
+		{
+			o_CreationLocation = mao_TreeHitPartSysLocation[i_Index]
+		}
+		else	// otherwise just put the GFX at the source position
+		{
+			o_CreationLocation = mao_TreeHitParticleSystem[i_Index]
+		}
+	
+		o_GFXSource 			= @mao_TreeHitParticleSystem[i_Index] OBJ_Duplicate( @o_CreationLocation OBJ_PosGet() )
+		m_Msg.msg_sender	= o_CreationLocation
+		Dispatch_Interaction( o_GFXSource, m_Msg )
+
+		// dont create it again unless it has been destroyed for that location
+		mai_IsPAGActiveForLocation[i_Index] = TRUE
+		maf_PAGStartTime[i_Index]				= TIME_Get()
+	}
+}
+
+// destroy particle systems when we are done with them
+for ( i_Index = 0; i_Index < C_MaxHitPAGS; i_Index++ )
+{
+	if ( mao_TreeHitParticleSystem[i_Index] && mai_IsPAGActiveForLocation[i_Index] )
+	{
+		// is the particle system done playing?
+		if ( TIME_Get() - maf_PAGStartTime[i_Index] >= maf_PAGDuration[i_Index] )
+		{
+			mai_IsPAGActiveForLocation[i_Index] = FALSE
+			maf_PAGStartTime[i_Index]				= 0.0
+		}
+	}
+}
+
+// check to see that there are particle systems playing.  if not, shut down this behavior
+for ( i_Index = 0; i_Index < C_MaxHitPAGS; i_Index++ )
+{
+	if ( mai_IsPAGActiveForLocation[i_Index] )
+	{
+		i_IsTrackDone = FALSE
+	}
+}
+
+if ( i_IsTrackDone )
+{
+	AI_TrackStop( C_Track_PAGActivation )
+}

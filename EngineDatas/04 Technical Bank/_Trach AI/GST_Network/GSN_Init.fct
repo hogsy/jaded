@@ -1,0 +1,26 @@
+
+OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_HasInitialPos,none)
+
+// Get next WP ===============================================
+o_nework1 = OBJ_Me()
+o_nework2 = WAY_NetNextWP(@o_nework1 WAY_NetOfObj(),o_nework1,NetNextWP_Mode_le_premier,0)
+if (o_nework2)
+	@o_nework2 OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_HasInitialPos,none)
+else
+	DBG_Error("Je ne suis pas le root")
+
+// Calc des Positions ==========================================
+
+if (!f_ecartement)
+	DBG_Error("f_ecartement ne doit pas etre null sinon virez l'AI")
+
+f_distmin = f_ecartement * f_percent
+f_distmax = f_ecartement - f_distmin
+
+v_axis = MATH_VecCrossProduct(MATH_VecNormalize(@o_nework2 OBJ_PosGet() - @o_nework1 OBJ_PosGet()), Cv_VerticalVector)
+v_pos_A = OBJ_PosGet() + (v_axis * (f_ecartement*0.5))
+v_pos_B = OBJ_PosGet() - (v_axis * (f_ecartement*0.5))
+
+v_pos_cur = OBJ_PosGet()
+
+AI_TrackCurChangeNow("GSN_Go")

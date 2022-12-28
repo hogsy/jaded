@@ -1,0 +1,55 @@
+//------------------------------------------------------------ 
+//			CREATION DE L'ECLAIR
+//------------------------------------------------------------
+if (i_GFX_Eclair == -1)
+{
+	i_GFX_Eclair = GFX_Add(2)																	// création de l’éclair
+	GFX_FlagSet(i_GFX_Eclair, 0, 1)															// activation
+	GFX_FlagSet(i_GFX_Eclair, 2, vrai)															// matériau transparent
+	GFX_MaterialSet(i_GFX_Eclair,get_SFX_light_and_smoke,3)						// affectation du matériau
+	GFX_Seti(i_GFX_Eclair,2100, 2*MATH_VecNorm(@o_source OBJ_PosGet() - @o_target OBJ_PosGet()))	// nombre de découpe (arrondie à 8)
+	GFX_Seti(i_GFX_Eclair,2101, 2)																// la texture est plaquée qu’une fois sur tout le faisceau
+	GFX_Seti(i_GFX_Eclair,2102, c_color)														// Couleur de l'éclair
+	GFX_Setf(i_GFX_Eclair, 2000, f_epaisseur)												// épaisseur
+	GFX_Setf(i_GFX_Eclair, 2001, f_rayon)													// rayon du cylindre dans lequel évolue l'éclair
+}
+
+//------------------------------------------------------------ 
+//			CREATION DU FLARE 1
+//------------------------------------------------------------
+if (i_GFX_Flare01 == -1)
+{
+	i_GFX_Flare01 = GFX_Add(21)                  							 					// ajout de l’effet
+	GFX_MaterialSet(i_GFX_Flare01, get_SFX_light_and_smoke, 0)					// affectation du matériau
+	GFX_Seti(i_GFX_Flare01, 21101, c_color)												// couleur du halo
+	GFX_Seti(i_GFX_Flare01, 21103, 1)														// halo simple
+	GFX_Setf(i_GFX_Flare01, 21000, f_epaisseur * 3.5)									// taille du halo
+	GFX_Setv(i_GFX_Flare01, 21200, @o_source OBJ_PosGet())						// Position du premier flare
+}
+
+//------------------------------------------------------------ 
+//			CREATION DU FLARE 2
+//------------------------------------------------------------
+if (i_GFX_Flare02 == -1)
+{
+	i_GFX_Flare02 = @o_target GFX_Add(21)                  							 	// ajout de l’effet
+	GFX_MaterialSet(i_GFX_Flare02, get_SFX_light_and_smoke, 0)					// affectation du matériau
+	GFX_Seti(i_GFX_Flare02, 21101, c_color)												// couleur du halo
+	GFX_Seti(i_GFX_Flare02, 21103, 1)														// halo simple
+	GFX_Setf(i_GFX_Flare02, 21000, f_epaisseur * 3.5)									// taille du halo
+	GFX_Setv(i_GFX_Flare02, 21200, @o_source OBJ_PosGet())						// Position du premier flare
+}
+
+//-------------------------------------------------------------
+//		POSITIONNEMENT DE L'ECLAIR
+//-------------------------------------------------------------
+GFX_Setv(i_GFX_Eclair, 2200, @o_source OBJ_PosGet())
+GFX_Setv(i_GFX_Eclair, 2201, @o_target OBJ_PosGet())
+
+//---------------------------------------------------------------------------------
+//		POSITIONNEMENT ET SCALE DES FLARES
+//---------------------------------------------------------------------------------
+GFX_Setv(i_GFX_Flare01, 21200, @o_source OBJ_PosGet())							// Position du premier flare
+GFX_Setv(i_GFX_Flare02, 21200, @o_target OBJ_PosGet())							// Position du premier flare
+GFX_Setf(i_GFX_Flare01, 21000, f_epaisseur * MATH_RandFloat(2.5,4.5))		// taille du halo
+GFX_Setf(i_GFX_Flare02, 21000, f_epaisseur * MATH_RandFloat(2.5,4.5))		// taille du halo

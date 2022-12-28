@@ -1,0 +1,162 @@
+ #include "number2Test_defines.var"
+
+int ti_control_flag
+int particle_index
+
+
+f_globalTime = TIME_Get()
+
+if(once && (num > 0) )
+{
+	
+	for( k = 0;k <num; k++)
+	{
+		for(l=0;l<NUM_NON_PAF; l++)
+		{
+			if(! (ao_objets_non_paffables[l] == tao_zdecol_objects[k]))
+			{	
+				if(tao_zdecol_objects[k])
+				{
+					//speed2 			= @tao_zdecol_objects[k]  DYN_SpeedGet()
+					speedVector 	= @tao_zdecol_objects[k]  DYN_SpeedGetVector()
+    					delta = f_globalTime - resistanceTimer 
+    					DBG_TraceFloat(delta)
+    					DBG_TraceEOL()
+					if(delta >= pushTime && mi_IsKnocking)  //11 is magic number speed1 > 10.0
+					{
+						//if(speed2 > 9.0)  // && speed1 > 9.0
+						//{
+						COL_ColMapActivationSet( none, all)
+                 	    COL_ColSetActivationSet( none, C_bit_zde_corps)
+						for( i1 = 0;i1 < NUM_PILLERS; i1++)
+						{
+							ODE_active = vrai
+							v_Position[0] = @o_Particle_Position[0] OBJ_PosGet()
+							@o_Particle_Systems[i1] OBJ_PosSet(v_Position[0])
+							@o_Particle_Systems[i1] OBJ_PagGeneratorFreqSet(1, 10.0)
+							f_Start_time[i1] = TIME_Get()
+
+							@o_Piller_Peices[i1] ODE_Enable( vrai)
+							ti_control_flag = @o_Piller_Peices[i1]ODE_Geti(0)
+							ti_control_flag &= ~0x20	// Immovable
+							//ti_control_flag |= ~0x2		 //movable
+							@o_Piller_Peices[i1] ODE_Seti(0, ti_control_flag)
+							@o_Piller_Peices[i1] ODE_Setv(0, cvector(0,0,0))
+							@o_Piller_Peices[i1] ODE_Setf(2, 0)
+							@o_Piller_Peices[i1] OBJ_FlagInactiveSet( faux)
+							
+							@o_Piller_Peices[i1] ODE_Setv(0, speedVector * 3.0)
+							@o_Piller_Peices[i1] ODE_Setf(2, 80.0)	
+							}
+						//}
+					}
+					else
+					{
+						for( i1= 0;i1 < NUM_PILLERS; i1++)
+						{
+							//@o_Piller_Peices[i] ODE_Enable( vrai)
+							//@o_Piller_Peices[i] ODE_Enable( vrai)
+							//@o_Piller_Peices[i] ODE_Setv(0, speedVector)
+							//@o_Piller_Peices[i] ODE_Setf(2, speed)
+							//ti_control_flag = @o_Piller_Peices[i]ODE_Geti(0)
+							//ti_control_flag &= ~0x20	// Immovable
+							//ti_control_flag |= ~0x2		 //movable
+							//@o_Piller_Peices[i] ODE_Seti(0, ti_control_flag)
+							//@o_Piller_Peices[i] OBJ_FlagInactiveSet( faux)
+						}
+						
+					}
+								
+				}
+			}
+		}
+	}
+	
+	if(f_globalTime - resistanceTimer > pushTime && mi_IsKnocking)  //speed1 > 10.0
+	{
+		if(speed2 > 9.0 && speed1 > 9.0)
+			once = faux
+	}
+}
+
+
+if(kongHit)
+{
+	if(hitOnce)
+	{
+		COL_ColMapActivationSet( none, all)
+		COL_ColSetActivationSet( none, C_bit_zde_corps)
+		for( i1 = 0;i1 < NUM_PILLERS; i1++)
+		{
+			ODE_active = vrai
+			v_Position[0] = @o_Particle_Position[0] OBJ_PosGet()
+			@o_Particle_Systems[i1] OBJ_PosSet(v_Position[0])
+			@o_Particle_Systems[i1] OBJ_PagGeneratorFreqSet(1, 10.0)
+			f_Start_time[i1] = TIME_Get()
+			
+			@o_Piller_Peices[i1] ODE_Enable( vrai)
+			ti_control_flag = @o_Piller_Peices[i1]ODE_Geti(0)
+			ti_control_flag &= ~0x20	// Immovable
+			//ti_control_flag |= ~0x2		 //movable
+			@o_Piller_Peices[i1] ODE_Seti(0, ti_control_flag)
+			@o_Piller_Peices[i1] OBJ_FlagInactiveSet( faux)
+			
+			//make pieces go flying
+			@o_Piller_Peices[i1] ODE_Setv(0, tv_paf_dir1*15.0)
+			@o_Piller_Peices[i1] ODE_Setf(2, 100.0)	
+		}
+	}
+	hitOnce = faux
+}
+
+if(ODE_active)
+{
+	v_Position[0] = @o_Particle_Position[0] OBJ_PosGet()
+	for( i1 = 0;i1 < NUM_PILLERS; i1++)
+		@o_Particle_Systems[i1] OBJ_PosSet(v_Position[0])
+}
+
+
+	
+//stops the particle system after a specific duration
+for(particle_index=0; particle_index<NUM_SYSTEMS; particle_index++)
+{
+	if(o_Particle_Systems[particle_index])
+	{
+		if(f_globalTime - f_Start_time[particle_index] >=  f_Duration[particle_index])
+			@o_Particle_Systems[particle_index] OBJ_PagGeneratorFreqSet(1, 0.0)
+	}
+}
+
+
+//if(initPos.y - @o_Particle_Position[0] OBJ_PosGet().y > 5.0)
+//	AI_TrackChange(1, "number2Test_explode")
+
+//maxX = @ODE_Floor OBJ_PosGet() .x + 10
+//minX  = @ODE_Floor OBJ_PosGet() .x - 10
+//maxY = @ODE_Floor OBJ_PosGet().y + 10
+//minY  = @ODE_Floor OBJ_PosGet().y - 10 
+//
+//@obj1 OBJ_PosSet( cvector (@ODE_Floor OBJ_PosGet() .x+10, @ODE_Floor OBJ_PosGet() .y, @ODE_Floor OBJ_PosGet() .z) )
+//@obj2 OBJ_PosSet( cvector (@ODE_Floor OBJ_PosGet() .x-10, @ODE_Floor OBJ_PosGet() .y, @ODE_Floor OBJ_PosGet() .z) )
+//@obj3 OBJ_PosSet( cvector (@ODE_Floor OBJ_PosGet() .x, @ODE_Floor OBJ_PosGet() .y+10, @ODE_Floor OBJ_PosGet() .z) )
+//@obj4 OBJ_PosSet( cvector (@ODE_Floor OBJ_PosGet() .x, @ODE_Floor OBJ_PosGet() .y-10, @ODE_Floor OBJ_PosGet() .z) )
+
+
+
+
+//point = @o_Particle_Position[0] OBJ_PosGet()
+//
+//if( (point.x < minX) || (point.x > maxX) || (point.y < minY) || (point.y > maxY) )
+//	AI_TrackChange(1, "number2Test_explode")
+
+//if  (!((point.x > minX) && (point.x < maxX) && (point.y > minY) &&  (point.y < maxY)))
+//{
+//   	AI_TrackChange(1, "number2Test_explode")
+//}
+
+if(f_globalTime - resistanceTimer < pushTime && mi_IsKnocking)
+{
+	if(speed1 < 9.0)
+		speedHigh = faux
+}

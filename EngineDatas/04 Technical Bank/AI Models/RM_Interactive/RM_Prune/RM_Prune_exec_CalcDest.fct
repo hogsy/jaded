@@ -1,0 +1,94 @@
+#include "RM_Prune_defines.var"
+
+vector		tv_dest
+float			tf_dist
+vector		tv_nextPos
+object		to_obj
+object		tao_obj[1]
+float			taf_float[1]
+int				ti_occ
+float			tf_vitesse
+
+
+switch(i_etat_courant)
+{
+	case ETAT_Prune_FOLLOW:
+		tv_dest=(@o_cible OBJ_PosGet()-OBJ_PosGet())
+		tf_dist=MATH_VecNorm(tv_dest)
+		
+		if(tf_dist>4.0) 
+		{
+			ti_occ=WAY_LIB_Test_Occluder(OBJ_PosGet(),DYN_SpeedGetVector(),1.0,@o_cible OBJ_PosGet(),-1,tv_nextPos,to_obj,&tao_obj[0],&taf_float[0],0,0)
+			if(ti_occ!=0)
+			{
+				tv_dest=(tv_nextPos-OBJ_PosGet())
+				tf_dist=MATH_VecNorm(tv_dest)
+			}
+			tv_dest.z=0.0
+			tf_vitesse=5.0
+		//	DBG_RenderVector(OBJ_PosGet(),(tv_dest/tf_dist)*tf_vitesse,color_rouge)
+			v_ForceVoulue=((tv_dest/tf_dist)*tf_vitesse)	
+			f_ForceRebond=f_ForceRebondAvance
+		}
+		else
+		{
+			v_ForceVoulue=Cv_NullVector
+			f_ForceRebond=f_ForceRebondArret
+		}
+	break
+	case ETAT_Prune_RIDED:
+		if(MATH_VecNorm(glob_joyvector_get)>0.1)
+		{
+			v_ForceVoulue=(glob_joyvector_get*15.0)	
+			f_ForceRebond=f_ForceRebondAvance
+			if(Proc_JOY_Boost_Pressed())
+			{
+				v_ForceVoulue*=3.0
+				f_ForceRebond*=2.0
+			}
+		}
+		else
+		{
+			v_ForceVoulue=Cv_NullVector
+			f_ForceRebond=f_ForceRebondArret
+		}
+	break
+	case ETAT_Prune_FUITE:
+		tv_dest=OBJ_PosGet() - @o_AFuir OBJ_PosGet()
+//		ti_occ=WAY_LIB_Test_Occluder(OBJ_PosGet(),DYN_SpeedGetVector(),1.0,OBJ_PosGet(),-1,tv_nextPos,to_obj,&tao_obj[0],&taf_float[0],0,0)
+		tf_dist=MATH_VecNorm(tv_dest)
+		tv_dest.z=0.0
+		tf_vitesse=5.0
+	//	DBG_RenderVector(OBJ_PosGet(),(tv_dest/tf_dist)*tf_vitesse,color_rouge)
+		v_ForceVoulue=((tv_dest/tf_dist)*tf_vitesse)+cvector(MATH_RandFloat(-1.0,1.0),MATH_RandFloat(-1.0,1.0),MATH_RandFloat(0.0,1.0))
+		f_ForceRebond=f_ForceRebondAvance
+	break
+	case ETAT_Prune_GAMBADE:
+		tv_dest=(v_Dest-OBJ_PosGet())
+		tf_dist=MATH_VecNorm(tv_dest)
+		
+		if(tf_dist>4.0) 
+		{
+			ti_occ=WAY_LIB_Test_Occluder(OBJ_PosGet(),DYN_SpeedGetVector(),1.0,@o_cible OBJ_PosGet(),-1,tv_nextPos,to_obj,&tao_obj[0],&taf_float[0],0,0)
+			if(ti_occ!=0)
+			{
+				tv_dest=(tv_nextPos-OBJ_PosGet())
+				tf_dist=MATH_VecNorm(tv_dest)
+			}
+			tv_dest.z=0.0
+			tf_vitesse=5.0
+		//	DBG_RenderVector(OBJ_PosGet(),(tv_dest/tf_dist)*tf_vitesse,color_rouge)
+			v_ForceVoulue=((tv_dest/tf_dist)*tf_vitesse)	
+			f_ForceRebond=f_ForceRebondAvance
+		}
+		else
+		{
+			v_ForceVoulue=Cv_NullVector
+			f_ForceRebond=f_ForceRebondArret
+		}
+	break
+	default:
+		v_ForceVoulue=Cv_NullVector
+		f_ForceRebond=f_ForceRebondArret		
+	break
+}		

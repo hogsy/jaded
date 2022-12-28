@@ -1,0 +1,59 @@
+object	to_gao
+int			ti_rank
+int			ti_type
+int			ti_ok
+vector	tv_start_pos
+vector	tv_end_pos
+vector	tv_shoot_dir
+vector	tv_temp
+float		tf_dist
+float		tf_dist_danger
+float		tf_dist_move
+messageid	tmid_shoot_event
+
+i_fuite_grenades_flag = faux
+
+if( ! Fuite_Explosive_Items )
+	return
+
+ti_rank = -1
+for (	tmid_shoot_event = MSG_GlobalScan(C_EVENT_TYPE_Shoot, &ti_rank); 
+		MSG_GlobalIsValid(tmid_shoot_event);
+		tmid_shoot_event = MSG_GlobalScan(C_EVENT_TYPE_Shoot, &ti_rank)	)
+{
+//	to_gao = EVENT_PereGet(tmid_shoot_event)
+	ti_type = EVENT_ShootTypeGet(tmid_shoot_event)
+	tv_end_pos = EVENT_ShootEndPosGet(tmid_shoot_event)
+	ti_ok = faux
+	switch( ti_type )
+	{
+		case RM_WEAPON_TYPE_GRENADE :
+			ti_ok = vrai
+			tf_dist_danger = 255.0
+			tf_dist_move = 10.0
+			break
+		case RM_WEAPON_TYPE_BOMBOX :
+			ti_ok = vrai
+			tf_dist_danger = 9.0
+			tf_dist_move = 10.0
+			break
+		default:
+			break
+	}
+	if( ti_ok )
+	{
+		tv_temp = OBJ_PosGet() - tv_end_pos
+		tf_dist = MATH_VecDotProduct(tv_temp,tv_temp)
+		if( tf_dist < tf_dist_danger )
+		{
+			i_fuite_grenades_flag = vrai
+			tv_shoot_dir = tv_temp
+			if( MATH_VecNullToler(tv_shoot_dir, 0.01) )
+				tv_shoot_dir = - OBJ_SightGet()
+			v_fuite_grenades_dangerous_pos = OBJ_PosGet() 
+			MATH_VecSetNorm(tv_shoot_dir, tf_dist_move)
+			v_fuite_grenades_dest_pos = OBJ_PosGet() + tv_shoot_dir
+		}
+	}
+}
+

@@ -1,0 +1,55 @@
+#include "ProjGrenade__defs.var" 
+
+// init dyna
+DYN_On()
+DYN_FlagsSet(DYN_C_BasicForces + DYN_C_VectorFriction, none)
+DYN_FrictionVectorSet( mv_LaunchFriction )
+DYN_GravitySet( mv_LaunchGravity )
+DYN_SpeedSetVector( mv_LaunchSpeed )
+
+// init visibility
+OBJ_FlagsControlSet(OBJ_C_ControlFlag_AlwaysVisible, none)
+// init collision
+COL_ColSetActivationSet( C_bit_zdm_pied, none )
+if ( mo_Sender )
+	COL_UnCollidableAdd( mo_Sender )
+
+//DBG_RenderVector(OBJ_PosGet(), DYN_SpeedGetVector(), color_jaune)
+
+if (mi_Type == GType_Fumigene)
+{
+	mi_Smoke = GFX_Add(13)														// Create the boum
+	GFX_FlagSet(mi_Smoke, 0 , 1)
+	GFX_FlagSet(mi_Smoke, 2 , 1)
+					
+	GFX_MaterialSet(mi_Smoke, get_SFX_light_and_smoke, -1)			// met le materiau
+	GFX_Seti(mi_Smoke, 13101, 8)													// Materiau 0
+		
+	GFX_Seti(mi_Smoke, 13100, 150)												// number of sprite
+	GFX_Seti(mi_Smoke, 13103, 0x40C0C0C0)									// Color fase 0
+	GFX_Seti(mi_Smoke, 13104, 0x20C0C0C0)									// Color fase 1
+	GFX_Seti(mi_Smoke, 13105, 0x00C0C0C0)									// Color fase 2
+	GFX_Seti(mi_Smoke, 13106, 0xFFFFFFFF)									// number of sprite to generate
+	GFX_Seti(mi_Smoke, 13107, 0)													// Sprites non triés
+		
+	GFX_Setf(mi_Smoke, 13000, 1.5)												// Growing speed min
+	GFX_Setf(mi_Smoke, 13001, 3.0)												// Growing speed max
+	GFX_Setf(mi_Smoke, 13002, 0.0001)											// Friction Grow
+	GFX_Setf(mi_Smoke, 13003, 0.5)												// Time fase 1
+	GFX_Setf(mi_Smoke, 13004, 5)													// Time fase 2
+	GFX_Setf(mi_Smoke, 13005, 0.1)												// Creation size min
+	GFX_Setf(mi_Smoke, 13006, 0.2)												// Creation size max
+	GFX_Setf(mi_Smoke, 13008, 0.05)												// generation rate
+	GFX_Setf(mi_Smoke, 13009, 3.0)												// Norm speed min
+	GFX_Setf(mi_Smoke, 13010, 6.0)												// Norm speed max
+	GFX_Setf(mi_Smoke, 13012, 0.75)												// Time random factor
+		
+	GFX_Setv(mi_Smoke, 13203, cvector(0.02, 0.02, 0.02))					// friction speed
+	GFX_Setv(mi_Smoke, 13204, cvector( 0, 0, 1 ) )							// wind
+	GFX_Setv(mi_Smoke, 13205, Cv_NullVector)								// Mainposspeed
+	GFX_Setv(mi_Smoke, 13206, Cv_NullVector)								// Mainpossfriction
+}
+
+AI_TrackCurChange( "ProjGrenade_launch" )
+
+

@@ -1,0 +1,56 @@
+
+#include"Na_Defines.var"
+
+int					ti_rank
+int					ti_paf_type 
+float				tf_puissance
+int					ti_canal
+float				tf_paf_value, tf_paf
+vector			tv_paf_dir
+messageid		tmid_paf_event
+message		EVT_msg_filter
+
+EVT_Paf_Pere = nobody
+f_paf_degats = 0
+
+if (m_script.msg_int3 & Ci_Filtre_NoCol)
+	return
+
+MSG_SetNull( EVT_msg_filter)
+EVT_msg_filter.msg_gao1 = OBJ_Me()			// Je cherche tous les Events Paf me concernant !
+
+ti_rank = -1
+tf_paf_value = 0
+tv_paf_dir = Cv_NullVector
+ti_canal = -1
+
+tmid_paf_event = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, EVT_msg_filter)
+while(MSG_GlobalIsValid(tmid_paf_event))
+{
+	ti_paf_type = EVENT_PafTypeGet(tmid_paf_event)
+	tf_puissance = 2000 // EVENT_PafPuisGet(tmid_paf_event)
+	EVT_Paf_Pere = EVENT_PereGet(tmid_paf_event)
+
+//	tmid_vision_event = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility, EVT_Pere, nobody)
+//	if (!MSG_GlobalIsValid(tmid_vision_event))
+//		DBG_Error("Je suis pafé par quelqu'un qui n'existe pas !!!")
+
+	v_paf_dir = EVENT_PafDirGet(tmid_paf_event)
+	DBG_RenderVector(OBJ_PosGet(), v_paf_dir * 5, color_rouge)
+	
+	// POINTS DE VIE
+	f_lifecur -= MATH_FloatMin(f_lifecur, tf_puissance)
+	f_paf_degats += tf_puissance
+
+	tmid_paf_event = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, EVT_msg_filter)
+	
+	if( ! i_mort_stat )
+	{
+		i_mort_stat = vrai
+		STATS_IncEnemyKilled_New(EVT_Paf_Pere, C_EnemyType_Native, 0 )
+	}
+}
+
+// Si ce perso accessible alors il devient ma target
+if (Native_LIB_Target_Check_This_One(EVT_Paf_Pere))
+	o_target = EVT_Paf_Pere

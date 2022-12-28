@@ -1,0 +1,233 @@
+#include "Interactive_Door_defs.var"
+
+vector	tv_temp, tv_temp1
+network	net_move
+int			ti_net
+int			ti_SF
+object	to_save, to_levier
+float		tf_dot, tf_dot1, tf_val
+int			ti_test_size
+int			i
+
+//--------( SF )--------
+if ( SF_i_NePasRejouerSiMort )
+{
+	SF_i_AlreadyDead = AI_SFDynGet(0, SF_MinById, SF_MaxById)	// Alloc
+	SpecialFlag_get( SF_i_AlreadyDead, i)		// Test SF
+	if (i)																// Si SF = 1 alors STOP
+	{								
+		AI_Execute( "InteractiveDoor_callback_tagon" )
+		if (mi_BlockWhenClosed)
+			mf_Ratio = 0
+		else 
+			mf_Ratio = 1
+		AI_Execute( "InteractiveDoor_update" )
+		AI_Execute( "InteractiveDoor_callback_tagoff" )
+		AI_TrackCurStop()
+	}
+}
+
+TIME_Wait( 0.5 )
+
+mo_main_actor = AI_MainActorGet(C_ID_Joueur)
+
+// RESEAU HUMAIN UPDATE CAPA 7
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//if(mi_ModeHumain)
+//{
+//	if(!@get_global move_network) 
+//	{
+////		DBG_TraceObject( OBJ_Me() )
+////		DBG_TraceString("AI Interactive_Door : mode humain is set but no move_network specified (AI stop)\n")
+////		AI_TrackCurStop()
+//		return
+//	}
+//	
+//	net_move = @get_global move_network
+//	move_net_1 = WAY_WPNearestOfOBJ(net_move, -1, 0, 0)
+//	to_save = WAY_NetNextWP(net_move, move_net_1, NetNextWP_Mode_choix_de_lindice, 0)
+//	
+//	for(ti_test_size = 0; ti_test_size < 2; ti_test_size++)
+//	{
+//		ti_net = 1
+//		move_net_2 = to_save
+//		while(move_net_2)
+//		{
+//			tv_temp = @move_net_1 OBJ_PosGet() - OBJ_PosGet()
+//			tv_temp1 = @move_net_2 OBJ_PosGet() - OBJ_PosGet()
+//			
+//			if(ti_test_size == 0)
+//			{
+//				tf_dot = MATH_VecDotProduct(tv_temp, OBJ_SightGet())
+//				tf_dot1 = MATH_VecDotProduct(tv_temp1, OBJ_SightGet())
+//			}
+//			else
+//			{
+//				tf_dot = MATH_VecDotProduct(tv_temp, OBJ_HorizonGet())
+//				tf_dot1 = MATH_VecDotProduct(tv_temp1, OBJ_HorizonGet())
+//			}
+//			
+//			if(MATH_FloatSign(tf_dot) == MATH_FloatSign(tf_dot1))
+//			{
+//				move_net_2 = WAY_NetNextWP(net_move, move_net_1, NetNextWP_Mode_choix_de_lindice, ti_net)
+//				ti_net++
+//			}
+//			else
+//			{
+//				ti_test_size = 10
+//				break
+//			}
+//		}
+//	}
+//}
+
+if(!move_net_2) move_net_1 = nobody
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//======== Check data ==========================================================
+if (mo_OpeningWP == nobody)
+{
+		DBG_TraceObject( OBJ_Me() )
+		DBG_TraceString("AI Interactive_Door : no mo_OpeningWP specified (AI stop)\n")
+		AI_TrackCurStop()
+		return
+}
+
+if (  !AI_TriggerIsValid( mt_OpeningTest ) )
+{
+		DBG_TraceObject( OBJ_Me() )
+		DBG_TraceString("AI Interactive_Door : no mt_OpeningTest specified (AI stop)\n")
+		AI_TrackCurStop()
+		return
+}
+
+//======== init porte denham =======================================================
+if (mi_Type == DOOR_Denham )
+{
+	DBG_TraceObject( OBJ_Me() )
+	DBG_TraceString("AI Interactive_Door : plus de porte denham (AI stop) \n")
+	AI_TrackCurStop()
+	return
+}
+
+//======== init porte pilier =======================================================
+if (mi_Type == DOOR_Pilar )
+{
+	mi_PD_State = 0
+	//mi_BlockWhenOpened  = vrai
+	mi_HumainInit = 0
+	if ( (mi_PD_NbPilar <= 0) || (mi_PD_NbPilar > 2) )
+	{
+		DBG_TraceObject( OBJ_Me() )
+		DBG_TraceString("AI Interactive_Door : not enough or too much pilar (pilar nb = 1 or 2)\n")
+		AI_TrackCurStop()
+		return
+	}
+	for (i = 0; i < mi_PD_NbPilar; i++)
+	{
+		to_save = mao_PD_Pilar[ i ]
+		if ( !to_save )
+		{
+			DBG_TraceObject( OBJ_Me() )
+			DBG_TraceString("AI Interactive_Door : pilar not defined\n")
+			AI_TrackCurStop()
+			return
+		}
+		
+		@to_save OBJ_FlagsIdentitySet( OBJ_C_IdentityFlag_DesignStruct, 0 )
+		to_save.des_float1 = 0
+		mf_PD_RotateBlockedOld[ i ] = 0
+		DOORPilar_SetInteraction( i, 0 )
+
+		to_levier = mao_PD_PilarLevier[ i ]
+		if (!to_levier)
+		{
+			DBG_TraceObject( OBJ_Me() )
+			DBG_TraceString("AI Interactive_Door : pilar levier not defined\n")
+			AI_TrackCurStop()
+			return
+		}
+		
+		if ( SF_i_NePasRejouerSiMort )
+		{
+			mai_PD_SFLevierIsHere[ i ] = AI_SFDynGet(i+1, SF_MinById, SF_MaxById)
+			SpecialFlag_get(mai_PD_SFLevierIsHere[ i ], ti_SF )
+			if ( ti_SF )
+				@to_levier OBJ_CapaSet( OBJ_Capa_0, 0 )
+		}
+
+		if ( !@to_levier OBJ_CapaTest( OBJ_Capa_0 ) )
+			@to_levier OBJ_FlagInvisibleSet( 1 )
+		else
+		{
+			if ( SF_i_NePasRejouerSiMort )
+				SpecialFlag_set( mai_PD_SFLevierIsHere[ i ] )
+			@to_levier OBJ_FlagInvisibleSet( 0 )
+			@to_levier OBJ_FlagInactiveSet( 0 )
+		}
+			
+		@to_levier OBJ_InfoPhotoParamSet( 0, 0, 3, 3, 0.1, 0.0, 0.0, 0.4)
+		@to_levier OBJ_InfoPhotoSphereOffsetSet( cvector(0, 0, 0) )
+		
+		// place correctement le pilier
+		tv_temp = @to_save OBJ_PosGet() 
+		tv_temp += 1.28 * @to_save OBJ_BankingGet() 
+		tv_temp += -0.5 * @to_save OBJ_SightGet()
+		@to_levier OBJ_PosSet( tv_temp )
+		@to_levier OBJ_SightGeneralSet( -@to_save OBJ_SightGet(), -@to_save OBJ_BankingGet() )
+	}
+}
+
+if (mi_Type == 03 )// PLF Rayman
+{
+	DYN_On()
+	DYN_FlagsSet( DYN_C_BasicForces + DYN_C_IgnoreGravity , none)
+}
+
+if ( ! mo_TagRef) mo_TagRef = OBJ_Me()
+
+DOOR_ComputeParams()
+
+mv_SightInit = OBJ_SightGet()
+mv_BankingInit = OBJ_BankingGet()
+if ( mo_PivotWP )
+{
+	mv_PivotPos = @mo_PivotWP OBJ_PosGet() - OBJ_PosGet()
+	mv_PivotPos = MATH_VecGlobalToLocal( mv_PivotPos )
+}
+
+//======== grid data  =======================================================
+if( mi_TagX > 0 )	mi_TagX--
+if( mi_TagY > 0 )	mi_TagY--
+
+//======== Initial state ==========================================================
+mi_Snd_LoopOpen = -1
+mi_Snd_LoopClose = -1
+mi_Opened = -1
+mi_JackForceActivation = 0
+
+if ( call_trigger( mt_OpeningTest ) )
+	mf_Ratio = 1
+else
+	mf_Ratio = 0
+	
+//======== Blindage réglage foireux ===================
+if (mi_BlockWhenClosed && mf_Ratio == 0)
+	mi_BlockWhenClosed = faux
+
+
+if( ! i_trigger_reinit_flag )
+	v_pos_init = OBJ_PosInitGet()
+i_trigger_reinit_flag = faux
+AI_Execute( "InteractiveDoor_update" )
+
+AI_CBAdd(OBJ_Me(), CallBack_TagOn, "InteractiveDoor_callback_tagon")
+AI_CBAdd(OBJ_Me(), CallBack_TagOff, "InteractiveDoor_callback_tagoff")
+
+AI_TrackChange(2, "InteractiveDoor_update_grid")
+
+if ( AI_TriggerIsValid( mt_Activate ) )
+	AI_TrackCurChange( "InteractiveDoor_waitactivation" )
+else
+	AI_TrackCurChange( "InteractiveDoor_loop" )
+

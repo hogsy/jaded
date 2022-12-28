@@ -1,0 +1,183 @@
+#include "RM_Bullet_defines.var"
+
+int			ti_i
+int			ti_ok
+int			ti_collision_nb
+int			ti_monture_insensitive
+int			ti_rayman_insensitive
+object	to_obj
+object	to_sender
+object	to_monture
+object	tao_zde_zde_list[20]
+object	to_gao
+vector	tv_pos
+vector	tv_sens
+float		tf_dist
+
+
+v_pos = OBJ_PosGet()
+
+
+// snd projectile qui passe près de rayman
+if( ! i_snd_near_rayman_done )
+{
+	to_gao = AI_MainActorGet(C_ID_Rayman)
+	tf_dist = MATH_RandFloat(4.0, 6.0)
+	if( to_gao && OBJ_SqrDist(to_gao) > f_snd_dist_min && OBJ_SqrDist(to_gao) < f_snd_dist_max )
+	{
+		i_snd_near_rayman_done = vrai
+		SND_RequestPlay(Ci_SND_Whisby)
+	}
+}
+
+to_sender = OBJ_Me().des_object1
+to_monture = nobody
+
+if( ! i_must_miss )
+{
+	ti_monture_insensitive = vrai
+	ti_rayman_insensitive = vrai
+	
+	// sens du paf
+	tv_sens = DYN_SpeedGetVector()
+	if( ! MATH_VecNullToler(tv_sens, 0.01) )
+		MATH_VecSetNormalize(tv_sens)
+	else
+		tv_sens = OBJ_SightGet()
+	
+	// sender et monture rayinsensitive?
+	if( to_sender ) // && to_sender == AI_MainActorGet(C_ID_Rayman) )
+	{
+		ti_rayman_insensitive = @to_sender OBJ_FlagsControlGet() & OBJ_C_ControlFlag_RayInsensitive
+		if( ! ti_rayman_insensitive )
+			@to_sender OBJ_FlagsControlSet(OBJ_C_ControlFlag_RayInsensitive, none)
+//		to_monture = @to_sender PROC_RM_MontureGet()
+		to_monture = Proc_MontureGet(to_sender)
+		if( to_monture )
+		{
+			ti_monture_insensitive = @to_monture OBJ_FlagsControlGet() & OBJ_C_ControlFlag_RayInsensitive
+			if( ! ti_monture_insensitive )
+				@to_monture OBJ_FlagsControlSet(OBJ_C_ControlFlag_RayInsensitive, none)
+		}
+	}
+	
+	// LRAY
+	DBG_RenderVector( v_pos_old, v_pos - v_pos_old,  color_bleu)
+	to_obj = COL_RayObject_Vector( v_pos_old, v_pos - v_pos_old, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+	if ( to_obj )
+	{
+		ti_ok = vrai
+		if( to_obj == get_rayman )
+		{
+			if( @to_obj PROC_RM_Dodge() )
+				ti_ok = faux
+		}
+		else
+		{
+			if( Proc_PNJ_Can_Dodge_Weapon(to_obj, to_sender, RM_WEAPON_TYPE_GUN) )
+			{
+				Proc_PNJ_Dodge_Actor_Set(to_obj, to_sender, RM_WEAPON_TYPE_GUN)
+				ti_ok = faux
+			}
+			
+			if( Proc_PNJ_Can_Protect_Weapon(to_obj, to_sender, RM_WEAPON_TYPE_GUN) )
+			{
+				Proc_PNJ_Protect_Actor_Set(to_obj, to_sender, RM_WEAPON_TYPE_GUN)
+				ti_ok = faux
+				f_life_time = 100.0
+				i_paf_already_sent = vrai
+			}
+			
+			if ( ! @to_obj OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Anims | OBJ_C_IdentityFlag_AI))
+				PROC_SFX_EXPLOSION_SOL(MATH_RandFloat(0.25, 0.75), COL_RayObject_PosGet())
+		}
+		
+		if( ti_ok ) 
+		{
+			if( ! i_paf_already_sent )		// sinon impossible de dodger
+			{
+				tv_pos = OBJ_PosGet()
+				EVENT_AddEventPafCanal( C_EVENT_FILTER_Object, C_PAF_RM_Gun + C_PAF_RM_Moyen, to_sender, Cf_EVENT_Duree_1Trame, to_obj, -1, 10.0, tv_sens, tv_pos)
+				f_life_time = 100.0
+				i_paf_already_sent = vrai
+			}
+		}
+	}
+	
+	// ZDE
+	ti_collision_nb = COL_ZDE_ZDEListGet( &tao_zde_zde_list[0], C_zde_fight, C_zde_corps, all, none, Ci_Filter_IdentityFlag)
+	for (ti_i = 0; ti_i < ti_collision_nb; ti_i++)
+	{
+		to_obj = tao_zde_zde_list[ti_i]
+		if( to_obj  != to_sender && to_obj != to_monture)
+		{
+			ti_ok = vrai
+			if( to_obj == get_rayman )
+			{
+				if( @to_obj PROC_RM_Dodge() )
+					ti_ok = faux
+			}
+			else
+			{
+				if( Proc_PNJ_Can_Dodge_Weapon(to_obj, to_sender, RM_WEAPON_TYPE_GUN) )
+				{
+					Proc_PNJ_Dodge_Actor_Set(to_obj, to_sender, RM_WEAPON_TYPE_GUN)
+					ti_ok = faux
+				}
+				if( Proc_PNJ_Can_Protect_Weapon(to_obj, to_sender, RM_WEAPON_TYPE_GUN) )
+				{
+					Proc_PNJ_Protect_Actor_Set(to_obj, to_sender, RM_WEAPON_TYPE_GUN)
+					ti_ok = faux
+					f_life_time = 100.0
+					i_paf_already_sent = vrai
+				}
+			}
+			
+			if( ti_ok ) 
+			{
+				if( ! i_paf_already_sent )		// sinon impossible de dodger
+				{
+					tv_pos = OBJ_PosGet()
+					EVENT_AddEventPafCanal(C_EVENT_FILTER_Object, i_paf_type, to_sender, Cf_EVENT_Duree_1Trame, to_obj, -1, 10.0, tv_sens, tv_pos)
+					f_life_time = 100.0
+					i_paf_already_sent = vrai
+				}
+			}
+		}
+	}
+	
+	// cancel ray insensitive
+	if( ! ti_monture_insensitive)
+		@to_monture OBJ_FlagsControlSet(none, OBJ_C_ControlFlag_RayInsensitive)
+	
+	if( ! ti_rayman_insensitive )
+		@to_sender OBJ_FlagsControlSet(none, OBJ_C_ControlFlag_RayInsensitive)
+}
+
+GFX_Setv(GFX_Halo, 21200, v_pos - (OBJ_SightGet() * 0.5))
+//GFX_Setv(GFX_Halo, 21201, @get_Kamera OBJ_BankingGet())
+
+GFX_Setv(i_GFX, 1200, v_pos + (OBJ_SightGet() * f_GFX_taille * f_long_GFX))		// Coordonnée de la position 3D du début du faisceau
+GFX_Setv(i_GFX, 1201, v_pos - (OBJ_SightGet() * f_GFX_taille * f_long_GFX))		// Coordonnée de la position 3D de la fin du faisceau
+
+//PROC_SFX_TRAINEE_PAF_GUN(i_GFX_Trainee_paf_gun, OBJ_PosGet())
+
+// DUREE DE VIE
+if ( f_life_time > OBJ_Me().des_float2 / Cf_speed)
+{
+//	GFX_Del(i_GFX)
+//	GFX_Del(GFX_Halo)
+//	GFX_Del(i_GFX_Trainee_paf_gun)
+	PROC_DESTROY_3_SFX(i_GFX, GFX_Halo, i_GFX_Trainee_paf_gun)
+	OBJ_Destroy()
+}
+f_life_time += TIME_GetDt()
+
+// SHOOT
+EVENT_AddEventShoot(to_sender, RM_WEAPON_TYPE_GUN, v_pos_old, v_pos, nobody, 0)
+i_event_shoot_done = vrai
+
+v_pos_old = v_pos
+
+//if( i_must_miss )
+//	Str_DisplayTextOnce("miss", VIEW_3dWorldTo2d(0,OBJ_PosGet()))

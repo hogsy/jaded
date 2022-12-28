@@ -1,0 +1,43 @@
+#include "ci_defines.var"
+
+float	tf_dist
+float		ti_forcecoup
+
+if (COL_ZDE_ZDECollide(o_attaque,C_zde_fight, C_zde_corps))
+{
+	ti_forcecoup = 1
+	if (i_cur_mode == Ci_mode_att_bullrush)
+	{
+		if (i_bullrush_hit)
+			return
+		ti_forcecoup = 3
+	}
+	
+	// PAF
+	EVENT_AddEventPaf( C_EVENT_FILTER_Object, C_PAF_KK_Moyen, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_attaque, ti_forcecoup, v_dir)
+	if (i_cur_mode == Ci_mode_att_cercle)
+	{
+		f_circular_attacktime = 1000
+		AI_TrackCurChange( "ci_3_attaque_cercle" )
+	}
+	else if (i_cur_mode == Ci_mode_att_bullrush )
+	{
+		if (i_bullrush_overrun)
+		{
+			i_bullrush_hit = 1
+			//COL_UnCollidableAdd( o_attaque )
+		}
+		else
+			AI_TrackCurChange("ci_10_wait_after_paf")
+		return
+	}
+	else if (f_attente_apres_attaque)
+		AI_TrackCurChange("ci_10_wait_after_paf")
+	else if (OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Generated))
+	{
+		AI_TrackStop(1)
+		AI_TrackCurChangeNow("ci_9_destroy")
+	}
+	else
+		AI_TrackCurChange("ci_7_inactif")
+}

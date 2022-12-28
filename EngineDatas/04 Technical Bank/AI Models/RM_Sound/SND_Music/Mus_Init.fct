@@ -1,0 +1,61 @@
+int ti_sf 
+
+AI_PrioritySet(190)	// Testeurs
+
+// Compteur de Trigger ----------------------------------------
+mi_TriggerTest = 0
+if (AI_TriggerIsValid( t_Condition1 ))
+{
+	mi_TriggerTest++
+ 	if ( AI_TriggerIsValid( t_Condition2 ))
+ 	{
+		mi_TriggerTest++
+ 		if ( AI_TriggerIsValid( t_Condition3 ))
+ 			mi_TriggerTest++
+	}
+}
+// Compteur de Trigger ----------------------------------------
+
+i_Group[0] -= 1
+i_Group[1] -= 1
+i_Group[2] -= 1
+
+if (i_JEU_ne_se_lancer_qune_fois)
+{
+	// SF RULES
+	i_SF_AlreadyPlayed = AI_SFDynGet(0, SF_MinById, SF_MaxById)		// Detruite ?
+	SpecialFlag_get(i_SF_AlreadyPlayed, ti_sf)
+	if ( ti_sf )
+	{
+		OBJ_CapaSet(OBJ_Capa_15,none)	
+		OBJ_Destroy()
+	}
+}
+
+if (f_begin_sound_delay >= 0)
+{
+	i_mon_instance = SND_MdFInstanceGet(1)
+	if (i_mon_instance == -1)
+	{
+		DBG_TraceObjectCanal(OBJ_Me(), 5)
+		DBG_TraceStringCanal(" n'a pas de modifier son 1 (Wav Transition)",5)
+		DBG_TraceEOLCanal(5)
+	}
+	i_mon_instance = SND_MdFInstanceGet(2)
+	if (i_mon_instance == -1)
+	{
+		DBG_TraceObjectCanal(OBJ_Me(), 5)
+		DBG_TraceStringCanal(" n'a pas de modifier son 2 (Wav Transition)",5)
+		DBG_TraceEOLCanal(5)
+	}
+}
+
+i_mon_instance = SND_MdFInstanceGet(0)
+if (i_mon_instance == -1)
+{
+	DBG_TraceObjectCanal(OBJ_Me(), 5)
+	DBG_TraceStringCanal(" n'a pas de modifier son 0 (Stream)",5)
+	DBG_TraceEOLCanal(5)
+}
+
+AI_TrackCurChangeNow("Mus_Go")

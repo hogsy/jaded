@@ -1,0 +1,59 @@
+//// Ligne à coller dans une fonction pour inclure les variables
+////#include	"ROOT/EngineDatas/04 Technical Bank/AI Models/Global Library/exec_rotations_tete&torse.var"
+//// Ligne à coller dans une fonction pour appeler la routine
+////#include	"ROOT/EngineDatas/04 Technical Bank/AI Models/Global Library/exec_rotations_tete&torse.fct"
+//
+//// On ne fait pas de rotation tete si l'anim nous l'interdit !!
+//
+//int			ti_flags
+//vector	tv_pos
+//object	to_module_tete 
+//float		tf_speed
+//
+//if ( OBJ_HasBeenKilled( des_o_acteur_suividesyeux))  des_o_acteur_suividesyeux = nobody
+//
+//tf_speed = des_f_RT_vitesse_de_rotation
+//if (des_f_RT_vitesse_de_rotation<1)
+//	tf_speed *= DT_20
+//
+//if (des_o_acteur_suividesyeux && ACT_CustomBitTest(Ani_CB_EnableRotation) )
+//{	
+//	// On regarde un perso
+//
+//	if (	des_i_RT_flags & C_RT_flags_regarde_la_tete_du_perso)
+//	{
+//		// Le flag est mis donc je vais essayer d'utiliser la tete
+//		ti_flags = des_i_RT_flags & (~C_RT_flags_regarde_la_tete_du_perso)	// Je le suprime
+//		to_module_tete = @des_o_acteur_suividesyeux ANI_CanalObjectGet(Anim_Canal_Tete)
+//		if (to_module_tete)
+//		{	
+//			if (des_v_hauteur_cible.z > 10000)	// Rajout Par FRED pour le cas de perso avec tete qui nous demande de regarder ailleur.
+//			{
+//				des_v_hauteur_cible.z-= 10000
+//				tv_pos = @des_o_acteur_suividesyeux OBJ_PosGet()		// Il n'y a pas de tete je suis obligé d'utiliser la position
+//			}				
+//			else
+//			{
+//				tv_pos = @to_module_tete OBJ_PosGet() + cvector(0,0,0.25) 	// Il y a une tete je l'utilise
+//				if (des_o_acteur_suividesyeux != OBJ_Me())
+//					des_v_hauteur_cible = Cv_NullVector
+//			}
+//		}
+//		else
+//			tv_pos = @des_o_acteur_suividesyeux OBJ_PosGet()		// Il n'y a pas de tete je suis obligé d'utiliser la position
+//	}
+//	else
+//	{
+//		// Le flag n'est pas mis donc j'utise le pivot du perso
+//		ti_flags = des_i_RT_flags
+//		tv_pos = @des_o_acteur_suividesyeux OBJ_PosGet()			// Je souhaite utiliser la position
+//	}
+//	OBJ_EyeFollow(  tv_pos + des_v_hauteur_cible, MATH_FloatLimit(tf_speed, 0, 1), des_i_type_acteur + ti_flags )
+//}
+//else
+//{	
+//	// On ne regarde plus personne
+//	ti_flags = des_i_RT_flags & (~C_RT_flags_regarde_la_tete_du_perso)	// Je le suprime
+//	OBJ_EyeFollow( Cv_NullVector, MATH_FloatLimit(tf_speed, 0, 1), des_i_type_acteur + ti_flags )
+//}
+//

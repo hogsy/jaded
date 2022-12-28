@@ -1,0 +1,95 @@
+//int			ti_i
+//
+//float		tf_temp, tf_temp1
+//vector	tv_temp
+//
+//f_specific_Z = 0.0
+//i_mf_cut = faux
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//// AFTER CAM
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//AI_CBExecute(CallBack_After_Camera, 0)
+//
+//v_sfx_sight = OBJ_SightGet()
+//v_sfx_bank = OBJ_BankingGet()
+//
+////////////////////////////////////////////////////////////////////
+//// MODE SHAKE
+////////////////////////////////////////////////////////////////////
+//if(i_sfx_shake)
+//{
+//	tf_temp = -MATH_Sin(f_sfx_time * f_sfx_shake_freq)
+//	tf_temp *= f_sfx_shake_amplitude
+//	
+//	tf_temp1 = MATH_Sin(f_sfx_time * f_sfx_shake_bank_freq)
+//	tf_temp1 *= f_sfx_shake_bank_amplitude
+//	
+//	f_sfx_time += TIME_GetDt()
+//	
+//	tv_temp = OBJ_HorizonGet()	* tf_temp1
+//	tv_temp += OBJ_SightGet()	* tf_temp
+//	
+//	tv_temp += OBJ_BankingGet()
+//	OBJ_BankingGeneralSet(OBJ_SightGet(), tv_temp)
+//	
+//	f_sfx_shake_amplitude -= (f_sfx_shake_speed * TIME_GetDt())
+//	f_sfx_shake_bank_amplitude -= (f_sfx_shake_speed * TIME_GetDt())
+//	if(f_sfx_shake_amplitude <= 0) f_sfx_shake_amplitude = 0
+//	if(f_sfx_shake_bank_amplitude <= 0) f_sfx_shake_bank_amplitude = 0
+//	
+//	f_sfx_shake_speed *= f_sfx_shake_attenuation
+//	if(f_sfx_shake_amplitude <= 0 && f_sfx_shake_bank_amplitude <= 0)
+//	{
+//		f_sfx_shake_amplitude = 0
+//		i_sfx_shake = 0
+//	}
+//}
+//
+////////////////////////////////////////////////////////////////////
+//// MODE RAMBLE
+////////////////////////////////////////////////////////////////////
+//if(i_sfx_ramble)
+//{
+//	tf_temp = f_sfx_ramble
+//	tv_temp = OBJ_SightGet() + cvector(MATH_RandFloat(-tf_temp, tf_temp), MATH_RandFloat(-tf_temp, tf_temp), MATH_RandFloat(-tf_temp, tf_temp))
+//	OBJ_SightGeneralSet(tv_temp, OBJ_BankingGet())
+//}
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//if(!OBJ_CapaTest(OBJ_Capa_0))
+//{
+//	VIEW_FocaleSet(0, f_focal_jack)
+//	VIEW_AssignObject(0)
+//	
+//	// effet viseur snipe
+//	if (f_focal_jack < 0.5 && @"Kingkong/Humain" o_mf_actor i_flag_snipe && @"univ" i_weapon_ID[C_ID_Jack] == Ci_weapon_ID_sniper_rifle)
+//	{
+//		tf_temp = (f_focal_jack - 0.3)
+//		tf_temp1 = tf_temp / 0.2
+//		@get_snipevisor OBJ_PosSet( cvector(0, -1, -tf_temp ) )
+//		@get_snipevisor OBJ_FlagInvisibleSet( 0 )
+//		@get_snipevisor OBJ_RLICarteSet( 1,COLOR_Blend( 0, 0xAF000000, tf_temp1 ))
+//		OBJ_RotateGlobalZ(MATH_Sin(TIME_Get()) * 0.00025)
+//		OBJ_RotateGlobalX(MATH_Sin(TIME_Get() * 0.9) * 0.0002)
+//	}
+//	else
+//	{
+//		@get_snipevisor OBJ_PosSet( cvector(-10, -1, -10 ) )
+//		@get_snipevisor OBJ_FlagInvisibleSet( 1 )
+//	}
+//}
+//else
+//{
+//	@get_snipevisor OBJ_PosSet( cvector(-10, -1, -10 ) )
+//	@get_snipevisor OBJ_FlagInvisibleSet( 1 )
+//}
+//
+//OBJ_CapaSet(0, OBJ_Capa_0)
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//// LANCERS DE RAYONS POUR LES TIRS
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//AI_CBExecute(CallBack_Tir, 0)
+//

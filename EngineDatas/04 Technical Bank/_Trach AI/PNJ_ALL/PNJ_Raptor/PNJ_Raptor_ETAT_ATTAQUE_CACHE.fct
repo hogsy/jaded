@@ -1,0 +1,595 @@
+#include "PNJ_Raptor_defines.var"
+
+//#define ALLOW_TERRASSE								1
+//#define ALLOW_BITE										1
+
+int			ti_i
+int			ti_index
+int			ti_action
+int			ti_frame_num
+int			ti_flag_can_leave_mode
+
+
+float		tf_dist
+float		tf_best_dist
+float		tf_dot_product
+
+vector	tv_pos
+vector	tv_me_to_cache
+vector	tv_new_sight
+
+object	to_hiding_place_nearest_wp
+object	to_hiding_place
+object	to_left_wp
+object	to_right_wp
+object	to_near_wp
+object	to_far_wp
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+
+	if (o_cache_best_wp)
+	{
+		if (@o_cache_best_wp OBJ_CapaTest(OBJ_Capa_0))
+			@o_cache_best_wp OBJ_CapaSet(none, OBJ_Capa_0)
+
+		o_cache_best_wp = nobody
+	}
+	
+	if (raptor_type == C_ID_Raptor)
+	{
+		COL_CrossableSet(none, Gmat_KK_Cross_All_But_Kong_And_Raptors)
+
+		COL_ZoneSizeSet(C_zdm_pied, cvector(0.75, 0.75, 0.75))
+		COL_ZonePosSet(C_zdm_pied, cvector(0.0, 0.0, 0.75))
+	}
+
+	ODE_Enable(vrai)
+
+	i_flag_cri = vrai
+
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_ATTAQUE_CACHE)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_ATTAQUE_CACHE
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = AI_TrackCurGet()
+
+	i_hiding_place_index = ai_perceived_hiding_place_index[i_perceived_best_actor_index]
+	i_attaque_phase = 0
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =======================================================================================================
+AI_Execute("PNJ_Raptor_exec_check_msg")
+
+AI_Execute("PNJ_Raptor_exec_check_vision")
+
+AI_Execute("PNJ_Raptor_exec_check_sound")
+
+i_flag_zde_fight_enable = vrai
+AI_Execute("PNJ_Raptor_exec_check_collision")
+
+AI_Execute("PNJ_Raptor_exec_check_paf")
+if (i_flag_paf_fly)
+	macro_change_etat("PNJ_Raptor_ETAT_PAF_FLY")
+if (i_flag_paf_fall)
+	macro_change_etat("PNJ_Raptor_ETAT_PAF_FALL")
+if (i_flag_paf_repousse || i_flag_paf_slide || !f_lifecur)
+	macro_change_etat("PNJ_Raptor_ETAT_PAF_SLIDE")
+
+AI_Execute("PNJ_Raptor_exec_check_shoot")
+
+AI_Execute("PNJ_Raptor_exec_check_client")
+
+AI_Execute("PNJ_Raptor_exec_update_best_interest")
+
+AI_Execute("PNJ_Raptor_exec_check_requin")
+
+ti_flag_can_leave_mode = faux
+if (raptor_type != C_ID_Raptor)
+	ti_flag_can_leave_mode = vrai
+//else if (raptor_category != Ci_Raptor_Heavy)
+//	ti_flag_can_leave_mode = vrai
+else if (i_attaque_phase < 2)
+	ti_flag_can_leave_mode = vrai
+
+if (ti_flag_can_leave_mode)
+{
+	if (i_flag_force_fuite)
+		macro_change_etat("PNJ_Raptor_ETAT_VALA")
+
+	if (! i_flag_in_my_territory)
+		macro_change_etat("PNJ_Raptor_ETAT_VALA")
+
+	if (! MSG_GlobalIsValid(mid_best_interet))
+		macro_change_etat("PNJ_Raptor_ETAT_ATTENTE")
+
+	if (! (ai_perceived_status[i_perceived_best_actor_index] & Ci_PERCEIVED_IN_HIDING_PLACE) )
+	{
+		if (ai_perceived_status[i_perceived_best_actor_index] & Ci_PERCEIVED_ALREADY_CHECKED)
+			macro_change_etat("PNJ_Raptor_ETAT_RODE")
+		else
+			macro_change_etat("PNJ_Raptor_ETAT_FIGHT")
+	}
+}
+
+// COMPORTEMENT ==================================================================================================	
+to_hiding_place_nearest_wp = ao_net_hiding_place[i_hiding_place_index]
+to_hiding_place = @"Interactive_Objects/ODE_TREX_Cache" to_hiding_place_nearest_wp Humain_Hide_Place_WP
+
+switch(raptor_type)
+{
+	case C_ID_Raptor :
+
+		switch(i_attaque_phase)
+		{
+			case 0 :
+				i_way_computation_mode = Ci_WAY_MODE_REACH_CACHE
+				AI_Execute("PNJ_Raptor_exec_way_find_dest_pos")
+				
+				AI_Execute("PNJ_Raptor_exec_way_move")
+		
+				i_flag_run = vrai
+
+				if (i_way_wp_nb == 1)
+				{
+					// Dernier wp avant d'arriver
+					tf_best_dist = Cf_Infinit	
+				
+					for (ti_i = 0; ti_i < 5; ti_i++)
+					{
+						to_far_wp = @"Interactive_Objects/ODE_TREX_Cache" to_hiding_place_nearest_wp WP_Raptor_List[ti_i]
+						if (!to_far_wp)
+							break	
+					
+//						if (@to_far_wp OBJ_CapaTest(OBJ_Capa_0))
+//							continue
+						if (@to_far_wp OBJ_CapaTest(OBJ_Capa_0))
+						{
+							o_cache_best_wp = nobody
+							break
+						}
+
+						tf_dist = OBJ_SqrDist(to_far_wp)
+						if (tf_dist < tf_best_dist && GRID_LIB_IsReachableFrom(OBJ_PosGet(), @to_far_wp OBJ_PosGet(), 0b0, 0.0, faux, 1))
+						{
+							tf_best_dist = tf_dist
+							
+							o_current_wp = o_next_wp
+							o_cache_best_wp = to_far_wp
+						}
+					}
+				}
+				else if (!i_way_moving && !i_way_wp_nb)
+				{
+					// OK, on est arrivé...
+					tf_best_dist = Cf_Infinit	
+				
+					for (ti_i = 0; ti_i < 5; ti_i++)
+					{
+						to_far_wp = @"Interactive_Objects/ODE_TREX_Cache" to_hiding_place_nearest_wp WP_Raptor_List[ti_i]
+						if (!to_far_wp)
+							break	
+					
+//						if (@to_far_wp OBJ_CapaTest(OBJ_Capa_0))
+//							continue
+						if (@to_far_wp OBJ_CapaTest(OBJ_Capa_0))
+						{
+							o_cache_best_wp = nobody
+							break
+						}
+							
+						tf_dist = OBJ_SqrDist(to_far_wp)
+						if (tf_dist < tf_best_dist)
+						{
+							tf_best_dist = tf_dist
+							o_cache_best_wp = to_far_wp
+						}
+					}
+					
+					if (!o_cache_best_wp)
+						PNJ_Raptor_Remove_Hiding_Place(o_current_wp)
+//						PNJ_Raptor_Memorise_Wp(o_current_wp)
+				}
+
+				if (o_cache_best_wp)
+				{
+					i_attaque_phase++
+					
+					ODE_Enable(faux)	
+
+					COL_ZoneSizeSet(C_zdm_pied, cvector(0.25, 0.25, 0.25))
+					COL_ZonePosSet(C_zdm_pied, cvector(0.0, 0.0, 0.25))
+
+					i_way_status = 0
+					i_way_last_status = 0
+
+					@o_cache_best_wp OBJ_CapaSet(OBJ_Capa_0, none)
+				}
+		
+				break
+				
+			case 1 :	
+		
+				if (to_hiding_place_nearest_wp)
+					i_dest_pos_territory_ID = to_hiding_place_nearest_wp.des_int2
+				else
+					i_dest_pos_territory_ID = i_my_territory_ID
+				v_way_destpos = @o_cache_best_wp OBJ_PosGet()
+			
+				AI_Execute("PNJ_Raptor_exec_way_move")
+
+				if (i_way_last_status & Ci_WAY_STATUS_BEZIER_NO_MOVE)
+				{
+					// OK, on est arrivé...
+					i_attaque_phase++
+					
+					i_flag_dont_change_action = vrai
+					i_flag_hiding_place_hit_enable = vrai
+
+					COL_CrossableSet(Gmat_KK_Cross_All_But_Kong_And_Raptors, none)
+
+					if (raptor_category == Ci_Raptor_Heavy)
+						PNJ_Raptor_ActionSet(Action_Attaque_Colonne_Rex)
+					else
+						PNJ_Raptor_ActionSet(Action_Attaque_Colonne)	
+		
+					OBJ_BankingGeneralSet(@o_cache_best_wp OBJ_SightGet(), v_virtual_banking)	
+					tv_pos = @o_cache_best_wp OBJ_PosGet()
+					tv_pos.z = OBJ_PosGet().z
+					OBJ_PosSet(tv_pos)
+				}
+				
+				break
+			
+			case 2 :
+		
+				i_flag_dont_change_action = vrai
+		
+				if (raptor_category == Ci_Raptor_Heavy && i_flag_hiding_place_hit_enable && ANI_CurrentFrameGet(0) > 135)
+				{
+					i_flag_hiding_place_hit_enable = faux
+					PNJ_Raptor_Hit_Hiding_Place()
+				}
+				
+				if (ACT_ActionFinished())
+				{
+//					PNJ_Raptor_Memorise_Wp(o_current_wp)
+					PNJ_Raptor_Remove_Hiding_Place(o_current_wp)
+					i_attaque_phase = 0
+				}
+				
+				break
+		}
+		
+		switch(i_attaque_phase)
+		{
+			case 0 :
+			case 1 :
+				i_flag_look = vrai
+				i_flag_look_best_interet = vrai
+				break
+		}
+		
+		AI_Execute("PNJ_Raptor_exec_select_action")
+		
+		//if (i_attaque_phase == 2 && ACT_ActionGet() == Action_Cri)
+		//	ACT_LIB_ActionFrequencyMultiply(0.8)
+		
+		break
+
+	case C_ID_Tyranosaure :
+
+		switch(i_attaque_phase)
+		{
+			case 0 :
+				v_way_destpos = @to_hiding_place_nearest_wp OBJ_PosGet()	
+		
+				i_way_computation_mode = Ci_WAY_MODE_REACH_CACHE
+				AI_Execute("PNJ_Raptor_exec_way_find_dest_pos")
+				
+				AI_Execute("PNJ_Raptor_exec_way_move")
+		
+				if (i_way_wp_nb == 1)
+				{
+					i_flag_run = faux
+				
+					to_left_wp = @"Interactive_Objects/ODE_TREX_Cache" o_next_wp WP_Left
+					to_right_wp = @"Interactive_Objects/ODE_TREX_Cache" o_next_wp WP_Right
+					
+					if ( ! to_left_wp && ! to_right_wp)	
+					{
+						DBG_TraceFloat(TIME_Get())
+						DBG_TraceString(" => ")
+						DBG_TraceObject(OBJ_Me())
+						DBG_TraceString(" ne trouve pas de wp pour se positionner pour la destruction de cache du wp ")
+						DBG_TraceObject(o_next_wp)
+						DBG_TraceEOL()
+						
+						DBG_Error("Pas de wp pour me positionner, je ne peux rien faire => LOG")
+					}
+					else if (to_left_wp && !to_right_wp)
+					{
+						if (GRID_LIB_IsReachableFrom(OBJ_PosGet(), PNJ_Raptor_Circumvent_Wp_If_Bad_Sight(OBJ_PosGet(), @to_left_wp OBJ_PosGet(), @to_left_wp OBJ_SightGet(), @to_left_wp OBJ_HorizonGet(), 1.5), 0b0, 0.0, faux, 1))
+						{
+							o_current_wp = o_next_wp
+							o_cache_best_wp = to_left_wp
+						}
+					}
+					else if (to_right_wp && !to_left_wp)
+					{
+						if (GRID_LIB_IsReachableFrom(OBJ_PosGet(), PNJ_Raptor_Circumvent_Wp_If_Bad_Sight(OBJ_PosGet(), @to_right_wp OBJ_PosGet(), @to_right_wp OBJ_SightGet(), @to_right_wp OBJ_HorizonGet(), 1.5), 0b0, 0.0, faux, 1))
+						{
+							o_current_wp = o_next_wp
+							o_cache_best_wp = to_right_wp
+						}
+					}
+					else
+					{
+						if (OBJ_SqrDistHorz(to_left_wp)	< OBJ_SqrDistHorz(to_right_wp))
+						{
+							to_near_wp = to_left_wp
+							to_far_wp = to_right_wp
+						}
+						else
+						{
+							to_near_wp = to_right_wp
+							to_far_wp = to_left_wp
+						}
+			
+						if (GRID_LIB_IsReachableFrom(OBJ_PosGet(), PNJ_Raptor_Circumvent_Wp_If_Bad_Sight(OBJ_PosGet(), @to_near_wp OBJ_PosGet(), @to_near_wp OBJ_SightGet(), @to_near_wp OBJ_HorizonGet(), 1.5), 0b0, 0.0, faux, 1))
+						{
+							o_current_wp = o_next_wp
+							o_cache_best_wp = to_near_wp
+						}
+						else if (GRID_LIB_IsReachableFrom(OBJ_PosGet(), PNJ_Raptor_Circumvent_Wp_If_Bad_Sight(OBJ_PosGet(), @to_far_wp OBJ_PosGet(), @to_far_wp OBJ_SightGet(), @to_far_wp OBJ_HorizonGet(), 1.5), 0b0, 0.0, faux, 1))
+						{
+							o_current_wp = o_next_wp
+							o_cache_best_wp = to_far_wp
+						}
+					}
+				}	
+				else if (!i_way_moving && !i_way_wp_nb && o_current_wp == o_path_dest_wp)
+				{
+					// OK, on est arrivé...
+					to_left_wp = @"Interactive_Objects/ODE_TREX_Cache" o_current_wp WP_Left
+					to_right_wp = @"Interactive_Objects/ODE_TREX_Cache" o_current_wp WP_Right
+					
+					if (to_left_wp && to_right_wp == nobody)
+						o_cache_best_wp = to_left_wp
+					else if (to_left_wp == nobody && to_right_wp)
+						o_cache_best_wp = to_right_wp
+					else if (OBJ_SqrDistHorz(to_left_wp) > OBJ_SqrDistHorz(to_right_wp))
+						o_cache_best_wp = to_right_wp
+					else
+						o_cache_best_wp = to_left_wp
+				}
+				else
+				{
+					i_flag_run = vrai
+				}
+		
+				if (o_cache_best_wp)
+				{
+					i_way_status = 0
+					i_way_last_status = 0
+
+					i_attaque_phase++
+				}
+		
+				break
+				
+			case 1 :	
+		
+//				i_dest_pos_territory_ID = o_current_wp.des_int2
+				if (to_hiding_place_nearest_wp)
+					i_dest_pos_territory_ID = to_hiding_place_nearest_wp.des_int2
+				else
+					i_dest_pos_territory_ID = i_my_territory_ID
+
+				v_way_destpos = @o_cache_best_wp OBJ_PosGet()
+
+				if (MATH_VecDotProduct(@o_cache_best_wp OBJ_SightGet(), OBJ_SightGet()) > 0.0 && MATH_VecDotProduct(@o_cache_best_wp OBJ_PosGet() - OBJ_PosGet(), OBJ_SightGet()) < 0.0)
+					i_flag_recul = vrai
+				else
+					v_way_destpos = PNJ_Raptor_Circumvent_Wp_If_Bad_Sight(OBJ_PosGet(), @o_cache_best_wp OBJ_PosGet(), @o_cache_best_wp OBJ_SightGet(), @o_cache_best_wp OBJ_HorizonGet(), 1.5)
+			
+				AI_Execute("PNJ_Raptor_exec_way_move")
+
+				if (i_way_last_status & Ci_WAY_STATUS_BEZIER_NO_MOVE)
+				{
+					// OK, on est arrivé...
+ 					i_attaque_phase++
+		
+					i_flag_dont_change_action = vrai
+		
+					to_left_wp = @"Interactive_Objects/ODE_TREX_Cache" o_current_wp WP_Left
+					to_right_wp = @"Interactive_Objects/ODE_TREX_Cache" o_current_wp WP_Right
+					
+					if (o_cache_best_wp == to_right_wp)
+						PNJ_Raptor_ActionSet(Action_Rex_Cri_D)
+					else
+						PNJ_Raptor_ActionSet(Action_Rex_Cri_G)
+				}
+		
+				break
+			
+			case 2 :
+		
+				i_flag_dont_change_action = vrai
+		
+				OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), @o_cache_best_wp OBJ_SightGet(), 4.0 * TIME_GetDt()), v_virtual_banking)	
+		
+				tv_pos = MATH_VecBlend(OBJ_PosGet(), @o_cache_best_wp OBJ_PosGet(), 4.0 * TIME_GetDt())
+				tv_pos.z = OBJ_PosGet().z
+				OBJ_PosSet(tv_pos)
+		
+				ti_frame_num = ANI_CurrentFrameGet(0)
+				if (!ACT_ActionItemGet() && ti_frame_num > 60)
+				{
+					if (f_me_to_main_dist < 25.0)
+					{
+						i_flag_zoom_smooth = vrai
+						LIBGFX_RambleCam(0.01)
+					}
+		
+//					if (f_me_to_main_dist < Cf_SND_Groupe_2_shout_fade_dist)
+//					{
+//						if ( ! i_SND_flag_fade_group_2 )
+//							SND_M_FadeGroup(SND_Cte_GrpMusic, Cf_SND_Groupe_2_shout_vol, Cf_SND_Groupe_2_shout_fade_delay)
+//						i_SND_flag_fade_group_2 = 2
+//					}
+				}
+				else if (ACT_ActionItemGet() && ti_frame_num < 10)
+				{
+					if (f_me_to_main_dist < 25.0)
+					{
+						i_flag_zoom_smooth = vrai
+						LIBGFX_RambleCam(0.01)
+					}
+		
+//					if (f_me_to_main_dist < Cf_SND_Groupe_2_shout_fade_dist)
+//					{
+//						if ( ! i_SND_flag_fade_group_2 )
+//							SND_M_FadeGroup(SND_Cte_GrpMusic, Cf_SND_Groupe_2_shout_vol, Cf_SND_Groupe_2_shout_fade_delay)
+//						i_SND_flag_fade_group_2 = 2
+//					}
+				}
+		
+				if (ACT_ActionFinished())
+				{
+					i_flag_hiding_place_hit_enable = vrai
+					i_attaque_phase++
+				}
+				else
+					break
+		
+			case 3 :
+		
+				i_flag_dont_change_action = vrai
+		
+				OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), @o_cache_best_wp OBJ_SightGet(), 4.0 * TIME_GetDt()), v_virtual_banking)	
+				
+				tv_pos = MATH_VecBlend(OBJ_PosGet(), @o_cache_best_wp OBJ_PosGet(), 4.0 * TIME_GetDt())
+				tv_pos.z = OBJ_PosGet().z
+				OBJ_PosSet(tv_pos)
+			
+				ti_action = ACT_ActionGet()
+				switch(ti_action)
+				{
+					case Action_Coup_Mur_D :
+					case Action_Coup_Mur_G :
+				
+						if (i_flag_hiding_place_hit_enable && ANI_CurrentFrameGet(0) > 32)
+						{
+							i_flag_hiding_place_hit_enable = faux
+							PNJ_Raptor_Hit_Hiding_Place()
+						}
+				
+						if (ACT_ActionFinished())
+						{
+							if (i_flag_roar)
+							{	
+								i_attaque_phase = 2
+								i_flag_dont_change_action = vrai
+								if (ti_action == Action_Coup_Mur_D)
+									PNJ_Raptor_ActionSet(Action_Rex_Cri_D)
+								else
+									PNJ_Raptor_ActionSet(Action_Rex_Cri_G)
+							}
+							else
+							{
+								i_flag_hiding_place_hit_enable = vrai
+								PNJ_Raptor_ActionSet(ACT_ActionGet() | Ci_ActionSet_Force_FrameZero)
+//								PNJ_Raptor_ActionSet(ACT_ActionGet())
+							}
+						}
+							
+						break
+						
+					default:
+					
+						to_left_wp = @"Interactive_Objects/ODE_TREX_Cache" o_current_wp WP_Left
+						to_right_wp = @"Interactive_Objects/ODE_TREX_Cache" o_current_wp WP_Right
+						
+						i_flag_hiding_place_hit_enable = vrai
+							
+						if (o_cache_best_wp == to_right_wp)
+							PNJ_Raptor_ActionSet(Action_Coup_Mur_D)
+						else
+							PNJ_Raptor_ActionSet(Action_Coup_Mur_G)
+				}
+				
+				break
+		
+			case 4 :
+		
+		//		i_flag_dont_change_action = vrai
+		
+				to_left_wp = @"Interactive_Objects/ODE_TREX_Cache" o_current_wp WP_Left
+				to_right_wp = @"Interactive_Objects/ODE_TREX_Cache" o_current_wp WP_Right
+		
+				OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), @o_cache_best_wp OBJ_SightGet(), 4.0 * TIME_GetDt()), v_virtual_banking)	
+		
+				tv_pos = MATH_VecBlend(OBJ_PosGet(), @o_cache_best_wp OBJ_PosGet(), 4.0 * TIME_GetDt())
+				tv_pos.z = OBJ_PosGet().z
+				OBJ_PosSet(tv_pos)
+		
+				f_attaque_wait_duration -= MATH_FloatMin(f_attaque_wait_duration, TIME_GetDt())
+		
+				if (f_attaque_wait_duration <= 0.0)
+				{
+					i_flag_hiding_place_hit_enable = vrai
+					i_attaque_phase = 3
+				}
+		
+				break
+		
+		}
+		
+		switch(i_attaque_phase)
+		{
+			case 0 :
+			case 1 :
+				i_flag_look = vrai
+		
+				if (o_cache_best_wp && OBJ_SqrDistHorz(o_cache_best_wp) < 16.0)
+				{
+					v_look_pos = @o_cache_best_wp OBJ_PosGet()
+					v_look_pos += @o_cache_best_wp OBJ_SightGet() * 10.0
+					v_look_pos.z = @o_ventre OBJ_PosGet().z
+				}
+				else
+				{
+					i_flag_look_best_interet = vrai
+				}
+				break
+		}
+		
+		AI_Execute("PNJ_Raptor_exec_select_action")
+		
+		//if (i_attaque_phase == 2 && ACT_ActionGet() == Action_Cri)
+		//	ACT_LIB_ActionFrequencyMultiply(0.8)
+		
+		break
+}

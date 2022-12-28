@@ -1,0 +1,113 @@
+//#include "CM_Defines.var"
+//
+//vector	tv_temp, tv_temp1, tv_joy1
+//float		tf_temp, tf_norm
+//object	to_obj
+//
+//// Params
+//o_mf_actor = AI_MainActorGet(0)
+//@o_mf_actor OBJ_FlagInvisibleSet(faux)
+//
+//// Changement de mode ?
+//if(i_mode_cur != CM_ModeVisee)
+//{
+//	i_mode_fps = faux
+//	if(i_mode_cur != CM_ModeProche) AI_TrackChange(1, "CM_Meca_Suivi")
+//	else i_mode_fps = vrai
+//	
+//	f_mf_blend_pos = 6
+//	f_last_dot = 0
+//	i_compute_cur = vrai
+//	AI_Execute("CM_Meca_CCur")	
+//	i_mode_cur = CM_ModeVisee	
+//}
+//
+//// Meca
+//f_au_z_base = 1.0
+//f_au_z_div = 3
+//f_au_z_mul = 1
+//f_au_tgt_base = 1.0
+//f_au_tgt_div = 7
+//f_au_tgt_mul = 1
+//		
+//i_compute_cur = faux
+//
+//// Retour mode normal ?
+//if(!IO_ButtonPressed(joy_button_L))
+//{
+//	// Transfert visee
+//	tf_temp = MATH_VecDotProduct(v_pos_cur - OBJ_PosGet(), v_pos_cur - @o_mf_actor OBJ_PosGet())
+//	tf_temp /= MATH_VecDotProduct(v_pos_cur - OBJ_PosGet(), v_pos_cur - OBJ_PosGet())
+//	tv_temp = tf_temp * (OBJ_PosGet() - v_pos_cur)
+//	v_mf_tgt_pos = v_pos_cur + tv_temp
+//	
+//	// FPS
+//	if(i_mode_fps)
+//	{
+//		tv_temp = v_pos_cur - @o_mf_actor OBJ_PosGet()
+//		MATH_VecSetHorzNormalize(tv_temp)
+//		@o_mf_actor OBJ_SightGeneralSet(tv_temp, Cv_VerticalVector)
+//		AI_TrackCurChangeNow("CM_Mode_Proche")
+//	}
+//	
+//	AI_TrackCurChangeNow("CM_Mode_Jack")
+//}
+//
+//// Curseur relatif
+//if(o_object_cur) v_pos_cur = MATH_VecBlend(v_pos_cur, @o_object_cur OBJ_PosGet() + v_rel_pos_cur, 6 * TIME_GetDt())
+//
+//// Deplacement curseur
+//v_joy_1 = MATH_VecBlend(v_joy_1, IO_JoyGetMove1(), 7 * TIME_GetDt())
+//tv_joy1 = v_joy_1
+//if(MATH_AbsFloat(tv_joy1.x) > C_JoyTolX)
+//{
+//	i_compute_cur = vrai
+//	tv_joy1.x -= C_JoyTolX * MATH_FloatSign(tv_joy1.x)
+//	tv_temp = v_pos_cur - OBJ_PosGet()
+//	MATH_VecSetNorm(tv_temp, 20)
+//	v_pos_cur = OBJ_PosGet() + tv_temp
+//	v_pos_cur += OBJ_HorizonGet() * (-tv_joy1.x * 1.5)
+//}
+//
+//if(MATH_AbsFloat(tv_joy1.y) > C_JoyTolY)
+//{
+//	i_compute_cur = vrai
+//	tv_joy1.y -= C_JoyTolY * MATH_FloatSign(tv_joy1.y)
+//	tv_temp = v_pos_cur - OBJ_PosGet()
+//	MATH_VecSetNorm(tv_temp, 20)
+//	v_pos_cur = OBJ_PosGet() + tv_temp
+//	v_pos_cur += OBJ_BankingGet() * (-tv_joy1.y * 1.5)
+//	if(v_pos_cur.z < -5) v_pos_cur.z = -5
+//	if(v_pos_cur.z > 20) v_pos_cur.z = 20
+//}
+//
+//if(IO_ButtonJustPressed(joy_button_StickR))
+//{
+//	i_compute_cur = vrai
+//	i_force_ignore = vrai
+//}
+//
+//f_mf_req_dist = 2.5
+//v_mf_tgt_req_pos = v_pos_cur
+//f_mf_blend_pos_tgt = 10000
+//f_mf_blend_pos += 2
+//f_mf_blend_pos = MATH_FloatMin(f_mf_blend_pos, 200)
+//
+//// Angle
+//tv_temp = v_pos_cur - OBJ_PosGet()
+//MATH_VecSetNorm(tv_temp, 20)
+//f_mf_anglez = -tv_temp.z * 0.05
+//
+//// Sight
+//v_mf_req_sight = (@o_mf_actor OBJ_PosGet() - v_pos_cur) 
+//MATH_VecSetHorzNormalize(v_mf_req_sight)
+//
+//if(i_mode_fps)
+//{
+//	to_obj = @o_mf_actor ANI_CanalObjectGet(0)
+//	tv_temp = @to_obj OBJ_PosGet() 
+//	OBJ_PosSet(tv_temp)
+//	tv_temp = v_pos_cur - OBJ_PosGet()
+//	OBJ_SightGeneralSet(tv_temp, Cv_VerticalVector)
+//	@o_mf_actor OBJ_FlagInvisibleSet(vrai)
+//}

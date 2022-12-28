@@ -1,0 +1,78 @@
+//----------------------------------------------------------------------------------------------------
+// INCLUDE
+//----------------------------------------------------------------------------------------------------
+#include "SM_Constants.var"
+
+
+//----------------------------------------------------------------------------------------------------
+// LOCAL VAR
+//----------------------------------------------------------------------------------------------------
+messageid 		tmid_signal
+int					ti_msg 
+int					ti_state 
+object			to_obj
+
+
+//----------------------------------------------------------------------------------------------------
+// CODE
+//----------------------------------------------------------------------------------------------------
+SND_M_SetGroupVol(SND_Cte_GrpMusic, 1.0)
+
+
+switch(mi_ScriptMode)
+{
+	// play and wait
+	case Cte_ScriptState_Play :
+		if( mi_ScriptTransSoundIndex != -1 )
+		{
+			SND_Play(mai_MusicInstance[mi_ScriptTransSoundIndex])
+			SND_Play(mai_MusicInstance[mi_ScriptTransSoundIndex+1])
+		}
+		
+		if(mi_ScriptSoundIndex != -1)
+		{
+			SND_InstanceSetf(mai_MusicInstance[mi_ScriptSoundIndex ], SND_Cte_SetInstDelay, mf_ScriptDelay)
+			SND_Play(mai_MusicInstance[	mi_ScriptSoundIndex ] )
+			mf_ScriptDelay = 0.0
+		}
+		else
+		{
+			mi_ScriptSoundIndex = 0 // force SND_IsPlaying to return 0
+		}
+			
+		mi_ScriptMode = Cte_ScriptState_WaitingExit
+		break
+		
+	// wait a signal or the end of the sound
+	case Cte_ScriptState_WaitingExit :
+		if( SND_IsPlaying(mai_MusicInstance[	mi_ScriptSoundIndex ] ) )
+		{
+			// sound is playing, so we scan that we do not received an inactive signal
+			ti_msg = -1
+			for(tmid_signal = MSG_GlobalScan(C_EVENT_TYPE_Signal, &ti_msg); MSG_GlobalIsValid(tmid_signal); tmid_signal = MSG_GlobalScan(C_EVENT_TYPE_Signal, &ti_msg) )
+			{
+				ti_state = SIG_TypeGet( tmid_signal )
+				to_obj = SIG_GaoGet( tmid_signal )
+							
+				if( ti_state  == SIG_C_INACTIVE_MUS_SCRIPT_MODE )
+				{
+					dbg_print(DBG_LV1, "exit script mode", to_obj)
+					SND_Stop(mai_MusicInstance[	mi_ScriptSoundIndex ] ) 
+					return
+				}
+			}
+		}
+		else
+		{
+			dbg_print(DBG_LV1, "exit script mode", nobody)
+			
+			SND_M_GetMusPhase = -1
+			MUS_SetPhase(-1)
+
+			AI_TrackChange(0, "SM_Scan_Jingle")
+			AI_TrackChange(1, "SM_Scan_Phase_Kit")
+			AI_TrackChange(2, "SM_Scheduler")
+			AI_TrackChange(3, "SM_MusVolume")
+		}
+		break
+}

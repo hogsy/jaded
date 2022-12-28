@@ -1,0 +1,172 @@
+#include "H_defines.var"
+
+int			ti_i
+int			ti_context
+float		tf_liferatio
+object	to_kong 
+object	to_sight_object
+vector	tv_temp
+int			ti_type_liaison
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+
+	AI_CBDel(o_KK_actor, CallBack_After_Blend, "H_callback_set_pos")
+	COL_ColSetActivationSet( C_bit_zdm_pied, none)
+	DYN_GravitySet( Cv_NormalGravity)
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_IA_Ann_GRAB_KK)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_IA_Ann_GRAB_KK
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+		ai_SRV_ENABLE[ti_i] = faux
+
+	// AUTORISATIONS DES GRABS
+	ai_SRV_ENABLE[Ci_LNK_GRAB_RAPTOR]		= vrai
+	ai_SRV_ENABLE[Ci_LNK_KKGRAB_OBJECT]	= vrai
+
+	// AUTORISATIONS DES BLOCKS
+	ai_SRV_ENABLE[Ci_LNK_BLOCK_RAPTOR]	= vrai
+	
+	o_grab_actor = ao_SRV[Ci_LNK_KKGRAB_OBJECT]
+	
+	f_time_start_etat = 0.0
+	AI_CBAdd(o_KK_actor, CallBack_After_Blend, "H_callback_set_pos")
+	COL_UnCollidableAdd(o_KK_actor)
+	COL_ColSetActivationSet( none, C_bit_zdm_pied)
+	DYN_GravitySet( Cv_NullVector)
+	DYN_SpeedSetVector( Cv_NullVector)
+	// Si j'étais planqué sur un WP, je libère le WP
+	if(o_in_cache_0D) 
+	{
+		@o_in_cache_0D OBJ_CapaSet(0, Capa_Cache_taken)
+		o_in_cache_0D = nobody
+	}
+	
+	i_KK_grab_transition = 0			// Transitions pour prendre ANN
+	
+	f_time_KK_camera = 0.0			// fin de la caméra cut ANN (si cut scene en cours)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+	f_pos_blend_coef = MATH_FloatBlend(f_pos_blend_coef, 1.0, 10.0 * TIME_GetDt())
+}
+
+
+// ANALYSE =======================================================================================================
+AI_Execute("H_exec_serveur_get")
+
+if( ! ao_SRV[Ci_LNK_KKGRAB_OBJECT] )
+	macro_change_etat("H_ETAT_IA_Projete")
+	
+if( ao_SRV[Ci_LNK_GRAB_RAPTOR] && f_time_start_etat > 0.1)
+{
+	// Kcamera_Insert_Plan( float Kcamera_duration, vector Kcamera_axis, float Kcamera_dist, object Kcamera_target, int Kcamera_module , vector Kcamera_offset, float Kcamera_transpeed, int Kcamera_flags)
+//	tv_temp = @ao_SRV[Ci_LNK_GRAB_RAPTOR] OBJ_PosGet() - OBJ_PosGet()
+	if( MATH_VecDotProduct(@ao_SRV[Ci_LNK_KKGRAB_OBJECT] OBJ_SightGet(), @ao_SRV[Ci_LNK_GRAB_RAPTOR] OBJ_SightGet())>0)
+		tv_temp = @ao_SRV[Ci_LNK_GRAB_RAPTOR] OBJ_SightGet()
+	else
+		tv_temp = - @ao_SRV[Ci_LNK_GRAB_RAPTOR] OBJ_SightGet()
+	tv_temp.z = 0.0
+	tv_temp = MATH_VecBlendRotate(tv_temp, Cv_VerticalVector, 0.2)
+	 
+//	Kcamera_Insert_Plan(5.0, tv_temp, 5.0, OBJ_Me(), Anim_Canal_Tete, cvector(0.0, 0.0, 0.0) ,0.0, 0b0)
+	
+	ao_SRV[Ci_LNK_KKGRAB_OBJECT] = LNK_ServeurGet(Ci_LNK_KKGRAB_OBJECT, amid_SRV_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT], faux, afct_SRV[Ci_LNK_KKGRAB_OBJECT], nofunc)	
+	AI_Execute("H_exec_change_etat")
+}
+
+// COMPORTEMENT =======================================================================================================
+
+i_flag_ANN_au_sol = faux
+
+if( ao_SRV[Ci_LNK_KKGRAB_OBJECT] && MSG_GlobalIsValid(amid_SRV_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT]) )
+{
+	ti_type_liaison = LNK_KKGrabObject_TypeGet(amid_SRV_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT])
+	
+	if( i_KK_grab_transition != ti_type_liaison )
+	{
+		// nouvelle étape dans le grab de ANN
+		i_KK_grab_transition = ti_type_liaison
+		
+		if( ti_type_liaison == Ci_KKGrabObject_Attrappe 
+		|| ti_type_liaison == Ci_KKGrabObject_Porte_Epaule
+		|| ti_type_liaison == Ci_KKGrabObject_Porte_Main
+		|| ti_type_liaison == Ci_KKGrabObject_PoseSol)
+			f_pos_blend_coef = 0.0			// blend de position pour attrapper ANN au sol puis pour la poser sur l'épaule
+	}
+
+	
+	switch( ti_type_liaison )
+	{
+		case Ci_KKGrabObject_Depose :
+		{
+			// KONG vient de déposer ANN
+//			o_KK_safe_WP = LNK_KKGrabObject_SafeWPGet(amid_SRV_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT])
+			ao_SRV[Ci_LNK_KKGRAB_OBJECT] = LNK_ServeurGet(Ci_LNK_KKGRAB_OBJECT, amid_SRV_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT], faux, afct_SRV[Ci_LNK_KKGRAB_OBJECT], nofunc)
+			
+			// Kcamera_Insert_Plan( float Kcamera_duration, vector Kcamera_axis, float Kcamera_dist, object Kcamera_target, int Kcamera_module , vector Kcamera_offset, float Kcamera_transpeed, int Kcamera_flags)
+			tv_temp = @o_grab_actor OBJ_PosGet() - OBJ_PosGet()
+			tv_temp.z = 0.0
+			tv_temp = MATH_VecBlendRotate(tv_temp, Cv_VerticalVector, 0.2)
+			
+//			Kcamera_Insert_Plan(3.0, tv_temp, 5.0, OBJ_Me(), Anim_Canal_Tete, cvector(0.0, 0.0, 0.0), 0.0, 0b0)
+			
+			macro_change_etat("H_ETAT_ann_KK_sol")
+			break
+		}
+		case Ci_KKGrabObject_Lache :
+		{
+			// KONG lache ANN
+			ao_SRV[Ci_LNK_KKGRAB_OBJECT] = LNK_ServeurGet(Ci_LNK_KKGRAB_OBJECT, amid_SRV_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT], faux, afct_SRV[Ci_LNK_KKGRAB_OBJECT], nofunc)			
+			
+			// Kcamera_Insert_Plan( float Kcamera_duration, vector Kcamera_axis, float Kcamera_dist, object Kcamera_target, int Kcamera_module , vector Kcamera_offset, float Kcamera_transpeed, int Kcamera_flags)
+			tv_temp = @o_grab_actor OBJ_PosGet() - OBJ_PosGet()
+			tv_temp.z = 0.0
+			tv_temp = MATH_VecBlendRotate(tv_temp, Cv_VerticalVector, 0.2)
+			
+//			Kcamera_Insert_Plan( 1.0, tv_temp, 5.0, OBJ_Me(), Anim_Canal_Tete, cvector(0.0, 0.0, 0.0), 0.0, 0b0)
+			
+			macro_change_etat("H_ETAT_IA_Projete")
+			break
+		}
+		default:
+		{
+			break
+		}
+	}
+	
+	ACT_ActionSet( Action_Ann_Sur_Epaule )
+}
+
+
+// SUIVI DU REGARD
+//to_sight_object = @"KingKong/Kong2" o_grab_actor o_fight_actor
+//if( to_sight_object )
+//{
+//	// si KONG a un ennemi, ANN le regarde
+//	i_flag_suivi_regard = vrai
+//	o_force_regard_time = to_sight_object
+//	v_force_regard_time = Cv_NullVector		// pour que ANN regarde bien la tête
+//	f_force_regard_time = 1.0						// pour cette trame
+//}
+//else
+	i_flag_suivi_regard = faux			// sinon elle ne regarde pas KONG
+

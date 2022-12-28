@@ -1,0 +1,12 @@
+if(@"univ" o_ramasse_objet_who && @"univ" o_ramasse_objet_who != AI_MainActorGet(C_ID_Joueur)) 
+{
+	AI_TrackCurChangeNow("Projectile_waittaken")
+	return
+}
+
+if (i_SF_TakeOnlyOnce)
+	SpecialFlag_set(i_SF_AlreadyTaken)
+	
+if(@"univ" o_ramasse_objet_who) return
+
+AI_Execute( "Projectile_destroy")

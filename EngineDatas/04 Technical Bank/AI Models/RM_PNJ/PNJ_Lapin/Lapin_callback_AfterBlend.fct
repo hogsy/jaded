@@ -1,0 +1,206 @@
+#include "PNJ_Lapin_defines.var"
+
+object	to_bone
+vector	tv_temp
+vector	tv_pos
+int			ti_ok
+int			ti_cpt
+float		tf_amp
+float		tf_rayon
+float		tf_taille
+float		tf_vitesse_etoiles
+
+
+// LOOK --------------------------------------------------------------------------------------------------------------------------------
+v_look_head_pos = MATH_VecGlobalToLocal(@ao_head_bones[0] OBJ_PosGet() - OBJ_PosGet())
+v_look_banking = MATH_VecGlobalToLocal(@ao_head_bones[0] OBJ_BankingGet())
+
+if( ! o_RideMount_Callback_Actor )
+	AI_Execute("Lapin_exec_neck")		// sinon exécuté dans la callback
+
+
+// A L ECRAN ?? -----------------------------------------------------------------------------------------------------------------
+f_on_screen_pourcent = VIEW_LIB_Pourcent_On_Screen(COL_ZonePosGet(C_zde_corps), COL_ZoneSizeGet(C_zde_corps), 1.0, 1.0, tv_temp, faux)
+
+
+// INVISIBLE ? -------------------------------------------------------------------------------------------------------------------
+if( i_invisible_flag )
+	returntrack
+
+
+// TERMINATOR --------------------------------------------------------------------------------------------------------------
+if( Config_Lapin == Config_Lapin_Terminator )
+{
+	// PTITS COEURS
+	if( ! i_decomposition_phase )
+	{
+		// tout rose
+		switch( i_etat_courant )
+		{
+			case ETAT_Lapin_FIGHT :
+				PROC_SFX_COEURS_TERMINATOR(i_GFX_Coeurs_terminator, OBJ_PosGet() + (f_speed_horiz* OBJ_SightGet()), OBJ_ZoomGet())
+				break
+			default:
+				PROC_DESTROY_SFX(i_GFX_Coeurs_terminator)
+				break
+		}
+	}
+	else
+		PROC_DESTROY_SFX(i_GFX_Coeurs_terminator)
+
+	// YEUX ROUGES --------------------------------------------------------------------------------------------------------------
+	if( i_decomposition_phase )
+	{
+		// à moitié ou totalement robot
+	
+		// OEIL GAUCHE
+		if (i_GFX_Halo_OeilG == -1)
+		{
+			i_GFX_Halo_OeilG = GFX_Add(21)                                 	 //création du halo
+			GFX_MaterialSet(i_GFX_Halo_OeilG, get_SFX_light_and_smoke,0) 	// affectation du matériau
+			GFX_Setf(i_GFX_Halo_OeilG, 21000, 0.25)             // taille du halo
+			GFX_Setf(i_GFX_Halo_OeilG, 21004, 4.0)                       // taille du halo
+			GFX_Seti(i_GFX_Halo_OeilG, 21101, 0x0000FF)          // couleur du halo
+			GFX_Seti(i_GFX_Halo_OeilG, 21100, 4)
+		}
+		to_bone = ANI_CanalObjectGet(Anim_Canal_PupilleGauche)
+		if( to_bone )
+		{
+			tv_pos = @to_bone OBJ_PosGet()
+			GFX_Setv(i_GFX_Halo_OeilG, 21200, tv_pos)
+			GFX_Setv(i_GFX_Halo_OeilG, 21201, @to_bone OBJ_SightGet())
+		}
+		else
+		{
+			tv_pos = @o_canal_tete OBJ_PosGet()
+			tv_pos += @o_canal_tete OBJ_BankingGet() * 0.2 * OBJ_ZoomGet()
+			tv_pos += @o_canal_tete OBJ_SightGet() * 0.37 * OBJ_ZoomGet()
+			tv_pos += @o_canal_tete OBJ_HorizonGet() * 0.23 * OBJ_ZoomGet()
+			GFX_Setv(i_GFX_Halo_OeilG, 21200, tv_pos)
+			GFX_Setv(i_GFX_Halo_OeilG, 21201, @o_canal_tete OBJ_SightGet())
+		}
+		
+		// OEIL DROIT
+		if (i_GFX_Halo_OeilD == -1)
+		{
+			i_GFX_Halo_OeilD = GFX_Add(21)                                 	 //création du halo
+			GFX_MaterialSet(i_GFX_Halo_OeilD, get_SFX_light_and_smoke,0) 	// affectation du matériau
+			GFX_Setf(i_GFX_Halo_OeilD, 21000, 0.25)             // taille du halo
+			GFX_Setf(i_GFX_Halo_OeilD, 21004, 4.0)                       // taille du halo
+			GFX_Seti(i_GFX_Halo_OeilD, 21101, 0x0000FF)          // couleur du halo
+			GFX_Seti(i_GFX_Halo_OeilD, 21100, 4)
+		}
+		to_bone = ANI_CanalObjectGet(Anim_Canal_PupilleDroite)
+		if( to_bone )
+		{
+			tv_pos = @to_bone OBJ_PosGet()
+			GFX_Setv(i_GFX_Halo_OeilD, 21200, tv_pos)
+			GFX_Setv(i_GFX_Halo_OeilD, 21201, @to_bone OBJ_SightGet())
+		}
+		else
+		{
+			tv_pos -= @o_canal_tete OBJ_HorizonGet() * 0.46 * OBJ_ZoomGet()
+			GFX_Setv(i_GFX_Halo_OeilD, 21200, tv_pos)
+			GFX_Setv(i_GFX_Halo_OeilD, 21201, @o_canal_tete OBJ_SightGet())
+		}
+	}
+}
+
+
+// GOUTTES DE SUEUR -----------------------------------------------------------------------------------------------------------------------------
+if( ! f_GFX_GoutteSueur_duree && i_GFX_GoutteSueur1 != -1 )
+{
+	i_GFX_GoutteSueur1 = -1
+	i_GFX_GoutteSueur2 = -1
+}
+if( i_GFX_GoutteSueur1 != -1 )
+{
+	v_GFX_GoutteSueur_pos = Lapin_GFX_GoutteSueur_PosGet()
+	PROC_SFX_GOUTTES_LAPIN_01(v_GFX_GoutteSueur_pos, f_GFX_GoutteSueur_taille, f_GFX_GoutteSueur_dist, i_GFX_GoutteSueur1, i_GFX_GoutteSueur2)
+}
+
+
+// HALO INDICATEUR VISUEL POUR HOTSPOT OU BEAT ------------------------------------------------------------------------------------------------------
+if( f_OnScreen_Pct > 0.5 && Beat_Config == Ci_BEAT_Config_Sensible )
+{
+	if( i_GFX_Halo_Display_Config == -1)
+	{
+		i_GFX_Halo_Display_Config = GFX_Add(21)                 // création du halo
+		GFX_FlagSet(i_GFX_Halo_Display_Config, 4, 1)
+		GFX_MaterialSet(i_GFX_Halo_Display_Config, get_SFX_light_and_smoke,0) // affectation du matériau
+		GFX_Seti(i_GFX_Halo_Display_Config, 21103, 1)			// 0 (défaut) flare mural		1 flare très simple 
+		GFX_Seti(i_GFX_Halo_Display_Config, 21101, 0x00AB32BC)     // couleur du halo
+		GFX_Setf(i_GFX_Halo_Display_Config, 21000, 1.0 * OBJ_ZoomGet())  // taille du halo
+		GFX_Setf(i_GFX_Halo_Display_Config, 21002, 0.75 * OBJ_ZoomGet())		// extraction par rapport au point de génération (vers la cam)
+	}
+//	GFX_Seti(i_GFX_Halo_Display_Config, 21101, color_test)
+//	GFX_Setf( i_GFX_Halo_Display_Config, 21000, halo_taille * OBJ_ZoomGet())  // taille du halo 
+//	GFX_Setf(i_GFX_Halo_Display_Config, 21002, halo_extraction * OBJ_ZoomGet())		// extraction par rapport au point de génération (vers la cam)
+	tv_pos = @o_canal_tete OBJ_PosGet() + Cv_VerticalVector
+	GFX_Setv(i_GFX_Halo_Display_Config, 21200, tv_pos )      // position du halo
+}
+else if( i_GFX_Halo_Display_Config != -1 )
+{
+	GFX_Del(i_GFX_Halo_Display_Config)
+	i_GFX_Halo_Display_Config = -1
+}
+
+
+// TERMINATOR : SOUND COURT CIRCUIT ET ETINCELLES
+if( i_Terminator_CourtCircuit_flag )
+{
+	f_Terminator_CourtCircuit_timer -= MATH_FloatMin(f_Terminator_CourtCircuit_timer, TIME_GetDt())
+	if( i_Mort_JeMeNoie_flag || ! f_LIFE_cur || i_paf_combo_fort_en_cours )
+	{
+		Lapin_GFX_Etincelles()
+		if( ! f_Terminator_CourtCircuit_timer )
+		{
+			SND_RequestPlay(Ci_SND_TERMINATOR_CourtCircuit)
+			f_Terminator_CourtCircuit_timer = MATH_RandFloat(0.5,1.0)
+		}
+	}
+	else
+	{
+		if( f_Terminator_CourtCircuit_timer < 0.5 )
+		{
+			if( ! i_Terminator_CourtCircuit_SND )
+			{
+				SND_RequestPlay(Ci_SND_TERMINATOR_CourtCircuit)
+				i_Terminator_CourtCircuit_SND = vrai
+			}
+			Lapin_GFX_Etincelles()
+			if( ! f_Terminator_CourtCircuit_timer )
+			{
+				f_Terminator_CourtCircuit_timer = MATH_RandFloat(1.0, 3.0)
+				i_Terminator_CourtCircuit_SND = faux
+			}
+		}
+	}
+}
+
+
+// COURONNE D'ETOILES =============================================================
+if( f_GFX_Couronne_etoiles_duree )
+{
+	tf_rayon = 1.0 * OBJ_ZoomGet()
+	tf_taille = 1.0 * OBJ_ZoomGet()
+	tf_vitesse_etoiles = 200.0 * OBJ_ZoomGet()
+	
+	for (ti_cpt = 0; ti_cpt < Ci_SFX_NB_ETOILES; ti_cpt++) 
+	{ 
+		tv_pos.x = OBJ_PosGet().x + (tf_rayon * MATH_Cos(f_GFX_Couronne_angle[ti_cpt] * Cf_PiBy180)) 
+		tv_pos.y = OBJ_PosGet().y + (tf_rayon * MATH_Sin(f_GFX_Couronne_angle[ti_cpt] * Cf_PiBy180)) 
+		tv_pos.z = @o_canal_tete OBJ_PosGet().z + 0.5 //+ MATH_RandFloat(-0.2,0.2)
+		tf_amp = 0.025 * tf_taille
+		PROC_SFX_COURONNE_ETOILES(i_GFX_Couronne_etoiles[ti_cpt], tv_pos + cvector(MATH_RandFloat(-tf_amp,tf_amp), MATH_RandFloat(-tf_amp, tf_amp), MATH_RandFloat(-tf_amp, tf_amp)), tf_taille) 
+		f_GFX_Couronne_angle[ti_cpt] += TIME_GetDt() * tf_vitesse_etoiles 
+		if (f_GFX_Couronne_angle[ti_cpt] >360.0) 
+			f_GFX_Couronne_angle[ti_cpt] -= 360.0 
+	} 
+}
+else
+{
+	for (ti_cpt = 0; ti_cpt < Ci_SFX_NB_ETOILES; ti_cpt++)
+		PROC_DESTROY_SFX(i_GFX_Couronne_etoiles[ti_cpt])
+}
+

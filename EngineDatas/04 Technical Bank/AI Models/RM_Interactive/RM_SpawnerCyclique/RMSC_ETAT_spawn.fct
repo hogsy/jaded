@@ -1,0 +1,121 @@
+#include "RM_SpawnerCyclique_defines.var"
+
+int					ti_i
+vector			tv_vec
+vector			tv_delta
+float				tf_dist
+
+// SORTIE ETAT 	===================================================================
+if( i_sort_etat )
+{
+	i_sort_etat = faux
+	return
+}
+
+// INIT ETAT 	=====================================================================
+if( i_etat_courant != RMSC_ETAT_SPAWN)
+{
+	i_etat_courant = RMSC_ETAT_SPAWN
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+
+	i_net_wp_count = WAY_NetFill(@o_start_wp WAY_NetOfObj(), o_start_wp, &ao_net_wp[0])
+	f_current_delay = f_delay
+	f_previous_speed = f_speed
+} 
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// STIMULI ========================================================================
+
+// Changement de direction ?
+if (MATH_FloatSign(f_previous_speed) != MATH_FloatSign(f_speed))
+{
+	// Changer les waypoints cible pour les objets spawnés
+	for (ti_i=0; ti_i < RMSC_NB_OBJECTS; ti_i++)
+	{
+		if (!(@ao_objects[ti_i] OBJ_FlagsControlGet() & OBJ_C_ControlFlag_ForceInvisible))
+		{
+			if (f_speed < 0.0)
+				ai_objects_wp[ti_i]--
+			else
+				ai_objects_wp[ti_i]++
+		}
+	}
+	
+	if (f_speed > 0.0)
+		f_current_delay = f_delay
+}
+
+// COMPORTEMENT ================================================================
+
+// Spawner un nouvel objet si besoin
+f_current_delay -= TIME_GetDt()
+if ((f_current_delay <= 0.0) && (f_speed > 0.0))
+{
+	for (ti_i=0; ti_i < RMSC_NB_OBJECTS; ti_i++)
+	{
+		if ((ao_objects[ti_i] == nobody) || (@ao_objects[ti_i] OBJ_FlagsControlGet() & OBJ_C_ControlFlag_ForceInvisible))
+		{
+			if (ao_objects[ti_i] == nobody)
+				ao_objects[ti_i] = @o_object OBJ_Duplicate(@o_start_wp OBJ_PosGet())
+
+//			ao_objects[ti_i] = @o_object OBJ_Duplicate(@o_start_wp OBJ_PosGet())
+			@ao_objects[ti_i] OBJ_PosSet(@o_start_wp OBJ_PosGet())
+			@ao_objects[ti_i] OBJ_SightGeneralSet(@o_start_wp OBJ_SightGet(), @o_start_wp OBJ_BankingGet())
+			@ao_objects[ti_i] OBJ_FlagsControlSet(0, OBJ_C_ControlFlag_ForceInvisible)
+			ai_objects_wp[ti_i] = 1
+			f_current_delay = f_delay
+			break
+		}
+	}
+}
+
+// Déplacer les objets
+for (ti_i=0; ti_i < RMSC_NB_OBJECTS; ti_i++)
+{
+	if ((ao_objects[ti_i] != nobody) && (!(@ao_objects[ti_i] OBJ_FlagsControlGet() & OBJ_C_ControlFlag_ForceInvisible)))
+	{
+		// Arrivé au dernier waypoint ?
+		if ((ai_objects_wp[ti_i] == -1) || (ai_objects_wp[ti_i] == i_net_wp_count))
+		{
+			// Oui -> invisible
+			@ao_objects[ti_i] OBJ_FlagsControlSet(OBJ_C_ControlFlag_ForceInvisible, 0)
+		}
+		else
+		{
+			// Déplacer l'objet
+			tv_vec = @ao_net_wp[ai_objects_wp[ti_i]] OBJ_PosGet() - @ao_objects[ti_i] OBJ_PosGet()
+			tf_dist = MATH_VecNorm(tv_vec)
+			if (!MATH_FloatNullEpsilon(tf_dist))
+				tv_delta = tv_vec / tf_dist
+			else
+				tv_delta = @ao_objects[ti_i] OBJ_SightGet()
+			if (f_speed < 0.0)
+				tv_delta *= -1.0
+			tv_delta *= f_speed * TIME_GetDt()
+			
+			// Collision avec le waypoint cible ?
+			if ((tf_dist < 0.1) || (MATH_VecDotProduct(@ao_net_wp[ai_objects_wp[ti_i]] OBJ_PosGet() - @ao_objects[ti_i] OBJ_PosGet() - tv_delta, tv_vec) < 0.0))
+			{
+				if (f_speed > 0.0)
+					ai_objects_wp[ti_i]++
+				else
+					ai_objects_wp[ti_i]--
+			}
+			else
+			{
+				@ao_objects[ti_i] OBJ_PosSet(@ao_objects[ti_i] OBJ_PosGet() + tv_delta)
+			}
+		}
+	}
+}
+
+f_previous_speed = f_speed

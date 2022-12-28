@@ -1,0 +1,82 @@
+#include "CR_defines.var"
+
+object		to_next_wp
+
+vector		tv_me_to_wp
+vector		tv_sight
+
+float			tf_speed_coef
+float			tf_dot
+
+int				ti_best_action
+int				ti_best_rot_coef
+
+
+to_next_wp = pop
+
+// ACTION -------------------------------------------------------------------------------------------------------------
+tv_me_to_wp = @to_next_wp OBJ_PosGet() - OBJ_PosGet()
+if( ! MATH_VecNullEpsilon(tv_me_to_wp) )
+	MATH_VecSetNormalize(tv_me_to_wp)
+
+
+// CAPA DU WP -----------------------------------------------------------------------------------------------
+if( @to_next_wp OBJ_CapaTest(CAPA_Reseau_Avance) )
+	goto AVANCE
+else if( @to_next_wp OBJ_CapaTest(CAPA_Reseau_StrafeG) )
+	goto STRAFEG
+else if( @to_next_wp OBJ_CapaTest(CAPA_Reseau_StrafeD) )
+	goto STRAFED
+else
+{
+	tf_dot = MATH_VecDotProduct(OBJ_HorizonGet(), tv_me_to_wp)
+	if( tf_dot < f_way_cos_attack_strafe && tf_dot > - f_way_cos_attack_strafe )
+	{
+		if( MATH_VecDotProduct(OBJ_SightGet(), tv_me_to_wp) > 0 )
+		{
+			// le wp est devant moi
+			AVANCE:
+			tv_sight = tv_me_to_wp
+			ti_best_action = ACTION_Avance
+			ti_best_rot_coef = Ci_rotation_coef_avance
+		}
+		else
+		{
+			// le wp est derrière moi
+			tv_sight = tv_me_to_wp
+			ti_best_action = ACTION_SurPlace
+			ti_best_rot_coef = Ci_rotation_coef_sur_place
+		}
+	}
+	else if( tf_dot > 0.0 )
+	{
+		// le wp est à gauche
+		STRAFEG:
+		tv_sight = MATH_VecCrossProduct(tv_me_to_wp, Cv_VerticalVector)
+		ti_best_action = ACTION_StrafeG
+		ti_best_rot_coef = Ci_rotation_coef_strafe
+	}
+	else
+	{
+		// le wp est à droite
+		STRAFED:
+		tv_sight = MATH_VecCrossProduct(Cv_VerticalVector, tv_me_to_wp)
+		ti_best_action = ACTION_StrafeD
+		ti_best_rot_coef = Ci_rotation_coef_strafe
+	}
+}
+
+// ACTION ------------------------------------------------------------------------
+if( ! ACT_ActionIsTransition() && ACT_ActionGet() != ti_best_action )
+	CR_ActionSet(ti_best_action, ti_best_rot_coef)
+
+// ORIENTATION ---------------------------------------------------------------
+DBG_RenderVector(OBJ_PosGet(), tv_sight, color_rouge)
+//CR_Rotation_Coef_Blend()
+OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), tv_sight, f_way_rotation_coef_cur * TIME_GetDt()),macro_banking)
+
+// COEF DE VITESSE --------------------------------------------------
+tf_speed_coef = CR_Speed_Coef_Get(0)
+//DYN_SpeedSetVector(DYN_SpeedGetVector() * tf_speed_coef)
+ACT_LIB_ActionFrequencyMultiply(tf_speed_coef)
+

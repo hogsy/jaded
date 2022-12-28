@@ -1,0 +1,80 @@
+
+vector	tv_pos
+vector	tv_sight
+vector	tv_banking
+
+// RIDE_GFX_Create()
+
+f_ride_snap_coef = MATH_FloatBlend(f_ride_snap_coef, 1.0, 5.0 * TIME_GetDt())
+switch( i_ride_actor_ID )
+{
+//	case C_ID_Raptor :
+////		@o_ride_cb_actor Proc_PRS_RidedGetInfos(tv_pos, tv_sight, tv_banking)
+//		tv_pos = @o_ride_cb_actor Proc_PRS_RidedPosGet()
+//		tv_sight = @o_ride_cb_actor Proc_PRS_RidedSightGet()
+//		tv_banking = @o_ride_cb_actor Proc_PRS_RidedBankingGet()
+//		break
+	case C_ID_Monture_Rhino :
+		tv_pos = @o_ride_cb_actor Proc_PNJ_Quadri_RidedPosGet()
+		tv_sight = @o_ride_cb_actor Proc_PNJ_Quadri_RidedSightGet()
+		tv_banking = @o_ride_cb_actor Proc_PNJ_Quadri_RidedBankingGet()
+		break
+	case C_ID_Monture_Aigle :
+	case C_ID_Monture_Bat :
+	case C_ID_Monture_Soucoupe :
+		tv_pos = @o_ride_cb_actor Proc_PNJ_Volant_RidedPosGet()
+		tv_sight = @o_ride_cb_actor Proc_PNJ_Volant_RidedSightGet()
+		tv_banking = @o_ride_cb_actor Proc_PNJ_Volant_RidedBankingGet()
+		break
+	case C_ID_Monture_Requin :
+		tv_pos = @o_ride_cb_actor Proc_PNJ_Shark_RidedPosGet()
+		tv_sight = @o_ride_cb_actor Proc_PNJ_Shark_RidedSightGet()
+		tv_banking = @o_ride_cb_actor Proc_PNJ_Shark_RidedBankingGet()
+		break
+	case C_ID_Monture_Tigre :
+		tv_pos = @o_ride_cb_actor Proc_PNJ_Quadri_RidedPosGet()
+		tv_sight = @o_ride_cb_actor Proc_PNJ_Quadri_RidedSightGet()
+		tv_banking = @o_ride_cb_actor Proc_PNJ_Quadri_RidedBankingGet()
+		break
+	case C_ID_Monture_Araignee :
+	case C_ID_Monture_Serpent :
+	case C_ID_Monture_Quadripode :
+		tv_pos = @o_ride_cb_actor Proc_PNJ_Snake_RidedPosGet()
+		tv_sight = @o_ride_cb_actor Proc_PNJ_Snake_RidedSightGet()
+		tv_banking = @o_ride_cb_actor Proc_PNJ_Snake_RidedBankingGet()
+		break
+	case C_ID_Monture_PoissonLumiere :
+		tv_pos = @o_ride_cb_actor Proc_PNJ_Shark_RidedPosGet()
+		tv_sight = @o_ride_cb_actor Proc_PNJ_Shark_RidedSightGet()
+		tv_banking = @o_ride_cb_actor Proc_PNJ_Shark_RidedBankingGet()
+		break
+	case C_ID_Lapin :
+		tv_pos = @o_ride_cb_actor Proc_PNJ_Lapin_RidedPosGet()
+		tv_sight = @o_ride_cb_actor Proc_PNJ_Lapin_RidedSightGet()
+		tv_banking = @o_ride_cb_actor Proc_PNJ_Lapin_RidedBankingGet()
+		break
+	case C_ID_Scooter :
+		tv_pos = @o_ride_cb_actor Proc_PNJ_Bunny_Saucer_RidedPosGet()
+		tv_sight = @o_ride_cb_actor Proc_PNJ_Bunny_Saucer_RidedSightGet()
+		tv_banking = @o_ride_cb_actor Proc_PNJ_Bunny_Saucer_RidedBankingGet()
+		break
+	case C_ID_Prune :
+		tv_pos = @o_ride_cb_actor Proc_RM_Prune_RidedPosGet()
+		tv_sight = @o_ride_cb_actor Proc_RM_Prune_RidedSightGet()
+		tv_banking = @o_ride_cb_actor Proc_RM_Prune_RidedBankingGet()
+		break
+	case C_ID_Pigeon :
+		tv_pos = @o_ride_cb_actor Proc_PNJ_Pigeon_RidedPosGet()
+		tv_sight = @o_ride_cb_actor Proc_PNJ_Pigeon_RidedSightGet()
+		tv_banking = @o_ride_cb_actor Proc_PNJ_Pigeon_RidedBankingGet()
+		break
+	default:
+		DBG_Error("Monture de type inconnu...!?")
+		break
+}
+
+OBJ_PosSet(MATH_VecBlend(OBJ_PosGet(), tv_pos, f_ride_snap_coef))
+OBJ_BankingGeneralSet(
+	MATH_VecBlendRotate(OBJ_SightGet(), tv_sight, f_ride_snap_coef),
+	MATH_VecBlendRotate(OBJ_BankingGet(), tv_banking, f_ride_snap_coef))
+

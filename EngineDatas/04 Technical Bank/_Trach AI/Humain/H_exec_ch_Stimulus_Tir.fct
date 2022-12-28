@@ -1,0 +1,27 @@
+#include "H_defines.var"
+
+// TEST ASSIST JACK TIR
+int					ti_rank
+messageid		EVT_ID
+message		tm_msg_filtre
+
+// Ann ne tir pas
+//if(i_type == Type_Ann) return
+
+MSG_SetNull(tm_msg_filtre)
+tm_msg_filtre.msg_sender = o_main_actor
+v_tir_pos_help = Cv_NullVector
+ti_rank = -1
+EVT_ID = MSG_GlobalScan(C_EVENT_TYPE_Tirer, &ti_rank)
+while (MSG_GlobalIsValid(EVT_ID))
+{
+	if (EVENT_FilterGet(EVT_ID) & C_EVENT_FILTER_Marin)
+	{
+		o_tir_target = EVENT_TargetGet(EVT_ID)
+		v_tir_pos_help = EVENT_PositionGet(EVT_ID)
+		break
+	}
+
+	EVT_ID = MSG_GlobalScan(C_EVENT_TYPE_Tirer, &ti_rank)
+}
+

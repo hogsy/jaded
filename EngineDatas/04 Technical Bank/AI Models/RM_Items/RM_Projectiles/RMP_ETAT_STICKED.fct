@@ -1,0 +1,49 @@
+#include "RM_Projectiles_defines.var"
+
+// SORTIE ETAT 	===================================================================
+if( i_sort_etat )
+{
+	i_sort_etat = faux
+	return
+}
+   
+// INIT ETAT 	=====================================================================
+if( i_etat_courant != RMP_ETAT_STICKED)
+{
+	i_etat_courant = RMP_ETAT_STICKED
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	v_initial_pos = @o_launcher OBJ_PosGet() - OBJ_PosGet()
+	AI_CBAdd(o_launcher, CallBack_After_Rec, "RMP_callback_sticked")
+	f_initial_zoom = OBJ_ZoomGet()
+	OBJ_ZoomSet(0.001)
+	OBJ_FlagInvisibleSet(faux)
+}	
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// COMPORTEMENT =================================================================
+if (f_time_start_etat >= f_time_min)
+{
+	OBJ_ZoomSet(f_initial_zoom)
+	AI_CBDel(o_launcher, CallBack_After_Rec, "RMP_callback_sticked")
+	i_started = vrai
+	if ((i_type == RMP_TYPE_MINE) || (i_type == RMP_TYPE_LARGUE) || (i_type == RMP_TYPE_AIRE))
+		AI_TrackCurChangeNow("RMP_ETAT_LAUNCHED")
+	else
+		AI_TrackCurChangeNow("RMP_ETAT_FIRED")
+}
+else
+	OBJ_ZoomSet(((f_time_start_etat / f_time_min) * f_initial_zoom) + 0.001)
+
+//else
+//	AI_Execute("RMP_callback_sticked")
+//

@@ -1,0 +1,222 @@
+// LE JOUEUR EST EN FPS AU SOL =========================================
+
+#include "k_define.var"
+
+int				ti_force_win_finish
+
+vector		tv_paf
+vector		tv_temp
+vector		tv_sight
+vector		tv_temp2
+object		to_Jack
+
+float			tf_dot
+float			tf_dist
+float			tf_rand
+
+i_cheat_mode = faux
+
+// ACTIONS ===================================================
+
+// DEMANDE DE GRAB JACK  ? -----------------------------------------
+if( IO_ButtonJustPressed(Jack_Joy_Grimpe_Descend_de_Kong) && ! IO_ButtonPressed(Jack_Joy_Viser) )
+{
+	// Caméra en FPS : Kong doit etre à l'écran et tourné vers Jack pour le grabber
+	if( @get_global Proc_Global_Player_Swap_Enabled() )
+	{
+		to_Jack = AI_MainActorGet(C_ID_Joueur)
+		tv_temp = OBJ_PosGet() - @to_Jack OBJ_PosGet()
+		tv_temp.z = 0.0
+		tf_dist = MATH_VecNorm(tv_temp)
+		if( tf_dist < 6.0)
+		{
+			// assez proche
+			if( ! MATH_VecNullToler(tv_temp, 0.1) )
+				MATH_VecSetNormalize(tv_temp)
+			else
+				tv_temp = OBJ_SightGet()
+			tv_sight = @to_Jack OBJ_SightGet()
+			tv_sight.z = 0.0
+			if( ! MATH_VecNullToler(tv_sight, 0.1) )
+				MATH_VecSetNormalize(tv_sight)
+			else
+				tv_sight = @to_Jack OBJ_SightGet()
+			DBG_RenderVector(@to_Jack OBJ_PosGet(), tv_sight, color_vert)
+			DBG_RenderVector(@to_Jack OBJ_PosGet(), tv_temp, color_cyan)
+			tf_dot = MATH_VecDotProduct(tv_sight, tv_temp)
+			if( tf_dist < 3.0 || tf_dot > 0.0 )
+			{
+				// Jack regarde vers Kong
+				i_flag_just_grab = vrai
+				i_flag_just_grab_JACK = vrai		// Je DOIS grabber Jack
+			}
+		}
+	}
+}
+// ON A LAISSE KONG SUR UNE COLONNE ? -----------------------------------------
+else if( Proc_KK_Test_Mode(ETAT_Kong_colonne) )
+{
+	// Kong sur la colonne, Jack au sol
+	if( ! i_LD_disable_Kong_move )
+	{
+		if( ACT_ActionGet() == Ci_Kanim_Colonne_Att )
+		{
+			f_auto_delai_action += TIME_GetDt()
+			if ( f_auto_delai_action > 1.5 )
+			{
+				f_auto_delai_action = 0.0
+				// test Jack descendu ?
+				tv_temp2 = @o_Joueur OBJ_PosGet() - OBJ_PosGet()
+				if( tv_temp2.z < - 2.0 )
+				{
+					i_flag_just_Action = vrai		// jump !!!!
+				}
+				// test Baston
+				else if( o_fight_actor )
+				{
+					tf_rand = MATH_RandFloat(0.0, 1.0)
+					if( tf_rand < 0.4 )
+						i_flag_just_coup = vrai
+					else if( tf_rand < 0.8 )
+						i_flag_just_grab = vrai
+					else if( ao_CL_GRABKONG[0] )
+						i_flag_just_Rage = vrai		// mordre
+				}
+			}
+		}
+	}
+}
+
+
+// JOYJOYJOYJOYJOY ===========================================
+v_joy_sight_old = v_joy_sight			// Memo du joypour détection du SWEEP
+if( ! ( @"univ" Cheat_i_Flags & CHEAT_Disable_Kong_AI_Move ) )
+{
+	if( i_LD_disable_Kong_move )
+	{
+//		Str_DisplayTextOnce("i_LD_disable_Kong_move", cvector(0.5,0.5,0))
+		v_joy_sight = OBJ_SightGet()
+	}
+	else if( Proc_KK_Test_Mode(ETAT_Kong_colonne) )
+	{
+		// colonne : pas de joy !!!!
+	}
+	else if ( o_fight_actor && ! i_flag_just_grab_JACK )
+	{
+		// Le joueur contrôle Jack, Kong est en fight =======================
+		v_joy_sight = @o_fight_actor OBJ_PosGet() - OBJ_PosGet()
+		if ( MATH_VecNullEpsilon( v_joy_sight))
+			v_joy_sight = OBJ_SightGet()
+		else
+			MATH_VecNormalize( v_joy_sight)
+		f_joy_norm = 1.0
+		f_auto_delai_action += TIME_GetDt()
+		
+		if ( i_coup_mode == C_Mode_Dash)
+		{
+			// dash attack
+			if ( f_auto_delai_action > 0.2 )
+			{
+				i_flag_just_coup = vrai
+				f_auto_delai_action = 0.0
+			}
+		}
+		else if( Proc_KK_Test_Mode(ETAT_Kong_finished) )
+		{
+			// protection kong en finished
+			if( f_finished_dual_timer )
+			{
+				if ( f_auto_delai_action > 0.15 )
+				{
+					i_flag_just_Rage_Any_Button = vrai
+					f_auto_delai_action = 0.0
+				}
+			}
+		}
+		else if( ti_force_win_finish && ( Proc_KK_Test_Mode(ETAT_Kong_finish) || Proc_KK_Test_Mode(ETAT_Kong_finished) ) )
+		{
+			// ne jamais perdre un finish(ed) (debug pour VINC)
+			v_joy_sight = OBJ_SightGet()
+			if ( f_auto_delai_action > 0.1 )
+			{
+				i_flag_just_Rage_Any_Button = vrai
+				f_auto_delai_action = 0.0
+			}
+		}
+		else if ( MATH_VecNorm(v_joy_sight) < (6.0 * @o_fight_actor OBJ_ZoomGet()) && ! Proc_KK_Test_Mode( ETAT_Kong_grab))
+		{
+			// proche, mais pas en grab
+			if ( f_auto_delai_action > 0.2 )
+			{
+				if ( MATH_RandFloat(0.0,1.0) < 0.5 )
+				{
+					i_flag_just_grab = vrai
+					f_auto_delai_action = 0.0
+				}
+				else if ( MATH_RandFloat(0.0,1.0) < 0.5 && ! Proc_KK_TestMashing(faux))
+				{
+					i_flag_just_Action = vrai
+					f_auto_delai_action = 0.0
+				}
+				else
+				{
+					i_flag_just_coup = vrai
+					f_auto_delai_action = 0.0
+				}
+			}
+			f_auto_joy_sens *= -1
+		}
+		else if ( Proc_KK_Test_Mode( ETAT_Kong_grab))
+		{
+			// en grab
+			if ( f_time_start_etat > 2.0 )
+			{
+				v_joy_sight = OBJ_HorizonGet()
+				if ( MATH_RandFloat( 0.0, 1.0) > 0.5 )
+					i_flag_just_coup = vrai
+				else
+					i_flag_just_grab = vrai
+			}
+			else if ( f_time_start_etat > 1.0 )
+			{
+				v_joy_sight = OBJ_HorizonGet()
+			}
+		}
+		MATH_VecSetNormalize(v_joy_sight)
+	}
+	else
+	{
+		// Le joueur contrôle Jack, Kong n'est pas en fight =====================
+		to_Jack = AI_MainActorGet(C_ID_Joueur)
+		if( ! to_Jack || ! i_Kong_chienchien )
+		{
+			v_joy_sight = OBJ_SightGet()
+		}
+		else
+		{
+			tv_sight = OBJ_SightGet()
+			tv_sight.z = 0.0
+			tv_temp = @to_Jack OBJ_PosGet() - OBJ_PosGet()
+			tv_temp.z = 0.0
+			tf_dot = MATH_VecDotProduct(tv_sight, tv_temp)
+			tf_dist = MATH_VecNorm(tv_temp)
+			if( tf_dot < 0.0 || tf_dist > 12.0 )
+			{
+				// Kong se rapproche de Jack
+				f_joy_norm = 1.0
+				if( ! MATH_VecNullToler(tv_temp, 0.1) )
+					MATH_VecSetNormalize(tv_temp)
+				else	
+					tv_temp = OBJ_SightGet()
+				v_joy_sight = tv_temp
+			}
+			else
+			{
+				// Kong est à distance d'attente
+				v_joy_sight = OBJ_SightGet()
+			}
+		}
+	}
+}
+v_joy_sight_normalized = v_joy_sight
+//	macro_render_Vector( OBJ_PosGet() +  cvector( 0.0, 0.0, 3.0), v_joy_sight_normalized * 5.0, 0xFF00)

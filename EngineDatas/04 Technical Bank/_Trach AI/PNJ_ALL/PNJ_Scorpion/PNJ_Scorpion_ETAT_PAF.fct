@@ -1,0 +1,90 @@
+#include "PNJ_Scorpion_defines.var"
+
+float			tf_dot_X
+float			tf_dot_Y
+float			tf_coef
+
+vector		tv_start_sight
+vector		tv_dest_sight
+vector		tv_new_banking
+
+// SORTIE ETAT ====================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_PAF)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_PAF
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ========================================================================
+AI_Execute("PNJ_Scorpion_exec_check_vision")
+
+AI_Execute("PNJ_Scorpion_exec_check_paf")
+
+AI_Execute("PNJ_Scorpion_exec_check_best_interet")
+
+// COMPORTEMENT ==================================================================
+
+switch(ACT_ActionGet())
+{
+	case Action_Meurt_G :
+	case Action_Meurt_D :
+
+		if (!i_SND_flag_death_played && f_time_start_etat > 0.35)
+		{
+			i_SND_flag_death_played = vrai
+			SND_RequestPlay(SND_DIE)
+		}
+
+//		if (OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna) && COL_CollideType(COL_C_Ground) && DYN_SpeedGet() < 0.1)
+//		{
+//			DYN_Off()
+//			COL_ColSetActivationSet(none, all)
+//		}
+
+		tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), v_ground_normale, 6.0 * TIME_GetDt())
+		OBJ_BankingSet(tv_new_banking)
+
+		if (ACT_ActionFinished())
+			macro_change_etat("PNJ_Scorpion_ETAT_MORT")	
+
+		break
+
+	case Action_Paf :
+
+		tf_coef = 1.0 - ANI_RatioGet(0)
+
+		if (ACT_ActionFinished())
+			ACT_ActionSet(Action_Attente)
+		
+		tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), v_ground_normale, 6.0 * TIME_GetDt())
+		OBJ_BankingSet(tv_new_banking)
+		OBJ_RotateLocalZ(tf_coef * f_paf_rot_speed * TIME_GetDt())	
+
+		break
+		
+	default:
+		f_time_etat_phase -= MATH_FloatMin(f_time_etat_phase, TIME_GetDt())
+		if ( ! f_time_etat_phase)
+			macro_change_etat(fct_main_etat)
+}

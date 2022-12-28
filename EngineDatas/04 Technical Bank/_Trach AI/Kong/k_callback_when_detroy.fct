@@ -1,0 +1,31 @@
+#include "k_define.var"
+
+int				ti_i
+
+function		fct_current
+
+for (ti_i = 0; ti_i < 10; ti_i++)
+	ao_SRV[ti_i] = LNK_ServeurGet(ti_i, amid_SRV_LIAISON_ID[ti_i], faux, nofunc, nofunc)
+
+for (ti_i = 0; ti_i < 10; ti_i++)
+	ao_CL[ti_i] = LNK_ClientGet(ti_i, amid_CL_LIAISON_ID[ti_i], faux, nofunc, nofunc, nofunc)
+
+i_etat_courant = -1
+fct_current = AI_TrackGet(Ci_Track_Etat)
+
+if (fct_current)
+{
+	i_sort_etat = vrai
+	AI_Execute(fct_current)
+}
+
+if (fct_last_etat)
+{
+	i_sort_etat = vrai
+	AI_Execute(fct_last_etat)
+}
+
+macro_del_callback_after_cam("k_callback_after_cam")
+
+macro_change_tag_size(Cv_NullVector, Cv_NullVector)
+AI_Execute("k_tag_off")

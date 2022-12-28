@@ -1,0 +1,64 @@
+#include "PNJ_Spider_defines.var"
+
+int			ti_state
+
+PNJ_Spider_UncollideCheck()
+PNJ_Spider_Precompute_Dist()
+PNJ_Spider_Soft_Collision()
+PNJ_Spider_Check_Body()
+PNJ_Spider_Sound()
+
+if (i_perceived_best_actor_index != -1 && ai_perceived_status[i_perceived_best_actor_index] & Ci_PERCEIVED_IS_DEAD)
+	OBJ_CapaSet(Capa_eat_dead_meat, none)
+else
+	OBJ_CapaSet(none, Capa_eat_dead_meat)
+
+if (i_perceived_best_actor_index != -1 && i_perceived_best_actor_index == i_perceived_main_actor_index)
+	f_main_accessible_duration += TIME_GetDt()
+else
+	f_main_accessible_duration = 0.0
+
+if (TIME_Elapsed(@get_global f_spider_time_last_bite, Cf_EVENT_Duree_1Trame))
+{
+	if (f_main_accessible_duration > 1.8 && ! (ai_perceived_status[i_perceived_best_actor_index] & (Ci_PERCEIVED_NEAR_FIRE | Ci_PERCEIVED_GET_FIRE)))
+	{
+		@get_global f_spider_time_last_bite = TIME_Get()
+		EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_KK_Fort, OBJ_Me(), Cf_EVENT_Duree_1Trame, ao_perceived_actor[i_perceived_best_actor_index], 10.0 * PAF_Unit, OBJ_SightGet())
+	}
+}
+
+ti_state = -1
+
+//switch(i_etat_courant)
+//{
+////	case ETAT_mort:	
+////		ti_state = C_EVENT_EnemyState_Die
+////		break
+//
+////	case ETAT_Attente :
+//
+////	case ETAT_Apparition :
+////		if (i_etat_phase > 3)
+////			ti_state = C_EVENT_EnemyState_Fight
+////		break
+//		
+//	case ETAT_Paf :
+//	case ETAT_Grabbed :
+//		ti_state = C_EVENT_EnemyState_Neutral
+//		break
+//
+//	case ETAT_Sol :	
+//	case ETAT_Attaque :
+//	case ETAT_Mur :
+//	case ETAT_Snap :
+//		if (i_perceived_best_actor_index != -1)
+//			ti_state = C_EVENT_EnemyState_Fight
+//		break
+//}
+//
+//if (ti_state != -1)
+//	EVENT_AddEventEnemy(C_ID_Spider, OBJ_Me(), ti_state)
+
+SPG2_AddSphere(OBJ_PosGet(), 3.0 * f_size_coef)
+
+v_last_pos = OBJ_PosGet()

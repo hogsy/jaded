@@ -1,0 +1,44 @@
+int			EVT_func_i																				
+int			EVT_nb_valide
+int			EVT_func_Type
+int			EVT_func_Filtre
+int			EVT_filtre_non
+int			EVT_filtre_oui
+int			EVT_type
+int			EVT_indice[20]
+
+//object	EVT_func_Pere
+//float		EVT_func_DureeDeVie
+//vector	EVT_func_Position
+//float		EVT_func_Delai
+
+EVT_filtre_non = pop
+EVT_filtre_oui = pop
+EVT_type = pop
+
+
+// recherche des cellules valide
+EVT_nb_valide = 0									// Pas de solution pour l instant
+
+EVT_func_i = 	@get_Event Valid_IndiceDernierCellule	// Partir de la fin de la liste	
+while(  EVT_func_i  != -1 && @get_Event Valid_Type[EVT_func_i] <= EVT_type)						// La parcourir juqu au bout
+{
+	if ( (@get_Event Valid_Type[EVT_func_i] == EVT_type)
+	&& ((@get_Event Valid_Filtre[EVT_func_i] & EVT_filtre_oui)
+	&& !(@get_Event Valid_Filtre[EVT_func_i] & EVT_filtre_non)))
+	{
+		// Cet EVENT est valide pour la recherche
+		EVT_indice[EVT_nb_valide] = EVT_func_i
+		EVT_nb_valide++
+		if ( EVT_nb_valide >= 20)
+			DBG_Error("Trop de solution pour le tableau actuel")
+	}
+	EVT_func_i = @get_Event Valid_Precedent[EVT_func_i]
+}
+
+
+// OUT: le tableau des indice et sa taille...
+for ( EVT_func_i = 0; EVT_func_i < EVT_nb_valide; EVT_func_i++)
+	push(EVT_indice[EVT_func_i])
+
+push(EVT_nb_valide)

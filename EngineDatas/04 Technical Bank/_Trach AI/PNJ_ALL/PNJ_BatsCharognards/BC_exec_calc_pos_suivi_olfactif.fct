@@ -1,0 +1,29 @@
+#include "BC_defines.var"
+
+vector			tv_old_dest_pos
+
+tv_old_dest_pos = v_dest_pos
+
+if( MSG_GlobalIsValid(mid_sang) )
+{
+	// pas de blend vers la position car à chaque nouvelle trace on refait l'init et on repositionne le last_wp
+	v_cible_pos = EVENT_PositionGet(mid_sang)
+	
+	v_dest_sight = v_cible_pos - OBJ_PosGet()
+	
+//	v_decalage = cvector(0.0, 0.0, 6.0)
+	v_decalage = BC_decalage( - v_dest_sight, Cf_atterrissage_decal_H, Cf_atterrissage_decal_Z)
+	v_dest_pos = v_cible_pos + v_decalage	
+}
+else
+{
+	v_dest_pos = v_dest_pos 
+}
+
+//DBG_RenderVector(OBJ_PosGet(), v_dest_pos - OBJ_PosGet(), color_cyan)
+
+if( ! MATH_VecNullToler(tv_old_dest_pos - v_dest_pos, 0.5) )
+{
+	i_flag_depl_wp_apres_reseau = faux		// la bidoche a bougé
+}
+

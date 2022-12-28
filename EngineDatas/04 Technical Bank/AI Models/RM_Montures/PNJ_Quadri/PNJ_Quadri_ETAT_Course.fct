@@ -1,0 +1,279 @@
+#include "PNJ_Quadri_defines.var"
+
+Include_UltraProcedure_Header
+
+int				ti_car_index
+int				ti_flag_complex_dodge
+
+object		to_head
+object		to_car
+object		to_current_wp
+object		to_next_wp
+
+float			tf_coef
+float			tf_dist
+float			tf_speed_coef
+float			tf_delay_before_collision
+float			tf_lateral_speed
+float			tf_move_length
+float			tf_wanted_traction
+float			tf_rot_speed
+float			tf_wanted_rot_angle
+float			tf_next_rot_angle
+float			tf_rot_torque
+float			tf_angle_delta
+float			tf_time
+float			tf_hor_speed
+float			tf_course_pilotage_coef
+float			tf_max_speed
+
+vector		tv_pos
+vector		tv_joy_dir
+vector		tv_speed
+vector		tv_traction
+vector		tv_collision_pos
+vector		tv_X
+vector		tv_Y
+vector		tv_target_pos
+vector		tv_move_dir
+
+if (i_flag_sortie_etat)
+{
+	i_flag_sortie_etat = faux
+	return
+}
+
+DBG_StartRaster(3, "PNJ_Quadri Pilote IA")
+
+if (i_etat_courant != ETAT_Course)
+{
+	// INTIALISATION
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Course
+	
+	if (fct_last_etat)
+	{
+		i_flag_sortie_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	fct_last_etat = AI_TrackCurGet()
+	
+	COL_SwapToSpecific(C_zdm_pied)
+	COL_ZoneSizeSet(C_zdm_pied, cvector(Cf_zdm_size, Cf_zdm_size, Cf_zdm_size))
+	COL_ZonePosSet(C_zdm_pied, cvector(0.0, 0.0, COL_ZoneSizeGet(C_zdm_pied)))
+
+	DYN_On()
+	DYN_FlagsSet(DYN_C_BasicForces | DYN_C_VectorFriction | DYN_C_NeverDynamicFather | DYN_C_NeverDynamicHierarchy | DYN_C_HorizontalGrounds | DYN_C_ApplyRec | DYN_C_Col, none)
+	DYN_GravitySet(cvector(0.0, 0.0, -40.0))
+
+//	f_acceleration = 40.0
+//	f_decceleration = 40.0
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ===============================================================
+o_Rided_Actor = LNK_ServeurGet(Ci_LNK_RIDE_ON_NMI, mid_Rided_LNK_ID, vrai, nofunc, nofunc)
+if ( o_Rided_Actor && !  o_fake_pilot )
+	macro_change_etat("PNJ_Quadri_ETAT_Basic")
+
+// POSITION SUR LE CIRCUIT
+//if (f_time_start_etat < 5.0)
+//{
+	tf_course_pilotage_coef = f_course_pilotage_coef
+	tf_max_speed = f_speed_max
+//}
+//else
+//{
+//	if (@o_montures_manager Montures_Manager_Wp_Nb_Get(i_my_index) > @o_montures_manager Montures_Manager_Main_Wp_Nb_Get() + 1)
+//	{
+//		tf_course_pilotage_coef = -1.0
+//		tf_max_speed = f_speed_max * 0.5
+//	}
+//	else if (@o_montures_manager Montures_Manager_Wp_Nb_Get(i_my_index) < @o_montures_manager Montures_Manager_Main_Wp_Nb_Get() - 1)
+//	{
+//		tf_course_pilotage_coef = 1.0
+//		tf_max_speed = f_speed_max * 1.5
+//	}
+//	else
+//	{
+//		tf_course_pilotage_coef = f_course_pilotage_coef
+//		tf_max_speed = f_speed_max
+//	}
+//}
+
+tv_target_pos = PNJ_Quadri_Get_Target_Pos(tf_course_pilotage_coef)
+
+tf_speed_coef = 1.0
+
+// PREDICTION DE COLLISIONS
+ti_car_index = PNJ_Quadri_Collision(tv_target_pos)
+if (ti_car_index != -1)
+{
+	to_car = @get_Montures_Manager_Path o_montures_manager ao_car[ti_car_index]
+
+	tf_delay_before_collision = @get_Montures_Manager_Path o_montures_manager af_car_col_time[i_my_index][ti_car_index]
+	tf_delay_before_collision = MATH_FloatMax(tf_delay_before_collision, 0.2)
+
+	tv_collision_pos = @to_car OBJ_PosGet()
+	tv_collision_pos += @get_Montures_Manager_Path o_montures_manager av_car_speed[ti_car_index] * tf_delay_before_collision
+	tv_collision_pos.z = OBJ_PosGet().z
+
+	tv_move_dir = tv_target_pos
+	tv_move_dir -= OBJ_PosGet()
+	tf_move_length = MATH_VecNorm(tv_move_dir)
+	tv_move_dir /= tf_move_length
+
+	if (WAY_LIB_Collide_Sphere(OBJ_PosGet() + cvector(0.0, 0.0, 2.0), tv_move_dir, tf_move_length, f_dodge_extrusion, tv_collision_pos, @get_Montures_Manager_Path o_montures_manager af_car_col_size[ti_car_index][i_my_index], tv_X))
+	{
+//		if (tf_delay_before_collision > 0.1)
+//		{
+//			ti_flag_complex_dodge	=  vrai
+//	
+//			tv_Y = OBJ_PosGet()
+//			tv_Y -= @to_car OBJ_PosGet()
+//			tv_Y.z = 0.0
+//			MATH_VecSetNormalize(tv_Y)
+//		
+//			DBG_RenderVector(tv_collision_pos, tv_Y * 10.0, color_jaune)	
+//		
+//			tv_X.x = tv_Y.y
+//			tv_X.y =  - tv_Y.x
+//			tv_X.z = 0.0
+//		}
+//		else
+//		{
+			ti_flag_complex_dodge	=  faux
+//		}
+	
+		tv_collision_pos = WAY_LIB_Get_Sphere_Pos(OBJ_PosGet(), tv_target_pos, DYN_SpeedGetVector() + @to_car DYN_SpeedGetVector(), f_dodge_extrusion, tv_collision_pos, @get_Montures_Manager_Path o_montures_manager af_car_col_size[ti_car_index][i_my_index], tv_X, tv_Y, ti_flag_complex_dodge)	
+		if (MATH_VecDotProduct(tv_collision_pos - OBJ_PosGet(), OBJ_SightGet()) > 0.0)
+		{
+			DBG_RenderVector(OBJ_PosGet() + cvector(0.0, 0.0, 2.0), tv_target_pos - OBJ_PosGet(), color_rouge)
+			tv_target_pos = tv_collision_pos
+			DBG_RenderVector(OBJ_PosGet() + cvector(0.0, 0.0, 2.0), tv_target_pos - OBJ_PosGet(), color_blanc)
+			DBG_RenderVector(tv_target_pos, Cv_VerticalVector * 10.0, color_blanc)
+		}
+	}
+}
+
+tv_joy_dir = tv_target_pos
+tv_joy_dir -= OBJ_PosGet()
+
+tv_joy_dir.z = 0.0
+tf_dist = MATH_VecNorm(tv_joy_dir)
+tv_joy_dir /= tf_dist
+
+v_joy_dir	 = tv_joy_dir
+
+// ANTICIPATION LIEE A LA DERIVE =======================================
+tv_joy_dir.z = tv_joy_dir.x
+tv_joy_dir.x = tv_joy_dir.y
+tv_joy_dir.y = - tv_joy_dir.z
+tv_joy_dir.z = 0.0
+
+tf_lateral_speed = MATH_VecDotProduct(DYN_SpeedGetVector(),  - tv_joy_dir)
+tv_joy_dir = tf_lateral_speed * tv_joy_dir
+tv_joy_dir += tv_target_pos
+tv_joy_dir -= OBJ_PosGet()
+
+//DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, tv_joy_dir, color_jaune)
+
+tv_joy_dir.z = 0.0
+tf_dist = MATH_VecNorm(tv_joy_dir)
+tv_joy_dir /= tf_dist
+
+if (ti_car_index == -1)
+{
+	tf_coef = 1.0 + (MATH_VecDotProduct(OBJ_SightGet(), tv_joy_dir) * 2.0)
+	tf_coef *= 0.5
+	tf_speed_coef *= MATH_FloatBlend(0.5, 1.0, tf_coef)
+}
+
+tf_wanted_traction = tf_max_speed * tf_speed_coef
+if (i_flag_Y_slide)
+{
+	DBG_RenderVector(OBJ_PosGet(), Cv_VerticalVector * 1000.0, color_cyan)
+ 	if (f_real_speed > 0.0)
+		tf_wanted_traction = MATH_FloatMin(tf_wanted_traction, f_real_speed + f_Y_limit_speed - 0.1)
+}
+
+// ANTICIPATION LIEE A L'INERTIE ANGULAIRE =================================
+
+// ANGLE DEST
+tf_wanted_rot_angle = MATH_VecAngle(OBJ_SightGet(), tv_joy_dir, OBJ_BankingGet())
+
+// COMBIEN DE TEMPS POUR S'ARRETER EN CONTRE BRAQUANT A FOND ?
+tf_rot_torque = -MATH_FloatSign(f_rot_speed) * f_rot_speed_max * f_rot_current_friction
+tf_time = PNJ_Quadri_Time_To_Reach_Speed(f_rot_speed, f_rot_current_friction, tf_rot_torque, 0.01)
+tf_time = MATH_FloatMax(tf_time, 0.1)
+
+// ANGLE ATTEINT QUAND ON ATTEINT UNE VITESSE ANGULAIRE NULLE
+tf_rot_speed = f_rot_speed
+tf_rot_torque = MATH_FloatSign(tf_wanted_rot_angle) * f_rot_speed_max * f_rot_current_friction
+tf_next_rot_angle = PNJ_Quadri_Angle_After_N_Seconds(tf_rot_speed, f_rot_current_friction, tf_rot_torque, tf_time, 0.0)
+
+// SI ON DEPASSE L'ANGLE VOULU, ON  CONTRE BRAQUE
+if (tf_wanted_rot_angle > 0.0 && tf_next_rot_angle > tf_wanted_rot_angle)
+	tv_joy_dir = -MATH_FloatSign(tf_wanted_rot_angle) * OBJ_HorizonGet()
+else if (tf_wanted_rot_angle < 0.0 && tf_next_rot_angle < tf_wanted_rot_angle)
+	tv_joy_dir = -MATH_FloatSign(tf_wanted_rot_angle) * OBJ_HorizonGet()
+else
+	tv_joy_dir = MATH_FloatSign(tf_wanted_rot_angle) * OBJ_HorizonGet()
+
+// COMPORTEMENT =========================================================
+DBG_StopRaster(3)
+
+DBG_StartRaster(4, "PNJ_Quadri Dynamique")
+
+PNJ_Quadri_Sight_And_Banking(tv_joy_dir)
+PNJ_Quadri_Apply_Traction_And_Choose_Action(tf_wanted_traction)
+
+DBG_StopRaster(4)
+
+if ( o_Rided_Actor && o_fake_pilot )
+{
+	@get_Kamera OBJ_FlagInactiveSet(vrai)
+	
+	tv_speed = DYN_SpeedGetVector()
+	tv_speed -= MATH_VecDotProduct(tv_speed, OBJ_BankingGet()) * OBJ_BankingGet()
+//	tv_speed.z = 0.0
+	tf_hor_speed = MATH_VecSquareNorm(tv_speed)
+	if (tf_hor_speed)
+	{
+		tf_hor_speed = MATH_FloatSqrt(tf_hor_speed)
+		tv_speed /= tf_hor_speed
+	}
+	else
+	{
+		tv_speed = OBJ_SightGet()
+	}
+
+	tv_pos = OBJ_PosGet()
+//	tv_pos -= OBJ_SightGet() * 10.0
+	tv_pos += tv_speed * 15.0
+	tv_pos.z += 1.0
+	
+	tv_pos = OBJ_PosGet() + MATH_VecBlendRotate(@get_Kamera OBJ_PosGet() - OBJ_PosGet(), tv_pos - OBJ_PosGet(), 8.0 * TIME_GetDt())
+	tv_pos.z = MATH_FloatMax(tv_pos.z, OBJ_PosGet().z + 1.0)
+
+	@get_Kamera OBJ_PosSet(tv_pos)
+
+	to_head = ANI_CanalObjectGet(Anim_Canal_Tete)
+	
+	tv_pos = @to_head OBJ_PosGet()
+	tv_pos.z = OBJ_PosGet().z + 2.0
+	
+	@get_Kamera OBJ_SightGeneralSet(tv_pos - @get_Kamera OBJ_PosGet(), Cv_VerticalVector)
+	
+	@get_Kamera VIEW_AssignObject(0)
+}
+else if (o_fake_pilot && @get_Kamera OBJ_FlagsControlGet() & OBJ_C_ControlFlag_ForceInactive)
+{
+	@get_Kamera OBJ_FlagInactiveSet(faux)
+}

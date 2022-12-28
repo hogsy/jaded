@@ -1,0 +1,25 @@
+#include "PNJ_Corbeau_defines.var"
+
+// BALANCIER
+
+float			tf_norm
+
+vector		tv_last_pos
+
+tv_last_pos = v_grav_pos
+
+v_grav_pos.z -= TIME_GetDt() * 2.0
+v_grav_pos += v_grav_speed * (TIME_GetDt() * 0.95)
+
+v_grav_pos -= OBJ_PosGet()
+tf_norm = MATH_VecNorm(v_grav_pos)
+v_grav_pos /= tf_norm
+
+v_grav_pos *= Cf_bras_de_levier
+
+OBJ_SightGeneralSet(OBJ_SightGet(), -v_grav_pos)
+
+v_grav_pos += OBJ_PosGet()
+
+v_grav_speed = (v_grav_pos - tv_last_pos) / TIME_GetDt()
+

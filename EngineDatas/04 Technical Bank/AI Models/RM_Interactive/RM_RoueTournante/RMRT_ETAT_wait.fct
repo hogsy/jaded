@@ -1,0 +1,112 @@
+#include "RM_RoueTournante_defines.var"
+
+float						tf_friction
+float						tf_speed_positive_limit
+float						tf_speed_negative_limit
+
+int							ti_i
+
+// SORTIE ETAT 	===================================================================
+if( i_sort_etat )
+{
+	i_sort_etat = faux
+	return
+} 
+
+// INIT ETAT 	=====================================================================
+if( i_etat_courant != RMRT_ETAT_WAIT)
+{
+	i_etat_courant = RMRT_ETAT_WAIT
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// COMPORTEMENT =================================================================
+if (f_traction != 0.0)
+{
+	Str_DisplayFloatOnce(f_traction, VIEW_3dWorldTo2d(0, OBJ_PosGet()))
+	
+	// Modifier la vitesse de rotation
+	f_rotation_speed += (f_traction * f_factor * f_traction_strength * TIME_GetDt() / 50000.0)
+}
+
+// Rotation de la roue
+if ((f_rotation_speed != 0.0) && (f_current_snap_delay == 0.0))
+{
+	if (o_last_grabbed == OBJ_Me())
+	{
+		// Friction
+//		f_rotation_speed *= 1.0 - (f_friction * TIME_GetDt())
+		tf_friction = (f_rotation_speed / (1.0 + f_friction)) - ((f_rotation_speed / (1.0 + f_friction)) * MATH_Exp(f_friction * TIME_GetDt()))
+		f_rotation_speed += tf_friction
+		
+		// Limitation de vitesse
+		if (i_poignee_tiree_properties == 2)
+		{
+			tf_speed_positive_limit = f_speed_positive_limit
+			tf_speed_negative_limit = 0.0
+		}
+		else if (i_poignee_tiree_properties == 1)
+		{
+			tf_speed_positive_limit = 0.0
+			tf_speed_negative_limit = f_speed_negative_limit			
+		}
+		else
+		{
+			tf_speed_positive_limit = f_speed_positive_limit
+			tf_speed_negative_limit = f_speed_negative_limit
+		}
+		f_rotation_speed = MATH_FloatLimit(f_rotation_speed, tf_speed_negative_limit, tf_speed_positive_limit)
+	}
+	
+	// Rotation
+	OBJ_RotateLocalZ(f_rotation_speed * TIME_GetDt())
+	
+	// Crant atteint ?
+	if (f_snap_angle != 0.0)
+	{
+		f_current_angle += f_rotation_speed * TIME_GetDt()
+		if (MATH_AbsFloat(f_current_angle) >= f_snap_angle)
+		{
+			// Arrêter la roue
+			f_current_angle = 0.0
+			f_rotation_speed = 0.0
+			f_traction = 0.0
+			f_factor = 0.0
+			f_current_snap_delay = f_snap_delay
+		}
+	}
+	
+	// Changer d'état si vitesse d'entraînement
+	if (((f_speed_entrainement > 0.0) && (f_rotation_speed >= f_speed_entrainement)) || ((f_speed_entrainement < 0.0) && (f_rotation_speed <= f_speed_entrainement)))
+		AI_TrackCurChangeNow("RMRT_ETAT_tourne")
+	
+	if (MATH_AbsFloat(f_rotation_speed) < 0.001)
+		f_rotation_speed = 0.0
+	
+}
+else if (f_current_snap_delay)
+{
+	f_current_snap_delay = MATH_FloatMax(f_current_snap_delay - TIME_GetDt(), 0.0)
+	f_rotation_speed = 0.0
+}
+	
+RMRT_UpdatePeersSpeed()
+
+if (f_rotation_speed != 0.0)
+	OBJ_CapaSet(Obj_Capa_Switch, none)
+else
+	OBJ_CapaSet(none, Obj_Capa_Switch)
+
+DBG_RenderCircle(OBJ_PosGet(), f_rayon, OBJ_BankingGet(), color_bleu)
+

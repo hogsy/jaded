@@ -1,0 +1,83 @@
+int 			i
+
+//--------( SF )--------
+if ( SF_i_NePasRejouerSiMort )
+{
+	i = AI_SFDynGet(0, SF_MinById, SF_MaxById)	// Alloc
+	Super_SpecialFlag_get( SF_i_AlreadyDead, i)		// Test SF
+	if (i)																// Si SF = 1 alors DESTROY
+		OBJ_Destroy()
+}
+
+// --------( get generation WP )--------
+for (mi_WPNb = 0; mi_WPNb < 16; mi_WPNb++)
+{
+		if (mao_WP[ mi_WPNb ] == nobody )
+			break
+}
+if (mi_WPNb == 0)
+	mao_WP[ 0 ] = OBJ_Me()
+	
+// --------( check number of ennemy to generate )--------
+if ( ( mi_MaxActive == 0 ) || (mi_NbBeforeDying == 0) )
+{
+	DBG_TraceObject( OBJ_Me() )
+	DBG_TraceString( "---> max number of active enemy or Number before dying is set to zero (AI stop)\n" )
+	AI_TrackCurStop()
+	return
+}
+
+// --------( check type of ennemy )--------
+if ( (mo_Enemy == nobody) && (mao_SeveralEnemy[ 0 ] == nobody) )
+{
+	DBG_TraceObject( OBJ_Me() )
+	DBG_TraceString( "---> no enemy (AI stop)\n" )
+	AI_TrackCurStop()
+	return
+}
+
+// --------( check generation time )--------
+if ( mf_GenTimeMax < mf_GenTime )
+	mf_GenTimeMax = mf_GenTime
+
+// --------( init generation time )-------
+mf_TimeLeft = 0 
+
+// --------( test trigger )--------
+mi_TriggerTest = 0
+if (AI_TriggerIsValid( mt_GenTriggerTest ))
+{
+	mi_TriggerTest++
+ 	if ( AI_TriggerIsValid( mt_GenTriggerTest1 ))
+ 	{
+		mi_TriggerTest++
+ 		if ( AI_TriggerIsValid( mt_GenTriggerTest2 ))
+ 			mi_TriggerTest++
+	}
+}
+
+if ( !mi_TriggerTest && (mf_GenTime <= 0) )
+{
+		DBG_TraceObject( OBJ_Me() )
+		DBG_TraceString( "---> no condition of generation (set trigger or time)  (AI stop)\n" )
+		AI_TrackCurStop()
+		return
+}
+
+if (mi_UseEnemyPerWave)
+{
+	if ( ( mf_PauseTime == 0) || (mi_WaveNumber == 0 ) || (mai_EnemyPerWave[0] == 0))
+		mi_UseEnemyPerWave = faux
+	else
+	{
+		mi_NbBeforeDying = mai_EnemyPerWave[0]
+		mi_CurWave = 0
+	}
+}
+
+OBJ_CapaSet( OBJ_Capa_0, 0 )
+mo_EnemyToShow = nobody
+mi_WPCur = -1
+mi_SeveralEnemy_Counter = 0
+mi_Add_Done = faux
+AI_TrackCurChange( "Spawner_loop" ) 

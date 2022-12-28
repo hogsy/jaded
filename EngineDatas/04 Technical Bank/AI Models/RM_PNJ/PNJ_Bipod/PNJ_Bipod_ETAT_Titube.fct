@@ -1,0 +1,206 @@
+#include "PNJ_Bipod_defines.var"
+
+int			ti_i
+
+float		tf_last_angle
+float		tf_coef
+float		tf_target_speed
+float		tf_limit_dt
+float		tf_dist
+float		tf_acceleration
+
+vector	tv_start_quat
+vector	tv_dest_quat
+
+vector	tv_pos
+vector	tv_dest_sight
+vector	tv_new_sight
+vector	tv_new_banking
+
+object	to_main_father
+object	to_monture
+
+if (i_flag_sortie_etat)
+{
+	i_flag_sortie_etat = faux
+	return
+}
+
+if (i_etat_courant != ETAT_Titube)
+{
+	// INTIALISATION
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Titube
+	
+	if (fct_last_etat)
+	{
+		i_flag_sortie_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	fct_last_etat = AI_TrackCurGet()
+	
+	if (o_Town)
+	{
+		v_IK_move_dir = OBJ_PosGet() - @o_Town OBJ_PosGet()
+		MATH_VecSetHorzNormalize(v_IK_move_dir)
+	}
+	else
+		v_IK_move_dir = OBJ_SightGet()
+
+	i_flag_can_stop_ik = faux
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+f_mort_coef = MATH_FloatMin(f_time_start_etat / 3.0, 1.0)
+
+if (f_time_start_etat > 3.0 && MATH_VecDotProduct(-OBJ_SightGet(), v_IK_move_dir) > Cf_Cos20)
+	macro_change_etat("PNJ_Bipod_ETAT_Tombe")
+
+f_dt += TIME_GetDt()
+
+tf_target_speed = 60.0
+tf_acceleration = 20.0
+
+if (f_speed <= tf_target_speed)
+	f_speed += MATH_FloatMin(tf_target_speed - f_speed, tf_acceleration * f_dt)
+else
+	f_speed -= MATH_FloatMin(f_speed - tf_target_speed, tf_acceleration * f_dt)
+
+tv_pos = OBJ_PosGet()
+
+if (f_speed >= 5.0 || f_walk_force_angle != -1.0)
+{
+	i_lock_feet = faux
+
+	if (i_SND_Motor_Loop == -1)
+		i_SND_Motor_Loop = SND_RequestPlayLoopOnObjCanal(Ci_SND_Motor_Loop, Anim_Canal_Tete)
+
+	// OSCILLATION PIED GAUCHE / DROIT
+	if ( f_bassin_shake )
+	{
+		if (i_SND_Move_Loop != -1)
+		{
+			SND_Stop(i_SND_Move_Loop)
+			i_SND_Move_Loop = -1
+		}
+	}
+	else
+	{
+		tf_last_angle = f_walk_angle
+
+		if (tf_last_angle < Cf_PiBy2)
+			f_walk_angle += f_speed * 0.04 * f_dt
+		else
+			f_walk_angle += f_speed * 0.12 * f_dt
+
+		if (tf_last_angle < Cf_PiBy2 && f_walk_angle >= Cf_PiBy2)
+		{
+			f_walk_angle = Cf_PiBy2
+			i_lock_feet = vrai
+		}
+		else if (tf_last_angle < Cf_Pi && f_walk_angle >= Cf_Pi)
+		{
+			f_walk_angle = 0.0
+			i_lock_feet = vrai
+		}
+
+		// DEPLACEMENT
+		tv_pos += v_IK_move_dir * f_speed * f_dt
+
+		// AXE POUR LES PIEDS (ANTICIPATION)
+		tv_new_sight = MATH_VecInCone(v_IK_move_dir, OBJ_SightGet(), Cf_PiBy6, 0)
+		v_IK_feet_sight = MATH_VecBlendRotate(v_IK_feet_sight, tv_new_sight, 4.0 * f_dt)
+	}
+
+	// VISEE
+	tv_new_sight = -v_IK_move_dir
+
+	tv_new_sight = MATH_VecInCone(tv_new_sight, v_IK_constraint_sight, Cf_PiBy4, 0)
+	tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_new_sight, 6.0 * f_dt)
+	
+	tv_new_banking = Cv_VerticalVector
+//	tv_new_banking = MATH_VecBlendRotate(Cv_VerticalVector, v_IK_move_dir, MATH_FloatMin(f_time_start_etat * 0.1, 0.5))
+
+	OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking)
+}
+else
+{
+	if ( i_lock_feet )
+	{
+		if (i_SND_Motor_Loop != -1)
+		{
+			SND_Stop(i_SND_Motor_Loop)
+			i_SND_Motor_Loop = -1
+		}
+	}
+	else
+	{
+		if (f_walk_angle <= Cf_PiBy2)
+		{
+			f_walk_angle += Cf_PiBy2 * f_dt
+			if (f_walk_angle > Cf_PiBy2)
+			{
+				i_lock_feet = vrai
+				f_walk_angle = Cf_PiBy2
+			}
+		}
+		else
+		{
+			f_walk_angle += Cf_PiBy2 * f_dt
+			if (f_walk_angle > Cf_Pi)
+			{
+				i_lock_feet = vrai
+				f_walk_angle = 0.0
+			}
+		}
+
+		// DEPLACEMENT
+		tv_pos += v_IK_move_dir * f_speed * f_dt
+
+		// AXE POUR LES PIEDS (ANTICIPATION)
+		tv_new_sight = MATH_VecInCone(v_IK_move_dir, OBJ_SightGet(), Cf_PiBy6, 0)
+		v_IK_feet_sight = MATH_VecBlendRotate(v_IK_feet_sight, tv_new_sight, 4.0 * f_dt)
+	}
+	
+	// VISEE
+	tv_new_sight = -v_IK_move_dir
+
+	tv_new_sight = MATH_VecInCone(tv_new_sight, v_IK_constraint_sight, Cf_PiBy4, 0)
+	tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_new_sight, 6.0 * f_dt)
+	
+	tv_new_banking = Cv_VerticalVector
+//	tv_new_banking = MATH_VecBlendRotate(Cv_VerticalVector, v_IK_move_dir, MATH_FloatMin(f_time_start_etat * 0.1, 0.5))
+
+	OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking)
+}
+
+DBG_RenderVector(@o_bassin OBJ_PosGet(), v_IK_constraint_sight * 1000.0, color_cyan)
+DBG_RenderVector(@o_bassin OBJ_PosGet(), v_IK_feet_sight * 1000.0, color_blanc)
+DBG_RenderVector(@o_bassin OBJ_PosGet(), v_IK_move_dir * 1000.0, color_jaune)
+
+if (f_walk_angle <= Cf_PiBy2)
+	tv_pos.z = MATH_FloatBlend(tv_pos.z, v_IK_ground_pos[0].z, 8.0 * f_dt)
+else
+	tv_pos.z = MATH_FloatBlend(tv_pos.z, v_IK_ground_pos[1].z, 8.0 * f_dt)
+//tv_pos.z = MATH_FloatBlend(tv_pos.z, (v_IK_ground_pos[0].z + v_IK_ground_pos[1].z) * 0.5, 12.0 * f_dt)
+OBJ_PosSet(tv_pos)
+
+PNJ_Bipod_IK()
+PNJ_Bipod_Oreille()
+PNJ_Bipod_Update_Col()
+
+PNJ_Bipod_Spawn()
+//PNJ_Bipod_Bomb()
+PNJ_Bipod_Laser()
+PNJ_Bipod_GFX_Accumulation()
+PNJ_Bipod_Death_Smoke()
+
+//PROC_DISPLAY_SHOCKWAVE()
+
+f_dt = 0.0

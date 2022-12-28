@@ -1,0 +1,123 @@
+//#include "PNJ_Raptor_defines.var"
+//
+//int				ti_i
+//int				ti_flag_kill_GFX
+//int				ti_flag_force_smoke
+//int				ti_terrain
+//
+//float			tf_coef
+//
+//vector		tv_point_A
+//vector		tv_point_B
+//vector		tv_wind
+//
+//object		to_hand
+//
+//if (raptor_type == C_ID_Galiminus)
+//	return
+//
+//ti_flag_kill_GFX = faux
+//
+//if (OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Culled)
+//	ti_flag_kill_GFX = vrai
+//else if (OBJ_FlagsControlGet() & (OBJ_C_ControlFlag_ForceInvisible | OBJ_C_ControlFlag_SecInvisible))
+//	ti_flag_kill_GFX = vrai
+//
+//if (ti_flag_kill_GFX)
+//{
+//	for (ti_i = 0; ti_i < 2; ti_i++)
+//	{
+//		if (GFX_Feet_Smoke[ti_i] != -1)
+//		{
+//			GFX_Seti(GFX_Feet_Smoke[ti_i], 13106, 0)						// *number of sprite to generate
+//			GFX_Feet_Smoke[ti_i] = -1
+//		}
+//	}
+//	
+//	return
+//}
+//
+//for (ti_i = 0; ti_i < 2; ti_i++)
+//{
+//	if (ti_i == Ci_IK_pied_gauche)
+//		to_hand = ANI_CanalObjectGet(Anim_Canal_OrteilGauche)
+//	else
+//		to_hand = ANI_CanalObjectGet(Anim_Canal_OrteilDroit)	
+//	
+//	ti_terrain = GRID_CapaGet(@to_hand OBJ_PosGet()) & tag_grid_terrain
+//
+//	switch(ti_terrain)
+//	{
+//		case Ci_sol_eau :
+//		case Ci_sol_eau_basse :
+//		
+//			if (GFX_Feet_Smoke[ti_i] != -1)
+//			{
+//				GFX_Seti(GFX_Feet_Smoke[ti_i], 13106, 0)						// *number of sprite to generate
+//				GFX_Feet_Smoke[ti_i] = -1
+//			}
+//			
+//			break
+//	
+//		default:
+//		
+//			if (GFX_Feet_Smoke[ti_i] == -1)
+//			{
+//				GFX_Feet_Smoke[ti_i] = GFX_Add(13)																// Create the boum
+//				
+//				GFX_MaterialSet(GFX_Feet_Smoke[ti_i], get_SFX_light_and_smoke, -1)						// met le materiau
+//				GFX_Seti(GFX_Feet_Smoke[ti_i], 13101, 8)															// Materiau 0
+//			
+//				GFX_Seti(GFX_Feet_Smoke[ti_i], 13100, 60)															// *Buffer number of sprite
+//				GFX_Seti(GFX_Feet_Smoke[ti_i], 13106, 0xFFFFFFFF)												// *number of sprite to generate
+//			
+//				GFX_Setf(GFX_Feet_Smoke[ti_i], 13003, 0.25)															// Time fase 1
+//				GFX_Setf(GFX_Feet_Smoke[ti_i], 13004, 0.25)															// Time fase 2
+//			
+//				GFX_Seti(GFX_Feet_Smoke[ti_i], 13107, 0)															// Sprites non triés
+//			
+//				GFX_FlagSet(GFX_Feet_Smoke[ti_i], 0 , 1)
+//				GFX_FlagSet(GFX_Feet_Smoke[ti_i], 2 , 1)
+//				
+//				GFX_Setf(GFX_Feet_Smoke[ti_i], 13012, 0.75)														// Time random
+//			
+//				GFX_Setv(GFX_Feet_Smoke[ti_i], 13201, cvector(-1.0, -1.0, -1.0))							// Speed min
+//				GFX_Setv(GFX_Feet_Smoke[ti_i], 13202, cvector(1.0, 1.0, 1.0))								// Speed max
+//		
+//				GFX_Setf(GFX_Feet_Smoke[ti_i], 13000, 0.1)														// Growing speed min
+//				GFX_Setf(GFX_Feet_Smoke[ti_i], 13001, 0.3)														// Growing speed max
+//				GFX_Setf(GFX_Feet_Smoke[ti_i], 13002, 0.0001)													// Friction Grow
+//	
+//				GFX_Setf(GFX_Feet_Smoke[ti_i], 13005, 0.3)														// Creation size min
+//				GFX_Setf(GFX_Feet_Smoke[ti_i], 13006, 0.6)														// Creation size max
+//
+//				GFX_Setf(GFX_Feet_Smoke[ti_i], 13009, 8.0)														// Norm speed min
+//				GFX_Setf(GFX_Feet_Smoke[ti_i], 13010, 10.0)														// Norm speed max
+//				GFX_Setf(GFX_Feet_Smoke[ti_i], 13007, 0.0)														// Gravity
+//					
+//				GFX_Setv(GFX_Feet_Smoke[ti_i], 13203, cvector(0.15, 0.15, 0.15))							// friction speed
+//				
+//				GFX_Seti(GFX_Feet_Smoke[ti_i], 13103, 0x40C0C0C0)											// Color fase 0
+//				GFX_Seti(GFX_Feet_Smoke[ti_i], 13104, 0x20C0C0C0)											// Color fase 1
+//				GFX_Seti(GFX_Feet_Smoke[ti_i], 13105, 0x00C0C0C0)											// Color fase 2
+//				
+//				GFX_Setf(GFX_Feet_Smoke[ti_i], 13008, 0.01)														// generation rate
+//			
+//				GFX_Setv(GFX_Feet_Smoke[ti_i], 13205, Cv_NullVector)										// Mainposspeed
+//				GFX_Setv(GFX_Feet_Smoke[ti_i], 13206, Cv_NullVector)										// Mainpossfriction
+//			}
+//			
+//			tv_wind = DYN_SpeedGetVector() * 0.25 
+//			GFX_Setv(GFX_Feet_Smoke[ti_i], 13204, tv_wind)												// wind
+//	
+//			tv_point_A = @to_hand OBJ_PosGet()
+//			tv_point_A += @to_hand OBJ_BankingGet() * 0.75
+//			tv_point_A.z -= 0.1
+//
+//			tv_point_A -= tv_wind * TIME_GetDt()
+//			GFX_Setv(GFX_Feet_Smoke[ti_i], 13200, tv_point_A) 								// Creation Pos
+//			
+//			break
+//	}
+//}
+//

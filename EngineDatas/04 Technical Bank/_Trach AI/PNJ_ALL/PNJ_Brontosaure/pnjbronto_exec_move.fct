@@ -1,0 +1,77 @@
+#include "PNJ_Brontosaure_defs.var"
+
+vector		next_pos, dir, sight, next_dir, tv_temp, save_pos, speed
+float			dot, dist, factor, fz
+object		ooo
+int				coul
+
+#define BASE_SPEED  6
+
+//--------( init )---------
+move_i_neardest = 0
+next_pos = OBJ_PosGet()
+save_pos = next_pos
+
+//---------( déplacement dans le plan horizontal )--------
+dir = move_v_dest[ 0 ] - next_pos
+dir.z = 0
+dist = MATH_VecNorm( dir )
+
+//----( orientation )-----
+coul = 0xFF00FF00
+if (dist < 10 )
+{
+	next_dir = move_v_dest[ 1 ] - move_v_dest[ 0 ]
+	factor = dist / 10
+	sight = (factor * dir) + ((1 - factor) * next_dir)
+	coul = 0xFF7FFF00
+}
+else
+	sight = dir
+	
+sight = MATH_VecBlendRotate(OBJ_SightGet(), sight,0.05)
+sight.z = 0
+if (!MATH_VecNull(sight) )
+{
+	MATH_VecSetNormalize( sight )
+	OBJ_BankingGeneralSet( sight , Cv_VerticalVector)
+}
+else
+	sight = OBJ_SightGet()
+	
+//----(déplacement non nul )----
+if (dist > 0 && move_f_speed > 0 )
+{
+	dir /= dist
+	factor = move_f_speed * TIME_GetDt()
+				
+	//----( on attend d'etre a peut près en face de la cible pour avancer )-----
+	dot = MATH_VecDotProduct(dir, sight)
+	if ( dot > 0.2 ) 
+	{
+		if (factor > dist)
+			factor = dist
+		next_pos += (dir * factor)
+		speed = dir * (move_f_speed * BASE_SPEED) 
+		speed.z = 0
+//		DYN_SpeedSetVector( speed )
+	}
+}
+else
+{
+//	DYN_SpeedSetVector( Cv_NullVector )
+}
+
+//OBJ_PosSet( next_pos )
+
+dist = MATH_VecNorm( save_pos - next_pos )
+dbg_speed = MATH_VecNorm( save_pos - next_pos ) / TIME_GetDt()
+dbg_time += TIME_GetDt()
+dbg_dist += dist
+
+//-------( arrivée sur la destination )--------
+dir = next_pos - move_v_dest[ 0 ]
+dir.z = 0
+dist = MATH_VecDotProduct(dir,dir)
+if ( dist < 36 )
+	move_i_neardest = 1

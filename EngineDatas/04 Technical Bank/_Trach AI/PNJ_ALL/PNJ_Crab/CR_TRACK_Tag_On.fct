@@ -1,0 +1,350 @@
+#include "CR_defines.var"
+
+#define			Cf_sol_hauteur_offset		0.05
+
+int					ti_state
+int					ti_zik_fight
+int					ti_i
+int					ti_string_ID
+
+vector			tv_wall_normal
+vector			tv_offset
+vector			tv_pos_target
+vector			tv_me_to_target
+vector			tv_me_to_main
+vector			tv_pos
+vector			tv_pos_crab
+vector			tv_2D_pos
+
+messageid		tmid_nmi
+
+object			to_bone
+object			to_gao
+object			to_ground
+
+float				tf_vitesse
+float				tf_vitesse_old
+float				tf_vitesse_max
+float				tf_shake_cam_coef
+float				tf_me_to_main
+float				tf_dist_max
+
+
+tv_2D_pos = VIEW_3dWorldTo2d(0, OBJ_PosGet())
+
+// GRAB TRAINE ====================================
+if( CR_Petit_Crabe_Grab_En_Cours() )
+{
+	// PETIT CRABE > Grab : force Blessé après x sec
+	if( ! i_grab_traine_force_blesse )
+	{
+		if( f_grab_traine_duration >= f_duree_grab_force_blesse )
+		{
+			i_grab_traine_force_blesse = vrai
+//			if( IsThis_ID_Humain(i_fight_actor_ID) )
+//			{
+//				if(@"univ" LIFE_HumainEtat[i_fight_actor_ID] != Life_ETAT_Mort)
+//					@"univ" LIFE_HumainEtat[i_fight_actor_ID] = Life_ETAT_Agonisant		// force agonisant
+//			}
+		}
+	}
+	// PETIT CRABE > Grab : tue après 10 sec
+	else
+	{
+		if( f_grab_traine_duration > 15.0 )
+		{
+			if( ! CR_Cadavre_Find(o_fight_actor))
+			{
+				DBG_TraceObject(OBJ_Me())
+				DBG_TraceString(" tue ")
+				DBG_TraceObject(o_fight_actor)
+				DBG_TraceString(" car il le grabbe depuis 10 sec - etat courant n° ")
+				DBG_TraceInt(i_etat_courant)
+				DBG_TraceEOL()
+				EVENT_AddEventPaf(C_EVENT_FILTER_Enemy, C_PAF_KK_KiTue, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_fight_actor, 999.0 * PAF_Unit, OBJ_SightGet())
+			}
+		}
+	}
+}
+
+
+// TAG ON =========================================
+AI_Execute("CR_CALLBACK_Tag_On")
+
+
+// SOFT COLLISIONS =================================
+CR_Soft_Collision()
+
+
+// ENNEMI =========================================
+//if( CR_IsVulnerable() && f_HP_cur )
+//{
+//	// Renseigner correctement les compagnons pour qu’ils tirent sur crabe lorsqu’il est vulnérable
+//	switch( i_etat_courant )
+//	{
+//		case ETAT_FIGHT :
+//		case ETAT_GRAB : 
+//		case ETAT_TRAINE :
+//		case ETAT_PAF :
+//			ti_state = C_EVENT_EnemyState_Fight			// Menaçant
+//			break
+//		default:
+//			ti_state = C_EVENT_EnemyState_Wait			// Présent
+//			break
+//	}
+//}
+//else
+if( f_HP_cur )
+{
+	if( i_modele == MODELE_Geant )
+	{
+		ti_state = C_EVENT_EnemyState_Fight			// Menaçant
+	}
+	else if( CR_IsVulnerable() && i_etat_courant != ETAT_IDLE )
+	{
+		ti_state = C_EVENT_EnemyState_Fight			// Menaçant
+	}
+	else
+	{
+		switch(i_etat_courant)
+		{
+			case ETAT_FIGHT :
+				// Renseigner correctement les compagnons pour qu’ils tirent sur crabe lorsqu’il est à bout portant lorsqu’ils sont menacés
+				switch( i_fight_mode )
+				{
+					case Ci_fight_mode_cadavre :
+					case Ci_fight_mode_cherche :
+					case Ci_fight_mode_retour :
+						ti_state = C_EVENT_EnemyState_Wait			// Présent
+						break
+						
+					case Ci_fight_mode_target :
+					default:
+						if( o_fight_actor && MSG_GlobalIsValid(mid_best_interet) )
+						{
+							// vers ma proie (pas un cadavre)
+							tv_pos_target = EVENT_InteretPositionGet(mid_best_interet)
+							tv_me_to_target = tv_pos_target - OBJ_PosGet()
+							tv_me_to_target.z = 0.0
+							if( MATH_VecNorm(tv_me_to_target) <= CR_Pos_Offset_Get() )
+								ti_state = C_EVENT_EnemyState_Fight			// Menaçant
+							else
+								ti_state = C_EVENT_EnemyState_Wait			// Présent
+						}
+						else
+							ti_state = C_EVENT_EnemyState_Wait			// Présent
+						break
+				}
+				break
+				
+			case ETAT_GRAB :
+			case ETAT_PAF :
+			case ETAT_APPARITION :
+			case ETAT_REPOUSSE :
+			case ETAT_TRAINE :
+				ti_state = C_EVENT_EnemyState_Fight			// Menaçant
+				break
+				
+			case ETAT_MANGE :
+				if( CR_Cadavre_Find(o_mange_actor) )
+					ti_state = C_EVENT_EnemyState_Wait			// Présent
+				else
+					ti_state = C_EVENT_EnemyState_Fight			// Menaçant
+				break
+			
+			case ETAT_IDLE :
+				ti_state = C_EVENT_EnemyState_Wait			// Présent
+				break
+				
+			case ETAT_MORT :	
+			case ETAT_TEST :
+			default:
+				ti_state = C_EVENT_EnemyState_Quiet			// Ignoré
+				break
+		}
+	}
+	
+	tmid_nmi = EVENT_AddEventEnemy(i_id_modele, OBJ_Me(), ti_state)
+	// spécifie la position de la "tête" pour les humains
+	tv_offset = cvector(0,0,0.5) * f_zoom
+	EVENT_PositionSet(tmid_nmi, @o_bone_carapace OBJ_PosGet() + tv_offset)
+	if( i_DBG_NMI_State || @"univ" i_cheat_page == 3 )
+	{
+		switch( ti_state )
+		{
+			case C_EVENT_EnemyState_Wait :		// Présent
+				ti_string_ID = STR_CreateText("\c0FF00CCCC\\h.04\Wait", tv_2D_pos + cvector(0.025,0.05,0), 0.0)
+				break
+			case C_EVENT_EnemyState_Quiet :		// Ignoré
+				ti_string_ID = STR_CreateText("\c0FFFFFFFF\\h.04\Quiet", tv_2D_pos + cvector(0.025,0.05,0), 0.0)
+				break
+			case C_EVENT_EnemyState_Fight :		// Menaçant
+				ti_string_ID = STR_CreateText("\c0FF0000FF\\h.04\Fight", tv_2D_pos + cvector(0.025,0.05,0), 0.0)
+				break
+			default:
+				ti_string_ID = STR_CreateText("\c0FFFF0000\\h.04\???", tv_2D_pos + cvector(0.025,0.05,0), 0.0)
+				break
+		}
+		STR_AppendText(ti_string_ID, "")
+	}
+}
+
+
+// DEBUG ==========================================
+AI_Execute("CR_exec_DEBUG_Display")
+
+
+// ROTATION DES PAFS ===============================
+if( ! MATH_FloatNullEpsilon(1 - f_paf_rotation_coef) )
+{
+	OBJ_RotateLocalZ( ( f_paf_rotation_force * (1 - f_paf_rotation_coef) ) * 1.0 * TIME_GetDt())
+	f_paf_rotation_coef = MATH_FloatBlend(f_paf_rotation_coef, 1.0, 5.0 * TIME_GetDt())
+}
+
+
+// PAF DYN SPEED ===================================
+f_paf_dyn_speed = MATH_VecDotProduct(v_paf_dyn_speed, v_paf_dyn_speed)
+if( OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna) && f_paf_dyn_speed > f_paf_dyn_min_norm && CR_PafDynReculEnabled() )
+{
+	// RECUL (SAUF SI DEJA MORT)
+	if (COL_CollideType(COL_C_Wall))
+	{
+		tv_wall_normal = COL_NormalGet(COL_C_Wall)
+		MATH_VecSetHorzNormalize(tv_wall_normal)
+		v_paf_dyn_speed -= MATH_FloatMin(MATH_VecDotProduct(v_paf_dyn_speed, tv_wall_normal), 0.0) * tv_wall_normal
+	}
+
+	DYN_SpeedSetVector(v_paf_dyn_speed)
+//	Str_DisplayFloatOnce(f_paf_dyn_speed, cvector(0.8,0,0))
+}
+else
+{
+	v_paf_dyn_speed = Cv_NullVector
+	f_paf_dyn_speed = 0.0
+}
+
+// CADAVRES ======================================
+CR_Cadavre_Check()
+CR_Cadavre_Check_New()
+
+// MUSIK FIGHT =====================================
+ti_zik_fight = faux
+if( MSG_GlobalIsValid(mid_best_interet) )
+{
+	to_gao = EVENT_InteretTargetGet(mid_best_interet)
+	if( @to_gao AI_IsModel(get_Humain_path) )
+		ti_zik_fight = vrai
+}
+//if( i_etat_courant == ETAT_FIGHT && i_fight_mode == Ci_fight_mode_cherche )
+//	ti_zik_fight = vrai
+if( ti_zik_fight )
+{
+//	Str_DisplayTextOnce("fight", cvector(0.5,0.5,0.0))
+	SIG_Send(SIG_C_TYPE_FIGHT, OBJ_Me())
+}
+
+
+// VITESSE =======================================
+tf_vitesse_old = f_vitesse
+v_vitesse_last_move = (OBJ_PosGet() - v_vitesse_last_pos) / TIME_GetDt()
+v_vitesse_last_pos = OBJ_PosGet()
+tf_vitesse = MATH_VecNorm(v_vitesse_last_move)
+if( i_modele == MODELE_Petit )
+	tf_vitesse_max = 3.0
+else
+	tf_vitesse_max = 4.5
+tf_vitesse = MATH_FloatLimit(tf_vitesse, 0.0, tf_vitesse_max)
+f_vitesse = tf_vitesse / tf_vitesse_max
+f_vitesse = MATH_FloatBlend(tf_vitesse_old, f_vitesse, 10 * TIME_GetDt())
+if( i_snd_move_playing )
+	SND_InsertVarSet(i_snd_move, 21, f_vitesse)
+//Str_DisplayFloatOnce(f_vitesse, cvector(0.5,0.5,0))
+//DBG_TraceFloat(tf_vitesse)
+//DBG_TraceEOL()
+
+// SHAKE CAMERA ==================================
+if (i_modele == MODELE_Geant)
+{
+	tf_dist_max = 20.0
+	tv_me_to_main = @o_main_actor OBJ_PosGet() - OBJ_PosGet()
+	tf_me_to_main = MATH_VecNorm(tv_me_to_main)
+	if( tf_me_to_main > tf_dist_max )
+		tf_shake_cam_coef = 0.0		// je suis trop loin
+	else if( f_vitesse < 0.05 && ACT_ActionGet() != ACTION_SurPlace )
+		tf_shake_cam_coef = 0.0		// je suis à l'arrêt
+	else
+	{
+		tf_shake_cam_coef = 1.0 - MATH_FloatLimit(tf_me_to_main / tf_dist_max, 0.0, 1.0)
+		if( ACT_ActionGet() == ACTION_SurPlace )
+			tf_shake_cam_coef *= MATH_FloatLimit(1.0 / tf_vitesse_max, 0.0, 1.0)
+		else
+			tf_shake_cam_coef *= MATH_FloatLimit(f_vitesse / tf_vitesse_max, 0.0, 1.0)
+		tf_shake_cam_coef *= 0.09
+	}
+	f_shake_cam_coef =MATH_FloatBlend(f_shake_cam_coef, tf_shake_cam_coef, 8.0 * TIME_GetDt())
+	IO_PafSet(100 * f_shake_cam_coef, 3)
+	LIBGFX_ShakeCam(f_shake_cam_coef, 50.0, 0.0, 0.0, 0.1, 0.95)
+	//Str_DisplayFloatOnce(f_shake_cam_coef, cvector(0.5,0.5,0))
+}
+
+
+// EXPLOSE : PATTES ARRACHEES =====================
+if( i_paf_explose )
+{
+	tv_pos_crab = OBJ_PosGet()
+	for( ti_i = 0; ti_i < i_explose_nb; ti_i++ )
+	{
+ 		af_explose_duree[ti_i] += TIME_GetDt()
+ 		to_bone = ao_explose_bones[ti_i]
+ 		tv_pos = @to_bone OBJ_PosGet()
+ 		switch( ai_explose_phase[ti_i] )
+ 		{
+	 		case 0 :		// je vole
+	 			// déplacement
+				av_explose_dir[ti_i] = MATH_VecBlend(av_explose_dir[ti_i], Cv_NullVector, 1.5 * TIME_GetDt())
+				av_explose_grav[ti_i] = MATH_VecBlend(av_explose_grav[ti_i], Cv_NormalGravity, 0.5 * TIME_GetDt())
+				DBG_RenderVector(tv_pos, av_explose_dir[ti_i], color_vert)
+				DBG_RenderVector(tv_pos, av_explose_grav[ti_i], color_rouge)
+				tv_pos += (av_explose_dir[ti_i] * TIME_GetDt())
+				tv_pos += (av_explose_grav[ti_i] * TIME_GetDt())
+				// détection du niveau du sol
+			 	if( af_explose_sol_Z[ti_i] == Cf_hauteur_Z_sol_default && ( af_explose_duree[ti_i] > 0.5 || tv_pos.z <= tv_pos_crab.z ) )
+				{
+					// checker le sol quand la patte est plus basse que le crabe ou que ça fait un moment qu'elle vole (pour ne pas prendre le Z du sol sous le crabe avant l'expulsion de la patte)
+					DBG_RenderVector(tv_pos, - Cv_VerticalVector, color_blanc)
+					to_ground = COL_RayObject_Dist(tv_pos, - Cv_VerticalVector, 1.0, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_Crossable)
+					if( to_ground )
+						af_explose_sol_Z[ti_i] = COL_RayObject_PosGet().z
+				}
+				// détection du contact avec le sol
+				if( af_explose_sol_Z[ti_i] != Cf_hauteur_Z_sol_default && tv_pos.z < ( af_explose_sol_Z[ti_i] + Cf_sol_hauteur_offset ) )
+				{
+					// je touche le sol
+					tv_pos.z = af_explose_sol_Z[ti_i] + Cf_sol_hauteur_offset
+					ai_explose_est_au_sol[ti_i] = vrai
+				}
+				// position
+				@to_bone OBJ_PosSet(tv_pos)
+				if( af_explose_duree[ti_i] > 3.0 || ai_explose_est_au_sol[ti_i] )
+					ai_explose_phase[ti_i] = 2
+				break
+				
+//	 		case 1 :		// je suis posé au sol
+//	 			af_explose_est_au_sol_duree[ti_i] += TIME_GetDt()
+//	 			@to_bone OBJ_PosSet(tv_pos)
+//	 			if( af_explose_est_au_sol_duree[ti_i] > 0.75 )
+//	 				ai_explose_phase[ti_i]++
+//	 			break
+	 			
+	 		case 2 : 	// je m'enfonce dans le sol
+				tv_pos += (cvector(0,0,-1) * 0.5 * TIME_GetDt())
+				@to_bone OBJ_PosSet(tv_pos)
+	 			break
+	 	}
+	}
+}
+
+
+// SUPPR DES UNCOL ================================
+CR_UncollideCheck()
+

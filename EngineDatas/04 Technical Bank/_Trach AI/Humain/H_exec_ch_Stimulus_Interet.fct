@@ -1,0 +1,23 @@
+int					ti_rank
+
+messageid		EVT_ID
+
+message		tm_msg_filtre
+
+MSG_SetNull(tm_msg_filtre)
+tm_msg_filtre.msg_gao1 = o_main_actor
+
+o_target_stimulus_interet = nobody
+o_target_stimulus_interet_lock = nobody
+
+ti_rank = -1
+EVT_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tm_msg_filtre)
+
+if (MSG_GlobalIsValid(EVT_ID))
+{
+	o_target_stimulus_interet = EVENT_PereGet(EVT_ID)
+	o_target_stimulus_hide = o_target_stimulus_interet
+}
+
+
+

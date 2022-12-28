@@ -1,0 +1,70 @@
+int ti_phase, ti_type, ti_prio
+int ti_wait, ti_attack, ti_fight, ti_stalk, ti_total
+
+//----------------------------------------------------------------------------------------------------
+ti_prio = 255
+ti_type = i_Type 
+ti_phase = i_Phase 
+
+
+//----------------------------------------------------------------------------------------------------
+#define M_TestTypeTrig(_trigger, _prio, _cte_type)\
+	{\
+		if(ti_prio > _prio)\
+		{\
+			if( AI_TriggerIsValid(_trigger)  &&  call_trigger(_trigger)  )\
+			{\
+				ti_prio = _prio\
+				ti_type= _cte_type\
+			}\
+		}\
+	}
+
+//----------------------------------------------------------------------------------------------------
+M_TestTypeTrig(t_Type_A, i_Type_A, SND_Cte_MusType_A)
+M_TestTypeTrig(t_Type_B, i_Type_B, SND_Cte_MusType_B)
+M_TestTypeTrig(t_Type_C, i_Type_C, SND_Cte_MusType_C)
+M_TestTypeTrig(t_Type_D, i_Type_D, SND_Cte_MusType_D)
+M_TestTypeTrig(t_Type_E, i_Type_E, SND_Cte_MusType_E)
+M_TestTypeTrig(t_Type_F, i_Type_F, SND_Cte_MusType_F)
+M_TestTypeTrig(t_Type_G, i_Type_G, SND_Cte_MusType_G)
+M_TestTypeTrig(t_Type_H, i_Type_H, SND_Cte_MusType_H)
+M_TestTypeTrig(t_Type_I, i_Type_I, SND_Cte_MusType_I)
+M_TestTypeTrig(t_Type_J, i_Type_J, SND_Cte_MusType_J)
+if(ti_type != -1)
+{
+	SND_M_SetMusType(ti_type)
+}
+
+
+//----------------------------------------------------------------------------------------------------
+ti_wait = get_enemy_waiting_nb
+ti_attack = get_enemy_attacking_nb 
+ti_fight = get_enemy_fighting_nb	
+ti_stalk = get_enemy_stalking_nb	
+ti_total = ti_wait + ti_attack + ti_fight + ti_stalk
+
+if( ti_total == 0 )
+{
+	ti_phase  = SND_Cte_MusPhase_Cool
+}
+else if( ti_fight )
+{
+	if( ti_fight < i_BigFight_Threshold)
+		ti_phase  = SND_Cte_MusPhase_Fight
+	else
+		ti_phase  = SND_Cte_MusPhase_BigFight
+}
+else if( ti_stalk )
+{
+	ti_phase  = SND_Cte_MusPhase_Stalk
+}
+else if( ti_wait )
+{
+	ti_phase  = SND_Cte_MusPhase_Wait	
+}
+
+if( ti_phase != -1)
+{
+	SND_M_SetMusPhase(ti_phase)
+}

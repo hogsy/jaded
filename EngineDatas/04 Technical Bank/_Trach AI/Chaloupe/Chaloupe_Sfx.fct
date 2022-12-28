@@ -1,0 +1,241 @@
+int			i_Gfx, i_gfx1
+vector	tv_temp, tv_temp1, tv_wind
+object	to_obj
+
+if(des_i_alone) return
+if(i_mode_cine == 1) 
+{
+	if(des_i_chaloupe_jack) 
+	{
+		if(TIME_Elapsed(f_time_init, 3))
+			coltitle = COLOR_Blend(coltitle, 0, 3 * TIME_GetDt())
+		else
+			coltitle = COLOR_Blend(coltitle, 0xFFBBBBBB, 2 * TIME_GetDt())
+		@des_obj_text OBJ_TextColorSet(0, 0, -1, coltitle)
+	}
+	
+	return
+}
+
+if((alpha_airtrace > 0.1 || i_splash) && TIME_Elapsed(f_time_spark, f_rand_spark))
+{
+		f_rand_spark = MATH_RandFloat(1.0,3)
+		f_time_spark = TIME_Get()
+		if(des_i_chaloupe_jack) f_time_must_splash = 0.5
+		SND_MdFPlay(0)
+		
+		//////////////////////////////////////////////////////////////////////////////////////////
+		tv_temp = WTR_GetDif1(OBJ_PosGet() + (OBJ_SightGet() * 4.0))
+		if(des_i_chaloupe_jack) tv_temp += 3 * OBJ_SightGet()
+//		tv_temp += @get_camera OBJ_SightGet()
+	
+		tv_temp.z -= 0.5
+		
+		tv_temp1 = cvector(0,0,0.15)
+}
+
+//if	(TIME_Elapsed(f_time_13, f_rand_13))
+//{
+//	to_obj = AI_MainActorGet(C_ID_Joueur)
+//	if	(OBJ_SqrDist(to_obj) < 15 * 15)
+//	{
+//		f_rand_13 = MATH_RandFloat(0.5, 1.5)
+//		f_time_13 = TIME_Get()
+//		tv_temp = WTR_GetDif1(OBJ_PosGet() + (OBJ_SightGet() * 4.5) )
+//		tv_temp += OBJ_HorizonGet() * MATH_RandFloat(-1.5, 1.5)
+//		i_gfx1 = GFX_Add(13)																// Create the boum
+//
+//		GFX_MaterialSet(i_gfx1, get_SFX_light_and_smoke, -1)					// met le materiau
+//		GFX_Seti(i_gfx1, 13101, 38)														// Materiau 6
+//
+//		GFX_Seti(i_gfx1, 13100, 100)														// *Buffer number of sprite
+//		GFX_Seti(i_gfx1, 13106, 0x0000FFFF)										// *number of sprite to generate
+////		GFX_Seti(i_gfx1, 13106, 0xFFFFFFFF)										// *number of sprite to generate
+//
+//		GFX_Setf(i_gfx1, 13003, 0.4)														// Time fase 1
+//		GFX_Setf(i_gfx1, 13004, 0.5)														// Time fase 2
+//
+//		GFX_Seti(i_gfx1, 13107, 0)														// Sprites non triés
+//		GFX_FlagSet(i_gfx1, 0 , 1)
+//
+//		GFX_FlagSet(i_gfx1, 2 , 1)
+//
+//		GFX_Setf(i_gfx1, 13012, 0.75)													// Time random
+//
+//		GFX_Setf(i_gfx1, 13000, 1.5)														// Growing speed min
+//		GFX_Setf(i_gfx1, 13001, 3.0)														// Growing speed max
+//		GFX_Setf(i_gfx1, 13002, 0.0001)													// Friction Grow
+//
+//		GFX_Setf(i_gfx1, 13005, 0.1)													// Creation size min
+//		GFX_Setf(i_gfx1, 13006, 0.5)														// Creation size max
+////		GFX_Setf(i_gfx1, 13005, 1.0)														// Creation size min
+////		GFX_Setf(i_gfx1, 13006, 2.0)														// Creation size max
+//
+//		GFX_Setv(i_gfx1, 13203, cvector(0.02, 0.02, 0.02))						// friction speed
+//
+//		GFX_Seti(i_gfx1, 13103, 0x20F8F8F0)											// Color fase 0
+////		GFX_Seti(i_gfx1, 13103, 0x60F8F8F0)											// Color fase 0
+////		GFX_Seti(i_gfx1, 13103, 0x60060606)											// Color fase 0
+//		GFX_Seti(i_gfx1, 13104, 0xA0FFFAF0)										// Color fase 1
+////		GFX_Seti(i_gfx1, 13104, 0x20A0A080)										// Color fase 1
+////		GFX_Seti(i_gfx1, 13104, 0x20060606)											// Color fase 1
+//		GFX_Seti(i_gfx1, 13105, 0x20808060)											// Color fase 2
+////		GFX_Seti(i_gfx1, 13105, 0x00000000)											// Color fase 2
+//
+//		GFX_Setf(i_gfx1, 13009, 0.2)														// Norm speed min
+//		GFX_Setf(i_gfx1, 13010, 0.3)														// Norm speed max
+////		GFX_Setf(i_gfx1, 13009, 0.1)														// Norm speed min
+////		GFX_Setf(i_gfx1, 13010, 0.2)														// Norm speed max
+//
+//		GFX_Setf(i_gfx1, 13007, -0.5)														// Gravity
+////		GFX_Setf(i_gfx1, 13007, 0.0)														// Gravity
+//
+//		GFX_Setf(i_gfx1, 13008, 0.20)													// generation rate
+//
+//		GFX_Setv(i_gfx1, 13205, Cv_NullVector)										// Mainposspeed
+//		GFX_Setv(i_gfx1, 13206, Cv_NullVector)										// Mainpossfriction
+//
+//		tv_wind = OBJ_SightGet() * -2.0
+////		tv_wind = Cv_NullVector // OBJ_SightGet() * 0.25
+//		GFX_Setv(i_gfx1, 13204, tv_wind)													// wind
+//
+//		tv_temp.z += 0.0
+////		tv_temp.z += 1
+//		GFX_Setv(i_gfx1, 13200, tv_temp) 								// Creation Pos
+//		GFX_Setv(i_gfx1, 13207, OBJ_HorizonGet() * 1.0)			// CreaPosAxe X
+//		GFX_Setv(i_gfx1, 13208, OBJ_SightGet() * 1.0)				// CreaPosAxe Y
+//		GFX_Setv(i_gfx1, 13209, OBJ_BankingGet() * 0.5)			// CreaPosAxe Z
+//		
+//		tv_temp	= OBJ_SightGet()
+////		tv_temp.z += 3
+//
+//		GFX_Setv(i_gfx1, 13201, tv_temp + cvector(-1.0, -1.0, 7.0))			// Speed min
+//		GFX_Setv(i_gfx1, 13202, tv_temp + cvector(1.0, 1.0, 10.0))			// Speed max
+//		
+//		GFX_LifeTimeSet(i_gfx1, 2.0)
+//	}
+//}
+
+//		i_Gfx = GFX_Add(9)  // ajout de l’effet
+//		GFX_FlagSet(i_Gfx,0,1) // activation de l’effet
+//		GFX_FlagSet(i_Gfx, 2, 1) // matériau transparent
+//		GFX_MaterialSet(i_Gfx, get_SFX_light_and_smoke,6)	// matériau
+//		GFX_Setv( i_Gfx, 9200, tv_temp) //position
+//		GFX_Setv( i_Gfx, 9201, tv_temp1) // axe du cone de vitesse
+//		GFX_Setv( i_Gfx, 9202, cvector( 0, 0, -1) )	 // gravité
+//		GFX_Seti( i_Gfx, 9100, 50)	 // nb max d’étincelles
+//		GFX_Seti( i_Gfx, 9101, 0x10202020)	 // couleur
+//		GFX_Seti (i_Gfx, 9102, 24) // flags : 16 => bit 4 à 1 => temps de mort
+//		GFX_Setf( i_Gfx, 9000, 0.1 )	 // angle
+//		GFX_Setf( i_Gfx, 9001, 25) // speed min
+//		GFX_Setf( i_Gfx, 9002, 35) // speed max
+//		GFX_Setf( i_Gfx, 9003, 0.99) // friction
+//		GFX_Setf( i_Gfx, 9004, 0.01 ) // width
+//		GFX_Setf( i_Gfx, 9005, 1.0 ) // time min
+//		GFX_Setf( i_Gfx, 9006, 1.5 ) // time max
+//		GFX_Setf( i_Gfx, 9007, 0.7 ) // scale
+//		GFX_Setf( i_Gfx, 9008, 0.001  ) // period
+//		GFX_Setf( i_Gfx, 9009, 0.1  ) // temps de mort minimum
+//		GFX_Setf( i_Gfx, 9010, 0.2  ) // temps de mort maxi
+
+
+//if(i_splash && TIME_Elapsed(f_time_splash, 2))
+//{
+//		f_time_splash = TIME_Get()
+//		tv_temp = WTR_GetDif1(OBJ_PosGet() + (OBJ_SightGet() * 3.0))
+//		i_gfx1 = GFX_Add(13)																// Create the boum
+//			
+//		GFX_MaterialSet(i_gfx1, get_SFX_light_and_smoke, -1)					// met le materiau
+//		GFX_Seti(i_gfx1, 13101, 6)														// Materiau 0
+//		
+//		GFX_Seti(i_gfx1, 13100, 100)														// *Buffer number of sprite
+//		GFX_Seti(i_gfx1, 13106, 0xFFFFFFFF)										// *number of sprite to generate
+//		
+//		GFX_Setf(i_gfx1, 13003, 0.3)														// Time fase 1
+//		GFX_Setf(i_gfx1, 13004, 1.5)														// Time fase 2
+//		
+//		GFX_Seti(i_gfx1, 13107, 0)														// Sprites non triés
+//		GFX_FlagSet(i_gfx1, 0 , 1)
+//		
+//		GFX_FlagSet(i_gfx1, 2 , 1)
+//			
+//		GFX_Setf(i_gfx1, 13012, 0.75)													// Time random
+//		
+//		GFX_Setf(i_gfx1, 13000, 4.0)														// Growing speed min
+//		GFX_Setf(i_gfx1, 13001, 8.0)														// Growing speed max
+//		GFX_Setf(i_gfx1, 13002, 0.0001)													// Friction Grow
+//			
+//		GFX_Setf(i_gfx1, 13005, 3.0)														// Creation size min
+//		GFX_Setf(i_gfx1, 13006, 5.0)														// Creation size max
+//			
+//		GFX_Setv(i_gfx1, 13203, cvector(0.02, 0.02, 0.02))						// friction speed
+//			
+//		GFX_Seti(i_gfx1, 13103, 0xFF202020)											// Color fase 0
+//		GFX_Seti(i_gfx1, 13104, 0xFF040404)											// Color fase 1
+//		GFX_Seti(i_gfx1, 13105, 0x00020202)											// Color fase 2
+//
+////		GFX_Seti(i_gfx1, 13103, 0xFFFFFFFF)											// Color fase 0
+////		GFX_Seti(i_gfx1, 13104, 0x80FFFFFF)											// Color fase 1
+////		GFX_Seti(i_gfx1, 13105, 0x00FFFFFF)											// Color fase 2
+//			
+//		GFX_Setf(i_gfx1, 13009, 0.1)														// Norm speed min
+//		GFX_Setf(i_gfx1, 13010, 0.2)														// Norm speed max
+//			
+//		GFX_Setf(i_gfx1, 13007, 0.0)														// Gravity
+//		
+//		GFX_Setf(i_gfx1, 13008, 0.01)													// generation rate
+//		
+//		GFX_Setv(i_gfx1, 13205, Cv_NullVector)										// Mainposspeed
+//		GFX_Setv(i_gfx1, 13206, Cv_NullVector)										// Mainpossfriction
+//
+//		tv_wind = Cv_NullVector // OBJ_SightGet() * 0.25
+//		GFX_Setv(i_gfx1, 13204, tv_wind)													// wind
+//
+//		tv_temp.z += 1
+//		GFX_Setv(i_gfx1, 13200, tv_temp) 								// Creation Pos
+//		GFX_Setv(i_gfx1, 13207, OBJ_HorizonGet() * 1.5)			// CreaPosAxe X
+//		GFX_Setv(i_gfx1, 13208, OBJ_SightGet() * 1.5)				// CreaPosAxe Y
+//		GFX_Setv(i_gfx1, 13209, OBJ_BankingGet() * 1.5)			// CreaPosAxe Y
+//		
+//		tv_temp	= 5 * OBJ_SightGet()
+//
+//		GFX_Setv(i_gfx1, 13201, tv_temp + cvector(-1.0, -1.0, -1.0))			// Speed min
+//		GFX_Setv(i_gfx1, 13202, tv_temp + cvector(1.0, 1.0, 1.0))				// Speed max
+//		
+//		GFX_LifeTimeSet(i_gfx1, 2.0)
+//}
+//
+
+	/////////////////////////
+//if(des_i_chaloupe_jack && TIME_Elapsed(f_time_goutte, 0.1))
+//{
+//	f_time_goutte = TIME_Get()
+//	i_Gfx = GFX_Add(9)  // ajout de l’effet
+//	GFX_FlagSet(i_Gfx,0,1) // activation de l’effet
+//	GFX_FlagSet(i_Gfx, 2, 1) // matériau transparent
+//	GFX_MaterialSet(i_Gfx, get_SFX_light_and_smoke,5)	// matériau
+//	tv_temp.x = MATH_RandFloat(-1.0, 1.0)
+//	tv_temp.y = MATH_RandFloat(-0.5, -3)
+//	tv_temp.z = 0.1
+//	tv_temp = MATH_VecLocalToGlobal(tv_temp)
+//	tv_temp += OBJ_PosGet()
+//	GFX_Setv( i_Gfx, 9200, tv_temp) //position
+//	GFX_Setv( i_Gfx, 9201, cvector( 0, 0, 0.1)) // axe du cone de vitesse
+//	 GFX_Setv( i_Gfx, 9202, cvector( 0, 0, -5) )	 // gravité
+//	 GFX_Seti( i_Gfx, 9100, 20)	 // nb max d’étincelles
+// 	GFX_Seti( i_Gfx, 9101, 0x73151515)	 // couleur
+//	 GFX_Seti (i_Gfx, 9102, 24) // flags : 16 => bit 4 à 1 => temps de mort
+//	 GFX_Setf( i_Gfx, 9000, 0.1 )	 // angle
+//	 GFX_Setf( i_Gfx, 9001, 10) // speed min
+//	 GFX_Setf( i_Gfx, 9002, 15) // speed max
+//	 GFX_Setf( i_Gfx, 9003, 0.99) // friction
+//	 GFX_Setf( i_Gfx, 9004, 0.02 ) // width
+//	 GFX_Setf( i_Gfx, 9005, 0.1 ) // time min
+//	 GFX_Setf( i_Gfx, 9006, 0.2 ) // time max
+//	 GFX_Setf( i_Gfx, 9007, 2 ) // scale
+//	 GFX_Setf( i_Gfx, 9008, 0.005  ) // period
+//	 GFX_Setf( i_Gfx, 9009, 0.3  ) // temps de mort minimum
+//	 GFX_Setf( i_Gfx, 9010, 0.5  ) // temps de mort maxi
+//	}
+
+

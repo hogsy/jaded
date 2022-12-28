@@ -1,0 +1,63 @@
+#include "RM_Lum_defines.var"
+
+object	to_canal
+float		tf_speed
+int			ti_move
+
+if ( i_SFX_Halo != -1)
+{
+	GFX_Setv(i_SFX_Halo, 21200, OBJ_PosGet())
+	GFX_Setf(i_SFX_Halo, 21000, f_halo_size )  // taille du halo
+}
+
+if ( ! MATH_FloatNullEpsilon(f_fin_delai))
+{
+	f_halo_size = MATH_FloatBlend( 0.0, f_halo_size, f_fin_delai / 0.5)
+	f_fin_delai -= MATH_FloatMin(f_fin_delai, TIME_GetDt())
+	if ( MATH_FloatNullEpsilon(f_fin_delai))
+	{
+		OBJ_Destroy()
+	}
+}
+else
+	f_halo_size = 1.0 + ( 0.1 * MATH_Cos( 2.0* TIME_Get()))
+
+
+// Deplacement
+switch( i_etat_courant )
+{
+	case ETAT_FOLLOW :
+	case ETAT_ABSORBE :
+		ti_move = faux
+		if( i_etat_courant == ETAT_FOLLOW && f_etat_duree > Lum_Duree_Attente() )
+			ti_move = vrai
+		else if( i_etat_courant == ETAT_ABSORBE )
+			ti_move = vrai
+		if ( ti_move )
+		{
+			f_blend_distance += MATH_FloatMin(1.0 - f_blend_distance, 1.5 * TIME_GetDt())
+			to_canal = @get_rayman ANI_CanalObjectGet(Anim_Canal_Torse)
+			OBJ_PosSet(MATH_VecBlend(OBJ_PosGet(), @to_canal OBJ_PosGet(), f_blend_distance))
+		}
+		break
+		
+	case ETAT_MEDAILLON :
+		if ( MATH_VecNullEpsilon(v_sens))
+		{
+			v_sens = OBJ_PosGet() - v_medaillon_pos
+			v_axe_rotation = Proc_Vec_HorzNormalise(v_sens, Cv_VerticalVector)
+			if ( ! MATH_VecNullEpsilon( v_axe_rotation - Cv_VerticalVector))
+				v_axe_rotation = MATH_VecCrossProduct( MATH_VecCrossProduct( v_sens, Cv_VerticalVector), v_sens)
+		}
+		else
+			v_sens = MATH_VecRotate(v_sens , @get_Kamera OBJ_SightGet(), f_blend_rotation * TIME_GetDt())
+		DBG_RenderVector(OBJ_PosGet(), v_medaillon_pos - OBJ_PosGet(), color_rouge)
+		f_blend_distance -= MATH_FloatMin( f_blend_distance, TIME_GetDt() * 0.65)
+		OBJ_PosSet(v_medaillon_pos + (v_sens * f_blend_distance))
+//		OBJ_SightGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(),@o_medaillon OBJ_BankingGet(), 2.5 * TIME_GetDt()), OBJ_BankingGet())
+		OBJ_BankingGeneralSet(
+			MATH_VecBlendRotate(OBJ_SightGet(), @o_medaillon OBJ_SightGet(), 2.5 * TIME_GetDt()), 
+			MATH_VecBlendRotate(OBJ_BankingGet(), @o_medaillon OBJ_BankingGet(), 2.5 * TIME_GetDt()))
+		break
+}
+

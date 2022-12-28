@@ -1,0 +1,98 @@
+#include"r_defines.var"
+
+int		ti_orient
+int		ti_freq
+int		ti_i, ti_family, ti_min
+float	tf[5]
+float	tf_min, tf_dot
+float	tf_speed_ask, tf_used_speed
+
+ti_orient = vrai
+switch (MOVE_MODE())
+{
+
+	case C_Move_Rider :
+		if( ACT_ActionGet() != RM_Act_Grappin_Launch || ACT_ActionFinished() )
+		{
+			// ne pas couper l'anim de lancer du grappin
+			if ( o_ride_actor && ! MATH_FloatNullToler( @o_ride_actor DYN_SpeedGet(), 1.5))
+				ACT_ActionSet(RM_Act_RideDepl)			
+			else
+				ACT_ActionSet(RM_Act_Ride)
+		}
+	case C_Move_Accroch :
+		ti_orient = faux
+		break
+	case C_Move_Jump :
+	case C_Move_Punch :
+	case C_Move_Punch1 :
+	case C_Move_Punch2 :
+	case C_Move_PunchInAir :
+	case C_Move_PunchL :
+	case C_Move_PunchR :
+	case C_Move_PunchB :
+		break
+	default:
+		// CODE RAPIDE DE ROUMAIN POUR FAIRE AVANCER LE SMILBLIK
+
+		switch ( ACT_ActionGet())
+		{
+			case RM_Act_Grappin_Launch :
+				if ( ! ACT_ActionFinished())
+					break
+			default: 
+				tf_speed_ask = f_joy_norm * Cf_Traction_Walk
+				if ( MATH_AbsFloat(tf_speed_ask - f_speed_hor) > 1.0)
+					tf_used_speed = tf_speed_ask
+				else
+					tf_used_speed = f_speed_hor
+				if ( ! MATH_FloatNullEpsilon(f_joy_norm))
+				{
+					// 1 - Choix de la famille avec la meilleure Orientation
+					tf_dot = -1
+					ti_family = 0.0
+					for ( ti_i =0; ti_i < i_action_nb_family && !MATH_FloatNullEpsilon(af_action_speed[ti_i]); ti_i++)
+					{
+						tf[ti_i] = MATH_VecDotProduct( MATH_VecNormalize( av_action_speed[ti_i]), MATH_VecGlobalToLocal( v_joy_sight_normalized))
+						if ( tf[ti_i] >= tf_dot)
+						{
+							tf_dot = tf[ti_i]
+							ti_family = ti_i
+						}
+					}
+					
+					// 2 - Choix de l anim avec la meilleure Vitesse
+					tf_min = 100.0
+					ti_family *= i_action_nb_each_family
+					for ( ti_i = ti_family; ti_i < 3 && !MATH_FloatNullEpsilon(af_action_speed[ti_i]); ti_i++)
+					{
+						if ( MATH_FloatNullEpsilon(af_action_speed[ti_i]))
+						{
+							tf[ti_i] = MATH_AbsFloat(1 - tf_used_speed)
+						}
+						else
+							tf[ti_i] = tf_used_speed / af_action_speed[ti_i]
+						if ( MATH_AbsFloat(tf[ti_i] - 1.0) < tf_min)
+						{
+							tf_min = tf[ti_i]
+							ti_min = ti_i
+						}
+					}
+					ACT_ActionSet(ai_action_index[ti_min])
+					ti_freq = MATH_FloatLimit( ACT_FrequencyGet(ACT_ActionGet(), ACT_ActionItemGet()) * tf_min, 1.0, 255.0)
+					ANI_FrequencySet(0, ti_freq)
+				}
+				else
+				{
+					// ATTENTE OU DERAP
+					if ( o_fight_actor)
+						ACT_ActionSet(RM_Act_Fight_Wait)
+					else
+						ACT_ActionSet(RM_Act_Wait)
+				}
+				break
+		}
+
+}
+if ( ti_orient)
+	AI_Execute("raym_exec_orient_with_joy")

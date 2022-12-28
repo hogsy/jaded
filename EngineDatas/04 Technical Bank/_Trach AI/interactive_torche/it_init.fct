@@ -1,0 +1,63 @@
+#include "it_defines.var"
+
+int ti_SF
+
+if (mf_TimeWait > 0 )
+	TIME_Wait( mf_TimeWait )
+
+//mi_ComplexFlamme = faux
+
+
+AI_CBAdd( OBJ_Me(), CallBack_SectoActOn, "if_cb_secto_in")
+AI_CBAdd( OBJ_Me(), CallBack_SectoActOff, "if_cb_secto_out")
+
+// --------( init var )--------
+if ( mf_FlammeSize == 0)
+	mf_FlammeSize = 0.2
+if (mf_FlammeEffectSize == 0)
+	mf_FlammeEffectSize = mf_FlammeSize
+	
+if (mv_VasqueSize.z == 0)
+	mv_VasqueSize.z = 1
+	
+if (OBJ_CapaTest( CAPA_Force_Off ) )
+	mi_On = faux
+else if ( OBJ_CapaTest( CAPA_Force_On ) )
+	mi_On = vrai
+	
+i_SF_AlreadyPlayed = AI_SFDynGet(0, SF_MinById, SF_MaxById)
+i_SF_State = AI_SFDynGet(1, SF_MinById, SF_MaxById)
+
+SpecialFlag_get(i_SF_AlreadyPlayed, ti_SF)
+if ( ti_SF )
+{
+	SpecialFlag_get(i_SF_State , ti_SF)
+	if (ti_SF)
+		mi_On = vrai
+	else
+		mi_On = faux
+}
+else
+{
+	SpecialFlag_set( i_SF_AlreadyPlayed )
+}
+
+
+mi_GFX = -1
+mi_Snd = -1
+GFX_Val = 1
+mai_GFX[ 0 ] = -1 
+AI_CBAdd(OBJ_Me(), CallBack_After_Rec, "it_callback_afterblend")
+
+
+if (mi_On)
+{
+	OBJ_CapaSet( CAPA_Allumee, CAPA_Force_On | CAPA_Force_Off )
+	AI_TrackCurChangeNow( "it_loop_on" )
+}
+else
+{
+	OBJ_CapaSet( 0, CAPA_Allumee | CAPA_Force_On | CAPA_Force_Off )
+	AI_TrackCurChangeNow( "it_loop_off" )
+}
+

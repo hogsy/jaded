@@ -1,0 +1,226 @@
+#include "PNJ_Tank_defines.var"
+
+Include_UltraProcedure_Header
+
+int			ti_loop
+
+float		tf_speed
+float		tf_time
+float		tf_norm
+
+object	to_gao
+vector	tv_axis 
+vector	tv_speed
+vector	tv_dest_pos
+
+// SORTIE ETAT =============================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ========================================================================
+if (i_etat_courant != ETAT_Paffed)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Paffed
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = fct_last_etat
+
+	f_time_start_etat = 0.0
+
+//	SPEECH_RequestPost
+//	(
+//		OBJ_Me(),
+//		OBJ_Me(), 
+//		0xD00057F1, 
+//		0x62004335, 
+//		1.0, 
+//		SPEECH_Cte_PriorityDefault, 
+//		5,
+//		0,
+//		0,
+//		0
+//	)
+	SND_RequestPlay(Ci_Snd_Tank_Explode)	// Reload
+	SND_RequestPlay(Ci_Snd_Tank_Shoot)
+		
+	SND_RequestPlay(Ci_Snd_Tank_Cri)	// Cri !
+
+	@o_main_actor Proc_KK_Pafs_Effects(faux)
+
+	Proc_Tank_GunStartFX(COL_ZonePosGet(C_zde_corps), 2.5, 5.5, 0.2, 1.0)
+
+	SpecialFlag_set(i_SF_AlreadyPlayed) 
+
+	ODE_Enable(faux)
+	COL_ColMapActivationSet(none,all)
+	OBJ_FlagInvisibleSet(vrai)
+
+	Proc_Tank_SFXGlass(OBJ_PosGet() + (OBJ_SightGet() * 2.0) + (OBJ_BankingGet() * 2.0))
+	Proc_Tank_SFXSmoke(OBJ_PosGet() + (OBJ_BankingGet() * 1.0))
+	
+	@o_car_manager PNJ_Car_Manager_Remove_Gao(OBJ_Me(), i_my_index)
+
+	// Speed et Enable l'ODE ===========
+	for (ti_loop = 0; ti_loop < i_ODE_nb; ti_loop++)
+	{
+		to_gao = o_ODE[ti_loop]
+		if (to_gao )
+		{
+			@to_gao ODE_Enable(vrai)
+			@to_gao OBJ_FlagInactiveSet(faux)
+			@to_gao OBJ_FlagInvisibleSet(faux)
+			@to_gao OBJ_HierarchyReset()
+
+			if (! @to_gao AI_IsModel(get_PNJ_Car_Path))
+			{
+				@to_gao ODE_Setf(0, 100.0)		// Mass
+
+				@to_gao BV_MinSet(cvector(-5.0, -5.0, -5.0))
+				@to_gao BV_MaxSet(cvector(5.0, 5.0, 5.0))
+			}
+
+			tv_axis = MATH_VecRotate(Cv_VerticalVector, cvector(1.0, 0.0, 0.0), MATH_RandFloat(-Cf_PiBy4, Cf_PiBy4))
+			tv_axis = MATH_VecRotate(tv_axis, cvector(0.0, 1.0, 0.0), MATH_RandFloat(-Cf_PiBy4, Cf_PiBy4))
+			tv_axis *= 20.0
+			@to_gao ODE_Setv(0, tv_axis  )
+			@to_gao ODE_Setv(3, cvector(MATH_RandFloat(-20.0, 20.0), MATH_RandFloat(-20.0, 20.0), 0)) // Moment angulaire
+		}
+	}
+
+	if (o_tourelle)
+	{
+		@o_tourelle ODE_Enable(vrai)
+
+		@o_tourelle ODE_Setf(0, 100.0)		// Mass
+
+		@o_tourelle BV_MinSet(cvector(-2.0, -2.0, -2.0))
+		@o_tourelle BV_MaxSet(cvector(2.0, 2.0, 2.0))
+
+		@o_tourelle OBJ_HierarchyReset()
+
+		to_gao = @get_global o_camera
+//		tv_axis = @to_gao OBJ_SightGet()
+//		MATH_VecSetHorzNormalize(tv_axis)
+//		tv_axis*= 20.0
+//		@o_tourelle ODE_Setv(0, -tv_axis  )
+
+
+		tv_axis = @to_gao OBJ_PosGet()
+		tv_axis -= @o_tourelle OBJ_PosGet()
+		tv_axis.z = 0.0
+		tf_norm = MATH_VecNorm(tv_axis)
+		if (tf_norm > 0.001)
+			tv_axis /= tf_norm
+		else
+			tv_axis = -@to_gao OBJ_SightGet()
+	
+		if (MATH_AbsFloat(tv_axis.x) > MATH_AbsFloat(tv_axis.y))
+			tv_axis = cvector(MATH_FloatSign(tv_axis.x), 0.0, 0.0)
+		else
+			tv_axis = cvector(0.0, MATH_FloatSign(tv_axis.y), 0.0)
+
+		tv_dest_pos = @o_tourelle OBJ_PosGet()
+		tv_dest_pos += tv_axis * 25.0
+		tv_dest_pos.z += 8.0
+
+		tv_axis = MATH_LIB_PHY_Impulsion_Get(@o_tourelle OBJ_PosGet(), tv_dest_pos, cvector(0.0, 0.0, -30.0), 40.0, tf_time)
+
+//#ifndef _FINAL_
+		if (tf_time == Cf_Infinit)
+			tf_time = 1.0
+		MATH_LIB_PHY_Display_Trajectory(@o_tourelle OBJ_PosGet(), tv_axis, cvector(0.0, 0.0, -30.0), tf_time, 30)
+//#endif
+
+		@o_tourelle ODE_Setv(0, tv_axis)
+		@o_tourelle ODE_Setv(3, cvector(MATH_RandFloat(-20.0, 20.0), MATH_RandFloat(-20.0, 20.0), 0)) // Moment angulaire
+	}
+
+	// Speed et Enable l'ODE ===========
+
+	if (o_militaire)
+	{
+		@o_militaire COL_ColSetActivationSet(C_bit_zdm_pied,none)
+		@o_militaire DYN_On()	
+		@o_militaire DYN_FlagsSet(DYN_C_BasicForces, none)
+		@o_militaire DYN_GravitySet(Cv_NormalGravity)
+//		@o_militaire OBJ_HierarchyResetCurrent()
+		@o_militaire ACT_ActionSet(1)
+	}
+	
+	// Paf sur l'Humain
+}
+else
+	f_time_start_etat += TIME_GetDt()
+
+// ANALYSE ===============================================================================
+
+// COMPORTEMENT =========================================================================
+if (f_time_start_etat > 0.75)
+	OBJ_CapaSet(none,Obj_Capa_Switch)
+
+if (o_militaire && @o_militaire ACT_ActionItemGet() == 2 && ( (@o_militaire COL_CollideType(COL_C_Ground) && @o_militaire OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna)) || !@o_militaire OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna) ) )
+{
+	if (@o_militaire OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna))
+	{
+		@o_militaire DYN_Off()
+		@o_militaire COL_ColSetActivationSet(none, C_bit_zdm_pied)
+	}
+	@o_militaire OBJ_PosSet( @o_militaire OBJ_PosGet() - cvector(0,0,0.15 * TIME_GetDt()) )	
+	f_profondeur += TIME_GetDt()
+	if (f_profondeur >= 3)
+	{
+		// Fin !!
+		@o_militaire OBJ_Destroy()
+		o_militaire = nobody
+//		OBJ_Destroy()		
+	}
+}
+
+for (ti_loop = 0; ti_loop < i_ODE_nb; ti_loop++)
+{
+	to_gao = o_ODE[ti_loop]
+	if (to_gao)
+	{
+		if (f_time_start_etat > 2.0 && ! @to_gao AI_IsModel(get_PNJ_Car_Path) && (@to_gao OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Culled) )
+		{
+			@to_gao OBJ_Destroy()
+			
+			i_ODE_nb--
+			o_ODE[ti_loop] = o_ODE[i_ODE_nb]
+			o_ODE[i_ODE_nb] = nobody
+			
+			ti_loop--
+			continue
+		}
+
+		ProcTank_ODE_Limit(to_gao, 20.0, 15.0)
+	}
+	else
+		break
+}
+
+if (o_tourelle)
+{
+	if (f_time_start_etat > 2.0 && @o_tourelle OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Culled)
+	{
+		@o_tourelle OBJ_Destroy()
+		o_tourelle = nobody
+	}
+	else
+	{
+		ProcTank_ODE_Limit(o_tourelle, 60.0, 15.0)
+	}
+}
+
+if ( ! o_tourelle && ! o_militaire && i_ODE_nb == 1)
+	OBJ_Destroy()

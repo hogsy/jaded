@@ -1,0 +1,140 @@
+//#include "PNJ_Raptor_defines.var"
+//
+//int				ti_i
+//int				ti_flag_kill_GFX
+//int				ti_flag_force_smoke
+//
+//float			tf_coef
+//
+//vector		tv_point_A
+//vector		tv_point_B
+//vector		tv_offset
+//vector		tv_wind
+//
+//object		to_hand
+//
+//if (raptor_type == C_ID_Galiminus)
+//	return
+//
+//ti_flag_kill_GFX = faux
+//
+//if (OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Culled)
+//	ti_flag_kill_GFX = vrai
+//else if (OBJ_FlagsControlGet() & (OBJ_C_ControlFlag_ForceInvisible + OBJ_C_ControlFlag_SecInvisible))
+//	ti_flag_kill_GFX = vrai
+//
+//if (ti_flag_kill_GFX)
+//{
+//	for (ti_i = 0; ti_i < 10; ti_i++)
+//	{
+//		if (GFX_Blood[ti_i] != -1)
+//		{
+//			GFX_Seti(GFX_Blood[ti_i], 13106, 0)						// *number of sprite to generate
+//			GFX_Blood[ti_i] = -1
+//		}
+//	}
+//	
+//	return
+//}
+//
+//ti_flag_force_smoke = faux
+//
+////switch(ACT_ActionGet())
+////{
+////	case Action_Paf_Petit_Sol_G :
+////	case Action_Paf_Petit_Sol_D :
+////	case Action_Paf_Petit_Sol_Dos :
+////	case Action_Paf_Petit_Sol_Face :
+////	case Action_Paf_Sol_G :
+////	case Action_Paf_Sol_D :
+////	case Action_Paf_Sol_Face :
+////	case Action_Paf_Sol_Dos :
+////		ti_flag_force_smoke = vrai
+////		break
+////}
+//
+//for (ti_i = 0; ti_i < 10; ti_i++)
+//{
+//	af_blood_delay[ti_i] -= MATH_FloatMin(af_blood_delay[ti_i], TIME_GetDt())
+//
+//	if (af_blood_delay[ti_i])
+//	{
+//		to_hand = ANI_CanalObjectGet(ai_blood_bone_index[ti_i])
+//	
+//		if (GFX_Blood[ti_i] == -1)
+//		{
+//			GFX_Blood[ti_i] = GFX_Add(13)																// Create the boum
+//			
+//			GFX_MaterialSet(GFX_Blood[ti_i], get_SFX_light_and_smoke, -1)						// met le materiau
+//			GFX_Seti(GFX_Blood[ti_i], 13101, 8)															// Materiau 0
+//		
+//			GFX_Seti(GFX_Blood[ti_i], 13100, 100)															// *Buffer number of sprite
+//			GFX_Seti(GFX_Blood[ti_i], 13106, 0xFFFFFFFF)												// *number of sprite to generate
+//		
+//			GFX_Setf(GFX_Blood[ti_i], 13003, 0.5)															// Time fase 1
+//			GFX_Setf(GFX_Blood[ti_i], 13004, 0.5)															// Time fase 2
+//		
+//			GFX_Seti(GFX_Blood[ti_i], 13107, 0)															// Sprites non triés
+//		
+//			GFX_FlagSet(GFX_Blood[ti_i], 0 , 1)
+//			GFX_FlagSet(GFX_Blood[ti_i], 2 , 1)
+//			
+//			GFX_Setf(GFX_Blood[ti_i], 13012, 0.75)														// Time random
+//		
+//			GFX_Setf(GFX_Blood[ti_i], 13000, 0.1)														// Growing speed min
+//			GFX_Setf(GFX_Blood[ti_i], 13001, 0.3)														// Growing speed max
+//			GFX_Setf(GFX_Blood[ti_i], 13002, 0.0001)													// Friction Grow
+//			
+//			GFX_Setf(GFX_Blood[ti_i], 13005, 0.05)														// Creation size min
+//			GFX_Setf(GFX_Blood[ti_i], 13006, 0.1)														// Creation size max
+//			
+//			GFX_Setv(GFX_Blood[ti_i], 13203, cvector(0.02, 0.02, 0.02))							// friction speed
+//			
+//			GFX_Seti(GFX_Blood[ti_i], 13103, 0x80000040)											// Color fase 0
+//			GFX_Seti(GFX_Blood[ti_i], 13104, 0x40000040)											// Color fase 1
+//			GFX_Seti(GFX_Blood[ti_i], 13105, 0x00000040)											// Color fase 2
+//			
+//			GFX_Setf(GFX_Blood[ti_i], 13009, 1.0)														// Norm speed min
+//			GFX_Setf(GFX_Blood[ti_i], 13010, 2.0)														// Norm speed max
+//			
+//			GFX_Setf(GFX_Blood[ti_i], 13007, -4.0)															// Gravity
+//
+////			GFX_Setf(GFX_Blood[ti_i], 13009, 0.0)														// Norm speed min
+////			GFX_Setf(GFX_Blood[ti_i], 13010, 0.0)														// Norm speed max
+////			GFX_Setf(GFX_Blood[ti_i], 13007, 0.0)															// Gravity
+//
+//			GFX_Setf(GFX_Blood[ti_i], 13008, 0.01)														// generation rate
+//		
+//			GFX_Setv(GFX_Blood[ti_i], 13205, Cv_NullVector)										// Mainposspeed
+//			GFX_Setv(GFX_Blood[ti_i], 13206, Cv_NullVector)										// Mainpossfriction
+//		}
+//		
+////		tv_wind = Cv_NullVector
+//		tv_wind = DYN_SpeedGetVector() * 0.25
+//		GFX_Setv(GFX_Blood[ti_i], 13204, tv_wind)												// wind
+//
+//		tv_offset = @to_hand MATH_VecLocalToGlobal(av_blood_bone_offset[ti_i])
+//
+//		tv_point_A = @to_hand OBJ_PosGet() 
+//		tv_point_A += tv_offset * 0.5
+//
+//		tv_point_B = @to_hand MATH_VecLocalToGlobal(av_blood_bone_normale[ti_i])
+//
+////		DBG_RenderVector(tv_point_A, tv_point_B * 10.0, color_rouge)
+//
+//		tv_point_A -= tv_wind * TIME_GetDt()
+//		GFX_Setv(GFX_Blood[ti_i], 13200, tv_point_A) 								// Creation Pos
+//
+//		tv_point_A = tv_point_B * 10.0
+//		GFX_Setv(GFX_Blood[ti_i], 13201, tv_point_A - cvector(1.0, 1.0, 0.0))						// Speed min
+//		GFX_Setv(GFX_Blood[ti_i], 13202, tv_point_A + cvector(1.0, 1.0, 0.0))						// Speed max
+//		
+////		GFX_Setv(GFX_Blood[ti_i], 13207, tv_offset)	// CreaPosAxe X
+//	}
+//	else if (GFX_Blood[ti_i] != -1)
+//	{
+//		GFX_Seti(GFX_Blood[ti_i], 13106, 0)						// *number of sprite to generate
+//		GFX_Blood[ti_i] = -1
+//	}
+//}
+//

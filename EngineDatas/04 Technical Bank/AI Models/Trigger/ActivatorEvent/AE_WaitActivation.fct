@@ -1,0 +1,46 @@
+#include "AE_defines.var"
+
+int		ti_play
+int		ti_play2
+
+ti_play = faux
+
+if( Gao_Pivot && COL_BV_PivotCollide(Gao_Pivot) )		// PIVOT BV CONDITION
+	ti_play = vrai
+else if ( i_Trig_Count )
+{
+	// TRIGGER CONDITION
+	ti_play = call_trigger( Trig_Condition1 )
+
+	if (i_Trig_Count > 1 )
+	{
+		if ( !( ( Trig_Operator12 == OPERATOR_OR ) && ti_play ) && !( ( Trig_Operator12 == OPERATOR_AND ) && !ti_play ) )
+		{
+			ti_play2 = call_trigger( Trig_Condition2 )
+			if ( Trig_Operator12 == OPERATOR_X_OR )
+				ti_play = ti_play ^ ti_play2
+			else
+				ti_play = ti_play2
+		}
+	}
+	if (i_Trig_Count > 2 )
+	{
+		if ( !( ( Trig_Operator23 == OPERATOR_OR ) && ti_play ) && !( ( Trig_Operator23 == OPERATOR_AND ) && !ti_play ) )
+		{
+			ti_play2 = call_trigger( Trig_Condition3 )
+			if ( Trig_Operator23 == OPERATOR_X_OR )
+				ti_play = ti_play ^ ti_play2
+			else
+				ti_play = ti_play2
+		}
+	}
+}
+
+
+// PLAY ?
+if( ti_play )
+{
+	EVT_PlayAll()
+	AI_TrackCurChangeNow("AE_Play")
+}
+

@@ -1,0 +1,103 @@
+object		to_module 
+object		to_bras
+object		to_avbras
+object		to_main
+object		to_ventre
+object		to_torse
+object		to_epaule
+object		to_snap
+
+vector		tv_pos_mainx 
+vector		tv_pos_main, tv_pos
+vector		tv_angle_coude
+int				ti_int
+vector		tv_main_delta 
+vector		tv_1
+vector		tv_2
+vector		tv_hor
+vector		tv_save_sight, tv_save_bank
+float			tf_v1z, tf_v2z
+float			tf_incline
+float			tf_decalage
+float			tf_dot, tf_dot2
+
+
+f_grab_blend = MATH_FloatMin( 1.0, f_grab_blend + (4.0 * TIME_GetDt()))	//	15.0  étant le nombre de frame du blend de transition
+	
+// MAIN DROITE
+to_snap = MSG_GlobalGetGao( amid_CL_LIAISON_ID[Ci_LNK_KKGRAB_FORCE], GAO4)
+if ( to_snap)
+{
+	v_pos_main = @to_snap OBJ_PosGet()
+	to_bras = ANI_CanalObjectGet( Anim_Canal_BrasDroit)
+	to_avbras = ANI_CanalObjectGet( Anim_Canal_AvantBrasDroit)
+	to_main = ANI_CanalObjectGet(Anim_Canal_MainDroite)
+	
+	v_pos_main_old = @to_main OBJ_PosGet()
+	
+	f_dist_main_coude_D = MATH_VecDistance( v_pos_main_old, @to_avbras OBJ_PosGet())
+	f_dist_bras_coude_D = MATH_VecDistance( @to_bras OBJ_PosGet(), @to_avbras OBJ_PosGet())
+	tv_main_delta = @to_main OBJ_PosGet() - OBJ_PosGet()
+	
+	// Main sur l arbre
+	
+	v_pos_main = MATH_VecBlendRotate( v_pos_main_old, v_pos_main, f_grab_blend)
+	if ( MATH_VecDistance( @to_bras OBJ_PosGet(), v_pos_main) > f_dist_main_coude_D + f_dist_bras_coude_D)
+	{
+		// Limitation de la position de la main en fonction de la longuer du bras + l avant bras
+		v_pos_main -= @to_bras OBJ_PosGet()
+		MATH_VecSetNorm( v_pos_main,f_dist_main_coude_D + f_dist_bras_coude_D - 0.05)
+		v_pos_main += @to_bras OBJ_PosGet()
+	}
+//	@to_main OBJ_PosSet( @to_snap OBJ_PosGet())
+	@to_main OBJ_PosSet( v_pos_main)
+	@to_main OBJ_BankingGeneralSet( @to_snap OBJ_SightGet(),  @to_snap OBJ_BankingGet())
+	tv_angle_coude= MATH_VecBlendRotate( -OBJ_HorizonGet(),  -Cv_VerticalVector, 0.5)
+	@to_avbras OBJ_IKCompute( to_main, to_bras, f_dist_main_coude_D, f_dist_bras_coude_D, tv_angle_coude)
+	tv_save_sight = @to_main OBJ_SightGet()
+	tv_save_bank = @to_main OBJ_BankingGet()
+	tv_hor = MATH_VecCrossProduct( @to_bras OBJ_BankingGet(), @to_avbras OBJ_BankingGet())
+	tv_hor = -MATH_VecCrossProduct( @to_avbras OBJ_BankingGet(), tv_hor)
+	@to_avbras OBJ_BankingGeneralSet( tv_hor, @to_avbras OBJ_BankingGet())
+	@to_main OBJ_BankingGeneralSet( tv_save_sight, tv_save_bank)
+}
+
+// MAIN GAUCHE
+to_snap = MSG_GlobalGetGao( amid_CL_LIAISON_ID[Ci_LNK_KKGRAB_FORCE], GAO5)
+
+if ( to_snap)
+{
+	v_pos_main = @to_snap OBJ_PosGet()
+	to_bras = ANI_CanalObjectGet( Anim_Canal_BrasGauche)
+	to_avbras = ANI_CanalObjectGet( Anim_Canal_AvantBrasGauche)
+	to_main = ANI_CanalObjectGet(Anim_Canal_MainGauche)
+	
+	v_pos_main_old = @to_main OBJ_PosGet()
+	
+	f_dist_main_coude_G = MATH_VecDistance( v_pos_main_old, @to_avbras OBJ_PosGet())
+	f_dist_bras_coude_G = MATH_VecDistance( @to_bras OBJ_PosGet(), @to_avbras OBJ_PosGet())
+	tv_main_delta = @to_main OBJ_PosGet() - OBJ_PosGet()
+	
+	
+	// Main sur l arbre 
+	v_pos_main = MATH_VecBlendRotate( v_pos_main_old, v_pos_main, f_grab_blend)
+	
+	if ( MATH_VecDistance( @to_bras OBJ_PosGet(), v_pos_main) > f_dist_main_coude_D + f_dist_bras_coude_D)
+	{
+		// Limitation de la position de la main en fonction de la longuer du bras + l avant bras
+		v_pos_main -= @to_bras OBJ_PosGet()
+		MATH_VecSetNorm( v_pos_main,f_dist_main_coude_D + f_dist_bras_coude_D - 0.05)
+		v_pos_main += @to_bras OBJ_PosGet()
+	}
+//	@to_main OBJ_PosSet( @to_snap OBJ_PosGet())
+	@to_main OBJ_PosSet( v_pos_main)
+	@to_main OBJ_BankingGeneralSet( @to_snap OBJ_SightGet(),  @to_snap OBJ_BankingGet())
+	tv_angle_coude= MATH_VecBlendRotate( OBJ_HorizonGet(),  -Cv_VerticalVector, 0.5)
+	@to_avbras OBJ_IKCompute( to_main, to_bras, f_dist_main_coude_G, f_dist_bras_coude_G, tv_angle_coude)
+	tv_save_sight = @to_main OBJ_SightGet()
+	tv_save_bank = @to_main OBJ_BankingGet()
+	tv_hor = MATH_VecCrossProduct( @to_bras OBJ_BankingGet(), @to_avbras OBJ_BankingGet())
+	tv_hor = -MATH_VecCrossProduct( @to_avbras OBJ_BankingGet(), tv_hor)
+	@to_avbras OBJ_BankingGeneralSet( tv_hor, @to_avbras OBJ_BankingGet())
+	@to_main OBJ_BankingGeneralSet( tv_save_sight, tv_save_bank)
+}

@@ -1,0 +1,103 @@
+#include "Interface_MenuInGame_defs.var"
+
+int			ti_Line
+int			ti_Col
+int			ti_Lang
+int			ti_SaveCur
+vector	tv_Pos
+int			tai_LineType[ 10 ]
+int			ti_NbLine
+
+#define Lang_Line(i)				mi_PageString + 5 + i
+
+if (!IntMIG_SetPageParams())
+	return
+
+ti_Lang = ConsoleSpecificOption( 34 )
+//pour avoir toutes les langues ti_Lang = 0x1002FF
+	
+// si faut pas mettre la langue par défaut virer les lignes suivante ....
+ti_Col = IO_ConsoleLangGet()
+tai_LineType[ 0 ] = ti_Col
+ti_NbLine = 1
+ti_Lang &= ~(1 << ti_Col )
+// .... et remettre la ligne suivante
+//ti_NbLine = 0
+
+ti_Col = 0
+while ( ti_Lang )
+{
+	if (ti_Lang & 1)
+	{
+		tai_LineType[ ti_NbLine ] = ti_Col
+		ti_NbLine++
+	}
+	ti_Col++
+	ti_Lang = (ti_Lang >> 1) & 0x7FFFFFFF
+}
+	
+if (INTMIG_EnterPage_Start)
+{
+	IntMIG_ResetTexte( mi_PageString, 30 )
+	
+	IntMIG_Option_StartMetrics( 0.06 )
+	for (ti_Line = 0; ti_Line < ti_NbLine; ti_Line++)
+		IntMIG_Option_AddMetrics( 0, ti_Line, INTMIG_LANG_TXG, INTMIG_LANG_TXT + tai_LineType[ ti_Line ] )
+	IntMIG_Option_EndMetrics( cvector( 0.5, 0.6, 0) )
+	
+	IntMIG_SetText_Page( mi_PageString, INTMIG_TXG, INTMIG_TEXT_StartMenu + 6, INTMIG_PosTitle_UpRight,  0.0, 6, -1, INTMIG_Color_NotSel, 0, 1 )
+	tv_Pos = IntMIG_Option_Pos( 2,mi_Cur)
+	tv_Pos.x = 0.8
+	IntMIG_SetText_Page( mi_PageString + 1, INTMIG_TXG, INTMIG_TEXT_Souligne, tv_Pos,  0.0, 2, -1, INTMIG_Color_Sel, 0, 1 )
+	IntMIG_SetText_Page( mi_PageString + 2, INTMIG_TXG, INTMIG_TEXT_Xselect, INTMIG_PosButton_BottomRight,  0.0, 6, -1, INTMIG_Color_Sel, 0, 1 )
+	IntMIG_SetText_Page( mi_PageString + 3, INTMIG_TXG, INTMIG_TEXT_Tback, INTMIG_PosButton_BottomLeft,  0.0, 4, -1, INTMIG_Color_Sel, 0, 1 )
+	
+	IntMIG_Frame_Start()
+	for (ti_Line = 0; ti_Line < ti_NbLine; ti_Line++)
+	{
+		tv_Pos = IntMIG_Option_Pos( 0,ti_Line)
+		tv_Pos.x = 0.8
+		IntMIG_SetText_Page( Lang_Line( ti_Line), INTMIG_LANG_TXG, INTMIG_LANG_TXT + tai_LineType[ ti_Line ], tv_Pos,  0.0, 2, -1, INTMIG_Color_NotSel, 0, 1 )
+		IntMIG_Frame_Add(Lang_Line( ti_Line))
+	}
+	IntMIG_Frame_End( mi_PageString + 4, 0xFFFFFFFF, 0.0, 0.03, 32 )
+	
+	@mo_Texte OBJ_TextColorSet( Lang_Line(mi_Cur), 0, -1, INTMIG_Color_Sel )
+	IntMIG_Text_FadeInMulti( mi_PageString, 20, 0.5, 0.0 )
+}
+else if (INTMIG_LeavePage_Start)
+{
+	IntMIG_Text_FadeOutMulti( mi_PageString, 20, 0.5 )
+}
+
+IntMIG_RestorePageParams()
+
+if ( mi_Exit || mi_ChangePage || mi_Cheat  )
+	return
+	
+ti_SaveCur = mi_Cur
+IntMIG_UpdateCur_Vertical( ti_NbLine, 1 )
+if (mi_Cur != ti_SaveCur )
+{
+	IntMIG_PlaySound( INTMIG_SOUND_SELECTION )
+	IntMIG_Text_ChangeColor( Lang_Line( ti_SaveCur ), INTMIG_Color_Sel, INTMIG_Color_NotSel, 0.25, 0.0 )
+	IntMIG_Text_ChangeColor( Lang_Line( mi_Cur ), INTMIG_Color_NotSel, INTMIG_Color_Sel, 0.25, 0.0 )
+	tv_Pos = IntMIG_Option_Pos( 2,mi_Cur)
+	tv_Pos.x = 0.8
+	@mo_Texte OBJ_TextPivotSet( mi_PageString + 1, tv_Pos )
+}
+
+if ( joy_cancel)
+{
+	IntMIG_PlaySound( INTMIG_SOUND_CANCEL )
+	SAVE_ValidateAl()
+	INTMIG_ChangePage(  "IntMIG_Page_OptStart" , 3 )
+	return
+}
+	
+if ( joy_valide )
+{
+	IntMIG_SetLangId(tai_LineType[ mi_Cur ] )
+	INTMIG_ChangePage(  "IntMIG_Page_OptStart" , 3 )
+}
+

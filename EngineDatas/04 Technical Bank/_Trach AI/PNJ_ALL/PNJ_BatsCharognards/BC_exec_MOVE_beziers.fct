@@ -1,0 +1,263 @@
+#include 		"BC_defines.var"
+
+vector		tv_sight				// nouveau sight
+vector		tv_pos_new
+vector		tv_sight_new
+vector		tv_sight_backup
+vector		tv_banking_backup
+vector		tv_temp
+
+float			tf_coef
+float			tf_dot1
+float			tf_dot2
+float			tf_secure_dt
+
+// nouveau wp
+int				ti_softcol_next_wp
+int				ti_wp_deja_passe
+
+
+tf_secure_dt = MATH_FloatLimit(TIME_GetDt(), 0.016, 0.048)		// SECURE DT FOR LOW FRAMERATE !!!
+
+ti_wp_deja_passe = faux
+
+i_flag_depl_fini = faux		// flag pour indiquer que le lien a été parcouru en entier
+
+//if( i_modele == Ci_MODELE_Bat_Noire && i_etat_courant == ETAT_Fight_Network )
+//{
+//	i_beziers_flag_last_trame = faux		// ne pas passer sous le sol pour atteindre mon wp d'attaque
+//}
+//if( i_etat_courant == ETAT_Chute_wp )
+//{
+//	i_beziers_flag_last_trame = faux		// ne pas passer sous le sol pour atteindre un wp de chute
+//}
+
+if( ! i_beziers_flag_last_trame )
+{
+	// réinit test béziers si je ne me déplaçais pas en béziers la trame d'avant
+	i_flag_depl_horiz = faux
+	v_beziers_sight = OBJ_SightGet()
+	v_beziers_banking = OBJ_BankingGet()
+}
+
+
+BC_beziers_init_position()
+
+i_speed_beziers_flag = vrai
+i_speed_vertical_flag = faux
+AI_Execute("BC_exec_MOVE_calc_speed")
+
+
+ti_softcol_next_wp = faux
+if( i_etat_courant != ETAT_Chute_wp && ! BC_Boss() )
+{
+	if( ! MATH_VecNullEpsilon(v_softcol_decal_current) )
+	{
+		// je suis en déplacement + coll molles
+		f_softcol_link_length -= (f_softcol_link_speed * tf_secure_dt)
+		if( i_perchee_retour_flag )
+		{
+			// pas d'approximation pour retourner se percher : on retourne exactement à l'endroit duquel on vient
+		}
+		else if( f_softcol_link_length < 0.0 )
+		{
+			if( i_DBG_trace_beziers_ON )
+				BC_Beziers_Display(0.0, color_cyan)
+			ti_softcol_next_wp = vrai		// link dépassé
+		}
+	}
+}
+
+
+BEZIERS_COMPUTE:
+f_beziers_speed = f_speed * tf_secure_dt
+f_link_coef = f_beziers_speed
+if( ! f_link_length )
+	tf_coef = 0.0
+else
+	tf_coef = f_link_coef / f_link_length
+
+if( ! ti_wp_deja_passe
+	&& ( BC_Boss() || i_etat_courant != ETAT_Fight_Approche )		// la sortie du mode n'est pas fct du parcours de la courbe, mais fct de la distance à la cible
+	&& ( tf_coef >= 1.0 
+		|| ( f_link_length <= f_softcol_rayon_current && BC_ReseauSoftColRayonOptimEnabled(i_etat_courant) )
+		|| ti_softcol_next_wp
+		|| ( i_etat_courant == ETAT_CINE_Vala && @o_cine_vala_gao COL_BV_PointCollide(OBJ_PosGet()) ) ) )
+{
+	i_flag_depl_fini = vrai				// déplacement total terminé (et pas juste le demi-tour)
+	i_flag_depl_horiz = faux			// nouveau lien : reset test horiz
+	ti_softcol_next_wp = faux		// 1 seul franchissement de wp à la fois		
+	
+	if( BC_Boss() && BC_IsEtatAttaque(i_etat_courant) )
+	{
+		if( i_etat_courant == ETAT_Fight_Remonte )
+			return		// retourne en ronde
+		
+		BC_Boss_Attack_Compute_Pos()
+		ti_wp_deja_passe = vrai
+		o_next_wp = o_tmp_obj_next
+		BC_beziers_init_position()
+		tf_coef = 0.0
+	}
+	else if( i_flag_cine )
+	{
+		return
+	}
+	else if( i_etat_courant == ETAT_Fight_Approche )
+	{
+		BC_Attaque_Calc_Deplacement(Ci_attaque_positionnement_retrait)
+	}
+	else if( ! i_flag_reseau_oneway && ! i_flag_reseau_array )
+	{
+		// le bat ne doit pas aller à un autre wp
+		o_last_wp = nobody
+		i_reseau_wp_count = 0			// newnewnew attention bugs ???
+		if( BC_Boss() && ! f_HP && o_attaque_finale_decor )
+		{
+			OBJ_SightGeneralSet(@o_attaque_finale_wp_chute OBJ_SightGet(), @o_attaque_finale_wp_chute OBJ_BankingGet())
+		}
+		return
+	}
+	else
+	{
+		if( i_flag_reseau_oneway )
+		{
+			// wp suivant sur un réseau cyclique dans un seul sens
+			switch( i_pause_mode )
+			{
+				case Ci_pause_mode_aucun :
+				{
+					// vol en ronde standard
+					o_last_wp = o_ronde_next_wp
+					o_next_wp = WAY_NetNextWP(n_reseau, o_last_wp, 0, 0)
+					o_ronde_next_wp = o_next_wp
+					if( @o_next_wp OBJ_CapaTest(CAPA_pause) )
+					{
+						// le prochain wp est un wp de pause
+						o_wp_pause = o_next_wp
+						tv_sight = @o_next_wp OBJ_PosGet() - OBJ_PosGet()
+						@o_tmp_obj_next OBJ_PosSet(@o_next_wp OBJ_PosGet() + BC_decalage( - tv_sight, Cf_atterrissage_decal_H, Cf_atterrissage_decal_Z))
+						@o_tmp_obj_next OBJ_BankingGeneralSet(tv_sight, Cv_VerticalVector)
+						o_next_wp = o_tmp_obj_next
+						v_dest_pos = @o_tmp_obj_next OBJ_PosGet()
+						i_pause_mode = Ci_pause_mode_on_y_va
+					}
+					
+					break
+				}
+				case Ci_pause_mode_on_y_va :
+				{
+					// la bat se dirigeait vers un wp de pause
+					// maintenant elle va atterrir
+					i_pause_mode = Ci_pause_mode_atterrissage
+					o_cible_depl = o_wp_pause
+					return		// changement d'état (atterrissage -> pause)
+					break
+				}
+				default:
+				{
+					// ???
+					DBG_Error("cas non géré (mode pause)")
+					break
+				}
+			}
+		}
+		else if( i_flag_reseau_array )
+		{
+//			AI_Execute("BC_exec_network_pos_next")
+			BC_Next_WP_Get()
+			
+			if( i_reseau_wp_count == 1)
+				i_flag_frein = vrai
+			else if( ! i_reseau_wp_count )
+				i_flag_frein = faux
+			
+			if( ! i_reseau_wp_count )
+				return		// déplacement terminé -> changement d'état
+		}
+		
+		// nouveau lien
+		BC_beziers_init_position()
+		
+		ti_wp_deja_passe = vrai
+		tf_coef = 0.0			// courbe recalculée depis ma position courante
+		
+		if( ! MATH_VecNullEpsilon(v_softcol_decal_current) )
+		{
+			// soft col en cours
+			f_softcol_link_length = f_link_length
+		}
+		else
+		{
+			// soft col terminée
+			 f_softcol_link_length = Cf_Infinit
+		}
+	}
+	
+	goto BEZIERS_COMPUTE
+}
+
+
+// TEST INCLINAISON =======================================================
+if( ! i_flag_depl_horiz )
+{
+	// test courbe verticale
+	tv_temp = @o_next_wp OBJ_PosGet() - @o_last_wp OBJ_PosGet()
+	if( MATH_VecNullEpsilon(tv_temp) )
+		tf_dot1 = 0.0
+	else
+	{
+		MATH_VecSetNormalize(tv_temp)
+		tf_dot1 = MATH_VecDotProduct(tv_temp, - Cv_VerticalVector)
+	}
+	
+	// test demi tour
+	tf_dot2 = MATH_VecDotProduct(@o_next_wp OBJ_SightGet(), @o_last_wp OBJ_SightGet())
+
+	// résultat
+	if( MATH_AbsFloat(tf_dot1) > Cf_Cos45 || tf_dot2 < 0 )
+		i_flag_depl_horiz = vrai
+}
+
+
+// POSITION DE LA BAT ====================================================
+
+BC_Calc_Beziers(tv_pos_new, tv_sight_new, tf_coef)
+OBJ_PosSet(tv_pos_new)
+
+if( i_DBG_trace_beziers_ON )
+	BC_Beziers_Display(tf_coef, color_blanc)
+
+// ORIENTATION DE LA BAT ==================================================
+tv_sight = tv_sight_new
+if( MATH_VecNullEpsilon(tv_sight) )
+	tv_sight = OBJ_SightGet()
+else
+	MATH_VecSetNormalize(tv_sight)
+
+//DBG_RenderVector(OBJ_PosGet(), v_beziers_sight, color_vert)
+//DBG_RenderVector(OBJ_PosGet(), v_beziers_banking, color_bleu)
+
+tv_sight_backup = OBJ_SightGet()											// backup sight courant
+tv_banking_backup = OBJ_BankingGet()									// backup banking courant
+
+// JE M'ORIENTE SUR LA BEZIERS POUR CONTINUER A M'ORIENTER SUR LA BEZIERS
+//DBG_RenderVector(OBJ_PosGet(), tv_sight * 10, color_jaune)
+tv_sight = BC_BlendRotate(v_beziers_sight, tv_sight, 100.0, f_rotation_angle_courant * (30.0 * Cf_1Degre) )		// 30 ° x30 (à cause du getdt)
+//DBG_RenderVector(OBJ_PosGet(), tv_sight * 10, color_cyan)
+OBJ_SightGeneralSet(tv_sight, MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 5 * tf_secure_dt))
+
+v_beziers_sight = OBJ_SightGet()											// backup sight trame courante sur la béziers
+v_beziers_banking = OBJ_BankingGet()									// backup banking trame courante sur la béziers
+
+//DBG_RenderVector(OBJ_PosGet(), v_beziers_sight, color_jaune)
+//DBG_RenderVector(OBJ_PosGet(), v_beziers_banking, color_cyan)
+
+// correction position bat
+if( i_flag_depl_horiz || MSG_GlobalIsValid(mid_grab_charogne) )
+{
+	OBJ_BankingGeneralSet(tv_sight, MATH_VecBlendRotate(tv_banking_backup, Cv_VerticalVector, 5 * tf_secure_dt))
+}
+
+i_beziers_flag_cette_trame = vrai
+

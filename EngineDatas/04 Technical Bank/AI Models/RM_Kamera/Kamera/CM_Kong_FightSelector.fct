@@ -1,0 +1,153 @@
+#define		Cf_Dist_MAX		50*50 //15*15 //12*12
+
+int				ti_rank
+object		to_gao
+messageid	EVT_ID
+vector		tv_axis
+vector		tv_axkam 
+float			tf_dot
+message tm_mes
+
+// CHEAT TXT ======================================================================================================
+if (@"univ" i_cheat_page == 2)
+{
+	int		ti_txt 
+	if (i_kam_in_fight)
+	{
+		ti_txt = STR_CreateText("\cFF0000FF\FIGHT ON", cvector(0.28, 0.10, 0.0), 0)
+		if (!MSG_GlobalIsValid(EVT_ID))
+			STR_AppendText(ti_txt, "\cFFFFFFFF\ (But no Interest Event!!)")
+	}
+	else
+		ti_txt = STR_CreateText("\cFF00FF00\FIGHT OFF (No Event)", cvector(0.28, 0.10, 0.0), 0)
+}	
+// CHEAT TXT ======================================================================================================
+
+
+
+
+	
+
+
+
+// Recuperation des le LOCKABLE Target ----------------------------------------------------------------------------------------------------------------------------------
+i_LockKam_Index = 0
+i_LockKam_Nbr = 0
+
+if (!@get_rayman PROC_RM_ModeLookON())
+{
+	o_lock = nobody
+	to_gao = @get_rayman o_fight_actor
+	if (to_gao)
+	{
+		ti_rank = -1
+		MSG_SetNull(tm_mes)
+		tm_mes.msg_sender = to_gao
+		EVT_ID = MSG_GlobalSearchIntGao( C_EVENT_TYPE_LockCam, &ti_rank, tm_mes)
+		if (MSG_GlobalIsValid(EVT_ID))
+		{
+			o_lock = to_gao
+			v_lock = @o_lock OBJ_PosGet()			// Position
+			v_lock += EVENT_Vec1Get(EVT_ID)
+			f_lock_blend = 0.0
+			v_lock_axis = OBJ_SightGet()
+		}
+	}
+	
+}
+else
+{
+	if (o_lock)
+	{
+		// J'essaye de rester sur mon dernier Lock
+		ti_rank = -1
+		MSG_SetNull(tm_mes)
+		tm_mes.msg_sender = o_lock 
+		EVT_ID = MSG_GlobalSearchIntGao( C_EVENT_TYPE_LockCam, &ti_rank, tm_mes)
+		if (MSG_GlobalIsValid( EVT_ID ) )
+		{
+			//Mise a Jour de la position
+			v_lock = @o_lock OBJ_PosGet()
+			v_lock += EVENT_Vec1Get(EVT_ID)
+		}
+
+		
+	}
+	else
+		MSG_GlobalSetInvalid(EVT_ID)
+		
+	if (!MSG_GlobalIsValid(EVT_ID))
+	{
+		// Je dois en choisir un autre...
+		ti_rank = -1
+		EVT_ID = MSG_GlobalScan(C_EVENT_TYPE_LockCam, &ti_rank)
+
+		o_lock = nobody
+		while(MSG_GlobalIsValid(EVT_ID))
+		{
+			to_gao = EVENT_PereGet(EVT_ID)
+
+			if (@o_mf_actor OBJ_SqrDist(to_gao) < Cf_Dist_MAX)
+			{
+				av_LockKam_Pos[i_LockKam_Index] = @to_gao OBJ_PosGet()
+				av_LockKam_Pos[i_LockKam_Index] += EVENT_Vec1Get(EVT_ID)
+
+				DBG_RenderSphere(av_LockKam_Pos[i_LockKam_Index],0.5,color_jaune)	
+
+				ao_LockKam[i_LockKam_Index] = to_gao
+
+				if (!o_lock)
+				{
+					tv_axis = @to_gao OBJ_PosGet() - OBJ_PosGet()
+					tv_axkam = OBJ_SightGet()
+					MATH_VecSetHorzNormalize(tv_axis)
+					MATH_VecSetHorzNormalize(tv_axkam)	
+					if (MATH_VecDotProduct(tv_axkam,tv_axis ) > 0.97)
+					{
+						o_lock = to_gao
+						v_lock = @o_lock OBJ_PosGet()			// Position
+						v_lock += EVENT_Vec1Get(EVT_ID)
+						f_lock_blend = 0.0
+						v_lock_axis = OBJ_SightGet()
+					}
+				}
+
+				i_LockKam_Index ++
+				i_LockKam_Nbr ++
+			}
+	
+			// CHEAT TXT ======================================================================================================
+			if (@"univ" i_cheat_page == 2)
+			{
+				int	ti_txt 
+				ti_txt = STR_CreateText("", cvector(0.17, 0.19+(0.04 * (i_LockKam_Index+ @get_global i_cheat_2_nbr)), 0.0), 0)
+				STR_AppendGao(ti_txt, to_gao)
+			}
+			// CHEAT TXT ======================================================================================================
+
+			EVT_ID = MSG_GlobalScan(C_EVENT_TYPE_LockCam, &ti_rank)
+		}
+	}
+}
+
+	
+//	// CHEAT TXT ======================================================================================================
+//	if (@"univ" i_cheat_page == 2)
+//	{
+//		if (!MSG_GlobalIsValid(EVT_ID))
+//			STR_CreateText("Nobody", cvector(0.17, 0.19+(0.04 * (1.0 + @get_global i_cheat_2_nbr)), 0.0), 0)
+//	}
+//	// CHEAT TXT ======================================================================================================
+	
+				
+
+//if (!i_LockKam_Nbr)
+//	o_lock = nobody
+
+
+
+f_LockKam_Blend -= MATH_FloatMin(f_LockKam_Blend,TIME_GetDt())
+if (i_LockKam_Nbr > 0 && i_LockKam_Nbr != i_LockKam_Nbr_old)
+	f_LockKam_Blend = 1.0
+
+i_LockKam_Nbr_old = i_LockKam_Nbr

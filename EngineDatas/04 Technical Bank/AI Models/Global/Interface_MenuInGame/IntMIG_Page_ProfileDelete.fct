@@ -1,0 +1,73 @@
+#include "Interface_MenuInGame_defs.var"
+
+vector	tv_pos
+
+#define PROFILEDEL_NEXTMENULINE( _i_index )\
+	ti_texte++\
+	tv_pos.y += 0.07
+
+if (!mo_Texte)
+	return
+if (!IntMIG_SetPageParams())
+	return
+
+
+if (INTMIG_EnterPage_Start)
+{
+	mi_MC_TestState = 0
+	IntMIG_ResetTexte( mi_PageString, 30 )
+
+	tv_pos = cvector( 0.5, 0.4, 0)
+	@mo_Texte OBJ_TextMaxWidthSet( 0.8 )
+	IntMIG_SetText_Page( mi_PageString, INTMIG_TXG, INTMIG_TEXT_Question + 3, tv_pos, 0.0, 5, -1, 0xFFFFFF, 0, 0 )
+	@mo_Texte OBJ_TextMaxWidthSet( 0 )
+	tv_pos.y += 0.05 + @mo_Texte OBJ_TextSizeGet(mi_PageString, 0, -1).y
+	
+	IntMIG_CreateText_Start( mi_PageString + 1 )
+	@mo_Texte OBJ_TextInsert( mi_PageString + 1, -1, SAVE_HeaderName(mi_ProfileDelete_Index) ) 
+	IntMIG_CreateText_End( mi_PageString + 1, tv_pos, 0.0, 5, -1, 0xFFFFFF, 0, 0 )
+	tv_pos.y += 0.05 + @mo_Texte OBJ_TextSizeGet(mi_PageString + 1, 0, -1).y
+	
+	//tv_pos = cvector(0.45, 0.6, 0)
+	tv_pos.x = 0.45
+	IntMIG_SetText_Page( mi_PageString + 2, INTMIG_TXG, INTMIG_TEXT_Xyes, tv_pos, 0.0, 6, -1, 0xFFFFFF, 0, 0 )
+	tv_pos.x = 0.55
+	IntMIG_SetText_Page( mi_PageString + 3, INTMIG_TXG, INTMIG_TEXT_Tno, tv_pos, 0.0, 4, -1, 0xFFFFFF, 0, 0 )
+	
+	IntMIG_Text_SetFrame( mi_PageString + 4, 0xFFFFFFFF, 0.0, mi_PageString , mi_PageString + 1,mi_PageString + 2 , mi_PageString + 3, -1, -1, 33 )
+	IntMIG_Text_FadeInMulti( mi_PageString, 5, 0.3, 0.0 )
+}
+else if ( INTMIG_LeavePage_Start)
+{
+	IntMIG_Text_FadeOutMulti( mi_PageString, 5, 0.5 )
+}
+
+IntMIG_RestorePageParams()
+
+if ( mi_Exit || mi_ChangePage || mi_Cheat )
+	return
+	
+if ( !IntMIG_MC_TestPresence() )
+{
+	mi_MC_Page = INTMIG_MCPage_GOTO_MemCard
+	INTMIG_ChangePage(  "IntMIG_Page_Memcard_TestError", 0 )
+	return
+}
+
+if (joy_cancel)
+{
+	IntMIG_PlaySound( INTMIG_SOUND_CANCEL )
+	INTMIG_ChangePage(  "IntMIG_Page_Profile" , mi_Profile_Cur )
+	return
+}
+
+if (joy_valide)
+{
+	IntMIG_PlaySound( INTMIG_SOUND_VALIDE )
+	SAVE_HeaderSet( mi_ProfileDelete_Index ,0,0,0,0,0)
+	mi_MC_Slot = mi_ProfileDelete_Index 
+	mi_MC_Mode = INTMIG_MCMode_ProfileDelete
+	mi_MC_State = 0
+	INTMIG_ChangePage( "IntMIG_Page_Memcard", 0 )
+}
+

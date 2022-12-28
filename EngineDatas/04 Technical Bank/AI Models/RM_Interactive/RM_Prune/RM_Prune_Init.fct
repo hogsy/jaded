@@ -1,0 +1,82 @@
+#include "RM_Prune_defines.var"
+
+o_rope_manager = @get_global o_rope_manager
+if ( ! o_rope_manager )
+	returntrack
+
+COL_ColSetActivationSet(none,C_bit_zde_fight)
+COL_SwapToSpecific(C_zde_fight)
+COL_SwapToSpecific(C_zdm_pied)
+COL_SwapToSpecific(C_zde_corps)
+		
+COL_CrossableSet(Gmat_RM_Crossable_Default,none)
+
+AI_CBAdd(OBJ_Me(), CallBack_WhenDestroy, "RM_Prune_cb_WhenDestroy")
+AI_CBAdd(OBJ_Me(), CallBack_Client, "RM_Prune_cb_Client")
+
+AI_CBAdd(OBJ_Me(), CallBack_SectoActOff, "RM_Prune_cb_SectoActOff")
+AI_CBAdd(OBJ_Me(), CallBack_SectoActOn, "RM_Prune_cb_SectoActOn")
+
+if(!o_cible) o_cible=get_rayman
+
+HotSpot_Add_Obj(OBJ_Me(), 1)
+
+AI_TrackChange(1,"RM_Prune_track_reflex")
+AI_TrackChange(3,"RM_Prune_track_end")
+
+
+
+switch(i_Template)
+{
+	case Ci_Template_Prune:
+		i_Deplacement = 1
+		f_ForceRebondArret = 5.0
+		f_ForceRebondAvance = 8.0
+		f_DYN_Friction =	5.0
+//		f_Prune_Taille = 0.7
+		f_Prune_Taille = 1.0
+		i_ID = C_ID_Prune
+	break
+	case Ci_Template_Mouton:
+		i_Deplacement = 2
+		f_ForceRebondArret = 0.0
+		f_ForceRebondAvance = 2.0
+		f_DYN_Friction =	20.0
+		f_MaxDist = 10.0
+		f_Prune_Taille = 0.2
+//		OBJ_ZoomSet(1.2)
+		OBJ_ZoomSet(0.2)
+		COL_ZoneSizeSet(C_zde_corps,cvector(2.4,2.4,2.4))	
+		COL_ZoneSizeSet(C_zdm_pied,cvector(2.4,2.4,2.4))	
+		i_ID = C_ID_Mouton
+	break
+	case 666:
+	break
+}
+
+f_ForceRebond = f_ForceRebondArret 
+
+switch(i_Deplacement)
+{
+	case 0:
+		fct_wait="RM_Prune_ETAT_ACTIVEWAIT"
+	break
+	case 1:
+		fct_wait="RM_Prune_ETAT_FOLLOW"
+	break
+	case 2:
+		fct_wait="RM_Prune_ETAT_BROUTE"
+	break
+}
+
+v_BankingVoulu = Cv_VerticalVector
+
+DYN_On()
+DYN_FlagsSet(DYN_C_BasicForces | DYN_C_NeverDynamicFather | DYN_C_VectorFriction | DYN_C_GlobalFriction | DYN_C_SkipFrictionWhenSpeedFromAnim | DYN_C_HorizontalGrounds | DYN_C_SlipOnGroundEdge, none)
+DYN_GravitySet(Cv_NormalGravity)
+DYN_FrictionVectorSet(cvector(f_DYN_Friction ,f_DYN_Friction ,0.0))
+
+if(i_Template==Ci_Template_Prune)
+	AI_TrackCurChangeNow("RM_Prune_ETAT_PASSIVEWAIT")
+else
+	AI_TrackCurChangeNow(fct_wait)

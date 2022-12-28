@@ -1,0 +1,25 @@
+
+int						ti_int_rank
+messageid			tmid_int_ID
+
+//============================================================================================
+// DETECTION DE LA PRESENCE DE COMBATS EN COURS DANS LA MAP
+//============================================================================================
+
+
+i_flag_demo_combats = faux
+
+ti_int_rank = -1
+for ( 	tmid_int_ID = MSG_GlobalScan(C_EVENT_TYPE_Interet, &ti_int_rank);
+		MSG_GlobalIsValid(tmid_int_ID);
+		tmid_int_ID = MSG_GlobalScan(C_EVENT_TYPE_Interet, &ti_int_rank) )
+{
+	// pour chaque message d'intérêt
+	if( (EVENT_PereGet(tmid_int_ID) != OBJ_Me()) && (EVENT_TargetGet(tmid_int_ID) != OBJ_Me()) )
+	{
+		// si ce message d'intérêt ne concerne pas la bat
+		i_flag_demo_combats = vrai
+		break
+	}
+}
+

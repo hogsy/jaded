@@ -1,0 +1,162 @@
+#include "H_defines.var"
+
+object	to_obj
+int			i
+float		tf_temp
+float		tf_max
+float		tf_prog
+float		tf_next_factor
+float		tf_dest
+int			ti_talk
+
+to_obj = ANI_CanalObjectGet(Anim_Canal_Tete)
+
+ti_talk = SPEECH_ObjectHasContent(OBJ_Me())
+if(ti_talk) 
+{
+	if(!f_time_speak || SPEECH_HumanGetTextKey(OBJ_Me()) != last_key_lip) 
+	{
+		last_key_lip = SPEECH_HumanGetTextKey(OBJ_Me())
+		f_time_speak = SPEECH_ObjectGetSoundDuration(OBJ_Me())
+		if(f_time_attend) f_time_attend = 10
+	}
+
+	f_time_speak -= TIME_GetDt()
+	if(f_time_speak < 0.5) ti_talk = faux
+}
+else
+{
+	last_key_lip = 0
+	f_time_speak = 0
+}
+
+if(ti_talk)
+{
+	if(!i_sequence_begin)
+	{
+		i_sequence_begin = 1	// blend
+		i_sequence_cur = 0//MATH_RandInt(0, i_sequence_lip_num)
+		f_sequence_cur = 0
+		f_cur_factor = 0
+		@to_obj OBJ_MorphFactorSet(0, 0.20)
+		@to_obj OBJ_MorphProgSet(0, 0)
+		
+		AI_Execute("H_exec_choixlip")
+		
+		@to_obj OBJ_MorphDataSet(0, ai_sequence_lip_data[i_sequence_cur], 0)
+		@to_obj OBJ_MorphDataSet(0, ai_sequence_lip_data[i_sequence_cur + 1], 1)
+	}
+	
+	// Blend
+	if(i_sequence_begin == 1)
+	{
+		tf_max = ai_sequence_lip[i_sequence_cur * 2] * f_sequence_freg
+		f_sequence_cur += TIME_GetDt() * f_glob_lip
+		if(f_sequence_cur > tf_max) 
+		{
+			i_sequence_begin = 2
+			f_sequence_cur = tf_max
+		}
+		
+		if(tf_max)
+		{
+			if(i_sequence_cur == 0)
+				tf_prog = (f_sequence_cur / tf_max)
+			else
+				tf_prog = 1 + (f_sequence_cur / tf_max)
+		}
+		else
+		{
+			if(i_sequence_cur == 0)
+				tf_prog = 1
+			else
+				tf_prog = 2
+		}
+		
+		@to_obj OBJ_MorphProgSet(0, tf_prog)
+		if(i_sequence_begin == 2)
+		{
+			f_sequence_cur = 0
+		}
+		
+		tf_next_factor = af_sequence_lip[i_sequence_cur]
+		if(tf_prog > 1) tf_prog -= 1
+		tf_temp = MATH_FloatBlend(f_cur_factor, tf_next_factor, tf_prog)
+		@to_obj OBJ_MorphFactorSet(0, MATH_FloatLimit(tf_temp * f_factor_mul_lip, 0, 1) * f_glob_lip)
+	}
+	
+	// Reste sur la pause
+	if(i_sequence_begin == 2)
+	{
+		tf_max = ai_sequence_lip[(i_sequence_cur * 2) + 1] * f_sequence_freg
+		f_sequence_cur += TIME_GetDt() * f_glob_lip
+		if(f_sequence_cur > tf_max) 
+		{
+			i_sequence_begin = 1
+			f_sequence_cur = 0
+			i_sequence_cur++
+			
+			f_cur_factor = af_sequence_lip[i_sequence_cur - 1]
+			
+			if(i_sequence_cur > 1)
+			{
+				@to_obj OBJ_MorphDataSet(0, ai_sequence_lip_data[i_sequence_cur - 1], 0)
+				@to_obj OBJ_MorphDataSet(0, ai_sequence_lip_data[i_sequence_cur], 1)
+				@to_obj OBJ_MorphProgSet(0, 1)
+			}
+			
+			// Retour au debut
+			if(i_type_lip < 3 && i_sequence_cur == i_sequence_shooted)
+			{
+				@to_obj OBJ_MorphDataSet(0, ai_sequence_lip_data[0], 0)
+				@to_obj OBJ_MorphDataSet(0, ai_sequence_lip_data[1], 1)
+				i_sequence_cur = 1
+			}
+			else if(i_type_lip == 3 && i_sequence_cur == i_sequence_screamed)
+			{
+				@to_obj OBJ_MorphDataSet(0, ai_sequence_lip_data[0], 0)
+				@to_obj OBJ_MorphDataSet(0, ai_sequence_lip_data[1], 1)
+				i_sequence_cur = i_sequence_shooted
+			}
+			else if(i_sequence_cur == i_sequence_lip_num)
+			{
+				@to_obj OBJ_MorphDataSet(0, ai_sequence_lip_data[0], 0)
+				@to_obj OBJ_MorphDataSet(0, ai_sequence_lip_data[1], 1)
+				i_sequence_cur = i_sequence_screamed
+			}
+		}		
+	}
+}
+else
+{
+	i_sequence_begin = faux
+//	if(i_mode_cine_morph) return
+	
+	if(@to_obj OBJ_MorphDataGet(0, 2) != i_lips_repos)
+	{
+		tf_temp = @to_obj OBJ_MorphFactorGet(0)
+		tf_temp = MATH_FloatBlend(tf_temp, 0, 4 * TIME_GetDt())
+		@to_obj OBJ_MorphFactorSet(0, tf_temp)
+		if(tf_temp > 0.01) return	
+	}
+		
+	if(!SPEECH_ObjectHasContent(OBJ_Me()) && SPEECH_ObjectIsSpeaking(OBJ_Me()))
+		@to_obj OBJ_MorphDataSet(0, LIPS_A, 2)
+	else
+		@to_obj OBJ_MorphDataSet(0, i_lips_repos, 2)
+		
+	tf_temp = @to_obj OBJ_MorphProgGet(0)
+	tf_temp = MATH_FloatBlend(tf_temp, 3, 4 * TIME_GetDt())
+	@to_obj OBJ_MorphProgSet(0, tf_temp)	
+	
+	if(!SPEECH_ObjectHasContent(OBJ_Me()) && SPEECH_ObjectIsSpeaking(OBJ_Me()))
+		tf_dest = 0.2 + (MATH_Sin(TIME_Get() * 5) * 0.1)
+	else
+		tf_dest = f_lips_repos_factor
+	if(DYN_SpeedGet() > 2) tf_dest = MATH_FloatMax(tf_dest, 0.2)
+	if(DYN_SpeedGet() > 4) tf_dest = MATH_FloatMax(tf_dest, 0.3)
+	
+	tf_temp = @to_obj OBJ_MorphFactorGet(0)
+	tf_temp = MATH_FloatBlend(tf_temp, tf_dest, 4 * TIME_GetDt())
+	@to_obj OBJ_MorphFactorSet(0, tf_temp)	
+}

@@ -1,0 +1,31 @@
+int		ti_alea
+object	to_mainactor
+
+to_mainactor = AI_MainActorGet(i_MainActor)
+
+if	( (des_o_ANN) && (o_gao_prio_sender == des_o_ANN) )
+{
+	if	(MATH_VecDistance(@o_gao_prio_sender OBJ_PosGet(), @o_gao_prio_1 OBJ_PosGet()) > 5)
+	{
+		CIM_PrepareMSGplans(0, F_GrosPlan_TeteProfil_M, o_gao_prio_1, o_gao_prio_sender, 0.35, F_flag_Cible_mouvante)
+//		CIM_PrepareMSGplans(1, F_MoyPlan_Dos, o_gao_prio_sender, o_gao_prio_1, 0.5, F_flag_Cible_mouvante+F_flag_Cam_mouvante+F_flag_Rotation_axiale)
+	}
+	else
+	{
+		CIM_PrepareMSGplans(0, F_FullPlan_Profil, o_gao_prio_sender, o_gao_prio_1, 0.5, F_flag_Cible_mouvante+F_flag_Rotation_axiale)
+	}
+}
+else // Pour n'importe quel indigène
+{
+	ti_alea = MATH_RandInt(0,2)
+	if	(MATH_VecDistance(@o_gao_prio_sender OBJ_PosGet(), @o_gao_prio_1 OBJ_PosGet()) > 10)
+//	if	( ! ti_alea)
+	{
+		CIM_PrepareMSGplans(0, F_MoyPlan_Dos, o_gao_prio_sender, to_mainactor, 0.5, F_flag_Cible_mouvante+F_flag_Cam_mouvante+F_flag_Rotation_axiale+F_flag_recalcul_focale)
+	}
+	else
+	{
+		CIM_PrepareMSGplans(0, F_MoyPlan_Aerien, o_gao_prio_sender, to_mainactor, 0.5, F_flag_Cible_mouvante+F_flag_Cam_mouvante+F_flag_Rotation_axiale+F_flag_Cible_milieu)
+	}
+}
+//{	CIM_PrepareMSGplans(0, F_GrosPlan_TeteProfil_M, o_gao_prio_sender, to_mainactor, 0.5, F_flag_Cible_mouvante+F_flag_Rotation_axiale)	}

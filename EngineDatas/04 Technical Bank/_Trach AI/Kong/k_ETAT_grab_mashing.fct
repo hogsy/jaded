@@ -1,0 +1,663 @@
+#include		"k_define.var"
+
+#define	Cf_REGRESS_TIME_BEFORE_SANCTION		0.5	// we allow the player x seconds of goofing off
+#define	Cf_MAX_ANIM_SPEED_CHANGE_FACTOR	1.0	// a factor of the anim's freq
+
+#define	Ci_mashing_annule_paffe				1
+#define	Ci_mashing_annule_joueur			2
+
+object	to_bone
+
+vector	tv_obstacle_anim_offset
+vector	tv_obstacle_pos_offset
+vector	tv_pos
+vector	tv_bus_pos
+vector	tv_kong_pos
+vector	tv_offset
+
+float		tf_pos_dist
+float		tf_anim_ratio
+float		tf_obj_frame_ratio_init
+float		tf_challengeFactor	// as time progresses, the challenge increases (1.0 = original challenge)
+float		tf_challengeStartTime	// time at which player has control in the challenge
+float		tf_frameInc				// by how much do we increase the current frame at this loop (can be negative)
+float		tf_maxAnimSpeed
+float		tf_gapToFrameInc	// distance between the smoothed rate of anim inc and this frame's
+float		tf_aniFreq
+float		tf_force_kong_down
+float		tf_forced_ratio
+float		tf_rembobine_coef
+float		tf_force_object_up
+float		tf_percent
+float		tf_timeout
+float		tf_secure_dt
+
+int			ti_positionne
+int			ti_set_ratio
+int			ti_pause
+int			ti_dbg_string
+int			ti_anim
+
+string		tstr_temp
+
+tstr_temp = ""
+tf_timeout = 0.0
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	ao_CL_GRABKONG[i_GrabKong_MainBloquee] = LNK_ClientGet(Ci_LNK_GRAB_KONG, amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee], faux, "k_exec_grab_object_param", nofunc, nofunc)
+	i_GrabKong_MainBloquee = -1
+	DYN_GravitySet(Cv_Kong_Gravity)
+	ai_GrabKong_Mashing_liaison_active = faux
+	ANI_Pause(faux)
+	AI_TriggerSetInvalid(trig_GrabKong_Mashing_win_restriction)
+	
+	if( ! i_paf_mashing )
+		COL_UnCollidableDel(o_GrabKong_Mashing_backup)		// sinon l'uncol est désactivée à la fin du mode paf
+	
+	i_sort_etat = faux	
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_Kong_grab_mashing) 
+{
+	i_etat_courant = ETAT_Kong_grab_mashing
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+
+	// CAMERA CAMERA CAMERA
+	@get_global i_kong_camera_status = Ci_Kcamera_deplacement	
+	// GRAB CLIENT ACCEPT
+	ai_SRV_ENABLE[Ci_LNK_KKFINISH_ON_KONG] = faux		// pas de finish !!!!
+	
+	i_GrabKong_MainBloquee = i_GrabKong_MainActionGrab
+	DYN_GravitySet(Cv_NullVector)
+	
+	v_GrabKong_Mashing_orientation = LNK_GrabKong_Mashing_Orientation_Get(amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee])
+	DBG_RenderVector(@ao_CL_GRABKONG[i_GrabKong_MainBloquee] OBJ_PosGet(), v_GrabKong_Mashing_orientation, color_vert)
+	v_GrabKong_Mashing_position = LNK_GrabKong_Mashing_Position_Get(amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee])
+	DBG_RenderVector(OBJ_PosGet(), v_GrabKong_Mashing_position - OBJ_PosGet(), color_bleu)
+	
+	o_GrabKong_Mashing_backup = ao_CL_GRABKONG[i_GrabKong_MainBloquee]
+	COL_UnCollidableAdd(o_GrabKong_Mashing_backup)
+	
+	// KIT #
+	i_GrabKong_Mashing_kit = LNK_GrabKong_Mashing_Kit_Get(amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee])
+	// ANIMS
+	i_GrabKong_Mashing_anim_positionne = ai_GrabKong_Mashing_kit_infos[i_GrabKong_Mashing_kit][Ci_Kmashing_Anim_Positionne]
+	i_GrabKong_Mashing_anim_challenge = ai_GrabKong_Mashing_kit_infos[i_GrabKong_Mashing_kit][Ci_Kmashing_Anim_Challenge]
+	i_GrabKong_Mashing_anim_kk_gagne = ai_GrabKong_Mashing_kit_infos[i_GrabKong_Mashing_kit][Ci_Kmashing_Anim_KK_Gagne]
+	i_GrabKong_Mashing_anim_kk_perdu = ai_GrabKong_Mashing_kit_infos[i_GrabKong_Mashing_kit][Ci_Kmashing_Anim_KK_Perdu]
+	// FENETRE DE CHALLENGE
+	f_GrabKong_Mashing_frame_kk_gagne = af_GrabKong_Mashing_kit_infos[i_GrabKong_Mashing_kit][Ci_Kmashing_Frame_KK_Gagne]
+	f_GrabKong_Mashing_frame_kk_perdu = af_GrabKong_Mashing_kit_infos[i_GrabKong_Mashing_kit][Ci_Kmashing_Frame_KK_Perdu]
+	// FORCE PARAMS - FROM THE OBJECT
+ 	f_GrabKong_Mashing_force_coef_kong_down = @get_KMashing_Object_path o_GrabKong_Mashing_backup f_ms_Force_Coef_Kong_Down
+ 	f_GrabKong_Mashing_force_coef_object_up = @get_KMashing_Object_path o_GrabKong_Mashing_backup f_ms_Force_Coef_Object_Up
+ 	f_GrabKong_Mashing_force_activate_object = @get_KMashing_Object_path o_GrabKong_Mashing_backup f_ms_Force_Activate_Object
+ 	f_GrabKong_Mashing_force_diminution_object = @get_KMashing_Object_path o_GrabKong_Mashing_backup f_ms_Force_Diminution_Object
+ 	f_GrabKong_Mashing_force_coef_trigger_kong = @get_KMashing_Object_path o_GrabKong_Mashing_backup f_ms_Force_Trigger_Kong
+	f_GrabKong_Mashing_force_coef_trigger_kong *= 2.0 // Os'cour trop chiant !!
+	trig_GrabKong_Mashing_win_restriction = @get_KMashing_Object_path o_GrabKong_Mashing_backup trig_win_restriction
+	i_GrabKong_Mashing_challenge_type = LNK_GrabKong_Mashing_Challenge_Get(amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee])
+	ACT_ActionSet(i_GrabKong_Mashing_anim_positionne)
+	i_GrabKong_Mashing_positionnement = vrai
+	f_GrabKong_Mashing_force_kong = 0.0
+	f_GrabKong_Mashing_force_object = 0.0
+	ai_GrabKong_Mashing_liaison_active = vrai
+	f_GrabKong_Mashing_blend = 0.0
+	f_GrabKong_Mashing_regressTime = 0.0
+	f_GrabKong_Mashing_frame_inc = 0.01	// give a little adantage to the player at start
+
+	i_request_txt_forced = GeneKon_C_mashing_lift
+
+	i_paf_mashing = faux
+	i_paf_mashing_cine = faux
+	i_GrabKong_Mashing_annule = 0
+	i_GrabKong_Mashing_annule_terminee = faux
+	f_GrabKong_Mashing_frame_SND = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+	f_GrabKong_Mashing_blend = MATH_FloatMin(1.0, f_GrabKong_Mashing_blend + ( 3.0 * TIME_GetDt()))
+}
+
+
+// ANALYSE =======================================================================
+
+RIDE_Propose_Link()
+
+tf_forced_ratio = 0.0
+
+// CHECK DE LA LIAISON --------------------------------------------------------------------------------------------------------------------------
+if ( ao_CL_GRABKONG[i_GrabKong_MainBloquee])
+	ao_CL_GRABKONG[i_GrabKong_MainBloquee] = LNK_ThisClientGet( ao_CL_GRABKONG[i_GrabKong_MainBloquee], Ci_LNK_GRAB_KONG, amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee], ai_GrabKong_Mashing_liaison_active, "k_exec_grab_object_param", nofunc, nofunc)
+else
+	ao_CL_GRABKONG[i_GrabKong_MainBloquee] = LNK_ClientGet(Ci_LNK_GRAB_KONG, amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee], ai_GrabKong_Mashing_liaison_active, "k_exec_grab_object_param", nofunc, nofunc)
+if( (ai_GrabKong_Mashing_liaison_active || i_GrabKong_Mashing_annule_terminee) && ! ao_CL_GRABKONG[i_GrabKong_MainBloquee])
+{
+	// INTERROMPU (ANNULE OU PAF)
+//	if( i_paf_mashing )
+//	{
+//		o_paf_actor = o_paf_actor_backup
+//		i_paf_type = C_PAF_KK_Fort
+//		v_paf_dir = v_paf_mashing_sens
+//		i_flag_paf_check_done = vrai		// ne pas refaire un checkpaf
+//		macro_change_etat("k_ETAT_paf")
+//	}
+//	else
+		macro_change_etat( "k_ETAT_main")		// Grab Fini
+}
+
+
+//if( i_GrabKong_Mashing_annule != 0 )
+//	macro_change_etat( "k_ETAT_main")		// Grab Fini
+
+
+// PAFS -------------------------------------------------------------------------------------------------------------------------------------------------
+AI_Execute("k_exec_detect_paf")
+if ( o_paf_actor )
+{
+	if( ! i_paf_mashing && ! (i_paf_type & C_PAF_KK_Faible) )
+	{
+		i_GrabKong_Mashing_annule = Ci_mashing_annule_paffe
+		o_paf_actor_backup = o_paf_actor
+		o_paf_mashing_actor = o_paf_actor
+		i_paf_mashing = vrai
+		o_paf_mashing_object = o_GrabKong_Mashing_backup
+		if( i_paf_type & C_PAF_KK_MashingCine )
+		{
+			// kong est projeté en arrière et tombe dans le vide
+			i_paf_mashing_cine = vrai
+			v_paf_mashing_sens = - @o_GrabKong_Mashing_backup OBJ_SightGet()
+		}
+		else
+		{
+			v_paf_mashing_sens = MATH_VecCrossProduct(Cv_VerticalVector, OBJ_SightGet())
+			v_paf_mashing_sens = MATH_VecRotate(v_paf_mashing_sens, Cv_VerticalVector, Cf_1Degre * 45)
+			MATH_VecSetNormalize(v_paf_mashing_sens)
+		}
+		DBG_RenderVector(OBJ_PosGet() + (3 * Cv_VerticalVector), v_paf_mashing_sens * 5.0, color_jaune)
+	}
+	// NEW NEW NEW !!!
+	if( i_paf_mashing )
+	{
+		o_paf_actor = o_paf_actor_backup
+		i_paf_type = C_PAF_KK_Fort
+		v_paf_dir = v_paf_mashing_sens
+		i_flag_paf_check_done = vrai		// ne pas refaire un checkpaf
+		macro_change_etat("k_ETAT_paf")
+	}
+}
+
+// ANNULATION PAR LE JOUEUR -----------------------------------------------------------------------------------------------------------------
+if( i_flag_just_Action )
+{
+	ai_GrabKong_Mashing_liaison_active = faux
+	if( ACT_ActionGet() == i_GrabKong_Mashing_anim_challenge )
+	{
+		i_GrabKong_Mashing_annule = Ci_mashing_annule_joueur
+	}	
+	if( ACT_ActionGet() == i_GrabKong_Mashing_anim_positionne )
+	{
+		i_GrabKong_Mashing_annule = Ci_mashing_annule_joueur
+		f_GrabKong_Mashing_frame = ANI_CurrentFrameGet(0)
+	}
+}
+
+// COMPORTEMENT ==================================================================
+
+ti_positionne = vrai
+ti_set_ratio = faux
+ti_pause = faux
+tf_challengeFactor = 1.0
+
+if( i_GrabKong_Mashing_annule )
+{
+	tstr_temp = "Annule"
+	
+	// ANNULE OU PAF ================================================================
+	f_GrabKong_Mashing_frame_kk_perdu = 0.0		// annulation : on rembobine l'anim de challenge jusqu'au début !!!!
+	if( ai_GrabKong_Mashing_liaison_active )
+		LNK_GrabKong_Mashing_Result_Set(amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee], Ci_Kmashing_Result_Annule_EnCours)
+//	if( i_paf_mashing )
+		tf_rembobine_coef = 250.0
+//	else
+//		tf_rembobine_coef = 100.0
+	if( ACT_ActionGet() == i_GrabKong_Mashing_anim_positionne )
+	{
+		ti_set_ratio = vrai
+		ti_pause = vrai
+		if( f_GrabKong_Mashing_frame <= 0.0 )
+		{
+			if( ai_GrabKong_Mashing_liaison_active )
+			{
+				ACT_ActionSet(i_GrabKong_Mashing_anim_kk_perdu)
+				f_GrabKong_Mashing_frame = ANI_NbFrameGet(0)
+//				LNK_GrabKong_Mashing_Result_Set(amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee], Ci_Kmashing_Result_Annule_Termine)
+			}
+			else
+				i_GrabKong_Mashing_annule_terminee = vrai
+		}
+	}
+	else if( ACT_ActionGet() == i_GrabKong_Mashing_anim_challenge )
+	{
+		if( f_GrabKong_Mashing_frame <= 0.0 )
+		{
+			if( i_paf_mashing )
+			{
+				// annulation due à un paf : rembobinage terminé
+				if( ai_GrabKong_Mashing_liaison_active )
+					LNK_GrabKong_Mashing_Result_Set(amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee], Ci_Kmashing_Result_Annule_Termine)
+				else
+					i_GrabKong_Mashing_annule_terminee = vrai
+			}
+			else
+			{
+				// annulation PAS due à un paf : on rembobine aussi l'anim de positionnement
+//				ACT_ActionSet(i_GrabKong_Mashing_anim_positionne)
+				ACT_ActionSet(i_GrabKong_Mashing_anim_kk_perdu)
+				f_GrabKong_Mashing_frame = ANI_NbFrameGet(0)
+			}
+		}
+		else
+		{
+			ti_set_ratio = vrai
+			ti_pause = vrai
+		}
+	}
+	else if( ACT_ActionGet() == i_GrabKong_Mashing_anim_kk_gagne )
+	{
+		if( ACT_ActionFinished() )
+			macro_change_etat("k_ETAT_main")
+				
+//		if( f_GrabKong_Mashing_frame <= 0.0 )
+//		{
+//			ACT_ActionSet(i_GrabKong_Mashing_anim_challenge)
+//			f_GrabKong_Mashing_frame = ANI_NbFrameGet(0)
+//		}
+	}
+	else if( ACT_ActionGet() == i_GrabKong_Mashing_anim_kk_perdu )
+	{
+		if( ACT_ActionFinished() )
+		{
+			if ( i_paf_mashing )
+			{
+				o_paf_actor = o_paf_actor_backup
+				i_paf_type = C_PAF_KK_Fort
+				v_paf_dir = v_paf_mashing_sens
+				i_flag_paf_check_done = vrai		// ne pas refaire un checkpaf
+				macro_change_etat("k_ETAT_paf")
+			}
+			else
+				macro_change_etat("k_ETAT_main")
+		}
+	}
+	
+	f_GrabKong_Mashing_frame = MATH_FloatMax(0.0, (f_GrabKong_Mashing_frame - (tf_rembobine_coef * TIME_GetDt())))
+}
+else
+{
+	// TIMEOUT ==================================
+	switch( i_GrabKong_Mashing_kit )
+	{
+		case Ci_Kmashing_Kit_04 :		// Pilier
+		case Ci_Kmashing_Kit_05 :		// Pilier
+			tf_timeout = 4.5
+			break
+		case Ci_Kmashing_Kit_06 :		// NYC Bus
+			tf_timeout = 10.0
+			break
+		default:
+			tf_timeout = 8.0
+			break
+	}
+	
+	// EN COURS =====================================================================
+	if( i_GrabKong_Mashing_positionnement )
+	{
+		// POSITIONNEMENT INITIAL -----------------------------------------------------------------------------------------------------------------
+		if( ACT_ActionGet() == i_GrabKong_Mashing_anim_positionne )
+		{
+			tstr_temp = "Positionne"
+			
+			LNK_GrabKong_Mashing_Result_Set(amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee], Ci_Kmashing_Result_Positionne)
+			if ( i_last_request_txt != GeneKon_C_mashing_lift && ANI_CurrentFrameGet(0) > 58)
+				i_request_txt_forced = GeneKon_C_mashing_lift
+			f_GrabKong_Mashing_frame = 0.0
+			if (ACT_ActionFinished())
+			{
+				// Passage en anim challenge
+				ACT_ActionSet(i_GrabKong_Mashing_anim_challenge)
+				// FRAME DEBUT DU CHALLENGE
+				tf_obj_frame_ratio_init = LNK_GrabKong_Mashing_Anim_Percent_Get(amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee])
+				if( tf_obj_frame_ratio_init )
+					f_GrabKong_Mashing_frame_debut = ANI_NbFrameGet(0) * tf_obj_frame_ratio_init
+				else
+					f_GrabKong_Mashing_frame_debut = af_GrabKong_Mashing_kit_infos[i_GrabKong_Mashing_kit][Ci_Kmashing_Frame_Debut_Challenge]
+					
+				// FRAME CHALLENGE GAGNE
+				if( f_GrabKong_Mashing_frame_kk_gagne == Cf_Infinit )
+					f_GrabKong_Mashing_frame_kk_gagne = ANI_NbFrameGet(0)		// GAGNE A LA FIN DE L'ANIM
+			}
+		}
+		else if( ACT_ActionGet() == i_GrabKong_Mashing_anim_challenge )
+		{
+			tstr_temp = "Challenge (deb)"
+			
+			LNK_GrabKong_Mashing_Result_Set(amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee], Ci_Kmashing_Result_EnCours)
+			ti_set_ratio = vrai
+			f_GrabKong_Mashing_frame = ANI_CurrentFrameGet(0)
+			if( f_GrabKong_Mashing_frame >= f_GrabKong_Mashing_frame_debut )
+			{
+				i_GrabKong_Mashing_positionnement = faux
+				f_GrabKong_Mashing_force_kong = f_GrabKong_Mashing_force_coef_trigger_kong
+			}
+		}
+	}
+	else if( ai_GrabKong_Mashing_liaison_active )
+	{
+		// CHALLENGE EN COURS (NI GAGNE NI PERDU) ===========================================================================
+		if (i_flag_just_Rage_Any_Button || i_flag_just_grab)
+		{
+			tf_percent = Proc_KK_Mashing_Pct()
+			@get_Kamera Proc_Kam_RumbleSet(tf_percent / Cf_Rumble_Amplitude, 6.0)
+		}
+		if ( MATH_AbsFloat( ANI_CurrentFrameGet(0) - f_GrabKong_Mashing_frame_SND) > 8.0)
+		{
+			f_GrabKong_Mashing_frame_SND = ANI_CurrentFrameGet(0)
+			SND_RequestPlay(40)
+		}
+		if( ACT_ActionGet() == i_GrabKong_Mashing_anim_challenge )
+		{
+			// Challenge en cours ----------------------------------------------------------------------
+			tstr_temp = "Challenge en cours !!!"
+			
+			if( f_GrabKong_Mashing_frame <= f_GrabKong_Mashing_frame_kk_perdu )
+			{
+				// KONG a perdu le challenge ------------------------------------------------------
+				LNK_GrabKong_Mashing_Result_Set(amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee], Ci_Kmashing_Result_KongPerdu)
+				if( i_GrabKong_Mashing_anim_kk_perdu != -1 )
+				{
+					ai_GrabKong_Mashing_liaison_active = faux			// ne pas redemander de liaison pendant l'anim perdu
+					ACT_ActionSet(i_GrabKong_Mashing_anim_kk_perdu)
+				}
+			}
+			else
+			{
+				// Challenge en cours : Gestion des forces ------------------------------------
+				if( ( i_GrabKong_Mashing_challenge_type == Ci_Kmashing_Type_Kong_Gagne_Ou_Perd 
+				|| i_GrabKong_Mashing_challenge_type == Ci_Kmashing_Type_Kong_Gagne_Toujours )
+				&& f_GrabKong_Mashing_frame >= f_GrabKong_Mashing_frame_kk_gagne 
+				&& ( ! AI_TriggerIsValid(trig_GrabKong_Mashing_win_restriction) || call_trigger(trig_GrabKong_Mashing_win_restriction) ) )
+				{
+					// KONG a gagné le challenge -------------------------------------------------
+					i_request_txt_forced = GeneKon_C_mashing_lift_pillar_win
+					LNK_GrabKong_Mashing_Result_Set(amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee], Ci_Kmashing_Result_KongGagne)
+					if( i_GrabKong_Mashing_anim_kk_gagne != -1 )
+					{
+						ai_GrabKong_Mashing_liaison_active = faux			// ne pas redemander de liaison pendant l'anim gagné
+						ACT_ActionSet(i_GrabKong_Mashing_anim_kk_gagne)
+					}
+					// else je ne mets pas à faux car c'est l'objet qui coupe la liaison
+				}
+				else
+				{
+					//================================================
+					// En plein combat : calculs de la nouvelle frame
+					//================================================
+					
+					// determine the challenge factor
+					if (f_GrabKong_Mashing_regressTime > Cf_REGRESS_TIME_BEFORE_SANCTION)
+					{
+						tf_challengeFactor = 1.0 + ((f_GrabKong_Mashing_regressTime - Cf_REGRESS_TIME_BEFORE_SANCTION) / 2)
+					}
+					
+					tf_frameInc = 0.0
+					LNK_GrabKong_Mashing_Result_Set(amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee], Ci_Kmashing_Result_EnCours)
+					
+					if( AI_TriggerIsValid(trig_GrabKong_Mashing_win_restriction) && ! call_trigger(trig_GrabKong_Mashing_win_restriction) )
+					{
+						// il y a un trigger d'empêchement de réussite qui n'a pas encore été annulé -> + dur
+						tf_force_kong_down = f_GrabKong_Mashing_force_coef_kong_down * 3.0
+						tf_force_object_up = f_GrabKong_Mashing_force_coef_object_up * 2.0
+					}
+					else
+					{
+						tf_force_object_up = f_GrabKong_Mashing_force_coef_object_up
+						if( f_time_fury )
+							tf_force_kong_down = f_GrabKong_Mashing_force_coef_kong_down * 0.5
+						else
+							tf_force_kong_down = f_GrabKong_Mashing_force_coef_kong_down
+					}
+					
+					tf_secure_dt = MATH_FloatLimit(TIME_GetDt(), 0.016, 0.048)		// SECURE DT FOR LOW FRAMERATE !!!
+					
+					if (f_GrabKong_Mashing_force_kong <= f_GrabKong_Mashing_force_activate_object )
+						f_GrabKong_Mashing_force_object = MATH_FloatMin(f_GrabKong_Mashing_force_object + (tf_force_object_up * tf_secure_dt * tf_challengeFactor), 10)
+					
+					f_GrabKong_Mashing_force_kong = MATH_FloatMax(0, f_GrabKong_Mashing_force_kong - (tf_force_kong_down * tf_secure_dt) )
+					
+					if( f_time_start_etat < tf_timeout )		// TIMEOUT
+					{
+						if( i_flag_just_grab || i_flag_just_Rage_Any_Button )
+						{
+							if( RIDE_Get_Actor_Nb() == 0 && ! o_scolo_actor )
+							{
+								#ifndef _FINAL_
+								if( @"univ" i_cheat_page == 4 )
+									Str_DisplayTextOnce("MASHING !!!", cvector(0.45,0.75,0))
+								#endif
+								f_GrabKong_Mashing_force_kong = f_GrabKong_Mashing_force_coef_trigger_kong * (1.0 / tf_challengeFactor)
+								f_GrabKong_Mashing_force_object = MATH_FloatMax(0, f_GrabKong_Mashing_force_object - f_GrabKong_Mashing_force_diminution_object )
+							}
+						}
+					}
+					
+					tf_frameInc += f_GrabKong_Mashing_force_kong
+					
+					if( i_GrabKong_Mashing_challenge_type == Ci_Kmashing_Type_Kong_Gagne_Ou_Perd 
+					|| i_GrabKong_Mashing_challenge_type == Ci_Kmashing_Type_Kong_Perd_Toujours )
+						tf_frameInc -= f_GrabKong_Mashing_force_object			// si l'objet résiste
+						
+					if (tf_frameInc < 0.0)
+						f_GrabKong_Mashing_regressTime += TIME_GetDt()
+//					else
+//						f_GrabKong_Mashing_regressTime -= MATH_FloatMin(f_GrabKong_Mashing_regressTime, 5 * TIME_GetDt())
+					
+					// smooth the change in animation frame change
+					tf_aniFreq = ANI_FrequencyGet(0)
+					tf_maxAnimSpeed = TIME_GetDt() * Cf_MAX_ANIM_SPEED_CHANGE_FACTOR * tf_aniFreq
+					if (f_GrabKong_Mashing_frame_inc < tf_frameInc)
+					{
+						// need to increase without going over
+						tf_gapToFrameInc = tf_frameInc - f_GrabKong_Mashing_frame_inc
+						f_GrabKong_Mashing_frame_inc += MATH_FloatMin(tf_maxAnimSpeed, tf_gapToFrameInc)
+					}
+					else
+					{
+						// need to decrease without going under
+						tf_gapToFrameInc = f_GrabKong_Mashing_frame_inc - tf_frameInc
+						f_GrabKong_Mashing_frame_inc -= MATH_FloatMin(tf_maxAnimSpeed, tf_gapToFrameInc)
+					}
+	
+					// smoothing occurs here, without it would be += tf_frameInc
+					f_GrabKong_Mashing_frame += f_GrabKong_Mashing_frame_inc
+					
+					// ne pas dépasser la frame gagne sinon on permet au joueur de prendre de l'avance dans le cas d'un objet qui ne peut jamais perdre
+					f_GrabKong_Mashing_frame = MATH_FloatMin(f_GrabKong_Mashing_frame, f_GrabKong_Mashing_frame_kk_gagne)
+		
+					ti_set_ratio = vrai
+					ti_pause = vrai
+				}
+			}
+		}
+	}
+	else
+	{
+		// CHALLENGE TERMINE (GAGNE OU PERDU) ==================================================================
+		if( ACT_ActionGet() == i_GrabKong_Mashing_anim_kk_gagne )
+		{
+			tstr_temp = "Gagne"
+			ti_positionne = faux
+			if( ACT_ActionFinished() )
+			{
+//				RAGE_Launch( Ci_Kanim_Intimid_Furie)
+				macro_change_etat("k_ETAT_main")
+			}
+		}
+		else if( ACT_ActionGet() == i_GrabKong_Mashing_anim_kk_perdu )
+		{
+			tstr_temp = "Perdu"
+			ti_positionne = faux
+			if( ACT_ActionFinished() )
+				macro_change_etat("k_ETAT_main")
+		}
+	}
+}
+
+// POSITION ET ORIENTATION =====================================================
+// NYC Bus
+if( i_GrabKong_Mashing_kit == 6 && ! i_GrabKong_Mashing_annule )
+{
+	if( ACT_ActionGet() == i_GrabKong_Mashing_anim_positionne )
+	{
+		to_bone = ANI_CanalObjectGet(Anim_Canal_Snap_Bassin)
+		tv_bus_pos = @ao_CL_GRABKONG[i_GrabKong_MainBloquee] OBJ_PosGet()
+		tv_offset = @to_bone OBJ_PosGet() - OBJ_PosGet()
+		tv_kong_pos = tv_bus_pos
+		tv_kong_pos -= tv_offset
+		OBJ_PosSet(MATH_VecBlend(OBJ_PosGet(), tv_kong_pos, f_GrabKong_Mashing_blend))
+		OBJ_BankingGeneralSet(
+			MATH_VecBlend( OBJ_SightGet(), v_GrabKong_Mashing_orientation, f_GrabKong_Mashing_blend), 
+			MATH_VecBlend( OBJ_BankingGet(), Cv_VerticalVector, f_GrabKong_Mashing_blend))
+	}
+}
+else if( ti_positionne )
+{
+	to_bone = ANI_CanalObjectGet(Anim_Canal_Snap_Bassin)
+	tv_obstacle_anim_offset = @to_bone OBJ_PosGet() - OBJ_PosGet()
+	
+	tv_obstacle_pos_offset = @to_bone OBJ_PosGet() - v_GrabKong_Mashing_position
+	tv_obstacle_pos_offset = MATH_VecBlend(tv_obstacle_pos_offset, Cv_NullVector, f_GrabKong_Mashing_blend)
+
+//	DBG_RenderVector(OBJ_PosGet(), tv_obstacle_anim_offset, color_rouge)
+//	DBG_RenderVector(v_obstacle_top_point_backup, Cv_VerticalVector * 10, color_bleu)
+//	DBG_RenderVector(v_obstacle_top_point_backup, tv_obstacle_pos_offset, color_vert)
+
+	tv_pos = v_GrabKong_Mashing_position
+	tv_pos += tv_obstacle_pos_offset
+	tv_pos -= tv_obstacle_anim_offset
+
+	OBJ_PosSet(tv_pos)
+
+	if( ai_GrabKong_Mashing_liaison_active )
+	{
+		to_bone = ao_CL_GRABKONG[i_GrabKong_MainBloquee]
+		v_GrabKong_Mashing_orientation = @to_bone OBJ_SightGet()
+	}
+	
+	OBJ_BankingGeneralSet(
+		MATH_VecBlend( OBJ_SightGet(), v_GrabKong_Mashing_orientation, f_GrabKong_Mashing_blend), 
+		MATH_VecBlend( OBJ_BankingGet(), Cv_VerticalVector, f_GrabKong_Mashing_blend))
+}
+
+// Ratio d'anim
+if( ti_set_ratio )
+{
+	if( tf_forced_ratio != 0.0 )
+	{
+		tf_anim_ratio = tf_forced_ratio
+		f_GrabKong_Mashing_frame = ANI_NbFrameGet(0) * tf_forced_ratio
+	}
+	else
+		tf_anim_ratio = MATH_FloatMin(0.99, f_GrabKong_Mashing_frame / ANI_NbFrameGet(0))	// surtout ne jamais arriver à 1.0 !!!
+	// BUG DU PLAYER D ANIM BUG DU PLAYER D ANIM
+	ACT_ActionSet( ACT_ActionGet() + Ci_ActionSet_Force_SameAction)
+	// BUG DU PLAYER D ANIM BUG DU PLAYER D ANIM
+	ANI_RatioSet(0, tf_anim_ratio)
+	
+	if( ai_GrabKong_Mashing_liaison_active )
+		LNK_GrabKong_Mashing_Anim_Percent_Set(amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee], tf_anim_ratio)
+	
+//	if( i_GrabKong_Mashing_annule )
+//	{
+//		DBG_TraceInt(ACT_ActionGet())
+//		DBG_TraceString("   ")
+//		DBG_TraceFloat(tf_anim_ratio)
+//		DBG_TraceEOL()
+//	}
+}
+
+// ANIM PAUSE ?
+if( ti_pause )
+	ANI_Pause(vrai)			// uniquement pendant le challenge
+else
+	ANI_Pause(faux)
+
+
+// ANIM POUR LE PILIER
+if( ACT_ActionGet() == i_GrabKong_Mashing_anim_positionne )
+	ti_anim = Ci_Kmashing_Anim_Positionne
+else if( ACT_ActionGet() == i_GrabKong_Mashing_anim_challenge )
+	ti_anim = Ci_Kmashing_Anim_Challenge
+else if( ACT_ActionGet() == i_GrabKong_Mashing_anim_kk_gagne )
+	ti_anim = Ci_Kmashing_Anim_KK_Gagne
+else if( ACT_ActionGet() == i_GrabKong_Mashing_anim_kk_perdu )
+	ti_anim = Ci_Kmashing_Anim_KK_Perdu
+else 
+	ti_anim = -1
+//if( ai_GrabKong_Mashing_liaison_active )
+if( MSG_GlobalIsValid(amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee]) )
+	LNK_GrabKong_Mashing_Action_Set(amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee], ti_anim)
+
+
+#ifdef DBG_MASHING_VALUES
+ti_dbg_string = STR_CreateText("Chlng: ", cvector(0.1,0.0,0.0), 0)
+STR_AppendInt( ti_dbg_string, i_GrabKong_Mashing_challenge_type )
+
+STR_AppendText(ti_dbg_string, "    LOS: ")
+STR_AppendFloat( ti_dbg_string, f_GrabKong_Mashing_frame_kk_perdu, 2 )
+STR_AppendText(ti_dbg_string, "     CUR: ")
+STR_AppendFloat( ti_dbg_string, f_GrabKong_Mashing_frame, 2 )
+STR_AppendText(ti_dbg_string, "     WIN: ")
+STR_AppendFloat( ti_dbg_string, f_GrabKong_Mashing_frame_kk_gagne, 2 )
+
+STR_AppendText(ti_dbg_string, "\nKFrmInc: ")
+STR_AppendFloat( ti_dbg_string, f_GrabKong_Mashing_frame_inc, 2 )
+STR_AppendText(ti_dbg_string, "\nKForce: ")
+STR_AppendFloat( ti_dbg_string, f_GrabKong_Mashing_force_kong, 2 )
+STR_AppendText(ti_dbg_string, "     OForce: ")
+STR_AppendFloat( ti_dbg_string, f_GrabKong_Mashing_force_object, 2 )
+STR_AppendText(ti_dbg_string, "     RegT: ")
+STR_AppendFloat( ti_dbg_string, f_GrabKong_Mashing_regressTime, 2 )
+STR_AppendText(ti_dbg_string, "     ChFx: ")
+STR_AppendFloat( ti_dbg_string, tf_challengeFactor, 2 )
+#endif
+
+
+// DEBUG ========================================================================
+#ifndef _FINAL_
+if( @"univ" i_cheat_page == 4 )
+{
+	// Etat liaison ------------------------
+	Str_DisplayTextOnce("SEQUENCE = ", cvector(0.4,0.85,0))
+	Str_DisplayTextOnce(tstr_temp, cvector(0.52,0.85,0))
+	// Frame -------------------------------
+	Str_DisplayTextOnce("FRAME = ", cvector(0.4,0.9,0))
+	Str_DisplayFloatOnce(f_GrabKong_Mashing_frame, cvector(0.5,0.9,0))
+	// Timeout -----------------------------
+	Str_DisplayTextOnce("Timeout in ", cvector(0.4,0.95,0))
+	Str_DisplayFloatOnce( MATH_FloatMax(0.0, tf_timeout - f_time_start_etat), cvector(0.52,0.95,0))
+}
+#endif

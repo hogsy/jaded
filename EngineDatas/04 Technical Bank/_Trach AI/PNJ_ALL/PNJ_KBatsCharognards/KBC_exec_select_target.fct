@@ -1,0 +1,62 @@
+#include "KBC_Defines.var"
+
+message 	tm_filter
+messageid tmid_vision, tmid_interet
+int ti_rank
+int ti_interet_on_ann
+int ti_visibility_context, ti_type_sol 
+float tf_dist
+
+ti_interet_on_ann = 0
+
+o_cible_attaque = nobody
+
+MSG_SetNull(tm_filter)
+tm_filter.msg_sender = o_ann
+ti_rank = -1
+tmid_vision = MSG_GlobalSearchIntGao( C_EVENT_TYPE_Visibility, &ti_rank, tm_filter)
+if (MSG_GlobalIsValid(tmid_vision))	
+{
+	// check if Ann is visible
+	
+	ti_visibility_context = EVENT_VisionContextGet(tmid_vision)
+	ti_type_sol = ti_visibility_context / 10
+	ti_visibility_context -= ti_type_sol * 10
+
+	if( ti_visibility_context == C_EVENT_CONTEXT_DEBOUT )
+	{
+		// Ann is visible.  Check if no one has an interest on her
+		MSG_SetNull(tm_filter)
+		ti_rank = -1
+		tm_filter.msg_gao1 = o_ann
+		for (	tmid_interet = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tm_filter);
+				MSG_GlobalIsValid(tmid_interet);
+				tmid_interet = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tm_filter) )
+		{
+			// if another enemy has an interest on ann, ignore her
+			if ( MSG_GlobalGetSender(tmid_interet ) != OBJ_Me())
+				ti_interet_on_ann = 1
+		}
+		
+		if ( ! ti_interet_on_ann && o_zone_activite && @o_zone_activite COL_BV_PivotCollide( o_ann ))
+		{
+			if (o_ann != o_ignore_target)
+				o_cible_attaque = o_ann
+		}
+	}
+}
+
+if ( ! o_cible_attaque && o_ignore_target != o_kong)
+{
+	o_cible_attaque = o_kong
+}
+
+
+if (o_cible_attaque == o_ann && 
+	(i_etat_courant == ETAT_Fight_Contact || i_etat_courant == ETAT_Fight_Approche ) && 
+	EVENT_TL_LifeGet(ID_LIFE) > 0.0)
+	o_attack_interaction = LNK_ClientGet(Ci_LNK_INTERACTION, mid_attack_interaction_LKN_ID, vrai, "KBC_exec_add_data_interaction", nofunc, "KBC_exec_init_interaction")
+else	
+	o_attack_interaction = LNK_ClientGet(Ci_LNK_INTERACTION, mid_attack_interaction_LKN_ID, faux, nofunc, nofunc, nofunc)	
+	
+	

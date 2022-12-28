@@ -1,0 +1,23 @@
+vector 	norm0, norm1
+object	to_WP1
+
+move_v_dest[0] = @move_o_WP[ 1 ] OBJ_PosGet()
+if (move_o_WP[ 0 ])
+	norm0 = move_v_dest[0] - @move_o_WP[ 0 ] OBJ_PosGet()
+else
+	norm0 = @move_o_WP[ 1 ] OBJ_SightGet()
+	
+if (move_o_WP[ 2 ])
+	move_v_dest[ 1 ] = @move_o_WP[ 2 ] OBJ_PosGet()
+else
+	move_v_dest[ 1 ] = move_v_dest[ 0 ] 
+	
+if ( move_f_Ecartement )
+{
+	norm0 = MATH_VecNormalize( MATH_VecCrossProduct( norm0, Cv_VerticalVector) )
+	push( move_o_WP[ 1 ] )
+	AI_Execute( "pnjbronto_exec_computewpwidth" )
+	move_v_dest[ 0 ] -= (move_f_Ecartement * WPBV_f_CurWidth) * norm0
+}
+
+

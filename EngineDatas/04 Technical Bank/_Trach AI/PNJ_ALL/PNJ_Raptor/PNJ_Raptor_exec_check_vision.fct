@@ -1,0 +1,308 @@
+#include "PNJ_Raptor_defines.var"
+
+int			ti_i
+int			ti_rank
+int			ti_rank2
+int			ti_context
+int			ti_type_sol
+int			ti_flag_target_is_hided
+int			ti_index
+int			ti_flag_best_interest_finded
+int			ti_flag_ok
+
+float		tf_dot_product
+float		tf_dist
+float		tf_best_dist
+
+vector	tv_ray_start_pos
+vector	tv_target_pos
+vector	tv_me_to_target
+vector	tv_temp
+
+object	EVT_Pere
+object	to_best_interet_target
+
+messageid		EVT_Visibility_ID
+messageid		EVT_Interet_ID
+messageid		EVT_InfoSeen_ID
+
+message		tmsg_filter
+
+int				ti_sphere_color
+int				ti_cone_color
+color			tc_vision_color
+
+#ifdef SHOW_RASTER
+DBG_StartRaster(3, "Check Vision")
+#endif
+
+if (i_flag_visual_check_done)
+{
+#ifdef SHOW_RASTER
+	DBG_StopRaster(3)
+#endif
+	return
+}
+
+i_flag_visual_check_done = vrai
+
+if (PNJ_Raptor_Get_Check_Vision())
+{
+#ifdef SHOW_RASTER
+	DBG_StopRaster(3)
+#endif
+	return
+}
+
+// COLORS --------------------------------------
+ti_cone_color = 0x0
+ti_sphere_color = 0x0
+#ifndef _FINAL_
+if (DBG_Display_Vision)
+{
+	ti_cone_color = 0x80008000
+	ti_sphere_color = 0x80008000
+}
+#endif
+
+tf_best_dist = Cf_Infinit
+
+tv_ray_start_pos = v_look_head_pos
+if (raptor_type == C_ID_Raptor && ACT_ActionGet() == Action_Mange_Au_Sol)
+	tv_ray_start_pos.z = OBJ_PosGet().z + 0.5
+
+if (MSG_GlobalIsValid(mid_best_interet))
+	to_best_interet_target = EVENT_InteretTargetGet(mid_best_interet)
+else
+	to_best_interet_target = nobody
+
+ti_rank = -1
+for (	EVT_Visibility_ID = MSG_GlobalScan(C_EVENT_TYPE_Visibility, &ti_rank);
+		MSG_GlobalIsValid(EVT_Visibility_ID);
+		EVT_Visibility_ID = MSG_GlobalScan(C_EVENT_TYPE_Visibility, &ti_rank))
+{
+	// SI CE N'EST PAS UN ACTEUR QUI M'INTERESSE, JE PASSE AU SUIVANT
+	if (PNJ_Raptor_Invalid_Vision_Event(EVT_Visibility_ID))
+		continue
+
+	EVT_Pere = EVENT_PereGet(EVT_Visibility_ID)
+
+	// RECUPERATION DE L'INDEX DE CE PERSO DANS LE TABLEAU DES ACTEURS PERCUS
+	ti_index = PNJ_Raptor_Add_Perceived_Actor(EVT_Pere, 0, EVT_Visibility_ID)
+
+	// SI POUR UNE RAISON OU POUR UNE AUTRE, CET ACTEUR N'A PAS ETE VALIDE...
+	if (ti_index == -1)
+		continue
+
+	// ON MET A JOUR L'INDEX DES INFOS DE NOTRE MEILLEUR INTERET
+	if (EVT_Pere == to_best_interet_target)
+		i_perceived_best_actor_index = ti_index
+
+	// LES CADAVRES SONT PERCUS DE TOUTE MANIERE
+	if (ai_perceived_status[ti_index] & Ci_PERCEIVED_IS_DEAD)
+	{
+		ai_perceived_seen[ti_index] = vrai
+		continue
+	}
+
+	if (EVT_Pere == o_main_actor)
+	{
+		tv_target_pos = @o_camera OBJ_PosGet()
+	}
+	else
+	{
+		tv_target_pos = EVENT_PositionGet(EVT_Visibility_ID)
+		tv_target_pos.z += 1.0
+	}
+
+	if (raptor_type != C_ID_Galiminus)
+	{
+		// RECUPERATION DU CONTEXT ET DU TERRAIN SUR LEQUEL LE PERSO EST
+		ti_context = EVENT_VisionContextGet(EVT_Visibility_ID)
+		ti_type_sol = ti_context / 10
+		ti_context -= ti_type_sol * 10
+	
+		if (ai_perceived_status[ti_index] & Ci_PERCEIVED_IS_DEAD)
+		{
+			// UN CADAVRE N'EST PAS CACHE !!!
+			ti_flag_target_is_hided	= faux
+		}
+		else
+		{
+			// EST-CE QUE LE PERSO EST CACHE ?
+			ti_flag_target_is_hided	= faux
+		
+			switch(ti_type_sol)
+			{
+				case Ci_sol_herbe :
+					tv_temp = v_look_head_pos - tv_target_pos
+					tv_temp.z = 0.0
+			
+					if (ACT_ActionGet() == Action_Observe && MATH_VecDotProduct(tv_temp, tv_temp) < 16.0)
+						ti_flag_target_is_hided = faux
+					else if (ti_context == C_EVENT_CONTEXT_ACCROUPI || ti_context == C_EVENT_CONTEXT_ALLONGE)
+						ti_flag_target_is_hided = vrai
+					break
+				
+				case Ci_sol_herbe_haute :
+					if (raptor_type != C_ID_Tyranosaure)
+						ti_flag_target_is_hided = vrai
+					break
+			}
+		}
+	
+//		if (ai_perceived_ID[ti_index] == C_ID_Joueur)
+//		{
+//			// Distance tete-cible
+//			tv_temp = v_look_head_pos
+//			tv_temp.z = OBJ_PosGet().z
+//			tv_temp = tv_target_pos - tv_temp
+//			if (tv_temp.z > -1.0 && tv_temp.z < 2.0)
+//			{
+//				tf_dist = MATH_VecDotProduct(tv_temp, tv_temp)
+//				if (tf_dist < f_vision_close_to_head_sqr_dist)
+//					ai_perceived_status[ti_index] |= Ci_PERCEIVED_CLOSE_TO_HEAD
+//			}
+//		
+//			// Distance pivot-cible
+//			tv_temp = tv_target_pos - OBJ_PosGet()
+//			if (tv_temp.z > -1.0 && tv_temp.z < 2.0)
+//			{
+//				tf_dist = MATH_VecDotProduct(tv_temp, tv_temp)
+//				if (tf_dist < f_vision_close_to_feet_sqr_dist)
+//					ai_perceived_status[ti_index] |= Ci_PERCEIVED_CLOSE_TO_FEET
+//			}
+//		}
+		
+//		if (ti_flag_target_is_hided && ! (ai_perceived_status[ti_index] & (Ci_PERCEIVED_COLLIDED_ACTOR | Ci_PERCEIVED_CLOSE_TO_HEAD | Ci_PERCEIVED_CLOSE_TO_FEET) ) )
+//			continue
+
+		if (ti_flag_target_is_hided)
+			continue
+	}
+
+	if (ai_perceived_accessible[ti_index] && IsThis_ID_Humain(ai_perceived_ID[ti_index]))
+	{
+		EVT_InfoSeen_ID = EVENT_AddEventInfo(OBJ_Me(), EVT_Pere, C_EVENT_INFOTYPE_SEEN)
+		EVENT_Info_OutsideGridSet(EVT_InfoSeen_ID, i_flag_dont_use_grid)
+		EVENT_Info_StalkSet(EVT_InfoSeen_ID, i_flag_stalk)
+	}
+
+	if (raptor_type == C_ID_Galiminus)
+	{
+		// POUR LE GALIMINUS, ACCESSIBLE == VU
+		ai_perceived_seen[ti_index] = vrai // ai_perceived_accessible[ti_index]
+		ai_perceived_status[ti_index] |= Ci_PERCEIVED_IDENTIFIED
+
+		if ( ! i_flag_dont_use_grid && MATH_LIB_ZoneInCone(OBJ_PosGet(), OBJ_SightGet(), Cf_Cos30, f_vision_near_in_move_dist, tv_target_pos, 1.0, vrai, tf_dot_product, 0, 0) )
+			ai_perceived_status[ti_index] |= Ci_PERCEIVED_NEAR_IN_MOVE_CONE	
+	}
+	else if (ai_perceived_status[ti_index] & Ci_PERCEIVED_IDENTIFIED)
+	{
+		// PERSO DEJA VU => TOUJOURS VU
+		ai_perceived_seen[ti_index] = vrai
+
+		if (MATH_LIB_ZoneInCone(OBJ_PosGet(), OBJ_SightGet(), Cf_Cos30, f_vision_near_in_move_dist, tv_target_pos, 1.0, vrai, tf_dot_product, 0, 0) )
+			ai_perceived_status[ti_index] |= Ci_PERCEIVED_NEAR_IN_MOVE_CONE
+	}
+	else
+	{
+		// PERSO PAS ENCORE IDENTIFIE
+		ti_flag_ok = faux	
+	
+		if (i_etat_courant == ETAT_DEVORE)
+			ti_flag_ok = vrai
+		else if ( ! IsThis_ID_Humain(ai_perceived_ID[ti_index]) )
+			ti_flag_ok = vrai
+		else if (MATH_LIB_ZoneInCone(v_look_head_pos, v_look_banking, Cf_cos_angle_vision, Cf_dist_vision, tv_target_pos, 1.0, vrai, tf_dot_product, ti_cone_color, ti_sphere_color))
+			ti_flag_ok = vrai
+	
+		if (ti_flag_ok)
+		{
+			// ON CONSIDERE QUE CET ACTEUR EST DANS MON CHAMPS DE VISION	
+		
+			if (IsThis_ID_Humain(ai_perceived_ID[ti_index]))
+			{
+				@get_global i_raptor_ray_on_colmap_nb++
+				COL_SpecificCrossableSet(all)
+				ti_flag_ok = COL_LIB_Can_See_Actor(EVT_Pere, tv_ray_start_pos, tv_target_pos, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable + COL_C_Ray_use_SpecificCrossableSet)
+
+				// AFFICHAGE INFO VISION ===========================================================
+				if (DBG_Display_Vision)
+				{
+					if (ti_flag_ok)
+					{
+						if (EVT_Pere == o_main_actor)
+							tc_vision_color = 0x40000080
+		
+						DBG_RenderVector(tv_ray_start_pos, tv_target_pos - tv_ray_start_pos, 0xFF00)
+					}
+					else
+					{
+			 			COL_SpecificCrossableSet(all)
+			 			if (COL_RayObject_Vector(tv_ray_start_pos, tv_target_pos - tv_ray_start_pos, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable + COL_C_Ray_use_SpecificCrossableSet))
+		 					DBG_RenderVector(tv_ray_start_pos, COL_RayObject_PosGet() - tv_ray_start_pos, 0xFF)
+		 				else
+		 					DBG_RenderVector(tv_ray_start_pos, tv_target_pos - tv_ray_start_pos, 0xFF)
+					}
+				}
+				// FIN : AFFICHAGE INFO VISION ===========================================================
+
+				// ON TESTE SI L'ACTEUR N'EST PAS CACHE PAR DE L'HERBE
+				if (ti_flag_ok && PNJ_Raptor_Actor_Hided_By_Grass(ti_index, tv_ray_start_pos, tv_target_pos) )
+					ti_flag_ok = faux
+			}
+			else
+			{
+				ti_flag_ok = vrai
+			}
+
+			if (ti_flag_ok)
+			{
+				// ON CONSIDERE QUE CET ACTEUR N'EST PAS CACHE PAR UNE COLMAP OU DE L'HERBE	
+			
+				ai_perceived_seen[ti_index] = vrai
+				ai_perceived_status[ti_index] |= Ci_PERCEIVED_IDENTIFIED
+			
+				// EST-CE QUE CET ACTEUR EST DANS MON CONE DE DEPLACEMENT ?
+				if (MATH_LIB_ZoneInCone(OBJ_PosGet(), OBJ_SightGet(), Cf_Cos30, f_vision_near_in_move_dist, tv_target_pos, 1.0, vrai, tf_dot_product, 0, 0) )
+					ai_perceived_status[ti_index] |= Ci_PERCEIVED_NEAR_IN_MOVE_CONE
+		
+			}
+		}
+	}
+
+	if (ai_perceived_accessible[ti_index] && ai_perceived_seen[ti_index] && IsThis_ID_Humain(ai_perceived_ID[ti_index]))
+		EVENT_Info_SeenSet(EVT_InfoSeen_ID, vrai)
+}
+
+PNJ_Raptor_Check_Perceived_Actor()
+PNJ_Raptor_Backup_Check_Vision()
+
+if (MSG_GlobalIsValid(mid_best_interet) && i_perceived_best_actor_index == -1)
+{
+#ifndef _FINAL_
+//	if (DBG_Warning_Allowed)
+//		DBG_Warning("Disparition de cet acteur")
+
+	if (DBG_Log_Allowed)
+	{
+		DBG_TraceObject(EVENT_InteretTargetGet(mid_best_interet))
+		DBG_TraceString(" n'a plus d'évènement vision")
+		DBG_TraceEOL()
+	}
+#endif
+
+	PNJ_Raptor_Del_Interest()
+}
+
+
+if (raptor_type == C_ID_Tyranosaure)
+{
+	if (f_me_to_main_dist < 2.5)
+		AI_Execute("PNJ_Raptor_exec_hard_grab")
+}
+
+#ifdef SHOW_RASTER
+DBG_StopRaster(3)
+#endif

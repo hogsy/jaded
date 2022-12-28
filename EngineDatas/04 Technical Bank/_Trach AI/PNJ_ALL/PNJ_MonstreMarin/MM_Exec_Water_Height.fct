@@ -1,0 +1,42 @@
+object	to_camera
+vector	tv_pos
+float		tf_coef
+
+// Gestion de la hauteur des vagues en fonction du Z du mainactor
+if (WTR_activation)
+{
+	f_WTR_Waves_Height = WTR_Waves_Height
+
+	WTR_Enable(vrai)
+	WTR_SetF(Ci_WTR_Water_Height, WTR_Water_Height)
+
+	to_camera = VIEW_GetObject(0)
+	if (to_camera)
+	{
+		tv_pos = @to_camera OBJ_PosGet()
+		
+		tf_coef = MATH_AbsFloat(tv_pos.z - WTR_Water_Height)
+		
+		if (tf_coef > 50)
+		{
+			tf_coef = MATH_FloatMin((tf_coef - 50) / 150, 1)
+			tf_coef = 1 -tf_coef
+			
+			if (tf_coef)
+			{
+				// On est dans la zone où l'altitude modifie la hauteur dse vagues
+				WTR_SetF(Ci_WTR_Waves_Height, f_WTR_Waves_Height * tf_coef)
+			}
+			else
+			{
+				// On est au dessus de l'altitude max
+				WTR_SetF(Ci_WTR_Waves_Height, 0)
+			}
+		}
+		else
+		{
+			// On est dans la zone où l'eau est ok
+			WTR_SetF(Ci_WTR_Waves_Height, f_WTR_Waves_Height)
+		}
+	}
+}

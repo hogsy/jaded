@@ -1,0 +1,249 @@
+#include "H_defines.var"
+#include "H_action.var"
+
+int			ti_i, i, j
+int			ti_context
+float		tf_liferatio
+vector	tv_temp
+vector	tv_temp1
+int			x
+int			y
+vector	tv_meilleur
+float		tf_meilleur
+int			ti_capa
+object	to_obj, to_obj2
+float		tf_temp
+
+if(f_time_mort_jack > Cf_delai_mort)
+	AFE_NoDecrease = vrai
+
+@"univ" MENU_f_LockedDuring = 5.0
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_camera_animee = faux
+	AFE_SpeedDecrease = 1.0
+	i_flag_ressucite = faux
+	i_sort_etat = faux
+	o_healer_mort = LNK_ClientGet_Interaction( mid_healer_mort, faux, nofunc, nofunc, nofunc)
+	@get_global i_cam_blocked_rot = faux
+	@get_global i_cam_blocked_trans = faux
+	@get_global o_cam_cut = nobody
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_Mort)
+{
+	i_bk_color = WOR_BackColGet(0)
+	Humains_LeaveObjectInHand()
+	
+	if (i_snd_tommygun != -1) 
+	{
+		SND_Stop( i_snd_tommygun )
+		i_snd_tommygun = -1
+		SND_Stop( i_snd_tommygunB )
+		i_snd_tommygunB = -1
+	}
+	
+	i_fade_mort = -1
+
+	if(i_flag_va_mourrir)
+		i_fade_mort = LIBGFX_Fade(31, 0x00000000, 0xff000000, 0.2, 0.1, 6.0, 0.0, 0.0, i_prio_fade)
+	else
+		i_fade_mort = LIBGFX_Fade(31, 0x00000000, 0xff000000, 0.2, 1.0, 6.0, 0.0, 0.0, i_prio_fade)
+	
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Mort
+
+//	if(i_jack_meurt_si_je_meurt)
+		SIG_Send(SIG_C_TYPE_MORT, OBJ_Me())
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+		ai_SRV_ENABLE[ti_i] = faux
+	
+	if( MSG_GlobalIsValid(amid_SRV_LIAISON_ID[Ci_LNK_GRAB_RAPTOR]) && 
+		( LNK_GrabServeurVisionIDGet(amid_SRV_LIAISON_ID[Ci_LNK_GRAB_RAPTOR]) == C_ID_Tyranosaure 
+		|| LNK_GrabServeurVisionIDGet(amid_SRV_LIAISON_ID[Ci_LNK_GRAB_RAPTOR]) == C_ID_CrabeGeant ) )
+	{
+		ai_SRV_ENABLE[Ci_LNK_GRAB_RAPTOR] = vrai
+	}
+	
+	AI_Execute("H_exec_serveur_get")
+	
+
+	COL_ColMapActivationSet(none, all)
+	DYN_GravitySet(H_GRAVITY)
+	DYN_FrictionVectorSet(cvector(1.0, 1.0, 0.0))
+	AI_TrackStop(Ci_Track_Reflex)
+	
+	AI_CBDel(OBJ_Me(), CallBack_After_Blend, "H_callback_after_blend")
+
+	f_interet = 0.0
+	i_dir_soin = faux
+	f_meilleur_soin = 1000
+
+	f_time_start_etat = 0.0
+	v_blend_mort = cvector(0, 0, 1)
+	
+	if(i_flag_va_mourrir)
+		i_request_txt = GeneJak_C_die_fall 
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// Jack chute
+if( i_flag_va_mourrir)
+{
+	DYN_GravitySet(cvector(0,0,-1))
+	tf_temp = 5 * TIME_GetDt()
+	AFE_Brightness_1_cur = MATH_FloatBlend(@get_global Proc_AE_BrightnessGet(), 0.1, tf_temp)
+	AFE_ColorBalance_1_cur = MATH_FloatBlend(@get_global Proc_AE_ColorBalance1Get(), 1.0, tf_temp)
+	AFE_ColorBalance_2_cur = 0.5
+//	AFE_Blur_1_cur = MATH_FloatBlend(@get_global Proc_AE_BlurGet(), 0.8, tf_temp)
+	AFE_Contraste_1_cur = MATH_FloatBlend(@get_global Proc_AE_ContrasteGet(), 0, tf_temp)
+	AFE_Remanence_1_cur = MATH_FloatBlend(@get_global Proc_AE_RemanenceGet(), 0, tf_temp)
+	AFE_SpeedDecrease = 0.0
+	AFE_NoDecrease = vrai
+	@get_global f_game_speed = 0.25
+	
+	if(f_time_start_etat > 1.0)
+		STATS_Dying( 0 )
+}
+else
+{
+	AFE_MotionBlur_1_cur = MATH_FloatBlend(@get_global Proc_AE_MotionBlurGet(), 1.0, TIME_GetDt())
+}
+
+to_obj = AI_MainActorGet(C_ID_Joueur)
+
+
+// COMPORTEMENT =================================================================	
+
+
+// MORT MORT MORT
+i_can_tag = faux
+
+if(!i_flag_va_mourrir)
+{
+	if(!i_flag_ressucite)
+		SIG_Send(SIG_C_TYPE_MORT, OBJ_Me())
+	DYN_SpeedSetVector(Cv_NullVector)
+	
+	if(f_time_start_etat > 1.5)
+	{
+		// Cherche la direction dans laquelle la pente est la moins forte
+		if(!i_dir_soin)
+		{
+			tf_meilleur = 1000
+			i_dir_soin = vrai
+			for(x = -1; x < 2; x++)
+			{
+				for(y = -1; y < 2; y++)
+				{
+					if(x == 0 && y == 0) continue
+					tv_temp = OBJ_PosGet()
+					tv_temp.x += x
+					tv_temp.y += y
+					if(GRID_Blocked(tv_temp, faux)) 
+					{
+						tf_meilleur = 1000
+						break
+					}
+					
+					to_obj = COL_RayObject_Vector( tv_temp + cvector(0,0,2), cvector(0,0,-4), all, none, 0, COL_C_Ray_on_ColMap_NoCrossable | COL_C_Ray_use_SpecificCrossableSet)
+					if(to_obj)
+					{
+						tv_temp = COL_RayObject_PosGet()
+						if(MATH_AbsFloat(tv_temp.z - OBJ_PosGet().z) < tf_meilleur)
+						{
+							tv_meilleur = tv_temp
+							tf_meilleur = MATH_AbsFloat(tv_temp.z - OBJ_PosGet().z)
+						}
+					}
+				}
+			}
+		
+			if(tf_meilleur != 1000)
+			{
+				f_meilleur_soin = tf_meilleur
+				DBG_RenderVector(tv_meilleur, cvector(0,0,2), 0xF0F0FF)
+				tv_temp = tv_meilleur - OBJ_PosGet()
+				MATH_VecSetHorzNormalize(tv_temp)
+				tv_temp = MATH_VecRotate(tv_temp, Cv_VerticalVector, Cf_PiBy2)
+				OBJ_BankingGeneralSet(tv_temp, Cv_VerticalVector)
+				@get_joueur_cam OBJ_BankingGeneralSet(tv_temp, @get_joueur_cam OBJ_BankingGet())
+			}
+		}
+		
+		if(f_time_start_etat > 4.0)
+		{
+			if(!o_healer_mort || f_meilleur_soin > 0.5) 
+			{
+				STATS_Dying( 0 )
+				return
+			}		
+		}
+
+		if(o_healer_mort && @get_Humain_path o_healer_mort i_flag_jesoigne)
+		{	
+			if(!i_flag_ressucite)
+			{
+				SND_M_SetGameMode( SND_Cte_ModePlaying)
+				SND_M_SetGameSubMode(0)
+				
+				@get_joueur_cam ACT_ActionSet(4)
+				@get_global i_cam_blocked_rot = vrai
+				@get_global v_cam_original_sight = OBJ_SightGet()
+				@get_global f_cam_blocked_x = 0.01
+				@get_global f_cam_blocked_z = 0.01
+				
+				f_time_mort_jack = 0
+				i_flag_crouch = faux
+				AFE_SpeedDecrease = 0.1			// Speed de decrease
+				i_flag_ressucite = vrai
+				GFX_Del(i_fade_mort)
+				LIBGFX_Fade(31, 0xff000000, 0x00000000, 0.0, 1.0, 4.0, 0.0, 0.0, i_prio_fade + 10)			
+			}
+			OBJ_SightGeneralSet(@get_joueur_cam OBJ_SightGet(), Cv_VerticalVector)
+		}
+		else if(@"univ" LIFE_HumainEtat[i_id_humain] == Life_ETAT_Normal)
+		{
+			AI_TrackChange(Ci_Track_Reflex, "H_TRACK_Reflex")
+			macro_change_etat("H_ETAT_FPS")
+		}
+		else if(f_time_start_etat > 8.0 && ! i_flag_ressucite)
+		{
+			STATS_Dying( 0 )
+			return
+		}
+		else
+		{
+//			tv_temp = @o_healer_mort OBJ_PosGet() - OBJ_PosGet()
+//			OBJ_SightGeneralSet(tv_temp, Cv_VerticalVector)
+		}
+	}
+}
+
+
+// ACTION MORT ==========================
+if(BambouEnMain())
+	ACT_ActionSet(5)
+else if(JetableEnMain())
+	ACT_ActionSet(6)
+else
+	ACT_ActionSet(0)
+
+

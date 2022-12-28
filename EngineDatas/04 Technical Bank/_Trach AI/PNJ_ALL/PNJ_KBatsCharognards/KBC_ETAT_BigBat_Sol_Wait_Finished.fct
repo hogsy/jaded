@@ -1,0 +1,70 @@
+#include "KBC_defines.var"
+
+vector	tv_zdm_perfect_size
+vector	tv_zdm_offset
+vector	tv_inclinaison
+
+
+// SORTIE ETAT
+if (i_sort_etat)
+{
+	OBJ_CapaSet(none, CAPA_BigBat_Attente_Finish)
+	i_sort_etat = faux
+	return
+}
+
+// ENTREE ETAT
+if (i_etat_courant != ETAT_Agonie)
+{
+	i_etat_ancien_ancien = i_etat_ancien
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Agonie
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	KBC_DBG_Trace(i_DBG_trace_etat, "etat big bat sol wait finished")
+	
+	AI_Execute("KBC_exec_dyn_on")
+	
+	OBJ_CapaSet(CAPA_BigBat_Attente_Finish, none)
+	
+	v_paf_offset = Cv_NullVector				// plus de recul !!! (anim spécifique)
+	ACT_ActionSet(ACTION_Agonie_Avant_Finished)
+	KBC_action_frequency_set(1.0)
+	KBC_reset_attaque()
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ===========================================================================
+
+// attend d'etre grabbée en finish (reflex)
+
+// test KONG part en mashing au lieu de venir me finir => teleport et baaaaaaastooooooon !!!!! (reflex)
+
+
+// COMPORTEMENT =====================================================================
+
+i_flag_neck = vrai
+v_look_pos = @o_Kong OBJ_PosGet()
+
+tv_zdm_perfect_size = Cv_ZDM_Sol
+tv_zdm_offset = cvector(0.0, 0.0, Cv_ZDM_Sol.x)
+if( COL_CollideType(COL_C_Ground) && (v_zdm_cur_offset ==  tv_zdm_offset) && (v_zdm_cur_size == tv_zdm_perfect_size))
+	DYN_Off()			// Dyna active jusqu'à ce que la bat touche le sol
+
+
+if( i_splash_flag )
+	tv_inclinaison = Cv_VerticalVector
+else if( ! MATH_VecNullEpsilon(v_ground_normale) )
+	tv_inclinaison = v_ground_normale
+else
+	tv_inclinaison = Cv_VerticalVector
+OBJ_BankingSet(MATH_VecBlendRotate(OBJ_BankingGet(), tv_inclinaison, 10.0 * TIME_GetDt()))
+

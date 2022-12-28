@@ -1,0 +1,100 @@
+vector		tv_wind, tv_expulsion_dir, POS_FOR_GFX, XAX, YAX
+float			IntensiteEjection, f_rot_angle
+
+vector	pv_temp
+object	to_light_n_smoke_K
+float		tf_facteur
+
+
+
+	//------------------------------------------------------------------------------------------------------------------
+	//------------------------------------------------------------------------------------------------------------------
+	// 						GENERATEUR DE PARCITULES 1
+	//------------------------------------------------------------------------------------------------------------------
+	//------------------------------------------------------------------------------------------------------------------
+if (i_GFX_Spawn1 == -1)
+{
+	i_GFX_Spawn1 = GFX_Add( 13)
+	
+	GFX_MaterialSet( i_GFX_Spawn1, get_SFX_light_and_smoke, -1)
+	GFX_Seti( i_GFX_Spawn1, 13101,45)														// ID de material du SFX Lgt&Smk
+	GFX_FlagSet( i_GFX_Spawn1, 0 , 1)
+	GFX_FlagSet( i_GFX_Spawn1, 2 , 1)
+	GFX_Seti( i_GFX_Spawn1, 13100,25)														// Nombre maxi de sprites
+	GFX_Seti( i_GFX_Spawn1, 13106,25) 														// Nombre de sprites à générer
+	GFX_Setf( i_GFX_Spawn1, 13003,0.400000)											// duree de vie phase 1
+	GFX_Setf( i_GFX_Spawn1, 13004,0.55000)												// duree de vie phase 2 
+	GFX_Setf( i_GFX_Spawn1, 13012,0.750000)											// Life time random
+	GFX_Seti( i_GFX_Spawn1, 13107,0)														// Tri des sprites
+	GFX_Setf( i_GFX_Spawn1, 13000,0.3250000)											// Vitesse de croissance min
+	GFX_Setf( i_GFX_Spawn1, 13001,0.900000)											// Vitesse de croissance max
+	GFX_Setf( i_GFX_Spawn1, 13002,0.0100000)											// Friction sur la croissance
+	GFX_Setf( i_GFX_Spawn1, 13005,0.100000)											// Taille min à la création
+	GFX_Setf( i_GFX_Spawn1, 13006,0.800000)											// Taille max à la création
+	GFX_Setf( i_GFX_Spawn1, 13007,-1.000000)											// Gravité
+	GFX_Setv( i_GFX_Spawn1, 13203,cvector(0.10, 0.10, 0.10))						// Friction sur chaque axe
+	GFX_Seti( i_GFX_Spawn1 , 13103,0xB9FFFFFF)										// Couleur phase 1
+	GFX_Seti( i_GFX_Spawn1 , 13104,0xB9FFFFFF)										// Couleur phase 2
+	GFX_Seti( i_GFX_Spawn1 , 13105,0x00FFFFFF)										// Couleur phase 3
+	GFX_Setf( i_GFX_Spawn1, 13009,-2.5000000)											// Vitesse min
+	GFX_Setf( i_GFX_Spawn1, 13010,-5.000000)											// Vitesse max
+	GFX_Setf( i_GFX_Spawn1, 13011,-1000)													// Hauteur du sol
+	GFX_Setv( i_GFX_Spawn1, 13200, OBJ_PosGet() + cvector(0.00000, 0.00000, 0.00000))	//Position de création
+	GFX_Setv( i_GFX_Spawn1, 13201,cvector(0.00000, 0.00000, -0.075000))		// Vitesse min sur chaque axe
+	GFX_Setv( i_GFX_Spawn1, 13202,cvector(0.00000, 0.00000, -0.175000))		// Vitesse max sur chaque axe
+	GFX_Setv( i_GFX_Spawn1, 13204,cvector(0.00000, 0.00000, 0.00000))			// Vent
+	GFX_Setv( i_GFX_Spawn1, 13205,cvector(0.00000, 0.00000, 0.00000))			// Vitesse de la position de création
+	GFX_Setv( i_GFX_Spawn1, 13206,cvector(0.00000, 0.00000, 0.00000))			// Friction de la position
+	tf_facteur = MATH_RandFloat(1.0,2.0)
+	GFX_Setv( i_GFX_Spawn1, 13207,0.150000 * OBJ_HorizonGet()*tf_facteur)	// Volume de création 1
+	GFX_Setv( i_GFX_Spawn1, 13208,0.150000 * OBJ_SightGet()*tf_facteur)		// Volume de création 2
+	GFX_Setv( i_GFX_Spawn1, 13209,0.100000 * OBJ_BankingGet()*tf_facteur)	// Volume de création 3
+	GFX_Setf( i_GFX_Spawn1, 13008,0.000000)											// Taux de génération
+
+}
+
+
+//------------------------------------------------------------------------------------------------------------------
+	//------------------------------------------------------------------------------------------------------------------
+	// 						GENERATEUR DE PARCITULES 2
+	//------------------------------------------------------------------------------------------------------------------
+	//------------------------------------------------------------------------------------------------------------------
+if (i_GFX_Spawn2== -1)
+{
+	i_GFX_Spawn2= GFX_Add( 13)
+	
+	GFX_MaterialSet( i_GFX_Spawn2, get_SFX_light_and_smoke, -1)
+	GFX_Seti( i_GFX_Spawn2, 13101,45)														// ID de material du SFX Lgt&Smk
+	GFX_FlagSet( i_GFX_Spawn2, 0 , 1)
+	GFX_FlagSet( i_GFX_Spawn2, 2 , 1)
+	GFX_Seti( i_GFX_Spawn2, 13100,10)														// Nombre maxi de sprites
+	GFX_Seti( i_GFX_Spawn2, 13106,10) 													// Nombre de sprites à générer
+	GFX_Setf( i_GFX_Spawn2, 13003,0.400000)											// duree de vie phase 1
+	GFX_Setf( i_GFX_Spawn2, 13004,0.750000)											// duree de vie phase 2 
+	GFX_Setf( i_GFX_Spawn2, 13012,0.750000)											// Life time random
+	GFX_Seti( i_GFX_Spawn2, 13107,0)														// Tri des sprites
+	GFX_Setf( i_GFX_Spawn2, 13000,0.45000)											// Vitesse de croissance min
+	GFX_Setf( i_GFX_Spawn2, 13001,2.00000)											// Vitesse de croissance max
+	GFX_Setf( i_GFX_Spawn2, 13002,0.0200000)											// Friction sur la croissance
+	GFX_Setf( i_GFX_Spawn2, 13005,0.10000)											// Taille min à la création
+	GFX_Setf( i_GFX_Spawn2, 13006,0.400000)											// Taille max à la création
+	GFX_Setf( i_GFX_Spawn2, 13007,-2.500000)											// Gravité
+	GFX_Setv( i_GFX_Spawn2, 13203,cvector(0.0750, 0.0750, 0.0150))				// Friction sur chaque axe
+	GFX_Seti( i_GFX_Spawn2, 13103,0xFFFFFFFF)										// Couleur phase 1
+	GFX_Seti( i_GFX_Spawn2, 13104,0xB9FFFFFF)										// Couleur phase 2
+	GFX_Seti( i_GFX_Spawn2, 13105,0x00FFFFFF)										// Couleur phase 3
+	GFX_Setf( i_GFX_Spawn2, 13009,-2.5000000)											// Vitesse min
+	GFX_Setf( i_GFX_Spawn2 , 13010,-5.000000)											// Vitesse max
+	GFX_Setf( i_GFX_Spawn2 , 13011,-1000)												// Hauteur du sol
+	GFX_Setv( i_GFX_Spawn2 , 13200, OBJ_PosGet() + cvector(0.00000, 0.00000, 0.00000))	//Position de création
+	GFX_Setv( i_GFX_Spawn2, 13201,cvector(0.00000, 0.00000, -0.15000))		// Vitesse min sur chaque axe
+	GFX_Setv( i_GFX_Spawn2, 13202,cvector(0.00000, 0.00000, -0.35000))		// Vitesse max sur chaque axe
+	GFX_Setv( i_GFX_Spawn2, 13204,cvector(0.00000, 0.00000, 0.00000))		// Vent
+	GFX_Setv( i_GFX_Spawn2, 13205,cvector(0.00000, 0.00000, 0.00000))		// Vitesse de la position de création
+	GFX_Setv( i_GFX_Spawn2, 13206,cvector(0.00000, 0.00000, 0.00000))		// Friction de la position
+	tf_facteur = MATH_RandFloat(0.1,0.4)
+	GFX_Setf( i_GFX_Spawn2, 13008,0.000000)											// Taux de génération
+
+}
+
+AI_TrackCurChange("SFX_Spawn_INIT")

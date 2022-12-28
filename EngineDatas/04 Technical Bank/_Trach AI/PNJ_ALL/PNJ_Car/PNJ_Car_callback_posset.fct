@@ -1,0 +1,32 @@
+#include "PNJ_Car_defines.var"
+
+Include_UltraProcedure_Header
+
+vector		tv_pos
+vector		tv_sight
+vector		tv_horizon
+vector		tv_banking
+vector		tv_me_to_essieu
+
+if (o_grabbed_actor_KK && @o_grabbed_actor_KK Proc_KK_Grabbed_Can_I_Posset())
+{
+	tv_pos = @o_grabbed_actor_KK Proc_KK_Grab_PosGet( 0 )
+	tv_sight = @o_grabbed_actor_KK Proc_KK_Grab_SightGet( 0 )
+	tv_banking = @o_grabbed_actor_KK  Proc_KK_Grab_BankingGet( 0 )
+
+	tv_horizon = @o_grabbed_actor_KK  Proc_KK_Grab_HorizonGet(0) //MATH_VecCrossProduct(tv_banking, tv_sight)
+//	tv_horizon *= MATH_FloatSign(MATH_VecDotProduct(tv_horizon, @o_grabbed_actor_KK  OBJ_SightGet()))
+
+//	tv_pos += X_offset * tv_horizon
+//	tv_pos += Y_offset * tv_sight
+//	tv_pos += Z_offset * tv_banking
+
+	tv_pos -= 1.2 * tv_horizon
+	tv_pos -= 0.3 * tv_sight
+
+	OBJ_SightGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), tv_horizon, f_time_start_etat * 2.0), MATH_VecBlendRotate(OBJ_BankingGet(), tv_sight, f_time_start_etat * 2.0))
+	OBJ_PosSet(MATH_VecBlend(OBJ_PosGet(), tv_pos, f_time_start_etat * 2.0))
+}
+
+PNJ_Car_Burn()
+

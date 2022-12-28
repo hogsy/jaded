@@ -1,0 +1,116 @@
+#include	"k_define.var"
+
+int				ti_depl_horiz
+int				ti_depl_vert
+vector		tv_pos
+vector		tv_joy_L
+vector		tv_joy_R
+float			tf_joy_R_norm
+float			tf_sign
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	// réactivation
+	COL_ColSetActivationSet(all, none)
+	COL_ColMapActivationSet(all, none)
+	AI_TrackChange(Ci_Track_TagOff, "k_tag_off")
+	AI_TrackChange(Ci_Track_TagOn, "k_tag_on")
+//	Ne pas couper la CB sinon bug ordre des callbacks pour posiionnement indy3rd !!!
+//	AI_CBAdd(OBJ_Me(), CallBack_After_Blend, "k_callback_after_blend")
+	DYN_On()
+	DYN_FlagsSet(DYN_C_BasicForces + DYN_C_HorizontalGrounds + DYN_C_VectorFriction + DYN_C_GlobalFriction + DYN_C_SkipFrictionWhenSpeedFromAnim, none)
+	DYN_GravitySet(Cv_Kong_Gravity)
+	ODE_Enable(vrai)
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_Kong_cheat_mode) 
+{
+	i_etat_courant = ETAT_Kong_cheat_mode
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	OBJ_BankingGeneralSet(@get_Kamera OBJ_SightGet(), Cv_VerticalVector)
+
+	fct_last_etat = AI_TrackCurGet()
+
+	// CAMERA CAMERA CAMERA
+	@get_global i_kong_camera_status = Ci_Kcamera_deplacement
+	// CAMERA CAMERA CAMERA
+
+	// GRAB CLIENT ACCEPT
+	ai_SRV_ENABLE[Ci_LNK_KKFINISH_ON_KONG] = faux
+	
+	// désactivation
+	COL_ColSetActivationSet(none, all)
+	COL_ColMapActivationSet(none,all)
+	AI_TrackStop(Ci_Track_TagOff)
+	AI_TrackStop(Ci_Track_TagOn)
+//	Ne pas couper la CB sinon bug ordre des callbacks pour posiionnement indy3rd !!!
+//	AI_CBDel(OBJ_Me(), CallBack_After_Blend, "k_callback_after_blend")	
+	DYN_Off()
+	ODE_Enable(faux)
+	ACT_ActionSet(Ci_Kanim_Attente)
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// COMPORTEMENT ===========================================================================
+
+//Str_DisplayTextOnce("CHEAT MODE", Cv_NullVector)
+
+
+// Joy Left pour déplacement horizontal ======================================
+ti_depl_horiz = faux
+tv_joy_L = glob_joyvector_get
+if( f_joy_norm )
+{
+	ti_depl_horiz = vrai
+//	Str_DisplayTextOnce("horizontal", cvector(0,0.1,0))
+	DBG_RenderVector(OBJ_PosGet(), tv_joy_L * 5, color_rouge)
+}
+
+// Joy Right pour déplacement vertical =======================================
+ti_depl_vert = faux
+tv_joy_R = IO_JoyGetMove1()
+if (MATH_VecNullToler(tv_joy_R, tolerance_joynull))
+	tf_joy_R_norm = 0.0
+else
+	tf_joy_R_norm = MATH_VecNorm(tv_joy_R) - tolerance_joynull
+if( tf_joy_R_norm && MATH_AbsFloat(tv_joy_R.y) > 0.35 )
+{
+	ti_depl_vert = vrai
+//	Str_DisplayTextOnce("vertical", cvector(0,0.2,0))
+	DBG_RenderVector(OBJ_PosGet(), tv_joy_R * 5, color_vert)
+	tv_joy_R = cvector(0,0,tv_joy_R.y - (0.35 * MATH_FloatSign(tv_joy_R.y)) )
+}
+
+if( tf_joy_R_norm && MATH_AbsFloat(tv_joy_R.x) > 0.35 )
+{
+	OBJ_RotateLocalZ((tv_joy_R.x - (0.35 * MATH_FloatSign(tv_joy_R.x)) ) * TIME_GetDt() * -5)
+}
+
+// Nouvelle position ====================================================
+tv_pos = OBJ_PosGet()
+if( ti_depl_horiz )
+{
+	tv_pos.x += tv_joy_L.x * TIME_GetDt() * 80
+	tv_pos.y += tv_joy_L.y * TIME_GetDt() * 80
+}
+if( ti_depl_vert)
+	tv_pos.z += tv_joy_R.z * TIME_GetDt() * 80
+OBJ_PosSet(tv_pos)
+
+// POUR KONG QUI DOIT RESETER LES INFO CHAQUE TRAME
+Proc_KongFight_TargetReset()												

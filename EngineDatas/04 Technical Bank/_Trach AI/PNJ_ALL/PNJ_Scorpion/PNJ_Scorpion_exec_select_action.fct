@@ -1,0 +1,50 @@
+#include "PNJ_Scorpion_defines.var"
+
+int				ti_flag_orientation
+
+float			tf_coef
+
+vector		tv_new_sight
+vector		tv_new_banking
+
+ti_flag_orientation = faux
+
+if (i_flag_dont_change_action)
+{
+	// On ne fait rien
+}
+else if (f_joy_norm)
+{
+	ACT_ActionSet(Action_Marche)
+
+	if (! ACT_ActionIsTransition()	)
+	{
+		ti_flag_orientation = vrai
+		ACT_LIB_ActionFrequencyMultiply(f_action_speed_coef)
+	}
+}
+else
+{
+	if (MSG_GlobalIsValid(mid_best_interet))
+		ti_flag_orientation = vrai
+
+	ACT_ActionSet(Action_Attente)
+}
+
+if (ti_flag_orientation)
+{
+	if (MATH_VecDotProduct(OBJ_SightGet(), v_joy_dir) > 0.0)
+		tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), v_joy_dir, 6.0 * TIME_GetDt())
+	else
+		tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), MATH_FloatSign(MATH_VecDotProduct(v_joy_dir, OBJ_HorizonGet())) * OBJ_HorizonGet(), 6.0 * TIME_GetDt())
+
+	tf_coef = MATH_FloatMax(MATH_VecDotProduct(DYN_SpeedGetVector(), OBJ_SightGet()), 0.0)
+	tf_coef = MATH_FloatLimit(tf_coef, Cf_PiBy2, Cf_2Pi)
+	tv_new_sight = MATH_VecInCone(tv_new_sight, OBJ_SightGet(), tf_coef * TIME_GetDt(), 0)
+}
+else
+	tv_new_sight = OBJ_SightGet()
+	
+tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), v_ground_normale, 6.0 * TIME_GetDt())
+
+OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking)

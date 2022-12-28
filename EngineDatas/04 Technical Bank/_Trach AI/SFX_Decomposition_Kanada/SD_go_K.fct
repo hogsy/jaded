@@ -1,0 +1,14 @@
+OBJ_LIB_Detach_Javelin(o_Target)
+
+// Evolution de l'ALPHA !
+f_alpha_peau -= MATH_FloatMin(f_alpha_peau, 255 * TIME_GetDt() / f_Duration)
+if (f_alpha_peau < 220 )
+{
+	f_alpha_viande -= MATH_FloatMin(f_alpha_viande, 255 * TIME_GetDt() / f_Duration)
+	if (!f_alpha_viande)
+	{
+		@o_Target OBJ_Destroy()
+		//@o_Target OBJ_CapaSet(OBJ_Capa_15, none)
+		OBJ_Destroy()
+	}
+}

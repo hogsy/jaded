@@ -1,0 +1,376 @@
+#include "ROOT/EngineDatas/04 Technical Bank/AI Models/Global Library/menu_constant.var"
+
+{
+	
+int i
+
+//========================================
+//                           SOUND
+//========================================
+SND_M_SetGameMode( SND_Cte_ModePlaying)
+SND_M_SetGameSubMode(0)
+SND_M_SetUserVol( SND_Cte_UserGrpMaster,  1.0 )
+SND_M_SetUserVol( SND_Cte_UserGrpDialog,  1.0 )
+SND_M_SetUserVol( SND_Cte_UserGrpMusic,  1.0 )
+SND_M_SetUserVol( SND_Cte_UserGrpSpecialFX, 1.0 )
+
+@"univ" SND_gi_ShowSubtitle = MENU_SUBTITLE
+@"univ" Cheat_i_Flags = 0
+
+#ifdef _JAPAN_
+@"univ" SND_gi_ShowSubtitle = 1
+#endif
+
+if ( @"univ" MENU_LangVost )
+	@"univ" SND_gi_ShowSubtitle = 1
+	
+if ( !@"univ" Engine )
+{
+	@"univ" SND_gi_ShowSubtitle = 1
+	@"univ" Cheat_i_Flags |= CHEAT_MenuCheat
+	@"univ" Cheat_i_Flags |= CHEAT_MenuReinit
+}
+
+@"univ" MENUDEMO_QuitTimer = 0
+
+//========================================
+//                           RAYMAN
+//========================================
+@"univ" i_RM_RideMontureID = 0			// Pas de monture a l'init
+
+//========================================
+//                           MAP PROGRESSION
+//========================================
+for ( i = 0; i < 25; i++)
+	@"univ" MENUDEMO_Loaded[ i ] = 0
+
+#define UNIVPROG_AddData( _map, _es, _vignette, _text, _jack_arme, _jack_mun, _hayes_arme, _hayes_mun )\
+	@"univ" PROG_ai_MapId[ @"univ" PROG_i_MapNumber ] = _map\
+	@"univ" PROG_ai_MapES[ @"univ" PROG_i_MapNumber ] = _es\
+	@"univ" PROG_ai_MapVignette[ @"univ" PROG_i_MapNumber ] = _vignette\
+	@"univ" PROG_ai_MapTexte[ @"univ" PROG_i_MapNumber ] = _text\
+	@"univ" PROG_ai_MapJackArme[ @"univ" PROG_i_MapNumber ] = _jack_arme\
+	@"univ" PROG_ai_MapJackMunition[ @"univ" PROG_i_MapNumber ] = _jack_mun\
+	@"univ" PROG_ai_MapHayesArme[ @"univ" PROG_i_MapNumber ] = _hayes_arme\
+	@"univ" PROG_ai_MapHayesMunition[ @"univ" PROG_i_MapNumber ] = _hayes_mun\
+	@"univ" PROG_i_MapNumber++
+
+
+@"univ" PROG_i_MapCur = 0
+@"univ" PROG_i_MapNumber = 0
+
+//UNIVPROG_AddData( 100, 	0, 		17,	17,	0, 	0, 											0, 0)
+//UNIVPROG_AddData( 101, 	1, 		0, 		0,		0, 	0, 											Ci_weapon_ID_colt, 50)
+//UNIVPROG_AddData( 201, 	1, 		1, 		1, 		Ci_weapon_ID_shotgun,	5,			0,0) 
+//UNIVPROG_AddData( 203, 	1, 		2, 		2, 		Ci_weapon_ID_colt, 	20, 				Ci_weapon_ID_sniper_rifle, 25)
+//UNIVPROG_AddData( 204, 	1, 		3, 		3, 		Ci_weapon_ID_sniper_rifle, 	20, 	Ci_weapon_ID_sniper_rifle, 65)
+//UNIVPROG_AddData( 301, 	1, 		4, 		4, 		0,0,											0,0)
+//UNIVPROG_AddData( 302, 	1, 		5, 		5, 		0,0,											0,0)
+//UNIVPROG_AddData( 303, 	1, 		6, 		6,		Ci_weapon_ID_colt, 5, 					Ci_weapon_ID_tommy_gun, 100)
+//UNIVPROG_AddData( 305, 	1, 		7, 		7, 		Ci_weapon_ID_tommy_gun, 30, 		0, 0 )
+//UNIVPROG_AddData( 306, 	1, 		8, 		8, 		Ci_weapon_ID_tommy_gun, 10, 		0, 0)
+//UNIVPROG_AddData( 304, 	1, 		9, 		9, 		0,0,											0,0)
+//UNIVPROG_AddData( 401, 	1, 		10, 	10, 	Ci_weapon_ID_tommy_gun, 5, 		0, 0)
+//UNIVPROG_AddData( 402, 	1, 		11, 	11, 	Ci_weapon_ID_sniper_rifle, 5, 		Ci_weapon_ID_shotgun, 16)
+//UNIVPROG_AddData( 403, 	1, 		12, 	12, 	Ci_weapon_ID_sniper_rifle, 1, 		Ci_weapon_ID_shotgun, 10 )
+//UNIVPROG_AddData( 404, 	1, 		13, 	13, 	Ci_weapon_ID_shotgun,5,				0,0)
+//UNIVPROG_AddData( 501, 	1, 		14, 	14, 	Ci_weapon_ID_sniper_rifle, 45, 		Ci_weapon_ID_colt, 150 )
+//UNIVPROG_AddData( 502, 	1, 		15, 	15, 	Ci_weapon_ID_colt, 50, 				Ci_weapon_ID_sniper_rifle, 50)
+//UNIVPROG_AddData( 504, 	1, 		16, 	16, 	0,0,											0,0)
+//UNIVPROG_AddData( 702, 	1, 		18, 	18, 	Ci_weapon_ID_colt, 10, 				Ci_weapon_ID_colt, 10)
+//UNIVPROG_AddData( 705, 	1, 		19, 	19,	0,0,											0,0)
+//UNIVPROG_AddData( 901, 	1, 		20, 	20,	0,0,											0,0)
+//UNIVPROG_AddData( 1002, 	1,		21, 	21,	0,0,											0,0)
+//UNIVPROG_AddData( 1101,	1,		22, 	22,	0,0,											0,0)
+//UNIVPROG_AddData( 1200, 	1,		23, 	23,	0,0,											0,0)
+//UNIVPROG_AddData( 1201, 	1,		38, 	38,	0,0,											0,0)
+//UNIVPROG_AddData( 703, 	1,		24, 	24, 	0,0, 											0,0)
+//UNIVPROG_AddData( 1401, 	1, 		25, 	25,	Ci_weapon_ID_sniper_rifle, 5, 		Ci_weapon_ID_sniper_rifle, 5)
+//UNIVPROG_AddData( 1402, 	1, 		26, 	26,	0,0,											0,0)
+//UNIVPROG_AddData( 1501, 	1, 		27, 	27,	Ci_weapon_ID_sniper_rifle, 5, 		Ci_weapon_ID_sniper_rifle, 5)
+//UNIVPROG_AddData( 1701, 	1, 		28, 	28,	0,0,											0,0)
+//UNIVPROG_AddData( 1702, 	1, 		29, 	29,	0,0,											0,0)
+//UNIVPROG_AddData( 1703, 	1, 		30, 	30,	0,0,											0,0)
+//UNIVPROG_AddData( 1801, 	1, 		31, 	31,	0,0,											0,0)
+//UNIVPROG_AddData( 1803, 	1, 		32, 	32,	0,0,											0,0)
+//UNIVPROG_AddData( 1804, 	1, 		33, 	33,	0,0,											0,0)
+//UNIVPROG_AddData( 1805, 	1, 		34, 	34,	0,0,											0,0)
+//UNIVPROG_AddData( 1901, 	1, 		35, 	35,	0,0,											0,0)
+//UNIVPROG_AddData( 1902, 	1, 		36, 	36,	0,0,											0,0)
+//UNIVPROG_AddData( 2001, 	1, 		37, 	37,	0,0,											0,0)
+//UNIVPROG_AddData( 2003, 	1, 		39, 	39,	0,0,											0,0)
+//UNIVPROG_AddData( 2004, 49, 	40, 	40,	0,0,											0,0)
+//UNIVPROG_AddData( 7, 		0, 		41, 	41,	0,0,											0,0)
+
+//========================================
+//                           WEAPON DATA
+//========================================
+
+//for(i = 0; i < C_ID_Marin_dernier; i++)
+//{
+//	@"univ" i_weapon_ammunition_max[Ci_weapon_ID_colt][i] = 30000 * Ci_colt_clip_size
+//	@"univ" i_weapon_ammunition_max[Ci_weapon_ID_tommy_gun][i] = 30000 * Ci_tommy_gun_clip_size
+//	@"univ" i_weapon_ammunition_max[Ci_weapon_ID_shotgun][i] = 30000 * Ci_shotgun_clip_size
+//	@"univ" i_weapon_ammunition_max[Ci_weapon_ID_sniper_rifle][i] = 30000 * Ci_sniper_rifle_clip_size
+//}
+//@"univ" i_weapon_ammunition_max[Ci_weapon_ID_colt][C_ID_Jimmy] = 30000 * Ci_colt_clip_size
+//@"univ" i_weapon_ammunition_max[Ci_weapon_ID_tommy_gun][C_ID_Jimmy] = 30000 * Ci_tommy_gun_clip_size
+//@"univ" i_weapon_ammunition_max[Ci_weapon_ID_shotgun][C_ID_Jimmy] = 30000 * Ci_shotgun_clip_size
+//@"univ" i_weapon_ammunition_max[Ci_weapon_ID_sniper_rifle][C_ID_Jimmy] = 30000 * Ci_sniper_rifle_clip_size
+//
+//// --------( COLT )---------
+//@"univ" Weapon_af_pointblankrange[ Ci_weapon_ID_colt] = Cf_colt_range_pointblank
+//@"univ" Weapon_af_middlerange[ Ci_weapon_ID_colt] = Cf_colt_range_medium
+//@"univ" Weapon_af_range[ Ci_weapon_ID_colt] = Cf_colt_range
+//@"univ" Weapon_af_Damage[ Ci_weapon_ID_colt][0] = Cf_colt_paf_pointblank
+//@"univ" Weapon_af_Damage[ Ci_weapon_ID_colt][1] = Cf_colt_paf
+//@"univ" Weapon_af_Damage[ Ci_weapon_ID_colt][2] = Cf_colt_paf_far
+//@"univ" Weapon_ai_clipsize[ Ci_weapon_ID_colt] = Ci_colt_clip_size
+//@"univ" Weapon_ai_slottaken[ Ci_weapon_ID_colt] = 1
+//
+//// --------( TOMMY GUN )---------
+//@"univ" Weapon_af_pointblankrange[ Ci_weapon_ID_tommy_gun] = Cf_tommy_gun_range_medium
+//@"univ" Weapon_af_middlerange[ Ci_weapon_ID_tommy_gun] = Cf_tommy_gun_range_medium
+//@"univ" Weapon_af_range[ Ci_weapon_ID_tommy_gun] = Cf_tommy_gun_range
+//@"univ" Weapon_af_Damage[ Ci_weapon_ID_tommy_gun][0] = Cf_tommy_gun_paf_pointblank
+//@"univ" Weapon_af_Damage[ Ci_weapon_ID_tommy_gun][1] = Cf_tommy_gun_paf
+//@"univ" Weapon_af_Damage[ Ci_weapon_ID_tommy_gun][2] = Cf_tommy_gun_paf_far
+//@"univ" Weapon_ai_clipsize[ Ci_weapon_ID_tommy_gun] = Ci_tommy_gun_clip_size
+//@"univ" Weapon_ai_slottaken[ Ci_weapon_ID_tommy_gun] = 2
+//
+//// --------( SHOTGUN )---------
+//@"univ" Weapon_af_pointblankrange[ Ci_weapon_ID_shotgun] = Cf_shotgun_range_pointblank
+//@"univ" Weapon_af_middlerange[ Ci_weapon_ID_shotgun] = Cf_shotgun_range_medium
+//@"univ" Weapon_af_range[ Ci_weapon_ID_shotgun] = Cf_shotgun_range
+//@"univ" Weapon_af_Damage[ Ci_weapon_ID_shotgun][0] = Cf_shotgun_paf_pointblank
+//@"univ" Weapon_af_Damage[ Ci_weapon_ID_shotgun][1] = Cf_shotgun_paf
+//@"univ" Weapon_af_Damage[ Ci_weapon_ID_shotgun][2] = Cf_shotgun_paf_far
+//@"univ" Weapon_ai_clipsize[ Ci_weapon_ID_shotgun] = Ci_shotgun_clip_size
+//@"univ" Weapon_ai_slottaken[ Ci_weapon_ID_shotgun] = 1
+//
+//// --------( SNIPER RIFLE )---------
+//@"univ" Weapon_af_pointblankrange[ Ci_weapon_ID_sniper_rifle] = Cf_sniper_rifle_range_pointblank
+//@"univ" Weapon_af_middlerange[ Ci_weapon_ID_sniper_rifle] = Cf_sniper_rifle_range_medium
+//@"univ" Weapon_af_range[ Ci_weapon_ID_sniper_rifle] = Cf_sniper_rifle_range
+//@"univ" Weapon_af_Damage[ Ci_weapon_ID_sniper_rifle][0] = Cf_sniper_rifle_paf_pointblank
+//@"univ" Weapon_af_Damage[ Ci_weapon_ID_sniper_rifle][1] = Cf_sniper_rifle_paf
+//@"univ" Weapon_af_Damage[ Ci_weapon_ID_sniper_rifle][2] = Cf_sniper_rifle_paf_far
+//@"univ" Weapon_ai_clipsize[ Ci_weapon_ID_sniper_rifle] = Ci_sniper_rifle_clip_size
+//@"univ" Weapon_ai_slottaken[ Ci_weapon_ID_sniper_rifle] = 0
+//
+//// --------( GRENADE )---------
+//@"univ" Weapon_af_pointblankrange[ Ci_weapon_ID_grenade] = Cf_grenade_range_pointblank
+//@"univ" Weapon_af_middlerange[ Ci_weapon_ID_grenade] = Cf_grenade_range_medium
+//@"univ" Weapon_af_range[ Ci_weapon_ID_grenade] = Cf_grenade_range
+//@"univ" Weapon_af_Damage[ Ci_weapon_ID_grenade][0] = Cf_grenade_pointblank
+//@"univ" Weapon_af_Damage[ Ci_weapon_ID_grenade][1] = Cf_grenade_paf
+//@"univ" Weapon_af_Damage[ Ci_weapon_ID_grenade][2] = Cf_grenade_paf_far
+//@"univ" Weapon_ai_clipsize[ Ci_weapon_ID_grenade] = Ci_grenade_clip_size
+//@"univ" Weapon_ai_slottaken[ Ci_weapon_ID_grenade] = 0
+
+
+//@"univ" Weapon_af_pointblankrange[ Ci_weapon_ID_bambou_moy] = Cf_bambou_range_pointblank
+//@"univ" Weapon_af_middlerange[ Ci_weapon_ID_bambou_moy] = Cf_bambou_range_medium
+//@"univ" Weapon_af_range[ Ci_weapon_ID_bambou_moy] = Cf_bambou_range
+//@"univ" Weapon_af_Damage[ Ci_weapon_ID_bambou_moy][0] = Cf_bamboumiddle_paf_pointblank
+//@"univ" Weapon_af_Damage[ Ci_weapon_ID_bambou_moy][1] = Cf_bamboumiddle_paf
+//@"univ" Weapon_af_Damage[ Ci_weapon_ID_bambou_moy][2] = Cf_bamboumiddle_paf_far
+//@"univ" Weapon_ai_clipsize[ Ci_weapon_ID_bambou_moy] = Ci_bambou_clip_size
+//@"univ" Weapon_ai_slottaken[ Ci_weapon_ID_bambou_moy] = 0
+//
+//@"univ" Weapon_af_pointblankrange[ Ci_weapon_ID_bambou_petit] = Cf_bambou_range_pointblank
+//@"univ" Weapon_af_middlerange[ Ci_weapon_ID_bambou_petit] = Cf_bambou_range_medium
+//@"univ" Weapon_af_range[ Ci_weapon_ID_bambou_petit] = Cf_bambou_range
+//@"univ" Weapon_af_Damage[ Ci_weapon_ID_bambou_petit][0] = Cf_bamboulittle_paf_pointblank
+//@"univ" Weapon_af_Damage[ Ci_weapon_ID_bambou_petit][1] = Cf_bamboulittle_paf
+//@"univ" Weapon_af_Damage[ Ci_weapon_ID_bambou_petit][2] = Cf_bamboulittle_paf_far
+//@"univ" Weapon_ai_clipsize[ Ci_weapon_ID_bambou_petit] = Ci_bambou_clip_size
+//@"univ" Weapon_ai_slottaken[ Ci_weapon_ID_bambou_petit] = 0
+
+// --------( JAVELOT )---------
+@"univ" Weapon_af_pointblankrange[ Ci_weapon_ID_bambou] = Cf_bambou_range_pointblank
+@"univ" Weapon_af_middlerange[ Ci_weapon_ID_bambou] = Cf_bambou_range_medium
+@"univ" Weapon_af_range[ Ci_weapon_ID_bambou] = Cf_bambou_range
+@"univ" Weapon_af_Damage[ Ci_weapon_ID_bambou][0] = Cf_bambou_paf_pointblank
+@"univ" Weapon_af_Damage[ Ci_weapon_ID_bambou][1] = Cf_bambou_paf
+@"univ" Weapon_af_Damage[ Ci_weapon_ID_bambou][2] = Cf_bambou_paf_far
+@"univ" Weapon_ai_clipsize[ Ci_weapon_ID_bambou] = Ci_bambou_clip_size
+@"univ" Weapon_ai_slottaken[ Ci_weapon_ID_bambou] = 0
+
+// -------( OSSEMENT )--------
+@"univ" Weapon_af_pointblankrange[ Ci_weapon_ID_ossement] = Cf_ossement_range_pointblank
+@"univ" Weapon_af_middlerange[ Ci_weapon_ID_ossement] = Cf_ossement_range_medium
+@"univ" Weapon_af_range[ Ci_weapon_ID_ossement] = Cf_ossement_range
+@"univ" Weapon_af_Damage[ Ci_weapon_ID_ossement][0] = Cf_ossement_paf_pointblank
+@"univ" Weapon_af_Damage[ Ci_weapon_ID_ossement][1] = Cf_ossement_paf
+@"univ" Weapon_af_Damage[ Ci_weapon_ID_ossement][2] = Cf_ossement_paf_far
+@"univ" Weapon_ai_clipsize[ Ci_weapon_ID_ossement] = Ci_ossement_clip_size
+@"univ" Weapon_ai_slottaken[ Ci_weapon_ID_ossement] = 0
+
+// --------( ARC )---------
+@"univ" Weapon_af_pointblankrange[ Ci_weapon_ID_arc] = Cf_arc_range_pointblank
+@"univ" Weapon_af_middlerange[ Ci_weapon_ID_arc] = Cf_arc_range_medium
+@"univ" Weapon_af_range[ Ci_weapon_ID_arc] = Cf_arc_range
+@"univ" Weapon_af_Damage[ Ci_weapon_ID_arc][0] = Cf_arc_paf_pointblank
+@"univ" Weapon_af_Damage[ Ci_weapon_ID_arc][1] = Cf_arc_paf
+@"univ" Weapon_af_Damage[ Ci_weapon_ID_arc][2] = Cf_arc_paf_far
+@"univ" Weapon_ai_clipsize[ Ci_weapon_ID_arc] = Ci_arc_clip_size
+@"univ" Weapon_ai_slottaken[ Ci_weapon_ID_arc] = 0
+
+// --------( HACHETTE )---------
+@"univ" Weapon_af_pointblankrange[ Ci_weapon_ID_hachette] = Cf_hachette_range_pointblank
+@"univ" Weapon_af_middlerange[ Ci_weapon_ID_hachette] = Cf_hachette_range_medium
+@"univ" Weapon_af_range[ Ci_weapon_ID_hachette] = Cf_hachette_range
+@"univ" Weapon_af_Damage[ Ci_weapon_ID_hachette][0] = Cf_hachette_paf_pointblank
+@"univ" Weapon_af_Damage[ Ci_weapon_ID_hachette][1] = Cf_hachette_paf
+@"univ" Weapon_af_Damage[ Ci_weapon_ID_hachette][2] = Cf_hachette_paf_far
+@"univ" Weapon_ai_clipsize[ Ci_weapon_ID_hachette] = Ci_hachette_clip_size
+@"univ" Weapon_ai_slottaken[ Ci_weapon_ID_hachette] = 0
+
+// --------( SARBACANE )---------
+@"univ" Weapon_af_pointblankrange[ Ci_weapon_ID_sarbacane] = Cf_sarbacane_range_pointblank
+@"univ" Weapon_af_middlerange[ Ci_weapon_ID_sarbacane] = Cf_sarbacane_range_medium
+@"univ" Weapon_af_range[ Ci_weapon_ID_sarbacane] = Cf_sarbacane_range
+@"univ" Weapon_af_Damage[ Ci_weapon_ID_sarbacane][0] = Cf_sarbacane_paf_pointblank
+@"univ" Weapon_af_Damage[ Ci_weapon_ID_sarbacane][1] = Cf_sarbacane_paf
+@"univ" Weapon_af_Damage[ Ci_weapon_ID_sarbacane][2] = Cf_sarbacane_paf_far
+@"univ" Weapon_ai_clipsize[ Ci_weapon_ID_sarbacane] = Ci_sarbacane_clip_size
+@"univ" Weapon_ai_slottaken[ Ci_weapon_ID_sarbacane] = 0
+
+// --------( CRANE )---------
+@"univ" Weapon_af_pointblankrange[ Ci_weapon_ID_crane] = Cf_crane_range_pointblank
+@"univ" Weapon_af_middlerange[ Ci_weapon_ID_crane] = Cf_crane_range_medium
+@"univ" Weapon_af_range[ Ci_weapon_ID_crane] = Cf_crane_range
+@"univ" Weapon_af_Damage[ Ci_weapon_ID_crane][0] = Cf_crane_paf_pointblank
+@"univ" Weapon_af_Damage[ Ci_weapon_ID_crane][1] = Cf_crane_paf
+@"univ" Weapon_af_Damage[ Ci_weapon_ID_crane][2] = Cf_crane_paf_far
+@"univ" Weapon_ai_clipsize[ Ci_weapon_ID_crane] = Ci_crane_clip_size
+@"univ" Weapon_ai_slottaken[ Ci_weapon_ID_crane] = 0
+
+
+
+//========================================
+//                           ENEMIES DATA
+//========================================
+for (i = 0; i < C_ID_Number; i++)
+{
+	@"univ" Enemy_af_ReaDist[ i ][ 0 ] = 10
+	@"univ" Enemy_af_ReaDist[ i ][ 1 ] = 20
+	@"univ" Enemy_af_ReaDist[ i ][ 2 ] = 30
+	@"univ" Enemy_af_Poids[ i ] = 1
+	@"univ" Enemy_af_Danger[ i ] = 1
+	@"univ" Enemy_af_Height[ i ] = 2
+	@"univ" Enemy_af_Radius[ i ] = 4
+	@"univ" Enemy_av_GrabTransporte_Offset[ i ] = cvector(0, 0, 0.2)
+}
+
+// Swamp small
+//@"univ" Enemy_af_ReaDist[ C_ID_SwampCrawlerSmall][ 0 ] = 4
+//@"univ" Enemy_af_ReaDist[ C_ID_SwampCrawlerSmall ][ 1 ] = 40
+//@"univ" Enemy_af_ReaDist[ C_ID_SwampCrawlerSmall ][ 2 ] = 50
+//@"univ" Enemy_af_Radius[ C_ID_SwampCrawlerSmall ] = 3
+//@"univ" Enemy_af_Danger[C_ID_SwampCrawlerSmall  ] = 1
+//
+// Galim
+//@"univ" Enemy_af_ReaDist[ C_ID_Galiminus ][ 0 ] = 6
+//@"univ" Enemy_af_ReaDist[ C_ID_Galiminus ][ 1 ] = 40
+//@"univ" Enemy_af_ReaDist[ C_ID_Galiminus ][ 2 ] = 50
+//@"univ" Enemy_af_Radius[ C_ID_Galiminus ] = 4
+//@"univ" Enemy_af_Danger[C_ID_Galiminus ] = 5
+
+// Raptor
+//@"univ" Enemy_af_ReaDist[ C_ID_Raptor ][ 0 ] = 10
+//@"univ" Enemy_af_ReaDist[ C_ID_Raptor ][ 1 ] = 40
+//@"univ" Enemy_af_ReaDist[ C_ID_Raptor ][ 2 ] = 50
+//@"univ" Enemy_af_Radius[ C_ID_Raptor ] = 8
+//@"univ" Enemy_af_Danger[C_ID_Raptor ] = 5
+//@"univ" Enemy_av_GrabTransporte_Offset[C_ID_Raptor] = cvector(0, 0, 0.2)
+
+// Indigene
+//@"univ" Enemy_af_ReaDist[ C_ID_Indigene ][ 0 ] = 10
+//@"univ" Enemy_af_ReaDist[ C_ID_Indigene ][ 1 ] = 40
+//@"univ" Enemy_af_ReaDist[ C_ID_Indigene ][ 2 ] = 50
+//@"univ" Enemy_af_Danger[C_ID_Indigene ] = 1
+
+// BatCharognard
+//@"univ" Enemy_af_ReaDist[ C_ID_Indigene ][ 0 ] = 10
+//@"univ" Enemy_af_ReaDist[ C_ID_Indigene ][ 1 ] = 40
+//@"univ" Enemy_af_ReaDist[ C_ID_Indigene ][ 2 ] = 50
+//@"univ" Enemy_af_Radius[ C_ID_Raptor ] = 6
+//@"univ" Enemy_af_Poids[C_ID_BatCharognard] = 80
+//@"univ" Enemy_af_Danger[C_ID_BatCharognard] = 3
+
+// TRex
+//@"univ" Enemy_af_ReaDist[ C_ID_Tyranosaure ][ 0 ] = 15
+//@"univ" Enemy_af_ReaDist[ C_ID_Tyranosaure ][ 1 ] = 40
+//@"univ" Enemy_af_ReaDist[ C_ID_Tyranosaure ][ 2 ] = 50
+//@"univ" Enemy_af_Radius[ C_ID_Tyranosaure ] = 10
+//@"univ" Enemy_af_Danger[C_ID_Tyranosaure ] = 10
+
+// Crabe Petit
+//@"univ" Enemy_af_ReaDist[C_ID_CrabePetit][ 0 ] = 3
+//@"univ" Enemy_af_ReaDist[C_ID_CrabePetit][ 1 ] = 40
+//@"univ" Enemy_af_ReaDist[C_ID_CrabePetit][ 2 ] = 50
+//@"univ" Enemy_af_Radius[C_ID_CrabePetit] = 3
+//@"univ" Enemy_af_Danger[C_ID_CrabePetit] = 1
+//@ "univ" Enemy_av_GrabTransporte_Offset[C_ID_CrabePetit] = cvector(0.0, 0.0, 1.75)
+
+// Crabe Géant
+//@"univ" Enemy_af_ReaDist[C_ID_CrabeGeant][ 0 ] = 10
+//@"univ" Enemy_af_ReaDist[C_ID_CrabeGeant][ 1 ] = 40
+//@"univ" Enemy_af_ReaDist[C_ID_CrabeGeant][ 2 ] = 50
+//@"univ" Enemy_af_Radius[C_ID_CrabeGeant] = 8
+//@"univ" Enemy_af_Danger[C_ID_CrabeGeant] = 5
+//@"univ" Enemy_av_GrabTransporte_Offset[C_ID_CrabeGeant] = cvector(0, 0, 1.75)
+
+// Tricératops
+//@"univ" Enemy_af_ReaDist[C_ID_Triceratops][ 0 ] = 10
+//@"univ" Enemy_af_ReaDist[C_ID_Triceratops][ 1 ] = 40
+//@"univ" Enemy_af_ReaDist[C_ID_Triceratops][ 2 ] = 50
+//@"univ" Enemy_af_Radius[C_ID_Triceratops] = 8
+//@"univ" Enemy_af_Danger[C_ID_Triceratops] = 5
+//@"univ" Enemy_av_GrabTransporte_Offset[C_ID_Triceratops] = cvector(0,0,2.5)
+
+//========================================
+//                           HUMAINS DATA
+//========================================
+//
+// action type : 
+//	-1 : pas d'interaction
+//    0 : interaction avec R2
+//    1 : interaction avec X
+//    2 : interaction avec O
+//
+@"univ" Humains_ActionType[ Ci_DISPLAY_NOTHING	] = -1
+@"univ" Humains_ActionType[ Ci_DISPLAY_FIGHT	] = 2
+@"univ" Humains_ActionType[ Ci_DISPLAY_HEAL ] = 1
+@"univ" Humains_ActionType[ Ci_DISPLAY_USE ] = 2
+@"univ" Humains_ActionType[ Ci_DISPLAY_COVER ] = 2
+@"univ" Humains_ActionType[ Ci_DISPLAY_CANCEL ] = -1
+@"univ" Humains_ActionType[ Ci_DISPLAY_PSSS ] = 1
+@"univ" Humains_ActionType[ Ci_DISPLAY_DONNE ] = 1
+@"univ" Humains_ActionType[ Ci_DISPLAY_HIDE ] = 2
+@"univ" Humains_ActionType[ Ci_DISPLAY_TAKE	] = 0
+@"univ" Humains_ActionType[ Ci_DISPLAY_DUMMY ] = -1
+@"univ" Humains_ActionType[ Ci_DISPLAY_FIGHTPROPOSE ] = 2
+@"univ" Humains_ActionType[ Ci_DISPLAY_HEALANN ] = 1
+
+// init heure du dernier paf
+//for(i = 0; i < C_ID_Marin_dernier; i++)
+for(i = 0; i < C_ID_Last_Compagnon; i++)
+{
+	@"univ" Humains_LastPafTime[i] = 0.0
+}
+
+// DOMMAGES DES ARMES
+//@"univ" i_weapon_paf_type[Ci_weapon_ID_colt] = C_PAF_KK_Weapon //+ C_PAF_KK_Faible
+//@"univ" i_weapon_paf_type[Ci_weapon_ID_tommy_gun] = C_PAF_KK_Weapon //+ C_PAF_KK_Faible
+//@"univ" i_weapon_paf_type[Ci_weapon_ID_shotgun] = C_PAF_KK_Weapon //+ C_PAF_KK_Fort
+//@"univ" i_weapon_paf_type[Ci_weapon_ID_sniper_rifle] = C_PAF_KK_Weapon //+ C_PAF_KK_Fort
+//@"univ" i_weapon_paf_type[Ci_weapon_ID_grenade] = C_PAF_KK_Weapon
+//@"univ" i_weapon_paf_type[Ci_weapon_ID_bambou] = C_PAF_KK_Javelin
+//@"univ" i_weapon_paf_type[Ci_weapon_ID_bambou_moy] = C_PAF_KK_Weapon
+//@"univ" i_weapon_paf_type[Ci_weapon_ID_bambou_petit] = C_PAF_KK_Weapon
+//@"univ" i_weapon_paf_type[Ci_weapon_ID_crane] = C_PAF_KK_CraneMolotov
+
+}

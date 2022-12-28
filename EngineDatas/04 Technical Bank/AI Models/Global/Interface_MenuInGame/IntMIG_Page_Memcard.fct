@@ -1,0 +1,199 @@
+#include "Interface_MenuInGame_defs.var"
+
+int i_Action
+
+// Get page parameters
+if (!IntMIG_SetPageParams())
+	return
+
+// init
+if ( INTMIG_EnterPage_Start )
+{
+	mi_MC_PageDisplayed = -1
+	mi_MC_PageChange = 0
+	mi_MC_Retry = 0
+	
+	if (mi_MC_Mode == INTMIG_MCMode_ProfileCreate)
+	{
+		SAVE_HeaderSet( mi_MC_Slot,2,0,INTMIG_FIRSTMAPID,-1,0)
+		AI_ReinitUniv()
+		IntMIG_ReinitUniv()
+		SAVE_Validate()
+		@"univ" PROG_i_Map = INTMIG_FIRSTMAPID
+		@"univ" PROG_i_ES = -1
+		@"univ" MENU_ProfileIndex = mi_MC_Slot
+	}
+}
+if (INTMIG_LeavePage_Start)
+{
+	OBJ_CapaSet( 0, OBJ_Capa_14)
+	IntMIG_MC_HideTexte()
+}
+
+if ( mi_Exit || mi_ChangePage || mi_Cheat )
+	return
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// TEST : DISPLAY ALL MEMCARD MESSAGE	
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+//mi_MC_Txg = INTMIG_TXGPS2		mi_MC_Texte = INTMIG_TEXT_PS2	mi_ConsoleText = INTMIG_TEXT_PS2MENU
+////mi_MC_Txg = INTMIG_TXGGC		mi_MC_Texte = INTMIG_TEXT_GC		mi_ConsoleText = INTMIG_TEXT_GCMENU
+////mi_MC_Txg = INTMIG_TXGXBOX	mi_MC_Texte = INTMIG_TEXT_XBOX	mi_ConsoleText = INTMIG_TEXT_XBOXMENU
+////mi_MC_Txg = INTMIG_TXGPC		mi_MC_Texte = INTMIG_TEXT_PC		mi_ConsoleText = INTMIG_TEXT_PCMENU 
+//
+//if ( mi_MC_PageDisplayed == -1 )
+//{
+//	mi_MC_PageDisplayed = 0
+//	IntMIG_MC_DisplayTexte( 0 )
+//}
+//else if ( IO_ButtonJustPressed(0) && (mi_MC_PageDisplayed < 60) )
+//{
+//	mi_MC_PageDisplayed++
+//	IntMIG_MC_DisplayTexte( mi_MC_PageDisplayed )
+//}
+//else if (IO_ButtonJustPressed(3) && (mi_MC_PageDisplayed > 0 ))
+//{
+//	mi_MC_PageDisplayed--
+//	IntMIG_MC_DisplayTexte( mi_MC_PageDisplayed )
+//}
+//return
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// TEST : DISPLAY ALL MEMCARD MESSAGE	
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+// ----( init data )----
+if ( mi_MC_Mode == INTMIG_MCMode_ProfileGet )
+{
+	mi_MC_PageAccessing = INTMIG_MCPage_ProfileGet
+	mi_MC_PageError = INTMIG_MCPage_ProfileGet_Error
+	mi_MC_PageSuccess = INTMIG_MCPage_ProfileGet_Ok
+	mi_MC_PageAfterSuccess = INTMIG_MCPage_ProfileGet_Ok
+	mi_MC_PageAfterError = INTMIG_MCPage_GOTO_MainMenuNoSave
+	mi_MC_PageAfterNoSaving = INTMIG_MCPage_GOTO_Profile
+	mi_MC_PageRetrying = INTMIG_MCPage_ProfileGet
+}
+else if (mi_MC_Mode == INTMIG_MCMode_ProfileCreate)
+{
+	mi_MC_PageAccessing = INTMIG_MCPage_ProfileGet
+	mi_MC_PageSaving = INTMIG_MCPage_ProfileCreate
+	mi_MC_PageError = INTMIG_MCPage_ProfileCreate_Error
+	mi_MC_PageSuccess = INTMIG_MCPage_ProfileCreate_OK
+	mi_MC_PageAfterSuccess = INTMIG_MCPage_ProfileCreate_OKX
+	mi_MC_PageAfterError = INTMIG_MCPage_ProfileCreate_ErrorX
+	mi_MC_PageAfterNoSaving = INTMIG_MCPage_ProfileCreate_ErrorX
+	mi_MC_PageRetrying = INTMIG_MCPage_ProfileGet
+	mi_MC_PageAfterCancelSave = INTMIG_MCPage_ProfileGet
+}
+else if (mi_MC_Mode == INTMIG_MCMode_ProfileDelete)
+{
+	mi_MC_PageAccessing = INTMIG_MCPage_ProfileGet
+	mi_MC_PageSaving = INTMIG_MCPage_ProfileDelete
+	mi_MC_PageError = INTMIG_MCPage_ProfileDelete_Error
+	mi_MC_PageSuccess = INTMIG_MCPage_ProfileDelete_OK
+	mi_MC_PageAfterSuccess = INTMIG_MCPage_ProfileDelete_OKX
+	mi_MC_PageAfterError = INTMIG_MCPage_ProfileDelete_ErrorX
+	mi_MC_PageAfterNoSaving = INTMIG_MCPage_ProfileCreate_ErrorX
+	mi_MC_PageRetrying = INTMIG_MCPage_ProfileGet
+	mi_MC_PageAfterCancelSave = INTMIG_MCPage_ProfileGet
+}
+else if (mi_MC_Mode == INTMIG_MCMode_Load)
+{
+	//mi_MC_PageAccessing = INTMIG_MCPage_Load
+	mi_MC_PageAccessing = INTMIG_MCPage_ProfileGet
+	mi_MC_PageLoading = INTMIG_MCPage_Load
+	mi_MC_PageError = INTMIG_MCPage_Load_Error
+	mi_MC_PageSuccess = INTMIG_MCPage_Load_OK
+	mi_MC_PageAfterSuccess = INTMIG_MCPage_Load_OKX
+	mi_MC_PageAfterError = INTMIG_MCPage_Load_ErrorX
+	mi_MC_PageAfterNoSaving = INTMIG_MCPage_ProfileCreate_ErrorX
+	mi_MC_PageRetrying = INTMIG_MCPage_ProfileGet
+}
+else if (mi_MC_Mode == INTMIG_MCMode_Save)
+{
+	mi_MC_PageAccessing = INTMIG_MCPage_ProfileGet
+	mi_MC_PageSaving = INTMIG_MCPage_Save
+	mi_MC_PageError = INTMIG_MCPage_Save_Error
+	mi_MC_PageSuccess = INTMIG_MCPage_Save_OK
+	mi_MC_PageAfterSuccess = INTMIG_MCPage_Save_OKX
+	mi_MC_PageAfterError = INTMIG_MCPage_Save_ErrorX
+	mi_MC_PageAfterNoSaving = INTMIG_MCPage_ProfileCreate_ErrorX
+	mi_MC_PageRetrying = INTMIG_MCPage_Save
+}
+
+
+// ----( init process )----
+if (mi_MC_State == 0)
+{
+	OBJ_CapaSet( OBJ_Capa_14, 0)
+	mi_MC_Page = mi_MC_PageAccessing
+	SAVE_Request(INO_e_SavRq_FreeRessource, 0)
+	SAVE_Request(INO_e_SavRq_SetRetryFlag, mi_MC_Retry )
+	mi_MC_State = 1
+	mi_MC_Retry = 1
+	
+	switch (mi_MC_Mode)
+	{
+	case INTMIG_MCMode_ProfileGet :		SAVE_Request(INO_e_SavRq_ReadAllHeaders, 0) break
+	case INTMIG_MCMode_ProfileCreate : 	SAVE_Request(INO_e_SavRq_WriteOneProfile, mi_MC_Slot ) break
+	case INTMIG_MCMode_ProfileDelete	:	SAVE_Request(INO_e_SavRq_WriteOneProfile, mi_MC_Slot ) break
+	case INTMIG_MCMode_Load	:				SAVE_Request(INO_e_SavRq_ReadOneProfile, mi_MC_Slot ) break
+	case INTMIG_MCMode_Save : 				SAVE_Request(INO_e_SavRq_WriteOneProfile, mi_MC_Slot ) break
+	}
+}
+
+if ( !mi_Exit && !mi_ChangePage )
+	IntMIG_MC_Process()
+
+IntMIG_MC_Display()
+//IntMIG_MC_DisplayDebugMenu()
+IntMIG_RestorePageParams()
+
+if ( mi_Exit || mi_ChangePage || mi_MC_PageChange )
+	return
+	
+i_Action = SAVE_Request( INO_e_SavRq_UserAction, 0 )
+switch (i_Action )
+{
+	case joy_button_A : 
+	case joy_button_B : 
+		IntMIG_PlaySound( INTMIG_SOUND_VALIDE )
+		break
+	case joy_button_D : 
+		IntMIG_PlaySound( INTMIG_SOUND_CANCEL )
+		break
+}
+
+if (mi_MC_Page >= 10000 )
+{
+	i_Action = mi_MC_Page
+	
+	switch( mi_MC_Page )
+	{
+	case INTMIG_MCPage_GOTO_MainMenuNoSave : 
+				@"univ" MENU_ProfileIndex = -1
+				@"univ" MENU_PlayWithoutSaving = 1
+				INTMIG_YesNoPage( INTMIG_YESNO_QUITPWS_MEMCARD )
+				//INTMIG_ChangePage(  "IntMIG_Page_StartMain" , 0 )
+				break
+	case INTMIG_MCPage_GOTO_MainMenu :					
+				@"univ" MENU_PlayWithoutSaving = 0
+				INTMIG_ChangePage(  "IntMIG_Page_StartMain" , 0 )
+				break
+	case INTMIG_MCPage_GOTO_Profile :						INTMIG_ChangePage(  "IntMIG_Page_Profile" , 0 ) break
+	case INTMIG_MCPage_GOTO_LoadProfileAfterCreate :	
+				@"univ" MENU_PlayWithoutSaving = 0
+				INTMIG_ChangePage(  "IntMIG_Page_StartMain" , 0 ) 
+				break
+	case  INTMIG_MCPage_GOTO_GameMenu :				INTMIG_ChangePage(  "IntMIG_Page_Main" , mi_MainCur ) break
+	case  INTMIG_MCPage_GOTO_Game :						mi_ExitAsked = 1 break
+	case INTMIG_MCPage_GOTO_LoadGameMenu :			INTMIG_LoadingPage(  3, 0 ) break
+	case INTMIG_MCPage_GOTO_Map :							INTMIG_ChangePage(  "IntMIG_Page_Map" , mi_Cur ) break
+	case INTMIG_MCPage_GOTO_MainMenu_Options : 	INTMIG_ChangePage(  "IntMIG_Page_StartMain" , 1 ) break
+	case INTMIG_MCPage_GOTO_MainMenu_XTra : 			INTMIG_YesNoPage( INTMIG_OK_FINALMESSAGE ) break //INTMIG_ChangePage(  "IntMIG_Page_StartMain" , 2 ) break
+
+	}
+}
+

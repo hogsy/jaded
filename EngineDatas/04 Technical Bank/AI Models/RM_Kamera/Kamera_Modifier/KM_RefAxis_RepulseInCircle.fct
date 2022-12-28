@@ -1,0 +1,33 @@
+object		to_perso
+
+vector		tv_me_to_kong
+float			tf_me_to_kong_norm, tf_norm
+vector		tv_me_to_kong_normalized
+vector		tv_me_to_kong_good 
+vector		tv_axis, tv_axis2
+
+to_perso = Proc_Kam_ActeurReference_Get()
+
+tv_me_to_kong = @to_perso OBJ_PosGet() - v_RefAxis_RIC_Pos
+tv_me_to_kong.z = 0
+tf_me_to_kong_norm = MATH_VecNorm(tv_me_to_kong)
+tv_me_to_kong_normalized = tv_me_to_kong / tf_me_to_kong_norm
+
+tf_norm = f_RefAxis_RIC_Size - (MATH_FloatMin(f_RefAxis_RIC_Size, tf_me_to_kong_norm))
+
+tv_me_to_kong_good = -tv_me_to_kong_normalized * tf_norm
+
+// Pour que les Axes lors du Blend Rotate soit sur le meme plan ====
+tv_axis2 = @o_ref_axis OBJ_PosGet() - v_RefAxis_RIC_Pos
+tv_axis2.z = 0
+if (MATH_VecNull(tv_axis2))
+	tv_axis2 = cvector(0,1,0)
+// Pour que les Axes lors du Blend Rotate soit sur le meme plan ====
+	
+tv_axis = MATH_VecBlendRotate(tv_axis2, tv_me_to_kong_good, f_RefAxis_RIC_Speed * TIME_GetDt())
+if (tf_norm)
+	MATH_VecSetNorm(tv_axis, tf_norm)
+else
+	tv_axis = Cv_NullVector
+
+@o_ref_axis OBJ_PosSet( v_RefAxis_RIC_Pos +  tv_axis )

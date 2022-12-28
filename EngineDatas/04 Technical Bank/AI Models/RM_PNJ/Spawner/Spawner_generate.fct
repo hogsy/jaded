@@ -1,0 +1,205 @@
+int 			ti_i
+object 		to_obj, o_New, o_Enemy
+message	msg_exec, msg_test
+vector		v
+trigger		tt_genexec
+int				sect0, sect1, sect2, sect3
+int				ti_gen, ti_save_counter
+
+if ( OBJ_CapaTest( 4 ) )
+{
+	OBJ_CapaSet( 0, OBJ_Capa_2 )
+	
+	if ( mo_EnemyToShow )
+	{
+		if( ! @mo_EnemyToShow OBJ_CapaTest(OBJ_Capa_15) )
+			@mo_EnemyToShow OBJ_FlagInvisibleSet( 0 )
+		mo_EnemyToShow = nobody
+	}
+
+	// last generation ?
+	if (mi_EnemyCount >= mi_NbBeforeDying && mi_NbBeforeDying != -1)
+	{
+		if ( ( mf_PauseTime == 0) || (mi_WaveNumber == 0 ) )
+		{
+			if ( !mi_Add_Done && mi_Add_Nb )
+			{
+				if ( LIBSpawner_StopAdditionnalGeneration() )
+					AI_TrackCurChangeNow( "Spawner_stop" )
+				else
+				{
+					mi_EnemyCount  = 0
+					mi_NbBeforeDying = mi_Add_Nb
+					mi_Add_Done = vrai
+				}
+			}
+			else
+				AI_TrackCurChangeNow( "Spawner_stop" )
+		}
+		else
+		{
+			mf_TimeLeft = mf_PauseTime
+			OBJ_CapaSet( 0, OBJ_Capa_0 )
+
+//			if ( mi_ForceHumainStress )
+//			{
+////				for(ti_i = 0; ti_i < C_ID_Marin_dernier; ti_i++)
+//				for(ti_i = 0; ti_i < C_ID_Last_Compagnon; ti_i++)
+//				{
+//					to_obj = @"univ" ao_AllHumains[ti_i]
+//					if(!to_obj) continue
+//					@"KingKong/Humain" to_obj i_force_hide = vrai
+//				}
+//			}
+			AI_TrackCurChangeNow( "Spawner_pause" ) 
+		}
+	}
+
+	mf_TimeLeft = MATH_RandFloat( mf_GenTime, mf_GenTimeMax )
+	maf_WPTimer[ mi_WPCur ] = 2
+	if (mi_GenWPSequential)
+		mi_WPCur = MATH_Modulo (mi_WPCur + 1, mi_WPNb )
+	else
+		mi_WPCur = -1
+	AI_TrackCurChangeNow( "Spawner_loop" )
+}
+
+if ( !mi_HeSeeMe )
+{
+	if (mf_TimeLeft <= mf_WarnTime )
+		mi_HeSeeMe = 1
+	else
+	{
+		v = VIEW_3dWorldTo2d(0,  @mao_WP[ mi_WPCur ] OBJ_PosGet() )
+		if ( (v.z > 0) && ( (v.x > 0 && v.x < 1) && (v.y > 0 && v.y < 1) ) )
+			mf_WatchTime += TIME_GetDt()
+		else
+			mf_WatchTime = 0
+		if ( mf_WatchTime > 0.2 )
+		{
+			mi_HeSeeMe = 1
+			mf_TimeLeft = mf_WarnTime
+		}
+	}
+}
+
+mf_TimeLeft -= TIME_GetDt()
+
+if ( AI_TriggerIsValid( mt_WarnTriggerExec ) )
+{
+	msg_exec = AI_TriggerGetMsg( mt_WarnTriggerExec )
+	msg_exec.msg_gao1 = mao_WP[ mi_WPCur ]
+	v = msg_exec.msg_vec1
+	v.x = mf_TimeLeft
+	msg_exec.msg_vec1 = v
+	AI_TriggerSetMsg( mt_WarnTriggerExec, msg_exec )
+	call_trigger( mt_WarnTriggerExec )
+}
+
+// Warn time ended, generate now
+if (mf_TimeLeft <  0)
+{
+	// generate what
+	if ( mao_SeveralEnemy[ 0 ] != nobody )
+	{
+		ti_gen = faux
+		ti_save_counter = mi_SeveralEnemy_Counter
+		while ( !ti_gen )
+		{
+			if ( !AI_TriggerIsValid( mat_SeveralEnemy_GenTrig[ mi_SeveralEnemy_Counter ] ) )
+				ti_gen = vrai
+			else if ( call_trigger( mat_SeveralEnemy_GenTrig[ mi_SeveralEnemy_Counter ] ) )
+				ti_gen = vrai
+				
+			if (!ti_gen)
+			{
+				mi_SeveralEnemy_Counter++
+				if ( mao_SeveralEnemy[ mi_SeveralEnemy_Counter ] == nobody )
+					mi_SeveralEnemy_Counter = 0
+				if ( ti_save_counter == mi_SeveralEnemy_Counter )
+				{
+					AI_TrackCurChangeNow( "Spawner_loop" ) 
+					return
+				}
+			}
+		}
+		
+		o_Enemy = mao_SeveralEnemy[ mi_SeveralEnemy_Counter ]
+		tt_genexec = mat_SeveralEnemy_GenTrigExec[ mi_SeveralEnemy_Counter ]
+		if ( !AI_TriggerIsValid( tt_genexec ))
+			tt_genexec = mt_GenTriggerExec
+		mi_SeveralEnemy_Counter++
+		if ( mao_SeveralEnemy[ mi_SeveralEnemy_Counter ] == nobody )
+			mi_SeveralEnemy_Counter = 0
+	}
+	else
+	{
+		tt_genexec = mt_GenTriggerExec
+		if ( !AI_TriggerIsValid( mt_GenEnemy ) )
+			o_Enemy = mo_Enemy
+		else if(call_trigger(mt_GenEnemy))
+			o_Enemy = mo_Enemy
+		else 
+			o_Enemy = mo_Enemy1
+		if(!	o_Enemy )	o_Enemy = mo_Enemy
+	}
+	
+	OBJ_CapaSet( OBJ_Capa_3, 0 ) 
+	o_New = @o_Enemy OBJ_Duplicate( @mao_WP[ mi_WPCur ] OBJ_PosGet() + mv_GenerationOffset )
+	@o_New OBJ_SightSet( @mao_WP[ mi_WPCur ] OBJ_SightGet() )
+	@o_New OBJ_PosSet(@mao_WP[ mi_WPCur ] OBJ_PosGet() + mv_GenerationOffset)
+	@o_New COL_StartMatrixSet(@o_New OBJ_PosGet())
+	
+	switch (me_GenEnemySect )
+	{
+		case 1 : // copy sect from spawner
+					SCT_GetOf( &sect0, &sect1, &sect2, &sect3)
+					@o_New SCT_SetOf( sect0, sect1, sect2, sect3)
+					break
+		case 2 : // copy sect from enemy model
+					@o_Enemy SCT_GetOf(&sect0, &sect1, &sect2, &sect3)
+					@o_New SCT_SetOf( sect0, sect1, sect2, sect3)
+					break
+	}
+	
+	switch( me_GenEnemyState )
+	{
+		case 0 : // invisible one trame
+					@o_New OBJ_FlagInvisibleSet( 1 )
+					mo_EnemyToShow = o_New
+					break
+		case 1 : // invisible
+					@o_New OBJ_FlagInvisibleSet( 1 )
+					break
+		case 2 : // visible
+					if( ! @o_New OBJ_CapaTest(OBJ_Capa_15) )
+						@o_New OBJ_FlagInvisibleSet( 0 )
+					break
+	}
+	
+	mao_Enemy[ mi_EnemyCur ] = o_New
+	OBJ_RegisterKill( mao_Enemy[ mi_EnemyCur ], &mao_Enemy[ mi_EnemyCur ] )
+	mi_EnemyCount++
+
+	if (AI_TriggerIsValid( tt_genexec) )
+	{
+		msg_exec = AI_TriggerGetMsg( tt_genexec)
+		if ( mi_TriggerTest )
+		{
+			msg_test = AI_TriggerGetMsg( mt_GenTriggerTest )
+			msg_exec.msg_gao5 = msg_test.msg_gao5
+			msg_exec.msg_int4 = msg_test.msg_int4
+			msg_exec.msg_int5 = msg_test.msg_int5
+			msg_exec.msg_vec4 = msg_test.msg_vec4
+			msg_exec.msg_vec5 = msg_test.msg_vec5
+		}
+		msg_exec.msg_sender = OBJ_Me()
+		msg_exec.msg_gao1 = o_New
+		if ( msg_exec.msg_gao2 == nobody )
+			msg_exec.msg_gao2 = mao_WP[ mi_WPCur ]			// Rajout Par FRED pour avoir le GAO de SPAWN dans le Trigger EXEC
+		AI_TriggerSetMsg(tt_genexec, msg_exec)
+		call_trigger( tt_genexec)
+	}
+	
+	OBJ_CapaSet( OBJ_Capa_2, 0 )
+}

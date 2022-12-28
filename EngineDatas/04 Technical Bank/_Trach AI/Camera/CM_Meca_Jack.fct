@@ -1,0 +1,245 @@
+#include "CM_Defines.var"
+
+vector	tv_pos, tv_sight, tv_newpos, tv_posray
+vector	tv_temp, tv_temp1, tv_temp2, tv_temp3
+float		tf_dot, tf_temp
+vector	tv_pos_actor
+float		tf_new_dist
+float		tf_stick_max_z
+float		tf_ComputeZ, tf_ComputeX
+
+if(!o_mf_actor) return
+
+//////// EFFET MARCHE
+effet_marche_hauteur = MATH_FloatBlend(effet_marche_hauteur, effet_marche_hauteur_saut, 4 * TIME_GetDt())
+//effet_marche_cote = MATH_FloatBlend(effet_marche_cote, 0, 2 * TIME_GetDt())
+effet_marche_vertical = MATH_VecBlend(effet_marche_vertical, Cv_VerticalVector, 4 * TIME_GetDt())
+effet_marche_hauteur_saut = MATH_FloatBlend(effet_marche_hauteur_saut, 0, 4 * TIME_GetDt())
+
+tf_temp = @"KingKong/Humain" o_mf_actor f_speed_jack
+
+effet_marche_vertical = Cv_VerticalVector
+if(@"KingKong/Humain" o_mf_actor i_flag_crouch && tf_temp > 1)
+{
+	tf_temp = MATH_Sin(TIME_Get() * 10) * 0.06
+	tv_temp = Cv_VerticalVector
+	tv_temp += (OBJ_HorizonGet() * MATH_Sin(TIME_Get() * 5) * 0.07)
+	effet_marche_vertical = MATH_VecBlend(effet_marche_vertical, tv_temp, 3 * TIME_GetDt())
+	effet_marche_hauteur = MATH_FloatBlend(effet_marche_hauteur, tf_temp, 6 * TIME_GetDt())
+}
+else if(tf_temp > 1 && tf_temp < 3)
+{
+	tf_temp = MATH_Sin(TIME_Get() * 10) * 0.03
+	effet_marche_hauteur = MATH_FloatBlend(effet_marche_hauteur, tf_temp, 16 * TIME_GetDt())
+	tf_temp = MATH_Sin(TIME_Get() * 5) * 0.06
+	effet_marche_cote = MATH_FloatBlend(effet_marche_cote, tf_temp, 16 * TIME_GetDt())
+}
+else if(tf_temp > 3)
+{
+	tf_temp = MATH_Sin(TIME_Get() * 16) * 0.03
+	effet_marche_hauteur = MATH_FloatBlend(effet_marche_hauteur, tf_temp, 16 * TIME_GetDt())
+}
+
+tv_temp = @o_mf_actor DYN_SpeedGetVector()
+if(effet_last_speed.z < -5 && tv_temp.z >= -1)
+{
+	tv_temp = tv_temp
+	effet_marche_hauteur_saut = -0.5
+}
+
+effet_last_speed = tv_temp
+COL_ColSetActivationSet(0, -1)
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// POSITION
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Distance courante
+tv_temp = OBJ_PosGet() - v_cur_pos_suivi
+tv_temp.z = 0
+f_CurDist = MATH_VecNorm(tv_temp)
+
+// Params tjs les memes
+af_FctIdeal_XTgt[0] = f_IdealDist
+af_FctIdeal_XTgt[2] = 0
+af_FctIdeal_ZTgt[0] = f_IdealDist
+af_FctIdeal_ZTgt[2] = 0
+
+// Cut ?
+if(i_mf_cut) f_CurDist = f_IdealDist
+
+// Rot verticale
+MATH_VecSetHorzNormalize(v_ideal_sight)
+tv_temp = MATH_VecCrossProduct(v_ideal_sight, Cv_VerticalVector)
+v_ideal_sight = MATH_VecRotate(v_ideal_sight, tv_temp, f_angle_z)
+
+// Position : Prise en compte de toutes les valeurs courantes pour calculer la position idéale
+if(i_mf_cut)
+	v_cur_sight = v_ideal_sight
+else
+	v_cur_sight = CM_BlendRotate(v_cur_sight, v_ideal_sight, 1000.0, 50.0)
+	
+tv_pos = v_cur_sight
+tv_pos *= f_IdealDist
+tv_pos.z += (f_IdealZMax + effet_marche_hauteur)
+tv_pos += v_cur_pos_suivi
+tv_pos += OBJ_HorizonGet() * effet_marche_cote
+tv_pos_actor = v_cur_pos_suivi + cvector(0,0,f_IdealZMin)
+
+// Lancé de rayon pour obstacles
+//if(CM_Ray(tv_pos_actor, tv_pos))
+//{
+//	tv_pos = COL_RayObject_PosGet()
+//	tv_posray = tv_pos
+//	tv_temp = tv_pos_actor - tv_pos
+//	MATH_VecSetNorm(tv_temp, 0.03)
+//	tv_pos += tv_temp
+//	tv_pos += (COL_RayObject_NormalGet() * 0.1)
+//	f_blend_pos = 2
+//}
+
+// Meca pour sphere
+//tv_temp = OBJ_PosGet()
+//DYN_On()
+//DYN_FlagsSet(DYN_C_BasicForces + DYN_C_NeverDynamicFather + DYN_C_VectorFriction, none)
+//DYN_SpeedSetVector(tv_pos - tv_pos_actor)
+//COL_StartMatrixSet(tv_pos_actor)
+OBJ_PosSet(tv_pos)
+//OBJ_EngineCall()
+//DYN_SpeedSetVector(Cv_NullVector)
+//tv_pos = OBJ_PosGet()
+//OBJ_PosSet(tv_temp)
+
+// Si on est quasi sur l'acteur, on prend le lance de rayon (pb collision ?)
+tv_temp = tv_pos_actor - tv_pos
+if(MATH_VecDotProduct(tv_temp, tv_temp) < 0.01 * 0.01) tv_pos = tv_posray
+
+// Blend position
+tv_newpos = tv_pos
+
+// Contraintes
+if(f_mf_max_pos_z && tv_pos.z > f_mf_max_pos_z) tv_pos.z = f_mf_max_pos_z
+if(f_mf_min_pos_z && tv_pos.z < f_mf_min_pos_z) tv_pos.z = f_mf_min_pos_z
+f_mf_max_pos_z = 0
+f_mf_min_pos_z = 0
+
+if(!i_mf_cut) 
+{
+	tv_newpos.x = MATH_FloatBlend(OBJ_PosGet().x, tv_pos.x, f_blend_pos * TIME_GetDt())
+	tv_newpos.y = MATH_FloatBlend(OBJ_PosGet().y, tv_pos.y, f_blend_pos * TIME_GetDt())
+	tv_newpos.z = MATH_FloatBlend(OBJ_PosGet().z, tv_pos.z, f_blend_pos * TIME_GetDt())
+}
+
+OBJ_PosSet(tv_newpos)
+
+// Distance courante
+tv_temp = OBJ_PosGet() - v_cur_pos_suivi
+tv_temp.z = 0
+f_CurDist = MATH_VecNorm(tv_temp)
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// SIGHT
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Cut ?
+if(i_mf_cut)
+{
+	M_ResetFctCur(af_FctCur_XTgt, af_FctIdeal_XTgt)
+	M_ResetFctCur(af_FctCur_ZTgt, af_FctIdeal_ZTgt)
+}
+else
+{
+	M_BlendFctCur(af_FctCur_XTgt, af_FctIdeal_XTgt, f_blend_pos)
+	M_BlendFctCur(af_FctCur_ZTgt, af_FctIdeal_ZTgt, f_blend_pos)
+}
+
+// Calcul de toutes les valeurs courantes
+M_ComputeFctCurY(af_FctCur_XTgt)
+M_ComputeFctCurY(af_FctCur_ZTgt)
+
+// Decalage X
+tv_temp = OBJ_PosGet() - v_cur_pos_suivi
+tv_temp.z = 0
+if(MATH_VecDotProduct(tv_temp, tv_temp) < 0.1*0.1) 
+{
+	v_cur_pos_suivi += OBJ_SightGet()
+	tv_temp = OBJ_PosGet() - v_cur_pos_suivi
+}
+
+MATH_VecSetHorzNormalize(tv_temp)
+tv_temp = MATH_VecCrossProduct(tv_temp, Cv_VerticalVector)
+MATH_VecSetHorzNormalize(tv_temp)
+tv_temp *= af_FctCur_XTgt[4]
+
+tv_sight = v_cur_pos_suivi + cvector(0,0,af_FctCur_ZTgt[4])
+tv_sight += @o_mf_actor MATH_VecLocalToGlobal(cvector(0, af_FctIdealY, 0))
+af_FctIdealY = MATH_FloatBlend(af_FctIdealY, 0, f_blend_pos * TIME_GetDt())
+tv_sight += tv_temp
+tv_sight -= OBJ_PosGet()
+
+// Sight
+if(i_force_pos_cible) tv_sight = v_force_pos_cible - OBJ_PosGet()
+if(!ti_keep_sight) OBJ_SightGeneralSet(tv_sight, effet_marche_vertical)
+
+// Calcul du X et du Y pour suivre une position donnée
+////////////////////////////////////////////////////////////////////////////////////
+if(i_force_pos_cible)
+{
+	tv_sight = CM_ComputeCible(OBJ_PosGet(), v_cur_pos_suivi, v_force_pos_cible, 1)
+	tv_temp = OBJ_PosGet() - v_cur_pos_suivi
+	MATH_VecSetHorzNormalize(tv_temp)
+	tv_temp = MATH_VecCrossProduct(tv_temp, Cv_VerticalVector)
+	af_FctCur_XTgt[1] = MATH_VecNorm(tv_sight) 
+	if(MATH_VecDotProduct(tv_temp, tv_sight) < 0) af_FctCur_XTgt[1] = -af_FctCur_XTgt[1]
+	af_FctCur_XTgt[3] = af_FctCur_XTgt[1]
+	
+	tv_temp = v_cur_pos_suivi
+	tv_temp.z = OBJ_PosGet().z
+	tv_temp = CM_ComputeCible(OBJ_PosGet(), tv_temp, v_force_pos_cible, 0)
+	af_FctCur_ZTgt[1] = tv_temp.z
+	af_FctCur_ZTgt[1] += OBJ_PosGet().z  - v_cur_pos_suivi.z
+	af_FctCur_ZTgt[3] = af_FctCur_ZTgt[1]
+}
+
+// End
+i_mf_cut = faux
+ti_keep_sight = faux
+v_last_pos_suivi = v_cur_pos_suivi
+i_force_pos_cible = faux
+
+
+
+// CONTRAINTES GLOBALES
+//////////////////////////////////////////////////////
+if(@get_global i_cam_blocked_rot)
+{
+	tv_temp2 = OBJ_SightGet()
+	
+	tv_temp = tv_temp2
+	MATH_VecSetHorzNormalize(tv_temp)
+	tv_temp1 = @get_global v_cam_original_sight
+	MATH_VecSetHorzNormalize(tv_temp1)
+	
+	tf_temp = MATH_VecAngle(tv_temp, tv_temp1, Cv_VerticalVector)
+	if(MATH_AbsFloat(tf_temp) > @get_global f_cam_blocked_x)
+	{
+		tv_temp2 = MATH_VecRotate(tv_temp1, Cv_VerticalVector, @get_global f_cam_blocked_x * MATH_FloatSign(-tf_temp))
+		tv_temp2.z = 0
+		
+		tv_temp1 = OBJ_SightGet()
+		tv_temp1.z = 0
+		
+		MATH_VecSetNorm(tv_temp2, MATH_VecNorm(tv_temp1))
+		
+		tv_temp2.z = OBJ_SightGet().z
+	}
+	
+	MATH_VecSetNormalize(tv_temp2)
+	if(tv_temp2.z > @get_global f_cam_blocked_z)
+		tv_temp2.z = @get_global f_cam_blocked_z
+	if(tv_temp2.z < @get_global f_cam_blocked_mz)
+		tv_temp2.z = @get_global f_cam_blocked_mz
+		
+	
+	OBJ_SightGeneralSet(tv_temp2, effet_marche_vertical)
+}

@@ -1,0 +1,82 @@
+#include "H_defines.var"
+
+messageid		tmid_LNK
+object			to_serveur
+float				tf_dist
+object			to_main
+object			to_ennemy
+int					ti_weapon
+float				tf_radius
+
+tmid_LNK = pop
+if(i_interdit_tir) return
+
+// Temps d'interdiction
+f_time_help_interdit -= TIME_GetDt()
+if(f_time_help_interdit < 0) f_time_help_interdit = 0
+if(f_time_help_interdit) return
+
+to_serveur = MSG_GlobalGetGao(tmid_LNK, SERVEUR)
+if(joueur) return
+if(i_interdit_aide) return
+
+if(@to_serveur AI_IsModel("KingKong/Humain"))
+{
+	if(@"KingKong/Humain" to_serveur i_etat_courant == ETAT_IA_help)
+		return
+	if(@"KingKong/Humain" to_serveur i_etat_courant == ETAT_IA_Ann_Climb)
+		return
+}
+
+// Certains états l'interdisent
+if(i_etat_courant != ETAT_IA_hide && i_etat_courant != ETAT_IA_suivi) return
+
+// Si je suis deja en help, et que c'est auto, je sort
+if(!LNK_InteractionIsManual(tmid_LNK) && i_etat_courant == ETAT_IA_help) return
+
+// Si automatique, je n'y vais pas si j'ai une bestiolle sur le dos
+if(!LNK_InteractionIsManual(tmid_LNK))
+{
+	if(HasInteretOn(OBJ_Me(), to_ennemy, tf_radius) && OBJ_SqrDist(to_ennemy) < tf_radius * tf_radius) return
+}
+
+// Si pas de gun, ou plus de munition, pas d'aide possible
+if(i_id_humain == C_ID_Hayes)
+{
+	if(!GunEnPlace() && !BambouEnMain()) 
+	{
+		ti_weapon = @"univ" i_weapon_ID[i_id_humain]
+		if(ti_weapon && ti_weapon != Ci_weapon_ID_grenade && ti_weapon != Ci_weapon_ID_crane && ti_weapon != Ci_weapon_ID_levier)
+		{
+			AskText(TEXTE_NoAmmo, GeneHay_C_no_ammo_urg, 50, nobody)
+		}
+		
+		return
+	}
+}
+
+tf_dist = OBJ_SqrDistHorz(to_serveur)
+
+// Prio à l'arme
+if(tf_dist < 10 * 10)
+{
+	if(GunEnPlace() && !JetableEnMain()) tf_dist = 1
+	else if(i_id_humain == C_ID_Hayes)
+		tf_dist = 2
+	else
+		tf_dist = 3
+}
+
+// Autorisation aide si on a les moyens d'aider
+switch(@"univ" i_weapon_ID[i_id_humain])
+{
+	case Ci_weapon_ID_tommy_gun :
+	case Ci_weapon_ID_shotgun :
+	case Ci_weapon_ID_colt :
+	case Ci_weapon_ID_sniper_rifle :
+	case Ci_weapon_ID_bambou :
+	case Ci_weapon_ID_bambou_moy :
+	case Ci_weapon_ID_bambou_petit :
+		LNK_ClientPropose(tmid_LNK, tf_dist)	 	
+		return
+}

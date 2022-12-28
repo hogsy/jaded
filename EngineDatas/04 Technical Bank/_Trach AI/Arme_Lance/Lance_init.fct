@@ -1,0 +1,88 @@
+int		ti_index
+int		ti_crossable
+
+
+//ti_dbg = vrai
+
+// RAZ VAR DBG SI PAS EN EDITEUR 
+if( AI_GetCurSystem() != 10 )
+{
+	ti_dbg = faux
+}
+
+
+//---------( state )--------------------------------------------
+mi_State = Ci_bambou_state_initwait
+
+o_fire = get_FireOnLance 
+
+OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_Msg, 0)			// structure message
+
+AI_CBAdd(OBJ_Me(), CallBack_WhenDestroy, "Lance_cb_when_destroy")
+
+AI_RunContext(CTX_AfterBlend)
+OBJ_FlagsControlSet(OBJ_C_ControlFlag_RayInsensitive, 0)
+OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_DesignStruct, 0)
+OBJ_Me().des_int1 = 0
+
+f_rand_propose = MATH_RandFloat(0.2, 0.3)
+mv_LaunchSpeed = cvector( 10, 10, 10 )
+mv_LaunchGravity = Cv_NormalGravity 
+mv_LaunchFriction = cvector( 1, 1, 1 )
+mo_Sender = nobody 
+mi_fall = faux
+v_pos_de_lancement = OBJ_PosGet()
+v_last_tested_grid_pos = cvector( 0.1, 0, 0)
+
+BV_MinSet(cvector(-1,-1,-1))
+BV_MaxSet(cvector(1,1,1))
+
+COL_ColSetActivationSet(none, all)
+
+//ti_crossable = Gmat_KK_Crossable_Default
+//ti_crossable |= Gmat_KK_Face_eau
+//COL_CrossableSet(ti_crossable, none)
+
+COL_CrossableSet(Gmat_KK_Crossable_Default, none)
+
+COL_UnCollidableReset()
+
+Lance_AddInWorld()
+
+f_fire_delay = MATH_RandFloat(0.02,0.10)
+
+AI_CBAdd(OBJ_Me(), CallBack_Client, "Lance_cb_client")
+
+mi_flamme_avant = mi_flamme
+
+	
+//--------( init vars ) --------
+mf_ZInit = OBJ_PosGet().z
+v_last_pos = OBJ_PosGet()
+v_last_sight = OBJ_SightGet()
+
+
+
+// INIT ? ========================================
+if( i_Spawned_Grabbed )
+{
+	// gst_force_etat_initial
+	o_grabbed_serveur = o_Spawned_Grabbed_Actor
+	i_Spawned_Grabbed = faux
+	o_Spawned_Grabbed_Actor = nobody
+	macro_add_callback_after_cam("Lance_ETAT_cb_Grabbed")
+	AI_TrackChange(0, "Lance_Reflex")
+}
+else
+{
+	if( o_rack_de_lances )
+		AI_TrackChange(2, "Lance_ETAT_Ground")
+	else
+		AI_TrackChange(2, "Lance_ETAT_Wait_Msg")
+	
+	//AI_TrackChange(2, "Lance_ETAT_Ground")
+	AI_TrackCurChangeNow("Lance_Reflex")
+}
+
+
+

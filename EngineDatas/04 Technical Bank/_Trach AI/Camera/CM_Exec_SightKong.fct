@@ -1,0 +1,63 @@
+#include "CM_Defines.var"
+
+vector	tv_joy1
+float		tf_norm
+
+i_visee_force_sight = vrai
+
+// Sight
+if(IO_ButtonJustPressed(joy_button_StickR))
+{
+	v_ideal_sight = -@o_mf_actor OBJ_SightGet()
+	i_auto_evitementsight = faux
+	i_auto_blendsight = faux
+	i_mf_cut = vrai
+	f_angle_z = 0
+}
+else if(i_mf_cut)
+{
+	i_mf_cut = vrai
+	v_ideal_sight = -@o_mf_actor OBJ_SightGet()
+	i_auto_evitementsight = faux
+	i_auto_blendsight = faux
+}
+else 
+{
+	i_auto_evitementsight = vrai
+	i_auto_blendsight = vrai
+	
+	// Mouvement sight par joy
+//	tv_joy1 = IO_JoyGetMove1()
+//	tf_norm = MATH_VecNorm( tv_joy1) 
+//	if ( tf_norm> tolerance_joynull)
+//	{
+//		MATH_VecSetNorm( tv_joy1, ((tf_norm - tolerance_joynull) / ( 1 - tolerance_joynull)))	// Joy entre 0 et 1 malgré la tollérance
+////		tv_joy1 *= ((MATH_VecNorm( tv_joy1) - tolerance_joynull) / ( 1 - tolerance_joynull))	// Joy entre 0 et 1 malgré la tollérance
+//		v_joy_1 = MATH_VecBlend(v_joy_1, tv_joy1 , 10 * TIME_GetDt())		// Blend vers un joy non nul
+//	}
+//	else
+//		v_joy_1 = MATH_VecBlend(v_joy_1, Cv_NullVector, 20 * TIME_GetDt())		// Blend vers un joy null
+	tv_joy1 = v_joy_1
+	if(MATH_AbsFloat(tv_joy1.x) > C_JoyTolX)
+	{
+		tv_joy1.x -= C_JoyTolX * MATH_FloatSign(tv_joy1.x)
+		tv_joy1.x *= @"univ" CAM_SensHoriz
+		v_ideal_sight = MATH_VecRotate(v_ideal_sight, Cv_VerticalVector, -tv_joy1.x * ( Cf_Kong_Rotation_Joy_Speed * TIME_GetDt()))
+		i_auto_evitementsight = faux
+		i_auto_blendsight = faux
+	}
+	else
+		i_auto_blendsight = i_auto_blendsight
+	
+	if(MATH_AbsFloat(tv_joy1.y) > C_JoyTolY)
+	{
+		tv_joy1.y -= C_JoyTolY * MATH_FloatSign(tv_joy1.y)
+		f_angle_z += (tv_joy1.y * 0.1)
+		f_angle_z = MATH_FloatLimit(f_angle_z, -Cf_Cos45, Cf_Cos45)
+		f_angle_z = tv_joy1.y * Cf_Cos45
+		i_auto_evitementsight = faux
+		i_auto_blendsight = faux
+		i_stick_zmax = faux
+	}
+}
+

@@ -1,0 +1,318 @@
+#include "KAnn_Defines.var"
+
+int 	ti_i
+int 	ti_on_enter
+int		ti_action_on_enter
+int		ti_action_ann
+int 	ti_num_link
+int 	toto
+int		ti_interaction_link_type
+
+messageid 		tmid_interet
+
+object 	to_interet_sender
+object 	to_kong_attacker
+object 	to_next_wp
+object	to_best_wp
+object 	to_canal
+
+vector 	tv_pos
+vector	tv_new_pos
+vector	tv_dir_wp
+vector	tv_dir_target
+vector 	tv_2D_pos
+
+float		tf_dot
+float		tf_best_dot
+float 		tf_dist
+
+string		str_texte
+
+
+ti_on_enter = 0
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_back_to_safe_wp = 0
+	f_attack_timer = 0.0
+	o_vision_target = nobody
+	o_javelin_target = nobody
+	OBJ_CapaSet(none, Capa_Action_Ann)
+	i_action_forced = 0
+	KAnn_Death_Timer_Reset()
+	AI_Execute("KAnn_exec_dyn_on")	
+	DYN_GravitySet(Cv_NormalGravity)
+	
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_Action)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Action
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	// AUTORISATIONS DES GRABS
+	for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+		ai_SRV_ENABLE[ti_i] = faux
+	ai_SRV_ENABLE[Ci_LNK_GRAB_RAPTOR] = faux
+	ai_SRV_ENABLE[Ci_LNK_GRAB_TRANSPORTE] = vrai
+	ai_SRV_ENABLE[Ci_LNK_KKGRAB_OBJECT] = vrai
+	ai_SRV_ENABLE[Ci_LNK_INTERACTION] = faux
+	ai_SRV_ENABLE[Ci_LNK_GRAB_KONG] = vrai
+	
+	o_fight_actor = nobody
+	if (i_has_weapon)
+		i_back_to_safe_wp = 1
+		
+	f_attack_timer = 0.0
+	i_in_cache = 0
+	f_attack_reaction_delay = -1
+	f_action_timer = -Cf_Infinit
+	ti_on_enter = 1
+	OBJ_BankingGeneralSet(OBJ_SightGet(), Cv_VerticalVector)
+	i_back_to_safe_wp = 0
+	i_action_completed = 0
+	i_interaction = 0
+	if (OBJ_CapaTest(Capa_Action_Ann))
+	{
+		i_action_forced = 1	
+	}
+	else	
+	{
+		OBJ_CapaSet(Capa_Action_Ann, none)
+		i_action_forced = 0	
+	}
+	KAnn_Death_Timer_Reset()
+ 	
+ 	if( i_has_weapon )
+		ACT_ActionSet(Ann_att_enjoue_bambou)
+	else
+		ACT_ActionSet(Ann_stress_attente)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+	
+	if (f_action_timer != -Cf_Infinit)
+		f_action_timer -= TIME_GetDt()
+	
+	// RAZ vars interaction fight attack / spider
+	if( i_action_id != WP_Action_Interaction_Attack && ao_SRV[Ci_LNK_INTERACTION] && ! @ao_SRV[Ci_LNK_INTERACTION] AI_IsModel(get_PNJ_KSpider_path) )
+		KAnn_Interaction_Attack_Reset()
+}
+
+// ANALYSE =======================================================================================================
+switch( i_action_id )
+{
+	case WP_Action_Interaction_Cache :
+	case WP_Action_Interaction_Attack :
+	case WP_Action_Colonne :
+	case WP_Action_Javelin_Get :
+	case WP_Action_Javelin_Throw :
+	case WP_Action_Wait :		// pas de réseau
+		ai_SRV_ENABLE[Ci_LNK_INTERACTION] = vrai
+		break
+}
+
+// SERVEURS ===================================================================
+AI_Execute("KAnn_exec_serveur_get")
+if (o_old_interaction_object != ao_SRV[Ci_LNK_INTERACTION])
+	o_old_interaction_object =o_old_interaction_object		// WE JUST HAD A INTERACTION ACTOR CHANGE!
+if(ao_SRV[Ci_LNK_GRAB_TRANSPORTE])
+	macro_change_etat("KAnn_ETAT_grabbed_bat")
+if(ao_SRV[Ci_LNK_KKGRAB_OBJECT])
+	macro_change_etat("KAnn_ETAT_grabbed_KK")
+if(ao_SRV[Ci_LNK_GRAB_KONG])
+	macro_change_etat("KAnn_ETAT_grabbed_trex")
+
+// CHECK FOR PAFS
+AI_Execute("KAnn_exec_CHECK_paf")
+if (o_paf_sender) 
+{
+	i_life_state = Life_ETAT_Mort 
+	macro_change_etat("KAnn_ETAT_paf")
+}
+
+if( ! ao_SRV[Ci_LNK_INTERACTION] )
+{
+	if( @o_KONG Proc_KK_IsInBadSituation(0) )
+		KAnn_Death_Timer_Reset()
+	else if( i_action_id == WP_Action_Interaction_Attack )
+	{
+		f_interaction_fight_change_actor_delay += TIME_GetDt()
+		if( f_interaction_fight_change_actor_delay > 1.0 )		// delai pour changer d'acteur (scénario à plusieurs ennemis)
+			KAnn_Death_Timer_Reset()
+	}
+	else
+		KAnn_Death_Timer_Reset()
+}
+
+if (i_action_forced )
+{
+	i_action = 1
+	ti_action_ann = OBJ_CapaGet() & Capa_Action_Ann
+	
+	if ( ! ti_action_ann)
+		macro_change_etat("KAnn_ETAT_follow_network")			// if no action, go to next waypoint
+}
+else if (o_safe_wp)
+{
+	i_action = @o_safe_wp OBJ_CapaGet() & WP_Capa_Action
+	ti_action_ann = OBJ_CapaGet() & Capa_Action_Ann
+	 
+	if ( ! i_action || ! ti_action_ann)
+		macro_change_etat("KAnn_ETAT_follow_network")			// if no action, go to next waypoint
+}
+
+// SET POTENTIAL TARGET
+KAnn_UpdateTarget()
+
+// COMPORTEMENT =======================================================================================================
+if (i_action_id == WP_Action_Fire && i_has_weapon)
+{
+	AI_Execute("KAnn_exec_action_javelin_set_fire")
+}
+else if (i_action_id == WP_Action_Javelin_Get && ! i_has_weapon )
+{
+	AI_Execute("KAnn_exec_action_javelin_get")		// VINC : ne pas bloquer ici si on a une intéraction attack et qu'on a déjà une lance
+}
+else if (i_action_id == WP_Action_Interaction_Cache)
+{
+	AI_Execute("KAnn_exec_action_interaction_cache")
+}
+else if( o_target && ( i_action_id == WP_Action_Interaction_Attack || @o_target AI_IsModel(get_PNJ_KSpider_path) ) )
+{
+	// SPEECH D'INTERACTION ATTACK
+	if( i_action_id == WP_Action_Interaction_Attack || @o_target AI_IsModel(get_PNJ_KSpider_path) )
+	{
+		if( ! OBJ_CapaTest(CAPA_Unlimited_Interaction_Fight) )
+		{
+			if( ao_SRV[Ci_LNK_INTERACTION] )
+			{
+				if( ! i_interaction_fight_init_speech )
+				{
+					i_interaction_fight_init_speech = vrai
+//					SPEECH_M_RqHuman	(C_ID_Ann, GeneKAnn_C_danger_need)
+				}
+				f_interaction_fight_time_cpt += TIME_GetDt()
+				if( ! i_interaction_fight_1st_attack_speech && f_interaction_fight_time_cpt > 2.0 )	// délai pour que Danger_Need soit écoulé
+				{
+					switch( LNK_InteractionParamGet(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION]) )
+					{
+						case C_INTER_FIGHT_ENEMY_FAKE_ATTACK :
+						case C_INTER_FIGHT_ENNEMY_ATTACK :
+							i_interaction_fight_1st_attack_speech = vrai
+//							SPEECH_M_RqHuman	(C_ID_Ann, GeneKAnn_C_bitten)
+							break
+					}
+				}
+				if( ! i_interaction_fight_middle_timer_speech && f_interaction_fight_time_cpt > 8.0 && @o_target AI_IsModel(get_PNJ_KSpider_path) )
+				{
+					i_interaction_fight_middle_timer_speech = vrai
+//					SPEECH_M_RqHuman	(C_ID_Ann, GeneKAnn_C_danger_fear)
+				}
+			}
+		}
+	}
+	
+	// MODE D'INTERACTION ATTACK
+	push(o_target)
+	AI_Execute("KAnn_exec_action_interaction_attack_GEST")
+}
+else if (i_action_id == WP_Action_Javelin_Throw)
+{
+	AI_Execute("KAnn_exec_action_javelin_throw")
+}
+else if (i_action_id == WP_Action_Teleport)
+{
+	AI_Execute("KAnn_exec_action_teleport")
+}
+else if (i_action_id == WP_Action_Colonne)
+{
+	AI_Execute("KAnn_exec_action_colonne")
+}
+else if (i_action_id == WP_Action_Sacrifice)
+{
+	AI_Execute("KAnn_exec_action_sacrifice")
+}
+else if (i_action_id == WP_Action_Cache)
+{
+	AI_Execute("KAnn_exec_action_cache")
+}
+else
+{
+	if( ! o_target && MATH_VecNorm(@o_KONG OBJ_PosGet() - OBJ_PosGet()) < 30.0 )
+	{
+		o_target = o_KONG			
+		o_vision_target = o_target
+	}	
+	
+	to_best_wp = nobody
+	// si on fait rien, qu'on a peur et qu'on a une cible (et quon est pas en action forcee), on se sauve! :)
+	if (i_fear && o_target && ! i_action_forced )
+	{
+		tf_dist = MATH_VecDistance(OBJ_PosGet(), @o_target OBJ_PosGet())
+		if ( (o_target == o_KONG &&  tf_dist < @get_global f_flee_distance_kong) ||
+		     (o_target != o_KONG &&  tf_dist < @get_global f_flee_distance_enemy) )
+		{
+			to_best_wp = KAnn_GetNextWPOnNetwork()
+		}
+	}
+	
+	if (to_best_wp)
+	{
+		i_wp_already_set = 1
+		KAnn_Set_Safe_Wp(to_best_wp)
+		i_old_link_action_type = i_link_action_type
+		i_link_action_type = WAY_LinkDesignGet(n_current_net,o_old_safe_wp,o_safe_wp )	
+		AI_TrackCurChangeNow("KAnn_ETAT_follow_network")
+	}
+	else
+	{
+		// Action attente
+		if( ! KAnn_Action_Kong_Proche() )
+		{
+			// Action standard (Kong loin)
+			if( OBJ_CapaTest(Capa_Wounded) )
+				ACT_ActionSet(Ann_blessee_attente)
+			else if( i_sub_action_id == WP_SubAction_cache )
+				ACT_ActionSet(Ann_Cache_Att)
+			else if( i_has_weapon )
+				ACT_ActionSet(Ann_att_enjoue_bambou)
+			else
+				ACT_ActionSet(Ann_stress_attente)
+		}
+	}
+	
+	if (o_target && !i_freezeSight)	
+	{
+		v_sight = @o_target OBJ_PosGet() - OBJ_PosGet()
+		
+		if ( ! MATH_VecNullEpsilon(v_sight))
+			v_sight = MATH_VecNormalize(v_sight)
+		
+		tf_dot = 	MATH_VecDotProduct(OBJ_SightGet(), v_sight)
+		v_sight = MATH_VecBlend(OBJ_SightGet(),v_sight, TIME_GetDt())
+
+		if (tf_dot < 0.5)
+			OBJ_BankingGeneralSet( v_sight ,Cv_VerticalVector ) 
+	}
+}
+
+if (i_action_completed)
+{
+	OBJ_CapaSet(none, Capa_Action_Ann)
+}
+

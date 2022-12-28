@@ -1,0 +1,708 @@
+#include "KT_defines.var"
+
+//procedure_ultra int	LIb_Kong_Attack( object po_object);
+//procedure_ultra int Proc_KK_IsInBadSituation(int ti_id);
+//Include_UltraProcedure_Header
+
+#define	Cf_dist_check_vide			10.0
+
+
+// RENDRE LE TREX COMPLETEMENT INACTIF MAIS VIVANT
+// #define  MODE_DUMMY
+// RENDRE LE TREX COMPLETEMENT INACTIF MAIS VIVANT
+
+object	to_ray_object
+object	to_head
+object	to_FA_lray_bone
+object	to_my_lray_bone
+object	to_old_fight_actor
+
+float		tf_dist
+float		tf_target_blend_speed
+float		tf_dot
+
+int			ti_i
+int			ti_attaque
+int			ti_flag_rotation
+int			ti_flag_trop_loin
+int			ti_flag_trop_pres
+int			ti_attak_hurlement
+int			ti_attak_lray
+int			ti_attak_res_loc
+int			ti_attak_collision
+int			ti_occluder_cette_trame
+int			ti_force_change_anim
+int			ti_charge_interdite
+int			ti_attack_mord_haut_force
+
+vector	tv_temp
+vector	tv_sight
+vector	tv_lray_sight
+vector	tv_lray_pos
+vector	tv_dest
+vector	tv_dest_next 
+vector	tv_tempZ
+
+messageid	tmid_vision
+messageid	tmid_temp
+messageid	tmid_kong
+function		tfct_newfunc
+
+// occluders
+object	to_occluder_jump
+object	to_occluders[4]
+float		tf_occluders[4]
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+//	if( ! ( i_etat_courant == ETAT_attente || (i_etat_courant == ETAT_KK_attaque && o_fight_actor == o_ANN)) )
+//		i_fury_KANN_death_interruption = faux		// flag interruption de timer conservé si REX hurle ou s'il attaque ANN
+	
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_KK_fight_Z)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_KK_fight_Z
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = AI_TrackCurGet()
+	
+	ai_grabbed_availibility[ Ci_LNK_GRAB_KONG] = vrai	
+	
+	f_non_collide_ground_time = 0.0		// sinon bug cycle "chute -> KO sol -> chute -> KO sol..."
+	
+	// init tableau des acteurs paffés
+	i_paf_nb = 0
+	for(ti_i = 0; ti_i < Ci_paf_nb_max ; ti_i++)
+		ao_paf_list[ti_i] = nobody
+	
+	// Considerer pour l hysteresis des anims de deplacement qu'on pard a l arret a l init du mode
+	i_fight_action_old = -1
+	f_fight_delai_anim = 10.0	
+	f_orientation_coef = 0.0						// BLEND DE BLEND	
+	// Contourne KONG
+	f_fight_sens_contourne += 1.0
+	if ( f_fight_sens_contourne == 2.0)
+		f_fight_sens_contourne = -1.0
+	
+	f_time_start_etat = 0.0
+	i_flag_zde_fight_type = 0
+
+	f_fight_delai_attak = 0.5
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+ti_force_change_anim = faux
+ti_charge_interdite = faux
+
+// ANALYSE =======================================================================================================
+
+o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, vrai, nofunc, nofunc)
+if (o_grabbed_actor_KK)
+{
+	macro_change_etat("KT_ETAT_grabbed")		
+}
+
+// Detection de PAF
+AI_Execute("KT_exec_check_paf")
+if (o_paf_actor)
+{
+	macro_change_etat("KT_ETAT_paf")					// ko delay nul -> simple paf
+}
+
+// Detection du vide
+macro_checkchute
+
+// Détection d'un envoi de projectile de Kong
+if( o_msg_projectile ) 
+	macro_change_etat("KT_ETAT_choppe")
+
+
+// MODE DEFENSIF
+//if ( !i_blesse_on && o_fight_actor && o_fight_actor  != o_ANN && @o_fight_actor LIb_Kong_Attack( OBJ_Me()))
+//	macro_change_etat("KT_ETAT_defense")
+
+// Détection Intimidation (sauf pendant une attaque ou une esquive)
+//AI_Execute("KT_exec_check_fury")
+//if( o_fury_actor )
+//	f_fury_duree += TIME_GetDt()
+//else
+//	f_fury_duree = 0.0
+//if( f_fury_duree >= f_fury_duree_pour_hurler )
+if( i_fury_force_hurlement )
+{
+	f_fury_duree = 0.0
+	i_fury_force_hurlement = faux
+	if( @get_global f_time_KK_ANN_avant_la_mort < Cf_Delai_Tue_ANN )
+	{
+		// interruption du timer 1 seule fois
+		if( ! i_fury_KANN_death_interrupted )
+		{
+			i_fury_KANN_death_interrupted = vrai
+			o_fury_actor = o_fury_force_actor
+			macro_change_etat("KT_ETAT_attente")
+		}
+	}
+	else
+	{
+		o_fury_actor = o_fury_force_actor
+		macro_change_etat("KT_ETAT_attente")
+	}
+}
+
+// COMPORTEMENT ==================================================================================================	
+
+// TEST FIGHT ACTOR
+to_old_fight_actor = o_fight_actor
+AI_Execute("KT_exec_fight_actor_select")
+if( ! o_fight_actor )
+{
+	macro_change_etat("KT_ETAT_attente")
+}
+
+// INIT FIGHT
+if( o_fight_actor != to_old_fight_actor )
+	AI_Execute("KT_exec_fight_actor_init")
+
+// SUIVI DU REGARD =============================================================================
+i_flag_look = vrai	
+to_head = @o_fight_actor ANI_CanalObjectGet(Anim_Canal_Tete)
+if( to_head )
+	v_look_pos = @to_head OBJ_PosGet()
+else
+	v_look_pos = @o_fight_actor OBJ_PosGet()
+
+if( o_fight_actor == o_KONG )
+	v_look_pos.z = @o_fight_actor OBJ_PosGet().z + 6.0
+
+
+// DEMI-TOUR EN COURS ==========================================================================
+if( ACT_ActionGet() == Action_Normal_DemiTourRapide )
+{
+	if( ! ACT_ActionFinished() )
+	{
+		returntrack
+	}
+	else
+	{
+		ti_force_change_anim = vrai
+	}
+}
+
+
+// SENS D'ORIENTATION ==========================================================================
+tmid_vision = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility, o_fight_actor, nobody)
+if( MSG_GlobalIsValid(tmid_vision) )
+	tv_dest = EVENT_PositionGet(tmid_vision)
+else
+	tv_dest = @o_fight_actor OBJ_PosGet()
+
+// TEST D OCCLUDER
+ti_occluder_cette_trame = WAY_LIB_Test_Occluder(OBJ_PosGet() + Cv_VerticalVector, tv_sight, COL_ZoneSizeGet(C_zdm_pied) + 0.1, tv_dest, -1, tv_dest_next, to_occluder_jump, &to_occluders[0], &tf_occluders[0], 0)
+if( ti_occluder_cette_trame != 0 )
+{
+	i_occluder_last_trame = vrai
+	no_occluder_duration = 0.0
+	tv_dest = tv_dest_next
+}
+else
+{
+	i_occluder_last_trame = faux
+	no_occluder_duration += TIME_GetDt()
+}
+
+tv_sight =  tv_dest - OBJ_PosGet()
+tv_sight.z = 0.0
+if( ! MATH_VecNullEpsilon(tv_sight) )
+{
+	tf_dist = MATH_VecNorm(tv_sight)
+	MATH_VecSetNormalize(tv_sight)
+}
+else
+{
+	tv_sight = OBJ_SightGet()
+	tf_dist = 0.0
+}
+
+DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, tv_sight * 10, color_jaune)
+//DBG_RenderVector(OBJ_PosGet(), OBJ_SightGet() * 10, color_vert)
+
+
+//to_head = ANI_CanalObjectGet(Anim_Canal_Tete)
+//tv_tempZ = tv_dest - @to_head OBJ_PosGet()
+
+
+// TEST KONG WALLING
+if( o_fight_actor && o_fight_actor == o_KONG && @get_global i_kong_camera_status == Ci_Kcamera_walling )
+{
+	// KONG fait du walling -> REX hurle vers lui
+	if( tf_dist < 30.0 )		// dist max de jump hotspot (voire + si + haut)
+	{
+		o_fury_actor = o_fight_actor
+		o_fight_actor = nobody
+		macro_change_etat("KT_ETAT_attente")
+	}
+	else
+	{
+		// continue à s'approcher mais charge interdite
+		ti_charge_interdite = vrai
+	}
+}
+
+
+// SENS CONTOURNEMENT ========================================================================
+if( o_fight_actor == o_ANN )
+	f_fight_sens_contourne = 0.0
+
+
+// SOUS-ETATS =================================================================================
+
+// ennemi présent, préparation de l'attaque
+ti_flag_rotation = faux
+ti_attaque = faux
+i_fight_action = i_Anim_attente		// action par défaut
+ti_flag_trop_pres = faux
+ti_flag_trop_loin = faux
+ti_attak_hurlement = faux
+ti_attak_lray = vrai
+ti_attak_res_loc = vrai
+ti_attak_collision = faux
+
+
+// TEST ATTAQUE EN RESOLUTION LOCALE DE COLLISIONS ============================================
+if( i_res_loc_flag )
+{	
+	DBG_RenderVector(OBJ_PosGet() + (2 * Cv_VerticalVector), MATH_VecNormalize(v_res_loc_normale_choisie) * 5, color_jaune)
+	if( MATH_VecDotProduct(v_res_loc_normale_choisie, tv_sight) < 0 )
+		ti_attak_res_loc = faux			// Le mur en collision est du même côté que mon fight actor : on interdit toute attaque
+}
+
+
+// TEST LRAY (MUR ENTRE MA CIBLE ET MOI) =======================================================
+to_FA_lray_bone = @o_fight_actor ANI_CanalObjectGet(Anim_Canal_Torse)
+to_my_lray_bone = ANI_CanalObjectGet(Anim_Canal_Torse)
+tv_lray_pos = @to_my_lray_bone OBJ_PosGet()
+tv_lray_sight = @to_FA_lray_bone OBJ_PosGet() - tv_lray_pos
+//DBG_RenderVector(tv_lray_pos, tv_lray_sight, color_blanc)
+//to_ray_object = COL_RayObject_Vector(tv_lray_pos, tv_lray_sight, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+//if( to_ray_object )
+//	ti_attak_lray = faux			// il n'y a qqchose entre mon fight actor et moi
+
+
+
+// TEST COLLISION AVEC KONG =================================================================
+if( i_res_loc_flag && o_fight_actor == o_KONG && i_KONG_virtual_collision )
+	ti_attak_collision = vrai
+
+
+//// TEST KONG EN FINISH SUR REX ===============================================================
+//if( KT_CheckTargetFinishing(o_fight_actor) )
+//	ti_attak_hurlement = vrai
+//
+//
+//// TEST AUTRE REX EN FINISH SUR KONG =========================================================
+//if( KT_CheckTargetFinished(o_fight_actor) )
+//	ti_attak_hurlement = vrai
+//
+
+// TEST KONG EN MAUVAISE POSTURE ===========================================================
+if( o_fight_actor == o_KONG && @o_fight_actor Proc_KK_IsInBadSituation(C_ID_Tyranosaure) )
+	ti_attak_hurlement = vrai
+
+
+// TEST ORIENTATION =========================================================================
+tf_dot = MATH_VecDotProduct(OBJ_SightGet(), tv_sight)
+
+//DBG_RenderVector(OBJ_PosGet() - (10 * OBJ_SightGet()) + Cv_VerticalVector, 20 * OBJ_SightGet(), color_vert)
+//tv_temp = MATH_VecRotate( - OBJ_SightGet(), Cv_VerticalVector, MATH_ACos(f_dot_tete_ou_queue) )
+//DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, tv_temp * 10.0, color_rouge)
+//tv_temp = MATH_VecRotate( - OBJ_SightGet(), Cv_VerticalVector, - MATH_ACos(f_dot_tete_ou_queue) )
+//DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, tv_temp * 10.0, color_rouge)
+
+
+#ifndef MODE_DUMMY
+// COUP DE QUEUE ===========================================================================
+if( i_flag_coup_queue_enabled && ! i_DBG_force_charge )
+{
+//	if( ( tf_dist < Cf_fight_dist_coup_queue_dos_max && tf_dot < - Cf_Cos45 )				// - 0.71
+//		|| ( tf_dist < Cf_fight_dist_coup_queue_cote_max && tf_dot < - Cf_Cos60 ) )			// - 0.50
+	if( tf_dist <= 8.0 && tf_dot < - f_dot_tete_ou_queue )
+	{
+		// Distance et orientaiton pour un coup de queue OK
+		if( ti_attak_hurlement )
+		{
+			// REX en peut pas attaquer l'acteur
+			o_fury_actor = o_fight_actor
+			macro_change_etat("KT_ETAT_attente")
+		}
+		else
+		{
+			// REX peut attaquer l'acteur
+			if( 
+				ti_attak_collision			// en collision avec KONG 
+				||
+				(
+					ti_attak_lray // visible
+					&& 
+					f_time_start_etat > f_fight_delai_attak 
+					&&
+					(
+						( ! i_res_loc_flag )		// attaque standard
+						|| 
+						( i_res_loc_flag && ti_attak_res_loc) 	// attaque réflexe en résolution locale
+					)
+				)
+			)
+			{
+				KT_Lance_Attaque(tv_sight, Action_Attak_CpQueueD, Action_Attak_CpQueueG, Ci_zde_fight_type_coup_de_queue, tfct_newfunc)
+				if( tfct_newfunc != nofunc )
+					macro_change_etat(tfct_newfunc)
+			}
+			// ELSE : Délai d'attaque pas encore passé : attente
+		}
+	}
+	else
+		ti_flag_trop_loin = vrai				// Ennemi trop loin pour un coup de queue
+}
+// ELSE : coup de queue interdit contre cet acteur
+
+
+// COUP DE TETE ===========================================================================
+if( i_flag_coup_tete_enabled && ! i_DBG_force_charge )
+{
+	if( tf_dist < Cf_fight_dist_coup_tete_max )
+	{
+		// Distance de coup de tête OK
+		if( tf_dot > - f_dot_tete_ou_queue )
+		{
+			// Ennemi devant ou sur les côtés ou légèrement derrière : coup de tête
+			if( ti_attak_hurlement )
+			{
+				// REX en peut pas attaquer l'acteur
+				o_fury_actor = o_fight_actor
+				macro_change_etat("KT_ETAT_attente")
+			}
+			else
+			{
+				// REX peut attaquer l'acteur
+				if( 	ti_attak_collision			// en collision avec KONG 
+				|| (		ti_attak_lray // visible
+						&& 
+						f_time_start_etat > f_fight_delai_attak
+						&&
+						(( ! i_res_loc_flag )		// attaque standard
+						|| ( i_res_loc_flag && ti_attak_res_loc)		// attaque réflexe en résolution locale
+				)))
+				{
+//					tmid_kong = EVENT_TL_MSGID_Get( o_fight_actor)			
+//					if( EVENT_TL_Is_Bleeding(tmid_kong))
+//					{
+//						// Detection du Grab pour le Finish
+//						o_I_finish_actor = LNK_ClientGet(Ci_LNK_KKFINISH_ON_KONG, mid_I_finish_LNK_ID, vrai, nofunc, nofunc, nofunc)
+//						if ( o_I_finish_actor)
+//						{
+//							macro_change_etat("KT_ETAT_I_Finish")
+//						}
+//						else
+//						{
+//							KT_Lance_Attaque(tv_sight, Action_Attak_CpTeteD, Action_Attak_CpTeteG, Ci_zde_fight_type_coup_de_tete, tfct_newfunc)
+//							if( tfct_newfunc != nofunc )
+//								macro_change_etat(tfct_newfunc)
+//						}
+//					}
+//					else
+					{
+						KT_Lance_Attaque(tv_sight, Action_Attak_CpTeteD, Action_Attak_CpTeteG, Ci_zde_fight_type_coup_de_tete, tfct_newfunc)
+						if( tfct_newfunc != nofunc )
+							macro_change_etat(tfct_newfunc)
+					}
+				}
+				// ELSE : Délai d'attaque pas encore passé : attente
+			}
+		}
+		// ELSE : Ennemi dans le dos : impossible de donner un coup de tête
+	}
+	else
+		ti_flag_trop_loin = vrai				// Ennemi trop loin pour un coup de tête
+}
+// ELSE : coup de tête interdit contre cet acteur
+
+
+// COUP DE DENTS ===========================================================================
+if( tf_dist < f_fight_dist_bite_max && ! i_DBG_force_charge )
+{
+	if( tf_dist > f_fight_dist_bite_min )
+	{
+		// Distance de coup de dents OK
+		if( o_fight_actor == o_KONG )
+		{
+			// Face à KONG
+			if( tf_dot > Cf_Cos45) //30 )
+			{
+				// Ennemi devant : coup de dents
+				if( ti_attak_hurlement )
+				{
+					// REX en peut pas attaquer l'acteur
+					o_fury_actor = o_fight_actor
+					macro_change_etat("KT_ETAT_attente")
+				}
+				else
+				{
+					// REX peut attaquer l'acteur
+					if( 	ti_attak_lray // visible
+						&& 
+						f_time_start_etat > f_fight_delai_attak
+						&& 
+						( ( ! i_res_loc_flag )		// attaque standard
+						|| 
+						( i_res_loc_flag && ti_attak_res_loc))) 	// attaque réflexe en résolution locale
+					{
+//						tmid_kong = EVENT_TL_MSGID_Get( o_fight_actor)			
+//						if( EVENT_TL_Is_Bleeding(tmid_kong))
+//						{
+//							// Detection du Grab pour le Finish
+//							o_I_finish_actor = LNK_ClientGet(Ci_LNK_KKFINISH_ON_KONG, mid_I_finish_LNK_ID, vrai, nofunc, nofunc, nofunc)
+//							if ( o_I_finish_actor)
+//							{
+//								macro_change_etat("KT_ETAT_I_Finish")
+//							}
+//							else
+//							{
+//								i_KK_attaque_action = Action_Fight_Mord
+//								i_flag_zde_fight_type = Ci_zde_fight_type_machoire
+//								macro_change_etat("KT_ETAT_attaque")
+//							}
+//						}
+//						else
+						{
+							i_KK_attaque_action = Action_Fight_Mord
+							i_flag_zde_fight_type = Ci_zde_fight_type_machoire
+							macro_change_etat("KT_ETAT_attaque")
+						}
+					}
+					// ELSE : Délai d'attaque pas encore passé : attente
+				}
+			}
+			else
+			{
+				// Ennemi sur le côté
+				ti_flag_trop_loin = vrai
+			}
+		}
+		else
+		{
+			// Face à ANN
+			if( tf_dot > Cf_Cos15 )
+			{
+				// Ennemi devant : choix de l'action à effectuer
+				if( 
+					i_attak_ANN	// Tue ANN
+					|| 
+					(
+						ti_attak_lray // visible
+						&& 
+						f_time_start_etat > f_fight_delai_attak
+//						&&
+//						(
+//							( ! i_res_loc_flag )		// attaque standard
+//							|| 
+//							( i_res_loc_flag && ti_attak_res_loc)		// attaque réflexe en résolution locale
+//						)
+					)
+				)
+				{
+					i_action_wait_timer_ann += 1
+					if( i_action_wait_timer_ann == 2 )
+						i_action_wait_timer_ann = 0
+					
+					if( ( ! i_action_wait_timer_ann ) || i_attak_ANN )
+					{
+						// REX choisit d'attaquer (une fois sur 2 ou timer kill ANN)
+						i_KK_attaque_action = Action_Fight_Mord_Flash
+						i_flag_zde_fight_type = Ci_zde_fight_type_machoire
+						macro_change_etat("KT_ETAT_attaque")
+					}
+					else
+					{
+						// REX choisit de hurler (une fois sur 2)
+						o_fury_actor = o_fight_actor
+						macro_change_etat("KT_ETAT_attente")
+					}
+				}
+				// ELSE : Délai d'attaque pas encore passé : attente
+			}
+			else
+			{
+//				if( ( f_fight_dist_bite_max - tf_dist ) < ( tf_dist - f_fight_dist_bite_min ) )
+//					ti_flag_trop_loin = vrai	// REX est + près de la limite loin que de la limite proche -> il va s'avancer (pour ne pas occiler avance/recule)
+//				else
+//					ti_flag_trop_pres = vrai	// REX est + près de la limite proche que de la limite loin -> il va reculer (pour ne pas occiler avance/recule)
+				ti_flag_rotation = vrai
+			}
+		}
+	}
+	else if( o_fight_actor == o_ANN )
+		ti_flag_trop_pres = vrai			// Trop proche -> recule (s'il n'a pas porté d'attaque réflexe)
+}
+else
+	ti_flag_trop_loin = vrai				// Trop loin pour un coup de dents
+#endif
+
+
+// CHARGE =================================================================================
+if( o_KONG && o_fight_actor == o_KONG )
+{
+	// Si la cible est KONG
+	if ( tf_dist >= Cf_charge_distance
+		&& tf_dot > Cf_Cos30
+		&& TIME_Elapsed(f_time_last_charge, Cf_charge_delai_recup) 
+		&& ! i_blesse_on 
+//		&& ! i_occluder_last_trame )
+		&& no_occluder_duration >= 0.5 
+		&& ! ti_charge_interdite )
+	{
+		// REX peut attaquer l'acteur
+		if( ! KT_Check_Presence_Interet_Statut(o_fight_actor, C_EVENT_InteretStatusCharge) && ! ti_attak_hurlement  )
+		{
+			o_charge_actor = o_fight_actor
+			macro_change_etat("KT_ETAT_charge")
+		}
+		else
+		{
+			// un autre TREX charge déjà mon fight_actor : j'attend 
+			f_time_last_charge = TIME_Get() - ( Cf_charge_delai_recup - 5.0 )
+			
+			o_fury_actor = o_fight_actor
+			macro_change_etat("KT_ETAT_attente")
+		}
+	}
+	else
+		ti_flag_trop_loin = vrai			// charge impossible -> avance / tourne
+}
+
+
+// SENS DEPLACEMENT =======================================================================
+// DEBUG SANS RECUL
+//if( ti_flag_trop_pres )
+//{
+//	ti_flag_trop_loin = faux			// il est possible qu'il y ait à la fois ti_flag_trop_loin et ti_flag_trop_pres
+//	
+//	if( @get_global i_kong_camera_status == Ci_Kcamera_accroch )
+//	{
+//		// KONG est accroché à un mur devant REX : REX arrête d'avancer et hurle
+//		if( TIME_Elapsed(f_fury_last_time_hurlement, Cf_duree_entre_2_hurlements) )
+//		{
+//			o_fury_actor = o_fight_actor
+//			o_fight_actor = nobody
+//			macro_change_etat("KT_ETAT_attente")
+//		}
+//		else
+//			i_fight_action = Action_Normal_Attente
+//	}
+//	else
+//	{
+//		i_fight_action = Action_Normal_Recul
+//		f_fight_sens_contourne = 0.0
+//	}
+//}
+
+// -------------------------------------------DEBUG TREX IMMOBILE
+#ifndef MODE_DUMMY
+{
+	if( ti_flag_trop_pres )
+	{
+		i_fight_action = Action_Normal_Recul
+		f_fight_sens_contourne = 0.0
+	}
+	else if( ti_flag_trop_loin )
+	{
+		if( i_DBG_dont_move )
+			i_fight_action = i_Anim_attente
+		else
+			i_fight_action = i_Anim_marche
+	}
+}
+#endif
+
+
+
+// DEMI TOUR RAPIDE =======================================================================
+if( tf_dot < - Cf_Cos45 && tf_dist >= 15.0 && ! i_DBG_dont_move )
+{
+	i_fight_action = Action_Normal_DemiTourRapide
+	ti_force_change_anim = vrai
+}
+
+
+// ACTION ==================================================================================
+if( ti_force_change_anim || ( i_fight_action != i_fight_action_old && f_fight_delai_anim > 1.0 ) )
+{
+	ACT_ActionSet( i_fight_action)
+//	if ( i_fight_action == i_Anim_marche)
+//	{
+////		ACT_FrequencyGet( i_Anim_marche,0)
+//		if ( !i_blesse_on)
+//			ANI_FrequencySet( 0, ACT_FrequencyGet( Action_Normal_Marche_Rapide,0))
+//		else
+//			ANI_FrequencySet( 0, ACT_FrequencyGet( Action_Normal_Marche_Rapide,0) * 0.75	)
+//	}
+	i_fight_action_old = i_fight_action
+	f_fight_delai_anim = 0.0}
+else
+	f_fight_delai_anim += TIME_GetDt()
+
+
+// ORIENTATION ==============================================================================
+if( i_fight_action != i_Anim_attente )
+	ti_flag_rotation = vrai		// Pas de rotation si pas de déplacement
+
+if( i_res_loc_flag )
+	ti_flag_rotation = vrai		// pour ne pas rester bloqué
+
+if( i_fight_action == Action_Normal_DemiTourRapide )
+	ti_flag_rotation = faux		// pas de rotation dans les anims de demi-tour
+
+if( ti_flag_rotation )
+{
+	// TEST D OCCLUDER
+//	ti_occluder_cette_trame = WAY_LIB_Test_Occluder(OBJ_PosGet() + Cv_VerticalVector, tv_sight, COL_ZoneSizeGet(C_zdm_pied) + 0.1, tv_dest, -1, tv_dest_next, to_occluder_jump, &to_occluders[0], &tf_occluders[0], 0)
+//	if( ti_occluder_cette_trame != 0 )
+//	{
+//		i_occluder_last_trame = vrai
+//		no_occluder_duration = 0.0
+//	}
+//	else
+//	{
+//		i_occluder_last_trame = faux
+//		no_occluder_duration += TIME_GetDt()
+//	}
+	
+//	tv_sight = tv_dest_next - OBJ_PosGet()
+//	DBG_RenderVector( OBJ_PosGet(),tv_sight * 5.0, color_bleu)
+
+	if( tf_dist < 15.0 && ! i_res_loc_flag )
+	{
+		// REX contourne sa cible s'il est assez près, sinon il va droit sur lui (ça peut faire sortir REX de la resolution locale)
+		tv_sight = MATH_VecRotate( tv_sight, Cv_VerticalVector, f_fight_sens_contourne * Cf_1Degre * 35.0)
+	}
+
+	v_orientation_sens = tv_sight
+	AI_Execute("KT_exec_orientation")
+}
+

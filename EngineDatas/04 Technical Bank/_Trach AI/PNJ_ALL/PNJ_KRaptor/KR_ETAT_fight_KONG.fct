@@ -1,0 +1,831 @@
+M_DeclareInteraction_Common
+M_DeclareInteraction_Kong
+#include "KR_defines.var"
+
+int				ti_can_attack
+int				ti_rank
+int				ti_sender_ID
+int				ti_suivi_regard
+int				ti_force_attack
+int				ti_useSafeOrbit
+int				ti_whereIsAnn
+int				ti_testForAttack		// 0 means dont test at all, 1 = test only bite  2 = test all
+int				ti_action
+int				ti_nbWaitForFinish							// final synchro before we launch finish on fight actor
+int				ti_jumpOnFAStatus							// -1,0,+1 see KR_GetJumpOnFightActorStatus
+int				ti_actorIsHurt
+int				ti_col
+int				ti_jump_error
+int				i_do_not_hit_kong
+
+float			tf_dist
+float			tf_dot
+float			tf_angleToKongSight		// see KR_GetAngleToActorSight
+float			tf_timeSinceLastAttack
+float			taf_occl_fake[1]
+
+object		to_canal
+object		to_pere
+object		to_collide_object
+object		to_occl_jump
+object		tao_occl_fake[1]
+object		to_blockingWall
+
+vector		tv_fight_actor_speed
+vector		tv_FA_pos
+vector		tv_sens 
+vector		tv_dirHrzToJump
+vector		tv_temp
+vector		tv_occl_nextPos
+vector		tv_sight
+
+message	tm_filter
+
+messageid	tmid_interet_ID
+messageid	tmid_vision_ID
+
+
+
+#define	Cf_BACKJUMP_LIMIT		100.0 * Cf_1Degre		// limit to jump on kong's back. Angle needs to be: > limit or < -limit
+#define	Cf_FRONTBITE_LIMIT		80.0 * Cf_1Degre			// limit to bite kong from his front. Angle needs to be < limit or > -limit
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	KK_i_fight_etat = 0		// Si non nul ici, l action init a été cancellé par un coup ar exemple.
+	if (i_etat_courant != ETAT_KK_ride && i_etat_courant != ETAT_FinishAttack)
+	{
+		o_bone_ride_KK = LNK_ClientGet(Ci_LNK_RIDE_DINO, mid_bone_ride_KK_LNK_ID, faux, nofunc, nofunc, nofunc)
+		KR_UncollideableDel(o_fight_actor)
+	}
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if( i_etat_courant != ETAT_fight_KONG )
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_fight_KONG
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	if ( i_action_init == Ci_action_init_Force_Jump)
+	{
+		f_time_last_ride = TIME_Get()
+		KK_i_fight_etat = Ci_fight_KONG_preparation_attaque
+		SND_RequestPlay(Ci_SND_Attack_KONG)
+	}
+	else
+		KK_i_fight_etat = Ci_fight_KONG_wait
+
+	i_flag_grosse_impulsion = faux
+	v_jump_pos = Cv_NullVector
+	f_time_check_proie_groupe = TIME_Get()
+	i_ride_try_flag = 0
+	f_rotation_requin_sign_perfect = 0.0		// pour forcer le calcul du sens de rotation
+	i_flag_attente_fourbe = faux
+	f_regard_fourbe_time = 0.0
+
+	// orbitting variations		
+	f_orbitting_countdown = 0.0
+	i_orbitting_speed = Ci_MOVING_SPEED_fast
+	i_orbitting_uturn = faux
+	f_orbitting_angleOffset = 0.0
+	
+	KR_GetOrCreateFinishSynchroMsg( o_KONG, mid_finishSynchro )
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+	f_regard_fourbe_time += TIME_GetDt()
+	if (f_use_safe_orbit_timer > 0.0)
+		f_use_safe_orbit_timer -= TIME_GetDt()
+}
+
+
+// ANALYSE =======================================================================================================
+
+AI_Execute("KR_exec_check_vision")
+
+// PAFS ------------------------------------------------------------------
+AI_Execute("KR_exec_check_paf")
+if( o_paf_actor )
+{
+	KR_Select_Paf_Etat(fct_track_change)
+	if( fct_track_change != nofunc )
+		macro_change_etat(fct_track_change)
+}
+
+// INTIMIDATION ------------------------------------------------------
+//if( ! i_jump_etat || i_attack_type == Ci_ATTACK_TYPE_FrontBite )
+//{
+//	if ( o_intimidator )
+//		macro_change_etat("KR_ETAT_intimide")
+//}
+
+// GRABBED ----------------------------------------------------------
+o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, vrai, nofunc, nofunc)
+if (o_grabbed_actor_KK)
+	macro_change_etat("KR_ETAT_grabbed")
+
+// manage countdown to attack Kong -----------------------
+if (f_locked_FA_timer > 0.0 && o_locked_FA == o_KONG)
+	f_locked_FA_timer -= TIME_GetDt()
+
+
+// Canceller les attaques et les pafs si KONG vient de passer en finish
+i_do_not_hit_kong = faux
+if( @o_KONG Proc_KK_IsInBadSituation(C_ID_Raptor) )
+{
+	KK_i_fight_etat = Ci_fight_KONG_move
+	i_do_not_hit_kong = vrai
+}
+
+
+// Test RIDE ----------------------------------------------------------
+if( i_ride_try_flag == Ci_ride_try_ask )
+{	
+	// Rap has touched Kong, can we land ?
+	o_bone_ride_KK = LNK_ClientGet(Ci_LNK_RIDE_DINO, mid_bone_ride_KK_LNK_ID, vrai, nofunc, nofunc, nofunc)
+	if( o_bone_ride_KK )
+	{
+		if( KR_ActorIsBleeding(o_bone_ride_KK) || @o_bone_ride_KK Proc_KK_RIDE_Get_Actor_Nb_By_Model(OBJ_Me()) == 1 )
+		{
+			i_jump_etat = Ci_Jump_notJumping
+			macro_change_etat("KR_ETAT_ride")
+		}
+		else
+			o_bone_ride_KK = LNK_ClientGet(Ci_LNK_RIDE_DINO, mid_bone_ride_KK_LNK_ID, faux, nofunc, nofunc, nofunc)	// couper la liaison ouverte et refusée
+	}
+	
+	// Can't land on Kong : rebound!
+	if( ! i_do_not_hit_kong )
+	{
+		EVENT_AddEventPafCanal(C_EVENT_FILTER_All, C_PAF_KK_Faible, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_fight_actor, -1, Ci_PAF_POINTS_FRONT_BITE, OBJ_SightGet(), COL_ZonePosGet(C_zde_fight))
+		KR_DBG_Trace(i_DBG_trace_send_paf, "paf faible (10 dmg) en rebondissant sur kong (ride refusé) (etat fight kong)")
+	}
+	DYN_SpeedSetVector(OBJ_SightGet() * -10.0)
+	ACT_ActionSet(Action_Paf_Revol+Ci_Action_Paf_4Dir_Face)
+	i_ride_try_flag = Ci_ride_try_failed
+}
+
+
+// ATTAQUE EN GROUPE -------------------------------------
+if( ! i_jump_etat )
+{
+	KR_check_proie_groupe(i_proie_groupe_wait_done)
+	if( ! i_proie_groupe_wait_done )
+	{
+		// Pas de proie groupe ET attente pas terminée --------------------
+		
+		// Suivi du regard (rotation de la tête uniquement, pas du corps)
+		i_flag_look = vrai
+		to_canal = @o_proie_groupe ANI_CanalObjectGet(Anim_Canal_Tete)
+		v_look_pos = @to_canal OBJ_PosGet()
+		returntrack
+	}
+	else
+	{
+		// Pas de proie groupe ou attente terminée --------------------
+		if( ! o_proie_groupe )
+		{
+			// Aucun raptor n'attaque ANN
+			AI_Execute("KR_exec_select_fight_actor")
+		}
+		else
+		{
+			// Un raptor attaque ANN
+			o_fight_actor = o_proie_groupe
+			KR_Check_KK_Grab_ANN()
+		}
+	}
+}
+
+// TEST DU FIGHT ACTOR -----------------------------------
+if( ! KR_Check_Fight_Actor_Interet() )
+	macro_change_etat("KR_ETAT_attente")
+else if( o_ANN && o_fight_actor == o_ANN )
+	macro_change_etat("KR_ETAT_fight_ANN")
+
+
+// COMPORTEMENT ==============================================================================
+
+i_iam_a_kong_target = vrai
+i_iam_a_kam_target = vrai
+i_flag_zde_fight_enable = vrai
+
+
+ti_whereIsAnn = KR_WhereIsAnn()
+
+tmid_vision_ID = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility, o_fight_actor, nobody)
+if( MSG_GlobalIsValid(tmid_vision_ID) )
+	tv_FA_pos = EVENT_PositionGet(tmid_vision_ID)
+else
+	tv_FA_pos = @o_fight_actor OBJ_PosGet()
+
+if (f_orbitting_countdown <= 0.0)
+	KR_ComputeNewOrbit()
+
+ti_jumpOnFAStatus = KR_GetJumpOnFightActorStatus(o_fight_actor)
+
+if (f_use_safe_orbit_timer > 0.0)
+	ti_useSafeOrbit = vrai
+else
+	ti_useSafeOrbit = faux
+
+// vrai : check occluders only of we are rotating
+v_sens_deplacement = KR_Compute_Deplacement_Requin(tv_FA_pos, KK_f_dist_saute_pres_sqr, KK_f_dist_saute_loin_sqr, vrai, ti_useSafeOrbit)
+v_sens_orientation = tv_FA_pos - OBJ_PosGet()
+v_sens_orientation.z = 0.0
+tf_dist = MATH_VecNorm(v_sens_orientation)
+if( MATH_VecNullEpsilon(v_sens_orientation) )
+	v_sens_orientation = OBJ_SightGet()
+MATH_VecSetNormalize(v_sens_orientation)
+
+ti_force_attack = faux
+if( @o_KONG Proc_KK_Test_Mode( ETAT_Kong_grab_mashing) )
+{
+	ti_force_attack = 2 // JUMP ATTACK
+}
+
+ti_testForAttack = 0		// default : no attack test
+
+
+// FURIE REUSSIE =====================================
+//if( o_intimidator && i_intimidation_type == Ci_KK_Fury_Type_Roar )
+//	KK_i_fight_etat = Ci_fight_KONG_wait 	// RAZ
+//if( f_intimidation_reussie_delai_wait )
+//	KK_i_fight_etat = Ci_fight_KONG_wait 	// RAZ
+
+if( o_intimidator && i_intimidation_type == Ci_KK_Fury_Type_Roar )
+	macro_change_etat("KR_ETAT_intimide")
+
+switch( KK_i_fight_etat )
+{
+	// TROP LOIN DE KONG ---------------------------------------------------------------------------------------------------------------------------------------------------------
+	case Ci_fight_KONG_wait :
+		ACT_ActionSet(Action_Normal_Attente)
+		i_jump_etat = Ci_Jump_notJumping							// réinit jump
+		i_flag_bite_ok = faux						// réinit paf
+		if( OBJ_SqrDistHorz(o_fight_actor) > Cf_dist_fight_KONG 
+		|| @o_KONG Proc_KK_Test_Mode( ETAT_Kong_walling) )
+			macro_change_etat("KR_ETAT_attente")		// KONG trop loin ou en walling => attend
+		else
+			KK_i_fight_etat = Ci_fight_KONG_move
+		break
+	
+	// DEPLACEMENT VERS KONG --------------------------------------------------------------------------------------------------------------------------------------------
+	case Ci_fight_KONG_move :
+		if( i_flag_attente_fourbe )
+		{
+			if( f_regard_fourbe_time < Cf_ATTENTE_REGARD_FOURBE )
+			{
+				KR_SetInterestType(C_EVENT_InteretStatusLock)
+				ACT_ActionSet(Action_Observe_Fourbe)
+			}
+			else
+				i_flag_attente_fourbe = faux
+		}
+		
+		f_orbitting_countdown -= TIME_GetDt()
+		
+		ti_testForAttack = Ci_test_attack_bite_and_jump
+		
+
+		tf_angleToKongSight = KR_GetAngleToActorSight(o_KONG)
+
+
+		// GESTION DE LA COLISION MUR
+		if ( MATH_VecNullEpsilon(v_sens_deplacement) || i_flag_rotation_requin)
+			tv_sight = OBJ_SightGet()
+		else
+			tv_sight = v_sens_deplacement
+			
+		tv_sight.z = 0.0
+		to_blockingWall = COL_BestAngleWallGaoGet( tv_sight,Cf_Cos20,&ti_col)	// blocking wall behind us ?
+ 		if (to_blockingWall && MATH_FloatNullEpsilon(f_time_way_block))
+			f_time_way_block = TIME_Get()
+
+		if ( ! MATH_FloatNullEpsilon( f_time_way_block) && ! TIME_Elapsed( f_time_way_block , 2.0))
+		{
+			ACT_ActionSet(10)
+			OBJ_BankingGeneralSet( MATH_VecBlendRotate( OBJ_SightGet(), v_sens_orientation, 6.0 * TIME_GetDt()), Cv_VerticalVector)
+			if ( MATH_VecNorm(  tv_FA_pos - OBJ_PosGet() ) < 8.0 && i_way_block_attack && f_time_start_etat > (f_time_way_block_last_attack + 2.0))
+			{
+				i_way_block_attack = 1 - i_way_block_attack	// éviter de reattaquer trop vite.
+				f_time_way_block = 0.0
+				f_time_way_block_last_attack = f_time_start_etat
+				ti_force_attack = 1	// FRONT BITE
+				ti_testForAttack = Ci_test_attack_bite_only
+			}
+			else
+				return
+		}
+		else if ( ! MATH_FloatNullEpsilon(f_time_way_block))
+		{
+			i_way_block_attack = vrai		// Tout le cycle a était fait : on peux re attaquer.
+			f_time_way_block = 0.0
+			f_time_way_block_last_attack = f_time_start_etat
+			if ( !ti_jumpOnFAStatus
+			&& ( i_KK_blesse || tf_angleToKongSight > Cf_BACKJUMP_LIMIT || tf_angleToKongSight < -Cf_BACKJUMP_LIMIT) )
+				ti_force_attack = 2	// JUMP
+			else
+				ti_force_attack = 1	// FRONT BITE
+
+			ti_testForAttack = Ci_test_attack_bite_only
+		}
+		else if ( ti_jumpOnFAStatus && ti_force_attack)
+			ti_force_attack = 0
+
+		if ( ! MATH_VecNullEpsilon(v_sens_deplacement) || ti_useSafeOrbit)
+		{
+			// NOT IN JUMP ZONE or USING SAFE ORBIT
+
+			// Déplacement (trop proche ou trop loin => le raptor se deplace vers KONG
+			i_flag_rotation_requin = vrai
+			i_flag_attente_fourbe = faux
+			if ( ti_jumpOnFAStatus == 0 )	// is on orbit : walk
+				ti_action = Action_Normal_Course //Marche
+			else if (ti_jumpOnFAStatus > 0)		// too far away
+				ti_action = Action_Normal_Course
+			else		// too close
+				ti_action = Action_Normal_Course				
+			
+			if (ti_useSafeOrbit)
+				ti_testForAttack = 0		// no test
+			else
+				ti_testForAttack = Ci_test_attack_bite_only		 // test front bite only
+		}
+		
+		if ( i_KK_blesse && ! ti_jumpOnFAStatus )
+			ti_testForAttack = Ci_test_attack_bite_and_jump
+		
+		if ( ti_testForAttack || ti_force_attack )
+		{
+			// Pas de déplacement (raptor à distance de saut)
+			KR_SetInterestType(C_EVENT_InteretStatusLock)	// might change back to none down here
+			
+			ti_can_attack = vrai		// so far so good
+			
+			// need to wait
+			if ( ti_can_attack && f_wait_before_next_attack > 0.0)
+				ti_can_attack = faux
+			
+			if ( ti_can_attack && @o_fight_actor Proc_KK_IsInBadSituation(C_ID_Raptor) )
+				ti_can_attack = faux
+			
+			//==================================================================
+			// Kong doesn't want any attack
+			if( ti_can_attack )
+			{
+				// KONG est-il en train d'effectuer une action qui m'interdit de lui sauter dessus ?
+				if( @o_fight_actor ACT_DesignFlagTest(ANI_DSF_Do_Not_Attack) )
+				{
+					ti_can_attack = faux
+					i_flag_grosse_impulsion = vrai
+					i_flag_attente_fourbe = vrai
+					f_regard_fourbe_time = 0.0
+				}
+			}
+			
+			ti_actorIsHurt = KR_ActorIsBleeding(o_fight_actor)
+			tf_timeSinceLastAttack = TIME_Get() - EVENT_Info_LastAttackTimeGet(mid_lastKongAttack)
+
+			// wait between attacks (unless finish attack in progress) // TIMEr GLOBAL A TOUS LES RAPTORS
+			if ( ! i_KK_blesse && tf_timeSinceLastAttack < Cf_ATTACK_FREQUENCY)
+				ti_can_attack = faux
+
+			// SI KONG NON BLESSE ET RIDE, NE PAS ESSAYER DE SAUTER DESSUS
+			if ( ! ti_actorIsHurt  && @o_KONG Proc_KK_RIDE_Get_Actor_Nb_By_Model(OBJ_Me()) )
+				ti_testForAttack = Ci_test_attack_bite_only
+
+			//==================================================================
+			// in my current angle, what attack is accessible for me
+			if (ti_can_attack || ti_force_attack)
+			{
+				if( i_DBG_test_finish_sur_KONG )
+					i_attack_type = Ci_ATTACK_TYPE_BackJump
+				else if ( ti_force_attack == 2)
+					i_attack_type = Ci_ATTACK_TYPE_BackJump
+				else if ( ti_force_attack == 1)
+					i_attack_type = Ci_ATTACK_TYPE_FrontBite
+				else if ( (ti_testForAttack == Ci_test_attack_bite_and_jump ) &&
+				    ( o_ANN && ti_whereIsAnn != Ci_AnnLocation_KongHand) &&
+				    ( i_KK_blesse || tf_angleToKongSight > Cf_BACKJUMP_LIMIT || tf_angleToKongSight < -Cf_BACKJUMP_LIMIT) ) // && KR_KongCanGrab() )
+				{
+					i_attack_type = Ci_ATTACK_TYPE_BackJump
+					//// desactive lattaque du dos pour tester que lattaque devant
+					//ti_can_attack = faux
+					//KR_SetInterestType(C_EVENT_InteretStatusNone)		// instead of locked since by ourselves we can't
+				}
+				else if (OBJ_SqrDistHorz(o_fight_actor) <= (Cf_FrontBiteAttackMaxDistFactor * KK_f_dist_saute_loin_sqr) )
+				{
+					tv_sens = OBJ_PosGet() - @o_fight_actor OBJ_PosGet()
+					tv_sens.z = 0.0
+					if ( MATH_VecNullEpsilon(tv_sens))
+						tv_sens = @o_fight_actor OBJ_SightGet()
+					else 
+						MATH_VecSetNormalize(tv_sens)
+					if ( MATH_VecDotProduct( @o_fight_actor Proc_KK_LookDirectionGet(), tv_sens) < Cf_Cos60)
+						i_attack_type = Ci_ATTACK_TYPE_FrontBite
+					else
+					{
+						ti_can_attack = faux
+						KR_SetInterestType(C_EVENT_InteretStatusInFightZone)		// instead of locked since by ourselves we can't
+					}
+				}
+				else
+				{
+					ti_can_attack = faux
+					KR_SetInterestType(C_EVENT_InteretStatusInFightZone)		// instead of locked since by ourselves we can't
+				}
+			}  
+
+			//==================================================================
+			// Can I reach Kong ?
+			if( ti_can_attack)
+			{
+				if ( !KR_CanReachActor( o_fight_actor, Anim_Canal_Tete, to_collide_object ) )
+				{
+					ti_can_attack = faux
+					KR_SetInterestType(C_EVENT_InteretStatusInFightZone)		// instead of locked since by ourselves we can't
+				}
+			}
+			
+			if( i_attack_type == Ci_ATTACK_TYPE_BackJump )
+			{
+				if( ti_force_attack )
+				{
+					KK_i_fight_etat = Ci_fight_KONG_orient_avant_attaque
+				}
+				else if( ti_can_attack )
+				{
+					if( ti_jumpOnFAStatus == 0 )
+						KK_i_fight_etat = Ci_fight_KONG_orient_avant_attaque
+					else
+						ti_can_attack = faux
+				}
+			}
+
+			// manage timers here
+			if( ti_can_attack || ti_force_attack) // && !i_group_finish_attack )
+			{
+				if( 	! TIME_Elapsed(f_time_last_ride, Cf_delai_ride) && ! ti_force_attack)
+				{
+					// raptor pas à l'écran ou alors depuis pas assez longtemps : il se positionne pour sauter
+					ti_can_attack = faux
+					KR_SetInterestType(C_EVENT_InteretStatusInFightZone)		// instead of locked since by ourselves we can't
+				}
+				else
+				{
+					// raptor à l'écran depuis suffisamment longtemps : attaque
+					KK_i_fight_etat = Ci_fight_KONG_orient_avant_attaque
+				}
+			}
+
+			if (i_flag_attente_fourbe)
+			{
+				ti_action = Action_Observe_Fourbe
+				i_flag_rotation_requin = faux
+			}
+			else if( ti_can_attack )
+			{		
+				ti_action = Action_Observe_Fourbe//Action_Normal_Attente
+				i_flag_rotation_requin = faux
+
+				// SET INTERET
+				KR_SetInterestType(C_EVENT_InteretStatusLock)
+				EVENT_Info_LastAttackTimeSet(mid_lastKongAttack, TIME_Get() ) 
+			}
+			else
+			{
+				v_sens_deplacement = v_sens_orientation
+				i_flag_rotation_requin = vrai
+				if (i_orbitting_speed == Ci_MOVING_SPEED_slow && @o_KONG DYN_SpeedGet() < 1.0 )
+					ti_action = Action_Normal_Marche
+				else
+					ti_action = Action_Normal_Course
+			}
+		}
+		
+		ACT_ActionSet(ti_action)
+		break
+	 
+// ORIENTATION VERS KONG AVANT JUMP ---------------------------------------------------------------------------------------------------
+	case Ci_fight_KONG_orient_avant_attaque :
+		KR_SetInterestType(C_EVENT_InteretStatusLock)
+//		EVENT_Info_LastAttackTimeSet(mid_lastKongAttack, TIME_Get() ) 
+		ACT_ActionSet(Action_Observe_Fourbe)
+		if ((i_attack_type == Ci_ATTACK_TYPE_BackJump) && ti_jumpOnFAStatus != 0 )
+		{
+			// can't jump: too close or too far
+			KK_i_fight_etat = Ci_fight_KONG_move
+		}
+		else
+		{		
+			// TOUJOURS ATTAQUER KK PAS DE LIMIT DE NOMBRE
+			f_time_last_ride = TIME_Get()
+			KK_i_fight_etat = Ci_fight_KONG_preparation_attaque
+			SND_RequestPlay(Ci_SND_Attack_KONG)
+		}
+		break
+	
+	// PREPARATION DE L ATTAQUE SUR KONG ----------------------------------------------------------------------------------------------
+	case Ci_fight_KONG_preparation_attaque :
+		KR_SetInterestType(C_EVENT_InteretStatusLock)
+		if (i_attack_type == Ci_ATTACK_TYPE_BackJump)
+		{
+			to_canal = @o_fight_actor ANI_CanalObjectGet(Anim_Canal_Ventre)
+			v_jump_pos = @to_canal	OBJ_PosGet()
+			
+			// ANTICIPATION
+ 			tv_fight_actor_speed = @o_fight_actor DYN_SpeedGetVector()
+			tv_fight_actor_speed.z = 0.0
+			if ( ! MATH_VecNullEpsilon( tv_fight_actor_speed))
+				MATH_VecSetNorm( tv_fight_actor_speed, @get_Kong_Path o_fight_actor f_walling_speed_in)
+		}		
+		else if (i_attack_type == Ci_ATTACK_TYPE_FrontBite)
+		{
+			to_canal = @o_fight_actor ANI_CanalObjectGet(Anim_Canal_JambeDroite)
+			v_jump_pos = @to_canal	OBJ_PosGet()
+		}
+		
+		ti_can_attack = faux		// following code needs to set to true to launch attack
+		
+		if ( ( i_attack_type == Ci_ATTACK_TYPE_BackJump && ti_jumpOnFAStatus != 0 ) 
+		&& i_action_init != Ci_action_init_Force_Jump)
+		{
+			KR_SetInterestType(C_EVENT_InteretStatusInFightZone)
+			i_jump_etat = Ci_Jump_notJumping			// réinit jump
+			KK_i_fight_etat = Ci_fight_KONG_move
+			break
+		}
+		else
+		{
+			// peut encore sauter : orientation
+			tv_dirHrzToJump = v_jump_pos - OBJ_PosGet()
+			tv_dirHrzToJump.z = 0
+			if (MATH_VecNullToler(tv_dirHrzToJump, 0.01))
+				tv_dirHrzToJump = OBJ_HorizonGet()	// makes sure he won't jump
+			else
+				MATH_VecSetNormalize(tv_dirHrzToJump)
+			to_blockingWall = COL_BestAngleWallGaoGet(-tv_dirHrzToJump,Cf_Cos80,&ti_col)	// blocking wall behind us ?
+			tv_temp = OBJ_SightGet()
+			tv_temp.z = 0.0
+			MATH_VecSetHorzNormalize(tv_temp)
+			tf_dot = MATH_VecDotProduct(tv_temp, tv_dirHrzToJump)
+			if ( (!to_blockingWall) && (tf_dot < Cf_Cos15) )	//MATH_FloatNullToler( MATH_AbsFloat(tf_dot - Cf_Cos15) , 0.1)) )
+			{
+				// pas bien orienté : il s'oriente avant de sauter
+				ACT_ActionSet(Action_Observe_Fourbe)
+			}
+			else
+			{
+				// will jump on kong so set interest at attack so no one else jumps
+				KR_SetInterestType(C_EVENT_InteretStatusAttack)
+				SND_RequestPlayOnObjCanal(Ci_SND_Roar, Anim_Canal_Tete)
+				
+				// NEED IMPULSE BEFORE JUMPING?
+				if (i_attack_type == Ci_ATTACK_TYPE_FrontBite)
+					i_jump_etat = Ci_Jump_noimpulse
+				else
+					i_jump_etat = Ci_Jump_impulse_big		// le raptor a attendu avant d'attaquer : il va effectuer une grosse impulsion
+				i_flag_grosse_impulsion = faux	// done with it
+				KK_i_fight_etat = Ci_fight_KONG_saut_cycle
+				i_action_init = 0										// l action init se fait on peux virer la variable.
+				KR_UncollideableAdd(o_fight_actor)
+			}
+		}
+		v_sens_deplacement = v_jump_pos - OBJ_PosGet()
+		v_sens_orientation = MATH_VecNormalize(v_jump_pos - OBJ_PosGet())
+		break
+	
+	// JUMP SUR KONG EN COURS ----------------------------------------------------------------------------------------------------
+	case Ci_fight_KONG_saut_cycle :
+		KR_SetInterestType(C_EVENT_InteretStatusAttack)
+		// Update Kong's attack message
+		if (i_attack_type == Ci_ATTACK_TYPE_BackJump)
+		{
+			EVENT_Info_LastAttackSet( mid_lastKongAttack, Ci_LASTATTACK_TYPE_Grab, TIME_Get(), OBJ_Me() )
+			if ( i_jump_etat > Ci_Jump_landing )
+			{
+				if( COL_ZDE_ZDECollide(o_fight_actor, C_zde_corps, C_zde_corps) && i_ride_try_flag == 0 )
+				{
+					// vient d'atterir sur le fight actor
+					i_ride_try_flag = Ci_ride_try_ask
+					i_flag_bite_ok = vrai
+				}
+			}
+		}
+		else if (i_attack_type == Ci_ATTACK_TYPE_FrontBite)
+		{
+			EVENT_Info_LastAttackSet( mid_lastKongAttack, Ci_LASTATTACK_TYPE_Normal, TIME_Get(), OBJ_Me() )
+			if ( i_jump_etat > Ci_Jump_landing )
+			{
+				if (f_PC_HDist[Ci_PCOMP_KONG] < 8.0)
+				{
+					i_jump_etat = Ci_Jump_bite
+					KK_i_fight_etat = Ci_fight_KONG_bite
+					ACT_ActionSet(Action_Fight_MordRapide)
+				}
+				else
+				{
+					// follow the target
+					v_jump_pos = @o_fight_actor OBJ_PosGet()
+					v_sens_deplacement = v_jump_pos - OBJ_PosGet()
+					v_sens_orientation = MATH_VecNormalize(v_jump_pos - OBJ_PosGet())
+				}
+			}
+		}
+
+		if ( ! i_jump_etat)
+		{
+			// Le saut est terminé 
+			KK_i_fight_etat = Ci_fight_KONG_wait
+			KR_UncollideableDel(o_fight_actor)
+		}
+		break
+		
+	// MORD KONG -----------------------------------------------------------------------------------------
+	case Ci_fight_KONG_bite :
+		KR_SetInterestType(C_EVENT_InteretStatusAttack)
+		// Update Kong's attack message
+		EVENT_Info_LastAttackSet( mid_lastKongAttack, Ci_LASTATTACK_TYPE_Normal, TIME_Get(), OBJ_Me() )
+		// TODO : AIM THE CLOSEST LIMB
+		to_canal = @o_fight_actor ANI_CanalObjectGet(Anim_Canal_JambeDroite)
+		v_jump_pos = @to_canal	OBJ_PosGet()
+		v_sens_deplacement = v_jump_pos - OBJ_PosGet()
+		v_sens_orientation = MATH_VecNormalize(v_jump_pos - OBJ_PosGet())
+		break
+		
+	// erreur  ?----------------------------------------------------------------------------------------------------
+	default:
+		KR_SetInterestType(C_EVENT_InteretStatusInFightZone)
+		DBG_Error("KK_i_fight_etat inconnu (etat fight KONG)")
+		break
+}
+
+// SUIVI REGARD ==================================================================
+ti_suivi_regard = vrai
+if( i_jump_etat == Ci_Jump_landing )
+	ti_suivi_regard = faux		// réception de saut
+if( ti_suivi_regard )
+{
+	i_flag_look = vrai
+	to_canal = @o_fight_actor ANI_CanalObjectGet(Anim_Canal_Tete)
+	v_look_pos = @to_canal OBJ_PosGet()
+}
+
+
+// ACTION ==================================================================
+ti_jump_error = faux
+switch(i_jump_etat)
+{
+	case Ci_Jump_impulse_big :		// Grosse impulsion
+		if( i_attack_type == Ci_ATTACK_TYPE_BackJump )
+		{
+			DYN_FrictionVectorSet(Cv_Raptor_friction)
+			//ACT_ActionSet(Action_Fight_Saut_deb)
+			ACT_ActionSet(Action_Jump_Impulse)
+			i_jump_etat = Ci_Jump_withimpulse	//MG: with Ci_Jump_noimpulse, it would skip the impulse before jumping
+		}
+		else if (i_attack_type == Ci_ATTACK_TYPE_FrontBite)
+		{
+			ACT_ActionSet(Ci_Action_FrontBiteWalk)
+			i_jump_etat = Ci_Jump_withimpulse	//MG: with Ci_Jump_noimpulse, it would skip the impulse before jumping
+		}
+		break
+		
+	case Ci_Jump_impulse_small :		// Petite impulsion
+		if (i_attack_type == Ci_ATTACK_TYPE_BackJump)
+		{
+			if (ACT_ActionFinished())		// wait until scream is over with
+			{
+				DYN_FrictionVectorSet(Cv_Raptor_friction)	
+				ACT_ActionSet(Action_Fight_Saut_deb)
+				v_jump_computedSpd = KR_Compute_Impulsion(vrai)	// anticipe kong
+				i_jump_etat = Ci_Jump_impulse_exit
+			}
+		}
+		else if (i_attack_type == Ci_ATTACK_TYPE_FrontBite)
+		{
+			if (ACT_ActionFinished())		// wait until scream is over with
+			{
+				ACT_ActionSet(Ci_Action_FrontBiteWalk)
+				i_jump_etat = Ci_Jump_cycle
+			}
+		}
+		break
+
+	case Ci_Jump_noimpulse :		// Calc impulsion + début saut cycle sans anim impulsion (déjà jouée en Ci_Jump_impulse_big)
+	case Ci_Jump_withimpulse :		// Calc impulsion + début saut cycle après anim impulsion
+		if (i_attack_type == Ci_ATTACK_TYPE_BackJump)
+		{
+			if (ACT_ActionFinished())		// noimpulse:wait for scream finished   withimpulse:wait first impulse anim
+			{
+				v_jump_computedSpd = KR_Compute_Impulsion(vrai)	// anticipe kong
+				ti_action = KR_GetImpulseExitAction(MATH_VecNormalize(v_jump_computedSpd))
+				ACT_ActionSet(ti_action)
+				i_jump_etat = Ci_Jump_impulse_exit
+			}
+		}
+		else if (i_attack_type == Ci_ATTACK_TYPE_FrontBite)
+		{
+			ACT_ActionSet(Ci_Action_FrontBiteWalk)
+			i_jump_etat = Ci_Jump_cycle
+		}
+		break
+		
+	case Ci_Jump_impulse_exit :
+		if (ACT_ActionFinished())
+		{
+			DYN_SpeedSetVector(v_jump_computedSpd)
+			ACT_ActionSet(Action_Fight_Saut_cycl_attack)
+			i_jump_etat = Ci_Jump_cycle
+		}
+		break
+		
+	case Ci_Jump_cycle :		// saut cycle en cours -> détection réception
+		if (i_attack_type == Ci_ATTACK_TYPE_BackJump)
+		{
+			KRDBG_DRAWVECTOR(Ci_DBG_DRAW_TMP, v_jump_pos, Cv_VerticalVector * 10, color_cyan)
+			if (COL_CollideType(COL_C_Ground))
+			{
+				DYN_FrictionVectorSet(Cv_Raptor_friction)	
+				ACT_ActionSet(Action_Fight_Saut_derape)
+				i_jump_etat = Ci_Jump_landing
+				i_ride_try_flag = 0
+			}
+		}
+		else if (i_attack_type == Ci_ATTACK_TYPE_FrontBite)
+		{
+			if ( ! COL_CollideType(COL_C_Ground) )
+			{
+				// something is obstructing : abort the attack
+				ACT_ActionSet(Action_Normal_Attente)
+				i_jump_etat = Ci_Jump_notJumping
+			}
+		}
+		break
+		
+	case Ci_Jump_landing :		// anim de réception sur le sol en cours -> fin de l'anim
+		if (i_attack_type == Ci_ATTACK_TYPE_BackJump)
+		{
+			if (ACT_ActionFinished())
+				i_jump_etat = Ci_Jump_notJumping
+		}
+		else if (i_attack_type == Ci_ATTACK_TYPE_FrontBite)
+			ti_jump_error = vrai
+		break
+		
+	case Ci_Jump_bite :
+		// envoie un paf if we're still colliding with him
+		COL_ColSetActivationSet(C_bit_zde_fight, none)
+		if( COL_ZDE_ZDECollide(o_fight_actor, C_zde_fight, C_zde_corps) )
+		{
+			if( ! i_do_not_hit_kong )
+			{
+				EVENT_AddEventPafCanal(C_EVENT_FILTER_All, C_PAF_KK_Faible, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_fight_actor, -1, Ci_PAF_POINTS_FRONT_BITE, OBJ_SightGet(), COL_ZonePosGet(C_zde_fight))
+				KR_DBG_Trace(i_DBG_trace_send_paf, "paf faible (10 dmg) en mordant kong (etat fight kong)")
+			}
+			SND_RequestPlay(Ci_SND_Bite)
+			i_jump_etat = Ci_Jump_wait_bite_end
+		}
+		else if( ANI_CurrentFrameGet(0) > 25 )
+			i_jump_etat = Ci_Jump_wait_bite_end
+		COL_ColSetActivationSet(none, C_bit_zde_fight)
+		break
+
+	case Ci_Jump_wait_bite_end :
+		// Mais fuir putain !!
+		if ( i_KK_blesse)
+			f_use_safe_orbit_timer = Cf_FLEE_TIME_MODE_WAR
+		else
+			f_use_safe_orbit_timer = Cf_FLEE_TIME_AFTER_BITE
+		f_use_safe_orbit_timer = MATH_RandFloat( f_use_safe_orbit_timer - 0.5, f_use_safe_orbit_timer + 0.5)
+		i_jump_etat = Ci_Jump_notJumping
+		KK_i_fight_etat = Ci_fight_KONG_move
+		break
+}
+
+if( ti_jump_error )
+{
+	// erreur dans le comportement du jump, du (à priori) à une annulation de jump à cause d'un finish
+	i_jump_etat = Ci_Jump_notJumping
+}
+
+
+// ORIENTATION ==================================================================
+if( ( i_jump_etat != Ci_Jump_landing ) && ( (i_jump_etat != Ci_Jump_cycle) || (i_attack_type == Ci_ATTACK_TYPE_FrontBite) ) )
+	AI_Execute("KR_exec_orientation")			// ne s'oriente pas en saut cycle et saut dérape
+

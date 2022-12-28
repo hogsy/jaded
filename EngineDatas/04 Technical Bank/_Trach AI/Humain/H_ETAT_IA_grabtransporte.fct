@@ -1,0 +1,169 @@
+///////// BAT ///////////////
+////////////////////////////////
+
+#include "H_defines.var"
+#include "H_action.var"
+
+
+int			ti_i
+int			ti_numero
+int			ti_index
+int			ti_context
+
+float		tf_liferatio
+
+vector	tv_new_sight
+vector	tv_dest_pos
+vector	tv_me_to_dest
+
+object	to_bone
+
+int			ti_anim
+int			ti_grab_type
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	DYN_FrictionVectorSet(cvector(1.0, 1.0, 0.0))
+
+	COL_ColMapActivationSet(all, none)
+	COL_UnCollidableDel(o_grab_actor)
+		
+	if( ! ao_SRV[Ci_LNK_GRAB_RAPTOR] )
+		AI_CBDel(o_grab_actor, CallBack_After_Blend, "H_callback_set_pos")		// uniquement si le grab est coupé (pas en paf par exemple)
+
+	v_grab_grav_pos = Cv_NullVector
+
+	i_sort_etat = faux
+	ResetPath()
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_IA_grabtransporte)
+{
+//	i_request_txt = Gene_C_caught
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_IA_grabtransporte
+
+	//----( pour fred : capa 0 à 1 indique pendant une trame que le perso s'est fait taper ou grabber )----
+	OBJ_CapaSet( OBJ_Capa_0, 0 )
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	// Envoie un message a SUN
+	EVENT_AddEventFilmation( C_EVENT_Filmation_filter_HumainGnaked, OBJ_Me(), ao_SRV[Ci_LNK_GRAB_RAPTOR], Cf_EVENT_Duree_1Trame)
+
+	for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+		ai_SRV_ENABLE[ti_i] = faux
+
+	ai_SRV_ENABLE[Ci_LNK_GRAB_RAPTOR] = vrai
+	ai_SRV_ENABLE[Ci_LNK_PSSS]					= vrai
+
+	o_grab_actor = ao_SRV[Ci_LNK_GRAB_RAPTOR]
+	COL_UnCollidableAdd(o_grab_actor)	
+
+	i_flag_init_rag_doll = vrai
+	AI_CBAdd(o_grab_actor, CallBack_After_Blend, "H_callback_set_pos")
+		
+	DYN_SpeedSetVector( Cv_NullVector)
+	DYN_TractionSet( Cv_NullVector)
+	DYN_FrictionVectorSet(cvector(0.5, 0.5, 0.0))
+	DYN_GravitySet(Cv_NullVector)
+
+	COL_ColMapActivationSet(none, all)
+	i_nb_hit = 0
+
+	f_time_start_etat = 0.0
+	
+	// décalage
+	o_grab_transporte_bone = @o_grab_actor ANI_CanalObjectGet(Anim_Canal_OrteilGauche)
+	v_local_sight = @o_grab_transporte_bone MATH_VecGlobalToLocal(OBJ_SightGet())
+	v_local_banking = @o_grab_transporte_bone MATH_VecGlobalToLocal(OBJ_BankingGet())
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE  =====================================================================
+AskText(TEXTE_ALaide, Gene_C_help, 10, nobody)
+
+// Pssss	
+OBJ_Me().des_int1 = Ci_DISPLAY_PSSS
+if(ao_SRV[Ci_LNK_PSSS])
+{
+	ForceRegardSur(AI_MainActorGet(C_ID_Jack), 1.0)
+	ao_SRV[Ci_LNK_PSSS] = LNK_ServeurGet(Ci_LNK_PSSS, amid_SRV_LIAISON_ID[Ci_LNK_PSSS], faux, nofunc, nofunc)
+	i_request_txt = Gene_C_help
+}
+
+AI_Execute("H_exec_serveur_get")
+AI_Execute("H_exec_ch_Stimulus_Paf")
+if (o_paf_sender) 
+	macro_change_etat("H_ETAT_IA_paf")
+
+// INTERRUPTION BRUTALE DE LA LIAISON
+if( ! ao_SRV[Ci_LNK_GRAB_RAPTOR] )
+{
+	AI_Execute("H_exec_set_pos_grab_transporte")
+	macro_change_etat("H_ETAT_IA_Projete")
+}
+
+// COMPORTEMENT ===============================================================
+
+// ACTION A JOUER
+ti_grab_type = LNK_GrabStatusGet(amid_SRV_LIAISON_ID[Ci_LNK_GRAB_RAPTOR])
+ti_anim = 0
+switch (ti_grab_type)
+{
+	case Ci_GrabTransporte_Type_Pose :
+		ti_anim = Action_Humain_Mort
+		break
+
+	case Ci_GrabTransporte_Type_Vole :
+	default:
+		if( i_id_humain == C_ID_Ann )
+		{
+			
+			switch( ACT_ActionGet() )
+			{
+				case Action_Ann_Grab_Bat_SeDebat :
+					if( ACT_ActionFinished() )
+					{
+						ti_anim = Action_Ann_Grab_Bat_Attend
+						f_time_start_etat = -2.0			// dans 2 sec on rejoue l'anim SeDebat
+					}
+					break
+				
+				case Action_Ann_Grab_Bat_Attend :
+					if( f_time_start_etat > 0.0 )
+						ti_anim = Action_Ann_Grab_Bat_SeDebat
+					break
+					
+				default:
+					// entrée dans le mode : ANN se débat
+					ti_anim = Action_Ann_Grab_Bat_SeDebat
+					break
+			}
+		}
+		else
+		{
+			// Denham, Hayes & Cie...
+			ti_anim = Action_Grabed_raptor_jambe
+		}
+		break
+}
+
+
+if( ! ACT_ActionIsTransition() )			// ne coupe pas une transition
+	if( ti_anim != 0 )
+		if( ACT_ActionGet() != ti_anim )
+			ACT_ActionSet1(ti_anim)
+

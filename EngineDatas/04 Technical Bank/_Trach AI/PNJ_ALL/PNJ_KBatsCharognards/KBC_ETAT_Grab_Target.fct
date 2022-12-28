@@ -1,0 +1,36 @@
+#include "KBC_defines.var"
+
+object to_duplicated
+
+
+// SORTIE ETAT
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// ENTREE ETAT
+if (i_etat_courant != ETAT_GrabTarget)
+{
+ 	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_GrabTarget
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	ACT_ActionSet(ACTION_Vol_Proie)
+	
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+

@@ -1,0 +1,105 @@
+#include "Box_defines.var"
+
+int			ti_ice
+float		tf_friction
+vector	tv_friction
+vector	tv_traction
+vector	tv_speed
+
+#define	Cv_Box_Friction_Ground_Bois		cvector(1,1,0)
+//#define	Cv_Box_Friction_Ground_Metal		cvector(5,5,0)
+
+#define	Cv_Box_Friction_Ice_Bois				cvector(0.15,0.15,0)
+//#define	Cv_Box_Friction_Ice_Metal			cvector(0.5,0.5,0)
+
+#define	Cv_Box_Friction_Chute_Bois			cvector(0.5,0.5,0)
+//#define	Cv_Box_Friction_Chute_Metal		cvector(2.0,2.0,0)
+
+
+// FRICTION ==============================================
+if (OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna))
+{
+	ti_ice = faux
+	if( ! Piege_Type
+		&& i_ground_flag
+		&& Glissement == Ci_Glissement_Ice
+		&& (COL_GMAT_FlagsGet(COL_C_Ground) & Gmat_RM_Ice) )
+		ti_ice = vrai
+	if( ti_ice )
+	{
+	//	if( Materiau == 1)	// Metal
+	//		tv_friction = Cv_Box_Friction_Ice_Metal
+	//	else
+			tv_friction = Cv_Box_Friction_Ice_Bois
+	}
+	else if( i_ground_flag )
+	{
+	//	if( Materiau == 1)	// Metal
+	//		tv_friction = Cv_Box_Friction_Ground_Metal
+	//	else
+			tv_friction = Cv_Box_Friction_Ground_Bois
+	}
+	else
+	{
+	//	if( Materiau == 1)	// Metal
+	//		tv_friction = Cv_Box_Friction_Chute_Metal
+	//	else		
+			tv_friction = Cv_Box_Friction_Chute_Bois
+	}
+	if( Materiau == 1)	// Metal
+		tv_friction *= 2.0
+
+//	tv_friction.z = 1.0
+//	tv_friction *= Size
+
+	tv_friction.z = 0.0
+
+	tv_friction *= 2.0
+	tf_friction = tv_friction.x		// important pour le tractionset ensuite !!! 
+	DYN_FrictionVectorSet(tv_friction)
+	
+	// TRACTION =================================================
+	if( ! DYN_Immovable )
+	{
+		tv_traction = v_Traction_Exterieure + v_Traction_Falling + v_Traction_Pente + v_Traction_Stream
+		tv_traction.x *= tf_friction
+		tv_traction.y *= tf_friction
+		DYN_TractionSet(tv_traction)
+	}
+	
+	if ( ! MATH_VecNullEpsilon(v_Speed_Propulse))
+	{
+		DYN_SpeedSetVector(v_Speed_Propulse)
+		v_Speed_Propulse = Cv_NullVector
+	}
+
+	tv_speed = DYN_SpeedGetVector()
+	tv_speed.z = 0.0
+
+	f_speed_before_rec = DYN_SpeedGet()
+}
+else
+{
+	tv_speed = Cv_NullVector
+	
+	f_speed_before_rec = 0.0
+}
+
+if ( !MATH_VecNullToler(tv_speed, 1.0))
+{
+	if ( i_SND_tracte == -1)
+		i_SND_tracte = SND_RequestPlayLoop(C_SND_Tracte)
+}
+else if ( i_SND_tracte != -1)
+{
+	SND_Stop(i_SND_tracte)
+	i_SND_tracte = -1
+}
+
+
+
+if( i_explose )
+	EVENT_AddEventShoot(OBJ_Me(), RM_WEAPON_TYPE_BOMBOX, v_pos_old, OBJ_PosGet(), nobody, 0)
+
+v_pos_old = OBJ_PosGet()
+

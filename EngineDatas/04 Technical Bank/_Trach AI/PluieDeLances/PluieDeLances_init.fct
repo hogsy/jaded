@@ -1,0 +1,41 @@
+#include "PluieDeLances_defines.var"
+
+int 		t_i
+object 	to_lance
+
+AI_CBAdd(OBJ_Me(), CallBack_WhenDestroy,"PluieDeLances_callback_when_destroy")
+
+if (i_nombre_de_lances > Ci_nombre_max_de_lances)
+{
+	i_nombre_de_lances = Ci_nombre_max_de_lances
+}
+
+if (i_lances_avant_paf_courant == 0)
+{
+	i_distance_diminue_avec_temps = faux	
+}
+
+if (i_lances_avant_paf_move < 5)
+	i_lances_avant_paf_move = -1
+
+// creation des lances
+//for (t_i = 0; t_i < i_nombre_de_lances; t_i++)
+//{ 
+//	to_lance = @"_Basic/_Basic_Persos/DUP_Javelin" OBJ_Duplicate(OBJ_PosGet())
+//	
+//	ao_liste_lances[t_i] = to_lance
+//	
+//	@to_lance OBJ_CapaSet(OBJ_Capa_2, none)	
+//	@to_lance OBJ_FlagInvisibleSet(1)				
+//
+//}
+
+o_cible = nobody
+
+AI_Execute("PluieDeLances_exec_init_temps")
+
+// on attend que les copains se pointent
+AI_TrackChange(1, "PluieDeLances_reflex")
+AI_TrackCurChange("PluieDeLances_etat_attente")
+
+

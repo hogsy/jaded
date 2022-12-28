@@ -1,0 +1,106 @@
+#include "Lance_defs.var"
+
+vector			tv_temp
+vector			tv_temp1
+
+object			to_obj
+
+int					ti_unplug
+int					ti_nbmsg
+int					ti_rank
+
+message		msg
+message 		tm_msg_filter
+messageid		EVT_VISIBILITY_ID
+
+
+if ( o_plug_to == nobody )
+{
+	macro_del_callback_after_cam("Lance_ETAT_cb_Plugged")
+	return
+}
+
+tv_temp = @o_plug_to MATH_VecLocalToGlobal(v_plug_local)
+OBJ_PosSet(@o_plug_to OBJ_PosGet() + tv_temp)
+
+tv_temp = @o_plug_to MATH_VecLocalToGlobal(v_plug_sight)
+tv_temp1 = @o_plug_to MATH_VecLocalToGlobal(v_plug_banking)
+OBJ_SightGeneralSet(tv_temp, tv_temp1)
+
+
+// TEST SIG ---------------
+if (o_plug_to)
+{
+	if( ! (@o_plug_to_master OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Active) )
+	{
+		i_force_unplug = vrai
+	}
+	else
+	{
+		MSG_SetNull(tm_msg_filter)
+		tm_msg_filter.msg_gao1 = o_plug_to_master
+		tm_msg_filter.msg_int1 = SIG_C_JAV_FREE
+		ti_rank = -1
+		EVT_VISIBILITY_ID = MSG_GlobalSearchIntGao( C_EVENT_TYPE_Signal, &ti_rank, tm_msg_filter)
+		if( MSG_GlobalIsValid(EVT_VISIBILITY_ID) )
+		{
+			DBG_TraceObject(OBJ_Me())
+			DBG_TraceString(" etat plugged, signal = destroy\n")
+			OBJ_Destroy()		// Destroy parce qu'on me le demande
+		}
+	}
+}
+
+
+AI_Execute( "Lance_exec_Wait_Taken" )
+
+ti_unplug = faux
+
+if (f_plug_timer >= 0 )
+{
+	f_plug_timer -= TIME_GetDt()
+	if (f_plug_timer < 0 )
+		ti_unplug = vrai
+}
+
+ti_nbmsg = MSG_GetCount()
+while	( ti_nbmsg )
+{
+	msg = MSG_Get()
+	ti_nbmsg = MSG_GetCount()
+	if (msg.msg_id == msg_id_grenadedestroy )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" etat plugged, msg grenadedestroy= destroy\n")
+		OBJ_Destroy()
+		return
+	}
+}
+
+if ( i_force_unplug || ti_unplug || (OBJ_CapaGet() & OBJ_Capa_4) )
+{
+	OBJ_CapaSet( 0, OBJ_Capa_4 )
+	DYN_On()
+	DYN_FlagsSet( DYN_C_BasicForces | DYN_C_VectorFriction | DYN_C_GlobalFriction | DYN_C_HorizontalGrounds, none)
+	DYN_FrictionVectorSet( mv_LaunchFriction )
+	DYN_GravitySet( mv_LaunchGravity )
+	DYN_SpeedSetVector( Cv_NullVector )
+
+	f_KK_horiz_blend = MATH_RandFloat( 4.0, 8.0)
+	o_plug_to_master = nobody
+
+	o_plug_to = nobody
+
+	macro_del_callback_after_cam("Lance_ETAT_cb_Plugged")
+	COL_ColSetActivationSet( all, none)
+	AI_TrackChange(2,  "Lance_ETAT_Ground" )
+}
+
+mi_State = Ci_bambou_state_plug
+
+
+#ifndef _FINAL_
+if( ti_dbg )
+	Str_DisplayTextOnce("cb Plugged", VIEW_3dWorldTo2d(0, OBJ_PosGet()))
+#endif
+

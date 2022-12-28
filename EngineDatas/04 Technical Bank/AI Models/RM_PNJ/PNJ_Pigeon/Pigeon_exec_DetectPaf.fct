@@ -1,0 +1,24 @@
+messageid		tmid_ID
+message		tmsg_filter
+
+int					ti_rank
+int					ti_type
+
+vector			tv_delta
+float				tf_puis
+
+MSG_SetNull(tmsg_filter)
+tmsg_filter.msg_gao1 = OBJ_Me()
+ti_rank = -1
+for (	tmid_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tmsg_filter);
+		MSG_GlobalIsValid(tmid_ID);
+		tmid_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tmsg_filter) )
+{
+	tv_delta = EVENT_PafDirGet(tmid_ID)
+	tf_puis = EVENT_PafPuisGet(tmid_ID)
+	v_paf += tv_delta * tf_puis
+}
+
+v_paf.z = 0.0
+if (!MATH_VecNull(v_paf))
+	AI_TrackCurChangeNow("Pigeon_ETAT_Paf")

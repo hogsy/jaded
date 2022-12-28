@@ -1,0 +1,233 @@
+
+#include "KT_defines.var"
+
+#define			Cf_dist_grab_gueule						50.0		// 16.0			// Dist ^2 min pour chopper le projectile en vol
+#define			Cf_dist_anim_fight_mord_max		100.0			// Dist ^2 max pour lancer l'anim de grab en vol
+#define			Cf_dist_anim_fight_mord_min			49.0			// Dist ^2 min pour lancer l'anim de grab en vol
+
+#define			Cf_duree_wait_grab				2.0			// Duréependant laquelle le T-Rex attend de recevoir un projectile
+
+
+int					ti_flag_exit
+object			to_gueule
+float				tf_dist
+int					ti_frame_num
+vector			tv_temp
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+//	if( o_Grab_Attak_Target == o_ANN )		// je n'ai pas eu le temps de manger ANN : je la mange qd même
+//		EVENT_AddEventPafCanal(C_EVENT_FILTER_Enemy, C_EVENT_PAF_KK_Tue, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_Grab_Attak_Target, -1, 0, OBJ_SightGet(), COL_ZonePosGet(C_zde_fight))	
+	
+	o_KK_projectile = nobody
+	o_Grab_Attak_Target = nobody
+
+	if( MSG_GlobalIsValid(mid_GRABKONG) )
+		LNK_ClientGet(Ci_LNK_GRAB_KONG, mid_GRABKONG, faux, "KT_exec_grab_object_param", nofunc, nofunc)
+	
+	i_sort_etat = faux	
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_KK_choppe_projectile)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_KK_choppe_projectile
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	ai_grabbed_availibility[ Ci_LNK_GRAB_KONG] = vrai	
+
+	f_time_start_etat = 0.0
+	
+	// SUPPRESSION DE L'INTERET (POUR L'ARRET DU TIMER DE MORT ANN)
+	if( MSG_GlobalIsValid(mid_best_interet) )
+		MSG_GlobalDelete(mid_best_interet, C_EVENT_EOFDEL)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =======================================================================================================
+
+o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, vrai, nofunc, nofunc)
+if (o_grabbed_actor_KK)
+	macro_change_etat("KT_ETAT_Grabbed_by_Kong")
+
+if( IO_KeyJustPressed(66) )
+{
+	o_paf_actor = o_Kong
+	v_paf_sens = - OBJ_SightGet()
+	macro_change_etat("KT_ETAT_paf")	
+}
+
+// Detection de PAF
+AI_Execute("KT_exec_check_paf")
+if (o_paf_actor)
+	macro_change_etat("KT_ETAT_paf")
+
+// Jack fait diversion
+Macro_Check_Paf_Jauge_Crier
+
+// Detection du vide
+macro_checkchute
+
+
+// INTERET ========================================================
+KT_Interet_Update(o_KK_projectile, C_EVENT_InteretStatusGrab)	// intérêt maintenu pour la Kamera
+
+// COMPORTEMENT ==================================================================================================	
+
+i_grabbed_special = faux				// Grab special possible
+				
+if( o_KK_projectile )
+{
+	// raptor pas encore attrapé -> le TREX le regarde
+	i_flag_look = vrai
+	v_look_pos = KT_GetActorPosToLook(o_KK_projectile)
+}
+
+
+// Test grab projectile
+ti_flag_exit = faux
+if( ! o_Grab_Attak_Target )
+{
+	// Le T-Rex n'a toujours pas choppé le projectile
+	if( o_KK_projectile )
+	{
+		if( (ACT_ActionGet() != i_Anim_attente) && (ACT_ActionGet() != Action_Choppe) )
+//			ACT_ActionSet(i_Anim_attente)
+			ACT_ActionSet(Action_Choppe)
+		
+		i_flag_look = vrai
+		v_look_pos = @o_KK_projectile OBJ_PosGet()
+		
+		if( f_time_start_etat < Cf_duree_wait_grab )
+		{
+			// T-Rex en attente du projectile
+			
+			to_gueule = ANI_CanalObjectGet(Anim_Canal_Machoire)
+			tf_dist = @to_gueule OBJ_SqrDist(o_KK_projectile)
+			
+			DBG_RenderVector( @to_gueule OBJ_PosGet(), @o_KK_projectile OBJ_PosGet() - @to_gueule OBJ_PosGet(), color_rouge )
+			
+			if( ACT_ActionGet() == i_Anim_attente )
+			{
+				// anim attente en cours -> test distance pour passer en anim coup de gueule
+//				if( tf_dist <= Cf_dist_anim_fight_mord_max )
+//				{
+//					if( tf_dist >= Cf_dist_anim_fight_mord_min )
+//					{
+						// distance ok, test du sens du projectile pour le pas lancer l'anim trop tôt et le rater
+						tv_temp = @o_KK_projectile DYN_SpeedGetVector()
+						if( tv_temp.z <= 0.0 )
+							ACT_ActionSet(Action_Choppe)
+//					}
+//					else
+//					{
+//						// trop proche pour etre choppé : on oublie
+//						o_msg_projectile = nobody
+//					 	macro_change_etat("KT_ETAT_attente")
+//					}
+//				}
+			}
+			else if( (ACT_ActionGet() == Action_Choppe ) && ( ! ACT_ActionFinished() ) )
+			{
+				// anim coup de gueule en cours
+				OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), @o_KK_projectile OBJ_PosGet() - OBJ_PosGet(), 5 * TIME_GetDt()), Cv_VerticalVector)
+
+				if( tf_dist <= Cf_dist_grab_gueule )
+				{
+					v_grab_vector = OBJ_SightGet()
+					i_grab_type = Ci_GrabKong_Type_TRex_Choppe
+					o_Grab_Attak_Target = LNK_ThisClientGet(o_KK_projectile, Ci_LNK_GRAB_KONG, mid_GRABKONG, vrai, "KT_exec_grab_object_param", nofunc, nofunc)
+					if( o_Grab_Attak_Target )
+					{
+						// envoi d'un paf pour le sang
+//						EVENT_AddEventPafCanal( C_EVENT_FILTER_Object, C_PAF_KK_KiTue, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_KK_projectile, -1, Cf_DMG_Choppe, OBJ_SightGet(), COL_ZonePosGet( C_zde_fight))
+						
+						// liaison
+						f_time_start_etat = 0.0
+						LNK_GrabKong_BoneSet(mid_GRABKONG, to_gueule)
+						LNK_GrabKong_TypeSet(mid_GRABKONG, Ci_GrabKong_Type_TRex_Choppe)
+						o_KK_projectile = nobody
+					}
+					// else échec liaison -> le T-Rex retentera d'établir la liaison tant que le projectiel est en l'air
+				}
+				// else encore trop loin
+			}
+			else
+				ti_flag_exit = vrai			// anim de coup de gueule terminée et projectile pas choppé
+		}
+		else
+			ti_flag_exit = vrai				// durée d'attente dépassée -> le projectile est surement tombé au sol
+	}
+	else
+	{
+		if( ACT_ActionGet() != Action_Choppe_Avale )
+			ti_flag_exit = vrai					// le projectile a été éjecté de la map et il a été détruit
+		else if( ACT_ActionFinished() )
+			ti_flag_exit = vrai					// le TREX a avalé le raptor
+	}
+}
+else if( (ACT_ActionGet() == Action_Choppe && ACT_ActionFinished()) || (ACT_ActionGet() == Action_Fight_Attak_Humain ) )
+{
+//	if( o_Grab_Attak_Target == o_ANN )
+//		ACT_ActionSet(Action_Choppe_Avale)
+//	else
+		ACT_ActionSet(Action_Choppe_Lance)
+}
+else if( ACT_ActionGet() == Action_Choppe_Avale )
+{
+	ti_frame_num = ANI_CurrentFrameGet(0)
+	if( ti_frame_num >= 180)
+	{
+//		if( MSG_GlobalIsValid(mid_GRABKONG) )
+//			LNK_ClientGet(Ci_LNK_GRAB_KONG, mid_GRABKONG, faux, "KT_exec_grab_object_param", nofunc, nofunc)
+//		if( o_Grab_Attak_Target )
+//		{
+			EVENT_AddEventPafCanal(C_EVENT_FILTER_Enemy, C_PAF_KK_KiTue, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_Grab_Attak_Target, -1, 0.0, OBJ_SightGet(), COL_ZonePosGet(C_zde_fight))
+//			o_Grab_Attak_Target = nobody
+//		}
+	}
+	if( ACT_ActionFinished() )
+		ti_flag_exit = vrai
+}
+else if( ACT_ActionGet() == Action_Choppe_Lance )
+{
+	// le T-Rex a choppé le projectile 
+	ti_frame_num = ANI_CurrentFrameGet(0)
+	if( ti_frame_num >= 140)
+	{
+		// le T-Rex a terminé de jouer avec lui
+		if( MSG_GlobalIsValid(mid_GRABKONG) && ( LNK_GrabKong_ActionGet(mid_GRABKONG) != Ci_GrabKong_LanceEtTombe ) )
+		{
+			// le TRex va lancer le raptor
+			LNK_GrabKong_ActionSet(mid_GRABKONG, Ci_GrabKong_LanceEtTombe)
+//			tv_temp = MATH_VecLocalToGlobal(cvector(-0.2, -0.33, 0.0))
+			tv_temp = MATH_VecLocalToGlobal(cvector(-0.4, -0.1, 0.0))
+			DBG_RenderVector(OBJ_PosGet(), tv_temp, color_jaune)
+			LNK_GrabKong_LanceVectorSet(mid_GRABKONG, tv_temp)
+		}
+	}
+	if( ACT_ActionFinished() )
+		ti_flag_exit = vrai				// sortie de l'état
+}
+
+
+if( ti_flag_exit )
+{
+	macro_change_etat("KT_ETAT_attente")
+}
+
+

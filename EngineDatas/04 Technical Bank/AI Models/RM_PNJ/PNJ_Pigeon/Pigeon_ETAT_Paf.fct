@@ -1,0 +1,56 @@
+#include "PNJ_Pigeon_defines.var"
+
+vector			tv_pos
+
+// SORTIE ETAT 	===================================================================
+if( i_sort_etat )
+{
+	i_sort_etat = faux
+	
+	v_paf = Cv_NullVector
+	DYN_SpeedSetVector(Cv_NullVector)
+	f_flying_speed = 4.0
+	f_factor = 1.0
+	return
+}
+
+// INIT ETAT 	=====================================================================
+if( i_etat_courant != ETAT_PIGEON_PAF)
+{
+	i_etat_courant = ETAT_PIGEON_PAF
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	
+	DYN_GravitySet(Cv_NormalGravity)
+	f_change_state_timer = MATH_RandFloat(0.5, 1.0)
+	v_travel_start = MATH_VecCrossProduct(v_paf, Cv_VerticalVector)
+	if (!MATH_VecNullEpsilon(v_travel_start))
+		MATH_VecSetNormalize(v_travel_start)
+	else
+		v_travel_start = OBJ_SightGet()
+	v_travel_start = MATH_VecGlobalToLocal(v_travel_start)
+	
+	DYN_Impulsion(OBJ_PosGet() + cvector(0.0, 0.0, 0.5) + (v_paf * MATH_RandFloat(0.2, 0.5)), f_change_state_timer * MATH_RandFloat(1.0, 1.5))
+	
+	f_time_start_etat = 0.0
+} 
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// STIMULI ========================================================================
+
+// COMPORTEMENT ================================================================
+OBJ_RotateAroundVec(v_travel_start, -(Cf_2Pi / f_change_state_timer) * TIME_GetDt())
+
+if (f_time_start_etat > f_change_state_timer)
+{
+	i_bored_by_someone = 1
+	OBJ_BankingGeneralSet(OBJ_SightGet(), Cv_VerticalVector)
+	AI_TrackCurChangeNow("Pigeon_ETAT_decolle")
+}

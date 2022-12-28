@@ -1,0 +1,19 @@
+DYN_On()
+DYN_FlagsSet( DYN_C_BasicForces | DYN_C_VectorFriction | DYN_C_GlobalFriction | DYN_C_HorizontalGrounds, none)
+DYN_FrictionVectorSet( mv_LaunchFriction )
+DYN_GravitySet( mv_LaunchGravity )
+DYN_SpeedSetVector( mv_LaunchSpeed )
+
+COL_ColSetActivationSet(all, none)
+
+if( o_grabbed_serveur )
+{
+	v_ground_sight = @o_grabbed_serveur OBJ_SightGet()
+	v_ground_banking = - @o_grabbed_serveur OBJ_HorizonGet()
+}
+else
+{
+	v_ground_sight = cvector(0,1,0)
+	v_ground_banking = cvector(1,0,0)
+}
+

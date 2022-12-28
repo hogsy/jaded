@@ -1,0 +1,454 @@
+//------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------
+#include "SM_Constants.var"
+
+
+
+//------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------
+int ti
+int ti_old, ti_new
+float tf, tf2, tf_fade, tf_duration
+int		tb_stopjingle 
+
+tb_stopjingle = 0
+
+
+//------------------------------------------------------------------------------------------------------------------
+// skip scheduler if reinit requested
+//------------------------------------------------------------------------------------------------------------------
+if(mi_ReinitKit)
+{
+	dbg_print(DBG_LV1, "kit-reinit detected", nobody)
+	AI_TrackCurChangeNow("SM_ReinitKit")
+}
+
+
+//------------------------------------------------------------------------------------------------------------------
+// treat transition sound + fade
+//------------------------------------------------------------------------------------------------------------------
+if( mf_Delay < 0.0 )
+{
+	tf = SND_TrackGeti(SND_Cte_Track_B,SND_Cte_TrackRq_ChainDelay)
+	if( tf > 0.0 )
+	{
+		tf /= 1000.0
+		mf_Delay = 0.0
+		
+		ti = MUS_GetBeginSound(mi_Phase)
+		if(mi_1stTime) ti=-1
+		mi_1stTime = 0
+		
+		tf2 = MUS_GetBeginSoundDelay(mi_Phase)
+		if( tf  < tf2)  tf2 = 0.0
+		
+		if(ti != -1)
+		{
+			SND_InstanceSetf(mai_MusicInstance[ti], SND_Cte_SetInstDelay, tf - tf2)
+			SND_InstanceSetf(mai_MusicInstance[ti+1], SND_Cte_SetInstDelay, tf - tf2)
+			SND_Play(mai_MusicInstance[ti])
+			SND_Play(mai_MusicInstance[ti+1])
+		}
+	}
+}
+
+
+//------------------------------------------------------------------------------------------------------------------
+// Scheduler
+//------------------------------------------------------------------------------------------------------------------
+switch( mi_SchedulerState )
+{
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+case Cte_State_SilenceStart :
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	// reset current state
+	MUS_InjureFxReset(0)
+	MUS_SetPhase(-1)	// get curr instance
+	SND_M_SetMusPhase(-1)
+	mf_Delay = 0.0
+
+	if(mi_InstanceIdx != -1) 
+	{
+		if(mai_MusicInstance[mi_InstanceIdx] != -1) 
+		{
+			// stop the instance in order to active any fade out
+			SND_Stop(mai_MusicInstance[mi_InstanceIdx])			
+		}
+	}
+	mi_SchedulerState = Cte_State_SilenceMode
+	break
+	
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+case Cte_State_SilenceMode :
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	break
+	
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+case Cte_State_Jingle_Play :
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	// reset current state
+	MUS_InjureFxReset(0)
+	MUS_SetPhase(-1)	// get curr instance
+	SND_M_SetMusPhase(-1)
+
+	// check force stop
+	if( AI_TriggerIsValid(at_JingleForceStop[mi_JingleSubIdx]) && call_trigger(at_JingleForceStop[mi_JingleSubIdx]) )
+	{
+		tb_stopjingle = 1
+
+		if( AI_TriggerIsValid(at_AndJingleForceStop[mi_JingleSubIdx])  && !call_trigger(at_AndJingleForceStop[mi_JingleSubIdx]) )
+			 	tb_stopjingle = 0
+	}
+			
+	if(tb_stopjingle) 
+	{
+		mf_Timer = 0.0
+		mi_SchedulerState = Cte_State_Jingle_WaitSilence 
+		break
+	}
+	
+	
+	if(mi_InstanceIdx != -1)
+		ti_old  = mai_MusicInstance[mi_InstanceIdx]
+	else
+		ti_old = -1
+		
+	// get the next instance
+	if(mi_JingleIdx != -1)
+	{
+		ti_new  = mai_MusicInstance[mi_JingleIdx]
+		SND_InstanceSetf(ti_new, SND_Cte_SetInstDelay, af_JingleDelay[mi_JingleSubIdx]) 
+	}	
+	else
+		ti_new = -1
+	
+	SND_Stop(ti_old)
+	SND_Play(ti_new)
+	//	SND_TrackChain(ti_old, ti_new, SND_Cte_TrackRq_ModeNoWait, SND_Cte_TrackRq_TagStart, 0)
+	mi_InstanceIdx = mi_JingleIdx
+	
+	// goto the next step
+	mi_SchedulerState = Cte_State_Jingle_WaitStop	
+	break								
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+case Cte_State_Jingle_WaitStop :
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	// check force stop
+	if( AI_TriggerIsValid(at_JingleForceStop[mi_JingleSubIdx]) && call_trigger(at_JingleForceStop[mi_JingleSubIdx]) )
+	{
+		tb_stopjingle = 1
+
+		if( AI_TriggerIsValid(at_AndJingleForceStop[mi_JingleSubIdx])  && !call_trigger(at_AndJingleForceStop[mi_JingleSubIdx]) )
+			 	tb_stopjingle = 0
+	}
+			
+	if(tb_stopjingle) 
+	{
+		mf_Timer = 0.0
+		mi_SchedulerState = Cte_State_Jingle_WaitSilence 
+		break
+	}
+	
+	if( SND_TrackStatusGet( SND_Cte_Track_B) ) break
+	mf_Timer = ai_EndSilence[mi_JingleSubIdx]
+	mf_Timer *= MATH_RandFloat(f_RangeMin, f_RangeMax)
+	//mf_Timer = mf_Timer + TIME_Get()
+	mi_SchedulerState = Cte_State_Jingle_WaitSilence
+	break								
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+case Cte_State_Jingle_WaitSilence :
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	mf_Timer -= TIME_GetDt()
+	if(mf_Timer > 0.0) break
+//	if(TIME_Get() < mf_Timer) break
+	mi_JingleIdx = -1
+	mi_JingleSubIdx = -1
+	mi_SchedulerState = Cte_State_Init
+	break								
+//	
+//
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+case Cte_State_Init :
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	if( SND_M_GetMusPhase < 0) break
+	if( SND_M_GetMusType < 0) break
+	
+	if(SND_M_GetMusPhase == mi_Phase)
+	{
+		// phase hasn't changed
+		if(mi_InstanceIdx == -1) break
+		if(mai_MusicInstance[mi_InstanceIdx] == -1) break
+	
+		// wait the end
+		if(SND_IsPlaying(mai_MusicInstance[mi_InstanceIdx])) break
+
+		// wait silence
+		mf_Timer = MUS_GetBetweenSilence(mi_Phase)
+		mf_Timer *= MATH_RandFloat(f_RangeMin, f_RangeMax)
+//		mf_Timer = mf_Timer + TIME_Get()
+		mi_SchedulerState = Cte_State_Pattern_WaitSilence
+	}
+	else
+	{
+		// special action to do when exiting the "injure"
+		if(	mi_Phase == SND_Cte_MusPhase_Injure )
+		{
+			MUS_InjureFxReset(0)
+		}
+
+		// change phase
+		if( 
+			(SND_M_GetMusPhase > mi_Phase) || 
+				( 	// force higher if fighting
+					(SND_M_GetMusPhase >= SND_Cte_MusPhase_Fight) && (mi_Phase >= SND_Cte_MusPhase_Fight)
+				)
+			)
+		{
+			// higher
+			mi_SchedulerState = Cte_State_ChangePhaseToHigher
+
+			if( mi_Phase == SND_Cte_MusPhase_Injure )
+			{
+				// force lower
+				mi_SchedulerState = Cte_State_ChangePhaseToLower
+			}
+		}
+		else
+		{
+			// lower
+			mi_SchedulerState = Cte_State_ChangePhaseToLower
+		}
+		
+	
+		if(
+			(SND_M_GetMusPhase ==SND_Cte_MusPhase_Fight ) &&
+			(mi_Phase ==SND_Cte_MusPhase_Injure )
+	      )
+		{
+			// special case injure => absent fight
+			ti = ( (SND_Cte_MusPhase_Fight) + ((@ "univ" SND_gi_MusicType)*SND_Cte_MusPhase_Nb) )
+			if( mai_MusicInstance[ti] < 0 )
+			{
+				// force lower action
+				mi_SchedulerState = Cte_State_ChangePhaseToLower
+			}
+		}
+		
+	
+		MUS_SetPhase(SND_M_GetMusPhase)
+		mi_CurrKit = SND_M_GetMusType 
+		mi_NextInstanceIdx = SND_M_GetMusIdx
+		mf_Delay = 0.0
+	}
+	break								
+//
+//
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+case Cte_State_ChangePhaseToLower :
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	// get curr instance
+	if(mi_InstanceIdx != -1)
+		ti_old  = mai_MusicInstance[mi_InstanceIdx]
+	else
+		ti_old = -1
+	mi_InstanceIdx = -1
+	
+	// is there any fade out ?
+	if( SND_InstanceGeti(ti_old, SND_Cte_GetInstFadeOut) )
+	{
+		// stop + fade out
+		SND_Stop(ti_old)
+		mf_Delay = 0.0
+		mi_InstanceIdx  = -1
+	}
+	else
+	{
+		// goto end
+		tf = SND_TrackChain(ti_old, ti_old, SND_Cte_TrackRq_ModeWaitMarker, SND_Cte_TrackRq_TagEnd, 0)
+	
+		mf_Delay = tf
+		mi_InstanceIdx  = -1
+	
+		if(tf >= 0.0)
+		{
+			// play transition sound ?
+			ti = MUS_GetBeginSound(mi_Phase)
+			if(mi_1stTime) ti=-1
+			mi_1stTime = 0
+			
+			if(ti != -1)
+			{
+				SND_InstanceSetf(mai_MusicInstance[ti], SND_Cte_SetInstDelay, tf - tf2)
+				SND_InstanceSetf(mai_MusicInstance[ti+1], SND_Cte_SetInstDelay, tf - tf2)
+				SND_Play(mai_MusicInstance[ti])
+				SND_Play(mai_MusicInstance[ti+1])
+			}
+		}
+	}
+
+	
+	// update state
+	mi_SchedulerState = Cte_State_ChangePhaseToLower_WaitStop
+	break								
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+case Cte_State_ChangePhaseToLower_WaitStop	:
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	if( SND_TrackStatusGet( SND_Cte_Track_B) ) 
+	{
+		break
+	}
+	
+	mi_InstanceIdx  = -1
+	
+	// silence
+	mf_Timer = MUS_GetEndSilence(mi_PrevPhase)
+	mf_Timer *= MATH_RandFloat(f_RangeMin, f_RangeMax)
+
+	// update state
+	mi_SchedulerState = Cte_State_ChangePhaseToLower_WaitSilence
+	break								
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+case Cte_State_ChangePhaseToLower_WaitSilence :
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	mf_Timer -= TIME_GetDt()
+	if(mf_Timer > 0.0) break
+	
+	// play the new sound
+	mf_Delay = 0.0
+	
+	mi_InstanceIdx = mi_NextInstanceIdx
+	mi_NextInstanceIdx = -1
+
+	if(mi_InstanceIdx != -1)
+		SND_Play(mai_MusicInstance[mi_InstanceIdx])
+		
+	// update state
+	mi_SchedulerState = Cte_State_Init
+	break								
+//
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+case Cte_State_ChangePhaseToHigher :
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	// get curr instance
+	if(mi_InstanceIdx != -1)
+ 		ti_old  = mai_MusicInstance[mi_InstanceIdx]
+	else
+		ti_old = -1
+
+	mi_InstanceIdx = mi_NextInstanceIdx
+	mi_NextInstanceIdx = -1
+	
+	// get new instance
+	if(mi_InstanceIdx != -1)
+		ti_new  = mai_MusicInstance[mi_InstanceIdx]
+	else
+		ti_new = -1
+
+	// play the next play mode
+	ti = MUS_GetBeginSpeed(mi_Phase)
+	
+	// force the play mode to chaining if it is a fight sub-phase
+	 
+	switch( mi_Phase )
+	{
+//	case SND_Cte_MusPhase_BigFight :
+	case SND_Cte_MusPhase_Advantage : 
+		ti = 0 
+		break
+		
+	default: 
+		break
+	}
+	
+	// play next sound
+	if(ti)
+	{
+		//SND_TrackChain(ti_old, ti_new, SND_Cte_TrackRq_ModeNoWait, SND_Cte_TrackRq_TagStart, -1)
+		tf = MUS_GetBeginSoundDelay(mi_Phase)
+		SND_InstanceSetf(ti_new, SND_Cte_SetInstDelay, tf)
+		SND_Play(ti_new)
+
+		
+		// play transition sound
+		ti = MUS_GetBeginSound(mi_Phase)
+		if(ti != -1)
+		{
+			SND_Play(mai_MusicInstance[ti])
+			SND_Play(mai_MusicInstance[ti+1])
+		}
+		SND_M_GroupPatternSet(SND_Cte_GrpMusic, 0, 1.0, 0.01)
+	}
+	else
+	{
+		mf_Delay  = SND_TrackChain(ti_old, ti_new, SND_Cte_TrackRq_ModeWaitMarker, SND_Cte_TrackRq_TagStart, 0)
+		tf = mf_Delay 
+		
+		// play transition sound
+		tf2 = MUS_GetBeginSoundDelay(mi_Phase)
+		if( tf  < tf2)  tf2 = 0.0
+		
+		if(tf >= 0.0)
+		{
+			ti = MUS_GetBeginSound(mi_Phase)
+			if(mi_1stTime) ti=-1
+			mi_1stTime = 0
+			if(ti != -1)
+			{
+				SND_InstanceSetf(mai_MusicInstance[ti], SND_Cte_SetInstDelay, tf - tf2)
+				SND_InstanceSetf(mai_MusicInstance[ti+1], SND_Cte_SetInstDelay, tf - tf2)
+				SND_Play(mai_MusicInstance[ti])
+				SND_Play(mai_MusicInstance[ti+1])
+			}
+		}
+	}
+
+	if(	mi_Phase == SND_Cte_MusPhase_Injure )
+	{
+		MUS_InjureFxSet	(0)
+	}
+		
+	// update state
+	mi_SchedulerState = Cte_State_Init
+	break								
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//case Cte_State_ChangePhaseToHigherAbsent :
+////+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//	// get curr instance
+//	if(mi_InstanceIdx != -1)
+//		ti_old  = mai_MusicInstance[mi_InstanceIdx]
+//	else
+//		ti_old = -1
+//
+//	mi_InstanceIdx = -1
+//	mi_NextInstanceIdx = -1
+//	
+//	// stop (fade out) the previous sound
+//	SND_Stop(ti_old)
+//	
+//	
+//	// update state
+//	mi_SchedulerState = Cte_State_Init
+//	break								
+//
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+case Cte_State_Pattern_WaitSilence :
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	mf_Timer -= TIME_GetDt()
+	if(mf_Timer > 0.0) break
+//	if(TIME_Get() < mf_Timer) break
+	
+	// play again
+	SND_Play(mai_MusicInstance[mi_InstanceIdx])
+	
+	// update the state
+	mi_SchedulerState = Cte_State_Init
+	break								
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+default:
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	SND_M_Assert(0, "[SND_MusManager] bad scheduler state")
+	mi_SchedulerState = Cte_State_Init
+	break
+}
+

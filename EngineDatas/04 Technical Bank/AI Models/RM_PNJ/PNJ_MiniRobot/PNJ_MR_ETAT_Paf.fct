@@ -1,0 +1,101 @@
+#include "PNJ_mr_defines.var"
+
+vector	tv_pos
+float		tf_normpaf,tf_maxpaf
+object	to_target
+
+// SORTIE ETAT ===================================================================
+if( i_sort_etat )
+{
+	i_sort_etat = faux
+	DYN_FrictionVectorSet(Cv_DYN_Friction)
+//	DYN_SpeedSetVector(Cv_NullVector)
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if( i_etat_courant != ETAT_PNJ_MR_Paf)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_PNJ_MR_Paf
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	REPAF:
+	v_traction_GOGO=Cv_NullVector
+	SND_RequestPlay(Ci_SND_MR_Paf)
+	o_paf_actor = nobody
+	f_time_start_etat = 0.0
+//	DYN_FrictionVectorSet(cvector(2.0,2.0,0.0))
+	DYN_FrictionVectorSet(cvector(1.0,1.0,0.0))
+//	if ( EVENT_LIFE_CurLifeGet( ID_LIFE) > 0.0)
+	if( f_LIFE_cur )
+	{
+		v_paf_sens = MATH_VecBlend(v_paf_sens,DYN_SpeedGetVector(),0.5)
+		DYN_SpeedSetVector(v_paf_sens)
+	}
+	else
+	{
+//		v_paf_sens*=10.0
+//		tf_normpaf=MATH_FloatMax(MATH_VecNorm(v_paf_sens),1.0)
+//		tf_maxpaf=MATH_FloatMin(tf_normpaf,20.0)
+//		v_paf_sens/=tf_normpaf
+//		v_paf_sens*=tf_maxpaf
+		
+		v_paf_sens = MATH_VecBlend(v_paf_sens,DYN_SpeedGetVector(),0.5)
+		DYN_SpeedSetVector(v_paf_sens)
+		if(!i_Explosion)
+		{
+			i_Explosion=vrai
+			f_CptDelayExplosion= 0.0
+			i_Tremble=faux
+		}
+	}
+	OBJ_CapaSet(Obj_Capa_Fight,none)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+// Stimuli
+
+if ( ROBOT_ROPE_Gogo_Mode())
+{
+	// Gogo mode
+	AI_TrackCurChangeNow("PNJ_MR_ETAT_Gogo")
+}	
+
+if(f_FuseeDuree!=0.0 && i_Explosion==vrai && f_time_start_etat>0.5)
+	AI_TrackCurChange("PNJ_MR_ETAT_Fusee")
+
+
+// Comportement
+OBJ_RotateLocalZ( f_paf_rotate * TIME_GetDt())
+//f_paf_rotate= MATH_FloatBlend(f_paf_rotate,0.0,8.0*TIME_GetDt()) 
+f_paf_rotate= MATH_FloatBlend(f_paf_rotate,0.0,0.8*TIME_GetDt()) 
+
+
+if( o_paf_actor)
+{
+	// Attaque mode
+	goto REPAF
+}
+
+
+if (  f_time_start_etat > 1.0 
+	&&  COL_CollideType(COL_C_Ground) 
+	&& !i_Explosion 
+	&& DYN_SpeedGet() <= (f_move_speed))
+{
+	AI_TrackCurChange("PNJ_MR_ETAT_Move")
+}
+
+//XMEN_SetSize( 0, 0, f_time_start_etat)
+
+if(f_time_start_etat>0.1)
+	PNJ_MR_SEND_PAF(5.0,Ci_MR_ModePaf_Paf,1.0)
+	
+

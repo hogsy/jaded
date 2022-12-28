@@ -1,0 +1,228 @@
+Include_UltraProcedure_Header
+
+#include "SFX_GG_defines.var"
+
+int			ti_fire
+int			ti_spark
+
+float		tf_ground_Z
+
+vector	tv_wind
+vector	tv_pos
+
+object	to_main_actor
+
+if (i_flag_sortie_etat)
+{
+	i_flag_sortie_etat = faux
+	return
+}
+
+if (i_etat_courant != ETAT_Explode)
+{
+	// INTIALISATION
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Explode
+	
+	if (fct_last_etat)
+	{
+		i_flag_sortie_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	// Sounds ===================
+	SND_RequestPlay(1)
+	i_snd_gazz = SND_RequestPlayLoop(2)
+	// Sounds ===================
+	
+	DYN_Off()
+	COL_ColSetActivationSet(none, all)
+
+	tf_ground_Z = OBJ_PosGet().z
+
+	tv_wind = Cv_NullVector // ODE_Getv(0) * 0.85
+		
+	tv_pos = OBJ_PosGet()
+	tv_pos -= tv_wind * TIME_GetDt()
+
+	ti_fire = GFX_Add(13)																// Create the boum
+				
+	GFX_MaterialSet(ti_fire, get_SFX_light_and_smoke, -1)						// met le materiau
+	GFX_Seti(ti_fire, 13101, 17)															// Materiau 0
+	GFX_Seti(ti_fire, 13110, 18)															// Materiau 1
+	GFX_Seti(ti_fire, 13111, 19)															// Materiau 2
+	GFX_Seti(ti_fire, 13112, 17)															// Materiau 3
+
+	GFX_Seti(ti_fire, 13100, 20)															// *Buffer number of sprite
+	GFX_Seti(ti_fire, 13106, 20)											// *number of sprite to generate
+	
+	GFX_Setf(ti_fire, 13003, 0.1)															// Time fase 1
+	GFX_Setf(ti_fire, 13004, 0.8)														// Time fase 2
+	
+	GFX_Seti(ti_fire, 13107, 0)															// Sprites non triés
+	
+	GFX_FlagSet(ti_fire, 0 , 1)
+	GFX_FlagSet(ti_fire, 2 , 1)
+	
+	GFX_Setf(ti_fire, 13012, 0.75)														// Time random
+	
+	GFX_Setv(ti_fire, 13201, tv_pos + cvector(-1.0, -1.0, 2.0))												// Speed min
+	GFX_Setv(ti_fire, 13202, tv_pos + cvector(1.0, 1.0, 3.0))											// Speed max
+	
+	GFX_Setf(ti_fire, 13000, -0.05)														// Growing speed min
+	GFX_Setf(ti_fire, 13001, -0.025)														// Growing speed max
+	GFX_Setf(ti_fire, 13002, 0.01)													// Friction Grow
+	
+	GFX_Setf(ti_fire, 13005, 0.25)														// Creation size min
+	GFX_Setf(ti_fire, 13006, 0.5)														// Creation size max
+	
+	GFX_Setv(ti_fire, 13203, cvector(0.02, 0.02, 0.02))							// friction speed
+	
+	GFX_Seti(ti_fire, 13103, 0xFF000000)											// Color fase 0
+	GFX_Seti(ti_fire, 13104, 0x8027A0FC)											// Color fase 1
+	GFX_Seti(ti_fire, 13105, 0x00)													// Color fase 2
+
+	GFX_Setf(ti_fire, 13009, 0.0)														// Norm speed min
+	GFX_Setf(ti_fire, 13010, 4.0)														// Norm speed max
+	
+	GFX_Setf(ti_fire, 13008, 0.0)														// generation rate
+	
+	GFX_Setv(ti_fire, 13205, Cv_NullVector)										// Mainposspeed
+	GFX_Setv(ti_fire, 13206, Cv_NullVector)										// Mainpossfriction
+		
+	GFX_Setf(ti_fire, 13007, 6.0)															// Gravity
+
+	GFX_Setv(ti_fire, 13200, tv_pos) 												// Creation Pos
+	GFX_Setv(ti_fire, 13207, OBJ_HorizonGet() * 0.5)							// CreaPosAxe X
+	GFX_Setv(ti_fire, 13208, OBJ_SightGet() * 0.5)						// CreaPosAxe Y
+	GFX_Setv(ti_fire, 13209, OBJ_BankingGet() * 0.5)					// CreaPosAxe Z
+	GFX_Setv(ti_fire, 13204, tv_wind)											// wind
+
+	if (GFX_Gaz == -1)
+	{
+		GFX_Gaz = GFX_Add(13)																// Create the boum
+					
+		GFX_MaterialSet(GFX_Gaz, get_SFX_light_and_smoke, 8)					// met le materiau
+	
+		GFX_Seti(GFX_Gaz, 13100, 4)														// *Buffer number of sprite
+		GFX_Seti(GFX_Gaz, 13106, 4)														// *number of sprite to generate
+		
+		GFX_Setf(GFX_Gaz, 13003, 0.1)													// Time fase 1
+		GFX_Setf(GFX_Gaz, 13004, 15.0)													// Time fase 2
+		
+		GFX_Seti(GFX_Gaz, 13107, 0)														// Sprites non triés
+		
+		GFX_FlagSet(GFX_Gaz, 0 , 1)
+		GFX_FlagSet(GFX_Gaz, 2 , 1)
+		
+		GFX_Setf(GFX_Gaz, 13012, 0.75)													// Time random
+		
+		GFX_Setv(GFX_Gaz, 13201, cvector(-1.0, -1.0, -1.0))							// Speed min
+		GFX_Setv(GFX_Gaz, 13202, cvector(1.0, 1.0, 1.0))							// Speed max
+		
+		GFX_Setf(GFX_Gaz, 13000, 2.0)														// Growing speed min
+		GFX_Setf(GFX_Gaz, 13001, 5.0)														// Growing speed max
+		GFX_Setf(GFX_Gaz, 13002, 0.0001)													// Friction Grow
+		
+		GFX_Setf(GFX_Gaz, 13005, 0.5)														// Creation size min
+		GFX_Setf(GFX_Gaz, 13006, 1.5)														// Creation size max
+		
+		GFX_Setv(GFX_Gaz, 13203, cvector(0.1, 0.1, 0.2))								// friction speed
+		
+		GFX_Seti(GFX_Gaz, 13103, 0xFF80FFFF)											// Color fase 0
+		GFX_Seti(GFX_Gaz, 13104, 0x8020341B)											// Color fase 1
+		GFX_Seti(GFX_Gaz, 13105, 0x0020341B)											// Color fase 2
+	
+		GFX_Setf(GFX_Gaz, 13009, 15.0)														// Norm speed min
+		GFX_Setf(GFX_Gaz, 13010, 25.0)														// Norm speed max
+		
+		GFX_Setf(GFX_Gaz, 13008, 0.0)														// generation rate
+		
+		GFX_Setv(GFX_Gaz, 13205, Cv_NullVector)											// Mainposspeed
+		GFX_Setv(GFX_Gaz, 13206, Cv_NullVector)											// Mainpossfriction
+			
+		GFX_Setf(GFX_Gaz, 13007, 1.5)														// Gravity
+	
+		GFX_Setv(GFX_Gaz, 13200, tv_pos) 													// Creation Pos
+		GFX_Setv(GFX_Gaz, 13204, tv_wind)													// wind
+	
+		GFX_Setf(GFX_Gaz, 13011, tf_ground_Z)												// Z min
+	}
+
+	ti_spark = GFX_Add(13)																// Create the boum
+				
+	GFX_MaterialSet(ti_spark, get_SFX_light_and_smoke, -1)						// met le materiau
+	GFX_Seti(ti_spark, 13101, 34)															// Materiau 0
+	GFX_Seti(ti_spark, 13110, 35)															// Materiau 1
+	GFX_Seti(ti_spark, 13111, 36)															// Materiau 2
+	GFX_Seti(ti_spark, 13112, 37)															// Materiau 3
+
+	GFX_Seti(ti_spark, 13100, 40)															// *Buffer number of sprite
+	GFX_Seti(ti_spark, 13106, 40)											// *number of sprite to generate
+	
+	GFX_Setf(ti_spark, 13003, 0.8)															// Time fase 1
+	GFX_Setf(ti_spark, 13004, 0.5)														// Time fase 2
+	
+	GFX_Seti(ti_spark, 13107, 0)															// Sprites non triés
+	
+	GFX_FlagSet(ti_spark, 0 , 1)
+	GFX_FlagSet(ti_spark, 2 , 1)
+	
+	GFX_Setf(ti_spark, 13012, 0.75)														// Time random
+	
+	GFX_Setv(ti_spark, 13201, cvector(-1.0, -1.0, -0.0))												// Speed min
+	GFX_Setv(ti_spark, 13202, cvector(1.0, 1.0, 1.0))											// Speed max
+	
+	GFX_Setf(ti_spark, 13000, 0.0)														// Growing speed min
+	GFX_Setf(ti_spark, 13001, 0.0)														// Growing speed max
+	GFX_Setf(ti_spark, 13002, 0.0001)													// Friction Grow
+	
+	GFX_Setf(ti_spark, 13005, 0.05)														// Creation size min
+	GFX_Setf(ti_spark, 13006, 0.1)														// Creation size max
+	
+	GFX_Setv(ti_spark, 13203, cvector(0.01, 0.01, 0.0))							// friction speed
+	
+	GFX_Seti(ti_spark, 13103, 0xFF00FF00)											// Color fase 0
+	GFX_Seti(ti_spark, 13104, 0x80002000)											// Color fase 1
+	GFX_Seti(ti_spark, 13105, 0x00)													// Color fase 2
+
+	GFX_Setf(ti_spark, 13009, 8.0)														// Norm speed min
+	GFX_Setf(ti_spark, 13010, 15.0)														// Norm speed max
+	
+	GFX_Setf(ti_spark, 13008, 0.0)														// generation rate
+	
+	GFX_Setv(ti_spark, 13205, Cv_NullVector)										// Mainposspeed
+	GFX_Setv(ti_spark, 13206, Cv_NullVector)										// Mainpossfriction
+		
+	GFX_Setf(ti_spark, 13007, -20.0)															// Gravity
+
+	GFX_Setv(ti_spark, 13200, tv_pos) 												// Creation Pos
+	GFX_Setv(ti_spark, 13207, OBJ_HorizonGet() * 0.5)							// CreaPosAxe X
+	GFX_Setv(ti_spark, 13208, OBJ_SightGet())						// CreaPosAxe Y
+	GFX_Setv(ti_spark, 13209, OBJ_BankingGet())					// CreaPosAxe Z
+	GFX_Setv(ti_spark, 13204, tv_wind)											// wind
+
+	GFX_Setf(ti_spark, 13011, tf_ground_Z)									// Z min
+	
+	to_main_actor = AI_MainActorGet(C_ID_Kong)
+	
+//	EVENT_AddEventPaf( int EVT_func_Filter, int EVT_func_Type, object EVT_func_Pere, float EVT_func_DureeDeVie, object EVT_func_Target, int EVT_func_Puissance, vector EVT_func_Sens)
+	EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_RM_Moyen, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_main_actor, 0.0 * PAF_Unit, @to_main_actor OBJ_PosGet() - OBJ_PosGet())
+
+	OBJ_FlagInvisibleSet(vrai)
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ==============================================================================
+if ( i_snd_gazz != -1 && f_time_start_etat > 20.0 )
+{
+	SND_Stop(i_snd_gazz)
+	i_snd_gazz = -1
+}
+
+@get_global Proc_AE_MotionSmoothSet( MATH_FloatMin(1.0, f_time_start_etat * 0.5 ))

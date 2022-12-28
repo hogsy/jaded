@@ -1,0 +1,83 @@
+#include "PNJ_Scorpion_defines.var"
+
+int				ti_i
+int				ti_rank
+
+vector		tv_new_sight
+vector		tv_new_banking
+
+message	tm_filter
+
+messageid tmid_interest
+
+// SORTIE ETAT ====================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_MORT)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_MORT
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	if (ACT_ActionGet() == Action_Meurt_G)
+		ACT_ActionSet(Action_Mort_G)
+	else
+		ACT_ActionSet(Action_Mort_D)
+	
+//	DYN_Off()
+//	COL_ColSetActivationSet(none, all)
+
+	OBJ_CapaSet(OBJ_Capa_15, none)
+
+	PNJ_Scorpion_OBBOX_Set(0.7)
+
+	PNJ_Scorpion_Del_Interest()
+	
+	for (ti_i = 0; ti_i < i_perceived_actor_nb; ti_i++)
+		PNJ_Scorpion_UncollideAdd(ao_perceived_actor[ti_i], -1.0)
+
+	macro_change_tag_size(Cv_NullVector, Cv_NullVector)
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ========================================================================
+if (f_time_start_etat > 5.0)
+{
+	// On regarde si on interesse quelqu'un...
+	ti_rank = -1
+	MSG_SetNull(tm_filter)
+	tm_filter.msg_gao1 = OBJ_Me()
+	tmid_interest = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tm_filter)
+
+	if ( ! MSG_GlobalIsValid(tmid_interest) )
+		macro_change_etat("PNJ_Scorpion_ETAT_FADE")
+}
+
+AI_Execute("PNJ_Scorpion_exec_check_paf")
+
+if (!f_point_de_viande)	
+	macro_change_etat("PNJ_Scorpion_ETAT_FADE")
+
+// COMPORTEMENT ==================================================================
+
+tv_new_sight = OBJ_SightGet()
+tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), v_ground_normale, 6.0 * TIME_GetDt())
+
+OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking)

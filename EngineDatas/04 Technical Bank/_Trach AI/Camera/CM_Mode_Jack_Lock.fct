@@ -1,0 +1,76 @@
+#include "CM_Defines.var"
+
+vector		tv_joy1
+vector		tv_temp, tv_temp1
+float			tf_dot, tf_temp
+object		to_obj
+int				ti_scan
+messageid mid_perso
+messageid	ao_midobj[50]
+int				ti_num
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Params
+AI_TrackChange(2, "CM_Meca_Jack")
+o_mf_actor = AI_MainActorGet(0)
+v_cur_pos_suivi = @o_mf_actor OBJ_PosGet()
+
+// Swap (TEMPORAIRE)
+if (@o_mf_actor AI_IsModel("Kong2")) 
+{
+	i_mf_cut = vrai
+	AI_TrackCurChangeNow("CM_Mode_Kong")
+}
+
+// Changement de mode ?
+if(i_mode_cur != CM_ModeJack_Lock)
+{
+	i_mode_cur = CM_ModeJack_Lock
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Calcul objet suivi
+o_object_cur = EVENT_PereGet(mid_perso)
+v_pos_cible = @o_object_cur OBJ_PosGet()
+v_offset_obj_cur = EVENT_LockCamOffsetGet(mid_perso)
+
+// Params
+f_blend_pos = 6
+i_stick_zmax = vrai
+f_factor_blend_sight = 0.5
+f_IdealZMin = 1.65
+
+// Distance
+tv_temp = v_cur_pos_suivi - @o_object_cur OBJ_PosGet()
+MATH_VecSetHorzNormalize(tv_temp)
+tf_dot = MATH_VecDotProduct(tv_temp, @o_mf_actor OBJ_SightGet())
+if(tf_dot > 0) 
+	f_IdealDist = MATH_FloatBlend(f_IdealDist, 3 + (3 * tf_dot), 4 * TIME_GetDt())
+else
+	f_IdealDist = MATH_FloatBlend(f_IdealDist, 3, 3 * TIME_GetDt())
+
+// Sight requit		
+tv_temp = v_cur_pos_suivi - @o_object_cur OBJ_PosGet()
+tv_temp.z = 0
+
+// Monte/descend la camera
+tv_temp1 = @o_object_cur OBJ_PosGet()
+tv_temp1.z += v_offset_obj_cur.z
+tv_temp1 = (v_cur_pos_suivi + cvector(0,0, f_IdealZMin)) - tv_temp1
+MATH_VecSetNorm(tv_temp1, f_IdealDist)
+f_IdealZMax = tv_temp1.z + f_IdealZMin
+
+// Vitesse max inversement prop a la distance a la cible
+tv_temp = v_cur_pos_suivi - @o_object_cur OBJ_PosGet()
+tv_temp.z = 0
+tf_temp = MATH_FloatMin(MATH_VecNorm(tv_temp), 5)
+
+v_ideal_sight = CM_BlendRotate(v_ideal_sight, tv_temp, 15.0, tf_temp)
+v_pos_cible = @o_object_cur OBJ_PosGet()
+
+i_auto_evitementsight = faux
+i_auto_blendsight = faux

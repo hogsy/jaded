@@ -1,0 +1,80 @@
+#include "RM_Champi_defines.var"
+Include_UltraProcedure_Header
+
+float			tf_coef
+float			tf_zoom
+
+// SORTIE ETAT 	===================================================================
+if( i_sort_etat )
+{
+	i_sort_etat = faux
+
+	OBJ_FlagInvisibleSet(0)
+	OBJ_ZoomSet(1.0)
+	COL_ColMapActivationSet(all, none)
+	
+	return
+}
+
+// INIT ETAT 	=====================================================================
+if( i_etat_courant != RMC_ETAT_HIDDEN)
+{
+	i_etat_courant = RMC_ETAT_HIDDEN
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	tf_zoom = 1.0
+	f_growth_start = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// STIMULI =======================================================================
+
+
+// COMPORTEMENT ================================================================
+if (f_time_start_etat < 0.5)
+{
+}
+else if (f_time_start_etat < 1.5)
+{
+	tf_coef = 1.5 - f_time_start_etat
+	tf_zoom = tf_coef * tf_coef
+	if (!MATH_FloatNullEpsilon(tf_zoom))
+		OBJ_ZoomSet(tf_zoom)
+}
+else if (f_time_start_etat < Delai_repousse)
+{
+	OBJ_FlagInvisibleSet(1)
+	COL_ColMapActivationSet(none, all)
+}
+else if ((Proc_RM_ManaGet() <= 0.0) && (f_growth_start == 0.0))
+{
+	f_growth_start = f_time_start_etat
+	OBJ_FlagInvisibleSet(0)
+	COL_ColMapActivationSet(all, none)
+}
+
+tf_coef = Proc_RM_ManaGet()
+
+if (f_growth_start)
+{
+	if (f_time_start_etat < f_growth_start + 1.0)
+	{
+		tf_coef = f_time_start_etat - f_growth_start
+		tf_zoom = tf_coef * tf_coef
+		if (!MATH_FloatNullEpsilon(tf_zoom))
+			OBJ_ZoomSet(tf_zoom)	
+	}
+	else
+	{
+		AI_TrackCurChangeNow("RMC_ETAT_wait")
+	}
+}

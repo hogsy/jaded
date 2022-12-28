@@ -1,0 +1,184 @@
+#include "KT_defines.var"
+
+float		tf_dist_max_sinon_crie
+float		tf_dist
+
+int			ti_mode_cible_hauteur
+
+object	to_ray_object
+
+vector	tv_lray_start_pos
+vector	tv_lray_sight
+vector	tv_sens
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if( i_etat_courant != ETAT_fight_cible_hauteur )
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_fight_cible_hauteur
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = AI_TrackCurGet()
+	
+	ai_grabbed_availibility[ Ci_LNK_GRAB_KONG] = vrai	
+	
+	f_non_collide_ground_time = 0.0		// sinon bug cycle "chute -> KO sol -> chute -> KO sol..."
+	
+	i_paf_nb = 0
+	
+	// Considerer pour l hysteresis des anims de deplacement qu'on pard a l arret a l init du mode
+	i_fight_action_old = -1
+	f_fight_delai_anim = 10.0	
+	f_orientation_coef = 0.0						// BLEND DE BLEND	
+	
+	f_time_start_etat = 0.0
+	i_flag_zde_fight_type = 0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// ANALYSE =============================================================================
+
+// Détection de GRAB
+o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, vrai, nofunc, nofunc)
+if (o_grabbed_actor_KK)
+{
+	macro_change_etat("KT_ETAT_Grabbed_by_Kong")		
+}
+
+// Detection de PAF
+AI_Execute("KT_exec_check_paf")
+if (o_paf_actor)
+{
+	macro_change_etat("KT_ETAT_paf")					// ko delay nul -> simple paf
+}
+
+// Jack fait diversion
+Macro_Check_Paf_Jauge_Crier
+
+// Detection du VIDE
+macro_checkchute
+
+// Détection CINE
+Macro_Check_Capa_CINE_Crier
+
+// Détection cible toujours en hauteur
+ti_mode_cible_hauteur = KT_CibleEnHauteur()
+if( ti_mode_cible_hauteur == Ci_Cible_Pas_En_Hauteur )
+{
+	macro_change_etat("KT_ETAT_attente")
+}
+
+// COMPORTEMENT =============================================================================
+
+// INTERET
+KT_Interet_Update(o_fight_actor, C_EVENT_InteretStatusLock)
+
+// REGARD
+i_flag_look = vrai	
+v_look_pos = KT_GetActorPosToLook(o_fight_actor)
+
+// ORIENTATION
+KT_OrientationInitGet(o_fight_actor, faux)
+
+// TEST D'OCCLUDER
+KT_OccluderTest()
+
+i_fight_action = i_Anim_attente		// action par défaut
+
+// DEPLACEMENT
+switch( ti_mode_cible_hauteur )
+{
+	case Ci_Cible_En_Hauteur_Mode_Walling :
+		tf_dist_max_sinon_crie = 30.0
+		break
+		
+	case Ci_Cible_En_Hauteur_Mode_Pas_Walling :
+//		if( o_fight_actor == o_ANN )
+		if( o_fight_actor == o_Jack )
+			tf_dist_max_sinon_crie = 8.0
+		else
+			tf_dist_max_sinon_crie = 15.0
+		break
+}
+
+
+// CHOIX DE L'ACTION
+if ( ! KT_GaoDansMonTerritoire(o_fight_actor))
+{
+	i_cri_filtre = Ci_CRI_PAS_D_ATTENTE_BLESSE
+	Macro_Crie_Vers_Fight_Actor
+	return
+}
+
+
+tv_sens = @o_fight_actor OBJ_PosGet() - OBJ_PosGet()
+tv_sens.z = 0.0
+
+tv_lray_start_pos = OBJ_PosGet() + cvector(0.0,0.0,3.0)
+tv_lray_sight = OBJ_SightGet()
+tv_lray_sight.z = 0.0
+tv_lray_sight = tv_sens
+MATH_VecSetNormalize(tv_lray_sight)
+DBG_RenderVector(tv_lray_start_pos, tv_lray_sight * 6.0, color_rouge)
+to_ray_object = COL_RayObject_Dist(tv_lray_start_pos, tv_lray_sight, 6.0, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+if( to_ray_object )
+{
+	i_fight_action = Action_Normal_Recul
+	i_force_change_anim = vrai
+	i_cible_haut_cancel_mur = vrai
+}
+else if( ( f_move_dist > tf_dist_max_sinon_crie && ! i_cible_haut_cancel_mur)		// dist max de jump hotspot (voire + si + haut)
+||  MATH_VecDotProduct( tv_sens, OBJ_SightGet()) < 0 )
+{
+	// trop loin : continue à s'approcher mais charge interdite
+	i_fight_action = i_Anim_marche
+}
+else
+{
+	// ni trop loin ni trop près : cycle
+//	i_cible_en_hauteur_cycle++
+//	if( i_cible_en_hauteur_cycle == 2)
+//		i_cible_en_hauteur_cycle = 0
+	i_cible_en_hauteur_cycle  = MATH_Modulo( i_cible_en_hauteur_cycle + 1, 2)
+	if( ti_mode_cible_hauteur  == Ci_Cible_En_Hauteur_Mode_Walling || ! i_cible_en_hauteur_cycle )
+	{
+		i_cri_filtre = Ci_CRI_PAS_D_ATTENTE_BLESSE
+		Macro_Crie_Vers_Fight_Actor
+	}
+	else
+	{
+		i_cible_en_hauteur_flag = vrai		// permet d'annuler l'attaque (peu de chances de réussir) pour chopper les nmi lancés
+		tf_dist = MATH_VecSquareDistance( COL_ZonePosGet( C_zde_tete), @o_Kong COL_ZonePosGet( C_zde_corps))
+		if ( WOR_GetKey() == 0x82000213 && tf_dist < 49.0)		// MAP 10B
+			i_KK_attaque_action = Action_Attak_CpdeFace
+		else
+			i_KK_attaque_action = Action_Attak_Mord_Haut
+		i_flag_zde_fight_type = Ci_zde_fight_type_machoire
+		macro_change_etat("KT_ETAT_attaque")
+	}
+}
+
+// ACTION
+KT_Action_Move_Select()
+
+// ORIENTATION
+v_orientation_sens = v_sight_avec_occluder
+KT_OrientationFinaleSet()
+

@@ -1,0 +1,74 @@
+#include "MAF_Defines.var"
+
+
+int	ti_i
+vector tv_tmp
+
+// Sound
+//i_homeBuzzInstance = SND_Request(MAF_SND_HOME_BUZZ,0)
+//
+//@o_homeBV SND_PlayLooped(i_homeBuzzInstance,-1)
+//SND_VolSet(i_homeBuzzInstance,0.1)
+//i_tgtHoverBuzzInstance = SND_Request(MAF_SND_TGT_HOVER_BUZZ,C_SND_Request_3DSound)
+//
+
+// temp: eliminate warnings
+i_flag_reinit_etat = 0
+if (!o_currentTarget)
+	o_currentTarget = get_camera
+	
+if (!o_targetToPaf)
+	o_targetToPaf = AI_MainActorGet(C_ID_Joueur)
+
+v_generateurPos = @o_generateur OBJ_PosGet() + v_generateurOffset
+
+
+if (!o_moucheModel)
+{
+	AI_TrackCurChange("MAF_DoNothing")
+	DBG_Error("The mouche model needs to be setup.")
+	return
+}
+else
+{
+	// make sure the model is not visible
+	@o_moucheModel OBJ_FlagInvisibleSet(vrai)
+}
+
+tv_tmp = @o_generateur OBJ_PosGet()
+tv_tmp += v_generateurOffset
+
+#ifdef RIEN_DUTOUT
+if (! @o_homeBV COL_BV_PointCollide(tv_tmp))
+{
+	AI_TrackCurChange("MAF_DoNothing")
+	DBG_Error("The position of o_generator + v_generatorOffset needs to be inside the home bv.")
+	return
+}
+#endif
+
+
+// prepare the array of cloned mouches
+
+if (i_nbMouchesMax > MAF_Ci_MaxNbMouches)
+	i_nbMouchesMax = MAF_Ci_MaxNbMouches
+
+// create all the mouche objects
+#ifdef MAF_DUPLICATE_AT_INIT
+for (ti_i = 0; ti_i < i_nbMouchesMax; ti_i++)
+{
+	ao_moucheList[ti_i] = @o_moucheModel OBJ_Duplicate(cvector(0,0,0))
+	@ao_moucheList[ti_i] OBJ_FlagInvisibleSet(vrai)
+	OBJ_RegisterKill(ao_moucheList[ti_i],&ao_moucheList[ti_i])
+}
+#endif
+
+for (ti_i = 0; ti_i < i_nbMouchesStart; ti_i++)
+{
+	i_curMoucheState = MAF_MoucheState_HomeHovering	
+	AI_Execute("MAF_Exec_AddMouche")
+}
+
+AI_TrackCurChange("MAF_Loop")
+
+

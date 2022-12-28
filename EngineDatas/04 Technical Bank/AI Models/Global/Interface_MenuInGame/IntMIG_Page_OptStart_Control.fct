@@ -1,0 +1,278 @@
+#include "Interface_MenuInGame_defs.var"
+
+int			ti_Line
+int			ti_SaveCur
+vector	tv_Pos
+int			ti_MenuNb, ti_Menu[ 10 ]
+
+//#define KEYLOGGER
+//#define OPTCONTROL_JOYCURVE
+
+#define Control_Line(i)				mi_PageString + 5 + i
+#define Control_Line2(i)				mi_PageString + 12 + i
+
+
+if (!IntMIG_SetPageParams())
+	return
+if (!mo_Texte)
+	return
+	
+ti_Menu[ 0 ] = 0
+ti_Menu[ 1 ] = 1
+ti_Menu[ 2 ] = 2
+ti_Menu[ 3 ] = 3
+ti_Menu[ 4 ] = 7
+ti_MenuNb = 5
+
+#ifdef OPTCONTROL_JOYCURVE
+ti_Menu[ ti_MenuNb ] = 4
+ti_MenuNb++
+#endif
+
+#ifdef KEYLOGGER
+ti_Menu[ ti_MenuNb ] = 5
+ti_MenuNb++
+ti_Menu[ ti_MenuNb ] = 6
+ti_MenuNb++
+#endif
+
+ti_Menu[ ti_MenuNb ] = 100
+	
+if (INTMIG_EnterPage_Start)
+{
+	IntMIG_ResetTexte( mi_PageString, 30 )
+	
+	if (mi_StartMenu || mi_E3Menu )
+		IntMIG_Option_StartMetrics( 0.06 )
+	else
+		IntMIG_Option_StartMetrics( 0.07 )
+		
+	for (ti_Line = 0; ti_Line < ti_MenuNb; ti_Line++)
+	{
+		if ( !ti_Menu[ ti_Line ] )
+			IntMIG_Option_AddMetrics( 0, ti_Line, mi_MC_Txg, mi_ConsoleText )
+		else
+			IntMIG_Option_AddMetrics( 0, ti_Line, INTMIG_TXG, INTMIG_TEXT_OptionsControl  + 1 + ti_Menu[ ti_Line ] )
+
+		switch ( ti_Menu[ ti_Line ] )
+		{
+		case 0: 	IntMIG_Option_AddMetrics( 1, ti_Line , INTMIG_TXG, INTMIG_TEXT_On )
+					IntMIG_Option_AddMetrics( 1, ti_Line , INTMIG_TXG, INTMIG_TEXT_Off )
+					break
+		case 1: 	IntMIG_Option_AddMetrics( 1, ti_Line , INTMIG_TXG, INTMIG_TEXT_OptionsControl_Param )
+					IntMIG_Option_AddMetrics( 1, ti_Line , INTMIG_TXG, INTMIG_TEXT_OptionsControl_Param + 1 )
+					break
+		default: 	IntMIG_Option_AddMetrics( 1, ti_Line , INTMIG_TXG, INTMIG_TEXT_Yes ) 
+					IntMIG_Option_AddMetrics( 1, ti_Line , INTMIG_TXG, INTMIG_TEXT_No ) 
+					break
+		}
+	}
+	IntMIG_Option_AddMetrics( 3, ti_MenuNb, INTMIG_TXG, INTMIG_TEXT_Command + 12 )
+	
+	if (mi_StartMenu || mi_E3Menu )
+		IntMIG_Option_EndMetrics( cvector( 0.5, 0.6, 0) )
+	else
+		IntMIG_Option_EndMetrics( cvector( 0.5, 0.5, 0) )
+		
+	IntMIG_SetText_Page( mi_PageString, INTMIG_TXG, INTMIG_TEXT_OptionsControl, INTMIG_PosTitle_UpRight,  0.0, 6, -1, INTMIG_Color_NotSel, 0, 1 )
+	IntMIG_SetText_Page( mi_PageString + 1, INTMIG_TXG, INTMIG_TEXT_Souligne, IntMIG_Option_Pos( 2, mi_Cur ),  0.0, 2, -1, INTMIG_Color_Sel, 0, 1 )
+	IntMIG_SetText_Page( mi_PageString + 2, INTMIG_TXG, INTMIG_TEXT_Xchange, INTMIG_PosButton_BottomRight,  0.0, 6, -1, INTMIG_Color_Sel, 0, 1 )
+	IntMIG_SetText_Page( mi_PageString + 3, INTMIG_TXG, INTMIG_TEXT_Tback, INTMIG_PosButton_BottomLeft,  0.0, 4, -1, INTMIG_Color_Sel, 0, 1 )
+	
+	IntMIG_Frame_Start()
+	for (ti_Line = 0; ti_Line < ti_MenuNb; ti_Line++)
+	{
+		if ( !ti_Menu[ ti_Line ] )
+			IntMIG_SetText_Page( Control_Line( ti_Line), mi_MC_Txg, mi_ConsoleText, IntMIG_Option_Pos( 0, ti_Line),  0.0, 2, -1, INTMIG_Color_NotSel, 0, 1 )
+		else if (ti_Menu[ ti_Line ] == 7)
+		{
+			//IntMIG_SetText_Page( Control_Line( ti_Line), mi_MC_Txg, mi_ConsoleText, IntMIG_Option_Pos( 0, ti_Line),  0.0, 2, -1, INTMIG_Color_NotSel, 0, 1 )
+			IntMIG_CreateText_Start( Control_Line( ti_Line))
+			@mo_Texte OBJ_TextInsert( Control_Line( ti_Line),  -1, "Invert Camera" )
+			IntMIG_CreateText_End( Control_Line( ti_Line), IntMIG_Option_Pos( 0, ti_Line),  0.0, 2, -1, INTMIG_Color_NotSel, 0, 1 )
+		}
+		else
+			IntMIG_SetText_Page( Control_Line( ti_Line), INTMIG_TXG, INTMIG_TEXT_OptionsControl  + 1 + ti_Menu[ ti_Line ], IntMIG_Option_Pos( 0, ti_Line),  0.0, 2, -1, INTMIG_Color_NotSel, 0, 1 )
+			
+		switch ( ti_Menu[ ti_Line ] )
+		{
+		case 0: IntMIG_OptionsControlString_Vibration( Control_Line2( ti_Line) , IntMIG_Option_Pos( 1, ti_Line), INTMIG_Color_NotSel) break
+		case 1: IntMIG_OptionsControlString_AimingAxis( Control_Line2( ti_Line), IntMIG_Option_Pos( 1, ti_Line), INTMIG_Color_NotSel) break
+		case 2: IntMIG_OptionsInterfaceString_Viseur( Control_Line2( ti_Line) , IntMIG_Option_Pos( 1, ti_Line), INTMIG_Color_NotSel) break
+		case 3: IntMIG_OptionsInterfaceString_Inventory( Control_Line2( ti_Line), IntMIG_Option_Pos( 1, ti_Line), INTMIG_Color_NotSel ) break
+		case 4: IntMIG_OptionsControlString_JoyCurve( Control_Line2( ti_Line), IntMIG_Option_Pos( 1, ti_Line), INTMIG_Color_NotSel ) break
+		case 5: IntMIG_OptionsControlString_KLRecord( Control_Line2( ti_Line), IntMIG_Option_Pos( 1, ti_Line), INTMIG_Color_NotSel ) break
+		case 6: IntMIG_OptionsControlString_KLPlay( Control_Line2( ti_Line), IntMIG_Option_Pos( 1, ti_Line), INTMIG_Color_NotSel) break
+		case 7: IntMIG_OptionsInterfaceString_Camera( Control_Line2( ti_Line) , IntMIG_Option_Pos( 1, ti_Line), INTMIG_Color_NotSel) break
+		}
+		IntMIG_Frame_Add(Control_Line( ti_Line))
+		IntMIG_Frame_Add(Control_Line2( ti_Line))
+	}
+	IntMIG_SetText_Page( Control_Line( ti_Line), INTMIG_TXG, INTMIG_TEXT_Command + 12, IntMIG_Option_Pos( 3,ti_Line) +cvector(0, 0.04, 0),  0.0, 1, -1, INTMIG_Color_NotSel, 0, 1 )
+	IntMIG_Frame_Add(Control_Line( ti_Line))
+	IntMIG_Frame_End( mi_PageString + 4, 0xFFFFFFFF, 0.0, 0.03, 32 )
+
+	@mo_Texte OBJ_TextColorSet( Control_Line(mi_Cur), 0, -1, INTMIG_Color_Sel )
+	@mo_Texte OBJ_TextColorSet( Control_Line2(mi_Cur), 0, -1, INTMIG_Color_Sel )
+	
+	IntMIG_Text_FadeInMulti( mi_PageString, 20, 0.5, 0.0 )
+
+	// store parameters
+	mi_Opt_SaveInt[ 0 ] = @"univ" PAD_Vibration
+	mi_Opt_SaveInt[ 1 ] = @"univ" CAM_SensVert
+	mi_Opt_SaveInt[ 2 ] = @"univ" CAM_Viseur
+	mi_Opt_SaveInt[ 3 ] = @"univ" MENU_i_ShowAmmoLeft
+	mi_Opt_SaveInt[ 4 ] = @"univ" MENU_i_ShowInventory
+	mi_Opt_SaveInt[ 5 ] = @"univ" CAM_Rotation
+	mi_ExitValide = faux
+	IntMIG_Text_FadeInMulti( mi_PageString, 20, 0.5, 0.0 )
+}
+else if (INTMIG_LeavePage_Start)
+{
+	IntMIG_Text_FadeOutMulti( mi_PageString, 20, 0.5 )
+	// restore parameters
+	if ( !mi_ExitValide )
+	{
+		@"univ" PAD_Vibration = mi_Opt_SaveInt[ 0 ]
+		@"univ" CAM_SensVert = mi_Opt_SaveInt[ 1 ]
+		@"univ" CAM_Viseur = mi_Opt_SaveInt[ 2 ]
+		@"univ" MENU_i_ShowAmmoLeft = mi_Opt_SaveInt[ 3 ]
+		@"univ" MENU_i_ShowInventory = mi_Opt_SaveInt[ 4 ]
+		@"univ" CAM_Rotation = mi_Opt_SaveInt[ 5 ]
+		SAVE_ValidateAl()
+		IO_PifPafEnable( mi_Opt_SaveInt[ 0 ] )
+	}
+}
+
+//for (ti_Line = 0; ti_Line <  ti_MenuNb; ti_Line++ )
+//	@mo_Texte OBJ_TextPivotSet( Control_Line(ti_Line), IntMIG_Option_Pos( 0, ti_Line ) )
+
+IntMIG_RestorePageParams()
+
+if ( mi_Exit || mi_ChangePage || mi_Cheat )
+	return
+	
+ti_SaveCur = mi_Cur
+IntMIG_UpdateCur_Vertical( ti_MenuNb + 1, 1 )
+if (mi_Cur != ti_SaveCur )
+{
+	IntMIG_PlaySound( INTMIG_SOUND_SELECTION )
+	IntMIG_Text_ChangeColor( Control_Line( ti_SaveCur ), INTMIG_Color_Sel, INTMIG_Color_NotSel, 0.25, 0.0 )
+	IntMIG_Text_ChangeColor( Control_Line( mi_Cur ), INTMIG_Color_NotSel, INTMIG_Color_Sel, 0.25, 0.0 )
+	IntMIG_Text_ChangeColor( Control_Line2( ti_SaveCur ), INTMIG_Color_Sel, INTMIG_Color_NotSel, 0.25, 0.0 )
+	IntMIG_Text_ChangeColor( Control_Line2( mi_Cur ), INTMIG_Color_NotSel, INTMIG_Color_Sel, 0.25, 0.0 )
+	if (mi_Cur == ti_MenuNb )
+	{
+		@mo_Texte OBJ_TextFlagSet( mi_PageString + 1, 1 )
+		@mo_Texte OBJ_TextPivotSet( mi_PageString + 1, IntMIG_Option_Pos( 2,mi_Cur) + cvector(0,0.04,0) )
+		IntMIG_SetText_Page( mi_PageString + 2, INTMIG_TXG, INTMIG_TEXT_Xselect, INTMIG_PosButton_BottomRight,  0.0, 6, -1, INTMIG_Color_Sel, 0, 1 )
+	}
+	else
+	{
+		@mo_Texte OBJ_TextFlagSet( mi_PageString + 1, 2 )
+		@mo_Texte OBJ_TextPivotSet( mi_PageString + 1, IntMIG_Option_Pos( 2,mi_Cur) )
+		IntMIG_SetText_Page( mi_PageString + 2, INTMIG_TXG, INTMIG_TEXT_Xchange, INTMIG_PosButton_BottomRight,  0.0, 6, -1, INTMIG_Color_Sel, 0, 1 )
+	}
+}
+
+	
+if ( joy_cancel  )
+{
+	IntMIG_PlaySound( INTMIG_SOUND_CANCEL )
+	SAVE_ValidateAl()
+	INTMIG_ChangePage(  "IntMIG_Page_OptStart" , 2 )
+	return
+}
+	
+if ( joy_valide )
+{
+	tv_Pos = @mo_Texte OBJ_TextPivotGet( Control_Line2(mi_Cur ) )
+	switch ( ti_Menu[ mi_Cur ] )
+	{
+		case 0:	if ( @"univ" PAD_Vibration )
+						@"univ" PAD_Vibration = faux
+					else
+						@"univ" PAD_Vibration = vrai
+					IO_PifPafEnable( @"univ" PAD_Vibration )
+					IO_PafSet( 100, 10 )
+					SAVE_ValidateAl()
+					IntMIG_OptionsControlString_Vibration( Control_Line2( mi_Cur ), tv_Pos, 0xFFFFFF)
+					break
+			
+		case 1: 	@"univ" CAM_SensVert = -@"univ" CAM_SensVert
+					SAVE_ValidateAl()
+					IntMIG_OptionsControlString_AimingAxis( Control_Line2( mi_Cur ), tv_Pos, 0xFFFFFF)
+					break
+					
+		case 2:
+				if (	@"univ" CAM_Viseur )
+					@"univ" CAM_Viseur = 0
+				else
+					@"univ" CAM_Viseur = 1
+				IntMIG_OptionsInterfaceString_Viseur( Control_Line2( mi_Cur ), tv_Pos, 0xFFFFFF)
+				SAVE_ValidateAl()
+				break
+			
+		case 3:
+				if (	@"univ" MENU_i_ShowInventory )
+				{
+					@"univ" MENU_i_ShowInventory = 0
+					@"univ" MENU_i_ShowAmmoLeft = 0
+				}
+				else
+				{
+					@"univ" MENU_i_ShowInventory = 1
+					@"univ" MENU_i_ShowAmmoLeft = 1
+				}
+				IntMIG_OptionsInterfaceString_Inventory( Control_Line2( mi_Cur ), tv_Pos, 0xFFFFFF)
+				SAVE_ValidateAl()
+				break
+
+				
+		case 4: 	ConsoleSpecificOption( 20 )
+					IntMIG_OptionsControlString_JoyCurve( Control_Line2( mi_Cur ), tv_Pos, 0xFFFFFF)
+					break
+					
+		case 5:  if (!DBG_IsRecord() && !DBG_IsPlay())
+				    	{
+						DBG_StartRecord()
+				    		WOR_Reinit()
+					}
+					else
+					{
+						DBG_StopRecord()
+						mi_ExitAsked = 1
+					}
+					break
+			
+		case 6 : if (!DBG_IsRecord() && !DBG_IsPlay())
+					{
+						DBG_StartPlay()
+						WOR_Reinit() 
+					}
+					else
+					{
+						DBG_StopPlay()
+						mi_ExitAsked = 1
+					}
+					break	
+					
+			case 7 :
+				if (	@"univ" CAM_Rotation)
+					@"univ" CAM_Rotation = 0
+				else
+					@"univ" CAM_Rotation = 1
+				IntMIG_OptionsInterfaceString_Camera( Control_Line2( mi_Cur ), tv_Pos, 0xFFFFFF)
+				break
+		
+		case 100:
+				mi_ExitValide = vrai
+				IntMIG_PlaySound( INTMIG_SOUND_VALIDE )
+				SAVE_ValidateAl()
+				INTMIG_ChangePage(  "IntMIG_Page_OptStart" , 2 )
+				return
+
+	}
+	IntMIG_PlaySound( INTMIG_SOUND_VALIDE )
+}
+

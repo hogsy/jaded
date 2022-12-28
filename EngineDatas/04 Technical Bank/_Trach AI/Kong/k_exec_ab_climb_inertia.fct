@@ -1,0 +1,278 @@
+#include "k_define.var"
+
+int			ti_action
+
+vector	tv_pivot_pos
+vector	tv_pendule
+vector	tv_bassin_to_main
+vector	tv_bassin_orient_blend
+vector	tv_main
+vector	tv_force_T
+vector	tv_force_TT
+
+float		tf_coef
+float		tf_norm
+float		tf_angle
+float		tf_ressort
+
+
+object	to_bassin
+object	to_main_gauche
+object	to_main_droite
+object	to_pied_gauche
+object	to_pied_droit
+object	to_main_D
+object	to_main_G
+
+// STEPH : SEUL LE BANKING DU CORPS / A LA NORMALE M INTERESSE
+switch ( ACT_ActionGet())
+{
+	case Ci_Kanim_climb_attente :
+	case Ci_Kanim_climb_accroche :
+		v_inertia_normale = v_climb_normale
+		break
+	case Ci_Kanim_saute_7M :
+		if (ANI_CurrentFrameGet(0) < 60)	
+			v_inertia_normale	= MATH_VecBlendRotate(v_inertia_normale, v_climb_normale, 8.0 * TIME_GetDt())
+		else
+			v_inertia_normale	= MATH_VecBlendRotate(v_inertia_normale, -OBJ_SightGet(), 8.0 * TIME_GetDt())
+		break
+	default:
+		v_inertia_normale = Cv_NullVector
+}
+
+
+if ( !MATH_VecNullEpsilon( v_inertia_normale ))
+{
+	to_bassin = ANI_CanalObjectGet(Anim_Canal_Bassin)
+	tv_pivot_pos = MATH_VecCrossProduct(OBJ_SightGet(), - v_climb_normale)
+	tf_angle = MATH_VecNorm(tv_pivot_pos)
+	
+//	tf_angle = MATH_VecAngle( OBJ_SightGet(), -v_climb_normale, OBJ_HorizonGet())
+	if (tf_angle > 0.0001)
+	{
+		tv_pivot_pos /= tf_angle
+		tf_angle = MATH_ASin(tf_angle)
+		if ( ACT_ActionGet() == Ci_Kanim_saute_7M)
+		{
+			f_climb_blend_bassin = MATH_FloatMin( 0.0,   f_climb_blend_bassin + ( 1.0 * TIME_GetDt()))
+			f_climb_blend_bassin = ANI_CurrentFrameGet(0) / 73.0
+			tf_angle = MATH_FloatBlend( tf_angle, 0.0, f_climb_blend_bassin)
+			
+			// Version 2 ************************
+//			to_main_D = ANI_CanalObjectGet( Anim_Canal_MainDroite)
+//			to_main_G = ANI_CanalObjectGet( Anim_Canal_MainGauche)
+//			
+//
+//			
+//			// Orientation
+////			tv_force_TT = MATH_VecBlendRotate( tv_force_TT,tv_force_T , 6.0 * TIME_GetDt())
+////			@to_bassin OBJ_PosSet( @to_bassin OBJ_PosGet() + ( tv_force_T - tv_force_TT))
+//			@to_bassin OBJ_PosSet(OBJ_PosGet() + MATH_VecRotate(@to_bassin OBJ_PosGet() - OBJ_PosGet(), OBJ_HorizonGet(), tf_angle))
+//			// Position du point d accroche
+//			tv_main = @to_main_D OBJ_PosGet()
+//			tv_main += @to_main_G OBJ_PosGet()
+//			tv_main *= 0.5
+//			tv_force_T = @o_climb_0D_wp OBJ_PosGet()
+//			tv_force_T -= @to_bassin OBJ_PosGet()
+//			tv_force_TT = tv_main - @to_bassin OBJ_PosGet()
+//			@to_bassin OBJ_Rotate_FromTo( @to_bassin MATH_VecGlobalToLocal(tv_force_TT), @to_bassin MATH_VecGlobalToLocal( tv_force_T))
+//
+//			
+
+			// Version 2 ************************	
+		}
+		else
+			f_climb_blend_bassin = 0.0
+			
+		@to_bassin OBJ_PosSet(OBJ_PosGet() + MATH_VecRotate(@to_bassin OBJ_PosGet() - OBJ_PosGet(), tv_pivot_pos, tf_angle))
+		tv_bassin_orient_blend = MATH_VecBlendRotate( @to_bassin MATH_VecGlobalToLocal(-v_climb_normale), @to_bassin MATH_VecGlobalToLocal(OBJ_SightGet()), f_climb_blend_bassin)
+		@to_bassin OBJ_Rotate_FromTo(@to_bassin MATH_VecGlobalToLocal(OBJ_SightGet()), tv_bassin_orient_blend)
+	}
+}
+return
+// STEPH : SEUL LE BANKING DU CORPS / A LA NORMALE M INTERESSE
+
+
+to_bassin = ANI_CanalObjectGet(Anim_Canal_Bassin)
+to_main_gauche = ANI_CanalObjectGet(Anim_Canal_MainGauche)
+
+ti_action = ACT_ActionGet()
+
+switch(ti_action)
+{
+	case Ci_Kanim_impulsion_up :
+	case Ci_Kanim_impulsion_up_left :
+	case Ci_Kanim_impulsion_right_up :
+	case Ci_Kanim_impulsion_down :
+	case Ci_Kanim_impulsion_left_down :
+	case Ci_Kanim_impulsion_right_down :
+
+		// ON NE TOUCHE PAS A LA NORMALE PENDANT L'IMPULSION
+
+		break
+
+	case Ci_Kanim_climb_attente :
+	case Ci_Kanim_climb_accroche :
+
+		v_inertia_normale = v_climb_normale
+
+		break
+
+	case Ci_Kanim_saute_7M :
+	
+		if (ANI_CurrentFrameGet(0) < 60)	
+			v_inertia_normale	= MATH_VecBlendRotate(v_inertia_normale, v_climb_normale, 8.0 * TIME_GetDt())
+		else
+			v_inertia_normale	= MATH_VecBlendRotate(v_inertia_normale, -OBJ_SightGet(), 8.0 * TIME_GetDt())
+
+		break
+
+	default:
+	
+		// ON BLEND LA NORMALE VERS LE NORMALE DEST SI ON EN A UNE
+		if  ((o_climb_0D_wp || o_climb_1D_current_wp) && MATH_VecDotProduct(OBJ_SightGet(), -v_climb_normale) > Cf_Cos60)
+			v_inertia_normale	= MATH_VecBlendRotate(v_inertia_normale, v_climb_normale, 8.0 * TIME_GetDt())
+		else
+			v_inertia_normale	= MATH_VecBlendRotate(v_inertia_normale, -OBJ_SightGet(), 8.0 * TIME_GetDt())
+}
+
+//macro_render_Vector(v_climb_position, v_inertia_normale * 5.0, color_rouge)
+//macro_render_Vector(v_climb_position, v_climb_normale * 5.0, color_vert)
+
+// PUTAIN DE MURS NON VERTICAUX ===================================================================================
+tv_pivot_pos = MATH_VecCrossProduct(OBJ_SightGet(), -v_inertia_normale)
+tf_angle = MATH_VecNorm(tv_pivot_pos)
+if (tf_angle > 0.0001)
+{
+	tv_pivot_pos /= tf_angle
+	tf_angle = MATH_ASin(tf_angle)
+	@to_bassin OBJ_PosSet(OBJ_PosGet() + MATH_VecRotate(@to_bassin OBJ_PosGet() - OBJ_PosGet(), tv_pivot_pos, tf_angle))
+	@to_bassin OBJ_Rotate_FromTo(@to_bassin MATH_VecGlobalToLocal(OBJ_SightGet()), @to_bassin MATH_VecGlobalToLocal(-v_inertia_normale))
+}
+
+// PUTAIN DE MURS NON VERTICAUX ===================================================================================
+
+switch(ti_action)
+{
+	case Ci_Kanim_climb_attente :
+	case Ci_Kanim_climb_accroche :
+
+		if (i_inertia_allowed)
+		{
+			f_inertia_IK_coef	= 1.0
+			
+			v_inertia_pivot_pos = v_climb_position
+	
+			tv_pivot_pos = v_climb_position
+			tv_pivot_pos -= MATH_VecDotProduct(tv_pivot_pos - @to_bassin OBJ_PosGet(), v_inertia_normale) * v_inertia_normale
+		
+			// LONGUEUR DE LA TIGE
+			tv_bassin_to_main = @to_main_gauche OBJ_PosGet() - @to_bassin OBJ_PosGet()
+			tv_bassin_to_main -= MATH_VecDotProduct(tv_bassin_to_main, v_inertia_normale) * v_inertia_normale
+			tf_norm = MATH_VecNorm(tv_bassin_to_main)
+	
+			// ON AJOUTE LA GRAVITE ET L'INERTIE
+			v_bassin_pos += v_bassin_speed * (TIME_GetDt() * 0.92)
+			v_bassin_pos.z -= TIME_GetDt() * 4.0
+		
+			// RENORMALISATION DE LA NOUVELLE POSITION
+			v_bassin_pos -= tv_pivot_pos
+			v_bassin_pos -= MATH_VecDotProduct(v_bassin_pos, v_inertia_normale) * v_inertia_normale
+			MATH_VecSetNormalize(v_bassin_pos)
+
+			v_bassin_pos *= tf_norm
+			v_bassin_pos += tv_pivot_pos
+
+			switch(ti_action)
+			{
+				case Ci_Kanim_climb_attente	 :
+			
+					to_pied_gauche = ANI_CanalObjectGet(Anim_Canal_PiedGauche)
+					i_flag_climb_IK[Ci_IK_pied_gauche] = vrai
+					f_IK_speed[Ci_IK_pied_gauche] = 1.0
+					v_IK_dest_pos[Ci_IK_pied_gauche] = @to_pied_gauche OBJ_PosGet()
+			
+					to_pied_droit = ANI_CanalObjectGet(Anim_Canal_PiedDroit)
+					i_flag_climb_IK[Ci_IK_pied_droit] = vrai
+					f_IK_speed[Ci_IK_pied_droit] = 1.0
+					v_IK_dest_pos[Ci_IK_pied_droit] = @to_pied_droit OBJ_PosGet()
+					
+				case Ci_Kanim_climb_accroche :
+	
+					to_main_droite = ANI_CanalObjectGet(Anim_Canal_MainDroite)
+					i_flag_climb_IK[Ci_IK_main_droite] = vrai
+					f_IK_speed[Ci_IK_main_droite] = 1.0
+					v_IK_dest_pos[Ci_IK_main_droite] = @to_main_droite OBJ_PosGet()
+			}
+	
+			// POSITIONNEMENT DU BASSIN		
+			@to_bassin OBJ_PosSet(v_bassin_pos)
+	
+			// ORIENTATION
+			tv_pendule = tv_pivot_pos - v_bassin_pos
+			tv_pendule -= MATH_VecDotProduct(tv_pendule, v_inertia_normale) * v_inertia_normale
+	
+			@to_bassin OBJ_Rotate_FromTo(@to_bassin MATH_VecGlobalToLocal(tv_bassin_to_main), @to_bassin MATH_VecGlobalToLocal(tv_pendule))
+	
+			v_IK_dest_pos[Ci_IK_main_gauche] = @to_main_gauche OBJ_PosGet()	
+
+			break
+		}
+
+	case Ci_Kanim_impulsion_up :
+	case Ci_Kanim_impulsion_up_left :
+	case Ci_Kanim_impulsion_right_up :
+	case Ci_Kanim_impulsion_down :
+	case Ci_Kanim_impulsion_left_down :
+	case Ci_Kanim_impulsion_right_down :
+	case Ci_Kanim_saute_7M :
+
+		if (f_inertia_IK_coef)
+		{
+			f_inertia_IK_coef = ANI_CurrentFrameGet(0)
+			f_inertia_IK_coef /=  ANI_NbFrameGet(0)	* 0.5
+			
+			f_inertia_IK_coef = 1.0 - MATH_FloatMin(f_inertia_IK_coef, 1.0)
+	
+			if (f_inertia_IK_coef)
+			{		
+				i_flag_climb_IK[Ci_IK_main_gauche] = vrai
+				f_IK_speed[Ci_IK_main_gauche] = 1.0
+				f_IK_coef[Ci_IK_main_gauche] = 1.0
+			}
+		}
+	
+	default:
+	
+		i_inertia_allowed = faux
+
+		if (f_inertia_IK_coef)
+		{
+			v_bassin_pos = MATH_VecBlend(@to_bassin OBJ_PosGet(), v_bassin_pos, f_inertia_IK_coef)
+			v_bassin_speed = (v_bassin_pos - v_bassin_last_pos) / TIME_GetDt()
+	
+			// POSITIONNEMENT DU BASSIN		
+			@to_bassin OBJ_PosSet(v_bassin_pos)
+	
+			// POSITION DU PIVOT
+			tv_pivot_pos = v_inertia_pivot_pos
+			tv_pivot_pos -= MATH_VecDotProduct(tv_pivot_pos - @to_bassin OBJ_PosGet(), v_inertia_normale) * v_inertia_normale
+			
+			// LONGUEUR DE LA TIGE
+			tv_bassin_to_main = @to_main_gauche OBJ_PosGet() - @to_bassin OBJ_PosGet()
+			tv_bassin_to_main -= MATH_VecDotProduct(tv_bassin_to_main, v_inertia_normale) * v_inertia_normale
+	
+			// ORIENTATION
+			tv_pendule = tv_pivot_pos - v_bassin_pos
+			tv_pendule -= MATH_VecDotProduct(tv_pendule, v_inertia_normale) * v_inertia_normale
+
+			tv_bassin_to_main = @to_bassin MATH_VecGlobalToLocal(tv_bassin_to_main)
+			tv_pendule	= MATH_VecBlend(tv_bassin_to_main, @to_bassin MATH_VecGlobalToLocal(tv_pendule), f_inertia_IK_coef)
+
+			@to_bassin OBJ_Rotate_FromTo(tv_bassin_to_main, tv_pendule)
+			
+			f_inertia_IK_coef -= MATH_FloatMin(f_inertia_IK_coef, 6.0 * TIME_GetDt())
+		}
+}
+

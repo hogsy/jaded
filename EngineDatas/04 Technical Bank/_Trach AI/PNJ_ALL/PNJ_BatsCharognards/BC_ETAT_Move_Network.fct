@@ -1,0 +1,193 @@
+#include "BC_defines.var"
+
+object			to_actor
+
+messageid		tmid_vision
+
+
+// SORTIE ETAT ===========================================================================
+if (i_sort_etat)
+{
+	i_flag_reseau_array = faux
+	f_obstacle_duration = 0.0
+	i_sort_etat = faux
+	return
+}
+
+
+// ENTREE ETAT ===========================================================================
+if (i_etat_courant != ETAT_Move_Network)
+{
+	i_etat_ancien_ancien = i_etat_ancien
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Move_Network
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	BC_DBG_Trace_Etat("etat move network")
+	
+	// CALCUL DU RESEAU et du next_wp
+	n_reseau = n_attaque
+	i_flag_depl_fini = faux			// pour bien recalculer le réseau pour remonter (ne pas sauter un wp en optimisant)
+	i_force_test_inclinaison = vrai
+	
+	i_flag_net_1st_calcul = vrai
+	// i_mode_depl a été initialisé à l'appel du mode car le mode sert dans plusieurs cas (transport de charogne || retour au réseau)
+	
+	// Choix de la destination
+	if( i_perchee_fake_attaque || ( i_perchee_retour_flag && ! n_attaque ) )
+	{
+		// fin d'attaque fake de bat perchee, ou alors c'est une bat qui retourne se percher, sans réseau de déplacement spécifié
+		@o_tmp_obj_next OBJ_PosSet(v_perchee_init_pos)
+//		@o_tmp_obj_next OBJ_BankingGeneralSet(v_perchee_init_sight, v_perchee_init_banking)
+		@o_tmp_obj_next OBJ_BankingGeneralSet(- v_perchee_init_banking,  Cv_VerticalVector)
+		o_next_wp = o_tmp_obj_next
+		o_cible_depl = o_next_wp
+		i_reseau_wp_count = 0
+		i_flag_reseau_array = faux
+		i_flag_reseau_oneway = faux
+//		i_flag_frein = vrai
+		f_speed = 0.0
+		f_ref_speed = 2.0
+		i_perchee_fake_attaque = faux
+		i_perchee_retour_post_rezo_flag = vrai		// retour accroche
+	}
+	else
+	{
+		// une bat qui ne retourne pas se percher ou alors une bat qui retourne se percher et qui a un réseau de déplacement spécifié
+		if( i_etat_ancien != ETAT_Move_Decolle )
+		{
+			o_cible_depl = BC_Choix_Cible_Deplacement_Calme()				// wp cible de dépacement déjà calculé dans l'état décolle (regarde en décollant)
+		}
+		i_flag_reseau_array = vrai
+		BC_Next_WP_Get()
+	}
+	BC_ref_speed_set(f_vitesse_move_network)
+	f_obstacle_duration = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =================================================================================
+
+
+// COMPORTEMENT ===========================================================================
+
+// Action et fréquence
+if( BC_select_action() )
+	BC_action_frequency_set(Cf_freq_standard)
+
+AI_Execute("BC_exec_check_obstacle")		// pour la rotation dans le reflex
+
+// Suivi du regard
+i_flag_neck = faux
+if( i_perchee_fake_attaque || ( i_perchee_retour_flag && ! n_attaque ) )
+{
+	i_flag_neck = faux
+}
+else if( ( i_reseau_wp_count >=2 ) && ao_reseau_wp[1] && ( MATH_VecDotProduct(OBJ_SightGet(), @ao_reseau_wp[1] OBJ_PosGet() - OBJ_PosGet()) >0 ) )
+{
+	i_flag_neck = vrai
+	v_look_pos = @ao_reseau_wp[1] OBJ_PosGet()
+}
+else if( o_next_wp && ( OBJ_SqrDist(o_next_wp) > 25.0 ) && MATH_VecDotProduct(OBJ_SightGet(), @o_next_wp OBJ_PosGet() - OBJ_PosGet() ) > 0 )
+{
+	i_flag_neck = vrai
+	v_look_pos = @o_next_wp OBJ_PosGet()
+}
+
+if( ! BC_ForceInactive() )
+{
+	if( ! i_flag_cine )
+	{
+		// TEST CADAVRES
+		to_actor = BC_Cadavre_Nearest(faux)
+		if( to_actor )
+		{
+			o_cadavre = to_actor		// NEW CADAVRE
+			BC_Cadavre_Nouveau_Select(to_actor)		// marqué comme "visité"
+			BC_Interet_Update(mid_interet_charogne, C_EVENT_InteretStatusFoodchain, to_actor, tmid_vision)
+			BC_Charognard_Mode_Force()
+			macro_change_etat("BC_ETAT_Move_Cadavre")			// NEW CADAVRE
+		}
+		
+		if( i_agressive )
+		{
+			//================== BAT AGRESSIVE ====================
+			
+			if( ! MSG_GlobalIsValid(mid_grab_charogne) 
+				&& BC_Test_Attaque() 
+				&& f_time_since_last_obstacle >= Cf_delai_since_last_obstacle_pour_attaque )
+				AI_Execute("BC_exec_init_attaque")
+		}
+//		else
+//		{
+//			//================= BAT CHAROGNARDE ==================
+//			
+//			if( ! MSG_GlobalIsValid(mid_grab_charogne) )
+//			{
+//				if( BC_Check_Sang() )
+//				{
+//					macro_change_etat("BC_ETAT_Move_Olfactif")
+//				}
+//				else
+//				{
+//					if( i_check_sang_already_done && f_charognard_forced_duration > Cf_charognard_forced_duration_min )
+//						BC_Charognard_Mode_Reset()
+//				}
+//			}
+//		}
+	}
+}
+
+
+// ======== DEPLACEMENT ==========
+
+if( i_perchee_retour_post_rezo_flag )
+{
+	v_dest_pos = v_perchee_init_pos
+//	i_flag_frein = vrai
+}
+AI_Execute("BC_exec_MOVE_beziers")
+
+if( MSG_GlobalIsValid( mid_grab_charogne ) )
+{
+	// la bat transporte une charogne
+	if( i_flag_depl_fini )
+	{
+		if( i_flag_cine )
+		{
+			// après un grab rapide, la bat remonte au réseau. Une fois le wp atteint, l'item ciné est validé.
+			i_flag_cine = faux
+			i_cine_close = vrai
+		}
+		else if( i_reseau_wp_count == 0 )
+		{
+			i_atterrissage_mode = Ci_atterrissage_nid_charogne
+			macro_change_etat("BC_ETAT_Move_Atterrit")	
+		}
+	}
+}
+else
+{
+	if( ! i_reseau_wp_count && i_flag_depl_fini )
+	{
+		if( i_perchee_retour_flag )
+		{
+			if( i_perchee_retour_post_rezo_flag )
+			{
+				i_perchee_retour_post_rezo_flag = faux
+				macro_change_etat("BC_ETAT_Wait_Perchee")		// retourne se pendre :)
+			}
+			// else : déplacement après réseau -> vers wp accrochage
+		}
+		else
+			macro_change_etat("BC_ETAT_Move_Ronde")		// le bat suit le réseau d'attente
+	}
+}

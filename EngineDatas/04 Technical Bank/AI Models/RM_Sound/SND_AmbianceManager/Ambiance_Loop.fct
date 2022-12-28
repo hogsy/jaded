@@ -1,0 +1,242 @@
+#include "Ambiance_defines.var"
+
+int		ti_i
+int		ti_ind
+int		ti_area
+int		ti_variation
+int		ti_trig_valide
+int		ti_cur_key
+int		ti_new_key
+int		ti_new_instance
+float	tf_hour
+float	tf_x1
+float	tf_x2
+float	tf_y
+
+// CHEAT TEST PLUIE
+#ifndef _FINAL_
+if( i_CHEAT_PLUIE )
+{
+	if( IO_KeyJustPressed(65) ) // A
+	{
+		i_cheat_pluie_on = 1 - i_cheat_pluie_on
+		if( Ambiance_DEBUG() )
+		{
+			DBG_TraceString("[SND_AmbianceManager] Cheat pluie = ")
+			DBG_TraceInt(i_cheat_pluie_on)
+			DBG_TraceEOL()
+		}
+	}
+}
+#endif
+
+
+// CURRENT ZIK
+ti_area = i_Area
+ti_variation = i_Variation
+
+
+// CHECK AREA
+for( ti_i = 0; ti_i < Ci_Trig_Area_Nb; ti_i ++ )
+{
+	if( AI_TriggerIsValid(Trigger_Area[ti_i]) && call_trigger(Trigger_Area[ti_i]) )
+	{
+		ti_area = ti_i * 10
+		break
+	}
+}
+
+
+// CHECK VARIATION
+if( i_CHEAT_PLUIE && i_cheat_pluie_on )
+	ti_variation = Ci_Variation_Pluie
+else if( ! i_CHEAT_PLUIE && ! @get_global ENV_pluie_interdit && @get_global ENV_pluie_encours )
+	ti_variation = Ci_Variation_Pluie
+else
+{
+//	tf_hour = JOUR_NUIT_HeureGet()
+	tf_hour = 12.0
+	if( tf_hour > 8.0 && tf_hour < 20.0 )
+		ti_variation = Ci_Variation_Jour
+	else
+		ti_variation = Ci_Variation_Nuit
+}
+
+
+// DETECT CHANGE
+if( ( ti_area != i_Area ) || ( ti_variation != i_Variation ) )
+{
+	i_Asked_index = ti_area + ti_variation
+	// DEBUG
+	#ifndef _FINAL_
+	if( Ambiance_DEBUG() )
+	{
+		DBG_TraceString("[SND_Ambiance] détect change = ")
+		DBG_TraceInt(i_Asked_index)
+		DBG_TraceEOL()
+	}
+	#endif
+}
+
+
+// GO CHANGE
+if( i_Played_index != i_Asked_index )
+{
+	// DEBUG
+//	#ifndef _FINAL_
+//	if( Ambiance_DEBUG() )
+//	{
+//		DBG_TraceString("[SND_Ambiance] Asked n° ")
+//		DBG_TraceInt(i_Asked_index)
+//		DBG_TraceString(" != Played n° ")
+//		DBG_TraceInt(i_Played_index)
+//		DBG_TraceString("\n")
+//	}
+//	#endif
+	
+	ti_cur_key = SND_InstanceGeti(i_Instance_Zik, SND_Cte_GetInstSoundKey)
+	ti_new_instance = SND_Request(i_Asked_index, 0)
+	ti_new_key = SND_InstanceGeti(ti_new_instance, SND_Cte_GetInstSoundKey)
+	SND_Destroy(ti_new_instance)
+	
+	// Fucking transitions jour/nuit => valider les nouvelles Area et Variation avant la fin du fade out...
+	i_Area = ti_area
+	i_Variation = ti_variation
+	
+	if( ti_cur_key == ti_new_key && ti_cur_key != -1 )
+	{
+		// Même musique, donc pas de fade out / fade in
+		i_Played_index = i_Asked_index
+		i_Area = ti_area
+		i_Variation = ti_variation
+		
+		// DEBUG
+		#ifndef _FINAL_
+		if( Ambiance_DEBUG() )
+		{
+			DBG_TraceString("[SND_Ambiance] Ambiance n° ")
+			DBG_TraceInt(i_Played_index)
+			DBG_TraceString(" (pas de fade out / fade in)\n")
+		}
+		#endif
+	}
+	else
+	{
+		// New Zik : stop old Zik (auto fade out) & play transition, then play new Zik when fade out is done
+		if( SND_TrackStatusGet(SND_Cte_Track_A) )
+		{
+			// stream toujours en cous (zik ou fade out)
+//			if( ! SND_IsPlaying(i_Instance_Transition) )
+			if( i_Instance_Transition == -1 )
+			{
+				// Transition pas encore lancée donc c'est la Zik qui est en cours
+				
+				// Zik Stop & Fade Out
+				SND_Stop(i_Instance_Zik)
+				
+				// Play Transition
+				ti_ind = Ci_Transition_Rank + i_Area
+				i_Instance_Transition = SND_Request(ti_ind, 0)
+				i_Instance_Transition1 = SND_Request(ti_ind+ 1, 0)
+				SND_PlayLooped(i_Instance_Transition, -1)
+				SND_PlayLooped(i_Instance_Transition1, -1)
+				
+				// DEBUG
+				#ifndef _FINAL_
+				if( Ambiance_DEBUG() )
+				{
+					DBG_TraceString("[SND_Ambiance] Stop Zik + Fade Out + Play Transition n° ")
+					DBG_TraceInt(ti_ind)
+					DBG_TraceEOL()
+				}
+				#endif
+			}
+			// else la zik est coupée et les transitions sont lancées... on attend la fin du fade out de la Zik
+		}
+		else
+		{
+			// DEBUG
+			#ifndef _FINAL_
+			if( Ambiance_DEBUG() )
+				DBG_TraceString("[SND_Ambiance] Zik et Fade Out terminés, End of transitions, Start New Zik\n ")
+			#endif
+			
+			// Zik et Fade Out terminés
+			if( i_Instance_Zik != -1 )
+				SND_Destroy(i_Instance_Zik)
+			i_Instance_Zik = -1
+			
+			// End of transitions
+			if( i_Instance_Transition != -1 )
+			{
+				SND_Stop(i_Instance_Transition)
+				i_Instance_Transition = -1
+			}
+			if( i_Instance_Transition1 != -1 )
+			{
+				SND_Stop(i_Instance_Transition1)
+				i_Instance_Transition1 = -1
+			}
+			
+			// Start New Zik
+			i_Played_index = i_Asked_index
+//			i_Area = ti_area
+//			i_Variation = ti_variation
+//			i_Area = i_Asked_index / 10		// garder le multiple de 10
+//			i_Area *= 10
+			i_Variation = MATH_Modulo(i_Asked_index, 10)
+			i_Area = i_Asked_index - i_Variation
+			i_Instance_Zik = SND_Request(i_Played_index, 0 ) //C_SND_Request_3DSound | C_SND_Request_DestroyWhenFinished )
+			
+			if( SND_InstanceGeti(i_Instance_Zik, SND_Cte_GetInstFadeIn) )
+				SND_FlagSet(i_Instance_Zik, SND_Cte_RandomPos)	// s'il y a un fade in sur la nouvelle Zik, start at random pos
+			else
+				SND_FlagReset(i_Instance_Zik, SND_Cte_RandomPos)		// sinon start from beginning
+			
+			SND_PlayLooped(i_Instance_Zik, -1)
+			
+			// DEBUG
+			#ifndef _FINAL_
+			if( Ambiance_DEBUG() )
+			{
+				DBG_TraceString("[SND_Ambiance] Play Ambiance n° ")
+				DBG_TraceInt(i_Played_index)
+				DBG_TraceEOL()
+			}
+			#endif
+		}
+	}
+}
+
+
+#ifndef _FINAL_
+tf_x1 = 0.85
+tf_x2 = 0.95
+tf_y = 0.7
+if( Ambiance_DEBUG() )
+{
+	Str_DisplayTextOnce("\cFF0000FF\\h0.08\Ambiance", cvector(tf_x1-0.03,tf_y,0))
+	tf_y += 0.07
+	Str_DisplayTextOnce("Area = ", cvector(tf_x1,tf_y,0))
+	Str_DisplayIntOnce(i_Area, cvector(tf_x2,tf_y,0))
+	tf_y += 0.05
+	Str_DisplayTextOnce("Var = ", cvector(tf_x1,tf_y,0))
+	Str_DisplayIntOnce(i_Variation, cvector(tf_x2,tf_y,0))
+	tf_y += 0.05
+	if( i_Played_index == i_Asked_index )
+		Str_DisplayTextOnce("\cFF00FF00\Played = ", cvector(tf_x1,tf_y,0))
+	else
+		Str_DisplayTextOnce("\cFF0000FF\Played = ", cvector(tf_x1,tf_y,0))
+	Str_DisplayIntOnce(i_Played_index, cvector(tf_x2,tf_y,0))
+	tf_y += 0.05
+	Str_DisplayTextOnce("\cFF00FF00\ASKED = ", cvector(tf_x1,tf_y,0))
+	Str_DisplayIntOnce(i_Asked_index, cvector(tf_x2,tf_y,0))
+}
+if( i_CHEAT_PLUIE )
+{
+	Str_DisplayTextOnce("cheat_pluie = ", cvector(tf_x1,tf_y,0))
+	Str_DisplayIntOnce(i_cheat_pluie_on, cvector(tf_x2,tf_y,0))
+	tf_y += 0.05
+}
+#endif
+

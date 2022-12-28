@@ -1,0 +1,92 @@
+
+#include "KBC_defines.var"
+
+vector		tv_new_soft_collision
+vector		tv_decal
+float			tf_step
+int				ti_soft_collision
+float			tf_coef
+
+
+// TAGGAGE ==================================================================
+#include "ROOT/EngineDatas/04 Technical Bank/AI Models/Global Library/exec_deplacements_tagon.fct"
+
+
+// RECUL DU AUX PAFS ==========================================================
+OBJ_PosSet(OBJ_PosGet() + (f_paf_offset_coef * v_paf_offset * (TIME_GetDt() * 15.0)) )					// recul paf
+
+
+// CUMUL DE PAFS  ==========================================================
+KBC_Paf_Cumul_Check_Time()
+
+
+// COLLISION MOLLES ============================================================
+v_pos_avant_soft_collision = OBJ_PosGet()
+
+
+if( ! KBC_Soft_Collision_Enabled() || MSG_GlobalIsValid(mid_grab_charogne) || ACT_ActionGet() == ACTION_Falaise_Attaque )
+{
+	// états coll molles interdites
+	ti_soft_collision = faux
+	tf_coef = 5.0
+}
+else
+{
+	ti_soft_collision = KBC_Soft_Collision(tv_new_soft_collision)
+	
+	if( i_etat_courant == ETAT_Fight_Contact && ! ti_soft_collision )
+		tf_coef = 20.0		// au contact de la proie, les coll molles s'annulent très vite
+	else
+		tf_coef = 0.5		// cas standard
+	
+	// CAS BAT NOIRE
+	if( i_modele == Ci_MODELE_Bat_Noire )
+		tf_coef /= 2.0		// la bat noire se décale moins que les autres, ce sont les autres qui se poussent
+
+}
+	
+// OFFSET DE COLLISION MOLLE
+if( ! ti_soft_collision )
+{
+	v_soft_collision_perfect = MATH_VecBlend(v_soft_collision_perfect, Cv_NullVector, 20.0 * TIME_GetDt())
+	if( i_DBG_soft_col )
+		DBG_TraceString("pas de soft col... ")
+}
+else
+{
+	v_soft_collision_perfect = tv_new_soft_collision
+	if( i_DBG_soft_col )
+		DBG_TraceString("il y a soft col !!!")
+}
+	
+v_soft_collision_current = MATH_VecBlend(v_soft_collision_current, v_soft_collision_perfect, tf_coef * TIME_GetDt())
+
+if( i_DBG_soft_col )
+{
+	DBG_TraceString(" norm current = ")
+	DBG_TraceFloat(MATH_VecNorm(v_soft_collision_current))
+	DBG_TraceString(" / norm perfect = ")
+	DBG_TraceFloat(MATH_VecNorm(v_soft_collision_perfect))
+	DBG_TraceString(" (coef = ")
+	DBG_TraceFloat(tf_coef )
+	DBG_TraceString(")")
+	DBG_TraceEOL()
+}
+
+// collisions molles
+DBG_RenderVector(OBJ_PosGet(), v_soft_collision_current, color_bleu)
+//	OBJ_PosSet(OBJ_PosGet() + ( v_soft_collision_current * (TIME_GetDt() * 15.0)) )
+OBJ_PosSet(OBJ_PosGet() + v_soft_collision_current )
+
+
+// SOUBRESAUTS ============================================================
+KBC_SoubreSaut_Check()
+
+// JAVELOTS ================================================================
+//KBC_Javelin_Check()
+
+
+// POSITION DU BALANCIER =======================================================
+AI_Execute("KBC_exec_balancier")
+
+

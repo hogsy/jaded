@@ -1,0 +1,38 @@
+
+#include "KT_defines.var"
+
+#define			Cf_dist_flying_grab_possible		50.0	// 100.0			// Dist ^2 min pour chopper le projectile en vol
+
+message		tm_msg
+object			to_projectile
+vector			tv_axe
+float				tf_dist
+
+
+o_msg_projectile = nobody
+o_jumpattak_actor_msg = nobody
+			
+tm_msg= MSG_Get()
+while (tm_msg.msg_id)
+{
+	switch ( tm_msg.msg_id )
+	{
+		case msg_id_KK_send_projectile :
+			// un peojectile arrive sur le T-Rex
+			to_projectile = tm_msg.msg_sender
+			tv_axe = @to_projectile OBJ_PosGet() - OBJ_PosGet()
+			tf_dist = OBJ_SqrDist(to_projectile) 
+			if( tf_dist >= Cf_dist_flying_grab_possible )
+				o_msg_projectile = to_projectile			// le projectile est assez loin pour que le T-Rex ait le temps de se retourner vers lui
+			break
+		case msg_id_KK_Fight_Jump :
+			o_jumpattak_actor_msg = tm_msg.msg_sender
+			break
+		case msg_id_KTREX_Charge :
+			o_charge_actor  = tm_msg.msg_gao2
+			o_fight_actor = tm_msg.msg_gao2
+			break
+	}
+	tm_msg = MSG_Get()
+}
+

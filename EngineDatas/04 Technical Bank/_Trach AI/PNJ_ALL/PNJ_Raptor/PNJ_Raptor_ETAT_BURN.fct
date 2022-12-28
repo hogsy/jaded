@@ -1,0 +1,124 @@
+#include "PNJ_Raptor_defines.var"
+
+int				ti_i
+int				ti_action
+
+float			tf_norm
+float			tf_delay
+
+vector		tv_pos
+vector		tv_traction
+vector		tv_speed
+vector		tv_new_sight
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+
+	COL_ZoneSizeSet(C_zdm_pied, cvector(0.75, 0.75, 0.75))
+	COL_ZonePosSet(C_zdm_pied, cvector(0.0, 0.0, 0.75))
+
+	f_force_run_duration = Cf_after_paf_force_run_duration
+	
+	f_requin_mode_duration = 0.0
+	f_force_requin_mode_duration = Cf_after_paf_force_requin_duration
+
+//	f_force_blesse_duration = 8.0
+
+	DYN_FrictionVectorSet(cvector(f_friction, f_friction, 0.0))	
+
+	if (i_SND_instance_burn != -1)
+	{
+		SND_Stop(i_SND_instance_burn)
+		i_SND_instance_burn = -1
+	}
+
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_BURN)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_BURN
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	if (i_SND_instance_burn == -1)
+	{
+		i_SND_instance_burn = SND_RequestPlayLoop(Ci_SND_Fire_Loop)
+		SND_RequestPlay(Ci_SND_Fire_Woosh)
+		f_SND_between_scream_duration = MATH_RandFloat(0.2, 1.0)
+	}
+
+	PNJ_Raptor_ActionSet(Action_Agonie_cycl)
+
+	DYN_FrictionVectorSet(cvector(6.0, 6.0, 0.0))	
+
+	COL_ZoneSizeSet(C_zdm_pied, cvector(1.25, 1.25, 1.25))
+	COL_ZonePosSet(C_zdm_pied, cvector(0.0, 0.0, 1.25))
+
+	i_SND_flag_play_agonie = vrai
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =====================================================================
+AI_Execute("PNJ_Raptor_exec_check_msg")
+
+AI_Execute("PNJ_Raptor_exec_check_vision")
+
+AI_Execute("PNJ_Raptor_exec_check_sound")
+
+AI_Execute("PNJ_Raptor_exec_check_collision")
+
+AI_Execute("PNJ_Raptor_exec_check_paf")
+if (i_flag_paf_fly)
+	macro_change_etat("PNJ_Raptor_ETAT_PAF_FLY")
+if (i_flag_paf_fall)
+	macro_change_etat("PNJ_Raptor_ETAT_PAF_FALL")
+
+AI_Execute("PNJ_Raptor_exec_check_shoot")
+
+AI_Execute("PNJ_Raptor_exec_update_best_interest")
+
+AI_Execute("PNJ_Raptor_exec_check_requin")
+
+AI_Execute("PNJ_Raptor_exec_check_client")
+
+if (!f_burning_duration || f_time_start_etat > 8.0)
+	macro_change_etat("PNJ_Raptor_ETAT_MORT")
+
+// COMPORTEMENT ===============================================================
+i_flag_look = vrai
+
+v_look_pos = OBJ_PosGet()
+v_look_pos += OBJ_SightGet() * f_neck_length
+v_look_pos += OBJ_BankingGet() * 2.0
+v_look_pos += OBJ_HorizonGet() * MATH_Cos(f_time_start_etat * 2.0)
+
+f_SND_between_scream_duration -= MATH_FloatMin(f_SND_between_scream_duration, TIME_GetDt())
+if ( ! f_SND_between_scream_duration )
+{
+	f_delay_before_next_shout_mix = 0.0
+	i_SND_roar_index = Ci_SND_Fire_Scream
+	PNJ_Raptor_Shout_Mix()
+	f_SND_between_scream_duration = MATH_RandFloat(0.5, 1.0)
+}
+
+AI_Execute("PNJ_Raptor_exec_on_ground_stuff")
+
+v_virtual_banking = MATH_VecBlendRotate(v_virtual_banking, v_ground_normal, 4.0 * TIME_GetDt())
+OBJ_BankingGeneralSet(OBJ_SightGet(), v_virtual_banking)
+

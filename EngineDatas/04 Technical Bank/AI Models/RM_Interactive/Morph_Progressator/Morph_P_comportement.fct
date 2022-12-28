@@ -1,0 +1,76 @@
+#define Capa_switch OBJ_Capa_7
+
+float	tf_morph_offset
+
+tf_morph_offset = des_f_morph_final_prog - des_f_morph_init_prog
+
+if (des_activation==1)
+	f_morph_progression += (tf_morph_offset / des_f_delai_morph_in) * TIME_GetDt()
+else if (des_activation==-1)
+{
+//	if (OBJ_CapaTest(Capa_switch) )
+		AI_TrackCurChangeNow("Morph_P_Step_by_step")
+}
+else if (OBJ_CapaTest(Capa_switch))
+{
+	f_morph_progression += (tf_morph_offset / des_f_delai_morph_in) * TIME_GetDt()
+}
+
+else
+{
+	if (des_colmap_init)
+		@des_colmap_init COL_ColMapActivationSet(all, none)
+
+	if (des_colmap_final)
+		@des_colmap_final COL_ColMapActivationSet(none, all)
+
+	f_morph_progression -= (tf_morph_offset / des_f_delai_morph_out) * TIME_GetDt()
+}
+
+if (des_mode == 1)
+{
+	if (f_morph_progression > des_f_morph_final_prog)
+		f_morph_progression = des_f_morph_init_prog + (f_morph_progression - des_f_morph_final_prog)
+}
+else
+{
+	if (f_morph_progression > des_f_morph_final_prog)
+	{
+		f_morph_progression = des_f_morph_final_prog
+
+		// Cas particulier, plus besoin de jouer l'IA
+		OBJ_MorphProgSet(0, f_morph_progression)
+		OBJ_MorphFactorSet(0, 1)
+
+		if (des_colmap_init)
+			@des_colmap_init COL_ColMapActivationSet(none, all)
+
+		if (des_colmap_final)
+			@des_colmap_final COL_ColMapActivationSet(all, none)
+
+		if (des_activation)
+		{
+			if	(des_mode == -1)
+			{	OBJ_Destroy()	}
+			AI_TrackCurStop()
+		}
+	}
+	else if (f_morph_progression < des_f_morph_init_prog)
+	{
+		f_morph_progression = des_f_morph_init_prog
+
+		// Cas particulier, plus besoin de jouer l'IA
+		OBJ_MorphProgSet(0, f_morph_progression)
+
+		if (des_activation)
+		{
+			if	(des_mode == -1)
+			{	OBJ_Destroy()	}
+			AI_TrackCurStop()
+		}
+	}
+}
+
+OBJ_MorphProgSet(0, f_morph_progression)
+OBJ_MorphFactorSet(0, 1)
+

@@ -1,0 +1,149 @@
+#include "BC_defines.var"
+
+#ifndef _FINAL_
+
+
+if( i_sort_etat )
+{
+	i_sort_etat = faux
+	return
+}
+
+
+if( i_etat_courant != ETAT_TEST )
+{
+	i_etat_ancien_ancien = i_etat_ancien
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_TEST
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+//	ACT_ActionSet(ACTION_Perchee_Attente)
+//	ACT_ActionSet(ACTION_Perchee_Panic)
+//	ACT_ActionSet(ACTION_Perchee_Panic_var)
+
+//	OBJ_SightGeneralSet(- Cv_VerticalVector, OBJ_BankingGet())
+
+//	ACT_ActionSet(41)
+//	ACT_ActionSet(ACTION_Vol_cycle)
+
+//	if( ! o_attaque_finale_decor )
+//		DBG_Error("j'ai besoin de o_attaque_finale_decor !!! (ETAT TEST)")
+//	if( ! @o_attaque_finale_decor ACT_HasActionKit() )
+//		DBG_Error("o_attaque_finale_decor doit avoir un actionkit !!! (ETAT TEST)")
+//	
+//	OBJ_PosSet(@o_attaque_finale_decor OBJ_PosGet() - (3 * @o_attaque_finale_decor OBJ_SightGet()))
+//	ACT_ActionSet(i_ACTION_Vol_Standard)
+//	@o_attaque_finale_decor ACT_ActionSet(ACTION_CINE_PIEUX_Intact_Fixe)
+//	COL_ColSetActivationSet(none, C_bit_zdm_pied)			// désactive zdm pied
+
+	ACT_ActionSet(i_ACTION_Vol_Standard)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+i_flag_neck = faux
+
+//if( IO_KeyPressed(65) )
+//{
+//	BC_GFX_Particules(OBJ_PosGet(), -OBJ_SightGet())
+//}
+
+OBJ_BankingGeneralSet(OBJ_SightGet(), Cv_VerticalVector)
+
+//
+//if( o_track_test_wp )
+//	v_look_pos = @o_track_test_wp OBJ_PosGet()
+//
+//if( IO_KeyJustPressed(65) )
+//	i_flag_neck = 1 - i_flag_neck
+
+//Str_DisplayIntOnce(i_flag_neck, Cv_NullVector)
+
+//if( f_time_start_etat > 2.0 && o_track_test_wp )
+//{
+//	o_cible_attaque = o_track_test_wp
+//	AI_Execute("BC_exec_dyn_on")
+//	DYN_SpeedSetVector(Cv_NullVector)
+//	tmid_vision = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility, o_cible_attaque, nobody)
+//	if( MSG_GlobalIsValid(tmid_vision) )
+//		BC_Seen_Actor_Add(tmid_vision)
+//	SND_RequestPlay(Ci_SND_Cri_Attack_Loin)			// je crie pour annoncer que je vais attaquer
+//	macro_change_etat("BC_ETAT_Fight_Approche")
+//}
+//
+
+
+if( o_track_test_wp )
+{
+	if( IO_KeyJustPressed(65) )
+	{
+		if( @o_track_test_wp OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Active )
+		{
+			if( o_track_test_wp.des_flags & DSF_Jack_Bats_Chute_Reservation ) 	// pas réservable
+			{
+				if( o_track_test_wp.des_flags & DSF_Jack_Bats_Chute_Reserved )		// déjà réservé
+				{
+					o_track_test_wp.des_flags &= ~DSF_Jack_Bats_Chute_Reserved
+				}
+				else		// pas réservé
+				{
+					o_track_test_wp.des_flags |= DSF_Jack_Bats_Chute_Reserved
+				}
+			}
+		}
+	}
+}
+
+
+//returntrack
+//
+//if( ACT_ActionGet() == i_ACTION_Vol_Standard )
+//{
+//	if( f_time_start_etat > 1.0 )
+//	{
+//		OBJ_PosSet(@o_attaque_finale_decor OBJ_PosGet())
+//		OBJ_BankingGeneralSet(@o_attaque_finale_decor OBJ_SightGet(), @o_attaque_finale_decor OBJ_BankingGet())
+//		ACT_ActionSet(ACTION_CINE_BAT_Ecrasement)
+//		@o_attaque_finale_decor ACT_ActionSet(ACTION_CINE_PIEUX_Ecrasement)
+//	}
+//}
+//else
+//{
+//	switch( ACT_ActionGet() )
+//	{
+//		case ACTION_CINE_BAT_Ecrasement :
+//			if( ACT_ActionFinished() )
+//			{
+//				ACT_ActionSet(ACTION_CINE_BAT_Mort)
+//				@o_attaque_finale_decor ACT_ActionSet(ACTION_CINE_PIEUX_Casse_Fixe)
+//				f_time_start_etat = 0.0
+//			}
+//			break
+//		
+//		case ACTION_CINE_BAT_Mort :
+//			if( f_time_start_etat > 2.0 )
+//			{
+//				ACT_ActionSet(ACTION_CINE_BAT_Paf_Mort)
+//				@o_attaque_finale_decor ACT_ActionSet(ACTION_CINE_PIEUX_Casse_Paf_Denham)
+//			}
+//			break
+//			
+//		case ACTION_CINE_BAT_Paf_Mort :
+//			if( ACT_ActionFinished() )
+//			{
+//				ACT_ActionSet(ACTION_CINE_BAT_Paf_Mort_Fixe)
+//				@o_attaque_finale_decor ACT_ActionSet(ACTION_CINE_PIEUX_Casse_Paf_Denham_Fixe)
+//			}
+//			break
+//	}
+//}
+
+#endif

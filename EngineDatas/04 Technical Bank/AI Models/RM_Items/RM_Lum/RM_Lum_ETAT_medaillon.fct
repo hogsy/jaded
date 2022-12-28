@@ -1,0 +1,58 @@
+#include "RM_Lum_defines.var"
+
+vector	tv_temp
+int			ti_ok
+
+// SORTIE ===================================================================
+if( i_etat_sortie )
+{
+	i_etat_sortie = faux
+	return
+}
+
+// ENTREE ===================================================================
+if( i_etat_courant != ETAT_MEDAILLON )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_MEDAILLON
+	if( fct_etat_last_track )
+	{
+		i_etat_sortie = vrai
+		AI_Execute(fct_etat_last_track)
+	}
+	f_etat_duree = 0.0
+	f_medaillon_pos_duree = 0.0
+	f_blend_distance = 1.0
+}
+else
+{
+	f_etat_duree += TIME_GetDt()
+}
+
+// ANALYSE ==================================================================
+
+ti_ok = faux
+if( f_medaillon_pos_duree )
+	ti_ok = vrai
+else
+{
+	tv_temp = v_medaillon_pos - OBJ_PosGet()
+	if( MATH_VecDotProduct(tv_temp, tv_temp) <= 0.1 )
+		ti_ok = vrai
+}
+if( ti_ok )
+{
+	f_medaillon_pos_duree += TIME_GetDt()
+//	if( f_medaillon_pos_duree > 3.0 )
+//	{
+//		//OBJ_Destroy()
+//		OBJ_FlagsControlSet(OBJ_C_ControlFlag_AlwaysVisible, none)
+////		OBJ_FlagInactiveSet(vrai)
+//	}
+//	else 
+	if( f_medaillon_pos_duree > 1.0 )
+		OBJ_CapaSet(OBJ_Capa_15, none)
+}
+
+// COMPORTEMENT ============================================================
+

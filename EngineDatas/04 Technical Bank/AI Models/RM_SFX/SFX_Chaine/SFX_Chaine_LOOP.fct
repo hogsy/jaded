@@ -1,0 +1,55 @@
+#include "SFX_Chaine_VAR.var"
+
+int			ti_i
+vector	tv_pos, tv_pos_old, tv_pos_init, tv_turbulences
+object	to_obj
+
+DBG_StartRaster(7,"IA CHAINE")
+
+to_obj = OBJ_Me()
+
+// Traitement de chaque module
+for (ti_i = 0; ti_i < i_nb_modules; ti_i++)
+{
+	// Définition de la position du WP père
+	if (ti_i == 0)
+	{
+		tv_pos_init = OBJ_PosGet()
+		tv_turbulences = cvector(MATH_RandFloat(-f_turbulence,f_turbulence), MATH_RandFloat(-f_turbulence,f_turbulence), MATH_RandFloat(-f_turbulence,f_turbulence))
+	}
+	else
+	{
+		tv_pos_init = v_pos_modules[ti_i-1]//@o_modules[ti_i-1] OBJ_PosGet()
+		tv_turbulences = Cv_NullVector
+	}
+
+	tv_pos_old = v_pos_modules[ti_i]
+
+	// On détermine sa nouvelle position
+	tv_pos = i_espacement * MATH_VecNormalize((tv_pos_init - tv_pos_old) - ((v_gravite + tv_turbulences) * TIME_GetDt()) + (v_dir_modules[ti_i] * 0.75))
+
+	// On mémorise la direction du vecteur
+	v_dir_modules[ti_i] = tv_pos_old - (tv_pos_init - tv_pos)
+
+	// On mémorise la position du module
+	v_pos_modules[ti_i] = tv_pos_init - tv_pos
+
+	// On déplace le module
+	if (i_type == 0)
+		@o_modules[ti_i] OBJ_PosSet(v_pos_modules[ti_i])//tv_pos_old + tv_pos)
+	else
+		PROC_SFX_FLARE_COEUR(to_obj, i_GFX_Coeurs[ti_i], v_pos_modules[ti_i], f_taille_coeurs, c_couleur_coeurs)
+}
+
+
+if (AI_TriggerIsValid(TRIG_REMOVE) && call_trigger(TRIG_REMOVE))
+{
+	PROC_SFX_CHAINE_DESTROY_LAST_MODULE()
+}
+
+if (AI_TriggerIsValid(TRIG_ADD) && call_trigger(TRIG_ADD))
+{
+	PROC_SFX_CHAINE_ADD_MODULE()
+}
+
+DBG_StopRaster(7)

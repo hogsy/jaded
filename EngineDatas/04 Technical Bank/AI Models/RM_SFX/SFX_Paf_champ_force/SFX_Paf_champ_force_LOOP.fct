@@ -1,0 +1,71 @@
+#include "SFX_Paf_champ_force_VAR.var"
+
+vector	tv_pos, tv_normale
+object	to_obj
+
+if (o_visuel_champ_force)
+	if (@o_visuel_champ_force COL_CollideType(COL_C_Wall))
+	{
+		tv_pos = @o_visuel_champ_force COL_CollidedPointGet(1) + cvector(0.0,0.0,0.5)
+		tv_normale = @o_visuel_champ_force COL_NormalGet(1)
+		PROC_SFX_RIPPLE_CHAMP_FORCE(i_GFX_Ripple, i_GFX_Etinc, tv_pos, tv_normale, 1.0)
+	}
+	else
+		PROC_DESTROY_2_SFX(i_GFX_Ripple, i_GFX_Etinc)
+else
+	if (COL_CollideType(COL_C_Wall))
+	{
+		tv_pos = COL_CollidedPointGet(1) + cvector(0.0,0.0,0.5)
+		tv_normale = COL_NormalGet(1)
+		PROC_SFX_RIPPLE_CHAMP_FORCE(i_GFX_Ripple, i_GFX_Etinc, tv_pos, tv_normale, 1.0)
+	}
+	else
+		PROC_DESTROY_2_SFX(i_GFX_Ripple, i_GFX_Etinc)
+
+if (AI_TriggerIsValid(t_activation) && call_trigger(t_activation))
+	i_stop = faux
+
+if (AI_TriggerIsValid(t_desactivation) && call_trigger(t_desactivation))
+	i_stop = vrai
+
+// DESACTIVATION DU CHAMP DE FORCE
+if (i_stop)
+{
+	if (i_active_sound)
+	{
+		if (o_visuel_champ_force)
+		{
+			@o_visuel_champ_force OBJ_FlagInvisibleSet(vrai)
+			@o_visuel_champ_force OBJ_FlagInactiveSet(vrai)
+		}
+		else
+		{
+			OBJ_FlagInvisibleSet(vrai)
+			OBJ_FlagInactiveSet(vrai)
+		}
+
+		SND_RequestPlay(SND_Champ_Stop)
+		i_active_sound = faux
+		PROC_LIBERE_NETWORK(faux)
+	}
+}
+else
+// ACTIVATION DU CHAMP DE FORCE
+if (!i_active_sound)
+{
+	if (o_visuel_champ_force)
+	{
+		@o_visuel_champ_force OBJ_FlagInvisibleSet(faux)
+		@o_visuel_champ_force OBJ_FlagInactiveSet(faux)
+	}
+	else
+	{
+		OBJ_FlagInvisibleSet(faux)
+		OBJ_FlagInactiveSet(faux)
+	}
+
+	SND_RequestPlay(SND_Champ_Activation)
+	SND_RequestPlay(SND_Champ_Active_Loop)
+	i_active_sound = vrai
+	PROC_LIBERE_NETWORK(vrai) 
+}

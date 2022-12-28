@@ -1,0 +1,547 @@
+#include "H_defines.var"
+
+int			ti_i
+int			ti_rank
+int			ti_state
+int			ti_index
+int			ti_capa, ti_capa1
+int			ti_ok
+
+object	to_followed_actor
+object	to_camera
+object	to_obj, to_next, to_obj1, to_obj2
+object	to_ennemy, to_main
+object	to_hayes, to_jack
+object	to_prev_prog
+
+messageid	tmid_info
+
+float		tf_sum
+float		tf_dot
+float		tf_temp
+float		tf_dist, tf_dist1, tf_dist2
+float		tf_dist_to_realdest
+float		tf_eloignement
+float		tf_temp1
+
+int			ti_indice
+int			failed
+int			ti_id
+int			ti_context
+int			i, capa
+int			ti_links
+		
+vector	tv_offset
+vector	tv_temp, tv_temp1
+vector	tv_way_destpos		// Position intermediaire ou se rendre actuellement 
+vector	tv_way_realpos		// La vrai position finale
+
+messageid	EVT_ID
+
+object	ao_links[20]
+int			ai_links
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_IA_suivi)
+{
+	o_last_prog = nobody
+	o_last_prog_prev = nobody
+	@get_global o_cache_preferee = nobody
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_IA_suivi
+	o_pref_target_stimulus_vis = nobody
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = AI_TrackCurGet()
+
+	for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+		ai_SRV_ENABLE[ti_i] = faux
+
+	// AUTORISATIONS DES GRABS
+	ai_SRV_ENABLE[Ci_LNK_GRAB_RAPTOR]		= vrai
+	
+	// AUTORISATION DES AIDES
+	ai_SRV_ENABLE[Ci_LNK_INTERACTION] 		= vrai
+	ai_SRV_ENABLE[Ci_LNK_PSSS] 					= vrai
+
+	f_time_start_etat = 0.0
+	f_way_time_search_pos = 0
+	
+	// Si j'étais planqué sur un WP, je libère le WP
+	if(o_in_cache_0D) 
+	{
+		@o_in_cache_0D OBJ_CapaSet(0, Capa_Cache_taken)
+		o_in_cache_0D = nobody
+	}
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =======================================================================================================
+
+if(f_time_start_etat > 1.0) OBJ_CapaSet(OBJ_Capa_11, 0)	// Autorise demarrage script
+
+AI_Execute("H_exec_read_world")
+AI_Execute("H_exec_serveur_get")
+AI_Execute("H_exec_change_etat")
+AI_Execute("H_exec_ch_Stimulus_Paf")
+if (o_paf_sender) macro_change_etat("H_ETAT_IA_paf")
+
+// INTERACTION
+OBJ_Me().des_int1 = Ci_DISPLAY_PSSS
+
+// ============================================================================================
+
+// TEXTE
+//to_obj = AI_MainActorGet(C_ID_Jack)
+//if(!i_flag_culled && !i_flag_stress && MATH_VecDotProduct(OBJ_SightGet(), @to_obj OBJ_SightGet()) < -0.5)
+//{
+//	if(OBJ_SqrDist(to_obj) < 6 * 6 && !@"KingKong/Humain" to_obj i_flag_arme_basse)
+//	{
+//		AskText(TEXTE_Enjoue, Gene_C_pointed_by_gun, 40, nobody)
+//	}
+//}
+
+// ============================================================================================
+
+// Climb ?
+if ( move_network && i_id_humain == C_ID_Ann) 
+{
+	to_obj = o_nearest_me
+	if(@to_obj OBJ_CapaTest(OBJ_Capa_0))
+	{
+		way_i_climb = 1
+		way_o_climb = to_obj
+		macro_change_etat( "H_ETAT_ann_climb" )
+	}
+}
+
+// Opportunité de tir (on ne tire pas sur un ennemi dont on est caché)
+ComputeCibleAShooter( -1.0 )
+if(o_target_stimulus_vis && (f_time_start_etat > 0.25))
+{
+	if(EVENT_InfoCanGaoSeeGao(o_target_stimulus_vis, OBJ_Me(), tmid_info))
+	{
+		AI_Execute("H_exec_validate_tir")
+	}
+}
+
+// FIGHT ==================================================================================================	
+
+if(i_force_hide) i_flag_detect_stress = vrai
+if(i_flag_detect_stress && f_time_start_etat && !i_force_suivi)
+{
+	if(i_id_humain != C_ID_Hayes || !@get_global i_progression_hayes_is_suivi)
+	{
+		ForceChercheCache()
+		if(o_hide_0D)
+		{
+			if(@o_hide_0D OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct)
+				o_hide_0D.des_int2 = o_hide_0D.des_int2 - 1
+			o_hide_0D = nobody
+			macro_change_etat( "H_ETAT_IA_hide" )
+		}
+	}
+}
+
+// COMPORTEMENT ==================================================================================================	
+to_followed_actor = PRG_SuiviCarotte
+if(!to_followed_actor) to_followed_actor = o_main_actor
+
+// COVER ?
+if(HL_TestCover()) macro_change_etat("H_ETAT_IA_MultiCover")
+
+// POSITION OU ALLER ======GGgg============================================================================================	
+
+// Eloignement désiré à jack
+// tf_dist_to_realdest contient la distance restance à parcourir (en ligne droite)
+tv_way_destpos = v_way_destpos
+tf_dist_to_realdest = MATH_VecNorm(v_way_destpos - OBJ_PosGet())
+tf_eloignement = PRG_Suivi_DistMin
+
+// Si je viens d'un fight, je ne peux plus etre chienchien (pour ne pas faire demi tour sur le reseau) tant
+// que jack n'est pas proche de nous
+to_obj = AI_MainActorGet(C_ID_Jack)
+if(OBJ_SqrDist(to_obj) < 4 * 4) i_sortie_fight = faux
+if(i_sortie_fight && tf_eloignement == 0) tf_eloignement = 5
+if(tf_eloignement == -1)
+{
+	if(f_hauteur_eau > Hauteur_Eau_Basse && f_time_start_etat > 1 && !i_flag_nage && TIME_Elapsed(f_time_last_nage, 2))
+	{
+		switch(i_id_humain)
+		{
+			case C_ID_Hayes : 		tf_eloignement = 3 break
+			case C_ID_Denham : 	tf_eloignement = -4.5 break
+			case C_ID_Jimmy : 		tf_eloignement = -4.5 break
+			case C_ID_Ann : 			tf_eloignement = -5.5 break
+		}			
+	}
+	else
+	{
+		switch(i_id_humain)
+		{
+			case C_ID_Hayes : 		tf_eloignement = 7 break
+			case C_ID_Denham : 	tf_eloignement = 6 break
+			case C_ID_Jimmy : 		tf_eloignement = 5 break
+			case C_ID_Ann : 			tf_eloignement = 4 break
+		}			
+	}
+}
+else
+{
+	switch(i_id_humain)
+	{
+		case C_ID_Hayes : 		tf_eloignement += 4 break
+		case C_ID_Denham : 	tf_eloignement += 2 break
+		case C_ID_Jimmy : 		tf_eloignement += 1 break
+		case C_ID_Ann : 			break
+	}	
+}
+
+// En rage, on trace devant
+if(@get_global i_flag_rage)
+{
+	tf_eloignement = 15
+}
+
+// On trace devant si on est en zone dangereuse
+if(ZoneDangereuse(OBJ_PosGet()))
+{
+	tf_eloignement = 100	
+}
+
+// On trace si ca crame dans le coin
+if(i_feu_pas_loin)
+{
+	i_flag_grosse_panique = vrai
+	tf_eloignement = 100	
+}
+
+if(tf_eloignement)
+{
+	if(f_joy_norm) tf_eloignement += 1.5
+	tf_dist_to_realdest = MATH_AbsFloat(tf_eloignement - MATH_VecNorm(OBJ_PosGet() - @to_followed_actor OBJ_PosGet()))
+}
+
+// Chien chien ==============================================
+if(tf_eloignement == 0)
+{
+//	f_way_time_search_pos = TIME_Get()	
+//	
+//	tv_temp = @to_followed_actor OBJ_PosGet()
+//	tv_temp1 = tv_temp + (@to_followed_actor OBJ_SightGet() * 5)
+//	tv_way_destpos = GRID_LastPosValid(tv_temp, tv_temp1, faux)
+//
+//	// Suivi devant, plus decalage sur le cote
+//	tv_temp = @to_followed_actor OBJ_PosGet() - OBJ_PosGet()
+//	MATH_VecSetHorzNormalize(tv_temp)
+//	tv_temp = MATH_VecCrossProduct(tv_temp, @to_followed_actor OBJ_SightGet())
+//	tv_temp = tv_way_destpos + (@to_followed_actor OBJ_HorizonGet() * 2 * MATH_FloatSign(tv_temp.z))
+//	tv_way_destpos = GRID_LastPosValid(tv_way_destpos, tv_temp, faux)
+//	tv_way_destpos.z = OBJ_PosGet().z
+//	
+//	// Si on est devant jack (et qu'on ne bouge pas), et que jack ne bouge pas, on ne bouge pas non plus sauf si trop loin
+//	tv_temp = OBJ_PosGet() - @to_followed_actor OBJ_PosGet()
+//	MATH_VecSetHorzNormalize(tv_temp)
+//	if(!f_joy_norm && (MATH_VecDotProduct(tv_temp, @to_followed_actor OBJ_SightGet()) > 0.4) && @to_followed_actor DYN_SpeedGet() < 1)
+//		tv_way_destpos = OBJ_PosGet()
+//		
+//	// Sinon si la pos est trop proche de jack, ou trop proche de moi, je bouge pas
+//	else
+//	{
+//		tv_temp = @to_followed_actor OBJ_PosGet() - tv_way_destpos
+//		if(MATH_VecNorm(tv_temp) < 2) tv_way_destpos = OBJ_PosGet()	
+//		tv_temp = OBJ_PosGet() - tv_way_destpos
+//		if(!f_joy_norm && MATH_VecNorm(tv_temp) < 2) tv_way_destpos = OBJ_PosGet()	
+//	}
+	
+	tv_way_destpos = @to_followed_actor OBJ_PosGet()
+	tv_temp = tv_way_destpos - OBJ_PosGet()
+	if(MATH_VecNorm(tv_temp) < 2) tv_way_destpos = OBJ_PosGet()
+	tf_dist_to_realdest = MATH_VecNorm(tv_way_destpos - OBJ_PosGet())
+}
+
+// Devant =====================================================
+else
+{
+	tv_way_destpos = OBJ_PosGet()
+	if(move_network)
+	{
+		to_next = nobody
+		to_obj = WAY_WPNearestOfPos(OBJ_PosGet(), move_network, -1, 0, 0)	
+		
+		tf_dist = MATH_VecNorm(@to_followed_actor OBJ_PosGet() - OBJ_PosGet())
+				
+		// On regarde jusqu'à n wps plus loins si l'un d'entre eux repond aux conditions
+		to_prev_prog = nobody
+		tf_dist1 = 0
+		tf_dist2 = 0
+		if(to_obj) 
+		{
+			tf_sum = 0
+			for(ti_index = 0; ti_index < 4; ti_index++)
+			{
+				tv_temp = v_last_prog - OBJ_PosGet()
+				if(o_last_prog && MATH_VecDotProduct(tv_temp, tv_temp) > 2 * 2)
+				{
+					to_next = o_last_prog
+					to_obj = o_last_prog_prev
+					o_last_prog = nobody
+				}
+				else
+				{
+					if(o_last_prog)
+					{
+						to_prev_prog = o_last_prog
+						to_obj = o_last_prog
+						o_last_prog = nobody
+					}
+					
+					ti_indice = 0
+					ai_links = 0
+					to_next = nobody
+					for(ti_indice = 0; ti_indice < WAY_GetNumLinks(move_network, to_obj); ti_indice++)
+					{
+						to_obj1 = WAY_NetNextWP(move_network, to_obj, NetNextWP_Mode_choix_de_lindice, ti_indice)
+						if(!to_obj1) break
+						ti_links = WAY_LinkCapaGet(move_network, to_obj, to_obj1)
+						if(ti_links & OBJ_Capa_7) continue
+						if(!(ti_links & @get_global i_capa_progession)) continue					
+						
+						ao_links[ai_links] = to_obj1
+						ai_links++
+						to_next = to_obj1
+					}
+					
+					// Choix aleatoire du brin
+					if(ai_links > 1)
+					{
+						ai_links = MATH_Modulo(i_id_humain, ai_links)
+						to_next = ao_links[ai_links]
+					}
+				}
+				
+				if(to_next)
+				{ 
+					tv_temp = @to_next OBJ_PosGet() - @to_obj OBJ_PosGet()
+					tf_sum += MATH_VecNorm(tv_temp)
+					
+					tf_dist1 = MATH_VecNorm(@to_followed_actor OBJ_PosGet() - @to_next OBJ_PosGet())
+					tf_dist2 = MATH_VecNorm(OBJ_PosGet() - @to_next OBJ_PosGet())
+					
+					if(tf_eloignement > 0) 
+					{
+						if
+						(
+							(tf_dist < tf_eloignement) 	// Jack trop proche
+						|| 	(tf_dist1 < tf_dist)				// Le wp me rapproche de jack
+						|| 	(tf_dist2 > tf_dist1)			// Jack plus proche que moi de mon wp suivant
+						) 
+						{
+							tf_dist_to_realdest += tf_sum
+							break
+						}
+					}
+					else
+					{
+						if
+						(
+								(tf_dist > -tf_eloignement) 	// Jack trop loin
+						&& 	(tf_dist1 < tf_dist)				// Le wp me rapproche de jack
+						&& 	(tf_dist2 > tf_dist1)			// Jack plus proche que moi de mon wp suivant
+						) 
+						{
+							tf_dist_to_realdest += tf_sum
+							break
+						}
+					}
+				}
+				
+				to_obj = to_next
+				if(!to_obj) break
+			}
+			
+			if(ti_index == 4) to_next = nobody		
+		}
+		
+		// Null part ou aller, je vais à l'ancienne pos si y'en avait une
+		if(!to_next && to_prev_prog)
+		{
+			tv_way_destpos = v_last_prog
+		}
+		else if(to_next)
+		{			
+			o_last_prog_prev = to_obj
+			o_last_prog = to_next
+			
+			// On va au wp le plus proche s'il est devant et pas trop proche, sinon on va au wp d'apres
+			tv_temp = @to_next OBJ_PosGet() - OBJ_PosGet()
+			tv_temp1 = @to_obj OBJ_PosGet() - OBJ_PosGet()
+			if(!MATH_VecNullEpsilon(tv_temp) && !MATH_VecNullEpsilon(tv_temp1))
+			{
+				MATH_VecSetNormalize(tv_temp)
+				MATH_VecSetNormalize(tv_temp1)
+				if(MATH_VecDotProduct(tv_temp, tv_temp1) > 0.5 && OBJ_SqrDist(to_obj) > 16) 
+					to_next = to_obj
+			}
+				
+			tv_way_destpos = @to_next OBJ_PosGet()
+			
+			tv_temp = tv_way_destpos - OBJ_PosGet()
+			tv_temp1 = OBJ_PosGet() - @to_followed_actor OBJ_PosGet()
+			if(MATH_VecDotProduct(tv_temp, tv_temp1) > 0)
+			{
+				f_eval_dist_move = MATH_AbsFloat(tf_eloignement) - MATH_VecNorm(tv_temp1)
+			}
+			else
+			{
+				f_eval_dist_move = tf_dist_to_realdest
+			}
+			
+			tv_way_destpos = ComputeDestPosDecaleeFull(tv_way_destpos, o_last_prog_prev, o_last_prog)
+			tv_temp = GRID_PosGet(tv_way_destpos)
+//			tv_way_destpos = GRID_PosGet(tv_way_destpos)
+			tv_way_destpos.x = tv_temp.x
+			tv_way_destpos.y = tv_temp.y
+			v_last_prog = tv_way_destpos
+		}
+		else
+		{
+			tv_way_destpos = OBJ_PosGet()
+			tf_dist_to_realdest = 0
+		}
+	}
+}
+
+// ==================================================================================================	
+
+// Progression stress (des merdes dans le coin, mais pas de cache)
+if(@get_global i_progression_stress && !@get_global i_flag_rage) 
+{
+	i_flag_force_marche = vrai
+	if(@get_global i_progression_stress_lente)
+		i_flag_marche_rapide = faux
+	else
+		i_flag_marche_rapide = vrai
+	f_min_dist_attend = 1	
+}
+
+// Interdit course
+if(!PRG_SuiviCarotte)
+{
+	to_obj = AI_MainActorGet(C_ID_Jack)
+	tf_temp = 6 * 6
+	if(i_flag_old_run) tf_temp = 4 * 4
+	if(!i_flag_culled && OBJ_SqrDist(AI_MainActorGet(C_ID_Jack)) < tf_temp * tf_temp && @"KingKong/Humain" to_obj f_real_speed < 3)
+	{
+		i_flag_force_marche = vrai
+	}
+}
+
+// En progression stress, on ne depasse jamais hayes
+if(@get_global i_progression_hayes_retrait)
+{
+	if(i_id_humain != C_ID_Hayes)
+	{
+		to_hayes = @"univ" ao_AllHumains[C_ID_Hayes]
+		if(!HL_ObjDevantObj( to_hayes, OBJ_Me() ))
+			tv_way_destpos = OBJ_PosGet()
+	}
+}
+	
+// Je n'ai le droit de sprinter que si je suis cullé, ou si ma distance à jack est petite
+to_obj = AI_MainActorGet(C_ID_Jack)
+if(tf_dist_to_realdest > 8 && !IsWater(i_ground_ID) && !i_flag_force_marche) i_flag_force_sprint = vrai
+
+v_way_destpos = tv_way_destpos
+
+if(i_mode_idle && MATH_VecNorm(IO_JoyGetMove()) < 0.5)
+	v_way_destpos = OBJ_PosGet()
+	
+if
+(
+	TestReculPorte(C_ID_Jack, 0) 
+||	TestReculPorte(C_ID_Denham, 0)
+||	TestReculPorte(C_ID_Jimmy, 0)
+||	TestReculPorte(C_ID_Hayes, 0)
+||	TestReculPorte(C_ID_Ann, 0)
+)
+{
+	v_way_destpos = OBJ_PosGet()
+	f_time_idle_enter = 0
+}
+
+CommonMove()
+
+// A l'aide si je recule
+if(i_flag_recul) f_time_force_attend = 1
+if(i_flag_recul && i_flag_panique && !@get_global i_flag_rage)
+{
+	AskText(TEXTE_ALaide, Gene_C_help, 10, nobody)
+	macro_set_danger( OBJ_Me() )
+	f_time_help = 5
+}
+
+if(GunEnPlace()) i_flag_panique = faux
+
+// Arret si trop proche et devant
+if(!GunEnPlace() && !i_flag_recul && o_ennemi_proche && o_ennemi_proche != AI_MainActorGet(C_ID_Jack))
+{
+	tf_temp = @"univ" Enemy_af_Radius[i_ennemi_proche_type]
+	if(OBJ_SqrDist(o_ennemi_proche) < tf_temp * tf_temp)
+	{
+		tv_temp = @o_ennemi_proche OBJ_PosGet() - OBJ_PosGet()
+		tv_temp.z = 0
+		if(MATH_VecDotProduct(tv_temp, OBJ_SightGet()) > 0.5)
+		{
+			tv_temp = v_way_destpos - OBJ_PosGet()
+			tv_temp.z = 0
+			if(!MATH_VecNullEpsilon(tv_temp))
+			{
+				MATH_VecSetHorzNormalize(tv_temp)
+				if(MATH_VecDotProduct(OBJ_SightGet(), tv_temp) > 0)
+					f_joy_norm = 0
+			}
+		}
+	}
+}
+
+// Anims
+///////////////////////////////////////////////
+
+// On destress petit à petit
+if(f_time_stress > 0)
+{
+	if(MATH_RandInt(0, 2)) f_time_stress -= TIME_GetDt()
+}
+else 
+{
+	f_time_stress = 0
+}
+
+if (!f_joy_norm)
+{
+	OrienteVersEnnemiProchePasDerriere()
+}
+
+//LigneDeMir()
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+if(!H_EtatIdle())
+	AI_Execute("H_exec_select_action")
+

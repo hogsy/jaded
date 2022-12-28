@@ -1,0 +1,28 @@
+messageid		tmid_LNK
+
+object	to_serveur
+
+float		tf_dist
+
+tmid_LNK = pop
+
+to_serveur = MSG_GlobalGetGao(tmid_LNK, SERVEUR)
+tf_dist = OBJ_SqrDistHorz(to_serveur)
+
+if (joueur)
+{
+	// Je suis le joueur, je ne propose de l'aide que si je suis à moins de 2m du demandeur
+ 	if (tf_dist < 4.0)
+		LNK_ClientPropose(tmid_LNK, tf_dist)	 	
+}
+else
+{
+	// Je suis un marin, je ne propose mon aide que si je suis courageux ou si Jack a besoin d aide
+	if ( i_confiance == 1 || to_serveur == o_main_actor)
+	{
+		// courageux
+		// ou
+		// Le demandeur est le main
+		LNK_ClientPropose(tmid_LNK, tf_dist)	
+	}
+}

@@ -1,0 +1,30 @@
+#include "PNJ_Shark_defines.var"
+
+function		fct_current
+
+o_Rided_Actor = LNK_ServeurGet(Ci_LNK_RIDE_ON_NMI, mid_Rided_LNK_ID, faux, nofunc, nofunc)
+
+COL_UnCollidableReset()
+
+OBJ_CapaSet(OBJ_Capa_15, none)
+
+i_etat_courant = -1
+
+fct_current = AI_TrackGet(Ci_Track_Etat)
+if (fct_current)
+{
+	i_flag_sortie_etat = vrai
+	AI_Execute(fct_current)
+}
+
+if (fct_last_etat)
+{
+	i_flag_sortie_etat = vrai
+	AI_Execute(fct_last_etat)
+}
+
+// GFX
+PNJ_Shark_Clean_GFX()
+
+// SOUND
+PNJ_Shark_Clean_Sound()

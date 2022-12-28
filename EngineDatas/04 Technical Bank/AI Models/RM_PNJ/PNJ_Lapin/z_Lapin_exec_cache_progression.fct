@@ -1,0 +1,359 @@
+//#include "PNJ_Lapin_defines.var"
+//
+//int			ti_start_index
+//int			ti_occluders_nb
+//
+//object	to_target
+//object	to_best_cache
+//object	to_tmp_occluder
+//object	to_occluderJump
+//object	tao_fake[10]
+//object	tao_occluders[50]
+//
+//float		tf_best1
+//float		tf_best2
+//float		tf_progression_offset
+//float		tf_size
+//float		tf_lapin_to_target_dist
+//float		tf_tmp_occluder_to_target_dist
+//float		tf_proj_occluder_to_target_dist
+//float		tf_lapin_to_tmp_occluder_dist
+//float		tf_lapin_to_proj_occluder_dist
+//float		taf_fake[10]
+//
+//vector	tv_2d_pos
+//vector	tv_lapin_pos
+//vector	tv_lapin_to_target
+//vector	tv_nmi_pos
+//vector	tv_occluderNextPos
+//vector	tv_tmp_occluder_pos
+//vector	tv_tmp_occluder_to_target
+//vector	tv_lapin_to_tmp_occluder
+//vector	tv_hide_pos
+//vector	tv_temp
+//
+//int			ti_i
+//int			ti_territory
+//int			ti_index
+//int			ti_occluderResult
+////int			ti_territory_ID_nb
+////int			tai_territories_ID[10]
+//int			ti_k
+//
+//int			ti_hide_capa
+////object	to_hide_start_wp
+//object	to_hide_wp
+//object	to_start_wp
+//
+//f_cache_progression_compute -= MATH_FloatMin(f_cache_progression_compute, TIME_GetDt())
+//
+//if( f_cache_progression_compute )
+//	return
+//
+//switch( Atk_Deplacement )
+//{
+//	case Ci_Atk_Deplacement_Occluders_Caches_GoMelee :
+//	case Ci_Atk_Deplacement_Occluders_Caches_FleeMelee :
+//		break
+//	default:
+//		return
+//}
+//
+////DBG_EraseAllVectors()
+//
+//if ( ! i_flag_in_my_territory )
+//	return
+//
+//ti_territory = i_my_territory_ID
+//
+//// dist lapin -> target
+//to_target = EVENT_InteretTargetGet(mid_best_interet)
+//
+//if( ! to_target )
+//	return
+//
+//
+//f_cache_progression_compute = 0.5
+//
+//
+//// RECHERCHE D'UNE CACHE AVEC LA PATH LIB	--------------------------------------------------------------------------------
+//to_hide_wp = nobody
+////tai_territories_ID[0] = -1
+////ti_territory_ID_nb = 10
+//i_path_voisin_wp_nb = 1
+//if( Territory_Path )
+//{
+//	ti_hide_capa = all
+//	if( to_target == o_main_actor )
+//	{
+//		o_path_dodge_actor_wp = o_path_main_actor_wp
+//		if (i_path_way_to_main_wp_nb > 1)	
+//		{
+//			ti_hide_capa = OBJ_Capa_14
+//			for (ti_i = 0; ti_i < i_path_way_to_main_wp_nb; ti_i++)
+//				@ao_path_way_to_main_wp[ti_i] OBJ_CapaSet(OBJ_Capa_14, none)
+//		}
+//	}
+//
+//	PATH_LIB_Avoid_Visibility(	@to_target OBJ_PosGet(),
+//											to_target,
+//											o_path_dodge_actor_wp,
+//											tv_hide_pos,
+//											to_hide_wp,
+//											Territory_Path,
+//											i_path_net_wp_nb,
+//											&ao_path_net_wp[0], 
+//											Lapin_MOVE_Offset_Get() + 1.0,
+//											OBJ_PosGet(),
+//											nobody,
+//											ti_hide_capa,
+//											nofunc)
+//
+//	if (ti_hide_capa == OBJ_Capa_14)
+//	{
+//		for (ti_i = 0; ti_i < i_path_way_to_main_wp_nb; ti_i++)
+//			@ao_path_way_to_main_wp[ti_i] OBJ_CapaSet(none, OBJ_Capa_14)
+//	}
+//
+////	// Retourne les IDs des territoires adjacents à celui sur lequel on se trouv
+////	PATH_LIB_Fill_Territory_IDs(	o_path_current_wp,
+////											Territory_Path,
+////											&ao_path_net_wp[0], 
+////											i_path_net_wp_nb,
+////											&tai_territories_ID[0],
+////											ti_territory_ID_nb,
+////											3)
+//
+//	// BV VOISINES
+//	i_path_voisin_wp_nb = 50		// taille max
+//	PATH_LIB_Fill_Wp_Array(o_path_current_wp, 
+//									Territory_Path, 
+//									&ao_path_net_wp[0],				// LES WPS DU RESEAU
+//									i_path_net_wp_nb,					// LE NOMBRE DE POINTS DU RESEAU
+//									&ao_path_voisin_wp[0],
+//									i_path_voisin_wp_nb,
+//									3)
+//
+//}
+//
+//
+//// RECHERCHE D'UNE CACHE AVEC LES OCCLUDERS --------------------------------------------------------------------------------
+//if( o_cache_just_leave )
+//	tv_lapin_pos = @o_cache_just_leave OBJ_PosGet()
+//else
+//	tv_lapin_pos = OBJ_PosGet()
+//tv_lapin_to_target = @to_target OBJ_PosGet() - tv_lapin_pos
+//tv_lapin_to_target.z = 0.0
+//DBG_RenderVector(tv_lapin_pos + Cv_VerticalVector, tv_lapin_to_target, color_cyan)
+//tf_lapin_to_target_dist = MATH_VecDotProduct(tv_lapin_to_target, tv_lapin_to_target)
+//tf_lapin_to_target_dist = MATH_FloatSqrt(tf_lapin_to_target_dist)
+//tv_lapin_to_target /= tf_lapin_to_target_dist
+//
+//to_best_cache = nobody
+//tf_best1 = Cf_Infinit
+//tf_best2 = Cf_Infinit
+//
+//
+//// Elements à parser
+//ti_occluders_nb = 0
+//if( Territory_BV )
+//{
+//	// optim pour territory BV
+//	for( ti_i = 0; ti_i < i_Territory_BV_Occluders_nb; ti_i++ )
+//	{
+//		tao_occluders[ti_occluders_nb] = ao_Territory_BV_Occluders[ti_i]
+//		ti_occluders_nb++
+//	}
+//}
+//else
+//{
+//	// std pour territory PATH & COLMAP
+//	for( ti_i = 0; ti_i < @get_list_manager i_occluder_nb; ti_i++ )
+//	{
+//		tao_occluders[ti_occluders_nb] = @get_list_manager ao_occluder[ti_i]
+//		ti_occluders_nb++
+//	}
+//}
+//
+//
+//// Start index
+//for (ti_k = 0; ti_k < i_path_voisin_wp_nb; ti_k++)
+//{
+////	if (tai_territories_ID[0] == -1)
+////	{
+////		ti_start_index = 0
+////		ti_territory = -1
+////	}
+////	else
+////	{
+////		ti_territory = tai_territories_ID[ti_k]
+////		ti_start_index = @get_list_manager ai_occluder_index[ti_territory]
+////	}
+//	
+//	if (Territory_Path)
+//	{
+//		ti_territory = ao_path_voisin_wp[ti_k].des_int2
+//		ti_start_index = @get_list_manager ai_occluder_index[ti_territory]
+//	}
+//	else
+//	{
+//		ti_start_index = 0
+//		ti_territory = -1
+//	}
+//
+//	// OCCLUDERS 
+//	for (ti_i = ti_start_index; ti_i < ti_occluders_nb; ti_i++)
+//	{
+//		to_tmp_occluder = tao_occluders[ti_i]
+//
+//		if( to_tmp_occluder.des_float1> 0.0 && to_tmp_occluder.des_float1 < f_cache_hauteur_min )
+//			continue
+//		
+//		if( @to_tmp_occluder OBJ_FlagsControlGet() & (OBJ_C_ControlFlag_SectoInactive | OBJ_C_ControlFlag_ForceInactive) )
+//			continue
+//		
+//		if( to_tmp_occluder == o_cache_just_leave )
+//			continue
+//		
+////		if( ti_territory != -1 && to_tmp_occluder.des_int2 != ti_territory )
+////			break		// j'ai commencé au début de ce territoire, si c plus lui y'en aura plus...
+//		
+//		if( Territory_BV && ! Lapin_Pos_in_Territory_BV(WAY_LIB_Occluder_Position_Get(to_tmp_occluder)) )
+//			continue
+//		
+//		if (Territory_Colmap && ti_territory != -1 && to_tmp_occluder.des_int2 != ti_territory)
+//			continue
+//			
+//		// checker par rapport à ma position de cache (et pas avec la position de l'occluder)
+//		tv_tmp_occluder_pos = Lapin_CACHE_Hide_Pos_Get(ti_i, to_tmp_occluder, to_target)
+//		tv_2d_pos = VIEW_3dWorldTo2d(0, tv_tmp_occluder_pos)
+//		
+//		// dist lapin -> occluder
+//		tv_lapin_to_tmp_occluder = tv_tmp_occluder_pos - tv_lapin_pos
+//		tv_lapin_to_tmp_occluder.z = 0.0
+//		DBG_RenderVector(tv_lapin_pos + Cv_VerticalVector, tv_lapin_to_tmp_occluder, color_blanc)
+//		tf_lapin_to_tmp_occluder_dist = MATH_VecDotProduct(tv_lapin_to_tmp_occluder, tv_lapin_to_tmp_occluder)
+//		tf_lapin_to_tmp_occluder_dist = MATH_FloatSqrt(tf_lapin_to_tmp_occluder_dist)
+//		
+//		// dist occluder -> target
+//		tv_tmp_occluder_to_target = @to_target OBJ_PosGet() - tv_tmp_occluder_pos
+//		tf_tmp_occluder_to_target_dist = MATH_VecDotProduct(tv_tmp_occluder_to_target, tv_tmp_occluder_to_target)
+//		tf_tmp_occluder_to_target_dist = MATH_FloatSqrt(tf_tmp_occluder_to_target_dist)
+//		
+//		// dist lapin -> projection
+//		tf_lapin_to_proj_occluder_dist = MATH_VecDotProduct(tv_lapin_to_tmp_occluder, tv_lapin_to_target)
+//		
+//		// dist projection -> target
+//		tf_proj_occluder_to_target_dist = tf_lapin_to_target_dist - tf_lapin_to_proj_occluder_dist
+//		
+//		switch( Atk_Deplacement )
+//		{
+//			case Ci_Atk_Deplacement_Occluders_Caches_FleeMelee :
+//				tf_progression_offset = -5.0		// même si ça em fait reculer j'y vais !!!
+//				break
+//			default:
+//				tf_progression_offset = 1.0		// je veux avancer un minimum pour valider cet occluder
+//				break
+//		}
+//		
+//		if( tf_tmp_occluder_to_target_dist > ( tf_lapin_to_target_dist - tf_progression_offset) )
+//			continue		// l'occluder est plus loin que la target que ma pos courante
+//		
+//		if( tf_lapin_to_proj_occluder_dist < 0.0 )
+//			continue		// cet occluder est derrière moi
+//		
+//		if( tf_lapin_to_tmp_occluder_dist > tf_lapin_to_target_dist )
+//			continue		// ça me fait me déplacer + que pour aller en fight direct
+//	
+//		if( tf_lapin_to_proj_occluder_dist > tf_lapin_to_target_dist )
+//			continue		// cet occluder est derrière ma target
+//	
+//		
+//		#ifndef _FINAL_
+//		if( Lapin_DBG_Display_ON() )
+//		{
+//			Str_DisplayGaoOnce(to_tmp_occluder, tv_2d_pos)
+//			Str_DisplayTxtFloatOnce("GAO ", tf_lapin_to_tmp_occluder_dist, tv_2d_pos + cvector(0,0.05,0))
+//			Str_DisplayTxtFloatOnce("/ ", tf_tmp_occluder_to_target_dist, tv_2d_pos + cvector(0.1,0.05,0))
+//			Str_DisplayTxtFloatOnce("Proj ", tf_lapin_to_proj_occluder_dist, tv_2d_pos + cvector(0,0.1,0))
+//			Str_DisplayTxtFloatOnce("/ ", tf_proj_occluder_to_target_dist, tv_2d_pos + cvector(0.1,0.1,0))
+//		}
+//		#endif
+//		
+//		if( tf_lapin_to_tmp_occluder_dist < tf_best1 
+//			&& tf_lapin_to_proj_occluder_dist < tf_best2  )
+//		{
+//			tf_best1 = tf_lapin_to_tmp_occluder_dist
+//			tf_best2  = tf_lapin_to_proj_occluder_dist
+//			i_cache_global_index = ti_i			// optim memo index
+//			
+//			to_best_cache = to_tmp_occluder
+//			DBG_RenderVector(tv_lapin_pos + Cv_VerticalVector, tv_lapin_to_tmp_occluder, color_vert)
+//		}
+//	}
+//}
+//
+//
+//to_best_cache = to_best_cache
+//
+//
+//i_cache_type = Ci_cache_type_Occluder
+//if (to_hide_wp)
+//{
+//	tv_temp = tv_hide_pos - OBJ_PosGet()
+//	tv_temp.z = 0.0
+//	if( MATH_VecSquareNorm(tv_temp) > 16.0 )
+//	{
+//		if (to_best_cache)
+//		{
+//			if (MATH_VecSquareNorm(tv_hide_pos - OBJ_PosGet()) < MATH_VecSquareNorm(@to_best_cache OBJ_PosGet() - OBJ_PosGet()))
+//			{
+//				to_best_cache  = to_hide_wp
+//				i_cache_type = Ci_cache_type_Geometrie
+//				v_cache_pos = tv_hide_pos
+//				f_cache_size = 2.0
+//				i_cache_global_index = -1
+//			}
+//		}
+//		else
+//		{
+//			to_best_cache  = to_hide_wp
+//			i_cache_type = Ci_cache_type_Geometrie
+//			v_cache_pos = tv_hide_pos
+//			f_cache_size = 2.0
+//			i_cache_global_index = -1
+//		}
+//	}
+//}
+//// init occluder
+//if( to_best_cache && i_cache_type == Ci_cache_type_Occluder )
+//{
+//	v_cache_pos = WAY_LIB_Occluder_Position_Get(to_best_cache)
+//	f_cache_size = WAY_LIB_Occluder_Size_Get(to_best_cache)
+//}
+//to_best_cache = to_best_cache
+//
+//
+//if( to_best_cache )
+//{
+//	#ifndef _FINAL_
+//	if( Lapin_DBG_Display_ON() )
+//	{
+//		Str_DisplayTxtFloatOnce("\c0000FFFF\\h0.05\Dest to Target = ", tf_lapin_to_target_dist, cvector(0.4,0.05,0))
+//		tv_tmp_occluder_pos = WAY_LIB_Occluder_Position_Get(to_best_cache)
+//		tv_2d_pos = VIEW_3dWorldTo2d(0, tv_tmp_occluder_pos)
+//		STR_CreateText("\c0000FFFF\\h0.1\ICI !!!", tv_2d_pos + cvector(0,-0.1,0), 0.0)
+//		f_cache_prog_display_delai = 1.0
+//		DBG_TraceObject(OBJ_Me())
+//		DBG_TraceString(" choisit de se cacher derière ")
+//		DBG_TraceObject(to_best_cache)
+//		DBG_TraceEOL()
+//	}
+//	#endif
+//	
+//	o_cache = to_best_cache
+//	o_cache_actor = to_target
+//	i_cache_mode = Ci_CACHE_Mode_Progression
+//	macro_change_etat("Lapin_ETAT_CACHE")
+//}
+//

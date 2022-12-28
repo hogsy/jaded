@@ -1,0 +1,50 @@
+vector	tv_zoom_dir
+object	to_cam
+float		tf_dot_product, tf_valeur
+
+if	( ! OBJ_CapaTest(OBJ_Capa_0))
+{
+	if	(des_f_duration_OUT != Cf_Infinit)
+		tf_valeur = TIME_GetDt() * des_f_duration_OUT * f_diff_valeur
+	else		
+		tf_valeur = f_diff_valeur
+		
+	f_cumul -= tf_valeur
+	f_valeur -= tf_valeur
+
+	if	(MATH_AbsFloat(f_cumul) >= MATH_AbsFloat(f_diff_valeur))
+	{
+		f_cumul = 0
+		f_valeur = des_f_value_init
+		AI_TrackCurChange("SFA_loop_ON")
+	}
+}
+	switch( des_i_type_AE )
+	{
+		case 0 :
+		AE_Brightness(f_valeur)
+		break
+		case 1 :
+		AE_Contraste(f_valeur)
+		break
+		case 2 :
+		AE_Remanece(f_valeur)
+		break
+		case 3 :
+		AE_Blur(f_valeur)
+		break
+		case 4 :
+		to_cam = VIEW_GetObject(0)
+		if	(des_o_gao)
+			tv_zoom_dir = @des_o_gao OBJ_PosGet() - @to_cam OBJ_PosGet()
+		else	tv_zoom_dir = Cv_NullVector
+		tf_dot_product = MATH_FloatMax(MATH_VecDotProduct(@des_o_gao OBJ_BankingGet(), -@to_cam OBJ_SightGet()), 5.0)
+//		@get_global Proc_AE_ZoomSmoothCenterSet( f_valeur * tf_dot_product, tv_zoom_dir)
+		AE_ZoomSmoothCenter(f_valeur * tf_dot_product, tv_zoom_dir)
+		break
+		case 6 :
+		AE_FoggyBlur(f_valeur)
+		break
+		case 7 :
+		AE_ColorBalance(f_valeur, f_valeur)
+	}

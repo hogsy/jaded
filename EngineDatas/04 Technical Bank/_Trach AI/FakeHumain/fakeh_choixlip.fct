@@ -1,0 +1,116 @@
+#include "fakeh_defines.var"
+object		to_obj
+float			tf_temp
+int				ti_act
+float			tf_default
+
+#define SET_SEQ(seq, blendto, duree) \
+	ai_sequence_lip_data[i_sequence_lip_num] = seq \
+	ai_sequence_lip[i_sequence_lip_num * 2] = blendto \
+	ai_sequence_lip[(i_sequence_lip_num * 2) + 1] = duree \
+	af_sequence_lip[i_sequence_lip_num] = tf_default \
+	i_sequence_lip_num++ 
+	
+#define SET_SEQF(seq, blendto, duree, factor) \
+	ai_sequence_lip_data[i_sequence_lip_num] = seq \
+	ai_sequence_lip[i_sequence_lip_num * 2] = blendto \
+	ai_sequence_lip[(i_sequence_lip_num * 2) + 1] = duree \
+	af_sequence_lip[i_sequence_lip_num] = factor \
+	i_sequence_lip_num++ 
+	
+//////////////////////////////////////////
+
+i_sequence_lip_num = 0
+tf_default = 0.2
+
+// Intensite generale en fonction de la distance
+if( @get_global i_Player_is_Kong )
+	to_obj = AI_MainActorGet(C_ID_Kong)
+else
+	to_obj = AI_MainActorGet(C_ID_Joueur)
+f_factor_mul_lip = 1.0
+
+//////////////////////////////////////////
+f_sequence_freg = 0.04
+f_glob_lip = 1
+
+SET_SEQ(LIPS_A, 2, 2)
+SET_SEQ(LIPS_M, 4, 2)
+SET_SEQ(LIPS_I, 4, 2)
+SET_SEQ(LIPS_A, 2, 2)
+SET_SEQ(LIPS_I, 6, 2)
+SET_SEQ(LIPS_O, 2, 4)
+
+SET_SEQF(LIPS_I, 4, 2, 0.5)
+SET_SEQF(LIPS_O, 4, 2, 0.5)
+SET_SEQF(LIPS_A, 2, 2, 0.5)
+
+SET_SEQ(LIPS_I, 4, 2)
+SET_SEQ(LIPS_O, 2, 2)
+SET_SEQ(LIPS_A, 2, 2)
+SET_SEQ(LIPS_I, 1, 2)
+SET_SEQ(LIPS_O, 1, 2)
+SET_SEQ(LIPS_I, 2, 2)
+
+SET_SEQ(LIPS_A, 6, 2)
+SET_SEQ(LIPS_M, 2, 2)
+SET_SEQ(LIPS_I, 1, 2)
+SET_SEQ(LIPS_A, 2, 2)
+SET_SEQ(LIPS_M, 1, 2)
+SET_SEQ(LIPS_A, 1, 2)
+
+SET_SEQF(LIPS_I, 6, 2, 0.5)
+SET_SEQF(LIPS_M, 8, 2, 0.5)
+SET_SEQF(LIPS_I, 2, 2, 0.5)
+
+SET_SEQ(LIPS_M, 6, 3)
+SET_SEQ(LIPS_O, 1, 2)
+SET_SEQ(LIPS_A, 2, 2)
+SET_SEQ(LIPS_I, 10, 2)
+SET_SEQ(LIPS_M, 6, 1)
+i_sequence_shooted = i_sequence_lip_num
+SET_SEQ(LIPS_A, 2, 4)
+SET_SEQ(LIPS_M, 3, 1)
+SET_SEQ(LIPS_I, 4, 2)
+SET_SEQ(LIPS_A, 2, 4)
+SET_SEQ(LIPS_I, 6, 2)
+SET_SEQ(LIPS_O, 2, 4)
+
+SET_SEQF(LIPS_I, 4, 2, 0.5)
+SET_SEQF(LIPS_O, 4, 2, 0.5)
+SET_SEQF(LIPS_A, 2, 2, 0.5)
+
+SET_SEQ(LIPS_I, 4, 2)
+SET_SEQ(LIPS_O, 2, 2)
+SET_SEQ(LIPS_A, 2, 2)
+SET_SEQ(LIPS_I, 1, 2)
+SET_SEQ(LIPS_O, 1, 2)
+SET_SEQ(LIPS_I, 2, 2)
+
+SET_SEQ(LIPS_A, 6, 4)
+SET_SEQ(LIPS_M, 1, 1)
+SET_SEQ(LIPS_I, 1, 2)
+SET_SEQ(LIPS_A, 2, 4)
+SET_SEQ(LIPS_M, 1, 1)
+SET_SEQ(LIPS_A, 1, 4)
+
+SET_SEQF(LIPS_I, 6, 2, 0.5)
+SET_SEQF(LIPS_M, 4, 1, 0.5)
+SET_SEQF(LIPS_I, 2, 2, 0.5)
+
+SET_SEQ(LIPS_M, 6, 3)
+SET_SEQ(LIPS_O, 1, 2)
+SET_SEQ(LIPS_A, 2, 4)
+SET_SEQ(LIPS_I, 10, 2)
+SET_SEQ(LIPS_M, 3, 1)
+i_sequence_screamed = i_sequence_lip_num
+SET_SEQF(LIPS_A, 10, 400000, 0.5)
+SET_SEQF(LIPS_A, 10, 4000, 0.5)
+//////////////////////////////////////////
+
+i_sequence_cur = 0
+switch(i_type_lip)
+{
+	case 3:	i_sequence_cur = i_sequence_shooted break
+	case 4:	i_sequence_cur = i_sequence_screamed break
+}

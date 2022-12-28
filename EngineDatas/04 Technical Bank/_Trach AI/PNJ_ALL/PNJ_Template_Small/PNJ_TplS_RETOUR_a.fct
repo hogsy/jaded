@@ -1,0 +1,17 @@
+#include "PNJ_TplS_defines.var"
+
+
+AI_Execute("PNJ_TplS_Stimulus_Paf")
+if (o_target_stimulus_paf)
+{
+	// On recoit un paf
+	ChangeEtat(C_Mode_Paf)
+}
+
+//if ( MATH_VecNullToler( (OBJ_PosGet() - OBJ_PosInitGet()), 0.1))
+if ( i_retour_etat == 3)
+{
+	// Fin du comportement attaque normalement
+	OBJ_PosSet( OBJ_PosInitGet())
+	ChangeEtat(C_Mode_Attente)
+}

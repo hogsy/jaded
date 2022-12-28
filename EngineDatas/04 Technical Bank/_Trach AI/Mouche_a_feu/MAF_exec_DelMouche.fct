@@ -1,0 +1,28 @@
+// releases the last mouche 
+// returns -1 if there was none or the new nb of mouches
+if (i_nbMouches == 0)
+	return
+
+i_nbMouches--
+
+if (i_curMouche == i_moucheWithSpeaker)
+{
+#ifdef MAF_DBG_TRACE	
+	DBG_TraceString("Stopping bzzz")
+	DBG_TraceInt(i_moucheWithSpeaker)
+	DBG_TraceEOL()
+#endif	
+
+	//SND_InstanceSetObj(i_tgtHoverBuzzInstance)	// to avoid deleting the snd when deleting the mouche
+//	SND_Stop(i_tgtHoverBuzzInstance)
+//	i_moucheWithSpeaker = -1
+}
+
+#ifndef MAF_DUPLICATE_AT_INIT
+@ao_moucheList[i_curMouche] OBJ_Destroy()
+ao_moucheList[i_curMouche] = nobody
+#endif
+#ifdef MAF_DUPLICATE_AT_INIT
+@ao_moucheList[i_curMouche] OBJ_FlagInvisibleSet(vrai)
+#endif
+

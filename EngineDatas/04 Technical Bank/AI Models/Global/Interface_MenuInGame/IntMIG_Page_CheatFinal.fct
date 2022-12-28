@@ -1,0 +1,372 @@
+#include "Interface_MenuInGame_defs.var"
+
+int			ti_line
+int			ti_char
+int			ti_Save
+int			ti_index
+int			ti_Max
+int			ti_Save2
+int			ti_Color
+
+int			tai_Code[ 4 ]
+int			ti_Code
+int			ti_CodeIndex
+int			ti_CodeShift
+
+vector	tv_pos, tv_pos2
+
+#define MAX_CHAR		20
+
+if (!mo_Texte) 
+	return
+if (!IntMIG_SetPageParams())
+	return
+
+if (INTMIG_EnterPage_Start )
+{
+	mi_MC_State = 0
+	mf_PageTimer = 0
+	mi_Cur2 = 0
+
+	// emptied the string
+	for (ti_char = 0; ti_char < MAX_CHAR + 1; ti_char++)
+		mai_ProfileChar[ ti_char ] = 0
+	
+	// title
+	IntMIG_ResetTexte( mi_PageString, 30 )
+	if ( mi_OnlineCode )
+	{
+		IntMIG_CreateText_Start( mi_PageString )
+		@mo_Texte OBJ_TextInsert( mi_PageString, -1, TEXT_Get(INTMIG_TXG, INTMIG_TEXT_ScoreNew + 8 ) )
+		@mo_Texte OBJ_TextIntInsert( mi_PageString, -1, mi_OnlineCode )
+		IntMIG_CreateText_End( mi_PageString, cvector( 0.8, 0.32, 0),  0.0, 6, -1, INTMIG_Color_Sel, 0, 1 )
+	}
+	else
+		IntMIG_SetText_Page( mi_PageString, INTMIG_TXG, INTMIG_TEXT_StartMenu + 3, cvector( 0.8, 0.3, 0),  0.0, 6, -1, INTMIG_Color_Sel, 0, 1 )
+	
+	// display profile name
+	IntMIG_CreateText_Start( mi_PageString + 1 )
+	@mo_Texte OBJ_TextInsert( mi_PageString + 1, -1, "\p13\$" )
+	IntMIG_CreateText_End( mi_PageString + 1, cvector(0.5, 0.43, 0) - cvector( 0, 0.03, 0), 0.0, 5, -1, 0, 0, 1 )
+	
+//	if (mi_OnlineCode)
+//		IntMIG_BuildCharTable( mi_PageString + 2, cvector( 0, 0.5, 0 ), 1 )
+//	else
+		IntMIG_BuildCharTable( mi_PageString + 2, cvector( 0, 0.5, 0 ), 0 )
+
+	IntMIG_SetText_Page( mi_PageString + 4, INTMIG_TXG, INTMIG_TEXT_Confirm, cvector( 0.5, 0.8, 0),  0.0, 5, -1, INTMIG_Color_NotSel, 0, 1 )
+	IntMIG_SetText_Page( mi_PageString + 5, INTMIG_TXG, INTMIG_TEXT_Xselect, INTMIG_PosButton_BottomRight,  0.0, 6, -1, INTMIG_Color_Sel, 0, 1 )
+	IntMIG_SetText_Page( mi_PageString + 6, INTMIG_TXG, INTMIG_TEXT_Tback, INTMIG_PosButton_BottomLeft,  0.0, 4, -1, INTMIG_Color_Sel, 0, 1 )
+
+	IntMIG_CreateText_Start( mi_PageString + 7 )
+	@mo_Texte OBJ_TextInsert( mi_PageString + 7, -1, "\p13\#" )
+	IntMIG_CreateText_End( mi_PageString + 7, cvector(-1, -1, 0), 0.0, 9, -1, INTMIG_Color_Sel, 0, 0 )
+
+	IntMIG_Text_FadeInMulti( mi_PageString, 8, 0.5, 0.0 )
+	IntMIG_Text_SetFrame( mi_PageString + 3, 0xFFFFFFFF, 0.0, mi_PageString + 1, mi_PageString + 2, mi_PageString + 4, -1, -1, -1, 33 )
+
+}
+else if (INTMIG_EnterPage_End )
+{
+	IntMIG_SetJoyFactor( 4.0 )
+}
+else if ( INTMIG_LeavePage_Start )
+{
+	IntMIG_SetJoyFactor( 1.0 )
+	IntMIG_Text_FadeOutMulti( mi_PageString, 8, 0.5 )
+}
+
+IntMIG_RestorePageParams()
+
+if ( mi_Exit || mi_ChangePage || mi_Cheat )
+	return
+	
+ // uncolorize all letter
+@mo_Texte OBJ_TextColorSet( mi_PageString + 2, 0, -1, INTMIG_Color_NotSel )
+	
+ti_Max = 5
+if ( !mai_ProfileChar[0] )
+	@mo_Texte OBJ_TextColorSet( mi_PageString + 2, 63, 1, INTMIG_Color_Disable )
+
+ti_Save = mi_Cur
+ti_Save2 = mi_Cur2
+IntMIG_UpdateCur( ti_Max, 1, 1, -1, 0, 0, 0, 0, 0, 0 )
+if (mi_Cur != 4)
+	IntMIG_UpdateCur2( 16, 1, 0, 0, -1, 1, 0, 0, 0, 0 )
+if (IO_ButtonJustPressed( joy_button_Start ) && (ti_Max == 5) )
+	mi_Cur = 4
+	
+if ( (mi_Cur != ti_Save) || (mi_Cur2 != ti_Save2) )
+	IntMIG_PlaySound( INTMIG_SOUND_SELECTION )
+
+if (mi_Cur != ti_Save)
+{
+	if (mi_Cur == 4 )
+		IntMIG_Text_ChangeColor( mi_PageString + 4, INTMIG_Color_NotSel, INTMIG_Color_Sel, 0.2, 0.0 )
+	if (ti_Save == 4)
+		IntMIG_Text_ChangeColor( mi_PageString + 4, INTMIG_Color_Sel, INTMIG_Color_NotSel, 0.2, 0.0 )
+}
+
+// colorize sel letter
+//@mo_Texte OBJ_TextPivotSet( mi_PageString + 7, cvector( -1, -1, 0))
+//ti_index = (mi_Cur * 16) + mi_Cur2
+//if ( ti_index < 64)
+//{
+//	@mo_Texte OBJ_TextColorSet( mi_PageString + 2, ti_index, 1, INTMIG_Color_Sel )
+//}
+	
+// colorize sel letter
+@mo_Texte OBJ_TextPivotSet( mi_PageString + 7, cvector( -1, -1, 0))
+ti_index = (mi_Cur * 16) + mi_Cur2
+if ( ti_index < 64)
+{
+	ti_Color = INTMIG_Color_Sel
+	if ( ( ( ti_index == 63 ) || (ti_index == 62 ) ) && ( ti_Max == 4 ) )
+		ti_Color = INTMIG_Color_NotSel
+	@mo_Texte OBJ_TextColorSet( mi_PageString + 2, ti_index, 1, ti_Color )
+	tv_pos = @mo_Texte OBJ_TextPosGetMax(mi_PageString + 2,ti_index,1)
+	tv_pos.x += @mo_Texte OBJ_TextPosGetMin(mi_PageString + 2,ti_index,1).x
+	tv_pos.x /= 2
+	if (ti_index == 62 )
+	{
+		tv_pos2 = @mo_Texte OBJ_TextPosGetMax(mi_PageString + 2,61,1)
+		tv_pos.y = tv_pos2.y
+	}
+	@mo_Texte OBJ_TextPivotSet( mi_PageString + 7, tv_pos)
+	@mo_Texte OBJ_TextColorSet( mi_PageString + 7, 0, -1, ti_Color )
+}
+
+		
+// display profile name
+IntMIG_CreateText_Start( mi_PageString + 1 )
+for (ti_char = 0; ti_char < MAX_CHAR; ti_char++)
+{
+	if (mai_ProfileChar[ ti_char ] == 0) 
+		break
+	@mo_Texte OBJ_TextInsert( mi_PageString + 1, -1, " " )
+	@mo_Texte OBJ_TextCharSet( mi_PageString + 1, ti_char, mai_ProfileChar[ ti_char ] )
+}
+
+mf_PageTimer += 3 * TIME_GetDt()
+ti_line = mf_PageTimer
+if ( ti_char < MAX_CHAR)
+	@mo_Texte OBJ_TextInsert( mi_PageString + 1, -1, "\p13\$" )
+//if ( mi_OnlineCode )
+//	IntMIG_CreateText_End( mi_PageString + 1, cvector(0.5, 0.43, 0), 0.0, 5, -1, INTMIG_Color_Sel, 0, 1 )
+//else
+	IntMIG_CreateText_End( mi_PageString + 1, cvector(0.5, 0.43, 0), 0.0, 5, -1, INTMIG_Color_Sel, 0, 0 )
+if ( ( ti_char < MAX_CHAR) && ( ti_line & 1 ) )
+	@mo_Texte OBJ_TextColorSet( mi_PageString + 1, ti_char, 1, 0 )
+
+
+if ( joy_cancel  )
+{
+	IntMIG_PlaySound( INTMIG_SOUND_CANCEL )
+
+	if (mi_StartMenu)
+	{
+		if (mi_OnlineCode)
+			INTMIG_ChangePage(  "IntMIG_Page_Xtra" , mi_XTraCur )
+		else
+			INTMIG_ChangePage(  "IntMIG_Page_StartMain" , 3 )
+	}
+	else
+		INTMIG_ChangePage(  "IntMIG_Page_Main" , mi_MainCur )
+	return
+}
+
+// computing code in hexa
+tai_Code[ 0 ] = 0
+tai_Code[ 1 ] = 0
+tai_Code[ 2 ] = 0
+tai_Code[ 3 ] = 0
+ti_CodeIndex = 0
+ti_CodeShift = 0
+
+for (ti_char = 0; ti_char < MAX_CHAR; ti_char++ )
+{
+	ti_Code = mai_ProfileChar[ ti_char ] & 0xFFF
+	if (ti_Code == 0) ti_Code = 63
+	else if (ti_Code >= 97) ti_Code = 26 + (ti_Code - 97)
+	else if (ti_Code >= 65) ti_Code = ti_Code - 65
+	else if (ti_Code >= 48) ti_Code = 52 + (ti_Code - 48)
+	else ti_Code = 0
+	
+	tai_Code[ ti_CodeIndex ] |= (ti_Code << ti_CodeShift)
+	ti_CodeShift += 6
+	if (ti_CodeShift == 30)
+	{
+		ti_CodeIndex++
+		ti_CodeShift = 0
+	}
+}
+
+// AVIRER : display code in hexa
+//{
+//	int ti_texte
+//	ti_texte = STR_CreateTextGroup( "\h0.06\ ", cvector( 0.82, 0.1, 0), 0, 1 )
+//	STR_AppendHexa( ti_texte, tai_Code[ 0 ] )
+//	STR_AppendText( ti_texte, "\n " )
+//	STR_AppendHexa( ti_texte, tai_Code[ 1 ] )
+//	STR_AppendText( ti_texte, "\n " )
+//	STR_AppendHexa( ti_texte, tai_Code[ 2 ] )
+//	STR_AppendText( ti_texte, "\n " )
+//	STR_AppendHexa( ti_texte, tai_Code[ 3 ] )
+//}
+	
+if ( joy_valide || (IO_ButtonJustPressed( joy_button_L) && (ti_Max == 5)) )
+{
+	if ((mi_Cur == 4) && joy_valide)
+	{
+		if (mi_OnlineCode)
+		{
+			ti_Code = mi_OnlineCode - 1
+			mi_OnlineCode = 0
+			tai_Code[ 0 ] = mai_ProfileChar[ 0 ] & 0xFFF
+			tai_Code[ 1 ] = mai_ProfileChar[ 1 ] & 0xFFF
+			tai_Code[ 2 ] = mai_ProfileChar[ 2 ] & 0xFFF
+			tai_Code[ 3 ] = mai_ProfileChar[ 3 ] & 0xFFF
+						
+			if ( (mai_ProfileChar[ 4 ] == 0) &&  SAVE_CompareOnlineCode( @"univ" MENU_ProfileIndex, ti_Code, tai_Code[ 0 ],tai_Code[ 1 ],tai_Code[ 2 ],tai_Code[ 3 ]) )
+			{
+				IntMIG_PlaySound( INTMIG_SOUND_VALIDE )
+				@"univ" PROG_ai_XtraUnlocked[ mai_XTRA_Order[ mi_XTraCur ] ] = 1
+				SAVE_Validate()
+				INTMIG_YesNoPage( INTMIG_OK_GOODONLINESCORE )
+			}
+			else
+			{
+				IntMIG_PlaySound( INTMIG_SOUND_CANCEL )
+				INTMIG_YesNoPage( INTMIG_OK_BADONLINESCORE )
+			}
+		}
+		else
+		{
+			ti_Code = 1
+			// KKg0 -> 8wonder
+			if ( ( tai_Code[0] == 0x1D9E8C3C) && (tai_Code[1] == 0x3FFFFADE) )
+			{
+				@"univ" Cheat_i_Flags |= CHEAT_GodMode | CHEAT_CHEAT_CHEAT
+			}
+			// KKpaffff -> GrosBras
+			else if ( ( tai_Code[0] == 0x1B28AC6) && (tai_Code[1] == 0x3FFEC6AB) )
+			{
+				@"univ" Cheat_i_Flags |= CHEAT_PafFort | CHEAT_CHEAT_CHEAT
+				ti_Code = 1
+			}
+			// KK 9 9 9 -> KK 999 mun
+			else if ( ( tai_Code[0] == 0x3DF4028A) && (tai_Code[1] == 0x27BA603D) )
+			{
+				@"univ" Cheat_i_Flags |= CHEAT_CHEAT_CHEAT
+//				@"univ" i_weapon_ammunition[ Ci_weapon_ID_colt ][C_ID_Jack] = 999
+//				@"univ" i_weapon_ammunition[ Ci_weapon_ID_tommy_gun ][C_ID_Jack] = 999
+//				@"univ" i_weapon_ammunition[ Ci_weapon_ID_shotgun ][C_ID_Jack] = 999
+//				@"univ" i_weapon_ammunition[ Ci_weapon_ID_sniper_rifle ][C_ID_Jack] = 999
+				ti_Code = 1
+			}
+			// KKWcolt -> KKtigun
+			else if ( ( tai_Code[0] == 0x208AD28A) && (tai_Code[1] == 0x3FFFF9EE) )
+			{
+				@"univ" Cheat_i_Flags |= CHEAT_CHEAT_CHEAT
+//				@"univ" i_weapon_ID[ C_ID_Jack ] =Ci_weapon_ID_colt
+//				if ( @"univ" i_weapon_ammunition[ Ci_weapon_ID_colt   ][C_ID_Jack] < 10 * Ci_colt_clip_size )
+//					@"univ" i_weapon_ammunition[ Ci_weapon_ID_colt ][C_ID_Jack] = 10 * Ci_colt_clip_size
+				ti_Code = 1
+			}
+			// KKWshotgun -> KKsh0tgum
+			else if ( ( tai_Code[0] == 0x3486C28A) && (tai_Code[1] == 0x3F9AE82D) )
+			{
+				@"univ" Cheat_i_Flags |= CHEAT_CHEAT_CHEAT
+//				@"univ" i_weapon_ID[ C_ID_Jack ] =Ci_weapon_ID_shotgun
+//				if ( @"univ" i_weapon_ammunition[ Ci_weapon_ID_shotgun  ][C_ID_Jack] < 10 * Ci_shotgun_clip_size )
+//					@"univ" i_weapon_ammunition[ Ci_weapon_ID_shotgun  ][C_ID_Jack] = 10 * Ci_shotgun_clip_size
+			}
+			// KKWtommy -> KKcapone
+			else if ( ( tai_Code[0] == 0x2969C28A) && (tai_Code[1] == 0x3FFDE9E8) )
+			{
+				@"univ" Cheat_i_Flags |= CHEAT_CHEAT_CHEAT
+//				@"univ" i_weapon_ID[ C_ID_Jack ] =Ci_weapon_ID_tommy_gun
+//				if ( @"univ" i_weapon_ammunition[ Ci_weapon_ID_tommy_gun ][C_ID_Jack] < 10 * Ci_tommy_gun_clip_size )
+//					@"univ" i_weapon_ammunition[ Ci_weapon_ID_tommy_gun ][C_ID_Jack] = 10 * Ci_tommy_gun_clip_size
+			}
+			// KKWsnipe -> KKsn1per
+			else if ( ( tai_Code[0] == 0x359EC28A) && (tai_Code[1] == 0x3FFEB7A9) )
+			{
+				@"univ" Cheat_i_Flags |= CHEAT_CHEAT_CHEAT
+//				@"univ" i_weapon_ID[ C_ID_Jack ] =Ci_weapon_ID_sniper_rifle
+//				if ( @"univ" i_weapon_ammunition[ Ci_weapon_ID_sniper_rifle ][C_ID_Jack] < 10 * Ci_sniper_rifle_clip_size )
+//					@"univ" i_weapon_ammunition[ Ci_weapon_ID_sniper_rifle ][C_ID_Jack] = 10 * Ci_sniper_rifle_clip_size
+			}
+			// 6pirZ Ful1 -> lance 1nf
+			else if ( ( tai_Code[0] == 0x1E7276A5) && (tai_Code[1] == 0x3F7E7D40) )
+			{
+				@"univ" Cheat_i_Flags |= CHEAT_InfiniteSpears | CHEAT_CHEAT_CHEAT
+			}
+			// MattIK
+//			else if ( ( tai_Code[0] == 0x8b6d68C) && (tai_Code[1] == 0x3FFFFFCA) )
+//				UNIV_SwapCheatFlags( CHEAT_IKOnVisuel)
+//			// V
+//			else if ( ( tai_Code[0] == 0x3FFFFFD5) && (tai_Code[1] == 0x3FFFFFFF) )
+//				UNIV_SwapCheatFlags( CHEAT_ShowVersion )
+			// XTRA -> KKmuseum
+			else if ( ( tai_Code[0] == 0x2CBA628A) && (tai_Code[1] == 0x3FFE6B9E) )
+				UNIV_SwapCheatFlags( CHEAT_UnlockAllBonus )
+			// MAP -> KKstOry
+			else if ( ( tai_Code[0] == 0x34B6C28A) && (tai_Code[1] == 0x3FFFFCAB) )
+				UNIV_SwapCheatFlags( CHEAT_UnlockAllMaps )
+			// EXIT
+//			else if ( ( tai_Code[0] == 0x3F4C85C4) && (tai_Code[1] == 0x3FFFFFFF) )
+//				IntMIG_Cheat_ExitMap()
+			else
+				ti_Code = 0
+				
+			if (ti_Code )
+				IntMIG_PlaySound( INTMIG_SOUND_VALIDE )
+			else
+				IntMIG_PlaySound( INTMIG_SOUND_CANCEL )
+				
+			if (mi_StartMenu)
+				INTMIG_ChangePage(  "IntMIG_Page_StartMain" , 3 )
+			else
+				INTMIG_ChangePage(  "IntMIG_Page_Main" , mi_MainCur )
+		}
+	}
+	else
+	{
+		ti_index = (mi_Cur * 16) + mi_Cur2
+		if ( (ti_index == 63) || IO_ButtonJustPressed( joy_button_L))
+		{
+			if (mai_ProfileChar[ 0 ] ) 
+			{
+				IntMIG_PlaySound( INTMIG_SOUND_CANCEL )
+				for (ti_char = 1; ti_char < MAX_CHAR; ti_char++ )
+				{
+					if (mai_ProfileChar[ ti_char ] == 0) 
+						break
+				}
+				mai_ProfileChar[ ti_char - 1 ] = 0
+			}
+			else
+				IntMIG_PlaySound( INTMIG_SOUND_VALIELOCK )
+		}
+		else if ( (ti_index == 62 ) && (ti_Max == 4) )
+		{
+			IntMIG_PlaySound( INTMIG_SOUND_VALIELOCK )
+		}
+		else
+		{
+			for (ti_char = 0; ti_char < MAX_CHAR; ti_char++ )
+			{
+				if (mai_ProfileChar[ ti_char ] == 0) 
+				{
+					IntMIG_PlaySound( INTMIG_SOUND_ENTERLETTER )
+					mai_ProfileChar[ ti_char ] = @mo_Texte OBJ_TextCharGet( mi_PageString + 2, ti_index )
+					break
+				}
+			}
+			if (ti_char == MAX_CHAR )
+				IntMIG_PlaySound( INTMIG_SOUND_CANCEL )
+		}
+	}
+}
+

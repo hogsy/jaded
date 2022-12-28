@@ -1,0 +1,211 @@
+#include "RM_FB_defines.var"
+
+Include_UltraProcedure_Header
+
+float		tf_coef
+
+vector	tv_new_sight
+vector	tv_new_banking
+vector	tv_speed
+
+vector	tv_ground_collide_pos
+vector	tv_ground_normal
+vector	tv_wall_collide_pos
+vector	tv_wall_normal
+
+if (i_flag_sortie_etat)
+{
+	i_flag_sortie_etat = faux
+	return
+}
+
+if (i_etat_courant != ETAT_Basic)
+{
+	// INTIALISATION
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Basic
+	
+	if (fct_last_etat)
+	{
+		i_flag_sortie_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	fct_last_etat = AI_TrackCurGet()
+	
+	COL_SwapToSpecific(C_zdm_pied)
+	COL_ZoneSizeSet(C_zdm_pied, cvector(Cf_zdm_size, Cf_zdm_size, Cf_zdm_size))
+	COL_ZonePosSet(C_zdm_pied, cvector(0.0, 0.0, 0.0))
+
+	if ( ! o_target )
+	{
+		COL_SwapToSpecific(C_zde_fight)
+		COL_ZoneSizeSet(C_zde_fight, cvector(2.0, 2.0, 2.0))
+		COL_ZonePosSet(C_zde_fight, cvector(0.0, 0.0, 0.0))
+	}
+
+	DYN_On()
+	DYN_FlagsSet(DYN_C_BasicForces | DYN_C_NeverDynamicFather | DYN_C_NeverDynamicHierarchy | DYN_C_HorizontalGrounds | DYN_C_SlipOnGroundEdge, none)
+	DYN_GravitySet(OBJ_BankingGet() * -100.0)
+	DYN_SpeedSetVector(OBJ_SightGet() * 20.0)
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ===============================================================
+RM_FB_Send_Paf()
+
+//if (RM_FB_Send_Paf() || f_time_start_etat > f_life_time)
+if (f_time_start_etat > f_life_time)
+	macro_change_etat("RM_FB_ETAT_Death")
+
+// GROUND COL ========================================================================================
+if (COL_CollideType(COL_C_Ground))
+{
+	DYN_GravitySet(Cv_NullVector)
+
+	f_delay_until_last_ground_col = 0.0
+
+	o_ground_gao = COL_ObjectGet(COL_C_Ground)
+	OBJ_HierarchySet(o_ground_gao)
+
+	tv_ground_normal = COL_NormalGet(COL_C_Ground)
+	tv_ground_collide_pos = COL_CollidedPointGet(COL_C_Ground)
+	
+	v_ground_normal = @o_ground_gao MATH_VecGlobalToLocal(tv_ground_normal)
+	v_ground_collide_pos = @o_ground_gao MATH_VecGlobalToLocal(tv_ground_collide_pos - @o_ground_gao OBJ_PosGet())
+}
+else
+{
+	f_delay_until_last_ground_col += TIME_GetDt()
+
+	if (o_ground_gao)
+	{
+		tv_ground_normal = @o_ground_gao MATH_VecGlobalToLocal(v_ground_normal)
+		tv_ground_collide_pos = @o_ground_gao OBJ_PosGet() + @o_ground_gao MATH_VecLocalToGlobal(v_ground_collide_pos)
+	}
+}
+
+//DBG_RenderVector(tv_ground_collide_pos, tv_ground_normal * 10.0, color_rouge)
+
+// WALL COL ========================================================================================
+if (COL_CollideType(COL_C_Wall))
+{
+	DYN_GravitySet(Cv_NullVector)
+
+	f_delay_until_last_wall_col = 0.0
+
+	o_wall_gao = COL_ObjectGet(COL_C_Wall)
+	OBJ_HierarchySet(o_wall_gao)
+
+	tv_wall_normal = COL_NormalGet(COL_C_Wall)
+	tv_wall_collide_pos = COL_CollidedPointGet(COL_C_Wall)
+	
+	v_wall_normal = @o_wall_gao MATH_VecGlobalToLocal(tv_wall_normal)
+	v_wall_collide_pos = @o_wall_gao MATH_VecGlobalToLocal(tv_wall_collide_pos - @o_wall_gao OBJ_PosGet())
+}
+else
+{
+	f_delay_until_last_wall_col += TIME_GetDt()
+
+	if (o_wall_gao)
+	{
+		tv_wall_normal = @o_wall_gao MATH_VecLocalToGlobal(v_wall_normal)
+		tv_wall_collide_pos = @o_wall_gao OBJ_PosGet() + @o_wall_gao MATH_VecLocalToGlobal(v_wall_collide_pos)
+	}
+}
+
+
+//DBG_RenderVector(tv_wall_collide_pos, tv_wall_normal * 10.0, color_rouge)
+
+// COMPORTEMENT ====================================================================================
+tv_speed = Cv_NullVector
+
+if ( f_delay_until_last_ground_col < 0.1 || f_delay_until_last_wall_col < 0.1 )
+{
+	if ( f_delay_until_last_ground_col < 0.1 && f_delay_until_last_wall_col < 0.1 )
+	{
+		if (MATH_VecDotProduct(OBJ_SightGet(), tv_ground_normal) < MATH_VecDotProduct(OBJ_SightGet(), tv_wall_normal))
+			tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), tv_ground_normal, 6.0 * TIME_GetDt())
+		else
+			tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), tv_wall_normal, 6.0 * TIME_GetDt())
+	}
+	else if (f_delay_until_last_ground_col < f_delay_until_last_wall_col)
+	{
+		tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), tv_ground_normal, 6.0 * TIME_GetDt())
+	}
+	else
+	{
+		tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), tv_wall_normal, 6.0 * TIME_GetDt())
+	}
+}
+else if (o_ground_gao || o_wall_gao)
+{
+	if (f_delay_until_last_ground_col < f_delay_until_last_wall_col)
+	{
+		tf_coef = f_delay_until_last_ground_col - 0.1
+		tf_coef *= tf_coef
+		tf_coef *= 4.0
+		tv_new_banking = tv_ground_collide_pos - OBJ_PosGet()
+	}
+	else
+	{
+		tf_coef = f_delay_until_last_wall_col - 0.1
+		tf_coef *= tf_coef
+		tf_coef *= 4.0
+		tv_new_banking = tv_wall_collide_pos - OBJ_PosGet()
+	}
+
+	DBG_RenderVector(OBJ_PosGet(), tv_new_banking, color_jaune)
+	
+	MATH_VecSetNormalize(tv_new_banking)
+	tv_speed += tv_new_banking * f_move_speed
+
+	tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), - tv_new_banking, tf_coef)
+}
+else
+{
+	tv_new_banking = OBJ_BankingGet()
+}
+
+//if (RM_FB_Soft_Col(tv_new_sight))
+//{
+//	tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_new_sight, 6.0 * TIME_GetDt())
+//}
+//else
+if (o_target)
+{
+	if (MATH_VecDotProduct(OBJ_SightGet(), @o_target OBJ_PosGet() - OBJ_PosGet()) > 5.0)
+		tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), @o_target OBJ_PosGet() - OBJ_PosGet(), 4.0 * TIME_GetDt())
+	else if (o_sender == AI_MainActorGet(0) || o_sender_2 == AI_MainActorGet(0))
+		tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), MATH_FloatSign(MATH_VecDotProduct(OBJ_HorizonGet(), @o_target OBJ_PosGet() - OBJ_PosGet())) * OBJ_HorizonGet(), 1.0 * TIME_GetDt())
+	else
+		tv_new_sight = OBJ_SightGet()
+}
+else
+{
+	tv_new_sight = OBJ_SightGet()
+}
+
+tv_new_sight -= MATH_VecDotProduct(tv_new_sight, tv_new_banking) * tv_new_banking
+OBJ_SightGeneralSet(tv_new_sight, tv_new_banking)
+
+if (o_ground_gao || o_wall_gao)
+{
+	tv_speed += OBJ_SightGet() * f_move_speed
+
+	if ( ! f_delay_until_last_ground_col )
+		tv_speed -= MATH_VecDotProduct(tv_speed, tv_ground_normal) * tv_ground_normal
+	
+	if ( ! f_delay_until_last_wall_col )
+		tv_speed -= MATH_VecDotProduct(tv_speed, tv_wall_normal) * tv_wall_normal
+	
+	DYN_SpeedSetVector(tv_speed)
+}
+
+RM_FB_GFX()
+

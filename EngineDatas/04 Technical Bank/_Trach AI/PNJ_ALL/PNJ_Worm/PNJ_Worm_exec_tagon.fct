@@ -1,0 +1,33 @@
+#include "PNJ_Worm_defines.var"
+
+int		ti_state
+
+AI_Execute("PNJ_Worm_callback_tagon")
+
+PNJ_Worm_UncollideCheck()
+PNJ_Worm_Soft_Collision()
+
+ti_state = -1
+
+switch(i_etat_courant)
+{
+	case ETAT_MORT :	
+		ti_state = C_EVENT_EnemyState_Die
+		break
+
+	case ETAT_FIGHT :
+	case ETAT_CATCH :
+	case ETAT_SAUT :
+		ti_state = C_EVENT_EnemyState_Fight
+		break
+
+	case ETAT_IDLE :
+	case ETAT_GRAB :
+	case ETAT_PAF :
+		ti_state = C_EVENT_EnemyState_Neutral
+		break
+
+}
+
+if (ti_state != -1)
+	EVENT_AddEventEnemy(C_ID_Scolo, OBJ_Me(), ti_state)

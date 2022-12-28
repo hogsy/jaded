@@ -1,0 +1,292 @@
+#include "PNJ_Raptor_defines.var"
+
+float		tf_sqr_hor_dist
+float		tf_interet
+float		tf_perceived_time
+float		tf_eval_time
+float		tf_dist
+float		tf_delay
+float		tf_sign
+
+int			ti_i
+int			ti_flag_go_to_grid_center
+int			ti_followed_ground_ID
+int			ti_flag_try_to_move
+int			ti_ground_id
+
+vector	tv_temp
+vector	tv_deplacement_dir
+vector	tv_traction
+
+object	to_target
+object	to_collide_object
+object	to_next_wp
+object	to_next_next_wp
+
+#define ALLOW_TERRASSE								1
+#define ALLOW_BITE										1
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_RHUBARBE)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_RHUBARBE
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = AI_TrackCurGet()
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =======================================================================================================
+AI_Execute("PNJ_Raptor_exec_check_msg")
+
+AI_Execute("PNJ_Raptor_exec_check_vision")
+
+AI_Execute("PNJ_Raptor_exec_check_sound")
+
+i_flag_zde_fight_enable = vrai
+AI_Execute("PNJ_Raptor_exec_check_collision")
+
+AI_Execute("PNJ_Raptor_exec_check_paf")
+if (i_flag_paf_fly)
+	macro_change_etat("PNJ_Raptor_ETAT_PAF_FLY")
+if (i_flag_paf_fall)
+	macro_change_etat("PNJ_Raptor_ETAT_PAF_FALL")
+if (i_flag_paf_repousse || i_flag_paf_slide || !f_lifecur)
+	macro_change_etat("PNJ_Raptor_ETAT_PAF_SLIDE")
+
+if (i_flag_force_fuite)
+	macro_change_etat("PNJ_Raptor_ETAT_VALA")
+if (! i_flag_in_my_territory)
+	macro_change_etat("PNJ_Raptor_ETAT_VALA")
+
+AI_Execute("PNJ_Raptor_exec_check_shoot")
+
+AI_Execute("PNJ_Raptor_exec_check_client")
+
+AI_Execute("PNJ_Raptor_exec_check_vala")
+if (MSG_GlobalIsValid(mid_vala))
+	macro_change_etat("PNJ_Raptor_ETAT_VALA")
+
+AI_Execute("PNJ_Raptor_exec_update_best_interest")
+
+AI_Execute("PNJ_Raptor_exec_check_requin")
+
+if (i_flag_change_target)
+	macro_change_etat("PNJ_Raptor_ETAT_HESITE")
+
+if (! MSG_GlobalIsValid(mid_best_interet) || i_perceived_best_actor_index != i_perceived_main_actor_index)
+	macro_change_etat("PNJ_Raptor_ETAT_ATTENTE")
+
+tf_delay	= TIME_Get() - EVENT_InteretSeenTimeGet(mid_best_interet)
+
+to_target = EVENT_InteretTargetGet(mid_best_interet)
+v_way_destpos = EVENT_InteretPositionGet(mid_best_interet)
+i_dest_pos_territory_ID = i_target_territory_ID
+
+i_flag_look_best_interet = vrai
+
+// COMPORTEMENT ==================================================================================================	
+switch(raptor_type)
+{
+	case C_ID_Raptor :
+	case C_ID_Galiminus :
+
+		if (i_flag_stalk)
+		{
+			f_force_requin_mode_duration = 0.0
+			i_way_computation_mode = Ci_WAY_MODE_FIGHT
+		}
+		else
+		{
+			if (f_force_requin_mode_duration)
+			{ 
+				f_requin_mode_extended_duration = 0.0
+				i_way_computation_mode = Ci_WAY_MODE_REQUIN
+				
+//				if (! f_force_run_duration && i_flag_requin_shout)
+//				{
+//					i_flag_requin_shout =  faux
+//					i_flag_cri = vrai
+//				}
+			}
+			else if (i_way_computation_mode == Ci_WAY_MODE_REQUIN)
+			{
+				i_way_computation_mode = Ci_WAY_MODE_FIGHT	
+			
+				f_requin_mode_extended_duration += TIME_GetDt()
+			
+				if (to_target != o_main_actor || i_flag_occluder_alllowed)
+				{
+					i_way_computation_mode = Ci_WAY_MODE_FIGHT
+				}
+				else if (f_requin_mode_extended_duration > 4.0 || f_me_to_main_dist > 10.0)
+				{
+					// Au bout d'un délai ou si on ets suffisemment loin, on repasse en attaque	
+					i_way_computation_mode = Ci_WAY_MODE_FIGHT	
+				
+					if (raptor_type == C_ID_Raptor)
+					{
+						// Le raptor va toujours éviter de faire demi-tour
+						to_next_wp = o_next_wp
+						to_next_next_wp = o_next_next_wp
+						
+						AI_Execute("PNJ_Raptor_exec_way_find_dest_pos")
+				
+						if (MATH_VecDotProduct(MATH_VecNormalize(v_way_destpos - OBJ_PosGet()), OBJ_SightGet()) < -Cf_Cos45 || 
+							(i_way_wp_nb > 1 && MATH_VecDotProduct(@ao_way_wp[i_way_wp_nb - 1] OBJ_PosGet() - OBJ_PosGet(), @ao_way_wp[i_way_wp_nb - 2] OBJ_PosGet() - @ao_way_wp[i_way_wp_nb - 1] OBJ_PosGet()) < 0.0) )
+						{
+							i_way_computation_old_mode = Ci_WAY_MODE_REQUIN
+							i_way_computation_mode = Ci_WAY_MODE_REQUIN	
+
+							v_way_destpos = EVENT_InteretPositionGet(mid_best_interet)
+							i_dest_pos_territory_ID = i_target_territory_ID
+							
+							o_next_wp = to_next_wp
+							o_next_next_wp = to_next_next_wp
+						}
+//						else
+//						{
+//							i_SND_flag_leaving_requin_mode = vrai
+//						}
+					}
+	
+//#ifndef _FINAL_
+//					if (DBG_Log_Allowed && i_way_computation_mode == Ci_WAY_MODE_FIGHT)
+//					{
+//						if (f_requin_mode_extended_duration > 4.0)
+//						{
+//							DBG_TraceFloat(TIME_Get())
+//							DBG_TraceString(" => ")
+//							DBG_TraceObject(OBJ_Me())
+//							DBG_TraceString(" attend depuis ")
+//							DBG_TraceFloat(f_requin_mode_extended_duration)
+//							DBG_TraceString(" secondes en mode requin et repasse en mode déplacement")
+//							DBG_TraceEOL()
+//						}
+//						else
+//						{
+//							DBG_TraceFloat(TIME_Get())
+//							DBG_TraceString(" => ")
+//							DBG_TraceObject(OBJ_Me())
+//							DBG_TraceString(" est a ")
+//							DBG_TraceFloat(f_me_to_main_dist)
+//							DBG_TraceString(" metres de ")
+//							DBG_TraceObject(to_target)
+//							DBG_TraceString(" et repasse en déplacement FIGHT ")
+//							DBG_TraceEOL()
+//						}
+//						
+//					}
+//#endif
+
+				}
+			}
+			else
+			{
+				i_way_computation_mode = Ci_WAY_MODE_FIGHT
+			}
+		}
+			
+		break
+		
+	default:
+		i_way_computation_mode = Ci_WAY_MODE_FIGHT
+}
+
+if (i_way_computation_mode == Ci_WAY_MODE_FIGHT)
+{
+	// SI UN RAPTOR OU UN GALIMINUS ATTAQUE LE MAIN HORS ECRAN
+	if (af_perceived_dist[i_perceived_best_actor_index] > 15.0) 
+		i_flag_run = vrai
+	else
+		i_flag_run = faux
+}
+else
+{
+	switch(raptor_type)
+	{
+		case C_ID_Galiminus :
+			i_flag_run = vrai
+			break
+		
+		default:
+			i_flag_run = faux
+	}
+}
+
+AI_Execute("PNJ_Raptor_exec_way_find_dest_pos")
+if (i_way_status  == Ci_WAY_MODE_REQUIN && MATH_VecDotProduct(OBJ_SightGet(), v_way_destpos) < 0.0)
+	f_force_requin_mode_duration = 0.0
+
+EVENT_InteretStatusSet(mid_best_interet, C_EVENT_InteretStatusLock)
+
+AI_Execute("PNJ_Raptor_exec_way_move")
+
+AI_Execute("PNJ_Raptor_exec_select_action")
+
+//if (to_target)
+//{
+//	switch(raptor_type)
+//	{
+//		case C_ID_Raptor :
+//			tv_traction = OBJ_PosGet()
+//			tv_traction -= @to_target OBJ_PosGet()	
+//			tv_traction.z = 0.0
+//	
+//			tf_dist = MATH_VecNorm(tv_traction)
+//	
+//			if (tf_dist < 4.0)
+//			{
+//				tv_traction /= tf_dist
+//				tv_traction *= 3.9
+//				tv_traction += @to_target OBJ_PosGet()
+//				tv_traction -= OBJ_PosGet()
+//				tv_traction *= 80.0 * DYN_FrictionGet()
+//				tv_traction.z = 0.0
+//				tv_traction += DYN_TractionVectorGet()
+//				DYN_TractionSet(tv_traction)
+//			}
+//			break
+//	
+//		case C_ID_Galiminus :
+//			tv_traction = OBJ_PosGet()
+//			tv_traction -= @to_target OBJ_PosGet()	
+//			tv_traction.z = 0.0
+//	
+//			tf_dist = MATH_VecNorm(tv_traction)
+//	
+//			if (tf_dist < 2.0)
+//			{
+//				tv_traction /= tf_dist
+//				tv_traction *= 1.9
+//				tv_traction += @to_target OBJ_PosGet()
+//				tv_traction -= OBJ_PosGet()
+//				tv_traction *= 80.0 * DYN_FrictionGet()
+//				tv_traction.z = 0.0
+//				tv_traction += DYN_TractionVectorGet()
+//				DYN_TractionSet(tv_traction)
+//			}
+//			break
+//	}
+//}
+
+

@@ -1,0 +1,71 @@
+#include "PLKJ_Defines.var"
+// make sure the reference column is vertical
+@Column OBJ_BankingSet(cvector(0,0,1))
+
+// bones initialization
+B_ZdeFight=ANI_CanalObjectGet(C_PLKJ_Bone_ZdeFight)
+B_ZdeBody=ANI_CanalObjectGet(C_PLKJ_Bone_ZdeBody)
+B_PlaneGrab=ANI_CanalObjectGet(C_PLKJ_Bone_PlaneGrab)
+B_RightHand=ANI_CanalObjectGet(C_PLKJ_Bone_RightHand)
+
+// IK initialization
+PLKJ_IK_Init()
+
+// default stuff
+CurrentDirection=cvector(-1,0,0)
+NewDirection=CurrentDirection
+OBJ_SightSet(-CurrentDirection)
+PLKJ_SnapOnDirection()
+
+// make an afterblend track
+AI_CBAdd(OBJ_Me(),CallBack_After_Blend,"PLKJ_after_blend")
+
+// create my own kamera
+@Kamera VIEW_AssignObject(0)
+@Kamera OBJ_RejoinAndOrient(KamIntro)
+
+// look if the alternative end is available
+if(@"univ" PROG_i_FinAlternative)
+{
+	OBJ_CapaSet(C_PLKJ_Capa_AltEndUnlocked,0)
+}
+
+// a checkpoint may trigger the alternative end
+if(OBJ_CapaTest(C_PLKJ_Capa_AlternativeEnd))
+{
+	PLKJ_GotoAlternativeEnd()
+}
+else
+{
+	if(!OBJ_CapaTest(C_PLKJ_Capa_AltEndUnlocked))
+	{
+		HP=HP_Normal
+	}
+	HP_Max=HP
+	// set intro action
+	PLKJ_SetAction(C_PLKJ_ACT_Climb)
+	// slow down movement during the fade and the delay
+	ANI_FrequencySet(0,1)
+	// start the fade
+	PLKJ_StartFade(0.0,C_PLKJ_DureeFade)
+	// tell the triggers I'm ready to play
+	OBJ_CapaSet(C_PLKJ_Capa_ReadyToPlay,0)
+	// restore normal anim speed
+	ANI_FrequencySet(0,C_PLKJ_Anim_DefaultSpeed)
+	VIEW_FocaleSet(0,C_PLKJ_Focal_Default)
+	// set camera mode
+	PLKJ_ChangeKamMode(C_PLKJ_KamMode_Intro)
+}
+
+// common stuff
+OBJ_FlagInvisibleSet(faux)
+ACT_DefaultTransition(15)
+AI_MainActorSet(0)
+AI_PrioritySet(100)
+MSG_On()
+
+// go to main behaviour
+AI_TrackChange(2,"PLKJ_bhv_Play")
+
+//OBJ_CapaSet(C_PLKJ_Capa_AltEndUnlocked,0)
+//HP=5

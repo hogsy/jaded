@@ -1,0 +1,1175 @@
+#include "CM_Defines.var"
+
+// ========[ Variables ]================================
+vector	tv_center_text_pos
+vector	tv_temp
+vector	tv_temp1
+vector	tv_temp2
+vector	tv_joy1
+vector	tv_master_joy1
+vector	tv_offset
+
+object	to_obj, to_obj1, to_obj2, to_canal
+object	to_last_lock
+
+float		tf_temp
+float		tf_speed_rot_x
+float		tf_speed_rot_y
+float		tf_speed_rot_ax
+float		tf_best_dist
+float		tf_dot
+float		tf_focal
+float		tf_blend_cible
+float		tf_tol
+float		tf_bestsight
+float		tf_bestsight_action[ 3 ]
+
+int			ti_ok
+int			ti_compute_local
+int			ti_blend_z
+int			ti_num
+int			ti_num_cibles
+int 		ti_first
+int			i 
+int			ti_canal, ti_flag
+int			ti_ok1
+int			ti_cam
+int			ti_ray
+int			ti_action
+int			ti_psss
+int			ti_force_lock 
+int			ti_nored
+
+int			ti_psstableray[ C_ID_Marin_dernier  ]
+int			ti_psstable[ C_ID_Marin_dernier ]
+int			ti_psstabledone
+int			ti_pssmain
+int			ti_pssmulti
+int			ti_texte
+
+messageid		mid
+messageid		tmid_new_psss
+object			to_new_psss
+
+// ========[ Constantes ]================================
+
+#define SPEED_X_NORMAL			2.0 
+#define SPEED_Y_NORMAL			1.75
+#define SPEED_AX_NORMAL		1.2 //1.5
+#define SPEED_X_WEAPON			2.0 // 1.3
+#define SPEED_Y_WEAPON		1.75 //1.0
+#define SPEED_AX_WEAPON		1.0
+#define SPEED_X_LOCK				2.0 //0.5
+#define SPEED_Y_LOCK				1.0 //0.25
+#define SPEED_AX_LOCK			1.0
+
+#define DIST_CIBLE						100
+#define DISTMIN_COUSSIN			4
+
+#define FOCAL_JACK					1.2
+#define FOCAL_JACKWEAPON		1.2
+
+#define Z_CROUCH						0.8
+#define Z_HEAL							0.56
+#define Z_ARMEBASSE				1.6
+#define Z_ARMEHAUTE				1.6
+
+#define PSS_GROUPERADIUS2	25		
+
+// ========[ INIT ]===================================
+
+COL_CrossableSet(Gmat_Face_eau, 0)
+
+tf_blend_cible = 6
+ti_psstabledone = faux
+o_mf_actor = AI_MainActorGet(0)
+v_cur_pos_suivi = @o_mf_actor OBJ_PosGet()
+ti_pssmulti = faux
+ti_force_lock = faux
+
+AI_TrackChange(2, "CM_Meca_Jack")
+
+// ---------( FRED : Gestion d'interdiction du joy )--------
+tv_master_joy1 = IO_JoyGetMove1()
+if (i_disable_joy1)
+{
+	i_disable_joy1 = faux
+	tv_master_joy1 = Cv_NullVector
+}
+if ( i_inverse_joy1)
+{
+	tv_master_joy1.y *= -1.0
+}
+
+// ========[ Changement de mode ? ]================================
+ti_blend_z = vrai
+ti_first = faux
+if(i_mode_cur != CM_ModeJack_Proche)
+{
+	ti_blend_z = faux
+	ti_first = vrai
+	v_pos_cible = Cv_NullVector
+	i_mode_cur = CM_ModeJack_Proche
+	f_blend_pos = 0
+	f_IdealZMin = 1.25
+	tv_temp = v_cur_pos_suivi - OBJ_PosGet()
+	tv_temp.z = 0
+	@o_mf_actor OBJ_BankingGeneralSet(tv_temp, Cv_VerticalVector)
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+i_auto_evitementsight = faux
+i_auto_blendsight = faux
+i_stick_zmax = faux
+i_visee_force_sight = vrai
+
+// Params : Distance ideale
+if(i_mf_cut) 
+	f_blend_pos = 150
+else
+	f_blend_pos = MATH_FloatBlend(f_blend_pos, 150, TIME_GetDt())
+	
+// Params : X tgt
+af_FctIdeal_XTgt[1] = 0
+af_FctIdeal_XTgt[3] = 0
+
+// Vitesse rotation
+to_last_lock = o_obj_lock
+o_obj_lock = nobody
+ti_compute_local = faux
+if (@"Kingkong/Humain" o_mf_actor i_flag_arme_basse) 
+{ 	
+	tf_speed_rot_x = SPEED_X_NORMAL 	
+	tf_speed_rot_y = SPEED_Y_NORMAL 
+	tf_speed_rot_ax = SPEED_AX_NORMAL 	
+} else 
+{ 	
+	tf_speed_rot_x = SPEED_X_WEAPON 	
+	tf_speed_rot_y = SPEED_Y_WEAPON 
+	tf_speed_rot_ax = SPEED_AX_WEAPON  	
+} 
+
+// ================[ GESTION DU PSSST ]==========================
+
+// -------------( mise à jour de la table des psste )----------------------
+for (i = 2; i < C_ID_Marin_dernier; i++)
+{
+	if ( i_pssste[ i ] && !MSG_GlobalIsValid(msgid_psss[i]) ) 
+		i_pssste[ i ] = 0
+}
+
+// -------------( vérifie que le psst existe toujours )----------------------
+if ( !i_pssste[ i_onlock_psss ] )
+	i_onlock_psss = 0
+else if (i_onlock_psss)
+{
+	ti_num = i_onlock_psss
+	// -------------( vérifie que l'on voit toujours le psst )----------------------
+	to_obj = @"univ" ao_AllHumains[ i_onlock_psss ]
+	to_canal = @to_obj ANI_CanalObjectGet( Anim_Canal_Tete )
+	if ( !to_canal) to_canal = to_obj
+
+	tv_temp = @to_canal OBJ_PosGet() - OBJ_PosGet()
+	if ( MATH_VecDotProduct(tv_temp, OBJ_SightGet() ) < 0 )
+	{
+		i_onlock_psss = 0
+	}
+	else
+	{
+		// -------------( On vire le psss si on bouge jack/la cam )-------------
+		tv_temp = IO_JoyGetMove()
+		tv_temp1 = IO_JoyGetMove1()
+		if(MATH_VecNorm(tv_temp) > 0.5 || MATH_VecNorm(tv_temp1) > 0.5) 
+			i_onlock_psss = 0
+		
+		// -------------( si ni la position des pieds ni celle de la tete sont dans l'écran on pete la liaison )----------------------
+		tv_temp = VIEW_3dWorldTo2d( 0, @to_obj OBJ_PosGet())
+		if ( ( tv_temp.x < -0.1 ) || ( tv_temp.x > 1.1 ) || ( tv_temp.y < -0.1 ) || (tv_temp.y > 1.1) )
+		{
+			tv_temp = VIEW_3dWorldTo2d( 0, @to_canal OBJ_PosGet())
+			if ( ( tv_temp.x < -0.1 ) || ( tv_temp.x > 1.1 ) || ( tv_temp.y < -0.1 ) || (tv_temp.y > 1.1) )
+			{
+				tv_temp = VIEW_3dWorldTo2d( 0, @to_obj OBJ_InfoPhotoPivotGet() )
+				if ( ( tv_temp.x < -0.1 ) || ( tv_temp.x > 1.1 ) || ( tv_temp.y < -0.1 ) || (tv_temp.y > 1.1) )
+					i_onlock_psss = 0
+			}
+		}
+	}
+	// -------------( casse la liaison )----------------------
+	if ( i_onlock_psss == 0 )
+	{
+		LNK_ThisClientGet(@"univ" ao_AllHumains[ ti_num ] , Ci_LNK_PSSS, msgid_psss[ ti_num ], faux, nofunc, nofunc, nofunc)
+		i_pssste[ ti_num ] = 0
+	}
+}
+
+// ---------( récupère les objets "vus" par la caméra )--------
+ti_flag = @o_mf_actor OBJ_FlagsControlGet()
+@o_mf_actor OBJ_FlagsControlSet(OBJ_C_ControlFlag_RayInsensitive, 0)
+ti_num = COL_SightDistanceListGet(&ao_obj[0], OBJ_PosGet(), OBJ_SightGet(), 50, 0.1, -1, 0, Ci_Filter_IdentityFlag, 100)
+ti_num_cibles = ti_num
+tf_best_dist = 0
+ti_ok = faux
+tf_bestsight_action[ 0 ] = 0.6
+tf_bestsight_action[ 1 ] = 0.6
+tf_bestsight_action[ 2 ] = 0.6
+ao_obj_action[ 0 ] = nobody
+ao_obj_action[ 1 ] = nobody
+ao_obj_action[ 2 ] = nobody
+while(ti_num)
+{	
+	ti_num--
+	to_obj = ao_obj[ti_num]
+	
+	// --------( interdit le main actor )--------
+	if (o_mf_actor == to_obj ) continue
+
+	// --------( interdit les objets sans designe struct ou avec des_int1 valable )--------
+	if ( ! (@to_obj OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct)) 
+		continue
+	if ( ( to_obj.des_int1 < 0) || (to_obj.des_int1 >= Ci_DISPLAY_NUMBER ) )
+		continue
+		
+	// --------( interdit les objets détruits )--------
+	if( OBJ_HasBeenKilled( to_obj ) ) 
+		continue
+		
+	// --------( type d'action possible sur l'objet )--------
+	ti_action = to_obj.des_int1
+	ti_action = @"univ" Humains_ActionType[ to_obj.des_int1 ]
+	if (ti_action == -1)
+		continue
+	if (ti_action == 2)
+	{
+		if( ! @to_obj OBJ_ModifierType(MDF_C_Modifier_InfoPhoto) )
+			continue
+		if( !CM_LockOk(ao_obj[ti_num], 1.0, 1.0) )
+			continue
+		tv_temp = @to_obj OBJ_InfoPhotoPivotGet() - OBJ_PosGet()
+	}
+	else
+	{
+		if( @to_obj OBJ_ModifierType(MDF_C_Modifier_InfoPhoto) )
+			tv_temp = @to_obj OBJ_InfoPhotoPivotGet() - OBJ_PosGet()
+		else
+			tv_temp = @to_obj OBJ_PosGet() - OBJ_PosGet()
+	}
+	
+	tv_temp1 = tv_temp
+	//MATH_VecSetHorzNormalize(tv_temp1)
+	MATH_VecSetNormalize(tv_temp1)
+	tf_dot = MATH_VecDotProduct(tv_temp1, OBJ_SightGet())
+	if(tf_dot > tf_bestsight_action[ ti_action ] )
+	{
+		// Occlusion ? 
+		ti_ok = vrai
+		tf_temp = MATH_VecNorm(tv_temp)
+		tv_temp /= tf_temp
+		to_obj2 = COL_RayObject_Dist(OBJ_PosGet(), tv_temp, tf_temp, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+		ti_canal = COL_RayObject_CanalGet()
+		
+		if(ti_canal != -1) to_obj2 = COL_RayObject_ActorGet()
+		if( !to_obj2 || to_obj2 == to_obj )
+		{
+			tf_bestsight_action[ ti_action ] = tf_dot
+			ao_obj_action[ ti_action ] = to_obj
+		}
+	}
+}
+if(!(ti_flag & OBJ_C_ControlFlag_RayInsensitive)) @o_mf_actor OBJ_FlagsControlSet(0, OBJ_C_ControlFlag_RayInsensitive)
+o_obj_lock = ao_obj_action[ 1 ]			
+
+// pour debug
+if ( @"KingKong/Humain" o_mf_actor i_flag_arme_basse_action != 0 )
+	i = 0
+
+
+// --------( Lock tué ?? )-------------------------------------------------------------
+//if(o_obj_lock && OBJ_HasBeenKilled(o_obj_lock)) o_obj_lock = nobody
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+to_obj1 = @"KingKong/Humain" o_mf_actor o_tir_prefered
+v_pos_ray_sight = @"KingKong/Humain" o_mf_actor v_tir_centre_impact
+ti_ray = faux
+
+// si sur un perso pssté
+if (i_onlock_psss)
+{
+	ti_ray = vrai
+	o_obj_lock = @"univ" ao_AllHumains[ i_onlock_psss ]
+	ao_obj_action[ 1 ] = o_obj_lock
+}
+// Si sur un objet interactif
+else if((to_obj1 && @to_obj1 OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct) && to_obj1.des_int1)
+{
+	if(!@to_obj1 OBJ_ModifierType(MDF_C_Modifier_InfoPhoto) || CM_LockOk(to_obj1, 1.0, 1.0))
+	{
+		ti_ray = vrai
+		o_obj_lock = to_obj1
+	}
+}
+// Si sur un objet info photo
+else if(to_obj1 && @to_obj1 OBJ_ModifierType(MDF_C_Modifier_InfoPhoto))
+{
+	if(CM_LockOk(to_obj1, 1.0, 1.0))
+	{
+		ti_ray = vrai
+		o_obj_lock = to_obj1
+	}
+}
+// --------( snap shoot )--------
+else if (IO_ButtonPressed( joy_button_R ) && !IO_ButtonPressed( joy_button_L2 ) &&  !@"KingKong/Humain" o_mf_actor i_flag_arme_basse )
+{
+//	DBG_RenderCone( OBJ_PosGet(), OBJ_SightGet(), 0.45, 0x4F00FF00)
+	if (tf_bestsight_action[ 2 ] > 0.9)
+	{	
+		o_obj_lock = ao_obj_action[ 2 ]
+		ti_force_lock = vrai
+//		DBG_TraceObject( o_obj_lock )
+//		DBG_TraceEOL()
+	}
+}
+	
+// Objet d'interaction
+ti_num = 0
+if(o_obj_lock && @o_obj_lock OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct)
+{
+	ti_num = o_obj_lock.des_int1
+	if ( (ti_num >= 0) && (ti_num < Ci_DISPLAY_NUMBER ) )
+	{
+		ti_action = @"univ" Humains_ActionType[ ti_num ]
+		if (ti_action != -1)
+			ao_obj_action[ ti_action ]  = o_obj_lock
+	}
+}
+
+to_obj = AI_MainActorGet(0)
+
+if(o_obj_lock)
+{
+	if(@o_obj_lock AI_IsModel("KingKong/Humain") && !@"KingKong/Humain" o_obj_lock i_flag_arme_basse && !@get_global i_flag_rage)
+	{
+		if(ti_num != Ci_DISPLAY_FIGHT && ti_num != Ci_DISPLAY_FIGHTPROPOSE && ti_num != Ci_DISPLAY_FIGHTBLOQUE)
+		{
+			ti_ok1 = faux	// Pas de coussin
+			ti_compute_local = vrai	// Pas de lock
+		}
+	}
+	else if(ti_num != Ci_DISPLAY_FIGHT && ti_num != Ci_DISPLAY_FIGHTPROPOSE && ti_num != Ci_DISPLAY_FIGHTBLOQUE)
+	{
+		ti_compute_local = vrai	// Pas de lock
+	}
+	
+	if(@"KingKong/Humain" to_obj i_flag_arme_basse)
+	{
+		ti_ok1 = faux	// Pas de coussin
+		ti_compute_local = vrai	// Pas de lock
+	}
+	
+	// Vitesse attenuée si sur cible
+	ti_ok1 = vrai
+	if(@o_obj_lock AI_IsModel("KingKong/Humain") && !@get_global i_flag_rage)
+	{
+		ti_ok1 = faux // Pas de coussin
+		ti_compute_local = vrai	// Pas de lock
+	}
+	
+	if(ti_ok1)
+	{
+		tf_speed_rot_x = SPEED_X_LOCK
+		tf_speed_rot_y = SPEED_Y_LOCK	
+		tf_speed_rot_ax = SPEED_AX_LOCK  	
+	}
+}
+else
+{
+	ti_ok = faux
+}
+
+if (to_last_lock != o_obj_lock)
+{
+	// --------( recalcul position locale )---------------------------------------
+	if ( o_obj_lock )
+		ti_compute_local = vrai
+}
+
+//--------( Lock que si l'on bouge et en pssst )-------------------
+tv_temp = IO_JoyGetMove()
+if(MATH_AbsFloat(tv_temp.x) < 0.2 && MATH_AbsFloat(tv_temp.y) < 0.2 && !ti_force_lock )
+{
+//	if(@"univ" i_weapon_ID[C_ID_Jack] != Ci_weapon_ID_bambou)
+	ti_compute_local = vrai
+}
+
+//  -------------( Informe jack de l'interaction possible	)----------------------------------
+@"KingKong/Humain" o_mf_actor i_current_interaction = ti_num
+
+// -------------( Si aucune action possible, on regarde si on peut faire un psss en prenant le perso visible le plus dans l'axe )-------------------
+ti_flag = @o_mf_actor OBJ_FlagsControlGet()
+@o_mf_actor OBJ_FlagsControlSet(OBJ_C_ControlFlag_RayInsensitive, 0)
+//if(!ti_num && !i_onlock_psss)
+if( !i_onlock_psss && !ao_obj_action[ 1 ] && (@"KingKong/Humain" o_mf_actor i_flag_arme_basse) )
+{
+	ti_psstabledone = 1
+	tf_bestsight = 0.5
+	for(i = C_ID_Ann; i < C_ID_Marin_dernier; i++)
+	{
+		ti_psstable[ i ] = 0
+		if(@"univ" ai_HumainIsHere[i] == 0) continue
+		to_obj = @"univ" ao_AllHumains[i]
+		if(!to_obj) continue
+		if(to_obj.des_int1 != Ci_DISPLAY_PSSS) continue
+		
+		tv_temp = @to_obj OBJ_PosGet() - OBJ_PosGet()
+		tf_temp = MATH_VecNorm(tv_temp)
+		MATH_VecSetHorzNormalize(tv_temp)
+		tf_dot = MATH_VecDotProduct(tv_temp, OBJ_SightGet())
+		if(tf_dot > tf_bestsight)
+		{
+			to_obj1 = COL_RayObject_Dist(OBJ_PosGet(), tv_temp, tf_temp, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+			ti_canal = COL_RayObject_CanalGet()
+			if(ti_canal != -1) to_obj1 = COL_RayObject_ActorGet()
+			if(!to_obj1 || to_obj1 == to_obj)
+			{
+				ti_psstable[ i ] = 1
+				ti_psstableray[ i ] = 1
+				
+				ti_ok = 0
+				o_obj_lock = to_obj
+				tf_bestsight = tf_dot
+				ti_num = Ci_DISPLAY_PSSS
+				ao_obj_action[ @"univ" Humains_ActionType[ Ci_DISPLAY_PSSS ] ] = o_obj_lock
+			}
+		}
+		else if (tf_dot > 0 )
+		{
+			ti_psstable[ i ] = 1
+			ti_psstableray[ i ] = 0
+		}
+	}
+}
+if(!(ti_flag & OBJ_C_ControlFlag_RayInsensitive)) 
+	@o_mf_actor OBJ_FlagsControlSet(0, OBJ_C_ControlFlag_RayInsensitive)
+	
+if(@"KingKong/Humain" o_mf_actor i_flag_arme_basse && !@get_global i_jack_grab)
+{
+	for (i = 0; i < 3; i++)
+	{
+		if ( !ao_obj_action[ i ] )
+			continue
+		to_obj = ao_obj_action[ i ]
+		ti_action = 	to_obj.des_int1
+		tv_temp = cvector( 0.5, 0.8 + (i * 0.05), 0 )
+		
+		if ( @get_global Interface_i_Show )
+		{
+			switch( i )
+			{
+			case 0 : ti_texte = STR_CreateText("\f\ \cff00ff00\(R2) ", tv_temp, 0 ) break
+			case 1 : ti_texte = STR_CreateText("\f\ \cff00ff00\(X) ", tv_temp, 0 ) break
+			case 2 : ti_texte = STR_CreateText("\f\ \cff00ff00\(0) ", tv_temp, 0 ) break
+			}
+			switch( ti_action )
+			{
+			case Ci_DISPLAY_FIGHTPROPOSE :	STR_AppendText(ti_texte, "FIGHT" ) break
+			case Ci_DISPLAY_HEAL :					STR_AppendText(ti_texte, "HEAL" ) break
+			case Ci_DISPLAY_HEALANN :				STR_AppendText(ti_texte, "HEAL" ) break
+			case Ci_DISPLAY_USE :						STR_AppendText(ti_texte, "USE" ) break
+			case Ci_DISPLAY_COVER :					STR_AppendText(ti_texte, "COVER" ) break
+			case Ci_DISPLAY_CANCEL :				STR_AppendText(ti_texte, "CANCEL" ) break
+			case Ci_DISPLAY_DONNE :					STR_AppendText(ti_texte, "DONNE" ) break
+			case Ci_DISPLAY_HIDE :						STR_AppendText(ti_texte, "HIDE" ) break
+			case Ci_DISPLAY_TAKE :					STR_AppendText(ti_texte, "TAKE" ) break
+			case Ci_DISPLAY_PSSS :					STR_AppendText(ti_texte, "PSSSS" ) break
+			default:
+				STR_DeleteText( ti_texte )
+			}
+		}
+		
+		if ( @"KingKong/Humain" o_mf_actor i_flag_arme_basse_action == i+1 )
+		{
+			if (ti_action == Ci_DISPLAY_PSSS )
+			{
+				ti_pssmain = LIBHumains_GetIndex( to_obj )
+				for ( ti_psss = 2; ti_psss < C_ID_Marin_dernier; ti_psss++)
+				{
+					if ( ti_psss != ti_pssmain )
+					{
+						if ( i_pssste[ ti_psss ] )
+						{
+							to_new_psss = @"univ" ao_AllHumains[ ti_psss ]
+							LNK_ThisClientGet(to_new_psss, Ci_LNK_PSSS, msgid_psss[ ti_psss  ], faux, nofunc, nofunc, nofunc)
+							i_pssste[ i ] = 0
+						}
+					}
+					else
+					{
+						if ( i_pssste[ ti_psss  ] == 0)
+						{
+							to_new_psss = LNK_ThisClientGet(to_obj, Ci_LNK_PSSS, msgid_psss[ ti_psss ], vrai, nofunc, nofunc, nofunc)
+							if (to_new_psss)
+							{
+								i_pssste[ ti_psss ] = 1
+								o_obj_lock = to_new_psss
+							}
+						}
+					}
+				}
+			}
+			
+			@to_obj OBJ_CapaSet(OBJ_Capa_15, 0)
+		}
+	}
+}
+
+//if( ti_num )
+//{
+//	if(@"KingKong/Humain" o_mf_actor i_flag_arme_basse)
+//	{
+//		tv_temp = cvector(0.1,0.9,0)
+//		switch(ti_num)
+//		{
+//			case Ci_DISPLAY_FIGHTPROPOSE :	STR_CreateText("\f\ \cff0000ff\INTERACTION - FIGHT", tv_temp, 0) break
+//			case Ci_DISPLAY_HEAL :					STR_CreateText("\f\ \cff0000ff\INTERACTION - HEAL", tv_temp, 0) break
+//			case Ci_DISPLAY_USE :						STR_CreateText("\f\ \cff0000ff\INTERACTION - USE", tv_temp, 0) break
+//			case Ci_DISPLAY_COVER :					STR_CreateText("\f\ \cff0000ff\INTERACTION - COVER", tv_temp, 0) break
+//			case Ci_DISPLAY_CANCEL :				STR_CreateText("\f\ \cff0000ff\INTERACTION - CANCEL", tv_temp, 0) break
+//			case Ci_DISPLAY_DONNE :					STR_CreateText("\f\ \cff0000ff\INTERACTION - DONNE", tv_temp, 0) break
+//			case Ci_DISPLAY_HIDE :						STR_CreateText("\f\ \cff0000ff\INTERACTION - HIDE", tv_temp, 0) break
+//			case Ci_DISPLAY_TAKE :					STR_CreateText("\f\ \cff0000ff\INTERACTION - TAKE", tv_temp, 0) break
+//		}
+//		
+//		if(o_obj_lock && @"KingKong/Humain" o_mf_actor i_flag_arme_basse_action)
+//		{
+//			ti_pssmain = LIBHumains_GetIndex( o_obj_lock )
+//			
+//			if (ti_num == Ci_DISPLAY_TAKE )
+//			{
+//				if ( @"KingKong/Humain" o_mf_actor i_flag_arme_basse_action != 1 )
+//					@"KingKong/Humain" o_mf_actor i_flag_arme_basse_action = 0
+//			}
+//			else
+//			{
+//				if (ti_pssmain ==-1)
+//				{ 
+//					if ( @"KingKong/Humain" o_mf_actor i_flag_arme_basse_action != 3 )
+//						@"KingKong/Humain" o_mf_actor i_flag_arme_basse_action = 0
+//				}
+//				else
+//				{
+//					if ( @"KingKong/Humain" o_mf_actor i_flag_arme_basse_action != 2 )
+//						@"KingKong/Humain" o_mf_actor i_flag_arme_basse_action = 0
+//				}
+//			}
+//			
+//			if(@"KingKong/Humain" o_mf_actor i_flag_arme_basse_action)
+//			{
+//				ti_pssmain = LIBHumains_GetIndex( o_obj_lock )
+//				
+//				//--------( pas de psstable : o_obj_lock directement visé est psstable, rajout des autres )----------------
+//				if ( !ti_psstabledone || !ti_pssmulti )
+//				{
+//					for (i = C_ID_Ann; i < C_ID_Marin_dernier; i++ )
+//					{
+//						if (i == ti_pssmain)
+//						{
+//							ti_psstable[ i ] = 1
+//							ti_psstableray[ i ] = 1
+//							continue
+//						}
+//						ti_psstable[ i ] = 0
+//						if ( !ti_pssmulti ) continue
+//							
+//						if (@"univ" ai_HumainIsHere[i] == 0) continue
+//						to_obj = @"univ" ao_AllHumains[i]
+//						if( !to_obj || to_obj == o_obj_lock) continue
+//						if(to_obj.des_int1 != Ci_DISPLAY_PSSS) continue
+//
+//						tv_temp = @to_obj OBJ_PosGet() - OBJ_PosGet()
+//						MATH_VecSetHorzNormalize(tv_temp)
+//						tf_dot = MATH_VecDotProduct(tv_temp, OBJ_SightGet())
+//						if (tf_dot > 0)
+//						{
+//							ti_psstable[ i ] = 1
+//							ti_psstableray [ i ] = 0
+//						}
+//					}
+//				}
+//				//--------( test de tout les psstables )---------------------------------------------------------
+//				for (i = 2; i < C_ID_Marin_dernier; i++)
+//				{
+//					to_new_psss = @"univ" ao_AllHumains[i]
+//
+//					if ( !ti_psstable[ i ] ) 
+//					{
+//						if ( i_pssste[ i ] )
+//						{
+//							LNK_ThisClientGet(to_new_psss, Ci_LNK_PSSS, msgid_psss[ i ], faux, nofunc, nofunc, nofunc)
+//							i_pssste[ i ] = 0
+//						}
+//						continue
+//					}
+//
+//					if ( i != ti_pssmain )
+//					{
+//						if ( @o_obj_lock OBJ_SqrDist( to_new_psss ) > PSS_GROUPERADIUS2)
+//						{
+//							if ( i_pssste[ i ] )
+//							{
+//								LNK_ThisClientGet(to_new_psss, Ci_LNK_PSSS, msgid_psss[ i ], faux, nofunc, nofunc, nofunc)
+//								i_pssste[ i ] = 0
+//							}
+//							continue
+//						}
+//						if ( !ti_psstableray[ i ] )
+//						{
+//							tv_temp = @to_obj OBJ_PosGet() - OBJ_PosGet()
+//							tf_temp = MATH_VecNorm(tv_temp)
+//							MATH_VecSetHorzNormalize(tv_temp)
+//							to_obj1 = COL_RayObject_Dist(OBJ_PosGet(), tv_temp, tf_temp, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+//							ti_canal = COL_RayObject_CanalGet()
+//							if(ti_canal != -1) to_obj1 = COL_RayObject_ActorGet()
+//							if( to_obj1 && (to_obj1 != to_obj) )
+//							{
+//								if ( i_pssste[ i ] )
+//								{
+//									LNK_ThisClientGet(to_new_psss, Ci_LNK_PSSS, msgid_psss[ i ], faux, nofunc, nofunc, nofunc)
+//									i_pssste[ i ] = 0
+//								}
+//								continue
+//							}
+//						}
+//					}
+//					if ( i_pssste[ i ] == 0)
+//					{
+//						to_new_psss = LNK_ThisClientGet(to_new_psss, Ci_LNK_PSSS, msgid_psss[ i ], vrai, nofunc, nofunc, nofunc)
+//						if (to_new_psss)
+//							i_pssste[ i ] = 1
+//					}
+//				}
+//				@o_obj_lock OBJ_CapaSet(OBJ_Capa_15, 0)
+//			}
+//		}	
+//	}
+//}
+
+// Informe jack de l'interaction en face de la camera
+@"KingKong/Humain" o_mf_actor o_obj_interaction = o_obj_lock
+@"KingKong/Humain" o_mf_actor i_flag_arme_basse_action = 0
+
+// Affichage cible
+tv_center_text_pos = cvector(0.497, 0.48, 0)
+if( @"KingKong/Humain" o_mf_actor i_flag_arme_haute )
+{
+	switch ( @"univ" i_weapon_ID[ C_ID_Jack ] )
+	{
+		case Ci_weapon_ID_bambou :
+		case Ci_weapon_ID_bambou_moy :
+		case Ci_weapon_ID_bambou_petit :
+		case Ci_weapon_ID_grenade :
+			ti_nored = 1
+			break
+		default:
+			ti_nored = 0
+	}
+
+	if(!o_obj_lock || ti_nored || (@o_obj_lock AI_IsModel("KingKong/Humain") && !@get_global i_flag_rage))
+		ti_texte = STR_CreateText( "\cFFd2f38b\", cvector(0.5, 0.5, 0), 0)
+	else 
+	{
+		tf_best_dist = @"univ" Weapon_af_range[ @"univ" i_weapon_ID[ C_ID_Jack ] ]
+		if (OBJ_SqrDist( o_obj_lock ) < tf_best_dist * tf_best_dist && ti_ray)
+			ti_texte = STR_CreateText( "\cFF8080FF\", cvector(0.5, 0.5, 0), 0)
+		else
+			ti_texte = STR_CreateText( "\cFFd2f38b\", cvector(0.5, 0.5, 0), 0)
+	}
+	STR_AppendText( ti_texte, "\h0.08\" )
+	STR_AppendText( ti_texte, "\w0.06\" )
+	STR_AppendText( ti_texte, "\jxy\" )
+	STR_AppendText( ti_texte, "\P8\!" )
+}
+
+// =====================[ FOCALE ]====================================
+
+// ---------( changement de focale selon mode armé ou non )----------------------------
+if (@"Kingkong/Humain" o_mf_actor i_flag_arme_basse)
+	tf_focal = FOCAL_JACK
+else
+	tf_focal = FOCAL_JACKWEAPON
+
+// ---------( changement de focale si on regarde une interraction )---------------------------
+if ( i_onlock_psss  )
+{
+	tf_temp = OBJ_SqrDist( o_obj_lock )
+	if ( tf_temp < 36 )
+		tf_focal -= 0.2
+	else if (tf_temp < 64 )
+		tf_focal -= 0.2 * (64 - tf_temp / 28)
+}
+	
+// ---------( focale pour viser avec snipe )---------------------------
+if(@"Kingkong/Humain" o_mf_actor i_flag_snipe)
+{
+	if(@"univ" i_weapon_ID[	C_ID_Jack] == Ci_weapon_ID_sniper_rifle)
+		tf_focal = 0.3
+	else
+		tf_focal = 0.9 // Changé par SEB
+	tf_speed_rot_x = SPEED_X_NORMAL * 0.2
+	tf_speed_rot_y = SPEED_Y_NORMAL * 0.2
+	tf_speed_rot_ax = 1.0
+	ti_compute_local = vrai
+}
+
+// ---------( amorti )---------------------------
+f_focal_jack = MATH_FloatBlend(f_focal_jack, tf_focal, 5 * TIME_GetDt())
+
+// =================[ READ JOY ]=========================================
+
+// ---------( look to ann / look the danger )---------------------------------------------
+//if(IO_ButtonPressed(joy_button_StickR) ) 
+//	i_look_ann = vrai
+//else
+	i_look_ann = faux
+	
+if (!IO_ButtonPressed( joy_button_StickR ) && i_danger_lookat )
+{
+	i_danger_lookat = faux
+//	if (@"Kingkong/Humain" o_mf_actor i_flag_arme_basse)
+//		OBJ_SightSet( v_danger_sightbefore )
+}
+	
+// --------( invert z axis of joy )----------------------------------
+if(IO_ButtonJustPressed(joy_button_Select))
+	@"univ" CAM_SensVert = -@"univ" CAM_SensVert
+
+// ================[ VITESSE DE ROTATION ]=============================
+
+// ---------( look to ann )---------------------------------------------
+if(i_look_ann)
+{
+	tf_speed_rot_x = SPEED_X_NORMAL
+	tf_speed_rot_y = SPEED_Y_NORMAL
+	tf_speed_rot_ax = SPEED_AX_NORMAL
+}
+
+to_obj = AI_MainActorGet(0)
+if(@"KingKong/Humain" to_obj i_flag_cheat_move)
+{
+	tf_speed_rot_x = SPEED_X_NORMAL * 3
+	tf_speed_rot_y = SPEED_Y_NORMAL * 3
+	tf_speed_rot_ax = SPEED_AX_NORMAL * 3
+}
+
+if (i_danger_lookat )
+{
+	tf_speed_rot_x = 0
+	tf_speed_rot_y = 0
+}
+
+// ---------( Acceleration progressive )---------------------------------------------
+tv_joy1 = tv_master_joy1
+tv_joy1.x = MATH_FloatLimit(tv_joy1.x, -1, 1)
+tv_joy1.y = MATH_FloatLimit(tv_joy1.y, -1, 1)
+if(MATH_AbsFloat(tv_joy1.x) > 0.95)
+{
+	if(!@"Kingkong/Humain" o_mf_actor i_flag_snipe)
+//		f_time_max_rot_x = MATH_FloatMin(f_time_max_rot_x + (2 * TIME_GetDt()), tf_speed_rot_ax)
+		f_time_max_rot_x = MATH_FloatMin(f_time_max_rot_x + ( TIME_GetDt()), tf_speed_rot_ax)
+	else
+		f_time_max_rot_x = MATH_FloatMin(f_time_max_rot_x + (1 * TIME_GetDt()), 1.0)
+//	if(tf_speed_rot_ax == SPEED_AX_NORMAL)
+//		tf_speed_rot_x += (f_time_max_rot_x * f_time_max_rot_x) /* 2.0
+//	else
+
+		tf_speed_rot_x += (f_time_max_rot_x * f_time_max_rot_x) * f_time_max_rot_x
+
+}
+else
+	f_time_max_rot_x = 0
+f_time_max_rot_y = 0
+
+// ---------( blend speed )---------------------------------------------
+f_speed_rot_x = tf_speed_rot_x
+f_speed_rot_y = tf_speed_rot_y
+
+// --------( PAD )-----------------------------------------------------
+ti_cam = faux
+tv_joy1 = tv_master_joy1
+tv_joy1.x = MATH_FloatLimit(tv_joy1.x, -1, 1)
+tv_joy1.y = MATH_FloatLimit(tv_joy1.y, -1, 1)
+
+if(MATH_AbsFloat(tv_joy1.x) > C_JoyTolX)
+{
+	if(MATH_AbsFloat(tv_joy1.x) > 0.2) 
+	{
+		ti_compute_local = vrai
+		ti_cam = vrai
+	}
+
+	tv_joy1.x -= C_JoyTolX * MATH_FloatSign(tv_joy1.x)
+
+	tv_joy1.x = (tv_joy1.x * tv_joy1.x) * MATH_FloatSign(tv_joy1.x)
+	tv_joy1.x *= (TIME_GetDt() * f_speed_rot_x)	
+	OBJ_RotateGlobalZ(tv_joy1.x * @"univ" CAM_SensHoriz)	
+}
+
+if(MATH_AbsFloat(tv_joy1.y) > C_JoyTolY)
+{
+	if(MATH_AbsFloat(tv_joy1.y) > 0.2) 
+	{
+		ti_compute_local = vrai
+		ti_cam = vrai
+	}
+	tv_joy1.y -= C_JoyTolY * MATH_FloatSign(tv_joy1.y)
+	tv_joy1.y = (tv_joy1.y * tv_joy1.y) * MATH_FloatSign(tv_joy1.y)
+//	if(@"univ" i_weapon_ID[0] != Ci_weapon_ID_sniper_rifle) tv_joy1.y = (tv_joy1.y * tv_joy1.y) * MATH_FloatSign(tv_joy1.y)
+	tv_joy1.y *= (TIME_GetDt() * f_speed_rot_y)
+	OBJ_RotateLocalX(-tv_joy1.y * @"univ" CAM_SensVert)
+	ti_blend_z = faux
+}
+
+// --------( Blindage sight )--------------------------------------
+tv_temp = OBJ_SightGet()
+if ( tv_temp.z > 0.95 )
+{
+	tv_temp.z = 0
+	MATH_VecSetNormalize( tv_temp )
+	tv_temp *= 0.31225  // = sqrt( 1 - sqr(0.95) )
+	tv_temp.z = 0.95
+}
+else if ( tv_temp.z < -0.95 )
+{
+	tv_temp.z = 0
+	MATH_VecSetNormalize( tv_temp )
+	tv_temp *= 0.31225  // = sqrt( 1 - sqr(0.95) )
+	tv_temp.z = -0.95
+}
+
+// CHEAT
+to_obj = AI_MainActorGet(0)
+if(@"KingKong/Humain" to_obj i_flag_cheat_move) tv_temp.z = 0
+OBJ_SightGeneralSet(tv_temp, Cv_VerticalVector)
+
+// L'angle dépend de la visee
+tv_temp = OBJ_SightGet()
+f_angle_z = -tv_temp.z
+
+// Si trop proche, pas de lock
+if(o_obj_lock)
+{	
+	tv_temp = @o_obj_lock OBJ_InfoPhotoPivotGet() - OBJ_PosGet()
+	tv_temp.z = 0	
+	tf_temp = MATH_VecDotProduct(tv_temp, tv_temp)
+	if(tf_temp < 5 * 5) 
+		ti_compute_local = vrai
+}
+
+// --------( gestion des dangers )--------
+if (f_danger_timer > 0)
+{
+	f_danger_timer -= TIME_GetDt()
+	f_danger_nexttimer -= TIME_GetDt()
+	if (f_danger_timer <= 0 && !i_danger_lookat )
+	{
+		if (f_danger_nexttimer > 0)
+		{
+			f_danger_timer = 	f_danger_nexttimer
+			o_danger_target = o_danger_nexttarget
+			f_danger_nexttimer = 0
+		}
+		else
+			f_danger_timer = 0
+	}
+}
+
+// Lock sur ann
+if( i_look_ann ) 
+{
+	if ( f_danger_timer > 0 ) 
+	{
+		to_obj = o_danger_target
+		if (!i_danger_lookat )
+			v_danger_sightbefore = OBJ_SightGet()
+		i_danger_lookat = 1
+	}
+	else
+		to_obj = @get_global o_prio_camera
+
+	// ANN if(!to_obj && @"univ" ai_HumainIsHere[C_ID_Ann]) to_obj = @"univ" ao_AllHumains[C_ID_Ann]
+	
+	if(to_obj)
+	{
+		tv_temp = VIEW_3dWorldTo2d(0, @to_obj OBJ_PosGet())
+		if(tv_temp.x > 0.4 && tv_temp.x < 0.6)
+		{
+			i_ask_cut = vrai
+			i_look_ann = faux
+		}
+		
+		ti_ok = vrai
+		
+		ti_compute_local = faux
+		if(i_ask_cut && ti_cam)
+		{
+			ti_compute_local = vrai
+		}
+		else if(!i_ask_cut)
+		{
+			ti_compute_local = faux
+			v_local_lock = cvector(0,0,0.5)
+		}
+		
+		o_obj_lock = to_obj
+		tf_blend_cible = 13
+	}
+	else
+	{
+		i_look_ann = faux
+		i_ask_cut = faux
+	}
+}
+else if ( o_obj_lock && (i_onlock_psss || ti_force_lock ) )
+{
+	v_local_lock = cvector(0,0,0)
+	to_canal = @o_obj_lock ANI_CanalObjectGet( Anim_Canal_Tete )
+	if (!to_canal) 
+	{
+		to_canal = o_obj_lock
+		tv_offset = @o_obj_lock OBJ_InfoPhotoPivotGet()
+	}
+	else
+	{
+		tv_offset = @to_canal OBJ_PosGet()
+	}
+	tv_temp = VIEW_3dWorldTo2d(0, @to_canal OBJ_PosGet() )
+
+	if(tv_temp.x > 0.4 && tv_temp.x < 0.6)
+	{
+		i_ask_cut = vrai
+		i_look_ann = faux
+	}
+		
+	ti_ok = vrai
+		
+	ti_compute_local = faux
+	if(i_ask_cut && ti_cam)
+	{
+		ti_compute_local = vrai
+	}
+	else if(!i_ask_cut)
+	{
+		ti_compute_local = faux
+		v_local_lock = cvector(0,0,0.5)
+	}
+	tf_blend_cible = 7
+}
+else
+{
+	i_ask_cut = faux
+}
+
+
+
+@get_global o_prio_camera = nobody
+
+// Compute cible en local
+if( o_obj_lock && ti_compute_local )
+{
+	if ( i_onlock_psss )
+		tv_temp = tv_offset - OBJ_PosGet()
+	else
+		tv_temp = @o_obj_lock OBJ_InfoPhotoPivotGet() - OBJ_PosGet()
+		
+	tv_temp.z = 0
+	tv_temp1 = OBJ_SightGet()
+	tv_temp1 = OBJ_PosGet() + (tv_temp1 * MATH_VecNorm(tv_temp))
+	
+	if ( i_onlock_psss )
+		tv_temp1 -= tv_offset
+	else
+		tv_temp1 -= @o_obj_lock OBJ_InfoPhotoPivotGet()
+
+	
+	v_local_lock = @o_obj_lock MATH_VecGlobalToLocal(tv_temp1)		
+}
+
+if(o_obj_lock )
+{
+	v_local_lock = @o_obj_lock MATH_VecLocalToGlobal(v_local_lock)
+	v_local_lock = MATH_VecGlobalToLocal(v_local_lock)
+	v_local_lock.y = 0
+	v_local_lock = MATH_VecLocalToGlobal(v_local_lock)
+	v_local_lock = @o_obj_lock MATH_VecGlobalToLocal(v_local_lock)
+}
+	
+// Cible
+i_force_pos_cible = vrai
+if(!ti_ok || !o_obj_lock)
+{
+	o_obj_lock = nobody
+	tv_temp = OBJ_PosGet() + (OBJ_SightGet() * DIST_CIBLE)
+}
+else
+{
+	tv_temp = @o_obj_lock MATH_VecLocalToGlobal(v_local_lock)
+	if ( i_onlock_psss )
+		tv_temp += tv_offset 
+	else
+		tv_temp += @o_obj_lock OBJ_InfoPhotoPivotGet()
+	
+	tv_temp1 = tv_temp - OBJ_PosGet()
+	MATH_VecSetNorm(tv_temp1, DIST_CIBLE)
+	tv_temp = OBJ_PosGet() + tv_temp1
+}
+
+if(!o_obj_lock || ti_compute_local)
+	v_force_pos_cible = tv_temp
+else
+	v_force_pos_cible = MATH_VecBlend(v_force_pos_cible, tv_temp, tf_blend_cible * TIME_GetDt())
+	
+// Orientation jack
+tv_temp = v_force_pos_cible - v_cur_pos_suivi
+MATH_VecSetHorzNormalize(tv_temp)
+@o_mf_actor OBJ_SightGeneralSet(tv_temp, Cv_VerticalVector)
+
+// ---------( Hauteur de la caméra )---------------------------------------
+if (f_specific_Z)
+	tf_temp = f_specific_Z
+else if(@"KingKong/Humain" o_mf_actor i_flag_crouch)
+	tf_temp = Z_CROUCH
+else
+{
+	if ( @"Kingkong/Humain" o_mf_actor i_flag_arme_basse)
+		tf_temp = Z_ARMEBASSE
+	else
+		tf_temp = Z_ARMEHAUTE
+}
+
+///////////////// FPS
+f_Decentrage = 0
+f_IdealDist = 0.05
+@o_mf_actor OBJ_FlagsControlSet(OBJ_C_ControlFlag_AlwaysVisible, 0)
+
+f_IdealZMin = MATH_FloatBlend(f_IdealZMin, tf_temp, 5 * TIME_GetDt())
+f_IdealZMax = f_IdealZMin
+v_ideal_sight = -@o_mf_actor OBJ_SightGet()
+
+// ========[ Effet shoot ]================================
+if(f_shoot_jack == -1 && i_just_shoot)
+{
+	f_shoot_jack = TIME_Get()
+	v_shoot_dispers_cur.y = 0
+	switch(@"univ" i_weapon_ID[C_ID_Jack])
+	{
+	case Ci_weapon_ID_tommy_gun :
+		v_shoot_dispers_cur.x = MATH_RandInt(2, 3) * 0.1
+		v_shoot_dispers_cur.y = MATH_RandInt(2, 3) * 0.1
+		v_shoot_dispers_cur.z = MATH_RandInt(2, 5) * 0.1
+		break
+	case Ci_weapon_ID_shotgun :
+		v_shoot_dispers_cur.x = MATH_RandInt(4, 8) * 0.1
+		v_shoot_dispers_cur.y = MATH_RandInt(4, 8) * 0.1
+		v_shoot_dispers_cur.z = MATH_RandInt(4, 8) * 0.1
+		break
+	case Ci_weapon_ID_sniper_rifle :
+		v_shoot_dispers_cur.x = 0
+		v_shoot_dispers_cur.y = 0
+		v_shoot_dispers_cur.z = MATH_RandInt(2, 5) * 0.1
+		break
+	default:
+		v_shoot_dispers_cur.x = MATH_RandInt(2, 5) * 0.1
+		v_shoot_dispers_cur.y = MATH_RandInt(2, 5) * 0.1
+		v_shoot_dispers_cur.z = MATH_RandInt(2, 5) * 0.1
+		break
+	}
+	
+	if(MATH_RandInt(0, 2) == 1) v_shoot_dispers_cur.x *= -1
+	if(MATH_RandInt(0, 2) == 1) v_shoot_dispers_cur.y *= -1
+	v_shoot_dispers_dst = -v_shoot_dispers_cur
+}
+else if(f_shoot_jack > 0)
+{
+	v_force_pos_cible += MATH_VecLocalToGlobal(v_shoot_dispers_cur)
+	v_shoot_dispers_cur.z -= 5 * TIME_GetDt()
+	switch(@"univ" i_weapon_ID[0])
+	{
+	case Ci_weapon_ID_tommy_gun :
+		if(v_shoot_dispers_cur.z <= v_shoot_dispers_dst.z * 0.5) f_shoot_jack = 0
+		break
+	default:
+		if(v_shoot_dispers_cur.z <= v_shoot_dispers_dst.z) f_shoot_jack = 0
+		break	
+	}
+}
+
+i_just_shoot = faux
+tf_temp = @o_mf_actor DYN_SpeedGet()
+if(tf_temp > 3) f_IdealZMax += MATH_Sin(TIME_Get() * 18) * 0.04
+
+// ---------( viseur d'interaction )------------------------------------------------------
+//to_obj = ao_obj_action[ 1 ]
+to_obj = o_obj_lock
+if ( to_obj &&  @to_obj AI_IsModel( "KingKong/Humain" ) )
+{
+	ti_pssmain = LIBHumains_GetIndex( to_obj )
+	if ( i_pssste[ ti_pssmain ] )
+	{
+		if (i_onlock_psss && i_onlock_psss != ti_pssmain )
+			i_onlock_psss = 0
+		else
+			i_onlock_psss = ti_pssmain
+	}
+	else
+		i_onlock_psss = 0
+}
+else
+	i_onlock_psss = 0
+
+//if ( ti_indicateur && o_obj_lock )
+//{
+//	// Hack pour forcer le recalcul de la matrice d'affichage en fonction de la cam
+//	VIEW_Culled(0)
+//	
+//	if ( @o_obj_lock AI_IsModel( "KingKong/Humain" ) )
+//	{
+//		ti_pssmain = LIBHumains_GetIndex( o_obj_lock )
+//		if ( i_pssste[ ti_pssmain ] )
+//			i_pssste[ ti_pssmain ]++
+//
+//		if ( ( ti_indicateur != Ci_DISPLAY_PSSS ) && ( ti_indicateur != Ci_DISPLAY_FIGHT) )
+//		{
+//			to_canal = @o_obj_lock ANI_CanalObjectGet( Anim_Canal_Torse )
+//			if (!to_canal) to_canal = o_obj_lock
+//			tv_temp2 = VIEW_3dWorldTo2d(0, @to_canal OBJ_PosGet())
+//			
+//			i_onlock_zoom = 1
+//			v_onlock_pos = @to_canal OBJ_PosGet()
+//			
+//	//		switch(ti_num)
+//	//		{
+//	//			case Ci_DISPLAY_FIGHTPROPOSE :	
+//	//			case Ci_DISPLAY_COVER :
+//	//			case Ci_DISPLAY_HIDE :	
+//	//				STR_CreateText( "\c4FCF4F\ \h0.04\ \w0.03\ \jxy\ \P8\#", tv_temp2, 0)
+//	//				break
+//	//			case Ci_DISPLAY_HEAL :					
+//	//				STR_CreateText( "\cF4CF4F\ \h0.04\ \w0.03\ \jxy\ \P8\%", tv_temp2, 0)
+//	//				break
+//	//			case Ci_DISPLAY_CANCEL :
+//	//				STR_CreateText( "\c4FCF4F\ \h0.04\ \w0.03\ \jxy\ \P8\&", tv_temp2, 0)
+//	//				break
+//	//			case Ci_DISPLAY_USE :						
+//	//			case Ci_DISPLAY_DONNE :					
+//	//			case Ci_DISPLAY_TAKE :					
+//	//				STR_CreateText( "\cF4CF4F\ \h0.04\ \w0.03\ \jxy\ \P8\$", tv_temp2, 0)
+//	//				break
+//	//		}
+//		}
+//	}
+//}
+//
+
+

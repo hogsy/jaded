@@ -1,0 +1,70 @@
+#include "IO_BentTree_Defines.var"
+
+int 		i_Index
+float		f_SineWaveModifiedCoef
+int 		ti_control_flag
+vector	v_MoveVector
+
+int			i_IsTrackDone
+
+i_IsTrackDone = vrai
+
+for ( i_Index = 0; i_Index < C_Max_Branches; i_Index++ )
+{
+	if ( mo_Branch[i_Index] && mi_IsBranchBending[i_Index] )
+	{
+		f_SineWaveModifiedCoef = fnf_SinOfTime( ( TIME_Get() - mf_BranchBendTimeStamp[i_Index] ), 0.0, mf_BranchBendFreq, mf_MaxBranchBend, 0.0 )
+	
+		if ( f_SineWaveModifiedCoef > mf_LastSineWaveModifiedCoef[i_Index] )
+		{
+			if ( mf_BranchHitDirection[i_Index] > 0.0 )
+			{
+				@mo_Branch[i_Index] OBJ_RotateLocalZ( -f_SineWaveModifiedCoef )
+				@mo_Branch[i_Index] OBJ_RotateLocalY( f_SineWaveModifiedCoef )
+
+			}
+			else
+			{
+				@mo_Branch[i_Index] OBJ_RotateLocalZ( f_SineWaveModifiedCoef )
+				@mo_Branch[i_Index] OBJ_RotateLocalY( f_SineWaveModifiedCoef )
+			}
+			
+			mv_BranchInitPos[i_Index].x += ( ( MATH_FloatSign( mf_BranchHitDirection[i_Index] ) ) * ( mf_BranchTranslationDistance * f_SineWaveModifiedCoef / mf_MaxBranchBend ) )
+			
+			@mo_Branch[i_Index] OBJ_PosSet( mv_BranchInitPos[i_Index] )
+			
+			mf_LastSineWaveModifiedCoef[i_Index] 	= f_SineWaveModifiedCoef
+		}
+		else
+		{
+			 mi_IsBranchBending[i_Index] 				= FALSE
+			 mf_LastSineWaveModifiedCoef[i_Index]	= 0.0
+			 mi_IsBranchBroken[i_Index] 					= TRUE
+			 
+			@mo_Branch[i_Index] OBJ_HierarchyReset()
+			@mo_Branch[i_Index] ODE_Enable( vrai )
+			ti_control_flag = @mo_Branch[i_Index] ODE_Geti( 0 )
+			ti_control_flag &= ~0x20
+			
+			// Immovable
+			@mo_Branch[i_Index] ODE_Seti( 0, ti_control_flag)
+			//JIMI_NOTE: this should not be based on Kong's position but on any thing that should trigger this ODE (e.g. raptor, rex, thrown objects, etc.)
+			@mo_Branch[i_Index] OBJ_FlagInactiveSet( faux )
+			@mo_Branch[i_Index] ODE_Setv( 0, ( @get_kong OBJ_SightGet() ) )
+			@mo_Branch[i_Index] ODE_Setf( 2, mf_BranchForce )
+		}
+	}
+}
+
+for ( i_Index = 0; i_Index < C_Max_Branches; i_Index++ )
+{
+	if ( mi_IsBranchBending[i_Index] )
+	{
+		i_IsTrackDone = faux
+	}
+}
+
+if ( i_IsTrackDone )
+{
+	AI_TrackStop( C_Track_BranchBend )
+}

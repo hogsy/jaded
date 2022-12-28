@@ -1,0 +1,69 @@
+
+#include "KBC_defines.var"
+
+//=============================================================================
+// LA BAT LANCE UNE ATTAQUE AU SOL
+//=============================================================================
+
+int 		ti_num_frame
+vector	tv_sens_paf
+
+
+// SORTIE ETAT
+if (i_sort_etat)
+{
+	o_cible_attaque = nobody		// le bat s'est vengé => il n'attaque plus
+	
+	i_sort_etat = faux
+	return
+}
+
+// ENTREE ETAT
+if (i_etat_courant != ETAT_Attaque_Sol)
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Attaque_Sol
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	
+	ACT_ActionSet(ACTION_attaque_Sol)
+	
+//	COL_ZonePosSet(C_zde_fight, cvector(0.0, -1.5, 0.5))			// position de la ZDE Fight
+}
+
+// destination et suivi du regard
+v_cible_pos = @o_cible_attaque OBJ_PosGet()
+v_look_pos = v_cible_pos
+v_dest_pos = v_cible_pos
+
+
+// le bat attaque
+if( ! ACT_ActionFinished() )
+{
+	// le bat est en train d'attaquer
+	ti_num_frame = ANI_CurrentFrameGet(0)
+	
+	if( TIME_Elapsed(f_time_last_paf, Cf_delai_paf) && ( COL_ZDE_ZDECollide(o_cible_attaque, C_zde_fight, C_zde_corps) && ( (ti_num_frame >= 30) && (ti_num_frame <= 60) ) ) )
+	{
+		// le délai entre 2 pafs dépassé, la ZDE Fight touche la ZDE Corps, le n° de la frame autorise le paf
+		tv_sens_paf = @o_cible_attaque OBJ_PosGet() - OBJ_PosGet()
+//		DBG_RenderVector( @o_cible_attaque OBJ_PosGet(), tv_sens_paf, color_rouge)
+		EVENT_AddEventPaf( C_EVENT_FILTER_Enemy, C_EVENT_PAF_Moyen, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_cible_attaque, Ci_dmg_attaque_sol, tv_sens_paf )
+		SND_RequestPlay(Ci_SND_Envoie_Paf)
+		f_time_last_paf = TIME_Get()
+	}
+}
+else
+	macro_change_etat("KBC_ETAT_Rampe")				// le bat continue de ramper
+
+
+// ======== DEPLACEMENT ==========
+
+OBJ_BankingGeneralSet( 
+	MATH_VecBlendRotate(OBJ_SightGet(), @o_cible_attaque OBJ_PosGet() - OBJ_PosGet(), 5.0 * TIME_GetDt()),
+	MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 10.0 * TIME_GetDt()) )

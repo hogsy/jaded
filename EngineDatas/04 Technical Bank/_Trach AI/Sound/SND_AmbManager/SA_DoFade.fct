@@ -1,0 +1,44 @@
+//------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------
+#include "SA_Constant.var"
+
+//------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------
+switch(mi_FadeMode)
+{
+	///////////////////////////////
+	case Cte_Fade_Off	: 
+		break
+	
+	///////////////////////////////
+	case Cte_Fade_In	:
+		mf_FadeDate -= TIME_GetDt() 
+		mf_CurrVolume += TIME_GetDt() * mf_FadeFactor 
+		
+		if( (mf_CurrVolume >= mf_FadeFinal)  || (mf_FadeDate <= 0.0) )
+		{
+			mf_CurrVolume = mf_FadeFinal
+			mi_FadeMode = Cte_Fade_Off
+		}
+		
+		SND_VolSet(mi_CurrInstance, mf_CurrVolume)
+		break
+	
+	///////////////////////////////
+	case Cte_Fade_Out	:
+		mf_FadeDate -= TIME_GetDt() 
+		mf_CurrVolume += TIME_GetDt() * mf_FadeFactor 
+		
+		if( (mf_CurrVolume <= mf_FadeFinal)  || (mf_FadeDate <= 0.0) )
+		{
+			mf_CurrVolume = mf_FadeFinal
+			mi_FadeMode = Cte_Fade_Off
+		}
+		
+		SND_VolSet(mi_CurrInstance, mf_CurrVolume)
+		break
+	
+	///////////////////////////
+	default:
+		break
+}

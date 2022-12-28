@@ -1,0 +1,86 @@
+#include "PNJ_Car_defines.var"
+
+int			ti_index
+
+float		tf_time
+
+vector	tv_pos
+vector	tv_speed
+
+object	to_serveur
+object	to_visuel
+
+// SORTIE ETAT =============================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	OBJ_CapaSet(none, Capa_Dont_Move)
+//	OBJ_FlagsControlSet(none, OBJ_C_ControlFlag_RayInsensitive)
+	
+	to_visuel = ANI_CanalObjectGet(0)
+	@to_visuel OBJ_PosSet(@to_visuel OBJ_PosGet() - (OBJ_BankingGet() * 0.15))
+
+	STATS_IncEnemyKilled_New(o_main_actor, C_EnemyType_Voiture, 0)
+
+	return
+}
+
+// INITIALISATION ETAT ========================================================================
+if (i_etat_courant != ETAT_Epave)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Epave
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = fct_last_etat
+
+	COL_ColSetActivationSet(C_bit_zde_corps, C_bit_zdm_pied | C_bit_zde_fight)
+
+	OBJ_CapaSet(Capa_Dont_Move, none)
+
+	to_visuel = ANI_CanalObjectGet(0)
+	@to_visuel OBJ_PosSet(@to_visuel OBJ_PosGet() + (OBJ_BankingGet() * 0.15))
+
+	i_flag_grab_allowed = vrai
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ===============================================================================
+o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, vrai, nofunc, nofunc)
+if (o_grabbed_actor_KK)
+	macro_change_etat("PNJ_Car_ETAT_Grabbed")
+
+if (PNJ_Car_ODE_Collision())
+	macro_change_etat("PNJ_Car_ETAT_Epave")
+
+AI_Execute("PNJ_Car_exec_check_paf")
+
+//if (! (@o_main_actor OBJ_FlagsControlGet() & OBJ_C_ControlFlag_ForceInactive) && f_on_screen_pourcent != -1.0 && OBJ_SqrDist(o_main_actor) > 100.0)
+//{
+//	tv_speed = ODE_Getv(0) 
+//	tv_speed.z = 0.0
+//	
+//	tv_pos = OBJ_PosGet()
+//	tv_pos += OBJ_BankingGet()
+////	DBG_RenderSphere(tv_pos, 3.0, 0x80800000)
+//
+//// Par FRED... PAS DE TARGET SUR VEHICULE STATIONNE
+////	Proc_KongFight_TargetAdd(OBJ_Me(), tv_pos, 3.0, C_AIDE_AU_TIR_Prio_Mur, 0)
+//}
+
+// COMPORTEMENT =========================================================================
+//v_wheel_sight = OBJ_SightGet()
+//v_wheel_axis = OBJ_HorizonGet()
+//
+//PNJ_Car_Compute_Forces()

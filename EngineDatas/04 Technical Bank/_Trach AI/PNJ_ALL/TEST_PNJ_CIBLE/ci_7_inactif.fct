@@ -1,0 +1,38 @@
+#include "ci_defines.var"
+
+i_cur_mode = Ci_mode_inactif
+if (i_cur_mode != i_old_mode)
+{
+	// INIT
+	i_old_mode = i_cur_mode
+
+	OBJ_FlagInvisibleSet(vrai)
+	COL_ColMapActivationSet(none,all)
+
+	DYN_Off()
+	
+	f_delta_H = 0
+
+	OBJ_PosSet(v_pos_init)
+
+	// mission, info, bone bone lod min lod max frame min radius
+	OBJ_InfoPhotoParamSet( 0, 0, -1, -1, 0.0, 0.0, 0.0, 0.0)
+	
+	f_time_ref = TIME_Get()
+}
+
+if (i_nbr_de_generation >= i_nbr_max_a_generer)
+{
+	AI_TrackStop(1)
+	AI_TrackCurChangeNow("ci_9_destroy")
+}
+
+if (TIME_Elapsed(f_time_ref, f_delai_inactif))
+{
+	if (i_test_condition_entre_attaques)
+		AI_TrackCurChangeNow("ci_0_trigger")
+	else
+		AI_TrackCurChangeNow("ci_1_appear")
+	
+}
+		

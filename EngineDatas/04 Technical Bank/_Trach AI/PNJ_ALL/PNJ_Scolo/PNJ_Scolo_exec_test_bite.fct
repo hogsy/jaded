@@ -1,0 +1,127 @@
+#include "PNJ_Scolo_defines.var"
+
+object	to_target
+
+
+vector	tv_hor_sight
+vector	tv_test_z
+float		tf_dist
+float		tf_target_dist_max
+float		tf_norm
+float		tf_dot_product
+
+if (!attack_allowed)
+	return
+
+if (i_modele == Ci_Modele_Big)
+	return
+
+if (i_perceived_best_actor_index == -1)
+	return
+ 
+//if (ai_perceived_status[i_perceived_best_actor_index] & (Ci_PERCEIVED_IS_DEAD | Ci_PERCEIVED_NEAR_FIRE))
+//	return
+
+if (ai_perceived_status[i_perceived_best_actor_index] & Ci_PERCEIVED_IS_DEAD)
+	return
+
+if (! MSG_GlobalIsValid(mid_best_interet))
+	return
+
+if ( ! ai_perceived_accessible[i_perceived_best_actor_index] )
+	return
+
+//if (f_on_ground_dist < i_modules_nb * dist_between_module)
+//	return
+
+//if ( i_flag_kong_mode && @o_main_actor Proc_KK_IsInBadSituation(0) )
+//	return
+
+if( o_kong && @o_kong Proc_KK_IsInBadSituation(0) )
+	return
+
+if (BV_ZoneCobra && ! COL_Pivot_BVCollide(BV_ZoneCobra))
+	return
+
+to_target = EVENT_InteretTargetGet(mid_best_interet)
+
+//if( i_flag_kong_mode )
+//{
+//	if( Proc_KK_BigScolo() && @o_main_actor Proc_KK_ModeGladiator() && @o_main_actor Proc_KK_Test_Mode(ETAT_Kong_desequilibre_paf_fort) )
+//		return
+//	
+//	if( to_target == o_main_actor && f_fury_detect )
+//		return
+//}
+
+if( o_kong && Proc_KK_BigScolo() && @o_kong Proc_KK_ModeGladiator() && @o_kong Proc_KK_Test_Mode(ETAT_Kong_desequilibre_paf_fort) )
+	return
+
+if( o_kong && to_target == o_kong && f_fury_detect )
+	return
+
+if ( instant_getup )
+{
+	tf_dist = 1.0
+}
+else
+{
+	if (i_on_ground_modules_nb < i_modules_nb - 1)
+		return
+	 
+	if (f_delay_until_last_ground_col > 0.2 && f_delay_until_last_wall_col > 0.2)
+		return
+
+	tv_hor_sight = OBJ_SightGet()
+	tv_hor_sight.z = 0.0
+	tf_norm = MATH_VecNorm(tv_hor_sight)
+	
+	if (MATH_FloatNullToler(tf_norm, 0.001))
+		return
+	
+	tv_hor_sight /= tf_norm
+	
+//	if (i_flag_kong_mode)
+	if (ai_perceived_ID[i_perceived_best_actor_index] == C_ID_Kong)
+		tf_target_dist_max = 12.0		// si c'est kong je me tiens loin
+	else if (IsThis_ID_Humain(ai_perceived_ID[i_perceived_best_actor_index]))
+		tf_target_dist_max = 6.0
+	else
+		tf_target_dist_max = 8.0
+	
+	tf_target_dist_max *= 1.0 - (MATH_FloatMax(MATH_VecDotProduct(MATH_VecNormalize(@to_target COL_ZonePosGet(C_zde_corps) - OBJ_PosGet()), Cv_VerticalVector), 0.0) * 0.5)
+
+	tf_dist = MATH_LIB_ZoneInCone(OBJ_PosGet(), tv_hor_sight, 0.0, tf_target_dist_max, @to_target COL_ZonePosGet(C_zde_corps), @to_target COL_ZoneSizeGet(C_zde_corps), faux, tf_dot_product, 0, 0)
+
+	if (ai_perceived_ID[i_perceived_best_actor_index] == C_ID_Kong)
+	{
+		if( tf_dist < 6.0)
+			tf_dist = 0.0
+		else
+		{
+			// Test de z( en fait le scolo doit pas etre dans un cyclindre autour de Kong
+			tv_test_z = OBJ_PosGet() - @o_kong OBJ_PosGet()
+			if ( tv_test_z.z > 8.0)
+				tf_dist = 0.0
+		}
+	}
+}
+
+if (tf_dist)
+{
+	instant_getup = faux
+
+	if (ai_perceived_ID[i_perceived_best_actor_index] == C_ID_Scolo)
+	{
+		o_proie = LNK_ThisClientGet(to_target, Ci_LNK_GRAB_RAPTOR, mid_proie_LNK, vrai, "PNJ_Scolo_exec_LNK_proie", nofunc, "PNJ_Scolo_exec_LNK_proie")
+		if (o_proie)
+		{
+			macro_change_etat("PNJ_Scolo_ETAT_Attaque")
+		}
+			
+	}
+	else
+	{	
+		macro_change_etat("PNJ_Scolo_ETAT_Attaque")
+	}
+}

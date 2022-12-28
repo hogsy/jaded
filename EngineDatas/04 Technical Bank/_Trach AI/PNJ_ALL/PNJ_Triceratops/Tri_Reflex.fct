@@ -1,0 +1,96 @@
+#include "Tri_defines.var"
+
+messageid	tmid_vis_ID
+vector	tv_pos_2D
+vector	tv_new_ground_normale
+vector	tv_speed
+int			ti_NMI_state
+
+// MAIN ACTORS
+o_Kong = AI_MainActorGet(0)
+o_Rayman = nobody
+if( ! @o_Kong AI_IsModel(get_Kong_Path) )
+{
+	o_Rayman = o_Kong
+	o_Kong = nobody
+}
+o_Joueur = AI_MainActorGet(C_ID_Joueur)
+
+// ANALYSE
+i_paf_check_done = faux
+i_cadavre_check_done = faux
+
+// UNCOL
+COL_UnCollidableReset()
+if( o_Joueur )
+	COL_UnCollidableAdd(o_Joueur)
+if( o_cadavre )
+	COL_UnCollidableAdd(o_cadavre)
+
+// GROUND NORMALE
+//v_ground_normale = Cv_VerticalVector
+if( COL_ColSetActivationGet() & C_bit_zdm_pied )
+{
+	if( COL_CollideType(COL_C_Ground) )
+		tv_new_ground_normale = COL_NormalGet(COL_C_Ground)
+	else
+		tv_new_ground_normale = Cv_VerticalVector
+}
+else
+	tv_new_ground_normale = Cv_VerticalVector
+v_ground_normale = MATH_VecBlend(v_ground_normale, tv_new_ground_normale, 5.0 * TIME_GetDt())
+DBG_RenderVector(OBJ_PosGet(), v_ground_normale * 5, color_bleu)
+
+
+// LIFE & Cie
+tv_pos_2D = VIEW_3dWorldTo2d(0, OBJ_PosGet())
+if( EVENT_LIFE_CurLifeGet(ID_LIFE) )
+{
+	// EVENT LIFE
+	EVENT_LIFE_LifeDisplay(ID_LIFE, tv_pos_2D + cvector(0.0,-0.05,1.5))
+	
+	// EVENT VISION
+	tmid_vis_ID = EVENT_AddEventVision(
+							i_ID, 
+							C_EVENT_FILTER_None, 
+							OBJ_Me(), 
+							Cf_EVENT_Duree_1Trame, 
+							OBJ_PosGet(), 
+							C_EVENT_Visibility_Full_Mvt, 
+							2.5 * OBJ_ZoomGet(), 
+							100.0, 
+							C_EVENT_CONTEXT_STANDARD, 
+							0, 
+							EVENT_LIFE_CurLifeGet(ID_LIFE) / EVENT_LIFE_MaxLifeGet(ID_LIFE))
+	EVENT_VisionTerritoryUdpate(tmid_vis_ID)
+	
+//	// EVENT NMI
+//	switch( i_etat_courant )
+//	{
+//		case ETAT_IDLE :
+//			ti_NMI_state = C_EVENT_EnemyState_Quiet
+//			break
+//		default:
+//			ti_NMI_state = C_EVENT_EnemyState_Fight
+//			break
+//	}
+//	EVENT_AddEventEnemy(i_ID, OBJ_Me(), ti_NMI_state)
+}
+else
+{
+	// EVENT CADAVRE
+	if( f_point_de_viande )
+		EVENT_AddEventCadavre(i_ID, OBJ_Me(), Cf_EVENT_Duree_1Trame, OBJ_PosGet())
+}
+
+
+f_No_Attaque_Delai -= MATH_FloatMin(f_No_Attaque_Delai, TIME_GetDt())
+
+// BUG Z SPEED
+if( OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna) )
+{
+	tv_speed = DYN_SpeedGetVector()
+	if( tv_speed.z > 0.0 )
+		tv_speed.z = 0.0
+	DYN_SpeedSetVector(tv_speed)
+}

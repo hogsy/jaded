@@ -1,0 +1,375 @@
+#include "PNJ_SwampCrawlerSmall_defs.var"
+
+vector	v_temp, sight, newsight
+float		deltaz, tf_deltaspeed
+object	to_bone
+object	to_gao
+
+if (stimul_o_target && ( @stimul_o_target AI_IsModel(get_PNJ_Bidoche_path) || @stimul_o_target AI_IsModel(get_PNJ_KBats_path) ) )
+{
+	if (@stimul_o_target AI_IsModel(get_PNJ_KBats_path))
+		i_eatme = vrai + vrai
+	else
+		i_eatme = vrai
+}
+else
+	i_eatme = faux
+
+f_time_paf_viande -= MATH_FloatMin(f_time_paf_viande, TIME_GetDt())
+
+//--------( Sortie Etat )--------
+if (etat_i_quitte)
+{
+	to_bone = ANI_CanalObjectGet(Anim_Canal_Tete)
+	etat_i_quitte = faux
+	return
+}
+
+#ifndef _FINAL_
+if ((i_debug_display || @get_global i_debug_all_swamp) && !@"univ" Engine)
+{
+	to_gao = ANI_CanalObjectGet(Anim_Canal_Tete)
+	Str_DisplayGaoOnce(stimul_o_target, VIEW_3dWorldTo2d(0, @to_gao OBJ_PosGet()))
+	Str_DisplayTextOnce("\cFF\ATTAQUE:", VIEW_3dWorldTo2d(0, @to_gao OBJ_PosGet()) - cvector(0,0.03,0))
+}
+#endif
+
+
+//--------( Entrée Etat )--------
+if ( etat_i_courant != SCS_ETAT_fight  )
+{
+	etat_i_ancien = etat_i_courant
+	etat_i_courant = SCS_ETAT_fight
+		
+	//----( quitte état précédent )----
+	if ( etat_fct )
+	{
+		etat_i_quitte = vrai
+		AI_Execute( etat_fct )
+	}
+
+	f_time_startetat = 0.0
+	
+	//--------( init variable )--------------------------------------------------------------
+	move_v_attackstart = OBJ_PosGet()
+	etat_fct = AI_TrackCurGet()
+	etat_i_state = 0
+	ACT_ActionSet( SCS_ACT_water_swim )
+	ACT_ActionFrequencySet(SCS_ACT_water_swim, 32 * (f_SpeedAttack* 0.75) )
+	return
+}
+else
+	f_time_startetat+= TIME_GetDt()
+
+//--------( plus de cible || la target n'est plus dans l'eau : demi tour )--------
+if ( !stimul_o_target || !SCS_fct_IsAttackable( stimul_o_target ) )
+{
+	if ( etat_i_state == 0 )
+	{
+		etat_i_state = 3
+		etat_f_timer = 2
+	}
+	else if (etat_i_state == 2 )
+	{
+		etat_i_state = 3
+		etat_f_timer = 0
+	}
+}
+
+//--------( se prend un paf )--------
+if ( stimul_i_paf )
+{
+	if ( ( etat_i_state == 1) && (stimul_i_pafcanal == Anim_Canal_Tete) )
+		stimul_f_pafHP *= 2
+	if (etat_i_state)
+		stimul_i_paftype = C_PAF_KK_Repousse
+	macro_takeapaf( SCS_PAF_one )
+}
+
+//---------( en train de boulotter une charogne )---------
+if (etat_i_state == 2 )
+{
+	etat_f_timer -= TIME_GetDt()
+	if (etat_f_timer < 0 )
+	{
+		etat_f_timer = 2
+		if( ! @stimul_o_target AI_IsModel(get_PNJ_KBats_path) || @stimul_o_target OBJ_CapaTest(OBJ_Capa_15) )	// pour les bats attendre la capa 15
+		{
+			EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_KK_FoodChain, OBJ_Me(), Cf_EVENT_Duree_1Trame, stimul_o_target, 1.0 * PAF_Unit, OBJ_SightGet())
+		}
+	}
+}
+
+//--------( déplacement )--------
+if (stimul_o_target)
+	move_v_attacktarget = @stimul_o_target OBJ_PosGet()
+move_v_dest = move_v_attacktarget //- (OBJ_SightGet() * 0.2)
+
+deltaz = MATH_Sin(TIME_GetDt() * 3 ) * 2
+if (deltaz > 1) deltaz = 1
+else if (deltaz < -1) deltaz = -1
+if ( stimul_i_charogne )
+{
+	if ( move_v_dest.z > move_f_Zsurface + (deltaz * move_f_Zsurfacebattement) )
+		move_v_dest.z = move_f_Zsurface + (deltaz * move_f_Zsurfacebattement)
+}
+else
+	move_v_dest.z = move_f_Zsurface + (deltaz * move_f_Zsurfacebattement)
+
+
+if (i_eatme)
+{
+	move_v_dest.z = move_f_Zsurface + 0.2
+}
+
+if ( f_viande_enfoncement )
+{
+	move_v_dest.z -= f_viande_enfoncement
+	f_viande_enfoncement -= MATH_FloatMin(f_viande_enfoncement, TIME_GetDt() * 0.75)
+}
+else if ( etat_i_state == 1 )
+{
+	if (stimul_o_target  == AI_MainActorGet(C_ID_Joueur) )
+	{
+		if ( @get_Humain_path stimul_o_target i_flag_nage)
+			deltaz = 0.2
+		else
+			deltaz = 0.5
+	}
+	else
+		deltaz = 0.3
+
+	etat_f_timer += TIME_GetDt()
+	if ( etat_f_timer < 0.5 )
+		deltaz *= (etat_f_timer * 2)
+	else if (etat_f_timer > 2)
+		deltaz = 0
+	else if (etat_f_timer > 1)
+		deltaz *= (1.5 - etat_f_timer) * 2
+	
+	move_v_dest.z += deltaz
+}
+
+if ( etat_i_state == 3 )
+{
+	etat_f_timer -= TIME_GetDt()
+	if (etat_f_timer )
+	{
+		move_v_dest = move_v_start
+		move_v_dest.z = move_f_Zsurface
+		stimul_o_target = nobody
+		macro_change_etat( "SCS_swim" )
+	}
+	move_f_speed -= TIME_GetDt()
+	if (move_f_speed > 0.5 )
+		ACT_ActionFrequencySet(SCS_ACT_water_swim, 64 * move_f_speed )
+	else
+		if (ACT_ActionGet() != SCS_ACT_water_wait )
+			ACT_ActionSet( SCS_ACT_water_wait )	
+}
+else
+{
+	if (stimul_o_target == AI_MainActorGet(C_ID_Joueur) )
+	{
+		v_temp = OBJ_PosGet() - @get_camera OBJ_PosGet()
+		v_temp.z = 0
+		tf_deltaspeed = MATH_VecDotProduct( @get_camera OBJ_SightGet() , v_temp )
+		if ( tf_deltaspeed < 0 )
+			move_f_speed = f_SpeedBackAttack 
+		else
+		{
+			if (ACT_ActionGet() == SCS_ACT_water_attack)
+			{
+				move_f_speed = f_SpeedAttack * 2.0 //1.5
+				if (i_eatme)
+					move_f_speed *= 0.5
+
+			}
+			else
+				move_f_speed = f_SpeedAttack
+
+			if (f_move_sign == 666)
+				move_f_speed *= MATH_FloatMax(0, MATH_VecDotProduct(OBJ_SightGet(), v_move_axis))	// Moins on est dans l'axe plus on ralentie...
+		}
+			
+	}
+	else
+	{
+//		if (ACT_ActionGet() == SCS_ACT_water_attack && !i_eatme)
+//			move_f_speed = f_SpeedAttack *1.1
+//		else
+			move_f_speed = f_SpeedAttack
+	}
+}
+
+move_i_ondule = 0
+move_i_remote = 0
+f_SpeedZ = 0.5
+
+
+AI_Execute( "SCS_exec_move" )
+
+//--------( réoriente )--------
+//newsight = move_v_dest - OBJ_PosGet()
+//sight = MATH_VecBlendRotate(OBJ_SightGet(), newsight, TIME_GetDt() )
+//sight.z = 0
+//if (!MATH_VecNull(sight) )
+//	OBJ_SightSet( sight )
+
+//--------( collision sur le sol )--------
+
+if (f_time_startetat >= 0.2)			// Blindage anti swamp qui detect un sol a l'init...
+{
+	if ( move_i_ground == 2 || (move_i_ground == 1 && MATH_VecDotProduct(-move_v_wall_axis, v_move_axis) > Cf_Cos45  )
+		&& OBJ_PosGet().z >= move_f_Zsurface - move_f_Zsurfacebattement )
+	{
+		#ifndef _FINAL_
+		if ((i_debug_display || @get_global i_debug_all_swamp) && !@"univ" Engine)
+		{
+			if (	move_i_ground == 2)
+				STR_CreateText("\cFF\Attack Abborted:\cFF00\Ground",VIEW_3dWorldTo2d(0, @to_gao OBJ_PosGet()) + cvector(0,0.03,0), 1.0)
+		}
+		#endif
+	
+		move_v_dest = move_v_start
+		move_v_dest.z = move_f_Zsurface
+		etat_f_swimnoattack_timer = SCS_Ct_NoAttackTimer
+		etat_i_swimnoattack = 1
+		macro_change_etat( "SCS_swim" )
+	}
+}
+
+//--------( cible proche )--------
+if (etat_i_state == 0)
+{
+	if (!i_eatme)
+	{
+		if (stimul_o_target == AI_MainActorGet(C_ID_Joueur))
+			f_AttackDist = 3.0
+		else
+			f_AttackDist = 2.0
+	}
+
+	if ( (i_eatme && ( move_v_dist2 < i_eatme && MATH_VecDotProduct(v_move_axis, OBJ_SightGet()) > Cf_Cos30))
+	|| ( (!i_eatme && ( ( move_v_dist2 < (f_AttackDist * f_AttackDist) ) && ((OBJ_PosGet().z >= move_f_Zsurface - move_f_Zsurfacebattement) || stimul_i_charogne))) && MATH_VecDotProduct(v_move_axis, OBJ_SightGet()) > Cf_Cos50)   )
+	{
+		etat_i_state = 1
+		etat_f_timer = 0
+		ACT_ActionSet( SCS_ACT_water_attack )
+		SND_RequestPlay( SCS_Snd_Attack )
+		to_bone = ANI_CanalObjectGet(Anim_Canal_Tete)
+	}
+	if (ACT_ActionFinished() )
+		ACT_ActionSet( SCS_ACT_water_swim )
+}
+else
+{
+	if (ACT_ActionFinished() )
+	{
+		move_v_dest = move_v_start
+		move_v_dest.z = move_f_Zsurface
+		etat_f_swimnoattack_timer = SCS_Ct_NoAttackTimer * 0.75
+		etat_i_swimnoattack = 1
+		macro_change_etat( "SCS_swim" )
+	}
+}
+
+
+//--------( ?? hit ?? )--------
+if (etat_i_state == 2)
+	return
+
+if (etat_i_state == 1)
+{
+	if (i_eatme)
+	{
+		// Attaque de Bidoche ou Charogne
+		if (!f_time_paf_viande && move_v_dist2 < (0.5 * i_eatme) * (0.5 * i_eatme) )
+		{
+			if ( !@stimul_o_target AI_IsModel(get_PNJ_KBats_path) || (@stimul_o_target AI_IsModel(get_PNJ_KBats_path) && @get_PNJ_KBats_path stimul_o_target i_splash_flag) )
+			{
+				float 	ti_nbr_pt_viande
+				SND_RequestPlay(SCS_Snd_Bite)
+				SND_RequestPlay(SCS_Snd_Plouf)
+
+				if (@stimul_o_target AI_IsModel(get_PNJ_Bidoche_path))	// Choix du nbr de point de viande en fonction du type de bebete.
+					ti_nbr_pt_viande = 10
+				else if (@stimul_o_target AI_IsModel(get_PNJ_KBats_path))
+					ti_nbr_pt_viande = 2
+				else
+					ti_nbr_pt_viande = 1
+
+				EVENT_AddEventPaf(C_EVENT_FILTER_Enemy, C_PAF_KK_FoodChain, OBJ_Me(), Cf_EVENT_Duree_1Trame, stimul_o_target, ti_nbr_pt_viande, -Cv_VerticalVector)
+				SCS_fct_GFX_Splash(@stimul_o_target OBJ_PosGet())
+				f_time_paf_viande  = 1.0
+				etat_i_state = 0
+				f_viande_enfoncement = 1.0
+			}
+		}
+	}
+	else			// Attaque de Marin/Jack...
+		AI_Execute( "SCS_exec_hit" )
+}
+
+if ( move_i_hit )
+{
+//	SND_RequestPlay( SCS_Snd_Bite )
+	
+	if (stimul_i_charogne )
+	{
+		etat_f_timer = 0
+		etat_i_state = 2
+		ACT_ActionSet( SCS_ACT_water_wait )
+		return
+	}
+	else
+	{
+		etat_f_timerswimafterhit = SCS_Ct_SqrDistForSoftCol
+				
+		if ( i_DieAfterHit )
+		{
+			if (o_WPdeath)
+			{
+				move_v_dest = @o_WPdeath OBJ_PosGet()
+				move_v_dest.z = move_f_Zsurface
+				move_i_gotodeath = vrai
+			}
+			else
+			{
+				move_v_dest = move_v_attackstart 
+				move_i_diewhenunderwater = vrai
+			}
+			etat_f_swimnoattack_timer = Cf_Infinit
+		}
+		else
+		{
+			if ( (i_Type == SCS_Mine) || (i_Type == SCS_Affut) )
+				move_v_dest = move_v_start
+			else
+				move_v_dest = move_v_end
+			etat_f_swimnoattack_timer = SCS_Ct_NoAttackTimer
+		}
+		//move_v_dest.z = move_f_Zunderwater
+		move_v_dest.z = move_f_Zsurface
+		move_i_hit = 0
+		etat_i_swimnoattack = 1
+		macro_change_etat( "SCS_swim" )
+	}
+}
+
+//--------( MINE et PASSAGE : arret si trop loin de sa position de départ )--------
+if ( ( i_Type == SCS_Mine ) || (i_Type == SCS_Passage) )
+{
+	v_temp = OBJ_PosGet() - move_v_attackstart
+	if (MATH_VecDotProduct(v_temp, v_temp) > 9)
+	{
+		if (i_Type == SCS_Mine) 
+			move_v_dest = move_v_start
+		else
+			move_v_dest = move_v_end
+		move_v_dest.z = move_f_Zunderwater
+		etat_f_swimnoattack_timer = SCS_Ct_NoAttackTimer
+		etat_i_swimnoattack = 1
+		macro_change_etat( "SCS_swim" )
+	}
+}

@@ -1,0 +1,63 @@
+
+#include "KIGO_defines.var"
+
+vector		tv_temp
+
+
+OBJ_ZoomSet(Cf_Kong_Zoom_coef_default)
+
+// Acteurs
+o_KONG = @"univ" ao_AllHumains[ C_ID_Kong ]
+o_ANN = @"univ" ao_AllHumains[ C_ID_Joueur ]
+
+// BV
+tv_temp = cvector(8.0, 8.0, 8.0)
+BV_MinSet(-tv_temp) 
+BV_MaxSet(tv_temp)
+
+// Nb de coups
+i_nb_coup = 0
+i_TYPE = 1 - i_grab_entite
+if( i_TYPE )
+	i_nb_coup_avt_destruction	 = Ci_resistance_bloc
+else
+	i_nb_coup_avt_destruction	 = Ci_resistance_souche
+	
+
+// Offsets 
+//av_offset[1][0] = cvector( 1.0, -1.0, 1.0) //cvector( -0.8, -1.0, -1.3)
+//av_offset[1][1] = cvector( -1.0, -1.0, 1.0) //cvector( -0.8, -1.0, -1.3)
+//av_rotation[ 1][0].y = 0.64
+//av_rotation[ 1][1].y = -0.64
+av_offset[1][0] = cvector( 0, 0, 1.5) //cvector( -0.8, -1.0, -1.3)
+av_offset[1][1] = cvector( 0, 0, 1.5) //cvector( -0.8, -1.0, -1.3)
+//av_rotation[ 1][0].y = 0.64
+//av_rotation[ 1][1].y = -0.64
+//if ( i_grab_entite)
+	f_dist_grab =	9.0 * 9.0		// Souche
+//else
+//{
+//	COL_ColSetActivationSet( none, all)
+//	AI_TrackCurStop()
+//	return
+//}
+
+//	f_dist_grab =	16.0		// Branche
+
+v_orient_horiz_banking_cur = OBJ_BankingGet()
+
+// Init
+if ( i_grab_detail == Ci_mode_Tree )
+	AI_Execute("KIGO_exec_dyn_on")
+	
+// Callbacks
+AI_CBAdd(OBJ_Me(), CallBack_Client, "KIGO_callback_client")
+AI_CBAdd(OBJ_Me(), CallBack_WhenDestroy, "KIGO_callback_when_destroy")
+
+// Traverse la colmap "tous sauf ANN"
+COL_CrossableSet(Gmat_KK_Crossable_Default,none)
+
+// Tracks
+AI_TrackChange( 1,"KIGO_reflex")
+AI_TrackCurChangeNow("KIGO_ETAT_attente_grab")
+

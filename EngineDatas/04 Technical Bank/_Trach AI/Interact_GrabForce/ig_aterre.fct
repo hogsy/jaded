@@ -1,0 +1,24 @@
+#include "ig_defines.var"
+
+
+if ( i_fin_mode)
+{
+	// PURGE DU COMPORTEMENT
+	// EXEC
+	i_fin_mode = faux
+	return
+}
+
+// INIT
+if ( i_mode != Ci_mode_aterre)
+{
+	i_mode = Ci_mode_aterre
+	if ( f_last_func)
+	{
+		i_fin_mode = vrai
+		AI_Execute( f_last_func)
+	}
+}
+
+
+DBG_RenderCylinder( OBJ_PosGet(), OBJ_BankingGet() * 15.0, Cf_RayonTron, 0x712C4E8B)

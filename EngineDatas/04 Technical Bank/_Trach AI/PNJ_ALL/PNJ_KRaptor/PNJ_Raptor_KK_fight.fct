@@ -1,0 +1,1173 @@
+//#include "PNJ_Raptor_KK_defines.var"
+//
+//
+//#define macro_move_dir																	\
+//{																									\
+//	i_flag_run = vrai																			\
+//	tv_offset = v_way_destpos - OBJ_PosGet()										\
+//	if( OBJ_SqrDist(o_fight_actor) > tf_dist_fight_actor_max )					\
+//	{																								\
+//		v_joy_dir = tv_offset																	\
+//		v_joy_dir.z = 0.0																		\
+//	}																								\
+//	else if( OBJ_SqrDist(o_fight_actor) < tf_dist_fight_actor_min )				\
+//	{																								\
+//		v_joy_dir = - tv_offset																\
+//		v_joy_dir.z = 0.0																		\
+//	}																								\
+//	else 																							\
+//		v_joy_dir = Cv_NullVector															\
+//																									\
+//	f_joy_norm = MATH_VecNorm(v_joy_dir)											\
+//	if ( f_joy_norm)																			\
+//		v_joy_dir /= f_joy_norm																\
+//}	
+//
+//
+//#define macro_action_fight_ANN														\
+//{																									\
+//	int		ti_orientation																		\
+//																									\
+//	ti_orientation = vrai																		\
+//																									\
+//	if( ! MATH_VecNullEpsilon(v_joy_dir) )												\
+//	{																								\
+//		// Le Raptor doit se déplacer (avancer ou reculer)							\
+//		if( MATH_VecDotProduct(v_joy_dir, @o_fight_actor OBJ_PosGet() - OBJ_PosGet() ) > 0 ) 		\
+//		{																							\
+//			ACT_ActionSet(Action_Normal_Trot)										\
+//		}																							\
+//		else																						\
+//		{																							\
+//			ACT_ActionSet(Action_Recul_Intimide)									\
+//			ti_orientation = faux																\
+//		}																							\
+//	}																								\
+//	else																							\
+//	{																								\
+//		// Le Raptor est bien positionné													\
+//		v_joy_dir = @o_fight_actor OBJ_PosGet() - OBJ_PosGet()				\
+//		if( TIME_Elapsed(f_time_last_cri_ANN, Cf_delay_cri_ANN) && (MATH_VecDotProduct(OBJ_SightGet(), MATH_VecNormalize(@o_fight_actor OBJ_PosGet() - OBJ_PosGet())) > Cf_Cos20 ) )			\
+//		{																							\
+//			ACT_ActionSet(Action_Cri)													\
+//			KK_i_fight_etat = 101															\
+//		}																							\
+//		else																						\
+//		{																							\
+//			ACT_ActionSet(Action_Normal_Attente)									\
+//		}																							\
+//	}																								\
+//																									\
+//	if( ti_orientation )																			\
+//	{																								\
+//		AI_Execute("PNJ_Raptor_KK_exec_orientation")							\
+//	}																								\
+//}
+//
+//#define macro_action_fight_KONG														\
+//{																									\
+//	int		ti_orientation																		\
+//																									\
+//	ti_orientation = vrai																		\
+//																									\
+//	if( ! MATH_VecNullEpsilon(v_joy_dir) )												\
+//	{																								\
+//		// Le Raptor doit se déplacer (avancer ou reculer)							\
+//		if( MATH_VecDotProduct(v_joy_dir, @o_fight_actor OBJ_PosGet() - OBJ_PosGet() ) > 0 ) 		\
+//		{																							\
+//			ACT_ActionSet(Action_Normal_Trot)										\
+//		}																							\
+//		else																						\
+//		{																							\
+//			ACT_ActionSet(Action_Recul_Intimide)									\
+//			ti_orientation = faux																\
+//		}																							\
+//	}																								\
+//																									\
+//	if( ti_orientation )																			\
+//	{																								\
+//		AI_Execute("PNJ_Raptor_KK_exec_orientation")							\
+//	}																								\
+//}
+//
+//
+////#define macro_action																		\
+////{																									\
+////	ti_choix_anim_en_fct_du_deplacement = faux									\
+////	if( OBJ_SqrDist(o_fight_actor) < Cf_dist_grab_ANN )							\
+////		ACT_ActionSet(Action_Recul_Intimide)										\
+////	else																							\
+////	{																								\
+////		if( TIME_Elapsed(f_time_last_cri_ANN, Cf_delay_cri_ANN) )			\
+////		{																							\
+////			ACT_ActionSet(Action_Cri)													\
+////			KK_i_fight_etat = 101															\
+////		}																							\
+////		else																						\
+////		{																							\
+////			ACT_ActionSet(Action_Normal_Attente)									\
+////		}																							\
+////	}																								\
+////}
+//
+//#define macro_search_way												\
+//{	AI_Execute("PNJ_Raptor_KK_exec_way_find")						\
+//	if ( i_way_moving) 														\
+//		{v_joy_dir = v_way_case_dest									\
+//		v_joy_dir -= OBJ_PosGet()										\
+//		v_joy_dir.z = 0.0}														\
+//	else v_joy_dir = Cv_NullVector										\
+//	f_joy_norm = MATH_VecNorm(v_joy_dir)							\
+//	if ( f_joy_norm)															\
+//		v_joy_dir /= f_joy_norm												\
+//}
+//
+//#define	KK_Fight_Etat_cache		0
+//#define	KK_Fight_Etat_avance		1
+//#define	KK_Fight_Etat_impulsion	2
+// #define	KK_Fight_Etat_saut			3
+//#define	KK_Fight_Etat_retour		4
+//
+//object	to_camera
+//
+//float		tf_sqr_hor_dist
+//float		tf_interet
+//float		tf_seen_time
+//float		tf_eval_time
+//float		tf_dist
+//float		tf_delay
+//float		tf_norm
+//float		tf_delay_since_last_update
+//float		tf_dist_anticipation
+//float		tf_amplitude
+//float		tf_time
+//
+//int			ti_i
+//int			ti_flag_go_to_grid_center
+//int			ti_followed_ground_ID
+//int			ti_flag_try_to_move
+//int			ti_ground_id
+//int			ti_choix_anim_en_fct_du_deplacement
+//int			ti_grab
+//
+//vector	tv_offset
+//vector	tv_temp
+//vector	tv_new_sight
+//vector	tv_speed
+//vector	tv_pos_start 
+//vector	tv_pos_end
+//vector	tv_anticipation
+//vector	tv_jump_pos
+//
+//object	to_interet_gao
+//object	to_collide_object
+//object	to_canal
+//
+//vector	tv_fight_actor_speed
+//float		tf_fight_actor_speed_coef
+////vector	tv_jump_pos_tete_decal
+//vector	tv_jump_axis
+//float		tf_jump_length
+//
+//object	to_temp
+//float		tf_dot
+//
+//// Test une seule attaque sur KONG
+//messageid		tmid_interet_ID
+//message		tm_filter
+//int					ti_rank
+//int					ti_target_under_attack
+//messageid		tmid_vision_ID
+//int					ti_sender_ID
+//object			to_pere
+//
+//int					ti_ann_sur_kong
+//int					ti_check_proie_groupe_grabbed_this_trame
+//int					ti_rand
+//object			to_target
+//
+//messageid		tmid_link_ID
+//message		tm_link
+//float				tf_dist_fight_actor_min
+//float				tf_dist_fight_actor_max
+//
+//
+//// SORTIE ETAT ===================================================================
+//if (i_sort_etat)
+//{
+//	i_sort_etat = faux
+//	i_jump_etat = 0								// Cancel de saut potentiels !!
+//	
+//	i_flag_lancer_derapage = faux
+//	if (i_etat_courant != ETAT_KK_ride)
+//		o_bone_ride_KK = LNK_ClientGet(Ci_LNK_RIDE_DINO, mid_bone_ride_KK_LNK_ID, faux, nofunc, nofunc, nofunc)
+//	
+//	if( o_proie_groupe && ( i_etat_courant != ETAT_grab ) && ( i_etat_courant != ETAT_mord ) && ( i_etat_courant != ETAT_KK_ride ) )
+//	{
+//		// la proie de groupe est conservée uniquement quand le raptor mène une attaque
+//		to_temp = EVENT_TargetGet(mid_best_interet)
+//		if( to_temp == o_proie_groupe )
+//			MSG_GlobalDelete(mid_best_interet, C_EVENT_EOFDEL)
+//		
+//		o_proie_groupe = nobody
+//	}
+//	
+//	return
+//}
+//
+//// INITIALISATION ETAT ==============================================================
+//if (i_etat_courant != ETAT_KK_fight)
+//{
+//	i_dernier_etat = i_etat_courant
+//	i_etat_courant = ETAT_KK_fight
+//	
+//	if (fct_last_etat)
+//	{
+//		i_sort_etat = vrai
+//		AI_Execute(fct_last_etat)
+//	}
+//
+//	fct_last_etat = AI_TrackCurGet()
+//	fct_main_etat = AI_TrackCurGet()
+//	
+//	if( i_dernier_etat == ETAT_projectile )
+//		i_flag_lancer_derapage = vrai
+//	
+//	f_time_start_etat = 0.0
+//	
+////	if ( i_dernier_etat != ETAT_paf && i_dernier_etat != ETAT_KK_ride)
+////		KK_i_fight_etat = 0
+////	else
+////		KK_i_fight_etat = 4
+//	
+//	KK_i_fight_etat = -1
+//	
+//	KK_f_time_non_visible = 0.0
+//	i_KK_ride = faux
+//	
+//	i_flag_intimidable = vrai
+//	
+//	v_jump_pos = Cv_NullVector
+//	
+//	f_time_check_proie_groupe = TIME_Get()
+//	i_proie_groupe_grabbed = faux
+//	i_propose_camera_fight = vrai
+//	i_attack_msg_sent = faux
+//}
+//else
+//{
+//	f_time_start_etat += TIME_GetDt()
+//}
+//
+//// ANALYSE =======================================================================================================
+//
+//AI_Execute("PNJ_Raptor_KK_exec_check_paf")
+//if( o_paf_actor )
+//{
+//	if ( i_paf_projete)
+//	{
+//		// Saut d'attaque en cours
+//		push(v_paf_dir)
+//		AI_Execute("PNJ_Raptor_KK_exec_aide_au_tir")
+//		if( o_aide_tir_actor )
+//			i_projectile_paf = faux
+//		else
+//			i_projectile_paf = vrai
+//		
+//		macro_change_etat("PNJ_Raptor_KK_projectile")
+//	}
+//	else
+//		macro_change_etat("PNJ_Raptor_KK_paf")
+//}
+//
+//
+//AI_Execute("PNJ_Raptor_KK_exec_check_fury")
+//if ( o_flee_actor )
+//	macro_change_etat("PNJ_Raptor_KK_intimide")
+//
+//o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, vrai, nofunc, nofunc)
+//if (o_grabbed_actor_KK)
+//	macro_change_etat("PNJ_Raptor_KK_grabbed")
+//
+//
+////if ( (KK_i_fight_etat == 0
+////|| KK_i_fight_etat == 1)
+////|| KK_i_fight_etat == 4)
+////{
+//
+//
+//
+//macro_check_proie_groupe
+//if( ! o_proie_groupe )
+//{
+//	// Aucun raptor n'attaque ANN
+////	if( TIME_Elapsed(f_time_check_stimulis, Cf_delay_check_stimulis) )
+////	{
+//		AI_Execute("PNJ_Raptor_KK_exec_select_fight_actor")
+//		
+////		AI_Execute("PNJ_Raptor_KK_exec_check_sound")
+////		AI_Execute("PNJ_Raptor_KK_exec_check_vision")
+////		AI_Execute("PNJ_Raptor_KK_exec_get_best_interet")
+////		// Test des acteurs vus
+////		if( MSG_GlobalIsValid(mid_best_interet) )
+////		{
+////			f_time_check_stimulis = TIME_Get()
+////			o_fight_actor = EVENT_TargetGet(mid_best_interet)
+////		}
+////	}
+//}
+//else
+//{
+//	// Un raptor attaque ANN
+//	o_fight_actor = o_proie_groupe
+////	macro_check_FA_ann_kkgrab
+//	PNJ_Raptor_KK_Fight_Actor_ANN_Check_KK_Grab()
+//}
+//
+//
+//
+////messageid	mmid_vision_ID																		
+////	float			mf_interet 																				
+////	int				ti_new_msg																			
+////	messageid mmid_vision																			
+////	int				mi_index 																				
+////	int				ti_destroy_best_interet																
+////																												
+////	ti_new_msg = faux																					
+////	ti_destroy_best_interet = faux																	
+////																												
+////	// Intérêt invalide ou ne concernant pas le bon acteur => nouvel intérêt				
+////	if( ! MSG_GlobalIsValid(mid_best_interet) )													
+////		ti_new_msg = vrai																				
+////	else if( o_fight_actor != EVENT_InteretTargetGet(mid_best_interet) )					
+////		ti_new_msg = vrai																				
+////																												
+////	if( ti_new_msg )																						
+////	{																											
+////		mmid_vision = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility, o_fight_actor, nobody)		
+////		if( MSG_GlobalIsValid(mmid_vision) )														
+////		{																										
+////			mi_index = PNJ_Raptor_KK_Add_Perceived_Actor(o_fight_actor, 0, mmid_vision)		
+////			if( mi_index != -1 )																			
+////			{																									
+////				ai_perceived_status[mi_index] |= Ci_PERCEIVED_VISION_STANDARD				
+////				PNJ_Raptor_KK_Best_Interet_Update(mi_index)								
+////				i_perceived_best_actor_index = mi_index											
+////			}																									
+////			else																								
+////				ti_destroy_best_interet = vrai															
+////		}																										
+////		else																									
+////			ti_destroy_best_interet = vrai																
+////															
+////	}																																			
+////																												
+////	if( ti_destroy_best_interet && MSG_GlobalIsValid(mid_best_interet) )				
+////		MSG_GlobalDelete(mid_best_interet, C_EVENT_EOFDEL)						
+//
+//
+//
+//
+//// Test de l'intérêt
+////macro_check_FA_valide_interet
+////if( MSG_GlobalIsValid(mid_best_interet) )
+////	o_fight_actor = EVENT_TargetGet(mid_best_interet)
+////else
+////	o_fight_actor = nobody
+////
+//// Test Fight
+////if( ! o_fight_actor )
+////	macro_change_etat("PNJ_Raptor_KK_attente")		// plus de fight actor -> attente
+////else
+//
+//if( ! PNJ_Raptor_KK_Check_Fight_Actor_Interet() )
+//	macro_change_etat("PNJ_Raptor_KK_attente")		// plus de fight actor -> attente
+//else
+//{
+//	if( o_fight_actor == o_ANN )
+//	{
+//		if( ( KK_i_fight_etat != 100 ) && ( KK_i_fight_etat != 101 ) )
+//			KK_i_fight_etat = 100			// remis à -1 après un grab
+//		
+//		if( i_fight_actor_type != Ci_fight_actor_Humain )
+//		{
+//			// INIT Mode Vs ANN
+//			i_fight_actor_type = Ci_fight_actor_Humain			
+//			i_flag_intimidable = vrai
+//			i_proie_groupe_grabbed = faux
+//		}
+//	}
+//	else if( o_fight_actor == o_KONG )
+//	{
+//		if( KK_i_fight_etat == -1 )
+//			KK_i_fight_etat = 0
+//		
+//		if( i_fight_actor_type != Ci_fight_actor_KONG )
+//		{
+//			// INIT Mode Vs KONG
+//		
+//			if( ( KK_i_fight_etat == 100 ) || ( KK_i_fight_etat == 101 ) )
+//				f_time_wait_after_projection = 1.0			// avant la cible était ANN => on attend 1 sec avant de sauter sur KONG
+//	
+//			i_fight_actor_type = Ci_fight_actor_KONG
+//			KK_i_fight_etat = 0
+//			i_flag_intimidable = vrai
+//			i_proie_groupe_grabbed = faux
+//		}
+//	}
+//	else
+//	{
+//		// ennemi autre que KONG ou REX
+////		DBG_BreakPoint()
+//
+////		// TMP !!!!! ==========================================================
+//
+//		o_fight_actor = nobody
+//		macro_change_etat("PNJ_Raptor_KK_attente")
+//
+////		// TMP !!!!! ==========================================================
+////		o_fight_actor = o_KONG
+////		if( i_fight_actor_type != Ci_fight_actor_KONG )
+////		{
+////			// INIT Mode Vs KONG
+////			i_fight_actor_type = Ci_fight_actor_KONG
+////			KK_i_fight_etat = 0
+////			i_flag_intimidable = vrai
+////			i_proie_groupe_grabbed = faux
+////		}
+//	}
+//}
+//
+//
+////	macro_check_proie_groupe
+////
+////	if( ! o_proie_groupe )
+////	{
+////		// recherche d'une attaque solo
+////		AI_Execute("PNJ_Raptor_KK_exec_check_sound")
+////		AI_Execute("PNJ_Raptor_KK_exec_check_vision")
+////		
+//////		if( ! i_jump_etat )
+//////		{
+//////			// s'il n'est pas en train de sauter, le raptor peut changer de cible
+//////			AI_Execute("PNJ_Raptor_KK_exec_check_interet")
+//////			if (MSG_GlobalIsValid(mid_new_interet))
+//////				macro_change_etat("PNJ_Raptor_KK_hesite")
+//////		}
+//////		
+////		if( ! i_jump_etat )
+////			AI_Execute("PNJ_Raptor_KK_exec_get_best_interet")
+////		
+////		if( MSG_GlobalIsValid(mid_best_interet) )
+////			o_fight_actor = EVENT_InteretTargetGet(mid_best_interet)
+////	}
+////	
+////	if( ! o_fight_actor ) 
+////		o_fight_actor = o_KONG		// DBG
+////	
+////	macro_check_FA_ann_kkgrab
+////	
+////	macro_check_FA_valide_interet
+////	
+////	
+////	if (MSG_GlobalIsValid(mid_best_interet))
+////	{
+////		if( o_proie_groupe )
+////			tf_delay_since_last_update = 0.0
+////		else
+////			tf_delay_since_last_update = TIME_Get() - EVENT_InteretUpdateTimeGet(mid_best_interet)
+////		
+////		if( (tf_delay_since_last_update > 0.5) && ( ! i_jump_etat ) )
+////		{
+////			// PAS VU CETTE TRAME
+//////			macro_change_etat("PNJ_Raptor_KK_search")
+////			macro_change_etat("PNJ_Raptor_KK_attente")
+////		}
+////		else
+////		{
+////			// VU CETTE TRAME
+////			if( ( ! (EVENT_FilterGet(mid_best_interet) & C_EVENT_FILTER_KingKong) ) && ( ! (EVENT_FilterGet(mid_best_interet) & C_EVENT_FILTER_Tyranosaure) ) )
+////			{
+////				// KING KONG OU TREX PAS ASSEZ INTERESSANT
+////				if ( KK_i_fight_etat != 100)
+////				{
+////					// changement de cible Kong -> Ann
+////					KK_i_fight_etat = 100				// Mode Vs Ann
+////					i_flag_intimidable = vrai
+////					i_fight_actor_type = Ci_fight_actor_Humain
+////					i_proie_groupe_grabbed = faux
+////				}
+////			}
+////			else 
+////			{
+////				if( EVENT_FilterGet(mid_best_interet) & C_EVENT_FILTER_KingKong )
+////					i_fight_actor_type = Ci_fight_actor_KONG		// KING KONG
+////				else
+////					i_fight_actor_type = Ci_fight_actor_TREX 		// TREX
+////				
+////				if ( KK_i_fight_etat == 100)
+////				{
+////					// changement de cible Ann -> KONG / TREX
+////					KK_i_fight_etat = 0						// Mode Vs KONG / TREX
+////					i_flag_intimidable = vrai
+////				}
+////			}
+////		}
+////		o_fight_actor = EVENT_InteretTargetGet(mid_best_interet)
+////	}
+////	else if ( KK_i_fight_etat)
+////		KK_i_fight_etat = 4
+//
+//
+////}
+//
+//
+//// Test RIDE ======================================================================
+//if( i_KK_ride )
+//{
+//	o_bone_ride_KK = LNK_ClientGet(Ci_LNK_RIDE_DINO, mid_bone_ride_KK_LNK_ID, vrai, nofunc, nofunc, nofunc)
+//	if ( o_bone_ride_KK)
+//	{
+//		if ( MSG_GlobalIsValid( mid_bone_ride_KK_LNK_ID))
+//			macro_change_etat("PNJ_Raptor_KK_ride")
+//	}
+//}
+//
+//// COMPORTEMENT =======================================================================================================
+//
+//i_flag_zde_fight_enable = vrai
+//
+//tf_dist = OBJ_SqrDist(o_fight_actor)
+//ti_choix_anim_en_fct_du_deplacement = vrai
+//switch ( KK_i_fight_etat)
+//{
+//	case 100:
+//		// ANN : test grab
+//		ti_choix_anim_en_fct_du_deplacement = faux
+//		EVENT_InteretStatusSet(mid_best_interet, C_EVENT_InteretStatusLock)
+//		i_flag_run = vrai
+//	
+//		v_way_destpos = @o_fight_actor OBJ_PosGet()
+//		tf_dist_fight_actor_min = Cf_dist_grab_ANN
+//		tf_dist_fight_actor_max = Cf_dist_grab_ANN + 9.0		// ^2
+//		macro_move_dir
+//
+////		MATH_VecSetNorm( tv_offset, 2.0)
+////		v_way_destpos += tv_offset
+////		macro_search_way
+//
+////		if ( i_way_moving) 														
+////		{
+////			v_joy_dir = v_way_case_dest									
+////			v_joy_dir -= OBJ_PosGet()										
+////			v_joy_dir.z = 0.0
+////		}														
+////		else 
+////			v_joy_dir = Cv_NullVector									
+////		
+////		f_joy_norm = MATH_VecNorm(v_joy_dir)							
+////		if ( f_joy_norm)															
+////			v_joy_dir /= f_joy_norm			
+//		
+//		
+//		if( ! MATH_VecNullEpsilon(v_joy_dir) )
+//		{
+//			// Raptor trop loin ou trop près de ANN
+//			macro_action_fight_ANN
+//			break
+//		}
+//		else
+//		{
+//			// Raptor à côté de ANN
+//			
+//			// TEST POUR MORDRE
+//			ti_grab = faux
+//			
+//			if( ! TIME_Elapsed(f_time_last_bite_ANN, Cf_delay_bite_ANN ) )
+//			{
+//				macro_action_fight_ANN
+//				
+//	//			ti_choix_anim_en_fct_du_deplacement = faux
+//	//			if( OBJ_SqrDist(o_fight_actor) < 5.0 )
+//	//				ACT_ActionSet(Action_Recul_Intimide)
+//	//			else
+//	//				ACT_ActionSet(Action_Normal_Attente)
+//	
+//				break
+//			}
+//			else
+//				ti_grab = vrai
+//			
+////			if( f_ride_grab_succes_bite_delay )
+////				ti_grab = vrai			// pour autoriser le raptor à grabber ANN après l'avoir fait tomber de l'épaule de KONG
+////			
+//////		if( i_proie_groupe_wait_done )
+//////		{
+////			// pas d'attente forcée, ANN pas grabbée par un autre raptor
+////			if (i_flag_head_contact)
+////				ti_grab = vrai
+////			else
+////			{
+////				if( ( OBJ_SqrDist(o_fight_actor) > Cf_dist_grab_ANN ) && ( OBJ_SqrDist(o_fight_actor) < ( Cf_dist_grab_ANN + 9.0 ) ) )
+////					ti_grab = vrai
+////				
+//////				tv_temp = v_way_destpos
+//////				tv_temp -= v_look_head_pos
+//////				tv_temp.z = 0.0	
+//////			
+//////				tf_dist = MATH_VecDotProduct(tv_temp, tv_temp)
+////		
+//////				if (tf_dist < 2.0)
+//////				{
+//////					ti_grab = vrai
+//////				}
+//////				else if (tf_dist < 4.0)
+//////				{
+//////					tf_dist = MATH_FloatSqrt(tf_dist)
+//////					tv_temp /= tf_dist	
+//////					 
+//////					if (EVENT_InteretPrecisionGet(mid_best_interet) == -1.0 || MATH_VecDotProduct(tv_temp, v_look_virtual_sight) > Cf_Cos60)
+//////						ti_grab = vrai
+//////				}
+////			}
+//////		}
+////		
+//			if( ti_grab )
+//			{
+//				// test supplémentaire : ANN déjà grabbée par un raptor
+//				ti_check_proie_groupe_grabbed_this_trame = faux
+//				if( ( ! i_proie_groupe_grabbed ) || ( i_proie_groupe_grabbed && TIME_Elapsed(time_check_proie_groupe_grabbed, Cf_delay_check_proie_groupe_grabbed) ) )
+//				{
+//					// ANN n'est pas encore grabbée par un raptor OU elle était grabbée : on vérifie si elle l'est toujours ou non
+//					time_check_proie_groupe_grabbed = TIME_Get()
+//					ti_check_proie_groupe_grabbed_this_trame = vrai
+//					tmid_link_ID = EVENT_FindEventPereTarget(Ci_LNK_EVENT_OFFSET + Ci_LNK_GRAB_RAPTOR, o_ANN, nobody)
+//					if( ! MSG_GlobalIsValid(tmid_link_ID) )
+//						i_proie_groupe_grabbed = faux
+//					else
+//					{
+//						tm_link = MSG_GlobalGetMsg(tmid_link_ID)
+//						if( tm_link.msg_gao1 )
+//							i_proie_groupe_grabbed = vrai
+//						else
+//							i_proie_groupe_grabbed = faux
+//					}
+//				}
+//				
+//				if( i_proie_groupe_grabbed )
+//				{
+//					// ANN est déjà grabbée par un autre raptor, j'attend mon tour
+//					if( ti_check_proie_groupe_grabbed_this_trame )
+//					{
+//						// choix de l'action (2 possibles)
+//						ti_rand = MATH_RandInt(0,2)
+//						if( ! ti_rand )
+//							ACT_ActionSet(Action_Normal_Attente)
+//						else
+//							ACT_ActionSet(Action_Renifle_Attente)
+//					}
+//					
+//					// pas de déplacement
+//					ti_choix_anim_en_fct_du_deplacement = faux
+//					
+//					// Orientation vers le perso qui a intimidé le raptor
+//					if( o_proie_groupe )
+//						to_target = o_proie_groupe
+//					else
+//						to_target = o_ANN
+//					OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), @to_target OBJ_PosGet() - OBJ_PosGet(),3 * TIME_GetDt()),MATH_VecBlendRotate(OBJ_BankingGet(),Cv_VerticalVector,3*TIME_GetDt()))
+//				}
+//				
+//				ti_grab = 1 - i_proie_groupe_grabbed		// si déjà grabbée, interdiction de grabber et vice-versa
+//			}
+//			
+//			if ( ti_grab)
+//			{
+//				// test supplémentaire : orientation
+//				if(  ( MATH_VecDotProduct( -OBJ_SightGet(), @o_fight_actor OBJ_SightGet()) < Cf_Cos60))
+//				{
+//					f_time_last_bite_ANN = TIME_Get()
+//					macro_change_etat("PNJ_Raptor_KK_mord")
+//				}
+//				else
+//				{
+//					macro_action_fight_ANN
+//				}
+//			}
+//		}
+//		break
+//	case 101 :
+//		// ANN : le raptor crie car il ne peut pas attaquer (orientation, délai....)
+//		ti_choix_anim_en_fct_du_deplacement = faux
+//		if ( ACT_ActionFinished() )
+//		{
+//			f_time_last_cri_ANN = TIME_Get()
+//			KK_i_fight_etat = 100
+//		}
+//		break
+//	case 0 :
+//		// CACHE
+//		ti_choix_anim_en_fct_du_deplacement = faux
+//		i_flag_grosse_impulsion = faux
+//		EVENT_InteretStatusSet(mid_best_interet, C_EVENT_InteretStatusLock)
+//		i_KK_ride = faux
+//		f_joy_norm = 0.0
+//		v_joy_dir = Cv_NullVector
+//		if ( tf_dist <= KK_f_dist_deplace)
+//		{
+//			KK_i_fight_etat = 1
+//			
+////			// Cible proche s'en approcher si elle est vraiment( LRAY) visible
+////			tv_pos_start = OBJ_PosGet() + cvector( 0.0, 0.0, 2.0)
+////			to_canal = @o_fight_actor ANI_CanalObjectGet(Anim_Canal_Tete)
+////			tv_pos_end = @to_canal OBJ_PosGet()
+////			DBG_RenderVector(tv_pos_start ,tv_pos_end - tv_pos_start, 0xff)
+////			to_collide_object = COL_RayObject_Vector( tv_pos_start, tv_pos_end - tv_pos_start, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable )
+//////			if ( to_collide_object == o_fight_actor)
+////			if ( ( ! to_collide_object ) || ( to_collide_object == o_fight_actor) )
+////				KK_i_fight_etat = 1					// Sortir de la cachette et passer en mode attaque
+////			else
+////			{
+////				// TEST TEST TEST
+////				KK_f_time_non_visible += TIME_GetDt()
+////				if ( KK_f_time_non_visible > 2.0)
+////					i_flag_clean_memory = vrai		// Kong plus visible depuis 2sec on clean oute la memoire
+////				// TEST TEST TEST
+////			}
+//		}
+//		break
+//	case 1 :
+//		// CHARGER KK
+//		EVENT_InteretStatusSet(mid_best_interet, C_EVENT_InteretStatusLock)
+//		
+////		i_flag_run = vrai
+////		v_way_destpos = @o_fight_actor OBJ_PosGet()
+////		tv_offset = OBJ_PosGet() - v_way_destpos
+////		MATH_VecSetNorm( tv_offset, 2.0)
+////		v_way_destpos += tv_offset
+////		macro_search_way
+//
+//		v_way_destpos = @o_fight_actor OBJ_PosGet()
+//		tf_dist_fight_actor_min = KK_f_dist_saute_pres
+//		tf_dist_fight_actor_max = KK_f_dist_saute_loin
+//		macro_move_dir
+//
+//	
+//		if( ! MATH_VecNullEpsilon(v_joy_dir) )
+//		{
+//			ti_choix_anim_en_fct_du_deplacement = faux
+//			macro_action_fight_KONG
+//		}
+//		else
+//		{
+//			// SAUTER SUR KONG OU TREX
+//			
+//			if( ( ! i_flag_grosse_impulsion ) || ( i_flag_grosse_impulsion && ( f_time_start_etat > 1.0 ) ) )
+//			{
+//				// pas d'attente ou attente fourbe depuis au moins 2 sec
+//				
+//				tv_pos_start = OBJ_PosGet() + cvector( 0.0, 0.0, 2.0)
+//				to_canal = @o_fight_actor ANI_CanalObjectGet(Anim_Canal_Tete)
+//				tv_pos_end = @to_canal OBJ_PosGet()
+//				to_collide_object = COL_RayObject_Vector( tv_pos_start, tv_pos_end - tv_pos_start, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable )
+//				if( ( ! to_collide_object ) || (to_collide_object == o_fight_actor) )
+//				{
+//					// la voie est libre
+//					
+//					// test que Kong n'est pas déjà attaqué par un autre raptor
+//					ti_target_under_attack = faux
+//					ti_rank = -1
+//					MSG_SetNull(tm_filter)
+//					tm_filter.msg_gao1 = o_fight_actor
+//					
+//					for (	tmid_interet_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tm_filter);
+//							MSG_GlobalIsValid(tmid_interet_ID);
+//							tmid_interet_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tm_filter) )
+//					{
+//						to_pere = EVENT_PereGet(tmid_interet_ID)
+//						if( to_pere != OBJ_Me() )
+//						{
+//							if( EVENT_InteretStatusGet(tmid_interet_ID) == C_EVENT_InteretStatusAttack)
+//							{
+//								tmid_vision_ID = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility, to_pere, nobody)
+//								if( MSG_GlobalIsValid(tmid_vision_ID) )
+//								{
+//									ti_sender_ID = EVENT_VisionIDGet(tmid_vision_ID)
+//									if( ti_sender_ID == C_ID_Raptor )
+//									{
+//										ti_target_under_attack = vrai
+//										i_flag_grosse_impulsion = vrai
+//										ACT_ActionSet(Action_Observe_Fourbe)
+//										f_time_start_etat = 0.0		// force à observer un peu
+//										i_jump_etat = 0
+//									}
+//								}
+//								break
+//							}
+//						}
+//					}
+//					
+//					ti_choix_anim_en_fct_du_deplacement = faux		// ne pas écraser l'anim sélectionnée
+//					
+////					// On Teste si la cible est client d'un finish (c Rex)
+////					if( ! ti_target_under_attack )
+////					{
+////						tmid_link_ID = EVENT_FindEventPereTarget(Ci_LNK_EVENT_OFFSET + Ci_LNK_GRAB_KONG, o_fight_actor, nobody) 
+////						if( MSG_GlobalIsValid(tmid_link_ID) )
+////						{
+////							if( LNK_GrabKong_TypeGet(tmid_link_ID) == Ci_GrabKong_Type_Finish )
+////								ti_target_under_attack = vrai
+////						}
+////					}
+//					
+//					// On Teste si la cible le serveur d'un finish (c Kong)
+//					if( ! ti_target_under_attack )
+//					{
+////						tmid_link_ID = EVENT_FindEventPereTarget(Ci_LNK_EVENT_OFFSET + Ci_LNK_GRAB_KONG, nobody, o_fight_actor)
+////						if( MSG_GlobalIsValid(tmid_link_ID) )
+////						{
+////							if( LNK_GrabKong_TypeGet(tmid_link_ID) == Ci_GrabKong_Type_Finish )
+////								ti_target_under_attack = vrai
+////							if( LNK_GrabKong_TypeGet(tmid_link_ID) == Ci_GrabKong_Type_Gros )
+////								ti_target_under_attack = vrai
+////						}
+//						
+//						if( @o_fight_actor ACT_DesignFlagTest(Cb_Design_Flag_Kong_No_Attack) )
+//						{
+//							ti_target_under_attack = vrai
+//							i_flag_grosse_impulsion = vrai
+//							ACT_ActionSet(Action_Observe_Fourbe)
+//							f_time_start_etat = 0.0		// force à observer un peu
+//							i_jump_etat = 0
+//						}
+//					}
+//					
+//					if( ! ti_target_under_attack )
+//					{
+//						// proie pas encore (ou plus) attaquée
+//						if( f_duree_dans_champ_camera >= Cf_duree_dans_champ_camera )
+//						{
+//							// raptor à l'écran
+//							if( f_time_start_etat > 1.0 )
+//							{
+//								// 1 sec que le raptor est en mode fight
+//								if( MATH_VecDotProduct(OBJ_SightGet(), MATH_VecNormalize(@o_fight_actor OBJ_PosGet() - OBJ_PosGet())) >= Cf_Cos20 )
+//								{
+//									KK_i_fight_etat = 2
+//									EVENT_InteretStatusSet(mid_best_interet, C_EVENT_InteretStatusAttack)		// update à cette trame
+//								}
+//								else
+//								{
+//									ACT_ActionSet(Action_Observe_Fourbe)
+//									v_look_pos = @o_fight_actor OBJ_PosGet()
+//									OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), v_look_pos - OBJ_PosGet(), 3 * TIME_GetDt()), MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 3 * TIME_GetDt()))
+//									ti_choix_anim_en_fct_du_deplacement = faux
+//								}
+//								
+//	//							if( i_flag_grosse_impulsion )
+//	//								ACT_ActionSet(Action_Fight_Grosse_Impulsion)	// attente fourbe -> grosse impulsion
+//							}
+//							else
+//							{
+//								// attente (trop tôt pour sauter)
+////								f_joy_norm = 0.0
+//								ti_choix_anim_en_fct_du_deplacement = faux
+//								ACT_ActionSet(Action_Normal_Attente)
+//								i_jump_etat = 0
+//							}
+//						}
+//						else
+//						{
+//							// proie déjà attaquée actuellement : pas de déplacement
+//							
+//							// TODO : avancer dans la caméra !!!!!!
+//							
+////							f_joy_norm = 0.0
+//							ti_choix_anim_en_fct_du_deplacement = faux
+//							ACT_ActionSet(Action_Normal_Attente)
+//							i_jump_etat = 0
+//						}
+//					}
+//					else
+//					{
+//						// proie déjà attaquée actuellement : pas de déplacement
+////						f_joy_norm = 0.0
+//						ti_choix_anim_en_fct_du_deplacement = faux
+//						ACT_ActionSet(Action_Normal_Attente)
+//						i_jump_etat = 0
+//					}
+//				}
+//				else
+//				{
+//					// jump impossible : retour en cachette
+////					KK_i_fight_etat = 4
+//					KK_i_fight_etat = 0
+//				}
+//			}
+//			else
+//			{
+//				// attente fourbe
+//				ACT_ActionSet(Action_Observe_Fourbe)
+//				v_look_pos = @o_fight_actor OBJ_PosGet()
+//				OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), v_look_pos - OBJ_PosGet(), 3 * TIME_GetDt()), MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 3 * TIME_GetDt()))
+//				ti_choix_anim_en_fct_du_deplacement = faux
+////				f_joy_norm = 0.0
+//			}
+//		}
+////		else if( tf_dist > KK_f_dist_deplace )
+////			KK_i_fight_etat = 0
+////		else
+////			f_joy_norm = 1.0			// déplacement
+//		break
+//	case 2 :
+//		// ANIM : ARMER LE SAUT
+////		ti_choix_anim_en_fct_du_deplacement = faux
+//		EVENT_InteretStatusSet(mid_best_interet, C_EVENT_InteretStatusAttack)
+//		
+//		// Anticipation : Calcul de la position de destination du saut
+//		if( i_fight_actor_type == Ci_fight_actor_TREX )
+//		{
+//			// TREX
+//			to_canal = @o_fight_actor ANI_CanalObjectGet( Anim_Canal_Tete)
+//			v_jump_pos = @to_canal	OBJ_PosGet()
+//			v_jump_pos += cvector(0,0,1)
+//		}
+//		else
+//		{
+//			// KONG
+//			to_canal = @o_fight_actor ANI_CanalObjectGet(Anim_Canal_EpauleDroite)
+//			v_jump_pos = @to_canal	OBJ_PosGet()
+//			
+////			AI_Execute("PNJ_Raptor_KK_exec_check_Ann_KKgrab")
+////			ti_ann_sur_kong = pop
+////			if( ! ti_ann_sur_kong )
+////			{
+////				// ANN n'est pas sur KONG
+////				to_canal = @o_fight_actor ANI_CanalObjectGet(Anim_Canal_EpauleDroite)
+////				v_jump_pos = @to_canal	OBJ_PosGet() 
+////			}
+////			else
+////			{
+////				// ANN est sur KONG
+////				v_jump_pos = @o_ANN OBJ_PosGet()			// VINCE : pb, la position de ANN n'est pas bonne (en afterblend elle est repositionnée par le grab)
+////			}
+//		}
+//		
+//	
+//// aaaaaaaaa
+//		 
+//		tv_fight_actor_speed = @o_fight_actor DYN_SpeedGetVector()
+//		tv_fight_actor_speed.z = 0.0
+//		if (  o_fight_actor == o_KONG )
+//		{
+//			if ( !MATH_VecNullEpsilon( tv_fight_actor_speed))
+//				MATH_VecSetNorm( tv_fight_actor_speed, @"KingKong/Kong2" o_fight_actor f_walling_speed_in)
+//		}
+//		else
+//		{
+//			// ANTICIPATION DU SAUT
+//			if( MATH_VecNorm(tv_fight_actor_speed) >= 10.0 )
+//			{
+//				// Axe du saut
+//				v_jump_pos += tv_fight_actor_speed * MATH_FloatSqrt(tf_dist) / 10
+//				tv_jump_axis = v_jump_pos - OBJ_PosGet()
+//	
+//				// Longueur du saut
+//				tf_jump_length = MATH_FloatMin(30.0, MATH_VecNorm(tv_jump_axis))
+//				MATH_VecSetNormalize(tv_jump_axis)
+//				v_jump_pos = OBJ_PosGet() + ( tv_jump_axis * tf_jump_length )
+//			}
+//		}
+//		DBG_RenderVector(OBJ_PosGet(), v_jump_pos - OBJ_PosGet(), color_bleu)
+//		DBG_RenderVector(v_jump_pos, cvector(0,0,10),color_rouge)
+//		 
+//// aaaaaaaaaa
+//
+//		tf_dist = MATH_VecNorm(v_jump_pos - OBJ_PosGet())
+//		tf_dist = tf_dist * tf_dist
+//		if( tf_dist < KK_f_dist_saute_pres )
+//		{
+//			// point de saut après calcul de l'anticipation trop proche : le raptor recule
+//			ti_choix_anim_en_fct_du_deplacement = faux
+//			ACT_ActionSet(Action_Recul_Intimide)
+//			i_jump_etat = 0			// réinit jump
+//		}
+//		else if( tf_dist > KK_f_dist_saute_loin )
+//		{
+//			// trop loin : le raptor se rapproche
+//			ti_choix_anim_en_fct_du_deplacement = faux
+//			ACT_ActionSet(Action_Normal_Trot)
+//			i_jump_etat = 0			// réinit jump
+//			KK_i_fight_etat = 1		// réinit attaque saut
+//			break
+//		}
+//		else
+//		{
+//			// à bonne distance pour sauter : orientation
+//			tf_dot = MATH_VecDotProduct(OBJ_SightGet(), MATH_VecNormalize(v_jump_pos - OBJ_PosGet()))
+////			if( tf_dot < Cf_Cos15 )
+//			if( ! MATH_FloatNullToler( MATH_AbsFloat(tf_dot - Cf_Cos15) , 0.1) )
+//			{
+//				// pas bien orienté : il s'oriente avant de sauter
+//				ACT_ActionSet(Action_Normal_Attente)
+//				ti_choix_anim_en_fct_du_deplacement = faux
+//				OBJ_BankingGeneralSet(
+//					MATH_VecBlendRotate(OBJ_SightGet(), v_jump_pos - OBJ_PosGet(), 10 * TIME_GetDt()),
+//					MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 10 * TIME_GetDt()) )
+//				break
+//			}
+//			else
+//			{
+//				// SAUT ANTICIPATION SUR KONG
+//				i_jump_anticipe_Kong = vrai
+//			}
+//		}
+//
+////		if( ! MATH_VecNullEpsilon(tv_fight_actor_speed) )
+////		{
+////			tf_fight_actor_speed_coef = MATH_VecNorm(tv_fight_actor_speed)
+////			MATH_VecSetHorzNormalize(tv_fight_actor_speed)
+////			v_jump_pos += tv_fight_actor_speed * tf_fight_actor_speed_coef
+////		}
+//		
+////		if( MATH_VecNorm(tv_fight_actor_speed) >= 5.0 )
+////		{
+////			MATH_VecSetNormalize(tv_fight_actor_speed)
+////			tf_fight_actor_speed_coef = MATH_FloatSqrt(tf_dist)
+//////			tf_fight_actor_speed_coef = MATH_FloatMax((tf_fight_actor_speed_coef / 10), 10 )
+////			tf_fight_actor_speed_coef = MATH_FloatMin(tf_fight_actor_speed_coef, 10 )
+////			v_jump_pos += tv_fight_actor_speed * tf_fight_actor_speed_coef
+////		}
+//		
+//	
+////		tf_dist_anticipation = MATH_VecDistance(@o_fight_actor OBJ_PosGet(), OBJ_PosGet())
+////		tv_anticipation = @o_fight_actor DYN_SpeedGetVector()
+////		tv_anticipation *= (TIME_GetDt() * (300.0 / tf_dist_anticipation)) // Anticipation a n trames
+////		v_jump_pos += tv_anticipation			
+//
+//		if( i_flag_grosse_impulsion )
+//		{
+////			if( ! ACT_ActionFinished() )		// grosse impulsion en cours
+////			{
+////				break
+////			}
+////			else
+////			{
+//				i_flag_grosse_impulsion = faux
+////				i_jump_etat = 3					// grosse impulsion terminée -> saut cycle
+//				i_jump_etat = 6						// le raptor va effectuer une grosse impulsion
+////			}
+//		}
+//		else
+//			i_jump_etat = 4						// le raptor va effectuer une petite impulsion
+//		
+////		if ( ACT_ActionFinished())
+//		{
+//			// anim annonce attaque terminé -> début du saut
+//			i_flag_intimidable =  faux			
+//			KK_i_fight_etat = 3
+//			COL_UnCollidableAdd(o_fight_actor)
+////			i_jump_etat = 4											// Lancer le saut
+//			v_safe_pos = @o_fight_actor OBJ_PosGet()		// Mémorisation d un sol ou revenir apres un Ride sur Kong
+//			
+//			if( i_fight_actor_type == Ci_fight_actor_TREX ) 		// TREX
+//			{
+//				// Saut sur TREX : envoi d'un message pour avertir le TREX (choppe en l'air)
+//				if( ! i_attack_msg_sent )
+//				{
+//					PNJ_Raptor_KK_send_msg( o_fight_actor, msg_id_KK_send_projectile)
+//					i_attack_msg_sent = vrai
+//				}
+//			}
+//		}
+//		
+//		// Orientation manuelle
+//		v_joy_dir = v_jump_pos - OBJ_PosGet()	
+//		v_joy_dir /= MATH_VecNorm(v_joy_dir)			// Axe de l'orientation( utilisé dans select_action)
+//		i_choix_anim = faux										// Pas de changement d anim juste l orientation
+////		OBJ_BankingGeneralSet( MATH_VecBlendRotate( OBJ_SightGet(), v_joy_dir, 6.0 * TIME_GetDt()), Cv_VerticalVector)
+//		break
+//	case 3 :
+//		// SAUT ATTACK
+//		i_attack_msg_sent = faux
+//		EVENT_InteretStatusSet(mid_best_interet, C_EVENT_InteretStatusAttack)
+//		if( i_jump_etat > 1 )
+//		{
+//			// I_jump_etat > 1 : Raptor en vol.
+//			if( 
+//			( ( i_fight_actor_type == Ci_fight_actor_KONG ) && COL_ZDE_ZDECollide(o_fight_actor, C_zde_corps, C_zde_corps) )
+//			||
+//			( ( i_fight_actor_type == Ci_fight_actor_TREX ) && COL_ZDE_ZDECollide(o_fight_actor, C_zde_fight, C_zde_corps) )
+//			)
+//			{
+//
+//				// Zone de corps de la cible touché : paf
+////				KK_i_fight_etat = 4
+//				KK_i_fight_etat = 0
+//				if (o_fight_actor == o_KONG)
+//					i_KK_ride = vrai					// Essayer de s accrocher a Kong
+//				else				
+//					EVENT_AddEventPafCanal( C_EVENT_FILTER_Object, C_EVENT_PAF_Tranchant, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_fight_actor, -1, 0, OBJ_SightGet(), OBJ_PosGet())
+//	//				EVENT_AddEventPaf( C_EVENT_FILTER_Object, C_EVENT_PAF_Tranchant, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_fight_actor, 1, OBJ_SightGet())
+//
+//			}
+//		}
+//		
+//		if ( ! i_jump_etat)						// Le saut est terminé
+////			KK_i_fight_etat = 4
+//			KK_i_fight_etat = 0
+//		break	
+//	case 4 :	
+//		// RETOUR EN CACHETTE
+//		EVENT_InteretStatusSet(mid_best_interet, C_EVENT_InteretStatusLock)
+//		if( COL_CollideType( COL_C_Ground))
+//		{
+//			if( i_KK_ride )
+//				i_KK_ride = faux
+//
+//			if( ! i_flag_intimidable  )
+//				i_flag_intimidable = vrai
+//			
+//			COL_UnCollidableDel(o_fight_actor)
+//			
+//			@get_global i_ennemi_counter_new[Ci_ennemi_counter_in_fight] ++
+//
+//
+//			v_way_destpos = OBJ_PosInitGet()
+//			tf_dist_fight_actor_min = 0.0
+//			tf_dist_fight_actor_max = 9.0		// ^2
+//			macro_move_dir
+//			if( MATH_VecNullEpsilon(v_joy_dir) )
+//			{
+//				// SE CACHER
+//				KK_i_fight_etat = 0
+//				KK_f_time_non_visible = 0.0
+//			}
+//
+//			
+////			macro_search_way
+////			if ( i_way_case_nbr > 4)
+//////				i_flag_run = faux
+//////			else
+////				i_flag_run = vrai
+////			
+////			if ( i_way_case_nbr <=2 )
+////			{
+////				// SE CACHER
+////				KK_i_fight_etat = 0
+////				KK_f_time_non_visible = 0.0
+////			}
+//		} 
+//		break
+//}
+//
+//// SUIVI REGARD
+//i_flag_look = vrai
+//v_look_pos = @o_fight_actor COL_ZonePosGet(C_zde_corps)
+//
+//// CHOIX DE L ANIM
+//
+//if( ti_choix_anim_en_fct_du_deplacement )
+//	AI_Execute("PNJ_Raptor_KK_exec_select_action")
+//
+//

@@ -1,0 +1,32 @@
+#include "RM_Lum_defines.var"
+
+// SORTIE ===================================================================
+if( i_etat_sortie )
+{
+	i_etat_sortie = faux
+	return
+}
+
+// ENTREE ===================================================================
+if( i_etat_courant != ETAT_CAGE )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_CAGE
+	if( fct_etat_last_track )
+	{
+		i_etat_sortie = vrai
+		AI_Execute(fct_etat_last_track)
+	}
+	f_etat_duree = 0.0
+}
+else
+{
+	f_etat_duree += TIME_GetDt()
+}
+
+// ANALYSE ==================================================================
+if( ! o_cage )
+	AI_TrackCurChangeNow("RM_Lum_ETAT_activation")
+
+// COMPORTEMENT ============================================================
+

@@ -1,0 +1,73 @@
+#include "PNJ_mr_defines.var"
+
+vector	tv_Offset
+
+
+// SORTIE ETAT ===================================================================
+if( i_sort_etat )
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if( i_etat_courant != ETAT_PNJ_MR_Explosion)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_PNJ_MR_Explosion
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	f_CptDelayExplosion= 0.0
+	i_Tremble=faux
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// STIMULI ===========================================================================
+
+
+
+// COMPORTEMENT ===================================================================
+
+PNJ_MR_SFX_Etincelles()
+
+if(!i_Tremble)
+{
+	if(COL_CollideType(COL_C_Ground) || i_is_in_water==vrai )
+	{
+		i_Tremble=vrai
+//		DYN_Off()
+		v_PosInit=OBJ_PosGet()
+	}
+}
+else
+{
+	v_PosInit=OBJ_PosGet()
+	f_CptDelayExplosion+=TIME_GetDt()
+	tv_Offset=cvector(MATH_RandFloat(-0.5,0.5),MATH_RandFloat(-0.5,0.5),MATH_RandFloat(-0.5,0.5))
+	OBJ_PosSet(v_PosInit+((tv_Offset*f_CptDelayExplosion)*0.04))
+	if(f_CptDelayExplosion>f_DelayExplosion)
+	{
+		PNJ_MR_SEND_PAF(Cf_MR_Damage_Explo,faux,5.0)
+//		EVENT_AddEventPafCanal( C_EVENT_FILTER_Object,  C_PAF_RM_Grenade, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_fight_target, -1, 1.0, @o_fight_target OBJ_PosGet() - OBJ_PosGet(), OBJ_PosGet())		
+		PROC_SFX_EXPLOSION_CARTOON( OBJ_PosGet())
+		OBJ_Destroy()
+	}
+}
+
+OBJ_RotateLocalZ( f_paf_rotate * TIME_GetDt())
+f_paf_rotate= MATH_FloatBlend(f_paf_rotate,0.0,1.0*TIME_GetDt()) 
+
+if( o_paf_actor)
+{
+	o_paf_actor = nobody
+	DYN_FrictionVectorSet(cvector(2.0,2.0,0.0))
+	DYN_SpeedSetVector(v_paf_sens*10.0)	
+}

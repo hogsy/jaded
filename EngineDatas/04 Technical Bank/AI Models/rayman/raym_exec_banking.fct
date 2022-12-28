@@ -1,0 +1,38 @@
+#include"r_defines.var"
+
+float		tf_bassin_angle
+vector	tv_delta_speed
+vector	tv_new_banking_axis
+object	to_bassin
+
+
+// Orientation lateral fct de ta vitesse precedante ==================================================================
+to_bassin = ANI_CanalObjectGet(Anim_Canal_Bassin)
+
+if ( ACT_ActionGet() == RM_Act_Jump_Fly || ACT_ActionGet() == RM_Act_Jump_FlyPump || ACT_ActionGet() == RM_Act_Jump_FlyPump2
+ || ACT_ActionGet() == RM_Act_Jump_FreeFall )
+{
+	tv_delta_speed = (DYN_SpeedGetVector() - v_last_speed) / TIME_GetDt()
+	if ( ACT_ActionGet() == RM_Act_Jump_Fly)
+		tf_bassin_angle = MATH_VecDotProduct(tv_delta_speed, OBJ_HorizonGet()) * 0.010 // d inclinaison
+	else
+		tf_bassin_angle = MATH_VecDotProduct(tv_delta_speed, OBJ_HorizonGet()) * 0.011		// coef d inclinaison	
+}
+else if (i_ground_flag)
+{
+	tv_delta_speed = (DYN_SpeedGetVector() - v_last_speed) / TIME_GetDt()
+	tf_bassin_angle = MATH_VecDotProduct(tv_delta_speed, OBJ_HorizonGet()) * 0.005		// coef d inclinaison
+	
+}
+else
+	tf_bassin_angle = 0
+	
+f_bassin_angle = MATH_FloatBlend(f_bassin_angle, -tf_bassin_angle, 3.0 * TIME_GetDt())	// vitesse de blend pour changer  dinclinaison
+
+tv_new_banking_axis = MATH_VecRotate(OBJ_BankingGet(), OBJ_SightGet(), f_bassin_angle)
+
+@to_bassin OBJ_Rotate_FromTo(@to_bassin MATH_VecGlobalToLocal(OBJ_BankingGet()), @to_bassin MATH_VecGlobalToLocal(tv_new_banking_axis))
+
+v_last_speed = DYN_SpeedGetVector()
+// Orientation lateral fct de ta vitesse precedante ==================================================================
+

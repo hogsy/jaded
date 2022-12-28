@@ -1,0 +1,96 @@
+ #include "KR_defines.var"
+
+vector			tv_temp
+vector			tv_temp2
+
+float				tf_temp
+
+
+// SEQUENCE DE SORTIE DU RIDE ====================================
+if( i_jump_exit && ! i_jump_etat )
+{
+	switch( i_ride_mode )
+	{
+		case Ci_ride_grab_impulsion :
+			// le raptor se prépare à sauter
+			tv_temp = OBJ_SightGet()
+			MATH_VecSetHorzNormalize(tv_temp)
+			tv_temp2 = v_ride_end_jump_pos - OBJ_PosGet()
+			MATH_VecSetHorzNormalize(tv_temp2)
+			// passage en saut cycle
+			if ( ACT_ActionFinished() || ! o_bone_ride_KK)
+			{
+				ACT_ActionSet(Action_Fight_Saut_cycl)
+				DYN_GravitySet(Cv_Raptor_Gravity)
+				// slow it down to avoid having the raptor stop moving in mid-air				
+				tf_temp = 0.7*ACT_FrequencyGet(Action_Fight_Saut_cycl,0)
+				ANI_FrequencySet(0, tf_temp)
+				DYN_Impulsion(v_ride_end_jump_pos, 1.5)
+				KRDBG_DRAWVECTOR(Ci_DBG_DRAW_TMP, v_ride_end_jump_pos, Cv_VerticalVector * 5, color_rouge)
+				AI_CBDel(o_bone_ride_KK_uncol, CallBack_After_Blend, "KR_CALLBACK_set_pos")
+				f_time_start_etat = 0.0
+				i_ride_mode = Ci_ride_grab_descend
+			}
+			break
+			
+		case Ci_ride_grab_descend :
+			// saut cycle
+			OBJ_BankingGeneralSet(OBJ_SightGet(), MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 10 * TIME_GetDt()))
+			if( f_time_start_etat > 0.1 )
+				COL_ColSetActivationSet(C_bit_zdm_pied, none)		// sinon le raptor va passer à travers kong et tomber 
+			break
+	}
+}
+
+
+
+// RECEPTION AU SOL =================================================
+if( COL_CollideType( COL_C_Ground) )
+{
+	if( i_etat_courant == ETAT_Finish_on_KONG && i_I_finish_action_liaison == Ci_GrabKong_FinishGagne )
+	{
+		// KONG a gagné le finish et je me prend un paf en tombant au sol
+//		KR_GFX_Impact(COL_CollidedPointGet(COL_C_Ground)) 		
+		i_jump_etat = Ci_Jump_notJumping
+		v_paf_dir = - OBJ_HorizonGet()
+		if( v_paf_dir.z >= 0.0 )
+			v_paf_dir.z = 0.0
+		v_paf_add_speed = Cv_NullVector
+		macro_change_etat("KR_ETAT_paf")
+	}
+	else
+	{
+		switch( i_ride_mode )
+		{
+			case Ci_ride_grab_descend :
+				i_ride_mode = Ci_ride_grab_au_sol
+				//ACT_ActionSet(Action_Fight_Saut_Landing)
+				ACT_ActionSet(Action_Fight_Saut_fin_surplace)
+				DYN_SpeedSetVector(Cv_NullVector)
+				DYN_FrictionVectorSet(Cv_Raptor_friction)
+				break
+				
+			case Ci_ride_grab_au_sol :
+				if( ACT_ActionFinished() )
+				{
+					if ( i_KK_blesse)
+						f_use_safe_orbit_timer = Cf_FLEE_TIME_MODE_WAR
+					else	
+						f_use_safe_orbit_timer = Cf_FLEE_TIME_AFTER_PAFFING
+					f_use_safe_orbit_timer = MATH_RandFloat( f_use_safe_orbit_timer - 0.5, f_use_safe_orbit_timer + 0.5)
+					macro_change_etat("KR_ETAT_fight_KONG")
+				}
+				break
+				
+			default:
+				if ( i_KK_blesse)
+					f_use_safe_orbit_timer = Cf_FLEE_TIME_MODE_WAR
+				else
+					f_use_safe_orbit_timer = Cf_FLEE_TIME_AFTER_PAFFING
+				f_use_safe_orbit_timer = MATH_RandFloat( f_use_safe_orbit_timer - 0.5, f_use_safe_orbit_timer + 0.5)
+				macro_change_etat("KR_ETAT_attente")
+				break
+		}
+	}
+}
+

@@ -1,0 +1,194 @@
+//object	to_Englehorn
+object	to_obj
+
+o_Englehorn = TEXT_ObjectGet(des_t_cine[8])
+TIME_Wait(8)//2
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+SPEECH_M_RqOneText(des_t_cine[7])
+meta(!SPEECH_ObjectIsSpeaking(TEXT_ObjectGet(des_t_cine[7]))) {}
+meta(SPEECH_ObjectIsSpeaking(TEXT_ObjectGet(des_t_cine[7]))) {}
+
+//SPEECH_M_RqOneText(des_t_cine[8])
+//meta(!SPEECH_ObjectIsSpeaking(TEXT_ObjectGet(des_t_cine[8]))) {}
+//meta(SPEECH_ObjectIsSpeaking(TEXT_ObjectGet(des_t_cine[8]))) {}
+
+to_obj = @get_global o_camera
+// VINCE =============
+//@"Filmation/Camera" to_obj i_blok_x = vrai
+
+// DEMANDE DE REGARD-----------------------------------------------------------------
+i_test_visee = vrai
+//o_Englehorn = TEXT_ObjectGet(des_t_cine[8])
+@o_Englehorn ACT_ActionSet(1)
+meta(SPEECH_ObjectIsSpeaking(TEXT_ObjectGet(des_t_cine[8]))) {}
+//o_Englehorn = TEXT_ObjectGet(des_t_cine[8])
+@o_Englehorn ACT_ActionSet(0)
+// DEMANDE DE REGARD-----------------------------------------------------------------
+
+SPEECH_M_RqOneText(des_t_cine[9])
+meta(!SPEECH_ObjectIsSpeaking(TEXT_ObjectGet(des_t_cine[9]))) {}
+meta(SPEECH_ObjectIsSpeaking(TEXT_ObjectGet(des_t_cine[9]))) 
+{}
+	if( !i_visee_ok )
+	{
+		if ( !@"univ" Texte_InGame )
+			STR_CreateText(des_t_cine[15], cvector(0.2,0.8,0), 0) 
+		else
+		{
+			if ( !mi_Encart_Displayed )
+			{
+				mi_Encart_Displayed = 1
+				ENCART_Show( @"univ" Texte_InGame, des_t_cine[15], cvector( 0.5, 0.965, 0), 9 )
+			}
+			ENCART_HideDialog( @"univ" Texte_InGame )
+		}
+	}
+	else if ( mi_Encart_Displayed )
+	{
+		ENCART_Hide( @"univ" Texte_InGame, 0.0 )
+		mi_Encart_Displayed = 0
+	}
+
+f_time_repeat = TIME_Get()
+meta(!i_visee_ok)  
+{
+	if(TIME_Elapsed(f_time_repeat, 10))
+	{
+		f_time_repeat = TIME_Get()
+		SPEECH_M_RqOneText(des_t_cine[9])
+	}
+
+	if ( !@"univ" Texte_InGame )
+		STR_CreateText(des_t_cine[15], cvector(0.2,0.8,0), 0) 
+	else
+	{
+		if ( !mi_Encart_Displayed )
+		{
+			mi_Encart_Displayed = 1
+			ENCART_Show( @"univ" Texte_InGame, des_t_cine[15], cvector( 0.5, 0.98, 0), 9 )
+		}
+		ENCART_HideDialog( @"univ" Texte_InGame )
+	}
+}
+
+if (mi_Encart_Displayed )
+{
+	ENCART_Hide( @"univ" Texte_InGame, 0.0 )
+	mi_Encart_Displayed = 0
+}
+
+//SPEECH_M_RqOneText(des_t_cine[10])
+////o_Englehorn = TEXT_ObjectGet(des_t_cine[10])
+//meta(!SPEECH_ObjectIsSpeaking(TEXT_ObjectGet(des_t_cine[10]))) {}
+//meta(SPEECH_ObjectIsSpeaking(TEXT_ObjectGet(des_t_cine[10]))) {}
+//o_Englehorn = TEXT_ObjectGet(des_t_cine[10])
+@o_Englehorn ACT_ActionSet(1)
+//meta( ! @o_Englehorn ACT_ActionFinished()) {}
+
+meta(!IO_ButtonJustPressed(JoyPSX_Button_croix) && !IO_ButtonJustPressed(JoyPSX_Button_triangle)  )
+{
+	if ( !@"univ" Texte_InGame )
+		STR_CreateText(des_t_cine[16], cvector(0.2,0.8,0), 0) 
+	else
+	{
+		if ( !mi_Encart_Displayed )
+		{
+			mi_Encart_Displayed = 1
+			ENCART_Show( @"univ" Texte_InGame, des_t_cine[16], cvector( 0.5, 0.98, 0), 9 )
+		}
+		ENCART_HideDialog( @"univ" Texte_InGame )
+	}
+}
+@o_Englehorn ACT_ActionSet(0)
+
+
+if (mi_Encart_Displayed )
+{
+	ENCART_Hide( @"univ" Texte_InGame, 0.0 )
+	mi_Encart_Displayed = 0
+}
+
+if(IO_ButtonJustPressed(JoyPSX_Button_triangle))
+	@"univ" CAM_SensVert = -@"univ" CAM_SensVert
+
+OBJ_CapaSet(OBJ_Capa_10, 0)
+SPEECH_M_RqOneText(des_t_cine[18])
+meta(!SPEECH_ObjectIsSpeaking(TEXT_ObjectGet(des_t_cine[18]))) {}
+meta(SPEECH_ObjectIsSpeaking(TEXT_ObjectGet(des_t_cine[18]))) {}
+
+if ( !@"univ" Texte_InGame )
+	STR_CreateText(des_t_cine[17], cvector(0.2,0.8,0), 5.0)
+else
+{
+	ENCART_Show( @"univ" Texte_InGame, des_t_cine[17], cvector( 0.5, 0.98, 0), 9 )
+	ENCART_Hide( @"univ" Texte_InGame, 5.0)
+	ENCART_HideDialog( @"univ" Texte_InGame )
+	mi_Encart_Displayed = 1
+	mf_HideDialog = 5.0
+}
+
+// TOUT TOUT DEBUT //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//SPEECH_M_RqOneText(des_t_cine[0])
+////meta(!SPEECH_ObjectIsSpeaking(TEXT_ObjectGet(des_t_cine[0]))) {}
+////meta(SPEECH_ObjectIsSpeaking(TEXT_ObjectGet(des_t_cine[0]))) {}
+//
+//TIME_Wait(2.0)
+
+@des_obj_text OBJ_TextSet( 0, "")
+
+OBJ_CapaSet(OBJ_Capa_8, 0)
+f_time_deb = TIME_Get()
+@o_Englehorn ACT_ActionSet(2)
+
+SPEECH_M_RqOneText(des_t_cine[1])
+meta(!SPEECH_ObjectIsSpeaking(TEXT_ObjectGet(des_t_cine[1]))) { if(mf_HideDialog > 0) { mf_HideDialog -= TIME_GetDt() ENCART_HideDialog( @"univ" Texte_InGame ) } }
+meta(SPEECH_ObjectIsSpeaking(TEXT_ObjectGet(des_t_cine[1]))) { if(mf_HideDialog > 0) { mf_HideDialog -= TIME_GetDt() ENCART_HideDialog( @"univ" Texte_InGame ) } }
+
+SPEECH_M_RqOneText(des_t_cine[4])
+meta(!SPEECH_ObjectIsSpeaking(TEXT_ObjectGet(des_t_cine[2]))) { if(mf_HideDialog > 0) { mf_HideDialog -= TIME_GetDt() ENCART_HideDialog( @"univ" Texte_InGame ) } }
+meta(SPEECH_ObjectIsSpeaking(TEXT_ObjectGet(des_t_cine[2]))) { if(mf_HideDialog > 0) { mf_HideDialog -= TIME_GetDt() ENCART_HideDialog( @"univ" Texte_InGame ) } }
+
+//SPEECH_M_RqOneText(des_t_cine[3])
+//meta(!SPEECH_ObjectIsSpeaking(TEXT_ObjectGet(des_t_cine[3]))) { if(mf_HideDialog > 0) { mf_HideDialog -= TIME_GetDt() ENCART_HideDialog( @"univ" Texte_InGame ) } }
+//meta(SPEECH_ObjectIsSpeaking(TEXT_ObjectGet(des_t_cine[3]))) { if(mf_HideDialog > 0) { mf_HideDialog -= TIME_GetDt() ENCART_HideDialog( @"univ" Texte_InGame ) } }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// BARQUE A L'EAU
+meta(!f_time_aleau) {}
+
+//f_time_aleau = TIME_Get()
+i_mode_cine = 2
+
+to_obj = @get_global o_camera
+// VINCE =================================
+//@"Filmation/Camera" to_obj i_blok_x = faux
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+SPEECH_M_RqOneText(des_t_cine[11])
+meta(!SPEECH_ObjectIsSpeaking(TEXT_ObjectGet(des_t_cine[11]))) { }
+
+//o_Englehorn = TEXT_ObjectGet(des_t_cine[11])
+@o_Englehorn ACT_ActionSet(3)
+meta(SPEECH_ObjectIsSpeaking(TEXT_ObjectGet(des_t_cine[11]))) { }
+
+//o_Englehorn = TEXT_ObjectGet(des_t_cine[11])
+@o_Englehorn ACT_ActionSet(4)
+
+OBJ_CapaSet(OBJ_Capa_12, 0)
+SPEECH_M_RqOneText(des_t_cine[12])
+meta(!SPEECH_ObjectIsSpeaking(TEXT_ObjectGet(des_t_cine[12]))) { }
+meta(SPEECH_ObjectIsSpeaking(TEXT_ObjectGet(des_t_cine[12]))) { }
+
+//TIME_Wait(1)
+OBJ_CapaSet(OBJ_Capa_13, 0)
+SPEECH_M_RqOneText(des_t_cine[14])
+meta(!SPEECH_ObjectIsSpeaking(TEXT_ObjectGet(des_t_cine[14]))) {}
+meta(SPEECH_ObjectIsSpeaking(TEXT_ObjectGet(des_t_cine[14]))) {}
+//OBJ_CapaSet(OBJ_Capa_12, 0)
+OBJ_CapaSet(OBJ_Capa_1, 0)
+AI_TrackCurStop()

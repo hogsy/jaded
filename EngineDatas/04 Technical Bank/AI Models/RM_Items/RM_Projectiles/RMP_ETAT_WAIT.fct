@@ -1,0 +1,53 @@
+#include "RM_Projectiles_defines.var"
+
+// SORTIE ETAT 	===================================================================
+if( i_sort_etat )
+{
+	i_sort_etat = faux
+	return
+}
+
+// INIT ETAT 	=====================================================================
+if( i_etat_courant != RMP_ETAT_WAIT)
+{
+	i_etat_courant = RMP_ETAT_WAIT
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// COMPORTEMENT =====================================================================
+if (i_started)
+	switch (i_type)
+	{
+		case 0 : // Mine
+		case 1 : // Projectile largué
+		case 3 : // Aire d'effet
+//			AI_TrackCurChangeNow("RMP_ETAT_LAUNCHED")
+			i_started = faux
+			AI_TrackCurChangeNow("RMP_ETAT_STICKED")
+			break
+			
+		case 2 : // Missile tête chercheuse
+			OBJ_FlagInvisibleSet(faux)
+			AI_TrackCurChangeNow("RMP_ETAT_FIRED")
+			break
+	}
+
+if (i_dead)
+{
+	if ((i_SND_boom == -1) || (!SND_IsPlaying(i_SND_boom)))
+	{
+		OBJ_Destroy()
+	}
+}

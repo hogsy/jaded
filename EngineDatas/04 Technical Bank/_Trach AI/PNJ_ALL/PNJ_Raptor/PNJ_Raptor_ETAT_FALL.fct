@@ -1,0 +1,94 @@
+#include "PNJ_Raptor_defines.var"
+
+int				ti_i
+int				ti_action
+
+float			tf_dot_X
+float			tf_dot_Y
+float			tf_sight_speed
+
+vector		tv_new_sight
+vector		tv_dest_sight
+vector		tv_speed
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+
+	f_way_bezier_sight_weight = 0.0
+
+	COL_ZoneSizeSet(C_zdm_pied, cvector(0.75, 0.75, 0.75))
+	COL_ZonePosSet(C_zdm_pied, cvector(0.0, 0.0, 0.75))
+
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_FALL)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_FALL
+
+	i_flag_reinit_etat = faux
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	PNJ_Raptor_Way_Reset()
+
+	o_grab_actor = LNK_ClientGet(Ci_LNK_GRAB_RAPTOR, mid_grab_actor_LNK_ID, faux, nofunc, nofunc, nofunc)
+
+	DYN_FrictionVectorSet(cvector(f_friction, f_friction, 0.0))	
+
+	i_flag_snap_pos = faux
+	i_flag_cri = faux
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+
+}
+
+// ANALYSE =======================================================================================================
+AI_Execute("PNJ_Raptor_exec_check_msg")
+
+AI_Execute("PNJ_Raptor_exec_check_vision")
+
+AI_Execute("PNJ_Raptor_exec_check_sound")
+
+AI_Execute("PNJ_Raptor_exec_check_collision")
+
+AI_Execute("PNJ_Raptor_exec_check_paf")
+if (i_flag_paf_fly)
+	macro_change_etat("PNJ_Raptor_ETAT_PAF_FLY")
+if (i_flag_paf_fall)
+	macro_change_etat("PNJ_Raptor_ETAT_PAF_FALL")
+if (i_flag_paf_repousse || i_flag_paf_slide || !f_lifecur)
+	macro_change_etat("PNJ_Raptor_ETAT_PAF_SLIDE")
+
+AI_Execute("PNJ_Raptor_exec_check_shoot")
+
+AI_Execute("PNJ_Raptor_exec_update_best_interest")
+
+AI_Execute("PNJ_Raptor_exec_check_requin")
+
+AI_Execute("PNJ_Raptor_exec_check_client")
+
+// COMPORTEMENT =================================================================================================
+if (!f_ground_col_time)
+	macro_change_etat(fct_main_etat)
+
+if (f_time_start_etat > 5.0)
+	OBJ_Destroy()
+	
+AI_Execute("PNJ_Raptor_exec_select_action")
+
+

@@ -1,0 +1,17 @@
+
+#include "KBC_defines.var"
+
+AI_Execute("KBC_exec_dyn_on")
+
+// vitesse de référence et mode de déplacement réseau
+if( MSG_GlobalIsValid( mid_grab_charogne ) )
+	KBC_ref_speed_set(Cf_speed_vol_proie)
+else
+	KBC_ref_speed_set(Cf_speed_vol)
+
+i_mode_depl = Ci_mode_depl_cine_vala
+
+i_flag_net_1st_move = vrai							// 1er mouvement pour repartir
+
+macro_change_etat("KBC_ETAT_CINE_Vala")			// retour au réseau / nid
+

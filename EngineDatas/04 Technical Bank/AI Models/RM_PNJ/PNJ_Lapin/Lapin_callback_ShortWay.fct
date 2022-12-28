@@ -1,0 +1,28 @@
+#include "PNJ_Lapin_defines.var"
+
+int			ti_ok
+object	to_start_wp
+object	to_dest_wp	
+
+ti_ok = faux
+switch( i_etat_courant )
+{
+	case ETAT_Lapin_FUITE :
+	 	ti_ok = vrai
+	 	break
+	 case ETAT_Lapin_CACHE :
+	 	if( i_cache_mode == Ci_CACHE_Mode_Fuite )
+	 		ti_ok = vrai
+	 	break
+}
+
+if( ti_ok )
+{
+	to_start_wp = WAY_ShortGet(0)
+	to_dest_wp = WAY_ShortGet(1)
+	
+	// WP DEST INVALIDE
+	if (to_dest_wp == o_path_main_actor_wp)
+		WAY_ShortSet(0, 1000000.0)
+}
+

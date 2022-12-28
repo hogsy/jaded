@@ -1,0 +1,57 @@
+Include_UltraProcedure_Header
+
+#include "PNJ_Scorpion_defines.var"
+
+vector		tv_new_sight
+vector		tv_new_banking
+
+object		to_duplicated
+
+// SORTIE ETAT ====================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_FADE)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_FADE
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	OBJ_CapaSet(OBJ_Capa_15, none)
+
+	PNJ_Scorpion_Del_Interest()
+
+	macro_change_tag_size(Cv_NullVector, Cv_NullVector)
+
+	to_duplicated = @get_SFX_decomposition OBJ_Duplicate(cvector(0,0,0))			// ALOC (C'est l'AI qui va gerer la decomposition)
+	@to_duplicated Proc_Decomposition_Init(OBJ_Me(), 3.0, 0, 1, -1)				// INIT (Vas y decompose moi :))
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ========================================================================
+if (f_time_start_etat > 10.0)
+	OBJ_Destroy()
+
+AI_Execute("PNJ_Scorpion_exec_check_paf")
+
+// COMPORTEMENT ==================================================================
+tv_new_sight = OBJ_SightGet()
+tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), v_ground_normale, 6.0 * TIME_GetDt())
+
+OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking)

@@ -1,0 +1,50 @@
+#include "Tri_defines.var"
+
+int			ti_rank
+int			ti_ID
+int			ti_test_cadavre
+int			ti_test_nb_global
+int			ti_test_nb_bat
+
+vector	tv_target_pos
+
+object	to_pere
+
+messageid		tmid_ID
+
+if( i_cadavre_check_done ) 
+	return
+
+i_cadavre_check_done = vrai
+o_cadavre = nobody
+
+// CHECK CADAVRES ??? -------------------------------------------------------------------------------------------
+ti_test_cadavre = faux
+if( ! MATH_Modulo(@get_global i_frame_nbr, 10) )
+	ti_test_cadavre = vrai
+if( i_etat_courant == ETAT_FOODCHAIN )
+	ti_test_cadavre = vrai
+if( ti_test_cadavre )
+{
+	// CHECK EVENTS CADAVRE -------------------------------------------------------------------------------------------
+	ti_rank = -1
+	for (	tmid_ID = MSG_GlobalScan(C_EVENT_TYPE_Cadavre, &ti_rank);
+			MSG_GlobalIsValid(tmid_ID);
+			tmid_ID = MSG_GlobalScan(C_EVENT_TYPE_Cadavre, &ti_rank)	)
+	{
+		to_pere = EVENT_PereGet(tmid_ID)
+		if ( to_pere && to_pere != OBJ_Me() )
+		{
+			tv_target_pos = EVENT_PositionGet(tmid_ID)
+			if( Tri_Pos_in_Territory(tv_target_pos) )
+			{
+				if( Tri_EstUnCadavre(to_pere, EVENT_CadavreIDGet(tmid_ID)) )
+				{
+					if( ! o_cadavre || ( OBJ_SqrDist(to_pere) < OBJ_SqrDist(o_cadavre) ) )
+						o_cadavre = to_pere
+				}
+			}
+		}
+	}
+}
+

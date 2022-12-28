@@ -1,0 +1,92 @@
+int			ti_i
+int			ti_flag_A_collision
+int			ti_flag_B_collision
+float		tf_lenght
+vector	tv_A_pos
+vector	tv_B_pos
+vector	tv_A_offset
+vector	tv_B_offset
+vector	tv_AB
+
+//float		tf_dt
+//
+//vector	tv_forces
+//vector	tv_speed
+//vector	tv_friction
+//vector	tv_traction
+//
+//tf_dt = TIME_GetDt()
+//tf_dt = MATH_FloatMin(tf_dt, 5.0 / 60.0)
+//
+//if (o_gao_A && @o_gao_A OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna))
+//	@o_gao_A DYN_TractionSet(Cv_NullVector)
+//	
+//if (o_gao_B && @o_gao_B OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna))
+//{
+//	@o_gao_B DYN_TractionSet(Cv_NullVector)
+//	@o_gao_B OBJ_BankingSet(@o_gao_A OBJ_PosGet() - @o_gao_B OBJ_PosGet())
+//}
+
+
+
+for (ti_i = 0; ti_i < i_rope_nb; ti_i++)
+{
+	tv_A_pos = @ao_rope_gao[ti_i][0] OBJ_PosGet()
+	if (ai_rope_offset[ti_i][0])
+	{
+		tv_A_offset = @ao_rope_gao[ti_i][0] MATH_VecLocalToGlobal(av_rope_offset[ti_i][0])
+		tv_A_pos += tv_A_offset
+	}
+	else
+	{
+		tv_A_offset = Cv_NullVector
+	}
+	
+	tv_B_pos = @ao_rope_gao[ti_i][1] OBJ_PosGet()
+	if (ai_rope_offset[ti_i][1])
+	{
+		tv_B_offset = @ao_rope_gao[ti_i][1] MATH_VecLocalToGlobal(av_rope_offset[ti_i][1])
+		tv_B_pos += tv_B_offset
+	}
+	else
+	{
+		tv_B_offset = Cv_NullVector
+	}
+
+	tv_AB = tv_B_pos
+	tv_AB -= tv_A_pos
+
+	tf_lenght = MATH_VecNorm(tv_A_pos - tv_B_pos)
+	if (ai_rope_mode[ti_i])
+	{
+		if (af_rope_start_length[ti_i] == -1.0)
+			af_rope_start_length[ti_i] = tf_lenght
+		else if (MATH_AbsFloat(af_rope_start_length[ti_i] - tf_lenght) > 0.2)
+			af_rope_start_length[ti_i] = tf_lenght
+	}
+	else
+	{
+		if (tf_lenght < af_rope_dest_length[ti_i])
+			af_rope_start_length[ti_i] = af_rope_dest_length[ti_i]
+		else if (tf_lenght > af_rope_start_length[ti_i] + 0.1)
+			af_rope_start_length[ti_i] = tf_lenght
+	}
+
+	if( af_rope_start_length[ti_i] >= af_rope_dest_length[ti_i] )
+		// la corde doit rétrécir
+		af_rope_start_length[ti_i] -= MATH_FloatMin(af_rope_start_length[ti_i] - af_rope_dest_length[ti_i], af_rope_dec_speed[ti_i] * TIME_GetDt())
+	else
+		// la corde doit augmenter
+		af_rope_start_length[ti_i] += MATH_FloatMin(af_rope_dest_length[ti_i] - af_rope_start_length[ti_i], af_rope_inc_speed[ti_i] * TIME_GetDt())
+
+//	af_rope_start_length[ti_i] = MATH_FloatBlend(af_rope_start_length[ti_i], af_rope_dest_length[ti_i], af_rope_speed_length[ti_i] * TIME_GetDt())
+	Rope_Manager_Compute_Rope(ti_i, ao_rope_gao[ti_i][0], ao_rope_gao[ti_i][1], af_rope_start_length[ti_i], af_rope_ratio[ti_i], tv_A_offset, tv_B_offset)
+
+	// Cas ou RM refusse la tension( la corde doit pas se blinder)
+	if ( i_RM_refuse_tension)
+		i_ID_RM_rope_no_blend = ti_i
+	else
+		i_ID_RM_rope_no_blend = -1
+
+	i_RM_refuse_tension = faux
+}

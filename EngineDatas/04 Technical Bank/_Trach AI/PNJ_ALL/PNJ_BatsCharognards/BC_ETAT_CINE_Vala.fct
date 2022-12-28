@@ -1,0 +1,123 @@
+#include "BC_defines.var"
+
+object		to_obj
+
+vector		tv_temp
+
+
+// SORTIE ETAT =================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+
+// ENTREE ETAT ================================================================
+if (i_etat_courant != ETAT_CINE_Vala )
+{
+	i_etat_ancien_ancien = i_etat_ancien
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_CINE_Vala
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	
+	// GAO A ATTEINDRE ------------------------------------------------------------------------------------------------------
+	o_cine_vala_gao = am_CineStack[0].msg_gao2
+	@o_tmp_obj_next OBJ_PosSet(@o_cine_vala_gao OBJ_PosGet())	
+//	@o_tmp_obj_next OBJ_BankingGeneralSet(@o_cine_vala_gao OBJ_PosGet() - OBJ_PosGet(), Cv_VerticalVector)
+	@o_tmp_obj_next OBJ_BankingGeneralSet(@o_cine_vala_gao OBJ_SightGet(), @o_cine_vala_gao OBJ_BankingGet())
+	o_next_wp = o_tmp_obj_next
+	v_dest_pos = @o_tmp_obj_next OBJ_PosGet()
+
+	i_flag_reseau_array = faux
+	i_force_test_inclinaison = vrai
+	
+	// TEST VITESSES AU DEPART ET A L'ARRET -------------------------------------------------------------------
+	switch(am_CineStack[0].msg_int2)
+	{
+		case 3 :		// départ et arrivée à l'arrêt 
+			f_speed = 0.0
+			i_flag_frein = vrai
+			break
+		
+		case 2 :		// arrivée à l'arrêt
+			i_flag_frein = vrai
+			break
+		
+		case 1 :		// départ à l'arrêt
+			f_speed = 0.0
+			break
+		
+		default:		// conservation des vitesses courantes
+			break
+	}
+	
+	BC_select_action()
+	
+	tv_temp = am_CineStack[0].msg_vec1
+	f_cine_vala_speed = tv_temp.x
+	BC_ref_speed_set(f_cine_vala_speed)
+	
+//	if( MSG_GlobalIsValid(mid_grab_charogne) )
+//		BC_ref_speed_set(f_vitesse_grab)
+//	else
+//		BC_ref_speed_set(f_vitesse_move_network)
+	
+	BC_action_frequency_set(1.0)
+
+	if( i_DBG_trace_etat )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : etat cine vala : ")
+		DBG_TraceObject(o_cine_vala_gao)
+		DBG_TraceEOL()
+	}
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+	if( i_cine_close )
+	{
+		// action terminée et pas de nouvelle commande ciné
+		AI_Execute("BC_exec_init_attente")
+	}
+}
+
+
+// ANALYSE =======================================================================================================
+
+
+// COMPORTEMENT =================================================================================================
+
+// procedure_trigger int TrigCINE_Vala(byref message m_msg) 
+// object1 who 
+// object2 position 
+// object3 regarde 
+// int1 intention ( 0 = standard ; 1 = rapide )
+// int2 depart-arret ( 0 = conservation des vitesses courantes ; 1 = départ à l'arrêt ; 2 = arrivée à l'arrêt; 3 = départ et arrivée à l'arrêt )
+
+// GAO A REGARDER ------------------------------------------------------------------------------------------------------
+i_flag_neck = faux
+to_obj = am_CineStack[0].msg_gao3
+if (to_obj)
+{
+	i_flag_neck = vrai
+	v_look_pos = @to_obj OBJ_PosGet()
+}
+
+
+AI_Execute("BC_exec_MOVE_beziers")
+if( i_flag_depl_fini )
+{
+	// VALA TERMINE
+	i_cine_close = vrai
+	i_etat_courant = ETAT_CINE_temp
+}
+

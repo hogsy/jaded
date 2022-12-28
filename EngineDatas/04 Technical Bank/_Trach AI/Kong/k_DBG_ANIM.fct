@@ -1,0 +1,40 @@
+int		pi_STR
+
+#ifndef _FINAL_
+
+if( ! i_DBG_DISPLAY_ANIM )
+	return
+
+if ( @"univ" i_cheat_page == 3)
+{
+	pi_STR = STR_CreateText( "ACTION: ", cvector( 0.8, 0.1, 0.0),0)
+	STR_AppendInt( pi_STR, ACT_ActionGet())
+
+	pi_STR = STR_CreateText( "ITEM: ", cvector( 0.8, 0.15, 0.0),0)
+	STR_AppendInt( pi_STR, ACT_ActionItemGet())
+
+	pi_STR = STR_CreateText( "TRANSITION: ", cvector( 0.8, 0.2, 0.0),0)
+	if ( ACT_ActionIsTransition())
+		STR_AppendText( pi_STR, "YES")
+	else
+		STR_AppendText( pi_STR, "NO")
+	pi_STR = STR_CreateText( "BLEND: ", cvector( 0.8, 0.25, 0.0),0)
+	if ( ANI_IsInBlend())
+	{
+		STR_AppendText( pi_STR, "YES ")
+		STR_AppendInt( pi_STR, ACT_BlendActionGet())
+	}
+	else
+		STR_AppendText( pi_STR, "NO")
+		
+	pi_STR = STR_CreateText( "FINISHED :", cvector( 0.8, 0.3, 0.0),0)
+	if ( ACT_ActionFinished())
+		STR_AppendText( pi_STR, "YES")
+	else
+		STR_AppendText( pi_STR, "NO")
+	pi_STR = STR_CreateText( "JOY NORM :", cvector( 0.8, 0.5, 0.0),0)
+	STR_AppendFloat( pi_STR, f_joy_norm, 2)
+}
+
+#endif
+

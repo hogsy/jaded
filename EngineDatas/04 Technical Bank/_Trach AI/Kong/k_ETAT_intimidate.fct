@@ -1,0 +1,217 @@
+#include"k_define.var"
+
+#define	Cf_step			8.0
+#define	Cf_delai_max	0.3339
+#define	Cf_delai_min	0.13
+#define	Cf_delta 			((Cf_delai_max - Cf_delai_min) / Cf_step)
+#define	Cf_time_min_fury_disabled			0.80
+#define	Cf_time_min_fury_enabled				1.20
+
+//#define Ci_Kanim_IntimidD							170
+//#define Ci_Kanim_IntimidG							171
+//#define Ci_Kanim_Intimid_Fin						172
+//#define Ci_Kanim_Intimid_Furie					173
+
+float		tf_delta 
+vector	tv_pied
+vector	tv_piedz
+vector 	tv_from_pied_to_bm
+vector	tv_axis
+vector	tv_axis_nn
+vector	tv_offset 
+int			ti_fury_type
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_fury_enabled = faux
+	i_sort_etat = faux
+	return
+}
+
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_fury)
+{
+	i_etat_courant = ETAT_fury
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	
+	// CAMERA 
+	@get_global i_kong_camera_status = Ci_Kcamera_deplacement
+	// GRAB CLIENT ACCEPT
+	ai_SRV_ENABLE[Ci_LNK_KKFINISH_ON_KONG] = faux
+	
+	// Debut de l'anim
+	if ( i_fury_enabled )
+		ACT_ActionSet( Ci_Kanim_IntimidG)
+	else
+	{
+		ACT_ActionSet( Ci_Kanim_Intimid_Fin)
+		ANI_FrequencySet(0,50)
+	}
+
+	f_safe_delay = Cf_delai_max * 2
+	i_fury_step = 0
+	DBG_RenderVector(OBJ_PosGet()+cvector(0,0,3),v_look_direction *5, color_blanc)
+	
+	tv_pied = @ao_IK_bones[0][2] OBJ_PosGet() + ((@ao_IK_bones[1][2] OBJ_PosGet() - @ao_IK_bones[0][2] OBJ_PosGet())/2) tv_pied.z = OBJ_PosGet().z tv_from_pied_to_bm = OBJ_PosGet() - tv_pied
+	v_fury_axis = v_look_position - tv_pied   // v_look_direction
+
+	f_fury_puissance = 0.0
+	f_fury_last_punch_time = 0.0		// Dernier coup sur le torse
+	f_fury_angle = Cf_Fury_Angle_Max
+	SND_RequestPlay( 22)
+	f_time_start_etat = 0.0
+	
+// STEPH ANN N EST PLUS TRIGGER FURY
+//	if( ao_CL[Ci_LNK_KKGRAB_OBJECT] && MSG_GlobalIsValid(amid_CL_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT])
+//		&& LNK_KKGrabObject_TypeGet(amid_CL_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT]) == Ci_KKGrabObject_Porte_Epaule )
+//		i_fury_enabled = vrai		// ANN sur l'épaule	
+//	else
+//		i_fury_enabled = faux	// ANN dans la main ou ANN au sol
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+	f_fury_last_punch_time += TIME_GetDt()
+}
+
+// ANALYSE =======================================================================
+
+// Le PAF est prio sur les changements de mode.
+AI_Execute("k_exec_detect_paf")
+{
+	if ( o_paf_actor)
+	{
+		PAF_Test_ChangeEtatValid(fct_track_change)
+		if( fct_track_change != nofunc )
+			macro_change_etat(fct_track_change)
+	}
+}
+
+// CHECK CHUTE
+if (f_time_collide_ground > Cf_delay_ground_col_tolerance)
+{
+
+	v_jump_force_chute_orient = OBJ_SightGet()
+	i_jump_check_hotspot = faux	// On peux enchainer les HOT SPOT
+	macro_change_etat("k_ETAT_jump")
+}
+
+// FURY TERMINEE
+if( i_fury_enabled && f_time_start_etat  > Cf_Fury_Time_Max) 
+{
+	// Anim terminée repasser en mode de déplacement
+	f_Fury_time_end = TIME_Get()
+	macro_change_etat( "k_ETAT_main")		// Grab Fini	
+}
+
+
+// COMPORTEMENT =======================================================================
+
+// FURY INTERDITE
+//if( ! i_fury_enabled && f_time_start_etat > Cf_time_min_fury_disabled && ACT_ActionGet() != Ci_Kanim_ArretRapide)
+//	ACT_ActionSet(Ci_Kanim_ArretRapide)
+
+// ENCHAINEMENT DE LA FURY
+if( i_fury_enabled && ACT_ActionGet() == Ci_Kanim_IntimidG )
+{
+	if(  f_time_start_etat < 0.5)
+	{
+		push(v_fury_axis)		// Axis Dest
+		push(3.0)				// Speed
+		push(0.5)				// Coef entre les deux pieds
+		AI_Execute("k_exec_2Feet_SightSet")
+	}
+
+//	// Orientation autour des pieds -------------------------------------
+//	tv_pied = @ao_IK_bones[0][2] OBJ_PosGet() + ((@ao_IK_bones[1][2] OBJ_PosGet() - @ao_IK_bones[0][2] OBJ_PosGet())/2) tv_pied.z = OBJ_PosGet().z tv_from_pied_to_bm = OBJ_PosGet() - tv_pied
+//	
+//	// 
+//	tv_axis = MATH_VecBlendRotate(tv_from_pied_to_bm, v_fury_axis, 3.0 * TIME_GetDt()) tv_axis.z = 0
+//	MATH_VecSetNormalize(tv_axis)
+//	
+//	tv_from_pied_to_bm = MATH_VecGlobalToLocal(tv_from_pied_to_bm)
+//	OBJ_Rotate_FromTo(cvector(0,-1,0), MATH_VecGlobalToLocal(tv_axis)) tv_from_pied_to_bm = MATH_VecLocalToGlobal(tv_from_pied_to_bm)
+//	
+//	tv_offset = tv_from_pied_to_bm
+//	OBJ_PosSet( tv_pied +  tv_offset )
+//	// Orientation autour des pieds -------------------------------------	
+
+	if ( ACT_ActionFinished() || f_fury_charge )
+	{	// Fin de l'intimidation : Je passe en furie
+		f_fury_charge = 1.0	// VALEUR SEUIL DE DECLANCHEMENT FURY
+		ACT_ActionSet(Ci_Kanim_Intimid_Furie)
+		SND_RequestPlay( 5)
+		f_time_fury = Cf_Fury_Duration
+		i_fury_on = vrai
+	}
+	else
+	{
+		// Track and Field
+//		if ( i_flag_just_intimidateG || i_flag_just_coup)
+//			SND_RequestPlay(4)
+		if ( f_time_start_etat < (f_safe_delay+0.1) )
+		{
+			// Bouton Droit attendu.
+			if (i_flag_just_coup)
+				i_valide = vrai
+			else if (i_flag_just_intimidateG && f_time_start_etat)
+				i_error ++	
+		}
+		else
+		{
+			if (!i_valide)
+				// Error ou Intimid fin
+//				if (i_fury_step > 2)
+				if( f_time_start_etat > Cf_time_min_fury_enabled )
+				{
+					ACT_ActionSet(Ci_Kanim_Intimid_Fin)
+				}
+				else
+					ACT_ActionSet(Ci_Kanim_ArretRapide)
+			else
+			{
+				i_valide = faux
+				i_fury_step ++
+				tf_delta = Cf_delai_max - (Cf_delta * MATH_FloatMin(i_fury_step, Cf_step))
+				f_safe_delay += 0.3 // tf_delta
+			}
+		}
+	}
+}
+else if ( ACT_ActionFinished() )
+{
+	// Fin ou Furie
+	macro_change_etat( "k_ETAT_main") 
+}
+else if ( i_fury_enabled && i_flag_just_coup )		// Charger le bonus de Fury
+	f_fury_charge = MATH_FloatMin( 2.0, f_fury_charge + Cf_Rage_Bonus_Increasing_Factor)
+
+if( i_fury_enabled )
+	ti_fury_type = Ci_KK_Fury_Type_Intimidate
+else
+{
+	ti_fury_type = Ci_KK_Fury_Type_Roar
+	if ( OBJ_CapaTest( OBJ_Capa_0))
+	{
+		COL_ZonePosSet( C_zde_fight, cvector( 0.0, -2.0, 2.0))
+		COL_ZoneSizeSet( C_zde_fight, cvector( 5.0, 5.0, 5.0))
+		AI_Execute( "k_exec_zdf_zdc")
+		COL_ZoneSizeSet( C_zde_fight, cvector( 3.0, 3.0, 3.0))
+	}
+}
+mid_fury = EVENT_AddEventFury( OBJ_Me(), Cf_EVENT_Duree_1Trame, OBJ_SightGet(), f_fury_puissance, f_fury_angle, ti_fury_type)
+
+DBG_RenderCone(OBJ_PosGet() + MATH_VecLocalToGlobal(Cv_KK_Fury_decalage_position) ,OBJ_SightGet() * f_fury_puissance, f_fury_angle, color_vert)
+
+f_fury_puissance = MATH_FloatMin( f_fury_puissance + (  (Cf_Fury_Puissance_Max / Cf_Fury_Time_Cap) * TIME_GetDt()), Cf_Fury_Puissance_Max)
+
+EVENT_AddEventSound( C_EVENT_FILTER_KingKong, OBJ_Me(), Cf_EVENT_Duree_1Trame, OBJ_PosGet(), 50.0)
+

@@ -1,0 +1,59 @@
+
+int			EVT_func_i																				
+
+int			EVT_func_Type
+int			EVT_func_Filtre
+object	EVT_func_Pere
+float		EVT_func_DureeDeVie
+vector	EVT_func_Position
+float		EVT_func_Delai
+float		EVT_func_Size
+int			EVT_func_Etat
+int			EVT_func_Context
+object	EVT_func_Target
+float		EVT_func_TimeSpeed
+int			EVT_func_Status
+
+EVT_func_Status			= pop
+EVT_func_TimeSpeed	= pop
+EVT_func_Target			= pop
+EVT_func_Context		= pop
+EVT_func_Etat			= pop
+EVT_func_Size			= pop
+EVT_func_Delai			= pop
+EVT_func_Position 		= pop
+EVT_func_DureeDeVie	= pop
+EVT_func_Pere			= pop
+EVT_func_Filtre 			= pop
+EVT_func_Type			= pop
+{																							
+
+	EVT_func_i = @get_Event Nb_Event_ToValid																					
+	if ( EVT_func_i >= C_EVENT_Max_Elem)																		
+	{	
+		// Gestion de fin de liste max
+		// Error liste pleine
+		push( -1)
+		DBG_Error("Trop d event propose a cette trame")
+		return
+	}
+	// copier l event dans le tableau des event a valider
+	CopyEvent( EVT_func_i,
+	EVT_func_Type,
+	EVT_func_Filtre,
+	EVT_func_Pere,
+	EVT_func_DureeDeVie,
+	EVT_func_Position,
+	EVT_func_Delai,
+	EVT_func_Size,
+	EVT_func_Etat,
+	EVT_func_Context,
+	EVT_func_Target,
+	EVT_func_TimeSpeed,
+	EVT_func_Status,
+	@get_Event i_nb_event)
+	@get_Event i_nb_event++												// Numero de l evenement depuis le debut
+	@get_Event Nb_Event_ToValid ++									// Nombre d element a traiter a la validation
+}
+
+push( @get_Event NumeroDeLEvent[EVT_func_i])

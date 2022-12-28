@@ -1,0 +1,47 @@
+#include "Tri_defines.var"
+
+vector	tv_temp
+vector	tv_temp1
+
+
+// SORTIE ETAT ==========================================
+if( i_etat_sortie )
+{
+	i_etat_sortie = faux
+	return
+}
+
+// ENTREE ETAT =========================================
+if( i_etat_courant != ETAT_DEAD )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_DEAD
+	if( fct_etat_ancien )
+	{
+		i_etat_sortie = vrai
+		AI_Execute(fct_etat_ancien)
+	}
+	fct_etat_ancien = AI_TrackCurGet()
+	f_etat_duree = 0.0
+	
+	Tri_ActionSet(Action_Mort)
+	COL_ColMapActivationSet(none, all)
+	
+	f_obbox_size_coef = 0.75
+	AI_Execute("Tri_exec_obbox")
+}
+else
+{
+	f_etat_duree += TIME_GetDt()
+}
+
+// ANALYSE =============================================
+AI_Execute("Tri_exec_Check_Pafs")
+if( ! f_point_de_viande )
+{
+	OBJ_Destroy()
+}
+
+// COMPORTEMENT =======================================
+OBJ_BankingGeneralSet(OBJ_SightGet(), macro_banking)
+

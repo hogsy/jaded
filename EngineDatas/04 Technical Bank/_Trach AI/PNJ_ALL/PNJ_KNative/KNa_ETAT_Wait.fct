@@ -1,0 +1,62 @@
+
+#include"KNa_Defines.var"
+
+vector		tv_wait 
+
+// SORTIE ETAT ===================================================================
+if (i_flag_sort_etat)
+{
+	i_flag_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_Wait)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Wait
+
+	if (fct_last_etat)
+	{
+		i_flag_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =====================================================================
+// On force un tir sur une Target Specifique ----------
+if (m_script.msg_gao2)
+	o_target = m_script.msg_gao2
+// On force un tir sur une Target Specifique ----------
+
+tv_wait = m_script.msg_vec1
+if (tv_wait.x == 666)
+	macro_change_etat("KNa_ETAT_WaitActivation")
+
+if (f_time_start_etat > tv_wait.x)
+	Macro_Script_Next	
+
+// PAFs -----------------------------------------------------
+AI_Execute("KNa_Exec_CheckPaf")
+if (EVT_Paf_Pere)
+	macro_change_etat("KNa_ETAT_Paf")
+
+// COMPORTEMENT ===============================================================
+
+ACT_ActionSet(Ci_AnimNative_Attente)
+
+if( OBJ_CapaTest(Ci_Capa_Go_Follow_Network) || (o_cur_wp && ! @o_cur_wp OBJ_CapaTest(Ci_WP_Capa_Action) ) )
+{
+	OBJ_CapaSet(none, Ci_Capa_Go_Follow_Network)
+	if (o_target == nobody)
+		o_target = @"univ" ao_AllHumains[C_ID_Kong]
+	AI_TrackCurChangeNow("KNa_ETAT_Follow_Network")	
+}	
+

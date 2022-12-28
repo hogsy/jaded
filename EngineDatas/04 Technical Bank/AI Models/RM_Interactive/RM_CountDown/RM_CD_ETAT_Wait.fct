@@ -1,0 +1,36 @@
+#include "RM_CD_Defines.var"
+
+// SORTIE ETAT 	===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// INIT ETAT 	=====================================================================
+if ( i_etat_courant != ETAT_RM_CD_Wait)
+{
+	i_etat_courant = ETAT_RM_CD_Wait
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()	
+	f_time_start_etat = 0.0	
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// CHANGEMENT D ETAT =============================================================
+if( AI_TriggerIsValid(TriggerTest_Start) && call_trigger(TriggerTest_Start) )
+{
+	AI_TrackCurChangeNow("RM_CD_ETAT_Go")
+}
+
+// COMPORTEMENT ================================================================
+
+//RM_CD_TimePrint()

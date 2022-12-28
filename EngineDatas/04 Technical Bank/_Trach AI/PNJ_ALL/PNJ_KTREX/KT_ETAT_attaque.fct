@@ -1,0 +1,265 @@
+#include "KT_defines.var"
+
+messageid	tmid_kong
+
+vector		tv_new_sight
+
+object		to_tete
+
+float			tf_coef_rotation
+float			tf_rotate_sign
+
+int				ti_can_rotate
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_KK_attaque_action = 0
+	i_flag_zde_fight_type = 0
+	i_contre_attaque_mode = faux
+	i_cible_en_hauteur_flag = faux
+	KT_ReAttackDelay()
+	
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_attaque)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_attaque
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	i_fight_paf	= faux
+	if( ! i_KK_attaque_action )
+		DBG_Error("KT_ETAT_attaque : i_KK_attaque_action non sélectionnée")
+	else
+		ACT_ActionSet(i_KK_attaque_action)
+
+	if( i_contre_attaque_mode )
+	{
+		if( i_flag_zde_fight_type == Ci_zde_fight_type_coup_de_tete )
+			ANI_CurrentFrameSet(0, 27)
+		else if( i_flag_zde_fight_type == Ci_zde_fight_type_coup_de_queue )
+			ANI_CurrentFrameSet(0, 30)
+		// else : anims de défense : frame 0
+	}
+	
+	f_time_start_etat = 0.0
+	i_paf_nb = 0		// RAZ tableau des acteurs paffés
+	f_orientation_coef = 0
+
+	if( MSG_GlobalIsValid(mid_best_interet) )
+		EVENT_InteretStatusSet(mid_best_interet, C_EVENT_InteretStatusAttack)
+	
+	if ( i_KK_attaque_action == Action_Attak_CpdeFace
+	|| i_KK_attaque_action == Action_Attak_Mord_Haut
+	|| i_KK_attaque_action == Action_Attak_CpTeteG 
+	|| i_KK_attaque_action == Action_Attak_CpTeteD)
+	{
+		if( ! @get_global i_Player_is_Kong )
+			i_I_finish_allowed = vrai
+		else if( ! i_contre_attaque_mode )
+			i_I_finish_allowed = vrai								// Droit a 1 seul test de Finish par attaque
+		else
+			i_I_finish_allowed = faux
+	}
+	else
+		i_I_finish_allowed = faux							// Pas de Finish dans les autres cas
+	
+	v_fight_actor_pos_backup = Cv_NullVector
+	i_paf_try_to_paf = faux
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =======================================================================================================
+
+//ai_grabbed_availibility[ Ci_LNK_GRAB_KONG] = faux		// à chaque trame car remis à vrai certaines phases...
+
+// GRAB KONG
+//o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, vrai, nofunc, nofunc)
+//if (o_grabbed_actor_KK)
+//	macro_change_etat("KT_ETAT_grabbed")		
+
+// Detection de PAF
+AI_Execute("KT_exec_check_paf")
+if (o_paf_actor)
+{
+	macro_change_etat("KT_ETAT_paf")					// ko delay nul -> simple paf
+}
+
+// Jack fait diversion
+Macro_Check_Paf_Jauge_Crier
+
+// Suivi de regard
+i_flag_look = vrai
+v_look_pos = KT_GetActorPosToLook(o_fight_actor)
+
+
+// COMPORTEMENT =================================================================================================
+
+KT_Interet_Update(o_fight_actor, C_EVENT_InteretStatusAttack)
+
+//if( o_fight_actor == o_ANN && MSG_GlobalIsValid(mid_interaction) && @o_ANN KAnn_Death_Attack_Enabled() && LNK_InteractionParamGet(mid_interaction) != C_INTER_FIGHT_ENNEMY_ATTACK)
+//	LNK_InteractionParamSet(mid_interaction, C_INTER_FIGHT_ENNEMY_ATTACK)
+
+// FIN DE L'ATTAQUE
+if (ACT_ActionFinished())
+{
+	if( o_fury_actor )
+		macro_change_etat("KT_ETAT_cri")
+	else if( i_Stunned_enabled && ! KT_Rage_en_cours() && o_fight_actor == o_Kong && ACT_ActionGet() == Action_Attak_CpdeFace && i_blesse_on )
+	{
+		o_fury_actor = o_fight_actor
+		i_stunned_flag = vrai
+		macro_change_etat("KT_ETAT_cri")
+	}
+	else
+//		macro_change_etat(fct_main_etat)		// retourne en fight kong ou fight jack
+		macro_change_etat("KT_ETAT_fight_KONG")
+}
+
+
+// AUTORISER KONG A TENTER UN GRAB A 2 MAINS MEME QUAND REX PAFFE
+ai_grabbed_availibility[ Ci_LNK_GRAB_KONG] = vrai
+o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, vrai, nofunc, nofunc)
+if (o_grabbed_actor_KK)
+	o_grabbed_actor_KK = o_grabbed_actor_KK
+
+
+// TEST CAPA ATTAQUE
+if( OBJ_CapaTest(Capa_Paffe) )
+{
+	i_paf_try_to_paf = vrai
+	COL_ColSetActivationSet(C_bit_zde_fight, none)
+	// i_flag_zde_fight_type est initialisé à l'appel du mode
+	AI_Execute("KT_exec_zdf_zdc")
+	COL_ColSetActivationSet(none, C_bit_zde_fight)
+
+	// Si l'attaque touche tenter de faire un finish sur la cible
+	// Commenter le Finish en attendant
+	if( i_fight_just_paf )
+//	if( i_fight_paf )
+	{
+		i_contre_attaque_mode = faux	// peut être à nouveau paffé
+		if( ! i_DBG_I_finish_disabled && i_I_finish_allowed )
+		{
+			if( FINISH_Kong_Allowed( o_fight_actor) )
+			{
+				MSG_GlobalDelete( mid_paf_EVENT_Send, C_EVENT_EOFDEL)
+				macro_change_etat("KT_ETAT_I_Finish")
+			}
+		}
+	}
+}
+else if ( i_paf_try_to_paf || KT_AttaqueFenetreGrabAutorise() )
+{
+	// Avant attaque (fenetre grab autorisé) ou après l'attaque (test zde zde effectué, plus de capa attaque)
+	i_paf_nb = 0			// RAZ tableau des acteurs paffés
+	if (o_grabbed_actor_KK)
+	{
+		macro_change_etat("KT_ETAT_Grabbed_by_Kong")		
+	}
+}
+
+
+// ORIENTATION
+ti_can_rotate = faux
+tf_coef_rotation = 0.0
+tf_rotate_sign = 1.0
+switch(ACT_ActionGet())
+{
+	case Action_Attak_CpQueueD :
+	case Action_Attak_CpQueueG :
+		// Coup de queue : s'oriente dos à KONG
+		if( ANI_CurrentFrameGet(0) > 25 )
+		{
+			ti_can_rotate = vrai
+			tf_coef_rotation = 2.0			// vitesse max de blend vers la position d'origine de KONG
+			tv_new_sight = @o_fight_actor OBJ_PosGet()
+			tf_rotate_sign = -1.0
+		}
+		break
+		
+	case Action_Attak_CpdeFace :
+		// Coup de dents : s'oriente vers la position de sa cible au début de l'attaque
+		@o_Kong Proc_KK_RAGE_Speed()
+		ti_can_rotate = vrai
+		tf_coef_rotation = 2.0
+		if( MATH_VecNullEpsilon(v_fight_actor_pos_backup ) )
+		{
+			tv_new_sight = @o_fight_actor OBJ_PosGet()
+			if( ANI_CurrentFrameGet(0) > 40 )
+			{
+				v_fight_actor_pos_backup = @o_fight_actor OBJ_PosGet()
+			}
+		}
+		else
+		{
+			tv_new_sight = v_fight_actor_pos_backup
+		}
+		break
+	case Action_Fight_Attak_Humain :
+		// Coup de dents : s'oriente pendant toute la 1ère phase de l'anim
+		if( ACT_ActionItemGet() == 0 )
+		{
+			ti_can_rotate = vrai
+			tf_coef_rotation = 3.0
+			tv_new_sight = @o_fight_actor OBJ_PosGet()
+		}
+		break
+	
+	case Action_Fight_Paf_G_Defense :
+	case Action_Fight_Paf_D_Defense :
+		ti_can_rotate = vrai
+		tf_coef_rotation = 3.0
+		tv_new_sight = @o_fight_actor OBJ_PosGet()
+		break
+		
+//	case Action_Attak_CpTeteD :
+//	case Action_Attak_CpTeteG :
+//		// Coup de tête : s'oriente pendant qu'il paffe
+//		if( OBJ_CapaTest(Capa_Paffe) )
+//		{
+//			ti_can_rotate = vrai
+//			tf_coef_rotation = 3.0
+//			tv_new_sight = @o_fight_actor OBJ_PosGet()
+//		}
+//		break
+	default: 
+		break
+}
+
+if( ti_can_rotate )
+{
+	f_orientation_coef = MATH_FloatBlend(f_orientation_coef, tf_coef_rotation, 10 * TIME_GetDt())
+	
+	tv_new_sight -= OBJ_PosGet()
+	tv_new_sight.z = 0.0
+	tv_new_sight *= tf_rotate_sign
+	DBG_RenderVector(OBJ_PosGet(), tv_new_sight, color_rouge)
+	tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_new_sight, f_orientation_coef  * TIME_GetDt())
+	OBJ_BankingGeneralSet(tv_new_sight, Cv_VerticalVector)
+}
+
+//Str_DisplayFloatOnce(f_orientation_coef, cvector(0.5,0.5,0.0))
+
+
+// DODGE-GRAB doit toujours réussir
+if( o_fight_actor == o_Kong && @o_Kong Proc_KK_Dodge_Actor_Get() == OBJ_Me() )
+{
+	KT_Grabbed_Jauge_Reset()
+}
+
+

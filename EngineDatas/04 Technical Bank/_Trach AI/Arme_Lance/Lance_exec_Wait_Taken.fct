@@ -1,0 +1,145 @@
+#include "Lance_defs.var"
+
+#define CF_dist_taken	3
+
+int			ti_cpt
+int			ti_snd
+int			ti_what
+int			ti_capa
+int			ti_ok
+int			ti_canramasse
+int			ti_enfeu
+int			ti_display_take
+
+float		tf_taken
+float		tf_dot
+float		tf_dot1
+
+vector	tv_temp
+vector	tv_temp1
+
+object 	to_obj
+
+
+if( o_rack_de_lances )
+	goto TEST_GRAB
+
+// Lance disparait sur case qui brule
+ti_enfeu = faux
+if(GRID_Has(1))
+{
+	GRID_CurrentSet(1)
+	ti_capa = GRID_CapaGet(OBJ_PosGet())
+	if(ti_capa & Ci_Grid2_EnFeu)
+		ti_enfeu = vrai
+	GRID_CurrentSet(0)
+}
+
+
+// Bidoche, c'est visible
+if (o_bidoche)
+{
+	@o_bidoche OBJ_CapaSet(CAPA_Bidoche_Snapped_SeDetacher, 0)
+	o_bidoche = nobody
+}
+
+//// Auto destruction
+//f_time_loin += TIME_GetDt()
+//if(f_time_loin > 5)
+//{
+//	 AI_Execute("Lance_exec_destroy")
+//}
+
+
+// Auto destruction
+if( i_numero_lance_jack < ( @get_global i_cpt_lance_jack - 5 ) )
+	f_time_loin += TIME_GetDt()		// je ne suis pas une des dernières lances de jack...
+else if( o_joueur && OBJ_SqrDist(o_joueur) > 15 * 15 || (mi_TypeLance == 3) || mb_casse || ti_enfeu)
+{
+	if(@get_global o_last_lance_jack != OBJ_Me())
+		f_time_loin += TIME_GetDt()
+}
+else
+	f_time_loin = 0
+if(f_time_loin > 3) 
+{
+	DBG_TraceObject(OBJ_Me())
+	DBG_TraceString(" exec wait taken, time loin > 3 = destroy\n")
+	OBJ_Destroy()
+}
+
+if(mi_TypeLance == 3 || mb_casse || ti_enfeu) 
+{
+	f_time_pointe += TIME_GetDt()
+	if(f_time_pointe > 2)
+	{
+		COL_ColSetActivationSet(none, all)
+		OBJ_PosSet(OBJ_PosGet() - cvector(0,0,0.3 * TIME_GetDt()))
+	}
+	return
+}
+
+
+mi_State = Ci_bambou_state_ground
+
+
+//---------( GFX )--------------------------------------------
+if( mi_flamme )
+{
+	if( ! i_fire_deja )
+	{
+		i_fire_deja = vrai
+		LIBGFX_GridFire(OBJ_PosGet(), vrai)
+	}
+}
+
+
+//OBJ_InfoPhotoParamSet( 0, 0, 3, 3, 0.0, 0.0, 0.0, 1)		// Bouée d'aide à la visée
+//OBJ_InfoPhotoInfoOffsetSet( Cv_NullVector )
+//OBJ_InfoPhotoSphereOffsetSet( Cv_NullVector )
+
+ti_display_take = 0
+if( o_joueur )
+{
+	to_obj = o_joueur
+	tf_taken = CF_dist_taken
+	
+	// Si jack vient vers moi, je peux prendre à une distance supérieur
+	tv_temp = OBJ_PosGet() - @to_obj OBJ_PosGet()
+	if(MATH_VecNullEpsilon(tv_temp)) tv_temp = @to_obj OBJ_SightGet()
+	MATH_VecSetNormalize(tv_temp)
+	if(MATH_VecDotProduct(tv_temp, @to_obj OBJ_SightGet()) > 0.9)
+	{
+		tv_temp = @to_obj DYN_SpeedGetVector()
+		tv_temp.z = 0
+		if(MATH_VecNorm(tv_temp) > 1.0)
+		{
+			tf_taken += 1
+		}
+	}
+	
+	tv_temp = OBJ_PosGet() - @to_obj OBJ_PosGet()
+	tv_temp1 = (OBJ_PosGet() - OBJ_SightGet()) - @to_obj OBJ_PosGet()
+	tf_dot = MATH_VecDotProduct(tv_temp, tv_temp)
+	tf_dot1 = MATH_VecDotProduct(tv_temp1, tv_temp1)
+	if(tf_dot1 < tf_dot)
+		tf_dot = tf_dot1
+	
+	if(tf_dot <= (tf_taken*tf_taken) )
+		ti_display_take = Ci_DISPLAY_TAKE
+}
+OBJ_Me().des_int1 = ti_display_take
+
+
+// ANALYSE ======================================================================
+TEST_GRAB:
+if( LNK_GRAB_OBJECT_Free_Slot(OBJ_Me()) )
+{
+	o_grabbed_serveur = LNK_ServeurGet(Ci_LNK_GRAB_OBJECT, mid_LNK_grabbed, vrai, nofunc, nofunc)
+	if( o_grabbed_serveur )
+	{
+		macro_add_callback_after_cam("Lance_ETAT_cb_Grabbed")
+		AI_TrackCurStop()
+	}
+}
+

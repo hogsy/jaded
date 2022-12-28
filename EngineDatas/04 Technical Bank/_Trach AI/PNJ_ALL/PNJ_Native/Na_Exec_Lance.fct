@@ -1,0 +1,130 @@
+
+float			tf_time
+float			tf_gravfactor
+float			tf_distance
+
+vector		tv_impulse 
+vector		tv_projectile_gravity
+vector		tv_lance_la
+message	tm_msg 
+object		to_os 
+int				ti_devant
+vector		tv_2Dpos
+vector		tv_offset
+int				ti_autour
+int				ti_flag_snipe
+object		to_jack
+
+vector		tv_speed 
+
+ti_devant = faux
+
+// Mort ==============
+//SPEECH_RequestPost
+//(
+//	OBJ_Me(),
+//	OBJ_Me(), 
+//	0xD00066C9, 
+//	0xD00066D0, 
+//	1.0, 
+//	SPEECH_Cte_PriorityDefault, 
+//	5,
+//	0,
+//	0,
+//	0
+//)
+// Mort ==============
+
+
+
+// ------------- MISS si HORS ECRAN --------------------------------------------------------------------------
+if (i_Tir_HorsEcran_Nbr_de_Miss)
+{
+	tv_2Dpos = VIEW_3dWorldTo2d( 0, OBJ_PosGet() )
+	if ( (tv_2Dpos.x < 0.1 || tv_2Dpos.x > 0.9) || (tv_2Dpos.y < 0.1 || tv_2Dpos.y > 0.9) )
+	{
+		i_Tir_HorsEcran_Nbr_de_Miss--
+		ti_devant = vrai
+	}
+}
+// ------------- MISS si HORS ECRAN --------------------------------------------------------------------------
+
+if (o_target == AI_MainActorGet(C_ID_Joueur))
+	tv_lance_la = @o_camera OBJ_PosGet()  - cvector(0,0,0.2)
+else
+{
+	to_os = @o_target ANI_CanalObjectGet(Anim_Canal_Tete)
+	if (to_os)
+		tv_lance_la = @to_os OBJ_PosGet() - cvector(0,0,0.5)
+	else
+		tv_lance_la = @o_target OBJ_PosGet()
+}
+
+if (ti_devant)
+{
+	@o_projectile 	OBJ_CapaSet(OBJ_Capa_5,none)
+	tv_offset = @o_target OBJ_SightGet() * MATH_RandFloat(1.0,3.0)
+	tv_offset = MATH_VecRotate(tv_offset,Cv_VerticalVector,MATH_RandFloat(-Cf_PiBy3,Cf_PiBy3))
+	tv_lance_la += tv_offset
+}
+else
+{
+
+	// Jack en snipe ou pas ? =============================
+	ti_flag_snipe = faux
+	to_jack = @"univ" ao_AllHumains[C_ID_Joueur]
+	if (to_jack)
+		ti_flag_snipe = @"KingKong/Humain" to_jack i_flag_snipe
+	// Jack en snipe ou pas ? =============================		
+		
+	if ( (!ti_flag_snipe && MATH_RandInt(0,101) >= i_Tir_Pourcentage_Reussite) || (ti_flag_snipe && MATH_RandInt(0,101) >= i_Tir_Pourcentage_ReussiteEnSnipe) )
+	{
+		// MISS autour !
+		@o_projectile 	OBJ_CapaSet(OBJ_Capa_5,none)
+		tv_offset = @o_target OBJ_SightGet() * MATH_RandFloat(1.0,2.5)
+		tv_offset = MATH_VecRotate(tv_offset,Cv_VerticalVector,MATH_RandFloat(-Cf_Pi,Cf_Pi))
+		tv_lance_la += tv_offset
+	}
+}
+
+// limitation de la distance de lancé
+if ( i_Tir_UseMaxDistance )
+{
+	tv_offset = tv_lance_la - OBJ_PosGet()
+	tf_distance = MATH_VecDotProduct( tv_offset, tv_offset ) 
+	DBG_RenderVector( OBJ_PosGet(), tv_offset , 0xFF )
+	if (tf_distance > f_Tir_MaxDistance * f_Tir_MaxDistance )
+	{
+		tv_offset*= f_Tir_MaxDistance / MATH_FloatSqrt( tf_distance )
+		tv_lance_la = OBJ_PosGet() + tv_offset
+		DBG_RenderVector( OBJ_PosGet(), tv_offset , 0xFF00 )
+
+	}
+}
+
+tf_gravfactor = MATH_RandFloat( f_MinGravityFactor , f_MaxGravityFactor )
+tv_projectile_gravity = Cv_NormalGravity * tf_gravfactor
+
+//DYN_LIB_ImpulsionGet_Friction(vector tv_start_pos, vector tv_dest_pos, vector tv_gravity, float tf_friction, byref float tf_time, int ti_flag_Z_friction, float tf_hauteur_saut)
+tv_impulse = DYN_LIB_ImpulsionGet_Friction( @o_projectile OBJ_PosGet(), tv_lance_la, tv_projectile_gravity, 1.0, tf_time, faux, 0.5)
+
+if (i_anticipation_active)
+{
+	tv_speed = (@o_target OBJ_PosGet() - v_old_target_pos) / TIME_GetDt()
+	tv_impulse = DYN_LIB_ImpulsionGet_Friction( @o_projectile OBJ_PosGet() - (tv_speed * tf_time), tv_lance_la, tv_projectile_gravity, 1.0, tf_time, faux, 0.5)
+}
+
+MSG_SetNull(tm_msg)
+tm_msg.msg_id = msg_id_grenadelaunch
+tm_msg.msg_sender = OBJ_Me()
+tm_msg.msg_vec1 = tv_impulse
+tm_msg.msg_vec2 = tv_projectile_gravity
+tm_msg.msg_vec3 = cvector(1.0, 1.0, 0.0)
+@o_projectile MSG_Send( tm_msg )
+
+o_projectile = nobody
+
+//DBG_TraceObject(OBJ_Me())
+//DBG_TraceString(" tir sur ")
+//DBG_TraceObject(o_target)
+//DBG_TraceEOL()

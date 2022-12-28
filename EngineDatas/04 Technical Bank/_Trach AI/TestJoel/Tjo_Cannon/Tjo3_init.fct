@@ -1,0 +1,17 @@
+OBJ_Destroy()
+
+if(!o_cible) 
+{
+	o_cible=@get_rayman ANI_CanalObjectGet(Anim_Canal_Tete)
+}
+
+if(o_porteur)
+{
+	o_porteurBone=@o_porteur ANI_CanalObjectGet(0)
+	AI_CBAdd(o_porteur,CallBack_After_Blend,"Tjo3_CallbackAfterBlend")
+}
+
+f_FireDelay = MATH_RandFloat(5.0,10.0)
+
+AI_TrackCurStop()
+//AI_TrackCurChangeNow("Tjo3_suivi")

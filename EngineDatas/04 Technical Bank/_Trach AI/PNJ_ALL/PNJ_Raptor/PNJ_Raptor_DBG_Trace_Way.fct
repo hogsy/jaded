@@ -1,0 +1,48 @@
+#ifndef _FINAL_
+int			ti_i
+
+float		tf_Z
+
+vector	tv_temp
+vector	tv_temp2
+
+object	to_main_actor
+
+if (DBG_Display_Way)
+{
+	to_main_actor = AI_MainActorGet(C_ID_Joueur)
+	
+//	tf_Z = @to_main_actor OBJ_PosGet().z
+	tf_Z = OBJ_PosGet().z
+	tf_Z += 0.1
+	
+	if (i_way_case_nbr > 0)
+	{
+		tv_temp = v_way_case[i_way_case_nbr - 1]
+		tv_temp -= OBJ_PosGet()
+		tv_temp.z = 0.0
+	
+		tv_temp2 = OBJ_PosGet()	
+		tv_temp2.z = tf_Z
+	
+		DBG_RenderVector(tv_temp2, tv_temp, color_blanc)
+	
+		for (ti_i = i_way_case_nbr - 1; ti_i > 0; ti_i--)
+		{
+			tv_temp2 = v_way_case[ti_i]
+			tv_temp2.z = tf_Z
+	
+			tv_temp = v_way_case[ti_i - 1] - v_way_case[ti_i]
+			tv_temp.z = 0.0
+	
+			DBG_RenderVector(tv_temp2, tv_temp, color_blanc)
+		}
+	}
+	
+	ao_way_wp[0] = ao_way_wp[0]
+	o_current_wp = o_current_wp
+	o_last_skiped_wp = o_last_skiped_wp
+//	GRID_LIB_IsReachableFrom(OBJ_PosGet(), v_way_destpos, 0, -1.0, vrai, i_grid_width)
+	return
+}
+#endif

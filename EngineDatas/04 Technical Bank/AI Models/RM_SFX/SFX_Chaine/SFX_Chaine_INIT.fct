@@ -1,0 +1,29 @@
+#include "SFX_Chaine_VAR.var"
+
+int			ti_i
+vector	tv_pos
+object	to_obj
+
+tv_pos = OBJ_PosGet()
+to_obj = OBJ_Me()
+
+if (i_nb_modules > Ci_NB_MODULE_MAX)
+	i_nb_modules = Ci_NB_MODULE_MAX
+
+// On initialise tous les GFX
+for (ti_i = 0; ti_i < Ci_NB_MODULE_MAX; ti_i++)
+	i_GFX_Coeurs[ti_i] = -1
+
+// On duplique les objets
+for (ti_i = 0; ti_i < i_nb_modules; ti_i++)
+{
+	tv_pos = tv_pos - cvector(0.0,0.0,i_espacement)
+	v_pos_modules[ti_i] = tv_pos
+
+	if (i_type == 0)
+		o_modules[ti_i] = @get_WP OBJ_Duplicate(tv_pos)
+	else
+		PROC_SFX_FLARE_COEUR(to_obj,i_GFX_Coeurs[ti_i], tv_pos, f_taille_coeurs, c_couleur_coeurs)
+}
+
+AI_TrackCurChangeNow("SFX_Chaine_LOOP")

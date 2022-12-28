@@ -1,0 +1,234 @@
+#include "Kam_Defines.var"
+
+int				ti_mode_normal
+int				ti_txt 
+
+object		to_kong
+object		to_jack
+
+
+// QUI est mon acteur !
+o_mf_actor_old = o_mf_actor
+if( o_force_actor )
+	o_mf_actor = o_force_actor
+else
+{
+	o_mf_actor = @get_rayman PROC_RM_MontureGet()
+	if ( ! o_mf_actor )
+		o_mf_actor = get_rayman
+}
+
+i_mf_actor_ID = @get_rayman PROC_RM_MontureIDGet()
+
+
+// Clean Flag de lock
+OBJ_CapaSet(none, Obj_Capa_Switch)
+v_MECA_cam_banking = Cv_VerticalVector
+
+i_kong_camera_status_new = @get_global i_kong_camera_status
+
+// JOY 1 ---------------------------------------------------------------------------------------------
+KamP_JoyD_Get()
+// JOY 1 ---------------------------------------------------------------------------------------------
+
+// Micro---------------------------------
+//SND_M_SetMicro(OBJ_Me())
+// Micro---------------------------------
+
+// SPEED de ma TARGET -------------------------------------------------------------------
+v_o_mf_actor_pos_old = v_o_mf_actor_pos
+v_o_mf_actor_pos = @o_mf_actor OBJ_PosGet()
+v_speed_target = (v_o_mf_actor_pos - v_o_mf_actor_pos_old) / TIME_GetDt()
+v_speed_target_horiz = v_speed_target
+v_speed_target_horiz.z = 0
+f_speed_target_horiz_norm = MATH_VecNorm(v_speed_target_horiz)
+// SPEED de ma TARGET -------------------------------------------------------------------
+
+// =================================
+if (!i_kam_enable_fight_toggle)
+	i_kam_enable_fight_trame = faux
+// =================================
+
+v_sight_camera_horiz = OBJ_SightGet()
+v_sight_camera_horiz.z = 0
+if (MATH_VecNullEpsilon(v_sight_camera_horiz))
+	v_sight_camera_horiz = OBJ_SightGet()
+else	
+	MATH_VecSetNormalize(v_sight_camera_horiz)
+
+
+f_cc_duration -= MATH_FloatMin(f_cc_duration, TIME_GetDt())
+
+
+// CHEAT TXT ======================================================================================================
+if (@"univ" i_cheat_page == 2)
+{
+	if (	@get_global i_cheat_2_nbr )
+		ti_txt = STR_CreateText("\cFF0000FF\X", cvector(0.005, 0.11+(0.04 * (@get_global i_cheat_2_nbr)), 0.0), 0)
+	else
+		ti_txt = STR_CreateText("\cFF0000FF\ WARNING NO KAM-MODIFIER HERE", cvector(0.03,0.11+(0.04 * (@get_global i_cheat_2_nbr+1)),0), 0)
+}
+// CHEAT TXT ======================================================================================================
+
+// ====== KAM CALLBACK ===================================
+if (Kam_CallBack_KamMod_GAO)
+	@Kam_CallBack_KamMod_GAO AI_CBExecute(CallBack_KamMod, 0)
+Kam_CallBack_KamMod_GAO_OLD = Kam_CallBack_KamMod_GAO
+Kam_Last_KamMod = Kam_CallBack_KamMod_GAO
+Kam_CallBack_KamMod_GAO = nobody
+// ====== KAM CALLBACK ===================================
+
+KamP_SettingsFctGaoTarget(o_mf_actor)
+
+if ( ! i_cam_fps )
+{
+	if( i_cam_fps_old )
+	{
+		// EXIT MODE FPS
+		KamP_Exit_FPS_Value_Restore()		// pour le pas fausser les orientations des caméras
+	}
+	AI_Execute("CM_Kong_AutoMode")
+}
+
+AI_Execute("CM_Kong_FightSelector")
+
+
+// SELECTION ET EXECUTION DES MODES ------------------------------------------------
+ti_mode_normal = faux
+if (o_cine_gao)
+{
+	// Camera Ciné.
+	AI_Execute("CM_Kong_Mode_Cine")
+	o_mf_actor_blend = nobody
+}
+else if (@get_rayman i_cheat_mode)
+{
+	// CHEAT DEPLACEMENT
+	AI_Execute("CM_Kong_Mode_Cheat")
+	o_mf_actor_blend = nobody
+}
+else if (i_dbg)
+{
+	AI_Execute("CM_Kong_Mode_Test")
+	o_mf_actor_blend = nobody
+}	
+//else if ( i_mf_actor_ID != C_ID_Rayman && @get_rayman PROC_RM_ModeLookON() )
+else if ( @get_rayman PROC_RM_ModeLookON() )
+{
+	AI_Execute("CM_Kong_Mode_FPS")
+	o_mf_actor_blend = nobody
+}
+else if (f_cc_duration)
+{
+	// Contre Champs et GenCam
+	AI_Execute("CM_Kong_Mode_CChamp")
+	o_mf_actor_blend = o_mf_actor
+}
+else
+{
+	ti_mode_normal = vrai
+	AI_Execute("CM_Kong_Mode_Normal")
+	o_mf_actor_blend = nobody
+}
+
+if (i_kong_camera_mode != Ci_Kamera_mode_CC)
+	i_kam_family = -i_kong_camera_mode
+
+// CHEAT TXT ======================================================================================================
+if (@"univ" i_cheat_page == 2)
+{
+	if (f_chm_coef < 0.98)
+		STR_CreateText("\cFF\\h0.05\Transition", cvector(0.80, 0.02, 0.0), 0)
+		
+
+	ti_txt = STR_CreateText("\cFFAAAAFF\\h0.05\", cvector(0.29, 0.02, 0.0), 0)
+	switch (i_kong_camera_mode)
+	{
+		case Ci_Kamera_mode_CC :
+			STR_AppendText(ti_txt, "(MODE KAM-MODIFIER)")
+			break
+		case Ci_Kamera_mode_CUT :
+			STR_AppendText(ti_txt, "(MODE CUT)")
+			break
+		case Ci_Kamera_mode_FINISH :
+			STR_AppendText(ti_txt, "(MODE FINISH:")
+			STR_AppendInt(ti_txt,i_finish_id)
+			STR_AppendText(ti_txt, ",")
+			STR_AppendInt(ti_txt,i_finish_chosen_plan)
+			STR_AppendText(ti_txt, ",")
+			STR_AppendGao(ti_txt,o_finish_actor)
+			STR_AppendText(ti_txt, ")")
+			break
+		case Ci_Kamera_mode_SWINGH :
+			STR_AppendText(ti_txt, "(MODE SWING PILAR)")
+			break
+		case Ci_Kamera_mode_WALLING :
+			STR_AppendText(ti_txt, "(MODE WALLING)")
+			break
+		case Ci_Kamera_mode_NORMAL :
+			STR_AppendText(ti_txt, "(MODE NORMAL)")
+			break
+		case Ci_Kamera_mode_CHEAT :
+			STR_AppendText(ti_txt, "(MODE CHEAT)")
+			break
+		case Ci_Kamera_mode_TEST :
+			STR_AppendText(ti_txt, "(MODE TEST)")
+			break
+		case Ci_Kamera_mode_CINE :
+			STR_AppendText(ti_txt, "(MODE CINE)")
+			break
+		case Ci_Kamera_mode_FPS :
+			STR_AppendText(ti_txt, "(MODE FPS)")
+			break
+		case Ci_Kamera_mode_Reward :
+			STR_AppendText(ti_txt, "(MODE REWARD : ")
+			STR_AppendInt(ti_txt,i_Reward_Type)
+			STR_AppendText(ti_txt, " , ")
+			STR_AppendGao(ti_txt,o_Reward_Actor)
+			STR_AppendText(ti_txt, " )")
+			break
+		default:
+			STR_AppendText(ti_txt, "(UNKNOWN MODE)")
+			break
+	}
+}
+
+// CHEAT TXT ======================================================================================================
+
+f_Kam_ComboFinish -= MATH_FloatMin(f_Kam_ComboFinish, 4.0 * TIME_GetDt())
+
+i_kong_camera_mode_old = i_kong_camera_mode
+i_kong_camera_status_old = i_kong_camera_status_new
+i_Kamera_mode_init_flag = faux
+f_Kamera_mode_init_infini = 1.0
+
+f_FinishLimitAngle = 666		// Default
+f_cut_if_backshoot = 666		// Default
+
+f_KMAdjust_Distance = 0						// Default
+f_KMAdjust_Angle = 0							// Default
+f_KMAdjust_CoefDecentrageHoriz = 1.0	// Default
+f_KMAdjust_ChutePlat	= 666					// Default
+f_KMAdjust_ChuteTornade = 666			// Default
+
+i_Kam_ComboFinish = faux
+
+i_kong_finish = faux
+
+OBJ_CapaSet(none, Kam_Capa_NoFinish)
+
+//o_cine_gao = nobody
+
+// RAZ Zone ! (Vars that has to be reset at a specific default value) 
+@get_global o_kong_finish_target = nobody
+
+i_cc_type_old = i_cc_type
+i_cc_type = -1
+
+// A mettre toutes les trames.
+i_cam_fps_old = i_cam_fps
+i_cam_fps = faux
+i_Reward_Type = -1
+o_Reward_Actor = nobody
+
+i_kam_enable_fight_trame = vrai		// Default

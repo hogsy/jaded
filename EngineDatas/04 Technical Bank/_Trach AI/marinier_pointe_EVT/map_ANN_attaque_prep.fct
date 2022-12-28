@@ -1,0 +1,32 @@
+vector	tv_distance
+float		tf_distance
+object	to_main_actor
+
+if	(OBJ_CapaTest(OBJ_Capa_8))
+{
+	to_main_actor = AI_MainActorGet(C_ID_Joueur)
+//	@get_jack des_o_acteur_suividesyeux = OBJ_Me()
+	tf_distance = MATH_VecDistance(@to_main_actor OBJ_PosGet(), @des_o_raptor OBJ_PosGet())
+	if	( ! (OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Culled) )
+	{
+		// ATTAQUE
+		TIME_Wait(0.5)
+		@des_o_raptor ACT_ActionSet(50)
+		TIME_Wait(0.5)
+		ACT_ActionSet(72)
+		// Envoie un message a SUN
+		EVENT_AddEventFilmation( C_EVENT_Filmation_filter_HumainPaffed, OBJ_Me(), des_o_raptor, Cf_EVENT_Duree_1Trame)
+		f_time = TIME_Get()
+		f_delay = 2.5//0.3 * tf_distance
+		des_o_regard_jack = des_o_raptor
+		AI_TrackCurChangeNow("map_ANN_attaque")
+	}
+	else	if	(TIME_Elapsed(f_time, 10))
+	{
+		des_o_regard_jack = nobody
+		// ATTAQUE
+		f_time = TIME_Get()
+		f_delay = 0
+		AI_TrackCurChangeNow("map_ANN_attaque")
+	}	
+}

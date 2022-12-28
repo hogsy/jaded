@@ -1,0 +1,97 @@
+vector	tv_pos
+float		tf_accel
+float		tf_dist
+float		tf_distWP
+vector	tv_objectif
+vector	tv_ortho
+object	to_WayDepart
+object	to_WayArrivee
+int			ti_orbite
+
+
+ti_orbite=1
+
+//if(!o_cible) 
+o_cible=Tjo_GetCible()
+
+//f_delai_paf -= MATH_FloatMin(f_delai_paf, TIME_GetDt())
+f_delai_fire -= MATH_FloatMin(f_delai_fire, TIME_GetDt())
+
+if(o_cible)
+{
+	tf_dist = MATH_VecNorm(@o_cible OBJ_PosGet()-OBJ_PosGet())
+	
+	if(tf_dist>f_Far)
+	{
+		if(n_Reseau)
+		{
+			to_WayDepart=WAY_WPNearestOfOBJ(n_Reseau,all,none,Ci_Filter_CapaFlag)
+			to_WayArrivee=@o_cible WAY_WPNearestOfOBJ(n_Reseau,all,none,Ci_Filter_CapaFlag)
+			i_NbWP=WAY_ShortWay(n_Reseau,&ao_Chemin[0],to_WayDepart,to_WayArrivee,-1,0) - 1
+		}
+		
+		tf_distWP = 10000.0
+	
+		if(i_NbWP>0)
+		{
+			tf_distWP =  MATH_VecNorm(@ao_Chemin[i_NbWP] OBJ_PosGet()-OBJ_PosGet())
+			if((tf_distWP<2.0) || (ao_Chemin[i_NbWP]==o_DernierWP))
+			{
+	 			o_DernierWP=ao_Chemin[i_NbWP]
+				i_NbWP--	
+				if(i_NbWP>0) tf_distWP =  MATH_VecNorm(@ao_Chemin[i_NbWP] OBJ_PosGet()-OBJ_PosGet())
+				else tf_distWP=10000.0
+			}
+		}
+		
+		if((tf_dist>tf_distWP) || (to_WayDepart!=to_WayArrivee))
+		{
+			tv_objectif=@ao_Chemin[i_NbWP] OBJ_PosGet()-OBJ_PosGet()
+			DBG_RenderCircle(@to_WayDepart OBJ_PosGet(),1.0,cvector(0.0,0.0,1.0),c_coul)
+			DBG_RenderCircle(@ao_Chemin[i_NbWP] OBJ_PosGet(),1.0,cvector(0.0,0.0,1.0),color_rouge)
+			DBG_RenderCircle(@to_WayArrivee OBJ_PosGet(),1.0,cvector(0.0,0.0,1.0),color_jaune)
+			ti_orbite=0
+		}	
+	}	
+	if(ti_orbite==1)
+	{
+		if(tf_dist>f_Far)
+		{
+			tv_objectif=@o_cible OBJ_PosGet()-OBJ_PosGet()
+		}
+		else
+		{
+			if( ! f_delai_paf )
+			{
+				f_delai_paf = MATH_RandFloat(0.0,10.0)
+	//			EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_RM_Fort, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_cible, 10.0, @o_cible OBJ_PosGet() - OBJ_PosGet())
+			}
+			if(tf_dist>f_Near)
+			{
+				tv_ortho=MATH_VecCrossProduct(@o_cible OBJ_PosGet()-OBJ_PosGet(),f_Sens*cvector(0.0,0.0,1.0))
+				tv_objectif=MATH_VecBlendRotate(@o_cible OBJ_PosGet()-OBJ_PosGet(),tv_ortho,1-((tf_dist-f_Near)/(f_Far-f_Near)))
+			}
+			else
+			{
+				tv_ortho=MATH_VecCrossProduct(@o_cible OBJ_PosGet()-OBJ_PosGet(),f_Sens*cvector(0.0,0.0,1.0))
+				tv_objectif=MATH_VecBlendRotate(OBJ_PosGet()-@o_cible OBJ_PosGet(),tv_ortho,tf_dist/f_Near)
+			}
+		}
+	}
+	DBG_RenderVector(OBJ_PosGet(),tv_objectif,c_coul)
+	DBG_RenderCircle(@o_cible OBJ_PosGet(),f_Near,cvector(0.0,0.0,1.0),c_coul)
+	DBG_RenderCircle(@o_cible OBJ_PosGet(),f_Far,cvector(0.0,0.0,1.0),c_coul)
+
+	OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(),tv_objectif,TIME_GetDt()*f_VitesseRotate),cvector(0.0,0.0,1.0))
+	v_Acceleration = MATH_VecNormalize(MATH_VecBlend(tv_objectif,OBJ_SightGet(),5.0*TIME_GetDt()))*TIME_GetDt()*100.0
+	OBJ_PosSet( OBJ_PosGet() + ( v_Acceleration * TIME_GetDt() ) )
+}
+
+ACT_ActionSet(i_action)
+
+if(f_delai_fire<=0.0)
+{
+	f_prepa_fire=1.0
+	AI_TrackCurChangeNow("Tjo_PrepaFire")
+}
+	

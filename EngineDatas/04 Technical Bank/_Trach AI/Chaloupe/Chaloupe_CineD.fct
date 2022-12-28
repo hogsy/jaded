@@ -1,0 +1,70 @@
+vector	tv_temp, tv_temp1
+int			ti_end
+object	to_obj
+
+if(!des_i_chaloupe_jack) i_mode_cine = 2
+
+AI_Execute("Chaloupe_Rotation")
+@get_global GLOBAL_i_PlayGenericSpeech = faux
+
+//f_time_start -= TIME_GetDt()
+//if(f_time_start > 0) 
+//{
+//	return
+//}
+
+ti_end = faux
+tv_temp1 = OBJ_PosGet()
+if	( ! des_i_chaloupe_jack && tv_temp1.z < 4)
+	ti_end = vrai
+else if( des_i_chaloupe_jack && i_cpt_descend == 3)
+	ti_end = vrai
+if(ti_end)
+{
+//	i_mode_cine = 1
+	i_force_block = vrai
+	f_add_sin = MATH_FloatBlend(f_add_sin, 1, 2 * TIME_GetDt())
+	
+	f_time_aleau = TIME_Get()
+	OBJ_CapaSet(OBJ_Capa_9, 0)
+
+	// Fin de la cine, on demarre
+	to_obj = AI_MainActorGet(C_ID_Joueur)
+	if(OBJ_CapaTest(OBJ_Capa_1) || @to_obj OBJ_CapaTest(OBJ_Capa_14))
+	{
+		OBJ_CapaSet(OBJ_Capa_1, 0)
+		i_mode_cine = faux
+		AI_TrackCurChangeNow("Chaloupe_Rotation") 
+	}
+	
+//	if(i_test_visee || !des_i_chaloupe_jack)
+//	{
+//		f_time_cine1 = TIME_Get()
+//		AI_TrackCurChangeNow("Chaloupe_CineD1") 
+//	}
+}
+else
+{
+	// Descend
+	if(!des_i_chaloupe_jack)
+	{
+		tv_temp = cvector(0,0,-1*TIME_GetDt())
+		OBJ_PosSet(OBJ_PosGet() + tv_temp)
+	}
+	else if(OBJ_CapaTest(OBJ_Capa_8))
+	{
+		if	(TIME_Elapsed(f_temp_descend, 2.4))//2.3
+		{
+			f_temp_descend = TIME_Get()
+			i_cpt_descend++
+			v_speed_descend = cvector(0,0, -TIME_GetDt() * 2.0)
+		}
+		else
+		{
+			v_speed_descend = MATH_VecBlend(v_speed_descend, Cv_NullVector, 1.5 * TIME_GetDt())
+		}
+		
+		OBJ_PosSet(OBJ_PosGet() + v_speed_descend)
+	}
+}
+

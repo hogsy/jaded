@@ -1,0 +1,74 @@
+#include "KIGO_defines.var"
+
+int						ti_visibility_type
+int						ti_collision_nb 
+int						ti_i
+int						ti_ind
+int						ti_type
+
+object				tao_zde_zde_list[20]
+object				to_collide_object
+object				to_pere_paf 
+
+vector				tv_sens
+
+messageid			tmid_visibility
+
+
+to_collide_object = nobody
+
+ti_collision_nb = COL_ZDE_ZDEListGet( &tao_zde_zde_list[0], C_zde_fight, C_zde_corps, all, none, Ci_Filter_IdentityFlag)
+if (COL_CollideType( COL_C_Wall + COL_C_Ground) || ti_collision_nb)
+{
+	to_collide_object = COL_ObjectGet( COL_C_Wall + COL_C_Ground)
+	if ( to_collide_object && @to_collide_object OBJ_FlagsIdentityTest( OBJ_C_IdentityFlag_AI))
+	{
+		tao_zde_zde_list[ti_collision_nb] = to_collide_object
+		ti_collision_nb++
+	}
+	
+	for (ti_i = 0; ti_i < ti_collision_nb; ti_i++)
+	{
+		if( tao_zde_zde_list[ti_i] == o_ANN )
+			continue			// ne paffe jamais ANN
+		
+		if( tao_zde_zde_list[ti_i] == o_KONG )
+			continue			// ne paffe jamais KONG
+		
+		ti_ind = ARR_ObjSearch( &ao_frappe_target[0], i_frappe_target_nb, tao_zde_zde_list[ti_i])
+		if ( ti_ind == -1 && tao_zde_zde_list[ti_i] != o_snap_actor)	// Pas deja paf et pas l acteur qui me lance
+		{
+			//i_nb_coup++
+			ao_frappe_target[i_frappe_target_nb] =  tao_zde_zde_list[ti_i]
+			i_frappe_target_nb++
+			
+			// sens
+			tv_sens = v_last_speed
+			if( MATH_VecNullToler(tv_sens, 0.1) )
+				tv_sens = OBJ_SightGet()
+			
+			// paf sender
+			to_pere_paf = OBJ_Me()
+			if( o_projectile_actor )
+				to_pere_paf = o_projectile_actor
+			
+			// Type de dommage en mode projectile
+			ti_type = C_PAF_KK_Fort
+			if( i_projectile_dmg )
+				ti_type |= C_PAF_KK_KiTue
+			
+			EVENT_AddEventPafCanal( C_EVENT_FILTER_Object, ti_type, to_pere_paf, Cf_EVENT_Duree_1Trame, tao_zde_zde_list[ti_i], -1, f_damage_projectile, tv_sens, COL_ZonePosGet( C_zde_fight))
+			f_proj_rot_coef_final = 0.0			// le tronc arrête de tourner
+			
+			// Test type ennemi
+			tmid_visibility = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility,  tao_zde_zde_list[ti_i], nobody)
+			if( MSG_GlobalIsValid(tmid_visibility) )
+			{
+				ti_visibility_type = EVENT_VisionIDGet(tmid_visibility)
+				if( ti_visibility_type == C_ID_Tyranosaure )
+					i_nb_coup++			//se dégrade quand KONG frappe un TREX	
+			}
+		}
+	}
+}
+

@@ -1,0 +1,18 @@
+int 	ti
+float 	tf1, tf2
+
+for(ti=SND_Cte_UserGrpMusic; ti <= SND_Cte_UserGrpMaster; ti++)
+{
+	tf1 = @ "univ" SND_gaf_UsrGroupVolume[ti-SND_Cte_UserGrpMusic]
+	tf2 = af_GroupVolume[ti]
+	
+	if( @ "univ" SND_gaf_UsrGroupVolume[ti-SND_Cte_UserGrpMusic] != af_GroupVolume[ti] )
+	{
+		af_GroupVolume[ti] = @ "univ" SND_gaf_UsrGroupVolume[ti-SND_Cte_UserGrpMusic]
+
+		if(af_GroupVolume[ti]>1.0) af_GroupVolume[ti] = 1.0
+		if(af_GroupVolume[ti]<0.0) af_GroupVolume[ti] = 0.0
+
+		SND_GroupVolumeSet(ti, af_GroupVolume[ti])
+	}
+}

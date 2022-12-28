@@ -1,0 +1,33 @@
+#define C_Plane_Speed					15		// m/s (* 3.6 = km/h)
+vector v
+message msg
+float f
+object tHits[10]
+int n,i
+dt=TIME_GetDt()
+v=OBJ_PosGet()+(dt*C_Plane_Speed*OBJ_SightGet())
+v+=Dest*Rot*dt
+v+=cvector(0,0,dt*5)
+v.z+=Strafe*dt
+Rot-=dt*2
+Strafe-=dt*10
+OBJ_PosSet(v)
+OBJ_SightSet(MATH_VecBlend(OBJ_SightGet(),Dest,dt*5))
+OBJ_RotateLocalY(dt*DestTimer)
+v=OBJ_BankingGet()
+OBJ_RotateLocalX(v.z*dt*8)
+while(MSG_GetCount()) msg=MSG_Get()
+TimerShoot-=dt
+if(TimerShoot<0)
+{
+	OBJ_FlagsTypeSet(OBJ_C_TypeFlag_Enemy,-1)
+	AI_TrackChange(2,"PLE_bhv_Init")
+}
+n=COL_ZDE_ZDEListGet(&tHits[0],C_zde_fight,C_zde_corps,all,none,Ci_Filter_IdentityFlag)
+if(n)
+{
+	msg.msg_id=C_PAF_KK_KiTue
+	msg.msg_sender=OBJ_Me()
+	for(i=0;i<n;i++) if(tHits[i] && tHits[i]!=OBJ_Me()) @tHits[i] MSG_Send(msg)
+}
+MSG_Clear()

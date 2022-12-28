@@ -1,0 +1,34 @@
+messageid		tmid_LNK
+
+float		tf_dist
+float		tf_limite
+
+vector	tv_temp
+
+object	to_serveur
+
+tmid_LNK = pop
+to_serveur = MSG_GlobalGetGao(tmid_LNK, SERVEUR)
+if( mi_State == Ci_bambou_state_grabbed )
+{
+	LNK_ServeurRefuse(tmid_LNK)
+}
+else if( o_joueur && to_serveur == o_joueur )
+{
+	// TEST DE DISTANCE
+	tv_temp = @to_serveur OBJ_PosGet() - OBJ_PosGet()
+	DBG_RenderVector(OBJ_PosGet(), tv_temp, color_bleu)
+	tf_limite = 9.0
+	tf_dist = MATH_VecDotProduct(tv_temp, tv_temp)
+	if( tf_dist < tf_limite )
+	{
+		LNK_ClientPropose(tmid_LNK, tf_dist)	
+		LNK_GrabObjectIdSet(tmid_LNK, Ci_weapon_ID_arc)
+	}
+	else
+		LNK_ServeurRefuse(tmid_LNK)
+}
+else
+{
+	LNK_ServeurRefuse(tmid_LNK)
+}

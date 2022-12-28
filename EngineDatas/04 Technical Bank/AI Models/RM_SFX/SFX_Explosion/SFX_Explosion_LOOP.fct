@@ -1,0 +1,184 @@
+#include "SFX_Explosion_VAR.var"
+
+DBG_StartRaster(4,"Rasters SFX")
+
+float	tf_vitesse, tf_amp
+int		ti_random_start, ti_random_stop, ti_cpt
+vector tv_pos, tv_pos_tmp
+
+if (b_rotate_gen)
+	OBJ_RotateLocalX(f_ang_rotate_gen * TIME_GetDt())
+
+if (OBJ_CapaTest(Obj_Capa_Switch) || (!AI_TriggerIsValid(TRIG_ON) || call_trigger(TRIG_ON)))
+{
+	switch (i_type)
+	{
+		case 0:
+			PROC_SFX_EXPLOSION_REALISTE(largeur_anneau, hauteur_colonne, OBJ_PosGet())
+			break
+		case 1:
+			PROC_SFX_EXPLOSION_CARTOON(OBJ_PosGet())
+			break
+		case 2:
+			PROC_SFX_EXPLOSION_SOL(f_taille, OBJ_PosGet())
+			break
+		case 3:
+			PROC_SFX_PAF_SOL(f_rayon, OBJ_PosGet())
+			break
+		case 4:
+			PROC_SFX_SPLASH01(OBJ_PosGet())
+			break
+		case 5:
+			PROC_DESTROY_2_SFX(i_GFX_01, i_GFX_02)
+			PROC_SFX_GOUTTES_LAPIN_01(OBJ_PosGet(), f_taille, f_dist, i_GFX_01, i_GFX_02)
+			break
+		case 6:
+			PROC_DESTROY_2_SFX(i_GFX_01, i_GFX_02)
+			PROC_SFX_PAF_LAPIN_02(OBJ_PosGet(), f_taille)
+			break
+		case 7:		
+			PROC_SFX_EXPLOSION_ARBRE(OBJ_PosGet(), f_taille, f_hauteur_explosion)
+			break
+		case 8:
+			PROC_DESTROY_SFX(i_GFX_Smoke)
+			PROC_SFX_GEN_FUMEE(OBJ_PosGet(), f_taille, c_color_fumee, i_GFX_Smoke)
+			break	
+		case 9:
+			PROC_SFX_CREATE_MEGAPAF(o_ref_megapaf, OBJ_PosGet(), f_taille_megapaf, f_inten_border, i_GFX_MP_Paf , i_GFX_MP_Etincelles, i_GFX_Morceaux, f_time_megapaf, f_duree_display_megapaf, f_time_display_megapaf)
+			i_activ_megapaf = vrai
+			f_time_megapaf = 0.0
+			break
+		case 10:	
+			ti_random_start = MATH_RandInt(0,i_freq_start_pression)
+			ti_random_stop = MATH_RandInt(0,i_freq_stop_pression)
+	
+			if ((ti_random_start == 0)) //|| (ti_random_stop == 0))
+			if (i_GFX_Smoke ==-1)
+					PROC_SFX_FUMEE_PRESSION(OBJ_PosGet(), f_taille_pression, c_color_fumee_pression, i_GFX_Smoke)
+			if (ti_random_stop == 0)
+				PROC_DESTROY_SFX(i_GFX_Smoke)
+			break
+		case 11:
+			PROC_SFX_EXPLOSION_SOL_PETITE(f_taille, OBJ_PosGet())
+			break
+		case 12:
+			PROC_SFX_EXPLOSION_LAPIN(OBJ_PosGet(), f_taille)
+			break
+		case 13:
+			i_activ_incant = vrai
+			PROC_SFX_INCANTATION(i_GFX_Incant1, OBJ_PosGet(), f_facteur_incant, f_hauteur_max_incant, PROC_INVERT_COLOR(c_color_incant))
+			break
+		case 14:
+			//PROC_SFX_COEURS_TERMINATOR(i_GFX_Coeurs_terminator, @get_rayman OBJ_PosGet(), f_taille)
+			PROC_SFX_COEURS_TERMINATOR(i_GFX_Coeurs_terminator, OBJ_PosGet(), f_taille)
+			break
+		case 15:
+			PROC_SFX_BULLES_EAU(i_GFX_Bulles, OBJ_PosGet(), f_taille)
+			//PROC_SFX_BULLES_EAU(i_GFX_Bulles, @get_rayman OBJ_PosGet() + cvector(0.0,0.0,1.0), f_taille)
+			break
+		case 16:
+			PROC_DESTRUCTION_OBJET(OBJ_Me())
+			break
+		case 17:
+			for (ti_cpt = 0; ti_cpt < Ci_SFX_NB_ETOILES; ti_cpt++)
+			{
+				tv_pos.x = OBJ_PosGet().x + (tf_rayon * MATH_Cos(i_GFX_Couronne_angle[ti_cpt] * Cf_PiBy180))
+				tv_pos.y = OBJ_PosGet().y + (tf_rayon * MATH_Sin(i_GFX_Couronne_angle[ti_cpt] * Cf_PiBy180))
+				tv_pos.z = OBJ_PosGet().z
+
+				tf_amp = 0.025 * f_taille
+
+				PROC_SFX_COURONNE_ETOILES(i_GFX_Couronne_etoiles[ti_cpt], tv_pos + cvector(MATH_RandFloat(-tf_amp,tf_amp), MATH_RandFloat(-tf_amp, tf_amp), MATH_RandFloat(-tf_amp, tf_amp)), f_taille)
+				i_GFX_Couronne_angle[ti_cpt] += TIME_GetDt() * tf_vitesse_etoiles
+				if (i_GFX_Couronne_angle[ti_cpt] >360.0)
+					i_GFX_Couronne_angle[ti_cpt] -= 360.0
+			}
+		case 18:
+			PROC_SFX_ZZZ(i_GFX_01, OBJ_PosGet(), f_taille)
+			break
+		case 19:
+			PROC_SFX_PIPI(i_GFX_01, OBJ_PosGet(), OBJ_SightGet(), f_taille)
+			break
+		case 20:
+			tv_pos_tmp = OBJ_PosGet()
+//			if (COL_RayObject_Dist(tv_pos_tmp, OBJ_SightGet(), 50.0, all, OBJ_C_IdentityFlag_Anims + OBJ_C_IdentityFlag_AI, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable))
+//				f_hauteur_col = COL_RayObject_PosGet().z
+//			else 
+			if (COL_RayObject_Dist(tv_pos_tmp, tv_pos_tmp - (Cv_VerticalVector * 50.0), 50.0, all, OBJ_C_IdentityFlag_Anims + OBJ_C_IdentityFlag_AI, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable))
+				f_hauteur_col = COL_RayObject_PosGet().z
+
+			PROC_SFX_JET_EAU(i_GFX_01, tv_pos_tmp, OBJ_SightGet(), f_taille_projecteur, f_taille_sprites, f_larg_projecteur, f_eparse_projecteur, f_hauteur_col)
+			break
+	}
+}
+
+if ((i_type == 13) && i_activ_incant)
+{
+	f_hauteur_incant += TIME_GetDt() * 5.0
+
+	f_facteur_incant += TIME_GetDt() * 3.5
+
+	if (f_hauteur_incant > 7.0)
+		f_hauteur_incant = 7.0
+
+	if (f_facteur_incant > 5.0)
+		f_facteur_incant = 5.0
+
+	if (i_activ_incant)
+		PROC_SFX_INCANTATION(i_GFX_Incant1, OBJ_PosGet(), f_facteur_incant + MATH_RandFloat(-0.5,0.5), f_hauteur_incant + MATH_RandFloat(-0.5,0.5), PROC_INVERT_COLOR( c_color_incant))
+}
+
+
+//---------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------
+// 						ON VIRE LES GENERATEURS
+//---------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------
+if ( !AI_TriggerIsValid(TRIG_OFF) || call_trigger(TRIG_OFF))
+{
+	PROC_DESTROY_6_SFX(i_GFX_01, i_GFX_02, i_GFX_03, i_GFX_MP_Etincelles, i_GFX_MP_Paf, i_GFX_Morceaux)
+	PROC_DESTROY_4_SFX(i_GFX_Incant1, i_GFX_Smoke, 	i_GFX_Coeurs_terminator, i_GFX_Bulles)
+
+	for (ti_cpt = 0; ti_cpt < Ci_SFX_NB_ETOILES; ti_cpt++)
+		PROC_DESTROY_SFX(i_GFX_Couronne_etoiles[ti_cpt])
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+// 			MISE A JOUR DES POSITIONS ET DES ORIENTATIONS DES GOUTTES DE SUEUR
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------------------------------------
+tf_vitesse = 3.5 * f_taille
+
+if ((i_GFX_01 != -1) && (i_type == 5))
+{
+	GFX_Setv(i_GFX_01, 13200, OBJ_PosGet() - MATH_VecLocalToGlobal(cvector(f_dist, 0.0, 0.0)))		// Position de création
+	GFX_Setv(i_GFX_01, 13201, MATH_VecLocalToGlobal(cvector(-tf_vitesse * 0.55, -0.15, 0.5)))		// Vitesse min sur chaque axe
+	GFX_Setv(i_GFX_01, 13202, MATH_VecLocalToGlobal(cvector(-tf_vitesse, 0.15, 4.5)))					// Vitesse max sur chaque axe
+}
+
+if ((i_GFX_02 != -1) && (i_type == 5))
+{
+	GFX_Setv(i_GFX_02, 13200, OBJ_PosGet() + MATH_VecLocalToGlobal(cvector(f_dist, 0.0, 0.0)))	// Position de création
+	GFX_Setv(i_GFX_02, 13201, MATH_VecLocalToGlobal(cvector(tf_vitesse * 0.55, -0.15, 0.5)))		// Vitesse min sur chaque axe
+	GFX_Setv(i_GFX_02, 13202, MATH_VecLocalToGlobal(cvector(tf_vitesse, 0.15, 4.5)))					// Vitesse max sur chaque axe
+}
+
+//-------------------------------
+// 		MEGAPAF
+//-------------------------------
+if (i_activ_megapaf)
+{
+//	PROC_SFX_CREATE_MEGAPAF(o_ref_megapaf, OBJ_PosGet(), f_taille_megapaf, i_GFX_MP_Paf , i_GFX_MP_Etincelles, f_time_megapaf, f_duree_max_megapaf, f_duree_display_megapaf, f_time_display_megapaf)
+	if (f_time_megapaf > f_duree_max_megapaf)
+		i_activ_megapaf = faux
+
+	PROC_SFX_CREATE_MEGAPAF(o_ref_megapaf, OBJ_PosGet(), f_taille_megapaf, f_inten_border, i_GFX_MP_Paf , i_GFX_MP_Etincelles, i_GFX_Morceaux, f_time_megapaf, f_duree_display_megapaf, f_time_display_megapaf)
+	f_time_megapaf += TIME_GetDt()
+}
+
+DBG_StopRaster(4)
+
+if (OBJ_CapaTest(Obj_Capa_Switch) || (!AI_TriggerIsValid(TRIG_ON) || call_trigger(TRIG_ON)))
+	if (i_one_shot)
+		AI_TrackCurStop()

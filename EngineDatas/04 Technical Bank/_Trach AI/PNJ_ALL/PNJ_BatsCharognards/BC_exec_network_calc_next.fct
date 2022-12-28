@@ -1,0 +1,302 @@
+
+#include "BC_defines.var"
+
+//=============================================================================
+// CALCULE LE TABLEAU DE WP A SUIVRE
+//=============================================================================
+
+
+// vol vers le réseau d'attente : test distance pour choisir d'mnprunter le réseau de depl ou non
+float				tf_dist_to_wp_cible
+
+// calcul du réseau
+object			to_final_wp				// wp final
+object			to_cible_wp				// wp proche de la cible
+object			to_1st_wp				// 1er wp
+object			to_next_wp				// prochain wp
+
+vector			tv_final_pos
+vector			tv_1st_pos
+
+// optimisation aller-retour
+vector			tv_axe_1er_lien		// axe lien wp 1->2
+vector			tv_axe_2eme_lien	// axe lien wp 2->3
+
+// optimisation demi-tour (wp déjà franchi)
+vector			tv_to_wp
+
+// détermination du wp d'attaque
+int					ti_nb_links						// nb de liens du wp de déplacement destination
+object			to_tmp_wp						// wp voisin du wp de déplacement destination
+object			to_best_wp						// meilleur wp pour le choix
+object			tao_wp[Ci_max_reseau_wp]						// tableau de wp pour les choix
+int					ti_i
+int					ti_cpt
+vector			tv_to_cible
+vector			tv_dir_tmp
+vector			tv_dir_best
+
+int					ti_flag_calc_net
+
+
+ti_flag_calc_net = faux
+
+
+//================= deb CHOIX DU WP FINAL DU DEPLACEMENT ================
+
+if( i_mode_depl == Ci_mode_depl_retour_se_percher )
+{
+	
+}
+else if( i_mode_depl == Ci_mode_depl_attaque )
+{
+	ti_cpt = 0
+	for( ti_i=0; ti_i < i_net_move_wp_nb; ti_i++)
+	{
+		if( ao_net_move_wp[ti_i] != o_backup_wp_depl_utilise )
+		{
+			// la bat ne réattaque pas du même point (test réalisé au 1er calcul du mode dépl attaque)
+			tao_wp[ti_cpt] = ao_net_move_wp[ti_i]
+			ti_cpt++
+		}
+	}
+	BC_WP_Reservation_Del(o_backup_nearest_cible_wp)
+	
+	if( BC_Attaque_Finale_Mode() )
+		to_final_wp = o_attaque_finale_wp
+	else
+		to_final_wp = ARR_LIB_NearestBVWaypoint(&tao_wp[0], ti_cpt, @o_cible_depl OBJ_PosGet(), CAPA_point_d_attaque, CAPA_point_reserve, tv_final_pos)
+	
+	if( ! to_final_wp )
+	{
+		if( o_backup_nearest_cible_wp )
+			to_final_wp = o_backup_nearest_cible_wp
+		else
+			DBG_Error("Erreur LD : il n'y a pas de wp d'attaque libre ! il y a plus de bats agressives que de wp d'attaque dans toute la map !!!")
+	}
+	
+	to_cible_wp = to_final_wp
+	
+	if( i_flag_net_1st_move || i_reseau_wp_count > 1 )
+		ti_flag_calc_net = vrai			// il y a encore au moins un lien à parcourir
+	else
+	{
+		// le bat vient d'arriver au wp d'attaque
+		if( to_final_wp == o_backup_nearest_cible_wp )
+			i_reseau_wp_count = 0			// le joueur n'a pas bougé -> la bat attaque
+		else
+		{
+			ti_flag_calc_net = vrai			// ================================= NEW NEW NEW DECEMBRE 2004 !!!!!!!!!!!!!!!!!!!!!! =================================
+			i_flag_depl_fini = faux			// la cible a bougé depuis que le bat a atteint le point d'attaque
+			i_flag_net_1st_calcul = vrai		// ne pas faire l'optimisation "je vais pas derrière"
+		}
+	}
+	o_backup_nearest_cible_wp = to_cible_wp
+	BC_WP_Reservation_Add(o_backup_nearest_cible_wp)
+}
+else if( i_mode_depl == Ci_mode_depl_attente )
+{
+	// retour au réseau d'attente
+	
+	if( i_flag_net_1st_move )
+	{
+		// 1er point de départ après l'attaque : choix du wp de depl entre le nearest wp et les wp qui sont reliés avec lui
+		ti_flag_calc_net = faux
+		
+		to_final_wp = ARR_LIB_NearestBVWaypoint(&ao_net_move_wp[0], i_net_move_wp_nb, OBJ_PosGet(), CAPA_deplacement, none, tv_final_pos)	// nearest de la bat
+		i_reseau_wp_count = 1
+		
+		// NEW NEW NEW pour ne pas passer par le réseau de depl si on est déjà à côté du réseau de ronde
+		if( o_cible_depl )
+		{
+			tf_dist_to_wp_cible = OBJ_SqrDist(o_cible_depl)
+			if( OBJ_SqrDist(to_final_wp) >= tf_dist_to_wp_cible )
+				to_final_wp = o_cible_depl			// c'est plus court de ne pas emprunter le réseau de depl
+		}
+	}
+	else
+	{
+		// suivi du réseau pour repartir
+		to_final_wp = ARR_LIB_NearestBVWaypoint(&ao_net_move_wp[0], i_net_move_wp_nb, @o_cible_depl OBJ_PosGet(), CAPA_deplacement, none, tv_final_pos)
+		ti_flag_calc_net = vrai
+	}
+}
+else if( i_mode_depl == Ci_mode_depl_charogne_transport )
+{
+	// retour au nid
+	
+	if( i_flag_net_1st_move )
+	{
+		// 1er point de départ après l'attaque : choix du wp de depl entre le nearest wp et les wp qui sont reliés avec lui
+		ti_flag_calc_net = faux
+		
+		to_final_wp = ARR_LIB_NearestBVWaypoint(&ao_net_move_wp[0], i_net_move_wp_nb, OBJ_PosGet(), CAPA_deplacement, none, tv_final_pos)	// nearest de la bat
+		i_reseau_wp_count = 99
+	}
+	else
+	{
+		if( i_reseau_wp_count > 1 )
+		{
+			// il y a encore des wp à parcourir
+			to_final_wp = ARR_LIB_NearestBVWaypoint(&ao_net_move_wp[0], i_net_move_wp_nb, @o_cible_depl OBJ_PosGet(), CAPA_deplacement, none, tv_final_pos)
+			ti_flag_calc_net = vrai
+		}
+		else
+		{
+			// la bat est arrivée au wp le + proche
+			if( ! i_flag_depl_wp_apres_reseau )
+			{
+				AI_Execute("BC_exec_calc_pos_grab_charogne")
+				
+				// next wp
+				@o_tmp_obj_next OBJ_PosSet(v_dest_pos)
+				@o_tmp_obj_next OBJ_BankingGeneralSet(v_dest_sight, Cv_VerticalVector)
+				o_next_wp = o_tmp_obj_next
+				
+				
+				to_final_wp = o_next_wp
+				i_reseau_wp_count = 1		// reste 1 depl à effectuer
+				ti_flag_calc_net = faux
+				i_flag_frein = vrai				// doit s'arrêter à la fin
+				i_flag_depl_wp_apres_reseau = vrai
+			}
+			else
+			{
+				i_reseau_wp_count = 0		// fin du déplacement
+				ti_flag_calc_net = faux
+				i_flag_depl_wp_apres_reseau = faux
+			}
+		}
+	}
+}
+else if( i_mode_depl == Ci_mode_depl_charogne_olfactif || i_mode_depl == Ci_mode_depl_charogne_visuel )
+{
+	if( i_reseau_wp_count > 1 )		// il y a encore des wp à parcourir
+	{
+		// suivi du réseau pour atteindre la position de la charogne ou de la trace de sang
+		@o_tmp_obj_next OBJ_PosSet(v_dest_pos)
+		@o_tmp_obj_next OBJ_BankingGeneralSet(v_dest_sight, Cv_VerticalVector)
+		o_next_wp = o_tmp_obj_next
+		
+		o_cible_depl = o_tmp_obj_next
+	
+		to_final_wp = ARR_LIB_NearestBVWaypoint(&ao_net_move_wp[0], i_net_move_wp_nb,  @o_cible_depl OBJ_PosGet(), CAPA_deplacement, none, tv_final_pos)
+		ti_flag_calc_net = vrai
+	}
+	else
+	{
+		// la bat est arrivée au wp le + proche
+		if( ! i_flag_depl_wp_apres_reseau )
+		{
+			if(i_mode_depl == Ci_mode_depl_charogne_olfactif)
+				AI_Execute("BC_exec_calc_pos_suivi_olfactif")
+			else if(i_mode_depl == Ci_mode_depl_charogne_visuel)
+				AI_Execute("BC_exec_calc_pos_suivi_visuel")
+			
+			// next wp
+			@o_tmp_obj_next OBJ_PosSet(v_dest_pos)
+			@o_tmp_obj_next OBJ_BankingGeneralSet(v_cible_pos - v_dest_pos, Cv_VerticalVector)
+			o_next_wp = o_tmp_obj_next
+			o_cible_depl = o_tmp_obj_next
+			
+			
+			to_final_wp = o_next_wp
+			i_reseau_wp_count = 1		// reste 1 depl à effectuer
+			ti_flag_calc_net = faux
+			i_flag_frein = vrai				// doit s'arrêter à la fin
+			i_flag_depl_wp_apres_reseau = vrai
+		}
+		else
+		{
+			i_reseau_wp_count = 0		// fin du déplacement
+			ti_flag_calc_net = faux
+			i_flag_depl_wp_apres_reseau = faux
+		}
+	}
+}
+
+
+
+//================= fin CHOIX DU WP FINAL DU DEPLACEMENT ================
+
+
+
+
+//================= deb CALCUL DU RESEAU DE DEPLACEMENT ================
+
+
+if( ! ti_flag_calc_net)
+	to_next_wp = to_final_wp			// déplacement déjà calculé
+else
+{
+	// calcul du réseau obligatoire
+	
+	// 1st_wp
+	to_1st_wp = ARR_LIB_NearestBVWaypoint(&ao_net_move_wp[0], i_net_move_wp_nb,  OBJ_PosGet(), CAPA_deplacement, none, tv_1st_pos)
+	
+	// CALCUL DU PLUS COURT CHEMIN
+	if( to_1st_wp && to_final_wp ) 
+	{
+		// il y a des wp
+		if( to_1st_wp != to_final_wp )
+			i_reseau_wp_count = WAY_ShortWay( n_reseau, &ao_reseau_wp[0], to_1st_wp, to_final_wp, all, none )
+		else
+		{
+			// wp de début et de fin identiques -> il faut se rendre au wp (test optimisation ensuite)
+			ao_reseau_wp[0] = to_1st_wp
+			i_reseau_wp_count = 1
+		}
+		
+		// OPTIMISATION "je vais pas derrière" : si le wp le + proche est derrière moi, c'est que la bv du wp devant moi est tellement grande que 
+		// je suis en contact avec elle alors que je suis toujours plus proche du wp derrière -> j'oublie le wp derrière
+		// REM : optimisation interdite lors du 1er calcul du réseau (il ne faut pas supprimer le 1er élément du réseau)
+		tv_to_wp = @to_1st_wp OBJ_PosGet() - OBJ_PosGet()
+		if( ( ! i_flag_net_1st_calcul) && (MATH_VecDotProduct(tv_to_wp, OBJ_SightGet()) < 0) )
+			i_reseau_wp_count--	
+		
+		// OPTIMISATION "j'y suis déjà" : prochain WP déjà atteint
+		if( i_reseau_wp_count && ( i_flag_depl_fini || COL_Pivot_BVCollide(ao_reseau_wp[i_reseau_wp_count -1]) ) )
+			if( ! i_flag_net_1st_move )		// pour etre sur que la bat aille bien se positionner à un wp d'attaque (et qu'elle n'attaque pas direct)
+				i_reseau_wp_count--
+		
+		// OPTIMISATION "aller-retour" : éviter un aller-retour (min 2 wp)
+		if( i_reseau_wp_count >= 2 )
+		{
+			tv_axe_1er_lien = OBJ_PosGet() - @ao_reseau_wp[i_reseau_wp_count -1] OBJ_PosGet()
+			if( ! MATH_VecNullEpsilon(tv_axe_1er_lien) )
+				MATH_VecSetNormalize(tv_axe_1er_lien)
+	
+			tv_axe_2eme_lien = @ao_reseau_wp[i_reseau_wp_count -2] OBJ_PosGet() - @ao_reseau_wp[i_reseau_wp_count -1] OBJ_PosGet()
+			if( ! MATH_VecNullEpsilon(tv_axe_2eme_lien) )
+				MATH_VecSetNormalize(tv_axe_2eme_lien)
+			
+			if( MATH_VecDotProduct(tv_axe_1er_lien, tv_axe_2eme_lien) > 0.8 )
+				i_reseau_wp_count--			// on évite l'aller-retour
+			// else pas de demi-tour -> pas d'optimisation possible
+		}
+		// else 0 ou 1 wp à franchir -> pas d'optimisation possible
+	}
+	else
+		i_reseau_wp_count = 0
+	
+	
+	// next wp
+	if( i_reseau_wp_count )
+		to_next_wp = ao_reseau_wp[i_reseau_wp_count -1]
+	else
+		to_next_wp = ao_reseau_wp[0]		// backup ancien point pour le vol_courbe de la trame d'après
+	
+	
+	i_flag_net_1st_calcul = faux
+}
+
+
+//================= fin CALCUL DU RESEAU DE DEPLACEMENT ================
+
+i_flag_net_1st_move = faux		// 1er déplacement effectué
+
+
+// PILE ===============================
+push(to_next_wp)
+// PILE ===============================
+

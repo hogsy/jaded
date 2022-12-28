@@ -1,0 +1,73 @@
+vector	tv_pos
+object	to_gao
+int			ti_string
+
+switch( i_GFX_mode )
+{
+	case 1 :
+		f_GFX_coef += MATH_FloatMin(1.0 - f_GFX_coef, TIME_GetDt())
+		break
+	case 2 :
+		f_GFX_coef += MATH_FloatMin(10.0 - f_GFX_coef, 15 * TIME_GetDt())
+		if( f_GFX_coef == 10.0 )
+			i_GFX_mode++
+		break
+	case 3 :
+		f_GFX_coef -= MATH_FloatMin(f_GFX_coef, 40 * TIME_GetDt())
+		if( ! f_GFX_coef )
+			i_GFX_mode++
+		break
+}
+
+// DO NOT DISPLAY
+to_gao = @get_global o_wearshop_rayman
+if( ! to_gao || OBJ_SqrDist(to_gao) > 400.0 )
+	f_GFX_coef = 0.0
+
+if( f_GFX_coef )
+{
+	// DISPLAY
+	if ( i_GFX_Halo == -1 )
+	{
+		i_GFX_Halo = @to_gao GFX_Add(21)
+		GFX_FlagSet(i_GFX_Halo, 4, 1)
+		GFX_MaterialSet(i_GFX_Halo, get_SFX_light_and_smoke, 0)	
+		GFX_Setf(i_GFX_Halo, 21002, 0.25)							// extraction par rapport au point de génération (vers la cam)
+		GFX_Seti(i_GFX_Halo, 21103, 1)		
+	}
+	GFX_Seti(i_GFX_Halo, 21101, c_GFX_color)
+	
+	GFX_Setv(i_GFX_Halo, 21200, OBJ_PosGet())
+	GFX_Setf(i_GFX_Halo, 21000, 2.0 * f_GFX_coef )  // taille du halo
+	
+	// DISPLAY TEXT
+	tv_pos = VIEW_3dWorldTo2d(0,OBJ_PosGet()) - cvector(0.1,0,0)
+	ti_string = STR_CreateText("\cFF\\h0.1\ ", tv_pos, 0)
+	switch( item )
+	{
+		case RM_POWER_DISGUISE_GLASSES :
+			STR_AppendText(ti_string, "Lunettes")
+			break
+		case RM_POWER_DISGUISE_HAIR :
+			STR_AppendText(ti_string, "Cheveux")
+			break
+		case RM_POWER_DISGUISE_SHOES :
+			STR_AppendText(ti_string, "Chaussures")
+			break
+		case RM_POWER_DISGUISE_VEST :
+			STR_AppendText(ti_string, "Corps")
+			break
+	}
+	STR_AppendText(ti_string, " ( ")
+	STR_AppendInt(ti_string, costume)
+	STR_AppendText(ti_string, " ) ")
+}
+else
+{
+	// DELETE
+	if ( i_GFX_Halo != -1 )
+	{
+		GFX_Del(i_GFX_Halo)
+		i_GFX_Halo = -1
+	}
+}

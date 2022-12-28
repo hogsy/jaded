@@ -1,0 +1,162 @@
+
+int res, res2
+
+#define	OPand	0
+#define	OPor		1
+#define	OPxor	2
+
+if (mi_trigger_forced_true)
+	res = vrai											// On force a vrai
+else if (mi_trigger_forced_false)
+	res = faux											// On force a faux
+else if ( mf_WhenTrueTimerBeforeExec )
+{
+	res = faux
+	mf_WhenTrueTimerBeforeExec -= TIME_GetDt()
+	if ( mf_WhenTrueTimerBeforeExec <= 0)
+	{
+		mf_WhenTrueTimerBeforeExec = 0
+		res = vrai
+	}
+}
+else if ( mf_WhenFalseTimerBeforeExec )
+{
+	res = vrai
+	mf_WhenFalseTimerBeforeExec -= TIME_GetDt()
+	if ( mf_WhenFalseTimerBeforeExec <= 0)
+	{
+		mf_WhenFalseTimerBeforeExec = 0
+		res = faux
+	}
+}
+else 
+{
+	if ( mi_TriggerTest )
+	{
+		// Test multi trigger
+		res = call_trigger( mt_TriggerTest )
+	
+		if (mi_TriggerTest > 1 )
+		{
+			if ( !( ( mt_TriggerTestOp_01 == OPor ) && res ) && !( ( mt_TriggerTestOp_01 == OPand ) && !res ) )
+			{
+				res2 = call_trigger( mt_TriggerTest1 )
+				if ( mt_TriggerTestOp_01 == OPxor )
+					res = res ^ res2
+				else
+					res = res2
+			}
+		}
+		if (mi_TriggerTest > 2 )
+		{
+			if ( !( ( mt_TriggerTestOp_12 == OPor ) && res ) && !( ( mt_TriggerTestOp_12 == OPand ) && !res ) )
+			{
+				res2 = call_trigger( mt_TriggerTest2 )
+				if ( mt_TriggerTestOp_12 == OPxor )
+					res = res ^ res2
+				else
+					res = res2
+			}
+		}
+	}
+	else
+		// Test BV simple
+		res =COL_BV_PivotCollide( mo_Perso )
+		
+	// delay avant execution si vrai
+	if ( res && (mi_State == 0) && (mf_WhenTrueWaitBeforeExec > 0 ))
+	{
+		mf_WhenTrueTimerBeforeExec = mf_WhenTrueWaitBeforeExec 
+		mf_WhenTrueTimerBeforeExec += MATH_RandFloat( -mf_WhenTrueWaitBeforeExec_random, mf_WhenTrueWaitBeforeExec_random)
+		if (	mf_WhenTrueTimerBeforeExec <= 0)
+		{
+			mf_WhenTrueTimerBeforeExec = 0
+			res = vrai
+		}
+		else
+			res = faux
+	}
+
+	// delai avant execution si faux	
+	if ( !res && (mi_State == 1) && (mf_WhenFalseWaitBeforeExec > 0 ))
+	{
+		mf_WhenFalseTimerBeforeExec = mf_WhenFalseWaitBeforeExec 
+		mf_WhenFalseTimerBeforeExec += MATH_RandFloat( -mf_WhenFalseWaitBeforeExec_random, mf_WhenFalseWaitBeforeExec_random)
+		if (	mf_WhenFalseTimerBeforeExec <= 0)
+		{
+			mf_WhenFalseTimerBeforeExec = 0
+			res = faux
+		}
+		else
+			res = vrai
+	}
+
+}
+
+
+switch( mi_State )
+{
+	case 0 : 		// --------( Off )--------
+		if (res)
+		{
+			// J'etais OFF, Je suis maintenant en ON
+			#ifndef _FINAL_
+			if ( @get_global DEBUG_ACTIVATORTRIGGER && !mi_StateMessage)
+			{
+				mi_StateMessage = 1
+				DBG_TraceString( "ActivatorTrigger ON :" )
+				DBG_TraceObject( OBJ_Me() )
+				DBG_TraceEOL()
+			}
+			#endif
+
+			AI_Execute( "ActivatorTrigger_playon" )
+			if (!mi_trigger_forced_true)
+			{
+				// Si on me demande de jouer les EXEC jusqu'a ce qu'il soit terminé, je passe pas en STATE 1 pour garder le test de Repeat & co
+				// Ici tous les EXECs ON sont fini d'executer
+				mi_State = 1
+				if ( (!mi_TriggerExec_repeat && !mi_Loop) && !AI_TriggerIsValid(mt_TriggerExecOff ))
+					AI_TrackCurChangeNow( "ActivatorTrigger_Destroy" )
+			}
+		}
+		else
+		{
+			// J'etais OFF, Je suis encore en OFF
+			if ( mi_TriggerExecOff_repeat)
+				AI_Execute( "ActivatorTrigger_playoff" )	
+		}
+		break
+				
+	case 1 : 		// --------( On )--------
+		if (res)
+		{
+			// J'etais ON, Je suis encore en ON
+			if ( mi_TriggerExec_repeat )
+				AI_Execute( "ActivatorTrigger_playon" )	
+		}
+		else
+		{
+			// J'etais ON, Je suis maintenant en OFF
+			#ifndef _FINAL_
+			if ( @get_global DEBUG_ACTIVATORTRIGGER && mi_StateMessage )
+			{
+				mi_StateMessage = 0
+				DBG_TraceString( "ActivatorTrigger OFF :" )
+				DBG_TraceObject( OBJ_Me() )
+				DBG_TraceEOL()
+			}
+			#endif
+
+			AI_Execute( "ActivatorTrigger_playoff" )
+			if (!mi_trigger_forced_false)
+			{
+				// Si on me demande de jouer les EXEC jusqu'a ce qu'il soit terminé, je passe pas en STATE 0 pour garder le test de Repeat & co
+				// Ici tous les EXECs OFF sont fini d'executer
+				mi_State = 0
+			 	if (!mi_Loop)
+			 		AI_TrackCurChangeNow( "ActivatorTrigger_Destroy" )
+			}
+		}
+		break
+}

@@ -1,0 +1,453 @@
+#include "PNJ_Raptor_defines.var"
+
+int				ti_trame
+int				ti_action
+
+float			tf_dist
+
+vector		tv_temp
+
+object		to_target
+
+messageid	tmid_invalid
+
+#define Cf_end_of_anim					0.999
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+
+	OBJ_FlagsExtraSet(none, OBJ_C_ExtraFlag_AlwaysPlay)
+
+	if (i_CineStack && am_CineStack[0].msg_id == CINE_Bite)
+		i_cine_close = vrai
+
+	i_flag_bite = faux
+	i_flag_zde_fight_enable = faux
+
+	if (i_flag_paf_visual)
+	{
+		f_force_run_duration = MATH_FloatMax(f_force_run_duration, Cf_after_bite_force_run_duration)
+		
+		f_requin_mode_duration = 0.0
+		f_force_requin_mode_duration = MATH_FloatMax(f_force_requin_mode_duration, Cf_after_bite_force_requin_duration)
+	}
+	else if (i_perceived_best_actor_index != -1 && ! IsThis_ID_Humain(ai_perceived_ID[i_perceived_best_actor_index]) )
+	{
+		f_force_run_duration = MATH_FloatMax(f_force_run_duration, 2.0)
+
+		f_requin_mode_duration = 0.0
+		f_force_requin_mode_duration = MATH_FloatMax(f_force_requin_mode_duration, 3.0)
+	}
+	
+	o_IK_bassin_bite_actor = nobody
+
+	DYN_FrictionVectorSet(cvector(f_friction, f_friction, 0.0))
+
+	return
+}
+
+if (i_CineStack && am_CineStack[0].msg_id == CINE_Bite)
+{
+	to_target = am_CineStack[0].msg_gao2
+	MSG_GlobalSetInvalid(tmid_invalid)
+	PNJ_Raptor_Best_Interet_Update(PNJ_Raptor_Add_Perceived_Actor(to_target, 0, tmid_invalid))
+
+	i_flag_check_best_interet_done = vrai
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_MORD)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_MORD
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+#ifndef _FINAL_
+	if (DBG_Display_Text && raptor_type == C_ID_Tyranosaure)
+		STR_CreateText("\h.07\TREX : RRRRRRRR !!!", cvector(0.45, 0.48, 0.0) , 2.0)
+#endif
+
+	i_flag_bite_ok = faux
+	i_flag_last_chance_grab = vrai
+
+	DYN_FrictionVectorSet(cvector(8.0, 8.0, 0.0))
+
+	to_target = EVENT_InteretTargetGet(mid_best_interet)
+	switch(ai_perceived_ID[i_perceived_best_actor_index])
+	{
+		case C_ID_Joueur :
+			o_IK_bassin_bite_actor = o_camera
+			break
+
+		case C_ID_Scolo :
+			o_IK_bassin_bite_actor = @to_target ANI_CanalObjectGet(5)
+			break
+			
+		case C_ID_BatCharognard :
+			o_IK_bassin_bite_actor = @to_target ANI_CanalObjectGet(Anim_Canal_Torse)
+			break	
+	
+		default:
+			o_IK_bassin_bite_actor = @to_target ANI_CanalObjectGet(Anim_Canal_Tete)
+	}
+
+	if (!o_IK_bassin_bite_actor)
+		o_IK_bassin_bite_actor = to_target
+
+	switch(raptor_type)
+	{
+		case C_ID_Tyranosaure :
+
+			tv_temp = @to_target OBJ_PosGet()
+			tv_temp -= OBJ_PosGet()
+
+			if (i_mord_action_index != -1)
+				PNJ_Raptor_ActionSet(i_mord_action_index)
+			else if (i_perceived_best_actor_index == i_perceived_main_actor_index)
+				PNJ_Raptor_ActionSet(Action_Fight_AttacJack_deb)
+			else if (tv_temp.z > 6.0)
+				PNJ_Raptor_ActionSet(Action_Fight_Mord_Haut)
+			else  if (tv_temp.z > 3.0)
+				PNJ_Raptor_ActionSet(Action_Fight_Mord_Face)
+			else
+				PNJ_Raptor_ActionSet(Action_Fight_Mord)
+			break
+
+		case C_ID_Galiminus :
+				
+			tv_temp = @o_IK_bassin_bite_actor OBJ_PosGet() 
+			tv_temp -= OBJ_PosGet()
+			
+			if (tv_temp.z > 3.0 * OBJ_ZoomGet())
+			{
+				i_mord_action_index = MATH_Modulo(i_mord_action_index + 1, 2)
+				if (i_mord_action_index)
+					PNJ_Raptor_ActionSet(Action_Fight_Gali_JackAttack)
+				else
+					PNJ_Raptor_ActionSet(Action_Fight_AttacJack_deb)
+			}
+			else
+			{
+				PNJ_Raptor_ActionSet(Action_Fight_Mord)
+			}	
+	
+			break
+
+		case C_ID_Raptor :
+			switch(ai_perceived_ID[i_perceived_best_actor_index])
+			{
+				case C_ID_Raptor :
+
+					if (MATH_VecDotProduct(OBJ_SightGet(), @to_target OBJ_SightGet()) > 0.0)
+						o_IK_bassin_bite_actor = @to_target ANI_CanalObjectGet(Anim_Canal_Bassin)
+			
+					i_mord_action_index = MATH_Modulo(i_mord_action_index + 1, 2)
+					if (i_mord_action_index)
+						PNJ_Raptor_ActionSet(Action_Fight_Mord)
+					else
+						PNJ_Raptor_ActionSet(Action_Fight_AttacJack_deb)
+					break
+
+				default:	
+					PNJ_Raptor_ActionSet(Action_Fight_Mord)
+			}
+			break
+	}	
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =======================================================================================================
+OBJ_FlagsExtraSet(OBJ_C_ExtraFlag_AlwaysPlay, none)
+
+//// RAMING TEST
+//DBG_TraceString("Faut qu'ça rame !!!")
+//DBG_TraceEOL()
+
+AI_Execute("PNJ_Raptor_exec_check_msg")
+
+AI_Execute("PNJ_Raptor_exec_check_vision")
+
+AI_Execute("PNJ_Raptor_exec_check_sound")
+
+i_flag_zde_fight_enable = vrai
+AI_Execute("PNJ_Raptor_exec_check_collision")
+
+AI_Execute("PNJ_Raptor_exec_check_paf")
+if (i_flag_paf_fly)
+	macro_change_etat("PNJ_Raptor_ETAT_PAF_FLY")
+if (i_flag_paf_fall)
+	macro_change_etat("PNJ_Raptor_ETAT_PAF_FALL")
+if (i_flag_paf_repousse || i_flag_paf_slide || !f_lifecur)
+	macro_change_etat("PNJ_Raptor_ETAT_PAF_SLIDE")
+if (i_flag_paf_visual)
+	macro_change_etat("PNJ_Raptor_ETAT_ATTENTE")
+
+AI_Execute("PNJ_Raptor_exec_check_shoot")
+
+AI_Execute("PNJ_Raptor_exec_update_best_interest")
+if (i_flag_change_target)
+	macro_change_etat("PNJ_Raptor_ETAT_HESITE")
+
+AI_Execute("PNJ_Raptor_exec_check_requin")
+
+AI_Execute("PNJ_Raptor_exec_check_client")
+
+if (o_grab_actor)
+	macro_change_etat("PNJ_Raptor_ETAT_GRAB")
+
+if ( ! MSG_GlobalIsValid(mid_best_interet) || i_perceived_best_actor_index == -1)
+	macro_change_etat(fct_main_etat)
+
+to_target = EVENT_InteretTargetGet(mid_best_interet)
+if (to_target == o_main_actor)
+	f_time_last_jackattack = TIME_Get()
+	
+// COMPORTEMENT =================================================================================================
+EVENT_InteretStatusSet(mid_best_interet, C_EVENT_InteretStatusLock)
+
+ai_perceived_seen[i_perceived_best_actor_index] = vrai
+
+//if (raptor_type == C_ID_Tyranosaure && i_perceived_best_actor_index == i_perceived_main_actor_index)
+//{
+//	i_flag_look_best_interet = vrai
+//	i_flag_look = vrai
+//	v_look_pos = @o_camera OBJ_PosGet()
+//	
+//	i_flag_bite = vrai
+//
+//	if ( (! i_CineStack || am_CineStack[0].msg_id != CINE_Bite) && ! PNJ_Raptor_On_Wall_Pos(@to_target OBJ_PosGet()) )
+//		i_flag_bite_no_wall = GRID_LIB_IsReachableFrom(OBJ_PosGet(), @o_IK_bassin_bite_actor OBJ_PosGet(), 0, -1.0, faux, 0)
+//	else
+//		i_flag_bite_no_wall = vrai
+//
+//	i_flag_run = vrai
+//
+//	i_way_computation_mode = Ci_WAY_MODE_FIGHT
+//	AI_Execute("PNJ_Raptor_exec_way_find_dest_pos")
+//	
+//	AI_Execute("PNJ_Raptor_exec_way_move")
+//	
+//	if ( ! i_way_moving ) // || af_perceived_dist[i_perceived_best_actor_index] < 10.0)
+//		macro_change_etat(fct_main_etat)
+//
+//	AI_Execute("PNJ_Raptor_exec_select_action")
+//	
+//	returntrack
+//}
+
+ti_trame = ANI_CurrentFrameGet(0)
+
+ti_action = ACT_ActionGet()
+switch(ti_action)
+{
+	case Action_Fight_Mord_Face :
+
+//		i_flag_look = vrai
+//		i_flag_look_best_interet = vrai
+
+		if (ACT_ActionFinished())
+			macro_change_etat("PNJ_Raptor_ETAT_ATTENTE")
+
+		if ( ! ACT_ActionItemGet() && ti_trame > 30 )
+		{
+			i_flag_bite = vrai
+		}
+		else if (i_flag_last_chance_grab && ACT_ActionItemGet())
+		{
+			i_flag_last_chance_grab = faux
+			i_flag_bite = vrai
+			
+			ACT_ActionSet(ti_action | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_FrameZero | Ci_ActionSet_Force_No_Blend)
+//			ANI_RatioSet(0, Cf_end_of_anim)
+			ANI_CurrentFrameSet(0, ANI_NbFrameGet(0) - 1)
+			ACT_ActionSet(ti_action | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_No_Blend)
+		}
+
+		PNJ_Raptor_Do_Commun_Bite_Stuff(to_target)		
+
+		break
+
+	case Action_Fight_Mord_Haut :
+
+//		i_flag_look = vrai
+//		i_flag_look_best_interet = vrai
+
+		if (ACT_ActionFinished())
+			macro_change_etat("PNJ_Raptor_ETAT_ATTENTE")
+
+		if ( ! ACT_ActionItemGet() && ti_trame > 35 )
+		{
+			i_flag_bite = vrai
+		}
+		else if (i_flag_last_chance_grab && ACT_ActionItemGet())
+		{
+			i_flag_last_chance_grab = faux
+			i_flag_bite = vrai
+			
+			ACT_ActionSet(ti_action | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_FrameZero | Ci_ActionSet_Force_No_Blend)
+//			ANI_RatioSet(0, Cf_end_of_anim)
+			ANI_CurrentFrameSet(0, ANI_NbFrameGet(0) - 1)
+			ACT_ActionSet(ti_action | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_No_Blend)
+		}
+
+		PNJ_Raptor_Do_Commun_Bite_Stuff(to_target)
+		
+		break
+
+	case Action_Fight_Mord :
+
+//		i_flag_look = vrai
+//		i_flag_look_best_interet = vrai
+
+		if (ACT_ActionFinished())
+			macro_change_etat("PNJ_Raptor_ETAT_ATTENTE")
+
+		switch(raptor_type)
+		{
+			case C_ID_Tyranosaure :
+				if ( ! ACT_ActionItemGet() && ti_trame >= 55 )
+				{
+					i_flag_bite = vrai
+				}
+				else if (i_flag_last_chance_grab && ACT_ActionItemGet())
+				{
+					i_flag_last_chance_grab = faux
+					i_flag_bite = vrai
+					
+					ACT_ActionSet(ti_action | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_FrameZero | Ci_ActionSet_Force_No_Blend)
+//					ANI_RatioSet(0, Cf_end_of_anim)
+					ANI_CurrentFrameSet(0, ANI_NbFrameGet(0) - 1)
+					ACT_ActionSet(ti_action | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_No_Blend)
+				}
+				break
+				
+			default:
+	
+				if (ti_trame >= 14 && ti_trame <= 19)
+				{
+					i_flag_bite = vrai
+				}
+				else if (i_flag_last_chance_grab && ti_trame > 19)
+				{
+					i_flag_last_chance_grab = faux
+					i_flag_bite = vrai
+					
+					ACT_ActionSet(ti_action | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_FrameZero | Ci_ActionSet_Force_No_Blend)
+					ANI_CurrentFrameSet(0, 19)
+					ACT_ActionSet(ti_action | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_No_Blend)
+				}
+					
+				break
+		}
+
+		PNJ_Raptor_Do_Commun_Bite_Stuff(to_target)
+
+		break
+
+	case Action_Fight_Gali_JackAttack :
+
+		if ( ! ACT_ActionItemGet() && ti_trame >= 15 )
+		{
+			i_flag_bite = vrai
+		}
+		else if (i_flag_last_chance_grab && ACT_ActionFinished())
+		{
+			i_flag_last_chance_grab = faux
+			i_flag_bite = vrai
+			
+			ACT_ActionSet(ti_action | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_FrameZero | Ci_ActionSet_Force_No_Blend)
+//			ANI_RatioSet(0, Cf_end_of_anim)
+			ANI_CurrentFrameSet(0, ANI_NbFrameGet(0) - 1)
+			ACT_ActionSet(ti_action | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_No_Blend)
+		}
+
+		if (ACT_ActionFinished())
+			macro_change_etat("PNJ_Raptor_ETAT_ATTENTE")
+
+		PNJ_Raptor_Do_Commun_Bite_Stuff(to_target)
+
+		break
+		
+	case Action_Fight_AttacJack_deb :
+
+		switch(raptor_type)
+		{
+			case C_ID_Tyranosaure :
+
+				if (ti_trame > 65)
+				{
+					i_flag_bite = vrai
+				}
+				else if (i_flag_last_chance_grab && ACT_ActionFinished())
+				{
+					i_flag_last_chance_grab = faux
+					i_flag_bite = vrai
+					
+					ACT_ActionSet(ti_action | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_FrameZero | Ci_ActionSet_Force_No_Blend)
+//					ANI_RatioSet(0, Cf_end_of_anim)
+					ANI_CurrentFrameSet(0, ANI_NbFrameGet(0) - 1)
+					ACT_ActionSet(ti_action | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_No_Blend)
+				}
+
+				if (ACT_ActionFinished())
+					macro_change_etat(fct_main_etat)
+
+				break
+				
+			default:
+				if (ti_trame > 25)
+				{
+					i_flag_bite = vrai
+				}
+				else if (i_flag_last_chance_grab && ACT_ActionFinished())
+				{
+					i_flag_last_chance_grab = faux
+					i_flag_bite = vrai
+					
+					ACT_ActionSet(ti_action | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_FrameZero | Ci_ActionSet_Force_No_Blend)
+//					ANI_RatioSet(0, Cf_end_of_anim)
+					ANI_CurrentFrameSet(0, ANI_NbFrameGet(0) - 1)
+					ACT_ActionSet(ti_action | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_No_Blend)
+				}
+			
+				if (ACT_ActionFinished())
+					PNJ_Raptor_ActionSet(Action_Fight_AttacJack_fin)
+		}
+
+		PNJ_Raptor_Do_Commun_Bite_Stuff(to_target)
+
+		break
+
+	case Action_Fight_AttacJack_fin :
+
+		if (ACT_ActionFinished())
+			macro_change_etat("PNJ_Raptor_ETAT_ATTENTE")
+
+		PNJ_Raptor_Do_Commun_Bite_Stuff(to_target)
+
+		break
+}
+
+if ( ! i_flag_bite_no_wall )
+{
+	f_force_dont_move_duration = 1.0
+	tv_temp = DYN_SpeedGetVector()
+	tv_temp.x = 0.0
+	tv_temp.y = 0.0
+	DYN_SpeedSetVector(tv_temp)
+	macro_change_etat("PNJ_Raptor_ETAT_ATTENTE")
+}

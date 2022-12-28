@@ -1,0 +1,84 @@
+#include "rmm_defines.var"
+
+int			ti_collision_nb, ti_i, ti_asp
+object	tao_zde_zde_list[30]
+vector	tv_sens
+float		tf_water_Z
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_MINE_Attente)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_MINE_Attente
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	PROC_MINE_DYN_ON()
+	
+	fct_last_etat = AI_TrackCurGet()
+}
+
+
+
+
+// CHANGEMENT D ETAT ==============================================================
+// GRABBED ???
+if ( i_aspire_recrache )
+{
+	o_Grabbed_Actor = LNK_ServeurGet(Ci_LNK_GRAB_EAGLE, mid_Grabbed_LNK_ID, vrai, nofunc, nofunc)
+	if( o_Grabbed_Actor )
+		AI_TrackCurChangeNow("rmm_ETAT_Grabbed")
+}
+
+
+
+// COMPORTEMENT ==============================================================
+
+// TESTS COLLISION
+ti_collision_nb = COL_ZDE_ZDEListGet( &tao_zde_zde_list[0], C_zde_fight, C_zde_corps, all, none, Ci_Filter_IdentityFlag)
+for (ti_i = 0; ti_i < ti_collision_nb; ti_i++)
+{
+	tv_sens = @tao_zde_zde_list[ti_i] OBJ_PosGet() - OBJ_PosGet()
+	EVENT_AddEventPafCanal( C_EVENT_FILTER_Object,  C_PAF_RM_Fort, OBJ_Me(), Cf_EVENT_Duree_1Trame, tao_zde_zde_list[ti_i], -1, 10.0, tv_sens, OBJ_PosGet())	
+	MATH_VecSetNorm(tv_sens, 20.0)
+	@tao_zde_zde_list[ti_i] DYN_SpeedSetVector(tv_sens)
+}
+
+if ( ti_collision_nb)
+{
+	PROC_SFX_EXPLOSION_CARTOON( OBJ_PosGet())
+	OBJ_Destroy()
+}
+
+// TEST STREAM
+v_Traction_Stream = PROC_ForceStreamGet(OBJ_PosGet(), ti_asp)
+if ( !MATH_VecNull( v_Traction_Stream))
+{
+	PROC_MINE_DYN_ON()
+	DYN_TractionSet( v_Traction_Stream * 2.0)
+}
+else if ( IsInWater( OBJ_PosGet(), tf_water_Z))
+{
+	DYN_FrictionVectorSet(cvector( 2.0, 2.0, 2.0))
+	DYN_TractionSet( Cv_NullVector)
+}
+else
+{
+	DYN_FrictionVectorSet(cvector( 1.0, 1.0, 0.0))
+	DYN_TractionSet( Cv_NormalGravity)
+}
+			
+		
+// POSITIONNEMENT
+if ( ! i_dyn_on)
+	OBJ_PosSet( v_pos_init + (v_oscilation_direction * MATH_Cos(TIME_Get() * f_oscilation_vitesse) * f_oscilation_amplitude))

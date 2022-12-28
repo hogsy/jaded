@@ -1,0 +1,187 @@
+#include "Tel_defines.var"
+
+object		tao_col[10]
+object		to_col
+int				ti_i
+int				ti_col_nb
+int				ti_rank
+message	tmsg_filter
+messageid	tmid_ID
+vector		tv_pos
+vector		tv_offset
+
+
+f_check_delai -= MATH_FloatMin(f_check_delai, TIME_GetDt())
+if( f_check_delai )
+	return		// j'ai servi de wp de destination, délai pour re-checker
+
+// (DES)ACTIVATION ZDE CORPS
+if( COL_ZoneTypeGet(C_zde_corps) )
+{
+	if( Teleport_When_Paffed )
+		COL_ColSetActivationSet(C_bit_zde_corps, none)
+	else 
+		COL_ColSetActivationSet(none, C_bit_zde_corps)
+}
+
+// CHECK ??? ==========================================================================================
+i_check_flag = faux
+if( Teleport_Always )		// CHECK ALWAYS 
+	i_check_flag = vrai
+else if( AI_TriggerIsValid(Teleport_Trigger) && call_trigger(Teleport_Trigger) )		// CHECK WITH TRIGGER 
+	i_check_flag = vrai
+else if( Teleport_When_CapaSwitch && OBJ_CapaTest(Obj_Capa_Switch) )		// CHECK WHEN CAPA 
+	i_check_flag = vrai
+else if( Teleport_When_Paffed )		// CHECK WHEN PAFFED 
+{
+	MSG_SetNull(tmsg_filter)
+	tmsg_filter.msg_gao1 = OBJ_Me()
+	ti_rank = -1
+	for (	tmid_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tmsg_filter);
+			MSG_GlobalIsValid(tmid_ID);
+			tmid_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tmsg_filter) )
+	{
+		i_check_flag = vrai
+		break
+	}
+}
+OBJ_CapaSet(none, Obj_Capa_Switch)		// raz capa switch allumée en LD pour déclencher le teleporteur
+
+// Camera Ciné ====================================
+if( i_GFX_mode[0] != Ci_GFX_mode_off )
+{
+	if (o_camera && (COL_BV_PivotCollide(get_rayman) || @Destination COL_BV_PivotCollide(get_rayman)  ))
+	{
+		@get_Kamera o_cine_gao = o_camera
+		@get_Kamera f_cine_blendIn = f_camera_TransitionIn
+		@get_Kamera f_cine_blendOut = f_camera_TransitionOut
+		@get_Kamera f_cine_focale = f_camera_Focale
+		@get_Kamera f_cine_duration = Cf_EVENT_Duree_1Trame
+	}
+}
+// Camera Ciné ====================================
+
+
+
+// GFX START ==========================================================================================
+if( i_check_flag )
+{
+	if( ! i_GFX )
+	{
+		f_GFX_duree[0] = Teleport_Delai + 0.1		// test >
+	}
+	else
+	{
+		// GFX 0 : position de départ
+		if( i_GFX_mode[0] == Ci_GFX_mode_off )
+		{
+			i_GFX_mode[0] = Ci_GFX_mode_activation
+			v_FX_Apparition[0] = OBJ_PosGet() + cvector(0,0,0.25)
+			f_GFX_duree_max[0] = MATH_FloatMax(Teleport_Delai, 0.1) + 2.0
+			
+			// GFX 1 : position d'arrivée
+			if( i_GFX_mode[1] == Ci_GFX_mode_off )
+			{
+				i_GFX_mode[1] = Ci_GFX_mode_activation
+				v_FX_Apparition[1] = @Destination OBJ_PosGet() + cvector(0,0,0.25)
+				f_GFX_duree_max[1] = MATH_FloatMax(Teleport_Delai, Cf_gfx_duree)
+			}
+		}
+	}
+}
+
+
+// TELEPORT NOW !!! ====================================================================================
+if( f_GFX_duree[0] > Teleport_Delai )
+{
+	// SCAN ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	i_check_valid_nb = 0
+	ti_col_nb = COL_BV_PivotListGet(&tao_col[0], OBJ_C_IdentityFlag_AI, none, Ci_Filter_IdentityFlag)
+	for( ti_i = 0; ti_i < ti_col_nb; ti_i ++ )
+	{
+		to_col = tao_col[ti_i]
+//		if( to_col == AI_MainActorGet(0) )
+		if( @to_col AI_IsModel(get_Rayman_Path) )		// Même les rayman FAKE
+		{
+			if( @to_col PROC_RM_MontureGet() )
+				continue		// ne pas téléporter rayman s'il est sur une monture
+			if( ! Enable_Rayman )
+				continue
+		}
+		else if( @to_col AI_IsModel(get_RM_Box_path) )
+		{
+			if( ! Enable_Box )
+				continue
+		}
+		else if( @to_col AI_IsModel(get_PNJ_Lapin_path) )
+		{
+			if( ! Enable_Lapin )
+				continue
+		}
+		else if( @to_col AI_IsModel(get_RM_Weapon_path) )
+		{
+			if( ! Enable_Item )
+				continue
+		}
+		else if( EstUneMontureMajestueuse(to_col) )
+		{
+			if( ! Enable_Monture )
+				continue
+		}
+		else
+		{
+			if( ! Enable_OtherAI )
+				continue
+		}
+		
+		ao_check_valid_gao[i_check_valid_nb] = to_col
+		i_check_valid_nb++
+	}
+
+	if( i_check_valid_nb )
+		SND_RequestPlay(Ci_SND_Teleport)
+	
+	// TELEPORT ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	if( i_Trace_Log )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" téléporte ")
+	}
+	for( ti_i = 0; ti_i < i_check_valid_nb; ti_i++ )
+	{
+		to_col = ao_check_valid_gao[ti_i]
+		tv_pos = @Destination OBJ_PosGet()
+		tv_offset = @to_col OBJ_PosGet() - OBJ_PosGet()
+		tv_offset.x = 0.0
+		tv_offset.y = 0.0
+		tv_pos += tv_offset
+		@to_col OBJ_PosSet(tv_pos)
+		@to_col COL_StartMatrixSet(tv_pos)
+		@to_col OBJ_BankingGeneralSet(@Destination OBJ_SightGet(), @Destination OBJ_BankingGet())
+		
+		if( i_Trace_Log )
+		{
+			DBG_TraceObject(to_col)
+			if( ti_i < (i_check_valid_nb -1) )
+				DBG_TraceString(" / ")
+		}
+	}
+	if( i_Trace_Log )
+	{
+		DBG_TraceString(" vers ")
+		DBG_TraceObject(Destination)
+		DBG_TraceEOL()
+	}
+	i_check_valid_nb = 0
+	if( @Destination AI_IsModel(get_RM_Teleporteur_path) )
+		@get_RM_Teleporteur_path Destination f_check_delai = 2.0
+	
+//	// GFX 1 : position d'arrivée
+//	if( i_GFX_mode[1] == Ci_GFX_mode_off )
+//	{
+//		i_GFX_mode[1] = Ci_GFX_mode_activation
+//		v_FX_Apparition[1] = @Destination OBJ_PosGet() + cvector(0,0,0.5)
+//		f_GFX_duree_max[1] = Cf_gfx_duree
+//	}
+}
+

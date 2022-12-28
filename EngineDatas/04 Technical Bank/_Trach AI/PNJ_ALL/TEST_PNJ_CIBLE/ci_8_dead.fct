@@ -1,0 +1,21 @@
+
+#define zoom_max 0.0
+
+float	tf_zoom
+
+OBJ_CapaSet(OBJ_Capa_1,none)
+
+f_zoom -= TIME_GetDt() * 2.0
+
+if (f_zoom < zoom_max )
+{
+	AI_TrackStop(1)
+	AI_TrackCurChangeNow("ci_9_destroy")
+}
+else
+{
+	tf_zoom = f_zoom * f_zoom_init
+	if ( tf_zoom <= 0)
+		tf_zoom = 0.01
+	OBJ_ZoomSet( tf_zoom )
+}

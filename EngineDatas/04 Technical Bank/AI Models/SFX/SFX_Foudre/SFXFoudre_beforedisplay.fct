@@ -1,0 +1,13 @@
+object	to_obj
+
+to_obj = VIEW_GetObject(0)
+OBJ_BankingGeneralSet(OBJ_SightGet(), -@to_obj OBJ_SightGet())
+
+mf_Save_Factor = LIGHT_RLIFactorGet()
+mi_Save_Color = LIGHT_RLIDestColorGet()
+
+if( mi_Dying )
+{
+	LIGHT_RLIFactorSet(1)
+	LIGHT_RLIDestColorSet(COLOR_Blend(0x0, 0xFFFFFFFF, mf_Dying_coef))
+}

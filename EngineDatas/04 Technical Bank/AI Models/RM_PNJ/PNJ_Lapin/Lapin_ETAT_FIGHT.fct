@@ -1,0 +1,319 @@
+#include "PNJ_Lapin_defines.var"
+
+float		tf_delay
+object	to_target
+object	to_gao
+int			ti_action
+vector	tv_temp
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_anti_mashing_flag = faux
+	Lapin_EXPRESSION(Cf_Expr_Mouth_Closed)
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_Lapin_FIGHT) 
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Lapin_FIGHT
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	Lapin_DBG_Trace_String(DBG_Trace_Etat, "FIGHT")
+	fct_previous_etat = fct_last_etat
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = AI_TrackCurGet()		// MAIN ETAT !!!!
+	f_time_start_etat = 0.0
+	
+	Lapin_PROC_WAY_CLEAR()
+	f_cache_progression_compute = 0.0
+	f_item_weapon_find_delai = 0.0
+	f_item_key_find_delai = 0.0
+	f_RideMount_check_delai = 0.0
+	f_Atk_Encerclement_sign = 0.0		// réinit
+	i_path_way_force_recompute_flag = vrai
+	
+	if( ACT_ActionGet() == Action_Attente_Dodo )
+		ACT_ActionSet(Action_Paf_fort_face_get_up)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// STIMULI ===========================================================================
+o_Grabbed_Actor = LNK_ServeurGet(Ci_LNK_GRAB_EAGLE, mid_Grabbed_LNK_ID, vrai, nofunc, nofunc)
+if( o_Grabbed_Actor )
+	macro_change_etat("Lapin_ETAT_GRABBED")
+
+o_Rided_Actor = LNK_ServeurGet(Ci_LNK_RIDE_ON_NMI, mid_Rided_LNK_ID, vrai, nofunc, nofunc)
+if( o_Rided_Actor )
+	macro_change_etat("Lapin_ETAT_RIDED")
+
+AI_Execute("Lapin_exec_check_vision")
+
+MACRO_CHECK_PAFS
+
+AI_Execute("Lapin_exec_update_best_interest")
+
+
+if( ACT_ActionGet() == Action_Paf_fort_face_get_up && ! ACT_ActionFinished() )
+	returntrack		// FINIR DE SE RELEVER !!!!!
+
+if( ! MSG_GlobalIsValid(mid_best_interet) )
+{
+	fct_main_etat = "Lapin_ETAT_ATTENTE"
+	MACRO_GO_IDLE(0)
+}
+
+to_target = EVENT_InteretTargetGet(mid_best_interet)
+
+if( Lapin_ROPE_Gogo_Mode() )
+	macro_change_etat("Lapin_ETAT_GOGO")
+
+MACRO_CHECK_CHUTE
+
+if( i_ventilo_flag )
+	macro_change_etat("Lapin_ETAT_ASPIRE")
+
+if( o_piege )
+	macro_change_etat("Lapin_ETAT_PIEGE")
+
+if( i_Beat_flag_danse )
+	macro_change_etat("Lapin_ETAT_DANSE")
+
+if( i_Beat_flag_alert )
+	macro_change_etat("Lapin_ETAT_BEAT_ALERT")
+
+tf_delay	= TIME_Get() - EVENT_InteretSeenTimeGet(mid_best_interet)
+//if( tf_delay > Cf_delay_before_lose_target )
+//	macro_change_etat("Lapin_ETAT_SEARCH")
+if( tf_delay > 0.1 )
+{
+	fct_main_etat = "Lapin_ETAT_ATTENTE"
+	MACRO_GO_IDLE(0)
+}
+
+// retourner voir maman
+if( Commander && @Commander Proc_PNJ_Lapin_LIFE_Get() && OBJ_SqrDist(Commander) > 400.0 && @Commander Proc_PNJ_Lapin_ETAT_Courant_Get() == ETAT_Lapin_ATTENTE )
+{
+	fct_main_etat = "Lapin_ETAT_ATTENTE"
+	MACRO_GO_IDLE(0)
+}
+
+// anti_mashing ?
+AI_Execute("Lapin_exec_check_anti_mashing")
+if( ! i_anti_mashing_flag )
+{
+	// FIND A MOUNT
+	o_RideMount_Nearest = nobody
+	if( ! o_RideMount_Actor )
+	{
+		AI_Execute("Lapin_exec_check_mount")
+		if( o_RideMount_Nearest && ! @o_RideMount_Nearest AI_IsModel(get_PNJ_Bunny_Saucer_path) )
+			macro_change_etat("Lapin_ETAT_GET_MOUNT")
+	}
+
+	// FIND A KEY
+	if( ! Lapin_ITEM_Has_Key() )		// je n'ai pas de clé
+	{
+		i_find_item_type = Ci_FIND_ITEM_KEY
+		AI_Execute("Lapin_exec_check_item")
+		if( o_item_nearest )		
+			macro_change_etat("Lapin_ETAT_GET_ITEM")
+	}
+	
+	// FIND A LUMS CAGE
+	if( ! Lapin_LUMS_Cage_Has() )
+	{
+		AI_Execute("Lapin_exec_check_lums_cage")
+		if( o_item_nearest )
+		{
+			MACRO_FORCE_VALID_INTERET
+			macro_change_etat("Lapin_ETAT_GET_ITEM")
+		}
+	}
+	
+	// FIND A CAROTTE
+	if( ! Lapin_ITEM_Has_Carotte() )		// je n'ai pas de carotte
+	{
+		i_find_item_type = Ci_FIND_ITEM_CAROTTE
+		AI_Execute("Lapin_exec_check_item")
+		if( o_item_nearest )		
+			macro_change_etat("Lapin_ETAT_GET_ITEM")
+
+		// FIND A WEAPON
+		if( ! Lapin_ITEM_Has_Weapon() )		// je n'ai ni arme ni carotte
+		{
+			i_find_item_type = Ci_FIND_ITEM_WEAPON
+			AI_Execute("Lapin_exec_check_item")
+			if( o_item_nearest )		
+				macro_change_etat("Lapin_ETAT_GET_ITEM")
+		}
+	}
+	
+	// GET THE FLYING SAUCER
+	if( o_RideMount_Nearest && @o_RideMount_Nearest AI_IsModel(get_PNJ_Bunny_Saucer_path) )
+	{
+		MACRO_FORCE_VALID_INTERET
+		macro_change_etat("Lapin_ETAT_GET_MOUNT")
+	}
+	
+	AI_Execute("Lapin_exec_check_grappin")
+	
+	AI_Execute("Lapin_exec_check_shoot")
+	
+	AI_Execute("Lapin_exec_check_grenade")
+	if( i_fuite_grenades_flag )
+		macro_change_etat("Lapin_ETAT_FUITE")
+	
+	o_cache = Lapin_CACHE_Progression_Nearest_Get(to_target)
+	if( o_cache )
+	{
+		o_cache_actor = to_target
+		i_cache_mode = Ci_CACHE_Mode_Progression
+		macro_change_etat("Lapin_ETAT_CACHE")
+	}
+}
+
+// UPDATE NEW TARGET POS
+i_target_territory_ID = Lapin_PROC_GAO_GET_TERRITORY_ID(to_target)
+if( i_target_territory_ID != i_old_good_target_territory_ID 
+	&& ! Lapin_PROC_WAY_TERRITORY_ID_ALLOWED(i_target_territory_ID) )
+{
+	// NEW TERRITORY IS NOT AVAILABLE
+	f_time_target_not_reachable += TIME_GetDt()
+	i_target_territory_ID = i_old_good_target_territory_ID
+	v_way_destpos = v_way_old_good_destpos
+}
+else
+{
+	f_time_target_not_reachable = 0.0
+	to_gao = Lapin_Get_Target(to_target)
+	if( to_gao != to_target )
+		i_action_traction_force_faster = vrai
+	v_way_destpos = @to_gao OBJ_PosGet()
+}
+
+
+// COMPORTEMENT ===========================================================================
+
+// Regard ----------------------------------------------------------
+i_flag_look = vrai
+v_look_pos = v_way_destpos
+
+
+if( i_anti_mashing_flag )
+{
+	AI_Execute("Lapin_exec_fight_melee")
+}
+else
+{
+	// Ne pas harceller le joueur
+	if( to_target == o_main_actor && i_RM_Paf_Mode_Get )
+	{
+		i_item_cant_use = Ci_item_cant_use_temps_mort
+		v_way_destpos = Cv_NullVector		// attendre qu'il se relève
+	}
+	else
+	{
+		// MELEE ? 
+		AI_Execute("Lapin_exec_fight_melee")
+		
+		// POWER MOUNT ?
+		AI_Execute("Lapin_exec_fight_use_powermount")
+		switch( i_powermount_cant_use )
+		{
+			case Ci_powermount_cant_use_reload :
+			case Ci_powermount_cant_use_interest_maxnb :
+				// ne pas avancer mais attendre pour shooter à distance
+				v_way_destpos = Cv_NullVector
+				break
+		}
+		
+		// ITEM ?
+		if( Lapin_ITEM_Has_Weapon() || Lapin_ITEM_Has_Carotte() )
+		{
+			AI_Execute("Lapin_exec_fight_use_item")
+			switch( i_item_cant_use )
+			{
+				case Ci_item_cant_use_wait_reload :
+				case Ci_item_cant_use_interest_maxnb :
+					v_way_destpos = Cv_NullVector		// ne pas avancer mais attendre pour shooter à distance
+					break
+			}
+			
+			// spécial FPP gun et soucoupe
+			AI_Execute("Lapin_exec_fight_use_item_scooter")
+		}
+		
+		// BULLRUSH ?
+		AI_Execute("Lapin_exec_fight_bullrush")
+		if( i_cannot_BullRush == Ci_cannot_BullRush_wait_atk_prio )
+			v_way_destpos = Cv_NullVector		// ne pas avancer mais attendre pour charger
+		
+		// JUMP DANS LE DOS ?
+		AI_Execute("Lapin_exec_fight_jump_in_back")
+		
+		// TAUPE DANS LE DOS ?
+		AI_Execute("Lapin_exec_fight_taupe_in_back")
+	}
+	
+	if( Atk_Deplacement == Ci_Atk_Deplacement_Occluders_Caches_FleeMelee )
+	{
+		switch( i_item_cant_use )
+		{
+			case Ci_item_cant_use_too_close :
+				o_cache = Lapin_CACHE_Fuite_Nearest_Get(i_my_territory_ID, o_cache_last, to_target)
+				if( o_cache )
+				{
+					o_cache_actor = to_target
+					i_cache_mode = Ci_CACHE_Mode_Fuite
+					macro_change_etat("Lapin_ETAT_CACHE")
+				}
+				break
+		}
+	}
+}
+
+
+// Joueur au sol == attendre qu'il se relève
+ti_action = vrai
+if( i_RM_Paf_Mode_Get )
+{
+	ti_action = faux
+	v_way_destpos = Cv_NullVector
+	
+	switch( Lapin_ACTION_Family_Get() )
+	{
+		case Action_Family_Nage :
+			Lapin_EXPRESSION(Cf_Expr_Mouth_Closed)
+			ti_action = Action_Nage_Attente
+			break
+		default:
+			Lapin_EXPRESSION(Cf_Expr_Mouth_Full)
+			ti_action = Action_Danse_GetPower
+			break
+	}
+	Lapin_ACTION_Set(ti_action)
+}
+
+// déplacement
+AI_Execute("Lapin_exec_way_find")
+AI_Execute("Lapin_exec_way_move")
+AI_Execute("Lapin_exec_way_orientation")
+if( ti_action )
+{
+	AI_Execute("Lapin_exec_way_select_action")
+	Lapin_EXPRESSION(Cf_Expr_Mouth_Closed)
+}
+
+OBJ_CapaSet(Obj_Capa_Fight, none)

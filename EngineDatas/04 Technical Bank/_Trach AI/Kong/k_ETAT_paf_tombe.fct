@@ -1,0 +1,119 @@
+#include"k_define.var"
+
+float		tf_dot_x
+float		tf_dot_y
+float		tf_fric
+int			ti_action
+int			ti_ride
+int			ti_i
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	o_paf_actor = nobody
+	DYN_FrictionVectorSet(Cv_NullVector)
+	for (ti_i = 0; ti_i < Ci_Ride_Client_Nb; ti_i++)
+		ao_bone_rider[ti_i] = LNK_ServeurGet(Ci_LNK_RIDE_DINO, amid_bone_rider_LNK_ID[ti_i], faux, nofunc, nofunc)
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_tombe) 
+{
+	i_etat_courant = ETAT_tombe
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	// CAMERA CAMERA CAMERA
+	@get_global i_kong_camera_status = Ci_Kcamera_deplacement
+	// CAMERA CAMERA CAMERA
+	
+	ACT_ActionSet(Ci_Kanim_Paf_tombe)
+	f_ko_delay = 0.2			// TEMP TEMP
+
+//	v_paf_dir
+//	o_paf_actor
+//	i_paf_type
+//	i_paf_puissance
+//	f_paf_time_recul = 0.0
+//	f_paf_time_esquive = 0.0	
+
+	DYN_SpeedSetVector( v_paf_dir * 10.0)
+	DYN_FrictionVectorSet( cvector( 2.0, 2.0, 2.0))
+	
+	// Lacher ANN : on informe ANN
+	if( 	ao_CL[Ci_LNK_KKGRAB_OBJECT])
+	{
+		if( i_Grab_Torse_ANN )
+		{
+			i_Grab_Torse_ANN = faux
+			i_Grab_Torse_Main = -1
+		}
+		LNK_KKGrabObject_TypeSet(amid_CL_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT], Ci_KKGrabObject_Lache)
+	}
+	
+	if ( i_GrabKong_Souche )
+	{
+		LNK_GrabKong_ActionSet(amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab], Ci_GrabKong_Relache)
+		ao_CL_GRABKONG[i_GrabKong_MainActionGrab] = nobody
+		i_GrabKong_Souche = faux
+	}
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ============================================================================
+
+// RIDE SERVEUR ?
+//ti_ride = faux
+//if ( f_time_start_etat < 0.5)
+	ti_ride = vrai
+for (ti_i = 0; ti_i < Ci_Ride_Client_Nb; ti_i++)
+{
+	ao_bone_rider[ti_i] = LNK_ServeurGet(Ci_LNK_RIDE_DINO, amid_bone_rider_LNK_ID[ti_i], ti_ride, nofunc, nofunc)
+}
+
+// COMPORTEMENT ===========================================================================
+
+
+//// CAMERA -----------------------------------------------------------------
+//if (o_fight_actor)
+//{
+//	@get_global i_kong_camera_status = Ci_Kcamera_fight
+//	@get_global mid_kong_camera_status = mid_fight_actor
+//}
+//else
+//	@get_global i_kong_camera_status = Ci_Kcamera_deplacement
+//// CAMERA -----------------------------------------------------------------
+
+
+if ( f_time_start_etat < 0.2)
+{
+	// Petit delai d inaction et d orinetation du paf
+	OBJ_BankingGeneralSet( MATH_VecBlendRotate( OBJ_SightGet(),  -v_paf_dir, 6.0 * TIME_GetDt()), OBJ_BankingGet())	
+	return
+}
+
+tf_dot_x = MATH_VecDotProduct( glob_joyvector_get, OBJ_HorizonGet())
+tf_dot_y = MATH_VecDotProduct( glob_joyvector_get, DYN_SpeedGetVector())
+
+
+
+// Gestion du temps KO
+if ( f_time_start_etat > 0.45 || !ACT_ActionIsTransition())
+{
+	f_ko_delay -= TIME_GetDt()
+	if (f_ko_delay <= 0)
+		macro_change_etat("k_ETAT_deplacement")
+}
+

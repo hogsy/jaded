@@ -1,0 +1,45 @@
+#include "RM_Barricade_defines.var"
+
+int		ti_SF
+int		ti_i
+
+f_DelayTremble 	=	0.0
+i_NbCoup			=	0
+i_NumModule		=	0
+
+o_rope_manager = @get_global o_rope_manager
+if(!o_rope_manager) return
+
+if(AI_PriorityGet() != 51)
+{
+	AI_PrioritySet(51)
+	DBG_Error("Mauvaise priorité pour la barricade (51). Sauvegardez et relancez svp")
+}
+
+AI_CBAdd(OBJ_Me(), CallBack_WhenDestroy, "RM_Barricade_cb_WhenDestroy")
+
+COL_CrossableSet(Gmat_RM_Crossable_Default,none)
+
+if(i_Targetable)
+	RM_TARGET_Add( OBJ_Me(), OBJ_PosGet() )
+
+if(i_Grappinable)
+	HotSpot_Add_Obj(OBJ_Me(), 1)
+
+for(ti_i=0;ti_i<Ci_Barricade_MaxModule;ti_i++)
+{
+	af_DelayDestroy[ti_i]=-1.0
+	av_AxeRotate[ti_i]=cvector(MATH_RandFloat(-0.5,0.5),MATH_RandFloat(-0.5,0.5),MATH_RandFloat(-0.5,0.5))
+	if(ao_Planche[ti_i])
+		av_PosInit[ti_i]=@ao_Planche[ti_i] OBJ_PosGet()
+}
+
+
+SF_ID = AI_SFDynGet(0, SF_MinById, SF_MaxById)                             // Alloc
+SpecialFlag_get(SF_ID, ti_SF)
+if (ti_SF) RM_Barricade_Detruit(Cv_NullVector,5.0)
+
+AI_CBAdd(OBJ_Me(), CallBack_SectoActOn, "RM_Barricade_cb_SectoActOn")
+AI_CBAdd(OBJ_Me(), CallBack_SectoActOff, "RM_Barricade_cb_SectoActOff")
+
+AI_TrackCurChangeNow("RM_Barricade_ETAT_ATTENTE")

@@ -1,0 +1,82 @@
+#include "KT_defines.var"
+
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_mort)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_mort
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	ai_grabbed_availibility[ Ci_LNK_GRAB_KONG] = faux
+	ACT_ActionSet(Action_KO_au_sol)
+	if (MSG_GlobalIsValid(mid_best_interet))
+		MSG_GlobalDelete(mid_best_interet,C_EVENT_EOFDEL)
+	COL_ColSetActivationSet(none, all)						// toutes les zde sont désactivées
+	COL_ColSetActivationSet(C_bit_zde_corps, none)		// zde corps active pour les pafs
+	COL_ColSetActivationSet(C_bit_zde_tete, none)		// zde tete active pour les pafs
+	COL_ColMapActivationSet(none,all)
+	ODE_Enable( faux)
+	DYN_Off()
+	
+	AI_TrackStop(0)
+	AI_TrackStop(1)
+	AI_TrackStop(3)
+	TREX_Del_Obj(OBJ_Me())
+	HotSpot_Del_Obj(OBJ_Me())
+	i_hotspot_set = faux
+	EVENT_LIFE_CurLifeSet(ID_LIFE, 0.0)
+	f_time_start_etat = 0.0
+	OBJ_CapaSet(Capa_Mort, none)
+	macro_del_callback_after_cam("KT_CALLBACK_aftercam")
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =======================================================================================================
+
+// Detection de PAF Cas non générique
+i_flag_paf_check_done = faux
+AI_Execute("KT_exec_check_paf")
+if (o_paf_actor )
+{
+	// couché -> paf au sol
+	o_mort_paf_actor_backup = o_paf_actor
+	ACT_ActionSet(Action_Paf_au_sol_mort)
+	f_time_start_etat = 0.0
+}
+
+// COMPORTEMENT =================================================================================================
+
+switch ( ACT_ActionGet())
+{	
+	case Action_Paf_au_sol_mort : 
+		// Paf au sol : fin de l"action de soubresaut
+		if( o_mort_paf_actor_backup == o_Jack && f_time_start_etat > 0.05 )
+			ACT_ActionSet(Action_KO_au_sol)
+		else if( f_time_start_etat > 0.35 )		// kong
+			ACT_ActionSet(Action_KO_au_sol)
+		break
+	default:
+		break
+}
+
+
+// EVENT VISION ==============================================
+// Event vision (même si REX est mort, c important pour les pv de la souche !!!)
+EVENT_AddEventVision(C_ID_Tyranosaure, C_EVENT_FILTER_Tyranosaure, OBJ_Me(), Cf_EVENT_Duree_1Trame, OBJ_PosGet(), C_EVENT_Visibility_Full_Mvt, Cf_Rayon_De_Vision, Cf_Degre_Interet_TREX, C_EVENT_CONTEXT_STANDARD, 0, 0.0)

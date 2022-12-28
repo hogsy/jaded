@@ -1,0 +1,471 @@
+#include"k_define.var"
+
+int			i_soundID
+int			ti_test
+int			ti_i
+int			ti_ODE_on
+
+vector	tv_pos_zone 
+vector	tv_zdm_speed
+vector	tv_speed
+vector	tv_offset
+vector	tv_recal
+vector	tv_local_pos
+vector	tv_sens
+vector	tv_pos
+vector	tv_my_pos
+vector	tv_pos1
+vector	tv_normal
+
+object	to_main
+object	to_membre
+object	to_canal_epaule 
+object	to_canal
+object	to_tete
+object	to_grab_object
+object	o_Foot
+object	o_Jambe
+
+float		tf_dot
+float		tf_sign
+float		tf_Zdiff
+
+
+if( i_etat_courant == ETAT_Kong_cheat_mode )
+	return			// Ne pas couper la CB sinon bug ordre des callbacks pour posiionnement indy3rd !!!
+
+for (ti_i  = 0; ti_i < 4; ti_i++)
+{
+	tv_local_pos = MATH_VecGlobalToLocal(@ao_IK_bones[ti_i][2] OBJ_PosGet() - OBJ_PosGet())	
+
+	if (MATH_VecNorm(tv_local_pos - v_IK_bone_local_pos[ti_i]) < 0.1)
+		i_flag_freeze_pos_IK[ti_i] = vrai
+	else
+		i_flag_freeze_pos_IK[ti_i] = faux
+
+	v_IK_bone_local_pos[ti_i] = tv_local_pos 
+}
+
+macro_render_Vector(v_obstacle_dest_pos, cvector(0.0, 0.0, 5.0), color_blanc)
+
+// FRED/STEF PB de positionnement du visuel de kong pendant le blend de position... PB de rotation a 180 degrée
+//if ( i_etat_courant == ETAT_commun_accroch_mur)
+//	AI_Execute("k_exec_ab_climb_inertia")
+
+AI_Execute("k_exec_ab_rotation_tete")
+
+
+// Position de Grab
+//v_grab_object_pos = @o_bras[0][0] OBJ_PosGet()
+//to_grab_object = ANI_CanalObjectGet( Anim_Canal_MainDroite + (i_GrabKong_MainActionGrab * 20))
+//v_grab_object_pos = @to_grab_object OBJ_PosGet()
+to_grab_object = ANI_CanalObjectGet( Anim_Canal_Tete)
+v_grab_object_pos = @to_grab_object OBJ_PosGet()
+
+
+v_grab_force_pos = @o_tete[0] OBJ_PosGet()
+v_grab_force_pos.z = OBJ_PosGet().z
+
+v_speed_afterblend = DYN_SpeedGetVector()
+
+
+AI_Execute("k_exec_SFX_hand_smoke")
+AI_Execute("k_exec_SFX_jump_smoke")
+
+// Orientation autour de X (uniquement) en fonction du sol (bof bof)
+AI_Execute("k_exec_ab_rotX")
+
+AI_Execute("k_exec_IK_legs")
+
+for (ti_i = 0; ti_i < 4; ti_i++)
+{
+	if(! i_flag_freeze_pos_IK[ti_i])
+		v_IK_bone_last_valid_pos[ti_i] = @ao_IK_bones[ti_i][2] OBJ_PosGet()
+}
+
+
+// POS ZDE CORPS =================================================================
+to_canal = ANI_CanalObjectGet(Anim_Canal_Torse)
+tv_pos_zone = @to_canal OBJ_PosGet()
+tv_pos_zone += @to_canal OBJ_SightGet()
+tv_pos_zone -= OBJ_PosGet()
+if( EVENT_LIFE_Est_Blesse( ID_LIFE) )
+	tv_offset = cvector(0.0,0.0,0.5)
+else
+	tv_offset = Cv_NullVector
+COL_ZonePosSet(C_zde_corps, MATH_VecGlobalToLocal(tv_pos_zone + tv_offset))
+
+
+// POS ZDE FIGHT ======================================================================
+//	switch ( i_frappe_coup)
+ti_ODE_on = faux
+f_global_time = TIME_Get()
+switch ( ACT_ActionGet())
+{
+	case Ci_Kanim_courseD :
+	case Ci_Kanim_courseG :
+//		Proc_KK_Impact_FootSteps(f_global_time, 0.5,1.0, SFX_ID_ImpactOnLeftFoot, SFX_ID_ImpactOnRightFoot, SFX_ID_ImpactOnLeftHand, SFX_ID_ImpactOnRightHand, faux,2)
+		break
+	case	Ci_Kanim_courseDD :			
+	case	Ci_Kanim_courseGG :
+	case	Ci_Kanim_GalopeD :			
+	case	Ci_Kanim_GalopeG :
+	case Ci_Kanim_QuartDr :					
+	case Ci_Kanim_QuartGa :				
+	case Ci_Kanim_DemiDr :					
+	case Ci_Kanim_DemiGa :		
+	case 54 :			
+	case 55 :			
+	case Ci_Kanim_StopRapide :					
+//		Proc_KK_Impact_FootSteps(f_global_time, 0.5, 0.5, SFX_ID_ImpactOnLeftFoot_Walk, SFX_ID_ImpactOnRightFoot_Walk, SFX_ID_ImpactOnLeftHand_Walk, SFX_ID_ImpactOnRightHand_Walk, vrai,2)
+		break	
+	case Ci_Kanim_dash : 
+//		Proc_KK_Impact_FootSteps(f_global_time, f_delay_dash_SFX , f_delay_dash_SFX, SFX_ID_ImpactOnLeftFoot, SFX_ID_ImpactOnRightFoot, SFX_ID_ImpactOnLeftHand, SFX_ID_ImpactOnRightHand, faux,2)	
+		break
+	case Ci_Kanim_Walling_cornerD :
+	case Ci_Kanim_Walling_derape :
+//			Proc_KK_Impact_FootSteps(f_global_time, 0.5, 0.5, SFX_ID_ImpactOnLeftFoot_Walling, SFX_ID_ImpactOnRightFoot_Walling, SFX_ID_ImpactOnLeftHand_Walling, SFX_ID_ImpactOnRightHand_Walling, vrai,1)
+		break
+	case Ci_Kanim_Walling_courseD :
+	case Ci_Kanim_Walling_courseG :
+//			Proc_KK_Impact_FootSteps(f_global_time, 0.3, 0.3, SFX_ID_ImpactOnLeftFoot_Walling, SFX_ID_ImpactOnRightFoot_Walling, SFX_ID_ImpactOnLeftHand_Walling, SFX_ID_ImpactOnRightHand_Walling, vrai,0)
+		break
+	case Ci_Kanim_coup_C_1 :
+	case Ci_Kanim_coup_C_2 :
+		ti_ODE_on = 1
+	case Ci_Kanim_frappeGa :
+		// LEFT ATTACKS
+		to_canal_epaule = ANI_CanalObjectGet(Anim_Canal_AvantBrasGauche)
+		tv_pos_zone = @to_canal_epaule OBJ_PosGet() - OBJ_PosGet()
+//		Proc_KK_Impact_FootSteps(f_global_time, 0.5, 0.5, SFX_ID_ImpactOnLeftFoot_Walk, SFX_ID_ImpactOnRightFoot_Walk, SFX_ID_ImpactOnLeftHand_Walk, SFX_ID_ImpactOnRightHand_Walk, vrai,2)
+		ti_ODE_on += 1
+		break
+	case Ci_Kanim_Attrape_D :
+		// RIGHT GRAB
+		to_canal_epaule = ANI_CanalObjectGet(Anim_Canal_AvantBrasDroit)
+		tv_pos_zone = @to_canal_epaule OBJ_PosGet() - OBJ_PosGet()
+		break
+
+	case Ci_Kanim_Colonne_FrappeD :
+	case Ci_Kanim_Colonne_FrappeG :
+	case Ci_Kanim_frappeDr :
+		// RIGHT ATTACKS
+		to_canal_epaule = ANI_CanalObjectGet(Anim_Canal_AvantBrasDroit)
+		tv_pos_zone = @to_canal_epaule OBJ_PosGet() - OBJ_PosGet()
+		ti_ODE_on = vrai
+//		Proc_KK_Impact_FootSteps(f_global_time, 0.5, 0.5, SFX_ID_ImpactOnLeftFoot_Walk, SFX_ID_ImpactOnRightFoot_Walk, SFX_ID_ImpactOnLeftHand_Walk, SFX_ID_ImpactOnRightHand_Walk, vrai,2)
+		break
+		
+	case Ci_Kanim_coup_T_3 :
+		// 2 ARMS SLASH ON GROUND ATTACKS
+		tv_my_pos = OBJ_PosGet()
+		to_canal_epaule = ANI_CanalObjectGet(Anim_Canal_AvantBrasGauche)
+		tv_pos_zone = @to_canal_epaule OBJ_PosGet()
+		to_canal_epaule = ANI_CanalObjectGet(Anim_Canal_AvantBrasDroit)
+		tv_pos_zone += @to_canal_epaule OBJ_PosGet()
+		tv_pos_zone *= 0.5
+		tv_pos_zone.z = tv_my_pos.z
+		tv_pos_zone.z += COL_ZoneSizeGet(C_zde_fight)
+		tv_pos_zone -= OBJ_PosGet()
+		tv_pos_zone += OBJ_SightGet() * 1.5
+		ti_ODE_on = vrai
+//		Proc_KK_Impact_FootSteps(f_global_time, 0.5, 0.5, SFX_ID_ImpactOnLeftFoot_Walk, SFX_ID_ImpactOnRightFoot_Walk, SFX_ID_ImpactOnLeftHand_Walk, SFX_ID_ImpactOnRightHand_Walk, vrai,2)
+		break
+		
+	case Ci_Kanim_coup_T_1 :
+		// 2 ARMS ATTACKS
+		to_canal_epaule = ANI_CanalObjectGet(Anim_Canal_AvantBrasGauche)
+		tv_pos_zone = @to_canal_epaule OBJ_PosGet()
+		to_canal_epaule = ANI_CanalObjectGet(Anim_Canal_AvantBrasDroit)
+		tv_pos_zone += @to_canal_epaule OBJ_PosGet()
+		tv_pos_zone *= 0.5
+		tv_pos_zone -= OBJ_PosGet()
+		ti_ODE_on = vrai
+//		Proc_KK_Impact_FootSteps(f_global_time, 0.5, 0.5, SFX_ID_ImpactOnLeftFoot_Walk, SFX_ID_ImpactOnRightFoot_Walk, SFX_ID_ImpactOnLeftHand_Walk, SFX_ID_ImpactOnRightHand_Walk, vrai,2)
+		break
+		
+	case Ci_Kanim_Paf_Fort_face_G :
+	case Ci_Kanim_Paf_Fort_face_D :
+	case Ci_Kanim_Paf_Fort_Face :
+	case Ci_Kanim_Paf_Fort_Dos :
+	default:
+		to_canal_epaule = ANI_CanalObjectGet(Anim_Canal_Torse)			// paffe avec son corps en tombant	
+		tv_pos_zone = @to_canal_epaule OBJ_PosGet() - OBJ_PosGet()
+}
+// Z Offset
+switch( ACT_ActionGet() )
+{
+	case Ci_Kanim_frappeGa :
+	case Ci_Kanim_frappeDr :
+	case Ci_Kanim_coup_C_1 :
+	case Ci_Kanim_coup_C_2 :
+	case Ci_Kanim_Attrape_D :
+		tf_Zdiff = tv_pos_zone.z
+		tv_pos_zone.z = (tf_Zdiff * 0.75)
+		break
+}
+COL_ZonePosSet( C_zde_fight, MATH_VecGlobalToLocal( tv_pos_zone))
+if ( ti_ODE_on &&  OBJ_CapaTest( Capa_ZDE_Fight_ON))
+{
+	if ( ti_ODE_on == 2)
+		tv_pos_zone.z = 0.0
+		
+	@o_ODE_Punch_coup OBJ_PosSet( v_pos_ODEPunch_coup)
+	@o_ODE_Punch_coup ODE_Setv(0, OBJ_PosGet() + tv_pos_zone - OBJ_PosGet())
+	v_pos_ODEPunch_coup = OBJ_PosGet() + tv_pos_zone
+	@o_ODE_Punch_coup OBJ_FlagInactiveSet(faux)
+	@o_ODE_Punch_coup ODE_Enable(vrai)
+}
+else
+{
+	@o_ODE_Punch_coup OBJ_FlagInactiveSet(vrai)
+	@o_ODE_Punch_coup ODE_Enable(faux)
+}
+OBJ_CapaSet( none, Capa_ZDE_Fight_ON )		// Capa pour dire zone de fight active pendant les coups
+
+
+////////////////////////////////////////////// effet	/////////////////////////////////////////////////////////////////////////////////////////////
+float		dz
+vector	tv_pos_kong
+tv_pos_kong = OBJ_PosGet()
+
+for (i_index_membre = 0;i_index_membre < 4;i_index_membre++)
+{
+	if (!i_index_membre)
+	{
+		dz = 0.1
+		to_membre = ANI_CanalObjectGet(Anim_Canal_PiedGauche)
+	}
+	else 
+	if (i_index_membre == 1)
+		{
+			dz = 0.1
+			to_membre = ANI_CanalObjectGet(Anim_Canal_PiedDroit)
+		}
+	else if (i_index_membre == 2)
+		{
+			dz = 0.4
+			to_membre= ANI_CanalObjectGet(Anim_Canal_DoigtG1)
+		}	
+	else 
+		if (i_index_membre == 3)
+		{
+			dz = 0.4
+			to_membre = ANI_CanalObjectGet(Anim_Canal_DoigtD1)	
+		}
+
+	v_pos_poussiere[i_index_membre] = @to_membre OBJ_PosGet() - cvector(0,0,0.5)
+	v_vitesse_membre = (v_pos_poussiere[i_index_membre] - v_pos_poussiere_old[i_index_membre]) / TIME_GetDt()
+	f_speed_membre = MATH_VecNorm(v_vitesse_membre)
+		if ((v_pos_poussiere[i_index_membre].z < tv_pos_kong.z + dz) && (f_speed_membre > 0.3))
+		{
+			//macro_render_Vector(v_pos_poussiere[i_index_membre],cvector(0,0,5),color_rouge)
+			AI_Execute("k_exec_SFX_marche_smock")
+		}
+		else
+			{
+				if (!(GFX_Marche_herbe[i_index_membre] == -1))
+				{
+					GFX_Seti(GFX_Marche_herbe[i_index_membre], 13106, 0)
+					GFX_Marche_herbe[i_index_membre] = -1
+				}
+				if (!(GFX_Marche_smock[i_index_membre] == -1))
+				{
+					GFX_Seti(GFX_Marche_smock[i_index_membre], 13106, 0)
+					GFX_Marche_smock[i_index_membre] = -1
+				}
+			}
+	v_pos_poussiere_old[i_index_membre] = v_pos_poussiere[i_index_membre]
+}	
+
+
+// Speed anim en Z se cumule : corriger le bug moteur de merde
+if ( i_etat_courant == ETAT_Kong_desequilibre || ACT_CustomBitGet() & 0b00000010 )
+{
+	tv_speed = DYN_SpeedGetVector()
+	tv_speed.z = 0.0
+	DYN_SpeedSetVector( tv_speed)
+}
+
+// --------- En Swing on controle la position du perso pour que la main soit bien sur le WP de swing ---------
+switch ( i_etat_courant )
+{
+	case ETAT_Kong_swing_pillard :
+		// Snap de la main sur le WP
+		if (ACT_ActionGet()	== Ci_Kanim_Swing_Ver_G)
+		{
+			to_main = o_bras[Ci_kong_bras_droit][0]
+			tv_offset = Cv_KONG_Offset_Creux_MainDroite_Std
+		}
+		else
+		{
+			to_main = o_bras[Ci_kong_bras_gauche][0]
+			tv_offset = Cv_KONG_Offset_Creux_MainGauche_Std
+		}
+		tv_pos = @to_main OBJ_PosGet()
+		tv_pos += @to_main MATH_VecLocalToGlobal(tv_offset)
+		tv_pos -= @o_jump_hotspot OBJ_PosGet()
+		tv_pos *= MATH_FloatLimit( (f_time_start_etat * 3), 0.1, 1.0)
+		OBJ_PosSet( OBJ_PosGet() - tv_pos )
+		break
+	case ETAT_Kong_swing_arch :
+		if ( ACT_ActionGet() != Ci_Kanim_Swing_Hor_Balance_DemiT) // || ANI_CurrentFrameGet(0) > 35)
+		{
+			// Snap de la main sur le WP
+			to_main  = o_bras[Ci_kong_bras_gauche][0]
+			tv_pos = @to_main OBJ_PosGet()
+			tv_pos += @to_main MATH_VecLocalToGlobal(Cv_KONG_Offset_Creux_MainGauche_Std)
+			tv_pos -= @o_jump_hotspot OBJ_PosGet()
+			tv_pos *= MATH_FloatLimit( (f_time_start_blend * 6), 0.1, 1.0)
+//			if ( ACT_ActionGet() == Ci_Kanim_Swing_Hor_Balance_DemiT )
+//				OBJ_PosSet( MATH_VecBlend( OBJ_PosGet(), OBJ_PosGet() - tv_pos, 6.0 * TIME_GetDt() ))
+//			else
+				OBJ_PosSet( OBJ_PosGet() - tv_pos )
+		}
+		break
+	case ETAT_Kong_walling :
+		if( o_walling_liane  && @o_walling_liane OBJ_CapaTest( OBJ_Capa_0) 
+		&& ! COL_Pivot_BVCollide(o_walling_liane))
+		{
+			tv_pos = OBJ_PosGet()
+			tv_pos.z = v_walling_pos.z
+			OBJ_PosSet(tv_pos )
+			i_walling_trop_haut = vrai
+		}
+		else
+			i_walling_trop_haut = faux
+		if ( ACT_ActionGet() == Ci_Kanim_Walling_derape)
+		{
+			i_walling_force_sfx = MATH_Modulo( i_walling_force_sfx + 1, 4 )
+			ai_walling_SFX[ i_walling_force_sfx] = 0
+		}
+		else
+			i_walling_force_sfx = -1
+	case ETAT_Kong_deplacement :
+		for ( ti_i =0; ti_i < 4; ti_i++)
+		{
+			i_soundID= 2 //COL_RayObject_SoundGet()
+			switch(  ti_i)
+			{
+				case 0 :
+					o_Foot 		= ANI_CanalObjectGet( Anim_Canal_DoigtD1)//ANI_CanalObjectGet( Anim_Canal_PiedDroit)
+					o_Jambe  	= ANI_CanalObjectGet(Anim_Canal_MainDroite)//ANI_CanalObjectGet(Anim_Canal_JambeDroite)
+					ti_test = SFX_ID_ImpactOnLeftFoot
+					if ( ai_walling_SFX[ ti_i] == 0)
+						ai_walling_SFX[ ti_i] = 1				
+					break
+				case 1 :
+					o_Foot 		= ANI_CanalObjectGet( Anim_Canal_DoigtG1)//ANI_CanalObjectGet( Anim_Canal_PiedGauche)
+					o_Jambe  	= ANI_CanalObjectGet(Anim_Canal_MainGauche)//ANI_CanalObjectGet(Anim_Canal_JambeGauche)
+					ti_test = SFX_ID_ImpactOnRightFoot
+					if ( ai_walling_SFX[ ti_i] == 0)
+						ai_walling_SFX[ ti_i] = 1				
+					break
+				case 2 :
+					o_Foot 		= ANI_CanalObjectGet( Anim_Canal_PiedDroit)  
+					o_Jambe  	= ANI_CanalObjectGet(Anim_Canal_JambeDroite)
+					ti_test = SFX_ID_ImpactOnLeftHand
+					if ( ai_walling_SFX[ ti_i] == 0)
+						ai_walling_SFX[ ti_i] = 1				
+					break
+				case 3 :
+					o_Foot 		= ANI_CanalObjectGet( Anim_Canal_PiedGauche)
+					o_Jambe  	= ANI_CanalObjectGet(Anim_Canal_JambeGauche)
+					ti_test = SFX_ID_ImpactOnRightHand
+					if ( ai_walling_SFX[ ti_i] == 0)
+						ai_walling_SFX[ ti_i] = 1				
+					break
+			}
+		
+			if ( MATH_VecDotProduct( OBJ_BankingGet(), MATH_VecNormalize(@o_Foot OBJ_PosGet() - OBJ_PosGet())) < Cf_Cos80
+			|| ( i_etat_courant == ETAT_Kong_walling &&  i_walling_force_sfx == ti_i))
+			{
+				if (ai_walling_SFX[ ti_i] == 1)
+				{
+					tv_normal	=  v_walling_normal
+					tv_pos		= @o_Foot OBJ_PosGet() 
+					tv_pos -=  0.4 * tv_normal
+					DBG_RenderSphere( tv_pos, 0.2, 0xFFFF0000)
+					tv_normal	=  v_walling_normal
+					tv_pos		= @o_Foot OBJ_PosGet() 
+					tv_pos -=  0.4 * tv_normal
+					DBG_RenderSphere( tv_pos, 0.2, 0xFFFF0000)
+		//			@get_Impact_GFX_path Proc_KK_SFXADD(ti_test, tv_pos , tv_normal, i_soundID, faux, OBJ_SightGet())	
+					switch ( i_etat_courant)
+					{
+						case ETAT_Kong_walling :
+		 					Proc_KK_SFX_Walling(tv_pos , tv_normal)
+		 					break
+		 				case ETAT_Kong_deplacement :
+		 					Proc_KK_SFX_Ground(tv_pos, 1.0)
+		 					break
+		 					
+		 			}
+					f_start_walkD_SFX_time = TIME_Get()
+					ai_walling_SFX[ ti_i] = 2		
+				}
+			}
+			else
+				ai_walling_SFX[ ti_i] = 0
+		}	
+		break
+}
+
+
+if( o_walling_liane  && @o_walling_liane OBJ_CapaTest( OBJ_Capa_0) 
+&& ! COL_Pivot_BVCollide(o_walling_liane))
+{
+	tv_pos = OBJ_PosGet()
+	tv_pos.z = v_walling_pos.z
+	OBJ_PosSet(tv_pos )
+}
+
+
+object	to_bone
+vector	tv_sight
+if ( o_colonne) // && f_colonne_pos_blend == 1.0)
+{
+	switch ( ACT_ActionGet() )
+	{
+		case Ci_Kanim_Colonne_FrappeDFin :
+		case Ci_Kanim_Colonne_FrappeG :
+			i_colonne_blend_coup = faux
+		case Ci_Kanim_Colonne_FrappeD :
+			tv_sight = @o_colonne OBJ_PosGet() - OBJ_PosGet()
+			MATH_VecSetHorzNormalize( tv_sight)
+			if ( !i_colonne_blend_coup && MATH_VecDotProduct( tv_sight, -v_colonne_best_axe) > Cf_Cos5)
+				break
+		default:
+		to_bone = ANI_CanalObjectGet(Anim_Canal_Snap_Bassin)		// snap bassin
+		@to_bone OBJ_PosSet(v_colonne_bone_pos)
+		tv_pos = OBJ_PosGet() - @to_bone OBJ_PosGet()			
+		OBJ_PosSet( MATH_VecBlend( OBJ_PosGet(), @o_colonne OBJ_PosGet() + tv_pos , f_colonne_pos_blend)  ) 
+	}
+}
+
+DBG_RenderVector( Proc_KK_Grab_PosGet(0) , Proc_KK_Grab_BankingGet(0), color_bleu)
+DBG_RenderVector( Proc_KK_Grab_PosGet(0) , Proc_KK_Grab_SightGet(0), color_vert)
+DBG_RenderVector( Proc_KK_Grab_PosGet(0) , MATH_VecCrossProduct( Proc_KK_Grab_BankingGet(0), Proc_KK_Grab_SightGet(0)), color_rouge)
+
+
+
+
+if ( i_etat_courant == ETAT_Kong_jump && COL_CollideType( COL_C_Ground + COL_C_SlipperyEdge))
+//&& i_in_jump != 2)
+{
+	tv_speed = DYN_SpeedGetVector()
+	if ( tv_speed.z > -10.0)
+	{
+		// MERDE je me suis fait recaler car il y a une arrete de Sol.
+		tv_speed.z = 0.0
+		tv_offset = OBJ_PosGet() - COL_CollidedPointGet( COL_C_Ground) 
+		tv_offset.z = 0.0
+		MATH_VecSetNorm( tv_offset, MATH_FloatMax( 4.0, MATH_VecNorm(tv_speed)))
+		tv_offset.z = -10.0
+		OBJ_PosSet( OBJ_PosGet() + ( tv_offset * TIME_GetDt()))
+		DBG_TraceString("KONG : IA RECAL")
+		DBG_TraceEOL()
+	}
+}
+
+

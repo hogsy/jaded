@@ -1,0 +1,367 @@
+#include"r_defines.var"
+
+int			ti_action
+int			ti_end
+int			ti_frame
+int			ti_GMAT
+vector	tv_paf_dir
+vector	tv_impulsion
+vector	tv_sight
+vector	tv_traction_joy
+float		tf_dot_X, tf_dot_Y
+
+// SORTIE ETAT 	===================================================================
+if( i_sort_etat )
+{
+	
+	if( i_paf_type & (C_PAF_RM_Choc + C_PAF_RM_KiTue + C_PAF_RM_Fort))
+		f_paf_time_last_big = TIME_Get()
+
+	DYN_FrictionVectorSet(Cv_DYN_Friction)
+	DYN_GravitySet( Cv_DYN_Gravity)
+	i_sort_etat = faux
+	return
+}
+
+// INIT ETAT 	=====================================================================
+if( i_etat_courant != ETAT_RM_paf )
+{
+	i_etat_courant = ETAT_RM_paf
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	REINIT:
+
+	// BACKUP
+	o_paf_actor = o_paf_detect_actor
+	v_paf_dir = v_paf_detect_dir
+	v_paf_dir  = Proc_Vec_HorzNormalise(v_paf_dir, OBJ_SightGet())		
+	i_paf_type = i_paf_detect_type
+	o_paf_detect_actor = nobody
+
+
+	if ( Proc_RM_LifeGet() <= 0.0)
+		i_paf_type |= C_PAF_RM_Fort
+
+
+	// Perte de calecon sauf avec le paf coupure de grappin
+	if ( i_paf_type & (C_PAF_RM_Fort + C_PAF_RM_Moyen))
+	{
+		if ( !( i_paf_type & C_PAF_RM_Cancel_Grappin))
+		{
+			if ( @"univ" ai_disguise[@"univ" i_shape_tete] & RM_POWER_DISGUISE_SLIP)
+			{
+				Proc_RM_LifeManaSet( 0.0, 0.0)
+				i_paf_type |= C_PAF_RM_Fort	
+			}
+			else
+			{
+				@"univ" ai_disguise[@"univ" i_shape_tete] |= RM_POWER_DISGUISE_SLIP
+				Proc_RM_CustomisationSet()
+			}
+		}
+	}
+
+	if( i_paf_type & (C_PAF_RM_Choc + C_PAF_RM_KiTue + C_PAF_RM_Fort))
+	{
+//		f_paf_time_last_big = TIME_Get()
+
+		
+		if ( o_ride_actor)
+		{
+			o_ride_actor = LNK_ThisClientGet(o_ride_actor, Ci_LNK_RIDE_ON_NMI, mid_ride_LNK_ID, faux, nofunc, nofunc, nofunc)
+			if ( @o_ride_cb_actor OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Anims))
+				AI_CBDel(o_ride_cb_actor, CallBack_After_Blend, "raym_cb_set_pos")
+			else
+				AI_CBDel(o_ride_cb_actor, CallBack_After_Rec, "raym_cb_set_pos")
+			o_ride_cb_actor = nobody
+			i_ride_actor_ID = 0
+			COLSET_ON_OFF( C_bit_zdm_pied, ON)
+		}
+	}
+	
+	// CHOIX DE L ANIM
+	if( i_paf_type & ( C_PAF_RM_Choc + C_PAF_RM_KiTue))
+	{
+		ACT_ActionSet( RM_Act_PafFace)
+		SND_RequestPlay(C_SND_PAF_NORMAL)
+		v_add_speed = v_paf_dir * 1.6 * DYN_FrictionGet()
+	}
+	else if ( i_paf_type & C_PAF_RM_ComboPetit)
+	{
+		ACT_ActionSet( RM_Act_PafNoStop)
+		SND_RequestPlay(C_SND_PAF_NORMAL)
+		v_add_speed = Cv_NullVector
+	}
+	else
+	{
+
+//		else if ( ! i_ground_flag )
+//		{
+//			if( i_paf_type & C_PAF_RM_Fort )
+//				ti_action = RM_Act_PafFAir
+//			else
+//				ti_action = RM_Act_PafAir
+//		}
+		if ( o_ride_actor && ! ( i_paf_type & (C_PAF_RM_Choc + C_PAF_RM_KiTue + C_PAF_RM_Fort)))
+		{
+			ACT_ActionSet( RM_Act_RidePaf)
+			SND_RequestPlay(C_SND_PAF_NORMAL)
+		}
+		else
+		{
+			DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, v_paf_dir, color_rouge)
+			tf_dot_Y = MATH_VecDotProduct(v_paf_dir, OBJ_SightGet())
+			if ( ! i_ground_flag && ! i_is_in_water)
+			{
+				if( i_paf_type & C_PAF_RM_Fort )
+					ti_action = RM_Act_PafFAir
+				else
+					ti_action = RM_Act_PafAir
+			}
+			else if (tf_dot_Y > 0.0)
+			{
+				if( i_paf_type & C_PAF_RM_Fort )
+				{
+					if ( i_is_in_water)
+						ti_action = RM_Act_Paf_Swin_Fdos
+					else
+						ti_action = RM_Act_PafFDos
+				}
+				else
+				{
+					if ( i_is_in_water)
+						ti_action = RM_Act_Paf_Swin_dos
+					else
+						ti_action = RM_Act_PafDos
+				}
+			}
+			else
+			{
+				if( i_paf_type & C_PAF_RM_Fort  )
+				{
+					if ( i_is_in_water)
+						ti_action = RM_Act_Paf_Swin_Fface
+					else
+						ti_action = RM_Act_PafFFace
+				}
+				else
+				{
+					if ( i_is_in_water)
+						ti_action = RM_Act_Paf_Swin_face
+					else
+						ti_action = RM_Act_PafFace
+				}
+			}
+		
+			ACT_ActionSet(ti_action | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_FrameZero)
+			if( i_paf_type & C_PAF_RM_Fort)
+			{
+				DYN_GravitySet( cvector( 0.0, 0.0, -10.0))
+				DYN_FrictionVectorSet(Cv_DYN_Friction_Jump)
+				if ( i_paf_type & C_PAF_RM_Grenade && ! i_is_in_water)
+				{
+					tv_impulsion = v_paf_dir * 15.0 + cvector( 0.0, 0.0, 8.0)					
+					f_paf_before_crete = 0.1
+				}
+				else
+				{
+					tv_impulsion = v_paf_dir * 10.0 + cvector( 0.0, 0.0, 5.0)
+					f_paf_before_crete = (-tv_impulsion.z / DYN_GravityVectorGet().z) - 0.3
+				}
+				DYN_SpeedSetVector( tv_impulsion) 
+
+				SND_RequestPlay(C_SND_PAF_FORT)
+			}
+			else
+			{
+				SND_RequestPlay(C_SND_PAF_NORMAL)
+				if ( ! i_is_in_water)
+					v_add_speed = v_paf_dir * 2.0 * DYN_FrictionGet()		
+				else
+					v_add_speed = v_paf_dir * 0.5 * DYN_FrictionGet()		
+			}
+		}
+	}
+	
+	if( i_paf_type & (C_PAF_RM_Fort + C_PAF_RM_KiTue) )
+	{
+		// arme
+		if( o_grab_object )
+			@o_grab_object OBJ_CapaSet(RM_WEAPON_CAPA_DROP_PAF, none)
+		o_grab_object = LNK_ClientGet( Ci_LNK_GRAB_OBJECT, mid_grab_object, faux, nofunc, nofunc, nofunc)
+		
+		// clef
+		if ( o_grab_cle && @o_grab_cle PROC_KEY_TypeGet() != KEY_TYPE_PTIZETRE)
+			o_grab_cle = LNK_ClientGet( Ci_LNK_GRAB_OBJECT, mid_grab_cle, faux, nofunc, nofunc, nofunc)
+		
+		GRAPPIN_Destroy()
+		
+	}
+	else if ( i_paf_type & C_PAF_RM_Moyen )
+		GRAPPIN_Destroy()
+	
+//	if( o_ride_actor)
+//	{
+//		// COUPER LE RIDE A CHAQUE PAF
+//		o_ride_actor = LNK_ThisClientGet(o_ride_actor, Ci_LNK_RIDE_ON_NMI, mid_ride_LNK_ID, faux, nofunc, nofunc, nofunc)
+//		if ( @o_ride_cb_actor OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Anims))
+//			AI_CBDel(o_ride_cb_actor, CallBack_After_Blend, "raym_cb_set_pos")
+//		else
+//			AI_CBDel(o_ride_cb_actor, CallBack_After_Rec, "raym_cb_set_pos")
+//
+//		o_ride_cb_actor = nobody
+//		i_ride_actor_ID = 0
+//		MOVE_CHANGE_To_Default()
+//	}
+
+	// COUP DE FREIN
+	f_traction_multiplier *= Cf_Coef_Frein_Paf
+	i_paf_ground_flag = i_ground_flag
+	RM_PAF_Filtre_Rouge()
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// DETECTIONS 	===================================================================
+if( o_paf_detect_actor && ! ( i_paf_type & C_PAF_RM_Fort )
+&& Proc_RM_LifeGet()) //EVENT_LIFE_CurLifeGet(ID_LIFE) )
+	goto REINIT
+
+// GRAPPIN END
+if ( i_flag_just_grappin )
+	GRAPPIN_Return()		// permettre de couper le grappin pendant un paf
+
+// AIR TO GROUND  AND VIE VERSA
+if ( !o_ride_actor && ! i_is_in_water && i_ground_flag != i_paf_ground_flag && ! ( i_paf_type & C_PAF_RM_Fort))
+{
+	MOVE_CHANGE_To_Jump( DYN_SpeedGetVector(), faux, vrai)
+	AI_TrackCurChangeNow("raym_ETAT_main")	
+}
+
+
+// COMPORTEMENT 	===============================================================
+
+// MODE LOOK INTERDIT
+
+// AU CAS OU L ON DESIRE UN COMPORTEMENT D ATT COUCHE AU SOL
+switch ( ACT_ActionGet() )
+{
+	
+	case RM_Act_Paf_Swin_Fdos :
+	case RM_Act_Paf_Swin_Fface :
+		i_flag_look_force_release = vrai
+		if( ACT_ActionFinished() )
+			ACT_ActionSet( RM_Act_Paf_Swim_Recep)
+		ti_end = faux
+		break
+	case RM_Act_PafFFace :
+	case RM_Act_PafFDos :
+		i_flag_look_force_release = vrai
+		if( ACT_ActionFinished() || f_time_start_etat >= f_paf_before_crete )
+		{
+			// Detection de l eau dans le sens de la chute.
+			COL_SpecificCrossableSet( Gmat_RM_Cross_All_But_Camera | Gmat_RM_Crossable_All_But_Rayman)
+			if ( COL_RayObject_Vector( OBJ_PosGet() - ( OBJ_SightGet() * 1.5), cvector( 0.0, 0.0,-1.5), all, none, OBJ_FlagsIdentityGet(), COL_C_Ray_on_ColMap_NoCrossable + COL_C_Ray_use_SpecificCrossableSet))
+				ti_GMAT = COL_GMAT_FlagsGet( COL_C_Ray)
+			else
+				ti_GMAT = 0
+			if ( ti_GMAT & Gmat_RM_Face_eau)
+				ACT_ActionSet(RM_Act_Paf_Swim_Recep)
+			else if ( i_paf_type & C_PAF_RM_Grenade && ! i_is_in_water)
+				ACT_ActionSet(RM_Act_PafFCreteBig)
+			else
+				ACT_ActionSet(RM_Act_PafFCrete)
+		}
+		ti_end = faux
+		break
+//	case RM_Act_Paf_Swim_Recep :
+//		i_flag_look_force_release = vrai
+//		if ( ACT_ActionFinished())
+//			ti_end = vrai
+//		break
+	case RM_Act_PAF_Reception :
+		i_flag_look_force_release = vrai
+		if ( ACT_ActionFinished())
+		{
+			if( Proc_RM_LifeGet()) //EVENT_LIFE_CurLifeGet(ID_LIFE) )
+				ACT_ActionSet( RM_Act_PafFReleve)
+			else
+				ti_end = vrai
+		}
+		break
+	case RM_Act_PafFReleve :
+		i_flag_look_force_release = vrai
+		if( ACT_ActionFinished())
+			ti_end = vrai
+		break
+	case RM_Act_PafFCrete :
+	case RM_Act_PafFCreteBig :
+	case RM_Act_PafFAir :
+	case RM_Act_Paf_Swim_Recep :	
+		i_flag_look_force_release = vrai
+		if ( COL_CollideType(COL_C_Ground))
+			ACT_ActionSet(RM_Act_PAF_Reception)
+//		else if ( i_is_in_water && DYN_SpeedGetVector().z < 0.0)
+//		{
+////			ti_frame = ANI_CurrentFrameGet(0)
+//			ACT_ActionSet( RM_Act_Paf_Swim_Recep)
+//			ANI_CurrentFrameSet(0,8)
+//			ANI_StockMatrix()
+//		}
+		else if ( ACT_ActionFinished())
+		{
+			if( Proc_RM_LifeGet()) //EVENT_LIFE_CurLifeGet(ID_LIFE) )
+			{
+				MOVE_CHANGE_To_Jump( DYN_SpeedGetVector(), faux, vrai)
+				AI_TrackCurChangeNow("raym_ETAT_main")						
+			}
+			else
+				ti_end = vrai				
+		}
+		break		
+	default:
+		if ( ACT_ActionFinished())
+			ti_end = vrai
+		else
+			ti_end = faux
+}
+
+if ( ti_end)
+{
+	if( Proc_RM_LifeGet()) //EVENT_LIFE_CurLifeGet(ID_LIFE) )
+		AI_TrackCurChangeNow("raym_ETAT_main")
+	else
+		AI_TrackCurChangeNow("raym_ETAT_mort_AHahah")
+}
+
+
+
+switch ( ACT_ActionGet())
+{
+
+	case RM_Act_PafNoStop :
+		v_force_JOY = Proc_RM_MultiplierCalc()
+		tv_sight = v_force_JOY
+		break			
+	case RM_Act_PafFDos :
+	case RM_Act_PafDos :
+	case RM_Act_Paf_Swin_dos :	
+	case RM_Act_Paf_Swin_Fdos :	
+		tv_sight = OBJ_SightGet()  //v_paf_dir
+		break
+		
+	default:
+		tv_sight = -v_paf_dir
+		break
+}
+
+if( MATH_VecNullEpsilon( tv_sight))
+	tv_sight  = OBJ_SightGet()
+OBJ_BankingGeneralSet(MATH_VecBlendRotate( OBJ_SightGet(), tv_sight , 8.0 * TIME_GetDt()), Cv_VerticalVector)

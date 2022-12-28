@@ -1,0 +1,127 @@
+#include "prs_RaptorSlim_defines.var"
+
+
+int			ti_i, ti_capa
+vector	tv_way_sight
+object	to_gao_init
+object	tao_way_wp[10]
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	switch( i_etat_courant )
+	{
+		case ETAT_PRS_JUMP :
+//		case ETAT_PRS_PAF_SLIDE :
+//		case ETAT_PRS_PAF_FALL :
+//		case ETAT_PRS_PAF_FLY :
+			// correct
+			break
+		default:
+			i_Spawn_flag = faux
+			PROC_WAY_CLEAR()		// incorrect, exit spawn
+			break
+	}
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_PRS_SPAWN)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_PRS_SPAWN
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = AI_TrackCurGet()
+	
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =======================================================================================================
+//// STIMULI ===========================================================================
+//AI_Execute("prs_exec_check_cadavre")
+AI_Execute("prs_exec_check_vision")
+//AI_Execute("prs_exec_update_best_interest")
+//
+
+
+// COMPORTEMENT =================================================================================================
+
+
+//i_way_computation_mode = Ci_WAY_MODE_SPAWN
+//AI_Execute("prs_exec_find_way")	// Trouver un moyen de tout caser la dedans si possible.
+//AI_Execute("prs_exec_way_move")
+
+if ( o_next_wp && COL_Pivot_BVCollide( o_next_wp))
+{
+	// On enlève ce wp puisqu'il est atteint
+	if (i_way_wp_nb)
+	{
+		o_current_wp = o_next_wp
+		i_way_wp_nb--
+		if( ! i_Spawn_way_Loop )
+			ao_way_wp[i_way_wp_nb] = nobody		// if spawn network loops, do not erase wp !!!
+	}
+	// Check Spawn Network w/ Loop
+	if( ! i_way_wp_nb && i_Spawn_way_Loop )
+		i_way_wp_nb = i_Spawn_way_Loop_wp_nb
+	
+	// On regarde si on a un wp suivant
+	if (i_way_wp_nb)
+		o_next_wp = ao_way_wp[i_way_wp_nb - 1]		
+	else
+		o_next_wp = nobody
+}
+// NEW NEXT VALUES
+if ( o_next_wp)
+{
+	v_next_pos = @o_next_wp OBJ_PosGet()
+}
+else
+{
+	macro_change_etat("prs_ETAT_ATTENTE")
+}
+
+if ( o_current_wp)
+	ti_capa = WAY_LinkCapaGet( @o_current_wp WAY_NetOfObj(),o_current_wp, o_next_wp)
+else
+	ti_capa = 0
+if ( ti_capa & Ci_Capa_Link_Jump)
+{
+	v_jump_dest_pos = @o_next_wp OBJ_PosGet()
+	i_jump_mode = Ci_jump_mode_std
+	macro_change_etat("prs_ETAT_JUMP")			
+}
+else if ( ti_capa & Ci_Capa_Link_Break)
+{
+	i_break_hideout_target_hidden = faux
+	o_hiding_place = o_next_wp
+	macro_change_etat("prs_ETAT_ATTAQUE_CACHE")
+}
+
+//tv_way_sight = v_next_pos - OBJ_PosGet()
+//tv_way_sight.z = 0.0
+//if ( MATH_VecNullEpsilon( tv_way_sight))
+//	tv_way_sight = OBJ_SightGet()
+//else
+//	MATH_VecSetNormalize(tv_way_sight)
+//OBJ_BankingGeneralSet( MATH_VecBlendRotate( OBJ_SightGet(), tv_way_sight, 5.0 * TIME_GetDt()), v_ground_normal)
+
+f_joy_norm = 1.0
+i_way_moving = vrai
+i_flag_run = vrai
+
+AI_Execute("prs_exec_way_move")		// update joy
+
+AI_Execute("prs_exec_select_action")

@@ -1,0 +1,151 @@
+#include "PNJ_Scorpion_defines.var"
+
+int			ti_crossable
+
+//OBJ_Destroy()
+
+//// MODIF TAILLE par FRED --------------------------------------------------------------------------------
+//if (f_size_coef<0)
+//	OBJ_ZoomSet(MATH_RandFloat(f_randsize_coef_min, f_randsize_coef_max))
+//else
+//	OBJ_ZoomSet(f_size_coef)
+//// MODIF TAILLE par FRED --------------------------------------------------------------------------------
+
+if (i_SF_NePasSeRejouerSiMort)
+{
+	int		ti_SF_AlreadyDead
+	i_SF_AlreadyDead = AI_SFDynGet(0, SF_MinById, SF_MaxById)		// Alloc
+	Super_SpecialFlag_get(i_SF_AlreadyDead, ti_SF_AlreadyDead)			// Test SF
+	if (ti_SF_AlreadyDead)																	// Si SF = 1 alors DESTROY
+		OBJ_Destroy()
+}
+
+i_frame_nb = 0
+
+// PUT@#!!!µ£$  DE SECTO !!!
+GRID_CurrentSet(0)
+
+if (! OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Generated) )
+{
+	meta( i_frame_nb < 2 || ! GRID_IsIn(OBJ_PosGet()) )
+	{
+		i_frame_nb++
+	}
+}
+
+OBJ_FlagInvisibleSet(faux)
+
+
+switch(i_modele)
+{
+	case Ci_Modele_Petit :
+
+		i_grab_allowed = faux
+
+		f_size_coef = MATH_RandFloat(0.4, 0.6)
+		f_life = Cf_Scorpion_Small_life
+		i_seuil_paf_important = 4
+		i_seuil_paf_moyen = 0
+		f_action_speed_max = 1.0
+		break
+
+	case Ci_Modele_Standard :
+
+//		i_grab_allowed = faux
+
+		f_size_coef = MATH_RandFloat(0.9, 1.2)
+		f_life = Cf_Scorpion_Standard_life
+		i_seuil_paf_important = 10
+		i_seuil_paf_moyen = 4
+		f_action_speed_max = 0.6
+		break
+
+	case Ci_Modele_Gros :
+		f_size_coef = 1.8
+		f_life = Cf_Scorpion_Big_life
+		i_seuil_paf_important = 15
+		i_seuil_paf_moyen = 5
+		f_action_speed_max = 0.4
+		break
+}
+
+if (o_start_wp)
+{
+	f_action_speed_coef = on_net_speed_coef
+	n_net = @o_start_wp WAY_NetOfObj()
+}
+
+f_action_speed_max *= 0.5
+
+OBJ_ZoomSet(f_size_coef)
+
+BV_MinSet(cvector(-2.0, -2.0, -0.5))
+BV_MaxSet(cvector(2.0, 2.0, 3.0))
+
+v_init_pos = OBJ_PosGet()
+
+ACT_DefaultTransition(15)
+
+DYN_On()
+DYN_FlagsSet(DYN_C_BasicForces | DYN_C_NeverDynamicFather | DYN_C_NeverDynamicHierarchy | DYN_C_VectorFriction | DYN_C_GlobalFriction | DYN_C_SkipFrictionWhenSpeedFromAnim | DYN_C_HorizontalGrounds, none)
+DYN_GravitySet(Cv_Scorpion_Gravity)
+DYN_FrictionVectorSet(Cv_Scorpion_Friction)
+
+COL_SwapToSpecific(C_zdm_pied)
+COL_ZonePosSet(C_zdm_pied, cvector(0.0, 0.0, 0.5))
+COL_ZoneSizeSet(C_zdm_pied, cvector(0.5, 0.5, 0.5))
+
+COL_SwapToSpecific(C_zde_corps)
+COL_ZonePosSet(C_zde_corps, cvector(0.0, 0.0, 1.0))
+COL_ZoneSizeSet(C_zde_corps, cvector(1.0, 1.0, 1.0))
+
+COL_CrossableSet(none, all)
+
+//ti_crossable = Gmat_Jack_DefaultCrossable
+//ti_crossable |= Gmat_Jack_Face_eau
+//ti_crossable |= Gmat_Jack_Face_de_Bord
+//ti_crossable |= Gmat_Jack_BordHumain_TraversableNMI
+//ti_crossable |= Gmat_Jack_Crossable_All_But_TREX
+//ti_crossable |= Gmat_Jack_Crossable_All_But_RAPTORS
+ti_crossable = Gmat_KK_Crossable_Default
+COL_CrossableSet(ti_crossable, none)
+
+DYN_MaxStepSet(0.35)
+
+OBJ_CapaSet(none, OBJ_Capa_15)
+
+//OBJ_InfoPhotoParamSet( 0, 0, Anim_Canal_Bassin, Anim_Canal_Bassin, 0.0, 0.0, 0.0, 3.0 * OBJ_ZoomGet())
+
+OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_DesignStruct, none)
+OBJ_Me().des_int1 = Ci_DISPLAY_FIGHT
+
+f_lifecur = f_life
+
+o_bassin = ANI_CanalObjectGet(100)
+o_queue_2 = ANI_CanalObjectGet(103)
+
+PNJ_Scorpion_OBBOX_Set(1.0)
+PNJ_Scorpion_Ulltra_Tag_Init()
+
+i_perceived_best_actor_index	 = -1
+
+macro_change_tag_size(cvector(-0.5, -0.5, 0.0), cvector(0.5, 0.5, 0.0))
+
+AI_CBAdd(OBJ_Me(), CallBack_Info, "PNJ_Scorpion_callback_info")
+AI_CBAdd(OBJ_Me(), CallBack_WhenDestroy, "PNJ_Scorpion_callback_when_destroy")
+AI_CBAdd(OBJ_Me(), CallBack_After_Blend, "PNJ_Scorpion_callback_afterblend")
+AI_CBAdd(OBJ_Me(), CallBack_Client, "PNJ_Scorpion_callback_client")
+AI_CBAdd(OBJ_Me(), CallBack_TagOn, "PNJ_Scorpion_callback_tagon")
+AI_CBAdd(OBJ_Me(), CallBack_TagOff, "PNJ_Scorpion_callback_tagoff")
+macro_add_callback_after_cam("PNJ_Scorpion_callback_aftercam")
+
+AI_TrackChange(Ci_Track_TagOn, "PNJ_Scorpion_exec_tagon")
+AI_TrackChange(Ci_Track_Etat, "PNJ_Scorpion_ETAT_IDLE")
+AI_TrackChange(Ci_Track_Reflex, "PNJ_Scorpion_reflex")
+//AI_TrackChange(Ci_Track_Etat, "PNJ_Scorpion_TEST")
+//AI_TrackChange(Ci_Track_Etat, "PNJ_Scorpion_ETAT_a_terre")
+//AI_TrackChange(Ci_Track_Etat, "PNJ_Scorpion_ETAT_mort")
+AI_TrackCurChangeNow("PNJ_Scorpion_exec_tagoff")
+
+
+

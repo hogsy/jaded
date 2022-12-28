@@ -1,0 +1,220 @@
+#include "PNJ_Snake_defines.var"
+
+int			ti_i
+int			ti_flag_collision
+int			ti_flag_ok
+
+float		tf_dist
+float		tf_coef
+float		tf_speed
+float		tf_norm
+float		tf_pow_coef
+//float		tf_delai_annonce
+//float		tf_jump_impulsion_max	
+float		tf_jump_Z_offset
+float		tf_Z		
+
+vector	tv_head_pos
+vector	tv_head_sight
+vector	tv_impulsion
+vector	tv_new_sight
+vector	tv_horizon
+vector	tv_start_pos
+vector	tv_speed
+vector	tv_me_to_target
+vector	tv_collide_pos
+vector	tv_ik_start_pos
+vector	tv_ik_start_sight
+
+vector	tv_ray_start_pos
+vector	tv_ray_dir
+vector	tv_ray_col_normal
+
+#define Cf_phase_0_duration				0.5
+#define Cf_phase_1_duration				1.0
+
+if (i_flag_sortie_etat)
+{
+	i_flag_sortie_etat = faux
+
+	DYN_On()
+	DYN_FlagsSet(DYN_C_BasicForces | DYN_C_VectorFriction | DYN_C_GlobalFriction | DYN_C_NeverDynamicFather, DYN_C_NeverDynamicHierarchy)
+	DYN_GravitySet(v_Snake_Gravity)
+
+	f_move_speed = 50.0
+	DYN_SpeedSetVector(OBJ_SightGet() * f_move_speed)
+
+	COL_ColSetActivationSet(C_bit_zdm_pied, none)
+	COL_ZoneSizeSet(C_zdm_pied, cvector(0.2, 0.2, 0.2))
+	
+	return
+}
+
+if (i_etat_courant != ETAT_GetUp)
+{
+	// INTIALISATION
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_GetUp
+	
+	if (fct_last_etat)
+	{
+		i_flag_sortie_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	fct_last_etat = "PNJ_Snake_ETAT_GetUp"
+	
+	PNJ_Snake_IK_Init(i_ik_modules_nb)
+
+//	DYN_Off()
+//	COL_ColSetActivationSet(none, C_bit_zdm_pied)
+
+//	f_rot_sign = MATH_FloatSign(MATH_RandFloat(-1.0, 1.0))
+
+	f_delay_until_last_ground_col = 1000.0
+	f_delay_until_last_wall_col = 1000.0
+
+
+	DYN_On()
+	DYN_FlagsSet(DYN_C_BasicForces | DYN_C_VectorFriction | DYN_C_GlobalFriction | DYN_C_NeverDynamicFather, DYN_C_NeverDynamicHierarchy)
+	DYN_GravitySet(Cv_NullVector)
+	DYN_FrictionVectorSet(cvector(6.0, 6.0, 6.0))	
+
+	COL_ColSetActivationSet(C_bit_zdm_pied, none)
+	COL_ZoneSizeSet(C_zdm_pied, cvector(0.5, 0.5, 0.5))
+
+	i_etat_phase = 0
+	f_etat_phase_duration = 0.0
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ==============================================================================
+o_Rided_Actor = LNK_ServeurGet(Ci_LNK_RIDE_ON_NMI, mid_Rided_LNK_ID, vrai, nofunc, nofunc)
+if (! o_Rided_Actor)
+	macro_change_etat("PNJ_Snake_ETAT_Basic")
+
+if (o_Rided_Actor == o_main_actor)
+{
+	if  (f_time_start_etat && (IO_ButtonJustPressed(RM_Monture_Button_Action1) || IO_ButtonJustPressed(RM_Monture_Button_Action2)))
+		macro_change_etat("PNJ_Snake_ETAT_Basic")
+
+	if (glob_joynorm_get)
+		v_joy_dir = MATH_VecBlendRotate(v_joy_dir, glob_joyvector_get_normalized, 4.0 * TIME_GetDt())
+}
+else
+{
+	tv_head_sight = @o_Rided_Actor Proc_PNJ_Lapin_VirtualSightGet()
+	tf_norm = MATH_VecSquareNorm(tv_head_sight)
+	if (tf_norm)
+	{
+		tf_norm = MATH_FloatSqrt(tf_norm)
+		v_joy_dir = MATH_VecBlendRotate(v_joy_dir, tv_head_sight / tf_norm, 6.0 * TIME_GetDt())
+		
+		if (f_time_start_etat > 1.0)
+			macro_change_etat("PNJ_Snake_ETAT_Basic")
+	}
+	else
+	{
+		v_joy_dir = OBJ_SightGet()
+	}
+}
+
+// COMPORTEMENT ========================================================================
+
+if (i_etat_phase < 2)
+{
+	f_move_speed -= MATH_FloatMin(f_move_speed, 1.5 * move_speed * TIME_GetDt())
+	f_virtual_net_offset += f_move_speed * TIME_GetDt()
+	f_virtual_net_offset = MATH_FloatMin(f_virtual_net_offset, i_ik_modules_nb * dist_between_module)
+}
+
+if (i_etat_phase < 3)
+	PNJ_Snake_Modules_Update(i_ik_modules_nb, nobody)
+
+if (ao_virtual_wp_father[i_virtual_net_last_wp_index])
+{
+	tv_ik_start_pos = @ao_virtual_wp_father[i_virtual_net_last_wp_index] MATH_VecLocalToGlobal(v_IK_pos)
+	tv_ik_start_pos += @ao_virtual_wp_father[i_virtual_net_last_wp_index] OBJ_PosGet()
+	
+	tv_ik_start_sight = @ao_virtual_wp_father[i_virtual_net_last_wp_index] MATH_VecLocalToGlobal(v_IK_sight)
+}
+else
+{
+	tv_ik_start_pos = v_IK_pos
+	
+	tv_ik_start_sight = v_IK_sight
+}
+
+v_IK_banking = @ao_modules[i_ik_modules_nb] OBJ_BankingGet()
+if (MATH_VecDotProduct(v_IK_banking, Cv_VerticalVector) > -Cf_Cos60)
+	v_IK_banking = MATH_VecBlendRotate(v_IK_banking, Cv_VerticalVector, 0.75)
+else
+	v_IK_banking = MATH_VecBlendRotate(v_IK_banking, -Cv_VerticalVector, 0.5)
+
+DBG_RenderVector(@ao_modules[i_ik_modules_nb] OBJ_PosGet(), v_IK_banking * 10.0, color_bleu)
+
+// Je me relève
+f_etat_phase_duration += TIME_GetDt()
+
+tf_coef = MATH_FloatMin(f_etat_phase_duration / Cf_phase_0_duration, 1.0)
+tf_coef = MATH_Sin(tf_coef * Cf_PiBy2)
+
+tv_start_pos = @ao_modules[i_ik_modules_nb] OBJ_PosGet()
+tv_start_pos += @ao_modules[i_ik_modules_nb] OBJ_SightGet() * (f_size_coef * 0.75)
+
+tv_me_to_target = OBJ_PosGet()
+tv_me_to_target  += v_joy_dir * 10.0
+//		tv_me_to_target  += @get_Kamera OBJ_SightGet()
+tv_me_to_target.z += 5.0
+
+tv_me_to_target -= tv_start_pos
+tv_me_to_target -= MATH_VecDotProduct(tv_me_to_target, v_IK_banking) * v_IK_banking
+
+tf_dist = MATH_VecNorm(tv_me_to_target)
+if (MATH_FloatNullToler(tf_dist, 0.001))
+	tv_me_to_target = @ao_modules[i_ik_modules_nb] OBJ_SightGet()
+else	
+	tv_me_to_target /= tf_dist
+
+tv_horizon.x = tv_me_to_target.y
+tv_horizon.y = -tv_me_to_target.x
+tv_horizon.z = 0.0
+MATH_VecSetNormalize(tv_horizon)
+tv_horizon *= MATH_Sin(f_time_start_etat * 3.0) * (0.4 * f_size_coef)
+
+tf_Z = 1.5 // Dest Z
+tf_Z += MATH_Sin(f_time_start_etat * 6.0) * 0.1 // Oscillation
+tf_Z *= f_size_coef
+
+tv_head_pos = tv_start_pos
+tv_head_pos += v_IK_banking * tf_Z
+tv_head_pos += tv_horizon
+
+tf_coef = MATH_FloatMin(tf_coef, 1.0)
+
+tv_head_pos = MATH_VecBlendRotate(tv_ik_start_pos - tv_start_pos, tv_head_pos - tv_start_pos, tf_coef)
+tv_head_pos += tv_start_pos
+
+DYN_SpeedSetVector((tv_head_pos - OBJ_PosGet()) / TIME_GetDt())	
+tv_head_pos = OBJ_PosGet()
+
+tv_head_sight = OBJ_PosGet()
+tv_head_sight += v_joy_dir * 10.0
+//		tv_head_sight += @get_Kamera OBJ_SightGet() * 10.0
+
+tv_head_sight = tv_head_sight - tv_head_pos
+tf_norm = MATH_VecSquareNorm(tv_head_sight)
+if (tf_norm)
+{
+	tf_norm = MATH_FloatSqrt(tf_norm)
+	tv_head_sight /= tf_norm
+	tv_head_sight = MATH_VecBlendRotate(tv_ik_start_sight, tv_head_sight, tf_coef)
+
+	PNJ_Snake_IK(i_ik_modules_nb, tv_head_pos, tv_head_sight, tf_coef)
+}
+

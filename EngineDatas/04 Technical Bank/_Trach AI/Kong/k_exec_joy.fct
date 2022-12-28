@@ -1,0 +1,47 @@
+#include "k_define.var"
+
+i_joy_flag_dash_old = i_joy_flag_dash
+
+i_joy_flag_dash = faux
+i_flag_just_grab = faux
+i_flag_just_grab_JACK = faux
+i_flag_just_pose_JACK = faux
+i_flag_just_throw = faux
+i_flag_just_dodge = faux
+i_flag_just_Action = faux
+i_flag_just_coup = faux
+i_flag_intimidateD = faux
+i_flag_intimidateG = faux
+i_flag_just_Rage = faux
+i_flag_just_Rage_Any_Button = faux
+i_flag_trample = faux
+i_flag_galop = faux
+f_joy_norm = 0.0
+
+IO_SetControlMode(1)
+
+if ( ! i_Interaction_ReadInputs)
+	return
+
+if ( i_joy_disable_control)
+	return
+
+if ( @get_global i_frame_nbr < 11)	// Blocage JOY ES
+	return
+
+if( @get_global i_Player_is_Kong )
+{
+	// LE JOUEUR CONTROLE KONG ===========================================
+	AI_Execute("k_exec_joy_main")
+}
+else if( @get_global i_Player_on_KK_Shoulder )
+{
+	// LE JOUEUR EST EN FPS SUR L'EPAULE DE KONG ===========================
+	AI_Execute("k_exec_joy_fps")
+}
+else
+{
+	// LE JOUEUR EST EN FPS AU SOL =========================================
+	AI_Execute("k_exec_joy_auto")
+}
+

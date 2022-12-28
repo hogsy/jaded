@@ -1,0 +1,69 @@
+#include "H_defines.var"
+
+messageid		tmid_info
+vector			tv_temp
+float				tf_temp
+int					ti_ok
+int					ti_id
+int					ti_force
+
+if(!o_target_stimulus_vis) return
+f_time_disable_tir -= TIME_GetDt()
+if(f_time_disable_tir > 0) return
+f_time_disable_tir = 0
+
+// Anim d'interdiction de pilotage d'arme
+if(!AnimAutoriseTir() && !BambouEnMain()) 
+{
+	f_time_disable_tir = 1.0
+	return
+}
+
+// Ennemi droit de tir
+switch(EVENT_EnemyTypeGet(msgid_target_stimulus_vis))
+{
+	case C_ID_OiseauCrouch : 	return
+	case C_ID_Dynamite :			return
+}
+
+// On est dans l'eau, on ne tire pas
+if(i_flag_nage) return
+
+// Pas d'arme
+if(!@"univ" i_weapon_ID[i_id_humain]) return
+
+// Plus de munitions
+ti_id = @"univ" i_weapon_ID[i_id_humain]
+
+if(!@"univ" i_weapon_ammunition[ti_id][i_id_humain] && !@"univ" i_weapon_ammunition_reserve[ti_id][i_id_humain]) 
+{
+	if(ti_id != Ci_weapon_ID_bambou && ti_id != Ci_weapon_ID_bambou_moy && ti_id != Ci_weapon_ID_bambou_petit)
+		return
+}
+
+// Pas la peine d'etre visible pour tirer dans certains etats
+ti_force = faux
+if(i_etat_courant == ETAT_IA_help) ti_force = vrai
+if(OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Hierarchy)) ti_force = vrai
+
+if(EVENT_InfoCanGaoSeeGao(o_target_stimulus_vis, OBJ_Me(), tmid_info) || ti_force)
+{
+	ti_ok = vrai
+	
+	// Dans ma direction courante
+	tv_temp = @o_target_stimulus_vis OBJ_PosGet() - OBJ_PosGet()
+	tv_temp.z = 0
+	if(MATH_VecNullEpsilon(tv_temp))
+		ti_ok = faux
+	else
+	{
+		MATH_VecSetHorzNormalize(tv_temp)
+		tf_temp = MATH_VecDotProduct(OBJ_SightGet(), tv_temp)
+		if(tf_temp < 0.5) ti_ok = faux
+	}
+	
+	if(ti_ok)
+	{
+		macro_change_etat("H_ETAT_IA_tir")
+	}
+}

@@ -1,0 +1,93 @@
+#include "RM_Prune_defines.var"
+vector		tv_dest
+float			tf_dist
+float			tf_vitesse
+float			tf_X_Max
+float			tf_Y_Max
+float			tf_X_Min
+float			tf_Y_Min
+
+// SORTIE ETAT ===================================================================
+if( i_sort_etat )
+{
+	v_SightVoulu=OBJ_SightGet()
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if( i_etat_courant != ETAT_Prune_GAMBADE)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Prune_GAMBADE
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_previous_etat = fct_last_etat
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	f_ForceRebond=f_ForceRebondAvance
+	if (o_BV_Territory)
+	{
+		tf_X_Max = MATH_FloatMin(@o_BV_Territory BV_MaxGet().x+@o_BV_Territory OBJ_PosGet().x,f_MaxDist+OBJ_PosGet().x)
+		tf_Y_Max = MATH_FloatMin(@o_BV_Territory BV_MaxGet().y+@o_BV_Territory OBJ_PosGet().y,f_MaxDist+OBJ_PosGet().y)
+		tf_X_Min = MATH_FloatMax(@o_BV_Territory BV_MinGet().x+@o_BV_Territory OBJ_PosGet().x,-f_MaxDist+OBJ_PosGet().x)
+		tf_Y_Min = MATH_FloatMax(@o_BV_Territory BV_MinGet().y+@o_BV_Territory OBJ_PosGet().y,-f_MaxDist+OBJ_PosGet().y)
+		DBG_RenderBox2(cvector(tf_X_Max,tf_Y_Max,5.0),cvector(tf_X_Min,tf_Y_Min,0.0),color_rouge)
+		v_Dest = cvector(MATH_RandFloat(tf_X_Min,tf_X_Max),MATH_RandFloat(tf_Y_Min,tf_Y_Max),0)		
+	}
+	else
+	{
+		v_Dest = OBJ_PosGet() + cvector(MATH_RandFloat(-f_MaxDist,f_MaxDist),MATH_RandFloat(-f_MaxDist,f_MaxDist),0)
+	}
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// STIMULI ===========================================================================
+
+o_Rided_Actor = LNK_ServeurGet(Ci_LNK_RIDE_ON_NMI, mid_Rided_LNK_ID, vrai, nofunc, nofunc)
+if( o_Rided_Actor )
+	macro_change_etat("RM_Prune_ETAT_RIDED")
+
+if(o_Pafeur)
+	macro_change_etat("RM_Prune_ETAT_PAFFED")
+
+if(COL_CollideType(COL_C_Wall))
+{
+	if(f_time_start_etat>1.0)
+		macro_change_etat(fct_wait)
+	else
+	{
+		if(f_time_start_etat<0.1)
+			v_Dest = OBJ_PosGet() + (COL_NormalGet(COL_C_Wall)*5.0)
+	}
+}
+
+// COMPORTEMENT ===================================================================
+v_SightVoulu=(v_Dest-OBJ_PosGet())
+
+if(COL_CollideType(COL_C_Ground))
+{
+	tv_dest=(v_Dest-OBJ_PosGet())
+	tv_dest.z=0.0
+	tf_dist=MATH_VecNorm(tv_dest)
+	
+	if(tf_dist>3.0) 
+	{
+		tf_vitesse= 2.0 + MATH_RandFloat(-0.5,0.5)
+		v_ForceVoulue=(OBJ_SightGet()*tf_vitesse) + (cvector(MATH_RandFloat(-1.0,1.0),MATH_RandFloat(-1.0,1.0),0.0) * 0.2)
+//		v_ForceVoulue=((tv_dest/tf_dist)*tf_vitesse)	
+		f_ForceRebond=f_ForceRebondAvance + MATH_RandFloat(-0.5,0.5)
+	}
+	else
+	{
+		macro_change_etat(fct_wait)
+	}
+}
+
+Prune_Rebondit()

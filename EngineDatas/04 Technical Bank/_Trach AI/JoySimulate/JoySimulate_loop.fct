@@ -1,0 +1,46 @@
+int				i
+vector 		joy0
+vector		joy1
+int				mask
+int				button
+
+IO_PadSet( 4 )
+
+joy0 = Cv_NullVector
+joy1 = Cv_NullVector
+button = 0
+
+if ( IO_ButtonPressed( joy_button_A) )
+	joy0.y = -1
+if ( IO_ButtonPressed( joy_button_B) )
+	joy0.x = 1
+if ( IO_ButtonPressed( joy_button_C) )
+	joy0.x = -1
+if ( IO_ButtonPressed( joy_button_D) )
+	joy0.y = 1
+	
+if ( IO_ButtonPressed( joy_button_Up) )
+	button |= joy_bit_button_Triangle
+if ( IO_ButtonPressed( joy_button_Down) )
+	button |= joy_bit_button_Croix
+if ( IO_ButtonPressed( joy_button_Right) )
+	button |= joy_bit_button_Rond
+if ( IO_ButtonPressed( joy_button_Left) )
+	button |= joy_bit_button_Carre
+	
+joy1 = IO_JoyGetMove()
+
+IO_PadSet( 0 )
+	
+mask = joy_bit_button_Croix
+mask |= joy_bit_button_Rond
+mask |= joy_bit_button_Carre
+mask |= joy_bit_button_Triangle
+mask |= joy_bit_button_Down
+mask |= joy_bit_button_Up
+mask |= joy_bit_button_Left
+mask |= joy_bit_button_Right
+mask |= joy_bit_button_Joy0
+mask |= joy_bit_button_Joy1
+
+IO_JoySimulate( mask, button, joy0, joy1 )

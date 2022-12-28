@@ -1,0 +1,69 @@
+#include"r_defines.var"
+
+vector	tv_speed
+vector	tv_ortho
+vector	tv_speed1
+vector	tv_sigmaF
+vector	tv_horizon_ground
+vector	tv_traction_ground
+vector	tv_grappin_pos
+vector	tv_dir
+vector	tv_pos1
+vector	tv_temp1
+float		tf_speed
+float		tf_dist
+object	to_obj
+int			ti_GMAT
+
+RM_Bascule_Refresh(1.0, v_before_rec_speed, DYN_SpeedGetVector(), o_bascule)
+
+
+// WATER ---------------------------------------------------------------------------------------------------------------------------
+if( i_is_in_water && MATH_VecNullEpsilon( v_force_GRAVITY + Cv_NormalGravity) && i_etat_courant != ETAT_RM_cheat && ( i_etat_courant != ETAT_RM_paf || !( i_paf_type & C_PAF_RM_Fort)))
+{
+//	f_water_blend = MATH_FloatMin( 1.0, f_water_blend + (TIME_GetDt() * 2.0))
+	f_water_blend += TIME_GetDt() * 2.0
+	tv_pos1 = OBJ_PosGet()
+	tv_pos1.z = MATH_FloatBlend( tv_pos1.z, f_water_Z - 0.6 + ( MATH_Cos( f_water_blend * 3.0) * 0.05),f_water_blend)
+	OBJ_PosSet(tv_pos1)
+}
+
+// Sale bidouille honteuse pas si fausse.
+tv_speed = DYN_SpeedGetVector()
+if ( i_ground_flag &&! MATH_FloatNullToler(DYN_SpeedGet(), 1.0) 
+&& ( MOVE_MODE() != C_Move_Jump || ACT_ActionGet() ==RM_Act_Jump_Reception || ACT_ActionGet() ==RM_Act_ReceptionGrosse) 
+&& ! i_is_in_water && tv_speed.z <= 0.0)
+{
+	//vitesse = (Somme froce/friction) - ( (Somme froce/friction) - vitesse)exp(-frict*tdt)
+	//	tv_sigmaF = DYN_TractionVectorGet()  + DYN_StreamVectorGet() + DYN_GravityVectorGet()
+	//	tv_speed =  ( v_sigmaF / DYN_FrictionGet()) - ( (v_sigmaF / DYN_FrictionGet()) - v_speed_before_rec)
+	//	tf_speed = tv_sigmaF.z * TIME_GetDt() + v_speed_before_rec.z
+	DBG_RenderVector( OBJ_PosGet(),tv_speed , color_bleu)
+	tv_speed.z = -f_speed_hor * 0.5 //tf_speed
+	DBG_RenderVector( OBJ_PosGet(),tv_speed , color_rouge)
+
+	DYN_SpeedSetVector(tv_speed)
+}
+
+v_force_GRAVITY = Proc_RM_Normale()
+
+//	tv_speed = DYN_SpeedGetVector()
+//	tv_ortho.x = -v_force_JOY.y
+//	tv_ortho.y = v_force_JOY.x
+//	tv_ortho.z = 0.0
+//if ( !MATH_VecNullEpsilon( v_force_GRAVITY - Cv_VerticalVector) && MOVE_MODE() != C_Move_Jump && ! MATH_VecNullEpsilon(tv_ortho) )
+//{
+//	DBG_RenderVector( OBJ_PosGet(),tv_speed , color_jaune)
+////	tv_speed = MATH_VecCrossProduct( -OBJ_HorizonGet(), v_force_GRAVITY) 
+//	MATH_VecSetNormalize(tv_ortho)
+//	tv_speed = MATH_VecCrossProduct( -tv_ortho, v_force_GRAVITY) 
+//	MATH_VecSetNorm( tv_speed, DYN_SpeedGet() / MATH_Cos(MATH_VecAbsAngle( Cv_VerticalVector, -v_force_GRAVITY)))
+//	DBG_RenderVector( OBJ_PosGet(),tv_speed , color_bleu)
+////	tv_speed.z -= f_speed_hor
+//	DYN_SpeedSetVector( tv_speed)
+//	DBG_RenderVector( OBJ_PosGet(),tv_speed , color_rouge)
+//}
+
+// GRAPPIN
+AI_Execute("raym_exec_grappin")
+

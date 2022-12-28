@@ -1,0 +1,58 @@
+int			ti_i
+int			ti_flag_already_activated
+
+OBJ_DrawMaskSet(none, DM_C_Fogged)
+
+f_step_length	= 1.4
+
+if (write)
+{
+	ti_flag_already_activated = faux
+}
+else
+{
+	i_SF_activation = AI_SFDynGet(0, SF_MinById, SF_MaxById)
+	Super_SpecialFlag_get(i_SF_activation, ti_flag_already_activated)
+	
+	if (!ti_flag_already_activated && (use_trigger && AI_TriggerIsValid(trigger_activation)))
+	{
+		if (! call_trigger(trigger_activation))
+			returntrack
+	}
+
+	Super_SpecialFlag_set(i_SF_activation)
+}
+
+for (ti_i = 0; ti_i < 100; ti_i++)
+	GFX_Strange_Line[ti_i] = -1
+
+o_last_wp = OBJ_Me()
+n_net = @o_last_wp WAY_NetOfObj()
+o_next_wp = WAY_NetNextWP(n_net, o_last_wp, 0, 0)
+
+SFX_NET_Fire_Compute_Network()
+
+if (ti_flag_already_activated)
+{	
+	// Tout le reseau est déjà enflammé
+	f_net_coef = f_net_length
+}
+
+if (f_delay)
+	f_speed = f_net_length / f_delay
+
+v_GFX_last_pos = @o_last_wp OBJ_PosGet()
+v_GFX_next_pos = v_GFX_last_pos
+
+f_link_length = MATH_VecNorm(@o_next_wp OBJ_PosGet() - @o_last_wp OBJ_PosGet())
+
+i_nb_GFX = 0
+
+AI_CBAdd(OBJ_Me(), CallBack_WhenDestroy, "SFX_NET_Fire_callback_destroy")
+AI_CBAdd(OBJ_Me(), CallBack_SectoVisOn, "SFX_NET_Fire_callback_destroy")
+AI_CBAdd(OBJ_Me(), CallBack_SectoActOn, "SFX_NET_Fire_callback_destroy")
+
+if (write)
+	AI_TrackCurChangeNow("SFX_NET_Fire_ETAT_Write")
+else
+	AI_TrackCurChangeNow("SFX_NET_Fire_ETAT_Burn")

@@ -1,0 +1,23 @@
+#include "KT_defines.var"
+
+object	to_bone
+object	to_camera
+
+float		tf_dot_product
+
+// AFTER EFFECT ZOOM SMOOTH CENTER =================================================
+to_camera = @get_global o_camera
+
+if( ! @get_global i_Player_is_Kong && KT_Action_Cri_EnCours() )
+	f_zoom_smooth_coef += MATH_FloatMin(2.5 - f_zoom_smooth_coef, 10.0 * TIME_GetDt())
+else
+	f_zoom_smooth_coef -= MATH_FloatMin(f_zoom_smooth_coef, 6.0 * TIME_GetDt())
+
+if( f_zoom_smooth_coef )
+{
+	to_bone = ANI_CanalObjectGet(Anim_Canal_Tete)
+	tf_dot_product = MATH_FloatMax(MATH_VecDotProduct(@to_bone OBJ_BankingGet(), - @to_camera OBJ_SightGet()), 0.0)
+	@get_global Proc_AE_ZoomSmoothCenterSet( f_zoom_smooth_coef * tf_dot_product, @to_bone OBJ_PosGet() - @to_camera OBJ_PosGet() )
+//	Str_DisplayFloatOnce(f_zoom_smooth_coef, cvector(0.5,0.5,0))
+}
+

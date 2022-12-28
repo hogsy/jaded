@@ -1,0 +1,163 @@
+#include "H_defines.var"
+#include "H_action.var"
+
+
+int			ti_i
+int			ti_numero
+int			ti_index
+int			ti_context
+
+float		tf_liferatio
+
+vector	tv_new_sight
+vector	tv_dest_pos
+vector	tv_me_to_dest
+
+messageid		tmid_grab_lnk
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{		
+	if (i_etat_courant != ETAT_IA_projete)
+	{
+		DYN_FrictionVectorSet(cvector(1.0, 1.0, 0.0))
+		COL_ColMapActivationSet(all, none)
+		COL_UnCollidableDel(o_grab_actor)
+	}
+
+	if(o_grab_actor == @get_global o_jack_last_paf) i_request_txt = Gene_C_thanks_for_saving
+	AI_CBDel(o_grab_actor, CallBack_After_Blend, "H_callback_set_pos")	
+
+	v_grab_grav_pos = Cv_NullVector
+
+	ao_CL[Ci_LNK_INTERACTION] = LNK_ClientGet(Ci_LNK_INTERACTION, amid_CL_LIAISON_ID[Ci_LNK_INTERACTION], faux, nofunc, nofunc, nofunc)
+	i_sort_etat = faux
+	f_time_etourdit = 3.0
+	ResetPath()
+	return
+}
+
+	
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_IA_grabswamp)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_IA_grabswamp
+	f_time_psss = 0
+	
+	//----( pour fred : capa 0 à 1 indique pendant une trame que le perso s'est fait taper ou grabber )----
+	OBJ_CapaSet( OBJ_Capa_0, 0 )
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	// Envoie un message a SUN
+	EVENT_AddEventFilmation( C_EVENT_Filmation_filter_HumainGnaked, OBJ_Me(), ao_SRV[Ci_LNK_GRAB_RAPTOR], Cf_EVENT_Duree_1Trame)
+
+	for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+		ai_SRV_ENABLE[ti_i] = faux
+
+	ai_SRV_ENABLE[Ci_LNK_GRAB_RAPTOR]	= vrai
+	ai_SRV_ENABLE[Ci_LNK_PSSS]					= vrai
+
+	o_grab_actor = ao_SRV[Ci_LNK_GRAB_RAPTOR]
+	COL_UnCollidableAdd(o_grab_actor)	
+
+	i_flag_init_rag_doll = vrai
+	AI_CBAdd(o_grab_actor, CallBack_After_Blend, "H_callback_set_pos")	
+
+	DYN_SpeedSetVector( Cv_NullVector)
+	DYN_TractionSet( Cv_NullVector)
+	DYN_FrictionVectorSet(cvector(0.5, 0.5, 0.0))
+
+	COL_ColMapActivationSet(none, all)
+
+	i_nb_hit = 0
+	i_flag_nage = faux
+
+	f_time_start_etat = 0.0
+	
+	macro_set_danger( OBJ_Me() )
+	
+	i_request_txt = Gene_C_help
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// ANALYSE  =====================================================================
+AskText(TEXTE_ALaide, Gene_C_help, 10, nobody)
+AI_Execute("H_exec_ch_Stimulus_Paf")
+o_paf_sender = nobody
+@get_global o_qqun_grab = OBJ_Me()
+
+// Pssss	
+OBJ_Me().des_int1 = Ci_DISPLAY_PSSS
+if(ao_SRV[Ci_LNK_PSSS])
+{
+	ForceRegardSur(AI_MainActorGet(C_ID_Jack), 1.0)
+	ao_SRV[Ci_LNK_PSSS] = LNK_ServeurGet(Ci_LNK_PSSS, amid_SRV_LIAISON_ID[Ci_LNK_PSSS], faux, nofunc, nofunc)
+	i_request_txt = Gene_C_help
+}
+
+AI_Execute("H_exec_read_joy")
+AI_Execute("H_exec_read_world")
+
+// FIN DU GRAB ?
+AI_Execute("H_exec_serveur_get")
+
+// INTERRUPTION BRUTALE DE LA LIAISON
+if (! ao_SRV[Ci_LNK_GRAB_RAPTOR])
+{
+	macro_change_etat(fct_main_etat)
+}
+
+
+// COMPORTEMENT =================================================================
+
+tmid_grab_lnk = amid_SRV_LIAISON_ID[Ci_LNK_GRAB_RAPTOR]
+switch(LNK_GrabStatusGet(tmid_grab_lnk))
+{
+	case 0 :
+		// Le Raptor me bouffe le bras
+//		if(!f_time_start_etat) i_request_txt = Gene_C_caught
+		break
+		
+	case 1 :
+		ACT_ActionSet1(Action_Humain_Mort)
+		tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), -@o_grab_actor OBJ_SightGet(), 4.0 * TIME_GetDt())
+		OBJ_BankingGeneralSet(tv_new_sight, Cv_VerticalVector)
+		break
+
+	case 2 :	
+		// Le Raptor me secoue
+		if (LNK_GrabServeurVisionIDGet(tmid_grab_lnk) == C_ID_Raptor && @"univ" LIFE_HumainEtat[i_id_humain] == Life_ETAT_Mort)
+			LNK_GrabStatusSet(tmid_grab_lnk, 3)
+		break	
+			
+	case 3:
+		// J'attends que le raptor me lance
+		break
+
+	case 4 :
+		// Le raptor me lance
+		macro_change_etat("H_ETAT_IA_Projete")
+		break
+}
+
+// ON EST SERVEUR HELP ====================================================================
+i_interaction_type = Ci_LNK_INTERACTION_FIGHT
+ao_CL[Ci_LNK_INTERACTION] = LNK_ClientGet(Ci_LNK_INTERACTION, amid_CL_LIAISON_ID[Ci_LNK_INTERACTION], vrai, "H_INTERACTION_add_data", nofunc, nofunc)
+
+AI_Execute("H_exec_read_world")
+
+// CAM IMPORTANCE
+@get_global o_prio_camera = OBJ_Me()
+

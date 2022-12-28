@@ -1,0 +1,70 @@
+Include_UltraProcedure_Header
+
+object	to_obj, to_camera 
+int			i
+int			ti_i
+int			in
+
+in = faux
+if( AI_TriggerIsValid(trig_activation) )
+	in = call_trigger(trig_activation)
+else
+{
+	to_obj = AI_MainActorGet(0)
+	if( to_obj && @to_obj COL_Pivot_BVCollide(OBJ_Me()) )
+		in = vrai
+}
+
+if(in)
+{
+	active = vrai
+	
+	// KONG
+	to_obj = AI_MainActorGet(0)
+	if( to_obj && o_destination)
+	{
+		@to_obj OBJ_PosSet(@o_destination OBJ_PosGet())		
+		@to_obj COL_StartMatrixSet(@o_destination OBJ_PosGet())
+		if ( to_obj == get_rayman)
+			@get_Rayman_Path to_obj v_speed_pos = @o_destination OBJ_PosGet()
+		@to_obj OBJ_BankingGeneralSet(@o_destination OBJ_SightGet(), Cv_VerticalVector)
+		@to_obj PROC_RM_Grappin_Destroy()
+		@get_Kamera Proc_Kam_Position_and_Orientation_Set(@o_destination OBJ_PosGet() - @o_destination OBJ_SightGet(), @o_destination OBJ_SightGet(), Cv_VerticalVector)
+	}
+
+	// SECTO
+	if (i_secteur != -1)
+	{
+		object to_gao
+		SCT_SetCurrent(i_secteur)
+
+		to_gao = @get_global o_AI_secto_gao
+		if (to_gao)
+			@to_gao Proc_Sec_AISecto_ADD()
+	}
+		
+	// TELEPORT OTHER STUFF
+	for (ti_i = 0; ti_i < 20; ti_i++)
+	{
+		if ( ! o_gao_a_positionner[ti_i][0] )
+			break
+	
+		@o_gao_a_positionner[ti_i][0] OBJ_PosSet(@o_gao_a_positionner[ti_i][1] OBJ_PosGet())		
+		@o_gao_a_positionner[ti_i][0] OBJ_BankingGeneralSet(@o_gao_a_positionner[ti_i][1] OBJ_SightGet(), @o_gao_a_positionner[ti_i][1] OBJ_BankingGet())
+		@o_gao_a_positionner[ti_i][0] COL_StartMatrixSet(@o_gao_a_positionner[ti_i][0] OBJ_PosGet())
+	}
+
+	// TRIGGERS
+	for (ti_i = 0; ti_i < 20; ti_i++)
+	{
+		if (! AI_TriggerIsValid(trig_trigger_exec[ti_i]) )
+			break
+		call_trigger(trig_trigger_exec[ti_i])
+	}
+
+	@get_global v_joy_cam_sight_old = Cv_NullVector // Pour qu'il n'y ait pas d'hysteresis de direction au moment du teleport...
+
+	// DESTROY	
+	if(i_oneshot)
+		OBJ_Destroy()
+}

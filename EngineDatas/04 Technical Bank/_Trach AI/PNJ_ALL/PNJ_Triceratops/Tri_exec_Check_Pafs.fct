@@ -1,0 +1,48 @@
+messageid		tmid_ID
+message	tmsg_filter
+int				ti_rank
+object		to_pere
+int				ti_type
+vector		tv_pos
+vector		tv_dir
+float			tf_dmg
+
+if( i_paf_check_done )
+	return
+
+i_paf_check_done = vrai
+
+o_paf_actor = nobody
+i_paf_type = 0
+v_paf_dir = Cv_NullVector
+
+MSG_SetNull(tmsg_filter)
+tmsg_filter.msg_gao1 = OBJ_Me()
+ti_rank = -1
+for (	tmid_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tmsg_filter);
+		MSG_GlobalIsValid(tmid_ID);
+		tmid_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tmsg_filter) )
+{
+	to_pere = EVENT_PereGet(tmid_ID)
+	ti_type = EVENT_PafTypeGet(tmid_ID)
+	tv_pos = EVENT_PafPositionGet(tmid_ID)
+	tv_dir = EVENT_PafDirGet(tmid_ID)
+	tf_dmg = EVENT_PafPuisGet(tmid_ID) * PAF_Unit
+	
+	if( ti_type & C_PAF_KK_FoodChain )
+	{
+		f_point_de_viande -= MATH_FloatMin(f_point_de_viande, tf_dmg)
+		continue
+	}
+	
+	o_paf_actor_to_target = to_pere		// riposter même si ça fait pas mal
+	if( to_pere != o_Kong && ! @to_pere AI_IsModel(get_PNJ_Piranha_path) )
+		continue
+	
+	o_paf_actor = to_pere
+	i_paf_type |= ti_type
+	v_paf_dir += tv_dir
+	
+	EVENT_LIFE_LifeChange(ID_LIFE, tf_dmg)
+}
+

@@ -1,0 +1,40 @@
+#include "KBC_defines.var"
+
+vector		tv_to_dest			// vecteur du bat vers la cible
+vector		tv_sight				// nouveau sight
+vector		tv_tmp_pos			// nouvelle position du bat
+
+float			tf_dist				// distance entre le bat et la cible
+
+
+i_flag_depl_fini = faux			// flag pour indiquer que le bat est arrivé à destination
+
+// axe de déplacement et distance restante
+tv_to_dest = v_dest_pos - OBJ_PosGet()
+tf_dist = MATH_VecNorm( tv_to_dest )
+
+//DBG_RenderVector(OBJ_PosGet(), tv_to_dest ,color_vert)
+
+
+// Vitesse de progression de la bat
+i_speed_vertical_flag = vrai
+i_speed_beziers_flag = faux
+AI_Execute("KBC_exec_MOVE_calc_speed")
+
+// Progression de la bat
+if( MATH_FloatNullToler(tf_dist, 0.1) || MATH_VecDotProduct(Cv_VerticalVector, v_dest_pos - OBJ_PosGet()) < 0 )
+	i_flag_depl_fini	 = vrai		// deplacement terminé
+else
+{
+	//bat pas arrivée
+	tv_to_dest /= tf_dist
+//	tv_sight = MATH_VecBlendRotate( OBJ_SightGet(), tv_to_dest, 3 * TIME_GetDt() )
+//	OBJ_BankingGeneralSet(tv_sight, MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 5 * TIME_GetDt()))
+//
+	OBJ_BankingGeneralSet(OBJ_SightGet(), MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 5 * TIME_GetDt()))
+
+	tv_tmp_pos = OBJ_PosGet()
+	tv_tmp_pos += (tv_to_dest * (f_speed * TIME_GetDt()))		// déplacement
+	OBJ_PosSet(tv_tmp_pos)
+}
+

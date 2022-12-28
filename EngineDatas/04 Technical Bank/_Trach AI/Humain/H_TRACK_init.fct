@@ -1,0 +1,168 @@
+#include "H_defines.var"
+#include "H_action.var"
+Include_UltraProcedure_Header
+
+vector	tv_temp
+
+object	to_clone
+object	to_bone
+object	to_obj
+
+int			ti_i
+int			ti_k
+int			ti_membre_index
+int			ti_rank
+
+messageid		tmid_lnk
+
+message		tmsg_filter
+
+
+
+if( o_Indy3rd )
+{
+	@o_Indy3rd OBJ_ZoomSet(0.75)
+	@o_Indy3rd OBJ_Destroy()
+}
+else
+{
+	DBG_Error("KK2 : plus de Compagnons ni de Natives avec l'IA Humain !!!!")
+	OBJ_Destroy()
+}
+
+OBJ_Destroy()
+
+
+i_first_trame = vrai
+
+IO_SetControlMode(0)
+OBJ_LodDistSet(200)
+ACT_DefaultTransition(15)
+@get_joueur_cam OBJ_FlagsControlSet(OBJ_C_ControlFlag_AlwaysVisible | OBJ_C_ControlFlag_RayInsensitive, 0)	// Cause pb partial
+
+// PUTAIN DE OBJ REINIT
+for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+{
+	MSG_SetNull(tmsg_filter)
+	tmsg_filter.msg_sender = OBJ_Me()
+	ti_rank = -1
+	tmid_lnk	= MSG_GlobalSearchIntGao(Ci_LNK_EVENT_OFFSET + ti_i, &ti_rank, tmsg_filter)
+	while(MSG_GlobalIsValid(tmid_lnk))
+	{
+		MSG_GlobalDelete(tmid_lnk, C_EVENT_DEL)
+		tmid_lnk	= MSG_GlobalSearchIntGao(Ci_LNK_EVENT_OFFSET + ti_i, &ti_rank, tmsg_filter)
+	}
+}
+
+// Humain présent ?
+@"univ" ao_AllHumains[i_id_humain] = OBJ_Me()
+
+OBJ_InfoPhotoParamSet( 0, 0, 3, 3, 0.0, 0.0, 0.0, 0)
+
+AI_RunContext(CTX_Normal)
+OBJ_FlagsControlSet(0, OBJ_C_ControlFlag_RayInsensitive)
+COL_PrioritySet(0)
+
+v_pos_decalage = MATH_VecRotate(cvector(0, 1, 0), Cv_VerticalVector, i_id_humain * Cf_PiBy4)
+v_cible_arme = cvector(0,0,0)
+//i_repousse_herbe = Action_Jack_RepousseHerbeG
+f_time_attend = 0.1
+
+@"univ" ai_HumainIsHere[i_id_humain] = 1
+f_interet = Cf_Degre_Interet_Jack
+AI_MainActorSet(C_ID_Joueur)
+@"univ" MENU_f_LifeBar_JackState = @"univ" LIFE_HumainEtat[ i_id_humain ]
+@"univ" MENU_f_LifeBar_CurState[ 0 ] = 1.0
+@"univ" MENU_f_LifeBar_CurState[ 1 ] = 1.0
+@"univ" MENU_f_LifeBar_CurState[ 2 ] = 1.0
+
+AFE_Brightness_1_cur = @get_global Proc_AE_BrightnessDefaultGet()
+AFE_Contraste_1_cur = @get_global Proc_AE_ContrasteDefaultGet()
+AFE_ColorBalance_1_cur = @get_global Proc_AE_ColorBalance1DefaultGet()
+AFE_MotionBlur_1_cur = @get_global Proc_AE_MotionBlurDefaultGet()
+AFE_Remanence_1_cur = @get_global Proc_AE_RemanenceDefaultGet()
+
+@"univ" LIFE_HumainEtat[i_id_humain] = Life_ETAT_Normal
+if(o_private_network) move_network = o_private_network
+
+afct_SRV[Ci_LNK_GRAB_RAPTOR] = "H_exec_propose_grab"
+afct_SRV[Ci_LNK_KKGRAB_OBJECT] = "H_exec_propose_KKgrab_object"
+
+if( ! i_test_anim)
+{
+	BV_MinSet(cvector(-2.0, -2.0, -2.0))
+	BV_MaxSet(cvector(2.0, 2.0, 2.0))
+}
+else
+{
+	BV_MinSet(cvector(-0.4, -0.4, -0.05))
+	BV_MaxSet(cvector(0.4, 0.4, 1.6))
+//	if	(i_id_humain == C_ID_Ann)
+//		v_ZdeFight_Pos = cvector(0.1, 0.05, 0)
+//	if	(i_id_humain == C_ID_Hayes)
+//		v_ZdeFight_Pos = cvector(0.3, 0.05, 0)
+//	if	(i_id_humain == C_ID_Denham)
+//		v_ZdeFight_Pos = cvector(0.5, 0.05, 0)
+//	if	(i_id_humain == C_ID_Jimmy)
+//		v_ZdeFight_Pos = cvector(0.6, 0.05, 0)
+//	if	(i_id_humain == C_ID_Marin1)
+//		v_ZdeFight_Pos = cvector(0.7, 0.05, 0)
+}
+
+COL_SwapToSpecific(C_zdm_pied)
+COL_ZoneSizeSet(C_zdm_pied, cvector(0.25, 0.25, 0.25))
+COL_ZonePosSet(C_zdm_pied, cvector(0.0, 0.0, 0.25))
+
+COL_SwapToSpecific(C_zdm_recalagespecial)
+COL_ZoneSizeSet(C_zdm_recalagespecial, cvector(0.25, 0.25, 0.25))
+COL_ZonePosSet(C_zdm_recalagespecial, cvector(0.0, 0.0, 1.0))
+
+COL_SwapToSpecific(C_zde_corps)
+COL_ZoneSizeSet(C_zde_corps, cvector(0.5, 0.5, 0.5))
+
+COL_SwapToSpecific(C_zde_fight)
+COL_ZoneSizeSet(C_zde_fight, cvector(0.5, 0.5, 0.5))
+COL_ZonePosSet(C_zde_fight, cvector(0.0, -0.75, 1.0))
+
+DYN_On()
+DYN_FlagsSet(DYN_C_BasicForces + DYN_C_NeverDynamicFather + DYN_C_VectorFriction, none)
+DYN_GravitySet(H_GRAVITY)
+DYN_MaxStepSet(0.45)
+
+AI_CBAdd(OBJ_Me(), CallBack_WhenDestroy, "H_callback_when_destroy")
+
+COL_CrossableSet(Gmat_KK_Crossable_Default, none)
+
+//// CANAUX
+o_canal_maind = ANI_CanalObjectGet(Anim_Canal_Snap_MainD)
+o_canal_annexe1 = ANI_CanalObjectGet(Anim_Canal_Annex1)
+////////////////////
+
+macro_add_callback_after_cam("H_callback_after_blend")
+
+AI_CBAdd(OBJ_Me(), CallBack_Client, "H_callback_client")
+AI_CBAdd(OBJ_Me(), CallBack_TagOff, "H_exec_tagoff")
+
+
+// IK INIT
+o_bassin = ANI_CanalObjectGet(Anim_Canal_Bassin)
+@get_global i_humain_teleport = vrai
+
+for( ti_i = 0; ti_i < Ci_Joueur_GrabObject_max_nb; ti_i++ )
+	ai_grabbed_object_ID[ti_i] = -1
+
+v_pilotage_dest_sight = OBJ_SightGet()	
+
+// FRED : Ici rajout d'un OBBOX sur le corps de JACK pour les test LR sur Visuel. Car Jack c'est un mec... Il a pas de tete.
+to_bone = ANI_CanalObjectGet(Anim_Canal_Tete)
+@to_bone BV_OBBoxMinSet(cvector(-0.2, -0.15, -1.7) )
+@to_bone BV_OBBoxMaxSet(cvector(0.2, 0.15, 0.2) )
+
+// Perso contrôlé par le joueur
+macro_add_callback_after_cam("H_callback_after_cam")
+AI_TrackChange(Ci_Track_TagOff, "H_TRACK_tagoff")
+AI_TrackChange(Ci_Track_Reflex, "H_TRACK_Reflex")
+AI_TrackChange(Ci_Track_Etat, "H_ETAT_FPS")
+AI_TrackChange(Ci_Track_TagOn, "H_TRACK_tagon")
+AI_TrackChange(Ci_Track_Post, "H_TRACK_Post")
+

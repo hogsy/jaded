@@ -1,0 +1,219 @@
+#include "PNJ_EatMe_defines.var"
+
+Include_UltraProcedure_Header
+
+int						ti_rank
+int						ti_i
+int						ti_canal
+int						ti_flag_burn
+int						ti_flag_desappear
+int						ti_flag_stop_sound
+int						ti_flag_respawn
+
+float					tf_dist
+float					tf_speed
+
+object				to_me
+object				to_duplicated
+object				to_camera
+object				to_main_actor
+
+vector				tv_speed
+
+message			tm_filter
+
+messageid			EVT_ID
+messageid			tmid_interest
+
+//f_Z_noise = 0.0
+
+OBJ_LIB_Detach_Javelin(OBJ_Me())
+
+// update water Z
+IsInWater(OBJ_PosGet(), f_water_Z)
+
+
+// ANALYSE =======================================================================
+//i_flag_audio_check_done			= faux
+i_flag_visual_check_done			= faux
+i_flag_paf_check_done				= faux
+//i_flag_collision_check_done		= faux
+i_flag_shoot_check_done			= faux
+//i_flag_budies_check_done			= faux
+//i_flag_vala_check_done				= faux
+//i_flag_check_best_interet_done	= faux
+
+// PAF ===========================================================================
+i_flag_paf = faux
+f_time_meat_bite -= MATH_FloatMin(f_time_meat_bite, TIME_GetDt())
+
+// MAIN ACTOR
+o_main_actor_Jack = AI_MainActorGet(C_ID_Joueur)
+o_main_actor_Kong = AI_MainActorGet(C_ID_Kong)
+if( @get_global i_Player_is_Kong )
+	to_main_actor = o_main_actor_Kong
+else
+	to_main_actor = o_main_actor_Jack
+
+f_bzz_duration -= MATH_FloatMin(f_bzz_duration, TIME_GetDt())
+
+if (COL_GMatReportGet(Gmat_KK_Face_de_mort) != -1)
+{
+	i_flag_force_death = vrai
+}
+else if (@get_global i_nbr_de_feux_en_cours)
+{
+	// ON BRULE ????			
+	GRID_CurrentSet(1)
+	if (GRID_CapaGet(OBJ_PosGet()) & Ci_Grid2_EnFeu)
+		i_flag_force_death = vrai
+	GRID_CurrentSet(0)
+}
+
+if (i_flag_force_death)
+	i_flag_smell_food = vrai
+
+if (i_flag_smell_food)
+{
+	if (!i_flag_death_sound_played)
+	{
+		i_flag_death_sound_played = vrai
+		SND_RequestPlay(SND_DIE)
+	}
+
+	f_death_duration += TIME_GetDt()
+
+	if ( ! i_flag_desappear )
+	{
+		ti_flag_desappear = faux
+		if (i_flag_force_death)
+			ti_flag_desappear = vrai
+		else if (! f_point_de_viande)
+			ti_flag_desappear = vrai
+		else if (f_death_duration > 10.0)
+		{
+			// On regarde si on interesse quelqu'un...
+			ti_rank = -1
+			MSG_SetNull(tm_filter)
+			tm_filter.msg_gao1 = OBJ_Me()
+			tmid_interest = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tm_filter)
+		
+			if ( ! MSG_GlobalIsValid(tmid_interest) )
+				ti_flag_desappear = vrai
+		}
+		
+		if (ti_flag_desappear)
+		{
+			OBJ_CapaSet(Capa_Destroyed, none)
+		
+			i_flag_desappear	= vrai
+		
+			switch(i_bidoche_type)
+			{
+				case Ci_Bidoche_Larve :
+				case Ci_Bidoche_Scolo :
+					to_duplicated = @get_SFX_decomposition OBJ_Duplicate(cvector(0,0,0))			// ALOC (C'est l'AI qui va gerer la decomposition)
+					@to_duplicated Proc_Decomposition_Init(OBJ_Me(), 1.0, 0, 1, -1)				// INIT (Vas y decompose moi :))
+					break
+
+				case Ci_Bidoche_Swamp :
+					to_duplicated = @get_SFX_decomposition OBJ_Duplicate(cvector(0,0,0))			// ALOC (C'est l'AI qui va gerer la decomposition)
+					@to_duplicated Proc_Decomposition_Init(OBJ_Me(), 1.0, 0, 1, -1)				// INIT (Vas y decompose moi :))
+					@to_duplicated Proc_Decomposition_Init(OBJ_Me(), 1.0, -1, 0, -1)				// INIT (Vas y decompose moi :))
+					break
+
+				case Ci_Bidoche_Crochax :
+					to_duplicated = @get_SFX_decomposition OBJ_Duplicate(cvector(0,0,0))			// ALOC (C'est l'AI qui va gerer la decomposition)
+					@to_duplicated Proc_Decomposition_Init(OBJ_Me(), 1.0, 0, 1, -1)				// INIT (Vas y decompose moi :))
+					@to_duplicated Proc_Decomposition_Init(OBJ_Me(), 1.0, -1, 0, -1)				// INIT (Vas y decompose moi :))
+					@to_duplicated Proc_Decomposition_Init(OBJ_Me(), 1.0, -1, 0, -1)				// INIT (Vas y decompose moi :))
+					break
+					
+				default:
+					to_duplicated = @get_SFX_decomposition OBJ_Duplicate(cvector(0,0,0))			// ALOC (C'est l'AI qui va gerer la decomposition)
+					@to_duplicated Proc_Decomposition_Init(OBJ_Me(), 1.0, 0, 1, -1)				// INIT (Vas y decompose moi :))
+					@to_duplicated Proc_Decomposition_Init(OBJ_Me(), 1.0, -1, 0, -1)				// INIT (Vas y decompose moi :))
+			}
+		}
+	}
+}
+
+if (OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna))
+	DYN_TractionSet(Cv_NullVector)
+	
+if (i_flag_smell_food && ! i_flag_desappear)
+{
+	EVENT_AddEventCadavre(C_ID_Bidoche, OBJ_Me(), Cf_EVENT_Duree_1Trame, OBJ_PosGet() + cvector( 0.0, 0.0, 0.3))
+}
+
+// SOUND =============================================================
+if( to_main_actor )
+{
+	switch(i_etat_courant)
+	{
+		case ETAT_Fly :
+		case ETAT_Ground :
+		case ETAT_Water :
+	
+			ti_flag_stop_sound = faux
+		
+			tv_speed = OBJ_PosGet() - v_last_pos
+			tv_speed /= TIME_GetDt()
+			v_last_pos = OBJ_PosGet()
+			tf_speed = MATH_VecNorm(tv_speed)
+			f_real_speed = tf_speed
+			
+			tf_speed = MATH_FloatMin(tf_speed, 6.0) / 6.0
+			
+			tf_dist = OBJ_SqrDist(to_main_actor) 
+			if (tf_dist < 25.0)
+			{
+				if (SND_move_1_loop == -1)
+					SND_move_1_loop = SND_RequestPlayLoopOnObjCanal(SND_MOVE_1, 2)
+				
+			//	if (SND_move_2_loop == -1)
+			//		SND_move_2_loop = SND_RequestPlayLoopOnObjCanal(SND_MOVE_2, 13)
+			}
+			else if (tf_dist > 36.0)
+			{
+				ti_flag_stop_sound	= vrai
+			}
+			
+			break
+			
+		default:
+			ti_flag_stop_sound = vrai
+	}
+}
+
+if (ti_flag_stop_sound)
+{
+	if (SND_move_1_loop != -1)
+	{
+		SND_Stop(SND_move_1_loop)
+		SND_move_1_loop = -1
+	}
+	
+	if (SND_move_2_loop != -1)
+	{
+		SND_Stop(SND_move_2_loop)
+		SND_move_2_loop = -1
+	}
+}
+
+if (SND_move_1_loop != -1)
+{
+	SND_InsertVarSet(SND_move_1_loop, 23, tf_speed)
+}
+
+if (SND_move_2_loop != -1)
+{
+	SND_InsertVarSet(SND_move_2_loop, 23, tf_speed)
+}
+// SOUND =============================================================
+
+
+i_hidden = faux
+
+
+//Str_DisplayGaoOnce(o_javelin, VIEW_3dWorldTo2d(0, OBJ_PosGet()))

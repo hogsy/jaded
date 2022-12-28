@@ -1,0 +1,17 @@
+// On test si on ne doit pas virer l'objet en fonction du timer
+f_timer_loop += TIME_GetDt()
+if (f_timer_loop > f_timer)
+{
+	PROC_DESTROY_SFX(i_GFX_fumee)
+	OBJ_Destroy()
+	AI_TrackCurStop()
+}
+
+// Si l'objet est actif, on update sa position
+if (b_activ)
+{
+	OBJ_ScaleSet(cvector(f_taille,f_taille,f_taille))
+	PROC_SFX_DEBRIS_DEPLACE_MODULE()
+	PROC_SFX_GEN_GROSSE_FUMEE(i_GFX_fumee, v_pos, MATH_RandFloat(50.0, 150.0), COLOR_SetRGBA(255,181,31,128))
+//	PROC_SFX_GEN_GROSSE_FUMEE(i_GFX_fumee, v_pos, MATH_RandFloat(50.0, 150.0), PROC_DARKEN_COLOR(COLOR_SetRGBA(255,181,31,128), f_timer_loop / f_timer))
+}

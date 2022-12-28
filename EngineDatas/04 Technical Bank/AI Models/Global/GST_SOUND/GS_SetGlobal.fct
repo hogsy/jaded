@@ -1,0 +1,42 @@
+//-----------------------------------------------------------------------------------------------
+// Micro position
+//-----------------------------------------------------------------------------------------------
+//if( @ "univ" SND_gi_GlobalCommand & SND_Cte_exec_Micro)
+	AI_Execute("GS_exec_SetMicro")
+@ "univ" SND_gi_GlobalCommand &= ~SND_Cte_exec_Micro	
+
+
+//-----------------------------------------------------------------------------------------------
+// Fx settings
+//-----------------------------------------------------------------------------------------------
+if( @ "univ" SND_gi_GlobalCommand & SND_Cte_exec_Fx)
+	AI_Execute("GS_exec_SetFx")
+@ "univ" SND_gi_GlobalCommand &= ~SND_Cte_exec_Fx	
+
+
+//-----------------------------------------------------------------------------------------------
+// user volume
+//-----------------------------------------------------------------------------------------------
+if( @ "univ" SND_gi_GlobalCommand & SND_Cte_exec_UsrVol )
+	AI_Execute("GS_exec_SetUserVol")
+@ "univ" SND_gi_GlobalCommand &= ~SND_Cte_exec_UsrVol	
+
+
+//-----------------------------------------------------------------------------------------------
+// group
+//-----------------------------------------------------------------------------------------------
+if( @ "univ" SND_gi_GlobalCommand & SND_Cte_exec_GrpVol )
+{
+	@ "univ" SND_gi_GlobalCommand &= ~SND_Cte_exec_GrpVol	
+	AI_Execute("GS_exec_SetGroup")
+}
+
+
+//-----------------------------------------------------------------------------------------------
+// global param 3D
+//-----------------------------------------------------------------------------------------------
+if( @ "univ" SND_gi_GlobalCommand & SND_Cte_exec_3D)
+	AI_Execute("GS_exec_Set3D")
+@ "univ" SND_gi_GlobalCommand &= ~SND_Cte_exec_3D	
+
+

@@ -1,0 +1,98 @@
+#include "PLE_Defines.var"
+#define C_Plane_Speed					20		// m/s (* 3.6 = km/h)
+#define C_Plane_RotationZ				(25*Cf_1Degre)
+#define C_Plane_DelayShoot				0.03
+#define C_Plane_ShootRecoil			(1*Cf_1Degre)
+#define C_Plane_SecurityDistance		1600
+vector v
+float f
+object o
+message msg
+dt=TIME_GetDt()
+// chose destination
+if(DestTimer<=0 && MATH_VecDotProduct(OBJ_SightGet(),Dest-OBJ_PosGet())<0)
+{
+	DestTimer=3
+	v=@Target OBJ_PosGet()-OBJ_PosGet()
+	v.z=0
+	v=MATH_VecNormalize(v)*MATH_RandFloat(30,50*MATH_FloatSign(MATH_RandFloat(-1000,1000)))
+	v+=OBJ_HorizonGet()*15
+	v.z+=MATH_RandFloat(-20,20)
+	Dest=@Target OBJ_PosGet()+v
+}
+DestTimer-=dt
+// movements
+v=OBJ_PosGet()-@Target OBJ_PosGet()
+v.z=0
+if(MATH_VecSquareNorm(v)>C_Plane_SecurityDistance)
+{
+	v=OBJ_PosGet()-@Jack OBJ_PosGet()
+	v.z=0
+	if(MATH_VecSquareNorm(v)>C_Plane_SecurityDistance || MATH_VecDotProduct(OBJ_SightGet(),@Jack OBJ_SightGet())>0) v=Dest-OBJ_PosGet()
+}
+v.z=0
+v=-2*MATH_VecNormalize(MATH_VecGlobalToLocal(v))
+if(MATH_VecSquareNorm(v)>1) v=MATH_VecNormalize(v)
+if(v.y<0) v.x=MATH_FloatSign(v.x)
+// movements
+RotationZ=MATH_FloatBlend(RotationZ,v.x*C_Plane_RotationZ,dt)
+RotationX=MATH_FloatBlend(RotationX,-MATH_AbsFloat(RotationZ*0.1),dt)
+// move the plane
+OBJ_PosSet(OBJ_PosGet()+(dt*((C_Plane_Speed*OBJ_SightGet())	-(Strafe*OBJ_HorizonGet()))))
+// set the orientation (roll & pitch only)
+OBJ_BankingSet(cvector(0,0,1))
+v=-MATH_VecNormalize(Dest-OBJ_PosGet())
+Rot=MATH_FloatBlend(Rot,MATH_ASin(v.z),dt)
+OBJ_RotateLocalX(Rot)
+OBJ_RotateLocalY(-2*RotationZ)
+OBJ_RotateLocalX(RotationX)
+if(!DontDoAnything)
+{
+	// shoot trigger
+	v=@Target OBJ_PosGet()-OBJ_PosGet()
+	f=MATH_VecNorm(v)
+	if(f<100 && MATH_VecDotProduct(v/f,OBJ_SightGet())>0.9 && Projectile)
+	{
+		if(TimerShoot<=0)
+		{
+			v=OBJ_PosGet()+((2.5*OBJ_BankingGet())-(2*OBJ_SightGet()))
+			o=@Projectile OBJ_Duplicate(v)
+			if(o)
+			{
+				@o OBJ_FlagsTypeSet(OBJ_C_TypeFlag_Enemy,-1)
+				v=@Target OBJ_PosGet()-v+(OBJ_HorizonGet()*3)
+				@o OBJ_SightSet(v)
+				@o OBJ_RotateGlobalZ(MATH_RandFloat(-C_Plane_ShootRecoil,C_Plane_ShootRecoil))
+				@o OBJ_RotateLocalX(MATH_RandFloat(-C_Plane_ShootRecoil,C_Plane_ShootRecoil))
+			}
+			TimerShoot=C_Plane_DelayShoot
+		}
+		else TimerShoot-=dt
+	}
+	else TimerShoot=0
+	// read messages
+	while(MSG_GetCount())
+	{
+		msg=MSG_Get()
+		if(msg.msg_id==C_EVENT_PAF_Balle)
+		{
+			o=msg.msg_sender
+			if(@o OBJ_FlagsTypeGet()&OBJ_C_TypeFlag_Friend)
+			{
+				OBJ_RotateLocalY(MATH_RandFloat(-C_Plane_HurtAnimAngle,C_Plane_HurtAnimAngle))
+				HP--
+				if(!HP)
+				{
+					if(Jack)
+					{
+						msg.msg_id=C_EVENT_EnemyState_Die
+						msg.msg_sender=OBJ_Me()
+						@Jack MSG_Send(msg)
+					}
+					TimerShoot=15
+					AI_TrackCurChange("PLE_bhv_Crash")
+				}
+			}
+		}
+	}
+}

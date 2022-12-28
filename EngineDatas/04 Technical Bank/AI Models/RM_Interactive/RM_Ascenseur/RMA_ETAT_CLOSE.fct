@@ -1,0 +1,49 @@
+#include "RM_Ascenseur_defines.var"
+
+int				ti_pidx
+float			tf_delta
+
+// SORTIE ETAT 	===================================================================
+if( i_sort_etat )
+{
+	i_sort_etat = faux
+	
+	if (i_SND_wait_loop >= 0)
+	{
+		SND_Stop(i_SND_wait_loop)
+		i_SND_wait_loop = -1
+	}
+	
+	return
+}
+
+// INIT ETAT 	=====================================================================
+if( i_etat_courant != ETAT_RMA_CLOSE)
+{
+	i_etat_courant = ETAT_RMA_CLOSE
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	@o_positions[i_dest] OBJ_CapaSet(none, OBJ_Capa_8)
+} 
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// COMPORTEMENT ================================================================
+
+// Mettre à jour son coefficient 
+f_porte_open[i_porte_position[i_dest]] -= f_porte_speed * TIME_GetDt()
+if (f_porte_open[i_porte_position[i_dest]] < 0.0)
+	f_porte_open[i_porte_position[i_dest]] = 0.0
+
+RMA_Porte_PosSet(i_porte_position[i_dest])
+
+if (f_porte_open[i_porte_position[i_dest]] <= 0.0)
+	AI_TrackCurChangeNow("RMA_ETAT_MOVE")

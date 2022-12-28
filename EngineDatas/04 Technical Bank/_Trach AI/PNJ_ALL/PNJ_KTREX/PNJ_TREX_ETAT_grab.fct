@@ -1,0 +1,138 @@
+#include "KT_defines.var"
+
+int			ti_i
+
+object	to_head
+
+vector	tv_temp
+
+// SORTIE ETmAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	o_grab_actor = LNK_ClientGet(Ci_LNK_GRAB_RAPTOR, mid_grab_actor_LNK_ID, faux, nofunc, nofunc, nofunc)
+
+	if (i_etat_courant != ETAT_rided)
+	{
+		for (ti_i = 0; ti_i < Ci_Ride_Client_Nb; ti_i++)
+			ao_bone_rider[ti_i] = LNK_ServeurGet(Ci_LNK_RIDE_DINO, amid_bone_rider_LNK_ID[ti_i], faux, nofunc, nofunc)
+	}
+
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_grab)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_grab
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	ai_grabbed_availibility[ Ci_LNK_GRAB_KONG] = vrai
+	
+	ACT_ActionSet(Action_Fight_Secoue)
+
+	if (MATH_VecDotProduct(@o_grab_actor OBJ_PosGet() - OBJ_PosGet(), @o_grab_actor OBJ_SightGet()) > 0.0)
+		@o_grab_actor ACT_ActionSet(70) // Action_Grabed_TREX_bras
+	else
+		@o_grab_actor ACT_ActionSet(71) //Action_Grabed_TREX_jambe
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =======================================================================================================
+
+AI_Execute("KT_exec_check_sound")
+
+AI_Execute("KT_exec_check_vision")
+
+AI_Execute("KT_exec_check_collision")
+
+AI_Execute("KT_exec_check_paf")
+if (o_paf_actor)
+	macro_change_etat("KT_ETAT_paf")
+
+// RIDE SERVEUR ?
+for (ti_i = 0; ti_i < Ci_Ride_Client_Nb; ti_i++)
+{
+	if (ao_bone_rider[ti_i])
+		macro_change_etat("KT_ETAT_rided")
+	else
+		ao_bone_rider[ti_i] = LNK_ServeurGet(Ci_LNK_RIDE_DINO, amid_bone_rider_LNK_ID[ti_i], vrai, nofunc, nofunc)
+}
+
+o_grab_actor = LNK_ClientGet(Ci_LNK_GRAB_RAPTOR, mid_grab_actor_LNK_ID, vrai, nofunc, nofunc, nofunc)
+if (o_grab_actor == nobody || ! MSG_GlobalIsValid(mid_best_interet) )
+	macro_change_etat(fct_main_etat)
+
+//i_flag_look = vrai
+//v_look_pos = @o_grab_actor OBJ_PosGet()
+
+EVENT_InteretStatusSet(mid_best_interet, C_EVENT_InteretStatusLock)
+EVENT_LifeSet(mid_best_interet, 10.0)
+EVENT_InteretSeenTimeSet(mid_best_interet, TIME_Get())
+EVENT_InteretPrecisionSet(mid_best_interet, 0.0)
+
+o_fight_actor = EVENT_InteretTargetGet(mid_best_interet)
+
+#ifdef DBG_DISPLAY_LOCK
+DBG_RenderVector(OBJ_PosGet(), @o_fight_actor OBJ_PosGet() - OBJ_PosGet(), color_rouge)
+#endif
+
+// COMPORTEMENT =================================================================================================
+if (IO_KeyPressed(VK_SPACE))
+{
+	ACT_ActionSet(Action_Observe)
+	OBJ_RotateGlobalZ(MATH_Sin(TIME_Get() * 8.0) * (3.0 * TIME_GetDt()))
+	return
+}
+else
+{
+	ACT_ActionSet(Action_Fight_Secoue)
+}
+
+OBJ_BankingGeneralSet(-OBJ_SightGet(), Cv_VerticalVector)	
+
+v_way_destpos = v_init_pos
+AI_Execute("KT_exec_way_find")
+
+OBJ_BankingGeneralSet(-OBJ_SightGet(), Cv_VerticalVector)	
+
+tv_temp = v_way_destpos
+tv_temp -= OBJ_PosGet()
+tv_temp.z = 0.0
+
+if (MATH_VecDotProduct(tv_temp, tv_temp) > 4.0)
+{
+	f_way_rot_speed	= MATH_FloatBlend(f_way_rot_speed, 6.0,  TIME_GetDt())	
+
+	v_joy_dir = OBJ_PosGet()
+	v_joy_dir -= v_way_case_dest
+	v_joy_dir.z = 0.0
+	
+	f_joy_norm = MATH_VecNorm(v_joy_dir)
+	
+	if (i_way_moving && f_joy_norm)
+	{
+		v_joy_dir /= f_joy_norm
+		OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), v_joy_dir, f_way_rot_speed * TIME_GetDt()), Cv_VerticalVector)
+	}
+}
+else
+{
+	f_way_rot_speed = 0.0
+}
+
+			
+

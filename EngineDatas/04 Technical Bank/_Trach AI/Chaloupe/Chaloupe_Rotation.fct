@@ -1,0 +1,184 @@
+vector	tv_temp, tv_temp1, tv_sight, tv_bank
+vector	av_pos[4]
+float		tf_far
+object	to_obj
+float		tf_temp
+
+if(des_i_chaloupe_jack)
+{
+	if(TIME_Elapsed(time_debut, time_eclaire))
+	{
+		@get_global f_force_eclaire = MATH_RandFloat(0.1, 0.2)
+		if(time_eclaire < 3)
+			time_eclaire = MATH_RandFloat(5, 15)
+		else
+			time_eclaire = MATH_RandFloat(1, 10)
+		time_debut = TIME_Get()
+	}
+	else
+	{
+		@get_global f_force_eclaire -= TIME_GetDt()
+		if(@get_global f_force_eclaire < 0) @get_global f_force_eclaire = 0
+	}
+	
+	if(i_mode_cine == 1)
+		f_water_height = MATH_FloatBlend(f_water_height, des_f_default_wave, TIME_GetDt())
+	else
+		f_water_height = MATH_FloatBlend(f_water_height, 0.15, TIME_GetDt())
+	WTR_SetF(Ci_WTR_Waves_Height, f_water_height)
+}
+
+if(des_i_alone)
+{
+	to_obj = AI_MainActorGet(C_ID_Joueur)
+	if(OBJ_SqrDist(to_obj) > des_i_vision * des_i_vision) 
+		return
+}
+
+//if(MATH_RandInt(0, 100) > 40)
+//	@get_SFX_rain Wind = cvector(0,0,1)
+//else if(MATH_RandInt(0, 100) > 10)
+//	@get_SFX_rain Wind = cvector(0,0.3,1)
+//else
+//	@get_SFX_rain Wind = cvector(1,0.0,1)
+
+if(OBJ_CapaTest(OBJ_Capa_0))
+{
+	macro_del_callback_after_cam("Chaloupe_cb_aftercam")
+	OBJ_Destroy()
+}
+
+if(OBJ_CapaTest(OBJ_Capa_2))
+{
+	AI_TrackChange(4, "Chaloupe_CineF")
+}
+
+// Orientation
+tv_bank = OBJ_BankingGet()
+if(net_move && !i_mode_cine)
+{
+	tf_temp = 5
+	if(des_i_mode_tomb) tf_temp = 2
+	
+	if(o_cur_wp && OBJ_SqrDistHorz(o_cur_wp) < tf_temp * tf_temp) o_cur_wp = WAY_NetNextWP(net_move, o_cur_wp, NetNextWP_Mode_le_premier, 0)
+	if(!o_cur_wp)
+		tv_sight = OBJ_SightGet()
+	else if( des_i_mode_tomb)
+	{
+		if(o_cur_wp)
+		{
+			tv_sight = MATH_VecBlendRotate(OBJ_SightGet(), @o_cur_wp OBJ_SightGet(), des_f_rot_tomb * TIME_GetDt())
+			tv_bank = MATH_VecBlendRotate(OBJ_BankingGet(), @o_cur_wp OBJ_BankingGet(), des_f_rot_tomb_v * TIME_GetDt())
+		}
+		else
+			tv_sight = OBJ_SightGet()
+	}
+	else
+	{
+		tv_temp = @o_cur_wp OBJ_PosGet() - OBJ_PosGet()
+		MATH_VecSetHorzNormalize(tv_temp)
+		tv_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_temp, TIME_GetDt())
+	}
+}
+else
+{
+	tv_sight = OBJ_SightGet()
+	if(des_i_oriente_cam) tv_sight = OBJ_PosGet() - @get_camera OBJ_PosGet()
+}
+
+// Tangage
+i_cpt_sin = 0	
+tv_temp = OBJ_PosGet() + (OBJ_SightGet() * 2) + OBJ_HorizonGet()
+av_pos[0] = WTR_GetDif1(tv_temp)
+
+tv_temp1 = tv_temp
+if(des_i_chaloupe_jack)
+	tv_temp1.z -= 0.25
+if(MATH_AbsFloat(tv_temp1.z - av_pos[0].z) > 0.08)
+	alpha_airtrace = 0.15
+if(tv_temp1.z - av_pos[0].z > 0.1)
+	i_splash = vrai
+else
+	i_splash = faux
+
+i_cpt_sin++
+tv_temp = OBJ_PosGet() + (OBJ_SightGet() * (2 + des_i_size)) - (OBJ_HorizonGet() * des_i_size)
+av_pos[1] = WTR_GetDif1(tv_temp)
+
+i_cpt_sin++
+tv_temp = OBJ_PosGet() - (OBJ_SightGet() * (2 + des_i_size)) + (OBJ_HorizonGet() * des_i_size)
+av_pos[2] = WTR_GetDif1(tv_temp)
+
+i_cpt_sin++
+tv_temp = OBJ_PosGet() - (OBJ_SightGet() * (2+ des_i_size)) - (OBJ_HorizonGet() * des_i_size)
+av_pos[3] = WTR_GetDif1(tv_temp)
+
+av_pos[3].z += MATH_Sin(TIME_Get() * 3) * f_add_sin
+f_add_sin = MATH_FloatBlend(f_add_sin, 0, 0.5 * TIME_GetDt())
+
+tv_temp = av_pos[0] - av_pos[3]
+tv_temp1 = av_pos[1] - av_pos[2]
+MATH_VecSetNormalize(tv_temp)
+MATH_VecSetNormalize(tv_temp1)
+tv_temp = MATH_VecCrossProduct(tv_temp1, tv_temp)
+
+tv_temp = MATH_VecBlendRotate(tv_temp, tv_bank, des_f_inertie_rot * TIME_GetDt())
+des_f_inertie_rot = 1.0
+OBJ_BankingGeneralSet(tv_sight, tv_temp)
+
+// Avance
+if(!des_i_alone && !i_mode_cine)
+{
+	if(o_cur_wp && @o_cur_wp OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_DesignStruct))
+		des_f_speed = MATH_FloatBlend(des_f_speed, o_cur_wp.des_float1, 5 * TIME_GetDt())
+	if(des_i_mode_tomb)
+	{
+		if(o_cur_wp)
+		{
+			tv_temp = @o_cur_wp OBJ_PosGet() - OBJ_PosGet()
+			MATH_VecSetHorzNormalize(tv_temp)
+		}
+	}
+	else
+	{
+		tv_temp = OBJ_SightGet()
+	}
+	
+	tv_temp *= des_f_speed * TIME_GetDt()
+	OBJ_PosSet(OBJ_PosGet() + tv_temp)
+}
+
+// Position
+if(i_mode_cine != 1)
+{
+	i_cpt_sin++
+	if(des_i_chaloupe_jack)
+		tv_temp = WTR_GetDif1(OBJ_PosGet()) + cvector(0, 0, 0.25)
+	else
+		tv_temp = WTR_GetDif1(OBJ_PosGet())
+	tv_temp = MATH_VecBlend(OBJ_PosGet(), tv_temp, des_f_inertie_z * TIME_GetDt())
+	tv_temp1 = OBJ_PosGet()
+	tv_temp1.z = tv_temp.z
+	OBJ_PosSet(tv_temp1)
+}
+
+if(des_i_chaloupe_jack && !i_mode_cine)
+{
+	to_obj = LIGHT_FogGet()
+	tf_far = @to_obj LIGHT_FarGet() + (10 * TIME_GetDt())
+	if(tf_far > 1000) tf_far = 1000
+	@to_obj LIGHT_NearFarSet(5, tf_far)
+}
+
+if(OBJ_CapaTest(OBJ_Capa_4))
+{
+	SND_MdFPlay(1)
+//	f_add_sin = 1
+	OBJ_CapaSet(0, OBJ_Capa_4)
+}
+
+//if(IO_ButtonJustPressed(JoyPSX_Button_croix)) 
+//{
+//	f_add_sin = 2
+////	AI_TrackCurChangeNow("Chaloupe_CineF")
+//}

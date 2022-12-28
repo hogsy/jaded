@@ -1,0 +1,158 @@
+#include "KAnn_Defines.var"
+
+int			ti_interaction_type
+int			ti_wait_for_ann
+
+//================================================================================================
+// INTERACTION AVEC LES RAPTORS
+//================================================================================================
+
+#ifndef _FINAL_
+if( i_DBG_display_interaction )
+	Str_DisplayTextOnce("Interaction Attack Raptors", Cv_Interaction_type_display_pos2d)
+#endif
+
+o_fight_actor = ao_SRV[Ci_LNK_INTERACTION]
+if( MSG_GlobalIsValid(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION]) )
+{
+	ti_interaction_type = LNK_InteractionParamGet(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION])
+	switch( ti_interaction_type )
+	{
+		case C_INTER_FIGHT_WAIT_FOR_ANN :
+			if( i_has_weapon )
+			{
+				// javelot en main
+				if( ! o_fight_actor )
+				{
+					ACT_ActionSet(Ann_att_enjoue_bambou)
+					ti_interaction_type = C_INTER_FIGHT_ANN_READY		// se prépare à subir une attaque
+				}
+				else
+				{
+					if( i_sub_action_id == WP_SubAction_cache )
+						ACT_ActionSet(Ann_Cache_Att)
+					else
+		 				ACT_ActionSet(Ann_att_enjoue_bambou)
+		 			if( i_interaction_modulo == 0 )		// les autres que raptors restent à 0
+						ti_interaction_type = C_INTER_FIGHT_ANN_READY		// se prépare à subir une attaque
+					else
+					{
+						ti_interaction_type = C_INTER_FIGHT_ANN_FAKING_ATTACK		// prépare une attaque/
+						@o_target KR_Set_Interaction_Timer(10.0)	
+					}	
+		 			i_interaction_modulo = MATH_Modulo(i_interaction_modulo + 1, 2)
+				}
+			}
+			else
+			{
+				// pas d'arme
+				if( i_sub_action_id == WP_SubAction_cache )
+					ACT_ActionSet(Ann_Cache_Att)
+				else
+					ACT_ActionSet(Ann_Cache_Protect)
+				ti_interaction_type = C_INTER_FIGHT_ANN_READY		// se prépare à subir une attaque
+			}
+			LNK_InteractionParamSet(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION], ti_interaction_type )
+			break
+			
+		case C_INTER_FIGHT_ENNEMY_ATTACK :
+		case C_INTER_FIGHT_ENEMY_FAKE_ATTACK :
+			if( ! i_has_weapon && ACT_ActionGet() == Ann_Cache_Att )
+			{
+				if( ANI_CurrentFrameGet(0) > 80 )
+				{
+					LNK_InteractionParamSet(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION], C_INTER_FIGHT_WAIT_FOR_ANN )
+					ACT_ActionSet(Ann_Cache_Protect)
+				}
+			}
+			else if( ACT_ActionGet() != Ann_Cache_Protect && 
+			    ACT_ActionGet() != Ann_stress_att_protege)
+			{
+				if( ti_interaction_type == C_INTER_FIGHT_ENNEMY_ATTACK )
+					ACT_ActionSet(Ann_stress_att_protege)			// reste debout => ouille !!!
+				else
+					ACT_ActionSet(Ann_Cache_Protect)		// se baisse
+			}
+			else if ( (ACT_ActionGet() == Ann_Cache_Protect && ANI_CurrentFrameGet(0) > 50) ||
+			 		   (ACT_ActionGet() == Ann_stress_att_protege && ANI_CurrentFrameGet(0) > 50) )
+			{
+				ACT_ActionSet(Ann_att_enjoue_bambou)
+				LNK_InteractionParamSet(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION], C_INTER_FIGHT_WAIT_FOR_ANN )
+			}
+			break
+			
+		case C_INTER_FIGHT_ENEMY_READY :
+			LNK_InteractionParamSet(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION], C_INTER_FIGHT_ANN_FAKING_ATTACK )
+			break
+	
+		case C_INTER_FIGHT_ANN_FAKING_ATTACK :
+			if( ACT_ActionGet() != Ann_frappe_bambou &&
+			    ACT_ActionGet() != Ann_attack_bambou_bas && 
+			    ACT_ActionGet() != Ann_attack_bambou_haut)
+			{
+				i_interaction_fight_action_attack_modulo = MATH_Modulo(i_interaction_fight_action_attack_modulo + 1, 3)
+				switch (i_interaction_fight_action_attack_modulo)
+				{
+					case 0:
+							ACT_ActionSet(Ann_frappe_bambou)
+							@o_target KR_Set_Interaction_Timer(0.35)
+						break
+					case 1:
+						    ACT_ActionSet(Ann_attack_bambou_bas)
+							@o_target KR_Set_Interaction_Timer(0.45)
+						break
+					case 2:
+						    ACT_ActionSet(Ann_attack_bambou_haut)					
+							@o_target KR_Set_Interaction_Timer(0.55)	
+						break										
+				}
+			}
+			else
+			{
+				ti_wait_for_ann = faux
+				if( ACT_ActionGet() == Ann_frappe_bambou && ANI_CurrentFrameGet(0) > 90 )
+					ti_wait_for_ann = vrai
+				else if( ACT_ActionGet() == Ann_attack_bambou_bas && ANI_CurrentFrameGet(0) > 65 )
+					ti_wait_for_ann = vrai
+				else if( ACT_ActionGet() == Ann_attack_bambou_haut && ACT_ActionFinished() )
+					ti_wait_for_ann = vrai
+				if( ti_wait_for_ann )
+				{
+					// ANN a forcément un bambou
+					ACT_ActionSet(Ann_att_enjoue_bambou)
+					LNK_InteractionParamSet(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION], C_INTER_FIGHT_WAIT_FOR_ANN)	
+					f_attack_reaction_delay = -1 
+				}
+			}
+			break
+	}
+}
+else
+{
+ 	if( i_has_weapon )
+		ACT_ActionSet(Ann_att_enjoue_bambou)
+	else
+		ACT_ActionSet(Ann_stress_attente)
+}
+
+if( ACT_ActionGet() != Ann_ramasse_debout )
+{
+	if (o_target && ! i_freezeSight)
+	{
+		v_sight = @o_target OBJ_PosGet() - OBJ_PosGet()
+		if( ACT_ActionGet() == Ann_Cache_Att && KAnn_Death_Timer_Get() > 1.0 )
+			v_sight *= -1.0
+		if ( ! MATH_VecNullEpsilon(v_sight))
+			v_sight = MATH_VecNormalize(v_sight)
+		v_sight = MATH_VecBlendRotate(OBJ_SightGet(), v_sight, 5.0 * TIME_GetDt())
+		OBJ_BankingGeneralSet(v_sight ,Cv_VerticalVector ) 
+		i_freezeSight = vrai
+	}
+}
+
+// TIMER MORT ANN ==========================
+if( ao_SRV[Ci_LNK_INTERACTION] )
+{
+	KAnn_Death_Timer_Countdown()
+}
+

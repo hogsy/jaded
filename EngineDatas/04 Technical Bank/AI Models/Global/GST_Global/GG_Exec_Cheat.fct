@@ -1,0 +1,70 @@
+
+int		txt
+
+
+#ifndef _FINAL_  //   Debug -- Debug -- Debug -- Debug -- Debug -- Debug -- Debug -- Debug --
+
+// --------[ cheat debug info ]--------
+if (IO_ButtonJustPressed(joy_button_Select) )
+{
+	// Page 0 = No PAGE
+	// Page 1 = Page ROPE
+	// Page 2 = Page INFOKAM (Kong only)
+	// Page 3 = Page ACTOR STATUS
+	// Page 4 = Zic
+
+	@"univ" i_cheat_page += 1
+
+	@"univ" i_cheat_page = MATH_Modulo(@"univ" i_cheat_page, 6)	// Nbr de page +1 PLEASE
+}
+
+switch(@"univ" i_cheat_page)
+{
+ 	case 1 : // STATISTIQUES =========================================================
+// 		STATS_Dump()
+//		STR_CreateText("\cFF0000FF\\h0.1\STATISTICS",Cv_NullVector, 0)
+//
+//		txt = STR_CreateText("Duree:          ", cvector(0,0.1,0), 0)
+//		STR_AppendFloat(txt, @"univ" STATS[@"univ" STATS_WorldID][STATS_DureeMap], 1)
+//		txt = STR_CreateText("Nombre de Mort:  ", cvector(0,0.15,0), 0)
+//		STR_AppendFloat(txt, @"univ" STATS[@"univ" STATS_WorldID][STATS_NbMort], 0)
+//		txt = STR_CreateText("Nombre de Paf:   ", cvector(0,0.2,0), 0)
+//		STR_AppendFloat(txt, @"univ" STATS[@"univ" STATS_WorldID][STATS_NbCoup], 0)
+//		txt = STR_CreateText("Nombre de Shoot: ", cvector(0,0.25,0), 0)
+//		STR_AppendFloat(txt, @"univ" STATS[@"univ" STATS_WorldID][STATS_NbShoot], 0)
+//		
+//		txt = STR_CreateText("Coef de Neuneu:   ", cvector(0,0.35,0), 0)
+//		STR_AppendFloat(txt, STATS_ScoreMap(), 0)
+
+//		if (IO_ButtonJustPressed(joy_button_L))
+//			@"univ" VID_gi_ModeOldMovie = MATH_Modulo(@"univ" VID_gi_ModeOldMovie +1,3)
+		
+		STR_CreateText("\cFF0000FF\\h0.1\DEBUG INFOS",Cv_NullVector, 0)
+		
+		break
+			
+	case 2 :	// KAM INFO ===========================================================
+		STR_CreateText("\cFF0000FF\\h0.1\KAM INFO",Cv_NullVector, 0)
+		txt = STR_CreateText("\cFF00FFFF\",cvector(0,0.075,0), 0)
+		STR_AppendGao(txt, o_camera)
+		txt = STR_CreateText("\cFF00FF00\Active Kam Modifier(s):", cvector(0,0.1,0), 0)
+		i_cheat_2_nbr = 0
+		i_cheat_2_last_prio = -1
+		i_cheat_2_last_gao = nobody
+		break
+
+	case 3 :	// ACTOR STATUS =======================================================
+		STR_CreateText("\cFF0000FF\\h0.1\ACTOR STATUS",Cv_NullVector, 0)
+		break
+
+	case 4 :	// CHEAT AUDIO ==========================================================
+		STR_CreateText("\cFF0000FF\\h0.1\MUSIC DEBUG",Cv_NullVector, 0)
+		break
+		
+	case 5 : // GRAB OBJECT INFO ====================================================
+		STR_CreateText("\cFF0000FF\\h0.1\TARGETING",Cv_NullVector, 0)
+		break
+}
+
+#endif	  //   Debug -- Debug -- Debug -- Debug -- Debug -- Debug -- Debug -- Debug --
+

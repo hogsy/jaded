@@ -1,0 +1,244 @@
+procedure_ultra void PNJ_Raptor_Init_Var();
+
+int			ti_priority
+
+#define SPG2_GW(terrain, ss, sa, ws) \
+	SPG2_FloatSet(0, 1005 + (terrain * 5), ss) \
+	SPG2_FloatSet(0, 1006 + (terrain * 5), sa) \
+	SPG2_FloatSet(0, 1007 + (terrain * 5), ws) \		
+
+//OBJ_BankingGeneralSet(OBJ_SightGet(), cvector(0,1,0))
+OBJ_FlagsControlSet(OBJ_C_ControlFlag_AlwaysActive, none)
+OBJ_FlagsControlSet(OBJ_C_ControlFlag_AlwaysVisible, none)
+
+if(change_col_back) WOR_BackColSet(0, col_back)
+
+// Type de Sectorisa	tion
+SCT_SetMode(i_RM_SectoMode)
+
+@get_global i_secto_atmosphere1 = i_secto_atmosphere1
+@get_global i_secto_atmosphere2 = i_secto_atmosphere2
+@get_global i_secto_merdenuage1 = i_secto_merdenuage1
+@get_global i_secto_merdenuage2 = i_secto_merdenuage2
+
+// PRIO par DEFAUT ===========================================================
+ti_priority = AI_PriorityGet()
+if (ti_priority != 1)
+{
+	AI_PrioritySet(1)
+	DBG_Error("Le map mapnager n'avait pas la bonne piorité, sauvez et relancez !!!")
+}
+// PRIO par DEFAUT ===========================================================
+
+// ECLAIRS =================================================================
+f_current_delay = MATH_RandFloat(f_delai_min,f_delai_max)
+// ECLAIRS =================================================================
+
+// TRANSFERT DES VALEURS PAR DEFAUT POUR LA MAP ============================
+@get_global AFE_DefaultValue[Param_AE_BlackAndWhite] = AFX_BlackAndWhite_1
+@get_global AFE_DefaultValue[Param_AE_Blur] = AFX_Blur_1
+@get_global AFE_DefaultValue[Param_AE_Brightness] = AFX_Brightness_1
+@get_global AFE_DefaultValue[Param_AE_ColorBalance1] = AFX_ColorBalance_1
+@get_global AFE_DefaultValue[Param_AE_ColorBalance2] = AFX_ColorBalance_2
+@get_global AFE_DefaultValue[Param_AE_Contraste] = AFX_Contraste_1
+@get_global AFE_DefaultValue[Param_AE_MotionBlur] = AFX_MotionBlur_1
+@get_global AFE_DefaultValue[Param_AE_MotionSmooth] = AFX_MotionSmooth_1
+@get_global AFE_DefaultValue[Param_AE_Remanence] = AFX_Remanence_1
+@get_global AFE_DefaultValue[Param_AE_RotationSmooth] = AFX_RotationSmooth_1
+@get_global AFE_DefaultValue[Param_AE_Wrap] = AFX_Wrap_1
+@get_global AFE_DefaultValue[Param_AE_ZoomSmooth] = AFX_ZoomSmooth_1
+@get_global AFE_DefaultValue[Param_AE_Glow] = AFX_Glow_1
+// TRANSFERT DES VALEURS PAR DEFAUT POUR LA MAP ============================	
+
+AE_PerfectGlow(AFX_SuperGlow_1,AFX_SuperGlow_2,AFX_SuperGlow_3)
+ 
+// INIT NEW GAME SI MODE NODE EDITEUR ou ENGINE ================================
+if (((@"univ" world_entrance_ID == -1) && (@"univ" Engine)) || !@"univ" Engine)
+{
+	// Init de l'etat du JEU
+	#include "ROOT\EngineDatas\04 Technical Bank\AI Models\Global Library\exec_new_game_init.fct"
+	// INIT des VAR necessaire a chaque premiere execution du moteur.
+	#include "ROOT\EngineDatas\04 Technical Bank\AI Models\Global Library\exec_universe_initvars.fct"
+	@"univ" world_entrance_ID = Numero_entree_ParDefaut
+}
+// INIT NEW GAME SI MODE NODE EDITEUR ou ENGINE ================================
+
+
+//========================================
+//                           SOUND OBLIGATOIRE 
+//========================================
+SND_M_SetGameMode( SND_Cte_ModePlaying)
+SND_M_SetGameSubMode(0)
+
+@get_global o_territory_colmap = o_territory_colmap
+
+// REACTION AU VENT =========================================================
+
+// Tout ce qui n'est pas sur la grille
+SPG2_FloatSet(0, 1000, 0.8)		// Spring strengh
+SPG2_FloatSet(0, 1001, 0.95)	// Speed absorbtion
+SPG2_FloatSet(0, 1002, 0.1)		// Wind sensitivity
+
+// Terrains
+SPG2_GW(Ci_sol_herbe, 0.8, 0.95, 0.1)
+SPG2_GW(Ci_sol_herbe_haute, 0.8, 0.95, 0.1)
+SPG2_GW(Ci_sol_herbe_ronce, 2.0, 0.95, 0.1)
+SPG2_GW(Ci_sol_eau_basse_herbe, 0.8, 0.95, 0.1)
+SPG2_GW(Ci_sol_eau_herbe, 0.8, 0.95, 0.1)
+SPG2_GW(Ci_sol_eau_mouche_feu, 0.8, 0.95, 0.1)
+
+
+if (AI_GetCurSystem() == Ci_CurSystem_Editeur)
+{
+	// GESTION DES POWER UPS A LINIT NE DEBUG
+	if( i_course_mashing)
+		RM_POWERUP_SET( RM_POWER_RUN_MASH, none)
+	else
+		RM_POWERUP_SET( none, RM_POWER_RUN_MASH)	
+	if( i_grappin_moyen)
+		RM_POWERUP_SET( RM_POWER_GRAP_MED, none)
+	else
+		RM_POWERUP_SET( none, RM_POWER_GRAP_MED)
+	if( i_grappin_long)
+		RM_POWERUP_SET( RM_POWER_GRAP_LONG, none)
+	else
+		RM_POWERUP_SET( none, RM_POWER_GRAP_LONG)
+	if( i_grappin_incassable)
+		RM_POWERUP_SET( RM_POWER_GRAP_INF, none)
+	else
+		RM_POWERUP_SET( none, RM_POWER_GRAP_INF)
+	if( i_helico_infini)
+		RM_POWERUP_SET( RM_POWER_HELICO_INF, none)
+	else
+		RM_POWERUP_SET( none, RM_POWER_HELICO_INF)
+	if( i_mode_spider_infini)
+		RM_POWERUP_SET( RM_POWER_SPIDER_INF, none)
+	else
+		RM_POWERUP_SET( none, RM_POWER_SPIDER_INF)
+		
+	// POWER UP MOUNT TAMING
+	if( i_mount_rhyno)
+		RM_POWERUP_SET( RM_POWER_MOUNT_RHYNO, none)
+	else
+		RM_POWERUP_SET( none, RM_POWER_MOUNT_RHYNO)
+	if( i_mount_shark)
+		RM_POWERUP_SET( RM_POWER_MOUNT_SHARK, none)
+	else
+		RM_POWERUP_SET( none, RM_POWER_MOUNT_SHARK)
+	if( i_mount_eagle)
+		RM_POWERUP_SET( RM_POWER_MOUNT_EAGLE, none)
+	else
+		RM_POWERUP_SET( none, RM_POWER_MOUNT_EAGLE)
+	if( i_mount_tiger)
+		RM_POWERUP_SET( RM_POWER_MOUNT_TIGER, none)
+	else
+		RM_POWERUP_SET( none, RM_POWER_MOUNT_TIGER)
+	if( i_mount_fish)
+		RM_POWERUP_SET( RM_POWER_MOUNT_FISH, none)
+	else
+		RM_POWERUP_SET( none, RM_POWER_MOUNT_FISH)
+	if( i_mount_spider)
+		RM_POWERUP_SET( RM_POWER_MOUNT_SPIDER, none)
+	else
+		RM_POWERUP_SET( none, RM_POWER_MOUNT_SPIDER)
+	if( i_mount_bat)
+		RM_POWERUP_SET( RM_POWER_MOUNT_BAT, none)
+	else
+		RM_POWERUP_SET( none, RM_POWER_MOUNT_BAT)
+	if( i_mount_snake)
+		RM_POWERUP_SET( RM_POWER_MOUNT_SNAKE, none)
+	else
+		RM_POWERUP_SET( none, RM_POWER_MOUNT_SNAKE)
+
+	// POWER UP DISGUISE
+	if( i_RM_Disguise_Punk)
+		RM_Disguise_Set( RM_Disguise_Punk, RM_POWER_DISGUISE_FULL)
+	else
+		RM_Disguise_Set( RM_Disguise_Punk, 0)
+		
+	if( i_RM_Disguise_Mamy)
+		RM_Disguise_Set( RM_Disguise_Mamy, RM_POWER_DISGUISE_FULL)
+	else
+		RM_Disguise_Set( RM_Disguise_Mamy, 0)
+	
+	if( i_RM_Disguise_Funky)
+		RM_Disguise_Set( RM_Disguise_Funky, RM_POWER_DISGUISE_FULL)
+	else
+		RM_Disguise_Set( RM_Disguise_Funky, 0)
+	
+	if( i_RM_Disguise_Elvis)
+		RM_Disguise_Set( RM_Disguise_Elvis, RM_POWER_DISGUISE_FULL)
+	else
+		RM_Disguise_Set( RM_Disguise_Elvis, 0)
+	
+	if( i_RM_Disguise_Hiphop)
+		RM_Disguise_Set( RM_Disguise_Hiphop, RM_POWER_DISGUISE_FULL)
+	else
+		RM_Disguise_Set( RM_Disguise_Hiphop, 0)
+	
+//	if( i_RM_Disguise_6)
+//		RM_Disguise_Set( RM_Disguise_6, RM_POWER_DISGUISE_FULL)
+//	else
+//		RM_Disguise_Set( RM_Disguise_6, 0)
+//	
+//	if( i_RM_Disguise_7)
+//		RM_Disguise_Set( RM_Disguise_7, RM_POWER_DISGUISE_FULL)
+//	else
+//		RM_Disguise_Set( RM_Disguise_7, 0)
+//	
+//	if( i_RM_Disguise_8)
+//		RM_Disguise_Set( RM_Disguise_8, RM_POWER_DISGUISE_FULL)
+//	else
+//		RM_Disguise_Set( RM_Disguise_8, 0)
+//	
+//	if( i_RM_Disguise_9)
+//		RM_Disguise_Set( RM_Disguise_9, RM_POWER_DISGUISE_FULL)
+//	else
+//		RM_Disguise_Set( RM_Disguise_9, 0)
+
+	if( i_RM_Disguise_Current)
+	{
+		RM_Disguise_Set( i_RM_Disguise_Current, RM_POWER_DISGUISE_GLASSES + i_RM_Disguise_Hair + i_RM_Disguise_Vest + i_RM_Disguise_Shoes)
+	}
+}	
+
+////////////////////////////////////////////////////
+//////////////// WATER ///////////////////////
+////////////////////////////////////////////////////
+if (WTR_activation)
+{
+			WTR_SetF(7,WTR_TextureTile)					//     float                                         TexScale;
+			WTR_SetL(8,WTR_TextureBigKey)			//       TEXKEY
+
+            // Paramètres INT
+            if (WTR_sky_color) WTR_SetL(Ci_WTR_sky_color, WTR_sky_color)
+            if (WTR_bottom_color) WTR_SetL(Ci_WTR_bottom_color, WTR_bottom_color)
+            if (WTR_water_color) WTR_SetL(Ci_WTR_water_color, WTR_water_color)
+
+            // PAS TOUCHE !!!
+            WTR_SetL(3, 48)                                              // FRUSTRUM MESH SIZE X
+            WTR_SetL(4, 128)                                 // FRUSTRUM MESH SIZE Y
+            WTR_SetL(5, 6)                                                // SPECTRUM POWER OF 2
+            WTR_SetL(6, 5)                                                // CHOPPY SPECTRUM POWER OF 2
+
+            // Paramètres float
+            f_WTR_Waves_Height = WTR_Waves_Height         
+
+            WTR_SetF(Ci_WTR_Waves_Height, f_WTR_Waves_Height)
+            WTR_SetF(Ci_WTR_Choppy, WTR_Choppy)
+            WTR_SetF(Ci_WTR_Tiling, WTR_Tiling)
+            WTR_SetF(Ci_WTR_Speed, WTR_Speed)
+            WTR_SetF(Ci_WTR_Wave_dir, WTR_Wave_dir)
+            WTR_SetF(Ci_WTR_Wave_Prop, WTR_Wave_Prop)
+       
+            WTR_Enable(vrai)
+            WTR_Water_Height = @des_acteur_eau OBJ_PosGet().z
+            @des_acteur_eau OBJ_FlagInactiveSet(vrai)
+            @des_acteur_eau OBJ_FlagInvisibleSet(vrai)
+            WTR_SetF(Ci_WTR_Water_Height, WTR_Water_Height)
+}
+
+TIME_Wait(0.1)
+
+v_time_rand_pluie = cvector(0,0,0.99)
+AI_TrackCurChangeNow("GST_MM_go")

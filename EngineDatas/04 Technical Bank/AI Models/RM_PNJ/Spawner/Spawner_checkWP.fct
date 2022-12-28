@@ -1,0 +1,36 @@
+vector	tv_temp
+float		tf_distjack
+float		tf_dt
+int			ti_WP
+object	to_camera	// kong ou jack
+
+
+to_camera = @get_global o_camera
+
+tf_dt = TIME_GetDt()
+for (ti_WP = 0; ti_WP < mi_WPNb; ti_WP++)
+	maf_WPTimer[ ti_WP ] -= tf_dt
+
+if (mi_WPCur == -1)
+	return
+	
+tv_temp = @mao_WP[ mi_WPCur ] OBJ_PosGet() - @to_camera OBJ_PosGet()
+tf_distjack = MATH_VecDotProduct( tv_temp, tv_temp )
+if (tf_distjack < mf_DistanceMin * mf_DistanceMin )
+{
+	if (mi_GenWPSequential)
+		mi_WPCur = MATH_Modulo (mi_WPCur + 1, mi_WPNb )
+	else
+		mi_WPCur = -1
+	return
+}
+
+if (  maf_WPTimer[ mi_WPCur ] > 0 )
+{
+	if (mi_GenWPSequential)
+		mi_WPCur = MATH_Modulo (mi_WPCur + 1, mi_WPNb )
+	else
+		mi_WPCur = -1
+	return
+}
+

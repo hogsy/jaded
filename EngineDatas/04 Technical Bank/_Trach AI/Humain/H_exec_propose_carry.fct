@@ -1,0 +1,69 @@
+#include "H_defines.var"
+
+messageid		tmid_LNK
+object			to_serveur
+float				tf_dist
+object			to_main, to_obj
+vector			tv_pos
+int					ti_danger, i
+int					ti_ok
+messageid		tmid_info
+vector			tv_temp
+float				tf_bestdist 
+
+tmid_LNK = pop
+
+// Hack radeau
+if(OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Hierarchy)) return
+
+to_serveur = MSG_GlobalGetGao(tmid_LNK, SERVEUR)
+tf_dist = OBJ_SqrDistHorz(to_serveur)
+
+if(joueur) 
+{
+//	if(!IO_ButtonPressed(joy_button_R2)) return
+//	if(tf_dist > 2 * 2) return
+//	if(i_flag_carry) return
+//	tv_temp = @to_serveur OBJ_PosGet() - OBJ_PosGet()
+//	MATH_VecSetHorzNormalize(tv_temp)
+//	if(MATH_VecDotProduct(OBJ_SightGet(), tv_temp) < 0.4) return
+//	LNK_ClientPropose(tmid_LNK, tf_dist)	 	
+	return
+}
+
+// Pas ann
+if(i_id_humain == C_ID_Ann) return
+
+// Uniquement en hide
+if(i_etat_courant != ETAT_IA_hide && i_etat_courant != ETAT_IA_help && i_etat_courant != ETAT_IA_tir) return
+
+// J'ai carry y'a pas longtemps
+if(!TIME_Elapsed(f_time_carry, 1)) return
+
+// Uniquement si en danger potentiel
+//if(!EVENT_InfoCanGaoSeeGao(nobody, to_serveur, tmid_info)) return
+if(ZoneDangereuse(@to_serveur OBJ_PosGet())) return
+
+// Y'a une cache de surface pas trop loin ?
+if(!GetCacheSoin(to_serveur)) return
+
+// Dans l'eau
+if(f_hauteur_eau > 0.3) return
+if(@"KingKong/Humain" to_serveur f_hauteur_eau > 0.3) return
+
+// Position dangereuse ?
+f_time_carry = TIME_Get()
+tv_pos = @to_serveur OBJ_PosGet()
+i_way_evite_ennemi = faux
+ti_danger = HL_CheminDangereux(tv_pos)
+i_way_evite_ennemi = vrai
+if(ti_danger == -1) return
+
+switch(i_id_humain)
+{
+	case C_ID_Hayes :		tf_dist *= 0.5 	break
+	case C_ID_Jimmy :		tf_dist *= 1 		break
+	case C_ID_Denham :	tf_dist *= 2.0 	break
+}
+
+LNK_ClientPropose(tmid_LNK, tf_dist)	 	

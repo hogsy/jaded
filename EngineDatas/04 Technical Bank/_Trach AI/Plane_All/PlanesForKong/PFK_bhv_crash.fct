@@ -1,0 +1,31 @@
+procedure_ultra void PE_RejoinAndOrient(object o);
+float clock
+clock=TIME_Get()
+// continue taking messages, for new hits
+PFK_GetMessages()
+// move to the destroy body, getting its falling movement
+if(DestroyBody && ExplosedMe)
+{
+	OBJ_RejoinAndOrient(DestroyBody)
+	@ExplosedMe PE_RejoinAndOrient(OBJ_Me())
+}
+// create some smoke
+if(clock>SmokeDelay)
+{
+	// set a new delay
+	SmokeDelay=clock+0.1
+	// generate black smoke
+	PFK_SmokeFX(0)
+	// may generate some fire particles
+	if(MATH_RandFloat(0,1)<0.1)
+	{
+		PFK_SmokeFX(1)
+	}
+}
+// possibly crash with another plane
+PFK_TestCrashWithFriends()
+// if I crashed long enough, I can disappear
+if(clock>TimerShoot)
+{
+	AI_TrackChange(2,"PFK_bhv_death")
+}

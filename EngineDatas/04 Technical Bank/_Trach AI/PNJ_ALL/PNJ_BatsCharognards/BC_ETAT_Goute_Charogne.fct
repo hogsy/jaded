@@ -1,0 +1,47 @@
+
+#include "BC_defines.var"
+
+
+// SORTIE ETAT
+if (i_sort_etat)
+{
+	f_cible_poids = 0.0
+	i_flag_neck = vrai
+	
+	i_sort_etat = faux
+	return
+}
+
+// ENTREE ETAT
+if (i_etat_courant != ETAT_Goute_Charogne)
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Goute_Charogne
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+
+	f_time_action = TIME_Get()			// init durée manger (pour goûter avant de décider s'il s'envole avec ou pas)
+
+	ACT_ActionSet(ACTION_Mange)
+	
+	// le bat regarde devant lui
+	v_look_pos = Cv_NullVector
+	i_flag_neck = faux
+}
+
+
+// ======= GOUTE LA CHAROGNE ==========
+
+if( TIME_Elapsed(f_time_action, 4.0) )
+{
+	if( f_cible_poids < @"univ" Enemy_af_Poids[C_ID_BatCharognard] )
+		macro_change_etat("BC_ETAT_Porte_Charogne")		// charogne légère => envol
+	else 
+		f_time_action = TIME_Get()
+//		macro_change_etat("BC_ETAT_Mange_Charogne")		// charogne lourde => niaque au sol
+}

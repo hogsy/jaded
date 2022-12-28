@@ -1,0 +1,28 @@
+
+// NOUVEL INTERET ====================================================================
+
+messageid			tmid_vision_ID
+int						ti_visibility_filter
+float					tf_interet
+object				to_actor
+
+
+to_actor = pop
+tf_interet = pop
+
+// Suppression de l'ancien intérêt
+if (MSG_GlobalIsValid(mid_best_interet))
+	MSG_GlobalDelete(mid_best_interet, C_EVENT_EOFDEL)
+
+// Nouvel intérêt
+mid_best_interet = EVENT_AddEventInteret(OBJ_Me(), 10.0, tf_interet, @to_actor OBJ_PosGet(), to_actor)
+
+//  Filtre de vision
+tmid_vision_ID = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility, to_actor, nobody)
+if( MSG_GlobalIsValid(tmid_vision_ID) )
+	ti_visibility_filter = EVENT_FilterGet(tmid_vision_ID)
+else
+	ti_visibility_filter = C_EVENT_FILTER_Marin
+
+EVENT_FilterSet(mid_best_interet, ti_visibility_filter)
+

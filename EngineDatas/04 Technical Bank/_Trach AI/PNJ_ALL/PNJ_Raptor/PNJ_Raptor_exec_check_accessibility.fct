@@ -1,0 +1,19 @@
+int						ti_territory_ID
+
+vector				tv_pos
+
+tv_pos = pop
+
+AI_Execute("PNJ_Raptor_exec_way_ponderation_set")
+
+if (GRID_GetPond(GRID_CapaGet(tv_pos) & tag_grid_terrain) == 0.0)
+{
+	push(faux)
+	return
+}
+	
+ti_territory_ID = GST_Climb_Territory_Get(tv_pos)
+
+push(ti_territory_ID)
+AI_Execute("PNJ_Raptor_exec_check_territory")
+	

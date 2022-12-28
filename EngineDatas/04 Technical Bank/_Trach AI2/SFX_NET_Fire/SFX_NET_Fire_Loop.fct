@@ -1,0 +1,120 @@
+int			ti_i
+int			ti_segment_nb
+int			ti_break
+
+float		tf_segment_length
+float		tf_temp
+
+vector	tv_point_A
+vector	tv_start_pos
+vector	tv_dest_pos
+
+if (!f_life_time)
+{
+	for (ti_i = 0; ti_i < i_nb_GFX; ti_i++)
+	{
+		GFX_Seti(GFX_Strange_Line[ti_i], 13106, 0)											// *number of sprite to generate
+		GFX_Strange_Line[ti_i] = -1
+	}
+
+	return
+}
+
+if (OBJ_FlagsControlGet() & (OBJ_C_ControlFlag_ForceInvisible | OBJ_C_ControlFlag_SectoInvisible))
+{
+	for (ti_i = 0; ti_i < i_nb_GFX; ti_i++)
+	{
+		GFX_Del(GFX_Strange_Line[ti_i])
+		GFX_Strange_Line[ti_i] = -1
+	}
+
+	i_nb_GFX = 0
+	i_nb_segments_complets = 0
+
+	o_last_wp = OBJ_Me()
+	o_next_wp = WAY_NetNextWP(n_net, o_last_wp, 0, 0)
+	
+	v_GFX_last_pos = @o_last_wp OBJ_PosGet()
+	v_GFX_next_pos = v_GFX_last_pos
+	
+	f_link_coef = 0.0
+	f_link_length = MATH_VecNorm(@o_next_wp OBJ_PosGet() - @o_last_wp OBJ_PosGet())
+
+	f_net_computed_length = 0.0
+
+	return
+}
+
+if (recompute_position)
+{
+	o_last_wp = OBJ_Me()
+	o_next_wp = WAY_NetNextWP(n_net, o_last_wp, 0, 0)
+	
+	v_GFX_last_pos = @o_last_wp OBJ_PosGet()
+	v_GFX_next_pos = v_GFX_last_pos
+	
+	f_link_coef = 0.0
+	f_link_length = MATH_VecNorm(@o_next_wp OBJ_PosGet() - @o_last_wp OBJ_PosGet())
+	
+	f_net_computed_length = 0.0
+	i_nb_segments_complets = 0
+}
+
+if (i_nb_GFX && f_net_coef == f_net_length)
+	return
+
+@o_last_wp OBJ_CapaSet(OBJ_Capa_0, none)
+
+// Longueur parcourue sur le reseau
+f_net_coef += MATH_FloatMin(f_net_length - f_net_coef, f_speed * TIME_GetDt())
+
+// Calcul du nombre total de segment à ce stade
+tf_segment_length = f_net_coef
+tf_segment_length /= f_step_length
+tf_segment_length += 0.5
+
+ti_segment_nb = tf_segment_length
+ti_segment_nb--
+
+// On va créer ou mettre à jour tout les segments complets
+for (ti_i = i_nb_segments_complets; ti_i < ti_segment_nb; ti_i++)
+{
+	// Il faut calculer de combien on va avancer pour atteindre la fin du segment	
+	tf_segment_length = (ti_i + 1) * f_step_length
+	tf_segment_length -= f_net_computed_length
+
+	f_link_coef += tf_segment_length
+	f_net_computed_length += tf_segment_length
+
+	v_GFX_last_pos = v_GFX_next_pos
+	v_GFX_next_pos = SFX_NET_Fire_Position_Get()
+
+	tv_dest_pos = v_GFX_next_pos - v_GFX_last_pos
+//	DBG_RenderVector(v_GFX_last_pos, tv_dest_pos, color_rouge)
+	tv_dest_pos *= 0.5
+	
+	tv_start_pos = v_GFX_last_pos
+	tv_start_pos += tv_dest_pos
+	
+	SFX_NET_Fire_Add_GFX(ti_i, tv_start_pos, tv_dest_pos)
+	
+	i_nb_segments_complets++
+}
+
+// On ajoute le dernier tronçon
+tf_segment_length = f_net_coef - f_net_computed_length
+
+f_link_coef += tf_segment_length
+f_net_computed_length += tf_segment_length
+
+tv_dest_pos = SFX_NET_Fire_Position_Get()
+tv_dest_pos -= v_GFX_next_pos
+//DBG_RenderVector(v_GFX_next_pos, tv_dest_pos, color_blanc)
+tv_dest_pos *= 0.5
+
+tv_start_pos = v_GFX_next_pos
+tv_start_pos += tv_dest_pos
+
+SFX_NET_Fire_Add_GFX(i_nb_segments_complets, tv_start_pos, tv_dest_pos)
+
+return

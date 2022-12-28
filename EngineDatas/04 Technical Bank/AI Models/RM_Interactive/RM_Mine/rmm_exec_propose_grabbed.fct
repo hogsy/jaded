@@ -1,0 +1,31 @@
+
+messageid		tmid_proposition
+
+object	to_serveur
+
+float		tf_dist
+float		tf_dist_test
+
+vector	tv_temp
+vector	tv_sens
+vector	tv_serveur_pos
+vector	tv_ma_pos
+vector	tv_sight
+vector	tv_banking
+
+
+tmid_proposition = pop
+to_serveur = MSG_GlobalGetGao(tmid_proposition, SERVEUR)
+tv_serveur_pos = @to_serveur OBJ_PosGet()
+tv_ma_pos = OBJ_PosGet()
+
+
+tv_temp = tv_serveur_pos - tv_ma_pos
+tf_dist = MATH_VecSquareNorm(tv_temp)
+
+tf_dist_test = 64.0
+
+if( tf_dist <= tf_dist_test )
+	LNK_ClientPropose(tmid_proposition, tf_dist)
+else
+	LNK_ServeurRefuse(tmid_proposition)

@@ -1,0 +1,51 @@
+#include "RM_Prune_defines.var"
+
+
+// SORTIE ETAT ===================================================================
+if( i_sort_etat )
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if( i_etat_courant != ETAT_Prune_BROUTE )
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Prune_BROUTE
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_previous_etat = fct_last_etat
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	v_ForceActu=Cv_NullVector
+	f_DelayWait = MATH_RandFloat(5.0,15.0)
+	v_BankingVoulu = OBJ_SightGet()
+	v_BankingVoulu.z=0.0
+	v_BankingVoulu = MATH_VecBlendRotate(Cv_VerticalVector,v_BankingVoulu,0.1)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// STIMULI ===========================================================================
+
+	o_Rided_Actor = LNK_ServeurGet(Ci_LNK_RIDE_ON_NMI, mid_Rided_LNK_ID, vrai, nofunc, nofunc)
+	if( o_Rided_Actor )
+		macro_change_etat("RM_Prune_ETAT_RIDED")
+
+	if(o_Pafeur)
+		macro_change_etat("RM_Prune_ETAT_PAFFED")
+
+	if(f_time_start_etat>f_DelayWait)
+		macro_change_etat("RM_Prune_ETAT_GAMBADE")	
+
+
+// COMPORTEMENT ===================================================================
+
+if(f_time_start_etat>f_DelayWait-1.0)
+	v_BankingVoulu = COL_NormalGet(COL_C_Ground)

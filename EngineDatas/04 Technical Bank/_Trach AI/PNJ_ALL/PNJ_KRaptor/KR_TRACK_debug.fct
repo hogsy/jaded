@@ -1,0 +1,99 @@
+#include "KR_defines.var"
+
+string			str_txt
+
+vector		tv_2D_pos
+
+object		to_bone
+
+
+to_bone = ANI_CanalObjectGet(Anim_Canal_Tete)
+tv_2D_pos = VIEW_3dWorldTo2d(0, @to_bone OBJ_PosGet())
+
+if (o_bone_ride_KK)
+	DBG_RenderCircle(OBJ_PosGet()+cvector(0,0,1), 1.2, OBJ_BankingGet(), color_vert)
+
+
+#ifndef _FINAL_
+if (MSG_GlobalIsValid(mid_best_interet))
+{
+	switch (EVENT_InteretStatusGet(mid_best_interet))
+	{
+		case C_EVENT_InteretStatusNone :
+			KRDBG_DRAWSPHERE(Ci_DBG_DRAW_GRP_ATTACK, OBJ_PosGet()+cvector(0,0,2), 2.0, color_cyan)
+			break
+
+		case C_EVENT_InteretStatusLock :
+			KRDBG_DRAWSPHERE(Ci_DBG_DRAW_GRP_ATTACK, OBJ_PosGet()+cvector(0,0,2), 1.0, color_bleu)
+			break
+	
+		case C_EVENT_InteretStatusAttack :
+		case C_EVENT_InteretStatusRide :
+			KRDBG_DRAWSPHERE(Ci_DBG_DRAW_GRP_ATTACK, OBJ_PosGet()+cvector(0,0,2), 1.0, color_rouge)
+			break
+			
+		case C_EVENT_InteretStatusCharge :
+			KRDBG_DRAWSPHERE(Ci_DBG_DRAW_GRP_ATTACK, OBJ_PosGet()+cvector(0,0,2), 1.0, color_vert)
+			break
+			
+		case C_EVENT_InteretStatusInFightZone :
+			KRDBG_DRAWSPHERE(Ci_DBG_DRAW_GRP_ATTACK, OBJ_PosGet()+cvector(0,0,2), 1.0, 0x7FFFFF00)
+			break
+	}
+}
+else
+{
+	KRDBG_DRAWSPHERE(Ci_DBG_DRAW_GRP_ATTACK, OBJ_PosGet()+cvector(0,0,2), 3.0, color_noire)
+}
+
+
+//switch( i_etat_courant )
+//{
+//	case ETAT_fight_ANN :
+//		str_txt = "fight ANN"
+//		break
+//	case ETAT_interact_ANN :
+//		str_txt = "interact ANN"
+//		break
+//	default:
+//		str_txt = ""
+//		break
+//}
+//Str_DisplayTextOnce(str_txt, VIEW_3dWorldTo2d(0, OBJ_PosGet() + cvector(0,-0.05,0)))
+//
+
+
+if( @"univ" i_cheat_page == 4 )
+{
+	switch( i_I_finish_role )
+	{
+		case Finish_on_KONG_Role_Anim_01 : 
+			str_txt = "Anim 01"
+			break
+		case Finish_on_KONG_Role_Anim_02 : 
+			str_txt = "Anim 02"
+			break		
+		case Finish_on_KONG_Role_Fake_01 : 
+			str_txt = "Fake 01"
+			break
+		case Finish_on_KONG_Role_Fake_02 : 
+			str_txt = "Fake 02"
+			break
+		case Finish_on_KONG_Role_Fake_03 : 
+			str_txt = "Fake 03"
+			break
+		default:
+			str_txt = ""
+			break
+	}
+	Str_DisplayTextOnce(str_txt, tv_2D_pos)
+	if( i_I_finish_leader )
+		Str_DisplayTextOnce("[LEADER]", tv_2D_pos + cvector(0,0.05,0))
+}
+
+if( @get_global i_AI_show_target && EVENT_LIFE_CurLifeGet(ID_LIFE) && o_fight_actor )
+	Str_DisplayGaoOnce(o_fight_actor, tv_2D_pos)
+
+
+#endif
+

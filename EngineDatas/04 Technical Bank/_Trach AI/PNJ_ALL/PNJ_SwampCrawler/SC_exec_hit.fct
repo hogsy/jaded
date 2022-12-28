@@ -1,0 +1,18 @@
+int				ti_nb_obj
+object		tao_obj[100]
+
+COL_ColSetActivationSet(C_bit_zde_fight, none)	
+
+ti_nb_obj = COL_ZDE_ZDEListGet(&tao_obj[0], C_zde_fight, C_zde_corps, all, none, Ci_Filter_IdentityFlag)
+while (ti_nb_obj)
+{
+	ti_nb_obj--
+	if (tao_obj[ti_nb_obj] != OBJ_Me())
+	{
+		move_i_hit = vrai
+		EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_KK_Repousse,  OBJ_Me(), 0.01, tao_obj[ti_nb_obj], 1.0 * PAF_Unit, OBJ_SightGet())
+	}
+}
+
+if (move_i_hit)
+	COL_ColSetActivationSet(none, C_bit_zde_fight)	

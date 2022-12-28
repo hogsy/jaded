@@ -1,0 +1,62 @@
+
+
+float			EVT_Longueur
+float			EVT_AngleCos
+vector		EVT_Axe
+vector		EVT_Sommet
+int				EVT_Indice
+int				EVT_LRay
+
+vector		tv_vct
+vector		tv_vct2
+object		to_obj
+int				i_test
+
+EVT_LRay				= pop
+EVT_Longueur		= pop
+EVT_AngleCos		= pop
+EVT_Axe				= pop
+EVT_Sommet			= pop
+EVT_Indice				= pop
+
+// Calcul du vecteur Sommet - Position de l EVENT
+tv_vct = @get_Event Valid_Position[EVT_Indice]
+if ( !MATH_VecNullEpsilon( tv_vct) )
+{
+	// L' EVENT a une position
+	tv_vct -= EVT_Sommet
+}
+else
+{
+	// L' EVENT n'a pas de position prendre celle de son Gao
+	to_obj = @get_Event Valid_PereDeLEvent[EVT_Indice]
+	tv_vct = @to_obj OBJ_PosGet() - EVT_Sommet
+}
+
+// Test du dot product pour verifier si le Pt est dans le cone
+if ( MATH_VecDotProduct( tv_vct, tv_vct) < EVT_Longueur * EVT_Longueur)
+{
+	// Le point est dans le cone
+	MATH_VecSetHorzNormalize( EVT_Axe)
+	tv_vct2 = tv_vct
+	MATH_VecSetHorzNormalize( tv_vct2)
+	if ( MATH_VecDotProduct( EVT_Axe, tv_vct2) >= EVT_AngleCos)
+	{
+		i_test = vrai
+		if ( !EVT_LRay)
+			push( 1)		// La cible est visible
+		else
+		{
+			to_obj = COL_RayObject_Vector( OBJ_PosGet(), tv_vct, all, none, 0, COL_C_Ray_on_visuel)
+			DBG_RenderVector( OBJ_PosGet(), COL_RayObject_PosGet() - OBJ_PosGet(), 0xFF00)
+			if ( !to_obj || to_obj == @get_Event Valid_PereDeLEvent[EVT_Indice])
+				push(1)	// La cible est visible
+			else
+				push(0)	// La cible est cachée visible
+		}		
+	}
+	else
+		push(0)	// La cible n'est pas dans le cone
+}
+else
+	push(0)	// La cible n'est pas dans le cone

@@ -1,0 +1,84 @@
+#include "prs_RaptorSlim_defines.var"
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_PRS_ATTENTE) 
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_PRS_ATTENTE
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = AI_TrackCurGet()
+}
+
+
+
+// STIMULI ===========================================================================
+if ( ! i_trigg_attack_valide && ( ! AI_TriggerIsValid( trigg_attack) || call_trigger( trigg_attack)))
+	i_trigg_attack_valide = vrai
+
+if ( i_trigg_attack_valide )
+{
+	AI_Execute("prs_exec_check_cadavre")
+	AI_Execute("prs_exec_check_vision")
+	AI_Execute("prs_exec_check_paf")
+	if (i_flag_paf_fly)
+		macro_change_etat("prs_ETAT_PAF_FLY")
+	if (i_flag_paf_fall)
+		macro_change_etat("prs_ETAT_PAF_FALL")
+	if (i_flag_paf_repousse || i_flag_paf_slide || ! EVENT_LIFE_CurLifeGet(ID_LIFE))
+		macro_change_etat("prs_ETAT_PAF_SLIDE")
+	AI_Execute("prs_exec_update_best_interest")
+	
+	// GRABBED ----------------------------------------------------------
+	o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, vrai, nofunc, nofunc)
+	if (o_grabbed_actor_KK)
+		macro_change_etat("prs_ETAT_GRABBED")
+	
+	
+	if ( MSG_GlobalIsValid(mid_best_interet))
+	{
+		if (i_perceived_best_actor_index == -1)
+		{
+			macro_change_etat("prs_ETAT_SEARCH")
+		}
+	//	else if ( i_flag_hiding_place_hit_enable && 
+	//	( ai_perceived_status[i_perceived_best_actor_index] & Ci_PERCEIVED_IN_HIDING_PLACE))
+	//	{
+	//		o_hiding_place = 
+	//		macro_change_etat("prs_ETAT_ATTAQUE_CACHE")
+	//	}
+		else if (ai_perceived_status[i_perceived_best_actor_index] & Ci_PERCEIVED_ALREADY_CHECKED)
+		{
+			macro_change_etat("prs_ETAT_HESITE")
+		}
+		else
+		{	
+			if ((TIME_Get() - EVENT_InteretSeenTimeGet(mid_best_interet)) <= Cf_delay_before_lose_target)
+				macro_change_etat("prs_ETAT_FIGHT")
+			else
+				macro_change_etat("prs_ETAT_SEARCH")
+		}
+	}
+}
+// COMPORTEMENT ===========================================================================
+
+
+//PRS_ActionSet(Action_Normal_Attente)
+
+v_next_pos = Cv_NullVector
+AI_Execute("prs_exec_way_move")
+
+AI_Execute("prs_exec_select_action")
+

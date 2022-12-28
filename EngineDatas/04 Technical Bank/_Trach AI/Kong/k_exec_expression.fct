@@ -1,0 +1,295 @@
+
+#include	"k_define.var"
+#define		debug		0
+	
+int					ti_loop
+object			to_canal, to_canaltete 
+int					ti_default_expr
+int					ti_tmp_expr
+int					ti_mash
+int					ti_rank, ti_STR
+float				tf_speed 
+messageid		EVT_ID 
+
+if (OBJ_CapaTest(Capa_Plus_dExpression))
+{
+	OBJ_CapaSet(none,Capa_Plus_dExpression)
+	return
+}
+
+// Expression Choise Manager =========================
+
+// Default =========================
+if (!f_exp_duration)
+{
+	ti_default_expr = Ci_Kexp_Neutre
+	ti_mash = Proc_Mashing_advantage()
+	if (f_time_fury)
+		ti_default_expr = Ci_Kexp_Combat
+	else if ( i_gladiator_on)
+		ti_default_expr = Ci_Kexp_Peur
+//	else if ( i_etat_courant == ETAT_Kong_grab_ANN)
+//		ti_default_expr = Ci_Kexp_Sourire
+	else if ( ti_mash != 666)
+	{
+		if ( ti_mash > 0.5)
+			ti_default_expr = Ci_Kexp_Colere
+		else if ( ti_mash < -0.5)
+			ti_default_expr = Ci_Kexp_Peur
+		else if ( i_expdefault_current == Ci_Kexp_Neutre )
+			ti_default_expr = Ci_Kexp_Combat
+		else
+			ti_default_expr = i_expdefault_current 
+	}
+	else if ( COUP_MODE() == C_Mode_Combo1
+	|| COUP_MODE() == C_Mode_Combo2
+	|| COUP_MODE() == C_Mode_Combo3
+	|| COUP_MODE() == C_Mode_Repulse )
+		ti_default_expr = Ci_Kexp_Combat
+	else if ( COUP_MODE() == C_Mode_Dash_Attack 
+	|| COUP_MODE() == C_Mode_Dash )
+		ti_default_expr = Ci_Kexp_Combat
+	else if ( COUP_MODE() == C_Mode_Fury)
+		ti_default_expr = Ci_Kexp_Combat
+	else if ( COUP_MODE() == C_Mode_Combo1)
+		ti_default_expr = Ci_Kexp_Combat
+	else if (i_etat_courant == ETAT_Kong_grab)
+	{
+		if ( i_GrabKong_attrape_jete == Ci_Jete)
+			ti_default_expr = Ci_Kexp_Combat
+		else
+			ti_default_expr = Ci_Kexp_Colere
+	}
+	else if ( i_etat_courant == ETAT_Kong_depl_souche)
+	{
+		switch ( i_reflex_anim)
+		{
+			case Ci_Kanim_souche_attente :
+			case 191 :
+			case Ci_Kanim_souche_marche :
+			case 193 :
+				ti_default_expr = Ci_Kexp_Colere				
+				break
+			default:
+				ti_default_expr = Ci_Kexp_Combat
+		}
+	}
+	else if ( COUP_MODE() == C_Mode_Retour )
+	{
+		switch ( i_reflex_anim)
+		{
+			case Ci_Kanim_Intimid_FinishFurieReward :
+			case Ci_Kanim_Intimid_FinishFurieCri :		
+			case Ci_Kanim_Intimid_Furie :
+			case Ci_Kanim_Intimid_FurieCri :
+				ti_default_expr = Ci_Kexp_Combat
+				break
+		}
+	}
+	else
+	{
+		switch ( i_reflex_anim)
+		{
+			case Ci_Kanim_Colonne_FrappeD :
+			case Ci_Kanim_Colonne_FrappeG :
+			case Ci_Kanim_Colonne_FrappeDFin :
+				ti_default_expr = Ci_Kexp_Combat
+				break
+			case Ci_Kanim_Colonne_Mord :
+			case Ci_Kanim_Colonne_Grab :
+			case Ci_Kanim_Colonne_Lance :
+				ti_default_expr = Ci_Kexp_Colere
+		}
+	}
+	if ( ti_default_expr == Ci_Kexp_Neutre)
+	{
+		ti_rank = -1
+		EVT_ID = MSG_GlobalScan(C_EVENT_TYPE_Interet, &ti_rank)
+		if( MSG_GlobalIsValid(EVT_ID) )
+		{
+			// On a un ennemi en fight
+			if (i_blesse_on)
+				ti_default_expr = Ci_Kexp_Colere
+			else
+				ti_default_expr = Ci_Kexp_Combat
+		}			
+	}
+
+	if (i_expdefault_current  != ti_default_expr)
+		KK_Exp_Set(ti_default_expr )
+}
+
+//ti_STR = STR_CreateText( "", cvector( 0.5, 0.2, 0.1), 0.0)
+//switch ( ti_default_expr)
+//{
+//	case Ci_Kexp_Colere :
+//		STR_AppendText( ti_STR,"COLERE")
+//		break
+//	case Ci_Kexp_Combat :
+//		STR_AppendText( ti_STR,"COMBAT")
+//		break
+//	case Ci_Kexp_Peur :
+//		STR_AppendText( ti_STR,"PEUR")
+//		break
+//	case Ci_Kexp_Sourire :
+//		STR_AppendText( ti_STR,"SOURIRE")
+//		break
+//	case Ci_Kexp_Neutre :
+//		STR_AppendText( ti_STR,"NEUTRE")
+//		break
+//	default:
+//		STR_AppendText( ti_STR,"NON DEFINE")	
+//}
+// Default =========================
+
+// Temporaire ======================
+ti_tmp_expr = -1
+
+//if (IO_KeyJustPressed(65))
+//	ti_tmp_expr = Ci_Kexp_SourireGrand
+
+if (ti_tmp_expr >= 0)
+	KK_Exp_Set(ti_tmp_expr)
+
+f_exp_duration -= MATH_FloatMin(f_exp_duration, TIME_GetDt())
+if  (!f_exp_duration && i_exp_current != i_expdefault_current)
+{
+	KK_Exp_Set(i_expdefault_current)
+	f_coef_retour = 0.2
+}
+// Temporaire ======================
+
+
+#ifndef _FINAL_
+if (debug)
+{
+	if (IO_KeyJustPressed(65))
+	{
+//		f_exp_duration = 2.0														// Duration
+		KK_Exp_Set(Ci_Kexp_SourireGrand)
+	}	
+	
+	if (IO_KeyJustPressed(66))
+	{
+//		f_exp_duration = 2.0														// Duration
+		KK_Exp_Set(Ci_Kexp_Combat)
+	}	
+	
+	if (IO_KeyJustPressed(67))
+	{
+//		f_exp_duration = 2.0														// Duration
+		KK_Exp_Set(Ci_Kexp_Neutre)
+	}	
+	
+	if (IO_KeyJustPressed(68))
+	{
+//		f_exp_duration = 2.0														// Duration
+		KK_Exp_Set(Ci_Kexp_Colere)
+	}	
+		
+	if (IO_KeyJustPressed(69))
+	{
+//		f_exp_duration = 2.0														// Duration
+		KK_Exp_Set(Ci_Kexp_Sourire)
+	}	
+		
+	if (IO_KeyJustPressed(70))
+	{
+//		f_exp_duration = 2.0														// Duration
+		KK_Exp_Set(Ci_Kexp_Peur)
+	}	
+	
+	if (IO_KeyJustPressed(71))
+	{
+//		f_exp_duration = 2.0														// Duration
+		KK_Exp_Set(Ci_Kexp_Triste)	
+	}	
+
+	if (IO_KeyPressed(49))
+		f_max -= TIME_GetDt()
+	if (IO_KeyPressed(50))
+		f_max += TIME_GetDt()
+}
+#endif 
+
+//	switch ( i_exp_current)
+//	{
+//		case Ci_Kexp_DefNeutre :
+//			Str_DisplayTextOnce("Expression Neutre", cvector(0,0,0))
+//			break
+//		case Ci_Kexp_SourireGrand	:
+//			Str_DisplayTextOnce("Expression SourireGrand", cvector(0,0,0))
+//			break
+//	
+//		case Ci_Kexp_Combat : 
+//			Str_DisplayTextOnce("Expression Combat", cvector(0,0,0))
+//			break
+//	
+//		case Ci_Kexp_Triste :
+//			Str_DisplayTextOnce("Expression Triste", cvector(0,0,0))
+//			break
+//	
+//		case Ci_Kexp_DefColere : 
+//			Str_DisplayTextOnce("Expression Colere", cvector(0,0,0))
+//			break
+//	
+//		case Ci_Kexp_Sourire :
+//			Str_DisplayTextOnce("Expression Sourire", cvector(0,0,0))
+//			break
+//	
+//		case Ci_Kexp_Peur :
+//			Str_DisplayTextOnce("Expression Peur", cvector(0,0,0))
+//	}
+
+to_canaltete = ANI_CanalObjectGet(0)
+to_canal = ANI_CanalObjectGet(245)
+
+//@to_canal OBJ_BankingSet( MATH_VecRotate( @to_canaltete OBJ_BankingGet(), @to_canaltete OBJ_HorizonGet(), f_max + 0.65 ) )
+
+f_max = MATH_VecAngle(@to_canal OBJ_BankingGet(),@to_canaltete OBJ_BankingGet(),-@to_canaltete OBJ_HorizonGet()) - 0.65
+
+af_exp_factor[Ci_Kexp_Canal_Bouche]= MATH_FloatLimit(f_max * 2.0, -0.2, 1.0)
+
+#ifndef _FINAL_
+if (debug)
+{
+	Str_DisplayFloatOnce(f_max, cvector(0,0.1,0))
+	Str_DisplayFloatOnce(af_exp_factor[Ci_Kexp_Canal_Bouche], cvector(0,0.15,0))
+}
+#endif
+
+// Attention Code de GENIE :) ==============================================================================
+
+to_canal = ANI_CanalObjectGet(1)
+
+for (ti_loop = 0; ti_loop < 6; ti_loop++)
+{
+	@to_canal OBJ_MorphProgSet(ti_loop, 1.0)		// Toujours la forme a fond
+
+	tf_speed = af_exp_speed[ti_loop] * f_coef_retour 	
+
+	if (ai_exp_target[ti_loop] != @to_canal OBJ_MorphDataGet(ti_loop,0))
+	{
+	
+		// Reduction du facteur jusqu'a 0 pour changer de target
+		if (@to_canal OBJ_MorphFactorGet(ti_loop) > 0 )
+			@to_canal OBJ_MorphFactorSet(ti_loop, MATH_FloatMax(0,@to_canal OBJ_MorphFactorGet(ti_loop) - (tf_speed * TIME_GetDt())) )
+		else
+			@to_canal OBJ_MorphFactorSet(ti_loop, MATH_FloatMin(0,@to_canal OBJ_MorphFactorGet(ti_loop) + (tf_speed * TIME_GetDt())) )
+
+		if (!@to_canal OBJ_MorphFactorGet(ti_loop))
+		{
+			// On est a 0 donc je change la target
+			@to_canal OBJ_MorphDataSet(ti_loop,ai_exp_target[ti_loop], 0 )
+		}
+	}
+	else
+	{
+		// C'est les meme formes donc j'addapte le factor au factor target
+		if (@to_canal OBJ_MorphFactorGet(ti_loop) > af_exp_factor[ti_loop] )
+			@to_canal OBJ_MorphFactorSet(ti_loop, MATH_FloatMax(af_exp_factor[ti_loop],@to_canal OBJ_MorphFactorGet(ti_loop) - (tf_speed * TIME_GetDt())) )
+		else
+			@to_canal OBJ_MorphFactorSet(ti_loop, MATH_FloatMin(af_exp_factor[ti_loop],@to_canal OBJ_MorphFactorGet(ti_loop) + (tf_speed * TIME_GetDt())) )
+	}
+}
+// Attention Code de GENIE :) ==============================================================================

@@ -1,0 +1,65 @@
+//------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------
+#include "SM_Constants.var"
+
+
+//------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------
+switch(mi_ReinitKit)
+{
+	case Cte_KitState_Reinit :
+		if( (mi_InstanceIdx != -1) && (mai_MusicInstance[mi_InstanceIdx] != -1) )
+		{
+			SND_Stop( mai_MusicInstance[mi_InstanceIdx] )
+			mi_ReinitKit = Cte_KitState_WaitStop
+		}
+		else
+		{
+			mi_ReinitKit = Cte_KitState_DoInit
+		}
+		break
+		
+	case Cte_KitState_WaitStop :
+		if( SND_IsPlaying( mai_MusicInstance[mi_InstanceIdx] ) ) break
+		mi_ReinitKit = Cte_KitState_DoInit
+		break
+
+	case Cte_KitState_DoInit :
+		SND_M_GroupPatternSet(SND_Cte_GrpMusic, 0, 1.0, 0.01)
+		mi_counter_locked = 0
+		mi_SchedulerState = 0
+		mf_Timer = 0.0
+		mi_NextInstanceIdx = -1
+		mi_InstanceIdx = -1
+		mi_PrevInstanceIdx = -1	
+		mi_JingleIdx = -1
+		mi_JingleSubIdx = -1
+		mf_FightTimer = 0.0
+		mi_1stTime = 1
+		mf_Delay = 0.0
+		//--
+		mf_ScanTimer = 0.0
+		//--
+		mi_wait = 0
+		mi_fight = 0	
+		mi_bigfight = 0	
+		mi_neutral = 0
+		mi_death = 0
+		mi_injured = 0
+		mi_stalk = 0
+		mi_silence = 0
+		//--
+		mi_Phase = -1
+		mi_PrevPhase = -1
+		mi_RqKit = -1
+		mi_CurrKit = -1
+		mi_ReinitKit = Cte_KitState_Idle
+		//--
+		mf_FightDuration = 0.0
+		//--
+		AI_TrackCurChange("SM_Scheduler")
+		break
+		
+	case Cte_KitState_Idle :
+		break
+}

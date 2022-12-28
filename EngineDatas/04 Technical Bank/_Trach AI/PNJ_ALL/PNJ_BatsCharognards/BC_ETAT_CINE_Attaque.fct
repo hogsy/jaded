@@ -1,0 +1,60 @@
+#include "BC_defines.var"
+
+
+// SORTIE ETAT =================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+
+// ENTREE ETAT ================================================================
+if (i_etat_courant != ETAT_CINE_Attaque )
+{
+	i_etat_ancien_ancien = i_etat_ancien
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_CINE_Attaque
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	BC_DBG_Trace_Etat("etat cine attaque")
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// ANALYSE =======================================================================================================
+
+
+// COMPORTEMENT =================================================================================================
+
+//procedure_trigger int TrigCINE_Fight(byref message m_msg) 
+// object1 who 
+// object2 target
+// int1 mode 0 = paf, 1 = grab lent, 2 = grab rapide
+
+i_flag_cine = vrai
+o_cible_attaque = am_CineStack[0].msg_gao2
+switch(am_CineStack[0].msg_int1)
+{
+	case 2 :
+		i_attack_mode = Ci_attack_mode_grab_rapide
+		break
+		
+	case 1 :
+		i_attack_mode = Ci_attack_mode_grab_lent
+		break
+		
+	default:
+		i_attack_mode = Ci_attack_mode_paf
+		break
+}
+
+macro_change_etat("BC_ETAT_Fight_Approche")

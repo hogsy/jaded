@@ -1,0 +1,159 @@
+#include "CR_defines.var"
+
+vector			tv_new_sight
+vector			tv_pos
+vector			tv_move
+vector			tv_joy_dir
+
+int					ti_main
+int					ti_sec
+int					ti_i
+
+messageid		tmid_vision
+
+
+// SORTIE ETAT ==============================================================================
+if (i_sort_etat)
+{
+	if( i_etat_courant != ETAT_REPOUSSE && i_etat_courant != ETAT_MANGE )
+		CR_Grab_Reset()
+	
+	i_sort_etat = faux
+	return
+}
+
+
+// ENTREE ETAT ==============================================================================
+if (i_etat_courant != ETAT_TRAINE )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_TRAINE
+	str_etat = "Traine"
+	if (fct_etat_courant)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_etat_courant)
+	}
+	
+	fct_etat_courant = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	if( i_DBG_trace_etat )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : ETAT ETAT_TRAINE : ")
+		DBG_TraceEOL()
+	}
+	
+	LNK_GrabStatusSet(mid_grab, Ci_Grab_Crab_Type_Traine)
+	ACT_ActionSet(ACTION_Recule)
+	
+	v_grab_traine_axis = - OBJ_SightGet()
+	for(ti_i = 0; ti_i < 4; ti_i++)
+	{
+		if( ! ti_i )
+			tv_joy_dir = - OBJ_SightGet()
+		else if( ti_i == 1 )
+			tv_joy_dir = OBJ_HorizonGet()
+		else if( ti_i == 2 )
+			tv_joy_dir = - OBJ_HorizonGet()
+		else
+			tv_joy_dir = OBJ_SightGet()
+			
+		if( GRID_LIB_IsReachableFrom(OBJ_PosGet(), OBJ_PosGet() + (tv_joy_dir * 6.0), 0b0, 2.0, vrai, 0) )
+		{
+			v_grab_traine_axis = tv_joy_dir
+			break
+		}
+	}
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// EMERGENCY ABORT =============================
+o_emergency_abort_actor = o_fight_actor
+Macro_Emergency_Abort
+
+// ANALYSE ===================================================================================
+AI_Execute("CR_exec_CHECK_Vision")
+
+// Paf
+AI_Execute("CR_exec_CHECK_Paf")
+if( CR_Paf_Check_Change_Etat() )
+	macro_change_etat("CR_ETAT_PAF")
+else if( o_paf_actor && i_paf_grab_lache_flag )
+	macro_change_etat(fct_etat_main)				// petit paf -> coupe la liaison -> retourne en fight
+
+if( ! MSG_GlobalIsValid(mid_best_interet) )
+	o_fight_actor = nobody
+
+if( ! MSG_GlobalIsValid(mid_grab) )
+	o_fight_actor = nobody
+
+if( ! o_fight_actor )
+{
+	if( i_DBG_trace_etat )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : etat traine, plus de o_fight_actor -> idle")
+		DBG_TraceEOL()
+	}
+	macro_change_etat("CR_ETAT_IDLE")	// perte d'intérêt et aucune autre cible -> IDLE
+}
+
+if( f_grab_traine_duration > 5.0 )
+	macro_change_etat("CR_ETAT_MANGE")		// je m'arrete pour le manger
+
+// PAFS COLLISION
+//AI_Execute("CR_exec_CHECK_Collision")
+
+
+// COMPORTEMENT =============================================================================
+
+
+// UNCOL -------------------------------------------------------------------------------------------
+if( MSG_GlobalIsValid(mid_grab) )
+	CR_UncollideAdd(o_fight_actor, Cf_EVENT_Duree_1Trame)
+
+
+// INTERET ------------------------------------------------------------------------------------------
+CR_Perceived_Actor_Check(o_fight_actor, tmid_vision)
+CR_Interet_Update(mid_best_interet, C_EVENT_InteretStatusGrab, o_fight_actor, tmid_vision)
+
+// DEPLACEMENT  ------------------------------------------------------------------------------
+
+// Test de la grille pour la nouvelle trame
+i_last_frontB = -1		// état traine : pas besoin de i_last_frontB
+tv_pos = OBJ_PosGet()
+if( i_petit_crabe_grab_stop == 0)
+{
+	ai_grille_stop[0] = Ci_sol_mur
+	i_grille_stop_nb = 1
+}
+else
+{
+	ai_grille_stop[0] = Ci_sol_mur
+	ai_grille_stop[1] = Ci_sol_eau
+	i_grille_stop_nb = 2
+}
+i_grid[0] = CRAB_GRID_Check(tv_pos+v_grid_check_offset[0], cvector(1.0, 0.0, 0.0), i_grid_nb_case_check, 0, i_last_frontB, i_DBG_render_grille_check )
+i_grid[1] = CRAB_GRID_Check(tv_pos+v_grid_check_offset[1], cvector(0.0, -1.0, 0.0), i_grid_nb_case_check, 1, i_last_frontB, i_DBG_render_grille_check )
+i_grid[2] = CRAB_GRID_Check(tv_pos+v_grid_check_offset[2], cvector(-1.0, 0.0, 0.0), i_grid_nb_case_check, 2, i_last_frontB, i_DBG_render_grille_check )
+i_grid[3] = CRAB_GRID_Check(tv_pos+v_grid_check_offset[3], cvector(0.0, 1.0, 0.0), i_grid_nb_case_check, 3, i_last_frontB, i_DBG_render_grille_check )
+
+// Récup des N°s d'axe pour l'orientation courante
+tv_move = v_grab_traine_axis
+tv_new_sight = - tv_move
+ti_main = CRAB_GRID_Get_Sight_ID(tv_move, ti_sec)
+if( i_grid[ti_main] || i_grid[ti_sec] )
+{
+	// j'ai un mur dans mon dos
+	macro_change_etat("CR_ETAT_MANGE")
+}
+
+// ORIENTATION --------------------------------------------------------------------
+DBG_RenderVector(OBJ_PosGet(), tv_new_sight * 10, color_vert)
+OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), tv_new_sight, f_way_rotation_coef * 3.0 * TIME_GetDt()),Cv_VerticalVector)

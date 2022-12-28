@@ -1,0 +1,40 @@
+vector	tv_vec_to_cam, tv_vec_to_player, tv_horizon_player
+int		ti_alea
+object	to_mainactor
+
+to_mainactor = AI_MainActorGet(i_MainActor)
+
+if	(o_gao_prio_sender == o_main_actor) // Pour JACK ou KONG
+{
+	if	( ! (@o_gao_prio_1 OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Culled))
+	{
+		return
+	}
+	else
+	{
+		// test pour savoir s'il est derrière JACK
+//		tv_vec_to_player = @o_gao_prio_1 OBJ_PosGet() - @o_main_actor OBJ_PosGet()
+//		tv_horizon_player = @o_main_actor OBJ_HorizonGet()
+//		tv_vec_to_player.z = tv_horizon_player.z
+//		tv_vec_to_player = MATH_VecCrossProduct(tv_vec_to_player, tv_horizon_player)
+//		if	(tv_vec_to_player.z > 0)
+//		{	return	}
+		if	(o_gao_prio_sender)
+		ti_alea = MATH_RandInt(0,2)
+		if	( ! ti_alea)
+		{	CIM_PrepareMSGplans(0, F_MoyPlan_Dos, o_gao_prio_1, o_gao_prio_sender, 0.5, F_flag_Cible_mouvante+F_flag_Cam_mouvante+F_flag_Rotation_axiale)	}
+//		{	CIM_PrepareMSGplans(0, F_GrosPlan_TeteFace_M, o_gao_prio_1, o_gao_prio_sender, 0.5, F_flag_Cible_mouvante+F_flag_Cam_mouvante+F_flag_recalcul_focale)	}
+		else
+		{	CIM_PrepareMSGplans(0, F_FullPlan_Dos, o_gao_prio_1, o_gao_prio_sender, 0.5, F_flag_Cible_mouvante+F_flag_Cam_mouvante+F_flag_Rotation_axiale)	}
+	}
+}
+else	if	((des_o_ANN) && (o_gao_prio_sender == des_o_ANN) )	// Pour ANN
+{
+	CIM_PrepareMSGplans(0, F_MoyPlan_Dos, o_gao_prio_1, des_o_ANN, 0.5, F_flag_Cible_mouvante+F_flag_Rotation_axiale)
+	CIM_PrepareMSGplans(1, F_MoyPlan_Dos, to_mainactor, o_gao_prio_1, 0.25, F_flag_Cam_mouvante+F_flag_Rotation_axiale)
+}
+else
+{
+//	return
+	CIM_PrepareMSGplans(0, F_MoyPlan_Dos, o_gao_prio_sender, o_gao_prio_1, 0.5, F_flag_Cible_mouvante+F_flag_Cam_mouvante)
+}

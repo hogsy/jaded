@@ -1,0 +1,21 @@
+if( f_vitesse_activation < 0.0 || f_vitesse_retour < 0.0 )
+	DBG_Error("la vitesse ne doit pas etre nulle !!!!")
+
+if( f_profondeur < 0.0 )
+	f_profondeur *= -1.0
+
+BV_MinSet(cvector(-1.1,-1.1,0.5))
+BV_MaxSet(cvector(1.1,1.1,2.5))
+
+AI_RunContext(CTX_AfterRec)
+
+o_father = OBJ_HierarchyGet()
+if (o_father)
+{
+	DYN_On()
+	DYN_FlagsSet(DYN_C_NeverDynamicHierarchy, none)
+	v_init_pos = @o_father MATH_VecGlobalToLocal(OBJ_PosGet() - @o_father OBJ_PosGet())
+}
+
+AI_TrackCurChangeNow("PP_wait")
+

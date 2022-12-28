@@ -1,0 +1,119 @@
+object 	wp2
+vector	tv_pos2
+float		tf_norm
+float		tf_angle
+vector	tv_Axe 
+vector	tv_Banking0
+vector	tv_Banking1
+object	to_wp
+object	to_next
+float		tf_dist, tf_disttotale
+float		tf_speed
+float		tf_time
+int			ti_synchrostate 
+int			ti_count
+object	to_synchro
+network	tn_net
+
+if ( !move_o_WP[ 0 ] )
+	return
+	
+// get params from WP
+f_speed = RAFT_WP_SpeedGet( move_o_WP[ 0 ], f_speed )
+orient_f_speed = RAFT_WP_RotSpeedGet( move_o_WP[ 0 ], orient_f_speed )
+
+RAFT_WP_TangGet( move_o_WP[ 0 ] )
+RAFT_WP_ObstacleGet( move_o_WP[ 0 ] )
+
+move_v_Pos[ 0 ] = @move_o_WP[ 0 ] OBJ_PosGet()
+move_v_Orient[ 0 ] = @move_o_WP[ 0 ] OBJ_SightGet()
+move_v_Bank[ 0 ] = @move_o_WP[ 0 ] OBJ_BankingGet()
+move_b_Orient = @move_o_WP[ 0 ] OBJ_CapaTest( OBJ_Capa_0 )
+	
+move_o_WP[ 1 ] = RAFT_WP_Next( move_o_WP[0], n_net )
+if (!move_o_WP[ 1 ] )
+{
+	move_i_Stop = 1
+	return		
+}
+
+move_v_Pos[ 1 ] = @move_o_WP[ 1 ] OBJ_PosGet()
+move_v_Orient[ 1 ] = @move_o_WP[ 1 ] OBJ_SightGet()
+move_v_Bank[ 1 ] = @move_o_WP[ 1 ] OBJ_BankingGet()
+move_v_Sight[ 0 ] = move_v_Pos[ 1 ] - move_v_Pos[ 0 ]
+
+f_link_length = MATH_VecNorm( move_v_Sight[ 0 ] )
+if (f_link_length > 0 )
+	move_v_Sight[ 0 ] /= f_link_length
+else
+	move_v_Sight[ 0 ] = move_v_Orient[ 0 ]
+	
+tn_net = n_net
+wp2 = RAFT_WP_Next( move_o_WP[ 1 ], tn_net )
+if ( !wp2 )
+	wp2 = move_o_WP[ 1 ] 
+	
+tv_pos2 = @wp2 OBJ_PosGet()
+move_v_Sight[ 1 ] = tv_pos2 - move_v_Pos[ 1 ]
+
+tf_norm = MATH_VecNorm( move_v_Sight[ 1 ] )
+sync_f_Dist = tf_norm
+if (tf_norm > 0 )
+	move_v_Sight[ 1 ] /= tf_norm
+else
+	move_v_Sight[ 1 ] = move_v_Sight[ 0 ]
+	
+tv_Banking0 = OBJ_BankingGet() 
+tv_Banking1 = MATH_VecCrossProduct(move_v_Sight[ 0 ],  Cv_VerticalVector)
+tv_Banking1.z = 0
+tv_Banking1 = MATH_VecCrossProduct( tv_Banking1, move_v_Sight[ 0 ] )
+tv_Axe = MATH_VecCrossProduct( tv_Banking0, tv_Banking1)
+
+if (!MATH_VecNullEpsilon(tv_Axe) && MATH_VecDotProduct( tv_Axe, tv_Axe) > 0)
+//if (MATH_VecDotProduct( tv_Axe, tv_Axe) > 0)
+{
+	tf_angle = MATH_VecAngle(tv_Banking0,tv_Banking1,tv_Axe)
+	RAFT_Gigot_Add( tv_Axe, tf_angle / 2)
+}
+
+if ( sync_o_With )
+{
+	to_wp = move_o_WP[ 1 ]
+	tn_net = n_net
+	sync_f_DistNext = 0
+	sync_f_TimeNext = 0
+	tf_speed = move_f_speed
+	ti_count = 0
+	sync_i_On = faux
+		
+CMP_synchro_start:
+
+	ti_synchrostate = RAFT_WP_SynchroState( to_wp, to_synchro )
+	if ( ti_synchrostate == 1 )
+	{
+			sync_i_On = vrai
+			sync_o_WPMe = to_wp
+			sync_o_WPOther = to_synchro
+			goto CMP_synchro_end
+	}
+	else if (ti_synchrostate == 2)
+		goto CMP_synchro_end
+		
+	ti_count++
+	if (ti_count == 8)
+		goto CMP_synchro_end
+	
+	to_next = RAFT_WP_Next( to_wp, tn_net )
+	if (!to_next)
+		goto CMP_synchro_end
+
+	tf_speed = RAFT_WP_SpeedGet( to_wp , tf_speed )
+	tf_dist = MATH_VecDistance( @to_wp OBJ_PosGet(), @to_next OBJ_PosGet())
+	sync_f_DistNext  += tf_dist
+	sync_f_TimeNext += tf_dist / tf_speed
+		
+	to_wp = to_next
+	goto CMP_synchro_start
+}
+
+CMP_synchro_end:

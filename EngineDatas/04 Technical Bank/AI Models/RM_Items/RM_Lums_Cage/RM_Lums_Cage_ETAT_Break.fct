@@ -1,0 +1,45 @@
+#include "RM_Lums_Cage_defines.var"
+
+// SORTIE ===================================================================
+if( i_etat_sortie )
+{
+	i_etat_sortie = faux
+	return
+}
+
+// ENTREE ===================================================================
+if( i_etat_courant != ETAT_Break )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Break
+	if( fct_etat_last_track )
+	{
+		i_etat_sortie = vrai
+		AI_Execute(fct_etat_last_track)
+	}
+	fct_etat_last_track = AI_TrackCurGet()
+	f_etat_duree = 0.0
+	OBJ_FlagInvisibleSet(vrai)
+//	Proc_RM_GenerateLums(1, OBJ_PosGet() + Cv_VerticalVector)
+	@o_lum Proc_LUMS_CageSet(nobody)
+	PROC_SFX_EXPLOSION_CARTOON(Proc_LUMS_CAGE_LumPositionGet())
+}
+else
+{
+	f_etat_duree += TIME_GetDt()
+}
+
+// ANALYSE =================================================================
+
+// COMPORTEMENT ===========================================================
+
+OBJ_BankingGeneralSet(
+	OBJ_SightGet(),
+	MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 5 * TIME_GetDt()))
+
+if( f_etat_duree > 2.0 )
+{
+	OBJ_Destroy()
+}
+
+@o_baton OBJ_FlagInvisibleSet(vrai)

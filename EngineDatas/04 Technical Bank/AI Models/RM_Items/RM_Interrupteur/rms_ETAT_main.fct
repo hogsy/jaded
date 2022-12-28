@@ -1,0 +1,108 @@
+//int	ti_display
+//int ti_change
+//int	ti_i
+//vector	tv_pos
+//
+//
+//
+//ti_change = faux
+//if ( i_besoin_retour)
+//{
+//	tv_pos = VIEW_3dWorldTo2d( 0, OBJ_PosGet()) - cvector( 0.0,0.1,0.0)
+//	ti_display = (f_delai_restant - 0.5 ) + 1
+//	if ( ti_display  >= 4)
+//		Str_DisplayTxtIntOnce( "\h0.08\",ti_display, tv_pos )
+//	else if ( f_delai_restant > 0.0)
+//		Str_DisplayTxtIntOnce( "\cFF\\h0.08\",ti_display, tv_pos)
+//
+//	f_delai_restant-= MATH_FloatMin( f_delai_restant, TIME_GetDt())
+//	if( MATH_FloatNullEpsilon(f_delai_restant))
+//	{
+//		i_besoin_retour = faux
+//		Proc_Inter_ON_OFF()
+//		ti_change = vrai
+//	}
+//}
+//
+//
+//
+//if ( Proc_Unlock())
+//{
+//	// L Inter est activé
+//
+//	// Besoin d un retour automatique?
+//	if ( f_delai_reste_meme_ETAT == -1)
+//	{
+//		i_besoin_retour = faux
+//		Proc_Inter_ON_OFF()
+//		ti_change = vrai
+//	}
+//	else if ( i_va_et_viens)
+//	{
+//		i_besoin_retour = faux
+//		Proc_Inter_ON_OFF()
+//		ti_change = vrai
+//	}
+//	else
+//	{
+//		// On a besoin d un retour auto, delai a attendre
+//		i_besoin_retour = vrai
+//		if ( MATH_FloatNullEpsilon( f_delai_restant))
+//		{
+//			Proc_Inter_ON_OFF()
+//			ti_change = vrai		
+//		}
+//		f_delai_restant = f_delai_reste_meme_ETAT
+//	}
+//}
+//
+//// PT1 FAIT CHIER
+//if ( ti_change)
+//{
+//	if ( i_etat_courant)
+//	{
+//		OBJ_CapaSet( Obj_Capa_Switch, none)
+//		for( ti_i =0; ti_i < 5; ti_i++)
+//		{
+//			if ( ! AI_TriggerIsValid(at_trig_ON[ti_i]))
+//				break
+//			call_trigger( at_trig_ON[ti_i])
+//		}
+//	}
+//	else
+//	{
+//		OBJ_CapaSet(none, Obj_Capa_Switch)
+//		for( ti_i =0; ti_i < 5; ti_i++)
+//		{
+//			if ( ! AI_TriggerIsValid(at_trig_OFF[ti_i]))
+//				break
+//			call_trigger( at_trig_OFF[ti_i])
+//		}
+//	}		
+//}
+//
+//OBJ_CapaSet( none, OBJ_Capa_0)
+//if ( !MATH_FloatNullEpsilon( f_paf_cumul_dmg))
+//{
+//	if ( f_paf_cumul_dmg != f_paf_cumul_needed)
+//		f_paf_cumul_dmg -= MATH_FloatMin( f_paf_cumul_dmg, TIME_GetDt() * f_paf_vitesse_decroit)
+//		
+//	#ifndef	_FINAL_
+//	tv_pos = VIEW_3dWorldTo2d( 0, OBJ_PosGet()) - cvector( 0.0,0.1,0.0)
+//	ti_display = (f_paf_cumul_dmg - 0.5 ) + 1
+//	if ( ti_display  >= 4)
+//		Str_DisplayTxtIntOnce( "\h0.08\",ti_display, tv_pos )
+//	else if ( f_delai_restant > 0.0)
+//		Str_DisplayTxtIntOnce( "\cFF\\h0.08\",ti_display, tv_pos)
+//	#endif
+//	
+//	// Deplacement du bouton
+//	OBJ_PosSet( OBJ_PosInitGet() + (OBJ_SightGet() * f_paf_enfoncement_max * ( f_paf_cumul_dmg / f_paf_cumul_needed)))
+//
+//	if ( f_paf_cumul_dmg == f_paf_cumul_needed ||
+//	f_paf_cumul_dmg > (f_paf_cumul_last_dmg - (f_paf_delai_Capa0_vrai * f_paf_vitesse_decroit)))
+//		OBJ_CapaSet( OBJ_Capa_0, none)
+//	if ( f_paf_cumul_dmg > (f_paf_cumul_last_dmg - (2.0 * f_paf_vitesse_decroit)))
+//		Proc_Mashing_Actor_Add(OBJ_Me())		// MAshing dure 2 sec.
+//		
+//}

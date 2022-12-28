@@ -1,0 +1,89 @@
+#include "KT_defines.var"
+
+vector	tv_pos
+vector	tv_2D_pos
+int			ti_i
+object	to_head
+string		str_texte
+
+#ifndef _FINAL_
+
+tv_pos = cvector(0.5,0.5,0)
+to_head = ANI_CanalObjectGet(Anim_Canal_Tete)
+tv_2D_pos = VIEW_3dWorldTo2d(0, @to_head OBJ_PosGet())
+
+//int	ti_i
+//for ( ti_i = 0; ti_i < i_uncol_old_nb; ti_i++)
+//{
+//	Str_DisplayTextOnce("Uncol = ", cvector( 0.1 + (ti_i * 0.05), 0.1, 0.0))
+//	Str_DisplayGaoOnce(ao_uncol_old[ ti_i], cvector( 0.1 + (ti_i * 0.05), 0.2, 0.0))
+//}
+
+//	Str_DisplayTextOnce("fight actor = ", v_DBG_display_fight_actor_pos)
+//	Str_DisplayGaoOnce(o_fight_actor, v_DBG_display_fight_actor_pos + cvector(0.15,0.0,0.0))
+//	Str_DisplayTextOnce("not on me = ", v_DBG_display_fight_actor_pos + cvector(0.0,0.05,0.0))
+//	Str_DisplayFloatOnce(f_time_KONG_not_on_me, v_DBG_display_fight_actor_pos + cvector(0.15,0.05,0.0))
+//	Str_DisplayTextOnce("time KONG = ", v_DBG_display_fight_actor_pos + cvector(0.0,0.1,0.0))
+//	Str_DisplayFloatOnce(f_time_KONG, v_DBG_display_fight_actor_pos + cvector(0.15,0.1,0.0))
+//
+
+//if( MSG_GlobalIsValid(mid_interaction) )
+//{
+//	Str_DisplayIntOnce(i_interaction_cpt, tv_2D_pos)
+//	switch( LNK_InteractionParamGet(mid_interaction) )
+//	{
+//		case C_INTER_FIGHT_WAIT_FOR_ANN :
+//			str_texte = "WAIT FOR ANN"
+//			break
+//		case C_INTER_FIGHT_ANN_READY :
+//			str_texte = "ANN READY"
+//			break
+//		case C_INTER_FIGHT_ENNEMY_ATTACK :
+//			str_texte = "ENNEMY ATTACK"
+//			break
+//		case C_INTER_FIGHT_ENEMY_FAKE_ATTACK :
+//			str_texte = "ENNEMY FAKE ATTACK"
+//			break
+//		default:
+//			str_texte = "DEFAULT"
+//			break
+//	}
+//	Str_DisplayTextOnce(str_texte, tv_2D_pos + cvector(0.025,0.0,0.0))
+//}
+
+
+
+//if( @get_global i_NMI_show_target && EVENT_LIFE_CurLifeGet(ID_LIFE) && o_fight_actor )
+//	Str_DisplayGaoOnce(o_fight_actor, tv_2D_pos)
+
+if( i_DBG_VINCE )
+{
+	KT_Cadavre_Memory_Display()
+
+	switch( i_etat_courant )
+	{
+		case ETAT_fight_JACK :
+			tv_2D_pos = cvector(0.5,0.5,0)
+			Str_DisplayGaoOnce(o_fight_actor, tv_2D_pos)
+			Str_DisplayTextOnce("modulo jack = ", tv_2D_pos + cvector(0,0.05,0))
+			Str_DisplayIntOnce(i_fight_Jack_cri_cpt, tv_2D_pos + cvector(0.15,0.05,0))
+			if( KT_Action_Cri_EnCours() )
+				Str_DisplayTextOnce("Crie vers Jack", tv_2D_pos + cvector(0,0.1,0))
+			else if( ACT_ActionGet() == Action_Fight_Attak_Humain || ACT_ActionGet() == Action_Fight_Attak_FPS )
+				Str_DisplayTextOnce("Attaque Jack !!!", tv_2D_pos + cvector(0,0.1,0))
+			break
+			
+		case ETAT_FoodChain :
+			if( o_cadavre )
+			{
+				Str_DisplayGaoOnce(o_cadavre, tv_2D_pos)
+				Str_DisplayTextOnce("step ", tv_2D_pos + cvector(0,0.05,0))
+				Str_DisplayIntOnce(i_foodchain_step, tv_2D_pos + cvector(0.05,0.05,0))
+			}
+			break
+	}
+}	
+	
+#endif
+
+

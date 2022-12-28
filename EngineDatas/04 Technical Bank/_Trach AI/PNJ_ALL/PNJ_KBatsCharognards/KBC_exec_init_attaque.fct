@@ -1,0 +1,34 @@
+#include "KBC_defines.var"
+
+KBC_DBG_Trace(i_DBG_trace_etat, "init attaque")
+
+AI_Execute("KBC_exec_dyn_on")
+
+if( MSG_GlobalIsValid(mid_interet_charogne) )
+	EVENT_Delete(mid_interet_charogne, C_EVENT_EOFDEL )			// perte de l'intérêt pour la charogne
+
+// raz compteur d'attaque (si le bat était déjà en train d'attaquer)
+
+i_mode_depl = Ci_mode_depl_attaque
+i_flag_reach_attack_wp = faux					// la bat doit se repositionner
+i_flag_net_1st_move = vrai							// 1er mouvement pour attaquer
+
+i_flag_frein = faux
+
+o_cible_attaque_contact = o_cible_attaque
+
+if( i_big_bat && i_big_bat_attack_decolle )
+{
+	i_envol_palier = 0
+	macro_change_etat("KBC_ETAT_Move_Decolle")				// attaque en décollant d'abord
+}
+else if( i_cadavre_joueur_proche_flag )
+{
+	f_dont_check_cadavre = MATH_RandFloat(5.0,15.0)
+	macro_change_etat("KBC_ETAT_Fight_Contact")
+}
+else if( i_etat_init == Ci_etat_init_perchee || i_etat_init == Ci_etat_init_cachee || ! net_move )
+	macro_change_etat("KBC_ETAT_Fight_Approche")				// attaque directe
+else
+	macro_change_etat("KBC_ETAT_Fight_Network")		// suivi réseau
+

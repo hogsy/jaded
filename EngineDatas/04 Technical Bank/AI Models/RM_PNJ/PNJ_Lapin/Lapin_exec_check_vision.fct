@@ -1,0 +1,74 @@
+#include "PNJ_Lapin_defines.var"
+
+int			ti_rank
+int			ti_index
+int			ti_flag_ok
+int			ti_check_territory
+int			ti_check_visibility
+
+float		tf_dist2
+
+vector	tv_target_pos
+vector	tv_temp
+
+object	to_pere
+
+messageid		EVT_Visibility_ID
+
+
+if (i_flag_visual_check_done)
+	return
+
+i_flag_visual_check_done = vrai
+
+if( @get_global i_frame_nbr < 3)
+	return		// VINCE : ne pas chopper des infos pourries car Rayman n'a pas encore été téléporté au bon endroit
+
+
+ti_check_visibility = faux
+if( ! o_Commander_cur )
+	ti_check_visibility = vrai
+//else if( ! @o_Commander_cur Proc_PNJ_Lapin_COMMANDER_Etat_Commandant() )
+//	ti_check_visibility = vrai
+if( ti_check_visibility )
+{
+	// je n'ai pas de commander ou il n'a pas de target
+
+	// A - en 1er toujours rayman
+	EVT_Visibility_ID = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility, o_main_actor, nobody)
+	if( MSG_GlobalIsValid(EVT_Visibility_ID) )
+	{
+		Lapin_Check_Vision(o_main_actor, EVT_Visibility_ID)
+	}
+	
+	// B - ensuite le reste
+	ti_rank = -1
+	for (	EVT_Visibility_ID = MSG_GlobalScan(C_EVENT_TYPE_Visibility, &ti_rank);
+			MSG_GlobalIsValid(EVT_Visibility_ID);
+			EVT_Visibility_ID = MSG_GlobalScan(C_EVENT_TYPE_Visibility, &ti_rank))
+	{
+		to_pere = EVENT_PereGet(EVT_Visibility_ID)
+		if( to_pere == OBJ_Me() )
+			continue
+		
+		// I DON T CHECK SAME ACTORS
+		if( AI_HaveSameModel(to_pere) )
+		{
+			ao_budy[i_budy_nb] = to_pere
+			i_budy_nb++
+			continue
+		}
+		
+		if( to_pere == o_main_actor )
+			continue			// on a déjà testé rayman !!!! (en A)
+		
+		Lapin_Check_Vision(to_pere, EVT_Visibility_ID)
+		
+	}
+}
+
+Lapin_Check_Perceived_Actor()
+
+if (MSG_GlobalIsValid(mid_best_interet) && i_perceived_best_actor_index == -1)
+	Lapin_Del_Interest()
+

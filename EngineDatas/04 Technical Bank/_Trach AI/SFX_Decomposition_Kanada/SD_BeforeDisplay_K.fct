@@ -1,0 +1,48 @@
+int			ti_Mat, ti_Layer
+int			ti_layer_id
+
+for (ti_Mat=0 ; ti_Mat < i_SubMatNbr ; ti_Mat++)
+{
+	for (ti_Layer=0 ; ti_Layer < 3 ; ti_Layer++)
+	{
+		ti_layer_id = Af_MyAlpha[ti_Mat][ti_Layer]
+		if (ti_layer_id != -1)
+		{
+//			if (	!ti_Layer )
+//				Ai_ViandeEnable[ti_Mat] = @o_os MAT_MT_FlagGet(ti_Mat, ti_layer_id) & MaterialFlags_ActiveLayer
+
+			//ADDED SURESH
+			if(@o_os AI_IsModel(get_SFX_Fade_Impact))
+			{
+				Af_Alpha[ti_Mat][ti_Layer] = @o_os MAT_MT_GetLocalAlpha(ti_Mat, ti_layer_id)
+			}
+			else
+				Af_Alpha[ti_Mat][ti_Layer] = @o_os MAT_MT_GetAlphaTresh(ti_Mat, ti_layer_id)
+		}
+	}
+}
+
+// Change AlphaTest Value For this Instance
+for (ti_Mat=0 ; ti_Mat < i_SubMatNbr ; ti_Mat++)
+{
+	for (ti_Layer=0 ; ti_Layer < 3 ; ti_Layer++)
+	{
+		ti_layer_id = Af_MyAlpha[ti_Mat][ti_Layer]
+		if (ti_layer_id != -1)
+		{
+			if (	!ti_Layer )
+			{
+				@o_os MAT_MT_FlagSet(ti_Mat, ti_layer_id,  none, MaterialFlags_ActiveLayer)
+				
+				//ADDED SURESH
+				if(@o_os AI_IsModel(get_SFX_Fade_Impact))
+					@o_os MAT_MT_SetLocalAlpha(ti_Mat, ti_layer_id, f_alpha_viande )//MAT_MT_SetAlphaTresh(ti_Mat, ti_layer_id, f_alpha_viande )  
+				else
+					@o_os MAT_MT_SetAlphaTresh(ti_Mat, ti_layer_id, f_alpha_viande )  
+				
+			}
+			else
+				@o_os MAT_MT_SetAlphaTresh(ti_Mat, ti_layer_id, f_alpha_peau)
+		}
+	}
+}

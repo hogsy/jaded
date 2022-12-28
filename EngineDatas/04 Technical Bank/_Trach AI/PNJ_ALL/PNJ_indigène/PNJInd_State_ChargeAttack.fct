@@ -1,0 +1,31 @@
+vector v
+
+@get_global i_ennemi_counter_new[Ci_ennemi_counter_in_fight]++
+
+// Orientation vers target
+v = @mo_Target OBJ_PosGet() - OBJ_PosGet()
+MATH_VecSetHorzNormalize(v)
+v = MATH_VecBlendRotate(OBJ_SightGet(), v, 10 * TIME_GetDt())
+OBJ_SightGeneralSet( v, Cv_VerticalVector )
+
+@get_global i_ennemi_counter_new[Ci_ennemi_counter_attacking]++
+
+// Anim de coup
+if (ACT_ActionGet() != 40 ) ACT_ActionSet( 40 )
+
+// Paf ?
+if ( !mi_PafSend && ANI_CurrentFrameGet(0) > 7 )
+{
+	mi_PafSend = 1
+	if ( OBJ_SqrDist(mo_Target) < 4 )
+		EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_KK_Moyen, OBJ_Me(), 0.01, mo_Target, 1.0 * PAF_Unit, OBJ_SightGet())
+
+}
+
+// Retour mode attack
+if (ACT_ActionFinished())
+{
+	mi_PafSend = 0
+	mi_InCharge = 0
+	AI_TrackCurChange("PNJInd_State_Attack")
+}

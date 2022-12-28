@@ -1,0 +1,110 @@
+#include "GHOST_defines.var"
+
+
+
+Include_UltraProcedure_Header
+
+int			ti_i
+
+float		tf_exp
+float		tf_time
+float		tf_jump_duration
+
+vector	tv_pos
+vector	tv_speed
+
+#define Cv_gravity		cvector(0.0, 0.0, -20.0)
+#define Cf_friction		1.0
+#define Cv_friction		cvector(Cf_friction, Cf_friction, 0.0)
+
+if (i_flag_sortie_etat)
+{
+	i_flag_sortie_etat = faux
+
+	return
+}
+
+if (i_etat_courant != GHOST_ETAT_Pile)
+{
+	// INTIALISATION
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = GHOST_ETAT_Pile
+	
+	if (fct_last_etat)
+	{
+		i_flag_sortie_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = "GHOST_ETAT_Pile"
+	
+	v_pile_dest_pos = Cv_NullVector
+	for (ti_i = 0; ti_i <  i_modules_nb; ti_i++)
+	{
+		v_pile_dest_pos	+= @ao_modules[ti_i] OBJ_PosGet()
+		av_modules_speed[ti_i] = Cv_NullVector
+	}
+	v_pile_dest_pos /= i_modules_nb
+	
+	v_pile_dest_pos = @o_main_actor OBJ_PosGet()
+
+//	for (ti_i = 0; ti_i <  i_modules_nb; ti_i++)
+//	{
+//		tv_pos = v_pile_dest_pos
+//		tv_pos.z += 0.5 * dist_between_module * ti_i
+//		
+//		tf_time = 1.0 + (ti_i * 0.05)
+//
+////		procedure vector DYN_LIB_ImpulsionGet_Friction(vector tv_start_pos, vector tv_dest_pos, vector tv_gravity, float tf_friction, byref float tf_time, int ti_flag_Z_friction, float tf_hauteur_saut)
+//		av_modules_speed[ti_i] = DYN_LIB_ImpulsionGet_Friction(@ao_modules[ti_i] OBJ_PosGet(), tv_pos, Cv_gravity, Cf_friction, tf_time, faux, 0.0) 
+//	}
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+tf_exp = MATH_Exp( - TIME_GetDt() * Cf_friction)
+
+for (ti_i = 0; ti_i <  i_modules_nb; ti_i++)
+{
+	tf_time = ti_i * 0.05
+	if (	f_time_start_etat < tf_time)
+		continue
+
+	tv_pos = v_pile_dest_pos
+	tv_pos.z += 0.5 * dist_between_module * ti_i
+	
+	tf_jump_duration = 1.5
+
+	if (MATH_VecNull(av_modules_speed[ti_i]))
+	{
+//		procedure vector DYN_LIB_ImpulsionGet_Friction(vector tv_start_pos, vector tv_dest_pos, vector tv_gravity, float tf_friction, byref float tf_time, int ti_flag_Z_friction, float tf_hauteur_saut)
+		tv_pos += MATH_VecRotate(cvector(1.0, 0.0, 0.0), Cv_VerticalVector, (3.0 * (tf_jump_duration + TIME_Get())) + (ti_i * 0.4)) * (ti_i * 0.1)
+		av_modules_speed[ti_i] = DYN_LIB_ImpulsionGet_Friction(@ao_modules[ti_i] OBJ_PosGet(), tv_pos, Cv_gravity, Cf_friction, tf_jump_duration, faux, 0.0) 
+
+//		tf_jump_duration = 0.0
+//		av_modules_speed[ti_i] = DYN_LIB_ImpulsionGet_Friction(@ao_modules[ti_i] OBJ_PosGet(), tv_pos, Cv_gravity, Cf_friction, tf_jump_duration, faux, 2.0) 
+	}
+	else if (f_time_start_etat > tf_time + tf_jump_duration)
+	{
+		tv_pos += MATH_VecRotate(cvector(1.0, 0.0, 0.0), Cv_VerticalVector, (3.0 * TIME_Get()) + (ti_i * 0.4)) * (ti_i * 0.1)
+		@ao_modules[ti_i] OBJ_PosSet(tv_pos)
+	}
+	else
+	{
+//		procedure vector DYN_LIB_Position_After_N_Seconds(vector tv_init_pos, byref vector tv_init_speed, vector tv_friction, vector tv_gravity, float tf_time, float tf_exp)
+		tv_speed = av_modules_speed[ti_i]
+		tv_pos = DYN_LIB_Position_After_N_Seconds(@ao_modules[ti_i] OBJ_PosGet(), tv_speed, Cv_friction, Cv_gravity, TIME_GetDt(), tf_exp)
+		av_modules_speed[ti_i] = tv_speed
+		@ao_modules[ti_i] OBJ_PosSet(tv_pos)
+	}
+}
+
+if (f_time_start_etat && IO_ButtonJustPressed(JoyPSX_Button_croix))
+	AI_TrackCurChangeNow("GHOST_ETAT_Corde")
+
+if (f_time_start_etat && IO_ButtonJustPressed(JoyPSX_Button_croix))
+	AI_TrackCurChangeNow("GHOST_ETAT_Basic")

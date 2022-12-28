@@ -1,0 +1,380 @@
+#include "r_defines.var"
+
+int			ti_cheat_mode_old 
+int			ti_face_paf
+int			pi_STR
+int			ti_nbRapport  
+int			ti_tab[20]
+int			ti_i, ti_flag
+
+float		tf_norm
+float		tf_glisse_coef
+float		tf_speed
+
+object	to_canal
+object	to_col
+object	to_tete
+object	to_gao
+
+vector	pv_pos 
+vector	tv_pos_2D
+vector	tv_horizon_ground
+vector	tv_traction_ground 
+vector	tv_temp
+vector	tv_sens_paf
+
+// MISE a JOUR DE LA MANA
+//EVENT_LIFE_CurLifeSet(ID_LIFE,  Proc_RM_LifeGet())
+
+// DANSE
+if ( @get_Music_Manager Proc_SND_Juice())
+{
+	if ( MOVE_MODE() != C_Move_Danse)
+	{
+		AI_TrackChange( 2, "raym_ETAT_danse")
+	}
+}
+i_danse_cancel = faux
+
+
+// GRAPPIN =======================================================
+if( ! o_rope_manager )
+	o_rope_manager = @get_global o_rope_manager
+
+// SPEED LIMIT Z ===================================================
+if( OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna) )
+{
+//	if( ! i_jump_copter )
+	if ( !i_ground_flag && COL_CollideType(COL_C_Wall))
+	{
+		if( Proc_RM_Glise_Contre_Mur())
+		{
+			f_jump_glisse_timer += TIME_GetDt()
+			tf_speed = DYN_SpeedGetVector().z
+			if ( tf_speed < -5.0)
+			{ 
+				DYN_SpeedLimitVertSet( MATH_FloatMax( 5.0, -tf_speed * Amorti_Coef_Dt( 0.99)))			// Pas de limite de vitesse Z	
+			}
+			Proc_RM_GFX_GlisseMur()
+		}
+	}
+	else if ( ACT_ActionGet() == RM_Act_Jump_FreeFall)
+	{
+		f_jump_glisse_timer = 0.0
+		DYN_SpeedLimitVertSet( 20.0)			// Pas de limite de vitesse Z
+	}
+	else if ( i_jump_copter)
+	{
+		f_jump_glisse_timer = 0.0
+		DYN_SpeedLimitVertSet( 2.0)			// Pas de limite de vitesse Z
+	}	
+	else
+	{
+		f_jump_glisse_timer = 0.0
+		DYN_SpeedLimitVertSet( 40.0)			// Pas de limite de vitesse Z
+	}	
+//	else if ( MATH_FloatNullToler( v_force_STREAM.z, 1.0) && DYN_SpeedGetVector().z <= 0.0 )
+//		DYN_SpeedLimitVertSet( Cf_DYN_SpeedZLimit)	// Pas de stream en Z limiter la chute en copter a 2m/s
+//	else
+//		DYN_SpeedLimitVertSet( 50.0)		// Un stream agit en Z ne plus limiter.
+}
+
+
+// WALL Managment ==============================================
+ti_face_paf = faux
+if( COL_CollideType(COL_C_Wall) )
+{
+	if( COL_GMAT_FlagsGet(COL_C_Wall) & Gmat_RM_Face_paf )
+	{
+		ti_face_paf = vrai
+		tv_sens_paf = COL_NormalGet(COL_C_Wall)
+	}
+	
+	v_wall_normale = COL_ZonePosGet(C_zdm_pied)
+	v_wall_normale -= COL_CollidedPointGet(COL_C_Wall)
+	MATH_VecSetNormalize(v_wall_normale)
+}
+
+// PUSH !! =========================================================
+to_gao = PROC_RM_MontureGet()
+if( ! to_gao )
+	to_gao = OBJ_Me()
+if( @to_gao COL_CollideType(COL_C_Wall) )
+{
+	to_col = @to_gao COL_BestAngleWallGaoGet(v_joy_sight, Cf_Cos45, &ti_tab[0])
+	Proc_PNJ_Push(to_col, @to_gao DYN_TractionVectorGet())
+}
+
+
+// GROUND Managment ==============================================
+i_flag_just_jump_from_ground = faux
+
+if (COL_CollideType(COL_C_Ground))
+{
+	// COL INFOS
+	tv_temp = COL_NormalGet(COL_C_Ground)
+//	tv_temp = COL_ZonePosGet(C_zdm_pied) - COL_CollidedPointGet(COL_C_Ground)	
+//	MATH_VecSetNormalize(tv_temp)
+	// FACE DE PAF
+	if (  COL_GMAT_FlagsGet(COL_C_Ground) & Gmat_RM_Face_paf)
+	{
+		ti_face_paf = vrai
+		tv_sens_paf = -OBJ_SightGet()
+	}
+	// FACE DE MORT
+	else if ( COL_GMAT_FlagsGet(COL_C_Ground) & Gmat_RM_Face_de_mort)
+	{
+		if( Proc_RM_LifeGet()) //EVENT_LIFE_CurLifeGet( ID_LIFE))
+		{
+			// à faire après le check paf sinon les données paf_detect_ sont écrasées
+			Proc_RM_LifeManaSet( 0.0, -1.0)
+//			EVENT_LIFE_CurLifeSet( ID_LIFE, 0.0)
+			v_paf_detect_dir = OBJ_SightGet()
+			i_paf_detect_type = C_PAF_RM_KiTue
+			AI_TrackChange(2, "raym_ETAT_paf")
+		}	
+	}
+	else if ( ! ( COL_GMAT_FlagsGet(COL_C_Ground) & COL_C_SlipperyEdge))
+		v_safe_pos = COL_CollidedPointGet( COL_C_Ground)
+}
+
+if (COL_CollideType(COL_C_Ground) && tv_temp.z > 0.0 )		// les plafonds ne sont pas des sols
+{
+	v_ground_pos = COL_CollidedPointGet(COL_C_Ground)
+	if (COL_ReportFlagGet(COL_C_Ground) & COL_C_Edge)
+		v_ground_edge_pos = v_ground_pos
+	to_col = COL_ObjectGet( COL_C_Ground)
+	if( @to_col OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_Dyna)
+		DYN_FlagsSet(DYN_C_OptimizeColDisable, none )
+	v_ground_normale = tv_temp
+	f_ground_timer = 0.1
+	i_ground_flag = vrai
+}
+else if ( i_etat_courant == ETAT_RM_paf)
+{
+	v_ground_normale = Cv_VerticalVector
+	switch ( ACT_ActionGet())
+	{
+		case 	RM_Act_PafFDos :				
+		case 	RM_Act_PafFFace  :	
+		case RM_Act_PafFCrete :
+		case RM_Act_PafFCreteBig :
+		case RM_Act_PafFAir :
+		case RM_Act_Paf_Swin_dos :
+		case RM_Act_Paf_Swin_face :
+		case RM_Act_Paf_Swin_Fdos :
+		case RM_Act_Paf_Swin_Fface :
+			i_ground_flag = faux
+			break
+		default:
+			i_ground_flag = vrai
+	}
+	f_ground_timer = 0.0
+}
+else if ( MOVE_MODE() == C_Move_Jump)
+{
+	switch ( ACT_ActionGet())
+	{
+//		case 	RM_Act_SwimImpul :				
+		case 	RM_Act_Jump_Impulsion :	
+		case RM_Act_Jump_Reception :
+		case RM_Act_ReceptionGrosse :
+		case RM_Act_PAF_Reception :
+		case RM_Act_DIVE_Reception :
+			i_ground_flag = vrai
+			break
+		default:
+			i_ground_flag = faux
+			v_ground_normale = Cv_VerticalVector
+	}
+	f_ground_timer = 0.0
+}
+//else if ( i_etat_courant == ETAT_RM_accroch)
+//{
+//	i_ground_flag = vrai
+//	f_ground_timer = 0.0	
+//}
+else if ( MOVE_MODE() == C_Move_Swim)
+{
+	v_ground_normale = Cv_VerticalVector
+	i_ground_flag = faux
+	f_ground_timer = 0.0
+}
+else if (f_ground_timer)
+{
+	f_ground_timer -= MATH_FloatMin(f_ground_timer,TIME_GetDt())
+	i_ground_flag = vrai
+}
+else
+{
+	v_ground_normale = Cv_VerticalVector
+	i_ground_flag = faux
+}
+
+//DBG_TraceInt( i_ground_flag)
+//DBG_TraceVector(v_ground_normale)
+//DBG_TraceEOL()
+
+
+//if( !MATH_VecNullEpsilon(v_wall_normale))
+//	DYN_GravitySet(v_wall_normale * -30.0)
+
+//if (COL_CollideType(COL_C_Wall))
+//{
+//	v_ground_normale = COL_NormalGet(COL_C_Wall)
+//	DYN_GravitySet(-v_ground_normale * 30.0)	
+//}
+
+// WATER
+Proc_RM_Water()
+
+
+// GESTION DES FORCE DU SOL =======================================
+v_force_ICE = Cv_NullVector
+if( i_ground_flag && ( COL_GMAT_FlagsGet(COL_C_Ground) & Gmat_RM_Ice) )
+{
+	DBG_RenderVector(OBJ_PosGet(), v_ground_normale, color_bleu)
+	tv_horizon_ground = MATH_VecCrossProduct(v_ground_normale, Cv_VerticalVector)
+	DBG_RenderVector(OBJ_PosGet(), tv_horizon_ground, color_rouge)
+	tv_traction_ground = MATH_VecCrossProduct(v_ground_normale, tv_horizon_ground)
+	DBG_RenderVector(OBJ_PosGet(), tv_traction_ground, color_vert)
+	
+	tf_norm = MATH_VecNorm(tv_traction_ground)
+	if( tf_norm > 0.1 )
+	{
+		MATH_VecSetNormalize(tv_traction_ground)
+		tf_glisse_coef = 1 - v_ground_normale.z							// ANGLE A 45° : = 0.3
+//		tf_glisse_coef = MATH_FloatSqrt( tf_glisse_coef)
+		tf_glisse_coef *= 10.0													// ANGLE A 45° : = 3.0
+		tv_traction_ground *= (tf_glisse_coef * Cf_Traction_Ice)		// ANGLE A 45° : = 30.0 or TRACTION JOY = 7.5 MAX !!!!
+		v_force_ICE = tv_traction_ground
+	}
+}	
+
+
+
+// SPEED Managment ================================================
+RM_Update_SPEED()
+//DBG_TraceFloat(f_speed_norm)
+//DBG_TraceString(" : ")
+//DBG_TraceVector(DYN_SpeedGetVector())
+//DBG_TraceEOL()
+
+
+// ANALYSE =======================================================
+AI_Execute("raym_exec_detect_paf")
+
+
+
+if ( ti_face_paf &&  i_etat_courant != ETAT_RM_paf  &&  i_etat_courant != ETAT_RM_mort )
+{
+	// à faire après le check paf sinon les données paf_detect_ sont écrasées
+
+//	Proc_RM_LifeManaSet( Proc_RM_LifeGet() - 10.0, -1.0)
+	f_display_life = Cf_Display_Time
+	v_paf_detect_dir = tv_sens_paf
+	i_paf_detect_type = C_PAF_RM_Choc
+	AI_TrackChange(2, "raym_ETAT_paf")
+}
+
+
+ti_cheat_mode_old = i_cheat_mode
+AI_Execute("raym_exec_read_joy")
+if( i_cheat_mode && ! ti_cheat_mode_old )
+	AI_TrackChange( 2, "raym_ETAT_cheat")
+else if( ! i_cheat_mode && ti_cheat_mode_old )
+	AI_TrackChange( 2, "raym_ETAT_main")
+	
+// MISE A JOUR DU SPEED LIMIT
+if( ! MATH_FloatNullEpsilon( @get_global f_vitesse_limit))
+	f_traction_limit = @get_global f_vitesse_limit
+else if ( i_flag_boost)
+	f_traction_limit = Cf_Traction_Boost
+else
+	f_traction_limit = 10.0
+
+// CHECK ITEMS
+if ( o_grappin_hotspot)
+{
+ 	if ( @o_grappin_hotspot AI_IsModel( get_RM_Weapon_path)
+ 		&& @o_grappin_hotspot PROC_WEAPON_TypeGet() == RM_WEAPON_TYPE_CLE )
+	{
+		o_grab_cle = LNK_ThisClientGet( o_grappin_hotspot, Ci_LNK_GRAB_OBJECT, mid_grab_cle, vrai, nofunc, nofunc, nofunc)
+		if ( o_grab_cle)
+		{
+			// PRENDRE LA CLE
+			LNK_KKGrabObject_StateSet(mid_grab_cle, 1)
+		}		
+	}
+	else
+		o_grab_object = LNK_ThisClientGet( o_grappin_hotspot, Ci_LNK_GRAB_OBJECT, mid_grab_object, vrai, nofunc, nofunc, nofunc)
+}
+else if ( o_grab_object )
+	o_grab_object = LNK_ThisClientGet( o_grab_object, Ci_LNK_GRAB_OBJECT, mid_grab_object, vrai, nofunc, nofunc, nofunc)
+
+if ( o_grab_object )
+{
+	@"univ" i_RM_Current_Weapon_ID = @o_grab_object PROC_WEAPON_TypeGet()
+	if ( f_grab_object_blend > 0.0)
+	{
+		LNK_KKGrabObject_BlendSet( mid_grab_object, f_grab_object_blend)
+		LNK_KKGrabObject_StateSet( mid_grab_object, 1)
+	}
+	else
+		LNK_KKGrabObject_BlendSet( mid_grab_object, 0.0)	
+	f_grab_object_blend = MATH_FloatMin( 1.0, f_grab_object_blend + ( TIME_GetDt() * 5.0))	
+}
+else
+{
+	if ( !o_grab_dup)
+		@"univ" i_RM_Current_Weapon_ID = 0
+	o_grab_object = nobody
+	f_grab_object_blend =  -0.6 //MATH_FloatBlend( f_grab_object_blend, 0.0, 5.0 * TIME_GetDt())
+}
+
+if ( o_grab_cle)
+{
+	if ( @o_grab_cle PROC_KEY_TypeGet() & KEY_TYPE_PTIZETRE)
+		@"univ" i_RM_Current_Key_ID = @get_RM_Weapon_path o_grab_cle i_Objectif_ID + 1000
+	else
+		@"univ" i_RM_Current_Key_ID = @o_grab_cle PROC_KEY_TypeGet() + 100
+		
+}
+else if ( ! o_grab_dup_cle)
+	@"univ" i_RM_Current_Key_ID = 0
+
+// EVENTS ========================================================
+to_canal = ANI_CanalObjectGet(Anim_Canal_Tete)
+//tv_pos_2D = VIEW_3dWorldTo2d(0, @to_canal OBJ_PosGet()) + cvector(-0.03,-0.2,0)
+//EVENT_LIFE_LifeDisplay(ID_LIFE, tv_pos_2D)
+@get_rayman OBJ_CapaSet(Capa_DUPLICATED, none)
+
+if( ! OBJ_CapaTest(Capa_FAKE) )
+	EVENT_AddEventVision(C_ID_Rayman, C_EVENT_FILTER_Rayman, OBJ_Me(), Cf_EVENT_Duree_1Trame, OBJ_PosGet(), C_EVENT_Visibility_Full_Mvt, 1.0, 100.0, C_EVENT_CONTEXT_STANDARD, 0, Proc_RM_LifeGet() / Proc_RM_LifeMaxGet())
+else
+	@get_rayman OBJ_CapaSet(Capa_DUPLICATED, none)
+
+// RECUP FIGHT ACTOR
+o_fight_actor = Proc_RM_FightActorGet(o_fight_actor)
+
+// DEATH AFX ======================================================
+Proc_RM_Death()
+
+DYN_FlagsSet( DYN_C_OptimizeColDisable, none)
+OBJ_FlagInvisibleSet(faux)
+to_tete = ANI_CanalObjectGet(Anim_Canal_EpauleGauche)
+@to_tete OBJ_FlagInvisibleSet(faux)
+to_tete = ANI_CanalObjectGet(Anim_Canal_EpauleDroite)
+@to_tete OBJ_FlagInvisibleSet(faux)
+to_tete = ANI_CanalObjectGet(Anim_Canal_Tete)
+@to_tete OBJ_FlagInvisibleSet(faux)
+
+// SND PAS
+AI_Execute("raym_exec_SND")
+
+if ( o_ride_actor)
+	o_ride_last_actor = o_ride_actor
+	
+// GESTION DES FORCES JOY
+v_force_JOY = Cv_NullVector
+Proc_RM_CustomizeTonRM()

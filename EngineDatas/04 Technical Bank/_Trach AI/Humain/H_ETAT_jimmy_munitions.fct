@@ -1,0 +1,135 @@
+#include "H_defines.var"
+#include "H_action.var"
+
+
+int			ti_numero
+int			ti_index
+int			ti_i
+int			ti_context
+int			ti_min
+
+vector	tv_dest_pos 
+vector	tv_temp
+
+float		tf_soin
+float		tf_temp
+
+messageid		msg_id
+messageid		tmid_info
+
+object	to_blesse
+object	to_obj, to_forwho
+
+int			ti_canmove
+int			ti_soin_dangereux_1, ti_soin_dangereux_2
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	if ( ao_SRV[Ci_LNK_INTERACTION] )
+	{
+		msg_id = amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION]
+		ao_SRV[Ci_LNK_INTERACTION] = LNK_ServeurGet(Ci_LNK_INTERACTION, msg_id, faux, nofunc, nofunc)
+	}
+	
+	i_sort_etat = faux	
+	i_flag_jesoigne = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_IA_Jimmy_Munitions)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_IA_Jimmy_Munitions
+	f_time_psss = 0
+	i_soin_en_cours = 0
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+		ai_SRV_ENABLE[ti_i] = faux
+
+	// AUTORISATIONS DES GRABS
+	ai_SRV_ENABLE[Ci_LNK_GRAB_RAPTOR]	= vrai
+
+	// AUTORISATION DES AIDES
+	ai_SRV_ENABLE[Ci_LNK_INTERACTION]		= vrai
+	ai_SRV_ENABLE[Ci_LNK_PSSS]					= vrai
+
+	DYN_SpeedSetVector( Cv_NullVector)
+	DYN_TractionSet( Cv_NullVector)
+	
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE  =====================================================================
+AI_Execute("H_exec_read_world")
+AI_Execute("H_exec_serveur_get")
+AI_Execute("H_exec_change_etat")
+AI_Execute("H_exec_ch_Stimulus_Paf")
+if (o_paf_sender) macro_change_etat("H_ETAT_IA_paf")
+
+to_forwho = ao_SRV[Ci_LNK_INTERACTION]
+if ( ao_SRV[Ci_LNK_INTERACTION] == nobody) macro_change_etat(fct_main_etat)
+	
+OBJ_Me().des_int1 = Ci_DISPLAY_PSSS
+ti_index = Humains_GetIndex(ao_SRV[Ci_LNK_INTERACTION])
+
+// Position destination
+ti_canmove = vrai
+v_way_destpos = @ao_SRV[Ci_LNK_INTERACTION] OBJ_PosGet()
+
+ti_soin_dangereux_1 = EVENT_InfoCanGaoSeeGao(nobody, OBJ_Me(), tmid_info)
+ti_soin_dangereux_2 = EVENT_InfoCanGaoSeeGao(nobody, to_forwho, tmid_info)
+if(ti_soin_dangereux_2) ti_canmove = faux
+
+// COMPORTEMENT ==============================================================
+
+// Deplacement jusqu'a celui qui veut se faire soigner
+f_min_dist_attend = 1
+f_joy_norm = 0.0
+CommonMove()
+
+i_flag_jesoigne = faux
+if(i_flag_arrived && ti_canmove)
+{
+	i_flag_suivi_regard = faux
+	f_time_psss += TIME_GetDt()
+	to_obj = ao_SRV[Ci_LNK_INTERACTION]
+	ForceRegardSur(to_obj, 0.3)
+	
+	// Orientation vers lui		
+	v_joy_dir = @to_obj OBJ_PosGet() - OBJ_PosGet()
+	MATH_VecSetHorzNormalize(v_joy_dir)
+	OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), v_joy_dir, 8.0 * TIME_GetDt()), Cv_VerticalVector)		
+	DYN_SpeedSetVector(Cv_NullVector)
+	i_flag_oriente_vers = vrai
+		
+	// Anim
+	i_flag_jesoigne = vrai
+	ACT_ActionSet1( Action_Stress_Attente)
+	
+	// FIN
+	if(f_time_psss > 1)
+	{
+		LNK_ServeurGet(Ci_LNK_INTERACTION, msg_id, faux, nofunc, nofunc)	
+		macro_change_etat(fct_main_etat)
+	}
+}
+else
+{
+	f_time_psss = 0
+	AI_Execute("H_exec_select_action")	
+}
+

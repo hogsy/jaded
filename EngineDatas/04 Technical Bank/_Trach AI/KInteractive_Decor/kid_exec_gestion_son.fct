@@ -1,0 +1,158 @@
+#include "KID_Defines.var"
+
+int			ti_num_unpaused
+int			ti_num_total
+int			i
+int			j
+int			instance
+int			tai_Prio[16]
+int			ti_NumPrio
+int			sound
+
+float		f_percent_rumble_target
+float		f_vel
+float		f_ang
+float		f_diffL
+float		f_diffA
+
+if(f_time_sound > 1.0)
+{
+	f_time_sound = 0
+	i_cur_num_instances_per_second = 0
+}
+
+
+
+// RUMBLE
+if(i_rumble_autorise)
+{
+	if(i_instance_snd_rumble == -1)
+	{
+		i_instance_snd_rumble = SND_RequestPlayLoop(ODE_Sound_Rumble)
+	}
+	
+	ti_num_unpaused	= mi_NumberOfPafs
+	
+	if ( mi_IsMultiHit )
+	{
+		ti_num_total		= mi_LastHit
+	}
+	else
+	{
+		ti_num_total		= ti_num_unpaused
+	}
+	
+	// ON CALCULE LE NOMBRE D'ELEMENTS ACTIFS / NOMBRE TOTAL ET ON BLEND AVEC CETTE MEME VALEUR DE LA
+	// FRAME PRECEDENTE ...
+	f_percent_rumble_target = ti_num_unpaused / ti_num_total		
+	f_percent_rumble = MATH_FloatBlend(f_percent_rumble, f_percent_rumble_target, 0.1)
+	
+	// VOLUME GERE PAR INSERT
+	if(i_instance_snd_rumble != -1)
+		SND_InsertVarSet(i_instance_snd_rumble,28, f_percent_rumble) }
+
+// CHOCS LOCAUX
+if(i_choc_autorise)
+{
+	
+	// PRIORITE DES SONS LOCAUX ...	
+	tai_Prio[0] = 4		// Water
+	tai_Prio[1] = 3		// Pierre
+	tai_Prio[2] = 2		// Veget
+	tai_Prio[3] = 1		// Terre	
+	
+	ti_NumPrio = 4
+	
+	j = 0
+	while( ( j < C_MaxBriques ) && ao_ODE_briques[j])
+	{	
+		// Dérivées  de vitesses linéraires et angulaires ont le même signe ... pas de choc
+		if
+		(
+				( MATH_FloatSign(af_ode_deriveeL_frame[j]) == MATH_FloatSign(af_ode_deriveeL_old_frame[j]))
+		&&	( MATH_FloatSign(af_ode_deriveeA_frame[j]) == MATH_FloatSign(af_ode_deriveeA_old_frame[j]))
+
+		)
+		{
+			j ++			
+			continue
+		}
+			
+		
+		// On veut une valeur positive à tester
+		f_diffL = af_ode_deriveeL_frame[j]
+		f_diffA = af_ode_deriveeA_frame[j]		
+		
+		if(f_diffL < 0.0)  f_diffL *= -1.0
+		if(f_diffA < 0.0)  f_diffA *= -1.0
+		
+					
+		if( (f_linear_threshold != 0.0) && (f_diffL < f_linear_threshold) && (f_angular_threshold != 0.0) && (f_diffA < f_angular_threshold))
+		{
+			j ++
+			continue
+		}
+		
+		i_cur_num_instances_per_second ++
+		
+		if(i_cur_num_instances_per_second < i_max_num_instances_per_second)
+		{
+			sound = @ao_ODE_briques[j] COL_ODE_PrioSoundGet(&tai_Prio[0], ti_NumPrio)
+			
+			instance = SND_Request(ODE_Sound_Choc_Local + sound, C_SND_Request_DestroyWhenFinished)								
+			if(instance != -1)
+				@ao_ODE_briques[j] SND_Play(instance)
+		}
+		
+		j ++
+	}
+}
+
+// WHOOSH
+if(i_whoosh_autorise)
+{
+	i = 0
+	while( ( i < C_MAX_Wooshable ) && ao_element_whooshable[i])
+	{	
+		j = 0
+		while( ( j < C_MaxBriques ) && ao_ODE_briques[j])
+		{
+			if(ao_ODE_briques[j] == ao_element_whooshable[i])
+			{
+				break
+			}
+			j ++			
+		}
+		
+		// Pa trouvé cet élément whooshable dans la structure .. je le skip ...
+		if( ( j >= C_MaxBriques ) || !ao_ODE_briques[j])
+		{
+			i ++
+			continue
+		}
+		
+		if((f_linear_whoosh != 0.0) && (af_ode_deriveeL_frame[j] > f_linear_whoosh))
+		{
+			if(ai_instance_snd_whoosh[i] == -1)
+			{
+				ai_instance_snd_whoosh[i] = SND_Request(ODE_Sound_Whoosh, 0)
+				if(ai_instance_snd_whoosh[i] != -1)
+					@ao_element_whooshable[i] SND_Play(ai_instance_snd_whoosh[i])
+			}			
+		}
+		else
+		{
+			if(ai_instance_snd_whoosh[i] != -1)
+			{
+				if(!SND_IsPlaying(ai_instance_snd_whoosh[i]))
+				{
+					SND_Stop(ai_instance_snd_whoosh[i])
+					ai_instance_snd_whoosh[i] = -1
+				}
+			}
+		}	
+			
+		i ++
+	}
+}
+

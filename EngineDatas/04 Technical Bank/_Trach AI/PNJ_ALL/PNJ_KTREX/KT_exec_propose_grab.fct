@@ -1,0 +1,280 @@
+#include "KT_defines.var"
+
+#define	Cf_largeur				3.0
+#define	Cf_zone_tete_cul		1.5
+
+messageid		tmid_proposition
+
+int			ti_grab_position
+
+object	to_serveur
+object	to_col
+
+float		tf_dist
+float		tf_dot
+float		tf_dist_grab
+float		tf_delta
+float		tf_lbdt
+float		tf_distance_CT
+
+vector	tv_pos
+vector	tv_temp
+vector	tv_tempZ
+vector	tv_tempnorm
+vector	tv_sight
+vector	tv_sens 
+vector	tv_pos_grab
+vector	tv_TETE
+vector	tv_CUL
+vector	tv_CT 
+vector	tv_CTED
+vector	tv_CTEG
+vector	tv_DG 
+
+
+//	VEC5
+//	VEC4
+//	VEC3
+
+
+tmid_proposition = pop
+
+to_serveur = MSG_GlobalGetGao(tmid_proposition, SERVEUR)
+
+to_serveur = to_serveur
+
+
+if( i_already_finished_flag )		// NEW NE PLUS ACCEPTER DE GRAB OU DE FINISH SI KONG M'A DEJA FINI
+	return
+
+// NEW GRAB NEW GRAB
+//if( ! i_grabbed_finish && ! (LNK_GrabStatusGet(tmid_proposition) & Ci_GrabKong_Type_Gros))
+//	return
+if( i_etat_courant != ETAT_KO_au_sol && ! (LNK_GrabStatusGet(tmid_proposition) & Ci_GrabKong_Type_Gros))
+	return
+
+// TEMP TEMP WAITINg GRAB SIDE
+if ( i_grabbed_special)
+	return
+
+ti_grab_position = 0
+tv_temp = LNK_GrabPositionGet(tmid_proposition)			// Position de Grab Kong
+tv_sens = LNK_GrabVectorGet(tmid_proposition)
+DBG_RenderVector( tv_temp + cvector( 0.0, 0.0, 0.5), tv_sens * 50.0, color_blanc)
+
+
+// CALCUL DES 4 POINTS DE GRAB ET AFFICHAGE
+// avant arriere
+tv_TETE = v_grab_object_pos			// Pos de la tete en after blend
+tv_TETE.z = OBJ_PosGet().z
+tv_CUL = OBJ_PosGet() - ( OBJ_SightGet() * 2.8)
+tf_distance_CT = MATH_VecNorm( tv_TETE - tv_CUL)
+tv_CT = (tv_TETE - tv_CUL) / tf_distance_CT
+DBG_RenderVector( tv_CUL + cvector( 0.0, 0.0 , 0.5), tv_CT * Cf_zone_tete_cul, color_vert)
+DBG_RenderVector( tv_TETE + cvector( 0.0, 0.0 , 0.5), -tv_CT * Cf_zone_tete_cul, color_vert)	
+DBG_RenderVector( tv_TETE - (tv_CT  * Cf_zone_tete_cul) + cvector( 0.0, 0.0 , 0.5), -tv_CT * ( tf_distance_CT - (2.0 * Cf_zone_tete_cul)), color_bleu)		
+DBG_RenderVector( tv_CUL + cvector( 0.0, 0.0 , 0.5), (tv_CUL - tv_TETE) * 2.0, color_rouge)
+DBG_RenderVector( tv_TETE + cvector( 0.0, 0.0 , 0.5), (tv_TETE - tv_CUL) * 2.0, color_rouge)
+//DBG_RenderCone( (tv_TETE + tv_CUL) * 0.5, tv_CT * 5.0, 60.0 * Cf_1Degre, 0x60FF0000)
+//DBG_RenderCone( (tv_TETE + tv_CUL) * 0.5, -tv_CT * 5.0, 35.0 * Cf_1Degre, 0x60FF0000)
+
+// cotes
+tv_DG.x = -tv_CT.y
+tv_DG.y = tv_CT.x
+tv_DG.z = 0.0
+tv_CTED = ( tv_TETE + tv_CUL) * 0.5 - ( tv_DG * Cf_largeur * 0.5)
+tv_CTEG = tv_CTED + ( tv_DG * Cf_largeur)
+DBG_RenderVector( tv_CTED + cvector( 0.0, 0.0 , 0.5), tv_DG * Cf_largeur, color_bleu)
+
+// Prise TETE
+tv_pos_grab =  tv_TETE
+ti_grab_position = 0
+
+tv_temp -= tv_pos_grab
+tv_temp.z = 0.0
+
+i_grabbed_tete = faux
+
+to_col = COL_RayObject_Vector( tv_pos_grab + cvector( 0.0, 0.0, 3.0), tv_temp, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+if ( to_col && to_col != OBJ_Me() && to_col != to_serveur )
+{
+	if( i_DBG_trace_propose_grab )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" collision LRAY avec ")
+		DBG_TraceObject(to_col)
+		DBG_TraceEOL()
+		DBG_RenderVector(tv_pos_grab + cvector( 0.0, 0.0, 3.0), tv_temp, color_blanc)		
+	}
+	return
+}
+
+tv_tempZ = @to_serveur OBJ_PosGet() - OBJ_PosGet()
+if ( MATH_AbsFloat(tv_tempZ.z) > 5.0)
+{
+	if( i_DBG_trace_propose_grab )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" = Z DIFF TOO BIG")
+		DBG_TraceEOL()
+	}
+//	DBG_BreakPoint()
+	return
+}
+
+if( i_etat_courant == ETAT_KO_au_sol && ( LNK_GrabStatusGet(tmid_proposition) & Ci_GrabKong_Type_Finish ) && @get_global i_KK_Ask_Finish_Button != JoyPSX_Button_rond )
+{
+	if( i_DBG_trace_propose_grab )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" reçoit une demande de finish")
+		DBG_TraceEOL()
+	}
+	
+//	if( i_blesse_on && i_grabbed_finish && MATH_VecDistance( OBJ_PosGet(), LNK_GrabPositionGet(tmid_proposition)) < 12.0 )
+	if( i_blesse_on && i_grabbed_finish && MATH_VecDistance( OBJ_PosGet(), LNK_GrabPositionGet(tmid_proposition)) < 22.0 )
+	{
+		if( i_DBG_trace_propose_grab )
+		{
+			DBG_TraceObject(OBJ_Me())
+			DBG_TraceString(" se propose")
+			DBG_TraceEOL()
+		}
+		LNK_ClientPropose(tmid_proposition, 1.0)		// Tres prioritatire
+		MSG_GlobalSetGao(tmid_proposition, OBJ_Me(), GAO3)
+		LNK_GrabKong_TypeSet( tmid_proposition, Ci_GrabKong_Type_Finish)			
+	}
+	else
+	{
+		if( i_DBG_trace_propose_grab )
+		{
+			DBG_TraceObject(OBJ_Me())
+			DBG_TraceString(" refuse : blessé")
+			DBG_TraceInt(i_blesse_on)
+			DBG_TraceString("  : finish :")
+			DBG_TraceInt(i_grabbed_finish)
+			DBG_TraceString("  : distance :")
+			DBG_TraceFloat( MATH_VecDistance( OBJ_PosGet(), LNK_GrabPositionGet(tmid_proposition)))
+			DBG_TraceEOL()
+		}
+	}
+}
+else if( LNK_GrabStatusGet(tmid_proposition) & Ci_GrabKong_Type_Gros )
+{
+	tf_dist = MATH_VecDotProduct(tv_temp, tv_temp)
+//		if( MATH_VecNullEpsilon( tv_temp))
+	tv_temp = @to_serveur OBJ_PosGet() - ((tv_TETE + tv_CUL) * 0.5)
+	tv_temp.z = 0.0
+	if( ! MATH_VecNullEpsilon(tv_temp) )
+		MATH_VecSetNormalize(tv_temp)
+	else
+		tv_temp = OBJ_SightGet()
+
+	tv_sight = @get_Kamera OBJ_SightGet()
+	tv_sight.z = 0.0
+	if( ! MATH_VecNullEpsilon(tv_sight) )
+		MATH_VecSetNormalize(tv_sight)
+	else
+		tv_sight = OBJ_SightGet()
+
+	tf_dot = -MATH_VecDotProduct( tv_sight, tv_temp)
+
+//	tf_dist_grab = 9.0 + MATH_AbsFloat(( MATH_ACos( tf_dot) - Cf_PiBy2) * 2.0)
+	tf_dist_grab = 15.0 + MATH_AbsFloat(( MATH_ACos( tf_dot) - Cf_PiBy2) * 2.0)
+	tf_dist_grab*= tf_dist_grab
+
+	// DBG DBG
+	// DBG DBG
+	
+	if( i_DBG_trace_propose_grab )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString( " | ")
+		DBG_TraceFloat(MATH_FloatSqrt( tf_dist ))
+		DBG_TraceString(" < ")
+		DBG_TraceFloat( MATH_FloatSqrt( tf_dist_grab) )
+		DBG_TraceEOL()
+		DBG_TraceString( " | angle |")
+		DBG_TraceFloat( tf_dot)
+		DBG_TraceString(" > ")
+		DBG_TraceFloat( MATH_ACos( tf_dot))
+		DBG_TraceEOL()
+	
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" (dist ")
+		DBG_TraceFloat(tf_dist)
+		DBG_TraceString(") : ")
+	}
+	
+	if ( tf_dist < tf_dist_grab )
+	{		
+		// La distance est bonne
+		tv_sens = LNK_GrabVectorGet(tmid_proposition)
+
+		// 2n d couche : LA MEME QUE DANS KONG !!!
+		tf_dist_grab = 4.5 + MATH_AbsFloat(( MATH_ACos( tf_dot) - Cf_PiBy2) * 1.0)	
+		tf_dist_grab  *= tf_dist_grab 
+		MSG_GlobalSetVector(tmid_proposition, cvector( tf_dist_grab, 0.0, 0.0), VEC2, VEC_X)
+		if ( tf_dist < tf_dist_grab && KT_Proc_AntiChain() && ! @to_serveur Proc_KK_RAGE_Test() )
+		{
+			DBG_TraceString("DODGE")
+			DBG_TraceEOL()
+			// POUR LA VERSION QU'ON NE CONNAISSAIT PAS.
+		 	i_fight_must_dodge = vrai
+		 	f_fight_delai_attak = 1.0 // sinon KK réattak direct et on voit pas l'esquive
+			AI_TrackChange(Ci_Track_Etat, "KT_ETAT_fight_KONG")			// appelé en callback...
+		}
+		else
+		{
+			tf_dot = MATH_VecDotProduct( tv_sens, tv_temp )
+		
+			// L'orientation est bonne
+			tf_dist = MATH_FloatMin(tf_dist, 999)
+			tf_dist += Ci_Grab_Kong_Pond_TRex
+			if( ( ! MATH_VecNullEpsilon(tv_sens) ) && tf_dot > 0.0 )
+			{
+				if( i_DBG_trace_propose_grab )
+					DBG_TraceString("bad axe : ")
+				tf_dist += Ci_Grab_Kong_Pond_Bad_Axe 			// BAD AXE
+			}
+			LNK_ClientPropose(tmid_proposition, tf_dist)
+			if( i_DBG_trace_propose_grab )
+				DBG_TraceFloat(tf_dist)
+			MSG_GlobalSetGao(tmid_proposition, OBJ_Me(), GAO3)
+			LNK_GrabKong_SpeedVectorSet( mid_grabbed_by_Kong_LNK_ID, DYN_SpeedGetVector())
+
+			if( i_etat_courant == ETAT_KO_au_sol && EVENT_LIFE_CurLifeGet(ID_LIFE) <= 0.0 )
+				i_grabbed_special = vrai		// grab flanc uniquement au sol
+			if ( i_grabbed_special)
+			{
+				tv_sens = tv_TETE - tv_CUL
+				tv_sens = MATH_VecCrossProduct( tv_sens, Cv_VerticalVector)
+				if ( MATH_VecDotProduct( tv_temp, tv_sens) > 0)
+					LNK_GrabKong_TypeSet( tmid_proposition, Ci_GrabKong_Type_Gros + Ci_GrabKong_Type_Special + Ci_GrabKong_Type_Droit)
+				else
+					LNK_GrabKong_TypeSet( tmid_proposition, Ci_GrabKong_Type_Gros + Ci_GrabKong_Type_Special)
+				v_grab_sight_init = tv_temp
+				v_grabbed_orient_init =  MATH_VecNormalize( tv_TETE - OBJ_PosGet())
+			}
+			else
+			{
+				LNK_GrabKong_TypeSet( tmid_proposition, Ci_GrabKong_Type_Gros)
+				// CHOIX DU POINT D ACCROCH
+				tv_temp = tv_pos_grab - OBJ_PosGet()
+				tv_temp.z = 0
+				MATH_VecSetNormalize( tv_temp)
+				tv_pos_grab = MATH_VecGlobalToLocal( tv_pos_grab - OBJ_PosGet())
+				// Face
+				i_grabbed_tete = 1
+				v_grab_sight_init = tv_temp
+				v_grabbed_orient_init =  MATH_VecNormalize( tv_TETE - OBJ_PosGet())
+				LNK_GrabKong_AncrageVectorSet(mid_grabbed_by_Kong_LNK_ID,v_grabbed_orient_init )
+				LNK_GrabKong_NeckSizeSet( mid_grabbed_by_Kong_LNK_ID, Cf_Neck_Size)
+			}
+		}
+	}
+	else if( i_DBG_trace_propose_grab )
+		DBG_TraceString("TOO FAR")
+	if( i_DBG_trace_propose_grab )
+		DBG_TraceEOL()
+}

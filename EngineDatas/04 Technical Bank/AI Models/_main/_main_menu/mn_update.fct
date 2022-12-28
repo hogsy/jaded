@@ -1,0 +1,82 @@
+#include "_main_menu_defs.var"
+#include "ROOT/EngineDatas/04 Technical Bank/AI Models/Global Library/menu_constant.var"
+
+int	map, mapkey
+
+i_sel_offset = 0
+i_sel_lig = 0
+
+// MENU
+if (menu_i_cur == menu_Jack_Kong )
+{
+	map_i_nb = 7
+	return
+}
+
+if (menu_i_cur == menu_Cine )
+{
+	map_i_nb = 3
+	return
+}
+
+
+//if ( menu_i_cur == menu_playtest )
+//{
+//	menu_playtest_map[ 00 ] = MENU_PT_MAP0		menu_playtest_es[ 00 ] = MENU_PT_ES0
+//	menu_playtest_map[ 01 ] = MENU_PT_MAP1		menu_playtest_es[ 01 ] = MENU_PT_ES1
+//	menu_playtest_map[ 02 ] = MENU_PT_MAP2		menu_playtest_es[ 02 ] = MENU_PT_ES2
+//	menu_playtest_map[ 03 ] = MENU_PT_MAP3		menu_playtest_es[ 03 ] = MENU_PT_ES3
+//	menu_playtest_map[ 04 ] = MENU_PT_MAP4		menu_playtest_es[ 04 ] = MENU_PT_ES4
+//	menu_playtest_map[ 05 ] = MENU_PT_MAP5		menu_playtest_es[ 05 ] = MENU_PT_ES5
+//	menu_playtest_map[ 06 ] = MENU_PT_MAP6		menu_playtest_es[ 06 ] = MENU_PT_ES6
+//	menu_playtest_map[ 07 ] = MENU_PT_MAP7		menu_playtest_es[ 07 ] = MENU_PT_ES7
+//	menu_playtest_map[ 08 ] = MENU_PT_MAP8		menu_playtest_es[ 08 ] = MENU_PT_ES8
+//	menu_playtest_map[ 09 ] = MENU_PT_MAP9		menu_playtest_es[ 09 ] = MENU_PT_ES9
+//	menu_playtest_map[ 10 ] = MENU_PT_MAP10	menu_playtest_es[ 10 ] = MENU_PT_ES10
+//	menu_playtest_map[ 11 ] = MENU_PT_MAP11	menu_playtest_es[ 11 ] = MENU_PT_ES11
+//	menu_playtest_map[ 12 ] = MENU_PT_MAP12	menu_playtest_es[ 12 ] = MENU_PT_ES12
+//	menu_playtest_map[ 13 ] = MENU_PT_MAP13	menu_playtest_es[ 13 ] = MENU_PT_ES13
+//	menu_playtest_map[ 14 ] = MENU_PT_MAP14	menu_playtest_es[ 14 ] = MENU_PT_ES14
+//	menu_playtest_map[ 15 ] = MENU_PT_MAP15	menu_playtest_es[ 15 ] = MENU_PT_ES15
+//	menu_playtest_map[ 16 ] = MENU_PT_MAP16	menu_playtest_es[ 16 ] = MENU_PT_ES16
+//	menu_playtest_map[ 17 ] = MENU_PT_MAP17	menu_playtest_es[ 17 ] = MENU_PT_ES17
+//	menu_playtest_map[ 18 ] = MENU_PT_MAP18	menu_playtest_es[ 18 ] = MENU_PT_ES18
+//	menu_playtest_map[ 19 ] = MENU_PT_MAP19	menu_playtest_es[ 19 ] = MENU_PT_ES19
+//	menu_playtest_map[ 20 ] = MENU_PT_MAP20	menu_playtest_es[ 20 ] = MENU_PT_ES20
+//	menu_playtest_map[ 21 ] = MENU_PT_MAP21	menu_playtest_es[ 21 ] = MENU_PT_ES21
+//	menu_playtest_map[ 22 ] = MENU_PT_MAP22	menu_playtest_es[ 22 ] = MENU_PT_ES22
+//	menu_playtest_map[ 23 ] = MENU_PT_MAP23	menu_playtest_es[ 23 ] = MENU_PT_ES23
+//	menu_playtest_map[ 24 ] = MENU_PT_MAP24	menu_playtest_es[ 24 ] = MENU_PT_ES24
+//	menu_playtest_map[ 25 ] = MENU_PT_MAP25	menu_playtest_es[ 25 ] = MENU_PT_ES25
+//	menu_playtest_map[ 26 ] = MENU_PT_MAP26	menu_playtest_es[ 26 ] = MENU_PT_ES26
+//	menu_playtest_map[ 27 ] = MENU_PT_MAP27	menu_playtest_es[ 27 ] = MENU_PT_ES27
+//	menu_playtest_map[ 28 ] = MENU_PT_MAP28	menu_playtest_es[ 28 ] = MENU_PT_ES28
+//	menu_playtest_map[ 29 ] = MENU_PT_MAP29	menu_playtest_es[ 29 ] = MENU_PT_ES29
+//	map_i_nb = MENU_PT_NBMAPS
+//	// Recup the index
+//	for (map = 0 ; map < map_i_nb; map++)
+//	{
+//		map_i_index[ map ] = -1
+//		for (mapkey = 0; mapkey < @"univ" WORLD_Key_Map_Nbr; mapkey++)
+//		{
+//			if (@"univ" WORLD_Key_Map_ID[ mapkey ] == menu_playtest_map[ map ] )
+//			{
+//				map_i_index[ map ] = mapkey
+//			}
+//		}
+//	}
+//	return
+//}
+
+
+mapkey = menu_i_cur
+	
+// number of map to see in menu
+map_i_nb = 0
+for ( map = 0; map < @"univ" WORLD_Key_Map_Nbr; map++ )
+{
+	if (@"univ" WORLD_Key_Map_Menu[ map ] != mapkey )
+		continue
+	map_i_index[ map_i_nb ] = map 
+	map_i_nb++
+}

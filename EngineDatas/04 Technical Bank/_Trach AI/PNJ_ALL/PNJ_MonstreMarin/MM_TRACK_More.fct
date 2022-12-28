@@ -1,0 +1,98 @@
+#include "MM_defines.var"
+
+int					ti_state
+int					ti_i
+int					ti_rank
+
+vector			tv_sens
+vector			tv_me_to_dyna
+vector			tv_2D_pos
+
+object			to_gao
+object			to_bone
+object			to_obj
+
+messageid		EVT_ID
+message		EVT_msg_filter
+
+
+// ENNEMI =========================================
+switch(i_etat_courant)
+{
+	case ETAT_MOVE :
+	default:
+		ti_state = C_EVENT_EnemyState_Fight			// Menaçant
+		break
+}
+EVENT_AddEventEnemy(C_ID_MonstreMarin, OBJ_Me(), ti_state)
+
+// PAF RECUL ======================================
+v_paf_speed = MATH_VecBlend(v_paf_speed, Cv_NullVector, f_paf_speed_blend * TIME_GetDt())
+f_paf_applic = MATH_FloatBlend(f_paf_applic, 1.0, f_paf_applic_blend * TIME_GetDt())
+
+// POSITION DES GAO ZDE CORPS ====================
+for(ti_i = 0; ti_i < Ci_corps_nb; ti_i++)
+{
+	to_gao = ao_corps[ti_i]
+	if( to_gao )
+	{
+		to_bone = ANI_CanalObjectGet(ai_corps_canal[ti_i])
+		@to_gao OBJ_PosSet(@to_bone OBJ_PosGet() + @to_bone MATH_VecLocalToGlobal(av_corps_pos[ti_i]))
+	}
+}
+
+// CHECK GOBBAGE DYNAMITE ======================
+i_dynamite_just_gobee = faux
+if( ! o_dynamite )
+{
+	if( i_bouche_ouverte_flag && BigMonster_EstVulnerable() )
+	{
+		for(ti_i = 0; ti_i < @get_global i_projectile_nb; ti_i++)
+		{
+			to_obj = @get_global ao_projectile[ti_i]
+			if( @get_Projectile_path to_obj mi_Type == 0 )	// Dynamite
+			{
+				tv_me_to_dyna = @to_obj OBJ_PosGet() - @o_machoire OBJ_PosGet()
+				if( MATH_VecDotProduct(tv_me_to_dyna, OBJ_SightGet()) > 0 )
+				{
+					if( MATH_VecNorm(tv_me_to_dyna) <= 5.0 )
+					{
+						o_dynamite = to_obj
+						@o_dynamite OBJ_CapaSet(OBJ_Capa_0, none)		// gobbé
+						f_dynamite_pos_coef = 0.0
+						f_time_dynamite_gobee = 0.0
+						if( i_DBG_trace_IA )
+						{
+							DBG_TraceObject(OBJ_Me())
+							DBG_TraceString(" : gobbe une dynamite ")
+						}
+						if( @get_Projectile_path to_obj i_dynam_allumee == vrai )
+						{
+							// dynamite allumée -> cancelle l'attaque (sinon il la gobbe mais ne cancelle pas)
+							i_dynamite_just_gobee = vrai
+							if( i_DBG_trace_IA )
+							{
+								DBG_TraceString(" (allumée !!!!)")
+								DBG_TraceEOL()
+							}
+						}
+						else if( i_DBG_trace_IA )
+						{
+							DBG_TraceString(" (éteinte)")
+							DBG_TraceEOL()
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+// SNAP DYNAMITE =================================
+if( o_dynamite )
+{
+	f_dynamite_pos_coef = MATH_FloatMin(f_dynamite_pos_coef + (2.0 * TIME_GetDt()), 1.0)
+	@o_dynamite OBJ_PosSet(MATH_VecBlend(@o_dynamite OBJ_PosGet(), @o_machoire OBJ_PosGet(), f_dynamite_pos_coef))
+}
+
+

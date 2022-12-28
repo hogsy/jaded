@@ -1,0 +1,119 @@
+
+#include "KBC_defines.var"
+
+//===========================================================================================
+// DETECTION DES ACTEURS VUS POUR PASSER DE SUIVI OLFACTIF CHAROGNE EN SUIVI VISUEL CHAROGNE
+//===========================================================================================
+
+float				tf_life_coef						// coef de santé du perso courant
+float				tf_interet
+float				tf_short_dist
+
+message		tmsg_int_filter					// filtre pour la recherche des messages d'intérêt
+messageid 		tmid_int_ID						// message d'intérêt courant
+messageid 		tmid_vis_ID						// message de vision courant
+messageid		tmid_interet_vision_ID
+messageid		tmid_best_vision
+
+int					ti_flag_interet_present		// flag qui indique que quelqu'un a déjà un intérêt pour ma cible 
+int					ti_int_rank						// rang du msg d'intérêt
+int					ti_i
+
+object			to_pere
+object			to_interet_pere
+
+
+
+tf_interet = 100
+tf_short_dist = Cf_Infinit
+
+
+// ============ VISION DU BAT ===============
+
+AI_Execute("KBC_exec_check_vision")
+
+
+// ==== RECHERCHE DES PERSOS BLESSES =====
+
+if( i_seen_actor_nb )
+{
+	// le bat voit des acteurs
+	
+	f_cible_life_coef = 1.0
+	
+	for( ti_i = 0; ti_i < i_seen_actor_nb; ti_i++)
+	{
+		// test de tous les persos vus
+		tmid_vis_ID = amid_seen_actor[ti_i]
+		tf_life_coef = EVENT_VisionLifeStateGet(tmid_vis_ID)
+		if( tf_life_coef <= Cf_Life_Blesse )
+		{
+			// ce perso est blessé
+			to_pere = EVENT_PereGet(tmid_vis_ID)
+			if( tf_life_coef <= f_cible_life_coef && OBJ_SqrDist(to_pere) < tf_short_dist )
+			{
+				ti_flag_interet_present = faux
+				
+				// recherche d'un message d'intérêt d'une autre bat sur la charogne
+				MSG_SetNull(tmsg_int_filter)
+				tmsg_int_filter.msg_gao1 = to_pere
+				
+				ti_int_rank = -1
+				for (	tmid_int_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_int_rank, tmsg_int_filter);
+						MSG_GlobalIsValid(tmid_int_ID);
+						tmid_int_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_int_rank, tmsg_int_filter) )
+				{
+					to_interet_pere = EVENT_PereGet(tmid_int_ID)
+					if( to_interet_pere != OBJ_Me() )
+					{
+						// l'acteur est déjà attaqué par quelqu'un
+						tmid_interet_vision_ID = EVENT_FindEventPereTarget( C_EVENT_TYPE_Visibility, to_interet_pere, nobody)
+						if( MSG_GlobalIsValid(tmid_interet_vision_ID) )
+						{
+							if( EVENT_VisionIDGet(tmid_interet_vision_ID) == C_ID_BatCharognard )
+							{
+								ti_flag_interet_present = vrai
+								break
+							}
+						}
+					}
+				}
+				
+//				DBG_TraceObject(to_pere)
+//				DBG_TraceString(" : interet present = ")
+//				DBG_TraceInt(ti_flag_interet_present)
+//				DBG_TraceEOL()
+				
+				if( ! ti_flag_interet_present )
+				{
+					// pas d'intérêt sur ce perso par quelqu'un d'autre => il devient ma meilleure cible
+					
+					tf_interet = EVENT_VisionInteretGet(tmid_vis_ID)			// récup de l'intérêt de vision pour l'event de type intérêt
+					
+					// caractéristiques de la charogne
+					i_charogne_ID = EVENT_VisionIDGet(tmid_vis_ID)
+					o_cible = to_pere
+					f_cible_life_coef = tf_life_coef
+					f_cible_poids = @"univ" Enemy_af_Poids[i_charogne_ID]		// poids de la cible
+					tf_short_dist = OBJ_SqrDist(to_pere)
+					tmid_best_vision = tmid_vis_ID
+				}
+			}
+		}
+	}
+	
+	if( f_cible_life_coef < 1.0 )
+	{
+		// la bat a vu quelqu'un de blessé ou mort
+		if( f_cible_life_coef == 0.0 )
+		{
+			// la bat a vu un mort => positionnement d'un intérêt sur lui
+//			mid_interet_charogne = EVENT_AddEventInteret(OBJ_Me(), 60.0, tf_interet, @o_cible OBJ_PosGet(), o_cible )
+//			EVENT_InteretVisionIDSet(mid_interet_charogne, C_ID_BatCharognard)
+			
+			KBC_Interet_Update(mid_interet_charogne, C_EVENT_InteretStatusAttack, o_cible, tmid_best_vision)
+		}
+		macro_change_etat("KBC_ETAT_Move_Visuel")
+	}
+}
+

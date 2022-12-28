@@ -1,0 +1,40 @@
+#include "PluieDeLances_defines.var"
+
+int				ti_i
+
+for (ti_i = 0; ti_i < Ci_nombre_max_custom_auto_paf_trigger; ti_i++)
+{
+	if( ! AI_TriggerIsValid(tr_custom_auto_paf_list[ti_i]) ) break
+
+	if (call_trigger( tr_custom_auto_paf_list[ti_i]) )
+	{
+		if (i_lances_avant_paf != ai_lances_avant_paf_trigger[ti_i])
+		{
+			i_lances_avant_paf = ai_lances_avant_paf_trigger[ti_i]
+			i_lances_avant_paf_just_changed = vrai
+		}
+		return
+	}
+}
+
+if (o_cible == AI_MainActorGet(C_ID_Joueur))
+{
+	if (@o_cible DYN_SpeedGet() < f_norme_vitesse_min)
+	{
+		if (i_lances_avant_paf != i_lances_avant_paf_stop)
+		{
+			i_lances_avant_paf = i_lances_avant_paf_stop
+			i_lances_avant_paf_just_changed = vrai
+		}
+		return 
+	}
+}
+
+if (i_lances_avant_paf != i_lances_avant_paf_move)
+{
+	i_lances_avant_paf = i_lances_avant_paf_move	
+	i_lances_avant_paf_just_changed = vrai	
+}
+
+
+

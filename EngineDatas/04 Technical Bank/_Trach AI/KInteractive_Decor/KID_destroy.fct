@@ -1,0 +1,70 @@
+#include "KID_Defines.var"
+
+int				ti_Index
+int 			ti_IsTrackDone
+int 			ti_Index2
+
+object		to_GFXSource
+
+message 	tm_Msg
+
+ti_IsTrackDone = vrai
+
+// INITIALISATION ETAT ==============================================================
+for ( ti_Index = 0; ti_Index < C_MaxBriques; ti_Index++ )
+{
+	// all this is just to start a GFX.  the rest of the track takes care of timing when to destroy each GFX and when to stop this track entirely
+	if ( ao_ODE_briques[ti_Index] && mai_IsDestroyGFXStarting[ti_Index] && mao_DestructionGFXTemplate[ti_Index][0] && !mai_IsGFXActive[ti_Index] )
+	{
+		mai_IsGFXActive[ti_Index] 				= vrai									// just for the lifetime of the object itself now.  The GFX takes care of its own life span.
+
+		for ( ti_Index2 = 0; ti_Index2 < C_MaxDestructionGFX; ti_Index2++ )
+		{
+			if ( mao_DestructionGFXTemplate[ti_Index][ti_Index2] )
+			{
+				to_GFXSource 								= @mao_DestructionGFXTemplate[ti_Index][ti_Index2] OBJ_Duplicate( @ao_ODE_briques[ti_Index] OBJ_PosGet() )
+				tm_Msg.msg_sender 					= ao_ODE_briques[ti_Index]	//JIMINOTE: set this to a WP
+				Dispatch_Interaction( to_GFXSource, tm_Msg )
+			}
+		}
+	}
+}
+
+// check to see end conditions
+for ( ti_Index = 0; ti_Index < C_MaxBriques; ti_Index++ )
+{
+	if ( mai_IsGFXActive[ti_Index] )
+	{
+		if ( TIME_Get() - maf_GFXTimeStart[ti_Index] >= mf_DestructionGFXDuration[ti_Index] )
+		{
+			if ( i_detruit_apres_paf )
+			{
+				@ao_ODE_briques[ti_Index] ODE_Enable(faux)
+				@ao_ODE_briques[ti_Index] OBJ_Destroy()						//JIMI_NOTE: we might want to not leak the dissappearing objcets and this destroy them here
+				ao_ODE_briques[ti_Index] = nobody
+			
+			}
+			
+			mai_IsGFXActive[ti_Index] = faux
+		}
+	}
+	else if ( ao_ODE_briques[ti_Index] && mai_IsDestroyGFXStarting[ti_Index] && !mao_DestructionGFXTemplate[ti_Index][0] )
+	{
+		@ao_ODE_briques[ti_Index] ODE_Enable(faux)
+		@ao_ODE_briques[ti_Index] OBJ_Destroy()						//JIMI_NOTE: we might want to not leak the dissappearing objcets and this destroy them here
+		ao_ODE_briques[ti_Index] = nobody
+	}
+}
+
+for ( ti_Index = 0; ti_Index < C_MaxBriques; ti_Index++ )
+{
+	if ( mai_IsGFXActive[ti_Index] )
+	{
+		ti_IsTrackDone = faux
+	}
+}
+
+if ( ti_IsTrackDone )
+{
+	AI_TrackStop( C_Track_Destroy )
+}

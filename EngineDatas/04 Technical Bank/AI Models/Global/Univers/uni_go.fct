@@ -1,0 +1,234 @@
+int i_Index
+
+if (load_world)
+{
+	load_world = faux		
+	
+	//////////////////////////////////////////////////////////////////////////////////////
+	//  SPECIAL POUR E3 / PS2
+	//////////////////////////////////////////////////////////////////////////////////////
+	if ( MENU_NZ == 1)
+	{
+		// reinit SF
+		for (i_Index = 0; i_Index < 200; i_Index++)
+		{
+			Flag_speciaux_sauve[ i_Index ] = 0
+			Float_speciaux_sauve[ i_Index ] = 0
+			Vector_speciaux_sauve[ i_Index ] = cvector( 0, 0, 0)
+		}
+	}
+	
+	if ( (MENU_NZ >= 1) && (MENU_NZ <= 4) && MENUDEMO_QuitWhenAllDone && (world_ID != 3) )
+	{
+		if ( MENUDEMO_QuitWhenAllDone )		
+		{
+			for (i_Index = 0; i_Index < MENUDEMO_NbMap; i_Index++)
+			{
+				if ( world_cur_ID == MENUDEMO_Map[ i_Index ] )
+				{
+					MENUDEMO_Loaded[ i_Index ] = 1
+					break
+				}
+			}
+		}
+
+		for (i_Index = 0; i_Index < MENUDEMO_NbMap; i_Index++)
+		{
+			if (	MENUDEMO_Loaded[ i_Index ] == 0)
+				break
+		}
+		if (i_Index == MENUDEMO_NbMap)
+		{
+			IO_DemoSeti( 6 )
+			return
+		}
+	}
+
+	if ( (MENU_NZ >= 1) && (MENU_NZ <= 4) && ((world_ID != 3) || (MENUDEMO_BeforeTransition == 3)))
+	{
+		if(MENU_NZ == 4) world_entrance_ID = 1
+		
+		// map de transition prend la suivante
+		if ( MENUDEMO_Transition && MENUDEMO_BeforeTransition )
+		{
+			if(MENUDEMO_BeforeTransition == 3)
+			{
+				world_ID =  MENUDEMO_Map[ 0 ]
+			}
+			else
+			{
+				for (i_Index = 0; i_Index < MENUDEMO_NbMap; i_Index++)
+				{
+					if ( ( MENUDEMO_BeforeTransition == MENUDEMO_Map[ i_Index ] ) && (world_cur_ID == MENUDEMO_Trans[ i_Index ] ) )
+					{
+						if ( !MENUDEMO_Chain || (i_Index == MENUDEMO_NbMap - 1) )
+							world_ID = 3
+						else
+						{
+							world_ID =  MENUDEMO_Map[ i_Index + 1 ]
+							world_entrance_ID = MENUDEMO_ES[ i_Index + 1 ]
+							@"univ" PROG_ES_0to1 = vrai
+						}
+						break
+					}
+				}
+			}
+			
+			MENUDEMO_BeforeTransition = 0
+		}
+		else
+		{
+			if(MENUDEMO_Transition && world_cur_ID == 3)
+			{
+				for (i_Index = 0; i_Index < MENUDEMO_NbMap; i_Index++)
+				{
+					if ( world_ID == MENUDEMO_Map[ i_Index ] )
+					{
+						if(i_Index)
+						{
+							world_ID = MENUDEMO_Trans[ i_Index - 1 ]
+							MENUDEMO_BeforeTransition = MENUDEMO_Map[ i_Index - 1 ]
+						}
+						else
+						{
+							world_ID = MENUDEMO_TransitionN
+							MENUDEMO_BeforeTransition = 3
+						}
+					}
+				}				
+			}
+			else
+			{
+				for (i_Index = 0; i_Index < MENUDEMO_NbMap; i_Index++)
+				{
+					if ( world_cur_ID == MENUDEMO_Map[ i_Index ] )
+					{
+						if (MENUDEMO_Transition && ( MENUDEMO_Trans[ i_Index ] != -1) && MENUDEMO_Trans[ i_Index ] )
+						{
+							world_ID = MENUDEMO_Trans[ i_Index ]
+							MENUDEMO_BeforeTransition  = world_cur_ID
+						}
+						else if ( !MENUDEMO_Chain || (i_Index == MENUDEMO_NbMap - 1) )
+							world_ID = 3
+						else
+						{
+							world_ID =  MENUDEMO_Map[ i_Index + 1 ]
+							world_entrance_ID = MENUDEMO_ES[ i_Index + 1 ]
+							@"univ" PROG_ES_0to1 = vrai
+						}
+						break
+					}
+				}
+			}
+		}
+	}
+	
+	if ( MENU_Playtest )
+	{
+		if ( ( world_cur_ID == 306 ) && (world_ID == 304 ) )
+		{
+			world_ID = 401
+			world_entrance_ID = 1
+		}
+		else if ( ( world_cur_ID == 702) && (world_ID == 705 ) )
+		{
+			world_ID = 901
+			world_entrance_ID = 1
+		}
+	}
+	//////////////////////////////////////////////////////////////////////////////////////
+	//  FIN SPECIAL POUR E3 / PS2
+	//////////////////////////////////////////////////////////////////////////////////////
+	
+	//////////////////////////////////////////////////////////////////////////////////////
+	//  set exit next map for replay mode 
+	//////////////////////////////////////////////////////////////////////////////////////
+	if ( PROG_i_MapReplay && (@"univ" PROG_ai_MapId[ @"univ" PROG_i_MapReplayIndex ] != world_ID) )
+	{
+		PROG_i_MapReplayExit = world_ID
+		world_ID = 3
+	}
+	
+	//////////////////////////////////////////////////////////////////////////////////////
+	//  en mode play without save, store last map loaded
+	//////////////////////////////////////////////////////////////////////////////////////
+	if ( MENU_PlayWithoutSaving && (world_ID != 3) )
+		MENU_PlayWithoutSaving_LastMap = world_ID
+		
+	//////////////////////////////////////////////////////////////////////////////////////
+	// en mode normal stock le fait que l'on ait terminé le jeu
+	//////////////////////////////////////////////////////////////////////////////////////
+	if ( !MENU_PlayWithoutSaving && !PROG_i_MapReplay && !PROG_i_FinAlternative && !PROG_i_MapFromExtra)
+	{
+		// chargement map credit ?
+		if (world_ID == 7 )
+			PROG_i_EndOfGameReached = 1
+	}
+			
+	//////////////////////////////////////////////////////////////////////////////////////
+	//  init stats
+	//////////////////////////////////////////////////////////////////////////////////////
+	// get map ID
+	for (i_Index = 0; i_Index < PROG_i_MapNumber; i_Index++ )
+	{
+		if ( world_ID == PROG_ai_MapId[ i_Index ] )
+		{
+			STATS_WorldID = i_Index
+			break
+		}
+	}
+	
+	// pas une map de stats, met les infos en fin de tableau et basta
+	if ( i_Index == PROG_i_MapNumber)
+		STATS_WorldID = STATS_NbMaps - 1
+	
+	// reset stats
+	STATS_f_Time = 0
+	STATS_f_Mort = 0
+	STATS_f_MortJoueur = 0
+	for (i_Index = 0; i_Index < STATS_NbVal; i_Index++)
+		STATS[ STATS_WorldID ][ i_Index ] = 0
+		
+	// reset object
+	Weapon_SFX = nobody
+		
+	AI_Execute("uni_exec_get_world_key")
+
+	// Init de l'etat du JEU
+	if (i_force_newgame_reinit)
+	{
+		i_force_newgame_reinit = 0
+		{
+			#include "ROOT\EngineDatas\04 Technical Bank\AI Models\Global Library\exec_new_game_init.fct"
+		}
+	}
+
+	// Reset ces infos à chaque chargement de map.
+	i_death_shield = 0
+	i_death_exploit = 0
+
+	// Backup les données du jeu
+	SAVE_Validate()
+
+	// load new level
+	world_loaded_id = WOR_LoadList(world_key)		
+
+	// Restore les données du jeu.
+	SAVE_Unvalidate()
+
+	// wait till loading is finished
+	world_loaded_id = WOR_Loaded() - 1
+	
+	// activate the new level
+	AI_ReinitUniv()
+	WOR_Activate(world_loaded_id)
+	world_cur_ID = world_ID
+
+	// force the render mode to be the dashboard one on xbox
+	if(AI_GetCurSystem() == 3)
+	{
+		SND_gi_RenderMode = SND_Cte_RenderUseConsoleSettings
+	}
+	
+	
+}

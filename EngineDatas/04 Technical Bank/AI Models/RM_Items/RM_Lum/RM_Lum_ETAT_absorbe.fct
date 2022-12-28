@@ -1,0 +1,51 @@
+#include "RM_Lum_defines.var"
+
+float		tf_zoom
+
+
+// SORTIE ===================================================================
+if( i_etat_sortie )
+{
+	i_etat_sortie = faux
+	return
+}
+
+// ENTREE ===================================================================
+if( i_etat_courant != ETAT_ABSORBE )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_ABSORBE
+	if( fct_etat_last_track )
+	{
+		i_etat_sortie = vrai
+		AI_Execute(fct_etat_last_track)
+	}
+	f_etat_duree = 0.0
+}
+else
+{
+	f_etat_duree += TIME_GetDt()
+}
+
+// ANALYSE ==================================================================
+
+// COMPORTEMENT ============================================================
+if( OBJ_ZoomGet() <= Cf_Lum_ZOOM_Absorbe )
+{
+	Proc_RM_Lums_Add()
+	OBJ_FlagInvisibleSet(vrai)
+	@get_global i_wearshop_active_flag = vrai
+	@get_global i_lums_absorbes++
+	
+	// Vas t il gérer lui même les rewards?
+	f_fin_delai = 0.5
+
+	AI_TrackCurStop()
+}
+else
+{
+	tf_zoom = OBJ_ZoomGet()
+	tf_zoom -= MATH_FloatMin(tf_zoom - Cf_Lum_ZOOM_Absorbe, TIME_GetDt())
+	OBJ_ZoomSet(tf_zoom)
+}
+

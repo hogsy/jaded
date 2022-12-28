@@ -1,0 +1,53 @@
+
+int					ti_rank
+int					ti_paf_type
+
+float				tf_inv_dt
+
+vector			tv_paf_dir
+
+object			to_target
+object			to_father
+object			to_sender
+
+message		tmsg_filter
+
+float				tf_puissance
+
+messageid		tmid_paf
+
+MSG_SetNull(tmsg_filter)
+tmsg_filter.msg_gao1 = OBJ_Me()
+ti_rank = -1
+
+for (	tmid_paf = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tmsg_filter);
+		MSG_GlobalIsValid(tmid_paf);
+		tmid_paf = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tmsg_filter)	)
+{
+	to_father	 = EVENT_PereGet(tmid_paf)
+	to_sender = EVENT_Gao2Get(tmid_paf)
+	tf_puissance = EVENT_PafPuisGet(tmid_paf)
+	ti_paf_type = EVENT_PafTypeGet(tmid_paf)
+	tv_paf_dir = EVENT_PafDirGet(tmid_paf)
+
+	MATH_VecSetNormalize(tv_paf_dir)
+
+	if (ti_paf_type & (C_PAF_KK_Moyen | C_PAF_KK_Fort) )
+	{	
+		i_flag_paf = vrai
+
+		// Crash
+		SND_RequestPlay(0)
+
+		COL_ColSetActivationSet(0,C_zde_corps)
+		
+		i_neon_type_cur = 1
+		Malfunction_every_min = 0
+		Malfunction_every_cur = 0.4
+		Proc_GNE_SFXGlass(OBJ_PosGet(), -5.0, 50)
+		Proc_GNE_SFXGlass(OBJ_PosGet(), -6.0, 50)
+		Proc_GNE_SFXGlass(OBJ_PosGet(), -7.0, 20)
+
+		break
+	}
+}

@@ -1,0 +1,108 @@
+//vector 	v, tv_tir_depart, tv_sight, tv_tir_arrivee, tv_Z
+//float		f, tf_coef, tf_sin
+//object	to_gao, to_bone
+//int			ti_canal, tc_color
+//
+////////////////////////////////////////////////////////////////////////////////////////////////
+//// STOP
+////////////////////////////////////////////////////////////////////////////////////////////////
+//if (OBJ_CapaTest( 1 ) || (mi_UserCanExit && IO_ButtonJustPressed( 0 ) ) )
+//{
+//	@"univ" i_weapon_ID[ 0 ] = mi_SaveWeapon
+//	to_gao = AI_MainActorGet(C_ID_Jack)
+//	@to_gao OBJ_FlagInvisibleSet( 0 ) 
+//	@to_gao OBJ_FlagInactiveSet( 0 ) 
+//	@to_gao OBJ_PosSet( OBJ_PosGet() ) 
+//	AI_TrackCurChange( "Tourelle_wait" )
+//}
+//
+////////////////////////////////////////////////////////////////////////////////////////////////
+//// MOVE
+////////////////////////////////////////////////////////////////////////////////////////////////
+//OBJ_Move( -mf_Recul * OBJ_SightGet() )
+//mf_Recul -= TIME_GetDt()
+//if (mf_Recul < 0)
+//	mf_Recul = 0
+//
+//to_bone = OBJ_HierarchyGet()
+//if ( to_bone )
+//	tv_Z = @to_bone OBJ_BankingGet()
+//else
+//	tv_Z = Cv_VerticalVector
+//
+//v = IO_JoyGetMove1()
+//v = MATH_VecBlend(mv_Move, v , 0.2)
+//mv_Move = v
+//
+//if ( MATH_AbsFloat( v.x ) > 0.4 )
+//{
+//	v.x *= MATH_AbsFloat( v.x )
+//	OBJ_RotateLocalZ( -v.x * TIME_GetDt() )
+//}
+//	
+//if ( MATH_AbsFloat( v.y ) > 0.4 )
+//{
+//	v.y *= MATH_AbsFloat( v.y )
+//	OBJ_RotateLocalX( -v.y * TIME_GetDt() )
+//	to_bone = OBJ_HierarchyGet()
+//	f = MATH_VecDotProduct( tv_Z, OBJ_SightGet() )
+//	if ( ( (v.y < 0) && (f < mf_AngleMin) ) || ( (v.y > 0) && (f > mf_AngleMax) ) )
+//		OBJ_RotateLocalX( v.y * TIME_GetDt() )
+//}
+//
+//v = IO_JoyGetMove()
+//if ( MATH_AbsFloat( v.x ) > 0.4 )
+//{
+//	v.x *= MATH_AbsFloat( v.x )
+//	OBJ_RotateLocalZ( -v.x * TIME_GetDt() * 0.25)
+//}
+//	
+//if ( MATH_AbsFloat( v.y ) > 0.4 )
+//{
+//	v.y *= MATH_AbsFloat( v.y )
+//	OBJ_RotateLocalX( -v.y * TIME_GetDt() * 0.25 )
+//	to_bone = OBJ_HierarchyGet()
+//	f = MATH_VecDotProduct( tv_Z, OBJ_SightGet() )
+//	if ( ( (v.y < 0) && (f < mf_AngleMin) ) || ( (v.y > 0) && (f > mf_AngleMax) ) )
+//		OBJ_RotateLocalX( v.y * TIME_GetDt()  * 0.25)
+//}
+//
+//f = MATH_VecDotProduct( OBJ_HorizonGet(), tv_Z )
+//if ( MATH_AbsFloat( f ) > Cf_Epsilon)
+//{
+//	v = OBJ_HorizonGet() - (tv_Z * f)
+//	tv_Z = MATH_VecCrossProduct(OBJ_SightGet(), v )
+//	OBJ_SightGeneralSet(OBJ_SightGet(), tv_Z)
+//}
+//
+//
+//	
+////////////////////////////////////////////////////////////////////////////////////////////////
+//// SHOOT
+////////////////////////////////////////////////////////////////////////////////////////////////
+//if (IO_ButtonPressed( joy_button_R2 ) )
+//{
+//	if ( !mi_Fire )
+//	{
+//		macro_add_callback_tir( "Tourelle_CB_Tir" )
+//		mi_Fire = 1
+//	}
+//}
+//else
+//{
+//	if ( mi_Fire )
+//	{
+//		macro_del_callback_tir( "Tourelle_CB_Tir" )
+//		mi_Fire = 0
+//	}
+//
+//	mf_TimeNextBullet = 0
+//	if ( mi_GFXweapon != -1)
+//	{
+//		GFX_Del(mi_GFXweapon)
+//		mi_GFXweapon = -1
+//	}
+//}
+//
+//OBJ_Move( mf_Recul * OBJ_SightGet() )
+//

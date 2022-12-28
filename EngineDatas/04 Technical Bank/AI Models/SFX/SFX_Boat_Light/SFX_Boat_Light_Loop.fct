@@ -1,0 +1,18 @@
+object		to_canal
+
+if (GFX_Halo == -1)
+{
+	GFX_Halo = GFX_Add(21)                                 	 //création du halo
+	GFX_MaterialSet(GFX_Halo, get_SFX_light_and_smoke,0) 	// affectation du matériau
+	GFX_Setf(GFX_Halo, 21000, f_radius )             // taille du halo
+	GFX_Setf(GFX_Halo, 21004, f_length )                       // taille du halo
+	GFX_Seti(GFX_Halo, 21101, halo_color)          // couleur du halo
+	GFX_Seti(GFX_Halo, 21100, 4)
+}
+
+to_canal = ANI_CanalObjectGet(1)
+if (! to_canal )
+	to_canal = OBJ_Me()
+
+GFX_Setv(GFX_Halo, 21200, @to_canal OBJ_PosGet() + (@to_canal OBJ_SightGet() * f_extrude))
+GFX_Setv(GFX_Halo, 21201, @to_canal OBJ_SightGet())

@@ -1,0 +1,57 @@
+#include "btode_defs.var"
+
+int i_Index
+int i_IsTrackDone
+
+//DBG_Warning( "Track play." )
+
+i_IsTrackDone = vrai
+
+mf_time = TIME_Get()
+
+// for every location that should emit a "when-hit" particle, activate it here
+for ( i_Index = 0; i_Index < C_MaxHitPAGS; i_Index++ )
+{
+	// make sure there is a pag to play at the loc and that it isnt already playing
+	if ( mao_TreeHitParticleSystem[i_Index] && !mai_IsPAGActiveForLocation[i_Index] )
+	{
+		@mao_TreeHitParticleSystem[i_Index] OBJ_PagGeneratorFreqSet( 1, maf_PAGFrequency[i_Index] )
+		@mao_TreeHitParticleSystem[i_Index] OBJ_PagFlagSet( none, ParticleGFlags_Freeze)
+		
+		// dont create it again unless it has been destroyed for that location
+		mai_IsPAGActiveForLocation[i_Index] = vrai
+		maf_PAGStartTime[i_Index]				= TIME_Get()
+	}
+}
+
+// destroy particle systems when we are done with them
+for ( i_Index = 0; i_Index < C_MaxHitPAGS; i_Index++ )
+{
+	if ( mao_TreeHitParticleSystem[i_Index] && mai_IsPAGActiveForLocation[i_Index] )
+	{
+		// is the particle system done playing?
+		if ( mf_time - maf_PAGStartTime[i_Index] >= maf_PAGDuration[i_Index] )
+		{
+			@mao_TreeHitParticleSystem[i_Index] OBJ_PagGeneratorFreqSet( 1, 0.0 )
+			
+			mai_IsPAGActiveForLocation[i_Index] = faux
+			maf_PAGStartTime[i_Index]				= 0.0
+		}
+	}
+}
+
+// check to see that there are particle systems playing.  if not, shut down this behavior
+for ( i_Index = 0; i_Index < C_MaxHitPAGS; i_Index++ )
+{
+	if ( mai_IsPAGActiveForLocation[i_Index] )
+	{
+		i_IsTrackDone = faux
+	}
+}
+
+if ( i_IsTrackDone )
+{
+	//DBG_Warning( "Stopping Track" )
+	AI_TrackStop( C_Track_TreeHitPAGActivation )
+}
+

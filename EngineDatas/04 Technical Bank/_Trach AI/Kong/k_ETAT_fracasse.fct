@@ -1,0 +1,50 @@
+#include"k_define.var"
+
+vector	tv_speed
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	i_GrabKong_MainBloquee = -1
+	DYN_GravitySet( Cv_Kong_Gravity)
+	return
+}
+
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_Kong_fracasse) 
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Kong_fracasse
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai 
+		AI_Execute(fct_last_etat)
+	}
+
+	// GRAB CLIENT ACCEPT
+	ai_SRV_ENABLE[Ci_LNK_KKFINISH_ON_KONG] = faux
+
+	LIBGFX_ShakeCam( 0.09, 35.0, 0.0, 0.0, 0.15, 0.99)
+	DYN_GravitySet( Cv_Kong_Gravity * 1.5)
+	fct_last_etat = AI_TrackCurGet()
+	ACT_ActionSet( Ci_Kanim_Fracasse_Action)
+	OBJ_BankingGeneralSet( OBJ_SightGet(), Cv_VerticalVector)
+	
+	STATS_IncAttack()
+}
+
+i_in_jump = 2	// Reception
+
+if (ACT_ActionItemGet())
+{
+	tv_speed = DYN_SpeedGetVector()
+	tv_speed.x *= 0.75
+	tv_speed.y *= 0.75
+	DYN_SpeedSetVector( tv_speed)
+}
+
+if ( ACT_ActionFinished())
+	macro_change_etat("k_ETAT_main")

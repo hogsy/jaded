@@ -1,0 +1,41 @@
+#include "BC_defines.var"
+
+object to_duplicated
+
+
+// SORTIE ETAT
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// ENTREE ETAT
+if (i_etat_courant != ETAT_Fade)
+{
+	i_etat_ancien_ancien = i_etat_ancien
+ 	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Fade
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	BC_DBG_Trace_Etat("etat fade")
+	
+	o_predateur = LNK_ServeurGet(Ci_LNK_GRAB_RAPTOR, mid_predateur, faux, nofunc, nofunc)
+
+	to_duplicated = @get_SFX_decomposition OBJ_Duplicate(cvector(0,0,0))			// ALOC (C'est l'AI qui va gerer la decomposition)
+	@to_duplicated Proc_Decomposition_Init(OBJ_Me(), 3.0, 0, 1, -1)				// INIT (Vas y decompose moi :))
+	@to_duplicated Proc_Decomposition_Init(OBJ_Me(), 3.0, -1, 0, -1)				// INIT (Vas y decompose moi :))
+//	i_take_paf = faux
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+i_flag_neck = faux

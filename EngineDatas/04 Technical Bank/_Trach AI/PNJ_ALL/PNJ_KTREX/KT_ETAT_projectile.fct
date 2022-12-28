@@ -1,0 +1,324 @@
+#include "KT_defines.var"
+
+int			ti_freq
+int			ti_detect_mur
+int			ti_col
+int			ti_frame
+int			ti_check_chute
+
+float		tf_dot
+float		tf_freq_coef
+float		tf_life_init
+
+vector	tv_speed
+vector	tv_sight
+vector	tv_sens_Kong
+vector	tv_pos_ancrage
+vector	tv_sens_collision
+vector	tv_sens_paf
+vector	tv_pos_collision
+
+object	to_tete
+object	to_col_actor
+object	to_bone
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	OBJ_CapaSet( none, Capa_Passe_Muret)			// Pendant l anim projection de coté la capa_5 est a vrai pour passer les obstacles.
+	if( f_time_last_charge + Cf_charge_delai_recup < TIME_Get() + Cf_charge_delai_after_proj )
+		f_time_last_charge = TIME_Get() - ( Cf_charge_delai_recup - Cf_charge_delai_after_proj )		
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_projectile)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_projectile
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+
+	f_proj_rotate = 0.0
+	tv_speed = DYN_SpeedGetVector()
+	DBG_RenderVector( OBJ_PosGet(),tv_speed, color_rouge)
+	f_grab_grav_speed_norm = MATH_VecNorm( tv_speed)
+
+	DYN_FrictionVectorSet( Cv_TREX_friction_marche)
+	f_time_start_etat = 0.0
+	i_paf_nb = 0
+	i_fight_paf = faux		// Personne de collisionné encore
+	KT_Grabbed_Jauge_Update()
+	COL_CrossableSet(Gmat_KK_Cross_All_But_Kong_And_TREX, none)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =======================================================================================================
+
+// Detection de PAF Cas non générique
+AI_Execute("KT_exec_check_paf")
+if (o_paf_actor && (i_paf_type & C_PAF_KK_KiTue ))
+{
+	KT_STATS_NMI_Killed(o_paf_actor)
+	macro_change_etat("KT_ETAT_mort")
+}
+
+
+// COMPORTEMENT =======================================================================================================
+KT_Interet_Update (o_fight_actor, C_EVENT_InteretStatusGrab)
+// Interdire le speed Z positif pour ne pas faire d'effet tremplin
+tv_speed = DYN_SpeedGetVector()
+if ( tv_speed.z > 0.0)
+{
+	tv_speed.z = 0.0
+	DYN_SpeedSetVector(tv_speed)		// annulation speed en Z
+}
+
+v_grab_grav_speed = KT_Proj_Vector_Get()
+
+ti_detect_mur = vrai
+ti_check_chute = faux
+switch ( ACT_ActionGet())
+{
+	case Action_Fight_Projectile_D :
+	case Action_Fight_Projectile_G :
+	case Action_Normal_Projectile :
+		
+		ti_check_chute = vrai
+		
+		// Jouer avec la FREQ
+		if( i_blesse_on )
+			tf_freq_coef = 60.0
+		else
+			tf_freq_coef = 120.0
+		f_proj_freq = MATH_FloatMax( 20, f_proj_freq - (tf_freq_coef * TIME_GetDt()))
+		ti_freq = f_proj_freq
+		ANI_FrequencySet( 0, ti_freq)
+
+		// Orienter
+		tv_speed = v_grab_grav_speed
+		if ( MATH_VecNullEpsilon( tv_speed))
+			tv_speed = OBJ_SightGet()
+		if ( MATH_VecDotProduct( tv_speed, OBJ_SightGet()) < 0.0)
+			tv_speed = (tv_speed + OBJ_SightGet()) * 0.5
+			
+		OBJ_BankingGeneralSet( MATH_VecBlendRotate( OBJ_SightGet(), MATH_VecNormalize(tv_speed), 6.0 * TIME_GetDt()), Cv_VerticalVector)
+
+//		if ( ACT_ActionFinished())
+		if( f_proj_freq < 48 )
+		{
+				macro_change_etat("KT_ETAT_derap")
+		}
+		break
+	case Action_Fight_GrabTT_Projectile_Arr :
+		ti_check_chute = vrai
+		ti_detect_mur = faux
+		if( ACT_ActionFinished())
+		{
+			macro_change_etat("KT_ETAT_fight_KONG")
+		}
+		break
+		
+	case Action_Fight_GrabTT_Projectile_D :
+	case Action_Fight_GrabTT_Projectile_G :
+		ti_check_chute = vrai
+		ti_detect_mur = faux
+		if ( ANI_CurrentFrameGet(0) > 60)
+			DYN_SpeedSetVector( DYN_SpeedGetVector() * 2.5)		// JEter plus loin que par l anim
+		if( ACT_ActionFinished())
+			ACT_ActionSet( Action_KO_au_sol )
+		break
+		
+	case Action_KO_au_sol :
+		ti_check_chute = vrai
+		ti_detect_mur = faux
+		if ( MATH_VecNullToler(tv_speed, 1.0))
+		{
+			DYN_SpeedSetVector( Cv_NullVector)
+
+			// NOUVELLE GESTION
+//			f_fatigue_time += Cf_fatigue_add_paf_croutage
+			if ( EVENT_LIFE_CurLifeGet( ID_LIFE) <= 0.0 )
+			{
+				f_fatigue_time = 5.0
+				macro_change_etat("KT_ETAT_KO_au_sol")
+			}
+			else
+			{
+				i_paf_mur_leger = vrai
+				v_paf_sens = - OBJ_SightGet()
+				o_paf_actor = o_fight_actor
+				macro_change_etat("KT_ETAT_paf")
+			}
+		}
+		break
+		
+	default:
+		DBG_TraceString("Projectile en mode default: étrange, a signaler")
+		DBG_TraceEOL()
+		DYN_SpeedSetVector( Cv_NullVector)
+		macro_change_etat("KT_ETAT_fight_KONG")
+		break
+}
+
+
+// ENVOI DE PAFS AUX ENNEMIS
+switch ( ACT_ActionGet())
+{
+	case Action_Fight_GrabTT_Projectile_D :
+	case Action_Fight_GrabTT_Projectile_G :
+		// projection latérale : REX paffe avec tout son corps
+		COL_ColSetActivationSet(C_bit_zde_fight, none)
+		i_flag_zde_fight_type = Ci_zde_fight_type_projection_laterale
+		AI_Execute("KT_exec_zdf_zdc")
+		COL_ColSetActivationSet(none, C_bit_zde_fight)
+		break
+	default:
+		// autre projection : REX paffe devant lui
+		COL_ColSetActivationSet(C_bit_zde_fight, none)
+		i_flag_zde_fight_type = Ci_zde_fight_type_projectile
+		AI_Execute("KT_exec_zdf_zdc")
+		COL_ColSetActivationSet(none, C_bit_zde_fight)
+		break
+}
+
+// Detection du vide
+if( ti_check_chute )
+	macro_checkchute
+
+// LE TREX PAF EN CHARGE
+//COL_ColSetActivationSet(C_bit_zde_fight, none)
+//i_flag_zde_fight_type = Ci_zde_fight_type_projectile
+//AI_Execute("KT_exec_zdf_zdc")
+//COL_ColSetActivationSet(none, C_bit_zde_fight)
+
+// TEST COLLISION MUR	
+
+// 1 LRAY devant la tete	
+//to_col_ray_object = nobody
+//to_tete = ANI_CanalObjectGet( Anim_Canal_Tete)
+//DBG_RenderVector(@to_tete OBJ_PosGet(), OBJ_SightGet() * 2.0, color_bleu )
+//to_col_ray_object = COL_RayObject_Dist( @to_tete OBJ_PosGet() , OBJ_SightGet() * 2.0, 1.5, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable  )
+//	
+//if( to_col_ray_object )
+//	tv_sens_collision = COL_RayObject_NormalGet()
+//	
+//to_col_wall_object = nobody
+//if( COL_BestAngleWallGaoGet( tv_speed, Cf_Cos30, &ti_col) )
+//{
+//	to_col_wall_object = COL_ObjectGet(COL_C_ReportIndex + ti_col)
+//	tv_sens_collision = COL_NormalGet(COL_C_ReportIndex  + ti_col)
+//	tv_pos_collision = COL_CollidedPointGet(COL_C_ReportIndex  + ti_col)
+//	tv_sens_collision = tv_pos_collision - OBJ_PosGet()
+//	MATH_VecSetHorzNormalize( tv_sens_collision)
+//	if ( MATH_VecDotProduct( tv_sens_collision, OBJ_SightGet()) < Cf_Cos60)
+//		to_col_wall_object = nobody
+//	
+//}
+//	
+// Test collision 3 - Résultat 
+
+//if( ( to_col_ray_object && ( to_col_ray_object != OBJ_Me()))
+//|| (to_col_wall_object && ( to_col_wall_object != OBJ_Me())))
+to_col_actor = KT_Test_collision_Mur_LRAY_COL(vrai, vrai, tv_speed, tv_sens_collision, v_collision_point)
+if ( to_col_actor && to_col_actor != o_Kong )
+{
+	// VERIF que le paf a été bien envoyé
+	tv_sens_paf = DYN_SpeedGetVector()
+	tv_sens_paf.z = 0.0
+	if ( MATH_VecNullEpsilon( tv_sens_paf))
+		tv_sens_paf = OBJ_SightGet()		// Le moins pire
+	else
+		MATH_VecSetNormalize( tv_sens_paf)				
+	if( ARR_ObjSearch( &ao_paf_list[0], i_paf_nb, to_col_actor) == -1 )
+	{
+		EVENT_AddEventPafCanal( C_EVENT_FILTER_Object, C_PAF_KK_Moyen + C_PAF_KK_Projection, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_col_actor, -1, Cf_DMG_Projection, tv_sens_paf, COL_ZonePosGet( C_zde_fight))
+//		DBG_TraceObject(OBJ_Me())
+//		DBG_TraceString(" projeté dans ")
+//		DBG_TraceObject(to_col_actor)
+//		DBG_TraceString(" et le paffe")
+//		DBG_TraceEOL()
+	}
+	
+	if( ti_detect_mur)
+	{
+		if( KT_Test_collision_Mur_Prend_Paf(to_col_actor) )
+		{
+//			if( i_blesse_on )
+			if( KT_Paf_Mur_Allowed() )
+			{
+				f_delay_last_paf_mur = 0.0
+				KT_GFX_Impact(v_collision_point)
+				
+				// paffable dans un mur, uniquement si blessé
+//				f_grabbed_last_time = TIME_Get()	// CAS ou REX SE COGNE: preparer l anti chain lance
+				
+	//			DBG_TraceObject(OBJ_Me())
+	//			DBG_TraceString(" projeté et paffé dans ")
+	//			DBG_TraceObject(to_col_actor)
+	//			DBG_TraceEOL()
+				
+				// CHANGER LA VIE DU TREX
+				EVENT_LIFE_LifeChange(ID_LIFE, Cf_PAF_Projectile_Mur)
+				KT_Timer_KONG_Init()
+				
+				f_coef_recul = 0.0
+				GST_PAF_Trans_Rotate( OBJ_PosGet(), OBJ_SightGet(), Cv_NullVector, tv_sens_collision, 15.0, v_add_speed, f_add_rotation)
+				v_add_speed *= 0.6
+		
+				if ( MATH_VecDotProduct( OBJ_SightGet(), tv_sens_collision) < 0)
+					i_ko_face_mur = vrai		// Jouer l anim d explosion sur les mur
+				
+//				to_bone = ANI_CanalObjectGet(Anim_Canal_Tete)
+//				KT_GFX_Particules(@to_bone OBJ_PosGet(), - OBJ_SightGet())
+				
+				
+	//			DBG_TraceString("KO Sol - ")
+	//			if( to_col_ray_object)
+	//				DBG_TraceObject( to_col_ray_object)
+	//			if( to_col_wall_object)
+	//				DBG_TraceObject( to_col_wall_object)				
+	//			DBG_TraceEOL()
+	
+				// NOUVELLE GESTION
+	//			f_fatigue_time += Cf_fatigue_add_paf_wall
+	
+	
+//				f_time_gfx_particules = Cf_time_gfx_particules
+				if ( EVENT_LIFE_CurLifeGet( ID_LIFE) <= 0.0 )
+				{
+					i_paf_mur_align = vrai
+					f_fatigue_time = 5.0
+					o_paf_actor = o_fight_actor
+					o_paf_actor_memo = o_fight_actor
+					macro_change_etat("KT_ETAT_KO_au_sol")
+				}
+				else
+				{
+					i_paf_mur_leger = vrai
+					v_paf_sens = tv_sens_collision
+					DBG_RenderVector(OBJ_PosGet() + cvector(0.0,0.0,3.0), v_paf_sens, color_rouge)
+					o_paf_actor = o_fight_actor
+					macro_change_etat("KT_ETAT_paf")
+				}
+			}
+			else
+				macro_change_etat("KT_ETAT_derap")
+		}
+		else
+			macro_change_etat("KT_ETAT_derap")
+	}
+}
+

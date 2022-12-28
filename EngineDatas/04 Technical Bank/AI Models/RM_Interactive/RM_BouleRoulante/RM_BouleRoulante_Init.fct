@@ -1,0 +1,14 @@
+
+f_rayon = COL_ZoneSizeGet(C_zdm_pied)
+
+DYN_On()
+DYN_FlagsSet(DYN_C_BasicForces | DYN_C_HorizontalGrounds, none)
+DYN_GravitySet(Cv_NormalGravity)
+DYN_MaxStepSet(0.01)
+
+o_main_actor = AI_MainActorGet(0)
+
+v_prev_pos = OBJ_PosGet()
+AI_CBAdd(OBJ_Me(), CallBack_After_Rec, "RMBR_callback_AfterRec")
+
+AI_TrackCurChangeNow("RMBR_ETAT_wait")

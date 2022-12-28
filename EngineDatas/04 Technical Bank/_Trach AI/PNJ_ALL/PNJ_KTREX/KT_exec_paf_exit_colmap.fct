@@ -1,0 +1,97 @@
+#include "KT_defines.var"
+
+vector		tv_sens_paf
+vector		tv_sens_paf_init
+vector		tv_safe_pos
+vector		tv_safe_axis
+vector		tv_actor_pos
+
+object		to_col_ray_object
+object		to_actor
+object		to_bone
+
+float			tf_rayon_colmap_KONG
+float			tf_rayon_colmap_REX
+float			tf_safe_norm
+float			tf_recul_norm
+int				ti_col
+
+to_actor = o_Kong
+
+//if( @to_actor Proc_KK_RefusePaf() )
+//	return
+
+tf_rayon_colmap_KONG = @to_actor COL_ColMapMaxGet(0).x
+tf_rayon_colmap_REX = COL_ColMapMaxGet(0).x
+tf_safe_norm = tf_rayon_colmap_REX + tf_rayon_colmap_KONG // + 0.5		// distance pour sortir l'un de l'autre
+
+if( ! MATH_VecNullEpsilon(v_paf_exit_colmap_sens) )
+{
+	// sens de recalage déjà calculé (continuité du recalage sur plusieurs trames)
+	tv_sens_paf = v_paf_exit_colmap_sens
+}
+else
+{
+	tv_sens_paf_init = @to_actor OBJ_PosGet() - OBJ_PosGet()
+	tv_sens_paf_init.z = 0.0
+	if( ! MATH_VecNullEpsilon(tv_sens_paf_init) )
+		MATH_VecSetNormalize(tv_sens_paf_init)
+	else
+		tv_sens_paf_init = OBJ_SightGet()
+
+	// 1 . on repousse de face
+	tv_sens_paf = tv_sens_paf_init
+	@to_actor OBJ_FlagsControlSet( OBJ_C_ControlFlag_RayInsensitive, none)
+	to_col_ray_object = COL_RayObject_Dist(OBJ_PosGet() + cvector(0,0,3), tv_sens_paf, 10.0, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable )
+	DBG_RenderVector( OBJ_PosGet() + cvector(0,0,3), tv_sens_paf * 10.0, color_bleu)
+	if( to_col_ray_object )
+	{
+		// il y a un mur dans en face : je repousse du côté de KONG
+		tv_sens_paf = MATH_VecCrossProduct(Cv_VerticalVector, tv_sens_paf_init)
+		to_bone = @to_actor ANI_CanalObjectGet(Anim_Canal_Tete)
+		if( MATH_VecDotProduct(tv_sens_paf, @to_bone OBJ_PosGet() - OBJ_PosGet()) < 0 )
+			tv_sens_paf *= -1
+		to_col_ray_object = COL_RayObject_Dist(OBJ_PosGet() + cvector(0,0,3), tv_sens_paf, 10.0, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable )
+		if( to_col_ray_object )
+		{
+			// il y a un mur en face et du côté de KONG : je repousse de l'autre côté
+			tv_sens_paf *= -1
+			to_col_ray_object = COL_RayObject_Dist(OBJ_PosGet() + cvector(0,0,3), tv_sens_paf, 10.0, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable )
+			if( to_col_ray_object )
+			{
+				// il y a un mur en face et sur les 2 côtés : je repousse derrière moi
+				tv_sens_paf = - tv_sens_paf_init
+			}
+		}
+	}
+	v_paf_exit_colmap_sens = tv_sens_paf		// on backup le sens de paf de recalage
+	@to_actor OBJ_FlagsControlSet( none, OBJ_C_ControlFlag_RayInsensitive)
+}
+
+
+tv_safe_pos = OBJ_PosGet() + ( tf_safe_norm * tv_sens_paf )
+DBG_RenderVector(OBJ_PosGet(), tv_safe_pos - OBJ_PosGet(), color_bleu)
+tv_actor_pos = @to_actor OBJ_PosGet()
+tv_actor_pos.z = tv_safe_pos.z		// recalage horizontal
+tv_safe_axis = tv_safe_pos - tv_actor_pos
+DBG_RenderVector(tv_actor_pos, tv_safe_axis, color_vert)
+tf_recul_norm = MATH_VecNorm(tv_safe_axis)
+tf_recul_norm *= 0.5
+tf_recul_norm /= TIME_GetDt()
+MATH_VecSetNormalize(tv_safe_axis)
+
+//DBG_TraceEOL()
+//DBG_TraceString("norme de recul = ")
+//DBG_TraceFloat(tf_recul_norm)
+//DBG_TraceEOL()
+
+tf_recul_norm = MATH_FloatMin(tf_recul_norm, 25.0)
+//tf_recul_norm = MATH_FloatMax(tf_recul_norm, 0.5)
+tv_sens_paf = tf_recul_norm * tv_safe_axis
+
+// ENVOI DU PAF =================================================================================
+if( MATH_VecNullToler(tv_sens_paf, 0.1) )
+	tv_sens_paf = OBJ_SightGet()
+DBG_RenderVector(OBJ_PosGet(), tv_sens_paf, color_cyan)
+EVENT_AddEventPafCanal( C_EVENT_FILTER_Enemy, C_PAF_KK_Exit_Colmap, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_actor, -1, 0.0, tv_sens_paf, OBJ_PosGet())
+

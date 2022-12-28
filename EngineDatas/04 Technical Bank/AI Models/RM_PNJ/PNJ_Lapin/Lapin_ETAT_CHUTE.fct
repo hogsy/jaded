@@ -1,0 +1,126 @@
+#include "PNJ_Lapin_defines.var"
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	Lapin_EXPRESSION(Cf_Expr_Mouth_Closed)
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_Lapin_CHUTE) 
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Lapin_CHUTE
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	Lapin_DBG_Trace_String(DBG_Trace_Etat, "CHUTE")
+	fct_previous_etat = fct_last_etat
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	if( i_dernier_etat == ETAT_Lapin_PAF )
+		Lapin_ACTION_Set(Action_Jump_Chute_Paf)
+	else
+		Lapin_ACTION_Set(Action_Jump_Chute)
+	f_chute_no_stream_duree = 0.0
+	Lapin_EXPRESSION(Cf_Expr_Mouth_Middle)
+}
+else
+{
+	if( MATH_VecNullToler(v_traction_stream, 0.01) )
+		f_chute_no_stream_duree += TIME_GetDt()
+	f_time_start_etat += TIME_GetDt()
+}
+
+// STIMULI ===========================================================================
+o_Grabbed_Actor = LNK_ServeurGet(Ci_LNK_GRAB_EAGLE, mid_Grabbed_LNK_ID, vrai, nofunc, nofunc)
+if( o_Grabbed_Actor )
+	macro_change_etat("Lapin_ETAT_GRABBED")
+
+o_Rided_Actor = LNK_ServeurGet(Ci_LNK_RIDE_ON_NMI, mid_Rided_LNK_ID, vrai, nofunc, nofunc)
+if( o_Rided_Actor && i_ground_flag )
+	macro_change_etat("Lapin_ETAT_RIDED")
+
+if( f_chute_no_stream_duree > 5.0 )
+{
+	MACRO_LAPIN_DESTROY
+}
+else if( f_time_start_etat > 3.0 )
+{
+	if( ! MATH_VecNullToler(v_traction_stream, 0.01) )
+	{
+		// je suis dans un stram, je dois nager pour avancer
+		v_traction_exit_chute = 5.0 * OBJ_SightGet()
+		Lapin_ACTION_Set(Action_Nage_Cycle)
+	}
+	else if( ACT_ActionGet() == Action_Nage_Cycle )
+		Lapin_ACTION_Set(Action_Jump_Chute)		// je suis hors du stream, j'ai fini de nager 
+}
+
+AI_Execute("Lapin_exec_check_vision")
+
+// ne repasser en paf que si on prend un nouveau paf et pas car on est (déjà) mort
+AI_Execute("Lapin_exec_check_paf")
+if( i_flag_paf )
+	macro_change_etat("Lapin_ETAT_PAF")
+
+
+if( i_ventilo_flag )
+	macro_change_etat("Lapin_ETAT_ASPIRE")
+
+AI_Execute("Lapin_exec_update_best_interest")
+
+//if( ! MSG_GlobalIsValid(mid_best_interet) )
+//	MACRO_GO_IDLE(0)
+
+// COMPORTEMENT ===================================================================
+//v_way_destpos = Cv_NullVector
+//i_target_territory_ID = Lapin_PROC_POS_GET_TERRITORY(v_way_destpos)
+//
+//AI_Execute("Lapin_exec_way_find")
+//
+//AI_Execute("Lapin_exec_way_move")
+//
+//AI_Execute("Lapin_exec_way_orientation")
+//
+//AI_Execute("Lapin_exec_way_select_action")
+
+switch( ACT_ActionGet() )
+{
+	case Action_Jump_Chute :
+	case Action_Jump_Chute_Paf :
+	case Action_Nage_Cycle :
+		if( ( i_ground_flag || i_is_in_water ) && f_time_start_etat > 0.1 ) // blend anim
+		{
+			i_flag_jump = faux
+			if( ACT_ActionGet() == Action_Jump_Chute_Paf )
+				Lapin_ACTION_Set(Action_Jump_Reception_Paf)
+			else
+				Lapin_ACTION_Set(Action_Jump_Reception)
+		}
+		break
+	case Action_Jump_Reception_Paf :
+		if( ACT_ActionFinished() )
+		{
+//			if( EVENT_LIFE_CurLifeGet(ID_LIFE) )
+			if( f_LIFE_cur )
+				Lapin_ACTION_Set(Action_Paf_fort_face_get_up)
+			else
+				MACRO_GO_IDLE(0)	// DEAD
+		}
+		break
+	case Action_Jump_Reception :
+	case Action_Paf_fort_face_get_up :
+		if( ACT_ActionFinished() )
+			MACRO_GO_IDLE(0)
+		break
+}
+
+// banking (je n'étais pas forcément vertical avant... (aspiré vers le haut...)
+OBJ_BankingGeneralSet(OBJ_SightGet(), MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 5 * TIME_GetDt()))

@@ -1,0 +1,57 @@
+int ti_trigger
+int	ti_res 
+
+// FRED --- ALLOCATION SF + DESTRUCTION Si SF A VRAI --------------
+if (i_SF_NePasSeRejouer)
+	SpecialFlag_set(i_SF_AlreadyPlayed)
+// FRED --- ALLOCATION SF + DESTRUCTION Si SF A VRAI --------------
+
+// RAZ ALREADY PLAYED FLAGS ----------------------------------------------------
+if (mi_TriggerExec_repeat)
+{
+	mi_TriggerExec_Flag = faux
+	for ( ti_trigger = 0; ti_trigger < 10; ti_trigger++)
+		mai_AdditionalTriggerExec_Flag[ti_trigger] = faux
+}
+mi_TriggerExecOff_Flag = faux
+for ( ti_trigger = 0; ti_trigger < 10; ti_trigger++)
+	mai_AdditionalTriggerExecOff_Flag[ti_trigger] = faux
+// RAZ ALREADY PLAYED FLAGS ----------------------------------------------------
+
+// Play Trigger ON
+if ( !mi_TriggerExec_Flag && AI_TriggerIsValid( mt_TriggerExec ) )
+	mi_TriggerExec_Flag = call_trigger ( mt_TriggerExec )
+
+// Play Trigger ON Additionnel
+for ( ti_trigger = 0; ti_trigger < 10; ti_trigger++)
+{
+	if ( !AI_TriggerIsValid( mat_AdditionalTriggerExec[ ti_trigger ] ) )
+		break
+	if (!mai_AdditionalTriggerExec_Flag[ti_trigger])
+		mai_AdditionalTriggerExec_Flag[ti_trigger] = call_trigger( mat_AdditionalTriggerExec[ ti_trigger ] )
+}
+
+// Play EVENT
+if ( ( (!mi_trigger_forced_true && mi_WaitEventFinished ) || !mi_WaitEventFinished) && ( OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_Events ) && (mi_State == 0) )
+	EVT_PlayAll()
+	
+// TEST si on doit forcer un PLAYON la prochaine trame.
+mi_trigger_forced_true = faux
+//if (mi_ForceConditionTrueUntilAllTriggerFinished)
+//{
+	// On doit forcer a vrai tant que toutes les conditions definis ne sont pas toute vrai
+	ti_res = vrai
+	if ( AI_TriggerIsValid( mt_TriggerExec ) )
+		ti_res &= mi_TriggerExec_Flag
+	for ( ti_trigger = 0; ti_trigger < 10; ti_trigger++)
+	{
+		if ( !AI_TriggerIsValid( mat_AdditionalTriggerExec[ ti_trigger ] ) )
+			break
+		ti_res &= mai_AdditionalTriggerExec_Flag[ti_trigger]
+	}
+	if (mi_WaitEventFinished && !EVT_IsStopAll())
+		ti_res = faux
+
+	if (!ti_res)
+		mi_trigger_forced_true = vrai
+//}

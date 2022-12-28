@@ -1,0 +1,125 @@
+#include "ode_defs.var"
+Include_UltraProcedure_Header
+
+object 	o_Kong
+float		tf_impulsion
+vector	tv_speed
+int			ti_trigger_unpaused
+int			ti_num_unpaused, ti_num_total
+
+//o_Kong = @"univ" ao_AllHumains[C_ID_Kong]
+o_Kong = nobody
+// if there is a swing assoiated with this ODE struct, wait for Kong to finish swinging on it before letting it fall
+if ( 0 ) // mo_Swing && o_Kong && @o_Kong Proc_KK_Test_Mode( ETAT_Kong_swing_arch ) && ( @o_Kong Proc_KK_HotSpotGet() == mo_Swing ))
+{
+	mi_SwingState = C_KongIsSwinging
+}
+else if ( mo_Swing && ( mi_SwingState == C_KongIsSwinging ) )
+{
+	mi_SwingState = C_KongStoppedSwinging
+}
+
+// if there is a swing we don't want the normal ODE trigger check.
+// if there is a swing and Kong has used it and is not using it any more, then the system is triggered
+if ( mo_Swing && ( mi_SwingState != C_KongStoppedSwinging ) )
+{
+	return
+}
+else if ( mo_Swing )
+{
+	ti_trigger_unpaused = 1
+}
+else
+{
+	// IF MODE IS ACTIF/PAUSE, CHECK IF ONE ELEMENT OF THE STRUCTURE IS UNPAUSED TO SWITCH TO ACTIVE MODE
+	ti_trigger_unpaused = 0
+	if(i_mode_init == ODE_Structure_Init_Actif_Pause)
+	{
+		if(ODE_b_Structure_Is_UnPaused(ti_num_unpaused, ti_num_total))
+			ti_trigger_unpaused = 1
+	}
+}
+
+i_trig_general_active = 0
+i_trig_paf_active = 0
+i_trig_projectile_active = 0
+AI_Execute("ode_check_trigger")
+
+// Rien ne s'est passé ... hop, je sors ...
+if
+(
+		! i_trig_general_active
+&& 	! i_trig_paf_active 
+&& 	! i_trig_projectile_active  
+&& 	! ti_trigger_unpaused 
+&& 	!(ODE_Structure_TestElementRemoved())
+) 
+{
+	return
+}
+
+if (i_SF_ODEStructCasse)
+	Super_SpecialFlag_set(i_SF_AlreadyCP)		// Set SF
+
+// Gros Choc de début
+if(i_son_activation_autorise)
+	SND_RequestPlay(ODE_Sound_Choc_Activation)
+
+// Un Trigger a été activé ... 
+switch(i_mode_init)
+{
+	case ODE_Structure_Init_Inactif:
+	ODE_Structure_Activation_OnOFF(1)
+	break
+	
+	case ODE_Structure_Init_Actif_Immovable:
+	ODE_Structure_Activation_OnOFF(1)	
+	ODE_Structure_Immovable_OnOFF(0)	
+	break
+
+	case ODE_Structure_Init_Actif_Pause:
+	if(!i_trig_projectile_active)
+		ODE_Structure_Activation_OnOFF(1)	
+	break
+	
+}
+
+// Trigger Projectile activé
+if(i_trig_projectile_active && o_projectile_cine)
+{
+	ODE_Object_ImmovableOnOFF(o_projectile_cine, 0)
+	@o_projectile_cine ODE_Enable(1)
+	tv_speed = @o_projectile_cine OBJ_BankingGet()
+	tv_speed *= f_vitesse_init_projectile
+	
+	@o_projectile_cine ODE_Setv(0, tv_speed)
+}
+else
+{
+	if(o_projectile_cine)
+	{
+		@o_projectile_cine ODE_Enable(0)	
+		ODE_Object_Kill(o_projectile_cine)
+	}
+}
+
+// Micro Impulsion sur PAF ?
+if(i_trig_paf_active && i_genere_impulsion_si_paf && o_element_paf)
+{
+	if(f_force_valeur_impulsion)
+		tf_impulsion = f_force_valeur_impulsion * MATH_RandFloat(0.7,1.1)
+	else
+		tf_impulsion = 1000.0 * MATH_RandFloat(0.7,1.1)
+	
+	@o_element_paf ODE_ForceAtPosSet(v_dir_paf * tf_impulsion, v_pos_paf)		
+}
+
+
+// Je stock la date de l'activation de la structure pour le TimeToLive
+f_time_at_activation = TIME_Get()
+f_time_sound = 0
+
+// Je passe en mode structure active ...
+AI_TrackCurChange("ode_state_active")
+
+

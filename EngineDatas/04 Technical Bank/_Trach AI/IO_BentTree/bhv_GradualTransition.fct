@@ -1,0 +1,71 @@
+#include "IO_BentTree_Defines.var"
+
+vector	v_res
+int 		i_Index
+
+mi_IsActivelyBanking			= TRUE
+
+// apply sine wave to the banking coef
+mf_BankingCoef 					= fnf_SinOfTime( ( TIME_Get() - mf_GradualBankingStartTimeStamp ), 0.0, mf_CurrTreeBendFrequency, mf_MaxTreeBend, 0.0 )
+
+// if sine wave is coming back down from peak, stop it at the specified percentage of a single bank.  Also no bend back on swings till Kong isn't swinging anymore.
+if ( mf_BankingCoef < mf_MyLastBankCoef ) //&& ( !mi_IsSwing ||  mi_KongIsSwinging && !mi_LastIsKongSwinging ) )
+{
+	if ( !mi_KongIsSwinging )
+	{
+		int blag
+		
+		blag = 1
+	}
+
+	if ( ( mf_BankingCoef / mf_MaxTreeBend ) < ( MATH_RandFloat( mf_MinBendBackPercent , mf_MaxBendBackPercent ) ) || ( ( mi_IsSwing && mi_IsSwing != 1 ) || mi_KongIsSwinging ) )
+	{
+		mv_CurrentBank			= OBJ_BankingGet()
+		mi_IsActivelyBanking	= FALSE
+		
+		if ( mi_IsSwing )	// might be needed in any case, but defintely for swing
+		{
+			AI_TrackStop( C_Track_PAGActivation )
+			
+//			for ( i_Index = 0; i_Index < C_MaxHitPAGS; i_Index++ )
+//			{
+//				mai_IsPAGActiveForLocation[i_Index] = faux
+//			}
+		}
+		
+		AI_TrackStop( C_Track_BankingTransition )
+		
+		return
+	}
+}
+
+// take note of the last banking coef
+mf_MyLastBankCoef = mf_BankingCoef
+	
+// bank to new angle
+v_res	= MATH_VecBlend( mv_StartingBank, mv_EndingBank, MATH_AbsFloat( mf_BankingCoef ) )
+	
+if ( v_res != Cv_NullVector )
+{
+	OBJ_BankingSet( v_res )
+}
+
+// possible trigger of vine wave stuff
+{
+	if ( !mi_IsNewVineWaveTriggered )
+	{
+		mf_ActualTimeOfLastVineWaveStart = TIME_Get()
+		
+		for ( i_Index = 0; i_Index < C_Max_Vines;  i_Index++ )
+		{
+			
+			mf_VineWaveStartTime[i_Index]				= mf_ActualTimeOfLastVineWaveStart + MATH_RandFloat( ( mf_RandomTimeToAddToVineWaveStart * -1 ), mf_RandomTimeToAddToVineWaveStart )
+			mf_VineBankingCoefCurrentMax[i_Index]	= mf_VineBankingCoefMax
+		}
+		
+		mi_IsNewVineWaveTriggered = vrai
+		mi_IsVineWaveActive 			= vrai
+		
+		AI_TrackChange( C_Track_VineWave, "bhv_VineWave" )
+	}
+}

@@ -1,0 +1,79 @@
+#include "PNJ_Spider_defines.var"
+
+int			ti_i
+int			ti_flag_ok
+int			ti_best_perceived_index
+
+float		tf_dist
+float		tf_best_dist
+
+if (i_flag_sortie_etat)
+{
+	i_flag_sortie_etat = faux
+	return
+}
+
+
+if (i_etat_courant != ETAT_Apparition)
+{
+	// INTIALISATION
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Apparition
+	
+	if (fct_last_etat)
+	{
+		i_flag_sortie_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	fct_last_etat = AI_TrackCurGet()
+	
+	i_etat_phase = 0
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+	
+// ANALYSE ===============================================================
+AI_Execute("PNJ_Spider_exec_check_vision")
+
+AI_Execute("PNJ_Spider_exec_check_paf")
+if (i_flag_paf)
+{
+	if (type == Ci_TYPE_RAMPANT)
+		macro_change_etat("PNJ_Spider_ETAT_Paf")
+	else
+		i_etat_phase = 1
+}
+
+// ANALYSE ===============================================================
+//PNJ_Spider_Test_Target()
+
+if (i_net_loop)	
+	macro_change_etat("PNJ_Spider_ETAT_Mur")
+	
+PNJ_Spider_Test_Attaque()
+
+// COMPORTEMENT =========================================================
+
+// JE VAIS AU BOUT DU RESEAU
+if (i_etat_phase)
+	f_move_speed = MATH_FloatBlend(f_move_speed, move_speed, 6.0 * TIME_GetDt())			
+else if (@ao_net_wp[i_current_wp_index] OBJ_CapaTest(Capa_Net_Wait_Enemy) && i_perceived_best_actor_index == -1)
+	f_move_speed = 0.0
+else
+	f_move_speed = MATH_FloatBlend(f_move_speed, move_speed, 6.0 * TIME_GetDt())			
+
+if (i_flag_net_end && f_move_speed)
+{
+	if (!i_etat_phase && type == Ci_TYPE_FIXE && o_best_interet_target)
+		macro_change_etat("PNJ_Spider_ETAT_Attaque")
+	else
+		macro_change_etat("PNJ_Spider_ETAT_Sol")
+}
+
+f_move_length = f_move_speed * TIME_GetDt()
+PNJ_Spider_Position_Set()

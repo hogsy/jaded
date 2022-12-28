@@ -1,0 +1,73 @@
+#include "PNJ_Corbeau_defines.var"
+
+int			ti_i
+
+float		tf_dot_product
+float		tf_coef
+
+vector	tv_pos
+
+object	to_corback
+
+if (i_etat_courant != ETAT_follow_network)
+{
+	i_etat_courant = ETAT_follow_network
+	
+	f_time_start_etat = 0.0
+
+	if (!OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Generated))
+	{
+		for (ti_i = 0; ti_i < des_nombre; ti_i++)
+		{
+			to_corback = OBJ_Duplicate(OBJ_PosGet())
+			@to_corback OBJ_FlagInvisibleSet(vrai)
+		}
+	}
+
+	o_last_wp = @get_WP OBJ_Duplicate(OBJ_PosGet())
+	o_next_wp = WAY_WPNearestOfOBJ(n_net, all, none, Ci_Filter_IdentityFlag)
+
+	OBJ_BankingGeneralSet(- @o_next_wp OBJ_SightGet(), Cv_VerticalVector)
+	OBJ_SightGeneralSet(MATH_VecRotate(OBJ_SightGet(), Cv_VerticalVector, MATH_RandFloat(-Cf_PiBy3, Cf_PiBy3)), Cv_VerticalVector)
+
+	@o_last_wp OBJ_SightSet(OBJ_SightGet())
+
+	f_link_length = MATH_VecNorm(@o_next_wp OBJ_PosGet() - OBJ_PosGet())
+
+	f_climb_speed = MATH_RandFloat(4.0, 6.0)
+	f_rot_speed = MATH_FloatSign(MATH_RandFloat(-1.0, 1.0)) * MATH_RandFloat(1.0, 3.0)
+
+	f_morph_speed = 10.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+tf_dot_product = 1.0 - MATH_FloatLimit(MATH_VecDotProduct(OBJ_SightGet(), Cv_VerticalVector), -0.25, 0.5)
+
+f_speed = MATH_FloatBlend(f_speed, tf_dot_product * f_climb_speed, 4.0 * TIME_GetDt())
+
+tf_coef = f_speed / f_climb_speed
+tf_coef *= 0.5
+f_morph_speed = MATH_FloatBlend(25.0, 5.0, tf_coef)
+
+if (f_speed > f_climb_speed * 1.1)
+	i_flag_plane = vrai
+else
+	i_flag_plane = faux
+
+AI_Execute("PNJ_Corbeau_exec_compute_position")
+
+if (OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Generated))
+{
+	tv_pos = OBJ_PosGet()
+	tv_pos += v_offset * MATH_FloatMin(f_time_start_etat * 0.5, 1.0)
+	OBJ_PosSet(tv_pos)
+	
+//	v_offset = MATH_VecRotate(v_offset, OBJ_SightGet(), f_rot_speed * TIME_GetDt())
+}
+
+AI_Execute("PNJ_Corbeau_exec_bankingset")
+
+AI_Execute("PNJ_Corbeau_exec_morph")

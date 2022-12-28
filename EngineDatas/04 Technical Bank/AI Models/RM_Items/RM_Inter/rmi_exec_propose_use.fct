@@ -1,0 +1,18 @@
+float		tf_dist
+object	to_serveur
+vector	tv_temp
+messageid		tmid_proposition
+
+
+tmid_proposition = pop
+
+to_serveur = MSG_GlobalGetGao(tmid_proposition, SERVEUR)
+
+tv_temp = @to_serveur OBJ_PosGet() - OBJ_PosGet()
+tf_dist = MATH_VecDotProduct(tv_temp, tv_temp)
+
+if( tf_dist  < 9.0 )
+{
+	LNK_ClientPropose(tmid_proposition, tf_dist)
+	LNK_Use_TypeSet(tmid_proposition, i_key_type)
+}

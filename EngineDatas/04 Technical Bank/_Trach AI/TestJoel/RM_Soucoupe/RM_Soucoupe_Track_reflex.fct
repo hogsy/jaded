@@ -1,0 +1,12 @@
+ float dt
+
+dt=TIME_GetDt()
+
+v_Speed = (OBJ_PosGet() - v_OldPos) / TIME_GetDt()
+v_Speed*=0.999
+v_Speed.z-=1.0
+
+
+v_OldPos = OBJ_PosGet()
+
+OBJ_PosSet(v_OldPos+(v_Speed*TIME_GetDt()))

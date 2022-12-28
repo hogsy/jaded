@@ -1,0 +1,49 @@
+#include "KBC_defines.var"
+
+vector			tv_sight
+vector			tv_banking
+
+if( o_cible_attaque )
+{
+	tv_sight = @o_cible_attaque OBJ_PosGet() - OBJ_PosGet()
+	tv_sight = KBC_BlendRotate(OBJ_SightGet(), tv_sight, 100.0, f_rotation_angle_courant * (30.0 * Cf_1Degre) )		// 30 ° x30 (à cause du getdt)
+}
+else
+{
+	tv_sight = OBJ_SightGet()
+}
+
+//tv_banking = MATH_VecRotate(Cv_VerticalVector, OBJ_HorizonGet(), Cf_PiBy4)
+//DBG_RenderVector(OBJ_PosGet(), tv_banking, color_vert)
+//tv_banking = MATH_VecBlendRotate(OBJ_BankingGet(), tv_banking, 5 * TIME_GetDt())
+//DBG_RenderVector(OBJ_PosGet(), tv_banking, color_rouge)
+
+tv_banking = MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 10 * TIME_GetDt())
+
+OBJ_BankingGeneralSet(tv_sight, tv_banking)
+
+// collisions molles
+//DBG_RenderVector(OBJ_PosGet(), v_soft_collision_current, color_bleu)
+//OBJ_PosSet(OBJ_PosGet() + v_soft_collision_current)
+
+AI_Execute("KBC_exec_MOVE_calc_speed")
+
+if( i_big_bat )
+	return
+
+//if( i_big_bat 
+//	&& i_etat_courant == ETAT_Fight_Pause 
+//	&& MATH_VecNullToler(v_vitesse_derapage, Cf_vitesse_derapage_null_toler) )		// d'abord je dérape, ensuite je remonte
+//{
+//	// la big bat monte un peu après un paf
+//	// STEPH ADD
+//	if ( ! i_charge_KK_dodge)
+//	// STEPH ADD
+//	{
+//		v_fight_wait_pos += (f_speed * TIME_GetDt() * Cv_VerticalVector)
+//		if( ! MATH_VecNullEpsilon(v_fight_wait_pos) )
+//			OBJ_PosSet(v_fight_wait_pos)		// force la position courante (pour les coll molles, pour ne pas être repoussé trop loin par la succession de PosSet en tagon)
+//	}
+//}
+//
+//

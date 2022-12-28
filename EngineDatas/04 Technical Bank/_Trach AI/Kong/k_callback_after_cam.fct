@@ -1,0 +1,45 @@
+#include "k_define.var"
+
+object	to_bone
+object	to_camera
+
+int			ti_FX
+int			ti_frame
+
+vector	tv_temp
+
+// AFTER EFFECT ZOOM SMOOTH CENTER =================================================
+to_camera = @get_global o_camera
+ti_FX = faux
+ti_frame = ANI_CurrentFrameGet(0)
+switch( ACT_ActionGet() )
+{
+	case Ci_Kanim_Intimid_Furie :
+	case Ci_Kanim_Intimid_FinishFurieCri :
+		if( ti_frame > 100 )
+			ti_FX = vrai
+		break
+	case Ci_Kanim_Intimid_FinishFurieReward :
+		if( ( ti_frame > 160 && ti_frame < 260 ) || ti_frame > 330 )
+			ti_FX = vrai
+		break
+}
+
+if( ti_FX )
+	f_zoom_smooth_coef += MATH_FloatMin(2.5 - f_zoom_smooth_coef, 10.0 * TIME_GetDt())
+else
+	f_zoom_smooth_coef -= MATH_FloatMin(f_zoom_smooth_coef, 6.0 * TIME_GetDt())
+
+if (f_zoom_smooth_coef)
+{
+	to_bone = ANI_CanalObjectGet(Anim_Canal_Tete)
+	@get_global Proc_AE_ZoomSmoothCenterSet( f_zoom_smooth_coef , @to_bone OBJ_PosGet() - @to_camera OBJ_PosGet() )	
+//	Str_DisplayFloatOnce(f_zoom_smooth_coef, cvector(0.5,0.5,0))
+}
+
+
+// ON SCREEN PCT ====================================================================
+f_on_screen_pct = VIEW_LIB_Pourcent_On_Screen(COL_ZonePosGet(C_zde_corps), COL_ZoneSizeGet(C_zde_corps), 1.0, 1.0, tv_temp, faux)
+//Str_DisplayFloatOnce(f_on_screen_pct, cvector(0.5,0.5,0))
+
+

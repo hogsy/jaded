@@ -1,0 +1,103 @@
+#include "KT_defines.var"
+
+object	to_followed_actor
+object	to_collide_object
+object	to_camera
+object	to_event_target
+
+float		tf_sqr_hor_dist
+
+int			ti_i
+int			ti_flag_go_to_grid_center
+int			ti_followed_ground_ID
+int			ti_flag_try_to_move
+
+vector	tv_offset
+vector	tv_temp
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+
+	MSG_GlobalSetInvalid(mid_new_interet)
+
+	if (i_etat_courant != ETAT_rided)
+	{
+		for (ti_i = 0; ti_i < Ci_Ride_Client_Nb; ti_i++)
+			ao_bone_rider[ti_i] = LNK_ServeurGet(Ci_LNK_RIDE_DINO, amid_bone_rider_LNK_ID[ti_i], faux, nofunc, nofunc)
+	}
+
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_hesite)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_hesite
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	ACT_ActionSet(Action_Normal_Attente)
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =======================================================================================================
+
+AI_Execute("KT_exec_check_sound")
+
+AI_Execute("KT_exec_check_vision")
+
+AI_Execute("KT_exec_check_collision")
+
+AI_Execute("KT_exec_check_paf")
+if (o_paf_actor)
+	macro_change_etat("KT_ETAT_paf")
+
+
+// RIDE SERVEUR ?
+for (ti_i = 0; ti_i < Ci_Ride_Client_Nb; ti_i++)
+{
+	if (ao_bone_rider[ti_i])
+		macro_change_etat("KT_ETAT_rided")
+	else
+		ao_bone_rider[ti_i] = LNK_ServeurGet(Ci_LNK_RIDE_DINO, amid_bone_rider_LNK_ID[ti_i], vrai, nofunc, nofunc)
+}
+
+if (MSG_GlobalIsValid(mid_new_interet))
+{
+	v_look_pos = EVENT_InteretPositionGet(mid_new_interet)
+	v_look_pos.z += 1.0
+
+	// SI on identifie une cible !!!
+	if (EVENT_InteretGet(mid_new_interet) > 0.0)
+	{
+		if (ACT_ActionGet() != Action_Observe)
+			ACT_ActionSet(Action_Observe)
+	}
+}
+
+if (f_time_start_etat > 1.5) // && i_flag_new_interet_in_cone)
+{
+	MSG_GlobalSetInvalid(mid_new_interet)
+	macro_change_etat(fct_main_etat)
+}
+
+// COMPORTEMENT =================================================================================================
+i_flag_look = vrai
+
+f_joy_norm = 0.0
+

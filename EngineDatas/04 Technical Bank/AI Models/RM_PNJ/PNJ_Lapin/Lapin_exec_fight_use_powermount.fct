@@ -1,0 +1,130 @@
+#include "PNJ_Lapin_defines.var"
+
+int			ti_i
+int			ti_flag_ok
+int			ti_interet_cpt
+int			ti_target_item_checked
+int			ti_gao_ray_insensitive
+
+float		tf_test_dist
+float		tf_dist, tf_dist2
+float		tf_dot_product
+float		tf_sqr_dist
+float		tf_norm
+float		tf_me_to_target_dist
+float		tf_range
+
+vector	tv_temp
+vector	tv_sight
+vector	tv_pos
+vector	tv_me_to_target 
+vector	tv_ray_start
+vector	tv_ray_dir
+
+object	to_target
+object	to_target_ref_bone
+object	to_obj
+
+i_powermount_cant_use = 0
+
+if( i_is_in_water )
+	return
+
+if( ! Proc_PNJ_Lapin_MontureGet() )
+	return
+
+if( f_powermount_use_delai )
+{
+	i_powermount_cant_use = Ci_powermount_cant_use_reload
+	return
+}
+
+if( ! i_flag_in_my_territory )
+	return
+
+if( i_perceived_best_actor_index == -1)
+	return
+
+to_target = ao_perceived_actor[i_perceived_best_actor_index]
+if( ! to_target )
+	return		// pas normal...
+
+if( f_OnScreen_Pct < 0.9 )
+	return		// HORS CHAMP !!!!
+
+if( ! Lapin_Atk_Simultannees_IsValid(to_target, ti_interet_cpt) )
+{
+	i_powermount_cant_use = Ci_powermount_cant_use_interest_maxnb
+	return		// nb d'interet !!!!
+}
+
+ti_flag_ok = faux
+
+// range ?
+tf_range = f_powermount_range
+tf_sqr_dist = tf_range
+tf_sqr_dist *= tf_sqr_dist
+
+to_target_ref_bone = @to_target ANI_CanalObjectGet(Anim_Canal_Tete)
+if( ! to_target_ref_bone )
+	to_target_ref_bone = to_target
+
+tv_temp = @to_target OBJ_PosGet()
+tv_temp -= OBJ_PosGet()
+tv_me_to_target = tv_temp
+
+if( MATH_VecDotProduct(OBJ_SightGet(), tv_temp) > 0.0 ) // && tv_temp.z > -2.0 && tv_temp.z < 3.5)
+{
+	tv_ray_start = v_look_head_pos
+	tv_temp = @to_target_ref_bone OBJ_PosGet()
+	tv_temp -= tv_ray_start
+//	tv_temp.z = 0.0
+
+	tf_dist = MATH_VecDotProduct(tv_temp, tv_temp)
+
+	if (tf_dist > tf_sqr_dist)
+	{
+		return		// too far !!!!
+	}
+	else
+	{	
+		tf_dist = MATH_FloatSqrt(tf_dist)
+		tv_temp /= tf_dist
+		DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, tv_temp, color_rouge)
+		DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, v_look_virtual_sight, color_vert)
+		tv_temp.z = 0.0
+		MATH_VecSetNormalize(tv_temp)
+		tv_sight = v_look_virtual_sight
+		tv_sight.z = 0.0
+		MATH_VecSetNormalize(tv_sight)
+
+		// test LRAY
+		tv_ray_dir = @to_target_ref_bone OBJ_PosGet() - tv_ray_start
+		
+		tf_dist = MATH_VecDotProduct(tv_ray_dir, tv_ray_dir)
+		
+		tf_dist = MATH_FloatSqrt(tf_dist)
+		DBG_RenderVector(tv_ray_start, tv_ray_dir, 0xCCCCCCCC)
+		
+		MATH_VecSetNormalize(tv_ray_dir)
+		tv_me_to_target /= tf_dist
+		
+		ti_gao_ray_insensitive = faux
+		if( @to_target OBJ_FlagsControlGet() & OBJ_C_ControlFlag_RayInsensitive )
+			ti_gao_ray_insensitive = vrai
+		else
+			@to_target OBJ_FlagsControlSet(OBJ_C_ControlFlag_RayInsensitive, none)
+		to_obj = COL_RayObject_Dist(tv_ray_start, tv_ray_dir, tf_dist, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+		if( ! to_obj )
+			ti_flag_ok = vrai		// pas d'obstacle
+		if( ! ti_gao_ray_insensitive )
+			@to_target OBJ_FlagsControlSet(none, OBJ_C_ControlFlag_RayInsensitive)			
+	}
+}
+
+
+// On peut attaquer avec la monture
+if( ti_flag_ok )
+{
+	macro_change_etat("Lapin_ETAT_USE_POWERMOUNT")
+}

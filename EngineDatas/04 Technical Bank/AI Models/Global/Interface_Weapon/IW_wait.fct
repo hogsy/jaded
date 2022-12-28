@@ -1,0 +1,32 @@
+if ( AI_MainActorGet(C_ID_Joueur) != @"univ" ao_AllHumains[ C_ID_Joueur ] )
+	return
+
+if (IO_ButtonJustPressed( 2 ) )
+{
+	WOR_Pause(0, 0xFFFFFFFF)
+	
+	mi_Exit = 0
+	mf_GenLumStart = 0
+	mf_GenLumEnd = 1
+	mf_GenLumTime = 0.2
+	mf_GenLumTimeCur = 0
+	mi_Slice  = -1
+	
+	AI_Execute( "IW_exec_init" )
+	AI_Execute( "IW_exec_colorize" )
+	OBJ_FlagInvisibleSet( 0 )
+	OBJ_PosSet( cvector(0, -1 * (1.2 / VIEW_FocaleGet(0)), 0 ) )
+	AI_TrackCurChange( "IW_loop" )
+}
+
+// TEMPORARY INFO
+if ( @"univ" i_weapon_ammunition_reserve[ Ci_weapon_ID_bambou ][ C_ID_Joueur ] == mi_bambou_nb + 1) 
+	mf_bambou_time = 1.0
+mi_bambou_nb = @"univ" i_weapon_ammunition_reserve[ Ci_weapon_ID_bambou ][ C_ID_Joueur ]
+
+if (mf_bambou_time > 0)
+{
+	mf_bambou_time -= TIME_GetDt()
+	STR_CreateText( "\f\\jx\\cFF00FF00\Bambou taken", cvector(0.5, 0.8, 0), 0 )
+}
+//

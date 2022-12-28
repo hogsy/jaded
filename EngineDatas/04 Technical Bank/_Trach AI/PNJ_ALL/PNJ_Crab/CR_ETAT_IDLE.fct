@@ -1,0 +1,249 @@
+#include "CR_defines.var"
+
+messageid		tmid_vision
+
+int					ti_main_hors_territoire
+int					ti_exec_network
+
+float				tf_dot
+
+vector			tv_me_to_main
+vector			tv_sight
+
+
+// SORTIE ETAT ==============================================================================
+if (i_sort_etat)
+{
+	f_net_force_wait_wp_countdown = -1.0
+	
+	// qd je reviendrai dans ce mode, je rechoisirai un wp de réseau
+	o_net_idle_last_wp = nobody
+	o_net_idle_next_wp = nobody
+	
+	i_sort_etat = faux
+	return
+}
+
+
+// ENTREE ETAT ==============================================================================
+if (i_etat_courant != ETAT_IDLE )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_IDLE
+	str_etat = "Idle"
+	if (fct_etat_courant)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_etat_courant)
+	}
+	
+	fct_etat_courant = AI_TrackCurGet()
+	fct_etat_main = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	i_attack_intimidation_done = faux
+	o_fight_actor = nobody		// raz après un fight ou un grab
+	i_antre_move_flag = faux
+	
+	if( i_etat_ancien != ETAT_APPARITION )
+		CR_Human_Attack_Del(OBJ_Me())
+	
+	if( i_DBG_trace_etat )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : ETAT IDLE...")
+		DBG_TraceEOL()
+	}
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// ANALYSE ===================================================================================
+AI_Execute("CR_exec_CHECK_Vision")
+
+AI_Execute("CR_exec_CHECK_Paf")
+if( CR_Paf_Check_Change_Etat() )
+{
+	i_net_idle_return_done = faux
+	macro_change_etat("CR_ETAT_PAF")
+}
+
+// INTERET (petit paf sans anim) -----------------------------------------
+if( o_paf_actor )
+	CR_Interet_Update(mid_best_interet, C_EVENT_InteretStatusAttack, o_paf_actor, tmid_vision)
+
+// COMPORTEMENT =============================================================================
+if( ! i_net_done_flag )
+{
+	// parcours réseau pas terminé
+	if( i_net_apparition_done )		// init apparition réseau effectuée et parcours pas terminé -> suivi réseau
+		macro_change_etat("CR_ETAT_APPARITION")
+	else
+	{
+		// init apparition réseau pas encore effectuée 
+		if( ! AI_TriggerIsValid(trig_net_apparition) || call_trigger(trig_net_apparition) )
+		{
+			i_net_apparition_done = vrai			// init apparition réseau effectuée
+			macro_change_etat("CR_ETAT_APPARITION")
+		}
+	}
+}
+else
+{
+	// Pos init
+	CR_AntreBackupPos()
+}
+
+// TEST CIBLE
+AI_Execute("CR_exec_CHECK_Target")
+if( i_change_target_flag )
+{
+	i_net_idle_return_done = faux
+	macro_change_etat("CR_ETAT_FIGHT")
+}
+
+// TEST MAIN ACTOR HORS DU TERRITOIRE (BLIND ZONE OU PAS)
+ti_main_hors_territoire = 1 - CR_Gao_in_BV(o_main_actor, o_territoire)
+
+// TEST RETOUR DANS MON ANTRE OU SUIVI RESEAU IDLE
+if( i_modele == MODELE_Geant && o_crabe_geant_fuite_wp && ti_main_hors_territoire )
+{
+	// PAS DE TARGET ET MAIN ACTOR HORS DU TERRITOIRE : POINT DE FUITE
+	
+	// RAZ NET IDLE
+	o_net_idle_last_wp = nobody
+	o_net_idle_next_wp = nobody
+	
+	if( CR_Arrive_A_Mon_Point_De_Fuite() )
+	{
+		// ATTENTE SUR PLACE
+		if( ACT_ActionGet() != ACTION_Attente )
+			ACT_ActionSet(ACTION_Attente)
+		OBJ_BankingGeneralSet(OBJ_SightGet(), macro_banking)
+	}
+	else
+	{
+		// DEPLACEMENT VERS LE POINT DE FUITE
+		if( ACT_ActionGet() != ACTION_Avance )
+			ACT_ActionSet(ACTION_Avance)
+		OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), @o_crabe_geant_fuite_wp OBJ_PosGet() - OBJ_PosGet(), 2.0 * TIME_GetDt()), macro_banking)		
+	}
+}
+else
+{
+	if( net_idle )
+	{
+		// RESEAU IDLE A PARCOURIR
+		str_etat = "Idle / Network"
+		if( ! i_net_idle_return_done )
+		{
+			// JE NE SUIS PAS ENCORE REVENU AU WP LE + PROCHE AVEC LA GRILLE
+			i_antre_move_flag = vrai
+			macro_change_etat("CR_ETAT_FIGHT")
+		}
+		else
+		{
+			// JE SUIS DEJA REVENU AVEC LA GRILLE
+			if( ! o_net_idle_next_wp )
+			{
+				// je ne suis pas encore en suivi de réseau d'attente, je choisi le wp le + proche de moi
+				if( i_DBG_trace_etat )
+				{
+					DBG_TraceObject(OBJ_Me())
+					DBG_TraceString(" : 1er wp du réseau idle")
+					DBG_TraceEOL()
+				}
+				CR_Global_Idle_Intimidation_Update()
+				o_net_idle_last_wp = nobody
+				o_net_idle_next_wp = CR_Net_Get_Next_Wp(net_idle, o_net_idle_last_wp)
+			}
+			
+			if( COL_Pivot_BVCollide(o_net_idle_next_wp) )
+			{
+				// Prochain wp atteint, détermination du wp suivant...
+				o_net_idle_last_wp = o_net_idle_next_wp
+				o_net_idle_next_wp = CR_Net_Get_Next_Wp(net_idle, o_net_idle_last_wp)
+			}
+			
+			if( ! o_net_idle_next_wp )
+			{
+				DBG_Error("net_idle n'est pas un réseau cyclique ????")
+			}
+			
+			ti_exec_network = vrai
+			f_net_idle_intim_delai -= MATH_FloatMin(f_net_idle_intim_delai, TIME_GetDt())
+			if( ! f_net_idle_intim_delai )
+			{
+				ti_exec_network = faux
+				if( ACT_ActionGet() != ACTION_Intimidation )
+				{
+					tv_me_to_main = @o_main_actor OBJ_PosGet() - OBJ_PosGet()
+					tv_me_to_main.z = 0.0
+					tv_sight = OBJ_SightGet()
+					tv_sight.z = 0.0
+					if( ! MATH_VecNullToler(tv_me_to_main, 0.1) )
+						MATH_VecSetNormalize(tv_me_to_main)
+					else
+						tv_me_to_main = OBJ_SightGet()
+					if( ! MATH_VecNullToler(tv_sight, 0.1) )
+						MATH_VecSetNormalize(tv_sight)
+					else
+						tv_sight = OBJ_SightGet()
+					tf_dot = MATH_VecDotProduct(tv_sight, tv_me_to_main)
+					if( tf_dot < Cf_Cos15 )
+					{
+//						Str_DisplayTextOnce("tourne", cvector(0.5,0.5,0))
+						ACT_ActionSet(ACTION_SurPlace)
+						OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), @o_main_actor OBJ_PosGet() - OBJ_PosGet(), f_way_rotation_coef_cur * TIME_GetDt()), macro_banking)
+					}
+					else
+					{
+						ACT_ActionSet(ACTION_Intimidation)
+						SND_RequestPlay(Ci_SND_Intimid)
+						OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), @o_main_actor OBJ_PosGet() - OBJ_PosGet(), f_way_rotation_coef_cur * TIME_GetDt()), macro_banking)
+					}
+				}
+				else
+				{
+					OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), @o_main_actor OBJ_PosGet() - OBJ_PosGet(), f_way_rotation_coef_cur * TIME_GetDt()), macro_banking)
+					if( ACT_ActionFinished() )
+					{
+						CR_Global_Idle_Intimidation_Update()
+						ti_exec_network = vrai
+					}
+				}
+			}
+			CR_Rotation_Coef_Blend()	// network ou intimidation
+			if( ti_exec_network )
+			{
+				push(o_net_idle_next_wp)
+				AI_Execute("CR_exec_NETWORK")
+			}
+		}
+	}
+	else
+	{
+		// PAS DE RESEAU IDLE
+		str_etat = "Idle / Init pos"
+		if( ! MATH_VecNullEpsilon(v_antre_pos) && ! CR_Arrive_A_Mon_Antre() )
+		{
+			// RETOUR A MON ANTRE
+			i_antre_move_flag = vrai
+			macro_change_etat("CR_ETAT_FIGHT")
+		}
+		else
+		{
+			// ATTENTE SUR PLACE
+			if( ACT_ActionGet() != ACTION_Attente )
+				ACT_ActionSet(ACTION_Attente)
+			OBJ_BankingGeneralSet(OBJ_SightGet(), macro_banking)
+		}
+	}
+}
+
+// PAFS COLLISION
+//AI_Execute("CR_exec_CHECK_Collision")
+

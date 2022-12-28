@@ -1,0 +1,84 @@
+#include "r_defines.var"
+
+int			ti_i
+int			ti_GMAT
+vector	tv_ray_dir
+vector	tv_hand_pos
+vector	tv_ray_normale 
+vector	tv_dest_pos, tv_dest_pos2 
+vector	tv_normale_sol, tv_normale_sol2
+
+object	to_ray
+
+
+// 4 lancés de rayon orthogonaux
+tv_ray_dir = v_joy_sight_normalized
+for (ti_i = 0; ti_i < 4; ti_i++)
+{
+	DBG_RenderVector( OBJ_PosGet() + cvector(0.0,0.0,1.0), tv_ray_dir* 1.2, color_blanc)
+ 
+	to_ray = COL_RayObject_Dist( ( OBJ_PosGet() + cvector(0.0,0.0,1.0)), tv_ray_dir, 1.2, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+	if ( to_ray)
+	{
+		// Un mur de ce coté			
+		ti_GMAT = COL_GMAT_FlagsGet( COL_C_Ray)
+		if ( ( ti_GMAT  & Gmat_RM_Accrochage) && ( MATH_FloatNullEpsilon(f_joy_norm) || MATH_VecDotProduct( v_joy_sight_normalized, tv_ray_dir) > -Cf_Cos80))
+		{
+			// ACCROCHAGE PERMIS	
+			tv_ray_normale = COL_RayObject_NormalGet()
+
+			if (tv_ray_normale.z < Cf_Kong_Angle_Mur_sol && tv_ray_normale.z > -Cf_Kong_Angle_Mur_sol)
+			{
+				// REGARDER SI L ON POURRA REMONTER AU DESSUS
+				tv_dest_pos = COL_TipTopPointGet(Cv_VerticalVector, Cf_largeur_RM, faux, vrai, faux, vrai)
+				tv_ray_normale = COL_RayObject_NormalGet()
+				tv_normale_sol = COL_RayObject_EdgeNormalGet()		// Normale du sol !!
+				tv_dest_pos2 = COL_RayObject_PosGet()
+				if ( tv_normale_sol.z < Cf_Kong_Angle_Mur_sol)
+					break		// C'est un mur ou un sol inversé !!
+					
+				// REGARDER SI L ON A ASSEZ DE PROFONDEUR POUR S ACCROCHER
+				if (  tv_dest_pos2.z- OBJ_PosGet().z > Cf_Z_Hauteur_Grab )
+ 				 	break		// Le sol est trop proche
+
+				tv_hand_pos = OBJ_PosGet() + cvector( 0.0,0.0, Cf_Offset_Lray_Hand_Grab)
+				if (MATH_AbsFloat( tv_hand_pos.z - tv_dest_pos.z) < Cf_Z_Hand_Grab_Max)
+				{
+					// Joy dans le sens de la corniche a attraper : validé !!
+					v_climb_normale = tv_ray_normale
+					@o_climb_target_wp OBJ_PosSet(tv_dest_pos)
+					@o_climb_target_wp OBJ_SightGeneralSet(-tv_ray_normale, tv_normale_sol)
+					o_climb_WP = o_climb_target_wp
+					@o_climb_WP OBJ_HierarchySet( to_ray)			// Décor mouvant
+					return
+				}
+			}
+		}
+	}
+	switch(ti_i)
+	{
+		case 0 :
+			// DROITE
+			ti_i= 4
+			tv_ray_dir = MATH_VecCrossProduct(tv_ray_dir, Cv_VerticalVector)
+			break
+		
+		case 1 :
+			// GAUCHE
+			tv_ray_dir *= -1.0
+			break
+
+		case 2 :
+//			if ( MATH_FloatNullEpsilon( f_joy_norm))
+//			{
+//				// DERRIERE SI PAS DE JOY
+//				tv_ray_dir = MATH_VecCrossProduct(Cv_VerticalVector, tv_ray_dir)
+//			}
+//			else
+				ti_i= 4
+			
+			break
+	}
+}
+
+o_climb_WP = nobody

@@ -1,0 +1,180 @@
+#include "btode_defs.var"
+
+vector	tv_offset, tv_speed
+float		tf_time_since_activation,tf_impulsion
+int			i
+int			ti_num_unpaused
+
+//{
+//	object o_test_object
+//	
+//	o_test_object = ao_ode_joints[0]
+//
+//	if ( o_test_object )
+//	{
+//		DBG_TraceVector( @o_test_object OBJ_BankingGet() )
+//		DBG_TraceEOL()
+//	}
+//}
+
+// trigger the when-tree-hit PAGS here (shouldnt happen more than once)
+if ( !mi_IsTreeHitPAGSTriggered )
+{
+	mi_IsTreeHitPAGSTriggered = vrai
+	
+	// run a parallel track to take care of the particle activation and timed deactivation
+	AI_TrackChange( C_Track_TreeHitPAGActivation, "btode_bhv_TreeHitPAGTimer" )
+}
+
+// activate tree fall behavior after delay
+if ( !mi_IsTreeFallPAGSTriggered )
+{
+	if ( TIME_Get() - f_time_at_activation >= mf_TreeFallPAGDelayAfterActive )
+	{
+		mi_IsTreeFallPAGSTriggered = vrai
+	
+		// run a parallel track to take care of the particle activation and timed deactivation
+		AI_TrackChange( C_Track_TreeFallPAGActivation, "btode_bhv_TreeFallPAGTimer" )
+	}
+}
+
+BTODE_Structure_UpdateCurrentFrameValues()
+
+// RUMBLE
+if(i_rumble_autorise)
+BTODE_Structure_Sons_Rumble()
+
+// CHOCS LOCAUX
+if(i_choc_autorise)
+	BTODE_Structure_Sons_Chocs()
+
+// WHOOSH
+if(i_whoosh_autorise)
+	BTODE_Structure_Sons_Whoosh()
+
+tf_time_since_activation = TIME_Get() - f_time_at_activation
+
+if(o_projectile_cine)
+{
+	if(f_projectile_distance_max)
+	{
+		tv_offset	= @o_projectile_cine OBJ_PosGet() - v_pos_init_projectile
+		
+		if(MATH_VecNorm(tv_offset) > f_projectile_distance_max)
+		{
+			BTODE_Object_Kill(o_projectile_cine)			
+		}
+	}
+	
+
+	if(o_projectile_gao_stop)
+	{
+		if(@o_projectile_cine COL_ObjectCollide(o_projectile_gao_stop))
+		{
+			BTODE_Object_Kill(o_projectile_cine)
+		}
+	}
+}
+
+BTODE_Structure_UpdateOldFrameValues()
+
+// ------- TOUS LES ELEMENTS DE LA STRUCTURE SONT DETRUITS/DESACTIVES ? -------
+if(BTODE_Structure_TestTotalDesactivation())
+{
+	//AI_TrackCurChange("ode_state_end")
+	AI_TrackChange( C_Track_Main, "btode_state_end" )
+}
+
+// ------- FLAG ECROULEMENT -------
+if( ! (i_flag_ecroulement_detecte) && o_element_test_ecroulement )
+{
+	tv_offset = @o_element_test_ecroulement OBJ_PosGet() - v_pos_init_element_test_ecroulement
+
+	if(MATH_VecNorm(tv_offset)	> f_deplacement_max_autorise)
+	{
+		i_flag_ecroulement_detecte = 1
+		OBJ_CapaSet(0b0000000100000000,0) // capa 8
+	}
+}
+
+// ------- TIME TO LIVE -------
+if(f_time_to_live_after_activation)
+{
+	if(tf_time_since_activation > f_time_to_live_after_activation)
+	{
+		//AI_TrackCurChange("ode_state_end")
+		AI_TrackChange( C_Track_Main, "btode_state_end" )
+		//DBG_Warning( "Changin track somewhere else." )
+	}	
+}
+	
+// ------- DESACTIVATION AUTOMATIQUE DES ELEMENTS EN Z -------
+if(o_z_desactivation)
+{
+	i = 0
+
+	while(ao_ode_elements[i])
+	{
+		tv_offset = @o_z_desactivation OBJ_PosGet() - @ao_ode_elements[i] OBJ_PosGet()
+		
+		if ( i == 0 )
+		{
+			DBG_TraceFloat( tv_offset.z )
+			DBG_TraceEOL()
+		}
+	
+		if(tv_offset.z > f_offset_z_desactivation)
+		{
+			@ao_ode_elements[i] ODE_Enable(0)
+			ai_ode_elements_etat[i] = ODE_Element_Etat_Detruit
+			
+ 			//JamesD: stop all effects after it gets too low
+			AI_TrackChange( C_Track_Main, "btode_state_end" )
+		}
+		i++
+	}	
+}
+
+// ------- GESTION VASE -------
+if(o_vase)
+{
+	AI_Execute("btode_exec_gestion_vase")
+}
+
+// ------- GESTION INSTABILITE FORCEE -------
+if(o_element_action)
+{
+	AI_Execute("btode_exec_gestion_instabilite")
+}
+
+// ------- ELEMENT ENLEVE ?-------
+if(BTODE_Structure_TestElementRemoved()) 
+	BTODE_Structure_Activation_OnOFF(1)
+
+// ------- AUTRE PAF DETECTE ?-------
+i_trig_paf_active = 0
+i_trig_projectile_active = 0
+AI_Execute("btode_check_trigger")
+if(!i_trig_paf_active && !i_trig_projectile_active) return
+
+// Trigger Projectile activé
+if(i_trig_projectile_active && o_projectile_cine)
+{
+	@o_projectile_cine ODE_Enable(1)
+	tv_speed = @o_projectile_cine OBJ_BankingGet()
+	tv_speed *= f_vitesse_init_projectile
+	
+	@o_projectile_cine ODE_Setv(0, tv_speed)
+}
+
+
+// ------- IMPULSION SUR PAF?-------
+if(o_element_paf && i_genere_impulsion_si_paf)
+{
+	if(f_force_valeur_impulsion)
+		tf_impulsion = f_force_valeur_impulsion * MATH_RandFloat(0.7,1.1)
+	else
+		tf_impulsion = 1000.0 * MATH_RandFloat(0.7,1.1)
+	
+	@o_element_paf ODE_ForceAtPosSet(v_dir_paf * tf_impulsion, v_pos_paf)
+}

@@ -1,0 +1,35 @@
+#include "BC_defines.var"
+
+int			ti_i
+
+object	to_wp
+
+// tab des wp du réseau
+i_net_move_wp_nb = WAY_NetFill(n_attaque, WAY_RootGet(n_attaque), &ao_net_move_wp[0])
+
+
+// init capa déplacement si aucune autre capa
+for( ti_i = 0; ti_i < i_net_move_wp_nb; ti_i++)
+{
+	to_wp = ao_net_move_wp[ti_i]
+	
+//	// WP ATTAQUE FINALE (BOSS)
+//	if( o_attaque_finale_wp )
+//	{
+//		if( to_wp == o_attaque_finale_wp )
+//		{
+//			for( ti_k = ti_i; ti_k < i_net_move_wp_nb; ti_k++)
+//			{
+//				ao_net_move_wp[ti_k] = ao_net_move_wp[ti_k + 1]
+//			}
+//			i_net_move_wp_nb--
+//			ti_i--
+//			continue
+//		}
+//	}
+	
+	// CAPA
+	if( ! @to_wp OBJ_CapaTest(CAPA_deplacement) && ! @to_wp OBJ_CapaTest(CAPA_point_d_attaque) && ! @to_wp OBJ_CapaTest(CAPA_mange_charogne) )
+		@to_wp OBJ_CapaSet(CAPA_deplacement, none)
+}
+

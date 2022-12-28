@@ -1,0 +1,524 @@
+#include "PNJ_Lapin_defines.var"
+
+float		tf_friction
+float		tf_kam_offset
+float		tf_lod
+float		tf_lod_invis
+float		tf_lod_low
+float		tf_lod_nofur
+float		tf_gfx_taille
+float		tf_zoom
+float		tf_zdm_size
+int			ti_kamera
+int			ti_cpt
+int			ti_lod
+int			ti_shape
+int			ti_ok
+int			ti_gfx
+object	to_monture
+vector	tv_traction
+vector	tv_pos
+vector	tv_sight
+vector	tv_banking
+vector	tv_zdm_size
+vector	tv_zdm_offset
+int			ti_i
+int			ti_uncol_buddies
+
+
+if( ! o_main_actor )
+	return
+
+// KAMERA =========================================================
+switch ( i_etat_courant )
+{
+	case ETAT_Lapin_MORT : 
+		ti_kamera = Mort_SeReleve
+		break
+	case ETAT_Lapin_RIDED :
+	case ETAT_Lapin_GRABBED :
+		ti_kamera = faux
+		break
+	case ETAT_Lapin_APPARITION :
+		if( ! i_App_Trigger_done )
+			ti_kamera = faux
+		else if( i_App_mode == Ci_APPARITION_mode_Ground )	// sous le sol
+			ti_kamera = faux
+		else
+			ti_kamera = vrai
+		break
+	case ETAT_Lapin_TAUPE :
+		if( i_taupe_phase > 2 )
+			ti_kamera = vrai
+		else
+			ti_kamera = faux
+		break
+	case ETAT_Lapin_PIEGE :
+		ti_kamera = faux
+	default:
+		ti_kamera = vrai
+		break
+}
+if( ti_kamera )
+{
+	if( @"univ" i_cheat_page == 2 )
+		Str_DisplayTextOnce("\cFF00\lockcam ON", VIEW_3dWorldTo2d(0,OBJ_PosGet()))
+	switch( Type )
+	{
+		case Lapin_Type_Petit : 
+			tf_kam_offset = 0.5
+			break
+		case Lapin_Type_Moyen :
+			tf_kam_offset =1.0
+			break
+		case Lapin_Type_Geant :
+			tf_kam_offset = 1.5
+			break
+		default:
+			DBG_Error("???")
+	}
+	EVENT_AddEventLockCam(OBJ_Me(), C_EVENT_LockCamStatus_Fight, tf_kam_offset * OBJ_BankingGet())
+}
+else
+{
+	if( @"univ" i_cheat_page == 2 )
+		Str_DisplayTextOnce("\cFF\lockcam OFF", VIEW_3dWorldTo2d(0,OBJ_PosGet()))
+}
+
+
+// FRICTION ==========================================================
+if( OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna) )
+{
+	if( i_etat_courant == ETAT_Lapin_BEAT_DANSE )
+	{
+//		if ( ACT_ActionGet() == RM_Act_Danse_Move_G)
+//			DYN_SpeedSetVector( OBJ_HorizonGet() * 0.8)
+//		else if ( ACT_ActionGet() == RM_Act_Danse_Move_D)
+//			DYN_SpeedSetVector( -OBJ_HorizonGet() * 0.8)
+		tf_friction = 4.0
+		DYN_FrictionVectorSet(cvector(4,4,1))
+		
+		DYN_SpeedSetVector(v_anim_speed / OBJ_ZoomGet())
+	}
+	else if( i_etat_courant == ETAT_Lapin_GOGO )
+	{
+		if( i_ground_flag )
+			tf_friction = 2.0
+		else
+			tf_friction = 1.0
+		DYN_FrictionVectorSet(cvector(tf_friction, tf_friction, 0))
+	}
+	else if( i_etat_courant == ETAT_Lapin_PAF )
+	{
+		if( i_ground_flag )
+		{
+			goto FRICTION_GROUND
+		}
+		else
+			tf_friction = DYN_FrictionGet()
+	}
+	else if( i_is_in_water )
+	{
+		tf_friction = Cf_DYN_Friction_Water
+		DYN_FrictionVectorSet(Cv_DYN_Friction_Water)
+	}
+	else if( i_flag_jump || ! i_ground_flag )
+	{
+		tf_friction = Cf_DYN_Friction_Jump
+		if( i_flag_jump_precis )
+			DYN_FrictionVectorSet(Cv_DYN_Friction_Jump_Precis)
+		else
+			DYN_FrictionVectorSet(Cv_DYN_Friction_Jump)
+	}
+	else
+	{
+		FRICTION_GROUND:
+		if( COL_GMAT_FlagsGet(COL_C_Ground) & Gmat_RM_Ice )
+		{
+			tf_friction = Cf_DYN_Friction_Ice 
+			DYN_FrictionVectorSet(Cv_DYN_Friction_Ice)
+		}
+		else
+		{
+			tf_friction = Cf_DYN_Friction_Ground
+			DYN_FrictionVectorSet(Cv_DYN_Friction_Ground)
+		}
+	}
+	//f_friction = MATH_FloatBlend(f_friction, tf_friction, 5 * TIME_GetDt())
+	f_friction = tf_friction
+	//if( DBG_IsObjSel() )
+	//{
+	//	DBG_TraceString("friction = ")
+	//	DBG_TraceFloat(f_friction)
+	//	DBG_TraceEOL()
+	//}
+	
+	// TRACTION ===================================================================================
+	if( i_ground_flag )
+		tv_traction = v_traction_stream
+	else
+		tv_traction = 2.0 * v_traction_stream
+	tv_traction += v_traction_joy
+	tv_traction += v_traction_ice
+	tv_traction += Lapin_Soft_Col()		// SOFTCOL !!!!
+	tv_traction += v_traction_gogo
+	tv_traction += v_traction_exit_chute
+	tv_traction += v_traction_push
+	tv_traction += v_traction_rm_jump_repulse
+	tv_traction.x *= f_friction
+	tv_traction.y *= f_friction
+	// traction ???
+	if( i_ventilo_stuck_on_wall )
+		DYN_SpeedSetVector(Cv_NullVector)
+	else
+		DYN_TractionSet(tv_traction)
+	
+	// SPEED ? =====================================================================================
+	f_speed_before_rec = DYN_SpeedGet()
+	v_speed_before_rec = v_speedgetvector
+	v_dyn_speed_before_rec = DYN_SpeedGetVector()
+}
+else
+{
+	f_speed_before_rec = 0.0
+	v_speed_before_rec = Cv_NullVector
+	v_dyn_speed_before_rec = Cv_NullVector
+}
+
+
+// RIDED ? ===========================================================
+if( o_Rided_Actor )
+	f_Rided_duree += TIME_GetDt()
+else
+	f_Rided_duree = 0.0
+
+
+// LOST GRAPPIN CONTROL ==============================================
+switch( i_etat_courant )
+{
+	case ETAT_Lapin_GRAPPIN_CONTROL :
+	case ETAT_Lapin_PAF :
+	case ETAT_Lapin_MELEE :
+		break
+	default:
+		Lapin_GRAPPIN_Control_Activate(faux)	// perdre le contrôle dans tous les autres états
+		break	
+}
+
+
+// UNCOL ? ===========================================================
+COL_UnCollidableReset()
+ti_uncol_buddies = faux
+if( i_flag_jump_to_danse )
+	ti_uncol_buddies = vrai
+if( i_Danse_pos_index != -1 )
+	ti_uncol_buddies = vrai
+if( o_Rided_Actor )
+	COL_UnCollidableAdd(o_Rided_Actor)
+if( o_Grabbed_Actor )
+	COL_UnCollidableAdd(o_Grabbed_Actor)
+if( i_etat_courant == ETAT_Lapin_JUMP )
+	COL_UnCollidableAdd(o_main_actor)
+if( i_etat_courant == ETAT_Lapin_GOGO )
+{
+	ti_uncol_buddies = vrai
+	COL_UnCollidableAdd(o_main_actor)
+	to_monture = @o_main_actor PROC_RM_MontureGet()
+	if( to_monture )
+		COL_UnCollidableAdd(to_monture )
+}
+if( i_paf_fort_en_cours )
+	ti_uncol_buddies = vrai
+if( i_etat_courant == ETAT_Lapin_MELEE 
+	&& Lapin_GRAPPIN_Control_Test() )
+	COL_UnCollidableAdd(o_Grappin_Control_actor)
+if( i_etat_courant == ETAT_Lapin_JUMP && i_flag_jump_to_ride_a_mount )
+	COL_UnCollidableAdd(o_RideMount_Nearest)
+if( i_etat_courant == ETAT_Lapin_TAUPE )
+	COL_UnCollidableAdd(o_main_actor)
+if( ti_uncol_buddies )
+{
+	for( ti_i = 0; ti_i < i_budy_nb; ti_i ++ )
+		COL_UnCollidableAdd(ao_budy[ti_i ])
+}
+if( o_item )
+	COL_UnCollidableAdd(o_item)
+if( o_key )
+	COL_UnCollidableAdd(o_key)
+if( o_RideMount_Actor )
+	COL_UnCollidableAdd(o_RideMount_Actor)
+if( o_RideMount_before_Taupe_backup )
+	COL_UnCollidableAdd(o_RideMount_before_Taupe_backup)
+if( o_lums_cage )
+	COL_UnCollidableAdd(o_lums_cage)
+for (ti_i = 0; ti_i < i_extern_uncol; ti_i++)
+	COL_UnCollidableAdd(ao_extern_uncol[ti_i])
+	
+
+// KO ? ==============================================================
+if( ! f_LIFE_cur )
+{
+	f_Mort_duree += TIME_GetDt()		// ne pas borner pour les tests de durée en mort
+	OBJ_CapaSet(Capa_KO, none)
+	if( ! Mort_SeReleve )
+		OBJ_CapaSet(Capa_MORT, none)
+	if( Lapin_DBG_Display_ON() )
+	{
+		ti_cpt = MATH_FloatMin(f_Mort_duree, Mort_SeReleve_Duree)
+		tv_pos = VIEW_3dWorldTo2d(0, @o_canal_tete OBJ_PosGet()) + cvector(0,-0.2,0)
+		Str_DisplayTxtIntOnce("\cFF\\h0.1\",ti_cpt, tv_pos)
+	}
+}
+else
+{
+	f_Mort_duree = 0.0
+	OBJ_CapaSet(none, Capa_KO)
+}
+
+
+// ALL ATTACKS DELAYED ======================================================
+if( i_RM_Paf_Mode_Get )
+{
+	f_melee_delai = Atk_Poing_Delai + MATH_RandFloat(1.0, 2.0)
+	f_item_weapon_use_delai = MATH_RandFloat(2.0, 4.0)
+	f_powermount_use_delai = MATH_RandFloat(2.0,4.0)
+}
+
+
+// RESET END OF TRAME ========================================================
+i_path_way_force_recompute_flag = faux
+o_Commander_Force_Target = nobody
+if( ! i_gogo_test_done )
+	f_main_gogo_duration = 0.0		// test non réalisé donc timer reseté
+v_traction_push = Cv_NullVector
+o_external_dodge_actor = nobody
+o_external_protect_actor = nobody
+OBJ_CapaSet(none, Capa_ZDE_Fight_ON)
+i_occluder_to_main_actor_last = i_occluder_to_main_actor
+i_occluder_to_main_actor = faux
+v_force_move_occluder_sight_last = v_force_move_occluder_sight
+if( ! i_v_joy_sight_computed )
+	v_joy_sight = OBJ_SightGet()		// joy au reflex pour la trame prochaine
+
+
+// LOD ? =====================================================================
+tf_lod = OBJ_LodVisGet()
+switch( Config_Lapin )
+{
+	case Config_Lapin_Terminator :
+		tf_lod_invis = 0.02
+		tf_lod_low = 0.04
+		tf_lod_nofur = 0.05
+		break
+	case Config_Lapin_Boucher :
+		tf_lod = 1.0			// pas de LoD !!!
+	default:
+		tf_lod_invis = 0.03
+		tf_lod_low = 0.1
+		tf_lod_nofur = 0.2
+		break
+}
+if( tf_lod < tf_lod_invis )
+{
+	ti_lod = Ci_Lapin_LOD_Invisible
+	ti_shape = ShapeSelect_Invisible
+}
+else
+{
+	if( tf_lod < tf_lod_low )
+		ti_lod = Ci_Lapin_LOD_LowDetail
+	else if( tf_lod < tf_lod_nofur )
+		ti_lod = Ci_Lapin_LOD_NoFur
+	else
+		ti_lod = Ci_Lapin_LOD_Full
+	ti_shape = i_SHAPE_ID + (10 * ti_lod )
+}
+//Str_DisplayTxtFloatOnce("LoD  ",tf_lod, MACRO_2D)
+//Str_DisplayTxtIntOnce("Shape  ", ti_shape, MACRO_2D+cvector(0,0.05,0))
+if( i_LOD_courant != ti_lod )
+{
+	i_LOD_ancien = i_LOD_courant
+	i_LOD_courant = ti_lod
+	f_LOD_duree = 0.0
+}
+else
+{
+	f_LOD_duree += TIME_GetDt()
+}
+ANI_ShapeSelect(Anim_Canal_Tete, ti_shape)
+
+
+// GROUND GFX
+ti_gfx = faux
+switch( i_etat_courant )
+{
+	case ETAT_Lapin_TAUPE :
+		if( ! i_taupe_destruction_0hp && ! i_taupe_to_keep_moving_flag )
+			ti_gfx = vrai
+		break
+	default:
+		switch( i_LOD_courant )
+		{
+			case Ci_Lapin_LOD_Full :
+			case Ci_Lapin_LOD_NoFur :
+			case Ci_Lapin_LOD_LowDetail :
+				ti_gfx = vrai
+				break
+		}
+		break
+}
+if( ti_gfx )
+{
+	if( f_GFX_smoke_delai )
+	{
+		PROC_SFX_SMOKE_01(v_GFX_ground_pos)
+		f_GFX_smoke_delai -= MATH_FloatMin(f_GFX_smoke_delai, TIME_GetDt())
+	}
+	if( f_GFX_ground_christophe_delai )
+	{
+		tf_gfx_taille = f_GFX_ground_taille
+		if( o_RideMount_before_Taupe_backup )
+			tf_gfx_taille *= 2.0		// masquer la monture
+		PROC_SFX_EXPLOSION_SOL(tf_gfx_taille, v_GFX_ground_pos)
+		f_GFX_ground_christophe_delai -= MATH_FloatMin(f_GFX_ground_christophe_delai, TIME_GetDt())
+	}
+}
+
+
+// GFX PTIZETRE POUR SOUCOUPE -------------------------------------------------------------------------------------
+if( o_RideMount_Actor 
+&& i_RideMount_ID == C_ID_Scooter 
+&& @o_RideMount_Actor OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna) 
+&& @o_RideMount_Actor DYN_SpeedGet() > 5.0 )
+	Proc_PNJ_Lapin_Ptizetre_GFX_display(faux)		// la soucoupe fuit
+else
+	Proc_PNJ_Lapin_Ptizetre_GFX_display(vrai)			// pas de soucoupe ou en mode attente
+
+
+// MONTURE MEMORISEE LORS DU PASSAGE EN TAUPE ------------------------------------------------------
+if( o_RideMount_before_Taupe_backup )
+{
+	switch( i_etat_courant )
+	{
+		case ETAT_Lapin_FUITE :
+		case ETAT_Lapin_TAUPE :
+		case ETAT_Lapin_JUMP :
+		case ETAT_Lapin_RIDE_MOUNT :
+			@o_RideMount_before_Taupe_backup OBJ_ZoomSet(MATH_FloatBlend(@o_RideMount_before_Taupe_backup OBJ_ZoomGet(), 0.25, 1.0 * TIME_GetDt()))
+			// gestion normale ça suit son cours...
+			break
+		default:
+			@o_RideMount_before_Taupe_backup OBJ_FlagInactiveSet(faux)
+			@o_RideMount_before_Taupe_backup OBJ_FlagInvisibleSet(faux)
+			@o_RideMount_before_Taupe_backup OBJ_ZoomSet(f_RideMount_before_Taupe_zoom)
+			o_RideMount_before_Taupe_backup = nobody
+			break
+	}
+}
+
+
+// GFX TRACES EN FUITE ------------------------------------------------------------------------------------------------------------
+//ti_ok = faux
+//switch( i_etat_courant )
+//{
+//	case ETAT_Lapin_FUITE :
+//		ti_ok = vrai
+//		break
+//	case ETAT_Lapin_CACHE :
+//		if( i_cache_mode == Ci_CACHE_Mode_Fuite )
+//			ti_ok = vrai
+//		break
+//}
+//if( ti_ok && ! f_fuite_gfx_smoke_delai && DYN_SpeedGet() > 2.0 )
+//{
+//	Lapin_GFX_Smoke(OBJ_PosGet())
+//	f_fuite_gfx_smoke_delai = 0.25
+//}
+
+
+// GFX FUITE DU LAPIN VOLEUR DE CLEF ===========================================
+if( f_LIFE_cur && Fuite_Si_Clef && ( Lapin_ITEM_Has_Key() || Lapin_LUMS_Cage_Has() ) )
+{
+	switch( i_etat_courant )
+	{
+		case ETAT_Lapin_PAF :
+		case ETAT_Lapin_PAF_STUN :
+		case ETAT_Lapin_MORT :
+		case ETAT_Lapin_GOGO :
+		case ETAT_Lapin_GRABBED :
+		case ETAT_Lapin_PIEGE :
+		case ETAT_Lapin_ASPIRE :
+			break
+		default:
+			Lapin_GFX_Fuite_Halo()
+			break
+	}
+}
+
+
+// ZOOM =======================================================================
+if( i_zoom_reduction )
+{
+	if( i_ground_flag || i_is_in_water )
+	{
+		if( ! i_zoom_reduction_encours )
+		{
+			i_zoom_reduction_encours = vrai
+			i_flag_genere_lums = vrai
+		}
+	}
+	if( i_zoom_reduction_encours )
+	{
+		tf_zoom = OBJ_ZoomGet()
+		tf_zoom -= MATH_FloatMin(tf_zoom - f_zoom, TIME_GetDt())
+		OBJ_ZoomSet(tf_zoom)
+		if( tf_zoom == f_zoom )
+		{
+			i_zoom_reduction = faux
+			i_zoom_reduction_encours = faux
+		}
+	}
+}
+
+// GENERATION DE LUMS ===========================================================
+if( i_flag_genere_lums )
+{
+	Proc_RM_GenerateLums(Bonus_Lum, @o_canal_tete OBJ_PosGet())
+	Bonus_Lum = 0
+	SpecialFlag_set(i_SF_LumRecupere)	
+}
+
+// ZDM PIED =====================================================================
+if( f_LIFE_cur )
+	tf_zdm_size = 0.5
+else
+	tf_zdm_size = 1.0
+tv_zdm_size = cvector(tf_zdm_size, tf_zdm_size, tf_zdm_size)
+tv_zdm_offset = cvector(0, 0, tf_zdm_size)
+v_zdm_cur_size = MATH_VecBlend(v_zdm_cur_size, tv_zdm_size, 5 * TIME_GetDt())
+COL_ZoneSizeSet(C_zdm_pied, v_zdm_cur_size)
+v_zdm_cur_offset = MATH_VecBlend(v_zdm_cur_offset, tv_zdm_offset, 5 * TIME_GetDt())
+COL_ZonePosSet(C_zdm_pied, v_zdm_cur_offset)
+
+
+// DANSE FORMATION =============================================================
+ti_ok = faux
+switch( i_etat_courant )
+{
+	case ETAT_Lapin_BEAT_DANSE :
+		ti_ok = vrai
+		break
+	case ETAT_Lapin_JUMP :
+		if( i_flag_jump_to_danse )
+			ti_ok = vrai
+		break
+}
+if( ! ti_ok && i_Danse_pos_index != -1 )
+{
+	Lapin_DANSE_Del()
+	i_Danse_pos_index = -1
+	i_Danse_jump_done = faux
+	i_Danse_formation_nb = 0
+	i_Danse_pos_ok = faux
+}
+

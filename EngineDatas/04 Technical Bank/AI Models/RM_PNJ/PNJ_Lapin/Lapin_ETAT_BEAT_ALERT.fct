@@ -1,0 +1,101 @@
+#include "PNJ_Lapin_defines.var"
+
+vector	tv_temp
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_Lapin_BEAT_ALERT) 
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Lapin_BEAT_ALERT
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	Lapin_DBG_Trace_String(DBG_Trace_Etat, "BEAT ALERT")
+	fct_previous_etat = fct_last_etat
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	f_time_sous_mode = 0.0
+	i_Beat_flag_alert_mode = 1
+	SND_RequestPlay(Ci_SND_BEAT_Alert)
+	v_Global_SND_Beat_SwitchPos = OBJ_PosGet() + (3.0 * OBJ_SightGet())		// temp !!!!!!
+	
+	DBG_TraceObject(OBJ_Me())
+	DBG_TraceString(" est configuré pour éteindre la musique.... c'est MAAAAAAAL !!!!\n")
+	DBG_Warning("un lapin est configuré pour éteindre la musique.... c'est MAAAAAAAL !!!!")
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// STIMULI ===========================================================================
+o_Grabbed_Actor = LNK_ServeurGet(Ci_LNK_GRAB_EAGLE, mid_Grabbed_LNK_ID, vrai, nofunc, nofunc)
+if( o_Grabbed_Actor )
+	macro_change_etat("Lapin_ETAT_GRABBED")
+
+o_Rided_Actor = LNK_ServeurGet(Ci_LNK_RIDE_ON_NMI, mid_Rided_LNK_ID, vrai, nofunc, nofunc)
+if( o_Rided_Actor )
+	macro_change_etat("Lapin_ETAT_RIDED")
+
+AI_Execute("Lapin_exec_check_vision")
+
+MACRO_CHECK_PAFS
+
+if( Lapin_ROPE_Gogo_Mode() )
+	macro_change_etat("Lapin_ETAT_GOGO")
+
+MACRO_CHECK_CHUTE
+
+if( i_ventilo_flag )
+	macro_change_etat("Lapin_ETAT_ASPIRE")
+
+if( o_piege )
+	macro_change_etat("Lapin_ETAT_PIEGE")
+
+AI_Execute("Lapin_exec_update_best_interest")
+
+//if( ! MSG_GlobalIsValid(mid_best_interet) )
+//	MACRO_GO_IDLE(0)
+
+if( ! i_Beat_flag_alert )
+	MACRO_GO_IDLE(0)
+
+// COMPORTEMENT ===================================================================
+switch( i_Beat_flag_alert_mode )
+{
+	case 1 : 	// aller vers la console du DJ
+		v_way_destpos = v_Global_SND_Beat_SwitchPos
+		tv_temp = v_Global_SND_Beat_SwitchPos - OBJ_PosGet()
+		tv_temp.z = 0.0
+		if( MATH_VecDotProduct(tv_temp,tv_temp) < 1.0 )
+		{
+			Lapin_ACTION_Set(Action_Danse_TurnOff)
+			i_Beat_flag_alert_mode++
+		}
+		break
+	case 2 :		// arrêter la musique
+		if( ACT_ActionFinished() )
+			MACRO_GO_IDLE(0)
+		v_way_destpos = Cv_NullVector
+		break
+}
+
+
+i_target_territory_ID = Lapin_PROC_POS_GET_TERRITORY_ID(v_way_destpos)
+AI_Execute("Lapin_exec_way_find")
+AI_Execute("Lapin_exec_way_move")
+AI_Execute("Lapin_exec_way_orientation")
+AI_Execute("Lapin_exec_way_select_action")
+

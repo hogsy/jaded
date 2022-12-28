@@ -1,0 +1,141 @@
+#include "KR_defines.var"
+
+int				ti_i
+int				ti_trame
+
+float			tf_interet
+float			tf_norm
+
+vector		tv_new_sight
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	if( ( i_etat_courant != ETAT_KK_ride ) && o_bone_ride_KK )
+	{
+		// le raptor était en train d'attaquer sur le dos de KONG : on exécute la sortie d'état de RIDE
+		AI_Execute("KR_ETAT_ride")
+	}
+	
+	i_sort_etat = faux
+	i_flag_zde_fight_enable = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_mord)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_mord
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	
+	i_flag_bite_ok = faux
+
+	f_time_start_etat = 0.0
+	
+	if( i_ride_attak )
+		ACT_ActionSet(Action_Ride_Attack)
+	else
+		ACT_ActionSet(Action_Fight_Mord)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =======================================================================================================
+
+o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, vrai, nofunc, nofunc)
+if (o_grabbed_actor_KK)
+	macro_change_etat("KR_ETAT_grabbed")
+
+i_flag_zde_fight_enable = vrai
+
+AI_Execute("KR_exec_check_paf")
+if( o_paf_actor )
+{
+	KR_Select_Paf_Etat(fct_track_change)
+	if( fct_track_change != nofunc )
+		macro_change_etat(fct_track_change)
+}
+
+if( ! i_ride_attak )
+{
+	AI_Execute("KR_exec_check_fury")
+	if ( o_intimidator )
+		macro_change_etat("KR_ETAT_intimide")
+}
+
+o_fight_actor = EVENT_InteretTargetGet(mid_best_interet)
+
+if (i_ride_attak)
+	KR_SetInterestType(C_EVENT_InteretStatusRide)
+else
+	KR_SetInterestType(C_EVENT_InteretStatusAttack)
+
+EVENT_LifeSet(mid_best_interet, 10.0)
+EVENT_InteretPositionSet(mid_best_interet, @o_fight_actor OBJ_PosGet())
+
+
+// COMPORTEMENT =================================================================================================
+
+i_iam_a_kam_target = vrai
+i_flag_look = faux
+
+
+// Fred : Ne paffer le perso qu'on attaque qu'a partir 14 et jusqu'a la frame 19
+ti_trame = ANI_CurrentFrameGet(0)
+
+if( ( ! i_flag_bite_ok ) && (ti_trame >= 14 && ti_trame <= 19) )
+	i_flag_bite = vrai				// paf possible pendant cette durée
+
+
+if( o_grab_actor )
+{
+	// attaque grab réussie
+	macro_change_etat("KR_ETAT_grab")
+}
+
+if (ACT_ActionFinished())
+{
+	if ( ! i_flag_bite_ok || EVENT_InteretPrecisionGet(mid_best_interet) == -1.0)	
+	{
+		// On a raté notre cible
+		tf_interet	 = EVENT_InteretGet(mid_best_interet)
+		tf_interet -= 10.0
+		EVENT_InteretSet(mid_best_interet, tf_interet)
+	}
+	
+	// dans tous les cas (paf réussi ou pas, grab réussi ou pas)
+	if( i_ride_attak )
+		macro_change_etat("KR_ETAT_ride")
+	else
+		macro_change_etat(fct_main_etat)
+}
+
+tv_new_sight = @o_fight_actor OBJ_PosGet()
+tv_new_sight -= OBJ_PosGet()
+tv_new_sight.z = 0.0
+
+tf_norm = MATH_VecNorm(tv_new_sight)
+
+if (tf_norm)
+	tv_new_sight /= tf_norm
+else
+	tv_new_sight = OBJ_SightGet()
+
+tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_new_sight, 8.0 * TIME_GetDt())
+OBJ_BankingGeneralSet(tv_new_sight, Cv_VerticalVector)
+
+if (tf_norm < 2.0)
+	DYN_SpeedSetVector(-tv_new_sight * 4.0)
+
+

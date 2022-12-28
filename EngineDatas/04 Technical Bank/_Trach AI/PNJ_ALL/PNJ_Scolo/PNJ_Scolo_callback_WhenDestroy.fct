@@ -1,0 +1,60 @@
+COL_UnCollidableReset()
+
+if (i_SF_NePasSeRejouerSiMort)
+	Super_SpecialFlag_set(i_SF_AlreadyDead)
+
+HotSpot_Del_Obj( ao_modules[1])
+
+PNJ_Scolo_Del_Interest()
+
+o_predateur = LNK_ClientGet(Ci_LNK_GRAB_RAPTOR, mid_predateur_LNK, faux, nofunc, nofunc, nofunc)
+o_proie = LNK_ClientGet(Ci_LNK_RIDE_DINO, mid_proie_LNK, faux, nofunc, nofunc, nofunc)
+o_proie = LNK_ClientGet(Ci_LNK_GRAB_RAPTOR, mid_proie_LNK, faux, nofunc, nofunc, nofunc)
+o_KK_Grabbed_actor = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_kong_LNK, faux, nofunc, nofunc)
+o_kk_finish = LNK_ClientGet(Ci_LNK_KKFINISH_ON_KONG, mid_kk_finish_LNK, faux, nofunc, nofunc, nofunc)
+o_kk_finish = LNK_ClientGet(Ci_LNK_KKFINISH_ON_KONG, mid_kk_I_finish_LNK, faux, nofunc, nofunc, nofunc)
+
+OBJ_CapaSet(OBJ_Capa_15, none)
+
+macro_del_callback_after_cam("PNJ_Scolo_callback_aftercam")
+
+if (SND_move_1_loop != -1)
+{
+	SND_Stop(SND_move_1_loop)
+	SND_move_1_loop = -1
+}
+
+if (SND_move_2_loop != -1)
+{
+	SND_Stop(SND_move_2_loop)
+	SND_move_2_loop = -1
+}
+
+if (SND_rollup_loop != -1)
+{
+	SND_Stop(SND_rollup_loop)
+	SND_rollup_loop = -1
+}
+
+if (SND_eat_loop != -1)
+{
+	SND_Stop(SND_eat_loop)
+	SND_eat_loop = -1
+}
+	
+if (SND_burn_loop != -1)
+{
+	SND_Stop(SND_burn_loop)
+	SND_burn_loop = -1
+}
+
+if (GFX_Water_Trace != -1)
+{
+	GFX_Del(GFX_Water_Trace)
+	GFX_Water_Trace = -1
+}
+
+// EVENT LIFE
+if ( MSG_GlobalIsValid( ID_LIFE ))
+	MSG_GlobalDelete( ID_LIFE , C_EVENT_EOFDEL)
+	

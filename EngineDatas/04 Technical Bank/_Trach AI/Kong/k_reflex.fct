@@ -1,0 +1,439 @@
+#include "k_define.var"
+
+vector		tv_hor_speed
+vector		tv_pos_col
+vector		tv_pos_2D
+vector			tv_tmp
+
+float			tf_speed
+float			tf_liferatio
+float			tf_LRAY_lgr
+
+object		to_ODE_col
+object		to_canal
+object		to_col
+object		to_ride
+
+messageid	tmid_temp
+
+int				ti_cheat_mode_old
+int				pi_STR
+int				ti_ind
+
+//if( @get_global i_Kong_ignore_paf )
+//	Str_DisplayTextOnce("i_Kong_ignore_paf", cvector(0.4,0.85,0))
+
+// FX PAF
+//if( IO_KeyJustPressed(65) )
+//{
+//	to_canal = ANI_CanalObjectGet(Anim_Canal_Tete)
+//	tv_tmp = @to_canal OBJ_PosGet() + (4.0 * OBJ_SightGet())
+//	Proc_KK_SFX_Paf_Particules(tv_tmp, -OBJ_SightGet())
+//}
+
+o_Joueur = AI_MainActorGet(C_ID_Joueur)
+
+AI_Execute("k_exec_each_frame")
+
+i_flag_paf_check_done = faux
+i_Kamera_cut_ANN_flag = faux
+i_ride_just_clear = faux
+
+f_finished_just_paf_delay_no_finished -= MATH_FloatMin(f_finished_just_paf_delay_no_finished, TIME_GetDt())
+
+// DEATH AFX =====================================================
+if( i_mode_mort || i_DBG_Death_AFX )
+{
+	if ( ! MATH_FloatNullEpsilon( f_time_fury))
+		Fury_End
+
+	@"univ" MENU_f_LockedDuring = 30	// Disable Menu Page
+		
+	@get_global Proc_AE_BrightnessSet(MATH_FloatBlend(@get_global Proc_AE_BrightnessGet(), f_death_afx_brightness, TIME_GetDt()))
+	@get_global Proc_AE_ContrasteSet(MATH_FloatBlend(@get_global Proc_AE_ContrasteGet(), f_death_afx_contraste, TIME_GetDt()))
+	@get_global Proc_AE_ColorBalanceSet(MATH_FloatBlend(@get_global Proc_AE_ColorBalance1Get(), f_death_afx_colorbalance1, TIME_GetDt()), f_death_afx_colorbalance2)
+	@get_global Proc_AE_MotionBlurSet(MATH_FloatBlend(@get_global Proc_AE_MotionBlurGet(), f_death_afx_blur, TIME_GetDt()))
+	@get_global Proc_AE_RemanenceSet(MATH_FloatBlend(@get_global Proc_AE_RemanenceGet(), f_death_afx_remanance, TIME_GetDt()))
+
+	f_kong_game_speed  = MATH_FloatBlend(f_kong_game_speed, 0.15, 3.0 * TIME_GetDt() / @get_global f_old_old_game_speed )
+	@get_global f_game_speed = f_kong_game_speed
+
+	if (!i_fade && f_kong_game_speed < 0.17515)
+	{
+		i_fade = vrai
+		LIBGFX_Fade(31, 0x00000000, 0xff000000, 0.0, 0.25, 5.0, 0.0, 0.0, 10)
+	}
+
+	if (f_kong_game_speed < 0.150025)
+	{
+		if (i_mode_mort == Ci_Kamera_AnnDeath)
+		{
+			if (@get_global i_ann_background != 666)
+			{
+				WOR_BackColSet(0, @get_global i_ann_background)
+				@get_global i_ann_background = 666
+			}
+			STATS_Dying( 3 )
+		}
+		else
+			STATS_Dying( 2 )
+	}
+}
+else 
+	f_kong_game_speed = @get_global f_old_game_speed
+// DEATH AFX ===================================================
+
+// LIAISON ANN A L'IINIT ============================================================================
+if ( i_je_dois_chopper_ann_a_init && o_Joueur)
+{
+	v_grab_object_pos = @o_Joueur OBJ_PosGet()
+	ao_CL[Ci_LNK_KKGRAB_OBJECT] = LNK_ClientGet(Ci_LNK_KKGRAB_OBJECT, amid_CL_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT], vrai, "k_exec_grab_object_param", nofunc, "k_exec_grab_object_init")
+	if (ao_CL[Ci_LNK_KKGRAB_OBJECT])
+	{
+		// J'ai un perso dans la main
+		i_je_dois_chopper_ann_a_init = faux
+		i_GrabKong_1_attrape_par_action = vrai
+		i_flag_positionne_ANN = faux
+		i_GrabKong_MainActionGrab = 0
+		
+		// TEST CONFIANCE INITIALE DE ANN
+		if( ! @get_global i_KK_ANN_On_Shoulder ) 
+		{
+			// ANN dans la main
+			i_Grab_Torse_ANN = vrai
+			i_Grab_Torse_Actor = vrai
+			i_Grab_Torse_Main = i_GrabKong_MainActionGrab
+			LNK_KKGrabObject_TypeSet(amid_CL_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT], Ci_KKGrabObject_Porte_Main)
+			if( ! i_GrabKong_MainActionGrab )
+				LNK_KKGrabObject_BoneSet(amid_CL_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT], ANI_CanalObjectGet(Anim_Canal_MainDroite) )
+			else
+				LNK_KKGrabObject_BoneSet(amid_CL_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT], ANI_CanalObjectGet(Anim_Canal_MainGauche) )
+		}
+		else
+		{
+			// ANN sur l'épaule
+			LNK_KKGrabObject_TypeSet(amid_CL_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT], Ci_KKGrabObject_Porte_Epaule)
+			LNK_KKGrabObject_BoneSet(amid_CL_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT], ANI_CanalObjectGet(Anim_Canal_Snap_Ann) )				
+		}
+	}	
+}
+
+if ( @get_global o_KK_trunc )
+{
+	i_GrabKong_Type = Ci_GrabKong_Type_Souche
+	v_grab_object_pos = OBJ_PosGet()				// Position du point de grab demandé
+	ao_CL_GRABKONG[0] = LNK_ClientGet(Ci_LNK_GRAB_KONG, amid_CL_LIAISON_ID_GRABKONG[0], vrai, "k_exec_grab_object_param", nofunc, nofunc)
+	if ( ao_CL_GRABKONG[0])
+	{
+		// J'attrape une souche
+		@get_global o_KK_trunc = nobody
+		i_GrabKong_Souche = vrai
+		i_GrabKong_posset_allowed = vrai
+		to_canal = ANI_CanalObjectGet( Anim_Canal_Snap_MainD)
+		LNK_GrabKong_BoneSet( amid_CL_LIAISON_ID_GRABKONG[0], to_canal)
+		// SOUCHE GRAB PASSER EN MODE DEPLACEMENT AVEC SOUCHE
+		macro_change_etat( "k_ETAT_main_souche")		// Grab Fini
+
+	}
+}
+
+// GRAB SCOLO TJRS ACCEPTE
+o_scolo_actor = LNK_ServeurGet(Ci_LNK_GRAB_RAPTOR, mid_scolo_LNK_ID, vrai, nofunc, nofunc)
+
+
+// TEST COUPURE LIAISON ANN =========================================================================
+
+if( ao_CL[Ci_LNK_KKGRAB_OBJECT] && ( ! MSG_GlobalIsValid(amid_CL_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT])) )
+	ao_CL[Ci_LNK_KKGRAB_OBJECT] = nobody
+
+// TEST WP "INTERACTIVE ANN AU SOL" ===================================================================
+AI_Execute("k_exec_check_msg")
+
+
+// GRAB AU NIVEAU DU TORSE ========================================================================
+
+if ( i_Grab_Torse_ANN)
+	i_Grab_ANN_pose_epaule = vrai
+i_Grab_Torse_ANN = faux
+i_Grab_Torse_Actor = faux
+// 1. ANN
+if( MSG_GlobalIsValid(amid_CL_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT]) )
+{
+	// KONG porte ANN
+	if( ! @get_global i_KK_ANN_On_Shoulder )
+	{
+		i_Grab_Torse_ANN = vrai
+		i_Grab_Torse_Actor = vrai
+		i_Grab_ANN_pose_epaule = faux
+	}
+//	else if ( i_Grab_ANN_pose_epaule)
+//		macro_change_etat("k_ETAT_grab_ANN")
+}
+else
+	i_Grab_Torse_Main = -1
+
+// 2. Raptor
+if(  ao_CL_GRABKONG[0] || ao_CL_GRABKONG[ 1] )
+{
+	// KONG porte quelque chose dans la main
+	if( ! i_Grab_Torse_Actor )
+	{
+		// KONG ne porte pas ANN dans la main (mais elle peut être sur son épaule)
+		if( MSG_GlobalIsValid(amid_CL_LIAISON_ID_GRABKONG[0]) )
+		{
+			// KONG tient un objet dans la main
+			if( LNK_GrabKong_TypeGet( amid_CL_LIAISON_ID_GRABKONG[0]) == Ci_GrabKong_Type_Petit )
+			{
+				// KONG tient un raptor
+				if( i_GrabKong_attrape_jete != Ci_Jete )
+				{
+					// KONG porte le Raptor dans sa main
+					i_Grab_Torse_ANN = faux
+					i_Grab_Torse_Actor = vrai
+					//i_Grab_Torse_Main = i_GrabKong_MainActionGrab
+					if( ao_CL_GRABKONG[0] )
+						i_Grab_Torse_Main = 0
+					else
+						i_Grab_Torse_Main = 1
+				}
+			}
+		}
+	}
+}
+else
+	i_Grab_Torse_Main = -1
+
+
+// READ JOY+ TEST CHEAT MODE ====================================
+ti_cheat_mode_old = i_cheat_mode
+AI_Execute("k_exec_joy")
+if( i_cheat_mode && ! ti_cheat_mode_old )
+	macro_change_etat("k_ETAT_cheat_mode")
+else if( ! i_cheat_mode && ti_cheat_mode_old )
+	macro_change_etat("k_ETAT_main")
+
+Proc_KK_LacherIndigene()
+Proc_KK_PrendreIndigene()
+
+AI_Execute("k_exec_select_opponent")
+
+if (OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna) && ( DYN_FlagsGet() & DYN_C_BasicForces))
+{
+	DYN_TractionSet(Cv_NullVector)
+//	DYN_StreamSet(Cv_NullVector)
+}
+
+if (COL_CollideType(COL_C_Ground))
+{
+	// Kong touche le sol, il a droit de se rattraper s'il tombe dans le vide par la suite
+	if ( i_etat_courant != ETAT_Kong_jump)
+		i_jump_flag_ratraping_allowed = vrai
+	// REcherche si on est bien en collision avec le Sol
+	// Recherche que le point de collision est 'sous' la ZDM
+	tv_pos_col = COL_CollidedPointGet( COL_C_Ground)
+	v_last_ground_pos = tv_pos_col
+	if ( (tv_pos_col.z - OBJ_PosGet().z) < COL_ZoneSizeGet( C_zdm_pied) *(1- Cf_Cos20))
+		v_climb_ground_pos = tv_pos_col		// Dernière position réellement sur le sol
+}
+
+// GESTION DE L UNCOLLIDE ACTOR
+if ( i_uncol && OBJ_SqrDistHorz( o_uncol_actor) > 65.61 )  // Distance SURE de non colision
+{
+	// Permettre la collision a nouveau avec cet acteur: si on la réactivait ndirectement la collision empècherait la projection
+	if( @o_uncol_actor AI_IsModel(get_PNJ_KTREX_Path)
+	&& @o_uncol_actor KT_Proc_Uncol_Check(OBJ_Me()) == -1)
+	{
+		i_uncol = faux
+		@o_uncol_actor COL_UnCollidableDel( OBJ_Me())
+		o_uncol_actor = nobody
+	}
+}
+
+
+tf_speed = DYN_SpeedGet()
+tf_speed = MATH_FloatRound( tf_speed, 0.1)
+if ( !MATH_FloatNullEpsilon( tf_speed))
+	EVENT_AddEventSound( C_EVENT_FILTER_KingKong, OBJ_Me(), Cf_EVENT_Duree_1Trame, OBJ_PosGet(), tf_speed)
+//EVENT_AddEventPafZone( C_EVENT_FILTER_Object, C_EVENT_PAF_Repousse , OBJ_Me(), Cf_EVENT_Duree_1Trame, OBJ_PosGet(), 5.0,1)
+
+
+// ODE
+//if ( !MATH_VecNullEpsilon( v_ODE_Punch_init_pos))
+//{
+//	if ( !MATH_FloatNullEpsilon(f_ODE_Punch_time))
+//	{
+//		f_ODE_Punch_time = MATH_FloatMax( f_ODE_Punch_time - TIME_GetDt(), 0.0)
+//		if ( MATH_FloatNullEpsilon( f_ODE_Punch_time))
+//		{
+//			@o_ODE_Punch ODE_Enable( faux)
+//			v_ODE_Punch_init_pos = Cv_NullVector			
+//		}
+//	}	
+//	else if ( @o_ODE_Punch COL_CollideType(COL_C_Wall) 
+//	&& COL_ObjectGet( COL_C_Wall) != OBJ_Me() && MATH_FloatNullEpsilon(f_ODE_Punch_time))
+//		f_ODE_Punch_time = 0.000001
+//	if( MATH_VecDistance( v_ODE_Punch_init_pos, @o_ODE_Punch OBJ_PosGet()) > 7.0)
+//	{
+//		@o_ODE_Punch ODE_Enable( faux)
+//		v_ODE_Punch_init_pos = Cv_NullVector
+//	}		
+//}
+
+
+//if ( i_etat_courant == ETAT_commun_walling || i_etat_courant == ETAT_deplacement || i_etat_courant == ETAT_depl_souche )
+//{
+//	// GROGNEMENT
+//	if( f_snd_grogne < 0.0)
+//	{
+// 		f_snd_grogne = MATH_RandFloat( 10.0, 20.0)
+// 		SND_RequestPlay( 22)
+//	}
+//	else
+//		f_snd_grogne -= TIME_GetDt()
+//}
+
+// CHECK FACE DE MORT : CHANGER LA LONGEUR EN FONCTION DES MODES !!!
+switch ( i_etat_courant )
+{
+	case ETAT_Kong_deplacement :
+		if ( o_colonne)
+			tf_LRAY_lgr = -1.3
+		else
+			tf_LRAY_lgr = -0.2
+		break
+	default:
+		tf_LRAY_lgr = -0.2
+}
+to_col = COL_RayObject_Vector( OBJ_PosGet() + cvector( 0.0, 0.0, 0.1), cvector( 0.0, 0.0,tf_LRAY_lgr),all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+
+if( i_mode_mort == 0 && ( COL_CollideType( COL_C_Ground) || to_col ) )
+{
+	// ne pas écraser les i_mode_mort définis manuellement dans les états....
+	if ( to_col)
+		i_mode_mort = COL_GMAT_FlagsGet( COL_C_Ray)
+	else
+	{
+		i_mode_mort = COL_GMAT_FlagsGet( COL_C_Ground)
+		if ( COL_CollideType(COL_C_Ground + COL_C_SlipperyEdge))
+			i_mode_mort  = i_mode_mort 
+	}
+	if ( i_mode_mort & Gmat_KK_Face_de_mort)
+	{
+		DBG_TraceString("KONG meurt à cause d'une face de mort\n")
+		i_mode_mort = Ci_Kcamera_saut_mort_chute
+	}
+	else if ( 	i_mode_mort & Gmat_KK_Face_de_lave )
+	{
+		DBG_TraceString("KONG meurt à cause d'une face de lave\n")
+		i_mode_mort = Ci_Kcamera_saut_mort_lava
+	}
+	else
+		i_mode_mort = 0
+	if ( i_mode_mort)
+		macro_change_etat("k_ETAT_mort")
+}
+// LOOK
+i_look_enable = vrai
+
+// LIFE
+if ( ! EVENT_LIFE_CurLifeGet( ID_LIFE))
+{
+	if ( MATH_FloatNullEpsilon( f_gladiator_timer) || ! MATH_FloatNullEpsilon( f_time_fury))
+	{
+		if ( !i_gladiator_on && MATH_FloatNullEpsilon( f_time_fury))
+		{
+			f_gladiator_timer = Cf_Timer_gladiator		// Init
+			i_gladiator_on = vrai	
+		}
+		else if ( MATH_FloatNullEpsilon( f_time_fury))
+		{
+			EVENT_LIFE_CurLifeSet( ID_LIFE, EVENT_LIFE_SeuilBlesseGet(ID_LIFE))// Le joueur a survécu
+			i_gladiator_on = faux
+		}
+		else
+		{
+			EVENT_LIFE_CurLifeSet( ID_LIFE, 10.0)// Le joueur en fury ne passe pas en mode gladiator: vie min
+			i_gladiator_on = faux
+			f_gladiator_timer = 0.0
+		}
+	}
+	else
+	{
+		f_gladiator_timer -= MATH_FloatMin( f_gladiator_timer, TIME_GetDt())
+		i_gladiator_on = vrai
+	}
+}
+else if ( ! EVENT_LIFE_Est_Blesse( ID_LIFE) )
+{
+	i_blesse_on = faux
+	i_gladiator_on = faux
+}
+else
+	i_blesse_on = vrai
+
+to_canal = ANI_CanalObjectGet(Anim_Canal_Tete)
+tv_pos_2D = VIEW_3dWorldTo2d( 0, @to_canal OBJ_PosGet())
+if( ! @get_global i_Player_on_KK_Shoulder )
+	tv_pos_2D += cvector(0.0,0.0,1.5)
+EVENT_LIFE_StateDisplay( ID_LIFE, tv_pos_2D)
+tv_pos_2D -= cvector( 0.0, 0.05,0.0)
+EVENT_LIFE_LifeDisplay( ID_LIFE, tv_pos_2D)
+
+
+//if ( IO_ButtonPressed( joy_button_L2))
+//	ODE_Enable(vrai)
+//else
+//	ODE_Enable(faux)
+
+// DEPLACEMENT OU ATTENTE
+//if ( i_reflex_anim >= 10)
+if ( !ANI_IsInBlend() )
+{
+	if ( ACT_DesignFlagGet() & Ci_KACT_ASF_Anim_Move)
+	{
+		if (i_reflex_anim == Ci_Kanim_GalopeD ||  i_reflex_anim == Ci_Kanim_GalopeG)
+			f_reflex_time_mouvement = 0.1
+		else
+			f_reflex_time_mouvement += TIME_GetDt()
+	}
+	else
+		f_reflex_time_mouvement = 0.0
+}
+else
+{
+	if( ACT_BlendActionGet() == Ci_Kanim_Attente 
+		&& ACT_ActionGet() != Ci_Kanim_AttenteBlesse 
+		&& ACT_ActionGet() != Ci_Kanim_AttenteAngry )
+		f_reflex_time_mouvement = 0.1
+}
+
+// VAL EXTERNE REFRESH
+i_in_jump = faux
+
+f_kamera_cine_ann_posee_delay -= MATH_FloatMin(f_kamera_cine_ann_posee_delay, TIME_GetDt())
+
+// SET LE NB DE BAT/RAPTOR EN RIDE SUR KONG
+RIDE_Set_Actor_Nb()
+
+// PETIT PAF SI RIDE
+to_ride = RIDE_Get_Actor( ti_ind)
+if ( RIDE_Get_Actor_Nb() && @to_ride AI_IsModel(get_PNJ_Scolo_Path)
+&& f_ride_paf_time > 3.0)
+{
+	f_ride_paf_time = 0.0
+	EVENT_AddEventPaf( C_EVENT_FILTER_Enemy, C_PAF_KK_Faible, to_ride, Cf_EVENT_Duree_1Trame, OBJ_Me(), 0.0, OBJ_SightGet())
+}
+else
+	f_ride_paf_time += TIME_GetDt()
+
+
+//// ENTER FPS ================================
+//if( i_etat_courant != ETAT_Kong_finished )
+//	if( @get_global i_Player_on_KK_Shoulder )
+//		macro_change_etat("k_ETAT_fps")
+
+
+// CINE FOR JP ===========================================
+if( OBJ_CapaTest(Capa_Mode_Cine) )
+	 macro_change_etat("k_ETAT_cine")
+

@@ -1,0 +1,81 @@
+#include "KCG_Defines.var"
+
+object 	o_Bone
+float		mf_DistanceToSwing
+float		mf_ClosestDistanceToSwing
+int			i_Index
+object 	o_SubObject
+int			ti_loop
+int			ti_sf
+
+
+// SF RULES =======================================================
+i_SF_AlreadyPlayed = AI_SFDynGet(0, SF_MinById, SF_MaxById)		// Detruite ?
+SpecialFlag_get(i_SF_AlreadyPlayed, ti_sf)
+if ( ti_sf )
+{
+	for (ti_loop = 0; ti_loop < 14; ti_loop++)
+	{
+		if (mao_SubObjects[ti_loop])
+			@mao_SubObjects[ti_loop] OBJ_Destroy()
+	}
+	OBJ_Destroy()	
+}
+// SF RULES =======================================================
+
+
+if ( mi_IsInactive )
+{
+	AI_TrackCurStop()
+	return
+}
+
+mo_Kong = get_kong
+
+// check to make sure we have all the objects we need (swing and Kong)
+if ( !mo_Kong )
+{
+	DBG_Warning( "Kong is needed for the KCasse_Grue to work." )
+	
+	AI_TrackCurStop()
+	
+	return
+}
+
+if ( !mo_Swing )
+{
+	DBG_Warning( "A swing in the mo_Swing designer property is needed for the KCasse_Grue to work." )
+	
+	AI_TrackCurStop()
+	
+	return
+}
+
+// get the initial position of the swing so that it doesn't rotate with the bone it is linked to.
+mv_InitialSwingPosition	= @mo_Swing OBJ_PosGet()
+mv_InitialSwingSight		= @mo_Swing OBJ_SightGet()
+
+// find the closest bone to link a hierarchy to the swing to and initialize all the broken parts to their correct positions
+mf_ClosestDistanceToSwing 	= 999999.9
+for ( i_Index = C_FirstBone; i_Index <= C_LastBone; i_Index++ )
+{
+	o_Bone 			= ANI_CanalObjectGet( i_Index )
+	o_SubObject 	= mao_SubObjects[( i_Index - C_FirstBone + 1 )]
+
+	mf_DistanceToSwing = MATH_VecSquareDistance( ( @o_Bone OBJ_PosGet() ), ( @mo_Swing OBJ_PosGet() ) )
+
+	if ( mf_ClosestDistanceToSwing > mf_DistanceToSwing )
+	{
+		mf_ClosestDistanceToSwing	= mf_DistanceToSwing
+		mo_ClosestBone					= o_Bone
+	}
+	
+	// disable ODE and make invisible the broken state visual objects for each bone
+	if ( o_SubObject )
+	{
+		@o_SubObject OBJ_FlagInvisibleSet( vrai )
+		@o_SubObject ODE_Enable( faux )
+	}
+}
+
+AI_TrackCurChange( "KCG_Wait" )

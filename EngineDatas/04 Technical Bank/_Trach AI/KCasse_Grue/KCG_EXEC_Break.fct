@@ -1,0 +1,68 @@
+#include "KCG_Defines.var"
+
+object	o_Bone
+float		f_DistanceToKong
+int 		i_Index
+vector	v_FlightDirection
+vector 	v_KongInvBanking
+vector	v_RotationVector
+vector	v_BankingVector
+
+v_KongInvBanking = -1.0 * ( @mo_Kong OBJ_BankingGet() )
+
+if ( !mi_IsBroken )
+{
+	mi_IsBroken = vrai
+	
+	// destroy the swing so Kong can't use it anymore
+	@mo_Swing OBJ_FlagInactiveSet( vrai )
+	
+	// make the whole object invisible to be replaced by the broken parts
+	OBJ_FlagInvisibleSet( vrai )
+	
+	// sound de break
+	SND_RequestPlay(0)
+	// make visible, and trigger ODE with settings to make them fly off.
+	for ( i_Index = C_FirstBone; i_Index <= C_LastBone; i_Index++ )
+	{
+		o_Bone 			= mao_SubObjects[( i_Index - C_FirstBone + 1 )]
+		
+		if ( o_Bone )
+		{
+			@o_Bone OBJ_FlagInvisibleSet( faux )
+			@o_Bone OBJ_FlagInactiveSet( faux )
+			@o_Bone COL_EnableSnP()
+		
+			// select and randomize the force of the ODE based on its distance to Kong
+			f_DistanceToKong	= MATH_VecDistance( @o_Bone OBJ_PosGet(), @mo_Kong OBJ_PosGet() )
+			
+			f_DistanceToKong	= MATH_RandFloat( ( 0.75 * f_DistanceToKong ), ( 1.25 * f_DistanceToKong ) )
+			
+			if ( mi_ReverseBendDirection )
+			{
+				v_FlightDirection	= f_DistanceToKong * ( @o_Bone OBJ_SightGet() )
+			}
+			else
+			{
+				v_FlightDirection	= ( -1.0 * f_DistanceToKong ) * ( @o_Bone OBJ_SightGet() )
+			}
+			
+			// get the flight direction of each bone
+			v_FlightDirection = MATH_VecBlend( v_FlightDirection, v_KongInvBanking, ( MATH_RandFloat( 0.0, 0.25 ) ) )
+			
+			// bend the flight direction vector upwards
+			v_FlightDirection = MATH_VecBlend( v_FlightDirection, Cv_VerticalVector * f_DistanceToKong, 0.75 )
+			
+			@o_Bone ODE_Setv( 0, v_FlightDirection )
+			@o_Bone ODE_Setf( 2, 100.0 - f_DistanceToKong )
+			
+			// put a rotation on each object
+			v_RotationVector = @o_Bone OBJ_PosGet() - @mo_Kong OBJ_PosGet()
+			v_RotationVector = MATH_VecBlend( -1.0 * v_RotationVector, v_RotationVector, ( MATH_RandFloat( 0.0, 1.0 ) ) )
+			
+			@o_Bone ODE_Setv( 3, ( v_RotationVector / 3 ) )
+
+			@o_Bone ODE_Enable( vrai )
+		}
+	}
+}

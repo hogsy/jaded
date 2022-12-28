@@ -1,0 +1,46 @@
+int				ti_SF_AlreadyPlayed
+
+// FRED --- ALLOCATION SF + DESTRUCTION Si SF A VRAI --------------
+if (i_SF_NePasSeRejouer)
+{
+	i_SF_AlreadyPlayed = AI_SFDynGet(0, SF_MinById, SF_MaxById)
+	Super_SpecialFlag_get(i_SF_AlreadyPlayed, ti_SF_AlreadyPlayed)
+	if (ti_SF_AlreadyPlayed)
+		OBJ_Destroy()
+}
+// FRED --- ALLOCATION SF + DESTRUCTION Si SF A VRAI --------------
+
+mi_State = 0
+mi_StateMessage = 1
+
+mi_TriggerTest = 0
+if (AI_TriggerIsValid( mt_TriggerTest ))
+{
+	mi_TriggerTest++
+ 	if ( AI_TriggerIsValid( mt_TriggerTest1 ))
+ 	{
+		mi_TriggerTest++
+ 		if ( AI_TriggerIsValid( mt_TriggerTest2 ))
+ 			mi_TriggerTest++
+	}
+}
+
+if ( mi_TriggerTest || mo_Perso )
+{
+	#ifndef _FINAL_
+	if ( @get_global DEBUG_ACTIVATORTRIGGER )
+	{
+		DBG_TraceString( "ActivatorTrigger ACTIVE :" )
+		DBG_TraceObject( OBJ_Me() )
+		DBG_TraceEOL()
+	}
+	#endif
+
+	AI_TrackCurChange( "ActivatorTrigger_wait" )
+	return
+}
+
+// error
+DBG_TraceObject( OBJ_Me() )
+DBG_TraceString(" --> set a trigger or a perso in AI var\n" )
+AI_TrackCurStop()

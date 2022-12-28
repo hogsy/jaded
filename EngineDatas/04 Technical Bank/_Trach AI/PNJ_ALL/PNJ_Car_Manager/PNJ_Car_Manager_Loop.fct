@@ -1,0 +1,42 @@
+int		ti_string_ID
+
+if (AI_GetCurSystem() == 10 && i_show_debug)
+{
+	if (o_shooting_car)
+	{
+		o_last_camera_gao = o_shooting_car
+
+		ti_string_ID = STR_CreateText("\h.03\Camera locker : ", cvector(0.01, 0.02, 0.0), 0.0)
+		STR_AppendGao(ti_string_ID, o_last_camera_gao)
+	}
+
+	if (o_last_camera_gao)
+	{
+		ti_string_ID = STR_CreateText("\h.03\Last Camera locker : ", cvector(0.01, 0.05, 0.0), 0.0)
+		STR_AppendGao(ti_string_ID, o_last_camera_gao)
+	}
+	
+	if (f_delay_since_last_car_shot >= 3.0)
+		ti_string_ID = STR_CreateText("\h.03\Delai depuis dernier tir : ", cvector(0.01, 0.08, 0.0), 0.0)
+	else
+		ti_string_ID = STR_CreateText("\c0FF0000FF\\h.03\Delai depuis dernier tir : ", cvector(0.01, 0.08, 0.0), 0.0)
+	STR_AppendFloat(ti_string_ID, f_delay_since_last_car_shot, 1)
+
+	if (f_delay_since_change_camera >= 6.0)
+		ti_string_ID = STR_CreateText("\h.03\Delai depuis derniere Camera : ", cvector(0.01, 0.11, 0.0), 0.0)
+	else
+		ti_string_ID = STR_CreateText("\c0FF0000FF\\h.03\Delai depuis dernier Camera : ", cvector(0.01, 0.11, 0.0), 0.0)
+	STR_AppendFloat(ti_string_ID, f_delay_since_change_camera, 1)
+
+}
+
+// ==================================================================
+// PREDICTION DE COLLISION
+// ==================================================================
+PNJ_Car_Manager_Check_Collision()
+
+f_car_dist_stop = 0.0
+f_delay_since_last_car_shot += TIME_GetDt()
+f_delay_since_change_camera += TIME_GetDt()
+
+i_nearest_wp_nb = 0

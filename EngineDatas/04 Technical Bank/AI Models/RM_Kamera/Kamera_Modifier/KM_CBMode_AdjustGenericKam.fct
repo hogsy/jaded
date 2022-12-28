@@ -1,0 +1,30 @@
+Include_UltraProcedure_Header
+
+object		to_camera
+
+
+// ========= EXEC TRACK BEFORE ===========
+if (fct_before)	AI_Execute(fct_before)
+// ========= EXEC TRACK BEFORE ===========
+
+to_camera = @get_global o_camera
+
+if (f_active_time_cur<0)		f_active_time_cur = -f_active_time_cur
+f_active_time_cur -= MATH_FloatMin(f_active_time_cur, TIME_GetDt())
+
+if (f_autodestroy_life_time >= 0)
+{
+	// Destruction qd le temps arrive a 0
+	f_autodestroy_life_time -= MATH_FloatMin(f_autodestroy_life_time, TIME_GetDt())
+}
+
+f_kam_infinit = 1.0
+i_active = vrai
+
+// Common
+@get_Kamera_Path to_camera f_KMAdjust_Distance = f_Adjust_Distance
+@get_Kamera_Path to_camera f_KMAdjust_Angle = f_Adjust_Angle
+@get_Kamera_Path to_camera f_KMAdjust_CoefDecentrageHoriz = f_Adjust_CoefDecentrageHoriz
+
+@get_Kamera_Path to_camera f_KMAdjust_ChutePlat = f_Adjust_ChutePlat
+@get_Kamera_Path to_camera f_KMAdjust_ChuteTornade = f_Adjust_ChuteTornade

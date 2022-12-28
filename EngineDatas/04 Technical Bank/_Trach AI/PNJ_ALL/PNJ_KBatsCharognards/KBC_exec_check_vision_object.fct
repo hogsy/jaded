@@ -1,0 +1,24 @@
+
+//======================================================================
+// Retourne l'ID du message de visibilité généré part l'objet passé dans la pile
+//======================================================================
+
+int					ti_vis_rank
+message		tmsg_vis_filter
+messageid		tmid_vis_ID
+object			to_object
+
+// Récupère l'objet dont on veut récupérer le message de visibilité
+to_object = pop
+
+// Filtre : recherche de l'objet spécifié
+MSG_SetNull( tmsg_vis_filter)
+tmsg_vis_filter.msg_sender = to_object
+
+ti_vis_rank = -1
+tmid_vis_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Visibility, &ti_vis_rank, tmsg_vis_filter)
+
+// Retourne l'ID du message de visibilité du père
+push(tmid_vis_ID)
+
+// EVENT_FindEventPereTarget( int EVT_type, object EVT_Pere, object EVT_Target)

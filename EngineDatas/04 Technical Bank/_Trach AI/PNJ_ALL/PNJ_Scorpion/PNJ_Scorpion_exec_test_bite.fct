@@ -1,0 +1,31 @@
+#include "PNJ_Scorpion_defines.var"
+
+object		to_target
+
+if (i_perceived_best_actor_index == -1)
+	return
+
+if (i_grab_allowed && TIME_Elapsed(@get_global f_raptor_last_grab_time, 4.0) )
+	return
+
+if (ai_perceived_status[i_perceived_best_actor_index] & Ci_PERCEIVED_ALREADY_GRABBED)
+	return
+
+switch(ai_perceived_ID[i_perceived_best_actor_index])
+{
+	case C_ID_Joueur :
+		if (af_perceived_dist[i_perceived_best_actor_index] < Cf_Bite_Jack_Dist * f_size_coef)
+			macro_change_etat("PNJ_Scorpion_ETAT_BITE")
+		break
+		
+	case C_ID_Kong :
+		if (af_perceived_dist[i_perceived_best_actor_index] < Cf_Bite_Kong_Dist * f_size_coef)
+			macro_change_etat("PNJ_Scorpion_ETAT_BITE")
+		break
+		
+	default:
+		if (af_perceived_dist[i_perceived_best_actor_index] < Cf_Bite_Dist * f_size_coef)
+			macro_change_etat("PNJ_Scorpion_ETAT_BITE")
+		break
+}
+

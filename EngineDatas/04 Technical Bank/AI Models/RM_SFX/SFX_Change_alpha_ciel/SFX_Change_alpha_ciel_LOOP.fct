@@ -1,0 +1,20 @@
+color		tc_color
+
+
+if (!AI_TriggerIsValid(TRIG_ON) || call_trigger(TRIG_ON))
+	i_activation = vrai
+
+if (i_activation)
+{
+	f_progression += f_speed * TIME_GetDt()
+	if (f_progression > 255.0)
+		f_progression = 255.0
+	
+	@o_sky MAT_MT_SetLocalAlpha(0,0, f_progression)
+	@o_fog LIGHT_ColorSet(COLOR_Blend(c_color_fog_init, c_constant_ciel, f_progression / 255.0))
+}
+else
+{
+	@o_sky MAT_MT_SetLocalAlpha(0,0, 0.0)
+	@o_fog LIGHT_ColorSet(c_color_fog_init)
+}

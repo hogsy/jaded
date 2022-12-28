@@ -1,0 +1,74 @@
+#include "KK_defines.var"
+
+vector	tv_temp
+object	to_clone
+int			ti_int 
+
+AI_RunContext(CTX_Normal)
+//AI_RunContext(CTX_AfterBlend)
+
+if (joueur)
+{
+	AI_MainActorSet(C_ID_Kong)
+}
+else
+{
+	OBJ_CapaSet(OBJ_Capa_15, none)
+}
+
+//afct_SRV[Ci_LNK_GRAB_ICO] = "H_exec_propose_ico"
+//afct_SRV[Ci_LNK_GRAB_TRAP] = nofunc
+//afct_SRV[Ci_LNK_GRAB_CROCO] = nofunc
+//afct_SRV[Ci_LNK_HELP_TRAP] = "H_exec_propose_help_trap"
+//afct_SRV[Ci_LNK_HELP_CROCO] = "H_exec_propose_help_trap"
+//afct_SRV[Ci_LNK_GRAB_OBJECT] = nofunc
+//afct_SRV[Ci_LNK_VALA] = nofunc
+//afct_SRV[Ci_LNK_GRAB_RAPTOR] = nofunc
+
+tv_temp = GRID_PosGet(OBJ_PosGet())
+tv_temp.z = OBJ_PosGet().z
+OBJ_PosSet(tv_temp)
+
+macro_change_tag_size(Cv_KK_Tag_Size_V1, Cv_KK_Tag_Size_V2)
+
+COL_ColSetActivationSet(none, C_bit_zdm_recalagespecial)
+
+COL_SwapToSpecific(C_zdm_pied)
+COL_ZoneSizeSet(C_zdm_pied, cvector(0.25, 0.25, 0.25))
+COL_ZonePosSet(C_zdm_pied, cvector(0.0, 0.0, 0.25))
+
+COL_SwapToSpecific(C_zdm_recalagespecial)
+COL_ZoneSizeSet(C_zdm_recalagespecial, cvector(0.25, 0.25, 0.25))
+COL_ZonePosSet(C_zdm_recalagespecial, cvector(0.0, 0.0, 1.0))
+
+COL_SwapToSpecific(C_zde_corps)
+COL_ZoneSizeSet(C_zde_corps, cvector(0.5, 0.5, 0.5))
+
+COL_SwapToSpecific(C_zde_fight)
+COL_ZoneSizeSet(C_zde_fight, cvector(0.5, 0.5, 0.5))
+COL_ZonePosSet(C_zde_fight, cvector(0.0, -0.75, 1.0))
+
+DYN_On()
+DYN_FlagsSet(DYN_C_BasicForces + DYN_C_NeverDynamicFather + DYN_C_VectorFriction, none)
+DYN_GravitySet(Cv_NormalGravity)
+
+AI_CBAdd(OBJ_Me(), CallBack_WhenDestroy, "KK_callback_when_destroy")
+AI_CBAdd(OBJ_Me(), CallBack_After_Blend, "KK_callback_after_blend")
+AI_CBAdd(OBJ_Me(), CallBack_Client, "KK_callback_client")
+
+if (joueur)
+{
+	// Perso contrôlé par le joueur
+	AI_TrackChange(Ci_Track_TagOff, "KK_exec_tagoff")
+	AI_TrackChange(Ci_Track_Reflex, "KK_reflex")
+//	AI_TrackChange(Ci_Track_Etat, "KK_ETAT_joueur_marche")
+	AI_TrackChange(Ci_Track_TagOn, "KK_exec_tagon")
+}
+else
+{
+	// Perso contrôlé par IA
+	AI_TrackChange(Ci_Track_TagOff, "KK_exec_tagoff")
+	AI_TrackChange(Ci_Track_Reflex, "KK_reflex")
+//	AI_TrackChange(Ci_Track_Etat, "KK_ETAT_IA_suivi")
+	AI_TrackChange(Ci_Track_TagOn, "KK_exec_tagon")
+}

@@ -1,0 +1,93 @@
+#include "PNJ_mr_defines.var"
+
+float		tf_dot
+int			ti_move
+vector	tv_sens
+vector	tv_cross
+
+// SORTIE ETAT 	===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	DYN_GravitySet( Cv_DYN_Gravity)
+	SND_Stop(i_SND_MR_Moteur)
+	i_SND_MR_Moteur = -1
+	SND_Stop(i_SND_MR_Voix)
+	i_SND_MR_Voix = -1
+	return
+}
+
+// INIT ETAT 	=====================================================================
+if ( i_etat_courant != ETAT_PNJ_MR_Move)
+{
+	i_etat_courant = ETAT_PNJ_MR_Move
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()	
+	i_SND_MR_Moteur = SND_RequestPlayLoop(Ci_SND_MR_Moteur)
+	i_SND_MR_Voix = SND_RequestPlayLoop(Ci_SND_MR_Voix)
+	OBJ_CapaSet(Obj_Capa_Fight,none)
+}
+
+
+// CHANGEMENT D ETAT =============================================================
+
+if ( o_BV_Zone && !(@o_BV_Zone COL_BV_PivotCollide( OBJ_Me())))
+{
+	if( !i_grabbed )
+		i_Explosion=vrai
+//		AI_TrackCurChangeNow("PNJ_MR_ETAT_Explosion")
+}
+
+if ( o_BV_Zone && ! @o_BV_Zone COL_BV_PivotCollide( o_fight_target ))
+{
+	AI_TrackCurChangeNow("PNJ_MR_ETAT_Retour")
+}
+
+if ( ROBOT_ROPE_Gogo_Mode())
+{
+	// Gogo mode
+	AI_TrackCurChangeNow("PNJ_MR_ETAT_Gogo")
+}	
+
+if ( ROBOT_Detect_Target( o_fight_target))
+{
+	// Attaque mode
+	AI_TrackCurChangeNow("PNJ_MR_ETAT_Charge")	
+}
+
+if ( o_paf_actor)
+{
+	// Mode Paf
+	AI_TrackCurChangeNow("PNJ_MR_ETAT_Paf")	
+}
+
+if(COL_CollideType(COL_C_Wall) && (COL_ObjectGet(COL_C_Wall)!=o_fight_target) && i_rotate==faux)
+{
+	AI_TrackCurChangeNow("PNJ_MR_ETAT_Contourne")	
+}
+
+
+// COMPORTEMENT ================================================================
+if(i_NbLink==1)
+{
+	tv_cross=MATH_VecCrossProduct(@o_fight_target OBJ_PosGet()-OBJ_PosGet(),Cv_VerticalVector)
+//	DBG_RenderVector(OBJ_PosGet(),tv_cross,color_rouge)
+	tf_dot=MATH_VecDotProduct(OBJ_PosGet()-@o_Partenaire[0] OBJ_PosGet(),tv_cross)
+	if(tf_dot<0.0)
+		tv_cross=-tv_cross
+//	DBG_RenderVector(OBJ_PosGet(),tv_cross,color_vert)
+	tv_cross=MATH_VecNormalize(tv_cross) * Cf_MR_Link_Dist_RM
+//	DBG_RenderVector(OBJ_PosGet(),tv_cross,color_bleu)
+	
+	PNJ_MR_Move(@o_fight_target OBJ_PosGet()+tv_cross,OBJ_PosGet())
+	DBG_RenderVector(OBJ_PosGet(),@o_fight_target OBJ_PosGet()+tv_cross-OBJ_PosGet(),color_rouge)
+//	PNJ_MR_Move(@o_fight_target OBJ_PosGet() + MATH_VecNormalize(OBJ_SightGet()),MATH_VecBlend(OBJ_PosGet(),@o_Partenaire[0] OBJ_PosGet(),0.5))
+}
+else
+{
+	PNJ_MR_Move(@o_fight_target OBJ_PosGet(),OBJ_PosGet())
+}

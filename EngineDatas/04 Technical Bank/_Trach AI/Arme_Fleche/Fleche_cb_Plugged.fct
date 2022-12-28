@@ -1,0 +1,83 @@
+vector		tv_temp
+vector		tv_temp1
+
+if( mi_State != Ci_bambou_state_plug )
+{
+	mi_State = Ci_bambou_state_plug
+	mf_State_Duration = 0.0
+	
+	DBG_TraceObject(OBJ_Me())
+	DBG_TraceString(" pluggée à ")
+	DBG_TraceObject(o_plug_to)
+	DBG_TraceEOL()
+}
+else
+{
+	mf_State_Duration += TIME_GetDt()
+}
+
+
+if( o_plug_to == nobody )
+{
+	DBG_TraceObject(OBJ_Me())
+	DBG_TraceString(" détruit car plus de o_plug_to\n")
+	macro_del_callback_after_cam("Fleche_cb_Plugged")
+	OBJ_Destroy()
+	return
+}
+
+
+// tomber trop bas ?
+if( ! f_plug_timer )
+{
+	if( MATH_AbsFloat( OBJ_PosGet().z - mf_ZInit) > 50 )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" détruit après 50m de chute après avoir été déplugé\n")
+		macro_del_callback_after_cam("Fleche_cb_Plugged")
+		OBJ_Destroy()
+	}
+}
+
+
+// PLUG TIMER ?
+if( f_plug_timer )
+{
+	f_plug_timer -= MATH_FloatMin(f_plug_timer, TIME_GetDt())
+	if( ! f_plug_timer )
+	{
+		mf_ZInit = OBJ_PosGet().z		// réinit du Z qd on déplug !!!!
+		
+		DYN_On()
+		DYN_FlagsSet( DYN_C_BasicForces | DYN_C_VectorFriction | DYN_C_GlobalFriction | DYN_C_HorizontalGrounds, none)
+		DYN_FrictionVectorSet(Cv_NullVector)
+		DYN_GravitySet(Cv_NormalGravity)
+		DYN_SpeedSetVector(Cv_NullVector)
+	}
+}
+
+
+// DO PLUG
+if( f_plug_timer )
+{
+	tv_temp = @o_plug_to MATH_VecLocalToGlobal(v_plug_local)
+	OBJ_PosSet(@o_plug_to OBJ_PosGet() + tv_temp)
+	
+	tv_temp = @o_plug_to MATH_VecLocalToGlobal(v_plug_sight)
+	tv_temp1 = @o_plug_to MATH_VecLocalToGlobal(v_plug_banking)
+	OBJ_SightGeneralSet(tv_temp, tv_temp1)
+}
+else
+{
+	OBJ_SightGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), - Cv_VerticalVector, 0.5 * TIME_GetDt()), OBJ_BankingGet())
+}
+
+
+
+#ifndef _FINAL_
+if( i_DEBUG )
+	Str_DisplayTextOnce("cb Plugged", VIEW_3dWorldTo2d(0, OBJ_PosGet()))
+#endif
+
+
+

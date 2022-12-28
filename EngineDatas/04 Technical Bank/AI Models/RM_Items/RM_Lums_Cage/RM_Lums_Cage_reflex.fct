@@ -1,0 +1,62 @@
+#include "RM_Lums_Cage_defines.var"
+
+float		tf_dt
+float		tf_size
+vector	tv_temp
+vector	tv_ground_normale
+
+o_main_actor = AI_MainActorGet(0)
+
+tf_dt = TIME_GetDt()
+
+@o_baton OBJ_FlagInvisibleSet(faux)
+
+// GROUND Managment ======================================================================
+tv_ground_normale = v_ground_normale		// ancienne normale
+if( o_grabbed_actor )
+{
+	tv_ground_normale = Cv_VerticalVector
+	i_ground_flag = faux
+	f_no_ground_duree = 10.0
+	f_ground_duree = 0.0
+}
+else
+{
+	tv_temp = Cv_NullVector
+	if (COL_CollideType(COL_C_Ground))
+		tv_temp = COL_NormalGet(COL_C_Ground)
+	if ( COL_CollideType(COL_C_Ground) && tv_temp.z > 0.0 )		// les plafonds ne sont pas des sols
+	{
+		tv_ground_normale = tv_temp
+		i_ground_flag = vrai
+		f_no_ground_duree = 0.0
+		f_ground_duree += tf_dt
+	}
+	else
+	{
+		f_no_ground_duree += tf_dt
+		if( f_no_ground_duree > 0.1 )
+		{
+			tv_ground_normale = Cv_VerticalVector
+			i_ground_flag = faux
+			f_ground_duree = 0.0
+		}
+		else
+			i_ground_flag = vrai
+	}
+}
+//v_ground_normale = MATH_VecBlendRotate(v_ground_normale, tv_ground_normale, 5 * TIME_GetDt())
+v_ground_normale = Cv_VerticalVector
+
+
+// ZDE CORPS & ZDM PIED ================================================================
+tf_size = 0.25
+tv_temp = cvector(tf_size,tf_size,tf_size)
+COL_ZoneSizeSet(C_zdm_pied, tv_temp)
+//tv_temp = -tf_size * @o_cage OBJ_BankingGet()
+//tv_temp += ( - OBJ_PosGet())
+tv_temp = @o_cage OBJ_PosGet()
+tv_temp -= 0.5 * @o_cage OBJ_BankingGet()
+tv_temp -= OBJ_PosGet()
+COL_ZonePosSet(C_zdm_pied, tv_temp)
+

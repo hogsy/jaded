@@ -1,0 +1,18 @@
+vector	tv_min
+vector	tv_max
+
+o_KK = @"univ" ao_AllHumains[ C_ID_Kong ]
+if ( ! o_KK)
+	return
+
+// Sizing BV
+tv_min = BV_MinGet( )
+tv_max = BV_MaxGet( )
+tv_min.z = 0.0
+tv_max.z = f_z_max 
+
+BV_MinSet( tv_min)
+BV_MaxSet( tv_max)
+
+f_z_decroche = f_z_max - 1.0
+AI_TrackCurChange("Klim_frein")

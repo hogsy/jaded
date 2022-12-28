@@ -1,0 +1,17 @@
+object	to_module
+
+if ( !AI_TriggerIsValid(t_activation) || ( AI_TriggerIsValid(t_activation) && call_trigger(t_activation) ) )
+{
+	if (!o_perso_a_snapper)
+		o_perso_a_snapper = OBJ_Me()
+
+	to_module = @o_perso_de_snap ANI_CanalObjectGet(i_bone_de_snap)
+	@o_perso_a_snapper OBJ_PosSet( @to_module OBJ_PosGet() + @to_module MATH_VecLocalToGlobal(v_offset_local))
+	if	(des_i_orientation)
+	{
+		if	( ! des_i_force_banking_V)
+			@o_perso_a_snapper OBJ_SightGeneralSet( @to_module OBJ_SightGet(), Cv_VerticalVector)
+		else
+			@o_perso_a_snapper OBJ_SightGeneralSet( @to_module OBJ_SightGet(), @to_module OBJ_BankingGet())
+	}
+}

@@ -1,0 +1,50 @@
+#include "RM_Costume_Item_defines.var"
+
+AI_CBAdd(OBJ_Me(), CallBack_WhenDestroy, "RM_Costume_Item_cb_WhenDestroy")
+
+switch( costume )
+{
+	case RM_Disguise_Punk :
+		c_GFX_color = 0x77A70732
+		break
+	case RM_Disguise_Mamy :
+		c_GFX_color = 0x77A70732
+		break
+	case RM_Disguise_Funky :
+		c_GFX_color = 0x77A70732
+		break
+	case RM_Disguise_Elvis :
+		c_GFX_color = 0x77A70732
+		break
+	case RM_Disguise_Hiphop :
+		c_GFX_color = 0x77A70732
+		break
+	case RM_Disguise_6 :
+	case RM_Disguise_7 :
+	case RM_Disguise_8 :
+	case RM_Disguise_9 :
+	case 10 : 
+		OBJ_Destroy()
+		break
+}
+
+switch( item )
+{
+	case 0 :
+		item = RM_POWER_DISGUISE_GLASSES
+		break
+	case 1 :
+		item = RM_POWER_DISGUISE_HAIR
+		break
+	case 2 :
+		item = RM_POWER_DISGUISE_VEST
+		break
+	case 3 :
+		item = RM_POWER_DISGUISE_SHOES
+		break
+}
+
+AI_TrackChange(2, "RM_Costume_Item_ETAT_Attente")
+AI_TrackChange(4, "RM_Costume_Item_GFX")
+AI_TrackCurStop()
+

@@ -1,0 +1,96 @@
+#include "PNJ_Raptor_defines.var"
+
+int				ti_i
+
+function		fct_current
+
+COL_UnCollidableReset()
+
+if (i_SF_NePasSeRejouerSiMort)
+	Super_SpecialFlag_set(i_SF_AlreadyDead)
+
+OBJ_CapaSet(OBJ_Capa_15, none)
+
+macro_del_callback_after_cam("PNJ_Raptor_callback_aftercam")
+
+i_etat_courant = -1
+fct_current = AI_TrackGet(Ci_Track_Etat)
+
+if (fct_current)
+{
+	i_sort_etat = vrai
+	AI_Execute(fct_current)
+}
+
+if (fct_last_etat)
+{
+	i_sort_etat = vrai
+	AI_Execute(fct_last_etat)
+}
+
+// MESSAGE GLOBAUX ==========================================================
+PNJ_Raptor_Del_Interest()
+
+// GRAB =======================================================================
+o_grab_actor = LNK_ClientGet(Ci_LNK_GRAB_RAPTOR, mid_grab_actor_LNK_ID, faux, nofunc, nofunc, nofunc)
+
+// GRID & CO ==================================================================
+macro_change_tag_size(Cv_NullVector, Cv_NullVector)
+AI_Execute("PNJ_Raptor_exec_tagoff")
+PNJ_Raptor_Ultra_TagOn()
+
+// GFX =====================================================================
+//for (ti_i = 0; ti_i < 2; ti_i++)
+//{
+//	if (GFX_Feet_Smoke[ti_i] != -1)
+//	{
+//		GFX_Seti(GFX_Feet_Smoke[ti_i], 13106, 0)						// *number of sprite to generate
+//		GFX_Feet_Smoke[ti_i] = -1
+//	}
+//}
+//
+//for (ti_i = 0; ti_i < 10; ti_i++)
+//{
+//	if (GFX_Blood[ti_i] != -1)
+//	{
+//		GFX_Seti(GFX_Blood[ti_i], 13106, 0)						// *number of sprite to generate
+//		GFX_Blood[ti_i] = -1
+//	}
+//}
+
+// SOUND ======================================================================
+if (i_SND_instance_attack != -1)
+{
+	SND_Stop(i_SND_instance_attack)
+	i_SND_instance_attack = -1
+}
+
+if (i_SND_instance_breath != -1)
+{
+	SND_Stop(i_SND_instance_breath)
+	i_SND_instance_breath = -1
+}
+
+if (i_SND_instance_devore != -1)
+{
+	SND_Stop(i_SND_instance_devore)
+	i_SND_instance_devore = -1
+}
+
+if (i_SND_instance_move != -1)
+{
+	SND_Stop(i_SND_instance_move)
+	i_SND_instance_move = -1
+}
+
+if (i_SND_instance_grab != -1)
+{
+	SND_Stop(i_SND_instance_grab)
+	i_SND_instance_grab = -1
+}
+
+if (i_SND_instance_burn != -1)
+{
+	SND_Stop(i_SND_instance_burn)
+	i_SND_instance_burn = -1
+}

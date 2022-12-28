@@ -1,0 +1,148 @@
+ 
+int				ti_i
+
+float			tf_dist
+float			tf_angle
+
+object		tao_bones[2]
+object		to_main_actor
+
+vector		tv_pivot_pos
+vector		tv_dest_pos
+vector		tv_axis
+vector		tv_new_sight
+vector		tv_new_banking
+vector		tv_head_horizon
+
+return
+
+#define DBG_DISPLAY_PILOTAGE						1
+#define Cf_speed													12.0
+
+// Rotation autour d'un seul axe
+
+tao_bones[0] = ANI_CanalObjectGet(Anim_Canal_Cou)
+tao_bones[1] = ANI_CanalObjectGet(Anim_Canal_Tete)
+
+to_main_actor = AI_MainActorGet(0)
+v_look_pos = @to_main_actor OBJ_PosGet() +  (OBJ_SightGet() * 20)
+
+if (1)
+//if (i_flag_look)
+{
+	tv_dest_pos = v_look_pos
+	
+	tv_pivot_pos = @tao_bones[1] OBJ_PosGet()
+
+#ifdef DBG_DISPLAY_PILOTAGE
+	DBG_RenderCircle(tv_pivot_pos, 2.0, Cv_VerticalVector, color_rouge)
+#endif
+
+//	tv_axis = v_look_pos
+//	tv_axis -= tv_pivot_pos
+//	tv_axis.z = 0.0
+//
+//	tf_dist = MATH_VecDotProduct(tv_axis, tv_axis)
+//	if (tf_dist < 1.0)
+//	{
+//		tf_dist = MATH_FloatSqrt(tf_dist)
+//		tv_axis /= tf_dist
+//		tv_axis *= 2.0
+//		
+//		tv_dest_pos = tv_pivot_pos
+//		tv_dest_pos += tv_axis
+//		tv_dest_pos.z = v_look_pos.z
+//	}
+//	
+//	tv_axis = tv_dest_pos
+//	tv_axis -= tv_pivot_pos
+//	tv_axis.z = 0.0
+//	tv_axis = MATH_VecInCone(tv_axis, OBJ_SightGet(), 1.2, 0)
+//
+//	tv_dest_pos = tv_pivot_pos
+//	tv_dest_pos += tv_axis
+//	tv_dest_pos.z = v_look_pos.z
+
+//	// X ============================================================================================
+//	tv_axis = tv_dest_pos
+//	tv_axis -= tv_pivot_pos
+//	
+//	DBG_RenderVector(tv_pivot_pos, tv_axis, color_jaune)
+//
+////	if (MATH_VecDotProduct(tv_axis, v_head_banking) > 0.5)
+//	{
+//		tv_head_horizon = MATH_VecCrossProduct(v_head_banking, Cv_VerticalVector)
+//		MATH_VecSetNormalize(tv_head_horizon) 
+//		
+////		DBG_RenderVector(tv_start_pos, tv_axis, color_jaune)
+////		DBG_RenderVector(tv_start_pos, tv_head_banking, color_bleu)
+////		DBG_RenderVector(tv_start_pos, tv_head_horizon, color_rouge)
+//		
+//		tv_axis -= MATH_VecDotProduct(tv_axis, tv_head_horizon) * tv_head_horizon
+//		
+//		tf_angle = MATH_VecAngle(tv_axis, v_head_banking, tv_head_horizon)
+//		
+////		if (f_head_speed_X < 0.0)
+////			f_head_speed_X = 0.0
+////		else
+////			f_head_speed_X = MATH_FloatBlend(f_head_speed_X, 2.0, TIME_GetDt())
+//		f_head_speed_X = 6.0
+//	
+//		f_head_angle_X = MATH_FloatBlend(f_head_angle_X, tf_angle, f_head_speed_X * TIME_GetDt())
+//	}
+////	else
+////	{
+////		if (f_head_speed_X > 0.0)
+////			f_head_speed_X = 0.0
+////		else
+////			f_head_speed_X = MATH_FloatBlend(f_head_speed_X, -6.0, TIME_GetDt())
+////		
+////		f_head_angle_X = MATH_FloatBlend(f_head_angle_X, 0.0, - f_head_speed_X * TIME_GetDt())
+////	}
+	
+	// Z =========================================================================================
+	
+	tv_axis = tv_dest_pos
+	tv_axis -= v_head_pos
+
+//	DBG_RenderVector(tv_pivot_pos, tv_axis, color_jaune)	
+
+	tv_axis.z = 0.0
+	
+	tf_angle = MATH_VecAngle(@tao_bones[0] OBJ_BankingGet(), tv_axis, Cv_VerticalVector)
+	
+	f_head_angle_Z = MATH_FloatBlend(f_head_angle_Z, tf_angle, 6.0 * TIME_GetDt())
+	
+}
+else if (f_head_angle_X || f_head_angle_Z)
+{
+//	// X =======================================================================
+//
+//	if (f_head_speed_X > 0.0)
+//		f_head_speed_X = 0.0
+//	else
+//		f_head_speed_X = MATH_FloatBlend(f_head_speed_X, -6.0, TIME_GetDt())
+//	
+//	f_head_angle_X = MATH_FloatBlend(f_head_angle_X, 0.0, - f_head_speed_X * TIME_GetDt())
+//
+//	// Z =======================================================================
+//
+//	f_head_angle_Z = MATH_FloatBlend(f_head_angle_Z, 0.0, 6.0 * TIME_GetDt())
+
+	f_head_angle_X -= MATH_FloatSign(f_head_angle_X) * MATH_FloatMin(MATH_AbsFloat(f_head_angle_X), 1.0 * TIME_GetDt())
+	f_head_angle_Z -= MATH_FloatSign(f_head_angle_Z) * MATH_FloatMin(MATH_AbsFloat(f_head_angle_Z), 0.5 * TIME_GetDt())
+}
+
+if (f_head_angle_X || f_head_angle_Z)
+{
+	for (ti_i = 0; ti_i < 2; ti_i++)
+	{
+		@tao_bones[ti_i] OBJ_RotateGlobalZ(f_head_angle_Z / 2.0)
+		@tao_bones[ti_i] OBJ_RotateLocalX(f_head_angle_X / 2.0)
+	}
+}
+	
+v_head_pos = @tao_bones[1] OBJ_PosGet() // MATH_VecGlobalToLocal(@tao_bones[1] OBJ_PosGet() - OBJ_PosGet())
+
+v_head_virtual_sight = @tao_bones[1] OBJ_BankingGet()
+v_head_banking = MATH_VecGlobalToLocal(v_head_virtual_sight)

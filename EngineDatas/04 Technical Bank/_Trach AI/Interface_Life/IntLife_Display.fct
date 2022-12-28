@@ -1,0 +1,122 @@
+//#include "Interface_Life_Defs.var" 
+//
+//int 		i, j, txt, index, refill, C
+//float		life, sin
+//
+//if (Jauge_NbDisplayed == 0)
+//	return
+//	
+//for (i = 0; i < Jauge_NbDisplayed; i++)
+//{
+//	index = Jauge_Index[ i ]
+//	
+//	if (@"univ" LIFE_HumainMax[ index ] == 0)
+//		continue
+//		
+//	life = Life_Value[ index ] / @"univ" LIFE_HumainMax[ index ]
+//	
+//	if (Jauge_Timer[i] != 0 )
+//	{
+//		if (Jauge_PosX[i] != 0)
+//		{
+//			Jauge_PosX[i] += TIME_GetDt() * INTLIFE_SPEEDON
+//			if (Jauge_PosX[i] > 0) Jauge_PosX[i] = 0
+//		}
+//		else if (Life_Value[ index ] != @"univ" LIFE_HumainCur[ index ] )
+//		{
+//			if (Life_Value[ index ] < @"univ" LIFE_HumainCur[ index ] )
+//			{
+//				Life_Value[ index ] += TIME_GetDt() * INTLIFE_SPEEDLIFEUP
+//				if (Life_Value[ index ] > @"univ" LIFE_HumainCur[ index ] )
+//					Life_Value[ index ] = @"univ" LIFE_HumainCur[ index ] 
+//			}
+//			else
+//			{
+//				Life_Value[ index ] -= TIME_GetDt() * INTLIFE_SPEEDLIFEDOWN
+//				if (Life_Value[ index ] < @"univ" LIFE_HumainCur[ index ] )
+//					Life_Value[ index ] = @"univ" LIFE_HumainCur[ index ] 
+//			}
+//		}
+//		else
+//		{
+//			if (life > Cf_Life_Blesse)
+//			{
+//				Jauge_Timer[ i ] -= TIME_GetDt()
+//				if (Jauge_Timer[ i ] < 0) Jauge_Timer[ i ] = 0
+//			}
+//		}
+//	}
+//	else
+//	{
+//		if (Jauge_PosX[i] >= INTLIFE_XMIN)
+//			Jauge_PosX[ i ] -= TIME_GetDt() * INTLIFE_SPEEDOFF
+//		else
+//			refill = 1
+//	}
+//	
+////	if (Jauge_PosY[ i ] > 0.05 * (i+1) )
+////	{
+////		Jauge_PosY[ i ] -= TIME_GetDt() * INTLIFE_SPEEDY
+////	}
+//
+//	if ( @get_global Interface_i_Show ) 
+//	{
+//		if ( index > C_ID_Jack)
+//			txt = STR_CreateText( "\h0.06\ \jr\", cvector( 1 - Jauge_PosX[i], Jauge_PosY[i], 0 ), 0)
+//		else
+//			txt = STR_CreateText( "\h0.06\", cvector( Jauge_PosX[i], Jauge_PosY[i], 0 ), 0)
+//			
+//		if (life < Cf_Life_Blesse)
+//		{
+//			//sin = 1 / ((life / Cf_Life_Blesse) + 0.1)
+//			sin = Cf_Life_Blesse - life
+//			Jauge_TimerCouleur[ index ] += 100 * TIME_GetDt() * sin
+//			sin = (MATH_Sin( Jauge_TimerCouleur[ index ] ) + 1) / 2
+//			C = COLOR_Blend( 0xFFFFFFFF, 0xFF0000FF, sin)
+//			STR_AppendText( txt, "\c" )
+//			STR_AppendHexa( txt, C )
+//			STR_AppendText( txt, "\" )
+//		}
+//		else
+//			Jauge_TimerCouleur[ index ] = 0
+//		
+//		switch ( index )
+//		{
+//			case C_ID_Kong : STR_AppendText( txt, "Kong") break
+//			case	C_ID_Jack : STR_AppendText( txt, "Jack") break
+//			case	C_ID_Ann : STR_AppendText( txt, "Ann") break
+//			case	C_ID_Hayes : STR_AppendText( txt, "Hayes") break
+//			case	C_ID_Bruce : STR_AppendText( txt, "Bruce") break
+//			case	C_ID_Denham : STR_AppendText( txt, "Denham") break
+//			case	C_ID_Jimmy : STR_AppendText( txt, "Jimmy") break
+//			default: STR_AppendText( txt, "Marin" ) break
+//		}
+//		
+//		
+//		life *= 100
+//		STR_AppendText( txt, " : " )
+//		STR_AppendInt( txt, life )
+//		STR_AppendText( txt, "%" )
+//	}
+//}
+//
+//if (!refill) return
+//
+//j = 0
+//for (i = 0; i < Jauge_NbDisplayed; i++)
+//{
+//	if (Jauge_PosX[ i ] < INTLIFE_XMIN ) 
+//	{
+//		Life_Show[ Jauge_Index[i] ] = 0
+//		continue
+//	}
+//	
+//	Jauge_Index[ j ] = Jauge_Index[ i ]
+//	Jauge_Timer[ j ] = Jauge_Timer[ i ] 
+//	Jauge_TimerCouleur[ j ] = Jauge_TimerCouleur[ i ] 
+//	Jauge_PosX[ j ] = Jauge_PosX[ i ]
+//	Jauge_PosY[ j ] = Jauge_PosY[ i ]
+//	j++
+//}
+//Jauge_NbDisplayed = j
+//

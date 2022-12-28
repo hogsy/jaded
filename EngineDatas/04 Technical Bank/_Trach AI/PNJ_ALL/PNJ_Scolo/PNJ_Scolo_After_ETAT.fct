@@ -1,0 +1,161 @@
+#include "PNJ_Scolo_defines.var"
+
+int			ti_state
+int			ti_module_index
+int			ti_offset
+
+object	to_head
+object	to_tail
+
+vector	tv_offset
+vector	tv_2D_pos
+
+float		tf_aide_prio
+
+messageid	EVT_ID
+
+tv_2D_pos = VIEW_3dWorldTo2d(0, OBJ_PosGet())
+
+switch(i_etat_courant)
+{
+	case ETAT_Attaque :
+	case ETAT_Wait_For_Grab :
+		f_morpg_prog = 2.0 + MATH_Sin(TIME_Get() * 60.0)
+		break
+
+	default:	
+		f_morpg_prog = MATH_FloatBlend(f_morpg_prog, 1.0, 4.0 * TIME_GetDt())
+}
+
+to_head = ANI_CanalObjectGet(Anim_Canal_Tete)
+@to_head OBJ_MorphFactorSet(0, 1.0)
+@to_head OBJ_MorphProgSet(0, f_morpg_prog)
+
+PNJ_Scolo_UncollideCheck()
+PNJ_Scolo_GFX_Trace()
+PNJ_Scolo_Recompute_BV()
+
+
+v_head_last_pos = OBJ_PosGet()
+
+SPG2_AddSphere(@ao_modules[i_modules_nb >> 1] OBJ_PosGet(), 3.0 * f_size_coef)
+
+ti_module_index = 3
+if( Proc_KK_BigScolo() && i_etat_courant == ETAT_Grabbed_By_Kong )
+	ti_module_index = 10		// centrer la ZDE dans ce mode pour paffer avec le corps du big scolo grabbé
+COL_ZonePosSet(C_zde_corps, MATH_VecGlobalToLocal(@ao_modules[ti_module_index] OBJ_PosGet() - OBJ_PosGet()) / OBJ_ZoomGet())
+
+
+if( f_lifecur > 0.0 )
+{
+	// LIFE ----------------------------------------------------------------------------
+	EVENT_LIFE_CurLifeSet(ID_LIFE, f_lifecur)
+	EVENT_LIFE_LifeDisplay( ID_LIFE, tv_2D_pos + cvector(0.0,-0.05,1.5))
+	
+	// CAMERA ----------------------------------------------------------------------
+	if (Proc_KK_BigScolo() && ! MATH_FloatNullEpsilon(f_lifecur))
+		EVENT_AddEventLockCam(OBJ_Me(), C_EVENT_LockCamStatus_Fight, Cv_NullVector)
+	
+	// KK TARGET ------------------------------------------------------------------	
+	if ( KK_IsTargetable)
+	{
+//		if( o_proie && o_proie == @"univ" ao_AllHumains[C_ID_Ann] )
+//			tf_aide_prio = C_AIDE_AU_TIR_Prio_GrabAnn
+//		else if( MSG_GlobalIsValid(mid_best_interet) && EVENT_InteretTargetGet(mid_best_interet) == @"univ" ao_AllHumains[C_ID_Ann] )
+//			tf_aide_prio = C_AIDE_AU_TIR_Prio_AttackAnn
+//		else
+			tf_aide_prio = C_AIDE_AU_TIR_Prio_Ennemi
+		Proc_KongFight_TargetAdd(OBJ_Me(), @ao_modules[2] OBJ_PosGet(), KK_Size, tf_aide_prio, 0) 			// Valable pour tous les ennemis
+		Proc_KongFight_TargetAdd(OBJ_Me(), @ao_modules[i_modules_nb - 3] OBJ_PosGet(), KK_Size, tf_aide_prio, 0)	// Valable pour tous les ennemis
+	}
+
+	// VISION ------------------------------------------------------------------------
+	EVT_ID = EVENT_AddEventVision(
+				C_ID_Scolo,
+				C_EVENT_FILTER_Enemy, 
+				OBJ_Me(), 
+				Cf_EVENT_Duree_1Trame, 
+				OBJ_PosGet() + cvector( 0.0, 0.0, 0.3),
+				C_EVENT_Visibility_Full_Mvt, 
+				0.4, 
+				150.0, 
+				C_EVENT_CONTEXT_STANDARD, 
+				0,
+//				f_lifecur / f_life)
+				EVENT_LIFE_CurLifeGet(ID_LIFE) / EVENT_LIFE_MaxLifeGet(ID_LIFE))
+	
+	// TERRITOIRE ------------------------------------------------------------------
+	switch(i_etat_courant)
+	{
+		case ETAT_Paf :
+		case ETAT_Snap :
+		case ETAT_KKRide :
+		case ETAT_KKFinish :
+			break
+			
+		default:
+			EVENT_VisionTerritoryUdpate(EVT_ID)
+	}
+
+	// ENEMY -----------------------------------------------------------------------
+	ti_state = -1
+	switch(i_etat_courant)
+	{
+		case ETAT_Paf :
+		case ETAT_Grabbed_Predateur :
+		case ETAT_Grabbed_By_Kong :
+		case ETAT_Wait_For_Grab :
+			ti_state = C_EVENT_EnemyState_Neutral
+			break
+	
+		case ETAT_Apparition :
+		case ETAT_Disparition :
+		case ETAT_Sol :
+		case ETAT_Devore :
+		case ETAT_Attaque :
+		case ETAT_Jump : 
+		case ETAT_Snap :
+			ti_state = C_EVENT_EnemyState_Fight
+			break
+	}
+	if (ti_state != -1 && ! dont_scare_budies)
+		EVENT_AddEventEnemy(C_ID_Scolo, OBJ_Me(), ti_state)
+}
+else
+{
+	if( ! i_flag_desappear && f_point_de_viande && i_etat_courant != ETAT_Grabbed_Predateur && i_etat_courant != ETAT_Grabbed_By_Kong )
+		EVENT_AddEventCadavre(C_ID_Scolo, OBJ_Me(), Cf_EVENT_Duree_1Trame, OBJ_PosGet())
+}
+
+if ( i_flag_net_end)
+	OBJ_CapaSet(OBJ_Capa_0, none)
+
+
+// ODE =============================================================
+ti_offset = 1
+if( Proc_KK_BigScolo() )
+{
+	if( i_etat_courant == ETAT_Grabbed_By_Kong || i_etat_courant == ETAT_KKIFinish )
+	{
+		to_tail = ao_modules[i_modules_nb -1]
+		tv_offset = @to_tail OBJ_PosGet()
+		tv_offset -= OBJ_PosGet()
+		DBG_RenderVector(OBJ_PosGet(), tv_offset, color_jaune)
+		tv_offset /= OBJ_ZoomGet()
+		tv_offset = MATH_VecGlobalToLocal(tv_offset)
+		ODE_Setv(ti_offset, tv_offset)
+		ODE_Enable(vrai)
+	}
+	else
+	{
+		ODE_Setv(ti_offset, Cv_NullVector)
+		ODE_Enable(faux)
+	}
+}
+
+
+#ifndef _FINAL_
+if( @get_global i_AI_show_target && EVENT_LIFE_CurLifeGet(ID_LIFE) && MSG_GlobalIsValid(mid_best_interet))
+	Str_DisplayGaoOnce(EVENT_InteretTargetGet(mid_best_interet), tv_2D_pos)
+#endif
+

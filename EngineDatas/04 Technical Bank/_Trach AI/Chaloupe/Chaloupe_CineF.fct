@@ -1,0 +1,26 @@
+object	to_obj
+
+f_add_sin=3
+f_rand_cam= 0.05
+to_obj = AI_MainActorGet(C_ID_Joueur)
+@get_Humain_path to_obj i_camera_animee = vrai
+@get_joueur_cam ACT_ActionSet(3)
+
+@"univ" MENU_f_LockedDuring = 16.0
+TIME_Wait(0.1)
+LIBGFX_Fade(31, 0x00000000, 0xffffffff, 0.0, 1.5, 13.0, 1.0, 0.0, 20)
+TIME_Wait(6.5)
+macro_del_callback_after_cam("Chaloupe_cb_aftercam")
+if(des_o_marins[0]) @des_o_marins[0] OBJ_Destroy()
+if(des_o_marins[1]) @des_o_marins[1] OBJ_Destroy()
+if(des_o_marins[2]) @des_o_marins[2] OBJ_Destroy()
+if(des_o_marins[3]) @des_o_marins[3] OBJ_Destroy()
+if(des_i_chaloupe_jack) @get_joueur OBJ_FlagInactiveSet(vrai)
+OBJ_CapaSet(OBJ_Capa_3, 0)
+@get_global GLOBAL_i_PlayGenericSpeech = vrai
+
+@"univ" world_ID = 101
+@"univ" world_entrance_ID = 1
+@"univ" load_world = vrai
+
+OBJ_Destroy()

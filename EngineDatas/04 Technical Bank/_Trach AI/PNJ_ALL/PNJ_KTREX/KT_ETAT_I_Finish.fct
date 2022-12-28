@@ -1,0 +1,123 @@
+#include "KT_defines.var"
+
+vector	tv_pos
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	i_exit_mode = faux
+	i_uncol = vrai		// DAns ce cas la on ne peux pas réactiver la collision sinon on risque de pas reusssir a éjecter : recalage...
+	o_I_finish_actor = LNK_ThisClientGet(o_I_finish_actor,Ci_LNK_KKFINISH_ON_KONG, mid_I_finish_LNK_ID, faux, nofunc, nofunc, nofunc)
+	i_grabbed_finish = faux
+//	f_I_finish_hardness -= 0.25
+//	i_cri_apres_un_paf = faux
+	i_cri_filtre = 0
+	return
+}
+
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_Finish_sur_Kong)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Finish_sur_Kong
+	o_I_finish_actor_ref = o_I_finish_actor
+	fct_last_etat = AI_TrackCurGet()
+
+	f_time_start_etat = 0.0
+	i_finish_end = faux
+	
+	LNK_Finish_ActionSet(mid_I_finish_LNK_ID, Ci_GrabKong_FinishSePlace)
+	LNK_Finish_FinisherTypeSet(mid_I_finish_LNK_ID, Ci_GrabKong_Finished_TREX)
+	ACT_ActionSet(Action_I_finish_Deb)
+	f_finish_force_rex = 0
+	f_finish_force_kong  = 0
+	f_finish_frame = 0.0
+	i_finish_init = vrai
+	v_finish_pos_init = OBJ_PosGet()
+	f_coef_recul = 1.0		// SUPPR DES ADD SPEED
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// ANALYSE ==============================================================
+o_I_finish_actor = LNK_ThisClientGet(o_I_finish_actor,Ci_LNK_KKFINISH_ON_KONG, mid_I_finish_LNK_ID, vrai, nofunc, nofunc, nofunc)
+
+if ( ! o_I_finish_actor)
+{
+	i_grabbed_finish = faux
+	if ( !(ACT_CustomBitGet() & CBit_GrabbedKK_Anim_Speciale) || ACT_ActionFinished())
+		macro_change_etat("KT_ETAT_fight_KONG")
+	return
+}
+
+// Detection de PAF
+AI_Execute("KT_exec_check_paf")
+if (o_paf_actor)
+{
+	// forcer à relacher le shift FPS (sinon saute de cam car changement d'offset pour la cam fps sur l'épaule)
+//	@get_global i_FPS_Shoulder_force_new_entry = vrai	
+	macro_change_etat("KT_ETAT_paf")
+}
+
+// Jack fait diversion
+//Macro_Check_Paf_Jauge_Crier
+
+// COMPORTEMENT ==============================================================
+KT_Uncol_Add( o_I_finish_actor)
+KT_Interet_Update(o_fight_actor, C_EVENT_InteretStatusGrab)
+
+i_flag_look = faux
+if( MSG_GlobalIsValid(mid_I_finish_LNK_ID) )
+{
+	switch ( LNK_Finish_ActionGet(mid_I_finish_LNK_ID))
+	{
+		case Ci_GrabKong_FinishSePlace :
+			OBJ_PosSet( MATH_VecBlend( v_finish_pos_init, @o_I_finish_actor OBJ_PosGet(), f_time_start_etat / 0.333))
+			OBJ_BankingGeneralSet( MATH_VecBlend( OBJ_SightGet(), -@o_I_finish_actor OBJ_SightGet(), 10.0 * TIME_GetDt()), 
+			MATH_VecBlend( OBJ_BankingGet(), @o_I_finish_actor OBJ_BankingGet(), 10.0 * TIME_GetDt()))
+			break
+			
+		case Ci_GrabKong_FinishDeb :
+			tv_pos = @o_I_finish_actor OBJ_PosGet()
+			tv_pos.z = OBJ_PosGet().z
+			OBJ_PosSet( MATH_VecBlend( v_finish_pos_init, tv_pos, f_time_start_etat / 0.333))
+			OBJ_BankingGeneralSet( MATH_VecBlend( OBJ_SightGet(), -@o_I_finish_actor OBJ_SightGet(), 10.0 * TIME_GetDt()), 
+			MATH_VecBlend( OBJ_BankingGet(), @o_I_finish_actor OBJ_BankingGet(), 10.0 * TIME_GetDt()))
+	
+			if( ACT_ActionGet() != Action_I_finish_Challenge)
+			{
+				ACT_ActionSet( Action_I_finish_Challenge)
+			}
+			break
+			
+		case	Ci_GrabKong_FinishFin :
+			o_I_finish_actor = LNK_ThisClientGet(o_I_finish_actor,Ci_LNK_KKFINISH_ON_KONG, mid_I_finish_LNK_ID, faux, nofunc, nofunc, nofunc)
+			break
+			
+		case Ci_GrabKong_FinishPerdu :		// KONG a perdu
+			if( ACT_ActionGet() != Action_I_finish_Win)
+			{
+				ACT_ActionSet( Action_I_finish_Win)
+				SIG_Send(SIG_C_TYPE_MORT, OBJ_Me())
+			}
+			break
+			
+		case Ci_GrabKong_FinishGagne :		// KONG a gagné
+			if( ACT_ActionGet() != Action_I_finish_Loose)
+			{
+				ACT_ActionSet( Action_I_finish_Loose)
+			}
+			if ( ANI_CurrentFrameGet(0) > 40)
+				DYN_SpeedSetVector( DYN_SpeedGetVector() * 1.5)
+			break
+	}
+}
+else
+	macro_change_etat("KT_ETAT_attente")
+

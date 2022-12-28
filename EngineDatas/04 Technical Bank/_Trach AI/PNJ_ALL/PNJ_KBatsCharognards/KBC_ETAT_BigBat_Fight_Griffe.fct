@@ -1,0 +1,427 @@
+#include "KBC_defines.var"
+
+#define	Cf_dist_trop_loin_de_KONG		100.0
+
+object		to_head
+
+vector		tv_sight_orientation
+vector		tv_banking
+vector		tv_temp
+vector		tv_temp2
+vector		tv_temp3
+vector		tv_temp4
+vector		tv_move
+vector		tv_perfect_dest_pos
+vector		tv_pos
+vector		tv_sinus
+
+messageid	tmid_vision
+
+float			tf_dist_to_pos
+float			tf_dot_orient
+float			tf_dot_speed
+float			tf_anim_vole_freq
+
+int				ti_mvt_termine
+int				ti_frame
+int				ti_frame_min
+int				ti_frame_max
+int 			ti_interaction_type
+int				ti_lance_attaque
+int				ti_action_vole
+int				ti_auto_change_action_vole
+int				ti_kong_walling_attack
+int				ti_test_ride
+int				ti_kong_mashing_attack
+int				ti_kong_in_finish
+
+
+// SORTIE ETAT
+if (i_sort_etat)
+{
+	i_flag_frein = faux
+	i_flag_exit_mode = faux
+	f_softcol_no_down_delai = 2.0			// délai pendant lequel les col molles ne pousseront pas la bat vers le bat
+	i_ride_try_flag	= 0
+	v_paf_sent_position = Cv_NullVector	// reset même en passage en ride
+//	f_bigbat_delai_no_attack = 1.5		// Cf_bigbat_delai_no_attack		// apres una attaque mashing pas de réattaque immédiate (sinon je vais passer dans Kong)
+	
+	// couper l'intéraction pour la laisser à une autre bat (même si i_interaction_Ann_fake_paf = vrai)
+	// edit : sauf si c une interaction infinie !!! (1 seule bat, cas map 10B)
+//	if( ! i_interaction_Ann_fake_paf || ! @o_attack_interaction KAnn_Interaction_Attack_Unlimited() )
+//		o_attack_interaction = LNK_ClientGet(Ci_LNK_INTERACTION, mid_attack_interaction_LKN_ID, faux, nofunc, nofunc, nofunc)
+	
+	@get_global i_KBigBat_anti_mashing = faux
+	KBC_BigBat_UncolDel()
+	
+	i_sort_etat = faux
+	return
+}
+
+
+// ENTREE ETAT
+if (i_etat_courant != ETAT_BigBat_Fight_Griffe)
+{
+	i_etat_ancien_ancien = i_etat_ancien
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_BigBat_Fight_Griffe
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	KBC_DBG_Trace_Gao(i_DBG_trace_etat, "etat bigbat fight griffe", o_cible_attaque)
+	
+	KBC_ref_speed_set(f_vitesse_fight_contact)
+	
+	i_flag_exit_mode = faux
+
+	ACT_ActionSet(ACTION_Falaise_Vol)
+	KBC_action_frequency_set(Cf_freq_standard)
+	
+	v_falaise_init_cible_pos = @o_cible_attaque OBJ_PosGet()
+	
+	if( o_Jack && o_cible_attaque == o_Jack )
+		i_attaque_positionnement = Ci_attaque_positionnement_retrait		// 1 seule bat attaque
+	else
+		i_attaque_positionnement = Ci_attaque_positionnement_retrait_initial		// toutes les bats attaquent
+	
+	v_cible_pos = KBC_Attaque_Calc_Position(i_attaque_positionnement)
+	
+	i_agresseur_ID = KBC_Vision_Get_ID(o_cible_attaque)
+	
+	// init vitesse déplacement
+	v_contact_vitesse_cur = v_beziers_sight
+	MATH_VecSetNorm(v_contact_vitesse_cur, f_speed)
+
+	i_ride_try_flag	= 0
+
+	// pas de delai pour attaquer quand j'arrive en plongent : pour les big bat et les small bats grab
+	f_time_last_attaque = TIME_Get() - f_attaque_delai
+		
+	AI_Execute("KBC_exec_dyn_on")
+	DYN_GravitySet(Cv_NullVector)		// si je viens de l'état paf, j'ai la gravité !!!
+	DYN_SpeedSetVector(Cv_NullVector)
+	
+	KBC_BigBat_UncolAdd()
+	
+	i_paf_send = faux
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+	
+	if( i_paf_send )
+		f_paf_sent_pursuit_time += TIME_GetDt()
+}
+
+// ANALYSE =================================================================================================
+MACRO_CHECK_PAFS
+
+
+
+// POS DELTA ===========================================================
+if ( o_Jack && o_cible_attaque == o_Jack ) //  && @o_Jack Proc_KIndigene_Kong_LiaisonStatusGet() == Ci_Kong_KIndigene_LinkStatus_None ) // KBC_WhereIsAnn() == 0)
+	f_attaque_pos_delta = 0.5
+else
+	f_attaque_pos_delta = 2.0
+
+
+// KONG CANCELLE LE MASHING IL VEUT ME FEINTER :) ========================== 
+if( ! i_paf_send && ! @o_Kong Proc_KK_Test_Mode(ETAT_Kong_grab_mashing) && ! @o_Kong Proc_KK_Test_Mode(ETAT_Kong_walling) ) 
+{
+	KBC_DBG_Trace(i_DBG_trace_etat, "ll n'est plus ni en mashing ni en climbing -> il a voulu me feinter -> je cancelle mon attaque")
+	f_big_bat_no_paf = 4.0
+	KBC_BigBat_ReattackDelay()
+	AI_Execute("KBC_exec_init_attente")
+}
+
+
+
+// FIN D'ATTAQUE ==========================================================
+ti_auto_change_action_vole = vrai
+if( ACT_ActionGet() == ACTION_Falaise_Attaque && ! ACT_ActionIsTransition() )
+{
+	ti_auto_change_action_vole = faux
+	if( ACT_ActionFinished() )
+	{
+		ACT_ActionSet(ACTION_Falaise_Vol)
+		KBC_action_frequency_set(Cf_freq_standard)
+		KBC_DBG_Trace(i_DBG_trace_etat, "attaque terminée -> retour en attente")
+		KBC_BigBat_ReattackDelay()
+		AI_Execute("KBC_exec_init_attente")		// repart à son réseau
+	}
+}
+
+// CANCEL PURSUIT AFTER PAF
+if( i_attaque_positionnement == Ci_attaque_positionnement_poursuit && f_paf_sent_pursuit_time > 0.55 )
+{
+	KBC_Init_Next_Attack()
+}
+
+// CANCEL ATTACK BECAUSE OF FINISH
+ti_kong_in_finish = faux
+tv_sinus = Cv_NullVector
+if( @o_Kong Proc_KK_IsInBadSituation(C_ID_BatCharognard ) ) 
+{
+	ti_kong_in_finish = vrai
+//	o_attack_interaction = LNK_ClientGet(Ci_LNK_INTERACTION, mid_attack_interaction_LKN_ID, faux, nofunc, nofunc, nofunc)
+	if( i_attaque_positionnement != Ci_attaque_positionnement_retrait )
+		KBC_Init_Next_Attack()
+}
+else if( i_attaque_positionnement != Ci_attaque_positionnement_paffe && o_attack_interaction && @o_attack_interaction KAnn_Death_Attack_Enabled() ) {
+	// coup de grace
+	i_attaque_positionnement = Ci_attaque_positionnement_paffe }
+
+
+// CANCEL ATTACK BECAUSE KONG HAS ALREADY 5 BATS RIDING HIM 
+if( o_cible_attaque == o_Kong && @o_Kong Proc_KK_RIDE_Get_Actor_Nb_By_Model(nobody) == 5 )
+{
+	if( i_attaque_positionnement != Ci_attaque_positionnement_retrait )
+	{
+		KBC_Init_Next_Attack()
+	}
+}
+
+if( i_attaque_positionnement == Ci_attaque_positionnement_retrait )
+	tv_sinus = cvector(MATH_Sin(f_contact_sin_desynchro * 4.0 * TIME_Get()), MATH_Sin(f_contact_sin_desynchro * 2.0 * TIME_Get()), MATH_Sin(f_contact_sin_desynchro * 0.5 * TIME_Get()))
+
+
+// REGARD ==================================================================
+to_head = @o_cible_attaque ANI_CanalObjectGet(Anim_Canal_Tete)
+if( ! to_head )
+	to_head = o_cible_attaque
+i_flag_neck = vrai
+v_look_pos = @to_head OBJ_PosGet()
+
+
+// ORIENTATION ==============================================================
+tv_temp = @to_head OBJ_PosGet() - OBJ_PosGet() tv_temp.z = 0.0 if( ! MATH_VecNullEpsilon(tv_temp) )
+	MATH_VecSetNormalize(tv_temp)
+tv_temp2 = OBJ_SightGet()
+tv_temp2.z = 0.0
+if( ! MATH_VecNullEpsilon(tv_temp2) )
+	MATH_VecSetNormalize(tv_temp2)
+tf_dot_orient = MATH_VecDotProduct(tv_temp, tv_temp2)
+
+tv_perfect_dest_pos = KBC_Attaque_Calc_Position(i_attaque_positionnement)
+tv_perfect_dest_pos += tv_sinus
+if( i_DBG_render_fight_position )
+	DBG_RenderVector(OBJ_PosGet(), tv_perfect_dest_pos - OBJ_PosGet(), color_vert) v_cible_pos = MATH_VecBlend(v_cible_pos, tv_perfect_dest_pos, 10 * TIME_GetDt()) v_dest_pos = v_cible_pos tf_dist_to_pos = MATH_VecNorm(tv_perfect_dest_pos - OBJ_PosGet())
+
+
+// TEST MOUVEMENT TERMINE ==================================================
+ti_mvt_termine = faux
+switch( i_attaque_positionnement )
+{
+	case Ci_attaque_positionnement_retrait_initial :
+		// JAMAIS VRAI POUR NE PAS FREINER LORSQU'ON PLONGE (DEBUT DU MODE)
+		break
+		
+	case Ci_attaque_positionnement_retrait :
+//		ti_mvt_termine = faux		// toujours bouger (sinus)
+		if( MATH_VecDotProduct(OBJ_SightGet(), tv_perfect_dest_pos - OBJ_PosGet()) > 0 
+			&& MATH_VecNorm(tv_perfect_dest_pos - OBJ_PosGet()) < 10.0 )
+			ti_mvt_termine = vrai			// test vecnorm pour suivre ma cible et pas rester à attendre au même endroit
+		else
+			i_wait_sinus_flag = vrai
+		break
+		
+//	case Ci_attaque_positionnement_paffe :
+//	case Ci_attaque_positionnement_attack_en_cours :
+//	case Ci_attaque_positionnement_poursuit :
+//	default:
+//		if( tf_dist_to_pos <= f_attaque_pos_delta && ! i_paf_sent )
+//			ti_mvt_termine = vrai
+//		break
+
+	case Ci_attaque_positionnement_poursuit :
+		break
+		
+	case Ci_attaque_positionnement_attack_en_cours :
+		if( tf_dist_to_pos <= f_attaque_pos_delta )
+			ti_mvt_termine = vrai
+		if( i_paf_send )
+			i_wait_sinus_flag = vrai
+		break
+		
+	case Ci_attaque_positionnement_paffe :
+		if( tf_dist_to_pos <= f_attaque_pos_delta )
+			ti_mvt_termine = vrai
+		else
+		{
+			// test pos fight derrière moi : j'attaque
+			tv_temp3 = tv_perfect_dest_pos - OBJ_PosGet()
+			tv_temp3.z = 0.0
+			DBG_RenderVector(OBJ_PosGet(), tv_temp3, color_blanc)
+			if( ! MATH_VecNullToler(tv_temp3, 0.1) )
+				MATH_VecSetNormalize(tv_temp3)
+			else
+				tv_temp3 = OBJ_SightGet()
+			
+			tv_temp4 = OBJ_SightGet()
+			tv_temp4.z = 0.0
+			DBG_RenderVector(OBJ_PosGet(), tv_temp4, color_vert)
+			if( ! MATH_VecNullToler(tv_temp4, 0.1) )
+				MATH_VecSetNormalize(tv_temp4)
+			else
+				tv_temp4 = OBJ_SightGet()
+			
+			if( MATH_VecDotProduct(tv_temp3, tv_temp4) < 0.0 )
+			{
+				if( MATH_VecNorm(@o_cible_attaque OBJ_PosGet() - OBJ_PosGet()) < (4.0 * f_zoom) )
+				{
+					ti_mvt_termine = vrai		// point d'attaque dans mon dos = ma cible avance vers moi = j'attaque
+				}
+			}
+		}
+//		i_wait_sinus_flag = vrai
+		break
+	
+}
+
+
+// TEST INIT ATTAQUE ========================================================
+switch( i_attaque_positionnement )
+{
+	case Ci_attaque_positionnement_retrait :
+	case Ci_attaque_positionnement_retrait_initial :
+		if( ACT_ActionGet() != ACTION_Falaise_Attaque )
+		{
+			ti_kong_walling_attack = KBC_KONG_in_Walling_Attack_Enabled()
+			ti_kong_mashing_attack = KBC_KONG_in_Mashing_Attack_Enabled()
+			f_time_last_attaque = TIME_Get()
+		 	SND_RequestPlay(Ci_SND_Cri_Attack_Loin)
+		 	i_attaque_positionnement = Ci_attaque_positionnement_paffe
+		}
+		break
+
+	case Ci_attaque_positionnement_paffe :
+		ti_lance_attaque = faux
+		v_paf_sent_position = Cv_NullVector
+		i_attaque_positionnement = Ci_attaque_positionnement_attack_en_cours
+		ACT_ActionSet(ACTION_Falaise_Attaque | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_FrameZero)
+		KBC_action_frequency_set(1.0)
+		ti_auto_change_action_vole = faux
+		i_paf_send = faux
+		SND_RequestPlay(Ci_SND_Cri_Attack_Griffe)
+		f_rotation_angle_courant = 0.0
+		break
+		
+	default:
+		break
+}
+
+
+// POURSUITE DE LA CIBLE ===================================================
+f_ref_speed = 15.0
+f_speed_blend_coef = 5.0
+
+// ACTION VOLE + VITESSE ================================================
+if( ti_auto_change_action_vole )
+{
+	tf_anim_vole_freq = 1.0
+	if( ti_mvt_termine )
+	{
+		ti_action_vole = ACTION_Falaise_Vol
+	}
+	else if( OBJ_SqrDist(o_cible_attaque) > Cf_dist_trop_loin_de_KONG )
+	{
+		KBC_ref_speed_set(15.0)
+		f_speed_blend_coef = 3.0
+		ti_action_vole = i_ACTION_Vol_Standard
+		tf_anim_vole_freq = 2.0
+	}
+	else
+	{
+		ti_action_vole = ACTION_Falaise_Vol
+	}
+	
+	if( KBC_KONG_in_Walling_Attack_Enabled() || KBC_KONG_in_Mashing_Attack_Enabled() )
+		tf_anim_vole_freq = 3.0
+	
+	if( ACT_ActionGet() != ti_action_vole && ! f_change_anim_delay )
+	{
+		ACT_ActionSet(ti_action_vole)		// oscilation anim vole std / anim vole falaise
+		f_change_anim_delay = MATH_RandFloat(0.5, 1.0)
+	}
+	
+	KBC_action_frequency_set(tf_anim_vole_freq)
+}
+
+tv_pos = KBC_Attaque_Calc_Position(i_attaque_positionnement)
+tv_pos += tv_sinus
+v_cible_pos = MATH_VecBlend(v_cible_pos, tv_pos, 5 * TIME_GetDt()) v_dest_pos = v_cible_pos
+
+v_contact_vitesse_max = v_dest_pos - OBJ_PosGet()
+//DBG_RenderVector(OBJ_PosGet(), v_contact_vitesse_max, color_vert)
+if( ! MATH_VecNullEpsilon(v_contact_vitesse_max) )
+	MATH_VecSetNorm(v_contact_vitesse_max, f_ref_speed)
+else
+	v_contact_vitesse_max = f_ref_speed * OBJ_SightGet() v_contact_vitesse_cur = MATH_VecBlend(v_contact_vitesse_cur, v_contact_vitesse_max, f_speed_blend_coef * TIME_GetDt())
+
+tf_dot_speed = 1.0
+v_contact_vitesse_cur *= tf_dot_speed
+
+//DBG_RenderVector(OBJ_PosGet(), v_contact_vitesse_cur, color_rouge) 
+f_speed = MATH_VecNorm(v_contact_vitesse_cur)
+if( i_attaque_positionnement == Ci_attaque_positionnement_retrait )
+{
+	f_speed = MATH_FloatMin(f_speed, 2.0)
+	if( ! MATH_VecNullToler(v_contact_vitesse_cur, 0.01) )
+	{
+		tv_move = MATH_VecNormalize(v_contact_vitesse_cur)
+		MATH_VecSetNorm(tv_move, f_speed)
+		OBJ_PosSet(OBJ_PosGet() + (tv_move * TIME_GetDt()))
+	}
+}
+else if( ! i_paf_send )
+	OBJ_PosSet(OBJ_PosGet() + (v_contact_vitesse_cur * TIME_GetDt()))
+
+
+// quand elle fait son coup de griffe devant le mashing, la bat ne tourne plus
+tv_sight_orientation = @to_head OBJ_PosGet() - OBJ_PosGet()		// dest derrière : recule en faisant face à sa proie
+tv_sight_orientation = KBC_BlendRotate(OBJ_SightGet(), tv_sight_orientation, 100.0, f_rotation_angle_courant * (30.0 * Cf_1Degre) )		// 30 ° x30 (à cause du getdt)
+tv_banking = MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 5 * TIME_GetDt()) OBJ_BankingGeneralSet(tv_sight_orientation, tv_banking)
+
+
+// ATTAQUE ---------------------------------------------------------------------------------------------------
+if( ACT_ActionGet() == ACTION_Falaise_Attaque )
+{
+	ti_frame = ANI_CurrentFrameGet(0)
+	ti_frame_max = 20
+	ti_frame_min = 10
+	if( ti_frame >= ti_frame_min && ti_frame <= ti_frame_max || i_flag_cine )
+	{
+		// paf / grab autorisée
+		if( ! i_attaque_fin_desynchro_flag )
+		{
+			KBC_ZDE_Size_n_Pos()
+			if( ! i_paf_send && ( COL_ZDE_ZDECollide(o_cible_attaque, C_zde_fight, C_zde_corps) || i_flag_cine ) )
+			{
+				// le délai entre 2 pafs dépassé, la ZDE Fight touche la ZDE Corps, le n° de la frame autorise le paf (MODIF : en ciné touche toujours)
+				f_time_last_attaque = TIME_Get()
+				if( ! ti_test_ride )
+				{
+					// envoie un paf à ma cible
+					KBC_Paf_n_Pursuit()
+					KBC_DBG_Trace(i_DBG_trace_etat, "paffe Kong !!! (contact) ")
+					i_calc_net_apres_mashing  =vrai		// pour calculer le chemin du retour
+					f_big_bat_no_paf = 4.0		// pas de paf alors que je viens de paffer kong en mashing
+				}
+			}
+		}
+	}
+}
+
+
+// INTERET  (en dernier car l'action peut changer avant !!!!)
+if( ! i_paf_send && ( ACT_ActionGet() == ACTION_Falaise_Attaque || i_attaque_positionnement == Ci_attaque_positionnement_paffe || i_attaque_positionnement == Ci_attaque_positionnement_poursuit ) )
+	KBC_Interet_Update(mid_interet_attaque, C_EVENT_InteretStatusAttackGriffe, o_cible_attaque, tmid_vision)		// locke l'intéret pour que les autres bats n'attaquent pas
+else
+	KBC_Interet_Update(mid_interet_attaque, C_EVENT_InteretStatusAttack, o_cible_attaque, tmid_vision)			// une autre peut attaquer
+
+
+

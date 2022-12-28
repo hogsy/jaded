@@ -1,0 +1,64 @@
+#include "Box_defines.var"
+
+messageid		tmid_ID
+message	tmsg_filter
+int				ti_rank
+object		to_pere
+int				ti_ok
+int				ti_type
+
+//int				ti_type
+//vector		tv_pos
+//vector		tv_dir
+//float			tf_dmg
+
+
+o_paf_actor = nobody
+v_paf_sens = Cv_NullVector
+
+MSG_SetNull(tmsg_filter)
+tmsg_filter.msg_gao1 = OBJ_Me()
+ti_rank = -1
+for (	tmid_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tmsg_filter);
+		MSG_GlobalIsValid(tmid_ID);
+		tmid_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tmsg_filter) )
+{
+	ti_ok = faux
+	to_pere = EVENT_PereGet(tmid_ID)
+	ti_type = EVENT_PafTypeGet(tmid_ID)
+	
+	switch( Piege_Type )
+	{
+		case Ci_Piege_Type_Vertical :
+			// les pafs me déclenchent
+			if( ! Piege_Paf_Detect )		// tous les pafs
+				ti_ok = vrai
+			else if( to_pere == AI_MainActorGet(C_ID_Rayman) )		// uniquement ceux de rayman
+				ti_ok = vrai
+			if( ti_ok )
+				OBJ_CapaSet(CAPA_BOX_Piege_Down, vrai)
+			break
+			
+		case Ci_Piege_Type_Cage :
+			// rien à battre des pafs
+			break
+			
+		default:
+			// les pafs me repoussent
+			if ( ! Materiau )
+			{
+				o_paf_actor = to_pere 
+				v_paf_sens = EVENT_PafDirGet(tmid_ID)
+				DYN_SpeedSetVector( MATH_VecNormalize(v_paf_sens) * 10.0)
+				
+				// MINE + GUN = EXPLOSE TOUT DE SUITE
+				if( Explose_Si_Coup )
+				{
+					if( ti_type & C_PAF_RM_Gun )
+						Timer_Before_Explode = 0.0
+				}
+			}
+			break
+	}
+}
+

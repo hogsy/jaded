@@ -1,0 +1,159 @@
+#include "TS_defines.var"  
+#include "TS_texts.var"
+
+int 		i_idhalo, i_SFX_Halo  
+int			ti_i
+vector 	size
+int 		ti_nblums
+int 		ti_cpt
+int			ti_string,ti_life, ti_mana
+vector	tv_pos, tv_rayPos  
+object 	to_obj
+
+to_obj = @get_rayman ANI_CanalObjectGet(Anim_Canal_Tete)	
+tv_rayPos = VIEW_3dWorldTo2d(0, @to_obj OBJ_PosGet() + cvector(-0.03,-0.2,0))
+
+
+tv_pos = VIEW_3dWorldTo2d(0,OBJ_PosGet())  
+//tv_rayPos  = VIEW_3dWorldTo2d(0, @get_rayman OBJ_PosGet())
+
+ti_mana = @"univ" f_RM_Mana
+ti_life		= @"univ" f_RM_Life
+ti_nblums = 5
+
+i_idhalo = -1
+i_SFX_Halo  =-1
+
+
+switch( i_etat_courant )
+{ 	
+	case Ci_ETAT_BLEU : 
+		OBJ_TextDelete(Ci_TEXTE_3, 0, -1)
+		OBJ_TextDelete(Ci_TEXTE_4, 0, -1) 
+		OBJ_TextDelete(Ci_TEXTE_5, 0, -1) 
+   
+		OBJ_TextSet(Ci_TEXTE_2,TEXT_Get( INTMIG_TXG, INTMIG_TEXT_StartMenu)  )  
+		OBJ_TextFlagSet(Ci_TEXTE_2, 21 )
+		OBJ_TextPivotSet(Ci_TEXTE_2, tv_rayPos) //cvector( 0.5, 0.5 , 0) ) //tv_rayPos )//
+		OBJ_TextSizeSet(Ci_TEXTE_2, 0, -1, cvector( -1, 0, 0) )		
+	break 	
+ 
+	case Ci_ETAT_ROUGE : 	
+		OBJ_TextDelete(Ci_TEXTE_2, 0, -1)
+		OBJ_TextDelete(Ci_TEXTE_4, 0, -1) 
+		OBJ_TextDelete(Ci_TEXTE_5, 0, -1) 	 
+
+		OBJ_TextSet(Ci_TEXTE_3, TEXT_Get( INTMIG_TXG, INTMIG_TEXT_Loading)  )
+		OBJ_TextFlagSet(Ci_TEXTE_3, 21 )
+		OBJ_TextPivotSet(Ci_TEXTE_3, cvector( 0.5, 0.6 , 0) )
+		OBJ_TextSizeSet(Ci_TEXTE_3, 0, -1, cvector( -1, 0, 0) ) 	
+	break 	
+
+	case Ci_ETAT_JAUNE :
+		OBJ_TextDelete(Ci_TEXTE_2, 0, -1)
+		OBJ_TextDelete(Ci_TEXTE_3, 0, -1) 
+		OBJ_TextDelete(Ci_TEXTE_5, 0, -1) 
+		
+		OBJ_TextSet( Ci_TEXTE_4, TEXT_Get( INTMIG_TXG, 0x4902D92A))//INTMIG_TEXT_Xchange)  )
+		OBJ_TextFlagSet( Ci_TEXTE_4, 21 )
+		OBJ_TextAlphaSet( Ci_TEXTE_4, 0, -1, 255)  
+		OBJ_TextPivotSet( Ci_TEXTE_4, cvector( 0.5, 0.7 , 0) )
+		OBJ_TextSizeSet( Ci_TEXTE_4, 0, -1, cvector( -1, 0, 0) )	
+	break 	
+
+	case Ci_ETAT_VERT : 
+		OBJ_TextDelete( Ci_TEXTE_2, 0, -1)
+		OBJ_TextDelete(Ci_TEXTE_3, 0, -1) 
+		OBJ_TextDelete( Ci_TEXTE_4, 0, -1) 
+		
+		OBJ_TextSet( Ci_TEXTE_5, TEXT_Get( INTMIG_TXG, INTMIG_TEXT_LJchange)  )
+		OBJ_TextFlagSet( Ci_TEXTE_5, 21 )
+		OBJ_TextAlphaSet( Ci_TEXTE_5, 0, -1, 128)  
+		OBJ_TextPivotSet( Ci_TEXTE_5, cvector( 0.5, 0.8 , 0) )
+		OBJ_TextSizeSet( Ci_TEXTE_5, 0, -1, cvector( -1, 0, 0) )
+				//TIME_Wait(1)	
+	break 
+
+	//case Ci_ETAT_PAUSE : 
+	//	break
+}  
+
+
+
+
+//-------------------------------------- HUD -----------------------------------------------------
+
+//if(ti_mana<80)
+//ti_nblums = 4
+//if(ti_mana<60)
+//ti_nblums = 3
+//if(ti_mana<40)
+//ti_nblums = 2
+//if(ti_mana<20)
+//ti_nblums = 1
+//if(ti_mana <5)
+//ti_nblums = 0
+//OBJ_TextSet( Ci_TEXTE_1, " Life \m1\  Mana \m2\\m3\")//TEXT_Get( INTMIG_TXG, INTMIG_TEXT_Xinfo)  )
+//OBJ_TextFloatInsert (Ci_TEXTE_1, -11, ti_life, 0)   
+////OBJ_TextFloatInsert (Ci_TEXTE_1, -12, ti_mana, 0)   
+//for(ti_cpt=0; ti_cpt < ti_nblums; ti_cpt++)
+//{
+//OBJ_TextInsert (  Ci_TEXTE_1,-12, "\p16\a") 	
+//}
+//
+////OBJ_TextColorSet( Ci_TEXTE_1, 0, -1, 0xFF)  
+//OBJ_TextFlagSet( Ci_TEXTE_1, 21 )
+//OBJ_TextPivotSet( Ci_TEXTE_1, cvector( 0.5, 0.1 , 0) )
+//OBJ_TextSizeSet( Ci_TEXTE_1, 0, -1, cvector( -1, 0, 0) )
+//
+
+
+
+OBJ_TextSet( Ci_TEXTE_1,"Press \p16\= Map") 
+
+OBJ_TextFlagSet( Ci_TEXTE_1, 1+4+16)
+OBJ_TextPivotSet( Ci_TEXTE_1, cvector( 0.5, 0.1 , 0) )
+OBJ_TextSizeSet( Ci_TEXTE_1, 0, -1, cvector( -1, 0, 0) )
+
+	
+//if (IO_ButtonJustPressed(joy_button_Select))
+//{
+//	showMap = !showMap	
+//}
+//
+//if(showMap) 	@o_Screen OBJ_FlagInvisibleSet( 0 )
+//else 				@o_Screen OBJ_FlagInvisibleSet( 1 )
+
+//@o_Screen2 OBJ_RotateLocalZ(0.01)
+
+@o_Screen	OBJ_FlagInvisibleSet( 1 )
+@o_Screen2	OBJ_FlagInvisibleSet( 1 )
+
+
+
+//if (IO_ButtonJustPressed( joy_button_L))
+//{
+//	@o_Screen2 OBJ_RotateLocalZ(angle)
+//	if(angle >= 2*M_PI) angle = 0
+//	angle+= (M_PI/180)
+//}
+
+//Hide Game Text
+//if(IO_ButtonJustPressed(joy_button_Start) && !pauseGame) 
+//{
+//}
+
+if(pauseGame) 
+{
+		//WOR_Pause(0, 0xFFFFFFFF)
+}
+else
+{
+		//WOR_UnPause(0, 0xFFFFFFFF)
+}
+
+
+
+
+
+

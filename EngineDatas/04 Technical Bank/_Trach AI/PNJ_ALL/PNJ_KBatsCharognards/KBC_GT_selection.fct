@@ -1,0 +1,16 @@
+
+//======================================================================
+// SELECTION DU CLIENT POUR LA LIAISON GRAB_TRANSPORTE
+//======================================================================
+
+
+object			to_client
+messageid		tmid_message
+
+tmid_message = pop
+
+to_client = MSG_GlobalGetGao(tmid_message, CLIENT)
+
+if( to_client != o_cible )
+	LNK_ServeurRefuse(tmid_message)			// le bat n'accepte pas d'autre client que la charogne qu'il a déjà choisie
+

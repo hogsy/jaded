@@ -1,0 +1,98 @@
+#include "ROOT/EngineDatas/04 Technical Bank/AI Models/Global Library/menu_constant.var"
+
+int 	i
+int		ti_choosedefault
+int		langflags
+
+DBG_TraceString( "----------( MAIN BOOTUP )----------" )
+DBG_TraceEOL()
+
+GFX_AddSorted( 17, 50 )
+GFX_FlagSet( 50, 0, 1)
+GFX_FlagSet( 50, 2, 1)
+
+meta ( !OBJ_TextRequest(0,0) ) {}
+
+if (MENU_FORCENOLANGMENU)
+{
+	DBG_TraceString( "No langage menu forced" )
+	DBG_TraceEOL()
+
+	lang_dialog = MENU_LANGAGE 
+	lang_subtitle = MENU_SUBTITLELANGAGE
+	AI_TrackCurChangeNow( "mbootup_memcard" )
+	return
+}
+
+// get all available langage
+langflags = IO_GameLangGet()
+
+// pour tester le polonais
+//langflags = 1<<10
+
+for (i = 0; i < 30; i++)
+{
+	if (langflags & (1<<i) )
+		available_langage[ i ] = 1
+	else
+		available_langage[ i ] = 0
+}
+
+// get default console langage
+lang_default = IO_ConsoleLangGet()
+if ( lang_default == -1 )
+	lang_default = 1
+	
+// does the current console support langage selection menu
+if ( ConsoleSpecificOption( 30 ) == 0 ) 
+{
+	DBG_TraceString( "no langage menu forced by configuration" )
+	DBG_TraceEOL()
+	mainbootup_SetLangId( lang_default )
+	AI_TrackCurChangeNow( "mbootup_memcard" )
+	return
+}
+
+// build list of available langage	
+lang_nb = 0
+
+// add default langage first in list
+if (available_langage[ lang_default ] == 1)
+{
+	available_langage[ lang_default ] = 0
+	lang_index[ 0 ] = lang_default
+	lang_nb = 1
+}
+
+// add other available langage
+for ( i = 0; i < 30; i++)
+{
+	if (available_langage[ i ])
+	{
+		lang_index[ lang_nb ] = i
+		lang_nb++
+	}
+}
+
+// no  langage goto an infinite loop in mbootup_chooselang
+if (lang_nb == 0)
+{
+	AI_TrackCurChange( "mbootup_chooselang" )
+	return
+}
+	
+// only one langage no need to choose
+if ( lang_nb == 1 ) 
+{
+	DBG_TraceString( "Only one langage, no choice" )
+	DBG_TraceEOL()
+	mainbootup_SetLangId( lang_index[ 0 ] )
+	AI_TrackCurChangeNow( "mbootup_memcard" )
+	return
+}
+
+lang_cur = -1
+lang_screen_status = 0
+mem_card_status = 0
+mf_Timer = 0
+AI_TrackCurChangeNow( "mbootup_chooselang" ) 

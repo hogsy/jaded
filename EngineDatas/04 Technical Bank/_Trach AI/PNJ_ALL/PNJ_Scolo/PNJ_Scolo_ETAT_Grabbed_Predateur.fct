@@ -1,0 +1,103 @@
+#include "PNJ_Scolo_defines.var"
+
+int				ti_i
+int				ti_flag_stop
+
+float			tf_speed
+float			tf_coef
+float			tf_target_speed
+
+vector		tv_pos
+vector		tv_new_sight
+vector		tv_new_banking
+vector		tv_speed
+vector		tv_traction
+
+object		to_predateur
+
+if (i_flag_sortie_etat)
+{
+	i_flag_sortie_etat = faux
+
+	COL_StartMatrixSet(OBJ_PosGet())
+
+	AI_TrackChange(4, "PNJ_Scolo_After_ETAT")
+	AI_CBDel(o_predateur, CallBack_After_Blend, "PNJ_Scolo_callback_set_pos")
+	o_predateur = LNK_ServeurGet(Ci_LNK_GRAB_RAPTOR, mid_predateur_LNK, faux, nofunc, nofunc)
+
+	ai_modules_locked[5] = faux
+
+	return
+}
+
+if (i_etat_courant != ETAT_Grabbed_Predateur)
+{
+	// INTIALISATION
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Grabbed_Predateur
+	
+	if (fct_last_etat)
+	{
+		i_flag_sortie_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	DYN_Off()
+	OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_Dyna)
+	COL_ColSetActivationSet(none, all)
+
+	AI_TrackStop(4)
+	AI_CBAdd(o_predateur, CallBack_After_Blend, "PNJ_Scolo_callback_set_pos")
+
+	fct_last_etat = "PNJ_Scolo_ETAT_Grabbed_Predateur"
+
+	// RAGDOLL ============================
+	i_on_ground_modules_nb = 0
+	i_in_water_modules_nb = 0
+	
+	f_delay_until_last_wall_col = 1000.0
+
+	f_ragdoll_damping = 1.0
+	i_flag_start_ragdoll_damping = faux
+
+	for (ti_i = 0; ti_i < i_modules_nb; ti_i++)
+	{
+		av_bone_col_normal[ti_i] = Cv_NullVector
+		af_bone_ground_col_timer[ti_i] = 1000.0
+	}
+	// RAGDOLL ============================
+	
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ===============================================================
+to_predateur = LNK_ServeurGet(Ci_LNK_GRAB_RAPTOR, mid_predateur_LNK, vrai, nofunc, nofunc)
+if (to_predateur != o_predateur 
+	|| LNK_GrabStatusGet(mid_predateur_LNK) == 4 )
+//	|| ! f_lifecur )			// VINCE
+	macro_change_etat("PNJ_Scolo_ETAT_Paf")
+
+AI_Execute("PNJ_Scolo_exec_check_vision")
+
+if( f_time_start_etat > 0.0 )
+{
+	AI_Execute("PNJ_Scolo_exec_check_paf")
+	// VINCE
+	if( i_flag_grab_paf && ( i_paf_type & C_PAF_KK_KiTue ) && ( i_paf_type & C_PAF_KK_FoodChain ) )
+	{
+		AI_CBDel(o_predateur, CallBack_After_Blend, "PNJ_Scolo_callback_set_pos")
+		OBJ_Destroy()
+	}
+	if (i_flag_paf )
+		macro_change_etat("PNJ_Scolo_ETAT_Paf")
+	// VINCE
+}
+
+AI_Execute("PNJ_Scolo_exec_check_best_interet")
+
+// COMPORTEMENT =========================================================
+

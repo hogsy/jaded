@@ -1,0 +1,27 @@
+#include "ci_defines.var"
+
+i_cur_mode = Ci_mode_wait_after_paf
+if (i_cur_mode != i_old_mode)
+{
+	// INIT
+	i_old_mode = i_cur_mode
+	f_time_ref = TIME_Get()
+	DYN_Off()
+	
+	if (COL_HasZDM() && i_suit_terrain)
+	{
+		DYN_On()
+		DYN_FlagsSet(DYN_C_BasicForces, none)
+		DYN_GravitySet( Cv_NormalGravity )
+		COL_ColSetActivationSet(C_bit_zdm_pied, none)
+	}
+
+}
+
+if (TIME_Elapsed(f_time_ref, f_attente_apres_attaque))
+{
+	// Apres l'attente attaque Move
+	AI_TrackCurChangeNow("ci_3_attaque_suivre")
+}
+
+

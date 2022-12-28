@@ -1,0 +1,219 @@
+#include "RM_Projectiles_defines.var"
+
+procedure_ultra int RM_Projectiles_Target_Paffed();
+
+vector		tv_vec
+vector		tv_speed
+vector		tv_tgt
+
+float			tf_speed
+float			tf_dist
+float			tf_tgt_dist
+float			tf_cos
+
+object 		to_ground
+
+int				ti_paffed
+
+// SORTIE ETAT 	===================================================================
+if( i_sort_etat )
+{
+	i_sort_etat = faux
+	
+	if (i_SND_fire != -1)
+		SND_Stop(i_SND_fire)
+	i_SND_fire = -1
+	
+	return
+}
+
+// INIT ETAT 	=====================================================================
+if( i_etat_courant != RMP_ETAT_FIRED)
+{
+	i_etat_courant = RMP_ETAT_FIRED
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+
+	if (i_type == RMP_TYPE_TETE)
+	{
+		DYN_On()
+		DYN_FlagsSet(DYN_C_BasicForces | DYN_C_Col, none)
+		DYN_FrictionSet(0.0)
+		
+//		tv_vec = ((OBJ_BankingGet() * 1.0) - ( OBJ_SightGet() * 2.5) + (@get_camera OBJ_HorizonGet()*2.0))
+//		tv_vec = ((@get_camera OBJ_BankingGet() * 1.0) + ( @get_camera OBJ_SightGet() * 2.5) + (@get_camera OBJ_HorizonGet()*2.0))
+//		MATH_VecSetNorm(tv_vec, f_speed*3)
+//		DYN_SpeedSetVector(tv_vec)
+
+		DYN_SpeedSetVector(v_initial_speed)
+		i_SND_fire = SND_RequestPlayLoop(RMP_SND_FIRE)
+	}
+	
+	// Halo lumineux
+	i_GFX_halo = GFX_Add(21)                 // création du halo
+	GFX_FlagSet(i_GFX_halo, 4, 1)
+	GFX_MaterialSet(i_GFX_halo, get_SFX_light_and_smoke,0) // affectation du matériau
+	GFX_Seti(i_GFX_halo, 21103, 1)			// 0 (défaut) flare mural		1 flare très simple 
+	GFX_Seti(i_GFX_halo, 21101, 0x0060DD)     // couleur du halo
+	GFX_Setf(i_GFX_halo, 21000, 0.5 * OBJ_ZoomGet())  // taille du halo
+	GFX_Setf(i_GFX_halo, 21002, 0.75 * OBJ_ZoomGet())		// extraction par rapport au point de génération (vers la cam)
+
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// STIMULI =======================================================================
+if (f_time_start_etat >= f_time_max)
+	AI_Execute("RMP_exec_boom")
+
+// Collision ?
+if (COL_ZDE_ZDECollide(o_target, C_zde_corps, C_zde_corps) || COL_CollideType(COL_C_Ground) || COL_CollideType(COL_C_Wall))
+{
+	if (i_type == RMP_TYPE_TETE)
+	{
+		if (COL_CollideType(COL_C_Ground))
+			tv_vec = COL_NormalGet(COL_C_Ground)
+		else if (COL_CollideType(COL_C_Wall))
+			tv_vec = COL_NormalGet(COL_C_Wall)
+			
+		// Paffer rayman seulement si pas de face
+		else if (MATH_VecDotProduct(@o_target OBJ_SightGet(), OBJ_BankingGet()) > Cf_Cos70)
+			tv_vec = -OBJ_BankingGet()
+		else
+			tv_vec = OBJ_BankingGet()
+		
+		// Pas d'explosion si l'angle d'attaque est faible
+		tf_dist = MATH_VecDotProduct(tv_vec, -OBJ_BankingGet())
+		if ((tf_dist > Cf_Cos70) || (!i_rotate))
+			AI_Execute("RMP_exec_boom")
+	}
+	else
+		AI_Execute("RMP_exec_boom")
+}
+
+// Pas d'ajustement de trajectoire si rayman est paffé
+if (f_wait_before_rotate)
+{
+	f_wait_before_rotate = MATH_FloatMax(0.0, f_wait_before_rotate - TIME_GetDt())
+	if (f_wait_before_rotate)
+		i_rotate = 0
+	else
+		i_rotate = 1
+}
+
+// COMPORTEMENT ================================================================
+
+// Ajuster la trajectoire si Rayman n'est pas mort
+if ((i_type == RMP_TYPE_TETE) && (!RM_Projectiles_Target_Paffed()) && (MATH_VecDotProduct(@o_target OBJ_PosGet() - OBJ_PosGet(), @o_target OBJ_SightGet()) > 0.0))
+{
+	// Vitesse du projectile
+	tv_speed = DYN_SpeedGetVector()
+	DBG_RenderVector(OBJ_PosGet(), tv_speed, color_vert)
+
+	tv_tgt = @o_target OBJ_PosGet() - OBJ_PosGet() + cvector (0.0, 0.0, 1.0)
+	tf_tgt_dist = MATH_VecNorm(tv_tgt)
+	
+	// Vitesse de rapprochement
+	tf_speed = MATH_VecDotProduct(tv_tgt, tv_speed)
+	
+	tv_vec = tv_tgt
+	tv_vec.z = 0.0
+	tf_dist = MATH_VecNorm(tv_vec)
+	if (tf_speed > 0.0)
+		tf_speed = tf_tgt_dist / tf_speed
+	else tf_speed = 0.0
+	
+	// Position anticipée de la cible
+	tf_speed = MATH_FloatMin(tf_speed, 0.2)
+	tv_vec = @o_target DYN_SpeedGetVector()
+	tv_vec.z = 0
+	tv_vec = tv_tgt + (tv_vec * tf_speed)
+	tf_speed = MATH_VecNorm(tv_speed)
+	
+//	tv_vec += @o_target OBJ_PosGet() - OBJ_PosGet() 
+
+	DBG_RenderVector(OBJ_PosGet(), tv_vec, color_rouge)
+	
+	// Ajuster la vitesse
+	if (tf_tgt_dist < 20.0)
+	{
+		if (MATH_VecDotProduct(@o_target OBJ_SightGet(), OBJ_BankingGet()) > 0.0)
+		{
+			tf_dist = MATH_VecNorm(@o_target OBJ_PosGet() - @get_camera OBJ_PosGet())
+			tf_cos = MATH_VecNorm(@o_target OBJ_PosGet() - OBJ_PosGet())
+			tf_cos = MATH_FloatMax((tf_cos - tf_dist) / (20.0 - tf_dist), 0.0) + 1.0
+			tf_cos *= 0.93 //1.0002
+			tf_speed = MATH_FloatLimit(@o_target DYN_SpeedGet() * tf_cos, 20.0, f_speed)
+			f_adjustment_speed = 1.5
+		}
+	
+//		Arrêter d'ajuster la trajectoire si on est proche de rayman
+		if (tf_tgt_dist < 2.5)
+		{
+			if (MATH_VecDotProduct(@o_target DYN_SpeedGetVector(), DYN_SpeedGetVector()) > 0.0)
+			{
+				i_rotate = faux
+				f_adjustment_speed = 0
+//				tf_speed = f_speed
+			}
+		}
+		
+	}
+	else if (tf_speed != f_speed)
+		tf_speed += (f_speed - tf_speed) * TIME_GetDt() * 5.0
+	
+	if (i_rotate)
+	{
+		// Calculer le nouveau vecteur vitesse
+		tv_vec = MATH_VecBlendRotate(tv_speed, tv_vec, f_adjustment_speed * TIME_GetDt())
+		tv_vec = MATH_VecInCone(tv_vec, tv_speed, Cf_PiBy8 / 1.5, 0)
+			
+		// Limiter la vitesse de chute
+		if ((tv_vec.z < -5.0) && (tf_dist > 30.0))
+			tv_vec.z = -5.0
+		else
+			tv_vec.z = tv_vec.z 
+	
+//		f_adjustment_speed += TIME_GetDt() * 2.5
+//		f_adjustment_speed = MATH_FloatMin(f_adjustment_speed, 8.0)
+		f_adjustment_speed = 8.0
+	}
+	else tv_vec = DYN_SpeedGetVector()
+	
+//	Str_DisplayFloatOnce(f_adjustment_speed, VIEW_3dWorldTo2d(0,OBJ_PosGet()))
+
+	MATH_VecSetNorm(tv_vec, tf_speed)
+	DYN_SpeedSetVector(tv_vec)
+	OBJ_BankingGeneralSet(OBJ_SightGet(), tv_speed)
+	
+	DBG_RenderVector(OBJ_PosGet(), OBJ_BankingGet(), color_bleu)
+	DBG_RenderVector(OBJ_PosGet(), @o_target OBJ_PosGet() - OBJ_PosGet(), color_bleu)
+	
+	tf_dist = MATH_AbsFloat(MATH_VecDotProduct(MATH_VecNormalize(tv_speed), MATH_VecNormalize(@o_target OBJ_PosGet() - OBJ_PosGet())))
+	if (tf_dist < 0.15)
+	{
+		f_circular_traj += TIME_GetDt()
+		tf_dist = f_circular_traj * DYN_SpeedGet()
+		tf_speed = Cf_Pi * MATH_VecNorm(@o_target OBJ_PosGet() - OBJ_PosGet())
+		if (tf_dist >= tf_speed)
+		{
+			f_wait_before_rotate = 0.5
+			f_adjustment_speed = 0.0
+		}
+	}
+	else
+		f_circular_traj = 0.0
+}
+//else
+//	DYN_SpeedSet(f_speed)
+
+// Positionnement du halo lumineux
+GFX_Setv(i_GFX_halo, 21200, OBJ_PosGet() + (DYN_SpeedGetVector() * TIME_GetDt()))
+

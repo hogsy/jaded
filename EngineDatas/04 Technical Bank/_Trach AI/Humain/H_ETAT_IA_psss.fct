@@ -1,0 +1,684 @@
+#include "H_defines.var"
+#include "H_action.var"
+
+
+
+int			ti_i
+int			ti_numero
+int			ti_index
+int			ti_flag_grab
+int			ti_context
+int			ti_arme
+int			ti_ammo
+int			ti_reserve
+int			ti_weapon
+
+float		tf_dist
+float		tf_sign
+float		tv_val
+float		tf_offset
+float		tf_liferatio
+
+vector	tv_dest_pos
+vector	tv_temp, tv_temp1, tv_temp2
+
+object	to_trap
+object	to_obj
+
+int			ti_mem_arme, ti_mem_ammo, ti_mem_reserve
+int			ti_temp
+
+float		tf_dot
+float		tf_temp
+
+int			ti_text_jack
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	OBJ_CapaSet(0, OBJ_Capa_7)
+	o_obj_interaction = nobody
+	i_flag_donne = 0
+	i_sort_etat = faux
+	ao_SRV[Ci_LNK_PSSS] = LNK_ServeurGet(Ci_LNK_PSSS, amid_SRV_LIAISON_ID[Ci_LNK_PSSS], faux, nofunc, nofunc)
+	if(o_obj_lance_hayes) @o_obj_lance_hayes OBJ_Destroy()
+	if(o_obj_lance_jack) @o_obj_lance_jack OBJ_Destroy()
+	o_obj_lance_hayes = nobody
+	o_obj_lance_jack = nobody
+	i_cache_arme = faux
+	
+	to_obj = @get_global o_camera
+	@get_camera_path to_obj o_obj_lock = nobody
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+ti_text_jack = -1
+if (i_etat_courant != ETAT_IA_psss)
+{
+	psss_far = faux
+	OBJ_CapaSet(OBJ_Capa_7, 0)
+	i_psss_ack = faux
+	f_time_psss = 0
+	o_obj_lance_hayes = nobody
+	o_obj_lance_jack = nobody
+	f_blend_speed_lance = 0
+	
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_IA_psss
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+		ai_SRV_ENABLE[ti_i] = faux
+
+	// AUTORISATIONS DES GRABS
+	ai_SRV_ENABLE[Ci_LNK_GRAB_RAPTOR]	= vrai
+	
+	// AUTORISATION DES AIDES
+	ai_SRV_ENABLE[Ci_LNK_INTERACTION] 		= vrai
+	ai_SRV_ENABLE[Ci_LNK_PSSS] 					= vrai
+
+	DYN_SpeedSetVector( Cv_NullVector)
+	DYN_TractionSet( Cv_NullVector)
+	
+	f_time_start_etat = 0.0
+	
+	ao_SRV[Ci_LNK_INTERACTION] = LNK_ServeurGet(Ci_LNK_INTERACTION, amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION], faux, nofunc, nofunc)
+	
+	// Texte
+	to_obj = AI_MainActorGet(C_ID_Jack)
+	Humains_BlaBlaFreq[TEXTE_Psss] = TIME_Get()
+	
+	i_qqchose = faux
+	SwapArmeHayesBeg( )
+	if(!i_obj_lance_type_hayes && !JetableEnMain())
+	{
+		i_request_txt_humain = C_ID_Jack
+		switch(i_id_humain)
+		{
+			case C_ID_Ann :			i_request_txt = GeneJak_C_info_Ann break
+			case C_ID_Jimmy :		i_request_txt = GeneJak_C_info_Jimmy break
+			case C_ID_Hayes :		i_request_txt = GeneJak_C_info_Hayes break
+			case C_ID_Denham :	i_request_txt = GeneJak_C_info_Denham break
+		}
+		
+		ti_text_jack = i_request_txt
+	}
+	else
+	{
+		i_qqchose = vrai
+		i_request_txt_humain = C_ID_Jack
+		switch(i_id_humain)
+		{
+			case C_ID_Ann :
+				if(!i_in_fight)
+					i_request_txt = GeneJak_C_call_Ann_med
+				else
+					i_request_txt = GeneJak_C_call_Ann_urg
+				break
+			case C_ID_Denham :
+				if(!i_in_fight)
+					i_request_txt = GeneJak_C_call_Denham_med
+				else
+					i_request_txt = GeneJak_C_call_Denham_urg
+				break
+			case C_ID_Hayes :
+				if(!i_in_fight)
+					i_request_txt = GeneJak_C_call_Hayes_med
+				else
+					i_request_txt = GeneJak_C_call_Hayes_urg
+				break
+			case C_ID_Jimmy :
+				if(!i_in_fight)
+					i_request_txt = GeneJak_C_call_Jimmy_med
+				else
+					i_request_txt = GeneJak_C_call_Jimmy_urg
+				break
+			default:
+				if(!i_in_fight)
+					i_request_txt = GeneJak_C_call_friend_med
+				else
+					i_request_txt = GeneJak_C_call_friend_urg
+				break
+		}
+		
+		ti_text_jack = i_request_txt
+	}
+	
+	// Lache la lance ?
+	/////////////////////////////////
+	if(i_id_humain == C_ID_Hayes)
+	{
+		if(!JetableEnMain())
+		{
+			SwapArmeHayesBeg( )
+			if(i_obj_lance_type_hayes) Humains_LeaveObjectInHand()
+		}
+	}
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE  =====================================================================
+
+// Si on me demande une interaction qui est la meme que celle que j'avais en entrant en psss, je l'ignore
+if(o_obj_interaction == ao_SRV[Ci_LNK_INTERACTION])
+	ao_SRV[Ci_LNK_INTERACTION] = LNK_ServeurGet(Ci_LNK_INTERACTION, amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION], faux, nofunc, nofunc)
+	
+AI_Execute("H_exec_read_world")
+AI_Execute("H_exec_serveur_get")
+AI_Execute("H_exec_change_etat")
+AI_Execute("H_exec_ch_Stimulus_Paf")
+if (o_paf_sender) macro_change_etat("H_ETAT_IA_paf")
+
+// INTERACTION
+i_global_look = vrai
+OBJ_Me().des_int1 = Ci_DISPLAY_PSSS
+if (!ao_SRV[Ci_LNK_PSSS]) macro_change_etat(fct_main_etat)
+
+// COMPORTEMENT ==============================================================
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Donne quelque chose ?
+to_obj = AI_MainActorGet(C_ID_Jack)
+tv_temp = @to_obj OBJ_PosGet() - OBJ_PosGet()
+MATH_VecSetHorzNormalize(tv_temp)
+tf_dot = MATH_VecDotProduct(OBJ_SightGet(), tv_temp)
+
+// Balance carrement le bambou devant jack
+if(BambouEnMain() && tf_dot > 0.9 && OBJ_SqrDist(to_obj) > 9 * 9)
+{
+	i_cine_shoot_mode = 0
+	o_cine_shoot = AI_MainActorGet(C_ID_Jack)
+	v_target_stimulus_vis = @o_cine_shoot OBJ_PosGet() + @o_cine_shoot OBJ_SightGet()
+	macro_change_etat("H_ETAT_IA_lance")
+}
+
+if(i_flag_donne == 2 || (f_time_start_etat > 0.2 && i_flag_arrived && tf_dot > 0.9 && OBJ_SqrDist(to_obj) < 9 * 9))
+{
+	OBJ_Me().des_int1 = Ci_DISPLAY_NOTHING
+	
+	to_obj = AI_MainActorGet(C_ID_Jack)
+	if( !f_joy_norm )
+	{
+		// Hayes peut-il lancé le flingue ?
+		if(i_id_humain == C_ID_Hayes)
+		{
+			OBJ_Me().des_int1 = Ci_DISPLAY_DONNE
+		}
+		
+		else if(i_id_humain == C_ID_Ann || i_id_humain == C_ID_Denham || i_id_humain == C_ID_Jimmy)
+		{
+			if(BambouEnMain())
+				OBJ_Me().des_int1 = Ci_DISPLAY_DONNE
+		}
+	}
+	
+	if(!i_flag_donne)
+	{
+		// Un bambou
+		if(!i_interdit_echange && JetableEnMain())
+		{
+			OBJ_Me().des_int1 = Ci_DISPLAY_DONNE
+			SwapArmeHayesBeg( )
+		}
+		
+		// Hayes peut-il lancé le flingue ?
+		else if(!i_interdit_echange && i_id_humain == C_ID_Hayes)
+		{
+			OBJ_Me().des_int1 = 0
+			SwapArmeHayesBeg( )
+			if(i_obj_lance_type_hayes) OBJ_Me().des_int1 = Ci_DISPLAY_DONNE
+			
+			if(OBJ_Me().des_int1 == 0)
+			{
+				meta(SPEECH_ObjectIsSpeaking(AI_MainActorGet(C_ID_Jack))) {}
+				f_time_psss = 4
+				if(i_in_fight)
+					i_request_txt = GeneHay_C_no_weapon_urg
+				else
+					i_request_txt = GeneHay_C_no_weapon_low
+			}
+		}
+		
+		// Rien à filer
+		else
+		{
+			meta(SPEECH_ObjectIsSpeaking(AI_MainActorGet(C_ID_Jack))) {}
+			OBJ_Me().des_int1 = 0
+			f_time_psss = 4
+			if(!TEXT_IsEmpty(@get_global text_buts[i_id_humain]) && TIME_Elapsed(f_time_last_goal, 15))
+			{
+				f_time_last_goal = TIME_Get()
+				SPEECH_M_RqOneText(@get_global text_buts[i_id_humain])
+			}
+			else
+			{
+				i_request_txt = Gene_C_obj_answer
+			}
+		}
+		
+			
+		i_flag_interaction_ok = faux
+		if(!OBJ_Me().des_int1)
+		{
+			i_flag_donne = 666
+		}
+		else
+		{
+			to_obj = @get_global o_camera
+			@get_camera_path to_obj o_obj_lock = nobody
+			
+			///////////////////////////////////////////////////////////////////////////
+			////////////////////////// ACTION ///////////////////////////////////
+			///////////////////////////////////////////////////////////////////////////
+			i_flag_donne = 1
+			if(JetableEnMain())
+			{
+				SwapArmeHayesBeg( )
+				to_obj = AI_MainActorGet(C_ID_Jack)
+				@"KingKong/Humain" to_obj i_mode_attrape = 3
+				@"KingKong/Humain" to_obj i_obj_lance_type_hayes = i_obj_lance_type_hayes
+				@"KingKong/Humain" to_obj i_obj_lance_type_jack = 0
+				@"KingKong/Humain" to_obj i_leave_object_in_hand = vrai
+				if(BambouEnMain())
+				{
+					if(OBJ_SqrDist(to_obj) > 6 * 6)
+						ACT_ActionSet(Action_DonneBambouLoin)				
+					else
+						ACT_ActionSet(Action_DonneBambou)				
+				}
+				else
+					ACT_ActionSet(Action_Lance_Objet)	
+					
+				switch(i_id_humain)
+				{
+					case C_ID_Denham :	
+						if(i_in_fight)
+							i_request_txt = GeneDen_C_give_stick_urg
+						else
+							i_request_txt = GeneDen_C_give_stick_low
+						break
+						
+					case C_ID_Ann :	
+						if(i_in_fight)
+							i_request_txt = GeneAnn_C_give_stick_urg
+						else
+							i_request_txt = GeneAnn_C_give_stick_low
+						break
+						
+					case C_ID_Hayes :	
+						if(i_in_fight)
+							i_request_txt = GeneHay_C_give_stick_urg
+						else
+							i_request_txt = GeneHay_C_give_stick_low
+						break				
+				}			
+			}
+			else if(i_id_humain == C_ID_Hayes)
+			{
+				if(MATH_RandInt(0, 2) == 0)
+				{
+					if(i_in_fight)
+						i_request_txt = GeneHay_C_swap_gun_far
+					else
+						i_request_txt = GeneHay_C_swap_gun_med
+				}
+					
+				SwapArmeHayesBeg( )
+				
+				// Anim sur jack
+				to_obj = AI_MainActorGet(C_ID_Jack)
+				if(i_obj_lance_type_hayes && i_obj_lance_type_jack)
+					@"KingKong/Humain" to_obj i_mode_attrape = 1
+				else
+					@"KingKong/Humain" to_obj i_mode_attrape = 3
+				@"KingKong/Humain" to_obj i_obj_lance_type_hayes = i_obj_lance_type_hayes
+				@"KingKong/Humain" to_obj i_obj_lance_type_jack = i_obj_lance_type_jack
+				
+				if(OBJ_SqrDist(to_obj) > 6 * 6)
+				{
+					if(i_obj_lance_type_jack)
+						ACT_ActionSet(Action_Hayes_LanceReception_ArmeLoin)				
+					else
+						ACT_ActionSet(Action_Hayes_Lance_ArmeLoin)				
+				}
+				else
+				{
+					if(i_obj_lance_type_jack)
+						ACT_ActionSet(Action_Hayes_LanceReception_Arme)				
+					else
+						ACT_ActionSet(Action_Hayes_Lance_Arme)				
+				}
+			}
+		}
+	}
+		
+	///////////////////////////////////////////////////////////////////////////
+	////////////////////////// DONNE ///////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////
+	if(i_flag_donne == 1)
+	{
+		if(!ACT_ActionItemGet())
+		{
+			v_pos_lance = @o_canal_annex1 OBJ_PosGet()
+			v_sight_lance = @o_canal_annex1 OBJ_SightGet()
+			v_bank_lance = @o_canal_annex1 OBJ_BankingGet()			
+		}
+		
+		to_obj = AI_MainActorGet(C_ID_Jack)
+		if(!@to_obj ACT_ActionItemGet())
+		{
+			to_obj = @to_obj ANI_CanalObjectGet(Anim_Canal_Annex1)
+			v_pos_lance_jack = @to_obj OBJ_PosGet()
+			v_sight_lance_jack = @to_obj OBJ_SightGet()
+			v_bank_lance_jack = @to_obj OBJ_BankingGet()			
+		}
+	
+		
+		if(ACT_ActionItemGet()) 
+		{
+			i_flag_donne = 2
+			
+			// BAMBOU
+			//////////////////////////////////////////////////////////
+			if(JetableEnMain())
+			{
+				SwapArmeHayesEnd( )
+				to_obj = o_canal_annex1
+				switch(i_obj_lance_type_hayes)
+				{
+//					case Ci_weapon_ID_bambou : 
+//						o_obj_lance_hayes = @get_bambou OBJ_Duplicate(OBJ_PosGet())
+//						@o_obj_lance_hayes OBJ_SightGeneralSet(-@get_camera OBJ_HorizonGet(), Cv_VerticalVector)
+//						break
+//					case Ci_weapon_ID_bambou_moy : 
+//						o_obj_lance_hayes = @get_bambou_moy OBJ_Duplicate(OBJ_PosGet())
+//						@o_obj_lance_hayes OBJ_SightGeneralSet(-@get_camera OBJ_HorizonGet(), Cv_VerticalVector)
+//						break
+//					case Ci_weapon_ID_bambou_petit : 
+//						o_obj_lance_hayes = @get_bambou_petit OBJ_Duplicate(OBJ_PosGet())
+//						@o_obj_lance_hayes OBJ_SightGeneralSet(-@get_camera OBJ_HorizonGet(), Cv_VerticalVector)
+//						break
+
+					/////////// KING KONG 2 ///////////////
+					case Ci_weapon_ID_bambou : 
+					case Ci_weapon_ID_bambou_moy : 
+					case Ci_weapon_ID_bambou_petit : 
+						o_obj_lance_hayes = @get_KJavelin OBJ_Duplicate(OBJ_PosGet())
+						@o_obj_lance_hayes OBJ_SightGeneralSet(-@get_camera OBJ_HorizonGet(), Cv_VerticalVector)
+						break
+						
+					case Ci_weapon_ID_grenade : 
+						o_obj_lance_hayes = @get_grenade OBJ_Duplicate(OBJ_PosGet())
+						@o_obj_lance_hayes OBJ_SightGeneralSet(@to_obj OBJ_SightGet(), @to_obj OBJ_BankingGet())					
+						break
+					case Ci_weapon_ID_crane : 
+						o_obj_lance_hayes = @get_crane OBJ_Duplicate(OBJ_PosGet())
+						@o_obj_lance_hayes OBJ_SightGeneralSet(@to_obj OBJ_SightGet(), @to_obj OBJ_BankingGet())					
+						break
+					case Ci_weapon_ID_levier : 
+						o_obj_lance_hayes = @get_levier OBJ_Duplicate(OBJ_PosGet())
+						@o_obj_lance_hayes OBJ_SightGeneralSet(@to_obj OBJ_SightGet(), @to_obj OBJ_BankingGet())					
+						break
+					default:
+						o_obj_lance_hayes = nobody
+						break
+				}
+
+				mf_Speed = 0
+				if(o_obj_lance_hayes)
+				{
+					@o_obj_lance_hayes OBJ_PosSet(v_pos_lance)
+				}
+			}
+			
+			// HAYES : ECHANGE D'ARMES
+			//////////////////////////////////////////////////////////
+			else if(i_id_humain == C_ID_Hayes)
+			{
+				SwapArmeHayesEnd( )
+				
+				////////////////
+				switch(i_obj_lance_type_hayes)
+				{
+					case Ci_weapon_ID_tommy_gun : 
+						o_obj_lance_hayes = @"_basic/_basic_persos/DUP_TommyGun" OBJ_Duplicate(OBJ_PosGet())
+						break
+					case Ci_weapon_ID_shotgun : 
+						o_obj_lance_hayes = @"_basic/_basic_persos/DUP_ShotGun" OBJ_Duplicate(OBJ_PosGet())
+						break
+					case Ci_weapon_ID_sniper_rifle : 
+						o_obj_lance_hayes = @"_basic/_basic_persos/DUP_Snipe" OBJ_Duplicate(OBJ_PosGet())
+						break
+					case Ci_weapon_ID_colt : 
+						o_obj_lance_hayes = @"_basic/_basic_persos/DUP_Colt" OBJ_Duplicate(OBJ_PosGet())
+						break
+					default:
+						o_obj_lance_hayes = nobody
+						break
+				}
+
+				if(o_obj_lance_hayes)
+				{
+					to_obj = o_canal_annex1
+					@o_obj_lance_hayes OBJ_PosSet(v_pos_lance)
+					@o_obj_lance_hayes OBJ_SightGeneralSet(-@get_camera OBJ_HorizonGet(), Cv_VerticalVector)
+				}
+				
+				switch(i_obj_lance_type_jack)
+				{
+					case Ci_weapon_ID_tommy_gun : 
+						o_obj_lance_jack = @"_basic/_basic_persos/DUP_TommyGun" OBJ_Duplicate(OBJ_PosGet())
+						break
+					case Ci_weapon_ID_shotgun : 
+						o_obj_lance_jack = @"_basic/_basic_persos/DUP_ShotGun" OBJ_Duplicate(OBJ_PosGet())
+						break
+					case Ci_weapon_ID_sniper_rifle : 
+						o_obj_lance_jack = @"_basic/_basic_persos/DUP_Snipe" OBJ_Duplicate(OBJ_PosGet())
+						break
+					case Ci_weapon_ID_colt : 
+						o_obj_lance_jack = @"_basic/_basic_persos/DUP_Colt" OBJ_Duplicate(OBJ_PosGet())
+						break
+					default:
+						o_obj_lance_jack = nobody
+						break
+				}
+
+				if(o_obj_lance_jack)
+				{
+					@o_obj_lance_jack OBJ_PosSet(v_pos_lance_jack)
+					@o_obj_lance_jack OBJ_SightGeneralSet(v_sight_lance_jack, v_bank_lance_jack)
+				}
+				/////////////////
+				f_time_psss = 50
+				goto l_move
+			}			
+		}
+		
+		OBJ_Me().des_int1 = Ci_DISPLAY_NOTHING
+		to_obj = AI_MainActorGet(C_ID_Jack)
+		ForceRegardSur(to_obj, 0.5)
+		OrienteVersTolerReal(to_obj, 1.0, 10.0)
+		if(i_request_txt != -1) i_force_generique = vrai
+		return
+	}
+	else 
+	{		
+l_move:
+		// Deplacement bambou
+		////////////////////////////////////////////////////
+		if(
+			i_obj_lance_type_hayes == Ci_weapon_ID_bambou 
+		|| 	i_obj_lance_type_hayes == Ci_weapon_ID_bambou_moy 
+		|| 	i_obj_lance_type_hayes == Ci_weapon_ID_bambou_petit
+		|| 	i_obj_lance_type_hayes == Ci_weapon_ID_grenade
+		|| 	i_obj_lance_type_hayes == Ci_weapon_ID_crane
+		|| 	i_obj_lance_type_hayes == Ci_weapon_ID_levier
+		)
+		{
+			if(!ACT_ActionFinished() && ACT_ActionItemGet() >= 1)
+			{
+				i_cache_arme = vrai
+				if(o_obj_lance_hayes)
+				{
+					tv_temp = @get_camera OBJ_PosGet() + cvector(0,0,0.5)
+					
+					if(i_obj_lance_type_hayes == Ci_weapon_ID_bambou || 	i_obj_lance_type_hayes == Ci_weapon_ID_bambou_moy || i_obj_lance_type_hayes == Ci_weapon_ID_bambou_petit)
+					{
+						tf_temp = @o_obj_lance_hayes OBJ_SqrDist(get_camera)
+						@o_obj_lance_hayes OBJ_SightGeneralSet(-@get_camera OBJ_HorizonGet(), Cv_VerticalVector)
+						@o_obj_lance_hayes OBJ_RotateGlobalZ(-0.2 * MATH_Sin(mf_Speed))
+						@o_obj_lance_hayes OBJ_RotateLocalX(-0.2 * MATH_Sin(mf_Speed))
+						mf_Speed += 20 * TIME_GetDt()
+					}
+					else
+					{
+						tv_temp.z += 0.1
+						tv_temp -= (@get_camera OBJ_HorizonGet() * 0.3)
+						@o_obj_lance_hayes OBJ_RotateGlobalZ(10 * TIME_GetDt())
+					}
+
+					tv_temp -= @o_obj_lance_hayes OBJ_PosGet()
+					tv_temp *= f_blend_speed_lance
+					tv_temp += @o_obj_lance_hayes OBJ_PosGet()
+					@o_obj_lance_hayes OBJ_PosSet(tv_temp)
+				}
+				
+				f_blend_speed_lance = MATH_FloatBlend(f_blend_speed_lance, 0.3, 15 * TIME_GetDt())
+				f_time_psss = 50
+				OBJ_Me().des_int1 = Ci_DISPLAY_NOTHING
+				to_obj = AI_MainActorGet(C_ID_Jack)
+				ForceRegardSur(to_obj, 0.5)
+				OrienteVersTolerReal(to_obj, 1.0, 10.0)
+				if(i_request_txt != -1) i_force_generique = vrai
+				return
+			}
+		}
+		
+		// Deplacement flingue hayes
+		////////////////////////////////////////////////////
+		else if(i_id_humain == C_ID_Hayes && !ACT_ActionFinished() && ACT_ActionItemGet() >= 1)
+		{
+			if(ACT_ActionItemGet() == 2 && o_obj_lance_jack)
+			{
+				@o_obj_lance_jack OBJ_FlagInvisibleSet(vrai)
+				i_cache_arme = faux
+			}
+			else
+				i_cache_arme = vrai				
+			if(o_obj_lance_hayes)
+			{
+				tv_temp = @get_camera OBJ_PosGet() + cvector(0,0,0.4)
+				tv_temp -= @o_obj_lance_hayes OBJ_PosGet()
+				tv_temp *= f_blend_speed_lance
+				tv_temp += @o_obj_lance_hayes OBJ_PosGet()
+				@o_obj_lance_hayes OBJ_PosSet(tv_temp)
+			}
+			
+			if(o_obj_lance_jack)
+			{
+				to_obj = o_canal_annex1
+				tv_temp = @to_obj OBJ_PosGet()
+				tv_temp -= @o_obj_lance_jack OBJ_PosGet()
+				tv_temp *= f_blend_speed_lance
+				tv_temp += @o_obj_lance_jack OBJ_PosGet()
+				@o_obj_lance_jack OBJ_PosSet(tv_temp)				
+			}
+			
+			f_blend_speed_lance = MATH_FloatBlend(f_blend_speed_lance, 0.3, 10 * TIME_GetDt())
+			f_time_psss = 50
+			OBJ_Me().des_int1 = Ci_DISPLAY_NOTHING
+			to_obj = AI_MainActorGet(C_ID_Jack)
+			ForceRegardSur(to_obj, 0.5)
+			OrienteVersTolerReal(to_obj, 1.0, 10.0)
+			if(i_request_txt != -1) i_force_generique = vrai
+			return
+		}			
+	}
+}
+
+// Return etat precedent au bout de 5s
+if(f_time_psss > 5)
+	macro_change_etat(fct_main_etat)
+
+v_way_destpos = OBJ_PosGet()
+to_obj = AI_MainActorGet(C_ID_Jack)
+if(OBJ_SqrDist(to_obj) > 2 * 2)
+{
+	if(OBJ_SqrDist(to_obj) > 6 * 6 || (GRID_PosValidSimplifie(OBJ_PosGet(), @to_obj OBJ_PosGet(), faux) == Cv_NullVector))
+	{
+		v_way_destpos = @to_obj OBJ_PosGet()
+	}
+}
+
+if(OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Hierarchy)) i_psss_nomove = vrai
+if(i_psss_nomove || !i_qqchose) v_way_destpos = OBJ_PosGet()
+
+if(f_time_start_etat && f_time_start_etat < 0.2) 
+{
+	if(!i_psss_ack && f_time_start_etat > 0.1)
+	{
+		i_psss_ack = vrai
+		if(f_joy_norm) i_request_txt = Gene_C_acknowledge
+	}
+	
+	v_way_destpos = OBJ_PosGet()
+	ForceRegardSur(to_obj, 0.5)
+}
+
+CommonMove()
+
+// A l'arret, s'oriente vers jack
+if(!f_joy_norm)
+{
+	f_time_psss += TIME_GetDt()
+	to_obj = AI_MainActorGet(C_ID_Jack)
+	if(f_time_start_etat > 0.2) 
+	{
+		OrienteVersToler(to_obj, 1.0, 100.0)
+		ForceRegardSur(to_obj, 0.5)
+	}
+	
+	if((!i_flag_arrived || i_psss_nomove) && f_time_psss > 0.5 && f_time_psss < 1.0 && f_time_start_etat && !psss_far)
+	{
+		if(OBJ_SqrDist(to_obj) > 8 * 8)
+		{
+			i_request_txt = Gene_C_too_far
+			psss_far = vrai
+		}
+	}
+		
+	if(!i_flag_arrived && f_time_psss > 3)
+	{
+		macro_change_etat(fct_main_etat)
+	}
+}
+else
+{
+	f_joy_norm = f_joy_norm
+}
+
+// Anims
+///////////////////////////////////////////////
+to_obj = AI_MainActorGet(C_ID_Jack)
+ForceRegardSur(to_obj, 0.5)
+PRG_Intention = nobody
+f_time_enjoue = 0
+i_cine_action = -1
+AI_Execute("H_exec_select_action")
+
+if(i_request_txt != -1) i_force_generique = vrai
+
+if(i_request_txt_humain == C_ID_Jack && i_request_txt != ti_text_jack)
+	i_request_txt_humain = -1

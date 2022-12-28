@@ -1,0 +1,21 @@
+#include "RM_lm_defines.var"
+
+if ( i_SFX_Halo != -1)
+{
+	GFX_Setv(i_SFX_Halo, 21200, OBJ_PosGet())
+	GFX_Setf(i_SFX_Halo, 21000, MATH_RandFloat(f_halo_size*0.5, f_halo_size*1.5))
+}
+
+if ( ! MATH_FloatNullEpsilon(f_fin_delai))
+{
+	f_halo_size = MATH_FloatBlend( 0.0, f_halo_size, f_fin_delai / Cf_fin_delai)
+	XMEN_SetSize( 0, 0, Cf_size_Xmen * f_fin_delai / Cf_fin_delai)
+	f_fin_delai -= MATH_FloatMin(f_fin_delai, TIME_GetDt())
+	if ( MATH_FloatNullEpsilon(f_fin_delai))
+		OBJ_Destroy()
+}
+else
+	f_halo_size = 0.4 + ( 0.1 * MATH_Cos( f_speed * TIME_Get()))
+
+if ( i_recup)
+	OBJ_PosSet( @get_rayman OBJ_PosGet() + (v_sens * f_blend_distance) + cvector( 0.0, 0.0, 1.2) + v_RM_Z_offset)

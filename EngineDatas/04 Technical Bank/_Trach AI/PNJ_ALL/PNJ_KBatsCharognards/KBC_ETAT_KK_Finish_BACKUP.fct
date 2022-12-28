@@ -1,0 +1,109 @@
+//#include "KBC_defines.var"
+//
+////=====================================================================================
+//// LES PETITES BATS FONT UN FINISH SUR KONG
+////=====================================================================================
+//
+//vector	tv_pos
+//
+//messageid		tmid_vision
+//
+//
+//// SORTIE ETAT ===================================================================
+//if (i_sort_etat)
+//{
+//	i_sort_etat = faux
+//	i_uncol = vrai		// DAns ce cas la on ne peux pas réactiver la collision sinon on risque de pas reusssir a éjecter : recalage...
+//	o_I_finish_actor = LNK_ThisClientGet(o_I_finish_actor,Ci_LNK_KKFINISH_ON_KONG, mid_I_finish_LNK_ID, faux, nofunc, nofunc, nofunc)
+//	i_I_finish_leader = faux
+//	return
+//}
+//
+//
+//// INITIALISATION ETAT ==============================================================
+//if (i_etat_courant != ETAT_KK_Finish )
+//{
+//	i_etat_ancien = i_etat_courant
+//	i_etat_courant = ETAT_KK_Finish
+//	fct_last_etat = AI_TrackCurGet()
+//	f_time_start_etat = 0.0
+//	
+//	LNK_Finish_ActionSet(mid_I_finish_LNK_ID, Ci_GrabKong_FinishSePlace)
+//	LNK_Finish_FinisherTypeSet(mid_I_finish_LNK_ID, Ci_GrabKong_Finished_Bats)
+//	ACT_ActionSet(ACTION_I_Finish_Deb)
+//	o_I_finish_actor_ref = o_I_finish_actor
+//	v_I_finish_pos_init = OBJ_PosGet()
+//	i_I_finish_leader = vrai
+//	@get_global i_KNMI_finish_leader_set = vrai
+//	@get_global ai_KNMI_finish_count[C_ID_BatCharognard]++		// compteur de difficulté
+//	
+//	if( i_DBG_trace_finish )
+//	{
+//		DBG_TraceObject(OBJ_Me())
+//		DBG_TraceString(" passe en finish sur KONG")
+//		DBG_TraceEOL()
+//	}
+//	if( i_DBG_trace_etat )
+//	{
+//		DBG_TraceObject(OBJ_Me())
+//		DBG_TraceString(" : etat kk finish")
+//		DBG_TraceEOL()
+//	}
+//}
+//else
+//{
+//	f_time_start_etat += TIME_GetDt()
+//}
+//
+//
+//// ANALYSE ==============================================================
+//o_I_finish_actor = LNK_ThisClientGet(o_I_finish_actor,Ci_LNK_KKFINISH_ON_KONG, mid_I_finish_LNK_ID, vrai, nofunc, nofunc, nofunc)
+//
+//if( ! o_I_finish_actor )
+//{
+//	if( ! (ACT_CustomBitGet() & CBit_GrabbedKK_Anim_Speciale) || ACT_ActionFinished() )
+//		AI_Execute("KBC_exec_init_attente")
+//}
+//
+//
+//// COMPORTEMENT ==============================================================
+//KBC_Interet_Update(mid_interet_attaque, C_EVENT_InteretStatusGrab, o_I_finish_actor, tmid_vision)
+//
+//i_flag_neck = faux
+//
+//switch( LNK_Finish_ActionGet(mid_I_finish_LNK_ID) )
+//{
+//	case Ci_GrabKong_FinishSePlace :
+//		OBJ_PosSet( MATH_VecBlend( v_I_finish_pos_init, @o_I_finish_actor OBJ_PosGet(), f_time_start_etat / 0.333))
+//		OBJ_BankingGeneralSet( MATH_VecBlend( OBJ_SightGet(), -@o_I_finish_actor OBJ_SightGet(), 10.0 * TIME_GetDt()), 
+//		MATH_VecBlend( OBJ_BankingGet(), @o_I_finish_actor OBJ_BankingGet(), 10.0 * TIME_GetDt()))
+//		break
+//		
+//	case Ci_GrabKong_FinishDeb :
+//		if( ACT_ActionGet() != ACTION_I_Finish_Challenge)
+//			ACT_ActionSet( ACTION_I_Finish_Challenge)
+//		tv_pos = @o_I_finish_actor OBJ_PosGet()
+//		tv_pos.z = OBJ_PosGet().z
+//		OBJ_PosSet( MATH_VecBlend( v_I_finish_pos_init, tv_pos, f_time_start_etat / 0.333))
+//		OBJ_BankingGeneralSet( MATH_VecBlend( OBJ_SightGet(), -@o_I_finish_actor OBJ_SightGet(), 10.0 * TIME_GetDt()), 
+//		MATH_VecBlend( OBJ_BankingGet(), @o_I_finish_actor OBJ_BankingGet(), 10.0 * TIME_GetDt()))
+//		break
+//		
+//	case	Ci_GrabKong_FinishFin :
+//		o_I_finish_actor = LNK_ThisClientGet(o_I_finish_actor,Ci_LNK_KKFINISH_ON_KONG, mid_I_finish_LNK_ID, faux, nofunc, nofunc, nofunc)
+//		break
+//		
+//	case Ci_GrabKong_FinishPerdu :		// KONG a perdu
+//		if( ACT_ActionGet() != ACTION_I_Finish_KK_Loses)
+//		{
+//			ACT_ActionSet( ACTION_I_Finish_KK_Loses)
+//			SIG_Send(SIG_C_TYPE_MORT, OBJ_Me())
+//		}
+//		break
+//		
+//	case Ci_GrabKong_FinishGagne :		// KONG a gagné
+//		if( ACT_ActionGet() != ACTION_I_Finish_KK_Wins)
+//			ACT_ActionSet( ACTION_I_Finish_KK_Wins)
+//		break
+//}
+//

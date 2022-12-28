@@ -1,0 +1,67 @@
+#include "PNJ_mr_defines.var"
+
+vector	tv_pos
+
+o_rope_manager = @get_global o_rope_manager
+if ( ! o_rope_manager )
+	returntrack
+
+OBJ_FlagInvisibleSet( vrai)
+	
+OBJ_ZoomSet(0.5)
+
+BV_MaxSet(cvector(1.0,1.0,1.5))
+BV_MinSet(cvector(-1.0,-1.0,-1.0))
+
+COL_ColSetActivationSet(none,C_bit_zde_fight)
+COL_SwapToSpecific(C_zde_fight)
+COL_SwapToSpecific(C_zde_corps)
+COL_SwapToSpecific(C_zdm_pied)
+
+COL_ZoneSizeSet(C_zde_corps,cvector(1.2,1.2,1.2))
+
+OBJ_FlagsTypeSet(OBJ_C_TypeFlag_DodgeCamera,none)
+
+v_posRetour=OBJ_PosGet()
+
+// DYNAMIQUE
+DYN_On()
+DYN_FlagsSet(DYN_C_BasicForces + DYN_C_HorizontalGrounds + DYN_C_SlipOnGroundEdge+ DYN_C_VectorFriction + DYN_C_GlobalFriction + DYN_C_ApplyRec +DYN_C_Solid, none)
+DYN_GravitySet(Cv_DYN_Gravity)
+DYN_FrictionVectorSet(Cv_DYN_Friction)
+
+COL_CrossableSet(Gmat_RM_Crossable_Default, none)
+
+// TARGETING
+tv_pos = COL_ZonePosGet(C_zde_corps)
+tv_pos -= OBJ_PosGet()
+tv_pos = MATH_VecGlobalToLocal( tv_pos)
+RM_TARGET_Add( OBJ_Me(), tv_pos )
+if(i_Grappinable)
+	HotSpot_Add_Obj(OBJ_Me(), vrai)
+
+// LIFE
+//ID_LIFE = EVENT_AddEventLife( 100.0, 100.0, 50.0)
+f_LIFE_max = 20.0
+f_LIFE_cur = f_LIFE_max
+
+f_move_speed*=MATH_RandFloat(0.8,1.2)
+i_rotate = vrai
+o_fight_target = get_rayman
+
+f_DelayExplosion = MATH_RandFloat(5.0,6.0)
+
+v_Banking = Cv_VerticalVector
+
+//CALLBACK
+AI_CBAdd(OBJ_Me(), CallBack_After_Rec, "PNJ_MR_cb_AfterBlend")
+AI_CBAdd(OBJ_Me(), CallBack_WhenDestroy, "PNJ_MR_cb_Destroy")
+AI_CBAdd(OBJ_Me(), CallBack_SectoVisOn, "PNJ_MR_cb_SectoVisOn")
+AI_CBAdd(OBJ_Me(), CallBack_SectoActOn, "PNJ_MR_cb_SectoActOn")
+AI_CBAdd(OBJ_Me(), CallBack_SectoActOff, "PNJ_MR_cb_SectoActOff")
+
+
+// TRACK
+AI_TrackChange( 1, "PNJ_MR_Track_reflex")
+AI_TrackChange( 3, "PNJ_MR_Track_end")
+AI_TrackCurChangeNow("PNJ_MR_ETAT_Hide")

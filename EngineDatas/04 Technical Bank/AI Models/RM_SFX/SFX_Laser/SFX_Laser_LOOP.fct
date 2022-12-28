@@ -1,0 +1,132 @@
+#include "SFX_Laser_VAR.var"
+
+color		couleur_laser
+vector	tv_speed 
+object	to_col
+
+//------
+int 		cpt1, cpt2
+vector 	tv_pos2
+float 		tf_interval_long, tf_interval_larg, tf_extreme_larg, tf_extreme_long
+
+
+OBJ_CapaSet( none, Obj_Capa_Switch)
+
+if ( OBJ_CapaTest(OBJ_Capa_25) || (AI_TriggerIsValid(t_trig_declenche) && !call_trigger(t_trig_declenche)))
+{
+	if (b_active)
+	{
+		i_stop_laser = vrai
+		b_active = faux
+		i_stop_laser = vrai
+		f_largeur_laser = largeur_laser
+		f_temps_restant = f_temps_mort
+
+		PROC_DESTROY_2_SFX(i_GFX_Etinc1, i_GFX_Etinc2)
+		PROC_SFX_LASER_DEACTIVATE(i_GFX_Etinc1, i_GFX_Etinc2, @obj_target OBJ_PosGet(), OBJ_PosGet())
+	}
+}
+else
+{
+	if (AI_TriggerIsValid(t_trig_declenche) && call_trigger(t_trig_declenche))
+	{
+		if (!b_active)
+		{
+			PROC_DESTROY_6_SFX(i_GFX_Laser1, i_GFX_Flare1, i_GFX_Flare2, i_GFX_Rocks1, i_GFX_Souffle1, i_GFX_Hop)
+
+			f_largeur_laser = largeur_laser
+			f_temps_restant = f_temps_mort
+			b_active = vrai
+		}
+	}
+}
+
+
+//-------------------------------------------------------------------------------------------
+//		TRAITEMENT DES DIFFERENTS TYPES DE LASERS
+//-------------------------------------------------------------------------------------------
+if (b_active)
+{
+	switch(i_type_laser)
+	{
+		case 0 : // LASER RAYON
+			i_stop_laser = faux
+			to_col =  COL_RayObject_Vector( OBJ_PosGet() , v_pos_col - OBJ_PosGet(), all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+			if ( to_col && (@to_col OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_AI))
+			{
+				switch (i_couleur)
+				{
+					case 1 :
+						v_pos_col = COL_RayObject_PosGet()
+						tv_speed = v_pos_col - OBJ_PosGet()
+						EVENT_AddEventPafCanal( C_EVENT_FILTER_Object,  C_PAF_RM_Moyen, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_col, -1, 10.0, tv_speed, v_pos_col)
+						SND_RequestPlay(Ci_SND_Laser_Paf)
+						break
+					case 0 :
+						OBJ_CapaSet( Obj_Capa_Switch, none)
+						if ( AI_TriggerIsValid( t_trig_declenche ) )
+							call_trigger(t_trig_declenche)
+						TIME_Wait(0.5)
+						break
+					case 2 :
+						v_pos_col = COL_RayObject_PosGet()
+						tv_speed = v_pos_col - OBJ_PosGet()
+						EVENT_AddEventPafCanal( C_EVENT_FILTER_Object,  C_PAF_RM_Moyen, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_col, -1, 0.0, tv_speed, v_pos_col)
+						SND_RequestPlay(Ci_SND_Laser_Paf)
+						break					
+				}
+			}
+			i_stop_laser = faux
+			if (PROC_AFFICHE_LASER(i_GFX_Laser1, i_GFX_Flare1, i_GFX_Flare2, i_GFX_Rocks1, i_GFX_Souffle1, i_GFX_Hop, OBJ_PosGet(), @obj_target OBJ_PosGet(), faux, id_mat_laser, id_mat_flare, f_largeur_laser, f_taille))
+			{
+				SND_RequestPlay(Ci_SND_Laser_Start)
+				SND_RequestPlayLoop(Ci_SND_Laser_Loop)
+			}
+			break
+		case 1 : // LASER DESTRUCTION
+			i_stop_laser = faux
+			PROC_AFFICHE_LASER(i_GFX_Laser1, i_GFX_Flare1, i_GFX_Flare2, i_GFX_Rocks1, i_GFX_Souffle1, i_GFX_Hop, OBJ_PosGet(), @obj_target OBJ_PosGet(), vrai, id_mat_laser, id_mat_flare, f_largeur_laser, f_taille)				
+			break
+		case 2 : // LASER TEMP
+			break
+	}
+}
+ 
+
+// Phase de désactivation
+if (f_temps_restant > 0.0)
+{
+	// Laser destruction
+	if (i_type_laser == 1)
+	{
+		f_largeur_laser = f_largeur_laser * f_temps_restant
+		//GFX_Seti(i_GFX_Laser, 1000, largeur_laser * f_temps_restant)
+		f_temps_restant = f_temps_restant - (0.1 * TIME_GetDt())
+	}
+
+	// Traitement laser classique
+	if (i_type_laser == 0)
+		if (i_stop_laser)
+		{
+			f_largeur_laser = f_largeur_laser * f_temps_restant
+		//	GFX_Seti(i_GFX_Laser, 1000, largeur_laser * f_temps_restant)
+			f_temps_restant = f_temps_restant - (TIME_GetDt())
+
+			PROC_AFFICHE_LASER(i_GFX_Laser1, i_GFX_Flare1, i_GFX_Flare2, i_GFX_Rocks1, i_GFX_Souffle1, i_GFX_Hop, OBJ_PosGet(), @obj_target OBJ_PosGet(), faux, id_mat_laser, id_mat_flare, f_largeur_laser, f_taille)
+
+			if (i_play_sound_fin)
+			{
+				SND_RequestPlay(Ci_SND_Laser_Stop)
+				i_play_sound_fin = faux
+			}
+
+			
+			if (f_temps_restant < 0.0)
+			{
+				PROC_DESTROY_3_SFX(i_GFX_Laser1, i_GFX_Flare1, i_GFX_Flare2)
+				i_stop_laser = faux
+				i_play_sound_fin = vrai
+			}
+		}
+}
+

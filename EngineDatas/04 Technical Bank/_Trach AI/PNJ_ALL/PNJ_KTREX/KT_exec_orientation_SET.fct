@@ -1,0 +1,18 @@
+#include "KT_defines.var"
+
+vector		tv_new_sight
+
+////////////////// PENSER A INITIALISER v_orientation_sens AVANT D'EXECUTER CETTE FONCTION !!!! /////////////////////////
+
+DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, v_orientation_sens * 10, color_jaune)
+
+if( MATH_VecNullEpsilon(v_orientation_sens) )
+	v_orientation_sens = OBJ_SightGet()
+
+// ORIENTATION SOUHAITEE
+f_orientation_coef = MATH_FloatBlend(f_orientation_coef, 2.0, TIME_GetDt())
+tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), v_orientation_sens, f_orientation_coef * TIME_GetDt())
+
+// ORIENTATION DEFINITIVE	
+OBJ_BankingGeneralSet(tv_new_sight, Cv_VerticalVector)
+

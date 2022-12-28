@@ -1,0 +1,591 @@
+Include_UltraProcedure_Header
+#include "PNJ_Scolo_defines.var"
+
+int				ti_index
+int				ti_flag_collision
+int				ti_flag_can_strangulate
+
+float			tf_norm
+float			tf_coef
+float			tf_dist
+float			tf_target_speed
+float			tf_zdm_pied_size
+float			tf_sign
+float			tf_frame
+float			tf_pct
+float			tf_offset
+float			tf_offset1
+
+vector		tv_pos	
+vector		tv_speed
+vector		tv_new_sight
+vector		tv_new_banking
+vector		tv_point_A
+vector		tv_OBBOX_center
+vector		tv_bone_sight
+vector		tv_bone_banking
+vector		tv_bone_horizon
+
+object		to_bone
+object		to_camera
+object		to_serveur
+
+to_camera = @get_global o_camera
+
+if (i_etat_courant == ETAT_KKBite)
+{
+	OBJ_PosSet(@o_snap_bone OBJ_PosGet() + @o_snap_bone MATH_VecLocalToGlobal(v_snap_pos))
+	OBJ_SightGeneralSet(@o_snap_bone MATH_VecLocalToGlobal(v_snap_sight), @o_snap_bone MATH_VecLocalToGlobal(v_snap_banking))	
+
+//	PNJ_Scolo_Finish_Snake(o_proie, 1, 6.0, @o_proie DYN_SpeedGetVector())
+	PNJ_Scolo_Snake(1, 6.0, @o_proie DYN_SpeedGetVector())
+
+//	f_ragdoll_damping = 1.0
+//	ai_modules_locked[0] = vrai
+//	PNJ_Scolo_Rag_Doll(0)
+}
+else if (i_etat_courant == ETAT_KKIFinish)
+{
+	// FINISH KONG
+	if ( @o_kk_finish ACT_ActionGet() == 150)
+	{
+		tf_frame = @o_kk_finish ANI_CurrentFrameGet(0)
+		if ( tf_frame < 25)
+			tf_pct = 0.0
+		else
+			tf_pct = MATH_FloatLimit(( tf_frame -25.0 ) / 5.0, 0.0, 1.0)
+	}
+	else
+		tf_pct = 1.0
+		
+	to_bone = @o_kk_finish ANI_CanalObjectGet(Anim_Canal_Snap_MainD)
+
+	DBG_RenderVector(@to_bone OBJ_PosGet(), @to_bone OBJ_HorizonGet() * 10.0, color_rouge)
+	DBG_RenderVector(@to_bone OBJ_PosGet(), @to_bone OBJ_SightGet() * 10.0, color_vert)
+	DBG_RenderVector(@to_bone OBJ_PosGet(), @to_bone OBJ_BankingGet() * 10.0, color_bleu)
+
+	OBJ_PosSet(MATH_VecBlend( OBJ_PosGet(), @to_bone OBJ_PosGet(), tf_pct))
+	
+	switch ( LNK_Finish_ActionGet(mid_kk_I_finish_LNK))
+	{
+		case Ci_GrabKong_FinishPerdu :		// KONG a perdu
+			tv_new_sight = OBJ_PosGet() - @ao_modules[i_modules_nb >> 1] OBJ_PosGet()
+			tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_new_sight, 6.0 * TIME_GetDt())
+			tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 6.0 * TIME_GetDt())
+			OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking)
+			break
+			
+		default:
+			tv_new_sight = - @to_bone OBJ_BankingGet()
+			tv_new_banking = @to_bone OBJ_HorizonGet()
+			OBJ_SightGeneralSet(tv_new_sight, tv_new_banking)
+	}
+
+	PNJ_Scolo_Finish_Snake(o_kk_finish, 1, 6.0, @o_kk_finish DYN_SpeedGetVector())
+}
+else if (o_KK_Grabbed_actor)
+{
+	// JE SUIS GRABBE PAR KONG	
+	if (KK_Grab2Hands)
+	{
+		// GRABBE A 2 MAINS
+		to_bone = @o_KK_Grabbed_actor ANI_CanalObjectGet(Anim_Canal_DoigtG1)
+		tv_pos = @to_bone OBJ_PosGet()
+		tv_pos += @to_bone OBJ_HorizonGet() * f_size_coef * 0.35
+		@ao_modules[0] OBJ_PosSet(tv_pos)
+		ai_modules_locked[0] = vrai
+		tv_pos -= @to_bone OBJ_HorizonGet() * f_size_coef * 0.35
+		to_bone = @o_KK_Grabbed_actor ANI_CanalObjectGet(Anim_Canal_DoigtD1)
+	
+		tv_pos = @to_bone OBJ_PosGet()
+	
+		@ao_modules[6] OBJ_PosSet(tv_pos)
+		ai_modules_locked[6] = vrai
+	
+		@ao_modules[0] OBJ_SightGeneralSet(@ao_modules[0] OBJ_PosGet() - @ao_modules[6] OBJ_PosGet(), @o_KK_Grabbed_actor OBJ_SightGet())
+		@ao_modules[6] OBJ_SightGeneralSet(@ao_modules[6] OBJ_PosGet() - @ao_modules[0] OBJ_PosGet(), @o_KK_Grabbed_actor OBJ_SightGet())
+	
+		PNJ_Scolo_Rag_Doll(0)
+		
+		@ao_modules[0] OBJ_SightSet(@ao_modules[0] OBJ_PosGet() - @ao_modules[1] OBJ_PosGet())
+		@ao_modules[6] OBJ_SightSet(@ao_modules[5] OBJ_PosGet() - @ao_modules[7] OBJ_PosGet())
+	}
+	else
+	{
+		// GRABBE A 1 MAIN
+		tf_coef = f_time_start_etat * 5.0 // / 0.1
+		ti_index = 8
+
+		to_bone = LNK_GrabKong_BoneGet(mid_kong_LNK)
+
+		tv_speed = @ao_modules[ti_index] OBJ_PosGet()
+	
+		tv_pos = @to_bone OBJ_PosGet()
+		tv_bone_sight = @to_bone OBJ_SightGet()
+		tv_bone_banking =@to_bone OBJ_BankingGet()
+		tv_bone_horizon = @to_bone OBJ_HorizonGet()
+		tv_pos += tv_bone_banking * 0.6
+		tv_pos -= tv_bone_horizon * 0.5
+	
+		DBG_RenderSphere(tv_pos,0.1, color_rose)
+
+		tv_pos = MATH_VecBlend( @ao_modules[ti_index] OBJ_PosGet(), tv_pos, tf_coef)
+		@ao_modules[ti_index] OBJ_PosSet(tv_pos)
+	
+		tv_new_sight = MATH_VecBlendRotate(@ao_modules[ti_index] OBJ_SightGet(), @to_bone OBJ_SightGet(), tf_coef)	
+		tv_new_banking = MATH_VecBlendRotate(@ao_modules[ti_index] OBJ_BankingGet(), @to_bone OBJ_HorizonGet(), tf_coef)
+		@ao_modules[ti_index] OBJ_SightGeneralSet(tv_bone_sight, tv_bone_horizon)
+		
+		av_modules_speed[ti_index] = @ao_modules[ti_index] OBJ_PosGet() - tv_speed
+		av_modules_speed[ti_index] /= TIME_GetDt()
+
+		PNJ_Scolo_Snake(ti_index + 1, 12.0, @o_KK_Grabbed_actor DYN_SpeedGetVector())
+		PNJ_Scolo_Inv_Snake(ti_index - 1, 12.0, @o_KK_Grabbed_actor DYN_SpeedGetVector())	
+
+	}
+
+}
+else if (o_predateur)
+{
+	// JE SUIS GRABBE PAR UN RAPTOR OU UN TREX
+
+	to_bone = @o_predateur ANI_CanalObjectGet(Anim_Canal_Machoire)
+	ti_index = 5 // i_modules_nb >> 1
+	
+	tv_speed = @ao_modules[ti_index] OBJ_PosGet()
+	
+	if (COL_RayObject_Dist(@to_bone OBJ_PosGet(), -Cv_VerticalVector, 10.0, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable))
+	{
+		v_ray_pos = MATH_VecBlend(v_ray_pos, COL_RayObject_PosGet(), 6.0 * TIME_GetDt())
+		v_ray_normal = MATH_VecBlendRotate(v_ray_normal, COL_RayObject_NormalGet(), 4.0 * TIME_GetDt())
+	}
+	
+	tf_coef = f_time_start_etat / 0.2
+	
+	switch( LNK_GrabServeurVisionIDGet(mid_predateur_LNK) )
+	{
+		case C_ID_Tyranosaure :
+			tf_offset = - 0.5
+			tf_offset1 = 1.0
+			break
+		default:	
+			tf_offset = 0.0
+			tf_offset1 = 0.5
+			break
+	}
+	
+	tv_pos = @to_bone OBJ_PosGet()
+	tv_pos += @to_bone OBJ_SightGet() * tf_offset
+	tv_pos += @to_bone OBJ_BankingGet() * tf_offset1
+	tv_new_sight = @to_bone OBJ_HorizonGet()
+	tv_new_banking = - @to_bone OBJ_SightGet()
+	if (tf_coef < 1.0)
+	{
+		tv_pos = MATH_VecBlend(@ao_modules[ti_index] OBJ_PosGet(), tv_pos, tf_coef)
+		tv_new_sight = MATH_VecBlendRotate(@ao_modules[ti_index] OBJ_SightGet(), tv_new_sight, tf_coef)
+		tv_new_banking = MATH_VecBlendRotate(@ao_modules[ti_index] OBJ_BankingGet(), tv_new_banking, tf_coef)
+	}
+	@ao_modules[ti_index] OBJ_PosSet(tv_pos)
+	@ao_modules[ti_index] OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking)
+	
+	av_modules_speed[ti_index] = @ao_modules[ti_index] OBJ_PosGet() - tv_speed
+	av_modules_speed[ti_index] /= TIME_GetDt()
+
+	PNJ_Scolo_Snake(ti_index + 1, 6.0, Cv_NullVector)
+	PNJ_Scolo_Inv_Snake(ti_index - 1, 6.0, Cv_NullVector)
+
+//	f_ragdoll_damping = 0.0
+//	ai_modules_locked[ti_index] = vrai
+//	PNJ_Scolo_Rag_Doll(0)	
+}
+else if (IsThis_ID_Humain(ai_perceived_ID[i_perceived_best_actor_index]))
+{
+	// JE SNAP UN HUMAIN	
+
+	OBJ_PosSet(@o_snap_bone OBJ_PosGet() + @o_snap_bone MATH_VecLocalToGlobal(v_snap_pos))
+	OBJ_BankingGeneralSet(@o_snap_bone MATH_VecLocalToGlobal(v_snap_sight), @o_snap_bone MATH_VecLocalToGlobal(v_snap_banking))
+	
+	v_head_last_pos = OBJ_PosGet()
+
+	if (f_time_start_etat < 0.65)
+	{
+		tv_new_banking = OBJ_PosGet()
+		tv_new_banking -= @o_snap_bone OBJ_PosGet()
+		f_grab_Z = MATH_VecDotProduct(tv_new_banking, @o_snap_bone OBJ_BankingGet())
+		tv_new_banking -= f_grab_Z * @o_snap_bone OBJ_BankingGet()
+		MATH_VecSetNormalize(tv_new_banking)
+		tv_new_banking = MATH_VecRotate(tv_new_banking, @o_snap_bone OBJ_BankingGet(), TIME_GetDt() * 8.0)
+	
+//		if (o_proie == o_main_actor)
+		if (o_proie == o_jack)
+			f_grab_Z = MATH_FloatBlend(f_grab_Z, MATH_Sin(2.0 * TIME_Get()), 4.0 * TIME_GetDt())
+		else
+			f_grab_Z = MATH_FloatBlend(f_grab_Z, 0.0, f_time_start_etat)
+	
+		tv_pos = tv_new_banking * 0.25
+		tv_pos += @o_snap_bone OBJ_PosGet()
+		tv_pos += f_grab_Z * @o_snap_bone OBJ_BankingGet()
+		
+		tv_speed = tv_pos - OBJ_PosGet()
+		OBJ_PosSet(tv_pos)
+		OBJ_BankingGeneralSet(tv_speed, tv_new_banking)
+		
+		v_snap_pos = @o_snap_bone MATH_VecGlobalToLocal(OBJ_PosGet() - @o_snap_bone OBJ_PosGet()) 
+		v_snap_sight = @o_snap_bone MATH_VecGlobalToLocal(OBJ_SightGet())
+		v_snap_banking = @o_snap_bone MATH_VecGlobalToLocal(OBJ_BankingGet())
+	}
+	
+	PNJ_Scolo_Modules_Update(0, o_snap_bone)
+}
+else if (ai_perceived_ID[i_perceived_best_actor_index] == C_ID_Scolo)
+{
+	// JE RIDE UN SCOLO	
+
+	OBJ_PosSet(@o_snap_bone OBJ_PosGet() + @o_snap_bone MATH_VecLocalToGlobal(v_snap_pos))
+	OBJ_BankingGeneralSet(@o_snap_bone MATH_VecLocalToGlobal(v_snap_sight), @o_snap_bone MATH_VecLocalToGlobal(v_snap_banking))	
+
+	v_head_last_pos = OBJ_PosGet()
+
+	if (f_delay_before_moving_again)
+	{
+//		f_move_speed	= 0.0
+//		f_delay_before_moving_again -= MATH_FloatMin(f_delay_before_moving_again, TIME_GetDt())
+		
+		PNJ_Scolo_Modules_Update(0, o_snap_bone)
+	}
+	else
+	{
+		f_move_speed  = MATH_FloatBlend(f_move_speed , f_snaped_speed, 8.0 * TIME_GetDt())
+		f_on_snaped_bone_length += f_move_speed * TIME_GetDt()
+
+		while(i_snaped_bone_index < 13 && f_on_snaped_bone_length > f_snaped_bone_length * 0.5)
+		{
+			i_snaped_bone_index++
+			f_on_snaped_bone_length -= f_snaped_bone_length
+		}
+
+		if ( ! f_move_speed || i_snaped_bone_index == 13)
+		{
+			f_snaped_speed = -1.5
+			f_delay_before_moving_again = MATH_RandFloat(0.5, 1.0)
+		}
+	
+		o_snap_bone = @o_proie ANI_CanalObjectGet(i_snaped_bone_index)
+
+		tv_pos = OBJ_PosGet() - @o_snap_bone OBJ_PosGet()
+		tv_pos -= MATH_VecDotProduct(tv_pos, @o_snap_bone OBJ_SightGet()) * @o_snap_bone OBJ_SightGet()
+		tv_pos = MATH_VecRotate(tv_pos, @o_snap_bone OBJ_SightGet(), MATH_AbsFloat(f_move_speed) * 5.0 * TIME_GetDt())
+
+		OBJ_BankingSet(tv_pos)
+		MATH_VecSetNorm(tv_pos, @o_proie OBJ_ZoomGet() * 0.35)
+		tv_pos -= @o_snap_bone OBJ_SightGet() * f_on_snaped_bone_length
+		tv_pos += @o_snap_bone OBJ_PosGet()
+		OBJ_PosSet(tv_pos)
+
+		PNJ_Scolo_Modules_Update(0, o_snap_bone)
+		
+		OBJ_BankingGeneralSet(OBJ_PosGet() - @ao_modules[1] OBJ_PosGet(), OBJ_BankingGet())
+
+		v_snap_pos = @o_snap_bone MATH_VecGlobalToLocal(OBJ_PosGet() - @o_snap_bone OBJ_PosGet()) 
+		v_snap_sight = @o_snap_bone MATH_VecGlobalToLocal(OBJ_SightGet())
+		v_snap_banking = @o_snap_bone MATH_VecGlobalToLocal(OBJ_BankingGet())
+	}
+}
+else if (ai_perceived_ID[i_perceived_best_actor_index] == C_ID_Raptor)
+{
+	// JE RIDE UN RAPTOR	
+
+	tf_zdm_pied_size	 = COL_ZoneSizeGet(C_zdm_pied)
+
+	OBJ_PosSet(@o_snap_bone OBJ_PosGet() + @o_snap_bone MATH_VecLocalToGlobal(v_snap_pos))
+	OBJ_BankingGeneralSet(@o_snap_bone MATH_VecLocalToGlobal(v_snap_sight), @o_snap_bone MATH_VecLocalToGlobal(v_snap_banking))	
+
+	v_head_last_pos = OBJ_PosGet()
+
+	tf_target_speed = f_snaped_speed
+	tf_target_speed *= 1.0 + (MATH_Sin(f_time_start_etat * 4.0) * 0.75)
+	f_move_speed = MATH_FloatBlend(f_move_speed, tf_target_speed, 6.0 * TIME_GetDt())
+
+	tf_dist = f_move_speed * TIME_GetDt()
+	
+	ti_flag_collision = faux
+
+//	if (OBJ_LIB_Collision_Dist_Actor_OBBOX(o_proie, OBJ_PosGet(), OBJ_SightGet(), tf_dist, tv_pos, tv_new_banking, i_snaped_bone_index))
+	if (COL_RaySingleObject_Dist(o_proie, OBJ_PosGet(), OBJ_SightGet(), tf_dist, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_visuel_and_bone_volumes))
+	{
+		tv_pos = COL_RayObject_PosGet()
+		tv_new_banking = COL_RayObject_NormalGet()
+		i_snaped_bone_index = COL_RayObject_CanalGet()
+		
+		ti_flag_collision = vrai
+		
+		DBG_RenderVector(OBJ_PosGet(), OBJ_SightGet() * tf_dist, color_rouge)	
+		DBG_RenderVector(tv_pos, tv_new_banking * 4.0, color_bleu)
+
+		o_snap_bone = @o_proie ANI_CanalObjectGet(i_snaped_bone_index)
+
+		tv_OBBOX_center = @o_snap_bone OBJ_PosGet()
+		tv_OBBOX_center += @o_snap_bone MATH_VecLocalToGlobal(@o_snap_bone BV_OBBoxMinGet())
+		tv_OBBOX_center += @o_snap_bone MATH_VecLocalToGlobal(@o_snap_bone BV_OBBoxMaxGet() - @o_snap_bone BV_OBBoxMinGet()) * 0.5
+	
+		tv_point_A = OBJ_PosGet() - tv_OBBOX_center
+		MATH_VecSetNormalize(tv_point_A)
+	}
+	else
+	{
+		tv_pos = OBJ_PosGet()
+		tv_pos += OBJ_SightGet() * (f_move_speed * TIME_GetDt())
+		tv_pos -= MATH_FloatMin(MATH_VecDotProduct(tv_pos - @o_proie OBJ_PosGet(), @o_proie OBJ_BankingGet()) - tf_zdm_pied_size, 0.0) * @o_proie OBJ_BankingGet()
+		OBJ_PosSet(tv_pos)
+	
+		tv_OBBOX_center = @o_snap_bone OBJ_PosGet()
+		tv_OBBOX_center += @o_snap_bone MATH_VecLocalToGlobal(@o_snap_bone BV_OBBoxMinGet())
+		tv_OBBOX_center += @o_snap_bone MATH_VecLocalToGlobal(@o_snap_bone BV_OBBoxMaxGet() - @o_snap_bone BV_OBBoxMinGet()) * 0.5
+	
+		tv_point_A = OBJ_PosGet() - tv_OBBOX_center
+		MATH_VecSetNormalize(tv_point_A)
+	
+		tf_dist = 5.0
+		
+//		if (OBJ_LIB_Collision_Dist_Actor_OBBOX(o_proie, OBJ_PosGet() + (tv_point_A * 0.5), -tv_point_A, tf_dist, tv_pos, tv_new_banking, i_snaped_bone_index))
+		if (COL_RaySingleObject_Dist(o_proie, OBJ_PosGet() + (tv_point_A * 0.5), -tv_point_A, tf_dist, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_visuel_and_bone_volumes))
+		{
+			tv_pos = COL_RayObject_PosGet()
+			tv_new_banking = COL_RayObject_NormalGet()
+			i_snaped_bone_index = COL_RayObject_CanalGet()
+
+			ti_flag_collision = vrai
+		
+			DBG_RenderVector(OBJ_PosGet(), -tv_point_A * tf_dist, color_rouge)	
+			DBG_RenderVector(tv_pos, tv_new_banking * 4.0, color_bleu)
+
+			o_snap_bone = @o_proie ANI_CanalObjectGet(i_snaped_bone_index)
+		}
+	}
+
+	if (ti_flag_collision)
+	{
+		tv_pos += tv_point_A * (0.3 * OBJ_ZoomGet())
+		tv_pos -= MATH_FloatMin(MATH_VecDotProduct(tv_pos - @o_proie OBJ_PosGet(), @o_proie OBJ_BankingGet()) - tf_zdm_pied_size, 0.0) * @o_proie OBJ_BankingGet()
+		OBJ_PosSet(tv_pos)
+	
+		PNJ_Scolo_Modules_Update(0, o_snap_bone)
+
+		tv_new_banking = MATH_VecBlendRotate(tv_point_A, tv_new_banking, 0.5)
+		tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), tv_new_banking, 8.0 * TIME_GetDt())
+
+		f_angle_oscillation += TIME_GetDt() * f_move_speed
+		while(f_angle_oscillation > Cf_2Pi)
+			f_angle_oscillation -= Cf_2Pi
+	
+		tf_coef = MATH_Sin(f_angle_oscillation)
+		tf_coef *= f_move_speed * 0.001
+	
+		to_bone = @o_proie ANI_CanalObjectGet(Anim_Canal_Ventre)
+		tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), @to_bone OBJ_PosGet() - OBJ_PosGet(), 2.0 * TIME_GetDt())
+
+		tv_new_sight = MATH_VecRotate(tv_new_sight, tv_new_banking , tf_coef)
+		OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking )
+	
+		v_snap_pos = @o_snap_bone MATH_VecGlobalToLocal(OBJ_PosGet() - @o_snap_bone OBJ_PosGet()) 
+		v_snap_sight = @o_snap_bone MATH_VecGlobalToLocal(OBJ_SightGet())
+		v_snap_banking = @o_snap_bone MATH_VecGlobalToLocal(OBJ_BankingGet())
+	}
+	else
+	{
+		PNJ_Scolo_Modules_Update(0, o_snap_bone)
+	}
+}
+else if (ai_perceived_ID[i_perceived_best_actor_index] == C_ID_Kong)
+{
+	// JE RIDE KONG OU FINISH PETITS SCOLO
+
+	ti_flag_can_strangulate = faux
+
+	if (@get_global o_KNMI_finish_leader == OBJ_Me())
+		ti_flag_can_strangulate = vrai
+	else if (@get_global o_KNMI_finish_leader == nobody && @o_kong Proc_KK_RIDE_Get_Actor_Nb_By_Model(nobody) >= 3)
+		ti_flag_can_strangulate = vrai
+	 
+	tf_zdm_pied_size	 = COL_ZoneSizeGet(C_zdm_pied)	
+
+	OBJ_PosSet(@o_snap_bone OBJ_PosGet() + @o_snap_bone MATH_VecLocalToGlobal(v_snap_pos))
+	OBJ_BankingGeneralSet(@o_snap_bone MATH_VecLocalToGlobal(v_snap_sight), @o_snap_bone MATH_VecLocalToGlobal(v_snap_banking))	
+
+	v_head_last_pos = OBJ_PosGet()
+
+	switch(i_snaped_bone_index)
+	{
+		case Anim_Canal_Cou :
+		case Anim_Canal_Tete :
+		case Anim_Canal_Machoire :
+			if (ti_flag_can_strangulate && o_kk_finish)
+			{
+				f_arround_neck_dist += f_move_speed * TIME_GetDt()
+				if (f_arround_neck_dist > 8.0 * f_size_coef)
+				{
+					tf_target_speed = 0.0
+					break
+				}
+			}
+			
+		default:
+			tf_target_speed = f_snaped_speed
+			tf_target_speed *= 1.0 + (MATH_Sin(f_time_start_etat * 4.0) * 0.75)
+	}
+	
+	f_move_speed = MATH_FloatBlend(f_move_speed, tf_target_speed, 6.0 * TIME_GetDt())
+
+	tf_dist = f_move_speed * TIME_GetDt()
+	tf_dist += tf_zdm_pied_size
+	
+	ti_flag_collision = faux
+
+	switch(i_snaped_bone_index)
+	{
+		case Anim_Canal_Cou :
+		case Anim_Canal_Tete :
+		case Anim_Canal_Machoire :
+
+			if (ti_flag_can_strangulate)
+			{
+				i_snaped_bone_index = Anim_Canal_Cou
+				o_snap_bone = @o_proie ANI_CanalObjectGet(i_snaped_bone_index)
+	
+				tv_OBBOX_center = @o_snap_bone OBJ_PosGet()
+				tv_OBBOX_center += @o_snap_bone OBJ_BankingGet() * 0.5
+				tv_OBBOX_center += @o_snap_bone OBJ_SightGet() * 0.25
+	
+				tv_pos = OBJ_PosGet()
+				tv_pos -= tv_OBBOX_center
+				tv_pos -= MATH_VecDotProduct(tv_pos, @o_snap_bone OBJ_BankingGet()) * @o_snap_bone OBJ_BankingGet()
+				MATH_VecSetNormalize(tv_pos)
+				tv_pos *= 0.8
+				
+				tf_sign = MATH_FloatSign(MATH_VecDotProduct(MATH_VecCrossProduct(OBJ_SightGet(), @o_snap_bone OBJ_BankingGet()), tv_pos))
+				if (tf_sign == 1.0)
+					tf_sign = tf_sign
+		
+				tv_pos = MATH_VecRotate(tv_pos, @o_snap_bone OBJ_BankingGet(), tf_sign * f_move_speed * TIME_GetDt() / 0.8)
+	
+				tv_new_sight = tf_sign * MATH_VecCrossProduct(@o_snap_bone OBJ_BankingGet(), tv_pos)
+	
+				tv_pos += tv_OBBOX_center
+		
+				OBJ_PosSet(tv_pos)
+			
+				PNJ_Scolo_Modules_Update(0, o_snap_bone)
+	
+				tv_new_banking = OBJ_PosGet() - tv_OBBOX_center		
+				tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), tv_new_banking, 8.0 * TIME_GetDt())
+		
+				OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking)
+			
+				v_snap_pos = @o_snap_bone MATH_VecGlobalToLocal(OBJ_PosGet() - @o_snap_bone OBJ_PosGet()) 
+				v_snap_sight = @o_snap_bone MATH_VecGlobalToLocal(OBJ_SightGet())
+				v_snap_banking = @o_snap_bone MATH_VecGlobalToLocal(OBJ_BankingGet())
+	
+				PNJ_Scolo_Modules_Update(0, o_snap_bone)	
+				break
+			}
+
+		default:
+		
+			if (COL_RaySingleObject_Dist(o_proie, OBJ_PosGet(), OBJ_SightGet(), tf_dist, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_visuel_and_bone_volumes))
+			{
+				ti_flag_collision = vrai
+
+				tv_pos = COL_RayObject_PosGet()
+				tv_new_banking = COL_RayObject_NormalGet()
+				i_snaped_bone_index = COL_RayObject_CanalGet()
+
+				DBG_RenderVector(OBJ_PosGet(), OBJ_SightGet() * (tf_dist - tf_zdm_pied_size), color_rouge)	
+				DBG_RenderVector(tv_pos, tv_new_banking * 4.0, color_bleu)
+		
+				o_snap_bone = @o_proie ANI_CanalObjectGet(i_snaped_bone_index)
+		
+				tv_OBBOX_center = @o_snap_bone OBJ_PosGet()
+				tv_OBBOX_center += @o_snap_bone MATH_VecLocalToGlobal(@o_snap_bone BV_OBBoxMinGet())
+				tv_OBBOX_center += @o_snap_bone MATH_VecLocalToGlobal(@o_snap_bone BV_OBBoxMaxGet() - @o_snap_bone BV_OBBoxMinGet()) * 0.5
+			
+		//		tv_point_A = tv_pos
+		//		tv_point_A += tv_new_banking * tf_zdm_pied_size
+				tv_point_A = OBJ_PosGet()
+				tv_point_A -= tv_OBBOX_center
+				MATH_VecSetNormalize(tv_point_A)
+			}
+			else
+			{
+				tv_pos = OBJ_PosGet()
+				tv_pos += OBJ_SightGet() * (f_move_speed * TIME_GetDt())
+				OBJ_PosSet(tv_pos)
+			
+				tv_OBBOX_center = @o_snap_bone OBJ_PosGet()
+				tv_OBBOX_center += @o_snap_bone MATH_VecLocalToGlobal(@o_snap_bone BV_OBBoxMinGet())
+				tv_OBBOX_center += @o_snap_bone MATH_VecLocalToGlobal(@o_snap_bone BV_OBBoxMaxGet() - @o_snap_bone BV_OBBoxMinGet()) * 0.5
+			
+				tv_point_A = OBJ_PosGet() - tv_OBBOX_center
+				MATH_VecSetNormalize(tv_point_A)
+			
+				tf_dist = 5.0
+		
+				if (COL_RaySingleObject_Dist(o_proie, OBJ_PosGet() + (tv_point_A * 0.5), -tv_point_A, tf_dist, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_visuel_and_bone_volumes))
+				{
+					ti_flag_collision = vrai
+					
+					tv_pos = COL_RayObject_PosGet()
+					tv_new_banking = COL_RayObject_NormalGet()
+					i_snaped_bone_index = COL_RayObject_CanalGet()
+				
+					DBG_RenderVector(OBJ_PosGet(), -tv_point_A * tf_dist, color_rouge)	
+					DBG_RenderVector(tv_pos, tv_new_banking * 4.0, color_bleu)
+		
+					o_snap_bone = @o_proie ANI_CanalObjectGet(i_snaped_bone_index)
+				}
+			}
+		
+			if (ti_flag_collision)
+			{
+				OBJ_PosSet(tv_pos + (tv_point_A * tf_zdm_pied_size))
+			
+				PNJ_Scolo_Modules_Update(0, o_snap_bone)
+		
+				tv_new_banking = MATH_VecBlendRotate(tv_point_A, tv_new_banking, 0.5)
+				tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), tv_new_banking, 8.0 * TIME_GetDt())
+		
+				f_angle_oscillation += TIME_GetDt() * f_move_speed
+				while(f_angle_oscillation > Cf_2Pi)
+					f_angle_oscillation -= Cf_2Pi
+			
+				tf_coef = MATH_Sin(f_angle_oscillation)
+				tf_coef *= f_move_speed * 0.001
+			
+				tv_new_sight = OBJ_SightGet()
+	
+				to_bone = @o_proie ANI_CanalObjectGet(Anim_Canal_Tete)
+				if (ti_flag_can_strangulate || MATH_VecSquareNorm(@to_bone OBJ_PosGet() - OBJ_PosGet()) > 9.0)
+					tv_new_sight = MATH_VecBlendRotate(tv_new_sight, @to_bone OBJ_PosGet() - OBJ_PosGet(), 4.0 * TIME_GetDt())
+
+				tv_new_sight = MATH_VecRotate(tv_new_sight, tv_new_banking , tf_coef)
+				OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking )
+			
+				v_snap_pos = @o_snap_bone MATH_VecGlobalToLocal(OBJ_PosGet() - @o_snap_bone OBJ_PosGet()) 
+				v_snap_sight = @o_snap_bone MATH_VecGlobalToLocal(OBJ_SightGet())
+				v_snap_banking = @o_snap_bone MATH_VecGlobalToLocal(OBJ_BankingGet())
+			}
+			else
+			{
+				tv_pos = OBJ_PosGet()
+				tv_pos += OBJ_SightGet() * (f_move_speed * TIME_GetDt())
+				OBJ_PosSet(tv_pos)
+		
+				PNJ_Scolo_Modules_Update(0, o_snap_bone)
+			}
+	}
+}
+
+v_head_last_pos = OBJ_PosGet()
+	
+AI_Execute("PNJ_Scolo_After_ETAT")
+
+

@@ -1,0 +1,301 @@
+#include "k_define.var"
+
+float		tf_coef
+float		tf_dot1
+float		tf_dot2
+float		tf_distance_DG 
+float		tf_delta
+float		tf_lbdt
+float		tf_duree
+float		tf_hauteur_saut
+
+int			ti_capa
+int			ti_freq
+vector	tv_temp
+vector	tv_axe
+vector	tv_HS_sight
+vector	tv_HS_bank
+vector	tv_sens
+vector	tv_CTED
+vector	tv_CTEG
+vector	tv_DG
+message	tm_msg
+
+object	to_jump_hotspot
+
+			// SAUT SUR POSITION PREDEFINIE OU CALCULEE AUPARAVANT	  ===============================================================================
+			
+			if ( o_jump_hotspot)
+			{
+				v_climb_position = @o_jump_hotspot OBJ_PosGet()
+
+				// CHOIX DE L ANIM DE SAUT DANS LE CAS D UN SAUT QUI ACCROCH UN PT PRECIS
+				tf_coef = 0.0
+				if (o_climb_0D_wp)
+				{
+					i_climb_jump_index = 0
+					ACT_ActionSet(Ci_Kanim_jump + (i_climb_jump_index * 2))	
+				}
+				else if ( o_jump_hotspot)
+				{
+					tv_temp = @o_jump_hotspot OBJ_PosGet() - OBJ_PosGet()
+					tv_temp.z = 0.0
+	
+					v_zdm_pos = Cv_Kong_zdm_pos			// Offset ZDM normal : saut sur point precis a attraper.
+					
+					ti_capa = o_jump_hotspot.des_int1
+					if (ti_capa &  HOTSPOT_Type_Fight)
+					{
+						i_jump_to_grab = vrai
+						ACT_ActionSet( Ci_Kanim_saute_cycl)
+						i_request_txt_forced = GeneKon_C_mashing_lift_trex_win
+					}
+					else if ( ti_capa & HOTSPOT_Type_Colonne)
+					{
+						switch( ACT_ActionGet())
+						{
+							case Ci_Kanim_Swing_Hor_Balance :
+							case Ci_Kanim_Swing_Hor_Balance_DemiT :
+								ACT_ActionSet( Ci_Kanim_saute_colonne_from_Swing)
+								break
+							default:
+								ACT_ActionSet( Ci_Kanim_saute_colonne)
+						}
+					}
+					else if ( ti_capa &  HOTSPOT_Type_Vert)
+					{
+						switch( ACT_ActionGet())
+						{
+							case Ci_Kanim_Swing_Hor_Balance :
+							case Ci_Kanim_Swing_Hor_Balance_DemiT :
+								ACT_ActionSet( Ci_Kanim_Swing_Arch_Tr_Arch)
+								break
+							default:
+								ACT_ActionSet( Ci_Kanim_Swing_Jump)
+						}
+					}
+					else if (  ti_capa & HOTSPOT_Type_Limit1_4)
+					{
+						// LIMITATION CALCUL
+						// 1. Trouver ou est Kong dans les zone de limitation
+						tv_axe = OBJ_PosGet() - @o_jump_hotspot OBJ_PosGet()
+						tv_axe.z = 0.0
+						tf_dot1 = MATH_VecDotProduct( tv_axe, @o_jump_hotspot OBJ_SightGet())
+						tf_dot2 = MATH_VecDotProduct( tv_axe, -@o_jump_hotspot OBJ_HorizonGet())						
+						// 2. Choisir le bon coté pour tourner par rapport a sa position
+						if ( tf_dot1 >0 && tf_dot2 > 0)
+						{
+							// Kong est dans le  ¼ du milieu
+							if ( (MATH_VecDotProduct( OBJ_HorizonGet(), tv_temp) > 0  && i_Grab_Torse_Main != 1) || i_Grab_Torse_Main == 0)
+								ACT_ActionSet( Ci_Kanim_Swing_Jump_G)
+							else
+								ACT_ActionSet( Ci_Kanim_Swing_Jump_D)		
+						}
+						else if ( tf_dot1 < 0)
+						{
+							// Kong dans le ¼ axe vert tourner a Droite
+							ACT_ActionSet( Ci_Kanim_Swing_Jump_G)		
+						}
+						else
+						{
+							// Kong dans le ¼ axe vert tourner a Gauche
+							ACT_ActionSet( Ci_Kanim_Swing_Jump_D)		
+						}
+					}
+					else if ( ti_capa & HOTSPOT_Type_ForceG ) //( 64)
+						ACT_ActionSet( Ci_Kanim_Swing_Jump_G)
+					else if ( ti_capa & HOTSPOT_Type_ForceD ) //(32)
+						ACT_ActionSet( Ci_Kanim_Swing_Jump_D)									
+					else if ( ti_capa & HOTSPOT_Type_Saut)
+					{
+						if ( OBJ_SqrDistHorz( o_jump_hotspot) > 400.0 || @o_jump_hotspot OBJ_PosGet().z > OBJ_PosGet().z + 6.0) 
+						{
+							o_climb_0D_wp  = o_jump_hotspot
+//								i_climb_jump_index = 0
+//								ACT_ActionSet(Ci_Kanim_jump + (i_climb_jump_index * 2))	
+							ACT_ActionSet(Ci_Kanim_saute_accroche)
+						}
+						else
+							ACT_ActionSet( Ci_Kanim_saute_cycl)
+					}
+					else
+					{
+						// PAS DE LIMITE COOL
+						if ( (MATH_VecDotProduct( OBJ_HorizonGet(), tv_temp) > 0  && i_Grab_Torse_Main != 1) || i_Grab_Torse_Main == 0)
+							ACT_ActionSet( Ci_Kanim_Swing_Jump_G)
+						else
+							ACT_ActionSet( Ci_Kanim_Swing_Jump_D)		
+					}
+				}
+				else
+				{
+					ACT_ActionSet(Ci_Kanim_saute_accroche)		
+				}
+
+
+				if ( o_jump_hotspot && o_jump_hotspot.des_desflags &  DSF_HotSpot_info_en_int1)
+				{
+					tv_HS_sight = @o_jump_hotspot OBJ_SightGet()
+					tv_HS_bank = @o_jump_hotspot OBJ_BankingGet()
+					if ( !(ti_capa & HOTSPOT_Type_Saut))
+						@o_jump_hotspot OBJ_BankingGeneralSet( @o_jump_hotspot OBJ_PosGet() - OBJ_PosGet(), Cv_VerticalVector)
+					tv_temp = @o_jump_hotspot OBJ_PosGet() - OBJ_PosGet()
+					tv_temp.z = 0.0
+					if ( ti_capa &  HOTSPOT_Type_Fight)
+					{
+						// Nouveau saut sur TREX : offset null
+						v_climb_hand_offset = Cv_NullVector
+						v_climb_hand_offset = cvector( 0.0, 0.0, 6.0)
+						// HOPTSPOT DE FIGHT: PREVENIR
+						@get_global i_kong_camera_status = Ci_Kcamera_saute
+						tm_msg.msg_id = msg_id_KK_Fight_Jump		
+						tm_msg.msg_sender = OBJ_Me()
+						@o_jump_hotspot MSG_Send( tm_msg)
+					}
+					else if ( ti_capa & HOTSPOT_Type_Colonne)
+					{
+						to_jump_hotspot = @o_jump_hotspot OBJ_HierarchyGet()
+						if ( ! to_jump_hotspot)
+						{
+							DBG_TraceString("Ce pillier n est pas en hierarchy avec le HS")
+							DBG_TraceObject( o_jump_hotspot )
+							DBG_TraceEOL()
+							DBG_Error("Il manque une hierarchy entre une solonne et son HotSpot !!!")							
+						}
+						v_climb_position = @to_jump_hotspot OBJ_PosGet()
+						o_colonne = to_jump_hotspot
+						Proc_KK_Pillar_Set_Axe()
+						o_colonne = nobody
+						@to_jump_hotspot OBJ_BankingGeneralSet( -v_colonne_best_axe, Cv_VerticalVector)
+//						v_colonne_best_axe
+						v_climb_hand_offset = @to_jump_hotspot MATH_VecLocalToGlobal(av_climb_hand_offset[11][Ci_Climb_Offset_Jump])
+						@to_jump_hotspot OBJ_Reinit(vrai)
+					}
+					else if ( ti_capa &  HOTSPOT_Type_Vert)
+						v_climb_hand_offset = @o_jump_hotspot MATH_VecLocalToGlobal(av_climb_hand_offset[8][Ci_Climb_Offset_Jump])
+					else if ( ti_capa & HOTSPOT_Type_Saut)
+					{
+						
+						tv_sens = v_joy_sight_normalized
+						
+						tv_CTED = v_climb_position - (@o_jump_hotspot OBJ_HorizonGet() * @o_jump_hotspot OBJ_ScaleGet().x * 0.5)
+						tv_CTEG = v_climb_position + (@o_jump_hotspot OBJ_HorizonGet() * @o_jump_hotspot OBJ_ScaleGet().x * 0.5)
+						tf_distance_DG = MATH_VecNorm( tv_CTED - tv_CTEG)
+						tv_DG = (tv_CTEG - tv_CTED)  / tf_distance_DG					
+						DBG_RenderVector( tv_CTED + cvector( 0.0, 0.0 , 0.5), tv_DG * tf_distance_DG, color_bleu)
+						
+					// CALCUL DES INTERSECTIONS AVEC COTE D-G
+						//V1 = tv_CTED + lbd * tv_DG
+						//V2 = tv_temp + mu * LNK_GrabVectorGet(tmid_proposition)
+						// resoudre en x/y pour que V1 = V2
+						tf_delta = (tv_DG.x * tv_sens.y) - ( tv_DG.y * tv_sens.x )
+						if ( MATH_FloatNullEpsilon( tf_delta))
+						{
+							// collineaire
+							if ( MATH_VecDotProduct( tv_sens, tv_DG) > 0.0)
+							{
+								tf_lbdt = tf_distance_DG  // GAUCHE
+							}
+							else
+							{
+								tf_lbdt = 0.0	// DROITE
+							}
+						}
+						else
+						{
+							// Intersection ligne ligne
+							tf_lbdt = (( OBJ_PosGet().x - tv_CTED.x ) * tv_sens.y) - ( (OBJ_PosGet().y  - tv_CTED.y ) * tv_sens.x )
+							tf_lbdt /= tf_delta	
+						}
+						DBG_RenderVector( tv_CTED + (tv_DG * tf_lbdt), Cv_VerticalVector, color_jaune)
+						tf_lbdt = MATH_FloatLimit( tf_lbdt, 0.0, tf_distance_DG)
+
+						v_climb_position = tv_CTED + (tv_DG * tf_lbdt)
+				
+						if ( o_climb_0D_wp == o_jump_hotspot)	//Accroch main
+						{
+							@o_jump_hotspot OBJ_BankingGeneralSet( tv_HS_sight, tv_HS_bank)
+							o_jump_hotspot = nobody
+							v_climb_hand_offset = @o_climb_0D_wp MATH_VecLocalToGlobal(av_climb_hand_offset[6][Ci_Climb_Offset_Jump])
+							v_climb_normale = -@o_climb_0D_wp OBJ_SightGet()
+						}
+						else														// Saut sur les pieds
+							v_climb_hand_offset = -@o_jump_hotspot OBJ_SightGet() * 1.5
+					}
+					else if ( ACT_ActionGet( ) == Ci_Kanim_Swing_Jump_G 
+					|| ACT_ActionGet( ) == 182)	// Transition
+						v_climb_hand_offset = @o_jump_hotspot MATH_VecLocalToGlobal(av_climb_hand_offset[9][Ci_Climb_Offset_Jump])
+					else
+						v_climb_hand_offset = @o_jump_hotspot MATH_VecLocalToGlobal(av_climb_hand_offset[10][Ci_Climb_Offset_Jump])
+					if ( o_jump_hotspot)
+						@o_jump_hotspot OBJ_BankingGeneralSet( tv_HS_sight, tv_HS_bank)
+				}
+				else
+					v_climb_hand_offset = Cv_NullVector
+			}
+
+			tv_temp = v_climb_position - v_climb_hand_offset
+			tv_temp -= OBJ_PosGet()
+		
+			// Calcul de la durée de l impulsion.
+			
+			// CALCUL DE LA FORCE D IMPULSION POUR EFFECTUER LE SAUT PRECIS
+
+			if ( i_jump_force_keep_Z_speed)		// Saut apres Hotspot : bien liéer l enchainement des sauts donc durée du saut liée a la vitesse en Z
+			{
+				f_climb_impulsion_duration = DYN_LIB_Time_To_Reach_Z(DYN_SpeedGetVector(), Cv_Kong_Gravity, tv_temp.z, faux)
+				macro_render_Vector(OBJ_PosGet() , DYN_SpeedGetVector(), color_bleu)
+				if ( !MATH_FloatNullEpsilon(f_climb_impulsion_duration + 1.0) )
+				{
+					// Soit on a un sautpossible time != -1
+					v_climb_impulsion_force = DYN_LIB_Impulsion_Dir_Friction(OBJ_PosGet(), v_climb_position - v_climb_hand_offset,  Cv_Kong_Gravity, f_jump_friction, f_climb_impulsion_duration, faux, MATH_VecNormalize( DYN_SpeedGetVector()), 10)
+				}
+				else // Saut pas possible en conservant : faire un saut général
+					v_climb_impulsion_force = DYN_LIB_ImpulsionGet_Friction(OBJ_PosGet(), v_climb_position - v_climb_hand_offset, Cv_Kong_Gravity, f_jump_friction, f_climb_impulsion_duration, faux, 0.0)
+
+				macro_render_Vector(OBJ_PosGet() + v_climb_impulsion_force, - v_climb_impulsion_force, color_blanc)
+			}	
+			else
+			{
+				tf_hauteur_saut = 0.0
+				f_climb_impulsion_duration = 0.0	// Cas général prendre le saut minimum acceptable
+				v_climb_impulsion_force = DYN_LIB_ImpulsionGet_Friction(OBJ_PosGet(), v_climb_position - v_climb_hand_offset, Cv_Kong_Gravity, f_jump_friction, f_climb_impulsion_duration, faux, tf_hauteur_saut) //0.0)
+				macro_render_Vector(OBJ_PosGet() + v_climb_impulsion_force, - v_climb_impulsion_force, color_blanc)
+			}
+
+			i_flag_climb_impulsion_done = vrai
+			f_climb_impulsion_time = TIME_Get()
+
+			macro_render_Vector(OBJ_PosGet(), v_climb_position - OBJ_PosGet(), color_blanc)	
+		
+			DYN_TractionSet(Cv_NullVector)
+			DYN_StreamSet(Cv_NullVector)
+			DYN_FrictionVectorSet(cvector(f_jump_friction, f_jump_friction, 0.0))
+			DYN_GravitySet(Cv_Kong_Gravity)
+			DYN_SpeedSetVector(v_climb_impulsion_force)
+			COL_ColSetActivationSet(none, C_bit_zdm_pied)
+			if ( !o_jump_hotspot || !(o_jump_hotspot.des_int1 & HOTSPOT_Type_Saut))
+			{
+				v_zdm_pos = v_zdm_pos  //cvector(0.0, 3.4, 0.0)
+			}
+			else
+				o_jump_hotspot = nobody
+
+
+
+
+			tf_coef = ACT_DurationGet(ACT_ActionGet(), 0)
+			tf_duree = f_climb_impulsion_duration 
+			if ( ACT_ActionIsTransition())
+			{
+				tf_coef = ACT_DurationGet(ACT_ActionGetTransition(), 0)
+				tf_duree = f_climb_impulsion_duration - ACT_DurationGet(ACT_ActionGet(), 0)
+				if ( tf_duree <= 0 )
+					f_climb_impulsion_duration  = 1.05	// pour diviser par 1.0 a la ligne suivante
+			}
+			tf_coef /= tf_duree - 0.05
+			tf_coef *= ANI_FrequencyGet(0)
+			
+			ti_freq = MATH_FloatLimit(tf_coef, 1, 255.0)
+			i_jump_clean_freq = ti_freq
+//			ANI_FrequencySet(0, ti_freq)

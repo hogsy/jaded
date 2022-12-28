@@ -1,0 +1,195 @@
+#include "MM_defines.var"
+
+int					ti_i
+
+vector			tv_temp
+
+float				tf_size
+
+object			to_bone
+object			to_gao
+
+
+
+// ANIMS ? ================================================
+if( ACT_HasActionKit() )
+{
+	i_mouvement = Ci_mouvement_IA_Anim
+	i_2D_virtual_network = vrai
+}
+else
+{
+	i_mouvement = Ci_mouvement_IA_only
+	i_2D_virtual_network = faux
+}
+
+
+// BV ====================================================
+tf_size = 30.0
+tv_temp = cvector(tf_size, tf_size, tf_size)
+BV_MinSet(-tv_temp)
+BV_MaxSet(tv_temp)
+
+
+// EAU ===================================================
+if (WTR_activation)
+{
+	// Paramètres INT
+	if (WTR_sky_color) 
+		WTR_SetL(Ci_WTR_sky_color, WTR_sky_color)
+	if (WTR_bottom_color) 
+		WTR_SetL(Ci_WTR_bottom_color, WTR_bottom_color)
+	if (WTR_water_color) 
+		WTR_SetL(Ci_WTR_water_color, WTR_water_color)
+	
+	// PAS TOUCHE !!!
+	WTR_SetL(3, 48)				// FRUSTRUM MESH SIZE X
+	WTR_SetL(4, 128)			// FRUSTRUM MESH SIZE Y
+	WTR_SetL(5, 6)				// SPECTRUM POWER OF 2
+	WTR_SetL(6, 5)				// CHOPPY SPECTRUM POWER OF 2
+
+	// Paramètres float
+	WTR_SetF(Ci_WTR_Waves_Height, WTR_Waves_Height)
+	WTR_SetF(Ci_WTR_Choppy, WTR_Choppy)
+	WTR_SetF(Ci_WTR_Tiling, WTR_Tiling)
+	WTR_SetF(Ci_WTR_Speed, WTR_Speed)
+	WTR_SetF(Ci_WTR_Wave_dir, WTR_Wave_dir)
+	WTR_SetF(Ci_WTR_Wave_Prop, WTR_Wave_Prop)
+	WTR_SetF(Ci_WTR_Water_Height, WTR_Water_Height)
+}
+
+// SPECIAL FLAGS =========================================
+if (i_SF_NePasSeRejouerSiMort)
+{
+	int		ti_SF_AlreadyDead
+	i_SF_AlreadyDead = AI_SFDynGet(0, SF_MinById, SF_MaxById)		// Alloc
+	Super_SpecialFlag_get(i_SF_AlreadyDead, ti_SF_AlreadyDead)			// Test SF
+	if (ti_SF_AlreadyDead)																	// Si SF = 1 alors DESTROY
+		OBJ_Destroy()
+}
+
+AI_RunContext(CTX_Normal)
+
+o_dup_wp_occluder = @get_WP OBJ_Duplicate(OBJ_PosGet())
+i_move_mode = Ci_move_mode_idle
+
+// INIT MODULES =========================================
+OBJ_FlagsControlSet(OBJ_C_ControlFlag_AlwaysVisible, none)
+BigMonster_HierarchyReset()
+BigMonster_Init_Modules()
+
+//if( o_wp_init )
+//{
+//	BigMonster_Teleport(o_wp_init)
+//	BigMonster_Modules_Update(0)
+//}
+
+if( ! o_water_Z )
+	DBG_Error("o_water_Z non spécifié !!! (wp positionné à la hauteur de l'eau)")
+
+BigMonster_Virtual_Net_Init()
+OBJ_FlagsControlSet(none, OBJ_C_ControlFlag_AlwaysVisible)
+
+AI_Execute("MM_Exec_Set_OBBOX")
+
+@get_global o_monstre_marin = OBJ_Me()
+f_HP_cur = f_HP_max
+OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_Msg, 0)			// structure message (CINE)
+
+// MACHOIRE
+o_machoire = ANI_CanalObjectGet(Anim_Canal_Machoire)
+v_bouche_repos = @o_machoire MATH_VecGlobalToLocal(@o_machoire OBJ_BankingGet())
+v_bouche_current = v_bouche_repos
+f_bouche_ouvre_angle = Cf_PiBy4
+f_bouche_ferme_angle = - ( 2.5 * Cf_PiBy8 )
+
+// COLSET ========================================================
+COL_SwapToSpecific(C_zde_corps)
+COL_ZonePosSet(C_zde_corps, cvector(0.0, -4.0, -0.9))
+COL_ZoneSizeSet(C_zde_corps, cvector(3.0, 3.0, 3.0))
+COL_SwapToSpecific(C_zde_fight)
+COL_ZonePosSet(C_zde_fight, cvector(0.0, -4.5, -0.9))
+//COL_ZoneSizeSet(C_zde_fight, cvector(2.0, 2.0, 2.0))
+COL_ZoneSizeSet(C_zde_fight, cvector(2.25, 2.25, 2.25))
+COL_ColSetActivationSet(all, none)			// active toutes les zde
+// SIZE ZDE CORPS ---------------------------
+av_corps_size[0] = cvector(3.0, 3.0, 3.0)
+av_corps_size[1] = cvector(3.0, 3.0, 3.0)
+av_corps_size[2] = cvector(2.5, 2.5, 2.5)
+av_corps_size[3] = cvector(2.25, 2.25, 2.25)
+av_corps_size[4] = cvector(2.0, 2.0, 2.0)
+// POS GAO CORPS ---------------------------
+av_corps_pos[0] = cvector(0.0, 1.0, 0.0)
+av_corps_pos[1] = cvector(0.0, 1.0, 0.0)
+av_corps_pos[2] = cvector(0.0, 1.0, 0.0)
+av_corps_pos[3] = cvector(0.0, 0.5, 0.0)
+av_corps_pos[4] = cvector(0.0, 0.5, 0.0)
+// CANAL SNAP GAO CORPS ------------
+ai_corps_canal[0] = Ci_queue_canal_premier
+ai_corps_canal[1] = Ci_queue_canal_premier+1
+ai_corps_canal[2] = Ci_queue_canal_premier+3
+ai_corps_canal[3] = Ci_queue_canal_premier+5
+ai_corps_canal[4] = Ci_queue_canal_premier+7
+// GAO ZDE CORPS ---------------------------
+for(ti_i = 0; ti_i < Ci_corps_nb; ti_i++)
+{
+	to_gao = ao_corps[ti_i]
+	if( to_gao )
+	{
+		@to_gao COL_SwapToSpecific(C_zde_corps)
+		@to_gao COL_ZonePosSet(C_zde_corps, Cv_NullVector)
+		@to_gao COL_ZoneSizeSet(C_zde_corps, av_corps_size[ti_i])
+	}
+}
+
+o_dynamite = nobody
+
+// mission, info, bone, bone, lod min, lod max, frame min, radius
+OBJ_InfoPhotoParamSet( 0, 0, Anim_Canal_Tete, Anim_Canal_Tete, 0.0, 0.0, 0.0, 2.5 * OBJ_ZoomGet())		// Bouée d'aide à la visée
+
+// vitesse
+f_speed_inclinaison_coef = 1.0
+f_speed_direction_coef = 1.0
+BigMonster_UpdateSpeed(f_speed_idle_max, f_speed_idle_blend)
+
+
+AI_Execute("MM_Exec_Dyn_On")
+
+f_dans_l_eau_duree = 99.0
+
+// ACTEURS
+o_jack = @"univ" ao_AllHumains[C_ID_Joueur]
+//o_jimmy = @"univ" ao_AllHumains[C_ID_Jimmy]
+//o_denham = @"univ" ao_AllHumains[C_ID_Denham]
+//o_hayes = @"univ" ao_AllHumains[C_ID_Hayes]
+
+// REGARD
+o_bone_cou = ANI_CanalObjectGet(Anim_Canal_Cou)
+o_bone_tete = ANI_CanalObjectGet(Anim_Canal_Tete)
+
+v_look_pos = OBJ_PosGet() + (10 * OBJ_SightGet())
+v_look_pos_cur = v_look_pos
+DBG_RenderVector(@o_bone_cou OBJ_PosGet(), @o_bone_cou OBJ_BankingGet(), color_bleu)
+v_cou_banking_init = @o_bone_cou MATH_VecGlobalToLocal(@o_bone_cou OBJ_BankingGet())
+DBG_RenderVector(@o_bone_tete OBJ_PosGet(), @o_bone_tete OBJ_BankingGet(), color_bleu)
+v_tete_banking_init = @o_bone_tete MATH_VecGlobalToLocal(@o_bone_tete OBJ_BankingGet())
+
+
+// MOVE
+v_move_pos_start = OBJ_PosGet() - (10 * OBJ_SightGet())
+//v_move_pos_dest_cur = OBJ_PosGet()
+BigMonster_MovePosDestUpdate(OBJ_PosGet())
+v_sight_avant_sinus = OBJ_SightGet()
+
+
+// CALLBACK & TRACKS =============================================
+AI_CBAdd(OBJ_Me(), CallBack_After_Blend, "MM_CALLBACK_AfterBlend")
+AI_CBAdd(OBJ_Me(), CallBack_Info, "MM_CALLBACK_Info")
+AI_CBAdd(OBJ_Me(), CallBack_WhenDestroy, "MM_CALLBACK_WhenDestroy")
+AI_TrackChange(Ci_Track_Reflex, "MM_TRACK_Reflex")
+if( i_DBG_track_test )
+	AI_TrackChange(Ci_Track_Etat, "MM_ETAT_TEST")
+else
+	AI_TrackChange(Ci_Track_Etat, "MM_ETAT_MOVE")
+AI_TrackChange(Ci_Track_Post, "MM_TRACK_More")
+

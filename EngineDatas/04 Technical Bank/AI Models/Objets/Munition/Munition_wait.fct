@@ -1,0 +1,108 @@
+//int				ti_rank
+//int				ti_status
+//int				ti_param
+//int				i, cpt
+//int				ti_snd
+//
+//object		EVT_Sender
+//
+//message	tmsg_filter
+//messageid	tmid_paf_event
+//
+//object		to_obj, to_obj1
+//int				ti_shape
+//int				ti_temp
+//
+//ti_shape = 0
+//switch(mi_Type)
+//{
+//	case 1:	ti_shape = 2 break
+//	case 2:	ti_shape = 1 break
+//	case 3:	ti_shape = 4 break
+//	case 4:	ti_shape = 3 break
+//	case 5:  ti_shape = 5 break
+//}
+//
+//for(i = 0; i < 10; i++)
+//{
+//	to_obj = ANI_CanalObjectGet(2 + i)
+//	ANI_ShapeSelect(2 + i, 0)
+//}
+//
+//cpt = 0
+//for(i = i_rand; cpt < mi_Quantity; i = MATH_Modulo(i + 1, 10))
+//{
+//	cpt++
+//	to_obj = ANI_CanalObjectGet(2 + i)
+//	ANI_ShapeSelect(2 + i, ti_shape)
+//}
+//
+//if(!mi_Quantity) return
+//if(mi_Quantity == 1 && i_wait_taken) 
+//{
+//	if(!@"univ" o_ramasse_objet_who) 
+//	{
+//		@"univ" Float_speciaux_sauve[i_SF_AlreadyPlayed] = 1
+//		mi_Quantity = 0
+//		i_wait_taken = faux
+//	}
+//	
+//	return
+//}
+//
+//OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_DesignStruct, 0)
+//
+//to_obj = AI_MainActorGet(C_ID_Jack)
+//if(OBJ_SqrDist(to_obj) < 4) OBJ_Me().des_int1 = Ci_DISPLAY_TAKE
+//else OBJ_Me().des_int1 = 0
+//
+//// UN HUMAIN
+//mo_ramasse = LNK_ClientGet_Interaction( mid_ramasse, 1, "Munition_add_data", nofunc, nofunc)
+//if(mo_ramasse) LNK_InteractionPositionSet(mid_ramasse, OBJ_PosGet())
+//if (	mo_ramasse && LNK_InteractionCStatusGet(mid_ramasse) == Ci_LNKINT_CSTATUS_Interact)
+//{
+//	if(mi_Type == 5)
+//		@"univ" i_ramasse_objet = Ci_weapon_ID_grenade
+//	else
+//		@"univ" i_ramasse_objet = Ci_weapon_ID_munition + mi_Type
+//	@"univ" o_ramasse_objet_who = mo_ramasse
+//	mo_ramasse = LNK_ClientGet(Ci_LNK_INTERACTION, mid_ramasse, faux, nofunc, nofunc, nofunc)
+//	i_wait_taken = vrai
+//}
+//
+//// JACK PREND VOLONTAIREMENT
+//if(i_wait_taken && !@"univ" o_ramasse_objet_who)
+//{
+//	mi_Quantity--
+//	@"univ" Float_speciaux_sauve[i_SF_AlreadyPlayed]--
+//	i_wait_taken = faux
+//}
+//
+//if (OBJ_CapaTest(OBJ_Capa_15))
+//{
+//	OBJ_CapaSet(0, OBJ_Capa_15)
+//	
+//	if(mi_Type == 5)
+//	{
+//		@"univ" i_ramasse_objet = Ci_weapon_ID_grenade
+//		@"univ" o_ramasse_objet_who = AI_MainActorGet(C_ID_Jack)
+//		mo_ramasse = LNK_ClientGet(Ci_LNK_INTERACTION, mid_ramasse, faux, nofunc, nofunc, nofunc)	
+//		i_wait_taken = vrai
+//	}
+//	else
+//	{
+//		ti_temp = @"univ" i_weapon_ammunition_max[mi_Type][C_ID_Jack] - @"univ" i_weapon_ammunition_reserve[mi_Type][C_ID_Jack]
+//		if(!ti_temp)
+//		{
+//			to_obj = AI_MainActorGet(C_ID_Jack)
+//			@"KingKong/Humain" to_obj i_request_txt = GeneJak_C_full_ammo
+//		}
+//		else
+//		{	
+//			@"univ" i_ramasse_objet = Ci_weapon_ID_munition + mi_Type
+//			@"univ" o_ramasse_objet_who = AI_MainActorGet(C_ID_Jack)
+//			mo_ramasse = LNK_ClientGet(Ci_LNK_INTERACTION, mid_ramasse, faux, nofunc, nofunc, nofunc)	
+//			i_wait_taken = vrai
+//		}
+//	}
+//}

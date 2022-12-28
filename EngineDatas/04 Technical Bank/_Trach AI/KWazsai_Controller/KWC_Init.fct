@@ -1,0 +1,44 @@
+#include "KWC_Defines.var"
+
+int i_Index
+
+//mi_DEBUG_MsgsOn = vrai
+
+// RAZ VAR DBG SI PAS EN EDITEUR 
+if( AI_GetCurSystem() != 10 )
+{
+	mi_DEBUG_MsgsOn = faux
+}
+
+
+if ( mf_ChanceForEachSpearToInactiveLaunch > 1.0 )
+{
+	mf_ChanceForEachSpearToInactiveLaunch = 1.0
+}
+else if ( mf_ChanceForEachSpearToInactiveLaunch < 0.0 )
+{
+	mf_ChanceForEachSpearToInactiveLaunch = 0.0
+}
+
+mf_DigwazaiTimeStamp	= TIME_Get()
+
+// setup the message to be sent to the rain of spears' AI
+MSG_SetNull( mm_Msg )
+
+mm_Msg.msg_sender		= OBJ_Me()																		// sender of the message
+mm_Msg.msg_vec1			= cvector( mf_ChanceForEachSpearToInactiveLaunch, 0.0, 0.0 )	// x-value of vector represents chance for each PDL spear to be launched in inactive mode
+mm_Msg.msg_id				= vrai
+
+mo_ANN						= @"univ" ao_AllHumains[C_ID_Joueur]
+mo_KONG 						= @"univ" ao_AllHumains[C_ID_Kong]
+
+if ( mi_UseStaticTargetting )
+{
+	mm_Msg.msg_gao2 	= OBJ_Me()
+}
+else
+{
+	mm_Msg.msg_gao2 	= nobody
+}
+
+AI_TrackCurChange( "KWC_Wait.fct" )

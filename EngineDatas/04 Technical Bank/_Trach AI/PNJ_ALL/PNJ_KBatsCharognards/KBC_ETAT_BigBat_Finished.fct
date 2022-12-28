@@ -1,0 +1,284 @@
+#include "KBC_defines.var"
+
+#define 		Finish_Debut_Controle		0.67		// 0.29 (%) de l'anim
+
+vector			tv_oeil_to_bat
+vector			tv_offset_to_Kong
+vector			tv_sight_init
+vector			tv_center_pos
+vector			tv_pos
+
+messageid		tmid_vision
+
+float				tf_finished_timeout 
+float				tf_kong_loose_coef
+float				tf_percent
+float				tf_secure_dt
+
+int					ti_liaison
+int					ti_KK_position
+int					ti_KK_orientation
+
+object			to_bone
+object			to_center
+
+string				str_txt
+							
+		
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	OBJ_CapaSet(none, CAPA_BigBat_Attente_Finish)
+	i_sort_etat = faux
+	o_finished_actor = LNK_ThisClientGet(o_finished_actor,Ci_LNK_KKFINISH_ON_KONG, mid_grabbed_by_Kong, faux, nofunc, nofunc, nofunc)
+	o_grabbed_actor = nobody
+	o_finished_actor_ref = nobody
+	
+	// rallume la dyna
+	AI_Execute("KBC_exec_dyn_on")
+	DYN_GravitySet(Cv_NormalGravity)
+	COL_ColSetActivationSet(C_bit_zdm_pied, none)			// active zdm pied
+	return
+}
+
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_KK_Finished )
+{
+	i_etat_ancien_ancien = i_etat_ancien
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_KK_Finished
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	KBC_DBG_Trace(i_DBG_trace_etat, "etat kk finishED")
+	KBC_DBG_Trace(i_DBG_trace_etat, "subit un finish de KONG ")
+	o_finished_actor_ref = o_finished_actor
+	v_finished_pos_init = OBJ_PosGet()
+	i_finished_end = faux
+	f_finished_force_kong = 0.0
+	f_finished_force_nmi = 0.0
+	f_finished_blend_coef = 0.0
+	AI_Execute("KBC_exec_dyn_on")
+	DYN_GravitySet(Cv_NormalGravity)
+	
+	f_finished_pos_coef = 0.0
+	
+	// POSITIONNEMENT DE LA BAT AU CENTRE DE L'ARENE
+	to_bone = ANI_CanalObjectGet(Anim_Canal_Snap_KONG)
+	
+	to_center = o_centre_arene
+	if( ! to_center )
+		to_center = @get_global o_KK_finish_arena_center
+	if( to_center )
+	{
+		tv_center_pos = @to_center OBJ_PosGet()
+		tv_pos = OBJ_PosGet()
+//		tv_center_pos.z = tv_pos.z		// bordel pouvez pas foutre le wp au niveau du sol non [[[`-'è~#{à-`^\`=-è#]]] ???? !!!!! 
+		tv_sight_init = OBJ_SightGet()
+		tv_offset_to_Kong = MATH_VecGlobalToLocal(@o_finished_actor_ref OBJ_PosGet() - OBJ_PosGet())
+ 		OBJ_BankingGeneralSet(tv_center_pos - OBJ_PosGet(), OBJ_BankingGet())
+		tv_oeil_to_bat = OBJ_PosGet() - @to_bone OBJ_PosGet()
+		if( ! MATH_VecNullEpsilon(tv_oeil_to_bat) )
+			tv_oeil_to_bat = MATH_VecBlend(tv_oeil_to_bat, Cv_NullVector, f_finished_pos_coef)
+		OBJ_PosSet(tv_center_pos+ tv_oeil_to_bat)
+	}
+	@o_finished_actor_ref OBJ_PosSet(@to_bone OBJ_PosGet())
+ 	@o_finished_actor_ref OBJ_BankingGeneralSet(- @to_bone OBJ_SightGet(), @to_bone OBJ_BankingGet())
+ 	KBC_action_frequency_set(1.0)
+ 	KBC_reset_attaque()
+ 	OBJ_CapaSet(CAPA_BigBat_Attente_Finish, none)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// ANALYSE ==============================================================
+o_finished_actor = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong, vrai, nofunc, nofunc)
+if( ! o_finished_actor )
+	macro_change_etat("KBC_ETAT_BigBat_Sol_Wait_Finished")
+else
+	KBC_Interet_Update(mid_interet_attaque, C_EVENT_InteretStatusGrabbed, o_finished_actor, tmid_vision)
+
+// COMPORTEMENT ==============================================================
+
+i_flag_neck = faux
+
+ti_liaison = -1
+ti_KK_position = faux
+ti_KK_orientation = faux
+str_txt = "???"
+
+ti_liaison = LNK_GrabKong_ActionGet(mid_grabbed_by_Kong)
+switch( ti_liaison )
+{
+	case Ci_GrabKong_FinishIntro :
+		str_txt = "intro"
+		if( ACT_ActionGet() != ACTION_Agonie_Avant_Finished )
+			ACT_ActionSet(ACTION_Agonie_Avant_Finished)
+		break
+	
+	case Ci_GrabKong_FinishSePlace :
+		str_txt = "se place"
+		f_finished_blend_coef = 6.0 * TIME_GetDt()
+		if( ACT_ActionGet() != ACTION_Finished_SePositionne )
+			ACT_ActionSet(ACTION_Finished_SePositionne)
+		break
+		
+	case Ci_GrabKong_FinishDeb :
+		if( ACT_ActionGet() == ACTION_Finished_SePositionne )
+		{
+			f_time_start_etat = 0.0
+			DYN_Off()
+			COL_ColSetActivationSet(none, C_bit_zdm_pied)			// désactive zdm pied
+		}
+		if ( ! i_finished_end )
+		{
+			if ( f_time_start_etat < Finish_Debut_Controle)
+			{
+				str_txt = "challenge (init)"
+				f_finished_frame = ANI_CurrentFrameGet(0)
+				f_finished_force_nmi = 2.0
+			}
+			else
+			{
+				// DEBUT du CONTOLE JOUEUR
+				str_txt = "challenge !!!"
+
+				// TEST Frame FAILLED
+				if ( f_finished_frame < 5 )
+				{
+					// FAILLED
+					i_finished_end = vrai		// TREX BAT KONG
+					LNK_GrabKong_ActionSet(mid_grabbed_by_Kong, Ci_GrabKong_FinishPerdu)
+					// dyna
+					AI_Execute("KBC_exec_dyn_on")
+					DYN_GravitySet(Cv_NormalGravity)
+					COL_ColSetActivationSet(C_bit_zdm_pied, none)			// active zdm pied
+				}
+
+				// GESTION des FORCES -----------------------------------------------------------------------------------------
+
+				// TIME OUT & PERTE TROP IMPORTANTE
+				tf_finished_timeout = 10
+				if ((f_finished_force_kong - f_finished_force_nmi) < -2.5)
+					tf_finished_timeout = 0
+				
+				tf_secure_dt = MATH_FloatLimit(TIME_GetDt(), 0.016, 0.048)		// SECURE DT FOR LOW FRAMERATE !!!
+				
+				// NE PAS MONTER LA FORCE DE L'ENNEMI SI KONG EST FORT
+				if (f_finished_force_kong < 2.0)
+					f_finished_force_nmi = MATH_FloatMin(f_finished_force_nmi + (2.0 * tf_secure_dt), 10)
+				
+				// VITESSE DE REDUCTION DE LA FORCE DE KONG EN RAGE & NORMAL
+				if( @o_finished_actor_ref Proc_KK_RAGE_Test() )
+					tf_kong_loose_coef = 3.0
+				else
+					tf_kong_loose_coef = 20.0
+				
+				// REDUCTION DE LA FORCE DE KONG
+				f_finished_force_kong = MATH_FloatMax(0,f_finished_force_kong - (tf_kong_loose_coef * tf_secure_dt))
+				
+				// GESTION DU BOUTON
+				if (f_time_start_etat < (Finish_Debut_Controle + tf_finished_timeout ))
+				{	
+					if( @o_finished_actor_ref Proc_KK_Mashing_Button_Just_Pressed() )
+					{
+						#ifndef _FINAL_
+						if( @"univ" i_cheat_page == 4 )
+							Str_DisplayTextOnce("MASHING !!!", cvector(0.45,0.75,0))
+						#endif
+						// VALEUR DE LA FORCE DE KONG VARIANT EN FCT DU % AGE DE FINISH
+						tf_percent = @o_finished_actor_ref Proc_KK_Mashing_Pct()
+//						f_finished_force_kong = 2.5 + (0.5-(tf_percent* 0.5))
+						f_finished_force_kong = 3.5 + (0.5-(tf_percent* 0.5))
+						f_finished_force_nmi = MATH_FloatMax(0,f_finished_force_nmi - 0.5)
+					}
+				}
+
+				// AJOUT DES FORCES
+				f_finished_frame += f_finished_force_kong
+				f_finished_frame -= f_finished_force_nmi
+				if ( f_finished_frame > ANI_NbFrameGet(0))
+				{
+					// FIn du FInish Kong Gagne
+					LNK_GrabKong_ActionSet( mid_grabbed_by_Kong, Ci_GrabKong_FinishFin )
+				}
+				else
+				{
+					ANI_RatioSet(0, f_finished_frame / ANI_NbFrameGet(0) )		
+					@o_finished_actor_ref ANI_RatioSet(0, f_finished_frame / @o_finished_actor_ref ANI_NbFrameGet(0) )		
+				}
+				// GESTION des FORCES -----------------------------------------------------------------------------------------
+			}
+			if ( ! i_finished_end )
+				ACT_ActionSet(ACTION_Finished_Challenge)
+			else
+				ACT_ActionSet(ACTION_Finished_KKLoses)		// KONG perd
+		}
+		break
+		
+	case	Ci_GrabKong_FinishFin :		// KONG gagne
+		str_txt = "kong a gagné"
+		if( ACT_ActionGet() != ACTION_Finished_KKWins)
+		{
+			ACT_ActionSet(ACTION_Finished_KKWins)
+			// repositionne KONG nickel au début de l'anim
+			to_bone = ANI_CanalObjectGet(Anim_Canal_Snap_KONG)
+			@o_finished_actor_ref OBJ_PosSet(@to_bone OBJ_PosGet())
+			@o_finished_actor_ref OBJ_BankingGeneralSet(OBJ_SightGet(), OBJ_BankingGet())
+		}
+		break
+		
+	case Ci_GrabKong_FinishGagne :
+		str_txt = "kong a gagne - anim terminée"
+		o_finished_actor = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong, faux, nofunc, nofunc)		// Fin de la liaison
+		macro_change_etat("KBC_ETAT_Sol_Mort")
+		break
+		
+	case Ci_GrabKong_FinishPerdu :
+		str_txt = "kong a perdu"
+		break
+}
+
+if( ACT_ActionGet() == ACTION_Finished_KKWins )		// liaison coupée !!!
+{
+	KBC_STATS_NMI_Killed(o_Kong)
+	
+//	if( ! i_big_bat_finished_blood_01 && ANI_CurrentFrameGet(0) > 8 )
+//	{
+//		i_big_bat_finished_blood_01 = vrai
+//		to_bone = ANI_CanalObjectGet(40)		// aile gauche
+//		KBC_GFX_Particules(@to_bone OBJ_PosGet(), - @to_bone OBJ_HorizonGet())
+//	}
+	if( ! i_big_bat_finished_blood_02 && ANI_CurrentFrameGet(0) > 192 )
+	{
+		OBJ_CapaSet(CAPA_BigBat_Finished_CrashDown, none)
+		i_big_bat_finished_blood_02 = vrai
+//		to_bone = ANI_CanalObjectGet(BAT_canal_torse)	
+//		KBC_GFX_Particules(@to_bone OBJ_PosGet(), OBJ_SightGet())
+	}
+	if( ANI_CurrentFrameGet(0) > 200 && ! OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna) )
+	{
+		AI_Execute("KBC_exec_dyn_on")
+		DYN_GravitySet(Cv_NormalGravity)
+		COL_ColSetActivationSet(C_bit_zdm_pied, none)			// active zdm pied
+	}
+}
+
+#ifndef _FINAL_
+if( @"univ" i_cheat_page == 4 )
+{
+	Str_DisplayTextOnce("LIAISON = ", cvector(0.4,0.85,0))
+	Str_DisplayTextOnce(str_txt, cvector(0.5,0.85,0))
+	Str_DisplayTextOnce("FRAME = ", cvector(0.4,0.9,0))
+	Str_DisplayFloatOnce(f_finished_frame, cvector(0.5,0.9,0))
+}	
+#endif
+

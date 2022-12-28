@@ -1,0 +1,205 @@
+#include "PNJ_Raptor_defines.var"
+
+int		ti_i
+int		ti_index
+int		ti_flag_exit
+int		ti_flag_a_table
+int		ti_best_index
+int		ti_flag_can_fight
+
+float	tf_nearest_dist
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+
+	if ( ! i_flag_saut )
+	{
+		i_way_computation_mode = -1
+		i_way_computation_old_mode = -1
+	}
+
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_VALA)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_VALA
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = AI_TrackCurGet()
+
+//	PNJ_Raptor_Uncollide_Humans()
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =======================================================================================================
+AI_Execute("PNJ_Raptor_exec_check_msg")
+
+AI_Execute("PNJ_Raptor_exec_check_vision")
+
+AI_Execute("PNJ_Raptor_exec_check_sound")
+
+AI_Execute("PNJ_Raptor_exec_check_collision")
+
+AI_Execute("PNJ_Raptor_exec_check_paf")
+if (i_flag_paf_fly)
+	macro_change_etat("PNJ_Raptor_ETAT_PAF_FLY")
+if (i_flag_paf_fall)
+	macro_change_etat("PNJ_Raptor_ETAT_PAF_FALL")
+if (i_flag_paf_repousse || i_flag_paf_slide || !f_lifecur)
+	macro_change_etat("PNJ_Raptor_ETAT_PAF_SLIDE")
+
+AI_Execute("PNJ_Raptor_exec_check_shoot")
+
+AI_Execute("PNJ_Raptor_exec_update_best_interest")
+
+AI_Execute("PNJ_Raptor_exec_check_requin")
+
+AI_Execute("PNJ_Raptor_exec_check_vala")
+
+AI_Execute("PNJ_Raptor_exec_test_bite")
+
+ti_flag_can_fight = vrai
+
+if ( i_flag_force_fuite )
+	ti_flag_can_fight = faux
+else if ( ! i_flag_in_my_territory )
+	ti_flag_can_fight = faux
+else if (MSG_GlobalIsValid(mid_vala))
+	ti_flag_can_fight = faux
+else if (i_perceived_best_actor_index == -1)
+	ti_flag_can_fight = faux
+else if ( ! ai_perceived_accessible[i_perceived_best_actor_index] )
+	ti_flag_can_fight = faux
+	
+if (ti_flag_can_fight)
+	macro_change_etat("PNJ_Raptor_ETAT_ATTENTE")
+
+
+// COMPORTEMENT =================================================================================================
+if (i_way_wp_nb && ao_way_wp[0])
+{
+	i_flag_look = vrai
+	v_look_pos = @ao_way_wp[0] OBJ_PosGet()
+	v_look_pos.z += 1.0
+}
+
+//i_flag_look = vrai
+//v_look_pos = @ao_head_bones[i_head_bone_nb] OBJ_PosGet()
+//v_look_pos += OBJ_SightGet() * 3.0
+//v_look_pos += MATH_VecRotate(OBJ_BankingGet(), OBJ_SightGet(), TIME_Get() * 4.0) * 2.0
+
+i_way_computation_mode = Ci_WAY_MODE_VALA
+AI_Execute("PNJ_Raptor_exec_way_find_dest_pos")
+
+//if (i_flag_blesse)
+//{
+//	i_flag_force_fuite = faux
+//	i_flag_display_i_am_back	= vrai
+//	macro_change_etat("PNJ_Raptor_ETAT_ATTENTE")
+//}
+
+i_flag_run = vrai
+
+AI_Execute("PNJ_Raptor_exec_way_move")
+AI_Execute("PNJ_Raptor_exec_select_action")
+
+// JE NE TROUVE PAS DE CHEMIN POUR ATTEINDRE MON POINT DE FUITE
+if (o_fuite_wp && i_way_status & Ci_WAY_STATUS_NO_NET_WAY)
+{
+	o_fuite_wp = nobody
+	
+#ifndef _FINAL_
+	DBG_TraceFloat(TIME_Get())
+	DBG_TraceString(" => ")
+	DBG_TraceObject(OBJ_Me())
+	DBG_TraceString(" ne peut pas accéder à son point de fuite ")
+	DBG_TraceEOL()
+#endif
+}
+
+if (! i_way_wp_nb && ! i_way_moving && (o_fuite_wp == nobody || o_current_wp == o_fuite_wp))
+{
+	f_wait_delay -= MATH_FloatMin(f_wait_delay, TIME_GetDt())
+
+	if (!f_wait_delay && ( AI_TriggerIsValid(trigger_leave_hide_position) &&  ! call_trigger(trigger_leave_hide_position) ) )
+		f_wait_delay = 0.001
+
+	if (MSG_GlobalIsValid(mid_vala))
+		MSG_GlobalDelete(mid_vala, C_EVENT_EOFDEL)
+
+	switch(raptor_type)
+	{
+		case C_ID_Tyranosaure :
+			ti_flag_a_table = vrai
+			break
+			
+		default:
+
+			if (o_current_wp && @o_current_wp OBJ_CapaTest(Ci_Capa_Fuite))
+			{
+				ti_flag_a_table = faux
+			
+				ti_best_index = -1
+				tf_nearest_dist = Cf_Infinit	
+	
+				// On regarde s'il y a des persos accessibles sur l'aire de jeu
+				for (ti_i = 0; ti_i < i_perceived_actor_nb; ti_i++)
+				{
+					// Un perso non accessible ne m'interesse pas
+					if (! ai_perceived_accessible[ti_i] )
+						continue
+						
+					// Un cadavre déjà traité ne m'interesse pas
+//					if (ai_perceived_status[ti_i] & Ci_PERCEIVED_IS_DEAD && PNJ_Raptor_Is_Body_Memorised(ao_perceived_actor[ti_i]))
+					if (ai_perceived_status[ti_i] & Ci_PERCEIVED_BODY_MEMORISED)
+						continue
+			
+					if (af_perceived_dist[ti_i] < tf_nearest_dist)
+					{
+						ti_best_index = ti_i
+						tf_nearest_dist = af_perceived_dist[ti_i]
+					}
+				}
+				
+				if (ti_best_index != -1)
+				{
+					// OK, j'ai quelque chose à bouffer
+					ti_flag_a_table = vrai
+					
+					ai_perceived_seen[ti_best_index] = vrai
+					PNJ_Raptor_Best_Interet_Update(ti_best_index)
+			
+					break
+				}
+			}
+			else
+			{
+				ti_flag_a_table = vrai
+			}
+	}
+
+	if (!f_wait_delay && ti_flag_a_table)
+	{
+		i_flag_force_fuite = faux
+		i_flag_display_i_am_back	= vrai
+		macro_change_etat("PNJ_Raptor_ETAT_ATTENTE")
+	}
+}
+
+

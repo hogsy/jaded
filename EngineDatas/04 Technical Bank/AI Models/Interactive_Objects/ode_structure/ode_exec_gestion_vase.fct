@@ -1,0 +1,56 @@
+#include "ode_defs.var"
+
+int 		instance
+int			i, i_object_dans_la_vase
+float		tf_poids
+
+// ------- GESTION ELEMENTS DANS LA VASE-------
+i = 0
+i_object_dans_la_vase = 0
+while(ao_ode_elements[i])
+{
+	// J'augmente le poids des éléments dans la vase pour qu'ils s'enfoncent ...
+	if(ai_ode_elements_etat[i] ==  ODE_Element_Etat_DansLaVase)
+	{	
+		tf_poids = @ ao_ode_elements[i] ODE_Getf(0)		
+		tf_poids += f_force_vitesse_enfoncement_vase
+		@ao_ode_elements[i] ODE_Enable(1)
+		@ao_ode_elements[i] ODE_Setf(0, tf_poids)
+		i_object_dans_la_vase = 1
+	}
+	i ++
+}
+
+// ------- NOUVEL ELEMENT DANS LA VASE ??-------
+i = 0
+while(ao_ode_elements[i])
+{
+	// Element détruit ou inactif , on skip ...
+	if
+	(
+		(ai_ode_elements_etat[i] == ODE_Element_Etat_Detruit)
+	||	(ai_ode_elements_etat[i] == ODE_Element_Etat_Inactif)
+	||	(ai_ode_elements_etat[i] ==  ODE_Element_Etat_DansLaVase)
+	
+	) 
+	{
+		i++
+		continue
+	}
+	
+	if( ( o_vase && @ao_ode_elements[i] COL_ObjectCollide(o_vase) )
+		|| ( o_vase2 && @ao_ode_elements[i] COL_ObjectCollide(o_vase2) ) )
+	{
+		ai_ode_elements_etat[i] = ODE_Element_Etat_DansLaVase
+		
+		// EXTINCTION DES FEUS .. OK, JE SORS
+		if(ai_gfx_feu_id[i] != -1)
+			GFX_Seti(ai_gfx_feu_id[i], 13106, 0)           					// Number of sprite to generate												
+		
+		instance = SND_Request(ODE_Sound_Choc_Local, C_SND_Request_DestroyWhenFinished)								
+		if(instance != -1)
+			@ao_ode_elements[i] SND_Play(instance)
+	
+	}
+	i++
+}

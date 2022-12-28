@@ -1,0 +1,236 @@
+Include_UltraProcedure_Header
+#include"k_define.var"
+
+int		ti_loop
+int		ti_i
+int		ti_k
+int		ti_membre_index
+int		ti_control_flag 
+
+vector	tv_pos
+vector	tv_temp
+
+float		tf_temp
+
+object	to_bone
+
+OBJ_Destroy()
+OBJ_ZoomSet(@get_global f_KK_Zoom_coef)		// Zoom de coef donné par l'ES/Map -> GST Global
+
+af_exp_speed[Ci_Kexp_Canal_BoucheIntentions] = 10.0
+af_exp_speed[Ci_Kexp_Canal_BoucheLips] = 10.0
+af_exp_speed[Ci_Kexp_Canal_PaupiereB] = 7.0
+af_exp_speed[Ci_Kexp_Canal_PaupiereH] = 7.0
+af_exp_speed[Ci_Kexp_Canal_Sourcils] = 7.0
+af_exp_speed[Ci_Kexp_Canal_SourcilP] = 7.0
+af_exp_speed[Ci_Kexp_Canal_Nez] = 5.0
+af_exp_speed[Ci_Kexp_Canal_Bouche] = 20.0
+
+KK_Exp_Set(Ci_Kexp_Combat)
+
+//TIME_SpeedFactorSet(0.3)
+//ACT_ActionSet(33)
+//TIME_Wait(3.0)
+
+// virer les sfx !!!!!!!
+i_SFX_on = faux
+
+OBJ_FlagsControlSet(OBJ_C_ControlFlag_AlwaysVisible, none)
+
+AI_MainActorSet(C_ID_Kong)
+@"univ" ao_AllHumains[ C_ID_Kong ] = OBJ_Me()
+TIME_Wait(0.001)
+
+o_Joueur = AI_MainActorGet(C_ID_Joueur)
+
+DBG_TraceFloat(MATH_FloatSign(0.0))
+DBG_TraceEOL()
+tv_pos = OBJ_PosGet()
+AI_Execute("k_exec_climb_init_offset")
+OBJ_PosSet( tv_pos)
+if (o_climb_target_wp == nobody)
+	o_climb_target_wp = @get_WP OBJ_Duplicate(OBJ_PosGet())
+
+ACT_ActionSet(0)
+
+OBJ_FlagsControlSet(none, OBJ_C_ControlFlag_AlwaysVisible)
+
+AI_RunContext(CTX_Normal)
+
+macro_change_tag_size(Cv_Kong_Tag_Size_V1,Cv_Kong_Tag_Size_V2)
+
+//if( OBJ_CapaTest(Capa_Force_choppe_Ann_Init) )
+//{
+//	i_je_dois_chopper_ann_a_init = vrai
+//	OBJ_CapaSet(none, Capa_Force_choppe_Ann_Init)
+//	// pour bien initialiser l'ik legs
+//	i_Grab_Torse_Actor = vrai
+//	i_Grab_Torse_ANN = vrai
+////	i_Grab_Torse_Main = 0
+//	f_time_attrappe = TIME_Get() - 5.0
+//	// pour bien initialiser l'ik legs
+//}
+//else
+//	i_je_dois_chopper_ann_a_init = faux
+
+if( i_je_dois_chopper_ann_a_init )
+{
+	// pour bien initialiser l'ik legs
+	i_Grab_Torse_Actor = vrai
+	i_Grab_Torse_ANN = vrai
+	f_time_attrappe = TIME_Get() - 5.0
+}
+
+Proc_KK_DynOn()
+	
+// CHOIX DE L ANGLE DES CORNERS
+//COL_GlobalCornerCosAngleSet( -Cf_Cos80) // cos de l angle 100° : cos ( Pi /2 + X) = -cos ( Pi /2 - X )
+//COL_GlobalCornerCosAngleSet( 0) // cos de l angle 90°
+
+// Traverse la colmap "tous sauf ANN"
+//COL_CrossableSet(Gmat_KK_Crossable_Default & (~Gmat_KK_Cross_All_But_Kong),none) 
+COL_CrossableSet(Gmat_KK_Crossable_Default, none)
+COL_CrossableSet(none, Gmat_KK_Cross_All_But_Kong_Only)
+COL_CrossableSet(none, Gmat_KK_Cross_All_But_Kong_And_Raptors)
+COL_CrossableSet(none, Gmat_KK_Cross_All_But_Kong_And_TREX)
+
+// Recup les GAO de la tete
+for (ti_loop = 0; ti_loop<4 ; ti_loop++)
+	o_tete[ti_loop] = ANI_CanalObjectGet(Anim_Canal_Tete + ti_loop)
+o_tete[4] = ANI_CanalObjectGet(Anim_Canal_Bassin)
+
+v_bassin_pos = @o_tete[4] OBJ_PosGet()
+v_bassin_last_pos = v_bassin_pos
+
+// Recup les GAO des bras
+for (ti_loop = 0; ti_loop<3; ti_loop++)
+{
+	o_bras[Ci_kong_bras_droit][ti_loop] = ANI_CanalObjectGet(Anim_Canal_MainDroite + ti_loop)
+	o_bras[Ci_kong_bras_gauche][ti_loop] = ANI_CanalObjectGet(Anim_Canal_MainGauche + ti_loop)
+}
+
+// Calcul de la longueur des membres...
+
+for (ti_i = 0; ti_i < 4; ti_i++)
+{
+	switch(ti_i)
+	{
+		case Ci_IK_pied_gauche :
+			ti_membre_index = Anim_Canal_PiedGauche
+			break
+		case Ci_IK_pied_droit :
+			ti_membre_index = Anim_Canal_PiedDroit
+			break
+		case Ci_IK_main_gauche :
+			ti_membre_index = Anim_Canal_MainGauche
+			break
+		case Ci_IK_main_droite :
+			ti_membre_index = Anim_Canal_MainDroite
+			break
+	}	
+
+	for (ti_k = 0; ti_k < 3; ti_k++)
+		ao_IK_bones[ti_i][ti_k] = ANI_CanalObjectGet(ti_membre_index + (2 - ti_k))
+
+	switch(ti_i)
+	{
+		case Ci_IK_pied_gauche :
+			ti_membre_index = Anim_Canal_OrteilGauche
+			break
+		case Ci_IK_pied_droit :
+			ti_membre_index = Anim_Canal_OrteilDroit
+			break
+		case Ci_IK_main_gauche :
+			ti_membre_index = Anim_Canal_DoigtG1
+			break
+		case Ci_IK_main_droite :
+			ti_membre_index = Anim_Canal_DoigtD1
+			break
+	}	
+
+	ao_IK_bones[ti_i][3] = ANI_CanalObjectGet(ti_membre_index)
+		
+	af_IK_bones_length[ti_i][0] = MATH_VecNorm(@ao_IK_bones[ti_i][1] OBJ_PosGet() - @ao_IK_bones[ti_i][0] OBJ_PosGet())
+	af_IK_bones_length[ti_i][1] = MATH_VecNorm(@ao_IK_bones[ti_i][2] OBJ_PosGet() - @ao_IK_bones[ti_i][1] OBJ_PosGet())
+}
+
+// Init Look var
+v_look_direction = OBJ_SightGet()
+
+v_last_banking = OBJ_BankingGet()
+
+// ZONES
+COL_SwapToSpecific(C_zdm_pied)
+COL_ZoneSizeSet(C_zdm_pied, cvector(Cf_Kong_taille_zdm,Cf_Kong_taille_zdm,Cf_Kong_taille_zdm))
+v_zdm_pos = Cv_Kong_zdm_pos
+v_old_zdm_pos = v_zdm_pos
+COL_ZonePosSet(C_zdm_pied, v_zdm_pos)
+
+COL_SwapToSpecific(C_zde_corps)
+COL_ZoneSizeSet(C_zde_corps, cvector( 2.4,2.4,2.4))
+
+COL_SwapToSpecific(C_zde_fight)
+COL_ZoneSizeSet(C_zde_fight, Cf_ZDE_SizeFight)
+
+COL_GeoColMapPosSet( 0, cvector( 0.0, 0.0, 2.8))
+	
+AI_CBAdd(OBJ_Me(), CallBack_WhenDestroy, "k_callback_when_detroy")
+AI_CBAdd(OBJ_Me(), CallBack_After_Blend, "k_callback_after_blend")
+AI_CBAdd(OBJ_Me(), CallBack_Client, "k_callback_client")
+macro_add_callback_after_cam("k_callback_after_cam")
+
+//COL_ColMapActivationSet(none,all)
+
+// ODE
+//if ( o_ODE_Punch )
+//{
+//	@o_ODE_Punch OBJ_PosSet( OBJ_PosGet())
+//	@o_ODE_Punch ODE_Enable(faux)
+//}
+
+OBJ_FlagsIdentitySet( OBJ_C_IdentityFlag_Msg, 0 )			// structure message (pour les WP "Pose Ann")
+
+to_bone = ANI_CanalObjectGet(Anim_Canal_Snap_Bassin)		// snap bassin
+@to_bone OBJ_FlagsIdentitySet( OBJ_C_IdentityFlag_ExtendedObject, none)
+@to_bone OBJ_FlagsExtraSet( OBJ_C_ExtraFlag_NoNBlendBone, none)
+
+// PUNCH ODE
+o_ODE_Punch_coup = @o_ODE_Punch OBJ_Duplicate( OBJ_PosGet())
+@o_ODE_Punch_coup OBJ_FlagInactiveSet(vrai)
+@o_ODE_Punch_coup ODE_Enable(faux)
+@o_ODE_Punch_coup OBJ_ZoomSet(1.5)
+tf_temp = 8.0
+tv_temp = cvector(tf_temp,tf_temp,tf_temp)
+@o_ODE_Punch_coup BV_MinSet(-tv_temp) 
+@o_ODE_Punch_coup BV_MaxSet(tv_temp)
+
+o_Kamera = @get_global o_camera
+
+AI_Execute("k_exec_mashing_kit_init")
+
+// LIFE
+f_life_init = MATH_FloatLimit(f_life_init, 0.0, Cf_Life_Max)
+ID_LIFE = EVENT_AddEventLife(f_life_init, Cf_Life_Max, Cf_Life_Max * 0.5)
+
+
+// BV
+tf_temp = 8.0
+tv_temp = cvector(tf_temp,tf_temp,tf_temp)
+BV_MinSet(-tv_temp) 
+BV_MaxSet(tv_temp)
+
+// CINE ?
+if( @get_global o_cine_gao )
+	OBJ_CapaSet(Capa_Mode_Cine, none)
+
+//@get_global Proc_Global_Human_Change_To_KAnn()		// DESACTIVE JACK
+
+// Perso contrôlé par le joueur
+f_time_ES_init = TIME_Get()
+AI_TrackChange(Ci_Track_TagOff, "k_tag_off")
+AI_TrackChange(Ci_Track_Reflex, "k_reflex")
+if ( ! i_debut_force)
+	AI_TrackChange(Ci_Track_Etat, "k_ETAT_main")
+else
+	AI_TrackChange(Ci_Track_Etat, "k_ETAT_fracasse")
+AI_TrackChange(Ci_Track_TagOn, "k_tag_on")

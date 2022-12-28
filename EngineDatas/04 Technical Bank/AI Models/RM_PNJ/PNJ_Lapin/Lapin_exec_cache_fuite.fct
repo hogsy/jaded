@@ -1,0 +1,220 @@
+//#include "PNJ_Lapin_defines.var"
+//
+//
+//int ti_territory
+//object to_excluded_occluder
+//object to_actor
+//
+//int			ti_i
+//int			ti_k
+//int			ti_start_index
+//int			ti_ok
+//int			ti_type
+//object	to_best_cache
+//object	to_tmp_occluder
+//object	to_hide_start_wp
+//object	to_hide_wp
+//float		tf_dist
+//float		tf_dist0
+//float		tf_best_dist
+//float		tf_dot
+//vector	tv_temp
+//vector	tv_temp1
+//vector	tv_temp2
+//vector	tv_hide_pos
+//vector	tv_pos
+//int			ti_territory_ID_nb
+//int			tai_territories_ID[10]
+//object	tao_occluders[50]
+//int			ti_occluders_nb
+//
+//
+//ti_territory = i_my_territory_ID
+//to_excluded_occluder = o_cache_not_safe
+//to_actor = o_fuite_actor
+//
+//ti_territory_ID_nb = 10
+//tai_territories_ID[0] = -1
+//to_hide_wp = nobody
+//
+//// RECHERCHE D'UNE CACHE AVEC LA PATH LIB	--------------------------------------------------------------------------------
+//if( Territory_Path )
+//{
+//	if( to_actor == o_main_actor )
+//	{
+//		o_path_dodge_actor_wp = o_path_main_actor_wp
+////			if (i_path_way_to_main_wp_nb > 1)	
+////				to_hide_start_wp = ao_path_way_to_main_wp[i_path_way_to_main_wp_nb - 2]
+////			else
+////				to_hide_start_wp = nobody
+//	}
+//
+//	// Retourne une cache basée sur la géométrie du dongeon
+//	PATH_LIB_Avoid_Visibility(	@to_actor OBJ_PosGet(),
+//											to_actor,
+//											o_path_dodge_actor_wp,
+//											tv_hide_pos,
+//											to_hide_wp,
+//											Territory_Path,
+//											i_path_net_wp_nb,
+//											&ao_path_net_wp[0], 
+//											Lapin_MOVE_Offset_Get() + 1.0,
+//											OBJ_PosGet(),
+//											nobody)
+//
+//	// Retourne les IDs des territoires adjacents à celui sur lequel on se trouv
+//	PATH_LIB_Fill_Territory_IDs(	o_path_current_wp,
+//											Territory_Path,
+//											&ao_path_net_wp[0], 
+//											i_path_net_wp_nb,
+//											&tai_territories_ID[0],
+//											ti_territory_ID_nb,
+//											3)
+//}
+//
+//// RECHERCHE D'UNE CACHE AVEC LES OCCLUDERS --------------------------------------------------------------------------------
+//to_best_cache = nobody
+//tf_best_dist = Cf_Infinit
+//
+//
+//// Elements à parser
+//ti_occluders_nb = 0
+//if( Territory_BV )
+//{
+//	// optim pour territory BV
+//	for( ti_i = 0; ti_i < i_Territory_BV_Occluders_nb; ti_i++ )
+//	{
+//		tao_occluders[ti_occluders_nb] = ao_Territory_BV_Occluders[ti_i]
+//		ti_occluders_nb++
+//	}
+//}
+//else
+//{
+//	// std pour territory PATH & COLMAP
+//	for( ti_i = 0; ti_i < @get_list_manager i_occluder_nb; ti_i++ )
+//	{
+//		tao_occluders[ti_occluders_nb] = @get_list_manager ao_occluder[ti_i]
+//		ti_occluders_nb++
+//	}
+//}
+//
+//
+//// Start index
+//for (ti_k = 0; ti_k < ti_territory_ID_nb; ti_k++)
+//{
+//	if (tai_territories_ID[0] == -1)
+//	{
+//		ti_start_index = 0
+//		ti_territory = -1
+//	}
+//	else
+//	{
+//		ti_territory = tai_territories_ID[ti_k]
+//		ti_start_index = @get_list_manager ai_occluder_index[ti_territory]
+//	}
+//	
+//	// OCCLUDERS
+//	for (ti_i = ti_start_index; ti_i < ti_occluders_nb; ti_i++)
+//	{
+//		to_tmp_occluder = tao_occluders[ti_i]
+//
+//		ti_ok = faux
+//
+//		if( to_tmp_occluder.des_float1 > 0.0 && to_tmp_occluder.des_float1 < f_cache_hauteur_min )
+//			continue
+//
+//		if (@to_tmp_occluder OBJ_FlagsControlGet() & (OBJ_C_ControlFlag_SectoInactive | OBJ_C_ControlFlag_ForceInactive))
+//			continue
+//		
+//		if( to_excluded_occluder && to_tmp_occluder == to_excluded_occluder )
+//			continue		// cet occluder est exclu de la recherche
+//			
+//		if( Territory_BV && ! Lapin_Pos_in_Territory_BV(WAY_LIB_Occluder_Position_Get(to_tmp_occluder)) )
+//			continue
+//		
+//		if ( Territory_Colmap && ti_territory != -1 && to_tmp_occluder.des_int2 != ti_territory)
+//			continue
+//	
+//		tv_pos = WAY_LIB_Occluder_Position_Get(to_tmp_occluder)
+////		Str_DisplayGaoOnce(to_occluder, VIEW_3dWorldTo2d(0, tv_pos))
+//		
+//		tv_temp = tv_pos - OBJ_PosGet()
+//		tv_temp.z = 0.0
+//		tf_dist0 = MATH_VecNorm(tv_temp)
+//		tv_temp /= tf_dist0
+//		
+//		DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, tv_temp * tf_dist0, color_blanc)
+//		if( tf_dist0 < tf_best_dist )
+//		{
+//			DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, tv_temp * tf_dist0, color_vert)
+//			tv_temp1 = @to_actor OBJ_PosGet() - OBJ_PosGet()
+//			tv_temp1.z = 0.0
+//			MATH_VecSetNormalize(tv_temp1)
+//			tf_dot = MATH_VecDotProduct(tv_temp, tv_temp1)
+//			if( tf_dot < Cf_Cos45 )
+//				ti_ok = vrai		// mon ennemi n'est pas devant l'occluder, donc c'est une cache potentielle
+//			else
+//			{
+//				// mon ennemi et l'occluder sont du même côté
+//				DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, tv_temp * tf_dist0, color_jaune)
+//				tv_temp2 = tv_pos - @to_actor OBJ_PosGet()
+//				tv_temp2.z = 0.0
+//				MATH_VecSetNormalize(tv_temp2)
+//				tf_dot = MATH_VecDotProduct(tv_temp, tv_temp2)
+//				if( tf_dot < 0.0 )
+//					ti_ok = vrai		// mon ennemi est de l'autre côté de l'occluder, donc c'est une cache potentielle
+//				else
+//					DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, tv_temp * tf_dist0, color_rouge)
+//			}
+//		}
+//		if( ti_ok )
+//		{
+//			tf_best_dist = tf_dist0
+//			to_best_cache = to_tmp_occluder
+//			i_cache_global_index = ti_i		// optim memo index
+//		}
+//	}
+//}
+//
+//i_cache_type = Ci_cache_type_Occluder
+//if (to_hide_wp)
+//{
+//	if (to_best_cache)
+//	{
+//		if (MATH_VecSquareNorm(tv_hide_pos - OBJ_PosGet()) < MATH_VecSquareNorm(@to_best_cache OBJ_PosGet() - OBJ_PosGet()))
+//		{
+//			to_best_cache  = to_hide_wp
+//			i_cache_type = Ci_cache_type_Geometrie
+//			v_cache_pos = tv_hide_pos
+//			f_cache_size = 2.0
+//			i_cache_global_index = -1
+//		}
+//	}
+//	else
+//	{
+//		to_best_cache  = to_hide_wp
+//		i_cache_type = Ci_cache_type_Geometrie
+//		v_cache_pos = tv_hide_pos
+//		f_cache_size = 2.0
+//		i_cache_global_index = -1
+//	}
+//}
+//
+//// init occluder
+//if( to_best_cache && i_cache_type == Ci_cache_type_Occluder )
+//{
+//	v_cache_pos = WAY_LIB_Occluder_Position_Get(to_best_cache)
+//	f_cache_size = WAY_LIB_Occluder_Size_Get(to_best_cache)
+//}
+//to_best_cache = to_best_cache
+//
+//
+//if( to_best_cache )
+//{
+//	o_cache = to_best_cache
+//	o_cache_actor = o_fuite_actor
+//	i_cache_mode = Ci_CACHE_Mode_Fuite
+//	macro_change_etat("Lapin_ETAT_CACHE")
+//}
+//
+//

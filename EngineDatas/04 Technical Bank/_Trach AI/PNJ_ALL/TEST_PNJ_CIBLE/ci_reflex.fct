@@ -1,0 +1,135 @@
+#include "ci_defines.var"
+
+int						ti_rank
+int						ti_state
+messageid			tmid_paf
+message			tm_filter
+int						ti_puissance
+int						ti_puissance_max
+vector				tv_speed
+
+object				to_cam
+vector				tv_poscam, tv_paf_pos
+float					tf_zoom
+
+o_paf_actor = nobody
+MSG_SetNull( tm_filter)
+tm_filter.msg_gao1 = OBJ_Me()
+
+ti_puissance_max = -1
+ti_rank = -1
+tmid_paf = MSG_GlobalSearchIntGao( C_EVENT_TYPE_Paf, &ti_rank, tm_filter)
+while ( MSG_GlobalIsValid( tmid_paf))
+{
+	ti_puissance = EVENT_PafPuisGet( tmid_paf)
+	if ( ti_puissance > ti_puissance_max)
+	{
+		ti_puissance_max = ti_puissance
+		v_paf_dir = EVENT_PafDirGet( tmid_paf)
+		o_paf_actor =  MSG_GlobalGetSender( tmid_paf)
+		i_paf_type = EVENT_PafTypeGet( tmid_paf)
+		i_paf_puissance = ti_puissance
+		tv_paf_pos = EVENT_PafPositionGet( tmid_paf)
+	}
+	tmid_paf = MSG_GlobalSearchIntGao( C_EVENT_TYPE_Paf, &ti_rank, tm_filter)	
+}
+
+if (o_paf_actor)
+{
+	if ( i_paf_puissance <= 1 )
+		f_paf_coef = 0
+	else if (i_paf_puissance < 5 )
+		f_paf_coef = -1
+	else
+		f_paf_coef = -2
+		
+	if (OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna))
+	{
+		tv_speed = DYN_SpeedGetVector()
+		tv_speed.x = v_paf_dir.x * i_paf_puissance
+		tv_speed.y = v_paf_dir.y * i_paf_puissance
+		DYN_SpeedSetVector(tv_speed)
+	}
+	@get_global i_cpt_hit_nb ++
+
+	i_energiecur -= i_paf_puissance
+	if (i_energiecur <= 0)
+	{
+		@get_global i_cpt_dead_nb ++
+		f_zoom = 1
+		AI_TrackCurStop()	
+		AI_TrackChange(2,"ci_8_dead")
+		returntrack
+	}
+	else
+	{
+		if (mi_GFXPAF == -1)
+		{
+			mi_GFXPAF = GFX_Add(21)
+			GFX_FlagSet(mi_GFXPAF , 4, 1)
+			GFX_MaterialSet(mi_GFXPAF, get_SFX_light_and_smoke, 0)
+			to_cam = VIEW_GetObject(0)
+			tv_poscam = @to_cam OBJ_PosGet()
+
+			GFX_Setf(mi_GFXPAF , 21000, 0.1 * (0.5 * MATH_VecDistance(tv_poscam, tv_paf_pos)))	//des_f_Radius
+			GFX_Setf(mi_GFXPAF , 21002, 0.0)	//des_f_Offset 
+			GFX_Setf(mi_GFXPAF , 21003, 0.0)
+			GFX_Setf(mi_GFXPAF , 21006, Cf_Pi)		//des_f_Angle 
+			GFX_Seti(mi_GFXPAF , 21104, 7)						//des_i_Number
+			GFX_Setv(mi_GFXPAF, 21200, tv_paf_pos)
+			GFX_Setv(mi_GFXPAF, 21201, v_paf_dir)
+			GFX_Seti(mi_GFXPAF , 21101, 0xff0000FF)	// Couleurs des rayons
+		}
+	}
+}
+else	if ( mi_GFXPAF != -1)
+{
+	GFX_Del(mi_GFXPAF)
+	mi_GFXPAF = -1
+}
+
+f_paf_coef = MATH_FloatMin(f_paf_coef  + (f_paf_acceleration * TIME_GetDt()), 1.0) 
+
+tf_zoom=f_zoom_init * f_zoom
+if( tf_zoom <= 0)
+	tf_zoom = 0.01
+OBJ_ZoomSet( tf_zoom )
+f_zoom = MATH_FloatBlend(f_zoom,1.0,20.0 * TIME_GetDt())
+
+
+if (i_cur_mode < 100)
+	AI_Execute("ci_exec_event_visible")
+
+
+// Stop les etats d'attente
+if ((i_se_recache_si_paf && o_paf_actor) && i_duplicate != 2)
+{
+	if (i_cur_mode == Ci_mode_wait_av_disparait || i_cur_mode == Ci_mode_wait_apres_apparition)
+		AI_TrackChange(2, "ci_6_desappear")
+}
+
+// Je m'enregistre en tant qu'ennemi
+ti_state = C_EVENT_EnemyState_Quiet
+switch(i_cur_mode)
+{
+	case Ci_mode_apparition :
+	case Ci_mode_wait_apres_apparition :
+	case Ci_mode_move :
+		ti_state = C_EVENT_EnemyState_Stalk
+		break
+		
+	case Ci_mode_att_droite :
+	case Ci_mode_att_jump :
+	case Ci_mode_att_suivre :
+	case Ci_mode_att_bullrush :
+	case Ci_mode_att_cercle :
+	case Ci_mode_wait_after_paf :
+		ti_state = C_EVENT_EnemyState_Fight
+		break
+
+	case Ci_mode_wait_av_disparait :
+	case Ci_mode_disparait :
+		ti_state = C_EVENT_EnemyState_Flee
+		break
+}
+EVENT_AddEventEnemy( C_ID_Cible, OBJ_Me(), ti_state )

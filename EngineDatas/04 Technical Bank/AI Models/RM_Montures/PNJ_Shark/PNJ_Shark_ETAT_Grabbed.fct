@@ -1,0 +1,144 @@
+#include "PNJ_Shark_defines.var"
+
+int				ti_index
+int				ti_flag_in_water
+
+float			tf_friction
+
+vector		tv_pos
+vector		tv_pos2
+vector		tv_traction
+
+object		to_bone
+object		to_eagle
+
+if (i_flag_sortie_etat)
+{
+	i_flag_sortie_etat = faux
+
+	ti_index = @o_rope_manager  Rope_Manager_Get_Corde_Index(OBJ_Me(), o_eagle)
+	@o_rope_manager  Rope_Manager_Del(ti_index)
+
+	o_eagle = LNK_ServeurGet(Ci_LNK_GRAB_EAGLE, mid_eagle_LNK, faux, nofunc, nofunc)
+
+	return
+}
+
+
+if (i_etat_courant != ETAT_Grabbed)
+{
+	// INTIALISATION
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Grabbed
+	
+	if (fct_last_etat)
+	{
+		i_flag_sortie_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	fct_last_etat = AI_TrackCurGet()
+	
+	ODE_Enable(faux)
+
+	DYN_On()
+	DYN_FlagsSet(DYN_C_BasicForces | DYN_C_VectorFriction| DYN_C_NeverDynamicFather | DYN_C_NeverDynamicHierarchy | DYN_C_HorizontalGrounds | DYN_C_SlipOnGroundEdge, none)
+	DYN_GravitySet(cvector(0.0, 0.0, -30.0))
+
+//	f_delay_until_last_ground_col = 0.0
+//	PNJ_Shark_Virtual_Net_Init(faux, nobody)
+
+	COL_UnCollidableAdd(o_eagle)
+	@o_rope_manager Rope_Manager_Add(OBJ_Me(), o_eagle, 0.0, 10.0, 0.0)
+
+	v_grav_pos = @o_eagle OBJ_PosGet()
+	v_grav_pos -= @o_eagle OBJ_BankingGet() * 3.0
+	v_grav_speed = Cv_NullVector
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ===============================================================
+to_eagle = LNK_ServeurGet(Ci_LNK_GRAB_EAGLE, mid_eagle_LNK, vrai, "PNJ_Shark_exec_LNK_Eagle", nofunc)
+if (to_eagle != o_eagle)
+	macro_change_etat("PNJ_Shark_ETAT_Basic")
+
+// RIDED ? -----------------------------------------------------------------
+o_Rided_Actor = LNK_ServeurGet(Ci_LNK_RIDE_ON_NMI, mid_Rided_LNK_ID, vrai, nofunc, nofunc)
+if ( o_Rided_Actor )
+{
+}
+else
+{
+}
+
+// COMPORTEMENT ===============================================================
+PNJ_Shark_Water_Col()
+f_water_Z = MATH_FloatMax(f_water_Z, WTR_GetDif(OBJ_PosGet()).z)
+
+if (OBJ_PosGet().z >  f_water_Z + (COL_ZoneSizeGet(C_zdm_pied) * OBJ_ZoomGet()))
+	ti_flag_in_water = faux
+else
+	ti_flag_in_water = vrai
+
+if (ti_flag_in_water)
+{
+	DYN_FlagsSet(none, DYN_C_GlobalFriction)
+	DYN_FrictionVectorSet(cvector(6.0, 1.0, 6.0))
+}
+else
+{
+	DYN_FlagsSet(DYN_C_GlobalFriction, none)
+
+	if (f_no_ground_col_duration > 0.2)
+		DYN_FrictionVectorSet(cvector(0.5, 0.5, 0.0))
+	else
+		DYN_FrictionVectorSet(cvector(4.0, 4.0, 0.0))
+
+}
+
+f_rot_torque = MATH_VecDotProduct(@o_eagle OBJ_HorizonGet(), OBJ_HorizonGet())
+f_rot_torque *= f_rot_speed_max * f_rot_friction
+
+PNJ_Shark_Rotation_Speed_Compute(ti_flag_in_water, tf_friction)
+
+tv_pos = OBJ_PosGet()
+tv_pos -= OBJ_SightGet()
+
+if (1) //f_delay_since_last_ground_col > Cf_hysteresis_no_ground_col && f_delay_since_last_wall_col > Cf_hysteresis_no_ground_col)
+{
+	tv_pos2 = v_grav_pos
+	tv_traction = cvector(0.0, 0.0, -40.0)
+	tv_traction /= 1.5
+	v_grav_speed = tv_traction - ((tv_traction - v_grav_speed) * MATH_Exp( - 1.5 * TIME_GetDt()))
+	v_grav_pos += v_grav_speed * TIME_GetDt()
+	v_grav_pos -= @o_eagle OBJ_PosGet()
+	MATH_VecSetNormalize(v_grav_pos)
+	OBJ_BankingGeneralSet(OBJ_SightGet(), -v_grav_pos)
+	DBG_RenderVector(@o_eagle OBJ_PosGet(), v_grav_pos * 4.0, color_jaune)
+	v_grav_pos *= 3.0
+	v_grav_pos += @o_eagle OBJ_PosGet()
+	v_grav_speed = (v_grav_pos - tv_pos2) / TIME_GetDt()
+}
+else
+{
+	tv_pos2 = v_grav_pos
+	v_grav_pos -= @o_eagle OBJ_PosGet()
+	MATH_VecSetNormalize(v_grav_pos)
+	v_grav_pos = MATH_VecBlendRotate(v_grav_pos, -@o_eagle OBJ_BankingGet(), 6.0 * TIME_GetDt())
+	DBG_RenderVector(@o_eagle OBJ_PosGet(), v_grav_pos * 2.0, color_jaune)
+	v_grav_pos *= 3.0
+	v_grav_pos += @o_eagle OBJ_PosGet()
+	v_grav_speed = (v_grav_pos - tv_pos2) / TIME_GetDt()
+}
+
+tv_pos2 = v_grav_pos
+
+ti_index = @o_rope_manager  Rope_Manager_Get_Corde_Index(OBJ_Me(), o_eagle)
+@o_rope_manager Rope_Manager_Enable_Offset(ti_index, vrai, MATH_VecGlobalToLocal(tv_pos - OBJ_PosGet()), vrai, @o_eagle MATH_VecGlobalToLocal(tv_pos2 - @o_eagle OBJ_PosGet()))
+
+PNJ_Shark_Snake(0, 12.0, Cv_NullVector, 0.0, 0.3)

@@ -1,0 +1,89 @@
+//------------------------------------------------------------------------------------------------
+// include 
+//------------------------------------------------------------------------------------------------
+#include "GS_Constant.var"
+
+//-----------------------------------------------------------------------------------------------
+// temp var
+//-----------------------------------------------------------------------------------------------
+int ti
+object to_object
+
+//-----------------------------------------------------------------------------------------------
+// AI Track allocation
+//-----------------------------------------------------------------------------------------------
+AI_TrackChange(GS_Cte_TrackIdMode , "GS_SetMode")
+AI_TrackChange(GS_Cte_TrackIdGlobal , "GS_SetGlobal")
+
+//-----------------------------------------------------------------------------------------------
+// Group volume reset
+//-----------------------------------------------------------------------------------------------
+to_object = AI_MainActorGet(0)
+if(to_object)
+{
+//	if( @to_object AI_IsModel("KingKong/Humain") )
+//		af_GroupVolume[SND_Cte_MasterGrp] = 0.8//jak
+//	else 
+		af_GroupVolume[SND_Cte_MasterGrp] = 0.75//kong
+}
+else
+{
+		af_GroupVolume[SND_Cte_MasterGrp] = 1//menu
+}
+
+
+
+for(ti=SND_Cte_GrpSpecialFX; ti<=SND_Cte_UserGrpMaster; ti++)
+{	
+	// reset global
+	@ "univ" SND_gaf_GroupVolumeFinal[ti] = 0.0
+	@ "univ" SND_gaf_GroupVolumeDuration[ti] = 0.0
+	@ "univ" SND_gaf_GroupVolume[ti] = af_GroupVolume[ti]
+
+	// force vol
+	SND_GroupVolumeSet(ti, af_GroupVolume[ti])
+}
+
+for(ti=0; ti<SND_Cte_GroupNb; ti++)
+{
+	// reset var
+	mai_GroupFadeMode[ti] = 0
+	maf_GroupFadeDate[ti] = 0.0
+	maf_GroupFadeFactor[ti] = 0.0
+	
+	mai_GroupRqId[ti] = -1
+	mai_GroupRqId[ti] = SND_GroupVolRqGet(ti)
+	SND_GroupVolRqSend(ti, mai_GroupRqId[ti], 1.0)
+	
+	@ "univ" SND_gaf_GroupVolRq[ti] = -1.0
+}
+
+//-----------------------------------------------------------------------------------------------
+// force settings
+//-----------------------------------------------------------------------------------------------
+@ "univ" SND_gi_GlobalCommand |= SND_Cte_exec_Fx	
+@ "univ" SND_gi_GlobalCommand |= SND_Cte_exec_3D	
+@ "univ" SND_gi_GlobalCommand |= SND_Cte_exec_FadeIn	
+@ "univ" SND_gi_GlobalCommand |= SND_Cte_exec_FadeOut
+@ "univ" SND_gi_GlobalCommand |= SND_Cte_exec_UsrVol	
+
+//-----------------------------------------------------------------------------------------------
+// 3D
+//-----------------------------------------------------------------------------------------------
+SND_Seti(SND_Cte_SetFreeze3DVol, 0)
+SND_Seti(SND_Cte_SetFreezeDynamicPan, 0)
+
+//-----------------------------------------------------------------------------------------------
+// force pan fx
+//-----------------------------------------------------------------------------------------------
+to_object = AI_MainActorGet(0)
+if (to_object)
+{
+//	if( @to_object AI_IsModel("KingKong/Humain") )
+//		SND_Setf(SND_Cte_SetSurroundFactor, 1.0)
+//	else
+		SND_Setf(SND_Cte_SetSurroundFactor, 2.0)
+}
+
+SND_TrackSeti(-1, SND_Cte_TrackRq_UnpauseAll, 1)
+

@@ -1,0 +1,138 @@
+//#include "Splinter_Bunny_defines.var"
+//
+//#define Cf_paf_force		200.0
+//
+//int			ti_i
+//int			ti_flag_ok
+//float		tf_coef
+//float		tf_pos_blend_coef
+//float		tf_dot_product
+//vector	tv_pos
+//object	to_obj
+//
+//f_dt += TIME_GetDt()
+////if (f_dt >= f_next_key_dt)
+//{
+//	if (rabbit)  
+//	{
+//		@rabbit DYN_On()
+//		@rabbit DYN_FlagsSet(DYN_C_BasicForces | DYN_C_NeverDynamicFather | DYN_C_NeverDynamicHierarchy | DYN_C_OptimizeColDisable, none)
+//	
+//		tv_pos = @rabbit OBJ_PosGet() 
+//		if (tv_pos.z < (f_Z_min + 1.0)  || i_flag_rabbit_on_ground)
+//		{
+//			i_flag_rabbit_on_ground = vrai
+//			ai_modules_locked[0] = faux
+//		
+//			ai_modules_locked[i_rided_module_index] = vrai
+//			av_modules_pos[i_rided_module_index] = @rabbit OBJ_PosGet()
+//		}
+//		else
+//		{
+//			ti_flag_ok = faux
+//			if (f_on_wall_duration)
+//				ti_flag_ok = vrai
+//
+//			if ( ! ti_flag_ok && @rabbit COL_CollideType(COL_C_Wall) )
+//			{
+//				to_obj = @rabbit COL_ObjectGet(COL_C_Wall)
+//				if ( ! (@to_obj OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna) ) )
+//					ti_flag_ok = vrai
+//			}
+//			
+//			if ( ! ti_flag_ok && @rabbit COL_CollideType(COL_C_Ground) )
+//			{
+//				to_obj = @rabbit COL_ObjectGet(COL_C_Ground)
+//				if ( ! (@to_obj OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna) ) )
+//					ti_flag_ok = vrai
+//			}	
+//		
+////			if ( ! ti_flag_ok && MATH_VecDotProduct(@rabbit OBJ_PosGet() - OBJ_PosGet(), OBJ_SightGet()) > -1.0 )
+////				ti_flag_ok = vrai
+//			
+//			if (ti_flag_ok)
+//			{
+//				f_on_wall_duration += TIME_GetDt()
+//		
+//				ai_modules_locked[i_rided_module_index] = vrai
+//		//		av_modules_pos[i_rided_module_index] = @rabbit OBJ_PosGet()
+//		
+//				if (f_on_wall_duration > 0.5)
+//				{	
+//					f_on_wall_duration = 0.0
+//					ai_modules_locked[i_rided_module_index] = faux
+//					av_modules_speed[i_rided_module_index] -= OBJ_SightGet() * Cf_paf_force * MATH_RandFloat(0.5, 1.0)
+//				}
+//			}
+////			else if (MATH_VecDotProduct(av_modules_speed[i_rided_module_index], OBJ_SightGet()) < 0.0)
+//			else
+//			{
+//				f_rided_rope_coef += (f_speed * TIME_GetDt()) / (Ci_modules_nb * Cf_segment_length)
+//				f_rided_rope_coef = MATH_FloatMin(f_rided_rope_coef, 1.0)
+//			}
+//		}
+//	
+//		tf_coef = f_rided_rope_coef * Ci_modules_nb
+//		tf_coef += 0.5
+//		i_rided_module_index = tf_coef
+//		i_rided_module_index--
+//	}
+//	
+////	f_dt += 0.1
+//	Splinter_Bunny_Rag_Doll()
+////	Splinter_Bunny_Display(0.0, color_vert)
+////	Splinter_Bunny_Display(1.0, color_rouge)
+//
+////	DBG_RenderSphere(@rabbit OBJ_PosGet(), 1.0, color_rouge)
+//
+////	f_dt -= f_next_key_dt + 0.1
+////	f_next_key_dt = f_dt + 0.1
+//}
+////else
+////{
+////	DBG_RenderSphere(@rabbit OBJ_PosGet(), 1.0, color_vert)
+////}
+//
+//f_dt = 0.0
+////tf_pos_blend_coef = 1.0
+//
+//tf_pos_blend_coef = f_dt / f_next_key_dt
+//
+//Splinter_Bunny_Display(tf_pos_blend_coef, 0)
+//
+//tf_coef = i_rided_module_index 
+//tf_coef /= Ci_modules_nb
+//
+//if (	i_flag_rabbit_on_ground )
+//{
+//	@rabbit OBJ_BankingGeneralSet(OBJ_SightGet(), MATH_VecBlendRotate(@rabbit OBJ_BankingGet(), Cv_VerticalVector, 12.0 * TIME_GetDt()))
+//	return
+//}
+//
+//for (ti_i = 1; ti_i < Ci_modules_nb; ti_i++)
+//{
+//	tf_coef = ti_i
+//	tf_coef /= Ci_modules_nb
+//	
+//	if (tf_coef > f_rided_rope_coef)
+//	{
+//		tf_coef = ti_i - 1
+//		tf_coef /= Ci_modules_nb
+//		tf_coef = f_rided_rope_coef - tf_coef
+//		tf_coef /= 1.0 / Ci_modules_nb
+//
+////		tv_pos = MATH_VecBlend(MATH_VecBlend(av_modules_last_pos[ti_i - 1], av_modules_pos[ti_i - 1], tf_pos_blend_coef), MATH_VecBlend(av_modules_last_pos[ti_i], av_modules_pos[ti_i], tf_pos_blend_coef), tf_coef)
+//		tv_pos = MATH_VecBlend(av_modules_pos[ti_i - 1], av_modules_pos[ti_i], tf_coef)
+//		if (rabbit)
+//		{
+//			@rabbit DYN_SpeedSetVector((tv_pos - @rabbit OBJ_PosGet()) / TIME_GetDt())
+//			@rabbit OBJ_BankingGeneralSet(OBJ_SightGet(), MATH_VecBlendRotate(@rabbit OBJ_BankingGet(), av_modules_pos[ti_i - 1] - av_modules_pos[ti_i], 12.0 * TIME_GetDt()))
+//		}
+//		else
+//		{
+//			DBG_RenderSphere(tv_pos, 1.0, color_blanc)
+//		}
+//		break
+//	}
+//}
+//

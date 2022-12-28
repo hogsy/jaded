@@ -1,0 +1,42 @@
+#include "PluieDeLances_defines.var"
+
+int 		ti_i, ti_group 
+object 	to_bv, to_humain
+
+to_bv = pop
+
+if (ao_cible_fixe[ 0 ] != nobody )
+{
+	i_nombre_cible = -1
+	for (ti_i = 0; ti_i < 5; ti_i++)
+	{
+		ao_cible_list[ti_i] = ao_cible_fixe[ ti_i ]
+		if (ao_cible_list[ti_i] == nobody) 
+			break
+	}
+	i_nombre_cible = ti_i
+	return
+}
+
+for (ti_i = 0; ti_i < 5; ti_i++)
+{
+	ao_cible_list[ti_i] = nobody
+}
+
+i_nombre_cible = 0
+for (ti_group = C_ID_Joueur; ti_group < C_ID_Last_Compagnon && i_nombre_cible < Ci_nombre_cibles; ti_group++)
+{
+
+	to_humain = @"univ" ao_AllHumains[ti_group]
+
+	if (to_humain)
+	{
+		if (@to_bv COL_BV_PivotCollide(to_humain))
+		{
+			ao_cible_list[i_nombre_cible] = to_humain
+			i_nombre_cible++	
+		}
+	}
+}
+
+

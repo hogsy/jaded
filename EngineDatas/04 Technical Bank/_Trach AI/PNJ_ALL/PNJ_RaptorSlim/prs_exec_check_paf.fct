@@ -1,0 +1,309 @@
+#include "prs_RaptorSlim_defines.var"
+
+int				ti_rank 
+int				ti_index
+int				ti_flag_ok
+int				ti_perceived_status
+int				ti_flag_add_paf
+
+float			tf_puissance_multiplifier
+float			tf_seuil_slide
+float			tf_seuil_fall
+float			tf_seuil_fly
+float			tf_seuil_accumulation
+float			tf_seuil_flee
+
+object		EVT_Pere
+
+message	tm_msg_filter
+
+messageid	tmid_paf_event
+messageid	tmid_invalid_event
+messageid	tmid_vision_event
+
+if (i_flag_paf_check_done)
+	return
+
+i_flag_paf_check_done = vrai
+o_paf_actor = nobody
+
+tf_seuil_slide = 8.0
+tf_seuil_fall = 11.0
+tf_seuil_fly = 20.0
+tf_seuil_accumulation = Cf_paf_resistance
+tf_seuil_flee = Cf_paf_resistance
+	
+MSG_GlobalSetInvalid(tmid_invalid_event)
+
+MSG_SetNull(tm_msg_filter)
+tm_msg_filter.msg_gao1 = OBJ_Me()
+ti_rank = -1
+
+
+i_flag_paf_fly = faux
+i_flag_paf_fall = faux
+i_flag_paf_slide = faux
+i_flag_paf_visual = faux
+i_flag_paf_repousse = faux
+i_flag_paf_bronto = faux
+
+for (	tmid_paf_event = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tm_msg_filter);
+		MSG_GlobalIsValid(tmid_paf_event);
+		tmid_paf_event = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tm_msg_filter)	)
+{
+	
+	EVT_Pere = EVENT_PereGet(tmid_paf_event)
+	if( EVT_Pere == o_Rided_Actor )
+		continue
+	
+	i_paf_type = EVENT_PafTypeGet(tmid_paf_event)
+	
+//	if (i_paf_type & C_PAF_RM_Weapon)
+//		f_time_last_shot_paf = TIME_Get()
+		
+	tf_puissance_multiplifier = 1.0
+	f_paf_puissance = EVENT_PafPuisGet(tmid_paf_event)
+	v_paf_dir = EVENT_PafDirGet(tmid_paf_event)	
+
+	// Le raptor ne doit pas rentrer dans une cache après un paf...
+	switch(ACT_ActionGet())
+	{
+		case Action_Attaque_Colonne_Rex :
+		case Action_Attaque_Colonne :
+			v_paf_dir = -OBJ_SightGet()
+			break
+	}
+
+	i_paf_canal = EVENT_PafCanalGet(tmid_paf_event)
+
+	o_paf_actor = EVT_Pere
+	
+	if ( i_etat_courant == ETAT_PRS_SPAWN || i_Spawn_flag )
+	{
+		PRS_Add_Visual_Paf(tmid_paf_event)
+		continue
+	}
+
+//	if (i_paf_type & C_PAF_RM_Repousse)
+//	{
+//		if (o_paf_actor != o_main_actor)
+//			continue	
+//	
+//		if (i_paf_type & C_PAF_RM_Jacks_Punch)
+//		{
+//		 	if (! o_grab_actor)
+//				continue			
+//			f_paf_puissance = 0.0
+//		}
+
+//		i_flag_grab_hit_cpt ++
+		
+		// Gestion accumulation de pafs...
+//		if (o_grab_actor == o_main_actor && i_flag_grab_hit_cpt < 3 && f_paf_puissance < 3)
+//		{
+//			if (TIME_Elapsed(f_SNF_last_paf_time, f_SNF_between_paf_duration))
+//			{
+//				f_SNF_last_paf_time = TIME_Get()
+//				SND_RequestPlayOnObjCanal(Ci_SND_Paf_Faible, Anim_Canal_Tete)
+//			}
+//
+//			continue
+//		}
+
+//		f_paf_puissance = 0.0
+//
+//		switch(i_paf_canal)
+//		{
+//			case Anim_Canal_Tete :
+//			case Anim_Canal_Machoire :
+//			case Anim_Canal_Cou :
+//				i_flag_paf_repousse = vrai
+//				break
+//			
+//			default:
+//				PRS_Add_Visual_Paf(tmid_paf_event)
+//				continue
+//		}
+//		
+//	}
+//	else
+	{
+		ti_index = ARR_ObjSearch(&ao_paf_sender[0], i_paf_sender_nb, EVT_Pere)
+		if (ti_index == -1)
+		{
+			ti_index = i_paf_sender_nb
+			i_paf_sender_nb++
+			ao_paf_sender[ti_index] = EVT_Pere
+		}
+	
+		af_paf_sender_dommage[ti_index] += f_paf_puissance
+	
+		f_paf_jauge	+= f_paf_puissance
+
+		i_flag_cri = faux
+
+//		if (i_paf_type & (C_PAF_RM_Weapon | C_PAF_RM_Javelin) )
+		{
+		 	switch(i_paf_canal)
+		 	{
+		 		// HEADSHOT ?
+		 		case Anim_Canal_Tete :
+		 		case Anim_Canal_Machoire :
+		 			tf_puissance_multiplifier *= 2.0
+					break	
+			}
+		}
+
+		// POINTS DE VIE
+//		if (@EVT_Pere AI_IsModel("PNJ_Predators/PNJ_Scolo"))
+//		{
+//			// On ne s'enlève pas de points de vie...
+//		}
+//		else
+		{
+			PRS_Remove_Life(f_paf_puissance * tf_puissance_multiplifier, EVT_Pere)
+			EVENT_LIFE_LifeChange( ID_LIFE, f_paf_puissance * tf_puissance_multiplifier)
+		}
+
+		if (i_paf_type & C_PAF_RM_KiTue)
+		{
+			PRS_Set_Life(0.0, EVT_Pere)
+			EVENT_LIFE_CurLifeSet(ID_LIFE, 0.0)
+		}
+
+//		if (i_paf_type & C_PAF_RM_Fire)
+//		{
+//			f_paf_jauge = 0.0
+//			i_flag_paf_slide = vrai
+//			DYN_SpeedSetVector(Cv_NullVector)
+//		}
+//		else if (EVT_Pere == o_main_actor && f_grab_main_hysteresis)
+//		{
+//			f_paf_jauge = 0.0
+//			i_flag_paf_fall = vrai	
+//		}
+//		else if (f_paf_puissance >= tf_seuil_fly && v_paf_dir.z > -Cf_Cos60 && ! (i_paf_type & C_PAF_RM_Javelin) )
+//		{
+//			f_paf_jauge = 0.0
+// 			i_flag_paf_fly = vrai
+//		}
+		else if (f_paf_puissance >= tf_seuil_fall)
+		{
+			f_paf_jauge = 0.0
+ 			i_flag_paf_fall = vrai
+ 		}
+ 		else if (f_paf_puissance >= tf_seuil_slide || (!i_flag_saut && f_paf_jauge >= tf_seuil_accumulation))
+		{
+			f_paf_jauge = 0.0
+			i_flag_paf_slide = vrai
+		}
+		else if (EVT_Pere && @EVT_Pere AI_HaveSameModel(OBJ_Me()))
+		{
+			f_paf_jauge = 0.0
+			i_flag_paf_slide = vrai
+		}
+
+		i_flag_paf_visual = vrai
+
+		if (i_flag_paf_fly)
+		{
+			switch(ACT_ActionGet())
+			{
+				case Action_Attaque_Colonne_Rex :
+				case Action_Attaque_Colonne :
+					// On est coincé, mieux vaut tomber
+					i_flag_paf_fly = faux
+					i_flag_paf_fall = vrai
+					break
+			}
+		}
+
+		switch(ACT_ActionGet())
+		{
+			case Action_Saut_cycl	 :
+			case Action_Saut_Pied_D :
+			case Action_Saut_Pied_G :
+			case Action_Saut_Reception_D :
+			case Action_Saut_Reception_G :
+			case Action_Saut_fin_surplace :
+				if (i_flag_paf_slide || i_flag_paf_fall)
+					i_flag_paf_fly = vrai
+				break
+		}
+		PRS_Add_Visual_Paf(tmid_paf_event)		
+	}
+	
+	ti_flag_ok = vrai
+	if ( ! f_lifecur )
+		ti_flag_ok = faux
+	else if (i_flag_paf_fall)
+		ti_flag_ok = faux
+	else if (i_flag_paf_fly)
+		ti_flag_ok = faux
+	else if (i_flag_paf_slide)
+		ti_flag_ok = faux
+	
+	
+
+	if (ti_flag_ok && TIME_Elapsed(f_SNF_last_paf_time, f_SNF_between_paf_duration))
+	{
+//		f_SNF_last_paf_time = TIME_Get()
+//		f_SNF_between_paf_duration = MATH_RandFloat(0.5, 1.0)
+		SND_RequestPlayOnObjCanal(Ci_SND_Paf_Faible, Anim_Canal_Tete)
+	}
+
+	if (f_lifecur)
+	{
+		ti_perceived_status = 0
+		
+		ti_flag_add_paf = faux
+
+		if ( ! f_paf_puissance )
+		{
+			ti_flag_add_paf = vrai
+		}
+//		else if (i_paf_type & C_PAF_RM_Javelin)
+//		{
+//			ti_flag_add_paf = vrai
+//			ti_perceived_status = Ci_PERCEIVED_JAVELIN_PAF
+//		}
+		else
+		{
+			ti_flag_add_paf = vrai
+		}
+
+		if (ti_flag_add_paf)
+		{
+			tmid_vision_event = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility, EVT_Pere, nobody)
+			ti_index = PRS_Add_Perceived_Actor(EVT_Pere, 0, tmid_vision_event)
+		
+			// MISE A JOUR DU STATUS DE CETTE ACTEUR
+			ti_perceived_status |= Ci_PERCEIVED_PAF
+
+			ai_perceived_status[ti_index] |= ti_perceived_status
+			if (ti_index != -1 && ! ai_perceived_accessible[ti_index])
+			{
+				f_fuite_jauge += f_paf_puissance
+				if (f_fuite_jauge >= tf_seuil_flee || i_flag_paf_slide || i_flag_paf_fall || i_flag_paf_fly)
+				{
+					f_paf_puissance = 0.0
+					i_flag_force_fuite = vrai
+				}
+			}
+		}
+	}
+}
+
+
+
+// PAF POUR L INSTANT QUE DU SLIDE
+if( i_flag_paf_fall )
+{
+	i_flag_paf_fall = faux
+	i_flag_paf_slide = vrai
+}
+if( i_flag_paf_fly )
+{
+	i_flag_paf_fly = faux
+	i_flag_paf_slide = vrai
+}

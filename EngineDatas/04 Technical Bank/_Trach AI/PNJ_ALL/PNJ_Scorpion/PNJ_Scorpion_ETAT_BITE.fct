@@ -1,0 +1,99 @@
+#include "PNJ_Scorpion_defines.var"
+
+object	to_target
+
+
+vector	tv_new_sight
+vector	tv_new_banking
+
+// SORTIE ETAT ====================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+
+	ACT_PartialActionOnOff(faux)
+	ACT_PartialBlendSet(6, 15)
+
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_BITE)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_BITE
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	PNJ_Raptor_Bite_Mix()
+
+	fct_last_etat = AI_TrackCurGet()
+	
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ========================================================================
+AI_Execute("PNJ_Scorpion_exec_check_vision")
+
+AI_Execute("PNJ_Scorpion_exec_check_paf")
+if (i_flag_paf_faible)
+	macro_change_etat("PNJ_Scorpion_ETAT_PAF")
+
+AI_Execute("PNJ_Scorpion_exec_check_shoot")
+
+AI_Execute("PNJ_Scorpion_exec_check_best_interet")
+
+if (! MSG_GlobalIsValid(mid_best_interet) )
+	macro_change_etat("PNJ_Scorpion_ETAT_IDLE")
+
+AI_Execute("PNJ_Scorpion_exec_test_jump")
+
+to_target = EVENT_InteretTargetGet(mid_best_interet)
+
+if (ACT_PartialActionGet() == Action_Attaque_deb)
+{
+	v_way_destpos = EVENT_InteretPositionGet(mid_best_interet)
+	AI_Execute("PNJ_Scorpion_exec_way_move")
+
+	AI_Execute("PNJ_Scorpion_exec_select_action")
+}
+else if (ACT_ActionGet() != Action_Attaque_fin)
+{
+	i_grab_hit_enable = vrai
+	ACT_ActionSet(Action_Attaque_fin)
+}
+
+switch(ACT_ActionGet())
+{
+	case Action_Attaque_fin :
+
+		if (i_grab_hit_enable && ANI_CurrentFrameGet(0) < 10 && PNJ_Scorpion_Bite_Target(to_target))
+		{
+			SND_RequestPlay(SND_BITE)
+			i_grab_hit_enable = faux
+
+			if ( ! (ai_perceived_status[i_perceived_best_actor_index] & Ci_PERCEIVED_ALREADY_GRABBED) )
+				EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_KK_Moyen, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_target, 10.0 * PAF_Unit, OBJ_SightGet())
+		}	
+		
+		if (ACT_ActionFinished())
+			macro_change_etat(fct_main_etat)
+
+		tv_new_sight = @to_target OBJ_PosGet()
+		tv_new_sight -= OBJ_PosGet()
+		tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_new_sight, 6.0 * TIME_GetDt())
+		tv_new_banking = MATH_VecBlendRotate(OBJ_BankingGet(), v_ground_normale, 6.0 * TIME_GetDt())
+		
+		OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking)
+
+		break
+}
+

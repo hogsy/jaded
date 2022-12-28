@@ -1,0 +1,27 @@
+#include "KAnn_defines.var"
+
+int				ti_i
+
+function		tfct_current
+
+for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+	ao_SRV[ti_i] = LNK_ServeurGet(ti_i, amid_SRV_LIAISON_ID[ti_i], faux, nofunc, nofunc)
+
+i_etat_courant = -1
+tfct_current = AI_TrackGet(Ci_Track_Etat)
+
+OBJ_CapaSet(CAPA_Mort, 0)
+		
+if (tfct_current != nofunc)
+{
+	i_sort_etat = vrai 
+	AI_Execute(tfct_current)
+}
+
+if (fct_last_etat != nofunc)
+{
+	i_sort_etat = vrai
+	AI_Execute(fct_last_etat)
+}
+
+AI_Execute("KAnn_TRACK_tag_off")

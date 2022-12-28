@@ -1,0 +1,99 @@
+#include "KAnn_defines.var"
+
+int			ti_i
+
+float		tf_norm
+float		tf_cote
+
+vector	tv_joy_move
+vector	tv_joy_sight
+vector	tv_speed
+vector	tv_speed_old
+
+
+// SORTIE D'ETAT =============================================================
+if( i_sort_etat )
+{
+	OBJ_FlagInvisibleSet(faux)
+	OBJ_FlagsControlSet(none, OBJ_C_ControlFlag_RayInsensitive)
+	DYN_GravitySet( Cv_NormalGravity)
+	COL_ColSetActivationSet(C_bit_zdm_pied, none)
+//	@get_global Proc_Global_Human_Change_To_KAnn()
+	i_sort_etat = faux
+	return
+}
+
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_FPS)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_FPS
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	OBJ_FlagInvisibleSet(vrai)
+	OBJ_FlagsControlSet(OBJ_C_ControlFlag_RayInsensitive, none)
+	// init déplacement au sol
+	DYN_FrictionVectorSet(cvector( 5.0,5.0,1.0))
+	DYN_TractionSet(Cv_NullVector)
+	v_joy_sight = OBJ_SightGet()
+	DYN_GravitySet( Cv_NullVector)
+	COL_ColSetActivationSet( none, C_bit_zdm_pied)
+	// AUTORISATIONS DES GRABS
+	for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+		ai_SRV_ENABLE[ti_i] = faux	
+	ai_SRV_ENABLE[Ci_LNK_KKGRAB_OBJECT] = vrai
+	
+//	@get_global Proc_Global_Human_Change_To_Jack()
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// COMPORTEMENT ===========================================================
+//@get_Kamera Proc_Kam_FPSMode_Set()
+ACT_ActionSet(Ann_stress_attente)
+
+// SERVEURS ===================================================================
+AI_Execute("KAnn_exec_serveur_get")
+if(ao_SRV[Ci_LNK_KKGRAB_OBJECT])
+	macro_change_etat("KAnn_ETAT_grabbed_KK")
+
+
+// DEPLACEMENT -----------------------------------------------------------------
+//v_joy_speed = DYN_SpeedGetVector()
+//tv_joy_move = -IO_JoyGetMove()
+//tf_norm = MATH_VecNorm(tv_joy_move)
+//if( ! MATH_FloatNullToler(tf_norm, 0.2) )
+//{
+//	tf_norm *= 4.0
+//	f_joy_move_norm = MATH_FloatBlend(f_joy_move_norm, tf_norm, 3 * TIME_GetDt())
+//	tv_speed_old = v_joy_speed
+//	tv_speed = MATH_VecLocalToGlobal(tv_joy_move)
+//	tv_speed.z = 0.0
+//	if( ! MATH_VecNullEpsilon(tv_speed) )
+//		MATH_VecSetNorm(tv_speed, f_joy_move_norm)
+//	tv_speed.z = tv_speed_old.z		// backupe la vitesse en Z
+//	v_joy_speed = tv_speed
+//}
+//else
+//	f_joy_move_norm = MATH_FloatBlend(f_joy_move_norm, 0.0, 5 * TIME_GetDt())
+//tv_speed = v_joy_speed
+//if( MATH_FloatNullToler(MATH_VecNorm(tv_speed), 0.05) )
+//	v_joy_speed = Cv_NullVector
+//DYN_SpeedSetVector(v_joy_speed)
+//
+// ORIENTATION ---------------------------------------------------------------------
+//OBJ_BankingGeneralSet(@get_Kamera OBJ_SightGet(), Cv_VerticalVector)
+
+// FANTOME DE JACK -------------------------------------------------
+OBJ_PosSet(@o_JACK OBJ_PosGet())
+OBJ_BankingGeneralSet(@o_JACK OBJ_SightGet(), @o_JACK OBJ_BankingGet())
+

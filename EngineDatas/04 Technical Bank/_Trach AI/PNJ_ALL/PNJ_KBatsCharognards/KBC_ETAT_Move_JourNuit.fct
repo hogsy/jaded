@@ -1,0 +1,91 @@
+#include "KBC_defines.var"
+
+messageid		tmid_vision
+
+
+// SORTIE ETAT
+if (i_sort_etat)
+{
+	i_flag_reseau_array = faux
+	
+	i_sort_etat = faux
+	return
+}
+
+
+// ENTREE ETAT
+if (i_etat_courant != ETAT_Move_JourNuit)
+{
+	i_etat_ancien_ancien = i_etat_ancien
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Move_JourNuit
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	KBC_DBG_Trace(i_DBG_trace_etat, "etat Move_JourNuit")
+	
+	// CALCUL DU RESEAU et du next_wp
+	n_reseau = net_move
+	i_flag_depl_fini = faux			// pour bien recalculer le réseau pour remonter (ne pas sauter un wp en optimisant)
+
+	i_flag_net_1st_calcul = vrai
+
+	if( ! net_move )
+		DBG_Error("Avec une config Jour-Nuit, une bat nécessite un réseau de déplacement (net_move)")
+	o_jour_nuit_wp = WAY_WPNearestOfPos( OBJ_PosGet(), net_move, CAPA_WP_JourNuit, none, Ci_Filter_CapaFlag)
+	if( ! o_jour_nuit_wp )
+		DBG_Error("Il n'y a pas de wp Jour-Nuit  (capa14) sur le réseau net_move !!!")
+//	to_obj2 = WAY_WPNearestOfPos( OBJ_PosGet(), net_move, CAPA_WP_deplacement, none, Ci_Filter_CapaFlag)
+	
+	i_mode_depl = Ci_mode_depl_jour_nuit
+	n_reseau = net_move
+	i_reseau_wp_count = 10				// pour bien spécifier qu'on a pas terminé de parcourir le réseau (mais qu'on veut commencer)
+	i_flag_reseau_array = vrai
+	i_force_test_inclinaison = vrai			// test d'inclinaison
+	i_flag_depl_wp_apres_reseau = faux
+	AI_Execute("KBC_exec_network_pos_next")
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ===========================================================================================
+MACRO_CHECK_PAFS
+
+
+// ANALYSE ==================================================
+if( JOUR_NUIT_HeureCorrecte(f_Heure_Debut, f_Heure_Fin) )
+{
+	AI_Execute("KBC_exec_init_attente")
+}
+
+
+// COMPORTEMENT ============================================
+
+// Action et fréquence
+if( KBC_select_action() )
+	KBC_action_frequency_set(Cf_freq_standard)
+
+// Suivi du regard
+i_flag_neck = faux
+if( ( i_reseau_wp_count >=2 ) && ao_reseau_wp[1] && ( MATH_VecDotProduct(OBJ_SightGet(), @ao_reseau_wp[1] OBJ_PosGet() - OBJ_PosGet()) >0 ) )
+{
+	i_flag_neck = vrai
+	v_look_pos = @ao_reseau_wp[1] OBJ_PosGet()
+}
+else if( o_next_wp && ( OBJ_SqrDist(o_next_wp) > 25.0 ) )
+{
+	i_flag_neck = vrai
+	v_look_pos = @o_next_wp OBJ_PosGet()
+}
+
+AI_Execute("KBC_exec_MOVE_beziers")
+if( ! i_reseau_wp_count && i_flag_depl_fini )
+{
+	macro_change_etat("KBC_ETAT_Wait_JourNuit")
+}

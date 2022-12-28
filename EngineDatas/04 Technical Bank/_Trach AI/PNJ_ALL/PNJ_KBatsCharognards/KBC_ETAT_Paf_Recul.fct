@@ -1,0 +1,68 @@
+
+#include "KBC_defines.var"
+
+
+messageid			tmid_vision
+
+
+//=============================================================================
+// LA BAT PREND UN PETIT PAF EN L'AIR ET RECULE SOUS L'IMPACT
+//=============================================================================
+
+// SORTIE ETAT
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	KBC_action_frequency_set(Cf_freq_standard)
+	f_speed = 0.0
+	
+	return
+}
+
+// ENTREE ETAT
+if (i_etat_courant != ETAT_Paf_Recul )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Paf_Recul
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+}
+
+
+// SUIVI DU REGARD
+if( i_mode_agressif_ON && o_cible_attaque )
+{
+	// bat agressive qui a locké un ennemi
+	i_flag_neck = vrai
+	v_look_pos = @o_cible_attaque OBJ_PosGet()
+}
+else
+	i_flag_neck = faux
+
+
+//========== DEPLACEMENT =============
+
+if( o_cible_attaque )
+	KBC_Interet_Update(mid_interet_attaque, C_EVENT_InteretStatusAttack, o_cible_attaque, tmid_vision)	// conserver l'intérêt pour réattaquer
+
+// action et fréquence
+if( KBC_select_action() )
+	KBC_action_frequency_set(Cf_freq_paf_recul)
+
+
+if( MATH_VecNullToler(v_paf_offset, 0.025) )
+{
+	v_paf_offset = Cv_NullVector
+	if( i_mode_agressif_ON && o_cible_attaque && ! MSG_GlobalIsValid(mid_grab_charogne) )
+		AI_Execute("KBC_exec_init_attaque")
+	else
+		KBC_macro_decolle
+}
+else
+	OBJ_PosSet( OBJ_PosGet() + (v_paf_offset * f_paf_offset_coef) )			// recul
+

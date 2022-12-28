@@ -1,0 +1,474 @@
+#include"k_define.var"
+
+#define	Cf_Delai_Amorti_apres_walling			0.2
+
+// LES deplacemetn latéraux sont commenté.
+// si cela reste ainsi virer les 2 anims correspondante du kit d action
+
+int			ti_action
+int			ti_flag_can_move
+int			ti_flag_corner
+int			ti_peut_decroch
+int			ti_GMAT
+
+float		tf_coef
+float		tf_norm
+float		tf_joy_norm
+float		tf_sign
+float		tf_speed
+float		tf_normale_offset
+float		tf_dot_product
+float		tf_edge_end_offset
+float		tf_blend_speed
+float		tf_dot_normale
+float		tf_frame
+
+vector	tv_joy_dir
+vector	tv_new_sight
+vector	tv_speed
+vector	tv_pos
+vector	tv_plan_horizon
+vector	tv_ray_dir
+vector	tv_sens_detect_hotspot 
+vector	tv_plan_banking
+vector	tv_ray_normale
+vector	tv_corner_normale
+
+object	to_collide_object
+object	to_bassin
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+
+	COL_ColSetActivationSet(C_bit_zdm_pied, none)	
+	v_zdm_pos = Cv_Kong_zdm_pos
+	DYN_GravitySet(Cv_Kong_Gravity)
+	COL_GeoColMapPosSet( 0, cvector( 0.0, 0.0, 2.8))
+
+
+	if ( i_etat_courant != ETAT_Kong_climb_rapide)
+	{
+		OBJ_HierarchyReset() // o_climb_0D_Wall
+		if ( o_climb_0D_wp && ( @o_climb_0D_wp OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_Generated ))
+			@o_climb_0D_wp OBJ_HierarchyReset()
+		o_climb_0D_wp = nobody
+	}
+	
+	i_climb_0D_GMAT = -1
+	i_flag_auto_grab = faux
+
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_Kong_accroch_mur) 
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Kong_accroch_mur
+
+	// CAMERA -----------------------------------------------------------------
+//	@get_global i_kong_camera_status = Ci_Kcamera_grab_grimpe
+//	@get_global v_kong_camera_vector		=  v_climb_normale
+	// CAMERA -----------------------------------------------------------------
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	if ( @o_climb_0D_wp OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Generated))
+		i_WP_generated = vrai
+	else
+		i_WP_generated = faux
+
+	// CAMERA -----------------------------------------------------------------
+	@get_global i_kong_camera_status = Ci_Kcamera_accroch
+	// CAMERA -----------------------------------------------------------------
+
+	// GRAB CLIENT ACCEPT
+	ai_SRV_ENABLE[Ci_LNK_KKFINISH_ON_KONG] = faux
+	COL_ColSetActivationSet(none, C_bit_zdm_pied)
+	v_climb_hand_offset = @o_climb_0D_wp MATH_VecLocalToGlobal(cvector(0.0, 0.0, 5.0))
+
+	if (i_WP_generated && !i_flag_auto_grab ) //&& i_dernier_etat == ETAT_jump))
+	{
+		f_time_12M_auto_grab = 0.1
+		ACT_ActionSet(Ci_Kanim_climb_attente)
+	}
+	else
+	{
+		ACT_ActionSet(Ci_Kanim_climb_accroche)
+	}
+	COL_GeoColMapPosSet( 0, cvector( 0.0, 0.0, -1.0))
+	DYN_GravitySet(Cv_NullVector)	
+
+	v_climb_normale = - @o_climb_0D_wp OBJ_SightGet()
+//	v_climb_position = @o_climb_0D_wp OBJ_PosGet()
+	OBJ_HierarchySet(o_climb_0D_Wall)
+	if ( @o_climb_0D_wp OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_Generated )
+		@o_climb_0D_wp OBJ_HierarchySet(o_climb_0D_Wall)
+	macro_render_Vector(v_climb_position, -v_climb_hand_offset, color_jaune)
+	
+	v_zdm_pos = cvector(0.0, 3.4, 0.0)
+
+	i_inertia_allowed = vrai
+	i_climb_ask_jump = faux
+	f_time_start_etat = 0.0
+	f_walling_time_decroche = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+v_climb_speed = Cv_NullVector
+
+//if (f_time_start_etat > 4.0)
+//	@o_climb_0D_wp OBJ_CapaSet(Capa_prise_HS, none)
+
+// ANALYSE ======================================================================
+AI_Execute("k_exec_detect_paf")
+if ( o_paf_actor)
+{
+	PAF_Test_ChangeEtatValid(fct_track_change)
+	if( fct_track_change != nofunc )
+		macro_change_etat(fct_track_change)
+}
+ 
+AI_Execute("k_exec_joy")
+					
+o_climb_0D_last_wp = o_climb_0D_wp
+
+
+// COMPORTEMENT ================================================================
+
+tf_blend_speed = 8.0
+
+ti_action = ACT_ActionGet()
+switch(ti_action)
+{
+	// Retablissement après raccrochage à une corniche
+	case Ci_Kanim_saute_7M :
+
+		tf_frame = ANI_CurrentFrameGet(0)
+		tf_coef = tf_frame / ANI_NbFrameGet(0)
+
+		// Anticipation du saut	
+		if ( i_flag_just_Action)
+			i_climb_ask_jump = vrai
+		if ( i_climb_ask_jump && tf_frame >= 40) //24 )
+		{
+			// Saut
+			f_time_collide_ground = 0.0 // Forcer un saut
+			if ( tf_frame < 60)
+			{
+				i_jump_force_no_impulsion = vrai
+				f_jump_force_distance = 1.0
+				f_jump_force_amplitude = 0.05
+				v_jump_force_sens = -v_climb_normale
+				MATH_VecSetHorzNormalize( v_jump_force_sens)
+				i_jump_check_hotspot = vrai	// On peux enchainer les HOT SPOT
+				
+				i_jump_force_zdm_impulsion = faux
+				i_jump_force_no_impulsion = faux										// On desire une anim d impulsion
+				i_jump_force_anim_impulsion = Ci_Kanim_saute_rapide_up	// Voici l anim d impulsion
+				macro_change_etat("k_ETAT_jump")
+			}
+			else
+			{
+				COUP_CHANGE_To_Dash()
+				macro_change_etat("k_ETAT_main")
+				return
+			}
+			
+		}
+
+		tv_pos = OBJ_PosGet()
+
+		// Gommage en Y ==========================================================
+		if (f_obstacle_dist && tf_frame > 60)
+		{
+			tf_normale_offset = MATH_FloatSign(f_obstacle_dist) * MATH_FloatMin(MATH_AbsFloat(f_obstacle_dist), 8.0 * TIME_GetDt()) 
+			tv_pos += OBJ_SightGet() * tf_normale_offset
+			f_obstacle_dist -= tf_normale_offset
+		}
+
+		// Gommage de la différence en Z ===============================================
+		tf_coef *= tf_coef
+		tf_coef *= tf_coef
+		tf_coef *= tf_coef
+
+		tv_pos.z = MATH_FloatBlend(tv_pos.z, @o_climb_0D_wp OBJ_PosGet().z, tf_coef)
+		
+		// blend de position
+		v_climb_0D_offset_accroch.z = 0.0
+		tv_pos += v_climb_0D_offset_accroch * ( 10.0 * TIME_GetDt())
+		v_climb_0D_offset_accroch *= ( 1.0 - (10.0 * TIME_GetDt()))
+		OBJ_PosSet(tv_pos)
+	
+		if (ACT_ActionFinished())
+		{
+//			ACT_ActionSet(Ci_Kanim_Attente)	
+		
+			tv_speed = DYN_SpeedGetVector()
+			tv_speed.z = 0.0
+			DYN_SpeedSetVector(tv_speed)
+	
+			f_time_collide_ground = 0.0
+
+			macro_change_etat("k_ETAT_main")
+		}
+			
+		break
+
+	// Anim de réception après un saut sur une prise 0D
+	case Ci_Kanim_climb_accroche :
+
+		// PLUS D ik VIRE DES SAUTES... par contre il faut eviter les sol non horizonataux pour le raccrochage dans ce cas la.
+//		if (ANI_IsInBlend())
+//		{
+//			i_flag_climb_IK[Ci_IK_main_gauche] = vrai
+//			f_IK_speed[Ci_IK_main_gauche] = 1.0
+//			f_IK_coef[Ci_IK_main_gauche] = 1.0
+//		}
+//		else
+//		{
+//			f_IK_coef[Ci_IK_main_gauche] = 0.0
+//		}
+
+		if (ACT_ActionFinished())
+		{
+//			if (@o_climb_0D_wp OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Generated))
+//				ACT_ActionSet(Ci_Kanim_saute_accroche_att)
+//			else
+				ACT_ActionSet(Ci_Kanim_climb_attente)
+		}
+			
+	default:
+
+		if (i_WP_generated)
+		{
+			ti_flag_can_move	= faux
+			ti_flag_corner = faux
+
+			if (ti_action == Ci_Kanim_climb_accroche)
+			{
+				v_climb_hand_offset = @o_climb_0D_wp MATH_VecLocalToGlobal(cvector(0.0, 0.0, 5.0))
+			}
+			else
+			{ 
+				if (@get_global f_joy_norm) // || f_climb_force_strafe_dist)
+				{
+					tf_blend_speed = 4.0
+					tf_edge_end_offset = 3.0
+					tf_speed = 0.0
+
+
+					tv_joy_dir = @get_global v_joy_camera_normalized_Z
+					macro_render_Vector(v_climb_position, tv_joy_dir * 10.0, color_cyan)
+					tf_dot_normale = MATH_VecDotProduct(tv_joy_dir, v_climb_normale)
+					tv_joy_dir -= tf_dot_normale * v_climb_normale
+					macro_render_Vector(v_climb_position, tv_joy_dir * 10.0, color_cyan)
+					MATH_VecSetNormalize(tv_joy_dir)
+					
+					macro_render_Vector(v_climb_position, tv_joy_dir * 10.0, color_cyan)
+
+					tv_plan_horizon = MATH_VecNormalize(MATH_VecCrossProduct(v_climb_normale, Cv_VerticalVector))
+					tv_plan_banking = MATH_VecNormalize(MATH_VecCrossProduct(tv_plan_horizon, v_climb_normale))
+				}
+
+				if (!ti_flag_can_move)
+					ACT_ActionSet(Ci_Kanim_climb_attente)
+			}
+		}
+		else
+		{
+			v_climb_hand_offset = @o_climb_0D_wp MATH_VecLocalToGlobal(cvector(0.0, 0.0, 5.0))
+		}
+
+		tv_pos = @o_climb_0D_wp OBJ_PosGet() //v_climb_position
+		tv_pos -= v_climb_hand_offset
+
+		// Validité du decrochage
+		if( !MATH_VecNullToler( tv_pos - OBJ_PosGet(), 0.2))
+			ti_peut_decroch = faux
+		else
+			ti_peut_decroch = vrai
+
+		tv_pos = MATH_VecBlend(OBJ_PosGet(), tv_pos, 8.0 * TIME_GetDt())
+		OBJ_PosSet(tv_pos)
+				
+		DYN_SpeedSetVector(Cv_NullVector)
+	
+		// ON SAUTE ?
+		f_time_12M_auto_grab -= MATH_FloatMin(f_time_12M_auto_grab, TIME_GetDt())	
+
+//			if (i_flag_just_Action && @get_global f_joy_norm)
+//			{
+//				ACT_ActionSet(Ci_Kanim_climb_attente)
+//				macro_change_etat("k_ETAT_commun_climb_impulsion")
+//			}
+//			else 
+		if (i_flag_just_Action )
+		{
+			// Saut Pour remonter sur la corniche
+//			if ( MATH_VecDotProduct( v_climb_normale, v_joy_sight) < 0.0)
+//			{
+//				// Saut dans le sens de la normale
+//				v_jump_force_sens = v_climb_normale												// Orientation du saut
+//				f_time_collide_ground = 0.0 // Forcer un saut
+//				i_jump_force_no_impulsion = faux	// Jouer d anim d impulsion
+//				i_jump_force_anim_impulsion = 78
+//				i_jump_force_no_orient_impulsion = vrai
+//				i_jump_check_hotspot = vrai	// Rien detecté, tester apres l impulsion
+//				i_jump_check_hotspot_fight = vrai	// On peux enchainer sur un ennemi
+//				f_jump_force_hauteur = 0.0 	// Saut a l opposé du mur
+//				f_jump_force_amplitude = 2.5 // Saut cloche
+//				f_jump_force_distance = 5 // Distance
+//			}
+//			else
+//			{
+				// TEST DE HOTSPOT POUR SAUTER
+				HOTSPOT_Detect( -OBJ_SightGet(), vrai)
+				if ( o_jump_hotspot)
+				{
+					
+					// HOPTSPOT
+					f_time_collide_ground = 0.0 // Forcer un saut
+					i_jump_force_no_impulsion = faux	// Jouer d anim d impulsion
+					i_jump_force_no_orient_impulsion = vrai // Ne pas orienter pendant le saut
+					i_jump_force_anim_impulsion = Ci_Kanim_Accroch_mur_demi_tour_Jump
+					i_jump_check_hotspot = faux	// On peux enchainer les HOT SPOT
+					f_jump_force_hauteur = -2.0 	// Saut a -2m au dessus du HS
+					f_jump_force_amplitude = 0.0 
+					macro_change_etat("k_ETAT_jump")
+				}
+				// TESTER S IL Y A UN MUR EN FACE POUR WALLER
+				tv_sens_detect_hotspot = OBJ_PosGet() - (OBJ_SightGet() * 8.0)
+				if ( i_climb_0D_GMAT == -1)
+				{
+					COL_RayObject_Vector( OBJ_PosGet() - (OBJ_SightGet() * 0.2), OBJ_SightGet() * 1.5, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+					i_climb_0D_GMAT = COL_GMAT_FlagsGet(COL_C_Ray)
+				}
+				if( i_climb_0D_GMAT & Gmat_KK_Walling_JumpHotSpotOnly)
+					tv_sens_detect_hotspot = WALLING_GetAnotherWall( OBJ_PosGet() - OBJ_SightGet(), -OBJ_SightGet() * 20.0, vrai)
+				if ( !MATH_VecNullEpsilon( tv_sens_detect_hotspot))
+				{
+					// SAUT N AYANT PAS DETECTE de HOTSPOT : saut normal			
+					i_jump_without_attack = vrai	// Saut précis : interdit le coup
+					f_time_collide_ground = 0.0 // Forcer un saut
+					i_jump_force_no_impulsion = faux	// Jouer d anim d impulsion
+					i_jump_force_anim_impulsion = Ci_Kanim_Accroch_mur_demi_tour_Jump
+					i_jump_force_no_orient_impulsion = vrai
+					f_jump_force_amplitude = 2.5 // Saut cloche
+					v_jump_force_sens = tv_sens_detect_hotspot - OBJ_PosGet()
+					f_jump_force_distance = MATH_VecNorm( v_jump_force_sens) // Distance
+					v_jump_force_sens /= f_jump_force_distance
+					i_jump_check_hotspot = faux	
+					i_jump_check_hotspot_fight =faux
+					f_jump_force_hauteur = -2.0 	// Saut a -2m au dessus du HS
+					macro_change_etat("k_ETAT_jump")	
+		
+				}				
+//			}
+	 		// On REMONTE
+	 		// CAMERA -----------------------------------------------------------------
+			@get_global i_kong_camera_status = Ci_Kcamera_deplacement
+			// CAMERA -----------------------------------------------------------------
+
+			COL_ColSetActivationSet(none, C_bit_zdm_pied)
+			
+			DYN_TractionSet(Cv_NullVector)
+			DYN_StreamSet(Cv_NullVector)
+			DYN_FrictionVectorSet(Cv_NullVector)
+		
+			v_zdm_pos = Cv_Kong_zdm_pos	
+
+			v_climb_hand_offset = @o_climb_0D_wp MATH_VecLocalToGlobal(cvector(0.0, 0.0, 5.0))
+
+
+			tv_pos = @o_climb_0D_wp OBJ_PosGet() //v_climb_position
+			tv_pos -= v_climb_hand_offset
+			v_climb_0D_offset_accroch = tv_pos - OBJ_PosGet()
+			ACT_ActionSet(Ci_Kanim_saute_7M)
+
+			f_obstacle_dist = MATH_VecDotProduct(v_climb_hand_offset, OBJ_SightGet())
+			f_obstacle_dist += av_climb_hand_offset[6][Ci_Climb_Offset_Jump].y
+			
+			f_obstacle_dist = f_obstacle_dist
+		}
+		else if ( ( i_Interaction_ReadInputs &&  ! i_joy_disable_control) && @get_global f_joy_norm && MATH_VecDotProduct( v_joy_sight_normalized, -v_climb_normale) >= Cf_Cos45 && !i_climb_0D_force_blend_banking)
+ 		{
+	 		// On REMONTE
+	 		// CAMERA -----------------------------------------------------------------
+			@get_global i_kong_camera_status = Ci_Kcamera_deplacement
+			// CAMERA -----------------------------------------------------------------
+
+			COL_ColSetActivationSet(none, C_bit_zdm_pied)
+			
+			DYN_TractionSet(Cv_NullVector)
+			DYN_StreamSet(Cv_NullVector)
+			DYN_FrictionVectorSet(Cv_NullVector)
+		
+			v_zdm_pos = Cv_Kong_zdm_pos	
+
+			v_climb_hand_offset = @o_climb_0D_wp MATH_VecLocalToGlobal(cvector(0.0, 0.0, 5.0))
+
+
+			tv_pos = @o_climb_0D_wp OBJ_PosGet() //v_climb_position
+			tv_pos -= v_climb_hand_offset
+			v_climb_0D_offset_accroch = tv_pos - OBJ_PosGet()
+			ACT_ActionSet(Ci_Kanim_saute_7M)
+
+			f_obstacle_dist = MATH_VecDotProduct(v_climb_hand_offset, OBJ_SightGet())
+			f_obstacle_dist += av_climb_hand_offset[6][Ci_Climb_Offset_Jump].y
+			
+			f_obstacle_dist = f_obstacle_dist
+		}
+		else if ( ti_peut_decroch && @get_global f_joy_norm && MATH_VecDotProduct( v_joy_sight_normalized, -v_climb_normale) <= -Cf_Cos45)
+ 		{
+	 		// CHUTE : WALLING
+			vector		tv_bassin_pos, tv_bassin_sight, tv_bassin_banking
+
+			// KOng doit décrocher se positionner comme s'il etait deja bien positionné pour éviter de ne pas etre en collision mur
+			tv_pos = @o_climb_0D_wp OBJ_PosGet() //v_climb_position
+			tv_pos -= v_climb_hand_offset
+			OBJ_PosSet(tv_pos)
+
+			// Ce bout de code permet de passer d'une position horizontal a une position verticale de BM sans saute d'anim et d'orientation
+			to_bassin = ANI_CanalObjectGet(Anim_Canal_Bassin)										// Os du bassin
+			tv_bassin_pos = @to_bassin OBJ_PosGet()														// Recup la position et l'orientation du bassin
+			tv_bassin_sight = @to_bassin OBJ_SightGet()													// pour la restaurer apres la rotation de BM
+			tv_bassin_banking = @to_bassin OBJ_BankingGet()											// Le but c'est que le bassin soit a la position avant le Flash (stock matrix) pour que le blend soit ok
+			OBJ_BankingGeneralSet( OBJ_BankingGet(), -OBJ_SightGet() )							// Inverse Banking et Sight (reorientation de la BM du perso)
+			@to_bassin OBJ_PosSet(tv_bassin_pos)															// On restore la positionet l'orientation,
+			@to_bassin OBJ_BankingGeneralSet(tv_bassin_sight, tv_bassin_banking)			// Le bassin est a nouveau correctement placé et orienté
+			ANI_StockMatrix()																						// On Flash alors la Matrice (orientation de la BM et du Bassin OK)
+			ACT_ActionSet(Ci_Kanim_Walling_derape)														// Lance l'anim 
+
+			v_zdm_pos = Cv_Kong_zdm_pos																	// On ajuste la position de la ZDM (optionnel)
+			v_old_zdm_pos = v_zdm_pos																			// On ajuste la position de la ZDM (optionnel)
+			COL_ZonePosSet(C_zdm_pied, Cv_Kong_zdm_pos)											// On ajuste la position de la ZDM (optionnel)
+
+			v_walling_normal = v_climb_normale
+
+			macro_change_etat("k_ETAT_walling")	 		
+	 	}
+}
+
+
+tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), - v_climb_normale, tf_blend_speed * TIME_GetDt())
+if ( !i_climb_0D_force_blend_banking) 
+	OBJ_BankingGeneralSet(tv_new_sight, MATH_VecBlendRotate( OBJ_BankingGet(), Cv_VerticalVector, 8.0 * TIME_GetDt()) )
+else
+{
+	OBJ_BankingGeneralSet(tv_new_sight, MATH_VecBlendRotate( OBJ_BankingGet(), Cv_VerticalVector, 8.0 * TIME_GetDt()) )
+	if ( f_time_start_etat > Cf_Delai_Amorti_apres_walling)
+	i_climb_0D_force_blend_banking = faux
+}
+
+

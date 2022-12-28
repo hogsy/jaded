@@ -1,0 +1,58 @@
+#include "GST_StalkManager_defines.var"
+
+int i
+
+if (mo_Enemy == nobody ) 
+{
+	DBG_TraceObject( OBJ_Me() )
+	DBG_TraceString( " -> StalkManager - No enemy set\n" )
+	AI_TrackCurStop()
+	return
+}
+
+if (mi_Enemy_Max == 0)
+{
+	DBG_TraceObject( OBJ_Me() )
+	DBG_TraceString( "StalkManager - max enemy set to 0, increase it\n" )
+	AI_TrackCurStop()
+	return
+}
+if (mi_Enemy_StalkMax > STALK_MaxStalkEnemy )
+{
+	DBG_TraceObject( OBJ_Me() )
+	DBG_TraceString( "StalkManager - max stalk enemy too high (max is 16)\n" )
+	AI_TrackCurStop()
+	return
+}
+if (mi_Enemy_FightMax > STALK_MaxFightEnemy )
+{
+	DBG_TraceObject( OBJ_Me() )
+	DBG_TraceString( "StalkManager - max fight enemy too high (max is 16)\n" )
+	AI_TrackCurStop()
+	return
+}
+	
+mi_Enemy_StalkNb = 0
+mi_Enemy_FightNb = 0
+mi_Enemy_Active = 0
+mi_Enemy_Nb = 0
+
+if (mf_StalkTimer_Min == 0)
+	mf_StalkTimer_Min = mf_StalkTimer_Max
+if (mf_StalkTimer_Max == 0)
+	mf_StalkTimer_Max = mf_StalkTimer_Min
+if (mf_StalkTimer_Max < mf_StalkTimer_Min)
+{
+	mf_StalkTimer_Cur = mf_StalkTimer_Min
+	mf_StalkTimer_Min = mf_StalkTimer_Max
+	mf_StalkTimer_Max = mf_StalkTimer_Cur
+}
+mf_StalkTimer_Cur = MATH_RandFloat( mf_StalkTimer_Min, mf_StalkTimer_Max)
+
+if ( mf_FightTimer == 0)
+	mf_FightTimer = 10
+	
+for (i = 0; i < STALK_MaxStalkEnemy; i++)
+	mai_StalkEnemy_OnWay[ i ] = -1
+
+AI_TrackCurChange( "GSTSM_loop" )

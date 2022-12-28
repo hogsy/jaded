@@ -1,0 +1,11 @@
+object o
+vector v
+v=@Kong OBJ_PosGet()-TargetPos
+v=MATH_VecNormalize(v)*TIME_GetDt()*7
+TargetPos+=v
+o=VIEW_GetObject(C_ID_Kong)
+v=@o OBJ_PosGet()
+v.z-=10
+OBJ_PosSet(v)
+OBJ_SightSet(TargetPos-OBJ_PosGet())
+@Spot OBJ_RejoinAndOrient(OBJ_Me())

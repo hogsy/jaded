@@ -1,0 +1,19 @@
+#include "PNJ_Car_defines.var"
+
+float		tf_dot_product
+
+vector	tv_temp
+
+object	to_camera
+
+to_camera = @get_global o_camera
+
+f_on_screen_pourcent = VIEW_LIB_Pourcent_On_Screen(OBJ_PosGet() + OBJ_BankingGet(), Cf_car_sphere_size, 1.0, 1.0, tv_temp, faux)
+
+//if (f_on_screen_pourcent == -1.0)
+//	OBJ_FlagInvisibleSet(vrai)
+//else
+//	OBJ_FlagInvisibleSet(faux)
+
+if (f_on_screen_pourcent != -1.0 && ! COL_LIB_Can_See_Actor(OBJ_Me(), @to_camera OBJ_PosGet(), OBJ_PosGet() + OBJ_BankingGet(), all, OBJ_C_IdentityFlag_AI, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable))
+	f_on_screen_pourcent = -1.0

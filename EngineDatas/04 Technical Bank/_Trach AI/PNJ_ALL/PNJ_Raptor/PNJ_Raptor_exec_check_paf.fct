@@ -1,0 +1,654 @@
+#include "PNJ_Raptor_defines.var"
+
+int					ti_flag_ok
+int					ti_rank
+int					ti_paf_event_nb
+int					ti_index
+int					ti_best_interet_paf_index
+int					ti_flag_target_accessible
+int					ti_territory_ID
+int					ti_perceived_status
+int					ti_flag_visual_paf
+int					ti_flag_add_paf
+
+float				tf_interet
+float				tf_interet_reel
+float				tf_last_wanted_speed
+float				tf_delay_before_bite
+float				tf_puissance_multiplifier
+float				tf_seuil_slide
+float				tf_seuil_fall
+float				tf_seuil_fly
+float				tf_seuil_accumulation
+float				tf_seuil_flee
+
+vector			tv_bras_de_levier
+
+object			EVT_Pere
+object			EVT_Target
+object			to_bone
+object			to_bidoche
+
+message		tm_msg_filter
+
+messageid		tmid_paf_event
+messageid		tmid_vision_event
+messageid		tmid_invalid_event
+
+if (i_flag_stalk)
+	return
+
+if (i_flag_paf_check_done)
+	return
+
+i_flag_paf_check_done = vrai
+
+o_paf_actor = nobody
+
+MSG_GlobalSetInvalid(tmid_invalid_event)
+
+MSG_SetNull(tm_msg_filter)
+tm_msg_filter.msg_gao1 = OBJ_Me()
+ti_rank = -1
+
+i_flag_paf_fly = faux
+i_flag_paf_fall = faux
+i_flag_paf_slide = faux
+i_flag_paf_visual = faux
+i_flag_paf_repousse = faux
+i_flag_paf_bronto = faux
+
+tf_delay_before_bite = Cf_Infinit
+
+if (raptor_type == C_ID_Tyranosaure && i_perceived_main_actor_index != -1 && ai_perceived_accessible[i_perceived_main_actor_index])
+{
+	tf_delay_before_bite = PNJ_Raptor_Delay_Before_Grab(o_main_actor, 1.0)
+//	if (tf_delay_before_bite != Cf_Infinit)
+//	{
+//		ti_index = STR_CreateText("Interception : ", cvector(0.1, 0.1, 0.0), 0.0)
+//		STR_AppendFloat(ti_index, tf_delay_before_bite, 2)
+//	}	
+}
+
+switch(raptor_category)
+{
+	case Ci_Raptor_Heavy :	
+		tf_seuil_slide = 15.0
+		tf_seuil_fall = 20.0
+		tf_seuil_fly = 40.0
+		tf_seuil_accumulation = 30.0
+		tf_seuil_flee = 30.0
+		break
+
+	default:
+		tf_seuil_slide = 8.0		// 5.0
+		tf_seuil_fall = 11.0		// 10.0
+		tf_seuil_fly = 20.0			// 20.0
+		tf_seuil_accumulation = Cf_paf_resistance
+		tf_seuil_flee = Cf_paf_resistance
+		break
+}
+
+for (	tmid_paf_event = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tm_msg_filter);
+		MSG_GlobalIsValid(tmid_paf_event);
+		tmid_paf_event = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tm_msg_filter)	)
+{
+	EVT_Pere = EVENT_PereGet(tmid_paf_event)
+
+	i_paf_type = EVENT_PafTypeGet(tmid_paf_event)
+
+	if (@EVT_Pere AI_IsModel("PNJ_Pacifique/PNJ_Bontosaure_Patte"))
+	{
+		switch(i_etat_courant)
+		{
+			case ETAT_A_TERRE :
+			case ETAT_BURN :
+			case ETAT_PAF_SLIDE :
+			case ETAT_PAF_FALL :
+			case ETAT_PAF_FLY :
+				PNJ_Raptor_Minimise_Life(0.0, EVT_Pere)
+				v_paf_dir = EVENT_PafDirGet(tmid_paf_event)
+				MATH_VecSetNormalize(v_paf_dir)
+				i_flag_paf_fall = vrai
+				i_flag_paf_bronto = vrai
+				return
+				break
+			
+			default:
+				continue
+		}
+	}
+
+	if (i_paf_type & C_PAF_KK_ODE)
+		continue
+
+	if (i_paf_type == C_PAF_KK_KiTue)
+	{
+		PNJ_Raptor_Minimise_Life(0.0, EVT_Pere)
+		continue
+	}
+
+//	if (i_paf_type == C_EVENT_PAF_Agonisant)
+//	{
+//		PNJ_Raptor_Minimise_Life(f_life * Cf_Life_Agonisant, EVT_Pere)
+//		continue
+//	}
+//
+//	if (i_paf_type == C_EVENT_PAF_Blessant)
+//	{
+//		PNJ_Raptor_Minimise_Life(f_life * Cf_Life_Blesse, EVT_Pere)
+//		continue
+//	}
+
+	if (raptor_type == C_ID_Raptor && EVT_Pere != o_main_actor && MSG_GlobalIsValid(mid_force_target) && EVT_Pere == EVENT_Gao2Get(mid_force_target))
+		continue
+
+	if (i_paf_type & C_PAF_KK_FoodChain)
+		f_point_de_viande -= MATH_FloatMin(f_point_de_viande,  EVENT_PafPuisGet(tmid_paf_event))
+
+	if (i_paf_type & C_PAF_KK_Weapon)
+		f_time_last_shot_paf = TIME_Get()
+
+	tf_puissance_multiplifier = 1.0
+	f_paf_puissance = EVENT_PafPuisGet(tmid_paf_event)
+	if (f_paf_puissance == 10000.0)
+		f_paf_puissance = Cf_sniper_rifle_paf
+
+	v_paf_dir = EVENT_PafDirGet(tmid_paf_event)
+	
+	// Le raptor ne doit pas rentrer dans une cache après un paf...
+	if (raptor_type == C_ID_Raptor)
+	{
+		switch(ACT_ActionGet())
+		{
+			case Action_Attaque_Colonne_Rex :
+			case Action_Attaque_Colonne :
+				v_paf_dir = -OBJ_SightGet()
+				break
+		}
+	}
+
+	i_paf_canal = EVENT_PafCanalGet(tmid_paf_event)
+
+	o_paf_actor = EVT_Pere
+
+//	if (i_paf_type == C_EVENT_PAF_Repousse)
+//		f_paf_puissance = 0.0
+//
+	if (i_paf_type & C_PAF_KK_Repousse)
+	{
+		switch(raptor_type)
+		{
+			case C_ID_Galiminus :
+
+				// BIDOCHE ===============================================================
+				ti_flag_ok = vrai
+			
+				to_bidoche = @get_global o_bidoche_gali
+				if ( ! to_bidoche)
+					ti_flag_ok = faux
+				else if (OBJ_ZoomGet() > 0.1501)
+					ti_flag_ok = faux
+				else if (EVT_Pere != o_main_actor)
+					ti_flag_ok = faux
+		 		else if (@get_global o_bidoche_gao)
+					ti_flag_ok = faux
+		 		else if (@"univ" i_jack_cpt_plug >= PLUG_CASSE)
+					ti_flag_ok = faux
+		 		
+				if (ti_flag_ok)
+		 		{
+					to_bidoche = @to_bidoche OBJ_Duplicate(@ao_head_bones[0] OBJ_PosGet())
+					@to_bidoche OBJ_BankingGeneralSet(OBJ_SightGet(), OBJ_BankingGet())
+					@to_bidoche OBJ_ZoomSet(OBJ_ZoomGet() * 16.0)
+					@get_global o_bidoche_gao = to_bidoche
+					@get_PNJ_Bidoche_path to_bidoche i_modules_pafed_index = MATH_RandInt(1, 4)
+					@get_PNJ_Bidoche_path to_bidoche f_size_coef = @to_bidoche OBJ_ZoomGet()
+					OBJ_Destroy()
+				}
+				// BIDOCHE ===============================================================
+
+				if (TIME_Elapsed(f_time_last_repousse, 4.0)	)
+				{
+					f_time_last_repousse = TIME_Get()
+
+					i_flag_paf_repousse = vrai
+
+					if (EVT_Pere != o_main_actor)
+						f_paf_puissance = 0.0
+					else if ( i_paf_type & C_PAF_KK_Jacks_Punch )		// Poing
+						f_paf_puissance = 0
+					else if ( f_paf_puissance == 1 )		// Crosse
+						f_paf_puissance = 0
+					else if ( f_paf_puissance == 2 )		// Os
+						f_paf_puissance = f_life / 3.0
+					else if ( f_paf_puissance == 3 )		// Lance
+						f_paf_puissance = f_life / 3.0
+					else
+						f_paf_puissance = f_life / 2.0		// Feu
+	
+					PNJ_Raptor_Remove_Life(f_paf_puissance, EVT_Pere)
+				}
+				else
+				{
+					i_flag_paf_visual = vrai
+				}
+				
+				
+				break
+		
+			case C_ID_Raptor :
+
+				if (o_paf_actor != o_main_actor)
+					continue	
+			
+//				PNJ_Raptor_Add_Visual_Paf(tmid_paf_event)
+	
+				if (i_paf_type & C_PAF_KK_Jacks_Punch)
+				{
+				 	if (! o_grab_actor)
+						continue
+						
+					f_paf_puissance = 0.0
+				}
+
+				i_flag_grab_hit_cpt ++
+				
+				// Gestion accumulation de pafs...
+				if (o_grab_actor == o_main_actor && i_flag_grab_hit_cpt < 3 && f_paf_puissance < 3)
+				{
+					if (TIME_Elapsed(f_SNF_last_paf_time, f_SNF_between_paf_duration))
+					{
+						f_SNF_last_paf_time = TIME_Get()
+						SND_RequestPlayOnObjCanal(Ci_SND_Paf_Faible, Anim_Canal_Tete)
+					}
+
+					continue
+				}
+
+				f_paf_puissance = 0.0
+
+				switch(i_paf_canal)
+				{
+					case Anim_Canal_Tete :
+					case Anim_Canal_Machoire :
+					case Anim_Canal_Cou :
+						i_flag_paf_repousse = vrai
+						if ( (i_paf_type & C_PAF_KK_Fire ) || ! TIME_Elapsed(f_time_last_repousse, 4.0) )
+							i_flag_force_requin_mode = vrai
+						f_time_last_repousse = TIME_Get()
+						break
+					
+					default:
+						PNJ_Raptor_Add_Visual_Paf(tmid_paf_event)
+						continue
+				}
+				break
+				
+			case C_ID_Tyranosaure :
+				continue
+				break
+		}
+	}
+	else
+	{
+		ti_index = ARR_ObjSearch(&ao_paf_sender[0], i_paf_sender_nb, EVT_Pere)
+		if (ti_index == -1)
+		{
+			ti_index = i_paf_sender_nb
+			i_paf_sender_nb++
+			ao_paf_sender[ti_index] = EVT_Pere
+		}
+	
+		af_paf_sender_dommage[ti_index] += f_paf_puissance
+	
+		f_paf_jauge	+= f_paf_puissance
+		f_paf_jauge_requin += f_paf_puissance
+	
+		switch(raptor_type)
+		{
+			case C_ID_Tyranosaure :
+
+				if (EVT_Pere == o_main_actor && (i_paf_type & C_PAF_KK_Weapon))
+					f_devore_paf_jauge += f_paf_puissance
+			
+				if (tf_delay_before_bite > 3.5)
+					break
+	
+				tf_last_wanted_speed = f_wanted_speed
+
+				if (i_flag_paf_can_reduce_speed)
+				{
+					if (f_paf_puissance >= Cf_sniper_rifle_paf)
+						f_wanted_speed -= MATH_FloatMin(f_wanted_speed, 5.0)
+					else
+						f_wanted_speed -= MATH_FloatMin(f_wanted_speed, 0.5)
+				}
+
+				if (i_perceived_best_actor_index != -1 && ai_perceived_status[i_perceived_best_actor_index] & Ci_PERCEIVED_CINE_TARGET)
+				{
+					// EN CINE TARGET... PAS DE BOBO
+					ti_flag_ok = faux
+				}
+				else
+				{
+					ti_flag_ok = faux
+	
+					if (f_paf_puissance >= Cf_shotgun_paf_pointblank)
+					{
+						// SHOT GUN A BOUT PORTANT
+						ti_flag_ok = vrai
+					}
+					else if (tf_last_wanted_speed && ! f_wanted_speed)
+					{
+						// ACCUMULATION
+						ti_flag_ok = vrai
+					}
+					else if (i_paf_type & C_PAF_KK_Javelin)
+					{
+						// LANCE
+						if (EVT_Pere != o_main_actor)
+						{
+							ti_flag_ok = vrai
+						}
+						else if (TIME_Elapsed(f_time_last_javelin_paf, 5.0) || i_perceived_best_actor_index != i_perceived_main_actor_index)
+						{
+							f_time_last_javelin_paf = TIME_Get()
+							ti_flag_ok = vrai
+						}
+					}
+					else
+					{
+						// IN THE HEAD
+						switch(i_paf_canal)
+						{
+							case Anim_Canal_Tete :
+							case Anim_Canal_Machoire :
+							case Anim_Canal_Cou :
+								if (i_etat_courant == ETAT_MORD || (f_machoire_rot_coef && EVT_Pere == o_main_actor) )
+									ti_flag_ok = vrai
+								break
+						}
+					}
+							
+					if (ti_flag_ok)
+					{
+						i_flag_paf_can_reduce_speed	 = faux
+					
+						f_paf_jauge = 0.0
+	
+						if (i_etat_courant != ETAT_HESITE && !i_flag_cri)
+							i_flag_change_target = vrai
+	
+						f_force_slow_duration = 6.0
+					}
+				}
+	
+				break	
+		
+			case C_ID_Raptor :
+
+				i_flag_cri = faux
+
+				if (i_paf_type & (C_PAF_KK_Weapon | C_PAF_KK_Javelin) )
+				{
+					switch(raptor_category)
+					{
+						case Ci_Raptor_Heavy :
+						 	switch(i_paf_canal)
+						 	{
+						 		// HEADSHOT ?
+						 		case Anim_Canal_Tete :
+						 		case Anim_Canal_Machoire :
+									break	
+
+								default:
+									f_paf_puissance = MATH_FloatMax(f_paf_puissance - 5.0, 0.0)
+							}
+							break
+						
+						default:
+			
+						 	switch(i_paf_canal)
+						 	{
+						 		// HEADSHOT ?
+						 		case Anim_Canal_Tete :
+						 		case Anim_Canal_Machoire :
+						 			tf_puissance_multiplifier *= 2.0
+									break	
+							}
+					}
+				}
+	
+				// POINTS DE VIE
+				if (@EVT_Pere AI_IsModel("PNJ_Predators/PNJ_Scolo"))
+				{
+					// On ne s'enlève pas de points de vie...
+				}
+				else
+				{
+					PNJ_Raptor_Remove_Life(f_paf_puissance * tf_puissance_multiplifier, EVT_Pere)
+				}
+	
+//				if (i_paf_type & C_EVENT_PAF_Blessant)
+//					PNJ_Raptor_Minimise_Life(f_life * Cf_Life_Blesse, EVT_Pere)
+//	
+//				if (i_paf_type & C_EVENT_PAF_Agonisant)
+//					PNJ_Raptor_Minimise_Life(f_life * Cf_Life_Agonisant, EVT_Pere)
+	
+				if (i_paf_type & C_PAF_KK_KiTue)
+					PNJ_Raptor_Minimise_Life(0.0, EVT_Pere)
+	
+				if (i_paf_type & C_PAF_KK_Fire)
+				{
+					f_paf_jauge = 0.0
+//		 			i_flag_paf_fly = vrai
+//					i_flag_paf_fall = vrai
+					i_flag_paf_slide = vrai
+				}
+				else if (EVT_Pere == o_main_actor && f_grab_main_hysteresis)
+				{
+					f_paf_jauge = 0.0
+					i_flag_paf_fall = vrai	
+				}
+				else if (f_paf_puissance >= tf_seuil_fly && v_paf_dir.z > -Cf_Cos60 && ! (i_paf_type & C_PAF_KK_Javelin) )
+				{
+					f_paf_jauge = 0.0
+		 			i_flag_paf_fly = vrai
+				}
+				else if (f_paf_puissance >= tf_seuil_fall)
+				{
+					f_paf_jauge = 0.0
+		 			i_flag_paf_fall = vrai
+		 		}
+		 		else if (f_paf_puissance >= tf_seuil_slide || (!i_flag_saut && f_paf_jauge >= tf_seuil_accumulation))
+				{
+					f_paf_jauge = 0.0
+					i_flag_paf_slide = vrai
+				}
+				else if (EVT_Pere && @EVT_Pere AI_HaveSameModel(OBJ_Me()))
+				{
+					f_paf_jauge = 0.0
+					i_flag_paf_slide = vrai
+				}
+	
+				i_flag_paf_visual = vrai
+
+				if (i_flag_paf_fly)
+				{
+					switch(ACT_ActionGet())
+					{
+						case Action_Attaque_Colonne_Rex :
+						case Action_Attaque_Colonne :
+							// On est coincé, mieux vaut tomber
+							i_flag_paf_fly = faux
+							i_flag_paf_fall = vrai
+							break
+							
+						default:
+							if ( ! i_flag_saut && raptor_category == Ci_Raptor_Heavy)
+							{
+								// Les lourds sont lourds...
+								i_flag_paf_fly = faux
+								i_flag_paf_fall = vrai
+							}
+					}
+				}
+
+				switch(ACT_ActionGet())
+				{
+					case Action_Saut_cycl	 :
+					case Action_Saut_Pied_D :
+					case Action_Saut_Pied_G :
+					case Action_Saut_Reception_D :
+					case Action_Saut_Reception_G :
+					case Action_Saut_fin_surplace :
+						if (i_flag_paf_slide || i_flag_paf_fall)
+							i_flag_paf_fly = vrai
+						break
+				}
+	
+				break
+	
+			case C_ID_Galiminus :
+			
+				// POINTS DE VIE
+				PNJ_Raptor_Remove_Life(f_paf_puissance, EVT_Pere)
+				
+				if (i_paf_type & C_PAF_KK_Javelin)
+					PNJ_Raptor_Minimise_Life(0.0, EVT_Pere)
+		
+				if (i_paf_type & C_PAF_KK_Fire || f_paf_puissance >= 20.0)
+		 			i_flag_paf_fly = vrai
+				else if (!f_lifecur || f_paf_puissance >= 10.0)
+					i_flag_paf_fall = vrai	
+				else
+					i_flag_paf_slide = vrai
+
+				switch(ACT_ActionGet())
+				{
+					case Action_Saut_cycl	 :
+					case Action_Saut_Pied_D :
+					case Action_Saut_Pied_G :
+					case Action_Saut_Reception_D :
+					case Action_Saut_Reception_G :
+					case Action_Saut_fin_surplace :
+						if (i_flag_paf_slide || i_flag_paf_fall)
+							i_flag_paf_fly = vrai
+						break
+				}
+
+				i_flag_paf_visual = vrai
+				break		
+		
+		}
+	
+		PNJ_Raptor_Add_Visual_Paf(tmid_paf_event)
+	}
+
+	switch(raptor_type)
+	{
+		case C_ID_Raptor :
+		case C_ID_Tyranosaure :
+
+			ti_flag_ok = vrai
+			if ( ! f_lifecur )
+				ti_flag_ok = faux
+			else if (i_flag_paf_fall)
+				ti_flag_ok = faux
+			else if (i_flag_paf_fly)
+				ti_flag_ok = faux
+			else if (i_flag_paf_slide)
+				ti_flag_ok = faux
+			
+			if (ti_flag_ok && TIME_Elapsed(f_SNF_last_paf_time, f_SNF_between_paf_duration))
+			{
+				f_SNF_last_paf_time = TIME_Get()
+				f_SNF_between_paf_duration = MATH_RandFloat(0.5, 1.0)
+				SND_RequestPlayOnObjCanal(Ci_SND_Paf_Faible, Anim_Canal_Tete)
+			}
+			
+			break
+	}
+
+	if (f_lifecur)
+	{
+		ti_perceived_status = 0
+		
+		ti_flag_add_paf = faux
+
+		if ( ! f_paf_puissance )
+		{
+			ti_flag_add_paf = vrai
+		}
+		else if (i_paf_type & C_PAF_KK_Javelin)
+		{
+			ti_flag_add_paf = vrai
+			ti_perceived_status = Ci_PERCEIVED_JAVELIN_PAF
+		}
+		else
+		{
+			switch(raptor_type)
+			{
+				case C_ID_Tyranosaure :
+					if (af_paf_sender_dommage[ti_index] > Cf_Trex_Paf_Resistance || i_paf_type & C_PAF_KK_Javelin)
+					{
+						ti_flag_add_paf = vrai
+						i_flag_del_paf_sender = vrai
+					}
+					break
+	
+				default:
+					ti_flag_add_paf = vrai
+			}
+		}
+
+		if (ti_flag_add_paf)
+		{
+			tmid_vision_event = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility, EVT_Pere, nobody)
+			ti_index = PNJ_Raptor_Add_Perceived_Actor(EVT_Pere, 0, tmid_vision_event)
+		
+			// MISE A JOUR DU STATUS DE CETTE ACTEUR
+			ti_perceived_status |= Ci_PERCEIVED_PAF
+
+			// PAF VENANT DU MAIN ACTOR
+			if (EVT_Pere == o_main_actor)
+			{
+//				if (i_paf_type & C_EVENT_PAF_Perforant || af_perceived_dist[ti_index] < 8.0)
+//					i_flag_ignore_force_target	= vrai
+					
+				ti_perceived_status |= Ci_PERCEIVED_MAIN_PAF
+			}
+
+			switch(raptor_type)
+			{
+				case C_ID_Tyranosaure :
+					ai_perceived_status[ti_index] |= ti_perceived_status
+					break
+	
+				case C_ID_Galiminus :
+					if (ai_perceived_accessible[ti_index])
+						ai_perceived_status[ti_index] |= ti_perceived_status
+					break
+					
+				case C_ID_Raptor :
+					ai_perceived_status[ti_index] |= ti_perceived_status
+					if (ti_index != -1 && ! ai_perceived_accessible[ti_index])
+					{
+						f_fuite_jauge += f_paf_puissance
+						if (f_fuite_jauge >= tf_seuil_flee || i_flag_paf_slide || i_flag_paf_fall || i_flag_paf_fly)
+						{
+							f_paf_puissance = 0.0
+							i_flag_force_fuite = vrai
+						}
+					}
+					break
+			}
+		}
+	}
+}
+
+//i_flag_paf_important = faux
+//i_flag_paf_moyen = faux
+//f_lifecur = f_life
+

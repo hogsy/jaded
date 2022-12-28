@@ -1,0 +1,22 @@
+vector		tv_sens
+
+if ( i_fin_mode)
+{
+	// PURGE DU COMPORTEMENT
+	// EXEC
+	i_fin_mode = faux
+	i_mode_retour_ini = faux
+	return
+}
+
+if ( !i_mode_retour_ini)
+{
+	i_mode_retour_ini = vrai
+	i_retour_etat = 1
+	ACT_ActionSet( 8)
+	return
+}
+
+if ( ACT_ActionFinished())
+	i_retour_etat = 3
+OBJ_BankingGeneralSet( MATH_VecBlendRotate( OBJ_SightGet(), OBJ_SightInitGet(), 6.0 * TIME_GetDt()), Cv_VerticalVector)

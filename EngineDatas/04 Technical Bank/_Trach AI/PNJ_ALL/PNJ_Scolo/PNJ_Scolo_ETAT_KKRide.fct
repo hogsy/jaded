@@ -1,0 +1,188 @@
+#include "PNJ_Scolo_defines.var"
+
+int				ti_i
+
+float			tf_coef
+float			tf_dist
+float			tf_speed
+
+object		to_target
+object		to_client
+
+vector		tv_pos
+vector		tv_new_sight
+vector		tv_new_banking
+vector		tv_speed
+vector		tv_traction
+vector		tv_temp
+
+object		to_me
+
+messageid	tmid_LNK
+
+if (i_flag_sortie_etat)
+{
+	i_flag_sortie_etat = faux
+	
+	COL_ColSetActivationSet(C_bit_zde_corps, none)
+
+	if (i_etat_courant != ETAT_KKFinish)
+	{
+		COL_StartMatrixSet(OBJ_PosGet())
+
+		i_snaped_bone_index = -1
+		f_delay_before_moving_again = 0.0
+
+		if (@get_global o_KNMI_finish_leader == OBJ_Me())
+			@get_global o_KNMI_finish_leader = nobody
+
+		AI_TrackChange(4, "PNJ_Scolo_After_ETAT")
+		AI_CBDel(o_proie, CallBack_After_Blend, "PNJ_Scolo_callback_set_pos")
+		o_proie = LNK_ThisClientGet(o_proie, Ci_LNK_RIDE_DINO, mid_proie_LNK, faux, nofunc, nofunc, nofunc)
+
+		if (SND_rollup_loop != -1)
+		{
+			SND_Stop(SND_rollup_loop)
+			SND_rollup_loop = -1
+		}
+	}
+
+	return
+}
+
+if (i_etat_courant != ETAT_KKRide)
+{
+	// INTIALISATION
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_KKRide
+	
+	if (fct_last_etat)
+	{
+		i_flag_sortie_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = "PNJ_Scolo_ETAT_KKRide"
+	
+	PNJ_Scolo_Virtual_Net_Init(vrai, nobody)
+
+	f_grab_Z_speed = DYN_SpeedGetVector().z
+
+	AI_TrackChange(Ci_Track_Reflex, "PNJ_Scolo_Reflex")
+
+	AI_TrackStop(4)
+	AI_CBAdd(o_proie, CallBack_After_Blend, "PNJ_Scolo_callback_set_pos")
+
+	o_snap_bone = @o_proie ANI_CanalObjectGet(i_snaped_bone_index)
+	f_move_speed = DYN_SpeedGet()
+	f_snaped_speed = 6.0 * OBJ_ZoomGet()
+	
+	v_snap_pos = @o_snap_bone MATH_VecGlobalToLocal(OBJ_PosGet() - @o_snap_bone OBJ_PosGet()) 
+	v_snap_sight = @o_snap_bone MATH_VecGlobalToLocal(OBJ_SightGet())
+	
+	v_snap_banking = OBJ_PosGet() - @o_snap_bone OBJ_PosGet()
+	v_snap_banking.z = 0.0
+	MATH_VecSetNormalize(v_snap_banking)
+	v_snap_banking = @o_snap_bone MATH_VecGlobalToLocal(v_snap_banking)
+
+	f_arround_neck_dist = 0.0
+
+	DYN_Off()
+
+	COL_ColSetActivationSet(none, C_bit_zdm_pied | C_bit_zde_corps)
+
+	f_delay_until_last_ground_col = 1000.0
+
+	f_time_start_etat = 0.0
+	
+	i_etat_phase = 0
+	f_time_start_etat = 0.0
+	
+	SND_RequestPlay(SND_ATTACK)
+
+	if (SND_rollup_loop == -1)
+	{
+		SND_rollup_loop = SND_RequestPlayLoop(SND_ROLLUP)
+	}
+	
+	// Paf leger sur Kong
+	tv_temp = OBJ_SightGet()
+	tv_temp.z = 0.0
+	if ( MATH_VecNullEpsilon( tv_temp))
+		tv_temp = @o_proie OBJ_SightGet()
+	EVENT_AddEventPaf( C_EVENT_FILTER_Enemy, C_PAF_KK_Faible, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_proie, 0.0 * PAF_Unit, tv_temp)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+if (f_time_start_etat > 1.0)
+	tutorial = faux
+
+//PNJ_Scolo_IK(, Cv_NullVector, Cv_NullVector)
+//returntrack
+
+// ANALYSE ===============================================================
+AI_Execute("PNJ_Scolo_exec_check_vision")
+
+o_KK_Grabbed_actor = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_kong_LNK, vrai, nofunc, nofunc)
+if (o_KK_Grabbed_actor)
+	macro_change_etat("PNJ_Scolo_ETAT_Grabbed_By_Kong")
+
+o_predateur = LNK_ServeurGet(Ci_LNK_GRAB_RAPTOR, mid_predateur_LNK, vrai, "PNJ_Scolo_exec_LNK_predateur", nofunc)
+if (o_predateur)
+{
+	switch(LNK_GrabServeurVisionIDGet(mid_predateur_LNK))
+	{
+		case C_ID_Scolo :
+			macro_change_etat("PNJ_Scolo_ETAT_Wait_For_Grab")
+			break	
+	
+		default:
+			macro_change_etat("PNJ_Scolo_ETAT_Grabbed_Predateur")
+	}
+}
+
+to_client = LNK_ThisClientGet(o_proie, Ci_LNK_RIDE_DINO, mid_proie_LNK, vrai, nofunc, nofunc, nofunc)
+if (!to_client)
+	macro_change_etat("PNJ_Scolo_ETAT_Paf")
+
+if (@get_global o_KNMI_finish_leader == nobody)
+{
+	switch(i_snaped_bone_index)
+	{
+		case Anim_Canal_Cou :
+		case Anim_Canal_Tete :
+		case Anim_Canal_Machoire :
+			o_kk_finish = LNK_ThisClientGet(o_kong, Ci_LNK_KKFINISH_ON_KONG, mid_kk_finish_LNK, vrai, nofunc, nofunc, nofunc)
+			if (o_kk_finish)
+			{
+				// INITIALISATION DU FINISH
+				PNJ_Scolo_KKFinish_Init()
+			}
+			break
+	}
+}
+
+if ( @get_global o_KNMI_finish_leader )
+	macro_change_etat("PNJ_Scolo_ETAT_KKFinish")
+
+AI_Execute("PNJ_Scolo_exec_check_paf")
+if (i_flag_paf  || ! f_lifecur || ! MSG_GlobalIsValid(mid_best_interet))
+	macro_change_etat("PNJ_Scolo_ETAT_Paf")
+
+AI_Execute("PNJ_Scolo_exec_check_best_interet")
+
+// COMPORTEMENT =========================================================
+EVENT_InteretStatusSet(mid_best_interet, C_EVENT_InteretStatusRide)
+
+tv_pos = @ao_modules[i_modules_nb - 1] OBJ_PosGet()
+tv_pos.z = MATH_FloatMax(tv_pos.z, OBJ_PosGet().z)
+
+if (COL_RayObject_Dist(tv_pos, -Cv_VerticalVector, 10.0, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable))
+{
+	v_ray_pos = MATH_VecBlend(v_ray_pos, COL_RayObject_PosGet(), 6.0 * TIME_GetDt())
+	v_ray_normal = MATH_VecBlendRotate(v_ray_normal, COL_RayObject_NormalGet(), 4.0 * TIME_GetDt())
+}
+

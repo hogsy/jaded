@@ -1,0 +1,43 @@
+vector	tv_temp
+int			ti_temp
+int			ti_sign
+object	to_cam
+
+to_cam = @get_global o_camera
+
+// Brume qui passe devant la caméra
+if(i_etat_brume == 0 && TIME_Elapsed(f_time_brume, 2) && !@get_global ENV_pluie_interdit)
+{
+//	if(@get_global ENV_pluie_encours)
+	{
+		f_time_brume = TIME_Get()
+		i_etat_brume = 1
+		tv_temp = @main OBJ_PosGet()
+		tv_temp += @to_cam OBJ_SightGet() * 4
+		ti_sign = MATH_RandInt(0, 2)
+		if(ti_sign) ti_sign = 1 else ti_sign = -1
+		tv_temp += @to_cam OBJ_HorizonGet() * 8 * ti_sign
+		tv_temp.z = @main OBJ_PosGet().z + MATH_RandFloat(0.5, 1.5)
+		@o_brume OBJ_PosSet(tv_temp)
+		@o_brume OBJ_FlagInvisibleSet(faux)
+		v_speed_brume = @to_cam OBJ_HorizonGet() * -ti_sign
+	}
+}
+
+if(i_etat_brume == 1)
+{
+	if((TIME_Elapsed(f_time_brume, 5) && @o_brume VIEW_Culled(0)) || @o_brume OBJ_SqrDist(main) > 20 * 20)
+	{
+		f_time_brume = TIME_Get()
+		i_etat_brume = 0
+		f_brume_alpha = 0
+		@o_brume OBJ_FlagInvisibleSet(vrai)
+	}
+	else
+	{
+		f_brume_alpha += 10 * TIME_GetDt()
+		if(f_brume_alpha > 25) f_brume_alpha = 25
+		@o_brume OBJ_FlagInvisibleSet(faux)
+		@o_brume OBJ_PosSet(@o_brume OBJ_PosGet() + (v_speed_brume * TIME_GetDt()))
+	}
+}

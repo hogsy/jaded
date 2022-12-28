@@ -1,0 +1,131 @@
+#include "H_defines.var"
+
+float		tf_dot_product
+
+vector	tv_new_sight
+vector	tv_new_banking
+vector	tv_speed
+
+float		tf_speed 
+int			ti_anim_frequence
+int			ti_action_offset
+int			ti_ground_id
+int			ti_numero
+
+object	to_main_actor
+
+to_main_actor = AI_MainActorGet(0)
+
+i_flag_crouch = faux
+i_flag_run = faux
+
+AI_Execute("H_exec_tagoff")
+
+AI_Execute("H_exec_pilote")
+
+//if (IO_ButtonPressed(JoyPSX_Button_carre))
+//	ti_action_offset = 10
+//else if (IO_ButtonPressed(JoyPSX_Button_croix))
+//	ti_action_offset = 12
+//else
+//	ti_action_offset = 0
+
+ti_action_offset = 0
+ti_ground_id = -1
+
+if (COL_CollideType(COL_C_Ground))
+	f_time_ground_col -= MATH_FloatMin(f_time_ground_col, TIME_GetDt())
+else
+	f_time_ground_col += TIME_GetDt()
+
+if (f_time_ground_col < 0.1)
+{
+	ti_ground_id = COL_GMAT_SoundGet(COL_C_Ground)
+
+	if (i_flag_crouch || ti_ground_id == 7)
+		ti_action_offset = 20
+	else if (ti_ground_id == 6)
+		ti_action_offset = 10
+		
+	i_context = ti_ground_id
+	i_context += i_flag_crouch << 8
+}
+
+if (f_joy_norm)
+{
+	tv_new_sight = OBJ_SightGet()
+	tv_new_sight = MATH_VecBlendRotate(tv_new_sight, v_joy_dir, 6.0 * TIME_GetDt())
+	
+	tv_new_banking = C_Horizontal_Banking
+	
+	OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking)
+
+	tf_dot_product = MATH_VecDotProduct(tv_new_sight, v_joy_dir)
+	if (tf_dot_product > 0.0)
+	{
+		if (ti_action_offset == 10)
+		{
+			ACT_ActionSet(1 + ti_action_offset)
+//			ANI_FrequencySet(0, 32)
+
+			ti_numero = EVENT_AddEventSound( C_EVENT_FILTER_Friend, OBJ_Me(), 0.2, OBJ_PosGet(), 5.0)
+		}
+		else
+		{
+			if (i_flag_run)
+			{
+				ACT_ActionSet(2 + ti_action_offset)
+				
+				ti_numero = EVENT_AddEventSound( C_EVENT_FILTER_Friend, OBJ_Me(), 0.2, OBJ_PosGet(), 10.0)
+			}
+			else
+			{
+				ACT_ActionSet(1 + ti_action_offset)
+
+				ti_numero = EVENT_AddEventSound( C_EVENT_FILTER_Friend, OBJ_Me(), 0.2, OBJ_PosGet(), 5.0)
+			}
+		}
+	}
+	else
+	{
+		ACT_ActionSet(0 + ti_action_offset)
+	}
+}
+else
+{
+	ACT_ActionSet(0 + ti_action_offset)
+
+	if (! joueur)
+	{
+		tv_new_sight = OBJ_PosGet() - @to_main_actor OBJ_PosGet()
+		tv_new_sight.z = 0.0
+		MATH_VecSetNormalize(tv_new_sight)
+		tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_new_sight, 6.0 * TIME_GetDt())
+
+		tv_new_banking = C_Horizontal_Banking
+	
+		OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking)
+	}
+}
+
+AI_Execute("H_exec_tagon")
+
+if (ti_ground_id != 6 || !i_flag_crouch)
+	ti_numero = EVENT_AddEventVision( C_EVENT_FILTER_Friend, OBJ_Me(), 0.001, OBJ_PosGet(), 0.5, 1.0, C_EVENT_ETAT_NORMAL, C_EVENT_CONTEXT_HERBE)
+
+tv_speed = DYN_SpeedGetVector()
+tv_speed.z = 0
+tf_speed = MATH_VecNorm( tv_speed)
+
+
+if ( i_etat > C_EVENT_ETAT_NORMAL )
+{
+	// le perso est blessé
+	if ( f_time_last_trace > 1.0)
+	{
+		f_time_last_trace = 0.0
+		EVENT_AddEventOlfactif( C_EVENT_FILTER_Friend, OBJ_Me(), 60.0, OBJ_PosGet(), i_etat)
+	}
+	else
+		f_time_last_trace += TIME_GetDt()
+}

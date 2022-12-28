@@ -1,0 +1,18 @@
+procedure_ultra object PLKJ_GetZde();
+object o
+message msg
+MSG_On()
+B_Propeller=ANI_CanalObjectGet(9)
+AI_PrioritySet(50)
+OBJ_FlagsTypeSet(OBJ_C_TypeFlag_Enemy,OBJ_C_TypeFlag_Friend)
+RefPos=OBJ_PosGet()
+SafeDistance*=SafeDistance
+Sound_Engine=SND_RequestPlayLoop(1)
+if(Target && @Target AI_IsModel("Kontreuil/PlaneKong")) KongZde=@Target PLKJ_GetZde()
+TimeBorn=TIME_Get()
+
+// get propeller and hide it
+o=ANI_CanalObjectGet(1)
+@o OBJ_FlagInvisibleSet(vrai)
+
+AI_TrackChange(2,"PFK_bhv_fly")

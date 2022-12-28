@@ -1,0 +1,33 @@
+object	to_obj
+vector	tv_temp
+
+to_obj = AI_MainActorGet(C_ID_Joueur)
+if(!to_obj) return
+
+if(OBJ_CapaTest(OBJ_Capa_0))
+	i_propose = vrai
+else
+	i_propose = faux
+	
+if(@get_global o_bidoche_plug_jack == OBJ_Me())
+	OBJ_CapaSet(0, OBJ_Capa_0)
+
+// Recup par jack par un coup de lance
+if(@get_global i_bidoche_coup && ! @get_global o_bidoche_plug_jack)
+{
+	if(OBJ_SqrDist(to_obj) < 2 * 2)
+	{
+		tv_temp = OBJ_PosGet() - @to_obj OBJ_PosGet()
+		MATH_VecSetHorzNormalize(tv_temp)
+		if(MATH_VecDotProduct(tv_temp, @get_camera OBJ_SightGet()) > 0.0)
+		{
+			@get_global o_bidoche_plug_jack = OBJ_Me()
+		}
+	}
+}
+
+if(o_plug_to)
+{
+	OBJ_PosSet(@o_plug_to OBJ_PosGet())
+}
+

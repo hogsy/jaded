@@ -1,0 +1,84 @@
+#include "PNJ_Raptor_defines.var"
+
+int			ti_i
+int			ti_index
+
+float		tf_time
+float		tf_dot_product
+
+vector	tv_new_sight
+vector	tv_temp
+vector	tv_A
+vector	tv_B
+
+object	to_me
+
+messageid		tmid_invalid
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_TEST)
+{
+//	if (i_etat_courant == -1)
+//		DBG_Warning("PNJ_Raptor en mode TEST <= Appellez Matthieu")
+
+	i_etat_courant = ETAT_TEST
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = AI_TrackCurGet()
+
+	PNJ_Raptor_ActionSet(Action_Normal_Attente)
+
+	o_main_actor = AI_MainActorGet(C_ID_Joueur)
+
+	i_flag_test_look = 0
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+if (PLAY_THIS_ACTION != -1)
+{
+	ACT_ActionSet(PLAY_THIS_ACTION)
+	if (ACT_ActionFinished())
+		ACT_ActionSet(PLAY_THIS_ACTION)
+}
+else
+{
+	if (IO_KeyJustPressed(VK_SPACE))
+		i_flag_test_look = MATH_Modulo(i_flag_test_look + 1, i_renifle_action_last_index + 1)
+	
+	ACT_ActionSet(ai_action_index[i_flag_test_look])
+}
+
+i_flag_leg_IK[Ci_IK_pied_droit] = faux
+i_flag_leg_IK[Ci_IK_pied_gauche] = faux
+
+ti_index = STR_CreateText("Ani Ratio : ", cvector(0.1, 0.1, 0.0), 0.0)
+STR_AppendFloat(ti_index, ANI_RatioGet(0), 2)
+
+if (PNJ_Raptor_Get_Move_Coef(Ci_IK_pied_gauche) == 1.0)
+	DBG_RenderVector(@ao_IK_bones[Ci_IK_pied_gauche][3] OBJ_PosGet(), Cv_VerticalVector * 10.0, color_jaune)
+
+if (PNJ_Raptor_Get_Move_Coef(Ci_IK_pied_droit) == 1.0)
+	DBG_RenderVector(@ao_IK_bones[Ci_IK_pied_droit][3] OBJ_PosGet(), Cv_VerticalVector * 10.0, color_jaune)
+
+
+
+DYN_SpeedSetVector(Cv_NullVector)

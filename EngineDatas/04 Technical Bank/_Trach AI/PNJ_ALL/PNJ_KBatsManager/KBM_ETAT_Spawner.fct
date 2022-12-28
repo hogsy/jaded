@@ -1,0 +1,126 @@
+#include "KBM_defines.var"
+
+int				ti_bigbat_index
+object		to_bigbat
+object		to_ronde_wp
+
+// INITIALISATION =====================================================================
+if( i_etat_courant != ETAT_Spawner )
+{
+	i_etat_courant = ETAT_Spawner
+	f_time_start_etat = 0.0
+	
+	i_attack_1ere_phase = faux		// maintenant on prend les param des autres phases pour les big bat attacks
+	
+	// TEST SPAWNER =====================================
+	if( ! o_spawner )
+	{
+		// pas de spawner
+		i_spawner_end = vrai
+		i_spawner_init_done = vrai
+		
+		if( i_DBG_Manager )
+			DBG_TraceString("********** PAS DE SPAWNER -> END\n")
+	}
+	else if( i_spawner_vagues_max_nb != -1 && i_spawner_count >= i_spawner_vagues_max_nb )
+	{
+		// nb max de vague dépassé
+		i_spawner_end = vrai
+		i_spawner_init_done = vrai
+		
+		if( i_DBG_Manager )
+			DBG_TraceString("********** SPAWNER : NB de vagues max dépassé -> END\n")
+	}
+	else
+	{
+		// ok on va lancer une nouvelle vague dans 2 sc
+		i_spawner_end = faux
+		i_spawner_init_done = faux
+		
+		if( i_DBG_Manager )
+			DBG_TraceString("********** SPAWNER : NB de vagues ok, on attend avant d'activer le spawner\n")
+	}
+}
+else
+	f_time_start_etat += TIME_GetDt()
+
+
+// TEST DE LA MORT DU SPAWNER ======================================================
+if( i_spawner_init_done && o_spawner )
+{
+	if( i_spawner_attendre_mort && @o_spawner OBJ_CapaTest(OBJ_Capa_15) )
+		i_spawner_end = vrai		// spawner mort
+	if( ! i_spawner_attendre_mort && @o_spawner OBJ_CapaTest(OBJ_Capa_3) )
+		i_spawner_end = vrai		// 1 nmi spawné
+}
+
+// SORTIE DU MODE ==================================================================
+if( i_spawner_end )
+{
+	if( i_spawner_attendre_mort )
+	{
+		f_spawner_end_reattack_delay = MATH_RandFloat(2.0, 4.0)
+		if( i_DBG_Manager )
+		{
+			DBG_TraceString("********** SPAWNER END -> délai de ré-attaque = ")
+			DBG_TraceFloat(f_spawner_end_reattack_delay)
+			DBG_TraceString(" sec\n")
+		}
+	}
+	else if( i_DBG_Manager )
+		DBG_TraceString("********** SPAWNER END\n")
+	AI_TrackCurChangeNow("KBM_ETAT_BigBat_Attack")
+}
+
+OBJ_CapaSet(CAPA_Phase_Spawner, none)
+
+if( f_time_start_etat < 0.5 ) // 2.0 )
+{
+	// conserver la caméra sur réseau car si on passe en caméra CC pendant le paf le joueur va être perdu
+}
+else
+{
+	// ACTIVATION DU SPAWNER ==========================================================
+	if( ! i_spawner_init_done )
+	{
+		i_spawner_init_done = vrai
+		i_spawner_count++
+		@o_spawner OBJ_Reinit(0)
+		@o_spawner OBJ_FlagInactiveSet(faux)
+		@o_spawner OBJ_CapaSet(none, OBJ_Capa_15)
+		if( i_DBG_Manager )
+		{
+			DBG_TraceString("********** SPAWNER : Vague n° ")
+			DBG_TraceInt(i_spawner_count)
+			DBG_TraceString(" / ")
+			DBG_TraceInt(i_spawner_vagues_max_nb)
+			DBG_TraceEOL()
+		}
+	}
+	
+	// choix de la Bat pour la caméra
+	for( ti_bigbat_index = 0; ti_bigbat_index < ci_bigbats_nb; ti_bigbat_index++ )
+	{
+		to_bigbat = ao_bigbats[ti_bigbat_index]
+		if( ! to_bigbat )
+			continue
+		if( to_bigbat )
+			break			// mémoriser la bat et l'indice valide pour le choix des capas ensuite
+	}
+	if( f_time_start_etat < 2.5 )
+	{
+		// maintenir la caméra CC Kong -> Bat au début du spawner
+//		KBM_CAPA_Kam_CC_Kong_to_Bat(ti_bigbat_index)
+	}
+	else
+	{
+		// sinon mettre la caméra CC Bat -> Kong pour la voir voler autour de l'arène (sauf si cam interdite)
+		to_ronde_wp = @get_PNJ_KBats_path to_bigbat o_ronde_next_wp
+		if( to_ronde_wp && ! @to_ronde_wp OBJ_CapaTest(CAPA_WP_no_kamera_capa) )
+			KBM_CAPA_Kam_CC_Bat_to_Kong(ti_bigbat_index)	// la bat va vers 1 wp qui n'a pas la capa interdiction caméra
+	//	else
+	//		KBM_CAPA_Kam_CC_Kong_to_Bat(ti_bigbat_index)	// la bat n'a pas encore choisi le wp ou alors il a la capa qui interdit la caméra
+		// else caméra network
+	}
+}
+

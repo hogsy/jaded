@@ -1,0 +1,98 @@
+#include "H_defines.var"
+
+float			tf_dist
+float			tf_size
+float			tf_dt
+float			tf_inv_dt
+float			tf_spring
+float			tf_attenuation
+float			tf_norm
+float			tf_length
+float			tf_friction
+float			tf_exp
+
+vector		tv_pos
+vector		tv_temp
+vector		tv_temp2
+vector		tv_bone_sight
+vector		tv_bone_banking
+vector		tv_collided_pos
+vector		tv_delta_pos
+vector		tv_delta_speed
+vector		tv_force
+vector		tv_last_pos
+		
+object		to_grab_serveur
+object		to_bone
+
+object	tao_bones[3]	
+	
+float		taf_bone_length[2]
+
+tao_bones[0] = @get_joueur_leg ANI_CanalObjectGet(Anim_Canal_CuisseGauche)
+tao_bones[1] = @get_joueur_leg ANI_CanalObjectGet(Anim_Canal_JambeGauche)
+tao_bones[2] = @get_joueur_leg ANI_CanalObjectGet(Anim_Canal_PiedGauche)
+
+taf_bone_length[0] = MATH_VecNorm(@tao_bones[1] OBJ_PosGet() - @tao_bones[0] OBJ_PosGet())
+taf_bone_length[1] = MATH_VecNorm(@tao_bones[2] OBJ_PosGet() - @tao_bones[1] OBJ_PosGet())
+
+@get_joueur_leg OBJ_FlagsControlSet(OBJ_C_ControlFlag_RayInsensitive, OBJ_C_ControlFlag_ForceInactive | OBJ_C_ControlFlag_ForceInvisible)
+@get_joueur_leg ACT_ActionSet(0)
+
+@get_joueur_leg OBJ_PosSet(OBJ_PosGet())
+@get_joueur_leg OBJ_BankingGeneralSet(OBJ_SightGet(), OBJ_BankingGet())
+
+to_bone = tao_bones[2]
+
+tv_temp = @to_bone OBJ_PosGet() - OBJ_PosGet()
+tv_temp.z = 0.0
+
+tv_temp2 = v_grab_hand_pos - OBJ_PosGet()
+tv_temp2.z = 0.0
+
+OBJ_Rotate_FromTo(MATH_VecGlobalToLocal(tv_temp), MATH_VecGlobalToLocal(tv_temp2))
+
+tv_temp = v_grab_hand_pos
+tv_temp -= @to_bone OBJ_PosGet()
+tv_temp.z = 0.0
+tv_temp *= 0.8
+
+tv_pos = OBJ_PosGet()
+tv_pos += tv_temp
+tv_pos.z = MATH_FloatMax(@ao_SRV[Ci_LNK_GRAB_RAPTOR] OBJ_PosGet().z, tv_pos.z)
+
+tf_size = COL_ZoneSizeGet(C_zdm_pied)
+
+if ( COL_RayObject_Vector(OBJ_PosGet() + cvector(0.0, 0.0, tf_size),  tv_pos - OBJ_PosGet(), all, OBJ_C_IdentityFlag_Dyna, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable))
+{
+	tv_collided_pos = COL_RayObject_PosGet()
+	
+	tv_pos = OBJ_PosGet()
+	tv_pos -= tv_collided_pos
+
+	tf_dist = MATH_VecNorm(tv_pos)
+
+	tv_pos /= tf_dist
+	tv_pos *= tf_size
+	tv_pos += tv_collided_pos
+}
+
+if (COL_RayObject_Dist(tv_pos + cvector(0.0, 0.0, 2.0), Cv_VerticalVector, -4.0, all, OBJ_C_IdentityFlag_Dyna, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable))
+{
+	tv_temp = COL_RayObject_PosGet()
+	tv_pos.z = MATH_FloatMax(tv_pos.z - (DYN_GravityVectorGet().z * TIME_GetDt()), tv_temp.z)
+}
+
+OBJ_PosSet(tv_pos)
+COL_StartMatrixSet(tv_pos)
+
+@get_joueur_leg OBJ_PosSet(OBJ_PosGet())
+@get_joueur_leg OBJ_BankingGeneralSet(OBJ_SightGet(), OBJ_BankingGet())
+
+tv_bone_sight = @tao_bones[2] OBJ_SightGet()
+tv_bone_banking = @tao_bones[2] OBJ_BankingGet()
+
+OBJ_LIB_IK(tao_bones[0], tao_bones[1], taf_bone_length[0], taf_bone_length[1], v_grab_hand_pos, @tao_bones[0] OBJ_BankingGet(), 1.0)
+
+@tao_bones[2] OBJ_BankingGeneralSet(tv_bone_sight, tv_bone_banking)
+

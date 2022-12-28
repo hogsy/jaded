@@ -1,0 +1,75 @@
+#include "CR_defines.var"
+
+messageid		tmid_vision
+
+
+// SORTIE ETAT ==============================================================================
+if (i_sort_etat)
+{	
+	i_sort_etat = faux
+	return
+}
+
+
+// ENTREE ETAT ==============================================================================
+if (i_etat_courant != ETAT_REPOUSSE )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_REPOUSSE
+	str_etat = "Repousse"
+	if (fct_etat_courant)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_etat_courant)
+	}
+	
+	fct_etat_courant = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	ACT_ActionSet(ACTION_Repousse)
+	
+	if( i_DBG_trace_etat )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : ETAT REPOUSSE")
+		DBG_TraceEOL()
+	}
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// ANALYSE ===================================================================================
+AI_Execute("CR_exec_CHECK_Vision")
+
+AI_Execute("CR_exec_CHECK_Paf")
+if( CR_Paf_Check_Change_Etat() )
+{
+	CR_Paf_Select_Action()
+//	v_paf_recul_backup = v_paf_recul
+	v_paf_recul_backup = v_paf_dyn_speed
+}
+
+
+// INTERET -----------------------------------------
+CR_Interet_Update(mid_best_interet, C_EVENT_InteretStatusAttack, o_fight_actor, tmid_vision)
+
+// COMPORTEMENT =============================================================================
+if( ACT_ActionFinished() )
+{
+	if( MSG_GlobalIsValid(mid_grab) )
+	{
+		if( i_modele == MODELE_Geant )
+			macro_change_etat("CR_ETAT_GRAB")
+		else
+			macro_change_etat("CR_ETAT_TRAINE")
+	}
+	else
+		macro_change_etat(fct_etat_main)
+}
+
+// ORIENTATION ------------------------------------------
+OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), @o_repousse_actor OBJ_PosGet() - OBJ_PosGet(), 5.0 * TIME_GetDt()),macro_banking)
+

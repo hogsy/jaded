@@ -1,0 +1,187 @@
+#include "BC_defines.var"
+
+messageid				tmid_vision
+
+object					to_cible_attaque
+
+
+// SORTIE ETAT
+if (i_sort_etat)
+{
+	f_angle_rotation_max = Cf_angle_rotation_max_default
+	i_sort_etat = faux
+	return
+}
+
+// ENTREE ETAT
+if (i_etat_courant != ETAT_Paf_Air )
+{
+	i_etat_ancien_ancien = i_etat_ancien
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Paf_Air
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	BC_DBG_Trace_Etat("etat paf air")
+	
+	if( ! i_paf_sol_mort_flag )
+	{
+		if( i_paf_important_flag )
+			ACT_ActionSet(ACTION_Paf_Air_Important)
+		else
+			ACT_ActionSet(ACTION_Paf_Air_Moyen)
+	}
+	
+	AI_Execute("BC_exec_dyn_on")
+
+	// BACKUP DIRECTION DU PAF POUR S'ORIENTER PENDANT LA CHUTE ========
+	v_last_paf_sight = v_sum_pafs_dir
+	v_last_paf_sight.z = 0.0
+	if( ! MATH_VecNullEpsilon(v_last_paf_sight) )
+		MATH_VecSetNormalize(v_last_paf_sight)
+	else
+		v_last_paf_sight = OBJ_SightGet()
+	DBG_RenderVector(OBJ_PosGet(), v_last_paf_sight, color_rouge)
+	BC_action_frequency_set(1.0)
+	if( i_modele == Ci_MODELE_Bat_Noire )
+	{
+		// BOSS : la bat noire ne conserve pas l'intérêt après un moyen/gros paf, afin que les bats grises descendent attaquer à leur tour
+		BC_reset_attaque()
+		@get_global f_time_bat_noire_escape = TIME_Get()
+	}
+	
+	BC_WP_Reservation_Del(o_backup_wp_depl_utilise)
+	
+	if( BC_Boss() )
+	{
+		// BOSS : la bat noire ne conserve pas l'intérêt après un moyen/gros paf, afin que les bats grises descendent attaquer à leur tour
+		to_cible_attaque = o_cible_attaque		// backup pour l'interet
+		BC_reset_attaque()
+		o_cible_attaque = to_cible_attaque
+		@get_global f_time_bat_noire_escape = TIME_Get()
+		OBJ_CapaSet(none, CAPA_Boss_attaque)
+	}
+	
+	f_angle_rotation_max = Cf_angle_rotation_max_paffe
+	
+	// CADAVRES
+	o_cadavre = nobody
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// EMERGENCY ABORT =============================
+if( o_cible_attaque && ! BC_TargetActive(o_cible_attaque) )
+{
+	DBG_TraceObject(OBJ_Me())
+	DBG_TraceString(" : Target non active (")
+	DBG_TraceObject(o_cible_attaque)	
+	DBG_TraceString(")")
+	DBG_TraceEOL()	
+	
+	BC_Cadavre_Del(o_cible_attaque)
+	o_cible_attaque = nobody
+}
+if( o_cible_attaque_contact&& ! BC_TargetActive(o_cible_attaque_contact) )
+{
+	DBG_TraceObject(OBJ_Me())
+	DBG_TraceString(" : Target non active (")
+	DBG_TraceObject(o_cible_attaque_contact)	
+	DBG_TraceString(")")
+	DBG_TraceEOL()	
+	o_cible_attaque_contact = nobody
+}
+
+
+
+// ANALYSE ============================================================================
+
+if( f_time_start_etat >= 10.0 )
+{
+	BC_DBG_Trace_Etat_Paf("etat paf air depuis 10 sec -> destroy")
+	OBJ_Destroy()
+}
+
+// COMPORTEMENT =====================================================================
+
+// INTERET ---------------------------------------------------------------------------------------------------------------------
+if( i_agressive && f_HP && o_cible_attaque )
+	BC_Interet_Update(mid_interet_attaque, C_EVENT_InteretStatusAttack, o_cible_attaque, tmid_vision)
+
+i_flag_neck = faux
+
+if( i_paf_sol_mort_flag || ( ! ACT_ActionIsTransition() && (ACT_ActionGet() == ACTION_Paf_Air_Moyen || ACT_ActionGet() == ACTION_Paf_Air_Important) && ACT_ActionFinished() ) )
+{
+	if( i_DBG_track_test )
+	{
+		macro_change_etat("BC_ETAT_TEST")
+	}
+	else if( f_HP && ! i_flag_agonie )
+	{
+		if( i_modele == Ci_MODELE_Bat_Noire )
+		{
+			// comportement spécifique bat noire : repart à un point d'attaque si paf moyen ou gros
+//			f_paf_delai_aucune_attaque = 3.0
+//			BC_DBG_Trace_Etat_Paf("etat paf air (bat noire pas morte) -> exec init attente")
+//			AI_Execute("BC_exec_init_attente")
+
+			BC_DBG_Trace_Etat_Paf("etat paf air (bat noire pas morte) -> exec decolle sans proie")
+
+			f_paf_delai_aucune_attaque = 1.5
+			i_envol_check_jack_Z = vrai		// remonter par rapport à Jack !!!!
+			AI_Execute("BC_exec_decolle_sans_proie")
+		}
+		else if( f_paf_pause_time )
+		{
+			// je dois faire une pause à la suite de mon paf
+			BC_DBG_Trace_Etat_Paf("etat paf air (f pause fime) -> etat fight pause")
+			macro_change_etat("BC_ETAT_Fight_Pause")
+		}
+		else if( o_cible_attaque_contact )
+		{
+			// j'étais au contact, j'y reste
+			o_cible_attaque = o_cible_attaque_contact
+			BC_DBG_Trace_Etat_Paf("etat paf air (o cible attaque contact) -> etat fight approche")
+			macro_change_etat("BC_ETAT_Fight_Approche")
+		}
+		else if( o_cible_attaque )
+		{
+			// j'ai une cible, je vais à un point d'attaque
+			BC_DBG_Trace_Etat_Paf("etat paf air (o cible attaque) -> exec init ATTAQUE")
+			AI_Execute("BC_exec_init_attaque")
+		}
+		else
+		{
+			// rien -> idle
+			BC_DBG_Trace_Etat_Paf("etat paf air -> exec init attente")
+			AI_Execute("BC_exec_init_attente")
+		}
+	}
+	else
+	{
+		// mort ou paf qui fait tomber en agonie : check wp de chute
+		o_chute_bats_wp = BC_Chute_WP_Select()
+		if( o_chute_bats_wp )
+		{
+			i_paf_sol_mort_flag = faux		// resete le flag de mort sur le ventre
+			BC_DBG_Trace_Etat_Paf("etat paf air (mort + o_chute_bats_wp) -> etat chute wp")
+			macro_change_etat("BC_ETAT_Chute_WP")		// Chute guidée
+		}
+		else
+		{
+			BC_DBG_Trace_Etat_Paf("etat paf air (mort sans chute wp) -> etat chute libre")
+			macro_change_etat("BC_ETAT_Chute_Libre")		// Chute pas guidée
+		}
+	}
+}
+
+OBJ_BankingGeneralSet( 
+	MATH_VecBlendRotate(OBJ_SightGet(), - v_last_paf_sight, 5 * TIME_GetDt()), 
+	MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 5 * TIME_GetDt()) )
+

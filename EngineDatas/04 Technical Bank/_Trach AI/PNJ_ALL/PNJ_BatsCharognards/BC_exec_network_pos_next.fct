@@ -1,0 +1,105 @@
+
+#include "BC_defines.var"
+
+//=============================================================================
+// POSITIONNE LES WP DE DEBUT ET DE FIN POUR LA COURBE DE BEZIERS ENTRE
+// LA POSITION COURANTE DU BAT ET LA POSITION DE LA CIBLE DU DEPLACEMENT
+//=============================================================================
+
+// calcul de l'intersection entre l'axe et la bv du gao cible
+vector			tv_dir
+float				tf_dist
+vector			tv_collide_pos
+vector			tv_sight
+
+int					ti_flag_calc_pos_next_wp
+
+
+AI_Execute("BC_exec_network_calc_next")
+o_next_wp = pop
+
+
+if( i_reseau_wp_count )
+{
+	// réseau pas terminé
+	
+	if( i_mode_depl == Ci_mode_depl_attaque )
+		v_dest_pos = @o_next_wp OBJ_PosGet()			// pour la détecion d'obstacle
+
+
+	if( ! ( ( (i_mode_depl == Ci_mode_depl_charogne_olfactif) || (i_mode_depl == Ci_mode_depl_charogne_visuel) || (i_mode_depl == Ci_mode_depl_charogne_transport) ) && i_flag_depl_wp_apres_reseau ) )
+	{
+		// l'IA passe ici pour tous les déplacements, sauf lors du dernier déplacement (hors réseau) des modes de suivi visuel et olfactif
+		
+		// Position du wp
+		tv_dir = @o_next_wp OBJ_PosGet() - OBJ_PosGet()
+		if( ! MATH_VecNullEpsilon(tv_dir) )
+			tv_dir = MATH_VecNormalize(tv_dir)
+		
+		if (! OBJ_LIB_Intersection_Dir_BV(o_next_wp, OBJ_PosGet(), tv_dir, tf_dist, tv_collide_pos))
+			tv_collide_pos = OBJ_PosGet()
+		
+		@o_tmp_obj_next OBJ_PosSet( tv_collide_pos )
+		
+		if( i_reseau_wp_count == 1 )
+		{
+			// dernier wp -> sight en fonction du mode
+			switch ( i_mode_depl )
+			{
+				case Ci_mode_depl_charogne_olfactif  :
+				{
+					tv_sight = v_cible_pos - OBJ_PosGet()
+					@o_tmp_obj_next OBJ_BankingGeneralSet( tv_sight, Cv_VerticalVector)
+					break
+				}
+				case Ci_mode_depl_charogne_visuel :
+				{
+					tv_sight = @o_cible OBJ_PosGet() - OBJ_PosGet()
+					@o_tmp_obj_next OBJ_BankingGeneralSet( tv_sight, Cv_VerticalVector)
+					break
+				}
+				case Ci_mode_depl_attaque :
+				{
+					tv_sight = @o_cible_attaque OBJ_PosGet() - @o_next_wp OBJ_PosGet()
+					@o_tmp_obj_next OBJ_BankingGeneralSet( tv_sight, Cv_VerticalVector)		// maintenant que la bat attend, c du BGS
+					break
+				}
+				case Ci_mode_depl_attente :
+				{
+					tv_sight = @o_cible_depl OBJ_PosGet() - @o_tmp_obj_next OBJ_PosGet()
+					@o_tmp_obj_next OBJ_BankingGeneralSet( tv_sight, Cv_VerticalVector)
+					break
+				}
+				case Ci_mode_depl_charogne_transport :
+				{
+//			 		tv_sight = @o_next_wp OBJ_PosGet() - OBJ_PosGet()
+			 		tv_sight = OBJ_SightGet()
+			 		@o_tmp_obj_next OBJ_BankingGeneralSet( tv_sight, Cv_VerticalVector)
+			 		break
+			 	}
+			 	default:
+			 	{
+				 	DBG_BreakPoint()
+				 	break
+				}
+			}
+		}
+		else
+		{
+			tv_sight = tv_collide_pos - OBJ_PosGet()		// il reste des wp à parcourir -> sight dans le sens du déplacement
+			if( MATH_VecNullEpsilon(tv_sight) )
+				tv_sight = OBJ_SightGet()
+			@o_tmp_obj_next OBJ_SightGeneralSet( tv_sight, Cv_VerticalVector)
+		}		
+	
+		o_next_wp = o_tmp_obj_next
+	}
+	else
+	{
+		// v_dest_pos et v_dest_sight précalculés
+		@o_tmp_obj_next OBJ_PosSet( v_dest_pos )
+ 		@o_tmp_obj_next OBJ_BankingGeneralSet( v_dest_sight, Cv_VerticalVector )
+		o_next_wp = o_tmp_obj_next
+	}
+}
+

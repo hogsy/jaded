@@ -1,0 +1,101 @@
+#include "PNJ_SwampCrawler_defs.var"
+
+int			i_loop, i_nb
+int			ti_crossable
+object	o_wp, to_bone
+float		tf_zoom
+
+//--------( SF )--------
+if ( SF_i_NePasRejouerSiMort )
+{
+	i_loop = AI_SFDynGet(0, SF_MinById, SF_MaxById)	// Alloc
+	Super_SpecialFlag_get( SF_i_AlreadyDead, i_loop)		// Test SF
+	if (i_loop)																// Si SF = 1 alors DESTROY
+		OBJ_Destroy()
+}
+
+//--------( check data )--------
+if( ! home_zone_waterZ )
+{
+	DBG_TraceObject( OBJ_Me())
+	DBG_TraceString("home_zone_net : object not définedi\n")		
+	AI_TrackCurStop()
+	return
+}
+
+if ( life_f_init == 0)
+	life_f_init = 20
+life_f_cur = life_f_init
+
+//--------( Bouée d'aide à la visée )--------
+OBJ_InfoPhotoParamSet( 0, 0, 3, 3, 0.0, 0.0, 0.0, 1.5)
+
+//-------( BV )---------------------
+tf_zoom = OBJ_ZoomGet()
+
+to_bone = ANI_CanalObjectGet(Anim_Canal_Tete)
+@to_bone BV_OBBoxMinSet(cvector(-0.2, -0.4, -0.05) * tf_zoom)
+@to_bone BV_OBBoxMaxSet(cvector(0.2, 0.2, 0.3) * tf_zoom)
+
+to_bone = ANI_CanalObjectGet(Anim_Canal_Cou)
+@to_bone BV_OBBoxMinSet(cvector(-0.25, -0.4, -0.05) * tf_zoom)
+@to_bone BV_OBBoxMaxSet(cvector(0.25, 0.2, 0.4) * tf_zoom)
+
+to_bone = ANI_CanalObjectGet(Anim_Canal_Torse)
+@to_bone BV_OBBoxMinSet(cvector(-0.3, -0.4, -0.05) * tf_zoom)
+@to_bone BV_OBBoxMaxSet(cvector(0.3, 0.3, 0.45) * tf_zoom)
+
+to_bone = ANI_CanalObjectGet(Anim_Canal_Ventre)
+@to_bone BV_OBBoxMinSet(cvector(-0.3, -0.4, -0.05) * tf_zoom)
+@to_bone BV_OBBoxMaxSet(cvector(0.3, 0.3, 0.45) * tf_zoom)
+
+to_bone = ANI_CanalObjectGet(Anim_Canal_Bassin)
+@to_bone BV_OBBoxMinSet(cvector(-0.25, -0.4, -0.05) * tf_zoom)
+@to_bone BV_OBBoxMaxSet(cvector(0.25, 0.3, 0.35) * tf_zoom)
+
+to_bone = ANI_CanalObjectGet(Anim_Canal_Queue)
+@to_bone BV_OBBoxMinSet(cvector(-0.2, -0.3, -0.05) * tf_zoom)
+@to_bone BV_OBBoxMaxSet(cvector(0.2, 0.2, 0.6) * tf_zoom)
+
+//--------( init territory )--------
+home_f_zmax = @home_zone_waterZ  OBJ_PosGet().z - 0.4
+home_f_zmin = home_f_zmax - home_f_waterdepth
+move_v_groundnormal  = Cv_VerticalVector
+
+//--------( Organizer )--------
+Organizer = @"univ" ORGANIZE_SwampCrawler 
+if ( Organizer )
+{
+	i_nb = M_Org SC_Nb
+	M_Org SC_Obj[ i_nb ] = OBJ_Me()
+	M_Org SC_Nb++
+}
+
+//COL_CrossableSet(none, all)
+//
+//ti_crossable = Gmat_Jack_DefaultCrossable
+//ti_crossable |= Gmat_Jack_Face_eau
+//ti_crossable |= Gmat_Jack_Face_de_Bord
+//ti_crossable |= Gmat_Jack_BordHumain_TraversableNMI
+//ti_crossable |= Gmat_Jack_Crossable_All_But_TREX
+//ti_crossable |= Gmat_Jack_Crossable_All_But_RAPTORS
+//
+//COL_CrossableSet(ti_crossable, none)
+
+//--------( Track )--------
+AI_TrackChange(0, "SC_TagOff")
+AI_TrackChange(1, "SC_Reflex")
+AI_TrackChange(4, "SC_TagOn")
+
+//--------( Etat initial )--------
+etat_i_courant = -1
+AI_TrackCurChange( "SC_ETAT_ground" )
+
+
+
+
+
+
+
+
+

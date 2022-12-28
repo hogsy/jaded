@@ -1,0 +1,37 @@
+#include "TROW_defines.var"
+
+procedure_ultra void RM_Projectiles_Fire(object to_launcher, object to_target, vector tv_init_speed);
+procedure_ultra int RM_Projectiles_IsStarted();
+procedure_ultra int RM_Projectiles_IsMine();
+procedure_ultra int RM_Projectiles_IsMissile();
+
+object		to_proj
+object		to_target
+
+vector		tv_vec
+vector		tv_pos
+vector		tv_axis
+
+int				ti_idx
+int				ti_i
+int				ti_nb
+int				ti_proj_needed
+int				ti_nb_miss
+
+float			tf_coeff
+
+// TRACTION
+if( OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna) )
+{
+	DYN_FlagsSet(DYN_C_OptimizeColDisable, none)	
+
+	DYN_TractionSet(Cv_NullVector)
+//	DYN_TractionSet(v_Traction_Exterieure)
+}
+
+OBJ_BankingGeneralSet(OBJ_SightGet(), v_last_real_banking)
+
+OBJ_CapaSet(none, all)
+
+f_delay_since_last_ground_col += TIME_GetDt()
+

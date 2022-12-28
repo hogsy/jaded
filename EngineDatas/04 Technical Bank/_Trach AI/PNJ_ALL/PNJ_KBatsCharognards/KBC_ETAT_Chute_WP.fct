@@ -1,0 +1,96 @@
+#include "KBC_defines.var"
+
+vector 	tv_pos
+vector	tv_sight
+
+float		tf_dist
+
+
+// SORTIE ETAT
+if (i_sort_etat)
+{
+	i_take_paf = vrai
+	i_sort_etat = faux
+	return
+}
+
+// ENTREE ETAT
+if (i_etat_courant != ETAT_Chute_WP )
+{
+	i_etat_ancien_ancien = i_etat_ancien
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Chute_WP
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	KBC_DBG_Trace(i_DBG_trace_etat, "etat chute wp")
+	
+	DYN_Off()
+	
+	if( OBJ_LIB_Intersection_Dir_BV(o_chute_bats_wp, OBJ_PosGet(), @o_chute_bats_wp OBJ_PosGet() - OBJ_PosGet(), tf_dist, tv_pos) )
+	{
+		ACT_ActionSet(ACTION_Vol_Blesse)
+		tv_sight = tv_pos - OBJ_PosGet()
+	}
+	else
+	{
+		i_chute_wp_deja_dedans = vrai
+		ACT_ActionSet(ACTION_Vol_Vrille)
+		tv_pos = OBJ_PosGet()
+		tv_sight = OBJ_SightGet()
+	}
+	
+	// next WP
+	@o_tmp_obj_next OBJ_PosSet(tv_pos)
+	@o_tmp_obj_next OBJ_SightGeneralSet(tv_sight, Cv_VerticalVector)
+	o_next_wp = o_tmp_obj_next
+	
+	i_flag_reseau_oneway = faux
+	i_flag_reseau_array = faux
+	i_force_test_inclinaison = vrai
+	
+	KBC_action_frequency_set(1.0)
+	KBC_ref_speed_set(Cf_speed_chute_wp)
+	f_speed = 0.0
+	
+	i_take_paf = faux
+	
+	if( ! i_big_bat )
+	{
+		OBJ_CapaSet(CAPA_Dead, none)
+	}
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// ANALYSE =======================================================================
+MACRO_CHECK_PAFS
+
+//KBC_Check_WaterZ()
+//IsInWater(OBJ_PosGet(), f_water_Z)
+
+// COMPORTEMENT ================================================================
+
+i_flag_neck = faux
+
+if( i_chute_wp_deja_dedans )
+{
+	macro_change_etat("KBC_ETAT_Chute_Libre")
+}
+else
+{
+	i_flag_frein = faux
+	AI_Execute("KBC_exec_MOVE_beziers")
+	if( i_flag_depl_fini )
+	{
+		macro_change_etat("KBC_ETAT_Chute_Libre")
+	}
+}
+

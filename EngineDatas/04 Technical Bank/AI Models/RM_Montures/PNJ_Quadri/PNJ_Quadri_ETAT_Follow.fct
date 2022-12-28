@@ -1,0 +1,135 @@
+//#include "PNJ_Quadri_defines.var"
+//
+//int				ti_car_index
+//
+//object		to_head
+//object		to_car
+//
+//float			tf_dist
+//float			tf_speed_coef
+//float			tf_delay_before_collision
+//float			tf_wanted_traction
+//
+//vector		tv_joy_dir
+//vector		tv_speed
+//vector		tv_traction
+//vector		tv_collision_pos
+//vector		tv_X
+//vector		tv_Y
+//
+//if (i_flag_sortie_etat)
+//{
+//	i_flag_sortie_etat = faux
+//	return
+//}
+//
+//
+//if (i_etat_courant != ETAT_Follow)
+//{
+//	// INTIALISATION
+//	i_dernier_etat = i_etat_courant
+//	i_etat_courant = ETAT_Follow
+//	
+//	if (fct_last_etat)
+//	{
+//		i_flag_sortie_etat = vrai
+//		AI_Execute(fct_last_etat)
+//	}
+//	
+//	fct_last_etat = AI_TrackCurGet()
+//	
+//	COL_SwapToSpecific(C_zdm_pied)
+//	COL_ZoneSizeSet(C_zdm_pied, cvector(Cf_zdm_size, Cf_zdm_size, Cf_zdm_size))
+//	COL_ZonePosSet(C_zdm_pied, cvector(0.0, 0.0, COL_ZoneSizeGet(C_zdm_pied)))
+//
+//	DYN_On()
+//	DYN_FlagsSet(DYN_C_BasicForces | DYN_C_VectorFriction | DYN_C_GlobalFriction | DYN_C_NeverDynamicFather | DYN_C_NeverDynamicHierarchy | DYN_C_HorizontalGrounds | DYN_C_ApplyRec, none)
+//	DYN_GravitySet(cvector(0.0, 0.0, -40.0))
+//	DYN_FrictionVectorSet(cvector(f_friction, f_friction, 0.0))
+//
+//	f_time_start_etat = 0.0
+//}
+//else
+//{
+//	f_time_start_etat += TIME_GetDt()
+//}
+//
+//// ANALYSE ===============================================================
+////DYN_TractionSet(Cv_NullVector)		// keep external traction
+//
+//o_leader = PNJ_Quadri_Rided_Get()
+//if ( ! o_leader )
+//	macro_change_etat("PNJ_Quadri_ETAT_Basic")
+//
+//tv_joy_dir = @o_leader OBJ_PosGet()
+//tv_joy_dir -= OBJ_PosGet()
+//tv_joy_dir.z = 0.0
+//tf_dist = MATH_VecNorm(tv_joy_dir)
+//tv_joy_dir /= tf_dist
+//
+//v_joy_dir	 = tv_joy_dir
+//
+//tf_speed_coef = MATH_FloatLimit((tf_dist - f_rand_dist_contact) * 0.1, 0.0, 1.0) 
+//
+//ti_car_index = PNJ_Quadri_Collision()
+//
+//if (ti_car_index != -1 && i_dodge_index != -1 && ti_car_index != i_dodge_index)
+//	ti_car_index = i_dodge_index
+//i_dodge_index = ti_car_index
+//
+//if (ti_car_index != -1)
+//{
+//	to_car = @get_Montures_Manager_Path o_montures_manager ao_car[ti_car_index]
+//
+//	tf_delay_before_collision = @get_Montures_Manager_Path o_montures_manager af_car_col_time[i_my_index][ti_car_index]
+//
+//	if (tf_delay_before_collision < 1.0)
+//	{
+//		tv_collision_pos = @to_car OBJ_PosGet()
+//		tv_collision_pos += @get_Montures_Manager_Path o_montures_manager av_car_speed[ti_car_index] * tf_delay_before_collision
+//		tv_collision_pos.z = OBJ_PosGet().z
+//
+//		tv_Y = tv_collision_pos
+//		tv_Y -= OBJ_PosGet()
+//		tv_Y.z = 0.0
+//		
+//		tv_X.x = tv_Y.y
+//		tv_X.y = -tv_Y.x
+//		tv_X.z = 0.0
+//
+//		tv_joy_dir = WAY_LIB_Get_Sphere_Pos(OBJ_PosGet(), tv_joy_dir, OBJ_SightGet(), f_dodge_extrusion, tv_collision_pos, @get_Montures_Manager_Path o_montures_manager af_car_col_size[ti_car_index][i_my_index], tv_X, tv_Y, faux)
+//		DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, tv_joy_dir - OBJ_PosGet(), color_blanc)
+//		DBG_RenderCircle(@to_car OBJ_PosGet() + Cv_VerticalVector, @get_Montures_Manager_Path o_montures_manager af_car_col_size[i_my_index][ti_car_index] + f_dodge_extrusion, Cv_VerticalVector, color_blanc)
+//
+//		tv_joy_dir -= OBJ_PosGet()
+//		tv_joy_dir.z = 0.0
+//		tf_dist = MATH_VecNorm(tv_joy_dir)
+//		tv_joy_dir /= tf_dist
+//		
+//		tf_speed_coef *= 0.8
+//	}
+//}
+//
+//
+//if (f_delay_since_last_ground_col < Cf_hysteresis_no_ground_col && (tf_dist  > f_rand_dist_contact || ti_car_index != -1))
+//{
+//	f_start_duration += TIME_GetDt()
+//}
+//else
+//{
+//	f_start_duration = 0.0
+//	f_rand_start_delay = MATH_RandFloat(0.2, 2.0)
+//}
+//
+//tf_wanted_traction = 0.0
+//
+//if (f_start_duration > f_rand_start_delay)
+//{
+//	tf_speed_coef *= 0.1 +  (MATH_FloatMax(MATH_VecDotProduct(OBJ_SightGet(), tv_joy_dir), 0.0) * 0.9)
+//	tf_wanted_traction = f_speed_max * tf_speed_coef * f_rand_speed_coef * DYN_FrictionVectorGet().x
+//}
+//
+//// COMPORTEMENT =========================================================
+//PNJ_Quadri_Sight_And_Banking(tv_joy_dir)
+//PNJ_Quadri_Apply_Traction_And_Choose_Action(tf_wanted_traction)
+//

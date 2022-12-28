@@ -1,0 +1,102 @@
+#include "PNJ_Raptor_defines.var"
+
+int					ti_link_capa
+int					ti_territory
+
+object			to_start_wp
+object			to_dest_wp
+
+float				tf_dot_product
+float				tf_link_length
+
+vector			tv_link_dir
+
+#ifdef SHOW_RASTER
+DBG_StartRaster(0, "IA Raptor")
+#endif
+
+to_start_wp = WAY_ShortGet(0)
+to_dest_wp = WAY_ShortGet(1)
+
+// WP DEST INVALIDE
+if (PNJ_Raptor_Wp_Is_Invalid(to_dest_wp))
+{
+	WAY_ShortSet(0, -1)
+
+#ifdef SHOW_RASTER
+	DBG_StopRaster(0)
+#endif
+	return
+}
+
+// LINK DYNAMIQUE
+if (PNJ_Raptor_Link_Is_Invalid(to_start_wp, to_dest_wp))
+{
+	WAY_ShortSet(0, -1)
+
+#ifdef SHOW_RASTER
+	DBG_StopRaster(0)
+#endif
+	return
+}
+
+switch(ACT_ActionGet())
+{
+	case Action_Agonie_fin_lent :
+	case Action_Agonie_fin_lent_tr_att :
+	case Action_Agonie_fin_rapide :
+	case Action_Agonie_fin_rapide_tr_att :
+	case Action_Normal_Attente :
+	case Action_Blesse_Attente :
+	case Action_Renifle_Attente :
+#ifdef SHOW_RASTER
+		DBG_StopRaster(0)
+#endif
+		return
+}
+
+switch(raptor_type)
+{
+	case C_ID_Raptor :
+	case C_ID_Galiminus :
+
+		// LINK QUI PART DE MON PREMIER WP
+		if (to_start_wp == o_path_start_wp && i_way_computation_mode != Ci_WAY_MODE_VALA)
+		{
+			tf_link_length = WAY_LinkWeightGet(n_net, to_start_wp, to_dest_wp)
+		
+			tv_link_dir = @to_dest_wp OBJ_PosGet()
+			tv_link_dir -= @to_start_wp OBJ_PosGet()
+		
+			tv_link_dir /= tf_link_length
+		
+			tf_dot_product = MATH_VecDotProduct(-OBJ_SightGet(), tv_link_dir)
+			tf_dot_product = MATH_FloatMax(tf_dot_product, 0.0)
+			tf_dot_product *= 10.0
+		
+			tf_link_length *= tf_dot_product
+			WAY_ShortSet(0, tf_link_length)
+
+#ifdef SHOW_RASTER
+			DBG_StopRaster(0)
+#endif
+			return
+		}
+		
+//		// LINK DE SAUT
+//		if (WAY_LinkCapaGet(n_net, to_start_wp, to_dest_wp) & Ci_Capa_Link_Jump)
+//		{
+//			if (i_way_computation_mode == Ci_WAY_MODE_FIGHT)
+//			{
+//				// 2 X plus couteux
+//				tf_link_length = WAY_LinkWeightGet(n_net, to_start_wp, to_dest_wp) * 0.5
+//				WAY_ShortSet(0, tf_link_length)
+//			}
+//		}
+		
+		break
+}
+
+#ifdef SHOW_RASTER
+DBG_StopRaster(0)
+#endif

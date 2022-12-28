@@ -1,0 +1,11 @@
+float		tf_int
+vector	tv_temp
+object	obj
+
+obj = VIEW_GetObject(0)
+tf_int = MATH_VecDotProduct(-OBJ_SightGet(), @obj OBJ_SightGet()) + des_f_max_angle
+if(tf_int < 0) 
+	tf_int = 0
+else
+	@get_global o_AFX_godray = OBJ_Me()
+AE_GodRays(MATH_FloatMin(tf_int, des_f_max_intensity), OBJ_SightGet())

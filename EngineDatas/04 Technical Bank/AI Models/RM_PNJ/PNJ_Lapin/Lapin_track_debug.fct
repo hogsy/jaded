@@ -1,0 +1,355 @@
+#include "PNJ_Lapin_defines.var"
+
+vector	tv_pos
+vector	tv_speed
+string		str_txt
+object	to_camera
+float		tf_txt
+int			ti_string
+int			ti_txt
+int			ti_cpt
+int			ti_i
+object	to_gao_txt
+
+#ifndef _FINAL_
+
+
+to_camera = VIEW_GetObject(0)
+if( OBJ_SqrDist(o_main_actor) > 10000 && OBJ_SqrDist(to_camera) > 10000 && ! o_RideMount_Actor )
+	return
+
+
+// LIFE DISPLAY
+tv_pos = VIEW_3dWorldTo2d(0, @o_canal_tete OBJ_PosGet() + cvector(0,0,1))
+if( @"univ" i_cheat_page == 3 )
+	Str_DisplayFloatDecOnce(f_LIFE_cur, 0, tv_pos)
+
+
+// BEAT !!!!
+//if( @"univ" i_cheat_page == 4 || Lapin_DBG_Display_ON() )
+//{
+//	if( i_Beat_flag_danse || i_Beat_flag_alert )
+//	{
+//		if( i_Beat_flag_danse )
+//			str_txt = "\cFF00\\h0.06\BEAT DANSE !!!"
+//		else
+//			str_txt = "\cFF\\h0.06\BEAT ALERT !!!"
+//		ti_string = STR_CreateText(str_txt, tv_pos, 0)
+//		tv_pos += cvector(0,0.05,0)
+//	}
+//}
+//
+
+
+if( ! Lapin_DBG_Display_ON() )
+	return
+
+
+// ACTION & SPEED
+if( DBG_Display_Action_Speed )
+{
+	tv_pos = VIEW_3dWorldTo2d(0, OBJ_PosGet()) + cvector(-0.2,0.1,0)
+	ti_string = STR_CreateText("\\h0.06\Family ", tv_pos, 0)
+	STR_AppendInt(ti_string, Lapin_ACTION_Family_Get())
+	STR_AppendText(ti_string, " / Action ")
+	STR_AppendInt(ti_string, ACT_ActionGet())
+	STR_AppendText(ti_string, " / Speed ")
+	tv_speed = v_speedgetvector
+	tv_speed.z = 0.0
+	STR_AppendFloat(ti_string, MATH_VecNorm(tv_speed), 2)
+	if( i_action_traction_force_faster )
+		Str_DisplayTextOnce("force faster", MACRO_2D + cvector(-0.05,0,0))
+}
+
+tv_pos = VIEW_3dWorldTo2d(0, OBJ_PosGet()) + cvector(-0.05,0,0)
+
+
+// INTERET CPT
+Lapin_Atk_Simultannees_IsValid(o_main_actor, ti_cpt)
+if( MSG_GlobalIsValid(mid_best_interet) && EVENT_InteretStatusGet(mid_best_interet) == C_EVENT_InteretStatusAttack )
+	Str_DisplayTextOnce("\cFF\\h0.08\ATTACK !!!", VIEW_3dWorldTo2d(0, OBJ_PosGet()+Cv_VerticalVector)+cvector(-0.05,0,0))
+
+
+
+// TARGET
+if( DBG_Display_Target )
+{
+	if( MSG_GlobalIsValid(mid_best_interet) )
+		Str_DisplayGaoOnce(EVENT_InteretTargetGet(mid_best_interet), tv_pos)
+	else
+		Str_DisplayTextOnce("<none>", tv_pos)
+}
+
+
+
+// TERRITORY
+if( DBG_Display_Territory )
+{
+	ti_string = STR_CreateText("\cFFFF\ID ", tv_pos, 0.0)
+	STR_AppendInt(ti_string, i_my_territory_ID)
+	STR_AppendText(ti_string, "\cFF\ / ")
+	STR_AppendInt(ti_string, i_target_territory_ID)
+}
+
+
+// ETAT
+if( DBG_Display_Etat )
+{
+	tv_pos += cvector(0.0,0.05,0)
+	tf_txt = 0.0
+	ti_txt = 0
+	to_gao_txt = nobody
+	switch( i_etat_courant )
+	{
+		case ETAT_Lapin_ATTENTE :
+			switch( Att_Mode )
+			{
+				case Att_Mode_Sur_Place :
+					str_txt = "Attente"
+					break
+				case Att_Mode_AnimWP :
+					str_txt = "Attente anim"
+					break
+				case Att_Mode_RandomBVPos :
+					str_txt = "Attente BV"
+					break
+				case Att_Mode_Ronde_Network :
+					str_txt = "Attente Ronde"
+					break
+				default:
+					DBG_Error("??")
+			}
+			break
+		case ETAT_Lapin_APPARITION :
+			str_txt = "Apparition"
+			break
+		case ETAT_Lapin_ASPIRE :
+			str_txt = "Aspiré"
+			break
+		case ETAT_Lapin_BEAT_ALERT :
+			str_txt = "\\h0.1\Beat Alert !!!"
+			ti_txt = i_Beat_flag_alert_mode
+			break
+		case ETAT_Lapin_BEAT_DANSE :
+			str_txt = "Beat Danse"
+//			ti_txt = i_Beat_flag_danse_mode
+			break
+		case ETAT_Lapin_BULLRUSH :
+			switch( i_BullRush_mode )
+			{
+				case Ci_BullRush_mode_Charge :
+				case Ci_BullRush_mode_ChargeFin :
+					str_txt = "\\h0.1\BullRush !!!"
+					break
+				default:
+					str_txt = "BullRush"
+					break
+			}
+			break
+		case ETAT_Lapin_CACHE :
+			if( i_cache_mode == Ci_CACHE_Mode_Fuite )
+				str_txt = "Cache Fuite  "
+			else
+				str_txt = "Progression Cache  "
+			to_gao_txt = o_cache
+			tf_txt = f_cache_temps_restant
+			if( f_cache_safe_timer > 0.0 )
+				Str_DisplayTxtFloatOnce("caché depuis... ", f_cache_safe_timer, tv_pos + cvector(0,0.05,0))
+			if( f_cache_not_safe_timer > 0.0 )
+				Str_DisplayTxtFloatOnce("surpris... ", f_cache_not_safe_timer, tv_pos + cvector(0,0.1,0))
+			break
+		case ETAT_Lapin_CHUTE :
+			str_txt = "Chute"
+			break
+		case ETAT_Lapin_COUNTER :
+			str_txt = "\\h0.1\Counter !!!"
+			break
+		case ETAT_Lapin_DODGE :
+			str_txt = "Dodge"
+			break
+		case ETAT_Lapin_FIGHT	:
+			str_txt = "Fight"
+			break
+		case ETAT_Lapin_FUITE :
+			str_txt = "Fuite   "
+			tf_txt = f_fuite_delai
+			to_gao_txt = o_fuite_wp
+			break
+		case ETAT_Lapin_GET_ITEM :
+			str_txt = "Get Item   "
+			to_gao_txt = o_item_nearest
+			break
+		case ETAT_Lapin_GET_MOUNT :
+			str_txt = "Get Mount   "
+			to_gao_txt = o_RideMount_Nearest
+			break
+		case ETAT_Lapin_GOGO	:
+			str_txt = "Gogo"
+			break
+		case ETAT_Lapin_GRABBED :
+			str_txt = "Grabbed"
+			break
+		case ETAT_Lapin_GRAPPIN_CONTROL :
+			str_txt = "Grappin Control"
+			break
+		case ETAT_Lapin_JUMP :	
+			str_txt = "Jump"
+			break
+		case ETAT_Lapin_MELEE	:	
+			str_txt = "Melee"
+			break
+		case ETAT_Lapin_MORT	:
+			str_txt = "Mort"
+			break
+		case ETAT_Lapin_PAF_STUN	:
+			str_txt = "Paf Stun"
+			break
+		case ETAT_Lapin_PAF	:
+			str_txt = "Paf"
+			break
+		case ETAT_Lapin_PIEGE :
+			str_txt = "Piégé"
+			break
+		case ETAT_Lapin_PROTECT	:
+			str_txt = "Protect"
+			break
+		case ETAT_Lapin_RIDED	:
+			str_txt = "Rided"
+			break
+		case ETAT_Lapin_RIDE_MOUNT	:
+			str_txt = "Ride Mount"
+			break
+//		case ETAT_Lapin_SEARCH :
+//			str_txt = "Search"
+//			break
+		case ETAT_Lapin_TAUPE :
+			str_txt = "Taupe"
+			break
+		case ETAT_Lapin_USE_POWERMOUNT :
+			str_txt = "Use PowerMount"
+			break
+		case ETAT_Lapin_USE_ITEM :
+			switch( i_item_ID )
+			{
+				case RM_WEAPON_TYPE_GUN :
+					str_txt = "Use Gun"
+					break
+				case RM_WEAPON_TYPE_GRENADE :
+					str_txt = "Use Grenade"
+					break
+				case RM_WEAPON_TYPE_CLE :
+					str_txt = "Use Key"
+					break
+				case RM_WEAPON_TYPE_CAROTTE :
+					str_txt = "Mange Carotte :)"
+					break
+				default:
+					str_txt = "Use Item ???"
+					break
+			}
+			break
+		default:
+			str_txt = "\h0.1\???"
+			break
+	}
+	// color
+	if( o_Commander_cur )
+		ti_string = STR_CreateText("\c0000FFFF\",tv_pos, 0)
+	else if( i_etat_courant == ETAT_Lapin_APPARITION && ! i_App_Trigger_done )
+		ti_string = STR_CreateText("\c000000FF\",tv_pos, 0)
+	else if( fct_main_etat == AI_TrackGet(2) )
+		ti_string = STR_CreateText("\c0000FF00\",tv_pos, 0)
+	else
+		ti_string = STR_CreateText("\c00FFFFFF\",tv_pos, 0)
+	// text
+	STR_AppendText(ti_string, str_txt)
+	// int
+	if( ti_txt )
+	{
+		STR_AppendText(ti_string, " (")
+		STR_AppendInt(ti_string, ti_txt)
+		STR_AppendText(ti_string, ")   ")
+	}
+	// float
+	if( tf_txt != 0.0 )
+	{
+		if( tf_txt == Cf_Infinit )
+			STR_AppendText(ti_string, "(infini)   ")
+		else
+		{
+			STR_AppendFloat(ti_string, tf_txt, 3)
+			STR_AppendText(ti_string, "   ")
+		}
+	}
+	// gao
+	if( to_gao_txt )
+	{
+		STR_AppendGao(ti_string, to_gao_txt)
+		STR_AppendText(ti_string, "   ")
+	}
+	// item can't use
+	if( i_item_cant_use )
+	{
+		STR_AppendText(ti_string, "\c000000FF\")
+		switch( i_item_cant_use )
+		{
+			case Ci_item_cant_use_too_close : 
+				STR_AppendText(ti_string, " too close")
+				break
+			case Ci_item_cant_use_too_far : 
+				STR_AppendText(ti_string, " too far")
+				break
+			case Ci_item_cant_use_wait_reload : 
+				STR_AppendText(ti_string, " wait reload")
+				break
+			case Ci_item_cant_use_obstacle : 
+				STR_AppendText(ti_string, " obstacle")
+				break
+			case Ci_item_cant_use_temps_mort : 
+				STR_AppendText(ti_string, " debout !")
+				break
+		}
+	}
+	// Commander ???
+//	if( o_Commander_cur )
+//	{
+//		tv_pos += cvector(0,0.05,0)
+//		STR_CreateText("\cFFFF\\h0.05\Commander",tv_pos, 0)
+//	}
+}
+
+
+if( i_etat_courant == ETAT_Lapin_CACHE && o_cache )
+{
+	STR_CreateText("\c0000FF00\\h0.1\ICI !!!", VIEW_3dWorldTo2d(0, v_cache_pos) + cvector(0,-0.1,0), 0.0)
+	DBG_RenderSphere(v_cache_pos, 1.0, color_jaune)
+}
+
+//if( MSG_GlobalIsValid(mid_best_interet))
+//	Str_DisplayGaoOnce(EVENT_InteretTargetGet(mid_best_interet), VIEW_3dWorldTo2d(0,OBJ_PosGet()) + cvector(0,0.2,0))
+
+//Str_DisplayFloatOnce(DYN_GravityVectorGet().z, VIEW_3dWorldTo2d(0,OBJ_PosGet()))
+
+
+// VISION
+if( DBG_Display_Vision )
+{
+	for(ti_i = 0; ti_i < i_perceived_actor_nb; ti_i++ )
+	{
+		tv_pos += cvector(0,0.05,0)
+		Str_DisplayTxtGaoOnce("\c777777\", ao_perceived_actor[ti_i], tv_pos)
+	}
+}
+
+
+// DANSE FORMATION
+if( i_Danse_pos_index != - 1)
+{
+	tv_pos = VIEW_3dWorldTo2d(0,OBJ_PosGet() + cvector(0,0,2))
+	ti_string = STR_CreateText("\cFFFF\\h0.1\", tv_pos, 0)
+	STR_AppendInt(ti_string, i_Danse_pos_index)
+	STR_AppendText(ti_string, "/")
+	STR_AppendInt(ti_string, @get_global i_Danse_Actors_nb)
+}
+
+#endif

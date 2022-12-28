@@ -1,0 +1,95 @@
+#include "prs_RaptorSlim_defines.var"
+
+int				ti_report
+
+vector		tv_Y
+vector		tv_way_sight 
+vector		tv_depl
+
+object		to_cache, to_target
+
+// OCCLUDERS TEST
+if ( ! MATH_VecNullEpsilon(v_next_pos) )
+{
+//	v_next_pos += v_Traction_Exterieure
+	i_way_moving = vrai
+}
+//else if( ! MATH_VecNullToler(v_Traction_Exterieure, 0.01) )
+//{
+//	v_next_pos = OBJ_PosGet() + v_Traction_Exterieure
+//	i_way_moving = vrai
+//}
+else
+	i_way_moving = faux
+
+
+//PNJ_Raptor_Test_Occluder()
+
+DBG_StartRaster(0,"Occluder Raptor")
+if ( i_way_moving)
+{
+	DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, v_next_pos - OBJ_PosGet(), color_jaune)
+	tv_Y = PRS_Compute_Deplacement(v_next_pos, 4.0, 64.0, vrai, ti_report, to_cache)		// 4.0, 64.0
+}
+else
+{
+	ti_report = 0
+	tv_Y = Cv_NullVector
+}
+DBG_StopRaster(0)
+
+if ( ti_report & ( Ci_OCCLUDER_BREAK | Ci_OCCLUDER_HIDE))
+{
+	// NEED TO BREAK TO GO THROW
+	if ( @to_cache COL_BV_PointCollide( v_next_pos))
+	{
+		if ( ( @to_cache OBJ_CapaTest( Ci_Capa_Break_Item) && ( i_way_move_bit & Ci_WAY_BIT_BREAK))
+		|| i_flag_hiding_place_hit_enable)
+ 		{
+		 	// I CAN BREAK IT OR I HAVE NOT TAG A HIDEOUT BEFORE
+		 	i_break_hideout_target_hidden = vrai
+		 	o_hiding_place = to_cache
+		 	macro_change_etat("prs_ETAT_ATTAQUE_CACHE")
+	 	}
+	 	else
+			i_way_computation_mode = Ci_WAY_MODE_RETURN
+	}
+}
+
+// JOY NORM
+//tv_Y = v_next_pos
+//tv_Y -= OBJ_PosGet()
+tv_Y.z = 0.0
+
+
+tv_way_sight = tv_Y
+tv_way_sight += v_Traction_Exterieure		// s'orienter en fct de la traction extérieure
+if ( MATH_VecNullEpsilon( tv_way_sight))
+	tv_way_sight = OBJ_SightGet()
+else
+	MATH_VecSetNormalize(tv_way_sight)
+OBJ_BankingGeneralSet( MATH_VecBlendRotate( OBJ_SightGet(), tv_way_sight, 5.0 * TIME_GetDt()), v_ground_normal)
+
+// Distance a l objectif
+tv_depl = v_way_destpos - OBJ_PosGet()
+if ( MATH_VecDotProduct( tv_depl, tv_depl) < 9.0)
+	tv_Y = Cv_NullVector
+
+f_joy_norm = MATH_VecNorm(tv_Y)
+if (i_way_moving && f_joy_norm)
+	f_joy_norm = MATH_FloatLimit(f_joy_norm, 0.0, 1.0)
+else
+{
+	f_joy_norm = 0.0
+	i_way_moving = faux
+}
+
+if( i_way_moving )
+{
+	v_joy_dir = MATH_VecNormalize(v_next_pos - OBJ_PosGet()) * f_joy_norm
+	if( o_Rided_Actor )
+		v_Traction_Joy = (v_joy_dir * Cf_Traction_Rided)
+	else
+		v_Traction_Joy = (v_joy_dir * Cf_Traction_Walk)
+}
+

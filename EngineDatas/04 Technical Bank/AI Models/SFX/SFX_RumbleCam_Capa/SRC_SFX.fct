@@ -1,0 +1,13 @@
+vector	tv_temp
+float		tf_temp
+object	to_camera 
+
+//AI_CBExecute(CallBack_After_Camera, 0)
+
+if	(i_sfx_ramble)
+{
+	to_camera = VIEW_GetObject(0)
+	tf_temp = f_sfx_ramble
+	tv_temp = @to_camera OBJ_SightGet() + cvector(MATH_RandFloat(-tf_temp, tf_temp), MATH_RandFloat(-tf_temp, tf_temp), MATH_RandFloat(-tf_temp, tf_temp))
+	@to_camera OBJ_SightGeneralSet(tv_temp, @to_camera OBJ_BankingGet())
+}

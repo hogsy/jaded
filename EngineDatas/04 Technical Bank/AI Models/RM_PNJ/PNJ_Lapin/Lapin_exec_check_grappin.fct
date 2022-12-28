@@ -1,0 +1,101 @@
+#include "PNJ_Lapin_defines.var"
+
+vector	tv_temp
+vector	tv_temp1
+object	to_grappin
+int			ti_dodge
+int			ti_protect
+
+
+if( i_flag_grappin_check_done )
+	return
+
+i_flag_grappin_check_done = vrai
+
+if( i_Grappin_Control_attack_flag )
+	return		// en train de porter une attaque parce que je l'ai déjà amené à moi !
+
+// GRAPPIN CONTROL ???
+if( Atk_Grappin_Controle )
+{
+	if( @get_rayman o_grappin && @get_rayman PROC_RM_Current_HotSpot_Get() == OBJ_Me() )
+	{
+		// rayman essaye de me grappiner
+		if( ! @get_rayman PROC_RM_MontureIDGet() )
+		{
+			// il n'est pas sur une monture
+			Lapin_GRAPPIN_Control(get_rayman)
+			MACRO_GO_IDLE(0)
+			return
+		}
+	}
+}
+
+// DODGE ENABLED ?
+ti_dodge = faux
+switch( Atk_Dodge )
+{
+	case Ci_Atk_Dodge_All :
+	case Ci_Atk_Dodge_Grappin :
+		ti_dodge = vrai
+		break
+}
+
+// PROTECT ENABLED ?
+ti_protect = faux
+switch( Atk_Protect )
+{
+	case Ci_Atk_Protect_All :
+	case Ci_Atk_Protect_Grappin :
+		ti_protect = vrai
+		break
+}
+
+if( ! ti_dodge && ! ti_protect )
+	return
+
+// DODGE 360° vs FRONT DODGE
+switch( i_etat_courant )
+{
+	case ETAT_Lapin_CACHE :
+		if( MATH_VecDotProduct(OBJ_SightGet(), @get_rayman OBJ_PosGet() - OBJ_PosGet()) < 0.0 )
+			return
+		break
+}
+
+
+// DODGE ANALYSIS
+if( @get_rayman PROC_RM_Current_HotSpot_Get() == OBJ_Me() )
+{
+	// vilain Rayman tu veux me grappiner
+	
+	if( @get_rayman i_grappin_accroche )
+		return		// sinon tant pis il m'a eu... mais je vais lui en coller une de toute façon :)
+	
+	if( @get_rayman i_grappin_retour )
+		return		// le grappin revient à Rayman, il ne cherche plus de hotspot
+	
+	to_grappin = @get_rayman o_grappin
+	if( to_grappin )
+	{
+		tv_temp = HotSpot_PosGet(OBJ_Me())
+		tv_temp -= @to_grappin OBJ_PosGet()
+		if( MATH_VecNorm(tv_temp) > 2.0 )
+			return 	// pas encore assez près
+		
+		// sinon c pas encore trop tard
+		tv_temp = @to_grappin OBJ_PosGet() - OBJ_PosGet()
+		tv_temp.z = 0.0
+		tv_temp1 = @get_rayman OBJ_PosGet() - OBJ_PosGet()
+		tv_temp1.z = 0.0
+		if( MATH_VecDotProduct(tv_temp, tv_temp1) < 0.0 )
+			return		// dans mon dos c bon il est déjà passé
+		
+		if( ti_protect )
+			Lapin_PROTECT(get_rayman, Ci_Dodge_Mode_Grappin)
+		else
+			Lapin_DODGE(get_rayman, Ci_Dodge_Mode_Grappin)
+		MACRO_GO_IDLE(0)
+	}
+}
+

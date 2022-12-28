@@ -1,0 +1,253 @@
+#include "KAnn_defines.var"
+
+vector	tv_temp
+
+object	to_clone
+object	to_bone
+
+int			ti_i
+int			ti_k
+int			ti_membre_index
+int			ti_rank
+
+messageid		tmid_lnk
+
+message		tmsg_filter
+
+OBJ_Destroy()
+
+SCT_SetOf(0,0,0,0)
+
+if( AI_GetCurSystem() != Ci_CurSystem_Editeur )
+{
+	// SI PAS EN EDITEUR
+	i_DBG_display_KONG_link = faux
+	i_DBG_display_interaction  = faux
+	i_DBG_display_death_timer = faux
+	i_DBG_display_death_music = faux
+}
+
+
+// PUTAIN DE OBJ REINIT
+for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+{
+	MSG_SetNull(tmsg_filter)
+	tmsg_filter.msg_sender = OBJ_Me()
+	ti_rank = -1
+	tmid_lnk	= MSG_GlobalSearchIntGao(Ci_LNK_EVENT_OFFSET + ti_i, &ti_rank, tmsg_filter)
+	while(MSG_GlobalIsValid(tmid_lnk))
+	{
+		MSG_GlobalDelete(tmid_lnk, C_EVENT_DEL)
+		tmid_lnk	= MSG_GlobalSearchIntGao(Ci_LNK_EVENT_OFFSET + ti_i, &ti_rank, tmsg_filter)
+	}
+}
+
+// MAIN ACTORS =================================
+@"univ" ao_AllHumains[i_id_humain] = OBJ_Me()
+//o_KONG = @"univ" ao_AllHumains[C_ID_Kong]
+o_KONG = AI_MainActorGet(C_ID_Kong)
+//o_JACK = @"univ" ao_AllHumains[C_ID_Jack]
+o_JACK = AI_MainActorGet(C_ID_Joueur)
+// MAIN ACTORS =================================
+
+COL_UnCollidableAdd(o_KONG)
+COL_UnCollidableAdd(o_JACK)
+
+AI_RunContext(CTX_Normal)
+ACT_DefaultTransition(15)
+OBJ_FlagsControlSet(0, OBJ_C_ControlFlag_RayInsensitive)
+OBJ_FlagsControlSet(OBJ_C_ControlFlag_AlwaysVisible, 0)	// Cause pb partial
+
+TIME_Wait(0.01)
+
+afct_SRV[Ci_LNK_GRAB_RAPTOR] = nofunc
+afct_SRV[Ci_LNK_KKGRAB_OBJECT] = "KAnn_exec_PROPOSE_KKGrab_Object"
+afct_SRV[Ci_LNK_GRAB_TRANSPORTE] = "KAnn_exec_propose_grab_transporte"
+afct_SRV[Ci_LNK_INTERACTION] = "KAnn_exec_propose_interaction"
+afct_SRV[Ci_LNK_GRAB_KONG] = "KAnn_exec_propose_grab_trex"
+
+
+//tv_temp = GRID_PosGet(OBJ_PosGet())
+//tv_temp.z = OBJ_PosGet().z
+//OBJ_PosSet(tv_temp)
+
+BV_MinSet(cvector(-2.0, -2.0, -2.0))
+BV_MaxSet(cvector(2.0, 2.0, 2.0))
+
+COL_ColSetActivationSet(none, C_bit_zdm_recalagespecial)
+
+COL_SwapToSpecific(C_zdm_pied)
+COL_ZoneSizeSet(C_zdm_pied, cvector(0.25, 0.25, 0.25))
+COL_ZonePosSet(C_zdm_pied, cvector(0.0, 0.0, 0.25))
+
+COL_SwapToSpecific(C_zdm_recalagespecial)
+COL_ZoneSizeSet(C_zdm_recalagespecial, cvector(0.25, 0.25, 0.25))
+COL_ZonePosSet(C_zdm_recalagespecial, cvector(0.0, 0.0, 1.0))
+
+COL_SwapToSpecific(C_zde_corps)
+COL_ZoneSizeSet(C_zde_corps, cvector(0.60, 0.60, 0.60))
+
+COL_SwapToSpecific(C_zde_fight)
+COL_ZoneSizeSet(C_zde_fight, cvector(0.5, 0.5, 0.5))
+COL_ZonePosSet(C_zde_fight, cvector(0.0, -0.75, 1.0))
+
+AI_Execute("KAnn_exec_dyn_on")
+
+AI_CBAdd(OBJ_Me(), CallBack_WhenDestroy, "KAnn_CALLBACK_when_destroy")
+
+COL_CrossableSet(Gmat_KK_Crossable_Ann | Gmat_KK_Face_eau | (Gmat_KK_Crossable_Default & ~Gmat_KK_Cross_All_But_Ann), none)
+
+AI_CBAdd(OBJ_Me(), CallBack_After_Blend, "KAnn_CALLBACK_after_blend")
+
+AI_CBAdd(OBJ_Me(), CallBack_Client, "KAnn_CALLBACK_client")
+
+
+// IK INIT =============================================================================================
+o_bassin = ANI_CanalObjectGet(Anim_Canal_Bassin)
+for (ti_i = 0; ti_i < 4; ti_i++)
+{
+	switch(ti_i)
+	{
+		case Ci_IK_pied_gauche :
+			ti_membre_index = Anim_Canal_PiedGauche
+			break
+		case Ci_IK_pied_droit :
+			ti_membre_index = Anim_Canal_PiedDroit
+			break
+		case Ci_IK_main_gauche :
+			ti_membre_index = Anim_Canal_MainGauche
+			break
+		case Ci_IK_main_droite :
+			ti_membre_index = Anim_Canal_MainDroite
+			break
+	}	
+
+	for (ti_k = 0; ti_k < 3; ti_k++)
+	{
+		to_bone = ANI_CanalObjectGet(ti_membre_index + (2 - ti_k))
+		ao_IK_bones[ti_i][ti_k] = to_bone
+	}
+
+	switch(ti_i)
+	{
+		case Ci_IK_pied_gauche :
+			ti_membre_index = Anim_Canal_OrteilGauche
+			break
+		case Ci_IK_pied_droit :
+			ti_membre_index = Anim_Canal_OrteilDroit
+			break
+		case Ci_IK_main_gauche :
+			ti_membre_index = Anim_Canal_DoigtG1
+			break
+		case Ci_IK_main_droite :
+			ti_membre_index = Anim_Canal_DoigtD1
+			break
+	}	
+
+	ao_IK_bones[ti_i][3] = ANI_CanalObjectGet(ti_membre_index)
+	if(ao_IK_bones[ti_i][1] && ao_IK_bones[ti_i][0])
+		af_IK_bones_length[ti_i][0] = MATH_VecNorm(@ao_IK_bones[ti_i][1] OBJ_PosGet() - @ao_IK_bones[ti_i][0] OBJ_PosGet())
+	if(ao_IK_bones[ti_i][2] && ao_IK_bones[ti_i][1])
+		af_IK_bones_length[ti_i][1] = MATH_VecNorm(@ao_IK_bones[ti_i][2] OBJ_PosGet() - @ao_IK_bones[ti_i][1] OBJ_PosGet())
+
+	if (ti_i < 2)
+	{
+		if(ao_IK_bones[ti_i][2])
+		{
+			v_IK_bone_local_pos[ti_i] = MATH_VecGlobalToLocal(@ao_IK_bones[ti_i][2] OBJ_PosGet() - OBJ_PosGet())
+			v_IK_bone_last_valid_sight[ti_i] = @ao_IK_bones[ti_i][2] OBJ_SightGet()
+			v_IK_bone_last_valid_banking[ti_i] = @ao_IK_bones[ti_i][2] OBJ_BankingGet()
+		}
+	}
+}
+
+
+// RAGDOLL SNAKE INIT =================================================================================
+for (ti_i = 0; ti_i < Ci_nb_bone; ti_i++)
+{
+	switch(ti_i)
+	{
+		case 0 :
+			ti_membre_index	= Anim_Canal_PiedGauche
+			break
+		case 1 :
+			ti_membre_index	= Anim_Canal_JambeGauche
+			break
+		case 2 : 
+			ti_membre_index	= Anim_Canal_Bassin
+			break
+		case 3 : 
+			ti_membre_index	= Anim_Canal_Ventre
+			break
+		case 4 : 
+			ti_membre_index	= Anim_Canal_Torse
+			break
+		case 5 : 
+			ti_membre_index	= Anim_Canal_Cou
+			break
+	}
+
+	ao_bones[ti_i] = ANI_CanalObjectGet(ti_membre_index)
+
+	if (ti_i && ao_bones[ti_i - 1] && ao_bones[ti_i])
+		af_bone_length[ti_i] = MATH_VecNorm(@ao_bones[ti_i - 1] OBJ_PosGet() - @ao_bones[ti_i] OBJ_PosGet())
+}
+
+AI_Execute("KAnn_exec_set_obbox")
+
+o_projectile = nobody
+
+// get fear mode from gst_global
+i_fear = @get_global i_KK_ANN_Fear_Mode 
+
+// SANTE INITIALE
+if( i_life_init )
+	KAnn_Life_Set(Life_ETAT_Normal)
+else
+	KAnn_Life_Set(Life_ETAT_Agonisant)
+
+KAnn_Death_Timer_Reset()
+
+//f_run_breath_delay = MATH_RandFloat(2.0,4.0)
+f_run_breath_delay = 0.0
+
+
+v_old_pos = OBJ_PosGet()
+
+// SHAPE INITIALE
+if (i_has_weapon)
+{
+	ANI_ShapeSelect(Anim_Canal_Snap_MainD, 10)  // bambou
+	ANI_ShapeSelect(Anim_Canal_Snap_MainD+1, 3)
+	ANI_ShapeSelect(Anim_Canal_Snap_MainD+2, 3)
+}
+else
+{
+	ANI_ShapeSelect(Anim_Canal_Snap_MainD, 0)
+	ANI_ShapeSelect(Anim_Canal_Snap_MainD+1, 0)
+	ANI_ShapeSelect(Anim_Canal_Snap_MainD+2, 0)
+}
+
+AI_TrackChange(Ci_Track_TagOff, "KAnn_TRACK_tag_off")
+AI_TrackChange(Ci_Track_Reflex, "KAnn_TRACK_Reflex")
+AI_TrackChange(Ci_Track_TagOn, "KAnn_TRACK_tag_on")
+
+
+f_javelin_time_last_throw_delay = 5.0
+
+
+//ACT_ActionSet(Ann_Grabbed_Bat_Mort)
+//TIME_Wait(10)
+
+// if ann is (will be) in kong's hand, begin in action state, else in follow network state
+//if ( ! @o_KONG OBJ_CapaTest(OBJ_Capa_12))
+//{
+//	AI_TrackChange(Ci_Track_Etat, "KAnn_ETAT_follow_network")
+//}
+//else
+//{
+//	AI_TrackChange(Ci_Track_Etat, "KAnn_ETAT_action")
+//}
+//
+
+AI_TrackChange(Ci_Track_Etat, "KAnn_ETAT_FPS")

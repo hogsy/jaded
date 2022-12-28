@@ -1,0 +1,549 @@
+#include "weapon_defines.var"
+
+vector	tv_pos
+vector	tv_pos0
+vector	tv_pos1
+vector	tv_pos2
+int			ti_display
+int			ti_boom
+int			ti_asp
+int			ti_ok
+int			ti_i, ti_nb 
+vector	tv_temp
+object	tao_zde_zde_list[20]
+object	to_target
+float		tf_dist2
+
+
+// GFX
+float		tf_dist
+
+o_main_actor = AI_MainActorGet(0)
+if( ! o_main_actor )
+	return
+
+// SPECIAL FU### MODE POUR LE DELAI DU SND DE L'EXPLOSION
+if( i_mode == C_Mode_Weapon_Explosed_SND_delai )
+{
+	f_explosed_snd_delai -= MATH_FloatMin(f_explosed_snd_delai, TIME_GetDt())
+	if( ! f_explosed_snd_delai )
+	{
+		OBJ_Destroy()
+	}
+	return
+}
+// SPECIAL FU### MODE POUR LE DELAI DU SND DE L'EXPLOSION
+
+if( OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna) )
+{
+	DYN_TractionSet(Cv_NullVector)
+}
+
+if ( OBJ_CapaTest(RM_WEAPON_CAPA_USE))
+	WEAPON_MODE_SET(C_Mode_Weapon_Used)
+
+if( OBJ_CapaTest(RM_WEAPON_CAPA_DROP_PAF) )
+{
+	switch( i_type )
+	{
+		case RM_WEAPON_TYPE_GUN :
+		case RM_WEAPON_TYPE_GRENADE :
+			if( i_drop_paf_cpt )
+			{
+				i_drop_paf_cpt--
+				if( ! i_drop_paf_cpt )
+					i_drop_paf_destroy_flag = vrai
+			}
+			break
+	}
+	WEAPON_MODE_SET(C_Mode_Weapon_Drop)
+}
+else if ( OBJ_CapaTest(RM_WEAPON_CAPA_DROP))
+	WEAPON_MODE_SET(C_Mode_Weapon_Drop)
+
+if ( OBJ_CapaTest(RM_WEAPON_CAPA_PROJ))
+	WEAPON_MODE_SET(C_Mode_Weapon_Proj)
+
+OBJ_CapaSet(none, RM_WEAPON_CAPA_GRABBED)
+
+COL_ColSetActivationSet(C_bit_zdm_pied, none)
+
+COL_UnCollidableReset()
+
+COL_ColSetActivationSet(none, C_bit_zde_fight)
+
+switch ( i_mode)
+{
+	case C_Mode_Weapon_Wait :
+		o_serveur_grab = LNK_ServeurGet(Ci_LNK_GRAB_OBJECT, mid_grabbed_LNK_ID, vrai, nofunc, nofunc)
+		if ( o_serveur_grab)
+		{
+			LNK_KKGrabObject_SubTypeSet(mid_grabbed_LNK_ID, i_key_type)
+			WEAPON_MODE_SET(C_Mode_Weapon_Get)
+		}
+		v_last_grab_actor_sight = OBJ_SightGet()
+		if( ! i_mitraillette )
+			OBJ_BankingGeneralSet(OBJ_SightGet(), MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 20 * TIME_GetDt()))
+			
+		// TEXT PTIZETRE AU SOL
+		if(i_key_type==KEY_TYPE_PTIZETRE)
+		{
+			if(f_Delay_Speech<=0.0)
+			{
+				tf_dist2 = MATH_VecSquareDistance(OBJ_PosGet(),@get_rayman OBJ_PosGet())
+				f_Delay_Speech=MATH_RandFloat(5.0,10.0)
+				if(@get_rayman OBJ_CapaTest(Obj_Capa_Fight))
+				{
+					SPEECH_RequestPost(OBJ_Me(), OBJ_Me(), C_TXT_Ptizetre, pz1_pri_support1, SPEECH_Cte_TimeOutDefault + 0.5, SPEECH_Cte_PriorityDefault, SPEECH_Cte_RandomSize, 0, 0, 0)
+				}
+				else if(tf_dist2<f_PZ_Near2)
+				{
+					i_AVuRM=vrai
+					SPEECH_RequestPost(OBJ_Me(), OBJ_Me(), C_TXT_Ptizetre, pz1_pri_near1, SPEECH_Cte_TimeOutDefault + 0.5, SPEECH_Cte_PriorityDefault, SPEECH_Cte_RandomSize, 0, 0, 0)
+					if( OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Anims) )
+						ACT_ActionSet(PZ_Action_Wave_Near)
+				}
+				else if(tf_dist2<f_PZ_Far2)
+				{
+					if(i_AVuRM)
+						SPEECH_RequestPost(OBJ_Me(), OBJ_Me(), C_TXT_Ptizetre, pz1_help_alone1, SPEECH_Cte_TimeOutDefault + 0.5, SPEECH_Cte_PriorityDefault, SPEECH_Cte_RandomSize, 0, 0, 0)
+					else
+						SPEECH_RequestPost(OBJ_Me(), OBJ_Me(), C_TXT_Ptizetre, pz1_pri_far1, SPEECH_Cte_TimeOutDefault + 0.5, SPEECH_Cte_PriorityDefault, SPEECH_Cte_RandomSize, 0, 0, 0)
+					if( OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Anims) )
+						ACT_ActionSet(PZ_Action_Wave_Far)
+				}
+				else
+					f_Delay_Speech = 0.2
+			}
+			else
+				f_Delay_Speech-=TIME_GetDt()
+				
+//			if( ACT_ActionGet() != PZ_Action_Stele_Incante )
+//				ACT_ActionSet(PZ_Action_Stele_Incante)
+//			else if( ACT_ActionFinished() )
+			if( OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Anims) )
+				if(ACT_ActionFinished())
+					ACT_ActionSet(PZ_Action_Attente)
+		}
+	break
+		
+	case C_Mode_Weapon_Proj :
+		COL_ColSetActivationSet( C_bit_zde_fight, none)
+		ti_nb = COL_ZDE_ZDEListGet( &tao_zde_zde_list[0], C_zde_fight, C_zde_corps, all, none, Ci_Filter_IdentityFlag)
+		for (ti_i = 0; ti_i < ti_nb; ti_i++)
+		{
+			to_target = tao_zde_zde_list[ti_i]
+			if ( to_target != get_rayman)
+				EVENT_AddEventPafCanal( C_EVENT_FILTER_Object, C_PAF_RM_Fort, get_rayman, Cf_EVENT_Duree_1Trame, to_target, -1, 10.0, v_proj_sens, OBJ_PosGet())
+		}
+		if( WEAPON_Collide_Ground() )
+		{
+			DYN_FrictionVectorSet(cvector( 5.0, 5.0, 0.0))	
+			WEAPON_MODE_SET(C_Mode_Weapon_Wait)
+		}
+		OBJ_BankingGeneralSet(OBJ_SightGet(), MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 20 * TIME_GetDt()))
+		break
+		
+	case C_Mode_Weapon_Drop :
+		if( WEAPON_Collide_Ground() )
+		{
+			DYN_FrictionVectorSet(cvector( 5.0, 5.0, 0.0))
+			if( i_drop_paf_destroy_flag )
+			{
+				PROC_SFX_EXPLOSION_CARTOON(OBJ_PosGet())
+				// SND EXPLOSE
+				f_explosed_snd_delai = 1.0
+				WEAPON_MODE_SET(C_Mode_Weapon_Explosed_SND_delai)
+			}
+			else
+				WEAPON_MODE_SET(C_Mode_Weapon_Wait)
+		}
+		if( i_drop_paf_destroy_flag )
+			OBJ_SightGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), OBJ_BankingGet(), 5 * TIME_GetDt()), MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 5 * TIME_GetDt()))
+		else
+			OBJ_BankingGeneralSet(OBJ_SightGet(), MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 20 * TIME_GetDt()))
+		break
+		
+	case C_Mode_Weapon_Get :
+		o_serveur_grab = LNK_ServeurGet(Ci_LNK_GRAB_OBJECT, mid_grabbed_LNK_ID, vrai, nofunc, nofunc)
+		if ( ! o_serveur_grab)
+			WEAPON_MODE_SET(C_Mode_Weapon_Drop)
+		else if ( LNK_KKGrabObject_StateGet(mid_grabbed_LNK_ID) == 1)
+			WEAPON_MODE_SET(C_Mode_Weapon_Grabbed)
+		if( o_serveur_grab )
+			@o_serveur_grab COL_UnCollidableAdd(OBJ_Me())
+		break
+		
+	case C_Mode_Weapon_Grabbed :
+		if( o_serveur_grab == o_main_actor )
+			OBJ_FlagInvisibleSet(faux)		// rayman me rend invisible en look
+		COL_ColSetActivationSet(none, C_bit_zdm_pied)
+		if( o_actor_grab )
+			OBJ_BankingGeneralSet( @o_actor_grab OBJ_SightGet(), Cv_VerticalVector)
+		else
+			OBJ_BankingGeneralSet(OBJ_SightGet(), Cv_VerticalVector)
+		o_serveur_grab = LNK_ServeurGet(Ci_LNK_GRAB_OBJECT, mid_grabbed_LNK_ID, vrai, nofunc, nofunc)
+		if( ! o_serveur_grab )
+			WEAPON_MODE_SET(C_Mode_Weapon_Drop)
+		else
+			v_last_grab_actor_sight = @o_serveur_grab OBJ_SightGet()
+		OBJ_CapaSet(RM_WEAPON_CAPA_GRABBED, none)
+		if( o_serveur_grab )
+			@o_serveur_grab COL_UnCollidableAdd(OBJ_Me())
+		if( ! i_Objectif_already_grabbed && i_key_type == KEY_TYPE_PTIZETRE && o_serveur_grab == o_main_actor )
+			i_Objectif_already_grabbed = vrai
+			
+		// TEXT PTIZETRE GRABBED
+		if(i_key_type==KEY_TYPE_PTIZETRE)
+		{
+			if(f_Delay_Speech<=0.0)
+			{
+				f_Delay_Speech=MATH_RandFloat(20.0,40.0)
+				if(@get_rayman OBJ_CapaTest(Obj_Capa_Fight))
+				{
+					SPEECH_RequestPost(OBJ_Me(), OBJ_Me(), C_TXT_Ptizetre, pz1_ride_warn1, SPEECH_Cte_TimeOutDefault + 0.5, SPEECH_Cte_PriorityDefault, SPEECH_Cte_RandomSize, 0, 0, 0)
+					f_Delay_Speech = MATH_RandFloat(3.0,8.0)
+				}
+				else
+				{
+					if(@get_rayman PROC_RM_NAGE())
+						SPEECH_RequestPost(OBJ_Me(), OBJ_Me(), C_TXT_Ptizetre, pz1_y_wait_swim1, SPEECH_Cte_TimeOutDefault + 0.5, SPEECH_Cte_PriorityDefault, SPEECH_Cte_RandomSize, 0, 0, 0)
+					else
+						SPEECH_RequestPost(OBJ_Me(), OBJ_Me(), C_TXT_Ptizetre, pz1_ride_wait1, SPEECH_Cte_TimeOutDefault + 0.5, SPEECH_Cte_PriorityDefault, SPEECH_Cte_RandomSize, 0, 0, 0)
+				}
+			}
+			else
+				f_Delay_Speech-=TIME_GetDt()
+
+			if( OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Anims) )
+				ACT_ActionSet(PZ_Action_Grabbed)
+		}
+		
+		break
+
+	case C_Mode_Weapon_Used :
+		// ANTI BUG FPP PAS LE TEMPS DE FAIRE MIEUX
+		if( ! i_mitraillette && ! o_actor_grab )
+			WEAPON_MODE_SET(C_Mode_Weapon_Drop)
+		// ANTI BUG FPP PAS LE TEMPS DE FAIRE MIEUX
+		switch ( i_type )
+		{
+			case RM_WEAPON_TYPE_GOURDIN :
+				WEAPON_SEND_PAF()
+				if( i_duree_de_vie )
+					WEAPON_MODE_SET(C_Mode_Weapon_Grabbed)
+				else
+					WEAPON_MODE_SET(C_Mode_Weapon_Destroy)
+				break
+				
+			case RM_WEAPON_TYPE_CLE :
+				// PTIZETRE
+				if(i_key_type==KEY_TYPE_PTIZETRE)
+					if(OBJ_CapaTest(Obj_Capa_Switch))
+						WEAPON_MODE_SET(C_Mode_PZ_BassinSoin)
+					else
+						WEAPON_MODE_SET(C_Mode_PZ_SteleIncante)
+				else
+					WEAPON_MODE_SET(C_Mode_Weapon_Destroy)							
+				break
+			case RM_WEAPON_TYPE_CAROTTE :
+				WEAPON_MODE_SET(C_Mode_Weapon_Destroy)							
+				break
+				
+			case RM_WEAPON_TYPE_GRENADE :
+//				if( o_used_target )
+//					Str_DisplayGaoOnce(o_used_target, VIEW_3dWorldTo2d(0, OBJ_PosGet()))
+				if( i_explose_type == Ci_Grenade_Explose_Type_Contact)		// Contact
+				{
+					ti_boom = faux
+					if( COL_CollideType(COL_C_Ground) || COL_CollideType(COL_C_Wall) )
+						ti_boom = vrai
+					if( o_used_target )
+					{
+						if( COL_Pivot_BVCollide(o_used_target))
+							ti_boom = vrai
+						else if( @o_used_target COL_ColSetActivationGet() & C_bit_zde_corps )
+						{
+							tv_temp = @o_used_target COL_ZonePosGet(C_zde_corps) - OBJ_PosGet()
+							DBG_RenderVector(OBJ_PosGet(), tv_temp, color_bleu)
+							if( MATH_VecDotProduct(tv_temp, tv_temp) < 3.0 )
+								ti_boom = vrai
+						}
+					}
+					if( ti_boom )
+					{
+						DYN_FrictionVectorSet(cvector(5.0,5.0,0.0))
+						WEAPON_MODE_SET(C_Mode_Weapon_Destroy)
+						break
+					}
+				}
+				else		// Timer
+				{ 
+					if ( WEAPON_Collide_Ground())
+					{
+						o_serveur_grab = LNK_ServeurGet(Ci_LNK_GRAB_OBJECT, mid_grabbed_LNK_ID, vrai, nofunc, nofunc)
+						if ( o_serveur_grab)
+						{
+							LNK_KKGrabObject_SubTypeSet(mid_grabbed_LNK_ID, i_key_type)
+							WEAPON_MODE_SET( C_Mode_Weapon_Get)
+							break
+						}			
+					}
+					i_grenade_active = vrai
+				}
+				DYN_TractionSet( PROC_ForceStreamGet(OBJ_PosGet(), ti_asp))
+				
+				// SHOOT
+				v_pos = OBJ_PosGet()
+				DBG_RenderVector( v_pos_old, v_pos - v_pos_old,  color_bleu)
+				EVENT_AddEventShoot(o_actor_grab, RM_WEAPON_TYPE_GRENADE, v_pos_old, v_pos, nobody, 0)
+				v_pos_old = v_pos
+				break
+				
+			case RM_WEAPON_TYPE_GUN :
+				if( i_mitraillette )
+				{
+					WEAPON_MODE_SET(C_Mode_Weapon_Wait)
+				}
+				else
+				{
+					o_serveur_grab = LNK_ServeurGet(Ci_LNK_GRAB_OBJECT, mid_grabbed_LNK_ID, vrai, nofunc, nofunc)
+					if (	! o_serveur_grab)
+						WEAPON_MODE_SET(C_Mode_Weapon_Drop)
+					if ( i_nb_munitions <= 0)
+						WEAPON_MODE_SET(C_Mode_Weapon_Destroy)
+					else
+						WEAPON_MODE_SET(C_Mode_Weapon_Grabbed)
+				}
+				break
+		}
+		if( o_serveur_grab )
+			@o_serveur_grab COL_UnCollidableAdd(OBJ_Me())
+		break
+		
+	case C_Mode_Weapon_Destroy :
+		DYN_Off()
+		switch( i_type )
+		{
+			case RM_WEAPON_TYPE_GRENADE :
+				// GFX TEMP
+				i_GFX_Explosion = WEAPON_CREATE_BOOM()
+				meta ( f_GFX_rayon > 0.5)
+				{
+					GFX_Setf(i_GFX_Explosion, 21000, f_GFX_rayon)			// rayon					
+					f_GFX_rayon = MATH_FloatBlend( f_GFX_rayon , 0.0, TIME_GetDt() * 10.0)
+				}
+				GFX_Del(i_GFX_Explosion)
+				i_GFX_Explosion = -1
+				// SND EXPLOSE
+				f_explosed_snd_delai = 2.0
+				WEAPON_MODE_SET(C_Mode_Weapon_Explosed_SND_delai)
+				break
+				
+			case RM_WEAPON_TYPE_GOURDIN :
+				// SND CRACK
+				f_explosed_snd_delai = 0.75
+				WEAPON_MODE_SET(C_Mode_Weapon_Explosed_SND_delai)
+				break
+			default:
+				OBJ_Destroy()
+				break
+		}
+		break
+		case C_Mode_PZ_SteleWait :
+		break
+		case C_Mode_PZ_BassinSoin :
+			if( OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Anims) )
+				ACT_ActionSet(PZ_Action_Attente)
+			if(!OBJ_CapaTest(Obj_Capa_Switch))
+				WEAPON_MODE_SET(C_Mode_Weapon_Wait)
+		break
+		case C_Mode_PZ_SteleIncante :
+
+			if(f_Delay_Speech<=0.0)
+			{
+				tf_dist2 = MATH_VecSquareDistance(OBJ_PosGet(),@get_rayman OBJ_PosGet())
+				f_Delay_Speech=MATH_RandFloat(5.0,10.0)
+				if(tf_dist2<f_PZ_Near2)
+					SPEECH_RequestPost(OBJ_Me(), OBJ_Me(), C_TXT_Ptizetre, pz1_y_magic_incant1, SPEECH_Cte_TimeOutDefault + 0.5, SPEECH_Cte_PriorityDefault, SPEECH_Cte_RandomSize, 0, 0, 0)
+				else if(tf_dist2<f_PZ_Far2)
+					SPEECH_RequestPost(OBJ_Me(), OBJ_Me(), C_TXT_Ptizetre, pz1_y_magic_incant1, SPEECH_Cte_TimeOutDefault + 0.5, SPEECH_Cte_PriorityDefault, SPEECH_Cte_RandomSize, 0, 0, 0)
+				else
+					f_Delay_Speech = 0.2
+			}
+			else
+				f_Delay_Speech-=TIME_GetDt()
+
+			if( OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Anims) )
+				ACT_ActionSet(PZ_Action_Stele_Incante)
+		break
+}
+
+if( i_grenade_active ) // && !MATH_FloatNullEpsilon( f_delai_before_boom))
+{
+	tv_pos = VIEW_3dWorldTo2d( 0, OBJ_PosGet()) - cvector( 0.0,0.1,0.0)
+	ti_display = (f_delai_before_boom - 0.5 ) + 1
+	if ( ti_display  >= 4)
+		Str_DisplayTxtIntOnce( "\h0.08\",ti_display, tv_pos )
+	else if ( f_delai_before_boom > 0.0)
+		Str_DisplayTxtIntOnce( "\cFF\\h0.08\",ti_display, tv_pos)
+	if ( WEAPON_Collide_Ground() )
+		DYN_FrictionVectorSet(cvector(5.0,5.0,0.0))						
+	if (  f_delai_before_boom < 0.0 )
+	{
+		i_grenade_active = faux
+		WEAPON_MODE_SET( C_Mode_Weapon_Destroy)		
+	}
+	f_delai_before_boom -= TIME_GetDt()						
+}
+
+
+OBJ_CapaSet(none, RM_WEAPON_CAPA_USE + RM_WEAPON_CAPA_DROP + RM_WEAPON_CAPA_DROP_PAF + RM_WEAPON_CAPA_PROJ)
+
+
+// RESET FRAPPE TIMER
+if( i_type == RM_WEAPON_TYPE_GOURDIN && TIME_Elapsed(f_gourdin_last_use, 0.5) )
+	i_frappe_target_nb = 0
+
+
+// OBJECTIF !!!! =======================================================
+if( i_frame_nb > 1 && i_key_type == KEY_TYPE_PTIZETRE ) // sauf 1ere trame (je peux subir un reinit)
+{
+	// TEST DES POSITIONS DE RAYMAN ET DU PTIZETRE
+	ti_ok = faux
+	tv_pos0 = OBJ_PosGet()
+	if( i_GFX_Obj_can_i_display && ! i_Objectif_already_grabbed )
+	{
+		if( ! o_Objectif_Donjon_BV || ! @o_Objectif_Donjon_BV COL_BV_PointCollide(@o_main_actor OBJ_PosGet()) )
+		{
+			// position d'affichage en extérieur
+			if( o_Objectif_Exterieur_Pos )
+				tv_pos0 = @o_Objectif_Exterieur_Pos OBJ_PosGet()
+			
+			// pas de donjon ou rayman dehors -> test pour l'affichage du GFX
+			switch( i_Objectif_Display_Mode )
+			{
+				case  0 :
+					SpecialFlag_get(5000 + ( 2 * i_Objectif_ID ), ti_ok)		// Doit-il être affiché ?
+					break
+				case 1 :
+					ti_ok = vrai
+					break
+			}
+		}
+	}
+	
+	if( ti_ok )
+	{
+		if( ! i_GFX_state )
+			i_GFX_state = 1		// FADE IN
+	}
+	else
+	{
+		if( i_GFX_state )
+			i_GFX_state = 3		// FADE OUT
+	}
+	switch( i_GFX_state )
+	{
+		case  0 :	// OFF
+			f_GFX_Obj_blend = 0.0
+			break
+		case 1 :		// FADE IN
+			f_GFX_Obj_blend += MATH_FloatMin(1.0 - f_GFX_Obj_blend, 1.0 * TIME_GetDt())
+			if( f_GFX_Obj_blend == 1.0 )
+				i_GFX_state = 2
+			break
+		case 2 :		// ON
+			f_GFX_Obj_blend = 1.0
+			break
+		case 3 :		// FADE OUT
+			f_GFX_Obj_blend -= MATH_FloatMin(f_GFX_Obj_blend, 3.0 * TIME_GetDt())
+			if( f_GFX_Obj_blend == 0.0 )
+				i_GFX_state = 0
+			break
+	}
+	
+	if( i_GFX_state )		// TOUS SAUF OFF
+	{
+		// positionner et tourner gao visuel
+		tv_pos1 = @get_rayman OBJ_PosGet() //+ (3.0 * f_GFX_Obj_blend)
+
+		// Distance entre l'objectif et RM -> détermination de la taille du SFX
+		tf_dist = (MATH_VecSquareNorm(tv_pos0 - tv_pos1) * 0.0001)// + 1.0
+
+		tv_temp = tv_pos0 + cvector(0.0,0.0, 10 + (tf_dist * 3.0))
+		@o_gfx_obj OBJ_PosSet(tv_temp)
+		
+		// GFX Halo
+		if( i_GFX_Obj_Halo == -1)
+		{
+			i_GFX_Obj_Halo = @o_gfx_obj GFX_Add(21)																// Halo
+			GFX_FlagSet(i_GFX_Obj_Halo, 4, 1)
+			GFX_MaterialSet(i_GFX_Obj_Halo, get_SFX_light_and_smoke, 0)									// affectation du matériau
+			GFX_Seti(i_GFX_Obj_Halo, 21103, 1)																			// 0 (défaut) flare mural 1 flare très simple 
+			GFX_Seti(i_GFX_Obj_Halo, 21101, c_Objectif_Color)														// couleur du halo
+		}
+		GFX_Setf(i_GFX_Obj_Halo, 21000, 2 + (0.01 * (tf_dist * tf_dist * 0.1) * Cf_GFX_Obj_Halo_Largeur * f_GFX_Obj_blend))	// taille du halo
+		GFX_Setf(i_GFX_Obj_Halo, 21002, f_halo_extraction)														// extraction par rapport au point de génération (vers la cam)
+		GFX_Setv(i_GFX_Obj_Halo, 21200, tv_temp + cvector(0.0,0.0,0.0))							   			// position du halo
+
+		// GFX Faisceau
+		if (i_GFX_Obj_Faisceau == -1)
+		{
+			i_GFX_Obj_Faisceau = @o_gfx_obj GFX_Add(21)															// création du halo
+			GFX_MaterialSet(i_GFX_Obj_Faisceau, get_SFX_light_and_smoke, 0) 								// affectation du matériau
+			GFX_Seti(i_GFX_Obj_Faisceau, 21103, 0)																	// 0 (défaut) flare mural, 1 flare très simple 
+			GFX_Seti(i_GFX_Obj_Faisceau, 21101, c_Objectif_Color) 		         								// couleur du halo
+		}
+		GFX_Setf(i_GFX_Obj_Faisceau, 21000, 1 + (0.001 * (tf_dist * tf_dist) * Cf_GFX_Obj_Faisceau_Largeur * f_GFX_Obj_blend))	// taille du halo
+		GFX_Setf(i_GFX_Obj_Faisceau, 21004, 25.0)																	// extraction
+		GFX_Setv(i_GFX_Obj_Faisceau, 21200, tv_temp)																// Position
+		GFX_Setv(i_GFX_Obj_Faisceau, 21201, -Cv_VerticalVector)												// Flare Sight = Normale au mur
+
+
+//		// create GFX
+//		tv_pos1 = tv_pos0 + (Cf_GFX_Obj_Faisceau_Hauteur * f_GFX_Obj_blend * Cv_VerticalVector)
+//
+//		// GFX Halo
+//		if( i_GFX_Obj_Halo == -1)
+//		{
+//			i_GFX_Obj_Halo = GFX_Add(21)										// Halo
+//			GFX_FlagSet(i_GFX_Obj_Halo, 4, 1)
+//			GFX_MaterialSet(i_GFX_Obj_Halo, get_SFX_light_and_smoke, 0)						// affectation du matériau
+//			GFX_Seti(i_GFX_Obj_Halo, 21103, 1)																// 0 (défaut) flare mural 1 flare très simple 
+//			GFX_Seti(i_GFX_Obj_Halo, 21101, c_Objectif_Color)											// couleur du halo
+//		}
+//		GFX_Setf(i_GFX_Obj_Halo, 21000, Cf_GFX_Obj_Halo_Largeur * f_GFX_Obj_blend)				// taille du halo
+//		GFX_Setf(i_GFX_Obj_Halo, 21002, 5.0)								// extraction par rapport au point de génération (vers la cam)
+//		GFX_Setv(i_GFX_Obj_Halo, 21200, tv_pos1)				   			// position du halo
+//		
+//		// GFX Faisceau
+//		if (i_GFX_Obj_Faisceau == -1)
+//		{
+//			i_GFX_Obj_Faisceau = GFX_Add(21)									// création du halo
+//			GFX_MaterialSet(i_GFX_Obj_Faisceau, get_SFX_light_and_smoke, 0) 					// affectation du matériau
+//			GFX_Seti(i_GFX_Obj_Faisceau, 21103, 0)							// 0 (défaut) flare mural, 1 flare très simple 
+//			GFX_Seti(i_GFX_Obj_Faisceau, 21101, c_Objectif_Color)       // couleur du halo
+//		}
+//		GFX_Setf(i_GFX_Obj_Faisceau, 21000, Cf_GFX_Obj_Faisceau_Largeur * f_GFX_Obj_blend)	// taille du halo
+//		GFX_Setf(i_GFX_Obj_Faisceau, 21004, 25.0)							// extraction
+//		GFX_Setv(i_GFX_Obj_Faisceau, 21200, tv_pos1)						// Position
+//		GFX_Setv(i_GFX_Obj_Faisceau, 21201, -Cv_VerticalVector)		// Flare Sight = Normale au mur
+	}
+	else
+	{
+		// GFX OFF
+		if( i_GFX_Obj_Halo != -1 )
+		{
+			GFX_Del(i_GFX_Obj_Halo)
+			i_GFX_Obj_Halo = -1
+		}
+		if( i_GFX_Obj_Faisceau != -1 )
+		{
+			GFX_Del(i_GFX_Obj_Faisceau)
+			i_GFX_Obj_Faisceau = -1
+		}
+	}
+}
+
+i_frame_nb++

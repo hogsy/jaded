@@ -1,0 +1,251 @@
+#include "PNJ_Lapin_defines.var"
+
+message	tmsg_filter
+messageid	tmid_ID
+int				ti_rank
+int				ti_i
+object		to_item
+object		to_owner
+object		to_bv
+vector		tv_pos
+vector		tv_dir
+float			tf_dist
+float			tf_best_dist
+int				ti_type
+object		to_path_current_wp
+object		to_path_dest_wp
+vector		tv_next_pos
+int				ti_path_way_wp_nb
+object		tao_path_way_wp[50]
+int				ti_ok
+int				ti_client_ID
+//int				ti_path_voisin_nb
+//object		tao_path_voisin[20]
+float			tf_test
+
+
+if( Mode_Compagnon )
+	return				// TEMP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+switch( i_find_item_type )
+{
+	// FIND WEAPON ------------------------------------------------
+	case Ci_FIND_ITEM_WEAPON :
+		if( i_flag_item_weapon_check_done )
+			return
+		i_flag_item_weapon_check_done = vrai
+		if( f_item_weapon_find_delai )
+			return
+		o_item_nearest = nobody
+		if( ! Item_Arme_Utilisable )
+			return
+		if( Lapin_ITEM_Has_Weapon() )
+			return			// j'ai déjà une arme
+		break
+	
+	// FIND KEY --------------------------------------------------------
+	case Ci_FIND_ITEM_KEY :
+		if( i_flag_item_key_check_done )
+			return
+		i_flag_item_key_check_done = vrai
+		if( f_item_key_find_delai )
+			return
+		o_item_nearest = nobody
+		if( Item_Prioritaire != Ci_Item_Prioritaire_CLE )
+			return
+		if( Lapin_ITEM_Has_Key() )
+			return			// j'ai déjà une clé
+		break
+	
+	// FIND CAROTTE --------------------------------------------------------
+	case Ci_FIND_ITEM_CAROTTE :
+		if( i_flag_item_carotte_check_done )
+			return
+		i_flag_item_carotte_check_done = vrai
+		if( f_item_carotte_find_delai )
+			return
+		o_item_nearest = nobody
+		if( ! Item_Appat_Carotte )
+			return
+		if( Lapin_ITEM_Has_Carotte() )
+			return			// j'ai déjà une carotte
+		break
+}
+
+// LISTER LES BV VOISINES POUR FAIRE DU TEST PIVOT/BV AU LIEU DE FAIRE DU A*
+if( Territory_Path && o_path_current_wp )		// ne pas appeler la fct avec un gao vide
+{
+	i_path_voisin_wp_nb = 50		// taille
+	PATH_LIB_Fill_Wp_Array(o_path_current_wp, 
+										Territory_Path, 
+										&ao_path_net_wp[0],				// LES WPS DU RESEAU
+										i_path_net_wp_nb,					// LE NOMBRE DE POINTS DU RESEAU
+										&ao_path_voisin_wp[0],
+										i_path_voisin_wp_nb,
+										3)
+}
+else
+	i_path_voisin_wp_nb = 0
+
+tf_best_dist = Cf_Infinit
+MSG_SetNull(tmsg_filter)
+ti_rank = -1
+for (	tmid_ID = MSG_GlobalSearchIntGao(Ci_LNK_EVENT_OFFSET + Ci_LNK_GRAB_OBJECT, &ti_rank, tmsg_filter);
+		MSG_GlobalIsValid(tmid_ID);
+		tmid_ID = MSG_GlobalSearchIntGao(Ci_LNK_EVENT_OFFSET + Ci_LNK_GRAB_OBJECT, &ti_rank, tmsg_filter) )
+{
+	to_item = EVENT_PereGet(tmid_ID)
+	to_owner = EVENT_Gao1Get(tmid_ID)
+	
+	if( o_item_to_get && to_item != o_item_to_get )
+		continue		// c'est pas l'item vers lequel je cours donc je l'ignore !!!
+	
+	if( OBJ_SqrDist(to_item) > 10000 )
+		continue		// trop loin !
+	
+	if( ! @to_item AI_IsModel(get_RM_Weapon_path) )
+		continue
+	
+	ti_type = @to_item PROC_WEAPON_TypeGet()
+	
+	if( ti_type == RM_WEAPON_TYPE_GRENADE && @to_item PROC_WEAPON_Grenade_Type_Timer_Activee() )
+		continue		// grenade activee
+
+	if( Territory_BV && ! Lapin_Pos_in_Territory_BV(@to_item OBJ_PosGet()) )
+		continue		// pas sur mon territoire
+	
+	if( Territory_Colmap && Lapin_PROC_GAO_GET_TERRITORY_ID(to_item) != i_my_territory_ID )
+		continue		// pas sur mon territoire
+	
+	
+	// distance autour de l'objectif à protéger
+	if( Att_Protect_Gao )
+	{
+		tf_test = Att_Protect_Gao_Dist + 5.0		// dist + offset pout récupérer les items
+		tf_test *= tf_test
+		if( @to_item OBJ_SqrDist(Att_Protect_Gao) > tf_test )
+			continue
+	}
+	
+	switch( i_find_item_type )
+	{
+		// FIND WEAPON ---------------------------------------------------------------------
+		case Ci_FIND_ITEM_WEAPON :
+			if( ! RM_ITEM_IS_WEAPON(ti_type) )
+				continue		// c'est pas une arme
+			if( to_owner )
+				continue		// déjà grabbée
+			switch( Item_Arme_Utilisable )
+			{
+				case Ci_Item_Arme_Guns_only :
+					if( ti_type != RM_WEAPON_TYPE_GUN )
+						continue
+					break
+					
+				case Ci_Item_Arme_Grenades_only :
+					if( ti_type != RM_WEAPON_TYPE_GRENADE )
+						continue
+					break
+					
+				case Ci_Item_Arme_Gourdins_only :
+					if( ti_type != RM_WEAPON_TYPE_GOURDIN )
+						continue
+					break
+			}
+			break
+			
+		// FIND KEY ------------------------------------------------------------------------------
+		case Ci_FIND_ITEM_KEY :
+			if( ti_type != RM_WEAPON_TYPE_CLE )	
+				continue
+			if( to_owner ) // && to_owner != get_rayman)
+				continue		// déjà grabbée par un autre lapin
+			break
+			
+		// FIND CAROTTE ------------------------------------------------------------------------------
+		case Ci_FIND_ITEM_CAROTTE :
+			if( ti_type != RM_WEAPON_TYPE_CAROTTE )	
+				continue
+			if( to_owner )
+				continue		// déjà grabbée :(:(:(
+			break
+	}
+	
+	tv_pos = @to_item OBJ_PosGet()
+	tv_dir = tv_pos - OBJ_PosGet()
+	tf_dist = MATH_VecNorm(tv_dir)
+	
+	if( tf_dist < tf_best_dist )
+	{
+		// BEST
+		ti_ok = vrai
+		
+		if( Territory_Path )
+		{
+			ti_ok = faux
+			
+			// RECHERCHE DE CHEMIN A*
+//			ti_client_ID = @get_global PATH_LIB_current_client_ID
+//			to_path_current_wp = nobody
+//			to_path_dest_wp = nobody
+//			ti_path_way_wp_nb = 0
+//			tv_next_pos = PATH_LIB_Get_Next_Pos(OBJ_PosGet(),			// POSITION DE DEPART
+//																	OBJ_Me(),
+//																	to_path_current_wp,		// WP DE DEPART (BYREF)
+//																	tv_pos,			// POSITION D'ARRIVEE
+//																	to_item,
+//																	to_path_dest_wp,			// WP D'ARRIVEE (BYREF)
+//																	1.5 + Lapin_MOVE_Offset_Get(),	// 2.0,							// EXTRUSION (LA TAILLE DE L'ACTEUR)
+//																	Territory_Path,					// LE RESEAU UTILISE
+//																	i_path_net_wp_nb,		// LE NOMBRE DE POINTS DU RESEAU
+//																	&ao_path_net_wp[0],	// LES WPS DU RESEAU
+//																	ti_path_way_wp_nb,		// LE NOMBRE DE WP DU CHEMIN (BYREF)
+//																	&tao_path_way_wp[0],	// LES WPS DU CHEMIN (BYREF)
+//																	faux,							// FORCE LE RECALCUL DU CHEMIN (VRAI / FAUX)
+//																	ti_client_ID)
+//			if( tv_next_pos != OBJ_PosGet() )
+//				ti_ok = vrai
+			
+			// TEST PIVOT/BV AU LIEU DU A* !!!! =)
+			for( ti_i = 0; ti_i < i_path_voisin_wp_nb; ti_i++ )
+			{
+				to_bv = ao_path_voisin_wp[ti_i]
+				if( @to_item COL_Pivot_BVCollide(to_bv) )
+				{
+					ti_ok = vrai		// dans une BV voisine avec accès
+					break
+				}
+			}
+		}
+		
+		// BEST & ACCESSIBLE
+		if( ti_ok )
+		{
+			tf_best_dist = tf_dist
+			o_item_nearest = to_item
+			i_item_to_get_ID = ti_type
+		}
+	}
+}
+
+o_item_nearest = o_item_nearest
+o_item_to_get = nobody
+
+// DELAI NEW CHECK
+if( i_frame_nb > 2 )
+{
+	switch( i_find_item_type )
+	{
+		case Ci_FIND_ITEM_WEAPON :
+			f_item_weapon_find_delai = 0.5
+			break
+		case Ci_FIND_ITEM_CAROTTE :
+			f_item_carotte_find_delai = 0.5
+			break
+		case Ci_FIND_ITEM_KEY :
+			f_item_key_find_delai  = 0.5
+			break
+	}
+}
+

@@ -1,0 +1,20 @@
+int	i
+
+@get_global o_camera = OBJ_Me()
+
+f_time_click = TIME_Get()
+
+TIME_Wait(0.01)
+
+AI_RunContext(CTX_AfterBlend)
+OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_Msg, 0)
+COL_SpecificCrossableSet(COL_CrossableGet() | Gmat_Jack_Face_de_Bord)
+
+i_mode_cur = -1
+i_mf_cut = vrai
+
+// Mode initial
+o_mf_actor = AI_MainActorGet(0)
+if(!o_mf_actor) return
+
+AI_TrackCurChangeNow("CM_Mode_Jack_Proche")

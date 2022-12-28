@@ -1,0 +1,151 @@
+#include "PNJ_Cricket_defines.var"
+
+int			ti_flag_collision
+
+float		tf_dt
+float		tf_sin
+float		tf_dist
+float		tf_dot_product
+float		tf_dist_culled
+
+vector	tv_dest_pos
+vector	tv_pseuso_speed
+
+object	to_camera
+
+if (i_flag_sortie_etat)
+{
+	i_flag_sortie_etat = faux
+	return
+}
+
+if (i_etat_courant != ETAT_Sol)
+{
+	// INTIALISATION
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Sol
+	
+	if (fct_last_etat)
+	{
+		i_flag_sortie_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	
+	f_rand_offset = MATH_RandFloat(0.0, 10.0)
+//	f_speed = MATH_RandFloat(1.5, 2.5)
+	f_speed = MATH_RandFloat(2.0, 3.0)
+
+	v_last_pos = OBJ_PosGet()
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+//AI_Execute("PNJ_Cricket_exec_check_paf")
+//if (i_flag_paf)
+//	macro_change_etat("PNJ_Cricket_ETAT_Paf")
+AI_Execute("PNJ_Cricket_exec_check_shoot")
+if (i_flag_paf)
+	macro_change_etat("PNJ_Cricket_ETAT_Paf")
+
+//if ( ! f_time_R2_just_pressed && IO_ButtonJustPressed(joy_button_R2) && ! IO_ButtonPressed(joy_button_L2))
+//	f_time_R2_just_pressed = 0.25
+//	
+//if (f_time_R2_just_pressed)
+//{
+//	f_time_R2_just_pressed -= TIME_GetDt()
+//
+//	if (f_time_R2_just_pressed <= 0.0)
+//	{
+//		f_time_R2_just_pressed = 0.0
+	
+		v_speed = OBJ_PosGet()
+		v_speed -= @o_main_actor OBJ_PosGet()
+		v_speed.z = 0.0
+		tf_dist = MATH_VecSquareNorm(v_speed)
+
+		if (tf_dist < 4.0)
+		{
+			tf_dist = MATH_FloatSqrt(tf_dist)
+			v_speed /= tf_dist
+			tf_dot_product = MATH_VecDotProduct(@o_main_actor OBJ_SightGet(), v_speed)
+			if (tf_dot_product > Cf_Cos45)
+			{
+				tf_dist = MATH_FloatLimit(tf_dist - 1.0, 0.0, 1.0)
+				tf_dist = 1.0 - tf_dist
+				tf_dist *= tf_dot_product
+				tf_dist *= 10.0
+				tf_dist += 10.0
+		
+//				v_speed	= @o_main_actor DYN_SpeedGetVector()
+//				v_speed.z = 0.0
+		
+				v_speed = MATH_VecBlendRotate(v_speed, Cv_VerticalVector, MATH_RandFloat(0.25, 0.5))
+				v_speed *= tf_dist
+			
+				macro_change_etat("PNJ_Cricket_ETAT_Paf")
+			}
+		}
+//	}
+//}
+
+tf_dt = TIME_GetDt()
+
+tf_sin = MATH_Sin((f_rand_offset + TIME_Get()) * 4.0)
+
+to_camera = @get_global o_camera
+
+if (o_target)
+{
+//	if (o_target == o_main_actor)
+//	{
+//		tv_dest_pos = @to_camera OBJ_PosGet()
+//		tv_dest_pos += @to_camera OBJ_SightGet()
+//	}
+//	else
+	{
+		tv_dest_pos = @o_target OBJ_PosGet()
+		tv_dest_pos.z += 1.0
+	}
+
+	tv_dest_pos += OBJ_HorizonGet() * (tf_sin * (2.0 * tf_dt))
+	OBJ_SightGeneralSet(MATH_VecBlend(OBJ_SightGet(), tv_dest_pos - OBJ_PosGet(), 2.0 * TIME_GetDt()), Cv_VerticalVector)
+//	OBJ_RotateLocalZ(tf_sin * (2.0 * tf_dt))
+}
+else
+{
+	OBJ_RotateLocalZ(MATH_RandFloat(-1.0, 3.0) * tf_dt)
+}
+
+tv_pseuso_speed = Cv_NullVector
+if (f_time_start_etat > 0.5)
+	tv_pseuso_speed += OBJ_SightGet() * (tf_dt * (f_speed * (1.5 + (tf_sin * 0.5))))
+if (i_cricket_ignore_gravity_cpt)
+	i_cricket_ignore_gravity_cpt--
+else
+	tv_pseuso_speed.z -= 1.5 * tf_dt
+OBJ_PosSet(OBJ_PosGet() + tv_pseuso_speed)
+ti_flag_collision = PNJ_Cricket_Keep_In_BV()
+
+if (0 && f_respawn_duration > 1.5)
+{
+//	if (ti_flag_collision)
+		tf_dist_culled = 1.0
+//	else
+//		tf_dist_culled = -1.0
+	
+	if (MATH_VecDotProduct(OBJ_PosGet() - @to_camera OBJ_PosGet(), @to_camera OBJ_SightGet()) < tf_dist_culled)
+		macro_change_etat("PNJ_Cricket_ETAT_Apparition")
+}
+
+if (ti_flag_collision)
+	OBJ_SightGeneralSet(MATH_VecBlend(OBJ_SightGet(), OBJ_PosGet() - v_last_pos, 0.8), Cv_VerticalVector)
+else
+	OBJ_SightSet(MATH_VecBlend(OBJ_SightGet(), OBJ_PosGet() - v_last_pos, 0.8))
+v_last_pos = OBJ_PosGet()
+
+PNJ_Cricket_Update_Modules_Pos()

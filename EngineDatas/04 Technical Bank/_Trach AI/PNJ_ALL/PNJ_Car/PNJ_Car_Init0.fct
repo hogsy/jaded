@@ -1,0 +1,96 @@
+#include "PNJ_Car_defines.var"
+
+Include_UltraProcedure_Header
+
+int		ti_i
+int		ti_visual_type
+int		sect0
+int		sect1
+int		sect2
+int		sect3
+
+vector	tv_pos
+
+object	to_car
+object	to_wheel
+object	to_net_root
+object	tao_net_wp[100]
+object	to_start_wp
+
+//OBJ_Destroy()
+
+//if (i_car_type == STATIONNEMENT)
+//	OBJ_Destroy()
+
+ODE_Enable(faux)
+
+meta (@get_global i_frame_nbr < 3)
+{
+	// On attend un peu
+}
+
+OBJ_FlagsControlSet(none, OBJ_C_ControlFlag_RayInsensitive)
+
+if (i_car_type == POLICE)
+{
+	if (OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Generated))
+	{
+		// Toute l'init a été faite par l'objet qui m'a dupliqué
+	}
+	else
+	{	
+		PNJ_Car_Init()
+		PNJ_Car_Respawn(faux)
+
+		tv_pos = OBJ_PosGet()
+	
+		// Génération de mes potes
+		for (ti_i = 0; ti_i < car_nb - 1; ti_i++)
+		{
+			tv_pos -= OBJ_SightGet() * 10.0
+	
+			to_car = OBJ_Duplicate(tv_pos)
+			@to_car AI_PrioritySet(128)
+	
+			// Copie de ma sectorisation
+			SCT_GetOf(&sect0, &sect1, &sect2, &sect3)
+			@to_car SCT_SetOf( sect0, sect1, sect2, sect3)
+			
+			// Initialisation et positionnement de la voiture dupliqué
+			@to_car PNJ_Car_Init()
+			@to_car PNJ_Car_Respawn(faux)
+		}
+	}
+}
+else
+{
+	PNJ_Car_Init()
+	PNJ_Car_Init_Visuel()
+}
+
+ODE_Enable(vrai)
+ODE_Setv(0, Cv_NullVector)
+ODE_Setv(3, Cv_NullVector)
+ODE_Setv(4, cvector(0.0, -1.5, -1.0))
+ODE_Setf(0, 1500.0) // Masse
+
+macro_add_callback_after_cam("PNJ_Car_callback_aftercam")
+AI_CBAdd(OBJ_Me(), CallBack_Client, "PNJ_Car_callback_client")
+AI_CBAdd(OBJ_Me(), CallBack_SectoActOn, "PNJ_Car_callback_WhenSectoOn")
+AI_CBAdd(OBJ_Me(), CallBack_WhenDestroy, "PNJ_Car_callback_when_destroy")
+AI_CBAdd(OBJ_Me(), CallBack_After_Rec, "PNJ_Car_callback_after_rec")
+
+switch(i_car_type)
+{
+	case STATIONNEMENT :
+		AI_TrackChange(1, "PNJ_Car_ETAT_Stationnement")
+		break
+
+	case TANK :
+		AI_TrackChange(1, "PNJ_Car_ETAT_Epave")
+		break
+
+	default:
+		AI_TrackChange(1, "PNJ_Car_ETAT_Deplacement")
+}
+AI_TrackCurChangeNow("PNJ_Car_REFLEX")

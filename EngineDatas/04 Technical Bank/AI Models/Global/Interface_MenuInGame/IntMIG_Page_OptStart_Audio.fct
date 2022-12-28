@@ -1,0 +1,248 @@
+#include "Interface_MenuInGame_defs.var"
+
+int			ti_Line, ti_Group
+int			ti_SaveCur
+float		tf_Val, tf_OldVal
+vector	tv_Pos
+int			tai_LineType[ 10 ]
+int			ti_NbLine
+
+#define Audio_Line(i)				mi_PageString + 5 + i
+#define Audio_Line2(i)				mi_PageString + 12 + i
+
+if (!IntMIG_SetPageParams())
+	return
+	
+ti_NbLine = 0
+if (ConsoleSpecificOption( 33 ) ) { tai_LineType[ ti_NbLine ] = 0  	ti_NbLine++ }
+tai_LineType[ ti_NbLine ] = 1  	ti_NbLine++
+tai_LineType[ ti_NbLine ] = 2  	ti_NbLine++
+tai_LineType[ ti_NbLine ] = 3  	ti_NbLine++
+tai_LineType[ ti_NbLine ] = 4  	ti_NbLine++
+tai_LineType[ ti_NbLine ] = 5  	ti_NbLine++
+tai_LineType[ ti_NbLine ] = 100
+	
+if (INTMIG_EnterPage_Start)
+{
+	IntMIG_ResetTexte( mi_PageString, 30 )
+	
+	if (mi_StartMenu || mi_E3Menu )
+		IntMIG_Option_StartMetrics( 0.06 )
+	else
+		IntMIG_Option_StartMetrics( 0.07 )
+		
+	for (ti_Line = 0; ti_Line < ti_NbLine; ti_Line++)
+	{
+		IntMIG_Option_AddMetrics( 0, ti_Line, INTMIG_TXG, INTMIG_TEXT_OptionsSound + 1 + tai_LineType[ ti_Line ] )
+		switch ( tai_LineType[ ti_Line ] )
+		{
+		case 0: 	IntMIG_Option_AddMetrics( 1, ti_Line , INTMIG_TXG, INTMIG_TEXT_OptionsSound_Param )
+					IntMIG_Option_AddMetrics( 1, ti_Line , INTMIG_TXG, INTMIG_TEXT_OptionsSound_Param + 1)
+					IntMIG_Option_AddMetrics( 1, ti_Line , INTMIG_TXG, INTMIG_TEXT_OptionsSound_Param + 2)
+					break
+		case 1: 	IntMIG_Option_AddMetrics( 1, ti_Line , INTMIG_TXG, INTMIG_TEXT_On )
+					IntMIG_Option_AddMetrics( 1, ti_Line , INTMIG_TXG, INTMIG_TEXT_Off )
+					break
+		default: IntMIG_Option_AddMetrics( 1, ti_Line , 0, 1 ) break
+		}
+	}
+	IntMIG_Option_AddMetrics( 3, ti_NbLine, INTMIG_TXG, INTMIG_TEXT_Command + 12 )
+	
+	if (mi_StartMenu || mi_E3Menu )
+		IntMIG_Option_EndMetrics( cvector( 0.5, 0.6, 0) )
+	else
+		IntMIG_Option_EndMetrics( cvector( 0.5, 0.5, 0) )
+	
+	IntMIG_SetText_Page( mi_PageString, INTMIG_TXG, INTMIG_TEXT_OptionsSound, INTMIG_PosTitle_UpRight,  0.0, 6, -1, INTMIG_Color_NotSel, 0, 1 )
+	IntMIG_SetText_Page( mi_PageString + 1, INTMIG_TXG, INTMIG_TEXT_Souligne, IntMIG_Option_Pos( 2, mi_Cur ),  0.0, 2, -1, INTMIG_Color_Sel, 0, 1 )
+	IntMIG_SetText_Page( mi_PageString + 2, INTMIG_TXG, INTMIG_TEXT_Xchange, INTMIG_PosButton_BottomRight,  0.0, 6, -1, INTMIG_Color_Sel, 0, 1 )
+	IntMIG_SetText_Page( mi_PageString + 3, INTMIG_TXG, INTMIG_TEXT_Tback, INTMIG_PosButton_BottomLeft,  0.0, 4, -1, INTMIG_Color_Sel, 0, 1 )
+	
+	IntMIG_Frame_Start()
+	for (ti_Line = 0; ti_Line < ti_NbLine; ti_Line++)
+	{
+		IntMIG_SetText_Page( Audio_Line( ti_Line), INTMIG_TXG, INTMIG_TEXT_OptionsSound  + 1 + tai_LineType[ ti_Line ], IntMIG_Option_Pos( 0,ti_Line),  0.0, 2, -1, INTMIG_Color_NotSel, 0, 1 )
+		switch ( tai_LineType[ ti_Line ] )
+		{
+		case 0: IntMIG_OptionsAudioSring_Type( Audio_Line2( ti_Line) , IntMIG_Option_Pos( 1,ti_Line), INTMIG_Color_NotSel) break
+		case 1: IntMIG_OptionsAudioSring_Subtitle( Audio_Line2( ti_Line), IntMIG_Option_Pos( 1,ti_Line), INTMIG_Color_NotSel) break
+		case 2: IntMIG_OptionsAudioSring_Volume( Audio_Line2( ti_Line), IntMIG_Option_Pos( 1,ti_Line), INTMIG_Color_NotSel, SND_M_GetUserVol( SND_Cte_UserGrpMaster ) ) break
+		case 3: IntMIG_OptionsAudioSring_Volume( Audio_Line2( ti_Line), IntMIG_Option_Pos( 1,ti_Line), INTMIG_Color_NotSel, SND_M_GetUserVol( SND_Cte_UserGrpDialog  ) ) break
+		case 4: IntMIG_OptionsAudioSring_Volume( Audio_Line2( ti_Line), IntMIG_Option_Pos( 1,ti_Line), INTMIG_Color_NotSel, SND_M_GetUserVol( SND_Cte_UserGrpMusic ) ) break
+		case 5: IntMIG_OptionsAudioSring_Volume( Audio_Line2( ti_Line), IntMIG_Option_Pos( 1,ti_Line), INTMIG_Color_NotSel, SND_M_GetUserVol( SND_Cte_UserGrpSpecialFX ) ) break
+		}
+		IntMIG_Frame_Add( Audio_Line( ti_Line) )
+		IntMIG_Frame_Add( Audio_Line2( ti_Line) )
+	}
+	IntMIG_SetText_Page( Audio_Line( ti_Line), INTMIG_TXG, INTMIG_TEXT_Command + 12, IntMIG_Option_Pos( 3,ti_Line) +cvector(0, 0.04, 0),  0.0, 1, -1, INTMIG_Color_NotSel, 0, 1 )
+	IntMIG_Frame_Add( Audio_Line( ti_Line) )
+	IntMIG_Frame_End( mi_PageString + 4, 0xFFFFFFFF, 0.0, 0.03, 32 )
+
+	@mo_Texte OBJ_TextColorSet( Audio_Line(mi_Cur), 0, -1, INTMIG_Color_Sel )
+	@mo_Texte OBJ_TextColorSet( Audio_Line2(mi_Cur), 0, -1, INTMIG_Color_Sel )
+	
+	IntMIG_Text_FadeInMulti( mi_PageString, 20, 0.5, 0.0 )
+
+	// store parameters
+	mf_Opt_SaveFloat[ 0 ] = SND_M_GetUserVol( SND_Cte_UserGrpMaster )
+	mf_Opt_SaveFloat[ 1 ] = SND_M_GetUserVol( SND_Cte_UserGrpDialog )
+	mf_Opt_SaveFloat[ 2 ] = SND_M_GetUserVol( SND_Cte_UserGrpMusic )
+	mf_Opt_SaveFloat[ 3 ] = SND_M_GetUserVol( SND_Cte_UserGrpSpecialFX )
+	mi_Opt_SaveInt[ 0 ] = SND_M_GetRenderMode
+	mi_Opt_SaveInt[ 1 ] = @"univ" SND_gi_ShowSubtitle
+	mi_ExitValide = faux
+}
+else if (INTMIG_LeavePage_Start)
+{
+	IntMIG_Text_FadeOutMulti( mi_PageString, 20, 0.5 )
+	// restore parameters
+	if ( !mi_ExitValide )
+	{
+		SND_M_SetUserVol( SND_Cte_UserGrpMaster  , mf_Opt_SaveFloat[ 0 ] )
+		SND_M_SetUserVol( SND_Cte_UserGrpDialog  , mf_Opt_SaveFloat[ 1 ] )
+		SND_M_SetUserVol( SND_Cte_UserGrpMusic  , mf_Opt_SaveFloat[ 2 ] )
+		SND_M_SetUserVol( SND_Cte_UserGrpSpecialFX  , mf_Opt_SaveFloat[ 3 ] )
+		SND_M_SetRenderMode( mi_Opt_SaveInt[ 0 ] )
+		@"univ" SND_gi_ShowSubtitle = mi_Opt_SaveInt[ 1 ]
+		SAVE_ValidateAl()
+	}
+}
+
+IntMIG_RestorePageParams()
+
+if ( mi_Exit || mi_ChangePage || mi_Cheat  )
+	return
+	
+ti_SaveCur = mi_Cur
+IntMIG_UpdateCur_Vertical( ti_NbLine + 1, 1 )
+if (mi_Cur != ti_SaveCur )
+{
+	IntMIG_PlaySound( INTMIG_SOUND_SELECTION )
+	IntMIG_Text_ChangeColor( Audio_Line( ti_SaveCur ), INTMIG_Color_Sel, INTMIG_Color_NotSel, 0.25, 0.0 )
+	IntMIG_Text_ChangeColor( Audio_Line( mi_Cur ), INTMIG_Color_NotSel, INTMIG_Color_Sel, 0.25, 0.0 )
+	IntMIG_Text_ChangeColor( Audio_Line2( ti_SaveCur ), INTMIG_Color_Sel, INTMIG_Color_NotSel, 0.25, 0.0 )
+	IntMIG_Text_ChangeColor( Audio_Line2( mi_Cur ), INTMIG_Color_NotSel, INTMIG_Color_Sel, 0.25, 0.0 )
+	if (mi_Cur == ti_NbLine )
+	{
+		@mo_Texte OBJ_TextFlagSet( mi_PageString + 1, 1 )
+		@mo_Texte OBJ_TextPivotSet( mi_PageString + 1, IntMIG_Option_Pos( 2,mi_Cur) + cvector(0,0.04,0) )
+		IntMIG_SetText_Page( mi_PageString + 2, INTMIG_TXG, INTMIG_TEXT_Xselect, INTMIG_PosButton_BottomRight,  0.0, 6, -1, INTMIG_Color_Sel, 0, 1 )
+	}
+	else
+	{
+		if (tai_LineType[ mi_Cur ] < 2)
+			IntMIG_SetText_Page( mi_PageString + 2, INTMIG_TXG, INTMIG_TEXT_Xchange, INTMIG_PosButton_BottomRight,  0.0, 6, -1, INTMIG_Color_Sel, 0, 1 )
+		else
+		{
+			if ( (ti_SaveCur == ti_NbLine) || (tai_LineType[ ti_SaveCur  ] < 2) )
+				IntMIG_SetText_Page( mi_PageString + 2, INTMIG_TXG, INTMIG_TEXT_LJchange, INTMIG_PosButton_BottomRight,  0.0, 6, -1, INTMIG_Color_Sel, 0, 1 )
+		}
+		@mo_Texte OBJ_TextFlagSet( mi_PageString + 1, 2 )
+		@mo_Texte OBJ_TextPivotSet( mi_PageString + 1, IntMIG_Option_Pos( 2,mi_Cur) )
+	}
+}
+
+if ( joy_cancel)
+{
+	IntMIG_PlaySound( INTMIG_SOUND_CANCEL )
+	SAVE_ValidateAl()
+	INTMIG_ChangePage(  "IntMIG_Page_OptStart" , 0 )
+	return
+}
+	
+tv_Pos = @mo_Texte OBJ_TextPivotGet( Audio_Line2(mi_Cur ) )
+if ( joy_valide )
+{
+	switch ( tai_LineType[ mi_Cur ] )
+	{
+		case 0:
+				IntMIG_PlaySound( INTMIG_SOUND_VALIDE )
+				if(AI_GetCurSystem() == 2)
+				{
+					if(joy_right)
+					{
+						if ( SND_M_GetRenderMode == SND_Cte_RenderMono )
+							SND_M_SetRenderMode( SND_Cte_RenderStereo )
+						else if ( SND_M_GetRenderMode == SND_Cte_RenderStereo )
+							SND_M_SetRenderMode( SND_Cte_RenderDolbyPrologicII )
+						else
+							SND_M_SetRenderMode( SND_Cte_RenderMono )
+					}
+					else
+					{
+						if ( SND_M_GetRenderMode == SND_Cte_RenderMono )
+							SND_M_SetRenderMode( SND_Cte_RenderDolbyPrologicII )
+						else if ( SND_M_GetRenderMode == SND_Cte_RenderDolbyPrologicII )
+							SND_M_SetRenderMode( SND_Cte_RenderStereo )
+						else
+							SND_M_SetRenderMode( SND_Cte_RenderMono )
+					}
+					
+				}
+				else
+				{
+					if ( SND_M_GetRenderMode == SND_Cte_RenderStereo )
+						SND_M_SetRenderMode( SND_Cte_RenderMono )
+					else
+						SND_M_SetRenderMode( SND_Cte_RenderStereo )
+				}
+				TIME_Wait( 0.1)
+				tv_Pos = @mo_Texte OBJ_TextPivotGet( Audio_Line2(mi_Cur ) )
+				IntMIG_OptionsAudioSring_Type( Audio_Line2( mi_Cur) , tv_Pos, INTMIG_Color_Sel)
+				break
+			
+		case 1: 
+				IntMIG_PlaySound( INTMIG_SOUND_VALIDE )
+				if (@"univ" SND_gi_ShowSubtitle)
+					@"univ" SND_gi_ShowSubtitle = 0
+				else
+					@"univ" SND_gi_ShowSubtitle = 1
+				IntMIG_OptionsAudioSring_Subtitle( Audio_Line2( mi_Cur), tv_Pos, INTMIG_Color_Sel)
+				SAVE_ValidateAl()
+				break
+		case 100:
+				mi_ExitValide = vrai
+				IntMIG_PlaySound( INTMIG_SOUND_VALIDE )
+				SAVE_ValidateAl()
+				INTMIG_ChangePage(  "IntMIG_Page_OptStart" , 0 )
+				return
+	}
+}
+
+if ( (tai_LineType[ mi_Cur ] >= 2) && (tai_LineType[ mi_Cur ] <= 5 ) && (joy_left_real || joy_right_real) )
+{
+	switch ( tai_LineType[ mi_Cur ] )
+	{
+		case 2: ti_Group = SND_Cte_UserGrpMaster  break
+		case 3: ti_Group = SND_Cte_UserGrpDialog  break
+		case 4: ti_Group = SND_Cte_UserGrpMusic  break
+		case 5: ti_Group = SND_Cte_UserGrpSpecialFX  break
+	}
+	
+	tf_Val = SND_M_GetUserVol ( ti_Group )
+	tf_OldVal = tf_Val
+	if (joy_left_real)
+	{
+		tf_Val -= 0.01
+		if (tf_Val < 0 ) tf_Val = 0
+	}
+	else
+	{
+		tf_Val += 0.01
+		if (tf_Val > 1) tf_Val = 1
+	}
+	SND_M_SetUserVol( ti_Group, tf_Val )
+	
+	if (tf_OldVal != tf_Val )
+		IntMIG_PlaySound(  INTMIG_SOUND_JAUGEMASTER + mi_Cur - 2 )
+	
+	switch ( tai_LineType[ mi_Cur ] )
+	{
+		case 2: IntMIG_OptionsAudioSring_Volume( Audio_Line2( mi_Cur ), tv_Pos, INTMIG_Color_Sel, SND_M_GetUserVol( SND_Cte_UserGrpMaster ) ) break
+		case 3: IntMIG_OptionsAudioSring_Volume( Audio_Line2( mi_Cur ), tv_Pos, INTMIG_Color_Sel, SND_M_GetUserVol( SND_Cte_UserGrpDialog  ) ) break
+		case 4: IntMIG_OptionsAudioSring_Volume( Audio_Line2( mi_Cur ), tv_Pos, INTMIG_Color_Sel, SND_M_GetUserVol( SND_Cte_UserGrpMusic ) ) break
+		case 5: IntMIG_OptionsAudioSring_Volume( Audio_Line2( mi_Cur ), tv_Pos, INTMIG_Color_Sel, SND_M_GetUserVol( SND_Cte_UserGrpSpecialFX ) ) break
+	}
+
+}
+

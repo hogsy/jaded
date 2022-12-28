@@ -1,0 +1,458 @@
+#include "Interactive_Door_defs.var"
+
+float		tf_oldratio, tf_speed
+object	o_levier, o_main, o_pilar, o_cl
+int			i, i_pilarmainblocked
+int			ti_pilarpersoblocked 
+int			ti_pilarmain
+int			tb_Interract
+
+mo_main_actor = AI_MainActorGet(C_ID_Joueur)
+
+// ====[ recompute parameters ]====
+if (OBJ_CapaTest( OBJ_Capa_13) )
+	DOOR_ComputeParams()
+	
+// ====[ porte avec pilier ]====
+if (mi_Type == DOOR_Pilar )
+{
+	mi_HumainInit--
+	
+	//----(  rotation extérieure temporaire )----
+	for (i = 0; i < mi_PD_NbPilar; i++)
+	{
+		o_pilar = mao_PD_Pilar[ i ]
+		o_pilar.des_vec1 = @o_pilar OBJ_SightGet()
+		o_pilar.des_vec2 = @o_pilar OBJ_HorizonGet()
+
+		if ( ( o_pilar.des_float1 != mf_PD_RotateBlockedOld[ i ] ) || (o_pilar.des_float1 != 0 ) )
+		{
+			@o_pilar OBJ_RotateAroundVec(@o_pilar OBJ_BankingGet(), -mf_PD_RotateBlockedOld[ i ])
+			o_pilar.des_vec1 = @o_pilar OBJ_SightGet()
+			o_pilar.des_vec2 = @o_pilar OBJ_HorizonGet()
+			mf_PD_RotateBlockedOld[ i ] = o_pilar.des_float1
+			@o_pilar OBJ_RotateAroundVec(@o_pilar OBJ_BankingGet(), mf_PD_RotateBlockedOld[ i ])
+		}
+	}
+		
+	//----( gestion speech timer )----
+	for (i = 0; i < DOOR_SPEECH_Number; i++)
+	{
+		if ( mf_PD_SpeechTimer[ i ] > 0)
+		{
+			mf_PD_SpeechTimer[ i ] -= TIME_GetDt()
+			if (mf_PD_SpeechTimer[ i ]  < 0)
+			{
+				mf_PD_SpeechTimer[ i ]  = 0
+				mi_PD_SpeechState[ i ] = 0
+			}
+		}
+	}
+	
+	//----( mi_PD_State != 0 indique que la porte est ouverte )----
+	if (mi_PD_State)
+	{
+		DOORPilar_Opened()
+		return
+	}
+
+	//----( specific perso	)----
+	o_main = AI_MainActorGet(C_ID_Joueur)
+		
+	//----( check les leviers )----
+	i_pilarmainblocked = 0
+	ti_pilarpersoblocked = 0
+	ti_pilarmain = -1
+	mi_PD_NbPilarReady = 0
+	mi_PD_NbLever = 0
+	for (i = 0; i < mi_PD_NbPilar; i++)
+	{
+		o_levier = mao_PD_PilarLevier[ i ]
+		o_pilar = mao_PD_Pilar[ i ]
+		o_levier.des_int1 = 0
+		mi_PD_PilarInterract[ i ] = 0
+		
+		// --------( pilier bloqué )--------
+		@o_pilar OBJ_CapaSet( OBJ_Capa_10, OBJ_Capa_11 | OBJ_Capa_13 | OBJ_Capa_14 )
+				
+		// --------( pas de levier )--------
+		if ( !@o_levier OBJ_CapaTest( OBJ_Capa_0 ) )
+		{
+			// propose action
+			if ( o_main && ( @o_levier OBJ_SqrDist( o_main ) < 4 ) && ( @"univ" i_jack_has_levier ) )
+				o_levier.des_int1 = Ci_DISPLAY_PUT
+					
+			// action validée ?, mets le levier en place
+			if( mo_main_actor && @o_levier OBJ_CapaTest( OBJ_Capa_15 ) )
+			{
+				if(i_block_15)
+				{
+					if( @get_Humain_path mo_main_actor i_flag_declenche) return
+					i_block_15 = faux
+				}
+				else
+				{
+					@get_Humain_path mo_main_actor i_flag_declenche = vrai
+					@get_Humain_path mo_main_actor o_obj_declenche = o_levier
+					i_block_15 = vrai
+					return
+				}
+				
+				@o_levier OBJ_CapaSet( OBJ_Capa_0, OBJ_Capa_15 )
+				@o_levier OBJ_FlagInvisibleSet( 0 )
+				@o_levier OBJ_FlagInactiveSet( 0 )
+				@"univ" i_jack_has_levier = faux
+				
+				if(@"univ" i_weapon_ID[C_ID_Joueur] == Ci_weapon_ID_levier)
+				{
+					@"univ" i_weapon_ID[C_ID_Joueur] = @"univ" i_weapon_ID_Save[C_ID_Joueur]
+					@"univ" i_weapon_ID_Save[C_ID_Joueur] = 0
+				}
+				
+				if(@"univ" i_weapon_ID_Save[C_ID_Joueur] == Ci_weapon_ID_levier)
+					@"univ" i_weapon_ID_Save[C_ID_Joueur] = 0
+				if(@"univ" i_weapon_ID_second[C_ID_Joueur] == Ci_weapon_ID_levier)
+					@"univ" i_weapon_ID_second[C_ID_Joueur] = 0
+			}
+		}
+		// --------( levier positionné )--------
+		else
+		{
+			if ( SF_i_NePasRejouerSiMort )
+				SpecialFlag_set( mai_PD_SFLevierIsHere[ i ] )
+			
+			mi_PD_NbLever++
+			
+			// propose use : seulement si joueur pas en action
+			if ( @o_pilar OBJ_CapaTest( OBJ_Capa_7 ) )
+			{
+				mi_PD_NbPilarReady++
+				mi_PD_PilarInterract[ i ] = 0
+				ti_pilarmain = i
+				if ( !@o_pilar OBJ_CapaTest( OBJ_Capa_12 ))
+					i_pilarmainblocked = 1
+				// si capa 10 sur le levier => jack vient de commencer à pousser / tirer bloqué
+				// => joue un son
+				if ( @o_levier OBJ_CapaTest( OBJ_Capa_10) )
+				{
+					SND_RequestPlay( 9 )
+					@o_levier OBJ_CapaSet( 0, OBJ_Capa_10 )
+				}
+			}
+			// autre perso sur le pilier
+			else if (@o_pilar OBJ_CapaTest( Obj_Capa_Switch ) )
+			{
+				mi_PD_PilarInterract[ i ] = 1
+				o_cl = @"Interactive/Interaction" o_pilar o_CL[ 0 ]
+				if ( o_cl )
+					@"KingKong/Humain" o_cl o_obj_levier = o_levier
+				mi_PD_NbPilarReady++
+			}
+			else if ( o_main && @o_pilar OBJ_SqrDist( o_main ) > 4 )
+			{
+				mi_PD_PilarInterract[ i ] = 1
+			}
+			else
+				// propose use pour jack
+				o_levier.des_int1 = Ci_DISPLAY_TAKE
+			
+			// joueur actionne le levier
+			if( o_main && @o_levier OBJ_CapaTest( OBJ_Capa_15 ) )
+			{
+				@o_levier OBJ_CapaSet( 0, OBJ_Capa_15 )
+				@get_Humain_path o_main f_speed_porte = mf_PD_rotspeed_open
+				@get_Humain_path o_main o_obj_porte = o_pilar
+				@get_Humain_path o_main o_obj_levier = o_levier
+			}
+			
+			// un perso secondaire pousse mais bloque en meme temps pour anim
+			if (@o_pilar OBJ_CapaTest( OBJ_Capa_4 ) )
+				ti_pilarpersoblocked = 1
+		}
+	}
+	
+	//====[ cas ou tous les piliers sont occupés ]====
+	if ( mi_PD_NbPilarReady == mi_PD_NbPilar )
+	{
+		if ( i_pilarmainblocked )
+		{
+			for (i = 0; i < mi_PD_NbPilar; i++)
+			{
+				o_pilar = mao_PD_Pilar[ i ]
+				@o_pilar OBJ_CapaSet( OBJ_Capa_11, OBJ_Capa_10 )
+				
+				// ----( SPEECH : HoHisse )----
+				if ( i != ti_pilarmain )
+				{
+					mi_Speech = DOOR_SPEECH_hohisse
+					mo_SpeechWho = @"Interactive/Interaction" o_pilar o_CL[ 0 ]
+					if (mo_SpeechWho)
+						AI_Execute( "InteractiveDoor_exec_speech" )
+				}
+			}
+		}
+		else
+		{
+			for (i = 0; i < mi_PD_NbPilar; i++)
+			{
+				o_pilar = mao_PD_Pilar[ i ]
+				@o_pilar OBJ_CapaSet( 0, OBJ_Capa_10)
+				if (ti_pilarmain != -1)
+					@o_pilar OBJ_CapaSet( OBJ_Capa_13, 0 )
+			}
+		}
+		
+		// regarde si tout le monde pousse vraiment
+		for (i = 0; i < mi_PD_NbPilar; i++)
+		{
+			o_pilar = mao_PD_Pilar[ i ]
+			if ( !@o_pilar OBJ_CapaTest( OBJ_Capa_12 ) )
+				break
+		}
+		// tout le monde pousse vraiment
+		if (i == mi_PD_NbPilar)
+		{
+			for (i = 0; i < mi_PD_NbPilar; i++)
+			{
+				o_pilar = mao_PD_Pilar[ i ]
+				@o_pilar OBJ_CapaSet(OBJ_Capa_14, 0)
+			}
+			OBJ_CapaSet(OBJ_Capa_9, OBJ_Capa_10)
+		}
+		else
+		{
+			OBJ_CapaSet(OBJ_Capa_9 | OBJ_Capa_10, 0)
+		}
+	}
+	else
+	{
+		tb_Interract = vrai
+		if ( AI_TriggerIsValid( mt_PD_InteractionOk ) && !call_trigger( mt_PD_InteractionOk ) )
+			tb_Interract = faux
+			
+		if ( tb_Interract && (mi_PD_NbLever == mi_PD_NbPilar ) )
+		{
+			// si jack pousse passe en mode activation forcée
+			if (ti_pilarmain != -1)
+			{
+				if ( !mi_JackForceActivation )
+				{
+					if ( !( AI_TriggerIsValid( mt_JackDontForceInteraction ) && call_trigger( mt_JackDontForceInteraction ) ) )
+					{
+						mi_JackForceActivation = 1
+						mi_HumainInit = 0
+					}
+				}
+			}
+			else
+			{
+				if ( mi_JackForceActivation )
+				{
+					mi_JackForceActivation = 0
+					mi_HumainInit = 0
+				}
+			}
+	
+			for ( i = 0; i < mi_PD_NbPilar; i++)
+			{
+				if ( mi_PD_PilarInterract[ i ] )
+					DOORPilar_SetInteraction( i, 1 )
+				else
+					DOORPilar_SetInteraction( i, 0)
+			}
+		}
+		else
+		{
+			for (i = 0; i < mi_PD_NbPilar; i++)
+				DOORPilar_SetInteraction( i, 0 )
+		}
+		
+		// SPEECH 
+		if ( o_main && ! @get_Humain_path o_main i_in_fight ) 
+		{
+			i = mi_PD_NbPilar - mi_PD_NbLever
+			mi_Speech = i
+			AI_Execute( "InteractiveDoor_exec_speech" )
+		}
+		
+		// ----( si jack essaye de pousser un levier et qu'un joueur va se pointer : speech j'arrive )----
+		if ( (ti_pilarmain != -1) )
+		{
+			if ( mi_PD_SpeechState[ DOOR_SPEECH_Jarrive ] == 0 )
+			{
+				for (i = 0; i < mi_PD_NbPilar; i++)
+				{
+					if (i == ti_pilarmain)
+						continue
+					o_pilar = mao_PD_Pilar[ i ]
+					if (@"Interactive/Interaction" o_pilar o_CL[ 0 ] != nobody )
+					{
+						mi_Speech = DOOR_SPEECH_Jarrive
+						mo_SpeechWho = @"Interactive/Interaction" o_pilar o_CL[ 0 ]
+						AI_Execute( "InteractiveDoor_exec_speech" )
+					}
+				}
+			}
+		}
+		else if (mf_PD_SpeechTimer[ DOOR_SPEECH_Jarrive ] > 10)
+			mf_PD_SpeechTimer[ DOOR_SPEECH_Jarrive ] = 10
+
+		for (i = 0; i < mi_PD_NbPilar; i++)
+		{
+			o_pilar = mao_PD_Pilar[ i ]
+			
+			// ----( si jack essaye de pousser un levier bloqué )----
+			if ( mi_PD_SpeechState[ DOOR_SPEECH_Jarrive ] == 0 )
+			{
+				if ( @o_pilar OBJ_CapaTest( OBJ_Capa_10 ) && @o_pilar OBJ_CapaTest(  OBJ_Capa_7 ) && mf_PD_RotateBlockedOld[ i ] )
+				{
+					if(mi_PD_NbPilar - mi_PD_NbLever == 0)
+					{
+						mi_Speech = DOOR_SPEECH_cantdoitalone
+						AI_Execute( "InteractiveDoor_exec_speech" )
+					}
+					else
+					{
+						i = mi_PD_NbPilar - mi_PD_NbLever
+						mi_Speech = i
+						if(mf_PD_SpeechTimer[ mi_Speech ] < 25)
+							mi_PD_SpeechState[ mi_Speech ] = 0						
+						AI_Execute( "InteractiveDoor_exec_speech" )
+					}
+				}
+			}
+			
+			@o_pilar OBJ_CapaSet( OBJ_Capa_10, 0 )
+		}
+		
+		if (mi_PD_NbPilarReady == 0)
+			OBJ_CapaSet( 0, OBJ_Capa_9 | OBJ_Capa_10)
+		else 
+			OBJ_CapaSet( OBJ_Capa_9 | OBJ_Capa_10, 0 )
+	}
+}
+
+tf_oldratio = mf_Ratio
+if (call_trigger( mt_OpeningTest ) || (OBJ_CapaTest(OBJ_Capa_9) ) )
+{
+	if (mf_OpeningRatio <= 0.0)
+		mf_Ratio = 1.0
+	else
+	{
+		if ( !OBJ_CapaTest( OBJ_Capa_10 ) )
+			mf_Ratio += MATH_FloatMin(1.0 - mf_Ratio, TIME_GetDt() / mf_OpeningRatio)
+	}
+}
+else
+{
+	if (mf_ClosingRatio <= 0.0)
+	{ 
+		if (mi_Snd_LoopOpen != -1)
+		{
+			SND_Stop( mi_Snd_LoopOpen )
+			SND_Destroy( mi_Snd_LoopOpen )
+			mi_Snd_LoopOpen = -1
+			SND_RequestPlay( SND_OpenEnd )
+		}
+	
+		mf_Ratio = tf_oldratio
+	}
+	else
+	{
+		if (mf_ClosingRatio < 10000)
+			mf_Ratio -= MATH_FloatMin(mf_Ratio, TIME_GetDt() / mf_ClosingRatio)
+			
+//		if (mi_Type == DOOR_Pilar && mf_Ratio)
+//		{
+//			for (i = 0; i < mi_PD_NbPilar; i++)
+//			{
+//				o_pilar = mao_PD_Pilar[ i ]
+//								
+//				tf_speed = mf_PD_rotspeed_close
+//				if (!tf_speed) tf_speed = 1.0
+//				if (@o_pilar OBJ_CapaTest( OBJ_Capa_5 ) ) tf_speed = -tf_speed
+//				
+//				@o_pilar OBJ_RotateGlobalZ(-tf_speed * TIME_GetDt())
+//			}
+//		}
+	}
+}
+
+OBJ_CapaSet( 0, OBJ_Capa_5 | OBJ_Capa_6 | OBJ_Capa_7 )
+if (mf_Ratio != tf_oldratio)	
+{
+	// sound
+	if (mf_Ratio > tf_oldratio)
+	{
+		// porte s'ouvre
+		OBJ_CapaSet( OBJ_Capa_5,0 )
+		if (mi_Snd_LoopClose != -1)
+		{
+			SND_Stop( mi_Snd_LoopClose )
+			SND_Destroy( mi_Snd_LoopClose )
+			mi_Snd_LoopClose = -1
+		}
+		if (mi_Snd_LoopOpen == -1)
+		{
+			SND_RequestPlay( SND_OpenStart)
+			mi_Snd_LoopOpen = SND_Request( SND_OpenLoop,C_SND_Request_3DSound )
+			SND_PlayLooped(mi_Snd_LoopOpen, -1)
+		}
+		if (mf_Ratio == 1)
+		{
+			SND_Stop( mi_Snd_LoopOpen )
+			SND_Destroy( mi_Snd_LoopOpen )
+			mi_Snd_LoopOpen = -1
+			SND_RequestPlay( SND_OpenEnd )
+		}
+	}
+	else
+	{
+		// porte se ferme
+		OBJ_CapaSet( OBJ_Capa_6,0 )
+		if (mi_Snd_LoopOpen != -1)
+		{
+			SND_Stop( mi_Snd_LoopOpen )
+			SND_Destroy( mi_Snd_LoopOpen )
+			mi_Snd_LoopOpen = -1
+		}
+		if ( (mi_Snd_LoopClose == -1)&& (mf_ClosingRatio < 10000) )
+		{
+			SND_RequestPlay( SND_CloseStart)
+			mi_Snd_LoopClose = SND_Request( SND_CloseLoop, C_SND_Request_3DSound )
+			SND_PlayLooped( mi_Snd_LoopClose, -1)
+		}
+		if (mf_Ratio == 0)
+		{
+			if( mi_Snd_LoopClose != -1)
+			{
+				SND_Stop( mi_Snd_LoopClose )
+				SND_Destroy( mi_Snd_LoopClose )
+				mi_Snd_LoopClose = -1
+			}
+			SND_RequestPlay( SND_CloseEnd )
+		}
+	}
+
+	AI_Execute( "InteractiveDoor_update" )
+}
+else
+{
+	// porte statique
+	OBJ_CapaSet( OBJ_Capa_7,0 )
+	
+	if (mi_Snd_LoopOpen != -1)
+	{
+		SND_Stop( mi_Snd_LoopOpen )
+		SND_Destroy( mi_Snd_LoopOpen )
+		mi_Snd_LoopOpen = -1
+	}
+	if (mi_Snd_LoopClose != -1)
+	{
+		SND_Stop( mi_Snd_LoopClose )
+		SND_Destroy( mi_Snd_LoopClose )
+		mi_Snd_LoopClose = -1
+	}
+}
+
+

@@ -1,0 +1,48 @@
+#define Ci_SND_Splash				1
+
+
+int			ti_i
+int			ti_snd_instance
+int			ti_index
+
+object	to_splash_gao[100]
+object	to_gao
+
+GFX_DynFogActiveGet(&to_splash_gao[0], 100, 0)
+for (ti_i = 0; ti_i < 100; ti_i++)
+{
+	to_gao = to_splash_gao[ti_i]
+
+	if ( ! to_gao )
+		break
+
+	ti_index = ARR_ObjSearch(&ao_sound_gao[0], i_sound_gao_nb, to_gao)
+	if (ti_index == -1)
+	{
+		ao_sound_gao[i_sound_gao_nb] = to_gao
+		af_sound_life[i_sound_gao_nb] = 1.0
+		av_sound_pos[i_sound_gao_nb] = @to_gao OBJ_PosGet()
+		i_sound_gao_nb++
+		
+		ti_snd_instance = SND_RequestPlay(Ci_SND_Splash)
+		SND_InstPosUpdate(ti_snd_instance, @to_gao OBJ_PosGet())
+	}
+}
+
+for (ti_i = 0; ti_i < i_sound_gao_nb; ti_i++)
+{
+	af_sound_life[ti_i] -= TIME_GetDt()
+	if (af_sound_life[ti_i] <= 0.0)
+	{
+		i_sound_gao_nb--
+		ao_sound_gao[ti_i] = ao_sound_gao[i_sound_gao_nb]
+		af_sound_life[ti_i] = af_sound_life[i_sound_gao_nb]
+		ao_sound_gao[i_sound_gao_nb] = nobody
+		af_sound_life[i_sound_gao_nb] = 0.0
+		ti_i--
+	}
+	else
+	{
+		DBG_RenderVector(av_sound_pos[ti_i], Cv_VerticalVector * 1000.0, color_cyan)
+	}
+}

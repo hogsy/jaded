@@ -1,0 +1,32 @@
+vector tv_contact
+vector tv_Dep
+float tf_Dist
+object to_touche
+v_DernierePos=OBJ_PosGet()
+
+tv_Dep=(v_trajectoire*TIME_GetDt()*10.0)
+OBJ_PosSet(v_DernierePos+tv_Dep)
+
+if(MATH_VecSquareDistance(OBJ_PosGet(),@o_cible OBJ_PosGet())<1.5)
+{
+	EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_RM_Fort, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_cible, 10.0, v_trajectoire)
+	PROC_SFX_EXPLOSION_CARTOON(OBJ_PosGet())
+	AI_TrackCurChangeNow("Tjo_Bullet_Destroy")
+}
+else
+{
+	tf_Dist = MATH_FloatMax(MATH_VecNorm(tv_Dep),0.0001)
+	to_touche=COL_RayObject_Dist(v_DernierePos,tv_Dep/tf_Dist,tf_Dist,all,none,Ci_Filter_IdentityFlag,vrai)
+	if(to_touche)
+	{
+		tv_contact=COL_RayObject_PosGet()
+		EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_RM_Fort, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_touche, 10.0, v_trajectoire)
+//		DBG_RenderSphere(v_DernierePos,1.0,color_jaune)
+		PROC_SFX_EXPLOSION_CARTOON(tv_contact)
+//GFX_CreateExplosion(0.0,1.0,v_DernierePos,OBJ_Me())
+		AI_TrackCurChangeNow("Tjo_Bullet_Destroy")
+	}
+}
+
+f_TTL-=TIME_GetDt()
+if(f_TTL<0) OBJ_Destroy()

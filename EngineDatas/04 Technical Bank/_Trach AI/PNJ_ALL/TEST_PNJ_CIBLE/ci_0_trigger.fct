@@ -1,0 +1,53 @@
+object	to_main 
+int			ti_trigger 
+
+#include "ci_defines.var"
+
+
+i_cur_mode = Ci_mode_trigger
+if (i_cur_mode != i_old_mode)
+{
+	// INIT
+	i_old_mode = i_cur_mode
+
+	v_pos_last = Cv_NullVector
+	
+	OBJ_FlagInvisibleSet(vrai)
+	COL_ColMapActivationSet(none,all)
+	
+	// mission, info, bone bone lod min lod max frame min radius
+	OBJ_InfoPhotoParamSet( 0, 0, -1, -1, 0.0, 0.0, 0.0, 0)
+}
+
+
+ti_trigger = faux
+
+if (AI_TriggerIsValid(t_trigger_activ))
+{
+	ti_trigger = call_trigger(t_trigger_activ)
+}
+else if (o_decl_actor_capa)
+{
+	if (@o_decl_actor_capa OBJ_CapaTest(i_decl_capa))
+		ti_trigger = vrai
+}
+else
+{
+	if (o_decl_actor_distance)
+		to_main = o_decl_actor_distance
+	else if (i_decl_actor_distance == -1)
+		to_main = AI_MainActorGet(i_MainActor)
+	else
+		to_main = @"univ" ao_AllHumains[i_decl_actor_distance]
+
+	if (MATH_VecDistance(OBJ_PosGet(),@to_main OBJ_PosGet()) < f_decl_distance)
+		ti_trigger = vrai
+}
+
+if (ti_trigger)
+{
+	if (	f_decl_delay )
+		TIME_Wait(f_decl_delay)
+
+	AI_TrackCurChangeNow("ci_1_appear")
+}

@@ -1,0 +1,74 @@
+#include "H_defines.var"
+Include_UltraProcedure_Header
+
+int			ti_str
+
+vector	tv_pos
+vector	tv_speed
+
+float		tf_temp
+float		tf_speed
+
+
+// KAMERA MODE -------------------------
+if( i_etat_courant == ETAT_Reward )
+{
+	if( @get_Interactive_Reward_path o_Reward i_Force_Reward_Kamera )
+		@get_Kamera Proc_Kam_RewardMode_Set(i_Reward_Type, o_Reward_Actor)
+	// else GenKam
+}
+else
+{
+	if( i_etat_courant != ETAT_Fake )
+		@get_Kamera Proc_Kam_FPSMode_Set()
+	// else Kam Kong
+}
+// KAMERA MODE -------------------------
+
+
+//AI_Execute("H_exec_tagon")
+
+// SPEED
+tv_speed = DYN_SpeedGetVector()
+tv_speed .z = 0.0
+f_dest_speed = MATH_VecNorm(tv_speed)
+
+
+// Gestion AE =======================================================================================
+if( AFE_SpeedDecrease )
+{
+	// Blend vers la valeur defaut de la map
+	tf_speed = AFE_SpeedDecrease * TIME_GetDt()
+	AFE_Brightness_1_cur = MATH_FloatBlend(AFE_Brightness_1_cur, @get_global Proc_AE_BrightnessDefaultGet(), tf_speed)
+	AFE_Contraste_1_cur = MATH_FloatBlend(AFE_Contraste_1_cur, @get_global Proc_AE_ContrasteDefaultGet(), tf_speed)
+	AFE_ColorBalance_1_cur = MATH_FloatBlend(AFE_ColorBalance_1_cur, @get_global Proc_AE_ColorBalance1DefaultGet(), tf_speed)
+	AFE_MotionBlur_1_cur = MATH_FloatBlend(AFE_MotionBlur_1_cur, @get_global Proc_AE_MotionBlurDefaultGet(), tf_speed)
+	AFE_Remanence_1_cur = MATH_FloatBlend(AFE_Remanence_1_cur, @get_global Proc_AE_RemanenceDefaultGet(), tf_speed)
+}
+
+if( i_etat_courant == ETAT_Mort )
+{
+	@get_global Proc_AE_BrightnessSet(AFE_Brightness_1_cur)
+	@get_global Proc_AE_ContrasteSet(AFE_Contraste_1_cur)
+	@get_global Proc_AE_ColorBalanceSet(AFE_ColorBalance_1_cur, AFE_ColorBalance_2_cur)
+	@get_global Proc_AE_MotionBlurSet(AFE_MotionBlur_1_cur)
+	@get_global Proc_AE_RemanenceSet(AFE_Remanence_1_cur)
+}
+else if( AFE_Brightness_1_cur - @get_global Proc_AE_BrightnessDefaultGet() > 0.005 && (AFE_NoDecrease || AFE_SpeedDecrease) )
+{
+	@get_global Proc_AE_BrightnessSet(AFE_Brightness_1_cur)
+	@get_global Proc_AE_ContrasteSet(AFE_Contraste_1_cur)
+	@get_global Proc_AE_ColorBalanceSet(AFE_ColorBalance_1_cur, AFE_ColorBalance_2_cur)
+	@get_global Proc_AE_MotionBlurSet(AFE_MotionBlur_1_cur)
+	@get_global Proc_AE_RemanenceSet(AFE_Remanence_1_cur)
+}
+else
+	AFE_SpeedDecrease = 0.0
+AFE_NoDecrease = faux
+// Gestion AE =======================================================================================
+
+STATS_IncDureeMap()
+
+AI_Execute("H_TRACK_DEBUG")
+
+

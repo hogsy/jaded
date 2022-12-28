@@ -1,0 +1,30 @@
+#include "PNJ_Brontosaure_defs.var"
+
+int 	ti_pattes, ti_bone
+
+if ( tag_i_IsOff )
+	return
+
+GRID_CurrentSet(0)
+
+for (ti_pattes = 0; ti_pattes < 2; ti_pattes++)
+{
+	if ( tag_flag[ ti_pattes ] )
+	{
+		GRID_TagBox(tag_vectorpos[ ti_pattes ], tag_vectorsight[ ti_pattes ], cvector(-0.5,-0.5,0), cvector(0.5,4.0,0), -64)
+		tag_flag[ ti_pattes ] = faux
+	}
+	
+	ti_bone = BRONTO_Bones_FrontRight + (ti_pattes * 2)
+	tag_vectorpos[ ti_pattes ] = @Pattes_o_Bones[ ti_bone ] OBJ_PosGet()
+	tag_vectorpos[ ti_pattes ].z = 0
+	tag_vectorsight[ ti_pattes ] = @Pattes_o_Bones[ ti_bone + 1 ] OBJ_PosGet()
+	tag_vectorsight[ ti_pattes ].z = 0
+	tag_vectorsight[ ti_pattes ] -= tag_vectorpos[ ti_pattes ]
+	MATH_VecSetNormalize( tag_vectorsight[ ti_pattes ] )
+	
+	if (GRID_IsIn(tag_vectorpos[ ti_pattes ]))
+	{
+		tag_flag[ ti_pattes ] = GRID_TagBox(tag_vectorpos[ ti_pattes ], tag_vectorsight[ ti_pattes ], cvector(-0.5,-0.5,0), cvector(0.5, 4.0,0), 64)
+	}
+}

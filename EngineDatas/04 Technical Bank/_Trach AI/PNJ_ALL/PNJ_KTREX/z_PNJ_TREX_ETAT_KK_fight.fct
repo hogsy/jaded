@@ -1,0 +1,512 @@
+#include "PNJ_TREX_defines.var"
+
+#define	Cf_dist_charge				30.0
+#define	Cf_dist_check_vide			10.0
+#define	Cf_delai_charge				20.0
+
+object	to_camera
+object	to_canal
+
+float		tf_sqr_hor_dist
+float		tf_interet
+float		tf_seen_time
+float		tf_eval_time
+float		tf_dist
+float		tf_delay
+float		tf_target_blend_speed
+float		tf_dist_max
+		
+int			ti_i,ti_rank 
+int			ti_flag_go_to_grid_center
+int			ti_followed_ground_ID
+int			ti_flag_try_to_move
+int			ti_ground_id
+
+vector	tv_offset
+vector	tv_temp
+vector	tv_sight
+
+object	to_interet_gao
+object	to_collide_object
+object	to_head
+object	to_actor
+
+messageid	tmid_vision 
+
+// Tiptop & LRay (charge)
+float		tf_tiptop_dist
+int			ti_tiptop_ok
+int			ti_lray_ok
+vector	tv_charge_sight
+vector	tv_charge_end_pos
+object	to_col_ray_object
+float		tf_dist_bite
+int			ti_attaque
+int			ti_fight_action_old
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+		
+	if (i_etat_courant != ETAT_rided)
+	{
+		for (ti_i = 0; ti_i < Ci_Ride_Client_Nb; ti_i++)
+			ao_bone_rider[ti_i] = LNK_ServeurGet(Ci_LNK_RIDE_DINO, amid_bone_rider_LNK_ID[ti_i], faux, nofunc, nofunc)
+	}
+	
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_KK_fight)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_KK_fight
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = AI_TrackCurGet()
+
+	ai_grabbed_availibility[ Ci_LNK_GRAB_KONG] = vrai	
+	i_flag_way_ok = faux
+	
+	i_fight_etat = Ci_fight_mode_prepare
+	
+	f_non_collide_ground_time = 0.0		// sinon bug cycle "chute -> KO sol -> chute -> KO sol..."
+	
+	// init tableau des acteurs paffés
+	i_paf_nb = 0
+	for(ti_i = 0; ti_i < Ci_paf_nb_max ; ti_i++)
+		ao_paf_list[ti_i] = nobody
+	
+	// Considerer pour l hysteresis des anims de deplacement qu'on pard a l arret a l init du mode
+	i_fight_action = Action_Normal_Attente
+	i_fight_action_old = -1
+	f_fight_delai_anim = 10.0	
+	
+	f_fight_sens_contourne += 1.0
+	if ( f_fight_sens_contourne == 2.0)
+		f_fight_sens_contourne = -1.0
+	
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =======================================================================================================
+
+o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, vrai, nofunc, nofunc)
+if (o_grabbed_actor_KK)
+	macro_change_etat("PNJ_TREX_ETAT_KK_grabbedbyKong")		
+
+
+// Detection de PAF
+AI_Execute("PNJ_TREX_exec_check_paf")
+if (o_paf_actor)
+	macro_change_etat("PNJ_TREX_ETAT_paf")					// ko delay nul -> simple paf
+
+
+// Detection du vide
+macro_checkchute
+
+// Détection d'un envoi de projectile de Kong
+if( o_msg_projectile)
+{
+	if( ( i_fight_etat == Ci_fight_mode_prepare ) || ( i_fight_etat == Ci_fight_mode_pause ) )
+		macro_change_etat("PNJ_TREX_ETAT_KK_choppe_projectile")
+}
+
+// Détection Intimidation (sauf pendant une attaque ou une esquive)
+if( ( i_fight_etat == Ci_fight_mode_pause ) || ( i_fight_etat == Ci_fight_mode_prepare ) )
+{
+	AI_Execute("PNJ_TREX_exec_check_fury")
+	
+	// temps d'intimidation
+	if( o_fury_actor )
+		f_fury_duree += TIME_GetDt()
+	else
+		f_fury_duree = 0.0
+	
+	// cri
+	if( f_fury_duree >= Cf_delai_check_fury_pour_cri )
+		macro_change_etat("PNJ_TREX_ETAT_attente")		// le TREX hurle
+}
+
+
+if ( i_attak_ANN)
+{
+	macro_change_etat("PNJ_TREX_ETAT_mord")
+}
+
+
+// STIMULIS ==========================================
+
+//if( i_DBG_Check_Stimulis_ON )
+//{
+//	AI_Execute("PNJ_TREX_exec_check_sound")
+//	
+//	AI_Execute("PNJ_TREX_exec_check_vision")
+//	
+//	AI_Execute("PNJ_TREX_exec_check_collision")
+//	
+//	AI_Execute("PNJ_TREX_exec_get_best_interet")
+//	if( MSG_GlobalIsValid(mid_best_interet) )
+//	{
+//		o_fight_actor = EVENT_TargetGet(mid_best_interet)
+//		AI_Execute("PNJ_TREX_exec_fight_actor_init")
+//	}
+//}
+//else
+//{
+	AI_Execute("PNJ_TREX_exec_select_fight_actor")
+	if( o_fight_actor )
+		AI_Execute("PNJ_TREX_exec_fight_actor_init")
+//}
+
+
+// COMPORTEMENT ==================================================================================================	
+
+//ti_fight_action_old = i_fight_action
+
+if ( o_fight_actor )
+{
+	// ETAT DE FIGHT
+	if( o_perimetre && ( ! @o_perimetre COL_BV_PointCollide(@o_fight_actor OBJ_PosGet()) ) )
+	{
+		f_time_last_charge = TIME_Get()		// pour ne pas charger dès le début
+		i_fight_etat = Ci_fight_mode_pause
+	}
+	else if( i_fight_etat == Ci_fight_mode_pause )
+		i_fight_etat = Ci_fight_mode_prepare
+	
+	// REGARD
+	i_flag_look = vrai	
+	to_head = @o_fight_actor ANI_CanalObjectGet(Anim_Canal_Tete)
+	v_look_pos = @to_head OBJ_PosGet()
+	if( o_fight_actor == o_KONG )
+		v_look_pos.z = @o_fight_actor OBJ_PosGet().z + 6.0
+	
+	tv_sight = @o_fight_actor OBJ_PosGet() - OBJ_PosGet()
+	tv_sight.z = 0.0
+	tf_dist = MATH_VecNorm(tv_sight)
+	tv_sight /= tf_dist
+	
+	// CONTOURNE
+	if( o_fight_actor == o_ANN )
+		f_fight_sens_contourne = 0.0
+}
+else
+{
+	// PLUS DE FIGHT ACTOR
+	macro_change_etat("PNJ_TREX_ETAT_attente")
+	
+//	i_fight_etat = Ci_fight_mode_pause
+//	
+//	// REGARD
+//	tv_sight = OBJ_SightGet()
+}
+
+
+//if ( ! MATH_VecNullEpsilon( v_add_speed))
+//{
+//	// frein / dérapage
+//	ACT_ActionSet( Action_Normal_Attente)
+//}
+//else
+if ( i_fight_etat == Ci_fight_mode_pause)
+{
+	// pas d'ennemi
+	if( ACT_ActionGet() != Action_Normal_Attente )
+	{
+		ACT_ActionSet( Action_Normal_Attente)
+		f_fight_delai_anim = 0.0
+	}
+	
+	i_fight_action = Action_Normal_Attente
+	i_fight_action_old = i_fight_action
+	f_fight_delai_anim += TIME_GetDt()
+}
+else if ( i_fight_etat == Ci_fight_mode_prepare)
+{
+	// ennemi présent, préparation d'attaque
+	
+//	if ( MATH_FloatNullEpsilon( f_fight_time_start_etat))
+//	{
+//		ACT_ActionSet( Action_Normal_Attente)			// frein / dérapage
+//	}
+//	else if ( f_fight_time_start_etat > 0.5)
+//	{
+		
+	i_flag_rotation = faux
+	ti_attaque = faux
+	
+	// LANCER DE RAYON ===============================================================
+	to_col_ray_object = COL_RayObject_Dist(OBJ_PosGet() + Cv_VerticalVector, @o_fight_actor OBJ_PosGet() - OBJ_PosGet(), tf_dist, all, OBJ_C_IdentityFlag_AI + OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable )
+	if( ! to_col_ray_object )
+		ti_lray_ok = vrai				// rien devant Rex
+	else
+		ti_lray_ok = faux				// mur devant Rex
+	
+	// TIP TOP =========================================================================
+	if (COL_RayObject_Dist(OBJ_PosGet() + Cv_VerticalVector, - Cv_VerticalVector, 10.0, all, OBJ_C_IdentityFlag_AI + OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable))
+	{
+//		tv_charge_sight = OBJ_SightGet()
+		tv_charge_sight = @o_fight_actor OBJ_PosGet() - OBJ_PosGet()
+		tv_charge_sight.z = 0.0
+		tv_charge_end_pos = COL_TipTopPointGet(tv_charge_sight, 0.0, faux, faux, faux, vrai)
+		DBG_RenderVector(OBJ_PosGet(), tv_charge_end_pos - OBJ_PosGet(), color_cyan)
+		if( MATH_VecNorm(tv_charge_end_pos - OBJ_PosGet()) >= Cf_dist_check_vide )
+			ti_tiptop_ok = vrai				// rien devant Rex
+		else
+			ti_tiptop_ok = faux			// mur ou vide devant Rex
+	}
+	else
+		ti_tiptop_ok = faux
+	
+//	if( ! ti_lray_ok )
+//	{
+//		// MUR ENTRE REX ET SA CIBLE
+//		if( MATH_VecNorm(COL_RayObject_PosGet() - OBJ_PosGet()) > 4.0 )
+//		{
+//			// MUR loin
+//			i_flag_rotation = vrai
+//			i_fight_action = Action_Normal_Marche_Rapide
+//		}		
+//		else
+//		{
+//			// MUR proche
+//			i_fight_etat = Ci_fight_mode_pause
+//			i_fight_action = Action_Normal_Attente
+//			i_flag_rotation = vrai
+//		}
+//	}
+//	else 
+//	{
+		// PAS DE MUR ENTRE REX ET SA CIBLE
+		
+//		to_canal = ANI_CanalObjectGet(Anim_Canal_Tete)
+//		tf_dist_bite = @to_canal OBJ_SqrDistHorz(o_fight_actor)
+		tv_temp = @o_fight_actor OBJ_PosGet() - OBJ_PosGet()
+		tv_temp.z = 0.0
+		tf_dist_bite = MATH_VecNorm(tv_temp)
+ 		if( i_deplace_ON && tf_dist_bite < f_fight_dist_bite_min )
+		{
+			// REX trop près pour mordre : il hurle ou il recule
+			if( ACT_ActionGet() != Action_Normal_Recul )
+			{
+				// REX recule
+				i_fight_action = Action_Normal_Recul
+				i_flag_rotation = vrai
+				f_fight_sens_contourne = 0.0
+			}
+			else
+				i_flag_rotation = vrai
+		}
+		else if( ( tf_dist_bite <= f_fight_dist_bite_max ) )
+		{
+			// REX à distance de morsure
+			if( f_time_start_etat > f_fight_delai_attak )
+			{
+				if( o_fight_actor != o_ANN )
+					ti_attaque = vrai			// REX attaque
+				else
+				{
+					// ANN
+					i_last_attak_proche_reaction += 1
+					if( i_last_attak_proche_reaction == 2 )
+						i_last_attak_proche_reaction = 0
+					
+					if( i_last_attak_proche_reaction )
+					{
+						// REX hurle
+						o_fury_actor = o_fight_actor
+						macro_change_etat("PNJ_TREX_ETAT_attente")
+					}
+					else
+						ti_attaque = vrai			// REX attaque
+				}
+			}
+			else
+			{
+				// REX attend avant d'attaquer
+				i_fight_action = Action_Normal_Attente
+				i_fight_etat = Ci_fight_mode_pause
+				i_flag_rotation = vrai
+			}
+		}
+//		else
+//		{
+//			// trop loin pour attaquer
+//			if( ACT_ActionGet() == Action_Normal_Recul )
+//			{
+//				i_fight_action = Action_Normal_Attente
+//				i_fight_etat = Ci_fight_mode_prepare
+//				i_flag_rotation = vrai
+//			}
+//		}
+		
+		if( ti_attaque )
+		{
+			// REX attaque
+			if ( i_attak_ON && i_esquive_ON)
+			{
+				if ( ( ! ( MATH_RandFloat( 0.0, 1.0) < 0.5 ) ) )	// && ( f_time_last_bite >= Cf_delai_bite ) )
+					i_fight_etat = Ci_fight_mode_esquive
+				else
+					i_fight_etat = Ci_fight_mode_attac
+			}
+			else if ( i_attak_ON ) 	// && ( f_time_last_bite >= Cf_delai_bite ) )
+				i_fight_etat = Ci_fight_mode_attac
+			else if ( i_esquive_ON)
+				i_fight_etat = Ci_fight_mode_esquive
+	
+			f_fight_delai_attak = MATH_RandFloat(3.0, 5.0)
+		}
+		
+//		else if ( ( ti_fight_action_old == i_fight_action ) && ( i_fight_action != Action_Normal_Recul ) && ( i_fight_etat != Ci_fight_mode_pause ) )
+		if( tf_dist_bite >= f_fight_dist_bite_max )
+		{
+			// REX trop loin pour atttaquer - il n'est pas passé en mode pause, il n'est pas en train de reculer
+//			if( ! ti_tiptop_ok )
+//			{
+//				// PAS DE MUR LRAY MAIS DU VIDE OU DU MUR (TIPTOP) ENTRE REX ET SA CIBLE
+//				if( MATH_VecDotProdu ct(OBJ_SightGet(), COL_RayObject_EdgeNormalGet()) > 0 )
+//				{
+//					// PAS DE MUR MAIS DU VIDE ENTRE REX ET SA CIBLE
+////					if( MATH_VecDotProduct(OBJ_SightGet(), MATH_VecNormalize(@o_fight_actor OBJ_PosGet() - OBJ_PosGet())) > Cf_Cos45 )
+////					{
+//						// le vide est entre REX et sa cible : il attend
+//						i_fight_action = Action_Normal_Attente
+//						i_fight_etat = Ci_fight_mode_pause
+//						i_flag_rotation = vrai
+////					}
+////					else
+////					{
+////						// le vide n'est pas entre REX et sa cible : il se retourne
+////						i_fight_action = Action_Normal_Marche_Lente
+////						i_flag_rotation = vrai
+////					}
+//				} 
+//				else
+//				{
+//					// MUR  ENTRE REX ET SA CIBLE
+//					i_fight_action = Action_Normal_Attente
+//					i_fight_etat = Ci_fight_mode_pause
+//					i_flag_rotation = vrai
+//				}
+//			}
+//			else 
+			{
+				// PAS DE MUR NI DE VIDE ENTRE REX ET SA CIBLE
+				
+				// Test pour entrer en mode charge
+				tv_temp = tv_sight
+				tv_temp.z = OBJ_SightGet().z
+				if ( i_deplace_ON && i_charge_ON && ( tf_dist >= Cf_dist_charge ) 
+					&& (MATH_VecDotProduct(OBJ_SightGet(), tv_temp) > Cf_Cos15) 
+					&& (MATH_VecNorm(tv_charge_end_pos - OBJ_PosGet()) >= MATH_VecNorm(@o_fight_actor OBJ_PosGet() - OBJ_PosGet()))
+					&& TIME_Elapsed(f_time_last_charge, Cf_delai_charge) 
+					&& o_KONG && ( o_fight_actor == o_KONG ) 
+					) //		&& ti_tiptop_ok )
+				{
+					o_charge_actor = o_fight_actor
+					macro_change_etat("PNJ_TREX_ETAT_KK_charge")
+				}
+//		//		else if ((i_flag_rotation || tf_dist > 9.0) && i_deplace_ON )
+//				else if ( ( tf_dist > 9.0) && i_deplace_ON) // && ( MATH_VecNorm(tv_charge_end_pos - OBJ_PosGet()) > 3.0) )
+//				{
+//					i_flag_rotation = vrai
+//					if ( i_fight_action == Action_Normal_Attente || MATH_VecDotProduct( tv_sight, OBJ_SightGet()) < Cf_Cos45)
+//						i_fight_action = Action_Normal_Marche
+//					else
+//						i_fight_action = Action_Normal_Trot		// Passer en trot si on est en marche et bien oriente
+//					
+//		//			ACT_ActionSet(Action_Normal_Trot)		// ennemi loin et pas de mur juste devant le TREX -> il marche
+//				}
+				else if ( i_deplace_ON && ( tf_dist > 4.0 ) ) // && ( MATH_VecNorm(tv_charge_end_pos - OBJ_PosGet()) > 3.0) )
+				{
+					// REX loin
+					i_flag_rotation = vrai
+					i_fight_action = Action_Normal_Marche_Rapide
+				}		
+				else
+				{
+					// REX trop proche
+					i_fight_etat = Ci_fight_mode_pause
+					i_fight_action = Action_Normal_Attente
+					i_flag_rotation = vrai
+				}
+			}
+		}
+//	}
+	
+	// ACTION ===============================================================================
+	if ( i_fight_action != i_fight_action_old && f_fight_delai_anim > 0.5)
+	{
+		ACT_ActionSet( i_fight_action)
+		i_fight_action_old = i_fight_action
+		f_fight_delai_anim = 0.0
+	}
+	else
+		f_fight_delai_anim += TIME_GetDt()
+	
+	// ORIENTATION ==============================================================================
+	
+	if( ACT_ActionGet() == Action_Normal_Attente )
+		i_flag_rotation = faux		// Pas de rotation si pas de déplacement
+	
+	if (i_flag_rotation )
+	{
+//		tf_target_blend_speed	= MATH_FloatMax(MATH_AbsFloat(f_look_angle), 0.75)
+		tf_target_blend_speed = 0.5	// 2.5	//2.0
+		f_rot_blend_speed = MATH_FloatBlend(f_rot_blend_speed, tf_target_blend_speed, TIME_GetDt())
+		
+		if( tf_dist < 15.0 )		// REX contourne sa cible s'il est assez près, sinon il va droit sur lui
+			tv_sight = MATH_VecRotate( tv_sight, Cv_VerticalVector, f_fight_sens_contourne * Cf_1Degre * 35.0)
+		
+		OBJ_BankingGeneralSet( MATH_VecBlendRotate( OBJ_SightGet(), tv_sight, f_rot_blend_speed * TIME_GetDt()), Cv_VerticalVector)
+
+		if (MATH_VecDotProduct(OBJ_SightGet(), tv_sight) > Cf_Cos10)
+			i_flag_rotation = faux
+	}
+	
+//	else if (MATH_AbsFloat(f_look_angle) > Cf_PiBy2)
+//	{
+//		i_flag_rotation = vrai
+//		f_rot_blend_speed = 0.0
+//	}
+}
+else if ( i_fight_etat == Ci_fight_mode_esquive)
+{
+	if( ACT_ActionGet() != Action_Attak_EsquiveD )
+	{
+		ACT_ActionSet( Action_Attak_EsquiveD)
+		f_fight_delai_anim = 0.0
+	}
+	else if ( ACT_ActionFinished())
+		i_fight_etat = Ci_fight_mode_prepare
+	
+	i_fight_action = Action_Attak_EsquiveD
+	i_fight_action_old = i_fight_action
+	f_fight_delai_anim += TIME_GetDt()
+}
+else if ( i_fight_etat == Ci_fight_mode_attac)
+{
+	macro_change_etat("PNJ_TREX_ETAT_mord")
+}
+
+
+//DYN_SpeedSetVector( DYN_SpeedGetVector() + v_grabbed_speed)
+//v_grabbed_speed = MATH_VecBlend( v_grabbed_speed, Cv_NullVector, Cf_grabbed_amorti_speed * TIME_GetDt())
+
+EVENT_AddEventEnemy( C_ID_Tyranosaure, OBJ_Me(), C_EVENT_EnemyState_Fight)
+

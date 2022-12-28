@@ -1,0 +1,19 @@
+#include "RM_Plateforme_defines.var"
+
+DYN_On()
+//i_Sens=0
+//i_Sens2=1-(i_Sens * 2)
+//
+
+f_spline_segment_length = 0.0
+
+o_DestWP = o_WP_Origine
+n_Network = @o_WP_Origine WAY_NetOfObj()
+
+OBJ_PosSet(@o_DestWP OBJ_PosGet())
+
+OBJ_BankingGeneralSet(@o_DestWP OBJ_SightGet(),Cv_VerticalVector)
+
+//o_DestWP = WAY_WPNearestOfOBJ(n_Network,all,none,Ci_Filter_CapaFlag)
+
+AI_TrackCurChangeNow("RM_Plateforme_ETAT_Wait")

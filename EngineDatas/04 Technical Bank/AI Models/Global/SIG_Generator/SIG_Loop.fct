@@ -1,0 +1,110 @@
+///////////////////////////////////////////////////////////////////////////////////////////////////
+int ti_on, ti
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+if( ! i_Activation ) return
+
+if( mi_TrigMode == 0 )
+{
+	// send signal while trig_on is true
+	ti_on = SIG_TestTrig(t_trigger_0, i_Operator_01, t_trigger_1, i_Operator_12, t_trigger_2, i_Operator_23, t_trigger_3)
+	
+	if( ti_on )
+	{
+		SIG_Send(i_Signal, OBJ_Me())	
+		if(i_Signal == SIG_C_TYPE_BIGFIGHT )
+		{
+			SIG_Send(SIG_C_TYPE_FIGHT, OBJ_Me())	
+		}
+		else if(i_Signal == SIG_C_TYPE_LD_BIGFIGHT )
+		{
+			SIG_Send(SIG_C_TYPE_LD_FIGHT, OBJ_Me())	
+		}
+
+		// callback
+		for(ti=0; ti<3; ti++)
+		{
+			if(AI_TriggerIsValid(at_OnCallback[ti]))
+				call_trigger(at_OnCallback[ti])
+			else
+				break
+		}
+		
+		if(i_Activation == 2)
+		{
+			// only once
+			i_Activation = 0
+		}
+	}
+	else
+	{
+		// callback
+		for(ti=0; ti<3; ti++)
+		{
+			if(AI_TriggerIsValid(at_OffCallback[ti]))
+				call_trigger(at_OffCallback[ti])
+			else
+				break
+		}
+	}
+}
+else if( mi_TrigMode == 1 )
+{
+	// start when trig_on is true, and stop when trig_off is true
+	
+	if( mb_IsSending )
+	{
+		ti_on = SIG_TestTrig(t_Off_0, i_OffOpe_01, t_Off_1, i_OffOpe_12, t_Off_2, i_OffOpe_23, t_Off_3)
+
+		if( ti_on )
+		{
+			if( mb_IsSending  && ( i_Activation == 2 ) )
+			{
+				// only once
+				i_Activation = 0
+
+				// callback
+				for(ti=0; ti<3; ti++)
+				{
+					if(AI_TriggerIsValid(at_OffCallback[ti]))
+						call_trigger(at_OffCallback[ti])
+					else
+						break
+				}
+				
+			}
+			mb_IsSending = 0	
+		}
+	}
+	else
+	{
+		ti_on = SIG_TestTrig(t_trigger_0, i_Operator_01, t_trigger_1, i_Operator_12, t_trigger_2, i_Operator_23, t_trigger_3)
+	
+		if( ti_on )
+			mb_IsSending = 1	
+	}
+	
+	if( mb_IsSending )	
+	{
+		SIG_Send(i_Signal, OBJ_Me())	
+		if(i_Signal == SIG_C_TYPE_BIGFIGHT )
+		{
+			SIG_Send(SIG_C_TYPE_FIGHT, OBJ_Me())	
+		}
+		else if(i_Signal == SIG_C_TYPE_LD_BIGFIGHT )
+		{
+			SIG_Send(SIG_C_TYPE_LD_FIGHT, OBJ_Me())	
+		}
+		
+		// callback
+		for(ti=0; ti<3; ti++)
+		{
+			if(AI_TriggerIsValid(at_OnCallback[ti]))
+				call_trigger(at_OnCallback[ti])
+			else
+				break
+		}
+	}
+	
+}

@@ -1,0 +1,928 @@
+#include "PNJ_Lapin_defines.var"
+
+int			ti_temp_way_wp_nb
+int			ti_report
+int			tai[20]
+int			ti_dont_exit
+int			ti_flag_tension
+int			ti_water_interdite
+int			ti_ok
+int			ti_result
+int			ti_debug
+int			ti_i
+
+object	tao_temp_way_wp[20]
+object	to_col
+object	to_rope_gao
+object	to_wp
+object	to_gao
+object	to_bv
+
+float		tf_glisse_coef
+float		tf_temp
+float		tf_dt
+float		tf_ground_hyst
+float		tf_ventilo_norm
+float		tf_norm
+float		tf_dist
+float		tf_offset
+
+vector	tv_speed
+vector	tv_temp
+vector	tv_temp1
+vector	tv_ground_normale
+vector	tv_joy
+vector	tv_grav
+vector	tv_axis
+vector	tv_pos_A
+vector	tv_pos_B
+
+
+o_main_actor = AI_MainActorGet(C_ID_Rayman)
+if( ! o_main_actor )
+	return
+
+if( ! i_frame_nb )
+	tf_dt = 0.016
+else
+	tf_dt = TIME_GetDt()
+
+OBJ_CapaSet(none, Obj_Capa_Fight)
+
+// Maintenir le ride !!! 
+if( o_RideMount_Actor )
+{
+	o_RideMount_Actor = LNK_ThisClientGet(o_RideMount_Actor, Ci_LNK_RIDE_ON_NMI, mid_RideMount_LNK_ID, vrai, nofunc, nofunc, nofunc)
+	if( ! o_RideMount_Actor )
+	{
+		Lapin_DYNA(vrai)
+		Lapin_RIDEMOUNT_Callback_Cancel()
+	}
+}
+
+
+// reset flag invisible si on n'est pas en apparition
+if( ! i_Grabbed_Died_flag && ! i_Mort_Destruction_SND_flag && ( i_etat_courant == ETAT_Lapin_TAUPE || Lapin_APPARITION_Terminee() ) )
+{
+	i_invisible_flag = faux
+	OBJ_FlagInvisibleSet(faux)
+	ANI_ShapeSelect(Anim_Canal_Tete, ShapeSelect_Visible)
+	if( o_item )
+		@o_item OBJ_FlagInvisibleSet(faux)
+	if( o_key )
+		@o_key OBJ_FlagInvisibleSet(faux)
+	if( o_shield )
+		@o_shield OBJ_FlagInvisibleSet(faux)
+	if( o_RideMount_Actor )
+		@o_RideMount_Actor OBJ_FlagInvisibleSet(faux)
+}
+
+
+OBJ_FlagsTypeSet(none, OBJ_C_TypeFlag_Pushable)		// je ne suis pas dans les softcol
+
+i_frame_nb++
+v_force_sight = Cv_NullVector		// raz force sight
+v_force_move_occluder_sight = Cv_NullVector
+
+f_melee_delai -= MATH_FloatMin(f_melee_delai, tf_dt)
+f_RideMount_check_delai -= MATH_FloatMin(f_RideMount_check_delai, tf_dt)
+f_item_reload_delai -= MATH_FloatMin(f_item_reload_delai, tf_dt)
+f_cache_prog_display_delai -= MATH_FloatMin(f_cache_prog_display_delai, tf_dt)
+f_item_weapon_use_delai -= MATH_FloatMin(f_item_weapon_use_delai, tf_dt)
+f_item_key_find_delai -= MATH_FloatMin(f_item_key_find_delai, tf_dt)
+f_item_carotte_find_delai -= MATH_FloatMin(f_item_carotte_find_delai, tf_dt)
+f_item_weapon_find_delai -= MATH_FloatMin(f_item_weapon_find_delai, tf_dt)
+f_lums_cage_find_delai -= MATH_FloatMin(f_lums_cage_find_delai, tf_dt)
+f_interet_attack_countdown -= MATH_FloatMin(f_interet_attack_countdown, tf_dt)
+f_jump_to_keep_moving -= MATH_FloatMin(f_jump_to_keep_moving, tf_dt)
+f_jump_to_attack -= MATH_FloatMin(f_jump_to_attack, tf_dt)
+f_ventilo_scream_delai -= MATH_FloatMin(f_ventilo_scream_delai, tf_dt)
+f_GFX_GoutteSueur_duree -= MATH_FloatMin(f_GFX_GoutteSueur_duree, tf_dt)
+f_powermount_use_delai -= MATH_FloatMin(f_powermount_use_delai, tf_dt)
+f_fuite_gfx_smoke_delai -= MATH_FloatMin(f_fuite_gfx_smoke_delai, tf_dt)
+f_jump_in_back_delai -= MATH_FloatMin(f_jump_in_back_delai, tf_dt)
+f_taupe_in_back_delai -= MATH_FloatMin(f_taupe_in_back_delai, tf_dt)
+f_GFX_Couronne_etoiles_duree -= MATH_FloatMin(f_GFX_Couronne_etoiles_duree, tf_dt)
+f_Atk_Encerclement_sign_countdown -= MATH_FloatMin(f_Atk_Encerclement_sign_countdown, tf_dt)
+f_Atk_Encerclement_forbidden -= MATH_FloatMin(f_Atk_Encerclement_forbidden, tf_dt)
+if( ! i_Counter_flag )
+	f_paf_jauge -= MATH_FloatMin(f_paf_jauge, 5.0 * tf_dt)
+if( f_fuite_delai != Cf_Infinit )
+	f_fuite_delai -= MATH_FloatMin(f_fuite_delai, tf_dt)
+if( ! i_flag_jump )
+	f_RideMount_Jump_to_Get_Item -= MATH_FloatMin(f_RideMount_Jump_to_Get_Item, tf_dt)
+
+i_RM_Paf_Mode_Get = @o_main_actor PROC_RM_Paf_Mode_Get()
+
+// ITEM =====================================================================================
+if( o_item && MSG_GlobalIsValid(mid_item_LNK_ID) )
+{
+	LNK_KKGrabObject_BlendSet(mid_item_LNK_ID, f_item_blend)
+	LNK_KKGrabObject_StateSet(mid_item_LNK_ID, 1)
+	f_item_blend = MATH_FloatBlend(f_item_blend, 1.0, 5 * tf_dt)
+}
+else
+{
+	o_item = nobody
+	f_item_blend = MATH_FloatBlend(f_item_blend, 0.0, 5 * tf_dt)
+}
+
+
+// ZDM ET RAPPORTS DE COLLISION =============================================================
+// FACE DE MORT
+if( COL_GMatReportGet(Gmat_RM_Face_de_mort) != -1 )
+{
+	DBG_TraceObject(OBJ_Me())
+	DBG_TraceString(" a touché une face de mort...\n")
+	MACRO_LAPIN_DESTROY
+}
+// FACE DE LAVE
+if( COL_GMatReportGet(Gmat_RM_Face_de_lave) != -1 )
+{
+	DBG_TraceObject(OBJ_Me())
+	DBG_TraceString(" a touché une face de lave...\n")
+	MACRO_LAPIN_DESTROY
+}
+// FACE DE PAF
+ti_report = COL_GMatReportGet(Gmat_RM_Face_paf)
+if( ti_report != -1 && TIME_Elapsed(f_face_paf_col_last_time, 2.0) && i_etat_courant != ETAT_Lapin_PAF )
+{
+	DBG_TraceObject(OBJ_Me())
+	DBG_TraceString(" a touché une face de paf...\n")
+	f_face_paf_col_last_time = TIME_Get()
+	tv_axis = COL_NormalGet(ti_report + COL_C_ReportIndex)
+	EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_RM_Fort, o_main_actor, Cf_EVENT_Duree_1Trame, OBJ_Me(), 10.0, tv_axis)
+}
+// PAFS EN GOGO MODE (RAYMAN ME BALANCE SUR UN MUR OU SUR LE SOL)
+if( i_paf_combo_fort_finish_en_cours
+	|| ( i_etat_courant == ETAT_Lapin_GOGO && f_time_start_etat > 0.5 ) )
+{
+	tf_temp = DYN_SpeedGet()
+	if( tf_temp < (f_speed_before_rec - 7.0) )
+	{
+		// brutale collision en mode gogo !!!
+		ti_dont_exit = faux
+		to_rope_gao = Lapin_ROPE_Get_Gao(tv_pos_A, tv_pos_B, ti_flag_tension)
+		if( to_rope_gao )
+		{
+			// si je suis toujours tenu en laisse je checke si j'ignore le paf, si je suis lancé je prend sans restriction
+			if( COL_CollideType(COL_C_Wall) )
+			{
+				to_col = COL_ObjectGet(COL_C_Wall)
+				if( @to_col OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+				{
+					if( @to_col AI_IsModel(get_PNJ_Lapin_path) )
+						ti_dont_exit = vrai
+					else if( @to_col AI_IsModel(get_RM_Weapon_path) )
+						ti_dont_exit = vrai
+				}
+			}
+		}
+		if( ! ti_dont_exit )
+		{
+			tv_axis = - v_speed_before_rec
+			if( ! MATH_VecNullToler(tv_axis, 0.01) )
+				MATH_VecSetNormalize(tv_axis)
+			else
+				tv_axis = - OBJ_SightGet()
+			DBG_RenderVector(OBJ_PosGet(), tv_axis, color_rouge)
+			DBG_TraceObject(OBJ_Me())
+			DBG_TraceString(" prend un paf (stoppé) pendant ")
+			if( i_paf_combo_fort_finish_en_cours )
+				DBG_TraceString("Combo Finish")
+			else
+				DBG_TraceString("GOGO")
+			if( COL_CollideType(COL_C_Wall) )
+			{
+				to_col = COL_ObjectGet(COL_C_Wall)
+				DBG_TraceObject(to_col)
+			}
+			DBG_TraceEOL()
+			EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_RM_Fort, o_main_actor, Cf_EVENT_Duree_1Trame, OBJ_Me(), 10.0, tv_axis)
+		}
+	}
+}
+// PAF POUR SE NOYER JOLIEMENT
+if( Mort_JeMeNoie && i_is_in_water && ! i_Mort_JeMeNoie_flag )
+{
+	EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_RM_KiTue, o_main_actor, Cf_EVENT_Duree_1Trame, OBJ_Me(), 1000.0, - OBJ_SightGet())
+	i_Mort_JeMeNoie_flag = vrai
+	Mort_SeReleve = faux		// ne plus se relever
+	i_Terminator_CourtCircuit_flag = vrai		// GFX
+	Lapin_ZOOM_Reduction()
+}
+
+v_last_pos = OBJ_PosGet()
+
+
+// ZDE ==================================================================================
+COL_ColSetActivationSet(C_bit_zde_corps, none)
+if( o_RideMount_Actor && i_RideMount_ID != C_ID_Monture_Rope )
+	COL_ColSetActivationSet(none, C_bit_zdm_pied)
+else
+	COL_ColSetActivationSet(C_bit_zdm_pied, none)
+
+
+// ANALYSE =============================================================================
+i_perceived_bit_field = 0
+i_flag_zde_fight_enable = faux
+i_test_zdf_zdc_done = faux
+i_flag_chck_bst_intrt_done = faux
+i_flag_visual_check_done = faux
+i_budy_nb = 0
+i_flag_paf_check_done = faux
+i_flag_cadavre_check_done = faux
+i_flag_paf_jauge = faux
+i_flag_item_key_check_done = faux
+i_flag_item_weapon_check_done = faux
+i_flag_item_carotte_check_done = faux
+i_flag_lums_cage_check_done = faux
+i_way_dont_move_dest_in_occluder = faux
+i_item_cant_use = 0
+i_use_previous_etat = faux
+i_occluder_to_main_actor = faux
+i_flag_shoot_check_done = faux
+i_flag_grappin_check_done = faux
+i_v_joy_sight_computed = faux
+i_gogo_test_done = faux
+i_flag_monture_check_done = faux
+i_taupe_attack_flag = faux
+i_etat_dodge_enabled = faux
+i_etat_protect_enabled = faux
+i_paf_combo_game_speed_flag = faux
+i_flag_anti_mashing_check_done = faux
+o_item_to_get = nobody
+i_action_traction_force_faster = faux
+i_AI_computed_dest_pos_flag = faux
+i_Mort_Destruction_flag = faux
+i_taupe_in_back_attack_flag = faux
+i_disable_select_action = faux
+i_flag_genere_lums = faux
+
+// PIEGE ? ====================================================================================================
+o_piege = PIEGE_PositionCheck(OBJ_PosGet())
+
+
+//===========================================================================================================
+// TERRITORY MANAGMENT 
+//===========================================================================================================
+if( Commander )
+{
+	if( @Commander Proc_PNJ_Lapin_COMMANDER_Etat_Commandant() )
+		o_Commander_cur = Commander
+//	else if( @Commander Proc_PNJ_Lapin_LIFE_Get() && OBJ_SqrDist(Commander) > 400.0 )
+//		o_Commander_cur = Commander		// retourner voir maman
+	else
+		o_Commander_cur = nobody
+}
+if( o_Commander_cur ) // && Proc_PNJ_Lapin_ETAT_Courant_Get() == ETAT_Lapin_ATTENTE )
+{
+	goto NO_TERRITORY
+}
+else if( Territory_BV )
+{
+	// TERRITOIRE BV -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	i_my_territory_ID = -2		// pour les occluders
+	i_flag_in_my_territory = Lapin_Pos_in_Territory_BV(OBJ_PosGet())
+	
+	if( ! Lapin_TERRITORY_ERROR_Ignore() && ! i_flag_in_my_territory )
+	{
+		goto GO_TO_TERRITORY_ERROR_CHECK
+	}
+}
+else if( Territory_Path )
+{
+	// TERRITORY PATHFINDING ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	Lapin_PATH_Init()
+	
+	if( ! Lapin_TERRITORY_ERROR_Ignore() )
+	{
+		// outside territory ????
+		if( @get_rayman PROC_RM_Current_HotSpot_Get() != OBJ_Me() )
+		{
+			ti_debug = 0
+			PATHLIBDEBUG:
+			to_wp = nobody
+			ti_result = PATH_LIB_Get_Wp(OBJ_PosGet(), OBJ_Me(), to_wp, Territory_Path, &ao_path_net_wp[0], i_path_net_wp_nb)
+			if( ti_result == Ci_PATH_LIB_NO_WP )
+			{
+				if( ! ti_debug )
+				{
+					ti_debug++
+					goto PATHLIBDEBUG
+				}
+				i_Territory_OutSide_duree += TIME_GetDt()
+				if( i_Territory_OutSide_duree > 0.35 )
+				{
+					goto GO_TO_TERRITORY_ERROR_CHECK
+				}
+			}
+			else
+				i_Territory_OutSide_duree = 0.0
+		}
+	}
+		
+	if (i_etat_courant == ETAT_Lapin_CACHE && i_cache_mode == Ci_CACHE_Mode_Fuite )
+		tf_offset = 0.0
+	else
+		tf_offset = 1.5 + Lapin_MOVE_Offset_Get()
+	
+	to_bv = o_path_current_wp
+	v_path_way_to_main_next_pos = PATH_LIB_Get_Next_Pos(	OBJ_PosGet(),						// POSITION DE DEPART
+																						OBJ_Me(),
+																						o_path_current_wp,					// WP DE DEPART (BYREF)
+																						@o_main_actor OBJ_PosGet(),	// POSITION D'ARRIVEE
+																						o_main_actor,
+																						o_path_main_actor_wp,			// WP D'ARRIVEE (BYREF)
+																						tf_offset,	// EXTRUSION (LA TAILLE DE L'ACTEUR)
+																						Territory_Path,							// LE RESEAU UTILISE
+																						i_path_net_wp_nb,					// LE NOMBRE DE POINTS DU RESEAU
+																						&ao_path_net_wp[0],				// LES WPS DU RESEAU
+																						i_path_way_to_main_wp_nb,		// LE NOMBRE DE WP DU CHEMIN (BYREF)
+																						&ao_path_way_to_main_wp[0],	// LES WPS DU CHEMIN (BYREF)
+																						faux,										// FORCE LE RECALCUL DU CHEMIN (VRAI / FAUX)
+																						i_path_to_main_client_ID)
+	
+	
+	// TERRITOIRE
+	if( o_path_current_wp )
+	{
+		if( to_bv && o_path_current_wp != to_bv )
+			i_depl_jump_cpt = 0		// changement de bv -> reset compteur de jump
+		
+		i_my_territory_ID = o_path_current_wp.des_int2
+		i_flag_in_my_territory = vrai
+	}
+	else
+	{
+		i_my_territory_ID = -1
+		i_flag_in_my_territory = faux
+	}
+}
+else if( Territory_Colmap )
+{
+	// TERRITORY ID COLMAP -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	i_my_territory_ID = Lapin_PROC_GAO_GET_TERRITORY_ID(OBJ_Me())
+	i_flag_in_my_territory = Lapin_PROC_WAY_TERRITORY_ID_ALLOWED(i_my_territory_ID)
+	Lapin_PROC_WAY_REFRESH_TERRITORY()
+	
+	if( ! Lapin_TERRITORY_ERROR_Ignore() && i_my_territory_ID == -1 )
+	{
+		GO_TO_TERRITORY_ERROR_CHECK:
+		// je suis dans un cas de merde... je retourne à une position safe
+		if( ! i_1st_ingame_valid_pos_goback 
+		&& Lapin_APPARITION_Terminee()
+		&& ! i_is_in_water 
+//		&& ! o_RideMount_Actor 
+		&& f_LIFE_cur 
+		&& ! o_Rided_Actor )
+		{
+			if( Territory_Error_wp_safe || ! MATH_VecNullToler(v_1st_ingame_valid_pos, 0.01) )
+			{
+				i_1st_ingame_valid_pos_goback = vrai
+				
+				DBG_TraceString("***** ")
+				DBG_TraceObject(OBJ_Me())
+				DBG_TraceString(" est hors territoire ")
+				DBG_TraceVector(OBJ_PosGet())
+				DBG_TraceString(" et s'enterre pour réapparaitre en ")
+				DBG_TraceVector(v_1st_ingame_valid_pos)
+				DBG_TraceEOL()
+				DBG_Warning("Un lapin s'est enterré car il était hors territoire, checkez le log pour connaitre la position svp")
+				
+				if( o_RideMount_Actor )
+				{
+					o_RideMount_before_Taupe_backup = o_RideMount_Actor
+					@o_RideMount_before_Taupe_backup OBJ_FlagInactiveSet(vrai)
+					f_RideMount_before_Taupe_zoom = @o_RideMount_before_Taupe_backup OBJ_ZoomGet()
+					Lapin_RIDEMOUNT_Cancel()
+					
+					DBG_TraceString("***** ce lapin s'est enterré avec ")
+					DBG_TraceObject(o_RideMount_before_Taupe_backup)
+					DBG_TraceEOL()
+					DBG_Warning("il s'est enterré avec une monture !!!")
+				
+				}
+				
+				macro_change_etat("Lapin_ETAT_FUITE")
+			}
+//			else
+//			{
+//				DBG_TraceString("***** ")
+//				DBG_TraceObject(OBJ_Me())
+//				DBG_TraceString(" est hors territoire ")
+//				DBG_TraceVector(OBJ_PosGet())
+//				DBG_TraceString(" et il n'a jamais été sur une position valide pour savoir y retourner...")
+//				DBG_TraceVector(v_1st_ingame_valid_pos)
+//				DBG_TraceEOL()
+//				DBG_Error("erreur Territoire, regardez le log svp")
+//			}
+		}
+	}
+}
+else
+{
+	// NO TERRITORY -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	NO_TERRITORY:
+	i_flag_in_my_territory = vrai
+	i_my_territory_ID = -1
+}
+
+// 1st VALIDE POS ?
+if( i_flag_in_my_territory && i_ground_flag && Lapin_APPARITION_Terminee() )
+	Lapin_Backup_1stInGame_ValidPos()
+
+//========================================================================================================
+// TERRITORY MANAGMENT 
+//========================================================================================================
+
+
+
+// EVENT VISION =========================================================================
+if( i_App_Trigger_done )
+{
+	ti_ok = vrai
+	if( ! f_LIFE_cur
+		&& ! Mort_SeReleve )
+		ti_ok = faux		// mort et ne se relèvera plus...
+	if( ti_ok )
+		EVENT_AddEventVision(i_Perso_ID, C_EVENT_FILTER_Lapin, OBJ_Me(), Cf_EVENT_Duree_1Trame, OBJ_PosGet(), C_EVENT_Visibility_Full_Mvt, 1.0, 100.0, C_EVENT_CONTEXT_STANDARD, 0, f_LIFE_cur / f_LIFE_max)
+}
+
+
+// EVENT ENEMY =========================================================================
+if( i_App_Trigger_done )
+{
+	ti_ok = faux
+	switch( i_etat_courant )
+	{
+		case ETAT_Lapin_TAUPE :
+			if( i_taupe_phase > 2 )
+				ti_ok = vrai
+			break
+		default:
+			if( f_LIFE_cur
+				&& ! Mode_Compagnon 
+				&& ! o_Rided_Actor 
+				&& ! o_Grabbed_Actor 
+				&& ! o_piege 
+				&& i_etat_courant != ETAT_Lapin_ASPIRE )
+				ti_ok = vrai
+			break
+	}
+	if( ti_ok )
+		EVENT_AddEventEnemy(i_Perso_ID, OBJ_Me(), C_EVENT_EnemyState_Fight)
+}
+
+
+// SPEED VECTOR =========================================================================
+
+if( OBJ_HierarchyGet() )
+	v_speedgetvector = DYN_SpeedGetVector()		// sinon ça foire les déplacements où je suis hiérarchisé sur 1 objet
+else
+{
+	v_speedgetvector = OBJ_PosGet() - v_speed_oldpos
+	v_speedgetvector /= tf_dt
+}
+v_speed_oldpos = OBJ_PosGet()
+
+// ANIM SPEED ============================================================================
+f_anim_speed = DYN_SpeedGet()
+v_anim_speed = DYN_SpeedGetVector()
+
+// SPEED Managment =======================================================================
+v_speed_horiz_old = v_speed_horiz
+v_speed_horiz = v_speedgetvector
+v_speed_horiz.z = 0.0
+f_speed_horiz = MATH_VecNorm(v_speed_horiz)
+
+
+// GROUND Managment ======================================================================
+//v_ground_normale = Cv_VerticalVector
+tv_ground_normale = v_ground_normale		// ancienne normale
+if( o_RideMount_Actor )
+{
+	tv_ground_normale = Cv_VerticalVector
+	i_ground_flag = vrai
+	f_no_ground_timer = 0.0
+}
+else
+{
+	tv_temp = Cv_NullVector
+	if (COL_CollideType(COL_C_Ground))
+		tv_temp = COL_NormalGet(COL_C_Ground)
+	if ( COL_CollideType(COL_C_Ground) && tv_temp.z > 0.0 )		// les plafonds ne sont pas des sols
+	{
+		to_col = COL_ObjectGet(COL_C_Ground)
+		tv_ground_normale = tv_temp
+		i_ground_flag = vrai
+		f_no_ground_timer = 0.0
+	}
+	else
+	{
+		f_no_ground_timer += tf_dt
+		if( f_no_ground_timer > 0.1 )
+		{
+			tv_ground_normale = Cv_VerticalVector
+			i_ground_flag = faux
+		}
+		else
+			i_ground_flag = vrai
+	}
+}
+v_ground_normale = Cv_VerticalVector
+
+
+// WALL Managment ===================================================================================
+if( COL_CollideType(COL_C_Wall) )
+{
+//	to_col = COL_BestAngleWallGaoGet(v_joy_sight, Cf_Cos45, &tai[0])
+	to_col = COL_BestAngleWallGaoGet(OBJ_SightGet(), Cf_Cos45, &tai[0])
+	if( to_col && ! @to_col OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Anims) )
+		f_wall_col_duration += tf_dt
+	else
+	{
+		if( i_is_in_water )
+			f_wall_col_duration -= MATH_FloatMin(f_wall_col_duration, tf_dt)
+		else
+			f_wall_col_duration = 0.0
+	}
+}
+else
+{
+	if( i_is_in_water )
+		f_wall_col_duration -= MATH_FloatMin(f_wall_col_duration, tf_dt)
+	else
+		f_wall_col_duration = 0.0
+}
+
+
+// FORCES ===========================================================================================
+v_traction_joy = Cv_NullVector
+i_stream_aspire_flag = faux
+if( o_RideMount_Actor || i_etat_courant == ETAT_Lapin_TAUPE )
+	v_traction_stream = Cv_NullVector
+else
+{
+	v_traction_stream = 	PROC_ForceStreamGet(OBJ_PosGet(), i_stream_aspire_flag)
+	v_traction_stream *= Depl_Stream_Pct
+	if( i_stream_aspire_flag )
+	{
+		f_stream_aspire_slave_coef += MATH_FloatMin(1.0 - f_stream_aspire_slave_coef, 0.5 * TIME_GetDt())
+		v_traction_stream *= f_stream_aspire_slave_coef
+	}
+	else
+		f_stream_aspire_slave_coef -= MATH_FloatMin(f_stream_aspire_slave_coef, 2.0 * TIME_GetDt())
+//	Str_DisplayFloatOnce(f_stream_aspire_slave_coef, VIEW_3dWorldTo2d(0,OBJ_PosGet())+cvector(0.15,0,0))
+}
+switch( Type )
+{
+	case Lapin_Type_Petit :
+		tf_ventilo_norm = 25.0
+		break
+	case Lapin_Type_Moyen :
+		tf_ventilo_norm = 49.0
+		break
+	case Lapin_Type_Geant :
+		tf_ventilo_norm = 100.0
+		break
+	default:
+		break
+}
+if( i_ventilo_flag )
+	tf_ventilo_norm *= 0.5
+i_ventilo_flag = faux
+v_ventilo_dir = Cv_NullVector
+i_ventilo_stuck_on_wall = faux
+if( i_stream_aspire_flag && MATH_VecDotProduct(v_traction_stream, v_traction_stream) >= tf_ventilo_norm )
+{
+//	Str_DisplayFloatOnce(MATH_VecNorm(v_traction_stream), cvector(0.5,0.9,0))
+	i_ventilo_flag = vrai
+	v_ventilo_dir = v_traction_stream
+}
+v_traction_ice = Cv_NullVector
+v_traction_gogo = Cv_NullVector
+v_traction_exit_chute = Cv_NullVector
+if( OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna) )
+	DYN_TractionSet(Cv_NullVector)
+// RM jump repulses rabbits...
+f_traction_rm_jump_repulse -= MATH_FloatMin(f_traction_rm_jump_repulse, tf_dt)
+if( ! f_traction_rm_jump_repulse )
+{
+	v_traction_rm_jump_repulse = Cv_NullVector
+	if( i_ground_flag )
+	{
+		switch( i_etat_courant )
+		{
+			case ETAT_Lapin_TAUPE :
+			case ETAT_Lapin_GOGO :
+			case ETAT_Lapin_GRABBED :
+			case ETAT_Lapin_GRAPPIN_CONTROL :
+			case ETAT_Lapin_COUNTER :
+			case ETAT_Lapin_BULLRUSH :
+			case ETAT_Lapin_APPARITION :
+			case ETAT_Lapin_ASPIRE :
+			case ETAT_Lapin_CHUTE :
+			case ETAT_Lapin_DODGE :
+			case ETAT_Lapin_RIDED :
+			case ETAT_Lapin_RIDE_MOUNT :
+			case ETAT_Lapin_PAF :
+			case ETAT_Lapin_PAF_STUN :
+			case ETAT_Lapin_BEAT_DANSE :
+			case ETAT_Lapin_MORT :
+			case ETAT_Lapin_FUITE :
+			case ETAT_Lapin_CACHE :
+				break
+			default:
+				if( f_LIFE_cur && ! o_RideMount_Actor )
+				{	
+					if( @o_main_actor PROC_RM_Just_JUMP_FromGround() )
+					{
+						// rayman jumpe devant moi
+						switch( Type )
+						{
+							case Lapin_Type_Petit :
+								tf_dist = 16.0
+								tf_norm = 8.0
+								break
+							case Lapin_Type_Moyen :
+								tf_dist = 16.0
+								tf_norm = 6.0
+								break
+							case Lapin_Type_Geant :
+								tf_dist = 9.0
+								tf_norm = 4.0
+								break
+							default:
+								DBG_Error("???")
+						}
+						tv_temp = OBJ_PosGet() - @o_main_actor OBJ_PosGet()
+						if( ! MATH_VecNullToler(tv_temp, 0.01)
+						&& MATH_VecDotProduct(tv_temp,tv_temp) < tf_dist )
+						{
+							v_traction_rm_jump_repulse = MATH_VecNormalize(tv_temp) * tf_norm
+							f_traction_rm_jump_repulse = 0.5
+						}
+					}
+				}
+				break
+		}
+	}
+}
+//if( f_traction_rm_jump_repulse )
+//	Str_DisplayTextOnce("REPULSE !!!!", MACRO_2D)
+if( i_ground_flag && (COL_GMAT_FlagsGet(COL_C_Ground) & Gmat_RM_Ice) )
+{
+	DBG_RenderVector(OBJ_PosGet(), v_ground_normale, color_bleu)
+	tv_temp = MATH_VecCrossProduct(v_ground_normale, Cv_VerticalVector)
+	DBG_RenderVector(OBJ_PosGet(), tv_temp, color_rouge)
+	tv_temp1 = MATH_VecCrossProduct(v_ground_normale, tv_temp)
+	DBG_RenderVector(OBJ_PosGet(), tv_temp1, color_vert)
+	if( MATH_VecNorm(tv_temp1) > 0.1 )
+	{
+		MATH_VecSetNormalize(tv_temp1)
+		tf_glisse_coef = 1 - v_ground_normale.z							// ANGLE A 45° : = 0.3
+		tf_glisse_coef *= 10.0													// ANGLE A 45° : = 3.0
+		tv_temp1 *= tf_glisse_coef												// ANGLE A 45° : = 30.0 or TRACTION JOY = 7.5 MAX !!!!
+		tv_temp1 *= ( Lapin_Traction_Walk_Get() * Cf_DYN_Traction_ICE_Factor )	// ICE !!!!
+		v_traction_ice = tv_temp1
+	}
+}
+
+
+// IK COU ========================================================
+i_flag_look = faux
+i_flag_look_best_interet = faux
+
+v_look_head_pos = OBJ_PosGet() + MATH_VecLocalToGlobal(v_look_head_pos)
+v_look_banking = MATH_VecLocalToGlobal(v_look_banking)
+
+v_look_virtual_sight = v_look_banking
+MATH_VecSetHorzNormalize(v_look_virtual_sight)
+
+f_look_angle_blend_speed += MATH_FloatMin(8.0 - f_look_angle_blend_speed, 8.0 * tf_dt)
+
+
+// DUREE A L ECRAN ===============================================
+if (f_on_screen_pourcent > 0.5)
+	f_on_screen_duration += tf_dt
+else
+	f_on_screen_duration = 0.0
+
+
+// WATER ========================================================
+if( ! o_RideMount_Actor )
+{
+	ti_water_interdite = faux
+	switch( i_etat_courant )
+	{
+		case ETAT_Lapin_RIDE_MOUNT :
+		case ETAT_Lapin_TAUPE :
+			ti_water_interdite = vrai
+			break
+		case ETAT_Lapin_FUITE :
+			if( i_fuite_sous_terre_pos_atteinte )
+				ti_water_interdite = vrai
+			break
+	}
+	
+	if( ! ti_water_interdite && IsInWater( OBJ_PosGet(), f_water_Z) && ! o_Grabbed_Actor )
+	{
+		// dans l'eau
+		if( i_ground_flag && ( f_water_Z - OBJ_PosGet().z < f_water_offset_start_blend))
+		{
+			i_is_in_water = faux
+			i_walk_in_water = vrai
+			f_water_blend = 0.0
+			DYN_GravitySet(Cv_DYN_Gravity)
+		}
+		else
+		{
+		 	tv_speed = v_speedgetvector
+	
+			if( ! i_is_in_water )
+			{
+				PROC_SFX_SPLASH02(OBJ_PosGet())
+				SND_RequestPlay(Ci_SND_Eau_Splash_In)
+			}
+	
+			i_is_in_water = vrai
+			i_walk_in_water = faux
+			
+			// cancel ride !!!
+			o_Rided_Actor = LNK_ServeurGet(Ci_LNK_RIDE_ON_NMI, mid_Rided_LNK_ID, faux, nofunc, nofunc)
+			
+			tv_grav = Cv_NullVector
+			if ( f_water_Z - OBJ_PosGet().z > f_water_offset_start_blend)
+				tv_grav.z = (f_water_Z - OBJ_PosGet().z) * 10.0
+			else if ( tv_speed.z < -2.0 )
+				tv_grav.z = -10.0
+			DYN_GravitySet(tv_grav)
+				
+//			PROC_SFX_BULLES_EAU(i_GFX_Eau_Bubulles, OBJ_PosGet(), OBJ_ZoomGet())
+		}
+	}
+	else
+	{
+		// hors de l'eau
+		if( i_is_in_water )
+			SND_RequestPlay(Ci_SND_Eau_Splash_Out)
+		
+		if( i_GFX_Eau_Bubulles != -1 )
+		{
+			GFX_Del(i_GFX_Eau_Bubulles)
+			i_GFX_Eau_Bubulles= -1
+		}
+
+		i_is_in_water = faux
+		i_walk_in_water = faux
+		f_water_blend = 0.0
+		switch( i_etat_courant )
+		{
+			case ETAT_Lapin_GOGO :
+				if( @get_rayman PROC_RM_Current_HotSpot_Get() == OBJ_Me() )
+					DYN_GravitySet(cvector(0,0,-5))
+				else
+					DYN_GravitySet(Cv_DYN_Gravity)		// le grappin est coupé
+				break
+			case ETAT_Lapin_PAF :
+				// géré dans l'état
+				break
+			case ETAT_Lapin_TAUPE :
+				if( i_taupe_phase < 3 )		// avant de me déplacer
+					DYN_GravitySet(Cv_NullVector)
+				else
+					DYN_GravitySet(Cv_DYN_Gravity)
+			default:
+				DYN_GravitySet(Cv_DYN_Gravity)
+				break
+		}
+	}
+}
+
+// SND ===========================================================
+AI_Execute("Lapin_exec_sound")
+
+
+//// BEAT ? =========================================================
+//i_Global_SND_Beat = @get_global Proc_Global_SND_BeatGet()
+//i_Global_SND_Beat_Tempo = @get_global Proc_Global_SND_BeatTempoGet()
+//switch( Beat_Config )
+//{
+//	case Ci_BEAT_Config_Ignore :
+//		i_Beat_flag_danse = faux
+//		i_Beat_flag_alert = faux
+//		break
+//	case Ci_BEAT_Config_Sensible :
+//		i_Beat_flag_alert = faux
+//		if( i_Beat_flag_danse )
+//		{
+//			if( i_Global_SND_Beat == -1 )
+//				i_Beat_flag_danse = faux
+//		}
+//		else
+//		{
+//			if( i_Global_SND_Beat == 1 && Lapin_ACTION_Danse_Jingle_Sensitive() )
+//				i_Beat_flag_danse = vrai
+//		}
+//		break
+//	case Ci_BEAT_Config_Alert :
+//		i_Beat_flag_danse = faux
+//		if( i_Beat_flag_alert )
+//		{
+//			if( i_Global_SND_Beat == -1 )
+//				i_Beat_flag_alert = faux
+//		}
+//		else
+//		{
+//			if( i_Global_SND_Beat == 1 && Lapin_ACTION_Danse_Jingle_Sensitive() )
+//				i_Beat_flag_alert = vrai
+//		}
+//		break
+//}
+if( Beat_Config == Ci_BEAT_Config_Sensible 
+	&& ! MATH_FloatNullEpsilon(@get_global i_SND_BEAT_Tempo)
+	&& OBJ_SqrDist(o_main_actor) < 10000 
+	&& ! i_is_in_water
+	&& i_ground_flag
+	// && @o_main_actor PROC_RM_Danse() )
+	)
+	i_Beat_flag_danse = vrai
+else
+{
+	i_Beat_flag_danse = faux
+}
+
+// MORPH ===================================================================
+switch( i_LOD_courant )
+{
+	case Ci_Lapin_LOD_Invisible :
+		// MOUTH
+		@o_canal_tete OBJ_MorphProgSet(0,Cf_Expr_Mouth_Closed)
+		// BLINK
+		@o_canal_tete OBJ_MorphProgSet(1, 1.0)
+		break
+		
+	case Ci_Lapin_LOD_Full :
+	default:
+		switch( Config_Lapin )
+		{
+			case Config_Lapin_Boucher :
+				break
+			default:
+				// MOUTH
+				f_expr_mouth_prog = MATH_FloatBlend(f_expr_mouth_prog, f_expr_mouth, 8.0 * TIME_GetDt())
+				@o_canal_tete OBJ_MorphProgSet(0, f_expr_mouth_prog)
+				// BLINK
+				if( i_etat_courant == ETAT_Lapin_MORT && ! Mort_SeReleve )
+					@o_canal_tete OBJ_MorphProgSet(1, 1.0)		// ne pas cligner des yeux alors que je suis mort ! =)
+				else
+				{
+					f_expr_blink_delay -= MATH_FloatMin(f_expr_blink_delay, TIME_GetDt())
+					if( ! f_expr_blink_delay )
+					{
+						i_expr_blink = vrai
+						f_expr_blink_delay = MATH_RandFloat(0.5,3.0)
+					}
+					if (i_expr_blink)
+					{
+						f_expr_blink_prog = MATH_FloatLimit(f_expr_blink_prog+(TIME_GetDt()*8.0), 1.0, 3.0)
+						if (f_expr_blink_prog ==3)
+						{
+							f_expr_blink_prog = 1.0
+							i_expr_blink = faux
+						}
+						@o_canal_tete OBJ_MorphProgSet(1, f_expr_blink_prog)
+					}
+				}
+				break
+		}
+		break
+}
+
+
+// LOD => ATTENTE ? ============================================================
+//if( i_LOD_courant == Ci_Lapin_LOD_Invisible )
+//{
+//	switch( i_etat_courant )
+//	{
+//		case ETAT_Lapin_ASPIRE :
+//		case ETAT_Lapin_GRABBED :
+//		case ETAT_Lapin_PIEGE :
+//		case ETAT_Lapin_MORT :
+//		case ETAT_Lapin_FUITE :
+//			// ne pas repasser en attente
+//			break
+//		default:
+//			if( f_LOD_duree > 5.0 && Lapin_APPARITION_Terminee() )
+// 				macro_change_etat("Lapin_ETAT_ATTENTE")
+//			break
+//	}
+//}
+
+
+// ATTAQUES SIMULTANEES
+i_Atk_Simultannees_main_flag_done = faux
+i_Atk_Simultannees_main_nb = 0
+Lapin_Atk_Simultannees_IsValid(o_main_actor, i_Atk_Simultannees_main_nb)
+

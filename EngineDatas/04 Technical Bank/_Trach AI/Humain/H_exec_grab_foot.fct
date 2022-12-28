@@ -1,0 +1,312 @@
+// MY RAG DOLL
+#include "H_defines.var"
+
+int			ti_i
+int			ti_index
+int			ti_iterations
+int			ti_flag_up
+int			ti_special_normalize
+
+float		tf_norm
+float		tf_hor_norm
+float		tf_dist_min
+float		tf_angle
+float		tf_length_1
+float		tf_length_2
+float		tf_length_3
+float		tf_X
+float		tf_Y
+float		tf_Z
+float		tf_dt
+float		tf_inv_dt
+float		tf_friction
+float		tf_exp
+//float		tf_Z_min
+float		tf_spring
+float		tf_attenuation
+
+vector	tv_X
+vector	tv_Y
+vector	tv_add_speed
+vector	tav_last_pos[Ci_nb_bone]
+vector	tv_precedent
+vector	tv_precedent_Z0
+vector	tv_temp
+vector	tv_new_sight
+vector	tv_new_banking
+vector	tv_delta_pos
+vector	tv_delta_speed
+vector	tv_force
+
+vector	tv_ground_pos
+vector	tv_ground_normale
+
+//object	to_bone
+object	to_cuisse_gauche
+object	to_ground_col
+
+if (i_flag_init_rag_doll)
+{
+	i_flag_init_rag_doll = faux
+
+	for (ti_i = 1; ti_i < Ci_nb_bone; ti_i++)
+	{
+		av_rd_pos[ti_i] = @ao_bones[ti_i] OBJ_PosGet()
+		av_rd_speed[ti_i] = Cv_NullVector
+	}
+}
+
+to_cuisse_gauche = ANI_CanalObjectGet(Anim_Canal_CuisseGauche)
+
+af_bone_length[2] = MATH_VecNorm(@ao_bones[2] OBJ_PosGet() - @ao_bones[1] OBJ_PosGet())
+
+av_rd_speed[0] = (v_grab_foot_pos - av_rd_pos[0]) / TIME_GetDt()
+av_rd_pos[0] = v_grab_foot_pos
+
+OBJ_PosSet(av_rd_pos[0])
+
+//if (OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna))
+//{
+//	DYN_GravitySet(Cv_NullVector)
+//	DYN_SpeedSetVector(Cv_NullVector)
+//}
+
+if( ! i_grab_foot_sight_enabled )
+	return
+
+to_ground_col = nobody
+tv_new_sight = -v_grab_foot_axis
+tv_new_banking = Cv_VerticalVector
+OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking)
+
+//OBJ_Rotate_FromTo(cvector(0.0, 1.0, 0.0), MATH_VecGlobalToLocal(v_grab_foot_axis))
+
+if (i_flag_rag_doll_test_Z)
+{
+	tv_ground_pos = av_rd_pos[Ci_nb_bone - 1]
+	tv_ground_pos.z += 1.0
+	//to_ground_col = COL_RayObject_Dist(tv_ground_pos, -Cv_VerticalVector, 10.0, all, OBJ_C_IdentityFlag_Anims | OBJ_C_IdentityFlag_Dyna, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+	if (i_flag_rag_doll_test_Z == 2)
+		to_ground_col = COL_RayObject_Dist(tv_ground_pos, -Cv_VerticalVector, 4.0, all, OBJ_C_IdentityFlag_Anims | OBJ_C_IdentityFlag_Dyna, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_Crossable)
+	if (!to_ground_col)
+		to_ground_col = COL_RayObject_Dist(tv_ground_pos, -Cv_VerticalVector, 4.0, all, OBJ_C_IdentityFlag_Anims | OBJ_C_IdentityFlag_Dyna, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+	
+	if (to_ground_col)
+	{
+		tv_ground_normale = COL_RayObject_NormalGet()
+		tv_ground_pos = COL_RayObject_PosGet()
+		
+		DBG_RenderVector(tv_ground_pos, tv_ground_normale * 10.0, color_bleu)
+		
+		if (i_flag_rag_doll_test_Z == 2)
+			tv_ground_pos -= tv_ground_normale * 0.1
+		else
+			tv_ground_pos += tv_ground_normale * 0.15
+	
+		tf_Z = MATH_VecDotProduct(av_rd_pos[0] - tv_ground_pos, tv_ground_normale)
+		if (tf_Z < 0.0)
+			av_rd_pos[0] -= tf_Z * tv_ground_normale
+	}
+}
+else
+{
+	i_flag_rag_doll_test_Z = vrai
+}
+
+tf_dt = TIME_GetDt()
+tf_inv_dt = 1.0 / tf_dt
+tf_friction = 2.0
+tf_exp = MATH_Exp(-tf_friction * tf_dt)
+
+for (ti_i = 1; ti_i < Ci_nb_bone; ti_i++)
+{
+	tav_last_pos[ti_i] = av_rd_pos[ti_i]
+	tav_last_pos[ti_i] -= MATH_FloatMin(MATH_VecDotProduct(tav_last_pos[ti_i] - v_grab_foot_pos, v_grab_foot_axis), 0.0) * v_grab_foot_axis
+
+	// SPRING
+	tv_delta_pos = tav_last_pos[ti_i]
+	tv_delta_pos -= av_rd_pos[0]
+
+//	if (MATH_VecDotProduct(tv_delta_pos, v_grab_foot_axis) < 0.0)
+//	{
+//		tv_delta_pos = tav_last_pos[ti_i]
+//		tv_delta_pos -= @ao_bones[ti_i] OBJ_PosGet() + (OBJ_PosGet() - @ao_bones[0] OBJ_PosGet())
+//		
+//		DBG_RenderVector(tav_last_pos[ti_i], -tv_delta_pos, color_rose)
+//	
+//		tv_delta_speed = av_rd_speed[ti_i]
+//		tv_delta_speed -= av_rd_speed[0]
+//		
+//		tv_force = tv_delta_pos
+//		tf_norm = MATH_VecDotProduct(tv_force, tv_force)
+//		if (tf_norm > 0.001)
+//		{
+//			tf_norm = MATH_FloatSqrt(tf_norm)
+//			tv_force /= tf_norm
+//	
+//			tf_attenuation = (MATH_VecDotProduct(tv_delta_speed, tv_delta_pos) / tf_norm) * 0.1
+//			tf_spring = tf_norm * 2.0
+//	
+//			tv_force *= tf_attenuation - tf_spring
+//			tv_force *= 2.0
+//			
+//	//		DBG_RenderVector(tav_last_pos[ti_i], tv_force, color_rose)
+//		}
+//		else
+//		{
+//			tv_force = Cv_NullVector
+//		}
+//	}
+//	else
+	{
+		DBG_RenderVector(tav_last_pos[ti_i], -tv_delta_pos, color_rose)
+	
+		tv_delta_speed = av_rd_speed[ti_i]
+		tv_delta_speed -= av_rd_speed[0]
+		
+		tv_force = tv_delta_pos
+		tf_norm = MATH_VecDotProduct(tv_force, tv_force)
+		if (tf_norm > 0.001)
+		{
+			tf_norm = MATH_FloatSqrt(tf_norm)
+			tv_force /= tf_norm
+	
+			tf_attenuation = (MATH_VecDotProduct(tv_delta_speed, tv_delta_pos) / tf_norm) * 0.1
+			tf_spring = (tf_norm - MATH_VecNorm(@ao_bones[ti_i] OBJ_PosGet() - @ao_bones[0] OBJ_PosGet())) * 2.0
+	
+			tv_force *= tf_attenuation - tf_spring
+			tv_force *= 2.0
+			
+	//		DBG_RenderVector(tav_last_pos[ti_i], tv_force, color_rose)
+		}
+		else
+		{
+			tv_force = Cv_NullVector
+		}
+	}
+	// END SPRING
+
+//	tv_force /= tf_friction
+//	av_rd_speed[ti_i] = tv_force - ( (tv_force - av_rd_speed[ti_i]) * tf_exp )
+	av_rd_speed[ti_i] *= tf_exp
+	av_rd_speed[ti_i] += tv_force
+	av_rd_speed[ti_i].z -= 20.0 * tf_dt
+	
+//	DBG_RenderVector(av_rd_pos[ti_i], av_rd_speed[ti_i], color_jaune)
+
+	av_rd_pos[ti_i] += av_rd_speed[ti_i] * tf_dt
+	av_rd_pos[ti_i] -= MATH_FloatMin(MATH_VecDotProduct(av_rd_pos[ti_i] - v_grab_foot_pos, v_grab_foot_axis), 0.0) * v_grab_foot_axis
+
+	tv_new_banking = av_rd_pos[ti_i] - av_rd_pos[ti_i - 1]
+
+	tf_norm = MATH_VecNorm(tv_new_banking)
+
+	if (tf_norm)
+		tv_new_banking /= tf_norm
+	
+	if (ti_i == 1)
+		tv_new_banking = MATH_VecBlendRotate(tv_new_banking, v_grab_foot_axis, 12.0 * TIME_GetDt())
+	else if (ti_i == 2)
+		tv_new_banking = MATH_VecBlendRotate(tv_new_banking, cvector(0.0, 0.0, -1.0), 6.0 * TIME_GetDt())
+	else if (ti_i == 3)
+		tv_new_banking = MATH_VecBlendRotate(tv_new_banking, MATH_VecNormalize(av_rd_pos[2] - av_rd_pos[0]), 6.0 * TIME_GetDt())
+	else
+		tv_new_banking = MATH_VecBlendRotate(tv_new_banking, MATH_VecNormalize(av_rd_pos[ti_i - 1] - av_rd_pos[ti_i - 2]), 6.0 * TIME_GetDt())
+
+	tf_norm = af_bone_length[ti_i] 
+	tv_new_banking *= tf_norm
+	
+	av_rd_pos[ti_i] = av_rd_pos[ti_i - 1]
+	av_rd_pos[ti_i] += tv_new_banking
+
+	if (to_ground_col)
+	{
+		tf_Z = MATH_VecDotProduct(av_rd_pos[ti_i] - tv_ground_pos, tv_ground_normale)
+		if (tf_Z < 0.0)
+		{
+//			DBG_RenderVector(av_rd_pos[ti_i - 1], tv_new_banking, color_blanc)
+
+			tv_X = MATH_VecCrossProduct(tv_new_banking, Cv_VerticalVector)
+			MATH_VecSetNormalize(tv_X)
+//			DBG_RenderVector(av_rd_pos[ti_i - 1], tv_X, color_vert)
+			
+			tv_Y = tv_ground_normale
+			tv_Y -= MATH_VecDotProduct(tv_Y, tv_X) * tv_X
+			MATH_VecSetNormalize(tv_Y)
+//			DBG_RenderVector(av_rd_pos[ti_i - 1], tv_Y, color_bleu)	
+
+			tv_X = MATH_VecCrossProduct(tv_Y, tv_X)
+			MATH_VecSetNormalize(tv_X)
+//			DBG_RenderVector(av_rd_pos[ti_i - 1], tv_X, color_rouge)	
+
+			tf_Y = MATH_VecDotProduct(tv_ground_pos - av_rd_pos[ti_i - 1], tv_Y)
+	
+			tf_X = af_bone_length[ti_i] * af_bone_length[ti_i]
+			tf_X -= tf_Y * tf_Y
+			if (tf_X >= 0.0)
+			{
+				tf_X = MATH_FloatSqrt(tf_X)
+				
+				tv_new_banking = tv_X * tf_X
+				tv_new_banking += tv_Y * tf_Y
+				
+//				DBG_RenderVector(av_rd_pos[ti_i - 1], tv_new_banking, color_jaune)
+		
+				av_rd_pos[ti_i] = av_rd_pos[ti_i - 1]
+				av_rd_pos[ti_i] += tv_new_banking
+			}
+		}
+	}
+}
+
+// POSITIONNEMENT BASSIN QUI EST LE PERE DE TOUT
+@ao_bones[2] OBJ_PosSet(av_rd_pos[2])
+@ao_bones[2] OBJ_Rotate_FromTo(cvector(0.0, 0.0, 1.0), @ao_bones[2] MATH_VecGlobalToLocal(av_rd_pos[3] - av_rd_pos[2]))
+
+// CONSTRAINT SUR LA JAMBE POUR LE SENS DE TORSION
+tf_length_1 = af_IK_bones_length[Ci_IK_pied_gauche][0]
+tf_length_2 = af_IK_bones_length[Ci_IK_pied_gauche][1]
+tv_X = av_rd_pos[0] - @to_cuisse_gauche OBJ_PosGet()
+tf_length_3 = MATH_VecNorm(tv_X)
+tv_X /= tf_length_3
+
+tv_Y = @to_cuisse_gauche OBJ_SightGet()
+tv_Y = MATH_VecCrossProduct(tv_Y, tv_X)
+tv_Y = MATH_VecCrossProduct(tv_X, tv_Y)
+MATH_VecSetNormalize(tv_Y)
+
+tf_X = tf_length_2 * tf_length_2
+tf_X -= tf_length_1 * tf_length_1
+tf_X -= tf_length_3 * tf_length_3
+tf_X /= -2.0 * tf_length_3
+
+tf_Y = tf_length_1 * tf_length_1
+tf_Y -= tf_X * tf_X
+tf_Y = MATH_FloatMax(tf_Y, 0.0)
+tf_Y = MATH_FloatSqrt(tf_Y)
+
+av_rd_pos[1] = @to_cuisse_gauche OBJ_PosGet()
+av_rd_pos[1] += tf_X * tv_X
+av_rd_pos[1] += tf_Y * tv_Y
+
+@ao_bones[2] OBJ_Rotate_FromTo(cvector(0.0, 0.0, 1.0), @ao_bones[2] MATH_VecGlobalToLocal(av_rd_pos[3] - av_rd_pos[2]))
+@ao_bones[3] OBJ_Rotate_FromTo(cvector(0.0, 0.0, 1.0), @ao_bones[3] MATH_VecGlobalToLocal(av_rd_pos[4] - av_rd_pos[3]))
+@ao_bones[4] OBJ_Rotate_FromTo(cvector(0.0, 0.0, 1.0), @ao_bones[4] MATH_VecGlobalToLocal(av_rd_pos[5] - av_rd_pos[4]))
+@to_cuisse_gauche OBJ_Rotate_FromTo(cvector(0.0, 0.0, 1.0), @to_cuisse_gauche MATH_VecGlobalToLocal(av_rd_pos[1] - @to_cuisse_gauche OBJ_PosGet()))
+@ao_bones[1] OBJ_Rotate_FromTo(cvector(0.0, 0.0, 1.0), @ao_bones[1] MATH_VecGlobalToLocal(av_rd_pos[0] - av_rd_pos[1]))
+
+//@ao_bones[0] OBJ_BankingSet(av_rd_pos[0] - av_rd_pos[1])
+@ao_bones[0] OBJ_Rotate_FromTo(cvector(0.0, 0.0, 1.0), @ao_bones[0] MATH_VecGlobalToLocal(av_rd_pos[0] - av_rd_pos[1]))
+
+// CALCUL DES SPEED
+for (ti_i = 1; ti_i < Ci_nb_bone; ti_i++)
+{
+	DBG_RenderVector(av_rd_pos[ti_i - 1], av_rd_pos[ti_i] - av_rd_pos[ti_i - 1], color_blanc)	
+
+	av_rd_speed[ti_i] = av_rd_pos[ti_i] - tav_last_pos[ti_i]
+	av_rd_speed[ti_i] /= tf_inv_dt
+}
+
+ti_i = ti_i
+ 
+ 

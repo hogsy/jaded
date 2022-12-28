@@ -1,0 +1,24 @@
+#include "PNJ_TplS_defines.var"
+
+// DYNAMIQUE
+DYN_On()																														// Go dynamic go !
+DYN_FlagsSet( DYN_C_BasicForces + DYN_C_VectorFriction+ DYN_C_Col, 0 )						// Friction Z special !
+DYN_GravitySet(Cv_NullVector)																						// Gravité du perso
+DYN_FrictionVectorSet(Cv_NullVector)	
+ACT_ActionSet(0)
+f_track[C_Mode_Attente][2] = "PNJ_TplS_ATTENTE_a"
+f_track[C_Mode_Attente][3] = "PNJ_TplS_ATTENTE_c"
+f_track[C_Mode_Attaque][2] = "PNJ_TplS_ATTAQUE_a"
+f_track[C_Mode_Attaque][3] = "PNJ_TplS_ATTAQUE_c"
+f_track[C_Mode_Paf][2] = "PNJ_TplS_PAF_a"
+f_track[C_Mode_Paf][3] = "PNJ_TplS_PAF_c"
+f_track[C_Mode_Grip][2] = "PNJ_TplS_Grab_a"
+f_track[C_Mode_Grip][3] = "PNJ_TplS_Grab_c"
+f_track[C_Mode_Retour][2] = "PNJ_TplS_RETOUR_a"
+f_track[C_Mode_Retour][3] = "PNJ_TplS_RETOUR_c"
+
+//OBJ_ZoomSet( 0.25)
+f_chuisla_annonce = f_frequence + MATH_RandFloat( -f_delta, f_delta)
+v_attente_position = OBJ_PosGet() + cvector( 0.0, 0.0, 0.3)
+AI_TrackChange( 2, "PNJ_TplS_ATTENTE_a")
+AI_TrackChange( 3, "PNJ_TplS_ATTENTE_c")

@@ -1,0 +1,61 @@
+#include "IO_GrabbableSpawner_Defines.var"
+
+int i_Index
+int i_ObjToChoose
+int i_NumberObjSeen
+int i_NumberObjChecked
+
+i_NumberObjChecked		= 0
+i_NumberObjSeen			= 0
+
+mi_TemplateObjectCount	= 0
+
+mf_SqrdDistBuff 				= mf_GrabObjDistToSpawnNew * mf_GrabObjDistToSpawnNew
+
+// count the number of grabbable object templates to choose from
+for ( i_Index = 0; i_Index < C_MaxGrabbableTemplateObjects; i_Index++ )
+{
+	if ( mo_GrabbableObjectTemplate[i_Index] )
+	{
+		mi_TemplateObjectCount++
+	}
+}
+
+// instantiate one of the templates
+if ( !mi_TemplateObjectCount )
+{
+	DBG_Warning( "IO_GrabbableSpawner has no grabbable objects to duplicate." )
+	
+	AI_TrackCurStop()
+}
+
+i_ObjToChoose = MATH_RandInt( 0, mi_TemplateObjectCount )
+				
+while ( i_NumberObjChecked < mi_TemplateObjectCount )
+{
+	if ( mo_GrabbableObjectTemplate[i_NumberObjChecked] )
+	{
+		if ( i_NumberObjSeen == i_ObjToChoose )
+		{
+			// break the loop once we are done choosing a new random obj
+			mi_CurrentTemplate		= i_NumberObjChecked
+			i_NumberObjChecked	= mi_TemplateObjectCount
+									
+			break
+		}
+		else
+		{
+			i_NumberObjSeen++
+		}
+	}
+
+	i_NumberObjChecked++
+}
+
+if ( mi_CurrentTemplate >= 0 && mi_CurrentTemplate < C_MaxGrabbableTemplateObjects && mo_GrabbableObjectTemplate[mi_CurrentTemplate] )
+{
+	mo_CurrentGrabbableObject = @mo_GrabbableObjectTemplate[mi_CurrentTemplate] OBJ_Duplicate( OBJ_PosGet() )
+
+	AI_TrackCurChange( "IO_GrabbableSpawner_Run.fct" )
+}
+

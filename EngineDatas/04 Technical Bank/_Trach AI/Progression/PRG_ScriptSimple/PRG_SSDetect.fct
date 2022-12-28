@@ -1,0 +1,44 @@
+message	msg
+int				ti_SF_AlreadyPlayed
+
+f_time_beg += TIME_GetDt()
+if(f_time_beg < 0.5) return
+
+// FRED --- ALLOCATION SF + DESTRUCTION Si SF A VRAI --------------
+if (i_SF_NePasSeRejouer)
+{
+	i_SF_AlreadyPlayed = AI_SFDynGet(0, SF_MinById, SF_MaxById)
+	Super_SpecialFlag_get(i_SF_AlreadyPlayed, ti_SF_AlreadyPlayed)
+	if (ti_SF_AlreadyPlayed)
+		OBJ_Destroy()
+}
+// FRED --- ALLOCATION SF + DESTRUCTION Si SF A VRAI --------------
+
+if(!AI_TriggerIsValid(declenchement)) return
+if(call_trigger(declenchement))
+{
+	if(!instantane) TIME_Wait(0.1)
+	i_cur = 0
+	
+	if(AI_TriggerIsValid(script[0]))
+	{
+		msg = AI_TriggerGetMsg(script[0])
+	 	msg.msg_int5 = 0	// int5 représente, si 0, le premier appel
+	 	AI_TriggerSetMsg(script[0], msg)
+	}
+	
+#ifndef _FINAL_
+	if(@get_global DEBUG_SCRIPT)
+	{
+		DBG_TraceString("######## Le script se declenche : ")
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceEOL()
+	}
+#endif
+	
+// FRED --- ALLOCATION SF + DESTRUCTION Si SF A VRAI --------------
+	if (i_SF_NePasSeRejouer)
+		SpecialFlag_set(i_SF_AlreadyPlayed)
+// FRED --- ALLOCATION SF + DESTRUCTION Si SF A VRAI --------------
+ 	AI_TrackCurChangeNow("PRG_SSLoop")
+}

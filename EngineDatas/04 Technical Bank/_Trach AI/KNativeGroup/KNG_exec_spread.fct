@@ -1,0 +1,69 @@
+#include "KNG_Defines.var"
+
+int 		ti_i
+object	to_klist_manager, to_WP
+int			i_current_wp
+int 		i_spread_nb
+object	o_fixed_wp
+
+object	tao_valid_wp[100]
+int			ti_valid_wp_nb
+
+i_spread_nb = o_cur_wp.des_int2
+if (i_spread_nb == 0 || i_spread_nb > i_current_number_of_natives)
+	i_spread_nb = i_number_of_natives
+
+to_klist_manager = get_KList_manager 
+i_current_wp = 0
+ti_valid_wp_nb = 0
+
+o_fixed_wp = o_cur_wp.des_object1
+
+if (o_fixed_wp)
+{
+	tao_valid_wp[ti_valid_wp_nb] = o_fixed_wp
+	ti_valid_wp_nb = 1
+}
+else
+{
+	for (ti_i = 0; ti_i < @get_KList_manager_path to_klist_manager i_native_spread_wp_nb; ti_i++)
+	{
+		to_WP = @get_KList_manager_path to_klist_manager ao_native_spread_wp[ti_i]		
+		if (MATH_VecDistance(@to_WP OBJ_PosGet(),OBJ_PosGet()) < 10.0)
+		{
+			tao_valid_wp[ti_valid_wp_nb] = to_WP
+			ti_valid_wp_nb++
+		}
+	}
+
+	if (ti_valid_wp_nb == 0)
+		DBG_Error("NativeGroup Spread Action Waypoint with no Native Action Waypoint in 10 meters range")
+}
+
+// get spread waypoints for every natives
+for( ti_i = 0; ti_i < i_number_of_natives && i_spread_nb > 0; ti_i++ )
+{
+	if ( ! ao_native_list[ti_i] )
+		continue
+		
+	if (i_current_wp == ti_valid_wp_nb)
+		i_current_wp = 0
+		
+	to_WP = tao_valid_wp[i_current_wp]		
+	@get_PNJ_KNative_path ao_native_list[ti_i] o_cur_wp = to_WP 	
+
+	@ao_native_list[ti_i] OBJ_CapaSet(OBJ_Capa_0,none)
+	
+	ao_native_list[ti_i] = nobody
+	i_current_number_of_natives --
+	
+	i_current_wp++
+	i_spread_nb--
+}
+
+if (i_current_number_of_natives == 0)
+{
+	AI_TrackCurChangeNow("KNG_ETAT_Dead")
+}
+
+

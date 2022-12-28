@@ -1,0 +1,219 @@
+#include "PNJ_Snake_defines.var"
+
+int				ti_i
+int				ti_index
+int				ti_flag_stop
+
+float			tf_speed
+float			tf_coef
+float			tf_target_speed
+
+vector		tv_pos
+vector		tv_pos2
+vector		tv_new_sight
+vector		tv_new_banking
+vector		tv_speed
+vector		tv_traction
+
+object		to_eagle
+object		to_bassin
+
+if (i_flag_sortie_etat)
+{
+	i_flag_sortie_etat = faux
+
+	COL_StartMatrixSet(OBJ_PosGet())
+
+	switch(creature_type)
+	{
+		case 	Ci_CreatureType_Spider :
+		case Ci_CreatureType_Quadri :
+
+			ti_index = @o_rope_manager  Rope_Manager_Get_Corde_Index(OBJ_Me(), o_eagle)
+			if (ti_index != -1)
+				ti_index = @o_rope_manager  Rope_Manager_Del(ti_index)
+	
+			break
+	
+		case Ci_CreatureType_Snake :
+
+			AI_TrackChange(4, "PNJ_Snake_After_ETAT")
+			AI_CBDel(o_eagle, CallBack_After_Blend, "PNJ_Snake_callback_set_pos")
+		
+			if (i_grabbed_bone_index != -1)
+			{
+				ai_modules_locked[i_grabbed_bone_index] = faux
+				i_grabbed_bone_index = -1
+			}
+		
+			o_snap_bone = nobody
+			
+			break
+			
+	}	
+
+	o_eagle = LNK_ServeurGet(Ci_LNK_GRAB_EAGLE, mid_eagle_LNK, faux, nofunc, nofunc)
+
+	return
+}
+
+if (i_etat_courant != ETAT_Grabbed)
+{
+	// INTIALISATION
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Grabbed
+	
+	if (fct_last_etat)
+	{
+		i_flag_sortie_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = "PNJ_Snake_ETAT_Grabbed"
+
+	o_snap_bone = LNK_GrabBoneGet(mid_eagle_LNK)
+
+	switch(creature_type)
+	{
+		case Ci_CreatureType_Snake :
+
+			DYN_Off()
+			OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_Dyna)
+			COL_ColSetActivationSet(none, all)
+		
+			AI_TrackStop(4)
+			AI_CBAdd(o_eagle, CallBack_After_Blend, "PNJ_Snake_callback_set_pos")
+
+			// RAGDOLL ============================
+			i_on_ground_modules_nb = 0
+			i_in_water_modules_nb = 0
+			
+			f_delay_until_last_wall_col = 1000.0
+		
+			f_ragdoll_damping = 1.0
+			i_flag_start_ragdoll_damping = faux
+		
+			for (ti_i = 0; ti_i < i_modules_nb; ti_i++)
+			{
+				av_bone_col_normal[ti_i] = Cv_NullVector
+				af_bone_ground_col_timer[ti_i] = 1000.0
+			}
+			// RAGDOLL ============================
+			
+			break
+			
+		case Ci_CreatureType_Spider :
+		case Ci_CreatureType_Quadri :
+
+			ACT_ActionSet(Action_Marche)
+
+			COL_UnCollidableAdd(o_eagle)
+			ti_index = @o_rope_manager Rope_Manager_Add(OBJ_Me(), o_eagle, 0.0, 10.0, 0.0)
+			@o_rope_manager Rope_Manager_ModeSet(ti_index, vrai)
+
+			v_grav_pos = @o_eagle OBJ_PosGet()
+			v_grav_pos -= @o_eagle OBJ_BankingGet() * 3.0
+			v_grav_speed = Cv_NullVector
+
+			break
+	}
+	
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ===============================================================
+to_eagle = LNK_ServeurGet(Ci_LNK_GRAB_EAGLE, mid_eagle_LNK, vrai, nofunc, nofunc)
+if (to_eagle != o_eagle )
+	macro_change_etat("PNJ_Snake_ETAT_Paf")
+
+switch(creature_type)
+{
+	case Ci_CreatureType_Spider :
+	case Ci_CreatureType_Quadri :
+
+		OBJ_HierarchyReset()
+
+		if (COL_CollideType(COL_C_Ground))
+		{
+			f_delay_until_last_ground_col = 0.0
+		
+			o_ground_actor = COL_ObjectGet(COL_C_Ground)
+			OBJ_HierarchySet(o_ground_actor)	
+		
+			v_ground_pos = COL_CollidedPointGet(COL_C_Ground)
+			v_last_collided_pos = v_ground_pos
+		
+			v_ground_normal	= COL_ZonePosGet(C_zdm_pied)
+			v_ground_normal -= v_ground_pos
+			MATH_VecSetNormalize(v_ground_normal)
+		
+			v_ground_col_normal = COL_NormalGet(COL_C_Ground)
+			
+			if (v_ground_normal.z > 0.0)
+				f_on_ground_dist += DYN_SpeedGet() * TIME_GetDt()
+			else
+				f_on_ground_dist = 0.0
+		}
+		else
+		{
+			f_delay_until_last_ground_col += TIME_GetDt()
+		
+			if (v_ground_normal.z < 0.0 || f_delay_until_last_ground_col > 0.2)
+				f_on_ground_dist = 0.0
+			else
+				f_on_ground_dist += DYN_SpeedGet() * TIME_GetDt()
+		}
+
+		if (f_delay_until_last_ground_col < 0.2)
+			f_on_ground_duration += TIME_GetDt()
+		else
+			f_on_ground_duration = 0.0
+
+		if (f_time_start_etat > 1.0 && f_on_ground_duration > 0.3)
+			to_eagle = LNK_ServeurGet(Ci_LNK_GRAB_EAGLE, mid_eagle_LNK, faux, nofunc, nofunc)
+
+		tv_pos = OBJ_PosGet()
+		
+		if (1) //f_delay_since_last_ground_col > Cf_hysteresis_no_ground_col && f_delay_since_last_wall_col > Cf_hysteresis_no_ground_col)
+		{
+			tv_pos2 = v_grav_pos
+			tv_traction = cvector(0.0, 0.0, -40.0)
+			tv_traction /= 1.5
+			v_grav_speed = tv_traction - ((tv_traction - v_grav_speed) * MATH_Exp( - 1.5 * TIME_GetDt()))
+			v_grav_pos += v_grav_speed * TIME_GetDt()
+//			v_grav_pos -= @o_eagle OBJ_PosGet()
+
+			to_bassin = @o_eagle ANI_CanalObjectGet(Anim_Canal_Bassin)
+			v_grav_pos -= @to_bassin OBJ_PosGet()
+
+			MATH_VecSetNormalize(v_grav_pos)
+			OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), @o_eagle OBJ_HorizonGet(), 4.0 * TIME_GetDt()), -v_grav_pos)
+			DBG_RenderVector(@to_bassin OBJ_PosGet(), v_grav_pos * 1.5, color_jaune)
+			v_grav_pos *= 1.5
+			v_grav_pos += @to_bassin OBJ_PosGet()
+			v_grav_speed = (v_grav_pos - tv_pos2) / TIME_GetDt()
+		}
+		else
+		{
+			tv_pos2 = v_grav_pos
+			v_grav_pos -= @o_eagle OBJ_PosGet()
+			MATH_VecSetNormalize(v_grav_pos)
+			v_grav_pos = MATH_VecBlendRotate(v_grav_pos, -@o_eagle OBJ_BankingGet(), 6.0 * TIME_GetDt())
+			DBG_RenderVector(@o_eagle OBJ_PosGet(), v_grav_pos * 2.0, color_jaune)
+			v_grav_pos *= 1.5
+			v_grav_pos += @o_eagle OBJ_PosGet()
+			v_grav_speed = (v_grav_pos - tv_pos2) / TIME_GetDt()
+		}
+		
+		tv_pos2 = v_grav_pos
+		
+		ti_index = @o_rope_manager  Rope_Manager_Get_Corde_Index(OBJ_Me(), o_eagle)
+		
+		@o_rope_manager Rope_Manager_Enable_Offset(ti_index, vrai, MATH_VecGlobalToLocal(tv_pos - OBJ_PosGet()), vrai, @o_eagle MATH_VecGlobalToLocal(tv_pos2 - @o_eagle OBJ_PosGet()))
+
+		break
+}

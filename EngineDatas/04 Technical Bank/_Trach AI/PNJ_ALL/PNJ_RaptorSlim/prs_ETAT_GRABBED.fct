@@ -1,0 +1,164 @@
+#include "prs_RaptorSlim_defines.var"
+
+int			ti_i
+int			ti_action
+
+object	to_head
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+
+//	KR_UncollideableDel(o_snap_actor)
+	o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, faux, nofunc, nofunc)
+	COL_ColSetActivationSet(C_bit_zdm_pied, none)
+	AI_CBDel(o_snap_actor, CallBack_After_Blend, "prs_CALLBACK_set_pos")
+	DYN_GravitySet(Cv_NormalGravity)
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_PRS_GRABBED)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_PRS_GRABBED
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	DYN_GravitySet(Cv_NullVector)
+	
+//	if( EVENT_LIFE_CurLifeGet(ID_LIFE))
+//		SND_RequestPlay(Ci_SND_Paf_Small)
+	
+	o_snap_actor = o_grabbed_actor_KK
+//	KR_UncollideableAdd(o_snap_actor)
+	COL_ColSetActivationSet(none, C_bit_zdm_pied)
+	
+	AI_CBAdd(o_snap_actor, CallBack_After_Blend, "prs_CALLBACK_set_pos")
+
+	f_time_start_etat = 0.0
+	f_pos_blend_coef = 0.0
+	v_grabbed_pos_init_blend = OBJ_PosGet()
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+	f_pos_blend_coef = MATH_FloatMin( f_pos_blend_coef +  (4.0 * TIME_GetDt()), 1.0)
+//	f_pos_blend_coef = MATH_FloatBlend(f_pos_blend_coef, 1.0, 10.0 * TIME_GetDt())
+}
+
+// ANALYSE =======================================================================================================
+
+PRS_ActionSet( Action_Mort)
+if ( EVENT_LIFE_CurLifeGet( ID_LIFE))
+	ACT_ActionSet(Action_KKHandGrabbed)	
+else
+{
+	if ( !MATH_FloatNullEpsilon( @o_grabbed_actor_KK DYN_SpeedGet() ))
+		ACT_ActionSet( Action_KKHandGrabbedDead)
+	else
+		ACT_ActionSet( Action_KKHandGrabbedDeadStop)
+}
+		
+// PAFS -----------------------------------------------------------------------------------------------------------
+AI_Execute("prs_exec_check_paf")		// pour les pafs C_PAF_RM_KiTue
+
+
+// TEST LIAISON GRAB ------------------------------------------------------------------------------------
+o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, vrai, nofunc, nofunc)
+if (o_grabbed_actor_KK == nobody)
+{
+	// il n'y a plus personne qui grabbe le raptor
+	if( EVENT_LIFE_CurLifeGet(ID_LIFE))
+		macro_change_etat(fct_main_etat)
+	else
+		macro_change_etat("prs_ETAT_MORT")		
+}
+
+// ACTION REALISEE PAR KONG --------------------------------------------------------------------
+ti_action = LNK_GrabKong_ActionGet( mid_grabbed_by_Kong_LNK_ID)
+if ( ti_action == Ci_GrabKong_Lance )
+{
+	// Projectile (KONG lance, ennemi en vue ou pas)
+	macro_change_etat("prs_ETAT_THROWN")		
+}
+
+// AUTO DEGRAB
+if( EVENT_LIFE_CurLifeGet(ID_LIFE) && f_time_start_etat > Cf_GrabKong_EscapeDuration ) // && @o_grabbed_actor_KK Proc_KK_GrabbedNMICanEscape() )
+{
+	//---------------------------------------------------------------------
+	// we've been grabbed for too long, it's time to go
+	//---------------------------------------------------------------------
+	
+	// leave the link
+	o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, faux, nofunc, nofunc)
+	
+	// eject eject eject !
+	if( EVENT_LIFE_CurLifeGet(ID_LIFE))
+		macro_change_etat(fct_main_etat)
+	else
+		macro_change_etat("prs_ETAT_MORT")		
+}
+
+
+// COMPORTEMENT  =======================================================================================================
+
+object	to_canal
+
+return
+//for(  ti_i = 0; ti_i < Ci_Nb_tremble_bone; ti_i++)
+for(  ti_i = 0; ti_i < 5; ti_i++)
+{
+	if ( TIME_Elapsed( f_tremble_time[ti_i], f_tremble_delai[ti_i]))
+	{
+		f_tremble_time[ti_i] = TIME_Get()
+		f_tremble_delai[ti_i] = MATH_RandFloat( 0.05, 0.15)
+		f_a[ti_i] = MATH_RandFloat( 1.5,4.5) * MATH_FloatSign( MATH_RandFloat( -0.1, 0.1))
+		f_b[ti_i] = MATH_RandFloat( 1.5,4.5) * MATH_FloatSign( MATH_RandFloat( -0.1, 0.1))
+		i_tremble_axe[ti_i] = MATH_RandInt( 0, 2)
+	}
+	f_a1[ti_i] = MATH_FloatBlend( f_a1[ti_i], f_a[ti_i], 8.0 * TIME_GetDt())	
+	f_b1[ti_i] = MATH_FloatBlend( f_b1[ti_i], f_b[ti_i], 8.0 * TIME_GetDt())	
+	switch ( ti_i)
+	{
+		case 0 :
+			to_canal = ANI_CanalObjectGet(Anim_Canal_CuisseGauche)
+//			@to_canal  OBJ_RotateLocalY(  f_a1[ti_i] * TIME_GetDt())
+		break
+		case 1 :
+			to_canal = ANI_CanalObjectGet(Anim_Canal_AvantBrasGauche)
+//			@to_canal  OBJ_RotateLocalY(  f_a1[ti_i] * TIME_GetDt())
+		break
+		case 2 :
+			to_canal = ANI_CanalObjectGet(Anim_Canal_Tete)
+//			@to_canal  OBJ_RotateLocalX(  3.0 * f_a1[ti_i] * TIME_GetDt())
+		break
+		case 3 :
+			to_canal = ANI_CanalObjectGet(Anim_Canal_Torse)
+//			@to_canal  OBJ_RotateLocalX(  f_a1[ti_i] * TIME_GetDt())
+		break
+		case 4 :
+			to_canal = ANI_CanalObjectGet(Anim_Canal_Queue)
+//			@to_canal  OBJ_RotateLocalX(  f_a1[ti_i] * TIME_GetDt())
+		break
+		case 5 :
+			to_canal = ANI_CanalObjectGet(Anim_Canal_CuisseDroite)
+//			@to_canal  OBJ_RotateLocalY(  f_a1[ti_i] * TIME_GetDt())
+		break
+
+	}
+//	switch( i_tremble_axe[ti_i])
+//	{
+//		case 0 :
+			@to_canal  OBJ_RotateLocalX(  f_a1[ti_i] * TIME_GetDt())
+//		case 1 :
+			@to_canal  OBJ_RotateLocalY(  f_b1[ti_i] * TIME_GetDt())
+//	}
+}

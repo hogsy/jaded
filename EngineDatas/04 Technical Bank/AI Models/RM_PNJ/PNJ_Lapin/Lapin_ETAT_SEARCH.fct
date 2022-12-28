@@ -1,0 +1,66 @@
+//#include "PNJ_Lapin_defines.var"
+//
+//float		tf_delay
+//
+//object	to_canal
+//
+//
+//// SORTIE ETAT ===================================================================
+//if (i_sort_etat)
+//{
+//	i_sort_etat = faux
+//	return
+//}
+//
+//// INITIALISATION ETAT ==============================================================
+//if (i_etat_courant != ETAT_Lapin_SEARCH) 
+//{
+//	i_dernier_etat = i_etat_courant
+//	i_etat_courant = ETAT_Lapin_SEARCH
+//	if (fct_last_etat)
+//	{
+//		i_sort_etat = vrai
+//		AI_Execute(fct_last_etat)
+//	}
+//	Lapin_DBG_Trace_String(DBG_Trace_Etat, "SEARCH")
+//	fct_main_etat = "Lapin_ETAT_ATTENTE"		// RETOURNER EN ATTENTE ENSUITE !!!
+//	fct_previous_etat = fct_last_etat
+//	fct_last_etat = AI_TrackCurGet()
+//	f_time_start_etat = 0.0
+//	Lapin_ACTION_Set(Lapin_ACTION_Attente_Get())
+//}
+//else
+//{
+//	f_time_start_etat += TIME_GetDt()
+//}
+//
+//// STIMULI ===========================================================================
+//o_Grabbed_Actor = LNK_ServeurGet(Ci_LNK_GRAB_EAGLE, mid_Grabbed_LNK_ID, vrai, nofunc, nofunc)
+//if( o_Grabbed_Actor )
+//	macro_change_etat("Lapin_ETAT_GRABBED")
+//
+//o_Rided_Actor = LNK_ServeurGet(Ci_LNK_RIDE_ON_NMI, mid_Rided_LNK_ID, vrai, nofunc, nofunc)
+//if( o_Rided_Actor )
+//	macro_change_etat("Lapin_ETAT_RIDED")
+//
+//AI_Execute("Lapin_exec_check_vision")
+//
+//AI_Execute("Lapin_exec_check_paf")
+//if( i_flag_paf || ! EVENT_LIFE_CurLifeGet(ID_LIFE) )
+//	macro_change_etat("Lapin_ETAT_PAF")
+//
+//AI_Execute("Lapin_exec_update_best_interest")
+//
+//if( ! MSG_GlobalIsValid(mid_best_interet) )
+//	MACRO_GO_IDLE(0)
+//else if( EVENT_InteretTargetGet(mid_best_interet) )
+//	macro_change_etat("Lapin_ETAT_FIGHT")
+//
+//if( f_time_start_etat > MATH_RandFloat(1.0,2.0) )
+//	MACRO_GO_IDLE(0)
+//
+//// VISUAL HINT
+//to_canal = ANI_CanalObjectGet(Anim_Canal_Tete)
+//Str_DisplayTextOnce("\cFF0000FF\\h0.1\?", VIEW_3dWorldTo2d(0, (@to_canal OBJ_PosGet() + (2.0 * Cv_VerticalVector))))
+//
+//

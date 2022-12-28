@@ -1,0 +1,57 @@
+#include "PNJ_Raptor_defines.var"
+
+object	to_followed_actor
+object	to_collide_object
+object	to_camera
+
+float		tf_sqr_hor_dist
+float		tf_interet
+float		tf_delay_since_last_update
+
+int			ti_i
+int			ti_flag_go_to_grid_center
+int			ti_followed_ground_ID
+int			ti_flag_try_to_move
+
+vector	tv_offset
+vector	tv_temp
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_apparait)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_apparait
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = AI_TrackCurGet()
+
+	ACT_ActionSet(Action_Normal_Attente)
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =======================================================================================================
+if (f_time_start_etat > 1.0)
+{
+	OBJ_FlagInvisibleSet(faux)
+	macro_change_etat("PNJ_Raptor_ETAT_passage")
+}
+

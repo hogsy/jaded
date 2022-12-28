@@ -1,0 +1,59 @@
+#include "IO_BentTree_Defines.var"
+
+int i_Index
+
+// while the tree is moving, the vine should cant in the opposite direction
+if ( mi_IsVineWaveActive )
+{
+	vector	v_NewBankingAngle
+		
+	{
+		for ( i_Index = 0; i_Index < C_Max_Vines;  i_Index++ )
+		{
+			if ( mao_Vine[i_Index] )
+			{
+				mf_SineWave				= fnf_SinOfTime( TIME_Get() - mf_VineWaveStartTime[i_Index], 0.0, mf_VineWaveFrequency[i_Index], mf_VineBankingCoefCurrentMax[i_Index], 0.0 )
+				mf_VineBankingCoef	= MATH_AbsFloat( mf_SineWave )
+
+				// reverse move direction for sine wave values below zero (for full sway)
+				if ( mf_SineWave < 0 )
+				{
+					float f_FloatBuffer
+					
+					f_FloatBuffer = mf_AmplitudeDeceleration / 2
+				
+					// wave stop condition (comes to rest)
+					if ( mi_HasDecayedThisPass[i_Index] && ( mf_VineBankingCoefCurrentMax[i_Index] - f_FloatBuffer <= 0.0 && ( mf_VineBankingCoefCurrentMax[i_Index] + f_FloatBuffer >= 0.0 ) ) )
+					{
+						mf_VineBankingCoef	= 0.0
+						mi_IsVineWaveActive	= faux
+						
+						AI_TrackStop( C_Track_VineWave )
+					}
+				
+					// JIMI_NOTE: vine wave orientation should NOT be based (necessarily) on Kong's position, but on anything that can trigger the movement (Rex, thrown objects, etc.)
+					mi_HasDecayedThisPass[i_Index]	= FALSE
+					mav_VineMoveDirection[i_Index]		= @mao_Vine[i_Index] OBJ_PosGet() - @get_kong OBJ_PosGet()
+				}
+				else
+				{
+					// degradation of the wave form amplitude
+					if ( !mi_HasDecayedThisPass[i_Index] )
+					{
+						mi_HasDecayedThisPass[i_Index] = TRUE
+						
+						mf_VineBankingCoefCurrentMax[i_Index] -= mf_AmplitudeDeceleration
+					}
+
+					// JIMI_NOTE: vine wave orientation should NOT be based (necessarily) on Kong's position, but on anything that can trigger the movement (Rex, thrown objects, etc.)
+					mav_VineMoveDirection[i_Index]	= @get_kong OBJ_PosGet() - @mao_Vine[i_Index] OBJ_PosGet()
+				}
+
+				mav_VineMoveDirection[i_Index]	= MATH_VecNormalize( mav_VineMoveDirection[i_Index] )
+				v_NewBankingAngle 				= MATH_VecBlend( mav_InitialVineRotation[i_Index], mav_VineMoveDirection[i_Index], mf_VineBankingCoef )
+				
+				@mao_Vine[i_Index] OBJ_BankingSet( v_NewBankingAngle )
+			}
+		}
+	}
+}

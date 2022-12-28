@@ -1,0 +1,66 @@
+#include "RM_Bascule_defines.var"
+
+int					ti_rank
+int					ti_paf_type
+
+object			to_target
+object			to_father
+object			to_sender
+
+vector			tv_paf_pos
+vector			tv_paf_dir
+
+message		tmsg_filter
+
+messageid		tmid_paf
+
+MSG_SetNull(tmsg_filter)
+tmsg_filter.msg_gao1 = OBJ_Me()
+ti_rank = -1
+
+for (	tmid_paf = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tmsg_filter);
+		MSG_GlobalIsValid(tmid_paf);
+		tmid_paf = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tmsg_filter)	)
+{
+	to_father	 = EVENT_PereGet(tmid_paf)
+	to_sender = EVENT_Gao2Get(tmid_paf)
+	if ( ! to_sender )
+		to_sender = to_father
+
+	ti_paf_type = EVENT_PafTypeGet(tmid_paf)
+	
+//	tv_paf_dir = EVENT_PafDirGet(tmid_paf)
+//	MATH_VecSetNormalize(tv_paf_dir)
+
+	tv_paf_dir = -Cv_VerticalVector
+
+	if (ti_paf_type & C_PAF_RM_Fort)
+		tv_paf_dir *= f_paf_fort
+	else if (ti_paf_type & C_PAF_RM_Moyen)
+		tv_paf_dir *= f_paf_moyen
+
+	tv_paf_pos = EVENT_PafPositionGet(tmid_paf)
+	DBG_RenderVector(tv_paf_pos, Cv_VerticalVector * 20.0, color_jaune)
+	v_speed += tv_paf_dir
+	v_rot_speed += MATH_VecCrossProduct(tv_paf_pos - OBJ_PosGet(), tv_paf_dir)
+}
+
+switch(liaison)
+{
+	case Ci_liaison_rotule :
+		break
+		
+	case Ci_liaison_horizon_axis :
+		v_rot_speed = MATH_VecDotProduct(v_rot_speed, OBJ_HorizonGet()) * OBJ_HorizonGet()
+		break
+
+	case Ci_liaison_sight_axis :
+		v_rot_speed = MATH_VecDotProduct(v_rot_speed, OBJ_SightGet()) * OBJ_SightGet()
+		break
+
+	case Ci_liaison_banking_axis :
+		v_rot_speed = MATH_VecDotProduct(v_rot_speed, OBJ_BankingGet()) * OBJ_BankingGet()
+		break
+}
+
+

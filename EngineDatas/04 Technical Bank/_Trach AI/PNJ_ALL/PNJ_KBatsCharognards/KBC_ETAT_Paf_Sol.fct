@@ -1,0 +1,68 @@
+
+#include "KBC_defines.var"
+
+//=============================================================================
+// LA BAT SE PREND UN GROS PAF AU SOL
+//=============================================================================
+
+// SORTIE ETAT
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// ENTREE ETAT
+if (i_etat_courant != ETAT_Paf_Sol )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Paf_Sol
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	ACT_ActionSet(ACTION_Paf_Sol)
+
+	// Dyna
+	AI_Execute("KBC_exec_dyn_on")
+	
+	// BACKUP DIRECTION DU PAF (SI PASSAGE EN PAF AIR) ========
+	v_last_paf_sight = v_sum_pafs_dir
+	
+	if( i_DBG_trace_etat )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : etat paf sol")
+		DBG_TraceEOL()
+	}
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+i_flag_neck = faux
+
+if( ACT_ActionFinished() )
+{
+	if( f_HP && ! i_flag_agonie )
+	{
+		// vivant : peut se renvoller
+		if( o_cible_attaque )
+			AI_Execute("KBC_exec_init_attaque")
+		else
+			AI_Execute("KBC_exec_init_attente")
+	}
+	else
+	{
+		// mort : paf air
+		v_sum_pafs_dir = v_last_paf_sight		// orientation de la bat en chutant
+		macro_change_etat("KBC_ETAT_Paf_Air")
+	}
+}

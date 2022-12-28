@@ -1,0 +1,32 @@
+if(i_WaitActivationEnd && i_TriggerState )
+{
+	return
+}
+
+if( f_time )
+{
+	// update du temps d'attente
+	f_time -= TIME_GetDt()
+
+	if(f_time > 0.0) 
+	{
+		return
+	}
+
+	// time is done, reinit de l'IA	
+	AI_TrackCurChangeNow("TXT_Init")
+}
+else
+{
+	// premier passage en inactif
+	if( f_ReactivePeriod < 0.0 )
+	{
+		// pas de reactivation
+		OBJ_Destroy()
+	}
+	else
+	{
+		// init de la date de reactivation
+		f_time = f_ReactivePeriod 
+	}
+}

@@ -1,0 +1,246 @@
+#include "PNJ_Bunny_Saucer_defines.var"
+
+Include_UltraProcedure_Header
+
+int				ti_i
+int				ti_link_nb
+int				ti_inactive_bunny_nb
+
+vector		tv_X
+vector		tv_Y
+vector		tv_pos
+vector		tv_current_link
+vector		tv_next_link
+vector		tv_cross_link
+vector		tv_B_pos
+vector		tv_C_pos
+vector		tv_dest_sight
+vector		tv_dest_banking
+vector		tv_main_speed
+
+float			tf_wanted_traction
+float			tf_coef
+float			tf_speed_coef
+float			tf_main_speed
+float			tf_pond
+float			tf_best_pond
+
+object		to_last_wp	
+object		to_next_wp
+object		to_monture
+
+network		tn_net
+
+if (i_flag_sortie_etat)
+{
+	i_flag_sortie_etat = faux
+	return
+}
+
+if (i_etat_courant != ETAT_Balade)
+{
+	// INTIALISATION
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Balade
+	
+	if (fct_last_etat)
+	{
+		i_flag_sortie_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	fct_last_etat = AI_TrackCurGet()
+	
+	DYN_Off()
+	COL_ColSetActivationSet(none, all)
+	COL_ColMapActivationSet(none, all)
+
+	COL_UnCollidableAdd(o_main_actor)
+
+	BV_MinSet(cvector(-5.0, -5.0, -5.0))
+	BV_MaxSet(cvector(5.0, 5.0, 5.0))
+
+	if (i_SND_Move_Loop1 == -1)
+		i_SND_Move_Loop1 = SND_RequestPlayLoop(Ci_SND_Move_Loop1)
+
+//	if (o_bascule)
+//	{
+//		@o_bascule OBJ_PosSet(OBJ_PosGet())
+//		@o_bascule OBJ_BankingGeneralSet(OBJ_SightGet(), OBJ_BankingGet())
+//		@o_bascule COL_StartMatrixSet(OBJ_PosGet())
+//		@o_bascule OBJ_HierarchySet(OBJ_Me())
+//	}
+
+	f_spline_coef = 0.0
+
+	// NEXT NEXT WP
+	v_spline_start_pos = OBJ_PosGet()
+	v_spline_dest_pos = @o_start_wp OBJ_PosGet()
+
+	f_spline_segment_length = MATH_VecNorm(v_spline_dest_pos - v_spline_start_pos)
+
+	@o_start_wp OBJ_SightSet(@o_start_wp OBJ_PosGet() - OBJ_PosGet())
+	to_next_wp = @o_start_wp WAY_NetNextWP(@o_start_wp WAY_NetOfObj(), o_start_wp, NetNextWP_Mode_axe_de_visee, 0)
+
+	o_spline_next_wp = to_next_wp
+
+	v_spline_start_axis = OBJ_SightGet()
+
+	tv_current_link = v_spline_dest_pos - v_spline_start_pos
+	tv_current_link /= f_spline_segment_length
+	tv_next_link = MATH_VecNormalize(@to_next_wp OBJ_PosGet() - v_spline_dest_pos)
+	tv_cross_link = MATH_VecCrossProduct(-tv_current_link, tv_next_link)
+	
+	v_spline_dest_axis = MATH_VecBlendRotate(-tv_current_link, tv_next_link, 0.5)
+	v_spline_dest_axis = MATH_VecCrossProduct(v_spline_dest_axis, tv_cross_link)
+	MATH_VecSetNormalize(v_spline_dest_axis)
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ===============================================================
+//EVENT_AddEventEnemy(OBJ_Me())
+EVENT_AddEventLockCam(OBJ_Me(), 0, OBJ_BankingGet())
+
+o_Rided_Actor = LNK_ServeurGet(Ci_LNK_RIDE_ON_NMI, mid_Rided_LNK_ID, vrai, nofunc, nofunc)
+if ( o_last_Rided_Actor && ! o_Rided_Actor )
+	macro_change_etat("PNJ_Bunny_Saucer_ETAT_Crash")
+o_last_Rided_Actor = o_Rided_Actor
+
+
+ti_inactive_bunny_nb = 0
+for (ti_i = 0; ti_i < 5; ti_i++)
+{
+	if ( ! ao_spawn_bunnies[ti_i] )
+	{
+		ti_inactive_bunny_nb++
+		continue
+	}
+
+	if (@ao_spawn_bunnies[ti_i] OBJ_FlagsControlGet() & (OBJ_C_ControlFlag_ForceInactive | OBJ_C_ControlFlag_SectoInactive) )
+	{
+		ti_inactive_bunny_nb++
+		continue
+	}
+	
+	if (@ao_spawn_bunnies[ti_i] OBJ_LodVisGet() < 0.1 && @ao_spawn_bunnies[ti_i] OBJ_SqrDist(o_main_actor) > 10000.0)
+	{
+		ti_inactive_bunny_nb++
+		@ao_spawn_bunnies[ti_i] OBJ_FlagsControlSet(OBJ_C_ControlFlag_ForceInvisible | OBJ_C_ControlFlag_ForceInactive, none)
+		continue
+	}
+}
+
+if (ti_inactive_bunny_nb == 5)
+{
+	if (AI_TriggerIsValid(trigger_largage))
+	{
+		if (call_trigger(trigger_largage))
+			macro_change_etat("PNJ_Bunny_Saucer_ETAT_Interception")
+	}
+	else if (IO_KeyPressed(VK_SPACE))
+	{
+		macro_change_etat("PNJ_Bunny_Saucer_ETAT_Interception")
+//		macro_change_etat("PNJ_Bunny_Saucer_ETAT_Crash")
+	}
+}
+
+if (@o_main_actor OBJ_HierarchyGet() != o_bascule)
+	f_main_on_me_duration -= MATH_FloatMin(f_main_on_me_duration, TIME_GetDt())
+else
+	f_main_on_me_duration = 3.0
+	
+if (f_main_on_me_duration)
+	tf_wanted_traction = 2.0
+else
+	tf_wanted_traction = f_speed_max
+
+if (v_spline_dest_pos.z > v_spline_start_pos.z)
+	v_spline_start_pos.z += MATH_FloatMin(v_spline_dest_pos.z - v_spline_start_pos.z, 5.0 * TIME_GetDt())
+
+if (tf_wanted_traction >= f_wanted_traction)
+	f_wanted_traction += MATH_FloatMin(tf_wanted_traction - f_wanted_traction, 20.0 * TIME_GetDt())
+else
+	f_wanted_traction -= MATH_FloatMin(f_wanted_traction - tf_wanted_traction, 20.0 * TIME_GetDt())
+
+f_spline_coef += f_wanted_traction * TIME_GetDt()
+
+while (f_spline_coef > f_spline_segment_length)
+{
+	f_spline_coef -= f_spline_segment_length
+
+	v_spline_start_pos = @o_start_wp OBJ_PosGet()
+
+	to_last_wp	= o_start_wp
+
+	// NEXT WP
+	o_start_wp = o_spline_next_wp // WAY_NetNextWP(@o_start_wp WAY_NetOfObj(), o_start_wp, NetNextWP_Mode_aleatoire, 0)
+	v_spline_dest_pos = @o_start_wp OBJ_PosGet()
+	f_spline_segment_length = MATH_VecNorm(v_spline_dest_pos - v_spline_start_pos)
+
+	// NEXT NEXT WP
+	@o_start_wp OBJ_SightSet(@o_start_wp OBJ_PosGet() - OBJ_PosGet())
+
+	tf_best_pond = -1.0
+
+	ti_link_nb = WAY_GetNumLinks(@o_start_wp WAY_NetOfObj(), o_start_wp)
+	for (ti_i = 0; ti_i < ti_link_nb; ti_i++)
+	{
+		to_next_wp = @o_start_wp WAY_NetNextWP(@o_start_wp WAY_NetOfObj(), o_start_wp, NetNextWP_Mode_choix_de_lindice, ti_i)
+		if (to_next_wp == to_last_wp)
+			continue
+	
+		tf_pond = MATH_RandFloat(0.0, 1.0)
+		if (tf_pond > tf_best_pond)
+		{
+			o_spline_next_wp = to_next_wp
+			tf_best_pond = tf_pond
+		}
+	}
+	
+	v_spline_start_axis = -v_spline_dest_axis
+
+	tv_current_link = v_spline_dest_pos - v_spline_start_pos
+	tv_current_link /= f_spline_segment_length
+	tv_next_link = MATH_VecNormalize(@o_spline_next_wp OBJ_PosGet() - v_spline_dest_pos)
+	tv_cross_link = MATH_VecCrossProduct(-tv_current_link, tv_next_link)
+	
+	v_spline_dest_axis = MATH_VecBlendRotate(-tv_current_link, tv_next_link, 0.5)
+	v_spline_dest_axis = MATH_VecCrossProduct(v_spline_dest_axis, tv_cross_link)
+	MATH_VecSetNormalize(v_spline_dest_axis)
+}
+
+
+tv_B_pos = v_spline_start_pos
+tv_B_pos += v_spline_start_axis * f_spline_segment_length * 0.33
+
+tv_C_pos = v_spline_dest_pos
+tv_C_pos += v_spline_dest_axis * f_spline_segment_length * 0.33
+
+//DBG_RenderVector(v_spline_start_pos, v_spline_start_axis * f_spline_segment_length * 0.33, color_rouge)
+//DBG_RenderVector(v_spline_dest_pos, v_spline_dest_axis * f_spline_segment_length * 0.33, color_vert)
+MATH_LIB_Bezier_Display(30, v_spline_start_pos, tv_B_pos, tv_C_pos, v_spline_dest_pos, color_blanc)
+tv_pos = MATH_LIB_Bezier_Pos_Get(f_spline_coef / f_spline_segment_length, v_spline_start_pos, tv_B_pos, tv_C_pos, v_spline_dest_pos, tv_dest_sight)
+
+OBJ_PosSet(tv_pos)
+tv_dest_banking = MATH_VecCrossProduct(tv_dest_sight, MATH_VecCrossProduct(Cv_VerticalVector, tv_dest_sight))
+MATH_VecSetNormalize(tv_dest_banking)
+tv_dest_banking = MATH_VecInCone(tv_dest_banking, Cv_VerticalVector, Cf_PiBy6, 0)
+if (f_time_start_etat < 1.0)
+	tv_dest_banking = MATH_VecBlendRotate(OBJ_BankingGet(), tv_dest_banking, f_time_start_etat)
+OBJ_BankingGeneralSet(tv_dest_sight, tv_dest_banking)
+
+f_door_coef -= MATH_FloatMin(f_door_coef, TIME_GetDt())
+
+//if (COL_Pivot_BVCollide(o_start_wp))
+//{
+//	f_boost_duration = 0.5
+//	@o_start_wp OBJ_SightSet(@o_start_wp OBJ_PosGet() - @o_main_actor OBJ_PosGet())
+//	o_start_wp = @o_start_wp WAY_NetNextWP(@o_start_wp WAY_NetOfObj(), o_start_wp, NetNextWP_Mode_axe_de_visee, 0)
+//}
+
+PNJ_Bunny_Spawn_Soucoupe()

@@ -1,0 +1,20 @@
+#include "KTC_Defines.var"
+
+int i_Index
+
+//for ( i_Index = ( mi_TriggerIndex  + 1 ); i_Index < C_MAX_Start_Triggers; i_Index++ )
+//{
+//	if ( mt_StartTrigger[i_Index] && ( AI_TriggerIsValid( mt_StartTrigger[i_Index] ) ) )
+	if ( mt_StartTrigger && ( AI_TriggerIsValid( mt_StartTrigger ) ) )
+	{
+		if ( call_trigger( mt_StartTrigger ) )
+		{
+//			mi_TriggerIndex = i_Index
+		
+			AI_TrackChange(	C_TRACK_Run, "KTC_BHV_Run" )
+			AI_TrackStop( C_TRACK_Wait )
+			
+//			break
+		}
+	}
+//}

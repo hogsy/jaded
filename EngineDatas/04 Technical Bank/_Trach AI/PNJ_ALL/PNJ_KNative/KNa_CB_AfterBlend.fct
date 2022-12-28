@@ -1,0 +1,87 @@
+vector	v_LookPos
+object	to_gao 
+vector		tv_pos
+object 	to_main
+float		tf_focale
+int			ti_optim_anims
+vector	tv_temp
+object	to_camera
+float		tf_dist
+float		tf_dist_low
+float		tf_dist_med
+int			ti_LOD_low
+int			ti_LOD_med
+int			ti_LOD_high
+int			ti_LOD
+
+// Pour la fonction de rotation tete !
+//#define C_RT_flags_regarde_la_tete_du_perso						0x00010000
+//#define C_RT_flags_custom_limit_value								0x08000000
+//#define C_RT_flags_ne_tourne_pas_le_torse						0x10000000
+//#define C_RT_flags_ratio_de_rotation_torcetete_identique		0x20000000
+//#define C_RT_flags_plus_de_limite_dangles							0x40000000
+//#define C_RT_flags_regarde_devant_si_perso_dans_le_dos	0x80000000
+//#define C_RT_flags_tourne_aussi_le_ventre							0x04000000
+
+// Suivi du Regard de la cible
+if (o_target)
+{
+	v_LookPos = @o_target OBJ_PosGet()
+	to_gao = ANI_CanalObjectGet(Anim_Canal_Tete)
+	OBJ_EyeFollowParamSet(Cf_1Degre * 75.0,-Cf_1Degre * 75.0,1000 ,1000 ,1000 ,1000 ,1000 )	
+	OBJ_EyeFollow(  v_LookPos, 0.2, C_RT_flags_custom_limit_value )
+	//DBG_RenderVector(@to_gao OBJ_PosGet(),v_LookPos - @to_gao OBJ_PosGet(), color_jaune) 
+}
+
+ti_optim_anims = faux
+
+// Test à la Caméra
+if( OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Culled )
+	ti_optim_anims = vrai
+else
+{
+	tf_dist_low = 20.0
+	tf_dist_med = 30.0
+	
+	ti_LOD_low = EVE_LOD_OneFrameOutOfTwo | EVE_LOD_SkipExtremityBones // EVE_LOD_FreezeSkeleton
+	ti_LOD_med = EVE_LOD_OneFrameOutOfTwo
+	ti_LOD_high = EVE_LOD_OnlyMagicBoxWhenCulled
+	
+	tf_focale = VIEW_FocaleGet(0)
+	to_camera = @get_global o_camera
+	tf_dist = OBJ_SqrDist(to_camera)
+	
+	if( tf_dist > (tf_dist_low * tf_dist_low * tf_focale) )
+	{
+		ti_optim_anims = vrai
+		ti_LOD = ti_LOD_low
+	}
+	if( tf_dist < ( tf_dist_med * tf_dist_med * tf_focale) )
+	{
+		ti_optim_anims = vrai
+		ti_LOD = ti_LOD_med
+	}
+}
+
+// Test à KONG
+tf_dist = OBJ_SqrDist(AI_MainActorGet(C_ID_Kong))
+if( tf_dist < ( 30 * 30 * tf_focale ) )
+{
+	ti_optim_anims = faux
+	ti_LOD = ti_LOD_high
+}
+
+ANI_LODSet(ti_LOD)
+
+// Positionnement du Projectile
+if( o_projectile && ! @o_projectile OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna))
+{
+	to_main = ANI_CanalObjectGet(Anim_Canal_Annex1)
+
+	tv_pos = @to_main OBJ_PosGet()
+	tv_pos.z += 0.05
+	
+	@o_projectile OBJ_PosSet( tv_pos )
+	@o_projectile OBJ_SightSet(@to_main OBJ_BankingGet() )
+}
+

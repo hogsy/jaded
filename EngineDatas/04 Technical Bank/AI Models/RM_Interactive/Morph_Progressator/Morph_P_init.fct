@@ -1,0 +1,62 @@
+#define Capa_switch OBJ_Capa_7
+int			ti_val
+float		tf_step
+
+////if (des_SF_activation)
+//{
+////	SpecialFlag_get(des_SF_activation, ti_val)
+////	if (ti_val)
+////	{
+////		f_morph_progression = des_f_morph_final_prog
+////		OBJ_CapaSet(Capa_switch, none)
+////
+////		if (des_colmap_init)
+////			@des_colmap_init COL_ColMapActivationSet(none, all)
+////
+////		if (des_colmap_final)
+////			@des_colmap_final COL_ColMapActivationSet(all, none)
+////	}
+////	else
+//	{
+//		f_morph_progression = des_f_morph_init_prog
+//		OBJ_CapaSet(none, Capa_switch)
+//
+//		if (des_colmap_init)
+//			@des_colmap_init COL_ColMapActivationSet(all, none)
+//
+//		if (des_colmap_final)
+//			@des_colmap_final COL_ColMapActivationSet(none, all)
+//	}
+//}
+//else
+
+tf_step = (des_f_morph_final_prog - des_f_morph_init_prog) / 3 
+
+
+f_morph_progression = des_f_morph_init_prog
+if (des_step_03 == 0)
+{
+	if (des_step_02 == 0)
+	{
+		if (des_step_01 == 0)
+		{
+			des_step_01 = des_f_morph_init_prog + tf_step
+			des_step_02 = des_step_01 + tf_step
+			des_step_03 = des_f_morph_final_prog
+		}
+		else
+		{
+		des_step_02 = des_step_01
+		des_step_03 = des_step_02
+		}
+	}
+	else
+	{
+	des_step_03 = des_step_02
+	}
+}
+
+OBJ_MorphProgSet(0, f_morph_progression)
+OBJ_MorphFactorSet(0, 1)
+
+AI_TrackCurChangeNow("Morph_P_comportement")

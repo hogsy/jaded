@@ -1,0 +1,249 @@
+#include "KT_defines.var"
+
+message		tm_msg_filter
+messageid		tmid_paf_event
+messageid		EVT_Visibility_ID
+
+object			to_paf_actor
+object			to_bone
+object			to_best_paf_actor
+
+int					ti_rank
+int					ti_paf_force
+int					ti_best_paf_force
+int					ti_paf_nb
+int					ti_i
+int					ti_canal
+int					ti_paf_type
+int					ti_ca_fait_mal
+int					ti_paf_anim
+
+vector			tv_paf_sens
+vector			tv_bras_de_levier
+
+float				tf_puissance
+float				tf_recul_norm
+float				tf_rotation_multiplier
+float				tf_life_init
+
+
+// INIT CUMUL PAFS (avant le return !!!!)
+ti_paf_nb = 0
+o_paf_actor = nobody
+i_paf_type = 0
+i_paf_force = 0
+
+if (i_flag_paf_check_done)
+	return
+
+i_flag_paf_check_done = vrai
+
+
+tf_life_init = EVENT_LIFE_CurLifeGet(ID_LIFE)
+ti_paf_anim = faux
+
+// INIT BEST PAF
+ti_best_paf_force = -1	// le pieux envoie un paf de 0
+to_best_paf_actor = nobody
+
+MSG_SetNull(tm_msg_filter)
+tm_msg_filter.msg_gao1 = OBJ_Me()
+ti_rank = -1
+
+for(	tmid_paf_event = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tm_msg_filter);
+		MSG_GlobalIsValid(tmid_paf_event);
+		tmid_paf_event = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tm_msg_filter)	)
+{
+	ti_ca_fait_mal = faux
+	ti_paf_nb++
+	if ( ti_paf_nb == 1)
+	{
+		// Utilisé dans l ETAT PAF
+		v_paf_sens = Cv_NullVector
+	}
+
+	to_paf_actor = EVENT_PereGet(tmid_paf_event)
+	
+	if( o_Kong && to_paf_actor == o_Kong && KT_Proc_RefusePaf() )
+		continue			// paf ignorés pendant une contre-attaque
+	
+	ti_paf_type = EVENT_PafTypeGet(tmid_paf_event)
+	
+	if( ti_paf_type == C_PAF_KK_Faible )
+		continue
+	
+	ti_canal = EVENT_PafCanalGet(tmid_paf_event)
+	
+	if ( MSG_GlobalIsValid(mid_grabbed_by_Kong_LNK_ID))
+	{
+		switch ( LNK_GrabKong_ActionGet(mid_grabbed_by_Kong_LNK_ID))
+		{
+			// en Grab : Finish ne pas prendre de PAF
+			case Ci_GrabKong_FinishSePlace  :
+			case Ci_GrabKong_Flanc_MashSePlace :  
+			case Ci_GrabKong_FinishDeb  :
+			case Ci_GrabKong_Flanc_MashDeb :  
+			case Ci_GrabKong_FinishGagne  :
+			case Ci_GrabKong_Flanc_MashGagne :  
+			case Ci_GrabKong_FinishPerdu  :
+			case Ci_GrabKong_Flanc_MashPerdu :  
+			case Ci_GrabKong_FinishFin  :
+			case Ci_GrabKong_Flanc_MashFin :  
+				continue
+				break
+		}
+	}
+
+	if( ti_paf_type == C_PAF_KK_FoodChain )
+		continue			// points de viande infinis pour REX....
+	
+	i_paf_type |= ti_paf_type
+	
+	tv_paf_sens = EVENT_PafDirGet(tmid_paf_event)
+	if( MATH_VecNullEpsilon(tv_paf_sens) )
+	{
+		// KInteractiveGrabObject avec ODE jeté par KONG
+		tv_paf_sens = @to_paf_actor OBJ_SightGet()
+	}
+	else
+	{
+		// autre
+		tv_paf_sens.z = 0.0
+		if ( MATH_VecNullEpsilon( tv_paf_sens))
+			tv_paf_sens = OBJ_SightGet()
+		else
+			MATH_VecSetNormalize(tv_paf_sens)
+	}
+//	DBG_RenderVector(EVENT_PafPositionGet(tmid_paf_event), tv_paf_sens * 5, color_rouge)
+	ti_paf_force = EVENT_PafPuisGet(tmid_paf_event)
+	tf_puissance = ti_paf_force
+	
+	// CHANGER LA VIE DE REX
+	if( o_Jack && to_paf_actor == o_Jack
+	&& (ti_paf_type & (C_PAF_KK_Javelin | C_PAF_KK_Arrow) )
+	&& i_etat_courant == ETAT_Finish_sur_Kong )
+	{
+		if( ti_canal == Anim_Canal_WeakPoint )
+		{
+			ti_ca_fait_mal = vrai
+			ti_paf_anim = vrai
+			DBG_TraceString("!!!!!!!!!!!!!!!!!! WEAKPOINT !!!!!!!!!!!!!!!!\n")
+		}
+		else if( @get_global i_Player_on_KK_Shoulder )
+		{
+			// kong en finished, l'indigène l'aide en fps sur l'épaule
+			switch( ti_canal )
+			{
+				case Anim_Canal_Tete :
+				case Anim_Canal_Cou :
+				case Anim_Canal_Torse :
+				case Anim_Canal_Machoire :
+					ti_ca_fait_mal = vrai
+					ti_paf_anim = vrai
+					break
+			}
+		}
+	}
+	
+	if( ti_paf_type & C_PAF_KK_Repousse )
+		ti_ca_fait_mal = faux		// les paf repousse font 0 dmg
+	else if( ! i_blesse_on )
+		ti_ca_fait_mal = vrai
+	else if( ti_paf_type & C_PAF_KK_Fort )
+		ti_ca_fait_mal = vrai
+	else if( ti_paf_type & C_PAF_KK_Ecrasement )
+		ti_ca_fait_mal = vrai
+	else if( ti_paf_type & C_PAF_KK_Projection )
+		ti_ca_fait_mal = vrai
+	
+	if( ti_ca_fait_mal )
+		EVENT_LIFE_LifeChange(ID_LIFE, tf_puissance)
+	
+	// KONG FRAPPE REX
+	if( o_Kong && to_paf_actor == o_Kong )
+	{
+		KT_Timer_KONG_Init()
+		if( KT_Rage_Enabled() )
+		{
+			// REX configuré pour pouvoir passer en rage
+			KT_Rage_Increase()
+			if( KT_Rage_Ready() )
+				KT_Rage_Launch()
+		}
+		
+		if( KT_Pafs_Effects_Check(ti_paf_type) )
+			@o_Kong Proc_KK_Pafs_Effects(faux)
+
+		if( ti_paf_type & C_PAF_KK_Repousse )
+		{
+			// jauge contre repousse
+			f_time_contre_repousse = 0.0
+			f_jauge_contre_repousse += 1.0
+		}
+		else
+		{
+			// jauge contre pafs
+			f_time_contre_attaque = 0.0
+			f_jauge_contre_attaque += 1.0
+		}
+	}
+	
+	if( o_Jack && to_paf_actor == o_Jack )
+	{
+		KT_Add_Paf_Feedback(tmid_paf_event)
+		f_Jack_paf_jauge += tf_puissance
+	}
+	
+	// NE PAS COMPTABLISER LES PAFS REPOUSSE LORS D'UNE ATTAQUE
+	if( ti_paf_type & C_PAF_KK_Repousse && KT_AttaqueFenetreGrabEsquiveInterdite() )
+		continue
+	
+	// CUMUL DES PAFS
+	i_paf_force += ti_paf_force
+	v_paf_sens += tv_paf_sens
+	
+	v_paf_position = EVENT_PafPositionGet(tmid_paf_event)
+	
+	// TEST BEST PAF
+	if( ti_paf_force > ti_best_paf_force )
+	{
+		ti_best_paf_force = ti_paf_force
+		to_best_paf_actor = to_paf_actor
+	}
+	
+	// GFX BLOOD
+	if( ti_paf_type & C_PAF_KK_KiTue )
+		EVENT_LIFE_CurLifeSet(ID_LIFE, 0.0)
+	
+	v_particules_paf_dir = v_paf_sens
+}
+
+
+// J'AI PRIS UN PAF DE KONG ================================
+if( to_best_paf_actor && ( ti_paf_anim || ( o_Kong && to_best_paf_actor == o_Kong ) ) )
+{
+	// Translation et rotation : INIT
+	if( i_etat_courant == ETAT_Finish_sur_Kong )
+		i_finish_repousse_flag = vrai
+	// cas standard
+	tf_recul_norm = 8.0
+	tf_rotation_multiplier = 1.0
+	if( i_paf_type & C_PAF_KK_Repousse )
+		tf_recul_norm = 0.0		// cas particulier pour les pafs repousse : multiplier les effets
+	
+	// Translation et rotation : CALCUL
+	f_coef_recul = 0.0
+	GST_PAF_Trans_Rotate(OBJ_PosGet(), OBJ_SightGet(), v_paf_position, v_paf_sens, tf_recul_norm, v_add_speed, f_add_rotation)
+	f_add_rotation *= tf_rotation_multiplier
+	
+	o_paf_actor = to_best_paf_actor
+}
+
+
+
+// PAF QUI MET AU SOL
+if(tf_life_init > 0.0 && EVENT_LIFE_CurLifeGet(ID_LIFE) <= 0.0 && o_Kong )
+{
+	@o_Kong Proc_KK_Pafs_Effects(faux)
+}
+

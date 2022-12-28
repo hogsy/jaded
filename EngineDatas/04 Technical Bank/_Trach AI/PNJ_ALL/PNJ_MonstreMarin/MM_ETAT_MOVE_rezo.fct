@@ -1,0 +1,414 @@
+//#include "MM_defines.var"
+//
+//float			tf_water_Z
+//float			tf_coef
+//float			tf_depasse
+//float			tf_dist_inclinaison
+//float			tf_dist_projection
+//float			tf_speed_inclinaison_coef_old
+//float			tf_temp
+//
+//vector		tv_paf_recul
+//vector		tv_paf_to_send
+//vector		tv_pos_new
+//vector		tv_sight_new
+//vector		tv_axe_sight_horiz
+//vector		tv_dest_pos
+//vector		tv_axe_move
+//vector		tv_proj_pos
+//vector		tv_2D_pos
+//
+//int				ti_hors_eau_old
+//
+//object		to_wp
+//
+//
+//
+//// SORTIE ETAT ==============================================================================
+//if( i_sort_etat )
+//{
+//	i_sort_etat = faux
+//	return
+//}
+//
+//
+//// ENTREE ETAT ==============================================================================
+//if( i_etat_courant != ETAT_MOVE )
+//{
+//	i_etat_ancien = i_etat_courant
+//	i_etat_courant = ETAT_MOVE
+//	
+//	if (fct_etat_courant)
+//	{
+//		i_sort_etat = vrai
+//		AI_Execute(fct_etat_courant)
+//	}
+//	
+//	fct_etat_courant = AI_TrackCurGet()
+//	fct_etat_main = AI_TrackCurGet()
+//	f_time_start_etat = 0.0
+//	
+//	if( i_DBG_trace_etat )
+//	{
+//		DBG_TraceObject(OBJ_Me())
+//		DBG_TraceString(" : ETAT MOVE...")
+//		DBG_TraceEOL()
+//	}
+//}
+//else
+//{
+//	f_time_start_etat += TIME_GetDt()
+//	
+//	// Temps mort
+//	if( ! f_HP_cur )
+//	{
+//		OBJ_CapaSet(OBJ_Capa_15, 0)
+//		f_time_mort += TIME_GetDt()
+//	}
+//	if( f_time_mort >= Cf_MonstreMarin_MortDuration )
+//		OBJ_Destroy()
+//}
+//
+//
+//// ANALYSE ===================================================================================
+//AI_Execute("MM_Exec_CHECK_Vision")
+//
+//AI_Execute("MM_Exec_CHECK_Paf")
+//
+//
+//// COMPORTEMENT =============================================================================
+//
+//// FIN DU SCRIPT ---------------------------------------------------------------------------------------
+//if( i_paf_dynamite_flag || ( i_script_running && ! o_script_net_nearest_wp && ! o_script_move_wp ) )
+//{
+//	// PAF DYNAMITE ou IDLE -> retour network
+//	i_script_running = faux
+//	Macro_Script_Next
+//	Macro_Script_Reset
+//	i_move_mode = Ci_move_mode_move_idle
+//	o_net_wp_last = nobody
+//	o_net_wp_next = MM_Net_Get_Next_WP()		// wp le + proche de moi
+//	MM_Beziers_Update(o_net_wp_next)
+//	i_bouche_ouverte_flag = faux
+//	if( i_DBG_trace_etat )
+//	{
+//		DBG_TraceString("fin du script, idle...(retour à ")
+//		DBG_TraceObject(o_net_wp_next)
+//		DBG_TraceString(")")
+//		DBG_TraceEOL()
+//	}
+//}
+//
+//// UPDATE POSITION ATTAQUE ---------------------------------------------------------------
+//if( i_move_mode == Ci_move_mode_teleport	 )
+//{
+//	MM_Teleport(o_script_move_wp)
+//	Macro_Script_Next
+//	returntrack
+//}
+//else if( i_move_mode == Ci_move_mode_attack )
+//{
+//	MM_Interet_Update(mid_best_interet, C_EVENT_InteretStatusAttack, o_fight_actor)
+//	
+//	if( i_attack_mode == Ci_attack_mode_paf )
+//	{
+//		// PAF -----------------------------------------------------------------------------------------
+//		if( COL_ZDE_ZDECollide(o_fight_actor, C_zde_fight, C_zde_corps) )
+//		{
+//			if( i_DBG_trace_etat )
+//			{
+//				DBG_TraceObject(OBJ_Me())
+//				DBG_TraceString(" paffe ")
+//				DBG_TraceObject(o_script_move_wp)
+//				DBG_TraceString(" ZDE Fight / ZDE Corps")
+//				DBG_TraceEOL()
+//			}
+//			tv_paf_to_send = @o_fight_actor OBJ_PosGet() - OBJ_PosGet()
+//			if( ! MATH_VecNullEpsilon(tv_paf_to_send) )
+//				MATH_VecSetNormalize(tv_paf_to_send)
+//			else
+//				tv_paf_to_send = OBJ_SightGet()
+//			EVENT_AddEventPaf(C_EVENT_FILTER_Enemy, C_EVENT_PAF_Fort, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_fight_actor, 0, tv_paf_to_send)
+//			Macro_Script_Next		// attaque terminée
+//			returntrack
+//		}
+//	}
+//	else
+//	{
+//		// GRAB ---------------------------------------------------------------------------------------
+//		o_grabbed_actor = LNK_ThisClientGet(o_fight_actor, Ci_LNK_GRAB_RAPTOR, mid_grab, vrai, "MM_Exec_Grab_Param", nofunc, "MM_Exec_Grab_Param")
+//		if( o_grabbed_actor )
+//		{
+//			LNK_GrabBoneSet(mid_grab, o_machoire)
+//			f_time_grab = 0.0
+//			if( i_DBG_trace_etat )
+//			{
+//				DBG_TraceObject(OBJ_Me())
+//				DBG_TraceString(" grabbe ")
+//				DBG_TraceObject(o_grabbed_actor)
+//				DBG_TraceEOL()
+//			}
+//			Macro_Script_Next		// attaque terminée
+//			returntrack
+//		}
+//	}
+//	
+//	// attaque pas encore terminée (pas de returntrack) => update courbe
+//	o_net_wp_last = nobody
+//	o_net_wp_next = nobody
+//	MM_Beziers_Update(o_script_move_wp)
+//}
+//
+//
+//// VITESSE =====================================================================
+//
+//if( i_move_mode == Ci_move_mode_move_in_time )
+//{
+//	f_speed_cur = MATH_FloatBlend(f_speed_cur, f_speed_max, f_speed_blend * TIME_GetDt())
+//}
+//else
+//{
+//	tv_dest_pos = @o_dup_wp_next OBJ_PosGet()
+//	tv_axe_move = tv_dest_pos - OBJ_PosGet()
+//	tv_axe_sight_horiz = OBJ_SightGet()
+//	tv_axe_sight_horiz.z = 0.0
+//	if( ! MATH_VecNullEpsilon(tv_axe_sight_horiz) && ! MATH_VecNullEpsilon(tv_axe_move) )
+//	{
+//	//	MATH_VecSetNormalize(tv_axe_sight_horiz)
+//	//	tf_dist_inclinaison = MATH_AbsFloat(MATH_VecDotProduct(tv_axe_move, tv_axe_sight_horiz))
+//	//	tv_proj_pos = OBJ_PosGet() + (MATH_VecNormalize(tv_axe_sight_horiz) * tf_dist_inclinaison)
+//	//	DBG_RenderVector(OBJ_PosGet(), tv_axe_move, color_vert)
+//	//	DBG_RenderVector(OBJ_PosGet(), MATH_VecNormalize(tv_axe_sight_horiz) * tf_dist_inclinaison, color_jaune)
+//	//	DBG_RenderVector(tv_proj_pos, tv_dest_pos - tv_proj_pos, color_rouge)
+//		if( tv_dest_pos.z > OBJ_PosGet().z )
+//		{
+//			// je remonte
+//			f_speed_inclinaison_coef = MATH_FloatMax(0.7, (f_speed_inclinaison_coef - (0.1 * TIME_GetDt())))
+//		}
+//		else
+//		{
+//			// je descend
+//			f_speed_inclinaison_coef = MATH_FloatMin(1.25, (f_speed_inclinaison_coef + (0.3 * TIME_GetDt())))
+//		}
+//	}
+//	else
+//		f_speed_inclinaison_coef = MATH_FloatBlend(f_speed_inclinaison_coef, 1.0, (0.5 * TIME_GetDt()))
+//	
+//	
+////	tf_speed_inclinaison_coef_old = f_speed_inclinaison_coef
+////	tv_dest_pos = @o_dup_wp_next OBJ_PosGet()
+////	tv_axe_move = tv_dest_pos - OBJ_PosGet()
+////	tv_axe_sight_horiz = OBJ_SightGet()
+////	tv_axe_sight_horiz.z = 0.0
+////	f_speed_inclinaison_coef = 1.0
+////	if( ! MATH_VecNullEpsilon(tv_axe_sight_horiz) && ! MATH_VecNullEpsilon(tv_axe_move) )
+////	{
+////		MATH_VecSetNormalize(tv_axe_sight_horiz)
+////	//	MATH_VecSetNormalize(tv_axe_move)
+////		tf_dist_projection = MATH_AbsFloat(MATH_VecDotProduct(tv_axe_move, tv_axe_sight_horiz))
+////		tv_proj_pos = OBJ_PosGet() + (tv_axe_sight_horiz * tf_dist_projection)
+////		tv_axe_move = tv_proj_pos - OBJ_PosGet()
+////		DBG_RenderVector(OBJ_PosGet(), tv_axe_move, color_cyan)
+////		tv_axe_move.z += (tv_dest_pos.z - OBJ_PosGet().z)
+////		DBG_RenderVector(OBJ_PosGet(), tv_axe_move, color_cyan)
+////		MATH_VecSetNormalize(tv_axe_move)
+////		DBG_RenderVector(OBJ_PosGet(), tv_axe_move, color_cyan)
+////		
+////		f_speed_inclinaison_coef = MATH_VecDotProduct(tv_axe_move, tv_axe_sight_horiz)
+////		DBG_RenderVector(OBJ_PosGet(), tv_axe_sight_horiz * 10.0, color_jaune)
+////		DBG_RenderVector(OBJ_PosGet(), tv_axe_move * 10.0, color_rouge)
+////		if( tv_dest_pos.z > OBJ_PosGet().z )
+////		{
+////			// sinon je monte : coef de 0.0 à 1.0
+////			f_speed_inclinaison_coef = (f_speed_inclinaison_coef - 0.5) * 2.0			// 0.0 / 0.5 / 1.0 => 0.0 / 0.0 / 0.1
+////		}
+////		else
+////		{
+////			// je descend : coef de 1.0 à 2.0
+////	//		f_speed_inclinaison_coef = 2.0 - f_speed_inclinaison_coef
+////	
+////	//		tf_temp = 1.0 - f_speed_inclinaison_coef		// en plus de 1.0 (car je plonge)
+////	//		f_speed_inclinaison_coef = MATH_FloatMin(1.25, 1.0 + tf_temp)
+////	
+////			f_speed_inclinaison_coef += 1 - ((f_speed_inclinaison_coef - 0.5) * 2.0)		// jusqu'à 1.5
+////		}
+////	}
+////	f_speed_inclinaison_coef = MATH_FloatBlend(tf_speed_inclinaison_coef_old, f_speed_inclinaison_coef, 2.0 * TIME_GetDt())
+//}
+//
+//	
+//f_speed_cur = MATH_FloatBlend(f_speed_cur, f_speed_inclinaison_coef * f_speed_max, f_speed_blend * TIME_GetDt())
+////tv_2D_pos = VIEW_3dWorldTo2d(0, OBJ_PosGet())
+////Str_DisplayFloatOnce(f_speed_cur, tv_2D_pos)
+////Str_DisplayFloatOnce(f_speed_inclinaison_coef, tv_2D_pos + cvector(0.0,0.1,0.0))
+//
+//
+//
+//// DEPLACEMENT ===================================================================
+//
+//if( ! f_HP_cur )
+//{
+//	// Déplacement Monstre Mort --------------------------------------------------
+//	if( ! OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna) )
+//	{
+//		// je viens juste de mourir
+//		AI_Execute("MM_Exec_Dyn_On")
+////		@o_dup_wp_next OBJ_PosSet(OBJ_PosGet() - (30.0 * Cv_VerticalVector) + (20.0 * OBJ_SightGet()))
+////		@o_dup_wp_next OBJ_BankingGeneralSet(OBJ_SightGet(), Cv_VerticalVector)
+////		MM_Beziers_Update_Dup_Last_Wp()
+////		f_beziers_coef = 0.0
+////		MM_Beziers_Init_Next_Link()
+//	}
+//}
+//else
+//{
+//	// Déplacement Monstre Vivant -------------------------------------------
+//	f_beziers_coef += f_speed_cur * TIME_GetDt()
+//	
+//	tf_coef = f_beziers_coef / f_beziers_length		// rapport chemin parcourru / longueur du lien
+//	while( tf_coef >= 1.0 )
+//	{
+//		if( ! f_HP_cur )
+//			OBJ_Destroy()
+//		
+//		tf_depasse = f_beziers_coef - f_beziers_length
+//		// test avancement sur le réseau
+//		o_net_wp_last = o_net_wp_next
+//		o_net_wp_next = MM_Net_Get_Next_WP()
+//		if( o_net_wp_next )
+//		{
+//			// suivi du réseau en cours
+//			MM_Beziers_Update(o_net_wp_next)
+//		}
+//		else
+//		{
+//			// suivi du réseau terminé : test déplacement post-réseau
+//			if( o_script_net_nearest_wp )
+//			{
+//				// je me dirige vers le wp du réseau le + proche de mon wp moveto
+//				if( o_net_wp_last == o_script_net_nearest_wp )
+//				{
+//					// je viens d'atteindre le wp du réseau le + proche de mon wp moveto
+//					if( i_DBG_trace_etat )
+//					{
+//						DBG_TraceObject(o_script_net_nearest_wp)
+//						DBG_TraceString("atteint, je vais maintenant vers ")
+//						DBG_TraceObject(o_script_move_wp)
+//						DBG_TraceEOL()
+//					}
+//					o_net_wp_last = o_script_net_nearest_wp
+//					o_net_wp_next = nobody
+//					MM_Beziers_Update(o_script_move_wp)
+//					o_script_net_nearest_wp = nobody
+//					@o_dup_wp_next OBJ_BankingGeneralSet(@o_dup_wp_next OBJ_SightGet(), Cv_VerticalVector) // à l'horizontale
+//					
+//					if( i_move_mode != Ci_move_mode_move_in_time )
+//					{
+//						i_move_mode = Ci_move_mode_move_direct		// je quitte le réseau
+//					}
+//					// else reste en mode move in time (vitesse précalculée à conserver)
+//				}
+//			}
+//			else if( o_script_move_wp )
+//			{
+//				// fin du déplacement : move_direct ou move_attaque : fin du script
+//				if( i_DBG_trace_etat )
+//				{
+//					DBG_TraceString("wp atteint, script next")
+//					DBG_TraceEOL()
+//				}
+//				o_script_move_wp = nobody
+//				o_net_wp_last = nobody
+//				o_net_wp_next = nobody
+//				Macro_Script_Next
+//				returntrack
+//			}
+//			else
+//			{
+//				DBG_Error("pas de suite au réseau et pourtant je n'ai pas de déplacement à effectuer après réseau ???")
+//			}
+//		}
+//		f_beziers_coef = tf_depasse		// on a avancé
+//		tf_coef = f_beziers_coef / f_beziers_length		// rapport chemin parcourru / longueur du lien
+//	}
+//	
+//	MM_Beziers_Compute(tv_pos_new, tv_sight_new, tf_coef)
+//	OBJ_PosSet(tv_pos_new)
+//	OBJ_SightGeneralSet(tv_sight_new, Cv_VerticalVector)
+//	MM_Beziers_Display()
+//}
+//
+//// TMP : switch snake / courbe
+//if( 0 && IO_KeyJustPressed(65))	// A
+//{
+//	ti_hors_eau_old = i_hors_de_l_eau_flag
+//	i_hors_de_l_eau_flag = 1 - i_hors_de_l_eau_flag
+//	if( ! ti_hors_eau_old && i_hors_de_l_eau_flag )
+//	{
+//		// je sors de l'eau : init snake
+//		i_no_snake_modules_nb = 1
+//		i_force_pos_update_flag = vrai
+//		MM_Virtual_Net_Init(i_force_pos_update_flag)
+//	}
+//}
+//
+//
+////OBJ_RotateLocalY(MATH_Sin(TIME_Get() * 2.0) * 0.5)
+//
+//// TEST HAUTEUR DE L'EAU
+////tf_water_Z = WTR_GetDif(OBJ_PosGet()).z
+////if( OBJ_PosGet().z > tf_water_Z )
+////{
+////	// HORS DE L'EAU
+////	if( ! i_hors_de_l_eau_flag )
+////	{
+////		i_hors_de_l_eau_flag = vrai
+////		i_no_snake_modules_nb = 1
+////		MM_Virtual_Net_Init(i_hors_de_l_eau_flag)
+////	}
+////}
+////else
+////{
+////	// SOUS L'EAU
+////	if( i_hors_de_l_eau_flag )
+////		i_hors_de_l_eau_flag = faux
+////}
+//
+//i_force_pos_update_flag = i_hors_de_l_eau_flag
+//
+//// MODE CHAINE OU SNAKE
+//tv_paf_recul = f_paf_applic * v_paf_speed
+//DBG_RenderVector(OBJ_PosGet(), tv_paf_recul, color_vert)
+//
+//// RECUL PAF ---------------------------------------------------------------------------
+//if( i_module_mode == Ci_module_mode_snake || ! MATH_VecNullEpsilon(tv_paf_recul) || ! f_HP_cur )
+//{
+//	// mode snake ou paf ou mort => SNAKE
+//	OBJ_PosSet(OBJ_PosGet() + tv_paf_recul)
+//	i_force_pos_update_flag = vrai
+//	MM_Virtual_Net_Init(vrai)
+//
+//	// Recompute Béziers (la pos de départ change mais pas la pos d'arrivée)
+//	MM_Beziers_Update_Dup_Last_Wp()
+//	f_beziers_coef = 0.0
+//	MM_Beziers_Init_Next_Link()
+//}
+//
+//
+//// AI MODULES -------------------------------------------------------------------------
+//if( i_DBG_move == Ci_DBG_move_chaine )
+//{
+//	// config chaine (snake temp)
+//	MM_Modules_Update(0)
+//}
+//else if( i_DBG_move == Ci_DBG_move_snake )
+//{
+//	// config full snake
+//	OBJ_RotateLocalZ(MATH_Sin(TIME_Get() * 2.0) * 0.5)
+//	MM_Snake(1)
+//}
+//
+//DBG_RenderVector(@o_dup_wp_last OBJ_PosGet(), @o_dup_wp_last OBJ_SightGet() * 10, color_vert)
+//DBG_RenderVector(@o_dup_wp_next OBJ_PosGet(), @o_dup_wp_next OBJ_SightGet() * 10, color_bleu)
+//
+//

@@ -1,0 +1,387 @@
+#include "PNJ_Lapin_defines.var"
+
+int					ti_rank
+int					ti_i
+int					ti_index
+int					ti_new_interet_index
+int					ti_last_best_interet_index
+int					ti_territory_ID
+int					ti_flag_ok
+int					ti_flag_choose_best_interest
+
+float				tf_best_dist
+float				tf_interet
+float				tf_best_interet
+float				tf_interet_reel
+
+object			to_best_interet_actor
+object			to_last_best_interet_gao
+object			to_nearest_wp
+object			to_nearest_memorised_wp
+object			to_gao
+object			to_main
+object			to_target
+
+message		tm_msg_filter
+messageid		EVT_ID
+messageid		tmid_interet
+messageid		tmid_visibility
+
+
+if (i_flag_chck_bst_intrt_done)
+	return
+
+i_flag_chck_bst_intrt_done = vrai
+
+ti_new_interet_index = -1
+ti_last_best_interet_index = i_perceived_best_actor_index
+
+if (MSG_GlobalIsValid(mid_best_interet))
+{
+	to_last_best_interet_gao = EVENT_InteretTargetGet(mid_best_interet)
+	
+	ti_i = ti_last_best_interet_index
+	if ( ! ai_perceived_accessible[ti_i] || ! ai_perceived_seen[ti_i] )
+		to_last_best_interet_gao = nobody
+}
+else
+	to_last_best_interet_gao = nobody
+
+
+if( o_Commander_Force_Target )
+{
+	for (ti_i = 0; ti_i < i_perceived_actor_nb; ti_i++)
+	{
+		if( ao_perceived_actor[ti_i] != o_Commander_Force_Target )
+			continue
+			
+		if ( ! ai_perceived_accessible[ti_i] )
+			continue
+			
+		if ( ! ai_perceived_seen[ti_i] )
+			continue
+		
+		ti_new_interet_index = Lapin_Best_Interet_Update(ti_i)
+		break
+	}
+	o_Commander_Force_Target = nobody
+}
+
+
+// AÏE LE CON !!! =======================================================================================
+if (ti_new_interet_index == -1)
+{
+	ti_flag_ok = vrai
+
+	if (! TIME_Elapsed(f_time_change_target, Cf_delay_between_target_switching))
+	{
+		ti_flag_ok = faux
+	}
+//	else
+//	{
+//		switch(i_etat_courant)
+//		{
+//			case ETAT_Lapin_MELEE :
+//			case ETAT_Lapin_USE_ITEM :
+//			case ETAT_Lapin_USE_POWERMOUNT :
+//			case ETAT_Lapin_BULLRUSH :
+//			case ETAT_Lapin_COUNTER :
+//			case ETAT_Lapin_DODGE :
+//			case ETAT_Lapin_PROTECT :
+//			case ETAT_Lapin_GRAPPIN_CONTROL :
+//				ti_flag_ok = faux
+//				break
+//		}
+//	}
+	
+	if (ti_flag_ok)
+	{
+		for (ti_i = 0; ti_i < i_perceived_actor_nb; ti_i++)
+		{
+			if ( ! ( ai_perceived_status[ti_i] & Ci_PERCEIVED_PAF) )
+				continue
+			
+			if ( ! ai_perceived_accessible[ti_i] )
+				continue
+			
+			if ( ! ai_perceived_seen[ti_i] )
+				continue
+			
+			ti_new_interet_index = Lapin_Best_Interet_Update(ti_i)
+			
+			if( ti_new_interet_index != -1 && to_last_best_interet_gao != ao_perceived_actor[ti_new_interet_index] )
+			{
+				#ifndef _FINAL_
+				if( DBG_Log_Allowed )
+				{
+					DBG_TraceFloat(TIME_Get())
+					DBG_TraceString(" => ")
+					DBG_TraceObject(OBJ_Me())
+					DBG_TraceString(" se fait paffer et attaque ")
+					DBG_TraceObject(ao_perceived_actor[ti_new_interet_index])
+					if (to_last_best_interet_gao)
+					{
+						DBG_TraceString(" au lieu de ")
+						DBG_TraceObject(to_last_best_interet_gao)
+					}
+					DBG_TraceString(" (PAF)")
+					DBG_TraceEOL()
+				}
+				#endif
+			}
+			
+			break
+		}
+	}
+}
+
+// ATTAQUE D' OPPORTUNITE =========================================================================
+if (ti_new_interet_index == -1)
+{
+	ti_flag_ok = vrai
+
+//	switch(i_etat_courant)
+//	{
+//		case ETAT_Lapin_MELEE :
+//		case ETAT_Lapin_USE_ITEM :
+//		case ETAT_Lapin_USE_POWERMOUNT :
+//		case ETAT_Lapin_BULLRUSH :
+//		case ETAT_Lapin_COUNTER :
+//		case ETAT_Lapin_DODGE :
+//		case ETAT_Lapin_PROTECT :
+//		case ETAT_Lapin_GRAPPIN_CONTROL :
+//			ti_flag_ok = faux
+//			break
+//	}
+
+	if (ti_flag_ok)
+	{
+		tf_best_dist = Cf_Infinit
+
+		for (ti_i = 0; ti_i < i_perceived_actor_nb; ti_i++)
+		{
+			if ( !( ai_perceived_status[ti_i] & Ci_PERCEIVED_IN_RED_ZONE))
+				continue
+
+//			if (ai_perceived_status[ti_i] & (Ci_PERCEIVED_IS_DEAD | Ci_PERCEIVED_ALREADY_GRABBED | Ci_PERCEIVED_ATTACKED))
+//				continue
+
+			if ( ! ai_perceived_accessible[ti_i] )
+				continue
+
+			if ( ! ai_perceived_seen[ti_i] )
+				continue
+
+//			if ( @ao_perceived_actor[ti_i] AI_HaveSameModel( OBJ_Me()))
+//				continue
+
+			if ( af_perceived_dist[ti_i] < tf_best_dist )
+			{
+				tf_best_dist = af_perceived_dist[ti_i]
+				ti_new_interet_index = ti_i
+			}
+		}
+		
+		ti_new_interet_index = Lapin_Best_Interet_Update(ti_new_interet_index)
+		if (ti_new_interet_index != -1 && to_last_best_interet_gao != ao_perceived_actor[ti_new_interet_index])
+		{
+			#ifndef _FINAL_
+			if (DBG_Log_Allowed)
+			{
+				DBG_TraceFloat(TIME_Get())
+				DBG_TraceString(" => ")
+				DBG_TraceObject(OBJ_Me())
+				DBG_TraceString(" est agressé et se défend contre ")
+				DBG_TraceObject(ao_perceived_actor[ti_new_interet_index])
+				if (to_last_best_interet_gao)
+				{
+					DBG_TraceString(" au lieu de ")
+					DBG_TraceObject(to_last_best_interet_gao)
+				}
+				DBG_TraceString(" (ZONE ROUGE)")
+				DBG_TraceEOL()
+			}
+			#endif
+		}
+	}
+}
+
+
+// CHEF, OUI CHEF !!!! ==============================================================================
+if (ti_new_interet_index == -1)
+{
+	ti_flag_ok = vrai
+
+//	if( ! TIME_Elapsed(f_time_change_target, Cf_delay_between_target_switching) )
+//		ti_flag_ok = faux
+	
+	if (ti_flag_ok)
+	{	
+		if( o_Commander_cur )
+		{
+			to_target = @o_Commander_cur Proc_PNJ_Lapin_COMMANDER_Target_Get()
+			if( to_target )
+			{
+				tmid_visibility = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility, to_target, nobody)
+				if( MSG_GlobalIsValid(tmid_visibility) )
+				{
+					ti_new_interet_index = Lapin_Add_Perceived_Actor(to_target, Ci_PERCEIVED_HEARD, tmid_visibility)
+					i_interet_force_identification_gao = vrai
+					ti_new_interet_index = Lapin_Best_Interet_Update(ti_new_interet_index)
+					
+					if( ti_new_interet_index != -1 && to_last_best_interet_gao != ao_perceived_actor[ti_new_interet_index] )
+					{
+						#ifndef _FINAL_
+						if( DBG_Log_Allowed )
+						{
+							DBG_TraceFloat(TIME_Get())
+							DBG_TraceString(" => ")
+							DBG_TraceObject(OBJ_Me())
+							DBG_TraceString(" suit son chef et attaque ")
+							DBG_TraceObject(ao_perceived_actor[ti_new_interet_index])
+							if (to_last_best_interet_gao)
+							{
+								DBG_TraceString(" au lieu de ")
+								DBG_TraceObject(to_last_best_interet_gao)
+							}
+							DBG_TraceString(" (COMMANDER)")
+							DBG_TraceEOL()
+						}
+						#endif
+					}
+				}
+			}
+		}
+	}
+}
+
+
+//
+//// REGLE : CIBLE ATTAQUEE PAR UN AUTRE PERSO ========================================================
+//if (ti_new_interet_index == -1)
+//{
+//	ti_flag_ok = vrai
+//
+//	if ( ! TIME_Elapsed(f_time_change_target, Cf_delay_between_target_switching) )
+//		ti_flag_ok = faux
+//	
+//	if (ti_flag_ok)
+//	{
+//		ti_new_interet_index = Lapin_Choose_Target()		// Repartition
+//		
+//		if (ti_new_interet_index != -1)
+//			Lapin_Best_Interet_Update(ti_new_interet_index)
+//
+//		if (ti_new_interet_index != -1 && to_last_best_interet_gao != ao_perceived_actor[ti_new_interet_index])
+//		{
+//			#ifndef _FINAL_
+//			if (DBG_Log_Allowed)
+//			{
+//				DBG_TraceFloat(TIME_Get())
+//				DBG_TraceString(" => ")
+//				DBG_TraceObject(OBJ_Me())
+//				DBG_TraceString(" entend un pote attaquer ")
+//				DBG_TraceObject(ao_perceived_actor[ti_new_interet_index])
+//				DBG_TraceString(" et va voir s'il en reste un morceau")
+//				DBG_TraceEOL()
+//			}
+//			#endif
+//		}
+//	}
+//}
+
+// ===========================================================================
+// INTERET MIS A ZERO :
+// ===========================================================================
+if (i_perceived_best_actor_index == -1)
+{
+	// PAS DE NOUVELLE INFO
+}
+else if (ai_perceived_status[i_perceived_best_actor_index] & Ci_PERCEIVED_ALREADY_GRABBED)
+{
+	// - SI MA CIBLE EST DEJA GRABBEE 
+//#ifndef _FINAL_
+//	if (DBG_Log_Allowed && EVENT_InteretGet(mid_best_interet))
+//	{
+//		DBG_TraceFloat(TIME_Get())
+//		DBG_TraceString(" => ")
+//		DBG_TraceObject(OBJ_Me())
+//		DBG_TraceString(" constate que ")
+//		DBG_TraceObject(ao_perceived_actor[i_perceived_best_actor_index])
+//		DBG_TraceString(" est deja grabe par un autre raptor => INTERET NULL")
+//		DBG_TraceEOL()
+//	}
+//#endif
+
+	EVENT_InteretSet(mid_best_interet, 0.0)
+}
+else if (MSG_GlobalIsValid(mid_best_interet))
+{
+	EVENT_InteretSet(mid_best_interet, af_perceived_interest[i_perceived_best_actor_index])
+}
+
+
+
+if (MSG_GlobalIsValid(mid_best_interet))
+	tf_best_interet = EVENT_InteretGet(mid_best_interet)
+else
+	tf_best_interet = -1.0
+
+//ti_flag_choose_best_interest = vrai
+//
+//switch(i_etat_courant)
+//{
+//		case ETAT_Lapin_MELEE :
+//		case ETAT_Lapin_USE_ITEM :
+//		case ETAT_Lapin_USE_POWERMOUNT :
+//		case ETAT_Lapin_BULLRUSH :
+//		case ETAT_Lapin_COUNTER :
+//		case ETAT_Lapin_DODGE :
+//		case ETAT_Lapin_PROTECT :
+//		case ETAT_Lapin_GRAPPIN_CONTROL :
+//			ti_flag_choose_best_interest = faux
+//		break
+//		
+//	default:
+//		if( 	o_Commander_cur )
+//			ti_flag_choose_best_interest = faux	// je suis dépendant d'un autre lapin c'est lui qui fait les tests pas moi
+//		else if (tf_best_interet > 0.0 && i_perceived_best_actor_index != -1)	
+//			ti_flag_choose_best_interest = faux
+//}
+//
+//if (ti_flag_choose_best_interest)
+//{
+//	// RECHERCHE DE LA MEILLEURE CIBLE PARMIS CELLES QUE JE VOIS, QUE J'ENTENDS ET DONT JE ME SOUVIENS
+//	ti_new_interet_index = Lapin_Choose_Target()
+//
+//	if (ti_new_interet_index != -1)
+//		Lapin_Best_Interet_Update(ti_new_interet_index)
+//}
+
+if (ti_new_interet_index == -1 && ! to_last_best_interet_gao )
+{
+	ti_new_interet_index = Lapin_Choose_Target()
+
+	if (ti_new_interet_index != -1)
+		Lapin_Best_Interet_Update(ti_new_interet_index)
+}	
+
+// SI ON N'A PAS CHANGE DE CIBLE, ON UPDATE LA CIBLE COURANTE
+if( ! o_Commander_cur )
+	if (ti_new_interet_index == -1)
+		Lapin_Best_Interet_Update(i_perceived_best_actor_index)
+
+
+// Je Lock ma target
+if( MSG_GlobalIsValid(mid_best_interet) )
+{
+	if( f_interet_attack_countdown )
+		EVENT_InteretStatusSet(mid_best_interet, C_EVENT_InteretStatusAttack)
+	else
+		EVENT_InteretStatusSet(mid_best_interet, C_EVENT_InteretStatusLock)
+	if (ti_last_best_interet_index != i_perceived_best_actor_index)
+	{
+		f_time_change_target = TIME_Get()
+	}
+}
+

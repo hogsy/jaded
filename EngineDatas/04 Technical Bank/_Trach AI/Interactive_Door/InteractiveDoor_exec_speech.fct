@@ -1,0 +1,124 @@
+#include "Interactive_Door_defs.var"
+
+int		i
+int 	ti_who
+int		ti_what
+float	tf_dist
+float	tf_bestdist
+object to_obj
+
+if(mi_no_speech) return
+if ( !mi_Speech  || mi_PD_SpeechState[ mi_Speech ] )
+	return
+	
+mf_PD_SpeechTimer[ mi_Speech ] = 30
+	
+if (mi_Speech == DOOR_SPEECH_HayesGo)
+{
+//	ti_who = C_ID_Hayes
+//	tf_bestdist = OBJ_SqrDist( @"univ" ao_AllHumains[ C_ID_Hayes ] )
+}
+else if (mi_Speech == DOOR_SPEECH_cantdoitalone)
+{
+	ti_who = C_ID_Joueur
+	tf_bestdist = 0
+}
+else if (mi_Speech == DOOR_SPEECH_Jarrive)
+{
+	mf_PD_SpeechTimer[ DOOR_SPEECH_Jarrive ] = 100000
+	ti_who = @"KingKong/Humain" mo_SpeechWho i_id_humain
+	tf_bestdist = 0
+}
+else if (mi_Speech == DOOR_SPEECH_hohisse )
+{
+	ti_who = @"KingKong/Humain" mo_SpeechWho i_id_humain
+	tf_bestdist = 0
+}
+else
+{
+	ti_who = -1
+	tf_bestdist = mf_PD_SpeechDistance  * mf_PD_SpeechDistance 
+//	for (i = C_ID_Ann; i <= C_ID_Jimmy; i++ )
+//	{
+//		if (!@"univ" ai_HumainIsHere[ i ] ) 
+//			continue
+//		tf_dist = OBJ_SqrDist( @"univ" ao_AllHumains[ i ] )
+//		if (tf_dist < tf_bestdist)
+//		{
+//			tf_bestdist = tf_dist
+//			ti_who = i
+//		}
+//	}
+	if ( ti_who == -1 )
+		return
+}
+
+if (tf_bestdist > 100)
+	return
+	
+DBG_TraceString("DOOR play " )
+DBG_TraceInt( mi_Speech )
+DBG_TraceString( "who = " )
+DBG_TraceInt( ti_who )
+DBG_TraceEOL()
+
+
+
+ti_what = -1
+switch( mi_Speech )
+{
+	case DOOR_SPEECH_2LeverLeft :
+		ti_what = Gene_C_look_for_2_levers
+		break
+				
+	case DOOR_SPEECH_1LeverLeft :
+		if(@"univ" i_jack_has_levier) 
+		{
+			mf_PD_SpeechTimer[ DOOR_SPEECH_1LeverLeft ] = 100000
+			mi_PD_SpeechState[ mi_Speech ] = 1
+			return
+		}
+		
+		if(mi_PD_NbPilar == 2)
+			ti_what = Gene_C_1_lever_left
+		else
+			ti_what = Gene_C_look_for_1_lever
+		break
+			
+	case DOOR_SPEECH_0LeverLeft :
+		ti_what = Gene_C_all_levers_found
+		break
+		
+	case DOOR_SPEECH_DoorOpened :
+		ti_what = Gene_C_door_ok
+		break
+			
+	case DOOR_SPEECH_HayesGo :
+		ti_what = Gene_C_opening_door
+		break
+		
+	case DOOR_SPEECH_cantdoitalone :
+		ti_what = GeneJak_C_door_alone
+		break
+		
+	case DOOR_SPEECH_Jarrive :
+		ti_what = Gene_C_answer
+		break
+
+	case DOOR_SPEECH_hohisse :
+		ti_what = Gene_C_opening_door
+		break
+		
+	case DOOR_SPEECH_waithelp :
+		ti_what = Gene_C_wait_for_help
+		break
+}
+
+if (ti_what != -1)
+{
+	mi_PD_SpeechState[ mi_Speech ] = 1
+	to_obj = @"univ" ao_AllHumains[ti_who]
+	if(to_obj && (@to_obj OBJ_CapaTest(OBJ_Capa_11) || to_obj == AI_MainActorGet(C_ID_Joueur)))
+//	if (@get_global GLOBAL_i_PlayGenericSpeech)
+		SPEECH_M_RqHuman( ti_who, ti_what )
+}

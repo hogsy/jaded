@@ -1,0 +1,151 @@
+#include "H_defines.var"
+
+int					ti_i
+int					ti_flag_help
+
+float				tf_dist
+float				tf_current_grab
+float				tf_liferatio
+
+vector			tv_new_sight
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+
+	ao_CL[Ci_LNK_HELP_TRAP] = LNK_ClientGet(Ci_LNK_HELP_TRAP, amid_CL_LIAISON_ID[Ci_LNK_HELP_TRAP], faux, nofunc, nofunc, nofunc)
+
+	f_time_action_disable = 0.5
+
+	macro_change_tag_size(Cv_Humain_Tag_Size_V1,Cv_Humain_Tag_Size_V2)
+
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_commun_GRAB_trap)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_commun_GRAB_trap
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+		ai_SRV_ENABLE[ti_i] = faux
+
+	ai_SRV_ENABLE[Ci_LNK_GRAB_TRAP]		= vrai
+	ai_SRV_ENABLE[Ci_LNK_GRAB_RAPTOR]	= vrai
+	ai_SRV_ENABLE[Ci_LNK_BLOCK_RAPTOR]	= vrai
+
+	i_flag_help = faux
+
+	DYN_SpeedSetVector( Cv_NullVector)
+	DYN_TractionSet( Cv_NullVector)
+	
+	ACT_ActionSet(Action_Normal_Attente)
+	
+	macro_change_tag_size(Cv_NullVector,Cv_NullVector)
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE  =====================================================================
+AI_Execute("H_exec_read_joy")
+
+AI_Execute("H_exec_read_world")
+
+// PAF
+AI_Execute("H_exec_ch_Stimulus_Paf")
+o_paf_sender = nobody
+
+AI_Execute("H_exec_serveur_get")
+
+// JE SUIS BLOCKED
+if (ao_SRV[Ci_LNK_BLOCK_RAPTOR])
+	macro_change_etat("H_ETAT_commun_BLOCK_raptor")
+
+// JE SUIS GRABED
+if (ao_SRV[Ci_LNK_GRAB_RAPTOR])
+	macro_change_etat("H_ETAT_commun_GRAB_raptor")
+if (ao_SRV[Ci_LNK_GRAB_ICO])
+	macro_change_etat("H_ETAT_commun_GRAB_ico")
+
+// FIN DU GRAB
+if (ao_SRV[Ci_LNK_GRAB_TRAP] == nobody)
+{
+	// Fin du grab
+	macro_change_etat(fct_main_etat)
+}
+
+AI_Execute("H_exec_display_grabed")
+
+// COMPORTEMENT ===============================================================
+tf_current_grab = LNK_GrabCurrentGet(amid_SRV_LIAISON_ID[Ci_LNK_GRAB_TRAP])
+
+if (tf_current_grab > LNK_GrabMaxGet(amid_SRV_LIAISON_ID[Ci_LNK_GRAB_TRAP]))
+{
+	// On a gagné, on sort du trou
+	macro_change_etat(fct_main_etat)
+}
+else if (tf_current_grab <= 0.0)
+{
+	// On est mort
+	macro_change_etat("H_ETAT_commun_mort")
+}
+
+// ON EST SERVEUR HELP TRAP ====================================================================
+if (joueur)
+{
+	// Je suis le joueur, je ne demande de l'aide que si j'ai valider cette demande
+	if (i_flag_help || ao_CL[Ci_LNK_HELP_TRAP])
+		ti_flag_help = vrai
+	else
+		ti_flag_help = faux
+}
+else
+{
+	// Je suis un marin, je demande de l'aide
+	ti_flag_help = vrai
+}
+
+ao_CL[Ci_LNK_HELP_TRAP] = LNK_ClientGet(Ci_LNK_HELP_TRAP, amid_CL_LIAISON_ID[Ci_LNK_HELP_TRAP], ti_flag_help, nofunc, nofunc, nofunc)
+
+if (ao_CL[Ci_LNK_HELP_TRAP])
+{
+	// J'ai quelqu'un qui vient m'aider
+	
+	if (OBJ_SqrDistHorz(ao_CL[Ci_LNK_HELP_TRAP]) < 4.0)
+		LNK_GrabDeltaUpdate(amid_SRV_LIAISON_ID[Ci_LNK_GRAB_TRAP], TIME_GetDt() * 2.0)
+}
+
+tv_new_sight = OBJ_PosGet() - @ao_SRV[Ci_LNK_GRAB_TRAP] OBJ_PosGet()
+tv_new_sight.z = 0.0
+
+tf_dist = MATH_VecNorm(tv_new_sight)
+if (tf_dist)
+	tv_new_sight /= tf_dist
+else
+	tv_new_sight = OBJ_SightGet()
+
+tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_new_sight, 6.0 * TIME_GetDt())
+OBJ_BankingGeneralSet(tv_new_sight, Cv_VerticalVector)
+
+if (joueur && IO_ButtonJustPressed(JoyPSX_Button_croix))
+	LNK_GrabDeltaUpdate(amid_SRV_LIAISON_ID[Ci_LNK_GRAB_TRAP], TIME_GetDt() * 8.0)
+
+int		ti_context
+ti_context = C_EVENT_CONTEXT_DEBOUT
+ti_context += i_ground_ID * 10
+tf_liferatio = @"univ" LIFE_HumainCur[ i_id_humain ] / @"univ" LIFE_HumainMax[ i_id_humain ] 
+EVENT_AddEventVision( i_id_humain, C_EVENT_FILTER_Marin, OBJ_Me(), 0.001, OBJ_PosGet(), C_EVENT_Visibility_Full_Mvt, Cf_Rayon_De_Vision, f_interet, ti_context, 0, tf_liferatio)

@@ -1,0 +1,27 @@
+#include "KBC_Defines.var"
+
+object		tao_tab_wp[Ci_max_reseau_wp]
+int				ti_tab_wp_count
+int				ti_i
+network		tn_net
+
+//if ( n_ride )
+//	tn_net = n_ride
+//else 
+//if ( n_net )
+	tn_net = n_net
+//else
+//	return
+
+
+// WP DE PAUSE ----------------------------------------------------------------------------------------
+i_tab_wp_pause_count = 0
+ti_tab_wp_count = WAY_NetFill(tn_net, WAY_RootGet(tn_net), &tao_tab_wp[0])
+for( ti_i = 0; ti_i < ti_tab_wp_count; ti_i ++)
+{
+	if( @tao_tab_wp[ti_i] OBJ_CapaTest(CAPA_WP_pause) )
+	{
+		ao_tab_wp_pause[i_tab_wp_pause_count] = tao_tab_wp[ti_i]
+		i_tab_wp_pause_count++
+	}
+}

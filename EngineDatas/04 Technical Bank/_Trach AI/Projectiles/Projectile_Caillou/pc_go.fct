@@ -1,0 +1,22 @@
+object	to_gao 
+
+//EVENT_AddEventVision( C_ID_Dummy, C_EVENT_FILTER_All, OBJ_Me(), 0.001, OBJ_PosGet(), 0.5, 1.0, 0.0, C_EVENT_CONTEXT_STANDARD, 0, 1.0)
+
+OBJ_RotateLocalX( -5 * TIME_GetDt())
+OBJ_RotateLocalZ( -10 * TIME_GetDt())
+
+if (COL_CollideType(COL_C_Ground))
+{
+	to_gao = COL_ObjectGet(COL_C_Ground)
+	EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_KK_Moyen , OBJ_Me(), 0.01, to_gao, 1.0 * PAF_Unit, OBJ_SightGet())
+	PC_GFX_Particules(OBJ_PosGet(), COL_NormalGet(COL_C_Ground))
+	AI_TrackCurChangeNow("pc_wait")
+}
+	
+if (COL_CollideType(COL_C_Wall))
+{
+	to_gao = COL_ObjectGet(COL_C_Wall)
+	EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_KK_Moyen,  OBJ_Me(), 0.01, to_gao, 1.0 * PAF_Unit, OBJ_SightGet())
+	PC_GFX_Particules(OBJ_PosGet(), COL_NormalGet(COL_C_Ground))
+	AI_TrackCurChangeNow("pc_wait")
+}

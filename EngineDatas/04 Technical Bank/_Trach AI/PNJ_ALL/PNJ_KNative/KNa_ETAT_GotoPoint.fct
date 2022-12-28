@@ -1,0 +1,53 @@
+
+#include"KNa_Defines.var"
+
+object		to_move_next_pos 
+
+// SORTIE ETAT ===================================================================
+if (i_flag_sort_etat)
+{
+	i_flag_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_GotoWP)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_GotoWP
+
+	if (fct_last_etat)
+	{
+		i_flag_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	v_move_init_pos = OBJ_PosGet()
+
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =====================================================================
+
+if ( MATH_VecDotProduct(@o_move_dest_pos OBJ_PosGet() - v_move_init_pos,@o_move_dest_pos OBJ_PosGet() - OBJ_PosGet()) < 0)
+{
+	Macro_Script_Next
+	returntrack
+}
+
+// PAFs -----------------------------------------------------
+AI_Execute("KNa_Exec_CheckPaf")
+if (EVT_Paf_Pere)
+	macro_change_etat("KNa_ETAT_Paf")
+// PAFs -----------------------------------------------------
+
+
+// COMPORTEMENT ===============================================================
+
+ACT_ActionSet(Ci_AnimNative_Deplacement)
+OBJ_BankingGeneralSet( MATH_VecBlendRotate(OBJ_SightGet(), @o_move_dest_pos OBJ_PosGet() - OBJ_PosGet(), 10.0 * TIME_GetDt()), Cv_VerticalVector)

@@ -1,0 +1,143 @@
+
+//----------------------------------------------------------------------------------------------------
+// LOCAL VAR
+//----------------------------------------------------------------------------------------------------
+messageid 		tmid_signal
+int					ti_msg 
+int					ti_state
+object			to_obj
+vector			tv_temp 
+int 				ti_wait, ti_fight, ti_neutral, ti_injured, ti_stalk
+int					ti_phase
+
+
+
+//----------------------------------------------------------------------------------------------------
+// CODE
+//----------------------------------------------------------------------------------------------------
+if(mf_InitTimer)
+{
+	mf_InitTimer -= TIME_GetDt()
+	if(mf_InitTimer < 0.0) mf_InitTimer = 0.0
+}
+
+if(mf_InitTimer)
+{
+	return
+}
+
+mi_Death = 0
+ti_wait = 0
+ti_fight = 0
+ti_neutral = 0
+ti_injured = 0
+ti_stalk = 0
+
+
+// count all signals
+//------------------------
+ti_msg = -1
+for(tmid_signal = MSG_GlobalScan(C_EVENT_TYPE_Signal, &ti_msg); MSG_GlobalIsValid(tmid_signal); tmid_signal = MSG_GlobalScan(C_EVENT_TYPE_Signal, &ti_msg) )
+{
+	ti_state = SIG_TypeGet( tmid_signal )
+	to_obj = SIG_GaoGet( tmid_signal )
+
+
+	/////////////////////////////
+	switch(ti_state)
+	{
+	case SIG_C_SETMUSVOL :
+		tv_temp = SIG_Ext3Get(tmid_signal )
+		mf_IA_VolRq = tv_temp.y
+		break
+		
+	case SIG_C_TYPE_MORT : 
+	case SIG_C_TYPE_LD_MORT : 
+		mi_Death++ 	
+		break
+
+	case SIG_C_TYPE_STRESS	: 		
+	case SIG_C_TYPE_LD_STRESS	: 		
+		ti_wait++ 		
+		break
+	case SIG_C_TYPE_FIGHT : 		
+	case SIG_C_TYPE_LD_FIGHT : 		
+		ti_fight++ 		
+		break	
+	case SIG_C_TYPE_COOL : 		
+	case SIG_C_TYPE_LD_COOL : 		
+		ti_neutral++ 		
+		break
+	case SIG_C_TYPE_INJURE : 		
+	case SIG_C_TYPE_LD_INJURE : 		
+		ti_injured++ 			
+		break
+	case SIG_C_TYPE_STALK : 		
+	case SIG_C_TYPE_LD_STALK : 		
+		ti_stalk++ 			
+		break
+		
+	default:	
+		break
+	}		
+}
+
+
+
+// now choose the phase  = fct(counters)
+//---------------------------------------------------------
+if (	mi_Death )
+{
+#ifndef _FINAL_
+	if(i_DebugMode)
+	{
+		DBG_TraceString("[MUS] death detected")
+		DBG_TraceEOL()
+	}
+#endif
+	
+	mi_DeathInstance = mai_Instance[SND_M_GetJingleIdx(0)]
+	SND_Play(mi_DeathInstance)
+	SND_M_SetGroupVol(SND_Cte_GrpMusic, 1.0)
+	
+	@"univ" SND_gi_GlobalCommand |= SND_Cte_exec_DeathFadeOut
+	SND_M_SetGameMode(SND_Cte_ModeDying)
+	SND_M_SetGameSubMode(0)
+	
+	AI_TrackStop(1)
+	AI_TrackStop(2)
+	AI_TrackCurChange("SKMM_PlayDeath")
+}
+else
+{
+	if( ti_injured ) 
+	{
+		ti_phase  = SND_Cte_MusPhase_Injure
+	}
+	else if( ti_fight)
+	{
+		ti_phase  = SND_Cte_MusPhase_Fight
+	}
+	else if( ti_stalk )
+	{
+		ti_phase  = SND_Cte_MusPhase_Stalk
+	}
+	else if( ti_wait )
+	{
+		ti_phase  = SND_Cte_MusPhase_Stress
+	}
+	else if( ti_neutral )
+	{
+		ti_phase  = SND_Cte_MusPhase_Cool
+	}
+	else
+	{
+		ti_phase = SND_M_GetMusPhase 
+	}
+	
+	// change the phase	
+	if(SND_M_GetMusPhase != ti_phase)
+	{
+		SND_M_SetMusPhase(ti_phase)
+	}
+}

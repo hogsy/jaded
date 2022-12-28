@@ -1,0 +1,86 @@
+#include "KIODE_defines.var"
+
+int			ti_index
+
+float		tf_time
+
+vector	tv_pos
+vector	tv_speed
+
+object	to_serveur
+
+// SORTIE ETAT =============================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	OBJ_CapaSet(none, Capa_Dont_Move)
+	OBJ_FlagsControlSet(none, OBJ_C_ControlFlag_RayInsensitive)
+	
+	KIODE_GFX_Spark()
+
+//	if (i_SND_bzzz_loop != -1)
+//	{
+//		SND_Stop(i_SND_bzzz_loop)
+//		i_SND_bzzz_loop = -1
+//	}
+//	
+	SND_RequestPlay(Ci_SND_paf)
+
+	return
+}
+
+// INITIALISATION ETAT ========================================================================
+if (i_etat_courant != ETAT_Attente)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Attente
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = fct_last_etat
+
+	COL_ColSetActivationSet(C_bit_zde_corps, C_bit_zdm_pied | C_bit_zde_fight)
+
+	OBJ_CapaSet(Capa_Dont_Move, none)
+
+//	i_flag_grab_allowed = vrai
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ===============================================================================
+//o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, vrai, nofunc, nofunc)
+//if (o_grabbed_actor_KK)
+//	macro_change_etat("KIODE_ETAT_Grabbed")
+
+AI_Execute("KIODE_exec_check_paf")
+if (i_flag_paf)
+	macro_change_etat("KIODE_ETAT_Ode")
+
+if (KIODE_ODE_Collision())
+	macro_change_etat("KIODE_ETAT_Ode")
+
+KIODE_GFX_Light()
+
+//if (f_camera_sqr_dist < Cf_SND_sqr_dist_on)
+//{
+//	if (i_SND_bzzz_loop == -1)
+//		i_SND_bzzz_loop = SND_RequestPlayLoop(Ci_SND_bzzz_loop)
+//}
+//else if (f_camera_sqr_dist > Cf_SND_sqr_dist_off)
+//{
+//	if (i_SND_bzzz_loop != -1)
+//	{
+//		SND_Stop(i_SND_bzzz_loop)
+//		i_SND_bzzz_loop = -1
+//	}
+//}

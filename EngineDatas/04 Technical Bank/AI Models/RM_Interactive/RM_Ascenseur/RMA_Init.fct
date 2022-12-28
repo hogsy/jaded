@@ -1,0 +1,63 @@
+#include "RM_Ascenseur_defines.var"
+
+int			i
+int			j
+vector	tv_asc_pos
+
+DYN_On()
+o_main_actor = AI_MainActorGet(0)
+
+// Activer les champs extended sur les waypoints de départ et d'arrivée
+@o_positions[0] OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_ExtendedObject, none)
+@o_positions[1] OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_ExtendedObject, none)
+
+// Position initiale de l'ascenseur
+v_position[0] = @o_positions[0] OBJ_PosGet()
+v_position[1] = @o_positions[1] OBJ_PosGet()
+v_axis = MATH_VecNormalize(v_position[1] - v_position[0])
+
+// Une position de départ a été spécifiée ?
+if (@o_positions[0] OBJ_CapaGet() & OBJ_Capa_8)
+{
+	i_dest = 0
+	OBJ_PosSet(v_position[0])
+}
+else if (@o_positions[1] OBJ_CapaGet() & OBJ_Capa_8)
+{
+	i_dest = 1
+	OBJ_PosSet(v_position[1])
+}
+else
+{
+	// Non, par défaut en position 0
+	i_dest = 0
+	@o_positions[0] OBJ_CapaSet(OBJ_Capa_8, none)  
+}
+
+// Position des portes
+tv_asc_pos = OBJ_PosGet()
+for (i=0; i < 2; i++)
+{
+	for (j=0; j < 2; j++)
+	{
+		v_porte_ipos[i][j] = @o_portes[i][j] OBJ_PosGet() - tv_asc_pos
+	}
+}
+		
+// Ouvrir la porte à la position courante
+f_porte_open[i_porte_position[i_dest]] = 1.0
+RMA_Porte_PosSet (i_porte_position[i_dest])
+
+// Index des sons en cours de lecture
+i_SND_move_loop = -1
+i_SND_wait_loop = -1
+
+// Callbacks de sectorisation
+AI_CBAdd(OBJ_Me(), CallBack_SectoActOn, "RMA_callback_SectoActOn")  
+AI_CBAdd(OBJ_Me(), CallBack_SectoActOff, "RMA_callback_SectoActOff")
+
+AI_TrackCurChangeNow("RMA_ETAT_WAIT")
+
+// {
+//	if (AI_TriggerIsValid(t_fermeture))
+//		ti_trig = call_trigger(t_fermeture)

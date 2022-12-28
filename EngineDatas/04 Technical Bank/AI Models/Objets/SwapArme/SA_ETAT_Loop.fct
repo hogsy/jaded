@@ -1,0 +1,118 @@
+//object	to_obj
+//int			ti_mem
+//int			ti_balle, ti_temp
+//int			ti_same_arme, ti_mem_ammo, ti_new_arme
+//int			activate, i
+//vector	tv_temp
+//
+//if(f_blend_chute)
+//{
+//	to_obj = ANI_CanalObjectGet(1)
+//	if(to_obj)
+//	{
+//		tv_temp = Cv_NullVector
+//		tv_temp.z += MATH_Sin(TIME_Get() * 30) * 0.03 * f_blend_chute
+//		@to_obj OBJ_PosSet(OBJ_PosGet() + tv_temp)
+//		
+//		tv_temp = OBJ_BankingGet()
+//		tv_temp.x += MATH_Sin(TIME_Get() * 10) * 0.03 * f_blend_chute
+//		tv_temp.y -= MATH_Sin(TIME_Get() * 10) * 0.04 * f_blend_chute
+//		@to_obj OBJ_BankingGeneralSet(@to_obj OBJ_SightGet(), tv_temp)
+//		
+//		f_blend_chute -= 2 * TIME_GetDt()
+//		if(f_blend_chute < 0) f_blend_chute = 0
+//	}
+//}
+//
+//if (des_o_parachute)
+//{
+//	SA_Rope_check_paf()
+//	ai_modules_locked[0] = vrai
+//	SA_Rag_Doll(0)
+//}
+//
+//OBJ_LIB_Detach_Javelin(OBJ_Me())
+//
+//GRID_CapaSet(OBJ_PosGet(), tag_grid_terraindyn_1)
+//
+//for(i = 2; i < 10; i++)
+//{
+//	to_obj = ANI_CanalObjectGet(i)
+//	@to_obj OBJ_ZoomSet(1.5)
+//}
+//
+//for(i = 2; i < 11; i++) ANI_ShapeSelect(i, 0) 
+////switch(des_i_arme_initiale)
+////{
+////	case 0 :										break
+////	case Ci_weapon_ID_tommy_gun : 	ANI_ShapeSelect(2, 1) ANI_ShapeSelect(3, 1) if((des_i_balles > @"univ" Weapon_ai_clipsize[Ci_weapon_ID_tommy_gun]) && !i_echange) ANI_ShapeSelect(10, 1) break
+////	case Ci_weapon_ID_shotgun : 		ANI_ShapeSelect(8, 1) ANI_ShapeSelect(9, 1) if((des_i_balles > @"univ" Weapon_ai_clipsize[Ci_weapon_ID_shotgun]) && !i_echange) ANI_ShapeSelect(10, 1) break
+////	case Ci_weapon_ID_colt : 			ANI_ShapeSelect(4, 1) ANI_ShapeSelect(5, 1) if((des_i_balles > @"univ" Weapon_ai_clipsize[Ci_weapon_ID_colt]) && !i_echange) ANI_ShapeSelect(10, 1) break
+////	case Ci_weapon_ID_sniper_rifle : 	ANI_ShapeSelect(6, 1) ANI_ShapeSelect(7, 1) if((des_i_balles > @"univ" Weapon_ai_clipsize[Ci_weapon_ID_sniper_rifle]) && !i_echange) ANI_ShapeSelect(10, 1) break
+////}
+//
+//if(!des_i_arme_initiale) 
+//{
+//	OBJ_Me().des_int1 = 0
+//	return
+//}
+//
+//to_obj = AI_MainActorGet(C_ID_Joueur)
+//if( to_obj && OBJ_SqrDist(to_obj) < 4)
+//	OBJ_Me().des_int1 = Ci_DISPLAY_TAKE
+//else
+//	OBJ_Me().des_int1 = 0
+//
+//// UN HUMAIN
+//if(AI_TriggerIsValid(des_t_propose_hayes))
+//	des_i_propose_hayes = call_trigger(des_t_propose_hayes)
+//if(des_i_propose_hayes && !OBJ_CapaTest(OBJ_Capa_0))
+//{
+//	mo_ramasse = LNK_ClientGet_Interaction( mid_ramasse, 1, "SA_add_data", nofunc, nofunc)
+//	if(mo_ramasse) LNK_InteractionPositionSet(mid_ramasse, OBJ_PosGet())
+//	if (	mo_ramasse && LNK_InteractionCStatusGet(mid_ramasse) == Ci_LNKINT_CSTATUS_Interact)
+//	{
+//		o_id_who = mo_ramasse
+//		AI_Execute("SA_echange")
+//	}
+//}
+//
+//// JACK PREND VOLONTAIREMENT
+//if (OBJ_CapaTest(OBJ_Capa_15))
+//{
+//	OBJ_CapaSet(OBJ_Capa_14, 0)
+//	OBJ_CapaSet(0, OBJ_Capa_15)
+//	o_id_who = AI_MainActorGet(C_ID_Joueur)
+//	@"KingKong/Humain" o_id_who f_delay_forcearmehaute = 0.5
+//	
+//	switch(@"univ" i_weapon_ID[ C_ID_Joueur ])
+//	{
+//		case Ci_weapon_ID_bambou :
+//		case Ci_weapon_ID_ossement :
+////		case Ci_weapon_ID_bambou_moy :
+////		case Ci_weapon_ID_bambou_petit :
+//			@"KingKong/Humain" to_obj i_leave_object_in_hand = vrai
+//			TIME_Wait(0.01)
+//			break
+//	}
+//	
+//	switch(@"univ" i_weapon_ID[ C_ID_Joueur ])
+//	{
+//		case Ci_weapon_ID_levier :
+//			@"univ" i_weapon_ID[ C_ID_Joueur ] = @"univ" i_weapon_ID_Save[C_ID_Joueur]
+//			@"univ" i_weapon_ID_Save[ C_ID_Joueur ] = Ci_weapon_ID_levier
+//			@"KingKong/Humain" o_id_who i_cache_arme = vrai
+//			break
+//	}
+//	
+//	@"univ" o_ramasse_objet_who = o_id_who
+//	@"univ" i_ramasse_objet = des_i_arme_initiale
+//	meta(@"univ" o_ramasse_objet_who) {}
+//	@"KingKong/Humain" o_id_who i_cache_arme = faux
+////	@"KingKong/Humain" o_id_who f_delay_forcearmehaute = 0.5
+////	@"KingKong/Humain" o_id_who i_recharge_arme = vrai
+//	i_echange = vrai
+//	AI_Execute("SA_echange")
+//}
+//
+//

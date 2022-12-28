@@ -1,0 +1,45 @@
+#include "H_defines.var"
+#include "H_action.var"
+
+int					ti_sign
+object			to_obj
+vector			tv_req_suivi
+vector			tv_temp, tv_temp1
+int					ti_rank
+messageid		EVT_ID
+object			EVT_Pere
+int					ti_weapon
+int					ti_valide
+int					ti_num
+float				tf_fear
+object			to_camera 
+int					cbact
+int					ti_annul
+
+#ifndef _FINAL_
+if(i_test_anim_no_pilotage)
+{
+	o_obj_suivi_des_yeux = nobody
+	v_cible_suivi_des_yeux = Cv_NullVector
+	return
+}
+
+if(o_test_anim_regard)
+{
+	o_obj_suivi_des_yeux = o_test_anim_regard
+	v_cible_suivi_des_yeux = @o_obj_suivi_des_yeux OBJ_PosGet()
+	f_pilotage_bras_duration = 0.5
+	return
+}
+#endif
+
+// Regarder qqun pendant un certain temps
+f_force_regard_time -= TIME_GetDt()
+if(f_force_regard_time < 0) 
+{
+	f_force_regard_time = 0
+	i_force_regard_toujours = faux
+}
+
+o_obj_suivi_des_yeux = nobody
+

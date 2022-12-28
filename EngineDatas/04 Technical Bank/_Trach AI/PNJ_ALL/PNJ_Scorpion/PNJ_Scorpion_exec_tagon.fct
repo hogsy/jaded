@@ -1,0 +1,104 @@
+#include "PNJ_Scorpion_defines.var"
+
+int		ti_state
+
+float		tf_speed
+float		tf_dist
+
+vector	tv_speed
+
+if (f_dash_duration && @get_global f_delay_since_last_scorpion_dash || @get_global o_last_scorpion_dasher != OBJ_Me())
+	f_dash_duration = 0.0
+
+AI_Execute("PNJ_Scorpion_callback_tagon")
+
+PNJ_Scorpion_UncollideCheck()
+PNJ_Scorpion_Soft_Collision()
+
+ti_state = -1
+
+switch(i_etat_courant)
+{
+	case ETAT_MORT :	
+		ti_state = C_EVENT_EnemyState_Die
+		break
+
+	case ETAT_FIGHT :
+	case ETAT_CATCH :
+	case ETAT_SAUT :
+	case ETAT_DODGE :
+		ti_state = C_EVENT_EnemyState_Fight
+		break
+
+	case ETAT_IDLE :
+	case ETAT_GRAB :
+	case ETAT_PAF :
+		ti_state = C_EVENT_EnemyState_Neutral
+		break
+
+}
+
+if (ti_state != -1)
+	EVENT_AddEventEnemy(C_ID_Scorpion, OBJ_Me(), ti_state)
+
+// SOUND =============================================================
+//tv_speed = DYN_SpeedGetVector()
+//tf_speed = MATH_VecDotProduct(tv_speed, OBJ_SightGet())
+
+if (f_lifecur)
+{
+	tf_speed = DYN_SpeedGet()
+	
+	tf_speed = MATH_FloatLimit(tf_speed / 6.0, 0.1, 1.0)
+	
+	tf_dist = OBJ_SqrDist(o_main_actor) 
+	if (tf_dist < 256.0)
+	{
+		if (SND_move_1_loop == -1)
+			SND_move_1_loop = SND_RequestPlayLoopOnObjCanal(SND_MOVE_1, 2)
+		
+		if (SND_move_2_loop == -1)
+			SND_move_2_loop = SND_RequestPlayLoopOnObjCanal(SND_MOVE_2, 13)
+	}
+	else if (tf_dist > 289.0)
+	{
+		if (SND_move_1_loop != -1)
+		{
+			SND_Stop(SND_move_1_loop)
+			SND_move_1_loop = -1
+		}
+		
+		if (SND_move_2_loop != -1)
+		{
+			SND_Stop(SND_move_2_loop)
+			SND_move_2_loop = -1
+		}
+	}
+	
+	if (SND_move_1_loop != -1)
+	{
+		SND_InsertVarSet(SND_move_1_loop, 23, tf_speed)
+	}
+	
+	if (SND_move_2_loop != -1)
+	{
+		SND_InsertVarSet(SND_move_2_loop, 23, tf_speed)
+	}
+}
+else
+{	
+	if (SND_move_1_loop != -1)
+	{
+		SND_Stop(SND_move_1_loop)
+		SND_move_1_loop = -1
+	}
+	
+	if (SND_move_2_loop != -1)
+	{
+		SND_Stop(SND_move_2_loop)
+		SND_move_2_loop = -1
+	}
+}
+// SOUND =============================================================
+
+

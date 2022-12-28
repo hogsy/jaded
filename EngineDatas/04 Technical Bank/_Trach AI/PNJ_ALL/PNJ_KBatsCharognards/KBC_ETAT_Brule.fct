@@ -1,0 +1,83 @@
+
+#include "KBC_defines.var"
+
+//=============================================================================
+// LA BAT BRULE
+//=============================================================================
+
+
+// SORTIE ETAT
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// ENTREE ETAT
+if (i_etat_courant != ETAT_Brule)
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Brule
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	ACT_ActionSet(ACTION_Paf_Air_Faible)
+	AI_Execute("KBC_exec_dyn_on")
+	
+	f_HP = 0.0		// pour tuer la bat si elle vient de l'agonie ou autre...
+	SND_RequestPlay(Ci_SND_Cri_Mort)
+	OBJ_CapaSet(CAPA_inactive, 0)
+	
+	DBG_TraceObject(OBJ_Me())
+	DBG_TraceString(" passe à travers les flammes => meurt brulée...")
+	DBG_TraceEOL()
+	
+	if( i_DBG_trace_etat )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : etat brule")
+		DBG_TraceEOL()
+	}
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// ANALYSE ======================================================================
+
+
+// COMPORTEMENT ================================================================
+
+i_flag_neck = faux
+
+switch( ACT_ActionGet() )
+{
+	case ACTION_Paf_Air_Faible :
+		if( ACT_ActionFinished() )
+			ACT_ActionSet(ACTION_Vol_Vrille)
+		
+		if( KBC_Collide_Ground() )
+			ACT_ActionSet(ACTION_Ecrase)
+		break
+	
+	case ACTION_Vol_Vrille :
+		if( KBC_Collide_Ground() )
+			ACT_ActionSet(ACTION_Ecrase)
+		break
+		
+	case ACTION_Ecrase :
+		if( ACT_ActionFinished() && KBC_Collide_Ground() )
+			OBJ_Destroy()
+		break
+}
+
+OBJ_BankingGeneralSet(OBJ_SightGet(), MATH_VecBlendRotate(OBJ_BankingGet(),Cv_VerticalVector,10.0 * TIME_GetDt()))
+

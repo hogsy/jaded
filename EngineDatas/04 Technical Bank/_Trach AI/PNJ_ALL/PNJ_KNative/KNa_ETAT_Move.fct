@@ -1,0 +1,92 @@
+// Gao1 = Gao deplacement Dest
+
+#include"KNa_Defines.var"
+
+object		to_move_next_pos 
+
+// SORTIE ETAT ===================================================================
+if (i_flag_sort_etat)
+{
+	i_flag_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_Move)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Move
+
+	if (fct_last_etat)
+	{
+		i_flag_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	o_move_dest_pos = m_script.msg_gao1
+	i_move_nbr_wp = WAY_ShortWay(net_deplacement, &o_move_list[0], o_move_cur_pos,o_move_dest_pos,all,none)
+
+	if (m_script.msg_int1)
+	{
+		// Choix d'un pourcentage
+		v_move_shoot_pos = MATH_VecBlend(@o_move_list[1] OBJ_PosGet(),@o_move_dest_pos OBJ_PosGet(), MATH_RandFloat(0.3,0.7)) 
+	}
+	else
+		v_move_shoot_pos = Cv_NullVector
+
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+DBG_RenderVector(v_move_shoot_pos, cvector(0,0,5),color_rouge)
+
+
+// ANALYSE =====================================================================
+// On force un tir sur une Target Specifique ----------
+if (m_script.msg_gao2)
+	o_target = m_script.msg_gao2
+// On force un tir sur une Target Specifique ----------
+
+if (i_move_nbr_wp == 2 && m_script.msg_int1)
+{
+	if (i_target_none)
+		m_script.msg_int1 = 0
+	else if (MATH_VecDotProduct(v_move_shoot_pos - @o_move_cur_pos OBJ_PosGet(), v_move_shoot_pos - OBJ_PosGet()) < 0)
+	{
+		i_move_flag_shootinmove = vrai
+		macro_change_etat("KNa_ETAT_Launch")
+	}
+}
+
+if (i_move_nbr_wp <= 1)
+{
+	o_move_cur_pos = o_move_dest_pos
+	macro_change_etat("KNa_ETAT_Wait")
+}
+
+to_move_next_pos = o_move_list[i_move_nbr_wp-2]
+if ( MATH_VecDotProduct(@to_move_next_pos OBJ_PosGet() - @o_move_cur_pos OBJ_PosGet(),@to_move_next_pos OBJ_PosGet() - OBJ_PosGet()) < 0)
+{
+	o_move_cur_pos = to_move_next_pos
+	i_move_nbr_wp --
+	returntrack
+}
+
+// PAFs -----------------------------------------------------
+AI_Execute("KNa_Exec_CheckPaf")
+if (EVT_Paf_Pere)
+	macro_change_etat("KNa_ETAT_Paf")
+// PAFs -----------------------------------------------------
+
+
+to_move_next_pos = o_move_list[i_move_nbr_wp-2]
+	
+// COMPORTEMENT ===============================================================
+
+ACT_ActionSet(Ci_AnimNative_Deplacement)
+
+OBJ_BankingGeneralSet( MATH_VecBlendRotate(OBJ_SightGet(), @to_move_next_pos OBJ_PosGet() - OBJ_PosGet(), 10.0 * TIME_GetDt()), Cv_VerticalVector)

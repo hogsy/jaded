@@ -1,0 +1,180 @@
+#include"KNa_Defines.var"
+
+int		ti_action 
+int		ti_action_item 
+
+// SORTIE ETAT ===================================================================
+if (i_flag_sort_etat)
+{
+	i_flag_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_Launch)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Launch
+
+	if (fct_last_etat)
+	{
+		i_flag_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	// Choix de la Phase d'init
+	if (i_move_flag_shootinmove)
+	{
+		i_etat_phase = 2										// Pas de decalage
+		ACT_ActionSet(Ci_AnimNative_Lance)
+	}
+	else
+	{
+		switch (m_script.msg_int2)
+		{
+			case 0 :
+				i_etat_phase = 2								// Pas de decalage
+				ACT_ActionSet(Ci_AnimNative_Lance)
+				break
+			case 1 :
+				i_etat_phase = 0								// Droite
+				break
+			case 2 :
+				i_etat_phase = 1								// Gauche
+				break				
+			case 3 :
+				i_etat_phase = MATH_RandInt(0,2)		// Rand droite ou gauche
+		}
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	// Na_attack01_05 =====================
+//	SPEECH_RequestPost
+//	(
+//		OBJ_Me(),
+//		OBJ_Me(), 
+//		0xD00066C9, 
+//		0xD00066D0, 
+//		1.0, 
+//		SPEECH_Cte_PriorityDefault, 
+//		5,
+//		0,
+//		0,
+//		0
+//	)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =====================================================================
+
+// On force un tir sur une Target Specifique ----------
+if (m_script.msg_gao2)
+	o_target = m_script.msg_gao2
+// On force un tir sur une Target Specifique ----------
+
+AI_Execute("KNa_Exec_CheckPaf")
+if (EVT_Paf_Pere)
+	macro_change_etat("KNa_ETAT_Paf")
+
+
+
+// COMPORTEMENT ===============================================================
+ti_action = ACT_ActionGet()
+ti_action_item = ACT_ActionItemGet()
+
+// PAFs -----------------------------------------------------
+if (ti_action == Ci_AnimNative_Lance && !ti_action_item)
+{
+	if (!o_projectile)
+	{
+		o_projectile = @o_Weapon OBJ_Duplicate( OBJ_PosGet() )
+		
+	//	if ( mi_BurningWeapon )
+	//	{
+	//		MSG_SetNull( msg )
+	//		msg.msg_id = msg_id_grenadeburning
+	//		msg.msg_sender = OBJ_Me()
+	//		@mo_WeaponCur MSG_Send( msg )
+	//	}
+	}
+}
+// PAFs -----------------------------------------------------
+
+switch (i_etat_phase)
+{
+	case 0 :
+		// Decalage Droite
+		OBJ_BankingGeneralSet( MATH_VecBlendRotate(OBJ_SightGet(), -@o_move_dest_pos OBJ_SightGet(), 1000.0 * TIME_GetDt()), Cv_VerticalVector)
+		ACT_ActionSet(Ci_AnimNative_Droite)
+		i_etat_phase = 3
+		break
+	case 1 :
+		// Decalage Gauche
+		OBJ_BankingGeneralSet( MATH_VecBlendRotate(OBJ_SightGet(), -@o_move_dest_pos OBJ_SightGet(), 1000.0 * TIME_GetDt()), Cv_VerticalVector)
+		ACT_ActionSet(Ci_AnimNative_Gauche)
+		i_etat_phase = 3
+		break
+	case 2 :
+		// Shoot
+		if ( ti_action == Ci_AnimNative_Lance )
+		{
+			if ( ACT_ActionFinished() )
+			{
+				if (i_target_none)
+					m_script.msg_int1 = 0
+				else
+					m_script.msg_int1--
+				if (m_script.msg_int1)
+					ACT_ActionSet(Ci_AnimNative_Lance)
+				else
+				{
+					if (i_move_flag_shootinmove)
+					{
+						i_move_flag_shootinmove = faux
+						macro_change_etat("KNa_ETAT_Move")
+					}
+					else
+					{
+//						macro_change_etat("Na_ETAT_Wait")
+						v_move_init_pos = OBJ_PosGet()
+						i_etat_phase = 10
+					}
+				}
+			}
+			else
+			{
+				// Anim Lancer Non terminer
+				if (ti_action_item == 1 && !i_action_item_old)
+				{
+					// Je lance ma lance
+					AI_Execute("KNa_Exec_Lance")
+				}
+			}
+		}
+		OBJ_BankingGeneralSet( MATH_VecBlendRotate(OBJ_SightGet(), @o_target OBJ_PosGet() - OBJ_PosGet(), 10.0 * TIME_GetDt()), Cv_VerticalVector)
+		break
+
+	case 3 :
+		if (ACT_ActionFinished())
+		{
+			ACT_ActionSet(Ci_AnimNative_Lance)
+			i_etat_phase = 2
+		}
+		break
+
+	case 10 :
+	
+		if ( MATH_VecDotProduct(@o_move_dest_pos OBJ_PosGet() - v_move_init_pos, @o_move_dest_pos OBJ_PosGet() - OBJ_PosGet()) < 0)
+			macro_change_etat("KNa_ETAT_Wait")
+		ACT_ActionSet(Ci_AnimNative_Deplacement)
+		OBJ_BankingGeneralSet( MATH_VecBlendRotate(OBJ_SightGet(), @o_move_dest_pos OBJ_PosGet() - OBJ_PosGet(), 10.0 * TIME_GetDt()), Cv_VerticalVector)	
+		break
+}
+
+i_action_item_old = ti_action_item
+

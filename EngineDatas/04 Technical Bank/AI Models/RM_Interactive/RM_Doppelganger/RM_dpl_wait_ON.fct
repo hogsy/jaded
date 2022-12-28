@@ -1,0 +1,58 @@
+int		ti_i
+vector	tv_offset
+
+// SORTIE ETAT 	===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// INIT ETAT 	=====================================================================
+if ( i_etat_courant != ETAT_RM_main)
+{
+	i_etat_courant = ETAT_RM_main
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()	
+}
+
+if ( (AI_TriggerIsValid( t_destroy[0]) && call_trigger( t_destroy[0]))
+|| ( AI_TriggerIsValid( t_destroy[1]) && call_trigger( t_destroy[1])))
+{ 
+	for ( ti_i=0; ti_i < 5; ti_i++ )
+	{
+		if ( o_position[ti_i])
+			@o_dupl[ti_i] OBJ_Destroy()
+	}
+	OBJ_CapaSet( none, Obj_Capa_Switch)
+//	AI_TrackCurChange("RM_dpl_wait_OFF")
+}
+
+if ( AI_TriggerIsValid( t_TP_RM_OUT) && call_trigger( t_TP_RM_OUT))
+{
+	if ( o_pos_RM_retour)
+	{
+		tv_offset = @get_Kamera OBJ_PosGet() - @get_rayman OBJ_PosGet()
+		tv_offset = @get_rayman MATH_VecGlobalToLocal( tv_offset)
+		@get_rayman OBJ_PosSet( @o_pos_RM_retour OBJ_PosGet())
+		@get_rayman OBJ_BankingGeneralSet( @o_pos_RM_retour OBJ_SightGet(), Cv_VerticalVector)
+		@get_rayman COL_StartMatrixSet(@o_pos_RM_retour OBJ_PosGet())
+		@get_rayman PROC_RM_Teleported()
+		tv_offset = @get_rayman MATH_VecLocalToGlobal( tv_offset)
+		@get_Kamera OBJ_PosSet( @get_rayman OBJ_PosGet() - tv_offset)		
+	}
+	
+	if ( OBJ_CapaTest(Obj_Capa_Switch))
+	{
+		for ( ti_i=0; ti_i < 5; ti_i++ )
+		{
+			if ( o_position[ti_i])
+				@o_dupl[ti_i] OBJ_Destroy()
+		}
+	}
+	AI_TrackCurChange("RM_dpl_wait_OFF")	
+}

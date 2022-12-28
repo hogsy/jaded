@@ -1,0 +1,64 @@
+
+#include "KR_defines.var"
+
+message		tm_msg
+int	ti_msgOperation
+
+
+
+if (! (OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_Msg) )
+	return		// this one doesnt support messages
+
+while (MSG_GetCount())
+{
+	tm_msg = MSG_Get()
+	ti_msgOperation = 0
+
+	switch (tm_msg.msg_id)
+	{
+		case msg_id_SendMessageTrigger :
+			ti_msgOperation = tm_msg.msg_int5
+			break
+	}
+	
+	// if it's an operation let's do it
+	if (ti_msgOperation > 0)
+	{
+		switch (ti_msgOperation)
+		{
+			//===================================
+			case Ci_MSG_OP_UNDEF :
+			//===================================
+				break
+
+			//===================================
+			case Ci_MSG_OP_ATTACK_PERSO :
+			//===================================
+				if (tm_msg.msg_gao1)
+					o_force_target = tm_msg.msg_gao1
+				else
+					o_force_target = nobody
+				break
+				
+			//===================================
+			case Ci_MSG_OP_FOLLOW_NET :
+			//===================================
+				if (tm_msg.msg_gao1)
+				{
+					KR_InitNetworkFollowing(tm_msg.msg_gao1, tm_msg.msg_int1)
+					macro_change_etat("KR_ETAT_FollowNetwork")
+				}
+				else
+				{
+					DBG_Error("raptor received message to follow network but first wp was not setup")
+				}
+				break
+
+			//===================================
+			case Ci_MSG_OP_FOLLOW_CLOSEST_NET :
+			//===================================
+				break
+		}
+	}
+}
+

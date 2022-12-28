@@ -1,0 +1,48 @@
+#include "PNJ_Spider_defines.var"
+
+object	to_target
+
+
+vector	tv_hor_sight
+
+float		tf_dist
+float		tf_norm
+float		tf_dot_product
+
+if (f_time_start_etat < 0.1)
+	return
+
+if (! TIME_Elapsed(@get_global f_spider_time_last_jump, 0.05) )
+	return
+
+if (i_flag_dodge_fire || i_flag_dodge_javelin_fire)
+	return
+
+if (i_perceived_best_actor_index == -1)
+	return
+ 
+if (ai_perceived_status[i_perceived_best_actor_index] & (Ci_PERCEIVED_IS_DEAD | Ci_PERCEIVED_GET_FIRE | Ci_PERCEIVED_NEAR_FIRE) )
+	return
+
+//if ( ! ( ai_perceived_status[i_perceived_best_actor_index] & Ci_PERCEIVED_NEAR_IN_MOVE_CONE ) )
+//	return
+
+//if (af_perceived_dist[i_perceived_best_actor_index] > Cf_attack_dist)
+//	return
+
+//if ( f_on_screen_duration < 0.5 && ai_perceived_ID[i_perceived_best_actor_index] == C_ID_Jack)
+//	return
+
+if (! MSG_GlobalIsValid(mid_best_interet))
+	return
+
+if (f_on_screen_pourcent == -1.0)
+	macro_change_etat("PNJ_Spider_ETAT_Snap")
+
+if (f_delay_until_last_ground_col > 0.3 && f_delay_until_last_wall_col > 0.3)
+	return
+
+//if (f_delay_until_last_wall_col < 0.2)
+//	return
+
+macro_change_etat("PNJ_Spider_ETAT_Attaque")

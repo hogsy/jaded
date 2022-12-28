@@ -1,0 +1,29 @@
+if(mf_InitTimer)
+{
+	mf_InitTimer -= TIME_GetDt()
+	if(mf_InitTimer < 0.0) mf_InitTimer = 0.0
+}
+
+if(mf_InitTimer)
+{
+	return
+}
+
+
+if( SND_IsPlaying(mi_DeathInstance) )
+	return
+	
+mi_DeathInstance = -1
+
+
+#ifndef _FINAL_
+	if(i_DebugMode)
+	{
+		DBG_TraceString("[MUS] end of death music")
+		DBG_TraceEOL()
+	}
+#endif
+	
+AI_TrackChange(0,"SKMM_ScanMessage")
+AI_TrackChange(1,"SKMM_Loop")
+AI_TrackChange(2,"SKMM_Volume")

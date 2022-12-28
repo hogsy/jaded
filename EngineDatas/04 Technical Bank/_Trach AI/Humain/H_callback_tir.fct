@@ -1,0 +1,596 @@
+//#include "H_defines.var"
+//
+//
+//int				ti_context
+//int				ti_canal
+//int				ti_rank
+//int				ti_nb_ray
+//int				ti_index
+//int				tc_color
+//float			ti_paf
+//int				ti_rem
+//int				ti_sound
+//int				ti_tommygunshoot
+//int				ti_snd
+//int				ti_sndcount
+//int				ti_sndimpact[ COL_C_Snd_Number ]
+//int				ti_weapon_id
+//int				ti_weapon_paf_type
+//
+//float			tf_size
+//float			tf_dot
+//float			tf_dist
+//float			tf_angle_x
+//float			tf_angle_y
+//float			tf_add_x
+//float			tf_add_y
+//float			tf_range
+//float			tf_tangle_x, tf_tangle_y
+//
+//object		to_gao
+//object		to_cible
+//object		to_canal
+//object		to_bone, to_bone1
+//object		to_camera
+//object		to_jack
+//
+//vector		tv_sight
+//vector		tv_temp
+//vector		tv_temp1
+//vector		tv_pos
+//vector		tv_normal, tv_impact
+//vector		tv_shot_ray
+//
+//vector		tv_tir_depart
+//vector		tv_tir_arrivee
+//
+//messageid	EVT_Visibility_ID
+//
+//vector		shot_impact[50]
+//vector		shot_normal[50]
+//object		shot_objet[50]
+//int				shot_canal[50]
+//float			shot_dist[50]
+//int				shot_index[50]
+//int				shot_num
+//int				ti_shot_index
+//
+//
+//f_time_force_strafe = 0.2
+//if ( OBJ_FlagsControlGet() & OBJ_C_ControlFlag_ForceInactive )
+//	return
+//
+//
+//// INIT ================================================================
+//ti_snd = vrai
+//
+//to_camera = @get_global o_camera
+//
+//ti_weapon_id = @"univ" i_weapon_ID[i_id_humain]
+//ti_weapon_paf_type = @"univ" i_weapon_paf_type[ti_weapon_id]
+//
+//DBG_TraceString("ti_weapon_paf_type = ")
+//DBG_TraceInt(ti_weapon_paf_type)
+//DBG_TraceEOL()
+//
+//// COMPORTEMENT ================================================================
+//switch( ti_weapon_id )
+//{
+//	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//	case Ci_weapon_ID_colt :
+//
+//		// BEG Munitions
+//		if(@"univ" i_weapon_ammunition[Ci_weapon_ID_colt][i_id_humain] == 0)
+//		{
+//			AI_Execute("H_exec_loading_weapon")
+//			i_flag_add_shoot = faux
+//			macro_del_callback_tir("H_callback_tir")
+//			break
+//		}
+//		if(@get_camera_path to_camera f_shoot_jack == 0) @get_camera_path to_camera f_shoot_jack = -1	
+//		@"univ" i_weapon_ammunition[Ci_weapon_ID_colt][i_id_humain] --
+//		@get_camera_path to_camera i_just_shoot = vrai
+//		// END Munitions
+//		
+//		EVENT_AddEventSound(C_EVENT_FILTER_Tir, OBJ_Me(), Cf_EVENT_Duree_1Trame, OBJ_PosGet(), Cf_portee_detonation)
+//		IO_PafSet(50, 2)
+//		SND_RequestPlay( SND_Jack_ColtShoot )
+//		if ( @"univ" i_weapon_ammunition[Ci_weapon_ID_colt][i_id_humain] <= 1)
+//			SND_RequestPlay( SND_Jack_ColtLastShoot )
+////		MORPH_Shoot( 0.15 )
+//					
+//		MakeTirCommon(tv_tir_depart, tv_tir_arrivee, tv_sight, to_gao, ti_canal, ti_snd )		
+//		
+//		if (to_gao && (!@to_gao AI_IsModel("KingKong/Humain") || @to_gao OBJ_CapaTest(OBJ_Capa_1)) )
+//		{
+//			if(i_flag_force_rate)
+//			{
+//				i_flag_force_rate = faux
+//				ti_paf = 0
+//			}
+//			else
+//			{
+//				ti_paf = Weapon_damage( Ci_weapon_ID_colt, OBJ_SqrDist( to_gao ) )
+//				@get_global o_jack_last_paf = to_gao
+//				EVENT_AddEventPafCanal(C_EVENT_FILTER_All, ti_weapon_paf_type, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_gao, ti_canal, ti_paf, tv_sight, tv_tir_arrivee)
+//			}
+//		}
+//		
+//		i_tir_nb++
+//		v_tir_pos_help = tv_tir_arrivee
+//		
+//		to_gao = o_canal_maind
+//		tv_tir_depart  = @to_gao OBJ_PosGet()
+//		tv_tir_depart += @to_gao OBJ_BankingGet() * 0.08
+//		tv_tir_depart += @to_gao OBJ_SightGet() * 0.18
+//
+//		tv_tir_arrivee -= tv_tir_depart
+//		tv_tir_arrivee *= 0.25
+//		tv_tir_arrivee +=tv_tir_depart
+//
+//		push(20)
+//		push(tv_tir_arrivee)
+//		push(tv_tir_depart)
+//		AI_Execute("H_exec_GFX_Tir")
+//		
+//		i_flag_add_shoot = faux
+//		macro_del_callback_tir("H_callback_tir")
+//		
+//		f_max_light_gun = 0.4
+//		f_time_light_gun = f_max_light_gun
+//		break
+//
+//	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//	case Ci_weapon_ID_tommy_gun :
+//
+//		ti_tommygunshoot = faux
+//		if ( MATH_FloatNullEpsilon(f_tir_time)) i_tir_nb = 0
+//		if (f_tir_time >= (0.1 * i_tir_nb) && i_flag_tir_continu )
+//			ti_tommygunshoot = vrai
+//
+//		// BEG Munitions
+//		if(ti_tommygunshoot && @"univ" i_weapon_ammunition[Ci_weapon_ID_tommy_gun][i_id_humain] == 0)
+//		{
+//			AI_Execute("H_exec_loading_weapon")
+//			i_flag_add_shoot = faux
+//			if (i_snd_tommygun != -1) 
+//			{
+//				SND_Stop( i_snd_tommygun )
+//				i_snd_tommygun = -1
+//				SND_Stop( i_snd_tommygunB )
+//				i_snd_tommygunB = -1
+//				SND_RequestPlay( SND_Jack_TommygunEndLoop )
+//			}
+//			macro_del_callback_tir("H_callback_tir")
+//			break
+//		}
+//		// END Munitions
+//			
+//		if(@get_camera_path to_camera f_shoot_jack == 0) @get_camera_path to_camera f_shoot_jack = -1	
+//		if ( ti_tommygunshoot )
+//		{
+//			EVENT_AddEventSound(C_EVENT_FILTER_Tir, OBJ_Me(), Cf_EVENT_Duree_1Trame, OBJ_PosGet(), Cf_portee_detonation)	
+//			IO_PafSet(50, 2)
+//
+//			if (i_snd_tommygun == -1)
+//			{
+//				i_snd_tommygun = SND_Request( SND_Jack_TommygunShoot,  C_SND_Request_DestroyWhenFinished)
+//				SND_PlayLooped(i_snd_tommygun, -1)
+//				i_snd_tommygunB = SND_Request( SND_Jack_TommygunShootB,  C_SND_Request_DestroyWhenFinished)
+//				SND_PlayLooped(i_snd_tommygunB, -1)
+//			}
+//				
+//			@"univ" i_weapon_ammunition[Ci_weapon_ID_tommy_gun][i_id_humain] --
+//			tf_size = @"univ" i_weapon_ammunition[Ci_weapon_ID_tommy_gun][i_id_humain]
+//			tf_size /= Ci_tommy_gun_clip_size
+//			SND_InsertVarSet( i_snd_tommygun, 4, tf_size )
+//			SND_InsertVarSet( i_snd_tommygunB, 4, tf_size )
+//			@get_camera_path to_camera i_just_shoot = vrai
+//			
+//			GFX_Weapon_TommygunRicochet--
+//			if ( GFX_Weapon_TommygunRicochet > 0)
+//				ti_snd = 0
+//
+//			MakeTirCommon(tv_tir_depart, tv_tir_arrivee, tv_sight, to_gao, ti_canal, ti_snd )		
+//			
+//			GFX_Weapon_TommygunNextRicochet = ti_snd
+//			if ( GFX_Weapon_TommygunRicochet <= 0)
+//			{
+//				GFX_Weapon_TommygunNextRicochet = -1
+//				GFX_Weapon_TommygunRicochet = MATH_RandInt( 3, 5 )
+//			}
+//		
+//			if (to_gao && (!@to_gao AI_IsModel("KingKong/Humain") || @to_gao OBJ_CapaTest(OBJ_Capa_1)) )
+//			{
+//				if(i_flag_force_rate)
+//				{
+//					i_flag_force_rate = faux
+//					ti_paf = 0
+//				}
+//				else
+//				{
+//					ti_paf = Weapon_damage( Ci_weapon_ID_tommy_gun, OBJ_SqrDist( to_gao ) )
+//					@get_global o_jack_last_paf = to_gao
+//					EVENT_AddEventPafCanal(C_EVENT_FILTER_All, ti_weapon_paf_type, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_gao, ti_canal, ti_paf, tv_sight, tv_tir_arrivee)
+//				}
+//			}
+//			
+//			i_tir_nb++
+//			v_tir_pos_help = tv_tir_arrivee
+//			
+//			to_gao = o_canal_maind
+//			tv_tir_depart  = @to_gao OBJ_PosGet()
+//			tv_tir_depart += @to_gao OBJ_BankingGet() * 0.1
+//			tv_tir_depart += @to_gao OBJ_SightGet() * 0.55
+//
+//			push(10)
+//			push(tv_tir_arrivee)
+//			push(tv_tir_depart)
+//			AI_Execute("H_exec_GFX_Tir")
+//		}
+//		
+//		f_tir_time += TIME_GetDt()
+//		
+//		if( ! i_flag_tir_continu )
+//		{
+//			i_flag_tir = faux
+//			i_tir_nb = 0
+//			f_tir_time = 0.0
+//			
+//			i_flag_add_shoot = faux
+//			macro_del_callback_tir("H_callback_tir")
+//			if (i_snd_tommygun != -1) 
+//			{
+//				SND_Stop( i_snd_tommygun )
+//				i_snd_tommygun = -1
+//				SND_Stop( i_snd_tommygunB )
+//				i_snd_tommygunB = -1
+//				SND_RequestPlay( SND_Jack_TommygunEndLoop )
+//			}
+//		}
+//		
+//		f_max_light_gun = 0.2
+//		f_time_light_gun = f_max_light_gun
+//		break
+//
+//	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//	case Ci_weapon_ID_sniper_rifle :
+//		// BEG Munitions
+//		if(@"univ" i_weapon_ammunition[Ci_weapon_ID_sniper_rifle][i_id_humain] == 0)
+//		{
+//			AI_Execute("H_exec_loading_weapon")
+//			i_flag_add_shoot = faux
+//			macro_del_callback_tir("H_callback_tir")
+//			break
+//		}
+//		
+//		if(@get_camera_path to_camera f_shoot_jack == 0) @get_camera_path to_camera f_shoot_jack = -1	
+//		@"univ" i_weapon_ammunition[Ci_weapon_ID_sniper_rifle][i_id_humain] --
+//		@get_camera_path to_camera i_just_shoot = vrai
+//		// END Munitions
+//		
+//		EVENT_AddEventSound(C_EVENT_FILTER_Tir, OBJ_Me(), Cf_EVENT_Duree_1Trame, OBJ_PosGet(), Cf_portee_detonation)
+//		IO_PafSet(50, 2)
+//		SND_RequestPlay( SND_Jack_SniperRifleShoot )
+//		if(@"univ" i_weapon_ammunition[Ci_weapon_ID_sniper_rifle][i_id_humain] == 0)
+//			SND_RequestPlay( SND_Jack_SniperRifleLastShoot )
+//				
+//		MakeTirCommon(tv_tir_depart, tv_tir_arrivee, tv_sight, to_gao, ti_canal, ti_snd)		
+//		if (to_gao && ( ! @to_gao AI_IsModel(get_Humain_path) || @to_gao OBJ_CapaTest(OBJ_Capa_1)) )
+//		{
+//			if(i_flag_force_rate)
+//			{
+//				i_flag_force_rate = faux
+//				ti_paf = 0
+//			}
+//			else
+//			{
+//				ti_paf = Weapon_damage( Ci_weapon_ID_sniper_rifle, OBJ_SqrDist( to_gao ) )
+//
+//				@get_global o_jack_last_paf = to_gao
+//				EVENT_AddEventPafCanal(C_EVENT_FILTER_All, ti_weapon_paf_type, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_gao, ti_canal, ti_paf, tv_sight, tv_tir_arrivee)
+//			}
+//		}
+//		
+//		v_tir_pos_help = tv_tir_arrivee
+//		
+//		to_gao = o_canal_maind
+//
+//		tv_tir_depart  = @to_gao OBJ_PosGet()
+//		tv_tir_depart += @to_gao OBJ_BankingGet() * 0.1
+//		tv_tir_depart += @to_gao OBJ_SightGet() * 0.6
+//
+//		push(100)	
+//		push(tv_tir_arrivee)
+//		push(tv_tir_depart)
+//		AI_Execute("H_exec_GFX_Tir")
+//		
+//		f_tir_time += TIME_GetDt()
+//		
+//		i_flag_add_shoot = faux
+//		macro_del_callback_tir("H_callback_tir")
+//		
+//		f_max_light_gun = 0.4
+//		f_time_light_gun = f_max_light_gun
+//		break
+//
+//	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//	case Ci_weapon_ID_shotgun :
+//		
+//		tv_tir_arrivee = Cv_NullVector
+//
+//		tv_tir_depart = @get_camera OBJ_PosGet()
+//		tv_sight = @get_camera OBJ_SightGet()
+//		tv_tir_depart += (tv_sight * 0.5)
+//
+//		if (!i_tir_nb)
+//		{
+//			// BEG Munitions
+//			if(@"univ" i_weapon_ammunition[Ci_weapon_ID_shotgun][i_id_humain] == 0)
+//			{
+//				AI_Execute("H_exec_loading_weapon")
+//				i_flag_add_shoot = faux
+//				macro_del_callback_tir("H_callback_tir")
+//				break				
+//			}
+//			
+//			if(@get_camera_path to_camera f_shoot_jack == 0) @get_camera_path to_camera f_shoot_jack = -1	
+//			@"univ" i_weapon_ammunition[Ci_weapon_ID_shotgun][i_id_humain] --
+//			@get_camera_path to_camera i_just_shoot = vrai
+//			// END Munitions
+//
+//			to_gao = o_canal_maind
+//			tv_temp = @to_gao OBJ_PosGet()
+//
+//			tv_temp += @to_gao OBJ_BankingGet() * 0.08
+//			tv_temp += @to_gao OBJ_SightGet() * 0.18	
+//			tv_temp1 = (@to_gao OBJ_SightGet() * 0.5)
+//
+//		}
+//		
+//		STATS_IncBullet( )
+//		EVENT_AddEventSound(C_EVENT_FILTER_Tir, OBJ_Me(), Cf_EVENT_Duree_1Trame, OBJ_PosGet(), Cf_portee_detonation)
+//		IO_PafSet(100, 4)
+//		SND_RequestPlay( SND_Jack_ShotgunShoot )
+//		if(@"univ" i_weapon_ammunition[Ci_weapon_ID_shotgun][i_id_humain] == 0)
+//			SND_RequestPlay( SND_Jack_ShotgunLastShoot )
+//				
+//		// init tableau des snd id rencontrés par les rayons
+//		for (ti_index = 0; ti_index < COL_C_Snd_Number; ti_index++)
+//			ti_sndimpact[ ti_index ] = 0
+//		
+//		// Balance la matrice de rayons
+//		tf_angle_x = -Cf_shotgun_cone
+//		tf_angle_y = -Cf_shotgun_cone
+//		tf_add_x = -0.5
+//		tf_add_y = 0.5
+//		shot_num = 0
+//		for (ti_nb_ray = 0; ti_nb_ray < 25; ti_nb_ray++)
+//		{
+//			i_tir_nb ++
+//		
+//			tf_tangle_x = tf_angle_x
+//			tf_tangle_y = tf_angle_y
+//			if(ti_nb_ray != 12)	// Centre
+//			{
+//				tf_tangle_x = tf_angle_x + MATH_RandFloat(-0.05, 0.05)
+//				tf_tangle_y = tf_angle_y + MATH_RandFloat(-0.05, 0.05)
+//			}
+//			
+//			tv_temp = MATH_VecRotate(tv_sight, Cv_VerticalVector, tf_tangle_x)
+//			tv_temp = MATH_VecRotate(tv_temp, MATH_VecCrossProduct(Cv_VerticalVector, tv_sight), tf_tangle_y)
+//			tv_temp1 = OBJ_HorizonGet() * tf_add_x 
+//			tv_temp1 += OBJ_BankingGet() * tf_add_y
+//			tv_temp = MATH_VecNormalize(tv_temp) * Cf_shotgun_range
+//			tv_temp += tv_temp1
+//			MATH_VecSetNormalize(tv_temp)
+//			
+//			tf_add_x += 1 / 4.0
+//			tv_temp1 *= 0.2
+//			DBG_RenderVector(tv_tir_depart + tv_temp1, tv_temp*Cf_shotgun_range, 255)
+//
+//			tf_angle_x += ((2 * Cf_shotgun_cone) / 4)
+//			if(tf_angle_x > Cf_shotgun_cone)
+//			{
+//				tf_add_x = -0.5
+//				tf_add_y -= 1 / 4.0
+//				tf_angle_x = -Cf_shotgun_cone
+//				tf_angle_y += ((2 * Cf_shotgun_cone) / 4)
+//			}
+//		
+//			tf_range = Cf_shotgun_range
+//			
+//			to_jack = AI_MainActorGet(C_ID_Jack)
+//			@to_jack OBJ_FlagsControlSet(OBJ_C_ControlFlag_RayInsensitive, 0)
+//			to_bone = COL_RayObject_Dist(tv_tir_depart + tv_temp1, tv_temp, tf_range, all, none, 0, COL_C_Ray_on_visuel_and_bone_volumes)
+//			@to_jack OBJ_FlagsControlSet(0, OBJ_C_ControlFlag_RayInsensitive)
+//				
+//			if (to_bone)
+//			{
+//				// Cas spécial
+//				ti_sound = COL_RayObject_SoundGet()
+//				if(ti_sound < COL_C_Snd_Number) ti_sndimpact[ ti_sound ]++
+//				if(ti_sound == COL_C_Snd_Water)
+//				{
+//					ti_sndimpact[ COL_C_Snd_Water ]++
+//
+//					// FRED ---------------------------------------------------------------
+//					LIBGFX_GunsImpact( COL_RayObject_PosGet(), COL_RayObject_NormalGet(), to_gao, -1, Ci_Color_Impact_Eau , ti_sound )
+////					push(COL_RayObject_NormalGet())						// Fr
+////					push(COL_RayObject_PosGet())							// Fr
+////					AI_Execute("H_exec_GFX_TirEau")						// Fr
+//					// FRED ---------------------------------------------------------------
+//					
+//					tf_range -= MATH_VecNorm(COL_RayObject_PosGet() - tv_tir_depart)
+//					if(tf_range > 0)
+//					{
+//						@to_bone OBJ_FlagsControlSet(OBJ_C_ControlFlag_RayInsensitive, 0)
+//						to_bone1 = COL_RayObject_Dist(COL_RayObject_PosGet() + tv_temp1, tv_temp, tf_range, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_visuel_and_bone_volumes)
+//						@to_bone OBJ_FlagsControlSet(0, OBJ_C_ControlFlag_RayInsensitive)
+//						to_bone = to_bone1
+//						if(to_bone && @to_bone AI_IsModel("KingKong/Humain") && !@to_bone OBJ_CapaTest(OBJ_Capa_1)) 
+//						{
+//							if(to_bone != AI_MainActorGet(C_ID_Jack))
+//								to_bone = nobody
+//							else
+//							{
+//								ti_sound = COL_RayObject_SoundGet()
+//								if(ti_sound < COL_C_Snd_Number) ti_sndimpact[ ti_sound ]++
+//							}
+//						}
+//					}
+//				}
+//				
+//				if(to_bone)
+//				{
+//					ti_canal = COL_RayObject_CanalGet()
+//					if (ti_canal == -1)
+//						to_gao = to_bone
+//					else
+//					{
+//						if (ti_sound == 0)
+//							ti_sndimpact[ COL_C_Snd_Flesh ]++
+//						to_gao = COL_RayObject_ActorGet()			
+//					}
+//					if(ti_nb_ray == 12 || !@to_gao AI_IsModel("KingKong/Humain") || @to_gao OBJ_CapaTest(OBJ_Capa_1))
+//					{
+//						tv_shot_ray	= COL_RayObject_PosGet()
+//					
+//						shot_impact[shot_num] = tv_shot_ray
+//						shot_normal[shot_num] = COL_RayObject_NormalGet()
+//						shot_objet[shot_num] = to_gao
+//						shot_canal[shot_num] = ti_canal
+//
+//						tv_shot_ray -= tv_tir_depart + tv_temp1
+//						shot_dist[shot_num] = MATH_VecDotProduct(tv_shot_ray, tv_shot_ray)  
+//						shot_num++
+//					}
+//				}
+//			}
+//		}
+//		
+//		// bruitage ricochets des balles
+//		ti_snd = -1
+//		if (shot_num)
+//		{
+//			if ( ti_sndimpact[ COL_C_Snd_Water ] )
+//			{
+//				ti_snd = SND_RequestPlay( SND_Jack_BulletWater )
+//				SND_InstPosUpdate( ti_snd, shot_impact[0])
+//				ti_sndimpact[ COL_C_Snd_Water ] = 0
+//			}
+//			
+//			if ( ti_sndimpact[ COL_C_Snd_Flesh ] )
+//				ti_snd = COL_C_Snd_Flesh
+//			else
+//			{
+//				ti_sndcount = 0
+//				for (ti_index = 0; ti_index < COL_C_Snd_Number; ti_index++)
+//				{
+//					if ( ti_sndimpact[ ti_index ] > ti_sndcount)
+//					{
+//						ti_sndcount= ti_sndimpact[ ti_index ]
+//						ti_snd = ti_index
+//					}
+//				}
+//			}
+//		}
+//		
+//		if (ti_snd != -1)
+//		{
+//			ti_snd = SND_RequestPlay( SND_Jack_BulletNone + ti_snd )
+//			SND_InstPosUpdate( ti_snd, shot_impact[0] )
+//		}
+//
+//				
+//		// Si y'a un ennemi dans le lot, je ne shoot aucun humain
+//		ti_rem = faux
+//		for (ti_nb_ray = 0; ti_nb_ray < shot_num; ti_nb_ray++)
+//		{
+//			to_gao = shot_objet[ti_nb_ray]
+//			if(!to_gao) continue
+//			
+//			if(!@to_gao AI_IsModel("KingKong/Humain") && (@to_gao OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct) && to_gao.des_int1)
+//			{
+//				ti_rem = vrai
+//				break
+//			}
+//		}
+//		
+//		// Check tous les résultats de rayon
+//		i_shotgun_target_nb = 0
+//	
+//		ARR_LIB_QuickSort_OrderIndex(&shot_index[0], &shot_dist[0], shot_num)
+//	
+//		for (ti_nb_ray = 0; ti_nb_ray < shot_num; ti_nb_ray++)
+//		{
+//			ti_shot_index	= shot_index[ti_nb_ray]
+//		
+//			to_gao = shot_objet[ti_shot_index]
+//			if(!to_gao) continue
+//			
+//			// Un humain ? (et on n'a pas le droit de les shooter)
+//			if((@to_gao AI_IsModel(get_Humain_path) && !@to_gao OBJ_CapaTest(OBJ_Capa_1)) && ti_rem )
+//			{
+//				if(to_gao != AI_MainActorGet(C_ID_Jack))
+//					continue
+//			}
+//			
+//			// FRED ---------------------------------------------------------------
+////			ti_canal = shot_canal[ti_shot_index]									// Fr
+//			if (ti_shot_index & 1)//Philippe - limite la casse
+//			LIBGFX_GunsImpact( shot_impact[ti_shot_index], shot_normal[ti_shot_index], to_gao, shot_canal[ti_shot_index], 0 ,-1)
+////			if (ti_canal == -1)																// Fr
+////				tc_color = Ci_etincelle													// Fr
+////			else																				// Fr
+////				tc_color = Ci_sang														// Fr
+////																								// Fr
+////			if (to_gao && !@to_gao AI_IsModel("KingKong/Humain")) 		// Fr
+////			{																					// Fr
+////				push(tc_color)																// Fr	
+////				push(shot_normal[ti_shot_index])									// Fr
+////				push(shot_impact[ti_shot_index])									// Fr
+////				AI_Execute("H_exec_GFX_Impact")								// Fr
+////			}																					// Fr
+//			// FRED ---------------------------------------------------------------
+//			
+//			ti_index = ARR_ObjSearch(&ao_shotgun_target[0], i_shotgun_target_nb, to_gao)	
+//			if(ti_index == -1)
+//			{
+//				ao_shotgun_target[i_shotgun_target_nb] = to_gao
+//				i_shotgun_target_nb++
+//
+//				tv_tir_arrivee = shot_impact[ti_shot_index]
+//				
+//				if (to_gao && (!@to_gao AI_IsModel("KingKong/Humain") || @to_gao OBJ_CapaTest(OBJ_Capa_1))) 
+//				{
+//					if (to_gao && (to_gao != o_main_actor))
+//					{
+//						if(i_flag_force_rate)
+//						{
+//							i_flag_force_rate = faux
+//							ti_paf = 0
+//						}
+//						else
+//						{
+//							ti_paf = Weapon_damage( Ci_weapon_ID_shotgun, shot_dist[ti_shot_index])
+//							@get_global o_jack_last_paf = to_gao
+//							EVENT_AddEventPafCanal(C_EVENT_FILTER_All, ti_weapon_paf_type, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_gao, ti_canal, ti_paf, tv_sight, tv_tir_arrivee)
+//						}
+//					}
+//				}
+//			}
+//		}
+//
+//		EVENT_AddEventShoot( OBJ_Me(), Ci_weapon_ID_shotgun, tv_tir_depart, tv_tir_arrivee, to_gao, ti_canal)
+//		i_flag_add_shoot = faux
+//		macro_del_callback_tir("H_callback_tir")
+//		
+//		f_max_light_gun = 0.5
+//		f_time_light_gun = f_max_light_gun
+//		break	
+//}

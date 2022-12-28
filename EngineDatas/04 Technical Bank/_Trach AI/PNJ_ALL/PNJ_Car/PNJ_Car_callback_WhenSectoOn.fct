@@ -1,0 +1,50 @@
+COL_UnCollidableReset()
+
+if (o_shooter)
+{
+	@o_shooter OBJ_Destroy()
+	o_shooter = nobody
+}
+
+if (GFX_Fire != -1)
+{
+//	SPG2_FireStateSet( GFX_Fire, 0 )
+	GFX_Seti(GFX_Fire, 13106, 0)											// *number of sprite to generate
+	GFX_Fire = -1
+}
+
+if (GFX_Smoke != -1)
+{
+	GFX_Seti(GFX_Smoke, 13106, 0)											// *number of sprite to generate
+	GFX_Smoke = -1
+}
+
+if (GFX_Snow != -1)
+{
+	GFX_Seti(GFX_Snow, 13106, 0)											// *number of sprite to generate
+	GFX_Snow = -1
+}
+
+if (i_SND_motor_loop != -1)
+{
+	SND_Stop(i_SND_motor_loop)
+	i_SND_motor_loop = -1
+}
+
+if (i_SND_siren_loop != -1)
+{
+	SND_Stop(i_SND_siren_loop)
+	i_SND_siren_loop = -1
+}
+
+if (i_SND_fire_loop != -1)
+{
+	SND_Stop(i_SND_fire_loop)
+	i_SND_fire_loop = -1
+}
+
+if (i_SND_shoot_loop != -1)
+{
+	SND_Stop(i_SND_shoot_loop)
+	i_SND_shoot_loop = -1
+}

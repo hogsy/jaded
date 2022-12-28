@@ -1,0 +1,290 @@
+#include "Interface_MenuInGame_defs.var"
+
+int			ti_index, ti_i
+int			ti_Col
+int			ti_texte
+int			ti_SaveCur
+int			ti_TFrame[ 5 ] 
+vector	tv_pos, av_ProfilePos[ 5 ]
+
+//#define	POS_PROFILE_TITLE			cvector( 0.5, 0.1, 0 )
+#define 	POS_PROFILE_NONE			cvector( 0.37, 0.68, 0)
+#define	POS_PROFILE0					cvector( 0.37, 0.51, 0)
+#define	POS_PROFILE1					cvector( 0.37, 0.58, 0)
+#define	POS_PROFILE2					cvector( 0.37, 0.65, 0)
+#define	POS_PROFILE3					cvector( 0.37, 0.72, 0)
+#define	POS_PROFILE4					cvector( 0.37, 0.79, 0)
+#define 	RECT_PROFILE_MIN			cvector( 0.05, 0.5, 0)
+#define 	RECT_PROFILE_MAX			cvector( 0.69, 0.86, 0)
+#define	POS_PROFILE_MENU			cvector( 0.9, 0.2, 0)
+#define	POS_PROFILE_MENUDY		0.07
+#define 	POS_PROFILE_DELETE		cvector( 0.37, 0.465, 0 )
+
+#define 	PROFILE_NEXTMENULINE( _i_index )\
+	mai_Profile_MenuIndex[ mi_Profile_MenuNb ] =  _i_index\
+	mai_Profile_MenuString[ mi_Profile_MenuNb ] = ti_texte\
+	mi_Profile_MenuNb++\
+	if (_i_index >= 100)	ti_TFrame[ ti_texte - mi_PageString] = ti_texte\
+	ti_texte++\
+	tv_pos.y += POS_PROFILE_MENUDY
+	
+#define	PageProfile_PosSouligne( _i_index )\
+	@mo_Texte OBJ_TextPivotSet(mi_Profile_MenuString_Delete + 1, @mo_Texte OBJ_TextPivotGet( mi_PageString + _i_index) + cvector( 0 ,0.05, 0) )\
+	@mo_Texte OBJ_TextFlagSet( mi_Profile_MenuString_Delete + 1, @mo_Texte OBJ_TextFlagGet( mi_PageString + _i_index ) )
+
+av_ProfilePos[ 0 ] = POS_PROFILE0
+av_ProfilePos[ 1 ] = POS_PROFILE1
+av_ProfilePos[ 2 ] = POS_PROFILE2
+av_ProfilePos[ 3 ] = POS_PROFILE3
+av_ProfilePos[ 4 ] = POS_PROFILE4
+
+if (!mo_Texte)
+	return
+if (!IntMIG_SetPageParams())
+	return
+
+if ( INTMIG_EnterPage_Start )
+{
+	//----( reset cheat code )----
+	@"univ" Cheat_i_Flags = 0
+	 
+	//----( initial state )----
+	IntMIG_ResetTexte( mi_PageString, 30 )
+	mi_Profile_State = 0
+	mi_MC_TestState = 0
+	ti_TFrame[ 0 ] = -1
+	ti_TFrame[ 1 ] = -1
+	ti_TFrame[ 2 ] = -1
+	ti_TFrame[ 3 ] = -1
+	
+	//----( get profile data )----
+	IntMIG_ProfileGetData()
+	mi_Profile_MenuNb = 0
+	
+	//----( Create Text )----
+	ti_texte = mi_PageString
+
+	mi_Profile_MenuString_Start = ti_texte
+	tv_pos = POS_PROFILE_MENU
+	IntMIG_SetText_Page( ti_texte, INTMIG_TXG, INTMIG_TEXT_StartMenu + 11, tv_pos,  0.0, 2, -1, INTMIG_Color_NotSel, 0, 1 )
+	PROFILE_NEXTMENULINE( 103 )
+	if ( AI_GetCurSystem() != 3)
+	{
+		IntMIG_SetText_Page( ti_texte, INTMIG_TXG, INTMIG_TEXT_StartMenu + 8, tv_pos,  0.0, 2, -1, INTMIG_Color_NotSel, 0, 1 )
+		PROFILE_NEXTMENULINE( 100 )
+	}
+	if (mi_Profile_Empty != -1)
+	{
+		IntMIG_SetText_Page( ti_texte, INTMIG_TXG, INTMIG_TEXT_StartMenu + 9, tv_pos,  0.0, 2, -1, INTMIG_Color_NotSel, 0, 1 )
+		PROFILE_NEXTMENULINE( 101 )
+	}
+	if ( mi_Profile_Nb )
+	{
+		IntMIG_SetText_Page( ti_texte, INTMIG_TXG, INTMIG_TEXT_StartMenu + 10, tv_pos,  0.0, 2, -1, INTMIG_Color_NotSel, 0, 1 )
+		PROFILE_NEXTMENULINE( 102 )
+	}
+	
+	mi_Profile_MenuString_Profile = ti_texte
+
+	tv_pos = cvector( 0.3, 0.6, 0 )
+	if ( mi_Profile_Nb == 0 )
+	{
+		if ( AI_GetCurSystem() != 3)
+			mi_ChangePageCur  = 2
+		else
+			mi_ChangePageCur  = 1
+		IntMIG_SetText_Page( ti_texte, INTMIG_TXG, INTMIG_TEXT_StartMenu + 12, POS_PROFILE_NONE,  0.0, 5, -1, INTMIG_Color_NotSel, 0, 1 )
+		@mo_Texte OBJ_TextColorSet( mi_Profile_MenuString_Start + mi_ChangePageCur, 0, -1, INTMIG_Color_Sel )
+		ti_texte++
+	}
+	else
+	{
+		mi_ChangePageCur = mi_Profile_MenuNb
+		for (ti_index = 0; ti_index < mi_Profile_Nb; ti_index++)
+		{
+			if ( mi_Profile_MoreRecent == mi_Profile_Index[ ti_index ] )
+			{
+				mi_ChangePageCur += ti_index
+				ti_Col = INTMIG_Color_Sel
+			}
+			else
+				ti_Col = INTMIG_Color_NotSel
+			IntMIG_CreateText_Start( ti_texte )
+			@mo_Texte OBJ_TextInsert( ti_texte, -1, SAVE_HeaderName(mi_Profile_Index[ ti_index ]) ) 
+			//profilecourrier IntMIG_CreateText_End( ti_texte, av_ProfilePos[ ti_index ], 0.0, 1, -1, ti_Col, 0, 1 )
+			IntMIG_CreateText_End( ti_texte, av_ProfilePos[ ti_index ], 0.0, 1, -1, ti_Col, 0, 0 )
+			PROFILE_NEXTMENULINE( ti_index )
+		}
+	}
+	IntMIG_Text_SetFrameXY	( ti_texte, 0xFFFFFFFF, RECT_PROFILE_MIN, RECT_PROFILE_MAX, 33, 0.0  )
+	ti_texte++
+	mi_Profile_MenuString_Cadre = ti_texte 
+	IntMIG_Text_SetFrame( mi_Profile_MenuString_Cadre, 0xFFFFFFFF, 0.0, ti_TFrame[ 0 ], ti_TFrame[ 1 ], ti_TFrame[ 2 ], ti_TFrame[ 3 ], -1, -1, 32 )
+	ti_texte++
+		
+	IntMIG_Text_FadeInMulti( mi_PageString, ti_texte - mi_PageString + 1, 0.3, 0.0 )
+		
+	IntMIG_SetText_Page( ti_texte, INTMIG_TXG, INTMIG_TEXT_Xselect, INTMIG_PosButton_BottomRight,  0.0, 6, -1, INTMIG_Color_Sel, 0, 1 )
+	ti_texte++
+	
+	mi_Profile_MenuString_Cancel = ti_texte
+	IntMIG_SetText_Page( ti_texte, INTMIG_TXG, INTMIG_TEXT_Tback, INTMIG_PosButton_BottomLeft,  0.0, 1024 + 4, -1, INTMIG_Color_Sel, 0, 1 )
+	ti_texte++
+	
+	mi_Profile_MenuString_Delete = ti_texte
+	@mo_Texte OBJ_TextMaxWidthSet( 0.6 )
+	IntMIG_SetText_Page( mi_Profile_MenuString_Delete, INTMIG_TXG, INTMIG_TEXT_StartMenu + 14, POS_PROFILE_DELETE,  0.0, 1024 + 1 + 8, 0, INTMIG_Color_Sel, 2, 1 )
+	@mo_Texte OBJ_TextMaxWidthSet( 0 )
+//	size = @mo_Texte OBJ_TextSizeGet(mi_Profile_MenuString_Delete, 0, -1)
+//	tv_pos = POS_PROFILE_DELETE
+//	if ( tv_pos.x - (size.x / 2) < 0.06 )
+//	{
+//		@mo_Texte OBJ_TextFlagSet( mi_Profile_MenuString_Delete, 1024 )
+//		tv_pos.x = 0.06
+//		@mo_Texte OBJ_TextPivotSet( mi_Profile_MenuString_Delete, tv_pos )
+//	}
+	
+	IntMIG_SetText_Page( mi_Profile_MenuString_Delete + 1, INTMIG_TXG, INTMIG_TEXT_Souligne, Cv_NullVector,  0.0, 1, -1, INTMIG_Color_Sel, 0, 1 )
+	PageProfile_PosSouligne( mi_ChangePageCur )
+}
+else if ( INTMIG_LeavePage_Start )
+{
+	IntMIG_Text_FadeOutMulti( mi_PageString, 20, 0.5 )
+}
+
+
+IntMIG_RestorePageParams()
+
+if ( mi_Exit || mi_ChangePage || mi_Cheat )
+	return
+	
+if ( !IntMIG_MC_TestPresence() )
+{
+	mi_MC_Page = INTMIG_MCPage_GOTO_MemCard
+	INTMIG_ChangePage(  "IntMIG_Page_Memcard_TestError", 0 )
+	return
+}
+
+if (mi_Cheat) return
+
+if (mi_Profile_State == 0)
+{
+	ti_SaveCur = mi_Cur
+	IntMIG_UpdateCur_Vertical( mi_Profile_MenuNb, 0 )
+	mi_Profile_Cur = mi_Cur
+	if (mi_Cur != ti_SaveCur)
+	{
+		IntMIG_PlaySound( INTMIG_SOUND_SELECTION )
+		IntMIG_Text_ChangeColor( mai_Profile_MenuString[ ti_SaveCur ], INTMIG_Color_Sel, INTMIG_Color_NotSel, 0.25, 0.0 )
+		IntMIG_Text_ChangeColor( mai_Profile_MenuString[ mi_Cur ], INTMIG_Color_NotSel, INTMIG_Color_Sel, 0.25, 0.0 )
+		PageProfile_PosSouligne( mi_Cur )
+	}
+	
+	ti_index = mai_Profile_MenuIndex[ mi_Cur ]
+	if (ti_index < 100)
+		IntMIG_Debug_SlotTimeDisplay( mi_Profile_Index[ ti_index ], cvector( 0.72, 0.5, 0)  )
+	
+	
+	if (joy_valide )
+	{
+		IntMIG_PlaySound( INTMIG_SOUND_VALIDE )
+		ti_index = mai_Profile_MenuIndex[ mi_Cur ]
+		if (ti_index < 100 )
+		{
+			@"univ" MENU_ProfileIndex = mi_Profile_Index[ ti_index ]
+			mi_MC_Slot = mi_Profile_Index[ ti_index ]
+			mi_MC_Mode = INTMIG_MCMode_Load
+			mi_MC_State = 0
+			IntMIG_ProfileGetData()
+			IntMIG_ProfileGet_MapES( mi_MC_Slot )
+			INTMIG_ChangePage(  "IntMIG_Page_Memcard", 0 )
+		}
+		else
+		{
+			switch (ti_index)
+			{
+			//----( refresh )----
+			case 100: 
+					mi_MC_Mode = INTMIG_MCMode_ProfileGet
+					mi_MC_State = 0
+					INTMIG_ChangePage(  "IntMIG_Page_Memcard", 0 )
+					break
+			//----( create new )----
+			case 101: 
+					INTMIG_ChangePage(  "IntMIG_Page_ProfileCreate", 0 )
+					break
+			//----( delete )----
+			case 102: 
+					if (mi_Profile_Nb == 1)
+					{
+						mi_ProfileDelete_Index = mi_Profile_Index[ 0 ]
+						INTMIG_ChangePage(  "IntMIG_Page_ProfileDelete", 0 )
+					}
+					else
+					{
+						mi_ProfileDelete_State = 0
+						mi_Profile_State = 1
+						IntMIG_Text_FadeOutMulti( mi_Profile_MenuString_Start, mi_Profile_MenuString_Profile - mi_Profile_MenuString_Start, 0.1)
+						IntMIG_Text_FadeOut( mi_Profile_MenuString_Cadre, 0.1 )
+						@mo_Texte OBJ_TextFlagSet( mi_Profile_MenuString_Cancel, @mo_Texte OBJ_TextFlagGet( mi_Profile_MenuString_Cancel ) & ~1024 )
+						IntMIG_Text_FadeIn( mi_Profile_MenuString_Cancel, 0.1, 0.0 )
+						@mo_Texte OBJ_TextFlagSet( mi_Profile_MenuString_Delete, @mo_Texte OBJ_TextFlagGet( mi_Profile_MenuString_Delete ) & ~1024 )
+						IntMIG_Text_FadeIn( mi_Profile_MenuString_Delete, 0.1, 0.0 )
+						mi_Cur = 0
+						IntMIG_Text_ChangeColor( mi_Profile_MenuString_Profile + mi_Cur, INTMIG_Color_NotSel, INTMIG_Color_Sel, 0.25, 0.0 )
+						PageProfile_PosSouligne( mi_Profile_MenuString_Profile - mi_PageString + mi_Cur )
+					}
+					return
+			//----( play without saving )----
+			case 103: 
+					INTMIG_YesNoPage( INTMIG_YESNO_PLAYWITHOUTSAVING )
+					break
+			}
+		}
+	}
+}
+else // mi_Profile_State = 1
+{
+	ti_SaveCur = mi_Cur
+	IntMIG_UpdateCur_Vertical( mi_Profile_Nb, 0 )
+	mi_Profile_Cur = mi_Cur
+	if (mi_Cur != ti_SaveCur)
+	{
+		IntMIG_PlaySound( INTMIG_SOUND_SELECTION )
+		IntMIG_Text_ChangeColor( mi_Profile_MenuString_Profile + ti_SaveCur, INTMIG_Color_Sel, INTMIG_Color_NotSel, 0.25, 0.0 )
+		IntMIG_Text_ChangeColor( mi_Profile_MenuString_Profile + mi_Cur, INTMIG_Color_NotSel, INTMIG_Color_Sel, 0.25, 0.0 )
+		PageProfile_PosSouligne( mi_Profile_MenuString_Profile - mi_PageString + mi_Cur )
+	}
+
+	if (joy_cancel)
+	{
+		IntMIG_PlaySound( INTMIG_SOUND_CANCEL )
+		mi_Profile_State = 0
+		mi_Cur = mi_Profile_Cur + (mi_Profile_MenuString_Profile - mi_Profile_MenuString_Start)
+		for( ti_i = mi_Profile_MenuString_Start; ti_i < mi_Profile_MenuString_Profile; ti_i++ )
+		{
+			@mo_Texte OBJ_TextColorSet( ti_i, 0, -1, INTMIG_Color_NotSel )
+			@mo_Texte OBJ_TextFlagSet( ti_i, @mo_Texte OBJ_TextFlagGet( ti_i ) & ~1024 )
+		}
+		for (ti_i = 0; ti_i < 4; ti_i++)
+		{
+			if ( ti_i + mi_Profile_MenuString_Start >= mi_Profile_MenuString_Profile )
+				ti_TFrame[ ti_i ] = -1
+			else
+				ti_TFrame[ ti_i ] = ti_i + mi_Profile_MenuString_Start
+		}
+		IntMIG_Text_FadeInMulti( mi_Profile_MenuString_Start, mi_Profile_MenuString_Profile - mi_Profile_MenuString_Start, 0.1, 0.0)
+		IntMIG_Text_SetFrame( mi_Profile_MenuString_Cadre, 0xFFFFFFFF, 0.0, ti_TFrame[ 0 ], ti_TFrame[ 1 ], ti_TFrame[ 2 ], ti_TFrame[ 3 ], -1, -1, 34 )
+		IntMIG_Text_FadeIn( mi_Profile_MenuString_Cadre, 0.1, 0.0 )
+		IntMIG_Text_FadeOut( mi_Profile_MenuString_Cancel, 0.1 )
+		IntMIG_Text_FadeOut( mi_Profile_MenuString_Delete, 0.1 )
+		return
+	}
+	if ( joy_valide )
+	{
+		IntMIG_PlaySound( INTMIG_SOUND_VALIDE )
+		mi_ProfileDelete_Index = mi_Profile_Index[ mi_Cur ]
+		INTMIG_ChangePage(  "IntMIG_Page_ProfileDelete", 0 )
+		return
+	}
+}

@@ -1,0 +1,176 @@
+//----------------------------------------------------------------------------------------------------
+// INCLUDE
+//----------------------------------------------------------------------------------------------------
+#include "SM_Constants.var"
+
+//----------------------------------------------------------------------------------------------------
+// VARIABLES
+//----------------------------------------------------------------------------------------------------
+int 				ti_phase, ti_kit, ti_prio
+
+//----------------------------------------------------------------------------------------------------
+// CODES
+//----------------------------------------------------------------------------------------------------
+
+
+// lock the phase + kit if playing jingle
+//----------------------------------------------------
+if( mi_JingleIdx != -1 ) return
+
+
+// init variables
+//-------------------
+ti_kit = mi_CurrKit
+ti_phase = mi_Phase
+
+
+// choose the kit
+//----------------------
+if(mi_ReinitKit == Cte_KitState_Idle)
+{
+	for(ti_prio=0; ti_prio<SND_Cte_MusKit_Nb; ti_prio++)
+	{
+		if( ! AI_TriggerIsValid(at_InitKitTrigger[ti_prio]) ) break
+		
+		if( call_trigger(at_InitKitTrigger[ti_prio])  )
+		{
+			ti_kit = i_InitKit
+			mi_ReinitKit = Cte_KitState_Reinit
+			break
+		}
+	}
+
+	for(ti_prio=0; ti_prio<SND_Cte_MusKit_Nb; ti_prio++)
+	{
+		if( AI_TriggerIsValid(at_KitTrigger[ti_prio])  &&  call_trigger(at_KitTrigger[ti_prio])  )
+		{
+			ti_kit = ti_prio
+			break
+		}
+	}
+}
+
+if( mi_RqKit != -1 )
+{
+	dbg_printInt(DBG_LV1, "request kit : ", mi_RqKit)
+	ti_kit  = mi_RqKit 
+	mi_RqKit = -1
+}
+
+
+
+if(ti_kit != mi_CurrKit)
+{
+	dbg_printInt(DBG_LV1, "new kit : ", ti_kit)
+
+	if(i_ChangeMusOnNewKit)
+	{
+			dbg_printInt(DBG_LV1, "force new kit usage: ", ti_kit)
+			mi_SchedulerState  = Cte_State_Init
+			MUS_SetPhase( -1)
+			mf_FightDuration = 0.0
+	}
+	
+	SND_M_SetMusType(ti_kit)
+}
+
+
+// filter
+//-------
+MUS_Filter(mi_wait , mai_wait[0], mai_wait[1])
+MUS_Filter(mi_fight , mai_fight[0], mai_fight[1])
+MUS_Filter(mi_neutral , mai_neutral[0], mai_neutral[1])
+MUS_Filter(mi_death , mai_death[0], mai_death[1])
+MUS_Filter(mi_injured , mai_injured[0], mai_injured[1])
+MUS_Filter(mi_stalk , mai_stalk[0], mai_stalk[1])
+	
+
+// choose the phase	
+//---------------------------
+if( mi_injured ) 
+{
+	mf_ScanTimer = 0.0
+	mf_FightDuration = i_Fight_MinDuration + 1.0
+	ti_phase  = SND_Cte_MusPhase_Injure
+}
+else if(mi_silence)
+{
+	mi_SchedulerState  = Cte_State_SilenceStart
+}
+else if( mi_fight && (mai_fight[1] > Cte_SignalTime))
+{
+	ti_phase  = SND_Cte_MusPhase_Fight
+	if(AI_TriggerIsValid(at_BigFightTrigger) && call_trigger(at_BigFightTrigger))
+	{
+		ti_phase  = SND_Cte_MusPhase_BigFight
+	}
+	else if(mi_bigfight)
+	{
+		ti_phase  = SND_Cte_MusPhase_BigFight
+	}
+		
+	mf_ScanTimer = 0.0
+}
+else if( mi_stalk && (mai_stalk[1] > Cte_SignalTime) )
+{
+	ti_phase  = SND_Cte_MusPhase_Stalk
+}
+else if( mi_wait && (mai_wait[1] > Cte_SignalTime))
+{
+	ti_phase  = SND_Cte_MusPhase_Stress
+}
+else if( mi_neutral && (mai_neutral[1] > Cte_SignalTime))
+{
+	ti_phase  = SND_Cte_MusPhase_Cool
+}
+else
+{
+	return
+}
+
+
+// fight min duration
+if(SND_M_GetMusPhase != ti_phase) 
+{
+	if( (SND_M_GetMusPhase == SND_Cte_MusPhase_Fight) || (SND_M_GetMusPhase == SND_Cte_MusPhase_BigFight) )
+	{
+		if( (ti_phase != SND_Cte_MusPhase_Fight) && (ti_phase != SND_Cte_MusPhase_BigFight) )
+		{
+			if( i_Fight_MinDuration > mf_FightDuration ) 
+			{
+				mf_FightDuration += TIME_GetDt()
+				return // we cancel the change of phase
+			}
+		}
+	}
+	mf_FightDuration = 0.0
+}
+	
+//#ifndef _FINAL_
+if(SND_M_GetMusPhase != ti_phase)
+{
+//	if(mi_SchedulerState == Cte_State_Pattern_WaitSilence)
+	if( 	mi_SchedulerState == Cte_State_ChangePhaseToLower_WaitSilence || 
+		mi_SchedulerState == Cte_State_Pattern_WaitSilence ||
+		mi_SchedulerState == Cte_State_SilenceMode ||
+		mi_SchedulerState == Cte_State_SilenceStart 
+	  )
+	{
+		mi_SchedulerState  = Cte_State_Init
+	}
+
+	dbg_printInt(DBG_LV1, "new phase : ",  ti_phase)
+}
+//#endif
+
+
+if( (SND_M_GetMusPhase == SND_Cte_MusPhase_Fight) || (SND_M_GetMusPhase == SND_Cte_MusPhase_BigFight) )
+{
+	mf_FightDuration += TIME_GetDt()
+}
+
+	
+SND_M_SetMusPhase(ti_phase)
+
+
+

@@ -1,0 +1,57 @@
+#include "BC_defines.var"
+
+
+// SORTIE ETAT
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// ENTREE ETAT
+if (i_etat_courant != ETAT_Paf_Explose )
+{
+	i_etat_ancien_ancien = i_etat_ancien
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Paf_Explose
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	BC_DBG_Trace_Etat("etat paf explose")
+	
+//	OBJ_FlagInvisibleSet(vrai)
+//	COL_ColMapActivationSet(none, all)
+//	COL_ColSetActivationSet(none, all)
+	
+//	BC_GFX_Particules(OBJ_PosGet(), v_sum_pafs_dir)
+
+	// CADAVRES
+	o_cadavre = nobody
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+//==================================================
+// TODO : Ajouter des GFX !!!!!
+//==================================================
+
+i_flag_neck = faux
+
+// LE PAF EXPLOSE DEVIENT UN GROS PAF AVEC FX
+i_take_paf = faux		// on ne prend plus les pafs !!!
+BC_reset_attaque()			// ne plus mémoriser les fight actor
+EVENT_Delete(mid_interet_attaque, C_EVENT_EOFDEL )
+EVENT_Delete(mid_interet_charogne, C_EVENT_EOFDEL )
+i_paf_important_flag = vrai
+MATH_VecSetNorm(v_paf_offset, 10)
+macro_change_etat("BC_ETAT_Paf_Air")
+
+//if( f_time_start_etat > 3.5 )
+//	OBJ_Destroy()
+

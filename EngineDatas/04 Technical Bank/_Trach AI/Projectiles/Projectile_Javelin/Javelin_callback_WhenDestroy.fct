@@ -1,0 +1,26 @@
+mo_ramasse = LNK_ClientGet_Interaction( mid_ramasse, 0, nofunc, nofunc, nofunc)
+
+if (i_GFX_Fire != -1)
+{
+	GFX_Seti( i_GFX_Fire, 13106, 0)	
+	i_GFX_Fire = -1
+}
+
+if(i_snd_flamme != -1)
+{
+	SND_Stop(i_snd_flamme)
+}
+
+if (o_bidoche)
+{
+	@get_PNJ_Bidoche_path o_bidoche o_javelin = nobody
+	@o_bidoche OBJ_Destroy()
+	o_bidoche = nobody
+}
+
+AI_Execute( "Javelin_exec_removefromworld" )
+COL_UnCollidableReset()
+
+macro_del_callback_after_cam("Javelin_Plug")
+macro_del_callback_tir("Javelin_launch")
+

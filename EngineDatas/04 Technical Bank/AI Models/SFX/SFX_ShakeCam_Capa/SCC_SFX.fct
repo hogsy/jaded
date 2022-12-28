@@ -1,0 +1,38 @@
+object		to_camera
+vector	tv_temp
+float		tf_temp, tf_temp1
+
+//============================================================
+// LIBGFX_ShakeCam(0.1, 35.0, 0.1, 20.0, 0.2, 1.1)
+//============================================================
+//procedure void LIBGFX_ShakeCam( float amplitude, float frequence, float amplbank, float freqbank, float speed, float attenuation)
+
+if	(i_sfx_shake)
+{
+	to_camera = VIEW_GetObject(0)
+	tf_temp = -MATH_Sin(f_sfx_time * f_sfx_shake_freq)
+	tf_temp *= f_sfx_shake_amplitude
+
+	tf_temp1 = MATH_Sin(f_sfx_time * f_sfx_shake_bank_freq)
+	tf_temp1 *= f_sfx_shake_bank_amplitude
+
+	f_sfx_time += TIME_GetDt()
+
+	tv_temp = @to_camera OBJ_HorizonGet()	* tf_temp1
+	tv_temp += @to_camera OBJ_SightGet()	* tf_temp
+
+	tv_temp += @to_camera OBJ_BankingGet()
+	@to_camera OBJ_BankingGeneralSet(@to_camera OBJ_SightGet(), tv_temp)
+
+	f_sfx_shake_amplitude -= (f_sfx_shake_speed * TIME_GetDt())
+	f_sfx_shake_bank_amplitude -= (f_sfx_shake_speed * TIME_GetDt())
+	if(f_sfx_shake_amplitude <= 0) f_sfx_shake_amplitude = 0
+	if(f_sfx_shake_bank_amplitude <= 0) f_sfx_shake_bank_amplitude = 0
+
+	f_sfx_shake_speed *= f_sfx_shake_attenuation
+	if(f_sfx_shake_amplitude <= 0 && f_sfx_shake_bank_amplitude <= 0)
+	{
+		f_sfx_shake_amplitude = 0
+		i_sfx_shake = 0
+	}
+}

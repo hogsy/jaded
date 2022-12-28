@@ -1,0 +1,124 @@
+#include "PNJ_Lapin_defines.var"
+
+float		tf_coef_1
+float		tf_coef_2
+float		tf_coef_3
+float		tf_coef_4
+float		tf_dot_product
+
+vector	tv_bras_vertical_G
+vector	tv_bras_vertical_D
+vector	tv_start_sight
+vector	tv_dest_sight
+vector	tv_bone_to_cam_pos
+
+object	to_bone
+object	to_head
+
+tf_coef_1 = 0.25 * f_look_blend_coef
+tf_coef_2 = 0.35 * f_look_blend_coef
+tf_coef_3 = 0.45 * f_look_blend_coef
+tf_coef_4 = 0.75 * f_look_blend_coef
+
+to_head = o_canal_tete
+
+tv_bone_to_cam_pos = v_bezier_head_look_pos 
+tv_bone_to_cam_pos -= @to_head OBJ_PosGet()
+//DBG_RenderVector(@to_head OBJ_PosGet(), tv_bone_to_cam_pos, color_bleu)
+MATH_VecSetNormalize(tv_bone_to_cam_pos)
+
+to_bone = ANI_CanalObjectGet(Anim_Canal_BrasGauche)
+tv_bras_vertical_G = @to_bone MATH_VecGlobalToLocal(Cv_VerticalVector)
+to_bone = ANI_CanalObjectGet(Anim_Canal_BrasDroit)
+tv_bras_vertical_D = @to_bone MATH_VecGlobalToLocal(Cv_VerticalVector)
+
+if (tf_coef_1)
+{
+	to_bone = ANI_CanalObjectGet(Anim_Canal_Ventre)
+	tv_start_sight = @to_bone MATH_VecGlobalToLocal(@to_head OBJ_SightGet())
+	tv_dest_sight = @to_bone MATH_VecGlobalToLocal(tv_bone_to_cam_pos)
+
+	if (MATH_VecCrossProduct(tv_start_sight, tv_dest_sight).x < 0.0)
+	{
+		tv_start_sight.z = 0.0
+		tv_dest_sight.z = 0.0
+	}
+
+//	if (tv_dest_sight.z > tv_start_sight.z)
+//		tv_dest_sight.z = tv_start_sight.z
+//	else if (tv_dest_sight.z < tv_start_sight.z - 0.3)
+//		tv_dest_sight.z = tv_start_sight.z - 0.3
+
+	tv_dest_sight = MATH_VecBlendRotate(tv_start_sight, tv_dest_sight, tf_coef_1)
+	@to_bone OBJ_Rotate_FromTo(tv_start_sight, tv_dest_sight)
+
+//	tv_bone_to_cam_pos = v_bezier_head_look_pos 
+//	tv_bone_to_cam_pos -= @to_head OBJ_PosGet()
+//	DBG_RenderVector(@to_head OBJ_PosGet(), tv_bone_to_cam_pos, color_bleu)
+//	MATH_VecSetNormalize(tv_bone_to_cam_pos)
+}
+
+if (tf_coef_2)
+{
+	to_bone = ANI_CanalObjectGet(Anim_Canal_Torse)
+	tv_start_sight = @to_bone MATH_VecGlobalToLocal(@to_head OBJ_SightGet())
+	tv_dest_sight = @to_bone MATH_VecGlobalToLocal(tv_bone_to_cam_pos)
+
+	if (MATH_VecCrossProduct(tv_start_sight, tv_dest_sight).x < 0.0)
+	{
+		tv_start_sight.z = 0.0
+		tv_dest_sight.z = 0.0
+	}
+
+//	if (tv_dest_sight.z > tv_start_sight.z)
+//		tv_dest_sight.z = tv_start_sight.z
+//	else if (tv_dest_sight.z < tv_start_sight.z - 0.3)
+//		tv_dest_sight.z = tv_start_sight.z - 0.3
+
+	tv_dest_sight = MATH_VecBlendRotate(tv_start_sight, tv_dest_sight, tf_coef_2)
+	@to_bone OBJ_Rotate_FromTo(tv_start_sight, tv_dest_sight)
+
+//	tv_bone_to_cam_pos = v_bezier_head_look_pos 
+//	tv_bone_to_cam_pos -= @to_head OBJ_PosGet()
+//	DBG_RenderVector(@to_head OBJ_PosGet(), tv_bone_to_cam_pos, color_bleu)
+//	MATH_VecSetNormalize(tv_bone_to_cam_pos)
+}
+
+//to_bone = ANI_CanalObjectGet(Anim_Canal_Ventre)
+//@to_bone OBJ_RotateLocalY(MATH_Sin(TIME_Get() * 2.0) * 1.5)
+//@to_bone OBJ_RotateLocalX(MATH_Sin(TIME_Get() * 0.33) * 1.5)
+
+to_bone = ANI_CanalObjectGet(Anim_Canal_BrasGauche)
+tv_dest_sight = @to_bone MATH_VecGlobalToLocal(Cv_VerticalVector)
+if (tv_dest_sight.z > tv_bras_vertical_G.z)
+	tv_dest_sight.z = tv_bras_vertical_G.z
+@to_bone OBJ_Rotate_FromTo(tv_bras_vertical_G, tv_dest_sight)
+
+to_bone = ANI_CanalObjectGet(Anim_Canal_BrasDroit)
+tv_dest_sight = @to_bone MATH_VecGlobalToLocal(Cv_VerticalVector)
+if (tv_dest_sight.z > tv_bras_vertical_D.z)
+	tv_dest_sight.z = tv_bras_vertical_D.z
+@to_bone OBJ_Rotate_FromTo(tv_bras_vertical_D, tv_dest_sight)
+
+to_bone = ANI_CanalObjectGet(Anim_Canal_Cou)
+tv_start_sight = @to_bone MATH_VecGlobalToLocal(@to_head OBJ_SightGet())
+tv_dest_sight = @to_bone MATH_VecGlobalToLocal(tv_bone_to_cam_pos)
+
+//if (tv_dest_sight.z < tv_start_sight.z - 0.3)
+//	tv_dest_sight.z = tv_start_sight.z - 0.3
+
+tv_dest_sight = MATH_VecBlendRotate(tv_start_sight, tv_dest_sight, tf_coef_3)
+@to_bone OBJ_Rotate_FromTo(tv_start_sight, tv_dest_sight)
+
+//tv_bone_to_cam_pos = v_bezier_head_look_pos 
+//tv_bone_to_cam_pos -= @to_head OBJ_PosGet()
+//DBG_RenderVector(@to_head OBJ_PosGet(), tv_bone_to_cam_pos, color_bleu)
+//MATH_VecSetNormalize(tv_bone_to_cam_pos)
+
+tv_start_sight = cvector(0.0, -1.0, 0.0)
+tv_dest_sight = @to_head MATH_VecGlobalToLocal(tv_bone_to_cam_pos)
+//tv_dest_sight.z = MATH_FloatMax(tv_dest_sight.x, -0.3)
+
+tv_dest_sight = MATH_VecBlendRotate(tv_start_sight, tv_dest_sight, tf_coef_4)
+@to_head OBJ_Rotate_FromTo(tv_start_sight, tv_dest_sight)		
+

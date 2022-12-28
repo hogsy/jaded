@@ -1,0 +1,83 @@
+#include "PNJ_Lapin_defines.var"
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_Lapin_PROTECT) 
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Lapin_PROTECT
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	Lapin_DBG_Trace_String(DBG_Trace_Etat, "PROTECT")
+	fct_previous_etat = fct_last_etat
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+
+	Lapin_ACTION_Set(Action_Fight_Protect)
+	SND_RequestPlay(Ci_SND_FIGHT_Protect)
+	i_protect_flag = faux
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// STIMULI ===========================================================================
+o_Grabbed_Actor = LNK_ServeurGet(Ci_LNK_GRAB_EAGLE, mid_Grabbed_LNK_ID, vrai, nofunc, nofunc)
+if( o_Grabbed_Actor )
+	macro_change_etat("Lapin_ETAT_GRABBED")
+
+o_Rided_Actor = LNK_ServeurGet(Ci_LNK_RIDE_ON_NMI, mid_Rided_LNK_ID, vrai, nofunc, nofunc)
+if( o_Rided_Actor )
+	macro_change_etat("Lapin_ETAT_RIDED")
+
+if( Lapin_ROPE_Gogo_Mode() )
+	macro_change_etat("Lapin_ETAT_GOGO")
+
+AI_Execute("Lapin_exec_check_vision")
+
+MACRO_CHECK_PAFS
+
+if( i_ventilo_flag )
+	macro_change_etat("Lapin_ETAT_ASPIRE")
+
+if( o_piege )
+	macro_change_etat("Lapin_ETAT_PIEGE")
+
+// anti_mashing ?
+AI_Execute("Lapin_exec_check_anti_mashing")
+if( i_anti_mashing_flag )
+	MACRO_GO_IDLE(0)
+
+AI_Execute("Lapin_exec_update_best_interest")
+
+if( ! MSG_GlobalIsValid(mid_best_interet) )
+	MACRO_GO_IDLE(0)
+
+// COMPORTEMENT ===================================================================
+
+if( f_time_start_etat > 1.0 )
+{
+	if( Fuite_Apres_Protect )
+	{
+		Lapin_FUITE(o_protect_actor)
+	}
+	MACRO_GO_IDLE(0)
+}
+
+v_force_sight = @o_protect_actor OBJ_PosGet() - OBJ_PosGet()
+f_orient_speed = 10.0
+AI_Execute("Lapin_exec_way_orientation")
+
+
+OBJ_CapaSet(Obj_Capa_Fight, none)

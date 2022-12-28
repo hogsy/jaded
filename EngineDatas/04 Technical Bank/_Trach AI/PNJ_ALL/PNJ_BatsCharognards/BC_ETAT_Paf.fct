@@ -1,0 +1,52 @@
+
+#include "BC_defines.var"
+
+
+// SORTIE ETAT
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// ENTREE ETAT
+if (i_etat_courant != ETAT_Paf )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Paf
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	
+	v_look_pos = @o_cible OBJ_PosGet()
+	
+	if( COL_CollideType( COL_C_Ground ) )
+		ACT_ActionSet(ACTION_Paf_Sol)
+	else
+		ACT_ActionSet(ACTION_Paf_Air)
+}
+
+
+if( ACT_ActionFinished() )
+{
+	// Anim de paf terminée => Chute au sol
+	macro_change_etat("BC_ETAT_Chute_Libre")			// le bat est en l'air => il tombe
+	
+//	if( i_flag_can_fly )
+//		macro_change_etat("BC_ETAT_Suivi_Cible")
+//	else
+//	{
+//		// le bat ne peut plus voler
+//		if( COL_CollideType( COL_C_Ground ) )
+//			macro_change_etat("BC_ETAT_Rampe")					// le bat est au sol => il rampe
+//		else
+//			macro_change_etat("BC_ETAT_Chute_Libre")			// le bat est en l'air => il tombe
+//	}
+}
+else
+	AI_Execute("BC_exec_inclinaison")		// Balancier
+

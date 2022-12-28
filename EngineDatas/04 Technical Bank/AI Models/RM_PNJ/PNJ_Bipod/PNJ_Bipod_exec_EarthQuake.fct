@@ -1,0 +1,34 @@
+
+messageid				tmid_ID
+message				tmsg_filter
+int							ti_rank
+
+object					to_pere
+
+// Paffer les visibles
+ti_rank = -1
+for (	tmid_ID= MSG_GlobalScan(C_EVENT_TYPE_Visibility, &ti_rank);
+		MSG_GlobalIsValid(tmid_ID);
+		tmid_ID= MSG_GlobalScan(C_EVENT_TYPE_Visibility, &ti_rank))
+{
+	to_pere = EVENT_PereGet(tmid_ID)
+	
+	if (@to_pere AI_IsModel(get_PNJ_Lapin_path) || (to_pere == o_main_actor))
+		PNJ_Bipod_EarthQuake(to_pere)
+}
+
+// Paffer les montures
+MSG_SetNull(tmsg_filter)
+ti_rank = -1
+for (	tmid_ID = MSG_GlobalSearchIntGao(Ci_LNK_EVENT_OFFSET + Ci_LNK_RIDE_ON_NMI, &ti_rank, tmsg_filter);
+		MSG_GlobalIsValid(tmid_ID);
+		tmid_ID = MSG_GlobalSearchIntGao(Ci_LNK_EVENT_OFFSET + Ci_LNK_RIDE_ON_NMI, &ti_rank, tmsg_filter) )
+{
+	to_pere = EVENT_PereGet(tmid_ID)
+	switch( Proc_CreatureTypeGet(to_pere) )
+	{
+		case C_ID_Monture_Araignee :
+			PNJ_Bipod_EarthQuake(to_pere)
+			break
+	}
+}

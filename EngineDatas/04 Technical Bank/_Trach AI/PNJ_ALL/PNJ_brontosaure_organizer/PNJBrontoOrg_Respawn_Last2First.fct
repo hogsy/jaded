@@ -1,0 +1,116 @@
+#include "PNJ_Brontosaure_Organizer_defs.var" 
+
+int			ti_bronto_ref, ti_bronto_moved, ti_index
+object	to_bronto
+vector	tv_pos, tv_before, tv_after, tv_possave
+float		tf_zoom, tf_dist, tf_val, tf_width
+network	tn_Net
+vector	tv_temp
+float		tf_scorebefore, tf_scoreafter
+
+// ========[ precomputing vars ]========
+tf_dist = (Bronto_DistMin + Bronto_DistMax) / 2
+tf_zoom = MATH_RandFloat( M_Brontoi( Bronto_Nb - 1 )  troupe_f_zoommin, M_Brontoi( Bronto_Nb - 1 )  troupe_f_zoommax )
+to_bronto = Bronto_Obj[ Bronto_Nb - 1 ]
+
+// ========[ compute score of first bronto ]========
+#ifdef BRONTO_LOG
+DBG_RenderVector( @to_bronto OBJ_PosGet() - cvector( 0, 0, 20), cvector(0, 0, 40), color_rouge )
+#endif
+tv_temp = @to_bronto OBJ_PosGet() - Bronto_RefPos
+tf_scorebefore = MATH_VecNorm( tv_temp )
+if (tf_scorebefore) tv_temp /= tf_scorebefore
+tf_scorebefore -= MATH_VecDotProduct( tv_temp, Bronto_RefSight ) * tf_dist * BRONTO_DOTMODIFIER
+
+// ========[ compute position after spawn ]========
+
+// ----( spawn after which bronto ? )----
+for (ti_bronto_ref= 0; ti_bronto_ref < Bronto_Nb - 1; ti_bronto_ref++)
+{
+	if ( M_Brontoi( ti_bronto_ref ) move_network == M_Brontoi( Bronto_Nb - 1 ) move_network )
+		break
+}
+if ( ti_bronto_ref == Bronto_Nb - 1)
+	ti_bronto_ref = 0
+	
+// ----( compute approximative spawn position )----
+tf_val = tf_zoom + M_Brontoi( ti_bronto_ref ) f_Zoom
+tv_pos = @Bronto_Obj[ti_bronto_ref] OBJ_PosGet()
+tv_pos += @Bronto_Obj[ti_bronto_ref] OBJ_SightGet() * (tf_dist * tf_val )
+#ifdef BRONTO_LOG
+DBG_RenderVector( tv_pos - cvector( 0, 0, 20), cvector(0, 0, 40), 0xFF00FF00 )
+#endif
+
+// ----( réajusetment position si le bronto ref n'est pas le dernier )----
+if (ti_bronto_ref != 0)
+{
+	tv_possave = tv_pos
+	
+	#ifdef BRONTO_LOG
+	DBG_RenderVector( @Bronto_Obj[ 0 ] OBJ_PosGet() - cvector( 0, 0, 20), cvector(0, 0, 40), 0xFF007F00 )
+	#endif
+	
+	tv_temp = @Bronto_Obj[ti_bronto_ref] OBJ_PosGet() - @Bronto_Obj[ 0 ] OBJ_PosGet()
+	tf_val = MATH_VecDotProduct( tv_temp, @Bronto_Obj[ti_bronto_ref] OBJ_SightGet() )
+	tv_temp -= tf_val * @Bronto_Obj[ti_bronto_ref] OBJ_SightGet() 
+	tv_pos = @Bronto_Obj[ 0 ] OBJ_PosGet() + tv_temp
+	
+	#ifdef BRONTO_LOG
+	DBG_RenderVector( tv_pos - cvector( 0, 0, 20), cvector(0, 0, 40), 0xFF7F0000 )
+	#endif
+
+	
+	tf_width = Bronto_Width * (tf_zoom + M_Brontoi( 0 ) f_Zoom)
+	tf_val = tf_zoom + M_Brontoi( ti_bronto_ref ) f_Zoom
+	if (MATH_VecDotProduct( tv_temp, tv_temp ) < tf_width * tf_width )
+		tv_pos += @Bronto_Obj[ti_bronto_ref] OBJ_SightGet() * (tf_dist * tf_val )
+	else
+		tv_pos += @Bronto_Obj[ti_bronto_ref] OBJ_SightGet() * (tf_dist * tf_val / 2)
+		
+	#ifdef BRONTO_LOG
+	DBG_RenderVector( tv_pos - cvector( 0, 0, 20), cvector(0, 0, 40), 0xFF00FF00 )
+	#endif
+		
+	if ( MATH_VecDotProduct( tv_pos - tv_possave, @Bronto_Obj[ti_bronto_ref] OBJ_SightGet()) < 0)
+		tv_pos = tv_possave
+}
+
+// ========[ compute score of spawn position ]========
+tv_temp = tv_pos - Bronto_RefPos
+tf_scoreafter = MATH_VecNorm( tv_temp )
+if (tf_scoreafter) tv_temp /= tf_scoreafter
+tf_scoreafter -= MATH_VecDotProduct( tv_temp, Bronto_RefSight ) * tf_dist * BRONTO_DOTMODIFIER
+
+if (tf_scoreafter < tf_scorebefore )
+{
+	for (ti_index = Bronto_Nb - 1; ti_index > 0; ti_index--)
+		Bronto_Obj[ ti_index ] = Bronto_Obj[ ti_index - 1 ] 
+
+	Bronto_Obj[ 0 ] = to_bronto
+	Bronto_Respawncount--
+	if (Bronto_Respawn_StopAfter > 0)
+		Bronto_Respawn_StopAfter++
+
+	M_Brontoi( 0 ) troupe_i_command  = 2
+	M_Brontoi( 0 ) troupe_v_param = tv_pos 
+	M_Brontoi( 0 ) f_Zoom = tf_zoom
+
+	Bronto_RespawnTimer = Bronto_TimeWithoutRespawn
+	Bronto_Respawn = 1
+}
+
+#ifdef BRONTO_LOG
+if (Bronto_Respawn)
+{
+	DBG_TraceString( "Respawn last -> first : before = " )
+	DBG_TraceFloat( tf_scorebefore )
+	DBG_TraceString(", after = ")
+	DBG_TraceFloat( tf_scoreafter )
+	DBG_TraceEOL()
+	
+	DBG_RenderVector( OBJ_PosGet() - cvector( 0, 0, 20), cvector(0, 0, 40), color_rouge )
+	DBG_RenderVector( tv_pos - cvector( 0, 0, 20), cvector(0, 0, 40), color_vert )
+	DBG_RenderVector( @Bronto_Obj[ti_bronto_ref] OBJ_PosGet() - cvector( 0, 0, 20), cvector(0, 0, 40), color_bleu )
+}
+#endif
+

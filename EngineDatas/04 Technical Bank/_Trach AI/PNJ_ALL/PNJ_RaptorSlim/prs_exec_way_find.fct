@@ -1,0 +1,142 @@
+#include "prs_RaptorSlim_defines.var"
+
+object	to_dest_wp, to_start_wp, to_last_wp
+vector	tv_dest_pos
+int			ti_territory_ID
+int			ti_flag_get_next_wp
+int			ti_way_nb_wp
+int			ti_capa
+float		tf_dist
+
+//if (o_next_wp && @o_next_wp OBJ_CapaTest(Ci_Capa_Exclusion))
+//	o_next_wp = nobody
+//
+//if (o_current_wp && @o_current_wp OBJ_CapaTest(Ci_Capa_Exclusion))
+//	o_current_wp = nobody
+
+ti_territory_ID = 0	// SET THIS TO INTERRUPT WAY TO TARGET( FLEE FIRE OR ELSE)
+if ( ! PROC_WAY_TERRITORY_ID_ALLOWED(i_target_territory_ID))
+{
+	// DESTINATION TERRITORY NOT AVAILABLE
+
+	if ( i_flag_in_my_territory)
+	{
+		// MY TERRITORY IS GOOD I CAN STAY HERE
+		v_next_pos = Cv_NullVector
+		o_next_wp = nobody
+		return
+	}
+	else
+	{
+		// MY TERRITORY IS NO MORE AVAILABLE FLEE
+		ti_territory_ID = PROC_WAY_FLEE_TERRITORY(i_my_territory_ID)
+		if ( ti_territory_ID == -1 )
+		{
+			// NOWHERE TO FLEE JUST DIE HERE
+//			if( i_OutSideTerritory_GoStraightIn )
+//			{
+//				v_next_pos = OBJ_PosInitGet()			// RETOURNE VERS SA POS INIT (tant qu'il est hors territoire)
+//				o_next_wp = nobody
+//				return
+//			}
+//			else
+			{
+				v_next_pos = Cv_NullVector
+				o_next_wp = nobody
+				return
+			}
+		}
+		else
+			i_way_computation_mode = Ci_WAY_MODE_FLEE
+	}
+}
+
+if ( i_my_territory_ID == i_target_territory_ID
+&& ! ti_territory_ID)
+{
+	// SAME TERRITORY THAN MY CURRENT TARGET GO WITH OCCLUDER ONLY
+	v_next_pos = v_way_destpos
+	i_next_territory = i_target_territory_ID
+	o_next_wp = nobody
+	return
+}
+else
+{
+	// CHECK SHORT WAY BEETWEEN THE 2 TERRITORIES
+	if ( ! ti_territory_ID && i_my_territory_ID)
+	{
+		// LOOK FOR TERRITORY PATH
+		ti_territory_ID = PROC_WAY_REACH_TERRITORY( i_my_territory_ID, i_target_territory_ID)
+	}	
+	// UPDATE WAY
+	if ( !o_next_wp || o_next_wp.des_int2 != i_next_territory )	// Nowhere or new territory
+	{
+		ti_way_nb_wp = PROC_WAY_TERRITORY_PATH(i_my_territory_ID, ti_territory_ID, i_way_move_bit)
+		if ( ti_way_nb_wp == -1)
+		{
+			// NOWHERE TO GO
+			v_next_pos = Cv_NullVector
+			o_next_wp = nobody
+			return			
+		}
+		else if ( !ti_way_nb_wp)
+		{
+			// NOT IN A TERRITORY CANNOT CHOOSE
+			v_next_pos = Cv_NullVector
+			o_next_wp = nobody
+			return					
+		}
+		o_current_wp = ao_way_wp[i_way_wp_nb]
+		o_next_wp = ao_way_wp[i_way_wp_nb - 1]
+		if (i_way_wp_nb > 1)
+			o_next_next_wp = ao_way_wp[i_way_wp_nb - 2]
+	}
+	else if ( COL_Pivot_BVCollide( o_next_wp))
+	{
+		// On enlève ce wp puisqu'il est atteint
+		if (i_way_wp_nb)
+		{
+			o_current_wp = o_next_wp
+			i_way_wp_nb--
+			ao_way_wp[i_way_wp_nb] = nobody
+		}
+		// On regarde si on a un wp suivant
+		if (i_way_wp_nb)
+			o_next_wp = ao_way_wp[i_way_wp_nb - 1]		
+		else
+			o_next_wp = nobody
+	}
+
+	// NEW NEXT VALUES
+	if ( o_next_wp)
+	{
+		v_next_pos = @o_next_wp OBJ_PosGet()
+		i_next_territory = o_next_wp.des_int2
+
+		if ( o_current_wp)
+			ti_capa = WAY_LinkCapaGet( WAY_Territory,o_current_wp, o_next_wp)
+		else
+			ti_capa = 0
+		if ( ti_capa & Ci_Capa_Link_Jump)
+		{
+			v_jump_dest_pos = @o_next_wp OBJ_PosGet()
+			i_jump_mode = Ci_jump_mode_std
+			macro_change_etat("prs_ETAT_JUMP")			
+		}
+		else
+		if ( i_etat_courant != ETAT_PRS_ATTAQUE_CACHE && @o_next_wp OBJ_CapaTest(Ci_Capa_Break_Item))
+		{
+			// NEED TO BREAK TO GO THROUGH
+			if ( ( i_way_move_bit & Ci_WAY_BIT_BREAK) || i_flag_hiding_place_hit_enable)
+			{
+				i_break_hideout_target_hidden = faux
+				o_hiding_place = o_next_wp
+				macro_change_etat("prs_ETAT_ATTAQUE_CACHE")
+			}
+			else
+			{
+				i_way_computation_mode = Ci_WAY_MODE_RETURN
+			}
+		}
+	}
+}

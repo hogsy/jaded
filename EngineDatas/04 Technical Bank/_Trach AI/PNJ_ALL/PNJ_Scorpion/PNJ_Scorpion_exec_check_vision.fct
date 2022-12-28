@@ -1,0 +1,85 @@
+#include "PNJ_Scorpion_defines.var"
+
+int					ti_rank
+int					ti_ID
+int					ti_index
+
+object			to_actor
+
+messageid		tmid_visibility
+messageid		EVT_InfoSeen_ID
+
+if (i_flag_visual_check_done)
+	return
+	
+i_flag_visual_check_done = vrai
+
+ti_rank = -1
+for (tmid_visibility = MSG_GlobalScan(C_EVENT_TYPE_Visibility, &ti_rank);
+	MSG_GlobalIsValid(tmid_visibility);
+	tmid_visibility = MSG_GlobalScan(C_EVENT_TYPE_Visibility, &ti_rank))
+{
+	ti_ID = EVENT_VisionIDGet(tmid_visibility)
+	to_actor = EVENT_PereGet(tmid_visibility)
+
+	switch(ti_ID)
+	{
+		case C_ID_Bidoche :
+			if (@to_actor OBJ_CapaTest(CAPA_Bidoche_Snapped_On_Javelin))	
+				continue
+			break
+	
+		case	C_ID_Scorpion :
+			PNJ_Scorpion_Add_Budy(tmid_visibility)
+			continue
+			break
+	
+		case C_ID_Spider :
+			continue
+			break
+
+		case C_ID_BatCharognard :
+			if ( ! @to_actor OBJ_CapaTest(OBJ_Capa_15) )
+				continue
+			break
+
+		case C_ID_Scolo :
+			if (EVENT_VisionLifeStateGet(tmid_visibility) > 0.0)
+				continue
+			else
+				ti_ID = ti_ID
+			break
+	}
+
+//	if (! IsThis_ID_Humain(ti_ID))
+//		continue
+		
+	ti_index = PNJ_Scorpion_Add_Perceived_Actor(to_actor, 0, tmid_visibility)
+	if (ti_index == -1)
+	{
+		if (IsThis_ID_Humain(ti_ID) && ( ! BV_ZoneTerritoire || @to_actor COL_Pivot_BVCollide(BV_ZoneTerritoire)) )
+		{
+			EVT_InfoSeen_ID = EVENT_AddEventInfo(OBJ_Me(), to_actor, C_EVENT_INFOTYPE_SEEN)
+			EVENT_Info_OutsideGridSet(EVT_InfoSeen_ID, faux)
+		}
+	
+		continue
+	}
+
+	if (ai_perceived_accessible[ti_index])
+	{
+		ai_perceived_seen[ti_index] = vrai
+		ai_perceived_status[ti_index] |= Ci_PERCEIVED_IDENTIFIED
+		
+		if (IsThis_ID_Humain(ai_perceived_ID[ti_index]))
+		{
+			EVT_InfoSeen_ID = EVENT_AddEventInfo(OBJ_Me(), to_actor, C_EVENT_INFOTYPE_SEEN)
+			EVENT_Info_OutsideGridSet(EVT_InfoSeen_ID, faux)
+		}
+	}
+}
+
+PNJ_Scorpion_Check_Perceived_Actor()
+
+if (i_perceived_best_actor_index == -1)
+	PNJ_Scorpion_Del_Interest()

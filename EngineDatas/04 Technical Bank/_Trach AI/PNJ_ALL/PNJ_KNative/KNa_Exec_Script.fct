@@ -1,0 +1,43 @@
+
+#include"KNa_Defines.var"
+
+i_move_flag_shootinmove = faux
+
+if (i_target_none)
+{
+	MSG_SetNull(m_script)
+	m_script.msg_id = CINE_NATIVE_Move
+	m_script.msg_gao1 = o_init_pos
+	m_script.msg_vec1 = cvector(666,0,0)
+	i_script_indice = -1
+}
+else
+{
+	call_trigger(trig_script[i_script_indice])
+	m_script = AI_TriggerGetMsg(trig_script[i_script_indice])
+}
+
+// Le script qui me demande de me detruire a la fin de cette action
+if (m_script.msg_int3 & Ci_Filtre_Destroy)
+{
+	OBJ_Destroy()
+}
+
+switch( m_script.msg_id )
+{
+	case CINE_NATIVE_Move :
+		AI_TrackChange(Ci_Track_Etat,"KNa_ETAT_Move")
+		break
+
+	case CINE_NATIVE_Launch :
+		AI_TrackChange(Ci_Track_Etat,"KNa_ETAT_Launch")
+		break
+	
+	case CINE_NATIVE_Loop :
+		i_script_indice = m_script.msg_int1
+		Macro_Script_Next
+		break
+}
+
+if (!i_script_next && AI_TriggerIsValid(trig_script[i_script_indice+1]))
+	i_script_indice++

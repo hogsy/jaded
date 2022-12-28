@@ -1,0 +1,42 @@
+
+//======================================================================================
+// DECLENCHEMENT D'UNE CAMERA FIGHT LOCKEE SUR ANN
+//======================================================================================
+
+#define		Cf_dist_KK_camera			2500.0
+
+object 		to_camera
+object		to_ray_object
+object		to_head_ANN
+vector		tv_sight
+int				ti_camera
+
+ti_camera = faux
+
+if( i_flag_ANN_KK && i_flag_ANN_au_sol )
+	ti_camera = vrai
+
+//f_time_KK_camera = MATH_FloatMax(0.0, f_time_KK_camera - TIME_GetDt())
+//
+//if( f_time_KK_camera )
+//	ti_camera = vrai
+//else if( i_flag_ANN_KK && i_flag_ANN_au_sol )
+//{
+//	// ANN mode KONG, ANN au sol, durée entre 2 checks écoulée
+//	if( OBJ_SqrDist(o_KK_actor) <= Cf_dist_KK_camera )
+//	{
+//		to_camera = get_camera
+//		to_head_ANN = ANI_CanalObjectGet(Anim_Canal_Tete)
+//		tv_sight = @to_head_ANN OBJ_PosGet() - @to_camera OBJ_PosGet()
+//		to_ray_object = COL_RayObject_Vector(@to_camera OBJ_PosGet(),  tv_sight, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+//		if( ! to_ray_object || to_ray_object == OBJ_Me() )
+//		{
+//			// ANN visible par la caméra
+//			f_time_KK_camera = 2.0
+//			ti_camera = vrai
+//		}
+//	}
+//}
+
+if( ti_camera )
+	EVENT_AddEventLockCam(OBJ_Me(), C_EVENT_LockCamStatus_Fight, cvector(0.0, 0.0, 1.5))

@@ -1,0 +1,112 @@
+
+
+
+#include"Na_Defines.var"
+
+object			to_old_target 
+
+messageid		tmid_paf
+
+//if (IO_ButtonJustPressed(JoyPSX_Button_triangle))
+//	tmid_paf = EVENT_AddEventPafCanal( C_EVENT_FILTER_All, C_EVENT_PAF_Perforant, OBJ_Me(), Cf_EVENT_Duree_1Trame, OBJ_Me(), 0, 0, OBJ_SightGet(), OBJ_PosGet())
+
+if (ACT_ActionGet() == Ci_AnimNative_Droite || ACT_ActionGet()	== Ci_AnimNative_Gauche )
+	DYN_SpeedSetVector( DYN_SpeedGetVector() * 0.25)
+
+// JOHN WAYNE ===================================================================
+if (AI_TriggerIsValid(t_trigger_JohnWayne) && call_trigger(t_trigger_JohnWayne))
+{
+	// Trigger Activé donc on demande un JohnWayne)
+	AI_TriggerSetInvalid(t_trigger_JohnWayne)		// Pour ne pas RETESTER et donc REPASSER EN PAF
+	f_lifecur = 0													// Je suis mort !
+	f_paf_degats = -1											// Conditionne un JohnWayne	 unique
+	macro_change_etat("Na_ETAT_Paf")
+}
+// JOHN WAYNE ===================================================================
+
+// Check collision ground  =============================================================
+if (COL_CollideType(COL_C_Ground))
+	f_time_ground = TIME_Get()
+
+// Check Face d'Eau =================================================================
+if( ! i_plouf  && COL_GMatReportGet(Gmat_KK_Face_eau) != -1 )
+{
+	i_plouf = vrai
+	SND_RequestPlay(Ci_SND_Plouf)
+	Native_LIB_GFX_Plouf(OBJ_PosGet())
+}
+
+// Check Face de Mort ===============================================================
+if (Native_LIB_Check_Death_Collision())
+{
+	macro_change_etat("Na_ETAT_Mort")
+	returntrack
+}
+
+// Check de la validité de la target + Find new target ==========================================
+i_target_none = faux
+if (!m_script.msg_gao2)
+{
+	// Le script ne force pas un Gao particulier
+//	if (i_etat_courant != ETAT_WaitActivation && i_etat_courant != ETAT_Launch)
+	{
+		// En tir est en lancé on ne change pas de target
+		to_old_target = o_target
+		if (!Native_LIB_Target_Check_This_One(o_target))
+			o_target = Native_LIB_Target_Get_One_In_BV(BV_ZoneTerritoire)	// Je cherche une autre cible car la cible courant n'est pas valide
+		if (!o_target)																				// Si j'ai pas de cible valide alors je garde ce que j'avais le temps de revenir au point d'init
+		{
+			i_target_none = vrai			// Je n'ai plus de target	
+			o_target = to_old_target 
+		}
+	}
+}
+
+// Permet de lancer la Zic Fight des que les indigenes ont une target
+if (o_target) 
+	SIG_Send(SIG_C_TYPE_FIGHT, OBJ_Me())
+
+// Traitement du script ! ===============================================================
+if (	i_script_running && i_script_next)
+{ 
+	i_script_next = faux
+	AI_Execute("Na_Exec_Script")
+}
+
+// Je SIGNALE a tous les marins que je suis dangeureux pour eux ! =================================
+if (o_target && i_dangeureux_pour_humain)
+{
+	int ti_i 
+	EVENT_AddEventEnemy( C_ID_Indigene, OBJ_Me(), C_EVENT_EnemyState_Fight)
+//	for(ti_i = 0; ti_i < C_ID_Marin_dernier; ti_i++)
+	for(ti_i = 0; ti_i < C_ID_Last_Compagnon; ti_i++)
+	{
+		object to_obj
+		messageid EVT_InfoSeen_ID
+		
+		if (!@"univ" ai_HumainIsHere[ ti_i ] ) continue
+		
+		to_obj = @"univ" ao_AllHumains[ti_i]
+		if(!to_obj) continue
+		if(IsThis_ID_HumainIndigene(ti_i)) continue
+			
+		EVT_InfoSeen_ID = EVENT_AddEventInfo(OBJ_Me(), to_obj, C_EVENT_INFOTYPE_SEEN)
+		EVENT_Info_OutsideGridSet(EVT_InfoSeen_ID, faux)
+	}
+}
+
+// EVENT VISIBILITY =================================================================
+mid_visibility = EVENT_AddEventVision
+(
+	C_ID_Indigene,									// EVT_func_ID
+	C_EVENT_FILTER_Enemy, 					// EVT_func_Filter
+	OBJ_Me(), 											// EVT_func_Pere
+	Cf_EVENT_Duree_1Trame, 					// EVT_func_DureeDeVie
+	OBJ_PosGet() + cvector( 0, 0, 1),			// EVT_func_Position
+	C_EVENT_Visibility_Full_Mvt, 				// EVT_func_Visibilite
+	0.4, 													// EVT_func_Size
+	100.0, 												// EVT_func_Interet
+	C_EVENT_CONTEXT_STANDARD, 		// EVT_func_Context
+	2,														// EVT_func_MaxSlots
+	1.0													// EVT_func_LifeState
+)

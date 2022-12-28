@@ -1,0 +1,76 @@
+
+vector tv_dist
+vector tv_orientChange
+
+float tf_rotation
+
+if (IO_ButtonJustPressed(JoyPSX_Button_croix))
+{
+	if (i_AnimId >= 0)
+	{
+		ACT_ActionSet(i_AnimId + Ci_ActionSet_Force_No_Blend + Ci_ActionSet_Force_SameAction)
+		ANI_Pause(vrai)
+		i_animIsPaused = vrai
+	}
+	
+	v_beginningPos = OBJ_PosGet()
+	v_beginningOrient = OBJ_SightGet()
+
+	STR_CreateText("FRAME 0 - PAUSED", cvector(0.1,0.0,0.0), 1)
+}
+else if (IO_ButtonJustPressed(JoyPSX_Button_triangle))
+{
+	if (MATH_VecNull(v_beginningOrient))
+		return		// in case X was never pressed
+
+	// set it to last frame
+	ANI_CurrentFrameSet(0,ANI_NbFrameGet(0))
+	ACT_ActionSet(i_AnimId + Ci_ActionSet_Force_No_Blend + Ci_ActionSet_Force_SameAction)         
+	ANI_Pause(vrai)
+	i_animIsPaused = vrai
+
+	// log distance traveled and orientation change
+	v_endPos = OBJ_PosGet()
+	v_endOrient = OBJ_SightGet()
+	
+	tv_dist = v_endPos - v_beginningPos
+
+	v_beginningOrient.z = 0
+	v_beginningOrient = MATH_VecNormalize(v_beginningOrient)
+	v_endOrient.z = 0
+	v_endOrient = MATH_VecNormalize(v_endOrient)
+	tf_rotation = MATH_VecAbsAngle(v_beginningOrient,v_endOrient)
+	DBG_TraceString("Animation ")
+	DBG_TraceInt(ACT_ActionGet())
+	DBG_TraceEOL()
+	
+	DBG_TraceString(" Distance (x,y,z) = ")
+	DBG_TraceVector(tv_dist)
+	DBG_TraceEOL()
+
+	DBG_TraceString(" Rotation around Z = ")
+	DBG_TraceFloat(tf_rotation / Cf_Pi * 180.0)
+	DBG_TraceString(" Degrees")
+	DBG_TraceEOL()
+	
+	STR_CreateText("LAST FRAME - PAUSED", cvector(0.1,0.0,0.0), 1)
+}
+else if (IO_ButtonJustPressed(JoyPSX_Button_carre))
+{
+	// switch pause
+	if (i_animIsPaused)
+	{
+		ANI_Pause(faux)
+		i_animIsPaused = faux
+		STR_CreateText("ANIM PLAY", cvector(0.1,0.0,0.0), 1)
+	}
+	else
+	{
+		ANI_Pause(vrai)
+		i_animIsPaused = vrai
+		STR_CreateText("ANIM PAUSE", cvector(0.1,0.0,0.0), 1)
+	}	
+	
+}
+
+

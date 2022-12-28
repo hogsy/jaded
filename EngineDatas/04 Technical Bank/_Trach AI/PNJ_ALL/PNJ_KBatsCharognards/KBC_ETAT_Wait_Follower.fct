@@ -1,0 +1,115 @@
+#include "KBC_defines.var"
+
+messageid	tmid_vision
+messageid	tmid_life
+
+object		to_head
+object		to_look_actor
+
+vector		tv_offset
+vector		tv_pos
+vector		tv_sin
+
+
+// SORTIE ETAT ========================================================================
+if (i_sort_etat)
+{
+	i_follower = faux
+	
+	i_sort_etat = faux
+	return
+}
+
+
+// ENTREE ETAT =======================================================================
+if( i_etat_courant != ETAT_Fight_Follower )
+{
+	i_etat_ancien_ancien = i_etat_ancien
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Fight_Follower
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	KBC_DBG_Trace(i_DBG_trace_etat, "etat follower")
+	
+	DYN_Off()
+	
+	ACT_ActionSet(i_ACTION_Vol_Standard)
+	KBC_action_frequency_set(MATH_RandFloat(1.0, 2.0))
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+	f_follow_blend_coef += MATH_FloatMin(1.0 - f_follow_blend_coef, 3 * TIME_GetDt())
+}
+
+
+// ANALYSE ==================================================================================================
+MACRO_CHECK_PAFS
+
+if( f_time_start_etat > 1.0 )
+{
+	// test vision
+	tmid_vision = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility, o_follow_gao, nobody)
+	if( ! MSG_GlobalIsValid(tmid_vision) )
+		f_follow_not_visible_duration += TIME_GetDt()
+	else
+	{
+		i_follow_already_seen = vrai		// attention secto différente entre le follower et le follow_gao !!!
+		if( EVENT_VisionLifeStateGet(tmid_vision) <= 0.0 )
+			f_follow_not_visible_duration += TIME_GetDt()
+	}
+	
+	// test life
+	tmid_life = EVENT_LIFE_MSGID_Get(o_follow_gao)
+	if( ! MSG_GlobalIsValid(tmid_life) )
+		f_follow_not_visible_duration += TIME_GetDt()
+	else
+	{
+		if( EVENT_LIFE_Est_Blesse(tmid_life) )
+			f_follow_not_visible_duration += TIME_GetDt()
+	}
+	
+	if( i_follow_already_seen && f_follow_not_visible_duration > 2.0 )
+	{
+		i_follower_init = faux
+		KBC_DBG_Trace(i_DBG_trace_etat, "o_follow_gao mort => devient une bat agressive standard")
+		AI_Execute("KBC_exec_init_attente")
+	}
+}
+
+
+// REGARD -----------------------------------------------------------
+if( o_follow_gao )
+{
+	i_flag_neck = vrai
+	if( @o_follow_gao KBC_IsEtatAttaque(-1) )
+		to_look_actor = o_Kong
+	else
+		to_look_actor = o_follow_gao
+	to_head = @to_look_actor ANI_CanalObjectGet(Anim_Canal_Tete)
+	if( ! to_head )
+		to_head = to_look_actor
+	v_look_pos = @to_head OBJ_PosGet()
+}
+
+
+// ORIENTATION --------------------------------------------------
+OBJ_BankingGeneralSet(
+	MATH_VecBlendRotate(OBJ_SightGet(), @o_follow_gao OBJ_SightGet(), 1 * TIME_GetDt()),
+	MATH_VecBlendRotate(OBJ_BankingGet(), @o_follow_gao OBJ_BankingGet(), 1 * TIME_GetDt()))
+
+
+// POSITION --------------------------------------------------------
+tv_offset = @o_follow_gao MATH_VecLocalToGlobal(v_follow_offset)
+DBG_RenderVector(@o_follow_gao OBJ_PosGet(), tv_offset, color_rouge)
+tv_pos = @o_follow_gao OBJ_PosGet()
+tv_pos += tv_offset
+tv_sin = cvector(MATH_Sin(f_follow_sin_desynchro * TIME_Get()), MATH_Sin(f_follow_sin_desynchro * 1.5 * TIME_Get()), MATH_Sin(f_follow_sin_desynchro * 3 * TIME_Get()))
+tv_pos += tv_sin
+OBJ_PosSet(MATH_VecBlend(OBJ_PosGet(), tv_pos, 2 * TIME_GetDt()))
+

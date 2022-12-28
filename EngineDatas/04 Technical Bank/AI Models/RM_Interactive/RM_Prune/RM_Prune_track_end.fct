@@ -1,0 +1,19 @@
+#include "RM_Prune_defines.var"
+
+vector	tv_Traction
+
+tv_Traction = Cv_NullVector
+tv_Traction += v_traction_GOGO
+tv_Traction += v_ForceActu * f_CoefJump
+//tv_Traction += v_traction_MOVE
+//tv_Traction += PNJ_MR_Soft_Col()		// SOFTCOL
+//tv_Traction += PROC_ForceStreamGet(OBJ_PosGet(), i_stream_aspire_flag)
+tv_Traction.x *= f_DYN_Friction
+tv_Traction.y *= f_DYN_Friction
+if(i_etat_courant != ETAT_Prune_PASSIVEWAIT)
+	DYN_TractionSet( tv_Traction)
+//DBG_RenderVector(OBJ_PosGet(),DYN_SpeedGetVector(),color_rouge)
+
+v_LastSpeed=DYN_SpeedGetVector()
+
+v_OldPos=OBJ_PosGet()

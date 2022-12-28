@@ -1,0 +1,262 @@
+#include "PNJ_SwampCrawlerSmall_defs.var"
+
+int				i
+vector		next_pos, dir, sight, temp, savedir
+float			dot, dist, factor, fz, norm, speedfactor, buddyfactor
+object		o_buddy
+int				ti_capa
+vector		tv_temp
+vector		tv_pos
+
+//--------( init )---------
+move_i_neardest = 0
+move_i_neardestlarge = 0
+
+next_pos = OBJ_PosGet()
+next_pos -= move_v_ondule 
+
+
+f_time_splash -= MATH_FloatMin(f_time_splash,TIME_GetDt())
+if (f_time_splash)
+{
+	tv_pos = OBJ_PosGet()
+	tv_pos.z = GFX_traceZ
+	DBG_RenderSphere(tv_pos,0.5,color_rouge)
+	SCS_fct_GFX_SplashMove(tv_pos, f_time_splash)
+}
+
+//---------( déplacement dans le plan horizontal )--------
+DBG_RenderSphere(move_v_dest, 1.0, color_rose)
+
+dir = move_v_dest - next_pos
+//dir.z = 0
+dist = MATH_VecNorm( dir )
+
+if (dist)
+	v_move_axis = dir / dist
+else
+	v_move_axis = Cv_NullVector
+
+
+// Super routine de contournement d'obstacle :) =======================================
+if (COL_CollideType(COL_C_Wall) )										// Mur & Normale
+{
+//	move_i_ground = 1
+	move_v_wall_axis = COL_NormalGet(COL_C_Wall)
+	DBG_RenderVector(OBJ_PosGet(),move_v_wall_axis * 10, color_rouge)
+
+ 	if (MATH_VecDotProduct(dir,move_v_wall_axis) < 0 || f_move_sign != 666)
+	{
+		vector	tv_cross
+		tv_cross = MATH_VecCrossProduct(move_v_wall_axis, Cv_VerticalVector)
+		DBG_RenderVector(OBJ_PosGet(),tv_cross * 10, color_vert)
+
+		if (	f_move_sign == 666)
+			f_move_sign = MATH_FloatSign(MATH_VecDotProduct(v_move_axis, tv_cross))
+		
+		dir = MATH_VecBlendRotate(-move_v_wall_axis, tv_cross * f_move_sign, 0.95) * dist
+		DBG_RenderVector(OBJ_PosGet(),dir * 10 * f_move_sign, color_bleu)
+	}
+}
+else
+	f_move_sign = 666
+// Super routine de contournement d'obstacle :) =======================================
+
+
+if (dist > 0)
+{
+	if (MATH_VecDotProduct(v_old_dir,dir/dist) < Cf_Cos45)
+		f_blendblend = 0
+	v_old_dir = dir / dist
+}
+
+if (move_i_remote)
+	dir = -dir
+
+//----(déplacement non nul )----
+if (dist > 0)
+{
+	dir /= dist
+	savedir = dir
+
+	//----( soft col )-----
+	if (ACT_ActionGet() == SCS_ACT_water_attack && ANI_CurrentFrameGet(0) > 80)
+	{
+		if (!i_eatme || f_time_paf_viande)
+		{
+			factor = 0
+			f_blendblend = 0
+		}
+		else
+			factor = 1.5
+	}
+	else
+		factor = 1
+	
+	speedfactor = 1
+	if ( 0) //move_i_buddynb )
+	{
+		factor = 2
+ 		for (i = 0; i < move_i_buddynb; i++ )
+		{
+			if (move_af_buddyradius[ i ] == 0)
+				return
+			
+			temp = move_av_buddypos[ i ] - OBJ_PosGet()
+			norm = MATH_VecNorm( temp )
+			if ( (norm == 0) || (norm > move_af_buddyradius[ i ]))
+				continue
+			temp /= norm
+			
+			buddyfactor = move_af_buddyradius[ i ] - norm
+			dot = MATH_VecDotProduct( temp, OBJ_SightGet() )
+			if ( dot > 0.5 )
+			{
+//				if (MATH_VecDotProduct( temp, savedir) < 0)
+//					temp = -temp
+				speedfactor *= 1 - ((buddyfactor / move_af_buddyradius[ i ]) * 0.5 * dot )
+				factor *= 1 + ((buddyfactor / move_af_buddyradius[ i ]) * dot )
+			}
+			dir -= 5 * buddyfactor * temp
+
+			if (DBG_IsObjSel()) 
+			{
+				//DBG_RenderSphere( move_av_buddypos[ i ], move_af_buddyradius[ i ],  0x4F00FF00 + (i * 10) )
+				DBG_RenderSphere( move_av_buddypos[ i ] +cvector( 0, 0, 1), 0.5 ,  0x4F00FF00 + (i * 10) )
+				DBG_RenderVector( OBJ_PosGet(), dir * 5, 0xFFFF0000 + (i*10 ) )
+			}
+		}
+	}
+	
+	//----( orientation )-----
+	if ( etat_i_courant == SCS_ETAT_wait )
+		f_blendblend = MATH_FloatBlend(f_blendblend, 2.0, 1.0 * TIME_GetDt())
+	else
+		f_blendblend = MATH_FloatBlend(f_blendblend, 2.0, 4.0 * TIME_GetDt())
+
+	sight = MATH_VecBlendRotate(OBJ_SightGet(), dir, f_blendblend * factor * TIME_GetDt() )
+	sight.z = 0
+	factor = MATH_VecNorm( sight ) 
+	if (factor > 0)
+	{
+		sight /= factor
+		OBJ_SightSet( sight )
+	}
+		
+	//dir /= dist
+ 	dir = sight
+	factor = move_f_speed * speedfactor * TIME_GetDt()
+
+	if (i_eatme && !f_time_paf_viande)
+	{
+		factor *= MATH_FloatLimit(dist, 0.1, 2.0) * 0.5
+	}
+				
+	//----( on attend d'etre a peut près en face de la cible pour avancer )-----
+//	dot = MATH_VecDotProduct(dir, sight)
+//	if ( dot > 0.2 ) 
+	{
+		if ( (move_i_brakewhennear) && (dist < 1) )
+			factor /= (2 - dist )
+		if (factor > dist)
+			factor = dist
+
+		// DEPLACEMENT =====================
+		f_deplacement_factor = MATH_FloatBlend(f_deplacement_factor, factor, 5.0 * TIME_GetDt() )
+		if (move_i_remote)
+			next_pos -= dir * f_deplacement_factor
+		else
+			next_pos += dir * f_deplacement_factor
+		// DEPLACEMENT =====================
+
+	}
+	
+//	if (move_i_ondule && (dot > 0.8 ) )
+//	{
+//		move_f_onduletimer += TIME_GetDt() * f_OnduleFrequence
+//		move_v_ondule = MATH_VecCrossProduct(dir, Cv_VerticalVector)
+//		move_v_ondule *= MATH_Sin(move_f_onduletimer) * f_OnduleAmplitude
+//		next_pos += move_v_ondule
+//	}
+//	else
+	{
+		move_f_onduletimer = 0
+		move_v_ondule = Cv_NullVector
+	}
+	
+	//----( sound )----
+	if ( snd_i_swim == -1 )
+	{
+		snd_i_swim = SND_Request( SCS_Snd_Swim, C_SND_Request_3DSound | C_SND_Request_DestroyWhenFinished)
+		SND_PlayLooped( snd_i_swim, -1 )
+	}
+}
+else
+{
+	//----( sound )----
+	if (snd_i_swim != -1)
+	{
+		SND_Stop( snd_i_swim )
+		snd_i_swim = -1
+	}
+}
+
+//--------( réglage du Z )--------
+fz = move_v_dest.z
+if (next_pos.z != fz )
+{
+	if (next_pos.z < fz)
+	{
+		next_pos.z += f_SpeedZ * TIME_GetDt()
+		if (next_pos.z > fz) next_pos.z = fz
+	}
+	else
+	{
+		next_pos.z -= f_SpeedZ * TIME_GetDt()
+		if (next_pos.z < fz) next_pos.z = fz
+	}
+}
+
+v_last_pos = OBJ_PosGet()
+OBJ_PosSet( next_pos )
+
+
+//--------( collision ? )---------
+move_i_ground = 0
+if( COL_CollideType(COL_C_Ground) )										// Ground
+	move_i_ground = 2
+
+//if (COL_CollideType(COL_C_Wall) )										// Mur & Normale
+//{
+//	move_i_ground = 1
+//	move_v_wall_axis = COL_NormalGet(COL_C_Wall)
+//}
+
+ti_capa = GRID_CapaGet(OBJ_PosGet() + OBJ_SightGet())		// Mur Grille & Normale
+if( (ti_capa & tag_grid_terrain) == 1)
+{
+	move_i_ground = 1
+	move_v_wall_axis = OBJ_PosGet() - GRID_PosGet(OBJ_PosGet() + OBJ_SightGet())
+	MATH_VecSetNormalize(move_v_wall_axis)
+}
+
+//-------( arrivée sur la destination )--------
+dir = next_pos - move_v_dest
+if ( move_i_ground && dir.z > 0)
+	dir.z = 0
+move_v_dist2 = MATH_VecDotProduct(dir,dir)
+if ( move_v_dist2 < 0.2 )
+{
+	move_i_neardest = 1
+	move_i_neardestlarge = 1
+}
+else if ( move_v_dist2 < 1 )
+	move_i_neardestlarge = 1
+
+//------ ripples
+tv_temp = OBJ_PosGet()
+if(MATH_AbsFloat(tv_temp.z - GFX_traceZ) < 0.7)
+{
+	tv_temp.z = GFX_traceZ
+	LIBGFX_MarcheDansEau(tv_temp, OBJ_SightGet() * MATH_VecNorm(dir), 0, f_time_ripple, 0x00202020)
+}

@@ -1,0 +1,199 @@
+
+#include "KBC_defines.var"
+
+//=============================================================================
+// DETECTION DES ACTEURS VUS (STOCKAGE DANS UN TABLEAU)
+//=============================================================================
+
+int			ti_rank
+int			ti_seen_actors
+int			ti_visibility_context
+int			ti_type_sol
+int			ti_cible_safe
+float		tf_dot_product
+vector	tv_target_pos
+object	to_pere
+object	to_ray_object
+messageid		tmid_visibility_ID
+messageid		tmid_interet_ID
+messageid		EVT_InfoSeen_ID
+float		tf_obj_size
+int			ti_visible
+int			ti_indice
+int			ti_ID
+
+
+#define Cf_angle_vision				Cf_PiBy3		// angle total vision = x2
+#define Cf_cos_angle_vision		Cf_Cos60
+
+
+if( i_flag_check_vision_done )
+	return
+
+i_flag_check_vision_done = vrai
+
+tf_obj_size = 0.0
+
+ti_rank = -1
+for (	tmid_visibility_ID = MSG_GlobalScan(C_EVENT_TYPE_Visibility, &ti_rank);
+		MSG_GlobalIsValid(tmid_visibility_ID);
+		tmid_visibility_ID = MSG_GlobalScan(C_EVENT_TYPE_Visibility, &ti_rank)	)
+{
+	// il y a un perso
+	ti_visible = faux
+	ti_cible_safe = faux			// la cible est dans un endroit innaccessible pour la bat
+	
+	to_pere = EVENT_PereGet(tmid_visibility_ID)
+	if (to_pere != OBJ_Me() )
+	{
+		ti_ID = EVENT_VisionIDGet(tmid_visibility_ID)
+		
+		if( KBC_Cadavre_Test(to_pere, tmid_visibility_ID) )
+			KBC_Cadavre_Add(to_pere)
+		
+		if( ti_ID == C_ID_BatCharognard 
+			&& @to_pere OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI)
+			&& @to_pere AI_IsModel(get_PNJ_Bats_path) )
+		{
+			// tests multiples pour sécurité envers les cadavres fake de bats
+			if( EVENT_VisionLifeStateGet(tmid_visibility_ID) > Cf_Life_Dead )
+			{
+				// bat vivante
+				if( ARR_ObjSearch(&ao_budy[0], i_budy_nb, to_pere) == -1 )
+				{
+					// bat pas déjà mémorisée = je la mémorise
+					ao_budy[i_budy_nb] = to_pere
+					i_budy_nb++
+				}
+			}
+			else
+			{
+				// bat morte
+				ti_indice = ARR_ObjSearch(&ao_budy[0], i_budy_nb, to_pere)
+				if( ti_indice != -1 )
+				{
+					// bat déjà mémorisée = on la supprime
+					ao_budy[ti_indice] = nobody
+					i_budy_nb--
+				}
+			}
+		}
+		
+		// Lecture de la position et de la dimension du perso
+		tf_obj_size = EVENT_VisionSizeGet(tmid_visibility_ID)
+		tv_target_pos = EVENT_PositionGet(tmid_visibility_ID)
+		tv_target_pos.z += 1.0
+		
+		// Contexte du personnage
+		ti_visibility_context = EVENT_VisionContextGet(tmid_visibility_ID)
+		ti_type_sol = ti_visibility_context / 10
+		
+		// TEST GRILLE 0 (TERRAIN)
+//		if( ! MSG_GlobalIsValid(mid_interet_attaque) || to_pere != o_cible_attaque )
+//		{
+//			// si je n'ai pas encore d'intérêt (je n'ai pas encore plongé vers ma cible) ou que c'est quelqu'un d'autre que ma cible, l'herbe le cache à mes yeux
+//			switch( ti_type_sol )
+//			{
+//				case Ci_sol_herbe_haute :			// la bat ne voit pas les acteurs qui sont dans l'herbe haute
+//					continue
+//					break
+//				case Ci_sol_herbe :
+//					ti_visibility_context -= ti_type_sol * 10
+//					if( ( ti_visibility_context == C_EVENT_CONTEXT_ACCROUPI ) || ( ti_visibility_context == C_EVENT_CONTEXT_ALLONGE ) )
+//						continue								// la bat ne voit pas les acteurs accroupis ou couchés dans l'herbe basse
+//					break
+//				default:
+//					break
+//			}
+//		}
+		
+		// TEST GRILLE 1 (CACHES)
+		GRID_CurrentSet(1)
+		ti_type_sol = GRID_CapaGet(tv_target_pos)
+		ti_type_sol &= tag_grid_terrain
+		switch( ti_type_sol )
+		{
+			case Ci_sol_cache_bats :
+			case Ci_sol_cache_raptor_bats :
+//				if( to_pere == o_cible_attaque )
+//				{
+//					DBG_TraceString("cache !!!")
+//					DBG_TraceEOL()
+//				}
+				continue
+				break
+			default: 
+				break
+		}
+		GRID_CurrentSet(0)
+		
+		if( KBC_Pos_in_BV(tv_target_pos, o_zone_activite) )
+		{
+			// si le personnage est dans ma zone d'activité
+//			if( ! KBC_est_au_sol() )
+			{
+				//======== Mode Vision Totale en l'air =========
+				
+//				if( OBJ_SqrDist(to_pere) <= f_vision_distance * f_vision_distance * f_zoom )
+					ti_visible = vrai			// seule la distance compte
+//				else
+//				{
+//					if( to_pere == o_cible_attaque )
+//					{
+//						DBG_TraceObject(OBJ_Me())
+//						DBG_TraceString(" : cible trop éloignée...")
+//						DBG_TraceEOL()
+//					}
+//				}
+			}
+//			else
+//			{
+//				//========== Mode Cône de Vision au sol ===========
+//				
+//				af_seen_dist[i_seen_actor_nb] = MATH_LIB_ZoneInCone(v_look_head_pos, v_look_axis, Cf_cos_angle_vision, Cf_dist_vision, tv_target_pos, tf_obj_size, faux, tf_dot_product, 0, 0)
+//				if (af_seen_dist[i_seen_actor_nb])
+//				{
+//					// si l'acteur est dans mon cône de vision
+//					to_ray_object = COL_RayObject_Vector(v_look_head_pos, tv_target_pos - v_look_head_pos, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+//					if ( ! to_ray_object || to_ray_object == to_pere)
+//					{
+//						// si le lancer de rayon ne rencontre pas d'obstacle (obstacle == null ou le perso lui-même) alors ce perso est visible
+//						ti_visible = vrai
+//						
+//						if (DBG_IsObjSel() && i_DBG_render_vision)
+//							DBG_RenderVector(v_look_head_pos, tv_target_pos - v_look_head_pos, color_bleu)		// perso visible
+//					}
+//					else if (DBG_IsObjSel() && i_DBG_render_vision)
+//						DBG_RenderVector(v_look_head_pos, COL_RayObject_PosGet() - v_look_head_pos, color_blanc)	// obstacle
+//				}
+//				else if (DBG_IsObjSel() && i_DBG_render_vision)
+//					DBG_RenderVector(v_look_head_pos, tv_target_pos - v_look_head_pos, color_rouge)	// perso hors du cône de vision
+//			}
+		}
+		else 
+		{
+			// hors de ma zone d'activité
+			ti_cible_safe = vrai
+			if (DBG_IsObjSel() && i_DBG_render_vision)
+				DBG_RenderVector(v_look_head_pos, tv_target_pos - v_look_head_pos, color_cyan)
+		}
+	}
+	
+	
+	//========== acteur visible ===========
+	if( ti_visible )
+		KBC_Seen_Actor_Add(tmid_visibility_ID)
+	
+	//========== acteur pas safe ===========
+	if( ! ti_cible_safe )
+	{
+		if( @to_pere OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) && @to_pere AI_IsModel("KingKong/Humain") )
+		{
+			EVT_InfoSeen_ID = EVENT_AddEventInfo(OBJ_Me(), to_pere, C_EVENT_INFOTYPE_SEEN)
+			EVENT_Info_OutsideGridSet(EVT_InfoSeen_ID, faux)
+		}
+	}
+}
+
+//if (DBG_IsObjSel() && i_DBG_render_vision)
+//	DBG_RenderCone(v_look_head_pos, v_look_axis * f_vision_distance, Cf_angle_vision, 0x40000080)		// cône de vision

@@ -1,0 +1,170 @@
+return
+
+//#define	Cf_X				0.2
+//#define	Cf_X1				0.27
+//#define	Cf_X2				0.4
+//#define	Cf_Y				0.2
+//#define	Cf_Ydelta		0.1
+//#define	Cf_YdeltaHi	0.15
+//#define	Cf_Y2delta		0.035
+//
+//
+//float			tf_pos_y
+//vector		disp_vector 
+//int				ti_ammo_left 
+//float			tf_offsetY
+//int				ti_loop
+//int				ti_ammo[Ci_weapon_ID_max]
+//
+//if (IO_ButtonJustPressed(joy_button_Start))
+//{
+//	if ( i_TeamStatus_displayed )
+//		i_TeamStatus_displayed = faux
+//	else if (!Interface_i_Show )
+//		Interface_i_Show = vrai
+//	else
+//	{
+//		Interface_i_Show = faux
+//		i_TeamStatus_displayed = vrai
+//	}
+//	//i_TeamStatus_displayed = 1 - i_TeamStatus_displayed
+//}
+//
+//if (i_TeamStatus_displayed)
+//{
+//	disp_vector = cvector(0,0,0)
+//	tf_pos_y = Cf_Y
+//
+//	// ANN
+//	i_indice_text = STR_CreateText("Ann: ", cvector(Cf_X,tf_pos_y,0), 0)
+//	i_indice_text = STR_CreateText("", cvector(Cf_X1,tf_pos_y,0), 0)
+////	STR_AppendFloat(i_indice_text,(@"univ" LIFE_HumainCur[C_ID_Ann]/@"univ" LIFE_HumainMax[C_ID_Ann])*100 , 0)
+////	i_indice_text = STR_CreateText("MediKit (", cvector(Cf_X2,tf_pos_y,0), 0)
+////	STR_AppendInt(i_indice_text , @"univ" i_medicit_reserve)
+////	STR_AppendText(i_indice_text, ")")
+//
+//	// JACK
+//	tf_pos_y += Cf_Ydelta
+//	i_indice_text = STR_CreateText("Jack: ", cvector(Cf_X,tf_pos_y,0), 0)
+//	i_indice_text = STR_CreateText("", cvector(Cf_X1,tf_pos_y,0), 0)
+////	STR_AppendFloat(i_indice_text,( MATH_FloatMax(@"univ" LIFE_HumainCur[C_ID_Jack], 1.0)/@"univ" LIFE_HumainMax[C_ID_Jack])*100 , 0)
+//
+//
+//	for (ti_loop = 1; ti_loop <= Ci_weapon_ID_grenade; ti_loop++)		ti_ammo[ti_loop] = faux
+//	i_ammo_ID = @"univ"i_weapon_ID[C_ID_Jack]
+//	i_indice_text = STR_CreateText("\c008080FF\", cvector(Cf_X2,tf_pos_y,0), 0)
+//	AI_Execute("GG_Exec_AppendWeaponName")
+//	STR_AppendText(i_indice_text," (")
+//	ti_ammo_left = @"univ" i_weapon_ammunition[i_ammo_ID][C_ID_Jack]
+//	ti_ammo_left+= @"univ" i_weapon_ammunition_reserve[i_ammo_ID][C_ID_Jack]
+//	STR_AppendInt(i_indice_text,ti_ammo_left)
+//	STR_AppendText(i_indice_text,")")
+//
+//	if (i_ammo_ID == Ci_weapon_ID_bambou)
+//	{
+//		i_ammo_ID = @"univ"i_weapon_ID_Save[C_ID_Jack]
+//		ti_ammo[i_ammo_ID] = vrai
+//		i_indice_text = STR_CreateText("", cvector(Cf_X2,tf_pos_y+Cf_Y2delta,0), 0)
+//		AI_Execute("GG_Exec_AppendWeaponName")
+//		STR_AppendText(i_indice_text," (")
+//		ti_ammo_left = @"univ" i_weapon_ammunition[i_ammo_ID][C_ID_Jack]
+//		ti_ammo_left+= @"univ" i_weapon_ammunition_reserve[i_ammo_ID][C_ID_Jack]
+//		STR_AppendInt(i_indice_text,ti_ammo_left)
+//		STR_AppendText(i_indice_text,")")
+//		tf_offsetY = Cf_Y2delta
+//	}
+//	else
+//	{
+//		tf_offsetY = 0
+//		ti_ammo[i_ammo_ID] = vrai
+//	}
+//	
+//	i_ammo_ID = @"univ"i_weapon_ID_second[C_ID_Jack]
+//	ti_ammo[i_ammo_ID] = vrai
+//	i_indice_text = STR_CreateText("", cvector(Cf_X2,tf_pos_y+Cf_Y2delta+tf_offsetY,0), 0)
+//	AI_Execute("GG_Exec_AppendWeaponName")
+//	STR_AppendText(i_indice_text," (")
+//	ti_ammo_left = @"univ" i_weapon_ammunition[i_ammo_ID][C_ID_Jack]
+//	ti_ammo_left+= @"univ" i_weapon_ammunition_reserve[i_ammo_ID][C_ID_Jack]
+//	STR_AppendInt(i_indice_text,ti_ammo_left)
+//	STR_AppendText(i_indice_text,")")
+//
+//	i_indice_text = STR_CreateText("Ammunition: ", cvector(Cf_X2,tf_pos_y+tf_offsetY+(Cf_Y2delta*2.0),0), 0)
+//	for (ti_loop = 1; ti_loop < Ci_weapon_ID_grenade; ti_loop++)
+//	{
+//		if (!ti_ammo[ti_loop] )// && @"univ" i_weapon_ammunition_reserve[ti_loop][C_ID_Jack])
+//		{
+//			i_ammo_ID = ti_loop
+//			AI_Execute("GG_Exec_AppendWeaponName")
+//			STR_AppendText(i_indice_text," (")
+//			STR_AppendInt(i_indice_text,@"univ" i_weapon_ammunition_reserve[ti_loop][C_ID_Jack])
+//			STR_AppendText(i_indice_text,")  ")
+//		}
+//	}
+//
+//
+//
+//	// DENHAM
+//	tf_pos_y += Cf_YdeltaHi
+//	i_indice_text = STR_CreateText("Denham: ", cvector(Cf_X,tf_pos_y,0), 0)
+//	i_indice_text = STR_CreateText("", cvector(Cf_X1,tf_pos_y,0), 0)
+////	STR_AppendFloat(i_indice_text,(@"univ" LIFE_HumainCur[C_ID_Denham]/@"univ" LIFE_HumainMax[C_ID_Denham])*100 , 0)
+//
+//	// BRUCE
+//	tf_pos_y += Cf_Ydelta
+//	i_indice_text = STR_CreateText("Jimmy: ", cvector(Cf_X,tf_pos_y,0), 0)
+//	i_indice_text = STR_CreateText("", cvector(Cf_X1,tf_pos_y,0), 0)
+////	STR_AppendFloat(i_indice_text,(@"univ" LIFE_HumainCur[C_ID_Bruce]/@"univ" LIFE_HumainMax[C_ID_Bruce])*100 , 0)
+//
+//	i_ammo_ID = Ci_weapon_ID_colt
+//	i_indice_text = STR_CreateText("", cvector(Cf_X2,tf_pos_y,0), 0)
+//	STR_AppendText(i_indice_text,"Colt Ammunition (")
+//	ti_ammo_left = @"univ" i_weapon_ammunition[i_ammo_ID][C_ID_Jimmy]
+//	ti_ammo_left+= @"univ" i_weapon_ammunition_reserve[i_ammo_ID][C_ID_Jimmy]
+//	STR_AppendInt(i_indice_text,ti_ammo_left)
+//	STR_AppendText(i_indice_text,")")
+//
+//	// HAYES
+//	tf_pos_y += Cf_Ydelta
+//	i_indice_text = STR_CreateText("Hayes: ", cvector(Cf_X,tf_pos_y,0), 0)
+//	i_indice_text = STR_CreateText("", cvector(Cf_X1,tf_pos_y,0), 0)
+////	STR_AppendFloat(i_indice_text,(@"univ" LIFE_HumainCur[C_ID_Hayes]/@"univ" LIFE_HumainMax[C_ID_Hayes])*100 , 0)
+//
+//	for (ti_loop = 1; ti_loop <= Ci_weapon_ID_grenade; ti_loop++)		ti_ammo[ti_loop] = faux
+//	i_ammo_ID = @"univ"i_weapon_ID[C_ID_Hayes]
+//	ti_ammo[i_ammo_ID] = vrai
+//	i_indice_text = STR_CreateText("", cvector(Cf_X2,tf_pos_y,0), 0)
+//	AI_Execute("GG_Exec_AppendWeaponName")
+//	STR_AppendText(i_indice_text," (")
+//	ti_ammo_left = @"univ" i_weapon_ammunition[i_ammo_ID][C_ID_Hayes]
+//	ti_ammo_left+= @"univ" i_weapon_ammunition_reserve[i_ammo_ID][C_ID_Hayes]
+//	STR_AppendInt(i_indice_text,ti_ammo_left)
+//	STR_AppendText(i_indice_text,")")
+//
+//	i_ammo_ID = @"univ"i_weapon_ID_second[C_ID_Hayes]
+//	ti_ammo[i_ammo_ID] = vrai
+//	i_indice_text = STR_CreateText("", cvector(Cf_X2,tf_pos_y+Cf_Y2delta,0), 0)
+//	AI_Execute("GG_Exec_AppendWeaponName")
+//	STR_AppendText(i_indice_text," (")
+//	ti_ammo_left = @"univ" i_weapon_ammunition[i_ammo_ID][C_ID_Hayes]
+//	ti_ammo_left+= @"univ" i_weapon_ammunition_reserve[i_ammo_ID][C_ID_Hayes]
+//	STR_AppendInt(i_indice_text,ti_ammo_left)
+//	STR_AppendText(i_indice_text,")")
+//
+//	i_indice_text = STR_CreateText("Ammunition: ", cvector(Cf_X2,tf_pos_y+(Cf_Y2delta*2.0),0), 0)
+//	for (ti_loop = 1; ti_loop < Ci_weapon_ID_grenade; ti_loop++)
+//	{
+//		if (!ti_ammo[ti_loop] )// && @"univ" i_weapon_ammunition_reserve[ti_loop][C_ID_Hayes])
+//		{
+//			i_ammo_ID = ti_loop
+//			AI_Execute("GG_Exec_AppendWeaponName")
+//			STR_AppendText(i_indice_text," (")
+//			STR_AppendInt(i_indice_text,@"univ" i_weapon_ammunition_reserve[ti_loop][C_ID_Hayes])
+//			STR_AppendText(i_indice_text,")  ")
+//		}
+//	}
+//
+//
+//
+//}
+//

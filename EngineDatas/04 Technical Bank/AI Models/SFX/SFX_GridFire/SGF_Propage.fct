@@ -1,0 +1,136 @@
+int			x, y, pi_GFX_Fire
+vector	tv_temp, tv_temp1
+object	to_obj
+int			i, cpt
+float		tf_dot, tf_temp
+int			done
+
+#define MAX_DIST 40
+
+if(TIME_Elapsed(f_time_fire, 0.15))
+{
+	f_time_fire = TIME_Get()
+	x = MATH_RandInt(i_FirstCase, i_MaxCase)
+	v_pos_feu = av_FireCase[x]
+}
+
+LIGGFX_Fumee(mi_gfx1, mi_gfx2, v_pos_feu, 0)
+
+@get_global i_nbr_de_feux_en_cours_now ++
+
+// PROPAGATION
+if(TIME_Elapsed(f_time_propag, f_tempo_propag) && i_CurCase < i_MaxCase)
+{
+	while(i_CurCase < i_MaxCase)
+	{
+		f_time_propag = TIME_Get()
+		tv_temp = av_FireCase[i_CurCase]
+		
+		GRID_CurrentSet(1)
+		if(!(GRID_CapaGet(tv_temp) & 192))
+		{
+			if(i_MaxCase == 1) SND_MdFPlay(2)
+			af_time[i_CurCase] = TIME_Get()
+			GRID_CurrentSet(0)
+			GRID_CapaAdd(tv_temp, tag_grid_terraindyn_2)
+			GRID_CurrentSet(1)
+			GRID_CapaSet(tv_temp, Ci_Grid2_EnFeu)
+			break
+		}
+		else
+		{
+			done = faux
+			for(x = -1; x <= 1; x++)
+			{
+				for(y = -1; y <= 1; y++)
+				{
+					if(x == 0 && y == 0) continue
+					tv_temp1 = tv_temp
+					tv_temp1.x += x
+					tv_temp1.y += y
+					if(GRID_CapaGet(tv_temp1) & 64) continue
+					if(GRID_CapaGet(tv_temp1) & 128) continue
+					if((GRID_CapaGet(tv_temp1) & tag_grid_terrain) != Ci_Grid2_Inflammable) continue
+					
+					av_FireCase[i_MaxCase] = tv_temp1
+					af_time[i_MaxCase] = TIME_Get()
+					
+					GRID_CapaSet(tv_temp1, Ci_Grid2_EnFeu)		
+					
+					GRID_CurrentSet(0)
+					GRID_CapaAdd(av_FireCase[i_MaxCase], tag_grid_terraindyn_2)
+					GRID_CurrentSet(1)
+										
+					i_MaxCase = MATH_Modulo(i_MaxCase + 1, 200)
+					done = vrai
+					break
+				}		
+				
+				if(done) break
+			}
+			
+			if(done) break
+			i_CurCase = MATH_Modulo(i_CurCase + 1, 200)
+		}
+	}
+	
+	GRID_CurrentSet(0)
+}
+
+// FIN
+if(f_max_delay)
+{
+	if(TIME_Elapsed(af_time[i_FirstCase], f_max_delay))
+	{
+		GRID_CapaAdd(av_FireCase[i_FirstCase], -tag_grid_terraindyn_2)
+		GRID_CurrentSet(1)
+		GRID_CapaSet(av_FireCase[i_FirstCase], -Ci_Grid2_EnFeu)
+		GRID_CapaSet(av_FireCase[i_FirstCase], Ci_Grid2_Brule)
+		GRID_CurrentSet(0)
+		
+		i_FirstCase = MATH_Modulo(i_FirstCase + 1, 200)
+		if(i_FirstCase == i_MaxCase) AI_TrackCurChangeNow("SGF_Fin")
+	}
+}
+
+// SOUND
+if( @get_global i_Player_is_Kong )
+	to_obj = AI_MainActorGet(C_ID_Kong)
+else
+	to_obj = AI_MainActorGet(C_ID_Joueur)
+cpt = 0
+for(i = i_ScanCase; cpt != 10 && i != i_MaxCase; i = MATH_Modulo(i + 1, 200))
+{
+	tv_temp = av_FireCase[i] - @to_obj OBJ_PosGet()
+	tf_dot = MATH_VecDotProduct(tv_temp, tv_temp)
+	if(tf_dot < f_sound_dist)
+	{
+		f_sound_dist = tf_dot
+	}	
+	cpt++
+}
+
+i_ScanCase = i
+if(i_ScanCase == i_MaxCase)
+{
+	if(f_sound_dist < MAX_DIST * MAX_DIST)
+	{
+		f_next_insert = 1 - (f_sound_dist / (MAX_DIST * MAX_DIST))
+		i_snd_playing = vrai
+	}
+	else
+	{
+		i_snd_playing = faux
+	}
+	
+	f_sound_dist = MAX_DIST * MAX_DIST
+	i_ScanCase = i_FirstCase 
+}
+
+if(i_snd_playing)
+{
+	f_cur_insert = MATH_FloatBlend(f_cur_insert, f_next_insert, 20 * TIME_GetDt())
+	to_obj = get_SFX_GridFire
+	tf_temp = @get_SFX_GridFire_path to_obj f_cur_insert
+	if(tf_temp < f_cur_insert) @get_SFX_GridFire_path to_obj f_cur_insert = f_cur_insert
+}

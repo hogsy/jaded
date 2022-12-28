@@ -1,0 +1,44 @@
+float clock
+vector v
+dt=TIME_GetDt()
+clock=TIME_Get()
+// continue taking messages, for new hits
+PFK_GetMessages()
+// create some smoke for 10s
+if(clock>SmokeDelay && clock<TimerShoot+10)
+{
+	// set a new delay
+	SmokeDelay=clock+0.1
+	// generate black smoke
+	PFK_SmokeFX(0)
+}
+// keep on falling for a few seconds
+if(clock<TimerShoot+5)
+{
+	OBJ_RotateLocalY(dt*Roll)
+	v=OBJ_SightGet()
+	v.z-=dt*0.2
+	OBJ_SightGeneralSet(v,OBJ_BankingGet())
+	Roll=MATH_FloatBlend(Roll,0,dt*0.5)
+	// set speed
+	OBJ_PosSet(OBJ_PosGet()+(dt*20*OBJ_SightGet()))
+}
+// then get back up
+else
+{
+	// get direction
+	v=OBJ_PosGet()-@Target OBJ_PosGet()
+	v.z=0
+	v=MATH_VecNormalize(v)
+	// go down
+	v.z=-0.1
+	// set direction & head up
+	OBJ_SightGeneralSet(MATH_VecBlend(OBJ_SightGet(),v,dt*0.5),MATH_VecBlend(OBJ_BankingGet(),cvector(0,0,1),dt*0.5))
+	// set speed
+	OBJ_PosSet(OBJ_PosGet()+(dt*30*OBJ_SightGet()))
+	// if I ran awat long enough, I can disappear
+	if(clock>TimerShoot+30)
+	{
+		AI_TrackChange(2,"PFK_bhv_death")
+	}
+}

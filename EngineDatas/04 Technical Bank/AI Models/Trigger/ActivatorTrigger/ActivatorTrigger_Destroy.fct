@@ -1,0 +1,29 @@
+int ti_destroy
+
+// attente avant destruction (au cas ou il est des sons a entendre
+f_DureeAvantDestruction -= TIME_GetDt()
+if( f_DureeAvantDestruction >= 0.0 ) return
+
+ti_destroy = 0
+if ( AI_TriggerIsValid( mt_TriggerExec ) )
+	ti_destroy = 1
+else if ( OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_Events )
+{
+	if ( EVT_IsStopAll() )
+		ti_destroy = 1
+}
+else
+	ti_destroy = 1
+	
+if (ti_destroy)
+{
+	#ifndef _FINAL_
+	if ( @get_global DEBUG_ACTIVATORTRIGGER )
+	{
+			DBG_TraceString( "ActivatorTrigger DESTROY :" )
+			DBG_TraceObject( OBJ_Me() )
+			DBG_TraceEOL()
+	}
+	#endif
+	OBJ_Destroy()
+}

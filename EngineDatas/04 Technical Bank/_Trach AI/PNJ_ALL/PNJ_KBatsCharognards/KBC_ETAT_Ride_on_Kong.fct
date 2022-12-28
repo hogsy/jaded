@@ -1,0 +1,149 @@
+#include "KBC_defines.var"
+
+int					ti_jump_exit
+int					ti_ann_kkgrab
+int					ti_finish_test
+
+messageid		tmid_vision
+
+object			to_lead 
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	if( i_etat_courant != ETAT_KK_Finish )
+		KBC_RIDE_Reset()
+	i_sort_etat = faux
+	return
+}
+
+
+ti_jump_exit = faux		// avant l'init car l'init le modifie
+ti_ann_kkgrab = faux	// avant l'init car l'init le modifie
+
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_KK_Ride)
+{
+	i_etat_ancien_ancien = i_etat_ancien
+	i_etat_ancien  = i_etat_courant
+	i_etat_courant = ETAT_KK_Ride
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	KBC_DBG_Trace_Gao(i_DBG_trace_etat, "etat kk ride / bone =",  LNK_GrabBoneGet(mid_bone_ride_KK_LNK_ID))
+	
+	DYN_GravitySet(Cv_NullVector)
+	COL_ColSetActivationSet(none, C_bit_zdm_pied)
+	o_bone_ride_KK_uncol = o_bone_ride_KK
+	AI_CBAdd(o_bone_ride_KK_uncol, CallBack_After_Blend, "KBC_cb_set_pos")
+	f_ride_paf_delay = 0.0
+	f_pos_blend_coef_ride = 0.0
+	i_paf_send = faux
+	i_ride_mode = Ci_ride_paf_kong
+	KBC_SND_Ride_Init()
+	
+	if( f_DBG_KK_Ride_duration > 0.0 )
+		f_KK_Ride_duration = f_DBG_KK_Ride_duration
+	else
+		f_KK_Ride_duration = Cf_ride_duration
+}
+else
+{
+	KBC_SND_Ride_Check()
+	f_time_start_etat += TIME_GetDt()
+	if( i_KONG_is_on_ground )
+		f_ride_paf_delay += TIME_GetDt()
+}
+
+
+// ANALYSE =======================================================================================================
+MACRO_CHECK_PAFS
+
+
+// SORTIE DE RIDE ===================================================
+o_bone_ride_KK = LNK_ClientGet(Ci_LNK_RIDE_DINO, mid_bone_ride_KK_LNK_ID, vrai, nofunc, nofunc, nofunc)
+if ( ! o_bone_ride_KK)
+	AI_Execute("KBC_exec_init_attente")				// Kong Coupe la LIAISON
+
+
+// KONG SORT DE MON TERRITOIRE, JE LE LACHE ======================================
+if( ! KBC_Gao_in_Territory(o_bone_ride_KK, faux) )
+	AI_Execute("KBC_exec_init_attente")
+
+
+// TEST PASSAGE EN FINISH ==========================================
+if( i_DBG_Finish_on_Kong_Forbidden )
+	ti_finish_test = faux
+else if( i_etat_init == Ci_etat_init_spawn_finish_IA )
+	ti_finish_test = faux		// spawn finish LD can become leader
+else
+	ti_finish_test = vrai
+o_I_finish_actor = LNK_ClientGet(Ci_LNK_KKFINISH_ON_KONG, mid_I_finish_LNK_ID, ti_finish_test, nofunc, nofunc, nofunc)
+if( o_I_finish_actor )
+{
+	KBC_DBG_Trace(i_DBG_trace_etat, "obtient la prio pour faire un finish sur KONG !!")
+	KBC_Finish_Initialisation(vrai)
+	macro_change_etat("KBC_ETAT_Finishing_Kong")
+}
+
+
+// PASSAGE EN FINISH FAKE =========================================
+if( i_etat_init == Ci_etat_init_spawn_finish_IA || ACT_ActionGet() == ACTION_Ride_Frenetic )
+{
+	to_lead = @get_global o_KNMI_finish_leader
+	if( to_lead)
+	{
+		if( @to_lead AI_IsModel(get_PNJ_KBats_path))
+		{
+			// il y a un finish : passage en anim finish fake
+			KBC_DBG_Trace_Gao(i_DBG_trace_etat, "détecte qu'1 bat est passée en finish : ", @get_global o_KNMI_finish_leader)
+			KBC_Finish_Initialisation(faux)		// pas leader
+			macro_change_etat("KBC_ETAT_Finishing_Kong")
+		}
+		else
+			AI_Execute("KBC_exec_init_attente")				// Kong Coupe la LIAISON
+	}
+}
+
+// ATTAQUE KONG APRES DELAI
+//if( i_ride_mode == Ci_ride_paf_kong && f_ride_paf_delay >= f_KK_Ride_duration )
+//{
+//	ACT_ActionSet(ACTION_Ride_Attack)
+//	f_ride_paf_delay = 0.0
+//}
+
+// PAFFE KONG
+//if (	ACT_ActionGet() ==ACTION_Ride_Attack)
+//{
+////	if( ! i_paf_sent )
+////	{
+////		if( ANI_CurrentFrameGet(0) > 46 )
+////		{
+////			i_paf_sent = vrai
+////			EVENT_AddEventPaf(C_EVENT_FILTER_Enemy, C_PAF_KK_Moyen, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_cible_attaque, Ci_dmg_attaque_ride, OBJ_SightGet())
+////			SND_RequestPlay(Ci_SND_Envoie_Paf)
+////		}
+////	}
+////	else
+////	{
+//		if( ANI_CurrentFrameGet(0) > 80 )
+//			AI_Execute("KBC_exec_init_attente")		// fin du ride
+////	}
+//}
+
+// ACTION =======================================================
+if( i_etat_init != Ci_etat_init_spawn_finish_IA && ACT_ActionGet() != ACTION_Ride_Frenetic )
+	ACT_ActionSet(ACTION_Ride_Frenetic)			// après test finish, pour ne pas avoir 2 actionset successifs
+
+// SUIVI DE REGARD ================================================
+i_flag_neck = faux
+
+// INTERET ========================================================
+KBC_Interet_Update(mid_interet_attaque, C_EVENT_InteretStatusRide, o_cible_attaque, tmid_vision)
+

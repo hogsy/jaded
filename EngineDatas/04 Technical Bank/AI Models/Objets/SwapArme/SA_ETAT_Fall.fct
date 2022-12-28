@@ -1,0 +1,113 @@
+//
+int			ti_loop
+//int			ti_control_flag
+//int			i_gfx1
+//
+//vector	tv_axis, tv_pos
+//vector	tv_temp
+//
+//object	to_brique
+//
+//color		col
+//
+//if (des_o_parachute)
+//{
+//	SA_Rope_check_paf()
+//	ai_modules_locked[0] = vrai
+//	SA_Rag_Doll(0)
+//}
+//
+//OBJ_RotateLocalZ(f_rotate * TIME_GetDt() * 5.0) 
+//f_rotate = MATH_FloatBlend(f_rotate,0.0, TIME_GetDt())
+//
+//if (COL_CollideType( COL_C_Ground ) && COL_NormalGet(COL_C_Ground).z > 0)
+//{
+///////////////////////////////////////////////////////////////////////////////
+//		i_gfx1 = GFX_Add(13)																// Create the boum
+//		GFX_MaterialSet(i_gfx1, get_SFX_light_and_smoke, -1)					// met le materiau
+//		GFX_Seti(i_gfx1, 13101, 8)														// Materiau 0
+//		GFX_Seti(i_gfx1, 13100, 30)														// *Buffer number of sprite
+//		GFX_Seti(i_gfx1, 13106, 0xFFFFFFFF)										// *number of sprite to generate
+//		GFX_Setf(i_gfx1, 13003, 0.25)														// Time fase 1
+//		GFX_Setf(i_gfx1, 13004, 1.0)														// Time fase 2
+//		GFX_Seti(i_gfx1, 13107, 0)														// Sprites non triés
+//		GFX_FlagSet(i_gfx1, 0 , 1)
+//		GFX_FlagSet(i_gfx1, 2 , 1)
+//		GFX_Setf(i_gfx1, 13012, 0.5)													// Time random
+//		GFX_Setf(i_gfx1, 13000, 0.5)														// Growing speed min
+//		GFX_Setf(i_gfx1, 13001, 1.0)														// Growing speed max
+//		GFX_Setf(i_gfx1, 13002, 0.0001)													// Friction Grow
+//		GFX_Setv(i_gfx1, 13203, cvector(0.02, 0.02, 0.02))						// friction speed
+//		col = COLOR_Blend(WOR_AmbiantColGet(0), 0xFFFFFFFF, 0.4)
+//		col &= 0x00FFFFFF
+//		GFX_Seti(i_gfx1, 13103, col)											// Color fase 0
+//		GFX_Seti(i_gfx1, 13105, col)											// Color fase 2
+//		col |= 0x20000000
+//		GFX_Seti(i_gfx1, 13104, col)											// Color fase 1
+//		GFX_Setf(i_gfx1, 13005, 0.5)														// Creation size min
+//		GFX_Setf(i_gfx1, 13006, 1.0)														// Creation size max
+//		GFX_Setf(i_gfx1, 13009, 0.1)														// Norm speed min
+//		GFX_Setf(i_gfx1, 13010, 0.2)														// Norm speed max
+//		GFX_Setf(i_gfx1, 13007, 0.5)													// Gravity
+////		GFX_Setf(i_gfx1, 13008, 0.25)													// generation rate
+//		GFX_Setf(i_gfx1, 13008, 0.1)													// generation rate
+//		GFX_Setv(i_gfx1, 13205, Cv_NullVector)										// Mainposspeed
+//		GFX_Setv(i_gfx1, 13206, Cv_NullVector)										// Mainpossfriction
+//		GFX_Setv(i_gfx1, 13204, cvector(0,0.1,0))										// wind
+//		GFX_Setv(i_gfx1, 13200, OBJ_PosGet()) 						// Creation Pos
+//		GFX_Setv(i_gfx1, 13207, OBJ_HorizonGet() * 0.5)			// CreaPosAxe X
+//		GFX_Setv(i_gfx1, 13208, OBJ_SightGet() * 0.5)				// CreaPosAxe Y
+//		GFX_Setv(i_gfx1, 13209, OBJ_BankingGet() * 0.5)			// CreaPosAxe Y
+//		tv_temp	= OBJ_BankingGet() * 30
+//		GFX_Setv(i_gfx1, 13201, tv_temp + cvector(-4.0, -4.0, -4.0))			// Speed min
+//		GFX_Setv(i_gfx1, 13202, tv_temp + cvector(4.0, 4.0, 4.0))				// Speed max
+//		GFX_LifeTimeSet(i_gfx1, 1.5)
+///////////////////////////////////////////////////////////////////////////////
+//
+//	SND_RequestPlay( 2 )
+//
+//	ANI_ShapeSelect(1,0)		// Visuel de la caisse Cassé 
+//
+//	OBJ_BankingGeneralSet(OBJ_SightGet(), MATH_VecBlendRotate(OBJ_BankingGet(), COL_NormalGet(COL_C_Ground), 0.5) )
+//
+//	DYN_Off()
+//	for (ti_loop = 0; ti_loop < i_debrits_nbr; ti_loop++)
+//	{
+//		to_brique = o_debrits[ti_loop]
+//
+//		@to_brique OBJ_FlagInvisibleSet(faux)
+//
+//		@to_brique COL_EnableSnP()
+//
+//		@to_brique ODE_Enable(vrai)
+//					
+//		// Reset Immovable Flag
+//		ti_control_flag = @to_brique ODE_Geti(0)
+//		ti_control_flag &= ~0x20
+//		@to_brique ODE_Seti(0, ti_control_flag)		
+//
+//		@to_brique OBJ_FlagInactiveSet( faux)
+//
+//		@to_brique COL_ColMapActivationSet(none, all)
+//
+//		@to_brique OBJ_HierarchyResetCurrent()
+//
+//		tv_pos = OBJ_PosGet() + cvector(0,0,0.4)
+//		tv_axis = @to_brique OBJ_PosGet() - tv_pos
+//		tv_axis.z = 0
+//		
+//		@to_brique ODE_Setv(0, tv_axis * MATH_RandFloat(5.0, 20.0))	// Force
+//	}
+//
+//	@"univ" Vector_speciaux_sauve[i_SF_ParaBrokenPos] = OBJ_PosGet()
+//	@"univ" Vector_speciaux_sauve[i_SF_ParaBrokenSight] = OBJ_SightGet()
+//	@"univ" Vector_speciaux_sauve[i_SF_ParaBrokenBank] = OBJ_BankingGet()
+//
+//	OBJ_CapaSet(Obj_Capa_Switch,none)
+//	f_blend_chute = 1
+//	AI_TrackCurChangeNow("SA_ETAT_Loop")	
+//}
+//else
+//{
+//	OBJ_BankingGeneralSet(OBJ_SightGet(), MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 2.0 * TIME_GetDt()))
+//}

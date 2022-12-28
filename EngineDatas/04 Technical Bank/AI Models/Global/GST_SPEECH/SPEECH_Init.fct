@@ -1,0 +1,558 @@
+//-------------------------------------------------------------------------------------------------------------------------------
+// INCLUDE
+//-------------------------------------------------------------------------------------------------------------------------------
+#include "SPEECH_Constant.var"
+
+
+//-------------------------------------------------------------------------------------------------------------------------------
+// VAR
+//-------------------------------------------------------------------------------------------------------------------------------
+// local var
+int 		i, j
+text 		tt_null
+object 	to_object
+
+
+//-------------------------------------------------------------------------------------------------------------------------------
+// CODE
+//-------------------------------------------------------------------------------------------------------------------------------
+// global reset
+//------------------
+#ifndef _FINAL_
+	if(i_DebugMode)
+	{
+		DBG_TraceString("[GST_SPEECH] -- MAP RESET -- ")
+		DBG_TraceEOL()
+	}
+#endif
+
+//OBJ_Destroy()
+
+for(i=0; i<Cte_DialogNb; i++)
+{
+	mas_CurrentContent[i] = "<notext>"
+}
+
+
+for(i=0; i<C_ID_Last_Compagnon; i++)
+{
+	for(j=0; j<G_NombreMax; j++)
+	{
+		ai_TextConfig[i][j] = -1
+	}
+}
+
+for(j=0; j<G_NombreMax; j++)
+{
+	maf_GenericLastTime[j] = 0.0
+	maf_GenericPeriodMin[j] = Cte_GenericPeriodMin_Default // default value
+}
+
+// minimal period for generic dialogs (specific value)
+//-----------------------------------------------------------------------
+maf_GenericPeriodMin[Gene_C_see_hurt_low		] = 2 
+maf_GenericPeriodMin[Gene_C_see_hurt_med		] = 2 
+maf_GenericPeriodMin[Gene_C_see_hurt_urg		] = 2 
+maf_GenericPeriodMin[Gene_C_see_Ann_low			] = 2 
+maf_GenericPeriodMin[Gene_C_see_Ann_med			] = 2 
+maf_GenericPeriodMin[Gene_C_see_Ann_urg			] = 2 
+maf_GenericPeriodMin[Gene_C_call_team_cover		] = 5 
+maf_GenericPeriodMin[Gene_C_warn_right			] = 2 
+maf_GenericPeriodMin[Gene_C_warn_left			] = 2 
+maf_GenericPeriodMin[Gene_C_warn_generic		] = 2 
+maf_GenericPeriodMin[Gene_C_warn_right_hurt		] = 2 
+maf_GenericPeriodMin[Gene_C_warn_left_hurt		] = 2 
+maf_GenericPeriodMin[Gene_C_warn_generic_hurt	] = 2 
+
+
+// look up table [perso][dial cte] => entry key
+//----------------------------------------------------------------
+//ai_TextConfig[C_ID_Ann][Gene_C_help				] = 0xD00050CC	
+//ai_TextConfig[C_ID_Ann][Gene_C_caught			] = 0xD00050D1	
+//ai_TextConfig[C_ID_Ann][Gene_C_see_hurt_low		] = 0xD00050D6	
+//ai_TextConfig[C_ID_Ann][Gene_C_see_hurt_med		] = 0xD00050DB	
+//ai_TextConfig[C_ID_Ann][Gene_C_see_hurt_urg		] = 0xD00050E0	
+//ai_TextConfig[C_ID_Ann][Gene_C_see_Ann_low		] = 0xD00050E5	
+//ai_TextConfig[C_ID_Ann][Gene_C_see_Ann_med		] = 0xD00050EA	
+//ai_TextConfig[C_ID_Ann][Gene_C_see_Ann_urg		] = 0xD00050EF	
+//ai_TextConfig[C_ID_Ann][Gene_C_pointed_by_gun	] = 0xD00050F4	
+//ai_TextConfig[C_ID_Ann][Gene_C_limping			] = 0xD00050F9	
+//ai_TextConfig[C_ID_Ann][Gene_C_almost_dying		] = 0xD00050FE	
+//ai_TextConfig[C_ID_Ann][Gene_C_friend_dying		] = 0xD0005103	
+//ai_TextConfig[C_ID_Ann][Gene_C_call_help			] = 0xD0005108	
+//ai_TextConfig[C_ID_Ann][Gene_C_call_cover		] = 0xD000510D	
+//ai_TextConfig[C_ID_Ann][Gene_C_call_team_cover	] = 0xD0005112	
+//ai_TextConfig[C_ID_Ann][Gene_C_friend_passed		] = 0xD0005117	
+//ai_TextConfig[C_ID_Ann][Gene_C_cover_Jack		] = 0xD000511C	
+//ai_TextConfig[C_ID_Ann][Gene_C_cover_team		] = 0xD0005121	
+//ai_TextConfig[C_ID_Ann][Gene_C_Jack_life_low		] = 0xD0005126	
+//ai_TextConfig[C_ID_Ann][Gene_C_answer			] = 0xD000512B	
+//ai_TextConfig[C_ID_Ann][Gene_C_answer_loud		] = 0xD0005130	
+//ai_TextConfig[C_ID_Ann][Gene_C_mission_ok		] = 0xD0005135	
+//ai_TextConfig[C_ID_Ann][Gene_C_call_far			] = 0xD000543C	
+//ai_TextConfig[C_ID_Ann][Gene_C_call_near			] = 0xD0005441	
+//ai_TextConfig[C_ID_Ann][Gene_C_call_near_low		] = 0xD0005446	
+//ai_TextConfig[C_ID_Ann][Gene_C_call_cover_bis	] = 0xD000544B	
+//ai_TextConfig[C_ID_Ann][Gene_C_breath_run		] = 0xD00054ED	
+//ai_TextConfig[C_ID_Ann][Gene_C_breath_run_fear	] = 0xD00054F2	
+//ai_TextConfig[C_ID_Ann][Gene_C_breath_stop		] = 0xD00054F7	
+//ai_TextConfig[C_ID_Ann][Gene_C_breath_stop_fear	] = 0xD00054FC	
+//ai_TextConfig[C_ID_Ann][Gene_C_blow_take			] = 0xD0005501	
+//ai_TextConfig[C_ID_Ann][Gene_C_warn_right		] = 0xD0005506	
+//ai_TextConfig[C_ID_Ann][Gene_C_warn_left			] = 0xD000550B	
+//ai_TextConfig[C_ID_Ann][Gene_C_warn_generic		] = 0xD0005510	
+//ai_TextConfig[C_ID_Ann][Gene_C_thanks_for_saving]=	0xD0005844
+//ai_TextConfig[C_ID_Ann][Gene_C_warn_right_hurt		] = 0xD0005862
+//ai_TextConfig[C_ID_Ann][Gene_C_warn_left_hurt		] = 0xD0005867
+//ai_TextConfig[C_ID_Ann][Gene_C_warn_generic_hurt	] = 0xD000586C
+//ai_TextConfig[C_ID_Ann][Gene_C_help_hurt			] = 0xD0005871
+//ai_TextConfig[C_ID_Ann][Gene_C_An_dying] = 0xD0005C60
+//ai_TextConfig[C_ID_Ann][Gene_C_De_dying] = 0xD0005C65
+//ai_TextConfig[C_ID_Ann][Gene_C_Ha_dying] = 0xD0005C6A
+//ai_TextConfig[C_ID_Ann][Gene_C_Ja_dying] = 0xD0005C6F
+//ai_TextConfig[C_ID_Ann][Gene_C_Ji_dying] = 0xD0005C74
+//ai_TextConfig[C_ID_Ann][Gene_C_man_dying_no_Ann] = 0xD0005C79
+//ai_TextConfig[C_ID_Ann][Gene_C_enemy_killed		] = 0xD0005E2B
+//ai_TextConfig[C_ID_Ann][Gene_C_throw_spear		] = 0xD0005E30
+//ai_TextConfig[C_ID_Ann][Gene_C_send_to_hide		] = 0xD0005E35
+//ai_TextConfig[C_ID_Ann][Gene_C_Ja_hurt_no_An	] = 0xD0005E3A
+//ai_TextConfig[C_ID_Ann][Gene_C_hidden			] = 0xD0005E3F
+//ai_TextConfig[C_ID_Ann][Gene_C_minor_talk		] = 0xD0005E44
+//ai_TextConfig[C_ID_Ann][Gene_C_friend_is_far	] = 0xD0005E49
+//ai_TextConfig[C_ID_Ann][Gene_C_look_for_2_levers	] = 0xD0005EF7
+//ai_TextConfig[C_ID_Ann][Gene_C_look_for_1_lever		] = 0xD0005EFC
+//ai_TextConfig[C_ID_Ann][Gene_C_1_lever_left			] = 0xD0005F01
+//ai_TextConfig[C_ID_Ann][Gene_C_all_levers_found		] = 0xD0005F06
+//ai_TextConfig[C_ID_Ann][Gene_C_opening_door			] = 0xD0005F0B
+//ai_TextConfig[C_ID_Ann][Gene_C_door_ok				] = 0xD0005F10
+//ai_TextConfig[C_ID_Ann][Gene_C_big_surprise] = 0xD0005FD6
+//ai_TextConfig[C_ID_Ann][Gene_C_heard_a_noise] = 0xD0005FDB
+//ai_TextConfig[C_ID_Ann][Gene_C_occupied_med				] = 0xD0006159
+//ai_TextConfig[C_ID_Ann][Gene_C_occupied_urg				] = 0xD000615E
+//ai_TextConfig[C_ID_Ann][Gene_C_acknowledge				] = 0xD0006163
+//ai_TextConfig[C_ID_Ann][Gene_C_see_hurt_no_ann_med		] = 0xD0006168
+//ai_TextConfig[C_ID_Ann][Gene_C_see_hurt_no_ann_urg		] = 0xD000616D
+//ai_TextConfig[C_ID_Ann][Gene_C_too_far			] = 0xD00066E7
+//ai_TextConfig[C_ID_Ann][Gene_C_excuse			] = 0xD00066EC
+//ai_TextConfig[C_ID_Ann][Gene_C_got_it			] = 0xD00066F1
+//ai_TextConfig[C_ID_Ann][Gene_C_encourage		] = 0xD0006728
+//ai_TextConfig[C_ID_Ann][Gene_C_obj_answer			] = 0xD0006897
+//ai_TextConfig[C_ID_Ann][Gene_C_obj_answer_hurt		] = 0xD00068B0
+//ai_TextConfig[C_ID_Ann][Gene_C_An_hurt			] = 0xD0006E24
+//ai_TextConfig[C_ID_Ann][Gene_C_De_hurt			] = 0xD0006E29
+//ai_TextConfig[C_ID_Ann][Gene_C_Ha_hurt			] = 0xD0006E2E
+//ai_TextConfig[C_ID_Ann][Gene_C_Ja_hurt			] = 0xD0006E33
+//ai_TextConfig[C_ID_Ann][Gene_C_Ji_hurt			] = 0xD0006E38
+//ai_TextConfig[C_ID_Ann][Gene_C_wait_for_help	] = 0xD0006EA6
+//ai_TextConfig[C_ID_Ann][Gene_C_fighting			] = 0xD0006EBF
+
+//
+ai_TextConfig[C_ID_Joueur][Gene_C_help				] = 0xD0005189	
+ai_TextConfig[C_ID_Joueur][Gene_C_caught			] = 0xD000518E	
+ai_TextConfig[C_ID_Joueur][Gene_C_see_hurt_low		] = 0xD0005193	
+ai_TextConfig[C_ID_Joueur][Gene_C_see_hurt_med		] = 0xD0005198	
+ai_TextConfig[C_ID_Joueur][Gene_C_see_hurt_urg		] = 0xD000519D	
+ai_TextConfig[C_ID_Joueur][Gene_C_see_Ann_low		] = 0xD00051A2	
+ai_TextConfig[C_ID_Joueur][Gene_C_see_Ann_med		] = 0xD00051A7	
+ai_TextConfig[C_ID_Joueur][Gene_C_see_Ann_urg		] = 0xD00051AC	
+ai_TextConfig[C_ID_Joueur][Gene_C_pointed_by_gun	] = 0xD00051B1	
+ai_TextConfig[C_ID_Joueur][Gene_C_limping			] = 0xD00051B6	
+ai_TextConfig[C_ID_Joueur][Gene_C_almost_dying		] = 0xD00051BB	
+ai_TextConfig[C_ID_Joueur][Gene_C_friend_dying		] = 0xD00051C0	
+ai_TextConfig[C_ID_Joueur][Gene_C_call_help			] = 0xD00051C5	
+ai_TextConfig[C_ID_Joueur][Gene_C_call_cover		] = 0xD00051CA	
+ai_TextConfig[C_ID_Joueur][Gene_C_call_team_cover	] = 0xD00051CF	
+ai_TextConfig[C_ID_Joueur][Gene_C_friend_passed		] = 0xD00051D4	
+ai_TextConfig[C_ID_Joueur][Gene_C_cover_Jack		] = 0xD00051D9	
+ai_TextConfig[C_ID_Joueur][Gene_C_cover_team		] = 0xD00051DE	
+ai_TextConfig[C_ID_Joueur][Gene_C_Jack_life_low		] = 0xD00051E3	
+ai_TextConfig[C_ID_Joueur][Gene_C_answer			] = 0xD00051E8	
+ai_TextConfig[C_ID_Joueur][Gene_C_answer_loud		] = 0xD00051ED	
+ai_TextConfig[C_ID_Joueur][Gene_C_mission_ok		] = 0xD00051F2	
+ai_TextConfig[C_ID_Joueur][Gene_C_call_far			] = 0xD0005428	
+ai_TextConfig[C_ID_Joueur][Gene_C_call_near			] = 0xD000542D	
+ai_TextConfig[C_ID_Joueur][Gene_C_call_near_low		] = 0xD0005432	
+ai_TextConfig[C_ID_Joueur][Gene_C_call_cover_bis	] = 0xD0005437	
+ai_TextConfig[C_ID_Joueur][Gene_C_breath_run		] = 0xD0005565	
+ai_TextConfig[C_ID_Joueur][Gene_C_breath_run_fear	] = 0xD000556A	
+ai_TextConfig[C_ID_Joueur][Gene_C_breath_stop		] = 0xD000556F	
+ai_TextConfig[C_ID_Joueur][Gene_C_breath_stop_fear	] = 0xD0005574	
+ai_TextConfig[C_ID_Joueur][Gene_C_blow_take			] = 0xD0005579	
+ai_TextConfig[C_ID_Joueur][Gene_C_warn_right		] = 0xD000557E	
+ai_TextConfig[C_ID_Joueur][Gene_C_warn_left			] = 0xD0005583	
+ai_TextConfig[C_ID_Joueur][Gene_C_warn_generic		] = 0xD0005588	
+ai_TextConfig[C_ID_Joueur][Gene_C_thanks_for_saving]=	0xD0005853
+ai_TextConfig[C_ID_Joueur][Gene_C_warn_right_hurt		] = 0xD000589E
+ai_TextConfig[C_ID_Joueur][Gene_C_warn_left_hurt		] = 0xD00058A3
+ai_TextConfig[C_ID_Joueur][Gene_C_warn_generic_hurt	] = 0xD00058A8
+ai_TextConfig[C_ID_Joueur][Gene_C_help_hurt			] = 0xD00058AD
+ai_TextConfig[C_ID_Joueur][Gene_C_An_dying] = 0xD0005CD8
+ai_TextConfig[C_ID_Joueur][Gene_C_De_dying] = 0xD0005CDD
+ai_TextConfig[C_ID_Joueur][Gene_C_Ha_dying] = 0xD0005CE2
+ai_TextConfig[C_ID_Joueur][Gene_C_Ja_dying] = 0xD0005CE7
+ai_TextConfig[C_ID_Joueur][Gene_C_Ji_dying] = 0xD0005CEC
+ai_TextConfig[C_ID_Joueur][Gene_C_man_dying_no_Ann] = 0xD0005CF1
+ai_TextConfig[C_ID_Joueur][Gene_C_enemy_killed		] = 0xD0005E97
+ai_TextConfig[C_ID_Joueur][Gene_C_throw_spear		] = 0xD0005E9C
+ai_TextConfig[C_ID_Joueur][Gene_C_send_to_hide		] = 0xD0005EA1
+ai_TextConfig[C_ID_Joueur][Gene_C_Ja_hurt_no_An	] = 0xD0005EA6
+ai_TextConfig[C_ID_Joueur][Gene_C_hidden			] = 0xD0005EAB
+ai_TextConfig[C_ID_Joueur][Gene_C_minor_talk		] = 0xD0005EB0
+ai_TextConfig[C_ID_Joueur][Gene_C_friend_is_far	] = 0xD0005EB5
+ai_TextConfig[C_ID_Joueur][Gene_C_look_for_2_levers	] = 0xD0005F51
+ai_TextConfig[C_ID_Joueur][Gene_C_look_for_1_lever		] = 0xD0005F56
+ai_TextConfig[C_ID_Joueur][Gene_C_1_lever_left			] = 0xD0005F5B
+ai_TextConfig[C_ID_Joueur][Gene_C_all_levers_found		] = 0xD0005F60
+ai_TextConfig[C_ID_Joueur][Gene_C_opening_door			] = 0xD0005F65
+ai_TextConfig[C_ID_Joueur][Gene_C_door_ok				] = 0xD0005F6A
+ai_TextConfig[C_ID_Joueur][Gene_C_big_surprise] = 0xD0005FEA
+ai_TextConfig[C_ID_Joueur][Gene_C_heard_a_noise] = 0xD0005FEF
+ai_TextConfig[C_ID_Joueur][Gene_C_occupied_med				] = 0xD00061A4
+ai_TextConfig[C_ID_Joueur][Gene_C_occupied_urg				] = 0xD00061A9
+ai_TextConfig[C_ID_Joueur][Gene_C_acknowledge				] = 0xD00061AE
+ai_TextConfig[C_ID_Joueur][Gene_C_see_hurt_no_ann_med		] = 0xD00061B3
+ai_TextConfig[C_ID_Joueur][Gene_C_see_hurt_no_ann_urg		] = 0xD00061B8
+ai_TextConfig[C_ID_Joueur][Gene_C_too_far			] = 0xD0006705
+ai_TextConfig[C_ID_Joueur][Gene_C_excuse			] = 0xD000670A
+ai_TextConfig[C_ID_Joueur][Gene_C_got_it			] = 0xD000670F
+ai_TextConfig[C_ID_Joueur][Gene_C_encourage		] = 0xD0006732
+ai_TextConfig[C_ID_Joueur][Gene_C_obj_answer			] = 0xD00068A6
+ai_TextConfig[C_ID_Joueur][Gene_C_obj_answer_hurt		] = 0xD00068BF
+ai_TextConfig[C_ID_Joueur][Gene_C_An_hurt			] = 0xD0006E6F
+ai_TextConfig[C_ID_Joueur][Gene_C_De_hurt			] = 0xD0006E74
+ai_TextConfig[C_ID_Joueur][Gene_C_Ha_hurt			] = 0xD0006E79
+ai_TextConfig[C_ID_Joueur][Gene_C_Ja_hurt			] = 0xD0006E7E
+ai_TextConfig[C_ID_Joueur][Gene_C_Ji_hurt			] = 0xD0006E83
+ai_TextConfig[C_ID_Joueur][Gene_C_wait_for_help	] = 0xD0006EB5
+ai_TextConfig[C_ID_Joueur][Gene_C_fighting			] = 0xD0006ECE
+
+//
+//ai_TextConfig[C_ID_Denham][Gene_C_help				] = 0xD0005251	
+//ai_TextConfig[C_ID_Denham][Gene_C_caught			] = 0xD0005256	
+//ai_TextConfig[C_ID_Denham][Gene_C_see_hurt_low		] = 0xD000525B	
+//ai_TextConfig[C_ID_Denham][Gene_C_see_hurt_med		] = 0xD0005260	
+//ai_TextConfig[C_ID_Denham][Gene_C_see_hurt_urg		] = 0xD0005265	
+//ai_TextConfig[C_ID_Denham][Gene_C_see_Ann_low		] = 0xD000526A	
+//ai_TextConfig[C_ID_Denham][Gene_C_see_Ann_med		] = 0xD000526F	
+//ai_TextConfig[C_ID_Denham][Gene_C_see_Ann_urg		] = 0xD0005274	
+//ai_TextConfig[C_ID_Denham][Gene_C_pointed_by_gun	] = 0xD0005279	
+//ai_TextConfig[C_ID_Denham][Gene_C_limping			] = 0xD000527E	
+//ai_TextConfig[C_ID_Denham][Gene_C_almost_dying		] = 0xD0005283	
+//ai_TextConfig[C_ID_Denham][Gene_C_friend_dying		] = 0xD0005288	
+//ai_TextConfig[C_ID_Denham][Gene_C_call_help			] = 0xD000528D	
+//ai_TextConfig[C_ID_Denham][Gene_C_call_cover		] = 0xD0005292	
+//ai_TextConfig[C_ID_Denham][Gene_C_call_team_cover	] = 0xD0005297	
+//ai_TextConfig[C_ID_Denham][Gene_C_friend_passed		] = 0xD000529C	
+//ai_TextConfig[C_ID_Denham][Gene_C_cover_Jack		] = 0xD00052A1	
+//ai_TextConfig[C_ID_Denham][Gene_C_cover_team		] = 0xD00052A6	
+//ai_TextConfig[C_ID_Denham][Gene_C_Jack_life_low		] = 0xD00052AB	
+//ai_TextConfig[C_ID_Denham][Gene_C_answer			] = 0xD00052B0	
+//ai_TextConfig[C_ID_Denham][Gene_C_answer_loud		] = 0xD00052B5	
+//ai_TextConfig[C_ID_Denham][Gene_C_mission_ok		] = 0xD00052BA	
+//ai_TextConfig[C_ID_Denham][Gene_C_call_far			] = 0xD0005450	
+//ai_TextConfig[C_ID_Denham][Gene_C_call_near			] = 0xD0005455	
+//ai_TextConfig[C_ID_Denham][Gene_C_call_near_low		] = 0xD000545A	
+//ai_TextConfig[C_ID_Denham][Gene_C_call_cover_bis	] = 0xD000545F	
+//ai_TextConfig[C_ID_Denham][Gene_C_breath_run		] = 0xD0005515	
+//ai_TextConfig[C_ID_Denham][Gene_C_breath_run_fear	] = 0xD000551A	
+//ai_TextConfig[C_ID_Denham][Gene_C_breath_stop		] = 0xD000551F	
+//ai_TextConfig[C_ID_Denham][Gene_C_breath_stop_fear	] = 0xD0005524	
+//ai_TextConfig[C_ID_Denham][Gene_C_blow_take			] = 0xD0005529	
+//ai_TextConfig[C_ID_Denham][Gene_C_warn_right		] = 0xD000552E	
+//ai_TextConfig[C_ID_Denham][Gene_C_warn_left			] = 0xD0005533	
+//ai_TextConfig[C_ID_Denham][Gene_C_warn_generic		] = 0xD0005538	
+//ai_TextConfig[C_ID_Denham][Gene_C_thanks_for_saving]=	0xD0005849
+//ai_TextConfig[C_ID_Denham][Gene_C_warn_right_hurt		] = 0xD0005876
+//ai_TextConfig[C_ID_Denham][Gene_C_warn_left_hurt		] = 0xD000587B
+//ai_TextConfig[C_ID_Denham][Gene_C_warn_generic_hurt	] = 0xD0005880
+//ai_TextConfig[C_ID_Denham][Gene_C_help_hurt			] = 0xD0005885
+//ai_TextConfig[C_ID_Denham][Gene_C_An_dying] = 0xD0005C8D
+//ai_TextConfig[C_ID_Denham][Gene_C_De_dying] = 0xD0005C92
+//ai_TextConfig[C_ID_Denham][Gene_C_Ha_dying] = 0xD0005C97
+//ai_TextConfig[C_ID_Denham][Gene_C_Ja_dying] = 0xD0005C9C
+//ai_TextConfig[C_ID_Denham][Gene_C_Ji_dying] = 0xD0005CA1
+//ai_TextConfig[C_ID_Denham][Gene_C_man_dying_no_Ann] = 0xD0005CA6
+//ai_TextConfig[C_ID_Denham][Gene_C_enemy_killed		] = 0xD0005E51
+//ai_TextConfig[C_ID_Denham][Gene_C_throw_spear		] = 0xD0005E56
+//ai_TextConfig[C_ID_Denham][Gene_C_send_to_hide		] = 0xD0005E5B
+//ai_TextConfig[C_ID_Denham][Gene_C_Ja_hurt_no_An	] = 0xD0005E60
+//ai_TextConfig[C_ID_Denham][Gene_C_hidden			] = 0xD0005E65
+//ai_TextConfig[C_ID_Denham][Gene_C_minor_talk		] = 0xD0005E6A
+//ai_TextConfig[C_ID_Denham][Gene_C_friend_is_far	] = 0xD0005E6F
+//ai_TextConfig[C_ID_Denham][Gene_C_look_for_2_levers	] = 0xD0005F15
+//ai_TextConfig[C_ID_Denham][Gene_C_look_for_1_lever		] = 0xD0005F1A
+//ai_TextConfig[C_ID_Denham][Gene_C_1_lever_left			] = 0xD0005F1F
+//ai_TextConfig[C_ID_Denham][Gene_C_all_levers_found		] = 0xD0005F24
+//ai_TextConfig[C_ID_Denham][Gene_C_opening_door			] = 0xD0005F29
+//ai_TextConfig[C_ID_Denham][Gene_C_door_ok				] = 0xD0005F2E
+//ai_TextConfig[C_ID_Denham][Gene_C_big_surprise] = 0xD0005FCC
+//ai_TextConfig[C_ID_Denham][Gene_C_heard_a_noise] = 0xD0005FD1
+//ai_TextConfig[C_ID_Denham][Gene_C_occupied_med				] = 0xD0006172
+//ai_TextConfig[C_ID_Denham][Gene_C_occupied_urg				] = 0xD0006177
+//ai_TextConfig[C_ID_Denham][Gene_C_acknowledge				] = 0xD000617C
+//ai_TextConfig[C_ID_Denham][Gene_C_see_hurt_no_ann_med		] = 0xD0006181
+//ai_TextConfig[C_ID_Denham][Gene_C_see_hurt_no_ann_urg		] = 0xD0006186
+//ai_TextConfig[C_ID_Denham][Gene_C_too_far			] = 0xD00066F6
+//ai_TextConfig[C_ID_Denham][Gene_C_excuse			] = 0xD00066FB
+//ai_TextConfig[C_ID_Denham][Gene_C_got_it			] = 0xD0006700
+//ai_TextConfig[C_ID_Denham][Gene_C_encourage		] = 0xD000672D
+//ai_TextConfig[C_ID_Denham][Gene_C_obj_answer			] = 0xD000689C
+//ai_TextConfig[C_ID_Denham][Gene_C_obj_answer_hurt		] = 0xD00068B5
+//ai_TextConfig[C_ID_Denham][Gene_C_An_hurt			] = 0xD0006E3D
+//ai_TextConfig[C_ID_Denham][Gene_C_De_hurt			] = 0xD0006E42
+//ai_TextConfig[C_ID_Denham][Gene_C_Ha_hurt			] = 0xD0006E47
+//ai_TextConfig[C_ID_Denham][Gene_C_Ja_hurt			] = 0xD0006E4C
+//ai_TextConfig[C_ID_Denham][Gene_C_Ji_hurt			] = 0xD0006E51
+//ai_TextConfig[C_ID_Denham][Gene_C_wait_for_help	] = 0xD0006EAB
+//ai_TextConfig[C_ID_Denham][Gene_C_fighting			] = 0xD0006EC4
+//
+////
+//ai_TextConfig[C_ID_Jimmy][Gene_C_help				] = 0xD00055B5	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_caught			] = 0xD00055BA	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_see_hurt_low		] = 0xD00055BF	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_see_hurt_med		] = 0xD00055C4	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_see_hurt_urg		] = 0xD00055C9	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_see_Ann_low		] = 0xD00055CE	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_see_Ann_med		] = 0xD00055D3	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_see_Ann_urg		] = 0xD00055D8	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_pointed_by_gun	] = 0xD00055DD	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_limping			] = 0xD00055E2	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_almost_dying		] = 0xD00055E7	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_friend_dying		] = 0xD00055EC	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_call_help			] = 0xD00055F1	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_call_cover		] = 0xD00055F6	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_call_team_cover	] = 0xD00055FB	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_friend_passed		] = 0xD0005600	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_cover_Jack		] = 0xD0005605	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_cover_team		] = 0xD000560A	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_Jack_life_low		] = 0xD000560F	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_answer			] = 0xD0005614	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_answer_loud		] = 0xD0005619	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_mission_ok		] = 0xD000561E	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_call_far			] = 0xD0005623	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_call_near			] = 0xD0005628	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_call_near_low		] = 0xD000562D	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_call_cover_bis	] = 0xD0005632	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_breath_run		] = 0xD0005637	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_breath_run_fear	] = 0xD000563C	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_breath_stop		] = 0xD0005641	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_breath_stop_fear	] = 0xD0005646	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_blow_take			] = 0xD000564B	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_warn_right		] = 0xD0005650	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_warn_left			] = 0xD0005655	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_warn_generic		] = 0xD000565A	
+//ai_TextConfig[C_ID_Jimmy][Gene_C_thanks_for_saving]=	0xD0005858
+//ai_TextConfig[C_ID_Jimmy][Gene_C_warn_right_hurt		] = 0xD00058B2
+//ai_TextConfig[C_ID_Jimmy][Gene_C_warn_left_hurt		] = 0xD00058B7
+//ai_TextConfig[C_ID_Jimmy][Gene_C_warn_generic_hurt	] = 0xD00058BC
+//ai_TextConfig[C_ID_Jimmy][Gene_C_help_hurt			] = 0xD00058C1
+//ai_TextConfig[C_ID_Jimmy][Gene_C_An_dying] = 0xD0005CF6
+//ai_TextConfig[C_ID_Jimmy][Gene_C_De_dying] = 0xD0005CFB
+//ai_TextConfig[C_ID_Jimmy][Gene_C_Ha_dying] = 0xD0005D00
+//ai_TextConfig[C_ID_Jimmy][Gene_C_Ja_dying] = 0xD0005D05
+//ai_TextConfig[C_ID_Jimmy][Gene_C_Ji_dying] = 0xD0005D0A
+//ai_TextConfig[C_ID_Jimmy][Gene_C_man_dying_no_Ann] = 0xD0005D0F
+//ai_TextConfig[C_ID_Jimmy][Gene_C_enemy_killed		] = 0xD0005EBA
+//ai_TextConfig[C_ID_Jimmy][Gene_C_throw_spear		] = 0xD0005EBF
+//ai_TextConfig[C_ID_Jimmy][Gene_C_send_to_hide		] = 0xD0005EC4
+//ai_TextConfig[C_ID_Jimmy][Gene_C_Ja_hurt_no_An	] = 0xD0005EC9
+//ai_TextConfig[C_ID_Jimmy][Gene_C_hidden			] = 0xD0005ECE
+//ai_TextConfig[C_ID_Jimmy][Gene_C_minor_talk		] = 0xD0005ED3
+//ai_TextConfig[C_ID_Jimmy][Gene_C_friend_is_far	] = 0xD0005ED8
+//ai_TextConfig[C_ID_Jimmy][Gene_C_look_for_2_levers	] = 0xD0005F6F
+//ai_TextConfig[C_ID_Jimmy][Gene_C_look_for_1_lever		] = 0xD0005F74
+//ai_TextConfig[C_ID_Jimmy][Gene_C_1_lever_left			] = 0xD0005F79
+//ai_TextConfig[C_ID_Jimmy][Gene_C_all_levers_found		] = 0xD0005F7E
+//ai_TextConfig[C_ID_Jimmy][Gene_C_opening_door			] = 0xD0005F83
+//ai_TextConfig[C_ID_Jimmy][Gene_C_door_ok				] = 0xD0005F88
+//ai_TextConfig[C_ID_Jimmy][Gene_C_big_surprise] = 0xD0005FF4
+//ai_TextConfig[C_ID_Jimmy][Gene_C_heard_a_noise] = 0xD0005FF9
+//ai_TextConfig[C_ID_Jimmy][Gene_C_occupied_med				] = 0xD00061BD
+//ai_TextConfig[C_ID_Jimmy][Gene_C_occupied_urg				] = 0xD00061C2
+//ai_TextConfig[C_ID_Jimmy][Gene_C_acknowledge				] = 0xD00061C7
+//ai_TextConfig[C_ID_Jimmy][Gene_C_see_hurt_no_ann_med		] = 0xD00061CC
+//ai_TextConfig[C_ID_Jimmy][Gene_C_see_hurt_no_ann_urg		] = 0xD00061D1
+//ai_TextConfig[C_ID_Jimmy][Gene_C_too_far			] = 0xD0006714
+//ai_TextConfig[C_ID_Jimmy][Gene_C_excuse			] = 0xD0006719
+//ai_TextConfig[C_ID_Jimmy][Gene_C_got_it			] = 0xD000671E
+//ai_TextConfig[C_ID_Jimmy][Gene_C_encourage		] = 0xD0006737
+//ai_TextConfig[C_ID_Jimmy][Gene_C_obj_answer			] = 0xD00068AB
+//ai_TextConfig[C_ID_Jimmy][Gene_C_obj_answer_hurt		] = 0xD00068C4
+//ai_TextConfig[C_ID_Jimmy][Gene_C_An_hurt			] = 0xD0006E88
+//ai_TextConfig[C_ID_Jimmy][Gene_C_De_hurt			] = 0xD0006E8D
+//ai_TextConfig[C_ID_Jimmy][Gene_C_Ha_hurt			] = 0xD0006E92
+//ai_TextConfig[C_ID_Jimmy][Gene_C_Ja_hurt			] = 0xD0006E97
+//ai_TextConfig[C_ID_Jimmy][Gene_C_Ji_hurt			] = 0xD0006E9C
+//ai_TextConfig[C_ID_Jimmy][Gene_C_wait_for_help	] = 0xD0006EBA
+//ai_TextConfig[C_ID_Jimmy][Gene_C_fighting			] = 0xD0006ED3
+//
+////
+//ai_TextConfig[C_ID_Hayes][Gene_C_help					] = 0xD0005341
+//ai_TextConfig[C_ID_Hayes][Gene_C_caught				] = 0xD0005346
+//ai_TextConfig[C_ID_Hayes][Gene_C_see_hurt_low			] = 0xD000534B
+//ai_TextConfig[C_ID_Hayes][Gene_C_see_hurt_med			] = 0xD0005350
+//ai_TextConfig[C_ID_Hayes][Gene_C_see_hurt_urg			] = 0xD0005355
+//ai_TextConfig[C_ID_Hayes][Gene_C_see_Ann_low			] = 0xD000535A
+//ai_TextConfig[C_ID_Hayes][Gene_C_see_Ann_med			] = 0xD000535F
+//ai_TextConfig[C_ID_Hayes][Gene_C_see_Ann_urg			] = 0xD0005364
+//ai_TextConfig[C_ID_Hayes][Gene_C_pointed_by_gun		] = 0xD0005369
+//ai_TextConfig[C_ID_Hayes][Gene_C_limping				] = 0xD000536E
+//ai_TextConfig[C_ID_Hayes][Gene_C_almost_dying			] = 0xD0005373
+//ai_TextConfig[C_ID_Hayes][Gene_C_friend_dying			] = 0xD0005378
+//ai_TextConfig[C_ID_Hayes][Gene_C_call_help			] = 0xD000537D
+//ai_TextConfig[C_ID_Hayes][Gene_C_call_cover			] = 0xD0005382
+//ai_TextConfig[C_ID_Hayes][Gene_C_call_team_cover		] = 0xD0005387
+//ai_TextConfig[C_ID_Hayes][Gene_C_friend_passed		] = 0xD000538C
+//ai_TextConfig[C_ID_Hayes][Gene_C_cover_Jack			] = 0xD0005391
+//ai_TextConfig[C_ID_Hayes][Gene_C_cover_team			] = 0xD0005396
+//ai_TextConfig[C_ID_Hayes][Gene_C_Jack_life_low		] = 0xD000539B
+//ai_TextConfig[C_ID_Hayes][Gene_C_answer				] = 0xD00053A0
+//ai_TextConfig[C_ID_Hayes][Gene_C_answer_loud			] = 0xD00053A5
+//ai_TextConfig[C_ID_Hayes][Gene_C_mission_ok			] = 0xD00053AA
+//ai_TextConfig[C_ID_Hayes][Gene_C_call_far				] = 0xD0005464
+//ai_TextConfig[C_ID_Hayes][Gene_C_call_near			] = 0xD0005469
+//ai_TextConfig[C_ID_Hayes][Gene_C_call_near_low		] = 0xD000546E
+//ai_TextConfig[C_ID_Hayes][Gene_C_call_cover_bis		] = 0xD0005473
+//ai_TextConfig[C_ID_Hayes][Gene_C_breath_run			] = 0xD000553D
+//ai_TextConfig[C_ID_Hayes][Gene_C_breath_run_fear		] = 0xD0005542
+//ai_TextConfig[C_ID_Hayes][Gene_C_breath_stop			] = 0xD0005547
+//ai_TextConfig[C_ID_Hayes][Gene_C_breath_stop_fear		] = 0xD000554C
+//ai_TextConfig[C_ID_Hayes][Gene_C_blow_take			] = 0xD0005551
+//ai_TextConfig[C_ID_Hayes][Gene_C_warn_right			] = 0xD0005556
+//ai_TextConfig[C_ID_Hayes][Gene_C_warn_left			] = 0xD000555B
+//ai_TextConfig[C_ID_Hayes][Gene_C_warn_generic			] = 0xD0005560
+//ai_TextConfig[C_ID_Hayes][Gene_C_thanks_for_saving]=	0xD000584E
+//ai_TextConfig[C_ID_Hayes][Gene_C_warn_right_hurt		] = 0xD000588A
+//ai_TextConfig[C_ID_Hayes][Gene_C_warn_left_hurt		] = 0xD000588F
+//ai_TextConfig[C_ID_Hayes][Gene_C_warn_generic_hurt	] = 0xD0005894
+//ai_TextConfig[C_ID_Hayes][Gene_C_help_hurt			] = 0xD0005899
+//ai_TextConfig[C_ID_Hayes][Gene_C_An_dying] = 0xD0005CBA
+//ai_TextConfig[C_ID_Hayes][Gene_C_De_dying] = 0xD0005CBF
+//ai_TextConfig[C_ID_Hayes][Gene_C_Ha_dying] = 0xD0005CC4
+//ai_TextConfig[C_ID_Hayes][Gene_C_Ja_dying] = 0xD0005CC9
+//ai_TextConfig[C_ID_Hayes][Gene_C_Ji_dying] = 0xD0005CCE
+//ai_TextConfig[C_ID_Hayes][Gene_C_man_dying_no_Ann] = 0xD0005CD3
+//ai_TextConfig[C_ID_Hayes][Gene_C_enemy_killed		] = 0xD0005E74
+//ai_TextConfig[C_ID_Hayes][Gene_C_throw_spear		] = 0xD0005E79
+//ai_TextConfig[C_ID_Hayes][Gene_C_send_to_hide		] = 0xD0005E7E
+//ai_TextConfig[C_ID_Hayes][Gene_C_Ja_hurt_no_An	] = 0xD0005E83
+//ai_TextConfig[C_ID_Hayes][Gene_C_hidden			] = 0xD0005E88
+//ai_TextConfig[C_ID_Hayes][Gene_C_minor_talk		] = 0xD0005E8D
+//ai_TextConfig[C_ID_Hayes][Gene_C_friend_is_far	] = 0xD0005E92
+//ai_TextConfig[C_ID_Hayes][Gene_C_look_for_2_levers	] = 0xD0005F33
+//ai_TextConfig[C_ID_Hayes][Gene_C_look_for_1_lever		] = 0xD0005F38
+//ai_TextConfig[C_ID_Hayes][Gene_C_1_lever_left			] = 0xD0005F3D
+//ai_TextConfig[C_ID_Hayes][Gene_C_all_levers_found		] = 0xD0005F42
+//ai_TextConfig[C_ID_Hayes][Gene_C_opening_door			] = 0xD0005F47
+//ai_TextConfig[C_ID_Hayes][Gene_C_door_ok				] = 0xD0005F4C
+//ai_TextConfig[C_ID_Hayes][Gene_C_big_surprise] = 0xD0005FE0
+//ai_TextConfig[C_ID_Hayes][Gene_C_heard_a_noise] = 0xD0005FE5
+//ai_TextConfig[C_ID_Hayes][Gene_C_occupied_med				] = 0xD000618B
+//ai_TextConfig[C_ID_Hayes][Gene_C_occupied_urg				] = 0xD0006190
+//ai_TextConfig[C_ID_Hayes][Gene_C_acknowledge				] = 0xD0006195
+//ai_TextConfig[C_ID_Hayes][Gene_C_see_hurt_no_ann_med		] = 0xD000619A
+//ai_TextConfig[C_ID_Hayes][Gene_C_see_hurt_no_ann_urg		] = 0xD000619F
+//ai_TextConfig[C_ID_Hayes][Gene_C_too_far			] = 0xD00066D8
+//ai_TextConfig[C_ID_Hayes][Gene_C_excuse			] = 0xD00066DD
+//ai_TextConfig[C_ID_Hayes][Gene_C_got_it			] = 0xD00066E2
+//ai_TextConfig[C_ID_Hayes][Gene_C_encourage		] = 0xD0006723
+//ai_TextConfig[C_ID_Hayes][Gene_C_obj_answer			] = 0xD00068A1
+//ai_TextConfig[C_ID_Hayes][Gene_C_obj_answer_hurt		] = 0xD00068BA
+//ai_TextConfig[C_ID_Hayes][Gene_C_An_hurt			] = 0xD0006E56
+//ai_TextConfig[C_ID_Hayes][Gene_C_De_hurt			] = 0xD0006E5B
+//ai_TextConfig[C_ID_Hayes][Gene_C_Ha_hurt			] = 0xD0006E60
+//ai_TextConfig[C_ID_Hayes][Gene_C_Ja_hurt			] = 0xD0006E65
+//ai_TextConfig[C_ID_Hayes][Gene_C_Ji_hurt			] = 0xD0006E6A
+//ai_TextConfig[C_ID_Hayes][Gene_C_wait_for_help	] = 0xD0006EB0
+//ai_TextConfig[C_ID_Hayes][Gene_C_fighting			] = 0xD0006EC9
+
+
+// -- private init
+//-------------------
+
+
+tt_null = M_GetNullText
+
+i_request_number = 0
+
+for(i=0; i<Cte_StackSize; i++)
+{
+	ai_data_priority[i] = -1 	// => element (i) is free
+	at_data_text[i] = tt_null	// => set invalid text
+	ai_request_sortedlist[i] = -1 // no request at rank (i)
+}
+
+for(i=0; i<Cte_DialogNb; i++)
+{
+	af_current_playtime[i] = 0.0
+	af_current_sndtime[i] = 0.0
+	ai_current_priority[i] = -1
+	ao_current_target[i] = nobody
+	ai_current_sndinstance[i] = -1
+	ai_current_sndkey[i] = -1
+	ai_current_strinstance[i] = -1
+	//
+	ai_previous_listid[i] = 0
+	//
+	ai_urgent_request[i] = -1
+	//
+	af_snd_volume[i] = 1.0
+	af_snd_timer[i] = 1.0
+	af_snd_factor[i] = 0.0
+	af_snd_muteduration[i] = 0.0
+}
+i_snd_new_play = 0
+
+av_DisplayPosition[0] = cvector(0.02, 0.8, 0.0)
+av_DisplayPosition[1] = cvector(0.02, 0.6, 0.0)
+
+
+// -- map is jak ?
+//----------------------
+//to_object = AI_MainActorGet(0)
+//if( @to_object AI_IsModel("KingKong/Humain") )
+//	mi_MapIsJaks = 1
+//else 
+	mi_MapIsJaks = 0
+
+
+// -- 3D config
+//------------------
+if(mi_MapIsJaks)
+{
+	mf_SoundNearDistance 	= Cte_SoundNearDistance_Jak
+	mf_SoundMiddleDistance	=  Cte_SoundNearDistance_Jak + (Cte_SoundFarDistance_Jak - Cte_SoundNearDistance_Jak) * Cte_SoundMiddleDistCoeff_Jak
+	mf_SoundFarDistance		= Cte_SoundFarDistance_Jak
+	mf_SoundMiddleCoeff		= Cte_SoundMiddleVolCoeff_Jak
+	mf_SoundFarCoeff			= Cte_SoundFarCoeff_Jak
+}
+else
+{
+	mf_SoundNearDistance 	= Cte_SoundNearDistance_Kong
+	mf_SoundMiddleDistance	=  Cte_SoundNearDistance_Kong + (Cte_SoundFarDistance_Kong - Cte_SoundNearDistance_Kong) * Cte_SoundMiddleDistCoeff_Kong
+	mf_SoundFarDistance		= Cte_SoundFarDistance_Kong
+	mf_SoundMiddleCoeff		= Cte_SoundMiddleVolCoeff_Kong
+	mf_SoundFarCoeff			= Cte_SoundFarCoeff_Kong
+}
+
+
+// -- volume
+//--------------
+mf_GrpVol = 1.0
+for(i=SND_Cte_GrpSpecialFX; i<SND_Cte_MasterGrp; i++)
+{
+	mai_GrpVolRq[i] = SND_GroupVolRqGet(i)
+	SND_GroupVolRqSend(i,mai_GrpVolRq[i], mf_GrpVol)
+}
+
+// -- lang init
+//---------------
+//TEXT_SetLanguage(i_MapInitLanguage)
+
+
+// -- end of init
+//------------------
+AI_TrackChange(0,"SPEECH_UpdateTimeOut")
+AI_TrackChange(1,"SPEECH_ReadRequest")
+AI_TrackChange(2,"SPEECH_TreatRequest")
+AI_TrackChange(3,"SPEECH_UpdateSndVol")

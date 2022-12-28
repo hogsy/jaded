@@ -1,0 +1,32 @@
+vector	tv_dist
+int			ti_rank
+object	EVT_Pere
+vector	EVT_Pos
+int			ti_paf_type
+messageid	tmid_paf_event
+message	tm_msg_filter
+
+o_paf_actor = nobody
+
+MSG_SetNull(tm_msg_filter)
+tm_msg_filter.msg_gao1 = OBJ_Me()
+ti_rank = -1
+for (	tmid_paf_event = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tm_msg_filter);
+		MSG_GlobalIsValid(tmid_paf_event);
+		tmid_paf_event = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tm_msg_filter)	)
+{
+	o_paf_actor = EVENT_PereGet(tmid_paf_event)	
+	v_paf_sens = EVENT_PafDirGet(tmid_paf_event)
+
+	ti_paf_type = EVENT_PafTypeGet(tmid_paf_event)
+
+	if ( ti_paf_type & C_PAF_KK_FoodChain)
+	{
+		f_point_de_viande -= EVENT_PafPuisGet(tmid_paf_event)
+	}
+	else
+		EVENT_LIFE_LifeChange( ID_LIFE, 100.0)
+//	if ( ! ( ti_paf_type & C_PAF_KK_Repousse))
+//		EVENT_LIFE_LifeChange( ID_LIFE, EVENT_PafPuisGet(tmid_paf_event))
+
+}

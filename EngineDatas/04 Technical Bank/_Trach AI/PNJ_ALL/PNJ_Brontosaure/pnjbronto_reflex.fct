@@ -1,0 +1,345 @@
+#include "PNJ_Brontosaure_defs.var"
+
+
+int			ti_i, ti_index, ti_inter, ti_follow, ti_temp
+int			ti_iteration
+
+float		x, y, 	tf_dist, x_prev, width, dx
+float		tf_W0, tf_W1
+
+vector	tv_temp, tv_main
+vector	tv_P0, tv_P1, tv_N0, tv_N1, tv_Pos, tv_Sight
+
+object	to_main, to_WP, to_PrevWP, to_WPRoot , to_WPRef, to_bone, to_camera
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// IK COU
+/////////////////////////////////////////////////////////////////////////////////////////
+if ( ! no_IK_NECK )
+{
+	i_flag_look = faux
+	i_flag_look_main = faux
+	i_flag_perfect_look = faux
+	i_flag_look_best_interet = faux
+	
+	v_look_head_pos = OBJ_PosGet() + MATH_VecLocalToGlobal(v_look_head_pos)
+	v_look_banking = MATH_VecLocalToGlobal(v_look_banking)
+	
+	v_look_virtual_sight = v_look_banking
+	MATH_VecSetHorzNormalize(v_look_virtual_sight)
+	
+	f_look_angle_blend_speed += MATH_FloatMin(4.0 - f_look_angle_blend_speed, 4.0 * TIME_GetDt())
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// IK LEGS
+/////////////////////////////////////////////////////////////////////////////////////////
+if ( ! no_IK_LEG )
+{
+	f_look_timer -= TIME_GetDt()
+	to_main = AI_MainActorGet(C_ID_Joueur)
+	to_camera = @get_global o_camera
+	tf_dist = @ao_head_bones[3] OBJ_SqrDistHorz(to_main)
+	
+	for (ti_i = 0; ti_i < 4; ti_i++)
+	{
+		if (tf_dist <= 1600.0 && MATH_VecDotProduct(@ao_IK_bones[ti_i][2] OBJ_PosGet() - @to_camera OBJ_PosGet(), @to_camera OBJ_SightGet()) > 0.0)
+		{
+			i_flag_leg_IK[ti_i]	= vrai
+		}
+		else if (i_flag_leg_IK[ti_i])
+		{
+			i_flag_leg_IK[ti_i]	= faux
+	
+			if (tf_dist <= 1600.0)
+			{
+				f_IK_Z_offset[ti_i] = 0.0
+				f_IK_coef[ti_i] = 0.0
+				f_IK_tenseur[ti_i] = 0.5
+				f_IK_ground_coef[ti_i] = 0.0
+				f_IK_snap_coef[ti_i] = 0.0
+			}
+		}
+	
+		f_IK_speed[ti_i] = TIME_GetDt() * 6.0
+	}
+			
+	if ( tf_dist < 1600.0) 	
+	{
+		if (MATH_VecDotProduct(@ao_head_bones[0] OBJ_PosGet() - @to_camera OBJ_PosGet(), @to_camera OBJ_SightGet()) > 0.0)
+			i_flag_look = vrai
+		else if (MATH_VecDotProduct(@ao_head_bones[i_head_bone_nb - 1] OBJ_PosGet() - @to_camera OBJ_PosGet(), @to_camera OBJ_SightGet()) > 0.0)
+			i_flag_look = vrai
+	
+		if (i_flag_look)
+		{
+			v_look_pos = @to_main OBJ_PosGet()	
+			
+			//if ((f_look_timer <= 0 ) || MATH_VecDotProduct(v_look_pos - @ao_head_bones[2] OBJ_PosGet(), OBJ_SightGet())	< 0.0)
+		
+			if (f_look_timer > 0 && MATH_VecDotProduct(v_look_pos - @ao_head_bones[2] OBJ_PosGet(), OBJ_SightGet())	> 0.0)
+			{
+				i_flag_look_main = vrai
+			}
+			else
+			{
+				f_look_rand_duration	 -= MATH_FloatMin(f_look_rand_duration, TIME_GetDt())
+				if ( ! f_look_rand_duration )
+				{
+					f_look_rand_duration = MATH_RandFloat(3.0, 6.0)
+					v_look_rand_pos = cvector(MATH_RandFloat(-10.0, 10.0), -20.0, @ao_head_bones[0] OBJ_PosGet().z - OBJ_PosGet().z + MATH_RandFloat(-3.0, 3.0))
+				}
+		
+				v_look_pos = OBJ_PosGet()
+				v_look_pos += MATH_VecLocalToGlobal(v_look_rand_pos) * OBJ_ZoomGet()
+			}
+		}
+	}
+}
+
+//=========================
+// sound
+//=========================
+if (Pattes_o_SendPaf )
+{
+	for (ti_index = 0; ti_index < 4; ti_index++)
+	{
+		if ( Pattes_o_SendPaf  == Pattes_o_Object[ ti_index ] )
+			break
+	}
+	Pattes_o_SendPaf = nobody
+	if (ti_index < 4 )
+	{
+		SND_RequestPlayOnObjCanal( BRONTO_Sound_paf, Pattes_i_Canal[ ti_index ] )
+	}
+}
+
+if (Sound_i_Moan)
+{
+	Sound_i_Moan = 0
+	SND_RequestPlayOnObjCanal( BRONTO_Sound_moan, Anim_Canal_Tete )
+}
+
+AI_Execute( "pnjbronto_exec_checkpaf" )
+if (stimul_i_paf)
+{
+	SND_RequestPlayOnObjCanal( BRONTO_Sound_paffed, Anim_Canal_Tete )
+}
+
+//=========================
+// chute ?
+//=========================
+if (move_o_WP[ 1 ] )
+{
+	tv_temp = @move_o_WP[ 1 ] OBJ_PosGet() 
+	tf_dist = tv_temp.z
+	tv_main = OBJ_PosGet()
+	tf_dist -= tv_main.z
+	
+	if (tf_dist > 50 )
+	{
+		tv_main.z = tv_temp.z + 2
+		OBJ_PosSet( tv_main )
+		tv_temp = DYN_SpeedGetVector()
+		tv_temp.z = 0
+		DYN_SpeedSetVector( tv_temp )
+	}
+}
+
+//=========================
+// respawn
+//=========================
+if (troupe_o_orga)
+{
+	if ( troupe_i_command == 2 )
+	{
+		troupe_i_command = 0
+		tv_Pos = troupe_v_param
+		move_o_WP[ 0 ] = nobody
+		move_o_WP[ 1 ]  = WAY_WPNearestOfPos( tv_Pos, move_network,all, none, Ci_Filter_IdentityFlag)
+		
+		for ( ti_index = 0; ti_index < move_i_netwpnb; ti_index++)
+		{
+			if ( move_ao_netwp[ ti_index ] == move_o_WP[ 1 ] )
+				break
+		}
+		
+		if(ti_index == 0)
+		{
+			move_o_WP[ 1 ] = move_ao_netwp[1]
+			ti_index = 1
+		}
+		
+		if (ti_index > 0 )
+		{
+			move_o_WP[ 0 ] = move_ao_netwp[ ti_index - 1 ]
+			tv_temp = @move_o_WP[ 1 ] OBJ_PosGet() - @move_o_WP[ 0 ] OBJ_PosGet()
+			tv_main = tv_Pos - @move_o_WP[ 0 ] OBJ_PosGet()
+			x = MATH_VecDotProduct( tv_temp, tv_main) / MATH_VecDotProduct( tv_temp, tv_temp )
+			tv_Pos = @move_o_WP[ 0 ] OBJ_PosGet() + (x * tv_temp)
+			tv_Sight = tv_temp
+		}
+		else
+			tv_Sight = OBJ_SightGet()
+		
+		tv_Pos += cvector( 0, 0, 1 )
+		f_Zoom = MATH_RandFloat( troupe_f_zoommin, troupe_f_zoommax )
+		OBJ_ZoomSet( f_Zoom )
+		@Pattes_o_Object[ 0 ] OBJ_ZoomSet( f_Zoom )
+		@Pattes_o_Object[ 1 ] OBJ_ZoomSet( f_Zoom )
+		@Pattes_o_Object[ 2 ] OBJ_ZoomSet( f_Zoom )
+		@Pattes_o_Object[ 3 ] OBJ_ZoomSet( f_Zoom )
+		
+		move_i_AlreadyRespawn = 1
+		OBJ_PosSet( tv_Pos )
+		OBJ_BankingGeneralSet( tv_Sight , Cv_VerticalVector )
+		COL_StartMatrixSet( tv_Pos )
+			
+		Bronto_Reset_IK_Legs()
+		Bronto_Init_IK()
+			
+		if ( WPBV_i_Use )
+		{
+			for (ti_index = 0; ti_index < BRONTO_SavedPosNb; ti_index++)
+				Lead_Width[ ti_index ] = 1.0
+			push( move_o_WP[ 1 ] )
+			AI_Execute( "pnjbronto_exec_computewpwidth" )
+		}
+		
+		move_o_WP[ 2 ] = WAY_NetNextWP( move_network,move_o_WP[ 1 ],0,0)
+		AI_Execute( "pnjbronto_exec_computemovedest" )
+	}
+}
+//else
+//{
+//	if (move_i_AlreadyRespawn )
+//	{
+//		to_main = AI_MainActorGet(C_ID_Jack)
+//		if (to_main)
+//		{
+//			tv_temp = @to_main OBJ_PosGet() - OBJ_PosGet()
+//			if ( MATH_VecDotProduct(tv_temp, OBJ_SightGet()) < 0 )
+//				move_i_AlreadyRespawn = 0
+//			else
+//			{
+//				tf_dist = move_f_RespawnDistance / 2
+//				tf_dist *= tf_dist
+//				if ( OBJ_SqrDistHorz( to_main ) < tf_dist )
+//					move_i_AlreadyRespawn = 0
+//			}
+//		}
+//	}
+//	else if ( move_i_Respawn )
+//	{
+//		tf_dist = move_f_RespawnDistance * move_f_RespawnDistance
+//		to_main = AI_MainActorGet(C_ID_Jack)
+//		tv_main = @to_main OBJ_PosGet()
+//		tv_temp = OBJ_PosGet() - tv_main
+//			
+//		if ( to_main && (OBJ_SqrDistHorz( to_main ) > tf_dist) && (MATH_VecDotProduct(tv_temp,OBJ_SightGet()) > 0) )
+//		{
+//			for ( ti_index = 0; ti_index < move_i_netwpnb; ti_index++)
+//			{
+//				if ( move_ao_netwp[ ti_index ] == move_o_WP[ 1 ] )
+//					break
+//			}
+//	
+//			while (ti_index > 0)
+//			{		
+//				tv_P0 = @move_ao_netwp[ ti_index ] OBJ_PosGet() - @move_ao_netwp[ ti_index - 1] OBJ_PosGet()
+//				tv_P1 = tv_main - @move_ao_netwp[ ti_index - 1] OBJ_PosGet() 
+//				x = MATH_VecDotProduct( tv_P0, tv_P0 ) 
+//				if (x > 0 )
+//				{
+//					x = MATH_VecDotProduct( tv_P0, tv_P1 )  / x
+//					if (( x >= 0) && (x <= 1))
+//						break
+//				}
+//				ti_index--
+//			}
+//			ti_index--
+//					
+//			while ( ti_index >= 0)
+//			{
+//				if (  @move_ao_netwp[ ti_index ] OBJ_SqrDistHorz( to_main ) > tf_dist )
+//					break
+//				ti_index--
+//			}
+//			
+//			if (ti_index >= 0)
+//			{
+//				tv_P0 = @move_ao_netwp[ ti_index ] OBJ_PosGet()
+//				push ( move_ao_netwp[ ti_index ] )
+//				AI_Execute( "pnjbronto_exec_computewpwidth" )
+//				tv_N0 = @move_ao_netwp[ ti_index ] OBJ_SightGet()
+//				tv_N0 = MATH_VecNormalize( MATH_VecCrossProduct(tv_N0, Cv_VerticalVector))
+//				tv_P0 -= (move_f_Ecartement * WPBV_f_CurWidth) * tv_N0
+//				
+//				tv_P1 = @move_ao_netwp[ ti_index + 1] OBJ_PosGet() 
+//				push ( move_ao_netwp[ ti_index + 1] )
+//				AI_Execute( "pnjbronto_exec_computewpwidth" )
+//				tv_N1 = @move_ao_netwp[ ti_index ] OBJ_SightGet()
+//				tv_N1 = MATH_VecNormalize( MATH_VecCrossProduct(tv_N1, Cv_VerticalVector))
+//				tv_P0 -= (move_f_Ecartement * WPBV_f_CurWidth) * tv_N1
+//				
+//				tv_Pos = tv_P0
+//				tv_temp = tv_P1 - tv_P0
+//				if ( MATH_AbsFloat( tv_temp.x ) > MATH_AbsFloat( tv_temp.y) ) 
+//					x = MATH_AbsFloat( tv_temp.x ) / 5
+//				else
+//					x = MATH_AbsFloat( tv_temp.y ) / 5
+//	
+//				ti_iteration = x
+//				tv_temp /= x
+//						
+//				for (ti_temp = 0; ti_temp < ti_iteration; ti_temp++)
+//				{
+//					tv_P1 = tv_P0 + tv_temp
+//					tv_N0 = tv_P1 - tv_main
+//					if (MATH_VecDotProduct( tv_N0, tv_N0 ) < tf_dist )
+//					{
+//						tv_Pos = tv_P0
+//						break
+//					}
+//					tv_P0 = tv_P1
+//				}
+//				
+//				move_o_WP[ 0 ] = nobody
+//				move_o_WP[ 1 ]  = move_ao_netwp[ ti_index ]
+//
+//				move_i_AlreadyRespawn = 1
+//				OBJ_PosSet( tv_Pos )
+//				OBJ_SightSet( tv_Sight )
+//				COL_StartMatrixSet( tv_Pos )
+//			
+//				Bronto_Reset_IK_Legs()
+//				Bronto_Init_IK()
+//			
+//				if ( WPBV_i_Use )
+//				{
+//					for (ti_index = 0; ti_index < BRONTO_SavedPosNb; ti_index++)
+//						Lead_Width[ ti_index ] = 1.0
+//					push( move_o_WP[ 1 ] )
+//					AI_Execute( "pnjbronto_exec_computewpwidth" )
+//				}
+//		
+//				move_o_WP[ 2 ] = WAY_NetNextWP( move_network,move_o_WP[ 1 ],0,0)
+//				AI_Execute( "pnjbronto_exec_computemovedest" )
+//			}
+//		}
+//	}
+//}
+
+
+
+// DEBUG
+//for (ti_index = 0; ti_index < 4; ti_index++ )
+//{
+////	if ( IK_ai_PatteState[ ti_index ] & 2 )
+//	{
+//		if ( IK_ai_PatteState[ ti_index ] & 1 )
+//			DBG_RenderSphere( @Pattes_o_Bones[ ti_index ] OBJ_PosGet(), 2, color_bleu )
+//		else
+//			DBG_RenderSphere( @Pattes_o_Bones[ ti_index ] OBJ_PosGet(), 2, color_rouge )
+//	}
+//}

@@ -1,0 +1,67 @@
+#include "PNJ_mr_defines.var"
+
+// SORTIE ETAT ===================================================================
+if( i_sort_etat )
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if( i_etat_courant != ETAT_PNJ_MR_Fusee)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_PNJ_MR_Fusee
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	f_DelayExplosion = f_FuseeDuree
+	f_ZGround = OBJ_PosGet().z
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// STIMULI ===========================================================================
+//if(f_time_start_etat>1.0)
+//	i_Explosion = faux
+//
+//if(f_time_start_etat>3.0)
+//{
+//	if(i_Detruit)
+//	{
+//		if(f_time_start_etat>4.0)
+//		{
+//			i_ADetruire=vrai
+//		}				
+//	}
+//	else
+//	{
+//
+//		SND_Stop(i_SND_MR_Voix_Casse)
+//		i_SND_MR_Voix_Casse = -1
+//		PNJ_MR_SEND_PAF(Cf_MR_Damage_Explo,Ci_MR_ModePaf_Explo,5.0)
+//		SND_RequestPlay(Ci_SND_MR_Explose)
+//	//	PROC_SFX_EXPLOSION_CARTOON( OBJ_PosGet())
+//		PROC_SFX_EXPLOSION_LAPIN (OBJ_PosGet(), 1.0)
+//		PNJ_MR_Flash()
+//		OBJ_FlagInvisibleSet(vrai)
+//		PNJ_MR_Destroy()
+//		i_Detruit=vrai
+//	}
+//}
+
+// COMPORTEMENT ===========================================================================
+if(f_time_start_etat>f_FuseeDelayMaxSpeed)
+	v_traction_MOVE = Cv_VerticalVector * MATH_FloatBlend(0.0,f_FuseeMaxSpeed,f_time_start_etat * f_FuseeCoefAcc) 
+else
+	v_traction_MOVE = Cv_VerticalVector * 10.5
+	
+OBJ_RotateLocalZ( f_paf_rotate * TIME_GetDt())
+f_paf_rotate= MATH_FloatBlend(f_paf_rotate,10.0,1.0*TIME_GetDt()) 
+

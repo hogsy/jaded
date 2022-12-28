@@ -1,0 +1,42 @@
+#include "PNJ_Scorpion_defines.var"
+
+object		to_target
+
+if (!i_grab_allowed)
+	return
+
+if (!i_grab_hit_enable)
+	return
+
+if (ai_perceived_status[i_perceived_best_actor_index] & Ci_PERCEIVED_ALREADY_GRABBED)
+	return
+
+if ( ! TIME_Elapsed(@get_global f_raptor_last_grab_time, 4.0) )
+	return
+
+to_target = EVENT_InteretTargetGet(mid_best_interet)
+
+if (PNJ_Scorpion_Test_Target(to_target) && GRID_LIB_IsReachableFrom(OBJ_PosGet(), @to_target OBJ_PosGet(), 0b0, -1.0, faux, 0))
+{
+	// Est-ce qu'on peut attraper le perso ou est-ce qu'on doit juste le mordre ?
+	o_grab_actor = LNK_ThisClientGet(to_target, Ci_LNK_GRAB_RAPTOR, mid_grab_actor_LNK_ID, vrai, "PNJ_Scorpion_exec_GRAB_init", nofunc, "PNJ_Scorpion_exec_GRAB_init")
+	if (o_grab_actor)
+	{
+		SND_RequestPlay(SND_BITE)
+		
+		@get_global f_raptor_last_grab_time = TIME_Get()
+		macro_change_etat("PNJ_Scorpion_ETAT_GRAB")
+	}
+//	else
+//	{
+//		SND_RequestPlay(SND_BITE)
+//		EVENT_AddEventPaf(C_EVENT_FILTER_All, C_EVENT_PAF_Tranchant | C_EVENT_PAF_Moyen, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_target, PAF_Unit * 10, OBJ_SightGet())
+//	}
+	
+//	if ( ! o_grab_actor )
+//	{
+//		i_grab_hit_enable	 = faux
+//		EVENT_AddEventPaf(C_EVENT_FILTER_All, C_EVENT_PAF_Fort, OBJ_Me(), 0.01, to_target, PAF_Unit, OBJ_SightGet())
+//	}
+}
+

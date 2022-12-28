@@ -1,0 +1,395 @@
+#include"k_define.var"
+
+#define macro_position_ann	\
+{	\
+	if( ! i_souche_cote )	\
+		ti_type = Ci_KKGrabObject_Porte_Epaule_TroncD	\
+	else	\
+		ti_type = Ci_KKGrabObject_Porte_Epaule_TroncG	\
+	LNK_KKGrabObject_TypeSet(amid_CL_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT], ti_type)	\
+}
+//#define	Cf_delai_2_coups_dans_le_meme_sens		0.3			// nb secondes pour ré-armer et choisir le sens de la nouvelle attaque
+
+int			ti_i
+int			ti_anim
+int			ti_type
+int			ti_exit
+int			ti_souche_presente
+
+// ORIENTATION ET SWEEP
+float		tf_rotation_speed
+float		tf_dot 
+float		tf_angle
+vector	tv_reflex_cul_pos_new
+int			ti_sweep_now
+
+// FLAGS
+int			ti_action_fight_en_cours		// flag qui indique que l'action courante est une action de fight 
+int			ti_can_paf							// flag qui indique que l'action courante permet de paffer
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	if( ao_CL[Ci_LNK_KKGRAB_OBJECT] )		// J'ai ANN sur l'épaule
+		LNK_KKGrabObject_TypeSet(amid_CL_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT], Ci_KKGrabObject_Porte_Epaule)
+
+	if ( i_etat_courant != ETAT_Kong_grab
+	&& i_etat_courant != ETAT_Kong_desequilibre)
+	{
+		i_GrabKong_Souche = faux
+		ao_CL_GRABKONG[i_GrabKong_MainActionGrab] = LNK_ClientGet(Ci_LNK_GRAB_KONG, amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab], faux, nofunc, nofunc, nofunc)
+	}
+	i_sort_etat = faux
+	return
+}
+
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_Kong_depl_souche) 
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Kong_depl_souche
+
+	v_reflex_cul_pos  = OBJ_PosGet() - (OBJ_SightGet() * 2)
+
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	// CAMERA -----------------------------------------------------------------
+	@get_global i_kong_camera_status = Ci_Kcamera_deplacement 
+	// CAMERA -----------------------------------------------------------------
+
+	// GRAB CLIENT ACCEPT
+	ai_SRV_ENABLE[Ci_LNK_KKFINISH_ON_KONG] = vrai
+		
+	f_time_collide_ground = 0.0	 // -0.2
+	i_flag_just_grab = faux 			// Si on viens dans ce mode en ayant dégrabé on ne veux pas regraber directement
+	i_frappe_coup = -1
+	f_time_start_etat = 0.0			// Durée écoulée entre 2 coups (pour iterdire 2 coups du même côté successifs)
+	i_GrabKong_MainActionGrab = 0
+	if ( i_dernier_etat == ETAT_Kong_desequilibre)
+	{
+		if ( @ao_CL_GRABKONG[i_GrabKong_MainActionGrab] AI_IsModel(get_KIntGrabObj_Path)
+		&& @ao_CL_GRABKONG[i_GrabKong_MainActionGrab] KIGO_Type() == 2)
+			i_souche_cote = 0 // souche toujours revenir dans la main G
+		else
+			i_souche_cote = i_souche_cote // ne pas changer de main
+	}
+	else
+		i_souche_cote = 1 - i_GrabKong_MainActionGrab		// à l'init, tronc main droite -> déplacement pied gauche et inversement
+	i_frappe_target_nb = 0			// raz compteur des acteurs paffés
+	
+	if( ao_CL[Ci_LNK_KKGRAB_OBJECT] )		// J'ai ANN sur l'épaule
+		macro_position_ann
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()		// Durée écoulée entre 2 coups (pour iterdire 2 coups du même côté successifs)
+}
+f_global_time = TIME_Get()
+
+// ANALYSE ============================================================================
+
+// GRAB KONG =======================================
+o_finish_actor= LNK_ServeurGet(Ci_LNK_KKFINISH_ON_KONG, mid_finish_LNK_ID, vrai, nofunc, nofunc)
+if (o_finish_actor)
+	macro_change_etat("k_ETAT_finished")
+
+
+
+ti_souche_presente = vrai
+ti_exit = faux
+//if( ao_CL_GRABKONG[i_GrabKong_MainActionGrab] && ( ! MSG_GlobalIsValid(amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab]) ) )
+ao_CL_GRABKONG[i_GrabKong_MainActionGrab] = LNK_ThisClientGet( ao_CL_GRABKONG[i_GrabKong_MainActionGrab], Ci_LNK_GRAB_KONG, amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab], vrai, nofunc, nofunc, nofunc)			//"k_exec_grab_object_param"
+if( ! ao_CL_GRABKONG[i_GrabKong_MainActionGrab] || ! MSG_GlobalIsValid(amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab]) )
+{
+	// Liaison rompu: la souche est KC
+	ti_souche_presente = faux
+	switch( ACT_ActionGet() )
+	{
+		case Ci_Kanim_souche_attente :
+		case 191 :
+		case Ci_Kanim_souche_marche :
+		case 193 :
+			ti_exit = vrai
+			break
+		default:
+			if( ACT_ActionFinished() )
+				ti_exit = vrai
+			break
+	}
+	if( ti_exit )
+	{
+		i_GrabKong_Souche = faux
+		ao_CL_GRABKONG[i_GrabKong_MainActionGrab] = nobody
+		macro_change_etat( "k_ETAT_main")
+	}
+}
+
+if( ao_CL_GRABKONG[1 - i_GrabKong_MainActionGrab] && ( ! MSG_GlobalIsValid(amid_CL_LIAISON_ID_GRABKONG[1 - i_GrabKong_MainActionGrab]) ) )
+{
+	// Laison rompu : la cible est explosée sur la souche
+	ao_CL_GRABKONG[1 - i_GrabKong_MainActionGrab] = nobody
+}
+
+AI_Execute("k_exec_detect_paf")
+if ( o_paf_actor)
+{
+	// couper la liaison
+//	i_GrabKong_Souche = faux
+//	ao_CL_GRABKONG[i_GrabKong_MainActionGrab] = LNK_ClientGet(Ci_LNK_GRAB_KONG, amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab], faux, nofunc, nofunc, nofunc)
+	PAF_Test_ChangeEtatValid(fct_track_change)
+	if( fct_track_change != nofunc )
+		macro_change_etat(fct_track_change)
+	else
+		macro_change_etat("k_ETAT_main")
+}
+
+
+if( i_flag_just_Action )
+{
+	COUP_CHANGE_To_Dash()
+	JUMP_HOTSPOT
+	macro_change_etat("k_ETAT_main")
+	return
+}
+
+
+if ( JUMP_Check_chute(vrai))
+	macro_change_etat("k_ETAT_jump")
+
+if ( i_flag_just_grab && COUP_SOUCHE_Get() == -1)
+{
+	// grab -> lancer du tronc
+	macro_change_etat( "k_ETAT_grab")
+}
+
+// RIDE SERVEUR : ACCROCHAGe DES RAPTOR
+RIDE_Propose_Link()
+
+
+// COMPORTEMENT ============================================================================
+
+i_frappe_read_joy = vrai
+ti_sweep_now = faux
+
+// POSITION ET PIED D APPUIS
+switch( i_reflex_anim )
+{
+	case Ci_Kanim_souche_frappe_face :
+	case Ci_Kanim_souche_frappe_gauche_tr_face :
+	case Ci_Kanim_souche_frappe_droite_tr_face :	
+		f_coef_pied_d_appui = 0.5		// i_souche_cote inchangé quand KONG frappe devant lui
+		break
+	case Ci_Kanim_souche_frappe_gauche :						
+	case Ci_Kanim_souche_frappe_face_tr_coup_droite :	
+	case Ci_Kanim_souche_frappe_face_tr_attente_droite :	
+		f_coef_pied_d_appui = 0.0
+		i_souche_cote = 0				// après un coup de la gauche vers la droite, on passe en attente / marche droite
+		break
+	case Ci_Kanim_souche_frappe_droite :						
+	case Ci_Kanim_souche_frappe_face_tr_coup_gauche :
+	case Ci_Kanim_souche_frappe_face_tr_attente_gauche :
+		f_coef_pied_d_appui = 1.0
+		i_souche_cote = 1				// après un coup de la droite vers la gauche, on passe en attente / marche gauche
+		break	
+}
+
+// Memo des coups dans les zones valides.
+KBUFFER_All()
+switch ( i_reflex_anim)
+{
+	case Ci_Kanim_souche_frappe_droite :
+		// 1ST HIT COMBO
+//		if ( ACT_ActionFinished() || ( BUFFER_Zone_Interrupt() && BUFFER_Buffered(C_Button_All)))
+		if ( ANI_CurrentFrameGet(0) > 35 || ( KBUFFER_Zone_Interrupt() && KBUFFER_Buffered(C_Button_All)))		
+		{
+			mi_PaffedODEThisSwing = faux
+			i_paf_afx_done = faux
+			i_fury_increased_this_action = faux
+			i_frappe_phase_before_zde_fight = vrai
+			
+			// TEST DU FINISH
+			if ( KBUFFER_Buffered( C_Button_Coup))
+			{
+				COUP_SOUCHE_Set( Ci_Kanim_souche_frappe_gauche)
+			}
+			else if ( KBUFFER_Buffered( C_Button_Repulse))
+			{
+				COUP_SOUCHE_Set( Ci_Kanim_souche_frappe_face)
+			}
+			else
+			{
+				COUP_SOUCHE_Set( -1)
+			}
+			KBUFFER_DEL_ALL()
+		}
+		break
+	case Ci_Kanim_souche_frappe_gauche :
+		// 1ST HIT COMBO
+//		if ( ACT_ActionFinished() || ( BUFFER_Zone_Interrupt() && BUFFER_Buffered(C_Button_All)))
+		if ( ANI_CurrentFrameGet(0) > 35 || ( KBUFFER_Zone_Interrupt() && KBUFFER_Buffered(C_Button_All)))		
+		{
+			mi_PaffedODEThisSwing = faux
+			i_paf_afx_done = faux
+			i_fury_increased_this_action = faux
+			i_frappe_phase_before_zde_fight = vrai
+			
+			// TEST DU FINISH
+			if ( KBUFFER_Buffered( C_Button_Coup))
+			{
+				COUP_SOUCHE_Set( Ci_Kanim_souche_frappe_droite)
+			}
+			else if ( KBUFFER_Buffered( C_Button_Repulse))
+			{
+				COUP_SOUCHE_Set( Ci_Kanim_souche_frappe_face)
+			}
+			else
+			{
+				COUP_SOUCHE_Set( -1)
+			}
+			KBUFFER_DEL_ALL()
+		}
+		break
+	case Ci_Kanim_souche_frappe_face :
+		if( ACT_ActionFinished() )
+		{
+			mi_PaffedODEThisSwing = faux
+			i_paf_afx_done = faux
+			i_fury_increased_this_action = faux
+			i_frappe_phase_before_zde_fight = vrai
+			LNK_GrabKong_NbCoupSet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab], LNK_GrabKong_NbCoupGet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab]) + 1)
+		}
+	case Ci_Kanim_souche_frappe_face_tr_attente_droite :
+	case Ci_Kanim_souche_frappe_face_tr_attente_gauche :
+	
+		// 1ST HIT COMBO
+		if ( ACT_ActionFinished() || ( KBUFFER_Zone_Interrupt() && KBUFFER_Buffered(C_Button_All)))
+		{
+			// TEST DU FINISH
+			if ( KBUFFER_Buffered( C_Button_Coup))
+			{
+				if ( !i_souche_cote)
+					COUP_SOUCHE_Set( Ci_Kanim_souche_frappe_droite)
+				else
+					COUP_SOUCHE_Set( Ci_Kanim_souche_frappe_gauche)
+			}
+			else
+			{
+				COUP_SOUCHE_Set( -1)
+			}
+			KBUFFER_DEL_ALL()
+		}
+		break
+	default:
+		if ( KBUFFER_Buffered( C_Button_Coup))
+		{
+			if( ! i_souche_cote )
+			{
+				// tronc porté à droite -> coup à gauche
+				COUP_SOUCHE_Set( Ci_Kanim_souche_frappe_droite)
+			}
+			else
+			{
+				// tronc porté à gauche -> coup à droite
+				COUP_SOUCHE_Set( Ci_Kanim_souche_frappe_gauche)
+			}
+			KBUFFER_DEL_ALL()
+		}
+		else if ( KBUFFER_Buffered( C_Button_Repulse))
+		{
+			COUP_SOUCHE_Set( Ci_Kanim_souche_frappe_face)
+			KBUFFER_DEL_ALL()
+		}
+}
+
+
+// ACTION FIGHT EN COURS ==================================================================
+if( i_reflex_anim >  (Ci_Kanim_souche_marche + 1)
+&& ! ACT_ActionFinished() && ti_souche_presente)
+{
+	// TEST PAF
+	if ( COUP_TryToHit( ))
+		AI_Execute("k_exec_zdf_zdc")
+	
+	// ORIENTATION & SWIP
+	tf_angle = MATH_VecAngle( v_joy_sight, OBJ_SightGet(), Cv_VerticalVector)
+	if( MATH_AbsFloat( tf_angle) > Cf_PiBy8 )
+	{
+		ti_sweep_now = vrai
+		tf_rotation_speed = 2.0	
+	}
+}
+
+
+
+// ACTION DE FIGHT EN COURS OU A DECLENCHER =========================================
+if ( COUP_SOUCHE_Get() == -1)
+{
+	if ( i_flag_just_grab)
+	{
+		// grab -> lancer du tronc
+		macro_change_etat( "k_ETAT_grab")
+	}
+	else if ( MATH_FloatNullEpsilon(f_joy_norm ))
+		ti_anim = Ci_Kanim_souche_attente + i_souche_cote
+	else
+	{
+		// déplacement
+		ti_anim = Ci_Kanim_souche_marche + i_souche_cote	
+
+		// sweep
+		ti_sweep_now = vrai
+		
+		tf_rotation_speed = 1.5
+		v_reflex_cul_pos = OBJ_PosGet() - (OBJ_SightGet() * 2)
+		if (f_time_auto_walk)
+			tf_rotation_speed *= 2.0
+	
+		f_coef_pied_d_appui = 0.5
+	
+		// Cul inertia -------------------------------------------------------
+		tv_reflex_cul_pos_new = OBJ_PosGet() - (OBJ_SightGet() * 2)
+		v_speed_cul = tv_reflex_cul_pos_new - v_reflex_cul_pos
+		v_speed_cul /= TIME_GetDt()
+		// Cul inertia ------------------------
+
+	}
+}
+else
+{
+	// POSITION DE ANN =============================================================	
+	if( ACT_ActionFinished() && ao_CL[Ci_LNK_KKGRAB_OBJECT] )
+		macro_position_ann		// J'ai ANN sur l'épaule
+
+	ti_anim = COUP_SOUCHE_Get()
+}
+
+// SWEEP ===================================================
+if( ti_sweep_now )
+{
+	push(v_joy_sight_normalized)						// Axis Dest
+	push(tf_rotation_speed)								// Speed
+	push(f_coef_pied_d_appui)							// Coef entre les deux pieds
+	AI_Execute("k_exec_2Feet_SightSet")
+}
+
+
+// NOUVELLE ACTION ==============================================================
+if( ti_anim != i_reflex_anim )
+{
+	// l'anim a changé
+	if( ti_souche_presente || ACT_ActionFinished())
+	{
+		// si kong grabbe la souche alors on change d'anim sinon on attend la fin de l'anim en cours
+		i_reflex_anim = ti_anim
+		ACT_ActionSet(ti_anim)
+	}
+}

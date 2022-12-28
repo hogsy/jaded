@@ -1,0 +1,92 @@
+object	to_obj, to_cible
+vector	tv_temp, tv_sight, tv_temp1
+int			i, ti_capa
+messageid	EVT_InfoSeen_ID
+
+// rien
+if(mode_carotte == 0) return
+
+//// MODE HERBE
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//if(mode_carotte == 1)
+//{
+//	to_cible = nobody
+//	
+//	// Choix d'une cible
+//	if(TIME_Elapsed(f_time_nopaf, 2.0))
+//	{
+//		for(i = 0; i < C_ID_Marin_dernier; i++)
+//		{
+//			to_obj = @"univ" ao_AllHumains[i]
+//			if(!to_obj) continue
+//			if(!@"univ" ai_HumainIsHere[i]) continue
+//			ti_capa = GRID_CapaGet(@to_obj OBJ_PosGet()) & tag_grid_terrain
+//			if(ti_capa == Ci_sol_herbe || ti_capa == Ci_sol_herbe_haute)
+//			{
+//				if(!@"KingKong/Humain" to_obj i_flag_crouch) 
+//				{
+//					to_cible = to_obj
+//					break
+//				}
+//			}
+//		}
+//	}
+//	
+//	if(to_cible)
+//	{
+//		tv_temp = @to_cible OBJ_PosGet() + cvector(0,0,1.5)
+//		tv_temp += @to_cible OBJ_SightGet()
+//		for(i = 0; i < num_oiseaux; i++)
+//		{
+//			to_obj = ao_obj[i]
+//			if(@to_cible OBJ_SqrDistHorz(to_obj) < 0.5 * 0.5)
+//			{
+//				if(MATH_VecDotProduct(@to_obj OBJ_SightGet(), @to_cible OBJ_SightGet()) < 0)
+//				{
+//					f_time_nopaf = TIME_Get()
+//					tv_sight = @to_obj OBJ_SightGet()
+//					EVENT_AddEventPafCanal(C_EVENT_FILTER_All, C_PAF_KK_Weapon , OBJ_Me(), Cf_EVENT_Duree_1Trame, to_cible, -1, PAF_Unit, tv_sight, Cv_NullVector)
+//					break
+//				}
+//			}
+//		}
+//	}
+//	else
+//	{
+//		// Au dessus du sol
+//		to_obj = COL_RayObject_Vector( @carotte OBJ_PosGet(), cvector(0,0,-50), all, none, 0, COL_C_Ray_on_ColMap_NoCrossable)
+//		tv_temp = COL_RayObject_PosGet() + cvector(0,0,2)
+//		
+//		// Deplacement
+//		if(MATH_VecNullEpsilon(v_speed_carotte)) v_speed_carotte = cvector(0,1,0)
+//		tv_temp1 = MATH_VecNormalize(v_speed_carotte)
+//		ti_capa = GRID_CapaGet(@carotte OBJ_PosGet() + tv_temp1) & tag_grid_terrain
+//		if(ti_capa != Ci_sol_herbe && ti_capa != Ci_sol_herbe_haute)
+//		{
+//			tv_temp1.x = MATH_RandFloat(-1, 2)
+//			tv_temp1.y = MATH_RandFloat(-1, 2)
+//			tv_temp1.z = 0
+//			if(!MATH_VecNullEpsilon(tv_temp1))
+//			{
+//				MATH_VecSetNormalize(tv_temp1)
+//				v_speed_carotte = tv_temp1
+//			}
+//		}
+//		else
+//		{
+//			tv_temp += v_speed_carotte * (TIME_GetDt() * 2.0)
+//		}		
+//	}
+//	
+//	@carotte OBJ_PosSet(tv_temp)
+//	
+//	//--------( event ennemy )--------
+//	if(to_cible)
+//	{
+//		EVT_InfoSeen_ID = EVENT_AddEventEnemy( C_ID_OiseauCrouch, carotte, C_EVENT_EnemyState_Fight)
+////		EVT_InfoSeen_ID = EVENT_AddEventInteret(carotte, 0.1, 10.0, @to_cible OBJ_PosGet(), to_cible)
+////		EVENT_InteretStatusSet(EVT_InfoSeen_ID, C_EVENT_InteretStatusAttack)
+//	}
+//	else
+//		EVT_InfoSeen_ID = EVENT_AddEventEnemy( C_ID_SwampCrawlerSmall, carotte, C_EVENT_EnemyState_Wait)		
+//}

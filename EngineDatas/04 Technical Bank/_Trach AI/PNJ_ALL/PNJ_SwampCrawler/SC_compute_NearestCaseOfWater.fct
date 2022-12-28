@@ -1,0 +1,60 @@
+int			i_loop, j_loop
+int			grid_capa
+int			couleur
+vector	bestpos, pos, dir
+vector	vtemp
+float 		dist, bestdist
+
+
+compute_i_res = 0
+pos = OBJ_PosGet()
+dir = OBJ_SightGet()
+dir.z = 0
+if (MATH_VecNull(dir) )
+	return
+
+if (MATH_AbsFloat(dir.x) >= MATH_AbsFloat(dir.y) )
+	dir /= MATH_AbsFloat( dir.x )
+else
+	dir /= MATH_AbsFloat( dir.y )
+
+for (i_loop = 0; i_loop < 10; i_loop++)
+{
+	grid_capa = GRID_CapaGet( pos ) & tag_grid_terrain
+	if (grid_capa == Ci_sol_eau)
+		break
+	pos += dir
+}
+
+if (i_loop == 10) 
+	return
+
+bestpos = pos
+vtemp = bestpos - OBJ_PosGet()
+bestdist = MATH_VecDotProduct( vtemp, vtemp)
+
+loopagain:
+
+for ( i_loop = 0; i_loop < 3; i_loop++)
+{
+	for (j_loop = 0; j_loop < 3; j_loop++)
+	{
+		pos = bestpos
+		pos.x += i_loop - 1
+		pos.y += j_loop -1
+		if ( (GRID_CapaGet( pos ) & tag_grid_terrain) == Ci_sol_eau)
+		{
+			vtemp = pos - OBJ_PosGet()
+			dist = MATH_VecDotProduct( vtemp, vtemp)
+			if (dist < bestdist)
+			{
+				bestpos = pos
+				bestdist = dist
+				goto loopagain
+			}
+		}
+	}
+}
+
+compute_v_pos = bestpos
+compute_i_res = 1

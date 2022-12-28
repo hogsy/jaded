@@ -1,0 +1,73 @@
+//messageid	tmid_grabbed_LNK_ID
+//int				ti_SF
+//vector		tv_pos
+//
+//switch( i_key_type)
+//{
+//	case 0:
+//		i_key_type = KEY_TYPE_GOLD + KEY_TYPE_SILVER + KEY_TYPE_BRASS
+//		break
+//	case 1:
+//		i_key_type = KEY_TYPE_GOLD
+//		break
+//	case 2:
+//		i_key_type = KEY_TYPE_SILVER
+//		break
+//	case 3:
+//		i_key_type = KEY_TYPE_BRASS
+//		break
+//}
+//
+//switch( i_paf_type)
+//{
+//	case 0:
+//		i_paf_type = C_PAF_RM_Moyen + C_PAF_RM_Fort
+//		break
+//	case 2:
+//		i_paf_type = C_PAF_RM_Moyen
+//		break
+//	case 3:
+//		i_paf_type = C_PAF_RM_Fort
+//		break
+//}
+//
+//switch( i_paf_sous_type)
+//{
+//	case 0: 
+//		i_paf_sous_type = -1
+//		break	
+//	case 2:
+//		i_paf_sous_type = C_PAF_RM_Grenade
+//		break
+//	case 3:
+//		i_paf_sous_type = C_PAF_RM_Gun
+//		break
+//	case 4:
+//		i_paf_sous_type = C_PAF_RM_DiveAttack
+//		break
+//}
+//
+//AI_PrioritySet(50)		// Passer avant les lapins
+//
+//tv_pos = COL_ZonePosGet(C_zde_corps)
+//tv_pos -= OBJ_PosGet()
+//RM_TARGET_Add( OBJ_Me(), MATH_VecGlobalToLocal( tv_pos) )
+//
+//i_etat_courant = i_Start_etat
+//SF_ID = AI_SFDynGet(0, SF_MinById, SF_MaxById)			// Allocation
+//SpecialFlag_get(SF_ID, ti_SF)
+//if (ti_SF)			
+//	i_etat_courant = 1 - i_etat_courant					// SF changé : on commence a l inverse de l etat init
+//
+//if ( ! i_Start_etat)
+//	OBJ_CapaSet(none, Obj_Capa_Switch)
+//else
+//{
+//	// ON
+//	OBJ_CapaSet( Obj_Capa_Switch, none)
+//	f_paf_cumul_dmg = f_paf_cumul_needed
+//	f_paf_cumul_last_dmg = f_paf_cumul_needed
+//}
+//AI_CBAdd(OBJ_Me(), CallBack_Client,"rms_cb_client")
+//
+//AI_TrackCurChangeNow("rms_ETAT_main")

@@ -1,0 +1,151 @@
+#include "PNJ_Lapin_defines.var"
+
+float		tf_speed
+vector	tv_pos_A
+vector	tv_pos_B
+vector	tv_temp
+int			ti_flag_tension
+object	to_rope_gao
+vector	tv_banking
+object	to_target
+
+
+// SORTIE ETAT ===================================================================
+if( i_sort_etat )
+{
+	DYN_SpeedSetVector(Cv_NullVector)
+	COL_ColMapActivationSet(all, none)
+	Lapin_BV_Init()
+	Lapin_PRIORITY_Set(Ci_AI_Priority_NORMAL)
+	Lapin_EXPRESSION(Cf_Expr_Mouth_Closed)
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if( i_etat_courant != ETAT_Lapin_GOGO )
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Lapin_GOGO
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	Lapin_DBG_Trace_String(DBG_Trace_Etat, "GOGO")
+	fct_previous_etat = fct_last_etat
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	BV_MinSet(cvector(-2.0, -2.0, -2.0) * OBJ_ZoomGet())
+	BV_MaxSet(cvector(2.0, 2.0, 2.0) * OBJ_ZoomGet())
+	COL_ColMapActivationSet(none, all)		// ne pas recaler rayman
+	Lapin_PRIORITY_Set(Ci_AI_Priority_APRES)
+	
+	Lapin_ACTION_Set(Action_Gogo_cycle)
+	f_gogo_paf_timer = 0.0
+//	v_gogo_last_speed = Cv_NullVector
+//	f_gogo_last_speed = 0.0
+	f_gogo_chute_duree = 0.0
+	i_gogo_launch_target_checked = faux
+	SND_RequestPlay(Ci_SND_FIGHT_GOGO_Start)
+	Lapin_EXPRESSION(Cf_Expr_Mouth_Full)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+	f_gogo_paf_timer += TIME_GetDt()
+	if( f_gogo_paf_timer > 0.25 )
+	{
+		f_gogo_paf_timer = 0.0
+		i_frappe_target_nb = 0		// refrapper les persos
+	}
+}
+
+// STIMULI ===========================================================================
+o_Grabbed_Actor = LNK_ServeurGet(Ci_LNK_GRAB_EAGLE, mid_Grabbed_LNK_ID, vrai, nofunc, nofunc)
+if( o_Grabbed_Actor )
+	macro_change_etat("Lapin_ETAT_GRABBED")
+
+o_Rided_Actor = LNK_ServeurGet(Ci_LNK_RIDE_ON_NMI, mid_Rided_LNK_ID, vrai, nofunc, nofunc)
+if( o_Rided_Actor )
+	macro_change_etat("Lapin_ETAT_RIDED")
+
+AI_Execute("Lapin_exec_check_vision")
+
+AI_Execute("Lapin_exec_check_paf")
+if( i_flag_paf_stun )
+	macro_change_etat("Lapin_ETAT_PAF_STUN")
+if( i_flag_paf ) // || ! EVENT_LIFE_CurLifeGet(ID_LIFE) )
+	macro_change_etat("Lapin_ETAT_PAF")
+
+if( ! i_ground_flag && ! i_is_in_water )
+{
+	f_gogo_chute_duree += TIME_GetDt()
+	if( f_gogo_chute_duree > 3.0 )
+		macro_change_etat("Lapin_ETAT_CHUTE")
+}
+else
+	f_gogo_chute_duree = 0.0
+
+
+tf_speed = MATH_VecSquareNorm(v_speedgetvector)
+
+to_rope_gao = Lapin_ROPE_Get_Gao(tv_pos_A, tv_pos_B, ti_flag_tension)
+
+if( Lapin_ROPE_Gogo_Mode() )
+{
+	// Toujours accroché
+	i_gogo_launch_target_checked = faux		// si je suis rechoppé alors que j'avais été expulsé
+}
+else
+{
+	// aide au tir !!!!
+	if( ! to_rope_gao && ! i_gogo_launch_target_checked )
+	{
+		i_gogo_launch_target_checked = vrai
+		Lapin_ACTION_Set(Action_Gogo_eject)
+		to_target = Lapin_BestTargetGet(v_speedgetvector)
+		if( to_target && to_target != OBJ_Me())
+		{
+			tv_temp = @to_target OBJ_PosGet() - OBJ_PosGet()
+			tf_speed = 50.0
+			MATH_VecSetNorm(tv_temp, tf_speed)
+			DYN_SpeedSetVector(tv_temp)
+			DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, tv_temp, color_rouge)
+			tv_temp = tv_temp
+		}
+	}
+	
+	// On est plus accroché et presque à l'arret
+//	Str_DisplayFloatOnce(tf_speed , cvector(0.5,0.9,0))
+//	DBG_TraceString("tf_speed  = ")
+//	DBG_TraceFloat(tf_speed )
+//	DBG_TraceEOL()
+	if ( f_time_start_etat > 1.0 && tf_speed < 64.0 ) // 1.0 )
+	{
+		SND_RequestPlay(Ci_SND_FIGHT_GOGO_End)
+		MACRO_GO_IDLE(0)
+	}
+}
+
+if( tf_speed > 25.0 )
+	i_flag_zde_fight_enable = vrai
+
+// COMPORTEMENT ===================================================================
+//v_gogo_last_speed = v_speedgetvector
+//f_gogo_last_speed = DYN_SpeedGet()
+
+if( to_rope_gao )
+	tv_banking = OBJ_PosGet() - @to_rope_gao OBJ_PosGet()
+else
+{
+	tv_banking = v_speedgetvector
+	tv_banking.z = 0.0
+}
+OBJ_BankingGeneralSet(
+	MATH_VecBlendRotate(OBJ_SightGet(), tv_banking, f_time_start_etat),	// 10.0 * TIME_GetDt()),
+	MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, f_time_start_etat)) //  30.0 * TIME_GetDt()))
+
+
+OBJ_CapaSet(Obj_Capa_Fight, none)

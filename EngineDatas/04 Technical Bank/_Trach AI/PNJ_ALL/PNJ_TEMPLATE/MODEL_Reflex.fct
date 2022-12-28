@@ -1,0 +1,53 @@
+#include "MODEL_defines.var"
+
+messageid		tmid_vision
+vector			tv_speed
+
+
+// ANALYSE =======================================================
+i_paf_check_done = faux
+o_Kong = AI_MainActorGet(C_ID_Kong)
+o_Joueur = AI_MainActorGet(C_ID_Joueur)
+v_ground_normale = Cv_VerticalVector
+
+
+// LIFE & FOODCHAIN ==============================================
+if( EVENT_LIFE_CurLifeGet(ID_LIFE) )
+{
+	// EVENT LIFE
+	EVENT_LIFE_LifeDisplay(ID_LIFE, VIEW_3dWorldTo2d(0, OBJ_PosGet()) + cvector(0.0,-0.05,1.5))
+	
+	// EVENT VISION
+	tmid_vision = EVENT_AddEventVision(
+							i_ID, 
+							C_EVENT_FILTER_None, 
+							OBJ_Me(), 
+							Cf_EVENT_Duree_1Trame, 
+							OBJ_PosGet(), 
+							C_EVENT_Visibility_Full_Mvt, 
+							2.5 * OBJ_ZoomGet(), 
+							100.0, 
+							C_EVENT_CONTEXT_STANDARD, 
+							0, 
+							EVENT_LIFE_CurLifeGet(ID_LIFE) / EVENT_LIFE_MaxLifeGet(ID_LIFE))
+	EVENT_VisionTerritoryUdpate(tmid_vision)
+	
+	// EVENT NMI
+	EVENT_AddEventEnemy(i_ID, OBJ_Me(), C_EVENT_EnemyState_Fight)
+}
+else
+{
+	if( f_points_de_viande )
+		EVENT_AddEventCadavre(i_ID, OBJ_Me(), Cf_EVENT_Duree_1Trame, OBJ_PosGet())
+}
+
+
+
+// BUG Z SPEED
+if( OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna) )
+{
+	tv_speed = DYN_SpeedGetVector()
+	if( tv_speed.z > 0.0 )
+		tv_speed.z = 0.0
+	DYN_SpeedSetVector(tv_speed)
+}

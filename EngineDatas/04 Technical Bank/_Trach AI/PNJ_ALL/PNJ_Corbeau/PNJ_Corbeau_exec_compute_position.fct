@@ -1,0 +1,61 @@
+float		tf_coef
+
+vector	tv_point_A
+vector	tv_point_B
+vector	tv_point_C
+vector	tv_point_D
+
+#define Cf_pourcentage			0.33
+
+f_link_coef += f_speed * TIME_GetDt()
+
+compute:
+
+tf_coef = f_link_coef / f_link_length
+
+if (tf_coef >= 1.0)
+{
+	if (@o_last_wp OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Generated))
+		@o_last_wp OBJ_Destroy()
+
+	o_last_wp = o_next_wp
+	o_next_wp = WAY_NetNextWP(n_net, o_last_wp, 0, 0)
+
+	f_link_coef -= f_link_length
+
+	f_link_length = MATH_VecNorm(@o_next_wp OBJ_PosGet() - @o_last_wp OBJ_PosGet())
+
+	goto compute
+}
+
+tv_point_A = @o_last_wp OBJ_PosGet()
+
+tv_point_B = tv_point_A 
+tv_point_B += @o_last_wp OBJ_SightGet() * (f_link_length * Cf_pourcentage)
+
+tv_point_D = @o_next_wp OBJ_PosGet()
+	
+tv_point_C = tv_point_D
+tv_point_C -= @o_next_wp OBJ_SightGet() * (f_link_length * Cf_pourcentage)
+
+//DBG_RenderVector(tv_point_A, tv_point_B - tv_point_A, color_rouge)
+//DBG_RenderVector(tv_point_B, tv_point_C - tv_point_B, color_rouge)
+//DBG_RenderVector(tv_point_C, tv_point_D - tv_point_C, color_rouge)
+
+tv_point_A += (tv_point_B - tv_point_A) * tf_coef
+tv_point_B += (tv_point_C - tv_point_B) * tf_coef
+tv_point_C += (tv_point_D - tv_point_C) * tf_coef
+
+//DBG_RenderVector(tv_point_A, tv_point_B - tv_point_A, color_vert)
+//DBG_RenderVector(tv_point_B, tv_point_C - tv_point_B, color_vert)
+
+tv_point_A += (tv_point_B - tv_point_A) * tf_coef
+tv_point_B += (tv_point_C - tv_point_B) * tf_coef
+
+//DBG_RenderVector(tv_point_A, tv_point_B - tv_point_A, color_bleu)
+
+OBJ_SightSet(tv_point_B - tv_point_A)
+
+tv_point_A += (tv_point_B - tv_point_A) * tf_coef
+
+OBJ_PosSet(tv_point_A)

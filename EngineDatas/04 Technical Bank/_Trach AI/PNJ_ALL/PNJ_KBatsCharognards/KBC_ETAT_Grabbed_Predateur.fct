@@ -1,0 +1,72 @@
+#include "KBC_defines.var"
+
+
+// SORTIE ETAT =================================================================
+if (i_sort_etat)
+{
+	AI_CBDel(o_predateur, CallBack_After_Blend, "KBC_cb_set_pos")
+	o_predateur = nobody
+	o_predateur_new = nobody
+	i_sort_etat = faux
+	return
+}
+
+
+// ENTREE ETAT =================================================================
+if (i_etat_courant != ETAT_Grabbed_Predateur)
+{
+	i_etat_ancien_ancien = i_etat_ancien
+ 	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Grabbed_Predateur
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	KBC_DBG_Trace(i_DBG_trace_etat, "etat grabbed predateur")
+
+	o_predateur_new = o_predateur
+	AI_CBAdd(o_predateur, CallBack_After_Blend, "KBC_cb_set_pos")
+
+	if (OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna))
+	{
+		DYN_SpeedSetVector(Cv_NullVector)
+	}
+
+	switch(LNK_GrabServeurVisionIDGet(mid_predateur))
+	{
+		case C_ID_Tyranosaure :
+			ACT_ActionSet(ACTION_Vol_Blesse)
+			ACT_LIB_ActionFrequencyMultiply(0.5)
+			break
+	}
+	
+	// Réactivation wp chute pour les autres bats ----------------
+	KBC_Chute_WP_reservation_free(o_chute_bats_wp)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+i_flag_neck = faux
+
+
+// ANALYSE  =====================================================================
+
+o_predateur_new = LNK_ServeurGet(Ci_LNK_GRAB_RAPTOR, mid_predateur, vrai, nofunc, nofunc)
+if( ! o_predateur_new )
+{
+	macro_change_etat("KBC_ETAT_Chute_Libre")
+}
+
+
+// MON PREDATEUR ME TUE
+AI_Execute("KBC_exec_check_paf")
+if( i_paf_type & C_PAF_KK_KiTue )
+{
+	OBJ_Destroy()
+}
+

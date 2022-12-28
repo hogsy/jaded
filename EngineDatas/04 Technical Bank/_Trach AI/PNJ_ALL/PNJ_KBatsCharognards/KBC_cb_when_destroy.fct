@@ -1,0 +1,85 @@
+#include "KBC_defines.var"
+
+int			ti_i
+
+
+// Destruction des objets temporaires =======================================
+if( o_tmp_obj_last )
+{
+	@o_tmp_obj_last OBJ_Destroy()
+	o_tmp_obj_last = nobody
+}
+
+if( o_tmp_obj_next )
+{
+	@o_tmp_obj_next OBJ_Destroy()
+	o_tmp_obj_next = nobody
+}
+
+
+// Suppr la réserv du wp d'attaque même s'il n'a pas été atteint 
+// (donc o_backup_nearest_cible_wp et pas o_backup_wp_depl_utilise )
+KBC_WP_Reservation_Del(o_backup_nearest_cible_wp)
+
+
+// CAPA mort ------------------------------------------------------------
+OBJ_CapaSet(CAPA_Dead_on_Ground, none)
+OBJ_CapaSet(CAPA_Dead, none)
+
+// special flag
+if (i_SF_NePasSeRejouerSiMort)
+	Super_SpecialFlag_set(i_SF_AlreadyDead)
+
+// LIAISONS -------------------------------------------------------------------
+o_cible = LNK_ClientGet(Ci_LNK_GRAB_TRANSPORTE, mid_grab_charogne, faux, "KBC_exec_grab_param", nofunc, "KBC_exec_grab_param")
+o_grabbed_actor = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong, faux, nofunc, nofunc)
+o_predateur = LNK_ServeurGet(Ci_LNK_GRAB_RAPTOR, mid_predateur, faux, nofunc, nofunc)
+o_I_finish_actor = LNK_ThisClientGet(o_I_finish_actor,Ci_LNK_KKFINISH_ON_KONG, mid_I_finish_LNK_ID, faux, nofunc, nofunc, nofunc)
+o_bone_ride_KK = LNK_ClientGet(Ci_LNK_RIDE_DINO, mid_bone_ride_KK_LNK_ID, faux, nofunc, nofunc, nofunc)
+
+// CALLBACKS ==============================
+AI_CBDel(OBJ_Me(), CallBack_After_Blend, "KBC_cb_afterblend")
+AI_CBDel(OBJ_Me(), CallBack_WhenDestroy, "KBC_cb_when_destroy")
+AI_CBDel(OBJ_Me(), CallBack_Client, "KBC_cb_client")
+AI_CBDel(OBJ_Me(), CallBack_Info, "KBC_cb_info")
+macro_del_callback_after_cam("KBC_cb_aftercam")
+
+
+// Réactivation wp chute pour les autres bats ----------------
+KBC_Chute_WP_reservation_free(o_chute_bats_wp)
+	
+// Javelots -----------------------------------------------------------------
+OBJ_LIB_Detach_Javelin(OBJ_Me())
+
+// INTERACTION FIGHT ---------------------------------------------
+o_attack_interaction = LNK_ClientGet(Ci_LNK_INTERACTION, mid_attack_interaction_LKN_ID, faux, nofunc, nofunc, nofunc)
+
+// Destroy spawned bats -------------------------------------------
+//for( ti_i = 0; ti_i < i_spawned_bats; ti_i++ )
+//{
+//	if ( ao_spawned_bats[ti_i])
+//		@ao_spawned_bats[ti_i] OBJ_Destroy()
+//}
+//i_spawned_bats = 0
+//
+//
+
+// LIFE
+if( MSG_GlobalIsValid( ID_LIFE ))
+	MSG_GlobalDelete(ID_LIFE , C_EVENT_EOFDEL)		// détruire uniquement au fade, pas à la mort !!!
+
+// STATS
+KBC_STATS_NMI_Killed(o_Kong)
+
+// SI JE SUIS REACTIVE
+for( ti_i = 0; ti_i < 5; ti_i++ )
+	AI_TrackStop(ti_i)
+
+// KER
+COL_UnCollidableReset()
+
+// Suppr des SoftCol
+KBC_SoftCol_ForgetMe()
+
+//TRACE
+KBC_DBG_Trace(i_DBG_trace_etat, "callback when destroy")

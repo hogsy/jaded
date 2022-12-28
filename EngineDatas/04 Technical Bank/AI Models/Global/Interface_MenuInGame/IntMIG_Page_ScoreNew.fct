@@ -1,0 +1,371 @@
+#include "Interface_MenuInGame_defs.var"
+
+int			ti_Col
+int			ti_Texte
+int			ti_Count
+int			ti_Line //, ti_LinePest
+int			ti_Who
+int			ti_InHOF
+vector	tv_Pos 
+vector	tv_Decal
+vector	size
+float		max1, max2, center, width
+
+#define 	RECT_MIN			cvector( 0.1, 0.38, 0)
+#define 	RECT_MAX		cvector( 0.9, 0.85, 0)
+
+if (!IntMIG_SetPageParams())
+	return
+if (!mo_Texte)
+	return
+	
+if (INTMIG_EnterPage_Start)
+{
+	IntMIG_ResetTexte( mi_PageString, 30 )
+	
+	if (mi_StartMenu )
+		tv_Decal = cvector( 0, 0, 0)
+	else
+		tv_Decal = cvector( 0, -0.1, 0)
+		
+	if (mi_ScoreState == mi_ScoreState_Old)
+	{
+		IntMIG_SetText_Page( 0, INTMIG_TXG, INTMIG_TEXT_SCOREGEN, INTMIG_PosTitle_UpRight,  0.0, 6, -1, INTMIG_Color_NotSel, 0, 1 )
+		if (mi_StartMenu)
+		{
+			//IntMIG_SetText_Page( 1, INTMIG_MAPNAME_TXG, INTMIG_MAPNAME_TXT + @"univ" PROG_ai_MapTexte[ mi_HOF_Map ], cvector(0.9, 0.36, 0),  0.0, 10, -1, INTMIG_Color_Sel, 0, 1 )
+			IntMIG_DisplayMapName( 1, mi_HOF_Map, cvector(0.898, 0.35, 0), 10, 0 )
+		}
+		IntMIG_Text_SetFrameXY	( 2, 0xFFFFFFFF, RECT_MIN + tv_Decal, RECT_MAX + tv_Decal, 33, 0.0 )
+	
+		if (mi_ScoreState_Old == 3)
+		{
+			//mi_ScoreSave = 0
+			IntMIG_SetText_Page( 4, INTMIG_TXG, INTMIG_TEXT_Tback, INTMIG_PosButton_BottomCenter,  0.0, 4, -1, INTMIG_Color_Sel, 0, 1 )
+		}
+		else
+		{
+			IntMIG_SetText_Page( 3, INTMIG_TXG, INTMIG_TEXT_Xcontinue, INTMIG_PosButton_BottomRight,  0.0, 6, -1, INTMIG_Color_Sel, 0, 1 )
+			if ( !(@"univ" PROG_i_MapReplay && mi_StartMenu) )
+				IntMIG_SetText_Page( 4, INTMIG_TXG, INTMIG_TEXT_Tback, INTMIG_PosButton_BottomLeft,  0.0, 4, -1, INTMIG_Color_Sel, 0, 1 )
+		}
+		IntMIG_Text_FadeInMulti( 0, 4, 0.5, 0.0 )
+	}
+
+		
+	// positive points
+	if (mi_ScoreState == 0)
+	{
+		if (mi_ScoreState_Old == 0)
+		{
+			IntMIG_Score_InitPage()
+		}
+		else
+		{
+			if ( @"univ" PROG_i_MapReplay && mi_StartMenu )
+				IntMIG_Text_FadeOutMulti( 4, 1, 0.5 )
+		}
+		
+//		if ( IntMIG_HOF_PestKill( mi_HOF_Map) )
+//			ti_LinePest = -10
+//		else
+//		{		
+//			if ( IntMIG_HOF_IsKongMap( mi_HOF_Map ) )
+//				ti_LinePest = 1
+//			else
+//				ti_LinePest = 2
+//		}
+			
+		ti_Count = 1
+		for ( ti_Line = 0; ti_Line < mi_Score_Count; ti_Line ++ )
+		{
+//			if ( ti_Line == ti_LinePest )
+//				continue
+			if (mai_ScoreFactor[ ti_Line ] < 0 )
+				break
+			ti_Count++
+		}
+		
+		tv_Pos = cvector( 0, 0.55 - (0.065 * (ti_Count - 1) / 2 ), 0)
+		tv_Pos += tv_Decal
+		ti_Texte = mi_PageString + 1
+		mi_ScoreMapPos = 0
+		
+		for (ti_Line = -1; ti_Line < mi_Score_Count; ti_Line ++ )
+		{
+//			if ( ti_Line == ti_LinePest )
+//				continue
+			if ((ti_Line >= 0) && (mai_ScoreFactor[ ti_Line ] < 0 ) )
+				break
+			mi_ScoreMapPos += IntMIG_Score_DisplayLine( ti_Texte, ti_Line, tv_Pos )
+			ti_Texte += 4
+			tv_Pos.y += 0.065
+		}
+		
+		IntMIG_Score_DisplayTotal( ti_Texte, INTMIG_TEXT_SCOREGEN + 7, mi_ScoreMapPos, cvector( 0.85, 0.8, 0) + tv_Decal, 0xFF7FFF7F )
+	}
+	// negative points
+	else if ( mi_ScoreState == 1)
+	{
+		if ( @"univ" PROG_i_MapReplay && mi_StartMenu )
+		{
+			IntMIG_SetText_Page( 4, INTMIG_TXG, INTMIG_TEXT_Tback, INTMIG_PosButton_BottomLeft,  0.0, 4, -1, INTMIG_Color_Sel, 0, 1 )
+			IntMIG_Text_FadeInMulti( 4, 1, 0.5, 0.0 )
+		}
+		
+		ti_Count = 0
+		for ( ti_Line = 0; ti_Line < mi_Score_Count; ti_Line ++ )
+		{
+			if (mai_ScoreFactor[ ti_Line ] > 0 )
+				continue
+			ti_Count++
+		}
+				
+		tv_Pos = cvector( 0, 0.55 - (0.065 * (ti_Count - 1) / 2 ), 0)
+		tv_Pos += tv_Decal
+		ti_Texte = mi_PageString + 5
+		mi_ScoreMapNeg = 0
+		for (ti_Line = 0; ti_Line < mi_Score_Count; ti_Line ++ )
+		{
+			if (mai_ScoreFactor[ ti_Line ] > 0 )
+				continue
+			mi_ScoreMapNeg += IntMIG_Score_DisplayLine( ti_Texte , ti_Line, tv_Pos)
+			ti_Texte += 4
+			tv_Pos.y += 0.065
+		}
+		IntMIG_Score_DisplayTotal( ti_Texte, INTMIG_TEXT_SCOREGEN + 8, mi_ScoreMapNeg, cvector( 0.85, 0.8, 0) + tv_Decal, 0xFF7F7FFF )
+	}
+	// score total
+	else if (mi_ScoreState == 2 )
+	{
+		mi_ScoreMap = mi_ScoreMapPos + mi_ScoreMapNeg
+		if (mi_ScoreMap < 0) 
+			mi_ScoreMap = 0
+		//mi_ScoreSave = 0
+		if ( (!mi_ScoreSave) && ( mi_StartMenu ) && (mi_ScoreMap > SAVE_HeaderGetScore( @"univ" MENU_ProfileIndex, mi_HOF_Map ) ) )
+		{
+			IntMIG_HOF_StoreStats( 1 )
+			mi_ScoreSave = 1
+		}
+		
+		IntMIG_Score_DisplayLine2( mi_PageString, INTMIG_TEXT_SCOREGEN + 7, mi_ScoreMapPos, cvector( 0.8, 0.42, 0) + tv_Decal, 0x7FFF7F )
+		IntMIG_Score_DisplayLine2( mi_PageString + 2, INTMIG_TEXT_SCOREGEN + 8, mi_ScoreMapNeg, cvector( 0.8, 0.48, 0) + tv_Decal, 0x7F7FFF )
+		IntMIG_Score_DisplayTotal( mi_PageString + 4, INTMIG_TEXT_SCOREGEN, mi_ScoreMap, cvector( 0.8, 0.58, 0) + tv_Decal, 0xFFFFFFFF )
+		
+		if (mi_StartMenu )
+		{
+//			IntMIG_SetText_Page( mi_PageString + 7, INTMIG_TXG, INTMIG_TEXT_SCOREGEN + 3, cvector( 0.6, 0.68, 0),  0.0, 6, -1, 0xFFFFFFFF, 0, 1 )
+//			IntMIG_CreateText_Start( mi_PageString + 8 )
+//			@mo_Texte OBJ_TextIntInsert( mi_PageString + 8, -1, IntMIG_HOF_GetPlayerOverallScore() )
+//			IntMIG_CreateText_End( mi_PageString + 8, cvector( 0.64, 0.7, 0) ,  0.0, 4, -1, 0xFFFFFFFF, 0, 1 )
+			IntMIG_Score_DisplayLine2( mi_PageString + 7, INTMIG_TEXT_SCOREGEN + 3, IntMIG_HOF_GetPlayerOverallScore(), cvector( 0.8, 0.68, 0), 0xFFFFFF )
+
+						
+			IntMIG_SetText_Page( mi_PageString + 9, INTMIG_TXG, INTMIG_TEXT_SCOREGEN + 4, cvector( 0.5, 0.76, 0),  0.0, 5, -1, 0xFFFFFFFF, 0, 1 )
+			IntMIG_CreateText_Start( mi_PageString + 10 )
+			@mo_Texte OBJ_TextInsert( mi_PageString + 10, -1, SAVE_GetInternetCode(@"univ" MENU_ProfileIndex ) )
+			@mo_Texte OBJ_TextEffectSeti( 0,-3,1)
+			IntMIG_CreateText_End( mi_PageString + 10, cvector( 0.5, 0.82, 0),  0.0, 5, -1, 0xFFFFFFFF, 0, 0 )
+			@mo_Texte OBJ_TextEffectSeti( -1,-3,0)
+		}
+		else
+		{
+			IntMIG_Score_DisplayLine2( mi_PageString + 7, INTMIG_TEXT_SCOREGEN + 5, SAVE_HeaderGetScore( @"univ" MENU_ProfileIndex, mi_HOF_Map), cvector( 0.8, 0.8, 0) + tv_Decal, 0xBFBFBF )
+		}
+	}
+	// HOF
+	else // mi_ScoreState == 3
+	{
+		IntMIG_HOF_Init( mi_HOF_Map, mi_ScoreMap ) 
+		ti_InHOF = 0
+		tv_Pos = cvector( 0, 0.6 - (0.065 * 2 ), 0)
+
+		for (ti_Line = 0; ti_Line < 5; ti_Line++ )
+		{
+			ti_Who = mai_HOF_Texte[ ti_Line ]
+			if ( (ti_Who - 1000) == @"univ" MENU_ProfileIndex )
+			{
+				ti_InHOF = 1
+				tv_Pos = cvector( 0, 0.55 - (0.065 * 2 ), 0)
+				break
+			}
+		}
+		
+		ti_Texte = mi_PageString
+		tv_Pos = cvector( 0, 0.55 - (0.065 * 2 ), 0)
+		if (ti_InHOF) tv_Pos.y += 0.05
+		 tv_Pos += tv_Decal
+		for (ti_Line = 0; ti_Line < 5; ti_Line++ )
+		{
+			ti_Col = 0xFFAFAFAF
+			tv_Pos.x = 0.5
+			ti_Who = mai_HOF_Texte[ ti_Line ]
+			if ( ti_Who < 1000 )
+				//profilecourrier IntMIG_SetText_Page( ti_Texte, INTMIG_HOF_TXG, INTMIG_HOF_TXT + ti_Who, tv_Pos,  0.0, 6, -1, ti_Col, 0, 1 )
+				IntMIG_SetText_Page( ti_Texte, INTMIG_HOF_TXG, INTMIG_HOF_TXT + ti_Who, tv_Pos,  0.0, 6, -1, ti_Col, 0, 0 )
+			else
+			{
+				IntMIG_CreateText_Start( ti_Texte )
+				@mo_Texte OBJ_TextSet( ti_Texte, SAVE_HeaderName( ti_Who - 1000) )
+				if ( (ti_Who - 1000) == @"univ" MENU_ProfileIndex )
+					ti_Col = 0xFFFFFF
+				//profilecourrier IntMIG_CreateText_End( ti_Texte, tv_Pos, 0.0, 6, -1, ti_Col, 0, 1 )
+				IntMIG_CreateText_End( ti_Texte, tv_Pos, 0.0, 6, -1, ti_Col, 0, 0 )
+			}
+			ti_Texte++
+		
+			tv_Pos.x = 0.55
+			IntMIG_CreateText_Start( ti_Texte )
+			@mo_Texte OBJ_TextIntInsert( ti_Texte, -1, mai_HOF_Score[ ti_Line ] )
+			IntMIG_CreateText_End( ti_Texte, tv_Pos, 0.0, 4, -1, ti_Col, 0, 1 )
+			ti_Texte++
+			tv_Pos.y += 0.07
+		}
+		
+		// recadrage des textes si dépassement
+		ti_Texte -= 10
+		max1 = 0
+		max2 = 0
+		for (ti_Line = 0; ti_Line < 5; ti_Line++)
+		{
+			size = @mo_Texte OBJ_TextSizeGet( ti_Texte, 0, -1)
+			width = size.x + 0.025
+			if (width > max1) max1 = width
+			ti_Texte++
+			size = @mo_Texte OBJ_TextSizeGet( ti_Texte, 0, -1)
+			width = size.x + 0.025
+			if (width > max2) max2 = width
+			ti_Texte++
+		}
+		center = max1 + 0.1 + ( (0.8 - max1 - max2) / 2 )
+		
+		ti_Texte -= 10
+		tv_Pos = cvector( 0, 0.55 - (0.065 * 2 ), 0)
+		if (ti_InHOF) tv_Pos.y += 0.05
+		 tv_Pos += tv_Decal
+		for (ti_Line = 0; ti_Line < 5; ti_Line++ )
+		{
+			tv_Pos.x = center - 0.025
+			@mo_Texte OBJ_TextPivotSet( ti_Texte, tv_Pos )
+			ti_Texte++
+			tv_Pos.x = center + 0.025
+			@mo_Texte OBJ_TextPivotSet( ti_Texte, tv_Pos )
+			ti_Texte++
+			tv_Pos.y += 0.07
+		}
+		
+		if ( !ti_InHOF )
+		{
+			tv_Pos = cvector( 0.5, 0.82, 0) + tv_Decal
+			IntMIG_SetText_Page( ti_Texte, INTMIG_TXG, INTMIG_TEXT_SCOREGEN + 9, tv_Pos,  0.0, 6, -1, 0xFFFFFF, 0, 1 )
+			tv_Pos.x = 0.55
+			IntMIG_CreateText_Start( ti_Texte + 1)
+			//@mo_Texte OBJ_TextIntInsert( ti_Texte + 1, -1, SAVE_HeaderGetScore( @"univ" MENU_ProfileIndex, mi_HOF_Map) )
+			@mo_Texte OBJ_TextIntInsert( ti_Texte + 1, -1, mi_ScoreMap )
+			IntMIG_CreateText_End( ti_Texte +1, tv_Pos, 0.0, 4, -1, ti_Col, 0, 1 )
+		}
+	}
+	
+	IntMIG_Text_FadeInMulti( mi_PageString, 30, 0.5, 0.0 )
+}
+else if (INTMIG_EnterPage_End )
+{
+}
+else if (INTMIG_LeavePage_Start)
+{
+	IntMIG_Text_FadeOutMulti( mi_PageString, 30, 0.5 )
+	if ( mi_ScoreState == mi_ScoreState_Old )
+		IntMIG_Text_FadeOutMulti( 0, 5, 0.5 )
+}
+
+IntMIG_RestorePageParams()
+
+if ( mi_Exit || mi_ChangePage || mi_Cheat )
+	return
+	
+if ( joy_cancel  )
+{
+	if ( @"univ" PROG_i_MapReplay && mi_StartMenu && (mi_ScoreState == 0) )
+	{
+		IntMIG_PlaySound( INTMIG_SOUND_VALIELOCK )
+	}
+	else
+	{
+		if ( (mi_ScoreState == 3) && (mi_ScoreState_Old == 3) )
+		{
+			@"univ" PROG_i_MapReplay = faux
+			INTMIG_ChangePage(  "IntMIG_Page_Map" , mi_Cur )
+		}
+		else
+		{
+			mi_ScoreState_Old = mi_ScoreState
+			IntMIG_PlaySound( INTMIG_SOUND_CANCEL )
+			if ( mi_ScoreState )
+			{
+				mi_ScoreState--
+				INTMIG_ChangePage( "IntMIG_Page_ScoreNew", mi_Cur )
+			}
+			else
+			{
+				if ( mi_StartMenu )
+				{
+					@"univ" PROG_i_MapReplay = faux
+					INTMIG_ChangePage(  "IntMIG_Page_Map" , mi_Cur )
+				}
+				else
+					INTMIG_ChangePage(  "IntMIG_Page_Main" , mi_Cur )
+			}
+		}
+	}
+	return
+}
+
+if ( joy_valide )
+{
+	if ( (mi_ScoreState == 3) && (mi_ScoreState_Old == 3) )
+		IntMIG_PlaySound( INTMIG_SOUND_VALIELOCK )
+	else
+	{
+		IntMIG_PlaySound( INTMIG_SOUND_VALIDE )
+		mi_ScoreState_Old = mi_ScoreState
+	
+		if (mi_ScoreState != 3 )
+		{
+			mi_ScoreState++
+			INTMIG_ChangePage( "IntMIG_Page_ScoreNew", mi_Cur )
+		}
+		else
+		{
+			if ( mi_StartMenu )
+			{
+				if (@"univ" PROG_i_MapReplay )
+				{
+					IntMIG_StoreOptions()
+					//DBG_TraceString( "Save Buffer : Restore3" ) DBG_TraceEOL()
+					SAVE_Request( INO_e_SavRq_RestoreSaveBuffer, 3)
+					SAVE_Unvalidate()
+					IntMIG_PasteOptions()
+					SAVE_Validate()
+				}
+		
+				if (mi_ScoreSave)
+				{
+					//IntMIG_HOF_StoreStats()
+					IntMIG_HOF_StoreStats( 1 )
+					@"univ" PROG_i_MapReplay = faux
+					if ( IntMIG_XTRA_Diff() )
+						INTMIG_YesNoPage( INTMIG_OK_NEWBONUS_SAVE)
+					else
+						INTMIG_YesNoPage( INTMIG_YESNO_SCOREHASCHANGED )
+				}
+				else
+				{
+					@"univ" PROG_i_MapReplay = faux
+					INTMIG_ChangePage(  "IntMIG_Page_Map" , mi_Cur )
+				}
+			}
+			else
+				INTMIG_ChangePage(  "IntMIG_Page_Main" , mi_Cur )
+		}
+	}
+}

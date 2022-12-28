@@ -1,0 +1,365 @@
+//#include "CR_defines.var"
+//
+//float				tf_dot
+//float				tf_dist_proj
+//float				tf_proj_cote
+//float				tf_calcul_cote
+//
+//messageid		tmid_vision
+//
+//vector			tv_new_sight
+//vector			tv_me_to_actor
+//vector			tv_actor_proj_pos
+//vector			tv_actor_proj_axis
+//vector			tv_pos_blend_horizon
+//vector			tv_me_to_pos_blend_horizon
+//vector			tv_temp
+//vector			tv_pos
+//vector			tv_lray_pos
+//vector			tv_lray_sight
+//
+//int					ti_strafeG_ok
+//int					ti_strafeD_ok
+//
+//object			to_ray_object
+//object			to_my_lray_bone
+//object			to_FA_lray_bone
+//
+//
+//// SORTIE ETAT ==============================================================================
+//if (i_sort_etat)
+//{
+//	i_sort_etat = faux
+//	return
+//}
+//
+//
+//// ENTREE ETAT ==============================================================================
+//if (i_etat_courant != ETAT_FIGHT )
+//{
+//	i_etat_ancien = i_etat_courant
+//	i_etat_courant = ETAT_FIGHT
+//	
+//	if (fct_etat_courant)
+//	{
+//		i_sort_etat = vrai
+//		AI_Execute(fct_etat_courant)
+//	}
+//	
+//	fct_etat_courant = AI_TrackCurGet()
+//	fct_etat_main = AI_TrackCurGet()
+//	f_time_start_etat = 0.0
+//	
+//	o_fight_actor = EVENT_InteretTargetGet(mid_best_interet)
+//	
+//	i_attack_paf_done = faux
+//	f_way_intimidation_delay = MATH_RandFloat(f_way_intimidation_delay_min, f_way_intimidation_delay_max)
+//}
+//else
+//{
+//	f_time_start_etat += TIME_GetDt()
+//}
+//
+//
+//// ANALYSE ===================================================================================
+//AI_Execute("CR_exec_CHECK_Vision")
+//
+//AI_Execute("CR_exec_CHECK_Paf")
+//if( CR_Paf_Check_Change_Etat() )
+//	macro_change_etat("CR_ETAT_PAF")
+//
+//if( ! MSG_GlobalIsValid(mid_best_interet) )
+//	macro_change_etat("CR_ETAT_IDLE")
+//
+//// COMPORTEMENT =============================================================================
+//
+//// INTERET ------------------------------------------------------------------------------------------
+//if( CR_Perceived_Actor_Check(o_fight_actor, tmid_vision) )
+//	CR_Interet_Update(mid_best_interet, C_EVENT_InteretStatusAttack, o_fight_actor, tmid_vision)
+//
+//// DEPLACEMENT  ------------------------------------------------------------------------------
+//v_way_dest_pos = EVENT_InteretPositionGet(mid_best_interet)
+////DBG_RenderVector(OBJ_PosGet(), v_way_dest_pos - OBJ_PosGet(), color_vert)
+//AI_Execute("CR_exec_WAY_Move")
+//DBG_RenderVector(OBJ_PosGet(), v_joy_dir * f_way_length, color_jaune)
+//
+//// ACTION -------------------------------------------------------------------------------------------
+//tv_new_sight = v_joy_dir
+//tv_me_to_actor = @o_fight_actor OBJ_PosGet() - OBJ_PosGet()
+//
+//switch( ACT_ActionGet() )
+//{
+//	case ACTION_Intimidation :
+//		// INTIMIDATION
+//		tv_new_sight = tv_me_to_actor
+//		if( ACT_ActionFinished() )
+//		{
+//			f_way_intimidation_delay = MATH_RandFloat(f_way_intimidation_delay_min, f_way_intimidation_delay_max)
+//			ACT_ActionSet(ACTION_Attente)
+//			CR_Rotation_Coef_Set(Ci_rotation_coef_attente)
+//		}
+//		break
+//		
+//	case ACTION_AttackG :
+//	case ACTION_AttackD :
+//		tv_new_sight = tv_me_to_actor
+//		// ATTAQUE EN COURS
+//		if( ACT_ActionFinished() )
+//		{
+//			// FIN D'ATTAQUE
+//			i_attack_paf_done = faux
+//			f_attack_delay = MATH_RandFloat(3.0, 5.0)
+//			ACT_ActionSet(ACTION_Attente)
+//		}
+//		else
+//		{
+//			// TEST PAF
+//			if( ! i_attack_paf_done && COL_ZDE_ZDECollide(o_fight_actor, C_zde_fight, C_zde_corps) )
+//			{
+//				DBG_TraceString("=== ")
+//				DBG_TraceObject(OBJ_Me())
+//				DBG_TraceString(" paffe ")
+//				DBG_TraceObject(o_fight_actor)
+//				DBG_TraceString(" ZDE Fight / ZDE Corps")
+//				DBG_TraceEOL()
+//				i_attack_paf_done = vrai
+//				EVENT_AddEventPaf(C_EVENT_FILTER_Enemy, C_EVENT_PAF_Moyen, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_fight_actor, PAF_Unit * 5, OBJ_SightGet())
+//				CR_Paffed_Actor_Add(o_fight_actor)
+//			}
+//		}
+//		break
+//	
+//	default:
+//		// ATTENTE OU DEPLACEMENT ============================================================
+//		tf_dot = MATH_VecDotProduct(OBJ_HorizonGet(), v_joy_dir)
+//		if( ! f_way_intimidation_delay && MATH_VecDotProduct(@o_fight_actor OBJ_SightGet(), MATH_VecNormalize(OBJ_PosGet() - @o_fight_actor OBJ_PosGet())) < Cf_Cos30 )
+//		{
+//			// PASSAGE EN INTIMIDATION : fin d'un strafe ou timer + pas dans le sight de la cible
+//			ACT_ActionSet(ACTION_Intimidation)
+//			CR_Rotation_Coef_Set(Ci_rotation_coef_intimidation)
+//		}
+//		else if( f_joy_norm )
+//		{
+//			// IL Y A UN DEPLACEMENT A EFFECTUER -------------------------------------
+//			if( CR_Strafe_Allowed() && (CR_Collide_Wall_Avance() || ! CR_Collide_Wall_Strafe()) )
+//			{
+//				// DEPLACEMENT EN STRAFE AUTORISE
+//				if( CR_Strafe_En_Cours() )
+//					tf_calcul_cote = CR_Strafe_Cote_Get()
+//				else
+//				{
+//					// Choix du côté de strafe
+//					
+//					// test à gauche
+//					tv_pos = OBJ_PosGet()
+//					tv_temp = MATH_VecCrossProduct(Cv_VerticalVector, v_joy_dir)
+//					MATH_VecSetNormalize(tv_temp)
+//					tv_pos += f_way_grid_avance_length * tv_temp
+//					if( GRID_LIB_IsReachableFrom(OBJ_PosGet(), tv_pos, 0b0, f_way_grid_avance_length, vrai, 0))
+//						ti_strafeG_ok = vrai
+//					else
+//						ti_strafeG_ok = faux
+//					
+//					// test à droite
+//					tv_pos = OBJ_PosGet()
+//					tv_temp = MATH_VecCrossProduct(v_joy_dir, Cv_VerticalVector)
+//					MATH_VecSetNormalize(tv_temp)
+//					tv_pos += f_way_grid_avance_length * tv_temp
+//					if( GRID_LIB_IsReachableFrom(OBJ_PosGet(), tv_pos, 0b0, f_way_grid_avance_length, vrai, 0))
+//						ti_strafeD_ok = vrai
+//					else
+//						ti_strafeD_ok = faux
+//					
+//					// comparatif des tests
+//					if( ti_strafeG_ok && ti_strafeD_ok )
+//						tf_calcul_cote = MATH_FloatSign(MATH_VecDotProduct(OBJ_HorizonGet(),v_joy_dir))
+//					else if( ti_strafeG_ok )
+//						tf_calcul_cote = 1.0
+//					else if( ti_strafeD_ok )
+//						tf_calcul_cote = -1.0
+//					else
+//					{
+//						f_way_strafe_delay = MATH_RandFloat(f_way_strafe_delay_min, f_way_strafe_delay_max)			// strafe interdit pour l'instant !!!
+//						goto STRAFE_INTERDIT
+//					}
+//				}
+//				
+//				if( f_way_length > f_way_strafe_dist_requin_ou_attack )
+//				{
+//					// mode strafe en requin (mon sight blende vers ma cible -> je lui tourne autour)
+//					if( ! CR_Strafe_En_Cours() )
+//						CR_Strafe_Begin(tf_calcul_cote)
+//				}
+//				else
+//				{
+//					// mode strafe avec blend de mon horizon vers ma cible
+//					if( ( tf_dot > Cf_Cos30 || tf_dot < - Cf_Cos30 ) && f_way_strafe_hysteresis == 0.0 )
+//					{
+//						// perso complètement sur ma gauche ou sur ma droite
+//						tf_dist_proj = MATH_VecDotProduct(tf_calcul_cote * OBJ_HorizonGet(), v_joy_dir)
+//						DBG_RenderVector(OBJ_PosGet(), tf_calcul_cote * OBJ_HorizonGet() * tf_dist_proj, color_blanc)
+//						tv_actor_proj_pos = OBJ_PosGet() + ( tf_calcul_cote * OBJ_HorizonGet() * tf_dist_proj )
+//						DBG_RenderVector(OBJ_PosGet(), tv_actor_proj_pos - OBJ_PosGet(), color_jaune)
+//						tv_actor_proj_axis = tv_actor_proj_pos - @o_fight_actor OBJ_PosGet()
+//						MATH_VecSetNormalize(tv_actor_proj_axis)
+//						if( MATH_VecDotProduct(OBJ_SightGet(), tv_actor_proj_axis) > 0 )
+//							tv_actor_proj_axis *= -1			// je force le calcul d'une position derrière moi pour m'orienter en strafe, sinon je pourrai me retrouver dos à lui
+//						DBG_RenderVector(@o_fight_actor OBJ_PosGet(), tv_actor_proj_axis, color_blanc)
+//						tv_pos_blend_horizon = @o_fight_actor OBJ_PosGet() + ( Cf_distance_anticipation_actor * f_zoom * tv_actor_proj_axis )
+//						tv_me_to_pos_blend_horizon = tv_pos_blend_horizon - OBJ_PosGet()
+//						DBG_RenderVector(@o_fight_actor OBJ_PosGet(), tv_pos_blend_horizon - @o_fight_actor OBJ_PosGet(), color_vert)
+//						DBG_RenderVector(OBJ_PosGet(), tv_me_to_pos_blend_horizon, color_bleu)
+//						
+//						tv_new_sight = tf_calcul_cote * MATH_VecCrossProduct(tv_me_to_pos_blend_horizon, Cv_VerticalVector)
+//						DBG_RenderVector(OBJ_PosGet(), tv_new_sight, color_rouge)
+//						
+//						if( ! CR_Strafe_En_Cours() )
+//							CR_Strafe_Begin(tf_calcul_cote)
+//					}
+//					else if( MATH_VecDotProduct(OBJ_SightGet(), v_joy_dir) < 0 )
+//					{
+//						// perso derrière moi : je me tourne sur place avant de partir en strafe quand il est sur le côté
+//						ACT_ActionSet(ACTION_SurPlace)
+//						CR_Rotation_Coef_Set(Ci_rotation_coef_sur_place)
+//					}
+//					else
+//					{
+//						// perso devant moi : je blende mon horizon vers sa position
+//						if( f_way_strafe_hysteresis == 0.0 )
+//							f_way_strafe_hysteresis = 0.2		// init hystérésis la 1ère fois qu'on passe ici (avec l'hystérésis on y repasse...)
+//						
+//						if( MATH_VecDotProduct(OBJ_HorizonGet(), v_joy_dir) > 0 )
+//						{
+//							// devant sur la gauche
+//							tv_new_sight = MATH_VecCrossProduct(v_joy_dir, Cv_VerticalVector)
+//							DBG_RenderVector(OBJ_PosGet(), tv_new_sight, color_rouge)
+//							if( ! CR_Strafe_En_Cours() )
+//								CR_Strafe_Begin(1.0)
+//						}
+//						else
+//						{
+//							// devant sur la droite
+//							tv_new_sight = MATH_VecCrossProduct(Cv_VerticalVector, v_joy_dir)
+//							DBG_RenderVector(OBJ_PosGet(), tv_new_sight, color_rouge)
+//							if( ! CR_Strafe_En_Cours() )
+//								CR_Strafe_Begin(-1.0)
+//						}
+//					}
+//				}
+//			}
+//			else
+//			{
+//				STRAFE_INTERDIT:
+//				// STRAFE INTERDIT : MARCHE OU SUR PLACE
+//				if( tf_dot > Cf_Cos45 || tf_dot < - Cf_Cos45 )
+//				{
+//					// perso trop de côté : se tourner avant d'avancer
+//					ACT_ActionSet(ACTION_SurPlace)
+//					CR_Rotation_Coef_Set(Ci_rotation_coef_sur_place)
+//				}
+//				else
+//				{
+////					if( f_way_length > f_way_distance_avance_attack )
+//						ACT_ActionSet(ACTION_Avance_Attaque)
+////					else
+////						ACT_ActionSet(ACTION_Avance_Standard)
+//					CR_Rotation_Coef_Set(Ci_rotation_coef_avance)
+//				}
+//			}
+//		}
+//		else
+//		{
+//			// DEPLACEMENT TERMINE ---------------------------------------------------------
+//			
+//			// DEBUT D'INTIMIDATION
+//			if( ! i_attack_intimidation_done )
+//			{
+//				ACT_ActionSet(ACTION_Intimidation)
+//				i_attack_intimidation_done = vrai
+//				CR_Rotation_Coef_Set(Ci_rotation_coef_intimidation)
+//			}
+//			// DEBUT D'ATTAQUE
+//			else if( ! f_attack_delay )
+//			{
+//				to_FA_lray_bone = @o_fight_actor ANI_CanalObjectGet(Anim_Canal_Tete)
+//				to_my_lray_bone = o_bone_carapace
+//				tv_lray_pos = @to_my_lray_bone OBJ_PosGet()
+//				tv_lray_sight = @to_FA_lray_bone OBJ_PosGet() - tv_lray_pos
+//				DBG_RenderVector(tv_lray_pos, tv_lray_sight, color_blanc)
+//				to_ray_object = COL_RayObject_Vector(tv_lray_pos, tv_lray_sight, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+//				if( to_ray_object || CR_Check_Presence_Interet_Statut_Model(o_fight_actor, faux, C_EVENT_InteretStatusGrab, vrai) ) 
+//				{
+//					// PAS LE DROIT D'ATTAQUER (MUR, DEJA GRABBE PAR UN BUDY....)
+//					ACT_ActionSet(ACTION_Attente)
+//					CR_Rotation_Coef_Set(Ci_rotation_coef_attente)
+//				}
+//				else
+//				{
+//					// PAS D'OBSTACLE ENTRE MA CIBLE ET MOI
+//					tv_new_sight = tv_me_to_actor
+//					if( MATH_VecDotProduct(OBJ_HorizonGet(), @o_fight_actor OBJ_PosGet() - OBJ_PosGet()) > 0 )
+//					{
+//						// GAUCHE
+//						if( i_grab )
+//						{
+//							ACT_ActionSet(ACTION_GrabGdeb)
+//							macro_change_etat("CR_ETAT_GRAB")
+//						}
+//						else
+//						{
+//							ACT_ActionSet(ACTION_AttackG)
+//							CR_Rotation_Coef_Set(Ci_rotation_coef_attaque)
+//						}
+//					}
+//					else
+//					{
+//						// DROITE
+//						if( i_grab )
+//						{
+//							ACT_ActionSet(ACTION_GrabDdeb)
+//							macro_change_etat("CR_ETAT_GRAB")
+//						}
+//						else
+//						{
+//							ACT_ActionSet(ACTION_AttackD)
+//							CR_Rotation_Coef_Set(Ci_rotation_coef_attaque)
+//						}
+//					}
+//				}
+//			}
+//			// ATTENTE
+//			else
+//			{
+//				ACT_ActionSet(ACTION_Attente)
+//				CR_Rotation_Coef_Set(Ci_rotation_coef_attente)
+//			}
+//		}
+//		break
+//}
+//
+//
+//// MODIF FREQUENCE DE L'ANIM -----------------------------------------------
+////if( ! ACT_ActionIsTransition() )
+////{
+////	switch( ACT_ActionGet() )
+////	{
+////		case ACTION_SurPlace :
+////		case ACTION_Avance_Normal :
+////		case ACTION_Avance_Attaque :
+////		case ACTION_StrafeD :
+////		case ACTION_StrafeG :
+////			ACT_LIB_ActionFrequencyMultiply(f_action_speed_coef)
+////			break
+////	}
+////}
+//
+//// ORIENTATION ---------------------------------------------------------------------------
+//OBJ_BankingGeneralSet(
+//	MATH_VecBlendRotate(OBJ_SightGet(), tv_new_sight, f_way_rotation_coef * TIME_GetDt()),
+//	MATH_VecBlendRotate(OBJ_BankingGet(), v_ground_normale, 6.0 * TIME_GetDt()))
+//
+//// INTIMIDATION DEBUT COMBAT ------------------------------------------------
+//if( f_way_length >= 15.0 )
+//	i_attack_intimidation_done = faux
+//
+//

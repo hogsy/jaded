@@ -1,0 +1,61 @@
+int		ti_CheckP
+int		ti_indice 
+
+ti_CheckP = faux
+
+// BV
+if (i_CP_Test_BV_Actif && COL_BV_PivotCollide(des_o_perso_detect))
+	ti_CheckP = vrai
+
+// Trigger
+if ((i_TriggerANDBv && ti_CheckP) || !i_TriggerANDBv)
+{
+	if (AI_TriggerIsValid(Trigger_CP) && call_trigger(Trigger_CP))
+		ti_CheckP = vrai
+	else if (i_TriggerANDBv)
+		ti_CheckP = faux
+}
+
+if (ti_CheckP)
+{
+	// #############
+	// CHECKPOINT !
+	// #############
+
+	// On reset uniquement si on change de CP !
+	if (@"univ" world_entrance_ID != des_numero_de_l_entree)
+	{
+		@"univ" i_death_shield = 0		// Reset le compteur de mort dans une arene (on change de map)
+		@"univ" i_death_exploit = 0		// Reset le compteur de mort exploit
+
+		DBG_TraceString("\n CheckPoint n°")
+		DBG_TraceInt(des_numero_de_l_entree)	
+		DBG_TraceString(" Validé... GAO: ")
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceEOL()
+	}
+	
+	// C'est moi la bonne entrée de map
+	@"univ" world_entrance_ID = des_numero_de_l_entree
+
+	OBJ_CapaSet(OBJ_Capa_14,none)		// Indique que ce CP a déjà été validé.
+
+	// Validation du SF associé au CP
+	if (i_SF_NePlusJamaisRefaireCP)
+		Super_SpecialFlag_set(i_SF_AlreadyCP)
+
+	// VALIDATE
+	SAVE_Validate()
+	
+	if (!i_save_dump_done)
+	{
+		macro_STATS_Dump( 1, OBJ_Me() )
+		i_save_dump_done = vrai
+	}
+
+	// Destruction apres Checkpoint Validé
+	if (i_CP_Destruction_Apres_CP || i_SF_NePlusJamaisRefaireCP)
+		OBJ_Destroy()
+}
+else
+	i_save_dump_done = faux

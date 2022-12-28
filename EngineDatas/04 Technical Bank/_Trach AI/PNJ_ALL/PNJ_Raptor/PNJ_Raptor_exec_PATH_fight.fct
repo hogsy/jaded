@@ -1,0 +1,206 @@
+int					ti_flag_skip_next_wp
+int					ti_flag_position_accessible
+
+object			to_nearest_wp
+object			to_start_wp
+object			to_dest_wp
+
+vector			tv_temp
+
+messageid		EVT_Memory_ID
+
+#define macro_clean_way																																\
+{																																								\
+	o_next_wp = nobody																																\
+	o_path_start_wp = nobody																															\
+	o_path_dest_wp = nobody																															\
+	 while(i_way_wp_nb)																																	\
+	{																																							\
+		i_way_wp_nb--																																	\
+		ao_way_wp[i_way_wp_nb] = nobody																										\
+	}																																							\
+}
+
+// A == ma position
+// B == le wp le plus proche de moi
+// C == le wp le plus proche de ma cible
+// D == la position destination
+// A -----> B chemin entre A et B ok
+// A --X--> B chemin entre A et B bloqué par la grille
+// A --?--> B chemin entre A et dépendant du reseau 
+
+if (i_way_computation_mode != i_way_computation_old_mode)
+{
+	// INITIALISATION
+	i_way_computation_old_mode = i_way_computation_mode
+
+}
+
+v_way_destpos = EVENT_InteretPositionGet(mid_best_interet)
+ti_flag_position_accessible = PNJ_Raptor_Is_Accessible(v_way_destpos, i_target_territory_ID)
+
+if ( ! ti_flag_position_accessible )
+{
+	// C --X--> D
+	i_flag_destpos_accessible = faux
+	to_dest_wp = WAY_WPNearestOfPos(v_way_destpos, n_net, all, OBJ_Capa_2, Ci_Filter_CapaFlag)
+}
+else if (i_flag_dont_use_grid)
+{
+	// JE SUIS DEJA SUR LE RESEAU, JE DOIS CHERCHER UNE SORTIE POUR ATTEINDRE MA CIBLE
+
+	// A -----> B
+	to_start_wp = o_next_wp
+	to_dest_wp = GST_Climb_NearestSightReachableWaypoint(&ao_net_wp[0], i_net_wp_nb, v_way_destpos, i_target_territory_ID, OBJ_SightGet(), -1.0, all, OBJ_Capa_2, to_nearest_wp)
+
+	if (to_dest_wp)
+	{
+		// A -----> B --?--> C -----> D
+		i_flag_destpos_accessible = vrai
+	}
+	else
+	{
+		// A ------> B --?--> C --X--> D
+		i_flag_destpos_accessible = faux
+		to_dest_wp = to_nearest_wp
+	}
+}
+else
+{
+	// ANTI BUG !!!
+	if (o_next_wp && @o_next_wp OBJ_CapaTest(OBJ_Capa_2))
+		macro_clean_way
+
+	// JE PEUX UTILISER LA GRILLE
+	if (GST_Climb_IsReachableFrom(OBJ_PosGet(), v_way_destpos, 0))
+	{
+		// A -----> D
+		macro_clean_way
+		to_start_wp = nobody	
+		to_dest_wp = nobody
+
+		i_flag_destpos_accessible = vrai
+	}
+	else
+	{
+		// A --X--> D	
+		to_dest_wp = GST_Climb_NearestSightReachableWaypoint(&ao_net_wp[0], i_net_wp_nb, v_way_destpos, i_target_territory_ID, OBJ_SightGet(), -1.0, all, OBJ_Capa_2, to_nearest_wp)
+		if (to_dest_wp)
+		{
+			// C -----> D
+			i_flag_destpos_accessible = vrai
+		}
+		else
+		{
+			// C --X--> D
+			i_flag_destpos_accessible = faux
+			to_dest_wp = to_nearest_wp
+		}
+	
+		// Si on peux aller au wp intermédiare, pas la peine de faire plus compliqué
+		if (i_flag_destpos_accessible && (to_dest_wp && GST_Climb_IsReachableFrom(OBJ_PosGet(), @to_dest_wp OBJ_PosGet(), 0)))
+		{
+			// A -----> C	-----> D
+			macro_clean_way
+
+			i_way_wp_nb = 1
+			ao_way_wp[0] = to_dest_wp
+
+			to_start_wp = nobody	
+			to_dest_wp = nobody
+		}
+	}
+}
+
+
+if (to_dest_wp && to_dest_wp != o_path_dest_wp)
+{
+	// OK, on doit atteindre un wp, comment on s'y prend	
+	if (i_way_wp_nb)
+	{
+		// On suivait déjà le reseau, on part du wp ou on allait pour rechercher un chemin
+		to_start_wp = ao_way_wp[i_way_wp_nb - 1]
+	}
+	else if (o_next_wp)
+	{
+		to_start_wp = o_next_wp
+	}
+	else
+	{
+		// On doit trouver un wp du reseau accessible pour démarrer notre recherche de chemin
+		to_start_wp = GST_Climb_NearestSightReachableWaypoint(&ao_net_wp[0], i_net_wp_nb, OBJ_PosGet(), i_my_territory_ID, OBJ_SightGet(), Cf_Cos70, all, OBJ_Capa_2, to_nearest_wp)
+		if (to_start_wp)
+		{
+			// A -----> B --?--> C -----> D
+		}
+		else
+		{
+			// A --X--> B --?--> C -----> D
+			to_start_wp = to_nearest_wp
+		}
+	}
+
+	if (to_start_wp && to_dest_wp)
+	{
+		// RECHERCHE DE CHEMIN
+		macro_clean_way
+	
+		f_way_rot_speed = 0.0
+
+		o_path_start_wp = to_start_wp
+		o_path_dest_wp = to_dest_wp
+		i_way_wp_nb = WAY_ShortWay(n_net, &ao_way_wp[0], to_start_wp, to_dest_wp, -1, 0)
+		
+		if (i_way_wp_nb)
+		{
+			// On a un chemin
+		}
+		else
+		{
+			// Echec, on n'a pas de chemin
+		}
+	}
+}
+
+// OPTIMISATION POUR ENLEVER UN WP DU RESAU
+ti_flag_skip_next_wp = vrai
+if (i_flag_dont_use_grid)
+	ti_flag_skip_next_wp = faux
+else if (i_way_wp_nb < 2)
+	ti_flag_skip_next_wp = faux
+else if (WAY_LinkCapaGet(n_net, ao_way_wp[i_way_wp_nb - 1], ao_way_wp[i_way_wp_nb - 2]) & OBJ_Capa_0)
+	ti_flag_skip_next_wp = faux
+else if (! GST_Climb_IsReachableFrom(OBJ_PosGet(), @ao_way_wp[i_way_wp_nb - 2] OBJ_PosGet(), 0))
+	ti_flag_skip_next_wp = faux
+
+if (ti_flag_skip_next_wp)
+{
+//	tv_temp = @ao_way_wp[i_way_wp_nb - 1] OBJ_PosGet() - OBJ_PosGet()
+//	tv_temp.z = 0.0
+//	DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, tv_temp, color_rouge)	
+
+	i_way_wp_nb--
+	ao_way_wp[i_way_wp_nb] = nobody
+}
+
+if (i_way_wp_nb)
+{
+	o_next_wp = ao_way_wp[i_way_wp_nb - 1]
+}
+else
+	o_next_wp = nobody
+
+if (i_way_wp_nb > 1)
+	o_next_next_wp = ao_way_wp[i_way_wp_nb - 2]
+else
+	o_next_next_wp = nobody
+
+//// TEST ANTI DEMI-TOUR
+//if (o_next_wp && MATH_VecDotProduct(OBJ_SightGet(), @o_next_wp OBJ_PosGet() - OBJ_PosGet()) < 0.0)
+//{
+//	macro_clean_way
+//
+//	o_next_wp = GST_Climb_NearestSightReachableWaypoint(OBJ_PosGet(), n_net, i_my_territory_ID, OBJ_SightGet(), 0.0, all, OBJ_Capa_2, to_nearest_wp)
+//	if (!o_next_wp)
+//		o_next_wp = to_nearest_wp
+//}

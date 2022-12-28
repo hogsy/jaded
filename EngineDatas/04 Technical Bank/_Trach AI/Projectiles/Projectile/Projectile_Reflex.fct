@@ -1,0 +1,345 @@
+#include "Projectile_defs.var"
+
+int				num
+object		ao_obj[50]
+object		to_obj
+vector		tv_temp, tv_sight, tv_X, tv_Y, tv_pos
+int				ti_i, ti_spg2
+message	tm_msg
+messageid EVT_InfoSeen_ID
+float			tf_norm, tf_x, tf_y, tf_ratio
+object		to_monstre_marin, to_gao
+float			tf_coef_dyna_fire
+int				ti_AllDir 
+
+#define CRANEFLAMME_MUL 		4
+
+v_last_pos = OBJ_PosGet()
+
+// DEBUG
+//Proj_Dbg_Reflex()
+
+//============================[ Dynamite ]===================
+if(mi_Type == ProjType_Dynamite)
+{
+	if(i_dynam_allumee)
+	{
+		////////////////////
+//		EVENT_AddEventEnemy( C_ID_Dynamite, OBJ_Me(), C_EVENT_EnemyState_Fight)
+//		for(ti_i = 0; ti_i < C_ID_Marin_dernier; ti_i++)
+//		{
+//			to_obj = @"univ" ao_AllHumains[ti_i]
+//			if(!to_obj) continue
+//			if(to_obj == OBJ_Me()) continue
+//			EVT_InfoSeen_ID = EVENT_AddEventInfo(OBJ_Me(), to_obj, C_EVENT_INFOTYPE_SEEN)
+//			EVENT_Info_OutsideGridSet(EVT_InfoSeen_ID, faux)
+//			EVT_InfoSeen_ID = EVENT_AddEventInteret(OBJ_Me(), 0.1, 10.0, @to_obj OBJ_PosGet(), to_obj)
+//			EVENT_InteretStatusSet(EVT_InfoSeen_ID, C_EVENT_InteretStatusAttack)	
+//		}
+
+		tv_sight = OBJ_SightGet()
+		tv_pos = OBJ_PosGet() + (tv_sight * 0.1)
+		tv_sight *= 0.08
+
+		//--------( GFX : meche qui se consume )--------
+		mf_dyna_time -= MATH_FloatMin(mf_dyna_time, mf_dyna_timecoef * TIME_GetDt())
+		LIBGFX_DynamiteInFire( mi_dyna_gfx, tv_pos, tv_sight, mf_dyna_time / C_Time_Dyna)
+		OBJ_MorphFactorSet(0,1)
+		OBJ_MorphProgSet(0,	1.0 - (mf_dyna_time / C_Time_Dyna) )
+		
+		//--------( GFX : trainée de fumée )--------
+//		ti_i = mi_crane_gfx
+//		if (mi_crane_gfx == -1)
+//		{
+//			mi_crane_gfx_lastpos = tv_pos
+//			mi_crane_gfx_lastsight = OBJ_SightGet()
+//		}
+//		
+//		tv_sight = tv_pos - mi_crane_gfx_lastpos
+//		tf_norm = MATH_VecNorm( tv_sight )
+//		if (tf_norm)
+//			tv_sight /= tf_norm
+//		else
+//			tv_sight = OBJ_SightGet()
+//
+//		LIBGFX_ProjectileFire(mi_crane_gfx, tv_pos, OBJ_SightGet() / 20, tv_sight, mi_crane_gfx_lastpos, mi_crane_gfx_lastsight, 0.05 )
+//		mi_crane_gfx_lastpos = tv_pos
+//		mi_crane_gfx_lastsight = tv_sight
+//
+//		if (ti_i == -1)
+//		{
+//			GFX_Setf(mi_crane_gfx, 13008, 0.2 )             							// generation rate
+//			GFX_Setf(mi_crane_gfx, 13000, 0.2)              							// Growing speed min
+//			GFX_Setf(mi_crane_gfx, 13001, 0.4)              							// Growing speed max
+//			GFX_Setf(mi_crane_gfx, 13002, 0.01)              							// Friction Grow
+//		}
+//
+		
+		//--------( explosion )--------
+		if( mf_dyna_time <= 0.0 )
+		{
+			//----( Dynamite gobbée par le monstre marin )----
+			if( OBJ_CapaTest(OBJ_Capa_0) )
+			{
+				to_monstre_marin = @get_global o_monstre_marin
+				OBJ_CapaSet(none, OBJ_Capa_0)
+				Proj_Dynamite_Paf_Send(to_monstre_marin)
+			}
+			//----( Test ZDE Fight / ZDE Corps pour infliger des dommages aux voisins )----
+			else
+			{
+				COL_ColSetActivationSet(C_bit_zde_fight, none )
+				num = COL_ZDE_ZDEListGet( &ao_obj[0], C_zde_fight, C_zde_corps, all, none, Ci_Filter_IdentityFlag)
+				while(num)
+				{
+					to_obj = ao_obj[num - 1]
+					Proj_Dynamite_Paf_Send(to_obj)
+					num--
+				}
+				COL_ColSetActivationSet(none, C_bit_zde_fight)
+			}
+			
+			//----( enflamme la grille )-----
+			if (on_ground)
+				LIBGFX_GridFire(OBJ_PosGet(), vrai)
+			else
+			{
+				DBG_RenderVector( OBJ_PosGet(), -Cv_VerticalVector * Cf_grenade_range_pointblank, color_rouge )
+				to_gao = COL_RayObject_Dist( OBJ_PosGet(), -Cv_VerticalVector, Cf_grenade_range_pointblank, all, none, 0, COL_C_Ray_on_ColMap_Crossable )
+				if ( to_gao  )
+					LIBGFX_GridFire(OBJ_PosGet(), vrai)
+			}
+			
+			//----( explosion )-----
+			EVENT_AddEventSound(C_EVENT_FILTER_Tir, OBJ_Me(), 2.0, OBJ_PosGet(), 250.0)
+			LIBGFX_DynamiteExplosion(OBJ_PosGet())
+			AI_Execute( "Projectile_destroy" )
+		}
+	}
+}
+//============================[ Crane ]===================
+else if(mi_Type == ProjType_Crane)
+{
+	if (mi_crane_allume)
+	{
+		ti_i = mi_crane_gfx
+		tv_temp = OBJ_PosGet() 
+		tv_temp += OBJ_SightGet() * 0.22 * OBJ_ZoomGet()
+		if (mi_crane_gfx == -1)
+		{
+			mi_crane_gfx_lastpos = tv_temp
+			mi_crane_gfx_lastsight = OBJ_SightGet()
+		}
+		
+		tv_sight = tv_temp - mi_crane_gfx_lastpos
+		tf_norm = MATH_VecNorm( mi_crane_gfx_lastsight )
+		if (tf_norm)
+			tv_sight /= tf_norm
+		else
+			tv_sight = OBJ_SightGet()
+
+		LIBGFX_ProjectileFire(mi_crane_gfx, tv_temp, OBJ_SightGet() / 20, tv_sight, mi_crane_gfx_lastpos, mi_crane_gfx_lastsight, 0.05 )
+		mi_crane_gfx_lastpos = tv_temp
+		mi_crane_gfx_lastsight = tv_sight
+
+		if (ti_i == -1)
+		{
+			GFX_Setf(mi_crane_gfx, 13008, 0.2 )             							// generation rate
+			GFX_Setf(mi_crane_gfx, 13000, 0.15 * OBJ_ZoomGet() )            	// Growing speed min
+			GFX_Setf(mi_crane_gfx, 13001, 0.3 * OBJ_ZoomGet() )              	// Growing speed max
+			GFX_Setf(mi_crane_gfx, 13002, 0.01)              							// Friction Grow
+		}
+	}
+	else
+	{
+		if ( mi_crane_gfx != -1)
+		{	
+			GFX_Seti( mi_crane_gfx, 13106, 0)	
+			mi_crane_gfx = -1
+		}
+	}
+	
+	if( mi_crane_choc )
+	{
+		if (mi_crane_allume)
+		{
+//			mi_craneflamme_spg2 = SPG2_FireAdd( mv_ImpactPos - cvector (0, 0, 0.5), 0)
+//			SPG2_FireStateSet( mi_craneflamme_spg2, 1 )
+//			SPG2_FireFloatSet( mi_craneflamme_spg2, 0, 0.5 )
+//			SPG2_FireFloatSet( mi_craneflamme_spg2, 1, 1 )
+			//SPG2_FireFloatSet( mi_craneflamme_spg2, 2, 0 )
+	
+			LIBGFX_GridFire( mv_ImpactPos, vrai )
+
+			tv_Y = v_last_speed
+			tf_norm = MATH_VecNorm( tv_Y )
+			ti_AllDir = faux
+			if ( !tf_norm ) 
+			{	
+				if ( mo_Sender )
+				{
+					tv_Y = OBJ_PosGet() - @mo_Sender OBJ_PosGet()
+					tf_norm = MATH_VecNorm( tv_Y )
+				}
+				if ( !tf_norm )
+				{
+					ti_AllDir = vrai
+					tv_Y = cvector(1, 0, 0)
+					tf_norm = 1
+				}
+			}
+			tv_Y /= tf_norm
+			
+			tv_X = MATH_VecCrossProduct( tv_Y, mv_ImpactNormal  )
+			if ( MATH_VecNullEpsilon( tv_X ) )
+				tv_X = OBJ_HorizonGet()
+			else
+				MATH_VecSetNormalize( tv_X )
+				
+			tf_ratio = MATH_AbsFloat( MATH_VecDotProduct( mv_ImpactNormal, tv_Y) )
+			tf_ratio += MATH_RandFloat(-0.1,0.1)
+			
+			tv_pos = mv_ImpactPos + (mv_ImpactNormal * 0.2)
+			
+			MSG_SetNull(tm_msg)
+			tm_msg.msg_id = msg_id_grenadelaunch
+			tm_msg.msg_sender = OBJ_Me()
+			tm_msg.msg_vec2 = cvector(0, 0, -20)
+			tm_msg.msg_vec3 = cvector( 1, 1, 1)
+			
+			if ( ti_AllDir )
+			{
+//				to_obj = @get_crane_flamme OBJ_Duplicate( tv_pos )
+				to_obj = @get_Arme_Crane OBJ_Duplicate( tv_pos )
+				tm_msg.msg_vec1 = (mv_ImpactNormal  + tv_Y) * CRANEFLAMME_MUL
+				@to_obj MSG_Send( tm_msg )
+				
+//				to_obj = @get_crane_flamme OBJ_Duplicate( tv_pos )
+				to_obj = @get_Arme_Crane OBJ_Duplicate( tv_pos )
+				tm_msg.msg_vec1 = (mv_ImpactNormal  - tv_Y) * CRANEFLAMME_MUL
+				@to_obj MSG_Send( tm_msg )
+				
+//				to_obj = @get_crane_flamme OBJ_Duplicate( tv_pos )
+				to_obj = @get_Arme_Crane OBJ_Duplicate( tv_pos )
+				tm_msg.msg_vec1 = (mv_ImpactNormal  + tv_X ) * CRANEFLAMME_MUL
+				@to_obj MSG_Send( tm_msg )
+				
+//				to_obj = @get_crane_flamme OBJ_Duplicate( tv_pos )
+				to_obj = @get_Arme_Crane OBJ_Duplicate( tv_pos )
+				tm_msg.msg_vec1 = (mv_ImpactNormal  - tv_X ) * CRANEFLAMME_MUL
+				@to_obj MSG_Send( tm_msg )
+			}
+			else
+			{
+//				to_obj = @get_crane_flamme OBJ_Duplicate( tv_pos )
+				to_obj = @get_Arme_Crane OBJ_Duplicate( tv_pos )
+				tm_msg.msg_vec1 = tv_Y * 5 * CRANEFLAMME_MUL
+				@to_obj MSG_Send( tm_msg )
+				
+//				to_obj = @get_crane_flamme OBJ_Duplicate( tv_pos )
+				to_obj = @get_Arme_Crane OBJ_Duplicate( tv_pos )
+				tm_msg.msg_vec1 = ( (tf_ratio * tv_Y) + ((1 - tf_ratio) * tv_X) ) * 3 * CRANEFLAMME_MUL
+				@to_obj MSG_Send( tm_msg )
+				
+//				to_obj = @get_crane_flamme OBJ_Duplicate( tv_pos )
+				to_obj = @get_Arme_Crane OBJ_Duplicate( tv_pos )
+				tm_msg.msg_vec1 = ( (tf_ratio * tv_Y) - ((1 - tf_ratio) * tv_X) ) * 3 * CRANEFLAMME_MUL
+				@to_obj MSG_Send( tm_msg )
+			}
+
+			mf_craneflamme_timeleft = 5.0
+			f_time_blindage = TIME_Get()
+			AI_TrackChange( 0, "Projectile_waitendoffire" )
+			AI_TrackCurStop()
+		}
+		else
+		{
+			AI_Execute( "Projectile_destroy" )
+		}
+	}
+	
+}
+//============================[ Crane flamme ]===================
+else if (mi_Type == ProjType_CraneFlamme )
+{
+	if (mi_crane_allume)
+	{
+		ti_i = mi_crane_gfx
+		tv_temp = OBJ_PosGet() 
+		if (mi_crane_gfx == -1)
+		{
+			mi_crane_gfx_lastpos = tv_temp
+			mi_crane_gfx_lastsight = OBJ_SightGet()
+		}
+		
+		tv_sight = tv_temp - mi_crane_gfx_lastpos
+		tf_norm = MATH_VecNorm( mi_crane_gfx_lastsight )
+		if (tf_norm)
+			tv_sight /= tf_norm
+		else
+			tv_sight = OBJ_SightGet()
+
+		LIBGFX_ProjectileFire(mi_crane_gfx, tv_temp, tv_sight / 20, tv_sight, mi_crane_gfx_lastpos, mi_crane_gfx_lastsight, 1.0 )
+		mi_crane_gfx_lastpos = tv_temp
+		mi_crane_gfx_lastsight = tv_sight
+		
+		EVENT_AddEventFireSphere( OBJ_Me(), tv_temp, 0.5)
+
+		if (ti_i == -1)
+		{
+			GFX_Seti(mi_crane_gfx, 13100, 100)               							// Buffer number of sprite
+			GFX_Setf(mi_crane_gfx, 13003, 0.8)               							// Time fase 1
+			GFX_Setf(mi_crane_gfx, 13004, 0.2)              								// Time fase 2
+			GFX_Setf(mi_crane_gfx, 13012, 0)              								// Time random
+			GFX_Setf(mi_crane_gfx, 13008, 0.1 )             							// generation rate
+			GFX_Setf(mi_crane_gfx, 13000, 0.5 )              							// Growing speed min
+			GFX_Setf(mi_crane_gfx, 13001, 1)              							// Growing speed max
+			GFX_Setf(mi_crane_gfx, 13002, 0.05)              							// Friction Grow
+		}
+	}
+	
+	for (ti_spg2 = 0; ti_spg2 < mi_craneflamme_spg2_nb; ti_spg2++ )
+	{
+		if ( mai_craneflamme_spg2[ ti_spg2 ] == -1)
+			continue
+		maf_craneflamme_spg2_timer[ ti_spg2 ] -= TIME_GetDt()
+		if ( maf_craneflamme_spg2_timer[ ti_spg2 ] < 0 )
+		{
+			SPG2_FireStateSet(mai_craneflamme_spg2[ ti_spg2 ],2)
+			mai_craneflamme_spg2[ ti_spg2 ] = -1
+		}
+	}
+
+	if(mi_crane_allume && mi_craneflamme_splof)
+	{
+		mi_craneflamme_splof = 0
+		tv_temp = OBJ_PosGet() - mv_craneflamme_spot
+		tf_norm = MATH_VecDotProduct(tv_temp, tv_temp)
+		if (tf_norm > mf_craneflamme_distmin )
+		{
+			LIBGFX_GridFire( OBJ_PosGet(), vrai )
+			
+			mf_craneflamme_distmin = 0.25 * 0.25
+						
+			tv_X = MATH_VecCrossProduct( mv_ImpactNormal, tv_sight )
+			if (MATH_VecNull( tv_X ))
+				MATH_VecSetNormalize( tv_X )
+			else
+				tv_X = OBJ_HorizonGet()
+			
+			tv_pos = mv_ImpactPos - (0.1 * mv_ImpactNormal)
+			tv_pos += MATH_RandFloat( -0.2, 0.2 ) * tv_X
+						
+			ti_spg2 = SPG2_FireAdd( tv_pos, 0)
+			SPG2_FireStateSet( ti_spg2, 1 )
+			SPG2_FireFloatSet( ti_spg2, 0, 0.25 )
+			SPG2_FireFloatSet( ti_spg2, 2, 0.3 )
+			
+			mai_craneflamme_spg2[ mi_craneflamme_spg2_nb ] = ti_spg2
+			maf_craneflamme_spg2_timer[ mi_craneflamme_spg2_nb ] = 4
+			mi_craneflamme_spg2_nb++
+			mv_craneflamme_spot = mv_ImpactPos
+		}
+	}
+}
+

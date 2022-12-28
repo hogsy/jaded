@@ -1,0 +1,355 @@
+//----------------------------------------------------------------------------------------------------
+// INCLUDE
+//----------------------------------------------------------------------------------------------------
+#include "SM_Constants.var"
+
+
+//----------------------------------------------------------------------------------------------------
+// LOCAL VAR
+//----------------------------------------------------------------------------------------------------
+messageid 		tmid_signal
+int					ti_msg 
+int					ti_state
+int 				ti_trig, ti_ld_stalk
+int 				ti_ld_wait, ti_ld_fight, ti_ld_bigfight, ti_ld_neutral, ti_ld_death, ti_ld_injured, ti_ld_IsPresent
+object			to_obj
+int 				ti_wait, ti_fight, ti_bigfight, ti_neutral, ti_death, ti_injured, ti_stalk 
+int					tai_ld_jingle[SND_Cte_MusJingle_Nb]
+int					tai_jingle[SND_Cte_MusJingle_Nb]
+int					ti_RqKit
+vector			tv_temp
+int					ti_silence, ti_ld_silence
+
+
+
+//----------------------------------------------------------------------------------------------------
+// CODE
+//----------------------------------------------------------------------------------------------------
+// init counters
+//------------------
+for(ti_ld_wait = 0; ti_ld_wait <SND_Cte_MusJingle_Nb; ti_ld_wait++)
+{
+	tai_ld_jingle[ti_ld_wait] = 0
+	tai_jingle[ti_ld_wait] = 0
+}
+
+ti_ld_wait = 0
+ti_ld_fight = 0	
+ti_ld_bigfight = 0	
+ti_ld_neutral = 0
+ti_ld_death = 0
+ti_ld_injured = 0
+ti_ld_IsPresent = 0
+ti_ld_stalk = 0
+ti_ld_silence = 0
+
+ti_wait = 0
+ti_fight = 0	
+ti_bigfight = 0	
+ti_neutral = 0
+ti_death = 0
+ti_injured = 0
+ti_stalk = 0
+ti_silence = 0
+
+ti_RqKit  = -1
+mi_VolModeAuto = 1
+
+// count all signals
+//------------------------
+ti_msg = -1
+for(tmid_signal = MSG_GlobalScan(C_EVENT_TYPE_Signal, &ti_msg); MSG_GlobalIsValid(tmid_signal); tmid_signal = MSG_GlobalScan(C_EVENT_TYPE_Signal, &ti_msg) )
+{
+	ti_state = SIG_TypeGet( tmid_signal )
+	to_obj = SIG_GaoGet( tmid_signal )
+
+	//////////////////////////////
+	if( ti_state  == SIG_C_SETMUSVOL )
+	{
+		dbg_print(DBG_LV2, "SetMusVol", to_obj)
+		mi_VolModeAuto = 0
+		tv_temp = SIG_Ext3Get(tmid_signal )
+		mf_VolTimer = tv_temp.y
+		continue
+	}
+	
+	
+	//////////////////////////////
+	if( ti_state  == SIG_C_ACTIVE_MUS_SCRIPT_MODE )
+	{
+		dbg_print(DBG_LV1, "enter script mode", to_obj)
+
+		mi_ScriptSoundIndex = SIG_Ext1Get( tmid_signal )
+		mi_ScriptTransSoundIndex = SIG_Ext2Get( tmid_signal )
+		tv_temp = SIG_Ext3Get(tmid_signal )
+		mf_ScriptDelay = tv_temp.x
+		mi_ScriptMode = Cte_ScriptState_Play
+		
+		AI_TrackStop(1)
+		AI_TrackStop(2)
+		AI_TrackStop(3)
+		AI_TrackCurChangeNow("SM_ScriptMode")
+	}
+	
+
+	//////////////////////////////
+	if( (ti_state >= SIG_C_MUS_KIT_0) && (ti_state <= SIG_C_MUS_KIT_9) )
+	{
+		ti_RqKit = ti_state - SIG_C_MUS_KIT_0
+		continue
+	}
+	
+	/////////////////////////////
+	if(ti_state & SIG_C_TYPE_LOCKMASK)
+	{
+		ti_state &= ~SIG_C_TYPE_LOCKMASK
+		if(mi_counter_locked == 0)
+			mi_counter_locked = 1
+	}
+	else if(ti_state & SIG_C_TYPE_UNLOCKMASK)
+	{
+		ti_state &= ~SIG_C_TYPE_UNLOCKMASK
+		mi_counter_locked = 0
+		dbg_printInt(DBG_LV1, "unlock detected (curr phase) ", SND_M_GetMusPhase)
+	}
+
+	
+	/////////////////////////////
+	switch(ti_state)
+	{
+	case SIG_C_TYPE_SILENCE	: 
+		ti_silence++ 
+		dbg_print(DBG_LV2, "silence signal", to_obj)
+		break
+	case SIG_C_TYPE_STRESS	: 
+		ti_wait++ 
+		dbg_print(DBG_LV2, "stress signal", to_obj)
+		break
+	case SIG_C_TYPE_FIGHT : 
+		ti_fight++ 
+		dbg_print(DBG_LV2, "fight signal", to_obj)
+		break	
+	case SIG_C_TYPE_BIGFIGHT : 
+		ti_bigfight++ 
+		dbg_print(DBG_LV2, "bigfight signal", to_obj)
+		break	
+	case SIG_C_TYPE_COOL : 
+		ti_neutral++ 
+		dbg_print(DBG_LV2, "cool signal", to_obj)
+		break
+	case SIG_C_TYPE_MORT : 
+		ti_death++ 
+		mi_counter_locked = 0 // force unlock
+		dbg_print(DBG_LV2, "mort signal", to_obj)
+		break
+	case SIG_C_TYPE_INJURE : 
+		ti_injured++ 	
+		if(i_InjureIsAlwaysUsed)
+			mi_counter_locked = 0 // force unlock
+		dbg_print(DBG_LV2, "injure signal", to_obj)
+		break
+	case SIG_C_TYPE_STALK : 
+		ti_stalk++ 	
+		dbg_print(DBG_LV2, "stalk signal", to_obj)
+		break
+	case SIG_C_TYPE_JINGLE_1 :
+	case SIG_C_TYPE_JINGLE_2 :
+	case SIG_C_TYPE_JINGLE_3 :
+	case SIG_C_TYPE_JINGLE_4 :
+	case SIG_C_TYPE_JINGLE_5 :
+	case SIG_C_TYPE_JINGLE_6 :
+	case SIG_C_TYPE_JINGLE_7 :
+	case SIG_C_TYPE_JINGLE_8 :
+	case SIG_C_TYPE_JINGLE_9 :
+		tai_jingle[ti_state - SIG_C_TYPE_JINGLE_1 + 1]++
+		dbg_printInt(DBG_LV2, "jingle signal", ti_state - SIG_C_TYPE_JINGLE_1 + 1) 
+		break
+
+	//
+
+	case SIG_C_TYPE_LD_SILENCE	: 
+		ti_ld_silence++ 
+		dbg_print(DBG_LV2, "ld-silence signal", to_obj)
+		break
+	case SIG_C_TYPE_LD_STRESS	: 
+		ti_ld_wait++  
+		dbg_print(DBG_LV2, "ld-stress signal", to_obj) 
+		break
+	case SIG_C_TYPE_LD_FIGHT : 
+		ti_ld_fight++ 
+		dbg_print(DBG_LV2, "ld-fight signal", to_obj) 
+		break		
+	case SIG_C_TYPE_LD_BIGFIGHT : 
+		ti_ld_bigfight++ 
+		dbg_print(DBG_LV2, "ld-bigfight signal", to_obj) 
+		break		
+	case SIG_C_TYPE_LD_COOL : 
+		ti_ld_neutral++ 
+		dbg_print(DBG_LV2, "ld-cool signal", to_obj) 
+		break
+	case SIG_C_TYPE_LD_MORT : 
+		ti_ld_death++ 
+		mi_counter_locked = 0 // force unlock
+		dbg_print(DBG_LV2, "ld-mort signal", to_obj) 
+		break
+	case SIG_C_TYPE_LD_INJURE : 
+		ti_ld_injured++ 	
+		if(i_InjureIsAlwaysUsed)
+			mi_counter_locked = 0 // force unlock
+		dbg_print(DBG_LV2, "ld-injure signal", to_obj) 
+		break
+	case SIG_C_TYPE_LD_STALK : 
+		ti_ld_stalk++ 	
+		dbg_print(DBG_LV2, "ld-stalk signal", to_obj) 
+		break
+	//
+	case SIG_C_TYPE_LD_JINGLE_1 :
+	case SIG_C_TYPE_LD_JINGLE_2 :
+	case SIG_C_TYPE_LD_JINGLE_3 :
+	case SIG_C_TYPE_LD_JINGLE_4 :
+	case SIG_C_TYPE_LD_JINGLE_5 :
+	case SIG_C_TYPE_LD_JINGLE_6 :
+	case SIG_C_TYPE_LD_JINGLE_7 :
+	case SIG_C_TYPE_LD_JINGLE_8 :
+	case SIG_C_TYPE_LD_JINGLE_9 :
+		tai_ld_jingle[ti_state - SIG_C_TYPE_LD_JINGLE_1 + 1]++
+		mi_counter_locked = 0 // force unlock
+		dbg_printInt(DBG_LV2, "ld-jingle signal", ti_state - SIG_C_TYPE_LD_JINGLE_1 + 1) 
+		break
+
+	default:	
+		dbg_print(DBG_LV2, "unkonwn signal", to_obj) 
+		break
+	}		
+}
+
+	
+if( ti_RqKit  != -1 )
+	mi_RqKit = ti_RqKit 
+
+// lock (can not swap if jingle is currently played)
+//--------------------------------------------------------------------
+if( mi_JingleIdx != -1 ) return
+
+if( (ti_injured + ti_ld_injured) && i_InjureIsAlwaysUsed)
+{
+	mi_counter_locked = 0
+	ti_injured = 1
+	ti_ld_injured = 1
+}
+
+if(mi_counter_locked > 1) return
+
+if(mi_counter_locked)
+{
+	dbg_printInt(DBG_LV1, "lock detected (prev phase) ", SND_M_GetMusPhase)
+	mi_counter_locked  = 2 // 1st time we want to lock it
+}
+
+
+// get ld signals ?
+//-----------------------
+if(!ti_death)
+{
+	if( ti_ld_stalk + ti_ld_wait + ti_ld_fight  + ti_ld_bigfight + ti_ld_neutral + ti_ld_death + ti_ld_injured + ti_ld_silence )
+	{
+		dbg_print(DBG_LV2, "SIG_Generator detected", nobody)
+		ti_wait = ti_ld_wait
+		ti_fight = ti_ld_fight
+		ti_bigfight = ti_ld_bigfight
+		ti_neutral = ti_ld_neutral
+		ti_death = ti_ld_death
+		ti_injured = ti_ld_injured
+		ti_stalk = ti_ld_stalk
+		ti_silence = ti_ld_silence
+	}
+}
+
+// check jingle
+//-------------------
+for(ti_ld_wait = 0; ti_ld_wait <SND_Cte_MusJingle_Nb; ti_ld_wait++)
+{
+	if(tai_ld_jingle[ti_ld_wait])
+	{
+		dbg_print(DBG_LV1, "SIG_Generator jingle detected", nobody)
+		tai_jingle[ti_ld_wait] = tai_ld_jingle[ti_ld_wait]
+	}
+}
+
+mi_wait = ti_wait
+mi_fight = ti_fight
+mi_bigfight = ti_bigfight
+mi_neutral = ti_neutral
+mi_death = ti_death
+mi_injured = ti_injured
+mi_stalk = ti_stalk
+mi_silence = ti_silence
+
+// force neutral if there is no other signal
+//-------------------------------------------------------
+if((mi_wait+mi_fight+mi_death+mi_injured+mi_stalk) == 0)
+{
+	dbg_print(DBG_LV2, "neutral detected", nobody)
+	mi_neutral = 1
+}
+
+
+// now choose the phase  = fct(counters)
+//---------------------------------------------------------
+if (	mi_death )
+{
+	dbg_print(DBG_LV1, "Death detected", nobody)
+	
+	mi_SchedulerState  = Cte_State_Jingle_Play
+	mi_JingleIdx= SND_M_GetJingleIdx(0)
+	mi_JingleSubIdx = 0
+	@"univ" SND_gi_GlobalCommand |= SND_Cte_exec_DeathFadeOut
+	SND_M_SetGameMode(SND_Cte_ModeDying)
+	SND_M_SetGameSubMode(0)
+}
+else
+{
+	for(ti_trig=1; ti_trig<SND_Cte_MusJingle_Nb; ti_trig++)
+	{
+		if( mai_JingleDone[ti_trig] ) continue // never play twice the same jingle into a map
+		
+		ti_state = tai_jingle[ti_trig]
+		
+		if( AI_TriggerIsValid(at_JingleTrigger[ti_trig]) && call_trigger(at_JingleTrigger[ti_trig] ) )
+		{
+			if( AI_TriggerIsValid(at_AndJingleTrigger[ti_trig]) )
+			{
+				if(  call_trigger(at_AndJingleTrigger[ti_trig] ) )
+					ti_state = 1	// there is both trigger and there are true
+			}
+			else
+			{
+				ti_state = 1 // there is only one trig, and it is true
+			}
+		}
+		
+		if( ti_state == 0 ) continue
+		
+		dbg_printInt(DBG_LV1, "jingle detected : ", ti_trig)
+			
+		mi_SchedulerState  = Cte_State_Jingle_Play
+		mai_JingleDone[ti_trig] = 1
+		mi_JingleIdx= SND_M_GetJingleIdx(ti_trig)
+		mi_JingleSubIdx = ti_trig
+		
+		if(ai_BeginSoundIndex[ti_trig] >= 0 )
+		{
+			// play jingle transition
+			ti_trig = ai_BeginSoundIndex[ti_trig] 
+			
+			if( ti_trig <= SND_Cte_MusicSnkSize )
+			{
+				SND_Play(mai_MusicInstance[ti_trig])
+				SND_Play(mai_MusicInstance[ti_trig+1])
+			}
+		}
+			
+		break		
+	}
+}
+

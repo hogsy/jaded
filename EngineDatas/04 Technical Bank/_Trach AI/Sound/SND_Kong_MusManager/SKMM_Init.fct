@@ -1,0 +1,38 @@
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#include "SKMM_Constant.var"
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+int ti
+
+#ifndef _FINAL_
+if( ! OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Sound) )
+{
+	DBG_Error("THIS IA MUST HAVE A SOUND BANK")
+}
+#endif
+
+for(ti=0; ti<SKMM_Cte_MaxBankSize; ti++)
+{
+	mai_Instance[ti] = SND_Request(ti, 0)
+}
+//
+mi_CurrentLine = 0 //@"univ" SND_SKMM_mi_CurrentLine // 0
+mi_CurrentActiveTriggerExec = -1 //@"univ" SND_SKMM_mi_CurrentActiveTriggerExec //-1
+
+//
+mi_Death = 0
+mi_DeathInstance = -1
+mi_CurrentPlayingInstance = -1
+mf_ChainDelay = 0.0
+//
+mi_AnnSignal = 0
+mi_MashingSignal = 0
+mi_NewSignal = 0
+//
+mf_IA_VolRq = 1.0
+mi_VolState = -1
+
+AI_TrackChange(0,"SKMM_ScanMessage")
+AI_TrackChange(1,"SKMM_Loop")
+AI_TrackChange(2,"SKMM_Volume")

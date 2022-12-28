@@ -1,0 +1,110 @@
+float		f_ElapsedTime
+float		f_CurrentTime
+vector	v_NewVelocity
+vector 	v_NewPos
+
+f_CurrentTime = TIME_Get()
+
+f_ElapsedTime =  f_CurrentTime - mf_StartTime
+
+if ( f_ElapsedTime >= mf_GeneralDuration && !mi_IsPersistent )
+{
+	if ( f_ElapsedTime >= mf_GeneralDuration + mf_FadeOutTime )
+	{
+		GFX_Del( mi_GFX_Key )
+	
+		// salut la visite
+		if ( mi_IsChild && !i_no_death)
+		{
+			OBJ_Destroy()
+		}
+	
+		AI_TrackCurStop()
+	}
+}
+else	// addition of new particle with dynamic at creation properties
+{
+	if ( f_CurrentTime - mf_LastCreationTime >= mf_TimeBetweenSpriteCreation )
+	{
+		if ( mi_PositionOffsetModifierType == 1 )
+		{
+			v_NewPos.x = fnf_Smoke_SinOfTime( f_ElapsedTime, mf_XSinePhase, mf_XSineFreq, mv_PositionMax.x, mv_PositionMin.x )
+			v_NewPos.y = fnf_Smoke_SinOfTime( f_ElapsedTime, mf_YSinePhase, mf_YSineFreq, mv_PositionMax.y, mv_PositionMin.y )
+			v_NewPos.z = fnf_Smoke_SinOfTime( f_ElapsedTime, mf_ZSinePhase, mf_ZSineFreq, mv_PositionMax.z, mv_PositionMin.z )
+		}
+		else if ( mi_PositionOffsetModifierType == 2 )
+		{
+			v_NewPos.x = MATH_RandFloat( mv_PositionMin.x, mv_PositionMax.x )
+			v_NewPos.y = MATH_RandFloat( mv_PositionMin.y, mv_PositionMax.y )
+			v_NewPos.z = MATH_RandFloat( mv_PositionMin.z, mv_PositionMax.z )
+		}
+		else	// None
+		{
+			v_NewPos.x = 0.0
+			v_NewPos.y = 0.0
+			v_NewPos.z = 0.0
+		}
+	
+		if ( mo_SourceObject && !( OBJ_HasBeenKilled( mo_SourceObject ) ) && @mo_SourceObject OBJ_IsValidGAO() )
+		{
+			//ADDED SURESH
+			//this makes the GFX follow the source after initilization, not sure if it will break anything for now....
+			OBJ_PosSet(@mo_SourceObject OBJ_PosGet() + v_NewPos)  
+			GFX_Setv( mi_GFX_Key, 6200, @mo_SourceObject OBJ_PosGet() + v_NewPos )
+		}
+		else
+		{
+			GFX_Setv( mi_GFX_Key, 6200, OBJ_PosGet() + v_NewPos )
+		}
+	
+		if ( mi_SmokeModifierType == 1 )
+		{
+			v_NewVelocity.x = fnf_Smoke_SinOfTime( f_ElapsedTime, mf_XSinePhase, mf_XSineFreq, mv_SpeedMax.x, mv_SpeedMin.x )
+			v_NewVelocity.y = fnf_Smoke_SinOfTime( f_ElapsedTime, mf_YSinePhase, mf_YSineFreq, mv_SpeedMax.y, mv_SpeedMin.y )
+			v_NewVelocity.z = fnf_Smoke_SinOfTime( f_ElapsedTime, mf_ZSinePhase, mf_ZSineFreq, mv_SpeedMax.z, mv_SpeedMin.z )
+		}
+		else
+		{
+			v_NewVelocity.x = MATH_RandFloat( mv_SpeedMin.x, mv_SpeedMax.x )
+			v_NewVelocity.y = MATH_RandFloat( mv_SpeedMin.y, mv_SpeedMax.y )
+			v_NewVelocity.z = MATH_RandFloat( mv_SpeedMin.z, mv_SpeedMax.z )
+		}
+		
+		if ( mi_NumberOfDynamicMaterials > 0 )
+		{
+			int i_MatToChoose
+			int i_NumberMatsSeen
+			int i_NumberMatsChecked
+
+			i_NumberMatsChecked	= 0 			 
+			i_NumberMatsSeen		= 0
+			i_MatToChoose 			= MATH_RandInt( 0, mi_NumberOfDynamicMaterials )
+					
+			while ( i_NumberMatsChecked < mi_NumberOfDynamicMaterials )
+			{
+				if ( mi_DynamicMaterialIndex[i_NumberMatsChecked] > -1 )
+				{
+					if ( i_NumberMatsSeen == i_MatToChoose )
+					{
+						GFX_MaterialSet( mi_GFX_Key, mo_Material, mi_DynamicMaterialIndex[i_NumberMatsChecked] )
+					
+						// break the loop once we are done choosing a new random mat
+						i_NumberMatsChecked = mi_NumberOfDynamicMaterials
+						
+						break
+					}
+					
+					i_NumberMatsSeen++
+				}
+
+				i_NumberMatsChecked++
+			}
+		}
+		
+		GFX_Setv( mi_GFX_Key, 6201, v_NewVelocity )
+		
+		GFX_Seti( mi_GFX_Key, 6103, 0 )
+		
+		mf_LastCreationTime = TIME_Get()
+	}
+}

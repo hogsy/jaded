@@ -1,0 +1,108 @@
+#include "CR_defines.var"
+
+object			to_best_target
+
+message		tmsg_trigger
+
+messageid		tmid_vision
+
+int					ti_regle
+
+to_best_target = nobody
+
+
+// TRIGGER ATTAQUE ===============================================================
+if( ! to_best_target && AI_TriggerIsValid(trig_attaque) && call_trigger(trig_attaque) )
+{
+	if( ! i_trig_attack_type ) 		// GAO5
+	{
+		ti_regle = Ci_regle_trigger_gao5
+		tmsg_trigger = AI_TriggerGetMsg(trig_attaque)
+		to_best_target = tmsg_trigger.msg_gao5
+		Check_This_Gao5(to_best_target)
+	}
+	else		// GAO specifique
+	{
+		ti_regle = Ci_regle_trigger_gao_spec
+		to_best_target = o_attack_gao
+	}
+	if( ! CR_Target_Check(to_best_target) )
+		to_best_target = nobody
+}
+
+// PAF DU MAIN ACTOR ==============================================================
+if( ! to_best_target && i_paf_main_actor_flag )
+{
+	to_best_target = o_main_actor
+	ti_regle = Ci_regle_paf_main_actor
+	if( ! CR_Target_Check(to_best_target) )
+		to_best_target = nobody
+}
+
+// PAF ===========================================================================
+if( ! to_best_target && o_paf_actor )
+{
+	to_best_target = o_paf_actor
+	ti_regle = Ci_regle_paf_actor
+	if( ! CR_Target_Check(to_best_target) )
+		to_best_target = nobody
+}
+
+// PAF RESEAU ===========================================================================
+if( ! to_best_target && o_net_paf_actor )
+{
+	to_best_target = o_net_paf_actor
+	ti_regle = Ci_regle_net_paf_actor
+	if( ! CR_Target_Check(to_best_target) )
+		to_best_target = nobody
+}
+
+
+// FORCE ATTACK TARGET ==========================================================
+if( ! to_best_target && o_DBG_force_attack_gao && CR_Perceived_Actor_Check(o_DBG_force_attack_gao, tmid_vision) ) //&& f_time_start_etat > 0.1 )
+{
+	to_best_target = o_DBG_force_attack_gao
+	ti_regle = Ci_regle_dbg_force_attack
+	if( ! CR_Target_Check(to_best_target) )
+		to_best_target = nobody
+}
+
+
+// ========================================================================================================
+// INTERET SUR LA CIBLE CHOISIE 
+// ========================================================================================================
+if( to_best_target && CR_Target_Change_Enabled(to_best_target) )
+{
+	if( i_DBG_trace_etat )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : cible principale trouvée : ")
+		DBG_TraceObject(to_best_target)
+		switch( ti_regle )
+		{
+			case Ci_regle_trigger_gao5 :
+				DBG_TraceString(" (trigger - gao5)")
+				break
+			case Ci_regle_trigger_gao_spec :
+				DBG_TraceString(" (trigger - gao specifique)")
+				break
+			case Ci_regle_paf_main_actor :
+				DBG_TraceString(" (paf du main actor)")
+				break
+			case Ci_regle_paf_actor :
+				DBG_TraceString(" (paf actor)")
+				break
+			case Ci_regle_net_paf_actor :
+				DBG_TraceString(" (NET paf actor)")
+				break
+			case Ci_regle_dbg_force_attack :
+				DBG_TraceString(" (dbg force attack)")
+				break
+		}
+		DBG_TraceEOL()
+	}
+	
+	CR_Perceived_Actor_Add(to_best_target, tmid_vision)
+	CR_Interet_Update(mid_best_interet, C_EVENT_InteretStatusAttack, to_best_target, tmid_vision)
+}
+

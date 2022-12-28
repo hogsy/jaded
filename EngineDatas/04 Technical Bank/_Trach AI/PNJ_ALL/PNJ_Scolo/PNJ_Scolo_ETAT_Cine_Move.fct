@@ -1,0 +1,71 @@
+#include "PNJ_Scolo_defines.var"
+
+int			ti_i
+int			ti_flag_ok
+int			ti_best_perceived_index
+
+float		tf_dist
+float		tf_best_dist
+
+vector	tv_temp
+
+if (i_flag_sortie_etat)
+{
+	i_flag_sortie_etat = faux
+
+//	if (@ao_net_wp[i_net_wp_nb - 1] OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Generated))
+//	{
+//		i_net_wp_nb--
+//		@ao_net_wp[i_net_wp_nb] OBJ_Destroy()
+//		ao_net_wp[i_net_wp_nb] = nobody
+//	}
+
+	return
+}
+
+
+if (i_etat_courant != ETAT_Cine_Move)
+{
+	// INTIALISATION
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Cine_Move
+	
+	if (fct_last_etat)
+	{
+		i_flag_sortie_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	fct_last_etat = "PNJ_Scolo_ETAT_Cine_Move"
+	
+	i_etat_phase = 0
+
+//	if (type == Ci_TYPE_FIXE)
+//	{
+//		tv_temp = @ao_net_wp[i_net_wp_nb - 1] OBJ_PosGet()
+//		tv_temp -= @ao_net_wp[i_net_wp_nb - 2] OBJ_PosGet()
+//		MATH_VecSetNormalize(tv_temp)
+//		tv_temp *= OBJ_ZoomGet() * 1.5
+//		ao_net_wp[i_net_wp_nb] = @get_WP OBJ_Duplicate(@ao_net_wp[i_net_wp_nb - 1] OBJ_PosGet() + tv_temp)
+//		@ao_net_wp[i_net_wp_nb] OBJ_SightGeneralSet(tv_temp, Cv_VerticalVector)
+//		i_net_wp_nb++
+//	}
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+	
+// ANALYSE ===============================================================
+
+// COMPORTEMENT =========================================================
+
+// JE VAIS AU BOUT DU RESEAU
+f_move_speed = MATH_FloatBlend(f_move_speed, move_speed, 6.0 * TIME_GetDt())			
+if (i_flag_net_end)
+	macro_change_etat("PNJ_Scolo_ETAT_Cine_GetUp")
+
+f_move_length = f_move_speed * TIME_GetDt()
+PNJ_Scolo_Position_Set()

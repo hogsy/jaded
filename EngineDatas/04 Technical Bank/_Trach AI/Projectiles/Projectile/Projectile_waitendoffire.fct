@@ -1,0 +1,47 @@
+#include "Projectile_defs.var"
+
+int ti_spg2
+int	ti_finished
+
+//---------[ crane ]---------
+if (mi_Type == ProjType_Crane )
+{
+	if(crane_blindage && TIME_Elapsed(f_time_blindage, crane_blindage_timer))
+	{
+		LIBGFX_GridFire(@crane_blindage OBJ_PosGet(), vrai)
+	}
+	else if(crane_blindage)
+	{
+		OBJ_FlagInvisibleSet(vrai)
+		return
+	}
+	
+//	mf_craneflamme_timeleft -= TIME_GetDt()
+//	if (mf_craneflamme_timeleft > 0)
+//		return
+//	SPG2_FireStateSet(mi_craneflamme_spg2,2)
+}
+//--------[ flamme du crane ]--------
+else if (mi_Type == ProjType_CraneFlamme )
+{
+	ti_finished = vrai
+	for (ti_spg2 = 0; ti_spg2 < mi_craneflamme_spg2_nb; ti_spg2++ )
+	{
+		if ( mai_craneflamme_spg2[ ti_spg2 ] == -1)
+			continue
+		maf_craneflamme_spg2_timer[ ti_spg2 ] -= TIME_GetDt()
+		if ( maf_craneflamme_spg2_timer[ ti_spg2 ] < 0 )
+		{
+			SPG2_FireStateSet(mai_craneflamme_spg2[ ti_spg2 ],2)
+			mai_craneflamme_spg2[ ti_spg2 ] = -1
+		}
+		else
+			ti_finished = faux
+	}
+	if ( !ti_finished )
+		return
+}
+
+	
+//SPG2_FireStateSet(mi_craneflamme_spg2,2)
+AI_Execute( "Projectile_destroy")

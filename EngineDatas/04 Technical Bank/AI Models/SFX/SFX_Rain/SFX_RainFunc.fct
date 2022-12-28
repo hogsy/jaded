@@ -1,0 +1,60 @@
+vector CameraPos
+object TheCamera
+color ConstantSet
+float ScaleU
+float OoScaleU
+
+
+TheCamera = VIEW_GetObject(0)
+
+CameraPos = @TheCamera OBJ_PosGet()
+
+if (Intensity <= 0.0) 
+{
+	CameraPos.z -= 100000
+	Intensity  = 0.0
+} 
+
+if (Intensity >= 1.0)  Intensity = 1.0
+
+if(get_SFX_rain == OBJ_Me() || OBJ_CapaTest(OBJ_Capa_0))
+{
+	if(@get_global ENV_pluie_interdit) 
+	{
+		Intensity = 0.0
+		CameraPos.z -= 100000
+	}
+	
+	OBJ_PosSet(CameraPos)
+}
+
+if(des_i_computeUV)
+{
+	ScaleU = 4.0 - (Intensity * 3.5)
+	MAT_MT_SetUV(0,0, 3, ScaleU)
+	OoScaleU = 1.0/ScaleU 
+	speedU -= MATH_FloatRound(speedU - ( OoScaleU * 0.5),OoScaleU )
+	MAT_MT_SetUV(0,0, 1, speedU )
+	speedU += TIME_GetDt()*4*((Intensity * 0.75) + 0.25)
+}
+
+//if (AI_GetCurSystem() == 1) // if gamecube …
+//	ConstantSet = COLOR_SetRGBA(30*Intensity,30*Intensity,30*Intensity,0)
+//else
+
+ConstantSet = COLOR_SetRGBA(20*Intensity,20*Intensity,20*Intensity,0)
+
+MAT_ConstantSet(ConstantSet,0)
+
+if (IsInit == -1)
+{
+//	AI_CBAdd(OBJ_Me(),0,"SFX_RAIN_BeforeDraw")
+//	AI_CBAdd(OBJ_Me(),1,"SFX_RAIN_AfterDraw")
+	IsInit = 0
+}
+
+if(Wind != cvector(0,0,1))
+{
+	if(MATH_VecNullEpsilon(Wind)) Wind = Cv_VerticalVector
+	OBJ_BankingGeneralSet(OBJ_SightGet(), MATH_VecNormalize(Wind))
+}

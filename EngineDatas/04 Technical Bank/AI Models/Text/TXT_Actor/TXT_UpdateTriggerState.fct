@@ -1,0 +1,28 @@
+#include  "TXT_Constant.var"
+int t0,t1
+
+i_TriggerState = 0
+
+
+if( AI_TriggerIsValid(t_Activation0) && AI_TriggerIsValid(t_Activation1) )
+{
+	t0 = call_trigger(t_Activation0)
+	t1 = call_trigger(t_Activation1)
+	
+	switch(i_Operator)
+	{
+		case OR : if(t0 || t1) i_TriggerState = 1 break
+		case AND : if(t0 && t1) i_TriggerState = 1 break
+		case XOR : if( (t0 && !t1) || (!t0 && t1) ) i_TriggerState = 1 break
+		default: i_TriggerState = 0 break
+	}
+	
+}
+else if( AI_TriggerIsValid(t_Activation0) && call_trigger(t_Activation0) )
+{
+	i_TriggerState = 1
+}
+else if( AI_TriggerIsValid(t_Activation1) && call_trigger(t_Activation1) )
+{
+	i_TriggerState = 1
+}

@@ -1,0 +1,49 @@
+#include "KBM_defines.var"
+
+vector	tv_temp
+
+object	to_bat
+object	to_kong
+
+float		tf_dist_proche
+
+
+// CAPA OFF SI TROP PRES DE KONG ===============================
+to_kong = AI_MainActorGet(C_ID_Kong)
+tf_dist_proche = 25.0
+if( OBJ_CapaTest(CAPA_Kam_CC_1eBigBat_to_Kong) || OBJ_CapaTest(CAPA_Kam_CC_Kong_to_1eBigBat) )
+{
+	to_bat = ao_bigbats[0]
+	if( @to_bat OBJ_SqrDistHorz(to_kong) < tf_dist_proche )
+		OBJ_CapaSet(none, CAPA_Kam_CC_1eBigBat_to_Kong + CAPA_Kam_CC_Kong_to_1eBigBat)
+}
+if( OBJ_CapaTest(CAPA_Kam_CC_2eBigBat_to_Kong) || OBJ_CapaTest(CAPA_Kam_CC_Kong_to_2eBigBat) )
+{
+	to_bat = ao_bigbats[1]
+	if( @to_bat OBJ_SqrDistHorz(to_kong) < tf_dist_proche )
+		OBJ_CapaSet(none, CAPA_Kam_CC_2eBigBat_to_Kong + CAPA_Kam_CC_Kong_to_2eBigBat)
+}
+
+
+// DEBUG DISPLAY CAPAS ============================
+#ifndef _FINAL_
+if( i_DBG_Manager )
+{
+	tv_temp = cvector(0.4,0.7,0)
+	Str_DisplayTextOnce("===== ", tv_temp )
+	Str_DisplayGaoOnce(OBJ_Me(), tv_temp + cvector(0.07,0,0))
+	Str_DisplayTextOnce(" =====", tv_temp + cvector(0.25,0,0))
+	tv_temp += cvector(0,0.05,0)
+	if( OBJ_CapaTest(CAPA_Phase_Spawner) )
+		Str_DisplayTextOnce("CAPA 0 : Phase Spawner", tv_temp + cvector(0,0,0))
+	if( OBJ_CapaTest(CAPA_Kam_CC_1eBigBat_to_Kong) )
+		Str_DisplayTextOnce("CAPA 1 : CC_1eBigBat_to_Kong", tv_temp + cvector(0,0.05,0))
+	if( OBJ_CapaTest(CAPA_Kam_CC_Kong_to_1eBigBat) )
+		Str_DisplayTextOnce("CAPA 2 : CC_Kong_to_1eBigBat", tv_temp + cvector(0,0.1,0))
+	if( OBJ_CapaTest(CAPA_Kam_CC_2eBigBat_to_Kong) )
+		Str_DisplayTextOnce("CAPA 3 : CC_2eBigBat_to_Kong", tv_temp + cvector(0,0.15,0))
+	if( OBJ_CapaTest(CAPA_Kam_CC_Kong_to_2eBigBat) )
+		Str_DisplayTextOnce("CAPA 4 : CC_Kong_to_2eBigBat", tv_temp + cvector(0,0.2,0))
+}
+#endif
+

@@ -1,0 +1,65 @@
+#include "RM_Stele_Defines.var"
+
+int	ti_i,ti_SF
+
+
+v_FX_Apparition=OBJ_PosGet()+Cv_VerticalVector
+
+i_NbSocles = 0
+for(ti_i=0;ti_i<Ci_RM_Stele_NbSocle_Max;ti_i++)
+{
+	if(ao_Socles[ti_i])
+		i_NbSocles++	
+}
+
+i_Reste=i_NbSocles
+
+for(ti_i=0;ti_i<i_NbSocles;ti_i++)
+{
+	ai_GFX_Halo[ti_i]=-1
+	i_GFX_Etincelles_stele[ti_i] = -1
+	
+	ai_SF_ID[ti_i] = AI_SFDynGet(ti_i, SF_MinById, SF_MaxById)                             // Alloc
+	SpecialFlag_get(ai_SF_ID[ti_i], ti_SF)
+	if (ti_SF)
+	{
+		ai_Socles_Valide[ti_i]=vrai
+		i_Reste--
+	}
+	else
+	{
+		ai_Socles_Valide[ti_i]=faux
+	}
+}
+
+for(ti_i=0; ti_i < Ci_RM_Stele_GFX_NbMax; ti_i++)
+{
+	i_GFX_Stele[ti_i] = -1
+	f_hauteur_incant[ti_i] = MATH_RandFloat(0,f_hauteur_max_incant)
+	f_facteur_incant[ti_i] = MATH_RandFloat(0,360)
+	i_activ_incant[ti_i] = faux
+}
+
+for (ti_i=0; ti_i < Ci_RM_Stele_NbSocle_Max; ti_i++)
+	if (ao_Socles[ti_i])
+	{
+		i_GFX_Stele_attente[ti_i] = -1
+		PROC_SFX_STELE_SIMPLE(i_GFX_Stele_attente[ti_i],@ao_Socles[ti_i] OBJ_PosGet() )
+	}
+
+
+AI_CBAdd(OBJ_Me(), CallBack_Client,"RM_Stele_CB_Client")
+AI_CBAdd(OBJ_Me(), CallBack_SectoVisOn,"RM_Stele_CB_Secto")
+
+
+
+AI_TrackChange( 1, "RM_Stele_Track_reflex")
+if(i_Type==0)
+{
+	AI_TrackCurChangeNow("RM_Stele_ETAT_Attente")
+}
+else
+{
+	f_dist_incant = 1.0
+	AI_TrackCurChangeNow("RM_Stele_ETAT_AttenteMenhir")
+}

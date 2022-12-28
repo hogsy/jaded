@@ -1,0 +1,250 @@
+#include "H_defines.var"
+
+int			ti_weapon
+int			ti_i
+int			ti_numero
+int			ti_index
+int			ti_flag_grab
+int			ti_context
+float		tf_dist
+float		tf_sign
+float		tv_val
+float		tf_offset
+float		tf_temp
+int			ti_move
+int			type
+object	to_who
+float		tf_radius
+float		tf_max
+
+vector	tv_dest_pos
+vector	tv_temp
+
+object	to_trap
+object	to_obj
+object	to_enn
+object	to_ennemy
+
+#define CHERCHE_CACHE_PROCHE	0
+#define FONCE_DESSUS						1
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	if(MSG_GlobalIsValid(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION]) && LNK_InteractionTypeGet(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION]) == Ci_LNK_INTERACTION_FIGHT)
+	{
+		o_obj_interaction = ao_SRV[Ci_LNK_INTERACTION]
+		ao_SRV[Ci_LNK_INTERACTION] = LNK_ServeurGet(Ci_LNK_INTERACTION, amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION], faux, nofunc, nofunc)
+	}
+	
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_IA_help)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_IA_help
+	f_time_enjoue = 2
+	o_pref_target_stimulus_vis = nobody
+	f_help_empty = 0
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+		ai_SRV_ENABLE[ti_i] = faux
+
+	// AUTORISATIONS DES GRABS
+	ai_SRV_ENABLE[Ci_LNK_GRAB_RAPTOR]	= vrai
+//	ai_SRV_ENABLE[Ci_LNK_GRAB_TRANSPORTE] = vrai
+	
+	// AUTORISATION DES AIDES
+	ai_SRV_ENABLE[Ci_LNK_INTERACTION] 		= vrai
+	ai_SRV_ENABLE[Ci_LNK_PSSS] 					= vrai
+
+	DYN_SpeedSetVector( Cv_NullVector)
+	DYN_TractionSet( Cv_NullVector)
+	
+	f_time_start_etat = 0.0	
+	i_help_no_cache = i_flag_danger
+	if(i_id_humain != C_ID_Ann) i_help_no_cache = vrai
+	
+	if(i_id_humain == C_ID_Hayes)
+	{
+		if(ao_SRV[Ci_LNK_INTERACTION] == AI_MainActorGet(C_ID_Jack))
+		{
+			if(@get_global i_jack_grab)
+				AskText(TEXTE_AideJack, GeneHay_C_enemy_on_jack, 10, nobody)
+		}
+		else if(ao_SRV[Ci_LNK_INTERACTION])
+		{
+			if(OBJ_SqrDist(ao_SRV[Ci_LNK_INTERACTION]) > 10 * 10)
+				AskText(TEXTE_AideJack, GeneHay_C_enemy_on_bud, 10, nobody)
+		}
+	}
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE  =====================================================================
+AI_Execute("H_exec_read_world")
+AI_Execute("H_exec_serveur_get")
+AI_Execute("H_exec_change_etat")
+AI_Execute("H_exec_ch_Stimulus_Paf")
+if (o_paf_sender) macro_change_etat("H_ETAT_IA_paf")
+
+// INTERACTION
+OBJ_Me().des_int1 = Ci_DISPLAY_PSSS
+if (!ao_SRV[Ci_LNK_INTERACTION]) macro_change_etat(fct_main_etat)
+
+if(f_time_start_etat)
+{
+	to_obj = ao_SRV[Ci_LNK_INTERACTION]
+	if(@to_obj AI_IsModel("KingKong/Humain"))
+	{
+		if(@"KingKong/Humain" to_obj i_etat_courant == ETAT_IA_help)
+			macro_change_etat(fct_main_etat)
+	}
+}
+
+// PLUS DE MUNITIONS
+if(!GunEnPlace() && !BambouEnMain())
+{
+	macro_change_etat(fct_main_etat)
+}
+
+// COMPORTEMENT ==============================================================
+
+// Si je vois une cible, je shoot direct si je suis dans le range de mon arme
+ti_weapon = @"univ" i_weapon_ID [i_id_humain]
+switch(ti_weapon)
+{
+	case Ci_weapon_ID_shotgun :
+		tf_temp = 8
+		break
+		
+	default:
+		tf_temp = @"univ" Weapon_af_range[ ti_weapon ]
+		tf_temp *= 0.5
+		break
+}
+
+// Si j'étais safe, et que j'ai un bambou, alors je tir
+if(!i_help_no_cache && BambouEnMain())
+	tf_temp = 100
+
+// Qui ?
+o_pref_target_stimulus_vis = ao_SRV[Ci_LNK_INTERACTION]
+if(HasInteretOn(OBJ_Me(), to_ennemy, tf_radius) && f_time_start_etat > 2.0 && OBJ_SqrDist(to_ennemy) < tf_radius * tf_radius)
+{
+	to_who = to_ennemy
+}
+else if(HasInteretOnMinDist(ao_SRV[Ci_LNK_INTERACTION], to_ennemy, type) != -1 && to_ennemy)
+{
+	to_who = to_ennemy
+}
+else
+{
+	to_who = ao_SRV[Ci_LNK_INTERACTION]
+}
+
+ComputeCibleAShooter( tf_temp )
+
+if(!o_target_stimulus_vis) f_help_empty += TIME_GetDt()
+else f_help_empty = 0
+if(f_help_empty > 30) 
+{
+	f_help_empty = f_help_empty
+	macro_change_etat(fct_main_etat)
+}
+
+if(o_target_stimulus_vis && f_time_start_etat > 0.1)
+{
+	// Imprecision du tir
+	if(o_pref_target_stimulus_vis != AI_MainActorGet(C_ID_Jack))
+		f_rand_rate = 50
+	
+	to_who = o_target_stimulus_vis
+	AI_Execute("H_exec_validate_tir")
+}
+
+// Si pas d'opportunité de tir, je sors
+to_obj = ao_SRV[Ci_LNK_INTERACTION]
+if(!i_help_no_cache && BambouEnMain())
+{
+	v_way_destpos = OBJ_PosGet() 
+	if(f_time_start_etat > 2)
+	{
+		f_time_help_interdit = 1.0
+		macro_change_etat(fct_main_etat)
+	}
+}
+else
+{
+	// Je vais jusqu'à celui qui demande de l'aide
+	tf_max = 5
+	if(@get_global o_qqun_carry == to_obj) tf_max = 2
+	if(OBJ_SqrDist(to_obj) > tf_max * tf_max || !GRID_PosValid(OBJ_PosGet(), @to_obj OBJ_PosGet()))
+	{
+		if(to_obj == AI_MainActorGet(C_ID_Jack))
+		{
+			if(@get_global i_jack_grab)
+				v_way_destpos = @to_obj OBJ_PosGet() + @to_obj OBJ_SightGet()
+			else
+				v_way_destpos = @to_obj OBJ_PosGet() 
+			if(ZoneDangereuse(@to_obj OBJ_PosGet()))
+				v_way_destpos = OBJ_PosGet() 		
+		}
+		else if(OBJ_SqrDist(to_obj) <= 2 * 2)
+			v_way_destpos = OBJ_PosGet()
+		else
+		{
+			v_way_destpos = @to_obj OBJ_PosGet() 
+			if(ZoneDangereuse(@to_obj OBJ_PosGet()))
+				v_way_destpos = OBJ_PosGet() 		
+		}
+	}
+	else
+	{
+		v_way_destpos = OBJ_PosGet()
+	}	
+}
+
+// Pas de ponderation en fonctions des ennemis : on trace tout droit
+i_flag_disable_marche = vrai
+if(@get_global i_jack_grab && to_obj == AI_MainActorGet(C_ID_Jack))
+	i_flag_force_sprint = vrai
+
+i_way_evite_ennemi = faux
+i_flag_disable_auto_crouch = vrai
+CommonMove()
+i_way_evite_ennemi = vrai
+
+// Orientation
+if(!f_joy_norm)
+{
+	if(to_who != ao_SRV[Ci_LNK_INTERACTION])
+	{
+		ForceRegardSur(to_who, 1.0)
+		OrienteVersToler(to_who, 0.85, 80.0)
+	}
+	else
+	{
+		OrienteVersEnnemiProchePasDerriere()
+	}
+}
+
+// Anims
+///////////////////////////////////////////////
+i_flag_force_course = vrai
+AI_Execute("H_exec_select_action")
+

@@ -1,0 +1,25 @@
+float		tf_min_dist
+float		tf_max_dist
+
+vector	tv_pos
+
+o_main_actor = AI_MainActorGet(0)
+
+v_me_to_main = @o_main_actor OBJ_PosGet()
+v_me_to_main -= @o_pivot OBJ_PosGet()
+v_me_to_main.z = 0.0
+f_me_to_main = MATH_VecNorm(v_me_to_main)
+v_me_to_main /= f_me_to_main 
+
+OBJ_CapaSet(none, all)
+
+tv_pos = @o_pivot OBJ_PosGet()
+tv_pos.z = OBJ_PosGet().z
+DBG_RenderCircle(tv_pos, dist_min, Cv_VerticalVector, color_vert)
+DBG_RenderCircle(tv_pos, dist_max, Cv_VerticalVector, color_rouge)
+
+tf_min_dist = dist_min //+ 100.0
+tf_max_dist = dist_max + 100.0
+
+if (f_me_to_main > tf_min_dist && f_me_to_main < tf_max_dist)
+	OBJ_CapaSet(OBJ_Capa_0, none)

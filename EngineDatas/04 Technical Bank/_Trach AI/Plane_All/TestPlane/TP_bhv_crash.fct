@@ -1,0 +1,17 @@
+#include "TP_Defines.var"
+vector v
+v=MATH_VecNormalize(OBJ_PosGet()-@RefObj OBJ_PosGet())
+v=MATH_VecBlendRotate(OBJ_SightGet(),v,dt*1.2)
+v.z-=dt*1.1
+OBJ_SightGeneralSet(v,OBJ_BankingGet())
+OBJ_PosSet(OBJ_PosGet()+(dt*Speed*OBJ_SightGet()))
+OBJ_RotateLocalY(dt)
+TP_MoveKamera()
+TP_Smoke()
+TP_StopLoop_Gun()
+
+if(TIME_Get()>OutOfControl && ReinitMap)
+{
+	@ReinitMap OBJ_FlagInactiveSet(faux)
+	ReinitMap=nobody
+}

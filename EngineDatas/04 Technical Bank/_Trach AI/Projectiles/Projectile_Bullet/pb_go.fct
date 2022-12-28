@@ -1,0 +1,22 @@
+object	to_gao 
+
+
+if ( f_life_time > 1.5)
+	OBJ_Destroy()
+f_life_time += TIME_GetDt()
+
+//EVENT_AddEventVision( C_EVENT_FILTER_All, OBJ_Me(), 0.001, OBJ_PosGet(), 0.5, 1.0, C_EVENT_ETAT_NORMAL, C_EVENT_CONTEXT_STANDARD)
+
+if (COL_CollideType(COL_C_Ground))
+{
+	to_gao = COL_ObjectGet(COL_C_Ground)
+	EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_KK_Moyen , o_pere, 0.01, to_gao, 1.0 * PAF_Unit, OBJ_SightGet())
+	OBJ_Destroy()
+}
+	
+if (COL_CollideType(COL_C_Wall))
+{
+	to_gao = COL_ObjectGet(COL_C_Wall)
+	EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_KK_Moyen,  o_pere, 0.01, to_gao, 1.0 * PAF_Unit, OBJ_SightGet())
+	OBJ_Destroy()
+}

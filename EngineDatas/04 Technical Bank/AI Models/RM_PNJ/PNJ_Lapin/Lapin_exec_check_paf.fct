@@ -1,0 +1,278 @@
+#include "PNJ_Lapin_defines.var"
+
+messageid		tmid_ID
+message	tmsg_filter
+messageid		tmid_visibility
+int				ti_rank
+int				ti_txt
+object		to_pere
+//object		to_bone
+int				ti_type
+vector		tv_pos
+vector		tv_dir
+float			tf_dmg
+int				ti_index
+float			tf_hp_init
+int				ti_bonus
+
+
+i_paf_detect_type = 0
+v_paf_detect_dir = Cv_NullVector
+v_paf_detect_pos = Cv_NullVector
+o_paf_detect_actor = nobody
+f_paf_puissance = 0.0
+
+i_flag_paf = faux
+i_flag_paf_stun = faux
+i_flag_paf_combo_petit = faux
+i_flag_paf_combo_fort = faux
+i_flag_paf_combo_fort_finish = faux
+ti_bonus = faux
+
+if (i_flag_paf_check_done)
+	return
+
+i_flag_paf_check_done = vrai
+
+if( i_Mort_Destruction_flag )
+	return
+
+//tf_hp_init = EVENT_LIFE_CurLifeGet(ID_LIFE)
+tf_hp_init = f_LIFE_cur
+
+MSG_SetNull(tmsg_filter)
+tmsg_filter.msg_gao1 = OBJ_Me()
+ti_rank = -1
+for (	tmid_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tmsg_filter);
+		MSG_GlobalIsValid(tmid_ID);
+		tmid_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tmsg_filter) )
+{
+	to_pere = EVENT_PereGet(tmid_ID)
+	ti_type = EVENT_PafTypeGet(tmid_ID)
+	tv_pos = EVENT_PafPositionGet(tmid_ID)
+	tv_dir = EVENT_PafDirGet(tmid_ID)
+	tv_dir.z = 0.0
+	if( MATH_VecNullToler(tv_dir, 0.01) )
+		tv_dir = - OBJ_SightGet()
+	tf_dmg = EVENT_PafPuisGet(tmid_ID) * PAF_Unit
+	
+	if( i_flag_jump_in_back_invincible )
+		continue
+	
+	switch( i_etat_courant )
+	{
+//		case ETAT_Lapin_DODGE :
+//			if( to_pere == o_dodge_actor )
+//			{
+//				if( ti_type & ( C_PAF_RM_Gun | C_PAF_RM_Grenade ) )
+//					continue		// ignorer les pafs de cet acteur uniquement (projectiles only)
+//			}
+//			break
+//	
+//		case ETAT_Lapin_PROTECT :
+//			if( to_pere == o_protect_actor )
+//				continue		// ignorer les pafs de cet acteur uniquement (même les coups de poing)
+//			break
+//			
+		case ETAT_Lapin_COUNTER :
+			if( to_pere == o_Counter_actor )
+				continue			// ignorer les pafs de cet acteur uniquement
+			break
+	}
+	
+	// ignorer les pafs sur la soucoupe
+//	if( o_RideMount_Actor && @o_RideMount_Actor AI_IsModel(get_PNJ_Bunny_Saucer_path) )
+	if( Proc_PNJ_Lapin_MontureIDTest(C_ID_Scooter) )
+	{
+		if( to_pere != o_RideMount_Actor )
+			continue
+//		Monture_Scooter = faux		// plus jamais !!!
+	}
+	
+	// FUCKING STEF CHEAT CODE
+//	if( ti_type & C_PAF_RM_KiTue )
+//	{
+//		EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_RM_Fort, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_pere, 50.0, OBJ_SightGet())
+//		continue	
+//	}
+	
+	o_paf_detect_actor = to_pere
+	v_paf_detect_dir += tv_dir
+	v_paf_detect_pos = tv_pos
+	
+	i_flag_paf = vrai
+	
+	// PAF TYPE ----------------------------------
+	i_paf_detect_type |= ti_type
+	// mort = fort
+	if( ! f_LIFE_cur )
+		i_paf_detect_type |= C_PAF_RM_Fort
+	// petit lapin = fort
+	if( Type == Lapin_Type_Petit )
+		i_paf_detect_type |= C_PAF_RM_Fort
+	// air paf
+	if( ! i_ground_flag )
+		i_paf_detect_type |= C_PAF_RM_Fort
+	// nage paf
+	if( i_is_in_water )
+	{
+		PROC_SFX_SPLASH02(OBJ_PosGet())
+		i_paf_detect_type |= C_PAF_RM_Fort
+	}
+	// Rayman jumpe sur moi pour me stunner
+	if( ti_type & C_PAF_RM_Stun )
+	{
+		i_flag_paf_stun = vrai
+		tf_dmg = 0.0
+	}
+	// Rayman en Combo
+	if( ti_type & C_PAF_RM_ComboPetit )
+		i_flag_paf_combo_petit = vrai
+	if( ti_type & C_PAF_RM_ComboFort )
+		i_flag_paf_combo_fort = vrai
+	if( ti_type & C_PAF_RM_ComboFinish )
+	{
+		DBG_RenderVector(OBJ_PosGet(), tv_dir * 10, color_jaune)
+		i_paf_combo_game_speed_end_flag = vrai
+		i_flag_paf_combo_fort_finish = vrai
+	}
+	// sur monture = expulsion
+	if( o_RideMount_Actor )
+		i_paf_detect_type |= C_PAF_RM_Fort
+		
+//	if( ! ti_bonus && EVENT_LIFE_CurLifeGet(ID_LIFE) 
+//	&& ( i_paf_detect_type & ( C_PAF_RM_Fort | C_PAF_RM_ComboPetit | C_PAF_RM_ComboFort | C_PAF_RM_ComboFinish ) ) )
+//	{
+//		ti_bonus = vrai
+//		Lapin_BONUS_Generate(tv_dir)
+//	}
+	
+	// DOMMAGES -----------------------------------------------
+	if( (ti_type & C_PAF_RM_KiTue) ||  o_App_next_wp )		// toujours en spawn (apparition, jump...)
+	{
+		f_LIFE_cur = 0.0
+		f_paf_puissance = 999.0
+	}
+	else
+	{
+		f_LIFE_cur -= MATH_FloatMin(f_LIFE_cur, tf_dmg)
+		f_paf_puissance += tf_dmg
+		
+		// paf jauge = paf fort ---------------------------------------------------
+		f_paf_jauge += tf_dmg
+		if( Proc_PNJ_Lapin_Paf_Jauge_is_Ready() )
+		{
+			// pas de déclenchement de jauge en combo
+			if( ! i_flag_paf_combo_petit && ! i_flag_paf_combo_fort )
+			{
+				i_flag_paf_jauge = vrai
+				i_paf_detect_type |= C_PAF_RM_Fort
+				Lapin_GFX_GoutteSueur_Creation()
+			}
+		}
+		else if( Atk_ContreAtk )
+		{
+			if( f_paf_jauge > (f_paf_jauge_max * 0.5) 
+			&& TIME_Elapsed(f_Counter_last_time, 5.0)
+			&& ! o_RideMount_Actor 
+			&& ! i_is_in_water )
+				i_Counter_flag = vrai
+		}
+		
+		// DISPLAY JAUGE
+		if( Lapin_DBG_Display_ON() || @"univ" i_cheat_page == 3 )
+		{
+			tv_pos = @o_canal_tete OBJ_PosGet()
+			tv_pos += (1.5 * Cv_VerticalVector)
+			tv_pos = VIEW_3dWorldTo2d(0, tv_pos)
+			ti_txt = STR_CreateText("\cFF0000FF\\h0.1\", tv_pos, 0.5)
+			STR_AppendFloat(ti_txt, f_paf_jauge, 0)
+			STR_AppendText(ti_txt, " / ")
+			STR_AppendFloat(ti_txt, f_paf_jauge_max, 0)
+			if( i_flag_paf_jauge )
+				STR_CreateText("\cFF0000FF\\h0.1\Paf Jauge !", tv_pos + cvector(0,0.05,0), 1.0)
+			else if( i_paf_detect_type & C_PAF_RM_Fort )
+				STR_CreateText("\cFF0000FF\\h0.1\Paf Fort !", tv_pos + cvector(0,0.05,0), 1.0)
+		}
+		
+		// RAZ JAUGE
+		if( i_paf_detect_type & C_PAF_RM_Fort )
+			f_paf_jauge = 0.0
+		
+		// PAS KO ! :)
+		if( ! f_LIFE_cur 
+			&& ! ( i_paf_detect_type & C_PAF_RM_Fort )
+			&& tf_hp_init )
+		{
+			if( i_flag_paf_combo_petit || i_flag_paf_combo_fort )
+			{
+				f_LIFE_cur = 1.0			// ne mourir que d'1 gros paf
+			}
+		}
+	}
+	
+	// BONUS --------------------------------------------------------------
+	if( ! ti_bonus )
+	{
+		if( i_paf_detect_type & C_PAF_RM_ComboFinish )
+		{
+			ti_bonus = vrai
+			Lapin_BONUS_Generate(tv_dir)
+		}
+		else if( Type == Lapin_Type_Petit && tf_hp_init && ! f_LIFE_cur  )
+		{
+			ti_bonus = vrai
+			Lapin_BONUS_Generate(tv_dir)
+		}
+	}
+	if( Bonus_Lum && ! f_LIFE_cur && Config_Lapin != Config_Lapin_Terminator )
+	{
+		Lapin_ZOOM_Reduction()
+	}
+	
+	// FUITE / PAF ? ------------------------------------------------------
+	switch( Fuite_Apres_Pafs )
+	{
+		case Ci_Fuite_Apres_Pafs_A_Chaque_Paf :
+			Lapin_FUITE(to_pere)
+			break
+			
+		case Ci_Fuite_Apres_Pafs_Cumul_de_Pafs :
+			if( i_flag_paf_jauge )
+				Lapin_FUITE(to_pere)
+			break
+			
+		case Ci_Fuite_Apres_Pafs_Jamais :
+			break
+	}
+	
+	// FUITE / HP ? ----------------------------------------------------
+	if( Fuite_HP == Ci_Fuite_HP_50pct )
+	{
+		if( ! i_Fuite_HP_50pct && f_LIFE_cur <= (0.5 * f_LIFE_max) )
+		{
+			i_Fuite_HP_50pct = vrai
+			Lapin_FUITE(to_pere)
+		}
+	}
+	
+	// mémoriser que cet acteur m'a paffé
+	ti_index = ARR_ObjSearch(&ao_perceived_actor[0], i_perceived_actor_nb, to_pere)
+	if( ti_index == -1 )
+	{
+		// je ne l'avais pas vu
+		tmid_visibility = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility, to_pere, nobody)
+		if( MSG_GlobalIsValid(tmid_visibility) )
+			ti_index = Lapin_Add_Perceived_Actor(to_pere, Ci_PERCEIVED_HEARD, tmid_visibility)
+	}
+	if( ti_index != -1 )
+	{
+		i_interet_force_identification_gao = vrai
+		Lapin_Best_Interet_Update(ti_index)
+		ai_perceived_status[ti_index] |= Ci_PERCEIVED_PAF
+	}
+	
+	// avertir le groupe
+	if( o_Commander_cur )
+ 		@o_Commander_cur Proc_PNJ_Lapin_COMMANDER_Target_Set(to_pere)
+}

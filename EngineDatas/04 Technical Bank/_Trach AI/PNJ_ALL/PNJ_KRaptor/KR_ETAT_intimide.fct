@@ -1,0 +1,128 @@
+#include "KR_defines.var"
+
+float			tf_delay_since_last_update
+vector		tv_sight
+object		to_head
+int				ti_col
+
+#define	Ci_intimidation_mode_orientation			1
+#define	Ci_intimidation_mode_recul					2
+#define	Ci_intimidation_mode_recul_termine		3
+
+#define	Cf_dist_craint_intimidation						144
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	o_intimidator = nobody
+	o_old_intimidator = nobody
+	
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_KK_intimide)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_KK_intimide
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	fct_last_etat = AI_TrackCurGet()
+		
+	f_time_start_etat = MATH_RandFloat( -0.5, 0.5)
+	f_time_last_check_fury = 0.0
+	
+	i_intimidation_mode = Ci_intimidation_mode_orientation
+	
+	i_flag_look = vrai
+	v_look_pos = OBJ_PosGet() + OBJ_SightGet()		// le raptor baisse la tête (il regarde un point devant ses pieds)
+	o_old_intimidator = o_intimidator
+	
+	f_way_rot_speed = 0.0		// coef début d'orientation
+	
+//	KR_DelInterestMsg(vrai)			// Suppr du mesage d'intéret du mode fight
+	
+	f_time_intimidate_observe = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// ANALYSE =======================================================================================================
+
+AI_Execute("KR_exec_check_vision")
+
+o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, vrai, nofunc, nofunc)
+if (o_grabbed_actor_KK)
+	macro_change_etat("KR_ETAT_grabbed")
+	
+
+AI_Execute("KR_exec_check_paf")
+if( o_paf_actor )
+{
+	KR_Select_Paf_Etat(fct_track_change)
+	if( fct_track_change != nofunc )
+		macro_change_etat(fct_track_change)
+}
+
+
+// COMPORTEMENT =======================================================================================================
+
+i_iam_a_kong_target = vrai
+
+
+to_head = @o_old_intimidator ANI_CanalObjectGet(Anim_Canal_Tete)
+if( ! to_head )
+	to_head = o_old_intimidator
+v_look_pos = @to_head OBJ_PosGet()
+
+
+switch( i_intimidation_mode )
+{
+	case Ci_intimidation_mode_orientation :
+		// SE RETOURNE
+		KR_INTERET_Update(o_old_intimidator, C_EVENT_InteretStatusLock)
+		tv_sight = OBJ_SightGet()
+		ACT_ActionSet(Action_Observe)		// le raptor commence par se tourner dans la direction du bruit
+		tv_sight = @o_old_intimidator OBJ_PosGet() - OBJ_PosGet()
+		MATH_VecSetHorzNormalize(tv_sight)
+		if( MATH_VecDotProduct(OBJ_SightGet(), tv_sight) >= 0.95 )
+			i_intimidation_mode = Ci_intimidation_mode_recul
+		break
+		
+	case Ci_intimidation_mode_recul :
+		// RECULE
+		KR_INTERET_Update(o_old_intimidator, C_EVENT_InteretStatusLock)
+		tv_sight = @o_old_intimidator OBJ_PosGet() - OBJ_PosGet()
+		if( OBJ_SqrDist(o_old_intimidator) < Cf_dist_craint_intimidation )
+			ACT_ActionSet(Action_Recul_Intimide)
+		else
+		{
+			o_intimidator = nobody			// le raptor a assez reculé -> il observe 
+			ACT_ActionSet(Action_Observe)
+			i_intimidation_mode = Ci_intimidation_mode_recul_termine
+		}
+		break
+		
+	case Ci_intimidation_mode_recul_termine :
+		// DELAI ATTENTE APRES INTIMIDATION
+		KR_INTERET_Update(o_old_intimidator, C_EVENT_InteretStatusLock)
+		tv_sight = @o_old_intimidator OBJ_PosGet() - OBJ_PosGet()
+		f_time_intimidate_observe += TIME_GetDt()	
+		if( f_time_intimidate_observe > 2.0 )
+			macro_change_etat("KR_ETAT_attente")			// durée d'observation dépassée
+		break
+}
+
+
+OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), tv_sight, 3 * TIME_GetDt()), Cv_VerticalVector)
+

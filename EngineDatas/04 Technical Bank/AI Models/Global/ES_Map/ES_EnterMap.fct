@@ -1,0 +1,133 @@
+Include_UltraProcedure_Header
+
+int			i, cpt, weapon, munition, index
+vector	tv_temp
+object	to_obj, to_obj1
+object	to_main_actor
+object	to_gao 
+
+// PAS DE SECTO POSSIBLE SUR LES ES - BORDEL ======
+SCT_SetOf(0,0,0,0)
+// PAS DE SECTO POSSIBLE SUR LES ES - BORDEL ======
+
+if (des_je_fais_entree_de_map)
+{
+	if (@get_global i_dbg_ES[des_numero_de_l_entree])
+		DBG_Error("Attention Cette ES a le Meme N° qu'une Autre")
+	else
+		@get_global i_dbg_ES[des_numero_de_l_entree] = 1
+}
+
+OBJ_CapaSet(none,OBJ_Capa_15)		// reset Capa 15 (indique que c'est l'entrée active)
+
+if (i_SF_NePlusJamaisRefaireCP)
+	i_SF_AlreadyCP = AI_SFDynGet(0, SF_MinById, SF_MaxById)		// Alloc
+
+to_main_actor = get_rayman
+
+if (!des_mode)	// Sortie de MAP	
+{
+	int ti_univ_loop
+	
+	// Recup the key
+	for (ti_univ_loop = 0; ti_univ_loop < @"univ" WORLD_Key_Map_Nbr; ti_univ_loop++)
+	{
+		if (@"univ" WORLD_Key_Map_ID[ti_univ_loop] == des_vers_map_numero)
+		{
+			WOR_RegisterES(@"univ" WORLD_Key_Map_Key[ti_univ_loop], to_main_actor)
+			break
+		}
+	}
+}
+
+o_camera = @get_global o_camera
+
+if(AI_PriorityGet() != 7)
+{
+	AI_PrioritySet(7)
+	DBG_Error("Mauvaise priorité pour l'ES (7)")
+}
+
+if ((des_numero_de_l_entree == @"univ" world_entrance_ID) && des_je_fais_entree_de_map)
+{
+	OBJ_CapaSet(OBJ_Capa_15, none)		// reset Capa 15 (indique que c'est l'entrée active)
+
+	DBG_TraceString("\n Entrée de map n°")
+	DBG_TraceInt(des_numero_de_l_entree)	
+	DBG_TraceString(" ... GAO: ")
+	DBG_TraceObject(OBJ_Me())
+	DBG_TraceString("\n\n")
+
+	if (!@"univ" Engine)
+		PROC_UNIV_RMMontureID_Set( des_montures )
+
+	for(i = 0; i < 5; i++)
+	{
+		if(!AI_TriggerIsValid(des_exec_enter[i])) break
+		call_trigger(des_exec_enter[i])
+	}
+
+	for(i = 0; i < 10; i+=2)
+	{
+		if(!des_teleport_enter[i]) break
+		to_obj = des_teleport_enter[i]
+		to_obj1 = des_teleport_enter[i + 1]
+		@to_obj OBJ_PosSet(@to_obj1 OBJ_PosGet())
+		@to_obj COL_StartMatrixSet(@to_obj1 OBJ_PosGet())
+		@to_obj OBJ_SightGeneralSet(@to_obj1 OBJ_SightGet(), @to_obj1 OBJ_BankingGet())
+	}
+	
+	// camera init
+	if (des_pos_camera)
+	{
+		@o_camera OBJ_PosSet(@des_pos_camera OBJ_PosGet())
+		@o_camera COL_StartMatrixSet(@des_pos_camera OBJ_PosGet())
+	}
+	
+	// Rayman
+	if (!des_pos_RM)
+		des_pos_RM = OBJ_Me()
+
+	@to_main_actor OBJ_PosSet(@des_pos_RM OBJ_PosGet() + cvector(0,0,0.1))
+	@to_main_actor  COL_StartMatrixSet(@des_pos_RM OBJ_PosGet() + cvector(0,0,0.1))
+	@get_Rayman_Path to_main_actor  v_speed_pos = @des_pos_RM OBJ_PosGet()
+	@to_main_actor OBJ_SightGeneralSet(@des_pos_RM OBJ_SightGet(),Cv_VerticalVector)
+
+	// Secto
+	SCT_SetCurrent(des_numero_secteur)
+	to_gao = @get_global o_AI_secto_gao
+	if (to_gao)
+		@to_gao Proc_Sec_AISecto_ADD()
+	
+	// STATS
+	macro_STATS_Dump( 0, OBJ_Me() )
+}
+
+if (! des_o_perso_detect)
+	des_o_perso_detect	= to_main_actor
+	
+switch (des_mode)
+{
+	case 0 : 
+		des_i_exit = 0
+		AI_TrackCurChange("ES_ExitMap")				// SORTIE de Map
+		break
+
+	case 1 :
+		if (i_SF_NePlusJamaisRefaireCP)
+		{
+			int		ti_SF_AlreadyDead
+			Super_SpecialFlag_get(i_SF_AlreadyCP, ti_SF_AlreadyDead)			// Test SF
+			if (ti_SF_AlreadyDead)																// Si SF = 1 alors DESTROY
+			{
+				OBJ_CapaSet(OBJ_Capa_14,none)
+				OBJ_Destroy()
+			}
+		}
+		AI_TrackCurChange("ES_CheckPoint")			// CHECPOINT
+		break		
+
+	default:
+		OBJ_Destroy()											// RIEN
+		break
+}

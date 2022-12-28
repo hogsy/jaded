@@ -1,0 +1,253 @@
+#include "H_defines.var"
+#include "H_action.var"
+
+vector	tv_temp
+
+object	to_grabbed_object
+object	to_weapon
+object	to_reward
+
+int			ti_i
+int			ti_weapon_id
+int			ti_index
+int			ti_no_crouch
+
+
+// FLAGS A RESETER TOUTES LES TRAMES ========================
+AI_Execute("H_exec_read_joy_reset")
+
+
+// JUMPING FROM KONG DISABLES JOY
+if( i_jump_from_KK_flag )
+	return
+
+if( i_flag_cheat_move )
+	return
+
+// SND JUMP
+tv_temp = DYN_SpeedGetVector()
+if(v_previous_speed.z < -5 && tv_temp.z >= -1)
+	SND_RequestPlay(SND_Jack_WalkStone)
+v_previous_speed = tv_temp
+
+
+// CHEAT WEAPONS ---------------------------------------------------------------
+#ifndef _FINAL_
+ti_no_crouch = faux
+// si le joueur est au sol
+if( IO_ButtonPressed(joy_button_L) && IO_ButtonPressed(joy_button_L2) )
+{
+	ti_no_crouch = vrai
+	if( IO_ButtonJustPressed(joy_button_StickL) )
+	{
+		// COMPUTE NEW WEAPON ID
+		switch( H_Weapon_ID_Get() )
+		{
+			case 0 :
+				ti_weapon_id = Ci_weapon_ID_bambou
+				break
+			case Ci_weapon_ID_bambou :
+				ti_weapon_id = Ci_weapon_ID_arc
+				break
+			case Ci_weapon_ID_arc :
+				ti_weapon_id = 0
+				break
+		}
+		
+		// RESET INVENTORY
+		while( H_Weapon_ID_Get() )
+		{
+			i_weapon_delete_n_destroy = vrai
+			H_Weapon_Delete(o_grabbed_object_en_main)
+			H_Weapon_Swap()
+		}
+		
+		// GENERATE NEW WEAPON
+		switch( ti_weapon_id )
+		{
+			case Ci_weapon_ID_bambou :
+				to_weapon = @get_Arme_Lance OBJ_Duplicate(OBJ_PosGet())
+				@to_weapon Lance_SetGrabbed(OBJ_Me())
+				ti_index = H_Joueur_GrabbedObject_Add(ti_weapon_id, to_weapon)
+				H_Weapon_Current_Set(ti_index, ti_weapon_id, to_weapon)
+				break
+				
+			case Ci_weapon_ID_arc :
+				to_weapon = @get_Arme_Arc OBJ_Duplicate(OBJ_PosGet())
+				@to_weapon Arc_SetGrabbed(OBJ_Me())
+				ti_index = H_Joueur_GrabbedObject_Add(ti_weapon_id, to_weapon)
+				H_Weapon_Current_Set(ti_index, ti_weapon_id, to_weapon)
+				break
+		}
+	}
+}
+#endif
+// CHEAT WEAPONS ---------------------------------------------------------------
+
+
+// CROUCH
+if( ti_no_crouch )
+	i_flag_crouch = faux		// pas de crouch sur l'épaule de kong
+else if( @get_global i_Player_on_KK_Shoulder )
+	i_flag_crouch = faux		// pas de crouch sur l'épaule de kong
+else if( f_hauteur_eau >= Hauteur_Eau_Basse )
+	i_flag_crouch = faux		// pas de crouch dans l'eau
+else if( IO_ButtonPressed(Jack_Joy_Crouch) && f_time_noground < 0.5 )
+	i_flag_crouch = vrai
+else if( i_flag_crouch_old )
+{
+	// Si on etait en crouch, et qu'on a un mur dessus, on reste en crouch
+	if( COL_RayObject_Dist(OBJ_PosGet() + cvector(0,0,0.8), cvector(0,0,1), 0.8, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable) )
+		i_flag_crouch = vrai
+}		
+if( i_flag_crouch_old && ! i_flag_crouch )
+	SND_RequestPlay( SND_Jack_CrouchUp )
+if( ! i_flag_crouch_old && i_flag_crouch )
+	SND_RequestPlay( SND_Jack_CrouchDown )
+
+
+// VISER
+if( IO_ButtonPressed(Jack_Joy_Viser) && H_Weapon_ID_Get() )
+{
+	i_joy_flag_viser = vrai
+	f_joy_viser_duree += TIME_GetDt()
+	
+	// ZOOM
+	if( IO_ButtonJustPressed(Jack_Joy_Zoom) )
+	{
+		i_joy_flag_zoom = 1 - i_joy_flag_zoom
+		
+		// Arc swap horizontal / vertical
+		if( H_Weapon_ID_Get() == Ci_weapon_ID_arc )
+			@"univ" Weapon_Pref_Arc_Horiz = 1 - @"univ" Weapon_Pref_Arc_Horiz
+	}
+}
+else
+{
+	// pas de flag viser si pas d'arme (pour pas bloquer ramasse)
+	i_joy_flag_zoom = faux
+	f_joy_viser_duree = 0.0
+}
+
+
+// TIRER / REPOUSSER / LANCER / RAMASSER
+to_grabbed_object = nobody
+if( IO_ButtonJustPressed(Jack_Joy_Tirer) && ! i_flag_nage )
+{
+	// Qqchose à ramasser ?
+	if( ! i_joy_flag_viser && ACT_ActionGet() != Inf_Action_Ramasse )
+	{
+		// REWARD A DECLENCHER ???
+		for( ti_i = 0; ti_i < @get_global i_Reward_count; ti_i++ )
+		{
+			to_reward = @get_global ao_Reward[ti_i]
+			if( to_reward )
+			{
+				o_Reward = to_reward
+				o_Reward_Actor = @get_Interactive_Reward_path to_reward o_Reward_Actor
+				i_Reward_Type = @get_Interactive_Reward_path to_reward i_Reward_Type
+				@o_Reward OBJ_CapaSet(CAPA_Reward_Activated, none)
+				goto READ_JOY
+			}
+		}
+		
+		
+		// ARME A RAMASSER ????
+		if( H_Joueur_GrabbedObject_Count() < Ci_Joueur_GrabObject_max_nb )
+		{
+			to_grabbed_object = LNK_ClientGet(Ci_LNK_GRAB_OBJECT, mid_LNK_Ramasse, vrai, "H_exec_grab_object_add_data", "H_exec_grab_object_select", nofunc)
+			if( to_grabbed_object )
+			{
+				i_joy_flag_ramasse = vrai
+				f_grabbed_object_ramasse_time = TIME_Get()
+				
+				@"univ" i_ramasse_objet = LNK_GrabObjectIdGet(mid_LNK_Ramasse)
+				@"univ" o_ramasse_objet_who = OBJ_Me()
+				@"univ" o_ramasse_objet_what = to_grabbed_object
+				goto READ_JOY
+			}
+		}
+	}
+	
+
+	// TIRER / LANCER / REPOUSSER
+//	if( ! i_joy_flag_ramasse )
+	{
+		switch( H_Weapon_ID_Get() )
+		{
+			case Ci_weapon_ID_bambou :
+			case Ci_weapon_ID_ossement :
+				switch( ACT_ActionGet() )
+				{
+					case Inf_Action_Bambou_Arme_Att :
+					case Inf_Action_Bambou_Arme_Marche :
+//						if( ANI_CurrentFrameGet(0) > 6 )
+						if( f_joy_viser_duree > 0.1 )
+							i_joy_flag_lancer = vrai
+						else
+							i_joy_flag_repousse = vrai
+						break
+					default:
+						i_joy_flag_repousse = vrai
+						break
+				}
+				break
+			
+			case Ci_weapon_ID_arc :
+				switch( ACT_ActionGet() )
+				{
+					case Inf_Action_Arc_Incline_Tendu :
+//					case Inf_Action_Arc_Arme_Horiz_Tendu :
+//					case Inf_Action_Arc_Arme_Vert_Tendu :
+						if( f_Arc_tendu_duree > 0.35 )
+							i_joy_flag_tir = vrai
+						break
+					default:
+						if( ! i_joy_flag_viser )		// mode ballade :)
+							i_joy_flag_repousse = vrai		// poing
+				}
+				break
+				
+			case 0 : 	// poing
+				i_joy_flag_repousse = vrai
+				break
+				
+			default:		// arme non gérée
+				break
+		}
+	}
+}
+
+
+// DROP
+if( IO_ButtonJustPressed(Jack_Joy_Drop) && ! i_flag_nage )
+{
+	i_joy_flag_drop = vrai
+	H_Weapon_Drop()
+	H_Weapon_Swap()
+}
+
+
+// RELOAD
+if( IO_ButtonJustPressed(Jack_Joy_Reload) && ! JetableEnMain() && ! i_flag_nage )
+{
+	i_joy_flag_reload = vrai
+}
+
+
+// SWAP WEAPONS
+if( IO_ButtonJustPressed(Jack_Joy_Swap_Weapons) && ! i_flag_nage )
+{
+	i_joy_flag_swap = vrai
+	H_Weapon_Swap()
+}
+
+
+// READ JOY =============================
+READ_JOY:
+f_joy_norm = @get_global f_joy_norm		
+if (f_joy_norm)
+	v_joy_dir = @get_global v_joy_camera_normalized
+else
+	v_joy_dir = OBJ_SightGet()		
+// READ JOY =============================

@@ -1,0 +1,57 @@
+#include "PNJ_SwampCrawler_Organizer_defs.var" 
+
+int 		i, j
+float		f_dist
+object 	o_SC1, o_SC2
+
+int		i_bestattack
+float	f_distattack
+
+
+
+for (i = 0; i < SC_Nb; i++ )
+	M_SCi(i) Org_i_Answer = 0
+
+if (!SC_TreatRequest) 
+	return
+	
+for (i = 0; i < SC_Nb; i++ )
+{
+	o_SC1 = SC_Obj[ i ]
+	
+	// attack
+	if ( (M_SC(o_SC1) Org_i_Request == 1 ) && (M_SC(o_SC1) Org_o_ReqObj ) )
+	{
+		f_distattack = Cf_Infinit
+		i_bestattack = -1
+
+		for ( j = i; j < SC_Nb; j++)
+		{
+			o_SC2 = SC_Obj[ j ]
+			if (M_SC(o_SC2) Org_o_StateAttack == M_SC(o_SC1) Org_o_ReqObj )
+			{
+				f_distattack = 0
+				i_bestattack = j
+			}
+
+			if (M_SC(o_SC2) Org_i_Request != 1) continue
+			if (M_SC(o_SC2) Org_o_ReqObj != M_SC(o_SC1) Org_o_ReqObj ) continue
+			
+			M_SC(o_SC2) Org_i_Request = 0
+
+			f_dist = @o_SC2 OBJ_SqrDist( M_SC(o_SC2) Org_o_ReqObj )
+			if (f_dist < f_distattack)
+			{
+				f_distattack = f_dist
+				i_bestattack = j
+			}
+		}
+
+		if (i_bestattack != -1)
+		{
+			M_SCi(i_bestattack) Org_i_Answer = 1
+		}
+	}
+}
+
+SC_TreatRequest = 0

@@ -1,0 +1,319 @@
+#include "PNJ_Lapin_defines.var"
+
+object	to_target
+object	to_gao
+object	to_bone
+vector	tv_sight
+vector	tv_offset
+int			ti_exit
+int			ti_use
+int			ti_indice
+float		tf_delai_use
+float		tf_delai_exit
+vector	tv_pos
+
+
+// SORTIE ETAT ===================================================================
+if( i_sort_etat )
+{
+	if( RM_ITEM_IS_WEAPON(i_item_ID) )		// weapons only !!!!!
+		f_item_reload_delai = MATH_RandFloat(2.0, 4.0)
+	i_Atk_Activate_Explosive_Box_flag = faux
+	Lapin_EXPRESSION(Cf_Expr_Mouth_Closed)
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_Lapin_USE_ITEM) 
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Lapin_USE_ITEM
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	Lapin_DBG_Trace_String(DBG_Trace_Etat, "USE ITEM")
+	fct_previous_etat = fct_last_etat		// ce n'est pas un état précédent pour la sortie du mode
+	fct_last_etat = AI_TrackCurGet()
+	// avant réinit ! (compteurs rafales)
+	i_item_Rafale_Total = Item_Rafale + Item_Rafale_Miss
+	i_item_rafale_cpt_total = 0	
+	i_item_rafale_cpt_good = 0
+	i_item_rafale_cpt_missed = 0
+	if( i_item_ID == RM_WEAPON_TYPE_GUN )
+	{
+		if( Item_Rafale > Item_Rafale_Miss )
+			i_item_rafale_ce_tir_ne_rate_pas = vrai		// la 1ère balle ne manquera pas sa cible
+		else
+			i_item_rafale_ce_tir_ne_rate_pas = faux		// la 1ère balle manquera sa cible
+	}
+	else
+		i_item_rafale_ce_tir_ne_rate_pas = vrai		// ma grenade ne manquera pas sa cible
+	
+		
+	o_use_target = EVENT_InteretTargetGet(mid_best_interet)
+	if( ! o_use_target )
+		DBG_Error("pas de o_use_target ???")
+	
+	REINIT:
+	f_time_start_etat = 0.0
+	
+	i_item_used = faux
+	switch( i_item_ID )
+	{
+		case RM_WEAPON_TYPE_GRENADE :
+			Lapin_ACTION_Set(Action_Fight_Grenade_Launch)
+			Lapin_ACTION_RandomFreqSet(0.8, 1.2)
+//			SND_RequestPlay(Ci_SND_ITEM_Use_Grenade)
+			break
+		case RM_WEAPON_TYPE_GUN :
+			Lapin_ACTION_Set(Action_Fight_Gun_Shoot)
+//			SND_RequestPlay(Ci_SND_ITEM_Use_Gun)
+			break
+		case RM_WEAPON_TYPE_CLE :
+			Lapin_ACTION_Set(Action_Fight_Grenade_Launch)
+//			SND_RequestPlay(Ci_SND_ITEM_Use_Clef)
+			break
+		case RM_WEAPON_TYPE_CAROTTE :
+			Lapin_ACTION_Set(Action_Carotte_Mange)
+//			SND_RequestPlay(Ci_SND_ITEM_Use_Carotte)
+			break
+		default:
+			DBG_Error("???")
+	}
+	Lapin_EXPRESSION(Cf_Expr_Mouth_Full)
+
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// STIMULI ===========================================================================
+o_Grabbed_Actor = LNK_ServeurGet(Ci_LNK_GRAB_EAGLE, mid_Grabbed_LNK_ID, vrai, nofunc, nofunc)
+if( o_Grabbed_Actor )
+	macro_change_etat("Lapin_ETAT_GRABBED")
+
+o_Rided_Actor = LNK_ServeurGet(Ci_LNK_RIDE_ON_NMI, mid_Rided_LNK_ID, vrai, nofunc, nofunc)
+if( o_Rided_Actor )
+	macro_change_etat("Lapin_ETAT_RIDED")
+
+AI_Execute("Lapin_exec_check_vision")
+
+MACRO_CHECK_PAFS
+
+if( Lapin_ROPE_Gogo_Mode() )
+	macro_change_etat("Lapin_ETAT_GOGO")
+
+if( i_ventilo_flag )
+	macro_change_etat("Lapin_ETAT_ASPIRE")
+
+if( o_piege )
+	macro_change_etat("Lapin_ETAT_PIEGE")
+
+AI_Execute("Lapin_exec_update_best_interest")
+
+if( ! MSG_GlobalIsValid(mid_best_interet) )
+	MACRO_GO_IDLE(0)
+
+if( ! o_item && ! i_item_used )		// si l'item a été utilisé, attendre la fin de l'anim (pour le test fuite après attaque)
+	MACRO_GO_IDLE(0)
+
+AI_Execute("Lapin_exec_check_grappin")
+
+AI_Execute("Lapin_exec_check_shoot")
+
+if( i_Beat_flag_danse )
+	macro_change_etat("Lapin_ETAT_DANSE")
+
+// COMPORTEMENT ===================================================================
+
+//to_target = EVENT_InteretTargetGet(mid_best_interet)
+to_target = o_use_target
+
+if( @to_target AI_IsModel(get_PNJ_Pigeon_path) )
+	i_item_rafale_ce_tir_ne_rate_pas = vrai
+
+if( RM_ITEM_IS_WEAPON(i_item_ID) )		// weapons only !!!!!
+	Lapin_INTERET_Attack()
+
+
+// USE & EXIT ? -----------------------------------------------------------------------
+ti_use = faux
+ti_exit = faux
+switch( i_item_ID )
+{
+	case RM_WEAPON_TYPE_CAROTTE :
+		if( f_time_start_etat > 2.5 )
+			ti_use = vrai
+		if( ACT_ActionFinished() )
+			ti_exit = vrai
+		break
+	case RM_WEAPON_TYPE_GRENADE :
+		if( ACT_ActionItemGet() == 1 )
+			ti_use = vrai
+		if( ACT_ActionItemGet() == 1 && ACT_ActionFinished() )
+			ti_exit = vrai
+		break
+	case RM_WEAPON_TYPE_GUN :
+		if( ! i_item_rafale_cpt_total )		// 1ère balle
+		{
+			tf_delai_use = 1.0
+			tf_delai_exit = 1.0
+		}
+		else if( i_item_rafale_cpt_total == i_item_Rafale_Total -1 )		// dernière balle
+		{
+			tf_delai_use = 0.1
+			tf_delai_exit = 0.5
+		}
+		else		// en cours de rafale
+		{
+			tf_delai_use = 0.1
+			tf_delai_exit = 0.1
+		}
+		if( f_time_start_etat > tf_delai_use )
+			ti_use = vrai
+		if( f_time_start_etat > tf_delai_exit )
+			ti_exit = vrai
+		break
+}
+if( ! i_item_used && ti_use )
+{
+	// utiliser l'arme
+	i_item_used = vrai
+//	DBG_TraceInt(i_item_rafale_cpt_total)
+
+	if( i_Atk_Activate_Explosive_Box_flag )
+		to_gao = Lapin_Get_Target(to_target)		// frapper la bombox !!!
+	else
+		to_gao = to_target
+
+	if( i_item_rafale_ce_tir_ne_rate_pas )
+	{
+//		@o_item PROC_WEAPON_Use(@to_gao OBJ_PosGet() - OBJ_PosGet(), to_gao)		// ça va toucher
+//		DBG_TraceString(" / lock\n")
+
+		tv_offset = Cv_NullVector
+		ti_indice = ARR_ObjSearch(&@get_list_manager ao_target[0], @get_list_manager i_target_nb, to_gao)
+		if( ti_indice != -1 )
+		{
+			tv_offset = @get_list_manager av_target[ti_indice]
+		}
+		else if( @to_gao AI_IsModel(get_PNJ_Pigeon_path) )
+		{
+			tv_offset = Cv_VerticalVector
+		}
+		else if( @to_gao OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Anims) )
+		{
+			to_bone = @to_gao ANI_CanalObjectGet(Anim_Canal_Tete)
+			if( ! to_bone )
+				to_bone = @to_gao ANI_CanalObjectGet(Anim_Canal_Bassin)
+			if( to_bone )
+			{
+				tv_offset = @to_bone OBJ_PosGet() - @to_gao OBJ_PosGet()
+				tv_offset = @to_gao MATH_VecLocalToGlobal(tv_offset)
+			}
+		}
+		@o_item PROC_WEAPON_Use(tv_offset, to_gao)		// ça va toucher
+	}
+	else
+	{
+		tv_pos = @to_gao MATH_VecLocalToGlobal(cvector(i_item_missed_last_side * MATH_RandFloat(0.5, 1.5), 0.0, MATH_RandFloat(-1.0, 1.0)))
+		i_item_missed_last_side *= -1.0
+		DBG_RenderVector(@to_gao OBJ_PosGet(), tv_pos, color_rouge)
+		tv_pos += @to_gao OBJ_PosGet()
+		@o_item PROC_WEAPON_Miss()
+		@o_item PROC_WEAPON_Use(tv_pos - OBJ_PosGet(), nobody)		// ça va rater
+//		DBG_TraceString(" / miss\n")
+	}
+}
+if( i_item_used && ti_exit )
+{
+	// tester si l'arme a été détruite
+	o_item = LNK_ThisClientGet(o_item, Ci_LNK_GRAB_OBJECT, mid_item_LNK_ID, vrai, nofunc, nofunc, nofunc)
+	i_item_rafale_cpt_total++
+	if( i_item_rafale_ce_tir_ne_rate_pas )
+		i_item_rafale_cpt_good++
+	else
+		i_item_rafale_cpt_missed++
+	
+	// gun miss ???
+	if( i_item_ID == RM_WEAPON_TYPE_GUN )
+	{
+		if( ! i_item_rafale_ce_tir_ne_rate_pas && i_item_rafale_cpt_good < Item_Rafale )
+			i_item_rafale_ce_tir_ne_rate_pas = vrai
+		else if( i_item_rafale_ce_tir_ne_rate_pas && i_item_rafale_cpt_missed < Item_Rafale_Miss )
+			i_item_rafale_ce_tir_ne_rate_pas = faux
+	}
+	
+	// lapin géant = rafale au gun
+	if( ( i_item_ID == RM_WEAPON_TYPE_GUN ) 
+		&& i_item_rafale_cpt_total < i_item_Rafale_Total )
+	{
+		goto REINIT
+	}
+	
+//	if( fct_previous_etat )
+//		macro_change_etat(fct_previous_etat)		// retour en cache
+//	else
+//		macro_change_etat(fct_main_etat)
+
+	// FUITE / ATTAQUE ? ------------------------------------
+	if( RM_ITEM_IS_WEAPON(i_item_ID) )
+	{
+//		if( MSG_GlobalIsValid(mid_best_interet) )
+//		{
+//			to_target = EVENT_InteretTargetGet(mid_best_interet)
+			to_target = o_use_target
+			switch( Fuite_Apres_Attaque )
+			{
+				case Ci_Fuite_Apres_Attaque_Toujours :
+					Lapin_FUITE(to_target)
+					break
+				case Ci_Fuite_Apres_Attaque_Gun :
+					if( i_item_ID == RM_WEAPON_TYPE_GUN )
+						Lapin_FUITE(to_target)
+					break
+				case Ci_Fuite_Apres_Attaque_Grenade :
+					if( i_item_ID == RM_WEAPON_TYPE_GRENADE )
+						Lapin_FUITE(to_target)
+					break
+			}
+//		}
+	}
+	MACRO_GO_IDLE(0)
+}
+
+switch( i_item_ID )
+{
+	case RM_WEAPON_TYPE_GUN :
+	case RM_WEAPON_TYPE_GRENADE :
+		if( i_Atk_Activate_Explosive_Box_flag )
+			to_gao = Lapin_Get_Target(to_target)		// frapper la bombox !!!
+		else
+			to_gao = to_target
+		v_way_destpos = @to_gao OBJ_PosGet()
+		i_target_territory_ID = Lapin_PROC_POS_GET_TERRITORY_ID(v_way_destpos)
+		
+		v_force_sight = v_way_destpos - OBJ_PosGet()
+		f_orient_speed = 20.0
+		break
+		
+	case RM_WEAPON_TYPE_CLE :
+	case RM_WEAPON_TYPE_CAROTTE :
+		v_way_destpos = Cv_NullVector
+		i_target_territory_ID = Lapin_PROC_POS_GET_TERRITORY_ID(v_way_destpos)
+		break
+}
+
+AI_Execute("Lapin_exec_way_orientation")
+
+// Regard ----------------------------------------------------------
+i_flag_look = vrai
+v_look_pos = v_way_destpos
+
+
+OBJ_CapaSet(Obj_Capa_Fight, none)

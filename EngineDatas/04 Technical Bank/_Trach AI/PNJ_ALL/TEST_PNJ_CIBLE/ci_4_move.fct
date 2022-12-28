@@ -1,0 +1,53 @@
+vector		tv_deplacement, tv_dir
+object		to_gao 
+
+#include "ci_defines.var"
+
+i_cur_mode = Ci_mode_move
+if (i_cur_mode != i_old_mode)
+{
+	// INIT
+	i_old_mode = i_cur_mode
+}
+
+tv_dir = MATH_VecNormalize( @o_deplacement_simple OBJ_PosGet() - OBJ_PosGet() )
+tv_deplacement = tv_dir * (f_deplacement_speed * TIME_GetDt())
+tv_deplacement *= f_paf_coef
+
+if (COL_HasZDM() && i_suit_terrain)
+	DYN_SpeedSetVector( tv_dir * (f_deplacement_speed * f_paf_coef) )
+else
+	OBJ_PosSet( OBJ_PosGet() + tv_deplacement )
+
+if (!MATH_VecNullEpsilon(tv_deplacement))
+	OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(),tv_deplacement,5.0 * TIME_GetDt()), Cv_VerticalVector)
+
+
+if (MATH_VecDotProduct(@o_deplacement_simple OBJ_PosGet() - v_pos_init, @o_deplacement_simple OBJ_PosGet() - OBJ_PosGet()) < 0)
+{
+	OBJ_PosSet(@o_deplacement_simple OBJ_PosGet())
+
+	if (o_1st_wp)
+	{
+		o_deplacement_simple = WAY_NetNextWP(n_network,o_deplacement_simple,0,0)
+		if (!o_deplacement_simple)
+		{
+			// On est a la fin du mouvement
+			if (o_attaque)
+				to_gao = o_attaque
+			else if (o_attaque_object)
+				to_gao = o_attaque_object
+			else if (i_attaque_id>=0)
+				to_gao = @"univ" ao_AllHumains[i_attaque_id]
+			else
+				to_gao = AI_MainActorGet(i_MainActor)
+	
+			o_attaque = to_gao
+			AI_TrackCurChangeNow("ci_3_attaque_suivre")
+		}
+	}
+	else
+		AI_TrackCurChangeNow("ci_5_wait")
+}
+
+AI_Execute("ci_exec_test_attaque_suivre")

@@ -1,0 +1,114 @@
+#include "r_defines.var"
+
+// calcul du sens du paf
+int				ti_collision_nb, ti_i
+int				ti_flag_tue_grab_torse_actor
+int				ti_zde_qui_paffe
+int				ti_paf
+int				ti_contre
+int				ti_type
+int				ti_gfx
+
+float			tf_dmg
+
+vector		tv_pos
+vector		tv_paf_pos
+vector		tv_sens
+
+object		tao_zde_zde_list[20]
+object		to_main
+object		to_gao
+object		to_item 
+message	tm_msg
+
+ti_gfx = vrai
+to_main = ANI_CanalObjectGet(Anim_Canal_PouceD1)
+tv_paf_pos = @to_main OBJ_PosGet()
+ti_collision_nb = COL_ZDE_ZDEListGet( &tao_zde_zde_list[0], C_zde_fight, C_zde_corps, all, none, Ci_Filter_IdentityFlag)
+for (ti_i = 0; ti_i < ti_collision_nb; ti_i++)
+{
+	if ( ARR_ObjSearch( &ao_frappe_target[0], i_frappe_target_nb, tao_zde_zde_list[ti_i]) == -1 && tao_zde_zde_list[ti_i] != get_rayman)
+	{
+		to_gao = tao_zde_zde_list[ti_i]
+		ao_frappe_target[i_frappe_target_nb] = to_gao
+		ti_paf = vrai
+		ti_contre = faux
+		
+		tf_dmg = 10.0
+		switch ( ACT_ActionGet())
+		{
+			case RM_Act_Jump_DIVE :
+			case RM_Act_DIVE_Reception :
+				SND_RequestPlay(C_SND_COUP_PAF)
+				ti_type = C_PAF_RM_Fort + C_PAF_RM_DiveAttack
+				tv_sens = @ao_frappe_target[i_frappe_target_nb] OBJ_PosGet() - OBJ_PosGet()
+				// Zone proche fait des dommages, zone éloignée pas de dommage.
+				if ( MATH_VecDotProduct(tv_sens,tv_sens)  >= 2.25)	
+				{
+					ti_type = C_PAF_RM_Moyen + C_PAF_RM_DiveAttack
+					tf_dmg = 0.0
+				}
+				break
+			case RM_Act_PunchUR2 :
+			case RM_Act_PunchUR0 :
+			case RM_Act_PunchU3 :
+			case RM_Act_PunchU3v1 :
+			case RM_Act_PunchU3v2 :
+				SND_RequestPlay(C_SND_COUP_Paf_Ultra)
+				ti_type = C_PAF_RM_Faible + C_PAF_RM_ComboPetit
+				tv_sens = @ao_frappe_target[i_frappe_target_nb] OBJ_PosGet() - OBJ_PosGet()
+				break
+			case RM_Act_PunchFinish :
+				@get_Kamera Proc_Kam_ComboFinish( ao_frappe_target[i_frappe_target_nb])		// Vas y fais ton taf petite
+				SND_RequestPlay(C_SND_COUP_PAF)
+				ti_type = C_PAF_RM_Moyen + C_PAF_RM_ComboFinish
+				tv_sens = @ao_frappe_target[i_frappe_target_nb] OBJ_PosGet() - OBJ_PosGet()
+				tv_sens = Proc_Vec_HorzNormalise( tv_sens, v_joy_sight_normalized)
+				// 1ere cible part dans le sens du joy
+				// Les autres s'écratent de RM.
+				if ( ! i_frappe_target_nb)
+					tv_sens = MATH_VecInCone( v_joy_sight_normalized, tv_sens, Cf_PiBy2, 0.0)
+				else
+					tv_sens = MATH_VecInCone( tv_sens, v_joy_sight_normalized, Cf_PiBy2, 0.0)
+				
+				break
+			case RM_Act_PunchTGV_Sol :
+				SND_RequestPlay(C_SND_COUP_PAF)
+				ti_type = C_PAF_RM_Fort
+				tv_sens = @ao_frappe_target[i_frappe_target_nb] OBJ_PosGet() - OBJ_PosGet()
+				break
+			case RM_Act_PunchDragon :
+				SND_RequestPlay(C_SND_COUP_PAF)
+				ti_type = C_PAF_RM_Moyen + C_PAF_RM_ComboFort
+				tv_sens = @ao_frappe_target[i_frappe_target_nb] OBJ_PosGet() - OBJ_PosGet()
+				break
+			default:
+				SND_RequestPlay(C_SND_COUP_PAF)
+				ti_type = C_PAF_RM_Moyen
+				tv_sens = OBJ_SightGet()
+		}
+		if ( ti_paf )
+		{
+			i_game_ralenti = faux
+
+			if( @to_gao AI_IsModel(get_RM_Costume_Item_path) )
+				@get_RM_Costume_Item_path to_gao i_paf_flag = vrai
+			else
+				EVENT_AddEventPafCanal( C_EVENT_FILTER_Object,  ti_type, OBJ_Me(), Cf_EVENT_Duree_1Trame, tao_zde_zde_list[ti_i], -1, tf_dmg, tv_sens, tv_paf_pos)
+
+			if( ti_gfx )
+				PROC_SFX_PAF_LAPIN_02(tv_paf_pos, MATH_RandFloat(1.0,1.5))
+		}
+		if ( ti_contre)
+		{
+			tv_sens = @ao_frappe_target[i_frappe_target_nb] OBJ_PosGet() - OBJ_PosGet()
+			tv_sens.z = 0.0
+			v_paf_detect_dir = tv_sens
+			i_paf_detect_type = C_PAF_RM_Choc
+			AI_TrackCurChangeNow("raym_ETAT_paf")
+		}
+
+		i_frappe_target_nb++
+	}
+}
+

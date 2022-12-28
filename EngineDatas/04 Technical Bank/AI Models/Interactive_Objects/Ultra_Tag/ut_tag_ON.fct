@@ -1,0 +1,21 @@
+int		ti_sf
+
+// Si je ne dois plus tagger
+if ( AI_TriggerIsValid(trig_je_tag) && ! call_trigger(trig_je_tag) )
+{
+	@get_global i_ultra_tag_touched = vrai
+	AI_TrackCurChangeNow("ut_tag_OFF")	
+}
+
+i_flag_tag_enable = vrai
+
+if (!mode)
+	AI_Execute("ut_callback_tagon")
+
+if (AI_TriggerIsValid(trig_detruction) && call_trigger(trig_detruction))
+{
+	@get_global i_ultra_tag_touched = vrai
+
+	AI_Execute("ut_callback_tagoff")
+	OBJ_Destroy()		// Le trigger demande la destruction
+}

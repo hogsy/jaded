@@ -1,0 +1,27 @@
+vector		tv_temp
+vector		tv_temp2
+vector		tv_offset
+object		to_main
+
+
+if( i_id_humain == C_ID_Ann )
+{
+	// ANN
+	to_main = ANI_CanalObjectGet(Anim_Canal_MainDroite)
+	OBJ_BankingGeneralSet(
+		MATH_VecBlendRotate(OBJ_SightGet(), @o_grab_actor OBJ_SightGet(), 10 * TIME_GetDt()),
+		MATH_VecBlendRotate(OBJ_BankingGet(), @o_grab_actor OBJ_BankingGet(), 10 * TIME_GetDt()))
+	tv_offset = @to_main OBJ_PosGet() - OBJ_PosGet()
+//	OBJ_PosSet(@o_grab_actor OBJ_PosGet() - tv_offset)
+	OBJ_PosSet( @o_grab_transporte_bone OBJ_PosGet() - tv_offset)
+}
+else
+{
+	// MARINS
+	v_grab_foot_pos = @o_grab_transporte_bone OBJ_PosGet()
+	v_grab_foot_axis = @o_grab_transporte_bone OBJ_BankingGet()
+	i_grab_foot_sight_enabled = vrai
+	AI_Execute("H_exec_grab_foot")
+}
+
+COL_StartMatrixSet(OBJ_PosGet())

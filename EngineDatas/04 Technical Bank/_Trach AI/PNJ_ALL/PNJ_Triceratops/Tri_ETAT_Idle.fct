@@ -1,0 +1,188 @@
+#include "Tri_defines.var"
+
+vector	tv_sight
+vector	tv_dest_pos
+vector	tv_move
+vector	tv_banking
+int			ti_i
+int			ti_action
+int			ti_move_on
+float		tf_dist
+float		tf_best_dist
+object	to_wp
+object	to_best_wp
+
+
+// SORTIE ETAT ==========================================
+if( i_etat_sortie )
+{
+	Tri_SND_Brouter_Stop()
+	Tri_SND_Boire_Stop()
+	i_etat_sortie = faux
+	return
+}
+
+// ENTREE ETAT =========================================
+if( i_etat_courant != ETAT_IDLE )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_IDLE
+	if( fct_etat_ancien )
+	{
+		i_etat_sortie = vrai
+		AI_Execute(fct_etat_ancien)
+	}
+	fct_etat_ancien = AI_TrackCurGet()
+	f_etat_duree = 0.0
+}
+else
+{
+	f_etat_duree += TIME_GetDt()
+}
+
+// ANALYSE =============================================
+AI_Execute("Tri_exec_Check_Pafs")
+if( o_paf_actor )
+	macro_change_etat("Tri_ETAT_Paf")
+
+AI_Execute("Tri_exec_Check_Cadavres")
+if( o_cadavre )
+	macro_change_etat("Tri_ETAT_FoodChain")
+
+AI_Execute("Tri_exec_Select_Target")
+if( o_fight_actor )
+{
+	if( i_paf_actor_to_target_flag )
+		macro_change_etat("Tri_ETAT_Fight")
+	else
+		macro_change_etat("Tri_ETAT_Fight")
+}
+
+// COMPORTEMENT =======================================
+
+// default : don't move
+tv_sight = OBJ_SightGet()
+tv_dest_pos = OBJ_PosGet()
+ti_action = Action_Idle
+tv_move = Cv_NullVector
+ti_move_on = faux
+// test retour
+to_best_wp = nobody
+switch( i_Retour_Mode )
+{
+	case Ci_Retour_Mode_SafeZone :
+		if( o_Safe_Zone && ! COL_Pivot_BVCollide(o_Safe_Zone) )
+		{
+			ti_move_on = vrai
+			tv_dest_pos = @o_Safe_Zone OBJ_PosGet()
+			tv_sight = tv_dest_pos - OBJ_PosGet()
+			if( OBJ_LIB_Intersection_Dir_BV(o_Safe_Zone, OBJ_PosGet(), tv_sight, tf_dist, tv_move))
+				tv_move -= OBJ_PosGet()
+			else
+				tv_move = tv_dest_pos - OBJ_PosGet()
+			tv_sight = tv_move
+			tv_move.z = 0.0
+		}
+		break
+	case Ci_Retour_Mode_InitPos :
+		tv_move = OBJ_PosInitGet() - OBJ_PosGet()
+		tv_move.z = 0.0
+		if( MATH_VecNorm(tv_move) > 3.0 )
+		{
+			ti_move_on = vrai
+			tv_dest_pos = OBJ_PosInitGet()
+			tv_sight = tv_dest_pos - OBJ_PosGet()
+		}
+		break
+	case Ci_Retour_Mode_Waypoint :
+		tf_best_dist = Cf_Infinit
+		for( ti_i = 0; ti_i < Ci_Retour_Mode_Waypoint_Max_nb; ti_i++ )
+		{
+			to_wp = ao_Retour_Waypoints[ti_i]
+			if( to_wp )
+			{
+				tf_dist = OBJ_SqrDistHorz(to_wp)
+				if( tf_dist < tf_best_dist )
+				{
+					tf_best_dist = tf_dist
+					to_best_wp = to_wp
+				}
+			}
+		}
+		if( to_best_wp )
+		{
+			tv_move = @to_best_wp OBJ_PosGet() - OBJ_PosGet()
+			tv_move.z = 0.0
+			if( MATH_VecNorm(tv_move) > 1.0 )
+			{
+				ti_move_on = vrai
+				tv_dest_pos = @to_best_wp OBJ_PosGet()
+				tv_sight = tv_dest_pos - OBJ_PosGet()
+			}
+		}
+		break
+}
+if( ti_move_on )
+{
+	if( MATH_VecNorm(tv_move) > 10.0 )
+		ti_action = Action_Trot_10ms
+	else
+		ti_action = Action_Marche
+}
+else
+{
+	switch( i_Retour_Action )
+	{
+		case Ci_Retour_Action_Boire :
+			ti_action = Action_Idle_Boire
+			break
+		case Ci_Retour_Action_Brouter :
+			ti_action = Action_Idle_Brouter
+			break
+		case Ci_Retour_Action_SelonWaypoint :
+			if( i_Retour_Mode == Ci_Retour_Mode_Waypoint && to_best_wp )
+			{
+				if( @to_best_wp OBJ_CapaTest(WP_CAPA_Boire) )
+					ti_action = Action_Idle_Boire
+				else if( @to_best_wp OBJ_CapaTest(WP_CAPA_Brouter) )
+					ti_action = Action_Idle_Brouter
+				else
+					ti_action = Action_Idle
+			}
+			else
+				ti_action = Action_Idle
+			break
+		case Ci_Retour_Action_Attente :
+		default:
+			ti_action = Action_Idle
+			break
+	}
+}
+DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, tv_sight, color_vert)
+tv_banking = Cv_VerticalVector
+if( ti_move_on )
+{
+	tv_banking = macro_banking	// ne pas s'adapter à la normale du sol en attente
+	if( Tri_Occluder_Test(tv_dest_pos, tv_sight) )
+		DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, tv_sight, color_rouge)
+}
+OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), tv_sight, 2 * TIME_GetDt()), tv_banking)
+Tri_ActionSet(ti_action)
+
+// SND LOOP --------------------------
+switch( ti_action )
+{
+	case Action_Idle_Boire :
+		Tri_SND_Boire_Start()
+		Tri_SND_Brouter_Stop()
+		break
+	case Action_Idle_Brouter :
+		Tri_SND_Boire_Stop()
+		Tri_SND_Brouter_Start()
+		break
+	default:
+		Tri_SND_Boire_Stop()
+		Tri_SND_Brouter_Stop()
+		break
+}
+

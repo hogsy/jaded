@@ -1,0 +1,46 @@
+int		cur, i
+int		in
+int		act
+object	to_obj
+
+TIME_Wait(1.0)
+
+in = faux
+cur = SCT_GetCurrent()
+if(cur == 666 || cur == 667) 
+{
+	for(i = 0; i < 10; i++)
+	{
+		to_obj = ao_all_gaos[i]
+		if(!to_obj) break
+		@to_obj OBJ_FlagInvisibleSet(faux)
+	}
+
+	return
+}
+
+for(i = 0; i < 40; i++)
+{
+	if(!ai_all_sectos[i]) break
+	if(ai_all_sectos[i] == cur)
+	{
+		in = vrai
+		break
+	}
+}
+
+if(!activate)
+	act = in
+else if(!in)
+	act = vrai
+else
+	act = faux
+	
+for(i = 0; i < 10; i++)
+{
+	to_obj = ao_all_gaos[i]
+	if(!to_obj) break
+	@to_obj OBJ_FlagInactiveSet(act)
+	@to_obj OBJ_FlagInvisibleSet(act)
+}
+

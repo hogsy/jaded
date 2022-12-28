@@ -1,0 +1,105 @@
+#include "k_define.var"
+
+float			tf_dist, tf_pond, tf_dot, tf_dist_grab
+object		to_serveur, to_bone,to_client
+messageid	tmid_proposition	
+vector		tv_temp, tv_sight
+int				ti_propose
+int				ti_ann_better
+
+tmid_proposition = pop
+
+//i_GrabAnn_Tested = vrai
+
+// ON VA SELCTIONNER LA MEILLEURE PONDERATION
+
+tf_pond = MSG_GlobalGetVector(tmid_proposition, VEC1).x
+
+i_GrabKong_Dash = faux			// Je peux graber sans dash
+
+ti_ann_better = faux
+switch( LNK_GrabStatusGet(tmid_proposition))
+{
+	case Ci_GrabKong_Type_Petit :
+//		if ( tf_pond > Ci_Grab_Kong_Pond_Dead)
+			to_client = MSG_GlobalGetGao(tmid_proposition, CLIENT)
+		if ( @to_client OBJ_CapaTest(OBJ_Capa_15) && i_GrabKong_grabAnnAccepte)
+		{
+			ti_ann_better = vrai
+			tf_dist = Cf_Infinit
+			TROP_LOIN
+		}
+		else
+		{
+			ti_ann_better = faux
+			
+			i_GrabAnn_Tested = vrai
+			to_bone = LNK_GrabBoneGet(tmid_proposition)
+			
+			tv_temp = @to_bone OBJ_PosGet()
+			tv_temp -= @to_client OBJ_PosGet()
+			tv_temp.z = 0.0
+			tf_dist = MATH_VecDotProduct(tv_temp, tv_temp)
+			
+			if ( @to_client AI_IsModel(get_PNJ_KBats_path))
+			{
+				if (tf_dist > 25.0)
+					TROP_LOIN
+			}
+			else if ( @to_client AI_IsModel(get_PNJ_KRaptor_path))
+			{
+				if (tf_dist > 16.0)
+					TROP_LOIN
+			}
+			else if ( @to_client AI_IsModel(get_PNJ_Scolo_Path))
+			{
+				if (tf_dist > 16.0 && @to_bone OBJ_SqrDistHorz( @to_client Proc_KK_Scolo_Bone(100)) > 16.0 )
+					TROP_LOIN
+			}
+			else if ( tf_dist > 16.0 )
+				TROP_LOIN
+		}
+		i_GrabKong_Dash = faux			// Je peux graber sans dash
+
+		break
+	case Ci_GrabKong_Type_Gros :
+	case Ci_GrabKong_Type_Special :
+	case 33	: 	// Ci_GrabKong_Type_Gros  + Ci_GrabKong_Type_Special 
+	case 161 : 	// Ci_GrabKong_Type_Gros  + Ci_GrabKong_Type_Special + Ci_GrabKong_Type_Droit
+		tf_dist_grab = MSG_GlobalGetVector(tmid_proposition, VEC2).x
+		tf_dist = tf_pond
+		if ( tf_pond > tf_dist_grab)
+			TROP_LOIN
+		else
+			ti_ann_better = faux
+		break
+	case Ci_GrabKong_Type_Finish :
+		tf_dist = tf_pond
+		if( MATH_VecDistance( OBJ_PosGet(), LNK_GrabPositionGet(tmid_proposition)) > 12.0 )
+			TROP_LOIN
+		else
+			ti_ann_better = faux
+		break
+	case Ci_GrabKong_Type_Souche :
+		ti_ann_better = faux
+		break
+	case Ci_GrabKong_Type_Mashing :
+		tf_pond -= Ci_Grab_Kong_Pond_MashingObject
+		tf_dist_grab = MSG_GlobalGetVector(tmid_proposition, VEC2).x
+		tf_dist = tf_pond
+		if ( tf_pond > tf_dist_grab)
+			TROP_LOIN
+		else
+			ti_ann_better = faux
+		tf_pond += Ci_Grab_Kong_Pond_MashingObject
+		break
+}
+
+// LIAISNO AVEC ANN A CONSERVER??
+if ( i_GrabKong_grabAnnAccepte && ! ti_ann_better)
+{
+	// Rah MERDE il faut tuer la liaison Ann car l acteur est meilleur.
+	ao_CL[Ci_LNK_KKGRAB_OBJECT] = LNK_ClientGet(Ci_LNK_KKGRAB_OBJECT, amid_CL_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT], faux, nofunc, nofunc, nofunc)		
+	i_GrabKong_grabAnnAccepte = faux		
+}
+MSG_GlobalSetVector(tmid_proposition, cvector( tf_pond, 0.0, 0.0), VEC1, VEC_X)

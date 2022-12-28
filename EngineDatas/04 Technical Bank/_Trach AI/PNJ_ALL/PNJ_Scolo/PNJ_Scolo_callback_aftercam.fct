@@ -1,0 +1,15 @@
+#include '"PNJ_Scolo_defines.var"
+
+float		tf_dot_product
+float		tf_size
+vector	tv_temp
+object	to_camera
+
+to_camera = @get_global o_camera
+v_cam_pos = @to_camera OBJ_PosGet()
+
+tf_size = MATH_VecNorm(@ao_modules[0] OBJ_PosGet() - @ao_modules[7] OBJ_PosGet())
+tf_size = MATH_FloatMax(tf_size, MATH_VecNorm(@ao_modules[14] OBJ_PosGet() - @ao_modules[7] OBJ_PosGet()))
+tf_size = MATH_FloatMax(tf_size, f_size_coef)
+f_on_screen_pourcent = VIEW_LIB_Pourcent_On_Screen(@ao_modules[7] OBJ_PosGet(), tf_size, 1.0, 1.0, tv_temp, faux)
+

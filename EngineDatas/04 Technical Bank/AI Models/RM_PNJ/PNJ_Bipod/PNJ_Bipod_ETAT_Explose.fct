@@ -1,0 +1,87 @@
+#include "PNJ_Bipod_defines.var"
+
+int			ti_i
+
+float		tf_last_angle
+float		tf_coef
+float		tf_target_speed
+float		tf_limit_dt
+float		tf_dist
+float		tf_acceleration
+
+vector	tv_start_quat
+vector	tv_dest_quat
+
+vector	tv_pos
+vector	tv_dest_sight
+vector	tv_new_sight
+vector	tv_new_banking
+
+object	to_main_father
+object	to_monture
+
+if (i_flag_sortie_etat)
+{
+	i_flag_sortie_etat = faux
+	return
+}
+
+if (i_etat_courant != ETAT_Explose)
+{
+	// INTIALISATION
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Explose
+	
+	if (fct_last_etat)
+	{
+		i_flag_sortie_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	fct_last_etat = AI_TrackCurGet()
+	
+	if (i_SND_Motor_Loop != -1)
+	{
+		SND_Stop(i_SND_Motor_Loop)
+		i_SND_Motor_Loop = -1
+	}
+
+	i_flag_can_stop_ik = vrai
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+if (f_time_start_etat > 1.0)
+{
+	if (f_time_start_etat < 3.0)
+	{
+		if (f_time_start_etat > 2.0)
+			PNJ_Bipod_Disable_All()
+	
+		tf_coef = f_time_start_etat - 1.0
+		tf_coef /= 2.0
+		tf_coef = MATH_Sin(tf_coef * Cf_Pi)
+		
+		@get_global Proc_AE_BlackAndWhiteSet(tf_coef)
+		@get_global Proc_AE_RemanenceSet(tf_coef)
+		@get_global Proc_AE_ContrasteSet(tf_coef)
+	}
+}
+
+f_dt = TIME_GetDt()
+
+PNJ_Bipod_IK()
+PNJ_Bipod_Oreille()
+PNJ_Bipod_Update_Col()
+
+PNJ_Bipod_Spawn()
+////PNJ_Bipod_Bomb()
+PNJ_Bipod_Laser()
+PNJ_Bipod_GFX_Accumulation()
+PNJ_Bipod_Death_Smoke()
+PNJ_Bipod_Death_Laser()
+PNJ_Bipod_Death_Halo()

@@ -1,0 +1,30 @@
+#include "PNJ_Corbeau_defines.var"
+
+int			ti_i
+
+
+object	to_main_actor
+object	to_corback
+
+if (i_etat_courant != ETAT_attente)
+{
+	i_etat_courant = ETAT_attente
+	
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+to_main_actor = AI_MainActorGet(i_MainActor)
+
+if (OBJ_SqrDistHorz(to_main_actor) < 100.0)
+{
+	OBJ_FlagInvisibleSet(faux)
+
+	if (o_1st_wp)
+		AI_TrackCurChangeNow("PNJ_Corbeau_ETAT_follow_network")
+	else
+		AI_TrackCurChangeNow("PNJ_Corbeau_ETAT_envol")
+}

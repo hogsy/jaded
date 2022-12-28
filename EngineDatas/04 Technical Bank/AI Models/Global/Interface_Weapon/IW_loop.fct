@@ -1,0 +1,72 @@
+vector 	v
+float		f, g
+int			i, T
+int			i_colorize
+
+i_colorize = faux
+
+if ( !IO_ButtonPressed( 2 ) && !mi_Exit )
+{
+	@"univ" i_weapon_change = mi_Choice
+	mi_Exit = 1
+	mf_GenLumStart = 1
+	mf_GenLumEnd = 0
+	mf_GenLumTime = 0.1
+	mf_GenLumTimeCur = 0
+}
+
+if ( (mf_GenLumTimeCur != mf_GenLumTime ) && (mf_GenLumTime > 0) )
+{
+	mf_GenLumTimeCur += TIME_GetDt()
+	AI_Execute( "IW_exec_colorize" )
+	if (mf_GenLumTimeCur > mf_GenLumTime )
+	{
+		mf_GenLumTime = 0
+		if (mi_Exit)
+		{
+			WOR_UnPause(0,0xFFFFFFFF)
+			OBJ_FlagInvisibleSet( 1 )
+			OBJ_PosSet( cvector(-10, -1, 0 ) )
+			AI_TrackCurChange( "IW_wait" )
+		}
+	}
+}
+
+if (mi_Exit ) return
+
+v = IO_JoyGetMove()
+v.y = -v.y
+if ( MATH_AbsFloat( v.x ) < 0.4 && MATH_AbsFloat( v.y ) < 0.4 )
+{
+	mi_Choice = -1
+	mi_Slice = -1
+}
+else
+{
+	f = MATH_VecAngle( v, cvector( 1, 0, 0), cvector( 0, 0, 1) )
+
+	g = f 
+	if (g < 0 ) g+= Cf_2Pi
+	mi_Slice = MATH_Modulo( g / (Cf_2Pi / 32), 32 )
+	mf_SliceLum = MATH_VecNorm( v ) - 0.4
+	if (f < 0) f+= Cf_2Pi
+	mi_Choice = MATH_Modulo( f / Cf_PiBy4, 8)
+}
+if (mi_Choice >= Ci_weapon_ID_max )
+	mi_Choice = -1
+	
+AI_Execute( "IW_exec_cheat" )
+	
+//if (mi_Choice != -1 && @"univ" i_weapon_ishere[ mi_Choice ][ C_ID_Jack ] == 0 )
+//	mi_Choice = -1
+
+for (i = 0; i < Ci_weapon_ID_max; i++)
+{
+	if (i == mi_Choice)
+		mf_ColorMul[ i ] = 1
+	else
+		mf_ColorMul[ i ] = 0.6
+}
+AI_Execute( "IW_exec_colorize" )
+
+

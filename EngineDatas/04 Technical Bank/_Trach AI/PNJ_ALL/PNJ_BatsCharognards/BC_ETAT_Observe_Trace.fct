@@ -1,0 +1,70 @@
+#include "BC_defines.var"
+
+messageid		tmid_tmp
+messageid		tmid_vision
+
+
+// SORTIE ETAT
+if (i_sort_etat)
+{
+	v_decalage = Cv_NullVector
+	f_cible_life_coef = 0
+	f_speed = 0.0
+	
+	i_sort_etat = faux
+	return
+}
+
+// ENTREE ETAT
+if (i_etat_courant != ETAT_Observe_Trace)
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Observe_Trace
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	f_time_action = TIME_Get()			// init durée d'observation
+	
+	// vitesse
+	BC_ref_speed_set(Cf_speed_observe)
+	f_speed = 0.0		// bat à l'arrêt
+	
+	ACT_ActionSet(i_ACTION_Vol_Standard)
+	BC_action_frequency_set(Cf_freq_sur_place)
+	
+	BC_DBG_Trace_Etat("etat observe trace ")
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// ========== OBSERVATION =============
+
+
+// INTERET ====================================
+i_flag_neck = faux
+if( MSG_GlobalIsValid(mid_sang) )
+{
+	BC_Interet_Update(mid_interet_charogne, C_EVENT_InteretStatusAttack, EVENT_PereGet(mid_sang), tmid_vision)
+	i_flag_neck = vrai
+	v_look_pos = EVENT_PositionGet(mid_sang)
+}
+
+
+if( TIME_Elapsed(f_time_action, Cf_observ_trace) )
+{
+	// le bat n'a rien vu
+	i_flag_check_sang = faux
+	f_time_flags_check_sang = TIME_Get()
+	BC_Charognard_Mode_Reset()
+	AI_Execute("BC_exec_init_attente")
+}
+

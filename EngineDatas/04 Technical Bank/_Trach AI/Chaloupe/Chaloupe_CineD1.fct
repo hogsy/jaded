@@ -1,0 +1,69 @@
+vector	tv_temp
+object	to_obj, to_camera
+float		tf_tempX
+
+i_mode_cine = 1
+tv_temp = IO_JoyGetMove1()
+
+// Test de la visee
+if(des_i_chaloupe_jack)
+{
+	i_force_block = faux
+	if(i_test_visee && !i_visee_ok)
+	{
+		if(!i_visee_ok1)
+		{
+			if(MATH_AbsFloat(tv_temp.y) < 0.5)
+				i_force_block = vrai			
+			else
+			{
+				@"univ" CAM_SensVert = MATH_FloatSign(tv_temp.y)
+				i_visee_ok1 = vrai
+			}
+		}
+		
+		if ( call_trigger( mt_TriggerTestVisee ) )
+		{
+			i_visee_ok = 1
+		}
+	}
+}
+
+// On peut descendre
+if(OBJ_CapaTest(OBJ_Capa_8))
+{
+//	f_temp_descend = TIME_Get()
+	i_mode_cine = 1
+	AI_TrackCurChangeNow("Chaloupe_CineD") 
+}
+//else
+//{
+//	to_camera = get_camera
+////	@to_camera OBJ_CapaSet(OBJ_Capa_0, 0)
+////	@to_camera VIEW_AssignObject(0)
+//	//
+//	if	(OBJ_CapaTest(OBJ_Capa_13))
+//	{
+//		if	(f_temps_decal_jack_deb < 1)
+//		{
+//			f_temps_decal_jack_deb += TIME_GetDt() * 0.10
+//			tf_tempX = des_f_decal_jack_deb + ((f_decal_jack_fin - des_f_decal_jack_deb) * f_temps_decal_jack_deb)
+//		}
+//		else
+//		{
+//			if	(f_temps_decal_jack_deb >= 1)
+//			{
+//				OBJ_CapaSet(0, OBJ_Capa_12)
+//				des_f_decal_jack_deb = f_decal_jack_fin
+//				tf_tempX = f_decal_jack_fin
+//			}
+//		}
+//	}
+//	else	tf_tempX = des_f_decal_jack_deb
+//	//
+//	VIEW_FocaleSet(0, tf_tempX)
+//}
+des_f_inertie_rot = 0.01
+des_f_default_wave = 0.05
+AI_Execute("Chaloupe_Rotation")
+des_f_default_wave = 0.2

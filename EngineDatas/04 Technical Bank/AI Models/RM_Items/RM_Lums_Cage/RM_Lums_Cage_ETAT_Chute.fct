@@ -1,0 +1,47 @@
+#include "RM_Lums_Cage_defines.var"
+
+// SORTIE ===================================================================
+if( i_etat_sortie )
+{
+	i_etat_sortie = faux
+	return
+}
+
+// ENTREE ===================================================================
+if( i_etat_courant != ETAT_Chute )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Chute
+	if( fct_etat_last_track )
+	{
+		i_etat_sortie = vrai
+		AI_Execute(fct_etat_last_track)
+	}
+	fct_etat_last_track = AI_TrackCurGet()
+	f_etat_duree = 0.0
+}
+else
+{
+	f_etat_duree += TIME_GetDt()
+}
+
+// ANALYSE =================================================================
+if( i_ground_flag )
+{
+	SND_RequestPlay(Ci_SND_Fall)
+	macro_change_etat("RM_Lums_Cage_ETAT_Ground")
+}
+
+AI_Execute("RM_Lums_Cage_exec_check_paf")
+if( i_paf_flag )
+{
+	macro_change_etat("RM_Lums_Cage_ETAT_Break")
+}
+
+// COMPORTEMENT ===========================================================
+
+OBJ_BankingGeneralSet(
+	OBJ_SightGet(),
+	MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 5 * TIME_GetDt()))
+
+@o_baton OBJ_FlagInvisibleSet(vrai)

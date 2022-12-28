@@ -1,0 +1,305 @@
+
+//==============================================================================
+// ORIENTATION DU RAPTOR 
+//==============================================================================
+
+#include "KR_defines.var"
+
+int					ti_trace_info_requin
+vector			tv_new_sight
+vector			tv_new_sight_avant_res_loc
+vector			tv_new_sight_apres_res_loc
+vector			tv_new_banking
+vector			tv_orbit_tangent_dir		// current direction to aim to do an orbit around kong
+vector			tv_temp
+float				tf_orbit_ratio // was tf_requin_coef_dist	// 1.0 = 100% rotating around kong			0.0 = going mypos->Kong direction
+float				tf_dist2
+float				tf_orbit_tangent_offset	// 0..1 used to add an angle above orbit to move away from kong was called tf_requin_perfect_coef
+float				tf_dist_requin_modulaire
+float				tf_dist_requin_none
+float				tf_dist_requin_full
+float				tf_dist_calcul
+float				tf_rotation_requin_old_sign
+vector 			tv_trace_res_loc_screen_pos
+float				tf_avance_recule
+vector			tv_banking_under_feet
+vector			tv_res_loc_aimed_dir	// direction we're most likely to try to follow
+float				tf_orbitOffsetSqr
+
+// occluder related
+vector			tv_occl_dest_pos
+vector			tv_occl_nextPos
+object			to_occl_jump
+object			tao_occl_extra[1]
+float				taf_occl_extra[1]
+int					ti_occl_res
+
+// blocking wall
+int					ti_col
+object			to_blockingWall
+vector			tv_colNormal
+vector			tv_colSlideLeft
+float				tf_dot
+
+#ifdef _MAGDBG_
+ti_trace_info_requin = vrai
+#endif
+#ifndef _MAGDBG_
+ti_trace_info_requin = faux		// always keep faux
+#endif
+
+// COEF ROTATION =======================================================================
+if( ! i_flag_rotation )
+{
+	f_way_rot_speed = 0.0
+	i_requin_demi_tour_flag = faux
+	return
+}
+else
+	f_way_rot_speed = MATH_FloatBlend(f_way_rot_speed, 6.0, 2.0 * TIME_GetDt())
+
+
+tf_avance_recule = MATH_FloatSign(MATH_VecDotProduct(OBJ_SightGet(), DYN_SpeedGetVector()))
+
+if (f_use_safe_orbit_timer > 0.0)
+	tf_orbitOffsetSqr = f_dist_safe_orbit*f_dist_safe_orbit
+else
+	tf_orbitOffsetSqr = 0.0
+
+
+// SIGHT ================================================================================
+#define Cf_demitour_rot_spd	2.0
+
+if( i_flag_rotation_requin )
+{
+	// DEPLACEMENT EN MODE REQUIN
+	if( i_requin_demi_tour_flag )
+	{
+		// EN TRAIN DE FAIRE UN DEMI-TOUR
+		//TODO: eventually stay facing the ennemy
+		KRDBG_DRAWVECTOR(Ci_DBG_DRAW_DEMITOUR, OBJ_PosGet(), v_requin_demi_tour_vector * 5, color_rouge)
+		tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), v_requin_demi_tour_vector, Cf_demitour_rot_spd * TIME_GetDt())
+		MATH_VecSetNormalize(tv_new_sight)
+		tv_res_loc_aimed_dir = v_requin_demi_tour_vector
+	
+		if( MATH_VecDotProduct(tv_new_sight, v_requin_demi_tour_vector) > Cf_Cos30 )
+			i_requin_demi_tour_flag = faux			// demi-tour terminé, on repasse en déplacement requin
+		
+		if( ti_trace_info_requin )
+		{
+			Str_DisplayTextOnce("requin demitour", Cv_NullVector)
+		}
+	}
+	else
+	{
+		// PAS EN TRAIN DE FAIRE UN DEMI-TOUR
+		
+//$$		// VECBLEND #1
+		tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), v_sens_orientation, f_way_rot_speed * TIME_GetDt())
+		KRDBG_DRAWVECTOR(Ci_DBG_DRAW_WALL_PRBLM, OBJ_PosGet(), tv_new_sight * 5, color_bleu*0.25)
+		
+		tf_dist2 = OBJ_SqrDist(o_fight_actor)
+		
+		if( ti_trace_info_requin )
+		{
+			Str_DisplayTextOnce("requin", Cv_NullVector)
+			Str_DisplayFloatOnce(tf_dist2, cvector(0,0.15,0))
+		}
+		
+		// CHOIX DE LA TANGANTE
+		tv_orbit_tangent_dir = MATH_VecCrossProduct(v_sens_orientation, Cv_VerticalVector)
+
+//MG: less trouble		KR_RandomiseOrbitNormal(tf_dist2,tv_orbit_tangent_dir)
+
+		KRDBG_DRAWVECTOR(Ci_DBG_DRAW_REQUIN,OBJ_PosGet(), tv_orbit_tangent_dir*3.0, color_bleu)		
+			
+		tf_rotation_requin_old_sign = f_rotation_requin_sign_perfect
+		if( ! f_duree_dans_champ_camera && f_duree_hors_champ_camera > 1.0 )
+		{
+			// Raptor hors de la caméra : possibilité de changer le sens de rotation (s'il est hors champ depuis suffisamment longtemps)
+//			if( MATH_VecDotProduct(@get_Kamera OBJ_HorizonGet(), OBJ_PosGet() - @get_Kamera OBJ_PosGet()) < 0 )
+//				f_rotation_requin_sign_perfect = 1.0
+//			else
+//				f_rotation_requin_sign_perfect = -1.0
+//			
+//			if( f_rotation_requin_sign_perfect != tf_rotation_requin_old_sign )
+//				i_requin_demi_tour_flag = vrai
+		}
+		else if ( f_rotation_requin_sign_perfect == 0 )
+		{
+			// COMES HERE AT START ONLY
+			i_requin_demi_tour_flag = vrai
+			// chose side to turn around
+			if (MATH_RandInt(0,2))
+				f_rotation_requin_sign_perfect = 1.0		// init sens de rotation si raptor dans la caméra
+			else
+				f_rotation_requin_sign_perfect = -1.0		// init sens de rotation si raptor dans la caméra
+		}
+		else if (i_orbitting_uturn)
+		{
+			i_requin_demi_tour_flag = vrai
+			i_orbitting_uturn = faux
+			f_rotation_requin_sign_perfect *= -1.0			// invert rotation side
+		}
+		
+		// TEST DEMI-TOUR
+		if( ! i_requin_demi_tour_flag )
+			tv_orbit_tangent_dir *= f_rotation_requin_sign_perfect		// le raptor suit son déplacement de requin
+		else
+		{
+			v_requin_demi_tour_vector = f_rotation_requin_sign_perfect * MATH_VecNormalize(tv_orbit_tangent_dir)
+			f_way_rot_speed = 0.0
+			if (tf_rotation_requin_old_sign)
+				tv_orbit_tangent_dir *= tf_rotation_requin_old_sign		// cette trame-ci on continue notre mouvement, à la prochaine trame on commence le demi-tour
+		}
+		KRDBG_DRAWVECTOR(Ci_DBG_DRAW_REQUIN,OBJ_PosGet(), tv_orbit_tangent_dir * 5, color_jaune)
+		
+		// COEFFICIENT DE ROTATION DU SIGHT VERS LA TANGANTE
+		tf_dist_requin_full = 0.75 * (KK_f_dist_saute_loin_sqr+tf_orbitOffsetSqr)						// dist à laquelle le raptor tourne parfaitement autour (tangante)
+		tf_dist_requin_modulaire = 0.333 * tf_dist_requin_full													// longueur sur laquelle la fonction du mode requin est croissante
+		tf_dist_requin_none = tf_dist_requin_full + tf_dist_requin_modulaire	// dist à partir de laquelle le raptor commence à tourner autour
+		if( tf_dist2 <= tf_dist_requin_full )
+		{
+			tf_orbit_ratio = 1.0//tf_requin_coef_dist = 0.0					// dans le rayon de rotation requin totale
+			tv_res_loc_aimed_dir = tv_orbit_tangent_dir
+		}
+		else if( tf_dist2 >= tf_dist_requin_none )
+		{
+			tf_orbit_ratio = 0.0//tf_requin_coef_dist = 1.0					// hors du rayon de rotation requin minimale
+			tv_res_loc_aimed_dir = v_sens_orientation
+		}
+		else
+		{	
+			// dans le rayon de la rotation requin qui est fonction de la distance
+			tf_dist_calcul = tf_dist2 - tf_dist_requin_full											// dist sur le segment de l'amplitude modulaire du mode requin
+			tf_orbit_ratio = 1.0 - (tf_dist_calcul/tf_dist_requin_modulaire)	//tf_requin_coef_dist = tf_dist_calcul / tf_dist_requin_modulaire					// rapport sur le segment de l'amplitude modulaire du mode requin
+			tv_res_loc_aimed_dir = MATH_VecBlendRotate(v_sens_orientation, tv_orbit_tangent_dir, tf_orbit_ratio)
+		}
+		if( ti_trace_info_requin )
+			Str_DisplayFloatOnce(tf_orbit_ratio, cvector(0.1,0,0))// tf_requin_coef_dist, cvector(0,0.05,0))
+
+// VECBLEND #2		
+//		tv_new_sight = MATH_VecBlendRotate(tv_orbit_tangent_dir, tv_new_sight, tf_requin_coef_dist)
+		tv_new_sight = MATH_VecBlendRotate(tv_new_sight, tv_orbit_tangent_dir, tf_orbit_ratio)
+		
+		KRDBG_DRAWVECTOR(Ci_DBG_DRAW_WALL_PRBLM, OBJ_PosGet(), tv_new_sight * 5, color_bleu*0.5)
+				
+		// LE RAPTOR DOIT -IL S'ELOIGNER TOUT EN TOURNANT AUTOUR (DECALAGE PAR RAPPORT A LA TANGENTE)
+		if ( tf_dist2 <= (KK_f_dist_saute_pres_sqr+tf_orbitOffsetSqr) )
+		{
+			// trop près pour sauter : s'éloigne en tournant
+			tf_orbit_tangent_offset = f_rotation_requin_sign_perfect * - Cf_PiBy3	// angle away from kong
+			if ( ti_trace_info_requin )
+				Str_DisplayTextOnce("tangente + pi/3", cvector(0,0.1,0))
+		}
+		else
+		{
+			tf_orbit_tangent_offset = 0.0
+			if( ti_trace_info_requin )
+				Str_DisplayTextOnce("tangente", cvector(0,0.1,0))
+		}
+		// décalage sur la normale pour s'approcher / se reculer de KONG
+		f_orbit_tangent_offset_angle = MATH_FloatBlend(f_orbit_tangent_offset_angle, tf_orbit_tangent_offset, 3.0 * TIME_GetDt())
+		tv_new_sight = MATH_VecRotate(tv_new_sight, Cv_VerticalVector, f_orbit_tangent_offset_angle)
+
+		tv_res_loc_aimed_dir = MATH_VecRotate(tv_res_loc_aimed_dir, Cv_VerticalVector, f_orbit_tangent_offset_angle)
+		
+		KRDBG_DRAWVECTOR(Ci_DBG_DRAW_WALL_PRBLM, OBJ_PosGet(), tv_new_sight * 5, color_bleu*0.75)
+
+//		// running against a wall ? follow it
+//		to_blockingWall = COL_BestAngleWallGaoGet(tv_new_sight,Cf_Cos10,&ti_col)
+//		if (to_blockingWall)
+//		{
+//			tv_colNormal = COL_NormalGet(COL_C_Wall)
+//			MATH_VecSetHorzNormalize(tv_colNormal)
+//			tv_colSlideLeft = MATH_VecCrossProduct(tv_colNormal,Cv_VerticalVector)
+//			
+//			tf_dot = MATH_VecDotProduct(tv_orbit_tangent_dir,tv_colSlideLeft)	// follow orbit
+//			if (tf_dot > 0.0)
+//				tv_new_sight = tv_colSlideLeft
+//			else
+//				tv_new_sight = -tv_colSlideLeft
+//				
+//			KRDBG_DRAWSPHERE(Ci_DBG_DRAW_TMP,OBJ_PosGet(),5.0,color_blanc)
+//		}
+
+		// orientation définitive
+		tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_new_sight, f_way_rot_speed * TIME_GetDt())
+		
+	}
+}
+else
+{
+	if( ti_trace_info_requin )
+		Str_DisplayTextOnce("pas en requin", cvector(0,0,0))
+
+	// DEPLACEMENT STANDARD
+	tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), v_sens_orientation, f_way_rot_speed * TIME_GetDt())	
+	tv_res_loc_aimed_dir = v_sens_orientation
+}
+
+KRDBG_DRAWVECTOR(Ci_DBG_DRAW_TMP+Ci_DBG_DRAW_WALL_PRBLM,OBJ_PosGet(), tv_new_sight * 5, color_bleu)
+
+// Bloqué par occluder pendant le déplacement ? =======================================================================
+
+if (i_flag_rotation_requin && tf_orbit_ratio == 1.0)//tf_requin_coef_dist == 0.0)
+{
+	if (KR_IsAnimEnDeplacement())
+	{
+		int ti_nbExtraOcc
+		ti_nbExtraOcc = 0
+		if (o_fight_actor && !i_jump_etat)
+		{
+			// is not attacking: avoid
+			tao_occl_extra[ti_nbExtraOcc] = o_fight_actor
+			taf_occl_extra[ti_nbExtraOcc] = @o_fight_actor COL_ZoneSizeGet(C_zde_corps)
+			ti_nbExtraOcc++
+		}
+
+		tv_occl_dest_pos = OBJ_PosGet() + (tv_new_sight * 2)
+		ti_occl_res = WAY_LIB_Test_Occluder( 	OBJ_PosGet() + Cv_VerticalVector, 
+																OBJ_SightGet(), 
+																COL_ZoneSizeGet(C_zdm_pied) + 0.1,
+																tv_occl_dest_pos, 
+																-1,	// territory not used for now
+																tv_occl_nextPos,
+																to_occl_jump, 
+																&tao_occl_extra[0],
+																&taf_occl_extra[0],
+																ti_nbExtraOcc,
+																C_Occl_Type_All )
+																
+		if (ti_occl_res != 0)
+		{
+			if (ti_occl_res & Ci_OCCLUDER_JUMP)
+			{
+				DBG_Error("jump occluders not supported yet")
+			}
+			tv_new_sight = tv_occl_nextPos - OBJ_PosGet()
+			KRDBG_DRAWVECTOR(Ci_DBG_DRAW_OCCLUDER, OBJ_PosGet(), tv_new_sight * 3, color_blanc )	
+			tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_new_sight, f_way_rot_speed * TIME_GetDt())	
+		}
+	}
+}
+else
+{
+	if (i_pathToFAIsOccluded)
+	{
+		tv_new_sight = MATH_VecNormalize(v_sens_deplacement)
+		// never mind all the trouble to adjust the sight so far, override with sight aiming for occluder contour path
+		tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_new_sight, f_way_rot_speed * TIME_GetDt())	
+	}
+}
+
+
+// BANKING ================================================================================
+if( COL_CollideType(COL_C_Ground) && !i_ride_mode)
+	tv_banking_under_feet = COL_NormalGet(COL_C_Ground)
+else
+	tv_banking_under_feet = Cv_VerticalVector
+
+tv_new_banking = MATH_VecBlendRotate( OBJ_BankingGet(), tv_banking_under_feet, 6.0 * TIME_GetDt()) 
+
+if ( MATH_VecNullEpsilon( tv_new_sight))
+	tv_new_sight = OBJ_SightGet()
+OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking)

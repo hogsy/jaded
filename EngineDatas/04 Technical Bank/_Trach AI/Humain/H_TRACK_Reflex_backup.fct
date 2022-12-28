@@ -1,0 +1,621 @@
+//#include "H_defines.var"
+//#include "H_action.var"
+//Include_UltraProcedure_Header
+//
+//int					ti_i, i, j
+//int					ti_flag
+//int					ti_index
+//int					ti_rank
+//int					ti_clip_nb
+//int					ti_bullet_nb
+//int					ti_color
+//int					ti_arme_bas
+//int					num_msg
+//int					ti_num
+//int					ti_temp
+//int					ti_state
+//int					ti_id
+//int					ti_weapon
+//int					ti_snd
+//int					ti_sig
+//float				tf_dot
+//int					failed
+//int					type
+//int					ti_injure
+//int					ti_ok
+//messageid		EVT_InfoSeen_ID
+//
+//message		tm_msg_filter
+//message		m_cine
+//messageid		tmid_paf_event
+//
+//vector			tv_pos
+//vector			tv_temp
+//vector			tv_sens
+//vector			tv_speed
+//
+//float				tf_coef
+//float				tf_angle
+//float				tf_norm
+//float				tf_heal
+//float				tf_temp
+//float				tf_max
+//
+//object			to_bone
+//object			to_obj, to_obj1
+//
+//message		msg
+//messageid		EVT_ID
+//messageid		tmid_info
+//
+//
+//// KONG
+//o_KONG = AI_MainActorGet(C_ID_Kong)
+//if( o_KONG )
+//	COL_UnCollidableAdd(o_KONG)
+//
+//IO_SetControlMode(0)
+//
+//// Choix de la pondération de la recherche de chemin en fonction du type de sol
+//GRID_PondHumain()
+//
+//// Zone de feu dans les parages
+//
+//v_org_sight = OBJ_SightGet()
+//f_delay_no_select_action -= MATH_FloatMin(f_delay_no_select_action, TIME_GetDt())
+//
+//#ifndef _FINAL_
+//i_flag_cheat_move = faux
+//if( IO_ButtonPressed(joy_button_L) && IO_ButtonPressed(joy_button_L2) && IO_ButtonPressed(joy_button_R) && IO_ButtonPressed(joy_button_R2) )
+//{
+//	i_flag_cheat_move = 1
+//}
+//#endif
+//
+//// Besoin pour savoir si y'a des lances dans le coin
+//f_best_lance_copy = f_best_lance
+//f_best_lance = Cf_Infinit
+//
+///////////////////////////////////////////
+//
+//// FAIL MODE
+//f_time_fail_move -= TIME_GetDt()
+//if(f_time_fail_move < 0) f_time_fail_move = 0
+//
+//// PAF
+//f_paf_timer -= TIME_GetDt()
+//if(f_paf_timer < 0)
+//{ 
+//	f_paf_timer = 0
+//}
+//else
+//{
+//	if(f_paf_timer < 0.5)
+//		AFE_SpeedDecrease = 1.5
+//}
+//
+//// ENJOUE
+//f_time_enjoue -= TIME_GetDt()
+//if(f_time_enjoue < 0) f_time_enjoue = 0
+//
+//// FEU INTERDIT
+//f_time_no_fire -= TIME_GetDt()
+//if(f_time_no_fire < 0) f_time_no_fire = 0
+//
+//// TAKE interdit
+//f_timer_notake -= TIME_GetDt()
+//if(f_timer_notake < 0) f_timer_notake = 0
+//
+//f_interdit_generique -= TIME_GetDt()
+//if(f_interdit_generique < 0) f_interdit_generique = 0
+//
+///////////////////////
+//
+//f_real_speed = MATH_VecNorm(v_last_pos - OBJ_PosGet())
+//f_real_speed /= TIME_GetDt()
+//
+//v_last_pos = OBJ_PosGet()
+//
+//f_sight_blend_speed = 4.0
+//
+//// Cumul du temps dans le vide
+//if (COL_CollideType(COL_C_Ground))
+//{
+//	f_time_noground = 0.0
+//	o_ground_col = COL_ObjectGet(COL_C_Ground)
+//}
+//else
+//{
+//	f_time_noground += TIME_GetDt()
+//	if (f_time_noground > 0.2)
+//		o_ground_col = nobody
+//}
+//
+//// Detection d'un stress
+//ai_AllEnemy = 0
+//i_way_evite_ennemi = vrai
+//i_in_fight = faux
+//i_flag_detect_stress = faux
+//ti_rank = -1
+//ti_sig = faux
+//i_has_trex = faux
+//EVT_ID = MSG_GlobalScan(C_EVENT_TYPE_Enemy, &ti_rank)
+//while(MSG_GlobalIsValid(EVT_ID))
+//{
+//	to_obj = EVENT_PereGet( EVT_ID )
+//	ti_state = EVENT_EnemyStateGet( EVT_ID )
+//	ti_id = EVENT_EnemyTypeGet( EVT_ID )
+//	if(ti_id == C_ID_Tyranosaure) i_has_trex = vrai
+//	
+//	if ((ti_state == C_EVENT_EnemyState_Fight || ti_state == C_EVENT_EnemyState_Neutral) && !i_in_fight ) 
+//	{
+//		i_in_fight = vrai
+//		f_time_in_fight += TIME_GetDt()
+//		f_time_last_fight = TIME_Get()
+//		i_flag_detect_stress = vrai
+//	}
+//	
+//	if ((ti_state == C_EVENT_EnemyState_Fight || ti_state == C_EVENT_EnemyState_Neutral) && !ti_sig)
+//	{
+//		if(ti_id != C_ID_Scolo) 
+//		{
+//			SIG_Send(SIG_C_TYPE_FIGHT, OBJ_Me())
+//			ti_sig = vrai
+//		}
+//	}
+//	
+//	if (ti_state == C_EVENT_EnemyState_Fight || ti_state == C_EVENT_EnemyState_Wait || ti_state == C_EVENT_EnemyState_Neutral)
+//	{
+//		ao_AllEnemy[ai_AllEnemy] = EVT_ID
+//		ai_AllEnemy++
+//		tf_temp = @"univ" Enemy_af_ReaDist[ti_id][C_EnemyDist_Stress]
+//		if(OBJ_SqrDist(to_obj) < tf_temp * tf_temp)
+//		{
+//			if(EVENT_InfoCanGaoSeeGao(to_obj, OBJ_Me(), tmid_info))
+//			{
+//				if(!EVENT_Info_StalkGet(tmid_info))
+//				{
+//					i_flag_detect_stress = vrai
+//				}
+//			}
+//		}
+//	}
+//	
+//	EVT_ID = MSG_GlobalScan(C_EVENT_TYPE_Enemy, &ti_rank)
+//}
+//
+//// On elimine des ennemis redondant
+//if(!@get_global i_humain_opt_enn)
+//{
+//	@get_global i_humain_opt_enn = vrai
+//	for(i = 0; i < ai_AllEnemy; i++)
+//	{
+//		if(!MSG_GlobalIsValid(ao_AllEnemy[i])) 
+//		{
+//			ao_AllEnemy[i] = ao_AllEnemy[ai_AllEnemy - 1]
+//			ai_AllEnemy--
+//			i--
+//			continue
+//		}
+//		
+//		to_obj = EVENT_PereGet( ao_AllEnemy[i] )
+//		for(j = i + 1; j < ai_AllEnemy; j++)
+//		{
+//			if(!MSG_GlobalIsValid(ao_AllEnemy[j])) 
+//			{
+//				ao_AllEnemy[j] = ao_AllEnemy[ai_AllEnemy - 1]
+//				ai_AllEnemy--
+//				j--
+//				continue
+//			}
+//			
+//			to_obj1 = EVENT_PereGet( ao_AllEnemy[j] )
+//			if(@to_obj OBJ_SqrDist(to_obj1) < 2 * 2)
+//			{
+//				MSG_GlobalDelete(ao_AllEnemy[j], C_EVENT_DEL)
+//				ao_AllEnemy[j] = ao_AllEnemy[ai_AllEnemy - 1]
+//				j--
+//				ai_AllEnemy--
+//				break
+//			}
+//		}
+//	}
+//}
+//
+//// Force l'attente enjoue si stress et interet sur moi
+//if(i_flag_detect_stress)
+//{
+//	tf_temp = HasInteretOnMinDist(OBJ_Me(), to_obj, type)
+//	if(to_obj)
+//	{
+//		f_time_enjoue = 3.0
+//		
+//		// Si on se fait attaquer par un ennemi, on demande un peu d'aide 
+//		switch(type)
+//		{
+//			case C_ID_CrabeGeant :				tf_norm = 20 break
+//			case C_ID_Scolo :						tf_norm = 10 break
+//			case C_ID_SwampCrawlerSmall :	tf_norm = 10 break
+//			default:										tf_norm = 6 break
+//		}
+//		
+//		if(tf_temp < tf_norm * tf_norm) f_time_help = 1.0
+//	}
+//}
+//
+//// Ennemi en fight ?
+//if(!i_in_fight)
+//{
+//	f_time_in_fight = 0
+//}
+//
+//if(i_flag_detect_stress) 
+//{
+//	f_time_stress = 20
+//}
+////else if(@get_global i_progression_stress) 
+////{
+////	f_time_stress = 20
+////}
+//else
+//{
+//	SIG_Send(SIG_C_TYPE_COOL, OBJ_Me())
+//}
+//
+//// Ma position courante est dangereuse ?
+//i_flag_danger = HL_PosDangereuseMe()
+//
+//
+//// Pose
+//if(i_flag_declenche)
+//{
+//	if(ACT_ActionGet() == Action_Jack_Declenche && ANI_CurrentFrameGet(0) > 20)
+//		i_flag_declenche = faux
+//}
+//
+////// Ramasse un objet
+////if( ! IsLoadingWeapon() )
+////{
+////	if(@"univ" o_ramasse_objet_who == OBJ_Me() && @"univ" i_ramasse_objet !=-1)
+////	{
+////		if( ((ACT_ActionGet() == Action_Jack_Ramasse || ACT_ActionGet() == Action_Jack_RamasseF) && ACT_ActionItemGet() == 1))
+////		{
+////			// GRABBED OBJECTS
+////			// kill de la liaison
+////			ti_index = H_Joueur_GrabbedObject_GetIndex_ByID(@"univ" i_ramasse_objet)
+////			if( ti_index != -1 && MSG_GlobalIsValid(amid_grabbed_object[ti_index]) )
+////			{
+////				LNK_ClientGet(Ci_LNK_GRAB_OBJECT, amid_grabbed_object[ti_index], faux, nofunc, nofunc, nofunc)
+////				o_grabbed_object_en_main = ao_grabbed_object[ti_index]
+////			}
+////	
+////			// WEAPONS
+////			if
+////			(
+////				@"univ" i_ramasse_objet == Ci_weapon_ID_shotgun || 
+////				@"univ" i_ramasse_objet == Ci_weapon_ID_sniper_rifle ||
+////				@"univ" i_ramasse_objet == Ci_weapon_ID_tommy_gun ||
+////				@"univ" i_ramasse_objet == Ci_weapon_ID_colt
+////			)
+////			{
+//////				SND_RequestPlay(100)
+////			}
+////			
+////			// Recup d'une munition
+////			else if(@"univ" i_ramasse_objet >= Ci_weapon_ID_munition && @"univ" i_ramasse_objet <= Ci_weapon_ID_munition_end)
+////			{
+//////				SND_RequestPlay(100)
+////				ti_weapon = @"univ" i_ramasse_objet - Ci_weapon_ID_munition
+////				ti_temp = @"univ" i_weapon_ammunition_reserve[ti_weapon][i_id_humain]	
+////				ti_temp += @"univ" Weapon_ai_clipsize[ti_weapon]	
+////				if(ti_temp > @"univ" i_weapon_ammunition_max[ti_weapon][i_id_humain])
+////					@"univ" i_weapon_ammunition_reserve[ti_weapon][i_id_humain]	= @"univ" i_weapon_ammunition_max[ti_weapon][i_id_humain]
+////				else
+////					@"univ" i_weapon_ammunition_reserve[ti_weapon][i_id_humain]	+= ti_temp
+////			}
+////			
+////			// Dynamite
+////			else if(@"univ" i_ramasse_objet == Ci_weapon_ID_grenade || @"univ" i_ramasse_objet == Ci_weapon_ID_crane || @"univ" i_ramasse_objet == Ci_weapon_ID_levier)
+////			{
+////				ti_ok = vrai
+////				if(@"univ" i_ramasse_objet == Ci_weapon_ID_levier)
+////				{
+////					if(@"univ" i_weapon_ID_Save[ i_id_humain ] == Ci_weapon_ID_levier || @"univ" i_weapon_ID[ i_id_humain ] == Ci_weapon_ID_levier)
+////						ti_ok = faux
+////				}
+////				
+////				if(ti_ok)
+////				{
+////					SND_RequestPlay(102)
+////				
+////					Humains_LeaveObjectInHand()
+////				
+////					if(@"univ" i_ramasse_objet == Ci_weapon_ID_levier)
+////						@"univ" i_jack_has_levier = vrai
+////						
+////					f_time_dynamite = @"univ" f_ramasse_objet_param
+////					if( @"univ" i_ramasse_objet == Ci_weapon_ID_grenade && ! f_time_dynamite )
+////						f_time_dynamite = C_Time_Dyna
+//////					H_OBJENMAIN_PARAM = @"univ" i_ramasse_objet_param
+////					if(!@"univ" i_weapon_ID_Save[ i_id_humain ]) @"univ" i_weapon_ID_Save[ i_id_humain ] = @"univ" i_weapon_ID[ i_id_humain ]
+////					@"univ" i_weapon_ID[ i_id_humain ] = @"univ" i_ramasse_objet
+////				}
+////			}
+////			
+////			// Recup d'un objet (ou bambou)
+////			else if(@"univ" i_ramasse_objet != @"univ" i_weapon_ID[i_id_humain])
+////			{
+////				if(@"univ" i_weapon_ID[ i_id_humain ] == Ci_weapon_ID_levier)
+////				{
+////					@"univ" i_weapon_ID_second[ i_id_humain ] = Ci_weapon_ID_levier
+////					@"univ" i_weapon_ID[ i_id_humain ] = 0
+////				}
+////				
+////				if(@"univ" i_weapon_ID_Save[ i_id_humain ] == Ci_weapon_ID_levier)
+////				{
+////					@"univ" i_weapon_ID_second[ i_id_humain ] = Ci_weapon_ID_levier
+////					@"univ" i_weapon_ID_Save[ i_id_humain ] = 0
+////				}
+////				
+////				SND_RequestPlay(101)
+////				Humains_LeaveObjectInHand()
+////				
+////				if(@"univ" i_weapon_ID_Save[ i_id_humain ] == Ci_weapon_ID_levier)
+////				{
+////					@"univ" i_weapon_ID_second[ i_id_humain ] = Ci_weapon_ID_levier
+////					@"univ" i_weapon_ID_Save[ i_id_humain ] = 0
+////				}
+////				
+////				if( ! @"univ" i_weapon_ID_Save[ i_id_humain ])
+////					@"univ" i_weapon_ID_Save[ i_id_humain ] = @"univ" i_weapon_ID[ i_id_humain ]
+////				@"univ" i_weapon_ID[ i_id_humain ] = @"univ" i_ramasse_objet
+//////				if(@"univ" i_ramasse_objet == Ci_weapon_ID_bambou) H_OBJENMAIN_PARAM = @"univ" i_ramasse_objet_param
+//////				if(@"univ" i_ramasse_objet == Ci_weapon_ID_bambou_moy) H_OBJENMAIN_PARAM = @"univ" i_ramasse_objet_param
+//////				if(@"univ" i_ramasse_objet == Ci_weapon_ID_bambou_petit) H_OBJENMAIN_PARAM = @"univ" i_ramasse_objet_param
+////				@"univ" i_weapon_ammunition[Ci_weapon_ID_bambou_petit][i_id_humain] = @"univ" i_ramasse_nbr								
+////				@"univ" i_jack_cpt_plug = @"univ" i_lance_cpt_plug				
+////			}
+////			else if(@"univ" i_ramasse_objet == Ci_weapon_ID_bambou_petit)
+////			{
+////				SND_RequestPlay(101)
+////				@"univ" i_weapon_ammunition[Ci_weapon_ID_bambou_petit][i_id_humain] = @"univ" i_ramasse_nbr
+////			}
+////			
+////			@"univ" i_ramasse_objet_param = 0
+////			@"univ" f_ramasse_objet_param = 0
+////			@"univ" o_ramasse_objet_who = nobody
+////			i_grenade_launched = 0
+////			@"univ" i_ramasse_objet = -1		// VINC
+////		}
+////	}
+////}
+//
+////========( MORPH SUR ARME )========
+////MORPH_Weapon()
+//
+//// Pour fred : capa 0 à 1 indique pendant une trame que le perso s'est fait taper ou grabber )-
+//OBJ_CapaSet( 0, OBJ_Capa_0 )
+//
+//// Culled (fake, indique qu'on est grosso merdo devant)
+//i_flag_culled = faux
+//i_flag_culled_enface = faux
+//
+//// Resets globaux
+//i_global_look = faux
+//i_force_intention = -1
+//f_time_prev_attend = f_time_attend
+//way_real_pos = v_way_destpos
+//i_can_tag = vrai
+//i_flag_oriente_vers = faux
+//o_ennemi_proche = nobody
+//o_target_stimulus_vis = nobody
+//i_flag_old_run = i_flag_run
+//i_flag_old_sprint = i_flag_sprint
+//i_flag_run = faux
+//i_flag_sprint = faux
+//i_flag_force_attente = faux
+//i_flag_force_marche = faux
+//i_flag_force_course = faux
+//i_flag_force_sprint = faux
+//i_flag_disable_sprint = faux
+//i_flag_disable_marche = faux
+//i_flag_panique = faux
+//i_flag_cache = faux
+//i_flag_marche_rapide = faux
+//i_flag_disable_auto_crouch = faux
+//i_flag_rush = faux
+//i_flag_no_intention_dir = faux
+//i_flag_grosse_panique = faux
+//
+//i_flag_grab_old = i_flag_grab
+//i_flag_crouch_old = i_flag_crouch
+//i_flag_tir = faux
+//i_flag_tir_continu = faux
+//i_flag_grab = faux
+//i_flag_suivi_regard = vrai
+//i_flag_stunned = faux
+//
+//// Temps
+//f_time_shoot_disable -= TIME_GetDt()
+//if(f_time_shoot_disable < 0) f_time_shoot_disable = 0
+//
+//// Calcul ennemi le plus proche
+//EnnemiLePlusProche()
+//
+//
+//o_main_actor = AI_MainActorGet(C_ID_Joueur)
+//
+//i_flag_pilotage = faux
+//
+//f_time_force_strafe -= MATH_FloatMin(f_time_force_strafe, TIME_GetDt())
+//f_paf_disable_duration -= MATH_FloatMin(f_paf_disable_duration, TIME_GetDt())
+//
+//DYN_TractionSet(Cv_NullVector)
+//DYN_StreamSet(Cv_NullVector)
+//
+///////////////////////////////////////////////////////////////////////////////////////////
+//// VIE
+///////////////////////////////////////////////////////////////////////////////////////////
+//
+//#ifndef _FINAL_
+//if(@"univ" Cheat_i_Flags & CHEAT_Invicible)
+//{
+//	@"univ" LIFE_HumainEtat[i_id_humain] = Life_ETAT_Normal
+//}
+//#endif
+//
+////==================================================================================
+//if(i_snd_injure != -1)
+//{
+//	f_blend_injure = 0
+//	SND_Stop(i_snd_injure)
+//	SND_Stop(i_snd_injure1)
+//	i_snd_injure = -1
+//	i_snd_injure1 = -1
+//}
+//
+//if(i_snd_injure != -1) @get_global i_qqun_marasme = vrai
+////==================================================================================
+//
+//
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+//
+//// Par defaut on lit le mouvement au joy.
+//i_read_joy_move = vrai
+//
+//if(ACT_ActionGet() == Action_Jack_RamasseF && ACT_ActionFinished())
+//{
+//	if( ! @"univ" i_jack_has_levier )
+//		i_recharge_arme = vrai
+//}
+//
+//ti_weapon = @"univ" i_weapon_ID[i_id_humain]
+//
+//// Rearme shotgun ?
+//if(i_arme_shotgun && ACT_PartialActionFinished())
+//	i_arme_shotgun = faux
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//// DISPLAY INTERFACE
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//// ----( infos temporaires )----		
+//if(@"univ" Cheat_i_Flags & CHEAT_PafFort) STR_CreateText("\cffffff\SHOOT FORT", cvector(0,0.0,0), 0.0)
+//if(@"univ" Cheat_i_Flags & CHEAT_Invicible) STR_CreateText("\cffffff\INVINCIBLE", cvector(0,0.05,0), 0.0)
+//
+//
+////--------( sound en fonction de l'état du joueur )-------------------------
+//if ( @"univ" LIFE_HumainEtat[C_ID_Joueur] == Life_ETAT_Agonisant)
+//{		
+//	if (i_snd_etatlife == -1)
+//	{
+//		if(i_big_gladiator) 
+//			i_snd_etatlifeindex = 8
+//		else
+//			i_snd_etatlifeindex = 9
+//		i_snd_etatlife = SND_Request( i_snd_etatlifeindex, C_SND_Request_3DSound | C_SND_Request_DestroyWhenFinished)
+//		SND_PlayLooped(i_snd_etatlife, -1)
+//	}
+//	
+//	if(i_big_gladiator) 
+//	{
+//		@get_global Proc_AE_MotionBlurSet(0.5)
+//		SIG_Send(SIG_C_TYPE_INJURE, OBJ_Me())
+//	}
+//}
+//else
+//{
+//	if (i_snd_etatlife != -1)
+//	{
+//		SND_Stop( i_snd_etatlife  )
+//		i_snd_etatlife = -1
+//		i_snd_etatlifeindex = -1
+//	}
+//}
+//
+//if(@"univ" LIFE_HumainEtat[i_id_humain] == Life_ETAT_Mort)
+//	SIG_Send(SIG_C_TYPE_MORT, OBJ_Me())
+//
+//
+//
+//if( Proc_KIndigene_Kong_LiaisonStatusGet() )
+//{
+//	COL_ColSetActivationSet(0, C_bit_zdm_pied)
+//	DYN_GravitySet(Cv_NullVector)
+//}
+////else if(i_flag_nage)			// en train de nager
+////{
+////	COL_ColSetActivationSet(0, C_bit_zdm_pied)
+////	DYN_GravitySet(Cv_NullVector)
+////}
+//else if( f_nage_wall_contact_Z_offset )		// en train de sortie de l'eau face à un rebord
+//{
+//	COL_ColSetActivationSet(0, C_bit_zdm_pied)
+//	DYN_GravitySet(Cv_NullVector)
+//}
+//else
+//{
+//	switch( i_etat_courant )
+//	{
+//		case ETAT_IA_grabtransporte :
+//		case ETAT_IA_porte :
+//			COL_ColSetActivationSet(0, C_bit_zdm_pied)			// désactive zdm pied
+//			DYN_GravitySet(Cv_NullVector)
+//			break
+//		default:
+//			DYN_GravitySet(H_GRAVITY)
+//			if(i_no_zdm)
+//				COL_ColSetActivationSet(0, C_bit_zdm_pied)
+//			else
+//				COL_ColSetActivationSet(C_bit_zdm_pied, 0)
+//			break
+//	}
+//}
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//// CASE MORTELLE
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//if(COL_CollideType(COL_C_Ground))
+//{
+//	// Case en feu
+//	if(CaseEnFeu(OBJ_PosGet()))
+//	{
+//		f_time_case_mortel += TIME_GetDt()
+//	}
+//	else
+//	{
+//		f_time_case_mortel = 0
+//	}
+//}
+//else
+//{
+//	f_time_case_mortel = 0
+//}
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//#ifndef _FINAL_
+//if(i_test_anim || i_test_anim_number != -1 )
+//{
+//	AI_TrackStop(0)
+//	AI_TrackStop(1)
+//	AI_TrackStop(2)
+//	AI_TrackStop(3)
+//	AI_TrackStop(4)
+//	AI_TrackChange(Ci_Track_Etat, "H_TRACK_testanim")
+//}
+//#endif
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//if( ! EtatCine())
+//{
+//	OBJ_FlagsControlSet(0, OBJ_C_ControlFlag_AlwaysVisible)	// Cause pb partial
+//}
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//if( ! i_flag_nage && i_etat_courant != ETAT_IA_porte)
+//{
+//	OBJ_DrawAtEnd()
+//}
+//
+//

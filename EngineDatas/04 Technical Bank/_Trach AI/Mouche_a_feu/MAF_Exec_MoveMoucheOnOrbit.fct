@@ -1,0 +1,138 @@
+#include "MAF_Defines.var"
+
+vector tv_newPos
+vector tv_tmp
+float tf_zMin
+float tf_zMax
+float tf_radMin
+float tf_radMax
+float tf_modifiedDT
+
+#define MAF_Cf_OrbitSpeedWhenCulled		3.0
+
+//===================================================
+// manage timeline value
+
+if (ai_moucheState[i_curMouche] == MAF_MoucheState_HomeHovering)
+{
+	// make the mouche spin faster as they get more aggressive
+	tf_modifiedDT = (1.0 + (MAF_Cf_AggressivityMaxSpinSpd * f_aggressivityMeter)) * TIME_GetDt()
+}
+else
+{
+	if ( ( (@ao_moucheList[i_curMouche] OBJ_FlagsStatusGet()) & OBJ_C_StatusFlag_Culled ) &&
+	     (i_curMouche != i_moucheWithSpeaker) )
+		tf_modifiedDT = TIME_GetDt() * MAF_Cf_OrbitSpeedWhenCulled
+	else
+		tf_modifiedDT = TIME_GetDt()
+}
+
+
+if (ai_moucheOrbitWay[i_curMouche] == 0)
+{
+	// timeline 0 .. 1
+	af_moucheOrbitTimeline[i_curMouche] += (tf_modifiedDT * af_moucheOrbitSpeed[i_curMouche])
+	while (af_moucheOrbitTimeline[i_curMouche] > 1.0)
+	{
+		af_moucheOrbitTimeline[i_curMouche] -= 1.0
+	}
+}
+else
+{
+	// timeline 1 .. 0
+	af_moucheOrbitTimeline[i_curMouche] -= (tf_modifiedDT * af_moucheOrbitSpeed[i_curMouche])
+	while (af_moucheOrbitTimeline[i_curMouche] < 0.0)
+	{
+		af_moucheOrbitTimeline[i_curMouche] += 1.0
+	}
+}
+
+
+//===================================================
+// Determine limits
+
+if (ai_moucheState[i_curMouche] == MAF_MoucheState_HomeHovering)
+{
+	tf_zMin = f_orbitZmin
+	tf_zMax = f_orbitZmax
+	tf_radMin = f_orbitRadiusMin
+	tf_radMax = f_orbitRadiusMax
+}
+else if (ai_moucheState[i_curMouche] == MAF_MoucheState_AroundTgt)
+{
+	tf_zMin = f_orbitTgtZmin
+	tf_zMax = f_orbitTgtZmax
+	tf_radMin = f_orbitRadTgtMin
+	tf_radMax = f_orbitRadTgtMax
+}
+else
+{
+	tf_zMin = 0.0
+	tf_zMax = 1.0
+	tf_radMin = f_orbitRadiusMin
+	tf_radMax = f_orbitRadiusMax
+}
+
+
+
+//===================================================
+// manage radius value
+
+af_moucheOrbitRadius[i_curMouche] += (af_moucheOrbitRadiusDir[i_curMouche] * tf_modifiedDT)
+if (af_moucheOrbitRadiusDir[i_curMouche] > 0)
+{
+	if (af_moucheOrbitRadius[i_curMouche] > tf_radMax)
+		af_moucheOrbitRadiusDir[i_curMouche] *= -1.0
+}
+else
+{
+	if (af_moucheOrbitRadius[i_curMouche] < tf_radMin)
+		af_moucheOrbitRadiusDir[i_curMouche] *= -1.0
+}
+
+//===================================================
+// manage Z value
+
+af_moucheOrbitZ[i_curMouche] += (af_moucheOrbitZDir[i_curMouche] * tf_modifiedDT)
+if (af_moucheOrbitZDir[i_curMouche] > 0)
+{
+	if (af_moucheOrbitZ[i_curMouche] > tf_zMax)
+		af_moucheOrbitZDir[i_curMouche] *= -1.0
+}
+else
+{
+	if (af_moucheOrbitZ[i_curMouche] < tf_zMin)
+		af_moucheOrbitZDir[i_curMouche] *= -1.0
+}
+
+
+// do we need to incline the orbit ?
+if (ai_moucheState[i_curMouche] == MAF_MoucheState_GotoTarget)
+{
+	tv_tmp = (@o_currentTarget OBJ_PosGet()) - (@ao_moucheList[i_curMouche] OBJ_PosGet())
+	tv_tmp = MATH_VecNormalize(tv_tmp)
+	ComputeOrbitVector
+	(
+		af_moucheOrbitTimeline[i_curMouche],
+		tv_tmp,	// direction
+		af_moucheOrbitRadius[i_curMouche],
+		tv_newPos
+	)
+
+}
+else
+{
+	ComputeOrbitPos
+	( 
+		af_moucheOrbitTimeline[i_curMouche],
+		af_moucheOrbitRadius[i_curMouche],
+		af_moucheOrbitZ[i_curMouche],
+		tv_newPos 
+	)
+}
+
+tv_newPos += av_moucheOrbitCenter[i_curMouche]
+@ao_moucheList[i_curMouche] OBJ_PosSet(tv_newPos)
+
+//DBG_RenderSphere(av_moucheOrbitCenter[i_curMouche],0.5,0xFFFFFFFF)
+

@@ -1,0 +1,53 @@
+
+#include "BC_defines.var"
+
+//=============================================================================================
+// RE-ACTUALISATION DE L'INTERET POUR LA CIBLE A ATTAQUER LORSQUE LA BAT LA VOIT (MEMOIRE DE LA BAT)
+//=============================================================================================
+
+// Event vision
+messageid			tmid_vis_ID
+object				to_pere
+int						ti_i
+float					tf_new_interet
+int						ti_cible_attaque_vue
+
+ti_cible_attaque_vue = faux
+
+//if( MSG_GlobalIsValid(mid_interet_attaque) )
+{
+	// la bat connait sa cible
+	
+	AI_Execute("BC_exec_check_vision")	
+	if( i_seen_actor_nb )
+	{
+		// le bat voit des acteurs
+		for( ti_i = 0; ti_i < i_seen_actor_nb; ti_i++)
+		{
+			// test de tous les acteurs vus
+			tmid_vis_ID = amid_seen_actor[ti_i]
+			to_pere = EVENT_PereGet(tmid_vis_ID)
+			if( to_pere == o_cible_attaque )
+			{
+				// le bat voit son agresseur => maj intérêt
+				ti_cible_attaque_vue = vrai
+				BC_Interet_Update(mid_interet_attaque, o_cible_attaque, tmid_vis_ID)
+			}
+		}
+	}
+}
+
+
+if( ! ti_cible_attaque_vue )
+{
+	// la cible s'est abritée
+	BC_macro_reset_attaque
+
+	if( i_DBG_trace_choix_proie_ON )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" a perdu sa cible de vue et annule son attaque")
+		DBG_TraceEOL()
+	}
+}
+

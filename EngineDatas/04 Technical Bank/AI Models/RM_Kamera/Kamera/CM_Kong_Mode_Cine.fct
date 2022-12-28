@@ -1,0 +1,51 @@
+
+vector	tv_meca_cam_target
+vector	tv_meca_cam_target_delta
+vector	tv_meca_cam_pos
+float		tf_meca_cam_focale
+float		tf_meca_cam_transitionspeed
+
+#include "Kam_Defines.var"
+
+// MECA SPECIALE ------------------------
+i_MECA_Mode = Ci_MecaMode_Position
+// MECA SPECIALE ------------------------
+
+// Backup Gao pour les Transitions specifique en mode CChant
+o_cc_kam_modifier_old = o_cine_gao
+
+// INIT
+if ( i_kong_camera_mode != Ci_Kamera_mode_CINE || o_cine_gao_old != o_cine_gao)
+{
+	// INIT du MODE ou CHANGEMENT de PARAM
+	KamP_Mode_Set(Ci_Kamera_mode_CINE)
+
+	// Backup des Valeurs pour le BLEND entre les modes
+	KamP_Backup_Change_Mode_Value()
+
+	f_chm_speed_forced = f_cine_blendOut
+
+	o_cine_gao_old = o_cine_gao
+}
+
+tf_meca_cam_transitionspeed = f_cine_blendIn
+
+tv_meca_cam_target = KamP_TargetVec_BlendPosGet(@o_cine_gao OBJ_PosGet() + (@o_cine_gao OBJ_SightGet() * 10), Cf_Infinit)
+
+tv_meca_cam_target_delta = cvector(0,0,0)
+
+tv_meca_cam_pos = @o_cine_gao OBJ_PosGet()
+
+tf_meca_cam_focale = f_cine_focale
+
+i_MECA_TestRayCast = faux
+
+// Apply this settings
+KamP_MECA_Pos_Blend( tv_meca_cam_target, tv_meca_cam_target_delta, tv_meca_cam_pos, tf_meca_cam_focale, tf_meca_cam_transitionspeed)
+
+// Durée du plan
+f_cine_duration -= MATH_FloatMin(f_cine_duration, TIME_GetDt())
+if (!f_cine_duration)
+	o_cine_gao = nobody
+	
+	

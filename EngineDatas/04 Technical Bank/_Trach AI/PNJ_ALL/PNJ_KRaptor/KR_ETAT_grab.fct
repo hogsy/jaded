@@ -1,0 +1,181 @@
+#include "KR_defines.var"
+
+int			ti_i
+int			ti_action
+
+object	to_head
+object	to_grab_actor
+
+vector	tv_temp
+vector	tv_normal 
+
+int			ti_etat_phase
+int			ti_trame
+
+vector	tv_new_sight
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+
+	if (i_etat_courant != ETAT_lance)
+		o_grab_actor = LNK_ClientGet(Ci_LNK_GRAB_RAPTOR, mid_grab_actor_LNK_ID, faux, nofunc, nofunc, nofunc)
+
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_grab)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_grab
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	fct_last_etat = AI_TrackCurGet()
+		
+	if( ! i_ride_attak )
+	{
+		// grab après une morsure au sol
+		ACT_ActionSet(Action_Fight_Secoue)	
+	}
+	// ELSE PAS D'ACTIONSET POUR UNE RIDE ATTACK (=> ETAT LANCE)
+	
+	LNK_GrabStatusSet(mid_grab_actor_LNK_ID, 2)
+	@o_grab_actor ACT_ActionSet(Action_Grabed_raptor_jambe)
+		
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =======================================================================================================
+
+o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, vrai, nofunc, nofunc)
+if (o_grabbed_actor_KK)
+	macro_change_etat("KR_ETAT_grabbed")
+
+if( ! KR_Check_Fight_Actor_Interet() )
+	macro_change_etat("KR_ETAT_attente")
+
+
+AI_Execute("KR_exec_check_paf")
+if( o_paf_actor )
+{
+	KR_Select_Paf_Etat(fct_track_change)
+	if( fct_track_change != nofunc )
+		macro_change_etat(fct_track_change)
+}
+
+if( MSG_GlobalIsValid(mid_grab_actor_LNK_ID) )
+{
+	to_grab_actor = LNK_ClientGet(Ci_LNK_GRAB_RAPTOR, mid_grab_actor_LNK_ID, vrai, nofunc, nofunc, nofunc)
+	if (o_grab_actor != to_grab_actor)
+		macro_change_etat(fct_main_etat)
+}
+else
+	macro_change_etat(fct_main_etat)
+
+if( ! i_ride_attak )
+{
+	AI_Execute("KR_exec_check_fury")
+	if ( o_intimidator )
+		macro_change_etat("KR_ETAT_intimide")
+}
+
+//KR_SetInterestType(C_EVENT_InteretStatusLock)
+if (i_ride_attak)
+	KR_SetInterestType(C_EVENT_InteretStatusRide)
+else
+	KR_SetInterestType(C_EVENT_InteretStatusAttack)
+
+EVENT_LifeSet(mid_best_interet, 10.0)
+EVENT_InteretSeenTimeSet(mid_best_interet, TIME_Get())
+EVENT_InteretPrecisionSet(mid_best_interet, 0.0)
+
+o_fight_actor = EVENT_InteretTargetGet(mid_best_interet)
+
+
+// COMPORTEMENT =================================================================================================
+
+i_iam_a_kam_target = vrai
+
+if( i_ride_attak )
+	ti_etat_phase = 3			// la liaison a le statut 2 pour l'humain, mais le raptor est en statut 3
+else
+	ti_etat_phase = LNK_GrabStatusGet(mid_grab_actor_LNK_ID)
+
+switch(ti_etat_phase)
+{
+	case 0 :
+	{
+		// Init
+		i_flag_bite_ok = faux
+		ACT_ActionSet(Action_Fight_Mord)
+		LNK_GrabStatusSet(mid_grab_actor_LNK_ID, 1)
+		break
+	}
+	case 1 :
+	{
+		// Le Raptor mord
+		i_flag_look = vrai
+		if (ANI_CurrentFrameGet(0) > 20)
+		{
+			// Synchronisation des 2 anims, c'est le serveur qui lance les deux anims en même temps...
+			i_flag_bite_leg = vrai
+
+			f_time_start_etat = 0.0
+			
+			@o_grab_actor ACT_ActionSet(Action_Grabed_raptor_jambe)		// perso grabbé par la jambe
+			LNK_GrabStatusSet(mid_grab_actor_LNK_ID, 2)
+		}
+		break
+	}
+	
+	case 2 :
+	{
+		// le Raptor secoue sa proie dans tous les sens
+		if( f_time_start_etat > 3.0 )
+			LNK_GrabStatusSet(mid_grab_actor_LNK_ID, 3)		// SPECIFIQUE AU RAPTOR KK !!!!!
+		
+		OBJ_BankingGeneralSet(-OBJ_SightGet(), Cv_VerticalVector)	
+		
+		v_way_destpos = OBJ_PosGet() - ( 5 * OBJ_SightGet() )
+		
+		OBJ_BankingGeneralSet(-OBJ_SightGet(), Cv_VerticalVector)	
+		
+		f_way_rot_speed	= MATH_FloatBlend(f_way_rot_speed, 6.0,  TIME_GetDt())	
+	
+		v_joy_dir = OBJ_PosGet()
+		v_joy_dir -= v_way_case_dest
+		v_joy_dir.z = 0.0
+		
+		f_joy_norm = MATH_VecNorm(v_joy_dir)
+		
+		if( f_joy_norm )
+		{
+			v_joy_dir /= f_joy_norm
+			tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), v_joy_dir, f_way_rot_speed * TIME_GetDt())
+			tv_new_sight = MATH_VecInCone(tv_new_sight, OBJ_SightGet(), Cf_Pi * TIME_GetDt(), 0)
+			OBJ_BankingGeneralSet(tv_new_sight, Cv_VerticalVector)
+		}
+		
+		break
+	}
+	
+	case 3 :
+	{
+		// Le Raptor jète sa proie (SPECIFIQUE AU RAPTOR KK, LE RAPTOR HUMAIN ATTEND L'INFO "STATUT 3" DES HUMAINS)
+		macro_change_etat("KR_ETAT_lance")
+		break
+	}
+}
+

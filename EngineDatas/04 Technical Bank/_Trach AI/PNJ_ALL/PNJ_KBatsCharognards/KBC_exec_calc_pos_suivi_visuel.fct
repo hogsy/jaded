@@ -1,0 +1,40 @@
+
+#include "KBC_defines.var"
+
+//============================================================================================
+// CALCULE LA POSITION  DU WP POUR LE DEPLACEMENT JUSQU'A LA CIBLE APRES LE PARCOURS DU RESEAU
+//============================================================================================
+
+
+object			to_charogne_head		// tête de la charogne (pour positionner la bat)
+vector			tv_decal_head				// vecteur de décalage entre le pivot et la tête de la cible
+
+vector			tv_old_cible_pos			// blend progressif de la position de la charogne
+
+
+tv_old_cible_pos = v_cible_pos
+v_cible_pos = @o_cible OBJ_PosGet()
+
+if( MATH_VecNorm( v_cible_pos - tv_old_cible_pos) >= 3.0 )
+{
+	// la cible s'est déplacée => init de la courbe
+	i_force_reinit = vrai
+}
+
+v_dest_sight = v_cible_pos - OBJ_PosGet()
+
+
+v_decalage = KBC_decalage( - v_dest_sight, Cf_atterrissage_decal_H, Cf_atterrissage_decal_Z)
+//v_decalage = cvector(0.0, 0.0, 4.0)
+v_dest_pos = v_cible_pos + v_decalage
+
+
+//DBG_RenderVector(OBJ_PosGet(), v_dest_pos - OBJ_PosGet(), color_cyan)
+
+
+// CALCUL DU RESEAU et du next_wp
+i_mode_depl = Ci_mode_depl_charogne_visuel
+n_reseau = n_attaque
+i_reseau_wp_count = 10				// pour bien spécifier qu'on a pas terminé de parcourir le réseau (mais qu'on veut commencer)
+AI_Execute("KBC_exec_network_pos_next")
+

@@ -1,0 +1,24 @@
+object	to_obj	
+int			i
+
+main = AI_MainActorGet(C_ID_Joueur)
+if(!main) return
+if(!@get_global o_camera) return
+
+// Grille
+capa = GRID_CapaGet(@main OBJ_PosGet()) & tag_grid_terrain
+capa1 = 0
+if(GRID_Has(1))
+{
+	GRID_CurrentSet(1)
+	capa1 = GRID_CapaGet(@main OBJ_PosGet()) & tag_grid_terrain
+	GRID_CurrentSet(0)
+}
+
+/////////////////////////
+if(@get_global ENV_poleine_herbe) AI_Execute("sfxg_exec_poleine")
+if(@get_global ENV_nape_brume) AI_Execute("sfxg_exec_brume")
+AI_Execute("sfxg_exec_dustfall")
+AI_Execute("sfxg_exec_mouche")
+AI_Execute("sfxg_exec_goutte")
+AI_Execute("sfxg_exec_mouchefeu")

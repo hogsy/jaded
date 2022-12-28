@@ -1,0 +1,126 @@
+#include "btode_defs.var"
+
+//{
+//	object o_test_object
+//
+//	o_test_object = ao_ode_joints[0]
+//
+//	if ( o_test_object )
+//	{
+//		mv_DEBUG2 =  @o_test_object OBJ_BankingGet( )
+//		mv_DEBUG3 = @o_test_object OBJ_PosGet( )
+//	}
+//}
+
+// ------- POS INIT DE L'ELEMENT POUR LE TEST ECROULEMENT
+if(o_element_test_ecroulement)
+	v_pos_init_element_test_ecroulement = @o_element_test_ecroulement OBJ_PosGet()
+else
+	v_pos_init_element_test_ecroulement = cvector(0,0,0)
+
+// ------- DESACTIVATION PAR DEFAUT DES ELEMENTS ODE
+switch(i_mode_init)
+{
+	case ODE_Structure_Init_Inactif:
+		BTODE_Structure_Activation_OnOFF(0)
+		BTODE_Structure_Immovable_OnOFF(0)	
+		break
+		
+	case ODE_Structure_Init_Actif_Immovable:
+		BTODE_Structure_Activation_OnOFF(1)
+		BTODE_Structure_Immovable_OnOFF(1)		
+		break
+		
+	case ODE_Structure_Init_Actif_Pause:
+		BTODE_Structure_Activation_OnOFF(1)
+		BTODE_Structure_Pause_OnOFF(1)		
+		break
+	
+}
+
+// -------  ACTIVATION DE TOUS LES JOINTS
+BTODE_Structure_Joint_Activation()
+
+// -------- NUMBER OF ELEMENTS
+i_num_ode_elements = BTODE_Structure_NumberOfBodyGet()
+
+// -------- VALEURS INITIALES DE LA VASE
+if(o_vase)
+{
+	if(!f_force_molesse_vase)
+		f_force_molesse_vase = 0.001
+	
+	@o_vase ODE_Setf(1,f_force_molesse_vase)	
+	
+	if(f_force_vitesse_enfoncement_vase == 0)
+		f_force_vitesse_enfoncement_vase = 10.0
+}
+	
+// ------ OBJECT DE DESACTIVATION EN Z
+if(f_offset_z_desactivation && !o_z_desactivation)
+	o_z_desactivation = OBJ_Me()
+	
+// ------ PROJECTILE CINE
+if(o_projectile_cine)
+{
+	v_pos_init_projectile = @o_projectile_cine OBJ_PosGet()	
+}
+
+// ------ INIT SOUND
+i_instance_snd_rumble = -1
+f_percent_rumble = 1.0
+
+ai_instance_snd_whoosh[0] = 0
+ai_instance_snd_whoosh[1] = 0
+ai_instance_snd_whoosh[2] = 0
+ai_instance_snd_whoosh[3] = 0
+ai_instance_snd_whoosh[4] = 0
+ai_instance_snd_whoosh[5] = 0
+ai_instance_snd_whoosh[6] = 0
+ai_instance_snd_whoosh[7] = 0
+
+ai_instance_snd_whoosh[0] = -1
+ai_instance_snd_whoosh[1] = -1
+ai_instance_snd_whoosh[2] = -1
+ai_instance_snd_whoosh[3] = -1
+ai_instance_snd_whoosh[4] = -1
+ai_instance_snd_whoosh[5] = -1
+ai_instance_snd_whoosh[6] = -1
+ai_instance_snd_whoosh[7] = -1
+
+// init PAG stuff
+{
+	int i_Index
+	
+	for ( i_Index = 0; i_Index < C_MaxHitPAGS; i_Index++ )
+	{
+		mai_IsPAGActiveForLocation[i_Index]	= faux
+		maf_PAGStartTime[i_Index]				= 0.0
+		
+		if ( mao_TreeHitParticleSystem[i_Index] )
+		{
+			@mao_TreeHitParticleSystem[i_Index] OBJ_PagGeneratorFreqSet( 1, 0.0)
+		}
+	}
+	
+	for ( i_Index = 0; i_Index < C_MaxFallPAGS; i_Index++ )
+	{
+		mai_IsFallPAGActiveForLocation[i_Index]	= faux
+		maf_FallPAGStartTime[i_Index]					= 0.0
+		
+		if ( mao_TreeFallParticleSystem[i_Index] )
+		{
+			@mao_TreeFallParticleSystem[i_Index] OBJ_PagGeneratorFreqSet( 1, 0.0)
+		}
+	}
+}
+
+if ( ao_ode_joints[0] )
+{
+	mv_InitPosOfBreakingPart = @ao_ode_joints[0] OBJ_PosGet()
+}
+
+//------- PASSAGE MODE ATTENTE
+//AI_TrackCurChange("ode_state_wait")
+AI_TrackChange( C_Track_Main, "btode_state_wait" )
+

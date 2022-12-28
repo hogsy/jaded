@@ -1,0 +1,327 @@
+#include "BC_defines.var"
+
+#define		Cf_atterrissage_distance		1.813
+#define		Cf_atterrissage_hauteur		1.886
+#define		Ci_coef_blend_correction		50
+
+object			to_tete
+
+messageid		tmid_vision
+
+vector		tv_pos_grab		// position de grab de la charogne
+vector		tv_decal_grab 		// décalage pour la position de grab
+vector		tv_decal_anim		// décalage pour positionner le bat pour l'anim d'atterrissage
+vector		tv_temp
+
+int				ti_attente_hors_champ_mode_on
+int				ti_cri_annonce_go
+
+
+// SORTIE ETAT
+if (i_sort_etat)
+{
+	i_flag_frein = faux
+	i_flag_attente_hors_champ = faux
+	i_sort_etat = faux
+	return
+}
+
+// init cri d'annonce
+ti_cri_annonce_go = faux
+
+// décalage 1 : pour grabber la charogne
+switch ( i_atterrissage_mode )
+{
+	case Ci_atterrissage_sur_charogne :
+	case Ci_atterrissage_nid_charogne :
+	{
+		if( @o_cible AI_IsModel(get_PNJ_Bidoche_path) )
+			tv_decal_grab = cvector(0,0,0.1) * @o_cible OBJ_ZoomGet()
+		else if( i_charogne_ID != -1 )
+			tv_decal_grab = @"univ" Enemy_av_GrabTransporte_Offset[i_charogne_ID] * @o_cible OBJ_ZoomGet()
+		else
+			tv_decal_grab = cvector(0,0,0.2) * @o_cible OBJ_ZoomGet()
+		break
+	}
+	case Ci_atterrissage_nid_pause :
+	{
+		tv_decal_grab = Cv_NullVector
+		break
+	}
+}
+
+// ENTREE ETAT
+if (i_etat_courant != ETAT_Move_Atterrit )
+{
+	i_etat_ancien_ancien = i_etat_ancien
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Move_Atterrit
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	BC_DBG_Trace_Etat("etat move atterrit")
+	
+	BC_ref_speed_set(Cf_speed_atterrit)
+	
+	// destination et sight du wp
+	ti_attente_hors_champ_mode_on = faux
+	switch ( i_atterrissage_mode )
+	{
+		case Ci_atterrissage_nid_charogne :
+			ti_attente_hors_champ_mode_on = vrai
+		case Ci_atterrissage_nid_pause :
+			// position d'arrivée
+			v_cible_pos = @o_cible_depl OBJ_PosGet()
+			tv_pos_grab = v_cible_pos			// TODO : Choisir un os de la charogne pour positionner le wp d'atterrissage (et pas son pivot)
+			break
+
+		case Ci_atterrissage_sur_charogne :
+			ti_attente_hors_champ_mode_on = vrai
+			
+			v_cible_pos = @o_cible OBJ_PosGet()
+			tv_pos_grab = v_cible_pos			// TODO : Choisir un os de la charogne pour positionner le wp d'atterrissage (et pas son pivot)
+			break
+	}
+	v_dest_sight = OBJ_SightGet()
+	DBG_RenderVector(OBJ_PosGet(), v_dest_sight * 5, color_bleu)
+	// décalage 1 : position pour grabber
+	DBG_RenderVector(v_cible_pos, tv_decal_grab, color_bleu)
+	// décalage 2 ; pour l'anim d'atterrissage
+	tv_decal_anim = BC_decalage( - v_dest_sight, Cf_atterrissage_distance, Cf_atterrissage_hauteur )	// position pour anim
+	DBG_RenderVector(v_cible_pos, tv_decal_anim, color_jaune)
+	// décalage 3 : décalage total
+	v_decalage = tv_decal_grab + tv_decal_anim
+	v_dest_pos = tv_pos_grab + v_decalage		// position de destination
+	DBG_RenderVector(v_cible_pos, v_decalage, color_vert)
+	
+	// wp d'arrivée
+	@o_tmp_obj_next OBJ_PosSet(v_dest_pos)
+	@o_tmp_obj_next OBJ_BankingGeneralSet( v_dest_sight, Cv_VerticalVector)
+	o_next_wp = o_tmp_obj_next
+	
+	f_time_action = TIME_Get()
+	
+	ti_cri_annonce_go = vrai
+	
+	BC_select_action()
+	BC_action_frequency_set(1.0)
+	
+	f_obstacle_duration = 0.0		// check obstacle pour aller chopper de la bouffe
+	f_speed = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// EMERGENCY ABORT =============================
+if( o_cible && ! BC_TargetActive(o_cible) )
+{
+	DBG_TraceObject(OBJ_Me())
+	DBG_TraceString(" : EMERGENCY ABORT : Target non active (")
+	DBG_TraceObject(o_cible )	
+	DBG_TraceString(")")
+	DBG_TraceEOL()	
+	
+	BC_Cadavre_Del(o_cible)
+	o_cible = nobody
+	AI_Execute("BC_exec_init_attente")
+}
+
+
+// TEST CIBLE DANS TERRITOIRE (FEU ???)
+if( o_cible && ! BC_Gao_in_Territory(o_cible, vrai) )
+{
+	BC_DBG_Trace_Etat_Gao("ma cible n'est plus dans mon territoire (feu ???) alors je repars", o_cible)
+	AI_Execute("BC_exec_init_attente")
+}
+
+// TEST CADAVRE DANS TERRITOIRE (FEU ???)
+if( o_cadavre && ! BC_Gao_in_Territory(o_cadavre, vrai) )
+{
+	BC_DBG_Trace_Etat_Gao("mon cadavre n'est plus dans mon territoire (feu ???) alors je repars", o_cadavre)
+	AI_Execute("BC_exec_init_attente")
+}
+
+
+// Vision ------------------------------------------------------------------------------------------
+if( o_cible && i_atterrissage_mode == Ci_atterrissage_sur_charogne )
+{
+	BC_Interet_Update(mid_interet_charogne, C_EVENT_InteretStatusFoodchainLocked, o_cible, tmid_vision)
+	
+	if( ! BC_Seen_Actor_Test(o_cible, tmid_vision) )
+	{
+		if( i_DBG_trace_etat )
+		{
+			DBG_TraceObject(OBJ_Me())
+			DBG_TraceString(" : ")
+			DBG_TraceObject(o_cible)
+			DBG_TraceString(" perdu de vue...")
+			DBG_TraceEOL()
+		}
+		AI_Execute("BC_exec_init_attente")
+	}
+}
+
+
+if( o_cible && @o_cible AI_IsModel(get_PNJ_Bidoche_path) && @o_cible OBJ_CapaTest(CAPA_Bidoche_Snapped_Jack) )
+{
+	BC_DBG_Trace_Etat("ma proie était une bidoche qui vient d'être ramassée")
+	AI_Execute("BC_exec_init_attente")
+}
+
+
+// Attente Hors Champ ==================================================================
+if( i_flag_attente_hors_champ )
+{
+	if( ( TIME_Elapsed(f_time_action, f_duree_wait_hors_champ) ) || ( f_duree_dans_champ_camera >= f_duree_min_dans_champ ) )
+	{
+		f_speed = 0.0
+		f_time_action = TIME_Get()		// pour relancer un cri
+		i_flag_attente_hors_champ = faux
+		
+		// wp de départ
+		@o_tmp_obj_last OBJ_PosSet(OBJ_PosGet())
+		@o_tmp_obj_last OBJ_BankingGeneralSet(OBJ_SightGet(), OBJ_BankingGet())
+		o_last_wp = o_tmp_obj_last
+
+		ACT_ActionSet(i_ACTION_Vol_Standard)
+		ti_cri_annonce_go = vrai
+	}
+	else
+	{
+		// Orientation vers la charogne ou le nid
+		OBJ_BankingGeneralSet(
+			MATH_VecBlendRotate(OBJ_SightGet(), v_dest_pos - OBJ_PosGet(), 5 * TIME_GetDt()),
+			MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 5 * TIME_GetDt()) )
+	}
+	
+	returntrack
+}
+
+
+
+// Obstacle ----------------------------------------------------------------------------------
+AI_Execute("BC_exec_check_obstacle")
+if( i_flag_obstacle )
+{
+	if( i_DBG_trace_etat )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : un obstacle l'empeche d'atteindre ")
+		DBG_TraceObject(o_cible)
+		DBG_TraceEOL()
+	}
+	AI_Execute("BC_exec_init_attente")
+}
+
+
+// Cri d'annonce d'action ==================================================================
+if( ti_cri_annonce_go )
+{
+	BC_Sound_Cri_Presence_Play()
+}
+
+
+// Suivi du regard =======================================================================
+if( o_cible )
+{
+	// la bat observe sa proie
+	to_tete = @o_cible ANI_CanalObjectGet(Anim_Canal_Tete)
+	if( ! to_tete )
+		to_tete = o_cible
+	v_look_pos = @o_cible OBJ_PosGet()
+}
+else if( ACT_ActionGet() == ACTION_Mange_Attente )
+{
+	// pas de proie, posée : elle regarde JACK
+	v_look_pos = @o_jack OBJ_PosGet()
+}
+else if( o_cible_depl )
+{
+	// pas de proie, en vol : la bat observe son nid
+	v_look_pos = @o_cible_depl OBJ_PosGet()
+}
+else
+	i_flag_neck = faux
+
+
+// TEST JOUEUR PROCHE PENDANT CYCLE FOODCHAIN
+if( i_atterrissage_mode == Ci_atterrissage_sur_charogne )
+{
+	AI_Execute("BC_exec_cadavre_joueur_proche")
+}
+
+// ========== DEPLACEMENT ===========================================================
+
+if( ACT_ActionGet() == i_ACTION_Vol_Standard || ACT_ActionGet() == ACTION_Vol_Proie )
+{
+	f_speed_blend_coef = 1.0
+	AI_Execute("BC_exec_MOVE_beziers")
+	if( i_flag_depl_fini )
+	{
+		// on recale bien la bat
+		OBJ_PosSet( @o_next_wp OBJ_PosGet() )
+		OBJ_BankingGeneralSet( @o_next_wp OBJ_SightGet(), @o_next_wp OBJ_BankingGet())
+		
+		// bat arrivé -> anim d'atterrissage sur le cadavre
+		ACT_ActionSet( ACTION_Vol_Atterrissage_fin )			// wp anim atterrissage_fin atteint -> passage en anim atterrissage_fin
+		@o_tmp_obj_last OBJ_PosSet( v_cible_pos + tv_decal_grab )								// TODO : supprimer cette ligne de debug !!!
+		@o_tmp_obj_last OBJ_BankingGeneralSet( v_dest_sight, Cv_VerticalVector)	// TODO : supprimer cette ligne de debug !!!
+		@o_next_wp OBJ_PosSet(v_cible_pos)		// pour le calcul de restriction de speed en fonction de ma position / wp next
+	}
+}
+else if( ACT_ActionGet() == ACTION_Vol_Atterrissage_fin) 
+{
+	f_speed = 0.0			// vitesse nulle pour redécoller si paf
+	if( ACT_ActionFinished() )
+	{
+		if( ! i_disable_atterrissage_dist_check )		// spécial 02C_2 : les bidoches peuvent tomber au pied d'un mur...
+		{
+			tv_temp = v_cible_pos + tv_decal_grab - OBJ_PosGet()
+			if( MATH_VecNorm(tv_temp) > 0.5 )
+			{
+				BC_DBG_Trace_Etat("n'a pas atterit où elle le souhaitait = il doit y avoir un obstacle")
+				AI_Execute("BC_exec_init_attente")
+			}
+		}
+		ACT_ActionSet(ACTION_Mange_Attente)					// le bat a atterrit -> il attend avant de manger
+		f_time_action = TIME_Get()		// durée d'attente (cas atterrissage nid sans proie)
+		DYN_Off()		// pour ne pas glisser
+		if( MSG_GlobalIsValid(mid_grab_charogne) )
+			LNK_GrabStatusSet(mid_grab_charogne, Ci_GrabTransporte_Type_Pose)		// la proie change d'anim
+	}
+}
+else if( ACT_ActionGet() == ACTION_Mange_Attente )
+{
+	switch( i_atterrissage_mode )
+	{
+		case Ci_atterrissage_sur_charogne : 
+		{
+			i_mange_mode = Ci_mange_gouter_charogne
+			macro_change_etat("BC_ETAT_Mange")		// le bat a attendu -> il va manger la charogne
+			break
+		}
+		case Ci_atterrissage_nid_charogne :
+		{
+			i_mange_mode = Ci_mange_tuer_proie
+			macro_change_etat("BC_ETAT_Mange")		// le bat a attendu -> il va manger la charogne
+			break
+		}
+		case Ci_atterrissage_nid_pause :
+		{
+			if( TIME_Elapsed(f_time_action, 5.0) )
+			{
+				i_envol_palier = 0
+				macro_change_etat("BC_ETAT_Move_Decolle")
+			}
+			break
+		}
+	}
+}
+

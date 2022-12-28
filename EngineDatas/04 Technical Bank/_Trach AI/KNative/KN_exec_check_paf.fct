@@ -1,0 +1,33 @@
+
+
+//=============================================================================
+// DETECTION DES PAFS
+//=============================================================================
+
+int					ti_paf_rank				// Rang du paf dans la liste
+messageid		tmid_paf_ID				// ID du paf
+message		tmsg_paf_filter			// Message filtre pour la lecture de la liste
+int					ti_vis_rank				// Rang du paf dans la liste
+messageid		tmid_vis_ID				// ID du paf
+message		tmsg_vis_filter			// Message filtre pour la lecture de la liste
+
+//===========================================================
+// Détection des pafs qui ont touché le bat
+//===========================================================
+
+MSG_SetNull( tmsg_paf_filter)
+tmsg_paf_filter.msg_gao1 = OBJ_Me()
+
+ti_paf_rank = -1
+o_cur_paf_pere = nobody
+
+for (	tmid_paf_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_paf_rank, tmsg_paf_filter);
+		MSG_GlobalIsValid(tmid_paf_ID);
+		tmid_paf_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_paf_rank, tmsg_paf_filter) )
+{
+	o_cur_paf_pere = EVENT_PereGet(tmid_paf_ID)
+	v_cur_paf_dir = EVENT_PafDirGet(tmid_paf_ID)
+	v_cur_paf_dir = v_cur_paf_dir 
+}
+
+	

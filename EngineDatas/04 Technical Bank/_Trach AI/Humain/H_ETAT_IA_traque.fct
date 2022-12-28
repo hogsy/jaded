@@ -1,0 +1,154 @@
+//#include "H_defines.var"
+//
+//int			ti_weapon
+//int			ti_i
+//int			ti_numero
+//int			ti_index
+//int			ti_flag_grab
+//int			ti_context
+//float		tf_dist
+//float		tf_sign
+//float		tv_val
+//float		tf_offset
+//float		tf_temp
+//int			ti_move
+//int			type
+//object	to_who
+//float		tf_radius
+//int			i
+//
+//vector	tv_dest_pos
+//vector	tv_temp
+//
+//object	to_trap
+//object	to_obj
+//object	to_enn
+//object	to_ennemy
+//
+//// SORTIE ETAT ===================================================================
+//if (i_sort_etat)
+//{
+//	i_sort_etat = faux
+//	return
+//}
+//
+//// INITIALISATION ETAT ==============================================================
+//if (i_etat_courant != ETAT_IA_traque)
+//{
+//	i_dernier_etat = i_etat_courant
+//	i_etat_courant = ETAT_IA_traque
+//	f_time_enjoue = 2
+//	o_pref_target_stimulus_vis = nobody
+//
+//	if (fct_last_etat)
+//	{
+//		i_sort_etat = vrai
+//		AI_Execute(fct_last_etat)
+//	}
+//
+//	fct_last_etat = AI_TrackCurGet()
+//
+//	for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+//		ai_SRV_ENABLE[ti_i] = faux
+//
+//	// AUTORISATIONS DES GRABS
+//	ai_SRV_ENABLE[Ci_LNK_GRAB_RAPTOR]	= vrai
+////	ai_SRV_ENABLE[Ci_LNK_GRAB_TRANSPORTE] = vrai
+//	
+//	// AUTORISATION DES AIDES
+//	ai_SRV_ENABLE[Ci_LNK_INTERACTION] 		= vrai
+//	ai_SRV_ENABLE[Ci_LNK_PSSS] 					= vrai
+//
+//	DYN_SpeedSetVector( Cv_NullVector)
+//	DYN_TractionSet( Cv_NullVector)
+//	
+//	f_time_start_etat = 0.0	
+//	i_help_no_cache = i_flag_danger
+//	
+//	o_cible_indigene = AI_MainActorGet(0)
+//	i = MATH_RandInt(0, 4)
+//	switch(i)
+//	{
+//		case 0:	i = C_ID_Jack break
+//		case 1:	i = C_ID_Denham break
+//		case 2:	i = C_ID_Ann break
+//		case 3:	i = C_ID_Hayes break
+//		case 4:	i = C_ID_Jimmy break
+//	}
+//	
+//	if(@"univ" ai_HumainIsHere[i]) o_cible_indigene = @"univ" ao_AllHumains[i]
+//	if(@"univ" LIFE_HumainEtat[i] == Life_ETAT_Mort) o_cible_indigene = AI_MainActorGet(0)
+//	if(@"univ" LIFE_HumainEtat[i] == Life_ETAT_Agonisant) o_cible_indigene = AI_MainActorGet(0)
+//}
+//else
+//{
+//	f_time_start_etat += TIME_GetDt()
+//}
+//
+//// ANALYSE  =====================================================================
+//AI_Execute("H_exec_read_world")
+//AI_Execute("H_exec_serveur_get")
+//AI_Execute("H_exec_change_etat")
+//AI_Execute("H_exec_ch_Stimulus_Paf")
+//if (o_paf_sender) macro_change_etat("H_ETAT_IA_paf")
+//
+//// INTERACTION
+//OBJ_Me().des_int1 = Ci_DISPLAY_FIGHT
+//
+//// PLUS DE MUNITIONS
+//if(!BambouEnMain())
+//{
+//	macro_change_etat(fct_main_etat)
+//}
+//
+//// COMPORTEMENT ==============================================================
+//
+//if(TIME_Elapsed(f_time_debut_traque, 15))
+//{
+//	i_baston_indigene = 1
+//	macro_change_etat(fct_main_etat)
+//}
+//
+//// Si je vois une cible, je shoot direct si je suis dans le range de mon arme
+//ti_weapon = @"univ" i_weapon_ID [i_id_humain]
+//tf_temp = @"univ" Weapon_af_range[ ti_weapon ]
+//tf_temp *= 0.5
+//
+//// Qui ?
+//ComputeCibleAShooter( tf_temp )
+//if(o_target_stimulus_vis && f_time_start_etat > 0.1)
+//{
+//	to_who = o_cible_indigene
+//	AI_Execute("H_exec_validate_tir")
+//}
+//
+//// Je vais jusqu'à celui qui demande de l'aide
+//to_obj = o_cible_indigene
+//if(OBJ_SqrDist(to_obj) > 5 * 5 || !GRID_PosValid(OBJ_PosGet(), @to_obj OBJ_PosGet()))
+//{
+//	if(OBJ_SqrDist(to_obj) < 2 * 2)
+//		v_way_destpos = OBJ_PosGet()
+//	else
+//		v_way_destpos = @to_obj OBJ_PosGet() 
+//}
+//else
+//{
+//	v_way_destpos = OBJ_PosGet()
+//}	
+//
+//// Pas de ponderation en fonctions des ennemis : on trace tout droit
+//i_way_evite_ennemi = faux
+//i_flag_disable_auto_crouch = vrai
+//CommonMove()
+//i_way_evite_ennemi = vrai
+//
+//// Orientation
+//if(!f_joy_norm)
+//{
+//	OrienteVersEnnemiProchePasDerriere()
+//}
+//
+//// Anims
+/////////////////////////////////////////////////
+//i_flag_force_course = vrai
+//AI_Execute("H_exec_select_action")

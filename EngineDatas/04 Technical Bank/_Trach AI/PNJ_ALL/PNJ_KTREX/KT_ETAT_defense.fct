@@ -1,0 +1,151 @@
+#include "KT_defines.var"
+
+int					ti_can_rotate
+float				tf_dot1
+float				tf_dot2
+float				tf_coef_rotation
+vector			tv_sens
+vector			tv_new_sight
+object			to_tete
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_KK_defense)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_KK_defense
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	// CHOIX DU COUP
+	tv_sens = @o_fight_actor OBJ_PosGet() - OBJ_PosGet()
+	tv_sens.z = 0.0
+	MATH_VecSetNormalize( tv_sens)
+	tf_dot1 = MATH_VecDotProduct( OBJ_SightGet(), tv_sens)
+	tf_dot2 = MATH_VecDotProduct( OBJ_HorizonGet(), tv_sens)
+	
+	if ( tf_dot1 > Cf_Cos30)
+	{
+		// Face
+		i_flag_zde_fight_type = Ci_zde_fight_type_machoire
+		ACT_ActionSet( Action_DEF_Face)
+	}
+	else if ( tf_dot1 < -Cf_Cos60)
+	{
+		// Derrière
+		i_flag_zde_fight_type = Ci_zde_fight_type_coup_de_queue
+		if( tf_dot2 > 0)
+			ACT_ActionSet( Action_DEF_CpQueueG)
+		else
+			ACT_ActionSet( Action_DEF_CpQueueD)			
+	}
+	else 
+	{
+		// Coté
+		i_flag_zde_fight_type = Ci_zde_fight_type_coup_de_tete
+		if( tf_dot2 > 0)
+			ACT_ActionSet( Action_DEF_CpTeteG)
+		else
+			ACT_ActionSet( Action_DEF_CpTeteD)			
+	}
+	 
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	i_defense_paf_sent = faux
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =======================================================================================================
+
+// Suivi de regard
+i_flag_look = vrai
+to_tete = @o_fight_actor ANI_CanalObjectGet(Anim_Canal_Tete)
+if( to_tete )
+	v_look_pos = @to_tete OBJ_PosGet()
+else
+	v_look_pos = @o_fight_actor OBJ_PosGet()
+
+if( OBJ_CapaTest(Capa_Paffe) &&  !i_defense_paf_sent)
+{
+	i_defense_paf_sent = vrai
+	tv_sens = @o_fight_actor OBJ_PosGet() - OBJ_PosGet()
+	tv_sens.z = 0.0
+	MATH_VecSetNormalize( tv_sens)
+
+	// Couper la liaison GRAB
+	o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, faux, nofunc, nofunc)
+
+//	COL_ColSetActivationSet(C_bit_zde_fight, none)
+//	// i_flag_zde_fight_type est initialisé à l'appel du mode
+//	AI_Execute("KT_exec_zdf_zdc")
+//	COL_ColSetActivationSet(none, C_bit_zde_fight)
+//	EVENT_AddEventPafCanal( C_EVENT_FILTER_Enemy, C_PAF_KK_Moyen, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_fight_actor, -1, 0, tv_sens, OBJ_PosGet())
+}
+
+// FIN DE L'ATTAQUE
+if (ACT_ActionFinished())
+{
+	macro_change_etat("KT_ETAT_attente")		// attente ou cri
+}
+	
+// ORIENTATION
+ti_can_rotate = faux
+tf_coef_rotation = 0.0
+switch(ACT_ActionGet())
+{
+	case Action_Fight_Mord :
+		// Coup de dents : s'oriente pendant toute la 1ère phase de l'anim
+		if( ACT_ActionItemGet() == 0 )
+		{
+			if( o_fight_actor == o_ANN )
+			{
+				ti_can_rotate = vrai
+				tf_coef_rotation = 1.0
+			}
+		}
+		break
+	case Action_Fight_Mord_Flash :
+		// Coup de dents : s'oriente pendant toute la 1ère phase de l'anim
+		if( ACT_ActionItemGet() == 0 )
+		{
+			ti_can_rotate = vrai
+			tf_coef_rotation = 3.0
+		}
+		break
+	case Action_Attak_CpTeteD :
+	case Action_Attak_CpTeteG :
+		// Coup de tête : s'oriente pendant qu'il paffe
+		if( OBJ_CapaTest(Capa_Paffe) )
+		{
+			ti_can_rotate = vrai
+			tf_coef_rotation = 3.0
+		}
+		break
+	default: 
+		// Coup de queue : ne s'oriente pas (orientation dans l'anim)
+		break
+}
+
+//if( ti_can_rotate )
+//{
+//	f_orientation_coef = MATH_FloatBlend(f_orientation_coef, tf_coef_rotation, 10 * TIME_GetDt())
+//	
+//	tv_new_sight = @o_fight_actor OBJ_PosGet()
+//	tv_new_sight -= OBJ_PosGet()
+//	tv_new_sight.z = 0.0
+//	tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_new_sight, f_orientation_coef  * TIME_GetDt())
+//	OBJ_BankingGeneralSet(tv_new_sight, Cv_VerticalVector)
+//}

@@ -1,0 +1,75 @@
+#include "PNJ_Plane_defines.var"
+
+object		to_bone_1
+object		to_bone_2
+
+OBJ_FlagsControlSet(OBJ_C_ControlFlag_AlwaysVisible, none)
+
+TIME_Wait(Cf_EVENT_Duree_1Trame)
+to_bone_1 = ANI_CanalObjectGet(10)
+to_bone_2 = ANI_CanalObjectGet(0)
+if (to_bone_1)
+	@to_bone_1 OBJ_HierarchySet(to_bone_2)
+
+OBJ_FlagsControlSet(none, OBJ_C_ControlFlag_AlwaysVisible)
+
+AI_RunContext(CTX_AfterRec)
+
+DYN_Off()
+
+AI_CBAdd(OBJ_Me(), CallBack_WhenDestroy,"PNJ_Plane_callback_WhenDestroy")
+AI_CBAdd(OBJ_Me(), CallBack_SectoActOn, "PNJ_Plane_callback_WhenSectoOn")
+//macro_add_callback_after_cam("PNJ_Plane_callback_aftercam")
+
+OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_DesignStruct,none)
+OBJ_Me().des_int1 = Ci_DISPLAY_FIGHT
+
+OBJ_FlagsControlSet(OBJ_C_ControlFlag_RayInsensitive, none)
+
+OBJ_CapaSet(none, all)
+
+AI_TrackChange(Ci_Track_Reflex, "PNJ_Plane_Reflex")
+
+//if (AI_GetCurSystem() != 10)
+//{
+//	// SI PAS EN EDITEUR
+//	EDIT = faux
+//}
+
+o_helice = ANI_CanalObjectGet(1)
+
+if (o_start_wp)
+{
+	n_net = @o_start_wp WAY_NetOfObj()
+	
+	o_next_wp = o_start_wp
+	v_net_next_pos = @o_next_wp BV_RandomPosGet(0)
+
+	if (WAY_RootGet(n_net) != o_start_wp)
+		DBG_Error("Le root n'est pas le premier wp donné")
+
+	PNJ_Plane_Init_Net()
+	PNJ_Plane_Position_Set()
+
+	v_grav_pos = OBJ_PosGet()
+	v_grav_pos.z -= 2.0
+
+	COL_ColSetActivationSet(C_bit_zde_corps, C_bit_zdm_pied)
+
+	switch(EDIT)
+	{
+		case ETAT_TEST :
+			AI_TrackChange(Ci_Track_Etat, "PNJ_Plane_ETAT_TEST")
+			break
+			
+		case ETAT_Attente :
+			AI_TrackChange(Ci_Track_Etat, "PNJ_Plane_ETAT_Attente")
+			break
+			
+		case ETAT_Cine :
+			AI_TrackChange(Ci_Track_Etat, "PNJ_Plane_ETAT_Cine")
+			break
+	}
+}
+
+AI_TrackCurStop()

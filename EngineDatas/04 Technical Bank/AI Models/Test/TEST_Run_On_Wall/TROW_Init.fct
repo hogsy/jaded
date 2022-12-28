@@ -1,0 +1,34 @@
+#include "TROW_defines.var"
+
+int		ti_i
+
+object	to_main_actor
+
+#define Cf_bv_size	10.0
+
+to_main_actor = AI_MainActorGet(0)
+if  ( ! to_main_actor )
+	returntrack
+	
+@to_main_actor OBJ_FlagInvisibleSet(vrai)
+@to_main_actor OBJ_FlagInactiveSet(vrai)
+
+//AI_MainActorSet(0)
+
+v_last_real_banking = OBJ_BankingGet()
+
+COL_CrossableSet(Gmat_RM_Crossable_Default, none)
+
+COL_SwapToSpecific(C_zdm_pied)
+COL_ZoneSizeSet(C_zdm_pied, cvector(0.5, 0.5, 0.5))
+COL_ZonePosSet(C_zdm_pied, cvector(0.0, 0.0, 0.0))
+
+OBJ_FlagsTypeSet(none, OBJ_C_TypeFlag_DodgeCamera)
+
+//AI_RunContext(CTX_AfterRec)
+AI_RunContext(CTX_Normal)
+
+AI_CBAdd(OBJ_Me(), CallBack_After_Rec, "TROW_callback_afterblend")
+AI_TrackChange(Ci_Track_Etat, "TROW_ETAT_Basic")
+
+AI_TrackCurChangeNow("TROW_Reflex")

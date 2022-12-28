@@ -1,0 +1,177 @@
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#include "SKMM_Constant.var"
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+int 			ti_Line
+message 	tm_msg
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///-------------------------------------------------------------------------------------------------------------------
+///-------------------------------------------------------------------------------------------------------------------
+if(mf_InitTimer)
+{
+	return
+}
+
+
+if(mi_CurrentLine >= SKMM_Cte_MaxHalfSize)
+{
+	
+#ifndef _FINAL_
+	if(i_DebugMode)
+	{
+		DBG_TraceString("[MUS] end of trig array detected")
+		DBG_TraceEOL()
+	}
+#endif
+
+	AI_TrackCurChangeNow("SKMM_Inactive")
+}	
+
+
+///-------------------------------------------------------------------------------------------------------------------
+///-------------------------------------------------------------------------------------------------------------------
+for(ti_Line = mi_CurrentLine; ti_Line < SKMM_Cte_MaxHalfSize; ti_Line++)
+{
+	// trig_test
+	if( AI_TriggerIsValid(at_Script[2*ti_Line]) )
+	{
+		if( call_trigger(at_Script[2*ti_Line]) )
+		{	// trigger-test is true
+
+#ifndef _FINAL_
+			if(i_DebugMode)
+			{
+				DBG_TraceString("[MUS] ### Trigger is true : ")
+				DBG_TraceInt(2*ti_Line)
+				DBG_TraceString(" ###")
+				DBG_TraceEOL()
+			}
+#endif
+			
+			// trig_exec
+			if( AI_TriggerIsValid(at_Script[2*ti_Line + 1]) )
+			{
+				mi_CurrentActiveTriggerExec = 2*ti_Line + 1 	// register the active trig_exec
+				mi_CurrentLine = ti_Line + 1							// register the next active trig_test
+				@"univ" SND_SKMM_mi_CurrentLine = mi_CurrentLine 
+				@"univ" SND_SKMM_mi_CurrentActiveTriggerExec = mi_CurrentActiveTriggerExec
+				
+#ifndef _FINAL_
+				if(i_DebugMode)
+				{
+					DBG_TraceString("[MUS] call PlayMusTrigger : ")
+					DBG_TraceInt(mi_CurrentActiveTriggerExec)
+					DBG_TraceEOL()
+				}
+#endif
+
+				break
+			}
+		}
+		else
+		{	// trigger-test is false
+			break
+		}
+	}
+	else
+	{
+		
+#ifndef _FINAL_
+		if(i_DebugMode)
+		{
+			DBG_TraceString("[MUS] end of trig array detected")
+			DBG_TraceEOL()
+		}
+#endif
+		// there is no more trigger => exit
+		AI_TrackCurChangeNow("SKMM_Inactive")
+		break
+	}
+}
+
+
+
+///-------------------------------------------------------------------------------------------------------------------
+if( AI_TriggerIsValid(t_AnnSignal) && call_trigger(t_AnnSignal) )
+{
+	if(mi_AnnSignal != 1) mi_NewSignal |= SKMM_Cte_AnnSignal
+	mi_AnnSignal = 1
+}
+else
+{
+	if(mi_AnnSignal != 0) mi_NewSignal |= SKMM_Cte_AnnSignal
+	mi_AnnSignal = 0
+	
+	///-------------------------------------------------------------------------------------------------------------------
+	if( AI_TriggerIsValid(t_MashingSignal) && call_trigger(t_MashingSignal) )
+	{
+		if(mi_MashingSignal != 1) mi_NewSignal |= SKMM_Cte_MashingSignal
+		mi_MashingSignal = 1
+	}
+	else
+	{
+		if(mi_MashingSignal != 0) mi_NewSignal |= SKMM_Cte_MashingSignal
+		mi_MashingSignal = 0
+	}
+}
+
+	
+	
+///-------------------------------------------------------------------------------------------------------------------
+if( AI_TriggerIsValid(t_InjureSignal) && call_trigger(t_InjureSignal) )
+{
+	if(mi_InjureSignal != 1) mi_NewSignal |= SKMM_Cte_InjureSignal
+	mi_InjureSignal = 1
+}
+else
+{
+	if(mi_InjureSignal != 0) mi_NewSignal |= SKMM_Cte_InjureSignal
+	mi_InjureSignal = 0
+}
+
+
+///-------------------------------------------------------------------------------------------------------------------
+#ifndef _FINAL_
+if(i_DebugMode)
+{
+	if(mi_NewSignal & SKMM_Cte_AnnSignal)
+	{
+		DBG_TraceString("[MUS] new ann signal :")
+		DBG_TraceInt(mi_AnnSignal)
+		DBG_TraceEOL()
+	}
+	if(mi_NewSignal & SKMM_Cte_MashingSignal)
+	{
+		DBG_TraceString("[MUS] new mashing signal :")
+		DBG_TraceInt(mi_MashingSignal)
+		DBG_TraceEOL()
+	}
+	if(mi_NewSignal & SKMM_Cte_InjureSignal)
+	{
+		DBG_TraceString("[MUS] new mashing signal :")
+		DBG_TraceInt(mi_InjureSignal )
+		DBG_TraceEOL()
+	}
+}
+#endif
+
+///-------------------------------------------------------------------------------------------------------------------
+mi_MaskMashingSignal = 0
+if((0 < mi_CurrentActiveTriggerExec) && (mi_CurrentActiveTriggerExec < SKMM_Cte_MaxSize))
+{
+	if(AI_TriggerIsValid(at_Script[mi_CurrentActiveTriggerExec]) )
+	{
+		tm_msg = AI_TriggerGetMsg(at_Script[mi_CurrentActiveTriggerExec])
+		if(tm_msg.msg_int4 == -10)
+		{
+			mi_MaskMashingSignal = 1
+			mi_NewSignal &= ~SKMM_Cte_MashingSignal
+		}
+		
+		call_trigger( at_Script[mi_CurrentActiveTriggerExec] )
+	}
+}

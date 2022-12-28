@@ -1,0 +1,51 @@
+#include "Interface_MenuInGame_defs.var"
+
+if (!IntMIG_SetPageParams())
+	return
+	
+if ( mo_Texte )
+{
+	if (INTMIG_EnterPage_Start)
+	{
+		SND_M_SetGameMode(SND_Cte_ModeLoading)
+		SND_M_SetGameSubMode(0)
+//		IntMIG_SetText( mi_PageString, INTMIG_TXG, INTMIG_TEXT_Loading, cvector(0.5, 0.5, 0),  0.0, 5, -1, 0xFFFFFF, 0 )
+//		IntMIG_Text_FadeInMulti( mi_PageString, 1, 0.5, 0.0 )
+	}
+}
+
+IntMIG_RestorePageParams()
+
+if ( mi_ChangePage )
+	return
+	
+if ( (mi_LoadMap == INTMIG_FIRSTMAPID) && (mi_LoadES == -1) )
+{
+	mi_LoadES = INTMIG_FIRSTMAPES 
+	DBG_TraceString( "PLAY TRAILER - PLAY TRAILER - PLAY TRAILER - PLAY TRAILER" )
+	DBG_TraceEOL()
+	if ( @"univ" SND_gi_ShowSubtitle )
+		ConsoleSpecificOption( 7 )
+	else
+		ConsoleSpecificOption( 6 )
+	 VIDEO_PLAY(0)
+}
+
+IntMIG_TimeUnlock()
+	
+// début du jeu => newgame reinit
+if ( (mi_LoadMap == INTMIG_FIRSTMAPID) && (mi_LoadES == INTMIG_FIRSTMAPES) && !@"univ" PROG_i_MapReplay )
+	@"univ" i_force_newgame_reinit = 1
+	
+//if ( (mi_LoadMap == 2001) && (mi_LoadES == 49) )
+//	VIDEO_SETKEY( 1 )
+	
+if (mi_StartMenu)
+{
+	IntMIG_HOF_GetPlayerOverallScore()
+	@"univ" PROG_i_XtraUnlocked_Old = @"univ" PROG_i_XtraUnlocked		// store state of xtra before launching a map
+}
+@"univ" load_world = vrai																	// Ask Loading
+@"univ" world_ID = mi_LoadMap 														// Map ID
+@"univ" world_entrance_ID = mi_LoadES												// Map ES
+

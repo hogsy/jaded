@@ -1,0 +1,78 @@
+int		ti_exit
+float	tf_dureefade
+
+if ( des_i_exit )
+{
+	des_duree_fade -= TIME_GetDt()
+	if (des_duree_fade < -0.1 )
+	{
+		@"univ" i_death_shield = 0		// Reset le compteur de mort dans une arene (on change de map)
+		@"univ" i_death_exploit = 0		// Reset le compteur de mort exploit
+		@"univ" load_world = vrai						
+		@"univ" world_ID = des_vers_map_numero
+		@"univ" world_entrance_ID = des_vers_entree_numero
+		stop
+	}
+	return
+}
+
+if ( !i_out_of_bv )
+{
+	if (!des_je_fais_entree_de_map)
+		i_out_of_bv = vrai
+	else if (!i_EX_Test_BV_Actif)
+		i_out_of_bv = vrai
+	else if (!COL_BV_PivotCollide(des_o_perso_detect))
+		i_out_of_bv = vrai
+	else
+		return
+}
+
+ti_exit = faux
+
+// BV
+if (i_EX_Test_BV_Actif && COL_BV_PivotCollide(des_o_perso_detect))
+	ti_exit = vrai
+
+// Trigger 
+if (AI_TriggerIsValid(Trigger_EX) && call_trigger(Trigger_EX))
+	ti_exit = vrai
+	
+// sortie par cheat
+#ifndef _FINAL_
+if (@"univ" Cheat_i_Flags & CHEAT_ExitMap)
+{
+	@"univ" Cheat_i_Flags &= ~CHEAT_ExitMap
+	ti_exit = vrai
+}
+#endif
+	
+if (ti_exit)
+{
+	macro_STATS_Dump( 2, OBJ_Me() )
+	
+	if (i_EX_Test_BV_Actif)
+		i_out_of_bv = faux
+		
+	tf_dureefade = des_duree_fade
+	tf_dureefade = tf_dureefade - 0.1
+	if(tf_dureefade < 0.0) tf_dureefade = 0.01
+	SND_Setf(SND_Cte_SetLoadingFadeOutTime, tf_dureefade)
+
+	SND_M_SetGameMode(SND_Cte_ModeLoading)
+	SND_M_SetGameSubMode(0)
+
+	DBG_TraceString("\n Sortie de map vers map n°")
+	DBG_TraceInt(des_vers_map_numero)	
+	DBG_TraceString(" entrée n°")
+	DBG_TraceInt(des_vers_entree_numero)	
+	DBG_TraceString(" ... GAO: ")
+	DBG_TraceObject(OBJ_Me())
+	DBG_TraceString("\n")
+
+	// A REMETTRE APRES E3
+	tf_dureefade = des_duree_fade
+	LIBGFX_Fade(31, 0x00000000, 0xff000000, 0.0, des_duree_fade, 5.0, 0.0, 0.0, 10)
+
+	des_i_exit = vrai
+}

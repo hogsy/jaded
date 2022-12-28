@@ -1,0 +1,48 @@
+#include "H_defines.var"
+
+if (ao_SRV[Ci_LNK_GRAB_RAPTOR])
+{
+	i_flag_etourdit = faux
+	
+	switch(LNK_GrabServeurVisionIDGet(amid_SRV_LIAISON_ID[Ci_LNK_GRAB_RAPTOR]))
+	{
+		case C_ID_Scolo :
+			macro_change_etat("H_ETAT_IA_grabscolo")
+			break
+
+		case C_ID_Scorpion :
+			macro_change_etat("H_ETAT_IA_grabscorpion")
+			break
+
+		case C_ID_BatCharognard :
+			macro_change_etat("H_ETAT_IA_grabtransporte")
+			break
+			
+		case C_ID_CrabeGeant :
+		case C_ID_CrabePetit :
+			macro_change_etat("H_ETAT_IA_grabcrab")
+			break
+
+		case C_ID_SwampCrawlerSmall :
+			macro_change_etat("H_ETAT_IA_grabswamp")
+			break
+
+		default:
+			macro_change_etat("H_ETAT_IA_grabraptor")
+	}
+}
+
+if(ao_SRV[Ci_LNK_PSSS])								if(i_etat_courant != ETAT_IA_psss) { macro_change_etat("H_ETAT_IA_psss") }
+
+// INTERACTION
+if (ao_SRV[Ci_LNK_INTERACTION] && MSG_GlobalIsValid(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION]) )
+{
+	switch(LNK_InteractionTypeGet(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION]))
+	{
+		case Ci_LNK_INTERACTION_HEAL :			if(i_etat_courant != ETAT_IA_Ann_Heal) { macro_change_etat("H_ETAT_ann_heal") } break
+		case Ci_LNK_INTERACTION_MUNITION :	if(i_etat_courant != ETAT_IA_Jimmy_Munitions) { macro_change_etat("H_ETAT_jimmy_munitions") } break
+		case Ci_LNK_INTERACTION_FIGHT :			if(i_etat_courant != ETAT_IA_help && i_etat_courant != ETAT_IA_tir) { macro_change_etat("H_ETAT_IA_help") } break
+		case Ci_LNK_INTERACTION_USE :			if(i_etat_courant != ETAT_IA_use) { macro_change_etat("H_ETAT_IA_use") } break
+		case Ci_LNK_INTERACTION_CARRY :		if(i_etat_courant != ETAT_IA_carry) { macro_change_etat("H_ETAT_IA_carry") } break
+	}
+}

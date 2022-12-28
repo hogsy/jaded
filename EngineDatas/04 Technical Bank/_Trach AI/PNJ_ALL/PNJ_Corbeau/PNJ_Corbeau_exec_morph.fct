@@ -1,0 +1,22 @@
+if (i_flag_plane)
+{
+	i_flag_planing = vrai
+	f_morph_progression += MATH_FloatMin(10.0 - f_morph_progression, f_morph_speed * TIME_GetDt())
+}
+else
+{
+	if (i_flag_planing)
+	{
+		f_morph_progression -= TIME_GetDt() * f_morph_speed
+		if (f_morph_progression <= 8.0)
+			i_flag_planing = faux
+	}
+	else
+	{
+		f_morph_progression += TIME_GetDt() * f_morph_speed
+		if (f_morph_progression > 8.0)
+			f_morph_progression -= 7.0
+	}
+}
+	
+OBJ_MorphProgSet(0, f_morph_progression)

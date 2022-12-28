@@ -1,0 +1,651 @@
+#include "PNJ_Raptor_defines.var"
+
+int			ti_i
+int			ti_k
+int			ti_flag_collision
+int			ti_flag_test_collision
+int			ti_flag_quaternion
+
+float		tf_borne_inf
+float		tf_borne_sup
+float		tf_coef
+float		tf_totale_norm
+float		tf_pourcentage
+float		tf_step
+float		tf_angle
+float		tf_anim_angle
+float		tf_X
+float		tf_Z	
+float		tf_length_coef
+float		tf_dot_product
+float		tf_dist
+float		tf_AB_and_CD_dist
+float		tf_IK_coef
+float		tf_Z_balayage_range
+float		tf_head_length
+float		tf_bone_sqr_length
+
+vector	tv_ref_sight
+vector	tv_pseudo_bone
+vector	tv_temp
+vector	tv_hor_half_plan
+vector	tv_hor_look_dir
+
+vector	tv_point_A
+vector	tv_point_B
+vector	tv_point_C
+vector	tv_point_D
+
+vector	tv_head_pos
+vector	tv_head_sight
+vector	tv_col_head_pos
+
+vector	tv_start_pos
+vector	tv_dest_pos
+
+vector	tv_new_head_sight
+vector	tv_new_head_banking
+
+vector	tav_neck_bone_pos[5]
+
+object	to_collision_object
+
+//#define DBG_DISPLAY_INFO									1
+
+//if (IO_KeyPressed(VK_SPACE))
+//	return
+
+ti_flag_collision = faux
+ti_flag_quaternion = vrai
+tf_AB_and_CD_dist = f_neck_length * 0.75
+
+tf_step = 1.0
+tf_step /= i_head_bone_nb - 1
+
+tv_point_A = @ao_head_bones[0] OBJ_PosGet()
+tv_point_B = @ao_head_bones[i_head_bone_nb - 1] OBJ_PosGet()
+
+ti_flag_test_collision = faux
+
+switch(raptor_type)
+{
+	case C_ID_Tyranosaure :
+		tf_Z_balayage_range = 1.2
+		tf_head_length = 3.0
+
+//		switch(i_etat_courant) 
+//		{
+//			case ETAT_PAF_SLIDE :
+//			case ETAT_PAF_FALL :
+//			case ETAT_PAF_FLY :
+//			case ETAT_A_TERRE :
+//			case ETAT_MORT :
+//			case ETAT_FADE :
+//				ti_flag_test_collision = vrai
+//				break
+//
+//			case ETAT_MORD :
+//			case ETAT_COODBOOL :
+//			case ETAT_DEVORE :
+//			case ETAT_GRAB :
+//			case ETAT_ATTAQUE_CACHE :
+//				ti_flag_test_collision = faux
+//				break
+//				
+//			default:
+//				if (i_flag_saut)
+//					ti_flag_test_collision = faux
+//				else
+//					ti_flag_test_collision = vrai
+//
+////				ti_flag_test_collision = faux
+//		}
+
+		break
+
+	default:
+		tf_Z_balayage_range = 0.3 * OBJ_ZoomGet()
+		tf_head_length = 0.8 * OBJ_ZoomGet()
+
+		switch(i_etat_courant) 
+		{
+			case ETAT_PAF_SLIDE :
+			case ETAT_PAF_FALL :
+			case ETAT_PAF_FLY :
+			case ETAT_A_TERRE :
+			case ETAT_MORT :
+			case ETAT_FADE :
+				ti_flag_test_collision = vrai
+				break
+
+			case ETAT_MORD :
+			case ETAT_COODBOOL :
+			case ETAT_DEVORE :
+			case ETAT_GRAB :
+			case ETAT_ATTAQUE_CACHE :
+				ti_flag_test_collision = faux
+				break
+				
+			default:
+//				if (i_flag_saut)
+//					ti_flag_test_collision = faux
+//				else
+//					ti_flag_test_collision = vrai
+
+				ti_flag_test_collision = faux
+		}
+}
+
+//if (IO_KeyPressed(VK_SPACE))
+//	ti_flag_test_collision = faux
+
+//tv_ref_sight = OBJ_SightGet()
+tv_ref_sight = @ao_head_bones[i_head_bone_nb] OBJ_BankingGet()
+tv_ref_sight -= MATH_VecDotProduct(tv_ref_sight, OBJ_BankingGet()) * OBJ_BankingGet()
+MATH_VecSetNormalize(tv_ref_sight)
+
+v_neck_head_anti_col_pos = @ao_head_bones[i_head_bone_nb] OBJ_PosGet() + @ao_head_bones[i_head_bone_nb] MATH_VecLocalToGlobal(v_neck_head_anti_col_pos)
+
+if (o_test_pilotage_tete)
+{
+	tv_head_pos = @o_test_pilotage_tete OBJ_PosGet()
+	tv_head_sight = @o_test_pilotage_tete OBJ_SightGet()
+}
+else
+{
+	// SI ON PILOTE LA TETE, ON VA DETERMINER LA POSITION DE LA TETE
+	// EN FONCTION DE L'ANIM ET DE LA POSITION QU'ON VEUT REGARDER
+	if (f_look_blend_coef)
+	{
+		tv_point_A -= tv_point_B
+		
+		tv_hor_look_dir = v_look_axis
+		tv_hor_look_dir -= MATH_VecDotProduct(tv_hor_look_dir, v_IK_bassin_banking) * v_IK_bassin_banking
+		MATH_VecSetNormalize(tv_hor_look_dir)
+
+		tf_dot_product = MATH_VecDotProduct(tv_ref_sight, tv_hor_look_dir)
+		tv_temp = MATH_VecCrossProduct(tv_ref_sight, tv_hor_look_dir)
+
+		tf_angle = MATH_VecNorm(tv_temp)
+		if (tf_angle)
+		{
+			tv_temp /= tf_angle
+			tf_angle = MATH_FloatMin(tf_angle, 1.0)
+		
+			tf_angle = MATH_ASin(tf_angle)
+			if (tf_dot_product < 0.0)	
+				tf_angle = Cf_Pi - tf_angle
+				
+			tf_angle *= 0.5
+			tf_angle *= f_look_blend_coef
+		
+			tf_length_coef = MATH_AbsFloat(tf_angle)
+			tf_length_coef /= Cf_PiBy2
+			tf_length_coef *= 0.2
+			tf_length_coef = 1.0 - tf_length_coef
+		
+			tv_point_A = MATH_VecRotate(tv_point_A, tv_temp, tf_angle)
+			tv_point_A *= tf_length_coef
+		}
+		
+		tv_point_A += tv_point_B
+		tv_point_C = v_bezier_head_look_pos
+
+		if (raptor_type == C_ID_Tyranosaure)
+		{
+			tv_point_A.z = MATH_FloatBlend(tv_point_A.z, @o_camera OBJ_PosGet() .z + 1.0, f_machoire_rot_coef)
+			tv_point_C.z = MATH_FloatBlend(tv_point_C.z, @o_camera OBJ_PosGet().z + 4.0, f_machoire_rot_coef)
+		}
+
+		tv_head_sight = MATH_VecNormalize(tv_point_C - tv_point_A)
+	}
+	else
+	{
+		tv_head_sight = @ao_head_bones[0] OBJ_BankingGet()
+	}
+	
+	if (raptor_type == C_ID_Tyranosaure)
+	{
+		// On ne veut pas que la tete passe sous le sol
+		if (COL_RayObject_Dist(tv_point_A, -Cv_VerticalVector, 10.0, all, OBJ_C_IdentityFlag_Dyna | OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable))
+		{
+			tv_point_C = COL_RayObject_PosGet()
+//			DBG_RenderVector(tv_point_A, tv_point_C - tv_point_A, color_jaune)
+			f_head_Z_min = MATH_FloatBlend(f_head_Z_min, tv_point_C.z + 3.0, 8.0 * TIME_GetDt())
+		}
+		else
+		{
+			f_head_Z_min = MATH_FloatBlend(f_head_Z_min, OBJ_PosGet().z, 2.0 * TIME_GetDt())
+		}
+
+		tv_point_A.z = MATH_FloatMax(tv_point_A.z, f_head_Z_min)
+	}
+
+	tv_head_pos = tv_point_A
+	
+	tv_point_C = tv_head_pos
+	tv_point_D = @ao_head_bones[i_head_bone_nb] OBJ_PosGet()
+	
+	switch(i_etat_courant)
+	{
+		case ETAT_TEST :
+			if (ACT_ActionGet() == Action_Agonie_cycl)
+			{
+				f_neck_vert_coef	-= MATH_FloatMin(f_neck_vert_coef, 4.0 * TIME_GetDt())
+		
+				tv_point_C += OBJ_BankingGet() * 0.25
+				tv_point_D -= MATH_VecDotProduct(tv_point_D - tv_point_C, OBJ_BankingGet()) * OBJ_BankingGet()
+			}
+			else
+			{
+				f_neck_vert_coef	+= MATH_FloatMin(1.0 - f_neck_vert_coef, 4.0 * TIME_GetDt())
+	
+				tv_temp = MATH_VecRotate(OBJ_BankingGet(), tv_point_C - tv_point_D, f_head_col_ray_Z_offset* Cf_Pi) * tf_Z_balayage_range
+				tv_point_C += tv_temp
+				tv_point_D += tv_temp
+			}
+			break
+	
+		case ETAT_A_TERRE :
+		case ETAT_MORT :
+		case ETAT_FADE :
+
+			f_neck_vert_coef	-= MATH_FloatMin(f_neck_vert_coef, 4.0 * TIME_GetDt())
+	
+			tv_point_C += OBJ_BankingGet() * 0.25
+			tv_point_D -= MATH_VecDotProduct(tv_point_D - tv_point_C, OBJ_BankingGet()) * OBJ_BankingGet()
+			break	
+
+		default:
+		
+			f_neck_vert_coef	+= MATH_FloatMin(1.0 - f_neck_vert_coef, 4.0 * TIME_GetDt())
+
+			tv_temp = MATH_VecRotate(OBJ_BankingGet(), tv_point_C - tv_point_D, f_head_col_ray_Z_offset* Cf_Pi) * tf_Z_balayage_range
+			tv_point_C += tv_temp
+			tv_point_D += tv_temp
+
+//			tv_point_C.z += f_head_col_ray_Z_offset * tf_Z_balayage_range
+//			tv_point_D.z += f_head_col_ray_Z_offset * 0.3
+	}
+	
+	if (ti_flag_test_collision)
+	{
+		@get_global i_raptor_ray_on_colmap_nb++
+		if (COL_RayObject_Vector(tv_point_D, tv_point_C - tv_point_D, OBJ_C_IdentityFlag_ColMap, OBJ_C_IdentityFlag_Anims | OBJ_C_IdentityFlag_Dyna, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable))
+			ti_flag_collision = vrai
+		else
+		{
+			@get_global i_raptor_ray_on_colmap_nb++
+			if (COL_RayObject_Dist(tv_point_C, tv_head_sight, tf_head_length, OBJ_C_IdentityFlag_ColMap, OBJ_C_IdentityFlag_Anims | OBJ_C_IdentityFlag_Dyna, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable))
+				ti_flag_collision = vrai
+		}
+	}
+}
+
+if (ti_flag_collision)
+{
+	to_collision_object = COL_RayObject_ActorGet()
+
+	v_neck_col_pos = COL_RayObject_PosGet()
+
+	tv_point_C = v_neck_col_pos
+	
+#ifndef _FINAL_
+	if (DBG_Display_Pilotage)
+		DBG_RenderVector(tv_point_D, tv_point_C - tv_point_D, color_rouge)
+#endif
+
+	f_neck_col_duration = 0.2
+
+	tv_point_D = -COL_RayObject_NormalGet()
+	if (tv_point_D.z > 0.0)
+	{
+		tv_point_D.z = 0.0
+		MATH_VecSetNormalize(tv_point_D)
+	}
+
+	if (f_time_head_col)
+		v_neck_col_normale = MATH_VecBlendRotate(v_neck_col_normale, -tv_point_D, 4.0 * TIME_GetDt())
+	else
+	 	v_neck_col_normale = -tv_point_D
+
+//	tv_temp = MATH_VecNormalize(tv_point_C - tv_point_B)
+//	if (MATH_AbsFloat(MATH_VecDotProduct(tv_point_D, MATH_VecNormalize(MATH_VecCrossProduct(tv_temp, Cv_VerticalVector)))) > 0.5)
+//		tv_point_D = tv_temp
+
+	switch(i_etat_courant)
+	{
+		case ETAT_TEST :
+			if (ACT_ActionGet() == Action_Agonie_cycl)
+			{
+#ifndef _FINAL_
+				if (DBG_Display_Pilotage)
+					DBG_RenderVector(tv_point_C, -tv_point_D * 0.5, 0x00128CEB)
+#endif
+				tv_point_C -= tv_point_D * 0.5
+			}
+			else
+			{
+#ifndef _FINAL_
+				if (DBG_Display_Pilotage)
+					DBG_RenderVector(tv_point_C, -tv_point_D * 0.8, 0x00128CEB)
+#endif
+				tv_point_C -= tv_point_D * (0.8 * tf_head_length)
+			}
+			break
+
+		case ETAT_A_TERRE :
+		case ETAT_MORT : 
+		case ETAT_FADE :
+#ifndef _FINAL_
+			if (DBG_Display_Pilotage)
+				DBG_RenderVector(tv_point_C, -tv_point_D * 0.5, 0x00128CEB)
+#endif
+			tv_point_C -= tv_point_D * 0.5
+			break
+		default:
+#ifndef _FINAL_
+			if (DBG_Display_Pilotage)
+				DBG_RenderVector(tv_point_C, -tv_point_D * 0.8, 0x00128CEB)
+#endif
+			tv_point_C -= tv_point_D * (0.8 * tf_head_length)
+
+//			tv_point_C -= tv_point_B
+//			tf_dist = MATH_VecNorm(tv_point_C)
+//			tv_point_C /= tf_dist
+//			tf_dist = MATH_FloatMax(tf_dist, f_neck_length * 0.75)
+//			tv_point_C *= tf_dist
+//			tv_point_C += tv_point_B
+
+			break
+	}
+	
+	if (MATH_AbsFloat(tv_point_D.z) < 0.99)
+	{
+		tv_temp = MATH_VecCrossProduct(tv_point_D, Cv_VerticalVector)
+		tv_temp = MATH_VecCrossProduct(tv_temp, tv_point_D)
+		MATH_VecSetNormalize(tv_temp)
+	}
+	else
+	{
+		tv_temp = tv_point_C - tv_point_B
+		tv_temp -= MATH_VecDotProduct(tv_temp, OBJ_BankingGet()) * OBJ_BankingGet()
+		MATH_VecSetNormalize(tv_temp)
+	}
+
+#ifndef _FINAL_
+	if (DBG_Display_Pilotage)
+		DBG_RenderVector(tv_point_C, tv_temp * 1000.0, color_bleu)
+#endif
+
+	tv_col_head_pos = tv_point_C
+	tv_col_head_pos += MATH_VecDotProduct(tv_point_B - tv_point_C, tv_temp) * tv_temp
+
+#ifndef _FINAL_
+	if (DBG_Display_Pilotage)
+	{
+		DBG_RenderVector(tv_point_B, tv_col_head_pos - tv_point_B, 0x00128CEB)
+		DBG_RenderVector(tv_point_C, tv_col_head_pos - tv_point_C, 0x00128CEB)
+	}
+#endif
+
+	tf_X = MATH_VecNorm(tv_point_B - tv_col_head_pos)
+
+	tf_Z = MATH_FloatLimit(MATH_VecNorm(tv_point_C - tv_point_B), f_neck_length * 0.8, f_neck_length * 0.95)
+//	tf_Z = MATH_VecNorm(@ao_head_bones[0] OBJ_PosGet() - tv_point_B)
+	tf_Z *= tf_Z
+
+	tf_Z -= tf_X * tf_X
+	tf_Z = MATH_FloatMax(tf_Z, 0.0)
+	tf_Z = MATH_FloatSqrt(tf_Z)
+
+#ifndef _FINAL_
+	if (DBG_Display_Pilotage)
+		DBG_RenderVector(tv_col_head_pos, tv_temp * tf_Z, 0x00128CEB)
+#endif
+
+	tv_col_head_pos += tf_Z * tv_temp
+
+#ifndef _FINAL_
+	if (DBG_Display_Pilotage)
+		DBG_RenderVector(tv_point_B, tv_col_head_pos - tv_point_B, 0x00128CEB)
+#endif
+	
+	if (f_time_head_col)
+		v_neck_head_anti_col_pos = MATH_VecBlend(v_neck_head_anti_col_pos, tv_col_head_pos, 6.0 * TIME_GetDt())
+	else
+		v_neck_head_anti_col_pos = tv_col_head_pos
+
+	switch(i_etat_courant)
+	{
+		case ETAT_TEST :
+			if (ACT_ActionGet() == Action_Agonie_cycl)
+				f_time_head_col += MATH_FloatMin(1.0 - f_time_head_col, 12.0 * TIME_GetDt())
+			else
+				f_time_head_col += MATH_FloatMin(1.0 - f_time_head_col, 8.0 * TIME_GetDt())
+			break
+
+		case ETAT_PAF_SLIDE :
+		case ETAT_PAF_FALL :
+		case ETAT_PAF_FLY :
+		case ETAT_A_TERRE :
+		case ETAT_MORT :
+		case ETAT_FADE :
+			f_time_head_col += MATH_FloatMin(1.0 - f_time_head_col, 12.0 * TIME_GetDt())
+			break
+			
+		default:
+			f_time_head_col += MATH_FloatMin(1.0 - f_time_head_col, 8.0 * TIME_GetDt())
+	}
+			
+}
+else if (ti_flag_test_collision)
+{
+#ifndef _FINAL_
+	if (DBG_Display_Pilotage)
+	{
+		DBG_RenderVector(tv_point_D, tv_point_C - tv_point_D, color_vert)
+		DBG_RenderVector(tv_point_C, tv_head_sight * tf_head_length, color_vert)
+	}
+#endif
+
+//	f_head_col_ray_Z_offset += f_head_col_ray_Z_speed * (20.0 * TIME_GetDt())
+	f_head_col_ray_Z_offset += f_head_col_ray_Z_speed * (8.0 * TIME_GetDt())
+	if (MATH_AbsFloat(f_head_col_ray_Z_offset) > 1.0)
+	{
+		f_head_col_ray_Z_offset = MATH_FloatSign(f_head_col_ray_Z_offset)
+		f_head_col_ray_Z_speed = - f_head_col_ray_Z_offset
+	}
+}
+
+switch(raptor_type)
+{
+	case C_ID_Raptor :
+		f_neck_B_weight = MATH_FloatBlend(2.0 * f_neck_length, 0.5 * f_neck_length, f_time_head_col)
+		f_neck_C_weight = MATH_FloatBlend(0.3, 0.95, f_time_head_col)
+		break
+
+	case C_ID_Tyranosaure :
+		f_neck_B_weight = MATH_FloatBlend(f_neck_length, 0.5 * f_neck_length, f_time_head_col)
+		f_neck_C_weight = MATH_FloatBlend(0.5, 1.9, f_time_head_col)
+		break
+}
+
+//f_neck_B_weight = MATH_FloatBlend(10.0, 1.0, f_time_head_col)
+//f_neck_C_weight = MATH_FloatBlend(1.0, 10.0, f_time_head_col)
+
+if (f_time_head_col)
+{
+	tv_head_pos = MATH_VecBlendRotate(tv_head_pos - tv_point_B, v_neck_head_anti_col_pos - tv_point_B, f_time_head_col)
+	tf_dist = MATH_VecNorm(tv_head_pos)
+	tv_head_pos /= tf_dist
+	tv_head_pos *= MATH_FloatLimit(tf_dist, f_neck_length * 0.8, f_neck_length * 0.95)
+	tv_head_pos += tv_point_B
+
+	DBG_RenderVector(tv_point_B, tv_head_pos - tv_point_B, color_blanc)
+
+	if (f_look_blend_coef == 1.0)
+	{
+		tv_start_pos = MATH_VecNormalize(tv_head_pos - tv_point_B)
+		tv_dest_pos = MATH_VecNormalize(v_bezier_head_look_pos - tv_head_pos)
+		tf_dot_product = MATH_VecDotProduct(tv_start_pos, tv_dest_pos)
+		tv_dest_pos = MATH_VecBlendRotate(tv_start_pos, tv_dest_pos, tf_dot_product)
+	}
+	else if ( ! f_look_blend_coef )
+	{
+		tv_start_pos = tv_head_pos - tv_point_B
+		tv_start_pos -= MATH_FloatMin(MATH_VecDotProduct(tv_start_pos, v_neck_col_normale), 0.0) * v_neck_col_normale
+		MATH_VecSetNormalize(tv_start_pos)
+
+		tv_dest_pos = tv_head_sight
+	}
+	else
+	{
+		tv_start_pos = MATH_VecNormalize(tv_head_pos - tv_point_B)
+		tv_dest_pos = MATH_VecNormalize(v_bezier_head_look_pos - tv_head_pos)
+		tf_dot_product = MATH_VecDotProduct(tv_start_pos, tv_dest_pos)
+		tv_dest_pos = MATH_VecBlendRotate(tv_start_pos, tv_dest_pos, tf_dot_product)
+
+		tv_start_pos = tv_head_pos - tv_point_B
+		tv_start_pos -= MATH_FloatMin(MATH_VecDotProduct(tv_start_pos, v_neck_col_normale), 0.0) * v_neck_col_normale
+		MATH_VecSetNormalize(tv_start_pos)
+		
+		tv_dest_pos = MATH_VecBlendRotate(tv_start_pos, tv_dest_pos, f_look_blend_coef)
+	}
+
+	tv_head_sight = MATH_VecBlendRotate(tv_head_sight, tv_dest_pos, f_time_head_col)
+
+//	if (!f_neck_col_duration)
+		f_time_head_col -= MATH_FloatMin(f_time_head_col, 4.0 * TIME_GetDt())
+}
+
+f_neck_col_duration -= MATH_FloatMin(f_neck_col_duration, TIME_GetDt())
+
+if (!f_time_head_col)
+	v_neck_head_anti_col_pos = tv_head_pos
+
+v_neck_head_anti_col_pos = @ao_head_bones[i_head_bone_nb] MATH_VecGlobalToLocal(v_neck_head_anti_col_pos - @ao_head_bones[i_head_bone_nb] OBJ_PosGet())
+
+tf_IK_coef = MATH_FloatMax(f_look_blend_coef, f_time_head_col)
+
+// PAS DU TOUT DE PILOTAGE !!!!
+if (!tf_IK_coef)
+{
+	f_neck_bezier_coef					= 1.0
+	af_neck_bone_bezier_coef[0]		= 1.0
+	af_neck_bone_bezier_coef[1]		= 0.8
+	af_neck_bone_bezier_coef[2]		= 0.6
+	af_neck_bone_bezier_coef[3]		= 0.4
+	af_neck_bone_bezier_coef[4]		= 0.2
+
+	return
+}
+
+tv_head_sight = MATH_VecBlendRotate(@ao_head_bones[0] OBJ_BankingGet(), tv_head_sight, tf_IK_coef)
+
+#ifndef _FINAL_
+if (DBG_Display_Pilotage)
+	DBG_RenderVector(tv_head_pos, tv_head_sight, color_blanc)
+#endif
+
+// C'EST PARTI POUR TROUVER UNE BONE BEZIER ============================================
+tv_point_A = @ao_head_bones[i_head_bone_nb - 1] OBJ_PosGet()
+
+tv_point_D = tv_head_pos
+
+tv_point_B = tv_point_A
+tv_point_B += @ao_head_bones[i_head_bone_nb - 1]  OBJ_BankingGet()
+
+tv_point_C = tv_point_D	
+tv_point_C -= tv_head_sight
+
+MATH_LIB_Bezier_Display(30, tv_point_A, tv_point_B, tv_point_C, tv_point_D)
+
+tav_neck_bone_pos[0] = tv_point_D
+tav_neck_bone_pos[i_head_bone_nb - 1] = tv_point_A
+
+for (ti_i = i_head_bone_nb - 2; ti_i > 0; ti_i--)
+{
+	tf_coef = 1.0 - (ti_i * tf_step)
+	tav_neck_bone_pos[ti_i] = MATH_LIB_Bezier_Pos_Get(tf_coef, tv_point_A, tv_point_B, tv_point_C, tv_point_D, tv_temp)
+//	DBG_RenderVector(tav_neck_bone_pos[ti_i], Cv_VerticalVector, color_blanc)
+//	DBG_RenderVector(tav_neck_bone_pos[ti_i + 1], tav_neck_bone_pos[ti_i] - tav_neck_bone_pos[ti_i + 1], color_rouge)
+}
+
+PNJ_Raptor_Renormalisation(&tav_neck_bone_pos[0], i_head_bone_nb, 5)
+
+for (ti_i = i_head_bone_nb - 2; ti_i > 0; ti_i--)
+{
+	DBG_RenderVector(tav_neck_bone_pos[ti_i], Cv_VerticalVector, color_blanc)
+	DBG_RenderVector(tav_neck_bone_pos[ti_i + 1], tav_neck_bone_pos[ti_i] - tav_neck_bone_pos[ti_i + 1], color_rouge)
+}
+
+for (ti_i = i_head_bone_nb - 1; ti_i > 1; ti_i--)
+{
+	tv_start_pos = @ao_head_bones[ti_i] OBJ_PosGet()
+	tv_dest_pos = tav_neck_bone_pos[ti_i - 1]
+	DBG_RenderVector(tv_start_pos, tv_dest_pos - tv_start_pos, color_cyan)
+
+	if (ti_i < i_head_bone_nb - 1)
+		tv_temp = @ao_head_bones[ti_i + 1] OBJ_SightGet()
+	else
+		tv_temp = MATH_VecBlend(@ao_head_bones[ti_i] OBJ_SightGet(), -Cv_VerticalVector, f_neck_vert_coef)
+
+	@ao_head_bones[ti_i] OBJ_Rotate_FromTo(cvector(0.0, 0.0, 1.0), MATH_VecBlendRotate(cvector(0.0, 0.0, 1.0), @ao_head_bones[ti_i] MATH_VecGlobalToLocal(tv_dest_pos - tv_start_pos), tf_IK_coef))
+
+	if (raptor_type == C_ID_Tyranosaure)
+	{	
+		tv_new_head_sight = @ao_head_bones[ti_i] OBJ_HorizonGet() 
+		tv_new_head_sight.z = 0.0
+		tv_new_head_sight = MATH_VecBlend(@ao_head_bones[ti_i] OBJ_HorizonGet() , tv_new_head_sight, tf_IK_coef * 0.5)
+		@ao_head_bones[0] OBJ_Rotate_FromTo(cvector(1.0, 0.0, 0.0), @ao_head_bones[ti_i]  MATH_VecGlobalToLocal(tv_new_head_sight))
+	}
+}
+
+@ao_head_bones[1] OBJ_Rotate_FromTo(cvector(0.0, 0.0, 1.0), MATH_VecBlendRotate(cvector(0.0, 0.0, 1.0),  @ao_head_bones[1]  MATH_VecGlobalToLocal(tv_head_pos - @ao_head_bones[1] OBJ_PosGet()), tf_IK_coef))
+
+if (raptor_type == C_ID_Tyranosaure)
+{	
+	tv_new_head_sight = @ao_head_bones[1] OBJ_HorizonGet() 
+	tv_new_head_sight.z = 0.0
+	tv_new_head_sight = MATH_VecBlend(@ao_head_bones[1] OBJ_HorizonGet() , tv_new_head_sight, tf_IK_coef * 0.5)
+	@ao_head_bones[1] OBJ_Rotate_FromTo(cvector(1.0, 0.0, 0.0), @ao_head_bones[1]  MATH_VecGlobalToLocal(tv_new_head_sight))
+}
+
+if (raptor_type == C_ID_Tyranosaure)
+{
+if (i_flag_head_search)
+	f_look_head_coef = MATH_FloatBlend(f_look_head_coef, 0.5 + (MATH_Sin(TIME_Get() * 3.0) * 0.1), 6.0 * TIME_GetDt())
+else
+	f_look_head_coef = MATH_FloatBlend(f_look_head_coef, 0.85, 6.0 * TIME_GetDt())
+}
+else if (f_time_head_col)
+	f_look_head_coef = MATH_FloatBlend(f_look_head_coef, 1.0, 6.0 * TIME_GetDt())
+else if (i_flag_perfect_look)
+	f_look_head_coef = MATH_FloatBlend(f_look_head_coef, 0.4 + (MATH_Sin(TIME_Get() * 8.0) * 0.3), 6.0 * TIME_GetDt())
+else if (ACT_ActionGet() == Action_Mange_Au_Sol)
+	f_look_head_coef -= MATH_FloatMin(f_look_head_coef, TIME_GetDt())
+else
+	f_look_head_coef = MATH_FloatMax(f_look_head_coef - (4.0 * TIME_GetDt()), 0.5)
+
+tv_new_head_banking = MATH_VecBlendRotate(@ao_head_bones[0] OBJ_BankingGet(), tv_head_sight, tf_IK_coef * f_look_head_coef)
+@ao_head_bones[0] OBJ_Rotate_FromTo(cvector(0.0, 0.0, 1.0), @ao_head_bones[0]  MATH_VecGlobalToLocal(tv_new_head_banking))
+
+if (raptor_type == C_ID_Tyranosaure)
+{	
+	tv_new_head_sight = @ao_head_bones[0] OBJ_HorizonGet() 
+	tv_new_head_sight.z = 0.0
+	tv_new_head_sight = MATH_VecBlend(@ao_head_bones[0] OBJ_HorizonGet() , tv_new_head_sight, tf_IK_coef *  0.5)
+	@ao_head_bones[0] OBJ_Rotate_FromTo(cvector(1.0, 0.0, 0.0), @ao_head_bones[0]  MATH_VecGlobalToLocal(tv_new_head_sight))
+	@ao_head_bones[0] OBJ_RotateLocalX(- tf_IK_coef * 0.3)
+}
+
+
+
+
+
+
+
+
+
+

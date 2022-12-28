@@ -1,0 +1,379 @@
+#include "PNJ_SwampCrawlerSmall_defs.var"
+
+int					ti_rank
+int					ti_rankgrab
+int					ti_ID 
+int					ti_visu_trig
+int					ti_ok
+int					ti_charogne
+
+messageid		EVT_InfoSeen_ID
+messageid		EVT_ID
+message		EVT_msg_filter
+message		t_msg
+message		EVTGrab_filter
+messageid		EVT_grab_ID	
+
+float				tf_dist
+float				tf_distbest
+float				tf_vison
+float				tf_visoff
+float				tf_dist4jack
+float				tf_height
+
+object			o_sender
+object			o_attack
+object			o_tmp
+
+vector			tv_sight
+vector			tv_bras_de_levier
+
+
+// ()-----------( init )----------()
+ti_visu_trig = faux
+
+stimul_i_nb = 0
+stimul_i_paf = faux
+stimul_i_attack = 0
+stimul_i_visu = 0
+stimul_i_move = 0
+move_i_buddynb = 0
+
+tv_sight = OBJ_SightGet()
+
+// ()-----------( check stimul paf )----------()
+MSG_SetNull( EVT_msg_filter)
+EVT_msg_filter.msg_gao1 = OBJ_Me()
+ti_rank = -1
+stimul_f_pafHP = 0
+
+for(	EVT_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, EVT_msg_filter);
+		MSG_GlobalIsValid(EVT_ID);
+		EVT_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, EVT_msg_filter) )
+{
+	stimul_i_nb++
+	stimul_i_paf = vrai
+	
+	// --------( paf params )--------
+	stimul_i_paftype = EVENT_PafTypeGet( EVT_ID )
+	stimul_o_pafby = MSG_GlobalGetSender( EVT_ID )
+	stimul_v_pafdir = EVENT_PafDirGet( EVT_ID )
+	stimul_f_pafHP += EVENT_PafPuisGet( EVT_ID )
+	stimul_i_pafcanal = EVENT_PafCanalGet( EVT_ID )
+	stimul_f_pafpuis = MATH_FloatMin( 2.0, stimul_f_pafHP )
+
+//	// *2 si tir sur TETE ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//	if (ACT_ActionGet() == SCS_ACT_water_attack && ( stimul_i_pafcanal == Anim_Canal_Machoire || stimul_i_pafcanal == Anim_Canal_Tete) )
+//	{
+//		stimul_f_pafHP *= 2.0
+//
+//		#ifndef _FINAL_
+//		if ((i_debug_display || @get_global i_debug_all_swamp) && !@"univ" Engine)
+//		{
+//			int			ti_indice
+//			object	to_gao
+//			to_gao = ANI_CanalObjectGet(Anim_Canal_Tete)
+//			ti_indice = STR_CreateText("\cFFFF00\Impact x2",VIEW_3dWorldTo2d(0, @to_gao OBJ_PosGet() - cvector(0,0,0.1) ), 1.5)	
+//		}
+//		#endif
+//	}
+//	// *2 si tir sur TETE ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+	tv_bras_de_levier = EVENT_PafPositionGet(EVT_ID)
+	tv_bras_de_levier -= OBJ_PosGet()
+	tv_bras_de_levier.z = 0.0
+	tv_bras_de_levier = MATH_VecCrossProduct(tv_bras_de_levier, stimul_v_pafdir)
+
+	DBG_TraceObject(OBJ_Me())
+	DBG_TraceString(" s'est fait toucher par ")
+	DBG_TraceObject(stimul_o_pafby)
+	DBG_TraceEOL()
+	
+	stimul_f_paf_rotspeed = 4 * MATH_FloatSign(tv_bras_de_levier.z)
+
+	if (stimul_i_paftype & C_PAF_KK_FoodChain)
+	{
+		f_point_de_viande -= MATH_FloatMin(f_point_de_viande, stimul_f_pafHP)
+		continue
+	}
+	else if (stimul_i_paftype & C_PAF_KK_Repousse)
+		stimul_f_pafHP = 0
+	else if (stimul_i_paftype & C_PAF_KK_Javelin)
+	{
+		if ( i_Paf_KilledByJavelin )
+//			stimul_f_pafHP += life_f_cur
+			stimul_f_pafHP = EVENT_LIFE_CurLifeGet(ID_LIFE)
+		o_tmp = EVENT_Gao2Get( EVT_ID )
+		if (o_tmp && @o_tmp AI_IsModel(get_Arme_Lance_path) )
+			@get_Arme_Lance_path o_tmp f_plug_timer = SCS_Ct_JavelinPlugTimer
+	}
+
+	// --------( ajustement de la puissance en fonction de l'orientation du swamp et de la dir du tir )--------
+	tf_dist = -MATH_VecDotProduct( stimul_v_pafdir, tv_sight)
+	if (tf_dist < 0)
+		stimul_f_pafpuis = 0
+	else
+		stimul_f_pafpuis *= tf_dist * f_PafReculFactor
+}
+
+
+// en mode dead on ne checke que les pafs (foodchain)
+if( etat_i_courant == SCS_ETAT_dead )
+	return	
+// en mode dead on ne checke que les pafs (foodchain)
+
+
+// ()-----------( check grab link )---------------()
+grab_o_actor = LNK_ThisClientGet(grab_o_actor, Ci_LNK_GRAB_RAPTOR, grab_mid_LNKID, vrai, nofunc, nofunc, nofunc)
+
+
+// ()--------( check stimul move )--------()
+if ( (i_Type == SCS_Passage) && AI_TriggerIsValid( t_Move ) )
+{
+	stimul_i_move = call_trigger( t_Move )
+}
+
+// ()--------( set seen info for all humains )--------()
+tf_visoff = f_Visibility_Off * f_Visibility_Off
+for(ti_rank = C_ID_Joueur; ti_rank < C_ID_Last_Compagnon; ti_rank++)
+{
+	o_sender = @"univ" ao_AllHumains[ti_rank]
+	if(!o_sender) continue
+	tf_dist = OBJ_SqrDist( o_sender )
+	if((tf_dist < tf_visoff) && (SCS_fct_IsAttackable( o_sender ) ))
+	{
+		EVT_InfoSeen_ID = EVENT_AddEventInfo(OBJ_Me(), o_sender, C_EVENT_INFOTYPE_SEEN)
+		EVENT_Info_OutsideGridSet(EVT_InfoSeen_ID, faux)
+	}
+}
+
+
+i_detect_bidoche = vrai
+// ()--------( check charogne only )--------()
+if (i_detect_bidoche)
+{
+	int	ti_bid
+
+	ti_rank = -1
+	for(	EVT_ID = MSG_GlobalScan(C_EVENT_TYPE_Cadavre, &ti_rank);
+			MSG_GlobalIsValid(EVT_ID);
+			EVT_ID = MSG_GlobalScan(C_EVENT_TYPE_Cadavre, &ti_rank) )
+	{
+		o_sender = MSG_GlobalGetSender(EVT_ID)
+
+//		ti_bid = faux
+//		if ( EVENT_VisionIDGet( EVT_ID ) == C_ID_Bidoche)
+//			ti_bid = vrai
+//		else if ( !@o_sender AI_IsModel(get_PNJ_SwampCrawlerSmall_path) && EVENT_VisionLifeStateGet(EVT_ID) == Cf_Life_Dead )
+//			ti_bid = vrai
+//
+		// valide bidoche
+		ti_bid = vrai
+		if ( EVENT_CadavreIDGet( EVT_ID ) == C_ID_SwampCrawlerSmall)
+			ti_bid = faux
+		
+		if (ti_bid)
+		{
+			if ( SCS_fct_IsAttackable( o_sender )  )
+			{
+				if ( !SCS_Check_Presence_Interet_Statut(o_sender, 2))
+				{
+					stimul_o_target = o_sender
+					stimul_i_attack = 1
+					stimul_i_charogne = vrai
+					if (i_Attack_HideBeforeTrigger)
+						i_Attack_HideBeforeTrigger = 0	
+					return
+				}
+			}
+		}
+	}
+}
+
+
+
+// ()--------( check stimul attack par trigger )--------()
+if ( AI_TriggerIsValid( t_Attack ) )
+{
+	if ( i_Attack_Type == SCS_Attack_trigvisu )
+	{
+		if (i_Attack_TriggerOnce != 2 )
+		{
+			if ( !call_trigger( t_Attack ) )
+				return
+			if (i_Attack_TriggerOnce)
+				i_Attack_TriggerOnce = 2
+			if (i_Attack_HideBeforeTrigger)
+				i_Attack_HideBeforeTrigger = 0
+		}
+	}
+	else if (i_Attack_Type == SCS_Attack_trig_gao5 )
+	{
+		if (call_trigger( t_Attack ))
+		{
+			t_msg = AI_TriggerGetMsg( t_Attack )
+			Check_This_Gao5( t_msg.msg_gao5 )
+			o_tmp = t_msg.msg_gao5
+			if ( SCS_fct_IsAttackable( o_tmp )  )
+			{
+				stimul_o_target = o_tmp
+				stimul_i_attack = 1
+				if (i_Attack_HideBeforeTrigger)
+					i_Attack_HideBeforeTrigger = 0	
+			}
+		}
+		return
+	}
+	else
+		ti_visu_trig = vrai
+}
+
+// ()--------( check stimul par event visu )--------()
+tf_vison = f_Visibility_On * f_Visibility_On
+tf_visoff = f_Visibility_Off * f_Visibility_Off
+tf_dist4jack = f_AttackDist4Jack * f_AttackDist4Jack
+ti_rank = -1
+o_sender = nobody
+o_attack = nobody
+tf_distbest = Cf_Infinit
+ti_charogne = faux
+EVT_ID = MSG_GlobalScan(C_EVENT_TYPE_Visibility, &ti_rank)
+while (MSG_GlobalIsValid(EVT_ID))
+{
+	ti_ID = EVENT_VisionIDGet( EVT_ID )
+	if (ti_ID == 0)
+		goto exec_stimulus_next_loop
+		
+	o_sender = MSG_GlobalGetSender(EVT_ID)
+
+	if (o_sender == OBJ_Me() ) 
+		goto exec_stimulus_next_loop
+		
+	tf_dist = OBJ_SqrDist( o_sender )
+	
+	// Pour les SOFTCOL ===============================================
+	if ( (ti_ID == C_ID_SwampCrawler) || (ti_ID == C_ID_SwampCrawlerSmall) )
+	{
+		if (tf_dist < SCS_Ct_SqrDistForSoftCol)
+		{
+			ti_ok = 1
+			if ( AI_HaveSameModel( o_sender ) )
+			{
+				if (@get_PNJ_SwampCrawlerSmall_path o_sender etat_i_courant == SCS_ETAT_dead )
+					ti_ok = 0
+			}
+			if (ti_ok)
+			{
+				move_av_buddypos[ move_i_buddynb ] = @o_sender OBJ_PosGet()
+				move_af_buddyradius[ move_i_buddynb ] = 2
+				move_i_buddynb++
+			}
+		}
+		goto exec_stimulus_next_loop
+	}
+	// Pour les SOFTCOL ===============================================
+
+	tf_dist = OBJ_SqrDist( o_sender )
+	
+	if ( (o_sender != stimul_o_target) && (tf_dist < 1) )
+		goto exec_stimulus_next_loop
+		
+	// ----( déja grabbé )----
+	if (ti_ID <= C_ID_Last_Compagnon)
+	{
+		ti_rankgrab = -1
+		MSG_SetNull(EVTGrab_filter)
+		EVTGrab_filter.msg_sender = o_sender
+		EVT_grab_ID = MSG_GlobalSearchIntGao(Ci_LNK_EVENT_OFFSET + Ci_LNK_GRAB_RAPTOR, &ti_rankgrab, EVTGrab_filter)
+		if (MSG_GlobalIsValid(EVT_grab_ID))
+		{
+			o_tmp = MSG_GlobalGetGao(EVT_grab_ID, SERVEUR)
+			if (o_tmp && o_tmp != OBJ_Me())
+				goto exec_stimulus_next_loop
+		}
+	}
+
+	if ( tf_dist < tf_vison || ((o_sender == stimul_o_target) && (tf_dist < tf_visoff)) )
+	{
+		if (SCS_Check_Presence_Interet_Statut(o_sender, 1))
+			goto exec_stimulus_next_loop
+
+		if ( ti_visu_trig )
+		{
+			t_msg = AI_TriggerGetMsg( t_Attack )
+			switch( i_Attack_Type )
+			{
+			case SCS_Attack_visu_triggao1 : t_msg.msg_gao1 = o_sender break
+			case SCS_Attack_visu_triggao2 : t_msg.msg_gao2 = o_sender break
+			case SCS_Attack_visu_triggao3 : t_msg.msg_gao3 = o_sender break
+			}
+			ti_ok = call_trigger( t_Attack )
+		}
+		else
+			ti_ok = vrai
+			
+		tf_height = @o_sender OBJ_PosGet().z - move_f_Zsurface
+		if ( tf_height > 0.5 )
+			ti_ok = faux
+			
+		if ( EVENT_VisionLifeStateGet(EVT_ID) == Cf_Life_Dead )
+		{
+			stimul_i_charogne = vrai
+			ti_charogne = vrai
+			tf_distbest = Cf_Infinit
+		}
+		else
+		{
+			if (ti_charogne)
+				ti_ok = faux
+			else
+				stimul_i_charogne = faux
+		}
+			
+		if (ti_ok && SCS_fct_IsAttackable( o_sender ) )
+		{
+			if (tf_dist < tf_distbest) 
+			{
+				o_attack = o_sender
+				if (ti_ID <= C_ID_Last_Compagnon)
+					stimul_i_cangrab = 1
+				else
+					stimul_i_cangrab = 0
+					
+				if ( EVENT_VisionLifeStateGet(EVT_ID) == Cf_Life_Dead )
+					stimul_i_charogne = vrai
+				else
+					stimul_i_charogne = faux
+				
+				tf_distbest = tf_dist
+				if ( ( o_sender == @"univ" ao_AllHumains[ C_ID_Joueur ] ) && (tf_dist < tf_dist4jack) )
+					tf_distbest = 0
+			}
+		}
+	}
+	
+exec_stimulus_next_loop:
+	EVT_ID = MSG_GlobalScan(C_EVENT_TYPE_Visibility, &ti_rank)
+}
+
+if (stimul_o_target != nobody && stimul_o_target != o_attack )
+	stimul_o_target = nobody
+else
+	stimul_o_target = o_attack
+
+if ( stimul_o_target )
+{
+	stimul_i_visu = vrai
+	switch( i_Type ) 
+	{
+		case 	SCS_Mine :
+		case SCS_Passage :
+			if ( tf_distbest < 9 || (i_AttackAfterPaf && stimul_i_paf) )
+				stimul_i_attack = vrai
+				break
+		case SCS_Affut :
+			stimul_i_attack = vrai
+			break
+	}
+}

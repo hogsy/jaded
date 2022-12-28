@@ -1,0 +1,58 @@
+
+#include"Na_Defines.var"
+
+vector		tv_wait 
+
+// SORTIE ETAT ===================================================================
+if (i_flag_sort_etat)
+{
+	i_flag_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_Wait)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Wait
+
+	if (fct_last_etat)
+	{
+		i_flag_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =====================================================================
+// On force un tir sur une Target Specifique ----------
+if (m_script.msg_gao2)
+	o_target = m_script.msg_gao2
+// On force un tir sur une Target Specifique ----------
+
+tv_wait = m_script.msg_vec1
+if (tv_wait.x == 666)
+	macro_change_etat("Na_ETAT_WaitActivation")
+
+if (f_time_start_etat > tv_wait.x)
+	Macro_Script_Next	
+
+// PAFs -----------------------------------------------------
+AI_Execute("Na_Exec_CheckPaf")
+if (EVT_Paf_Pere)
+	macro_change_etat("Na_ETAT_Paf")
+// PAFs -----------------------------------------------------
+
+// COMPORTEMENT ===============================================================
+
+ACT_ActionSet(Ci_AnimNative_Attente)
+
+//if (o_target)
+//	OBJ_BankingGeneralSet( MATH_VecBlendRotate(OBJ_SightGet(), @o_target OBJ_PosGet() - OBJ_PosGet(), 10.0 * TIME_GetDt()), Cv_VerticalVector)
+OBJ_BankingGeneralSet( MATH_VecBlendRotate(OBJ_SightGet(), -@o_move_dest_pos OBJ_SightGet(), 10.0 * TIME_GetDt()), Cv_VerticalVector)

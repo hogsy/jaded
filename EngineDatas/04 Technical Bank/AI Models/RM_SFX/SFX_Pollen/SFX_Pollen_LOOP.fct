@@ -1,0 +1,68 @@
+#include "SFX_Pollen_VAR.var"
+
+int 		ti_cpt1, ti_display
+vector	tv_dir, tv_old_pos, tv_old_dir, tv_dest, tv_gravite
+float 		tf_vitesse, tf_tmp_amp
+vector	tv_BV_min, tv_BV_max
+
+
+
+DBG_StartRaster(6,"Raster pollen")
+
+	tv_BV_min = @o_BV_ref BV_MinGet() + (@o_BV_ref OBJ_PosGet() - OBJ_PosGet())
+	tv_BV_max = @o_BV_ref BV_MaxGet() + (@o_BV_ref OBJ_PosGet() - OBJ_PosGet())
+
+	//---------------------------------------------------------------------------------------------------------------------
+	//		MODIFICATION DE LA POSITION DES WP
+	//---------------------------------------------------------------------------------------------------------------------
+	for (ti_cpt1 = 0; ti_cpt1<i_nb_creatures ; ti_cpt1++)
+	{
+		// On initialise la gravité à Null
+		tv_gravite = Cv_NullVector
+
+		//-------------------------------------------------------
+		// 	BACKUP ANCIENNES VALEURS
+		//-------------------------------------------------------
+		// On mémorise l'ancienne valeur de la direction
+		tv_old_dir = v_list_dir_obj[ti_cpt1]
+		// Idem pour l'ancienne position
+		tv_old_pos = v_list_obj[ti_cpt1]
+		// idem pour l'ancienne position de destination
+		tv_dest = v_list_dest_obj[ti_cpt1]
+
+		//-------------------------------------------------------
+		// 	CALCUL NOUVELLE VALEURS
+		//-------------------------------------------------------
+		tv_dir = tv_dest - tv_old_pos																					// on calcule la direction classique
+
+		// Blindage vecteur nul v_attenuation
+		if (f_attenuation== 0.0000)
+			f_attenuation= 0.0001
+
+		// On calcule la nouvelle position de la particule
+		tf_vitesse = f_vitesse
+
+		v_list_obj[ti_cpt1] = (tv_old_pos + (tf_vitesse * (tv_old_dir + (tv_dir * f_attenuation)) * TIME_GetDt()))
+
+		// On backup la direction de l'objet
+		v_list_dir_obj[ti_cpt1] = MATH_VecNormalize(v_list_obj[ti_cpt1] - tv_old_pos)
+
+
+		//---------------------------------------------------------------------------------------------------------------------
+		//			TEST DE DISTANCE PAR RAPPORT A LA DESTINATION
+		//---------------------------------------------------------------------------------------------------------------------
+
+		if (MATH_VecSquareNorm(v_list_obj[ti_cpt1] - v_list_dest_obj[ti_cpt1]) < f_distance)
+			v_list_dest_obj[ti_cpt1] = PROC_GEN_WP(tv_BV_min, tv_BV_max)
+
+		//---------------------------------------------------------------------------------------------------------------------
+		//								RENDU DES PARTICULES
+		//---------------------------------------------------------------------------------------------------------------------
+		// LUCIOLLES
+		if (i_SFX[ti_cpt1] == -1)
+			i_SFX[ti_cpt1] = PROC_SFX_POLLEN(f_taille_pollen + MATH_RandFloat(-f_rand_taille_pollen, f_rand_taille_pollen), Cv_NullVector, 1.0)
+
+		GFX_Setv(i_SFX[ti_cpt1], 21200, OBJ_PosGet() + v_list_obj[ti_cpt1])
+	}
+
+DBG_StopRaster(6)

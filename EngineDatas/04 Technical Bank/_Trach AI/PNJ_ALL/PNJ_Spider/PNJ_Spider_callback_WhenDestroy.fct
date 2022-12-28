@@ -1,0 +1,41 @@
+int			ti_i
+
+object	to_spider
+
+//PNJ_Spider_Explode()
+
+i_flag_sortie_etat = vrai
+if (fct_last_etat)
+	AI_Execute(fct_last_etat)
+
+COL_UnCollidableReset()
+
+if (i_SF_NePasSeRejouerSiMort)
+	Super_SpecialFlag_set(i_SF_AlreadyDead)
+
+OBJ_LIB_Detach_Javelin(OBJ_Me())
+
+EVENT_Delete(mid_best_interet, C_EVENT_DEL)
+
+macro_add_callback_after_cam("PNJ_Spider_callback_aftercam")
+
+OBJ_CapaSet(OBJ_Capa_15, none)
+
+if (SND_move_1_loop != -1)
+{
+	SND_Stop(SND_move_1_loop)
+	SND_move_1_loop = -1
+}
+
+if (SND_move_2_loop != -1)
+{
+	SND_Stop(SND_move_2_loop)
+	SND_move_2_loop = -1
+}
+
+if (SND_move_3_loop != -1)
+{
+	SND_Stop(SND_move_3_loop)
+	SND_move_3_loop = -1
+}
+

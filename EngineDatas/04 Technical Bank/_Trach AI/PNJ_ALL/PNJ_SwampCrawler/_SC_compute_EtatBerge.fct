@@ -1,0 +1,26 @@
+int			aai_Grid[3][3]
+int			i_grid, i_loop, j_loop
+vector	dpos, pos
+
+pos.z = 0
+berge_v_pos = compute_v_posgrid
+berge_v_norm = Cv_NullVector
+berge_i_accessible = 1 
+berge_i_occupee = 0
+
+for (i_loop = 0; i_loop < 3; i_loop++)
+{
+	for (j_loop = 0; j_loop < 3; j_loop++)
+	{
+		dpos = cvector( (i_loop - 1), (j_loop - 1), 0 )
+		pos = compute_v_posgrid + dpos
+		i_grid = GRID_CapaGet( pos )
+		
+		if ( (i_grid & tag_grid_terrain) == Ci_sol_eau )
+			berge_v_norm += dpos
+		else if ( (i_grid & tag_grid_terrain ) == Ci_sol_mur) 
+			berge_i_accessible = 0
+		else if ( i_grid & tag_grid_occupe_msk	)
+			berge_i_occupee = 1
+	}
+}

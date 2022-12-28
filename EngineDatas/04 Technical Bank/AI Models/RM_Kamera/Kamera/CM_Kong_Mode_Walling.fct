@@ -1,0 +1,174 @@
+//#include "Kam_Defines.var"
+//
+//// ######################
+//// WALLING & CORNERING
+//// ######################
+//
+//
+//
+//vector	tvz_walling_axis
+//vector	tvz_walling_normal
+//vector	tv_walling_speed
+//float		tf_walling_speed_normZ
+//float		tf_walling_speed_norm
+//vector	tv_sight 
+//
+//v_MECA_cam_target = KamP_TargetGao_BlendPosGet(o_mf_actor, Cf_BlendPos_DefaultSpeed)
+////MATH_VecBlend(v_MECA_cam_target,@o_mf_actor OBJ_PosGet(), 15.0 * TIME_GetDt())
+//
+//// Backup Gao pour les Transitions specifique en mode CChant
+//o_cc_kam_modifier_old = nobody
+//
+//if (i_kong_camera_mode != Ci_Kamera_mode_WALLING)
+//{
+//	// Init
+//	i_kong_camera_mode = Ci_Kamera_mode_WALLING
+//
+//	i_wl_vu_du_haut = faux //vrai
+//	i_wl_dans_le_dos = vrai
+//
+//	if (i_kong_camera_status_old == Ci_Kcamera_accroch)
+//	{
+//		if ( MATH_VecDotProduct(OBJ_SightGet(), @get_Kong_Path o_mf_actor v_walling_normal) < 0 )
+//			i_wl_dans_le_dos = vrai
+//		else
+//		{
+//			i_wl_dans_le_dos = faux
+//			i_wl_vu_du_haut = vrai
+//		}
+//	}
+//
+//	vG_chm_cam_sight = OBJ_SightGet()
+//	f_chm_coef = 0
+//	f_change_mode_speed = 0.3 //1.0
+//	f_walling_speed_normZ = 0
+//	v_kong_speed = @o_mf_actor DYN_SpeedGetVector()
+//
+//	v_walling_lastaxis = @get_Kong_Path o_mf_actor v_walling_horizon
+//	f_walling_speed_target_horiz_norm = f_speed_target_horiz_norm
+//	f_walling_speed_target_verti_norm = v_speed_target.z
+//}
+//
+//f_chm_coef= MATH_FloatMin(f_chm_coef+ (f_change_mode_speed * TIME_GetDt()), 1)
+//
+//tvz_walling_axis = @get_Kong_Path o_mf_actor v_walling_horizon
+//tvz_walling_normal = @get_Kong_Path o_mf_actor v_walling_normal
+//
+//if (!@get_Kong_Path o_mf_actor i_walling_grimper)
+//{if ( MATH_VecDotProduct(tvz_walling_axis,v_walling_lastaxis) < -0.1)
+//{
+//	f_chm_coef = 0
+//	f_change_mode_speed = 1.0
+//	vG_chm_cam_sight = OBJ_SightGet()
+//}
+//}
+//
+//v_axis = MATH_VecBlendRotate(v_axis,tvz_walling_axis,5.0 * TIME_GetDt())
+//v_normal = MATH_VecBlendRotate(v_normal,tvz_walling_normal,5.0 * TIME_GetDt())
+//v_walling_lastaxis = tvz_walling_axis
+//
+//
+//f_walling_speed_target_horiz_norm = MATH_FloatBlend(f_walling_speed_target_horiz_norm, f_speed_target_horiz_norm, 5.0 * TIME_GetDt() )
+//f_walling_speed_target_verti_norm = MATH_FloatBlend(f_walling_speed_target_verti_norm, v_speed_target.z, 5.0*TIME_GetDt() )
+//
+//
+//
+//v_kong_speed = MATH_VecBlend(v_kong_speed, @o_mf_actor DYN_SpeedGetVector(), 5.0 * TIME_GetDt())
+//f_kong_speed_norm = MATH_VecNorm(v_kong_speed)
+//
+//#ifdef DBG_Render
+//DBG_RenderVector(vG_cam_target,v_axis*20,color_jaune)
+//DBG_RenderVector(vG_cam_target,v_normal *20,color_blanc)
+//#endif
+//
+//v_walling_speed = MATH_VecBlend(v_walling_speed, v_kong_speed, 5.0 * TIME_GetDt())
+//tv_walling_speed = v_walling_speed
+//tf_walling_speed_normZ = tv_walling_speed.z 
+//tv_walling_speed.z = 0
+//tf_walling_speed_norm = MATH_VecNorm(tv_walling_speed)
+//
+//MATH_VecSetHorzNormalize(v_normal)
+//
+//if (i_wl_vu_du_haut)
+//{
+//	vG_cam_target_delta_tgt = v_normal * 4
+////	vG_cam_target_delta_tgt  += tvz_walling_axis * 2
+//}	
+//else
+//	vG_cam_target_delta_tgt = v_normal * 4
+//
+//v_MECA_cam_target_delta = MATH_VecBlend(v_MECA_cam_target_delta,vG_cam_target_delta_tgt, 2.5 * TIME_GetDt())
+//
+//
+//if (i_wl_vu_du_haut)
+//{
+//	// WALLING SPECIAL VU DU HAUT (fight au dessous)
+//	tv_sight = -v_normal
+//
+//	f_MECA_cam_dist = MATH_FloatBlend(f_MECA_cam_dist, 9.0, 5.0 * TIME_GetDt())
+//}
+//else
+//if (@get_Kong_Path o_mf_actor i_walling_grimper)
+//{
+//	// CORNERING
+//
+//	// Horizontal Axis
+//	tv_sight = -v_normal
+//
+//	// Distance
+//	f_MECA_cam_dist = MATH_FloatBlend(f_MECA_cam_dist, Cf_normal_distance, 5.0 * TIME_GetDt())
+//
+//	// Vitesse Z en Cornering non bridé en positif
+//	tf_walling_speed_normZ = -MATH_FloatLimit(tf_walling_speed_normZ, -20,20)
+//	if (tf_walling_speed_normZ < 0)
+//		tf_walling_speed_normZ *= 2		// J'amplifie l'orientation Z en cornering vers le haut
+//}
+//else
+//{
+//	// WALLING 
+//
+//	// Horizontal Axis
+//	tv_sight = MATH_VecBlendRotate(-v_normal, v_axis, MATH_FloatLimit((f_walling_speed_target_horiz_norm / 15), 0.0, 0.95) )
+//
+//	// Distance
+//	f_MECA_cam_dist = MATH_FloatBlend(f_MECA_cam_dist, Cf_normal_distance, 5.0 * TIME_GetDt())
+//
+//	// Vitesse Z en Cornering bridé en positif
+//	tf_walling_speed_normZ = -MATH_FloatLimit(tf_walling_speed_normZ, -20,0)
+//}
+//f_walling_speed_normZ = MATH_FloatBlend(f_walling_speed_normZ, tf_walling_speed_normZ, 7.5*TIME_GetDt())
+//	
+//if (i_walling_grimper_old != @get_Kong_Path o_mf_actor i_walling_grimper)
+//{
+//	// Cornering
+//	f_chm_coef = 0
+//	f_change_mode_speed = 2.0
+//	vG_chm_cam_sight = OBJ_SightGet()
+//}
+//
+//i_walling_grimper_old = @get_Kong_Path o_mf_actor i_walling_grimper
+//
+//DBG_RenderVector(OBJ_PosGet(),tv_sight*100,color_rouge)
+//
+////tv_sight = MATH_VecBlendRotate(tv_sight,  -Cv_VerticalVector , 0.95 )
+//if (i_wl_vu_du_haut)
+//{
+//	if ( i_wl_dans_le_dos )
+//		tv_sight = MATH_VecBlendRotate(tv_sight,  -Cv_VerticalVector, 0.80) 
+//	else
+//		tv_sight = MATH_VecBlendRotate(-tv_sight,  -Cv_VerticalVector, 0.80) 
+//	
+////	v_MECA_cam_banking = tvz_walling_normal
+//}
+//else
+//	tv_sight = MATH_VecBlendRotate(tv_sight,  -Cv_VerticalVector * MATH_FloatSign(f_walling_speed_normZ) , MATH_FloatMin(0.98, MATH_AbsFloat(f_walling_speed_normZ) / (20+ MATH_AbsFloat(f_walling_speed_normZ)))  )
+//
+////v_MECA_cam_banking = -tvz_walling_normal
+////tv_sight = MATH_VecBlendRotate(tv_sight,  -Cv_VerticalVector * MATH_FloatSign(f_walling_speed_normZ) , MATH_FloatMin(0.98, MATH_AbsFloat(f_walling_speed_normZ) / (20+ MATH_AbsFloat(f_walling_speed_normZ)))  )
+//
+////tv_sight = MATH_VecBlendRotate(vG_chm_cam_sight, tv_sight , f_change_mode_coef)					// Blend pour les changements de mode.
+////v_MECA_cam_sight = MATH_VecBlendRotate(v_MECA_cam_sight, tv_sight, 8.0 * TIME_GetDt())		// Blend pour lisser le
+//
+//v_MECA_cam_sight = MATH_VecBlendRotate(vG_chm_cam_sight, tv_sight, f_chm_coef)	
+//
+//f_MECA_cam_focale = 1.2

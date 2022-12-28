@@ -1,0 +1,68 @@
+#include "PNJ_Corbeau_defines.var"
+
+int				ti_i
+
+float			tf_dist
+
+vector		tv_pos
+vector		tv_new_sight
+vector		tv_temp
+
+object		to_nearest_wp
+object		to_corback
+
+if (i_etat_courant != ETAT_envol)
+{
+	i_etat_courant = ETAT_envol
+
+	OBJ_FlagInvisibleSet(faux)
+
+	if (!OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Generated))
+	{
+		for (ti_i = 0; ti_i < des_nombre; ti_i++)
+		{
+			to_corback = OBJ_Duplicate(OBJ_PosGet())
+			@to_corback OBJ_FlagInvisibleSet(vrai)
+		}
+	}
+	
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+if (f_time_start_etat > 10.0 && OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Culled)
+{
+	if (OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Generated))
+		OBJ_Destroy()
+	else
+		OBJ_Reinit(vrai)
+}
+
+tv_pos = OBJ_PosGet()
+tv_pos += OBJ_SightGet() * (TIME_GetDt() * f_speed)
+OBJ_PosSet(tv_pos)
+
+OBJ_BankingGeneralSet(OBJ_SightGet(), Cv_VerticalVector)
+
+tv_new_sight = MATH_VecBlend(OBJ_SightGet(), MATH_FloatSign(f_rot_speed) * OBJ_HorizonGet(), MATH_AbsFloat(f_rot_speed) * TIME_GetDt())
+tv_new_sight = MATH_VecBlend(tv_new_sight, Cv_VerticalVector, f_climb_speed)
+OBJ_SightSet(tv_new_sight)
+
+if (f_time_start_etat < 2.0)
+{
+	f_speed += TIME_GetDt() * 4.0
+	f_morph_speed = 20.0
+}
+else
+{
+	f_speed = 12.0
+	f_morph_speed = 6.0
+}
+
+AI_Execute("PNJ_Corbeau_exec_bankingset")
+
+AI_Execute("PNJ_Corbeau_exec_morph")

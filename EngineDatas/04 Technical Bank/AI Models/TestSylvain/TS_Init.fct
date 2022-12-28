@@ -1,0 +1,69 @@
+#include "TS_defines.var" 
+
+meta ( !OBJ_TextRequest(0,0) ) {}
+
+//GFX_AddSorted( 17, 5)
+//GFX_FlagSet(5, 0, 1)
+//GFX_FlagSet(5, 2, 1)
+
+showMap = faux
+pauseGame = faux
+
+
+GFX_AddSorted( 17, Ci_TEXTE_1 )
+GFX_FlagSet( Ci_TEXTE_1, 0, 1)
+GFX_FlagSet( Ci_TEXTE_1, 2, 0)
+
+GFX_AddSorted( 17, Ci_TEXTE_2 )
+GFX_FlagSet( Ci_TEXTE_2, 0, 1)
+GFX_FlagSet( Ci_TEXTE_2, 2, 1)
+
+GFX_AddSorted( 17, Ci_TEXTE_3 )
+GFX_FlagSet( Ci_TEXTE_3, 0, 1)
+GFX_FlagSet( Ci_TEXTE_3, 2, 1)
+
+GFX_AddSorted( 17, Ci_TEXTE_4 )
+GFX_FlagSet( Ci_TEXTE_4, 0, 1)
+GFX_FlagSet( Ci_TEXTE_4, 2, 1)
+
+GFX_AddSorted( 17, Ci_TEXTE_5 )
+GFX_FlagSet( Ci_TEXTE_5, 0, 1)
+GFX_FlagSet( Ci_TEXTE_5, 2, 1)
+
+angle = -M_PI/2
+
+if (o_Screen )
+{
+	@o_Screen GFX_AddSorted( 17, INTDISPLAY_MENUBG )
+	GFX_FlagSet( INTDISPLAY_MENUBG, 0, 1)
+	GFX_FlagSet( INTDISPLAY_MENUBG, 2, 0)
+	@o_Screen OBJ_SightGeneralSet( cvector(-1, 0, 0), cvector( 0, 1, 0) )
+	@o_Screen OBJ_ZoomSet( 0.05 )
+	@o_Screen OBJ_PosSet( cvector( -0.5, -1.0, -0.25 ) )
+	
+}
+
+if (o_Screen2 )
+{
+	@o_Screen2 GFX_AddSorted( 17, 81 )
+	GFX_FlagSet( 81, 0, 1) 
+	@o_Screen2 OBJ_SightGeneralSet( cvector(0, 0, 1), cvector( 0, 1, 0) )
+	@o_Screen2 OBJ_ZoomSet( 0.2 )
+	@o_Screen2 OBJ_PosSet( cvector( 0.0, -1, 0.0 ) )
+	
+	@o_Screen2 OBJ_RotateLocalZ(angle)
+
+	
+//	@o_Screen2 OBJ_SightGeneralSet( cvector(-1, 0, 0), cvector( 0, 1, 0) )
+//	@o_Screen2 OBJ_ZoomSet( 0.05 )
+//	@o_Screen2 OBJ_PosSet( cvector( 0.5, -1.0, -0.25 ) )
+}
+
+
+
+i_choix_bouton = Ci_ETAT_VERT
+AI_TrackChange(2, "TS_ETAT_VERT") 
+AI_TrackChange(4, "TS_Affichage") 
+AI_TrackCurChangeNow("TS_Reflex")  
+
+//AI_TrackCurChangeNow("TS_Affichage")  

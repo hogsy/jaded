@@ -1,0 +1,31 @@
+vector	tv_temp
+object	to_obj
+object	to_cam
+
+to_cam = @get_global o_camera
+if(TIME_Elapsed(f_time_dust_ok, 1.5))
+{
+	@o_dust_1 OBJ_PagGeneratorFreqSet(1, 0)
+}
+
+if(TIME_Elapsed(f_time_dust, f_rand_dust))
+{
+	f_time_dust = TIME_Get()
+	tv_temp = @to_cam OBJ_SightGet() * MATH_RandInt(1, 5)
+	tv_temp += @to_cam OBJ_HorizonGet() * MATH_RandFloat(-1,  1)
+	tv_temp += @to_cam OBJ_PosGet()
+	to_obj = COL_RayObject_Vector(tv_temp, cvector(0,0,3), all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_visuel)
+	if(to_obj)
+	{
+		f_rand_dust = MATH_RandInt(4, 10)
+		f_time_dust_ok = TIME_Get()
+		tv_temp = COL_RayObject_PosGet()
+		@o_dust_1 OBJ_PosSet(tv_temp)
+		@o_dust_1 OBJ_FlagInvisibleSet(faux)
+		@o_dust_1 OBJ_PagGeneratorFreqSet(1, 15)
+	}
+	else
+	{
+		f_rand_dust = 2.0
+	}
+}

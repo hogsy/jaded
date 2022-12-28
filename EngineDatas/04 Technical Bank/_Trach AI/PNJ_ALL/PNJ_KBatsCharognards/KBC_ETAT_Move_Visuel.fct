@@ -1,0 +1,115 @@
+
+#include "KBC_defines.var"
+
+//=============================================================================
+// LA BAT SUIT UNE CHAROGNE (OLFACTIF OU VISUEL)
+//=============================================================================
+
+
+messageid		tmid_tmp					// event odeur de sang
+messageid		tmid_vision
+
+vector			tv_old_cible_pos			// blend progressif de la position de la charogne
+vector			tv_tmp_cible_pos			// blend progressif de la position de la charogne
+
+object			to_tete
+
+
+// SORTIE ETAT
+if (i_sort_etat)
+{
+	i_flag_reseau_array = faux
+	i_sort_etat = faux
+	return
+}
+
+
+//======================================================
+// Position de la cible
+//======================================================
+
+if( i_etat_courant != ETAT_Move_Visuel || i_force_reinit || ( TIME_Elapsed(f_time_check_charogne_pos, 2.0) && (i_reseau_wp_count > 1) ) )
+{
+	// il reste du chemin à parcourir et le bat va re-checker la position de sa cible
+	// exception : si le bat arrive à son dernier point, on ne recalcule pas
+	f_time_check_charogne_pos = TIME_Get()
+
+	AI_Execute("KBC_exec_calc_pos_suivi_visuel")				// MAJ coordonnées de la charogne
+}
+
+// blend vers la position de la cible (si elle bouge) (car le last_wp n'est pas recalculé)
+tv_old_cible_pos = v_cible_pos
+v_cible_pos = @o_cible OBJ_PosGet()
+v_cible_pos = MATH_VecBlend(tv_old_cible_pos, v_cible_pos, 5 * TIME_GetDt())
+
+v_dest_pos = v_cible_pos + v_decalage
+
+// suivi du regard
+i_flag_neck = vrai
+to_tete = @o_cible ANI_CanalObjectGet(Anim_Canal_Tete)
+if( ! to_tete )
+	to_tete = o_cible
+v_look_pos = @o_cible OBJ_PosGet()
+
+// test zone d'activité
+if( ! KBC_Pos_in_BV(v_cible_pos, o_zone_activite) )
+	AI_Execute("KBC_exec_init_attente")
+
+
+// ENTREE ETAT
+if (i_etat_courant != ETAT_Move_Visuel || i_force_reinit )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Move_Visuel
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	i_force_reinit = faux
+
+	KBC_ref_speed_set(Cf_speed_vol)
+	i_flag_reseau_array = vrai
+	i_force_test_inclinaison = vrai			// test d'inclinaison
+	i_flag_depl_wp_apres_reseau = faux
+	
+	if( i_DBG_trace_etat )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : etat move visuel")
+		DBG_TraceEOL()
+	}
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// ======== DEPLACEMENT ==========
+
+if( KBC_Seen_Actor_Test(o_cible, tmid_vision) )
+	KBC_Interet_Update(mid_interet_charogne, C_EVENT_InteretStatusAttack, o_cible, tmid_vision)
+else
+	AI_Execute("KBC_exec_init_attente")
+
+
+KBC_select_action()
+
+if( i_reseau_wp_count == 1 )
+	i_flag_frein = vrai
+else
+	i_flag_frein = faux
+AI_Execute("KBC_exec_MOVE_beziers")
+if( i_flag_depl_fini && ( ! i_reseau_wp_count ) )
+{
+	if( o_cible )
+		macro_change_etat("KBC_ETAT_Observe_Charogne")		// point d'observation atteint -> la bat observe la charogne
+	else
+		AI_Execute("KBC_exec_init_attente")
+}
+

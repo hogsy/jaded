@@ -1,0 +1,80 @@
+int 			res
+message 	msg
+vector		v
+
+// Passe en mode Ready
+OBJ_CapaSet(Capa_PNJ_Ready, none)
+
+v = MATH_VecBlend(OBJ_PosGet(), mv_poshide, 2 * TIME_GetDt())
+OBJ_PosSet(v)
+
+res = vrai
+if ( AI_TriggerIsValid( mt_StartCondition ) )
+{
+	res = call_trigger( mt_StartCondition )
+	if (res)
+	{
+		msg = AI_TriggerGetMsg( mt_StartCondition )
+		mo_Target = msg.msg_gao5
+		if ( mo_Target )
+		{
+			mav_TargetPos[ 0 ] = @mo_Target OBJ_PosGet()
+			mav_TargetPos[ 1 ] = mav_TargetPos[ 0 ]
+			mav_TargetPos[ 2 ] = mav_TargetPos[ 0 ]
+			mav_TargetPos[ 3 ] = mav_TargetPos[ 0 ]
+			mav_TargetPos[ 4 ] = mav_TargetPos[ 0 ]
+		}
+	}
+}
+
+// Desactivation du 
+if (OBJ_CapaTest(Capa_PNJ_Desactivate) && !ANI_IsInBlend() )
+{
+	OBJ_CapaSet(none,Capa_PNJ_Desactivate + Capa_PNJ_Attaque + Capa_PNJ_Hit )
+	// Destruction de l'arme s'il y en a une
+	if (mo_WeaponCur)
+	{
+		mi_HadWeapon = faux
+		AI_Execute( "PNJInd_Exec_Weapon" )
+		mi_HadWeapon = vrai
+	}
+	OBJ_FlagInvisibleSet(vrai)
+	OBJ_FlagInactiveSet(vrai)
+	stop
+}
+
+if (o_master)
+{
+	// FRED - GESTION MASTER -------------------------
+
+	// Je vire l'attaque si on me demande de me hider
+	if (OBJ_CapaTest(Capa_PNJ_Hide))
+		OBJ_CapaSet(none,Capa_PNJ_Hide + Capa_PNJ_Attaque)
+	
+	if (o_master && OBJ_CapaTest(Capa_PNJ_Attaque))
+	{
+		// On me demande d'attaquer
+		if (f_delay_before_attaque <= 0)
+		{
+			// delai ecoulé
+	
+			// Le master me demande de sortir de ma cache
+			OBJ_CapaSet(none, Capa_PNJ_Attaque+Capa_PNJ_Hide)
+			AI_TrackCurChange( "PNJInd_State_GoOut" )
+		}
+		else
+			f_delay_before_attaque -= TIME_GetDt()
+	}
+	// FRED - GESTION MASTER -------------------------	
+}
+else
+{
+	if (res )
+	{
+		mf_TimeLeft -= TIME_GetDt()
+		if ( mf_TimeLeft < 0 )
+		{
+			AI_TrackCurChange( "PNJInd_State_GoOut" )
+		}
+	}
+}	

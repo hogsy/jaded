@@ -1,0 +1,23 @@
+object	to_WP
+vector	v0, v1
+
+to_WP = pop
+
+if( !to_WP )
+{
+	WPBV_f_CurWidth = 1
+	return
+}
+
+v0 = @to_WP BV_MinGet()
+v1 = @to_WP BV_MaxGet()
+WPBV_f_CurWidth = MATH_FloatMax( MATH_AbsFloat( v1.x - v0.x), MATH_AbsFloat( v1.y - v0.y) )
+
+if (WPBV_f_CurWidth > WPBV_f_MaxWidth )
+	WPBV_f_CurWidth = 1.0
+else
+{
+	if (WPBV_f_CurWidth < WPBV_f_MinWidth )
+		WPBV_f_CurWidth = WPBV_f_MinWidth
+	WPBV_f_CurWidth /= WPBV_f_MaxWidth
+}

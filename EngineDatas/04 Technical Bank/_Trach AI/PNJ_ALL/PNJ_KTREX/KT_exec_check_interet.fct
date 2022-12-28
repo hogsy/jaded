@@ -1,0 +1,179 @@
+#include "KT_defines.var"
+
+int			ti_target
+int			ti_flag_new_event
+int			ti_rank
+int			ti_rank2
+
+float		tf_interest
+float		tf_best_interest
+float		tf_new_interet_best_dist
+float		tf_coef
+float		tf_dist
+float		tf_imprecision
+
+vector	tv_temp
+vector	EVT_Pos
+
+object	EVT_Pere
+object	EVT_Target
+object	to_actor_locked_on_target
+
+message		tmsg_filter
+message		tmsg_filter2
+
+messageid		tmid_interet_ID
+messageid		tmid_interet_ID2
+messageid		tmid_best_new_interet
+
+tf_best_interest = -1.0
+
+// VAR LIEES AU NEW EVENT
+ti_flag_new_event = 0
+tf_new_interet_best_dist = Cf_Infinit
+MSG_GlobalSetInvalid(tmid_best_new_interet)
+
+// BACKUP DU DERNIER MEILLEUR EVENEMENT INTERESSANT
+mid_last_interet = mid_best_interet
+
+ti_rank = -1
+
+MSG_SetNull(tmsg_filter)
+tmsg_filter.msg_sender = OBJ_Me()
+
+tmid_interet_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tmsg_filter)
+while(MSG_GlobalIsValid(tmid_interet_ID) || ti_flag_new_event)
+{
+	if (MSG_GlobalIsValid(tmid_interet_ID))
+	{
+		// BOUCLE STANDARD
+		tf_interest = EVENT_InteretGet(tmid_interet_ID)
+
+		if (i_flag_clean_memory)
+		{
+			// ON VIDE NOTRE MEMOIRE
+			EVENT_Delete(tmid_interet_ID, C_EVENT_DEL)
+
+			tmid_interet_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tmsg_filter)
+			continue
+		}
+		else if (tf_interest == -1.0)
+		{
+			// CIBLE NON IDENTIFIEE
+			if (i_flag_memorise_all_new_events)
+			{
+				// ON SE MOQUE DES NOUVEAUX EVENEMENTS
+				tf_interest = 0.0
+				EVENT_InteretSet(tmid_interet_ID, tf_interest)
+			}	
+			else
+			{
+				// ON EVALUE JUSTE LA PONDERATION DE CE NOUVEL INTERET SI ON N'A PAS DE NOUVEL INTERET
+				if (! MSG_GlobalIsValid(mid_new_interet))
+				{
+					EVT_Pos = EVENT_InteretPositionGet(tmid_interet_ID)	
+			
+					tv_temp = EVT_Pos - OBJ_PosGet()
+					tv_temp.z = 0.0
+					
+					tf_dist = MATH_VecDotProduct(tv_temp, tv_temp)
+					if (tf_dist < tf_new_interet_best_dist)
+					{
+						ti_flag_new_event	 = 1
+					
+						tf_new_interet_best_dist = tf_dist
+						tmid_best_new_interet	= tmid_interet_ID
+					}
+				}
+	
+				tmid_interet_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tmsg_filter)
+				continue
+			}
+		}
+	}
+	else
+	{
+		// ON MET A JOUR LE MEILLEUR NOUVEL INTERET
+		ti_flag_new_event = 0
+	
+		tmid_interet_ID = tmid_best_new_interet
+
+		tf_interest = 0.0
+
+		EVENT_InteretSet(tmid_interet_ID, tf_interest)
+		mid_new_interet = tmid_interet_ID
+	}
+
+	EVENT_InteretStatusSet(tmid_interet_ID, C_EVENT_InteretStatusNone)
+	EVT_Target = EVENT_TargetGet(tmid_interet_ID)
+
+	// MISE A JOUR DE L'INTERET REEL
+	tf_interest = EVENT_InteretGet(tmid_interet_ID)
+
+	if (EVT_Target && tf_interest > 0.0)
+	{
+		if (EVENT_InteretSeenTimeGet(tmid_interet_ID) == TIME_Get())
+		{
+			// VU CETTE TRAME
+		}
+		else
+		{
+			// INVISIBLE CETTE TRAME
+			tf_interest -= 20.0
+		}
+	
+		ti_target = 0
+
+		ti_rank2 = -1
+		MSG_SetNull(tmsg_filter2)
+		tmsg_filter2.msg_gao1 = EVT_Target
+		
+		tmid_interet_ID2 = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank2, tmsg_filter2)
+		while(MSG_GlobalIsValid(tmid_interet_ID2))
+		{
+			to_actor_locked_on_target = EVENT_PereGet(tmid_interet_ID2)
+			if ( EVENT_InteretStatusGet( tmid_interet_ID2) & C_EVENT_InteretStatusLock)
+				ti_target++
+
+			tmid_interet_ID2 = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank2, tmsg_filter2)
+		}
+
+		// Multi Lock de la cible : baisse d'interêt
+		tf_interest /= (1.0 + ti_target)
+
+//		// Cible qui saigne : augmenter l'interêt
+//		tmid_interet_ID2 = EVENT_FindEventPereTarget(C_EVENT_TYPE_Odor, EVT_Target, nobody)
+//		if (MSG_GlobalIsValid(tmid_interet_ID2))
+//			tf_interest += 50.0
+//
+//		// Interêt lié à la précision
+//		if (tf_imprecision > 0.0)
+//		{
+//			// Imprecision sur la position de la cible : baisser l'interêt
+//			tf_interest -= MATH_FloatMin(tf_interest, tf_imprecision)
+//		}
+//		else if (tf_imprecision < 0.0 && tf_interest >= 51.0)
+//		{
+//			// Position précise mais inaccessible : baisser l'interêt
+//			tf_interest = MATH_FloatMin(tf_interest, 51.0)
+//		}
+	}
+
+	EVENT_InteretReelSet(tmid_interet_ID, tf_interest)
+
+	if (tf_interest > tf_best_interest || (tmid_interet_ID == mid_best_interet && tf_interest >= tf_best_interest))
+	{
+		tf_best_interest = tf_interest
+		mid_best_interet = tmid_interet_ID
+	}
+
+	tmid_interet_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tmsg_filter)
+}
+
+// NETTOYAGE DE LA MEMOIRE
+if (i_flag_clean_memory)
+{
+	i_flag_clean_memory = faux
+	MSG_GlobalSetInvalid(mid_best_interet)
+	MSG_GlobalSetInvalid(mid_new_interet)
+}

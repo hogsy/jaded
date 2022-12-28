@@ -1,0 +1,18 @@
+#include "WS_defines.var"
+
+if( ! o_rayman || ! o_camera || ! o_wp_select_costume || ! o_wp_select_item || ! o_medaillon )
+	DBG_Error("il manque un objet !")
+
+if( AI_PriorityGet() != 254 )
+{
+	AI_PrioritySet(254)
+	DBG_Error("recommencez svp")
+}
+
+OBJ_FlagsControlSet(OBJ_C_ControlFlag_AlwaysActive, none)
+
+@get_global o_wearshop_rayman = o_rayman
+
+AI_TrackChange(2, "WS_ETAT_INACTIF")
+AI_TrackCurChangeNow("WS_Reflex")
+ 

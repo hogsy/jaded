@@ -1,0 +1,207 @@
+#include "BC_defines.var"
+
+int					ti_envol
+
+messageid		tmid_vision
+
+object			to_actor
+
+
+// SORTIE ETAT ===============================================================
+if (i_sort_etat)
+{
+	i_perchee_decroche_flag = faux
+	i_sort_etat = faux
+	return
+}
+
+// ENTREE ETAT ===============================================================
+if (i_etat_courant != ETAT_Wait_Perche )
+{
+	i_etat_ancien_ancien = i_etat_ancien
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Wait_Perche
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	BC_DBG_Trace_Etat("etat wait perchee")
+	
+	DYN_Off()
+	ACT_ActionSet(ACTION_Perchee_Attente)
+	i_perchee_decroche_flag = faux
+	i_perchee_retour_flag = faux
+	f_perchee_action_time = MATH_RandFloat(0.5, 4.5)
+	i_perchee_fake_attaque = faux
+	f_speed = 0.0	// raz speed qd je me racccroche
+	BC_Charognard_Mode_Reset()		// blindage IA (passe en charognard en retournant se percher...)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+i_flag_neck = faux
+
+
+// EMERGENCY ABORT =============================
+if( o_cible_attaque && ! BC_TargetActive(o_cible_attaque) )
+{
+	DBG_TraceObject(OBJ_Me())
+	DBG_TraceString(" : Target non active (")
+	DBG_TraceObject(o_cible_attaque)	
+	DBG_TraceString(")")
+	DBG_TraceEOL()	
+	
+	BC_Cadavre_Del(o_cible_attaque)
+	o_cible_attaque = nobody
+	i_perchee_decroche_flag = faux
+	BC_Charognard_Mode_Force()
+}
+
+
+// ANALYSE ===============================================================
+AI_Execute("BC_exec_check_sound")
+
+// COMPORTEMENT =========================================================
+if( ACT_ActionGet() == ACTION_Perchee_Attente )
+{
+	f_perchee_action_time -= MATH_FloatMin(f_perchee_action_time, TIME_GetDt())
+	if( ! f_perchee_action_time )
+	{
+		SND_RequestPlay(Ci_SND_Cri_Presence)
+		f_perchee_action_time = MATH_RandFloat(5.0, 10.0)
+		i_perchee_action_next = 1 - i_perchee_action_next
+		if( i_perchee_action_next )
+			ACT_ActionSet(ACTION_Perchee_Panic)
+		else
+			ACT_ActionSet(ACTION_Perchee_Panic_var)
+	}
+}
+
+if( ACT_ActionGet() == ACTION_Perchee_Panic || ACT_ActionGet() == ACTION_Perchee_Panic_var )
+{
+	if( ACT_ActionFinished() )
+		ACT_ActionSet(ACTION_Perchee_Attente)
+}
+
+if( ! i_perchee_decroche_flag )
+{
+	// bat endormie...
+	ti_envol = faux
+	if( ! BC_ForceInactive() )
+	{
+		// TEST CADAVRES
+		to_actor = BC_Cadavre_Nearest(faux)
+		if( to_actor )
+		{
+			o_cadavre = to_actor			// NEW CADAVRE
+			BC_Cadavre_Nouveau_Select(to_actor)		// marqué comme "visité"
+			BC_Interet_Update(mid_interet_charogne, C_EVENT_InteretStatusFoodchain, to_actor, tmid_vision)
+			BC_Charognard_Mode_Force()
+			i_perchee_decroche_flag = vrai
+		}
+		
+		if( i_agressive )
+		{
+			// AGRESSIVE only -------------------------------------------------------------------------------------
+			if( i_flag_check_sound_valide )
+			{
+				ti_envol = vrai
+				BC_DBG_Trace_Etat("une bat a crié")
+			}
+			if( i_near_shoot_flag )
+			{
+				ti_envol = vrai
+				BC_DBG_Trace_Etat("on a tiré près de moi")
+			}
+			if( o_cible_attaque || BC_Test_Attaque() )
+			{
+				ti_envol = vrai
+				BC_DBG_Trace_Etat("trigger attaque")
+			}
+			
+			if( ti_envol )
+			{
+				i_perchee_decroche_flag = vrai
+				// hors de sa BV : la bat va se décrocher comme pour attaquer puis se reposer
+				if( ! BC_Gao_in_Territory(o_cible_attaque, faux) )
+				{
+					i_perchee_fake_attaque = vrai
+					v_fight_fake_position = OBJ_PosGet() + (10 * OBJ_BankingGet() * f_zoom)
+				}
+			}
+		}
+	}
+}
+else
+{
+	// bat en train de se réveiller...
+	if( o_cadavre )
+		BC_Interet_Update(mid_interet_charogne, C_EVENT_InteretStatusFoodchain, o_cadavre, tmid_vision)		// maintenir l'interet
+	
+	if( MATH_FloatNullEpsilon(@get_global f_bat_plongeon_delay) )
+	{
+		if( i_agressive )
+		{
+			// AGRESSIVE -------------------------------------------------------------------------------------
+			if(o_cible_attaque)		// blindage (cf. desous)
+			{
+				BC_Global_Plongeon_Sound_Play()
+				@get_global i_bat_perchee_plongeon_modulo = MATH_Modulo(@get_global i_bat_perchee_plongeon_modulo +1, 3)
+				AI_Execute("BC_exec_dyn_on")
+				DYN_SpeedSetVector(Cv_NullVector)
+				tmid_vision = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility, o_cible_attaque, nobody)
+				if( MSG_GlobalIsValid(tmid_vision) )
+					BC_Seen_Actor_Add(tmid_vision)
+				macro_change_etat("BC_ETAT_Fight_Approche")
+			}
+		}
+		else
+		{
+			BC_Global_Plongeon_Sound_Play()
+			BC_Update_Global_Plongeon_Delay()
+			BC_Update_Global_Last_Plongeon_Time()
+			@get_global i_bat_perchee_plongeon_modulo = MATH_Modulo(@get_global i_bat_perchee_plongeon_modulo +1, 3)
+			macro_change_etat("BC_ETAT_Move_Cadavre")		// NEW CADAVRE
+		}
+		
+//		else
+//		{
+//			// CHAROGNARD -------------------------------------------------------------------------------------
+//			if( ! MSG_GlobalIsValid(mid_grab_charogne) )
+//			{
+//				if( BC_Check_Sang() )
+//				{
+//					BC_Global_Plongeon_Sound_Play()
+//					BC_Update_Global_Plongeon_Delay()
+//					BC_Update_Global_Last_Plongeon_Time()
+//					@get_global i_bat_perchee_plongeon_modulo = MATH_Modulo(@get_global i_bat_perchee_plongeon_modulo +1, 3)
+//					ACT_ActionSet(i_ACTION_Vol_Standard)
+//					ACT_ActionFrameSet(0, MATH_RandInt(0, 64))
+//					macro_change_etat("BC_ETAT_Move_Olfactif")
+//				}
+//				else
+//				{
+//					if( i_check_sang_already_done && f_charognard_forced_duration > Cf_charognard_forced_duration_min )
+//					{
+//						BC_Charognard_Mode_Reset()
+//						i_perchee_decroche_flag = faux		// attention bug ! o_cible_attaque qd la bat repasse en agressive et que le flag reste à vrai !!!!
+//					}
+//				}
+//			}
+//		}
+	}
+}
+
+if( ! ACT_ActionIsTransition() )
+{
+	// réorientation de la bat sans blend après la transition !!!!
+	OBJ_BankingGeneralSet(
+		MATH_VecBlendRotate(OBJ_SightGet(), v_perchee_init_sight, 1),
+		MATH_VecBlendRotate(OBJ_BankingGet(), v_perchee_init_banking, 1))
+}
+

@@ -1,0 +1,17 @@
+#include "Interactive_Door_Denham_Switch_defs.var"
+
+float		tf_ratio
+vector	tv_pos
+
+f_Timer += TIME_GetDt()
+if (f_Timer > TIMER_APPEAR)
+{
+	tf_ratio = 1
+	f_Timer = 0
+	AI_TrackCurChange( "InterDDS_Wait" )
+}
+else
+	tf_ratio = f_Timer / TIMER_APPEAR
+	
+tv_pos = v_PosOff + (tf_ratio * (v_PosStart - v_PosOff ))
+OBJ_PosSet( tv_pos )

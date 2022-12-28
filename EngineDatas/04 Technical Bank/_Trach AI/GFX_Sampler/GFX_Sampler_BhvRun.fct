@@ -1,0 +1,59 @@
+#include "GFX_Sampler_Defines.var"
+
+float 		f_ElapsedTime
+float		f_NewWindSpeed
+float 		f_TotalElapsedTime
+
+f_ElapsedTime 		= TIME_Get() - mf_StartTime
+f_TotalElapsedTime	= TIME_Get() - mf_InitTime
+
+if ( f_ElapsedTime >= mf_LifeSpan && !mi_IsPersistant )
+{
+	GFX_Del( mi_GFX_Key )
+	
+	// salut la visite
+	if ( mi_IsChild && !i_no_death)  
+	{
+		OBJ_Destroy()
+	}
+
+	AI_TrackCurStop()
+}
+else	// if we aren't finished, then modify the GFX over its lifespan as specified.
+{
+	// if still active, reposition GFX to the desired source object, assuming this source object still exists.
+	//N.B. this can be dangerous if the source object has been destroyed as I am not sure if these checks will suffice.
+	if ( mi_FollowSourceObj && mo_SourceObject && !( OBJ_HasBeenKilled( mo_SourceObject ) ) && @mo_SourceObject OBJ_IsValidGAO() )
+	{
+		//ADDED SURESH
+		//this makes the GFX follow the source after initilization, not sure if it will break anything for now....
+		if(mo_SourceObject  != OBJ_Me())
+			OBJ_PosSet(@mo_SourceObject OBJ_PosGet() + mv_PositionOffset)  
+		GFX_Setv( mi_GFX_Key, i_Mod + 200, @mo_SourceObject OBJ_PosGet() + mv_PositionOffset )
+	}
+	
+	// SFX on GFX
+	// sine wave on wind
+	if ( mi_UseSineOnWind )
+	{
+		f_NewWindSpeed = fnf_Sampler_SinOfTime( f_TotalElapsedTime, mf_WindSinePhase, mf_WindSineFreq, mf_MaxWindSpeed, mf_MinWindSpeed )
+		
+		GFX_Setv( mi_GFX_Key, i_Mod + 204, mv_NormalStartWind * f_NewWindSpeed )
+	}
+}
+
+// totally separate: this is a total restart
+if ( mi_IsRecreatingOn )
+{
+	if ( f_ElapsedTime >= mf_RecreationPeriod )
+	{
+		if ( mi_GFX_Key != C_Invalid_GFX )
+		{
+			GFX_Del( mi_GFX_Key )
+		}
+		
+		mf_TimeRunning = 0.0
+
+		AI_TrackCurChange( "GFX_Sampler_Init.fct" )
+	}
+}

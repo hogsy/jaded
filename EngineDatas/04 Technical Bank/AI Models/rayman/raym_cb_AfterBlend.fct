@@ -1,0 +1,95 @@
+#include"r_defines.var"
+
+vector	tv_speed
+vector	tv_dir
+vector	tv_pos1
+vector	tv_pos2
+float		tf_rand, tf_time 
+object	to_main, to_tete
+
+
+// BANKING ----------------------------------------------------------------------------------------------------------------------------------
+AI_Execute("raym_exec_banking")
+
+// IK ----------------------------------------------------------------------------------------------------------------------------------
+Rayman_IK()
+
+// SUIVI REGARD --------------------------------------------------------------------------------------------------------------------------
+AI_Execute("raym_exec_suivi_regard")
+
+// IK MAIN
+AI_Execute("raym_exec_IK")
+
+// COPTER GFX -----------------------------------------------------------------------------------------------------------------------------
+if( i_jump_copter && MOVE_MODE() == C_Move_Jump )
+{
+	tf_time = TIME_Get() * 20.0
+	tv_pos1 = cvector(MATH_Cos( tf_time ) * 0.6, MATH_Sin(tf_time) * 0.6, 0.0)
+	tv_pos2 = - tv_pos1
+	to_tete = ANI_CanalObjectGet(Anim_Canal_Tete)
+	tv_pos1 += @to_tete OBJ_PosGet() + cvector( 0.0, 0.0, 0.3)
+	tv_pos2 += @to_tete OBJ_PosGet() + cvector( 0.0, 0.0, 0.3)
+	HELICO_GFX_Line_Segment( tv_pos1, tv_pos2)
+}
+else
+	HELICO_GFX_Destroy()
+
+// GRAPPIN GFX ---------------------------------------------------------------------------------------------------------------------------
+if( o_grappin )
+{
+	switch( i_grappin_gfx_mode )
+	{
+		case Ci_grappin_gfx_mode_Faisceau :
+			GRAPPIN_GFX_Line()
+			break
+		case Ci_grappin_gfx_mode_Etincelles :
+			GRAPPIN_GFX_Sparks()
+			break
+		case Ci_grappin_gfx_mode_TipTop :
+			GRAPPIN_GFX_Line_TipTop()
+			break
+		case Ci_grappin_gfx_mode_Corde :
+//			to_main = ANI_CanalObjectGet(RM_Canal_Grappin)
+//			tv_pos1 = @to_main OBJ_PosGet()
+//			tv_pos1 += MATH_VecLocalToGlobal(cvector(0.20,0,0))
+			to_main = ANI_CanalObjectGet(Anim_Canal_MainGauche)
+			tv_pos1 = @to_main OBJ_PosGet()
+			tv_pos2 = @o_grappin OBJ_PosGet()
+			tv_dir = tv_pos2 - tv_pos1
+			if ( ! MATH_VecNullEpsilon( tv_dir))
+				MATH_VecSetNorm(tv_dir, 0.2)
+			else
+				tv_dir = OBJ_SightGet() * 0.2
+			tv_pos2 -= tv_dir
+			DBG_RenderSphere(tv_pos1, 0.25, color_rouge)
+			DBG_RenderSphere(tv_pos2, 0.25, color_bleu)
+			GRAPPIN_GFX_Corde(tv_pos1, tv_pos2)
+			break
+		case Ci_grappin_gfx_mode_Eclair :
+			GRAPPIN_GFX_Lightning()
+			break
+	}
+}
+
+// CHARGE GRAPPIN GFX
+if ( i_grappin_SFX_Target  != -1)
+{
+	if( o_SFX_target)
+	{
+		if ( ! MATH_VecNullEpsilon( v_grappin_SFX_pos ))
+			v_grappin_SFX_pos = MATH_VecBlend( v_grappin_SFX_pos, HotSpot_PosGet( o_SFX_target), f_grappin_SFX_blend)
+		else
+			v_grappin_SFX_pos  = HotSpot_PosGet( o_SFX_target)	
+		GFX_Setf(i_grappin_SFX_Target, 21000, MATH_RandFloat(0.45, 0.95))			// rayon
+	}
+	else
+	{
+		GFX_Setf(i_grappin_SFX_Target, 21000, MATH_RandFloat(0.0, 0.0))			// rayon			
+		v_grappin_SFX_pos = Cv_NullVector
+	}
+
+	GFX_Setv(i_grappin_SFX_Target, 21200, v_grappin_SFX_pos)
+}
+	
+//if ( ACT_ActionGet() == RM_Act_SwimDepl)
+//	Proc_RM_GFX_Splash( OBJ_PosGet(), 0.001)

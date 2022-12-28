@@ -1,0 +1,44 @@
+#include "PNJ_antilope_defines.var"
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	DYN_TractionSet(Cv_NullVector)
+	DYN_SpeedSetVector( Cv_NullVector)
+	DYN_GravitySet(Cv_NormalGravity)
+	return
+}
+
+// INIT ETAT ======================================================================
+if ( i_etat_courant != ETAT_PA_DEAD)
+{
+	i_etat_courant = ETAT_PA_DEAD
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	
+	ACT_ActionSet(Action_Mort)
+	DYN_SpeedSetVector(Cv_NullVector)
+}
+
+
+// REACTIONS ===============================================================
+
+// GRABBED ----------------------------------------------------------
+o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, vrai, nofunc, nofunc)
+if (o_grabbed_actor_KK)
+	macro_change_etat("pa_ETAT_grabbed")
+
+if( COL_CollideType(COL_C_Ground) )
+	DYN_GravitySet(Cv_NullVector)			// ne pas traverser le sol si relaché et en contact
+else
+	DYN_GravitySet(Cv_NormalGravity)		// tomber au sol
+
+// COMPORTEMENT =======================================================================================================
+
+OBJ_BankingGeneralSet( OBJ_SightGet(), MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 15 * TIME_GetDt()))

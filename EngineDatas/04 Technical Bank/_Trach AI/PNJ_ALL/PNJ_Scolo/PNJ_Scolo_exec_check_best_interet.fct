@@ -1,0 +1,555 @@
+#include "PNJ_Scolo_defines.var"
+
+int				ti_i
+int				ti_flag_ok
+int				ti_new_interet_index
+int				ti_flag_choose_best_interest
+
+float			tf_interet
+float			tf_best_interet
+float			tf_best_dist
+
+object		to_last_best_interet_gao
+
+message	tmsg_trigger
+
+if ( ! f_lifecur )
+	return
+
+if (MSG_GlobalIsValid(mid_best_interet))
+	to_last_best_interet_gao = EVENT_InteretTargetGet(mid_best_interet)
+else
+	to_last_best_interet_gao = nobody
+
+ti_new_interet_index = -1
+
+// ATTAQUE DENHAM ===================================================================================
+//if (tutorial)
+//{
+//	for (ti_i = 0; ti_i < i_perceived_actor_nb; ti_i++)
+//	{
+//		if (ai_perceived_ID[ti_i] == C_ID_Denham)
+//		{
+//			ti_new_interet_index = PNJ_Scolo_Best_Interet_Update(ti_i)
+//			break
+//		}
+//	}
+//	
+//	return
+//}
+
+//// REGLE PAF DU MAIN =================================================================================
+//if (ti_new_interet_index == -1)
+//{
+//	if (i_perceived_main_actor_index != -1 && ai_perceived_status[i_perceived_main_actor_index] & Ci_PERCEIVED_PAF)
+//	{
+//		ti_new_interet_index = PNJ_Scolo_Best_Interet_Update(i_perceived_main_actor_index)
+//
+//		if (ti_new_interet_index != -1 && to_last_best_interet_gao != ao_perceived_actor[ti_new_interet_index])
+//		{
+//#ifndef _FINAL_
+//			DBG_TraceFloat(TIME_Get())
+//			DBG_TraceString(" => ")
+//			DBG_TraceObject(OBJ_Me())
+//			DBG_TraceString(" préfère ")
+//			DBG_TraceObject(ao_perceived_actor[ti_new_interet_index])
+//			if (to_last_best_interet_gao)
+//			{
+//				DBG_TraceString(" à ")
+//				DBG_TraceObject(to_last_best_interet_gao)
+//			}
+//			DBG_TraceString(" PAF DU MAIN ACTOR ")
+//			DBG_TraceEOL()
+//#endif
+//		}
+//	}
+//}
+// REGLE PAF DU MAIN =================================================================================
+if (ti_new_interet_index == -1)
+{
+	if (i_perceived_kong_index != -1 && ai_perceived_status[i_perceived_kong_index] & Ci_PERCEIVED_PAF)
+	{
+		ti_new_interet_index = PNJ_Scolo_Best_Interet_Update(i_perceived_kong_index)
+
+		if (ti_new_interet_index != -1 && to_last_best_interet_gao != ao_perceived_actor[ti_new_interet_index])
+		{
+#ifndef _FINAL_
+			DBG_TraceFloat(TIME_Get())
+			DBG_TraceString(" => ")
+			DBG_TraceObject(OBJ_Me())
+			DBG_TraceString(" préfère ")
+			DBG_TraceObject(ao_perceived_actor[ti_new_interet_index])
+			if (to_last_best_interet_gao)
+			{
+				DBG_TraceString(" à ")
+				DBG_TraceObject(to_last_best_interet_gao)
+			}
+			DBG_TraceString(" PAF DU MAIN ACTOR ")
+			DBG_TraceEOL()
+#endif
+		}
+	}
+}
+// REGLE PAF DU MAIN =================================================================================
+if (ti_new_interet_index == -1)
+{
+	if (i_perceived_jack_index != -1 && ai_perceived_status[i_perceived_jack_index] & Ci_PERCEIVED_PAF)
+	{
+		ti_new_interet_index = PNJ_Scolo_Best_Interet_Update(i_perceived_jack_index)
+
+		if (ti_new_interet_index != -1 && to_last_best_interet_gao != ao_perceived_actor[ti_new_interet_index])
+		{
+#ifndef _FINAL_
+			DBG_TraceFloat(TIME_Get())
+			DBG_TraceString(" => ")
+			DBG_TraceObject(OBJ_Me())
+			DBG_TraceString(" préfère ")
+			DBG_TraceObject(ao_perceived_actor[ti_new_interet_index])
+			if (to_last_best_interet_gao)
+			{
+				DBG_TraceString(" à ")
+				DBG_TraceObject(to_last_best_interet_gao)
+			}
+			DBG_TraceString(" PAF DU MAIN ACTOR ")
+			DBG_TraceEOL()
+#endif
+		}
+	}
+}
+
+// REGLE CADAVRE : SI JE VOIS UN PERSO INANIME, MIAM MIAM ===================================================
+if (ti_new_interet_index == -1)
+{
+	ti_flag_ok = vrai
+
+	switch(i_etat_courant)
+	{
+		case ETAT_Snap :
+		case ETAT_Attaque :
+		case ETAT_Wait_For_Grab :
+		case ETAT_Grabbed_Predateur :
+		case ETAT_Grabbed_By_Kong :
+		case ETAT_KKRide :
+		case ETAT_KKFinish :
+			ti_flag_ok = faux
+			break
+			
+		default:
+//			if (i_perceived_best_actor_index  != -1 && ai_perceived_status[i_perceived_best_actor_index] & Ci_PERCEIVED_IS_DEAD)
+//			if (i_perceived_best_actor_index != -1 && ! (ai_perceived_status[i_perceived_best_actor_index] & Ci_PERCEIVED_IS_DEAD) )
+//			{
+//				switch(ai_perceived_ID[i_perceived_best_actor_index])
+//				{
+//					case C_ID_Scolo :
+//					case C_ID_Raptor :
+//						ti_flag_ok = faux
+//						break
+//				}
+//			}
+	}
+
+	if (ti_flag_ok)
+	{
+		tf_best_dist = Cf_Infinit
+
+		for (ti_i = 0; ti_i < i_perceived_actor_nb; ti_i++)
+		{
+		 	if (! ai_perceived_accessible[ti_i] )
+		 		continue
+
+			if ( ! (ai_perceived_status[ti_i] & Ci_PERCEIVED_IS_DEAD) )
+				continue
+			
+			if (ai_perceived_status[ti_i] & Ci_PERCEIVED_BODY_MEMORISED)
+				continue
+
+			if (af_perceived_dist[ti_i] >= tf_best_dist)
+				continue
+
+			ti_new_interet_index = ti_i
+			tf_best_dist = af_perceived_dist[ti_i]
+		}
+
+		ti_new_interet_index = PNJ_Scolo_Best_Interet_Update(ti_new_interet_index)
+
+		if (ti_new_interet_index != -1 && to_last_best_interet_gao != ao_perceived_actor[ti_new_interet_index])
+		{
+#ifndef _FINAL_
+			DBG_TraceFloat(TIME_Get())
+			DBG_TraceString(" => ")
+			DBG_TraceObject(OBJ_Me())
+			if (ai_perceived_seen[ti_new_interet_index])
+				DBG_TraceString(" a vu ")
+			else
+				DBG_TraceString(" a entendu ")
+			DBG_TraceObject(ao_perceived_actor[ti_new_interet_index])
+			DBG_TraceString(" en train d'agoniser (NOUVEAU CADAVRE)")
+			DBG_TraceEOL()
+#endif
+		}
+	}
+}
+
+// REGLE PAF =========================================================================================
+if (ti_new_interet_index == -1)
+{
+	ti_flag_ok = vrai
+
+	if (! TIME_Elapsed(f_time_change_target, Cf_delay_between_target_switching))
+		ti_flag_ok = faux
+	
+	if (ti_flag_ok)
+	{
+		for (ti_i = 0; ti_i < i_perceived_actor_nb; ti_i++)
+		{
+			if (ai_perceived_status[ti_i] & Ci_PERCEIVED_PAF)
+			{
+				ti_new_interet_index = PNJ_Scolo_Best_Interet_Update(ti_i)
+	
+				if (ti_new_interet_index != -1 && to_last_best_interet_gao != ao_perceived_actor[ti_new_interet_index])
+				{
+#ifndef _FINAL_
+					DBG_TraceFloat(TIME_Get())
+					DBG_TraceString(" => ")
+					DBG_TraceObject(OBJ_Me())
+					DBG_TraceString(" préfère ")
+					DBG_TraceObject(ao_perceived_actor[ti_new_interet_index])
+					if (to_last_best_interet_gao)
+					{
+						DBG_TraceString(" à ")
+						DBG_TraceObject(to_last_best_interet_gao)
+					}
+					DBG_TraceString(" PAF D'UN ACTOR")
+					DBG_TraceEOL()
+#endif
+				}
+	
+				break
+			}
+		}
+	}
+}
+
+// REGLE JE ME FAIS GRABBER ==============================================================================
+if (ti_new_interet_index == -1)
+{
+	if (o_predateur)
+	{
+		ti_new_interet_index = ARR_ObjSearch(&ao_perceived_actor[0], i_perceived_actor_nb, o_predateur)
+		ti_new_interet_index = PNJ_Scolo_Best_Interet_Update(ti_new_interet_index)
+
+		if (ti_new_interet_index != -1 && to_last_best_interet_gao != ao_perceived_actor[ti_new_interet_index])
+		{
+#ifndef _FINAL_
+			DBG_TraceFloat(TIME_Get())
+			DBG_TraceString(" => ")
+			DBG_TraceObject(OBJ_Me())
+			DBG_TraceString(" préfère ")
+			DBG_TraceObject(ao_perceived_actor[ti_new_interet_index])
+			if (to_last_best_interet_gao)
+			{
+				DBG_TraceString(" à ")
+				DBG_TraceObject(to_last_best_interet_gao)
+			}
+			DBG_TraceString(" JE SUIS GABBE PAR CET ACTOR ")
+			DBG_TraceEOL()
+#endif
+		}
+	}
+}
+
+// REGLE : GAO TRIGGER
+if (ti_new_interet_index == -1)
+{
+	if (o_trigger_target)
+	{
+		ti_new_interet_index	= ARR_ObjSearch(&ao_perceived_actor[0], i_perceived_actor_nb, o_trigger_target)
+		if (ti_new_interet_index != -1)
+		{
+			ti_new_interet_index = PNJ_Scolo_Best_Interet_Update(ti_new_interet_index)
+			o_trigger_target = nobody
+
+#ifndef _FINAL_
+			if (ti_new_interet_index != -1 && to_last_best_interet_gao != ao_perceived_actor[ti_new_interet_index])
+			{
+				DBG_TraceFloat(TIME_Get())
+				DBG_TraceString(" => ")
+				DBG_TraceObject(OBJ_Me())
+				DBG_TraceString(" préfère ")
+				DBG_TraceObject(ao_perceived_actor[ti_new_interet_index])
+				if (to_last_best_interet_gao)
+				{
+					DBG_TraceString(" à ")
+					DBG_TraceObject(to_last_best_interet_gao)
+				}
+				DBG_TraceString(" CIBLE TRIGGER ATTAQUE")
+				DBG_TraceEOL()
+			}
+#endif
+		}
+	}
+}
+
+// REGLE : PERSO SUR MA TRAJECTOIRE
+if (ti_new_interet_index == -1)
+{
+	ti_flag_ok = vrai
+
+//	if (!i_flag_trigger_attack_used)
+//		ti_flag_ok = faux
+//	else if (i_perceived_best_actor_index != -1 && ai_perceived_status[i_perceived_best_actor_index] & Ci_PERCEIVED_IS_DEAD)
+//		ti_flag_ok = faux
+//	else
+	{
+		switch(i_etat_courant)
+		{
+		 	case ETAT_Sol :
+		 	case ETAT_Devore :
+				ti_flag_ok = vrai
+				break
+ 					
+ 			default:
+				ti_flag_ok = faux
+		}
+	}
+
+	if (ti_flag_ok)
+	{
+		// JE PRENDS LE MEILLEUR DE CEUX QUI SONT DANS CERTAINS CONES
+		tf_best_dist = Cf_Infinit
+
+		for (ti_i = 0; ti_i < i_perceived_actor_nb; ti_i++)
+		{
+			if ( ! (ai_perceived_status[ti_i] & Ci_PERCEIVED_NEAR_IN_MOVE_CONE) )
+				continue
+
+			if (ai_perceived_status[ti_i] & (Ci_PERCEIVED_IS_DEAD | Ci_PERCEIVED_ALREADY_GRABBED))
+				continue
+
+			if ( ! ai_perceived_accessible[ti_i] )
+				continue
+
+			if ( ! ai_perceived_seen[ti_i] )
+				continue
+
+			if (af_perceived_dist[ti_i] >= tf_best_dist)
+				continue
+
+			if (i_perceived_best_actor_index != -1 && ai_perceived_status[i_perceived_best_actor_index] & Ci_PERCEIVED_IS_DEAD)
+			{
+				// Si je vais vers un cadave et que je croise un autre scolo alors je cohabite
+				if (ai_perceived_ID[ti_i] == C_ID_Scolo && ti_i != i_perceived_best_actor_index)
+					continue
+			}
+
+			tf_best_dist = af_perceived_dist[ti_i]
+			
+			if (ai_perceived_ID[ti_i] != C_ID_Joueur)
+			{
+				if (! TIME_Elapsed(f_time_change_target, Cf_delay_between_target_switching))
+					continue
+
+				 if (IsThis_ID_Humain(ai_perceived_ID[ti_i]))
+					continue
+			}
+	
+			ti_new_interet_index = ti_i
+		}
+		
+		ti_new_interet_index = PNJ_Scolo_Best_Interet_Update(ti_new_interet_index)
+#ifndef _FINAL_
+		if (ti_new_interet_index != -1 && to_last_best_interet_gao != ao_perceived_actor[ti_new_interet_index])
+		{
+			DBG_TraceFloat(TIME_Get())
+			DBG_TraceString(" => ")
+			DBG_TraceObject(OBJ_Me())
+			DBG_TraceString(" préfère ")
+			DBG_TraceObject(ao_perceived_actor[ti_new_interet_index])
+			if (to_last_best_interet_gao)
+			{
+				DBG_TraceString(" à ")
+				DBG_TraceObject(to_last_best_interet_gao)
+			}
+			DBG_TraceString(" CE PERSO EST SUR MA TRAJECTOIRE")
+			DBG_TraceEOL()
+		}
+#endif
+	}
+}
+
+
+if (i_perceived_best_actor_index == -1)
+{
+}
+else if( (i_perceived_best_actor_index != i_perceived_kong_index && i_perceived_best_actor_index != i_perceived_jack_index) && ai_perceived_status[i_perceived_best_actor_index] & Ci_PERCEIVED_NEAR_FIRE)
+{
+	// - SI MA CIBLE EST PROCHE D'UN FEU
+#ifndef _FINAL_
+	if (EVENT_InteretGet(mid_best_interet))
+	{
+		DBG_TraceFloat(TIME_Get())
+		DBG_TraceString(" => ")
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" constate que ")
+		DBG_TraceObject(ao_perceived_actor[i_perceived_best_actor_index])
+		DBG_TraceString(" est près d'un feu => INTERET NULL")
+		DBG_TraceEOL()
+	}
+#endif
+
+	EVENT_InteretSet(mid_best_interet, 0.0)
+}
+else if ( ! ai_perceived_accessible[i_perceived_best_actor_index] )
+{
+	// - SI MA CIBLE EST DEJA INACCESSIBLE
+#ifndef _FINAL_
+	if ( EVENT_InteretGet(mid_best_interet))
+	{
+		DBG_TraceFloat(TIME_Get())
+		DBG_TraceString(" => ")
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" constate que ")
+		DBG_TraceObject(ao_perceived_actor[i_perceived_best_actor_index])
+		DBG_TraceString(" est inaccessible => INTERET NULL")
+		DBG_TraceEOL()
+	}
+#endif
+
+	EVENT_InteretSet(mid_best_interet, 0.0)
+}
+else if (ai_perceived_status[i_perceived_best_actor_index] & Ci_PERCEIVED_ALREADY_GRABBED)
+{
+	// - SI MA CIBLE EST DEJA GRABBEE 
+#ifndef _FINAL_
+	if ( MSG_GlobalIsValid(mid_best_interet) && EVENT_InteretGet(mid_best_interet))
+	{
+		DBG_TraceFloat(TIME_Get())
+		DBG_TraceString(" => ")
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" constate que ")
+		DBG_TraceObject(ao_perceived_actor[i_perceived_best_actor_index])
+		DBG_TraceString(" est deja grabe par un autre acteur => INTERET NULL")
+		DBG_TraceEOL()
+	}
+#endif
+	
+	EVENT_InteretSet(mid_best_interet, 0.0)
+}
+else if (ai_perceived_status[i_perceived_best_actor_index] & Ci_PERCEIVED_STUNNED)
+{
+	// - SI MA CIBLE EST HS
+#ifndef _FINAL_
+	if (EVENT_InteretGet(mid_best_interet))
+	{
+		DBG_TraceFloat(TIME_Get())
+		DBG_TraceString(" => ")
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" constate que ")
+		DBG_TraceObject(ao_perceived_actor[i_perceived_best_actor_index])
+		DBG_TraceString(" est inanimé => INTERET NULL")
+		DBG_TraceEOL()
+	}
+#endif
+
+	EVENT_InteretSet(mid_best_interet, 0.0)
+}
+else if (MSG_GlobalIsValid(mid_best_interet))
+{
+	EVENT_InteretSet(mid_best_interet, af_perceived_interest[i_perceived_best_actor_index])
+}
+
+
+ti_flag_choose_best_interest	= vrai
+
+if (MSG_GlobalIsValid(mid_best_interet))
+	tf_best_interet = EVENT_InteretGet(mid_best_interet)
+else
+	tf_best_interet = -1.0
+
+switch(i_etat_courant)
+{
+	case ETAT_Attaque :
+	case ETAT_Snap :
+	case ETAT_Paf :
+	case ETAT_Wait_For_Grab :
+	case ETAT_KKRide :
+	case ETAT_KKFinish :
+		ti_flag_choose_best_interest	= faux
+		break
+		
+	default:
+		if (!i_flag_trigger_attack_used || (tf_best_interet > 0.0 && i_perceived_best_actor_index != -1) )
+			ti_flag_choose_best_interest	= faux
+}
+
+if (ti_flag_choose_best_interest)
+{
+	// RECHERCHE DE LA MEILLEURE CIBLE PARMIS CELLES QUE JE VOIS, QUE J'ENTENDS ET DONT JE ME SOUVIENS
+	for (ti_i = 0; ti_i < i_perceived_actor_nb; ti_i++)
+	{
+		if ( ! ai_perceived_accessible[ti_i] )
+			continue
+
+		if (ai_perceived_seen[ti_i] || ai_perceived_status[ti_i] & Ci_PERCEIVED_IS_DEAD)
+		{
+			tf_interet = af_perceived_interest[ti_i]
+		
+//			if (ti_i != i_perceived_main_actor_index && ai_perceived_status[ti_i] & Ci_PERCEIVED_NEAR_FIRE)
+//				tf_interet = 0.0
+			if (ti_i != i_perceived_kong_index && ai_perceived_status[ti_i] & Ci_PERCEIVED_NEAR_FIRE)
+				tf_interet = 0.0
+			else if (ti_i != i_perceived_jack_index && ai_perceived_status[ti_i] & Ci_PERCEIVED_NEAR_FIRE)
+				tf_interet = 0.0
+			else if (ai_perceived_status[ti_i] & (Ci_PERCEIVED_ALREADY_GRABBED | Ci_PERCEIVED_STUNNED))
+				tf_interet = 0.0
+			else if (ai_perceived_status[ti_i] & Ci_PERCEIVED_IS_DEAD)
+				tf_interet = 10.0
+
+			if (tf_interet > tf_best_interet)
+			{
+				ti_new_interet_index = ti_i
+				tf_best_interet = tf_interet
+			}
+		}
+	}
+
+	if (ti_new_interet_index != -1)
+		PNJ_Scolo_Best_Interet_Update(ti_new_interet_index)
+}
+
+// SI ON N'A PAS DE NOUVELLE CIBLE, ON UPDATE LA CIBLE COURANTE
+if (ti_new_interet_index == -1)
+	PNJ_Scolo_Best_Interet_Update(i_perceived_best_actor_index)
+
+if ( MSG_GlobalIsValid(mid_best_interet) && to_last_best_interet_gao != EVENT_InteretTargetGet(mid_best_interet))
+{
+	i_flag_change_target = vrai
+	f_time_change_target = TIME_Get()
+
+#ifndef _FINAL_
+	if (ti_new_interet_index != -1)
+	{
+		if (to_last_best_interet_gao)
+		{
+			DBG_TraceFloat(TIME_Get())
+			DBG_TraceString(" => ")
+			DBG_TraceObject(OBJ_Me())
+			DBG_TraceString(" préfère ")
+			DBG_TraceObject(ao_perceived_actor[ti_new_interet_index])
+			DBG_TraceString(" à ")
+			DBG_TraceObject(to_last_best_interet_gao)
+			DBG_TraceString(" MEILLEUR INTERET")
+			DBG_TraceEOL()
+		}
+		else
+		{
+			DBG_TraceFloat(TIME_Get())
+			DBG_TraceString(" => ")
+			DBG_TraceObject(OBJ_Me())
+			DBG_TraceString(" choisit  ")
+			DBG_TraceObject(ao_perceived_actor[ti_new_interet_index])
+			DBG_TraceEOL()
+		}	
+	}
+#endif
+}

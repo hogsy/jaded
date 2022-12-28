@@ -1,0 +1,46 @@
+#include 		"KBC_defines.var"
+
+object		to_col_object					// obstacle rencontré par le lancer de rayon
+
+vector		tv_obstacle_pos				// position de l'obstacle
+vector		tv_obstacle_dir
+
+float			tf_dot
+
+i_flag_obstacle = faux
+
+if( i_flag_cine )
+	return
+
+// TEST COLL
+if( COL_CollideType(COL_C_Wall) )
+{
+	to_col_object = COL_ObjectGet(COL_C_Wall)
+	if( ! @to_col_object OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Anims) )
+	{
+		// je touche un mur, mais pas un perso
+		tv_obstacle_pos = COL_CollidedPointGet(COL_C_Wall)
+		tv_obstacle_dir = tv_obstacle_pos - OBJ_PosGet()
+		if( ! MATH_VecNullEpsilon(tv_obstacle_dir) )
+			MATH_VecSetNormalize(tv_obstacle_dir)
+		tf_dot = MATH_VecDotProduct(OBJ_SightGet(), tv_obstacle_dir)
+		if( tf_dot > 0.0 ) //Cf_Cos30 )
+		{
+//			DBG_RenderVector(tv_obstacle_pos, OBJ_PosGet() - tv_obstacle_pos, color_cyan)		// obstacle
+			f_obstacle_duration += TIME_GetDt()
+			if( f_obstacle_duration >= 2.0 )
+			{
+				// UN OBSTACLE A ETE DETECTE  : mur, ou LRAY + ( il est plus haut que mon point d'attaque OU il est trop proche de ma destination -> je vais rentrer dedans )
+				i_flag_obstacle = vrai
+				f_time_since_last_obstacle = 0.0
+				i_force_test_inclinaison = vrai
+				
+				i_flag_frein = vrai
+				
+				i_flag_reach_attack_wp = faux		// position d'attaque annulée -> le bat devra en recalculer une nouvelle
+			}
+		}
+	}
+}
+f_check_obstacle_dist = Cf_dist_obstacle_vol			// réinit dist check obstacles
+

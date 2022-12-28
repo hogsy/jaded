@@ -1,0 +1,258 @@
+#include "_Projectile_Javelin_defs.var"
+
+#define CF_dist_taken	3
+
+object 	to_obj
+int			id, ti_snd
+int			ti_what
+int			ti_capa
+int			ti_state
+float		tf_taken
+vector	tv_temp, tv_temp1
+int			ti_ok, ti_canramasse
+float		tf_dot, tf_dot1
+int			ti_prio
+int			capa, enfeu
+vector	vpos
+	
+// Lance disparait sur case qui brule
+enfeu = faux
+if(GRID_Has(1))
+{
+	GRID_CurrentSet(1)
+	capa = GRID_CapaGet(OBJ_PosGet())
+	if(capa & Ci_Grid2_EnFeu) enfeu = vrai
+	GRID_CurrentSet(0)
+}
+
+if(!o_plug_to_master && i_on_bone)
+	o_plug_to = nobody
+	
+// si lance non enflammée test de temps en temps pour savoir si elle est dans un feu
+if ( o_plug_to && !mi_flamme && i_can_burn )
+{
+	f_fire_time_test -= TIME_GetDt()
+	if (f_fire_time_test < 0)
+	{
+		f_fire_time_test = 1
+		vpos = @o_plug_to MATH_VecLocalToGlobal(v_plug_local) + @o_plug_to OBJ_PosGet()
+		if(i_cpt_plug < i_casse) vpos += OBJ_SightGet() / 2
+		if ( EVENT_FIRE_IsPosInFire( vpos, OBJ_Me() ) )
+		{
+			mi_flamme = 1
+			f_fire_time = JAVELIN_FireTimeWhenFixed
+		}
+	}
+}
+
+// Bidoche, c'est visible
+if (o_bidoche)
+{
+	@o_bidoche OBJ_CapaSet(CAPA_Bidoche_Snapped_SeDetacher, 0)
+	o_bidoche = nobody
+}
+
+// Auto destruction
+if(OBJ_SqrDist(AI_MainActorGet(C_ID_Joueur)) > 15 * 15 || (mi_TypeLance == 3) || mb_casse || enfeu)
+{
+	if(@get_global o_last_lance_jack != OBJ_Me())
+		f_time_loin += TIME_GetDt()
+}
+else
+	f_time_loin = 0
+if(f_time_loin > 3) 
+{
+	OBJ_Destroy()
+}
+
+
+if(mi_TypeLance == 3 || mb_casse || enfeu) 
+{
+	if (mi_flamme) AI_Execute( "Javelin_GFX_fire1" )
+	f_time_pointe += TIME_GetDt()
+	if(f_time_pointe > 1)
+	{
+		COL_ColSetActivationSet(none, all)
+		OBJ_PosSet(OBJ_PosGet() - cvector(0,0,0.3 * TIME_GetDt()))
+	}
+	return
+}
+
+switch(mi_TypeLance)
+{ 
+case 0:	ti_what = Ci_weapon_ID_bambou break
+case 1:	ti_what = Ci_weapon_ID_ossement break
+//case 1:	ti_what = Ci_weapon_ID_bambou_moy break
+//case 2:	ti_what = Ci_weapon_ID_bambou_petit break
+}
+
+ti_state = mi_State
+mi_State = Ci_bambou_state_ground
+
+//---------( GFX )--------------------------------------------
+if (mi_flamme)
+{
+	AI_Execute( "Javelin_GFX_fire1" )
+	if(!i_fire_deja)
+	{
+		i_fire_deja = vrai
+		v_fire_deja_pos = GRID_PosGet(OBJ_PosGet())
+		LIBGFX_GridFire(OBJ_PosGet(), vrai)
+	}
+	else if ( v_fire_deja_pos != GRID_PosGet(OBJ_PosGet()) )
+	{
+		i_fire_deja = faux
+	}
+}
+
+if(i_cpt_plug >= i_casse && mb_casse)
+	ti_prio = PRIO_PICK_BAMBOU_CASSE
+else 
+{
+	switch(mi_TypeLance)
+	{
+		case 0:	ti_prio = PRIO_PICK_BAMBOU break
+		case 1:	ti_prio = PRIO_PICK_BAMBOU_MOY break
+		case 2:	ti_prio = PRIO_PICK_BAMBOU_PETIT break
+	}
+}
+
+if(i_cpt_plug >= i_casse && mb_casse)
+{
+	OBJ_InfoPhotoParamSet( ti_prio, 0, 3, 3, 0.0, 0.0, 0.0, 0.2)		// Bouée d'aide à la visée
+	to_obj = VIEW_GetObject(0)
+	tv_temp = @to_obj OBJ_PosGet() + @to_obj OBJ_SightGet()
+	tv_temp -= OBJ_PosGet()
+	tv_temp += (@to_obj OBJ_HorizonGet() * 0.5)
+	tv_temp = MATH_VecGlobalToLocal(tv_temp)
+	OBJ_InfoPhotoInfoOffsetSet( tv_temp )
+	OBJ_InfoPhotoSphereOffsetSet( tv_temp )
+}
+else
+{
+	OBJ_InfoPhotoParamSet( ti_prio, 0, 3, 3, 0.0, 0.0, 0.0, 1)		// Bouée d'aide à la visée
+	OBJ_InfoPhotoInfoOffsetSet( Cv_NullVector )
+	OBJ_InfoPhotoSphereOffsetSet( Cv_NullVector )
+}
+
+to_obj = AI_MainActorGet(C_ID_Joueur)
+tf_taken = CF_dist_taken
+
+// Si jack vient vers moi, je peux prendre à une distance supérieur
+tv_temp = OBJ_PosGet() - @to_obj OBJ_PosGet()
+if(MATH_VecNullEpsilon(tv_temp)) tv_temp = @to_obj OBJ_SightGet()
+MATH_VecSetNormalize(tv_temp)
+if(MATH_VecDotProduct(tv_temp, @to_obj OBJ_SightGet()) > 0.9)
+{
+	tv_temp = @to_obj DYN_SpeedGetVector()
+	tv_temp.z = 0
+	if(MATH_VecNorm(tv_temp) > 1.0)
+	{
+		tf_taken += 1
+	}
+}
+
+tv_temp = OBJ_PosGet() - @to_obj OBJ_PosGet()
+tv_temp1 = (OBJ_PosGet() - OBJ_SightGet()) - @to_obj OBJ_PosGet()
+tf_dot = MATH_VecDotProduct(tv_temp, tv_temp)
+tf_dot1 = MATH_VecDotProduct(tv_temp1, tv_temp1)
+if(tf_dot1 < tf_dot) tf_dot = tf_dot1
+
+if(ti_what == Ci_weapon_ID_ossement && @"univ" i_weapon_ID[C_ID_Joueur] == Ci_weapon_ID_bambou)
+	OBJ_Me().des_int1 = 0
+else if(tf_dot <= (tf_taken*tf_taken) )
+{
+	OBJ_Me().des_int1 = Ci_DISPLAY_TAKE
+	if ( @to_obj AI_IsModel( "KingKong/Humain" ) )
+	{
+		id = @"KingKong/Humain" to_obj i_id_humain
+		if (@"univ" i_weapon_ID[ id ] == ti_what )
+			OBJ_Me().des_int1 = 0
+	}
+}
+else
+	OBJ_Me().des_int1 = 0
+
+// JACK
+if (OBJ_CapaTest(OBJ_Capa_15))
+{
+//	ti_snd = SND_RequestPlay( SND_take )
+//	SND_InstPosUpdate( ti_snd, OBJ_PosGet() )
+
+	OBJ_CapaSet(0, OBJ_Capa_15)
+	if (@"univ" o_ramasse_objet_who == nobody )
+	{
+		@"univ" i_ramasse_objet = ti_what
+		@"univ" i_ramasse_objet_param = mi_flamme
+		@"univ" o_ramasse_objet_who = AI_MainActorGet(C_ID_Joueur)
+		@"univ" i_ramasse_nbr = 1
+		@"univ" i_lance_cpt_plug = i_cpt_plug
+		i_wait_jack = vrai
+		if(ti_state == Ci_bambou_state_plug)
+			AI_TrackChange(0, "Javelin_waitdestroy")
+		else
+			AI_TrackCurChangeNow( "Javelin_waitdestroy" )
+	}
+}
+
+// HUMAINS
+ti_canramasse = vrai
+if (ti_state == Ci_bambou_state_plug)
+{
+	if ( o_plug_to != o_plug_to_master )
+		ti_canramasse = faux
+	else if (v_plug_normal.z < Cf_Kong_Angle_Mur_sol)
+		ti_canramasse = faux
+}
+
+//if(ti_state != Ci_bambou_state_plug)
+if ( ti_canramasse )
+{
+	ti_ok = vrai
+	ti_capa = GRID_CapaGet(OBJ_PosGet()) & tag_grid_terrain
+	if(ti_capa == Ci_sol_eau) ti_ok = faux
+	if(ti_capa == Ci_sol_eau_basse) ti_ok = faux
+	if(ti_capa == Ci_sol_eau_basse_herbe) ti_ok = faux
+	if(ti_capa == Ci_sol_eau_herbe) ti_ok = faux
+	to_obj = AI_MainActorGet(C_ID_Joueur)
+	if(@to_obj OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Hierarchy)) ti_ok = vrai
+	if(ti_capa == Ci_sol_eau_mouche_feu) ti_ok = faux
+	if(ti_capa == Ci_sol_mur) ti_ok = faux
+	if(ti_capa == Ci_sol_herbe_ronce) ti_ok = faux
+	if(i_pas_les_compagnons) ti_ok = faux
+	if(OBJ_CapaTest(OBJ_Capa_7)) ti_ok = faux
+	if(i_cpt_plug >= i_casse - 1) ti_ok = faux
+	
+	if(ti_ok)
+	{
+		if(TIME_Elapsed(f_time_last_propose, f_rand_propose))
+		{
+			f_time_last_propose = TIME_Get()
+			mo_ramasse = LNK_ClientGet_Interaction( mid_ramasse, 1, "javelin_add_data", nofunc, nofunc)
+		}
+		
+		if(!MSG_GlobalIsValid(mid_ramasse)) mo_ramasse = nobody
+		if(mo_ramasse) LNK_InteractionPositionSet(mid_ramasse, OBJ_PosGet())
+		if (	mo_ramasse && LNK_InteractionCStatusGet(mid_ramasse) == Ci_LNKINT_CSTATUS_Interact)
+		{		
+			@"univ" i_ramasse_objet = ti_what
+			@"univ" i_ramasse_objet_param = mi_flamme
+			@"univ" o_ramasse_objet_who = mo_ramasse
+			@"univ" i_lance_cpt_plug = i_cpt_plug
+			@"univ" i_ramasse_nbr = 1
+			mo_ramasse = LNK_ClientGet(Ci_LNK_INTERACTION, mid_ramasse, faux, nofunc, nofunc, nofunc)
+			if(ti_state == Ci_bambou_state_plug)
+				AI_TrackChange(0, "Javelin_waitdestroy")
+			else
+				AI_TrackCurChangeNow( "Javelin_waitdestroy" )
+		}
+	}
+	else if(mo_ramasse && MSG_GlobalIsValid(mid_ramasse))
+	{
+		mo_ramasse = LNK_ClientGet(Ci_LNK_INTERACTION, mid_ramasse, faux, nofunc, nofunc, nofunc)
+	}
+}
+else if(mo_ramasse && MSG_GlobalIsValid(mid_ramasse))
+{
+	mo_ramasse = LNK_ClientGet(Ci_LNK_INTERACTION, mid_ramasse, faux, nofunc, nofunc, nofunc)
+}

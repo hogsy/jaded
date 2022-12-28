@@ -1,0 +1,37 @@
+
+#include "C_defines.var"
+
+float		tf_size
+vector	tv_temp
+int			ti_i
+int			ti_k
+
+
+AI_CBAdd(OBJ_Me(), CallBack_WhenDestroy, "C_callback_when_destroy")
+AI_CBAdd(OBJ_Me(), CallBack_Client, "C_cb_client")
+
+
+if( type == 33 )
+{
+	// BIDOCHE
+	f_point_de_viande = 5
+	tf_size = 0.5
+	OBJ_FlagsControlSet(OBJ_C_ControlFlag_RayInsensitive, 0)
+	i_LD_grab_transporte_ON = faux		// interdire aux bats de grabber de la bidoche !!!!
+}
+else
+	tf_size = 3.0
+
+tv_temp = cvector(tf_size, tf_size, tf_size)
+BV_MinSet(-tv_temp)
+BV_MaxSet(tv_temp)
+
+if(type == 33)
+{
+	macro_add_callback_after_cam("C_callback_pluglance")
+	i_propose = faux
+}
+
+
+AI_TrackCurChangeNow("C_ETAT_Not_Grabbed")
+

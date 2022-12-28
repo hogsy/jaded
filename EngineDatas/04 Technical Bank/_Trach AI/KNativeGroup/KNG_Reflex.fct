@@ -1,0 +1,196 @@
+#include "KNG_Defines.var"
+
+vector 	tv_center 
+
+object	to_head
+object	to_target
+
+int 		ti_i
+int			i_GravityStateHasChanged
+int			ti_group_split
+int			ti_string_ID
+
+
+// DEBUG KILL ANN ------------------------------------------------------------------------------------------------------------
+if( i_dbg )
+{
+	if( i_nb_wave < i_nb_wave_kill_ann )
+	{
+		Str_DisplayGaoOnce(OBJ_Me(), v_dbg)
+		Str_DisplayTextOnce("waves : ", v_dbg + cvector(0,0.05,0))
+		Str_DisplayIntOnce(i_nb_wave, v_dbg + cvector(0.1,0.05,0))
+		Str_DisplayTextOnce("/", v_dbg + cvector(0.12,0.05,0))
+		Str_DisplayIntOnce(i_nb_wave_kill_ann, v_dbg + cvector(0.15,0.05,0))
+	}
+	else
+	{
+		ti_string_ID = STR_CreateText("\c0FF0000FF\\h.04\", v_dbg, 0.0)
+		STR_AppendGao(ti_string_ID, OBJ_Me())
+		ti_string_ID = STR_CreateText("\c0FF0000FF\\h.04\waves : ", v_dbg + cvector(0,0.05,0), 0.0)
+		STR_AppendText(ti_string_ID,"")
+		ti_string_ID = STR_CreateText("\c0FF0000FF\\h.04\", v_dbg + cvector(0.1,0.05,0), 0.0)
+		STR_AppendInt(ti_string_ID, i_nb_wave)
+		ti_string_ID = STR_CreateText("\c0FF0000FF\\h.04\ / ", v_dbg + cvector(0.12,0.05,0), 0.0)
+		STR_AppendText(ti_string_ID,"")
+		ti_string_ID = STR_CreateText("\c0FF0000FF\\h.04\", v_dbg + cvector(0.15,0.05,0), 0.0)
+		STR_AppendInt(ti_string_ID, i_nb_wave_kill_ann)
+	}
+	if( AI_TriggerIsValid(tr_activation_trigger) && call_trigger(tr_activation_trigger) )
+	{
+		ti_string_ID = STR_CreateText("\c0FF00FF00\\h.04\Activation OK", v_dbg + cvector(0,0.1,0), 0.0)
+		STR_AppendText(ti_string_ID, "")
+	}
+	else
+	{
+		ti_string_ID = STR_CreateText("\c0FF555555\\h.04\Not Activated...", v_dbg + cvector(0,0.1,0), 0.0)
+		STR_AppendText(ti_string_ID, "")
+	}
+	
+}
+// DEBUG KILL ANN ------------------------------------------------------------------------------------------------------------
+
+
+// VALIDER UNE VAGUE QUE S'IL Y A UN MINIMUM DE JAVELOTS LANCES
+//if( i_nb_javelin_this_wave >= 3 )
+//{
+//	i_nb_javelin_this_wave = 0
+//	i_nb_wave++
+//}
+
+mi_ReflexExecCounter++
+
+if ( ! i_all_natives_generated || i_etat_courant == ETAT_Inactive)
+	return
+
+Proc_KongFight_TargetAdd(OBJ_Me(), COL_ZonePosGet(C_zde_corps), COL_ZoneSizeGet(C_zde_corps), C_AIDE_AU_TIR_Prio_AttackAnn, 0)
+
+AI_Execute("KNG_exec_check_paf")
+
+// update BV to be set at the average position of all natives
+tv_center = Cv_NullVector
+i_current_number_of_natives = 0
+
+// disable gravity for natives with 14 true on their group capa (for use with standing on KInteractive_Decor without collisions).
+i_GravityStateHasChanged = faux
+if ( ( mi_ReflexExecCounter > 5 ) && ( OBJ_CapaTest( Ci_Capa_No_Gravity ) ) && mi_IsGravityOn )
+{
+	mi_IsGravityOn 					= faux
+	i_GravityStateHasChanged	= vrai
+}
+else if ( !mi_IsGravityOn && !( OBJ_CapaTest( Ci_Capa_No_Gravity ) ) )
+{
+	mi_IsGravityOn 					= vrai
+	i_GravityStateHasChanged	= vrai
+}
+
+ti_group_split = 0
+
+for (ti_i = 0; ti_i < i_number_of_natives; ti_i++)
+{	
+	if ( ! ao_native_list[ti_i])
+	{
+		ti_group_split = 1
+		continue
+	}
+	
+	if ( i_GravityStateHasChanged )
+	{
+		if ( !mi_IsGravityOn )
+		{
+			@ao_native_list[ti_i] DYN_GravitySet( Cv_NullVector )
+			@ao_native_list[ti_i] OBJ_CapaSet( Ci_Capa_No_Gravity, none )
+		}
+		else
+		{
+			@ao_native_list[ti_i] DYN_GravitySet( Cv_NormalGravity )
+			@ao_native_list[ti_i] OBJ_CapaSet( none, Ci_Capa_No_Gravity )
+		}
+	}
+		
+	if (@ao_native_list[ti_i] OBJ_CapaTest(Ci_Capa_Dead))
+	{
+		ao_native_list[ti_i] = nobody
+	
+		//JIMI_NOTE: always cap out to max with this type of respawn mode.
+		if ( i_respawn_when_dead == C_RespawnType_Always )
+		{
+			mi_JustDied = vrai
+			KNativeGroup_SpawnNative(ti_i)
+		}
+	}
+
+	if ( ao_native_list[ti_i] )
+	{
+		i_current_number_of_natives++
+		tv_center += @ao_native_list[ti_i] OBJ_PosGet()
+	}
+}
+
+if (ti_group_split)
+	OBJ_CapaSet(Ci_Capa_Split, none)
+
+if (i_current_number_of_natives == 0)
+	AI_TrackChange( Ci_Track_Etat, "KNG_ETAT_Dead")
+
+if (tv_center != Cv_NullVector)
+{
+	tv_center /= i_current_number_of_natives
+	OBJ_PosSet(tv_center)
+	DBG_RenderCircle(OBJ_PosGet()+cvector(0.0,0.0,1.0),f_rayon,Cv_VerticalVector,color_bleu)	
+}
+
+//JIMINOTE: forces reset of DWZ targetting
+if (OBJ_CapaTest(Ci_Capa_ResetNextLockedPos))
+{
+	OBJ_CapaSet(none, Ci_Capa_ResetNextLockedPos)
+	v_next_locked_position	= Cv_NullVector
+}
+
+if (OBJ_CapaTest(Ci_Capa_UpdateLockedPos) && o_target_movement )
+{
+	OBJ_CapaSet(none, Ci_Capa_UpdateLockedPos)
+
+	to_target = o_target_movement
+
+	if (i_target_zone == Ci_target_zone_tete)
+	{
+		to_head = @to_target ANI_CanalObjectGet(Anim_Canal_Tete)
+		if (to_head)
+			to_target = to_head
+	}
+	else if ( i_target_zone == Ci_target_zone_corps )
+	{
+		to_head = @to_target ANI_CanalObjectGet( Anim_Canal_Torse )
+		if (to_head)
+			to_target = to_head
+	}
+	
+	//JIMI_NOTE: check to see if there is already a locked target position to avoid overwriting
+	// if there is another Digwazsai call while the natives are still throwing
+	// (which would make the natives retarget)
+	if ( v_locked_position == Cv_NullVector )
+	{
+		v_locked_position = @to_target OBJ_PosGet()
+	
+		v_locked_position.x += MATH_RandFloat(-f_radius_digwazai,f_radius_digwazai)
+		v_locked_position.y += MATH_RandFloat(-f_radius_digwazai, f_radius_digwazai)
+	}
+	else	// store this next one to be used
+	{
+		v_next_locked_position = @to_target OBJ_PosGet()
+		v_next_locked_position.x	+= MATH_RandFloat(-f_radius_digwazai,f_radius_digwazai)
+		v_next_locked_position.y 	+= MATH_RandFloat(-f_radius_digwazai, f_radius_digwazai)
+	}
+}
+
+//JIMI_NOTE: Emily wanted a way to stop the infinte respawn of dead natives
+if( AI_TriggerIsValid(mt_StopRespawn) && call_trigger(mt_StopRespawn) )
+	i_respawn_when_dead = C_RespawnType_None
+
+if (OBJ_CapaTest(Ci_Capa_Force_Respawn))
+{
+	i_do_respawn = 1
+	OBJ_CapaSet(none, Ci_Capa_Force_Respawn)
+	AI_Execute("KNG_exec_Destroy")
+	AI_TrackChange(Ci_Track_Etat, "KNG_ETAT_Dead")
+}

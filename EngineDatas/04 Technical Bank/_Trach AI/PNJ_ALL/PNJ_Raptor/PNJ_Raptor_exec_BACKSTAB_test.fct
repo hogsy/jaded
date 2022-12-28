@@ -1,0 +1,72 @@
+#include "PNJ_Raptor_defines.var"
+
+int			ti_i
+int			ti_flag_ok
+
+object	to_client
+object	to_actor
+
+float		tf_dist
+
+vector	tv_temp
+
+to_client = pop
+
+//if (i_etat_courant != ETAT_a_terre)
+//{
+//	// Si notre client est celui qu'on attaque, on considère qu'il ne peut pas nous surprendre
+//	if (MSG_GlobalIsValid(mid_best_interet) && to_client == EVENT_InteretTargetGet(mid_best_interet))
+//	{
+//		push(faux)
+//		return
+//	}
+//
+//	// Si je vois notre client, il ne peut pas nous surprendre
+//	for (ti_i = 0; ti_i < i_seen_actor_nb; ti_i++)
+//	{
+//		to_actor = EVENT_PereGet(amid_seen_actor[ti_i])
+//		if (to_actor == to_client)
+//		{
+//			push(faux)
+//			return
+//		}
+//	}
+//}
+
+tv_temp = OBJ_PosGet()
+tv_temp -= @to_client OBJ_PosGet()
+
+tf_dist = MATH_VecDotProduct(tv_temp, tv_temp)
+
+if (tf_dist < 49.0)
+{
+	tf_dist = MATH_FloatSqrt(tf_dist)
+	tv_temp /= tf_dist
+
+	ti_flag_ok = vrai
+
+	switch(i_etat_courant)
+	{
+		case ETAT_a_terre :
+			break
+
+		default:
+			if (MATH_VecDotProduct(OBJ_SightGet(), tv_temp) < Cf_Cos60)
+				ti_flag_ok = faux
+	}
+	
+	if (ti_flag_ok && MATH_VecDotProduct(@to_client OBJ_SightGet(), tv_temp) < Cf_Cos60)
+		ti_flag_ok = faux
+
+	if (ti_flag_ok)
+	{
+		to_actor = COL_RayObject_Dist(@to_client OBJ_PosGet() + Cv_VerticalVector, tv_temp, tf_dist, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+		if (!to_actor)
+		{
+			push(vrai)
+			return
+		}
+	}
+}
+
+push(faux)

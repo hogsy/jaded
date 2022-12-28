@@ -1,0 +1,42 @@
+vector	tv_recul, tv_temp, tv_pos_obstacle, tv_projection
+object	to_collision
+float		tf_projection, tf_angle, tf_norme, tf_BVsize
+
+		tv_recul = v_POS_CIBLE - v_POS_CAM
+		to_collision = COL_RayObject_Vector(v_POS_CAM, tv_recul, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+		// Il y a un obstacle entre la caméra et les acteurs, j'efface l'objet méchamment
+		if	( ( (to_collision)
+			&& ( ! @to_collision OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Anims) ) ) )
+		{
+			o_objet_collision = to_collision
+			tf_BVsize = @o_objet_collision BV_SizeGet()
+			tv_recul *= -1
+			tv_pos_obstacle = @o_objet_collision OBJ_PosGet()
+ 			tv_temp = tv_pos_obstacle - v_POS_CIBLE
+//			DBG_RenderVector(v_POS_CIBLE, tv_temp, 0xffffffff)
+			tv_projection = tv_recul - tv_temp
+			tf_norme = MATH_VecNorm(tv_temp)
+			tf_angle = MATH_VecAngle(tv_recul, tv_temp, tv_projection)
+			tf_projection = MATH_Cos(tf_angle)
+			tf_projection *= tf_norme
+			tv_temp = MATH_VecNormalize(tv_recul)
+			tv_temp *= tf_projection
+//			DBG_RenderVector(v_POS_CIBLE, tv_temp, 0xffffff00)
+			tv_projection = v_POS_CIBLE + tv_temp
+//			DBG_RenderVector(v_POS_CIBLE, tv_projection - v_POS_CIBLE, 0xffffff00)
+			tv_temp = MATH_VecNormalize(tv_projection - tv_pos_obstacle)
+			tv_temp *= tf_BVsize
+			DBG_RenderVector(v_POS_CAM, tv_temp, 0xffffff00)
+			v_decalage += tv_temp
+			v_POS_CAM += tv_temp
+//			@get_insert_camera OBJ_PosSet(v_POS_CAM)
+//			tf_projection = MATH_VecNorm(tv_temp)
+//			tv_temp = MATH_VecNormalize(tv_recul)
+//			tv_temp *= tf_projection
+//			tv_projection = MATH_VecNormalize((tv_temp + v_POS_CIBLE) - tv_pos_obstacle)
+//			MATH_DistPointLine(,,)
+//			@o_objet_collision OBJ_FlagInvisibleSet(vrai)
+			// Finalement je vais laisser tomber
+//			returntrack
+			// Old version, remplacement par un plan sur le personnage "caché"
+		}

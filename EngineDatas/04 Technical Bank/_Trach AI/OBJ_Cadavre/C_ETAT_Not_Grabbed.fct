@@ -1,0 +1,66 @@
+
+#include "C_defines.var"
+
+// Event visibilité
+vector			tv_temp
+
+object			to_serveur
+
+messageid		tmid_vision
+
+object			to_jack
+
+to_jack = @"univ" ao_AllHumains[ C_ID_Joueur ] 
+
+
+// SORTIE ETAT
+if (i_sort_etat)
+{	
+	i_sort_etat = faux
+	return
+}
+
+// ENTREE ETAT
+if (i_etat_courant != ETAT_Not_Grabbed)
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Not_Grabbed
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	
+	// GRAVITE activée (le cadavre tombe s'il été lachée en l'air)
+	if(type != 33)
+	{
+		DYN_On()
+		DYN_FlagsSet(DYN_C_GlobalFriction + DYN_C_BasicForces + DYN_C_VectorFriction, none)
+		DYN_GravitySet(Cv_NormalGravity)
+		DYN_FrictionVectorSet(Cv_friction)
+	}
+}
+
+
+if( COL_CollideType(COL_C_Ground) )
+	DYN_Off()
+
+// test demande de liaison grab
+to_serveur = LNK_ServeurGet( Ci_LNK_GRAB_RAPTOR, mid_grab, i_LD_grab_transporte_ON, nofunc, nofunc ) 
+if( to_serveur )
+	AI_TrackCurChangeNow("C_ETAT_Grabbed")			// un perso a grabbé la charogne
+
+AI_Execute("C_exec_check_paf")
+
+
+if( i_always_active_ON || ( to_jack && (OBJ_SqrDist(to_jack) <= 25.0) ) )
+{
+	if( @get_global o_bidoche_plug_jack != OBJ_Me() && i_propose)
+	{
+		if (f_point_de_viande != 0.0 )
+			EVENT_AddEventCadavre(type, OBJ_Me(), Cf_EVENT_Duree_1Trame, OBJ_PosGet())
+	}
+}
+

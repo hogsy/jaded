@@ -1,0 +1,107 @@
+#include "KNG_Defines.var"
+
+int ti_i
+object to_main
+int ti_done
+int sect0,sect1,sect2,sect3
+object to_projectile
+
+// SORTIE ETAT
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// ENTREE ETAT
+if (i_etat_courant != ETAT_Reload)
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Reload
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	fct_last_etat = AI_TrackCurGet()
+	
+	f_time_start_etat = 0.0
+	
+	for (ti_i = 0; ti_i < i_number_of_natives; ti_i++)
+	{
+		ai_native_has_thrown_javelin[ti_i] = faux
+		mai_AleadyTestedForInactiveDWZThrowRate[ti_i]	= faux
+		af_native_throwing_delay[ti_i] = MATH_RandFloat( 0.1, 1.0 )
+	}
+}	
+else
+{
+	f_time_start_etat += TIME_GetDt()
+	
+	for (ti_i = 0; ti_i < i_number_of_natives; ti_i++)
+	{
+		af_native_throwing_delay[ti_i] -= TIME_GetDt()
+	}
+}
+
+ti_done = 1
+
+for (ti_i = 0; ti_i < i_number_of_natives; ti_i++)
+{
+	if (  ! ao_native_list[ti_i] )
+		continue 
+		
+	if (o_weapon == nobody)
+		continue
+	
+	if (@get_PNJ_KNative_path ao_native_list[ti_i] o_projectile == nobody)
+	{
+		if (@ao_native_list[ti_i] ACT_ActionGet() != Ci_AnimNative_Reload)
+		{
+			if (af_native_throwing_delay[ti_i] <= 0.0)
+				@ao_native_list[ti_i] ACT_ActionSet(Ci_AnimNative_Reload)
+			else
+				@ao_native_list[ti_i] ACT_ActionSet(Ci_AnimNative_Attente_No_Spear)
+		}
+		else if (@ao_native_list[ti_i] ACT_ActionItemGet() == 1)
+		{
+			to_main = @ao_native_list[ti_i] ANI_CanalObjectGet(Anim_Canal_Snap_MainD)	
+			
+			@get_PNJ_KNative_path ao_native_list[ti_i] o_projectile = @o_weapon OBJ_Duplicate(@to_main OBJ_PosGet())
+			to_projectile = @get_PNJ_KNative_path ao_native_list[ti_i] o_projectile
+			if( to_projectile )
+			{
+				if( i_weapon_fire )			// VINC : on vire ce fuck### random qui fait qu'on peut avoir 0 native avec du feu avec 75%....
+					@get_Arme_Lance_path to_projectile mi_flamme = 1
+				else
+ 					@get_Arme_Lance_path to_projectile mi_flamme = 0
+				
+				// Get the information from the current Object (AI)
+				SCT_GetOf( &sect0, &sect1, &sect2, &sect3)
+				@to_projectile SCT_SetOf( sect0, sect1, sect2, sect3)
+				
+				if( o_target_movement == o_ann )
+					@to_projectile Lance_LRay_Type_Set(COL_C_Ray_on_visuel_and_bone_volumes)
+			}
+		}
+		
+		ti_done	= 0
+	}
+	else if ( @ao_native_list[ti_i] ACT_ActionGet() == Ci_AnimNative_Attente || 
+			   (@ao_native_list[ti_i] ACT_ActionGet() == Ci_AnimNative_Reload && 
+			   @ao_native_list[ti_i] ACT_ActionFinished()   ))
+	{
+		@ao_native_list[ti_i] ACT_ActionSet(Ci_AnimNative_Attente)
+	}
+	else
+	{
+		ti_done = 0
+	}
+}
+
+if (ti_done)
+{
+	AI_TrackCurChange("KNG_ETAT_Wait")	
+}

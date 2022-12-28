@@ -1,0 +1,55 @@
+#include "KT_defines.var"
+
+float		tf_time
+
+vector	tv_new_sight
+vector	tv_temp
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_TEST)
+{
+	i_etat_courant = ETAT_TEST
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = AI_TrackCurGet()
+
+	ACT_ActionSet(0)
+
+	o_main_actor = AI_MainActorGet(0) 
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+i_flag_look = vrai
+
+v_look_pos = @o_main_actor OBJ_PosGet()
+v_look_pos.z += 6.0
+
+//OBJ_RotateLocalZ(TIME_GetDt())
+
+//o_fight_actor = o_main_actor
+//o_grab_actor = LNK_ClientGet(Ci_LNK_GRAB_RAPTOR, mid_grab_actor_LNK_ID, vrai, nofunc, "PNJ_Raptor_exec_check_grab", nofunc)
+//
+//if (o_grab_actor)
+//{
+//	mid_best_interet = EVENT_AddEventInteret(OBJ_Me(), 10.0, 1000.0, @o_main_actor OBJ_PosGet(), o_main_actor )
+//	macro_change_etat("PNJ_Raptor_ETAT_grab")
+//}

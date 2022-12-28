@@ -1,0 +1,10 @@
+int ti_idx
+
+ti_idx = SND_M_GetMusIdx(@ "univ" SND_gi_MusicPhase, @ "univ" SND_gi_MusicVariant)
+if( mi_MusicIdx  != ti_idx )
+{
+	SND_M_Assert(ti_idx >= 0, "[GST_SOUND] bad music index")
+	SND_M_Assert(ti_idx < SND_Cte_ArraySize, "[GST_SOUND] bad music index")
+	mi_MusicIdx = ti_idx 
+	SND_PlayLooped(mai_StreamInstance[mi_MusicIdx])
+}

@@ -1,0 +1,62 @@
+int					i, ti_rank,flags
+float				tf_paf_value, tf_paf_power
+vector			tv_paf_dir
+object			to_cur_element
+message		msg
+
+// ------------------------ PAF General ------------------------------
+if(AI_TriggerIsValid(trig_general) && call_trigger(trig_general))
+{
+	i_trig_general_active= vrai
+	
+	o_element_paf = nobody
+	v_dir_paf = Cv_NullVector
+	v_pos_paf = Cv_NullVector
+	i_power_paf = 0
+	return
+}
+
+// ------------------------Trigger Projectile--------------------------
+if(AI_TriggerIsValid(trig_projectile) && call_trigger(trig_projectile))
+{
+	i_trig_projectile_active= vrai
+	
+	o_element_paf = nobody
+	v_dir_paf = Cv_NullVector
+	v_pos_paf = Cv_NullVector
+	i_power_paf = 0
+	
+	AI_TriggerSetInvalid(trig_projectile)
+	
+	return	
+}
+
+// ------------------------PAF sur un élément de la structure ODE --------------------------
+i = 0
+while(ao_ode_elements[i])
+{
+	to_cur_element = ao_ode_elements[i]
+
+	// Changement du message du trigger pour qu'il se déclenche pour l"élément ODE
+	msg = AI_TriggerGetMsg(trig_paf)
+	msg.msg_gao1 = to_cur_element
+	AI_TriggerSetMsg(trig_paf, msg)
+
+	if(AI_TriggerIsValid(trig_paf) && call_trigger(trig_paf))
+	{		               
+		i_trig_paf_active = vrai		
+		
+		msg = AI_TriggerGetMsg(trig_paf)
+		
+		o_element_paf = to_cur_element	
+				
+		v_dir_paf = msg.msg_vec5
+		v_pos_paf = msg.msg_vec4
+		i_power_paf = 0
+		
+		return
+	}
+	
+	i ++
+}
+

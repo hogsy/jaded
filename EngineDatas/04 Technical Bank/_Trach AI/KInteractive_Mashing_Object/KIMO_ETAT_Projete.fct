@@ -1,0 +1,84 @@
+#include "KIMO_defines.var"
+
+object		to_obj
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	o_projete_actor = nobody
+	if (i_dyna_option == Ci_DynaOption_Dynamic || i_dyna_option == Ci_DynaOption_DynaAtWin)
+		DYN_GravitySet(Cv_NormalGravity)	
+	OBJ_CapaSet( 0, Ci_CAPA_KongWinning )	
+	OBJ_CapaSet( Ci_CAPA_KongHasWon, 0 )	
+
+	i_sort_etat = faux	
+	return
+}
+
+
+// INITIALISATION ETAT ==============================================================
+if( i_etat_courant != ETAT_Projete )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Projete
+	
+	o_projete_actor = o_mashing_actor		// avant fct_last_etat car remis à nobody
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	if (i_dyna_option == Ci_DynaOption_Dynamic || i_dyna_option == Ci_DynaOption_DynaAtWin)
+		DYN_GravitySet(Cv_NullVector)
+	OBJ_CapaSet( Ci_CAPA_KongWinning, 0 )	
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// ANALYSE =======================================================================
+
+// Contact Ground ----------------------------------------------------------------------------
+to_obj = nobody
+if( COL_CollideType(COL_C_Ground) )
+{
+	to_obj = COL_ObjectGet(COL_C_Ground)
+	if( to_obj == o_projete_actor )
+		to_obj = nobody
+}
+
+// Contact Wall
+if( ! to_obj && COL_CollideType(COL_C_Wall) )
+{
+	to_obj = COL_ObjectGet(COL_C_Wall)
+	if( to_obj == o_projete_actor )
+		to_obj = nobody
+}
+
+if( to_obj )
+{
+	EVENT_AddEventPaf( C_EVENT_FILTER_Object, C_PAF_KK_Fort, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_obj, 2.0 * PAF_Unit, OBJ_SightGet())
+//	macro_change_etat("KIMO_ETAT_Wait")
+	OBJ_Destroy()
+}
+
+// COMPORTEMENT =================================================================	
+
+// GRAVITE réactivée une fois que KONG a lancé l'objet ---------------------
+if ( f_time_start_etat > 0.5 && 
+	(i_dyna_option == Ci_DynaOption_Dynamic || i_dyna_option == Ci_DynaOption_DynaAtWin)
+  )
+	DYN_GravitySet(Cv_NormalGravity)
+
+// KAMERA ------------------------------------------------------------------------------------
+@get_global i_kong_camera_status = i_kit_Kamera_Status
+if( i_kit_Kamera_Status == Ci_Kcamera_finish )
+{
+	@get_Kamera Proc_Kam_FinishMode_Set( i_kit_Kamera_Finish_ID, OBJ_Me() )
+}

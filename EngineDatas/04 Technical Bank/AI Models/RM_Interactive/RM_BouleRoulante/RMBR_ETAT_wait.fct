@@ -1,0 +1,152 @@
+#include "RM_BouleRoulante_defines.var"
+
+int				ti_is_paffer
+int				ti_i
+
+vector		tv_delta
+vector		tv_vec
+vector		tv_normal_sol
+vector		tv_normal_mur
+
+float 			tf_cos
+float			tf_norm
+
+object		to_obj
+
+// SORTIE ETAT 	===================================================================
+if( i_sort_etat )
+{
+	i_sort_etat = faux
+	return
+}
+
+// INIT ETAT 	=====================================================================
+if( i_etat_courant != RMBR_ETAT_WAIT)
+{
+	i_etat_courant = RMBR_ETAT_WAIT
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// STIMULI =======================================================================
+
+// Detection des pafs
+RMBR_DetectPaf()
+
+// Grimpage autorisé ou non
+//tv_vec = MATH_VecNormalize(@o_main_actor OBJ_PosGet() - OBJ_PosGet())
+//if (MATH_VecDotProduct(tv_vec, Cv_VerticalVector) < Cf_Cos80)
+//	DYN_FlagsSet(none, DYN_C_NeverDynamicFather)
+//else
+//	DYN_FlagsSet(DYN_C_NeverDynamicFather, none)
+//	
+
+// COMPORTEMENT ================================================================
+if (c_est_la_crise)
+	v_angular_speed *= -1.0
+	
+// Reaction du sol
+i_actor_on_sphere = 0
+tv_normal_sol = RMBR_ColNormalGet(COL_C_Ground)
+if (!MATH_VecNull(tv_normal_sol))
+{
+	tf_cos = MATH_FloatLimit(MATH_VecDotProduct(tv_normal_sol, Cv_VerticalVector), 0.99, 1.0)
+	v_sol = cvector((1.0 - tf_cos) * tv_normal_sol.x * f_gravity_strength * 100.0, (1.0 - tf_cos) * tv_normal_sol.y * f_gravity_strength * 100.0, 0.0)
+	v_angular_speed.z = 0.0
+}
+else v_sol = Cv_NullVector
+
+// Collision avec un mur
+tv_normal_mur = RMBR_ColNormalGet(COL_C_Wall)
+if (!MATH_VecNull(tv_normal_mur))
+{
+	tv_normal_mur.z = 0.0
+	MATH_VecSetNormalize(tv_normal_mur)
+	tv_vec = MATH_VecCrossProduct(tv_normal_mur, Cv_VerticalVector)
+	v_paf = (tv_vec * MATH_VecDotProduct(tv_vec, v_paf)) - (tv_normal_mur* MATH_VecDotProduct(tv_normal_mur, v_paf))
+	v_angular_speed = (((tv_vec * MATH_VecDotProduct(tv_vec, v_angular_speed)) - (tv_normal_mur* MATH_VecDotProduct(tv_normal_mur, v_angular_speed)))) * f_bounciness
+	
+	// Envoyer des pafs aux objets collisionnés
+	to_obj = COL_ObjectGet(COL_C_Wall)
+	ti_is_paffer = 0
+	for (ti_i=0; ti_i < 5; ti_i++)
+	{
+		if (ao_paffers[ti_i] == to_obj)
+		{
+			ti_is_paffer = 1
+			break
+		}
+	}
+	
+	if (!ti_is_paffer && (to_obj != o_last_paffed) && @to_obj AI_IsModel(get_RM_BouleRoulante_path) || @to_obj AI_IsModel(get_PNJ_Lapin_path) || @to_obj AI_IsModel(get_Rayman_Path))
+	{
+		tf_norm = MATH_VecNorm(v_angular_speed)
+		tv_delta = (f_rayon * tf_norm * f_inertie * f_inertie) * MATH_VecNormalize(@to_obj OBJ_PosGet() - OBJ_PosGet())
+		if ((@to_obj AI_IsModel(get_RM_BouleRoulante_path) || (tf_norm > 2.0)) && (!MATH_VecNullEpsilon(tv_delta)))
+		{
+			EVENT_AddEventPaf(0, C_PAF_RM_Moyen, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_obj, 1.0, tv_delta)
+			o_last_paffed = to_obj
+		}
+		else o_last_paffed = nobody
+	}
+}
+
+// Mouvement de Rayman
+if (i_actor_on_sphere)
+{
+	if (i_walk_moves_sphere)
+	{
+		tv_delta = MATH_VecNormalize(@o_main_actor OBJ_PosGet() - OBJ_PosGet())
+		tf_cos = 1 - MATH_VecDotProduct(tv_delta, Cv_VerticalVector)
+		tf_cos = MATH_FloatBlend(tf_cos, 1.0, 0.5)
+		v_paf += cvector(tf_cos * tv_delta.x * f_walk_strength, tf_cos * tv_delta.y * f_walk_strength, 0.0)
+	}
+}
+
+// Acceleration due au paf
+if (!MATH_VecNullEpsilon(v_paf))
+{
+	f_acc = MATH_FloatMin(f_acc + ((1.0 - f_inertie) * TIME_GetDt() * 10.0), 1.0)
+	tv_delta = v_paf * f_acc * f_acc
+	v_paf -= tv_delta
+	v_angular_speed += tv_delta
+}
+
+// Acceleration due au sol
+if (!MATH_VecNullEpsilon(tv_normal_sol))
+{
+	DYN_GravitySet(Cv_NullVector)
+	v_angular_speed += v_sol * TIME_GetDt()
+}
+else
+{
+	DYN_GravitySet(-f_gravity_strength * Cv_VerticalVector)
+}
+
+// Rotation et mouvement de la boule
+v_prev_pos = OBJ_PosGet()
+if (!MATH_VecNullEpsilon(v_angular_speed))
+{
+//	OBJ_RotateGlobalX(-v_angular_speed.y * TIME_GetDt())
+//	OBJ_RotateGlobalY(v_angular_speed.x * TIME_GetDt())
+	
+	tv_delta = v_angular_speed * f_rayon * TIME_GetDt()
+	OBJ_PosSet(OBJ_PosGet() + tv_delta)
+
+	tv_delta = MATH_VecNormalize(v_angular_speed) * f_friction * TIME_GetDt()
+	if (MATH_VecNorm(tv_delta) > MATH_VecNorm(v_angular_speed))
+		v_angular_speed = Cv_NullVector
+	else
+		v_angular_speed -= tv_delta
+}
+

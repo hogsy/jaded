@@ -1,0 +1,121 @@
+#define camcut_duree_sans_controles 	0.3
+
+#define macro_backup_camjoy_value		{v_joy_cam_sight_old = v_joy_cam_sight							// Backup de la visée courant pour le test d'opposition la prochaine trame.	\
+														f_joy_norm_old = f_joy_norm											// Backup de la norm							\
+														v_joy_camera_old = v_joy_camera									// Backup du joy transformé						\
+														v_joy_camera_normalized_old = v_joy_camera_normalized}	// Backup du joy transformé & normalisé
+														
+
+object	to_camera								// Acteur Camera
+float		tf_normetemporaire					// Norme
+object 	to_pp										// Personnage Principal
+int			tf_tolerance
+
+// NORMAL JOY avec BLEND ##################################
+to_camera = VIEW_GetObject(0)								// Recuperation de la camera active
+if(!to_camera) return 												// blindage rfe => en moteur il n y a pas de gao a la 1ere trame
+
+v_joy_cam_sight = @to_camera OBJ_SightGet()			// Recuperation de la visée de la camera active
+v_joy_cam_sight.z = 0.0
+if ( !MATH_VecNullEpsilon( v_joy_cam_sight))
+	MATH_VecSetNormalize(v_joy_cam_sight)				// PT1 n utilisez PLUS CE HRIZONTTAL NORMALIZE !!
+else
+	v_joy_cam_sight = cvector ( 1.0, 0.0,0.0)
+
+v_joy_camera = -IO_JoyGetMove()
+if (OBJ_CapaTest(OBJ_Capa_3))
+	v_joy_camera *= -1.0
+
+// Gestionnaire de transition (permet de detecter les changements d'orientation brusque
+if ( !i_joy_transition_en_cours && !MATH_VecNullToler(v_joy_camera, tolerance_joynull) )
+{
+	// On est pas en transition et la cam et la visée de la cam est non nulle
+	if ( (!MATH_VecNull(v_joy_cam_sight_old) && !MATH_VecNull(v_joy_cam_sight)) && MATH_VecDotProduct(v_joy_cam_sight_old, v_joy_cam_sight) < Cf_Cos45)
+	{
+		// Les cam sont opposées donc on cut !
+		i_joy_transition_en_cours = vrai
+
+		v_joy_camera_startblend = v_joy_camera_old
+		v_joy_camera_normalized_startblend = v_joy_camera_normalized_old
+		f_joy_norm_startblend = f_joy_norm_old
+
+		v_joy_camera_pour_blend = MATH_VecNormalize( v_joy_camera )		// Ref JOY
+		
+		f_joy_timeref = TIME_Get()
+	}
+}
+
+v_joy_camera = -IO_JoyGetMove()
+if (OBJ_CapaTest(OBJ_Capa_3))
+	v_joy_camera *= -1.0
+
+tf_normetemporaire  = MATH_VecNorm(v_joy_camera)
+if (tf_normetemporaire  < tolerance_joynull)
+{
+	// Le joy ne bouge pas.
+	MATH_VecSetNull(v_joy_camera)
+	MATH_VecSetNull(v_joy_camera_normalized)
+
+	MATH_VecSetNull(v_joy_camera_Z)
+	MATH_VecSetNull(v_joy_camera_normalized_Z)
+
+	f_joy_norm = 0.0	
+	// Transition Reset !
+	i_joy_transition_en_cours = faux
+}
+else
+{
+	// Oui, Il y a un deplacement.
+
+	// Gestionnaire de transition, effectue un BLEND sur l'orientation
+	if	(i_joy_transition_en_cours)
+	{
+		// On est dans une transition
+		if ( ( MATH_VecDotProduct( v_joy_camera_pour_blend, MATH_VecNormalize(v_joy_camera)) < 0.9) 
+		|| ( IO_ButtonJustPressed(JoyPSX_Button_carre) && TIME_Elapsed(f_joy_timeref, 0.5)))
+			i_joy_transition_en_cours = faux			// Break JOY Hysteresis.
+		else
+		{
+			v_joy_camera = v_joy_camera_startblend
+			v_joy_camera_normalized = v_joy_camera_normalized_startblend
+			tf_normetemporaire = f_joy_norm_startblend
+		}
+	}
+
+	// Gestion Normale
+	if (!i_joy_transition_en_cours)
+	{
+		// On est pas en transition...donc je calcul les nouveaux vecteurs
+
+		// On change de repere (repere normal)
+		v_joy_camera_Z = v_joy_camera
+		v_joy_camera_Z.z = - v_joy_camera_Z.y
+		v_joy_camera_Z.y = 0.0
+	
+		v_joy_camera_Z = @to_camera MATH_VecLocalToGlobal(v_joy_camera_Z)	
+
+		v_joy_camera_normalized_Z = v_joy_camera_Z / tf_normetemporaire
+
+		v_joy_camera = @to_camera MATH_VecLocalToGlobal(v_joy_camera)
+		v_joy_camera.z = 0.0
+
+		MATH_VecSetNormalize(v_joy_camera)
+		v_joy_camera_normalized = v_joy_camera
+		
+		tf_normetemporaire	= MATH_FloatLimit(tf_normetemporaire - tolerance_joynull, 0.0, tolerance_joymax - tolerance_joynull)
+		tf_normetemporaire /= tolerance_joymax - tolerance_joynull
+
+		v_joy_camera *= tf_normetemporaire
+	}
+ 
+//	DBG_RenderVector(@get_sally OBJ_PosGet() + cvector(0,0,1.0), v_joy_camera, color_jaune)
+	f_joy_norm = tf_normetemporaire
+
+	// XBOX------------------------------------
+	if (f_joy_norm > 0.99)
+		 f_joy_norm = 1.0
+	// XBOX------------------------------------
+		
+}
+
+macro_backup_camjoy_value

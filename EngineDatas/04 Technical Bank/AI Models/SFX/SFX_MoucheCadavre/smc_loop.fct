@@ -1,0 +1,76 @@
+int			i
+float		tf_dist
+vector	tv_temp
+float		tf_speed
+object	to_main
+float		tf_zoom
+
+if( @get_global i_Player_is_Kong )
+	to_main = AI_MainActorGet(C_ID_Kong)
+else
+	to_main = AI_MainActorGet(C_ID_Joueur)
+
+if(des_i_visuel == 1)
+{
+	if(@to_main COL_Pivot_BVCollide(OBJ_Me()))
+	{
+		i_in = vrai
+		@"_basic/_basic_persos/SFX_generique" OBJ_CapaSet(OBJ_Capa_0, 0)
+	}
+	else if(i_in)
+	{
+		i_in = faux
+		@"_basic/_basic_persos/SFX_generique" OBJ_CapaSet(0, OBJ_Capa_0)
+	}
+}
+
+if(OBJ_SqrDist(to_main) > 15 * 15) 
+{
+	for(i = 0; i < des_i_max; i++) @ao_mouche[i] OBJ_FlagInvisibleSet(vrai)
+	AI_TrackCurChangeNow("smc_wait")
+}
+
+if(TIME_Elapsed(f_time_speed_mouche, 3))
+{
+	f_time_speed_mouche = TIME_Get()
+	for(i = 0; i < des_i_max; i++)
+	{
+		v_speed_mouche[i].x = MATH_RandFloat(-2.0, 2.0)
+		v_speed_mouche[i].y = MATH_RandFloat(-2.0, 2.0)
+		v_speed_mouche[i].z = MATH_RandFloat(0.0, 0.5)
+	}
+}
+
+for(i = 0; i < des_i_max; i++)
+{
+	tf_dist = @ao_mouche[i] OBJ_SqrDist(to_main)
+	if(tf_dist < 12.0 * 12.0)
+		tf_zoom = 3.0
+	else if(tf_dist < 14.0 * 14.0)
+		tf_zoom = 1.5
+	else
+		tf_zoom = 0.5
+	@ao_mouche[i] OBJ_ZoomSet(tf_zoom)
+
+	if(i_in)
+	{
+		tv_temp = (@get_camera OBJ_PosGet() + @get_camera OBJ_SightGet()) - @ao_mouche[i] OBJ_PosGet()
+		tv_temp += v_speed_mouche[i]
+	}
+	else
+	{
+		tv_temp = MATH_VecLocalToGlobal(v_speed_mouche[i])
+		tv_temp += OBJ_PosGet()
+		tv_temp -= @ao_mouche[i] OBJ_PosGet()
+	}
+	
+	tv_temp = MATH_VecBlendRotate(@ao_mouche[i] OBJ_SightGet(), tv_temp, 3 * TIME_GetDt())
+	@ao_mouche[i] OBJ_SightGeneralSet(tv_temp, Cv_VerticalVector)
+	if(i_in)
+		tf_speed = 3.0
+	else
+		tf_speed = 1.5
+	tv_temp = @ao_mouche[i] OBJ_SightGet() * tf_speed * TIME_GetDt()
+	tv_temp += @ao_mouche[i] OBJ_PosGet()
+	@ao_mouche[i] OBJ_PosSet(tv_temp)
+}

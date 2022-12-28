@@ -1,0 +1,78 @@
+vector   tv_pos_SFX
+
+
+if          (@o_EVT_master OBJ_CapaTest(i_ma_capasignal))
+
+{
+
+//          OBJ_OrientTo(to_cam)
+
+            OBJ_Move(cvector(0,0,-1.82))
+
+//          ACT_ActionSet(3)
+
+            tv_pos_SFX = OBJ_PosGet() + cvector(0, 0, -0.5)
+
+            o_SFX_Explo01_dup = @o_SFX_Explo01 OBJ_Duplicate(tv_pos_SFX)
+
+//          @o_SFX_Explo01_dup OBJ_CapaSet(Obj_Capa_Switch, 0)
+
+//          ANI_FrequencySet(0, 32)
+
+//          TIME_Wait(0.05)
+
+//                      @o_SFX_Explo01_dup OBJ_CapaSet(0, Obj_Capa_Switch)
+
+//          TIME_Wait(1.5)
+
+            {
+
+                        @o_SFX_Explo01_dup OBJ_CapaSet(Obj_Capa_Switch, 0)
+
+//                      OBJ_Move(cvector(0,0,0.5))
+
+                        OBJ_FlagInvisibleSet(faux)
+
+                        ACT_ActionSet(8)
+
+            }
+
+            TIME_Wait(0.3)
+
+                        @o_SFX_Explo01_dup OBJ_CapaSet(0, Obj_Capa_Switch)
+
+            TIME_Wait(1.5)
+
+                        @o_SFX_Explo01_dup OBJ_Destroy()
+
+//          AI_TrackCurStop()
+
+//          ACT_ActionSet(01)
+
+            AI_TrackCurChange("LZU_loop_marche")
+
+}
+
+//vector	tv_pos_SFX
+//if	(@o_EVT_master OBJ_CapaTest(i_ma_capasignal))
+//{
+//	OBJ_Move(cvector(0,0,-0.5))
+//	OBJ_FlagInvisibleSet(faux)
+//	ACT_ActionSet(3)
+//	tv_pos_SFX = OBJ_PosGet() + cvector(0, 0, -0.5)
+//	o_SFX_Explo01_dup = @o_SFX_Explo01 OBJ_Duplicate(tv_pos_SFX)
+//	@o_SFX_Explo01_dup OBJ_CapaSet(Obj_Capa_Switch, 0)
+//	TIME_Wait(0.05)
+//		@o_SFX_Explo01_dup OBJ_CapaSet(0, Obj_Capa_Switch)
+//	TIME_Wait(1.5)
+//	{
+//		@o_SFX_Explo01_dup OBJ_CapaSet(Obj_Capa_Switch, 0)
+//		OBJ_Move(cvector(0,0,0.5))
+//		ACT_ActionSet(4)
+//	}
+//	TIME_Wait(0.3)
+//		@o_SFX_Explo01_dup OBJ_CapaSet(0, Obj_Capa_Switch)
+//	TIME_Wait(1.5)
+//		@o_SFX_Explo01_dup OBJ_Destroy()
+//	AI_TrackCurChange("LZU_loop_marche")
+//}

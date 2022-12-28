@@ -1,0 +1,277 @@
+#include "KBC_defines.var"
+
+int					ti_i
+int					ti_cur_net_is_ronde_net
+int					num_msg
+
+message		tm_message
+message		m_cine
+
+object			to_wp
+
+network			tnet_idlework
+
+vector			tv_ma_pos
+vector			tv_kong_pos
+
+
+// CINE
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+if(i_CineStack && am_CineStack[0].msg_id == CINE_ResetWaitDefault)
+	OBJ_CapaSet(CAPA_CINE_Annulee, 0)
+	
+// Capa13 = action courant terminée, on passe a la suivante
+if(i_CineStack && (i_cine_close || OBJ_CapaTest(CAPA_CINE_Annulee)))
+{
+	l_loop:
+	i_CineStackChanged = vrai
+  	for(ti_i = 0; ti_i < i_CineStack - 1; ti_i++)  am_CineStack[ti_i] = am_CineStack[ti_i + 1]
+	
+  	i_CineStack--
+  	if(!i_CineStack) 
+  	{
+		OBJ_CapaSet(CAPA_CINE_Terminee, 0)
+	  	if(i_CineWaitDefault)
+	  	{
+		  	am_CineStack[0] = m_CineWaitDefault
+		  	i_CineStack = 1
+		}
+		else
+		{
+			if( KBC_IsEtatCine(i_etat_courant) )
+				AI_Execute("KBC_exec_init_attente")
+		}
+	}
+	else
+	{
+		m_cine = am_CineStack[0]
+		if(m_cine.msg_id == CINE_ResetWaitDefault)
+		{
+			i_CineWaitDefault = faux
+			goto l_loop
+		}		
+	}
+	
+	i_cine_close = faux
+}
+
+// On empile les commandes
+ti_i = 0
+num_msg = MSG_GetCount()
+while(num_msg)
+{
+	tm_message = MSG_Read(ti_i)
+	
+	//////////////// CHECK FOR PROJECTILES FROM KONG ///////////////////////////////////
+	if( tm_message.msg_id == msg_id_KK_send_projectile)
+	{
+		// un projectile arrive sur la bat
+		o_projectile = tm_message.msg_sender
+		f_temps_projectile = 0.0
+	}
+	else if( tm_message.msg_id == msg_id_KBigBat_Attack )
+	{
+		// attaque en piqué pour la big bat
+//		if( i_big_bat && ! o_big_bat_target )
+//		if( i_big_bat && ! OBJ_CapaTest(CAPA_BigBat_attaque_en_cours) )
+		if( i_big_bat && OBJ_CapaTest(CAPA_BigBat_attaque_possible) )
+//			&& ! MSG_GlobalIsValid(mid_grab_charogne) && ! OBJ_CapaTest(CAPA_Release_Grabbed_Actor) )
+		{
+			
+			// je ne suis pas déjà en train de faire une attaque en piqué
+			i_big_bat_attack_init = vrai
+			o_big_bat_target = tm_message.msg_gao2
+			o_big_bat_attack_wp = tm_message.msg_gao3
+			o_big_bat_retreat_wp = tm_message.msg_gao4
+			i_big_bat_attack_decolle = tm_message.msg_int1
+			if( i_big_bat_attack_decolle )
+			{
+				tv_ma_pos = OBJ_PosGet()
+				tv_kong_pos = @o_big_bat_target OBJ_PosGet()
+				if( tv_ma_pos.z > ( tv_kong_pos.z + 8.0 ) )
+					i_big_bat_attack_decolle = faux		// déjà suffisament haut
+			}
+			i_big_bat_attack_scream = faux
+			i_bigbat_manager_count_done = faux
+			OBJ_CapaSet(none, CAPA_BigBat_attaque_possible)
+			OBJ_CapaSet(CAPA_BigBat_attaque_en_cours, none)
+			switch( i_etat_courant )
+			{
+				case ETAT_Sol_Interaction_Ann :
+				case ETAT_Move_Atterrit :
+				case ETAT_Mange :
+					i_bigbat_attack_imparable = vrai		// cette attaque ne doit pas rater (pas de test de dodge)
+					break
+				default:
+//					if( OBJ_CapaTest(CAPA_Release_Grabbed_Actor) )
+//						i_bigbat_attack_imparable = vrai		// cette attaque ne doit pas rater (pas de test de dodge)
+//					else
+						i_bigbat_attack_imparable = faux
+					break
+			}
+			//-----------------------------------------
+			if( i_DBG_trace_etat )
+			{
+				DBG_TraceObject(OBJ_Me())
+				DBG_TraceString(" : BIG BAT Attack / target = ")
+				DBG_TraceObject(o_big_bat_target)
+				DBG_TraceString(" / attack wp = ")
+				DBG_TraceObject(o_big_bat_attack_wp)
+				DBG_TraceString(" / retreat wp = ")
+				DBG_TraceObject(o_big_bat_retreat_wp)
+				if( i_big_bat_attack_decolle )
+					DBG_TraceString(" / decolle ")
+//				DBG_TraceString(" / sender = ")
+//				DBG_TraceObject(tm_message.msg_gao5)
+				DBG_TraceEOL()
+			}
+		}
+	}
+	else if( tm_message.msg_id == msg_id_KBat_Network_Set )
+	{
+		// Modif des réseaux de la bat ----------------------------------------
+		if( i_DBG_trace_etat )
+		{
+			DBG_TraceObject(OBJ_Me())
+			DBG_TraceString(" : BAT Network Set / net_idle_wp = ")
+			DBG_TraceObject(tm_message.msg_gao2)
+			DBG_TraceString(" : BAT Network Set / net_move_wp = ")
+			DBG_TraceObject(tm_message.msg_gao3)
+			DBG_TraceEOL()
+		}
+		// Backup réseau courant ---------------------------------------------
+		if( n_reseau == net_idle )
+			ti_cur_net_is_ronde_net = vrai
+		else
+			ti_cur_net_is_ronde_net = faux
+		// Check changement du réseau de ronde ----------------------
+		to_wp = tm_message.msg_gao2
+		if( to_wp )
+		{
+			tnet_idlework = @to_wp WAY_NetOfObj()
+			net_idle = tnet_idlework
+			KBC_Networks_INIT()
+			if( ti_cur_net_is_ronde_net )
+				n_reseau = net_idle		// écraser n_reseau si à ce moment là c'est net_idle (et pas net_move)
+		}
+		// Check changement du réseau d'attaque -----------------------
+//		to_wp = tm_message.msg_gao3
+//		if( to_wp )
+//		{
+//			tnet_idlework = @to_wp WAY_NetOfObj()
+//			net_move = tnet_idlework
+//			KBC_Networks_INIT()
+//			if( ! ti_cur_net_is_ronde_net )
+//				n_reseau = net_move		// écraser n_reseau si à ce moment là c'est net_move (et pas net_idle)
+//		}
+	}
+//	else if(tm_message.msg_id > 100000)
+//	{
+//		if(tm_message.msg_id == CINE_Reset)
+//		{
+//			i_CineStack = 0
+//			MSG_Clear()			
+//			OBJ_CapaSet(0, CAPA_CINE_Terminee)
+//			if(KBC_IsEtatCine(i_etat_courant))
+//				AI_Execute("KBC_exec_init_attente")
+//			break
+//		}
+//		else
+//		{
+//			if(i_CineStack == 0) 
+//			{
+//				OBJ_CapaSet(0, CAPA_CINE_Terminee)
+//				i_CineStackChanged = vrai
+//			}
+//			
+//			if(i_CineStack == 1 && am_CineStack[0].msg_id == CINE_WaitDefault ) OBJ_CapaSet(0, CAPA_CINE_Terminee)
+//			if(i_CineStack == 20) DBG_Error("Trop de messages cines humains")
+//			am_CineStack[i_CineStack] = tm_message
+//			i_CineStack++
+//		}
+//	}
+	
+	ti_i++
+	num_msg--
+}
+
+OBJ_CapaSet(0, CAPA_CINE_Annulee)
+MSG_Clear()
+
+//// On execute la premiere
+//if(i_CineStack && i_CineStackChanged)
+//{
+//	if( ! KBC_IsEtatCine(i_etat_courant) )
+//		SND_RequestPlay(Ci_SND_Cri_Attack_Loin)			// je crie pour annoncer que je vais attaquer
+//	
+//	i_CineStackChanged = faux
+//	m_cine = am_CineStack[0]
+//	switch(m_cine.msg_id)
+//	{
+//		case CINE_Wait :
+//			#ifndef _FINAL_
+//			if(@get_global DEBUG_SCRIPT)
+//			{
+//				DBG_TraceString("######## ")
+//				DBG_TraceObject(OBJ_Me())
+//				DBG_TraceString(" passe en WAIT\n")
+//			}
+//			#endif
+//			macro_change_etat("KBC_ETAT_CINE_Wait")
+//			break
+//
+//		case CINE_Vala :
+//			#ifndef _FINAL_
+//			if(@get_global DEBUG_SCRIPT)
+//			{
+//				DBG_TraceString("######## ")
+//				DBG_TraceObject(OBJ_Me())
+//				DBG_TraceString(" passe en VALA\n")
+//			}
+//			#endif
+//			macro_change_etat("KBC_ETAT_CINE_Vala")
+//			break
+//
+//		case CINE_Fight :
+//			#ifndef _FINAL_
+//			if(@get_global DEBUG_SCRIPT)
+//			{
+//				DBG_TraceString("######## ")
+//				DBG_TraceObject(OBJ_Me())
+//				DBG_TraceString(" passe en ATTAQUE\n")
+//			}
+//			#endif
+//			macro_change_etat("KBC_ETAT_CINE_Attaque")
+//			break
+//			
+//		case CINE_ForceEtat :
+//			#ifndef _FINAL_
+//			if(@get_global DEBUG_SCRIPT)
+//			{
+//				DBG_TraceString("######## ")
+//				DBG_TraceObject(OBJ_Me())
+//				DBG_TraceString(" force un état\n")
+//			}
+//			#endif
+//			macro_change_etat("KBC_ETAT_CINE_Force_Etat")
+//			break
+//		
+//		case CINE_WaitDefault :
+//			i_CineWaitDefault = vrai
+//			m_CineWaitDefault = m_cine
+//			if (i_CineStack == 1)
+//				OBJ_CapaSet(CAPA_CINE_Terminee, 0)
+//			#ifndef _FINAL_
+//			if(@get_global DEBUG_SCRIPT)
+//			{
+//				DBG_TraceString("######## ")
+//				DBG_TraceObject(OBJ_Me())
+//				DBG_TraceString(" passe en WAIT DEFAULT\n")
+//			}
+//			#endif
+//			macro_change_etat("KBC_ETAT_CINE_Wait_Default")
+//			break
+//	}
+//}
+

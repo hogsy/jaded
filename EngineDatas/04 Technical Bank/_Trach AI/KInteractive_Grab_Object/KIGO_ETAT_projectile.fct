@@ -1,0 +1,164 @@
+
+//===============================================================================
+// Projectile : le tronc a été lancé par un acteur (Kong) et il y a potentiellement un acteur cible pour le lancer
+//===============================================================================
+
+#include "KIGO_defines.var"
+
+int			ti_explose
+int			ti_pos
+
+vector	tv_dest_pos
+vector	tv_sens
+vector	tv_temp
+
+object	to_target
+object	to_col_obj
+
+float		tf_friction
+float		tf_amplitude
+float		tf_time
+
+#define	Cf_hauteur_Kong			7.0
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_KIGO_projectile)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_KIGO_projectile
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	v_proj_pos = @o_snap_actor OBJ_PosGet()
+	to_target = LNK_GrabKong_LanceObjectGet( mid_grabbed_by_Kong_LNK_ID)
+//	DBG_TraceString("cible du lancer : ")
+//	DBG_TraceObject(to_target)
+//	DBG_TraceEOL()
+	if( ! to_target )
+	{
+		tv_sens = LNK_GrabKong_LanceVectorGet( mid_grabbed_by_Kong_LNK_ID)
+		v_proj_pos += tv_sens * f_puissance_projectile
+		v_proj_pos += cvector( 0.0, 0.0, 5.0)
+	}
+	else
+	{
+		ti_pos = LNK_GrabKong_LanceTargetGet( mid_grabbed_by_Kong_LNK_ID)
+		v_proj_pos = @get_global v_KongFight_TargetAddPos[ti_pos]
+		if ( MATH_VecNullEpsilon( v_proj_pos))
+			v_proj_pos = @to_target OBJ_PosGet()
+		DYN_GravitySet(Cv_NullVector)
+	}
+	
+	o_projectile_actor = o_grabbed_actor_KK
+	o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, faux, nofunc, nofunc)
+	COL_ColSetActivationSet(C_bit_zdm_pied, none)
+	
+	SND_RequestPlay(Ci_SND_Thrown)
+	i_frappe_target_nb = 0
+	i_proj_etat = 1
+	
+//	i_tombe_impact_done = vrai	
+
+	f_proj_rot_coef_cur = 0.20
+	f_proj_rot_coef_final = 0.10
+	f_proj_rot_coef_blend = 0.5 // 2.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// ANALYSE =======================================================================================================
+
+// COMPORTEMENT =======================================================================================================
+
+switch(i_proj_etat)
+{
+	case 1 :
+	{
+		// INIT LANCER
+//		tf_friction = 2.0
+//		tf_amplitude = Cf_hauteur_Kong + 4.0
+//		tf_time = 0.0
+//
+		tv_temp = v_proj_pos - OBJ_PosGet()
+		DBG_RenderVector(OBJ_PosGet(), tv_temp, color_jaune)
+		if ( i_grab_entite == Ci_One_Handed )
+			DYN_FrictionVectorSet( cvector(2.0, 2.0, 0.0))
+		
+		MATH_VecSetNorm( tv_temp, f_puissance_projectile) //MATH_VecNorm(tv_temp) * 2.0 )
+		DYN_SpeedSetVector(tv_temp)
+		v_last_speed = tv_temp
+		DYN_FrictionVectorSet(Cv_NullVector)
+		i_proj_etat = 2
+	}
+	break
+	
+	case 2 :
+	{
+		ti_explose = faux
+		// TRONC LANCé
+		if (MATH_VecDotProduct( v_last_speed, v_proj_pos - OBJ_PosGet()) < 0.0)
+		{
+			DYN_GravitySet(Cv_NormalGravity * 2.0)
+		}	
+	
+		AI_Execute("KIGO_exec_zdf_zdc")
+		if ( i_grab_entite == Ci_One_Handed && i_frappe_target_nb && ao_frappe_target[i_frappe_target_nb - 1])
+			ti_explose = vrai
+		
+		AI_Execute("KIGO_exec_incline_horiz")
+		
+		if (COL_CollideType(COL_C_Ground))
+		{
+//			if ( !i_tombe_impact_done)
+//			{
+//				i_tombe_impact_done = vrai
+//				SND_RequestPlay(Ci_SND_Fallen)
+//			}
+			if( i_grab_entite == Ci_One_Handed )
+				ti_explose = vrai
+			else
+				AI_TrackCurChangeNow("KIGO_ETAT_impact")		// le tronc a touché le sol ou un ennemi
+		}
+		
+		if (COL_CollideType(COL_C_Wall) )
+		{
+			to_col_obj = COL_ObjectGet(COL_C_Wall) 
+			if( to_col_obj != o_projectile_actor && to_col_obj != o_ANN)
+			{
+				if( i_grab_entite == Ci_One_Handed )
+					ti_explose = vrai
+			}
+		}
+//		if ( ti_explose)
+//			AI_TrackCurChangeNow("KIGO_ETAT_explose")		// le roc explose		
+		break
+	} 
+}
+
+v_last_speed = DYN_SpeedGetVector()
+
+
+if( f_time_start_etat > 0.15 )
+{
+	// délai avant de faire tourner le tronc
+	AI_Execute("KIGO_exec_rotation")
+//	OBJ_BankingGeneralSet( MATH_VecBlendRotate( OBJ_SightGet(), Cv_VerticalVector, 5.0 * TIME_GetDt()), OBJ_BankingGet())
+}
+

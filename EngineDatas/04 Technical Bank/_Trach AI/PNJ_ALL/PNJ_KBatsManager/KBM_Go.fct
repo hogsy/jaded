@@ -1,0 +1,260 @@
+//#include "KBM_defines.var"
+//
+//int				ti_next_phase
+//int				ti_attack_wp_index
+//int				ti_bigbat_passage_nb_max
+//int				ti_bigbat_paf_nb_max
+//int				ti_bigbat_index
+//int				ti_old_phase
+//int				ti_attack_msg_already_sent
+//
+//message	tm_msg
+//
+//ti_attack_msg_already_sent = faux
+//
+//OBJ_CapaSet(none, CAPA_Kam_CC_Kong_to_1eBigBat)
+//OBJ_CapaSet(none, CAPA_Kam_CC_Kong_to_2eBigBat)
+//OBJ_CapaSet(none, CAPA_Phase_Spawner)
+//
+//if( ! i_bigbat_count )
+//{
+//	if( i_DBG_phase )
+//		DBG_TraceString("********** 0 BIG BAT EN VIE -> DESACTIVATION\n")
+//	OBJ_FlagInactiveSet(vrai)
+//}
+//
+//for( ti_bigbat_index = 0; ti_bigbat_index < ci_bigbats_nb; ti_bigbat_index++ )
+//{
+//	if( ! ao_bigbats[ti_bigbat_index] )
+//		continue
+//	
+//	if( @ao_bigbats[ti_bigbat_index] OBJ_CapaTest(CAPA_BigBat_Dead) )
+//	{
+//		ao_bigbats[ti_bigbat_index] = nobody
+//		i_bigbat_count--
+//		if( i_DBG_phase )
+//			DBG_TraceString("********** 1 BIG BAT EN MOINS !!! \n")
+//		continue
+//	}
+//	
+//	// Paramètres de sortie de la phase -----------------------------------------------------------
+//	if( ! ai_bigbat_1ere_sequence_done[ti_bigbat_index] )
+//	{
+//		ti_bigbat_passage_nb_max = i_nb_passages_1ere_sequence
+//		ti_bigbat_paf_nb_max = i_nb_paf_1ere_sequence
+//	}
+//	else
+//	{
+//		ti_bigbat_passage_nb_max = i_nb_passages_autre_sequence
+//		ti_bigbat_paf_nb_max = i_nb_paf_autre_sequence
+//	}
+//	
+//	if( @ao_bigbats[ti_bigbat_index] KBC_BigBat_GiveCapaToManager() )
+//	{
+//		if( ti_bigbat_index == 0 )
+//			OBJ_CapaSet(CAPA_Kam_CC_Kong_to_1eBigBat, none)
+//		else
+//			OBJ_CapaSet(CAPA_Kam_CC_Kong_to_2eBigBat, none)
+//	}
+//	
+//	if( ai_phase[ti_bigbat_index] != Ci_phase_agonie && @ao_bigbats[ti_bigbat_index] OBJ_CapaTest(CAPA_BigBat_Agonie) )
+//	{
+//		ai_phase[ti_bigbat_index] = Ci_phase_agonie
+//		if( i_DBG_phase )
+//		{
+//			DBG_TraceString("********** Détection de l'agonie pour")
+//			DBG_TraceObject(ao_bigbats[ti_bigbat_index])
+//			DBG_TraceEOL()
+//		}
+//	}
+//	
+//	ti_next_phase = faux
+//	switch( ai_phase[ti_bigbat_index] )
+//	{
+//		// PHASE D'ATTENTE ==========================================================================
+//		case Ci_phase_attente :
+//			// réinit ?
+//			if( ai_bigbat_attack_reinit[ti_bigbat_index])
+//			{
+//				ai_passages_count[ti_bigbat_index] = 0
+//				ai_bigbat_nb_paf[ti_bigbat_index] = 0
+//				ai_bigbat_attack_reinit[ti_bigbat_index] = faux
+//			}
+//			// test paf
+//			if( ai_bigbat_nb_paf[ti_bigbat_index] >= ti_bigbat_paf_nb_max )
+//			{
+//				KBM_Sequence_Enchainement(Ci_enchainement_nb_pafs, ti_bigbat_index)
+//				break
+//			}
+//			// test envoi message
+//			if( ! ti_attack_msg_already_sent		// ne pas lancer 2 msg d'attack la même trame
+//				&& @ao_bigbats[ti_bigbat_index] OBJ_CapaTest(CAPA_BigBat_Ready_for_Attack)
+//				&& @ao_bigbats[ti_bigbat_index] KBC_Target_Check(AI_MainActorGet(0))		// ne pas envoyer de msg s'il n'est pas attaqueble !
+//				&& ! KBM_UneBigBatAttaqueDeja(ti_bigbat_index) )
+//				ti_next_phase = vrai
+//			if( ti_next_phase )
+//			{
+//				ai_phase[ti_bigbat_index] = Ci_phase_bigbat_attack
+//				ti_attack_msg_already_sent = vrai
+//				// select wp & envoi message
+//				ti_attack_wp_index = KBM_GetNearestAttackWPindex(ao_bigbats[ti_bigbat_index])
+//				MSG_SetNull(tm_msg)
+//				tm_msg.msg_gao2 = AI_MainActorGet(0)
+//				tm_msg.msg_gao3 = ao_init_attack_wp[ti_attack_wp_index]
+//				tm_msg.msg_gao4 = ao_post_attack_wp[ti_attack_wp_index]
+//				tm_msg.msg_id = msg_id_KBigBat_Attack
+//				tm_msg.msg_int1 = 1		// decolle !!!
+//				@ao_bigbats[ti_bigbat_index] MSG_Send(tm_msg)
+//				if( i_DBG_phase )
+//				{
+//					DBG_TraceString("********** SEND ATTACK MSG pour ")
+//					DBG_TraceObject(ao_bigbats[ti_bigbat_index])
+//					DBG_TraceString(" -> phase BigBat Attack\n")
+//				}
+//			}
+//			break
+//		
+//		// PHASE D'ATTAQUE DE LA BIG BAT ===============================================================
+//		case Ci_phase_bigbat_attack : 
+//			// test paf
+//			if( ai_bigbat_nb_paf[ti_bigbat_index] >= ti_bigbat_paf_nb_max )
+//			{
+//				KBM_Sequence_Enchainement(Ci_enchainement_nb_pafs, ti_bigbat_index)
+//				break
+//			}
+//			// test nb de passages minimum pour quitter la phase
+//			else if( ai_bigbat_attack_just_done[ti_bigbat_index] )
+//			{
+//				if( i_DBG_phase )
+//				{
+//					DBG_TraceString("********** INC NB PASSAGES : ")
+//					DBG_TraceInt(ai_passages_count[ti_bigbat_index])
+//					DBG_TraceString(" / ")
+//					DBG_TraceInt(ti_bigbat_passage_nb_max)
+//					DBG_TraceString(" pour ")
+//					DBG_TraceObject(ao_bigbats[ti_bigbat_index])
+//					DBG_TraceEOL()
+//				}
+//				if( ai_passages_count[ti_bigbat_index] >= ti_bigbat_passage_nb_max )
+//				{
+//					KBM_Sequence_Enchainement(Ci_enchainement_nb_passages, ti_bigbat_index)
+//				}
+//				else
+//				{
+//					ai_phase[ti_bigbat_index] = Ci_phase_attente
+//					if( i_DBG_phase )
+//					{
+//						DBG_TraceString("********** Nb passages pas terminé pour")
+//						DBG_TraceObject(ao_bigbats[ti_bigbat_index])
+//						DBG_TraceString(" -> attente msg\n")
+//					}
+//				}
+//			}
+//			// attaque cancelée (territoire, finished....)
+//			else if( ai_bigbat_just_abort[ti_bigbat_index] )
+//			{
+//				ai_phase[ti_bigbat_index] = Ci_phase_attente
+//				if( i_DBG_phase )
+//				{
+//					DBG_TraceString("********** Attaque cancelée par ")
+//					DBG_TraceObject(ao_bigbats[ti_bigbat_index])
+//					DBG_TraceString(") -> attente msg\n")
+//				}
+//			}
+//			break
+//		
+//		// PHASE D'ATTAQUE DES SMALL BATS ============================================================
+//		case Ci_phase_spawner_attente :
+//			if( @ao_bigbats[ti_bigbat_index] KBC_BigBat_Ronde() )
+//				ai_phase[ti_bigbat_index] = Ci_phase_spawner_actif
+//			if( ai_bigbat_just_paffee[ti_bigbat_index] )
+//				ai_phase[ti_bigbat_index] = Ci_phase_spawner_actif
+//			break
+//			
+//		case Ci_phase_spawner_actif : 
+//			OBJ_CapaSet(CAPA_Phase_Spawner, none)
+//			if( ! @o_spawner OBJ_CapaTest(OBJ_Capa_3) )		// CAPA_3   : au moins un ennemi a été généré
+//			{
+//				af_capa_1er_plan_duree[ti_bigbat_index] = 5.0
+//			}
+//			if( @o_spawner OBJ_CapaTest(OBJ_Capa_15) )
+//				ti_next_phase = vrai
+//			if( ti_next_phase )
+//			{
+//				@o_spawner OBJ_FlagInactiveSet(vrai)		// désactive le spawner, sera réactvé en temps voulu
+//				ai_bigbat_attack_reinit[ti_bigbat_index] = vrai		// réinit
+//				ai_phase[ti_bigbat_index] = Ci_phase_attente
+//				if( i_DBG_phase )
+//				{
+//					DBG_TraceString("********** SPAWNER CAPA 15 -> phase attente msg pour ")
+//					DBG_TraceObject(ao_bigbats[ti_bigbat_index])
+//					DBG_TraceEOL()
+//				}
+//			}
+//			break
+//		
+//		// PHASE INTERROMPUE !!! ======================================================================
+//		case Ci_phase_mashing : 
+//			// détect fin d'attaque mashing
+//			if( ! @ao_bigbats[ti_bigbat_index] OBJ_CapaTest(CAPA_BigBat_Mashing_Attack) )
+//				ti_next_phase = vrai
+//			if( ti_next_phase )
+//			{
+//				if( i_DBG_phase )
+//				{
+//					DBG_TraceString("********** Mashing terminé pour ")
+//					DBG_TraceObject(ao_bigbats[ti_bigbat_index])
+//					DBG_TraceString(" -> ")
+//				}
+//				ti_old_phase = ai_phase_interrompue[ti_bigbat_index]
+//				if( ti_old_phase != Ci_phase_spawner_actif )
+//				{
+//					ti_old_phase = Ci_phase_attente
+//					if( i_DBG_phase )
+//						DBG_TraceString("attente msg\n")
+//				}
+//				else if( i_DBG_phase )
+//					DBG_TraceString("retour en phase spawner\n")
+//				ai_phase[ti_bigbat_index] = ti_old_phase
+//			}
+//			break
+//		
+//		// PHASE D'AGONIE ===========================================================================
+//		case Ci_phase_agonie :
+//			if( ! @ao_bigbats[ti_bigbat_index] OBJ_CapaTest(CAPA_BigBat_Agonie) )
+//			{
+//				ai_phase[ti_bigbat_index] = Ci_phase_attente
+//				if( i_DBG_phase )
+//				{
+//					DBG_TraceString("********** Fin de l'agonie pour ")
+//					DBG_TraceObject(ao_bigbats[ti_bigbat_index])
+//					DBG_TraceString(" )-> attente msg\n")
+//				}
+//			}
+//			break
+//	}
+//	
+//	// Maitenir la kam au 1er plan après la génération du 1er nmi
+//	af_capa_1er_plan_duree[ti_bigbat_index] -= MATH_FloatMin(af_capa_1er_plan_duree[ti_bigbat_index], TIME_GetDt())
+//	if( af_capa_1er_plan_duree[ti_bigbat_index] )
+//	{
+//		if( ti_bigbat_index == 0 )
+//			OBJ_CapaSet(CAPA_Kam_CC_Kong_to_1eBigBat, none)
+//		else
+//			OBJ_CapaSet(CAPA_Kam_CC_Kong_to_2eBigBat, none)
+//	}
+//}
+//
+//
+//// Debug capas
+//if( i_DBG_phase )
+//{
+//	if( OBJ_CapaTest(CAPA_Kam_CC_Kong_to_1eBigBat) )
+//		Str_DisplayTextOnce("Manager capa 0 : Kam 1er Plan 1e Big Bat", cvector(0.4,0.65,0))
+//	if( OBJ_CapaTest(CAPA_Phase_Spawner) )
+//		Str_DisplayTextOnce("Manager capa 1 : Phase Spawner", cvector(0.4,0.7,0))
+//	if( OBJ_CapaTest(CAPA_Kam_CC_Kong_to_2eBigBat) )
+//		Str_DisplayTextOnce("Manager capa 0 : Kam 1er Plan 2e Big Bat", cvector(0.4,0.65,0))
+//}
+//
+//

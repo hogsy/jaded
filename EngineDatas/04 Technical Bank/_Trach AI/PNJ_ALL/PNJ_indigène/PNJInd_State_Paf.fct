@@ -1,0 +1,143 @@
+vector 	v
+int			action, ti_end
+float		tf_friction
+
+@get_global i_ennemi_counter_new[Ci_ennemi_counter_in_fight]++
+mi_paf_in = 1
+
+if (mi_paf_num != mi_paf_numcur )
+{
+	mi_paf_numcur = mi_paf_num
+	
+	if ( mi_paf_type == C_PAF_KK_Faible )
+	{
+		action = 65 
+		mv_paf_dir = 5 * (mv_paf_dir + cvector( 0, 0, 0.08) )
+		mf_paf_delay = 0.5
+	}
+	else
+	{
+		if ( (mi_paf_canal == -1) || (mi_paf_canal == Anim_Canal_Torse) )
+		{
+			action = 60
+			mf_paf_animspeedfactor  = 0
+			
+			if ( mf_paf_value == 1 )
+			{
+				action = 60
+				mf_paf_delay = 0.5
+				mv_paf_dir = 5 * (mv_paf_dir + cvector( 0, 0, 0.08) )
+			}
+			else if ( mf_paf_value < 5 )
+			{
+				action = 60
+				mf_paf_delay = 2
+				mv_paf_dir = 5 * (mv_paf_dir + cvector( 0, 0, 0.08) )
+			}
+			else 
+			{
+				action = 65
+				mf_paf_delay = 2
+				mv_paf_dir = 10 * (mv_paf_dir + cvector( 0, 0, 0.08) )
+			}
+		}
+		else if (mi_paf_canal  == Anim_Canal_Bassin)
+		{
+			mf_paf_animspeedfactor = 1
+			if (mf_paf_value == 1)
+			{
+				action = 20
+				mf_paf_delay = 2
+				mv_paf_dir = 5 * (mv_paf_dir + cvector( 0, 0, 0.08) )
+			}
+			else
+			{
+				action = 65
+				mf_paf_delay = 4
+				if ( mf_paf_value < 5 )
+					mv_paf_dir = 5 * (mv_paf_dir + cvector( 0, 0, 0.08) )
+				else
+					mv_paf_dir = 10 * (mv_paf_dir + cvector( 0, 0, 0.08) )
+			}
+		}
+		else if (mi_paf_canal == Anim_Canal_Tete )
+		{
+			mf_LifeCur = 0
+			mf_paf_delay = 0.5
+			action = 65
+			mf_paf_animspeedfactor  = 0
+			
+			if ( mf_paf_value < 5 )
+				mv_paf_dir = 5 * (mv_paf_dir + cvector( 0, 0, 0.08) )
+			else
+				mv_paf_dir = 10 * (mv_paf_dir + cvector( 0, 0, 0.08) )
+		}
+	}
+
+	ACT_ActionSet( action )
+}
+
+ti_end = 0
+if (mf_paf_delay > 0)
+{
+	mf_paf_delay -= TIME_GetDt()
+	if (mf_paf_delay < 0 )
+		ti_end = 1
+}
+else if (ACT_ActionFinished())
+	ti_end = 1
+
+
+v = DYN_SpeedGetVector( )
+v.x *= mf_paf_animspeedfactor 
+v.y *= mf_paf_animspeedfactor
+v +=  mv_paf_dir
+DYN_SpeedSetVector( v  )
+
+if (COL_CollideType(COL_C_Ground) && (mv_paf_dir.z < 0) )
+	tf_friction = 0
+else
+	tf_friction = 0.96
+
+mv_paf_dir = (mv_paf_dir * tf_friction) + (cvector( 0, 0, -1) * TIME_GetDt())
+	
+if( ti_end )
+{
+	mi_paf_in = 0
+	if (mf_LifeCur <= 0) 
+	{
+		mi_dying = vrai
+		AI_TrackChange(2, "PNJInd_State_Mort")
+		return
+	}
+	if ( mi_HideWhenPaffed )
+	{
+		AI_TrackChange( 2, "PNJInd_State_Hide" )
+		return
+	}
+
+	ACT_ActionSet(0)
+	if ( mi_CanCharge )
+	{
+		if (mo_Target && (!mo_WeaponCur || MATH_RandInt(0, 2) != 0) )
+			AI_TrackCurChangeNow("PNJInd_State_Charge")
+	}
+
+	mi_AttackState = 2
+	AI_TrackCurChangeNow("PNJInd_State_Attack")
+}
+
+
+
+//if(!mi_CanCharge || (mo_WeaponCur && MATH_RandInt(0, 2) == 0))
+//{
+//	mi_AttackState = 2
+//	AI_TrackCurChangeNow("PNJInd_State_Attack")
+//}
+//else
+//{
+//	ACT_ActionSet(0)
+//	TIME_Wait(0.3)
+//	AI_TrackCurChangeNow("PNJInd_State_Charge")
+//}
+//

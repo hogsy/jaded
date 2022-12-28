@@ -1,0 +1,155 @@
+#include "ig_defines.var"
+
+vector 	tv_bank
+vector	tv_force
+vector	tv_sens_chute
+vector	tv_banking
+vector	v_local_X
+vector	v_local_Y
+vector	tv_ray_pos
+vector	tv_ray_dir
+vector	tv_dest_bank
+vector	tv_sens_paf 
+
+object	to_ray
+float		tf_norm
+int			ti_bong
+int			ti_ray_nb
+
+if ( i_fin_mode)
+{
+	// PURGE DU COMPORTEMENT
+	// EXEC
+	if( MSG_GlobalIsValid( mid_grabbed_LIAISON_ID))
+		LNK_ServeurGet(Ci_LNK_KKGRAB_FORCE, mid_grabbed_LIAISON_ID, faux, nofunc, nofunc)
+	COL_UnCollidableDel( o_uncollide_actor)
+	i_fin_mode = faux
+	return
+}
+
+// INIT
+if ( i_mode != Ci_mode_casse)
+{
+	i_mode = Ci_mode_casse
+	if ( f_last_func)
+	{
+		i_fin_mode = vrai
+		AI_Execute( f_last_func)
+	}
+	v_casse_bank_ini = OBJ_BankingGet()
+	f_casse_blend = 0.0
+	f_time_casse = 0.0
+	f_time_casse2 = 0
+}
+
+// ANALYSE
+//o_grab_actor = LNK_ServeurGet(Ci_LNK_KKGRAB_FORCE, mid_grabbed_LIAISON_ID, vrai, nofunc, nofunc)
+//if ( !o_grab_actor || 
+if ( MATH_VecDotProduct( OBJ_BankingGet(), Cv_VerticalVector) < Cf_Cos85)
+	ChangeEtat("ig_aterre")
+
+
+// COMPORTEMENT
+
+//if (o_grab_actor)
+//{
+//	tv_force = LNK_GrabVectorGet(mid_grabbed_LIAISON_ID)
+//	if ( !MATH_VecNullEpsilon( tv_force))
+//	{
+//		tv_sens_chute.x = -OBJ_BankingGet().y
+//		tv_sens_chute.y = OBJ_BankingGet().x
+//		tv_sens_chute.z = 0
+//		MATH_VecSetNormalize( tv_sens_chute)
+//		OBJ_RotateGlobalZ( MATH_VecDotProduct( tv_sens_chute, tv_force) * TIME_GetDt())
+//	}
+//}
+
+// Influence de Kong + Gravité
+//v_force = LNK_GrabVectorGet(mid_grabbed_LIAISON_ID)
+//v_grav_pos += v_force * ( Cf_CasseForce * TIME_GetDt() )								// Action de la Force
+//v_grav_pos = OBJ_PosGet() + ( OBJ_BankingGet() * Cf_G )							// Centre de gravité
+//
+//v_grav_pos -= cvector( 0.0, 0.0, Cf_ForceGravite* TIME_GetDt())						// Action de la Gravité
+//tv_banking = v_grav_pos - OBJ_PosGet()
+
+//if ( f_time_casse < 0.5)
+if ( MATH_FloatNullEpsilon(f_time_casse2) && f_casse_blend < 0.08)
+	f_casse_blend += MATH_RandFloat( 0.05, 0.2) *  TIME_GetDt()
+else
+{
+	if( !i_casse_accelere)
+	{
+		i_casse_accelere = vrai
+		v_casse_bank_ini = OBJ_BankingGet()
+		f_time_casse2 = f_time_casse
+	}
+	f_casse_blend = ( f_time_casse - f_time_casse2)
+	f_casse_blend *= f_casse_blend 
+}
+//f_casse_blend = f_time_casse * f_time_casse 
+tv_dest_bank = OBJ_BankingGet()
+MATH_VecSetHorzNormalize( tv_dest_bank)
+tv_banking = MATH_VecBlendRotate( v_casse_bank_ini, tv_dest_bank, f_casse_blend)
+MATH_VecSetNorm( tv_banking, 20.0)
+f_time_casse += TIME_GetDt()
+
+
+// *************************
+// COllision avec un mur
+// *************************
+
+//	REPERE LOCAL
+if ( !MATH_FloatNullEpsilon(MATH_VecDotProduct(-Cv_VerticalVector, OBJ_BankingGet()) + 1.0))
+{
+	v_local_X = MATH_VecCrossProduct( -Cv_VerticalVector, OBJ_BankingGet())
+	MATH_VecSetHorzNormalize( v_local_X)
+}
+else
+	v_local_X = OBJ_HorizonGet()
+v_local_Y = MATH_VecCrossProduct( OBJ_BankingGet(), v_local_X)
+
+
+// Recheche d'une collision éventuelle pendant la chute
+DBG_RenderCylinder( OBJ_PosGet(), tv_banking, Cf_RayonTron, 0x712C4E8B)
+tv_ray_pos = OBJ_PosGet() + ( v_local_Y* Cf_RayonTron)
+tv_ray_dir = tv_banking
+DBG_RenderVector( tv_ray_pos,  tv_banking, 0xFF)
+to_ray = COL_RayObject_Vector( tv_ray_pos, tv_ray_dir, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_visuel)
+if ( to_ray)
+{
+	// PAF
+	if ( MATH_VecDotProduct( @to_ray OBJ_PosGet() - OBJ_PosGet(), v_local_X) > 0)
+		tv_sens_paf = v_local_X
+	else
+		tv_sens_paf = -v_local_X	
+	DBG_RenderVector( @to_ray OBJ_PosGet() + cvector( 0.0, 0.0, 2.0), tv_sens_paf * 5.0, 0xFF)
+	EVENT_AddEventPaf( C_EVENT_FILTER_Object, C_PAF_KK_Moyen, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_ray, 1.0 * PAF_Unit, tv_sens_paf )
+	
+}
+
+ti_bong =faux
+ti_ray_nb = 0
+to_ray = COL_RayObject_Vector( tv_ray_pos, tv_ray_dir, all, OBJ_C_IdentityFlag_AI, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+
+while ( to_ray && ti_ray_nb < 5)
+{
+	// Trouver vite un point valide
+	ti_ray_nb++
+	ti_bong = vrai
+	tv_ray_pos = v_last_ray_pos
+	tv_ray_dir = v_last_ray_dir
+	tv_banking += v_last_ray_dir
+	tv_banking /= 2.0
+	tv_ray_pos += v_last_ray_pos
+	tv_ray_pos /= 2.0	
+	to_ray = COL_RayObject_Vector( tv_ray_pos, tv_banking, all, none, 0, COL_C_Ray_on_ColMap_NoCrossable)
+	DBG_RenderVector( tv_ray_pos,  tv_banking, 0xFF)
+}
+
+v_last_ray_pos = tv_ray_pos
+v_last_ray_dir = tv_ray_dir
+OBJ_BankingGeneralSet( OBJ_SightGet(), tv_banking)
+if ( ti_bong)
+	ChangeEtat("ig_aterre")
+
+

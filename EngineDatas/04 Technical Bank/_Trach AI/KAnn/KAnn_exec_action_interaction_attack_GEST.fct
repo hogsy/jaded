@@ -1,0 +1,18 @@
+object		to_actor
+
+to_actor = pop
+
+i_run_breath_enabled = vrai		// autorisée à jouer le son GeneKAnn_C_breath_run_fear
+
+// MODE D'INTERACTION ATTACK
+if (@to_actor AI_IsModel( get_PNJ_Scolo_Path ) )
+	AI_Execute("KAnn_exec_action_interaction_attack_scolo")
+else if (@to_actor AI_IsModel( get_PNJ_KBats_path ) )
+	AI_Execute("KAnn_exec_action_interaction_attack_bat")		// SMALL bats only
+else if (@to_actor AI_IsModel( get_PNJ_KRaptor_path ) )
+	AI_Execute("KAnn_exec_action_interaction_attack_raptor")
+else if (@to_actor AI_IsModel( get_PNJ_KSpider_path ) )
+	AI_Execute("KAnn_exec_action_interaction_attack_spider")
+else
+	AI_Execute("KAnn_exec_action_interaction_attack_default")			// default
+

@@ -1,0 +1,50 @@
+//-------------------------------------------------------------------------------------------------------------------
+#include "SP_Constant.var"
+
+
+
+//-------------------------------------------------------------------------------------------------------------------
+int i, ti_trigger
+
+
+//-------------------------------------------------------------------------------------------------------------------
+for(i=0; i<SP_Cte_SndRef_MaxNb; i++)
+{
+	if( ! AI_TriggerIsValid(at_Trigger[i]) ) break
+	
+	ti_trigger = call_trigger(at_Trigger[i])
+	
+	switch(mai_State[i])
+	{
+		case SP_Cte_State_WaitPlaying :
+			if( ! ti_trigger ) break
+			// callback au play
+			if(AI_TriggerIsValid(at_Callback[i]))	call_trigger(at_Callback[i])
+			// play
+			SND_MdFPlay(ai_MdFIndexes[i])
+			mai_State[i] = SP_Cte_State_WaitStopping 
+			break
+			
+				
+		case SP_Cte_State_WaitStopping :
+			if( (i_Stop == SP_Cte_Stop_When_trigger_is_off ) && ! ti_trigger )
+			{
+				SND_MdFStop(ai_MdFIndexes[i])
+				if(AI_TriggerIsValid(at_StopCallback[i]))	call_trigger(at_StopCallback[i])
+
+				if(i_TriggerScan == SP_Cte_TriggerScan_Inactive_after_1st_playing) 
+					mai_State[i] = SP_Cte_State_Dead
+				else
+					mai_State[i] = SP_Cte_State_WaitPlaying
+			}
+			else if( (i_Play == SP_Cte_Play_While_trigger_is_on ) && ti_trigger )
+			{
+				if( (SND_MdFGetStatus(ai_MdFIndexes[i])  & 4) == 0 )
+					SND_MdFPlay( ai_MdFIndexes[i] )
+			}
+			break
+		
+	
+		default: break		
+	}
+}

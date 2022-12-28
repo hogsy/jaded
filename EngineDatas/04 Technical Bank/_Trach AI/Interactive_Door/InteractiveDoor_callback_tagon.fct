@@ -1,0 +1,28 @@
+int test
+
+test = GRID_IsIn(@mo_TagRef OBJ_PosGet())
+
+if ( !test )
+{
+	mi_TagDone = 0
+	return
+}
+
+if ( ! mi_TagDone && !mi_Opened )
+{
+	mi_TagDone = 1
+	GRID_CurrentSet( mi_TagEtage )
+	GRID_TagBox(@mo_TagRef OBJ_PosGet(), @mo_TagRef OBJ_SightGet(), cvector( -0.001, -0.001, 0), cvector( mi_TagX, mi_TagY, 0), tag_grid_terraindyn_1)
+	if (mi_Type != 03 )// Pas PLF Rayman
+	{
+		@mo_TagRef COL_ColMapActivationSet( all, none)
+	}
+
+	if (move_net_1)
+	{
+		WAY_LinkCapaSet(@get_global move_network, move_net_1, move_net_2, OBJ_Capa_7, 0)
+		WAY_LinkCapaSet(@get_global move_network, move_net_2, move_net_1, OBJ_Capa_7, 0)
+	}
+}
+
+

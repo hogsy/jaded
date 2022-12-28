@@ -1,0 +1,45 @@
+#include "RM_Champi_defines.var"
+Include_UltraProcedure_Header
+
+vector		tv_vec
+vector		tv_pos
+
+int				ti_i
+
+// SORTIE ETAT 	===================================================================
+if( i_sort_etat )
+{
+	i_sort_etat = faux
+	return
+}
+
+// INIT ETAT 	=====================================================================
+if( i_etat_courant != RMC_ETAT_WAIT)
+{
+	i_etat_courant = RMC_ETAT_WAIT
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// STIMULI =======================================================================
+if (RMC_IsHit())
+{
+	tv_pos = OBJ_PosGet() + cvector(0.0, 0.0, 1.0)
+	for (ti_i=0; ti_i < Bonus_Mana; ti_i++)
+	{
+		tv_vec = cvector(MATH_RandFloat(-1.0, 1.0), MATH_RandFloat(-1.0, 1.0), MATH_RandFloat(1.0, 3.0)) * 5.0
+		Proc_RM_GenerateLifeMana(0, 1, tv_pos, tv_vec)
+	}
+	AI_TrackCurChangeNow("RMC_ETAT_hidden")
+}
+// COMPORTEMENT ================================================================

@@ -1,0 +1,62 @@
+
+int							ti_i
+float						tf_rope_length
+float						tf_rope_ratio
+float						tf_cos
+vector					tv_vec
+vector					tv_force
+vector					tv_traction_A
+vector					tv_traction_B
+
+
+o_poignee_tiree = nobody
+//o_last_grabbed = nobody
+f_traction = 0.0
+for (ti_i=0; ti_i < 5; ti_i++)
+{
+	if (o_poignees[ti_i] != nobody)
+	{
+		o_tireur = @o_rope_manager Rope_Manager_Get_Linked_Gao(o_poignees[ti_i], tf_rope_length, tf_rope_ratio, tv_traction_A, tv_traction_B)
+		if (o_tireur)
+		{
+			o_poignee_tiree = o_poignees[ti_i]
+			i_poignee_tiree_properties = i_poignees_properties[ti_i]
+			break
+		}
+	}
+}
+
+if (o_poignee_tiree != nobody)
+{
+	// Corde tendue ?
+	i_rope_index = @o_rope_manager Rope_Manager_Get_Corde_Index(o_tireur, o_poignee_tiree)
+	if (@o_rope_manager Rope_Manager_RopeTendue(i_rope_index))
+		f_delai_tire += TIME_GetDt()
+	else if (!glob_joynorm_get)
+		f_delai_tire = 0.0
+	if (f_delai_tire > 0.1)
+	{
+		// Récupérer la traction exercée par la corde
+		@o_rope_manager Rope_Manager_RopeLastTrameTractionGet(i_rope_index, tv_force, tv_traction_B)
+		tv_force = tv_traction_B		// à cleaner !!!!
+		if (!MATH_VecNullEpsilon(tv_force))
+		{
+			// Réorienter le vecteur si besoin
+			if (MATH_VecDotProduct(@o_tireur OBJ_PosGet() - @o_poignee_tiree OBJ_PosGet(), tv_force) < 0.0)
+				tv_force *= -1.0
+	
+			// Augmenter le facteur d'application de la force
+			if (f_inertie > 0.0)
+				f_factor = MATH_FloatMin(MATH_FloatBlend(f_factor, 1.0, (1.0 - f_inertie) * TIME_GetDt() * 10.0), 1.0)
+			else
+				f_factor = 1.0
+	
+			// Force de rotation
+			tv_vec = MATH_VecCrossProduct(@o_poignee_tiree OBJ_PosGet() - OBJ_PosGet(), tv_force)
+			f_traction = MATH_VecDotProduct(tv_vec, OBJ_BankingGet())
+		}
+	}
+	o_last_grabbed = OBJ_Me()
+}
+else
+	f_delai_tire = 0.0

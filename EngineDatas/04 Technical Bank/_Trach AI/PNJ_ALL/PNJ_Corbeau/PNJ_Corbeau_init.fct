@@ -1,0 +1,63 @@
+#include "PNJ_Corbeau_defines.var"
+
+object	to_corback 
+
+OBJ_ZoomSet(f_zoom)
+OBJ_FlagInvisibleSet(vrai)
+
+BV_MinSet(cvector(-1.0, -1.0, -1.0))
+BV_MaxSet(cvector(1.0, 1.0, 1.0))
+
+v_grav_pos = OBJ_PosGet()
+v_grav_pos.z -= Cf_bras_de_levier
+
+f_morph_progression = MATH_RandFloat(1.0, 8.0)
+
+// INITIALISATION RESEAU
+if (o_1st_wp)
+{
+	n_net = @o_1st_wp WAY_NetOfObj()
+
+	o_last_wp = o_1st_wp
+	o_next_wp = WAY_NetNextWP(n_net, o_last_wp, 0, 0)
+
+	f_link_coef -= 0.0
+
+	f_link_length = MATH_VecNorm(@o_next_wp OBJ_PosGet() - @o_last_wp OBJ_PosGet())
+	
+	if (! OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Generated))
+		AI_Execute("PNJ_Corbeau_exec_compute_network")
+}
+
+f_rot_speed = MATH_FloatSign(MATH_RandFloat(-1.0, 1.0)) * MATH_RandFloat(1.0, 3.0)
+f_climb_speed = MATH_RandFloat(0.2, 0.3)
+
+if (OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Generated))
+{
+	TIME_Wait(f_morph_progression / 5.0)	
+
+	OBJ_FlagInvisibleSet(faux)
+
+	if (o_1st_wp)
+	{
+		v_offset = MATH_VecRotate(OBJ_SightGet(), OBJ_HorizonGet(), MATH_RandFloat(-Cf_PiBy2, Cf_PiBy2))
+		v_offset = MATH_VecRotate(v_offset, OBJ_BankingGet(), MATH_RandFloat(-Cf_PiBy2, Cf_PiBy2))
+		v_offset *= MATH_RandFloat(1.0, 2.0)
+
+		AI_TrackCurChangeNow("PNJ_Corbeau_ETAT_follow_network")
+	}
+	else
+	{
+		OBJ_SightGeneralSet(MATH_VecRotate(OBJ_SightGet(), Cv_VerticalVector, MATH_RandFloat(-Cf_PiBy3, Cf_PiBy3)), Cv_VerticalVector)
+
+		AI_TrackCurChangeNow("PNJ_Corbeau_ETAT_envol")
+	}
+}
+else
+{
+	if (o_1st_wp && direct_fly)
+		AI_TrackCurChangeNow("PNJ_Corbeau_ETAT_follow_network")
+	else
+		AI_TrackCurChangeNow("PNJ_Corbeau_ETAT_attente")
+}
+

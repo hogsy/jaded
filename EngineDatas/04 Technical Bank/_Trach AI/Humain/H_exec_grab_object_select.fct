@@ -1,0 +1,20 @@
+messageid  tmid
+int		ti_ID
+int		ti_index
+
+tmid = pop
+
+ti_ID = LNK_GrabObjectIdGet(tmid)
+
+//if( @"univ" i_weapon_ID[i_id_humain] == ti_ID )
+//{
+//	LNK_ServeurRefuse(tmid)		// pas la même.... mmm et les munitions, hein ??? va falloir faire un truc...
+//}
+
+ti_index = H_Joueur_GrabbedObject_GetIndex_ByID(ti_ID)
+if( ti_index != -1 )
+{
+	// j'ai déjà
+	LNK_ServeurRefuse(tmid)
+}
+

@@ -1,0 +1,175 @@
+#include "KT_defines.var"
+
+#define 		Finish_Debut_Controle		2.74
+
+float 		tf_percent
+float		tf_finish_timeout 
+float		tf_kong_loose_coef
+float		tf_secure_dt
+
+int			ti_indice
+int			ti_i
+int			ti_frame
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	i_exit_mode = faux
+	i_uncol = vrai		// DAns ce cas la on ne peux pas réactiver la collision sinon on risque de pas reusssir a éjecter : recalage...
+	o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, faux, nofunc, nofunc)		// Fin de la liaison
+	i_grabbed_finish = faux
+	return
+}
+
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_KK_grabbedFinish)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_KK_grabbedFinish
+	o_grabbed_actor_KK_ref = o_grabbed_actor_KK
+	fct_last_etat = AI_TrackCurGet()
+
+	f_time_start_etat = 0.0
+	i_finish_end = faux
+	
+	f_finish_force_rex = 0
+	f_finish_force_kong  = 0
+	f_coef_recul = 1.0		// SUPPR DES ADD SPEED
+	i_gfx_particules_finish = faux
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// ANALYSE ==============================================================
+//if ( !i_finish_end)
+//	o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, vrai, nofunc, nofunc)
+//else
+o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, vrai, nofunc, nofunc)
+
+if ( !o_grabbed_actor_KK)
+{
+	i_grabbed_finish = faux
+	ai_grabbed_availibility[ Ci_LNK_GRAB_KONG] = faux
+	if ( ACT_ActionGet() == Action_Agonie_finish_Deb)
+		ACT_ActionSet( Action_Agonie_finish_Gagne)
+	else if ( !(ACT_CustomBitGet() & CBit_GrabbedKK_Anim_Speciale) || ACT_ActionFinished())
+	{
+		KT_LifeRecupere()
+		macro_change_etat("KT_ETAT_fight_KONG")
+	}
+	return
+}
+
+
+// COMPORTEMENT ==============================================================
+KT_Uncol_Add( o_grabbed_actor_KK)
+KT_Interet_Update(o_fight_actor, C_EVENT_InteretStatusGrab)
+
+i_flag_look = faux
+
+switch ( LNK_GrabKong_ActionGet(mid_grabbed_by_Kong_LNK_ID))
+{
+	case Ci_GrabKong_FinishDeb :
+		if ( ! i_finish_end )
+		{
+			if ( f_time_start_etat < Finish_Debut_Controle)
+				f_finish_frame = ANI_CurrentFrameGet(0)
+			else
+			{
+				// DEBUT du CONTOLE JOUEUR
+
+				// TEST Frame FAILLED
+				if ( f_finish_frame < 102)
+				{
+					// FAILLED
+					i_finish_end = vrai		// TREX BAT KONG
+					i_paf_exit_colmap_mode = vrai		// RECALE KONG
+					i_uncol = vrai								// RECALE KONG
+					LNK_GrabKong_ActionSet(mid_grabbed_by_Kong_LNK_ID, Ci_GrabKong_FinishPerdu)
+				}
+
+				// GESTION des FORCES -----------------------------------------------------------------------------------------
+
+				// TIME OUT & PERTE TROP IMPORTANTE
+				tf_finish_timeout = 10
+//				Str_DisplayFloatOnce(f_finish_force_kong - f_finish_force_rex, cvector(0,0.8,0))
+				if ((f_finish_force_kong - f_finish_force_rex) < -2.5)
+					tf_finish_timeout = 0
+				
+				tf_secure_dt = MATH_FloatLimit(TIME_GetDt(), 0.016, 0.048)		// SECURE DT FOR LOW FRAMERATE !!!
+				
+				// NE PAS MONTER LA FORCE DE L'ENNEMI SI KONG EST FORT
+				if (f_finish_force_kong < 2.0)
+					f_finish_force_rex = MATH_FloatMin(f_finish_force_rex + (2.0 * tf_secure_dt), 10)
+				
+				// REDUCTION DE LA FORCE DE KONG
+				if( @o_grabbed_actor_KK_ref Proc_KK_RAGE_Test() )
+					tf_kong_loose_coef = 3.0
+				else
+					tf_kong_loose_coef = 20.0
+				f_finish_force_kong = MATH_FloatMax(0,f_finish_force_kong - (tf_kong_loose_coef * tf_secure_dt))
+				
+				// GESTION DU BOUTON
+				if (f_time_start_etat < (Finish_Debut_Controle + tf_finish_timeout ))
+				{	
+					if( @o_grabbed_actor_KK_ref Proc_KK_Mashing_Button_Just_Pressed() )
+					{
+						// VALEUR DE LA FORCE DE KONG VARIANT EN FCT DU % AGE DE FINISH
+						tf_percent = @o_grabbed_actor_KK_ref Proc_KK_Mashing_Pct()
+						f_finish_force_kong = 3.0 + (0.5-(tf_percent* 0.5))
+						f_finish_force_rex = MATH_FloatMax(0,f_finish_force_rex - 0.5)
+					}
+				}
+
+				// AJOUT DES FORCES
+				f_finish_frame += f_finish_force_kong
+				f_finish_frame -= f_finish_force_rex
+				if ( f_finish_frame > ANI_NbFrameGet(0))
+				{
+					// FIn du FInish Kong Gagne
+					LNK_GrabKong_ActionSet( mid_grabbed_by_Kong_LNK_ID, Ci_GrabKong_FinishFin )
+				}
+				else
+				{
+					ANI_RatioSet(0, f_finish_frame / ANI_NbFrameGet(0) )		
+					@o_grabbed_actor_KK_ref ANI_RatioSet(0, f_finish_frame / @o_grabbed_actor_KK_ref ANI_NbFrameGet(0) )		
+				}
+				// GESTION des FORCES -----------------------------------------------------------------------------------------
+			}
+			if ( ! i_finish_end)
+				ACT_ActionSet( Action_Agonie_finish_Deb)
+			else
+				ACT_ActionSet(Action_Agonie_finish_Gagne)
+		}
+		break
+		
+	case	Ci_GrabKong_FinishFin :
+		i_already_finished_flag = vrai
+		if( ACT_ActionGet() != Action_Agonie_finish_Fin )
+		{
+//			KT_Add_GFX_Blood(Ci_GFX_Blood_Finish_Bras_de_Fer, nobody)
+			ACT_ActionSet( Action_Agonie_finish_Fin)
+		}
+//		else if( ! i_gfx_particules_finish && ANI_CurrentFrameGet(0) > 65 )
+//		{
+//			i_gfx_particules_finish = vrai
+//			f_time_gfx_particules = 0.25
+//			v_particules_paf_dir = OBJ_BankingGet()
+//		}
+		break
+		
+	case Ci_GrabKong_FinishGagne :
+		o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, faux, nofunc, nofunc)		// Fin de la liaison
+		KT_STATS_NMI_Killed(o_grabbed_actor_KK_ref)
+		macro_change_etat("KT_ETAT_mort")
+		break
+		
+	case Ci_GrabKong_FinishPerdu :
+		break
+}

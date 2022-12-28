@@ -1,0 +1,78 @@
+#include "CM_Defines.var"
+
+vector	tv_temp
+vector	tv_joy1
+float		tf_z
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Params
+AI_TrackChange(2, "CM_Meca_Kong")
+o_mf_actor = AI_MainActorGet(0)
+v_cur_pos_suivi = @o_mf_actor OBJ_PosGet()
+
+// Changement de mode ?
+if(i_mode_cur != CM_ModeKong_Proche)
+{
+	i_mode_cur = CM_ModeKong_Proche
+	
+//	tv_temp = @o_mf_actor OBJ_PosGet() - OBJ_PosGet()
+//	tv_temp.z = 0
+//	@o_mf_actor OBJ_BankingGeneralSet(tv_temp, Cv_VerticalVector)
+}
+
+if(!IO_ButtonPressed(joy_button_R)) 
+{
+	f_blend_pos = 5
+	AI_TrackCurChangeNow("CM_Mode_Kong")
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+i_auto_evitementsight = faux
+i_auto_blendsight = faux
+i_stick_zmax = faux
+i_visee_force_sight = faux
+
+// Params : Distance ideale
+f_IdealDist = 2.5
+
+// Params : Hauteur cam
+f_IdealZMin = 6.5
+f_IdealZMax = 6.5
+f_blend_pos = MATH_FloatBlend(f_blend_pos, 50, TIME_GetDt())
+
+// Params : X tgt
+af_FctIdeal_XTgt[1] = 0
+af_FctIdeal_XTgt[3] = 0
+
+// Params : Hauteur tgt
+af_FctIdeal_ZTgt[1] = f_IdealZMin - 0.7
+af_FctIdeal_ZTgt[3] = f_IdealZMin - 0.7
+
+// Sight
+v_ideal_sight = -@o_mf_actor OBJ_SightGet()
+
+// Pad
+v_joy_1 = MATH_VecBlend(v_joy_1, IO_JoyGetMove1(), 7 * TIME_GetDt())
+tv_joy1 = v_joy_1
+if(MATH_AbsFloat(tv_joy1.x) > C_JoyTolX)
+{
+	f_blend_pos = 5
+	tv_joy1.x -= C_JoyTolX * MATH_FloatSign(tv_joy1.x)
+	tv_temp = @o_mf_actor OBJ_SightGet()
+	tv_temp = MATH_VecCrossProduct(tv_temp, Cv_VerticalVector)
+	if(tv_joy1.x > 0) tv_temp = -tv_temp
+	v_ideal_sight = MATH_VecBlendRotate(v_ideal_sight, tv_temp, MATH_AbsFloat(tv_joy1.x))
+}
+
+if(MATH_AbsFloat(tv_joy1.y) > C_JoyTolY)
+{
+	f_blend_pos = 5
+	tv_joy1.y -= C_JoyTolY * MATH_FloatSign(tv_joy1.y)
+	f_IdealZMax += (tv_joy1.y * 4.5)
+	f_IdealZMax = MATH_FloatMax(f_IdealZMax, 4)
+}
+	

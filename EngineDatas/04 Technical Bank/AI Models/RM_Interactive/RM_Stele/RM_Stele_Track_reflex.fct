@@ -1,0 +1,40 @@
+#include "RM_Stele_Defines.var"
+
+float tf_Lod
+object to_mana
+int ti_SND
+
+tf_Lod = OBJ_LodVisGet()
+if(tf_Lod!=0.0)
+{
+	f_Lod = MATH_FloatMax(MATH_FloatBlend(f_Lod,tf_Lod,1.0*TIME_GetDt()),0.001)
+}
+
+if(OBJ_LodVisGet()<0.05 && MATH_VecSquareDistance(OBJ_PosGet(),@get_rayman OBJ_PosGet())>100.0)
+{
+	if(!i_Loin)
+	{
+		PROC_DESTROY_ALL_SFX()
+		i_Loin=vrai
+	}
+}
+else
+{
+	i_Loin=faux
+	RM_Stele_GFXMajIncantation()
+	RM_Stele_GFXHalos()
+}
+
+if(i_PopLife>0)
+{
+	Proc_RM_GenerateLifeMana(faux,vrai, @ao_Socles[i_EnValidation] OBJ_PosGet() + (Cv_VerticalVector*0.5),MATH_RandFloat(5.0,10.0) * cvector(MATH_RandFloat(-0.5,0.5),MATH_RandFloat(-0.5,0.5),MATH_RandFloat(0.75,1.5)))
+	to_mana=Proc_RM_GenerateLifeMana(vrai,faux, @ao_Socles[i_EnValidation] OBJ_PosGet() + (Cv_VerticalVector*0.5),MATH_RandFloat(5.0,10.0) * cvector(MATH_RandFloat(-0.5,0.5),MATH_RandFloat(-0.5,0.5),MATH_RandFloat(0.75,1.5)))	
+	i_PopLife--
+	if(i_PopLife==0)
+	{
+		ti_SND = @to_mana SND_Request(1, 0)
+		SND_Play(ti_SND)
+	}
+}
+
+// RM_Stele_GFX_Signalisation()

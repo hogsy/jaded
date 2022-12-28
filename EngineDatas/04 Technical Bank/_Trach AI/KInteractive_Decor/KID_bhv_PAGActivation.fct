@@ -1,0 +1,107 @@
+#include "KID_Defines.var"
+
+int 			ti_IndexToBrique
+int 			ti_IndexToPAG
+int 			ti_IsTrackDone
+
+object 		tmo_GFXSource
+
+message 	tm_Msg
+
+ti_IsTrackDone = vrai
+
+mf_time = TIME_Get()
+
+// for every location that should emit a "when-hit" particle, activate it here
+for ( ti_IndexToBrique = 0; ti_IndexToBrique < C_MaxBriques; ti_IndexToBrique++ )
+{
+	if ( mai_PafNumberToBreakOn[ti_IndexToBrique] == mi_NumberOfPafs || !mi_IsMultiHit )
+	{
+		// if there isn't a brick, there won't be PAGs to activate there
+		if ( ao_ODE_briques[ti_IndexToBrique] )
+		{
+			for ( ti_IndexToPAG = 0; ti_IndexToPAG < C_MaxHitPags; ti_IndexToPAG++ )
+			{
+				// make sure there is a pag to play at the loc and that it isnt already playing
+				if ( mao_ParticleSystem[ti_IndexToBrique][ti_IndexToPAG] && !mai_IsPAGActiveForLocation[ti_IndexToBrique][ti_IndexToPAG] )
+				{
+					// dont create it again unless it has been destroyed for that location
+					mai_IsPAGActiveForLocation[ti_IndexToBrique][ti_IndexToPAG]	= vrai
+					maf_PAGStartTime[ti_IndexToBrique][ti_IndexToPAG]					= TIME_Get()
+				}
+			}
+		}
+	}
+}
+
+// perform actual activation, taking delays into account
+for ( ti_IndexToBrique = 0; ti_IndexToBrique < C_MaxBriques; ti_IndexToBrique++ )
+{
+	// if there isn't a brick, there won't be PAGs to activate there
+	if ( ao_ODE_briques[ti_IndexToBrique] )
+	{
+		for ( ti_IndexToPAG = 0; ti_IndexToPAG < C_MaxHitPags; ti_IndexToPAG++ )
+		{
+			if ( mai_IsPAGActiveForLocation[ti_IndexToBrique][ti_IndexToPAG] && !mai_IsPAGCreatedForLocation[ti_IndexToBrique][ti_IndexToPAG] )
+			{
+				if ( mf_time - maf_PAGStartTime[ti_IndexToBrique][ti_IndexToPAG] >= maf_PAGDelay[ti_IndexToBrique][ti_IndexToPAG] )
+				{	
+					tmo_GFXSource 		= @mao_ParticleSystem[ti_IndexToBrique][ti_IndexToPAG] OBJ_Duplicate( @ao_ODE_briques[ti_IndexToBrique] OBJ_PosGet() )
+					
+					if ( !mao_PAGLocationWP[ti_IndexToBrique][ti_IndexToPAG] )
+					{
+						tm_Msg.msg_sender	= ao_ODE_briques[ti_IndexToBrique]	//JIMINOTE: set this to a WP
+					}
+					else
+					{
+						tm_Msg.msg_sender = mao_PAGLocationWP[ti_IndexToBrique][ti_IndexToPAG]
+					}
+					
+					Dispatch_Interaction( tmo_GFXSource, tm_Msg )
+					
+					mai_IsPAGCreatedForLocation[ti_IndexToBrique][ti_IndexToPAG] = vrai
+				}
+			}
+		}
+	}
+}
+
+// destroy particle systems when we are done with them
+for ( ti_IndexToBrique = 0; ti_IndexToBrique < C_MaxBriques; ti_IndexToBrique++ )
+{
+	// if there isn't a brick, there won't be PAGs to deactivate there
+	if ( ao_ODE_briques[ti_IndexToBrique] )
+	{
+		for ( ti_IndexToPAG = 0; ti_IndexToPAG < C_MaxHitPags; ti_IndexToPAG++ )
+		{
+			if ( mao_ParticleSystem[ti_IndexToBrique][ti_IndexToPAG] && mai_IsPAGActiveForLocation[ti_IndexToBrique][ti_IndexToPAG] )
+			{
+				// has the particle been activated
+				if ( mai_IsPAGCreatedForLocation[ti_IndexToBrique][ti_IndexToPAG] )
+				{
+					mai_IsPAGActiveForLocation[ti_IndexToBrique][ti_IndexToPAG]	= faux
+					maf_PAGStartTime[ti_IndexToBrique][ti_IndexToPAG]					= 0.0
+					mai_IsPAGCreatedForLocation[ti_IndexToBrique][ti_IndexToPAG] = faux
+				}
+			}
+		}
+	}
+}
+
+// check to see that there are particle systems playing.  if not, shut down this behavior
+for ( ti_IndexToBrique = 0; ti_IndexToBrique < C_MaxBriques; ti_IndexToBrique++ )
+{
+	// if there isn't a brick, there won't be PAGs to deactivate there
+	for ( ti_IndexToPAG = 0; ti_IndexToPAG < C_MaxHitPags; ti_IndexToPAG++ )
+	{
+		if ( mai_IsPAGActiveForLocation[ti_IndexToBrique][ti_IndexToPAG] )
+		{
+			ti_IsTrackDone = faux
+		}
+	}
+}
+
+if ( ti_IsTrackDone )
+{
+	AI_TrackStop( C_Track_PagActivation )
+}

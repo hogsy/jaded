@@ -1,0 +1,38 @@
+int 			enemy
+object		to_obj
+message	tm_msg
+
+mi_EnemyActive = 0
+
+if ( AI_TriggerIsValid( mt_Trigger_EnemyIsDead ) )
+{
+	tm_msg = AI_TriggerGetMsg( mt_Trigger_EnemyIsDead )
+	for (enemy = 0; enemy < 16; enemy++)
+	{
+		to_obj = mao_Enemy[ enemy ]
+		if (to_obj == nobody) continue
+		
+		tm_msg.msg_gao1 = to_obj
+		AI_TriggerSetMsg(mt_Trigger_EnemyIsDead, tm_msg)
+		if ( call_trigger( mt_Trigger_EnemyIsDead ) )
+		{
+			mao_Enemy[ enemy ] = nobody
+			continue
+		}
+		mi_EnemyActive++
+	}
+}
+else
+{
+	for (enemy = 0; enemy < 16; enemy++)
+	{
+		to_obj = mao_Enemy[ enemy ]
+		if (to_obj == nobody) continue
+		if (@to_obj OBJ_CapaTest( OBJ_Capa_15 ) )
+		{
+			mao_Enemy[ enemy ] = nobody
+			continue
+		}
+		mi_EnemyActive++
+	}
+}

@@ -1,0 +1,380 @@
+#include "H_defines.var"
+#include "H_action.var"
+
+
+
+int			ti_i
+int			ti_numero
+int			ti_index
+int			ti_flag_grab
+int			ti_context
+int			ti_useparam
+int			ti_danger
+int			ti_blend
+int			ti_inverse
+
+float		tf_val
+float		tf_speed
+float		tf_norm
+
+vector	tv_dest_pos
+vector	tv_temp
+vector 	tv_temp1
+vector	tv_horizon
+
+object	to_trap
+object	to_obj
+
+int			ti_what
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_use_porte = faux
+	if(MSG_GlobalIsValid(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION]))
+	{
+		if(LNK_InteractionTypeGet(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION]) == Ci_LNK_INTERACTION_USE)
+		{
+			o_obj_interaction = ao_SRV[Ci_LNK_INTERACTION]
+			ao_SRV[Ci_LNK_INTERACTION] = LNK_ServeurGet(Ci_LNK_INTERACTION, amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION], faux, nofunc, nofunc)
+		}
+	}
+	i_sort_etat = faux
+	o_obj_levier = nobody
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_IA_use)
+{
+	Humains_LeaveObjectInHand()
+	speak_use_porte = 0
+
+	i_use_porte = faux
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_IA_use
+	f_time_echec_use = 0
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+		ai_SRV_ENABLE[ti_i] = faux
+
+	// AUTORISATIONS DES GRABS
+	ai_SRV_ENABLE[Ci_LNK_GRAB_RAPTOR]	= vrai
+//	ai_SRV_ENABLE[Ci_LNK_GRAB_TRANSPORTE]	= vrai
+
+	// AUTORISATION DES AIDES
+	ai_SRV_ENABLE[Ci_LNK_INTERACTION] 		= vrai
+	ai_SRV_ENABLE[Ci_LNK_PSSS]					= vrai
+
+	DYN_SpeedSetVector( Cv_NullVector)
+	DYN_TractionSet( Cv_NullVector)
+	
+	f_time_start_etat = 0.0
+		
+	// Texte
+	to_obj = ao_SRV[Ci_LNK_INTERACTION]
+	if(to_obj)
+	{
+		ti_useparam = LNK_InteractionParamGet( amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION] ) & 0xFF
+		ti_what = (LNK_InteractionParamGet(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION]) & 0xFF00) >> 8
+	}
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE  =====================================================================
+if(MSG_GlobalIsValid(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION]))
+{
+	ti_useparam = LNK_InteractionParamGet( amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION] ) & 0xFF
+	if(ti_useparam == Ci_LNKINT_USE_Ramasse || ti_useparam == Ci_LNKINT_USE_RamasseUp)
+		i_flag_rush = vrai
+}
+
+AI_Execute("H_exec_read_world")
+AI_Execute("H_exec_serveur_get")
+AI_Execute("H_exec_change_etat")
+AI_Execute("H_exec_ch_Stimulus_Paf")
+if (o_paf_sender) macro_change_etat("H_ETAT_IA_paf")
+
+// INTERACTION
+OBJ_Me().des_int1 = Ci_DISPLAY_PSSS
+if (!ao_SRV[Ci_LNK_INTERACTION]) macro_change_etat(fct_main_etat)
+if(!MSG_GlobalIsValid(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION])) macro_change_etat(fct_main_etat)
+
+// COMPORTEMENT ==============================================================
+
+// --------( Init vars )-------- //
+v_joy_dir = Cv_NullVector
+
+// Je vais jusqu'à celui qui m'a demandé
+to_obj = ao_SRV[Ci_LNK_INTERACTION]
+v_way_destpos = LNK_InteractionPositionGet(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION])
+
+if(GRID_Blocked(v_way_destpos, faux) && (ti_useparam == Ci_LNKINT_USE_Ramasse || ti_useparam == Ci_LNKINT_USE_RamasseUp))
+{
+	tv_temp = v_way_destpos - OBJ_PosGet()
+	if(MATH_VecDotProduct(tv_temp, tv_temp) < 4 * 4)
+	{
+		MATH_VecSetNorm(tv_temp, 0.4)
+		v_way_destpos -= tv_temp
+	}
+}
+
+tv_temp = v_way_destpos - OBJ_PosGet()
+tf_norm = MATH_VecNorm(tv_temp)
+
+if(tf_norm < 3)
+{
+	Humains_LeaveObjectInHand()
+}
+
+
+// Blindage lance en contrebas (ou en hauteur), non accessible
+if(ti_useparam == Ci_LNKINT_USE_Ramasse || ti_useparam == Ci_LNKINT_USE_RamasseUp)
+{
+	tv_temp = v_way_destpos - OBJ_PosGet()
+	tv_temp1 = tv_temp
+	tv_temp1.z = 0
+	if(MATH_VecNorm(tv_temp1) < MATH_AbsFloat(tv_temp.z) && MATH_AbsFloat(tv_temp.z) > 0.5)
+	{
+		@to_obj OBJ_CapaSet(OBJ_Capa_7, 0)	// Interdit ramasse compagnons
+		macro_change_etat(fct_main_etat)
+	}
+	
+	// Hack radeau
+	if(OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Hierarchy) && (tf_norm > 2 || COL_CollideType(COL_C_Wall)) )
+	{
+		@to_obj OBJ_CapaSet(OBJ_Capa_7, 0)	// Interdit ramasse compagnons
+		macro_change_etat(fct_main_etat)
+		return
+	}
+	
+	ForceRegardSur(ao_SRV[Ci_LNK_INTERACTION], 0.1)
+}
+
+i_flag_disable_recul = vrai
+if(i_in_fight) i_flag_disable_marche = vrai
+f_min_dist_attend = 1
+CommonMove()
+
+// Climb ?
+if ( i_id_humain == C_ID_Ann) 
+{
+	to_obj = o_nearest_me
+	if(@to_obj OBJ_CapaTest(OBJ_Capa_0))
+	{
+		way_i_climb = 1
+		way_o_climb = to_obj
+		macro_change_etat( "H_ETAT_ann_climb" )
+	}
+}
+
+if (f_joy_norm)
+{
+	// En deplacement
+	f_time_echec_use = 0
+	LNK_InteractionCStatusSet(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION], Ci_LNKINT_CSTATUS_Move)
+	o_obj_levier = nobody
+}
+else 
+{
+	if(!i_flag_arrived || tf_norm >= 3)
+	{
+		f_time_psss = 0
+		f_time_echec_use += TIME_GetDt()
+		if(f_time_echec_use > 2) macro_change_etat(fct_main_etat)
+	}
+	else
+	{
+		f_time_psss += TIME_GetDt()
+		
+		// MECANISME ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		if(ti_useparam == Ci_LNKINT_USE_Mecanisme)
+		{
+			LNK_InteractionCStatusSet(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION], Ci_LNKINT_CSTATUS_Interact)
+			
+			i_flag_oriente_vers = vrai
+			if(i_flag_culled)
+			{
+				OBJ_PosSet(v_way_destpos)
+				OBJ_BankingGeneralSet(@to_obj OBJ_SightGet(), Cv_VerticalVector)
+			}
+			else 
+			{
+				OBJ_PosSet(MATH_VecBlend(OBJ_PosGet(), v_way_destpos, 5 * TIME_GetDt()))
+				OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), @to_obj OBJ_SightGet(), 5 * TIME_GetDt()), Cv_VerticalVector)
+			}
+			
+			if(i_id_humain == C_ID_Hayes)
+			{
+				ACT_ActionSet1(Action_Stress_Attente)
+			}
+			else
+			{
+				ACT_ActionSet1(Action_Den_Mecanisme)
+			}
+			
+			return
+		}
+		
+		// FILM ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		else if(ti_useparam == Ci_LNKINT_USE_Film)
+		{
+			LNK_InteractionCStatusSet(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION], Ci_LNKINT_CSTATUS_Interact)
+			
+			i_flag_oriente_vers = vrai
+			i_flag_suivi_regard = faux
+			if(i_flag_culled)
+			{
+				OBJ_PosSet(v_way_destpos)
+				OBJ_BankingGeneralSet(@to_obj OBJ_SightGet(), Cv_VerticalVector)
+			}
+			else 
+			{
+				OBJ_PosSet(MATH_VecBlend(OBJ_PosGet(), v_way_destpos, 5 * TIME_GetDt()))
+				OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), @to_obj OBJ_SightGet(), 5 * TIME_GetDt()), Cv_VerticalVector)
+			}
+			
+			ACT_ActionSet1(Action_Den_Camera)
+			f_time_force_attend = 1.5
+			return
+		}
+	
+		// RAMASSE ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		else if(ti_useparam == Ci_LNKINT_USE_Ramasse || ti_useparam == Ci_LNKINT_USE_RamasseUp)
+		{
+			tv_temp = LNK_InteractionPositionGet(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION])
+			
+			// Si maintenant ca brule, on sort
+			if(CaseEnFeu(tv_temp) && f_time_start_etat) 
+			{
+				macro_change_etat(fct_main_etat)
+				return
+			}
+			
+			tv_temp -= OBJ_PosGet()
+			
+			if(ti_useparam == Ci_LNKINT_USE_Ramasse)
+			{
+				if(ACT_ActionGet() != Action_RamasseTerre) ACT_ActionSet1(Action_RamasseTerre)
+			}
+			else
+			{
+				if(ACT_ActionGet() != Action_RamasseDebout) ACT_ActionSet1(Action_RamasseDebout)
+			}
+			
+			if(ACT_ActionFinished()) LNK_InteractionCStatusSet(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION], Ci_LNKINT_CSTATUS_Interact)
+			tv_temp = v_way_destpos - OBJ_PosGet()
+			tv_temp = H_BlendRotate(OBJ_SightGet(), tv_temp, 5.0, 0.0)
+			OBJ_BankingGeneralSet(tv_temp, Cv_VerticalVector)
+			i_flag_oriente_vers = vrai
+			return
+		}
+		
+		// PORTE ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		else if(ti_useparam == Ci_LNKINT_USE_Porte)
+		{
+			o_obj_porte = ao_SRV[Ci_LNK_INTERACTION]
+			i_use_porte = vrai
+			
+			if ( @o_obj_porte OBJ_CapaTest( OBJ_Capa_5 ) )
+			{
+				tv_horizon = -@o_obj_porte OBJ_HorizonGet()
+				ti_inverse = 1
+			}
+			else
+			{
+				tv_horizon = @o_obj_porte OBJ_HorizonGet()
+				ti_inverse = 0
+			}
+			
+			v_way_destpos = @o_obj_porte OBJ_PosGet() 
+			v_way_destpos -= 0.71 * @o_obj_porte OBJ_SightGet()
+			v_way_destpos += 0.5 * tv_horizon
+			tv_temp = v_way_destpos - OBJ_PosGet()
+			tv_temp.z = 0
+			if(MATH_VecNorm(tv_temp) > 0.5) 
+			{
+ 				v_joy_dir = tv_temp
+				f_joy_norm = 1
+				OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), v_joy_dir, 5 * TIME_GetDt()), Cv_VerticalVector)
+				ACT_ActionSet(Action_Stress_Marche)
+				return
+			}
+			else
+			{
+				ti_blend = 1
+				LNK_InteractionCStatusSet(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION], Ci_LNKINT_CSTATUS_Interact)
+	
+				if (o_obj_levier)
+					@o_obj_levier OBJ_CapaSet( 0, OBJ_Capa_5 )
+				
+				@o_obj_porte OBJ_CapaSet(0, OBJ_Capa_12)
+				if (@o_obj_porte OBJ_CapaTest( OBJ_Capa_10 ) || @o_obj_porte OBJ_CapaTest( OBJ_Capa_11 ) )
+				{
+					speak_use_porte += TIME_GetDt()
+					ACT_ActionSet(Action_Pousse_Att)
+					if(i_id_humain != C_ID_Ann && speak_use_porte > 5)
+						AskText(TEXTE_WaitHelp, Gene_C_wait_for_help, 30, nobody)
+				}
+				else
+				{
+					ACT_ActionSet(Action_Pousse_Marche)
+					if ( @o_obj_porte OBJ_CapaTest(OBJ_Capa_13))
+						@o_obj_porte OBJ_CapaSet(OBJ_Capa_12, 0)
+	
+					if ( !ACT_ActionIsTransition() )
+						@o_obj_porte OBJ_CapaSet(OBJ_Capa_12, 0)
+	
+					if (@o_obj_porte OBJ_CapaTest( OBJ_Capa_14 ) )
+					{
+						ti_blend = 0
+						tf_speed = f_speed_porte
+						if (!tf_speed) tf_speed =1
+						if (ti_inverse) tf_speed = -tf_speed
+						
+						@o_obj_porte OBJ_RotateGlobalZ(tf_speed * TIME_GetDt())
+					}
+				}
+								
+				// POS/ORIENT	
+				LNK_InteractionPositionSet(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION], v_way_destpos)
+		
+				if (ti_blend)
+					tv_temp = MATH_VecBlend(OBJ_PosGet(), v_way_destpos, 4 * TIME_GetDt())
+				else
+					tv_temp = v_way_destpos
+				OBJ_PosSet(tv_temp)
+					
+				if (ti_blend)
+					tv_temp = MATH_VecBlendRotate(OBJ_SightGet(), -tv_horizon, 4 * TIME_GetDt())
+				else
+					tv_temp = -tv_horizon
+				OBJ_SightGeneralSet(tv_temp, Cv_VerticalVector)
+				
+				DYN_SpeedSetVector(Cv_NullVector)
+				return
+			}			
+		}
+		
+		// RIEN ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		else
+		{
+			LNK_InteractionCStatusSet(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION], Ci_LNKINT_CSTATUS_Interact)			
+		}
+	}
+}
+
+// --------( Anims )-------- //
+AI_Execute("H_exec_select_action")
+

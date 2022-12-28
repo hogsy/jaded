@@ -1,0 +1,145 @@
+#include "KR_defines.var"
+
+object	to_followed_actor
+object	to_collide_object
+object	to_camera
+object	to_canal
+
+float		tf_sqr_hor_dist
+float		tf_interet
+float		tf_delay_since_last_update
+
+int			ti_i
+int			ti_flag_go_to_grid_center
+int			ti_followed_ground_ID
+int			ti_flag_try_to_move
+
+vector	tv_offset
+vector	tv_temp
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_attente)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_attente
+
+	f_time_start_etat = 0.0
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = AI_TrackCurGet()
+
+	macro_change_tag_size(cvector(-0.5, -1.0, 0.0), cvector(0.5, 1.0, 0.0))
+
+	ACT_ActionSet(Action_Normal_Attente)
+	
+	// SUPPRESSION DE L'INTERET (POUR L'ARRET DU TIMER DE MORT ANN)
+	if (o_fight_actor == nobody)
+		KR_DelInterestMsg(faux)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =======================================================================================================
+
+AI_Execute("KR_exec_check_vision")
+
+o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, vrai, nofunc, nofunc)
+if (o_grabbed_actor_KK)
+	macro_change_etat("KR_ETAT_grabbed")
+
+
+AI_Execute("KR_exec_check_paf")
+if( o_paf_actor )
+{
+	KR_Select_Paf_Etat(fct_track_change)
+	if( fct_track_change != nofunc )
+		macro_change_etat(fct_track_change)
+}
+
+if (o_net_nextNode)
+	macro_change_etat("KR_ETAT_FollowNetwork")
+
+// COMPORTEMENT =================================================================================================
+i_iam_a_kam_target = vrai
+i_iam_a_kong_target = vrai
+
+// ATTAQUE EN GROUPE SUR ANN ------------------------------------------------------------------------
+KR_check_proie_groupe(i_proie_groupe_wait_done)
+if( ! i_proie_groupe_wait_done )
+	returntrack
+
+if( ! o_proie_groupe )
+{
+	// Aucun raptor n'attaque ANN
+	AI_Execute("KR_exec_select_fight_actor")
+}
+else
+{
+	// Un raptor attaque ANN
+	o_fight_actor = o_proie_groupe
+	KR_Check_KK_Grab_ANN()
+}
+
+// Test Fight Actor ----------------------------------------------------------------------------------------------------
+if( f_time_start_etat > 1.0 && KR_Check_Fight_Actor_Interet() )
+{
+	if( o_ANN && ( o_fight_actor == o_ANN ) )
+		macro_change_etat("KR_ETAT_fight_ANN")	
+	else if( o_fight_actor == o_KONG )
+		macro_change_etat("KR_ETAT_fight_KONG")
+}
+
+// SUIVI DU REGARD
+if ( o_fight_actor )
+{
+	// Observe avant d'attaquer
+	i_flag_look = vrai
+	to_canal = @o_fight_actor ANI_CanalObjectGet(Anim_Canal_Tete)
+	if( to_canal )
+		v_look_pos = @to_canal OBJ_PosGet()
+	else
+		v_look_pos = @o_fight_actor OBJ_PosGet()
+	tv_temp = v_look_pos - OBJ_PosGet()
+	tv_temp.z = 0.0
+//	if ( MATH_VecDotProduct( tv_temp, OBJ_SightGet()) < 0.0)
+//		ACT_ActionSet(Action_RegardDos_Attente)
+//	else
+//		ACT_ActionSet(Action_Normal_Attente)
+}
+//else if ( o_KONG && OBJ_SqrDistHorz(o_KONG ) < 600)
+//{
+//	// Observe plutot que d avoir l air CON et MORT
+//	i_flag_look = vrai
+//	to_canal = @o_KONG ANI_CanalObjectGet(Anim_Canal_Tete)
+//	if( to_canal )
+//		v_look_pos = @to_canal OBJ_PosGet()
+//	else
+//		v_look_pos = @o_KONG OBJ_PosGet()
+//	tv_temp = v_look_pos - OBJ_PosGet()
+//	tv_temp.z = 0.0
+//
+//}
+else
+{
+	i_flag_look = faux
+	// TERRITOIRE
+	if ( f_time_start_etat > 2.0)
+		macro_change_etat("KR_ETAT_retour")
+}
+
+

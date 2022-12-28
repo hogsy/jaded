@@ -1,0 +1,22 @@
+vector	tv_temp
+vector	tv_pos
+vector	tv_cam
+float		f_norm
+float		f_fade
+float		f_speed
+object	to_obj
+int			temp_int
+#define VC des_v_center_to_repos
+
+if (@get_global f_Hour_Set == -1)
+{
+	// Permet de reposionner l'env en fonction de l'heure (Par FRED)
+	@get_global f_Hour_Set = -2
+	to_obj = @des_o_env OBJ_HierarchyGet()
+	@to_obj OBJ_Reinit(vrai)
+	@des_o_env OBJ_Reinit(vrai)																					// Repositionne l'environement
+	@des_o_env OBJ_RotateLocalZ(@"univ" Planetes_CurRotation[des_i_numplanete])		// Rajoute la rotation
+	v_normvais = @des_o_teleport OBJ_PosGet() + des_v_center_world
+	f_firstnorm = MATH_VecNorm(v_normvais)
+}
+

@@ -1,0 +1,28 @@
+#include "k_define.var"
+
+if( Proc_KK_RefusePaf() )
+	return
+
+switch( AI_CBGetParam() )
+{
+	case Ci_LNK_RIDE_DINO :
+		if ( !i_ride_just_clear)
+		{
+			for (i_bone_index = 0; i_bone_index < Ci_Ride_Client_Nb ; i_bone_index++)
+			{
+				ao_bone_rider[i_bone_index] = LNK_ServeurGet(Ci_LNK_RIDE_DINO, amid_bone_rider_LNK_ID[i_bone_index], vrai, "k_exec_propose_ride", nofunc)
+			}
+			RIDE_Set_Actor_Nb()		// Update Ride Actor Nb
+		}
+		break
+		
+	case Ci_LNK_GRAB_RAPTOR :
+		o_scolo_actor = LNK_ServeurGet(Ci_LNK_GRAB_RAPTOR, mid_scolo_LNK_ID, faux, nofunc, nofunc)
+		break
+
+	case Ci_LNK_KKFINISH_ON_KONG :
+		// Utilisation des conditions grab pour valider la liaison
+		o_finish_actor = LNK_ServeurGet(Ci_LNK_KKFINISH_ON_KONG, mid_finish_LNK_ID, ai_SRV_ENABLE[Ci_LNK_KKFINISH_ON_KONG], "k_exec_propose_grab", nofunc)
+		break
+}
+

@@ -1,0 +1,68 @@
+#include "PNJ_Scorpion_defines.var"
+
+int				ti_i
+
+function		fct_current
+
+COL_UnCollidableReset()
+
+if (i_SF_NePasSeRejouerSiMort)
+	Super_SpecialFlag_set(i_SF_AlreadyDead)
+
+macro_add_callback_after_cam("PNJ_Scorpion_callback_aftercam")
+
+OBJ_CapaSet(OBJ_Capa_15, none)
+
+i_etat_courant = -1
+fct_current = AI_TrackGet(Ci_Track_Etat)
+
+if (fct_current)
+{
+	i_sort_etat = vrai
+	AI_Execute(fct_current)
+}
+
+if (fct_last_etat)
+{
+	i_sort_etat = vrai
+	AI_Execute(fct_last_etat)
+}
+
+// MESSAGE GLOBAUX ==========================================================
+PNJ_Scorpion_Del_Interest()
+
+//// INTERACTION =================================================================
+//for (ti_i = 0; ti_i < 10; ti_i++)
+//	ao_fighter[ti_i] = LNK_ClientGet(Ci_LNK_INTERACTION, amid_fighter[ti_i], faux, nofunc, nofunc, nofunc)
+
+// GRAB =======================================================================
+o_grab_actor = LNK_ClientGet(Ci_LNK_GRAB_RAPTOR, mid_grab_actor_LNK_ID, faux, nofunc, nofunc, nofunc)
+
+// GRID & CO ==================================================================
+macro_change_tag_size(Cv_NullVector, Cv_NullVector)
+AI_Execute("PNJ_Scorpion_callback_tagoff")
+
+// SOUND ======================================================================
+if (SND_move_1_loop != -1)
+{
+	SND_Stop(SND_move_1_loop)
+	SND_move_1_loop = -1
+}
+
+if (SND_move_2_loop != -1)
+{
+	SND_Stop(SND_move_2_loop)
+	SND_move_2_loop = -1
+}
+
+if (SND_grab_loop != -1)
+{
+	SND_Stop(SND_grab_loop)
+	SND_grab_loop = -1
+}
+
+if (SND_burn_loop != -1)
+{
+	SND_Stop(SND_burn_loop)
+	SND_burn_loop = -1
+}

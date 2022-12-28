@@ -1,0 +1,242 @@
+#include "PNJ_Raptor_defines.var"
+
+int				ti_i
+int				ti_trame
+int				ti_action
+int				ti_flag_ok
+int				ti_best_index
+
+float			tf_interet
+float			tf_norm
+float			tf_coef
+float			tf_dist
+float			tf_nearest_ode_dist
+
+vector		tv_new_sight
+vector		tv_temp
+vector		tv_traction
+
+object		to_object
+
+trigger		trigger_a_executer
+
+#define Cf_Dist_Min					4.2
+#define Cf_Dist_Recalage			4.1
+#define Cf_Traction_Coef			30.0
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+
+	i_flag_bite = faux
+	i_flag_zde_fight_enable = faux
+
+	o_IK_bassin_bite_actor = nobody
+	o_destructible_occluder = nobody
+
+	DYN_FrictionVectorSet(cvector(f_friction, f_friction, 0.0))
+
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_COODBOOL)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_COODBOOL
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+#ifndef _FINAL_
+	if (DBG_Display_Text && raptor_type == C_ID_Tyranosaure)
+		STR_CreateText("\h.07\TREX : RRRRRRRR !!!", cvector(0.45, 0.48, 0.0) , 2.0)
+#endif
+
+	i_flag_bite_ok = faux
+
+	DYN_FrictionVectorSet(cvector(8.0, 8.0, 0.0))
+
+	switch(raptor_type)
+	{
+		case C_ID_Raptor :
+			PNJ_Raptor_ActionSet(Action_Coup_Belier)
+			break
+		
+		case C_ID_Tyranosaure :
+			if (o_destructible_occluder_ode)
+			{
+				if (MATH_VecDotProduct(OBJ_HorizonGet(), @o_destructible_occluder_ode OBJ_PosGet() - OBJ_PosGet()) > 0.0)
+					PNJ_Raptor_ActionSet(Action_Fight_Head_Hit_Left)
+				else
+					PNJ_Raptor_ActionSet(Action_Fight_Head_Hit_Right)
+			}
+			else
+			{
+				if (MATH_VecDotProduct(OBJ_HorizonGet(), @o_destructible_occluder OBJ_PosGet() - OBJ_PosGet()) > 0.0)
+					PNJ_Raptor_ActionSet(Action_Fight_Head_Hit_Left)
+				else
+					PNJ_Raptor_ActionSet(Action_Fight_Head_Hit_Right)
+			}
+			break
+	}
+
+	i_flag_hiding_place_hit_enable = vrai
+	
+	f_time_recul = 0.0
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =======================================================================================================
+AI_Execute("PNJ_Raptor_exec_check_msg")
+
+AI_Execute("PNJ_Raptor_exec_check_vision")
+
+AI_Execute("PNJ_Raptor_exec_check_sound")
+
+i_flag_zde_fight_enable = vrai
+AI_Execute("PNJ_Raptor_exec_check_collision")
+
+AI_Execute("PNJ_Raptor_exec_check_paf")
+if (i_flag_paf_fly)
+	macro_change_etat("PNJ_Raptor_ETAT_PAF_FLY")
+if (i_flag_paf_fall)
+	macro_change_etat("PNJ_Raptor_ETAT_PAF_FALL")
+if (i_flag_paf_repousse || i_flag_paf_slide || !f_lifecur)
+	macro_change_etat("PNJ_Raptor_ETAT_PAF_SLIDE")
+//if (i_flag_paf_visual)
+//	macro_change_etat("PNJ_Raptor_ETAT_ATTENTE")
+
+AI_Execute("PNJ_Raptor_exec_check_shoot")
+
+AI_Execute("PNJ_Raptor_exec_update_best_interest")
+if (i_flag_change_target)
+	macro_change_etat("PNJ_Raptor_ETAT_HESITE")
+//PNJ_Raptor_Best_Interet_Update(i_perceived_best_actor_index)
+
+AI_Execute("PNJ_Raptor_exec_check_requin")
+
+AI_Execute("PNJ_Raptor_exec_check_client")
+if (o_grab_actor)
+	macro_change_etat("PNJ_Raptor_ETAT_GRAB")
+
+if ( MSG_GlobalIsValid(mid_best_interet))
+	EVENT_InteretStatusSet(mid_best_interet, C_EVENT_InteretStatusLock)
+
+// COMPORTEMENT =================================================================================================
+ti_flag_ok = faux
+ti_trame = ANI_CurrentFrameGet(0)
+
+ti_action = ACT_ActionGet()
+
+switch(ti_action)
+{
+	case Action_Fight_Head_Hit_Left :
+	case Action_Fight_Head_Hit_Right :
+		if (i_flag_hiding_place_hit_enable && ti_trame > 48)
+		{
+			ti_flag_ok = vrai
+		}
+		else if (ACT_ActionFinished())
+		{
+			if (@o_destructible_occluder OBJ_FlagsControlGet() & OBJ_C_ControlFlag_ForceInactive)
+				macro_change_etat(fct_main_etat)
+			else
+				PNJ_Raptor_ActionSet(Action_Recul)
+		}
+		break
+		
+	case Action_Coup_Belier :
+		if (i_flag_hiding_place_hit_enable && ti_trame > 30)
+		{
+			ti_flag_ok = vrai
+		}
+		else if (ACT_ActionFinished())
+		{
+			if (@o_destructible_occluder OBJ_FlagsControlGet() & OBJ_C_ControlFlag_ForceInactive)
+				macro_change_etat(fct_main_etat)
+			else
+				PNJ_Raptor_ActionSet(Action_Recul)
+		}
+		break
+		
+	case Action_Recul :
+		f_time_recul += TIME_GetDt()
+
+		if (f_time_recul > 1.0)
+			macro_change_etat(fct_main_etat)
+			
+		break
+}
+
+if (ti_flag_ok)
+{
+	// Visuellement le moment de l'impact...	
+
+	i_flag_hiding_place_hit_enable = faux
+
+	// J'active l'ode que je vais frapper et j l'enlève de la liste des ode à frapper...
+	if (o_destructible_occluder_ode)
+		@o_destructible_occluder_ode OBJ_CapaSet(Obj_Capa_Switch, none)
+		
+	// SI j'ai encore un ode à frapper, je réinitialise le timer...
+	to_object = @"Interactive_Objects/ODE_Occluder" o_destructible_occluder ode_a_activer[0]
+	if ( to_object )
+	{
+		@"Interactive_Objects/ODE_Occluder" o_destructible_occluder f_occluder_life_time = @"Interactive_Objects/ODE_Occluder" o_destructible_occluder occluder_life_time
+	}
+	else	
+	{
+		if (@"Interactive_Objects/ODE_Occluder" o_destructible_occluder flag_je_dois_me_desactiver)
+			@o_destructible_occluder OBJ_FlagInactiveSet(vrai)	
+
+		for (ti_i = 0; ti_i < 10; ti_i++)
+		{
+			to_object = @"Interactive_Objects/ODE_Occluder" o_destructible_occluder activation[ti_i]
+			if ( ! to_object ) 
+				break
+				
+			@to_object OBJ_FlagInactiveSet(faux)
+			@to_object OBJ_FlagInvisibleSet(faux)
+		}
+
+		for (ti_i = 0; ti_i < 10; ti_i++)
+		{
+			to_object = @"Interactive_Objects/ODE_Occluder" o_destructible_occluder desactivation[ti_i]
+			if ( ! to_object ) 
+				break
+				
+			@to_object OBJ_FlagInactiveSet(vrai)
+			@to_object OBJ_FlagInvisibleSet(vrai)
+		}
+
+		for (ti_i = 0; ti_i < 10; ti_i++)
+		{
+			trigger_a_executer = @"Interactive_Objects/ODE_Occluder" o_destructible_occluder trigger_a_executer[ti_i]
+			if (AI_TriggerIsValid(trigger_a_executer)) 
+				call_trigger(trigger_a_executer)
+			else
+				break
+		}
+	}
+}
+
+if (o_destructible_occluder_ode)
+	tv_new_sight = @o_destructible_occluder_ode OBJ_PosGet()
+else
+	tv_new_sight = @o_destructible_occluder OBJ_PosGet()
+tv_new_sight -= OBJ_PosGet()
+tv_new_sight.z = 0.0
+tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_new_sight, 4.0 * TIME_GetDt())
+OBJ_BankingGeneralSet(tv_new_sight, v_virtual_banking)

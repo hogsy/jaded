@@ -1,0 +1,49 @@
+#include "NET_Follower_defines.var"
+
+int			ti_i
+
+float		tf_dot_product
+float		tf_coef
+
+vector	tv_pos
+
+object	to_corback
+
+if (i_etat_courant != ETAT_run)
+{
+	i_etat_courant = ETAT_run
+	
+	f_time_start_etat = 0.0
+
+	f_link_coef = 0.0
+
+	switch(start_mode)
+	{
+		case 0 :
+			// From current pos
+			o_last_wp = @get_WP OBJ_Duplicate(OBJ_PosGet())
+			o_next_wp = WAY_WPNearestOfOBJ(n_net, all, none, Ci_Filter_IdentityFlag)
+			@o_last_wp OBJ_SightSet(@o_next_wp OBJ_PosGet() - @o_last_wp OBJ_PosGet())
+			break
+			
+		case 1 :
+			// From 1st wp
+			o_last_wp = o_1st_wp
+			o_next_wp = WAY_NetNextWP(n_net, o_last_wp, 0, 0)
+			OBJ_PosSet(@o_last_wp OBJ_PosGet())
+			break
+	}
+	
+	f_link_length = MATH_VecNorm(@o_next_wp OBJ_PosGet() - OBJ_PosGet())
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE
+AI_Execute("NET_Follower_exec_check_paf")
+
+// COMPORTEMENT
+AI_Execute("NET_Follower_exec_compute_position")
+

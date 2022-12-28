@@ -1,0 +1,147 @@
+#include "MM_defines.var"
+
+#define		test_tout_droit								1
+#define		test_ronde									2
+#define		test_position_intermediaire			3
+
+vector			tv_pos_new
+float				tf_coef
+float				tf_depasse
+vector			tv_pos_occluder
+vector			tv_sight_occluder
+object			ao_occluder[10]
+float				af_occluder[10]
+int					ti_occluder_status
+object			o_occluder_jump
+vector			tv_link
+vector			tv_test_occluder_dest_pos
+vector			tv_temp
+object			to_bone
+vector			tv_sight
+vector			tv_horizon
+vector			tv_banking
+float				tf_sinus
+vector			tv_move
+
+
+
+// SORTIE ETAT ==============================================================================
+if( i_sort_etat )
+{
+	i_sort_etat = faux
+	return
+}
+
+
+// ENTREE ETAT ==============================================================================
+if( i_etat_courant != ETAT_TEST )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_TEST
+	
+	if (fct_etat_courant)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_etat_courant)
+	}
+	
+	fct_etat_courant = AI_TrackCurGet()
+	fct_etat_main = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	if( i_DBG_trace_IA )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : ETAT TEST...")
+		DBG_TraceEOL()
+	}
+	
+	if( ! o_DBG_wp )
+		DBG_Error("j'ai besoin de o_DBG_wp !!!")
+	
+	v_look_pos = @o_DBG_wp OBJ_PosGet()
+	
+	BigMonster_MovePosStartUpdate()
+	BigMonster_MovePosDestUpdate(@o_DBG_wp OBJ_PosGet())
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// ANALYSE ===================================================================================
+
+// COMPORTEMENT =============================================================================
+
+switch( i_DBG_track_test )
+{
+	case test_tout_droit :
+		tv_move = v_move_pos_dest - OBJ_PosGet()
+		DBG_RenderVector(OBJ_PosGet(), v_sight_avant_sinus, color_vert)
+		DBG_RenderVector(OBJ_PosGet(), tv_move, color_cyan)
+		tv_sight = MATH_VecBlendRotate(v_sight_avant_sinus,	tv_move, 5 * TIME_GetDt())
+		DBG_RenderVector(OBJ_PosGet(), tv_sight, color_blanc)
+		v_sight_avant_sinus = MATH_VecNormalize(tv_sight)
+		goto AVANCE
+		break
+		
+	case test_ronde :
+		BigMonster_MovePosStartUpdate()
+		BigMonster_Occluder_Compute_Idle_Pos(v_sight_avant_sinus, tv_sight, tv_test_occluder_dest_pos)
+		BigMonster_MovePosDestUpdate(tv_test_occluder_dest_pos)
+		tv_sight = MATH_VecBlendRotate(v_sight_avant_sinus, tv_sight, 5 * TIME_GetDt())
+		v_sight_avant_sinus = MATH_VecNormalize(tv_sight)
+		goto AVANCE
+		break
+
+	case test_position_intermediaire :
+		tv_temp = BigMonster_GetIntermediatePosition(o_DBG_wp)
+		break
+}
+
+
+if( 0 )
+{
+	AVANCE:
+	
+	// SINUS
+	f_frequence = MATH_Sin(TIME_Get() * f_sinus_frequence)		// -1.0 < freq < 1.0
+	f_frequence *= 0.2		// -0.2 < freq < 0.2
+	f_ampleur = f_speed_test * f_sinus_ampleur
+	tf_sinus = f_frequence * f_ampleur
+	
+	DBG_TraceString("freq = ")
+	DBG_TraceFloat(f_frequence)
+	DBG_TraceString(" / ampleur = ")
+	DBG_TraceFloat(f_ampleur)
+	DBG_TraceString(" / sinus = ")
+	DBG_TraceFloat(tf_sinus)
+	DBG_TraceEOL()
+	
+	// SIGHT
+	tv_horizon = - MATH_VecCrossProduct(tv_sight, Cv_VerticalVector)
+	DBG_RenderVector(OBJ_PosGet(), tv_horizon, color_rouge)
+	tv_banking = MATH_VecCrossProduct(tv_sight, tv_horizon)
+	DBG_RenderVector(OBJ_PosGet(), tv_banking, color_bleu)
+	tv_sight = MATH_VecRotate(tv_sight, tv_banking, tf_sinus)
+	DBG_RenderVector(OBJ_PosGet(), tv_sight, color_vert)
+	OBJ_SightGeneralSet(tv_sight, tv_banking)
+	
+	DYN_GravitySet(Cv_NullVector)
+	DYN_FrictionVectorSet(Cv_BigMonster_Friction)
+	DYN_SpeedSetVector(Cv_NullVector)
+
+	MATH_VecSetNormalize(tv_sight)
+	OBJ_PosSet(OBJ_PosGet() + (tv_sight * (f_speed_test * TIME_GetDt())))
+	BigMonster_Modules_Update()
+	
+	v_look_pos = @o_DBG_wp OBJ_PosGet()
+	AI_Execute("MM_Exec_Regard")
+}
+
+
+//OBJ_RotateLocalX
+//OBJ_RotateGlobalZ
+//OBJ_RotateLocalY
+

@@ -1,0 +1,62 @@
+#include "PNJ_Scolo_defines.var"
+
+messageid			tmid_LNK
+
+int						ti_kong_grab_status
+
+float					tf_dist
+object				to_serveur
+object				to_bone
+
+tmid_LNK = pop
+
+//to_bone	= LNK_GrabKong_BoneGet(tmid_LNK)
+//if (OBJ_SqrDist(to_bone) < 16.0 || @ao_modules[i_modules_nb >> 1] OBJ_SqrDist(to_bone) < 16.0)
+// C'est qKong qui fait désormais les test précis.
+
+ti_kong_grab_status = LNK_GrabStatusGet(tmid_LNK)
+
+if ( ti_kong_grab_status & Ci_GrabKong_Type_Finish)
+{
+	LNK_ServeurRefuse(tmid_LNK)
+	return
+}
+
+to_bone = MSG_GlobalGetGao(tmid_LNK, SERVEUR)
+tf_dist = @ao_modules[i_modules_nb - 1] OBJ_SqrDist(to_bone)
+if (tf_dist < 64.0 || OBJ_SqrDist(to_bone)  < 64.0)
+{
+	if( Proc_KK_BigScolo() ) 
+	{
+		// GROS SCOLO
+		if( i_kk_I_finish_kong_a_gagne && (ti_kong_grab_status & Ci_GrabKong_Type_Souche) )
+		{
+			// JE SUIS ATTRAPE
+			LNK_GrabKong_TypeSet(tmid_LNK, Ci_GrabKong_Type_Souche)
+			tf_dist += Ci_Grab_Kong_Pond_Bat_Kong + Ci_Grab_Kong_Pond_Dead
+			LNK_ClientPropose(tmid_LNK, tf_dist)
+			return
+		}
+		else if (f_lifecur)
+		{
+			// JE SUIS VIVANT, ON VA PASSER EN FINISH
+			@get_global i_KongTriesToGrabABigScolo = vrai
+			o_kk_finish = LNK_ClientGet(Ci_LNK_KKFINISH_ON_KONG, mid_kk_I_finish_LNK, vrai, nofunc, nofunc, nofunc)
+			if (o_kk_finish)
+				LNK_Finish_FinisherTypeSet(mid_kk_I_finish_LNK, Ci_GrabKong_Finished_BigScolo)
+		}
+	}
+	else if (ti_kong_grab_status & Ci_GrabKong_Type_Petit)
+	{
+		// PETIT SCOLO
+		if (f_lifecur)
+		{
+			LNK_GrabKong_TypeSet(tmid_LNK, Ci_GrabKong_Type_Petit)
+			tf_dist += Ci_Grab_Kong_Pond_Bat_Kong
+			LNK_ClientPropose(tmid_LNK, tf_dist)
+			return
+		}
+	}
+}
+
+LNK_ServeurRefuse(tmid_LNK)

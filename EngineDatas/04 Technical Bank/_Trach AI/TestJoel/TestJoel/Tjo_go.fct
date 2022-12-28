@@ -1,0 +1,22 @@
+vector	tv_pos
+float		tf_accel
+
+tv_pos = VIEW_3dWorldTo2d(0,OBJ_PosGet())
+
+if(o_cible)
+{
+	if(i_AutoAcceleration==1)
+	{
+		tf_accel = MATH_VecNorm(@o_cible OBJ_PosGet()-OBJ_PosGet()) * 1
+		tf_accel = MATH_FloatLimit(tf_accel, 2.0, 10.0)
+		f_VitesseDeplacement = MATH_FloatBlend(f_VitesseDeplacement, tf_accel, 1.2 * TIME_GetDt())
+//		Str_DisplayTxtFloatOnce("Vitesse   ", f_VitesseDeplacement, tv_pos)
+//		tv_pos += cvector(0,0.05,0)
+//		Str_DisplayTxtFloatOnce("tf_accel   ", tf_accel, tv_pos)
+	}
+//	OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(),@o_cible OBJ_PosGet()-OBJ_PosGet(),TIME_GetDt()*f_VitesseRotate),cvector(0.0,0.0,1.0))
+	OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(),@o_cible OBJ_PosGet()-OBJ_PosGet(),1),cvector(0.0,0.0,1.0))
+	v_Acceleration = MATH_VecBlend(v_Acceleration,OBJ_SightGet() * f_VitesseDeplacement ,0.1)
+	OBJ_PosSet( OBJ_PosGet() + ( v_Acceleration * TIME_GetDt() ) )
+}
+

@@ -1,0 +1,115 @@
+#include "PNJ_Lapin_defines.var"
+
+vector	tv_temp
+float		tf_dist
+int			ti_ok
+message	tmsg_filter
+messageid	tmid_ID
+int			ti_rank
+object	to_monture
+object	to_owner
+
+
+o_main_actor = AI_MainActorGet(0)
+if( ! o_main_actor )
+	return
+
+ti_ok = vrai
+
+if( f_App_Monture_Gao_this_one_destroy_delai > 0.0 )
+{
+	f_App_Monture_Gao_this_one_destroy_delai += TIME_GetDt()
+	ti_ok = vrai
+}
+else
+{
+	if( i_Att_Delai_Disparition_flag )
+	{
+		if( o_App_Monture_Gao_this_one )
+		{
+			ti_ok = faux
+			
+			if( ! Territory_BV )
+				DBG_Error("BUG Lapin s'enterre après un délai en attente, et sapwne une monture à l'init... prévu uniquement avec le mode Territoire 1 BV !!!")
+			
+			tv_temp = @o_App_Monture_Gao_this_one OBJ_PosGet() - @o_main_actor OBJ_PosGet()
+			tf_dist = MATH_FloatSqrt(MATH_VecDotProduct(tv_temp,tv_temp))
+			if( tf_dist > 50.0 || ! Lapin_Gao_in_Territory_BV(o_App_Monture_Gao_this_one) )
+				ti_ok = vrai
+			
+			// test liaison
+			if( ti_ok )
+			{
+				ti_ok = faux
+				
+				MSG_SetNull(tmsg_filter)
+				ti_rank = -1
+				for (	tmid_ID = MSG_GlobalSearchIntGao(Ci_LNK_EVENT_OFFSET + Ci_LNK_RIDE_ON_NMI, &ti_rank, tmsg_filter);
+						MSG_GlobalIsValid(tmid_ID);
+						tmid_ID = MSG_GlobalSearchIntGao(Ci_LNK_EVENT_OFFSET + Ci_LNK_RIDE_ON_NMI, &ti_rank, tmsg_filter) )
+				{
+					to_monture = EVENT_PereGet(tmid_ID)
+					if( to_monture != o_App_Monture_Gao_this_one )
+						continue
+				
+					to_owner = EVENT_Gao1Get(tmid_ID)
+					if( to_owner )
+						continue		// déjà ridé
+					
+					ti_ok = vrai			// elle ne sert de monture à personne :)
+					f_App_Monture_Gao_this_one_destroy_delai += TIME_GetDt()
+				}
+			}
+		}
+	}
+}
+
+if( f_App_Monture_Gao_this_one_destroy_delai > 0.0 )
+{
+	PROC_SFX_EXPLOSION_SOL(10.0, @o_App_Monture_Gao_this_one OBJ_PosGet())
+	if( f_App_Monture_Gao_this_one_destroy_delai > 0.5 )
+	{
+		@o_App_Monture_Gao_this_one OBJ_Destroy()
+		ti_ok = vrai
+	}
+	else
+	{
+		ti_ok = faux
+	}
+}
+
+if( ! ti_ok )
+	returntrack
+
+// LES ITEMS
+if( o_item )
+{
+	@o_item OBJ_Destroy()
+}
+if( o_key ) // && App_Item == RM_WEAPON_TYPE_CLE )
+{
+	@o_key OBJ_Destroy()
+}
+if( o_shield )
+{
+	@o_shield OBJ_Destroy()
+}
+// LE LAPIN
+if( i_taupe_destruction_0hp )
+{
+	MACRO_LAPIN_DESTROY		// U'R DEAD, MAN !
+}
+else
+{
+	// RESPAWN
+	if( OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Generated) )
+	{
+		MACRO_LAPIN_DESTROY
+	}
+	else
+	{
+		OBJ_Reinit(vrai)
+		OBJ_FlagInvisibleSet(vrai)
+	}
+}
+

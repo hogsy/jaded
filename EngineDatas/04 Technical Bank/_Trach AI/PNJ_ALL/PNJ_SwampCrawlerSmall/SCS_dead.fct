@@ -1,0 +1,100 @@
+#include "PNJ_SwampCrawlerSmall_defs.var"
+Include_UltraProcedure_Header
+
+int			ti_rank
+int			ti_foodchain
+
+object	to_duplicated 
+
+message		tm_filter
+messageid		tmid_interet_ID
+
+
+//--------( Entrée Etat )--------
+if ( etat_i_courant != SCS_ETAT_dead )
+{
+	etat_i_ancien = etat_i_courant
+	etat_i_courant = SCS_ETAT_dead
+		
+	//----( quitte état précédent )----
+	if ( etat_fct )
+	{
+		etat_i_quitte = vrai
+		AI_Execute( etat_fct )
+	}
+	
+	if (!OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Generated))
+	{
+		SpecialFlag_set(i_SF_AlreadyPlayed)
+	}
+	
+	//--------( vire les infos )--------
+	OBJ_InfoPhotoParamSet( 0, 0, 3, 3, 1.0, 0.0, 0.0, 0)
+	OBJ_Me().des_int1 = 0
+
+	//--------( init variable )------------------------------------------------------------------------------------
+	etat_fct = AI_TrackCurGet()
+	COL_ColSetActivationSet(0, C_bit_zdm_pied)
+
+	ACT_ActionSet( SCS_ACT_dead )
+	
+	OBJ_CapaSet( OBJ_Capa_15,0)
+		
+	STATS_IncEnemyKilled_New( stimul_o_pafby, C_EnemyType_Swamp, 0 )
+
+	if (GFX_trace != -1)
+	{
+		GFX_Del( GFX_trace )
+		GFX_trace = -1
+	}
+	
+	f_timer_start_etat = 0.0
+	return
+}
+else
+{
+	f_timer_start_etat += TIME_GetDt()
+	
+	// CHECK FOODCHAIN INTERESTS
+	ti_foodchain = faux
+	ti_rank = -1
+	MSG_SetNull(tm_filter)
+	tm_filter.msg_gao1 = OBJ_Me()
+	for (	tmid_interet_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tm_filter);
+			MSG_GlobalIsValid(tmid_interet_ID);
+			tmid_interet_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tm_filter) )
+	{
+		switch( EVENT_InteretStatusGet(tmid_interet_ID) )
+		{
+			case C_EVENT_InteretStatusFoodchain :
+			case C_EVENT_InteretStatusFoodchainLocked :
+				ti_foodchain = vrai
+				break
+		}
+	}
+	if( ! ti_foodchain )
+		f_fade_timer -= MATH_FloatMin(f_fade_timer, TIME_GetDt())
+}
+
+
+if( ! i_fade_flag && ( ! f_point_de_viande || ! f_fade_timer ) )
+{
+	i_fade_flag = vrai
+	to_duplicated = @get_SFX_decomposition OBJ_Duplicate(cvector(0,0,0))			// ALOC (C'est l'AI qui va gerer la decomposition)
+	@to_duplicated Proc_Decomposition_Init(OBJ_Me(), 3.0, 0, 1, -1)					// INIT (Vas y decompose moi :))
+}
+
+
+//--------( déplacement )--------
+move_v_dest = OBJ_PosGet()
+//move_v_dest.z = move_f_Zunderwater - 2
+move_v_dest.z = move_f_Zsurface		// remonter à la surface
+move_f_speed = f_Speed
+move_i_brakewhennear = 1
+move_i_ondule = 0
+move_v_ondule = Cv_NullVector
+move_i_remote = 0
+f_SpeedZ = 0.5	// 0.1
+
+AI_Execute( "SCS_exec_move" )
+

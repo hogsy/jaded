@@ -1,0 +1,14 @@
+float	tf_angle
+
+mf_Morph_Timer = 0
+mf_Dying_coef = 0
+
+tf_angle = MATH_RandFloat(-0.5, 0.5)
+OBJ_RotateLocalZ(tf_angle)
+
+OBJ_ZoomSet( mf_Size )
+
+AI_CBAdd( OBJ_Me(), CallBack_Before_Display, "SFXFoudre_beforedisplay" )
+AI_CBAdd( OBJ_Me(), CallBack_After_Display, "SFXFoudre_afterdisplay" )
+
+AI_TrackCurChange( "SFXFoudre_loop" )

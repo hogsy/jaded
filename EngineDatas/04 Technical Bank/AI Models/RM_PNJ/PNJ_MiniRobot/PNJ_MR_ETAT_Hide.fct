@@ -1,0 +1,37 @@
+#include "PNJ_mr_defines.var"
+
+
+
+
+// SORTIE ETAT 	===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	DYN_GravitySet( Cv_DYN_Gravity)
+	return
+}
+
+// INIT ETAT 	=====================================================================
+if ( i_etat_courant != ETAT_PNJ_MR_Hide)
+{
+	i_etat_courant = ETAT_PNJ_MR_Hide
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()	
+	OBJ_CapaSet(none,Obj_Capa_Fight)
+}
+
+
+
+// CHANGEMENT D ETAT ============================================================
+if ( ! AI_TriggerIsValid(trig_activation) || call_trigger(trig_activation))
+{
+	OBJ_FlagInvisibleSet( faux)
+	AI_TrackCurChangeNow("PNJ_MR_ETAT_Wait")
+}
+
+
+// COMPORTEMENT ================================================================

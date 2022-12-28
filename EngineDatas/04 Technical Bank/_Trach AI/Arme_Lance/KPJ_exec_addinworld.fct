@@ -1,0 +1,63 @@
+int 		i, nb, is_in_world, best, ti_etat
+object	o, mainactor
+float		dist, bestdist
+
+
+if( KPJ_IsInWorld() )
+	return
+
+@get_global o_last_lance_jack = OBJ_Me()
+nb = @get_global i_LanceNb
+if (nb == Ci_bambou_maxinmap)
+{
+	mainactor = AI_MainActorGet(C_ID_Jack)
+	bestdist = 0
+	best = 0
+	for (i = 0; i < Ci_bambou_maxinmap; i++)
+	{
+		o = @get_global ao_Lances[ i ]
+		if ( !o )
+		{
+			best = i
+			break
+		}
+		
+		ti_etat = @get_KJavelin_path o mi_State
+	    if ( (ti_etat == Ci_bambou_state_launch) || (ti_etat == -1) )
+	    		continue
+			
+		dist = @o OBJ_SqrDist( mainactor )
+		if (dist > bestdist)
+		{
+			best = i
+			bestdist = dist
+		}
+	}
+	
+	o = @get_global ao_Lances[ best ]
+	if ( o )
+	{
+		if ( @o AI_IsModel (get_KJavelin_path) )
+		{
+			if ( @get_KJavelin_path o i_GFX_Fire != -1)
+			{
+				GFX_Seti( @get_KJavelin_path o i_GFX_Fire, 13106, 0)
+				@get_KJavelin_path o i_GFX_Fire = -1
+			}
+		}
+		
+		@o macro_del_callback_after_cam("KPJ_Plug")
+		@o macro_del_callback_tir("KPJ_cb_ETAT_Launch")
+		@o OBJ_Destroy()
+	}
+	
+	@get_global ao_Lances[ best ] = OBJ_Me()
+}
+else
+{
+	nb++
+	@get_global i_LanceNb = nb
+	@get_global ao_Lances[ nb - 1 ] = OBJ_Me()
+}
+
+

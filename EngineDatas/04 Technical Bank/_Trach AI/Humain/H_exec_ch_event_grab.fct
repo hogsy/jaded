@@ -1,0 +1,117 @@
+int			ti_int
+int			ti_test
+int			ti_numero
+int			ti_index
+int			ti_type
+int			ti_filtre
+
+vector	tv_vct
+float		tf_dist_max
+float		tf_dist
+float		tf_grab_delta
+
+int			EVT_Taille
+int			EVT_Filtre
+object	EVT_Sender
+object	EVT_Target
+vector	EVT_Position
+int			EVT_Type
+
+object	to_grab_actor
+
+// EST-CE QUE J'AI DEJA UN ACTEUR QUI EST GRABE PAR MOI
+if (o_grab_actor)
+{
+	ti_index = EVENT_GetIndice(	i_grab_event_ID)
+
+	tf_grab_delta = EVENT_GetGrabCurrent(ti_index)
+	
+	if (joueur && (!i_flag_grab || (tf_grab_delta < 0.0 || tf_grab_delta > EVENT_GetGrabMax(ti_index))))
+	{
+		// Le grab est rompu
+		EVENT_DelGrab(ti_index)
+	
+		o_grab_actor = nobody
+		i_grab_event_ID = -1
+	}
+}
+
+tf_dist_max = 9.0
+to_grab_actor = nobody
+
+EVT_Taille =  EVENT_SearchEvent(C_EVENT_TYPE_Grab, C_EVENT_FILTER_All, C_EVENT_FILTER_None)
+for( ti_int = 0; ti_int < EVT_Taille; ti_int++)
+{
+	EVT_Filtre = EVENT_GetFilter(@get_Event SearchIndiceMemory[ti_int])
+	EVT_Sender = EVENT_GetPere(@get_Event SearchIndiceMemory[ti_int])
+	EVT_Target = EVENT_GetTarget(@get_Event SearchIndiceMemory[ti_int])
+	EVT_Type = EVENT_GetGrabType(@get_Event SearchIndiceMemory[ti_int])	
+
+	EVT_Position = @EVT_Sender OBJ_PosGet()
+
+	if (EVT_Sender == OBJ_Me())
+	{
+	}
+	else if (EVT_Filtre == C_EVENT_FILTER_Grab_Propose)
+	{
+		// PROPOSITION DE GRAB
+		if (i_flag_grab && !o_grab_actor)
+		{
+			// JE SUIS EN RECHERCHE D'UN ACTEUR A GRABER
+			tf_dist = MATH_VecDotProduct( EVT_Position - OBJ_PosGet(), EVT_Position - OBJ_PosGet())
+	
+			// JE RECHERCHE L'ACTEUR LE PLUS PROCHE
+			if ( tf_dist < tf_dist_max )
+			{
+				tf_dist_max = tf_dist
+				to_grab_actor = EVT_Sender
+				ti_type = EVT_Type
+				ti_filtre = EVT_Filtre
+			}
+		}
+	}
+	else if (EVT_Filtre == C_EVENT_FILTER_Grab_Done)
+	{
+		// VALIDATION DE GRAB
+		
+		if (EVT_Target == OBJ_Me())
+		{
+			// C'est moi qui suis grabé
+			o_grabbed_actor = EVT_Sender
+			i_grabbed_event_ID = EVENT_GetNumero(@get_Event SearchIndiceMemory[ti_int])
+			i_grabbed_type = EVT_Type
+		}
+		else if (EVT_Type & (C_EVENT_Grab_Croco + C_EVENT_Grab_Trap) && (EVT_Target && @EVT_Target AI_IsModel("KingKong/Humain")))
+		{
+			// JE SUIS EN RECHERCHE D'UN ACTEUR A GRABER
+			tf_dist = MATH_VecDotProduct( EVT_Position - OBJ_PosGet(), EVT_Position - OBJ_PosGet())
+	
+			if (!joueur || (i_flag_grab && tf_dist < 9.0))
+//			if (joueur && (i_flag_grab && tf_dist < 9.0))
+			{
+				tf_dist_max = 0.0
+		
+				o_grab_actor = EVT_Target
+				i_grab_event_ID = EVENT_GetNumero(@get_Event SearchIndiceMemory[ti_int])
+				i_grab_type = EVT_Type
+				ti_filtre = EVT_Filtre
+			}
+		}
+	}
+}
+
+if (to_grab_actor)
+{
+	// VALIDATION DU GRAB
+	
+	// Recherche si l'acteur n'est pas déjà grab
+	o_grab_actor = to_grab_actor
+	i_grab_type = ti_type
+
+	if (ti_filtre != C_EVENT_FILTER_Grab_Done)
+	{
+		// On valide un grab qui n'était pas encore validé
+		i_grab_event_ID = EVENT_AddEventGrab(C_EVENT_FILTER_Grab_Done, OBJ_Me(), o_grab_actor, 0.0, 0.0, C_EVENT_Grab_Ico)	
+	}
+}
+

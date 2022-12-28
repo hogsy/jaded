@@ -1,0 +1,48 @@
+Include_UltraProcedure_Header
+
+int		ti_i
+int		ti_count
+int		ti_result
+		
+for ( ti_i = 0; ti_i < 20; ti_i++)
+{
+	if ( ao_WP_Territory[ti_i])
+	{
+		ti_count = 0
+		ti_result = 0
+		if ( AI_TriggerIsValid(at_Triggers[ti_i]))
+		{
+			ti_count++
+			if( call_trigger(at_Triggers[ti_i]))
+				ti_result++
+		}
+		if ( AI_TriggerIsValid(at_Triggers1[ti_i]))
+		{
+			ti_count++
+			if( call_trigger(at_Triggers1[ti_i]))
+				ti_result++
+		}
+		if ( AI_TriggerIsValid(at_Triggers2[ti_i]))
+		{
+			ti_count++
+			if( call_trigger(at_Triggers2[ti_i]))
+				ti_result++
+		}
+		if ( ! ai_test_et_ou[ti_i])
+		{
+			// TEST LOGIK AND
+			if ( ti_result && ti_count == ti_result)
+				@ao_WP_Territory[ti_i] OBJ_CapaSet(  OBJ_Capa_13, none)
+			else
+				@ao_WP_Territory[ti_i] OBJ_CapaSet( none, OBJ_Capa_13)
+		}	
+		else
+		{
+			// TEST LOGIK OR
+			if ( ti_result)
+				@ao_WP_Territory[ti_i] OBJ_CapaSet(  OBJ_Capa_13, none)
+			else
+				@ao_WP_Territory[ti_i] OBJ_CapaSet( none, OBJ_Capa_13)
+		}				
+	}
+}

@@ -1,0 +1,63 @@
+#include "BC_defines.var"
+
+#define	Cf_duree_observe_avant_attaque		2.0
+#define	Cf_distance_observe_avant_attaque	3.0
+#define	Cf_distance_hysteresis_ignore			1.0
+
+vector	tv_temp
+float		tf_dist_to_cadavre
+float		tf_dist_to_me
+float		tf_dist_min
+
+
+if( ! i_cadavre_joueur_proche_flag )
+{
+	tv_temp = @o_jack OBJ_PosGet() - OBJ_PosGet()
+	tv_temp.z = 0.0			// distance horiz car la bat vole
+	tf_dist_to_me = MATH_VecNorm(tv_temp)
+	
+	tf_dist_to_cadavre = 999.0
+	if( tf_dist_to_me < 8.0 && o_cadavre )
+	{
+		// si jack est suffisamment proche de moi (car je part en vol contact après) alors je regarde s'il est proche du cadavre
+		tv_temp = @o_jack OBJ_PosGet() - @o_cadavre OBJ_PosGet()
+		tv_temp.z = 0.0			// distance horiz car la bat vole
+		tf_dist_to_cadavre = MATH_VecNorm(tv_temp)
+	}
+	
+	tf_dist_min = MATH_FloatMin(tf_dist_to_me, tf_dist_to_cadavre)
+	
+	if( tf_dist_min < Cf_distance_observe_avant_attaque )
+	{
+		f_cadavre_joueur_proche_duree += TIME_GetDt()
+	}
+	else if( f_cadavre_joueur_proche_duree > 0.0 )
+	{
+		// il est plus loin mais il s'était approché -> hystérésis
+		if( tf_dist_min > (Cf_distance_observe_avant_attaque + Cf_distance_hysteresis_ignore) )
+			f_cadavre_joueur_proche_duree = 0.0
+		else
+			f_cadavre_joueur_proche_duree += TIME_GetDt()
+	}
+	if( f_cadavre_joueur_proche_duree > 0.0 )
+	{
+		i_flag_neck = vrai
+		v_look_pos = @o_jack OBJ_PosGet()
+	}
+	if( f_cadavre_joueur_proche_duree > Cf_duree_observe_avant_attaque )
+	{
+		i_cadavre_joueur_proche_flag = vrai
+		BC_Charognard_Mode_Reset()
+		if( i_agressive )
+		{
+			// agressive -> attaque Jack
+			o_cible_attaque = o_jack
+			AI_Execute("BC_exec_init_attaque")		// initialise le mode d'attaque
+		}
+		else
+		{
+			// charognard -> se renvolle
+			AI_Execute("BC_exec_decolle_sans_proie")
+		}
+	}
+}

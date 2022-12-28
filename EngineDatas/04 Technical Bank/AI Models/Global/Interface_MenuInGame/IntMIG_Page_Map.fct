@@ -1,0 +1,145 @@
+#include "Interface_MenuInGame_defs.var"
+
+int	 	ti_Score	
+int		ti_Save
+
+if (!IntMIG_SetPageParams())
+	return
+if (!mo_Texte)
+	return
+	
+#define MAPNAME_POS	cvector( 0.5, 0.68, 0 )
+	
+if (INTMIG_EnterPage_Start)
+{
+	mi_PageState = 1 // met à 1 pour forcer le coloring des artwork à full light
+	mi_Page_Map = vrai
+	@"univ" PROG_i_MapReplay = 0
+	IntMIG_ProfileGet_MapES( @"univ" MENU_ProfileIndex )
+	IntMIG_SetArtworkPos( 0 )
+	IntMIG_ResetTexte( mi_PageString, 30 )
+	
+	IntMIG_SetText_Page( mi_PageString, INTMIG_TXG, INTMIG_TEXT_StartMenu + 15, INTMIG_PosTitle_UpRight,  0.0, 6, -1, INTMIG_Color_NotSel, 0, 1 )
+	IntMIG_SetText_Page( mi_PageString + 1, INTMIG_TXG, INTMIG_TEXT_Tback, INTMIG_PosButton_BottomLeft,  0.0, 4, -1, INTMIG_Color_Sel, 0, 1 )
+	IntMIG_SetText_Page( mi_PageString + 2, INTMIG_TXG, INTMIG_TEXT_Oviewscore, cvector( 0.5, 0.84, 0),  0.0, 5, -1, INTMIG_Color_Sel, 0, 1 )
+	IntMIG_SetText_Page( mi_PageString + 3, INTMIG_TXG, INTMIG_TEXT_Xselect, INTMIG_PosButton_BottomRight,  0.0, 6, -1, INTMIG_Color_Sel, 0, 1 )
+
+	@mo_Texte OBJ_TextSet( mi_PageString +4, "\P16\L\b114\A" )
+	IntMIG_CreateText_End( mi_PageString + 4, cvector( 0.13, 0.5, 0),  0.0, 5, -1, 0xFFFFFF, 0, 0 )
+	@mo_Texte OBJ_TextSet( mi_PageString + 5, "\P16\L\b112\A" )
+	IntMIG_CreateText_End( mi_PageString + 5, cvector( 0.87, 0.5, 0),  0.0, 5, -1, 0xFFFFFF, 0, 0 )
+
+	//if ( ( mi_Cur != @"univ" PROG_i_MapCur) || (mi_Cur == @"univ" PROG_i_MapNumber -1) )
+		IntMIG_DisplayMapName( mi_PageString + 6, mi_Cur, MAPNAME_POS, 5, 1 )
+//	else
+//		@mo_Texte OBJ_TextSet( mi_PageString + 6, "")
+
+	ti_Score = IntMIG_HOF_DisplayScore( mi_Cur, mi_PageString + 7, cvector( 0.5, 0.77, 0), 5, 0xFF7F7F )
+
+	IntMIG_Text_FadeInMulti( mi_PageString, 10, 0.5, 0.0 )
+	
+	if ( !IntMIG_MapIsUnlocked( mi_Cur ) || (mi_Cur == @"univ" PROG_i_MapCur ) || (ti_Score == -1) )
+	{
+		@mo_Texte OBJ_TextFlagSet( mi_PageString + 2, 1045 )
+		@mo_Texte OBJ_TextEffectSeti( 1, -1, mi_PageString + 2 )
+	}
+}
+else if (INTMIG_EnterPage_End )
+{
+	IntMIG_SetJoyFactor( 3.0 )
+}
+else if (INTMIG_LeavePage_Start)
+{
+	mi_Page_Map = faux
+	IntMIG_SetJoyFactor( 1.0 )
+	IntMIG_Text_FadeOutMulti( mi_PageString, 10, 0.5 )
+}
+
+IntMIG_ShowArtwork( 0, mi_PageString + 4, mi_PageString + 5 )
+IntMIG_ColorArtwork()
+
+IntMIG_RestorePageParams()
+
+if ( mi_Exit || mi_ChangePage || mi_Cheat )
+	return
+	
+ti_Score = IntMIG_HOF_DisplayScore( mi_Cur, mi_PageString + 7, cvector( 0.5, 0.77, 0), 5, 0xFF7F7F )
+if ( ti_Score == -1 )
+	@mo_Texte OBJ_TextFlagSet( mi_PageString + 2, 1045 )
+else
+	@mo_Texte OBJ_TextFlagSet( mi_PageString + 2, 21 )
+
+	
+if ( IntMIG_MapIsUnlocked( mi_Cur ) )
+{
+	//if ( ( mi_Cur != @"univ" PROG_i_MapCur) || (mi_Cur == @"univ" PROG_i_MapNumber -1) )
+		IntMIG_DisplayMapName( mi_PageString + 6, mi_Cur, MAPNAME_POS, 5, 1 )
+//	else
+//		@mo_Texte OBJ_TextSet( mi_PageString + 6, "")
+	@mo_Texte OBJ_TextFlagSet( mi_PageString + 3, 22 )
+}
+else
+{
+	@mo_Texte OBJ_TextSet( mi_PageString + 6, "")
+	@mo_Texte OBJ_TextFlagSet( mi_PageString + 2, 1045 )
+	@mo_Texte OBJ_TextFlagSet( mi_PageString + 3, 1046 )
+}
+
+ti_Save = mi_Cur
+IntMIG_UpdateCur( @"univ" PROG_i_MapNumber, 0, 0, 0, -1, 1, 0, 0, 0, 0 )
+if (mi_Cur != ti_Save)
+	IntMIG_PlaySound( INTMIG_SOUND_SELECTION )
+
+if ( joy_cancel  )
+{
+	IntMIG_PlaySound( INTMIG_SOUND_CANCEL )
+	INTMIG_ChangePage(  "IntMIG_Page_StartMain" , 0 )
+	return
+}
+	
+if ( joy_valide )
+{
+	if( IntMIG_MapIsUnlocked(mi_Cur) )
+	{
+		IntMIG_PlaySound( INTMIG_SOUND_VALIDE )
+		if ( (mi_Cur != @"univ" PROG_i_MapNumber - 1) && (mi_Cur == @"univ" PROG_i_MapCur ) )
+		{
+			@"univ" PROG_i_MapReplay = faux
+			//DBG_TraceString( "Save Buffer : Save5" ) DBG_TraceEOL()
+			SAVE_Request( INO_e_SavRq_SaveSaveBuffer, 5)
+			INTMIG_LoadingPage( @"univ" PROG_i_Map, @"univ" PROG_i_ES )
+		}
+		else
+		{
+			SAVE_Validate()
+			//DBG_TraceString( "Save Buffer : Save6" ) DBG_TraceEOL()
+			SAVE_Request( INO_e_SavRq_SaveSaveBuffer, 6)
+			AI_ReinitUniv()
+			SAVE_Validate()
+			
+			@"univ" PROG_i_MapReplay = vrai
+			@"univ" PROG_i_MapReplayIndex = mi_Cur
+			INTMIG_LoadingPage( @"univ" PROG_ai_MapId[ mi_Cur ], @"univ" PROG_ai_MapES[ mi_Cur ] )
+		}
+	}
+	else
+		IntMIG_PlaySound( INTMIG_SOUND_VALIELOCK )
+}
+
+if (IO_ButtonJustPressed( joy_button_B ) && !(@mo_Texte OBJ_TextFlagGet( mi_PageString + 2 ) & 1024) )
+{
+	IntMIG_PlaySound( INTMIG_SOUND_VALIDE )
+	mi_HOF_Map = mi_Cur
+	if ( IntMIG_HOF_GetPlayerScore( mi_HOF_Map ) == 0)
+	{
+		mi_ScoreMap = 0
+		mi_ScoreState = 3
+	}
+	else
+		mi_ScoreState = 0
+	mi_ScoreState_Old = mi_ScoreState
+	mi_ScoreSave = 0
+	INTMIG_ChangePage(  "IntMIG_Page_ScoreNew" , mi_Cur )
+}
+	
+

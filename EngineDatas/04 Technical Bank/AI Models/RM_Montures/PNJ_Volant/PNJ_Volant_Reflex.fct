@@ -1,0 +1,23 @@
+i_flag_landing = faux
+
+if (i_cam_cut)
+	i_cam_cut--
+
+if (IO_ButtonJustPressed(joy_button_StickR))
+	i_cam_cut = 2
+
+if ( o_main_actor )
+{
+}
+else
+{
+	o_main_actor = AI_MainActorGet(0)
+	COL_UnCollidableAdd(o_main_actor)
+}
+
+
+if (OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna))
+{
+	DYN_TractionSet(Cv_NullVector)
+	DYN_FlagsSet(DYN_C_OptimizeColDisable, none)
+}

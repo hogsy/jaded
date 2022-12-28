@@ -1,0 +1,171 @@
+#include "PNJ_Quadri_defines.var"
+
+Include_UltraProcedure_Header
+
+float		tf_dot_product
+float		tf_sign
+
+vector	tv_start_dir
+vector	tv_joy_dir
+vector	tv_dir
+vector	tv_pos
+vector	tv_sight
+vector	tv_banking
+
+object	to_head
+object	to_ventre
+object	to_bassin
+
+DBG_StartRaster(2, "PNJ_Quadri_After_Blend")
+
+OBJ_BankingGeneralSet(v_real_sight, v_real_banking)
+
+// RAZ TRACTIONS
+//v_Traction_Exterieure = Cv_NullVector	
+
+to_head = ANI_CanalObjectGet(Anim_Canal_Tete)
+to_ventre = ANI_CanalObjectGet(Anim_Canal_Ventre)
+to_bassin = ANI_CanalObjectGet(Anim_Canal_Bassin)
+
+// ACCELERATION => PENCHING
+tv_dir = DYN_SpeedGetVector() - v_last_speed
+tv_dir /= TIME_GetDt()
+
+tf_dot_product = MATH_VecDotProduct(tv_dir, OBJ_HorizonGet())
+tf_dot_product *= 0.01
+tf_dot_product = MATH_FloatLimit(tf_dot_product, -0.3, 0.3)
+
+if (o_eagle)
+	f_speed_angle -= MATH_FloatSign(f_speed_angle) * MATH_FloatMin(MATH_AbsFloat(f_speed_angle), 2.0 * TIME_GetDt())
+else
+	f_speed_angle = MATH_FloatBlend(f_speed_angle, -tf_dot_product, 6.0 * TIME_GetDt())
+
+tv_dir = MATH_VecRotate(OBJ_BankingGet(), OBJ_SightGet(), f_speed_angle)
+
+v_virtual_banking = tv_dir
+
+// Rotation autour du bassin
+v_IK_ref_ground_pos = @to_bassin MATH_VecGlobalToLocal(OBJ_PosGet() - @to_bassin OBJ_PosGet())
+@to_bassin OBJ_Rotate_FromTo(@to_bassin MATH_VecGlobalToLocal(OBJ_BankingGet()), @to_bassin MATH_VecGlobalToLocal(tv_dir))
+v_IK_ref_ground_pos = @to_bassin OBJ_PosGet() + @to_bassin MATH_VecLocalToGlobal(v_IK_ref_ground_pos)
+
+//// Rotation autour du pivot
+//v_IK_ref_ground_pos = @to_bassin MATH_VecGlobalToLocal(@to_bassin OBJ_PosGet() - OBJ_PosGet())
+//@to_bassin OBJ_Rotate_FromTo(@to_bassin MATH_VecGlobalToLocal(OBJ_BankingGet()), @to_bassin MATH_VecGlobalToLocal(tv_dir))
+//v_IK_ref_ground_pos = OBJ_PosGet() + @to_bassin MATH_VecLocalToGlobal(v_IK_ref_ground_pos)
+//@to_bassin OBJ_PosSet(v_IK_ref_ground_pos)
+//v_IK_ref_ground_pos = OBJ_PosGet()
+
+//v_last_speed = DYN_SpeedGetVector()
+
+// Sight référence
+v_head_sight = MATH_VecLocalToGlobal(v_head_sight)
+
+switch(ACT_ActionGet())
+{
+	case Ci_Action_Reception :
+	case Ci_Action_Choc_Mur_G :
+	case Ci_Action_Choc_Mur_D :
+		tv_joy_dir = OBJ_SightGet()
+		break
+
+	default:
+		tv_joy_dir = v_joy_dir
+}
+
+tf_sign = MATH_FloatSign(MATH_VecDotProduct(tv_joy_dir, OBJ_HorizonGet()))
+if (MATH_FloatSign(MATH_VecDotProduct(tv_joy_dir, OBJ_SightGet())) < 0.0 && tf_sign != MATH_FloatSign(MATH_VecDotProduct(v_head_sight, OBJ_HorizonGet())))
+{
+	tv_joy_dir = MATH_VecCrossProduct(OBJ_BankingGet(), v_head_sight) * tf_sign
+	tv_joy_dir  = tv_joy_dir
+}
+
+//DBG_RenderVector(@to_head OBJ_PosGet(), tv_joy_dir * 5.0, color_jaune)
+
+if (MATH_VecSquareNorm(tv_joy_dir))
+	tv_joy_dir = tv_joy_dir
+else
+	tv_joy_dir = v_head_sight
+	
+tv_joy_dir = MATH_VecBlendRotate(v_head_sight, tv_joy_dir, 4.0 * TIME_GetDt())
+v_head_sight = MATH_VecGlobalToLocal(tv_joy_dir)
+
+//DBG_RenderVector(@to_head OBJ_PosGet(), tv_joy_dir * 5.0, color_jaune)
+
+tv_start_dir = @to_head MATH_VecGlobalToLocal(OBJ_SightGet())
+
+// rotation ventre 50%
+tv_dir = tv_joy_dir
+
+tv_dir = MATH_VecBlendRotate(OBJ_SightGet(), tv_dir, 0.5)
+tv_dir = MATH_VecInCone(tv_dir, @to_ventre OBJ_BankingGet(), 0.9, 0)
+tv_dir -= MATH_VecDotProduct(tv_dir, OBJ_BankingGet()) * OBJ_BankingGet()
+@to_ventre	OBJ_Rotate_FromTo(@to_ventre MATH_VecGlobalToLocal(OBJ_SightGet()), @to_ventre MATH_VecGlobalToLocal(tv_dir))
+
+// rotation tete 100%
+tv_dir = tv_joy_dir
+
+tv_dir = MATH_VecInCone(tv_dir, @to_head OBJ_BankingGet(), Cf_PiBy3, 0)
+//@to_head OBJ_Rotate_FromTo(cvector(0.0, 0.0, 1.0), @to_head MATH_VecGlobalToLocal(tv_dir))
+@to_head OBJ_Rotate_FromTo(tv_start_dir, @to_head MATH_VecGlobalToLocal(tv_dir))
+
+AI_Execute("PNJ_Quadri_exec_IK_Legs")
+
+   PNJ_Quadri_GFX_Smoke(Ci_IK_main_gauche, vrai)
+PNJ_Quadri_GFX_Smoke(Ci_IK_main_droite, vrai)
+PNJ_Quadri_GFX_Smoke(Ci_IK_pied_gauche, vrai)
+PNJ_Quadri_GFX_Smoke(Ci_IK_pied_droit, vrai)
+
+if (0 && f_dash_duration)
+{
+//	@get_global Proc_AE_ZoomSmoothCenterSet( 2.0, @to_head OBJ_PosGet() - @get_Kamera OBJ_PosGet() )	
+	tv_joy_dir = @to_head OBJ_PosGet()
+//	tv_joy_dir += DYN_SpeedGetVector() * MATH_FloatSign(MATH_VecDotProduct(DYN_SpeedGetVector(), @get_Kamera OBJ_SightGet())) * 0.5
+	tv_joy_dir -= @get_Kamera OBJ_PosGet()
+	@get_global Proc_AE_ZoomSmoothCenterSet( MATH_VecDotProduct(OBJ_SightGet(), DYN_SpeedGetVector()) * 0.05,  tv_joy_dir)	
+}
+
+
+// RIDED ?
+//Proc_PNJ_Quadri_RidedGetInfos(tv_pos, tv_sight, tv_banking)
+tv_pos = Proc_PNJ_Quadri_RidedPosGet()
+DBG_RenderCircle(tv_pos, 0.75, Cv_NullVector, color_vert)
+if( o_Rided_Actor )
+	i_Rided_last_trame = vrai
+else
+	i_Rided_last_trame = faux
+
+if (GFX_Halo_G == -1)
+{
+	GFX_Halo_G = GFX_Add(21)                                 	 //création du halo
+	GFX_MaterialSet(GFX_Halo_G, get_SFX_light_and_smoke,0) 	// affectation du matériau
+	GFX_Setf(GFX_Halo_G, 21000, 0.5)             // taille du halo
+	GFX_Setf(GFX_Halo_G, 21004, 2.0)                       // taille du halo
+	GFX_Seti(GFX_Halo_G, 21101, 0x0020FF)          // couleur du halo
+	GFX_Seti(GFX_Halo_G, 21100, 4)
+}
+
+tv_pos = @to_head OBJ_PosGet()
+tv_pos += @to_head OBJ_BankingGet() * 0.95 * OBJ_ZoomGet()
+tv_pos += @to_head OBJ_SightGet() * 0.07 * OBJ_ZoomGet()
+tv_pos += @to_head OBJ_HorizonGet() * 0.43 * OBJ_ZoomGet()
+GFX_Setv(GFX_Halo_G, 21200, tv_pos)
+GFX_Setv(GFX_Halo_G, 21201, @to_head OBJ_HorizonGet())
+
+if (GFX_Halo_D == -1)
+{
+	GFX_Halo_D = GFX_Add(21)                                 	 //création du halo
+	GFX_MaterialSet(GFX_Halo_D, get_SFX_light_and_smoke,0) 	// affectation du matériau
+	GFX_Setf(GFX_Halo_D, 21000, 0.5)             // taille du halo
+	GFX_Setf(GFX_Halo_D, 21004, 2.0)                       // taille du halo
+	GFX_Seti(GFX_Halo_D, 21101, 0x0020FF)          // couleur du halo
+	GFX_Seti(GFX_Halo_D, 21100, 4)
+}
+
+tv_pos -= @to_head OBJ_HorizonGet() * 0.86 * OBJ_ZoomGet()
+GFX_Setv(GFX_Halo_D, 21200, tv_pos)
+GFX_Setv(GFX_Halo_D, 21201, -@to_head OBJ_HorizonGet())
+
+
+
+DBG_StopRaster(2)

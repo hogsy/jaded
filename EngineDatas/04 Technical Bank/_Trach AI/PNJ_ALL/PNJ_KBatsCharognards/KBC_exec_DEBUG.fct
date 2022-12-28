@@ -1,0 +1,110 @@
+#include "KBC_defines.var"
+
+vector	tv_2D_pos
+vector	tv_pos
+vector	tv_temp
+
+object	to_bone
+
+int			ti_string_ID
+
+
+tv_2D_pos = VIEW_3dWorldTo2d(0, OBJ_PosGet())
+
+#ifndef _FINAL_
+
+// SNAP KONG FINISHED ------------------------------------------------
+if( i_big_bat && @"univ" i_cheat_page == 4 )
+{
+	switch( i_etat_courant )
+	{
+		case ETAT_Agonie :
+		case ETAT_KK_Finished :
+		case ETAT_Mort :
+			to_bone = ANI_CanalObjectGet(Anim_Canal_Snap_KONG)
+			if( to_bone )
+			{
+				tv_pos = @to_bone OBJ_PosGet()
+				tv_temp = @to_bone OBJ_SightGet()
+				DBG_RenderVector(tv_pos - (2 * tv_temp), 4 * tv_temp, color_vert)
+				tv_temp = @to_bone OBJ_BankingGet()
+				DBG_RenderVector(tv_pos - (2 * tv_temp), 4 * tv_temp, color_bleu)
+				tv_temp = @to_bone OBJ_HorizonGet()
+				DBG_RenderVector(tv_pos - (2 * tv_temp), 4 * tv_temp, color_rouge)
+			}
+			break
+		default:
+			break
+	}
+}
+
+// INTERACTION -------------------------------------------------------------------
+if( i_DBG_display_interaction && o_attack_interaction )
+{
+	if( i_big_bat )
+		Str_DisplayGaoOnce(o_attack_interaction, cvector(0.5,0.5,0))
+	else
+		Str_DisplayGaoOnce(o_attack_interaction, tv_2D_pos)
+}
+
+// BIG BAT KAPAS ---------------------------------------------------------------
+if( i_big_bat && i_DBG_display_big_bat_kapa )
+{
+	Str_DisplayTextOnce("===== ", v_DBG_display_big_bat_kapa)
+	Str_DisplayGaoOnce(OBJ_Me(), v_DBG_display_big_bat_kapa + cvector(0.07,0,0))
+	Str_DisplayTextOnce(" =====", v_DBG_display_big_bat_kapa + cvector(0.25,0,0))
+	if ( OBJ_CapaTest(CAPA_Decolle) )
+		Str_DisplayTextOnce("KAPA 0 : Fly away OR No Landing", v_DBG_display_big_bat_kapa + cvector(0,0.05,0))
+	if( OBJ_CapaTest(CAPA_BigBat_Attente_Finish) )
+		Str_DisplayTextOnce("KAPA 1 : Waiting for finish", v_DBG_display_big_bat_kapa + cvector(0,0.1,0))
+	if( OBJ_CapaTest(CAPA_BigBat_Attaque_Mashing) )
+		Str_DisplayTextOnce("KAPA 3 : Mashing", v_DBG_display_big_bat_kapa + cvector(0,0.15,0))
+	if( OBJ_CapaTest(CAPA_Ignore_Pafs) )
+		Str_DisplayTextOnce("KAPA 5 : ignore pafs", v_DBG_display_big_bat_kapa + cvector(0,0.2,0))
+	if( OBJ_CapaTest(CAPA_BigBat_attaque_possible) )
+		Str_DisplayTextOnce("KAPA 6 : waiting for attack", v_DBG_display_big_bat_kapa + cvector(0,0.25,0))
+	if( OBJ_CapaTest(CAPA_BigBat_attaque_en_cours) )
+		Str_DisplayTextOnce("KAPA 7 : is attacking", v_DBG_display_big_bat_kapa + cvector(0,0.3,0))
+	if( OBJ_CapaTest(CAPA_waits_for_KONG) )
+		Str_DisplayTextOnce("KAPA 8 : waits for kong", v_DBG_display_big_bat_kapa + cvector(0,0.35,0))
+	if( OBJ_CapaTest(CAPA_BigBat_Kamera) )
+		Str_DisplayTextOnce("KAPA 11 : Big Bat Kamera", v_DBG_display_big_bat_kapa + cvector(0,0.4,0))
+	if( OBJ_CapaTest(CAPA_BigBat_Finished_CrashDown) )
+		Str_DisplayTextOnce("KAPA 14 : Crashed", v_DBG_display_big_bat_kapa + cvector(0,0.45,0))
+	if( OBJ_CapaTest(CAPA_Dead) )
+		Str_DisplayTextOnce("KAPA 15 : Dead", v_DBG_display_big_bat_kapa + cvector(0,0.5,0))
+	if( i_etat_courant == ETAT_Move_Ronde && o_ronde_next_wp && @o_ronde_next_wp OBJ_CapaTest(CAPA_WP_BigBat_Do_Not_Attack) )
+		Str_DisplayTextOnce("WP KAPA 12 : Do not attack", v_DBG_display_big_bat_kapa + cvector(0,0.55,0))
+	if( i_etat_courant == ETAT_Move_Ronde && o_ronde_next_wp && @o_ronde_next_wp OBJ_CapaTest(CAPA_WP_no_kamera_capa) )
+		Str_DisplayTextOnce("WP KAPA 13 : no kamera", v_DBG_display_big_bat_kapa + cvector(0,0.6,0))
+}
+
+//if( i_VINCE || @"univ" i_cheat_page == 3 )
+//{
+//	if( EVENT_TL_LifeGet(ID_LIFE) > 0.0 && ! i_big_bat && ! i_follower && ! i_KONG_ride_walling_bat )
+//	{
+//		if( i_LD_attack_config )
+//			ti_string_ID = STR_CreateText("\c0FF0000FF\\h.03\Paffe", tv_2D_pos + cvector(0,-0.1,0), 0.0)
+//		else
+//			ti_string_ID = STR_CreateText("\c0FF00FF00\\h.03\Grabbe", tv_2D_pos + cvector(0,-0.1,0), 0.0)
+//		STR_AppendText(ti_string_ID, "")
+//	}
+//}
+
+if( @get_global i_AI_show_target )
+	if( EVENT_LIFE_CurLifeGet(ID_LIFE) > 0.0 && o_cible_attaque)
+		Str_DisplayGaoOnce(o_cible_attaque, tv_2D_pos)
+
+#endif
+// DEBUG DEBUG DEBUG ==============================================
+
+
+//if( i_etat_init == Ci_etat_init_spawn_finish )
+//	Str_DisplayTextOnce("SPW", tv_2D_pos)
+
+//Str_DisplayIntOnce(i_reseau_wp_count, tv_2D_pos + cvector(0,0.05,0))
+//if( JOUR_NUIT_HeureCorrecte(f_Heure_Debut, f_Heure_Fin) )
+//	Str_DisplayTextOnce("Heure OK ", tv_2D_pos)
+//else
+//	Str_DisplayTextOnce("Heure pas ok...", tv_2D_pos)
+//

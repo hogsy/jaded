@@ -1,0 +1,305 @@
+
+#include "KPluieDeLances_defines.var"
+
+int t_i, ti_recule, ti_au_repos, ti_etat_javelot
+object to_lance
+vector tv_impulse, tv_orient_vers_cible, tv_sight
+message tm_msg, tm_trigger 
+float tf_time, tf_dist, f_x, f_y, f_pourcent_distance
+float 	f_RandRes
+int		i_IsDWZShot
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != Ci_etat_attaque)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = Ci_etat_attaque
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = AI_TrackCurGet()
+	
+	AI_Execute("KPluieDeLances_exec_init_temps")
+	
+	i_lances_avant_paf = i_lances_avant_paf_move 
+	
+	if (i_lances_avant_paf  >= 0)
+		i_lances_avant_paf_courant =  i_lances_avant_paf 
+				
+	f_temps_avant_paf_courant = f_temps_avant_paf
+}
+
+
+// compteur de lance
+if ( (i_max_lance_a_lancer > 0 ) && (i_lance_lancee_compteur >= i_max_lance_a_lancer ) )
+	return
+
+// Permet de lancer la Zic Fight des que les lances se mettent en marche !
+SIG_Send(SIG_C_TYPE_FIGHT, OBJ_Me())
+
+tm_trigger = AI_TriggerGetMsg(tr_attaque)
+
+if ( !mi_IsDigwazsaiControlled || mi_ForceFireComplete )
+{
+	push( tm_trigger.msg_gao1 )
+	AI_Execute("KPluieDeLances_exec_construit_liste_cibles")
+}
+
+i_IsDWZShot = faux
+if ( mi_IsDigwazsaiControlled && !mi_ForceFireComplete )
+{
+	i_IsDWZShot = vrai
+}
+
+for (t_i = 0; t_i < Ci_nombre_max_d_emetteurs ; t_i++)
+{
+	f_RandRes = MATH_RandFloat( 0.0, 1.0 )
+	
+	if (ao_liste_emetteurs[t_i] && ( !i_IsDWZShot || mi_IsDWZActive || ( f_RandRes <= mf_InactiveDWZFreq ) ) )
+	{
+		// si compteur est ecoule, il est temps de relancer
+		if (ao_liste_temps_emetteurs[t_i] < 0.0 || i_IsDWZShot )
+		{
+			//to_lance = ao_liste_lances[i_lance_courante]
+			
+			// new	
+			if (o_lance_reference)
+				to_lance = @o_lance_reference OBJ_Duplicate(OBJ_PosGet())
+	//		@to_lance OBJ_CapaSet(OBJ_Capa_2, none)	
+			// enew
+						
+//			i_lance_courante++		
+//			if (i_lance_courante == i_nombre_de_lances)
+//			{
+//				i_lance_courante = 0
+//			}			
+			
+//			if (to_lance != nobody && @to_lance AI_IsModel("Projectiles/Projectile_Javelin"))	
+		    {
+//				ti_etat_javelot = @"Projectiles/Projectile_Javelin" to_lance mi_State
+//			
+//			    if (ti_etat_javelot  == Ci_bambou_state_launch || ti_etat_javelot == -1 )
+//					ti_au_repos = faux
+//				else
+//					ti_au_repos = vrai
+//	
+//				if (ti_au_repos)
+					//JIMI_NOTE: targetting taken care of by Digwaszai controller if the lance throw is triggered by this attack
+					{
+						if ( !mi_IsDigwazsaiControlled || mi_ForceFireComplete )
+						{
+							o_cible = ao_cible_list[MATH_RandInt(0, i_nombre_cible)]
+
+							if (o_cible == AI_MainActorGet(C_ID_Kong))
+							{
+								if (i_lances_avant_paf_just_changed)
+								{
+									i_lances_avant_paf_courant =  i_lances_avant_paf
+									i_lances_avant_paf_just_changed = faux	
+								}
+							}
+						}
+						else
+						{
+							o_cible = mo_WaszaiTarget
+						}
+					
+					
+//					if (@"Projectiles/Projectile_Javelin" to_lance i_GFX_Fire != -1)
+//					{
+//						GFX_Seti( @"Projectiles/Projectile_Javelin" to_lance i_GFX_Fire, 13106, 0)	
+//						@"Projectiles/Projectile_Javelin" to_lance i_GFX_Fire = -1
+//					}
+					
+//					@to_lance OBJ_FlagInvisibleSet(1)
+// 					@to_lance OBJ_Reinit(1)	
+	
+					@to_lance OBJ_PosSet(@ao_liste_emetteurs[t_i] OBJ_PosGet())	
+				
+	 				if ( !mo_WaszaiStaticTarget )
+	 				{
+	 					tv_orient_vers_cible  = @o_cible OBJ_PosGet()
+	 				}
+	 				else
+	 				{
+		 				tv_orient_vers_cible = @mo_WaszaiStaticTarget OBJ_PosGet()
+		 			}
+					
+					tv_sight = @o_cible OBJ_SightGet()
+					//tv_sight = @o_cible OBJ_PosGet() - OBJ_SightGet()
+					
+					if (MATH_VecDotProduct(@o_cible OBJ_SightGet(), @o_cible DYN_SpeedGetVector()) < 0.0)
+						ti_recule = vrai
+					else
+						ti_recule = faux
+					
+					if (ti_recule)
+					{
+						f_pourcent_distance = f_fact_distance_cible_back
+					}
+					// si la cible ne bouge pas et que la distance ne doit pas diminuer en fonction du temps, on
+					// utilise un pourcentage de la distance totale
+					else if ( ! i_distance_diminue_avec_temps && @o_cible DYN_SpeedGet() < f_norme_vitesse_min)
+					{	
+						f_pourcent_distance = f_fact_distance_cible_stop
+					}
+					// si la cible ne bouge pas et que la distance doit diminuer avec le temps, on calcule
+					// dynamiquement le pourcentage a appliquer a la distance
+					else if ( i_distance_diminue_avec_temps && @o_cible DYN_SpeedGet() < f_norme_vitesse_min) 
+					{
+						f_pourcent_distance = i_lances_avant_paf_courant
+						f_pourcent_distance /= i_lances_avant_paf 
+						f_pourcent_distance *= f_fact_distance_cible_stop
+					}
+					// sinon (la cible bouge), on prend la distance totale
+					else
+						f_pourcent_distance = 1.0
+						
+					//JIMI_NOTE: no forward prediction of shots and don't randomize for Digwazsai AS MUCH
+					if ( !mi_IsDigwazsaiControlled || mi_ForceFireComplete || !mi_IsDWZActive || !mi_IsAccurate )
+					{
+						// on tire a une position randomisee, qui est a f_distance_cible * f_pourcent_distance
+						// metres en avant de la cible
+						tv_orient_vers_cible += tv_sight * f_distance_cible * f_pourcent_distance
+						
+						// on randomize en x et y selon un radius
+						f_x = 	MATH_RandFloat(-f_radius, f_radius)
+						f_y = 	MATH_RandFloat(-f_radius, f_radius) 
+						tv_orient_vers_cible.x += f_x
+						tv_orient_vers_cible.y += f_y
+					}
+					else
+					{
+						f_x = 	MATH_RandFloat(-f_radius, f_radius)
+						f_y = 	MATH_RandFloat(-f_radius, f_radius)
+
+						if ( o_cible == AI_MainActorGet(C_ID_Kong) )
+						{
+							tv_orient_vers_cible.z += MATH_RandFloat( 1.75, 4.5 )
+							
+							tv_orient_vers_cible.x += f_x * 0.25
+							tv_orient_vers_cible.y += f_y * 0.25
+						}
+						else
+						{
+							tv_orient_vers_cible.z += MATH_RandFloat( 0.375, 1.75 )
+						}
+					}
+					
+					tv_orient_vers_cible  -= @to_lance OBJ_PosGet()
+					tf_dist = MATH_VecNorm(tv_orient_vers_cible )
+					
+					// borne distance max
+					if ( tf_dist > f_max_distance )
+					{
+						tv_orient_vers_cible *= f_max_distance / tf_dist
+						tf_dist = f_max_distance
+					}
+			
+					tv_orient_vers_cible  += @to_lance OBJ_PosGet()
+		
+					tf_time = f_time
+
+					tv_impulse = DYN_LIB_ImpulsionGet_Friction( @to_lance OBJ_PosGet(), tv_orient_vers_cible, f_gravite, f_friction , tf_time, i_flag_Z_friction, f_hauteur )
+			
+					MSG_SetNull( tm_msg )
+					tm_msg.msg_id 			= msg_id_grenadelaunch
+					tm_msg.msg_sender 	= OBJ_Me()
+					tm_msg.msg_vec1 		= tv_impulse  						// speed
+					tm_msg.msg_vec2 		= Cv_NormalGravity/10			// grav
+					tm_msg.msg_vec3 		= cvector(1.0, 1.0, 0.0)			// frict
+					
+					// si msg_int2 == 1 alors la k javelin envoie un paf digwazai
+					if ( mi_IsDigwazsaiControlled && !mi_ForceFireComplete && mi_IsDWZActive )
+					{
+						if ( !mi_IsAccurate && ( o_cible != AI_MainActorGet(C_ID_Kong) ) )
+						{
+							tm_msg.msg_int2	= 0
+						}
+						else
+						{
+							tm_msg.msg_int2	= 1
+						}
+					}
+					else
+					{
+						tm_msg.msg_int2	= 0
+					}
+
+					// si le temps initial avant paf est ecoule, on lock sur la cible pour un 
+					// paf automatique (si cest Jack) a chaque n lance		     	
+		     		if ( AI_MainActorGet(C_ID_Kong) == o_cible)
+		     		{
+		     			//if (	f_temps_avant_paf_courant <= 0.0 && 
+//			    				i_lances_avant_paf  >= 0 && 
+//			     			i_lances_avant_paf_courant == 0)
+//			     		{
+//					    		tm_msg.msg_gao4 = get_Kamera 			// lock sur cam, c est mortel!
+//					    	}
+//					    	else
+//					    	{
+						    	// sinon, on ne fait pas de domage meme si on est paffer
+							@to_lance OBJ_CapaSet(OBJ_Capa_3, 0)
+//						}
+				    	}
+			   		
+			   		@get_Arme_Lance_path to_lance mi_flamme = i_flamme		  
+			    		@to_lance MSG_Send( tm_msg )
+				
+					@to_lance OBJ_CapaSet(OBJ_Capa_2, 0)
+
+					if (!i_fait_pafs)
+					{
+						@to_lance OBJ_CapaSet(OBJ_Capa_3, 0)
+					}
+
+					// on ne commence a compter les lances que lorsque le temps_avant_paf
+					// est ecoule
+					if (o_cible == AI_MainActorGet(C_ID_Kong))
+					{
+						if (f_temps_avant_paf_courant <= 0.0)
+						{
+							if (i_lances_avant_paf  >= 0)
+							{
+								i_lances_avant_paf_courant --
+						
+								if (i_lances_avant_paf_courant < 0)
+									i_lances_avant_paf_courant = i_lances_avant_paf 
+							}
+				    		}	
+					}
+					
+					if ( !mi_IsDigwazsaiControlled || mi_ForceFireComplete )
+					{
+						ao_liste_temps_emetteurs[t_i] = MATH_RandFloat(f_min_temps_entre_lances, f_max_temps_entre_lances )
+						
+						// compteur de lance
+						i_lance_lancee_compteur++
+						break
+					}				
+				}
+			}
+		}
+		else
+		{
+			ao_liste_temps_emetteurs[t_i] -= TIME_GetDt()
+		}
+	}
+}
+
+if (f_temps_avant_paf_courant > 0)
+	f_temps_avant_paf_courant -=TIME_GetDt()
+
+mi_ForceFireComplete	= vrai

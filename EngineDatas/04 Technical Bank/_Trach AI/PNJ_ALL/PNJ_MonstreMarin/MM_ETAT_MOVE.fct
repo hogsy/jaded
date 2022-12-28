@@ -1,0 +1,941 @@
+#include "MM_defines.var"
+
+float			tf_water_Z
+float			tf_coef
+float			tf_depasse
+float			tf_dist_inclinaison
+float			tf_dist_projection
+float			tf_speed_inclinaison_coef_old
+float			tf_temp
+float			tf_speed
+vector		tv_paf_recul
+vector		tv_paf_to_send
+vector		tv_pos_new
+vector		tv_sight_new
+vector		tv_2D_pos
+int				ti_hors_eau_old
+object		to_wp
+// occluders
+vector			tv_dest_pos_occluder_test
+vector			tv_dest_pos_occluder_reelle
+vector			tv_sight_occluder
+object			ao_occluder[10]
+float				af_occluder[10]
+object			to_occluder_jump
+// idle
+int					ti_deja_franchi
+vector			tv_move
+vector			tv_link
+float				tf_dot_sight
+float				tf_dest_dist
+// dyna
+float				tf_dans_l_eau_duree
+int					ti_k
+// fuite
+int					ti_i
+message		tmsg_trigger
+// jump
+vector			tv_temp
+float				tf_friction
+float				tf_time
+float				tf_coef_sight
+vector			tv_jump_sight
+int					ti_sous_l_eau_apres_jump
+vector			tv_jump_pos
+// radeau
+object			to_move_dest
+// pos dest
+float				tf_pos_dest_delta
+int					ti_abort_attack_done
+vector			tv_banking_new
+vector			tv_horizon_new
+float				tf_horizon_dot
+// bat
+vector			v_bat_speed
+float				f_bat_speed
+// position du wp
+vector			tv_pos
+float				tf_sinus
+// sinus
+float				tf_max
+float				tf_sight_coef_max
+vector			tv_zde_pos
+
+
+ti_abort_attack_done = faux
+
+
+// SORTIE ETAT =================================================================================================
+if( i_sort_etat )
+{
+	i_sort_etat = faux
+	return
+}
+
+
+// ENTREE ETAT ================================================================================================
+if( i_etat_courant != ETAT_MOVE )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_MOVE
+	
+	if (fct_etat_courant)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_etat_courant)
+	}
+	
+	INIT_NEW_SCRIPT:
+	i_script_reinit_etat = faux
+	fct_etat_courant = AI_TrackCurGet()
+	fct_etat_main = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	if( i_DBG_trace_script )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : INIT ETAT")
+		DBG_TraceEOL()
+	}
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+	
+	// Temps mort
+	if( ! f_HP_cur )
+	{
+		OBJ_CapaSet(CAPA_Mort, 0)
+		f_time_mort += TIME_GetDt()
+	}
+	if( f_time_mort >= Cf_MonstreMarin_MortDuration )
+		OBJ_Destroy()
+}
+
+
+// ANALYSE ===================================================================================================
+
+AI_Execute("MM_Exec_CHECK_Vision")
+
+AI_Execute("MM_Exec_CHECK_Paf")
+
+
+// COMPORTEMENT =============================================================================================
+
+
+// TEST HAUTEUR DE L'EAU ====================================================
+//tf_water_Z = WTR_GetDif(OBJ_PosGet()).z
+ti_hors_eau_old = i_hors_de_l_eau_flag
+ti_sous_l_eau_apres_jump = faux
+if( o_water_Z )
+{
+	tf_water_Z = @o_water_Z OBJ_PosGet().z
+	if( OBJ_PosGet().z > (tf_water_Z + f_jump_eau_Z))
+	{
+		// HORS DE L'EAU
+		if( ! i_hors_de_l_eau_flag )
+		{
+			// je sors de l'eau : init snake
+			i_hors_de_l_eau_flag = vrai
+//			i_force_pos_update_flag = vrai
+//			i_no_snake_modules_nb = 1
+//			BigMonster_Virtual_Net_Init(vrai)
+		}
+		
+		if( ! i_flag_jump && i_move_mode == Ci_move_mode_attack && i_attack_mode == Ci_attack_mode_grab && @o_fight_actor AI_IsModel(get_PNJ_Bats_path) )
+		{
+			// jump pour l'attaque de la bat only
+			i_flag_jump_now = vrai
+			i_flag_jump = vrai
+		}
+
+		f_dans_l_eau_duree = 0.0
+		if( OBJ_PosGet().z < tf_water_Z )
+			ti_sous_l_eau_apres_jump = vrai
+	}
+	else
+	{
+		// SOUS L'EAU
+		f_dans_l_eau_duree += TIME_GetDt()
+		if( i_hors_de_l_eau_flag )
+		{
+			// je rentre dans l'eau
+			i_hors_de_l_eau_flag = faux
+		}
+	}
+}
+
+
+// TEST NEXT SCRIPT =============================================================
+if( 0 )
+{
+	SCRIPT_NEXT:
+	BigMonster_Script_Next()
+	AI_Execute("MM_Exec_CHECK_Msg")
+	if( i_script_reinit_etat )
+	{
+		goto INIT_NEW_SCRIPT
+	}
+	else
+	{
+		goto INIT_IDLE
+	}
+}
+
+
+// APRES_ATTAQUE ==============================================================
+if( 0 )
+{
+	APRES_ATTAQUE:
+	i_move_mode = Ci_move_mode_apres_attaque
+	BigMonster_Immersion_Init()
+	if( i_DBG_trace_IA )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : après une attaque, choix de l'action à effectuer...")
+		DBG_TraceEOL()
+	}
+	if( BigMonster_AbortAttack() )
+	{
+		// Attaque repoussée -------------------------------------------------------
+		i_attack_marins_flag = faux		// attaque réussie ou ratée, raz flag attack marins
+		i_en_fuite = vrai
+		i_attack_phase = 0		// ne pas confondre immersion fuite et phase d'immersion de l'attaque 
+		if( i_DBG_trace_IA )
+		{
+			DBG_TraceObject(OBJ_Me())
+			DBG_TraceString(" : attaque annulée, fuira après avoir replongé")
+			DBG_TraceEOL()
+		}
+	}
+	else
+	{
+		// Attaque réussie ----------------------------------------------------------
+		i_attack_marins_flag = faux		// attaque réussie ou ratée, raz flag attack marins
+		if( i_attack_radeau_flag )
+		{
+			if( i_DBG_trace_IA )
+			{
+				DBG_TraceObject(OBJ_Me())
+				DBG_TraceString(" : attaque réussie, attaquera les marins tombés à l'eau après avoir replongé")
+				DBG_TraceEOL()
+			}
+			i_attack_radeau_flag = faux
+			i_attack_marins_flag = vrai		// va attaquer les marins tombés à l'eau
+			// choix du marin à attaquer
+			if( ARR_ObjSearch(&ao_interet_target[0], i_interet_target_nb, o_jack) != -1 )
+			{
+				// j'ai attaqué le radeau de Jack et Jimmy, j'attaque toujours Jack
+				o_fight_actor = o_jack
+			}
+			else
+			{
+				// j'ai attaqué le radeau de Hayes et Denham
+				if( i_choix_du_marin == 1 )
+				{
+					// je choisis celui qui est le + proche du wp d'attaque des marins
+					if( @o_script_attack_marin_wp OBJ_SqrDist(o_hayes) < @o_script_attack_marin_wp OBJ_SqrDist(o_denham) )
+						o_fight_actor = o_hayes
+					else
+						o_fight_actor = o_denham
+				}
+				else if( i_choix_du_marin == 2 )
+				{
+					// j'attaque l'un ou l'autre au hasard
+					if( MATH_RandFloat(-1.0, 1.0) > 0.0 )
+						o_fight_actor = o_denham
+					else
+						o_fight_actor = o_hayes
+				}
+			}
+			o_fight_move_wp = o_fight_actor
+			to_wp = @o_fight_actor ANI_CanalObjectGet(Anim_Canal_Tete)
+			if( to_wp )
+				o_fight_move_wp = to_wp
+			if( i_DBG_trace_IA )
+			{
+				DBG_TraceObject(OBJ_Me())
+				DBG_TraceString(" : choisit d'attaquer ")
+				DBG_TraceObject(o_fight_actor)
+				DBG_TraceEOL()
+			}
+			goto MOVE
+		}
+	}
+}
+
+
+// REPASSE EN IDLE ===========================================================
+if( 0 )
+{
+	INIT_IDLE:
+	i_script_running = faux
+	BigMonster_Script_Next()
+	BigMonster_Script_Reset()
+	i_move_mode = Ci_move_mode_idle
+	if( i_DBG_trace_IA )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : fin du script, passe en idle...(tourne en rond)")
+		DBG_TraceEOL()
+	}
+}
+
+
+// CHECK NOUVEAU SCRIPT ==================================================
+if( ! i_script_running && ! i_immersion && ! i_attack_marins_flag )
+{
+	// je checke les nouveaux messages quand j'ai fini de m'immerger ou quand j'ai fini d'attaquer les marins tombés à l'eau
+	AI_Execute("MM_Exec_CHECK_Msg")
+	if( i_script_reinit_etat )
+	{
+		goto INIT_NEW_SCRIPT
+	}
+}
+
+
+// FIN DU SCRIPT ===========================================================
+if( ! ti_abort_attack_done && BigMonster_AbortAttack() )
+{
+	// ATTAQUE annulée -> fuite
+	ti_abort_attack_done = vrai
+	goto APRES_ATTAQUE
+}
+
+
+// INTERET ===============================================================
+for( ti_k = 0; ti_k < i_interet_target_nb; ti_k++)
+{
+	BigMonster_Interet_Update(amid_interet[ti_k], C_EVENT_InteretStatusAttack, ao_interet_target[ti_k])
+}
+
+
+// ATTAQUE ===============================================================
+
+MOVE:		// avant les attaques car on y rafraichit la position de destination
+
+if( i_move_mode == Ci_move_mode_attack )
+{
+	// MAJ POSITION DE DESTINATION ---------------------------------------------------------------------------
+	if( i_attack_type == Ci_attack_type_renverse )
+	{
+		// renverse un radeau
+		if( i_attack_phase == Ci_attack_phase_sortdeleau )
+		{
+			tv_pos = BigMonster_CalcPhaseWpPos()
+			@o_dup_wp_occluder OBJ_PosSet(tv_pos)
+			BigMonster_MovePosDestUpdate(tv_pos)
+		}
+	}
+	else if( i_attack_type == Ci_attack_type_ras_de_l_eau )
+	{
+		// fonce vers un radeau
+		if( i_attack_radeau_flag )
+		{
+			tv_pos = @o_fight_move_wp OBJ_PosGet() + cvector(0.0, 0.0, f_radeau_pos_add_Z)
+			@o_dup_wp_occluder OBJ_PosSet(tv_pos)
+			BigMonster_MovePosDestUpdate(tv_pos)
+		}
+		else if( i_attack_marins_flag )
+		{
+			tv_pos = @o_fight_move_wp OBJ_PosGet() + cvector(0.0, 0.0, f_marin_pos_add_Z)
+			@o_dup_wp_occluder OBJ_PosSet(tv_pos)
+			BigMonster_MovePosDestUpdate(tv_pos)
+		}
+	}
+	else
+	{
+		// choppe la bat
+		if( ! o_grabbed_actor )
+		{
+			tv_pos = @o_fight_move_wp OBJ_PosGet()
+			@o_dup_wp_occluder OBJ_PosSet(tv_pos)
+			BigMonster_MovePosDestUpdate(tv_pos)
+		}
+	}
+	
+	// TEST ATTAQUE ----------------------------------------------------------------------------------------------------------
+	if( BigMonster_PhasePaffeOuGrabbe() )
+	{
+		if( i_attack_mode == Ci_attack_mode_paf )
+		{
+			// TEST PAF -----------------------------------------------------------------------------------------
+			if( COL_ZDE_ZDECollide(o_fight_actor, C_zde_fight, C_zde_corps) )
+			{
+				if( i_DBG_trace_IA )
+				{
+					DBG_TraceObject(OBJ_Me())
+					DBG_TraceString(" : paffe ")
+					DBG_TraceObject(o_fight_actor)
+					DBG_TraceString(" ZDE Fight / ZDE Corps")
+					DBG_TraceEOL()
+				}
+				if( i_attack_type == Ci_attack_type_renverse )
+				{
+					tv_paf_to_send = OBJ_BankingGet()
+				}
+				else
+				{
+					tv_paf_to_send = @o_fight_move_wp OBJ_PosGet() - OBJ_PosGet()
+					if( ! MATH_VecNullEpsilon(tv_paf_to_send) )
+						MATH_VecSetNormalize(tv_paf_to_send)
+					else
+						tv_paf_to_send = OBJ_SightGet()
+				}
+				DBG_RenderVector(OBJ_PosGet(), tv_paf_to_send * 10, color_rouge)
+				EVENT_AddEventPaf(C_EVENT_FILTER_Enemy, C_PAF_KK_Fort, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_fight_actor, 0.0, tv_paf_to_send)
+				OBJ_CapaSet(none, CAPA_Fury)
+				if( i_attack_type == Ci_attack_type_renverse )
+				{
+					if( i_attack_phase == Ci_attack_phase_renverse )
+					{
+						// init wp à atteindre pour continuer à sortir de l'eau
+						if( i_DBG_trace_IA )
+						{
+							DBG_TraceObject(OBJ_Me())
+							DBG_TraceString(" : radeau renversé ('paffé) : passe à la phase soulève")
+							DBG_TraceEOL()
+						}
+						i_attack_phase = Ci_attack_phase_souleve
+						tv_pos = BigMonster_CalcPhaseWpPos()
+						@o_dup_wp_occluder OBJ_PosSet(tv_pos)
+						BigMonster_MovePosStartUpdate()
+						BigMonster_MovePosDestUpdate(tv_pos)
+					}
+				}
+				else
+				{
+					goto APRES_ATTAQUE
+				}
+			}
+		}
+		else
+		{
+			// TEST GRAB ---------------------------------------------------------------------------------------
+			if( ! o_grabbed_actor )
+			{
+				o_grabbed_actor = LNK_ThisClientGet(o_fight_actor, Ci_LNK_GRAB_RAPTOR, mid_grab, vrai, "MM_Exec_Grab_Param", nofunc, "MM_Exec_Grab_Param")
+				if( o_grabbed_actor )
+				{
+					EVENT_AddEventPaf(C_EVENT_FILTER_Enemy, C_PAF_KK_Fort, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_grabbed_actor, 0.0, OBJ_SightGet())
+					LNK_GrabBoneSet(mid_grab, o_machoire)
+					f_time_grab = 0.0
+					if( i_DBG_trace_IA )
+					{
+						DBG_TraceObject(OBJ_Me())
+						DBG_TraceString(" : grabbe ")
+						DBG_TraceObject(o_grabbed_actor)
+						DBG_TraceEOL()
+					}
+					if( i_attack_type == Ci_attack_type_jump_horsdeleau )
+					{
+						BigMonster_MovePosStartUpdate()
+						tv_temp = @o_water_Z OBJ_PosGet()
+						tv_pos = OBJ_PosGet()
+						tv_pos.z = tv_temp.z		// ma position au niveau de l'eau
+						tv_temp = OBJ_SightGet()
+						tv_temp.z = 0.0
+						MATH_VecSetNormalize(tv_temp)
+						tv_pos += (10.0 * tv_temp)		// devant moi au niveau de l'eau
+						DBG_RenderVector(OBJ_PosGet(), tv_pos - OBJ_PosGet(), color_cyan)
+ 						@o_dup_wp_occluder OBJ_PosSet(tv_pos)
+						BigMonster_MovePosDestUpdate(tv_pos)
+					}
+					else
+					{
+						goto APRES_ATTAQUE
+					}
+				}
+			}
+		}
+	}
+}
+
+
+// =======================================================================================================
+// DEPLACEMENT 
+// =======================================================================================================
+
+if( i_move_mode == Ci_move_mode_teleport	 )
+{
+	// TELEPORT ====================================================================
+	
+	BigMonster_Teleport(o_script_move_wp)
+	BigMonster_MovePosStartUpdate()
+	BigMonster_Virtual_Net_Init()
+	goto SCRIPT_NEXT
+}
+else if( ! f_HP_cur )
+{
+	// MORT : DYNA ONLY =============================================================
+	
+	DYN_GravitySet(Cv_BigMonster_Gravity)
+	DYN_FrictionVectorSet(Cv_BigMonster_Friction)
+}
+else if( i_flag_jump )
+{
+	// JUMP HORS DE L'EAU ===========================================================
+	
+	// 1 . TEST RETOMBE DANS L'EAU ----------------------
+	if( ! i_hors_de_l_eau_flag )
+	{
+		// je rentre dans l'eau
+		i_flag_jump = faux
+		f_jump_eau_Z = 0.0
+		goto MOVE_SOUS_L_EAU
+	}
+	
+	// 2 . DYNAMIQUE ------------------------------------------------
+	if( ti_sous_l_eau_apres_jump )
+	{
+		DYN_GravitySet(Cv_NullVector)
+		DYN_FrictionVectorSet(Cv_BigMonster_Friction_RentreDansLEau)
+	}
+	else
+	{
+		DYN_GravitySet(Cv_BigMonster_Gravity)
+		DYN_FrictionVectorSet(Cv_BigMonster_Friction)
+	}
+	
+	// 3 . IMPULSION ---------------------------------------------------
+	if( i_flag_jump_now )
+	{
+		// je viens de sortir de l'eau
+		i_flag_jump_now = faux
+		tf_time = 0.5			// anticipation à 0.5 sec
+		v_bat_speed = @get_PNJ_Bats_path o_fight_actor v_beziers_sight
+		if( ! MATH_VecNullEpsilon(v_bat_speed) )
+			MATH_VecSetNormalize(v_bat_speed)
+		else
+			v_bat_speed = @o_fight_actor OBJ_SightGet()
+		f_bat_speed = @get_PNJ_Bats_path o_fight_actor f_speed
+		tv_jump_pos = @o_fight_actor OBJ_PosGet()
+		tv_jump_pos += ( v_bat_speed * f_bat_speed * tf_time)	// Anticipation a 1s
+		DBG_RenderVector(OBJ_PosGet(), tv_jump_pos - OBJ_PosGet(), color_rouge)
+		BigMonster_MovePosStartUpdate()
+		tv_pos = tv_jump_pos
+		@o_dup_wp_occluder OBJ_PosSet(tv_pos)
+		BigMonster_MovePosDestUpdate(tv_pos)
+		f_jump_hauteur = @o_dup_wp_occluder OBJ_PosGet().z - OBJ_PosGet().z
+		tf_friction = DYN_FrictionVectorGet().x
+		tv_temp = DYN_LIB_ImpulsionGet_Friction(OBJ_PosGet(), @o_dup_wp_occluder OBJ_PosGet(), DYN_GravityVectorGet(), tf_friction, tf_time, faux, 0.0)
+		DYN_SpeedSetVector(tv_temp)
+		DYN_FrictionVectorSet(cvector( tf_friction, tf_friction, 0.0))
+		v_jump_sight = tv_temp
+		f_jump_eau_Z = - f_jump_hauteur
+	}
+	
+	// 4 . ORIENTATION ----------------------------------------------
+	tv_sight_new = DYN_SpeedGetVector()
+	tf_speed = MATH_VecNorm(tv_sight_new)
+	if( ! MATH_FloatNullToler(tf_speed, 0.01) )
+	{
+		tv_sight_new /= tf_speed
+		tv_sight_new = MATH_VecBlendRotate(OBJ_SightGet(), tv_sight_new, 8.0 * TIME_GetDt())
+		tv_jump_sight = v_jump_sight
+		tv_jump_sight.z = 0.0
+		v_jump_sight = MATH_VecBlendRotate(v_jump_sight, tv_jump_sight, 1.0 * TIME_GetDt())
+		OBJ_SightGeneralSet(
+			MATH_VecBlendRotate(OBJ_SightGet(), v_jump_sight, 3 * TIME_GetDt()),
+			MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 3 * TIME_GetDt()))
+	}
+	
+	// 5 . RAZ speed pour la reprise du déplacement sous l'eau
+	f_speed_cur = 0.0
+}
+else 
+{
+	// DEPLACEMENT EN POSSET AVEC CALCUL DE LA VITESSE ET SINUS : 
+	MOVE_SOUS_L_EAU:
+	
+	// 1 . NOUVEL AXE DE DEPLACEMENT EN FONCTION DU MODE ========================================================
+	tv_move = Cv_NullVector
+	
+	if( i_immersion || i_attack_phase == Ci_attack_phase_plonge )
+	{
+		// MOUVEMENT D'IMMERSION ===================================================================
+		if( BigMonster_ReachedPos(v_move_pos_dest) )
+		{
+			f_sight_coef_accel = 0.0
+			// IMMERSION TERMINEE ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+			i_immersion = faux
+			if( i_attack_phase == Ci_attack_phase_plonge )
+			{
+				// PHASE D'IMMERSION D'UNE ATTAQUE "RENVERSE" ------------------------------------------------------------------
+				i_attack_phase = Ci_attack_phase_renverse
+				BigMonster_MovePosStartUpdate()
+				tv_pos = BigMonster_CalcPhaseWpPos()
+				@o_dup_wp_occluder OBJ_PosSet(tv_pos)
+				BigMonster_MovePosDestUpdate(tv_pos)
+				BigMonster_UpdateSpeed(f_speed_renverse_max, f_speed_renverse_blend)
+				if( i_DBG_trace_IA )
+				{
+					DBG_TraceObject(OBJ_Me())
+					DBG_TraceString(" : passe à la phase renverse (sous le radeau)")
+					DBG_TraceEOL()
+				}
+				goto MOVE
+			}
+			else if( i_en_fuite )
+			{
+				// IMMERSION APRES ATTAQUE ANNULEE -------------------------------------------------------------------------------------
+				i_en_fuite = faux
+				o_wp_fuite = o_script_move_after_attack_wp
+				i_move_mode = Ci_move_mode_fuite
+				BigMonster_MovePosStartUpdate()
+				tv_pos = @o_wp_fuite OBJ_PosGet()
+				@o_dup_wp_occluder OBJ_PosSet(tv_pos)
+				BigMonster_MovePosDestUpdate(tv_pos)
+				if( i_DBG_trace_IA )
+				{
+					DBG_TraceObject(OBJ_Me())
+					DBG_TraceString(" : fuit vers ")
+					DBG_TraceObject(o_wp_fuite)
+					DBG_TraceEOL()
+				}
+				BigMonster_Script_Next()
+				BigMonster_Script_Reset()
+				goto MOVE
+			}
+			else if( i_attack_marins_flag )
+			{
+				// IMMERSION APRES ATTAQUE D'UN RADEAU, AVANT D'ATTAQUER LES MARINS ----------------------
+				BigMonster_Attack_Positionnement_Init(o_script_attack_marin_wp)
+				BigMonster_MovePosStartUpdate()
+				f_attaque_paf_dmg_cumul = 0.0		// raz au début d'une attaque, ou à chaque event
+				if( i_DBG_trace_IA )
+				{
+					DBG_TraceObject(OBJ_Me())
+					DBG_TraceString(" : attaque les marins à partir de ")
+					DBG_TraceObject(o_script_attack_marin_wp)
+					DBG_TraceEOL()
+				}
+				if( f_time_depl_attack_joueur && ARR_ObjSearch(&ao_interet_target[0], i_interet_target_nb, o_jack) != -1 )
+				{
+					// c'était une attaque sur le joueur et on m'a spécifié un temp de déplacement pour atteindre mon wp d'attaque de marins tombés à l'eau : calcul d'une vitesse pour le "moveintime" fake sur le joueur
+					// 1 . vers le wp de positionnement ---------------------------------
+					f_script_move_in_time_dist += BigMonster_MoveDistGet(@o_dup_wp_occluder OBJ_PosGet(), OBJ_PosGet())
+					// 2 . vers le wp d'orientation ----------------------------------------
+					f_script_move_in_time_dist += BigMonster_MoveDistGet(@o_script_attack_marin_wp OBJ_PosGet(), @o_dup_wp_occluder OBJ_PosGet())
+					// Vitesse à appliquer
+					BigMonster_UpdateSpeed(f_script_move_in_time_dist / f_script_move_in_time_temps, 1.0)
+				}
+//				else
+//					BigMonster_UpdateSpeed(f_speed_attack_marins_max, f_speed_attack_marins_blend)
+				goto MOVE
+			}
+			else
+			{
+				// IMMERSION SANS RIEN A FAIRE ENSUITE (je viens d'attaquer un marin tombé à l'eau) ---------------------------
+				goto SCRIPT_NEXT
+			}
+		}
+		else
+		{
+			// IMMERSION EN COURS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+			tv_move = v_move_pos_dest - OBJ_PosGet()
+		}
+	}
+	else if( i_move_mode == Ci_move_mode_idle )
+	{
+		// TOURNE EN ROND ===================================================================================
+		BigMonster_MovePosStartUpdate()
+		BigMonster_Occluder_Compute_Idle_Pos(v_sight_avant_sinus, tv_move, tv_pos)
+		BigMonster_MovePosDestUpdate(tv_pos)
+	}
+	else
+	{
+		// DEPLACEMENT STANDARD =============================================================================
+		if( BigMonster_ReachedPos(v_move_pos_dest) )
+		{
+			f_sight_coef_accel = 0.0
+			// DEPLACEMENT TERMINE +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+			if( BigMonster_NextScriptWhenReachedPos() )
+			{
+				goto SCRIPT_NEXT
+			}
+			else
+			{
+				// je ne passe pas encore au script suivant
+				if( i_attack_phase == Ci_attack_phase_vers_wp_temp )
+				{
+					if( i_DBG_trace_IA )
+					{
+						DBG_TraceObject(OBJ_Me())
+						DBG_TraceString(" : phase émerge terminée, se dirige maintenant vers ")
+					}
+					i_attack_phase = Ci_attack_phase_orientation
+					if( i_move_mode == Ci_move_mode_apres_attaque )
+					{
+						// attaque marins
+						BigMonster_MovePosStartUpdate()
+						tv_pos = @o_script_attack_marin_wp OBJ_PosGet()
+						@o_dup_wp_occluder OBJ_PosSet(tv_pos)
+						BigMonster_MovePosDestUpdate(tv_pos)
+						if( i_DBG_trace_IA )
+						{
+							DBG_TraceObject(o_script_attack_marin_wp)
+							DBG_TraceEOL()
+						}
+						// réinit speed attaque
+						BigMonster_UpdateSpeed(f_speed_attack_marins_max, f_speed_attack_marins_blend)
+						goto MOVE
+					}
+					else
+					{
+						// attaque scriptée
+						BigMonster_MovePosStartUpdate()
+						tv_pos = @o_script_move_wp OBJ_PosGet()
+						@o_dup_wp_occluder OBJ_PosSet(tv_pos)
+						BigMonster_MovePosDestUpdate(tv_pos)
+						if( i_DBG_trace_IA )
+						{
+							DBG_TraceObject(o_script_move_wp)
+							DBG_TraceEOL()
+						}
+						goto MOVE
+					}
+				}
+				else if( i_attack_phase == Ci_attack_phase_sortdeleau )
+				{
+					// phase sort de l'eau terminée -> phase replonge
+					i_attack_phase = Ci_attack_phase_plonge
+					v_attack_axis = @o_fight_actor OBJ_PosGet() - OBJ_PosGet()
+					MATH_VecSetHorzNormalize(v_attack_axis)
+					BigMonster_MovePosStartUpdate()
+					tv_pos = BigMonster_CalcPhaseWpPos()
+					@o_dup_wp_occluder OBJ_PosSet(tv_pos)
+					BigMonster_MovePosDestUpdate(tv_pos)
+					BigMonster_UpdateSpeed(f_speed_plonge_max, f_speed_plonge_blend)
+					if( i_DBG_trace_IA )
+					{
+						DBG_TraceObject(OBJ_Me())
+						DBG_TraceString(" : passe à la phase replonge")
+						DBG_TraceEOL()
+					}
+					goto MOVE
+				}
+				else if( i_attack_phase == Ci_attack_phase_orientation )
+				{
+					i_attack_phase = 0
+					if( i_move_mode == Ci_move_mode_in_time )
+					{
+						// je viens d'atteindre le wp du script move in time : je me snappe sur lui
+						BigMonster_Teleport(o_script_move_wp)
+						BigMonster_MovePosStartUpdate()
+						BigMonster_Virtual_Net_Init()
+						goto SCRIPT_NEXT
+					}
+					else if( i_attack_marins_flag )
+					{
+						// je vais attaquer les marins ----------------------------------------
+						i_attack_mode = Ci_attack_mode_grab
+						i_attack_type = Ci_attack_type_ras_de_l_eau
+						o_fight_move_wp = BigMonster_Attack_Init(o_fight_actor)
+						BigMonster_MovePosStartUpdate()
+						goto MOVE
+					}
+					else
+					{
+						// je n'ai pas à attaquer les marins
+						goto SCRIPT_NEXT
+					}
+				}
+				else if( i_attack_phase == Ci_attack_phase_souleve )
+				{
+					i_attack_phase = 0
+					goto APRES_ATTAQUE
+				}
+			}
+		}
+		else
+		{
+			// DEPLACEMENT EN COURS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+			tv_move = v_move_pos_dest - OBJ_PosGet()
+		}
+	}
+	
+	// 2 . TEST OCCLUDERS =====================================================
+	
+	if( MATH_VecNullEpsilon(tv_move) )
+	{
+		DBG_TraceString("********************************************************")
+		DBG_TraceEOL()
+		DBG_TraceString("move mode = ")
+		DBG_TraceInt(i_move_mode)
+		DBG_TraceString(" / attack type = ")
+		DBG_TraceInt(i_attack_type)
+		DBG_TraceString(" / phase = ")
+		DBG_TraceInt(i_attack_phase)
+		DBG_TraceEOL()
+		if( i_attack_phase == Ci_attack_phase_renverse )
+		{
+			DBG_Warning("J'ai raté le radeau ????")
+		}
+		DBG_TraceString("********************************************************")
+		DBG_TraceEOL()
+		DBG_Error("MATH_VecNullEpsilon(tv_move) : CHECK LOG !!!!!!")
+	}
+
+//	DBG_RenderVector(OBJ_PosGet(), v_sight_avant_sinus, color_vert)
+	DBG_RenderVector(OBJ_PosGet(), tv_move, color_cyan)
+	MATH_VecSetNormalize(tv_move)
+	if( BigMonster_Test_Occluder(OBJ_PosGet(), tv_move, f_occluder_largeur, v_move_pos_dest, -1, tv_dest_pos_occluder_reelle, to_occluder_jump, &ao_occluder[0], &af_occluder[0], 0) )
+	{
+		tv_move = tv_dest_pos_occluder_reelle - OBJ_PosGet()
+		DBG_RenderVector(OBJ_PosGet(), tv_move, color_cyan)	
+		MATH_VecSetNormalize(tv_move)
+//		Str_DisplayTextOnce("BigMonster : OCCLUDER !!!", cvector(0.5, 0.5, 0.0))
+	}
+	
+	// 3 . ORIENTATION ===========================================================
+	
+	// Coefs d'orientation
+//	if( i_attack_marins_flag && (i_attack_phase == Ci_attack_phase_vers_wp_temp || i_attack_phase == Ci_attack_phase_orientation) )
+//		tf_sight_coef_max = 1.0
+//	else
+		tf_sight_coef_max = 4.0
+	f_sight_coef_accel = MATH_FloatBlend(f_sight_coef_accel, tf_sight_coef_max, 2.0 * TIME_GetDt())
+	DBG_RenderVector(OBJ_PosGet(), v_sight_avant_sinus, color_vert)
+	tv_sight_new = MATH_VecBlendRotate(v_sight_avant_sinus, tv_move, f_sight_coef_accel * TIME_GetDt())
+	DBG_RenderVector(OBJ_PosGet(), tv_sight_new, color_bleu)
+	MATH_VecSetNormalize(tv_sight_new)
+	v_sight_avant_sinus = tv_sight_new
+	
+	// SINUS
+	f_sinus_frequence = 2.75
+	f_frequence = MATH_Sin(TIME_Get() * f_sinus_frequence)		// -1.0 < freq < 1.0
+	f_frequence *= 0.2		// -0.2 < freq < 0.2
+	
+	if( BigMonster_Ondulation_Autorisee() )
+	{
+		if( f_paf_sinus_horiz )
+			tf_max = 0.5
+		else if( i_attack_marins_flag ) // && ! i_attack_phase )
+			tf_max = 0.1
+		else
+			tf_max = 0.2
+	}
+	else
+		tf_max = 0.0
+	
+	f_sinus_ampleur = MATH_FloatBlend(f_sinus_ampleur, tf_max, 2.5 * TIME_GetDt())		// 0.5
+	f_ampleur = f_speed_test * f_sinus_ampleur
+	tf_sinus = f_frequence * f_ampleur
+	
+	// Inclinaison
+//	if( i_immersion || i_attack_phase == Ci_attack_phase_plonge )
+//	{
+//		tv_banking_new = MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 2.0 * TIME_GetDt())
+//	}
+//	else
+	{
+		tv_horizon_new = - MATH_VecCrossProduct(tv_sight_new, Cv_VerticalVector)
+//		DBG_RenderVector(OBJ_PosGet(), tv_horizon_new, color_rouge)
+		tv_banking_new = MATH_VecCrossProduct(tv_sight_new, tv_horizon_new)
+		tv_banking_new = MATH_VecBlendRotate(OBJ_BankingGet(), tv_banking_new, 3 * TIME_GetDt())
+	}
+	DBG_RenderVector(OBJ_PosGet(), tv_banking_new * 10, color_bleu)
+	DBG_RenderVector(OBJ_PosGet(), tv_sight_new * 10, color_vert)
+	tv_sight_new = MATH_VecRotate(tv_sight_new, tv_banking_new, tf_sinus)
+	OBJ_BankingGeneralSet(tv_sight_new, tv_banking_new)
+	
+	// 4 . POSITION ===============================================================
+	BigMonster_SpeedCoefCompute()
+	f_speed_cur = BigMonster_SpeedCompute()
+  	DYN_GravitySet(Cv_NullVector)
+	DYN_FrictionVectorSet(Cv_BigMonster_Friction)
+	DYN_SpeedSetVector(Cv_NullVector)
+ 	OBJ_PosSet(OBJ_PosGet() + (tv_sight_new * (f_speed_cur * TIME_GetDt())))
+}
+
+
+// RECUL PAF ==============================================================
+tv_paf_recul = f_paf_applic * v_paf_speed
+//DBG_RenderVector(OBJ_PosGet(), tv_paf_recul, color_cyan)
+if( BigMonster_SnakeOn(tv_paf_recul) && i_mouvement == Ci_mouvement_IA_only )
+{
+	// mode snake ou paf ou mort => SNAKE
+	OBJ_PosSet(OBJ_PosGet() + tv_paf_recul)
+// 	Str_DisplayTextOnce("SNAKE", cvector(0.5,0.5,0.0))
+ 	
+ 	i_body_mode = Ci_Body_Mode_Snake
+}
+else
+{
+//	Str_DisplayTextOnce("CHAINE", cvector(0.5,0.5,0.0))
+	
+	i_body_mode = Ci_Body_Mode_Chain
+}
+
+
+// MODULES ===============================================================
+if( i_mouvement == Ci_mouvement_IA_Anim )
+	BigMonster_Anim_Update(0)
+else
+	BigMonster_Modules_Update()
+
+
+// REGARD ================================================================
+if( i_immersion)
+	v_look_pos = @o_dup_wp_occluder OBJ_PosGet()
+//	i_regard_flag = faux
+else
+{
+	switch( i_move_mode )
+	{
+		case Ci_move_mode_in_time :
+			if( o_fight_move_wp )
+				v_look_pos = @o_fight_move_wp OBJ_PosGet()
+			else
+				v_look_pos = v_move_pos_dest
+			break
+		
+		case Ci_move_mode_attack :
+		case Ci_move_mode_apres_attaque :
+			switch( i_attack_phase )
+			{
+				case Ci_attack_phase_plonge :
+				case Ci_attack_phase_renverse :
+				case Ci_attack_phase_souleve :
+				case Ci_attack_phase_vers_wp_temp :
+					i_regard_flag = faux
+					break
+				case Ci_attack_phase_sortdeleau :
+				case Ci_attack_phase_orientation :
+				default:		// phase 0 (plus de phase en cours => avance au ras de l'eau)
+					v_look_pos = @o_fight_move_wp OBJ_PosGet()
+					break
+			}
+			break
+		
+		case Ci_move_mode_direct :
+		case Ci_move_mode_teleport :
+			v_look_pos = @o_dup_wp_occluder OBJ_PosGet()
+			break
+	
+		case Ci_move_mode_fuite :
+			v_look_pos = @o_wp_fuite OBJ_PosGet()
+			break
+			
+		case Ci_move_mode_idle :
+			v_look_pos = OBJ_PosGet() + (10.0 * v_sight_avant_sinus )
+			break
+			
+		default:
+			i_regard_flag = faux
+			break
+			
+	}
+}
+
+AI_Execute("MM_Exec_Regard")
+tv_zde_pos = @o_bone_tete OBJ_PosGet() - OBJ_PosGet()
+tv_zde_pos = MATH_VecGlobalToLocal(tv_zde_pos)
+COL_ZonePosSet(C_zde_fight, tv_zde_pos)
+
+DBG_RenderVector(v_move_pos_start, v_move_pos_dest - v_move_pos_start, color_cyan)
+
+
+//Str_DisplayIntOnce(i_force_pos_update_flag, cvector(0.5,0.6,0.0))
+

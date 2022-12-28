@@ -1,0 +1,70 @@
+#include "KIGO_defines.var"
+
+messageid		tmid_proposition
+
+object	to_serveur
+object	to_bone
+
+float		tf_dist
+
+int			ti_flag_grab_dist_ok
+
+vector	tv_vers_serveur
+vector	tv_temp
+vector	tv_sens
+
+ti_flag_grab_dist_ok = faux
+
+tmid_proposition = pop
+
+to_serveur = MSG_GlobalGetGao(tmid_proposition, SERVEUR)
+
+tv_vers_serveur = LNK_GrabPositionGet(tmid_proposition)
+tv_vers_serveur -= OBJ_LIB_Nearest_Volume_Pos( OBJ_Me(), cvector( -1.0, -1.0,0.0), cvector( 1.0,1.0,6.0), tv_vers_serveur)
+//tv_vers_serveur -= v_centre_pos
+
+
+tv_temp = tv_vers_serveur
+//tv_temp.z = 0.0
+tf_dist = MATH_VecDotProduct(tv_temp, tv_temp)
+
+//DBG_RenderVector(LNK_GrabPositionGet(tmid_proposition), -tv_temp, color_bleu)
+
+
+
+if (tf_dist <= f_dist_grab )
+	ti_flag_grab_dist_ok = vrai		// la distance est bonne
+//else
+//{
+//	tv_temp = tv_vers_serveur
+//	tv_temp -= tv_souche_hauteur
+//	
+//	tv_temp.z = 0.0
+//	tf_dist = MATH_VecDotProduct(tv_temp, tv_temp)
+//	if (tf_dist <= Cf_dist_grab_carre )
+//		ti_flag_grab_dist_ok = vrai		// la distance est bonne
+//}
+
+if( ti_flag_grab_dist_ok && (LNK_GrabStatusGet(tmid_proposition) & Ci_GrabKong_Type_Souche))
+{
+	// la distance est bonne
+	tv_sens = LNK_GrabVectorGet(tmid_proposition) 
+//	if( MATH_VecNullEpsilon(tv_sens) || (MATH_VecDotProduct(tv_sens, tv_temp) < 0.0) )
+	{
+		// L'orientation est bonne
+		
+		tf_dist = MATH_FloatMin(tf_dist, 999)
+		tf_dist += Ci_Grab_Kong_Pond_Souche
+		if( ( ! MATH_VecNullEpsilon(tv_sens) ) && MATH_VecDotProduct(tv_sens, tv_temp) > 0.0 )
+			tf_dist += Ci_Grab_Kong_Pond_Bad_Axe
+		LNK_ClientPropose(tmid_proposition, tf_dist)
+
+		if ( i_grab_entite == Ci_One_Handed )
+			LNK_GrabKong_TypeSet( tmid_proposition, Ci_GrabKong_Type_Petit)
+		else
+			LNK_GrabKong_TypeSet( tmid_proposition, Ci_GrabKong_Type_Souche)
+
+		LNK_GrabKong_LanceVectorSet( tmid_proposition, v_centre_pos)					// Donner l info relative a la position du centre du tron
+	}
+}
+

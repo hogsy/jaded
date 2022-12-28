@@ -1,0 +1,36 @@
+//------------------------------------------------------------------------------------------------------------------------------
+#include "SND_BP_Constant.var"
+
+
+//------------------------------------------------------------------------------------------------------------------------------
+int i
+
+for(i=0; i<SND_BP_Cte_SndRef_MaxNb; i++)
+{
+	if(ai_Indexes[i] >=0)
+		ai_Indexes[i] = SND_Request(ai_Indexes[i], 0)
+
+	mai_State[i] = SND_BP_Cte_State_Dead
+}
+
+
+for(i=0; i<SND_BP_Cte_SndRef_MaxNb; i++)
+{
+	if( ! AI_TriggerIsValid(at_Trigger[i]) ) break
+	
+	if( ai_Indexes[i] != -1)  
+	{
+		if( i_InitState == SND_BP_Cte_InitState_Playing )
+		{
+			SND_Play(ai_Indexes[i])
+			mai_State[i] = SND_BP_Cte_State_WaitStopping
+		}
+		else
+		{
+			mai_State[i] = SND_BP_Cte_State_WaitPlaying
+		}
+	}
+}
+
+
+AI_TrackChange(0, "SND_BP_Loop")

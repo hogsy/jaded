@@ -1,0 +1,85 @@
+#include "H_defines.var"
+
+int			ti_context
+float		tf_liferatio
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+
+	ao_CL[Ci_LNK_INTERACTION] = LNK_ClientGet(Ci_LNK_INTERACTION, amid_CL_LIAISON_ID[Ci_LNK_INTERACTION], faux, nofunc, nofunc, nofunc)
+
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_commun_interaction)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_commun_interaction
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	ai_SRV_ENABLE[Ci_LNK_GRAB_CROCO]		= vrai
+	ai_SRV_ENABLE[Ci_LNK_GRAB_ICO]			= faux
+	ai_SRV_ENABLE[Ci_LNK_GRAB_OBJECT]	= faux
+	ai_SRV_ENABLE[Ci_LNK_GRAB_TRAP]		= vrai
+	ai_SRV_ENABLE[Ci_LNK_HELP_CROCO]		= faux
+	ai_SRV_ENABLE[Ci_LNK_HELP_TRAP]			= faux
+	ai_SRV_ENABLE[Ci_LNK_VALA]					= faux
+
+	ACT_ActionSet(Action_Attaque_Frappe)
+
+	if (joueur)
+	{
+		AI_Execute("H_exec_read_joy")
+		v_frappe_sight = v_joy_dir
+	}	
+	else
+	{
+		v_frappe_sight = OBJ_SightGet()
+	}
+
+	i_flag_zde_fight_enable = vrai
+	
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ======================================================================
+AI_Execute("H_exec_read_joy")
+
+AI_Execute("H_exec_serveur_get")
+
+if (ao_SRV[Ci_LNK_GRAB_CROCO])
+	macro_change_etat("H_ETAT_commun_GRAB_croco")
+
+if (ao_SRV[Ci_LNK_GRAB_TRAP])
+	macro_change_etat("H_ETAT_commun_GRAB_trap")
+
+ao_CL[Ci_LNK_INTERACTION] = LNK_ClientGet(Ci_LNK_INTERACTION, amid_CL_LIAISON_ID[Ci_LNK_INTERACTION], vrai, nofunc, nofunc, nofunc)
+if (ao_CL[Ci_LNK_INTERACTION] == nobody)
+	macro_change_etat(fct_main_etat)
+
+// COMPORTEMENT ================================================================
+ti_context = C_EVENT_CONTEXT_DEBOUT
+ti_context += i_ground_ID * 10
+tf_liferatio = @"univ" LIFE_HumainCur[ i_id_humain ] / @"univ" LIFE_HumainMax[ i_id_humain ] 
+EVENT_AddEventVision( i_id_humain, C_EVENT_FILTER_Marin, OBJ_Me(), 0.001, OBJ_PosGet(), C_EVENT_Visibility_Full_Mvt, Cf_Rayon_De_Vision, f_interet, ti_context, 0, tf_liferatio)
+
+OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), v_frappe_sight, 15.0 * TIME_GetDt()), Cv_VerticalVector)
+
+AI_Execute("H_exec_test_ZDE_FIGHT")
+
+if (ACT_ActionFinished())
+	macro_change_etat(fct_main_etat)

@@ -1,0 +1,232 @@
+message 		tmsg_filter
+messageid 		tmid_ID
+int					ti_rank, ti_cpt1, ti_cpt2, ti_type_paf
+float				tf_dist
+vector			tv_pos, tv_temp
+object			to_GST, to_gao
+network			tn_net
+
+i_is_paf = faux
+
+tf_dist = 25
+
+//------------------------------------------------------------------------------------------
+// Initialisation variables pour boucle de test des pafs
+//------------------------------------------------------------------------------------------
+MSG_SetNull(tmsg_filter)
+tmsg_filter.msg_gao1 = OBJ_Me()
+ti_rank = -1
+ti_type_paf = -1
+
+//------------------------------------------------------------------------------------------
+// Boucle de test des pafs
+//------------------------------------------------------------------------------------------
+for (tmid_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tmsg_filter); MSG_GlobalIsValid(tmid_ID); tmid_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tmsg_filter) )
+{
+	// Position paf
+	v_pos_collide = EVENT_PafPositionGet(tmid_ID)
+	v_dir_collide = EVENT_PafDirGet(tmid_ID)
+
+	//  Paf Gun
+	if ( (EVENT_PafTypeGet(tmid_ID) & C_PAF_RM_Gun) && ((i_type_paf == 0) || (i_type_paf == 2)))
+	{
+		ti_type_paf = 0
+		i_is_paf = vrai
+	}
+
+	// Paf grenade -> le paf grenade marche quie l'on ai configuré en grenade ou en gun (qui peut le plus peut le moins)
+	if ( (EVENT_PafTypeGet(tmid_ID) & C_PAF_RM_Grenade))// && ((i_type_paf == 1) || (i_type_paf == 2)))
+	{
+		ti_type_paf = 1
+		i_is_paf = vrai
+	}
+
+	// Paf grenade -> le paf grenade marche quie l'on ai configuré en grenade ou en gun (qui peut le plus peut le moins)
+	if ((i_type_force_paf == 0) || (i_type_force_paf == 2))
+		if ((EVENT_PafTypeGet(tmid_ID) & C_PAF_RM_Fort) && !(EVENT_PafTypeGet(tmid_ID) & C_PAF_RM_Grenade))
+		{
+			ti_type_paf = 2
+			i_is_paf = vrai
+		}
+
+	if ((i_type_force_paf == 1) || (i_type_force_paf == 2))
+		if ((EVENT_PafTypeGet(tmid_ID) & C_PAF_RM_Moyen) && !(EVENT_PafTypeGet(tmid_ID) & C_PAF_RM_Grenade))
+		{
+			ti_type_paf = 2
+			i_is_paf = vrai
+		}
+
+	// Si c'est notre premier paf, on met i_etat_init à 1.Sinon, on le met à une valeur dont on se contrefout
+	if (i_is_paf)
+	{
+		if (i_etat_init == 1)
+			i_etat_init = 2
+		if (i_etat_init == 0)
+			i_etat_init = 1
+	}
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// Si c'est le premier paf, on masque l'objet fake, on affiche tous les objets et on active leurs colmaps
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+if (i_etat_init == 1)
+{
+	// Si on n'a qu'un seul objet à masquer (l'objet initial), on affiche le SFX de Paf
+	if (i_nb_modules == 0)
+		switch (i_type_SFX)
+		{
+			case 0:
+				PROC_SFX_EXPLOSION_01(OBJ_PosGet(), BV_MaxGet().z)
+				break
+			case 1:
+				break
+		}
+
+	i_nb_mod_detruits++
+		
+	OBJ_FlagInvisibleSet(faux)
+	if( o_obj_init )
+	{
+		@o_obj_init OBJ_Destroy()
+
+		if (i_nb_mod_detruits >= (i_nb_modules+1))
+			COL_ColSetActivationSet(none, C_bit_zde_corps)
+	}
+
+	if (o_occludeur)
+	{
+		to_GST = get_Event
+		@o_occludeur OBJ_FlagInactiveSet(vrai)
+//		@to_GST WAY_LIB_Del_Occluder(o_occludeur)
+	}
+
+	PROC_HIDE_ALL_MODULES(faux)
+	i_etat_init++
+}
+
+//---------------------------------------------------------------------------------------
+// S'il y a un paf, on test sur quel objet il y a eu paf
+//---------------------------------------------------------------------------------------
+if (i_is_paf)
+	for (ti_cpt1=0; ti_cpt1<i_nb_modules; ti_cpt1++)
+	{
+		// Si on est en mode laser
+		if ((ti_type_paf == 0) && ((PROC_IS_PAF_MODULE(ti_cpt1, v_pos_collide)) && (@o_modules[ti_cpt1] OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Active)))
+			if (i_etat_modules[ti_cpt1] == 0)
+			{
+				tv_temp = @o_modules[ti_cpt1] OBJ_PosGet()
+
+				if (o_ref_sol)
+					tv_temp.z = @o_ref_sol OBJ_PosGet().z
+
+				switch (i_type_SFX)
+				{
+					case 0:
+						PROC_SFX_EXPLOSION_01(tv_temp, @o_modules[ti_cpt1] BV_MaxGet().z)
+						break
+					case 1:
+						tv_temp = PROC_CALC_CENTER_BV(@o_modules[ti_cpt1] BV_MinGet(), @o_modules[ti_cpt1] BV_MaxGet(), ti_cpt1)
+						PROC_SFX_EXPLOSION_VITRE(tv_temp, PROC_CALC_TAILLE_BV(ti_cpt1))
+						SND_RequestPlay(1)
+						SND_RequestPlay(2)
+						break
+				}
+
+				PROC_DESTRUCTION_MODULE(ti_cpt1, (@o_modules[ti_cpt1] OBJ_PosGet()) - v_pos_collide, -1.0)
+				i_nb_mod_detruits++
+				i_etat_modules[ti_cpt1] = 1
+			}
+
+		// Si on est en mode grenade
+		if (ti_type_paf == 1)
+		{
+			tv_pos = @o_modules[ti_cpt1] OBJ_PosGet()
+			if (MATH_VecSquareNorm(tv_pos-v_pos_collide) < tf_dist)
+				if (i_etat_modules[ti_cpt1] == 0)
+				{
+					tv_temp = @o_modules[ti_cpt1] OBJ_PosGet()
+					
+					if (o_ref_sol)
+						tv_temp.z = @o_ref_sol OBJ_PosGet().z
+					
+					switch (i_type_SFX)
+					{
+						case 0:
+							PROC_SFX_EXPLOSION_01(tv_temp, @o_modules[ti_cpt1] BV_MaxGet().z)
+							break
+						case 1:
+							tv_temp = PROC_CALC_CENTER_BV(@o_modules[ti_cpt1] BV_MinGet(), @o_modules[ti_cpt1] BV_MaxGet(), ti_cpt1)
+							PROC_SFX_EXPLOSION_VITRE(tv_temp, PROC_CALC_TAILLE_BV(ti_cpt1))
+							SND_RequestPlay(1)
+							SND_RequestPlay(2)
+							break
+					}
+
+					PROC_DESTRUCTION_MODULE(ti_cpt1, (@o_modules[ti_cpt1] OBJ_PosGet()) - v_pos_collide, -1.0)
+					i_nb_mod_detruits++
+					i_etat_modules[ti_cpt1] = 1
+				}
+		}
+
+		// Si on es en mode PAF Fort
+		if ((ti_type_paf == 2) && ((PROC_IS_PAF_MODULE(ti_cpt1, v_pos_collide)) && (@o_modules[ti_cpt1] OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Active)))
+			if (i_etat_modules[ti_cpt1] == 0)
+			{
+				tv_temp = @o_modules[ti_cpt1] OBJ_PosGet()
+
+				if (o_ref_sol)
+					tv_temp.z = @o_ref_sol OBJ_PosGet().z
+
+				switch (i_type_SFX)
+				{
+					case 0:
+						PROC_SFX_EXPLOSION_01(tv_temp, @o_modules[ti_cpt1] BV_MaxGet().z)
+						break
+					case 1:
+						tv_temp = PROC_CALC_CENTER_BV(@o_modules[ti_cpt1] BV_MinGet(), @o_modules[ti_cpt1] BV_MaxGet(), ti_cpt1)
+						PROC_SFX_EXPLOSION_VITRE(tv_temp, PROC_CALC_TAILLE_BV(ti_cpt1))
+						SND_RequestPlay(1)
+						SND_RequestPlay(2)
+						break
+				}
+
+				PROC_DESTRUCTION_MODULE(ti_cpt1, (@o_modules[ti_cpt1] OBJ_PosGet()) - v_pos_collide, -1.0)
+				i_nb_mod_detruits++
+				i_etat_modules[ti_cpt1] = 1
+			}
+
+}
+
+// Test : est-ce qu'il existe encore des modules intacts ?
+if (i_nb_mod_detruits >= (i_nb_modules+1))
+{
+	COL_ColSetActivationSet(none, C_bit_zde_corps)
+	// On libère le réseau
+	PROC_FREE_NETWORK(vrai)
+}
+
+
+
+// On test d'éventuels blocs à détruire si leurs liens l'ont été
+if (i_reaction_chaine)
+	if (i_nb_modules > 0)
+		for (ti_cpt1=0; ti_cpt1<i_nb_modules; ti_cpt1++)
+		{
+			if (i_liens_destruction[ti_cpt1] != -1)
+				if (i_etat_modules[ti_cpt1] == 0)
+					if (i_etat_modules[i_liens_destruction[ti_cpt1]] == 1)
+					{
+						tv_temp = @o_modules[ti_cpt1] OBJ_PosGet()
+	
+						if (o_ref_sol)
+							tv_temp.z = @o_ref_sol OBJ_PosGet().z
+	
+						PROC_DESTRUCTION_MODULE(ti_cpt1, (@o_modules[ti_cpt1] OBJ_PosGet()) - v_pos_collide, 1.0)
+						i_nb_mod_detruits++
+						i_etat_modules[ti_cpt1] = 1
+		
+						// Test : est-ce qu'il existe encore des modules intacts ?
+						if (i_nb_mod_detruits >= (i_nb_modules+1))
+						COL_ColSetActivationSet(none, C_bit_zde_corps)
+					}
+		}

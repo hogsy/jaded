@@ -1,0 +1,175 @@
+#define		DT					0.016667
+#define		FRICTION		0.99
+#define		GRAVZ			-10
+
+vector		tv_Pos, tv_Sight, tv_temp
+float			tf_Val, f
+int				c
+
+mf_DT += TIME_GetDt()
+tv_Pos = OBJ_PosGet()
+
+while (mf_DT > DT )
+{
+	if ( mi_Chute == 0)
+		mv_Speed *= FRICTION
+	else
+		mv_Speed *= 0.95
+	mv_Speed.z += GRAVZ * DT
+	
+	tv_Pos += mv_Speed * DT
+	
+	mf_DT -= TIME_GetDt()
+}
+
+if ( mi_Chute == 0)
+{
+	if (mv_Speed.z < 0)
+	{
+		mi_Chute = 1
+		mf_Timer = mf_LifeTime
+	}
+}
+else
+{
+	col -= 1
+	if( (col & 0xFF) == 0xFF) 
+	{
+		col = 0xFF000000
+		GFX_Seti( mi_Smoke, 13106, 0)
+	}
+	GFX_Seti( mi_Sun_GFX, 18102, col)
+	
+	c = col & 0xFF
+	f = c
+	f /= 0x8F
+	GFX_Setv(mi_Smoke, 13204, cvector( 0, 0, 1 ) )
+	c = COLOR_Blend( 0x40505050, 0x800000C0, f )
+	GFX_Seti(mi_Smoke, 13103, c)							
+	c = COLOR_Blend( 0x40505050, 0x405050C0, f )
+	GFX_Seti(mi_Smoke, 13104, c)									// Color fase 1
+//	c = COLOR_Blend( 0x00000000, 0x00C0C0C0, f )
+//	GFX_Seti(mi_Smoke, 13105, c)									// Color fase 1
+
+
+
+	
+	mf_Timer -= TIME_GetDt()
+	if (mf_Timer <  0 )
+	{
+		if ( mi_Sun_GFX != -1)
+		{
+			GFX_Del(mi_Sun_GFX)
+			mi_Sun_GFX = -1
+		}
+		OBJ_Destroy()
+	}
+}
+
+
+tv_Sight = tv_Pos - OBJ_PosGet()
+if ( !MATH_VecNull(tv_Sight ) )
+	OBJ_SightSet( tv_Sight )
+
+OBJ_PosSet( tv_Pos )
+
+// GFX - halo simple
+//if(mi_Sun_GFX == -1)
+//{
+//	mi_Sun_GFX = GFX_Add(21)
+//	GFX_FlagSet(mi_Sun_GFX, 0, 1)
+//	GFX_FlagSet(mi_Sun_GFX, 2, 1)
+//	GFX_FlagSet(mi_Sun_GFX, 4, 1)
+//	GFX_MaterialSet(mi_Sun_GFX, get_SFX_light_and_smoke, 0)	
+//	GFX_Setf(mi_Sun_GFX, 21002, 0.1)							// extraction par rapport au point de génération (vers la cam)
+//	GFX_Seti(mi_Sun_GFX, 21103, 1)		
+//	GFX_Seti(mi_Sun_GFX, 21101, 0xFF0000FF)
+//	GFX_Setf(mi_Sun_GFX, 21000, 1.0)							// rayon
+//}
+//GFX_Setv( mi_Sun_GFX, 21200, OBJ_PosGet())				// position du halo
+
+if (mi_Sun_GFX == -1)
+{
+	mi_Sun_GFX = GFX_Add( 18 )
+	GFX_MaterialSet( mi_Sun_GFX, get_SFX_light_and_smoke, 11)
+	GFX_FlagSet( mi_Sun_GFX, 2, 1)
+	GFX_Setf( mi_Sun_GFX, 18011, 1.0)
+	GFX_Setf( mi_Sun_GFX, 18012, 1.0)
+	GFX_Setf( mi_Sun_GFX, 18013, 50.0)
+	GFX_Setf( mi_Sun_GFX, 18010, 3.8 )
+	GFX_Seti( mi_Sun_GFX, 18102, 0xFF00008F)
+	GFX_Setf( mi_Sun_GFX, 18000, 0.2)
+	GFX_Setf( mi_Sun_GFX, 18001, 0.2)
+	GFX_Setf( mi_Sun_GFX, 18002, 2.0)
+	GFX_Setf( mi_Sun_GFX, 18003, 0.1)
+	GFX_Setf( mi_Sun_GFX, 18004, 0.5 )
+	GFX_Setf( mi_Sun_GFX, 18005, 0.1)
+	GFX_Setf( mi_Sun_GFX, 18006, 0.1 )
+	GFX_Setf( mi_Sun_GFX, 18007, 1.0)
+	GFX_Setf( mi_Sun_GFX, 18008, 0.1)
+	GFX_Setf( mi_Sun_GFX, 18009, 0.8 )
+	GFX_Setf( mi_Sun_GFX, 18012, 0.5)				//= durée apparition/disparition !)
+	GFX_Seti( mi_Sun_GFX, 18101, 32)
+	GFX_Seti( mi_Sun_GFX, 18103, 8)		
+	//if (i_Hide)		GFX_Seti( mi_Sun_GFX, 18103, 8)
+	GFX_Seti( mi_Sun_GFX, 18100, 1)
+}
+
+if (mi_Smoke == -1)
+{
+	mi_Smoke = GFX_Add(13)														// Create the boum
+	GFX_FlagSet(mi_Smoke, 0 , 1)
+	GFX_FlagSet(mi_Smoke, 2 , 1)
+					
+	GFX_MaterialSet(mi_Smoke, get_SFX_light_and_smoke, -1)			// met le materiau
+	GFX_Seti(mi_Smoke, 13101, 8)													// Materiau 0
+		
+	GFX_Seti(mi_Smoke, 13100, 200)												// number of sprite
+	GFX_Seti(mi_Smoke, 13103, 0x800000C0)									// Color fase 0
+	GFX_Seti(mi_Smoke, 13104, 0x405050C0)									// Color fase 1
+	GFX_Seti(mi_Smoke, 13105, 0x00C0C0C0)									// Color fase 2
+	GFX_Seti(mi_Smoke, 13106, 0xFFFFFFFF)									// number of sprite to generate
+	GFX_Seti(mi_Smoke, 13107, 0)													// Sprites non triés
+		
+	GFX_Setf(mi_Smoke, 13000, 0.3)												// Growing speed min
+	GFX_Setf(mi_Smoke, 13001, 0.5)												// Growing speed max
+	GFX_Setf(mi_Smoke, 13002, 0.0001)											// Friction Grow
+	GFX_Setf(mi_Smoke, 13003, 0.5)												// Time fase 1
+	GFX_Setf(mi_Smoke, 13004, 2)													// Time fase 2
+	GFX_Setf(mi_Smoke, 13005, 0.1)												// Creation size min
+	GFX_Setf(mi_Smoke, 13006, 0.2)												// Creation size max
+	GFX_Setf(mi_Smoke, 13008, 0.05)												// generation rate
+	GFX_Setf(mi_Smoke, 13009, 3.0)												// Norm speed min
+	GFX_Setf(mi_Smoke, 13010, 6.0)												// Norm speed max
+	GFX_Setf(mi_Smoke, 13012, 0.75)												// Time random factor
+		
+	GFX_Setv(mi_Smoke, 13203, cvector(0.02, 0.02, 0.02))					// friction speed
+	GFX_Setv(mi_Smoke, 13204, cvector( 0, -2, 1 ) )							// wind
+	GFX_Setv(mi_Smoke, 13205, Cv_NullVector)								// Mainposspeed
+	GFX_Setv(mi_Smoke, 13206, Cv_NullVector)	
+}
+
+tf_Val = 4.0 + MATH_RandFloat(-1, 1)
+if (mi_Sun_Kill)
+	tf_Val *= mf_Timer
+GFX_Setf( mi_Sun_GFX, 18010, tf_Val)
+
+GFX_Setv( mi_Sun_GFX, 18200, OBJ_PosGet() )
+
+GFX_Setv(mi_Smoke, 13200, OBJ_PosGet()) 								// Creation Pos
+tv_temp = OBJ_SightGet() * 2.0
+GFX_Setv(mi_Smoke, 13201, tv_temp + cvector(-0.5, -0.5, -0.5))		// Speed min
+GFX_Setv(mi_Smoke, 13202, tv_temp + cvector(0.5,0.5,0.5))		// Speed max
+
+
+if (mi_Chute && (mf_Timer < 1.0) && !mi_Sun_Kill )
+{
+	GFX_Seti( mi_Sun_GFX, 18104, 1)
+	GFX_Seti( mi_Smoke, 13106, 0)
+	mi_Sun_Kill = 1
+}
+
+
+
+
+

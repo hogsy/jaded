@@ -1,0 +1,62 @@
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#include "SKMM_Constant.var"
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+message tm_msg 
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////
+if( AI_TriggerIsValid(t_AnnSignal) && call_trigger(t_AnnSignal) )
+{
+	if(mi_AnnSignal != 1) mi_NewSignal |= SKMM_Cte_AnnSignal
+	mi_AnnSignal = 1
+}
+else
+{
+	if(mi_AnnSignal != 0) mi_NewSignal |= SKMM_Cte_AnnSignal
+	mi_AnnSignal = 0
+	
+	///
+	if( AI_TriggerIsValid(t_MashingSignal) && call_trigger(t_MashingSignal) )
+	{
+		if(mi_MashingSignal != 1) mi_NewSignal |= SKMM_Cte_MashingSignal
+		mi_MashingSignal = 1
+	}
+	else
+	{
+		if(mi_MashingSignal != 0) mi_NewSignal |= SKMM_Cte_MashingSignal
+		mi_MashingSignal = 0
+	}
+}
+
+	
+
+///
+if( AI_TriggerIsValid(t_InjureSignal) && call_trigger(t_InjureSignal) )
+{
+	if(mi_InjureSignal != 1) mi_NewSignal |= SKMM_Cte_InjureSignal
+	mi_InjureSignal = 1
+}
+else
+{
+	if(mi_InjureSignal != 0) mi_NewSignal |= SKMM_Cte_InjureSignal
+	mi_InjureSignal = 0
+}
+
+///
+mi_MaskMashingSignal = 0
+if(mi_CurrentActiveTriggerExec != -1)
+{
+	
+	tm_msg = AI_TriggerGetMsg(at_Script[mi_CurrentActiveTriggerExec])
+	if(tm_msg.msg_int4 == -10)
+	{
+		mi_MaskMashingSignal = 1
+		mi_NewSignal &= ~SKMM_Cte_MashingSignal
+	}
+		
+	call_trigger( at_Script[mi_CurrentActiveTriggerExec] )
+}
+

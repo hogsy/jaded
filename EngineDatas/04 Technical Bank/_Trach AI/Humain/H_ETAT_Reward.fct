@@ -1,0 +1,70 @@
+Include_UltraProcedure_Header
+
+#include "H_defines.var"
+#include "H_action.var"
+
+int			ti_i
+int			ti_type_liaison
+
+vector	tv_temp
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_Reward_Type = -1
+	o_Reward = nobody
+	o_Reward_Actor = nobody
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_Reward)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Reward
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	// INTERACTION
+	for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+		ai_SRV_ENABLE[ti_i] = faux
+
+	switch( i_Reward_Type )
+	{
+		case Ci_Reward_Type_Trappe_au_sol :
+		default:
+			tv_temp = @o_Reward_Actor OBJ_PosGet() - OBJ_PosGet()
+			OBJ_BankingGeneralSet(tv_temp, Cv_VerticalVector)
+			tv_temp *= -1
+			MATH_VecSetNorm(tv_temp, 1.5)
+			tv_temp += @o_Reward_Actor OBJ_PosGet()
+			OBJ_PosSet(tv_temp)
+			Proc_Joueur_Swap_to_3rd()
+			@o_Indy3rd ACT_ActionSet(In3rd_Action_Ouvre_Trappe)
+			break
+	}
+	f_Reward_AFE_coef = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// ANALYSE ==========================================================================================
+MACRO_READ_WORLD
+
+if( @o_Indy3rd ACT_ActionFinished() )
+	macro_change_etat("H_ETAT_FPS")
+
+AI_Execute("H_exec_read_joy_reset")
+
+AI_Execute("H_exec_speed")
+

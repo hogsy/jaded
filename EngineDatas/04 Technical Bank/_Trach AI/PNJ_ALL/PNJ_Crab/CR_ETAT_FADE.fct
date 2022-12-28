@@ -1,0 +1,66 @@
+#include "CR_defines.var"
+
+object 	to_duplicated
+object 	to_bone
+
+vector	tv_sight
+
+
+// SORTIE ETAT ==============================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+
+// ENTREE ETAT ==============================================================================
+if (i_etat_courant != ETAT_FADE )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_FADE
+	str_etat = "Fade"
+	if (fct_etat_courant)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_etat_courant)
+	}
+	
+	fct_etat_courant = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+//	if( i_paf_lance_backup_flag )
+//		ACT_ActionSet(ACTION_Mort_Paf_Lance)
+//	else
+//		ACT_ActionSet(ACTION_Mort)
+
+	if( i_DBG_trace_etat )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : ETAT FADE")
+		DBG_TraceEOL()
+	}
+	
+	to_bone = ANI_CanalObjectGet(Anim_Canal_Bassin)
+	to_duplicated = @get_SFX_decomposition OBJ_Duplicate(cvector(0,0,0))			// ALOC (C'est l'AI qui va gerer la decomposition)
+	@to_duplicated Proc_Decomposition_Init(OBJ_Me(), 2.0, 0, 1, -1)				// INIT (Vas y decompose moi :))
+	@to_duplicated Proc_Decomposition_Init(OBJ_Me(), 2.0, 0, 1, -1)				// INIT (Vas y decompose moi :))
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// ANALYSE ===================================================================================
+
+AI_Execute("CR_exec_CHECK_Paf")		// FEEDBACK
+
+// COMPORTEMENT =============================================================================
+
+// ORIENTATION -----------------------------------------------------------
+if( ! MATH_VecNullToler(v_paf_dyn_speed, 0.1) )
+	tv_sight = MATH_VecBlendRotate(OBJ_SightGet(), v_paf_dyn_speed, 5 * TIME_GetDt())
+else
+	tv_sight = OBJ_SightGet()
+OBJ_BankingGeneralSet(tv_sight, macro_banking)

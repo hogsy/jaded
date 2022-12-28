@@ -1,0 +1,20 @@
+int				ti_loop
+object		to_gao 
+
+i_nbr_perso_dans_zone = 0
+for (ti_loop = C_ID_Joueur; ti_loop <= C_ID_Last_Compagnon ; ti_loop++)
+{
+	to_gao = @"univ" ao_AllHumains[ti_loop]
+	if (to_gao)
+	{
+		// Le marin est dans la map
+		if (@to_gao COL_Pivot_BVCollide(o_bv_detect_human))
+		{
+			// Le perso est dans la BV
+			ao_perso_dans_zone[i_nbr_perso_dans_zone] = to_gao
+			i_nbr_perso_dans_zone++
+		}
+	}
+}
+
+i_nbr_perso_dans_zone =i_nbr_perso_dans_zone

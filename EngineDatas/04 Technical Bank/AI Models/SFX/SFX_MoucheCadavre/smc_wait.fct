@@ -1,0 +1,21 @@
+int			i
+vector	tv_temp
+object	to_main
+
+if( @get_global i_Player_is_Kong )
+	to_main = AI_MainActorGet(C_ID_Kong)
+else
+	to_main = AI_MainActorGet(C_ID_Joueur)
+
+if(OBJ_SqrDist(to_main) > 15 * 15) return
+for(i = 0; i < des_i_max; i++) 
+{
+	tv_temp = OBJ_PosGet()
+	tv_temp.x += MATH_RandFloat(-1, 1)
+	tv_temp.y += MATH_RandFloat(-1, 1)
+	tv_temp.z += MATH_RandFloat(-0.2, 0.2)
+	@ao_mouche[i] OBJ_PosSet(tv_temp)
+	@ao_mouche[i] OBJ_FlagInvisibleSet(faux)
+}
+
+AI_TrackCurChangeNow("smc_loop")

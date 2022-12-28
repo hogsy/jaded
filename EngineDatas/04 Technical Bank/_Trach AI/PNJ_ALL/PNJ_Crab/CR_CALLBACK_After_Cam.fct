@@ -1,0 +1,44 @@
+#include "CR_defines.var"
+
+vector	tv_temp
+
+float		tf_dot_product
+
+object	to_bone
+object	to_camera
+
+
+f_on_screen_pourcent = VIEW_LIB_Pourcent_On_Screen(COL_ZonePosGet(C_zde_corps), COL_ZoneSizeGet(C_zde_corps), 1.0, 1.0, tv_temp, faux)
+
+if( i_modele == MODELE_Geant )
+{
+	tv_temp = @o_main_actor OBJ_PosGet() - OBJ_PosGet()
+	if( MATH_VecNorm(tv_temp) > 30.0 )
+	{
+		f_zoom_smooth_coef -= MATH_FloatMin(f_zoom_smooth_coef, 6.0 * TIME_GetDt())
+	}
+	else if( ACT_ActionGet() == ACTION_Intimidation )
+	{
+		f_zoom_smooth_coef += MATH_FloatMin(3.0 - f_zoom_smooth_coef, 10.0 * TIME_GetDt())
+		IO_PafSet(100, 12)		// Fort
+//		Str_DisplayTextOnce("12", cvector(0.5,0.5,0))
+	}
+	else
+	{
+		f_zoom_smooth_coef -= MATH_FloatMin(f_zoom_smooth_coef, 6.0 * TIME_GetDt())
+		if (f_zoom_smooth_coef)
+		{
+			IO_PafSet(100, 8)		// Moyen
+//			Str_DisplayTextOnce("8", cvector(0.5,0.5,0))
+		}
+	}
+	
+	if (f_zoom_smooth_coef)
+	{
+		to_camera = @get_global o_camera
+		to_bone = ANI_CanalObjectGet(Crab_Canal_Vulnerable_Devant)
+		tf_dot_product = MATH_FloatMax(MATH_VecDotProduct(OBJ_SightGet(), - @to_camera OBJ_SightGet()), 0.0)
+		@get_global Proc_AE_ZoomSmoothCenterSet( f_zoom_smooth_coef * tf_dot_product, @to_bone OBJ_PosGet() - @to_camera OBJ_PosGet() )
+	}
+}
+

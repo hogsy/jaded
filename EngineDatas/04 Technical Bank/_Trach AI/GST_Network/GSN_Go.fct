@@ -1,0 +1,34 @@
+object	to_gao
+float		tf_dist 
+int			ti_ok
+vector	tv_point
+
+if( @get_global i_Player_is_Kong )
+	to_gao = AI_MainActorGet(C_ID_Kong)
+else
+	to_gao = AI_MainActorGet(C_ID_Joueur)
+
+ti_ok = MATH_LIB_Intersection_Line_Plane(v_pos_A, -v_axis, @to_gao OBJ_PosGet(), v_axis, tf_dist, tv_point)
+
+if (tf_dist> f_distmax)
+{
+	if (v_pos_tgt != v_pos_A)
+		f_blend_speed = 0.0
+	v_pos_tgt = v_pos_A
+}
+else if (tf_dist< f_distmin)
+{
+	if (v_pos_tgt != v_pos_B)
+		f_blend_speed = 0.0
+	v_pos_tgt = v_pos_B
+}
+
+f_blend_speed = MATH_FloatBlend(f_blend_speed, 2.0, 4.0 * TIME_GetDt())
+v_pos_cur = MATH_VecBlend(v_pos_cur, v_pos_tgt, f_blend_speed * TIME_GetDt()) 
+
+@o_nework1 OBJ_PosSet(v_pos_cur)
+@o_nework2 OBJ_PosSet(@o_nework2 OBJ_PosInitGet() + (v_pos_cur - @o_nework1 OBJ_PosInitGet()) )
+
+
+//Str_DisplayFloatOnce(tf_dist, cvector(0,0.8,0))
+//DBG_RenderSphere(v_pos_cur,1.0,color_jaune)

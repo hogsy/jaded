@@ -1,0 +1,50 @@
+//vector		tv_pos
+//object 	to_main
+//float		tf_on_screen_pourcent
+//float		tf_focale
+//int			ti_optim_anims
+//vector	tv_temp
+//object	to_camera
+//
+//ti_optim_anims = faux
+//if( OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Culled )
+//	ti_optim_anims = vrai
+//else
+//{
+//	tf_focale = VIEW_FocaleGet(0)
+//	to_camera = @get_global o_camera
+//	if( OBJ_SqrDist(to_camera) > (50 * 50 * tf_focale) )
+//		ti_optim_anims = vrai
+//	else
+//	{
+//		tf_on_screen_pourcent = VIEW_LIB_Pourcent_On_Screen(COL_ZonePosGet(C_zde_corps), COL_ZoneSizeGet(C_zde_corps), 1.0, 1.0, tv_temp, faux)
+//		if( tf_on_screen_pourcent < 0.5 )
+//			ti_optim_anims = vrai
+//	}
+//}
+//
+//if( ti_optim_anims )
+//{
+////	OBJ_FlagsControlSet(none, OBJ_C_ControlFlag_DesableAnimPlayerOnMe)
+//	ANI_LODSet(EVE_LOD_OnlyMagicBoxWhenCulled + EVE_LOD_OneFrameOutOfTwo ) // + EVE_LOD_SkipExtremityBones ) // + EVE_LOD_FreezeSkeleton)
+//}
+//else
+//{
+////	OBJ_FlagsControlSet(OBJ_C_ControlFlag_DesableAnimPlayerOnMe, none)
+//	ANI_LODSet(EVE_LOD_OnlyMagicBoxWhenCulled)
+//}
+//
+//// Positionnement du Projectile
+//if( ! ti_optim_anims && o_projectile && ! @o_projectile OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna))
+//{
+//	to_main = ANI_CanalObjectGet(Anim_Canal_Annex1)
+//
+//	tv_pos = @to_main OBJ_PosGet()
+//	tv_pos.z += 0.05
+//	
+//	@o_projectile OBJ_PosSet( tv_pos )
+//	@o_projectile OBJ_SightSet(@to_main OBJ_BankingGet() )
+//
+//}
+//
+//

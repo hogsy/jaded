@@ -1,0 +1,94 @@
+#include "MAF_Defines.var"
+
+
+
+
+
+// inserts mouche i_curMouche randomly where it belongs depending on its current state
+
+float tf_halfBox
+vector tv_newPos
+
+switch (ai_moucheState[i_curMouche])
+{
+	case MAF_MoucheState_HomeHovering :
+
+		// position is randomly setup inside the spawning box
+		tf_halfBox = MAF_Cf_SpawningBoxSize / 2.0
+		tv_newPos.x = MATH_RandFloat(-1*tf_halfBox,tf_halfBox)
+		tv_newPos.y = MATH_RandFloat(-1*tf_halfBox,tf_halfBox)
+		tv_newPos.z = MATH_RandFloat(0,tf_halfBox)
+		tv_newPos += @o_generateur OBJ_PosGet()
+		tv_newPos += v_generateurOffset
+		
+		// setup orbit
+		av_moucheOrbitCenter[i_curMouche] = tv_newPos
+		af_moucheOrbitTimeline[i_curMouche] = MATH_RandFloat(0,1)
+		af_moucheOrbitSpeed[i_curMouche] = MATH_RandFloat(f_moucheOrbitSpdMin,f_moucheOrbitSpdMax)	// orbits per second
+		af_moucheOrbitRadius[i_curMouche] = MATH_RandFloat(f_orbitRadiusMin,f_orbitRadiusMax)
+		af_moucheOrbitRadiusDir[i_curMouche] = MATH_RandFloat(0.5,1.0)
+		if (MATH_RandInt(0,2) == 1)
+			af_moucheOrbitRadiusDir[i_curMouche] *= -1.0		// inverse for half of them
+		af_moucheOrbitZDir[i_curMouche] = MATH_RandFloat(1.0,2.0)
+			af_moucheOrbitZDir[i_curMouche] *= -1.0		// inverse for half of them
+		ai_moucheOrbitWay[i_curMouche] = MATH_RandInt(0,2)
+		
+		AI_Execute("MAF_Exec_MoveMoucheOnOrbit")
+		
+		// setup orbit center speed vector
+		// speed vector is randomly chosen	
+		ChooseRandomSpeedVector(
+			av_moucheSpd[i_curMouche],
+			MAF_MAX_OrbitCenterSpd_X,
+			MAF_MAX_OrbitCenterSpd_Y,
+			MAF_MAX_OrbitCenterSpd_Z)
+		break
+	
+	case MAF_MoucheState_GotoTarget :
+	
+
+#ifdef MAF_TRAVEL_STRAIGHT
+		// setup orbit
+		tv_newPos = @o_generateur OBJ_PosGet()
+		@ao_moucheList[i_curMouche] OBJ_PosSet(tv_newPos)
+#endif		
+#ifndef MAF_TRAVEL_STRAIGHT
+
+		tv_newPos = @o_generateur OBJ_PosGet() + v_generateurOffset
+		av_moucheOrbitCenter[i_curMouche] = tv_newPos
+		af_moucheOrbitTimeline[i_curMouche] = MATH_RandFloat(0,1)
+		af_moucheOrbitSpeed[i_curMouche] = MATH_RandFloat(1.0,1.5)//(f_moucheOrbitSpdMin,f_moucheOrbitSpdMax)	// orbits per second
+		af_moucheOrbitRadius[i_curMouche] = MATH_RandFloat(0.1,0.2)//(f_orbitRadiusMin,f_orbitRadiusMax)
+		af_moucheOrbitRadiusDir[i_curMouche] = MATH_RandFloat(0.1,1)
+		if (MATH_RandInt(0,2) == 1)
+			af_moucheOrbitRadiusDir[i_curMouche] *= -1.0		// inverse for half of them
+//		af_moucheOrbitZDir[i_curMouche] = MATH_RandFloat(0.1,0.2)
+		
+		//	af_moucheOrbitZDir[i_curMouche] *= -1.0		// inverse for half of them
+		ai_moucheOrbitWay[i_curMouche] = MATH_RandInt(0,2)
+		@ao_moucheList[i_curMouche] OBJ_PosSet(tv_newPos)
+		
+#endif		
+		break
+
+	case MAF_MoucheState_AroundTgt :
+		// setup orbit
+		av_moucheOrbitCenter[i_curMouche] = @o_currentTarget OBJ_PosGet()
+		FindOrbitTimeLineNotVisible(@o_currentTarget OBJ_SightGet(),af_moucheOrbitTimeline[i_curMouche])
+		af_moucheOrbitSpeed[i_curMouche] = MATH_RandFloat(0.5,1.0)//(f_moucheOrbitSpdMin,f_moucheOrbitSpdMax)	// orbits per second
+		ai_moucheOrbitWay[i_curMouche] = MATH_RandInt(0,2)
+		af_moucheOrbitRadiusDir[i_curMouche] = MATH_RandFloat(1.0,4.0)
+		if (MATH_RandInt(0,2) == 1)
+			af_moucheOrbitRadiusDir[i_curMouche] *= -1.0		// inverse for half of them
+		af_moucheOrbitZDir[i_curMouche] = MATH_RandFloat(1.0,2.0)
+			af_moucheOrbitZDir[i_curMouche] *= -1.0		// inverse for half of them
+		ai_moucheOrbitWay[i_curMouche] = MATH_RandInt(0,2)
+		
+		AI_Execute("MAF_Exec_MoveMoucheOnOrbit")
+	
+		break
+
+	case 	MAF_MoucheState_GobackHome :
+		break	
+
+}

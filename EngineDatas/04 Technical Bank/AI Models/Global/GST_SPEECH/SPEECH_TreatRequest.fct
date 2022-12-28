@@ -1,0 +1,452 @@
+//---------------------------------------------------------------------------------------------------------------------------
+// INCLUDES
+//---------------------------------------------------------------------------------------------------------------------------
+#include "SPEECH_Constant.var"
+
+
+//---------------------------------------------------------------------------------------------------------------------------
+// LOCAL VARIABLES
+//---------------------------------------------------------------------------------------------------------------------------
+object	to_object, to_texte
+int 		ti_sound
+string		ts_string
+int			ti_track, ti_request, ti_othertrack
+vector	tv_pos
+int 		ti_fx, ti_effect7
+vector	min, max
+int			ti_effect, ti_idx
+
+//---------( récup de l'objet string )---------
+to_texte = @"univ" Texte_InGame
+
+//---------------------------------------------------------------------------------------------------------------------------
+// CODE
+//---------------------------------------------------------------------------------------------------------------------------
+for( ti_track = 0; ti_track<Cte_DialogNb; ti_track++)
+{
+	af_current_playtime[ti_track] -= TIME_GetDt()
+	
+	// traitement spéciaux avec strings
+	//---------------------------------------------
+	if (to_texte && (ai_current_strinstance[ti_track] != -1) )
+	{
+		// repositionnement du texte
+		//---------------------------------------------
+		if (af_current_positionmoveto[ ti_track ] != 0)
+		{
+			tv_pos = @to_texte OBJ_TextPivotGet( STRINGAME_DLG0 + ti_track )
+			tv_pos.y -= TIME_GetDt()
+			if (tv_pos.y < af_current_positionmoveto[ ti_track ])
+			{
+				tv_pos.y = af_current_positionmoveto[ ti_track ]
+				af_current_positionmoveto[ ti_track ] = 0
+			}
+			@to_texte OBJ_TextPivotSet( STRINGAME_DLG0 + ti_track, tv_pos )
+		}
+
+	}
+
+	// --- the current track is working 
+	//---------------------------------------------
+	if( af_current_playtime[ti_track] > 0.0 ) continue
+
+
+	// -- check sound instance
+	//------------------------------------
+	if( ai_current_sndkey[ti_track] != -1)
+	{
+		if( SND_InstanceGeti(ai_current_sndinstance[ti_track], SND_Cte_GetInstSoundKey) != ai_current_sndkey[ti_track] )
+		{
+			// any pertubator has destroyed my sound instance
+			ai_current_sndinstance[ti_track] = -1
+			ai_current_sndkey[ti_track] = -1
+		}
+	}
+
+	// --- stop/destroy the previous sound
+	//---------------------------------------------------
+	if( ai_urgent_request[ti_track] == -1 )
+	{
+		if(SND_IsPlaying(ai_current_sndinstance[ti_track])) continue
+	}
+	SND_Stop(ai_current_sndinstance[ti_track])
+	SND_Destroy(ai_current_sndinstance[ti_track])
+	ai_current_sndinstance[ti_track] = -1
+	ai_current_sndkey[ti_track] = -1
+
+
+	// --- delete the previous display
+	//-------------------------------------------
+	if( ai_current_strinstance[ti_track] != -1) 
+	{
+		if (to_texte)
+		{
+			@to_texte OBJ_TextSet(  STRINGAME_DLG0 + ti_track, "" )
+			@to_texte OBJ_TextEffectSeti( 1, -1, STRINGAME_DLG0 + ti_track )
+		}
+		else
+			STR_DeleteText(ai_current_strinstance[ti_track])
+	}
+
+	af_current_sndtime[ti_track] = 0.0
+	ai_current_strinstance[ti_track] = -1
+	ao_current_sender[ti_track] = nobody
+	ao_current_target[ti_track] = nobody
+	at_current_text[ti_track] = M_GetNullText
+ 	ai_current_priority[ti_track] = -1
+	af_current_timeout[ti_track] = 0.0
+ 	ai_current_flag[ti_track] = 0
+ 	ai_current_listid[ti_track] = 0
+ 	ai_current_listindex[ti_track] = 0
+ 	mai_CurrentHasContent[ti_track] = 0
+ 	o_speaker[ti_track] = OBJ_Me()
+	
+
+	// --- do nothing if the other track is playing a block
+	//-------------------------------------------------------
+	if( ai_previous_listid[1-ti_track] ) 	
+	{
+		continue
+	}
+	
+	// --- get the new request
+	//----------------------------------
+	if( ai_urgent_request[ti_track] != -1 )
+	{	
+		// --- there is an urgent request
+		//------------------------------------------
+		
+		if( ai_current_listid[ti_track] )
+		{
+			// --- the previous request was a list => del all elem of this list
+			SPEECH_DeleteDataListRq(ai_current_listid[ti_track])
+		}
+	
+		SPEECH_ReadDataRq
+		(
+			ai_urgent_request[ti_track],
+			ao_current_sender[ti_track],
+			ao_current_target[ti_track],
+ 			at_current_text[ti_track],
+ 			ai_current_priority[ti_track],
+			af_current_timeout[ti_track],
+ 			ai_current_flag[ti_track],
+ 			ai_current_listid[ti_track],
+ 			ai_current_listindex[ti_track]
+		)
+
+		SPEECH_DeleteRq(ai_urgent_request[ti_track])
+		SPEECH_DeleteDataRq(ai_urgent_request[ti_track])
+		ai_urgent_request[ti_track] = -1
+	}
+	else if( i_request_number ) 
+	{	
+		// --- get from the list ---
+		//--------------------------------
+		
+		ti_request = SPEECH_PopRq(ao_current_target[1-ti_track], ai_previous_listid[ti_track])
+		if(ti_request <0) continue
+		
+		SPEECH_ReadDataRq
+		(
+			ti_request,
+			ao_current_sender[ti_track],
+			ao_current_target[ti_track],
+ 			at_current_text[ti_track],
+ 			ai_current_priority[ti_track],
+			af_current_timeout[ti_track],
+ 			ai_current_flag[ti_track],
+ 			ai_current_listid[ti_track],
+ 			ai_current_listindex[ti_track]
+		)
+
+		SPEECH_DeleteDataRq(ti_request)
+		ai_urgent_request[ti_track] = -1
+	}
+	else
+	{
+		// -- no more request ---
+		//--------------------------------
+		
+		af_current_sndtime[ti_track] = 0.0
+		ao_current_sender[ti_track] = nobody
+		ao_current_target[ti_track] = nobody
+ 		at_current_text[ti_track] = M_GetNullText
+ 		ai_current_priority[ti_track] = -1
+		af_current_timeout[ti_track] = 0.0
+ 		ai_current_flag[ti_track] = 0
+ 		ai_current_listid[ti_track] = 0
+ 		ai_current_listindex[ti_track] = 0
+ 		mai_CurrentHasContent[ti_track] = 0
+ 		o_speaker[ti_track] = OBJ_Me()
+		continue
+	}
+	
+	if( !ai_previous_listid[ti_track] && ai_current_listid[ti_track] )
+	{
+		// this is the 1st element of a block
+		ai_previous_listid[ti_track] = ai_current_listid[ti_track]
+	}
+	else if( ai_previous_listid[ti_track] && (ai_previous_listid[ti_track] == ai_current_listid[ti_track]) )
+	{
+		// this is the last elem of a block
+		if( (ai_current_listid[ti_track] & 0x0000000F) == (ai_current_listindex[ti_track]+1) )
+		{
+			ai_previous_listid[ti_track] = 0
+		}		
+	}
+
+
+	// -- test activation
+	//------------------------
+	if(ai_current_flag[ti_track] & SPEECH_Cte_FlagsTestTriggerWhenRetrying)
+	{
+		if( @ "Text/TXT_Actor" ao_current_sender[ti_track] i_TriggerState == 0 )
+		{
+			// request is canceled
+//			DBG_TraceString("poeut")
+//			DBG_TraceEOL()
+			continue
+		}
+	}
+
+	ti_fx = 1
+	if( ao_current_target[ti_track] )
+	{
+		o_speaker[ti_track] = ao_current_target[ti_track]
+		
+		to_object = AI_MainActorGet(0)
+		if( (o_speaker[ti_track] == to_object) && mi_MapIsJaks )
+		{
+			ti_fx = 0
+		}
+	}
+	else
+		o_speaker[ti_track] = OBJ_Me()
+
+	// -- get sound + play it
+	//-------------------------------
+		
+	
+	ti_sound = TEXT_ToSound(at_current_text[ti_track])
+	if( ti_sound >= 0 )
+	{
+		if( ao_current_target[ti_track] )
+		{
+			// sound is 3D
+			ai_current_sndinstance[ti_track] = SND_Request(ti_sound, C_SND_Request_3DSound | C_SND_GlobalSoundReferencing)
+			
+			SND_InstanceSetf(ai_current_sndinstance[ti_track], SND_Cte_SetInstNear0, mf_SoundNearDistance)
+			SND_InstanceSetf(ai_current_sndinstance[ti_track], SND_Cte_SetInstMiddle0, mf_SoundMiddleDistance)
+			SND_InstanceSetf(ai_current_sndinstance[ti_track], SND_Cte_SetInstFar0, mf_SoundFarDistance)
+			SND_InstanceSetf(ai_current_sndinstance[ti_track], SND_Cte_SetInstMiddleCoeff, mf_SoundMiddleCoeff)
+			SND_InstanceSetf(ai_current_sndinstance[ti_track], SND_Cte_SetInstFarCoeff, mf_SoundFarCoeff)
+			to_object = ao_current_target[ti_track]
+		}
+		else
+		{
+			// sound is not 3D
+			ai_current_sndinstance[ti_track] = SND_Request(ti_sound, C_SND_GlobalSoundReferencing)
+			to_object = OBJ_Me()
+		}
+
+
+		// get sound key
+		ai_current_sndkey[ti_track] = SND_InstanceGeti(ai_current_sndinstance[ti_track], SND_Cte_GetInstSoundKey)
+#ifndef _FINAL_			
+		if( (ai_current_sndinstance[ti_track]!=-1)  && (ai_current_sndkey[ti_track] == -1) )
+		{
+			DBG_Error("on a une instance sans son")
+			DBG_TraceEOL()
+		}
+#endif			
+	
+		
+		// send sound to group A
+		SND_InstanceSeti(ai_current_sndinstance[ti_track], SND_Cte_SetInstGroup, SND_Cte_SetiGrpA)
+		
+//		if( ti_fx )
+//		{
+			// if not jack send to FxB vol = 50 percent
+			i_snd_new_play = 1 << ti_track 
+			SND_InstanceSetf(ai_current_sndinstance[ti_track], SND_Cte_SetInstFxVolLeft, Cte_SoundFxVol)
+			SND_InstanceSetf(ai_current_sndinstance[ti_track], SND_Cte_SetInstFxVolRight, Cte_SoundFxVol)
+			SND_InstanceSeti(ai_current_sndinstance[ti_track], SND_Cte_GetInstFxCore, Cte_SoundFxCoreId)
+//		}
+//		else
+//		{
+//			i_snd_new_play = 1 << ti_track 
+//			SND_PanSet(ai_current_sndinstance[ti_track], 0, 10000) // force the dialog to be front of + centered
+//		}
+		
+		// set the track
+		SND_InstanceSeti(ai_current_sndinstance[ti_track], SND_Cte_GetInstTrack, ai_sndtrackid[ti_track])
+		
+		// set no doppler
+		SND_InstanceSetf(ai_current_sndinstance[ti_track], SND_Cte_SetInstDoppler, 0.0)
+				
+		// set volume
+		af_snd_volume[ti_track] = Cte_SoundVolumeHigh
+		SND_VolSet(ai_current_sndinstance[ti_track], af_snd_volume[ti_track])
+//		SND_FreqSet(ai_current_sndinstance[ti_track], 24000)
+
+		
+		// play sound
+		@to_object SND_Play(ai_current_sndinstance[ti_track])			
+	}
+	
+	// -- get text and display it
+	//-----------------------------------
+	speech_dbg_printtxt("display : ", ao_current_sender[ti_track], at_current_text[ti_track], ti_track)
+
+	ts_string = TEXT_ToString(at_current_text[ti_track])
+	mas_CurrentContent[ti_track] = ts_string 
+
+	av_DisplayPosition[ti_track].x = (80 - TEXT_Length(ts_string)) / 2.0
+	av_DisplayPosition[ti_track].x /= 80.0
+	
+	if(av_DisplayPosition[ti_track].x <= 0.0)
+		av_DisplayPosition[ti_track].x = 0.02
+		
+	if(av_DisplayPosition[ti_track].x >= 1.0)
+		av_DisplayPosition[ti_track].x = 0.02
+
+
+//	if( TEXT_Compare(ts_string, "<notext>")  || TEXT_Compare(ts_string, "<sfx>") || TEXT_Compare(ts_string, "<") ||TEXT_Compare(ts_string, " <") || TEXT_Compare(ts_string, "[") ) 
+// doesnt display any string that begins with [ or <
+	if( TEXT_Compare(ts_string, "<")  || TEXT_Compare(ts_string, " <") || TEXT_Compare(ts_string, "[") ||TEXT_Compare(ts_string, " [")  ) 
+		mai_CurrentHasContent[ti_track] = 0
+	else
+		mai_CurrentHasContent[ti_track] = 1
+
+	
+	if( @"univ" SND_gi_ShowSubtitle && mai_CurrentHasContent[ti_track] )
+	{
+		if (to_texte)
+		{
+			av_DisplayPosition[ti_track] = cvector (0.5, 0.98, 0 )
+			af_current_positionmoveto[ ti_track ] = 0
+			
+			ai_current_strinstance[ti_track] = STRINGAME_DLG0 + ti_track
+			@to_texte OBJ_TextSet( STRINGAME_DLG0 + ti_track, "\-- ")
+			@to_texte OBJ_TextInsert( STRINGAME_DLG0 + ti_track, -1, ts_string )
+			@to_texte OBJ_TextPivotSet( STRINGAME_DLG0 + ti_track, av_DisplayPosition[ti_track] )
+			@to_texte OBJ_TextFrameSet( STRINGAME_DLG0 + ti_track, 9, 32 )
+			@to_texte OBJ_TextFrameColorSet( STRINGAME_DLG0 + ti_track, 0xc0c0c0c0 )
+			@to_texte OBJ_TextFrameBorderSet( STRINGAME_DLG0 + ti_track, 0.02)
+			@to_texte OBJ_TextFlagSet( STRINGAME_DLG0 + ti_track, 1 + 8 + 16 + 256 + 32)
+			@to_texte OBJ_TextMaxWidthSet( 0.8 )
+			@to_texte OBJ_TextColorSet( STRINGAME_DLG0 + ti_track, 0, -1, 0xC0C0C0C0 )
+			@to_texte OBJ_TextSizeSet( STRINGAME_DLG0 + ti_track, 0, -1, cvector( -1, 0, 0) )
+			@to_texte OBJ_TextMaxWidthSet( 0 )
+			
+			min = @to_texte OBJ_TextRectGet( STRINGAME_DLG0 + ti_track, 0, -1, 0)
+			max = @to_texte OBJ_TextRectGet( STRINGAME_DLG0 + ti_track, 0, -1, 1)
+			
+			ti_effect = @to_texte OBJ_TextEffectAdd( 1, STRINGAME_DLG0 + ti_track, 0, -1 )
+			@to_texte OBJ_TextEffectSeti( ti_effect, 0, 1)
+			@to_texte OBJ_TextEffectSeti( ti_effect, 1, 1)
+			@to_texte OBJ_TextEffectSetf( ti_effect, 150, 0.1) // duree du fadein
+			@to_texte OBJ_TextEffectSetf( ti_effect, 151, Cte_DisplayDelay) // lancé dans N s
+			
+			for( ti_othertrack = 0; ti_othertrack<Cte_DialogNb; ti_othertrack++)
+			{
+				if (ti_othertrack == ti_track ) continue
+				if (ai_current_strinstance[ ti_othertrack ] == -1) continue
+				//af_current_positionmoveto[ ti_othertrack] = 0.8
+				//af_current_positionmoveto[ ti_othertrack] = @to_texte OBJ_TextPivotGet( STRINGAME_DLG0  + ti_othertrack ).y
+				//af_current_positionmoveto[ ti_othertrack] -= (max.y - min.y ) + 0.05
+				af_current_positionmoveto[ ti_othertrack] = min.y - 0.05
+			}
+		}
+		else
+		{
+			ai_current_strinstance[ti_track] = STR_CreateText("\h.06\", av_DisplayPosition[ti_track], -1.0)
+			STR_AppendText( ai_current_strinstance[ti_track], "\c7F7F7F\" )
+			STR_AppendText(ai_current_strinstance[ti_track] , "- ")
+			STR_AppendText(ai_current_strinstance[ti_track] , ts_string)
+		}
+	}
+	
+	if( TEXT_Compare(ts_string, "<lipsync>") )
+		mai_CurrentHasContent[ti_track] = 1
+
+
+	// -- get the working time
+	//----------------------------------
+	if( ai_current_sndinstance[ti_track] == -1 )
+	{
+		af_current_playtime[ti_track] = f_SecondByLetter * TEXT_Length(ts_string)
+		
+		if( af_current_playtime[ti_track] < 1.0 )
+			af_current_playtime[ti_track] = 1.0		
+			
+		if( af_current_playtime[ti_track] > 4.0 )
+			af_current_playtime[ti_track] = 4.0		
+	}
+	else
+	{
+		af_current_playtime[ti_track] = SND_SoundDurationGet(ti_sound) 
+	}
+
+	af_current_sndtime[ti_track] = af_current_playtime[ti_track]
+	af_current_playtime[ti_track] += f_Latency
+	
+	// -- Set last effect on string : to have a maximum of 2 lines displayed in same time
+	//---------------------------------------------------------------------------------------------------------------------
+	if (to_texte && (ai_current_strinstance[ti_track] != -1) )
+	{
+		ti_effect = @to_texte OBJ_TextEffectAdd( 1, STRINGAME_DLG0 + ti_track , 0, -1 )
+		@to_texte OBJ_TextEffectSeti( ti_effect, 1, 1)
+		if (af_current_playtime[ti_track] < 0.1) 
+		{
+			@to_texte OBJ_TextEffectSetf( ti_effect, 150, af_current_playtime[ti_track] )
+			@to_texte OBJ_TextEffectSetf( ti_effect, 151, Cte_DisplayDelay)
+		}
+		else
+		{
+			@to_texte OBJ_TextEffectSetf( ti_effect, 150, 0.1)
+			@to_texte OBJ_TextEffectSetf( ti_effect, 151, af_current_playtime[ti_track] - 0.1 + Cte_DisplayDelay)
+		}
+
+		ti_effect = @to_texte OBJ_TextEffectAdd( 21, STRINGAME_DLG0 + ti_track, 0, -1 )
+		@to_texte OBJ_TextEffectSeti( ti_effect, 2100, 2 )
+		@to_texte OBJ_TextEffectSetf( ti_effect, 2150, af_current_playtime[ti_track] )
+	}
+
+	// --- update the last speakers positions
+	//-------------------------------------------------------
+	
+	if(o_speaker[ti_track])
+	{
+		to_object = AI_MainActorGet(0)
+		if( (o_speaker[ti_track] == to_object) && mi_MapIsJaks )
+			to_object = @get_global o_camera 
+		else
+			to_object = @o_speaker[ti_track] ANI_CanalObjectGet(Anim_Canal_Tete)
+			
+		if( ! to_object ) to_object = o_speaker[ti_track]
+		
+		tv_pos = @to_object OBJ_PosGet()
+		if(ti_track == 0)
+			@get_speaker1 OBJ_PosSet(tv_pos)
+		else
+			@get_speaker2 OBJ_PosSet(tv_pos)
+		
+		
+		for(ti_idx = C_ID_Kong ; ti_idx <C_ID_Last_Compagnon; ti_idx++)
+		{
+			if( (@"univ" ai_HumainIsHere[ti_idx] == 0) || (@"univ" ao_AllHumains[ti_idx] != o_speaker[ti_track]) )
+				continue
+			
+			maf_HumanTxtLastTime[ti_idx] = TIME_Get() + af_current_sndtime[ti_track]
+			break			
+		}
+	}
+}
+
+
+
+
+
+

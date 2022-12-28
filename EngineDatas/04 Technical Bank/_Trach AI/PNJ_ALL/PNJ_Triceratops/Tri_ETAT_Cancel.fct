@@ -1,0 +1,41 @@
+#include "Tri_defines.var"
+
+// SORTIE ETAT ==========================================
+if( i_etat_sortie )
+{
+	i_etat_sortie = faux
+	return
+}
+
+// ENTREE ETAT =========================================
+if( i_etat_courant != ETAT_CANCEL )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_CANCEL
+	if( fct_etat_ancien )
+	{
+		i_etat_sortie = vrai
+		AI_Execute(fct_etat_ancien)
+	}
+	fct_etat_ancien = AI_TrackCurGet()
+	f_etat_duree = 0.0
+	Tri_ActionSet(i_action_marche)
+}
+else
+{
+	f_etat_duree += TIME_GetDt()
+}
+
+// ANALYSE =============================================
+AI_Execute("Tri_exec_Check_Pafs")
+if( o_paf_actor )
+	macro_change_etat("Tri_ETAT_Paf")
+
+// COMPORTEMENT =======================================
+if( f_etat_duree > 1.5 )
+{
+	macro_change_etat("Tri_ETAT_Idle")
+}
+
+OBJ_BankingGeneralSet(OBJ_SightGet(), MATH_VecBlendRotate(OBJ_BankingGet(), v_ground_normale, 2 * TIME_GetDt()))
+

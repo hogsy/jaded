@@ -1,0 +1,11 @@
+#define C_Plane_Speed					15		// m/s (* 3.6 = km/h)
+vector v
+message msg
+float f
+dt=TIME_GetDt()
+OBJ_PosSet(OBJ_PosGet()+(dt*C_Plane_Speed*OBJ_SightGet()))
+v=OBJ_BankingGet()
+OBJ_RotateLocalX(v.z*dt)
+OBJ_RotateLocalY(dt*3)
+TimerShoot-=dt
+if(TimerShoot<0) OBJ_Destroy()

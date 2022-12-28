@@ -1,0 +1,72 @@
+#include "RM_Levier_defines.var"
+
+if( ! o_levier )
+	DBG_Error("Vous devez spécifier o_levier")
+
+if(AI_PriorityGet() != 51)
+{
+	AI_PrioritySet(51)
+	DBG_Error("Mauvaise priorité pour le levier (51). Sauvegardez et relancez svp")
+}
+
+o_rope_manager = @get_global o_rope_manager
+if( ! o_rope_manager )
+	return
+
+if( i_flag_hotspot )
+	HotSpot_Add_Obj(OBJ_Me(), faux)
+
+// RESET
+if( ! i_position )
+{
+	v_levier_axe_init = @o_levier OBJ_SightGet()
+	v_levier_axe_open = @o_levier OBJ_BankingGet()
+	OBJ_CapaSet(none, CAPA_OPEN)
+}
+else
+{
+	v_levier_axe_init = @o_levier OBJ_SightGet()
+	v_levier_axe_open = - @o_levier OBJ_BankingGet()
+	OBJ_CapaSet(CAPA_OPEN, none)
+}
+f_levier_coef = 0.0
+OBJ_CapaSet(none, CAPA_Reussi + CAPA_RopeTendue + CAPA_RopeReady + CAPA_Rope)
+
+//if( MATH_VecDotProduct(OBJ_SightGet(), Cv_VerticalVector) > Cf_Cos45 )
+if( OBJ_SightGet().z > 0.5 )
+{
+	i_levier_vertical = vrai
+	COL_ColMapActivationSet(none,all)
+}
+else
+	COL_ColMapActivationSet(all,none)
+
+AI_CBAdd(OBJ_Me(), CallBack_SectoActOn, "Levier_callback_SectoActOn")
+AI_CBAdd(OBJ_Me(), CallBack_SectoActOff, "Levier_callback_SectoActOff")
+
+
+f_ouverture_limite = 0.5			// coef d'ouverture pour valider la réussite
+f_ouverture_speed = 10.0		// vitesse de fin d'ouverture une fois réussi
+f_levier_longueur = Cf_Levier_Longueur
+switch( i_type )
+{
+	case Ci_Levier_Type_Standard :
+	case Ci_Levier_Type_Double :
+		break
+	case Ci_Levier_Type_Porte_a_Clones_D :
+		v_levier_axe_open *= -1.0
+	case Ci_Levier_Type_Porte_a_Clones_G :
+		f_ouverture_limite = 0.35
+		f_ouverture_speed = 0.5
+		f_levier_longueur = 5.0
+		i_one_shot = vrai
+		f_coef_force_joueur = 0.5
+		if( ! o_deuxieme_levier )
+			DBG_Error("pas de 2è levier !!!!???")
+		break
+	case Ci_Levier_Type_Impossible :
+		f_ouverture_limite = 1.5		// au de là de 1.0 c impossible à réussir
+		break
+}
+
+AI_TrackCurChangeNow("Levier_wait")

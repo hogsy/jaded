@@ -1,0 +1,34 @@
+
+#include "IKPA_defines.var"
+
+message		tm_message
+int					ti_action_type
+
+//DBG_RenderCircle(OBJ_PosGet(), Cf_dist_activation, Cv_VerticalVector, color_jaune)
+
+//if( call_trigger(trig_condition_poser_ann) )
+if( 0 )
+{
+	// Trigger activé
+	MSG_SetNull(	tm_message)
+	tm_message.msg_id = msg_id_WP_Pose_ANN
+	tm_message.msg_sender = OBJ_Me()
+
+	// Definition de l'action a realiser ---------
+	switch( i_action_type )
+	{
+		case Ci_PoseAnn_CacheToi :
+		case Ci_PoseAnn_VaBoire :
+		case Ci_PoseAnn_VaAgir :
+			break
+		default:
+			DBG_Error("Type d'action inconnu pour le WP Pose ANN")
+			break
+	}
+	
+	tm_message.msg_int1 = i_action_type 			// Type d'action a realiser sur le point
+	tm_message.msg_gao1 = o_gao_dest 			// objet target
+
+	@o_KONG MSG_Send(tm_message)
+}
+

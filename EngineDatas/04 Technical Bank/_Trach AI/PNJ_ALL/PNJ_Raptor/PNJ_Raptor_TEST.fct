@@ -1,0 +1,158 @@
+#include "PNJ_Raptor_defines.var"
+
+int			ti_i
+int			ti_index
+
+float		tf_time
+float		tf_dot_product
+
+vector	tv_new_sight
+vector	tv_temp
+vector	tv_A
+vector	tv_B
+
+object	to_me
+
+messageid		tmid_invalid
+
+int 				ti_wp_to_reach_nb
+int					ti_stop_when_nb
+object 			tao_wp_to_reach[10]
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_TEST)
+{
+//	if (i_etat_courant == -1)
+//		DBG_Warning("PNJ_Raptor en mode TEST <= Appellez Matthieu")
+
+	i_etat_courant = ETAT_TEST
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = AI_TrackCurGet()
+
+//	PNJ_Raptor_ActionSet(Action_Fight_Mord)
+	PNJ_Raptor_ActionSet(Action_Normal_Attente)
+//	PNJ_Raptor_ActionSet(Action_Renifle_Attente)
+//	PNJ_Raptor_ActionSet(Action_Renifle_Marche)
+//	PNJ_Raptor_ActionSet(Action_Cri)
+//	PNJ_Raptor_ActionSet(Action_Mange_Au_Sol)
+//	PNJ_Raptor_ActionSet(Action_TRex_Coup_Mur_D)
+//	PNJ_Raptor_ActionSet(Action_Rex_Renifle_D)
+//	PNJ_Raptor_ActionSet(Action_Fight_Secoue)
+
+//	i_flag_test_look = faux
+//	PNJ_Raptor_ActionSet(Action_Attaque_Colonne)	
+
+	o_main_actor = AI_MainActorGet(C_ID_Joueur) 
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+//o_predateur = LNK_ServeurGet(Ci_LNK_GRAB_RAPTOR, mid_predateur_LNK, vrai, "PNJ_Raptor_exec_LNK_predateur", nofunc)
+//if (o_predateur)
+//	macro_change_etat("PNJ_Raptor_ETAT_Grabbed")
+
+//TEST_TEST(OBJ_PosGet(), OBJ_PosGet() + (OBJ_SightGet()  * 10.0))
+//GRID_LIB_IsReachableFrom(OBJ_PosGet(), OBJ_PosGet() + (OBJ_SightGet() * 10.0), 0b0, 0.0, vrai, i_grid_width)
+
+if (o_test_gao[0] && o_test_gao[1])
+{
+//	tf_time = MATH_LIB_Get_Intersection_Time(@o_test_gao[0] OBJ_PosGet(), @o_test_gao[0] OBJ_SightGet() * 10.0, 0.75, @o_test_gao[1] OBJ_PosGet(), @o_test_gao[1] OBJ_SightGet() * 5.0, 1.25)
+	i_way_occluder_status = WAY_LIB_Test_Occluder(@o_test_gao[0] OBJ_PosGet() + Cv_VerticalVector, @o_test_gao[0] OBJ_SightGet(), 0.5, @o_test_gao[1] OBJ_PosGet(), -1, v_way_destpos, o_occluder_jump, & @get_global ao_bronto_leg[0], & @get_global af_bronto_leg_size[0], @get_global i_bronto_leg_nb, C_Occl_Type_All)	
+}
+
+PNJ_Raptor_In_Front_Of_Me(o_main_actor)
+
+//if (o_test_gao1)
+//{
+//	if (MATH_LIB_ZoneInCone(OBJ_PosGet(), OBJ_SightGet(), Cf_Cos30, 3.8, @o_test_gao1 OBJ_PosGet(),  0.5, faux, tf_dot_product, 0, 0))
+//		MATH_LIB_ZoneInCone(OBJ_PosGet(), OBJ_SightGet(), Cf_Cos30, 3.8, @o_test_gao1 OBJ_PosGet(),  0.5, faux, tf_dot_product, 0x800000FF, 0x800000FF)
+//	else
+//		MATH_LIB_ZoneInCone(OBJ_PosGet(), OBJ_SightGet(), Cf_Cos30, 3.8, @o_test_gao1 OBJ_PosGet(),  0.5, faux, tf_dot_product, 0x8000FF00, 0x8000FF00)
+//}
+
+i_flag_look = faux
+
+if (IO_KeyJustPressed(VK_LCONTROL))
+	i_flag_test_look = MATH_Modulo(i_flag_test_look + 1, 2)
+
+if (MSG_GlobalIsValid(mid_best_interet))
+	EVENT_InteretPositionSet(mid_best_interet, @o_main_actor OBJ_PosGet())
+else
+	mid_best_interet = EVENT_AddEventInteret(OBJ_Me(), 1000.0, 100.0, @o_main_actor OBJ_PosGet(), o_main_actor)
+
+MSG_GlobalSetInvalid(tmid_invalid)
+i_perceived_best_actor_index = PNJ_Raptor_Add_Perceived_Actor(o_main_actor, none, tmid_invalid)
+if (i_perceived_best_actor_index != -1)
+	ai_perceived_seen[i_perceived_best_actor_index] = vrai
+
+if (i_flag_test_look)
+{
+	i_flag_look = vrai
+	i_flag_look_best_interet = vrai
+}
+
+AI_Execute("PNJ_Raptor_exec_check_paf")
+
+//if (IO_KeyJustPressed(VK_SPACE))
+//	i_flag_cri = vrai
+
+if (IO_KeyJustPressed(VK_SPACE))
+{
+//	i_flag_paf_fly = vrai
+//	i_flag_paf_fall = vrai
+	i_flag_paf_slide = vrai
+	v_paf_dir = OBJ_SightGet()
+//	v_paf_dir = OBJ_HorizonGet()
+}
+
+if (i_flag_paf_fly)
+	macro_change_etat("PNJ_Raptor_ETAT_PAF_FLY")
+if (i_flag_paf_fall)
+	macro_change_etat("PNJ_Raptor_ETAT_PAF_FALL")
+if (i_flag_paf_repousse || i_flag_paf_slide || !f_lifecur)
+	macro_change_etat("PNJ_Raptor_ETAT_PAF_SLIDE")
+
+//i_way_computation_mode = Ci_WAY_MODE_BALADE
+//AI_Execute("PNJ_Raptor_exec_way_find_dest_pos")
+//AI_Execute("PNJ_Raptor_exec_way_move")
+
+AI_Execute("PNJ_Raptor_exec_select_action")
+
+//PNJ_Raptor_OBBOX_Set(0.7)
+
+////i_flag_blesse = vrai
+//if (o_next_wp && ! o_current_wp)
+//	o_current_wp = o_next_wp
+//
+//if (IO_KeyPressed(VK_SPACE))
+//{
+//	PNJ_Raptor_Fill_Flee_Wp_Array(&tao_wp_to_reach[0], ti_wp_to_reach_nb)
+//	ti_stop_when_nb = 2
+//}
+//else
+//{
+//	ti_wp_to_reach_nb = -1
+//	ti_stop_when_nb = -1
+//}
+//
+//PNJ_Raptor_Dijkstra(o_current_wp, &tao_wp_to_reach[0], ti_wp_to_reach_nb, ti_stop_when_nb)
+//PNJ_Raptor_Dijkstra_Clean()

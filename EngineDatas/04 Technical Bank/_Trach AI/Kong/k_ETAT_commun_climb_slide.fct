@@ -1,0 +1,193 @@
+#include"k_define.var"
+
+float		tf_coef
+
+vector	tv_pos
+vector	tv_new_sight
+
+object	to_hand
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+
+	v_zdm_pos = Cv_Kong_zdm_pos
+	DYN_FrictionVectorSet(Cv_NullVector)
+
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_commun_climb_slide) 
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_commun_climb_slide
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+
+	fct_last_etat = AI_TrackCurGet()
+
+	// CAMERA -----------------------------------------------------------------
+	@get_global i_kong_camera_status = Ci_Kcamera_grab_grimpe
+	// CAMERA -----------------------------------------------------------------
+
+	DYN_GravitySet(Cv_Kong_Gravity)
+
+	v_zdm_pos = cvector(0.0, 3.4, 0.0)
+
+	if (!i_flag_auto_grab)
+	{
+		o_climb_0D_wp = nobody
+		o_climb_1D_current_wp = nobody
+	}
+
+	// Par defaut si aucun joy n'est précisé pendant le saut on cherche a se rattraper sur le mur ou on est accroché
+	if (! MATH_VecNullEpsilon(v_jump_init_joy_vector))
+	{
+		v_jump_last_joy_vector = v_jump_init_joy_vector
+		MATH_VecSetHorzNormalize( v_jump_last_joy_vector)
+	}
+	else
+		v_jump_last_joy_vector = -v_climb_normale
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ======================================================================
+AI_Execute("k_exec_joy")
+
+
+
+if (i_flag_auto_grab)
+{
+	ACT_ActionSet(Ci_Kanim_climb_slide)	
+
+	tv_pos = v_climb_position
+	tv_pos -= v_climb_hand_offset
+	
+	if (OBJ_PosGet().z < tv_pos.z)
+	{
+		i_climb_0D_force_remonting = faux
+		macro_change_etat("k_ETAT_climb_accroch_mur")
+	}
+}
+else
+{
+//	if (i_flag_grab)
+	if (1)
+	{
+		i_climb_ponderation_mode = Ci_PONDERATION_CLIMB_SLIDE
+		AI_Execute("k_exec_climb_find_best_pos")	
+		// STEPH
+		tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), v_jump_init_joy_vector, 10.0 * TIME_GetDt())
+		OBJ_BankingGeneralSet(tv_new_sight, Cv_VerticalVector)
+		// STEPH
+
+			
+		if (o_climb_0D_wp)
+		{
+			i_climb_0D_force_remonting = faux
+			macro_change_etat("k_ETAT_climb_accroch_mur")
+		}
+//		else if (o_climb_1D_current_wp)
+//			macro_change_etat("k_ETAT_commun_climb_1D ")
+//	
+	//	if (i_flag_climb_wall)
+	//		macro_change_etat("k_ETAT_commun_climb_2D")
+	}
+	
+	if (COL_CollideType(COL_C_Ground) && COL_NormalGet(COL_C_Ground).z > 0.0)
+	{
+	//	OBJ_PosSet(OBJ_PosGet() + (v_climb_normale * 4.0))
+		f_time_collide_ground = 0.0
+		macro_change_etat("k_ETAT_deplacement")
+	}
+}
+
+// COMPORTEMENT ================================================================
+
+// TEST DE WALLING
+Test_Walling
+
+if (i_flag_auto_grab)
+{
+	tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), - v_climb_normale, 6.0 * TIME_GetDt())
+	OBJ_BankingGeneralSet(tv_new_sight, Cv_VerticalVector)
+}
+else
+{
+	AI_Execute("k_exec_climb_ray")
+	if ( i_dernier_etat == ETAT_commun_walling)
+		v_climb_normale = v_walling_normal
+	
+	DYN_FrictionVectorSet(Cv_NullVector)
+	
+	to_hand	= ANI_CanalObjectGet(Anim_Canal_MainGauche)
+	v_climb_hand_offset = @to_hand OBJ_PosGet() - OBJ_PosGet()
+	
+	if (DYN_SpeedGetVector().z < 0.0)
+	{
+	
+		if (i_flag_grab)
+		{
+			if (i_flag_climb_wall)
+			{
+				DYN_FrictionVectorSet(cvector(4.0, 4.0, MATH_FloatMax(8.0 + (0.7 * DYN_SpeedGetVector().z), 0.0)))
+				ACT_ActionSet(Ci_Kanim_climb_slide)
+			}
+			else
+			{
+				ACT_ActionSet(Ci_Kanim_jump + (3 * 2))
+			}
+		
+			if (i_flag_just_jump)
+			{
+				i_flag_climb_last_chance = vrai
+				i_climb_ponderation_mode = Ci_PONDERATION_CLIMB_SLIDE
+				AI_Execute("k_exec_climb_find_best_pos")	
+				i_flag_climb_last_chance = faux
+
+			
+				if (o_climb_0D_wp)
+				{
+					i_climb_0D_force_remonting = faux
+					macro_change_etat("k_ETAT_climb_accroch_mur")
+				}
+//				else if (o_climb_1D_current_wp)
+//					macro_change_etat("k_ETAT_commun_climb_1D")
+				else
+					macro_change_etat("k_ETAT_commun_climb_impulsion")
+			}
+		}
+		else if ( i_dernier_etat == ETAT_commun_walling)
+		{
+			DYN_FrictionVectorSet(cvector(4.0, 4.0, MATH_FloatMax(8.0 + (0.7 * DYN_SpeedGetVector().z), 0.0)))
+			ACT_ActionSet(Ci_Kanim_climb_slide)
+			tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), -v_climb_normale, 6.0 * TIME_GetDt())
+			OBJ_BankingGeneralSet(tv_new_sight, Cv_VerticalVector)
+		}
+		else
+		{
+			ACT_ActionSet(Ci_Kanim_jump + (3 * 2))
+		}
+	}
+	
+	if (i_flag_climb_wall)
+	{
+		tv_pos = MATH_VecBlend(OBJ_PosGet(), v_climb_position, 8.0 * TIME_GetDt())
+		OBJ_PosSet(tv_pos)	
+	
+		tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), - v_climb_normale, 8.0 * TIME_GetDt())
+		OBJ_BankingGeneralSet(tv_new_sight, Cv_VerticalVector)
+	}
+}

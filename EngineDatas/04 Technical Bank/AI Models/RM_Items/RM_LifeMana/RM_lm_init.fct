@@ -1,0 +1,60 @@
+message	tm_msg
+vector		tv_pos
+
+// DYNAMIQUE
+DYN_On()
+DYN_FlagsSet(DYN_C_BasicForces + DYN_C_VectorFriction, none)
+DYN_GravitySet(Cv_NormalGravity)
+DYN_FrictionVectorSet(cvector(0.5, 0.5, 0.5))
+COL_CrossableSet(Gmat_RM_Crossable_Default, none)
+COL_UnCollidableAdd( get_rayman)
+COL_ColSetActivationSet( none, all)
+
+OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_Msg, none)
+
+tm_msg = MSG_GetById(msg_id_BonusLifeMana)
+if ( tm_msg.msg_id )
+{
+	tv_pos = OBJ_PosGet()
+//	tv_pos += tm_msg.msg_vec1 * MATH_RandFloat( 5.0, 8.0)
+//	DYN_Impulsion( tv_pos, MATH_RandFloat( 0.2, 2.0))
+	DYN_SpeedSetVector(tm_msg.msg_vec1)
+	i_bonus = 0
+	if ( tm_msg.msg_int1)
+		i_bonus = 1
+	if ( tm_msg.msg_int2)
+		i_bonus += 2
+}
+
+switch ( i_bonus )
+{
+	case 1 :	
+		f_bonus_life = 10.0
+		f_bonus_mana = 0.0
+		i_color_halo = 0x003392F4 //color_rouge
+		break
+	case 2 :
+		f_bonus_life = 0.0
+		f_bonus_mana = 10.0
+		i_color_halo = 0x009EFA60 //color_vert
+		break
+	case 3 :
+		f_bonus_life = 5.0
+		f_bonus_mana = 5.0
+		i_color_halo = color_jaune
+		break
+}
+
+// Init
+f_speed = MATH_RandFloat( 1.0, 3.0)
+f_blend_distance = 1.0
+f_blend_rotation = MATH_RandFloat( 5.0, 8.0)
+f_blend_rotation *= MATH_FloatSign( MATH_RandFloat( -3.0, 3.0))
+
+XMEN_SetSize( 0, 0, 0.2)
+
+v_RM_Z_offset = MATH_RandFloat(-0.75,0.1) * Cv_VerticalVector
+
+AI_CBAdd(OBJ_Me(), CallBack_After_Rec, "RM_lm_cb_AfterRec")
+
+AI_TrackCurChangeNow("RM_lm_wait")

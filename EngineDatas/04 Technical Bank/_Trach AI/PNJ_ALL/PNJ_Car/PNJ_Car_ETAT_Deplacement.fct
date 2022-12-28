@@ -1,0 +1,777 @@
+#include "PNJ_Car_defines.var"
+
+Include_UltraProcedure_Header
+
+#define Ci_I_M_The_Player			0
+
+int				ti_flag_ok
+int				ti_i
+int				ti_link_nb
+int				ti_occluder_status
+int				ti_car_index
+int				ti_snd_family
+int				ti_flag_can_shoot_kong
+int				ti_flag_ray_insensitive
+
+float			tf_delay_before_collision
+float			tf_delay_before_kong
+float			tf_dot_product
+float			tf_dist
+float			tf_lateral_speed
+float			tf_best_dot
+float			tf_norm
+float			tf_target_throttle
+float			tf_inv_dt
+float			tf_speed
+float			tf_angle
+float			tf_move_sign
+
+vector		tv_pos
+vector		tv_joy_dir
+vector		tv_dest_sight
+vector		tv_new_sight
+vector		tv_traction
+vector		tv_link_horizon
+vector		tv_speed
+vector		tv_wheel_horizon
+vector		tv_X		
+vector		tv_Y
+vector		tv_best_sight
+vector		tv_link_axis
+
+object		to_next_wp
+object		to_best_wp
+object		to_car
+object		to_ray_obj
+
+vector		tv_start_pos
+vector		tv_dest_pos
+vector		tv_ray_dir
+
+object	to_camera
+
+//OBJ_RotateGlobalZ(TIME_GetDt())
+//returntrack
+
+to_camera = @get_global o_camera
+
+// SORTIE ETAT =============================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+
+//	HotSpot_Del_Obj(OBJ_Me())
+
+	i_flag_start_shoot = faux
+
+	STATS_IncEnemyKilled_New(o_main_actor, C_EnemyType_Voiture, 0)
+
+	if (@"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager o_shooting_car == OBJ_Me())
+		@"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager o_shooting_car = nobody
+
+	return
+}
+
+// INITIALISATION ETAT ========================================================================
+if (f_on_screen_duration < -30.0 && PNJ_Car_Respawn(vrai))
+	i_etat_courant = -1
+
+if (i_etat_courant != ETAT_Deplacement)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Deplacement
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = fct_last_etat
+	
+	COL_ColSetActivationSet(C_bit_zde_corps, C_bit_zdm_pied | C_bit_zde_fight)
+	COL_ColMapActivationSet(none, all)
+
+	ODE_Enable(vrai)
+
+//	HotSpot_Add_Obj(OBJ_Me(), vrai)
+
+	i_flag_grab_allowed = vrai
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ===============================================================================
+o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, vrai, nofunc, nofunc)
+if (o_grabbed_actor_KK)
+	macro_change_etat("PNJ_Car_ETAT_Grabbed")
+
+if (PNJ_Car_ODE_Collision())
+	macro_change_etat("PNJ_Car_ETAT_Epave")
+
+AI_Execute("PNJ_Car_exec_check_paf")
+if (i_flag_paf)
+	macro_change_etat("PNJ_Car_ETAT_Epave")
+
+//if (! (@o_main_actor OBJ_FlagsControlGet() & OBJ_C_ControlFlag_ForceInactive) && f_on_screen_pourcent != -1.0 && OBJ_SqrDist(o_main_actor) > 64.0)
+if (! (@o_main_actor OBJ_FlagsControlGet() & OBJ_C_ControlFlag_ForceInactive) && OBJ_SqrDist(o_main_actor) > 64.0)
+{
+	tv_speed = ODE_Getv(0) 
+	tv_speed.z = 0.0
+	
+	tv_pos = OBJ_PosGet()
+	tv_pos += OBJ_BankingGet()
+//	DBG_RenderSphere(tv_pos, 3.0, 0x80000080)
+	tv_pos += tv_speed * (f_me_to_main_dist / 70.0)
+	
+	if (f_time_reverse_camera)
+		Proc_KongFight_TargetAdd(OBJ_Me(), tv_pos, 3.0, C_AIDE_AU_TIR_Prio_GrabAnn, 0)
+	else
+		Proc_KongFight_TargetAdd(OBJ_Me(), tv_pos, 3.0, C_AIDE_AU_TIR_Prio_Ennemi, 0)
+}
+
+// KONG DODGE ?
+if (@o_main_actor Proc_KK_Test_Mode(C_Mode_Dash))
+	f_keep_shooting_duration = 1.0
+else if (@o_main_actor Proc_KK_Test_Mode( C_Mode_Esquive))
+	f_keep_shooting_duration = 1.0
+
+
+// COMPORTEMENT =========================================================================
+to_car = nobody
+ti_car_index = PNJ_Car_Collision()
+if (ti_car_index != -1)
+{
+	to_car = @"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager ao_car[ti_car_index]
+	tf_delay_before_collision = @"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager af_car_col_time[i_my_index][ti_car_index] 
+	if (tf_delay_before_collision > 2.0)
+		ti_car_index = -1
+}
+	
+if (f_recul_duration)
+{
+	tv_joy_dir = OBJ_PosGet()
+	tv_joy_dir -= v_wall_collide_pos	
+	tv_joy_dir.z = 0.0
+	MATH_VecSetNormalize(tv_joy_dir)
+
+	tv_dest_sight = tv_joy_dir
+
+	DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, tv_joy_dir * 10.0, color_rouge)
+	
+	tf_target_throttle = f_speed_max
+
+//	if (MATH_VecDotProduct(v_wall_collide_pos - OBJ_PosGet(), OBJ_SightGet()) > 0.0)
+//	{
+//		tv_joy_dir = MATH_FloatSign(MATH_VecDotProduct(v_wall_normal, -OBJ_HorizonGet())) * OBJ_HorizonGet()
+//		tf_target_throttle = -f_speed_max
+//	}
+//	else
+//	{
+//		f_recul_duration = 0.0
+//		tv_joy_dir = OBJ_SightGet()
+//		tf_target_throttle = f_speed_max
+//	}
+}
+else
+{
+	tv_speed = ODE_Getv(0)
+	tv_speed.z = 0.0
+
+	if (@o_main_actor DYN_SpeedGet() > 1.0 && ! @o_main_actor Proc_KK_Test_Mode(600))
+	{
+		tf_delay_before_kong = MATH_VecDotProduct(v_me_to_main, tv_speed - @o_main_actor DYN_SpeedGetVector())	
+		if (tf_delay_before_kong > 0.0)
+			tf_delay_before_kong = f_me_to_main_dist / tf_delay_before_kong
+		else
+			tf_delay_before_kong = Cf_Infinit
+	}
+	else
+	{
+		tf_delay_before_kong = 1000.0
+	}
+
+	i_flag_panic = faux
+
+	if (f_me_to_main_dist < 15.0)
+	{
+		f_force_fuite_duration = 3.0
+	}
+	else if (i_flag_start_shoot)
+	{
+		if (tf_delay_before_kong < 1.0)
+			f_force_fuite_duration = 3.0
+	}
+	else if (tf_delay_before_kong < 2.0)
+	{
+		f_force_fuite_duration = 3.0
+	}
+
+	if (f_force_fuite_duration)
+	{
+		if (ti_car_index != -1 && ! tf_delay_before_collision && AI_HaveSameModel(to_car))
+			@"PNJ_Pacifique/PNJ_Car" to_car f_force_fuite_duration = f_force_fuite_duration
+	
+		i_flag_panic = vrai
+
+		tv_link_axis = @o_start_wp OBJ_PosGet() - @o_current_wp OBJ_PosGet()
+		tv_link_axis.z = 0.0
+		MATH_VecSetNormalize(tv_link_axis)
+
+//		if (f_on_screen_duration > 0.5 && MATH_VecDotProduct(OBJ_PosGet() - @o_current_wp OBJ_PosGet(), tv_link_axis) < MATH_VecDotProduct(@o_main_actor OBJ_PosGet() - @o_current_wp OBJ_PosGet(), tv_link_axis))
+		if (MATH_VecDotProduct(OBJ_PosGet() - @o_current_wp OBJ_PosGet(), tv_link_axis) < MATH_VecDotProduct(@o_main_actor OBJ_PosGet() - @o_current_wp OBJ_PosGet(), tv_link_axis))
+		{
+			to_next_wp = o_start_wp
+			o_start_wp = o_current_wp
+			o_current_wp = to_next_wp
+
+			if (o_start_wp == o_current_wp)
+				DBG_Error("Pas bien")
+		}
+
+		// INITIALISATION ETAT		
+		if (i_move_mode)
+		{
+			// On fuit !!!	
+			i_move_mode = 0
+			i_flag_start_shoot = faux
+		}
+	
+		if (f_time_reverse_camera && TIME_Elapsed(@"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager f_time_last_panic_speech, 10.0))
+		{
+			@"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager f_time_last_panic_speech = TIME_Get()
+			// Non de Dieu
+			SPEECH_RequestPost
+			(
+				OBJ_Me(),
+				OBJ_Me(), 
+				SPEECH_CteTxg_SpeNewYork, 
+				GeneNY_C_car_retreat_panic, 
+				1.0, 
+				SPEECH_Cte_PriorityDefault, 
+				5,
+				0,
+				0,
+				0
+			)
+		}
+		else if (!f_time_reverse_camera && TIME_Elapsed(@"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager f_time_last_panic_speech, 10.0))
+		{
+			@"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager f_time_last_panic_speech = TIME_Get()
+			// "RECULEZ"
+			SPEECH_RequestPost
+			(
+				OBJ_Me(),
+				OBJ_Me(), 
+				SPEECH_CteTxg_SpeNewYork, 
+				GeneNY_C_car_retreat, 
+				1.0, 
+				SPEECH_Cte_PriorityDefault, 
+				5,
+				0,
+				0,
+				0
+			)
+		}
+
+		if (COL_Pivot_BVCollide(o_start_wp))
+		{
+			to_best_wp = nobody	
+			tf_best_dot = -Cf_Infinit
+		
+			o_current_wp = o_start_wp
+
+//				tv_best_sight = OBJ_SightGet()
+//				tv_best_sight.z = 0.0
+//				MATH_VecSetNormalize(tv_best_sight)
+		
+			tv_best_sight = @o_start_wp OBJ_PosGet()
+			tv_best_sight -= @o_main_actor OBJ_PosGet()
+			DBG_RenderVector(@o_main_actor OBJ_PosGet() + Cv_VerticalVector, tv_best_sight, color_jaune)
+			tv_best_sight.z = 0.0
+			MATH_VecSetNormalize(tv_best_sight)
+
+			tf_move_sign = MATH_FloatSign(MATH_VecDotProduct(ODE_Getv(0), OBJ_SightGet()))
+
+			ti_link_nb = WAY_GetNumLinks(n_net, o_start_wp)
+			for (ti_i = 0; ti_i < ti_link_nb; ti_i++)
+			{
+				to_next_wp = WAY_NetNextWP(n_net, o_start_wp, 6, ti_i)	
+				
+				if (@to_next_wp OBJ_CapaTest(OBJ_Capa_0))
+					continue
+		
+				if (WAY_LinkCapaGet(n_net, o_start_wp, to_next_wp) & Ci_net_capa_link_invalid)
+					continue
+				
+				tf_dot_product = MATH_VecDotProduct(MATH_VecNormalize(@to_next_wp OBJ_PosGet() - @o_start_wp OBJ_PosGet()), tv_best_sight)
+				if (tf_dot_product < -Cf_Cos60)
+					tf_dot_product = -1.0
+				else
+					tf_dot_product = MATH_VecDotProduct(MATH_VecNormalize(@to_next_wp OBJ_PosGet() - OBJ_PosGet()), tf_move_sign * OBJ_SightGet())
+//					tf_dot_product = MATH_RandFloat(0.0, 1.0)
+	
+				if (tf_dot_product > tf_best_dot)
+				{
+					tf_best_dot = tf_dot_product
+					to_best_wp = to_next_wp
+				}
+			}
+			
+			if (to_best_wp)
+				o_start_wp = to_best_wp
+			else
+				o_start_wp = to_next_wp
+
+			if (o_start_wp == o_current_wp)
+				DBG_Error("Pas bien")
+		}
+
+		tv_dest_sight = @o_start_wp OBJ_PosGet()
+		tv_dest_sight -= OBJ_PosGet()
+		tv_dest_sight.z = 0.0
+	
+		DBG_RenderVector(OBJ_PosGet(), tv_dest_sight, color_rouge)
+		
+		tf_dist = MATH_VecNorm(tv_dest_sight)
+		if (tf_dist > 0.001)
+			tv_dest_sight /= tf_dist
+		else
+			tv_dest_sight = OBJ_SightGet()
+		tv_joy_dir = tv_dest_sight
+
+		tf_target_throttle = f_speed_max
+		
+		PNJ_Car_Fake_Shoot()
+	}
+//	else if ( (! i_flag_start_shoot && f_on_screen_pourcent == -1.0 ) || f_me_to_main_dist > 30.0 + @"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager f_car_dist_stop)
+	else if (! i_flag_start_shoot && f_me_to_main_dist > 30.0 + @"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager f_car_dist_stop)
+ 	{
+		tv_link_axis = @o_start_wp OBJ_PosGet() - @o_current_wp OBJ_PosGet()
+		tv_link_axis.z = 0.0
+		MATH_VecSetNormalize(tv_link_axis)
+
+		// INTIALISATION ETAT
+		if (i_move_mode != 1)
+		{
+			if (MATH_VecDotProduct(OBJ_PosGet() - @o_current_wp OBJ_PosGet(), tv_link_axis) > MATH_VecDotProduct(@o_main_actor OBJ_PosGet() - @o_current_wp OBJ_PosGet(), tv_link_axis))
+			{
+				to_next_wp = o_start_wp
+				o_start_wp = o_current_wp
+				o_current_wp = to_next_wp
+	
+				if (o_start_wp == o_current_wp)
+					DBG_Error("Pas bien")
+			}
+
+			i_flag_start_shoot = faux
+			i_move_mode = 1
+		}
+	
+ 		if (COL_Pivot_BVCollide(o_start_wp))
+		{
+			to_best_wp = nobody	
+			tf_best_dot = -1.0
+			
+			o_current_wp = o_start_wp
+
+			tv_best_sight = @o_main_actor OBJ_PosGet()
+			tv_best_sight -= @o_start_wp OBJ_PosGet()
+			tv_best_sight.z = 0.0
+			MATH_VecSetNormalize(tv_best_sight)
+		
+			ti_link_nb = WAY_GetNumLinks(n_net, o_start_wp)
+			for (ti_i = 0; ti_i < ti_link_nb; ti_i++)
+			{
+				to_next_wp = WAY_NetNextWP(n_net, o_start_wp, 6, ti_i)	
+				
+				if (@to_next_wp OBJ_CapaTest(OBJ_Capa_0))
+					continue
+
+				if (WAY_LinkCapaGet(n_net, o_start_wp, to_next_wp) & Ci_net_capa_link_invalid)
+					continue
+
+//				if (MATH_VecDotProduct(OBJ_PosGet() - @to_camera OBJ_PosGet(), @to_camera OBJ_SightGet()) < 0.0)
+//					tf_dot_product = MATH_VecDotProduct(MATH_VecNormalize(@to_next_wp OBJ_PosGet() - @o_start_wp OBJ_PosGet()), @to_camera OBJ_SightGet()) 
+//				else
+					tf_dot_product = MATH_VecDotProduct(MATH_VecNormalize(@to_next_wp OBJ_PosGet() - @o_start_wp OBJ_PosGet()), tv_best_sight) 
+
+//				// Pour que les voitures n'arrivent pas toutes par le même chemin
+//				if (f_on_screen_duration < 0.0 && tf_dot_product > 0.0)
+//					tf_dot_product = MATH_RandFloat(0.0, 1.0)
+				
+				if (tf_dot_product > tf_best_dot)
+				{
+					tf_best_dot = tf_dot_product
+					to_best_wp = to_next_wp
+				}
+			}
+			
+			o_start_wp = to_best_wp
+
+			if (o_start_wp == o_current_wp)
+				DBG_Error("Pas bien")
+		}
+
+		tv_dest_sight = @o_start_wp OBJ_PosGet()
+		tv_dest_sight -= OBJ_PosGet()
+		tv_dest_sight.z = 0.0
+
+		DBG_RenderVector(OBJ_PosGet(), tv_dest_sight, color_vert)
+		
+		tf_dist = MATH_VecNorm(tv_dest_sight)
+		tv_dest_sight /= tf_dist
+		tv_joy_dir = tv_dest_sight
+		
+		tf_target_throttle = f_speed_max
+	}
+	else
+	{
+		// INITIALISATION ETAT
+		if (i_move_mode != 2)
+		{
+			i_move_mode = 2
+		}
+
+		ti_snd_family = @to_camera Proc_Kam_FamilyGet()
+	
+		tv_pos = OBJ_PosGet()
+		tv_pos -= OBJ_HorizonGet()
+		tv_pos += OBJ_BankingGet() * 2.0
+
+//		if (@"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager o_shooting_car && @"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager o_shooting_car != OBJ_Me())
+//		{
+//			ti_flag_can_shoot_kong = faux
+//		}
+//		else
+		{
+			ti_flag_ray_insensitive = OBJ_FlagsControlGet() & OBJ_C_ControlFlag_RayInsensitive
+	
+			OBJ_FlagsControlSet(OBJ_C_ControlFlag_RayInsensitive, none)
+	
+//			COL_LIB_Can_See_Actor(object to_actor, vector tv_start_pos, vector tv_actor_pos, int ti_true, int ti_false, int ti_filter_type, int ti_crossable_type)
+			ti_flag_can_shoot_kong = COL_LIB_Can_See_Actor(o_main_actor, tv_pos, @o_main_actor OBJ_PosGet() + Cv_VerticalVector, all, OBJ_C_IdentityFlag_AI, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+	
+			if ( ! ti_flag_ray_insensitive )
+				OBJ_FlagsControlSet(none, OBJ_C_ControlFlag_RayInsensitive)
+		}
+
+		if ( i_flag_start_shoot && ! ti_flag_can_shoot_kong )
+			i_flag_start_shoot = faux
+		else if (ti_snd_family == 10 || ti_snd_family == 11)
+			i_flag_start_shoot = faux
+		else if (@"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager o_shooting_car && @"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager o_shooting_car != OBJ_Me())
+			i_flag_start_shoot = faux
+
+		if (ti_flag_can_shoot_kong)
+			@"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager f_car_dist_stop += 5.0
+
+		if ( ! i_flag_start_shoot &&
+			ti_flag_can_shoot_kong &&
+			@"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager f_delay_since_last_car_shot > 3.0 &&
+			((! @"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager o_shooting_car && @"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager f_delay_since_change_camera > 6.0) || @"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager o_shooting_car == OBJ_Me()) &&
+			ti_snd_family != 10 &&
+			ti_snd_family != 11)
+		{
+			i_flag_start_shoot = vrai
+			f_shoot_dist = -1.0
+			f_time_last_shoot = TIME_Get() + 1.0
+			v_shoot_target_pos = @o_main_actor OBJ_PosGet()
+		}
+
+		if (i_flag_start_shoot)
+		{
+			if ( ! f_time_reverse_camera )
+			{
+				// Mise en place de la caméra
+				// "THERE"
+				SPEECH_RequestPost
+				(
+					OBJ_Me(),
+					OBJ_Me(), 
+					SPEECH_CteTxg_SpeNewYork, 
+					GeneNY_C_car_see_kong,
+					1.0, 
+					SPEECH_Cte_PriorityDefault, 
+					5,
+					0,
+					0,
+					0
+				)
+			}	
+		
+			f_time_reverse_camera	= 10.0
+			PNJ_Car_Shoot()
+		}
+//		else if (@"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager o_shooting_car == OBJ_Me())
+//		{
+//			@"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager o_shooting_car = nobody
+//		}
+
+		f_follow_this_car_duration = 0.0
+
+		tv_dest_sight = @o_current_wp OBJ_PosGet()
+		tv_dest_sight -= OBJ_PosGet()
+		tv_dest_sight.z = 0.0
+		
+		tf_dist = MATH_VecNorm(tv_dest_sight)
+		if (MATH_FloatNullToler(tf_dist, 0.001))
+			tv_dest_sight = OBJ_SightGet()
+		else
+			tv_dest_sight /= tf_dist
+
+		tv_joy_dir = tv_dest_sight
+		
+		if (ti_car_index != -1 && tf_delay_before_collision < 1.0)	
+			tf_target_throttle = 0.0
+		else if (MATH_VecDotProduct(OBJ_SightGet(), v_me_to_main) > 0.0)
+			tf_target_throttle = 0.0
+		else
+			tf_target_throttle = 0.01
+	}
+}
+
+if (i_flag_start_shoot)
+{
+	@"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager o_shooting_car = OBJ_Me()
+	@"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager f_delay_since_last_car_shot = 0.0
+}
+
+if (@"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager o_shooting_car == OBJ_Me())
+	f_time_reverse_camera	= 10.0	
+
+if (Ci_I_M_The_Player && ! OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Generated))
+{
+	if (IO_ButtonPressed(JoyPSX_Button_croix))
+		f_throttle = f_speed_max
+	else if (IO_ButtonPressed(JoyPSX_Button_rond))
+		f_throttle = -f_speed_max
+	else
+		f_throttle = 0.0
+		
+	i_flag_panic = vrai
+	tf_target_throttle = f_throttle
+
+	if (glob_joynorm_get)
+		tv_joy_dir = MATH_VecRotate(OBJ_SightGet(), OBJ_BankingGet(), - IO_JoyGetMove().x * 0.5)
+	else
+		tv_joy_dir = OBJ_SightGet()
+		
+	tv_dest_sight = tv_joy_dir
+}
+else if (ti_car_index != -1 && tf_delay_before_collision < 1.0 && (tf_delay_before_collision || ! f_recul_duration) )
+{
+	DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, @to_car OBJ_PosGet() - OBJ_PosGet(), color_rouge)
+	
+	if (i_flag_panic || f_recul_duration)
+	{
+		tv_joy_dir = PNJ_Car_Dodge_This_Car(ti_car_index)
+
+		tv_joy_dir -= OBJ_PosGet()
+		tv_joy_dir.z = 0.0
+		tf_dist = MATH_VecNorm(tv_joy_dir)
+		tv_joy_dir /= tf_dist
+	}
+	else
+	{
+		tf_norm = MATH_VecNorm(@to_car ODE_Getv(0))
+
+		if (@to_car OBJ_CapaGet() & (Capa_Epave | Capa_Dont_Move) )
+			tf_dot_product = -1.0
+		else if (tf_norm > 2.0)
+			tf_dot_product = MATH_VecDotProduct(@to_car ODE_Getv(0) / tf_norm, OBJ_SightGet())
+		else
+			tf_dot_product = MATH_VecDotProduct(@to_car OBJ_SightGet(), OBJ_SightGet())
+	
+		if (tf_dot_product > Cf_Cos30) // && MATH_VecDotProduct(@to_car OBJ_PosGet() - OBJ_PosGet(), OBJ_SightGet()) > 2.0)
+		{
+			i_followed_car_index = ti_car_index
+			f_follow_this_car_duration = 0.5
+			
+			if ( ! tf_delay_before_collision )
+			{
+				tf_target_throttle = 0.0
+			}
+			else
+			{
+				tf_target_throttle = MATH_VecDotProduct(@to_car ODE_Getv(0), OBJ_SightGet())
+				tf_target_throttle -= MATH_FloatSign(tf_target_throttle) * 5.0
+			}
+		}
+		else if (PNJ_Car_Come_From_Left(to_car))	
+		{
+			if (WAY_LIB_Collide_Sphere(OBJ_PosGet(), tv_dest_sight, tf_dist, Cf_car_extrusion, @to_car OBJ_PosGet(), @"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager af_car_col_size[i_my_index][ti_car_index], tv_pos))
+			{
+				tv_joy_dir = WAY_LIB_Get_Sphere_Pos(OBJ_PosGet(), @o_start_wp OBJ_PosGet(), OBJ_SightGet(), Cf_car_extrusion, @to_car OBJ_PosGet(), @"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager af_car_col_size[i_my_index][ti_car_index], -OBJ_HorizonGet(), OBJ_SightGet(), faux)
+				DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, tv_joy_dir - OBJ_PosGet(), color_blanc)
+				DBG_RenderCircle(@to_car OBJ_PosGet() + Cv_VerticalVector, @"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager af_car_col_size[i_my_index][ti_car_index] + Cf_car_extrusion, Cv_VerticalVector, color_blanc)
+		
+				tv_joy_dir -= OBJ_PosGet()
+				tv_joy_dir.z = 0.0
+				tf_dist = MATH_VecNorm(tv_joy_dir)
+				tv_joy_dir /= tf_dist
+			}
+
+			tf_target_throttle = f_speed_max
+		}
+		else if (PNJ_Car_Come_From_Right(to_car) && @"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager af_car_col_time[i_my_index][ti_car_index])	
+		{
+			tf_target_throttle = 0.0
+		}
+		else
+		{
+			tf_target_throttle = 1.0
+	
+			tv_joy_dir = PNJ_Car_Dodge_This_Car(ti_car_index)
+	
+			tv_joy_dir -= OBJ_PosGet()
+			tv_joy_dir.z = 0.0
+			tf_dist = MATH_VecNorm(tv_joy_dir)
+			tv_joy_dir /= tf_dist
+		}
+	}
+}
+else if (f_follow_this_car_duration)
+{
+	to_car = @"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager ao_car[i_followed_car_index]	
+
+	DBG_RenderVector(OBJ_PosGet(), @to_car OBJ_PosGet() - OBJ_PosGet(), color_bleu)
+
+	tf_norm = MATH_VecDotProduct(@to_car ODE_Getv(0), OBJ_SightGet())
+	tf_target_throttle = MATH_FloatMax(tf_norm - 5.0, 0.0)
+}
+
+// EN AVANT OU EN ARRIERE ?
+if (f_recul_duration)
+	tf_dot_product = MATH_VecDotProduct(OBJ_SightGet(), tv_joy_dir)
+//else if (f_me_to_main_dist > 50.0)
+//	tf_dot_product = 1.0
+//else if (f_recul_duration)
+//	tf_dot_product = 1.0
+else if (MATH_VecDotProduct(ODE_Getv(0), OBJ_SightGet()) > 4.0)
+{
+	// On avance trop rapidement pour passer la marche arrière	
+
+	tf_dot_product = MATH_VecDotProduct(OBJ_SightGet(), tv_dest_sight)	
+	if (tf_dot_product < 0.0)
+		tf_target_throttle = MATH_FloatBlend(tf_target_throttle, MATH_FloatMin(6.0, tf_target_throttle), - tf_dot_product)
+
+	tf_dot_product = 1.0
+}
+else
+	tf_dot_product = MATH_VecDotProduct(OBJ_SightGet(), tv_dest_sight)
+	
+if (tf_dot_product < 0.0)
+{
+	DBG_RenderVector(OBJ_PosGet(), tv_dest_sight * 10.0, color_cyan)
+
+	if ( ! f_recul_duration && f_me_to_main_dist > 25.0)
+	{
+		tf_target_throttle *= -0.2
+
+		tv_joy_dir = MATH_FloatSign(MATH_VecDotProduct(tv_dest_sight, -OBJ_HorizonGet())) * OBJ_HorizonGet()
+	}
+	else
+	{
+		if (ti_car_index != -1)
+			tf_target_throttle *= -0.5
+		else
+			tf_target_throttle *= -1.0
+	
+		if ( (i_flag_panic || f_force_fuite_duration) &&  TIME_Elapsed(f_time_snd_horn, 1.0) && f_camera_sqr_dist < Cf_SND_Sqr_Dist_On)
+		{
+			f_time_snd_horn = TIME_Get()
+			SND_RequestPlay(Ci_SND_horn)
+		}
+	
+		tf_dot_product = MATH_VecDotProduct(tv_joy_dir, OBJ_HorizonGet())
+		tv_joy_dir = MATH_VecBlendRotate(OBJ_SightGet(), MATH_FloatSign(tf_dot_product) * OBJ_HorizonGet(), MATH_AbsFloat(tf_dot_product))
+	}
+}
+else if ( ! i_flag_panic )
+{
+	tf_dot_product	= MATH_VecDotProduct(tv_dest_sight, OBJ_SightGet())
+	tf_target_throttle *= 0.4 + MATH_FloatBlend(0.0, 0.6, tf_dot_product)
+}
+
+// POUR RETOMBER SUR SES ROUES
+if (@ao_wheel[0] OBJ_PosGet().z > f_ground_Z + 0.75)
+{
+	tv_joy_dir = OBJ_HorizonGet()
+//	DBG_RenderVector(OBJ_PosGet(), tv_joy_dir * 10.0, color_cyan)
+}
+else if (@ao_wheel[1] OBJ_PosGet().z > f_ground_Z + 0.75)
+{
+	tv_joy_dir = -OBJ_HorizonGet()
+//	DBG_RenderVector(OBJ_PosGet(), tv_joy_dir * 10.0, color_cyan)
+}
+
+// Freinage d'urgence : on va rentrer dans un mur...
+if ( (GRID_CapaGet(OBJ_PosGet() + (ODE_Getv(0) * 0.5)) & tag_grid_terrain) == Ci_sol_mur)
+	tf_target_throttle = 0.0
+
+if (f_camera_sqr_dist < Cf_SND_Sqr_Dist_skid && TIME_Elapsed(f_time_snd_skid, 1.0))
+{
+	if (f_target_throttle > 1.0 && ! tf_target_throttle && f_ode_speed > 2.0)
+	{
+		f_time_snd_skid = TIME_Get()
+		SND_RequestPlay(Ci_SND_skid)
+	}
+	else if (MATH_VecSquareNorm(ODE_Getv(3)) > 6.0)
+	{
+		DBG_RenderVector(OBJ_PosGet(), Cv_VerticalVector * 100.0, color_rose)
+		f_time_snd_skid = TIME_Get()
+		SND_RequestPlay(Ci_SND_skid)
+	}
+}
+
+f_target_throttle = tf_target_throttle
+
+if ( ! tf_target_throttle )
+	f_throttle = 0.0
+else if (f_throttle > tf_target_throttle)
+	f_throttle -= MATH_FloatMin(f_throttle - tf_target_throttle, 400.0 * TIME_GetDt())
+else
+	f_throttle += MATH_FloatMin(tf_target_throttle - f_throttle, 400.0 * TIME_GetDt())
+
+f_follow_this_car_duration -= MATH_FloatMin(f_follow_this_car_duration, TIME_GetDt())
+
+tf_angle = MATH_VecAngle(OBJ_SightGet(), tv_joy_dir, OBJ_BankingGet())
+//tf_angle = MATH_FloatLimit(tf_angle, -Cf_PiBy3, Cf_PiBy3)
+tf_angle = MATH_FloatLimit(tf_angle, -Cf_PiBy4, Cf_PiBy4) 
+f_wheel_angle += MATH_FloatSign(tf_angle - f_wheel_angle) * MATH_FloatMin(MATH_AbsFloat(tf_angle - f_wheel_angle), Cf_Pi * TIME_GetDt())
+tv_new_sight = MATH_VecRotate(OBJ_SightGet(), OBJ_BankingGet(), f_wheel_angle)
+
+v_wheel_sight = tv_new_sight
+v_wheel_axis = MATH_VecCrossProduct(OBJ_BankingGet(), tv_new_sight)
+
+PNJ_Car_Compute_Forces()
+
+if (Ci_I_M_The_Player && ! OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Generated) )
+{
+	ti_i = STR_CreateText("\Wanted Speed : ", cvector(0.1, 0.1, 0.0), 0.0)
+	STR_AppendFloat(ti_i, f_throttle * 3.6, 2)
+	ti_i = STR_CreateText("\Speed : ", cvector(0.1, 0.15, 0.0), 0.0)
+	STR_AppendFloat(ti_i, tf_speed* 3.6, 2)
+
+	@get_Kamera OBJ_FlagInactiveSet(vrai)
+	@o_main_actor OBJ_FlagInactiveSet(vrai)	
+	
+	tv_pos = OBJ_PosGet()
+	tv_pos -= OBJ_SightGet() * 8.0
+	tv_pos.z += 4.0
+
+	tv_pos = MATH_VecBlendRotate(@get_Kamera OBJ_PosGet() - OBJ_PosGet(), tv_pos - OBJ_PosGet(), 4.0 * TIME_GetDt())
+	tv_pos += OBJ_PosGet()
+	@get_Kamera OBJ_PosSet(tv_pos)
+
+	tv_pos = MATH_VecBlendRotate(OBJ_SightGet(), -Cv_VerticalVector, 0.1)
+	tv_pos = MATH_VecBlendRotate(@get_Kamera OBJ_SightGet(), tv_pos, 4.0 * TIME_GetDt())
+	@get_Kamera OBJ_SightGeneralSet(tv_pos, Cv_VerticalVector)
+	@get_Kamera VIEW_AssignObject(0)
+}

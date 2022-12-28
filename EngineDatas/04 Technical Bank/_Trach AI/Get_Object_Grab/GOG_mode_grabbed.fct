@@ -1,0 +1,108 @@
+//
+#include "GOG_define.var"
+//
+//object	to_module 
+//object	to_serveur
+//object	to_cible
+//object	to_Kamera 
+//
+//float		tf_dist 
+//
+//vector	tv_tir_pos
+//
+//// INIT ============================================================================
+//if (i_etat_courant != Ci_GOG_ETAT_Grabbed) 
+//{
+//	i_etat_courant = Ci_GOG_ETAT_Grabbed
+//}
+//	
+//
+//// ANALYSE =======================================================================
+//
+//to_serveur = LNK_ServeurGet(i_grabbed_filtre, mid_grabbed_LIAISON_ID, vrai, nofunc, nofunc)
+//if (to_serveur == nobody)
+//{
+//	// Gestion du NO COL -------------------------------------------------
+//	if (o_no_col_actor)
+//	{
+//		// Fin du NoCol 
+//		COL_UnCollidableDel(o_no_col_actor)
+//		o_no_col_actor = nobody
+//	}
+//	// Pas de collide tant que le perso est trop proche de moi
+//	o_no_col_actor = o_grabbed_actor
+//	COL_UnCollidableAdd(o_no_col_actor)
+//	// Gestion du NO COL -------------------------------------------------
+//
+//	DYN_FrictionVectorSet( cvector(10.0,10.0,0.0) )
+//	COL_ColSetActivationSet(all, none)
+//
+//	if (!o_no_col_actor)
+//	{
+//		o_no_col_actor = o_grabbed_actor
+//		COL_UnCollidableAdd(o_no_col_actor)
+//		COL_ColSetActivationSet(all, none)
+//	}
+//
+//	to_Kamera = @get_global o_camera
+//	OBJ_SightSet( @get_Kamera_Path to_Kamera v_pos_cible - OBJ_PosGet())
+//	v_axis = OBJ_SightGet()
+//
+//	DYN_GravitySet(Cv_NormalGravity)	
+//
+//	tv_tir_pos = Cv_NullVector
+//	if (@get_Kamera_Path to_Kamera i_mode_cur == 0 && @get_Kamera_Path to_Kamera o_object_cur)
+//	{
+//		// Tir sur la cible lock par la cam
+//		to_cible = @get_Kamera_Path to_Kamera o_object_cur
+//		tv_tir_pos = @to_cible OBJ_PosGet()
+//	}
+//	else if ( @get_Kamera_Path to_Kamera i_mode_cur == 1)
+//	{
+//		// Tir au centre du mode look
+//		to_cible = @o_no_col_actor COL_RayObject_Dist( @get_camera OBJ_PosGet(), @get_camera OBJ_SightGet(), 50.0, all, none, 0, COL_C_Ray_on_visuel)
+//		if ( to_cible)
+//			tv_tir_pos = COL_RayObject_PosGet()
+//		else
+//			tv_tir_pos = @to_Kamera OBJ_PosGet() + ( @to_Kamera OBJ_SightGet() *  50.0)
+//	}
+//
+//
+//	if (MATH_VecNullEpsilon( tv_tir_pos))
+//	{
+//		// Lacher a terre
+//		OBJ_CapaSet(none,all)
+//		if ( i_grabbed_filtre == Ci_LNK_GRAB_OBJECT)
+//			DYN_Impulsion( @o_grabbed_actor OBJ_PosGet() + (@o_grabbed_actor OBJ_SightGet()*2.0), 0.3)
+//		else if ( i_grabbed_filtre == Ci_LNK_KKGRAB_OBJECT)
+//			DYN_Impulsion( @o_grabbed_actor OBJ_PosGet() + (@o_grabbed_actor OBJ_SightGet()* 30.0), 3.0)
+//		
+//	}
+//	else
+//	{
+//		// Lancer
+//		tf_dist = MATH_VecDistance(tv_tir_pos, OBJ_PosGet())
+//		DYN_Impulsion( tv_tir_pos, 0.1 + ( tf_dist / 20) )
+//	}
+//
+//	AI_TrackCurChangeNow("GOG_mode_air")
+//}
+//else
+//{
+//	if ( i_grabbed_filtre == Ci_LNK_GRAB_OBJECT)
+//	{
+//		// Si C Jack sepositionner dans la main
+//		to_module = @o_grabbed_actor ANI_CanalObjectGet(Anim_Canal_MainGauche)
+//		OBJ_PosSet( @to_module OBJ_PosGet() )
+//		OBJ_BankingGeneralSet(@to_module OBJ_SightGet(),@to_module OBJ_BankingGet())
+//	}
+//	else
+//	{
+//		// Si C Kong le laisser positionner
+//		o_no_col_actor = o_grabbed_actor
+//		COL_UnCollidableAdd(o_no_col_actor)
+//	}
+//		
+//	// ******************
+//	// PENSER A UNIFORMISER LE TOUT
+//}

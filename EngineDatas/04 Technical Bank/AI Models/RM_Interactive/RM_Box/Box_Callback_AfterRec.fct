@@ -1,0 +1,22 @@
+// RAZ TRACTIONS
+v_Traction_Exterieure = Cv_NullVector	
+v_Traction_Falling = Cv_NullVector
+v_Traction_Pente = Cv_NullVector
+
+DBG_RenderVector(OBJ_PosGet(), Proc_Box_HotSpot_PosGet() - OBJ_PosGet(), color_bleu)
+
+v_last_sight = OBJ_SightGet()
+v_last_banking = OBJ_BankingGet()
+
+o_father = OBJ_HierarchyGet()
+if (o_father)
+{
+	v_Ground_Normale_Cur = @o_father MATH_VecGlobalToLocal(v_Ground_Normale_Cur)
+	v_last_sight = @o_father MATH_VecGlobalToLocal(v_last_sight)
+	v_last_banking = @o_father MATH_VecGlobalToLocal(v_last_banking)
+}
+
+RM_Bascule_Refresh(Size, v_last_speed, DYN_SpeedGetVector(), o_bascule)
+
+COL_ColSetActivationSet(C_bit_zdm_pied, none)		// active
+

@@ -1,0 +1,82 @@
+#include "PNJ_Scorpion_defines.var"
+
+float		tf_rayon
+
+// SORTIE ETAT ====================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+
+	f_delay_before_next_dodge = MATH_RandFloat(0.0, 10.0)
+
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_IDLE)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_IDLE
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = AI_TrackCurGet()
+
+	f_time_start_etat = 0.0
+
+	f_idle_rot_angle = MATH_RandFloat(0.0, Cf_Pi)
+
+	ACT_ActionSet(Action_Attente)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ========================================================================
+AI_Execute("PNJ_Scorpion_exec_check_vision")
+
+AI_Execute("PNJ_Scorpion_exec_check_paf")
+if (i_flag_paf_faible)
+	macro_change_etat("PNJ_Scorpion_ETAT_PAF")
+
+AI_Execute("PNJ_Scorpion_exec_check_best_interet")
+
+if (i_perceived_best_actor_index != -1 && ! (ai_perceived_status[i_perceived_best_actor_index] & Ci_PERCEIVED_ALREADY_GRABBED))
+{
+	if (ai_perceived_status[i_perceived_best_actor_index] & Ci_PERCEIVED_IS_DEAD)
+		macro_change_etat("PNJ_Scorpion_ETAT_DEVORE")	
+
+	macro_change_etat("PNJ_Scorpion_ETAT_FIGHT")
+}
+
+// COMPORTEMENT ==================================================================
+
+if (f_on_screen_pourcent > 0.0 || o_start_wp)
+{
+	f_idle_rot_angle += 0.2 * TIME_GetDt()
+	if (f_idle_rot_angle > Cf_2Pi)
+		f_idle_rot_angle -= Cf_2Pi
+
+	v_way_destpos = v_init_pos
+
+	if (rayon_balade)
+		v_way_destpos += MATH_VecRotate(cvector(1.0, 0.0, 0.0), Cv_VerticalVector, f_idle_rot_angle) * (rayon_balade * (1.0 + (MATH_Sin(f_idle_rot_angle) * 0.5)))
+
+	
+	DBG_RenderVector(v_way_destpos, Cv_VerticalVector * 10.0, color_cyan)
+
+	AI_Execute("PNJ_Scorpion_exec_way_move")
+}
+else
+{
+	f_joy_norm = 0.0
+	v_joy_dir = OBJ_SightGet()
+}
+
+AI_Execute("PNJ_Scorpion_exec_select_action")

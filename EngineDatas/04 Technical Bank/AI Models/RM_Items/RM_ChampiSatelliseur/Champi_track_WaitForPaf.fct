@@ -1,0 +1,50 @@
+
+procedure_ultra int Proc_RM_IsJumping();
+
+messageid		tmid_ID
+message		tmsg_filter
+
+int					ti_rank
+int					ti_type
+
+vector			tv_vec
+
+tv_vec = @o_tgt OBJ_PosGet() - OBJ_PosGet()
+if (tv_vec.z > 1.0)
+{
+	MSG_SetNull(tmsg_filter)
+	tmsg_filter.msg_gao1 = OBJ_Me()
+	tmsg_filter.msg_sender = o_tgt
+	ti_rank = -1
+	for (	tmid_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tmsg_filter);
+			MSG_GlobalIsValid(tmid_ID);
+			tmid_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tmsg_filter) )
+	{
+		ti_type = EVENT_PafTypeGet(tmid_ID)
+		if (ti_type & C_PAF_RM_DiveAttack)
+		{
+			i_want_to_jump = 1
+			i_want_to_bounce = 0
+			@o_tgt Proc_RM_Jump(jump_strength * 5.0 * OBJ_BankingGet())
+		}
+	}
+	
+	if (COL_BV_PivotCollide(o_tgt) && !@o_tgt Proc_RM_Attack_DIVE())
+	{
+		if (!i_want_to_jump && COL_ObjectCollide(o_tgt))
+		{
+			if (i_want_to_bounce)
+			{
+				@o_tgt Proc_RM_Jump(bounce_strength * 5.0 * OBJ_BankingGet())
+				i_want_to_bounce = 0
+			}
+			else
+				i_want_to_bounce = 1
+		}
+	}
+	else 
+	{
+		i_want_to_bounce = 0
+		i_want_to_jump = 0
+	}
+}

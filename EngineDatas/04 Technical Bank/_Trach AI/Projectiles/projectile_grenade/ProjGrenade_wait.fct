@@ -1,0 +1,42 @@
+#include "ProjGrenade__defs.var" 
+
+message 	msg
+object		o
+
+if ( OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Msg) )
+{
+	msg = MSG_Get()
+	if ( msg.msg_id == msg_id_grenadelaunch )
+	{
+		mo_Sender = msg.msg_sender
+		mv_LaunchSpeed = msg.msg_vec1
+		mv_LaunchGravity = msg.msg_vec2
+		mv_LaunchFriction = msg.msg_vec3
+		mi_Type = GType_Fumigene
+
+//		if (IO_ButtonPressed( 0 ))
+//			mi_Type = GType_Soporifique
+//		else
+//			mi_Type = GType_Fumigene
+		
+		AI_TrackCurChange( "ProjGrenade_initlaunch" )
+		return
+	}
+}
+
+if ( OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_DesignStruct) && OBJ_CapaTest( OBJ_Capa_0 ) )
+{
+	o = OBJ_Me()
+	mo_Sender = o.des_object1
+	if ( !o.des_float1) o.des_float1 = 15
+	mv_LaunchSpeed = o.des_float1 * OBJ_HorizonGet()
+	AI_TrackCurChange( "ProjGrenade_initlaunch" )
+}
+	
+// lancement clavier pour test
+//if ( IO_KeyJustPressed( VK_SHIFT ) )
+//{
+//	AI_TrackCurChange( "ProjGrenade_initlaunch" )
+//	return
+//}
+

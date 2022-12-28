@@ -1,0 +1,40 @@
+int			i_loop
+vector	vAP, vBP, vAB
+float		dot1, dot2, dist, bestdist
+vector	vIntersect
+
+bestdist = Cf_Infinit
+compute_i_res = 0
+compute_i_nb = 0
+for (i_loop = 0; i_loop  < home_net_nb; i_loop++)
+{
+	vAP = compute_v_A - home_link_start[ i_loop ]
+	vBP = compute_v_B - home_link_start[ i_loop ]
+
+	dot1 = MATH_VecDotProduct( vAP, home_link_norm[ i_loop ] )
+	dot2 = MATH_VecDotProduct( vBP, home_link_norm[ i_loop ] )
+	
+	if ( (dot1 < 0 && dot2 >= 0) || (dot1 >= 0 && dot2 < 0) )
+	{
+		vAB = compute_v_B - compute_v_A
+		
+		dot1 = (home_link_vector[ i_loop ].y * vAB.x) - (home_link_vector[ i_loop ].x * vAB.y)
+		if (dot1 != 0)
+		{
+			dot1 = (vAB.x * vAP.y) - (vAB.y * vAP.x) / dot1
+			if (( dot1>= 0) && (dot1 <= 1) )
+			{
+				vIntersect = home_link_start[ i_loop ] + (dot1 * home_link_vector[ i_loop ])
+				vIntersect -= compute_v_A
+				dist = MATH_VecDotProduct(vIntersect,vIntersect)
+				if (dist < bestdist)
+				{
+					compute_f_distcarre = dist
+					compute_i_res = 1
+					compute_v_pos = vIntersect
+				}
+				compute_i_nb++
+			}
+		}
+	}
+}

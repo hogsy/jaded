@@ -1,0 +1,127 @@
+#include "KNG_Defines.var"
+
+int 		ti_i
+
+//i_dbg = 1
+
+OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_HasInitialPos,none)
+
+if( AI_GetCurSystem() != 10 )
+{
+	// SI PAS EN EDITEUR
+	i_dbg = faux
+}
+
+if ( ! i_all_natives_generated)
+{
+	if (ao_fixed_spawn_wp[0] == nobody)
+	{
+		OBJ_PosSet(OBJ_PosInitGet())
+	}
+	else
+	{
+		if (ao_fixed_spawn_wp[i_cur_fixed_spawn_wp])
+		{
+			OBJ_PosSet(@ao_fixed_spawn_wp[i_cur_fixed_spawn_wp] OBJ_PosGet())
+			o_cur_wp = ao_fixed_spawn_wp[i_cur_fixed_spawn_wp]
+			n_cur_net = @o_cur_wp WAY_NetOfObj()
+		}
+		
+		i_cur_fixed_spawn_wp++
+		
+		if (i_cur_fixed_spawn_wp == Ci_max_number_of_fixed_spawn_wp ||
+			ao_fixed_spawn_wp[i_cur_fixed_spawn_wp] == nobody)
+		{
+			i_cur_fixed_spawn_wp = 0
+		}
+	}
+}
+
+if ( mi_WaitForMoveEndToDWZ )
+{
+	mi_AllowDWZ = faux
+}
+
+if ( ! i_inited_once)
+{
+
+	KNG_InitPos() 
+	
+	i_inited_once = 1
+	// PUTAIN DE SECTO
+	i_frame_nb = 0
+	
+	meta( i_frame_nb < 2 )
+	{
+		i_frame_nb++
+	}
+}
+
+// Attente additionnelle pour des histoires de Raster
+if (f_time_AdditionalWait)
+{
+	TIME_Wait(f_time_AdditionalWait)
+}
+
+
+o_ann = @"univ" ao_AllHumains[ C_ID_Joueur ]
+o_kong = @"univ" ao_AllHumains[ C_ID_Kong ]
+
+if ( ! o_target_movement )
+	o_target_movement = o_kong
+
+if ( ! i_all_natives_generated)
+{
+	if (i_number_of_natives > Ci_max_number_of_natives)
+	{
+		DBG_Warning("Native Group : number_of_natives > max_number_of_natives")	
+		i_number_of_natives = Ci_max_number_of_natives
+	}
+	
+	// compute number of reference native
+	i_nb_native_ref = 0
+	for (ti_i = 0; ti_i < Ci_number_of_reference_natives; ti_i++)
+	{
+		if (ao_native_ref[ti_i]) 
+			i_nb_native_ref++
+		else 
+			break
+	}
+			
+	// create natives
+	//JIMI_NOTE: broke the native creation out into its own func since I will use it to replenish partially destroyed groups
+	if ( ao_native_ref[0] )
+	{
+		for ( ti_i = 0; ti_i < i_number_of_natives; ti_i++ )
+		{
+			KNativeGroup_SpawnNative(ti_i)
+		}
+	}
+}
+
+i_all_natives_generated = 1
+
+i_all_natives_ready = 1
+
+for (ti_i = 0; ti_i < i_number_of_natives; ti_i++)
+{
+	if (ao_native_list[ti_i])
+	{
+		if (@get_PNJ_KNative_path ao_native_list[ti_i]	 i_init_done == 0)
+			i_all_natives_ready = 0
+	}		
+}
+
+// RESPAWN DELAY ==================================
+f_respawn_delay -= MATH_FloatMin(f_respawn_delay, TIME_GetDt())
+if( ! f_respawn_delay )
+{
+	if (i_all_natives_generated && i_all_natives_ready)
+	{
+		if ( AI_TriggerIsValid(tr_activation_trigger))
+			AI_TrackCurChangeNow("KNG_ETAT_Inactive")
+		else
+			AI_TrackCurChangeNow("KNG_ETAT_Wait")
+	}
+}
+

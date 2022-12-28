@@ -1,0 +1,92 @@
+#include "KR_defines.var"
+
+int				ti_i
+int				ti_trame
+
+float			tf_interet
+float			tf_norm
+
+vector		tv_new_sight
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{	
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if( i_etat_courant != ETAT_mort )
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_mort
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	// removed for collision with natives on ledges after being thrown in the air
+//	DYN_SpeedSetVector(Cv_NullVector)
+	v_paf_add_speed = Cv_NullVector
+
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = AI_TrackCurGet()
+
+	
+	f_time_start_etat = 0.0
+	i_flag_look = faux
+	
+	if (i_SF_NePasSeRejouerSiMort)
+		Super_SpecialFlag_set(i_SF_AlreadyDead_SFID)
+
+	//MG: is it really set ?		
+	Super_SpecialFlag_get(i_SF_AlreadyDead_SFID, i_flag_look)			// Test SF
+	i_flag_look = faux
+	
+//	KR_DelInterestMsg(faux)
+	KR_INTERET_Delete()
+	OBJ_CapaSet(CAPA_Mort, none)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =======================================================================================================
+
+// GRAB KONG
+o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, vrai, nofunc, nofunc)
+if (o_grabbed_actor_KK)
+	macro_change_etat("KR_ETAT_grabbed")
+
+// PAF
+AI_Execute("KR_exec_check_paf")
+if( o_paf_actor )
+{
+	KR_Select_Paf_Etat(fct_track_change)
+	if( fct_track_change != nofunc )
+		macro_change_etat(fct_track_change)
+}
+
+// COMPORTEMENT =================================================================================================
+
+OBJ_BankingGeneralSet(OBJ_SightGet(), MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 5 * TIME_GetDt()))
+
+// time to desintegrate ?
+if (f_time_before_desintegration <= 0.0)
+	macro_change_etat("KR_ETAT_Desintegrate")
+
+if( ACT_ActionFinished( ))
+	ACT_ActionSet(Action_Mort)
+	
+//if (f_time_start_etat > 10.0)	//TODO: avoir un compteur mort (sinon paf remet ca a zero)
+//{
+//	object to_duplicated 
+//	to_duplicated = @get_SFX_decomposition OBJ_Duplicate(cvector(0,0,0))			// ALOC (C'est l'AI qui va gerer la decomposition)
+//	@to_duplicated Proc_Decomposition_Init(OBJ_Me(), 3.0, 0, 1, -1)				// INIT (Vas y decompose moi :))
+//	
+//}
+//

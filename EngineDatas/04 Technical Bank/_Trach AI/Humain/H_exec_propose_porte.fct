@@ -1,0 +1,29 @@
+#include "H_defines.var"
+
+messageid		tmid_LNK
+object			to_serveur
+float				tf_dist
+object			to_main
+object			to_for_who
+vector			tv_temp
+vector			tv_pos
+int					ti_danger
+
+tmid_LNK = pop
+
+to_serveur = MSG_GlobalGetGao(tmid_LNK, SERVEUR)
+tf_dist = OBJ_SqrDistHorz(to_serveur)
+tv_pos = LNK_InteractionPositionGet(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION])
+if(i_etat_courant != ETAT_IA_suivi && i_etat_courant != ETAT_IA_hide && i_etat_courant != ETAT_IA_help) return
+
+// Trop loin
+if(tf_dist > 40 * 40) return
+
+// Chemin possible ?
+if(!TIME_Elapsed(f_time_propose_porte, 2)) return
+f_time_propose_porte = TIME_Get()
+//ti_danger = HL_CheminDangereux(tv_pos)
+ti_danger = faux
+if(ti_danger == -1) return
+
+LNK_ClientPropose(tmid_LNK, tf_dist)	 

@@ -1,0 +1,46 @@
+int ti_trigger
+int	ti_res 
+
+// RAZ ALREADY PLAYED FLAGS ----------------------------------------------------
+if (mi_TriggerExecOff_repeat)
+{
+	mi_TriggerExecOff_Flag = faux
+	for ( ti_trigger = 0; ti_trigger < 10; ti_trigger++)
+		mai_AdditionalTriggerExecOff_Flag[ti_trigger] = faux
+}
+mi_TriggerExec_Flag = faux
+for ( ti_trigger = 0; ti_trigger < 10; ti_trigger++)
+	mai_AdditionalTriggerExec_Flag[ti_trigger] = faux
+// RAZ ALREADY PLAYED FLAGS ----------------------------------------------------
+
+// Play Trigger OFF
+if ( !mi_TriggerExecOff_Flag && AI_TriggerIsValid( mt_TriggerExecOff ) )
+	mi_TriggerExecOff_Flag = call_trigger ( mt_TriggerExecOff )
+
+// Play Trigger OFF Additionnel
+for ( ti_trigger = 0; ti_trigger < 10; ti_trigger++)
+{
+	if ( !AI_TriggerIsValid( mat_AdditionalTriggerExecOff[ ti_trigger ] ) )
+		break
+	if (!mai_AdditionalTriggerExecOff_Flag[ti_trigger])
+		mai_AdditionalTriggerExecOff_Flag[ti_trigger] = call_trigger( mat_AdditionalTriggerExecOff[ ti_trigger ] )
+}
+
+// TEST si on doit forcer un PLAYOFF la prochaine trame.
+mi_trigger_forced_false = faux 
+//if (mi_ForceConditionFalseUntilAllTriggerFinished)
+//{
+	// On doit forcer a vrai tant que toutes les conditions definis ne sont pas toute vrai
+	ti_res = vrai
+	if ( AI_TriggerIsValid( mt_TriggerExecOff ) )
+		ti_res &= mi_TriggerExecOff_Flag
+	for ( ti_trigger = 0; ti_trigger < 10; ti_trigger++)
+	{
+		if ( !AI_TriggerIsValid( mat_AdditionalTriggerExecOff[ ti_trigger ] ) )
+			break
+		ti_res &= mai_AdditionalTriggerExecOff_Flag[ti_trigger]
+	}
+
+	if (!ti_res)
+		mi_trigger_forced_false = vrai
+//}

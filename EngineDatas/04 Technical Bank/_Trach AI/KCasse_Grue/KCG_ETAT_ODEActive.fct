@@ -1,0 +1,22 @@
+#include "KCG_Defines.var"
+
+object	o_Bone
+int			i_Index
+
+// after the lifetime has elapsed, stop the ODE activity and stop rendering the objects.
+
+mf_ODEActiveLifetime -= TIME_GetDt()
+
+if ( mf_ODEActiveLifetime <= 0 )
+{
+	for ( i_Index = C_FirstBone; i_Index <= C_LastBone; i_Index++ )
+	{
+		o_Bone 	= mao_SubObjects[( i_Index - C_FirstBone + 1 )]
+
+		@o_Bone OBJ_FlagInvisibleSet( vrai )
+		@o_Bone OBJ_FlagInactiveSet( vrai )
+		@o_Bone ODE_Enable( faux )
+	}
+
+	AI_TrackCurStop()
+}

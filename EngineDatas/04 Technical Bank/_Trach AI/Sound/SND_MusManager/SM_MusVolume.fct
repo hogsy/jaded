@@ -1,0 +1,67 @@
+//------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------
+#include "SM_Constants.var"
+float tf_AttTime, tf_AttVol
+
+//------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------
+//if( mi_Phase == SND_Cte_MusPhase_BigFight ) 
+//{
+//	// skip if any jingle
+//	SND_M_SetGroupVol(SND_Cte_GrpMusic, 1.0)
+//	return
+//}
+//else 
+if( mi_JingleIdx != -1 ) 
+{
+	// skip if any jingle
+	SND_M_SetGroupVol(SND_Cte_GrpMusic, 1.0)
+	return
+}
+else if(mi_VolModeAuto)
+{
+	// do auto fade out
+	//--------------------------
+	
+	if(mi_VolPhase != mi_Phase)
+	{
+		// reinit if new phase
+		mf_VolTimer = 0.0
+		mi_VolPhase = mi_Phase
+		SND_M_SetGroupVol(SND_Cte_GrpMusic, 1.0)
+		return
+	}
+	else if(mi_VolPhase == -1)
+	{
+		// no phase
+		SND_M_SetGroupVol(SND_Cte_GrpMusic, 1.0)
+		return
+	}
+	
+	// update the timer
+	mf_VolTimer += TIME_GetDt()
+	tf_AttTime = MUS_GetlAttTime(mi_VolPhase)
+	
+	// the fade is not yet started
+	if(mf_VolTimer < tf_AttTime ) return
+	
+	// the fade is finished
+	if(mf_VolTimer > (tf_AttTime+Cte_VolAttFadeOutTime) ) return
+	
+	
+	// register the fade request
+	tf_AttVol = MUS_GetAttVol(mi_VolPhase)
+	SND_M_FadeGroup(SND_Cte_GrpMusic, tf_AttVol, Cte_VolAttFadeOutTime)
+	mf_VolTimer = tf_AttTime+Cte_VolAttFadeOutTime+0.1
+}
+else
+{
+	// get volume from other IA
+	//-------------------------------------
+	
+	SND_M_SetGroupVol(SND_Cte_GrpMusic, mf_VolTimer)
+}
+
+
+
+

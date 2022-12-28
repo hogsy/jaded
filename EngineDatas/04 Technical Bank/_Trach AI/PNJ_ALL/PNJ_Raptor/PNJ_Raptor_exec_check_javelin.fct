@@ -1,0 +1,66 @@
+#include "PNJ_Raptor_defines.var"
+
+int				ti_i
+int				ti_lances_nb
+int				ti_canal
+
+object		to_lance
+
+//if (IO_KeyPressed(65))
+//	f_lifecur = MATH_FloatMax(f_lifecur - (f_life * (TIME_GetDt() / 60.0)), 2.0 * PAF_Unit)
+
+//if (raptor_type == C_ID_Galiminus)
+//{
+//	OBJ_LIB_Detach_Javelin(OBJ_Me())
+//	return
+//}
+
+ti_lances_nb = 0
+
+for (ti_i = 0; ti_i < Ci_bambou_maxinmap; ti_i++)
+{
+	to_lance = 	@get_global ao_Lances[ti_i]
+
+	if (!to_lance)
+		continue	
+
+	if (@get_Arme_Lance_path to_lance mi_State != Ci_bambou_state_plug)
+		continue
+		
+	if (@get_Arme_Lance_path to_lance o_plug_to_master != OBJ_Me())
+		continue
+	
+	if (@get_Arme_Lance_path to_lance f_plug_timer == -1.0)
+	{
+		ti_canal = @get_Arme_Lance_path to_lance i_plug_canal
+		switch(ti_canal)
+		{
+			case Anim_Canal_Machoire :
+			case Anim_Canal_Tete :
+			case Anim_Canal_Cou :
+			case Anim_Canal_BrasDroit :
+			case Anim_Canal_AvantBrasDroit :
+			case Anim_Canal_MainDroite :
+			case Anim_Canal_BrasGauche :
+			case Anim_Canal_AvantBrasGauche :
+			case Anim_Canal_MainGauche :
+			case Anim_Canal_Queue :
+			case 101 :
+			case 102 :
+			case 103 :
+			case 104 :
+			case Anim_Canal_PiedDroit :
+			case Anim_Canal_OrteilDroit :
+			case Anim_Canal_PiedGauche :
+			case Anim_Canal_OrteilGauche :
+				@get_Arme_Lance_path to_lance f_plug_timer = 1.0
+				break
+		}
+	}
+
+	if (raptor_type == C_ID_Raptor && f_lifecur > 2.0 * PAF_Unit && ti_lances_nb < 3)
+		f_lifecur = MATH_FloatMax(f_lifecur - (f_life * (TIME_GetDt() / 60.0)), 2.0 * PAF_Unit)
+	
+	ti_lances_nb++
+}
+

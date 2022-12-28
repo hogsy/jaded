@@ -1,0 +1,38 @@
+#include "ig_defines.var"
+
+// PURGE DU COMPORTEMENT
+if ( i_fin_mode)
+{
+	i_fin_mode = faux
+	return
+}
+
+// INIT
+if ( i_mode != Ci_mode_propose)
+{
+	i_mode = Ci_mode_propose
+	if ( f_last_func)
+	{
+		i_fin_mode = vrai
+		AI_Execute( f_last_func)
+	}
+}
+
+
+// COMPORTEMENT
+o_grab_actor = LNK_ServeurGet(Ci_LNK_KKGRAB_FORCE, mid_grabbed_LIAISON_ID, vrai, nofunc, nofunc)
+
+if (o_grab_actor)
+{
+	// On me demande un GRAB
+	o_uncollide_actor = o_grab_actor
+	COL_UnCollidableAdd( o_uncollide_actor)
+	MSG_GlobalSetVector( mid_grabbed_LIAISON_ID, cvector( Cf_AngleCercle_2, 0.0, 0.0), VEC1, VEC_X) 
+	if ( i_mode_grab == 1 )
+		ChangeEtat("ig_grab")
+	else
+		ChangeEtat("ig_grab_simple")
+
+}
+
+DBG_RenderCylinder( OBJ_PosGet(), OBJ_BankingGet() * 15.0, Cf_RayonTron, 0x712C4E8B)

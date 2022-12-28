@@ -1,0 +1,242 @@
+#include "RM_ObjectifManager_defines.var"
+
+int			ti_display
+int			ti_i
+int			ti_str
+vector	tv_pos0
+float		tf_dist
+
+vector	tv_pos1
+vector	tv_pos2
+vector	tv_temp
+object	to_pos
+object	to_visuel
+
+
+// SORTIE ==========================================================================
+if( i_sort_etat )
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ====================================================================
+if (i_etat_courant != ETAT_Display)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Display
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// ANALYSE ========================================================================
+
+
+// COMPORTEMENT==================================================================
+for( ti_i = 0; ti_i < Ci_Objectif_max_nb; ti_i++ )
+{
+	// BLEND ===========================================================================
+	ti_display = faux
+	if( i_DEBUG && ao_Obj_Visuel[ti_i] )
+		ti_display = vrai
+	
+	switch( ai_Obj_Affichage_phase[ti_i] )
+	{
+		case Ci_Display_FadeIn :
+			af_Obj_Blend[ti_i] += MATH_FloatMin(1.0 - af_Obj_Blend[ti_i], 1.0 * TIME_GetDt())
+			af_Obj_Hauteur[ti_i] = MATH_FloatBlend(0.0, Cf_Display_hauteur, af_Obj_Blend[ti_i])
+			af_Obj_Zoom[ti_i] = MATH_FloatBlend(0.0, Cf_Display_ZoomMax, af_Obj_Blend[ti_i])
+			if( af_Obj_Blend[ti_i] == 1.0 )
+				ai_Obj_Affichage_phase[ti_i] = Ci_Display_Full
+			if( ti_display )
+			{
+				ti_str = STR_CreateText("\cFFFF\\h0.1\Obj ", VIEW_3dWorldTo2d(0,@ao_Obj_Visuel[ti_i] OBJ_PosGet()), 0.0)
+				STR_AppendInt(ti_str, ti_i)
+				STR_AppendText(ti_str, " : Fade In")
+			}
+			break
+
+		case Ci_Display_Full :
+			af_Obj_Hauteur[ti_i] = Cf_Display_hauteur
+			af_Obj_Zoom[ti_i] = Cf_Display_ZoomMax
+			if( ti_display )
+			{
+				ti_str = STR_CreateText("\cFF00\\h0.1\Obj ", VIEW_3dWorldTo2d(0,@ao_Obj_Visuel[ti_i] OBJ_PosGet()), 0.0)
+				STR_AppendInt(ti_str, ti_i)
+				STR_AppendText(ti_str, " : Full")
+			}
+			break
+
+		case  Ci_Display_FadeOut :
+			af_Obj_Blend[ti_i] -= MATH_FloatMin(af_Obj_Blend[ti_i], 1.0 * TIME_GetDt())
+			af_Obj_Hauteur[ti_i] = MATH_FloatBlend(0.0, Cf_Display_hauteur, af_Obj_Blend[ti_i])
+			af_Obj_Zoom[ti_i] = MATH_FloatMax(Cf_Display_ZoomMin, MATH_FloatBlend(0.0, Cf_Display_ZoomMax, af_Obj_Blend[ti_i]))
+			if( ! af_Obj_Blend[ti_i] )
+				ai_Obj_Affichage_phase[ti_i] = Ci_Display_OFF
+			if( ti_display )
+			{
+				ti_str = STR_CreateText("\c88FF\\h0.1\Obj ", VIEW_3dWorldTo2d(0,@ao_Obj_Visuel[ti_i] OBJ_PosGet()), 0.0)
+				STR_AppendInt(ti_str, ti_i)
+				STR_AppendText(ti_str, " : Fade Out")
+			}
+			break
+
+		case Ci_Display_OFF :
+			af_Obj_Hauteur[ti_i] = 0.0
+			af_Obj_Zoom[ti_i]=  Cf_Display_ZoomMin
+			if( ti_display )
+			{
+				ti_str = STR_CreateText("\cFF\\h0.1\Obj ", VIEW_3dWorldTo2d(0,@ao_Obj_Visuel[ti_i] OBJ_PosGet()), 0.0)
+				STR_AppendInt(ti_str, ti_i)
+				STR_AppendText(ti_str, " : Off")
+			}
+			break
+	}
+
+	if( ai_Obj_Affichage_phase[ti_i] )
+	{
+		// cet objectif doit être affiché ========================================================
+		to_pos = ao_Obj_Pos[ti_i]
+		if( ! to_pos )
+		{
+			DBG_TraceString("****** L'objectif n°")
+			DBG_TraceInt(ti_i)
+			DBG_TraceString(" doit être affiché mais aucun gao de positionnement n'est renseigné !\n")
+			DBG_Warning("Pb sur l'Objectif Manager, regardez le log svp...")
+		}
+		else
+		{
+			tv_pos0 = @to_pos OBJ_PosGet()
+			
+			// récupération du visuel à afficher
+			to_visuel = ao_Obj_Visuel[ti_i]
+			if( ! to_visuel )
+			{
+//				to_visuel = @get_ITEM_CarrotGun OBJ_Duplicate(tv_pos0)
+//				@to_visuel OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_AI)
+//				ao_Obj_Visuel[ti_i] = to_visuel
+				continue
+			}
+
+			// zoom + visible
+			@to_visuel OBJ_ZoomSet(af_Obj_Zoom[ti_i])
+			@ao_Obj_Visuel[ti_i] OBJ_FlagInvisibleSet(faux)
+			@ao_Obj_Visuel[ti_i] OBJ_FlagInvisibleSet(faux)
+
+			// positionner et tourner gao visuel
+			@to_pos OBJ_RotateGlobalZ( 45 * Cf_1Degre * TIME_GetDt() * af_Obj_Rotate_Desynchro_0[ti_i] )
+			tv_pos1 = tv_pos0 + (af_Obj_Hauteur[ti_i] * Cv_VerticalVector)
+			tv_pos2 = tv_pos1 + (3.0 * @to_pos OBJ_SightGet() * af_Obj_Blend[ti_i] )
+
+			// Distance entre l'objectif et RM -> détermination de la taille du SFX
+			tf_dist = (MATH_VecSquareNorm(@get_rayman OBJ_PosGet() - tv_pos2) * 0.0001) + 1.0
+
+			tv_temp = tv_pos2 + cvector(0.0,0.0, 10 + (tf_dist * 1.0))
+			@to_visuel OBJ_PosSet(tv_temp)
+			@to_visuel OBJ_RotateGlobalZ( 180 * Cf_1Degre * TIME_GetDt() * af_Obj_Rotate_Desynchro_1[ti_i] )
+
+			// GFX Halo
+			if( ai_Obj_GFX_Halo[ti_i] == -1)
+			{
+				ai_Obj_GFX_Halo[ti_i] = @ao_Obj_Visuel[ti_i] GFX_Add(21)										// Halo
+				GFX_FlagSet(ai_Obj_GFX_Halo[ti_i], 4, 1)
+				GFX_MaterialSet(ai_Obj_GFX_Halo[ti_i], get_SFX_light_and_smoke, 0)						// affectation du matériau
+				GFX_Seti(ai_Obj_GFX_Halo[ti_i], 21103, 1)																// 0 (défaut) flare mural 1 flare très simple 
+				GFX_Seti(ai_Obj_GFX_Halo[ti_i], 21101, ac_Obj_GFX_Color[ti_i])								// couleur du halo
+			}
+			GFX_Setf(ai_Obj_GFX_Halo[ti_i], 21000, 25 + (0.02 * tf_dist * halo_taille * af_Obj_Blend[ti_i]))	// taille du halo
+			GFX_Setf(ai_Obj_GFX_Halo[ti_i], 21002, halo_extraction)												// extraction par rapport au point de génération (vers la cam)
+			GFX_Setv(ai_Obj_GFX_Halo[ti_i], 21200, tv_temp + cvector(0.0,0.0,2.5))				   			// position du halo
+
+			// GFX Faisceau
+			if (ai_Obj_GFX_Faisceau[ti_i] == -1)
+			{
+				ai_Obj_GFX_Faisceau[ti_i] = @ao_Obj_Visuel[ti_i] GFX_Add(21)									// création du halo
+				GFX_MaterialSet(ai_Obj_GFX_Faisceau[ti_i], get_SFX_light_and_smoke, 0) 					// affectation du matériau
+				GFX_Seti(ai_Obj_GFX_Faisceau[ti_i], 21103, 0)														// 0 (défaut) flare mural, 1 flare très simple 
+				GFX_Seti(ai_Obj_GFX_Faisceau[ti_i], 21101, ac_Obj_GFX_Color[ti_i])          					// couleur du halo
+			}
+			GFX_Setf(ai_Obj_GFX_Faisceau[ti_i], 21000, 5 + (0.04 * tf_dist * faisceau_taille * af_Obj_Blend[ti_i]))	// taille du halo
+			GFX_Setf(ai_Obj_GFX_Faisceau[ti_i], 21004, 25.0)														// extraction
+			GFX_Setv(ai_Obj_GFX_Faisceau[ti_i], 21200, tv_temp)													// Position
+			GFX_Setv(ai_Obj_GFX_Faisceau[ti_i], 21201, -Cv_VerticalVector)									// Flare Sight = Normale au mur
+
+//			// GFX Halo
+//			if( ai_Obj_GFX_Halo[ti_i] == -1 )
+//			{
+//				ai_Obj_GFX_Halo[ti_i] = GFX_Add(21)		// Halo
+//				GFX_FlagSet(ai_Obj_GFX_Halo[ti_i], 4, 1)
+//				GFX_MaterialSet(ai_Obj_GFX_Halo[ti_i], get_SFX_light_and_smoke, 0) // affectation du matériau
+//				GFX_Seti(ai_Obj_GFX_Halo[ti_i], 21103, 1)			// 0 (défaut) flare mural		1 flare très simple 
+//				GFX_Seti(ai_Obj_GFX_Halo[ti_i], 21101, ac_Obj_GFX_Color[ti_i])     // couleur du halo
+//			}
+//			GFX_Setf(ai_Obj_GFX_Halo[ti_i], 21000, halo_taille * af_Obj_Blend[ti_i])
+//			GFX_Setf(ai_Obj_GFX_Halo[ti_i], 21002, halo_extraction)		// extraction par rapport au point de génération (vers la cam)
+//			GFX_Setv(ai_Obj_GFX_Halo[ti_i], 21200, tv_pos2)      // position du halo
+//			
+//			// GFX Faisceau
+//			if (ai_Obj_GFX_Faisceau[ti_i] == -1)
+//			{
+//				ai_Obj_GFX_Faisceau[ti_i] = GFX_Add(21)                                 	 // création du halo
+//				GFX_FlagSet(ai_Obj_GFX_Faisceau[ti_i], 0, 1)		// 0 : 1 : Actif, 0 : desactivé
+//				GFX_FlagSet(ai_Obj_GFX_Faisceau[ti_i], 2, 1)		// 2 : 1 : matériau transparent, 0 : matériau opaque
+//				GFX_FlagSet(ai_Obj_GFX_Faisceau[ti_i], 4, 1)		// 4 : le halo est visible de dos
+//				GFX_MaterialSet(ai_Obj_GFX_Faisceau[ti_i], get_SFX_light_and_smoke, 0) 	// affectation du matériau
+//				GFX_Seti(ai_Obj_GFX_Faisceau[ti_i], 21103, 0)			// 0 (défaut) flare mural		1 flare très simple 
+//				GFX_Seti(ai_Obj_GFX_Faisceau[ti_i], 21101, ac_Obj_GFX_Color[ti_i])          // couleur du halo
+//			}
+//			GFX_Setf(ai_Obj_GFX_Faisceau[ti_i], 21000, faisceau_taille * af_Obj_Blend[ti_i])             // taille du halo
+//			GFX_Setf(ai_Obj_GFX_Faisceau[ti_i], 21002, faisceau_extraction)				// extraction
+//			GFX_Setv(ai_Obj_GFX_Faisceau[ti_i], 21200, tv_pos2)		// Position
+//			GFX_Setv(ai_Obj_GFX_Faisceau[ti_i], 21201, tv_pos0 - tv_pos2)		// Flare Sight = Normale au mur
+		}
+	}
+	else
+	{
+		// cet objectif ne doit pas / plus être affiché ====================================================
+		if( ai_Obj_GFX_Faisceau[ti_i] != -1 )
+		{
+			GFX_Del(ai_Obj_GFX_Faisceau[ti_i])
+			ai_Obj_GFX_Faisceau[ti_i] = -1
+		}
+		if( ai_Obj_GFX_Halo[ti_i] != -1 )
+		{
+			GFX_Del(ai_Obj_GFX_Halo[ti_i])
+			ai_Obj_GFX_Halo[ti_i] = -1
+		}
+		if( ao_Obj_Visuel[ti_i] )
+		{
+			@ao_Obj_Visuel[ti_i] OBJ_FlagInvisibleSet(vrai)
+			@ao_Obj_Visuel[ti_i] OBJ_FlagInactiveSet(vrai)
+		}
+	}
+}
+
+
+// DEBUG ===============================================================================================
+//if( i_DEBUG && IO_KeyJustPressed(65) )
+//{
+//	if( ! i_ONOFF )
+//	{
+//		PROC_OBJECTIF_Manager_Activation(0, ao_Obj_Pos[0], ao_Obj_Visuel[0], ac_Obj_GFX_Color[0])
+//		PROC_OBJECTIF_Manager_Activation(1, ao_Obj_Pos[1], ao_Obj_Visuel[1], ac_Obj_GFX_Color[1])
+////		PROC_OBJECTIF_Manager_Activation(2, ao_Obj_Pos[2], ao_Obj_Visuel[2], ac_Obj_GFX_Color[2])
+//	}
+//	else
+//	{
+//		PROC_OBJECTIF_Manager_Validation(0)
+//		PROC_OBJECTIF_Manager_Validation(1)
+////		PROC_OBJECTIF_Manager_Validation(2)
+//	}
+//	i_ONOFF = 1 - i_ONOFF
+//}
+//

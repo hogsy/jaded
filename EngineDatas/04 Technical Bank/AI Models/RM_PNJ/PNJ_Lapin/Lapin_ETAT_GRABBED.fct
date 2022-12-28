@@ -1,0 +1,94 @@
+#include "PNJ_Lapin_defines.var"
+
+object	to_Grabbed_Actor
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	Lapin_TARGETTING(vrai)
+	if( ! @o_Grabbed_Actor AI_IsModel(get_PNJ_Shark_path) )
+		AI_CBDel(o_Grabbed_Actor, CallBack_After_Blend, "Lapin_callback_Grabbed")
+	else
+		AI_CBDel(o_Grabbed_Actor, CallBack_After_Rec, "Lapin_callback_Grabbed")
+	o_Grabbed_Actor = LNK_ServeurGet(Ci_LNK_GRAB_EAGLE, mid_Grabbed_LNK_ID, faux, nofunc, nofunc)
+	o_Grabbed_Actor_bone = nobody
+	Lapin_EXPRESSION(Cf_Expr_Mouth_Closed)
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_Lapin_GRABBED) 
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Lapin_GRABBED
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	Lapin_DBG_Trace_String(DBG_Trace_Etat, "GRABBED")
+	fct_previous_etat = fct_last_etat
+//	fct_main_etat = AI_TrackCurGet()		// MAIN ETAT !!!!
+	fct_main_etat = "Lapin_ETAT_ATTENTE"		// retour en attente à la sortie de grabbed
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	f_time_sous_mode = 0.0
+	
+	Lapin_TARGETTING(faux)
+	o_Grabbed_Actor_bone = LNK_GrabBoneGet(mid_Grabbed_LNK_ID)
+	if( ! @o_Grabbed_Actor AI_IsModel(get_PNJ_Shark_path) )
+		AI_CBAdd(o_Grabbed_Actor, CallBack_After_Blend, "Lapin_callback_Grabbed")
+	else
+		AI_CBAdd(o_Grabbed_Actor, CallBack_After_Rec, "Lapin_callback_Grabbed")
+	
+	Lapin_ACTION_Set(Action_Grabbed_cycle)
+	Lapin_EXPRESSION(Cf_Expr_Mouth_Full)
+	SND_RequestPlay(Ci_SND_GRABBED)
+	f_Grabbed_coef = 0.0
+	Lapin_Del_Interest()
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+	f_time_sous_mode += TIME_GetDt()
+	f_Grabbed_coef += MATH_FloatMin(1.0 - f_Grabbed_coef, 3 * TIME_GetDt())
+}
+
+// STIMULI ===========================================================================
+//AI_Execute("Lapin_exec_check_vision")
+
+o_Rided_Actor = LNK_ServeurGet(Ci_LNK_RIDE_ON_NMI, mid_Rided_LNK_ID, vrai, nofunc, nofunc)
+if( o_Rided_Actor )
+	macro_change_etat("Lapin_ETAT_RIDED")
+
+MACRO_CHECK_PAFS
+
+if( Lapin_ROPE_Gogo_Mode() )
+	macro_change_etat("Lapin_ETAT_GOGO")
+
+to_Grabbed_Actor = LNK_ServeurGet(Ci_LNK_GRAB_EAGLE, mid_Grabbed_LNK_ID, vrai, nofunc, nofunc)
+if( to_Grabbed_Actor != o_Grabbed_Actor )
+{
+	if( @o_Grabbed_Actor AI_IsModel(get_PNJ_Shark_path) )
+	{
+		// JUST DIE !!!!
+		i_Grabbed_Died_flag = vrai
+		OBJ_FlagInvisibleSet(vrai)
+//		EVENT_LIFE_CurLifeSet(ID_LIFE, 0.0)
+		f_LIFE_cur = 0.0
+		macro_change_etat("Lapin_ETAT_PAF")
+	}
+	else
+		macro_change_etat("Lapin_ETAT_CHUTE")
+}
+
+
+// SND
+if( f_time_sous_mode > MATH_RandFloat(2.0, 5.0) )
+{
+	f_time_sous_mode = 0.0
+	SND_RequestPlay(Ci_SND_GRABBED)
+}
+

@@ -1,0 +1,194 @@
+#include "MM_defines.var"
+
+float			tf_liferatio
+int				ti_k
+float			tf_time_before_kill
+
+
+// ANALYSE =======================================================================
+i_vision_check_flag = faux
+i_paf_check_flag = faux
+i_perceived_actor_nb = 0
+
+if( i_DBG_display_infos )
+{
+	// FLAGS D'ATTAQUE
+	Str_DisplayTextOnce("Radeau", cvector(0.0, 0.05, 0.0))
+	Str_DisplayIntOnce(i_attack_radeau_flag, cvector(0.1, 0.05, 0.0))
+	Str_DisplayTextOnce("Marins", cvector(0.0, 0.1, 0.0))
+	Str_DisplayIntOnce(i_attack_marins_flag, cvector(0.1, 0.1, 0.0))
+	
+	// MOVE MODE
+	Str_DisplayTextOnce("Move Mode", cvector(0.0, 0.15, 0.0))
+	switch( i_move_mode )
+	{
+		case Ci_move_mode_apres_attaque :
+			Str_DisplayTextOnce("Apres Attaque", cvector(0.15, 0.15, 0.0))
+			break
+		case Ci_move_mode_attack :
+			Str_DisplayTextOnce("Attaque", cvector(0.15, 0.15, 0.0))
+			Str_DisplayTextOnce("Type d'Attaque ", cvector(0.0, 0.2, 0.0))
+			if( i_attack_type == Ci_attack_type_ras_de_l_eau )
+				Str_DisplayTextOnce("Ras de l'eau", cvector(0.2, 0.2, 0.0))
+			else if( i_attack_type == Ci_attack_type_renverse )
+				Str_DisplayTextOnce("Renverse", cvector(0.2, 0.2, 0.0))
+			else if( i_attack_type == Ci_attack_type_jump_horsdeleau )
+				Str_DisplayTextOnce("Jump hors de l'eau", cvector(0.2, 0.2, 0.0))
+			else
+				Str_DisplayTextOnce("???", cvector(0.0, 0.2, 0.0))
+			Str_DisplayTextOnce("Cible ", cvector(0.0, 0.25, 0.0))
+			Str_DisplayGaoOnce(o_fight_actor, cvector(0.1, 0.25, 0.0))
+			break
+		case Ci_move_mode_direct :
+			Str_DisplayTextOnce("Direct", cvector(0.15, 0.15, 0.0))
+			break
+		case Ci_move_mode_fuite :
+			Str_DisplayTextOnce("Fuite", cvector(0.15, 0.15, 0.0))
+			break
+		case Ci_move_mode_idle :
+			Str_DisplayTextOnce("Idle", cvector(0.15, 0.15, 0.0))
+			break
+		case Ci_move_mode_in_time :
+			Str_DisplayTextOnce("In Time", cvector(0.15, 0.15, 0.0))
+			break
+		case Ci_move_mode_teleport :
+			Str_DisplayTextOnce("Teleport", cvector(0.15, 0.15, 0.0))
+			break
+	}
+	
+	// PHASE
+	Str_DisplayTextOnce("Phase", cvector(0.0, 0.3, 0.0))
+	switch( i_attack_phase )
+	{
+		case Ci_attack_phase_vers_wp_temp :
+			Str_DisplayTextOnce("vers wp temp", cvector(0.1, 0.3, 0.0))
+			break
+		case Ci_attack_phase_orientation :
+			Str_DisplayTextOnce("Orientation", cvector(0.1, 0.3, 0.0))
+			break
+		case Ci_attack_phase_plonge :
+			Str_DisplayTextOnce("Plonge", cvector(0.1, 0.3, 0.0))
+			break
+		case Ci_attack_phase_renverse :
+			Str_DisplayTextOnce("Renverse", cvector(0.1, 0.3, 0.0))
+			break
+		case Ci_attack_phase_souleve :
+			Str_DisplayTextOnce("Souleve", cvector(0.1, 0.3, 0.0))
+			break
+		case Ci_attack_phase_sortdeleau :
+			Str_DisplayTextOnce("Sort de l'eau", cvector(0.1, 0.3, 0.0))
+			break
+		default:
+			Str_DisplayTextOnce("0", cvector(0.1, 0.3, 0.0))
+			break
+	}
+	
+	// INTERET 
+	Str_DisplayTextOnce("=== INTERETS === ", cvector(0.0, 0.35, 0.0))
+	if( ! i_interet_target_nb )
+	{
+		Str_DisplayTextOnce("(aucun)", cvector(0.0, 0.4, 0.0))
+	}
+	else
+	{
+		for( ti_k = 0; ti_k < i_interet_target_nb; ti_k++)
+		{
+			Str_DisplayGaoOnce(ao_interet_target[ti_k], cvector(0.0, (0.4 + (ti_k * 0.05)) , 0.0))
+		}
+	}
+	
+	// TEMPS RESTANT
+	if( BigMonster_ModeVitesseImposee() )
+	{
+		f_script_move_in_time_cpt -= MATH_FloatMin(f_script_move_in_time_cpt, TIME_GetDt())
+		Str_DisplayTextOnce("Temps restant", Cv_NullVector)
+		Str_DisplayFloatOnce(f_script_move_in_time_cpt, cvector(0.2, 0.0, 0.0))
+		Str_DisplayTextOnce("/ Vitesse (m/s) = ", cvector(0.3, 0.0, 0.0))
+		Str_DisplayFloatOnce(f_speed_max, cvector(0.5, 0.0, 0.0))
+	}
+}
+
+
+// GRAB : TIME TO KILL ===============================================================
+if( MSG_GlobalIsValid(mid_grab) )
+{
+	if( @o_grabbed_actor AI_IsModel(get_PNJ_Bats_path) )
+		tf_time_before_kill = 1.5
+	else
+		tf_time_before_kill = 2.0
+	f_time_grab += TIME_GetDt()
+	if( ! i_grabbed_actor_killed && f_time_grab >= tf_time_before_kill )
+	{
+		if( i_DBG_trace_IA )
+		{
+			DBG_TraceObject(OBJ_Me())
+			DBG_TraceString(" : tue ")
+			DBG_TraceObject(o_grabbed_actor)
+			DBG_TraceEOL()
+		}
+		EVENT_AddEventPaf(C_EVENT_FILTER_Enemy, C_PAF_KK_KiTue, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_grabbed_actor, 0.0, OBJ_SightGet())
+		i_grabbed_actor_killed = vrai
+//		o_grabbed_actor = LNK_ThisClientGet(o_grabbed_actor, Ci_LNK_GRAB_RAPTOR, mid_grab, faux, "MM_Exec_Grab_Param", nofunc, "MM_Exec_Grab_Param")
+	}
+}
+
+
+// GRAB : TEST ACTEUR DETRUIT =======================================================
+if( o_grabbed_actor )
+{
+	o_grabbed_actor = LNK_ThisClientGet(o_grabbed_actor, Ci_LNK_GRAB_RAPTOR, mid_grab, vrai, "MM_Exec_Grab_Param", nofunc, "MM_Exec_Grab_Param")
+	if( ! o_grabbed_actor )
+	{
+		MSG_GlobalSetInvalid(mid_grab)
+	}
+}
+
+
+// EVENT VISIBILITY =================================================================
+tf_liferatio = f_HP_cur / f_HP_max
+EVENT_AddEventVision
+(
+	C_ID_MonstreMarin,
+	C_EVENT_FILTER_Enemy, 
+	OBJ_Me(), 
+	Cf_EVENT_Duree_1Trame, 
+	OBJ_PosGet(),
+	C_EVENT_Visibility_Full_Mvt, 
+	Cf_MonstreMarin_Size, 
+	Cf_MonstreMarin_InteretForOthers, 
+	C_EVENT_CONTEXT_STANDARD, 
+	0,
+	tf_liferatio
+)
+
+
+// TIME DYNAMITE GOBEE =============================================================
+if( o_dynamite )
+{
+	f_time_dynamite_gobee += TIME_GetDt()
+	if( f_time_dynamite_gobee > 5.0 )
+	{
+		// la dynamite gobée n'était pas allumée
+		@o_dynamite OBJ_Destroy()
+		o_dynamite = nobody
+	}
+}
+
+
+// SINUS DES PAFS
+f_sinus_paf_coef = MATH_FloatBlend(f_sinus_paf_coef, 1.0, 3.0 * TIME_GetDt())
+f_sinus_paf_banking = MATH_FloatBlend(f_sinus_paf_banking, 0.0, 2.0 * TIME_GetDt())
+f_sinus_paf_horizon = MATH_FloatBlend(f_sinus_paf_horizon, 0.0, 2.0 * TIME_GetDt())
+f_sinus_paf_visee = MATH_FloatBlend(f_sinus_paf_visee, 0.0, 1.0 * TIME_GetDt())
+f_time_paf_sinus_horiz = MATH_FloatBlend(f_time_paf_sinus_horiz, 0.0, 2.0 * TIME_GetDt())
+f_paf_sinus_banking = MATH_FloatBlend(f_paf_sinus_banking, 0.0, 1.5 * TIME_GetDt())
+f_paf_sinus_horiz = MATH_FloatBlend(f_paf_sinus_horiz, 0.0, 1.0 * TIME_GetDt())
+
+f_speed_blend_secure = 1.0	
+//f_speed_blend_secure = MATH_FloatBlend(f_speed_blend_secure, 1.0, 4.0 * TIME_GetDt())
+
+//v_move_pos_dest_cur = MATH_VecBlendRotate(v_move_pos_dest_cur, v_move_pos_dest, 2.0 * TIME_GetDt())
+
+i_regard_flag = vrai
+
+

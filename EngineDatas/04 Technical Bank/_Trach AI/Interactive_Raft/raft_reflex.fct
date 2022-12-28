@@ -1,0 +1,240 @@
+#include "Interactive_Raft_defs.var"
+
+float			tf_dist, tf_TimeOther, tf_average, tf_speed0, tf_speed1, tf_time
+vector		tv_axe, tv_speed, tv_Z, tv_temp
+object		WPOther_Me
+object		WPOther_Other
+object		to_perso
+int				ti_eject, ti_perso, ti_msg, ti_gigot, ti_lance, ti_older
+vector		A,B,C,D
+message	msg, msg_send
+
+//if ( DBG_IsObjSel() )
+//{
+//	tv_axe = OBJ_SightGet() * RAFT_Length
+//	tv_speed = OBJ_HorizonGet() * RAFT_Width
+//	tv_Z = OBJ_BankingGet() * 0.5
+//	A = OBJ_PosGet() + tv_axe + tv_speed + tv_Z
+//	B = OBJ_PosGet() + tv_axe - tv_speed + tv_Z
+//	C = OBJ_PosGet() - tv_axe - tv_speed + tv_Z
+//	D = OBJ_PosGet() - tv_axe + tv_speed + tv_Z
+//	DBG_RenderVector( A, B - A, color_rose )
+//	DBG_RenderVector( B, C - B, color_rose )
+//	DBG_RenderVector( C, D - C, color_rose )
+//	DBG_RenderVector( D, A - D, color_rose )
+//}
+
+v_speed = (OBJ_PosGet() - v_last_pos) / TIME_GetDt()
+v_last_pos = OBJ_PosGet()
+
+if (obstacle_i_type == RAFT_Obstacle_sphere)
+{
+	if ( obstacle_i_show )
+		DBG_RenderSphere( obstacle_v_pos, obstacle_f_radius, color_rose )
+	if ( RAFT_Inter_Sphere( obstacle_v_pos, obstacle_f_radius ) )
+	{
+		DBG_RenderSphere( obstacle_v_colpos, 0.1, color_bleu )
+		DBG_RenderVector( obstacle_v_colpos, obstacle_v_colnorm, color_bleu )
+	}
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+// CAPA
+//	0 : take a paf
+//	1 : stop
+// 	2 : redémarre
+/////////////////////////////////////////////////////////////////////////////////
+if ( OBJ_CapaTest( OBJ_Capa_0 ) )
+{
+	OBJ_CapaSet( 0, OBJ_Capa_0 )
+//	paf_i_takeone = 1
+//	paf_f_puissance = 10
+	paf_i_flag = 1
+}
+
+if ( OBJ_CapaTest( OBJ_Capa_1 ) )
+{
+	OBJ_CapaSet( 0, OBJ_Capa_1 )
+	if (o_colmap_add )
+		@o_colmap_add OBJ_FlagInactiveSet( 1 )
+	move_i_Stop = 1
+}
+
+if ( OBJ_CapaTest( OBJ_Capa_2 ) )
+{
+//	for ( ti_perso = 0; ti_perso < 4; ti_perso++)
+//	{
+//		if ( ao_Who[ ti_perso ] == nobody ) continue
+//		@ao_Who[ ti_perso ] OBJ_HierarchySetFather( OBJ_Me() )
+//	}
+
+	OBJ_CapaSet( 0, OBJ_Capa_2 )
+	if (o_colmap_add )
+		@o_colmap_add OBJ_FlagInactiveSet( 0 )
+	move_i_Stop = 0
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+// TANGAGE
+/////////////////////////////////////////////////////////////////////////////////
+tang_i_on = 0
+if ( tang_i_on )
+{
+	tang_f_timer -= TIME_GetDt()
+	if ( tang_f_timer < 0)
+	{
+		tang_i_count = MATH_Modulo( tang_i_count + 1, 4 )
+		if ( ( tang_i_count == 0 ) || (tang_i_count == 3 ) )
+			tv_axe.x = MATH_RandFloat(0.1, 1 )
+		else
+			tv_axe.x = MATH_RandFloat(-1, -0.1 )
+		if ( ( tang_i_count == 0 ) || (tang_i_count == 1 ) )
+			tv_axe.y = MATH_RandFloat(0.1, 1 )
+		else
+			tv_axe.y = MATH_RandFloat(-1, -0.1 )
+		tv_axe.z = 0
+		
+		RAFT_Gigot_Add( tv_axe, tang_f_force )
+		tang_f_timer += tang_f_delay
+	}
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+// Perturbateur
+/////////////////////////////////////////////////////////////////////////////////
+for ( ti_perso = 0; ti_perso < 4; ti_perso++)
+{
+	to_perso = perturb_o_Object[ ti_perso ]
+	if ( (to_perso == nobody ) ||  (perturb_f_Delay[ ti_perso ] == 0) )
+		break
+	if (!(@to_perso OBJ_FlagsStatusGet() &OBJ_C_StatusFlag_Active )) continue
+	
+	tf_dist = OBJ_SqrDist( to_perso )
+	if (tf_dist > perturb_f_DistMax[ti_perso] * perturb_f_DistMax[ti_perso] ) 
+	{
+		perturb_f_Timer[ ti_perso ] = 0
+		continue
+	}
+	perturb_f_Timer[ ti_perso ] += TIME_GetDt()
+	
+	if (perturb_f_Timer[ ti_perso ] > perturb_f_Delay[ ti_perso ] )
+	{
+		tv_axe = @to_perso OBJ_PosGet() - OBJ_PosGet()
+		tv_temp = MATH_VecCrossProduct( tv_axe, OBJ_BankingGet() )
+		tv_axe += MATH_RandFloat(-1, 1) * tv_temp
+		
+		tv_axe = MATH_VecGlobalToLocal( tv_axe )
+		ti_gigot = RAFT_Gigot_Add( tv_axe, perturb_f_Force[ ti_perso ] )
+		gigot_f_speed[ ti_gigot ] = RAFT_GIGOT_TIMER  / (perturb_f_Delay[ ti_perso ] * 3)
+		perturb_f_Timer[ ti_perso ] -= perturb_f_Delay[ ti_perso ]
+	}
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+// SYNCHRO
+/////////////////////////////////////////////////////////////////////////////////
+sync_f_SpeedAdd = 0
+if ( sync_i_On && @"Interactive_Objects/Interactive_Raft" sync_o_With sync_i_On)
+{
+	WPOther_Me = @"Interactive_Objects/Interactive_Raft" sync_o_With sync_o_WPMe
+	WPOther_Other = @"Interactive_Objects/Interactive_Raft" sync_o_With sync_o_WPOther
+	
+	if ( ( WPOther_Me == sync_o_WPOther) && (WPOther_Other == sync_o_WPMe) )
+	{
+		tf_TimeOther = @"Interactive_Objects/Interactive_Raft" sync_o_With sync_f_Time
+		tf_average = (sync_f_Time + tf_TimeOther) / 2
+		
+		tf_speed0 = (sync_f_Dist + sync_f_DistNext) / sync_f_Time
+		tf_speed1 = (sync_f_Dist + sync_f_DistNext) / tf_average
+		sync_f_SpeedAdd = tf_speed1 - tf_speed0
+	}
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+// EJECTION PERSO
+/////////////////////////////////////////////////////////////////////////////////
+for ( ti_eject = 0; ti_eject < 4; ti_eject++)
+{
+	if ( ao_EjectedPerso[ ti_eject ] )
+	{
+		to_perso = ao_EjectedPerso[ ti_eject ]
+		@to_perso OBJ_HierarchyReset()
+		tv_speed = @to_perso DYN_SpeedGetVector()
+		if ( tv_speed.z  <  0 )
+		{
+			COL_UnCollidableDel( to_perso )
+			@to_perso COL_UnCollidableDel( OBJ_Me() )
+			if (o_colmap_add) @o_colmap_add OBJ_FlagInactiveSet( 0 )
+			ao_EjectedPerso[ ti_eject ] = nobody
+		}
+	}
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+// Ralentissement des radeaux si perso out of raft
+/////////////////////////////////////////////////////////////////////////////////
+OBJ_CapaSet( 0, OBJ_Capa_3 )
+for ( ti_perso = 0; ti_perso < 4; ti_perso++)
+{
+	if ( ao_Who[ ti_perso ] == nobody ) continue
+	if ( @ao_Who[ ti_perso ] OBJ_HierarchyGet( ) != OBJ_Me())
+		OBJ_CapaSet( OBJ_Capa_3, 0 )
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+// MESSAGE
+/////////////////////////////////////////////////////////////////////////////////
+// test teleport
+//if ( OBJ_CapaTest( OBJ_Capa_14 ) )
+//{
+//	OBJ_CapaSet( 0, OBJ_Capa_14 )
+//	msg.msg_sender = OBJ_Me()
+//	msg.msg_id =  msg_id_raft_teleport
+//	msg.msg_gao1 = test
+//	MSG_Send( msg )
+//}
+
+ti_msg = MSG_GetCount()
+while	( ti_msg )
+{
+	msg = MSG_Get()
+	ti_msg = MSG_GetCount()
+	
+	if ( (msg.msg_id == msg_id_raft_teleport ) && (msg.msg_gao1 != nobody) )
+	{
+		o_1st_wp = msg.msg_gao1
+		OBJ_SightGeneralSet( @o_1st_wp OBJ_SightGet(), Cv_VerticalVector )
+		OBJ_PosSet( @o_1st_wp OBJ_PosGet() )
+		RAFT_InitNetwork()
+	}
+	else if ((msg.msg_id == msg_id_projectile_plugto) && (msg.msg_gao1 != nobody) && lance_max)
+	{
+		tf_time = Cf_Infinit
+		for ( ti_lance = 0; ti_lance < lance_max; ti_lance++)
+		{
+			if ( !lance_obj[ ti_lance ] )
+				break
+			if ( lance_time[ ti_lance ] < tf_time )
+			{
+				tf_time = lance_time[ ti_lance ]
+				ti_older = ti_lance
+			}
+		}
+		if ( ti_lance == lance_max )
+		{
+			ti_lance = ti_older
+			MSG_SetNull( msg_send )
+			msg_send.msg_id = msg_id_grenadedestroy
+			@lance_obj[ ti_lance ] MSG_Send( msg_send )
+			OBJ_UnRegisterKill(lance_obj[ ti_lance ], &lance_obj[ ti_lance ])
+		}
+		
+		lance_obj[ ti_lance ] = msg.msg_gao1
+		OBJ_RegisterKill(lance_obj[ ti_lance ], &lance_obj[ ti_lance ])
+		lance_time[ ti_lance ] = TIME_Get()
+	}
+}
+
+
+///////// SFX ///////////////
+AI_Execute("Raft_exec_profile")

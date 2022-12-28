@@ -1,0 +1,110 @@
+#include "SFX_Banc_poissons_VAR.var"
+
+int 		ti_cpt1, ti_display
+vector	tv_dir, tv_old_pos, tv_old_dir, tv_dest, tv_gravite
+float 		tf_vitesse, tf_tmp_amp
+vector 	tv_BV_min, tv_BV_max
+
+DBG_StartRaster(2,"Raster poissons total")
+	//---------------------------------------------------------------------------------------------------------------------
+	//		MODIFICATION DE LA POSITION DES WP
+	//---------------------------------------------------------------------------------------------------------------------
+	for (ti_cpt1 = 0; ti_cpt1<i_nb_creatures ; ti_cpt1++)
+	{
+		tv_BV_min = @o_BV_ref BV_MinGet() + (@o_BV_ref OBJ_PosGet() - OBJ_PosGet())
+		tv_BV_max = @o_BV_ref BV_MaxGet() + (@o_BV_ref OBJ_PosGet() - OBJ_PosGet())
+
+		// On initialise la gravité à Null
+		tv_gravite = Cv_NullVector
+
+		//-------------------------------------------------------
+		// 	BACKUP ANCIENNES VALEURS
+		//-------------------------------------------------------
+		// On mémorise l'ancienne valeur de la direction
+		tv_old_dir = v_list_dir_obj[ti_cpt1]
+		// Idem pour l'ancienne position
+		tv_old_pos = v_list_obj[ti_cpt1]
+		// idem pour l'ancienne position de destination
+		tv_dest = v_list_dest_obj[ti_cpt1]
+
+		//-------------------------------------------------------
+		// 	CALCUL NOUVELLE VALEURS
+		//-------------------------------------------------------
+		// On détermine la nouvelle direction à suivre
+		if ( (tv_old_pos.z + f_dist_surface) > tv_BV_max.z && (i_list_jump[ti_cpt1] == faux))	// Si le poisson est proche de la surface, on le fait sauter
+		{
+			if (tv_old_pos.z < tv_BV_max.z)
+				tv_dir = tv_dest - tv_old_pos + cvector(0,0,(f_force_impulse/40))							// On balance une grosse force d'impulsion
+			else
+			{
+				//PROC_SFX_MINI_PLOUF(2.0,cvector(tv_old_pos.x, tv_old_pos.y, BV_MaxGet().z) + OBJ_PosGet())
+				i_list_jump[ti_cpt1] = vrai																				// On le définit comme étant en mode saut
+				v_list_dest_obj[ti_cpt1].z = tv_BV_min.z + ((tv_BV_max.z - tv_BV_min.z)/2)   // On fait en sorte que le prochain point soit profond pour éviter l'effet rebond sur la surface
+			}
+		}
+		else
+			tv_dir = tv_dest - tv_old_pos																				// Sinon on calcule la direction de façon classique
+
+		if ((tv_old_pos.z + f_dist_surface) > tv_BV_max.z)													// Si le poisson est au dessus de la BV
+			tv_gravite = cvector(0,0,f_gravite_saut)																	// on lui applique une gravité
+		else
+		{
+			if (i_list_jump[ti_cpt1])
+				PROC_SFX_MINI_PLOUF(2.0,cvector(tv_old_pos.x, tv_old_pos.y, tv_BV_max.z) + OBJ_PosGet())
+			tv_gravite = Cv_NullVector																					// Sinon on remet la gravité à Null
+			i_list_jump[ti_cpt1] = faux																					// et on remet le poisson en état normal
+		}
+
+		// Blindage vecteur nul v_attenuation
+		if (f_attenuation== 0.0000)
+			f_attenuation= 0.0001
+
+		// On calcule la nouvelle position de la particule
+		if (i_list_jump[ti_cpt1])
+			tf_vitesse = f_vitesse
+		else
+			tf_vitesse = -0.15 + f_vitesse + (0.85 * (f_vitesse * tv_old_dir.z) )
+
+
+		if ( ( (tv_old_pos.z + f_dist_surface) > tv_BV_max.z) && (i_list_jump[ti_cpt1] == vrai))
+		{
+			tf_vitesse *= 2
+			v_list_obj[ti_cpt1] = (tv_old_pos + (tf_vitesse * (tv_old_dir + (tv_old_dir * f_attenuation) + (tv_gravite * TIME_GetDt())) * TIME_GetDt()))
+		}
+		else
+		{
+			if (tf_vitesse > f_vitesse)
+				tf_vitesse -= (tf_vitesse / 150) * TIME_GetDt()
+			else
+				tf_vitesse = f_vitesse
+
+			v_list_obj[ti_cpt1] = (tv_old_pos + (tf_vitesse * (tv_old_dir + (tv_dir * f_attenuation)) * TIME_GetDt()))
+		}
+		// On backup la direction de l'objet
+
+		v_list_dir_obj[ti_cpt1] = MATH_VecNormalize(v_list_obj[ti_cpt1] - tv_old_pos)
+
+
+		//---------------------------------------------------------------------------------------------------------------------
+		//			TEST DE DISTANCE PAR RAPPORT A LA DESTINATION
+		//---------------------------------------------------------------------------------------------------------------------
+
+		if (MATH_VecSquareNorm(v_list_obj[ti_cpt1] - v_list_dest_obj[ti_cpt1]) < f_distance)
+		{
+			i_list_jump[ti_cpt1] = faux
+			v_list_dest_obj[ti_cpt1] = PROC_GEN_WP(tv_BV_min, tv_BV_max)
+		}
+
+		//---------------------------------------------------------------------------------------------------------------------
+		//								RENDU DES PARTICULES
+		//---------------------------------------------------------------------------------------------------------------------
+		if (o_list_obj[ti_cpt1])
+			{
+				@o_list_obj[ti_cpt1] OBJ_BankingSet(Cv_VerticalVector)
+				@o_list_obj[ti_cpt1] OBJ_SightSet(v_list_dir_obj[ti_cpt1])
+				@o_list_obj[ti_cpt1] OBJ_PosSet(OBJ_PosGet() + v_list_obj[ti_cpt1])
+			}
+		//PROC_DISPLAY_WP(OBJ_PosGet() + v_list_obj[ti_cpt1], v_list_dir_obj[ti_cpt1], 0.25 )
+}
+
+DBG_StopRaster(0)

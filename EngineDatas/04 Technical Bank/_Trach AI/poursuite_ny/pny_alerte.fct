@@ -1,0 +1,137 @@
+object		to_gao, to_close, to_close_bv, to_close_follow
+vector		tv_temp, tv_pos_follow, tv_offset
+float			tf_dist, tf_max_speed
+int				i
+
+// Temps depuis le début de l'aleeeerrrte
+f_time_alert += TIME_GetDt()
+
+// Je ne place pas la target du follow pile poil sur Kong ... j'utilise un offset
+tv_offset = OBJ_SightGet() * 4
+tv_offset.z = 0
+
+// Je récup kong
+to_gao = AI_MainActorGet(C_ID_Kong)
+
+// Je suis en alerte ... je change mon halo et mon spot
+GFX_Seti(i_idhalo, 21101, color_alerte)
+//if(o_occluder)
+//	@o_occluder OBJ_ShadowColorSet(color_alerte)	
+
+// Pour le retour au mode standby, on retournera au Root
+o_next_wp = nobody
+
+// Fin de l'alerte, je retourne en standby
+if( f_time_since_last_kong_seen  > f_retour_standby)
+{
+	i_mode = 0
+	v_pos_target = @o_follow OBJ_PosGet()	
+	return
+}
+
+v_speed_follow = @o_follow DYN_SpeedGetVector()
+tv_pos_follow = @o_follow OBJ_PosGet()
+
+// J'ai spécifié un object en "BV" .. je ne veux pas que ma target quitte cette BV
+if(o_bv_limite_alerte && (f_time_alert > 1.0))
+{
+	if( ! (@o_bv_limite_alerte COL_BV_PivotCollide(o_follow)))
+	{
+		i_mode = 0
+		v_pos_target = @o_follow OBJ_PosGet()		
+		return	
+	}
+}
+
+// Je suis en alerte ... je préviens mes potes pas trop loin ..
+i = 0
+while(o_close_spots[i])
+{
+	to_close = o_close_spots[i]
+	to_close_follow = @"little_actors/poursuite_ny" to_close o_follow
+	to_close_bv = @"little_actors/poursuite_ny" to_close o_bv_limite_alerte
+	
+	if(to_close_bv &&  ( @to_close_bv COL_BV_PivotCollide(to_close_follow) ) )
+	{
+		@"little_actors/poursuite_ny" to_close i_mode = 1	
+		
+		if(f_time_since_last_kong_seen < @"little_actors/poursuite_ny" to_close f_time_since_last_kong_seen)
+		{
+		 	@"little_actors/poursuite_ny" to_close f_time_since_last_kong_seen = f_time_since_last_kong_seen
+			@"little_actors/poursuite_ny" to_close v_last_pos_kong_in_ray =  v_last_pos_kong_in_ray
+			@"little_actors/poursuite_ny" to_close v_last_speed_kong_in_ray =  v_last_speed_kong_in_ray
+		}
+	}
+	
+	i++
+}
+
+
+// Distance entre la position actuelle de la target et Kong
+tf_dist = MATH_VecNorm(tv_pos_follow - @to_gao OBJ_PosGet()) 
+
+// Kong est proche ... on modère la vitesse max
+if(tf_dist > 10)
+	tf_max_speed = f_max_speed
+else
+	tf_max_speed = f_max_speed * (tf_dist / 10)
+
+f_current_speed = MATH_FloatBlend(f_current_speed, tf_max_speed, TIME_GetDt() * 5)
+
+// Distance entre la position actuelle de la target et la derniere position de Kong connue ...
+tf_dist = MATH_VecNorm(tv_pos_follow - v_last_pos_kong_in_ray) 
+
+// X sec après la dernière detection, le spot connait la position de Kong (Il le voit)
+if(f_time_since_last_kong_seen < 3.0)
+{
+	v_last_pos_kong_in_ray = @to_gao OBJ_PosGet()
+	v_last_speed_kong_in_ray = @to_gao DYN_SpeedGetVector()
+}
+else
+{	// Ca fait plus de X sec que je n'ai pas vu Kong, j'essaye de le retrouver en fonction de sa derniere vitesse connue
+	if(tf_dist < 30.0)
+	{
+		tv_temp = f_time_since_last_kong_seen * v_last_speed_kong_in_ray
+		v_last_pos_kong_in_ray += tv_temp
+	}
+	// Bon, j'ai perdu le macaque ... et je suis trop loin du dernier point ou je l'ai vu ... retour stand by	
+	else if(tf_dist > 30.0)
+	{
+		i_mode = 0
+		v_pos_target = @o_follow OBJ_PosGet()
+		return		
+	}
+}
+
+v_pos_target = v_last_pos_kong_in_ray + tv_offset
+
+tv_temp = v_pos_target - tv_pos_follow
+
+
+	
+// Blend ?
+if(f_follow_blend < 1)
+{
+	tv_temp = MATH_VecBlend(v_speed_follow, tv_temp, f_follow_blend)
+	f_follow_blend += TIME_GetDt() / 10
+}
+
+// Distance entre la position actuelle du follow  et la position de la target ...
+tf_dist = MATH_VecNorm(tv_pos_follow - v_pos_target) 
+
+if(tf_dist < 0.2)
+{
+	f_current_speed = 0	
+}
+else
+{
+	while(f_current_speed * TIME_GetDt() > tf_dist)
+	{
+		f_current_speed /= 2
+	}
+}
+
+
+// Set de la vitesse
+@o_follow DYN_SpeedSetVector(tv_temp)
+@o_follow DYN_SpeedSet(f_current_speed)	

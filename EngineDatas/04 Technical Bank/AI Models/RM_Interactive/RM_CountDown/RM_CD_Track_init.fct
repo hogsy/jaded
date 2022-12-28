@@ -1,0 +1,55 @@
+#include "RM_CD_Defines.var"
+
+int		ti_i
+float	tf_f
+vector tv_pos
+
+tf_f=f_Time/i_NbHalos
+i_NbLeftHalos = i_NbHalos
+
+f_Angle = ((2 * Cf_Pi) / i_NbHalos)
+
+f_Size = f_Time / f_Size
+
+for(ti_i=0;ti_i<i_NbHalos;ti_i++)
+{
+	ai_Halo[ti_i]=-1
+//	ai_Coeur[ti_i]=-1
+	af_TimeLeft[ti_i]=tf_f
+}
+
+if(o_CentreHalos)
+{
+	o_CentreHalos = @o_CentreHalos ANI_CanalObjectGet(i_Bone)
+}
+
+tf_f=f_Time/i_NbHalos
+
+//-------------------------------------------------------------
+// GFX Trainée de coeurs
+//-------------------------------------------------------------
+i_nb_modules = i_NbHalos
+
+if (i_TypeHalo == 3)
+{
+	tv_pos = @o_CentreHalos OBJ_PosGet() + tv_decalage_vertical
+
+	if (i_NbHalos > Ci_RM_CD_MaxHalo)
+		i_NbHalos = Ci_RM_CD_MaxHalo
+	
+	// On initialise tous les GFX
+	for (ti_i = 0; ti_i < Ci_RM_CD_MaxHalo; ti_i++)
+		ai_Halo[ti_i] = -1
+	
+	// On duplique les objets
+	for (ti_i = 0; ti_i < i_NbHalos; ti_i++)
+	{
+		tv_pos = tv_pos - cvector(0.0,0.0,i_espacement)
+		v_pos_modules[ti_i] = tv_pos
+		af_TimeLeft[ti_i] = tf_f
+	}
+}
+
+
+
+AI_TrackCurChangeNow("RM_CD_ETAT_Wait")

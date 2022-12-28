@@ -1,0 +1,39 @@
+#include "KBC_defines.var"
+
+object to_duplicated
+
+
+// SORTIE ETAT
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// ENTREE ETAT
+if (i_etat_courant != ETAT_Fade)
+{
+ 	i_etat_ancien_ancien = i_etat_ancien
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Fade
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	KBC_DBG_Trace(i_DBG_trace_etat, "etat fade")
+
+	to_duplicated = @get_SFX_decomposition OBJ_Duplicate(cvector(0,0,0))			// ALOC (C'est l'AI qui va gerer la decomposition)
+	@to_duplicated Proc_Decomposition_Init(OBJ_Me(), 2.0, 0, 1, -1)				// INIT (Vas y decompose moi :))
+	@to_duplicated Proc_Decomposition_Init(OBJ_Me(), 2.0, -1, 0, -1)				// INIT (Vas y decompose moi :))
+	
+	DYN_Off()
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+i_flag_neck = faux

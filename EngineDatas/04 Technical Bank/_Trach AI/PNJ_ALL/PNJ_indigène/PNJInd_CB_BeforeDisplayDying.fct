@@ -1,0 +1,23 @@
+object 	to_bone 
+float		blend
+int			i
+
+mf_Mat_Timer -= TIME_GetDt()
+to_bone = ANI_CanalObjectGet(Anim_Canal_Bassin)
+if ( to_bone )
+{
+	mi_Mat_Flags = @to_bone MAT_MT_FlagGet(0,0)
+	
+	if (mf_Mat_Timer > 0.5 )
+	{
+		blend = (mf_Mat_Timer - 0.5) * 2
+		@to_bone MAT_MT_FlagSet(0,0,0x10400,0)
+		@to_bone MAT_MT_SetLocalAlpha(0,0, 255 * blend )
+		
+		DBG_TraceInt( 255 * blend )
+		DBG_TraceString( "-" )
+		DBG_TraceInt( @to_bone MAT_MT_GetLocalAlpha(0,0))
+		DBG_TraceString( "\n" )
+//		MAT_MT_EnableLevel(0,0,1)
+	}
+}

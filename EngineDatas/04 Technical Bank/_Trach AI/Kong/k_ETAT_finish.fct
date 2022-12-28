@@ -1,0 +1,372 @@
+#include"k_define.var"
+Include_UltraProcedure_Header
+
+float		tf_percent
+float		tf_angle
+
+int			ti_valide
+int			tai[20]
+int			ti_kamera_finish_id
+int			ti_kamera_finish_id_kongwins
+int			ti_kamera_finish_id_forced 
+int			ti_action_seplace
+int			ti_action_challenge
+int			ti_action_gagne
+int			ti_action_perdu
+int			ti_finish_type
+int			ti_action_liaison
+int			ti_kamera_finish_id_cur
+int			ti_frame_launch_reward
+
+object	to_col
+object	to_gao
+object	to_bone_snap_kong
+object	to_bone
+object	to_kamera_gao
+
+vector	tv_col_pos
+vector	tv1
+vector	tv2
+vector	tv_zde_old_pos
+vector	tv_temp
+vector	tv_kong_to_oeil
+vector	tv_oeil_to_kong
+vector	tv_bat_to_oeil
+vector	tv_oeil_sight_init
+vector	tv_oeil_sight_new
+vector	tv_bat_pos
+vector	tv_oeil_pos
+
+string		str_txt
+
+// INIT VARS ======================================================================
+if( ao_CL_GRABKONG[i_GrabKong_MainActionGrab] )
+{
+	if( @ao_CL_GRABKONG[i_GrabKong_MainActionGrab] AI_IsModel(get_PNJ_KBats_path) )
+	{
+		// BIG BAT
+		ti_kamera_finish_id = Ci_Kamera_Finish_id_BigBat
+		ti_kamera_finish_id_kongwins = Ci_Kamera_Finish_id_BigBat_KongWins
+		ti_kamera_finish_id_forced = Ci_Kamera_Finish_id_BigBat_KongWins
+		ti_action_seplace = Ci_Kanim_FinishBigBat_SePlace
+		ti_action_challenge = Ci_Kanim_FinishBigBat_Deb
+		ti_action_gagne = Ci_Kanim_FinishBigBat_Gagne
+		ti_action_perdu = Ci_Kanim_FinishBigBat_Perd
+		ti_finish_type = Ci_finish_type_Big_Bat
+		ti_frame_launch_reward = 295		// total frames 298
+		to_bone_snap_kong = @ao_CL_GRABKONG[i_GrabKong_MainActionGrab] ANI_CanalObjectGet(Anim_Canal_Snap_KONG)	// kong se positionne sur une boite à oeil dans l'anim de la Big Bat
+	}
+	else
+	{
+		// TREX : DEFAULT
+		ti_kamera_finish_id = Ci_Kamera_Finish_id_TRex
+		ti_kamera_finish_id_kongwins = Ci_Kamera_Finish_id_TRex
+		ti_kamera_finish_id_forced = -1
+		ti_action_seplace = Ci_Kanim_Finish_SePlace
+		ti_action_challenge = Ci_Kanim_Finish_Deb
+		ti_action_gagne = Ci_Kanim_Finish_Fin
+		ti_action_perdu = Ci_Kanim_GrabTT_pafD_byREX
+		ti_finish_type = Ci_finish_type_TREX
+		ti_frame_launch_reward = 100
+		to_bone_snap_kong = nobody		// kong ne se positionne pas sur une boite à oeil dans l'anim de REX...
+	}
+}
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	if ( i_GrabKong_MainBloquee != -1)
+		ao_CL_GRABKONG[i_GrabKong_MainBloquee] = LNK_ThisClientGet( ao_CL_GRABKONG[i_GrabKong_MainBloquee], Ci_LNK_GRAB_KONG, amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee], faux, nofunc, nofunc, nofunc)
+	i_GrabKong_MainBloquee = -1
+	DYN_GravitySet( Cv_Kong_Gravity)
+	COL_ColSetActivationSet( C_zdm_pied, none)
+	SND_GRAB_STOP
+	
+	i_sort_etat = faux
+	return
+}
+
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_Kong_finish) 
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Kong_finish
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	// GRAB CLIENT ACCEPT
+	ai_SRV_ENABLE[Ci_LNK_KKFINISH_ON_KONG] = faux
+	
+	fct_last_etat = AI_TrackCurGet()
+	DYN_GravitySet( Cv_NullVector)
+	COL_ColSetActivationSet( none, C_zdm_pied)
+	DYN_SpeedSetVector(Cv_NullVector)
+	i_GrabKong_MainBloquee = i_GrabKong_MainActionGrab
+	LNK_GrabKong_ActionSet(amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee], Ci_GrabKong_FinishSePlace)
+	ACT_ActionSet(ti_action_seplace)
+	v_add_speed = Cv_NullVector
+	f_coef_recul = 1.0
+	i_SND_mash_advantage = 0 // par defaut Kong n a pas l avantage pour jouer le son quand il prend l avantage
+	i_exit_mode = faux
+	RIDE_Clear_Link_Bat(vrai)
+	i_finish_repousse = faux
+	f_finish_pos_blend = 0.0
+	f_finish_orient_blend = 0.0
+	STATS_IncAttack()
+}
+
+// ANALYSE  ==============================================================
+
+AI_Execute("k_exec_detect_paf")
+if ( o_paf_actor)
+{
+	PAF_Test_ChangeEtatValid(fct_track_change)
+	if( fct_track_change != nofunc )
+		macro_change_etat(fct_track_change)
+}
+
+
+// QUITTER LE GRAB GRACE A UN DASH
+if( i_flag_just_Action && ACT_ActionGet() == ti_action_challenge )
+{
+	v_dash_direction = v_joy_sight_normalized
+	ACT_ActionSet( Ci_Kanim_dash + Ci_ActionSet_Force_FrameZero + Ci_ActionSet_Force_SameAction)
+	COUP_Orient( 0.0, 0.5, 0.0)
+	COUP_Set_Mode( C_Mode_Dash)
+	macro_change_etat( "k_ETAT_main")		// Grab Fini
+}
+
+
+if ( i_exit_mode)
+	ti_valide = faux		// Sortie de mode demandée on ne veux plus de liaison
+else
+	ti_valide = vrai
+
+
+if ( ao_CL_GRABKONG[i_GrabKong_MainBloquee])
+	ao_CL_GRABKONG[i_GrabKong_MainBloquee] = LNK_ThisClientGet( ao_CL_GRABKONG[i_GrabKong_MainBloquee], Ci_LNK_GRAB_KONG, amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee], ti_valide, "k_exec_grab_object_param", nofunc, nofunc)
+if ( !ao_CL_GRABKONG[i_GrabKong_MainBloquee])
+{
+	// Liaison coupée: le TREX s'est libéré.
+	if ( !i_exit_mode || ACT_ActionFinished())
+		macro_change_etat("k_ETAT_main")
+	else
+		return
+}	
+
+
+// COMPORTEMENT ==============================================================
+
+// CAMERA -----------------------------------------------------------------
+ti_kamera_finish_id_cur = -1
+to_kamera_gao = nobody
+ti_action_liaison = LNK_GrabKong_ActionGet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab])
+switch( ti_action_liaison )
+{
+	case Ci_GrabKong_FinishSePlace :
+		if( ti_finish_type == Ci_finish_type_Big_Bat )
+			ti_kamera_finish_id_cur = ti_kamera_finish_id
+		break
+	case Ci_GrabKong_FinishDeb :
+		ti_kamera_finish_id_cur = ti_kamera_finish_id
+		break
+	case Ci_GrabKong_FinishFin :
+		if( ti_finish_type == Ci_finish_type_Big_Bat )
+		{
+			if( ANI_CurrentFrameGet(0) > 47 )
+				ti_kamera_finish_id_cur = ti_kamera_finish_id_kongwins
+			else
+				ti_kamera_finish_id_cur = ti_kamera_finish_id
+		}
+		else
+			ti_kamera_finish_id_cur = ti_kamera_finish_id
+		break
+	case Ci_GrabKong_FinishGagne :
+		if( ti_finish_type == Ci_finish_type_Big_Bat )
+			ti_kamera_finish_id_cur = ti_kamera_finish_id_kongwins
+		else
+			ti_kamera_finish_id_cur = ti_kamera_finish_id
+		break
+}
+if( ti_kamera_finish_id_cur == -1 )
+	ti_kamera_finish_id_cur = ti_kamera_finish_id_cur
+if( ti_kamera_finish_id_cur != -1 )
+{
+	if( to_kamera_gao )
+		to_gao = to_kamera_gao
+	else if( ti_finish_type == Ci_finish_type_Big_Bat )
+		to_gao = OBJ_Me()		// KONG est fixe
+	else
+		to_gao = ao_CL_GRABKONG[i_GrabKong_MainBloquee]		// REX est fixe
+	@get_Kamera Proc_Kam_FinishMode_Set( ti_kamera_finish_id_cur, to_gao)	// Parametres pour le moment, le type de Finish et le perso de reference de ce finish (en principe KONG)
+	#ifndef _FINAL_
+	if( @"univ" i_cheat_page == 4 )
+	{
+		Str_DisplayTextOnce("kamera finish / id = ", cvector(0.4,0.8,0))
+		Str_DisplayIntOnce(ti_kamera_finish_id_cur, cvector(0.6,0.8,0))
+	}
+	#endif
+}
+// CAMERA -----------------------------------------------------------------
+
+f_ride_paf_time = 0.0		// Pas de paf de scolo sur le delai dans ce mode
+
+// CHOIX DES ANIMS DEPENDANT DE KONG
+switch ( LNK_GrabKong_ActionGet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab]))
+{	
+	// #################################################################################################################################################################
+	case Ci_GrabKong_FinishSePlace :
+		if (ACT_ActionFinished())
+		{
+			SND_RequestPlay(14)
+			i_request_txt_forced = GeneKon_C_mashing_finish
+			LNK_GrabKong_ActionSet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab],  Ci_GrabKong_FinishDeb )
+			RUMBLE_INIT
+			ACT_ActionSet(ti_action_challenge)
+			i_SND_Grab_LoopA = SND_RequestPlayLoopOnObjCanal(54, Anim_Canal_MainDroite)
+			i_SND_Grab_LoopB = SND_RequestPlayLoopOnObjCanal(55, Anim_Canal_MainGauche)
+		}
+		switch( ti_finish_type )
+		{
+			case Ci_finish_type_Big_Bat :
+				f_finish_pos_blend = 1.0
+				f_finish_orient_blend = 1.0
+				OBJ_PosSet(MATH_VecBlend(OBJ_PosGet(), @to_bone_snap_kong OBJ_PosGet(), f_finish_pos_blend))		// kong se positionne sur une boite à oeil dans l'anim de la Big Bat	
+				COL_StartMatrixSet(OBJ_PosGet())
+				break
+			
+			case Ci_finish_type_TREX :
+				// COLLISIONS
+				to_col = COL_BestAngleWallGaoGet( @ao_CL_GRABKONG[i_GrabKong_MainBloquee] OBJ_PosGet() - OBJ_PosGet(), Cf_Cos90,&tai[0])
+				if ( to_col  && to_col  != ao_CL_GRABKONG[i_GrabKong_MainBloquee] )
+				{
+					// Detection d un objet entre les 2 acteurs.
+					if ( @to_col  OBJ_FlagsIdentityTest( OBJ_C_IdentityFlag_AI))
+						Proc_KK_Send_Paf( C_EVENT_FILTER_Object, C_PAF_KK_Moyen, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_col, -1, 2.0, OBJ_SightGet(), OBJ_PosGet())
+					tv_col_pos = COL_CollidedPointGet( COL_C_Wall)
+					DBG_RenderVector( tv_col_pos, cvector( 0.0, 0.0, 5.0), color_rouge)
+					tv1 = tv_col_pos - OBJ_PosGet()
+					tv1.z = 0.0
+					tv2 = tv_col_pos - @ao_CL_GRABKONG[i_GrabKong_MainBloquee] OBJ_PosGet()
+					tv2.z = 0.0
+					if ( MATH_VecDotProduct( tv1, tv2) < 0 )
+					{
+						i_exit_mode = vrai	// Collison entre les 2 : cancel.
+						macro_change_etat("k_ETAT_main")	// Pas de liaison finish possible
+					}
+				}
+				// POSITION ET ORIENTATION
+				OBJ_PosSet(MATH_VecBlend( OBJ_PosGet(), @ao_CL_GRABKONG[i_GrabKong_MainBloquee] OBJ_PosGet(), 6.0 * TIME_GetDt()))
+				OBJ_BankingGeneralSet(
+					MATH_VecBlend( OBJ_SightGet(), @ao_CL_GRABKONG[i_GrabKong_MainBloquee] OBJ_SightGet(), 6.0 * TIME_GetDt()), 
+					MATH_VecBlend( OBJ_BankingGet(), @ao_CL_GRABKONG[i_GrabKong_MainBloquee] OBJ_BankingGet(), 6.0 * TIME_GetDt()))
+				COL_StartMatrixSet(OBJ_PosGet())
+				break
+		}
+		break
+		
+	// #################################################################################################################################################################
+	case Ci_GrabKong_FinishDeb :
+		if (i_flag_just_Rage_Any_Button || i_flag_just_grab)
+		{
+			tf_percent = Proc_KK_Mashing_Pct()
+			@get_Kamera Proc_Kam_RumbleSet(tf_percent / Cf_Rumble_Amplitude, 6.0)
+		}
+
+		// SND
+		SND_InsertVarSet( i_SND_Grab_LoopA, 11, ANI_RatioGet(0))
+		if ( !i_SND_mash_advantage && ANI_RatioGet(0)> 0.75)
+		{
+			i_SND_mash_advantage = 1
+			SND_RequestPlay( 56)
+		}
+		else if ( i_SND_mash_advantage && ANI_RatioGet(0) < 0.25)
+		{
+			i_SND_mash_advantage = 0
+		}
+		ACT_ActionSet(ti_action_challenge)
+		switch( ti_finish_type )
+		{
+			case Ci_finish_type_Big_Bat :
+				OBJ_PosSet(@to_bone_snap_kong OBJ_PosGet())
+				OBJ_BankingGeneralSet(@to_bone_snap_kong OBJ_SightGet(), @to_bone_snap_kong OBJ_BankingGet())
+				break 
+			case Ci_finish_type_TREX :
+				// c'est KONG qui va au TREX
+				OBJ_PosSet( @ao_CL_GRABKONG[i_GrabKong_MainBloquee] OBJ_PosGet())
+				OBJ_BankingGeneralSet( @ao_CL_GRABKONG[i_GrabKong_MainBloquee] OBJ_SightGet(), @ao_CL_GRABKONG[i_GrabKong_MainBloquee] OBJ_BankingGet())
+		}
+		break
+
+	// #################################################################################################################################################################
+	case Ci_GrabKong_FinishFin : 
+		if ( ACT_ActionGet() != ti_action_gagne )
+		{
+			SND_GRAB_STOP
+			i_Kamera_Finish_id_Forced = ti_kamera_finish_id_forced 
+			ACT_ActionSet(ti_action_gagne)
+			DYN_GravitySet( Cv_Kong_Gravity)
+		}
+		if ( ACT_ActionFinished() || ANI_CurrentFrameGet(0) > ti_frame_launch_reward )	// sécurité car pour la bat c à la fin de l'anim
+		{
+			LNK_GrabKong_ActionSet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainActionGrab], Ci_GrabKong_FinishGagne )
+			to_gao = ao_CL_GRABKONG[i_GrabKong_MainBloquee]
+			RAGE_Launch_Reward(to_gao)
+		}
+		else if ( ! MATH_FloatNullEpsilon(f_rumble_power) && ANI_CurrentFrameGet(0) > 65)
+		{
+			f_rumble_power = 0.0
+		}
+		switch( ti_finish_type )
+		{
+			case Ci_finish_type_Big_Bat :
+				if( ! i_finish_repousse && ANI_CurrentFrameGet(0) > 200 )
+				{
+					i_finish_repousse = vrai
+					to_bone = @ao_CL_GRABKONG[i_GrabKong_MainBloquee] ANI_CanalObjectGet(3)	// torse, N° canal spécifique pour les bats
+					LIBGFX_ShakeCam( 0.05, 35.0, 0.0, 0.0, 0.15, 1.1)
+					Proc_KK_SFX_Ring(@to_bone OBJ_PosGet(), Cv_VerticalVector)
+					tv_zde_old_pos = COL_ZonePosGet(C_zde_fight)
+					tv_zde_old_pos -= OBJ_PosGet()
+					tv_zde_old_pos = MATH_VecGlobalToLocal(tv_zde_old_pos)
+					tv_temp = @to_bone OBJ_PosGet()
+					tv_temp -= OBJ_PosGet()
+					tv_temp = MATH_VecGlobalToLocal(tv_temp)
+					COL_ZonePosSet(C_zde_fight, tv_temp)
+					COL_ZoneSizeSet(C_zde_fight, cvector(8.0, 8.0, 8.0))
+					KONG_Test_ZDE_ZDE(C_zde_fight, C_zde_corps, Cv_NullVector, faux, vrai)
+					COL_ZonePosSet(C_zde_fight, tv_zde_old_pos)
+					COL_ZoneSizeSet(C_zde_fight, Cf_ZDE_SizeFight)
+				}
+				break
+			case Ci_finish_type_TREX :
+				break
+		}
+		break
+
+	// #################################################################################################################################################################		
+	case Ci_GrabKong_FinishGagne :
+		SND_GRAB_STOP
+		ao_CL_GRABKONG[i_GrabKong_MainBloquee] = LNK_ThisClientGet( ao_CL_GRABKONG[i_GrabKong_MainBloquee], Ci_LNK_GRAB_KONG, amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee], faux, "k_exec_grab_object_param", nofunc, nofunc)
+		macro_change_etat("k_ETAT_main")
+		break
+		
+	// #################################################################################################################################################################
+	case Ci_GrabKong_FinishPerdu :
+		if( ACT_ActionGet() != ti_action_perdu )
+		{
+			ACT_ActionSet(ti_action_perdu)
+			DYN_GravitySet( Cv_Kong_Gravity)
+		}
+		if( ACT_ActionFinished() )
+		{
+			i_exit_mode = vrai		// couper la liaison
+		}
+		break
+}

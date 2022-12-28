@@ -1,0 +1,11 @@
+#include "PRO_Defines.var"
+if(COL_RayObject_Vector(OBJ_PosGet(),OBJ_SightGet()*LifeTime*C_PProj_Speed,OBJ_C_IdentityFlag_ColMap,none,Ci_Filter_IdentityFlag,COL_C_Ray_on_ColMap_NoCrossable))
+{
+	timer=MATH_VecNorm(COL_RayObject_PosGet()-OBJ_PosGet())/C_PProj_Speed
+}
+else timer=LifeTime
+AI_PrioritySet(10)
+dt=TIME_GetDt()
+OBJ_PosSet(OBJ_PosGet()+(C_PProj_Speed*dt*OBJ_SightGet()))
+OBJ_ScaleSet(cvector(scale,2,scale))
+AI_TrackChange(2,"PRO_bhv_Run")

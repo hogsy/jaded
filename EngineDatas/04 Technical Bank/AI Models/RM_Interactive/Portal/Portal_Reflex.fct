@@ -1,0 +1,94 @@
+vector		tv_pos
+vector		tv_offset
+vector		tv_bv_min
+vector		tv_bv_max
+
+o_main_actor = AI_MainActorGet(0)
+
+if (@o_main_actor COL_BVObjectObject(A))
+{
+//	DBG_RenderVector(v_outside_A_pos, Cv_VerticalVector * 1000.0, color_rouge)
+
+	if ( ! i_flag_in_A )
+	{
+		tv_bv_min = @A OBJ_PosGet()
+		tv_bv_min += @A BV_MinGet()
+
+		tv_bv_max = @A OBJ_PosGet()
+		tv_bv_max += @A BV_MaxGet()
+
+		if (v_outside_A_pos.x > tv_bv_min.x && v_outside_A_pos.x < tv_bv_max.x)
+			v_A_axis = cvector(0.0, MATH_FloatSign(v_outside_A_pos.y - @A OBJ_PosGet().y), 0.0)
+		else
+			v_A_axis = cvector(MATH_FloatSign(v_outside_A_pos.x - @A OBJ_PosGet().x), 0.0, 0.0)
+	}	
+
+	i_flag_in_A = vrai
+	
+//	DBG_RenderVector(@A OBJ_PosGet(), v_A_axis * 1000.0, color_rouge)
+}
+else
+{
+	if (i_flag_in_A && MATH_VecDotProduct(@o_main_actor OBJ_PosGet() - @A OBJ_PosGet(),  v_A_axis) < 0.0)
+	{
+		tv_offset = @B OBJ_PosGet()
+		tv_offset -= @A OBJ_PosGet()
+	
+		tv_pos = @o_main_actor OBJ_PosGet()
+		tv_pos += tv_offset
+		@o_main_actor OBJ_PosSet(tv_pos)
+		@o_main_actor COL_StartMatrixSet(tv_pos)
+	
+		tv_pos = @get_Kamera OBJ_PosGet()
+		tv_pos += tv_offset
+		@get_Kamera OBJ_PosSet(tv_pos)
+		@get_Kamera v_MECA_cam_target += tv_offset
+	}
+	
+	i_flag_in_A	= faux
+	v_outside_A_pos = @o_main_actor OBJ_PosGet()
+}
+
+if (@o_main_actor COL_BVObjectObject(B))
+{
+//	DBG_RenderVector(v_outside_B_pos, Cv_VerticalVector * 1000.0, color_vert)
+
+	if ( ! i_flag_in_B )
+	{
+		tv_bv_min = @B OBJ_PosGet()
+		tv_bv_min += @B BV_MinGet()
+
+		tv_bv_max = @B OBJ_PosGet()
+		tv_bv_max += @B BV_MaxGet()
+
+		if (v_outside_B_pos.x > tv_bv_min.x && v_outside_B_pos.x < tv_bv_max.x)
+			v_B_axis = cvector(0.0, MATH_FloatSign(v_outside_B_pos.y - @B OBJ_PosGet().y), 0.0)
+		else
+			v_B_axis = cvector(MATH_FloatSign(v_outside_B_pos.x - @B OBJ_PosGet().x), 0.0, 0.0)
+	}	
+
+	i_flag_in_B = vrai
+	
+//	DBG_RenderVector(@B OBJ_PosGet(), v_B_axis * 1000.0, color_vert)
+}
+else
+{
+	if (i_flag_in_B && MATH_VecDotProduct(@o_main_actor OBJ_PosGet() - @B OBJ_PosGet(),  v_outside_B_pos - @B OBJ_PosGet()) < 0.0)
+	{
+		tv_offset = @A OBJ_PosGet()
+		tv_offset -= @B OBJ_PosGet()
+	
+		tv_pos = @o_main_actor OBJ_PosGet()
+		tv_pos += tv_offset
+		@o_main_actor OBJ_PosSet(tv_pos)
+		@o_main_actor COL_StartMatrixSet(tv_pos)
+	
+		tv_pos = @get_Kamera OBJ_PosGet()
+		tv_pos += tv_offset
+		@get_Kamera OBJ_PosSet(tv_pos)
+		@get_Kamera v_MECA_cam_target += tv_offset
+	}
+	
+	i_flag_in_B = faux
+	v_outside_B_pos = @o_main_actor OBJ_PosGet()
+}

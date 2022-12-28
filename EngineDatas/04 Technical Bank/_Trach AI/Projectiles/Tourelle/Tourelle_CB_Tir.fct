@@ -1,0 +1,96 @@
+//vector 	v, tv_tir_depart, tv_sight, tv_tir_arrivee
+//float		f, tf_coef, tf_sin
+//object	to_gao, to_bone
+//int			ti_canal, tc_color
+//float			ti_puissance
+//
+//mf_TimeNextBullet -= TIME_GetDt()
+//if ( mf_TimeNextBullet < 0)
+//{
+//	mf_TimeNextBullet = mf_TimeBetweenTwoBullet
+//	mf_Recul = -0.04
+//	
+//	tv_tir_depart = @mo_Camera OBJ_PosGet()
+//	tv_sight = @mo_Camera OBJ_SightGet()
+//	
+//	DBG_RenderVector( tv_tir_depart, tv_sight * 10, color_rose )
+//	
+////	tv_tir_depart = OBJ_PosGet()
+////	tv_tir_depart += OBJ_BankingGet() * 0.1
+////	tv_tir_depart += OBJ_SightGet() * 0.5
+////
+////	tv_sight = @get_camera OBJ_HorizonGet() * MATH_RandFloat(-mf_BulletDispertion, mf_BulletDispertion)
+////	tv_sight += @get_camera OBJ_BankingGet() * MATH_RandFloat(-mf_BulletDispertion, mf_BulletDispertion)
+////	tv_tir_depart += tv_sight
+////	tv_sight += OBJ_SightGet()
+//	MATH_VecSetNormalize(tv_sight)
+//	
+//	to_bone = COL_RayObject_Dist(tv_tir_depart, tv_sight, mf_Range, all, none, 0, COL_C_Ray_on_visuel_and_bone_volumes)
+//	if (to_bone)
+//	{
+//		ti_canal = COL_RayObject_CanalGet()
+//		if (ti_canal == -1)
+//		{
+//			tc_color = 0x40C0C0C0
+//			to_gao = to_bone
+//		}
+//		else
+//		{
+//			tc_color = 0xFF000060
+//			to_gao = COL_RayObject_ActorGet()
+//		}
+//		
+//		tv_tir_arrivee = COL_RayObject_PosGet()
+//
+////		push(tc_color)
+////		push(COL_RayObject_NormalGet())
+////		push(tv_tir_arrivee)
+////		AI_Execute("H_exec_GFX_Impact")
+//	}
+//	else
+//	{
+//		to_gao = nobody
+//		tv_tir_arrivee = tv_tir_depart + (tv_sight *  mf_Range)
+//	}
+//			
+//	tv_sight = tv_tir_arrivee - tv_tir_depart
+//	tv_sight.z = 0
+//	if ( MATH_VecNullEpsilon( tv_sight)) tv_sight = OBJ_SightGet()
+//	MATH_VecSetNormalize( tv_sight)	
+//		
+//	if (to_gao) 
+//	{
+//		ti_puissance = Cf_tommy_gun_paf
+//		EVENT_AddEventPafCanal(C_EVENT_FILTER_All, C_PAF_KK_Weapon , OBJ_Me(), 0.01, to_gao, ti_canal, ti_puissance, tv_sight, tv_tir_arrivee)
+//	}
+//				
+//	tv_tir_depart  = OBJ_PosGet()
+//	tv_tir_depart += OBJ_BankingGet() * 0.1
+//	tv_tir_depart += OBJ_SightGet() * 0.5
+////	push(10)
+////	push(tv_tir_arrivee)
+////	push(tv_tir_depart)
+////	AI_Execute("H_exec_GFX_Tir")
+//
+//	if (mi_GFXweapon == -1)
+//	{
+//		mi_GFXweapon = GFX_Add(21)
+//		GFX_FlagSet(mi_GFXweapon , 4, 1)
+//		GFX_MaterialSet(mi_GFXweapon , get_SFX_light_and_smoke, 0)	
+//		GFX_Setf(mi_GFXweapon , 21000, 0.05)	//des_f_Radius
+//		GFX_Setf(mi_GFXweapon , 21002, 0.0)	//des_f_Offset 
+//		GFX_Setf(mi_GFXweapon , 21003, 0.0)
+//		GFX_Setf(mi_GFXweapon , 21006, Cf_Pi)		//des_f_Angle 
+//		GFX_Seti(mi_GFXweapon , 21104, 7)						//des_i_Number 
+//	}
+//
+//	//tf_coef = f_time_GFX_Tommygun / 0.2
+//	tf_coef = 0.5
+//	tf_sin = MATH_Sin(TIME_Get() * 60.0)
+//
+//	GFX_Setv(mi_GFXweapon , 21200, tv_tir_depart)
+//	GFX_Setv(mi_GFXweapon , 21201, MATH_VecRotate(OBJ_BankingGet(), OBJ_SightGet(), 40.0 * TIME_Get()))
+//	GFX_Setf(mi_GFXweapon , 21004, tf_coef * (3.0 + (tf_sin * 1.5)))	
+//	GFX_Seti(mi_GFXweapon , 21101, COLOR_Blend(0x2080FF, 0x80C0FF, tf_coef * (0.5 * (1.0 + tf_sin))))	// Couleurs des rayons
+//}
+//

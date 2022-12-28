@@ -1,0 +1,58 @@
+#include "PNJ_Snake_defines.var"
+
+int					ti_i
+int					ti_rank
+int					ti_perceived_status
+int					ti_paf_type
+int					ti_index
+int					ti_seuil_paf_moyen
+int					ti_seuil_paf_fort
+int					ti_canal
+int					ti_au_moins_un_paf
+
+vector			tv_speed
+vector			tv_temp
+
+object			to_target
+object			to_father
+object			to_sender
+
+message		tmsg_filter
+
+float				tf_puissance
+float				tf_life_init
+
+messageid		tmid_paf
+messageid		tmid_vision_event
+
+i_paf_type = 0
+i_paf_flag = faux
+v_paf_dir = Cv_NullVector
+
+MSG_SetNull(tmsg_filter)
+tmsg_filter.msg_gao1 = OBJ_Me()
+ti_rank = -1
+
+for (	tmid_paf = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tmsg_filter);
+		MSG_GlobalIsValid(tmid_paf);
+		tmid_paf = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tmsg_filter)	)
+{
+	to_father	 = EVENT_PereGet(tmid_paf)
+	to_sender = EVENT_Gao2Get(tmid_paf)
+	if ( ! to_sender )
+		to_sender = to_father
+
+	tf_puissance = EVENT_PafPuisGet(tmid_paf)
+	ti_paf_type = EVENT_PafTypeGet(tmid_paf)
+	ti_canal = EVENT_PafCanalGet(tmid_paf)
+	
+	i_paf_type |= ti_paf_type
+//	if (i_paf_type & C_PAF_RM_Fort)
+		i_paf_flag = vrai
+		
+	if (i_paf_type & C_PAF_RM_EarthQuake)
+		f_earth_quake_duration = 2.0
+	
+	v_paf_dir = EVENT_PafDirGet(tmid_paf)
+	MATH_VecSetNormalize(v_paf_dir)
+}

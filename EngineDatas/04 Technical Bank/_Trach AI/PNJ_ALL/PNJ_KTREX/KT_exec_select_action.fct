@@ -1,0 +1,16 @@
+
+// ACTION ==================================================================================
+if( i_force_change_anim || ( i_fight_action != i_fight_action_old && f_fight_delai_anim > 1.0 ) )
+{
+	ACT_ActionSet(i_fight_action)
+
+	if( i_fight_action == i_Anim_marche && i_blesse_on )
+	{
+		ANI_FrequencySet(0, ANI_FrequencyGet(0) * MATH_RandFloat(0.9,1.3))
+	}
+	
+	i_fight_action_old = i_fight_action
+	f_fight_delai_anim = 0.0
+}
+else
+	f_fight_delai_anim += TIME_GetDt()

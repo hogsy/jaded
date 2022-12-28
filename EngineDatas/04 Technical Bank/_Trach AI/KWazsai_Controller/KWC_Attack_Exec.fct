@@ -1,0 +1,56 @@
+#include "KWC_Defines.var"
+
+int			i_Index
+int			i_Index2
+float 		f_Dist
+object	o_Target
+int 		i_IsDependenceObjectDestroyed
+object	to_group
+
+o_Target = mm_Msg.msg_gao1
+
+// if there is no-one left to attack because of the dependance objects or some other factor, stop all processing
+mi_NeverTriggerAnyMoreDWZ = vrai
+
+if ( o_Target )
+{
+	for ( i_Index = 0; i_Index < C_Max_NativeGroups; i_Index++ )
+	{
+		i_IsDependenceObjectDestroyed  = faux
+		
+		if ( mao_DependanceObject[i_Index] )
+		{
+			if ( @mao_DependanceObject[i_Index] OBJ_CapaTest( OBJ_Capa_2 ) )
+			{
+				i_IsDependenceObjectDestroyed = vrai
+			}
+		}
+		
+		if ( !i_IsDependenceObjectDestroyed )
+		{
+			for ( i_Index2 = 0; i_Index2 < C_Max_AIPerGrp; i_Index2++ )
+			{
+				to_group = mao_NativeGroup[i_Index][i_Index2]
+				if ( to_group )
+				{
+					f_Dist = MATH_VecDistance( ( @to_group OBJ_PosGet() ), ( @o_Target OBJ_PosGet() ) )
+					if ( f_Dist <= mf_MaxDistFromEachJavSrc && f_Dist >= mf_MinDistFromEachJavSrc )
+					{
+						if ( ! @to_group AI_IsModel( "Kanada/KPluieDeLances" ) )
+						{
+							@to_group OBJ_CapaSet( mi_CapaToSet, none )
+								
+							mi_NeverTriggerAnyMoreDWZ = faux
+						}
+						else
+						{
+							@to_group MSG_Send( mm_Msg )
+					
+							mi_NeverTriggerAnyMoreDWZ = faux
+						}
+					}
+				}
+			}
+		}
+	}
+}

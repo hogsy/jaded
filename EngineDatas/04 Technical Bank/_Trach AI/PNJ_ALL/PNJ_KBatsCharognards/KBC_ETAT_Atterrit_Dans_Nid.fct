@@ -1,0 +1,161 @@
+
+#include "KBC_defines.var"
+
+//=============================================================================
+// LA BAT ATTERRIT DANS SON NID AVEC SA PROIE POUR LA MANGER
+//=============================================================================
+
+object			to_tete
+
+
+// SORTIE ETAT
+if (i_sort_etat)
+{
+	i_flag_depl_horiz = faux
+	i_flag_neck = vrai
+	
+	i_sort_etat = faux
+	return
+}
+
+// ENTREE ETAT
+if (i_etat_courant != ETAT_Atterrit_Avec_Proie )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Atterrit_Avec_Proie
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	
+	f_ref_speed = Cf_speed_atterrit
+	
+	// destination
+	v_cible_pos = @o_cible_depl OBJ_PosGet()
+	v_decalage = Cv_NullVector
+	v_dest_pos = v_cible_pos + v_decalage
+	
+	DBG_RenderVector(v_cible_pos, v_decalage, color_vert)
+
+	// wp d'arrivée
+	@o_tmp_obj_next OBJ_PosSet(v_dest_pos)
+	@o_tmp_obj_next OBJ_BankingGeneralSet( OBJ_SightGet(), Cv_VerticalVector)
+	o_next_wp = o_tmp_obj_next
+	
+	// lien à parcourir
+	f_link_coef = 0.0
+	f_link_length = MATH_VecNorm(@o_next_wp OBJ_PosGet() - @o_last_wp OBJ_PosGet())
+	
+	i_flag_depl_horiz = vrai
+	f_time_action = TIME_Get()
+	
+//	if( MSG_GlobalIsValid( mid_grab_charogne ) )
+//		ACT_ActionSet(ACTION_Vol_Proie)
+//	else
+		ACT_ActionSet(i_reflex_action_vol)
+	
+//	if( ! f_duree_dans_champ_camera )
+	if( MSG_GlobalIsValid(mid_grab_charogne) && ( ! f_duree_dans_champ_camera ) )
+	{
+		i_flag_attente_hors_champ = vrai		// Hors champ : attente avant d'atterrir à côté de la charogne
+	}
+	else
+	{
+		// wp de départ
+		@o_tmp_obj_last OBJ_PosSet(OBJ_PosGet())
+		@o_tmp_obj_last OBJ_BankingGeneralSet(OBJ_SightGet(), OBJ_BankingGet())
+		o_last_wp = o_tmp_obj_last
+	}
+}
+
+// Suivi du regard
+if( MSG_GlobalIsValid(mid_grab_charogne) )
+{
+	// la bat observe sa proie
+	to_tete = @o_cible ANI_CanalObjectGet(Anim_Canal_Tete)
+	v_look_pos = @to_tete OBJ_PosGet()
+}
+else if( ACT_ActionGet() == ACTION_Mange_Attente )
+{
+	// si elle n'a pas de proie, elle reagrde JACK une fois posée
+	v_look_pos = @o_jack OBJ_PosGet()
+}
+	
+// Cri annonce descente dans son nid
+//if( ! TIME_Elapsed(f_time_action, 1.0) )
+if( MSG_GlobalIsValid(mid_grab_charogne) && ( ! TIME_Elapsed(f_time_action, 1.0) ) )
+{
+	//Str_DisplayTextOnce("Skriiiii !!! - Je vais me regaler !!!", cvector(0, 0.5, 0))
+}
+
+
+// Attente Hors Champ
+if( i_flag_attente_hors_champ )
+{
+	if( ( TIME_Elapsed(f_time_action, 3.0) ) || ( f_duree_dans_champ_camera >= 0.5 ) )
+	{
+		f_speed = 0.0
+		f_time_action = TIME_Get()		// pour relancer un cri
+		i_flag_attente_hors_champ = faux
+		
+		// wp de départ
+		@o_tmp_obj_last OBJ_PosSet(OBJ_PosGet())
+		@o_tmp_obj_last OBJ_BankingGeneralSet(OBJ_SightGet(), OBJ_BankingGet())
+		o_last_wp = o_tmp_obj_last
+	}
+//	else
+//	{
+//		DBG_TraceString("attente hors champ (atterrit dans son nid)")
+//		DBG_TraceEOL()
+//	}
+	
+	return
+}
+
+
+// ========== DEPLACEMENT ============
+
+if( ( ! MSG_GlobalIsValid(mid_grab_charogne) ) && ( ! TIME_Elapsed(f_time_action, 2.0) ) && ( ACT_ActionGet() != ACTION_Mange_Attente ) )
+{
+	// si la bat vient de reposer, elle survole son nid en se retournant vers le joueur avant de se poser
+	OBJ_BankingGeneralSet(
+		MATH_VecBlendRotate(OBJ_SightGet(), @o_jack OBJ_PosGet() - OBJ_PosGet(), 1 * TIME_GetDt()),
+		MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 3 * TIME_GetDt()) )
+	return
+}
+
+AI_Execute("KBC_exec_vol_ligne_droite")
+if( i_flag_depl_fini )
+{
+	if( MSG_GlobalIsValid(mid_grab_charogne) )
+	{
+		// la bat a une proie : elle va la manger
+		if( ACT_ActionGet() == ACTION_Vol_Proie )
+			ACT_ActionSet(ACTION_Mange_Attente)			// le bat a atterrit -> il attend avant de manger
+		else if( (ACT_ActionGet() == ACTION_Mange_Attente) && ACT_ActionFinished() )
+		{
+			LNK_GrabTransporte_TypeSet(mid_grab_charogne, Ci_GrabTransporte_Type_Pose)
+			i_mange_mode = Ci_mange_tuer_proie		
+			macro_change_etat("KBC_ETAT_Mange")				// le bat a attendu -> il va manger la charogne
+		}
+	}
+	else
+	{
+		// la bat n'a pas de proie : elle attend dans son nid avant de se renvoler
+		if( ACT_ActionGet() != ACTION_Mange_Attente )
+		{
+			ACT_ActionSet(ACTION_Mange_Attente)
+			f_time_action = TIME_Get()
+		}
+		else if( TIME_Elapsed(f_time_action, 5.0) )
+		{
+			i_envol_palier = 0
+			macro_change_etat("KBC_ETAT_Decolle")
+		}
+	}
+}
+
+

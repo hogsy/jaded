@@ -1,0 +1,117 @@
+#include "_main_menu_defs.var"
+#include "ROOT/EngineDatas/04 Technical Bank/AI Models/Global Library/menu_constant.var"
+
+int ti_i
+
+@"univ" PROG_GameCumul_JackMort = @"univ" PROG_GameCumul_JackMort + 1
+
+// FADE
+ti_i = GFX_AddSorted(11, 10)
+GFX_FlagSet( ti_i, 0, 1)          										// active l'effet
+GFX_FlagSet( ti_i, 2, 1 )          										// met le flag materiau transparent a vrai
+GFX_MaterialSet( ti_i, OBJ_Me(), 31)   		// met le materiau
+GFX_Seti( ti_i, 11100, 0xFF000000)        	// couleur 0
+GFX_Seti( ti_i, 11101, 0x00000000)    		// couleur 1
+GFX_Setf( ti_i, 11000, 0)         	// t0
+GFX_Setf( ti_i, 11001, 1)         	// t1
+GFX_Setf( ti_i, 11002, 0)         	// t2
+GFX_Setf( ti_i, 11003, 0)         	// t3
+GFX_Setf( ti_i, 11004, 0)      		// t4
+
+// AfTeR FX
+AE_BlackAndWhite(0)
+AE_Blur(0)
+AE_Brightness(0)
+AE_ColorBalance(0,0)
+AE_Contraste(0)
+AE_MotionBlur(0)
+AE_MotionSmooth(0)
+AE_Remanece(0)
+AE_RotationSmooth(0)
+AE_Wrap(0)
+AE_ZoomSmooth(0)
+AE_Glow(0)
+AE_ZoomSmoothCenter(0,Cv_NullVector)
+
+@"univ" Texte_InGame = nobody
+@"univ" Texte_Menu = nobody
+@ "univ" SND_go_MicroRef  = nobody
+
+SND_M_SetGameMode( SND_Cte_ModePlaying)
+SND_M_SetGameSubMode(0)
+
+STR_RegisterMaterial(o_obj_font)
+
+if ( o_MenuReal )
+{
+	if ( @"univ" PROG_i_MapReplay )
+	{
+		@o_MenuReal OBJ_CapaSet( OBJ_Capa_0, 0 )
+		@o_MenuReal OBJ_FlagInactiveSet( 0 )
+		@o_MenuReal OBJ_FlagInvisibleSet( 0 )
+		OBJ_Destroy()
+		//TIME_Wait(0.5)
+		//AI_TrackCurChangeNow( "mn_wait" )
+		return
+	}
+	
+	if ( OBJ_CapaTest( OBJ_Capa_0 ) || (MENU == MENU_GAME) )
+	{
+		@o_MenuReal OBJ_CapaSet( OBJ_Capa_0, 0 )
+		@o_MenuReal OBJ_FlagInactiveSet( 0 )
+		@o_MenuReal OBJ_FlagInvisibleSet( 0 )
+		OBJ_Destroy()
+		//TIME_Wait(0.5)
+		//AI_TrackCurChangeNow( "mn_wait" )
+		return
+	}
+	else if ( (@"univ" MENU_NZ == 1) || ( (@"univ" MENU_NZ == 0) && (OBJ_CapaTest( OBJ_Capa_1 ) || (MENU == MENU_DEMO1)) ))
+	{
+		@"univ" MENU_NZ = 1
+		@o_MenuReal OBJ_CapaSet( OBJ_Capa_1, 0 )
+		@o_MenuReal OBJ_FlagInactiveSet( 0 )
+		@o_MenuReal OBJ_FlagInvisibleSet( 0 )
+		TIME_Wait(0.5)
+		AI_TrackCurChangeNow( "mn_wait" )
+		return
+	}
+	else if ( (@"univ" MENU_NZ == 2) || ( (@"univ" MENU_NZ == 0) && (OBJ_CapaTest( OBJ_Capa_2 ) || (MENU == MENU_DEMO2)) ))
+	{
+		@"univ" MENU_NZ = 2
+		@o_MenuReal OBJ_CapaSet( OBJ_Capa_1, 0 )
+		@o_MenuReal OBJ_FlagInactiveSet( 0 )
+		@o_MenuReal OBJ_FlagInvisibleSet( 0 )
+		TIME_Wait(0.5)
+		AI_TrackCurChangeNow( "mn_wait" )
+		return
+	}
+	else if ( (@"univ" MENU_NZ == 3) || ( (@"univ" MENU_NZ == 0) && (OBJ_CapaTest( OBJ_Capa_3 ) || (MENU == MENU_DEMO3)) ))
+	{
+		@"univ" MENU_NZ = 3
+		@o_MenuReal OBJ_CapaSet( OBJ_Capa_1, 0 )
+		@o_MenuReal OBJ_FlagInactiveSet( 0 )
+		@o_MenuReal OBJ_FlagInvisibleSet( 0 )
+		TIME_Wait(0.5)
+		AI_TrackCurChangeNow( "mn_wait" )
+		return
+	}
+	else if ( (@"univ" MENU_NZ == 4) || ( (@"univ" MENU_NZ == 0) && (OBJ_CapaTest( OBJ_Capa_4 ) || (MENU == MENU_DEMO4)) ))
+	{
+		@"univ" MENU_NZ = 4
+		@o_MenuReal OBJ_CapaSet( OBJ_Capa_1, 0 )
+		@o_MenuReal OBJ_FlagInactiveSet( 0 )
+		@o_MenuReal OBJ_FlagInvisibleSet( 0 )
+		TIME_Wait(0.5)
+		AI_TrackCurChangeNow( "mn_wait" )
+		return
+	}
+	else if (OBJ_CapaTest( OBJ_Capa_5 ) || (MENU == MENU_PLAYTEST) )
+		menu_i_cur = menu_playtest
+	else
+		menu_i_cur = menu_Jack_Kong
+}
+
+//kong_time = MATH_RandFloat(2,5)
+AI_Execute( "mn_update" )
+
+AI_TrackCurChangeNow("mn_go")

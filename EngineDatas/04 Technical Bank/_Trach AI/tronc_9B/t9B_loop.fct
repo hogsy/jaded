@@ -1,0 +1,35 @@
+object	to_obj, to_obj1
+vector	tv_temp
+
+to_obj = AI_MainActorGet(C_ID_Joueur)
+if(fin || @to_obj COL_Pivot_BVCollide(bv_fin))
+{
+	time += TIME_GetDt()
+	if(time > 0.5)
+	{
+		@get_Humain_path to_obj i_no_zdm = faux
+		return
+	}
+	
+	fin = vrai
+	
+	to_obj = @get_global o_camera
+	v_blend = MATH_VecBlendRotate(v_blend, @to_obj OBJ_BankingGet(), 2*TIME_GetDt())
+	@to_obj OBJ_SightGeneralSet(@to_obj OBJ_SightGet(), v_blend)
+	return
+}
+
+to_obj = @get_global o_camera
+to_obj1 = ANI_CanalObjectGet(10)
+v_blend = MATH_VecBlendRotate(v_blend, @to_obj1 OBJ_SightGet(), 5 * TIME_GetDt())
+@to_obj OBJ_SightGeneralSet(@to_obj OBJ_SightGet(), v_blend)
+
+if(v_blend.z < 0.3)
+{
+	fin = vrai
+	to_obj = AI_MainActorGet(C_ID_Joueur)
+	@get_Humain_path to_obj i_no_zdm = vrai
+	tv_temp = OBJ_HorizonGet()
+	tv_temp *= 3
+	EVENT_AddEventPafCanal(C_EVENT_FILTER_All, C_PAF_KK_Fort, to_obj, Cf_EVENT_Duree_1Trame, to_obj, -1, 1.0, tv_temp, @to_obj OBJ_PosGet())
+}

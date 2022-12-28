@@ -1,0 +1,45 @@
+#define C_Plane_RotationZSpeed	(150*Cf_1Degre)
+#define C_Plane_RotationZMax		(80*Cf_1Degre)
+#define C_Plane_BankingFactor		0.6
+#define C_Plane_RotationXSpeed	(40*Cf_1Degre)
+#define C_Plane_RotationXMax		(80*Cf_1Degre)
+#define C_Plane_StrafeSpeed		0
+#define C_Plane_FlyingSpeed		20
+vector v
+float f//,dt
+
+dt=TIME_GetDt()
+
+//=====================================================
+//	Flying
+//=====================================================
+v=IO_JoyGetMove()
+f=MATH_VecSquareNorm(v)
+if(f<0.2) v=cvector(0,0,0)
+RotationZ=MATH_FloatLimit(MATH_FloatBlend(RotationZ,-v.x*C_Plane_RotationZSpeed,dt),-C_Plane_RotationZMax,C_Plane_RotationZMax)
+RotationX=MATH_FloatLimit(MATH_FloatBlend(RotationX,v.y*C_Plane_RotationXSpeed,dt),-C_Plane_RotationXMax,C_Plane_RotationXMax)
+OBJ_BankingSet(cvector(0,0,1))
+v=OBJ_PosGet()
+v+=(OBJ_HorizonGet()*RotationZ*C_Plane_StrafeSpeed*dt)
+OBJ_RotateLocalX(RotationX)
+OBJ_RotateLocalY(RotationZ*C_Plane_BankingFactor)
+OBJ_RotateGlobalZ(RotationZ*dt)
+v+=dt*C_Plane_FlyingSpeed*OBJ_SightGet()
+OBJ_PosSet(v)
+
+//=====================================================
+//	Kamera
+//=====================================================
+v=MATH_VecBlend(@Kamera OBJ_BankingGet(),OBJ_BankingGet(),dt*5)
+@Kamera OBJ_BankingSet(v)
+v=MATH_VecBlend(@Kamera OBJ_SightGet(),OBJ_SightGet(),dt*5)
+@Kamera OBJ_SightSet(v)
+
+v=OBJ_PosGet()
+v+=OBJ_BankingGet()*4
+v+=OBJ_SightGet()*-5
+v+=@Kamera OBJ_SightGet()*-6
+@Kamera OBJ_PosSet(v)
+
+@Kamera OBJ_RotateLocalX(RotationX*2.2*dt)
+@Kamera OBJ_RotateLocalZ(RotationZ*1.5*dt)

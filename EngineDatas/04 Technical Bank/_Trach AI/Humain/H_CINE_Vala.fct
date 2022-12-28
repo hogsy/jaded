@@ -1,0 +1,257 @@
+#include "H_defines.var"
+#include "H_action.var"
+
+object  		to_obj
+message 	m_cine
+int				ti_weapon
+int				ti_i
+float			tf_temp
+vector		tv_temp
+float			tf_time
+vector		tv_impulsion
+float			tf_dist
+
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+//	i_cine_close = vrai
+	return
+}
+
+if(i_etat_courant != ETAT_CINE_Vala)
+{
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	i_psss_nomove = vrai
+	f_time_start_etat = 0
+	f_time_fail_vala = 0
+	i_etat_courant = ETAT_CINE_Vala
+	fct_main_etat = AI_TrackCurGet()
+	fct_last_etat = AI_TrackCurGet()
+	
+	////////////// INTERACTION /////////////////////////
+	for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+		ai_SRV_ENABLE[ti_i] = faux
+
+	// AUTORISATIONS DES GRABS
+	ai_SRV_ENABLE[Ci_LNK_GRAB_RAPTOR]	= vrai
+
+	// AUTORISATION DES AIDES
+	ai_SRV_ENABLE[Ci_LNK_PSSS] 					= vrai
+	/////////////////////////////////////////////////////////////////
+} 
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+
+AI_Execute("H_exec_read_world")
+AI_Execute("H_exec_serveur_get")
+AI_Execute("H_exec_change_etat")
+AI_Execute("H_exec_ch_Stimulus_Paf")
+if (o_paf_sender) macro_change_etat("H_ETAT_IA_paf")
+OBJ_Me().des_int1 = Ci_DISPLAY_PSSS
+
+/////////////////////////////////////////////////////////////////////////////////
+
+m_cine = am_CineStack[0]
+ti_weapon = @"univ" i_weapon_ID [i_id_humain]
+
+// Climb ?
+if ( move_network && i_id_humain == C_ID_Ann) 
+{
+	to_obj = o_nearest_me
+	if(@to_obj OBJ_CapaTest(OBJ_Capa_0))
+	{
+		way_i_climb = 1
+		way_o_climb = to_obj
+		way_o_climbvaladest = m_cine.msg_gao2
+		macro_change_etat( "H_ETAT_ann_climb" )
+	}
+}
+
+// Ejection
+if(m_cine.msg_int2 == 3)
+{
+	to_obj = m_cine.msg_gao2
+	tv_temp = @to_obj OBJ_PosGet()
+	
+	if(!f_time_start_etat)
+	{
+		tf_time = 0.0
+		tv_impulsion = DYN_LIB_ImpulsionGet_Friction
+				( 
+					OBJ_PosGet(), 
+					tv_temp, 
+					Cv_NormalGravity, 
+					2.0,
+					tf_time,
+					0,
+					tv_temp.z + 1.0
+				)
+				
+		DYN_SpeedSetVector(tv_impulsion)
+		DYN_FrictionVectorSet(cvector(2.0,2.0,2.0))
+		COL_ColMapActivationSet(none, all)
+	}
+	else
+	{			
+		if(OBJ_PosGet().z < tv_temp.z)
+		{
+			COL_ColMapActivationSet(all, none)
+			i_cine_close = vrai
+		}
+	}
+	
+	tv_temp = OBJ_PosGet() - tv_temp
+	tv_temp = MATH_VecBlendRotate(OBJ_SightGet(), tv_temp, 5 * TIME_GetDt())
+	OBJ_SightGeneralSet(tv_temp, Cv_VerticalVector)
+	i_flag_oriente_vers = vrai
+	
+	if(!joueur)
+		ACT_ActionSet(Action_Humain_Ejection)
+	else
+	{
+		i_camera_animee = vrai
+		@get_camjack ACT_ActionSet(0)
+	}
+	
+	return
+}
+
+// Regarde
+o_cine_regarde = m_cine.msg_gao3
+if(o_cine_regarde)
+{	
+	o_cine_regarde = @o_cine_regarde ANI_CanalObjectGet(Anim_Canal_Tete)
+	if(!o_cine_regarde) o_cine_regarde = m_cine.msg_gao3
+	f_cine_regarde = 0.5
+	
+	// Pas derriere trop loin
+	tv_temp = @o_cine_regarde OBJ_PosGet() - OBJ_PosGet()
+	MATH_VecSetHorzNormalize(tv_temp)
+	if(MATH_VecDotProduct(OBJ_SightGet(), tv_temp) < 0)
+	{		
+		if(OBJ_SqrDist(o_cine_regarde) > 4 * 4)
+			o_cine_regarde = nobody
+	}
+}
+ 
+// Deplacement
+to_obj = m_cine.msg_gao2
+v_way_destpos = @to_obj OBJ_PosGet()
+tf_dist = MATH_VecNorm(v_way_destpos - OBJ_PosGet())
+i_flag_disable_recul = vrai
+
+// Aucun test
+if(m_cine.msg_int2 == 4)
+{
+	v_joy_dir = v_way_destpos - OBJ_PosGet()
+	tf_temp = MATH_VecNorm(v_joy_dir)
+	if(tf_temp < 1)
+	{
+		MATH_VecSetNormalize(v_joy_dir)
+		f_joy_norm = 0
+		i_flag_arrived = vrai
+	}
+	else
+	{
+		if (tf_temp > 2)
+			i_flag_run = vrai
+		MATH_VecSetNormalize(v_joy_dir)
+		f_joy_norm = 1
+		i_flag_arrived = faux
+	}
+}
+else
+{
+	CommonMove()
+}
+
+// Echec vala, blindage pour qu'il ne soit pas infini
+if(!f_joy_norm)
+{
+	f_time_fail_vala += TIME_GetDt()
+	if(f_time_fail_vala > 2)
+	{
+		tv_temp = v_way_destpos - OBJ_PosGet()
+		if(MATH_VecDotProduct(tv_temp, tv_temp) <= 2*2)
+		{
+			i_flag_arrived = vrai
+		}
+	}
+	
+//	if(f_time_fail_vala > 30)
+//		i_flag_arrived = vrai
+}
+else
+{
+	f_time_fail_vala = 0
+}
+
+if (i_flag_arrived && m_cine.msg_int2 != 1) i_cine_close = vrai
+ 
+// Intention
+if(f_joy_norm)
+{
+	i_flag_recul = faux
+	i_flag_panique = faux
+	
+	if(m_cine.msg_int1 >= 1000)
+	{
+		i_cine_action = (m_cine.msg_int1 - 1000) + 255
+	}
+	else
+	{
+		switch(m_cine.msg_int1)
+	 	{
+	  		case 0 : i_cine_action = -1 break
+	  		case 1 : i_cine_action = Action_Humain_Normal_Marche break
+	  		case 2 : if(AnimWeapon()) i_cine_action = -1 else i_cine_action = -1 break
+	  		case 3 : if(AnimWeapon()) i_cine_action = Action_Hayes_Arme_Marche else i_cine_action = Action_Stress_Marche break
+	  		case 4 : if(AnimWeapon()) i_cine_action = -1 else i_cine_action = -1 break
+	  		case 5 : if(AnimWeapon()) i_cine_action = Action_Hayes_Stress_MarcheF_Rapide else i_cine_action = Action_Stress_Marche_Rapide break
+	  		case 6 : if(AnimWeapon()) i_cine_action = Action_CacheF_Trot else i_cine_action = Action_Cache_Trot break
+	  		case 7 : i_cine_action = -1 i_flag_recul = vrai v_joy_dir = -v_joy_dir break
+	  		case 8 : i_cine_action = -1 i_flag_recul = vrai i_flag_panique = vrai v_joy_dir = -v_joy_dir break
+	  		case 9 : if(AnimWeapon()) i_cine_action = Action_Hayes_Arme_Course else i_cine_action = Action_Stress_Course break
+	  		case 10 : if(AnimWeapon()) i_cine_action = Action_Cache_MarcheF else i_cine_action = Action_Cache_Marche break
+	  		case 11 : if(AnimWeapon()) i_cine_action = Action_CacheF_Trot else i_cine_action = Action_Cache_Trot break
+	 	}
+	 	
+	 	if(tf_dist < 2)
+	 	{
+		 	if(i_cine_action == Action_Hayes_Arme_Trot) i_cine_action = Action_Hayes_Stress_MarcheF_Rapide
+		 	else if(i_cine_action == Action_Hayes_Arme_Course) i_cine_action = Action_Hayes_Stress_MarcheF_Rapide
+		 	else if(i_cine_action == Action_Stress_Trot) i_cine_action = Action_Stress_Marche_Rapide
+		 	else if(i_cine_action == Action_Stress_Course) i_cine_action = Action_Stress_Marche_Rapide
+		}
+		
+		if(f_hauteur_eau >= Hauteur_Eau_Basse)
+			i_cine_action = -1
+	 }
+}
+else
+{
+	if(i_cine_action != -1)
+	{
+		if(ACT_CustomBitGetIndex(i_cine_action) & 1)
+			i_cine_action = -1
+	}
+}
+ 
+// Anims
+AI_Execute("H_exec_select_action")
+
+//i_cine_action = -1
+if(i_cine_close) 
+{
+	fct_last_etat = nofunc
+	i_etat_courant = 0
+}

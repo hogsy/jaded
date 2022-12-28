@@ -1,0 +1,29 @@
+int			ti_loop
+float		tf_min, tf_dist, tf_factor
+vector	Pos, vAP, vTemp, dest
+
+
+Pos = OBJ_PosGet()
+tf_min = Cf_Infinit
+for (ti_loop = 0; ti_loop < home_net_nb; ti_loop++)
+{
+	vAP = Pos - home_link_start[ ti_loop ]
+	tf_factor = MATH_VecDotProduct( vAP, home_link_vector[ ti_loop ])
+	tf_factor /= MATH_VecDotProduct(home_link_vector[ ti_loop ],home_link_vector[ ti_loop ])
+	if (tf_factor < 0)
+		dest = home_link_start[ ti_loop ]
+	else if (tf_factor > 1)
+		dest = home_link_start[ ti_loop ] + home_link_vector[ ti_loop ]
+	else
+		dest = home_link_start[ ti_loop ] + (tf_factor * home_link_vector[ ti_loop ])
+		
+	vTemp  = Pos - dest
+	tf_dist = MATH_VecDotProduct(vTemp,vTemp)
+	if (tf_dist < tf_min )
+	{
+		tf_min = tf_dist
+		compute_v_pos = dest
+		compute_i_link = ti_loop
+	}
+}
+

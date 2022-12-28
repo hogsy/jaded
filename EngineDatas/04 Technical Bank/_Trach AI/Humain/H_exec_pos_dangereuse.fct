@@ -1,0 +1,38 @@
+int					ti_rank, ti_state
+vector			tv_pos
+vector			tv_temp
+messageid		tmid_info
+messageid		EVT_ID
+object			to_obj
+
+tv_pos = pop
+
+// Si position safe, c ok
+if(!EVENT_InfoCanGaoSeeGao(nobody, OBJ_Me(), tmid_info)) 
+{
+	push(faux)
+	return
+}
+
+// Si un ennemi trop proche, danger
+ti_rank = -1
+EVT_ID = MSG_GlobalScan(C_EVENT_TYPE_Enemy, &ti_rank)
+while(MSG_GlobalIsValid(EVT_ID))
+{
+	ti_state = EVENT_EnemyStateGet( EVT_ID )
+	if (ti_state  == C_EVENT_EnemyState_Fight || ti_state  == C_EVENT_EnemyState_Wait)
+	{
+		to_obj = EVENT_PereGet(EVT_ID)
+		tv_temp = tv_pos - @to_obj OBJ_PosGet()
+		if(MATH_VecDotProduct(tv_temp, tv_temp) < 3 * 3)
+		{
+			push(vrai)
+			return
+		}
+	}
+	
+	EVT_ID = MSG_GlobalScan(C_EVENT_TYPE_Enemy, &ti_rank)
+}
+
+// Sinon c ok
+push(faux)

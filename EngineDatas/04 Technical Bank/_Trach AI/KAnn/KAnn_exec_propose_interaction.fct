@@ -1,0 +1,34 @@
+#include "KAnn_defines.var"
+
+messageid			tmid_LNK
+
+float				tf_dist
+float				tf_limite
+object			to_SRV
+object			to_bone
+vector			tv_temp
+
+tmid_LNK = pop
+
+to_SRV = MSG_GlobalGetGao(tmid_LNK  , SERVEUR)
+
+if( @o_KONG Proc_KK_IsInBadSituation(0) )
+	LNK_ServeurRefuse(tmid_LNK)		// ne pas repasser en intéraction (pour éviter les 15 / 14.9 / 15 / 14.9...)
+else if ( LNK_InteractionTypeGet(tmid_LNK) == Ci_LNK_INTERACTION_FIGHT)
+{
+	if( ! OBJ_CapaTest(CAPA_Fight_Interaction_Disabled) )
+	{
+		if( i_etat_courant == ETAT_grabbed_bat )
+		{
+			// grabbée par une Bat : n'accepter que les intéractions proposées par elle
+			if( to_SRV == o_grabbed_bat_actor )
+				LNK_ClientPropose(tmid_LNK, 1.0)	
+		}
+		else if ( MATH_VecNorm(LNK_InteractionPositionGet(tmid_LNK) - OBJ_PosGet()) < Cf_max_distance_for_fight_interaction )
+		{
+			// standard : test distance
+			LNK_ClientPropose(tmid_LNK, 1.0)	
+		}
+	}
+}
+

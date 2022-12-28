@@ -1,0 +1,68 @@
+object	to_head
+vector	tv_cible_tete, tv_bone_to_cam_pos, tv_start_sight, tv_dest_sight
+object	to_bone
+float		af_pilote[4]
+
+// LIPS
+AI_Execute("fakeh_lips")
+
+// SUIVI REGARD
+if (AI_TriggerIsValid(des_t_suivi) && call_trigger(des_t_suivi) )
+{
+	if	(suivi_regard)
+	{
+		f_pilotage_coef = MATH_FloatBlend(f_pilotage_coef, 1, TIME_GetDt())
+		if	( ( ! des_i_type) || (des_i_type == 1) )
+			to_head = ANI_CanalObjectGet(Anim_Canal_Tete)
+		else
+			to_head = ANI_CanalObjectGet(Anim_Canal_Cou)
+		tv_cible_tete = @suivi_regard OBJ_PosGet()
+	
+		tv_bone_to_cam_pos = tv_cible_tete - @to_head OBJ_PosGet()
+		
+		if	( ! des_i_type)
+		{
+			af_pilote[0] = 0.1
+			af_pilote[1] = 0.2
+			af_pilote[2] = 0.4
+			af_pilote[3] = 0.6
+		}
+		else if	(des_i_type == 1)
+		{
+			af_pilote[0] = 0.0
+			af_pilote[1] = 0.0
+			af_pilote[2] = 0.4
+			af_pilote[3] = 0.6
+		}
+		else
+		{
+			af_pilote[0] = 0.0
+			af_pilote[1] = 0.0
+			af_pilote[2] = 0.0
+			af_pilote[3] = 0.6
+		}
+
+		to_bone = ANI_CanalObjectGet(Anim_Canal_Ventre)
+		tv_start_sight = @to_bone MATH_VecGlobalToLocal(@to_head OBJ_SightGet())
+		tv_dest_sight = @to_bone MATH_VecGlobalToLocal(tv_bone_to_cam_pos)
+		tv_dest_sight = MATH_VecBlendRotate(tv_start_sight, tv_dest_sight, f_pilotage_coef * af_pilote[0])
+		@to_bone OBJ_Rotate_FromTo(tv_start_sight, tv_dest_sight)
+	
+		to_bone = ANI_CanalObjectGet(Anim_Canal_Torse)
+		tv_start_sight = @to_bone MATH_VecGlobalToLocal(@to_head OBJ_SightGet())
+		tv_dest_sight = @to_bone MATH_VecGlobalToLocal(tv_bone_to_cam_pos)
+		tv_dest_sight = MATH_VecBlendRotate(tv_start_sight, tv_dest_sight, f_pilotage_coef * af_pilote[1])
+		@to_bone OBJ_Rotate_FromTo(tv_start_sight, tv_dest_sight)
+	
+		to_bone = ANI_CanalObjectGet(Anim_Canal_Cou)
+		tv_start_sight = @to_bone MATH_VecGlobalToLocal(@to_head OBJ_SightGet())
+		tv_dest_sight = @to_bone MATH_VecGlobalToLocal(tv_bone_to_cam_pos)
+		tv_dest_sight = MATH_VecBlendRotate(tv_start_sight, tv_dest_sight, f_pilotage_coef * af_pilote[2])
+		@to_bone OBJ_Rotate_FromTo(tv_start_sight, tv_dest_sight)
+	
+		tv_start_sight = cvector(0.0, -1.0, 0.0)
+		tv_dest_sight = @to_head MATH_VecGlobalToLocal(tv_bone_to_cam_pos)
+		tv_dest_sight = MATH_VecBlendRotate(tv_start_sight, tv_dest_sight, f_pilotage_coef * af_pilote[3])
+		@to_head OBJ_Rotate_FromTo(tv_start_sight, tv_dest_sight)		
+	}
+}

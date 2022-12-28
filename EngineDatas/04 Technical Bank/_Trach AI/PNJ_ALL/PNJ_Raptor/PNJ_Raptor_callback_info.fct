@@ -1,0 +1,45 @@
+#include "PNJ_Raptor_defines.var"
+
+int				ti_index
+int				ti_territory
+int				ti_flag
+vector		tv_pos
+
+#ifdef SHOW_RASTER
+DBG_StartRaster(0, "IA Raptor")
+#endif
+
+switch(raptor_type)
+{
+	case C_ID_Galiminus :
+		@get_global i_flag_pos_accessible = vrai
+		break
+		
+	default:
+		tv_pos = @get_global v_flag_pos_accessible
+		
+		ti_territory = GST_EVENT_Territory_Get(tv_pos)
+		ti_flag = PNJ_Raptor_Is_Accessible(tv_pos, ti_territory)
+		@get_global i_flag_pos_accessible = ti_flag
+}
+
+//ti_index = PNJ_Raptor_Precal_Pos_Index_Get(tv_pos)
+//if (ti_index == -1)
+//{
+//	ti_territory = GST_EVENT_Territory_Get(tv_pos)
+//	
+//	ti_flag = PNJ_Raptor_Is_Accessible(tv_pos, ti_territory)
+//	PNJ_Raptor_Precal_Pos_Add(tv_pos, ti_flag)
+//
+//	@get_global i_flag_pos_accessible = ti_flag
+//}
+//else
+//{
+//	@get_global i_raptor_precal_pos_used_nb ++
+//	@get_global i_flag_pos_accessible = @get_global ai_raptor_precal_pos_flag[ti_index]
+//}
+
+#ifdef SHOW_RASTER
+DBG_StopRaster(0)
+#endif
+

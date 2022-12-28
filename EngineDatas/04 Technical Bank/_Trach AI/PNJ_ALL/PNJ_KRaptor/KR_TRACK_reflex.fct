@@ -1,0 +1,232 @@
+#include "KR_defines.var"
+
+int		ti_rank
+int		ti_position
+int		ti_ground
+int		ti_IK_default
+int		ti_main_vision_context
+int		ti_i
+int		ts_STR
+
+float	tf_interet
+
+messageid		EVT_ID
+messageid		tmid_life
+
+message		tm_msg_filter
+message		tm_projectile
+
+vector			tv_temp
+vector			tv_pos_2D
+vector			tv_paf_exit_KK
+
+object			to_canal
+
+
+// TEST TRIGGER SMALL KNMI MUST DIE ---------
+if( @get_global i_Small_KNMI_must_die )
+	OBJ_Destroy()
+
+
+//ADDED SURESH
+f_global_time = TIME_Get()
+
+
+
+// VALUES COMPUTED ONCE (and used all over) ===========================================
+KR_PrecomputeEachLoop()
+
+// INTIMIDATION ------------------------------------------------------
+f_intimidation_reussie_delai_wait -= MATH_FloatMin(f_intimidation_reussie_delai_wait, TIME_GetDt())
+AI_Execute("KR_exec_check_fury")
+
+// Paf mortel ============================================================================
+if( ! i_snd_mort_done )
+{
+	if ( i_paf_mortel == 2)
+	{
+		i_snd_mort_done = vrai
+		EVENT_LIFE_CurLifeSet( ID_LIFE, 0.0)
+		SND_RequestPlay(Ci_SND_Paf_Die)
+	}
+}
+
+i_paf_mortel = faux
+
+// ROTATION ==============================================================================
+i_flag_rotation = vrai
+i_flag_rotation_requin = faux
+
+// BUDY ==================================================================================
+i_flag_visual_check_done = faux
+i_budy_nb = 0
+DYN_TractionSet(Cv_NullVector)
+
+// OCCLUDERS =============================================================================
+i_pathToFAIsOccluded = faux
+
+
+// TEST CAMERA ===========================================================================
+if( KR_hors_champ() )
+{
+	f_duree_hors_champ_camera += TIME_GetDt()
+	f_duree_dans_champ_camera = 0.0
+}
+else
+{
+	f_duree_hors_champ_camera = 0.0
+	f_duree_dans_champ_camera += TIME_GetDt()
+}
+
+// CHUTE ================================================================================
+if( ( ! i_ride_attak ) && (ACT_ActionGet() != Action_Network_WallRun) && ( COL_ColSetActivationGet() & C_bit_zdm_pied ) && ( ! COL_CollideType( COL_C_Ground) ) )
+	f_time_en_lair+= TIME_GetDt()
+else
+	f_time_en_lair = 0.0
+
+if( f_time_en_lair > 2.0 ) 
+	macro_change_etat("KR_ETAT_chute")
+
+
+// FACE DE MORT =========================================================================
+if( COL_CollideType( COL_C_Ground) )
+	if ( COL_GMAT_FlagsGet( COL_C_Ground) & Gmat_KK_Face_de_mort)
+		OBJ_Destroy()
+
+// IK ====================================================================================
+f_IK_speed[Ci_IKRaptor_pied_gauche]		= TIME_GetDt() * 6.0
+f_IK_speed[Ci_IKRaptor_pied_droit]			= f_IK_speed[Ci_IKRaptor_pied_gauche]
+i_flag_climb_IK[Ci_IKRaptor_pied_gauche]	= faux
+i_flag_climb_IK[Ci_IKRaptor_pied_droit]		= faux
+i_flag_walk_IK[Ci_IKRaptor_main_gauche]		= faux
+i_flag_walk_IK[Ci_IKRaptor_main_droite]			= faux
+i_flag_walk_IK[Ci_IKRaptor_pied_gauche]		= ACT_CustomBitTest(Ci_CustomBit_IK_FootLeft)
+i_flag_walk_IK[Ci_IKRaptor_pied_droit]			= ACT_CustomBitTest(Ci_CustomBit_IK_FootRight)
+i_flag_walk_IK[Ci_IKRaptor_Cou]					= ACT_CustomBitTest(Ci_CustomBit_IK_Neck)
+
+// ANALYSE ==============================================================================
+i_flag_paf_check_done			= faux
+i_flag_look = faux
+i_flag_zde_fight_enable = faux
+i_flag_bite = faux
+i_flag_bite_leg = faux
+
+// REGARD ===============================================================================
+v_look_head_pos = OBJ_PosGet() + MATH_VecLocalToGlobal(v_look_head_pos)
+v_look_banking = MATH_VecLocalToGlobal(v_look_banking)
+
+v_look_virtual_sight = v_look_banking
+if( !MATH_VecNullEpsilon(v_look_banking))
+	MATH_VecSetHorzNormalize(v_look_virtual_sight)
+else
+	v_look_virtual_sight = OBJ_SightGet()
+
+f_look_angle_blend_speed += MATH_FloatMin(8.0 - f_look_angle_blend_speed, 8.0 * TIME_GetDt())
+
+// REFRESH BEST INTERET ====================================================================
+if (MSG_GlobalIsValid(mid_best_interet))
+{
+	KR_SetInterestType(C_EVENT_InteretStatusInFightZone)
+	EVENT_LifeSet(mid_best_interet, 1.0)
+}
+
+
+// VISION, NMI & CADAVRE ===========================================================================
+if( EVENT_LIFE_CurLifeGet(ID_LIFE) )
+{
+	EVENT_AddEventVision( C_ID_Raptor, C_EVENT_FILTER_Raptor, OBJ_Me(), Cf_EVENT_Duree_1Trame, OBJ_PosGet(), C_EVENT_Visibility_Full_Mvt, 1.0, 100.0, C_EVENT_CONTEXT_STANDARD, 0, 1.0)
+	EVENT_AddEventEnemy( C_ID_Raptor, OBJ_Me(), C_EVENT_EnemyState_Fight)
+	
+	// LIFE DISPLAY ----------------------------------
+	to_canal = ANI_CanalObjectGet(Anim_Canal_Tete)
+	tv_pos_2D = VIEW_3dWorldTo2d(0, @to_canal OBJ_PosGet())
+	EVENT_LIFE_StateDisplay( ID_LIFE, tv_pos_2D + cvector(0.0,0.0,1.5))
+	EVENT_LIFE_LifeDisplay( ID_LIFE, tv_pos_2D + cvector(0.0,-0.05,1.5))
+
+}
+else if( i_etat_courant != ETAT_Desintegrate && f_point_de_viande )
+	EVENT_AddEventCadavre(C_ID_Raptor, OBJ_Me(), Cf_EVENT_Duree_1Trame, OBJ_PosGet())
+
+// UNCOL =================================================================================
+if( i_uncol && OBJ_SqrDist(o_uncol_actor) > 50.0 )
+{
+	KR_UncollideableDel(o_uncol_actor)
+	o_uncol_actor = nobody
+	i_uncol = faux
+}
+
+// BUG ENVOL RAPTOR ======================================================================
+tv_temp = DYN_SpeedGetVector()
+if( tv_temp.z > 0.5 && ! i_jump_etat && i_etat_courant != ETAT_projectile && ! i_ride_attak && i_etat_courant != ETAT_KK_ride && i_etat_courant != ETAT_FollowNetwork )
+{
+	// vitesse en Z autorisée : en saut d'attaque, en mode projectile, en ride attack et en saut exit ride
+	tv_temp.z = 0.0
+	DYN_SpeedSetVector(tv_temp)
+}
+
+f_locked_FA_timer -= MATH_FloatMin(f_locked_FA_timer, TIME_GetDt())
+
+
+// DEMO PS2 SI KONG BLESSE ON NE SAUTE PAS DESSUS NON PLUS
+i_KK_blesse = faux
+tmid_life = EVENT_LIFE_MSGID_Get( o_KONG)
+if( ! i_DBG_Demo_PS2 && MSG_GlobalIsValid(tmid_life) && EVENT_LIFE_Est_Blesse(tmid_life) && @o_KONG Proc_KK_RIDE_Get_Actor_Nb_By_Model(OBJ_Me()) )
+	i_KK_blesse = vrai
+
+
+// Messages ======================================================================
+AI_Execute("KR_exec_check_msg")
+
+
+#ifndef _FINAL_
+// show zones requin
+if (i_DBG_drawVectorOption & Ci_DBG_DRAW_REQUIN)
+{
+	tv_temp = @o_KONG OBJ_PosGet()
+	tv_temp.z += 0.2	// to be above ground a bit
+	if (f_use_safe_orbit_timer > 0.0)
+	{
+		ti_i = color_rouge
+		DBG_RenderCircle( tv_temp, MATH_FloatSqrt(KK_f_dist_saute_pres_sqr+(f_dist_safe_orbit*f_dist_safe_orbit)), Cv_VerticalVector, ti_i)
+		DBG_RenderCircle( tv_temp, MATH_FloatSqrt(KK_f_dist_saute_loin_sqr+(f_dist_safe_orbit*f_dist_safe_orbit)), Cv_VerticalVector, ti_i)
+	}
+	else
+	{
+		ti_i = color_vert
+		DBG_RenderCircle( tv_temp, MATH_FloatSqrt(KK_f_dist_saute_pres_sqr), Cv_VerticalVector, ti_i )
+		DBG_RenderCircle( tv_temp, MATH_FloatSqrt(KK_f_dist_saute_loin_sqr), Cv_VerticalVector, ti_i)
+	}
+	
+	// show front bite attack zone
+	tv_temp.z += 0.1
+	DBG_RenderCircle( tv_temp, (Cf_FrontBiteAttackMaxDistFactor*MATH_FloatSqrt(KK_f_dist_saute_loin_sqr)), Cv_VerticalVector, 0x7F2090EC)
+}
+#endif
+
+
+// debug
+i_DBG_lastCall = -1
+
+
+// ANTI COLLIDE KONG
+if ( o_KONG )
+{
+	switch ( i_etat_courant)
+	{
+		case ETAT_fight_KONG :
+		case ETAT_fight_ANN :
+		case ETAT_attente :
+//		case ETAT_paf :
+		case ETAT_interact_ANN :
+			if ( OBJ_SqrDistHorz(o_KONG) < 9.0 && @"Kanada2/Kong" o_KONG f_reflex_speed > 1.0)
+			{
+				tv_paf_exit_KK = OBJ_PosGet() - @o_KONG OBJ_PosGet()
+				tv_paf_exit_KK.z = 0.0
+				if ( ! MATH_VecNullEpsilon( tv_paf_exit_KK))
+					MATH_VecSetNorm(tv_paf_exit_KK, 5.0)
+				else
+					tv_paf_exit_KK = OBJ_SightGet()
+				EVENT_AddEventPafCanal(C_EVENT_FILTER_All, C_PAF_KK_Repousse, o_KONG, Cf_EVENT_Duree_1Trame, OBJ_Me(), -1, 1.0, tv_paf_exit_KK, @o_KONG OBJ_PosGet())
+			}
+	}	
+}

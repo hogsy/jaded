@@ -1,0 +1,60 @@
+#include "PNJ_Snake_defines.var"
+
+messageid			tmid_LNK
+
+int			ti_i
+int			ti_flag_refuse
+
+float			tf_dist
+float			tf_best_dist
+
+object		to_serveur
+object		to_bone
+
+tmid_LNK = pop
+
+to_serveur = MSG_GlobalGetGao(tmid_LNK, SERVEUR)
+to_bone = LNK_GrabBoneGet(tmid_LNK)
+
+switch(creature_type)
+{
+	case Ci_CreatureType_Snake :
+
+		if (OBJ_SqrDist(to_bone) > 100.0)
+		{
+			LNK_ServeurRefuse(tmid_LNK)
+		}
+		else	
+		{
+			tf_best_dist = 16.0
+			i_grabbed_bone_index = -1
+		
+			for (ti_i = 2; ti_i < i_modules_nb; ti_i += 2)
+			{
+				tf_dist = @to_bone OBJ_SqrDist(ao_modules[ti_i])
+				if (tf_dist < tf_best_dist)
+				{
+					tf_best_dist = tf_dist
+					i_grabbed_bone_index = ti_i
+				}
+			}	
+		
+			if (i_grabbed_bone_index == -1)
+				LNK_ServeurRefuse(tmid_LNK)
+			else
+				LNK_ClientPropose(tmid_LNK, tf_best_dist)
+		}
+				
+		break
+		
+	case Ci_CreatureType_Spider :
+	case Ci_CreatureType_Quadri :
+
+		tf_dist = OBJ_SqrDist(to_bone)
+		if (tf_dist > 81.0)
+			LNK_ServeurRefuse(tmid_LNK)
+		else
+			LNK_ClientPropose(tmid_LNK, tf_dist)
+
+		break
+}

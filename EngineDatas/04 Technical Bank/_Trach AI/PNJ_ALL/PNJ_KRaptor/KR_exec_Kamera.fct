@@ -1,0 +1,36 @@
+
+//======================================================================================
+// LOCK DE LA CAMERA FIGHT 
+//======================================================================================
+
+#define		Cf_dist_KK_camera			2500.0
+
+int				ti_camera
+
+return			// temp !!!!!!!!!!!!!!!!!! ==========================================================
+
+
+ti_camera = faux
+
+f_time_camera_fight = MATH_FloatMax(0.0, f_time_camera_fight - TIME_GetDt())
+
+if( ! i_propose_camera_fight )
+	return				// le mode interdit la caméra fight
+else 
+{
+	if( f_time_camera_fight )
+		ti_camera = vrai			// le mode autorise la caméra, elle a été autorisée il n'y a pas longtemps, on ne refait pas les calculs
+	else
+	{
+		// durée entre 2 tests de caméra écoulée
+		if( OBJ_SqrDist(o_KONG) <= Cf_dist_KK_camera )
+		{
+			// raptor assez proche
+			f_time_camera_fight = 0.5
+			ti_camera = vrai
+		}
+	}
+}
+
+if( ti_camera )
+	EVENT_AddEventLockCam(OBJ_Me(), C_EVENT_LockCamStatus_Fight, Cv_NullVector)

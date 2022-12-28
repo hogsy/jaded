@@ -1,0 +1,64 @@
+#include "PNJ_Scolo_defines.var"
+
+float		tf_dist
+float		tf_target_speed
+
+vector	tv_me_to_target
+vector	tv_target_speed
+
+if (i_flag_sortie_etat)
+{
+	i_flag_sortie_etat = faux
+	return
+}
+
+if (i_etat_courant != ETAT_Pit)
+{
+	// INTIALISATION
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Pit
+	
+	if (fct_last_etat)
+	{
+		i_flag_sortie_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	fct_last_etat = "PNJ_Scolo_ETAT_Pit"
+	
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+	
+// ANALYSE ===============================================================
+if (@o_pit_target OBJ_FlagsControlGet() & OBJ_C_ControlFlag_ForceInactive)
+	returntrack
+
+// COMPORTEMENT =========================================================
+tv_me_to_target = @o_pit_target OBJ_PosGet()
+tv_me_to_target -= OBJ_PosGet()
+tf_dist = MATH_VecNorm(tv_me_to_target)
+tv_me_to_target /= tf_dist
+
+if (tf_dist > 20.0)
+{
+	f_move_speed = MATH_FloatBlend(f_move_speed, 100.0, 4.0 * TIME_GetDt())
+}
+else
+{
+	tv_target_speed = @o_pit_target DYN_SpeedGetVector()
+
+	if (tf_dist / MATH_FloatMax(MATH_VecDotProduct(OBJ_SightGet() * f_move_speed, tv_me_to_target), 0.0) < 1.0)
+		tf_target_speed = MATH_FloatMax(MATH_VecDotProduct(tv_target_speed, tv_me_to_target) - 2.0, 0.0)
+	else
+		tf_target_speed = MATH_FloatMax(MATH_VecDotProduct(tv_target_speed, tv_me_to_target) + (tf_dist - 2.0), 0.0)
+ 
+	f_move_speed = MATH_FloatBlend(f_move_speed, tf_target_speed, 4.0 * TIME_GetDt())
+}
+
+f_move_length = f_move_speed * TIME_GetDt()
+PNJ_Scolo_Position_Set()
+

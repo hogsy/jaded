@@ -1,0 +1,87 @@
+Proto_CameraGet
+#include"Na_Defines.var"
+
+object		to_gao
+vector		tv_temp
+
+OBJ_Destroy()
+
+if (!o_Weapon)
+	DBG_Error("Definir une Arme a ce perso")
+if (!o_init_pos)
+	DBG_Error("Definir un objet position init a ce perso")
+if (!o_fall_direction)
+	DBG_Error("Definir une direction de chute a ce perso")
+
+if (i_SF_NePasSeRejouerSiMort)
+{
+	int		ti_SF_AlreadyDead
+	i_SF_AlreadyDead = AI_SFDynGet(0, SF_MinById, SF_MaxById)		// Alloc
+	Super_SpecialFlag_get(i_SF_AlreadyDead, ti_SF_AlreadyDead)			// Test SF
+	if (ti_SF_AlreadyDead)																	// Si SF = 1 alors DESTROY
+		OBJ_Destroy()
+}
+
+//ACT_ActionSet(8)
+//TIME_Wait(500)
+
+TIME_Wait(Cf_EVENT_Duree_1Trame)
+
+if (i_Tir_Pourcentage_ReussiteEnSnipe < 0)
+	i_Tir_Pourcentage_ReussiteEnSnipe = i_Tir_Pourcentage_Reussite
+
+to_gao = get_global
+o_camera = @to_gao Proc_CameraGet()
+
+OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_DesignStruct + OBJ_C_IdentityFlag_HasInitialPos, none)
+
+//OBJ_InfoPhotoParamSet( 0, 0, 3, 3, 0.0, 0.0, 0.0, 0.8)		// Bouée d'aide à la visée
+if( ! OBJ_ModifierType(MDF_C_Modifier_InfoPhoto) )
+	OBJ_InfoPhotoParamSet( 0, 0, 3, 3, 0.0, 0.0, 0.0, 2.5 * OBJ_ZoomGet())
+
+DYN_On()
+DYN_FlagsSet(DYN_C_BasicForces | DYN_C_NeverDynamicFather | DYN_C_NeverDynamicHierarchy | DYN_C_VectorFriction | DYN_C_GlobalFriction | DYN_C_SkipFrictionWhenSpeedFromAnim | DYN_C_HorizontalGrounds, none)
+DYN_GravitySet(Cv_Scorpion_Gravity)
+DYN_FrictionVectorSet(Cv_Scorpion_Friction)
+
+net_deplacement = @o_init_pos WAY_NetOfObj()
+OBJ_PosSet( @o_init_pos OBJ_PosGet())
+COL_StartMatrixSet(OBJ_PosGet())
+
+// CROSSABLE
+//COL_CrossableSet(none, Gmat_Jack_Crossable_All_But_RAPTORS)
+COL_CrossableSet(none, all)
+
+
+o_move_cur_pos = o_init_pos
+o_move_dest_pos = o_init_pos
+
+o_main = ANI_CanalObjectGet(Anim_Canal_MainDroite)
+f_lifecur = f_life
+
+COL_SwapToSpecific(C_zdm_pied)
+COL_ZonePosSet(C_zdm_pied, cvector(0.0, 0.0, 0.25))
+COL_ZoneSizeSet(C_zdm_pied, cvector(0.25, 0.25, 0.25))
+
+// BV et OBBOX
+tv_temp = cvector(2.5, 2.5, 2.5) * OBJ_ZoomGet()
+BV_MinSet(-tv_temp)
+BV_MaxSet(tv_temp)
+AI_Execute("Na_Exec_OBBOX")
+
+
+//COL_SwapToSpecific(C_zde_corps)
+//COL_ZonePosSet(C_zde_corps, cvector(0.0, 0.0, 1.0))
+//COL_ZoneSizeSet(C_zde_corps, cvector(1.0, 1.0, 1.0))
+
+//AI_TrackChange(Ci_Track_TagOff, "Na_Exec_tagoff")
+AI_TrackChange(Ci_Track_Reflex, "Na_Reflex")
+AI_TrackChange(Ci_Track_TagOn, "Na_TagOn")
+
+AI_CBAdd(OBJ_Me(), CallBack_After_Blend, "Na_CB_AfterBlend")
+AI_CBAdd(OBJ_Me(), CallBack_WhenDestroy, "Na_CB_Destroy")
+
+i_mort_stat = faux
+i_plouf = faux
+
+AI_TrackCurChangeNow("Na_ETAT_WaitActivation")

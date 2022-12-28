@@ -1,0 +1,16 @@
+int		ti_canal
+
+
+//if( @o_Target AI_IsModel(get_PNJ_Crab_path) || @o_Target AI_IsModel(get_PNJ_SwampCrawlerSmall_path) )
+//	ti_canal = 18	// carapace
+//else if ( @o_Target AI_IsModel(get_PNJ_Bidoche_path) ||  @o_Target AI_IsModel(get_PNJ_Scolo_Path) )
+//	ti_canal = 0
+//else
+	ti_canal = Anim_Canal_Bassin
+
+o_os = @o_Target ANI_CanalObjectGet(ti_canal)
+
+AI_CBAdd(o_Target, CallBack_Before_Display, "SD_BeforeDisplay")
+AI_CBAdd(o_Target, CallBack_After_Display, "SD_AfterDisplay")
+
+AI_TrackCurChangeNow("SD_go")

@@ -1,0 +1,209 @@
+#include "PNJ_Snake_defines.var"
+
+int			ti_i
+int			ti_crossable
+
+float		tf_speed
+
+vector	tv_move
+
+o_rope_manager  = @get_global o_rope_manager 
+if  ( ! o_rope_manager  )
+	returntrack
+
+AI_RunContext(CTX_AfterRec)
+DYN_Off()
+
+v_Snake_Gravity = cvector(0.0, 0.0, -40.0)
+
+i_gmat_death_bit = Gmat_RM_Face_de_mort
+i_gmat_paf_bit = Gmat_RM_Face_paf
+i_gmat_water_bit = Gmat_RM_Face_eau
+
+OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_DesignStruct,none)
+OBJ_Me().des_int1 = 0
+
+v_init_pos = OBJ_PosGet()
+v_joy_dir = OBJ_SightGet()
+
+f_delay_until_last_ground_col = 0.0
+f_delay_until_last_wall_col = 0.0
+
+v_last_collided_pos = OBJ_PosGet() - OBJ_BankingGet()
+v_dest_banking = OBJ_BankingGet()
+
+//AI_CBAdd(OBJ_Me(), CallBack_WhenDestroy,"PNJ_Snake_callback_WhenDestroy")
+//AI_CBAdd(OBJ_Me(), CallBack_Info,"PNJ_Snake_callback_info")
+//AI_CBAdd(OBJ_Me(), CallBack_Client, "PNJ_Snake_callback_client")
+//macro_add_callback_after_cam("PNJ_Snake_callback_aftercam")
+
+OBJ_FlagsTypeSet(OBJ_C_TypeFlag_DodgeCamera, none)
+
+OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_DesignStruct,none)
+//if ( ! i_flag_kong_mode )
+	OBJ_Me().des_int1 = Ci_DISPLAY_FIGHT
+
+ODE_Enable(faux)
+
+switch(creature_type)
+{
+	case Ci_CreatureType_Snake :
+
+		i_monture_ID = C_ID_Monture_Serpent
+
+		// ZDE CORPS ====================================
+		COL_SwapToSpecific(C_zde_corps)
+		COL_ZoneSizeSet(C_zde_corps, cvector(1.75, 1.75, 1.75))
+		COL_CrossableSet(none, all)
+		COL_CrossableSet(Gmat_RM_Crossable_Default, none)
+		COL_ZonePosSet(C_zde_corps, Cv_NullVector)
+		
+		// ZDM PIED =======================================
+		COL_SwapToSpecific(C_zdm_pied)
+		COL_ZoneSizeSet(C_zdm_pied, cvector(0.2, 0.2, 0.2))
+		COL_ZoneFlagSet(C_zdm_pied, COL_C_Zone_ZDM | COL_C_Zone_ZDE, none)
+
+		f_size_coef = 3.0
+		
+		move_speed *= f_size_coef	
+
+		dist_between_module *= f_size_coef
+		dist_tail *= f_size_coef
+		
+		f_last_module_min_dist = f_size_coef
+		f_last_module_min_dist *= f_last_module_min_dist
+		
+		f_middle_module_min_dist = 0.6 * f_size_coef
+		f_middle_module_min_dist *= f_middle_module_min_dist
+		
+		i_modules_nb = 15
+		i_ik_modules_nb = MATH_FloatMin(i_modules_nb - 3, 10)
+		
+		f_rigidity_coef = 400.0
+		
+		f_n2_dist = 0.5 * f_size_coef
+		f_n3_dist = 0.8 * f_size_coef
+		f_n5_dist = 1.2 * f_size_coef
+		break
+		
+	case Ci_CreatureType_Spider :
+
+		i_monture_ID = C_ID_Monture_Araignee
+
+//		// ZDE CORPS ====================================
+//		COL_SwapToSpecific(C_zde_corps)
+//		COL_ZoneSizeSet(C_zde_corps, cvector(1.25, 1.25, 1.25))
+//		COL_ZonePosSet(C_zde_corps, Cv_NullVector)
+
+		// ZDM PIED =======================================
+		COL_SwapToSpecific(C_zdm_pied)
+		COL_ZoneSizeSet(C_zdm_pied, cvector(0.6, 0.6, 0.6) )
+		COL_ZoneFlagSet(C_zdm_pied, COL_C_Zone_ZDM | COL_C_Zone_ZDE, none)
+
+		COL_CrossableSet(none, all)
+		COL_CrossableSet(Gmat_RM_Crossable_Default, none)
+		COL_CrossableSet(none, Gmat_RM_Face_eau)
+
+		f_size_coef = 2.0
+//		f_size_coef = MATH_RandFloat(1.0, 4.0)
+
+//		if ( OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Generated) )
+//		{
+//			f_size_coef = MATH_RandFloat(1.0, 3.0)
+//		}
+//		else
+//		{
+//			for (ti_i = 0; ti_i < 10; ti_i++)
+//				OBJ_Duplicate(OBJ_PosGet() + cvector(MATH_RandFloat(-5.0, 5.0), MATH_RandFloat(-5.0, 5.0), 0.0))
+//		}
+
+		move_speed *= f_size_coef
+
+		BV_MinSet(cvector(-f_size_coef, -f_size_coef, -f_size_coef) * 1.5)		// BV servent aussi au DODGE cam (Fucking BV)
+		BV_MaxSet(cvector(f_size_coef, f_size_coef, f_size_coef) * 1.5)
+
+		OBJ_ZoomSet(f_size_coef)
+		
+		ACT_MagicBoxMoveGet(&tv_move, &tf_speed, Action_Marche, 0)
+		af_anim_speed[0] = tf_speed * f_size_coef
+		
+		PNJ_Spider_Init_IK()
+
+		AI_CBAdd(OBJ_Me(), CallBack_After_Blend, "PNJ_Snake_callback_after_blend")
+
+		i_modules_nb = 0
+		break
+
+	case Ci_CreatureType_Quadri :
+
+		i_monture_ID = C_ID_Monture_Quadripode
+
+//		// ZDE CORPS ====================================
+//		COL_SwapToSpecific(C_zde_corps)
+//		COL_ZoneSizeSet(C_zde_corps, cvector(1.25, 1.25, 1.25))
+//		COL_ZonePosSet(C_zde_corps, Cv_NullVector)
+
+		// ZDM PIED =======================================
+		COL_SwapToSpecific(C_zdm_pied)
+		COL_ZoneSizeSet(C_zdm_pied, cvector(0.8, 0.8, 0.8) )
+		COL_ZoneFlagSet(C_zdm_pied, COL_C_Zone_ZDM | COL_C_Zone_ZDE, none)
+
+		COL_CrossableSet(none, all)
+		COL_CrossableSet(Gmat_RM_Crossable_Default, none)
+		COL_CrossableSet(none, Gmat_RM_Face_eau)
+
+		f_size_coef = 1.0
+//		f_size_coef = MATH_RandFloat(1.0, 4.0)
+
+//		if ( OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Generated) )
+//		{
+//			f_size_coef = MATH_RandFloat(1.0, 3.0)
+//		}
+//		else
+//		{
+//			for (ti_i = 0; ti_i < 10; ti_i++)
+//				OBJ_Duplicate(OBJ_PosGet() + cvector(MATH_RandFloat(-5.0, 5.0), MATH_RandFloat(-5.0, 5.0), 0.0))
+//		}
+
+		move_speed *= f_size_coef
+
+		BV_MinSet(cvector(-f_size_coef, -f_size_coef, -f_size_coef) * 2.5)		// BV servent aussi au DODGE cam (Fucking BV)
+		BV_MaxSet(cvector(f_size_coef, f_size_coef, f_size_coef) * 2.5)
+
+		OBJ_ZoomSet(f_size_coef)
+		
+		ACT_MagicBoxMoveGet(&tv_move, &tf_speed, Action_Marche, 0)
+		af_anim_speed[0] = tf_speed * f_size_coef
+		
+		PNJ_Spider_Init_IK()
+
+		AI_CBAdd(OBJ_Me(), CallBack_After_Blend, "PNJ_Snake_callback_after_blend")
+
+		i_modules_nb = 0
+		break
+}
+
+COL_FilterSet(all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag)
+
+v_last_pos = OBJ_PosGet()
+v_head_last_pos = OBJ_PosGet()
+
+OBJ_FlagsControlSet(OBJ_C_ControlFlag_AlwaysVisible, none)
+PNJ_Snake_Init_Modules()
+OBJ_FlagsControlSet(none, OBJ_C_ControlFlag_AlwaysVisible)
+
+f_lifecur = f_life
+
+//HotSpot_Add_Obj(OBJ_Me(), 0)
+//i_hotspot = vrai
+
+OBJ_CapaSet(none, all)
+
+AI_CBAdd(OBJ_Me(), CallBack_SectoActOn, "PNJ_Snake_callback_when_SectoOn")
+AI_CBAdd(OBJ_Me(), CallBack_WhenDestroy, "PNJ_Snake_callback_when_destroy")
+AI_CBAdd(OBJ_Me(), CallBack_Client, "PNJ_Snake_callback_client")
+AI_TrackChange(4, "PNJ_Snake_After_ETAT")
+AI_TrackChange(Ci_Track_Etat, "PNJ_Snake_ETAT_Basic")
+//AI_TrackChange(Ci_Track_Etat, "PNJ_Snake_ETAT_Paf")
+AI_TrackCurChangeNow("PNJ_Snake_Reflex")
+

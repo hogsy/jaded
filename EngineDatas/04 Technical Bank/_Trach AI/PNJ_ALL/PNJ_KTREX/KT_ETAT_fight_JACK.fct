@@ -1,0 +1,250 @@
+#include "KT_defines.var"
+
+float		tf_dot_avec_occluder
+float		tf_dot_sans_occluder
+float		tf_dist_trop_loin
+float		tf_dist_trop_proche
+
+int			ti_orientation
+int			ti_deplacement
+int			ti_change_target
+
+messageid		tmid_cadavre_interet
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_degagement_flag = faux
+	
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if( i_etat_courant != ETAT_fight_JACK )
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_fight_JACK
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = AI_TrackCurGet()
+	
+	ai_grabbed_availibility[ Ci_LNK_GRAB_KONG] = vrai	
+	
+	f_non_collide_ground_time = 0.0		// sinon bug cycle "chute -> KO sol -> chute -> KO sol..."
+	
+	i_paf_nb = 0
+
+	// Considerer pour l hysteresis des anims de deplacement qu'on pard a l arret a l init du mode
+	i_fight_action_old = -1
+	f_fight_delai_anim = 10.0	
+	f_orientation_coef = 0.0						// BLEND DE BLEND	
+	
+	f_time_start_etat = 0.0
+	i_flag_zde_fight_type = 0
+	
+	KT_ReAttackDelay()
+	
+	o_fight_actor = o_Jack		// pas forcément initialisé (-> foodchain...)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// flags temp
+i_fight_action = i_Anim_attente		// action par défaut
+
+i_interaction_well_positionned = faux
+
+ti_orientation = vrai
+ti_deplacement = vrai
+ti_change_target = vrai
+
+// ANALYSE ========================================================================
+
+// Detection de GRAB
+o_grabbed_actor_KK = LNK_ServeurGet(Ci_LNK_GRAB_KONG, mid_grabbed_by_Kong_LNK_ID, vrai, nofunc, nofunc)
+if (o_grabbed_actor_KK)
+{
+	macro_change_etat("KT_ETAT_Grabbed_by_Kong")		
+}
+
+// Detection de PAF
+AI_Execute("KT_exec_check_paf")
+if (o_paf_actor)
+{
+	macro_change_etat("KT_ETAT_paf")					// ko delay nul -> simple paf
+}
+
+// Jack fait diversion
+Macro_Check_Paf_Jauge_Crier
+
+// Detection du vide
+macro_checkchute
+
+// Détection CINE
+Macro_Check_Capa_CINE_Crier
+
+// INTERET
+KT_Interet_Update(o_fight_actor, C_EVENT_InteretStatusLock)
+
+// REGARD
+i_flag_look = vrai
+v_look_pos = KT_GetActorPosToLook(o_fight_actor)
+
+// FOODCHAIN
+AI_Execute("KT_exec_check_cadavres")
+
+if( i_foodchain_cri_fini_de_manger )
+{
+	i_foodchain_cri_fini_de_manger = faux
+	KT_Action_Cri_Select(o_fight_actor)
+}
+
+// CRIE VERS JACK
+if( KT_Action_Cri_EnCours() && ! ACT_ActionFinished() )
+{
+	ti_orientation = faux
+	ti_deplacement = faux
+	ti_change_target = faux
+}
+
+// ATTAQUE JACK
+switch( ACT_ActionGet() )
+{
+	case Action_Fight_Attak_Humain :
+	case Action_Fight_Attak_FPS :
+		if( ! ACT_ActionFinished() )
+		{
+			ti_deplacement = faux
+			ti_change_target = faux
+			if( OBJ_CapaTest(Capa_Paffe) )
+			{
+				i_flag_zde_fight_type = Ci_zde_fight_type_machoire
+				COL_ColSetActivationSet(C_bit_zde_fight, none)
+				// i_flag_zde_fight_type est initialisé à l'appel du mode
+				AI_Execute("KT_exec_zdf_zdc")
+				COL_ColSetActivationSet(none, C_bit_zde_fight)
+			}
+		}
+		break
+}
+
+
+// CHANGE TARGET
+if( ti_change_target )
+{
+	// TEST FIGHT ACTOR
+	AI_Execute("KT_exec_fight_actor_select")
+	if( ! o_fight_actor )
+	{
+		macro_change_etat("KT_ETAT_attente")
+	}
+	else if( o_fight_actor == o_Kong )
+	{
+		macro_change_etat("KT_ETAT_fight_KONG")
+	}
+}
+
+// FOODCHAIN
+if( f_time_start_etat > 1.0 )
+{
+	// si REX a commencé à avancer vers Jack, test des cadavres
+	o_cadavre = KT_Cadavre_Nearest(faux)
+	if( o_cadavre )
+	{
+		if( ti_change_target )
+			macro_change_etat("KT_ETAT_FoodChain")
+		else
+		{
+			// ne te détruit pas !!!
+			tmid_cadavre_interet = EVENT_AddEventInteret(OBJ_Me(), Cf_EVENT_Duree_1Trame, 1.0, @o_cadavre OBJ_PosGet(), o_cadavre)
+			if( MSG_GlobalIsValid(tmid_cadavre_interet) )
+				EVENT_InteretStatusSet(tmid_cadavre_interet, C_EVENT_InteretStatusFoodchain)
+		}
+	}
+}
+
+// COMPORTEMENT ============================================================================
+
+if( ti_orientation || ti_deplacement )
+{
+	// ORIENTATION
+	KT_OrientationInitGet(o_fight_actor, faux)
+	
+	// TEST D'OCCLUDER
+	KT_OccluderTest()
+}
+
+
+if( ti_deplacement )
+{
+	i_fight_action = i_Anim_attente
+
+	// DEPLACEMENT ===========================================
+	tf_dot_avec_occluder = MATH_VecDotProduct(OBJ_SightGet(), v_sight_avec_occluder)
+	tf_dot_sans_occluder = MATH_VecDotProduct(OBJ_SightGet(), v_sight_sans_occluder)
+	
+	if( i_fight_Jack_cri_cpt )
+	{
+		// s'approche pour crier face à Jack
+		tf_dist_trop_proche = 8.5
+		tf_dist_trop_loin = 10.0
+	}
+	else 
+	{
+		// s'approche pour attaquer Jack
+		tf_dist_trop_proche = 3.0	//5.0
+		tf_dist_trop_loin = 5.0	//7.0
+	}
+	
+	if( f_move_dist < tf_dist_trop_proche )
+	{
+		i_fight_action = Action_Normal_Recul
+	}
+	else if( f_move_dist > tf_dist_trop_loin)
+	{
+		i_fight_action = i_Anim_marche
+	}
+	else if( tf_dot_sans_occluder < Cf_Cos15 )
+	{
+		i_fight_action = i_Anim_marche
+	}
+	else
+	{
+		if( i_fight_Jack_cri_cpt )
+			KT_Action_Cri_Select(o_fight_actor)
+		else
+//			ACT_ActionSet(Action_Fight_Attak_Humain)
+			ACT_ActionSet(Action_Fight_Attak_FPS)
+		i_fight_Jack_cri_cpt = MATH_Modulo(i_fight_Jack_cri_cpt + 1, 2) 
+		i_force_change_anim = vrai
+		return		// ne pas rechanger d'action
+	}
+}
+
+
+if( ti_deplacement )
+{
+	// ACTION
+	KT_Action_Move_Select()
+}
+
+
+if( ti_orientation || ti_deplacement )
+{
+	// ORIENTATION
+	v_orientation_sens = v_sight_avec_occluder
+	KT_OrientationFinaleSet()
+}
+
+

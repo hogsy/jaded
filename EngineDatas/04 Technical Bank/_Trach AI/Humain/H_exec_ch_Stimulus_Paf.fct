@@ -1,0 +1,229 @@
+#include "H_defines.var"
+
+int					ti_rank
+int					ti_canal
+
+vector			tv_bras_de_levier
+
+object			to_bone
+vector			tv_temp
+
+messageid		EVT_ID
+message		EVT_msg_filter
+
+if(i_flag_cheat_move) return
+if((@"univ" Cheat_i_Flags & CHEAT_Invicible)) return
+if(i_flag_rush) return
+if(@"univ" LIFE_HumainEtat[C_ID_Joueur] == Life_ETAT_Mort) return
+
+
+// TEST VISION
+o_target_stimulus_vis = nobody
+
+if(@"univ" LIFE_HumainEtat[i_id_humain] == Life_ETAT_Mort)
+	return
+
+if(i_flag_invincible)
+	return
+
+MSG_SetNull( EVT_msg_filter)
+EVT_msg_filter.msg_gao1 = OBJ_Me()
+ti_rank = -1
+for( EVT_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, EVT_msg_filter);
+	MSG_GlobalIsValid(EVT_ID);
+	EVT_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, EVT_msg_filter))
+{
+	i_paf_type = EVENT_PafTypeGet(EVT_ID)
+	v_paf_dir =  EVENT_PafDirGet(EVT_ID)
+	if( ! MATH_VecNullEpsilon(v_paf_dir) )
+		MATH_VecSetNormalize(v_paf_dir)
+	f_paf_force = EVENT_PafPuisGet(EVT_ID)
+	o_paf_sender = EVENT_PereGet(EVT_ID)
+	ti_canal = EVENT_PafCanalGet(EVT_ID)
+	
+	if( o_paf_sender == AI_MainActorGet(C_ID_Kong) )
+		continue		// ignorer les pafs de Kong
+
+	IO_PafSet(100, 50)
+	
+	// Pas de prise en compte vie
+	if(i_auto_paf) 
+	{
+		i_auto_paf = faux
+		continue
+	}
+	
+//	if( ! i_jack_meurt_si_je_meurt && o_paf_sender == AI_MainActorGet(C_ID_Joueur))
+//	{
+//		o_paf_sender = nobody
+//	}
+//	else
+	{
+		if ( !(@"univ" Cheat_i_Flags & CHEAT_GodMode ) )
+		{
+			if (!f_paf_disable_duration)
+			{	
+				DBG_TraceString("Trame ")
+				DBG_TraceInt(@get_global i_frame_nbr)
+				DBG_TraceString(" : ")
+				DBG_TraceObject(OBJ_Me())
+				DBG_TraceString(" prend un paf de ")
+				DBG_TraceObject(o_paf_sender)
+				DBG_TraceEOL()
+		
+
+				if ( @"univ" LIFE_HumainEtat[i_id_humain] == Life_ETAT_Agonisant)
+				{
+					@"univ" LIFE_HumainEtat[i_id_humain] = Life_ETAT_Mort
+				}
+				else
+				{
+					f_time_agonisant = TIME_Get()
+					STATS_IncInjuries( 1, i_id_humain)
+					@"univ" LIFE_HumainEtat[i_id_humain] = Life_ETAT_Agonisant
+					
+					if(i_paf_type & C_PAF_KK_Fort)
+					{
+						i_big_gladiator = vrai
+						
+						if(@"univ" i_death_shield == 0)
+						{
+							f_paf_disable_duration = 3
+							f_paf_timer = 15 + Paf_Gap_Delay
+						}
+						else if(@"univ" i_death_shield == 1)
+						{
+							f_paf_disable_duration = 3
+							f_paf_timer = 13 + Paf_Gap_Delay
+						}
+						else
+						{
+							f_paf_disable_duration = 5
+							f_paf_timer = 10 + Paf_Gap_Delay
+						}
+					}
+					else if(i_paf_type & C_PAF_KK_Moyen)
+					{
+						i_big_gladiator = vrai
+						
+						if(@"univ" i_death_shield == 0)
+						{
+							f_paf_disable_duration = 3
+							f_paf_timer = 10 + Paf_Gap_Delay
+						}
+						else if(@"univ" i_death_shield == 1)
+						{
+							f_paf_disable_duration = 3
+							f_paf_timer = 7 + Paf_Gap_Delay
+						}
+						else
+						{
+							f_paf_disable_duration = 4
+							f_paf_timer = 7 + Paf_Gap_Delay
+						}
+					}
+					else 
+					{
+						i_big_gladiator = faux
+						
+						if(@"univ" i_death_shield == 0)
+						{
+							f_paf_disable_duration = 3
+							f_paf_timer = 5 + Paf_Gap_Delay
+						}
+						else if(@"univ" i_death_shield == 1)
+						{
+							f_paf_disable_duration = 4
+							f_paf_timer = 5 + Paf_Gap_Delay
+						}
+						else
+						{
+							f_paf_disable_duration = 3
+							f_paf_timer = 4 + Paf_Gap_Delay
+						}
+					}
+					
+					f_time_gladiator = f_paf_timer
+					f_time_help = f_paf_timer
+				}
+			}
+		}
+		
+		// Delay ne plus m'attaquer
+		@"univ" Humains_PafTimer[ i_id_humain ] = f_paf_timer
+		@"univ" Humains_LastPafTime[ i_id_humain ] = TIME_Get()
+		
+		// ----( GFX - red flash )----
+		AFE_Brightness_1_cur = 0.1
+		AFE_Contraste_1_cur = 1.5
+		AFE_ColorBalance_1_cur = 0.6
+		AFE_ColorBalance_2_cur = 0.5
+		AFE_MotionBlur_1_cur = 0.35	
+		AFE_Remanence_1_cur = 0.25
+		AFE_SpeedDecrease = 0.4
+		
+		if(!ao_SRV[Ci_LNK_GRAB_RAPTOR])
+			i_camera_animee = vrai		
+		if(i_paf_type & C_PAF_KK_Moyen)
+		{
+			if(i_flag_crouch)
+				@get_joueur_cam ACT_ActionSet(2 | Ci_ActionSet_Force_SameAction) 
+			else
+				@get_joueur_cam ACT_ActionSet(10 | Ci_ActionSet_Force_SameAction)
+			@get_joueur_cam ANI_CurrentFrameSet(0, 0)
+		}
+		else if(i_paf_type & C_PAF_KK_Faible)
+		{
+			if(i_flag_crouch)
+				@get_joueur_cam ACT_ActionSet(2 | Ci_ActionSet_Force_SameAction)
+			else
+				@get_joueur_cam ACT_ActionSet(11 | Ci_ActionSet_Force_SameAction)
+			@get_joueur_cam ANI_CurrentFrameSet(0, 0)
+		}
+		else
+		{
+			if(i_flag_crouch)
+				@get_joueur_cam ACT_ActionSet(2 | Ci_ActionSet_Force_SameAction)
+			else
+				@get_joueur_cam ACT_ActionSet(0 | Ci_ActionSet_Force_SameAction)
+			@get_joueur_cam ANI_CurrentFrameSet(0, 0)
+		}
+		// ----) EOGFX (----
+		
+		if (i_paf_type & C_PAF_KK_KiTue)
+			@"univ" LIFE_HumainEtat[i_id_humain] = Life_ETAT_Mort
+
+		if (i_paf_type & C_PAF_KK_Piranha)
+			@"univ" LIFE_HumainEtat[i_id_humain] = Life_ETAT_Mort
+		
+		if (i_paf_type & C_PAF_KK_Weapon)
+		{
+			if (TIME_Elapsed(f_visual_paf_last_time, Cf_visual_paf_delay))
+			{
+				f_visual_paf_last_time = TIME_Get()
+	
+				v_visual_paf_dir = v_paf_dir
+				
+				tv_bras_de_levier = EVENT_PafPositionGet(EVT_ID)
+				tv_bras_de_levier -= v_bassin_pos
+	
+				v_visual_paf_bassin_offset = v_paf_dir
+	
+				f_visual_paf_rot_coef = MATH_VecNorm(MATH_VecCrossProduct(tv_bras_de_levier, v_visual_paf_dir))
+				f_visual_paf_rot_coef = MATH_FloatMin(f_visual_paf_rot_coef, 0.4)
+	
+				tv_bras_de_levier.z *= 0.6
+	
+				to_bone = ANI_CanalObjectGet(Anim_Canal_Bassin)
+				if(to_bone) 
+				{
+					v_visual_paf_quaternion = @to_bone MATH_VecGlobalToLocal(tv_bras_de_levier)
+				}
+			}
+		}
+	}
+}
+
+if (o_grab_actor)
+	o_paf_sender = nobody
+

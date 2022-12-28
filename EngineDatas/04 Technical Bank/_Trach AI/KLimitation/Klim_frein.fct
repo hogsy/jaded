@@ -1,0 +1,36 @@
+Include_UltraProcedure_Header
+
+
+float	tf_offset
+
+if ( COL_BV_PivotCollide( o_KK))
+{
+	// FREIN
+	if ( @o_KK Proc_KK_Test_Mode( ETAT_Kong_walling))
+	{
+		tf_offset = @o_KK OBJ_PosGet().z - OBJ_PosGet().z
+		if ( tf_offset  < f_z_decroche 
+		&& ( ! i_decroch ||  f_time_decroch > f_duree_decroch))
+		{
+			// Ralentir
+			tf_offset /= f_z_max
+			i_decroch = faux
+			f_time_decroch = 0.0
+		}
+		else
+		{
+			tf_offset = 1.6 // Forcer a décrocher
+			i_decroch = vrai
+			f_time_decroch += TIME_GetDt()
+		}
+		@o_KK Proc_KK_FreinClimbing( tf_offset)
+	}
+}
+else if ( i_decroch && f_time_decroch < f_duree_decroch ) 
+{
+	// Forcer a décrocher
+	f_time_decroch += TIME_GetDt()
+	@o_KK Proc_KK_FreinClimbing( 1.6)
+}
+else
+	i_decroch = faux

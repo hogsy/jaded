@@ -1,0 +1,72 @@
+#include "PNJ_mr_defines.var"
+
+float tf_dist2
+
+
+// SORTIE ETAT ===================================================================
+if( i_sort_etat )
+{
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if( i_etat_courant != ETAT_PNJ_MR_Retour)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_PNJ_MR_Retour
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	OBJ_CapaSet(none,Obj_Capa_Fight)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// STIMULI ===========================================================================
+tf_dist2 = MATH_VecSquareDistance(v_posRetour,OBJ_PosGet() )
+
+if(tf_dist2<0.5)
+{
+	AI_TrackCurChangeNow("PNJ_MR_ETAT_Wait")	
+}
+
+if (@o_BV_Zone COL_BV_PivotCollide( o_fight_target))
+{
+	AI_TrackCurChangeNow("PNJ_MR_ETAT_Move")
+}
+
+if ( o_BV_Zone && !(@o_BV_Zone COL_BV_PivotCollide( OBJ_Me())))
+{
+	if( !i_grabbed )
+		i_Explosion=vrai
+//		AI_TrackCurChangeNow("PNJ_MR_ETAT_Explosion")
+}
+
+if ( ROBOT_ROPE_Gogo_Mode())
+{
+	// Gogo mode
+	AI_TrackCurChangeNow("PNJ_MR_ETAT_Gogo")
+}	
+
+if ( o_paf_actor)
+{
+	// Mode Paf
+	AI_TrackCurChangeNow("PNJ_MR_ETAT_Paf")	
+}
+
+// COMPORTEMENT ===========================================================================
+
+if(COL_CollideType(COL_C_Wall) && !i_grabbed )
+{
+	v_posRetour=OBJ_PosGet()+cvector(0.01,0.01,0)
+}
+
+PNJ_MR_Move(v_posRetour,OBJ_PosGet())
+

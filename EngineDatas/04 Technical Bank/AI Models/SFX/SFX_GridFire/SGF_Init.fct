@@ -1,0 +1,49 @@
+int			i
+object	to_obj
+vector	vmin
+vector	tv_temp
+
+
+OBJ_Destroy()
+
+if(des_i_mode_checkpoint) 
+{
+	TIME_Wait(0.5)
+	AI_TrackCurChangeNow("SGF_CP")
+}
+
+if(i_original) 
+{
+	AI_PrioritySet(120)
+	AI_TrackCurChangeNow("SGF_sound")
+}
+else
+{
+	for(i = 0; i < 10; i++)
+	{
+		if( ! @get_SFX_GridFire o_set_capa0[i]) break
+		to_obj = @get_SFX_GridFire o_set_capa0[i]
+		
+		vmin = @to_obj BV_MinGet()
+		vmin += @to_obj OBJ_PosGet()
+		tv_temp = OBJ_PosGet()
+		tv_temp.z = vmin.z + 0.1
+		OBJ_PosSet(tv_temp)
+		if(COL_Pivot_BVCollide(to_obj)) @to_obj OBJ_CapaSet(OBJ_Capa_0, 0)
+	}
+}
+
+if(AI_TriggerIsValid(trig_activation))
+{
+	if(!call_trigger(trig_activation)) return
+}
+
+if(@get_global f_fire_duration)
+	f_max_delay = @get_global f_fire_duration
+if(@get_global f_fire_propag)
+	f_tempo_propag = @get_global f_fire_propag
+		
+av_FireCase[0] = OBJ_PosGet()
+i_MaxCase = 1
+af_time[0] = TIME_Get()
+AI_TrackCurChangeNow("SGF_Propage")

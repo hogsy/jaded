@@ -1,0 +1,91 @@
+#include "weapon_defines.var"
+
+object	to_main
+vector	tv_pos
+vector	tv_sight
+vector	tv_banking
+
+if( MSG_GlobalIsValid(mid_grabbed_LNK_ID) )
+{
+	switch ( i_type )
+	{
+		case RM_WEAPON_TYPE_CAROTTE :
+			f_grab_coef = MATH_FloatBlend(f_grab_coef, 1.0, 10.0 * TIME_GetDt())
+			to_main = @o_actor_grab ANI_CanalObjectGet(Anim_Canal_MainDroite)
+			tv_pos = @to_main OBJ_PosGet()
+			tv_sight = @o_actor_grab OBJ_SightGet()
+			tv_banking = @o_actor_grab OBJ_BankingGet()
+			break
+			
+		case RM_WEAPON_TYPE_CLE :
+			switch( i_key_type )
+			{
+				case KEY_TYPE_PTIZETRE :
+					f_grab_coef = MATH_FloatBlend(f_grab_coef, 1.0, 10.0 * TIME_GetDt())
+					to_main = @o_actor_grab ANI_CanalObjectGet(Anim_Canal_Bassin)
+					tv_pos = @to_main OBJ_PosGet()
+					tv_pos -= @to_main OBJ_BankingGet() * 0.25
+					tv_pos -=  @to_main OBJ_SightGet() * 0.35
+					tv_sight = @to_main OBJ_SightGet()
+					tv_banking = @to_main OBJ_BankingGet()
+					break
+					
+				default:
+					f_grab_coef = MATH_FloatBlend(f_grab_coef, 1.0, 10.0 * TIME_GetDt())
+					to_main = @o_actor_grab ANI_CanalObjectGet(Anim_Canal_Bassin)
+					tv_pos = @to_main OBJ_PosGet() 
+					if( @o_actor_grab AI_IsModel(get_Rayman_Path) )
+					{
+						tv_pos += ( @to_main OBJ_BankingGet() * 0.1) 
+						tv_pos -= ( @to_main OBJ_SightGet() * 0.3)
+					}
+					else if( @o_actor_grab AI_IsModel(get_PNJ_Lapin_path) )
+					{
+						tv_pos -= (0.4 * @to_main OBJ_SightGet() * @o_actor_grab OBJ_ZoomGet())
+						tv_pos += ( 0.25 * @to_main OBJ_BankingGet() * @o_actor_grab OBJ_ZoomGet() )
+					}
+					tv_sight = @to_main OBJ_BankingGet()
+					tv_banking = @to_main OBJ_HorizonGet()
+					break
+			}
+			break
+			
+		case RM_WEAPON_TYPE_GRENADE :
+			f_grab_coef = MATH_FloatBlend(f_grab_coef, 1.0, 10.0 * TIME_GetDt())
+			to_main = @o_actor_grab ANI_CanalObjectGet(Anim_Canal_MainDroite)
+			tv_pos = @to_main OBJ_PosGet() + ( @to_main OBJ_BankingGet() * 0.2)
+			tv_sight = @o_actor_grab OBJ_SightGet()
+			tv_banking = @o_actor_grab OBJ_BankingGet()
+			break
+			
+		case RM_WEAPON_TYPE_GUN :
+			f_grab_coef = MATH_FloatBlend(f_grab_coef, 1.0, 10.0 * TIME_GetDt())
+			to_main = @o_actor_grab ANI_CanalObjectGet(Anim_Canal_MainDroite)
+			tv_pos = @to_main OBJ_PosGet()
+			tv_pos += @to_main OBJ_BankingGet()	* 0.10
+//			tv_pos += @to_main MATH_VecLocalToGlobal( cvector( 0.000255, 0.0644, 0.14))
+			tv_sight = @to_main OBJ_BankingGet()
+			tv_banking = @to_main OBJ_HorizonGet()
+			break
+			
+		case RM_WEAPON_TYPE_GOURDIN :
+			f_grab_coef = MATH_FloatBlend(f_grab_coef, 1.0, 10.0 * TIME_GetDt())
+			to_main = @o_actor_grab ANI_CanalObjectGet(Anim_Canal_MainDroite)
+			tv_pos = @to_main OBJ_PosGet()
+			tv_pos += @to_main OBJ_BankingGet()	* 0.10
+//			tv_pos += @to_main MATH_VecLocalToGlobal( cvector( 0.000255, 0.0644, 0.14))
+			tv_sight = @to_main OBJ_SightGet()
+			tv_banking = @to_main OBJ_BankingGet()
+			break
+			
+		default:
+			DBG_Error("WEAPON TYPE NON RECONNU")
+	}
+	
+	tv_pos = MATH_VecBlend(OBJ_PosGet(), tv_pos, f_grab_coef)	//LNK_KKGrabObject_BlendGet(mid_grabbed_LNK_ID)) 
+	OBJ_PosSet(tv_pos)
+	
+	tv_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_sight, f_grab_coef)
+	tv_banking = MATH_VecBlendRotate(OBJ_BankingGet(), tv_banking, f_grab_coef)
+	OBJ_BankingGeneralSet(tv_sight, tv_banking)
+}

@@ -1,0 +1,39 @@
+#include "Arc_defines.var"
+
+vector 	n, z
+vector	tv_speed
+
+float		tf_speed
+
+object	o_tmp
+
+#define COLCOUNT_1	10
+#define COLCOUNT_2	20
+
+
+mi_State = Ci_bambou_state_ground
+
+
+// TEST GRAB
+AI_Execute("Arc_exec_Wait_Taken")
+
+//---------( tomber trop bas ? )---------
+if ( MATH_AbsFloat( OBJ_PosGet().z - mf_ZInit) > 50 )
+{
+	OBJ_Destroy()
+}
+
+
+// ORIENTATION
+OBJ_BankingGeneralSet(
+	MATH_VecBlendRotate(OBJ_SightGet(), v_ground_sight, 10 * TIME_GetDt()),
+	MATH_VecBlendRotate(OBJ_BankingGet(), v_ground_banking, 7 * TIME_GetDt()))
+
+if( COL_CollideType(COL_C_Ground) )
+{
+	DYN_Off()
+	COL_ColSetActivationSet(none, all)
+}
+
+
+Arc_Corde_Reset()

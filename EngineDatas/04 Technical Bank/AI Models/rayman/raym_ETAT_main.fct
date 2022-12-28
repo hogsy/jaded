@@ -1,0 +1,1112 @@
+#include"r_defines.var"
+
+int				ti_pos
+int				ti_orient
+int				ti_muni 
+int				ti_action 
+int				ti_game_ralenti
+int				ti_test_ground 
+int				ti_test_punch
+int				ti_test_ride
+int				ti_test_wall
+int				ti_test_jump 
+int				ti_rope_index
+int				ti_chute_stopped
+int				ti_report
+int				ti_freq
+int				ti_cancel_coup_ultra
+int				ti_gfx_del
+int				ti_decal
+
+float			tf_X
+float			tf_Y 
+float			tf_Z 
+float			tf_norm
+float			tf_friction
+float			tf_glisse_coef
+float			tf_blend
+float			tf_dot
+float			tf_coef
+float			tf_force
+float			tf_length 
+float			tf_time_restant
+
+vector		tv_traction
+vector		tv_speed
+vector		tv_impulsion_force 
+vector		tv_pos
+vector		tv_horizon_ground
+vector		tv_traction_ground
+vector		tv_traction_joy 
+vector		tv_temp
+vector		tv_banking 
+vector		tv_grappin
+vector		tv_wall_normal
+vector		tv_wall_ortho
+vector		tv_sight
+
+object		to_main
+object		to_tete
+object		to_obj 
+object		to_grab_2
+
+messageid	tmid_grab_object
+
+// SORTIE ETAT 	===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	i_jump_copter = faux
+	DYN_GravitySet( Cv_DYN_Gravity)
+	i_frappe_target_nb = 0
+	PROC_DESTROY_SFX(i_GFX_Feu_bubules)
+	Proc_RM_DESTROY_GFX_Fire()
+	return
+}
+
+// INIT ETAT 	=====================================================================
+if ( i_etat_courant != ETAT_RM_main)
+{
+	i_etat_courant = ETAT_RM_main
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()	
+}
+
+// DETECTIONS 	===================================================================
+
+// CHECK PAF
+if( o_paf_detect_actor )
+	AI_TrackCurChangeNow("raym_ETAT_paf")
+
+if( i_flag_just_drop)
+	MOVE_CHANGE_To_Drop()
+		
+// CHECK ITEMS
+if( o_grappin_hotspot && @o_grappin_hotspot AI_IsModel(get_RM_Weapon_path)
+&& o_grab_object  && o_grab_object != o_grappin_hotspot)
+{
+//	if ( @o_grappin_hotspot  PROC_WEAPON_TypeGet() != RM_WEAPON_TYPE_CLE 	&& (!o_grab_object || @o_grab_object PROC_WEAPON_TypeGet() != @o_grappin_hotspot  PROC_WEAPON_TypeGet()))
+		o_grab_object = LNK_ClientGet( Ci_LNK_GRAB_OBJECT, mid_grab_object, faux, nofunc, nofunc, nofunc)
+//	else
+//	{
+//		i_flag_just_grappin = faux
+//		i_grappin_must_be_launched = faux		// buffer create grappin
+//		o_grappin_hotspot = nobody
+//	}
+}
+
+if ( i_flag_just_grab || (i_flag_just_grappin && f_joy_grappin_pressed < Cf_Use_Joy_Delai ))
+{
+	if ( o_grab_object)
+	{
+		// Os'cour bidouille
+		to_grab_2 = LNK_ClientGet( Ci_LNK_GRAB_OBJECT, tmid_grab_object, vrai, nofunc, nofunc, nofunc)
+	}
+	else
+		to_grab_2 = LNK_ClientGet( Ci_LNK_GRAB_OBJECT, mid_grab_object, vrai, nofunc, nofunc, nofunc)
+	if ( to_grab_2 )
+	{
+		if ( o_grab_object)
+		{
+			// Deja 1 en main et item différent
+			if ( @to_grab_2 PROC_WEAPON_TypeGet() != RM_WEAPON_TYPE_CLE )
+			{
+				if( @o_grab_object PROC_WEAPON_TypeGet() != @to_grab_2 PROC_WEAPON_TypeGet())
+				{
+					o_grab_object = LNK_ClientGet( Ci_LNK_GRAB_OBJECT, mid_grab_object, faux, nofunc, nofunc, nofunc)	// COUPER
+					o_grab_object = to_grab_2 // CHANGER
+					mid_grab_object = tmid_grab_object	// CHANGER
+					LNK_KKGrabObject_BlendSet( mid_grab_object, 0.0)
+				}
+				else 
+				{
+					to_grab_2 = LNK_ClientGet( Ci_LNK_GRAB_OBJECT, tmid_grab_object, faux, nofunc, nofunc, nofunc)
+					goto NOGRAB
+				}
+			}
+			else
+			{
+				// PRENDRE LA CLE
+				if ( ! o_grab_cle)
+				{
+					o_grab_cle = to_grab_2
+					mid_grab_cle = tmid_grab_object
+					LNK_KKGrabObject_StateSet(mid_grab_cle, 1)
+				}
+				else
+				{
+					LNK_ClientGet( Ci_LNK_GRAB_OBJECT, tmid_grab_object, faux, nofunc, nofunc, nofunc)	// COUPER								
+					goto NOGRAB
+				}
+			}
+		}
+		else
+		{
+			// ramasser
+			if ( @to_grab_2 PROC_WEAPON_TypeGet() == RM_WEAPON_TYPE_CLE)
+			{
+				// PRENDRE LA CLE
+				if ( ! o_grab_cle)
+				{
+					o_grab_cle = to_grab_2
+					mid_grab_cle = mid_grab_object
+					LNK_KKGrabObject_StateSet(mid_grab_cle, 1)
+					MSG_GlobalSetInvalid(mid_grab_object)
+				}
+				else
+				{
+					LNK_ClientGet( Ci_LNK_GRAB_OBJECT, mid_grab_object, faux, nofunc, nofunc, nofunc)	// COUPER				
+					MSG_GlobalSetInvalid(mid_grab_object)
+					goto NOGRAB
+				}
+				
+			}
+			else
+			{
+				// PRENDRE L ITEM
+				o_grab_object = to_grab_2				
+				LNK_KKGrabObject_BlendSet( mid_grab_object, 0.0)
+			}
+		}
+		
+		MOVE_CHANGE_To_Grab()
+		i_flag_just_grappin = faux
+		i_flag_just_use = faux
+		
+		i_flag_just_C = faux
+		i_flag_just_punch = faux
+		i_flag_just_release_grappin = faux
+	}
+	
+}	
+NOGRAB:
+
+// COMPORTEMENT 	===============================================================
+
+// Memo des coups dans les zones valides.
+BUFFER_All()
+i_choix_anim = vrai
+ti_orient = faux
+switch ( MOVE_MODE())
+{
+
+// ------------------------------------------------------------------------------------------------		
+// -------------------------------------------- JUMP ---------------------------------------
+// ------------------------------------------------------------------------------------------------		
+	case C_Move_Jump :
+
+		i_choix_anim = faux	
+		ti_orient = vrai		
+
+		if ( GRAPPIN_Detection())
+			break
+
+		if ( i_grappin_mur_accroch_mode)
+		{
+			MOVE_CHANGE_To_Varap()
+			break
+		}
+
+		// JUMP IN JUMP
+//		if ( i_flag_just_jump && f_jump_copter_time < Cf_HelicoWithoutPower)
+//			i_jump_copter = 1 - i_jump_copter 
+		
+		if (  f_joy_jump_pressed > 0.25 && DYN_SpeedGetVector().z < 0.0 )
+			i_jump_copter = vrai
+		else
+			i_jump_copter = faux
+	
+		
+		ti_test_ground  = vrai
+		ti_test_punch = vrai
+		ti_test_wall = vrai
+		ti_test_ride = faux
+		ti_chute_stopped = faux
+		ti_test_jump = faux
+		DYN_GravitySet( Cv_DYN_Gravity)
+
+		tv_speed = DYN_SpeedGetVector()
+//		if( (  ! MATH_FloatNullEpsilon(f_joy_grappin_pressed) && f_joy_grappin_pressed < Cf_Jump_charge_Max )
+//		|| ( ! MATH_FloatNullEpsilon(f_joy_punch_pressed ) && f_joy_punch_pressed < Cf_Jump_charge_Max))
+//		{
+//			ti_chute_stopped = vrai
+//		}
+
+
+		switch ( ACT_ActionGet())
+		{
+			
+			case 	RM_Act_SwimImpul :	
+				if( ! MATH_FloatNullEpsilon( f_water_jump_add))
+				{
+					OBJ_PosSet( OBJ_PosGet() + cvector( 0.0, 0.0, f_water_jump_add * TIME_GetDt()))
+				}
+			case 	RM_Act_Jump_Impulsion :				
+			case 	RM_Act_SpiderImpul :
+				i_jump_copter = faux
+				if ( ACT_ActionFinished())
+				{
+					if ( ! i_keep_hierarchy)
+						OBJ_HierarchyReset()			// Car les hierarchy dynamique ne se coupent pas toute seule quand on est plus en colision !!!
+					f_jump_impulsion_time = TIME_Get()
+					DYN_SpeedSetVector(v_jump_impulsion_force)
+					ACT_ActionSet(RM_Act_Jump)
+				}
+				ti_test_ground = faux
+				ti_test_punch = faux
+				ti_test_wall = faux
+				break
+			case RM_Act_JumpPump :
+//				if ( MATH_FloatNullEpsilon( f_joy_norm ))
+//				{
+//					f_joy_norm = 1.0
+//					v_joy_sight = v_orient_JOY
+//					v_joy_sight_normalized = v_orient_JOY
+//				}
+			case RM_Act_Jump :
+			case RM_Act_Jump_FlyPump :
+			case RM_Act_Jump_FlyPump2 :
+			case RM_Act_RideImpuls :
+			case RM_Act_JumpMash :
+				// DETECTION PLAFOND ET JUMP BOOST
+				if( ! TIME_Elapsed( f_jump_impulsion_time , 0.1))
+				{
+					// Permettre de sauter loin si on met un joy juste apres le saut !!
+					if ( (f_speed_hor < Cf_Traction_Fly && f_joy_norm) || MATH_VecDotProduct( v_joy_sight_normalized , v_speed_hor) < 0.0 )
+					{
+						tv_speed = v_joy_sight_normalized * Cf_Traction_Fly
+						tv_speed.z = DYN_SpeedGetVector().z
+						DYN_SpeedSetVector( tv_speed)
+						v_jump_impulsion_force.x = tv_speed.x
+						v_jump_impulsion_force.y = tv_speed.y
+					}
+				}
+				DYN_GravitySet( Cv_DYN_Gravity)
+				
+//				if( ! TIME_Elapsed( f_jump_impulsion_time , JUMP_Time_Impuls()))
+//				{
+//					if ( i_flag_jump)
+//						DYN_SpeedSetVector(v_jump_impulsion_force)
+//					else
+//						f_jump_impulsion_time -= 0.5
+//				}
+//				else
+					ti_test_jump = vrai
+			
+//				if ( ! MATH_VecNullEpsilon(v_force_STREAM))
+//					ACT_ActionSet(RM_Act_Jump_Fly)
+//				else if ( ACT_ActionItemGet() && f_speed_hor > Cf_Speeed_Fly)
+//					ACT_ActionSet(RM_Act_Jump_Fly)
+				if ( ACT_ActionFinished())
+				{
+					if ( ACT_ActionGet()	== RM_Act_Jump_FlyPump || ACT_ActionGet() == RM_Act_Jump_FlyPump2)
+						ACT_ActionSet(RM_Act_Jump_Fly)
+					else
+						ACT_ActionSet(RM_Act_Chute)
+				}
+//			case RM_Act_Chute :
+//			case RM_Act_Jump_Fly :
+				switch ( ACT_ActionGet())
+				{
+					case RM_Act_Jump_FlyPump :
+					case RM_Act_Jump_FlyPump2 :
+						if ( ANI_CurrentFrameGet(0) > 6 )
+							ti_test_jump = vrai							
+						break
+					case RM_Act_Jump :
+						if( ACT_ActionItemGet() && ANI_CurrentFrameGet(0) > 2)
+							ti_test_jump = vrai
+						break
+					default:
+						ti_test_jump = vrai
+				}
+				ti_test_ride = vrai
+				if( i_jump_copter )
+					ACT_ActionSet(RM_Act_Copter)
+				break
+			case RM_Act_Chute :
+			case RM_Act_Jump_Fly :
+			case RM_Act_Jump_FreeFall :
+			case RM_Act_ChuteContreMur :
+				ti_test_jump = vrai
+				ti_test_ride = vrai
+				if ( ! MATH_VecNullEpsilon(v_force_STREAM))
+					ACT_ActionSet(RM_Act_Jump_FreeFall)
+				else if ( i_grappin_accroche)
+				{
+					ACT_ActionSet(RM_Act_Chute)					
+				}
+//				else if ( i_flag_boost && f_speed_engine_hor > Cf_Speed_For_TGV)
+				else if ( f_speed_engine_hor > Cf_Speed_For_TGV)
+				{
+					ACT_ActionSet( RM_Act_Jump_Fly)
+				}
+				else if ( v_speed_engine.z < -Cf_Speed_For_TGV)
+				{
+					ACT_ActionSet( RM_Act_Jump_FreeFall)
+				}
+				else if ( Proc_RM_Glise_Contre_Mur()) // COL_CollideType(COL_C_Wall))
+					ACT_ActionSet(RM_Act_ChuteContreMur)
+				else
+					ACT_ActionSet(RM_Act_Chute)
+
+				if( i_jump_copter )
+					ACT_ActionSet(RM_Act_Copter)
+				break
+			case	RM_Act_Jump_DIVE :
+				// DIVE ATTACK QUI AVANCE UN PEU
+				ti_test_punch = faux
+				ti_orient = faux
+				ti_test_wall = faux
+				
+				i_jump_copter = faux
+//				tv_speed = OBJ_SightGet()
+//				tv_speed.z = -3.0			
+				tv_speed = cvector( 0.0, 0.0, -21.0)
+				DYN_SpeedSetVector( tv_speed * 7.0)
+				
+				COL_ZoneSizeSet(C_zde_fight,cvector(3.5,3.5,3.5))
+				COL_ZonePosSet(C_zde_fight,cvector(0.0,0.0,0.0))
+//				OBJ_CapaSet( Capa_ZDE_Fight_ON, none)
+				if ( ANI_CurrentFrameGet(0) > 7)
+					ACT_ActionSet( RM_Act_Chute)
+				MOVE_Cancel_Mouvment()
+				break
+			case  RM_Act_Jump_SUPERSONIC :
+				ti_test_punch = faux
+				ti_orient = faux
+				ti_test_wall = faux
+				OBJ_CapaSet( Capa_ZDE_Fight_ON, none)
+				OBJ_RotateLocalX( 20.0 * TIME_GetDt())
+				MOVE_Cancel_Mouvment()
+			case RM_Act_Jump_ChuteNoControl :
+				ti_test_ride = faux
+				break
+			case RM_Act_PunchInAir2 :
+				// COMBOOOOO SAUT COUP
+				ti_chute_stopped = vrai
+				ti_test_punch = faux
+				ti_test_jump = vrai
+				if ( ACT_ActionFinished())
+				{
+					if ( BUFFER_Buffered(C_Button_C))
+					{
+						i_frappe_target_nb = 0
+						f_jump_speed_limit -= 0.1
+						ACT_ActionSet(RM_Act_PunchInAir)
+						BUFFER_DEL_ALL()
+					}
+					else
+						MOVE_Jump_GOTO_Chute()
+				}
+				MOVE_Cancel_Mouvment()
+				break
+			case RM_Act_PunchTGV_Air :
+				if( ANI_CurrentFrameGet(0) >= 3)
+					OBJ_CapaSet( Capa_ZDE_Fight_ON, none)
+				Proc_RM_GFX_Fire()
+			case RM_Act_PunchFinish :
+				if( ANI_CurrentFrameGet(0) >= 7 && ANI_CurrentFrameGet(0) <= 15 )
+					OBJ_CapaSet( Capa_ZDE_Fight_ON, none)
+			case RM_Act_PunchInAir :
+				ti_chute_stopped = vrai
+				ti_test_punch = faux
+				if ( ACT_ActionFinished())
+				{
+					Proc_RM_DESTROY_GFX_Fire()
+					if ( BUFFER_Buffered(C_Button_C))
+					{
+						i_frappe_target_nb = 0
+						f_jump_speed_limit -= 0.1
+						ACT_ActionSet(RM_Act_PunchInAir2)
+						BUFFER_DEL_ALL()
+					}
+					else
+						MOVE_Jump_GOTO_Chute()
+				}
+//				MOVE_Cancel_Mouvment()
+				break			
+			case RM_Act_PAF_Reception :
+				if ( ACT_ActionFinished())
+					ACT_ActionSet( RM_Act_PafFReleve)
+				ti_test_ground = faux
+				ti_test_punch = faux
+				ti_test_wall = faux
+				ti_orient = faux
+				MOVE_Cancel_Mouvment()
+				break
+			case RM_Act_Jump_Reception :
+			case RM_Act_ReceptionGrosse :
+			case RM_Act_DIVE_Reception :
+			case RM_Act_ReceptionEcrase :
+				if ( i_flag_just_jump)
+				{
+					MOVE_CHANGE_To_Jump( DYN_SpeedGetVector(), i_flag_just_jump, vrai)
+					f_jump_impulsion_time = TIME_Get()
+					ti_test_ground = faux
+					break
+				}
+				else if ( i_flag_just_punch)
+				{
+					// HIT
+					f_coup_speed = 1.0
+					MOVE_CHANGE_To_Punch(0)
+					MOVE_Cancel_Mouvment()
+					break
+				}
+				else if ( i_flag_just_esquive)
+				{
+					if ( f_speed_hor > 1.0 )
+						MOVE_CHANGE_To_ReceptionBoost()
+					else
+						MOVE_CHANGE_To_Dodge()
+					ti_test_ground = faux
+					break
+				}	
+				else if( i_flag_just_cle)
+				{
+					ti_test_punch = vrai
+//					MOVE_CHANGE_To_Use()
+					ti_test_ground = faux
+					break
+				}				
+			case RM_Act_PafFReleve :
+				ti_test_ground = faux
+				ti_test_punch = faux
+				ti_test_wall = faux
+				if ( ACT_ActionFinished() 
+				|| ( ACT_ActionGet() == RM_Act_Jump_Reception && ! MATH_FloatNullEpsilon( f_joy_norm) && ANI_CurrentFrameGet(0) >= 3))
+//				|| ( ACT_ActionGet() == RM_Act_ReceptionGrosse && MATH_FloatNullEpsilon( f_joy_norm) && ANI_CurrentFrameGet(0) >= 5) )
+				{
+					if ( ACT_ActionGet() == RM_Act_ReceptionGrosse)
+					{
+						ACT_ActionSet( RM_Act_Jump_Reception)
+						break
+					}
+					f_ground_timer = 0.1		// Forcer reception Sol a cause des pentes.
+					MOVE_CHANGE_To_Default()
+					break
+				}
+				break
+			case RM_Act_Copter :
+				ti_test_ride = vrai
+				if ( ! RM_POWERUP_IS_ACTIF( RM_POWER_HELICO_INF))
+					f_jump_copter_time += TIME_GetDt()
+				if ( !i_jump_copter || f_jump_copter_time >= Cf_HelicoWithoutPower)
+				{
+					i_jump_copter = faux
+					ACT_ActionSet(RM_Act_Chute)
+				}
+				break
+			case  RM_Act_Grappin_Launch :
+				ti_test_ground = faux
+				ti_test_punch = faux
+				if( ANI_CurrentFrameGet(0) <= 6) //Ci_Grappin_FrameLance)
+				{
+					ti_chute_stopped = vrai
+				}
+				if ( ACT_ActionFinished())
+					MOVE_Jump_GOTO_Chute()
+				break	
+			case	RM_Act_Use_Gun :
+			case	RM_Act_Use_Grenade :
+			case	RM_Act_Use_CleEchec :
+			case	RM_Act_Use_CleMarche :
+				Proc_RM_Mode_Weapon()
+			case RM_Act_Ramasse :
+			case RM_Act_RamasseMove :
+				ti_chute_stopped = vrai
+			default:
+				if ( ACT_ActionFinished())
+					MOVE_Jump_GOTO_Chute()
+				break
+		}
+		
+	
+		// RECEPTION  DETECTION
+		if ( ti_test_ground && DYN_SpeedGetVector().z <= 0.0 && COL_CollideType(COL_C_Ground))
+		{
+			tv_temp = COL_NormalGet(COL_C_Ground)
+			if ( tv_temp.z > 0.0)
+			{
+				switch ( ACT_ActionGet())
+				{
+					case RM_Act_Jump_ChuteNoControl :
+						ACT_ActionSet( RM_Act_PAF_Reception)
+						break
+					case RM_Act_Jump_DIVE :
+						OBJ_CapaSet( Capa_ZDE_Fight_ON, none)
+						ACT_ActionSet(RM_Act_DIVE_Reception)
+						@get_Kamera Proc_Kam_RumbleSet( 0.05, 6.0)
+						PROC_SFX_PAF_SOL( 5.0, OBJ_PosGet())
+						EVENT_AddEventPafCanal( C_EVENT_FILTER_Object,  C_PAF_RM_Fort + C_PAF_RM_DiveAttack, OBJ_Me(), Cf_EVENT_Duree_1Trame, COL_ObjectGet(COL_C_Ground), -1, 10.0, -Cv_VerticalVector, OBJ_PosGet())
+						ao_frappe_target[i_frappe_target_nb] = COL_ObjectGet(COL_C_Ground)
+						i_frappe_target_nb++
+						break
+					case RM_Act_Jump_Fly :
+					case RM_Act_Jump_FlyPump :
+					case RM_Act_Jump_FlyPump2 :
+						if ( f_joy_norm)
+							MOVE_CHANGE_To_ReceptionBoost()
+						else
+							ACT_ActionSet( RM_Act_ReceptionEcrase)
+//							ACT_ActionSet( RM_Act_Jump_Reception)
+						break
+					default:
+						if ( ! MATH_FloatNullEpsilon( f_joy_norm) && f_speed_hor >= 4.0)
+							MOVE_CHANGE_To_ReceptionBoost()
+						else if ( v_speed_before_rec.z < -10.0)
+							ACT_ActionSet( RM_Act_ReceptionGrosse) 
+						else
+							ACT_ActionSet( RM_Act_Jump_Reception)
+							
+				}
+			}
+		}	
+
+		// Fort ralenti de chute pour les coup, lancé de grappin ...
+		tv_speed = DYN_SpeedGetVector()
+		if ( ti_chute_stopped )
+		{
+			if ( tv_speed.z < 0)
+			{ 
+//				f_jump_speed_limit -= 0.1
+				if ( f_jump_speed_limit > - 0.7)
+				{
+					tv_speed.z = f_jump_speed_limit
+					DYN_SpeedSetVector( tv_speed)
+				}
+			}		
+		}
+
+		// ACCROCH DETECT	
+		if ( ti_test_wall)
+		{
+			if ( ! o_grappin && ( tv_speed.z < 0 || i_jump_mashing))	
+				AI_Execute("raym_exec_jump_LRAY")
+			if ( o_climb_WP)
+			{
+				i_jump_copter = faux
+				AI_TrackCurChangeNow("raym_ETAT_accroch")
+			}
+		}
+
+//		// SAUT EN GRAPPIN		
+//		if ( i_flag_just_jump && i_grappin_accroche ) //&& ! i_grappin_snap_to_dest) c'est plus possible pour l instant
+//		{
+//			if ( f_joy_norm > 0.5)
+//			{
+//				f_traction_speed_time = 2.0		// POur boost
+//				f_traction_multiplier = 11.0
+//			}
+//			else
+//			{
+//				f_traction_speed_time = 0.0		// POur boost
+//				f_traction_multiplier = 1.0
+//			}
+//			
+//			MOVE_CHANGE_To_Jump( v_joy_sight_normalized * f_traction_multiplier, i_flag_just_jump, vrai)
+//			if( ! @get_global i_GRAPPIN_OutOfControl_flag )
+//				GRAPPIN_Destroy()
+//			break
+//		}
+
+//		// REBOND SUR LAPIN
+//		o_jump_rebound  = Proc_RM_CheckRebond()
+//		if ( o_jump_rebound)
+//		{
+//			tv_speed.z = 0.0
+//			DYN_SpeedSetVector( tv_speed)
+//			EVENT_AddEventPafCanal( C_EVENT_FILTER_Object,  C_PAF_RM_Stun, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_obj, -1, 0.0, OBJ_SightGet(), OBJ_PosGet())
+//			v_jump_impulsion_force = v_joy_sight_normalized * 5.0
+//			v_jump_impulsion_force.z = 80.0
+//			MOVE_CHANGE_To_Jump( v_jump_impulsion_force, vrai, vrai)
+//			break
+//		}
+
+		// MULTIPLE SAUT
+		if ( ti_test_jump && i_flag_just_jump )
+		{
+			// ACT_ActionGet() != RM_Act_JumpPump ||
+			f_jump_impulsion_time = TIME_Get()
+			MOVE_CHANGE_To_Jump( DYN_SpeedGetVector(), i_flag_just_jump, vrai)
+			break
+		}
+
+		// PUNCH DETECTION
+		if ( ti_test_punch)
+		{
+			if( i_flag_just_punch)
+			{
+				// HIT IN JUMP    
+				i_frappe_target_nb = 0
+				if ( o_fight_actor_best_joy && Proc_PNJ_Paf_Combo_Waiting_for_Finish( o_fight_actor_best_joy))
+					ACT_ActionSet(RM_Act_PunchFinish)
+				else if ( i_flag_boost && f_speed_hor >= Cf_Speed_For_TGV)
+				{
+					if ( Proc_RM_ManaGet() >= Cf_Mana_Cost_DASH)
+					{
+						Proc_RM_LifeManaSet( -1.0, MATH_FloatMax( 0.0, Proc_RM_ManaGet() - Cf_Mana_Cost_DASH))		
+						ACT_ActionSet(RM_Act_PunchTGV_Air)
+					}
+					else
+					{
+						ACT_ActionSet(RM_Act_PunchInAir)
+						f_jump_speed_limit -= 0.1
+					}
+					f_display_mana = 1.0
+				}
+				else
+				{
+					ACT_ActionSet(RM_Act_PunchInAir)
+					f_jump_speed_limit -= 0.1
+				}
+				COL_ZoneSizeSet(C_zde_fight,cvector(0.7,0.7,0.7))
+				COL_ZonePosSet(C_zde_fight,cvector(0.0,-0.8,0.8))
+				BUFFER_DEL_ALL()
+			}
+			else if ( i_flag_just_super_punch && f_jump_time > 0.15)
+			{
+				// DASH ATTACK
+				 
+				if ( Proc_RM_ManaGet() >= Cf_Mana_Cost_DIVE)
+				{
+					Proc_RM_LifeManaSet( -1.0, MATH_FloatMax( 0.0, Proc_RM_ManaGet() - Cf_Mana_Cost_DIVE))		
+					i_jump_copter = faux
+					i_frappe_target_nb = 0
+					ACT_ActionSet(RM_Act_Jump_DIVE)
+				}
+				f_display_mana = 1.0
+				BUFFER_DEL_ALL()
+			}
+		}
+		
+		// RIDE DETECTION
+		if ( ti_test_ride && ! i_jump_copter)
+		{
+			// toujours en jump : test de ride d'1 nmi
+			tv_speed = DYN_SpeedGetVector()
+			if ( tv_speed.z < 0.0)
+				o_ride_actor = LNK_ClientGet(Ci_LNK_RIDE_ON_NMI, mid_ride_LNK_ID, vrai, nofunc, nofunc, nofunc)
+			
+			if ( i_grappin_snap_to_dest)
+			{
+				if ( !o_grappin_hotspot)
+					i_grappin_snap_to_dest = faux
+				if( o_grappin_hotspot && PROC_RM_IS_MOUNT( o_grappin_hotspot))
+					o_ride_actor = LNK_ThisClientGet( o_grappin_hotspot, Ci_LNK_RIDE_ON_NMI, mid_ride_LNK_ID, vrai, nofunc, nofunc, nofunc)					
+			}
+
+			if( o_ride_actor )
+			{
+				MOVE_CHANGE_To_Ride()
+				break
+			}
+		}
+		// USE DETECTION
+		if( i_flag_just_use )
+		{
+			MOVE_CHANGE_To_Use()
+			break
+		} 
+
+		f_jump_time += TIME_GetDt()
+		break	
+// ------------------------------------------------------------------------------------------------		
+// -------------------------------------------- VARAP ---------------------------------------
+// ------------------------------------------------------------------------------------------------		
+	case C_Move_Varap :
+		// GRAPPIN LAUNCH / END
+		i_choix_anim = faux	
+		ti_orient = faux
+		
+		if( ! RM_POWERUP_IS_ACTIF( RM_POWER_SPIDER_INF))
+			f_varap_time += TIME_GetDt()
+		if ( GRAPPIN_Detection())
+			break
+		
+		// SAUT
+		if ( i_flag_just_jump || f_varap_time  >= Cf_Varap_WithoutGlove)
+		{
+			MOVE_CHANGE_To_Jump( DYN_SpeedGetVector(), i_flag_just_jump, vrai)
+			MOVE_Cancel_Mouvment()
+			break
+		}	
+
+		else if( i_flag_just_use)
+		{
+			MOVE_CHANGE_To_Use()
+		}
+		Proc_RM_Mode_Weapon()
+				
+		// FORCE DE DECROCHAGE
+		if( i_grappin_accroche)
+		{
+			ti_rope_index = @o_rope_manager Rope_Manager_Get_Corde_Index(o_grappin_start_actor, o_grappin_dest_actor)
+			if (ti_rope_index != -1 && @o_rope_manager Rope_Manager_RopeLengthGet(ti_rope_index) > 3.0)                        
+				f_varap_tension += TIME_GetDt()
+			else
+				f_varap_tension = 0.0
+		}
+		else
+			f_varap_tension = 0.0
+
+		if ( MATH_VecNorm(v_force_STREAM ) > 10.0 || f_varap_tension > Cf_Varap_Tension_Decroch)
+
+		{
+			MOVE_CHANGE_To_Jump( DYN_SpeedGetVector(), faux, vrai)
+			MOVE_Cancel_Mouvment()
+			break
+		}	
+			
+		OBJ_PosSet( v_varap_pos)
+		OBJ_SightGeneralSet( -v_varap_normal, Cv_VerticalVector)
+		if ( ACT_ActionGet() != RM_Act_Grappin_Launch || ACT_ActionFinished())
+			ACT_ActionSet(RM_Act_SpiderAtt)
+
+		MOVE_Cancel_Mouvment()
+		break
+// ------------------------------------------------------------------------------------------------		
+// -------------------------------------------- RIDE ---------------------------------------
+// ------------------------------------------------------------------------------------------------		
+	case C_Move_Rider :
+		i_choix_anim = faux	
+		ti_orient = faux
+		
+		Proc_RM_Mode_Weapon()
+
+		to_tete = ANI_CanalObjectGet(Anim_Canal_Tete)
+		if ( IsInWater( OBJ_PosGet(), f_water_Z)  && (f_water_Z - OBJ_PosGet().z) > 1.9)
+			PROC_SFX_BULLES_EAU( i_GFX_Feu_bubules, @to_tete OBJ_PosGet() , 1.0)
+		else
+			PROC_DESTROY_SFX(i_GFX_Feu_bubules)
+
+
+		// JUMP
+		if ( i_flag_just_ride_exit)
+			i_flag_just_ride_exit = PROC_RM_Mount_Jump_OFF( o_ride_actor, i_ride_actor_ID)
+
+
+		// KEEP RIDING ?
+		o_ride_actor = LNK_ThisClientGet(o_ride_actor, Ci_LNK_RIDE_ON_NMI, mid_ride_LNK_ID, vrai, nofunc, nofunc, nofunc)
+		if( ! o_ride_actor || ( i_flag_just_ride_exit && ( ! IsInWater( OBJ_PosGet(), f_water_Z) || (OBJ_PosGet().z - f_water_Z) > -0.9)))
+		{
+			// player's jump or fake jump = exit ride
+			o_ride_actor = LNK_ThisClientGet(o_ride_actor, Ci_LNK_RIDE_ON_NMI, mid_ride_LNK_ID, faux, nofunc, nofunc, nofunc)
+			switch ( i_ride_actor_ID )
+			{
+				case C_ID_Monture_Rhino :
+					tf_force = 9.0
+					break
+				case C_ID_Monture_Requin :
+					tf_force = 9.0
+					break
+				default:
+					tf_force = 5.0
+			}
+			MOVE_CHANGE_To_Jump( v_speed_hor + ( v_joy_sight * tf_force), vrai, faux)
+			if ( @o_ride_cb_actor OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Anims))
+				AI_CBDel(o_ride_cb_actor, CallBack_After_Blend, "raym_cb_set_pos")
+			else
+				AI_CBDel(o_ride_cb_actor, CallBack_After_Rec, "raym_cb_set_pos")
+			o_ride_cb_actor = nobody
+			i_ride_actor_ID = 0
+			MOVE_Cancel_Mouvment()
+			break
+		}
+		else
+			RM_Proc_Uncol_Add( o_ride_actor) // C'est une monture
+		
+		if( ACT_ActionGet() != RM_Act_Grappin_Launch || ACT_ActionFinished() )
+		{
+			// ne pas couper l'anim de lancer du grappin
+			if ( o_ride_actor && ! MATH_FloatNullToler( @o_ride_actor DYN_SpeedGet(), 1.5))
+				ACT_ActionSet(RM_Act_RideDepl)			
+			else
+				ACT_ActionSet(RM_Act_Ride)
+		}
+
+		MOVE_Cancel_Mouvment()
+		break
+// ------------------------------------------------------------------------------------------------		
+// --------------------------------------------  USE  ---------------------------------------
+// ------------------------------------------------------------------------------------------------		
+	case C_Move_Use :
+		i_choix_anim = faux
+		ti_orient = vrai	
+		if ( ! o_grab_object)
+		{
+			MOVE_CHANGE_To_Default()			
+			break
+		}
+		switch ( @o_grab_object PROC_WEAPON_TypeGet())
+		{
+			case RM_WEAPON_TYPE_GRENADE :
+			case RM_WEAPON_TYPE_GOURDIN :
+				if ( ACT_ActionFinished())
+				{
+					Proc_RM_Use_Weapon()
+					o_grab_object = nobody
+					
+					if( o_ride_actor )
+						MOVE_CHANGE_To_Ride()
+					else if (  ! i_ground_flag)
+						MOVE_CHANGE_To_Jump( v_speed_hor, faux, faux)		
+					else
+						MOVE_CHANGE_To_Default()			
+				}
+				break
+			case RM_WEAPON_TYPE_GUN :
+				if ( ACT_ActionFinished())
+				{
+					if( o_ride_actor )
+						MOVE_CHANGE_To_Ride()
+					else if (  ! i_ground_flag)
+						MOVE_CHANGE_To_Jump( v_speed_hor, faux, faux)		
+					else
+						MOVE_CHANGE_To_Default()			
+				}
+				break
+			case RM_WEAPON_TYPE_CLE :
+				if ( ACT_ActionFinished())
+				{
+					LNK_Use_ActivationSet(mid_use)  
+					o_client_use = nobody
+					if ( ACT_ActionGet() == RM_Act_Use_CleMarche)
+					{
+						// On lache la clé ca a marché
+						@o_grab_object PROC_WEAPON_Use( Cv_NullVector, nobody)
+						o_grab_object = nobody
+					}
+					
+					MOVE_CHANGE_To_Default()
+				}				
+				break				
+		}
+		break
+
+// ------------------------------------------------------------------------------------------------		
+// -------------------------------------------- FIGHT ---------------------------------------
+// ------------------------------------------------------------------------------------------------		
+	case C_Move_Punch :
+		i_choix_anim = faux	
+		ti_orient = vrai	
+		ti_gfx_del = faux
+
+		// TEMP TEMP
+		// EN ATTENTANT DES ANIMS PLUS DEF
+		ti_cancel_coup_ultra = faux
+		switch ( ACT_ActionGet())
+		{
+			case RM_Act_PunchU3 :
+			case RM_Act_PunchU3v1 :
+			case RM_Act_PunchU3v2 :
+			case RM_Act_PunchUR0 :
+			case RM_Act_PunchUR2 :
+				if ( f_frappe_time > 0.2)
+				{
+					if ( ! BUFFER_Buffered(C_Button_C))
+						ti_cancel_coup_ultra = vrai
+					else
+						i_frappe_ultra_memo = vrai
+					BUFFER_DEL_ALL()
+					f_frappe_time = 0.0
+					i_frappe_target_nb = 0	
+				}			
+				OBJ_CapaSet( Capa_ZDE_Fight_ON, none)
+				f_frappe_time += TIME_GetDt()
+				break
+			case RM_Act_PunchDragon :
+				BUFFER_DEL_ALL()		// on ne veux pas de mémorisation sur ce coup.
+			case RM_Act_PunchR0 :
+			case RM_Act_PunchR1 :
+			case RM_Act_PunchR2 :
+			case RM_Act_PunchR3 :
+			case RM_Act_PunchR4 :
+			case RM_Act_PunchR5 :
+			case RM_Act_Punch2 :
+			case RM_Act_Punch3 :
+			case RM_Act_Punch4 :
+				f_frappe_time = 0.0
+				OBJ_CapaSet( Capa_ZDE_Fight_ON, none)
+				break
+			case RM_Act_PunchTGV_Sol : 
+				f_frappe_time = 0.0
+				OBJ_CapaSet( Capa_ZDE_Fight_ON, none)
+				if ( i_coup_super)
+				{
+					ti_freq = ACT_FrequencyGet(ACT_ActionGet(), ACT_ActionItemGet()) * 0.75
+					ANI_FrequencySet(0, ti_freq)
+					Proc_RM_GFX_Fire()
+				}
+				else		
+					Proc_RM_GFX_Smoke()
+				break
+		}			
+		// TEMP TEMP
+		
+	
+		if ( ti_cancel_coup_ultra || ACT_ActionFinished() || ( BUFFER_Zone_Interrupt()&& ( f_joy_norm || BUFFER_Buffered(C_Button_C) || BUFFER_Buffered(C_Button_X))))
+		{
+			if ( BUFFER_Buffered( C_Button_C) || i_frappe_ultra_memo)
+			{
+				// NEW HIT
+				ti_orient = ti_orient 	
+				f_coup_speed += 0.2
+				MOVE_CHANGE_To_Punch(0) 
+			}
+			else
+				MOVE_CHANGE_To_Default()
+		}
+	
+		if ( i_flag_just_jump || ! i_ground_flag )
+		{
+//			if ( i_flag_just_jump && ACT_ActionGet() == RM_Act_PunchDragon)
+//				ti_game_ralenti = vrai
+//			else
+//				ti_game_ralenti = faux
+			MOVE_CHANGE_To_Jump( v_speed_hor, i_flag_just_jump, vrai)
+//			if ( ti_game_ralenti)
+//				i_game_ralenti = vrai
+			MOVE_Cancel_Mouvment()
+		}	
+		else if ( i_flag_just_esquive )
+		{
+			MOVE_CHANGE_To_Dodge()
+		}	
+		break
+		
+// ------------------------------------------------------------------------------------------------		
+// -------------------------------------------- NAGE ---------------------------------------
+// ------------------------------------------------------------------------------------------------		
+	case C_Move_Swim :
+		i_choix_anim = vrai
+		ti_orient = vrai	
+		if ( ! i_is_in_water)
+		{
+			MOVE_CHANGE_To_Default()
+		}
+		else if ( i_flag_just_jump)
+		{
+			MOVE_CHANGE_To_Jump( v_speed_hor, i_flag_just_jump, vrai)
+			MOVE_Cancel_Mouvment()
+		}
+		
+		GRAPPIN_Detection()
+		break
+		
+// ------------------------------------------------------------------------------------------------		
+// -------------------------------------------- ESQUIVE ---------------------------------------
+// ------------------------------------------------------------------------------------------------		
+	case C_Move_ReceptionRoulade :
+	case C_Move_Esquive :
+		OBJ_CapaSet( OBJ_Capa_1, none)
+		
+		if ( i_flag_just_jump)
+		{
+			MOVE_CHANGE_To_Jump( v_speed_hor, vrai, vrai)			
+			MOVE_Cancel_Mouvment()
+			break
+		}
+		else if ( i_flag_just_punch)
+		{
+			// HIT
+			f_coup_speed = 1.0
+			MOVE_CHANGE_To_Punch(0)
+			i_choix_anim = faux
+			break
+		}
+		else if( i_flag_just_use)
+		{
+			MOVE_CHANGE_To_Use()
+			MOVE_CHANGE_To_Default()
+			i_choix_anim = faux
+			break
+		}
+		else if( i_flag_just_cle)
+		{
+			MOVE_CHANGE_To_Use()
+			i_choix_anim = faux
+			break
+		}
+		else if ( ACT_ActionFinished())
+			MOVE_CHANGE_To_Default()
+		else
+			f_joy_norm = 1.0
+		i_choix_anim = vrai
+		ti_orient = vrai	
+		break
+
+
+// ------------------------------------------------------------------------------------------------		
+// -------------------------------------------- AU SOL ---------------------------------------
+// ------------------------------------------------------------------------------------------------		
+	default: 
+		i_choix_anim = vrai
+		ti_orient = vrai	
+		i_grappin_created = faux
+		
+		GRAPPIN_Detection()
+	
+		if( o_ride_actor )
+		{
+			MOVE_CHANGE_To_Ride()
+			MOVE_Cancel_Mouvment()
+		}
+		else if ( i_flag_just_jump || ! i_ground_flag )
+		{
+			MOVE_CHANGE_To_Jump( v_speed_hor, i_flag_just_jump, vrai)
+//			MOVE_Cancel_Mouvment()
+		}
+		else if ( i_flag_just_punch)
+		{
+			// HIT
+			f_coup_speed = 1.0
+			MOVE_CHANGE_To_Punch(0)
+//			MOVE_Cancel_Mouvment()
+		}
+		else if( i_flag_just_use)
+		{
+			MOVE_CHANGE_To_Use()
+		}
+		else if( i_flag_just_cle)
+		{
+			MOVE_CHANGE_To_Use()
+		}
+		else if ( i_flag_just_esquive)
+		{
+			if ( f_speed_hor > 8.0 )
+				MOVE_CHANGE_To_ReceptionBoost()
+			else
+				MOVE_CHANGE_To_Dodge()
+			break
+		}	
+		Proc_RM_Mode_Weapon()
+
+		break
+}
+
+	
+// DETECTER SI KONG PEUT PAFFER
+if ( COLSET_TryToHit( ))
+	AI_Execute("raym_exec_zdf_zdc")
+else
+	i_frappe_target_nb = 0
+
+// GESTION DES FORCES JOY
+v_force_JOY = Proc_RM_MultiplierCalc()
+DBG_RenderVector( OBJ_PosGet(), v_force_JOY , color_vert)
+if ( i_choix_anim)
+	ti_orient = RM_Choix_Anim_Deplacement(v_force_JOY)
+
+if ( ti_orient)
+	AI_Execute("raym_exec_orient_with_joy")
+
+	
+// EFFECT DE VITESSE
+//if ( i_flag_boost)
+//	 @get_global Proc_AE_ZoomSmoothCenterSet(MATH_FloatBlend( @get_global Proc_AE_ZoomSmoothCenterGet(), 2.0 * @get_Kamera Proc_Kam_SpeedGet() / Cf_Traction_Boost , 6.0 * TIME_GetDt()), @get_Kamera OBJ_SightGet())

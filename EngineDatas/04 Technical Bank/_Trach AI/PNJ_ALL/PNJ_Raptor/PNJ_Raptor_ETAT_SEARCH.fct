@@ -1,0 +1,156 @@
+#include "PNJ_Raptor_defines.var"
+
+object	to_collide_object
+object	to_camera
+
+float		tf_sqr_hor_dist
+float		tf_interet
+float		tf_imprecision
+float		tf_delay
+float		tf_dist
+float		tf_interest_life
+
+int			ti_i
+int			ti_flag_go_to_grid_center
+int			ti_followed_ground_ID
+int			ti_flag_try_to_move
+
+vector	tv_offset
+vector	tv_temp
+
+object	to_interet_gao
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+
+	if (MSG_GlobalIsValid(mid_best_interet))
+		EVENT_LifeSet(mid_best_interet, Cf_Infinit)
+
+	f_delay_before_next_shout_mix = MATH_RandFloat(2.0, 6.0)
+
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_SEARCH)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_SEARCH
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+	fct_main_etat = AI_TrackCurGet()
+
+	f_force_run_duration = 0.0
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =======================================================================================================
+AI_Execute("PNJ_Raptor_exec_check_msg")
+
+AI_Execute("PNJ_Raptor_exec_check_vision")
+
+AI_Execute("PNJ_Raptor_exec_check_sound")
+
+i_flag_zde_fight_enable = vrai
+AI_Execute("PNJ_Raptor_exec_check_collision")
+
+AI_Execute("PNJ_Raptor_exec_check_paf")
+if (i_flag_paf_fly)
+	macro_change_etat("PNJ_Raptor_ETAT_PAF_FLY")
+if (i_flag_paf_fall)
+	macro_change_etat("PNJ_Raptor_ETAT_PAF_FALL")
+if (i_flag_paf_repousse || i_flag_paf_slide || !f_lifecur)
+	macro_change_etat("PNJ_Raptor_ETAT_PAF_SLIDE")
+
+AI_Execute("PNJ_Raptor_exec_check_shoot")
+
+AI_Execute("PNJ_Raptor_exec_update_best_interest")
+
+AI_Execute("PNJ_Raptor_exec_check_requin")
+
+if (i_flag_change_target)
+	macro_change_etat("PNJ_Raptor_ETAT_HESITE")
+
+if (! MSG_GlobalIsValid(mid_best_interet))
+	macro_change_etat("PNJ_Raptor_ETAT_ATTENTE")
+
+// TEST POUR MORDRE
+//if (i_flag_head_contact)
+//	macro_change_etat("PNJ_Raptor_ETAT_MORD")
+//AI_Execute("PNJ_Raptor_exec_test_bite")
+
+tf_delay = TIME_Get() - EVENT_InteretSeenTimeGet(mid_best_interet)
+if (!tf_delay || f_force_requin_mode_duration)
+	macro_change_etat("PNJ_Raptor_ETAT_FIGHT")
+
+v_way_destpos = EVENT_InteretPositionGet(mid_best_interet)
+i_dest_pos_territory_ID = i_target_territory_ID
+
+// COMPORTEMENT ==================================================================================================	
+i_way_computation_mode = Ci_WAY_MODE_FIGHT
+AI_Execute("PNJ_Raptor_exec_way_find_dest_pos")
+
+i_flag_look = vrai
+
+tv_temp = v_way_destpos - v_look_head_pos
+tv_temp.z = 0.0
+
+tf_interest_life = EVENT_LifeGet(mid_best_interet)
+
+if (i_way_wp_nb && MATH_VecDotProduct(tv_temp, tv_temp) < 25.0)
+{
+	i_flag_head_search = faux
+}
+else
+{
+	i_flag_head_search = vrai
+
+	if (tf_interest_life > 6.0)
+	{
+		tf_interest_life = 6.0
+		EVENT_LifeSet(mid_best_interet, tf_interest_life)
+	}
+}
+
+if (!i_flag_head_search && (EVENT_InteretTargetAlreadySeen(mid_best_interet) || i_flag_run_after_paf))
+	i_flag_run = vrai
+else
+	i_flag_run = faux
+
+if (i_flag_head_search)
+{
+	tv_temp = OBJ_PosGet()
+	tv_temp += MATH_VecRotate(OBJ_SightGet(), Cv_VerticalVector, MATH_Sin(2.0 * TIME_Get()) * Cf_PiBy4) * f_look_axis_length
+	tv_temp.z += 1.0
+	
+	v_look_pos = tv_temp
+}
+else
+{
+	v_look_pos = v_way_destpos
+}
+
+AI_Execute("PNJ_Raptor_exec_way_move")
+
+if (tf_interest_life < 3.0)
+{
+	i_flag_dont_change_action = vrai
+	PNJ_Raptor_ActionSet(Action_Observe)
+}
+
+AI_Execute("PNJ_Raptor_exec_select_action")
+
+

@@ -1,0 +1,557 @@
+//#include"k_define.var"
+//
+//#define	Cf_Amortie_vitesse										0.94
+//#define	Ci_frappe_frame_check_combo						36//19
+//#define	Ci_frappe_puissante_frame_valide_min			6
+//#define	Ci_frappe_puissante_frame_valide					21 //  12
+//
+//// CHARGE DU COUP
+//#define	Cf_frappe_puissante_freq_min						1.0
+//#define	Cf_frappe_puissante_freq_blend_down_coef		3.4
+//#define	Cf_frappe_puissante_freq_blend_up_coef			20.0
+//
+//#define	Ci_frappe_frame_deb_combo							0 // 8 //13
+//
+//int				ti_rank
+//int				ti_i
+//int				ti_frame
+//int				ti_frappe_puissante_libere
+//int				ti_frappe_puissante_pause
+//int				ti_action_finished
+//int				ti_frame_finished
+//int				ti_combo_reinit
+//int				ti_fury_on
+//int				ti_action
+//
+//float			tf_dist_min
+//float			tf_dist
+//float			tf_angle 
+//float			tf_amorti_coef
+//float			tf_delai_new_coup
+//
+//vector		tv_sight
+//vector		tv_pos_proche
+//vector		tv_ortho
+//vector		tv_sens
+//vector		tv_pos		// ODE
+//vector		tv_force		// ODE
+//vector		tv_frappe_ortho
+//vector		tv_speed
+//vector		tv_axe_joy
+//vector		tv_axe_grab
+//
+//object		EVT_Pere
+//object		to_ODE_Punch
+//
+//messageid	EVT_Visibility_ID
+//
+//
+//
+//// SORTIE ETAT ===================================================================
+//if (i_sort_etat) 
+//{
+//	ANI_Pause(0)
+//	i_Grab_Torse_Main_Swapping = faux
+//	i_Grab_Torse_Main_Swapping_Next = faux
+//	i_frappe_puissante_done = faux
+//	i_sort_etat = faux
+//	v_frappe_pied_fixe = Cv_NullVector
+//	return
+//}
+//
+//// INITIALISATION ETAT ==============================================================
+//if (i_etat_courant != ETAT_frappe) 
+//{
+//	i_etat_courant = ETAT_frappe
+//
+//	if (fct_last_etat)
+//	{
+//		i_sort_etat = vrai
+//		AI_Execute(fct_last_etat)
+//	}
+//
+//	fct_last_etat = AI_TrackCurGet()
+//	f_time_start_fury = 0.0
+//	i_fight_paf = faux
+//
+//// CAMERA -----------------------------------------------------------------
+//	@get_global i_kong_camera_status = Ci_Kcamera_deplacement
+//// CAMERA -----------------------------------------------------------------
+//
+//	ti_combo_reinit = faux
+//	i_frappe_next_coup = -1
+//	i_frappe_target_nb_backup = 0
+//	if( f_time_fury )
+//		i_frappe_combo_max_nb = Ci_frappe_combo_max_nb_fury
+//	else
+//		i_frappe_combo_max_nb = Ci_frappe_combo_max_nb_normal
+//	
+//	
+//	// REINIT ================================================================
+//	REINIT:
+//	
+//	f_time_start_etat = 0.0
+//	i_Grab_Torse_Main_Swapping_Step = 0
+//
+//	if( ! ti_combo_reinit )
+//	{
+//		// 1ER COUP
+//		i_frappe_combo_count = 1
+//		i_frappe_buffer = 1
+//		i_frappe_coup = K_Choix_du_Coup(Ci_Frappe_Dr_Coup_3)
+////		i_frappe_coup = K_Choix_du_Coup(-1)
+//		i_frappe_buffer = 0
+//		i_Grab_Torse_Main_Swapping = i_Grab_Torse_Main_Swapping_Next
+//		i_Grab_Torse_Main_Swapping_Next = faux
+//		i_frappe_puissante_en_cours = vrai
+//		i_frappe_puissante_done = faux
+//		i_frappe_change_cote = vrai
+//		i_frappe_target_nb_backup = 0
+//		i_frappe_target_nb = 0
+//		
+//		// Vitesse initiale
+//		v_frappe_speed = DYN_SpeedGetVector()
+//		v_frappe_speed.z = 0.0
+//		if( ! MATH_VecNullToler(v_frappe_speed, 0.1) )
+//		{
+//			i_frappe_mvt_frein = vrai
+//			f_frappe_speed_blend = Cf_Amortie_vitesse
+//		}
+//		else
+//			i_frappe_mvt_frein = faux
+//	}
+//	else
+//	{
+//		// COUP EN COMBO
+//		i_frappe_combo_count++
+//		i_Grab_Torse_Main_Swapping = i_Grab_Torse_Main_Swapping_Next
+//		i_Grab_Torse_Main_Swapping_Next = faux
+//		i_frappe_coup = i_frappe_next_coup
+//		i_frappe_next_coup = -1
+//		i_frappe_puissante_en_cours = faux		// plus de coup à cumuler
+//		i_frappe_target_nb = 0
+//		if( ! i_frappe_target_nb_backup )				// init en tag on
+//			i_frappe_puissante_done = faux			// pas de perso paffé -> fin de la combo puissante
+//
+//		// TEST ACCUMULATION EN COMBO
+//		i_frappe_puissante_en_cours = vrai
+//		i_frappe_puissante_done = faux
+//	}
+//
+//	i_frappe_buffer = 0
+//	i_flag_just_coup = faux			// Le coup viens d etre lu, reseter l info.
+//	if( i_Grab_Torse_Main_Swapping )
+//	{
+//		// Changer la <beep> de main
+//		i_frappe_coup = -1
+//		i_Grab_Torse_Main_Swapping_Step = 0
+//		if( ! i_Grab_Torse_Main )
+//			ACT_ActionSet(Ci_Kanim_GO_SwapMain_DG)
+//		else
+//			ACT_ActionSet(Ci_Kanim_GO_SwapMain_GD)
+//	}
+//	else
+//	{
+//		// 2 mains libres ou 1 main qui tient un petit objet
+//		ACT_ActionSet(Ci_Kanim_frappe + i_frappe_coup)
+////		if( ti_combo_reinit )
+////			ANI_CurrentFrameSet(0, Ci_frappe_frame_deb_combo) 
+//	}
+//
+//
+//	// INIT FRAPPE PUISSANTE
+//	f_frappe_puissante_freq_init = ANI_FrequencyGet(0)
+//	f_frappe_puissante_freq_cur = f_frappe_puissante_freq_init
+//	v_frappe_puissante_speed = 25.0 * OBJ_SightGet()
+//
+//	// ODE
+//	tv_frappe_ortho = MATH_VecRotate( v_frappe_sight, Cv_VerticalVector, Cf_PiBy2)
+//	
+//	// REGLER A NOUVEAU QUAND LES ANIMS SERONT ACCEPTEES
+//	switch( i_frappe_coup )
+//	{
+//		case 0:
+//			if ( !i_frappe_mvt_frein)
+//			{
+//				i_frappe_mvt_frein = vrai					// Simuler un déplacement
+//				v_frappe_speed = OBJ_SightGet() * 8.5
+//				f_frappe_speed_blend = 0.9
+//			}
+//			tv_pos = OBJ_PosGet() + (v_frappe_sight * 2.5)+ cvector( 0.0, 0.0, 5.0)
+//			tv_force = ((-v_frappe_sight * 0.0) - tv_frappe_ortho+ (OBJ_BankingGet() * 0.0)) * 20.0
+//			f_joy_sweep_angle = Cf_PiBy180		// frappe a droite
+//			f_coef_pied_d_appui = 0			// coup extérieur à droite OU coup de face à gauche -> rotation pied droit
+//			break
+//		case 1 :
+//			if ( !i_frappe_mvt_frein)
+//			{
+//				i_frappe_mvt_frein = vrai					// Simuler un déplacement
+//				v_frappe_speed = OBJ_SightGet() * 8.5
+//				f_frappe_speed_blend = 0.9
+//			}
+//			tv_pos = OBJ_PosGet() + (v_frappe_sight * 2.5)+ cvector( 0.0, 0.0, 5.0)
+//			tv_force = ((-v_frappe_sight * 0.0) + tv_frappe_ortho + (OBJ_BankingGet() * 0.0)) * 20.0
+//			f_joy_sweep_angle = -Cf_PiBy180		// frappe a gauche			
+//			f_coef_pied_d_appui = 1			// coup extérieur à gauche OU coup de face à droite -> rotation pied gauche
+//			break
+//		case  2 :
+//			tv_pos = OBJ_PosGet() + (tv_frappe_ortho * 3.5) + (v_frappe_sight * 3.0) + cvector( 0.0, 0.0, 5.0)
+//			tv_force = ((v_frappe_sight * 0.8) - (tv_frappe_ortho * 0.5) - (OBJ_BankingGet() * 0.6)) * 20.0
+//			f_joy_sweep_angle = Cf_PiBy180		// frappe a droite
+//			f_coef_pied_d_appui = 0.75			// coup extérieur à gauche OU coup de face à droite -> rotation pied gauche
+//			break
+//		case  3 :
+//			tv_pos = OBJ_PosGet() - (tv_frappe_ortho * 3.5) + (v_frappe_sight * 3.0) + cvector( 0.0, 0.0, 5.0)
+//			tv_force = ((v_frappe_sight * 0.8) + ( tv_frappe_ortho * 0.5) - (OBJ_BankingGet() * 0.6)) * 20.0
+//			f_joy_sweep_angle = -Cf_PiBy180		// frappe a gauche			
+//			f_coef_pied_d_appui = 0.5			// coup extérieur à droite OU coup de face à gauche -> rotation pied droit
+//			break
+//		case  4 :
+//			tv_pos = OBJ_PosGet() + (tv_frappe_ortho * 3.5) + (v_frappe_sight * 3.0) + cvector( 0.0, 0.0, 5.0)
+//			tv_force = ((v_frappe_sight * 0.8) - (tv_frappe_ortho * 0.5) - (OBJ_BankingGet() * 0.6)) * 20.0
+//			f_joy_sweep_angle = Cf_PiBy180		// frappe a droite
+//			f_coef_pied_d_appui = 0.5			// coup extérieur à gauche OU coup de face à droite -> rotation pied gauche
+//			break
+//		case  5 :
+//			tv_pos = OBJ_PosGet() - (tv_frappe_ortho * 3.5) + (v_frappe_sight * 3.0) + cvector( 0.0, 0.0, 5.0)
+//			tv_force = ((v_frappe_sight * 0.8) + ( tv_frappe_ortho * 0.5) - (OBJ_BankingGet() * 0.6)) * 20.0
+//			f_joy_sweep_angle = -Cf_PiBy180		// frappe a gauche			
+//			f_coef_pied_d_appui = 0.25			// coup extérieur à droite OU coup de face à gauche -> rotation pied droit
+//			break
+//		case  6 :
+//			tv_pos = OBJ_PosGet() + (tv_frappe_ortho * 3.5) + (v_frappe_sight * 3.0) + cvector( 0.0, 0.0, 5.0)
+//			tv_force = ((v_frappe_sight * 0.8) - (tv_frappe_ortho * 0.5) - (OBJ_BankingGet() * 0.6)) * 20.0
+//			f_joy_sweep_angle = Cf_PiBy180		// frappe a droite
+//			f_coef_pied_d_appui = 0.5			// coup extérieur à gauche OU coup de face à droite -> rotation pied gauche
+//			break
+//		case  7 :
+//			tv_pos = OBJ_PosGet() - (tv_frappe_ortho * 3.5) + (v_frappe_sight * 3.0) + cvector( 0.0, 0.0, 5.0)
+//			tv_force = ((v_frappe_sight * 0.8) + ( tv_frappe_ortho * 0.5) - (OBJ_BankingGet() * 0.6)) * 20.0
+//			f_joy_sweep_angle = -Cf_PiBy180		// frappe a gauche			
+//			f_coef_pied_d_appui = 0.5			// coup extérieur à droite OU coup de face à gauche -> rotation pied droit
+//			break
+//		default:
+//			tv_pos = OBJ_PosGet() - (OBJ_SightGet() * 1.5)+ cvector( 0.0, 0.0, 1.0)
+//			tv_force = (OBJ_SightGet() + (OBJ_BankingGet() * 0.5)) * 200.0
+//			break
+//	}
+//	v_frappe_ODE_pos =  tv_pos
+//	v_frappe_ODE_force =  tv_force
+//	DBG_RenderVector( tv_pos, tv_force, color_bleu)
+//	i_frappe_genere_ODE = faux
+//}
+//else
+//{
+//	f_time_start_etat += TIME_GetDt()
+//	f_time_start_fury += TIME_GetDt()
+//}
+//
+//// ANALYSE ===========================================================================
+//
+//DBG_RenderVector(OBJ_PosGet(), v_frappe_sight * 5, color_jaune)
+//
+//// DETECTER SI KONG EST PAFFE ----------------------------
+//AI_Execute("k_exec_detect_paf")
+////if ( ! i_fight_paf && o_paf_actor)			// Ne pas prendre de pas si on est en train de frapper( a vrai si une cible est touchée)
+//if ( o_paf_actor)
+//{
+//	PAF_Test_ChangeEtatValid(fct_track_change)
+//	if( fct_track_change != nofunc )
+//		macro_change_etat(fct_track_change)
+//}
+//
+//// TEST FURY ------------------------------------------------------------
+////if( ao_CL[Ci_LNK_KKGRAB_OBJECT] && MSG_GlobalIsValid(amid_CL_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT])
+////	&& LNK_KKGrabObject_TypeGet(amid_CL_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT]) == Ci_KKGrabObject_Porte_Epaule
+////	&& f_time_start_fury < 0.1 )
+//
+////if( f_time_start_fury < 0.1 )
+////{
+////	ti_fury_on = faux
+////	if( i_flag_intimidateD && ( i_frappe_coup == 1 || i_frappe_coup == 2 ) )
+////		ti_fury_on = vrai
+////	else if( i_flag_just_coup && i_frappe_coup == -1 && f_time_start_etat > 0.0 )
+////		ti_fury_on = vrai
+////	else if( i_flag_intimidateG && ( i_frappe_coup == 0 || i_frappe_coup == 3 ) )
+////		ti_fury_on = vrai
+////	else if( i_flag_just_intimidateG && i_frappe_coup == -1 && f_time_start_etat > 0.0 )
+////		ti_fury_on = vrai
+////	
+////	if( ti_fury_on )
+////		macro_change_etat( "k_ETAT_intimidate")
+////}
+//
+//// TEST LIAISON ANN ------------------------------------------------
+//if( i_Grab_Torse_Main_Swapping && ! MSG_GlobalIsValid(amid_CL_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT]) )
+//	i_Grab_Torse_Main_Swapping = faux
+//
+//if( i_Grab_Torse_Actor && ! i_Grab_Torse_ANN )
+//	i_Grab_Torse_Actor = faux			// si c ANN, elle swappe de main (IK legs activée), si c un raptor, il sert à paffer (IK legs coupée)
+//
+//
+//// COMPORTEMENT ===================================================================================
+//
+//OBJ_CapaSet( OBJ_Capa_3, none)	// Anim d attaque( info pour le TREX)
+//
+//ti_frame = ANI_CurrentFrameGet(0)
+//ti_frappe_puissante_libere = faux
+//ti_frappe_puissante_pause = faux
+//ti_action_finished = faux
+//
+//if( i_Grab_Torse_Main_Swapping )
+//{
+//	// SWAP MAIN ANN =================================================================================
+//	
+//	// Changement de main pour ANN
+//	if( ! i_Grab_Torse_Main_Swapping_Step && ( f_time_start_etat == 0.0))
+//		i_Grab_Torse_Main_Swapping_Step = 1		// KONG amorce le mouvement de changement de main s'il n'est pas dans un enchaînement
+//	
+//	if( i_Grab_Torse_Main_Swapping_Step == 1 )
+//	{
+//		// KONG baisse le 1er bras (si ce n'est pas un enchaînement)
+//		if ( f_time_start_etat < 0.35 )
+//		{
+//			i_flag_climb_IK[Ci_IK_main_droite] = faux
+//			i_flag_climb_IK[Ci_IK_main_gauche] = faux
+//			i_flag_walk_IK[Ci_IK_main_droite] = faux
+//			i_flag_walk_IK[Ci_IK_main_gauche] = faux
+//		}
+//		else
+//			i_Grab_Torse_Main_Swapping_Step = 2
+//	}
+//	
+//	if( i_Grab_Torse_Main_Swapping_Step == 2 )
+//	{
+//		// On indique le changement de main
+//		i_Grab_Torse_Main = 1 - i_Grab_Torse_Main
+//		i_GrabKong_MainActionGrab = 1 - i_GrabKong_MainActionGrab
+//		i_flag_climb_IK[Ci_IK_main_droite] = vrai
+//		i_flag_climb_IK[Ci_IK_main_gauche] = vrai
+//		i_flag_walk_IK[Ci_IK_main_droite] = vrai
+//		i_flag_walk_IK[Ci_IK_main_gauche] = vrai
+//		
+//		if( ! i_Grab_Torse_Main )
+//			LNK_KKGrabObject_BoneSet(amid_CL_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT], ANI_CanalObjectGet(Anim_Canal_MainDroite))
+//		else
+//			LNK_KKGrabObject_BoneSet(amid_CL_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT], ANI_CanalObjectGet(Anim_Canal_MainGauche))
+//		
+//		i_Grab_Torse_Main_Swapping_Step = 3
+//	}
+//	
+//	if( i_Grab_Torse_Main_Swapping_Step == 3)
+//	{
+//		// ANN passe dans l'autre main et KONG lève l'autre bras
+//		if ( f_time_start_etat < 0.55 )
+//		{
+//			i_flag_climb_IK[Ci_IK_main_droite] = vrai
+//			i_flag_climb_IK[Ci_IK_main_gauche] = vrai
+//			i_flag_walk_IK[Ci_IK_main_droite] = vrai
+//			i_flag_walk_IK[Ci_IK_main_gauche] = vrai
+//		}
+//		else
+//		{
+//			if ( i_GrabKong_MainBloquee != -1)
+//				macro_change_etat("k_ETAT_grab")
+//			else
+//				macro_change_etat("k_ETAT_main")
+//		}
+//	}
+//	
+//	// ORIENTATION ------------------------------------------------------------------
+//	i_look_enable = faux
+//}
+//else
+//{
+//	// KONG FIGHT ================================================================================
+//	
+//	// UN BOUTON ANNULE L'ACCUMULATION DE L'AUTRE -----
+////	if( i_flag_just_coup && i_flag_intimidateG )
+////	{
+////		i_flag_intimidateG = faux
+////		i_frappe_puissante_en_cours = faux
+////	}
+////	if( i_flag_just_intimidateG && i_flag_intimidateD )
+////	{
+////		i_flag_intimidateD = faux
+////		i_frappe_puissante_en_cours = faux
+////	}
+//
+//	// BUFFERING
+//	// EASY ONE VERSION 1
+//	if ( i_flag_just_coup )
+//		i_frappe_buffer++
+//
+//
+//	// DETECTER SI KONG PEUT PAFFER -------------------------------
+//	if ( OBJ_CapaTest( OBJ_Capa_0))
+//	{
+//		AI_Execute("k_exec_zdf_zdc")
+//		if ( !i_frappe_genere_ODE)
+//		{
+//			i_frappe_genere_ODE = vrai
+//			Genere_ODE_Punch( v_frappe_ODE_pos, v_frappe_ODE_force)
+//		}
+//	}
+//	
+//	// CHOIX DU COUP POUR LA COMBO ---------------------------------
+//	if( i_frappe_combo_count < i_frappe_combo_max_nb 
+////		&& ( !i_frappe_puissante_done || i_frappe_change_cote ) 
+//		&& ACT_ActionFinished()
+////		&& ( (ti_frame >= 48 && i_frappe_combo_count == 1)
+////				|| (ti_frame >= 28 && i_frappe_combo_count == 2) )
+//		&& i_frappe_buffer)
+//	{
+//		// nouveau coup (si on est en combo de frappe puissante, on doit alterner les côtés pour ne pas casser la combo)
+//		i_frappe_next_coup = K_Choix_du_Coup(i_frappe_coup)
+//		i_frappe_buffer--	
+//	}
+//	
+//	ti_action = ACT_ActionGet()
+//
+//	// TEST 1ERE FRAPPE PUISSANTE -----------------------------------
+//	if( i_frappe_puissante_en_cours )
+//	{
+//		switch ( ti_action)
+//		{
+//			case Ci_Kanim_frappe_Combo2Dr :
+//			case Ci_Kanim_frappe_Combo2Ga :
+//				// Cas particulier du coup 2 de la combo
+//				if ( ! i_flag_intimidateD )
+//					i_frappe_puissante_en_cours = faux
+//				else if( ti_frame >= 6 )
+//					ti_frappe_puissante_libere = vrai
+//				else
+//					ti_frappe_puissante_pause = vrai
+//				break
+//			default:
+//				// Marche pour coup 1 et 3 de la combo
+//				if( ti_frame < Ci_frappe_puissante_frame_valide )
+//				{
+//					// Cumulation de la frappe puissante -----------------------------
+//					if ( !i_flag_intimidateD)
+//						i_frappe_puissante_en_cours = faux
+//				}
+//				else if( ! i_flag_intimidateG || ti_frame >= 13 )
+//					ti_frappe_puissante_libere = vrai
+//				else
+//					ti_frappe_puissante_pause = vrai
+//				break
+//		}
+//	}
+//
+//	// LIBERATION FRAPPE PUISSANTE -------------------------------
+//	if( ti_frappe_puissante_libere )
+//	{
+//		i_frappe_puissante_en_cours = faux
+//		i_frappe_puissante_done = vrai
+//		i_frappe_mvt_frein = faux		// pour ne pas freiner le mvt d'une frappe puissante
+//	}
+//	
+//	// MODIF FREQUENCE FRAPPE PUISSANTE -----------------
+//	if( ti_frappe_puissante_pause || i_frappe_puissante_en_cours )
+//	{
+//		switch ( ti_action)
+//		{
+//			case Ci_Kanim_frappe_Combo2Dr :
+//			case Ci_Kanim_frappe_Combo2Ga :
+//				f_frappe_puissante_freq_cur = MATH_FloatBlend(f_frappe_puissante_freq_cur, Cf_frappe_puissante_freq_min, 7.0 * TIME_GetDt())		// concentre la frappe
+//				break
+//			default: 
+//				if( ti_frame > Ci_frappe_puissante_frame_valide_min)
+//					f_frappe_puissante_freq_cur = MATH_FloatBlend(f_frappe_puissante_freq_cur, Cf_frappe_puissante_freq_min, Cf_frappe_puissante_freq_blend_down_coef * TIME_GetDt())		// concentre la frappe
+//		}
+//	}
+//	else
+//			f_frappe_puissante_freq_cur = MATH_FloatBlend(f_frappe_puissante_freq_cur, f_frappe_puissante_freq_init, Cf_frappe_puissante_freq_blend_up_coef * TIME_GetDt())		// libère la frappe
+////	ANI_FrequencySet(0, f_frappe_puissante_freq_cur)
+//	
+//	// VITESSE AJOUTEE POUR UNE FRAPPE PUISSANTE ------------
+//	// Le TIMING EST aCHIER JE COMMENTE LE SPEED EST LANCE TROP TOT
+////	if( i_frappe_puissante_done && ANI_FrequencyGet(0) > ( f_frappe_puissante_freq_init/ 2 ) )
+////	{
+////		tv_speed = OBJ_SightGet() * MATH_VecNorm(v_frappe_puissante_speed)
+////		tv_speed.z = DYN_SpeedGetVector().z
+////		DYN_SpeedSetVector(tv_speed)
+////		v_frappe_puissante_speed *= Amorti_Coef_Dt(0.9)
+////	}
+//
+//	// REALISATION DE LA COMBO OU SORTIE DU MODE ------------
+//	if( ACT_ActionFinished() || i_frappe_next_coup != -1)
+//	{
+//		if( i_frappe_next_coup == -1)
+//		{
+//			// Action terminée, pas de combo
+//			if ( i_GrabKong_MainBloquee != -1)
+//				macro_change_etat("k_ETAT_grab")
+//			else
+//				macro_change_etat("k_ETAT_main")
+//		}
+//		else if( ! i_frappe_puissante_en_cours || i_frappe_puissante_done )
+//		{
+//			// passage en combo
+//			if( i_frappe_coup == i_frappe_next_coup )
+//			{
+//				// Forcer dans ce cas le coup exterieur pour que visuellement ca soit moins nul que jouer 2 fois le meme coup
+//				if ( i_frappe_next_coup == 2)
+//					i_frappe_next_coup  = 1
+//				else
+//					i_frappe_next_coup  = 0
+//			}
+//			
+//			ti_combo_reinit = vrai
+//			ACT_ActionSet(Ci_Kanim_frappe + i_frappe_coup + Ci_ActionSet_Force_SameAction + Ci_ActionSet_Force_FrameZero)
+//			goto REINIT
+//		}
+//	}
+//	
+//	// ORIENTATION & SWEEP -----------------------------------------------------
+//	i_look_enable = faux
+//	
+//	switch( i_frappe_coup)
+//	{
+//		case 0 :
+//		case 1 :
+//			tf_angle = MATH_VecAngle( v_joy_sight, OBJ_SightGet(), Cv_VerticalVector)
+//			if ( f_joy_sweep_angle * tf_angle  > 0)
+//			{
+//				// Joy du bon cote pour sweeper
+//				tf_angle = MATH_VecAngle( v_frappe_sight, OBJ_SightGet(), Cv_VerticalVector)
+//				if ( f_joy_sweep_angle * tf_angle  > 0 )
+//				{
+//					// Joy fait progresser la destianation du sweep	
+//					v_frappe_sight = MATH_VecBlendRotate( v_frappe_sight, v_joy_sight, 6.0 * TIME_GetDt())
+//				}
+//			}
+//			break
+//		case 2 :
+//		case 3 :
+//			break
+//	}
+//
+////	if( ! i_frappe_puissante_en_cours )
+//	{
+//		// Kong s oriente seulement s il ne charge pas son coup
+//		f_joy_sweep_force += 50.0* TIME_GetDt()
+//		
+//		push(v_frappe_sight)					// Axis Dest
+//		push(1.2)								// Speed
+//		push(f_coef_pied_d_appui)			// Coef entre les deux pieds
+//		AI_Execute("k_exec_2Feet_SightSet")	
+//	}
+////	else if ( f_joy_norm)	// Pendant la charge Kong peux choisir la direction que le coup va prendre quand on lache le joy
+////		v_frappe_sight = v_joy_sight
+//}
+//
+//
+//// VITESSE REDUITE PENDANT LA PREPARATION DU COUP =========================================
+//if( i_frappe_mvt_frein )
+//{
+//	// FRED : Modif conservation du Z de la gravité
+//	tv_speed = OBJ_SightGet() * MATH_VecNorm(v_frappe_speed)
+//	tv_speed.z = DYN_SpeedGetVector().z
+//	if (DYN_SpeedGet() < MATH_VecNorm(v_frappe_speed))
+//		DYN_SpeedSetVector( tv_speed )
+//
+//	v_frappe_speed *= Amorti_Coef_Dt(f_frappe_speed_blend)
+//}
+//

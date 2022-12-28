@@ -1,0 +1,114 @@
+#include "Interface_MenuInGame_defs.var"
+
+int			ti_Line
+int			ti_Count
+int			ti_SaveCur
+int			ti_OptionText[ 4 ]
+int			ti_Flags
+float		tf_PosX
+
+#define PageOptStart_LineDiff				0.08
+#define PageOptStart_PosLine( i ) 			cvector( tf_PosX, 0.4 + (PageOptStart_LineDiff* i) , 0) 
+#define PageOptStart_PosSouligne( i ) 	cvector( tf_PosX, 0.43 + (PageOptStart_LineDiff * i) , 0) 
+#define PageOptStart_Line(i)					mi_PageString + 5 + i
+
+if (!mo_Texte)
+	return
+if (!IntMIG_SetPageParams())
+	return
+	
+ti_Count = 3
+if ( mi_StartMenu || mi_E3Menu )
+{
+	ti_Line = ConsoleSpecificOption(34)
+	// pour avoir toutes les langues ti_Line = 0x1002FF
+	if ( ti_Line != 0 && ti_Line != -1)
+		ti_Count = 4
+	ti_Flags = 6
+	tf_PosX = 0.8
+}
+else
+{
+	ti_Flags = 5
+	tf_PosX = 0.5
+}
+	
+if (INTMIG_EnterPage_Start)
+{
+	IntMIG_ResetTexte( mi_PageString, 30 )
+	IntMIG_SetText_Page( mi_PageString, INTMIG_TXG, INTMIG_TEXT_StartMenu + 1, INTMIG_PosTitle_UpRight,  0.0, 6, -1, INTMIG_Color_NotSel, 0, 1 )
+	IntMIG_SetText_Page( mi_PageString + 1, INTMIG_TXG, INTMIG_TEXT_Souligne, PageOptStart_PosSouligne( mi_Cur ),  0.0, ti_Flags, -1, INTMIG_Color_Sel, 0, 1 )
+	IntMIG_SetText_Page( mi_PageString + 2, INTMIG_TXG, INTMIG_TEXT_Xselect, INTMIG_PosButton_BottomRight,  0.0, 6, -1, INTMIG_Color_Sel, 0, 1 )
+	IntMIG_SetText_Page( mi_PageString + 3, INTMIG_TXG, INTMIG_TEXT_Tback, INTMIG_PosButton_BottomLeft,  0.0, 4, -1, INTMIG_Color_Sel, 0, 1 )
+
+	ti_OptionText[ 0 ] = INTMIG_TEXT_OptionsSound
+	ti_OptionText[ 1 ] = INTMIG_TEXT_OptionsVideo
+	ti_OptionText[ 2 ] = INTMIG_TEXT_OptionsControl
+	ti_OptionText[ 3 ] = INTMIG_TEXT_StartMenu + 6
+	
+	IntMIG_Frame_Start()
+	for (ti_Line = 0; ti_Line < ti_Count; ti_Line++)
+	{
+		IntMIG_SetText_Option( PageOptStart_Line(ti_Line) , INTMIG_TXG, ti_OptionText[ ti_Line ], PageOptStart_PosLine(ti_Line),  0.0, ti_Flags, -1, INTMIG_Color_NotSel, 0, 1 )
+		IntMIG_Frame_Add( PageOptStart_Line(ti_Line) )
+	}
+	IntMIG_Frame_End( mi_PageString + 4, 0xFFFFFFFF, 0.05, 0.03, 32 )
+	@mo_Texte OBJ_TextColorSet( PageOptStart_Line(mi_Cur), 0, -1, INTMIG_Color_Sel )
+	
+	IntMIG_Text_FadeInMulti( mi_PageString, 10, 0.5, 0.0 )
+}
+else if (INTMIG_LeavePage_Start)
+{
+	IntMIG_Text_FadeOutMulti( mi_PageString, 10, 0.5 )
+}
+	
+IntMIG_RestorePageParams()
+
+if ( mi_Exit || mi_ChangePage || mi_Cheat )
+	return
+	
+ti_SaveCur = mi_Cur
+IntMIG_UpdateCur_Vertical( ti_Count, 1 )
+
+if (mi_Cur != ti_SaveCur )
+{
+	IntMIG_PlaySound( INTMIG_SOUND_SELECTION )
+	IntMIG_Text_ChangeColor( PageOptStart_Line( ti_SaveCur ), INTMIG_Color_Sel, INTMIG_Color_NotSel, 0.25, 0.0 )
+	IntMIG_Text_ChangeColor( PageOptStart_Line( mi_Cur ), INTMIG_Color_NotSel, INTMIG_Color_Sel, 0.25, 0.0 )
+	@mo_Texte OBJ_TextPivotSet( mi_PageString + 1, PageOptStart_PosSouligne( mi_Cur ) )
+}
+
+if ( joy_cancel  )
+{
+	if (mi_E3Menu )
+	{
+		IntMIG_PlaySound( INTMIG_SOUND_MENUOUT )
+		INTMIG_ChangePage(  "IntMIG_Page_E3Menu" , 0 )
+	}
+	else if (mi_StartMenu)
+	{
+		IntMIG_PlaySound( INTMIG_SOUND_CANCEL )
+		if ( IntMIG_OptionsHasChanged() && (@"univ" MENU_ProfileIndex != -1) )
+			INTMIG_YesNoPage( INTMIG_YESNO_OPTIONSCHANGEDSAVE )
+		else
+			INTMIG_ChangePage(  "IntMIG_Page_StartMain" , 1 )
+	}
+	else
+	{
+		IntMIG_PlaySound( INTMIG_SOUND_CANCEL )
+		INTMIG_ChangePage(  "IntMIG_Page_Main" , mi_MainCur )
+	}
+	return
+}
+	
+if ( joy_valide )
+{
+	IntMIG_PlaySound( INTMIG_SOUND_VALIDE )
+	switch ( mi_Cur )
+	{
+		case 0: INTMIG_ChangePage(  "IntMIG_Page_OptStart_Audio" , 0 ) break 
+		case 1: INTMIG_ChangePage(  "IntMIG_Page_OptStart_Video" , 0 ) break 
+		case 2: INTMIG_ChangePage(  "IntMIG_Page_OptStart_Control" , 0 ) break 
+		case 3: INTMIG_ChangePage(  "IntMIG_Page_OptStart_Langue" , 0 ) break 
+	}
+}

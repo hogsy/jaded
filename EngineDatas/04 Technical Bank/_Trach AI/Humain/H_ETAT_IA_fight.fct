@@ -1,0 +1,285 @@
+//#include "H_defines.var"
+//
+//int			ti_i
+//int			ti_rank
+//int			ti_id
+//int			ti_sortie
+//
+//object	to_followed_actor
+//object	to_collide_object
+//object	to_camera
+//object	to_obj, to_next
+//
+//float		tf_dot
+//float		tf_temp
+//float		tf_dist, tf_dist1, tf_dist2
+//float		tf_dist_to_realdest
+//float		tf_eloignement
+//
+//int			ti_numero
+//int			ti_puis
+//int			ti_flag_go_to_grid_center
+//int			ti_followed_ground_ID
+//int			ti_ground_ID
+//int			ti_indice 
+//int			ti_context
+//int			i, capa
+//		
+//vector	tv_offset
+//vector	tv_temp
+//
+//messageid	EVT_ID
+//
+//// SORTIE ETAT ===================================================================
+//if (i_sort_etat)
+//{
+//	i_sort_etat = faux
+//	macro_change_tag_size(Cv_Humain_Tag_Size_V1, Cv_Humain_Tag_Size_V2)
+//	return
+//}
+//
+//// INITIALISATION ETAT ==============================================================
+//if (i_etat_courant != ETAT_IA_fight)
+//{
+//	i_dernier_etat = i_etat_courant
+//	i_etat_courant = ETAT_IA_fight
+//	i_sortie_fight = faux
+//	i_try_to_move = faux
+//
+//	if (fct_last_etat)
+//	{
+//		i_sort_etat = vrai
+//		AI_Execute(fct_last_etat)
+//	}
+//
+//	fct_last_etat = AI_TrackCurGet()
+//	fct_main_etat = AI_TrackCurGet()
+//
+//	for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+//		ai_SRV_ENABLE[ti_i] = faux
+//
+//	// AUTORISATIONS DES GRABS
+//	ai_SRV_ENABLE[Ci_LNK_GRAB_CROCO]			= vrai
+//	macro_SRV_enable_ICO()
+//	ai_SRV_ENABLE[Ci_LNK_GRAB_TRAP]			= vrai
+//	ai_SRV_ENABLE[Ci_LNK_GRAB_RAPTOR]		= vrai
+//	ai_SRV_ENABLE[Ci_LNK_KKGRAB_OBJECT]	= vrai
+//
+//	// AUTORISATIONS DES BLOCKS
+//	ai_SRV_ENABLE[Ci_LNK_BLOCK_RAPTOR]	= vrai
+//
+//	// AUTORISATION DES AIDES
+//	ai_SRV_ENABLE[Ci_LNK_HELP_CROCO]		= vrai
+//	ai_SRV_ENABLE[Ci_LNK_HELP_TRAP]			= vrai
+//	ai_SRV_ENABLE[Ci_LNK_HELP_RAPTOR] = vrai
+//	// AUTORISATION VALA
+//	ai_SRV_ENABLE[Ci_LNK_VALA]					= vrai
+//
+//	f_time_start_etat = 0.0
+//	
+//	// Si j'étais planqué sur un WP, je libère le WP
+//	if(o_in_cache_0D) 
+//	{
+//		@o_in_cache_0D OBJ_CapaSet(0, Capa_Cache_taken)
+//		o_in_cache_0D = nobody
+//	}
+//}
+//else
+//{
+//	f_time_start_etat += TIME_GetDt()
+//}
+//
+//// ANALYSE =======================================================================================================
+//AI_Execute("H_exec_ch_Stimulus_Paf")
+//
+//if (o_paf_sender)
+//	macro_change_etat("H_ETAT_commun_paf")
+//
+//// RECHERCHE SERVEUR ============================================================================================
+//AI_Execute("H_exec_serveur_get")
+//
+//// JE SUIS BLOCKED
+//if (ao_SRV[Ci_LNK_BLOCK_RAPTOR])
+//	macro_change_etat("H_ETAT_commun_BLOCK_raptor")
+//
+//// JE SUIS GRABED
+//if (ao_SRV[Ci_LNK_KKGRAB_OBJECT])
+//	macro_change_etat("H_ETAT_commun_GRAB_kong")
+//if (ao_SRV[Ci_LNK_GRAB_RAPTOR])
+//	macro_change_etat("H_ETAT_commun_GRAB_raptor")
+//if (ao_SRV[Ci_LNK_GRAB_CROCO])
+//	macro_change_etat("H_ETAT_commun_GRAB_croco")
+//if (ao_SRV[Ci_LNK_GRAB_TRAP])
+//	macro_change_etat("H_ETAT_commun_GRAB_trap")
+//if (ao_SRV[Ci_LNK_GRAB_ICO])
+//	macro_change_etat("H_ETAT_commun_GRAB_ico")
+//
+//// JE VAIS AIDER QUELQU'UN
+//if (ao_SRV[Ci_LNK_HELP_TRAP])
+//	macro_change_etat("H_ETAT_commun_HELP_trap")
+//if (ao_SRV[Ci_LNK_HELP_CROCO])
+//	macro_change_etat("H_ETAT_commun_HELP_croco")
+//
+//// VALA
+//if (ao_SRV[Ci_LNK_VALA])
+//	macro_change_etat("H_ETAT_IA_vala")
+//
+//AI_Execute("H_exec_main_context_get")
+//ti_context = MATH_Modulo(i_followed_context, 10)
+//
+/////////////////////////////////////////////////////////////////////////////////////////////
+//// Sortie du mode fight si on n'est plus dans aucune zone de fight
+//// Entree en mode hide si on est dans une zone de stress
+//ti_rank = -1
+//ti_sortie = vrai
+//EVT_ID = MSG_GlobalScan(C_EVENT_TYPE_Enemy, &ti_rank)
+//while(MSG_GlobalIsValid(EVT_ID))
+//{
+//	if (EVENT_EnemyStateGet( EVT_ID ) == C_EVENT_EnemyState_Fight)
+//	{
+//		to_obj = EVENT_PereGet( EVT_ID )
+//		ti_id = EVENT_EnemyTypeGet( EVT_ID )
+//		
+//		// Sortie fight
+//		tf_temp = @"univ" Enemy_af_ReaDist[ti_id][C_EnemyDist_Fight] + 2 // Tolerance de 2m
+//		if(OBJ_SqrDist(to_obj) < tf_temp * tf_temp) ti_sortie = faux
+//		
+//		// Entree hide
+//		if ( @get_list_manager i_hide_0D_wp_nb )
+//		{
+//			tf_temp = @"univ" Enemy_af_ReaDist[ti_id][C_EnemyDist_Stress] 
+//			if(OBJ_SqrDist(to_obj) < tf_temp * tf_temp)
+//			{
+//				i_hide_mode = Hide_Mode_Flee
+//				macro_change_etat("H_ETAT_IA_hide")
+//			}
+//		}		
+//	}
+//	EVT_ID = MSG_GlobalScan(C_EVENT_TYPE_Enemy, &ti_rank)
+//}
+//
+//if ( ti_sortie )
+//{
+//	i_sortie_fight = vrai
+//	macro_change_etat("H_ETAT_IA_suivi")
+//}
+//	
+/////////////////////////////////////////////////////////////////////////////////////////////
+//
+//// Uniquement si un ennemi en fight ou en stalk
+//o_target_stimulus_vis = nobody
+//v_target_stimulus_vis = Cv_NullVector
+//
+//i_command_result = 0
+//if ( i_command )
+//{
+//	if (i_command == 1) 
+//	{
+//		o_target_stimulus_vis = o_command_target
+//		v_target_stimulus_vis = v_command_vector
+//		v_tir_pos_help = v_target_stimulus_vis
+//		o_tir_target = o_target_stimulus_vis
+//	}
+//}
+//
+//if( o_target_stimulus_vis)
+//{
+//	o_tir_target = o_target_stimulus_vis
+//	tv_temp.x = MATH_RandFloat(-0.3, 0.3)
+//	tv_temp.y = MATH_RandFloat(-0.3, 0.3)
+//	tv_temp.z = MATH_RandFloat(-0.3, 0.3)
+//	v_tir_pos_help = v_target_stimulus_vis + tv_temp
+//}
+//
+//if (i_command == 1)
+//{
+//	if (o_tir_target == o_command_target)
+//		i_command_result = 1
+//}
+//
+//// Demande de tir ??
+/////////////////////////////////
+//if(!MATH_VecNullEpsilon(v_tir_pos_help))
+//{
+//	tv_temp = v_tir_pos_help - OBJ_PosGet()
+//	tv_temp.z = 0
+//	if(MATH_VecNorm(tv_temp) < 4)
+//	{
+//		macro_change_etat("H_ETAT_commun_action_tir")
+//	}
+//}
+//
+//// Par defaut on reste sur place
+//i_flag_run = faux
+//f_joy_norm = 0
+//if (i_command == 2) 
+//{
+//	v_joy_dir = v_command_vector
+//	i_command_result = 1
+//	if(i_mode_suivi_des_yeux != 1 && i_mode_suivi_des_yeux != 2) i_mode_suivi_des_yeux = 1
+//}
+//else
+//{
+//	i_mode_suivi_des_yeux = 0
+//	v_joy_dir = OBJ_SightGet()
+//}
+//
+//// Mais est ce que je vois quand meme qqchose ?
+/////////////////////////////////////////////////////////////////////////////
+//if( !o_target_stimulus_vis)
+//{
+//	AI_Execute("H_exec_ch_Stimulus_Vision")
+//	if( o_target_stimulus_vis)
+//	{
+//		v_joy_dir = v_target_stimulus_vis - OBJ_PosGet()
+//		v_joy_dir.z = 0.0
+//		tf_temp = MATH_VecNorm(v_joy_dir)
+//		if((tf_temp < 5) || (ACT_ActionGet() == Action_Arme_Recule && tf_temp < 6))
+//		{
+//			if(!GRID_Blocked(OBJ_PosGet() - OBJ_SightGet(), vrai))
+//			{
+//				i_flag_recul = vrai
+//				f_joy_norm = 1
+//			}
+//		}
+//		MATH_VecSetHorzNormalize(v_joy_dir)
+//	}
+//	
+//	o_target_stimulus_vis = nobody
+//	v_target_stimulus_vis = Cv_NullVector
+//}
+//
+//// Demande de deplacement ?
+////////////////////////////////////////////////////
+//to_obj = AI_MainActorGet(0)
+//
+//i_flag_run = faux
+//if (i_try_to_move)
+//{
+//	v_way_destpos = @to_obj OBJ_PosGet()
+//	AI_Execute("H_exec_way_find")
+//	
+//	// Arrivée ?
+//	v_joy_dir = v_way_case_dest - OBJ_PosGet()
+//	v_joy_dir.z = 0.0
+//	f_joy_norm = MATH_VecNorm(v_joy_dir)
+//	if (i_way_moving && f_joy_norm)
+//	{
+//		v_joy_dir /= f_joy_norm
+//		f_joy_norm = MATH_FloatLimit(f_joy_norm, 0.0, 1.0)		
+//	}
+//	else
+//	{
+//		v_joy_dir = Cv_NullVector
+//		f_joy_norm = 0
+//	}
+//}
+//
+//// Anims
+/////////////////////////////////////////////////
+//i_flag_tir = faux
+//i_flag_tir_continu = faux
+//i_flag_lock_mode = vrai
+//AI_Execute("H_exec_select_action")
+//
+//

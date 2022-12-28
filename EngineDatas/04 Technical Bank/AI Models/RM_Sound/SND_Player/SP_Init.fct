@@ -1,0 +1,35 @@
+//------------------------------------------------------------------------------------------------------------------------------
+#include "SP_Constant.var"
+
+
+//------------------------------------------------------------------------------------------------------------------------------
+int i
+
+
+for(i=0; i<SP_Cte_SndRef_MaxNb; i++)
+{
+	mai_State[i] = SP_Cte_State_Dead
+}
+
+for(i=0; i<SP_Cte_SndRef_MaxNb; i++)
+{
+	if( AI_TriggerIsValid(at_Trigger[i])  )
+	{
+		if( i_InitState == SP_Cte_InitState_Playing )
+		{
+			SND_MdFPlay(ai_MdFIndexes[i])
+			mai_State[i] = SP_Cte_State_WaitStopping
+		}
+		else
+		{
+			mai_State[i] = SP_Cte_State_WaitPlaying
+		}
+	}
+	else
+	{
+		break
+	}
+}
+
+
+AI_TrackChange(0, "SP_Loop")

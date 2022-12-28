@@ -1,0 +1,451 @@
+#include "PNJ_Scolo_defines.var"
+
+Include_UltraProcedure_Header
+int						ti_rank
+int						ti_i
+int						ti_canal
+int						ti_flag_burn
+int						ti_flag_desappear
+int						ti_flag_stop_sound
+int						ti_flag_ok
+int						ti_play_eat_loop
+
+float					tf_dist
+float					tf_speed
+
+object				to_gao
+object				to_me
+object				to_duplicated
+object				to_camera
+object				to_joueur
+
+vector				tv_speed
+vector				tv_pos_2D
+
+message			tm_filter
+
+messageid			EVT_ID
+messageid			tmid_interest
+
+
+if( @get_global i_Player_is_Kong )
+	to_joueur = o_kong
+else
+	to_joueur = o_jack
+
+
+if ( Proc_KK_BigScolo() )
+{
+	if (Proc_KK_Scolo_Finish_Allowed())
+		OBJ_CapaSet(Capa_Big_Scolo_Grabbable, none)
+	else
+		OBJ_CapaSet(none, Capa_Big_Scolo_Grabbable)
+
+	if (@get_global i_KongTriesToGrabABigScolo )
+		@get_global i_KongTriesToGrabABigScolo = faux
+}
+
+if (i_flag_net_death && ! i_flag_desappear)
+	OBJ_Destroy()
+
+// DETECT FURY
+if( Proc_KK_BigScolo() )
+{
+	f_fury_detect -= MATH_FloatMin(f_fury_detect, TIME_GetDt())
+	AI_Execute("PNJ_Scolo_exec_check_fury")
+}
+
+// TEST TRIGGER SMALL KNMI MUST DIE ---------
+if( ! Proc_KK_BigScolo() )
+{
+	if( @get_global i_Small_KNMI_must_die )
+		OBJ_Destroy()
+}
+
+if (f_lifecur && AI_TriggerIsValid(trigger_instant_attack) && call_trigger(trigger_instant_attack))
+{
+	i_etat_courant = -1
+	macro_change_etat("PNJ_Scolo_ETAT_Attaque")
+}
+
+// LIFE DISPLAY ==================================
+//#ifndef _FINAL_
+//if( i_flag_kong_mode )
+//{
+//	tv_pos_2D = VIEW_3dWorldTo2d(0, OBJ_PosGet())
+//	EVENT_LIFE_StateDisplay(ID_LIFE, tv_pos_2D + cvector(0.0,0.0,1.5))
+//	EVENT_LIFE_LifeDisplay( ID_LIFE, tv_pos_2D + cvector(0.0,-0.05,1.5))
+//}
+//else
+//{
+//	if( f_lifecur && @"univ" i_cheat_page == 3 )
+//		Str_DisplayFloatOnce(f_lifecur, VIEW_3dWorldTo2d(0, OBJ_PosGet()))
+//}
+//#endif
+// LIFE DISPLAY ==================================
+
+v_IK_banking = OBJ_BankingGet()
+
+i_perceived_bit_field = 0
+//i_perceived_actor_nb = 0
+//i_perceived_main_actor_index = -1
+i_perceived_kong_index = -1
+i_perceived_jack_index = -1
+//i_perceived_best_actor_index = -1
+
+i_flag_change_target = faux
+
+f_Z_noise = 0.0
+f_force_Z_axis_duration -= MATH_FloatMin(f_force_Z_axis_duration, TIME_GetDt())
+f_ray_can_paf_duration -= MATH_FloatMin(f_ray_can_paf_duration, TIME_GetDt())
+
+// ON SCREEN =====================================================================
+if (f_on_screen_pourcent > 0.0)
+{
+	if (f_on_screen_duration < 0.0)
+		f_on_screen_duration = 0.0
+		
+	f_on_screen_duration += TIME_GetDt()
+}
+else
+{
+	if (f_on_screen_duration > 0.0)
+		f_on_screen_duration = 0.0
+		
+	f_on_screen_duration -= TIME_GetDt()
+}
+
+// BEST INTERET ===================================================================
+if (MSG_GlobalIsValid(mid_best_interet))
+	EVENT_InteretStatusSet(mid_best_interet, C_EVENT_InteretStatusNone)
+
+// ANALYSE =======================================================================
+//i_flag_audio_check_done			= faux
+i_flag_visual_check_done			= faux
+i_flag_paf_check_done				= faux
+//i_flag_collision_check_done		= faux
+i_flag_shoot_check_done			= faux
+//i_flag_budies_check_done			= faux
+//i_flag_vala_check_done				= faux
+//i_flag_check_best_interet_done	= faux
+
+// PAF ===========================================================================
+i_flag_paf = faux
+
+// JUMP ==========================================================================
+i_flag_jump = faux
+
+f_timer_after_main_collision -= MATH_FloatMin(f_timer_after_main_collision, TIME_GetDt())
+
+// MAIN ACTORS
+//o_main_actor = AI_MainActorGet(0)
+//PNJ_Scolo_UncollideAdd(o_main_actor, -1.0)
+o_kong = AI_MainActorGet(C_ID_Kong)
+PNJ_Scolo_UncollideAdd(o_kong, -1.0)
+o_jack = AI_MainActorGet(C_ID_Joueur)
+PNJ_Scolo_UncollideAdd(o_jack, -1.0)
+
+
+// FACE DE MORT ==================================================================
+if ( COL_GMatReportGet(i_gmat_death_bit) != -1 )
+	i_flag_force_death = vrai
+
+if (i_flag_force_death)
+{
+//	PNJ_Scolo_Minimise_Life(0.0, o_main_actor)
+	PNJ_Scolo_Minimise_Life(0.0, to_joueur)
+}
+
+if ( ! f_lifecur )
+{
+	PNJ_Scolo_Init_OBBOX(0.6)	
+
+	OBJ_CapaSet(OBJ_Capa_15, none)
+
+	if (!i_flag_death_sound_played)
+	{
+		i_flag_death_sound_played = vrai
+		SND_RequestPlay(SND_DIE)
+	}
+	
+	if( ! Proc_KK_BigScolo() )
+	{
+		// Small Scolo
+		if ( i_etat_courant != ETAT_Grabbed_By_Kong)
+			f_death_duration += TIME_GetDt()
+		
+		if ( ! i_flag_desappear )
+		{
+			ti_flag_desappear = faux
+			if (i_flag_force_death)
+				ti_flag_desappear = vrai
+			else if (! f_point_de_viande)
+				ti_flag_desappear = vrai
+			else if (f_death_duration > 5.0)
+			{
+				// On regarde si on interesse quelqu'un...
+				ti_rank = -1
+				MSG_SetNull(tm_filter)
+				tm_filter.msg_gao1 = OBJ_Me()
+				tmid_interest = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tm_filter)
+			
+				if ( ! MSG_GlobalIsValid(tmid_interest) )
+					ti_flag_desappear = vrai
+			}
+			
+			if (ti_flag_desappear)
+			{
+				i_flag_desappear	= vrai
+			
+				to_duplicated = @get_SFX_decomposition OBJ_Duplicate(cvector(0,0,0))			// ALOC (C'est l'AI qui va gerer la decomposition)
+				@to_duplicated Proc_Decomposition_Init(OBJ_Me(), 2.0, 0, 1, -1)				// INIT (Vas y decompose moi :))
+				to_gao = ANI_CanalObjectGet(250)
+				if (to_gao)
+				{
+					@to_duplicated Proc_Decomposition_Init(OBJ_Me(), 2.0, 0, 1, -1)				// INIT (Vas y decompose moi :))
+					@to_duplicated Proc_Decomposition_Init(OBJ_Me(), 2.0, 0, 1, -1)				// INIT (Vas y decompose moi :))
+				}
+			}
+		}
+	}
+}
+	
+if (OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna))
+	DYN_TractionSet(Cv_NullVector)
+	
+if (@get_global i_nbr_de_feux_en_cours && i_etat_courant != ETAT_Attente)
+{
+	// ON BRULE ????			
+	to_me = OBJ_Me()
+
+	ti_flag_ok = faux
+
+	if (COL_CollideType(COL_C_Ground))
+		ti_flag_ok = vrai
+	else if (i_etat_courant == ETAT_Paf && i_on_ground_modules_nb >= 4)
+		ti_flag_ok = vrai
+	else if (i_etat_courant == ETAT_Attaque && i_etat_phase < 3)
+		ti_flag_ok = vrai
+	else if (i_etat_courant == ETAT_Wait_For_Grab)
+		ti_flag_ok = vrai
+		
+	if (ti_flag_ok)
+	{
+		GRID_CurrentSet(1)
+	
+		for (ti_i = 0; ti_i < i_modules_nb; ti_i += 3)
+		{
+			if (i_etat_courant == ETAT_Paf)
+			{
+				if (af_bone_ground_col_timer[ti_i])
+					continue
+			}
+			else if (i_etat_courant == ETAT_Sol)
+			{
+				if ( ti_i > i_on_ground_modules_nb)
+					break
+			}
+	
+			if (GRID_CapaGet(@ao_modules[ti_i] OBJ_PosGet()) & Ci_Grid2_EnFeu)
+			{
+				f_burn_on_ground_duration -= MATH_FloatMin(f_burn_on_ground_duration, TIME_GetDt())
+				if  (!f_burn_on_ground_duration)
+				{
+					f_burn_on_ground_duration = MATH_RandFloat(0.3, 0.5)
+					EVENT_AddEventPafCanal(	C_EVENT_FILTER_All, 
+															C_PAF_KK_Fire | C_PAF_KK_KiTue, 
+															to_joueur, 
+															Cf_EVENT_Duree_1Trame, 
+															to_me, 
+															ti_i, 
+															1000.0 * PAF_Unit, 
+															cvector(MATH_RandFloat(-0.5, 0.5), MATH_RandFloat(-0.5, 0.5), 0.5),
+															@ao_modules[ti_i] OBJ_PosGet()												
+														)
+				}
+													
+				f_SND_burning_duration = 1.0
+													
+				break
+			}
+		}
+		
+		GRID_CurrentSet(0)
+	}
+}
+
+//if (IO_KeyJustPressed(VK_SPACE))
+//	PNJ_Scolo_Explode()
+
+//switch(i_etat_courant)
+//{
+//	case ETAT_Apparition :
+//	case ETAT_Attente :
+//		break
+//	
+//	default:
+//
+//		if ( ! i_flag_desappear )
+//		{
+//			EVT_ID = EVENT_AddEventVision
+//			(
+//				C_ID_Scolo,
+//				C_EVENT_FILTER_Enemy, 
+//				OBJ_Me(), 
+//				Cf_EVENT_Duree_1Trame, 
+//				OBJ_PosGet() + cvector( 0.0, 0.0, 0.3),
+//				C_EVENT_Visibility_Full_Mvt, 
+//				0.4, 
+//				150.0, 
+//				C_EVENT_CONTEXT_STANDARD, 
+//				0,
+//				f_lifecur / f_life
+//			)
+//			
+//			switch(i_etat_courant)
+//			{
+//				case ETAT_Paf :
+//					if ( ! f_lifecur )
+//						EVENT_VisionTerritoryUdpate(EVT_ID)
+//					break
+//						
+//				case ETAT_Snap :
+//				case ETAT_KKRide :
+//				case ETAT_KKFinish :
+//					break
+//					
+//				default:
+//					EVENT_VisionTerritoryUdpate(EVT_ID)
+//			}
+//		}
+//
+//		break
+//}
+
+// SOUND =============================================================
+ti_flag_stop_sound = faux
+
+if (f_lifecur && i_etat_courant != -1 && i_etat_courant != ETAT_Attente)
+{
+	tv_speed = OBJ_PosGet() - v_last_pos
+	tv_speed /= TIME_GetDt()
+	v_last_pos = OBJ_PosGet()
+	tf_speed = MATH_VecNorm(tv_speed)
+	f_real_speed = tf_speed
+	
+	tf_speed = MATH_FloatMin(tf_speed, 6.0) / 6.0
+	
+	tf_dist = OBJ_SqrDist(to_joueur) 
+	if (tf_dist < 400.0)
+	{
+		if (SND_move_1_loop == -1)
+			SND_move_1_loop = SND_RequestPlayLoopOnObjCanal(SND_MOVE_1, 2)
+		
+		if (SND_move_2_loop == -1)
+			SND_move_2_loop = SND_RequestPlayLoopOnObjCanal(SND_MOVE_2, 13)
+
+		switch(i_etat_courant)
+		{
+			case ETAT_Sol :
+			case ETAT_Devore :
+
+				ti_play_eat_loop = vrai
+				if (i_perceived_best_actor_index == -1)
+					ti_play_eat_loop = faux
+				else if (! ( ai_perceived_status[i_perceived_best_actor_index] & Ci_PERCEIVED_IS_DEAD) )
+					ti_play_eat_loop = faux
+				else if (ai_perceived_ID[i_perceived_best_actor_index] == C_ID_BatCharognard && ! @ao_perceived_actor[i_perceived_best_actor_index] OBJ_CapaTest(OBJ_Capa_15))
+					ti_play_eat_loop = faux
+				else if (i_etat_courant != ETAT_Devore && af_perceived_dist[i_perceived_best_actor_index] > 3.0)
+					ti_play_eat_loop = faux
+					
+				break
+				
+			default:
+				ti_play_eat_loop = faux
+		}
+		
+		if (ti_play_eat_loop && SND_eat_loop == -1)
+		{
+			if (SND_eat_loop == -1)
+				SND_eat_loop = SND_RequestPlayLoopOnObjCanal(SND_EAT, Anim_Canal_Tete)
+		}	
+		else if ( ! ti_play_eat_loop && SND_eat_loop != -1)
+		{
+			SND_Stop(SND_eat_loop)
+			SND_eat_loop = -1
+		}
+	}
+	else if (tf_dist > 600.0)
+	{
+		ti_flag_stop_sound = vrai
+	}
+}
+else
+{
+	ti_flag_stop_sound = vrai
+}
+
+if (ti_flag_stop_sound)
+{
+	if (SND_move_1_loop != -1)
+	{
+		SND_Stop(SND_move_1_loop)
+		SND_move_1_loop = -1
+	}
+	
+	if (SND_move_2_loop != -1)
+	{
+		SND_Stop(SND_move_2_loop)
+		SND_move_2_loop = -1
+	}
+	
+	if (SND_eat_loop != -1)
+	{
+		SND_Stop(SND_eat_loop)
+		SND_eat_loop = -1
+	}	
+}
+
+if (SND_move_1_loop != -1)
+{
+	SND_InsertVarSet(SND_move_1_loop, 23, tf_speed)
+}
+
+if (SND_move_2_loop != -1)
+{
+	SND_InsertVarSet(SND_move_2_loop, 23, tf_speed)
+}
+
+f_SND_burning_duration -= MATH_FloatMin(f_SND_burning_duration, TIME_GetDt())
+if (f_SND_burning_duration && f_ragdoll_damping)
+{
+	if (SND_burn_loop == -1)
+	{
+		SND_burn_loop = SND_RequestPlayLoop(SND_FIRE_LOOP)
+
+		SND_RequestPlay(SND_FIRE_START)
+		f_SND_between_scream_duration = MATH_RandFloat(0.5, 1.0)
+	}
+
+	if (f_SND_between_scream_duration)
+	{
+		f_SND_between_scream_duration -= TIME_GetDt()
+		if (f_SND_between_scream_duration <= 0.0)
+		{
+			f_SND_between_scream_duration = MATH_RandFloat(0.5, 1.0)
+			SND_RequestPlay(SND_FIRE_SCREAM)
+		}
+	}
+}
+else if (SND_burn_loop != -1)
+{
+	SND_Stop(SND_burn_loop)
+	SND_burn_loop = -1
+}
+
+
+
+// SOUND =============================================================
+
+

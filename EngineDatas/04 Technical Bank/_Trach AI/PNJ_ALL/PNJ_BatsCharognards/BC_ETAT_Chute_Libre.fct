@@ -1,0 +1,97 @@
+#include "BC_defines.var"
+
+int			ti_action
+
+vector	tv_sight
+
+
+// SORTIE ETAT
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+// ENTREE ETAT
+if (i_etat_courant != ETAT_Chute_Libre )
+{
+	i_etat_ancien_ancien = i_etat_ancien
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Chute_Libre
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	BC_DBG_Trace_Etat("etat chute libre")
+	
+	OBJ_CapaSet(CAPA_ChuteMortelle, 0 )
+	BC_action_frequency_set(1.0)
+	
+	if( ! BC_Boss() || ! o_attaque_finale_decor )
+	{
+		// petite bat ou big bat mais avec mort std et pas ciné
+		AI_Execute("BC_exec_dyn_on")
+		if( ! i_chute_wp_deja_dedans )
+		{
+			DYN_SpeedSetVector(DYN_SpeedGetVector() + (f_speed * OBJ_SightGet()))
+		}
+	}
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ============================================================================
+
+if( f_time_start_etat >= 5.0 )
+{
+	DBG_TraceObject(OBJ_Me())
+	DBG_TraceString(" est en chute libre depuis + de 5.0 sec => destroy")
+	DBG_TraceEOL()
+	OBJ_Destroy()
+}
+
+BC_Check_WaterZ()
+
+if( BC_Boss() )
+{
+	if( o_attaque_finale_decor )
+		macro_change_etat("BC_ETAT_Paf_Ecrase")		// pour la ciné 03B : anim écrase lancée au wp spécifié
+	// sinon attend de toucher le sol
+}
+
+if( BC_Collide_Ground() )
+	macro_change_etat("BC_ETAT_Paf_Ecrase")
+
+if( i_splash_flag )
+	macro_change_etat("BC_ETAT_Paf_Ecrase")		// jouer l'anim d'écrasement au contact de l'eau
+
+// COMPORTEMENT ==================================================
+
+i_flag_neck = faux
+
+// Action (pas à l'init pour éviter plusieurs ACT_ActionSet à la même trame !!!!)
+if( i_etat_ancien == ETAT_Chute_wp && ! i_chute_wp_deja_dedans )
+{
+	ti_action = ACTION_Vol_Blesse
+	OBJ_BankingGeneralSet(OBJ_SightGet(), MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 5 * TIME_GetDt()) )
+}
+else
+{
+	ti_action = ACTION_Vol_Vrille
+	if( ! MATH_VecNullToler(v_last_paf_sight, 0.1) )
+		tv_sight = - v_last_paf_sight
+	else
+		tv_sight = OBJ_SightGet()
+	OBJ_BankingGeneralSet( 
+		MATH_VecBlendRotate(OBJ_SightGet(), tv_sight, 5 * TIME_GetDt()), 
+		MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 5 * TIME_GetDt()) )
+}
+
+if( ACT_ActionGet() != ti_action )
+	ACT_ActionSet(ti_action)
+

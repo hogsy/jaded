@@ -1,0 +1,63 @@
+vector		tv_oldpos, tv_pos, tv_dir
+float			tf_speednorm
+int				ti_nb_obj, ti_paf
+object		tao_obj[100], to_obj
+
+#define 		REPULSE_SPEEDFACTOR		4	
+#define 		REPULSE_COLFACTOR			4
+#define		REPULSE_FACTOR				8
+
+SPG2_AddSphere(OBJ_PosGet(), 4.5)
+
+tv_pos = OBJ_PosGet()
+tv_oldpos = v_PrevPos
+v_PrevPos = tv_pos
+
+tv_dir = (tv_pos - tv_oldpos) / TIME_GetDt()
+v_Speed = (v_Speed * 0.8) + (tv_dir * 0.2)
+v_Speed.z = 0
+if (MATH_VecDotProduct( v_Speed, OBJ_SightGet()) < 0)
+	v_Speed = Cv_NullVector
+
+// ----( optim no paf )----
+if (OBJ_CapaTest( OBJ_Capa_0 ) )
+{
+	paf_o_obj = nobody
+	return
+}
+
+// ----( patte trop lente, pas de paf )----
+tf_speednorm = MATH_VecDotProduct( v_Speed, v_Speed)
+if (tf_speednorm < 9 )
+{
+	paf_o_obj = nobody
+	return
+}
+	
+//----( paf possible )----
+ti_nb_obj = COL_ZDE_ZDEListGet( &tao_obj[0], C_zde_fight, C_zde_corps, all, none, Ci_Filter_IdentityFlag)
+while (ti_nb_obj)
+{
+	ti_nb_obj--
+	
+	tv_dir = @tao_obj[ti_nb_obj] OBJ_PosGet() - tv_pos
+	tv_dir.z = 0
+	MATH_VecSetNormalize( tv_dir )
+		
+	if (MATH_VecDotProduct( tv_dir, OBJ_SightGet() ) > 0.5 )
+	{
+		tv_dir *= REPULSE_COLFACTOR
+		tv_dir += v_Speed * REPULSE_SPEEDFACTOR
+		tv_dir += v_RepulseAxe * REPULSE_FACTOR
+		EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_KK_Moyen,  OBJ_Me(), 0.01, tao_obj[ti_nb_obj], 6.0 * PAF_Unit, tv_dir)
+		
+		if ( o_Bronto && !paf_o_obj)
+		{
+			if (tao_obj[ti_nb_obj] == AI_MainActorGet(0) )
+			{
+				paf_o_obj = tao_obj[ti_nb_obj]
+				@"PNJ_Pacifique/PNJ_Brontosaure" o_Bronto Pattes_o_SendPaf = OBJ_Me()
+			}
+		}
+	}
+}

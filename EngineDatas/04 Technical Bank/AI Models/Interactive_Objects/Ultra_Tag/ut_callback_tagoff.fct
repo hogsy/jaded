@@ -1,0 +1,16 @@
+if ( i_tag_done && GRID_IsIn(OBJ_PosGet()))
+{
+	i_tag_done = faux
+
+	COL_ColSetActivationSet(none,all)
+	COL_ColMapActivationSet( none, all)
+	
+	GRID_CurrentSet(TAG_etage)
+	GRID_TagBox(OBJ_PosGet(), OBJ_SightGet(), cvector(-0.0001,-0.0001,0), cvector(0.00001 + nb_cases_x, 0.00001 + nb_cases_y, 0), -tag_grid_terraindyn_1)
+	
+	if(move_net_1)
+	{
+		WAY_LinkCapaSet(@get_global move_network, move_net_1, move_net_2, 0, OBJ_Capa_7)
+		WAY_LinkCapaSet(@get_global move_network, move_net_2, move_net_1, 0, OBJ_Capa_7)
+	}
+}

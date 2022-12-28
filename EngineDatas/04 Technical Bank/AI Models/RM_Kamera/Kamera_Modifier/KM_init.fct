@@ -1,0 +1,101 @@
+
+Include_UltraProcedure_Header
+
+#include "KM_Defines.var"
+
+network tn_net
+int			ti_loop
+
+
+switch (i_mode)
+{
+	case 0 :
+		f_CallBack = "KM_CBMode_CreateNewLDKam.fct"
+		break
+	case 1 :
+		f_CallBack = "KM_CBMode_AdjustGenericKam.fct"
+		break
+}
+
+
+
+i_cc_kam_KamModifierID = @get_Kamera Proc_Kam_KamModifierID_Get()
+
+if (i_global_kam_ID >= 0)
+	@get_global i_Global_KamID[i_global_kam_ID] = OBJ_Me()
+
+TIME_Wait(0.01)
+
+if (!o_cam_pos)
+	o_cam_pos = OBJ_Me()
+
+if (o_wp_reseau_pos)
+	tn_net = @o_wp_reseau_pos WAY_NetOfObj()
+else
+{
+	tn_net = nonet
+	o_wp_reseau_pos = OBJ_Me()
+}
+
+if (tn_net) 
+{
+	#ifndef _FINAL_ // -----------------------------------------------------------------------------------------
+	if (	o_wp_reseau_pos != WAY_RootGet(tn_net) )
+		DBG_Error("Faire un SET AS ROOT sur le Gao Network de ce KamModifier")
+	#endif // -------------------------------------------------------------------------------------------------------
+	
+	i_nbr_wp = WAY_NetFill(tn_net, o_wp_reseau_pos, &o_WP_liste[0])
+
+	for (ti_loop = 1; o_WP_liste[ti_loop] ; ti_loop++)
+	{
+		f_dist[ti_loop-1] = MATH_VecNorm( @o_WP_liste[ti_loop] OBJ_PosGet() - @o_WP_liste[ti_loop-1] OBJ_PosGet() )
+		v_axis_norm[ti_loop-1] = (@o_WP_liste[ti_loop] OBJ_PosGet() - @o_WP_liste[ti_loop-1] OBJ_PosGet() ) / f_dist[ti_loop-1]
+	}
+}
+else 
+	i_nbr_wp = 0
+
+// Compteur de Trigger ----------------------------------------
+mi_TriggerTest = 0
+if (AI_TriggerIsValid( t_activation ))
+{
+	mi_TriggerTest++
+ 	if ( AI_TriggerIsValid( t_activation2 ))
+ 	{
+		mi_TriggerTest++
+ 		if ( AI_TriggerIsValid( t_activation3 ))
+ 			mi_TriggerTest++
+	}
+}
+// Compteur de Trigger ----------------------------------------
+
+@o_cam_pos OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_HasInitialPos,none)
+
+
+switch (i_RefAxis_mode)
+{
+	case 1 :
+		v_RefAxis_RIC_Pos = OBJ_PosGet()
+		fct_before = "KM_RefAxis_RepulseInCircle"
+		break
+	case 2 :
+		fct_after = "KM_RefAxis_ForceDeltaZ"
+		break
+	case 3 :
+		if( ! o_RefAxis_AKA_Ann )
+			DBG_Error("pas de o_RefAxis_AKA_Ann")
+//			o_RefAxis_AKA_Ann = @"univ" ao_AllHumains[C_ID_Ann]
+		fct_before = "KM_RefAxis_AnnKongAxis"
+		break
+	case 4 :
+		fct_before = "KM_RefAxis_AutoReverseShoot"
+		break
+	case 5 :
+		fct_before = "KM_RefAxis_AutoReverseShoot"
+		fct_after = "KM_RefAxis_ForceDeltaZ"
+		break
+	case 6 :
+		fct_before = "KM_RefAxis_MathAxis"
+}
+	
+AI_TrackCurChangeNow("KM_Etat_WaitActivation")

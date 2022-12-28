@@ -1,0 +1,52 @@
+message	msg_sorted, m_msg_outi
+
+if	(MSG_GetCount())
+{
+	msg_sorted = MSG_Get()
+	i_type_event = msg_sorted.msg_int1
+	if	(msg_sorted.msg_sender)
+		o_gao_prio_sender = msg_sorted.msg_sender
+	if	(msg_sorted.msg_gao1)
+		o_gao_prio_1 = msg_sorted.msg_gao1
+	v_vector_prio1 = msg_sorted.msg_vec1
+	v_vector_prio2 = msg_sorted.msg_vec2
+	if	( ( ( (des_o_ANN)
+		&&	(o_gao_prio_sender != des_o_ANN) ) )
+		||	(i_type_event != C_EVENT_Filmation_filter_PersoAttacked) )
+	{
+		if	( ! TIME_Elapsed(f_time_last_EVT, 5))
+		{	return	}
+	}
+}
+else
+{	return	}
+
+// Choix des sequences en Fn des types d'Event
+//MSG_SetNull(m_msg_out)
+f_time_last_EVT = TIME_Get()
+//m_msg_out.msg_int1 = -1
+o_main_actor = AI_MainActorGet(i_MainActor)
+
+if	(i_type_event == C_EVENT_Filmation_filter_HumainPaffed)
+{
+	AI_Execute("CIM_Plans_Paffed")
+}
+else	if	(i_type_event == C_EVENT_Filmation_filter_HumainGnaked)
+{
+	AI_Execute("CIM_Plans_Gnaked")
+}
+else	if	(i_type_event == C_EVENT_Filmation_filter_PersoDetected)
+{
+	AI_Execute("CIM_Plans_Warnings")
+}
+else	if	(i_type_event == C_EVENT_Filmation_filter_PersoAttacked)
+{
+	AI_Execute("CIM_Plans_Attacks")
+}
+else	if	(i_type_event == C_EVENT_Filmation_filter_KongGrab)
+{
+	AI_Execute("CIM_Plans_Grabs")
+}
+//@des_o_INSERT_Dir MSG_Send(m_msg_out)
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

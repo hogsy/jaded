@@ -1,0 +1,55 @@
+#include"r_defines.var"
+
+int			ti_action
+int			ti_end
+
+vector	tv_paf_dir
+float		tf_dot_X, tf_dot_Y
+
+// SORTIE ETAT 	===================================================================
+if( i_sort_etat )
+{
+	i_sort_etat = faux
+	return
+}
+
+// INIT ETAT 	=====================================================================
+if( i_etat_courant != ETAT_RM_mort )
+{
+	i_etat_courant = ETAT_RM_mort
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	GRAPPIN_Destroy()
+	ACT_ActionSet( RM_KO_oSol)
+	f_time_start_etat = 0.0
+	SND_RequestPlay( C_SND_PAF_MORT)
+	SND_RequestPlay( C_SND_PAF_MORT+1)
+	SND_RequestPlay( C_SND_PAF_MORT+2)
+	OBJ_CapaSet( Capa_Mort, none)
+	@get_SND_MusMort_RayDeath OBJ_FlagInactiveSet(faux)
+}
+else
+	f_time_start_etat += TIME_GetDt()
+	
+if (  f_time_start_etat  > Cf_RM_FalseDeathTime)
+{
+	// AHAHAH tu y as cru
+	OBJ_CapaSet( none, Capa_Mort)
+	OBJ_PosSet(v_safe_pos)
+	COL_StartMatrixSet(v_safe_pos)
+	DYN_TractionSet(Cv_VerticalVector)
+	DYN_SpeedSetVector( Cv_VerticalVector)
+	Proc_RM_LifeManaSet(Proc_RM_LifeMaxGet(), Proc_RM_ManaMaxGet())
+
+	f_display_life = Cf_Display_Time
+	f_display_mana = Cf_Display_Time
+	i_disguise_cut = 0
+	
+	Proc_RM_DisguiseReinit()
+	MOVE_CHANGE_To_Default()
+	AI_TrackCurChangeNow("raym_ETAT_main")	
+}

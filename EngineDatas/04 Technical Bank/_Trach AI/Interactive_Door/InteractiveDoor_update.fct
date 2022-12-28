@@ -1,0 +1,102 @@
+#include "Interactive_Door_defs.var"
+
+
+vector	v, pos, sight, banking
+vector	Pivot0, Pivot1
+int			i
+object	o_pilar, o_main
+
+
+// ----( position )----
+if (mi_Move)
+{
+	pos = v_pos_init
+	v = @mo_OpeningWP OBJ_PosGet() - pos
+	pos = pos + (mf_Ratio * v)
+	
+	OBJ_PosSet( pos )
+}
+
+// ----( rotation )----
+if (mi_Rotate)
+{
+	if (mo_PivotWP)
+		Pivot0 = MATH_VecLocalToGlobal( mv_PivotPos )
+		
+	v = @mo_OpeningWP OBJ_SightGet()
+	sight = MATH_VecBlendRotate(mv_SightInit, v, mf_Ratio )
+	
+	v = @mo_OpeningWP OBJ_BankingGet()
+	banking = MATH_VecBlendRotate(mv_BankingInit, v, mf_Ratio )
+	
+	OBJ_SightGeneralSet( sight, banking )
+	
+	if ( mo_PivotWP )
+	{
+		Pivot1 = MATH_VecLocalToGlobal( mv_PivotPos )
+		OBJ_PosSet( OBJ_PosGet() + (Pivot0 - Pivot1 ) )
+	}
+}
+
+// ----( state )----
+if (mf_Ratio == 1)
+{
+	if (mi_Opened != 1)
+	{
+		mi_Opened = 1
+		OBJ_CapaSet( OBJ_Capa_8,0)
+		if (mi_Type != 03 )// Pas PLF Rayman
+		{
+			COL_ColMapActivationSet(none,all)
+			@mo_TagRef COL_ColMapActivationSet( none, all)
+		}
+
+		if (mi_BlockWhenOpened)
+		{
+			if ( SF_i_NePasRejouerSiMort )
+				SpecialFlag_set( SF_i_AlreadyDead)
+	
+			if (mi_Type == DOOR_Pilar)
+			{
+				for (i = 0; i < mi_PD_NbPilar; i++)
+				{
+					o_pilar = mao_PD_Pilar[ i ]
+					@o_pilar OBJ_CapaSet( 0, OBJ_Capa_0 )
+					@o_pilar OBJ_CapaSet( OBJ_Capa_2, 0 )
+					if ( @o_pilar OBJ_CapaTest( OBJ_Capa_7 ) )
+					{
+//						o_main = AI_MainActorGet(C_ID_Jack)
+//						@"KingKong/Humain" o_main o_obj_porte = nobody
+//						@"KingKong/Humain" o_main o_obj_levier = nobody
+					}
+				}
+				mi_PD_State = 1
+			}
+			else
+			{
+				AI_TrackCurStop()
+			}
+		}
+	}
+}
+else
+{
+	if (mi_Opened != 0)
+	{
+		mi_Opened = 0
+		OBJ_CapaSet( 0, OBJ_Capa_8)
+		if (mi_Type != 03 )// Pas PLF Rayman
+		{
+			COL_ColMapActivationSet(all,none)
+		}
+	}
+
+	if (mi_BlockWhenClosed && (mf_Ratio == 0) )
+	{
+		if ( SF_i_NePasRejouerSiMort )
+			SpecialFlag_set( SF_i_AlreadyDead)
+		AI_TrackCurStop()
+	}
+
+}
+

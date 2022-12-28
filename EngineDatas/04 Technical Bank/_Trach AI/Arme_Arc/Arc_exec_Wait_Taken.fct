@@ -1,0 +1,85 @@
+#include "Arc_defines.var"
+
+#define CF_dist_taken	3
+
+int			ti_cpt
+int			ti_snd
+int			ti_what
+int			ti_capa
+int			ti_ok
+int			ti_canramasse
+int			ti_enfeu
+int			ti_display_take
+
+float		tf_taken
+float		tf_dot
+float		tf_dot1
+
+vector	tv_temp
+vector	tv_temp1
+
+object 	to_obj
+
+
+
+// Auto destruction
+if(@get_global o_joueur_last_bow != OBJ_Me())
+	f_time_loin += TIME_GetDt()
+else
+	f_time_loin = 0.0
+if( f_time_loin > 60 ) 
+{
+	OBJ_Destroy()
+}
+
+
+
+//OBJ_InfoPhotoParamSet( 0, 0, 3, 3, 0.0, 0.0, 0.0, 1)		// Bouée d'aide à la visée
+//OBJ_InfoPhotoInfoOffsetSet( Cv_NullVector )
+//OBJ_InfoPhotoSphereOffsetSet( Cv_NullVector )
+
+//ti_display_take = 0
+//if( o_joueur )
+//{
+//	to_obj = o_joueur
+//	tf_taken = CF_dist_taken
+//	
+//	// Si jack vient vers moi, je peux prendre à une distance supérieur
+//	tv_temp = OBJ_PosGet() - @to_obj OBJ_PosGet()
+//	if(MATH_VecNullEpsilon(tv_temp)) tv_temp = @to_obj OBJ_SightGet()
+//	MATH_VecSetNormalize(tv_temp)
+//	if(MATH_VecDotProduct(tv_temp, @to_obj OBJ_SightGet()) > 0.9)
+//	{
+//		tv_temp = @to_obj DYN_SpeedGetVector()
+//		tv_temp.z = 0
+//		if(MATH_VecNorm(tv_temp) > 1.0)
+//		{
+//			tf_taken += 1
+//		}
+//	}
+//	
+//	tv_temp = OBJ_PosGet() - @to_obj OBJ_PosGet()
+//	tv_temp1 = (OBJ_PosGet() - OBJ_SightGet()) - @to_obj OBJ_PosGet()
+//	tf_dot = MATH_VecDotProduct(tv_temp, tv_temp)
+//	tf_dot1 = MATH_VecDotProduct(tv_temp1, tv_temp1)
+//	if(tf_dot1 < tf_dot)
+//		tf_dot = tf_dot1
+//	
+//	if(tf_dot <= (tf_taken*tf_taken) )
+//		ti_display_take = Ci_DISPLAY_TAKE
+//}
+//OBJ_Me().des_int1 = ti_display_take
+
+
+// ANALYSE ======================================================================
+TEST_GRAB:
+if( LNK_GRAB_OBJECT_Free_Slot(OBJ_Me()) )
+{
+	o_grabbed_serveur = LNK_ServeurGet(Ci_LNK_GRAB_OBJECT, mid_LNK_grabbed, vrai, nofunc, nofunc)
+	if( o_grabbed_serveur )
+	{
+		macro_add_callback_after_cam("Arc_ETAT_cb_Grabbed")
+		AI_TrackCurStop()
+	}
+}
+

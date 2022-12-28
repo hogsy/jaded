@@ -1,0 +1,65 @@
+
+#include "IOB_Defines.var"
+
+int			ti_ind 
+int 		ti_control_flag
+int			ti_sf
+
+
+// SF RULES
+i_SF_AlreadyPlayed = AI_SFDynGet(0, SF_MinById, SF_MaxById)		// Detruite ?
+SpecialFlag_get(i_SF_AlreadyPlayed, ti_sf)
+if ( ti_sf )
+{
+	for( ti_ind = 0; ti_ind <  Ci_IOB_NbrOfObjectMax; ti_ind++)
+	{
+		if (ODE_Objects[ti_ind] && ODE_Objects[ti_ind] != OBJ_Me())
+		{
+			@ODE_Objects[ti_ind] ODE_Enable(faux)
+			@ODE_Objects[ti_ind] OBJ_Destroy()
+		}
+	}
+	ODE_Enable(faux)
+	OBJ_Destroy()
+}
+
+mf_TagX /= 2.0
+mf_TagY /= 2.0
+
+if (!i_tagged)
+{
+	i_tagged = vrai
+	GRID_CurrentSet( 0 )
+	GRID_TagBox(OBJ_PosGet(), OBJ_SightGet(), cvector( -mf_TagX, -mf_TagY, 0), cvector( mf_TagX, mf_TagY, 0), tag_grid_terraindyn_1)
+}
+
+
+COL_ColMapActivationSet(all, none)
+OBJ_FlagsControlSet(none, OBJ_C_ControlFlag_RayInsensitive)
+
+
+AI_CBAdd(OBJ_Me(), CallBack_WhenDestroy, "IOB_CallBack_Destroy")
+
+for( ti_ind = 0; ti_ind <  Ci_IOB_NbrOfObjectMax; ti_ind++)
+{
+	// activate the ode for the item that corresponds to the paf number
+	if ( ODE_Objects[ti_ind] && ODE_Steps[ti_ind] > i_step_last)
+		i_step_last = ODE_Steps[ti_ind]
+	if ( ODE_Objects[ti_ind] && ODE_Objects[ti_ind] != OBJ_Me() )
+	{
+		ti_control_flag = @ODE_Objects[ti_ind]ODE_Geti(0)
+		ti_control_flag |= 0x20
+		@ODE_Objects[ti_ind]ODE_Seti(0,ti_control_flag)
+	}
+	if (ODE_Objects[ti_ind])
+	{
+		ODE_LifeTime[ti_ind] = -1.0
+		if ( ODE_Objects[ti_ind] != OBJ_Me())
+			@ODE_Objects[ti_ind] OBJ_FlagsControlSet( OBJ_C_ControlFlag_RayInsensitive, none)
+	}
+	else
+		ODE_LifeTime[ti_ind] = 0
+	
+}
+
+AI_TrackCurChangeNow("IOB_Etat_Go")

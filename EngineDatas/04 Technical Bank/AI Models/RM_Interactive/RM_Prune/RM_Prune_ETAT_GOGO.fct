@@ -1,0 +1,49 @@
+#include "RM_Prune_defines.var"
+
+// SORTIE ETAT ===================================================================
+if( i_sort_etat )
+{
+	i_sort_etat = faux
+	v_traction_GOGO=Cv_NullVector
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if( i_etat_courant != ETAT_Prune_GOGO)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Prune_GOGO
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_previous_etat = fct_last_etat
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// STIMULI ===========================================================================
+
+if ( f_time_start_etat > 1.0 && MATH_VecNorm(v_traction_GOGO) <= 1.0*f_DYN_Friction ) // 1.0 )
+{
+	macro_change_etat("RM_Prune_ETAT_GRAPPINED")
+}
+
+// COMPORTEMENT ===================================================================
+
+//v_traction_GOGO = DYN_SpeedGetVector()*(1.0-(TIME_GetDt()*10.0))
+v_traction_GOGO = DYN_SpeedGetVector()*(1.0-(TIME_GetDt()*5.0))
+
+if(Prune_ROPE_Gogo_Mode())
+{
+	Prune_Send_PAF(0)
+}
+else
+{
+	Prune_Rebondit()
+}

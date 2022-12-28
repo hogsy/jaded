@@ -1,0 +1,55 @@
+#include "PLJ_Defines.var"
+#define C_Plane_Speed					20			// m/s (* 3.6 = km/h)
+#define C_Plane_RotationZ				(40*Cf_1Degre)
+#define C_Plane_Strafe_Max				5
+#define C_Plane_Shoot_MaxX			(-40*Cf_1Degre)
+#define C_Plane_Shoot_MaxY			(-40*Cf_1Degre)
+#define C_Plane_Shoot_MinY			(-10*Cf_1Degre)
+#define C_Plane_DelayShoot				0.03
+#define C_Plane_ShootRecoil			(0.5*Cf_1Degre)
+#define C_Plane_DistanceFight			20
+vector v
+float f
+object o
+message msg
+int i
+dt=TIME_GetDt()
+// set target pos
+TargetPos=MATH_VecBlend(TargetPos,@Target OBJ_PosGet(),BlendLookTarget)
+BlendLookTarget=MATH_FloatMin(1,BlendLookTarget+(dt*0.01))
+// change strafe with banking & target position
+if(Target)
+{
+	v=TargetPos-OBJ_PosGet()
+	f=-MATH_FloatSign(v.z)
+	v=OBJ_HorizonGet()
+	f*=C_Plane_Strafe_Max*v.z
+	Strafe=MATH_FloatBlend(Strafe,f,dt)
+}
+else Strafe=0
+v=cvector(Strafe*-0.1,0,0)
+// movements
+RotationZ=MATH_FloatBlend(RotationZ,v.x*C_Plane_RotationZ,dt)
+RotationX=MATH_FloatBlend(RotationX,-MATH_AbsFloat(RotationZ*0.1),dt)
+// adjust speed
+Speed=C_Plane_Speed
+// move the plane
+OBJ_PosSet(OBJ_PosGet()+(((dt*Speed)*OBJ_SightGet())+(Strafe*dt*-OBJ_HorizonGet())))
+// set the orientation (roll & pitch only)
+OBJ_BankingSet(cvector(0,0,1))
+v=-MATH_VecNormalize(TargetPos-OBJ_PosGet()+cvector(0,0,-5))
+f=MATH_FloatLimit(MATH_ASin(v.z),-30*Cf_1Degre,60*Cf_1Degre)
+OBJ_RotateLocalX(f)
+OBJ_RotateLocalY(-2*RotationZ)
+OBJ_RotateLocalX(RotationX)
+// Place Kamera
+if(Kamera)
+{
+	v=-10*MATH_VecNormalize(TargetPos-OBJ_PosGet()+cvector(0,0,-5))
+	@Kamera OBJ_BankingSet(cvector(0,0,1))
+	@Kamera OBJ_SightSet(-v)
+	v+=OBJ_PosGet()
+	v+=OBJ_BankingGet()*4
+	v-=OBJ_SightGet()*2.2
+	@Kamera OBJ_PosSet(v)
+}

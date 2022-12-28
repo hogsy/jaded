@@ -1,0 +1,107 @@
+#include "IOB_Defines.var"
+
+//#define			ODE_Sound_Choc_Activation				0
+//#define			ODE_Sound_Rumble							5
+//#define			ODE_Sound_Choc_Local						10
+//#define			ODE_Sound_Whoosh							20
+
+
+vector		tv_paf 
+int				ti_step, i
+int				ti_ind 
+object		to_brique
+int				ti_control_flag
+
+// ------- UPDATE DES VITESSES DE LA FRAME COURANTE -------
+i = 0
+while(ODE_Objects[i])
+{
+	af_ode_vitesseL_frame[i] = @ODE_Objects[i] ODE_Getf(2)
+	af_ode_deriveeL_frame[i] = (af_ode_vitesseL_frame[i] - af_ode_vitesseL_old_frame[i]) / TIME_GetDt()
+	
+	af_ode_vitesseA_frame[i] = @ODE_Objects[i] ODE_Getf(3)
+	af_ode_deriveeA_frame[i] = (af_ode_vitesseA_frame[i] - af_ode_vitesseA_old_frame[i]) / TIME_GetDt()
+
+	i ++
+}
+
+tv_paf = IOB_CheckPaf( ti_step )
+
+// ODE Activation
+if ( ti_step )
+{
+	int ti_test
+
+	// Son d'activation d'une étape ...
+	SND_RequestPlay(0)		// Impact du Choc
+
+	// On on doit avancer d'une (ou plusiuers) etape dans la destruction du bordel
+	
+	ti_test = vrai
+	for( ti_ind = 0; ti_ind <  Ci_IOB_NbrOfObjectMax; ti_ind++)
+	{
+		// activate the ode for the item that corresponds to the paf number
+		to_brique = ODE_Objects[ti_ind]
+		if ( to_brique )
+		{
+			if ( ODE_Steps[ti_ind] <= (i_step_current + ti_step ) && ODE_Steps[ti_ind] > i_step_current)
+			{
+				ODE_LifeTime[ti_ind] = 6.0		// 6s
+	
+				@to_brique COL_EnableSnP()
+	
+				@to_brique ODE_Enable(vrai)
+							
+				// Reset Immovable Flag
+				ti_control_flag = @to_brique ODE_Geti(0)
+				ti_control_flag &= ~0x20
+				@to_brique ODE_Seti(0, ti_control_flag)		
+	
+				@to_brique OBJ_FlagInactiveSet( faux)
+	
+				@to_brique COL_ColMapActivationSet(none, all)
+	
+				IOB_ApplyForces(to_brique, tv_paf, ti_step)
+			}
+			else if ( ODE_Steps[ti_ind] > (i_step_current + ti_step ) )
+			{
+				af_vibrating[ti_ind] = MATH_RandFloat( 0.02, 0.1)
+				ti_test = faux
+			}
+		}
+	}
+	if (ti_test)
+	{
+		SND_RequestPlay(1)						// Gros impact (shootgun)
+
+		OBJ_CapaSet(OBJ_Capa_15,none)
+
+		SIG_Send(SIG_C_JAV_FREE, OBJ_Me())
+		OBJ_FlagsControlSet(OBJ_C_ControlFlag_RayInsensitive,none)
+
+		SpecialFlag_set(i_SF_AlreadyPlayed) 
+		AI_Execute("IOB_TAG_OFF")
+	}
+	i_step_current += ti_step
+}
+
+// Gestion des vibrations
+IOB_Check_Vibrating()
+
+if ( IOB_Module_lifetime() )
+{
+	ODE_Enable(faux)
+	OBJ_Destroy()
+}
+	
+i = 0
+while(ODE_Objects[i])
+{
+	af_ode_vitesseL_old_frame[i] = af_ode_vitesseL_frame[i]
+	af_ode_deriveeL_old_frame[i] = af_ode_deriveeL_frame[i]
+	af_ode_vitesseA_old_frame[i] = af_ode_vitesseA_frame[i]
+	af_ode_deriveeA_old_frame[i] = af_ode_deriveeA_frame[i]
+	
+	i ++
+}
+

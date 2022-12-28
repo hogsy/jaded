@@ -1,0 +1,62 @@
+
+#include"KNa_Defines.var"
+
+message 	tmsg_trigger 
+
+// SORTIE ETAT ===================================================================
+if (i_flag_sort_etat)
+{
+	i_flag_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_WaitActivation)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_WaitActivation
+
+	if (fct_last_etat)
+	{
+		i_flag_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	i_script_running = faux
+	i_script_next = vrai
+	i_script_indice = 0
+
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =====================================================================
+if (!AI_TriggerIsValid(trigger_attaque) || ( AI_TriggerIsValid(trigger_attaque) && call_trigger(trigger_attaque) ) )
+{
+	switch(target_selection)	
+	{
+		case 0 :
+			o_target  = o_force_target
+			if (!o_target) DBG_Error("o_force_target est a nobody alors qu'on me demande de le considerer comme l'ennemi a attaquer")	
+			break
+			
+		case 1 :
+			tmsg_trigger = AI_TriggerGetMsg(trigger_attaque)
+			o_target  = tmsg_trigger.msg_gao5
+			Check_This_Gao5(o_target)
+			break
+	}
+
+	if (!KNative_LIB_Target_Check_This_One(o_target))
+		o_target = KNative_LIB_Target_Get_One_In_BV(BV_ZoneTerritoire)	// Je cherche une autre cible car la cible courant n'est pas valide
+	if (o_target)				// Si j'ai une cible valide alors OK je lance le script ! (Et donc je change de mode)
+		i_script_running = vrai
+}
+
+// COMPORTEMENT ===============================================================
+
+ACT_ActionSet(Ci_AnimNative_Attente)

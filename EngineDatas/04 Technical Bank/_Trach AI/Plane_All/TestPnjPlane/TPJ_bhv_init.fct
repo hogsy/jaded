@@ -1,0 +1,23 @@
+vector v
+object o
+float f,d
+MSG_On()
+MSG_Clear()
+AI_PrioritySet(50)
+Rot=0
+TimerShoot=0
+Strafe=0
+DestTimer=0
+v=@Target OBJ_PosGet()
+f=MATH_RandFloat(0,Cf_2Pi)
+d=MATH_RandFloat(80,100)
+v.x+=d*MATH_Cos(f)
+v.y+=d*MATH_Sin(f)
+v.z+=MATH_FloatSign(MATH_RandFloat(-10000,10000))*10
+OBJ_PosSet(v)
+OBJ_SightSet(@Target OBJ_PosGet()-v)
+OBJ_RotateGlobalZ(MATH_RandFloat(0,Cf_2Pi))
+HP=25
+Dest=OBJ_PosGet()-OBJ_SightGet()
+if(ImTheRedBaron) AI_TrackCurChange("TPJ_bhv_RedBaron")
+else AI_TrackCurChange("TPJ_bhv_fly")

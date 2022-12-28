@@ -1,0 +1,110 @@
+#include "KBC_defines.var"
+
+object			to_obj
+
+vector			tv_banking
+vector			tv_temp
+vector			tv_sight
+
+
+// SORTIE ETAT =================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+
+// ENTREE ETAT ================================================================
+if (i_etat_courant != ETAT_CINE_Wait )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_CINE_Wait
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	KBC_DBG_Trace(i_DBG_trace_etat, "etat cine wait")
+	
+	// TEST LARGAGE ? :)
+	switch(am_CineStack[0].msg_int2)
+	{
+		case 1 :
+			o_cible = LNK_ThisClientGet(o_cible, Ci_LNK_GRAB_TRANSPORTE, mid_grab_charogne, faux, "KBC_exec_grab_param", nofunc, "KBC_exec_grab_param")
+			break
+			
+		default:
+			break
+	}
+	
+	KBC_select_action()
+	KBC_action_frequency_set(Cf_freq_CINE_wait)
+	f_rotation_angle_courant = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// ANALYSE =======================================================================================================
+
+
+// COMPORTEMENT =================================================================================================
+
+// procedure_trigger int TrigCINE_Wait(byref message m_msg)
+// object1 who 
+// object2 orientation
+// object3 regarde
+// vec1 time (vec1.x)
+// int1 arret ( 0 = durée dans vec1.x ; 1 = attente waitgoal )
+// int2 intention ( 0 = rien ; 1 = lache sa proie )
+
+// GAO VERS LEQUEL M'ORIENTER --------------------------------------------------------------------------------
+to_obj = am_CineStack[0].msg_gao2
+if (to_obj)
+{
+	tv_sight = @to_obj OBJ_PosGet() - OBJ_PosGet()
+	tv_sight = KBC_BlendRotate(OBJ_SightGet(), tv_sight, 100.0, f_rotation_angle_courant * (30.0 * Cf_1Degre) )		// 30 ° x30 (à cause du getdt)
+	
+	tv_banking = MATH_VecRotate(Cv_VerticalVector, OBJ_HorizonGet(), Cf_PiBy4)
+//	DBG_RenderVector(OBJ_PosGet(), tv_banking, color_vert)
+	tv_banking = MATH_VecBlendRotate(OBJ_BankingGet(), tv_banking, 5 * TIME_GetDt())
+//	DBG_RenderVector(OBJ_PosGet(), tv_banking, color_rouge)
+	
+	OBJ_BankingGeneralSet(tv_sight, tv_banking)
+}
+
+
+// GAO A REGARDER ------------------------------------------------------------------------------------------------------
+i_flag_neck = faux
+to_obj = am_CineStack[0].msg_gao3
+if (to_obj)
+{
+	i_flag_neck = vrai
+	v_look_pos = @to_obj OBJ_PosGet()
+}
+
+
+// TEST DUREE D'ATTENTE -----------------------------------------------------------------------------------------------
+switch(am_CineStack[0].msg_int1)
+{
+	case 0 :
+		// Durée
+		tv_temp = am_CineStack[0].msg_vec1
+		tv_temp.y += TIME_GetDt() 
+		am_CineStack[0].msg_vec1 = tv_temp
+		if (tv_temp.y >= tv_temp.x)
+			i_cine_close = vrai
+		break
+
+	case 1:
+		// WaitGoal
+		OBJ_CapaSet(CAPA_CINE_Terminee, 0)
+		break
+}
+

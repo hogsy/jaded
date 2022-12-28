@@ -1,0 +1,57 @@
+#include "CR_defines.var"
+
+object			to_actor
+
+messageid		tmid_vision
+
+
+// SORTIE ETAT ==============================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	return
+}
+
+
+// ENTREE ETAT ==============================================================================
+if (i_etat_courant != ETAT_EXPLOSE )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_EXPLOSE
+	
+	if (fct_etat_courant)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_etat_courant)
+	}
+	
+	fct_etat_courant = AI_TrackCurGet()
+	fct_etat_main = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	if( i_DBG_trace_etat )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : ETAT EXPLOSE...")
+		DBG_TraceEOL()
+	}
+	
+	// Explose
+	OBJ_FlagInvisibleSet(vrai)
+	COL_ColMapActivationSet(none, all)
+	COL_ColSetActivationSet(none, all)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// ANALYSE ===================================================================================
+
+
+// COMPORTEMENT ===================================================================================
+
+if( f_time_start_etat > 0.5 )
+	OBJ_Destroy()
+

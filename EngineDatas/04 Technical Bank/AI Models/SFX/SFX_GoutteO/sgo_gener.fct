@@ -1,0 +1,37 @@
+int			i
+vector	tv_temp
+float		z
+
+f_ZSol = (OBJ_PosGet().z -BV_MinGet().z) - des_f_distSol
+
+if(OBJ_CapaTest(OBJ_Capa_0)) return
+if(!TIME_Elapsed(f_last_gen, f_next_freq)) return
+if(OBJ_FlagsControlGet() & OBJ_C_ControlFlag_SectoInvisible) return
+
+f_time_rien = 0
+f_last_gen = TIME_Get()
+f_next_freq = MATH_RandFloat(des_f_freq_min, des_f_freq_max)
+if(i_cur_gouttes >= 50) return
+
+for(i = 0; i < 50; i++)
+{
+	if(MATH_VecNull(av_pos_gouttes[i]))
+	{
+		tv_temp = BV_RandomPosGet(0)
+		z = OBJ_PosGet().z
+		tv_temp.z = z
+		av_pos_gouttes[i] = tv_temp
+		af_speed_gouttes[i] = 0
+		af_vit_gouttes[i] = MATH_RandFloat(des_f_gravity_min, des_f_gravity_max)
+		
+		ai_id_gouttes[i] = GFX_Add(1)
+		GFX_Setf(ai_id_gouttes[i], 1000, des_f_largeur_g)
+		GFX_Seti(ai_id_gouttes[i], 1100, des_c_goutte)
+         GFX_FlagSet(ai_id_gouttes[i], 0, 1)            // activation de l’effet
+         GFX_FlagSet(ai_id_gouttes[i], 2, 1)            // le matériau utilié sera transparent
+		GFX_MaterialSet(ai_id_gouttes[i], get_SFX_light_and_smoke, 15)
+		
+		if(i > i_cur_gouttes) i_cur_gouttes = i
+		break
+	}
+}

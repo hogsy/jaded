@@ -1,0 +1,124 @@
+
+#include "KBC_defines.var"
+
+//=============================================================================
+// LA BAT SUIT UNE CHAROGNE (OLFACTIF OU VISUEL)
+//=============================================================================
+
+
+messageid		tmid_tmp					// event odeur de sang
+messageid		tmid_vision
+
+vector			tv_old_cible_pos			// blend progressif de la position de la charogne
+vector			tv_tmp_cible_pos			// blend progressif de la position de la charogne
+
+object			to_charogne_head		// tête de la charogne (pour positionner la bat)
+vector			tv_decal_head				// vecteur de décalage entre le pivot et la tête de la cible
+
+
+// SORTIE ETAT
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+
+	i_flag_reseau_array = faux
+	return
+}
+
+
+// ENTREE ETAT
+if( (i_etat_courant != ETAT_Move_Olfactif) || i_force_reinit )
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Move_Olfactif
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	i_force_reinit = faux
+	
+	AI_Execute("KBC_exec_calc_pos_suivi_olfactif")
+
+	// o_cible_depl
+	@o_tmp_obj_next OBJ_PosSet(v_dest_pos)
+	@o_tmp_obj_next OBJ_BankingGeneralSet(v_dest_sight, Cv_VerticalVector)
+	o_cible_depl = o_tmp_obj_next
+	
+	// CALCUL DU RESEAU et du next_wp
+	i_mode_depl = Ci_mode_depl_charogne_olfactif
+	n_reseau = n_attaque
+	i_reseau_wp_count = 10				// pour bien spécifier qu'on a pas terminé de parcourir le réseau (mais qu'on veut commencer)
+	AI_Execute("KBC_exec_network_pos_next")
+	
+	KBC_ref_speed_set(Cf_speed_vol)
+	i_flag_reseau_array = vrai
+	
+	i_flag_depl_wp_apres_reseau = faux
+	
+	if( i_DBG_trace_etat )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : etat move olfactif")
+		DBG_TraceEOL()
+	}
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+KBC_select_action()
+
+
+// INTERET ====================================
+if( MSG_GlobalIsValid(mid_sang) )
+	KBC_Interet_Update(mid_interet_charogne, C_EVENT_InteretStatusAttack, EVENT_PereGet(mid_sang), tmid_vision)
+else
+{
+	AI_Execute("KBC_exec_init_attente")
+}
+
+// suivi du regard
+i_flag_neck = vrai
+v_look_pos = v_cible_pos
+
+if( TIME_Elapsed(f_time_check_charogne, Cf_freq_check_sang) )
+{
+	// temps écoulé
+	f_time_check_charogne = TIME_Get()
+	
+	// ========= STIMULUS VISION BLESSES ===========
+	
+	AI_Execute("KBC_exec_suit_perso_blesse")
+	
+	
+	// ========== STIMULUS ODEUR SANG ============
+	
+	tmid_tmp = mid_sang
+	AI_Execute("KBC_exec_check_sang")
+	if( MSG_GlobalIsValid(mid_sang) && MSG_GlobalIsValid(tmid_tmp) && (mid_sang != tmid_tmp) )
+	{
+		if( EVENT_PereGet(tmid_tmp) != EVENT_PereGet(mid_sang) )
+			i_force_reinit = vrai			// tache de sang + fraiche => on refait l'init de l'état Suivi Olfactif
+	}
+	else
+		mid_sang = tmid_tmp		// récup ancienne trace de sang
+}
+
+
+// ======== DEPLACEMENT ==========
+
+if( i_reseau_wp_count == 1 )
+	i_flag_frein = vrai
+else
+	i_flag_frein = faux
+AI_Execute("KBC_exec_MOVE_beziers")
+if( i_flag_depl_fini && ( ! i_reseau_wp_count ) )
+	macro_change_etat("KBC_ETAT_Observe_Trace")		// trace atteinte -> la bat observe la trace de sang
+

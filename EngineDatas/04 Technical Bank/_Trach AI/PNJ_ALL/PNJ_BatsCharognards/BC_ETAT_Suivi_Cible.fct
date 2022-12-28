@@ -1,0 +1,204 @@
+
+#include "BC_defines.var"
+
+//=============================================================================
+// LA BAT SUIT UNE CHAROGNE (OLFACTIF OU VISUEL)
+//=============================================================================
+
+
+messageid		tmid_tmp					// event odeur de sang
+
+int					ti_type_suivi_cur			// mem du type de suivi
+
+vector			tv_old_cible_pos			// blend progressif de la position de la charogne
+vector			tv_tmp_cible_pos			// blend progressif de la position de la charogne
+
+object			to_charogne_head		// tête de la charogne (pour positionner la bat)
+vector			tv_decal_head				// vecteur de décalage entre le pivot et la tête de la cible
+
+
+// SORTIE ETAT
+if (i_sort_etat)
+{
+	i_type_suivi = 0
+	i_flag_frein = faux
+	
+	i_sort_etat = faux
+	return
+}
+
+//======================================================
+// Init next wp : à l'init de l'état et à chaque frame de l'état
+//======================================================
+
+if( o_cible )
+{
+	//======= suivi visuel charogne  ========
+	
+	if( i_type_suivi == 1)
+	{
+		// passage du suivi olfactif en suivi visuel => init de la courbe
+		i_etat_courant--
+		i_flag_use_inter_wp = faux
+		
+		v_cible_pos = @o_cible OBJ_PosGet()
+		v_new_cible_pos = v_cible_pos
+		v_decalage = decalage( OBJ_PosGet() - v_cible_pos, 2.0, 4.0)
+	}
+	else
+	{
+		// continuité du suivi visuel de la charogne
+		if( TIME_Elapsed(f_time_check_charogne_pos, 1.0) )
+		{
+			// le bat va re-checker la position de sa cible
+			f_time_check_charogne_pos = TIME_Get()
+			v_new_cible_pos = @o_cible OBJ_PosGet()
+			
+			if( MATH_VecNorm( v_new_cible_pos - v_cible_pos) >= 3.0 )
+			{
+				// la cible s'est déplacée => init de la courbe
+				i_etat_courant--
+				i_flag_use_inter_wp = faux
+			}
+		}
+		
+		// blend vers la position de la cible (si elle bouge) (car le last_wp n'est pas recalculé)
+		v_cible_pos = MATH_VecBlend(v_cible_pos, v_new_cible_pos, 5 * TIME_GetDt())
+		
+		if( v_cible_pos != v_new_cible_pos )
+			v_decalage = decalage( OBJ_PosGet() - v_cible_pos, 2.0, 4.0)		// calcul de l'axe de décalage si la cible a bougé
+	}
+	
+	// calcul du décalage pivot -> tête (pour positionner le wp de fin de la courbe par rapport à la tête)
+	to_charogne_head = @o_cible ANI_CanalObjectGet(Anim_Canal_Tete)
+	tv_decal_head = @to_charogne_head OBJ_PosGet() - @o_cible OBJ_PosGet()
+	tv_decal_head.x = 0.0
+	tv_decal_head.y = 0.0		// on ne conserve que le décalage vertical pour la tête
+	
+	v_dest_pos = ( v_cible_pos + tv_decal_head ) + v_decalage
+	
+	i_type_suivi = 2
+	
+	v_look_pos = @o_cible OBJ_PosGet()
+}
+else
+{
+	//===== suivi olfactif =====
+	
+	i_type_suivi = 1
+	
+	if( MSG_GlobalIsValid(mid_sang) )
+	{
+		// trace de sang toujours présente
+		
+		// pas de blend vers la position car à chaque nouvelle trace on refait l'init et on repositionne le last_wp
+		v_cible_pos = EVENT_PositionGet(mid_sang)
+		
+		v_decalage = decalage( OBJ_PosGet() - v_cible_pos, 2.0, 2.0)			// decalage horizontal + le bat observe la trace à 2 m de haut
+		v_dest_pos = v_cible_pos + v_decalage
+	}
+	// else le bat se dirige vers la v_cible_pos mémorisée
+	
+	v_look_pos = v_cible_pos
+}
+
+
+// test de la zone d'activité
+macro_zone_activite( v_look_pos )
+
+// Init du wp de destination (à l'init et à chaque trame)
+if( ! i_flag_use_inter_wp )
+{
+	// le bat se dirige vers un le wp au-dessus de la trace de sang
+	v_dest_sight = v_cible_pos - v_dest_pos
+	
+	@o_tmp_obj_next OBJ_PosSet(v_dest_pos)
+	@o_tmp_obj_next OBJ_BankingGeneralSet(v_dest_sight, Cv_VerticalVector)
+	o_next_wp = o_tmp_obj_next
+	
+	f_ref_speed = Cf_speed_vol
+}
+
+
+// ENTREE ETAT
+if (i_etat_courant != ETAT_Suivi_Charogne)
+{
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Suivi_Charogne
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		ti_type_suivi_cur = i_type_suivi		// backup type suivi
+		AI_Execute(fct_last_etat)
+		i_type_suivi = ti_type_suivi_cur		// récup type suivi
+	}
+	fct_last_etat = AI_TrackCurGet()
+	
+	AI_Execute("BC_exec_demi_tour")		// test demi-tour
+	
+	// position et orientation last WP (infos courantes du bat)
+	@o_tmp_obj_last OBJ_PosSet(OBJ_PosGet())
+	@o_tmp_obj_last OBJ_SightGeneralSet(OBJ_SightGet(), Cv_VerticalVector)
+	o_last_wp = o_tmp_obj_last
+	
+	f_link_coef = 0.0			// lien à parcourir
+	
+	ACT_ActionSet(ACTION_Vol)			// action
+	
+	i_flag_frein = vrai				// le bat doit s'arrêter au-dessus de la cible
+}
+
+// lien à parcourir
+f_link_length = MATH_VecNorm(@o_next_wp OBJ_PosGet() - @o_last_wp OBJ_PosGet())
+
+DBG_RenderVector( @o_last_wp OBJ_PosGet(), @o_next_wp OBJ_PosGet() - @o_last_wp OBJ_PosGet(), color_vert)
+
+
+// ========= STIMULUS VISION ===========
+
+// Si le bat a un perso blessé en visuel, il le suit plutôt que de pister l'odeur de sang
+if( i_type_suivi == 1 )
+{
+	if( TIME_Elapsed(f_time_check_charogne, Cf_freq_check_sang) )
+	{
+		// temps écoulé
+		f_time_check_charogne = TIME_Get()
+	
+		AI_Execute("BC_exec_suit_perso_blesse")		// si le bat est en suivi olfactif, il regarde s'il y a des persos blessés
+	}
+}
+
+
+// ========= STIMULUS SANG ============
+
+// Sinon le bat suit la piste de sang
+if( i_type_suivi == 1 )
+{
+	// si le bat est en suivi olfactif, il regarde s'il y a une trace + fraiche
+	if( TIME_Elapsed(f_time_check_charogne, Cf_freq_check_sang) )
+	{
+		// temps écoulé
+		f_time_check_charogne = TIME_Get()
+		
+		tmid_tmp = mid_sang
+		AI_Execute("BC_exec_check_sang")
+		if( MSG_GlobalIsValid(mid_sang) && (mid_sang != tmid_tmp) )
+			i_etat_courant--			// tache de sang + fraiche => on recommence l'état Suivi Odeur
+		else
+			mid_sang = tmid_tmp		// récup ancienne trace de sang
+	}
+}
+
+
+// ======== DEPLACEMENT ==========
+
+AI_Execute("BC_exec_vol_courbe")
+if( i_flag_depl_fini )
+{
+	if( i_type_suivi == 2)
+		macro_change_etat("BC_ETAT_Observe_Charogne")			// suivi visuel de la charogne => observe charogne
+	else
+		macro_change_etat("BC_ETAT_Observe_Trace")				// suivi olfactif de la charogne => observe la trace de sang
+}
+

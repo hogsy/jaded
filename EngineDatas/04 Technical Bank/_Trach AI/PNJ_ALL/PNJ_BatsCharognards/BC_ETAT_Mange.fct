@@ -1,0 +1,232 @@
+#include "BC_defines.var"
+
+object			to_grab
+
+vector			tv_sens_paf
+
+int					ti_charogne_dead
+int					ti_test_delai_paf_mange
+int					ti_envol
+
+messageid		tmid_vision
+
+
+// SORTIE ETAT
+if (i_sort_etat)
+{
+	f_cible_poids = 0.0
+	f_speed = 0.0		// bat à l'arrêt
+	i_mange_mode = 0
+	i_flag_neck = vrai
+	SND_Stop(i_sound_mange)
+	i_sort_etat = faux
+	return
+}
+
+// ENTREE ETAT
+if (i_etat_courant != ETAT_Mange)
+{
+	i_etat_ancien_ancien = i_etat_ancien
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Mange
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	BC_DBG_Trace_Etat("etat mange")
+
+	f_time_action = TIME_Get()			// init durée manger (pour goûter avant de décider s'il s'envole avec ou pas)
+	
+	macro_change_tag_size( Cv_Tag_Min, Cv_Tag_Max )	// TAG
+	
+	// CRI
+	i_sound_mange = SND_Request(Ci_SND_Mange, C_SND_Request_3DSound | C_SND_Request_DestroyWhenFinished )
+	SND_PlayLooped( i_sound_mange, -1)
+	
+	DYN_Off()		// pour ne pas glisser
+	
+	if( o_cible )
+	{
+		if( @o_cible AI_IsModel(get_OBJ_Cadavre_path) )
+		{
+			tmid_vision = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility, o_cible, nobody)
+			if( MSG_GlobalIsValid(tmid_vision) && EVENT_VisionLifeStateGet(tmid_vision) == -1.0 )
+			{
+				DBG_Warning("cadavre fake avec 0.0 points de viande ??? (regardez le log svp)")
+				DBG_TraceObject(OBJ_Me())
+				DBG_TraceString(" : ")
+				DBG_TraceObject(o_cible)
+				DBG_TraceString(" est un cadavre fake LD avec 0.0 point de viande.... ")
+				DBG_TraceEOL()
+				DBG_TraceString("si vous voulez un cadavre avec des points de viande infinis, mettez le nb de points de viande à -1.0")
+				DBG_TraceEOL()
+			}
+		}
+	}
+	f_paf_mange_countdown = f_paf_mange_delai
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// EMERGENCY ABORT =============================
+if( o_cible && ! BC_TargetActive(o_cible) )
+{
+	DBG_TraceObject(OBJ_Me())
+	DBG_TraceString(" : EMERGENCY ABORT : Target non active (")
+	DBG_TraceObject(o_cible )	
+	DBG_TraceString(")")
+	DBG_TraceEOL()	
+	
+	BC_Cadavre_Del(o_cible)
+	o_cible = nobody
+	AI_Execute("BC_exec_init_attente")
+}
+
+
+// ANALYSE ==============================================================
+
+i_flag_neck = faux
+
+// BIDOCHE RAMASSEE
+if( o_cible && @o_cible AI_IsModel(get_PNJ_Bidoche_path) && @o_cible OBJ_CapaTest(CAPA_Bidoche_Snapped_Jack) )
+{
+	BC_DBG_Trace_Etat("ma proie était une bidoche qui vient d'être ramassée")
+	AI_Execute("BC_exec_init_attente")
+}
+
+// TEST POINTS DE VIANDE DU CADAVRE
+ti_charogne_dead = faux
+ti_envol = faux
+if( ! o_cible )
+	ti_charogne_dead = vrai		// charogne supprimée
+else if( ! ( @o_cible OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Active ) )
+	ti_charogne_dead = vrai		// charogne désactivée
+else
+{
+	i_flag_neck = vrai
+	v_look_pos = @o_cible OBJ_PosGet()
+	
+	tmid_vision = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility, o_cible, nobody)
+	if( ! MSG_GlobalIsValid(tmid_vision) )
+		ti_charogne_dead = vrai
+	else if( EVENT_VisionLifeStateGet(tmid_vision) == -1 )
+		ti_charogne_dead = vrai
+	else
+	{
+		if( i_mange_mode == Ci_mange_gouter_charogne )
+		{
+			if( BC_est_dans_nid(o_cible) )
+			{
+				to_grab = LNK_ThisClientGet(o_cible, Ci_LNK_GRAB_RAPTOR, mid_grab_charogne, vrai, "BC_exec_grab_param", nofunc, "BC_exec_grab_param")
+				if( to_grab )
+					i_mange_mode = Ci_mange_tuer_proie
+			}
+		}
+		
+		if( i_mange_mode == Ci_mange_tuer_proie )
+		{
+			if( ! MSG_GlobalIsValid(mid_grab_charogne) )
+				ti_charogne_dead = vrai
+		}
+	}
+}
+
+
+// TEST JOUEUR PROCHE PENDANT CYCLE FOODCHAIN
+if( ! o_cible || ! BC_est_dans_nid(o_cible) )
+{
+	AI_Execute("BC_exec_cadavre_joueur_proche")
+}
+
+
+if( f_cadavre_joueur_proche_duree > 0.0 )
+{
+	ACT_ActionSet(ACTION_Mange_Attente)
+	ti_test_delai_paf_mange = faux
+}
+else
+{
+	ACT_ActionSet(ACTION_Mange)
+	ti_test_delai_paf_mange = vrai
+	f_paf_mange_countdown -= MATH_FloatMin(f_paf_mange_countdown, TIME_GetDt())
+}
+
+// MON CADAVRE N'A PLUS DE POINTS DE VIANDE
+if( ti_charogne_dead )
+{
+	BC_Cadavre_Del(o_cible)
+	ti_envol = vrai
+}
+if( ti_envol )
+{
+	AI_Execute("BC_exec_decolle_sans_proie")
+}
+
+
+// COMPORTEMENT ========================================================
+BC_Interet_Update(mid_interet_charogne, C_EVENT_InteretStatusFoodchainLocked, o_cible, tmid_vision)
+
+if( i_mange_mode == Ci_mange_gouter_charogne )
+{
+	if( TIME_Elapsed(f_time_action, 4.0) )
+	{
+		ti_test_delai_paf_mange = faux
+		// ça fait 4 sec que le bat mange la charogne
+		if( f_cible_poids <= @"univ" Enemy_af_Poids[C_ID_BatCharognard] )
+		{
+			// Charogne légère => le bat essaie de l'emporter
+			to_grab = LNK_ThisClientGet(o_cible, Ci_LNK_GRAB_RAPTOR, mid_grab_charogne, vrai, "BC_exec_grab_param", nofunc, "BC_exec_grab_param")
+			if( ! to_grab )
+				f_time_action = TIME_Get()			// grab raté => le bat continue de la manger et recommencera plus tard
+			else
+			{
+				LNK_GrabStatusSet(mid_grab_charogne, Ci_GrabTransporte_Type_Vole)
+				i_envol_palier = 1
+				f_envol_wait = Cf_envol_wait_length
+				macro_change_etat("BC_ETAT_Move_Decolle")				// charogne grabbée => envol
+			}
+		}
+		else
+			f_time_action = TIME_Get()			// charogne lourde => le bat continue de la manger
+	}
+}
+else if( i_mange_mode == Ci_mange_tuer_proie ) 
+{
+	if( TIME_Elapsed(f_time_action, 10.0) )
+	{
+		ti_test_delai_paf_mange = faux
+		// la bat tue sa proie (ça fait 10 sec qu'elle la mange...)
+		if( MSG_GlobalIsValid(mid_grab_charogne) )
+		{
+			// la bat lache la charogne qu'il transporte
+			LNK_ClientGet(Ci_LNK_GRAB_RAPTOR, mid_grab_charogne, faux, nofunc, nofunc, nofunc)
+		}
+		BC_reset_attaque()
+		tv_sens_paf = @o_cible OBJ_PosGet() - OBJ_PosGet()
+		EVENT_AddEventPaf( C_EVENT_FILTER_Enemy, C_PAF_KK_KiTue, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_cible, 99.0 * PAF_Unit, tv_sens_paf )
+		o_cible = nobody
+		i_envol_palier = 0
+		macro_change_etat("BC_ETAT_Move_Decolle")				// charogne grabbée => envol
+	}
+}
+
+
+// PAF MANGE =====================================================================
+if( ti_test_delai_paf_mange && ! f_paf_mange_countdown )
+{
+	tv_sens_paf = @o_cible OBJ_PosGet() - OBJ_PosGet()
+	if( MATH_VecNullToler(tv_sens_paf, 0.1) )
+		tv_sens_paf = OBJ_SightGet()
+	EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_KK_FoodChain, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_cible, 1.0 * PAF_Unit, tv_sens_paf)
+	f_paf_mange_countdown = f_paf_mange_delai
+}
+
+#ifndef _FINAL_
+if( o_cible && @o_cible AI_IsModel(get_Humain_path) && i_modele != Ci_MODELE_Bat_Noire )
+	DBG_Error("bug cible / bat etat mange... appeler Vinc B pliz !!!!!")
+#endif

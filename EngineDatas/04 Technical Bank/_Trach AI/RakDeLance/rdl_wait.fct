@@ -1,0 +1,175 @@
+//int				ti_rank
+//int				ti_status
+//int				ti_param
+//int				i
+//int				ti_snd
+//int				ti_destroy
+//int				ti_weapon, ti_temp
+//
+//object		EVT_Sender
+//
+//message	tmsg_filter
+//messageid	tmid_paf_event
+//
+//object		to_obj, to_obj1
+//vector		tv_temp
+//float			tf_taken
+//
+//for(i = 0; i < 5; i++)
+//{
+//	to_obj = ANI_CanalObjectGet(i + 2)
+//	if(mai_display[i])
+//	{
+//		switch(mi_TypeLance)
+//		{
+//			case 0 :	ANI_ShapeSelect(i + 2, 1) break
+//			case 1 :	ANI_ShapeSelect(i + 2, 2) break
+//			case 2 :	ANI_ShapeSelect(i + 2, 3) break
+//		}
+//	}
+//	else
+//	{
+//		ANI_ShapeSelect(i + 2, 0)
+//	}
+//}
+//
+//ti_destroy = faux
+//tf_taken = 3
+//to_obj = AI_MainActorGet(C_ID_Jack)
+//if( to_obj )
+//{
+//	// Si jack vient vers moi, je peux prendre à une distance supérieur
+//	tv_temp = OBJ_PosGet() - @to_obj OBJ_PosGet()
+//	if(MATH_VecNullEpsilon(tv_temp)) tv_temp = @to_obj OBJ_SightGet()
+//	MATH_VecSetNormalize(tv_temp)
+//	if(MATH_VecDotProduct(tv_temp, @to_obj OBJ_SightGet()) > 0.9)
+//	{
+//		tv_temp = @to_obj DYN_SpeedGetVector()
+//		tv_temp.z = 0
+//		if(MATH_VecNorm(tv_temp) > 1.0)
+//		{
+//			tf_taken += 1
+//		}
+//	}
+//}
+//
+//if( to_obj && OBJ_SqrDist(to_obj) < tf_taken * tf_taken) 
+//{
+//	ti_weapon = @"univ" i_weapon_ID[C_ID_Jack]
+//	switch(mi_TypeLance)
+//	{
+//		case 0 : ti_temp = Ci_weapon_ID_bambou break
+//		case 1 : ti_temp = Ci_weapon_ID_bambou_moy break
+//		case 2 : ti_temp = Ci_weapon_ID_bambou_petit break
+//	}
+//	
+//	if(ti_temp == Ci_weapon_ID_bambou_moy && ti_weapon == Ci_weapon_ID_bambou)
+//		OBJ_Me().des_int1 = 0
+//	else if(ti_weapon != ti_temp && @"univ" o_ramasse_objet_who != AI_MainActorGet(C_ID_Jack))
+//	{
+//		OBJ_Me().des_int1 = Ci_DISPLAY_TAKE
+//		
+//		to_obj = VIEW_GetObject(0)
+//		tv_temp = @to_obj OBJ_PosGet() + @to_obj OBJ_SightGet()
+//		tv_temp -= OBJ_PosGet()
+//		tv_temp += (@to_obj OBJ_HorizonGet() * 0.5)
+//		tv_temp = MATH_VecGlobalToLocal(tv_temp)
+//		OBJ_InfoPhotoInfoOffsetSet( tv_temp )
+//		OBJ_InfoPhotoSphereOffsetSet( tv_temp )
+//	}
+//	else
+//	{
+//		OBJ_Me().des_int1 = 0
+//	}
+//}
+//else 
+//{
+//	tv_temp = cvector(0,0,1)
+//	OBJ_InfoPhotoInfoOffsetSet( tv_temp )
+//	OBJ_InfoPhotoSphereOffsetSet( tv_temp )
+//	OBJ_Me().des_int1 = 0
+//}
+//
+//// TAG
+//tag_change_value = tag_grid_terraindyn_2
+//{
+//	#include "ROOT/EngineDatas/04 Technical Bank/AI Models/Global Library/exec_deplacements_tagon.fct"
+//}
+//
+//// UN HUMAIN
+//if(mi_propose_compagnon && !OBJ_CapaTest(OBJ_Capa_0))
+//{
+////	if(
+////		(@"univ" ao_AllHumains[C_ID_Ann] && @"univ" ai_HumainIsHere[C_ID_Ann] && OBJ_SqrDist(@"univ" ao_AllHumains[C_ID_Ann]) <= 10 * 10) ||
+////		(@"univ" ao_AllHumains[C_ID_Hayes] && @"univ" ai_HumainIsHere[C_ID_Hayes] && OBJ_SqrDist(@"univ" ao_AllHumains[C_ID_Hayes]) <= 10 * 10) ||
+////		(@"univ" ao_AllHumains[C_ID_Denham] && @"univ" ai_HumainIsHere[C_ID_Denham] && OBJ_SqrDist(@"univ" ao_AllHumains[C_ID_Denham]) <= 10 * 10) ||
+////		(@"univ" ao_AllHumains[C_ID_Jimmy] && @"univ" ai_HumainIsHere[C_ID_Jimmy] && OBJ_SqrDist(@"univ" ao_AllHumains[C_ID_Jimmy]) <= 10 * 10) ||
+////		(@"univ" ao_AllHumains[C_ID_Indigene1] && @"univ" ai_HumainIsHere[C_ID_Indigene1] && OBJ_SqrDist(@"univ" ao_AllHumains[C_ID_Indigene1]) <= 20 * 20) ||
+////		(@"univ" ao_AllHumains[C_ID_Indigene2] && @"univ" ai_HumainIsHere[C_ID_Indigene2] && OBJ_SqrDist(@"univ" ao_AllHumains[C_ID_Indigene2]) <= 20 * 20) ||
+////		(@"univ" ao_AllHumains[C_ID_Indigene3] && @"univ" ai_HumainIsHere[C_ID_Indigene3] && OBJ_SqrDist(@"univ" ao_AllHumains[C_ID_Indigene3]) <= 20 * 20) ||
+////		(@"univ" ao_AllHumains[C_ID_Indigene4] && @"univ" ai_HumainIsHere[C_ID_Indigene4] && OBJ_SqrDist(@"univ" ao_AllHumains[C_ID_Indigene4]) <= 20 * 20) ||
+////		(@"univ" ao_AllHumains[C_ID_Indigene5] && @"univ" ai_HumainIsHere[C_ID_Indigene5] && OBJ_SqrDist(@"univ" ao_AllHumains[C_ID_Indigene5]) <= 20 * 20)
+////	)
+//	{	
+//		v_pos = OBJ_PosGet()
+//		if(TIME_Elapsed(f_time_last_propose, f_rand_propose))
+//		{
+//			f_time_last_propose = TIME_Get()
+//			mo_ramasse = LNK_ClientGet_Interaction( mid_ramasse, 1, "rdl_adddata", nofunc, nofunc)
+//		}
+//		
+//		if(!MSG_GlobalIsValid(mid_ramasse)) mo_ramasse = nobody
+//		if(mo_ramasse) 
+//		{
+//			if(OBJ_SqrDist(mo_ramasse) < 2)
+//			{
+//				tv_temp = @mo_ramasse OBJ_PosGet() - OBJ_PosGet()
+//				MATH_VecSetNorm(tv_temp, 0.5)
+//				tv_temp += OBJ_PosGet()
+//				LNK_InteractionPositionSet(mid_ramasse, tv_temp)
+//			}
+//			else
+//			{
+//				LNK_InteractionPositionSet(mid_ramasse, OBJ_PosGet())
+//			}
+//		}
+//	}
+//}
+//
+//if(mo_ramasse && !MSG_GlobalIsValid(mid_ramasse)) mo_ramasse = nobody
+//if (	mo_ramasse && LNK_InteractionCStatusGet(mid_ramasse) == Ci_LNKINT_CSTATUS_Interact)
+//{
+//	switch(mi_TypeLance )
+//	{
+//		case 0:	@"univ" i_ramasse_objet = Ci_weapon_ID_bambou @"univ" i_ramasse_nbr = 1 break
+//		case 1: 	@"univ" i_ramasse_objet = Ci_weapon_ID_bambou_moy @"univ" i_ramasse_nbr = 1 break
+//		case 2: 	@"univ" i_ramasse_objet = Ci_weapon_ID_bambou_petit @"univ" i_ramasse_nbr = 3 break
+//	}
+//
+//	@"univ" o_ramasse_objet_who = mo_ramasse
+//	@"univ" i_lance_cpt_plug = 0
+//	mo_ramasse = LNK_ClientGet(Ci_LNK_INTERACTION, mid_ramasse, faux, nofunc, nofunc, nofunc)
+//	ti_destroy = vrai
+//}
+//
+//// JACK PREND VOLONTAIREMENT
+//if (OBJ_CapaTest(OBJ_Capa_15))
+//{
+//	OBJ_CapaSet(0, OBJ_Capa_15)	
+//	switch(mi_TypeLance )
+//	{
+//		case 0:	@"univ" i_ramasse_objet = Ci_weapon_ID_bambou @"univ" i_ramasse_nbr = 1 break
+//		case 1: 	@"univ" i_ramasse_objet = Ci_weapon_ID_bambou_moy @"univ" i_ramasse_nbr = 1 break
+//		case 2: 	@"univ" i_ramasse_objet = Ci_weapon_ID_bambou_petit @"univ" i_ramasse_nbr = 3 break
+//	}
+//	
+//	@"univ" o_ramasse_objet_who = AI_MainActorGet(C_ID_Jack)
+//	@"univ" i_lance_cpt_plug = 0
+//	ti_destroy = vrai
+//}
+//
+//
+//if(ti_destroy)
+//{
+//	AI_TrackCurChangeNow("rdl_waitdestroy")
+//}

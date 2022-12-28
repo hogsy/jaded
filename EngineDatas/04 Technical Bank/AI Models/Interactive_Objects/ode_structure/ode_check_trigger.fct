@@ -1,0 +1,179 @@
+int					i, j
+vector			tv_offset
+object			to_cur_element
+message		msg
+
+int					i_GFX_Fire
+
+//JIMI_NOTE: delayed general trigger (for walls to fall BEHIND Kong)
+if ( mi_DelayWasTriggered )
+{
+	 mf_BreakDelay -= TIME_GetDt()
+	 
+	if ( mf_BreakDelay <= 0 )
+	{
+		i_trig_general_active= vrai
+		
+		o_element_paf = nobody
+		v_dir_paf = Cv_NullVector
+		v_pos_paf = Cv_NullVector
+		i_power_paf = 0
+	}
+
+	return
+}
+
+// ------------------------ PAF General ------------------------------
+if(AI_TriggerIsValid(trig_general) && call_trigger(trig_general))
+{
+	if ( mi_UseDelay )
+	{
+		mi_DelayWasTriggered = vrai
+	}
+	else
+	{
+		i_trig_general_active= vrai
+		
+		o_element_paf = nobody
+		v_dir_paf = Cv_NullVector
+		v_pos_paf = Cv_NullVector
+		i_power_paf = 0
+	}
+	return
+}
+
+// ------------------------Trigger Projectile--------------------------
+if(AI_TriggerIsValid(trig_projectile) && call_trigger(trig_projectile))
+{
+	i_trig_projectile_active= vrai
+	
+	o_element_paf = nobody
+	v_dir_paf = Cv_NullVector
+	v_pos_paf = Cv_NullVector
+	i_power_paf = 0
+	
+	AI_TriggerSetInvalid(trig_projectile)
+	
+	return	
+}
+
+// ------------------------PAF sur un élément de la structure ODE --------------------------
+i = 0
+while(ao_ode_elements[i])
+{
+	to_cur_element = ao_ode_elements[i]
+	
+	// On ne veut pas PAF ou enflammer la vase !
+	if(o_vase && (to_cur_element == o_vase))
+	{
+		i ++
+		continue
+	}
+	if(o_vase2 && (to_cur_element == o_vase2))
+	{
+		i ++
+		continue
+	}
+
+	// Changement du message du trigger pour qu'il se déclenche pour l"élément ODE
+	msg = AI_TriggerGetMsg(trig_paf)
+	msg.msg_gao1 = to_cur_element
+	AI_TriggerSetMsg(trig_paf, msg)
+
+	if(AI_TriggerIsValid(trig_paf) && call_trigger(trig_paf))
+	{		               
+		i_trig_paf_active = vrai		
+		
+		msg = AI_TriggerGetMsg(trig_paf)
+		
+		o_element_paf = to_cur_element	
+				
+		v_dir_paf = msg.msg_vec5
+		v_pos_paf = msg.msg_vec4
+		i_type_paf = msg.msg_int4
+		i_power_paf = 0
+		
+		if((i_type_paf & C_PAF_RM_Fire) && (ai_ode_elements_reaction_feu[i] != 0))
+		{
+			// Cet object est-il deja en feu ?
+			j = 0
+			while(ao_ode_elements_en_feu[j])
+			{
+				if(ao_ode_elements_en_feu[j] == o_element_paf)
+				{
+					break
+				}
+				j ++
+			}
+			
+			if(ao_ode_elements_en_feu[j])
+			{
+				i ++
+				continue
+			}
+			
+			// Nouvel object en feu ... je le rajoute dans la table
+			ao_ode_elements_en_feu[j] = o_element_paf
+			af_en_feu_depuis[j] = TIME_Get()
+			
+			ai_gfx_feu_id[i] = @o_element_paf GFX_Add(13)
+			i_GFX_Fire = ai_gfx_feu_id[i]
+			
+			GFX_FlagSet(i_GFX_Fire, 0 , 1)
+			GFX_FlagSet(i_GFX_Fire, 2 , 1)
+		
+			GFX_MaterialSet(i_GFX_Fire, get_SFX_light_and_smoke, -1)      	// met le materiau
+			GFX_Seti(i_GFX_Fire, 13101, 17)              								// Materiau 0
+			GFX_Seti(i_GFX_Fire, 13110, 18)               								// Materiau 1
+			GFX_Seti(i_GFX_Fire, 13111, 19)              								// Materiau 2
+			GFX_Seti(i_GFX_Fire, 13112, 17)              								// Materiau 3
+		
+			GFX_Seti(i_GFX_Fire, 13100, 50)               								// Buffer number of sprite
+			GFX_Seti(i_GFX_Fire, 13106, 0xFFFFFFFF)           					// Number of sprite to generate
+			GFX_Seti(i_GFX_Fire, 13107, 0)               								// Sprites non triés
+		
+			GFX_Setf(i_GFX_Fire, 13003, 0.7)               								// Time fase 1
+			GFX_Setf(i_GFX_Fire, 13004, 0.7)              								// Time fase 2
+			GFX_Setf(i_GFX_Fire, 13012, 0)              								// Time random
+			   
+			GFX_Setv(i_GFX_Fire, 13201, cvector(0, 0, 0))            				// Speed min
+			GFX_Setv(i_GFX_Fire, 13202, cvector(0, 0, 1))           				// Speed max
+			  
+			af_gfx_feu_param1[i] = 0.5
+			
+			GFX_Setf(i_GFX_Fire, 13000, af_gfx_feu_param1[i])              		// Growing speed min
+			GFX_Setf(i_GFX_Fire, 13001, af_gfx_feu_param1[i])              		// Growing speed max
+			GFX_Setf(i_GFX_Fire, 13002, 0.01)              							// Friction Grow
+			  
+			GFX_Setf(i_GFX_Fire, 13005, 0)            									// Creation size min
+			GFX_Setf(i_GFX_Fire, 13006, 0)           									// Creation size max
+			  
+			GFX_Setv(i_GFX_Fire, 13203, cvector(0.0, 0.0, 0.1))      				// friction speed
+			  
+			GFX_Seti(i_GFX_Fire, 13103, 0x004087FF)          					// Color fase 0
+			GFX_Seti(i_GFX_Fire, 13104, 0x70000818)           					// Color fase 1
+			GFX_Seti(i_GFX_Fire, 13105, 0x00000000)           					// Color fase 2
+			  
+			GFX_Setf(i_GFX_Fire, 13009, 0)              								// Norm speed min
+			GFX_Setf(i_GFX_Fire, 13010, 0)              								// Norm speed max
+			  
+			GFX_Setf(i_GFX_Fire, 13008, 0.10)             								// generation rate
+						
+			tv_offset = @o_element_paf MATH_VecLocalToGlobal(@o_element_paf ODE_Getv(1))
+//			tv_temp	= @get_camera OBJ_PosGet() - @o_element_paf OBJ_PosGet() - tv_offset
+//			MATH_VecSetNormalize(tv_temp)
+
+//			GFX_Setv(i_GFX_Fire, 13200, @o_element_paf OBJ_PosGet()  + tv_temp + @o_element_paf ODE_Getv(1) ) 	// Creation Pos
+			GFX_Setv(i_GFX_Fire, 13200, @o_element_paf OBJ_PosGet()  + @o_element_paf ODE_Getv(1) ) 	// Creation Pos
+			
+			GFX_Setv(i_GFX_Fire, 13207, 0.25 * @o_element_paf OBJ_HorizonGet())				// CreaPosAxe X
+			GFX_Setv(i_GFX_Fire, 13208, 0.25 * @o_element_paf  OBJ_SightGet())					// CreaPosAxe 	
+			GFX_Setv(i_GFX_Fire, 13209, 0.7 * @o_element_paf  OBJ_BankingGet())					// CreaPosAxe 		
+		}
+		
+		return
+	}
+	
+	i ++
+}
+

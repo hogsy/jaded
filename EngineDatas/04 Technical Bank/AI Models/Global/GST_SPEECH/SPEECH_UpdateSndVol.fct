@@ -1,0 +1,138 @@
+//---------------------------------------------------------------------------------------------------------------------------
+// INCLUDE
+//---------------------------------------------------------------------------------------------------------------------------
+#include "SPEECH_Constant.var"
+
+
+//---------------------------------------------------------------------------------------------------------------------------
+// VAR
+//---------------------------------------------------------------------------------------------------------------------------
+int i
+
+
+
+//---------------------------------------------------------------------------------------------------------------------------
+// CODE
+//---------------------------------------------------------------------------------------------------------------------------
+
+if(i_snd_new_play && mi_MapIsJaks)
+{
+	mf_GrpVolFadeFactor =  (mf_GrpVol - Cte_MinVol) / Cte_FadeOutDuration
+	mf_GrpMuteDuration = af_current_playtime[i_snd_new_play >> 1]  - Cte_FadeOutDuration
+	if(mf_GrpMuteDuration > 0.0)
+		mi_VolFadeMode = 0
+}
+
+i_snd_new_play = 0
+	
+switch(mi_VolFadeMode)
+{
+	case 0 : // update the fade out
+		mf_GrpVol = mf_GrpVol - (mf_GrpVolFadeFactor * TIME_GetDt())
+		
+		if(mf_GrpVol <= Cte_MinVol)
+		{
+			mf_GrpVol = Cte_MinVol
+			mi_VolFadeMode = 1
+		}
+		
+		for(i=SND_Cte_GrpSpecialFX; i<SND_Cte_MasterGrp; i++)
+		{
+			if(i==SND_Cte_GrpDialog) continue
+			SND_GroupVolRqSend(i, mai_GrpVolRq[i], mf_GrpVol)
+		}
+		break
+				
+	case 1 : // wait the end of dialogue
+		mf_GrpMuteDuration = mf_GrpMuteDuration - TIME_GetDt()
+		if(mf_GrpMuteDuration <= 0.0)
+		{
+			mf_GrpVolFadeFactor =  (Cte_MaxVol - mf_GrpVol) / Cte_FadeInDuration
+			mi_VolFadeMode = 2
+		}
+		break
+	
+	case 2 : // update the fade in
+		mf_GrpVol = mf_GrpVol +( mf_GrpVolFadeFactor * TIME_GetDt())
+		
+		if(mf_GrpVol >= Cte_MaxVol)
+		{
+			mf_GrpVol = Cte_MaxVol
+			mi_VolFadeMode = -1
+		}
+		
+		for(i=SND_Cte_GrpSpecialFX; i<SND_Cte_MasterGrp; i++)
+		{
+			if(i==SND_Cte_GrpDialog) continue
+			SND_GroupVolRqSend(i, mai_GrpVolRq[i], mf_GrpVol)
+		}
+		break
+
+	case 10 : // force fade in now !
+		mf_GrpVolFadeFactor =  (Cte_MaxVol - mf_GrpVol) / Cte_FadeInDuration
+		mi_VolFadeMode = 2
+		break
+		
+	default: // inactive
+		break
+}
+	
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+if((SND_M_GetMusPhase == SND_Cte_MusPhase_Injure) && !mi_PrevMode)
+{
+	mi_PrevMode = SND_Cte_MusPhase_Injure
+	mi_GrpDialMode  = Cte_InjureFadeOutDial_Rq
+}
+else if((SND_M_GetMusPhase != SND_Cte_MusPhase_Injure) && mi_PrevMode)
+{
+	mi_PrevMode = 0
+	mi_GrpDialMode  = Cte_InjureFadeInDial_Rq
+}
+
+
+
+if(mi_GrpDialMode  == Cte_InjureFadeOutDial_Rq)
+{
+	mf_GrpDialFadeFactor =  (Cte_InjureFadeOutDial_LowVol - mf_GrpDialVol) / Cte_InjureFadeOutDial_Time
+	mi_GrpDialMode  = Cte_InjureFadeOutDial_Running
+}
+else if(mi_GrpDialMode == Cte_InjureFadeInDial_Rq)
+{
+	mf_GrpDialFadeFactor =  (Cte_InjureFadeInDial_HiVol - mf_GrpDialVol)/ Cte_InjureFadeInDial_Time
+	mi_GrpDialMode  = Cte_InjureFadeInDial_Running
+}
+
+
+
+switch(mi_GrpDialMode)
+{
+	case Cte_InjureFadeOutDial_Running :
+		mf_GrpDialVol = mf_GrpDialVol+( mf_GrpDialFadeFactor * TIME_GetDt())
+		if( mf_GrpDialVol  <= Cte_InjureFadeOutDial_LowVol ) 
+		{
+			mf_GrpDialVol  = Cte_InjureFadeOutDial_LowVol 
+			mi_GrpDialMode  = -1
+		}
+		break
+		
+	case Cte_InjureFadeInDial_Running :
+		mf_GrpDialVol = mf_GrpDialVol+( mf_GrpDialFadeFactor * TIME_GetDt())
+		if( mf_GrpDialVol  >= Cte_InjureFadeInDial_HiVol ) 
+		{
+			mf_GrpDialVol  = Cte_InjureFadeInDial_HiVol 
+			mi_GrpDialMode  = -1
+		}
+		break
+		
+	default:
+		break
+}
+
+
+SND_GroupVolRqSend(SND_Cte_GrpDialog, mai_GrpVolRq[SND_Cte_GrpDialog], mf_GrpDialVol)
+
+

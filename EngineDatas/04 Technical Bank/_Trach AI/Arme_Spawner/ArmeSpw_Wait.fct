@@ -1,0 +1,27 @@
+int		i
+
+// une lance vient d'être ramassée, test nb de lances restantes
+if( i_dup_weapon_generation )
+{
+	AI_TrackCurChangeNow("ArmeSpw_CheckDestroy")
+}
+
+
+// CHOIX DE LA SHAPE
+for(i = 0; i < 5; i++)
+{
+	if(mai_display[i])
+	{
+		switch(mi_TypeLance)
+		{
+			case 0 :	ANI_ShapeSelect(i + 2, 1) break
+			case 1 :	ANI_ShapeSelect(i + 2, 2) break
+			case 2 :	ANI_ShapeSelect(i + 2, 3) break
+		}
+	}
+	else
+	{
+		ANI_ShapeSelect(i + 2, 0)
+	}
+}
+

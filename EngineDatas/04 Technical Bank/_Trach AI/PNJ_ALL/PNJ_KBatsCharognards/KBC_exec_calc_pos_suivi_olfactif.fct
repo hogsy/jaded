@@ -1,0 +1,20 @@
+
+#include "KBC_defines.var"
+
+//============================================================================================
+// CALCULE LA POSITION  DU WP POUR LE DEPLACEMENT JUSQU'A LA CIBLE APRES LE PARCOURS DU RESEAU
+//============================================================================================
+
+
+if( MSG_GlobalIsValid(mid_sang) )
+{
+	// pas de blend vers la position car à chaque nouvelle trace on refait l'init et on repositionne le last_wp
+	v_cible_pos = EVENT_PositionGet(mid_sang)
+	
+	v_dest_sight = v_cible_pos - OBJ_PosGet()
+	
+//	v_decalage = cvector(0.0, 0.0, 6.0)
+	v_decalage = KBC_decalage( - v_dest_sight, Cf_atterrissage_decal_H, Cf_atterrissage_decal_Z)
+	v_dest_pos = v_cible_pos + v_decalage	
+}
+

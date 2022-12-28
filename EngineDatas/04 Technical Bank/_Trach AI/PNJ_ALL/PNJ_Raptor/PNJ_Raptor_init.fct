@@ -1,0 +1,703 @@
+#include "PNJ_Raptor_defines.var"
+int					ti_i
+int					ti_k
+int					ti_membre_index
+int					ti_index
+int					ti_WARNING
+int					ti_crossable
+
+float				tf_size
+
+vector			tv_pos
+vector			tv_temp
+vector			tv_bite_pos
+vector			tv_quat
+
+object			to_target
+object			to_nearest_wp
+object			to_bone
+object			to_raptor
+
+message		tm_msg
+
+messageid		EVT_Interet_ID
+messageid		EVT_Info_ID
+
+//OBJ_Destroy()
+
+if (i_SF_NePasSeRejouerSiMort)
+{
+	int		ti_SF_AlreadyDead
+	i_SF_AlreadyDead = AI_SFDynGet(0, SF_MinById, SF_MaxById)		// Alloc
+	Super_SpecialFlag_get(i_SF_AlreadyDead, ti_SF_AlreadyDead)			// Test SF
+	if (ti_SF_AlreadyDead)																	// Si SF = 1 alors DESTROY
+		OBJ_Destroy()
+}
+
+#ifndef _FINAL_
+if (raptor_network_initialisator && ! OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Generated) )
+{
+	DBG_Warning("LOG CI DESSOUS")
+	DBG_TraceObject(OBJ_Me())
+	DBG_TraceString(" est inutile (initialisation des reseaux automatisée)")
+	DBG_TraceEOL()
+	DBG_TraceString("SUPPRIMEZ MOI DE LA MAP OU DESACTIVEZ MOI SI JE SUIS UTILISE POUR GENERER")
+	DBG_TraceEOL()
+	OBJ_Destroy()
+}
+
+if (!n_net)
+	DBG_Error("J'ai besoin d'un reseau")
+#endif
+
+OBJ_CapaSet(none, all)
+COL_ColMapActivationSet(none, all)
+ODE_Enable(faux)
+
+i_frame_nb = 0
+
+// PUT@#!!!µ£$  DE SECTO !!!
+GRID_CurrentSet(0)
+
+if (! OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Generated))
+{
+	meta(@get_global i_frame_nbr < 2 || ! GRID_IsIn(OBJ_PosGet()) )
+	{
+		i_frame_nb++
+	}
+}
+
+OBJ_FlagInvisibleSet(faux)
+
+ACT_DefaultTransition(30)
+
+DBG_Display_Text = faux
+//DBG_Warning_Allowed = faux
+
+AI_RunContext(CTX_Normal)
+
+AI_Execute("PNJ_Raptor_exec_way_ponderation_set")
+
+to_raptor = OBJ_Me()
+to_raptor.des_int1 = Ci_DISPLAY_FIGHT
+
+// BLINDAGE TEMPORAIRE
+if ( ! i_net_wp_nb)
+	@to_raptor PNJ_Raptor_Init_Var()
+	
+PNJ_Raptor_Dijkstra_Clean()
+
+if (AI_GetCurSystem() != Ci_CurSystem_Editeur)
+{
+	// SI PAS EN EDITEUR
+	DBG_Display_Vision = faux
+	DBG_Display_Sound = faux
+	DBG_Display_Pilotage = faux
+	DBG_Display_Way = faux
+	DBG_Display_Text = faux
+	DBG_Display_Jump = faux
+	DBG_Display_Territory = faux
+	DBG_Hide_Invalid_Territory_Wp = faux
+	DBG_Warning_Allowed = faux
+	DBG_Log_Allowed = faux
+}
+
+//DBG_Display_Way = vrai
+
+OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_DesignStruct, none)
+
+if ( ! OBJ_ModifierType(MDF_C_Modifier_InfoPhoto) )
+	OBJ_InfoPhotoParamSet( 0, 0, Anim_Canal_Bassin, Anim_Canal_Bassin, 0.0, 0.0, 0.0, 3.0 * OBJ_ZoomGet())
+
+switch(raptor_type)
+{
+	case C_ID_Raptor :
+
+		f_friction = Cf_Raptor_friction
+
+		i_SND_flag_1st_attack = vrai
+
+		i_fake_attack_counter = @"univ" i_death_shield
+
+		f_jump_friction = Cf_Raptor_jump_friction
+		v_jump_friction = cvector(f_jump_friction, f_jump_friction, 0.0)
+
+		v_jump_gravity = Cv_Raptor_Gravity
+
+		tf_size = 4.0
+
+		i_grid_width = 0
+
+		f_look_axis_length = 5.0
+
+		f_vision_close_to_head_sqr_dist = 1.0
+		f_vision_close_to_feet_sqr_dist = 1.0
+		f_vision_near_in_move_dist = 10.0
+
+		switch(raptor_category)
+		{
+			case Ci_Raptor_Light :
+				f_life = Cf_Raptor_Light_Life * PAF_Unit
+				f_point_de_viande = Cf_Raptor_Light_Meat_Point
+				f_wanted_speed_modifier = 0.7
+				break
+		
+			case  Ci_Raptor_Standard :
+				f_life = Cf_Raptor_Standard_Life * PAF_Unit
+				f_point_de_viande = Cf_Raptor_Standard_Meat_Point
+				f_wanted_speed_modifier = 1.0
+				break
+
+			case  Ci_Raptor_Heavy :
+				f_life = Cf_Raptor_Heavy_Life * PAF_Unit
+				f_point_de_viande = Cf_Raptor_Heavy_Meat_Point
+				OBJ_ZoomSet(1.15)
+				f_wanted_speed_modifier = 1.0 / OBJ_ZoomGet()
+				break
+		}
+
+		if (override_life)
+			f_life = override_life
+
+		if (override_point_de_viande != -1.0)
+			f_point_de_viande = override_point_de_viande
+
+		f_max_step = 0.7
+		DYN_MaxStepSet(f_max_step)
+		
+		COL_PrioritySet(100)
+
+		COL_SwapToSpecific(C_zdm_pied)
+		COL_ZoneSizeSet(C_zdm_pied, cvector(0.75, 0.75, 0.75))
+		COL_ZonePosSet(C_zdm_pied, cvector(0.0, 0.0, 0.75))
+		COL_ZoneFlagSet(C_zdm_pied, COL_C_Zone_NoScale, none)
+		//COL_ZoneSizeSet(C_zdm_pied, cvector(0.5, 0.5, 0.5))
+		//COL_ZonePosSet(C_zdm_pied, cvector(0.0, 0.0, 0.5))
+		
+		COL_SwapToSpecific(C_zde_corps)
+		COL_ZoneSizeSet(C_zde_corps, cvector(3.0, 3.0, 3.0))
+		COL_ZoneFlagSet( C_zde_corps, COL_C_Zone_ZDE, COL_C_Zone_ZDM)
+		
+		COL_SwapToSpecific(C_zde_fight)
+		COL_ZoneSizeSet(C_zde_fight, cvector(0.75, 0.75, 0.75))
+
+		break
+
+	case C_ID_Galiminus :
+
+		f_friction = Cf_Raptor_friction
+
+		f_life = Cf_Galiminus_Life * PAF_Unit
+
+		if (override_life)
+			f_life = override_life
+
+		f_point_de_viande = Cf_Galiminus_Meat_Point
+
+		if (override_point_de_viande != -1.0)
+			f_point_de_viande = override_point_de_viande
+
+		DBG_Log_Allowed = faux
+
+		i_SND_flag_1st_attack = vrai
+
+		i_mord_action_index = MATH_RandInt(0, 3)
+
+		if (LD_galiminus_zoom)
+			OBJ_ZoomSet(LD_galiminus_zoom)
+		else
+			OBJ_ZoomSet(MATH_RandFloat(0.2, 0.35))
+
+		f_jump_friction = Cf_Galiminus_jump_friction
+		v_jump_friction = cvector(f_jump_friction, f_jump_friction, 0.0)
+
+		v_jump_gravity = Cv_Galiminus_Gravity
+
+		tf_size = 4.0 * OBJ_ZoomGet()
+
+		i_grid_width = 0
+
+		f_look_axis_length = 2.0
+
+		f_vision_close_to_head_sqr_dist = 0.25
+		f_vision_close_to_feet_sqr_dist = 0.25
+		f_vision_near_in_move_dist = 10.0
+
+		f_wanted_speed_modifier = MATH_RandFloat(0.7, 1.3)
+
+		f_max_step = 0.7
+		DYN_MaxStepSet(f_max_step)
+
+		COL_SwapToSpecific(C_zdm_pied)
+		COL_ZoneSizeSet(C_zdm_pied, cvector(0.75, 0.75, 0.75))
+		COL_ZonePosSet(C_zdm_pied, cvector(0.0, 0.0, 0.75))
+		//COL_ZoneSizeSet(C_zdm_pied, cvector(0.5, 0.5, 0.5))
+		//COL_ZonePosSet(C_zdm_pied, cvector(0.0, 0.0, 0.5))
+		
+		COL_SwapToSpecific(C_zde_corps)
+		COL_ZoneSizeSet(C_zde_corps, cvector(1.0, 1.0, 1.0))
+		COL_ZoneFlagSet( C_zde_corps, COL_C_Zone_NoScale | COL_C_Zone_ZDE, COL_C_Zone_ZDM)
+		
+		COL_SwapToSpecific(C_zde_fight)
+		COL_ZoneFlagSet(C_zde_fight, COL_C_Zone_NoScale | COL_C_Zone_ZDE, COL_C_Zone_ZDM)
+		COL_ZoneSizeSet(C_zde_fight, cvector(1.0, 1.0, 1.0))
+		COL_ZonePosSet(C_zde_fight, cvector(0.0, -1.2, 1.0))
+
+		break
+
+
+	case C_ID_Tyranosaure :
+
+		f_friction = Cf_Rex_friction
+
+		f_life = 2000.0 * PAF_Unit
+
+		OBJ_ZoomSet(1.5)
+//		OBJ_ZoomSet(1.0)
+
+		v_jump_gravity = Cv_Raptor_Gravity
+
+		tf_size = 13.0
+
+		i_grid_width = 1
+
+		f_look_axis_length = 20.0
+
+		f_vision_close_to_head_sqr_dist = 9.0
+		f_vision_close_to_feet_sqr_dist = 9.0
+		f_vision_near_in_move_dist = 8.0
+
+		f_point_de_viande = 10.0
+
+		ODE_Enable(vrai)
+
+		f_wanted_speed_modifier = 1.0
+
+		f_max_step = 1.5
+		DYN_MaxStepSet(f_max_step)
+	
+		COL_PrioritySet(100)
+		
+		COL_ZoneFlagSet(C_zdm_pied, COL_C_Zone_NoScale, none)
+		COL_SwapToSpecific(C_zdm_pied)
+		COL_ZoneSizeSet(C_zdm_pied, cvector(1.5, 1.5, 1.5))
+		COL_ZonePosSet(C_zdm_pied, cvector(0.0, 0.0, 1.5))
+		//COL_ZoneSizeSet(C_zdm_pied, cvector(0.5, 0.5, 0.5))
+		//COL_ZonePosSet(C_zdm_pied, cvector(0.0, 0.0, 0.5))
+		
+		COL_SwapToSpecific(C_zde_corps)
+		COL_ZoneSizeSet(C_zde_corps, cvector(4.0, 4.0, 4.0))
+		COL_ZoneFlagSet( C_zde_corps, COL_C_Zone_ZDE, COL_C_Zone_ZDM)
+		
+		COL_SwapToSpecific(C_zde_fight)
+		COL_ZoneSizeSet(C_zde_fight, cvector(1.0, 1.0, 1.0))
+
+		break
+		
+	default:
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" a un type invalide")
+		DBG_TraceEOL()
+		OBJ_Destroy()
+}
+
+// IK NECK INIT ================================================================================================
+i_head_bone_nb = 4
+
+for (ti_i = 0; ti_i < i_head_bone_nb; ti_i++)
+{
+	ao_head_bones[ti_i] = ANI_CanalObjectGet(Anim_Canal_Tete + ti_i)
+
+	if (ti_i)	
+	{
+		af_neck_bone_length[ti_i - 1] = MATH_VecNorm(@ao_head_bones[ti_i - 1] OBJ_PosGet() - @ao_head_bones[ti_i] OBJ_PosGet())
+		f_neck_length += af_neck_bone_length[ti_i - 1]
+	}
+}
+
+switch(raptor_type)
+{
+	case C_ID_Raptor :
+	case C_ID_Galiminus :
+		o_ventre = ANI_CanalObjectGet(Anim_Canal_Tete + 4)
+		break
+		
+	case C_ID_Tyranosaure :
+		o_ventre = ao_head_bones[i_head_bone_nb - 1]
+}
+
+ao_head_bones[i_head_bone_nb] = ANI_CanalObjectGet(Anim_Canal_Bassin)
+
+// INITIALISATION DU TABLEAU DES VITESSES ============================================================================
+OBJ_FlagsControlSet(OBJ_C_ControlFlag_AlwaysVisible, none)
+COL_ColSetActivationSet(none, all)
+PNJ_Raptor_Init_Speed_Array()
+
+// ON RETANLIT LES COLLISIONS ======================================================================================
+COL_ColSetActivationSet(all, none)
+COL_ColSetActivationSet(none, C_bit_zde_fight + C_bit_zdm_recalagespecial)
+
+//COL_CrossableSet(none, all)
+//ti_crossable = Gmat_Jack_Face_eau
+//ti_crossable |= Gmat_Jack_Face_de_mort
+//ti_crossable |= Gmat_Jack_BordHumain_TraversableNMI
+//ti_crossable |= Gmat_Jack_BordHumain_TraversableNMI_Et_Jack
+//
+//switch(raptor_type)
+//{
+//	case C_ID_Raptor :
+//		ti_crossable |= Gmat_Jack_Crossable_All_But_TREX
+//		break
+//
+//	case C_ID_Tyranosaure :
+//		ti_crossable |= Gmat_Jack_Crossable_All_But_RAPTORS
+//		break
+//
+//	default:
+//		ti_crossable |= Gmat_Jack_Crossable_All_But_TREX
+//		ti_crossable |= Gmat_Jack_Crossable_All_But_RAPTORS
+//}
+//COL_CrossableSet(ti_crossable, none)
+
+COL_CrossableSet(Gmat_KK_Crossable_Default, none)
+switch(raptor_type)
+{
+	case C_ID_Raptor :
+		COL_CrossableSet(none, Gmat_KK_Cross_All_But_Kong_And_Raptors)
+		break
+	case C_ID_Tyranosaure :
+		COL_CrossableSet(none, Gmat_KK_Cross_All_But_Kong_And_TREX + Gmat_KK_Cross_All_But_TREX)
+		break		
+}
+
+
+COL_UnCollidableReset()
+
+PNJ_Raptor_Init_Bronto()
+
+// BV ============================================================================================================
+BV_MinSet(cvector(-tf_size, -tf_size, -tf_size * 0.15))
+BV_MaxSet(cvector(tf_size, tf_size, tf_size * 0.85))
+
+#ifndef _FINAL_
+if (! OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Msg))
+{
+	OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_Msg, none)
+	DBG_Error("Pas de structure message pour le Raptor, sauvez et relancez")
+}
+#endif
+
+//MSG_Clear()
+
+DYN_On()
+DYN_FlagsSet(DYN_C_BasicForces | DYN_C_NeverDynamicFather | DYN_C_VectorFriction | DYN_C_GlobalFriction | DYN_C_SkipFrictionWhenSpeedFromAnim | DYN_C_HorizontalGrounds, none)
+DYN_GravitySet(v_jump_gravity)
+DYN_FrictionVectorSet(cvector(f_friction, f_friction, 0.0))
+
+//i_net_territory_bit_field = 0xFFFFFFFF
+//i_net_territory_ID_bit_field = 0xFFFFFFFF
+
+i_my_territory_ID = GST_EVENT_Territory_Get(OBJ_PosGet())
+PNJ_Raptor_Refresh_Territory_List()
+i_flag_in_my_territory = PNJ_Raptor_Territory_ID_Allowed(i_my_territory_ID)
+
+PNJ_Raptor_Ulltra_Tag_Init()
+
+if (PNJ_Raptor_Blocked(OBJ_PosGet(), 0))
+{
+	i_flag_dont_use_grid = vrai
+
+	DBG_TraceFloat(TIME_Get())
+	DBG_TraceString(" => ")
+	DBG_TraceObject(OBJ_Me())
+	DBG_TraceString(" est sur du mur => démarre hors grille")
+	DBG_TraceEOL()
+}
+else
+{
+	ti_index = PNJ_Raptor_Territory_Index_Get(i_my_territory_ID)
+	if (ti_index == -1)
+	{
+		DBG_TraceFloat(TIME_Get())
+		DBG_TraceString(" => ")
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" n'est pas sur un territoire")
+		DBG_TraceEOL()
+
+		if (DBG_Warning_Allowed)
+			DBG_Warning("RAPTOR HORS TERRITOIRE")
+	}
+	else
+	{
+		o_next_wp = ARR_LIB_NearestSightReachableWaypoint(&ao_net_wp[0], ai_net_territory_first_wp_index[ti_index], ai_net_territory_wp_nb[ti_index], OBJ_PosGet(), OBJ_SightGet(), -1.0, all, Ci_Capa_Out_Of_Grid | Ci_Capa_Exclusion, to_nearest_wp, 0, vrai)
+		if (o_next_wp == nobody)
+		{
+			i_flag_dont_use_grid = vrai
+	
+			DBG_TraceFloat(TIME_Get())
+			DBG_TraceString(" => ")
+			DBG_TraceObject(OBJ_Me())
+			DBG_TraceString(" ne trouve pas de wp accessible via la grille => démarre hors grille")
+			DBG_TraceEOL()
+	
+			if (DBG_Warning_Allowed)
+				DBG_Warning("METTEZ MOI DIRECTEMENT SUR UNE CASE JAUNE !!!")
+		}
+	}
+}
+
+if (i_flag_dont_use_grid)
+{
+//	o_next_wp = PNJ_Raptor_Nearest_Wp_Get(OBJ_PosGet(), Ci_Capa_Out_Of_Grid, Ci_Capa_Exclusion, faux)
+	o_next_wp = PNJ_Raptor_Start_Wp_Get()
+	if (@o_next_wp OBJ_CapaTest(Ci_Capa_LD_Territory))
+		i_my_territory_ID = o_next_wp.des_int2
+}
+else if (o_next_wp)
+{
+	i_flag_occluder_alllowed = @o_next_wp OBJ_CapaTest(Ci_Capa_Use_Occluder)
+}
+
+PNJ_Raptor_Update_Flag(o_next_wp)
+
+v_way_case_dest = GRID_PosGet(OBJ_PosGet())
+v_way_case_dest.z = OBJ_PosGet().z
+//OBJ_PosSet(v_way_case_dest)
+
+v_look_last_head_pos = @ao_head_bones[0] OBJ_PosGet()
+v_look_head_pos = MATH_VecGlobalToLocal(@ao_head_bones[0] OBJ_PosGet() - OBJ_PosGet())
+v_look_banking = MATH_VecGlobalToLocal(@ao_head_bones[0] OBJ_BankingGet())
+
+v_look_axis = OBJ_SightGet() * f_look_axis_length
+
+v_init_pos = OBJ_PosGet()
+
+f_lifecur = f_life
+
+f_quat_last_time = -Cf_Infinit
+
+// IK LEGS INIT ================================================================================================
+tv_pos = OBJ_PosGet()
+
+for (ti_i = 0; ti_i < 2; ti_i++)
+{
+	switch(ti_i)
+	{
+		case Ci_IK_pied_gauche :
+			ti_membre_index = Anim_Canal_PiedGauche
+			break
+		case Ci_IK_pied_droit :
+			ti_membre_index = Anim_Canal_PiedDroit
+			break
+		case Ci_IK_main_gauche :
+			ti_membre_index = Anim_Canal_MainGauche + 1
+			break
+		case Ci_IK_main_droite :
+			ti_membre_index = Anim_Canal_MainDroite + 1
+			break
+	}	
+
+	for (ti_k = 0; ti_k < 3; ti_k++)
+	{
+		to_bone = ANI_CanalObjectGet(ti_membre_index + (2 - ti_k))
+//		DBG_RenderVector(@to_bone OBJ_PosGet(), @to_bone OBJ_BankingGet(), color_bleu)
+		ao_IK_bones[ti_i][ti_k] = to_bone
+	}
+
+	switch(ti_i)
+	{
+		case Ci_IK_pied_gauche :
+			ti_membre_index = Anim_Canal_OrteilGauche
+			break
+		case Ci_IK_pied_droit :
+			ti_membre_index = Anim_Canal_OrteilDroit
+			break
+		case Ci_IK_main_gauche :
+			ti_membre_index = Anim_Canal_MainGauche
+			break
+		case Ci_IK_main_droite :
+			ti_membre_index = Anim_Canal_MainDroite
+			break
+	}	
+
+	ao_IK_bones[ti_i][3] = ANI_CanalObjectGet(ti_membre_index)
+		
+	af_IK_bones_length[ti_i][0] = MATH_VecNorm(@ao_IK_bones[ti_i][1] OBJ_PosGet() - @ao_IK_bones[ti_i][0] OBJ_PosGet())
+	af_IK_bones_length[ti_i][1] = MATH_VecNorm(@ao_IK_bones[ti_i][2] OBJ_PosGet() - @ao_IK_bones[ti_i][1] OBJ_PosGet())
+	af_IK_bones_length[ti_i][2] = MATH_VecNorm(@ao_IK_bones[ti_i][3] OBJ_PosGet() - @ao_IK_bones[ti_i][2] OBJ_PosGet())
+
+	f_IK_leg_length[ti_i] = af_IK_bones_length[ti_i][0]
+	f_IK_leg_length[ti_i] += af_IK_bones_length[ti_i][1]
+	f_IK_leg_length[ti_i] += af_IK_bones_length[ti_i][2]
+	f_IK_leg_length[ti_i] *= 1.75
+
+	v_IK_bone_last_valid_sight[ti_i] = @ao_IK_bones[ti_i][2] OBJ_SightGet()
+	v_IK_bone_last_valid_banking[ti_i] = @ao_IK_bones[ti_i][2] OBJ_BankingGet()
+
+	if (ti_i < 2)
+		v_IK_feet_Z_axis[ti_i] = @ao_IK_bones[ti_i][3] MATH_VecGlobalToLocal(Cv_VerticalVector)	
+
+	if (raptor_type != C_ID_Tyranosaure && ti_i < 2)
+	{
+		switch(ti_i)
+		{
+			case Ci_IK_pied_gauche :
+				PNJ_Raptor_ActionSet(Action_Saut_Reception_G + (Ci_ActionSet_Force_No_Blend | Ci_ActionSet_Force_SameAction))
+				break
+	
+			case Ci_IK_pied_droit :
+				PNJ_Raptor_ActionSet(Action_Saut_Reception_D + (Ci_ActionSet_Force_No_Blend | Ci_ActionSet_Force_SameAction))
+				break
+		}
+	
+//		DBG_RenderVector(OBJ_PosGet(), @ao_head_bones[i_head_bone_nb] OBJ_PosGet() - OBJ_PosGet(), color_jaune)
+		av_IK_bassin_reception_offset[ti_i] = MATH_VecGlobalToLocal(@ao_head_bones[i_head_bone_nb] OBJ_PosGet() - OBJ_PosGet())
+	
+		switch(ti_i)
+		{
+			case Ci_IK_pied_gauche :
+				PNJ_Raptor_ActionSet(Action_Saut_Pied_G + (Ci_ActionSet_Force_No_Blend | Ci_ActionSet_Force_SameAction))
+				break
+	
+			case Ci_IK_pied_droit :
+				PNJ_Raptor_ActionSet(Action_Saut_Pied_D + (Ci_ActionSet_Force_No_Blend | Ci_ActionSet_Force_SameAction))
+				break
+		}
+	
+//		DBG_RenderVector(OBJ_PosGet(), @ao_head_bones[i_head_bone_nb] OBJ_PosGet() - OBJ_PosGet(), color_jaune)
+		av_IK_bassin_saut_offset[ti_i] = MATH_VecGlobalToLocal(@ao_head_bones[i_head_bone_nb] OBJ_PosGet() - OBJ_PosGet())
+	}
+}
+
+to_bone = ANI_CanalObjectGet(Anim_Canal_Machoire)
+
+switch(raptor_type)
+{
+	case C_ID_Tyranosaure :
+
+		ai_bite_action_num[0] = Action_Fight_Mord
+		PNJ_Raptor_ActionSet(Action_Fight_Mord + (Ci_ActionSet_Force_No_Blend | Ci_ActionSet_Force_SameAction))
+		ANI_RatioSet(0, 1.0)
+		PNJ_Raptor_ActionSet(Action_Fight_Mord + (Ci_ActionSet_Force_No_Blend | Ci_ActionSet_Force_SameAction))
+		tv_bite_pos = @to_bone OBJ_PosGet()
+		tv_bite_pos += @to_bone OBJ_BankingGet() * 1.5
+		tv_bite_pos -= @to_bone OBJ_SightGet() * 1.5
+		DBG_RenderVector(@ao_head_bones[0] OBJ_PosGet(), tv_bite_pos - @ao_head_bones[0] OBJ_PosGet(), color_jaune)
+		tv_quat = tv_bite_pos - @ao_head_bones[i_head_bone_nb] OBJ_PosGet()
+//		tv_quat -= MATH_VecDotProduct(tv_quat, OBJ_HorizonGet()) * OBJ_HorizonGet()
+		av_bassin_bite_quat[0] = @ao_head_bones[i_head_bone_nb] MATH_VecGlobalToLocal(tv_quat)
+		av_gao_bite_quat[0] = MATH_VecGlobalToLocal(tv_bite_pos - OBJ_PosGet())
+
+		ai_bite_action_num[1] = Action_Fight_Mord_Face
+		PNJ_Raptor_ActionSet(Action_Fight_Mord_Face + (Ci_ActionSet_Force_No_Blend | Ci_ActionSet_Force_SameAction))
+		ANI_RatioSet(0, 1.0)
+		PNJ_Raptor_ActionSet(Action_Fight_Mord_Face + (Ci_ActionSet_Force_No_Blend | Ci_ActionSet_Force_SameAction))
+		tv_bite_pos = @to_bone OBJ_PosGet()
+		tv_bite_pos += @to_bone OBJ_BankingGet() * 1.5
+		tv_bite_pos -= @to_bone OBJ_SightGet() * 1.5
+		DBG_RenderVector(@ao_head_bones[0] OBJ_PosGet(), tv_bite_pos - @ao_head_bones[0] OBJ_PosGet(), color_jaune)
+		tv_quat = tv_bite_pos - @ao_head_bones[i_head_bone_nb] OBJ_PosGet()
+//		tv_quat -= MATH_VecDotProduct(tv_quat, OBJ_HorizonGet()) * OBJ_HorizonGet()
+		av_bassin_bite_quat[1] = @ao_head_bones[i_head_bone_nb] MATH_VecGlobalToLocal(tv_quat)
+		av_gao_bite_quat[1] = MATH_VecGlobalToLocal(tv_bite_pos - OBJ_PosGet())
+
+		ai_bite_action_num[2] = Action_Fight_Mord_Haut
+		PNJ_Raptor_ActionSet(Action_Fight_Mord_Haut + (Ci_ActionSet_Force_No_Blend | Ci_ActionSet_Force_SameAction))
+		ANI_CurrentFrameSet(0, 35)
+		PNJ_Raptor_ActionSet(Action_Fight_Mord_Haut + (Ci_ActionSet_Force_No_Blend | Ci_ActionSet_Force_SameAction))
+		tv_bite_pos = @to_bone OBJ_PosGet()
+		tv_bite_pos += @to_bone OBJ_BankingGet() * 1.5
+		tv_bite_pos -= @to_bone OBJ_SightGet() * 0.75
+		DBG_RenderVector(@ao_head_bones[0] OBJ_PosGet(), tv_bite_pos - @ao_head_bones[0] OBJ_PosGet(), color_jaune)
+		tv_quat = tv_bite_pos - @ao_head_bones[i_head_bone_nb] OBJ_PosGet()
+//		tv_quat -= MATH_VecDotProduct(tv_quat, OBJ_HorizonGet()) * OBJ_HorizonGet()
+		av_bassin_bite_quat[2] = @ao_head_bones[i_head_bone_nb] MATH_VecGlobalToLocal(tv_quat)
+		av_gao_bite_quat[2] = MATH_VecGlobalToLocal(tv_bite_pos - OBJ_PosGet())
+
+		ai_bite_action_num[3] = Action_Fight_AttacJack_deb
+		PNJ_Raptor_ActionSet(Action_Fight_AttacJack_deb + (Ci_ActionSet_Force_No_Blend | Ci_ActionSet_Force_SameAction))
+		ANI_RatioSet(0, 1.0)
+		PNJ_Raptor_ActionSet(Action_Fight_AttacJack_deb + (Ci_ActionSet_Force_No_Blend | Ci_ActionSet_Force_SameAction))
+		tv_bite_pos = @to_bone OBJ_PosGet()
+		tv_bite_pos += @to_bone OBJ_BankingGet() * 1.5
+		tv_bite_pos -= @to_bone OBJ_SightGet() * 0.75
+		DBG_RenderVector(@ao_head_bones[0] OBJ_PosGet(), tv_bite_pos - @ao_head_bones[0] OBJ_PosGet(), color_jaune)
+		tv_quat = tv_bite_pos - @ao_head_bones[i_head_bone_nb] OBJ_PosGet()
+//		tv_quat -= MATH_VecDotProduct(tv_quat, OBJ_HorizonGet()) * OBJ_HorizonGet()
+		av_bassin_bite_quat[3] = @ao_head_bones[i_head_bone_nb] MATH_VecGlobalToLocal(tv_quat)
+		av_gao_bite_quat[3] = MATH_VecGlobalToLocal(tv_bite_pos - OBJ_PosGet())
+
+		break	
+	
+	default:
+
+		PNJ_Raptor_ActionSet(Action_Fight_Mord + (Ci_ActionSet_Force_No_Blend | Ci_ActionSet_Force_SameAction))
+		ANI_RatioSet(0, 0.25)
+		PNJ_Raptor_ActionSet(Action_Fight_Mord + (Ci_ActionSet_Force_No_Blend | Ci_ActionSet_Force_SameAction))
+		tv_bite_pos = @to_bone OBJ_PosGet()
+		tv_bite_pos += @to_bone OBJ_BankingGet() * (0.6 * OBJ_ZoomGet())
+		tv_bite_pos -= @to_bone OBJ_SightGet() * (0.6 * OBJ_ZoomGet())
+//		DBG_RenderVector(@ao_head_bones[i_head_bone_nb] OBJ_PosGet(), tv_bite_pos - @ao_head_bones[i_head_bone_nb] OBJ_PosGet(), color_jaune)
+		tv_quat = tv_bite_pos - @ao_head_bones[i_head_bone_nb] OBJ_PosGet()
+		av_bassin_bite_quat[0] = @ao_head_bones[i_head_bone_nb] MATH_VecGlobalToLocal(tv_quat)
+
+		PNJ_Raptor_ActionSet(Action_Fight_AttacJack_deb + (Ci_ActionSet_Force_No_Blend | Ci_ActionSet_Force_SameAction))
+		ANI_RatioSet(0, 0.9)
+		PNJ_Raptor_ActionSet(Action_Fight_AttacJack_deb + (Ci_ActionSet_Force_No_Blend | Ci_ActionSet_Force_SameAction))
+		tv_bite_pos = @to_bone OBJ_PosGet()
+		tv_bite_pos += @to_bone OBJ_BankingGet() * (0.6 * OBJ_ZoomGet())
+		tv_bite_pos -= @to_bone OBJ_SightGet() * (0.6 * OBJ_ZoomGet())
+		DBG_RenderVector(@ao_head_bones[i_head_bone_nb] OBJ_PosGet(), tv_bite_pos - @ao_head_bones[i_head_bone_nb] OBJ_PosGet(), color_jaune)
+		tv_quat = tv_bite_pos - @ao_head_bones[i_head_bone_nb] OBJ_PosGet()
+		av_bassin_bite_quat[3] = @ao_head_bones[i_head_bone_nb] MATH_VecGlobalToLocal(tv_quat)
+
+		PNJ_Raptor_ActionSet(Action_Saut_cycl + (Ci_ActionSet_Force_No_Blend | Ci_ActionSet_Force_SameAction))
+		av_IK_bassin_saut_offset[2] = MATH_VecGlobalToLocal(@ao_head_bones[i_head_bone_nb] OBJ_PosGet() - OBJ_PosGet())
+		ANI_RatioSet(0, 1.0)
+		PNJ_Raptor_ActionSet(Action_Saut_cycl + (Ci_ActionSet_Force_No_Blend | Ci_ActionSet_Force_SameAction))
+		av_IK_bassin_reception_offset[2] = MATH_VecGlobalToLocal(@ao_head_bones[i_head_bone_nb] OBJ_PosGet() - OBJ_PosGet())
+}
+
+PNJ_Raptor_ActionSet(Action_Normal_Attente + (Ci_ActionSet_Force_No_Blend | Ci_ActionSet_Force_SameAction))
+OBJ_PosSet(tv_pos)
+
+OBJ_FlagsControlSet(none, OBJ_C_ControlFlag_AlwaysVisible)
+
+PNJ_Raptor_OBBOX_Set(1.0)
+
+//v_last_pos = OBJ_PosGet()
+
+//v_grav_last_pos = OBJ_PosGet()
+//v_grav_last_pos.z -= Cf_pendule_length
+
+i_flag_ennemi_fake = faux
+i_perceived_best_actor_index = -1
+i_perceived_main_actor_index = -1
+
+AI_CBAdd(OBJ_Me(), CallBack_Info, "PNJ_Raptor_callback_info")
+AI_CBAdd(OBJ_Me(), CallBack_WhenDestroy, "PNJ_Raptor_callback_when_destroy")
+AI_CBAdd(OBJ_Me(), CallBack_After_Blend, "PNJ_Raptor_callback_afterblend")
+AI_CBAdd(OBJ_Me(), CallBack_Client, "PNJ_Raptor_callback_client")
+AI_CBAdd(OBJ_Me(), CallBack_ShortWay, "PNJ_Raptor_callback_shortway")
+AI_CBAdd(OBJ_Me(), CallBack_TagOn, "PNJ_Raptor_callback_tagon")
+AI_CBAdd(OBJ_Me(), CallBack_TagOff, "PNJ_Raptor_callback_tagoff")
+macro_add_callback_after_cam("PNJ_Raptor_callback_aftercam")
+
+AI_TrackChange(Ci_Track_TagOff, "PNJ_Raptor_exec_tagoff")
+AI_TrackChange(Ci_Track_Reflex, "PNJ_Raptor_reflex")
+AI_TrackChange(Ci_Track_Etat, "PNJ_Raptor_ETAT_ATTENTE")
+
+if (AI_TriggerIsValid(trigger_force_target))
+	call_trigger(trigger_force_target)
+
+//AI_TrackChange(Ci_Track_Etat, "PNJ_Raptor_TEST")
+//AI_TrackChange(Ci_Track_Etat, "PNJ_Raptor_ETAT_A_TERRE")
+//AI_TrackChange(Ci_Track_Etat, "PNJ_Raptor_ETAT_MORT")
+//AI_TrackChange(Ci_Track_Etat, "PNJ_Raptor_ETAT_BURN")
+
+if (YOAN)
+	AI_TrackChange(Ci_Track_Etat, "PNJ_Raptor_YOAN")
+	
+AI_TrackChange(Ci_Track_TagOn, "PNJ_Raptor_exec_tagon")
+
+f_time_change_target = -1000.0

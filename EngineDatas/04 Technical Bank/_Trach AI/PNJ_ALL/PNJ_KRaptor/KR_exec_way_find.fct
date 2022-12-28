@@ -1,0 +1,54 @@
+vector	tv_dest_pos
+
+vector	tv_temp
+
+i_way_algo_limitdestpos = 6
+f_way_len_big = 60
+f_way_tolerance_sqr_dist = 4.0
+
+// ON PASSE PLUS LES CASES ROUGE !!!!
+f_way_test_born = 4.0
+
+v_way_currentpos = OBJ_PosGet()
+
+tv_dest_pos = GRID_PosGet(v_way_destpos) 
+
+tv_temp = tv_dest_pos - v_way_last_destpos
+tv_temp.z = 0.0
+
+//if (tv_dest_pos != v_way_last_destpos) 
+if (MATH_VecDotProduct(tv_temp, tv_temp) > 4.0)
+{
+	i_way_force_recompute = vrai
+
+	f_way_compute_time = TIME_Get()
+	i_flag_way_ok = faux
+
+	v_way_last_destpos = tv_dest_pos
+}
+
+i_way_moving = vrai
+
+af_way_ponderation[Ci_sol_plaine] = 1.0
+af_way_ponderation[Ci_sol_mur] = 0.0
+af_way_ponderation[Ci_sol_herbe] = 10.0
+af_way_ponderation[Ci_sol_eau] = 2.0
+af_way_ponderation[4] = 1.0
+af_way_ponderation[5] = 1.0
+af_way_ponderation[6] = 1.0
+af_way_ponderation[7] = 1.0
+af_way_ponderation[8] = 1.0
+af_way_ponderation[9] = 1.0
+af_way_ponderation[10] = 1.0
+af_way_ponderation[11] = 1.0
+af_way_ponderation[12] = 1.0
+af_way_ponderation[13] = 1.0
+af_way_ponderation[14] = 1.0
+af_way_ponderation[15] = 1.0
+
+GRID_SetPond(& af_way_ponderation[0])
+
+AI_Execute("PNJ_Raptor_KK_exec_way_compute")
+
+if (i_way_moving)
+	i_flag_way_ok = vrai

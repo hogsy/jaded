@@ -1,0 +1,23 @@
+#include "KBC_defines.var"
+
+messageid			tmid_LNK
+
+tmid_LNK = pop
+
+if( i_etat_courant != ETAT_Mort )
+{
+	LNK_ServeurRefuse(tmid_LNK)
+	return
+}
+
+switch(LNK_GrabServeurVisionIDGet(tmid_LNK))
+{
+	case C_ID_Tyranosaure :
+		LNK_ClientPropose(tmid_LNK, Cf_Infinit)
+		break
+
+	default:
+		LNK_ServeurRefuse(tmid_LNK)
+		break
+}
+

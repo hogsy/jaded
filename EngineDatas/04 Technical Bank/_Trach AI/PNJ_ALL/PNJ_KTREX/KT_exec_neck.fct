@@ -1,0 +1,227 @@
+#include "KT_defines.var"
+
+int				ti_i
+int				ti_k
+int				ti_flag_look_at_main_actor
+int				ti_flag_dead_zone
+int				ti_trame_num
+
+float			tf_dist
+float			tf_angle
+float			tf_sign
+float			tf_dot_product
+float			tf_dist_min
+float			tf_coef
+float			tf_A
+float			tf_B
+float			tf_dt
+
+vector		tv_dest_pos
+vector		tv_axis
+vector		tv_bone_to_dest
+vector		tv_temp
+vector		tv_look_pos_with_Z
+
+object		to_target
+object		to_bone
+
+#define Cf_speed				12.0
+
+
+// KTREX SPECIFIC ====================================================
+tv_look_pos_with_Z = v_look_pos
+if( i_blesse_on || ( o_Kong && @o_Kong Proc_KK_Test_Mode(ETAT_Kong_colonne) ) )
+{
+	tv_temp = OBJ_PosGet()
+	v_look_pos.z = tv_temp.z
+}
+if ( ! ACT_CustomBitTest(CBit_Suivi_Regard_ON) && ! OBJ_CapaTest(Capa_Suivi_Regard) )
+	i_flag_look = faux
+OBJ_CapaSet(none, Capa_Suivi_Regard)
+// KTREX SPECIFIC ====================================================
+
+
+
+if (i_frame_nb < 10)
+	tf_dt = 1000.0
+else
+	tf_dt = TIME_GetDt()
+
+
+ti_flag_look_at_main_actor = faux
+
+tv_temp = v_look_pos - v_last_look_pos
+if (MATH_VecDotProduct(tv_temp, tv_temp) > 4.0)
+	f_look_angle_blend_speed = 0.0
+
+if (i_flag_look)
+{
+	f_look_blend_coef += MATH_FloatMin(1.0 - f_look_blend_coef, 4.0 * tf_dt)
+}
+else
+{
+	f_look_blend_coef -= MATH_FloatMin(f_look_blend_coef, 4.0 * tf_dt)
+	v_look_axis = MATH_VecBlendRotate(OBJ_SightGet() * f_look_axis_length, v_look_axis, f_look_blend_coef)
+}
+
+switch(raptor_type)
+{
+	case C_ID_Galiminus :
+		tf_dist_min = 0.15
+		break
+	case C_ID_Raptor :
+		tf_dist_min = 0.35
+		break
+	case C_ID_Tyranosaure :
+		tf_dist_min = 1.5
+		break
+}
+
+tf_dist_min += f_neck_length
+
+v_look_pivot_pos = @ao_head_bones[i_head_bone_nb - 1] OBJ_PosGet()
+v_look_pivot_pos -= MATH_VecDotProduct(v_look_pivot_pos - OBJ_PosGet(), OBJ_HorizonGet()) * OBJ_HorizonGet()
+
+if (f_look_blend_coef)
+{
+	switch(ACT_ActionGet())
+	{
+		case Action_DemiTourRapideG :
+		case Action_DemiTourRapideD :
+			f_look_angle_blend_speed	 = 3.0
+	
+			if (MATH_VecDotProduct(v_look_pos - v_look_pivot_pos, OBJ_SightGet()) < 0.0)
+			{
+				v_look_pos = v_backup_look_pos
+				break
+			}
+		default:
+			v_backup_look_pos = v_look_pos
+	}
+	
+	if (i_flag_look)
+	{	
+		if (i_DBG_Display_Pilotage)
+			DBG_RenderSphere(v_look_pivot_pos, tf_dist_min, 0x80808080)
+
+		tv_bone_to_dest = v_look_pos
+		tv_bone_to_dest -= v_look_pivot_pos 
+
+		// CALCUL DE LA POSITION A REGARDER ================================
+		tv_dest_pos = v_look_pos
+	
+		// DISTANCE MIN A LA TETE ===========
+		tf_dist = MATH_VecDotProduct(tv_bone_to_dest, tv_bone_to_dest)
+		if (tf_dist < tf_dist_min * tf_dist_min)
+		{
+			tf_dist = MATH_FloatSqrt(tf_dist)
+			tv_bone_to_dest /= tf_dist
+			tv_bone_to_dest *= tf_dist_min
+			
+			tv_dest_pos = v_look_pivot_pos
+			tv_dest_pos += tv_bone_to_dest
+		}
+	
+		tv_bone_to_dest = tv_dest_pos - v_look_pivot_pos
+
+		if (i_DBG_Display_Pilotage)
+			DBG_RenderVector(v_look_pivot_pos, tv_bone_to_dest, color_blanc)
+
+		// PUTAIN D'EULER
+		tv_temp = tv_bone_to_dest
+		tv_temp -= MATH_VecDotProduct(tv_temp, OBJ_BankingGet()) * OBJ_BankingGet()
+		tf_angle = MATH_VecAngle(OBJ_SightGet(), tv_temp, OBJ_BankingGet())
+		
+		if (f_look_in_dead_cone_sign && MATH_AbsFloat(tf_angle) > 2.6)
+		{
+			ti_flag_dead_zone = vrai
+		
+			tv_bone_to_dest = MATH_VecRotate(tv_bone_to_dest, OBJ_BankingGet(), (f_look_in_dead_cone_sign * 2.6) - tf_angle)
+
+			if (raptor_type == C_ID_Tyranosaure)
+				f_look_angle_blend_speed = 2.0
+			else
+				f_look_angle_blend_speed = 6.0
+		}
+		else
+		{
+			ti_flag_dead_zone = faux
+		
+			f_look_in_dead_cone_sign = MATH_FloatSign(tf_angle)
+		}
+
+		// DETECTION DU "DEMI-TOUR"
+		tv_temp = tv_bone_to_dest
+		tv_temp.z = 0.0
+		f_look_axis_norm = MATH_VecNorm(tv_temp)
+		tv_temp /= f_look_axis_norm
+	
+		if (i_DBG_Display_Pilotage)
+			DBG_RenderVector(v_look_pivot_pos, tv_bone_to_dest, color_rouge)
+
+		if (MATH_VecDotProduct(tv_temp, OBJ_SightGet()) < 0.0 || MATH_VecDotProduct(v_look_axis, OBJ_SightGet()) < 0.0)
+		{
+			tf_sign = MATH_FloatSign(MATH_VecDotProduct(tv_temp, OBJ_HorizonGet()))
+		
+			if (MATH_FloatSign(MATH_VecDotProduct(v_look_axis, OBJ_HorizonGet())) != tf_sign)
+			{
+				i_flag_perfect_look = faux
+			
+				if (raptor_type == C_ID_Tyranosaure)
+					f_look_angle_blend_speed = 2.0
+				else
+					f_look_angle_blend_speed = 6.0
+			
+				tv_bone_to_dest = v_look_axis
+				tv_bone_to_dest.z = 0.0
+				tv_bone_to_dest = tf_sign * MATH_VecCrossProduct(Cv_VerticalVector, tv_bone_to_dest)
+				
+				MATH_VecSetNormalize(tv_bone_to_dest)	
+				tv_bone_to_dest *= f_look_axis_length
+
+				if (i_DBG_Display_Pilotage)
+					DBG_RenderVector(v_look_pivot_pos, tv_bone_to_dest, color_cyan)
+			}
+		}
+		
+		v_look_axis = MATH_VecBlendRotate(v_look_axis, tv_bone_to_dest, f_look_angle_blend_speed * tf_dt)
+
+		v_look_axis = MATH_LIB_VectorInPrisme(v_look_axis, OBJ_SightGet(), OBJ_BankingGet(), 2.6)
+	}
+
+	v_bezier_head_look_pos = v_look_pivot_pos
+	v_bezier_head_look_pos += v_look_axis
+
+	if (i_DBG_Display_Pilotage)
+		DBG_RenderVector(v_look_pivot_pos, v_look_axis, color_vert)
+
+	AI_Execute("KT_exec_IK_neck")
+}
+else
+{
+	i_flag_perfect_look = vrai	
+
+	v_look_axis = OBJ_SightGet() * f_look_axis_length
+
+	v_look_pos = v_look_pivot_pos
+	v_look_pos += v_look_axis
+
+	v_bezier_head_look_pos = v_look_pivot_pos
+	v_bezier_head_look_pos += v_look_axis
+	
+	AI_Execute("KT_exec_IK_neck")
+}
+
+// BACKUP EN LOCAL ================================================================
+v_last_look_pos = v_look_pos
+v_look_head_pos = MATH_VecGlobalToLocal(@ao_head_bones[0] OBJ_PosGet() - OBJ_PosGet())
+v_look_virtual_sight = @ao_head_bones[0] OBJ_BankingGet()
+v_look_banking = MATH_VecGlobalToLocal(v_look_virtual_sight)
+
+
+
+// SPECIFIC KONG's TREX ====================================================
+v_look_pos = tv_look_pos_with_Z
+// SPECIFIC KONG's TREX ====================================================
+
+

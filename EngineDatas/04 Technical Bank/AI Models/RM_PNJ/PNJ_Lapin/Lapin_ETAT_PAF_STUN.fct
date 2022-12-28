@@ -1,0 +1,68 @@
+#include "PNJ_Lapin_defines.var"
+
+int		ti_action
+
+
+// SORTIE ETAT ===================================================================
+if( i_sort_etat )
+{
+	Lapin_EXPRESSION(Cf_Expr_Mouth_Closed)
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if( i_etat_courant != ETAT_Lapin_PAF_STUN )
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Lapin_PAF_STUN
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	Lapin_DBG_Trace_String(DBG_Trace_Etat, "PAF STUN")
+	fct_previous_etat = fct_last_etat
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	
+	Lapin_SND_Paf(Ci_SND_PAF_Stun)
+	ti_action = Action_Paf_petit_face
+	Lapin_ACTION_Set(ti_action | Ci_ActionSet_Force_SameAction | Ci_ActionSet_Force_FrameZero)
+	Lapin_ACTION_RandomFreqSet(0.2, 0.3)
+	Lapin_EXPRESSION(Cf_Expr_Mouth_Full)
+	
+	f_GFX_Couronne_etoiles_duree = Cf_PAF_STUN_duree
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// STIMULI ===========================================================================
+o_Grabbed_Actor = LNK_ServeurGet(Ci_LNK_GRAB_EAGLE, mid_Grabbed_LNK_ID, vrai, nofunc, nofunc)
+if( o_Grabbed_Actor )
+	macro_change_etat("Lapin_ETAT_GRABBED")
+
+o_Rided_Actor = LNK_ServeurGet(Ci_LNK_RIDE_ON_NMI, mid_Rided_LNK_ID, vrai, nofunc, nofunc)
+if( o_Rided_Actor )
+	macro_change_etat("Lapin_ETAT_RIDED")
+
+AI_Execute("Lapin_exec_check_vision")
+
+MACRO_CHECK_PAFS
+
+if( Lapin_ROPE_Gogo_Mode() )
+	macro_change_etat("Lapin_ETAT_GOGO")
+
+MACRO_CHECK_CHUTE
+
+if( i_ventilo_flag )
+	macro_change_etat("Lapin_ETAT_ASPIRE")
+
+AI_Execute("Lapin_exec_update_best_interest")
+
+if( f_time_start_etat > Cf_PAF_STUN_duree )
+	MACRO_GO_IDLE(0)
+
+OBJ_CapaSet(Obj_Capa_Fight, none)

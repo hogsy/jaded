@@ -1,0 +1,100 @@
+#include "PNJ_Lapin_defines.var"
+
+
+// SORTIE ETAT ===================================================================
+if( i_sort_etat )
+{
+	switch( i_etat_courant )
+	{
+		case ETAT_Lapin_MELEE :
+		case ETAT_Lapin_PAF :
+		case ETAT_Lapin_PAF_STUN :
+		case ETAT_Lapin_CHUTE :
+			// ne pas perdre le contrôle du grappin
+			break
+		default:
+			Lapin_GRAPPIN_Control_Activate(faux)	// perd le contrôle du grappin
+			break
+	}
+	i_sort_etat = faux
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if( i_etat_courant != ETAT_Lapin_GRAPPIN_CONTROL )
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Lapin_GRAPPIN_CONTROL
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	Lapin_DBG_Trace_String(DBG_Trace_Etat, "GRAPPIN CONTROL")
+	fct_previous_etat = fct_last_etat
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	Lapin_GRAPPIN_Control_Activate(vrai)	// gagne le contrôle du grappin
+	i_Grappin_Control_flag = faux
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// STIMULI ===========================================================================
+o_Grabbed_Actor = LNK_ServeurGet(Ci_LNK_GRAB_EAGLE, mid_Grabbed_LNK_ID, vrai, nofunc, nofunc)
+if( o_Grabbed_Actor )
+	macro_change_etat("Lapin_ETAT_GRABBED")
+
+o_Rided_Actor = LNK_ServeurGet(Ci_LNK_RIDE_ON_NMI, mid_Rided_LNK_ID, vrai, nofunc, nofunc)
+if( o_Rided_Actor )
+	macro_change_etat("Lapin_ETAT_RIDED")
+
+AI_Execute("Lapin_exec_check_vision")
+
+MACRO_CHECK_PAFS
+
+if( Lapin_ROPE_Gogo_Mode() )
+	macro_change_etat("Lapin_ETAT_GOGO")
+
+MACRO_CHECK_CHUTE
+
+if( i_ventilo_flag )
+	macro_change_etat("Lapin_ETAT_ASPIRE")
+
+if( o_piege )
+	macro_change_etat("Lapin_ETAT_PIEGE")
+
+AI_Execute("Lapin_exec_update_best_interest")
+
+if( ! MSG_GlobalIsValid(mid_best_interet) )
+	MACRO_GO_IDLE(0)
+
+if( o_Grappin_Control_actor == get_rayman )
+{
+	if( @get_rayman PROC_RM_Current_HotSpot_Get() != OBJ_Me() )
+		o_Grappin_Control_actor = nobody
+}
+if( ! o_Grappin_Control_actor )
+	MACRO_GO_IDLE(0)
+
+
+AI_Execute("Lapin_exec_fight_melee")
+
+
+// COMPORTEMENT ===================================================================
+
+Lapin_ACTION_Set(Action_Fight_GrappinControl)
+//v_way_destpos = Cv_NullVector
+//i_target_territory_ID = Lapin_PROC_POS_GET_TERRITORY(v_way_destpos)
+//AI_Execute("Lapin_exec_way_find")
+//AI_Execute("Lapin_exec_way_move")
+//
+v_force_sight = @o_Grappin_Control_actor OBJ_PosGet() - OBJ_PosGet()
+AI_Execute("Lapin_exec_way_orientation")
+
+//AI_Execute("Lapin_exec_way_select_action")
+
+
+OBJ_CapaSet(Obj_Capa_Fight, none)

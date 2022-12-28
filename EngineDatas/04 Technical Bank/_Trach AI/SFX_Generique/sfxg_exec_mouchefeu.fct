@@ -1,0 +1,146 @@
+int			i, max
+vector	tv_temp, tv_temp1
+float		tf_dot
+int			x, y
+vector	tv_dest_pos
+int			ti_one
+int			ti_what
+object	to_cam
+object	to_obj
+int			ti_mode
+
+to_cam = @get_global o_camera
+ti_what = 0
+if(capa == Ci_sol_eau_mouche_feu) 
+{
+	ti_what = Ci_sol_eau_mouche_feu
+	i_max_feu = 15
+	v_last_pos_ronce = @main OBJ_PosGet()
+	ti_mode = 0
+}
+
+if(OBJ_CapaTest(OBJ_Capa_0)) 
+{
+	ti_mode = 1
+	i_max_feu = 15
+	v_last_pos_ronce = @main OBJ_PosGet()	
+	if(f_time_mouche_feu > 4)
+	{
+		f_time_mouche_feu = 0
+		to_obj = AI_MainActorGet(C_ID_Joueur)
+		tv_temp = -@to_obj OBJ_SightGet()
+		EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_KK_Fort, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_obj, 1.0 * PAF_Unit, tv_temp)
+	}
+}
+
+// Temps pour envoyer un paf
+if((!ti_what || (capa != ti_what)) && !OBJ_CapaTest(OBJ_Capa_0))
+	f_time_mouche_feu = 0
+else
+	f_time_mouche_feu += TIME_GetDt()	
+
+if(!i_max_feu) 
+{
+	if(i_snd_mouche_feu != -1)
+	{
+		SND_Stop(i_snd_mouche_feu)
+		i_snd_mouche_feu = -1
+	}
+	
+	f_time_mouche_feu	= 0
+	return
+}
+
+if(i_snd_mouche_feu == -1)
+{
+	i_snd_mouche_feu = SND_RequestPlayLoop(1)
+}
+
+ti_one = faux
+max = i_max_feu
+for(i = 0; i < max; i++)
+{
+	if((!ti_what || (capa != ti_what)) && !OBJ_CapaTest(OBJ_Capa_0))
+	{
+		if(@ao_mouchefeu[i] OBJ_FlagsControlGet() & OBJ_C_ControlFlag_ForceInvisible) continue
+		
+		af_delay_feu[i] -= TIME_GetDt()
+		if(af_delay_feu[i] < 0)
+			af_zfeu[i] = MATH_FloatMax(af_zfeu[i] - (1 * TIME_GetDt()), -3)
+		if(af_zfeu[i] < -2.9) @ao_mouchefeu[i] OBJ_FlagInvisibleSet(vrai)
+		tv_temp = @ao_mouchefeu[i] OBJ_PosGet()
+		tv_temp.z = @to_cam OBJ_PosGet().z + af_zfeu[i]
+		tv_temp.x += MATH_RandFloat(-0.05, 0.05)
+		tv_temp.y += MATH_RandFloat(-0.05, 0.05)
+		tv_temp.z += MATH_RandFloat(-0.05, 0.05)
+		tv_temp1 = v_last_pos_ronce - @main OBJ_PosGet()
+		if( ! MATH_VecNullEpsilon(tv_temp1) )
+			MATH_VecSetNormalize(tv_temp1)
+		else
+			tv_temp1 = OBJ_SightGet()
+		tv_temp += tv_temp1 * TIME_GetDt() * 0.5
+		@ao_mouchefeu[i] OBJ_PosSet(tv_temp)
+		
+		ti_one = vrai
+		
+		continue
+	}
+	else if(@ao_mouchefeu[i] OBJ_FlagsControlGet() & OBJ_C_ControlFlag_ForceInvisible)
+	{
+		ti_one = vrai
+		if(ti_mode)
+			af_zfeu[i] = -1 - (i * 0.6)
+		else
+			af_zfeu[i] = -1 - (i * 0.3)
+		if(!ti_one) SND_InstPosUpdate(i_snd_mouche_feu, @ao_mouchefeu[i] OBJ_PosGet())
+		@ao_mouchefeu[i] OBJ_FlagInvisibleSet(faux)
+	}
+	else
+	{
+		if(!ti_one) SND_InstPosUpdate(i_snd_mouche_feu, @ao_mouchefeu[i] OBJ_PosGet())
+		af_delay_feu[i] = MATH_RandFloat(0.5, 2)
+		ti_one = vrai
+		af_zfeu[i] = MATH_FloatMin(af_zfeu[i] + (2 * TIME_GetDt()), 0)
+	}
+	
+	// Repositionne l'objet hors champ pour un nouveau depart
+	if(af_etatfeu[i] >= 0)
+	{
+		tv_temp = cvector(0.5,0,0)
+		tf_dot = (Cf_2Pi / max) * i
+		tf_dot += MATH_RandFloat(-Cf_2Pi / max,Cf_2Pi / max)
+		tv_temp = MATH_VecRotate(tv_temp, cvector(0,-1,0), tf_dot)
+		tv_temp.y = MATH_RandFloat(-0.5, 0.2)
+		av_posfeu[i] = tv_temp
+		
+		av_speedfeu[i] = -av_posfeu[i]
+				
+		af_etatfeu[i] = -1.1 + (1.0 / (i + 1))
+		
+		tv_temp = @to_cam MATH_VecLocalToGlobal(av_posfeu[i])
+		tv_temp += @to_cam OBJ_PosGet()
+		tv_temp.z += af_zfeu[i]
+		@ao_mouchefeu[i] OBJ_PosSet(tv_temp)
+		
+		@ao_mouchefeu[i] OBJ_SightGeneralSet(@to_cam OBJ_SightGet(), Cv_VerticalVector)
+		tv_temp = @to_cam MATH_VecLocalToGlobal(MATH_VecNormalize(av_speedfeu[i]))
+		tf_dot = MATH_VecDotProduct(tv_temp, @to_cam OBJ_HorizonGet())
+		tf_dot = MATH_ACos(-tf_dot)
+		@ao_mouchefeu[i] OBJ_RotateLocalY(-tf_dot)
+	}
+	
+	// Bouge l'objet hors champ
+	else
+	{
+		av_posfeu[i] += av_speedfeu[i] * TIME_GetDt() * 2
+		tv_temp = @to_cam MATH_VecLocalToGlobal(av_posfeu[i])
+		tv_temp.x += 0.02 * MATH_Sin(TIME_Get() * 6)
+		tv_temp.z += 0.02 * MATH_Sin(TIME_Get() * 6)
+		tv_temp += @to_cam OBJ_PosGet()
+		tv_temp.z += af_zfeu[i]
+		@ao_mouchefeu[i] OBJ_PosSet(tv_temp)
+		af_etatfeu[i] += TIME_GetDt()
+	}
+}
+
+if(!ti_one) i_max_feu = 0

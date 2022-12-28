@@ -1,0 +1,53 @@
+//#include "Kam_Defines.var"
+//
+//// ##################
+//// SWING HORIZONTAL
+//// ##################
+//
+//vector		tv_axe_cam 
+//float			tf_coef 
+//vector		tv_axe_kong
+//
+//
+//// MECA SPECIALE ------------------------
+//i_MECA_Mode = Ci_MecaMode_Position
+//// MECA SPECIALE ------------------------
+//
+//// Backup Gao pour les Transitions specifique en mode CChant
+//o_cc_kam_modifier_old = nobody
+//
+//v_MECA_cam_target= KamP_TargetGao_BlendPosGet(o_mf_actor, Cf_BlendPos_DefaultSpeed)
+////MATH_VecBlend(v_MECA_cam_target,@o_mf_actor OBJ_PosGet(), 8.0 * TIME_GetDt())
+//
+//if (i_kong_camera_mode != Ci_Kamera_mode_SWINGH)
+//{
+//	// Init
+//	i_kong_camera_mode = Ci_Kamera_mode_SWINGH
+//
+//	f_chm_coef = 0
+//	f_change_mode_speed = 3.0
+//
+//	vG_chm_cam_sight = OBJ_SightGet()
+//	f_walling_speed_normZ = 0
+//	v_kong_speed = @o_mf_actor DYN_SpeedGetVector()
+//
+//	v_swing_pos = OBJ_PosGet()
+//	v_swing_last_move = v_camera_last_move
+//}
+//
+//f_chm_coef= MATH_FloatMin(f_chm_coef+ (f_change_mode_speed * TIME_GetDt()), 1)
+//
+//// Gestion de la Target
+//tv_axe_cam = OBJ_HorizonGet()
+//MATH_VecSetHorzNormalize(tv_axe_cam)
+//tf_coef = MATH_VecDotProduct(tv_axe_cam, tv_axe_kong)
+//vG_cam_target_delta_tgt = OBJ_HorizonGet() * (tf_coef * Cf_RM_TargetHoriz)
+//vG_cam_target_delta_tgt.z = Cf_RM_TargetZ
+//
+//// Gestion de la position de la Cam
+//v_swing_last_move *= Amorti_Coef_Dt(0.98)
+//v_swing_pos += v_swing_last_move * TIME_GetDt()
+//
+//v_MECA_cam_pos = v_swing_pos
+//
+//f_MECA_cam_focale = 1.2

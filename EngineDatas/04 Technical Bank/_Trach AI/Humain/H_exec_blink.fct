@@ -1,0 +1,55 @@
+#include "H_defines.var"
+
+object	to_obj, to_obj1, to_obj2
+float		tf_temp
+float		tf_origin, tf_origin1
+vector	tv_temp
+
+if(joueur) return
+if(!ANI_CanalObjectGet(210)) return
+if(i_mode_cine_morph) return
+
+to_obj = ANI_CanalObjectGet(Anim_Canal_Tete)
+@to_obj OBJ_MorphProgSet(4, 2)
+
+if(TIME_Elapsed(f_time_last_blink, f_rank_blink) && !i_blink_en_cours)
+{
+	f_time_last_blink = TIME_Get()
+	f_rank_blink = MATH_RandFloat(1.0, 3)
+	i_blink_en_cours = vrai
+}
+
+if(i_blink_en_cours)
+{
+	tf_temp = @to_obj OBJ_MorphFactorGet(4)
+	tf_temp = MATH_FloatBlend(tf_temp, 1, 19 * TIME_GetDt())
+	if(tf_temp >= 0.99) i_blink_en_cours = faux
+	@to_obj OBJ_MorphFactorSet(4, tf_temp)
+}
+else
+{
+	@to_obj OBJ_MorphDataSet(3, 13, 1) 	// Sourire
+	@to_obj OBJ_MorphDataSet(4, 14, 1) 	// Sourcils
+	
+	to_obj1 = ANI_CanalObjectGet(210)
+	tf_origin1 = f_paupiere_bas
+	tf_origin = f_paupiere_haut
+	
+	to_obj2 = ANI_CanalObjectGet(Anim_Canal_Tete)
+	tv_temp = @to_obj2 MATH_VecGlobalToLocal(@to_obj1 OBJ_SightGet())
+	tf_origin -= tv_temp.z
+	tf_origin = MATH_FloatLimit(tf_origin, 0, 1)
+	
+	if(i_id_humain == C_ID_Ann)
+		tf_origin1 += tv_temp.z * 4
+	else
+		tf_origin1 += tv_temp.z * 2
+	tf_origin1 = MATH_FloatLimit(tf_origin1, 0, 1)
+	tf_temp = @to_obj OBJ_MorphFactorGet(3)
+	tf_temp = MATH_FloatBlend(tf_temp, tf_origin1, 18 * TIME_GetDt())
+	@to_obj OBJ_MorphFactorSet(3, tf_temp)
+	
+	tf_temp = @to_obj OBJ_MorphFactorGet(4)
+	tf_temp = MATH_FloatBlend(tf_temp, tf_origin, 18 * TIME_GetDt())
+	@to_obj OBJ_MorphFactorSet(4, tf_temp)
+}

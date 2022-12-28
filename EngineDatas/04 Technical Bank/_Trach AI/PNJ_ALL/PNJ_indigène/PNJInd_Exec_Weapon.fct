@@ -1,0 +1,47 @@
+vector 		v
+object		main
+message	msg
+
+main = ANI_CanalObjectGet( Anim_Canal_MainDroite )
+
+if ( !mi_HadWeapon )
+{
+	if ( mo_WeaponCur )
+	{
+		if ( @mo_WeaponCur AI_IsModel(get_Arme_Lance_path) )
+		{
+			MSG_SetNull( msg )
+			msg.msg_id = msg_id_grenadedestroy
+			msg.msg_sender = OBJ_Me()
+			@mo_WeaponCur MSG_Send( msg )
+		}
+		else
+			@mo_WeaponCur OBJ_Destroy( )
+		mo_WeaponCur = nobody
+	}
+	return
+}
+
+if ( !mo_WeaponCur )
+{
+	if ( !mo_Weapon )
+		return
+	mo_WeaponCur = @mo_Weapon OBJ_Duplicate( OBJ_PosGet() )
+	
+	if ( mi_BurningWeapon )
+	{
+		MSG_SetNull( msg )
+		msg.msg_id = msg_id_grenadeburning
+		msg.msg_sender = OBJ_Me()
+		@mo_WeaponCur MSG_Send( msg )
+	}
+}
+
+
+v = @main OBJ_PosGet()
+v += @main OBJ_BankingGet() * 0.1
+v += @main OBJ_HorizonGet() * -0.05
+@mo_WeaponCur OBJ_PosSet( v )
+@mo_WeaponCur OBJ_SightSet(@main OBJ_SightGet() )
+
+

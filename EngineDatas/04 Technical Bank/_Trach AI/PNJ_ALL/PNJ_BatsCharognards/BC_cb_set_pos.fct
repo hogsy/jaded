@@ -1,0 +1,68 @@
+int				ti_serveur_vision_ID
+
+float			tf_coef
+
+vector		tv_pos
+vector		tv_sight
+vector		tv_banking
+vector		tv_grab_foot_pos
+
+object		to_bone
+object		to_serveur
+
+
+if( MSG_GlobalIsValid(mid_predateur) )
+{
+	to_serveur = MSG_GlobalGetGao(mid_predateur, SERVEUR)
+	ti_serveur_vision_ID	= LNK_GrabServeurVisionIDGet(mid_predateur)
+	switch(ti_serveur_vision_ID)
+	{
+		case C_ID_MonstreMarin :
+			// Position
+			to_bone	= LNK_GrabBoneGet(mid_predateur)
+			tv_pos = @to_bone OBJ_PosGet()
+			tv_pos += ( 3.0 * @to_bone OBJ_BankingGet())
+			DBG_RenderVector(OBJ_PosGet(), tv_pos - OBJ_PosGet(), color_bleu)
+			tv_pos = MATH_VecBlend(OBJ_PosGet(), tv_pos, 10.0 * TIME_GetDt())
+			OBJ_PosSet(tv_pos)
+			// Orientation
+			tv_sight = - @to_bone OBJ_BankingGet()
+			tv_banking = - @to_bone OBJ_SightGet()
+			OBJ_BankingGeneralSet(
+				MATH_VecBlendRotate(OBJ_SightGet(), tv_sight, 10.0 * TIME_GetDt()),
+				MATH_VecBlendRotate(OBJ_BankingGet(), tv_banking, 10.0 * TIME_GetDt()))
+			break
+			
+		case C_ID_Tyranosaure :
+			// Position
+			tf_coef = @to_serveur ANI_CurrentFrameGet(0)
+
+			OBJ_ZoomSet(MATH_FloatBlend(OBJ_ZoomGet(), 0.5, tf_coef / 300))
+
+			tf_coef /= 300
+
+			to_bone	= @to_serveur ANI_CanalObjectGet(Anim_Canal_Machoire)
+
+			tv_grab_foot_pos = @to_bone OBJ_PosGet()
+			tv_grab_foot_pos += @to_bone OBJ_BankingGet() * MATH_FloatBlend(2.3, 1.5, tf_coef)
+			tv_grab_foot_pos -= @to_bone OBJ_SightGet() * 0.5
+
+			tv_sight = @to_bone OBJ_BankingGet()
+			tv_banking = - @to_bone OBJ_SightGet()
+
+//			tv_grab_foot_pos = MATH_VecBlendRotate(tv_grab_foot_pos - @to_bone OBJ_PosGet(), tv_sight * 0.1, tf_coef)
+//			tv_grab_foot_pos += @to_bone OBJ_PosGet()
+	
+			tv_grab_foot_pos = MATH_VecBlend(OBJ_PosGet(), tv_grab_foot_pos, f_time_start_etat * 4.0)
+			OBJ_PosSet(tv_grab_foot_pos)
+
+			// Orientation
+			tv_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_sight, f_time_start_etat * 4.0)
+			tv_banking = MATH_VecBlendRotate(OBJ_BankingGet(), tv_banking, f_time_start_etat * 4.0)
+			OBJ_BankingGeneralSet(tv_sight, tv_banking)
+			break
+		
+		default:
+			break
+	}
+}

@@ -1,0 +1,83 @@
+
+//===============================================================================
+// Impact Sol : après une projection, le tronc reçoit un impact en retombant sur le sol 
+//===============================================================================
+
+#include "KIGO_defines.var"
+
+vector		tv_impulsion_pos
+
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+//	AI_CBDel(o_snap_actor, CallBack_After_Blend, "KIGO_callback_set_pos")
+//	COL_UnCollidableDel(o_snap_actor)
+//	o_snap_actor = nobody
+	o_projectile_actor = nobody
+	
+	i_sort_etat = faux
+	return
+}
+
+
+// INITIALISATION ETAT ==============================================================
+if ( i_etat_courant != ETAT_KIGO_impact )
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_KIGO_impact
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+
+//	if ( !OBJ_FlagsIdentityTest( OBJ_C_IdentityFlag_Dyna))
+		AI_Execute("KIGO_exec_dyn_on")
+	
+	tv_impulsion_pos = OBJ_PosGet() + DYN_SpeedGetVector()
+	DYN_Impulsion( tv_impulsion_pos, 2.0 )
+	DBG_RenderVector(tv_impulsion_pos, Cv_VerticalVector * 5, color_rouge)
+	DYN_FrictionVectorSet(Cv_souche_grosse_friction)
+	
+//	f_proj_rot_coef_cur = 0.33
+	f_proj_rot_coef_final = 0.0
+	
+	f_horizontal_blend_coef = 0.0
+	//i_nb_coup++
+	SND_RequestPlay(Ci_SND_Fallen)
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+if( COL_CollideType(COL_C_Ground) )
+	f_proj_rot_coef_blend = 3.0				// le tronc s'arrête de tourner qd il est au sol
+
+
+if( MATH_FloatNullToler(f_proj_rot_coef_final - f_proj_rot_coef_cur, 0.05) )
+{
+	// le tronc s'est arrêté de tourner
+	AI_TrackCurChangeNow("KIGO_ETAT_attente_grab")		// le tronc ne tourne plus -> attente
+}
+else
+{
+	v_last_speed = DYN_SpeedGetVector()
+	if( v_last_speed.z > 0.0 )
+	{
+		v_last_speed.z = 0.0
+		DYN_SpeedSetVector(v_last_speed)
+	}
+	
+	AI_Execute("KIGO_exec_zdf_zdc")
+
+	AI_Execute("KIGO_exec_incline_horiz")
+
+	AI_Execute("KIGO_exec_rotation")
+}
+

@@ -1,0 +1,164 @@
+//#include "Interface_MenuInGame_defs.var"
+//
+//int			ti_Line
+//int			ti_Texte
+//int			ti_Col
+//int			ti_SaveCur
+//vector	tv_Pos
+//int			ti_MenuNb, ti_Menu[ 5 ]
+//
+////#define KEYLOGGER
+////#define OPTCONTROL_JOYCURVE
+//
+//if (!IntMIG_SetPageParams())
+//	return
+//if (!mo_Texte)
+//	return
+//	
+//ti_Menu[ 0 ] = 0
+//ti_Menu[ 1 ] = 1
+//ti_MenuNb = 2
+//tv_Pos = cvector( 0.8, 0.4, 0)
+//
+//#ifdef OPTCONTROL_JOYCURVE
+//ti_Menu[ ti_MenuNb ] = 2
+//ti_MenuNb++
+//#endif
+//
+//#ifdef KEYLOGGER
+//ti_Menu[ ti_MenuNb ] = 3
+//ti_MenuNb++
+//ti_Menu[ ti_MenuNb ] = 4
+//ti_MenuNb++
+//tv_Pos = cvector( 0.8, 0.3, 0)
+//#endif
+//	
+//if (INTMIG_EnterPage_Start)
+//{
+//	IntMIG_ResetTexte( mi_PageString, 20 )
+//	ti_Texte = mi_PageString
+//
+//	IntMIG_SetText( ti_Texte, INTMIG_TXG, INTMIG_TEXT_OptionsControl, cvector(0.5, 0.1, 0),  1.5, 5, -1, 0xFFFFFF, 0 )
+//	ti_Texte++
+//	
+//	for (ti_Line = 0; ti_Line < ti_MenuNb; ti_Line++)
+//	{
+//		ti_Col = IntMIG_GetTextLineColor( ti_Line )
+//		
+//		switch(  ti_Menu[ ti_Line ] )
+//		{
+//		case 0: IntMIG_SetText( ti_Texte, INTMIG_TXG, INTMIG_TEXT_OptionsControl + 1 + ti_Line, tv_Pos,  0.0, 6, -1, ti_Col, 0 ) break
+//		case 1: IntMIG_SetText( ti_Texte, INTMIG_TXG, INTMIG_TEXT_OptionsControl + 1 + ti_Line, tv_Pos,  0.0, 6, -1, ti_Col, 0 ) break
+//		case 2: 	@mo_Texte OBJ_TextSet( ti_Texte, "Joy curve" ) 
+//					IntMIG_CreateText_End( ti_Texte, tv_Pos,  0.0, 6, -1, ti_Col, 0, 0 )
+//					break
+//		case 3: @mo_Texte OBJ_TextSet( ti_Texte, "Record" ) 
+//					IntMIG_CreateText_End( ti_Texte, tv_Pos,  0.0, 6, -1, ti_Col, 0, 0 )
+//					break
+//		case 4:  @mo_Texte OBJ_TextSet( ti_Texte, "Play" ) 
+//					IntMIG_CreateText_End( ti_Texte, tv_Pos,  0.0, 6, -1, ti_Col, 0, 0 )
+//					break
+//		}
+//		ti_Texte++
+//		
+//		tv_Pos.x = 0.2
+//		switch ( ti_Menu[ ti_Line ] )
+//		{
+//		case 0: IntMIG_OptionsControlString_Vibration( mi_PageString + 10 + ti_Line, tv_Pos, ti_Col) break
+//		case 1: IntMIG_OptionsControlString_AimingAxis( mi_PageString + 10 + ti_Line, tv_Pos, ti_Col) break
+//		case 2: IntMIG_OptionsControlString_JoyCurve( mi_PageString + 10 + ti_Line, tv_Pos, ti_Col ) break
+//		case 3: IntMIG_OptionsControlString_KLRecord( mi_PageString + 10 + ti_Line, tv_Pos, ti_Col ) break
+//		case 4: IntMIG_OptionsControlString_KLPlay( mi_PageString + 10 + ti_Line, tv_Pos, ti_Col) break
+//		}
+//		tv_Pos.x = 0.8
+//		
+//		tv_Pos.y += 0.08
+//	}
+//
+//	IntMIG_SetText( ti_Texte, INTMIG_TXG, INTMIG_TEXT_ChangeX, cvector( 0.4, 0.95, 0),  0.0, 6, 1, 0x808080, 0 )
+//	IntMIG_SetText( ti_Texte + 1, INTMIG_TXG, INTMIG_TEXT_BackT, cvector( 0.6, 0.95, 0),  0.0, 4, 1, 0x808080, 0 )
+//	IntMIG_Text_FadeInMulti( mi_PageString, 20, 0.5, 0.0 )
+//}
+//else if (INTMIG_LeavePage_Start)
+//{
+//	IntMIG_Text_FadeOutMulti( mi_PageString, 20, 0.5 )
+//}
+//
+//IntMIG_RestorePageParams()
+//
+//if ( mi_Exit || mi_ChangePage || mi_Cheat )
+//	return
+//	
+//ti_SaveCur = mi_Cur
+//IntMIG_UpdateCur_Vertical( ti_MenuNb, 1 )
+//if (mi_Cur != ti_SaveCur )
+//{
+//	IntMIG_Text_ChangeColor( mi_PageString + 1 + ti_SaveCur, INTMIG_Color_Sel, INTMIG_Color_NotSel, 0.25, 0.0 )
+//	IntMIG_Text_ChangeColor( mi_PageString + 1 + mi_Cur, INTMIG_Color_NotSel, INTMIG_Color_Sel, 0.25, 0.0 )
+//	IntMIG_Text_ChangeColor( mi_PageString + 10 + ti_SaveCur, INTMIG_Color_Sel, INTMIG_Color_NotSel, 0.25, 0.0 )
+//	IntMIG_Text_ChangeColor( mi_PageString + 10 + mi_Cur, INTMIG_Color_NotSel, INTMIG_Color_Sel, 0.25, 0.0 )
+//	IntMIG_PlaySound( INTMIG_SOUND_SELECTION )
+//}
+//
+//
+//if ( joy_cancel  )
+//{
+//	IntMIG_PlaySound( INTMIG_SOUND_CANCEL )
+//	SAVE_ValidateAl()
+//	INTMIG_ChangePage(  "IntMIG_Page_Options" , 2 )
+//	return
+//}
+//	
+//if ( joy_valide )
+//{
+//	tv_Pos.x = 0.2
+//	tv_Pos.y += (mi_Cur * 0.08)
+//	 
+//	switch ( ti_Menu[ mi_Cur ] )
+//	{
+//		case 0:	if ( IO_PifPafEnable( -1 ) )
+//						IO_PifPafEnable( 0 )
+//					else
+//						IO_PifPafEnable( 1 )
+//					IO_PafSet( 100, 10 )
+//					SAVE_ValidateAl()
+//					IntMIG_OptionsControlString_Vibration( mi_PageString + 10 + mi_Cur, tv_Pos, 0xFFFFFF)
+//					break
+//			
+//		case 1: 	@"univ" CAM_SensVert = -@"univ" CAM_SensVert
+//					SAVE_ValidateAl()
+//					IntMIG_OptionsControlString_AimingAxis( mi_PageString + 10 + mi_Cur, tv_Pos, 0xFFFFFF)
+//					break
+//				
+//		case 2: 	ConsoleSpecificOption( 20 )
+//					IntMIG_OptionsControlString_JoyCurve( mi_PageString + 10 + mi_Cur, tv_Pos, 0xFFFFFF)
+//					break
+//					
+//		case 3:  if (!DBG_IsRecord() && !DBG_IsPlay())
+//				    	{
+//						DBG_StartRecord()
+//				    		WOR_Reinit()
+//					}
+//					else
+//					{
+//						DBG_StopRecord()
+//						mi_ExitAsked = 1
+//					}
+//					break
+//			
+//		case 4 : if (!DBG_IsRecord() && !DBG_IsPlay())
+//					{
+//						DBG_StartPlay()
+//						WOR_Reinit() 
+//					}
+//					else
+//					{
+//						DBG_StopPlay()
+//						mi_ExitAsked = 1
+//					}
+//					break	
+//	}
+//	IntMIG_PlaySound( INTMIG_SOUND_VALIDE )
+//}
+//
+//

@@ -1,0 +1,30 @@
+procedure_ultra void Tjo_Bullet_TrajSet(vector v_traj);
+
+vector	tv_dest
+object	to_monTir
+
+OBJ_PosSet(@o_porteurBone OBJ_PosGet() + @o_porteurBone MATH_VecLocalToGlobal(v_position))
+
+tv_dest=@o_cible OBJ_PosGet()-OBJ_PosGet()
+OBJ_SightGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(),tv_dest,5.0*TIME_GetDt()),Cv_VerticalVector)
+
+//f_FireDelay-=TIME_GetDt()
+//if(f_FireDelay<0)
+//{
+//	f_FireDelay = MATH_RandFloat(1.0,5.0)
+//	to_monTir = @o_projectile OBJ_Duplicate(OBJ_PosGet())
+//	@to_monTir Tjo_Bullet_TrajSet(OBJ_SightGet())
+//}
+//
+
+if(i_fire>0)
+{
+	f_pause+=TIME_GetDt()
+	if(f_pause>0.2)
+	{
+		i_fire--
+		to_monTir = @o_projectile OBJ_Duplicate(OBJ_PosGet())
+		@to_monTir Tjo_Bullet_TrajSet(OBJ_SightGet())
+		f_pause=0
+	}
+}

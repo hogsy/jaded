@@ -1,0 +1,329 @@
+#include "PNJ_Brontosaure_Organizer_defs.var" 
+
+int 		ti_Bronto, ti_OtherBronto, ti_respawn, ti_Patte
+int			ti_RespawnMax
+object	to_ref, to_B0, to_B1, to_Next, to_First, to_Last, to_Patte
+vector	tv_temp, tv_Norm, tv_ref
+float		tf_dist, tf_best, tf_speedadd
+float		tf_dot, tf_realdist, tf_start, tf_end, tf_ratio
+vector	tv_first 
+vector	tv_last 
+float		tf_dotfirst 
+float		tf_dotlast 
+int			ti_countbefore, ti_theend
+
+//////////////////////////////////////////////////////////////////////////
+// TEST CAPA
+/////////////////////////////////////////////////////////////////////////
+
+// --------( Mode Panique )--------
+if (OBJ_CapaTest( OBJ_Capa_0 ) )
+{
+	OBJ_CapaSet(0,OBJ_Capa_0)
+	if ( !Bronto_Panique_On )
+	{
+		OBJ_CapaSet(OBJ_Capa_8, 0)
+		Bronto_Panique_On = vrai
+		Bronto_Panique_Timer = 0
+	}
+}
+
+// --------( Gestion panique par paf )--------
+if (Bronto_Paf_On)
+	Bronto_Paf_Count -= 3 * TIME_GetDt()
+else 
+	Bronto_Paf_Count -= Bronto_Paf_DecrPerSecond  * TIME_GetDt()
+	
+if (Bronto_Paf_Count < 0)
+	Bronto_Paf_Count = 0
+if (Bronto_Paf_Count > Bronto_Paf_Seuil )
+{
+	Bronto_Paf_Count = Bronto_Paf_Seuil 
+	if ( (!Bronto_Paf_On) && (!Bronto_Panique_On) )
+	{
+		Bronto_Paf_On = vrai
+		Bronto_Paf_SpeedAdd = 0
+	}
+}
+
+
+// --------( Fin temporaire de troupeau )--------
+if ( OBJ_CapaTest( OBJ_Capa_1 ) )
+{
+	if ( Bronto_RespawnMax_Capa1 < 0 )
+		Bronto_RespawnMax_Capa1 = Bronto_Respawncount
+}
+else if ( Bronto_Respawn_StopTimer > 0 )
+{
+	Bronto_Respawn_StopTimer -= TIME_GetDt()
+	if ( (Bronto_Respawn_StopTimer) < 0 && (Bronto_Respawn_StopAfter == 0) )
+	{
+		Bronto_Respawn_StopAfter = MATH_RandInt(Bronto_Respawn_StopAfter_Min, Bronto_Respawn_StopAfter_Max)
+		Bronto_Respawn_StopTimer = MATH_RandFloat(Bronto_Respawn_StopTimer_Min, Bronto_Respawn_StopTimer_Max)
+		Bronto_RespawnMax_Capa1 = Bronto_Respawncount
+	}
+	if ( Bronto_RespawnMax_Capa1 < 0 )
+		ti_RespawnMax = Bronto_RespawnMax
+	else
+		ti_RespawnMax = Bronto_RespawnMax_Capa1
+}
+else
+{
+	Bronto_RespawnMax_Capa1 = -1
+	ti_RespawnMax = Bronto_RespawnMax
+}
+
+// --------( ramble cam )---------
+if ( OBJ_CapaTest( OBJ_Capa_2 ) )
+{
+	to_ref = get_camera
+	tf_best = Cf_Infinit
+	for (ti_Bronto = 0; ti_Bronto < Bronto_Nb; ti_Bronto++)
+	{
+		tf_dist = @to_ref OBJ_SqrDist( Bronto_Obj[ ti_Bronto ] )
+		if (tf_dist < tf_best)
+			tf_best = tf_dist
+	}	
+	
+	tf_start = Bronto_f_Shake_DistStart * Bronto_f_Shake_DistStart
+	tf_end = Bronto_f_Shake_DistEnd * Bronto_f_Shake_DistEnd
+	if ( tf_best < tf_end )
+	{
+		if (tf_best < tf_start )
+			tf_ratio = 1
+		else
+			tf_ratio = (tf_best - tf_end) /  (tf_start - tf_end )
+			
+		LIBGFX_RambleCam( Bronto_f_Shake_Amplitude * tf_ratio )
+	}
+}
+
+// --------( shake cam )---------
+if (OBJ_CapaTest( OBJ_Capa_7 ) )
+{
+	OBJ_CapaSet( 0, OBJ_Capa_7  )
+	IO_PafSet( 100, 1 )
+}
+
+if (OBJ_CapaTest( OBJ_Capa_6))
+{
+	Bronto_f_Shake_Locked = 1.0
+	OBJ_CapaSet( 0, OBJ_Capa_6 )
+}
+
+if (Bronto_f_Shake_Locked > 0)
+{
+	Bronto_f_Shake_Locked -= TIME_GetDt()
+	if (Bronto_f_Shake_Locked <= 0)
+		OBJ_CapaSet( 0, OBJ_Capa_3 )
+	else
+		OBJ_CapaSet(OBJ_Capa_3 , 0 )
+}
+	
+if ( OBJ_CapaTest( OBJ_Capa_3 ) )
+{
+	to_ref = get_camera
+	tf_best = 100
+	for (ti_Bronto = 0; ti_Bronto < Bronto_Nb; ti_Bronto++)
+	{
+		for (ti_Patte = 0; ti_Patte < 4; ti_Patte++)
+		{
+			if ( M_Brontoi( ti_Bronto ) IK_ai_PatteState[ ti_Patte ] == 2 )
+			{
+				to_Patte = M_Brontoi( ti_Bronto ) Pattes_o_Object[ ti_Patte ]
+				tv_temp = @to_Patte OBJ_PosGet() - @to_ref OBJ_PosGet()
+				tf_dist = MATH_VecNorm( tv_temp )
+				if (tf_dist < tf_best)
+				{
+					if ( tf_dist < 20 )
+						tf_best = tf_dist
+					else
+					{
+						tv_temp /= tf_dist
+						if (MATH_VecDotProduct( tv_temp, @to_ref OBJ_SightGet()) > 0.3 )
+							tf_best = tf_dist
+					}
+				}
+			}
+		}
+	}	
+	
+	tf_start = 20
+	tf_end = 100
+	if ( tf_best < tf_end )
+	{
+		if (tf_best < tf_start )
+			tf_ratio = 1
+		else
+			tf_ratio = (tf_best - tf_end) /  (tf_start - tf_end )
+			
+		LIBGFX_CheckCam( 0.05 * tf_ratio, 20.0, 0.02 * tf_ratio, 20.0, 0.2, 2.0)
+	}
+	LIBGFX_RambleCam( 0.01 )
+}
+
+//----( optim no paf with patte )----
+if ( OBJ_CapaTest( OBJ_Capa_4 ) )
+{
+	if ( !Bronto_NoPafWithPattes )
+		Bronto_NoPafWithPattes = LIBBronto_SetOptim_NoPafWithPattes(1)
+}
+else
+{
+	if ( Bronto_NoPafWithPattes )
+		Bronto_NoPafWithPattes = LIBBronto_SetOptim_NoPafWithPattes(0)
+}
+
+// ----( optim no ik on legs )----
+if ( OBJ_CapaTest( OBJ_Capa_5 ) )
+{
+	if ( !Bronto_NoIKOnLeg)
+		Bronto_NoIKOnLeg= LIBBronto_SetOptim_NoIKOnLegs(1)
+}
+else
+{
+	if ( Bronto_NoIKOnLeg)
+		Bronto_NoIKOnLeg= LIBBronto_SetOptim_NoIKOnLegs(0)
+}
+
+//////////////////////////////////////////////////////////////////////////
+// BRONTO SPEED
+/////////////////////////////////////////////////////////////////////////
+tf_speedadd = 0
+
+if (	Bronto_Panique_On )
+{
+	Bronto_Panique_Timer += TIME_GetDt()
+	if (Bronto_Panique_Timer > Bronto_Panique_Time)
+	{
+		Bronto_Panique_On = faux
+		OBJ_CapaSet( 0, OBJ_Capa_8 )
+	}
+	else if (Bronto_Panique_Timer < Bronto_Panique_TimeFadeIn)
+		tf_speedadd = Bronto_Panique_SpeedOffset * (Bronto_Panique_Timer / Bronto_Panique_TimeFadeIn )
+	else if (Bronto_Panique_Timer > Bronto_Panique_Time - Bronto_Panique_TimeFadeOut )
+		tf_speedadd = Bronto_Panique_SpeedOffset * ((Bronto_Panique_Time - Bronto_Panique_Timer) / Bronto_Panique_TimeFadeOut)
+	else
+		tf_speedadd = Bronto_Panique_SpeedOffset
+		
+	if (Bronto_Paf_On)
+	{
+		if (tf_speedadd < Bronto_Paf_SpeedAdd)
+			tf_speedadd = Bronto_Paf_SpeedAdd
+		else
+		{
+			Bronto_Paf_On = 0
+		}
+	}
+	Bronto_Paf_Count = 0
+}
+else if (Bronto_Paf_On)
+{
+	if (Bronto_Paf_Count <= 0 )
+	{
+		Bronto_Paf_SpeedAdd -= TIME_GetDt()
+		if (Bronto_Paf_SpeedAdd < 0)
+		{
+			Bronto_Paf_SpeedAdd = 0
+			Bronto_Paf_On = faux
+		}
+	}
+	else if (Bronto_Paf_SpeedAdd < Bronto_Panique_SpeedOffset )
+	{
+		Bronto_Paf_SpeedAdd += TIME_GetDt() * 8
+		if (Bronto_Paf_SpeedAdd > Bronto_Panique_SpeedOffset )
+		{
+			Bronto_Paf_SpeedAdd = Bronto_Panique_SpeedOffset 
+		}
+	}
+	tf_speedadd = Bronto_Paf_SpeedAdd
+}
+
+for (ti_Bronto = 0; ti_Bronto < Bronto_Nb; ti_Bronto++)
+{
+	Bronto_ComputeSpeed( ti_Bronto )
+	M_Brontoi( ti_Bronto ) troupe_f_speedadd = tf_speedadd
+}
+
+//////////////////////////////////////////////////////////////////////////
+// SPAWNAGE
+/////////////////////////////////////////////////////////////////////////
+Bronto_RespawnTimer -= TIME_GetDt()
+if ( Bronto_RespawnTimer < 0)
+{
+	to_ref = AI_MainActorGet(C_ID_Joueur)
+	//to_ref = OBJ_Me()
+	Bronto_RefPos = @to_ref OBJ_PosGet()
+	Bronto_RefSight = @to_ref OBJ_SightGet()
+	Bronto_Respawn = 0
+	
+	ti_countbefore = 0
+	for (ti_Bronto = 0; ti_Bronto < Bronto_Nb; ti_Bronto++)
+	{
+		tv_temp = @Bronto_Obj[ ti_Bronto ] OBJ_PosGet() - Bronto_RefPos 
+		if (MATH_VecDotProduct( tv_temp, @Bronto_Obj[ ti_Bronto ] OBJ_SightGet()) > 0)
+			ti_countbefore++
+	}
+	
+	if ( ti_countbefore >= Bronto_Nb / 2 )
+	{
+		if ( ( Bronto_Respawncount < ti_RespawnMax ) )
+		{
+			AI_Execute ("PNJBrontoOrg_Respawn_First2Last" )
+		}
+	}
+	if ( (Bronto_Respawn == 0) && (ti_countbefore <= Bronto_Nb / 2))
+	{
+		if (Bronto_Respawncount > 0 )
+		{
+			AI_Execute ("PNJBrontoOrg_Respawn_Last2First" )
+		}
+	}
+}
+
+// signale au bronto qu'ils ne respawneront plus
+if ( Bronto_Respawncount >= Bronto_RespawnMax )
+{
+	ti_theend = 1
+	for (ti_Bronto = 0; ti_Bronto < Bronto_Nb; ti_Bronto++)
+	{
+		@Bronto_Obj[ ti_Bronto ] OBJ_CapaSet( OBJ_Capa_2, 0)
+		if ( !@Bronto_Obj[ ti_Bronto ] OBJ_CapaTest( OBJ_Capa_3 ) )
+			ti_theend = 0
+	}
+	if ( ti_theend )
+	{
+		OBJ_CapaSet( OBJ_Capa_15, 0 )
+		OBJ_Destroy()
+	}
+}
+else
+{
+	for (ti_Bronto = 0; ti_Bronto < Bronto_Nb; ti_Bronto++)
+	{
+		@Bronto_Obj[ ti_Bronto ] OBJ_CapaSet( 0, OBJ_Capa_2)
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+// SOUND
+/////////////////////////////////////////////////////////////////////////
+if ( Bronto_Paf_On || Bronto_Panique_On )
+	Bronto_f_MoanTimer -= 5 * TIME_GetDt()
+else
+	Bronto_f_MoanTimer -= TIME_GetDt()
+	
+if ( Bronto_f_MoanTimer < 0 )
+{
+	ti_Bronto = MATH_RandInt( 0, Bronto_Nb )
+	M_Brontoi( ti_Bronto ) Sound_i_Moan = 1
+	Bronto_f_MoanTimer = MATH_RandFloat( Bronto_f_MoanMin, Bronto_f_MoanMax )
+}
+
+#ifdef BRONTO_LOG
+for (ti_Bronto = 0; ti_Bronto < Bronto_Nb; ti_Bronto++)
+{
+	ti_Patte = STR_CreateText( "", VIEW_3dWorldTo2d(0,@Bronto_Obj[ ti_Bronto ] OBJ_PosGet()),  0 )
+	STR_AppendInt( ti_Patte, ti_Bronto )
+}
+#endif

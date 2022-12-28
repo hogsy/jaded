@@ -1,0 +1,192 @@
+#include "PNJ_Raptor_defines.var"
+
+object	to_collide_object
+object	to_camera
+
+float		tf_sqr_hor_dist
+float		tf_interet
+float		tf_imprecision
+
+int			ti_numero
+int			ti_flag_go_to_grid_center
+int			ti_followed_ground_ID
+int			ti_ray_ground_sound_id
+int			ti_index 
+int			ti_context
+int			ti_flag_followed_crouch
+int			ti_flag_try_to_move
+
+vector	tv_offset
+vector	tv_temp
+
+object	to_interet_gao
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+
+	if (i_etat_courant != ETAT_rided)
+		o_bone_rider = LNK_ServeurGet(Ci_LNK_RIDE_DINO, i_bone_rider_LNK_ID, i_bone_rider_PROPOSITION_ID, faux, nofunc)
+
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_piste)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_piste
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	i_flag_way_ok = faux
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =======================================================================================================
+AI_Execute("PNJ_Raptor_exec_check_sound")
+
+AI_Execute("PNJ_Raptor_exec_check_vision")
+
+i_flag_zde_fight_enable = vrai
+AI_Execute("PNJ_Raptor_exec_check_collision")
+
+AI_Execute("PNJ_Raptor_exec_check_paf")
+if (o_paf_actor)
+	macro_change_etat("PNJ_Raptor_ETAT_paf")
+
+if (o_bone_rider)
+	macro_change_etat("PNJ_Raptor_ETAT_rided")
+o_bone_rider = LNK_ServeurGet(Ci_LNK_RIDE_DINO, i_bone_rider_LNK_ID, i_bone_rider_PROPOSITION_ID, vrai, nofunc)
+
+AI_Execute("PNJ_Raptor_exec_check_interet")
+if (MSG_GlobalIsValid(mid_new_interet) || (MSG_GlobalIsValid(mid_best_interet) && mid_best_interet != mid_last_interet))
+	macro_change_etat("PNJ_Raptor_ETAT_hesite")
+
+if (! MSG_GlobalIsValid(mid_best_interet))
+	macro_change_etat(fct_main_etat)
+
+v_way_destpos = EVENT_InteretPositionGet(mid_best_interet)
+
+tf_interet = EVENT_InteretReelGet(mid_best_interet)
+if (tf_interet > 50.0)
+{
+	// C'est assez interessant
+#ifdef DBG_DISPLAY_LOCK
+	object toto
+	toto = EVENT_InteretTargetGet(mid_best_interet)
+	DBG_RenderVector(OBJ_PosGet(), @toto OBJ_PosGet() - OBJ_PosGet(), color_rouge)
+#endif
+
+	EVENT_InteretStatusSet(mid_best_interet, C_EVENT_InteretStatusLock)
+	macro_change_etat("PNJ_Raptor_ETAT_attaque")
+}
+
+tf_imprecision = EVENT_InteretPrecisionGet(mid_best_interet)
+if (tf_imprecision)
+{
+	DBG_RenderCircle(v_way_destpos, tf_imprecision, Cv_VerticalVector, color_rouge)
+
+	tv_temp = MATH_VecCrossProduct(v_way_destpos - OBJ_PosGet(), Cv_VerticalVector)
+	MATH_VecSetNormalize(tv_temp)
+	
+	tv_temp *= tf_imprecision
+	tv_temp += v_way_destpos
+	
+	v_way_destpos = tv_temp
+}
+	
+// COMPORTEMENT ==================================================================================================	
+ti_flag_go_to_grid_center = vrai
+
+//DBG_RenderVector(v_way_destpos, cvector(0.0, 0.0, 5.0), color_bleu)
+
+tv_temp = v_way_destpos
+tv_temp -= OBJ_PosGet()
+tv_temp.z = 0.0
+
+tf_sqr_hor_dist = MATH_VecDotProduct(tv_temp, tv_temp)
+
+ti_flag_try_to_move = faux
+
+if (tf_sqr_hor_dist > 4.0)
+{
+	ti_flag_try_to_move = vrai
+
+	i_flag_look = vrai
+	v_look_pos = v_way_destpos
+	v_look_pos.z += 1.0
+}
+
+if (ti_flag_try_to_move)
+{
+	AI_Execute("PNJ_Raptor_exec_way_find")
+
+	v_joy_dir = v_way_case_dest
+	v_joy_dir -= OBJ_PosGet()
+	v_joy_dir.z = 0.0
+
+	f_joy_norm = MATH_VecNorm(v_joy_dir)
+
+	if (i_way_moving && f_joy_norm)
+	{
+		v_joy_dir /= f_joy_norm
+		
+		f_joy_norm = MATH_FloatLimit(f_joy_norm, 0.0, 1.0)
+		
+		ti_flag_go_to_grid_center = faux
+	}
+}
+
+if (i_way_moving)
+{
+	if (!i_flag_run && i_way_case_nbr > 8)
+		i_flag_run = vrai
+	else if (i_flag_run && i_way_case_nbr < 5)
+		i_flag_run = faux
+}
+else
+{
+	if (!i_flag_run && tf_sqr_hor_dist > 64.0)
+		i_flag_run = vrai
+	else if (i_flag_run && tf_sqr_hor_dist < 25.0)
+		i_flag_run = faux
+}
+			
+DBG_RenderVector(v_way_case_dest, cvector(0.0, 0.0, 10.0), color_bleu)
+	
+if (ti_flag_go_to_grid_center && i_flag_way_ok)
+{
+	i_flag_run = faux
+
+	// On est arrivé, on se centre sur la case
+	v_joy_dir = v_way_case_dest
+	v_joy_dir -= OBJ_PosGet()
+	v_joy_dir.z = 0.0
+	
+	f_joy_norm = MATH_VecNorm(v_joy_dir)
+
+	if (f_joy_norm)
+		v_joy_dir /= f_joy_norm
+	else
+		v_joy_dir = OBJ_SightGet()
+
+	if (f_joy_norm > 0.25)
+		f_joy_norm = MATH_FloatLimit(f_joy_norm, 0.0, 1.0)
+	else
+		f_joy_norm = 0.0
+}
+
+AI_Execute("PNJ_Raptor_exec_select_action")

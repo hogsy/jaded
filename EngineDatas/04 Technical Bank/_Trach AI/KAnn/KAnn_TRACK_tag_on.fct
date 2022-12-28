@@ -1,0 +1,120 @@
+#include "KAnn_Defines.var"
+
+float			tf_time
+float			tf_temp
+
+object		to_obj
+
+int				ti_signal
+
+
+// ================ RAJOUT LOD ANN =====================================
+to_obj = VIEW_GetObject(0)
+tf_temp = MATH_VecNorm(@to_obj OBJ_PosGet() - OBJ_PosGet())
+tf_temp *= VIEW_FocaleGet(0)
+
+//Str_DisplayFloatOnce(tf_temp, cvector(0.5,0.5,0))
+if(tf_temp < 6)
+	ANI_ShapeSelect(Anim_Canal_Tete, 1)
+else if(tf_temp < 9)
+	ANI_ShapeSelect(Anim_Canal_Tete, 2)
+else
+	ANI_ShapeSelect(Anim_Canal_Tete, 3)
+// ================ RAJOUT LOD ANN =====================================
+
+
+OBJ_CapaSet(none, Capa_Disable_Action)
+
+i_CINE_force_new_safe_WP = faux
+
+// DEATH MUSIK ======================================================================
+if( KAnn_Death_Timer_Is_Activated() && ! OBJ_CapaTest(CAPA_No_Stress_Muzik) )
+{	
+	// DEBUG TIMER ====================================================================
+	if( i_DBG_display_death_timer )
+	{
+		Str_DisplayTextOnce("Timer Ann : ", cvector(0.4,0,0))
+		Str_DisplayFloatOnce(KAnn_Death_Timer_Get(), cvector(0.52,0,0))
+	}
+	
+	// DEATH MUSIK MANAGMENT ========================================================
+	if( i_snd_injure == -1 )
+	{
+		i_snd_injure = SND_RequestPlayLoop(110)
+		i_snd_injure1 = SND_RequestPlayLoop(111)
+	}
+	else
+	{
+		tf_temp = 1 - (KAnn_Death_Timer_Get() / Cf_KAnn_Death_Timer_Max_Value)
+		f_blend_injure = MATH_FloatBlend(f_blend_injure, tf_temp, 2.0 * TIME_GetDt())
+		SND_InsertVarSet(i_snd_injure, 2, f_blend_injure)
+		SND_InsertVarSet(i_snd_injure1, 2, f_blend_injure)
+		
+		SND_GroupVolumeSet(1, 1 - f_blend_injure)
+	}
+}
+else
+{
+	// stopper le son injure
+	if(i_snd_injure != -1)
+	{
+		SND_Stop(i_snd_injure)
+		SND_Stop(i_snd_injure1)
+		i_snd_injure = -1
+		i_snd_injure1 = -1
+	}
+	// remettre le volume du groupe
+	if( f_blend_injure != 0.0 )
+	{
+		f_blend_injure = MATH_FloatBlend(f_blend_injure, 0.0, 5 * TIME_GetDt())
+		if( MATH_FloatNullToler(f_blend_injure, 0.1) )
+			f_blend_injure = 0.0
+		SND_GroupVolumeSet(1, 1 - f_blend_injure)
+	}
+}
+
+
+// CHECK FOR TELEPORTATION
+if ( MATH_VecDistance( OBJ_PosGet(), v_old_pos)  > 50.0 && i_action_id != WP_Action_Teleport)
+{
+	switch( i_etat_courant )
+	{
+		case ETAT_grabbed_bat :
+		case ETAT_grabbed_KK :
+		case ETAT_grabbed_raptor :
+		case ETAT_grabbed_trex :
+		case ETAT_FPS :
+			// VINCE : FUCKING CAPA 1, I'LL STAY IN MY MODE !!!!!!
+			break
+		default:
+			OBJ_CapaSet(CAPA_Force_New_Safe_WP, none)		// makes Ann going to follow network mode and check for a wp...
+			break
+	}
+}
+
+v_old_pos = OBJ_PosGet()
+
+// RUN BREATH DELAY ----------------------------------------------
+if( i_run_breath_enabled )
+{
+	f_run_breath_delay -= MATH_FloatMin(f_run_breath_delay, TIME_GetDt())
+	if( ! f_run_breath_delay )
+	{
+//		SPEECH_M_RqHuman	(C_ID_Ann, GeneKAnn_C_breath_run_fear)
+		f_run_breath_delay = MATH_RandFloat(2.0, 4.0) // , 8.0)
+	}
+}
+
+// SND STEP ---------------------------------------
+ti_signal = ANI_SignalGet()
+if(ti_signal & 1)
+	SND_RequestPlay(Ci_SND_FootStep)
+
+
+// AFFICHAGE DEBUG -------------------------
+AI_Execute("KAnn_exec_DEBUG")
+
+
+// CAPA ==========================
+OBJ_CapaSet(none, CAPA_Grabbed_Non_Posable)
+

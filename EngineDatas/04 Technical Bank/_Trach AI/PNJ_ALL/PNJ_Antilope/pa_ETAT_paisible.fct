@@ -1,0 +1,63 @@
+#include "PNJ_antilope_defines.var"
+
+vector	tv_sens
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+	DYN_TractionSet(Cv_NullVector)
+	DYN_SpeedSetVector( Cv_NullVector)
+	return
+}
+
+// INIT ETAT ======================================================================
+if ( i_etat_courant != ETAT_PA_WAIT)
+{
+	i_etat_courant = ETAT_PA_WAIT
+	
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+}
+
+// REACTIONS ===============================================================
+if ( o_danger)
+	macro_change_etat("pa_ETAT_flee")
+	
+if( o_paf_actor)
+	macro_change_etat("pa_ETAT_paf")
+
+
+// COMPORTEMENT ===============================================================
+
+if ( MATH_VecNullEpsilon(v_retour_pos)
+|| MATH_VecDistance( OBJ_PosGet(), v_retour_pos) > 2.0 )
+{
+	// RETOUR
+	if ( MATH_VecNullEpsilon(v_retour_pos))
+	{
+		if ( o_BV_Territory)
+		{
+			v_retour_pos = @o_BV_Territory BV_RandomPosGet(0)
+			v_retour_pos.z = OBJ_PosGet().z
+		}
+		else
+			v_retour_pos = OBJ_PosGet()
+	}
+	tv_sens = v_retour_pos - OBJ_PosGet()
+	tv_sens.z = 0.0
+	if ( MATH_VecNullEpsilon(tv_sens))
+		tv_sens = OBJ_SightGet()
+	else
+		tv_sens = MATH_VecNormalize( tv_sens)
+	
+	OBJ_BankingGeneralSet( MATH_VecBlendRotate( OBJ_SightGet(), tv_sens, 5.0 * TIME_GetDt()), Cv_VerticalVector)
+	ACT_ActionSet(PA_Fuite)
+	ANI_FrequencySet(0, i_ani_freq)
+}
+else
+	ACT_ActionSet(PA_Attente)

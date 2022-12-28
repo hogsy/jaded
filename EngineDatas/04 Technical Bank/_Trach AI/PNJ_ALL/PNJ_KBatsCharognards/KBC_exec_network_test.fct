@@ -1,0 +1,36 @@
+#include "KBC_Defines.var"
+
+object	to_wp
+
+// TEST CONFIG RESEAUX ============================================================================
+
+if( KBC_RetourneSePercher_Config() )
+{
+	// pas besoin de réseaux
+	return
+}
+
+if( ! net_idle )
+{
+	DBG_Error("net_idle : réseau d'attente obligatoire")
+	OBJ_Destroy()
+}
+
+if( i_KONG_ride_walling_bat )
+{
+	// uniquement besoin de net_idle
+	return
+}
+
+if( ! i_big_bat )
+{
+	// uniquement besoin de net_idle
+	return
+}
+
+if( ! net_move )
+{
+	DBG_Error("net_move : réseau de déplacement obligatoire")
+	OBJ_Destroy()
+}
+

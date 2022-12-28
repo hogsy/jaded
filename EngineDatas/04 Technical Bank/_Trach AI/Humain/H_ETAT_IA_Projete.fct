@@ -1,0 +1,176 @@
+#include "H_defines.var"
+#include "H_action.var"
+
+
+int			ti_i
+vector	tv_temp
+object	to_ray_object
+int			ti_pt_dmg
+float		tf_projete_hauteur
+int			ti_perso_stunned
+float		tf_liferatio
+int			ti_context
+
+#define		Ci_etat_projete_chute			0
+#define		Ci_etat_projete_stunned		1
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	COL_UnCollidableDel(o_grab_actor)	
+	o_grab_actor = nobody
+
+	COL_ColMapActivationSet(all, none)
+	
+	DYN_FrictionVectorSet(cvector(1.0, 1.0, 0.0))
+		
+	i_sort_etat = faux
+	ResetPath()
+	return
+}
+
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_IA_projete)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_IA_projete
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+		ai_SRV_ENABLE[ti_i] = faux
+
+	// Lancé
+	COL_ColMapActivationSet(none, all)
+
+	v_projete_init_pos = Cv_NullVector				// calcul des dégat dus à la chute désactivé
+	
+	if( ( i_dernier_etat == ETAT_IA_grabkong ) || ( i_dernier_etat == ETAT_IA_Ann_GRAB_KK ) )
+	{
+		DYN_GravitySet( H_GRAVITY)
+
+		ACT_ActionSet1(Action_Grabed_raptor_bras)
+//		DYN_Impulsion( @o_grab_actor OBJ_PosGet() + (@o_grab_actor OBJ_SightGet()* 30.0), 3.0)
+	}
+	else if( i_dernier_etat == ETAT_IA_grabtransporte )
+	{
+		DYN_SpeedSetVector(Cv_NullVector)		// ne pas conserver de vitesse par rapport au déplacement de la bat
+		DYN_GravitySet(H_GRAVITY)
+
+		ACT_ActionSet1(Action_Grabed_raptor_bras)		// anim de chute temporaire
+//		v_projete_init_pos = @o_grab_actor OBJ_PosGet()			// calcul des dégat dus à la chute activé
+
+		DYN_FrictionVectorSet(cvector(5.0, 5.0, 5.0))
+	}
+	else if (i_dernier_etat == ETAT_IA_grabraptor)
+	{
+		// On ne touche pas aux paramètres de la dynamique, le raptor a calculé une impulsion
+	}
+	else if (i_dernier_etat == ETAT_IA_Ann_Climb)
+	{
+		v_projete_init_pos = OBJ_PosGet()
+		DYN_GravitySet(H_GRAVITY)
+		DYN_SpeedSetVector( -OBJ_SightGet() * 2)
+		ACT_ActionSet1(Action_Grabed_raptor_bras)		// anim de chute temporaire
+	}
+	
+	f_time_start_etat = 0.0
+	i_etat_state = Ci_etat_projete_chute
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// ANALYSE  =====================================================================
+
+AI_Execute("H_exec_ch_Stimulus_Paf")
+o_paf_sender = nobody
+
+if( ( i_etat_state == Ci_etat_projete_stunned ) && COL_CollideType(COL_C_Ground) )
+	ai_SRV_ENABLE[Ci_LNK_GRAB_RAPTOR] = vrai
+
+AI_Execute("H_exec_serveur_get")
+AI_Execute("H_exec_change_etat")
+
+// COMPORTEMENT ===============================================================
+
+if( i_etat_state == Ci_etat_projete_chute )
+{
+	// perso en train de voler
+	if( COL_CollideType( COL_C_Ground))
+	{
+		// collision sol / plafond
+		tv_temp = COL_NormalGet(COL_C_Ground)
+		if(tv_temp.z > 0)
+		{
+			// Je touche le sol : fin du vol plané	
+			ti_perso_stunned = vrai
+			
+			// ====== DIFFERENTS TYPES DE CHUTE =========
+			
+			if ( ! MATH_VecNullEpsilon(v_projete_init_pos) )
+			{
+				// calcul des dégat dus à la hauteur de la chute
+				i_ground_ID = GRID_CapaGet( OBJ_PosGet())
+				i_ground_ID &= tag_grid_terrain
+				
+				if( IsWater(i_ground_ID))
+				{
+					// eau -> pas de dommage, perso concient (pas inanimé)
+					tf_projete_hauteur = 0.0
+					ti_perso_stunned = faux
+				}
+				else
+				{
+					// autre -> dommages
+					tv_temp = OBJ_PosGet() - v_projete_init_pos
+					tf_projete_hauteur = MATH_VecNorm(tv_temp)
+				}
+				
+				STATS_IncInjuries( joueur, i_id_humain)
+				@"univ" LIFE_HumainEtat[i_id_humain] = Life_ETAT_Agonisant
+			}
+			
+			// ======== TEST DES POINTS DE VIE ==========
+			
+			if(@"univ" LIFE_HumainEtat[i_id_humain] == Life_ETAT_Mort)
+				macro_change_etat("H_ETAT_IA_mort")
+			else
+			{
+				i_etat_state = Ci_etat_projete_stunned
+				if( ti_perso_stunned )
+				{
+					f_etat_statetimer = 1.5
+					ACT_ActionSet1( Action_Humain_Mort )
+				}
+				else
+					f_etat_statetimer = 0.0
+			}
+		}
+		// else : Je touche le plafond : j'attends de toucher le sol
+	}
+	else
+	{
+		// je ne touche ni le sol ni le plafond
+		if( f_time_start_etat >= 5.0 )
+			macro_change_etat("H_ETAT_IA_mort")		// chute dans le vide
+	}
+}
+else if( i_etat_state == Ci_etat_projete_stunned )
+{
+	// réception au sol effectuée et perso stunned : délai avant de se relever	
+	OBJ_BankingGeneralSet(OBJ_SightGet(), MATH_VecBlendRotate(OBJ_BankingGet(),Cv_VerticalVector,3 * TIME_GetDt()))
+	f_etat_statetimer -= TIME_GetDt()
+	if (f_etat_statetimer <= 0)
+		macro_change_etat(fct_main_etat)
+}
+

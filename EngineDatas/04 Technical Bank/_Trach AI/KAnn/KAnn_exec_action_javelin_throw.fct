@@ -1,0 +1,147 @@
+#include "KAnn_Defines.var"
+
+int	ti_nbr 
+int ti_i
+object to_main, to_head
+float tf_time 
+vector tv_impulsion
+float tf_range
+vector tv_temp
+message tm_msg
+vector tv_gravity 
+object to_design_object
+int ti_fire_weapon
+object	to_rack
+int 		ti_num_link
+object 	to_next_wp
+
+#define Cf_grenade_XY_friction				1.0
+#define Cf_grenade_hauteur_impulsion	1.0
+
+// if there's a target in the WP, use this one instead
+if (o_safe_wp.des_object1 != nobody)
+	o_javelin_target = o_safe_wp.des_object1
+ 
+if (OBJ_CapaTest(CAPA_No_Javelin_Attack) || 
+	o_target == o_KONG)
+{
+	return
+}
+
+if ( ! o_projectile ) 
+{
+	i_action_completed = 1 
+	ACT_ActionSet(Ann_stress_attente)
+	return	
+}
+
+i_run_breath_enabled = vrai		// autorisée à jouer le son GeneKAnn_C_breath_run_fear
+
+if (f_action_timer == -Cf_Infinit)
+{
+	f_action_timer = 0.5
+
+ 	if( i_has_weapon )
+		ACT_ActionSet(Ann_att_enjoue_bambou)
+	else
+		ACT_ActionSet(Ann_stress_attente)
+}
+else if (f_action_timer < 0.0)
+{
+	if (o_target && TIME_Elapsed(f_javelin_time_last_throw, f_javelin_time_last_throw_delay) )
+	{
+		tf_range = Cf_bambou_range 
+		tv_gravity = Cv_NormalGravity
+		ACT_ActionSet(Ann_bambou_lance)
+		if (ACT_ActionGet() == Ann_bambou_lance && ACT_ActionItemGet() == 1 )
+		{
+			f_javelin_time_last_throw = TIME_Get()
+			f_javelin_time_last_throw_delay = MATH_RandFloat(4.0, 7.0)
+			
+			ANI_ShapeSelect(Anim_Canal_Snap_MainD, 3)  // bambou moyen (9==petit)
+			ANI_ShapeSelect(Anim_Canal_Snap_MainD+1, 3)
+			ANI_ShapeSelect(Anim_Canal_Snap_MainD+2, 3)
+		
+			to_main = ANI_CanalObjectGet(Anim_Canal_Snap_MainD)	
+	
+			to_head = @o_target ANI_CanalObjectGet(Anim_Canal_Tete) 
+			if (to_head)
+				o_target = to_head
+	
+			tf_time = 0
+			tv_impulsion = DYN_LIB_ImpulsionGet_Friction
+			(
+					@o_projectile OBJ_PosGet(), 
+					@o_target OBJ_PosGet()	,
+					Cv_NormalGravity, 
+					Cf_grenade_XY_friction,
+					tf_time,
+					0,
+					0.0
+				)
+			//tf_time *= 0.125
+			tf_time *= 0.5
+	
+	 		tv_impulsion = DYN_LIB_ImpulsionGet_Friction
+				( 
+					@o_projectile OBJ_PosGet(), 
+					@o_target OBJ_PosGet()	,
+					Cv_NormalGravity, 
+					Cf_grenade_XY_friction,
+					tf_time,
+					0,
+					0.0
+				)						
+				
+			@o_projectile OBJ_SightSet( tv_impulsion )
+	
+			if (o_projectile)
+			{
+				MSG_SetNull(tm_msg)
+				tm_msg.msg_id = msg_id_grenadelaunch
+				tm_msg.msg_sender = OBJ_Me()
+				tm_msg.msg_vec1 = tv_impulsion
+				tm_msg.msg_vec2 = tv_gravity
+				tm_msg.msg_vec3 = cvector(Cf_grenade_XY_friction, Cf_grenade_XY_friction, Cf_grenade_XY_friction)
+				
+				@o_projectile MSG_Send( tm_msg )
+				
+				o_projectile = nobody
+				i_javelin_launched = 1
+				
+				i_back_to_safe_wp = 0
+				i_has_weapon = 0
+				f_action_timer = -Cf_Infinit
+				f_projectile_blend_pos_coef = 0.0
+				
+				// o_safe_wp.des_desflags --
+				// By FRED --------------------------------------------------------------------------------------
+				ti_nbr = o_safe_wp.des_desflags & 0xF
+				if (ti_nbr && ti_nbr != 0xF)	// Il en reste et c'est pas infini (0xF)
+					ti_nbr--
+				o_safe_wp.des_desflags = (o_safe_wp.des_desflags & ~0xF) | ti_nbr
+				// By FRED --------------------------------------------------------------------------------------
+				
+				// By Vinc -----------
+//				SPEECH_M_RqHuman	(C_ID_Ann, GeneKAnn_C_throw_spear)
+			}
+		}
+	}
+	else
+	{
+		if( i_has_weapon )
+			ACT_ActionSet(Ann_att_enjoue_bambou)
+		else
+			ACT_ActionSet(Ann_stress_attente)
+	}
+}
+
+if (o_target)
+{
+	v_sight = @o_target OBJ_PosGet() - OBJ_PosGet()
+	if ( ! MATH_VecNullEpsilon(v_sight))
+		v_sight = MATH_VecNormalize(v_sight)
+		
+	v_sight = MATH_VecBlend(OBJ_SightGet(),v_sight, TIME_GetDt() * 5)
+	OBJ_BankingGeneralSet( v_sight ,Cv_VerticalVector ) 
+}

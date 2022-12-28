@@ -1,0 +1,65 @@
+
+vector	tv_traction
+vector	tv_pos
+float		tf_grab_delta
+float		tf_attraction
+int			ti_int
+int			ti_piege
+
+if ( i_fin_mode)
+{
+	// PURGE DU COMPORTEMENT
+	// EXEC
+	i_fin_mode = faux
+	i_mode_detect_ini = faux
+	return
+}
+
+
+if ( !i_mode_detect_ini)
+{
+	i_mode_detect_ini = vrai
+	i_grab_phase = 0
+	return
+}
+
+ti_piege = faux
+for( ti_int = 0; ti_int < 5; ti_int++)
+{
+	if (ao_grab_client[ ti_int] )
+	{
+		ti_piege = vrai
+		if ( !i_mode_grab_ini[ ti_int])
+		{
+			i_mode_grab_ini[ ti_int] = vrai
+			@ao_grab_client[ ti_int] DYN_GravitySet( Cv_NullVector)
+			@ao_grab_client[ ti_int] COL_ColSetActivationSet( none, C_bit_zdm_pied)
+			tv_pos = @ao_grab_client[ti_int] OBJ_PosGet() - OBJ_PosGet()
+			tv_pos.z = 0.0
+			MATH_VecSetNorm( tv_pos, f_taille + 0.5)
+			v_grab_traction[ ti_int] = OBJ_PosGet() + tv_pos
+		}
+		else
+		{
+			tf_grab_delta = LNK_GrabCurrentGet(amid_grab_LNK[ti_int])
+	
+			tv_pos = MATH_VecBlend( v_grab_traction[ ti_int], OBJ_PosGet() + v_attraction, 1 - (tf_grab_delta / LNK_GrabMaxGet(amid_grab_LNK[ti_int])))
+			@ao_grab_client[ti_int] OBJ_PosSet( MATH_VecBlend( @ao_grab_client[ti_int] OBJ_PosGet(), tv_pos, 6.0 * TIME_GetDt()))
+			LNK_GrabDeltaUpdate(amid_grab_LNK[ti_int], -TIME_GetDt())
+//			f_grab_delta[ ti_int] = tf_grab_delta 
+		}
+	}
+}
+
+if ( ti_piege && !i_grab_phase)
+{
+	i_grab_phase = 1
+	GRID_CurrentSet(0)
+	GRID_TagBox(OBJ_PosGet(), OBJ_SightGet(), cvector( -1, -1, 0), cvector( 1, 1, 0), tag_grid_occupe)	
+}
+else if ( !ti_piege && i_grab_phase)
+{
+	i_grab_phase = 0
+	GRID_TagBox(OBJ_PosGet(), OBJ_SightGet(), cvector( -1, -1, 0), cvector( 1, 1, 0), -tag_grid_occupe)	
+}
+DBG_RenderCircle( OBJ_PosGet(), f_taille, Cv_VerticalVector, 0xFF00)

@@ -1,0 +1,10 @@
+vector v, sight
+
+v = move_v_dest - OBJ_PosGet()
+v = MATH_VecNormalize( v )
+
+OBJ_PosSet( OBJ_PosGet() + (v * (TIME_GetDt() * move_f_speed)) )
+
+sight = OBJ_SightGet()
+sight += v * 0.1
+OBJ_SightSet( sight )

@@ -1,0 +1,444 @@
+#include "PNJ_Raptor_defines.var"
+//#include "ROOT/EngineDatas/04 Technical Bank/AI Models/KingKong/Humain/H_action.var"
+Include_UltraProcedure_Header
+
+#define Action_Grabed_raptor_bras							090
+#define Action_Grabed_raptor_jambe						091
+
+int			ti_trame
+int			ti_i
+int			ti_action
+int			ti_etat_phase
+int			ti_flag_ok
+
+float		tf_dist
+float		tf_size_coef
+
+object	to_head
+object	to_grab_actor
+object	to_bone
+
+vector	tv_temp
+vector	tv_new_sight
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+
+	i_cine_close = vrai
+
+	if (raptor_type == C_ID_Tyranosaure && o_grab_actor == o_main_actor)
+	{
+		MSG_GlobalSetInvalid(mid_grab_actor_LNK_ID)
+		o_grab_actor = nobody
+	}
+	else if (i_etat_courant != ETAT_LANCE)
+	{
+		o_grab_actor = LNK_ClientGet(Ci_LNK_GRAB_RAPTOR, mid_grab_actor_LNK_ID, faux, nofunc, nofunc, nofunc)
+	}
+
+	if (i_SND_instance_grab != -1)
+	{
+		SND_Stop(i_SND_instance_grab)
+		i_SND_instance_grab = -1
+	}
+
+	if (i_SND_instance_devore != -1)
+	{
+		SND_Stop(i_SND_instance_devore)
+		i_SND_instance_devore = -1
+	}
+
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_GRAB)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_GRAB
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	switch(raptor_type)
+	{
+		case C_ID_Raptor : 
+			if (i_SND_instance_grab == -1)
+				i_SND_instance_grab = SND_RequestPlayLoopOnObjCanal(Ci_SND_Grab, Anim_Canal_Tete)
+			break
+			
+//		case C_ID_Tyranosaure :
+//			// FLASH ROUGE
+//			@get_global Proc_AE_ColorBalanceSet(0.9, 0.5)
+//			break
+	}
+
+	i_flag_grab_hit_cpt = 0
+
+	f_grab_phase_duration = 0.0
+	f_grab_on_ground_duration = 0.0
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE =======================================================================================================
+AI_Execute("PNJ_Raptor_exec_check_msg")
+
+AI_Execute("PNJ_Raptor_exec_check_vision")
+
+AI_Execute("PNJ_Raptor_exec_check_sound")
+
+AI_Execute("PNJ_Raptor_exec_check_collision")
+
+AI_Execute("PNJ_Raptor_exec_check_paf")
+if (raptor_type != C_ID_Tyranosaure)
+{
+	if (i_flag_paf_fly)
+		macro_change_etat("PNJ_Raptor_ETAT_PAF_FLY")
+	if (i_flag_paf_fall)
+		macro_change_etat("PNJ_Raptor_ETAT_PAF_FALL")
+	if (i_flag_paf_repousse || i_flag_paf_slide || !f_lifecur)
+		macro_change_etat("PNJ_Raptor_ETAT_PAF_SLIDE")
+	if (i_flag_paf_visual && o_grab_actor == o_main_actor)
+		macro_change_etat("PNJ_Raptor_ETAT_ATTENTE")
+}
+
+AI_Execute("PNJ_Raptor_exec_check_shoot")
+
+AI_Execute("PNJ_Raptor_exec_update_best_interest")
+
+AI_Execute("PNJ_Raptor_exec_check_requin")
+
+AI_Execute("PNJ_Raptor_exec_check_client")
+
+AI_Execute("PNJ_Raptor_exec_check_vala")
+
+if (raptor_type == C_ID_Tyranosaure && o_grab_actor != o_main_actor)
+{
+	tf_dist = MATH_VecSquareNorm(@ao_head_bones[0] OBJ_PosGet() - @o_main_actor COL_ZonePosGet(C_zde_corps)) 
+	if (tf_dist < 16.0)
+	{
+		o_grab_actor = LNK_ThisClientGet(o_grab_actor, Ci_LNK_GRAB_RAPTOR, mid_grab_actor_LNK_ID, faux, nofunc, nofunc, nofunc)
+		i_perceived_best_actor_index = PNJ_Raptor_Best_Interet_Update(i_perceived_main_actor_index)	
+		o_grab_actor = LNK_ThisClientGet(o_main_actor, Ci_LNK_GRAB_RAPTOR, mid_grab_actor_LNK_ID, vrai, "PNJ_Raptor_exec_GRAB_init", nofunc, "PNJ_Raptor_exec_GRAB_init")
+		
+		PNJ_Raptor_ActionSet(Action_Fight_Avale)
+	}
+}
+
+if (!o_grab_actor || !MSG_GlobalIsValid(mid_best_interet))
+{
+#ifndef _FINAL_
+	if (DBG_Log_Allowed)
+	{
+		DBG_TraceFloat(TIME_Get())
+		DBG_TraceString(" => ")
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" => RUPTURE DE GRAB !!! ")
+		DBG_TraceEOL()
+	}
+#endif 
+
+	macro_change_etat(fct_main_etat)
+}
+
+if ( ! i_flag_change_target && EVENT_InteretTargetGet(mid_best_interet) != o_grab_actor )
+{
+	// Blindage pour un bug que je n'ai pas le temps de tracer
+	DBG_BreakPoint()
+	i_flag_change_target = vrai
+}
+
+if (i_perceived_best_actor_index != -1 && IsThis_ID_Marin(ai_perceived_ID[i_perceived_best_actor_index]))
+	@get_global f_raptor_last_grab_time = TIME_Get()
+
+EVENT_InteretStatusSet(mid_best_interet, C_EVENT_InteretStatusLock)
+
+// COMPORTEMENT =================================================================================================
+if (raptor_type == C_ID_Raptor && o_grab_actor == o_main_actor)
+{
+	if ( ! f_grab_main_hysteresis )
+	{
+		tf_size_coef = 3.0
+	
+		to_bone = ANI_CanalObjectGet(Anim_Canal_Machoire)
+		@to_bone BV_OBBoxMinSet(cvector(-0.15 * tf_size_coef, -0.1 * tf_size_coef, -0.1))
+		@to_bone BV_OBBoxMaxSet(cvector(0.15 * tf_size_coef, 0.1 * tf_size_coef, 0.8))
+		
+		// TETE A BASSIN
+		@ao_head_bones[0] BV_OBBoxMinSet(cvector(-0.15 * tf_size_coef, -0.3 * tf_size_coef, -0.1))
+		@ao_head_bones[0] BV_OBBoxMaxSet(cvector(0.15 * tf_size_coef, 0.2 * tf_size_coef, 0.8))
+	}
+
+	f_grab_main_hysteresis = 1.0
+}
+
+ti_etat_phase = LNK_GrabStatusGet(mid_grab_actor_LNK_ID)
+
+switch(ti_etat_phase)
+{
+	case 0 :
+
+		switch(ACT_ActionGet())
+		{
+			case Action_Fight_AttacJack_deb :
+			case Action_Fight_AttacJack_fin :
+			case Action_Fight_AttacJack_tr_att :
+			case Action_Fight_Mord :
+			case Action_Fight_Mord_Face :
+			case Action_Fight_Mord_Haut :
+				if (!ACT_ActionFinished())
+					break
+					
+			default:
+
+				// MISSION ACCOMPLIE, J'AI REUSSI A GRABER CET ACTEUR !!!
+				if (MSG_GlobalIsValid(mid_force_target))
+					MSG_GlobalDelete(mid_force_target, C_EVENT_DEL)
+
+				if (raptor_type == C_ID_Tyranosaure)
+				{
+					if (o_grab_actor == o_main_actor)
+						EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_KK_FoodChain | C_PAF_KK_Repousse | C_PAF_KK_KiTue, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_grab_actor, 1000.0 * PAF_Unit, OBJ_SightGet())
+					else
+						@o_grab_actor ACT_ActionSet(Action_Grabed_raptor_jambe) 
+
+					if (ACT_ActionGet() != Action_Mange_Au_Sol)
+						PNJ_Raptor_ActionSet(Action_Fight_Avale)
+
+					LNK_GrabStatusSet(mid_grab_actor_LNK_ID, 2)
+				}
+				else
+				{
+					PNJ_Raptor_ActionSet(Action_Fight_Secoue)
+
+					if (ai_perceived_ID[i_perceived_best_actor_index] == C_ID_Joueur)
+					{
+						EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_KK_Fort, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_grab_actor, 0.0, OBJ_SightGet())
+						LNK_GrabStatusSet(mid_grab_actor_LNK_ID, 2)
+					}
+					else if (IsThis_ID_Humain(ai_perceived_ID[i_perceived_best_actor_index]))
+					{
+						@o_grab_actor ACT_ActionSet(Action_Grabed_raptor_bras) 
+						EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_KK_Fort, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_grab_actor, 0.0, OBJ_SightGet())
+					}
+					else
+					{
+						LNK_GrabStatusSet(mid_grab_actor_LNK_ID, 2)
+					}
+				}
+		}
+
+		if (raptor_type == C_ID_Raptor)
+		{
+			if (MSG_GlobalIsValid(mid_vala))
+				macro_change_etat("PNJ_Raptor_ETAT_VALA")
+	
+			if ( ! i_flag_in_my_territory )
+				macro_change_etat("PNJ_Raptor_ETAT_ATTENTE")
+	
+			if (i_flag_change_target)
+				macro_change_etat("PNJ_Raptor_ETAT_HESITE")
+	
+			ti_flag_ok = faux
+	
+			if (f_time_start_etat > 4.0)
+				ti_flag_ok = vrai
+			else if (f_time_start_etat > 2.0 && f_on_screen_duration > 1.0)
+				ti_flag_ok = vrai
+			else if (f_time_start_etat > 2.0  && (MSG_GlobalIsValid(mid_force_target) && EVENT_Int3Get(mid_force_target)))
+				ti_flag_ok = vrai
+				
+			if (ti_flag_ok)
+			{
+				PNJ_Raptor_ActionSet(Action_Fight_Mord)
+				LNK_GrabStatusSet(mid_grab_actor_LNK_ID, 1)
+			}
+			else
+			{
+				i_way_computation_mode = Ci_WAY_MODE_GRAB
+				AI_Execute("PNJ_Raptor_exec_way_find_dest_pos")
+			
+				OBJ_BankingGeneralSet(-OBJ_SightGet(), OBJ_BankingGet())	
+				
+				v_way_destpos = @o_next_wp OBJ_PosGet()
+				i_dest_pos_territory_ID = o_next_wp.des_int2
+
+				AI_Execute("PNJ_Raptor_exec_way_move")
+
+				AI_Execute("PNJ_Raptor_exec_select_action")	
+
+				OBJ_BankingGeneralSet(-OBJ_SightGet(), OBJ_BankingGet())	
+			}
+		}
+		
+		break
+
+	case 1 :
+
+		i_flag_look = vrai
+		i_flag_look_best_interet = vrai
+
+		if (MSG_GlobalIsValid(mid_vala))
+			macro_change_etat("PNJ_Raptor_ETAT_VALA")
+
+		if ( ! i_flag_in_my_territory )
+			macro_change_etat("PNJ_Raptor_ETAT_ATTENTE")
+
+		if (i_flag_change_target)
+			macro_change_etat("PNJ_Raptor_ETAT_HESITE")
+
+		if (ANI_CurrentFrameGet(0) > 20 || raptor_type == C_ID_Tyranosaure)
+		{
+			// Synchronisation des 2 anims, c'est le serveur qui lance les deux anims en même temps...
+			i_flag_bite_leg = vrai
+
+			f_grab_phase_duration = 0.0
+			f_grab_on_ground_duration = 0.0
+			LNK_GrabStatusSet(mid_grab_actor_LNK_ID, 2)
+
+			switch(raptor_type)
+			{
+				case C_ID_Raptor :
+					if (IsThis_ID_Humain(ai_perceived_ID[i_perceived_best_actor_index]))
+						@o_grab_actor ACT_ActionSet(Action_Grabed_raptor_jambe)
+					break
+				case C_ID_Tyranosaure :
+					if (IsThis_ID_Humain(ai_perceived_ID[i_perceived_best_actor_index]))
+						@o_grab_actor ACT_ActionSet(Action_Grabed_raptor_jambe)
+					else
+						EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_KK_Fort, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_grab_actor, 1000.0 * PAF_Unit, OBJ_SightGet())
+					break
+			}
+		}
+
+		break
+
+	case 2 :
+
+		switch(raptor_type)
+		{
+			case C_ID_Raptor :
+
+				if (MSG_GlobalIsValid(mid_vala))
+					macro_change_etat("PNJ_Raptor_ETAT_LANCE")
+		
+				if ( ! i_flag_in_my_territory )
+					macro_change_etat("PNJ_Raptor_ETAT_LANCE")
+		
+				if (i_flag_change_target)
+					macro_change_etat("PNJ_Raptor_ETAT_LANCE")
+		
+				f_grab_phase_duration += TIME_GetDt()
+				f_grab_on_ground_duration += TIME_GetDt()
+
+				if (f_grab_on_ground_duration < 6.0 || o_grab_actor == o_main_actor)
+				{
+					// ON TRAINE NOTRE PROIE SUR LE SOL	
+					i_flag_bite_leg = vrai
+						
+					i_way_computation_mode = Ci_WAY_MODE_GRAB
+					AI_Execute("PNJ_Raptor_exec_way_find_dest_pos")
+				
+					OBJ_BankingGeneralSet(-OBJ_SightGet(), OBJ_BankingGet())	
+					
+					v_way_destpos = @o_next_wp OBJ_PosGet()
+					i_dest_pos_territory_ID = o_next_wp.des_int2
+
+					AI_Execute("PNJ_Raptor_exec_way_move")
+
+					AI_Execute("PNJ_Raptor_exec_select_action")	
+
+					OBJ_BankingGeneralSet(-OBJ_SightGet(), OBJ_BankingGet())	
+				}
+				else
+				{
+					// ON REGARDE EN LEVANT LA TETE	
+				
+					if ( ! IsThis_ID_Humain(ai_perceived_ID[i_perceived_best_actor_index]) || f_grab_phase_duration > 12.0)
+						macro_change_etat("PNJ_Raptor_ETAT_LANCE")
+
+					i_flag_look = vrai
+			
+					v_look_pos = OBJ_PosGet()
+					v_look_pos += OBJ_SightGet() * 5.0
+					v_look_pos += OBJ_HorizonGet() * (MATH_Sin(f_time_start_etat * 8.0) * (MATH_Cos(f_time_start_etat * Cf_PiBy2) * 8.0))
+					v_look_pos.z += 2.0
+					
+					PNJ_Raptor_ActionSet(Action_Observe)	
+				
+					if (f_grab_on_ground_duration > 7.0)
+						f_grab_on_ground_duration = 0.0
+				}
+				
+				break
+				
+			case C_ID_Tyranosaure :
+			
+				switch(ACT_ActionGet())
+				{
+					case Action_Fight_Avale :
+	
+						if ( ! ACT_ActionIsTransition() && ANI_CurrentFrameGet(0) > 170 )
+						{	
+							EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_KK_FoodChain | C_PAF_KK_Repousse | C_PAF_KK_KiTue, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_grab_actor, 1000.0 * PAF_Unit, OBJ_SightGet())
+							@o_grab_actor OBJ_FlagInvisibleSet(vrai)
+						}
+
+						if (ACT_ActionFinished())
+						{
+							PNJ_Raptor_Del_Interest()
+							
+							macro_change_etat("PNJ_Raptor_ETAT_ATTENTE")
+						}	
+						break
+						
+					case Action_Mange_Au_Sol :
+
+						ti_flag_ok = faux
+
+						if (i_SND_instance_devore == -1)
+							i_SND_instance_devore = SND_RequestPlayLoopOnObjCanal(Ci_SND_MangeAuSol, Anim_Canal_Tete)
+
+						if (ANI_CurrentFrameGet(0) > 300)
+							ti_flag_ok = vrai
+						else if (@o_main_actor OBJ_HierarchyGet() && f_me_to_main_dist > 50.0)
+							ti_flag_ok = vrai
+				
+						if (ti_flag_ok)
+						{
+							@o_grab_actor OBJ_FlagInvisibleSet(vrai)
+							EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_KK_FoodChain | C_PAF_KK_KiTue, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_grab_actor, 1000.0 * PAF_Unit, OBJ_SightGet())
+
+							PNJ_Raptor_Del_Interest()
+							
+							macro_change_etat("PNJ_Raptor_ETAT_ATTENTE")
+						}
+						break
+				}
+				
+				break
+		}
+		
+		break
+		
+	case 3 :
+	
+		// Le perso m'informe que je dois le lacher
+		macro_change_etat("PNJ_Raptor_ETAT_LANCE")
+		break
+}
+		
+if (raptor_type == C_ID_Raptor && o_grab_actor == o_main_actor && f_time_start_etat > Cf_Delay_Before_Grabbed_Jack_Die)
+	EVENT_AddEventPaf(C_EVENT_FILTER_All, C_PAF_KK_Fort | C_PAF_KK_KiTue, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_grab_actor, 1.0 * PAF_Unit, OBJ_SightGet())

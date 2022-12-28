@@ -1,0 +1,316 @@
+#include "PNJ_Brontosaure_defs.var"
+
+int			ti_i
+int			ti_k
+
+float		tf_borne_inf
+float		tf_borne_sup
+float		tf_coef
+float		tf_totale_norm
+float		tf_pourcentage
+float		tf_step
+float		tf_angle
+float		tf_anim_angle
+float		tf_X
+float		tf_Z	
+float		tf_length_coef
+float		tf_dot_product
+float		tf_dist
+float		tf_AB_and_CD_dist
+float		tf_IK_coef
+float		tf_Z_balayage_range
+float		tf_head_length
+float		tf_bone_sqr_length
+
+vector	tv_ref_sight
+vector	tv_pseudo_bone
+vector	tv_temp
+vector	tv_hor_half_plan
+vector	tv_hor_look_dir
+
+vector	tv_point_A
+vector	tv_point_B
+vector	tv_point_C
+vector	tv_point_D
+
+vector	tv_head_pos
+vector	tv_head_sight
+
+vector	tv_start_pos
+vector	tv_dest_pos
+
+vector	tv_new_head_sight
+vector	tv_new_head_banking
+
+//#define DBG_DISPLAY_INFO									1
+
+//if (IO_KeyPressed(VK_SPACE))
+//	return
+
+if (@get_global i_IK_NECK_Off)
+	return
+
+if (AI_GetCurSystem() == 1)
+{
+	// PS2
+	return
+}
+
+// IK IK IK IK IK IK IK IK IK IK
+tf_AB_and_CD_dist = f_neck_length * 0.66
+
+tf_step = 1.0
+tf_step /= i_head_bone_nb
+
+tv_point_A = @ao_head_bones[0] OBJ_PosGet()
+tv_point_B = @ao_head_bones[i_head_bone_nb - 1] OBJ_PosGet()
+
+tv_ref_sight = @ao_head_bones[i_head_bone_nb] OBJ_BankingGet()
+tv_ref_sight -= MATH_VecDotProduct(tv_ref_sight, OBJ_BankingGet()) * OBJ_BankingGet()
+MATH_VecSetNormalize(tv_ref_sight)
+
+// SI ON PILOTE LA TETE, ON VA DETERMINER LA POSITION DE LA TETE
+// EN FONCTION DE L'ANIM ET DE LA POSITION QU'ON VEUT REGARDER
+if (f_look_blend_coef)
+{
+	tv_point_A -= tv_point_B
+	
+	tv_hor_look_dir = v_look_axis
+	tv_hor_look_dir -= MATH_VecDotProduct(tv_hor_look_dir, v_IK_bassin_banking) * v_IK_bassin_banking
+	MATH_VecSetNormalize(tv_hor_look_dir)
+
+	tf_dot_product = MATH_VecDotProduct(tv_ref_sight, tv_hor_look_dir)
+	tv_temp = MATH_VecCrossProduct(tv_ref_sight, tv_hor_look_dir)
+
+	tf_angle = MATH_VecNorm(tv_temp)
+	if (tf_angle)
+	{
+		tv_temp /= tf_angle
+		tf_angle = MATH_FloatMin(tf_angle, 1.0)
+	
+		tf_angle = MATH_ASin(tf_angle)
+		if (tf_dot_product < 0.0)	
+			tf_angle = Cf_Pi - tf_angle
+			
+		tf_angle *= 0.65
+		tf_angle *= f_look_blend_coef
+	
+		tf_length_coef = MATH_AbsFloat(tf_angle)
+		tf_length_coef /= Cf_PiBy2
+		tf_length_coef *= 0.2
+		tf_length_coef = 1.0 - tf_length_coef
+	
+		tv_point_A = MATH_VecRotate(tv_point_A, tv_temp, tf_angle)
+		tv_point_A *= tf_length_coef
+	}
+	
+	tv_point_A += tv_point_B
+	tv_point_C = v_bezier_head_look_pos
+
+	tv_head_sight = MATH_VecNormalize(tv_point_C - tv_point_A)
+}
+else
+{
+	tv_head_sight = @ao_head_bones[0] OBJ_BankingGet()
+}
+
+tv_head_pos = tv_point_A
+
+tv_point_C = tv_head_pos
+tv_point_D = @ao_head_bones[i_head_bone_nb] OBJ_PosGet()
+
+f_neck_B_weight = 2.0
+f_neck_C_weight = 2.0
+
+tf_IK_coef = f_look_blend_coef
+
+// PAS DU TOUT DE PILOTAGE !!!!
+if (!tf_IK_coef)
+{
+	f_neck_bezier_coef					= 1.0
+	af_neck_bone_bezier_coef[0]		= 1.0
+	af_neck_bone_bezier_coef[1]		= 0.8
+	af_neck_bone_bezier_coef[2]		= 0.6
+	af_neck_bone_bezier_coef[3]		= 0.4
+	af_neck_bone_bezier_coef[4]		= 0.2
+
+	return
+}
+
+tv_head_sight = MATH_VecBlendRotate(@ao_head_bones[0] OBJ_BankingGet(), tv_head_sight, tf_IK_coef)
+
+#ifndef _FINAL_
+//DBG_RenderVector(tv_head_pos, tv_head_sight, color_blanc)
+#endif
+
+// C'EST PARTI POUR TROUVER UNE BONE BEZIER ============================================
+tv_point_A = @ao_head_bones[i_head_bone_nb - 1] OBJ_PosGet()
+tv_point_D = tv_head_pos
+
+// =============================================================================
+// On fait une première dichotomie pour trouver en gros une courbe de la même longueur que celle du cou
+// =============================================================================
+tf_borne_inf = 0.0
+tf_borne_sup = 2.0
+ti_k = 0
+tf_totale_norm = 0.0
+while(ti_k < 10)
+{
+	ti_k++
+
+	tf_totale_norm	= 0.0
+
+	tf_pourcentage = tf_borne_inf
+	tf_pourcentage += (tf_borne_sup - tf_borne_inf) * 0.5
+
+	tv_point_B = tv_point_A
+	tv_point_B += @ao_head_bones[i_head_bone_nb - 1]  OBJ_BankingGet() * (f_neck_B_weight * tf_pourcentage)
+
+	tv_point_C = tv_point_D	
+	tv_point_C -= tv_head_sight * f_neck_C_weight
+
+	tv_start_pos = @ao_head_bones[i_head_bone_nb - 1] OBJ_PosGet()
+	tv_dest_pos = tv_start_pos
+
+	for (ti_i = 1; ti_i < i_head_bone_nb - 1; ti_i++)
+	{
+		tf_coef = ti_i * tf_step
+		tv_start_pos = tv_dest_pos
+		tv_dest_pos = MATH_LIB_Bezier_Pos_Get(tf_coef, tv_point_A, tv_point_B, tv_point_C, tv_point_D, tv_temp)
+		tf_totale_norm += MATH_VecNorm(tv_dest_pos - tv_start_pos)
+	}
+
+	tf_totale_norm += MATH_VecNorm(tv_point_D - tv_dest_pos)
+
+	if (MATH_AbsFloat(tf_totale_norm - f_neck_length) < 1.0)
+	{
+		// OK, C'est bon
+		ti_k = ti_k
+		break
+	}
+	else if (tf_totale_norm > f_neck_length)
+	{
+		tf_borne_sup -= tf_borne_inf
+		tf_borne_sup *= 0.5
+		tf_borne_sup += tf_borne_inf 
+	}
+	else
+	{
+		tf_borne_inf -= tf_borne_sup
+		tf_borne_inf *= 0.5
+		tf_borne_inf += tf_borne_sup
+	}
+}
+
+f_neck_bezier_coef = MATH_FloatBlend(f_neck_bezier_coef, tf_pourcentage, 6.0 * TIME_GetDt())
+tf_pourcentage = f_neck_bezier_coef
+
+// ON A ENFIN NOS 4 POINTS QUI DETERMINE LA COURBE ==============================================
+tv_point_B = tv_point_A
+tv_point_B += @ao_head_bones[i_head_bone_nb - 1] OBJ_BankingGet() * (f_neck_B_weight * tf_pourcentage)
+
+tv_point_C = tv_point_D	
+tv_point_C -= tv_head_sight * f_neck_C_weight
+
+#ifndef _FINAL_
+//MATH_LIB_Bezier_Display(30, tv_point_A, tv_point_B, tv_point_C, tv_point_D)
+#endif
+
+// =========================================================================
+// Pour les bones, on va rechercher une position sur la courbe telle que la longueur de l'os soit correcte
+// =========================================================================
+tf_borne_inf = 0.0
+tv_start_pos = tv_point_A
+
+for (ti_i = i_head_bone_nb - 1; ti_i > 1; ti_i--)
+{
+	tf_borne_sup = 1.0
+
+	ti_k = 0
+
+	tf_bone_sqr_length = af_neck_bone_length[ti_i - 1]
+	tf_bone_sqr_length *= tf_bone_sqr_length
+
+	while (ti_k < 10)
+	{
+		ti_k++
+
+		tf_coef = tf_borne_inf 
+		tf_coef += (tf_borne_sup - tf_borne_inf) * 0.5
+	
+		tv_dest_pos = MATH_LIB_Bezier_Pos_Get(tf_coef, tv_point_A, tv_point_B, tv_point_C, tv_point_D, tv_temp)
+
+		tv_pseudo_bone = tv_dest_pos - tv_start_pos
+		tf_totale_norm = MATH_VecDotProduct(tv_pseudo_bone, tv_pseudo_bone)
+
+		if (MATH_AbsFloat(tf_totale_norm - tf_bone_sqr_length) < 1.0)
+		{
+			// OK, C'est bon
+			break
+		}
+		else if (tf_totale_norm > tf_bone_sqr_length)
+		{
+			tf_borne_sup -= tf_borne_inf
+			tf_borne_sup *= 0.5
+			tf_borne_sup += tf_borne_inf 
+		}
+		else
+		{
+			tf_borne_inf -= tf_borne_sup
+			tf_borne_inf *= 0.5
+			tf_borne_inf += tf_borne_sup
+		}
+	}
+
+	af_neck_bone_bezier_coef[ti_i] = MATH_FloatBlend(af_neck_bone_bezier_coef[ti_i], tf_coef, 6.0 * TIME_GetDt())
+	tf_coef = af_neck_bone_bezier_coef[ti_i]
+
+	// On récupère la position une dernière fois après le blend
+	tv_dest_pos = MATH_LIB_Bezier_Pos_Get(tf_coef, tv_point_A, tv_point_B, tv_point_C, tv_point_D, tv_temp)
+
+	if (ti_i < i_head_bone_nb - 1)
+		tv_temp = @ao_head_bones[ti_i + 1] OBJ_SightGet()
+	else
+		tv_temp = MATH_VecBlend(@ao_head_bones[ti_i] OBJ_SightGet(), -Cv_VerticalVector, f_neck_vert_coef)
+
+	@ao_head_bones[ti_i] OBJ_Rotate_FromTo(cvector(0.0, 0.0, 1.0), MATH_VecBlendRotate(cvector(0.0, 0.0, 1.0),  @ao_head_bones[ti_i]  MATH_VecGlobalToLocal(tv_dest_pos - tv_start_pos), tf_IK_coef))
+
+//		if (raptor_type == C_ID_Tyranosaure)
+//		{	
+//			tv_new_head_sight = @ao_head_bones[ti_i] OBJ_HorizonGet() 
+//			tv_new_head_sight.z = 0.0
+//			tv_new_head_sight = MATH_VecBlend(@ao_head_bones[ti_i] OBJ_HorizonGet() , tv_new_head_sight, tf_IK_coef * 0.5)
+//			@ao_head_bones[0] OBJ_Rotate_FromTo(cvector(1.0, 0.0, 0.0), @ao_head_bones[ti_i]  MATH_VecGlobalToLocal(tv_new_head_sight))
+//		}
+
+	tv_start_pos = @ao_head_bones[ti_i - 1] OBJ_PosGet()
+}
+
+@ao_head_bones[1] OBJ_Rotate_FromTo(cvector(0.0, 0.0, 1.0), MATH_VecBlendRotate(cvector(0.0, 0.0, 1.0),  @ao_head_bones[1]  MATH_VecGlobalToLocal(tv_head_pos - @ao_head_bones[1] OBJ_PosGet()), tf_IK_coef))
+
+//	if (raptor_type == C_ID_Tyranosaure)
+//	{	
+//		tv_new_head_sight = @ao_head_bones[1] OBJ_HorizonGet() 
+//		tv_new_head_sight.z = 0.0
+//		tv_new_head_sight = MATH_VecBlend(@ao_head_bones[1] OBJ_HorizonGet() , tv_new_head_sight, tf_IK_coef * 0.5)
+//		@ao_head_bones[1] OBJ_Rotate_FromTo(cvector(1.0, 0.0, 0.0), @ao_head_bones[1]  MATH_VecGlobalToLocal(tv_new_head_sight))
+//	}
+
+f_look_head_coef = 0.5
+
+tv_new_head_banking = MATH_VecBlendRotate(@ao_head_bones[0] OBJ_BankingGet(), tv_head_sight, tf_IK_coef * f_look_head_coef)
+@ao_head_bones[0] OBJ_Rotate_FromTo(cvector(0.0, 0.0, 1.0), @ao_head_bones[0]  MATH_VecGlobalToLocal(tv_new_head_banking))
+
+//	if (raptor_type == C_ID_Tyranosaure)
+//	{	
+//		tv_new_head_sight = @ao_head_bones[0] OBJ_HorizonGet() 
+//		tv_new_head_sight.z = 0.0
+//		tv_new_head_sight = MATH_VecBlend(@ao_head_bones[0] OBJ_HorizonGet() , tv_new_head_sight, tf_IK_coef *  0.5)
+//		@ao_head_bones[0] OBJ_Rotate_FromTo(cvector(1.0, 0.0, 0.0), @ao_head_bones[0]  MATH_VecGlobalToLocal(tv_new_head_sight))
+//		@ao_head_bones[0] OBJ_RotateLocalX(- tf_IK_coef * 0.3)
+//	}
+
+
+
+
+

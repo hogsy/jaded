@@ -1,0 +1,170 @@
+#include "H_defines.var"
+#include "H_action.var"
+
+
+int			ti_i
+int			ti_numero
+int			ti_index
+int			ti_flag_help
+int			ti_context
+
+float		tf_liferatio
+float		tf_temp
+
+object	to_obj
+object	to_raptor
+
+vector	tv_temp
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	DYN_GravitySet(H_GRAVITY)
+	DYN_FrictionVectorSet(cvector(1.0, 1.0, 0.0))
+
+	COL_ColMapActivationSet(all, none)
+	COL_UnCollidableDel(o_grab_actor)
+	o_grab_actor = nobody
+	
+	macro_del_callback_after_cam("H_callback_set_pos")
+
+	if(MSG_GlobalIsValid(amid_SRV_LIAISON_ID[Ci_LNK_CARRY]))
+		ao_SRV[Ci_LNK_CARRY] = LNK_ServeurGet(Ci_LNK_CARRY, amid_SRV_LIAISON_ID[Ci_LNK_CARRY], faux, nofunc, nofunc)
+	
+	v_grab_grav_pos = Cv_NullVector
+	i_flag_ik_bras = faux
+
+	i_sort_etat = faux
+	f_time_agonisant = TIME_Get()
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_IA_carried)
+{
+	i_flag_hasbeen_carried = vrai
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_IA_carried
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	// Envoie un message a SUN
+	EVENT_AddEventFilmation( C_EVENT_Filmation_filter_HumainGnaked, OBJ_Me(), ao_SRV[Ci_LNK_GRAB_RAPTOR], Cf_EVENT_Duree_1Trame)
+
+	for (ti_i = 0; ti_i < Ci_LNK_TYPE_NB; ti_i++)
+		ai_SRV_ENABLE[ti_i] = faux
+
+	ai_SRV_ENABLE[Ci_LNK_CARRY]	= vrai
+	ai_SRV_ENABLE[Ci_LNK_PSSS]		= vrai
+
+	i_flag_init_rag_doll = vrai
+	macro_add_callback_after_cam("H_callback_set_pos")
+
+	DYN_SpeedSetVector( Cv_NullVector)
+	DYN_TractionSet( Cv_NullVector)
+	DYN_GravitySet(Cv_NullVector)
+	DYN_FrictionVectorSet(cvector(0.5, 0.5, 0.0))
+
+	COL_ColMapActivationSet(none, all)
+	i_nb_hit = 0
+	f_time_start_etat = 0.0
+	f_time_psss = 0
+	
+	o_grab_actor = ao_SRV[Ci_LNK_CARRY]
+	if(o_grab_actor != AI_MainActorGet(C_ID_Jack)) COL_UnCollidableAdd(o_grab_actor)	
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE  =====================================================================
+
+// Pssss	
+OBJ_Me().des_int1 = Ci_DISPLAY_PSSS
+if(ao_SRV[Ci_LNK_PSSS])
+{
+	ForceRegardSur(AI_MainActorGet(C_ID_Jack), 1.0)
+	ao_SRV[Ci_LNK_PSSS] = LNK_ServeurGet(Ci_LNK_PSSS, amid_SRV_LIAISON_ID[Ci_LNK_PSSS], faux, nofunc, nofunc)
+	i_request_txt = Gene_C_almost_dying
+}
+
+@get_global o_qqun_carry = OBJ_Me()
+AI_Execute("H_exec_read_world")
+AI_Execute("H_exec_serveur_get")
+AI_Execute("H_exec_change_etat")
+AI_Execute("H_exec_ch_Stimulus_Paf")
+if (o_paf_sender) macro_change_etat("H_ETAT_IA_paf")
+
+if (!ao_SRV[Ci_LNK_CARRY]) macro_change_etat("H_ETAT_IA_stunned")
+to_obj = ao_SRV[Ci_LNK_CARRY]
+
+// COMPORTEMENT =====================================================================
+
+// Indigene
+if(@to_obj OBJ_CapaTest(OBJ_Capa_1))
+{
+	AskText(TEXTE_ALaide, Gene_C_help, 10, nobody)
+}
+
+//if(to_obj == AI_MainActorGet(C_ID_Jack))
+//{
+//	COL_ColMapActivationSet(all, none)
+//	tv_temp = @to_obj OBJ_PosGet() - OBJ_PosGet()
+//	tf_temp = MATH_VecNorm(tv_temp)
+//	if(tf_temp > 0.5)
+//	{
+//		tv_temp.z = 0
+//		OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), tv_temp, 10 * TIME_GetDt()), Cv_VerticalVector)
+//	}
+//	
+//	i_flag_ik_bras = vrai
+//	tf_temp = @"KingKong/Humain" to_obj f_speed_jack
+//	if(tf_temp < 0.1)
+//	{
+//		ACT_ActionSet1(Action_Humain_Blesse_Attente)
+//	}
+//	else
+//	{
+//		if
+//		(
+//			(ACT_ActionGet() == Action_Humain_Blesse_Attente && OBJ_SqrDist(to_obj) < 0.8 * 0.8)
+//		||	(OBJ_SqrDist(to_obj) < 0.5 * 0.5)
+//		)
+//		{
+//			ACT_ActionSet1(Action_Humain_Blesse_Attente)
+//		}
+//		else
+//		{
+//			ACT_ActionSet1(Action_Humain_Blesse_Marche)
+//			tv_temp = @to_obj OBJ_PosGet() - OBJ_PosGet()
+//			tf_temp = MATH_VecNorm(tv_temp)
+//			tf_temp *= 200
+//			if(tf_temp > 255) tf_temp = 255
+//			ANI_FrequencySet(0, tf_temp)
+//		}
+//	}
+//}
+//else
+{
+	if(!ACT_ActionIsTransition())
+	{
+		if(@"KingKong/Humain" to_obj f_real_speed > 0.5)
+			ACT_ActionSet1(Action_SeFaitTrainer)
+		else
+			ACT_ActionSet1(Action_SeFaitTrainerAtt)	
+	}
+	
+	DYN_SpeedSetVector(Cv_NullVector)
+	i_can_tag = faux
+}
+
+// ON EST SERVEUR HELP ====================================================================
+i_interaction_type = Ci_LNK_INTERACTION_FIGHT
+ao_CL[Ci_LNK_INTERACTION] = LNK_ClientGet(Ci_LNK_INTERACTION, amid_CL_LIAISON_ID[Ci_LNK_INTERACTION], vrai, "H_INTERACTION_add_data", nofunc, nofunc)

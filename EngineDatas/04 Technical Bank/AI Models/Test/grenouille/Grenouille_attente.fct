@@ -1,0 +1,261 @@
+#include "Grenouille_defines.var"
+
+int			ti_i
+
+float		tf_time
+float		tf_best_impulsion
+float		tf_exp_Ft
+float		tf_exp_minus_Ft
+float		tf_cos_h_Ft
+float		tf_sin_h_Ft
+float		tf_friction
+float		tf_precal_derivee
+float		tf_precal_tangente
+float		tf_x2_plus_y2
+float		tf_G2_sur_4
+
+vector	tv_A
+vector	tv_M
+vector	tv_precal
+vector	tv_temp1
+vector	tv_temp2
+
+vector	tv_dbg_temp
+
+float		tf_jump_duration
+float		tf_impulsion_norme
+float		tf_derive_en_t
+float		tf_tangente_en_t
+float		tf_last_time
+float		tf_inv_time
+float		tf_inv_sqr_time
+
+OBJ_Destroy()
+
+//#define JUMP				1
+
+DBG_EraseAllVectors()
+
+
+hauteur_saut = 0.0
+friction = MATH_FloatMax(friction, 0.001)
+//friction = 1.0 + MATH_Sin(TIME_Get())
+
+tf_friction = friction
+
+if (1)
+{
+#ifdef JUMP
+	DYN_On()
+	if (IO_KeyPressed(VK_SPACE))
+	{
+		DYN_FlagsSet(DYN_C_BasicForces, DYN_C_VectorFriction)
+		DYN_FrictionSet(tf_friction)
+	}
+	else
+	{
+		DYN_FlagsSet(DYN_C_BasicForces + DYN_C_VectorFriction, none)
+		DYN_FrictionVectorSet(cvector(friction, friction, 0.0))
+	}
+	DYN_GravitySet(Cv_test_gravity)
+#endif
+
+#ifndef JUMP	
+	tv_M = @dest_pos OBJ_PosGet() - OBJ_PosGet()
+
+	if (IO_KeyPressed(VK_SPACE))
+	{
+		tv_A = Cv_test_gravity / friction
+	}
+	else
+	{
+		tv_M.x *= tv_M.x
+		tv_M.y *= tv_M.y
+		tv_M.z *= tv_M.z
+	
+		tf_x2_plus_y2 = tv_M.x + tv_M.y
+	
+		tf_precal_derivee = tf_friction * tf_friction
+		tf_precal_tangente = tf_precal_derivee * tf_precal_derivee * 0.5 * tf_x2_plus_y2
+		tf_precal_derivee *= tf_friction * 0.5 * tf_x2_plus_y2
+	
+		tf_G2_sur_4 = Cv_test_gravity.z * Cv_test_gravity.z
+		tf_G2_sur_4 *= 0.25
+	}
+
+	tf_best_impulsion = Cf_Infinit
+	for (ti_i = 0; ti_i < 200; ti_i++)
+	{
+		// CALCUL DE LA FONCTION TELLE QUE LA DERIVE DE V(t) pour t = tf_time
+		tf_time = 0.1 + (ti_i * 0.02)
+	
+		if (IO_KeyPressed(VK_SPACE))
+		{
+			v_impulsion = DYN_LIB_ImpulsionGet_Friction(OBJ_PosGet(), @dest_pos OBJ_PosGet(), Cv_test_gravity, friction, tf_time, vrai, hauteur_saut)
+
+			// DERIVEE POUR FRICTION GLOBALE
+			tf_exp_Ft = MATH_Exp(tf_friction * tf_time)
+			tf_exp_minus_Ft = 1.0 / tf_exp_Ft
+	
+			tv_precal = (tv_A * tf_time) - tv_M
+			tv_precal *= tf_friction
+	
+			tv_temp1 = tv_precal
+			tv_temp2 = tv_precal
+			
+			tv_temp1 += tv_A * (1.0 - tf_exp_Ft)
+			tv_temp2 += tv_A * (tf_exp_minus_Ft - 1.0)
+			
+			tf_derive_en_t = MATH_VecDotProduct(tv_temp1, tv_temp2)
+		}
+		else
+		{
+			v_impulsion = DYN_LIB_ImpulsionGet_Friction(OBJ_PosGet(), @dest_pos OBJ_PosGet(), Cv_test_gravity, friction, tf_time, faux, hauteur_saut)
+
+			// DERIVEE POUR FRICTION XY
+			tf_exp_Ft = MATH_Exp(tf_friction * tf_time)
+			tf_exp_minus_Ft = 1.0 / tf_exp_Ft
+	
+			tf_cos_h_Ft = (tf_exp_Ft + tf_exp_minus_Ft) * 0.5
+	
+			tf_inv_time = 1.0 / tf_time
+			tf_inv_sqr_time = tf_inv_time * tf_inv_time
+
+			tf_derive_en_t = tf_precal_derivee
+			tf_derive_en_t /= tf_cos_h_Ft - 1.0
+			tf_derive_en_t += ( (tf_G2_sur_4 * tf_time) - (tv_M.z * (tf_inv_time * tf_inv_sqr_time)) ) * (tf_exp_minus_Ft - 1.0)
+		}
+		
+		tv_dbg_temp = OBJ_PosGet()
+		tv_dbg_temp += OBJ_HorizonGet() * (tf_time * 5.0)
+		tv_dbg_temp += cvector(0.0, 0.0, tf_derive_en_t * 0.01)
+		DBG_RenderVector(tv_dbg_temp, cvector(0.0, 0.0, -tf_derive_en_t * 0.01), color_bleu)
+
+		tf_impulsion_norme = MATH_VecNorm(v_impulsion)
+	
+		if (tf_impulsion_norme < tf_best_impulsion)
+		{
+			tf_best_impulsion = tf_impulsion_norme
+			tf_jump_duration = tf_time
+		}
+
+		DBG_RenderVector(OBJ_PosGet() + v_impulsion, -v_impulsion, COLOR_Blend(0xFF, 0xFF00, tf_time * 0.25))
+
+	}
+
+	// RESOLUTION NUMERIQUE PAR LA METHODE DE NEWTON
+
+	if (IO_KeyPressed(VK_SPACE))
+	{
+		// FRICTION GLOBALE	
+	
+		tf_time = 1.0
+		tf_last_time = 10.0
+		ti_i = 0
+		
+		while (MATH_AbsFloat(tf_time - tf_last_time) > 0.01 && ti_i < 10)
+		{
+			ti_i++	
+		
+			tf_exp_Ft = MATH_Exp(tf_friction * tf_time)
+			tf_exp_minus_Ft = MATH_Exp(-tf_friction * tf_time)
+		
+			tv_precal = (tv_A * tf_time) - tv_M
+			tv_precal *= tf_friction
+		
+			tv_temp1 = tv_precal
+			tv_temp2 = tv_precal
+			
+			tv_temp1 += tv_A * (1.0 - tf_exp_Ft)
+			tv_temp2 += tv_A * (tf_exp_minus_Ft - 1.0)
+			
+			tf_derive_en_t = MATH_VecDotProduct(tv_temp1, tv_temp2)
+	
+			tv_dbg_temp = OBJ_PosGet() + ((tf_time * 5.0) * OBJ_HorizonGet())
+			DBG_RenderVector(tv_dbg_temp, cvector(0.0, 0.0, tf_derive_en_t * 0.01), color_blanc)
+	
+			tf_cos_h_Ft = (tf_exp_Ft + tf_exp_minus_Ft) * 0.5
+	
+			tf_tangente_en_t = 2.0 * tf_friction
+			tf_tangente_en_t *= (1.0 - tf_cos_h_Ft)
+			tf_tangente_en_t *= MATH_VecDotProduct(tv_precal, tv_A)
+	
+			tf_last_time = tf_time
+		
+			tf_time -= tf_derive_en_t / tf_tangente_en_t
+	
+			tv_dbg_temp += cvector(0.0, 0.0, tf_derive_en_t * 0.01)
+			DBG_RenderVector(tv_dbg_temp, (OBJ_PosGet() + ((tf_time * 5.0) * OBJ_HorizonGet())) - tv_dbg_temp, color_cyan)
+		}
+	}
+	else
+	{
+		// FRICTION LOCALE	
+	
+		tf_time = 1.0
+		tf_last_time = 10.0
+		ti_i = 0
+		
+		while (MATH_AbsFloat(tf_time - tf_last_time) > 0.01 && ti_i < 10)
+		{
+			ti_i++	
+		
+			tf_exp_Ft = MATH_Exp(tf_friction * tf_time)
+			tf_exp_minus_Ft = 1.0 / tf_exp_Ft
+	
+			tf_cos_h_Ft = (tf_exp_Ft + tf_exp_minus_Ft) * 0.5
+			tf_sin_h_Ft = (tf_exp_Ft - tf_exp_minus_Ft) * 0.5
+	
+			tf_inv_time = 1.0 / tf_time
+			tf_inv_sqr_time = tf_inv_time * tf_inv_time
+
+			tf_derive_en_t = tf_precal_derivee
+			tf_derive_en_t /= tf_cos_h_Ft - 1.0
+			tf_derive_en_t += ( (tf_G2_sur_4 * tf_time) - (tv_M.z * (tf_inv_time * tf_inv_sqr_time)) ) * (tf_exp_minus_Ft - 1.0)
+	
+			tv_dbg_temp = OBJ_PosGet() + ((tf_time * 5.0) * OBJ_HorizonGet())
+			DBG_RenderVector(tv_dbg_temp, cvector(0.0, 0.0, tf_derive_en_t * 0.01), color_blanc)
+	
+			// (cosH(FT) - 1.0)^2
+			tf_cos_h_Ft = 1.0 - tf_cos_h_Ft
+			tf_cos_h_Ft *= tf_cos_h_Ft
+	
+			tf_tangente_en_t = (tf_G2_sur_4 + (3.0 * (tv_M.z * (tf_inv_time * tf_inv_sqr_time)))) * (tf_exp_minus_Ft - 1.0)
+			tf_tangente_en_t -= tf_friction * tf_exp_minus_Ft * ((Cv_test_gravity.z * tf_time) - (tv_M.z * (tf_inv_sqr_time * tf_inv_sqr_time)))
+			tf_tangente_en_t -= tf_precal_tangente * (tf_sin_h_Ft / tf_cos_h_Ft)
+	
+			tf_last_time = tf_time
+	
+			tf_time -= tf_derive_en_t / tf_tangente_en_t
+	
+			tv_dbg_temp += cvector(0.0, 0.0, tf_derive_en_t * 0.01)
+			DBG_RenderVector(tv_dbg_temp, (OBJ_PosGet() + ((tf_time * 5.0) * OBJ_HorizonGet())) - tv_dbg_temp, color_cyan)
+		}
+	}
+
+//	tv_dbg_temp = OBJ_PosGet() + ((tf_time * 5.0) * OBJ_HorizonGet())
+//	DBG_RenderVector(tv_dbg_temp, cvector(0.0, 0.0, 1000.0), color_blanc)
+
+	if (IO_KeyPressed(VK_SPACE))
+		v_impulsion = DYN_LIB_ImpulsionGet_Friction(OBJ_PosGet(), @dest_pos OBJ_PosGet(), Cv_test_gravity, friction, tf_time, vrai, hauteur_saut)
+	else
+		v_impulsion = DYN_LIB_ImpulsionGet_Friction(OBJ_PosGet(), @dest_pos OBJ_PosGet(), Cv_test_gravity, friction, tf_time, faux, hauteur_saut)
+
+	DBG_RenderVector(OBJ_PosGet() + v_impulsion, -v_impulsion, color_jaune)
+#endif
+	time = 0.0
+
+	if (IO_KeyPressed(VK_SPACE))
+		v_impulsion = DYN_LIB_ImpulsionGet_Friction(OBJ_PosGet(), @dest_pos OBJ_PosGet(), Cv_test_gravity, friction, time, vrai, hauteur_saut)
+	else
+		v_impulsion = DYN_LIB_ImpulsionGet_Friction(OBJ_PosGet(), @dest_pos OBJ_PosGet(), Cv_test_gravity, friction, time, faux, hauteur_saut)
+
+	DBG_RenderVector(OBJ_PosGet() + v_impulsion, -v_impulsion, color_blanc)
+
+#ifdef JUMP
+	DYN_SpeedSetVector(v_impulsion)
+	v_init_pos = OBJ_PosGet()
+
+	AI_TrackCurChangeNow("Grenouille_comportement")
+#endif
+}

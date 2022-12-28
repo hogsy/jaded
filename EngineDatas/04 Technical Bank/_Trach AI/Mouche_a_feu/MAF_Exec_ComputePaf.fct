@@ -1,0 +1,148 @@
+#include "MAF_Defines.var"
+
+
+
+int ti_mouche
+int ti_curNbMouchesThatCanHit
+float tf_minHitTime
+float tf_maxHitTime
+//int ti_moucheThadCanSpeak
+
+//===================================================
+// STINGING attacks
+
+
+
+// count the number of mouches around the player (only those can paf)
+ti_curNbMouchesThatCanHit = 0
+if (i_etat_courant != MAF_ETAT_Calm)
+{
+	for (ti_mouche = 0; ti_mouche < i_nbMouchesMax; ti_mouche++)
+	{
+		if (ai_moucheState[ti_mouche] == MAF_MoucheState_AroundTgt)
+			ti_curNbMouchesThatCanHit++
+	}
+}
+	
+if (i_nbMouchesThatCanHit == 0)
+{
+	f_timeSinceMoucheCanHit = 0
+
+	if (ti_curNbMouchesThatCanHit > 0)
+	{
+		// some mouches can now hit
+		// determine first hit time
+		tf_minHitTime = f_timeBetweenStrikes - f_variationBetweenStrikes
+		tf_maxHitTime = f_timeBetweenStrikes + f_variationBetweenStrikes
+		
+		f_timeOfNextMoucheHit = MATH_RandFloat(tf_minHitTime,tf_maxHitTime)
+		f_timeOfNextMoucheHit += f_timeSinceMoucheCanHit
+	}
+	else
+	{
+		f_timeOfNextMoucheHit = 0
+	}
+}
+else
+{
+	// check for next hit	
+	f_timeSinceMoucheCanHit += TIME_GetDt()
+	
+	if (f_timeSinceMoucheCanHit >= f_timeOfNextMoucheHit)
+	{
+		// STING!
+		if (f_timeOfNextMoucheHit >= f_timeForStrikeWounds)
+		{
+			// wound strike
+#ifdef MAF_ENABLE_STINGS			
+			EVENT_AddEventPaf(
+				C_EVENT_FILTER_Object, 
+				C_PAF_KK_Repousse, 
+				OBJ_Me(), 
+				Cf_EVENT_Duree_1Trame, 
+				o_targetToPaf,
+				1.0 * PAF_Unit,
+				@o_targetToPaf OBJ_HorizonGet()
+			)
+#endif			
+#ifdef MAF_DBG_TRACE			
+			DBG_TraceString("PAF - Blood Wound")
+			DBG_TraceFloat(f_timeOfNextMoucheHit)
+			DBG_TraceEOL()
+#endif			
+		}
+		else if (f_timeOfNextMoucheHit >= f_timeForStrikeDizzy)
+		{
+			// dizzyness sting
+#ifdef MAF_ENABLE_STINGS			
+			EVENT_AddEventPaf(
+				C_EVENT_FILTER_Object, 
+				C_PAF_KK_Faible, 
+				OBJ_Me(), 
+				Cf_EVENT_Duree_1Trame, 
+				o_targetToPaf, 
+				2.0 * PAF_Unit, 
+				@o_targetToPaf OBJ_HorizonGet()
+			)
+#endif
+#ifdef MAF_DBG_TRACE			
+			DBG_TraceString("PAF - Dizzy sting")
+			DBG_TraceFloat(f_timeOfNextMoucheHit)
+			DBG_TraceEOL()
+#endif			
+		}
+		else
+		{
+			// lucky bastard! Its not time yet to sting
+#ifdef MAF_DBG_TRACE			
+			DBG_TraceString("PAF - Dans lbeurre")
+			DBG_TraceFloat(f_timeOfNextMoucheHit)
+			DBG_TraceEOL()
+#endif			
+		}
+
+		// determine next hit
+		// determine first hit time
+		tf_minHitTime = f_timeBetweenStrikes - f_variationBetweenStrikes
+		tf_maxHitTime = f_timeBetweenStrikes + f_variationBetweenStrikes
+		
+		f_timeOfNextMoucheHit = MATH_RandFloat(tf_minHitTime,tf_maxHitTime)
+		f_timeOfNextMoucheHit += f_timeSinceMoucheCanHit
+	}
+}
+
+i_nbMouchesThatCanHit = ti_curNbMouchesThatCanHit
+
+
+// sound
+// mouche(s) hover around the target
+//if (i_moucheWithSpeaker == -1)
+//{
+//	// put a speaker on the first hovering mouche!
+//	for (ti_mouche = 0; ti_mouche < i_nbMouchesMax; ti_mouche++)
+//	{
+//		if (IsMoucheActive(ao_moucheList[ti_mouche]) && ai_moucheState[ti_mouche] == MAF_MoucheState_AroundTgt)
+//		{
+//			i_moucheWithSpeaker = ti_mouche
+////R			@ao_moucheList[ti_mouche] SND_PlayLooped(i_tgtHoverBuzzInstance,-1)
+//			SND_PlayLooped(i_tgtHoverBuzzInstance,C_SND_Request_3DSound)
+//			SND_InstPosUpdate(i_tgtHoverBuzzInstance,@ao_moucheList[i_moucheWithSpeaker] OBJ_PosGet())
+//			
+//			SND_InsertVarSet(i_tgtHoverBuzzInstance,0,1.0)
+//			SND_InsertVarSet(i_tgtHoverBuzzInstance,1,f_aggressivityMeter)
+//#ifdef MAF_DBG_TRACE
+//			DBG_TraceString("Playing bzzz")
+//			DBG_TraceInt(i_moucheWithSpeaker)
+//			DBG_TraceEOL()
+//#endif			
+//		}
+//	}
+//}
+//else
+//{
+//	SND_InstPosUpdate(i_tgtHoverBuzzInstance,@ao_moucheList[i_moucheWithSpeaker] OBJ_PosGet())
+//	SND_InsertVarSet(i_tgtHoverBuzzInstance,0,1.0)
+//	SND_InsertVarSet(i_tgtHoverBuzzInstance,1,f_aggressivityMeter)
+//}
+
+

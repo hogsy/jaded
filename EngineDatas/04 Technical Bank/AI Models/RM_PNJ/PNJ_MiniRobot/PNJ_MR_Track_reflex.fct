@@ -1,0 +1,120 @@
+#include "PNJ_mr_defines.var"
+
+
+vector	tv_pos_2D,tv_BankVoulu
+float		tf_water
+
+i_gogo_test_done = faux
+v_traction_GOGO = Cv_NullVector
+v_traction_MOVE = Cv_NullVector
+o_paf_actor = nobody
+
+if( @o_fight_target PROC_RM_Current_HotSpot_Get() == OBJ_Me() )
+	i_grabbed=vrai
+else
+	i_grabbed=faux
+
+
+if(f_FreezeMove>0.0) 
+	f_FreezeMove-=TIME_GetDt()
+
+// DETECTION DES PAFS
+AI_Execute("PNJ_MR_exec_detect_paf")
+
+// Vision
+AI_Execute("PNJ_MR_exec_check_vision")
+
+
+// EVENTS ========================================================
+tv_pos_2D = VIEW_3dWorldTo2d(0, OBJ_PosGet()+cvector(0,0,1.5))
+//EVENT_LIFE_LifeDisplay(ID_LIFE, tv_pos_2D)
+if( @"univ" i_cheat_page == 3 )
+	Str_DisplayFloatDecOnce(f_LIFE_cur, 0, tv_pos_2D)
+EVENT_AddEventVision(C_ID_MiniRobot, C_EVENT_FILTER_None, OBJ_Me(), Cf_EVENT_Duree_1Trame, OBJ_PosGet(), C_EVENT_Visibility_Full_Mvt, 1.0, 100.0, C_EVENT_CONTEXT_STANDARD, 0, f_LIFE_cur / f_LIFE_max ) // EVENT_LIFE_CurLifeGet(ID_LIFE) / EVENT_LIFE_MaxLifeGet(ID_LIFE))
+EVENT_AddEventEnemy(C_ID_MiniRobot, OBJ_Me(), C_EVENT_EnemyState_Fight)
+EVENT_AddEventLockCam(OBJ_Me(), C_EVENT_LockCamStatus_Fight, 0.2 * OBJ_BankingGet())
+
+
+// ZDM ET RAPPORTS DE COLLISION =============================================================
+// FACE DE MORT
+if( COL_GMatReportGet(Gmat_RM_Face_de_mort) != -1 )
+{
+	DBG_TraceObject(OBJ_Me())
+	DBG_TraceString(" a touché une face de mort...")
+	OBJ_Destroy()
+}
+// FACE DE LAVE
+if( COL_GMatReportGet(Gmat_RM_Face_de_lave) != -1 )
+{
+	DBG_TraceObject(OBJ_Me())
+	DBG_TraceString(" a touché une face de lave...")
+	OBJ_Destroy()
+}
+
+// FACE D'EAU
+
+if (IsInWater( OBJ_PosGet(),tf_water) )
+{
+	i_is_in_water=vrai
+	
+	if(!i_Explosion)
+	{
+		PROC_SFX_SPLASH02(OBJ_PosGet())
+		DYN_FrictionVectorSet(cvector(10.0,10.0,20.0))
+		f_DelayExplosion=1.0
+//		AI_TrackChange(2,"PNJ_MR_ETAT_Explosion")
+		i_Explosion=vrai
+	}
+}
+
+if(f_PasDeRotate>0.0)
+{
+//	Str_DisplayFloatOnce(f_PasDeRotate,tv_pos_2D)
+	f_PasDeRotate-=TIME_GetDt()
+}
+
+//if( COL_GMatReportGet(Gmat_RM_Face_eau) != -1 )
+//{
+//	f_DelayExplosion = 1.0
+//	AI_TrackChange(2,"PNJ_MR_ETAT_Explosion")	
+//}
+//
+if(i_Linkable)
+{
+	if(Proc_PNJ_MiniRobot_EstDispo()) PNJ_MiniRobot_SearchLink()
+	PNJ_MiniRobot_CheckLink()
+}
+
+if(!i_FrappeATerre && (@o_fight_target PROC_RM_Paf_Mode_Get()!=0))
+{
+	f_FreezeMove=1.5
+}
+
+if(i_Explosion)
+{
+	PNJ_MR_Explosion()
+}
+
+if(i_ADetruire)
+{
+	OBJ_Destroy()
+}
+
+if (i_etat_courant==ETAT_PNJ_MR_Gogo)
+{
+//	v_Banking = @get_rayman OBJ_PosGet() - OBJ_PosGet()
+}
+else
+{
+	tv_BankVoulu=MATH_VecBlend(Cv_VerticalVector,DYN_SpeedGetVector(),0.1)
+	v_Banking = MATH_VecBlend(v_Banking,tv_BankVoulu,TIME_GetDt()*5.0)
+	OBJ_BankingSet(v_Banking)
+}
+
+//OBJ_BankingGeneralSet(v_Banking,OBJ_SightGet())
+//COL_ZonePosSet(C_zdm_pied,cvector(0.0,0.0,MATH_Sin(TIME_Get())))
+
+if(i_Grappinable)
+{
+	PNJ_MiniRobot_GFX_Halo_Poignet()
+}

@@ -1,0 +1,51 @@
+int			i
+object	to_obj, to_obj1
+vector	tv_temp, tv_temp1
+color		col
+float		tf_temp
+
+to_obj = AI_MainActorGet(C_ID_Rayman)
+if( ! to_obj )
+	return
+for(i = 0; i < 10; i++)
+{
+	to_obj1 = des_ao_waypoints[i]
+	if(!to_obj1) break
+	if(@to_obj COL_Pivot_BVCollide(to_obj1))
+	{
+		in_bv = i
+		break
+	}
+}
+
+if(in_bv == -1) return
+to_obj1 = des_ao_waypoints[in_bv]
+
+if(des_o_light)
+{
+	tv_temp = MATH_VecBlendRotate(@des_o_light OBJ_SightGet(), @to_obj1 OBJ_SightGet(), des_af_speed[in_bv] * TIME_GetDt())
+	tv_temp1 = MATH_VecBlendRotate(@des_o_light OBJ_BankingGet(), @to_obj1 OBJ_BankingGet(), des_af_speed[in_bv] * TIME_GetDt())
+	@des_o_light OBJ_SightGeneralSet(tv_temp, tv_temp1)
+	col = COLOR_Blend(@des_o_light LIGHT_ColorGet(), des_ao_color_lgt[in_bv], des_af_speed[in_bv] * TIME_GetDt())
+	@des_o_light LIGHT_ColorSet(col)
+}
+
+if(des_o_light1)
+{
+	tv_temp = MATH_VecBlendRotate(@des_o_light1 OBJ_SightGet(), @to_obj1 OBJ_SightGet(), des_af_speed1[in_bv] * TIME_GetDt())
+	tv_temp1 = MATH_VecBlendRotate(@des_o_light1 OBJ_BankingGet(), @to_obj1 OBJ_BankingGet(), des_af_speed1[in_bv] * TIME_GetDt())
+	@des_o_light1 OBJ_SightGeneralSet(tv_temp, tv_temp1)
+	col = COLOR_Blend(@des_o_light1 LIGHT_ColorGet(), des_ao_color_lgt1[in_bv], des_af_speed1[in_bv] * TIME_GetDt())
+	@des_o_light1 LIGHT_ColorSet(col)
+}
+
+if(des_o_godrays)
+{
+	tv_temp = MATH_VecBlendRotate(@des_o_godrays OBJ_SightGet(), @to_obj1 OBJ_SightGet(), des_af_speed[in_bv] * TIME_GetDt())
+	tv_temp1 = MATH_VecBlendRotate(@des_o_godrays OBJ_BankingGet(), @to_obj1 OBJ_BankingGet(), des_af_speed[in_bv] * TIME_GetDt())
+	@des_o_godrays OBJ_SightGeneralSet(tv_temp, tv_temp1)
+	tf_temp = @"SFX/SFX_GodRays" des_o_godrays des_f_max_intensity
+	tf_temp = MATH_FloatBlend(tf_temp, des_af_intensity_ray[in_bv], des_af_speed[in_bv] * TIME_GetDt())
+	@"SFX/SFX_GodRays" des_o_godrays des_f_max_intensity = tf_temp
+
+}

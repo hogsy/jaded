@@ -1,0 +1,514 @@
+#include "H_defines.var"
+
+#define		Cf_hauteur_safe				1.5
+#define		Cf_hauteur_paf				5.0
+#define		Cf_hauteur_mort_chute		8.0
+#define		Cf_hauteur_mort_ronces	1.0
+
+#define		Ci_grimpe_monte				1
+#define		Ci_grimpe_descend			2
+#define		Ci_grimpe_stop				3
+#define		Ci_grimpe_tombe				4
+
+#define		Cf_grimper_mvt_toler		0.5
+
+vector	tv_temp
+vector	tv_temp1
+vector	tv_temp2
+vector	tv_temp3
+vector	tv_offset
+
+object	to_obj
+object	to_collision_object
+object	to_echelle
+
+float		tf_temp
+float		tf_ray
+float		tf_dot
+
+int			ti_temp
+int			ti_max
+int			ti_max_val
+int			x
+int			y
+int			acpt[16]
+int			ti_nage_wall
+int			ti_capa
+int			ti_flag_water_under_pos
+int			ti_grimpe
+int			ti_index
+int			ti_nbr_col
+
+
+// WATER ?
+ti_flag_water_under_pos = IsWaterUnderPos(OBJ_PosGet())
+
+
+// GROUND COL ==================================================================================
+
+if(@get_global i_humain_teleport)
+	v_ground_pos = OBJ_PosGet()
+if(i_flag_cheat_move) 
+	v_ground_pos = OBJ_PosGet()
+if( @get_global i_frame_nbr < 10 )
+	v_ground_pos = OBJ_PosGet()
+if( i_flag_nage )
+	v_ground_pos = OBJ_PosGet()		// Z DYN (water)
+if( i_flag_pousse )
+	v_ground_pos = OBJ_PosGet()		// Z DYN (levier-ascenceur)
+if( i_echelle_flag )
+	v_ground_pos = OBJ_PosGet()		// Z DYN (echelle)
+if( i_jump_from_echelle_flag )		// jump depuis le sol ou depuis une échelle
+{
+	i_jump_flag = faux		// antibug...
+	if( DYN_SpeedGetVector().z > 0.0 )	// phase ascendante
+		v_ground_pos = OBJ_PosGet()		// plsu dure sera la chute...
+}
+
+if (COL_CollideType(COL_C_Ground))
+{
+	// Réception Jump
+	H_JumpReset()
+	
+	i_flag_va_mourrir = faux
+	f_flag_en_chute_old = f_flag_en_chute
+	f_flag_en_chute = 0
+	
+	// Face de mort
+	if( ! i_flag_cheat_move && (COL_GMAT_FlagsGet(COL_C_Ground) & Gmat_KK_Face_de_mort) )
+	{
+		if( @"univ" LIFE_HumainEtat[i_id_humain] != Life_ETAT_Mort )
+		{
+			DBG_TraceObject(OBJ_Me())
+			DBG_TraceString(" meurt à cause d'une face de mort\n")
+		}
+		@"univ" LIFE_HumainEtat[i_id_humain] = Life_ETAT_Mort
+	}
+	
+	// Chute
+	tf_temp = v_ground_pos.z - OBJ_PosGet().z
+	if( tf_temp > Cf_hauteur_safe ) 
+	{
+		if(H_IsWater())
+		{
+			HUM_fct_GFX_Splash(OBJ_PosGet())
+			SND_RequestPlay(27)
+		}
+		else
+			SND_RequestPlay(25)
+	}
+	
+	if( ! ti_flag_water_under_pos && tf_temp > Cf_hauteur_mort_ronces && IsSolPaf(OBJ_PosGet()) && ! CaseBrulee(OBJ_PosGet()) )
+	{
+		// Chute sur ronces mortelles
+		if( @"univ" LIFE_HumainEtat[i_id_humain] != Life_ETAT_Mort )
+		{
+			DBG_TraceObject(OBJ_Me())
+			DBG_TraceString(" meurt à cause d'une chute dans les ronces\n")
+		}
+		@"univ" LIFE_HumainEtat[i_id_humain] = Life_ETAT_Mort
+	}
+	else if( ! ti_flag_water_under_pos && tf_temp >= Cf_hauteur_mort_chute )
+	{
+		// Chute mortelle
+		if(i_ground_ID != Ci_sol_eau && !i_pas_mort_chute)
+		{
+			if( @"univ" LIFE_HumainEtat[i_id_humain] != Life_ETAT_Mort )
+			{
+				DBG_TraceObject(OBJ_Me())
+				DBG_TraceString(" meurt à cause d'une chute au sol de 8m\n")
+			}
+			@"univ" LIFE_HumainEtat[i_id_humain] = Life_ETAT_Mort
+		}
+	}
+	else if( tf_temp >= Cf_hauteur_paf )
+	{
+		// Chute blessante
+		EVENT_AddEventPaf(C_EVENT_FILTER_All, 0, OBJ_Me(), 0.01, OBJ_Me(), 1.0 * PAF_Unit, OBJ_SightGet())
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" prend un paf à cause d'une chute de 5m\n")
+	}
+	else if( tf_temp > Cf_hauteur_safe )
+	{
+		// Chute pas safe
+		i_camera_animee = vrai
+		@get_joueur_cam ACT_ActionSet(6)
+		IO_PafSet(100, 8)
+	}
+	
+	f_time_ground_col = 0.0
+	v_ground_pos = OBJ_PosGet()
+	v_ground_normal = COL_NormalGet(COL_C_Ground)
+}
+else
+{
+	tf_temp = v_ground_pos.z - OBJ_PosGet().z
+	f_flag_en_chute = tf_temp
+	
+	// je sais que je dois mourir, j'abrège mes souffrances
+	if( ! ti_flag_water_under_pos )
+	{
+		if( i_flag_va_mourrir && tf_temp > 3.0 && ! i_pas_mort_chute )
+		{
+			@get_global f_game_speed = 0.5
+			if( @"univ" LIFE_HumainEtat[i_id_humain] != Life_ETAT_Mort )
+			{
+				DBG_TraceObject(OBJ_Me())
+				DBG_TraceString(" meurt à cause d'une chute dans le vide de 3m (le joueur devait mourir)\n")
+			}
+			@"univ" LIFE_HumainEtat[i_id_humain] = Life_ETAT_Mort
+			macro_change_etat("H_ETAT_Mort")
+		}
+		
+		// en chute
+		if( f_flag_en_chute > 0.2 && ! i_flag_va_mourrir )
+		{
+			tf_ray = - (Cf_hauteur_mort_chute + 0.5)
+			DBG_RenderVector(OBJ_PosGet() + cvector(0, 0, 0.5), cvector(0,0,tf_ray), color_vert)
+			to_obj = COL_RayObject_Vector(OBJ_PosGet() + cvector(0, 0, 0.5) , cvector(0,0,tf_ray), all, none, 0, COL_C_Ray_on_ColMap_NoCrossable | COL_C_Ray_use_SpecificCrossableSet)
+			if( ! to_obj )
+			{
+				i_flag_va_mourrir = vrai
+				DBG_TraceObject(OBJ_Me())
+				DBG_TraceString(" en chute depuis 0.2 sec et pas de sol (ni d'eau) à 8m sous les pieds -> va mourir\n")
+			}
+		}
+		
+		if( tf_temp > Cf_hauteur_mort_chute && ! i_pas_mort_chute )
+		{
+			if( @"univ" LIFE_HumainEtat[i_id_humain] != Life_ETAT_Mort )
+			{
+				DBG_TraceObject(OBJ_Me())
+				DBG_TraceString(" meurt à cause d'une chute dans le vide de 8m\n")
+			}
+			@"univ" LIFE_HumainEtat[i_id_humain] = Life_ETAT_Mort
+			macro_change_etat("H_ETAT_Mort")
+		}
+	}
+	
+	f_time_ground_col += TIME_GetDt()
+}
+
+
+// TYPE DE SOL
+i_ground_ID = GRID_CapaGet(OBJ_PosGet())
+i_ground_ID &= tag_grid_terrain
+if( i_ground_ID == Ci_sol_mur )
+{
+	for(x = 0; x < 16; x++)
+		acpt[x] = 0
+	
+	ti_max_val = 0
+	for(x = -1; x <= 1; x++)
+	{
+		for(y = -1; y <= 1; y++)
+		{
+			if(x == 0 && y == 0) continue
+
+			tv_temp = GRID_PosGet(OBJ_PosGet())
+			tv_temp.x += x
+			tv_temp.y += y
+			ti_temp = GRID_CapaGet( tv_temp )
+			ti_temp &= tag_grid_terrain
+			if(ti_temp == Ci_sol_mur) continue
+			if(IsSolPaf(tv_temp)) continue
+			acpt[ti_temp]++
+			if(acpt[ti_temp] > ti_max_val)
+			{
+				ti_max_val = acpt[ti_temp]
+				ti_max = ti_temp
+			}
+		}
+	}
+	
+	if(ti_max_val)
+		i_ground_ID = ti_max
+}
+
+// Herbe brulee = rien
+i_real_ground_ID = i_ground_ID
+if(i_ground_ID == Ci_sol_herbe || i_ground_ID == Ci_sol_herbe_haute || i_ground_ID == Ci_sol_herbe_ronce)
+{
+	if(CaseBrulee(OBJ_PosGet()))
+		i_ground_ID = 0
+}
+
+// WALL COL =====================================================================================
+
+if (COL_CollideType(COL_C_Wall))
+{
+	f_time_wall_col += TIME_GetDt()
+	v_wall_normal = COL_NormalGet(COL_C_Wall)
+}
+else
+{
+	f_time_wall_col = 0.0
+}
+
+// Hauteur plafond ==================================================================================
+
+// Hauteur de l'eau
+//f_water_Z = -Cf_Infinit
+//IsWater(0)		// VINC : update water Z bis
+//if(i_flag_nage)
+//{
+////	if( ! IsWater(0) )
+////		i_flag_nage = faux
+//	if( 1 )
+//	{
+//		tv_temp = OBJ_PosGet()
+//	//	tv_temp.z = v_hauteur_eau.z
+//		tv_temp.z = f_water_Z_world
+//		tv_temp.z -= 0.1
+//		to_obj = COL_RayObject_Vector(tv_temp, cvector(0,0,-(Hauteur_Eau_Haute - 0.1)), OBJ_C_IdentityFlag_ColMap, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_Crossable)
+//		if(to_obj)
+//		{
+//			tv_temp = COL_RayObject_NormalGet()
+//			if(tv_temp.z >= Cf_Cos45)
+//			{
+//				to_obj = COL_RayObject_Vector(OBJ_PosGet() + cvector(0,0,1), cvector(0,0,-2), OBJ_C_IdentityFlag_ColMap, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_Crossable)
+//				tv_temp = COL_RayObject_PosGet() + cvector(0,0,0.1)
+//				
+//				tv_temp1 = tv_temp - OBJ_PosGet()	
+//				tf_temp = tv_temp1.z
+//	//			tv_temp.z -= 0.2		// VINC
+//				
+//				OBJ_PosSet(tv_temp)
+//				COL_StartMatrixSet(tv_temp)
+//				i_flag_nage = faux
+//				COL_ColSetActivationSet(C_bit_zdm_pied, 0)
+//				DYN_GravitySet(H_GRAVITY)
+//				
+//				if(joueur)
+//				{
+//					tv_temp1 = @get_camera OBJ_PosGet()
+//					tf_temp = tv_temp1.z - tv_temp.z
+//					to_obj = @get_global o_camera
+//					@get_camera_path to_obj f_blend_z = tf_temp
+//				}
+//				else
+//				{
+//					to_obj = ANI_CanalObjectGet(Anim_Canal_Bassin)
+//					tv_temp = @to_obj OBJ_PosGet()
+//					tv_temp.z -= tf_temp
+//					@to_obj OBJ_PosSet(tv_temp)
+//					f_blend_bassin = tf_temp
+//				}
+//			}
+//		}
+//	}
+//}
+//else
+//{
+//	f_hauteur_eau = 0
+//	if(IsWater(i_ground_ID) && (i_etat_courant != ETAT_IA_Ann_Climb) )
+//	{
+////		to_obj = COL_RayObject_Vector(OBJ_PosGet(), cvector(0,0,4 ), OBJ_C_IdentityFlag_ColMap, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_Crossable)
+////		if(to_obj)
+////		{
+////			ti_temp = COL_GMAT_FlagsGet(COL_C_Ray) 
+////			if(ti_temp & Gmat_KK_Face_eau)
+////			{
+////				v_hauteur_eau = COL_RayObject_PosGet()
+////				tv_temp = v_hauteur_eau - OBJ_PosGet()
+////				f_hauteur_eau = tv_temp.z
+//				
+//				f_hauteur_eau = f_water_Z_world - (OBJ_PosGet().z)
+//				if(f_flag_en_chute > 1.5) 
+//				{
+//					HUM_fct_GFX_Splash(v_hauteur_eau)
+//					SND_RequestPlay(27)
+//				}
+//				
+//				if(f_hauteur_eau > Hauteur_Eau_Nage)
+//				{
+//					i_flag_nage = vrai
+//					H_JumpReset()
+//				}
+////			}
+////		}
+//	}
+//}
+//
+////if (f_hauteur_eau)
+////	f_water_Z = OBJ_PosGet().z + f_hauteur_eau
+////else
+////	f_water_Z = -Cf_Infinit
+//	
+
+if( H_IsWater() || ( ti_flag_water_under_pos && (f_water_Z_world + 0.5 > OBJ_PosGet().z)) )
+{
+	// détection wall (aide à la remontée paroi verticale)
+	ti_nage_wall = faux
+	if( f_joy_norm )
+	{
+		if( f_nage_wall_contact_duration )
+			ti_nage_wall = vrai		// déjà ok on continue
+		else
+		{
+			// 1er test
+			if( i_flag_nage )
+			{
+				if( COL_CollideType(COL_C_Wall) )
+				{
+					tv_temp = OBJ_PosGet()
+					tv_temp.z = f_water_Z_world
+					to_obj = COL_RayObject_Vector(tv_temp, OBJ_SightGet(), OBJ_C_IdentityFlag_ColMap, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+					if( to_obj )
+					{
+						// j'ai un mur devant moi, est-il trop haut pour monter ?
+						tv_temp += OBJ_SightGet()
+						tv_temp += (2.0 * Cv_VerticalVector)
+						tv_temp1 = - 4.0 * Cv_VerticalVector
+						to_obj = COL_RayObject_Vector(tv_temp, tv_temp1, OBJ_C_IdentityFlag_ColMap, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+						if( to_obj )
+						{
+							tv_temp = COL_RayObject_PosGet()
+							DBG_RenderVector(OBJ_PosGet(), tv_temp - OBJ_PosGet(), color_rouge)
+							tv_temp1 = @get_Kamera OBJ_PosGet()
+							if( tv_temp1.z + 0.5 > tv_temp.z )
+							{
+								// c pas trop haut je peux monter dessus
+								ti_nage_wall = vrai
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	if( ti_nage_wall )
+		f_nage_wall_contact_duration += TIME_GetDt()
+	else
+		f_nage_wall_contact_duration -= MATH_FloatMin(f_nage_wall_contact_duration, 3 * TIME_GetDt())
+
+	f_hauteur_eau = f_water_Z_world - (OBJ_PosGet().z) - f_nage_wall_contact_Z_offset
+}
+else
+{
+	f_nage_wall_contact_duration = 0.0
+	f_hauteur_eau = 0.0
+}
+f_nage_wall_contact_Z_offset = f_nage_wall_contact_duration * 2.0
+
+if( i_flag_nage )
+{
+	// en train de nager
+	if( f_hauteur_eau < (Hauteur_Eau_Nage - 0.1) )
+	{
+		i_flag_nage = faux
+	}
+}
+else
+{
+	// marche
+	if( f_flag_en_chute > 1.5 )
+	{
+		HUM_fct_GFX_Splash(v_hauteur_eau)
+		SND_RequestPlay(27)
+	}
+	if( f_hauteur_eau > Hauteur_Eau_Nage)
+	{
+		i_flag_nage = vrai
+		H_JumpReset()
+	}
+}
+
+
+// ECHELLE =======================================================================
+ti_grimpe = Ci_grimpe_tombe
+i_echelle_snap_flag = faux
+if( COL_GMAT_FlagsGet(COL_C_Wall) & Gmat_KK_Echelle )
+	f_echelle_gmat_timer += TIME_GetDt()
+else
+	f_echelle_gmat_timer = 0.0
+if( i_jump_from_echelle_flag )
+	f_jump_from_echelle_timer += TIME_GetDt()
+else
+	f_jump_from_echelle_timer = 0.0
+if( ( ! i_jump_from_echelle_flag || f_jump_from_echelle_timer > 0.5 ) && f_echelle_gmat_timer > 0.2 )
+{
+	// contact avec l'échelle depuis le sol ou en jump depuis une échelle depuis un délai écoulé
+	// STR_AppendText(STR_CreateText("\c0FF0000FF\\h.10\",cvector(0.5,0.5,0), 0), "Echelle")
+	if( ! i_echelle_flag )		// init grimpe
+		f_echelle_startingZ = OBJ_PosGet().z		
+	ti_grimpe = Ci_grimpe_stop
+	if( f_joy_norm )
+	{
+		to_echelle = nobody
+		ti_index = COL_GMatReportGet(Gmat_KK_Echelle)
+		if( ti_index != -1 )
+		{
+			to_echelle = COL_ObjectGet(COL_C_ReportIndex + ti_index)
+			if( to_echelle )
+			{
+				// init : snaper indy sur l'échelle
+				if( f_echelle_snap_coef < 1.0 )
+				{
+					i_echelle_snap_flag = vrai
+					f_echelle_snap_coef = MATH_FloatMin(1.0, f_echelle_snap_coef + (5.0 * TIME_GetDt()))
+					// projection de la position d'Indy sur l'axe de l'échelle
+					tv_temp = @to_echelle OBJ_PosGet()
+					tv_temp.z = f_echelle_startingZ
+					tv_temp1 = OBJ_PosGet()
+					tv_temp1.z = f_echelle_startingZ
+					tv_temp2 = @to_echelle OBJ_SightGet()
+					tv_temp2.z = 0.0
+					tv_temp3 = tv_temp1 - tv_temp	// échelle vers Indy
+					tf_dot = MATH_VecDotProduct(tv_temp2, tv_temp3)
+					DBG_RenderVector(tv_temp, tv_temp2, color_vert)
+					DBG_RenderVector(tv_temp, tv_temp3, color_jaune)
+					tv_temp2 *= tf_dot
+					DBG_RenderVector(tv_temp, tv_temp2, color_bleu)
+					OBJ_BankingGeneralSet(MATH_VecBlendRotate(OBJ_SightGet(), - tv_temp2, f_echelle_snap_coef), Cv_VerticalVector)
+					tv_temp2 += tv_temp
+					OBJ_PosSet(MATH_VecBlend(OBJ_PosGet(), tv_temp2, f_echelle_snap_coef))
+				}
+				// monter ou descendre ?
+				tf_dot = MATH_VecDotProduct(OBJ_SightGet(), v_joy_dir)
+				if( tf_dot > Cf_grimper_mvt_toler )			// joy vers l'échelle = monter
+					ti_grimpe = Ci_grimpe_monte
+				else if( tf_dot < - Cf_grimper_mvt_toler )		// joy à l'opposé de l'échelle = descendre
+					ti_grimpe = Ci_grimpe_descend
+				// valider le déplacement si le joueur est tourné vers l'échelle
+				tv_temp = @to_echelle OBJ_PosGet() - OBJ_PosGet()
+				MATH_VecSetHorzNormalize(tv_temp)
+				tv_temp1 = OBJ_SightGet()
+				MATH_VecSetHorzNormalize(tv_temp1)
+				if( MATH_VecDotProduct(tv_temp, tv_temp1) < Cf_Cos70 )
+					ti_grimpe = Ci_grimpe_stop		// annule le déplacement
+			}
+		}
+	}
+	i_echelle_flag = vrai
+}
+else
+{
+	i_echelle_flag = faux
+	f_echelle_hauteur = 0.0
+	f_echelle_snap_coef = 0.0
+}
+switch( ti_grimpe )
+{
+	case Ci_grimpe_monte :
+		f_echelle_speed_coef = MATH_FloatBlend(f_echelle_speed_coef, 2.0, 2.0 * TIME_GetDt())
+		f_echelle_hauteur += f_echelle_speed_coef * TIME_GetDt()
+		break
+	case Ci_grimpe_descend :
+		f_echelle_speed_coef = MATH_FloatBlend(f_echelle_speed_coef, 2.0, 2.0 * TIME_GetDt())
+		f_echelle_hauteur -= f_echelle_speed_coef * TIME_GetDt()
+		break
+	default:
+		f_echelle_speed_coef = 0.0
+		break
+}
+if( f_echelle_hauteur )
+{
+	tv_temp = OBJ_PosGet()
+	tv_temp.z = f_echelle_startingZ
+	tv_temp.z += f_echelle_hauteur
+	OBJ_PosSet(tv_temp)
+}
+
+
+

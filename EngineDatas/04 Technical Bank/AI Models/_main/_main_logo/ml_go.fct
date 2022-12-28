@@ -1,0 +1,120 @@
+int			ti_i
+vector 	size
+
+#define	INTMIG_TXG									0x4902D48D
+#define 	INTMIG_TEXT_Loading						0x4902D4B7
+#define 	INTMIG_TEXT_PressStart					0x4902D4B9
+
+	
+SND_M_SetGameMode( SND_Cte_ModePlaying)
+SND_M_SetGameSubMode(0)
+
+SND_RequestPlay( 0 )
+
+ti_i = GFX_AddSorted(11, 10)
+GFX_FlagSet( ti_i, 0, 1)          										// active l'effet
+GFX_FlagSet( ti_i, 2, 1 )          										// met le flag materiau transparent a vrai
+GFX_MaterialSet( ti_i, get_SFX_light_and_smoke, 31)   		// met le materiau
+GFX_Seti( ti_i, 11100, 0xFF000000)        	// couleur 0
+GFX_Seti( ti_i, 11101, 0x00000000)    		// couleur 1
+GFX_Setf( ti_i, 11000, 0.2)         	// t0
+GFX_Setf( ti_i, 11001, 0.8)         	// t1
+GFX_Setf( ti_i, 11002, 0)         	// t2
+GFX_Setf( ti_i, 11003, 0)         	// t3
+GFX_Setf( ti_i, 11004, 0)      		// t4
+
+meta ( !OBJ_TextRequest(0,0) ) {}
+
+OBJ_TextSet( 1, TEXT_Get( 0x4902eff0, 0x4902f004) )
+OBJ_TextPageSet( 1, 0, -1, 3, 0 )
+OBJ_TextFlagSet( 1, 16 + 1 + 8 )
+OBJ_TextColorSet( 1, 0, -1, 0x7F7F7F )
+OBJ_TextPivotSet( 1, cvector( 0.5, 0.975, 0 ) )
+
+OBJ_TextMaxWidthSet( 0.93 )
+OBJ_TextEffectSeti( 3, -2, -5 )
+OBJ_TextSizeSet( 1, 0, -1, cvector( -1, 0, 0) )
+OBJ_TextEffectSeti( 3, -2, 0 )
+OBJ_TextMaxWidthSet( 0 )
+OBJ_TextAlign( 1, 0, -1, 0 )
+
+size = OBJ_TextSizeGet( 1, 0, -1)
+
+ti_i = OBJ_TextEffectAdd( 1, 1, 0, -1 )
+OBJ_TextEffectSeti( ti_i, 1, 1)
+OBJ_TextEffectSeti( ti_i, 0, 1)
+OBJ_TextEffectSetf( ti_i, 150, 0.5)
+OBJ_TextEffectSetf( ti_i, 151, 0.5 )
+
+
+OBJ_TextSet( 0, TEXT_Get( INTMIG_TXG, INTMIG_TEXT_PressStart)  )
+OBJ_TextFlagSet( 0, 21 )
+OBJ_TextPivotSet( 0, cvector( 0.5, (1.5 - size.y) / 2 , 0) )
+OBJ_TextSizeSet( 0, 0, -1, cvector( -1, 0, 0) )
+
+ti_i = OBJ_TextEffectAdd( 2, 0, 0, -1)
+OBJ_TextEffectSeti( ti_i, 0, 1)                // smooth (avec fade) ou non
+OBJ_TextEffectSeti( ti_i, 200, 0xFFFFFFFF)     // une des couleurs
+OBJ_TextEffectSeti( ti_i, 201, 0xFF404040)      // l'autre couleur
+OBJ_TextEffectSetf( ti_i, 250, 2)             // temps avant chaque changement
+
+ti_i = OBJ_TextEffectAdd( 1, 0, 0, -1 )
+OBJ_TextEffectSeti( ti_i, 1, 1)
+OBJ_TextEffectSeti( ti_i, 0, 1)
+OBJ_TextEffectSetf( ti_i, 150, 0.5)
+OBJ_TextEffectSetf( ti_i, 151, 0.5 )
+
+meta(!IO_ButtonPressed(joy_button_Start)) 
+{
+}
+
+//if ( o_EffectSoundBank )
+//{
+//	@o_EffectSoundBank SND_RequestPlay( 0 )
+//}
+
+SND_RequestPlay( 1 )
+SND_RequestPlay( 2 )
+
+
+
+OBJ_TextEffectSeti( 1, -1, 0 )
+ti_i = OBJ_TextEffectAdd( 1, 0, 0, -1 )
+OBJ_TextEffectSeti( ti_i, 1, 1)
+OBJ_TextEffectSetf( ti_i, 150, 0.5 )
+
+ti_i = OBJ_TextEffectAdd( 1, 1, 0, -1 )
+OBJ_TextEffectSeti( ti_i, 1, 1)
+OBJ_TextEffectSetf( ti_i, 150, 0.5 )
+
+
+//SND_Stop(snd)
+
+ti_i = GFX_AddSorted(11, 9)
+GFX_FlagSet( ti_i, 0, 1)          										// active l'effet
+GFX_FlagSet( ti_i, 2, 1 )          										// met le flag materiau transparent a vrai
+GFX_MaterialSet( ti_i, get_SFX_light_and_smoke, 31)   		// met le materiau
+GFX_Seti( ti_i, 11100, 0x00000000)        	// couleur 0
+GFX_Seti( ti_i, 11101, 0xFF000000)    		// couleur 1
+GFX_Setf( ti_i, 11000, 0)        	// t0
+GFX_Setf( ti_i, 11001, 1)        	// t1
+GFX_Setf( ti_i, 11002, 10)         	// t2
+GFX_Setf( ti_i, 11003, 0)         	// t3
+GFX_Setf( ti_i, 11004, 0)      		// t4
+
+TIME_Wait(2)
+
+if (ConsoleSpecificOption(32))
+{
+	OBJ_TextSet( 0, TEXT_Get( INTMIG_TXG, INTMIG_TEXT_Loading)  )
+	OBJ_TextFlagSet( 0, 21 )
+	OBJ_TextPivotSet( 0, cvector( 0.5, 0.5, 0) )
+	OBJ_TextSizeSet( 0, 0, -1, cvector( -1, 0, 0) )
+}
+
+TIME_Wait( 0.2 )
+
+VIDEO_SETKEY( 0xFFFFFFFF )
+
+@"univ" load_world = vrai
+@"univ" world_ID = 3

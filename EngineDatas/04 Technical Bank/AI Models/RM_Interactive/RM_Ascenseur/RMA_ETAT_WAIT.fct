@@ -1,0 +1,65 @@
+#include "RM_Ascenseur_defines.var"
+
+int			ti_trig1
+int			ti_trig2
+int 		ti_switch
+vector	tv_pos
+
+// SORTIE ETAT 	===================================================================
+if( i_sort_etat )
+{
+	i_sort_etat = faux
+	return
+}
+
+// INIT ETAT 	=====================================================================
+if( i_etat_courant != ETAT_RMA_WAIT)
+{
+	i_etat_courant = ETAT_RMA_WAIT
+	if( fct_last_etat )
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+
+	if (i_SND_wait_loop == -1)
+		i_SND_wait_loop = SND_RequestPlayLoop(SND_WAIT_LOOP)
+} 
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// COMPORTEMENT ================================================================
+
+if (AI_TriggerIsValid(t_position0))
+	ti_trig1 = call_trigger(t_position0)
+else ti_trig1 = 0
+if (AI_TriggerIsValid(t_position1))
+	ti_trig2 = call_trigger(t_position1)
+else ti_trig2 = 0
+
+tv_pos = OBJ_PosGet()
+if (ti_trig1 && (tv_pos == v_position[0]))
+	ti_trig1 = 0
+if (ti_trig2 && (tv_pos == v_position[1]))
+	ti_trig2 = 0
+
+if (AI_TriggerIsValid(t_demi_tour) && (!(t_demi_tour_si_dedans) || COL_BV_PivotCollide(o_main_actor)))
+	ti_switch = call_trigger(t_demi_tour)
+else ti_switch = 0
+	
+if (ti_trig1 || ti_trig2 || ti_switch)
+{
+	if (!ti_switch)
+	{
+		if (ti_trig1) 
+			i_dest = 1
+		else i_dest = 0
+	}
+	
+	AI_TrackCurChangeNow("RMA_ETAT_CLOSE")
+}
+

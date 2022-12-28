@@ -1,0 +1,105 @@
+#include "prs_RaptorSlim_defines.var"
+
+Include_UltraProcedure_Header
+
+object		to_collide_object
+object 		to_duplicated
+
+// SORTIE ETAT ===================================================================
+if (i_sort_etat)
+{
+	i_sort_etat = faux
+
+//	COL_ZoneSizeSet(C_zdm_pied, cvector(0.75, 0.75, 0.75))
+//	COL_ZonePosSet(C_zdm_pied, cvector(0.0, 0.0, 0.75))
+
+	return
+}
+
+// INITIALISATION ETAT ==============================================================
+if (i_etat_courant != ETAT_PRS_FADE)
+{
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_PRS_FADE
+
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+
+	fct_last_etat = AI_TrackCurGet()
+
+	to_duplicated = @get_SFX_decomposition OBJ_Duplicate(cvector(0,0,0))			// ALOC (C'est l'AI qui va gerer la decomposition)
+	@to_duplicated Proc_Decomposition_Init(OBJ_Me(), 5.0, 0, 1, -1)				// INIT (Vas y decompose moi :))
+	
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+// ANALYSE ================================================================
+//AI_Execute("PNJ_Raptor_exec_check_paf")
+
+if (f_time_start_etat > 10.0)	
+	OBJ_Destroy()
+
+switch(ACT_ActionGet())
+{
+	case Action_Mort_Paf :
+		if (ACT_ActionFinished())
+			PRS_ActionSet(Action_Mort)
+		break
+		
+	case Action_Mort_2_Paf :
+		if (ACT_ActionFinished())
+			PRS_ActionSet(Action_Mort_2)
+		break
+
+	case Action_Mort :
+	case Action_Mort_2 :
+		break
+		
+	case Action_Agonie_cycl :
+		PRS_ActionSet(Action_Mort)
+		break
+
+	default:
+		@get_global pnj_raptor_death_ID = MATH_Modulo(@get_global pnj_raptor_death_ID + 1, 2)
+		if (@get_global pnj_raptor_death_ID)
+			PRS_ActionSet(Action_Mort)
+		else
+			PRS_ActionSet(Action_Mort_2)
+}
+
+if (i_flag_paf_repousse || i_flag_paf_visual)
+{
+	switch(ACT_ActionGet())
+	{
+		case Action_Mort_2 :
+		case Action_Mort_2_Paf :
+			PRS_ActionSet(Action_Mort_2_Paf | Ci_ActionSet_Force_FrameZero | Ci_ActionSet_Force_SameAction)
+			break
+
+		case Action_Mort :
+		case Action_Mort_Paf :
+			PRS_ActionSet(Action_Mort_Paf | Ci_ActionSet_Force_FrameZero | Ci_ActionSet_Force_SameAction)
+			break
+	}
+}
+
+// COMPORTEMENT ==========================================================
+if (f_time_start_etat > 3.0 && !f_neck_col_duration)
+{
+	DYN_Off()
+	COL_ColSetActivationSet(none, all)
+}
+
+//AI_Execute("PNJ_Raptor_exec_on_ground_stuff")
+
+v_virtual_banking = MATH_VecBlendRotate(v_virtual_banking, v_ground_normal, 4.0 * TIME_GetDt())
+OBJ_BankingGeneralSet(OBJ_SightGet(), v_virtual_banking)
+
+

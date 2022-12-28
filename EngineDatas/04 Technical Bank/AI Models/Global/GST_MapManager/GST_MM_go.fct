@@ -1,0 +1,311 @@
+Include_UltraProcedure_Header
+
+int			i, ti_wind
+object	to_obj, to_kong
+vector	tv_temp
+float		tf_max
+
+// Centrer la grille sur un perso ?
+if(Centrer_La_Grille) GRID_CenterSet(@Centrer_La_Grille OBJ_PosGet())
+
+// BEAT Manager
+Proc_MM_SND_BeatManager()
+
+// FOGGGGGGGGGGGGGGGGGGGGGGGGGGG ====================================
+if (i_use_FogCorrection)
+{
+	GSP_Set_After_Effct(13, vrai, 0, sfx_FogPSX_near)
+	GSP_Set_After_Effct(13, vrai, 1, sfx_FogPSX_far)
+}
+
+if (i_mode_old_movie != @"univ" VID_gi_ModeOldMovie)
+{
+	if (@"univ" VID_gi_ModeOldMovie == 1)
+	{
+		// Old movie
+		@get_global AFE_DefaultValue[Param_AE_BlackAndWhite] = 1
+		@get_global AFE_DefaultValue[Param_AE_Brightness] = -0.05
+		@get_global AFE_DefaultValue[Param_AE_ColorBalance1] = 0.2
+		@get_global AFE_DefaultValue[Param_AE_ColorBalance2] = 0.6
+		@get_global AFE_DefaultValue[Param_AE_Remanence] = 0.4
+	}
+	else if (@"univ" VID_gi_ModeOldMovie == 2)
+	{
+		// Picture Boost
+		@get_global AFE_DefaultValue[Param_AE_BlackAndWhite] = 0.3
+		@get_global AFE_DefaultValue[Param_AE_Brightness] = -0.05
+		@get_global AFE_DefaultValue[Param_AE_ColorBalance1] = AFX_ColorBalance_1
+		@get_global AFE_DefaultValue[Param_AE_ColorBalance2] = AFX_ColorBalance_2
+		@get_global AFE_DefaultValue[Param_AE_Remanence] = 0.5
+		
+	}
+	else
+	{
+		// Normal
+		@get_global AFE_DefaultValue[Param_AE_BlackAndWhite] = AFX_BlackAndWhite_1
+		@get_global AFE_DefaultValue[Param_AE_Brightness] = AFX_Brightness_1
+		@get_global AFE_DefaultValue[Param_AE_ColorBalance1] = AFX_ColorBalance_1
+		@get_global AFE_DefaultValue[Param_AE_ColorBalance2] = AFX_ColorBalance_2
+		@get_global AFE_DefaultValue[Param_AE_Remanence] = AFX_Remanence_1
+	}
+	
+	i_mode_old_movie = @"univ" VID_gi_ModeOldMovie
+}
+
+
+
+
+// ECLAIRS =================================================================
+if (SND_SignalIsActive("ecl0"))
+{
+//	i_phase_eclair = 1
+//	f_phase_time = MATH_RandFloat(0.10,0.12)
+//	f_phase_value = @get_global Proc_AE_BlackAndWhiteGet()
+}
+
+else if (SND_SignalIsActive("ecl1"))
+{
+//	i_phase_eclair = 1
+//	f_phase_time = MATH_RandFloat(0.10,0.15)
+//	f_phase_value = @get_global Proc_AE_BlackAndWhiteGet()
+}
+
+else if (SND_SignalIsActive("ecl2") || @get_global f_force_eclaire > 0.01)
+{
+	i_phase_eclair = 1
+	f_phase_time = MATH_RandFloat(0.05,0.10)
+	f_phase_brightness_value = @get_global Proc_AE_BrightnessGet()
+	f_phase_contrast_value = @get_global Proc_AE_ContrasteGet()
+	f_phase_bw_value = @get_global Proc_AE_BlackAndWhiteGet()
+}
+
+else if (SND_SignalIsActive("ecl3") )// || IO_KeyPressed(65))
+{
+	i_phase_eclair = 1
+	f_phase_time = MATH_RandFloat(0.05,0.10)
+	f_phase_brightness_value = @get_global Proc_AE_BrightnessGet()
+	f_phase_contrast_value = @get_global Proc_AE_ContrasteGet()
+	f_phase_bw_value = @get_global Proc_AE_BlackAndWhiteGet()
+}
+
+if (AI_TriggerIsValid(Trigger_Eclairs) && call_trigger(Trigger_Eclairs))
+{
+    f_current_delay -= MATH_FloatMin(f_current_delay, TIME_GetDt())
+    if (!f_current_delay)
+    {
+		// Lightning GO
+        if (MATH_RandInt(0,100) <= 10)
+            f_current_delay = MATH_RandFloat(0.05,0.15)
+        else
+            f_current_delay = MATH_RandFloat(f_delai_min,f_delai_max)
+        i_phase_eclair = 1
+        f_phase_time = MATH_RandFloat(0.05,0.10)
+		f_phase_brightness_value = @get_global Proc_AE_BrightnessGet()
+		f_phase_contrast_value = @get_global Proc_AE_ContrasteGet()
+		f_phase_bw_value = @get_global Proc_AE_BlackAndWhiteGet()
+    }
+}
+
+if (i_phase_eclair)
+{
+	switch (i_phase_eclair)
+	{
+		case 1 :
+			f_phase_brightness_value = MATH_FloatBlend(f_phase_brightness_value, -0.01, 15.0 * TIME_GetDt())
+			f_phase_contrast_value = MATH_FloatBlend(f_phase_contrast_value, 2.5, 10.0 * TIME_GetDt())
+			f_phase_bw_value = MATH_FloatBlend(f_phase_bw_value, 0.5, 10.0 * TIME_GetDt())
+
+			f_phase_time -= MATH_FloatMin(f_phase_time, TIME_GetDt())
+			if (!f_phase_time)
+			{
+				f_phase_time = 1.0
+				i_phase_eclair = 2
+			}
+			break
+
+		case 2 :
+			f_phase_brightness_value = MATH_FloatBlend(f_phase_brightness_value, @get_global Proc_AE_BrightnessDefaultGet(), 8.0 * TIME_GetDt())
+			f_phase_contrast_value = MATH_FloatBlend(f_phase_contrast_value, @get_global Proc_AE_ContrasteDefaultGet(), 5.0 * TIME_GetDt())
+			f_phase_bw_value = MATH_FloatBlend(f_phase_bw_value, @get_global Proc_AE_BlackAndWhiteDefaultGet(), 7.0 * TIME_GetDt())
+			f_phase_time -= MATH_FloatMin(f_phase_time, 0.1 * TIME_GetDt())
+			if (!f_phase_time)
+				i_phase_eclair = 0
+			break
+	}
+	@get_global Proc_AE_BrightnessSet(f_phase_brightness_value)
+	@get_global Proc_AE_ContrasteSet(f_phase_contrast_value)
+	@get_global Proc_AE_BlackAndWhiteSet(f_phase_bw_value)
+}
+
+//@get_global Proc_AE_BrightnessSet(f_brightness)
+//@get_global Proc_AE_ContrasteSet(f_contrast)
+//@get_global Proc_AE_BlackAndWhiteSet(f_bw)
+
+
+// ECLAIRS =================================================================
+
+
+// PLUIE ==================================================================
+//if (SND_SignalIsActive("plu0"))
+//	i_rain = faux
+//	i_rain = vrai
+//
+//if (i_rain )
+to_obj = AI_MainActorGet(0)
+for(i = 0; i < 20; i++)
+{
+	if(!o_zone_interdit[i]) break
+	if(@to_obj COL_Pivot_BVCollide(o_zone_interdit[i]))
+	{
+		@get_global ENV_pluie_interdit = vrai
+		break
+	}
+}
+
+@get_global ENV_pluie_encours = faux
+if (SND_SignalIsActive("plu0") || i_force_pluie)
+{
+	@get_global ENV_pluie_encours = vrai
+	f_intensity_rain += 0.25 * TIME_GetDt()
+	if(f_intensity_rain > 1.0) f_intensity_rain = 1.0
+	f_next_freq_ripple = 0.01
+	if(!o_objet_pluie) AI_Execute("GST_MM_exec_riple")
+}
+else if(SND_SignalIsActive("plu1"))
+{
+	@get_global ENV_pluie_encours = vrai
+	f_intensity_rain += 0.25 * TIME_GetDt()
+	if(f_intensity_rain > 0.5) f_intensity_rain = 0.5
+	f_next_freq_ripple = 0.01
+	if(!o_objet_pluie) AI_Execute("GST_MM_exec_riple")
+}
+else
+{
+	f_intensity_rain -= 0.10 * TIME_GetDt()
+	if(f_intensity_rain < 0.0) f_intensity_rain = 0.0
+}
+
+if(o_objet_pluie)
+{
+	@"SFX/SFX_Rain" o_objet_pluie Intensity = f_intensity_rain
+	@o_objet_pluie OBJ_CapaSet(OBJ_Capa_0, 0)
+}
+else
+	@get_SFX_rain Intensity = f_intensity_rain
+for(i = 0; i < 20; i++)
+{
+	if(!o_zone_static[i]) break
+	to_obj = o_zone_static[i]
+	@"SFX/SFX_Rain" to_obj Intensity = f_intensity_rain
+}
+	
+// PLUIE ==================================================================
+
+
+
+// VENT ===================================================================
+//if (SND_SignalIsActive("ven0"))
+//	i_wind = faux
+//	i_wind = vrai
+//
+//if (i_wind)
+ti_wind = faux
+//if (SND_SignalIsActive("ven0"))
+//{
+//	ti_wind = vrai
+//	v_cur_win = MATH_VecRotate(v_cur_win, Cv_VerticalVector, MATH_RandInt(0, 3) * TIME_GetDt() * 10)
+//	f_cur_wind = MATH_RandFloat(0.3, 0.5)
+//	SPG2_GlobalWind(f_cur_wind, 2.0, 3.0, v_cur_win)
+//}	
+
+if(SND_SignalIsActive("plu0"))
+	tf_max = 10
+else
+	tf_max = 25
+if(TIME_Elapsed(f_time_last_win, tf_max))
+{
+	f_time_force_wind = MATH_RandFloat(3, 8)
+	f_time_last_win = TIME_Get()
+}
+
+tv_temp = MATH_VecBlendRotate(@get_SFX_rain Wind, v_time_rand_pluie, 3 * TIME_GetDt())
+@get_SFX_rain Wind = tv_temp
+
+if(TIME_Elapsed(f_time_vent_pluie, 5))
+{
+	if(!TIME_Elapsed(f_time_vent_pluie, 10))
+	{
+		if(TIME_Elapsed(f_time_dt_pluie, f_time_rand_pluie))
+		{
+			f_time_dt_pluie = TIME_Get()
+			f_time_rand_pluie = MATH_RandFloat(0.5, 1)
+			v_time_rand_pluie.x = MATH_RandFloat(0.2, 0.6)
+			v_time_rand_pluie.y = 0//MATH_RandFloat(0.2, 0.6)
+			v_time_rand_pluie.z = 1
+			MATH_VecSetNormalize(v_time_rand_pluie)
+		}
+	}
+	else if(TIME_Elapsed(f_time_vent_pluie, 20))
+	{
+		f_time_vent_pluie = TIME_Get()
+	}
+	else
+	{
+		v_time_rand_pluie = cvector(0,0,0.99)
+	}
+}
+
+if (SND_SignalIsActive("ven0") || f_time_force_wind || i_force_wind)
+{
+	@get_SFX_rain OBJ_RotateGlobalZ(TIME_GetDt())
+	ti_wind = vrai
+	v_cur_win = MATH_VecRotate(v_cur_win, Cv_VerticalVector, MATH_RandInt(0, 3) * TIME_GetDt() * 10)	
+	if(SND_SignalIsActive("plu0")|| i_force_wind)
+		f_cur_wind = MATH_RandFloat(0.5, 0.9)
+	else
+		f_cur_wind = MATH_RandFloat(0.3, 0.6)
+	SPG2_GlobalWind(f_cur_wind, 2.0, 3.0, v_cur_win)
+}	
+
+f_time_force_wind -= TIME_GetDt()
+if(f_time_force_wind < 0) f_time_force_wind = 0
+
+//===RAFALES DE VENT PONCTUELS
+if (SND_SignalIsActive("raf0") || SND_SignalIsActive("raf1") || i_force_rafale)
+{
+	f_time_rafal = 0.5
+}
+	
+if(f_time_rafal > 0)
+{
+	f_time_rafal -= TIME_GetDt()
+	ti_wind = vrai
+	f_cur_wind = MATH_RandFloat(0.5, 0.8)
+	SPG2_GlobalWind(f_cur_wind, 2.5, 3.0, v_cur_win)
+}
+
+if(!ti_wind)
+{
+	v_cur_win = MATH_VecRotate(v_cur_win, Cv_VerticalVector, MATH_RandInt(0, 3) * TIME_GetDt() * 10)
+	f_cur_wind = MATH_FloatBlend(f_cur_wind, des_f_defaultwind, TIME_GetDt())
+	SPG2_GlobalWind(f_cur_wind, 1.0, 2.0, v_cur_win)
+}
+
+// VENT ===================================================================
+
+@get_global ENV_poleine_herbe = sfx_poleine_herbe
+@get_global ENV_nape_brume = sfx_nappe_brume
+@get_global gfx_light_gun = sfx_light_gun
+
+if(!o_objet_pluie) AI_Execute("GST_MM_exec_goute")
+
+
+// Disable KK move
+//if ( i_disable_Kong_Move)
+//{
+//	to_kong = AI_MainActorGet(C_ID_Kong)
+//	if( to_kong )
+//	{
+//		@get_Kong_Path to_kong i_LD_disable_Kong_move = vrai
+//	}
+//}

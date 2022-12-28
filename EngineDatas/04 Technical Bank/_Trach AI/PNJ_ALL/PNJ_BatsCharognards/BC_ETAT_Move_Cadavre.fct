@@ -1,0 +1,220 @@
+#include "BC_defines.var"
+
+messageid		tmid_vision
+
+vector			tv_sight
+vector			tv_me_to_cadavre
+
+float				tf_dot
+
+
+// SORTIE ETAT ============================================================
+if (i_sort_etat)
+{
+	i_flag_reseau_array = faux
+	if( i_etat_courant != ETAT_Move_Atterrit )
+		o_cadavre = nobody	
+	f_cadavre_occupation_delay = 0.0
+	i_sort_etat = faux
+	return
+}
+
+
+// ENTREE ETAT ============================================================
+if( i_etat_courant != ETAT_Move_Cadavre )
+{
+	i_etat_ancien_ancien = i_etat_ancien
+	i_etat_ancien = i_etat_courant
+	i_etat_courant = ETAT_Move_Cadavre
+	if (fct_last_etat)
+	{
+		i_sort_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	fct_last_etat = AI_TrackCurGet()
+	f_time_start_etat = 0.0
+	BC_DBG_Trace_Etat("etat move cadavre")
+	
+	BC_Calc_Pos_Cadavre()
+	@o_tmp_obj_next OBJ_PosSet(v_dest_pos)
+	@o_tmp_obj_next OBJ_BankingGeneralSet(v_dest_sight, Cv_VerticalVector)
+	o_cible_depl = o_tmp_obj_next
+	
+	// CALCUL DU RESEAU et du next_wp
+	i_mode_depl = Ci_mode_depl_cadavre
+	n_reseau = n_attaque
+	i_reseau_wp_count = 10				// pour bien spécifier qu'on a pas terminé de parcourir le réseau (mais qu'on veut commencer)
+	i_flag_reseau_array = vrai
+	i_force_test_inclinaison = vrai			// test d'inclinaison
+	i_flag_depl_wp_apres_reseau = faux
+	BC_Next_WP_Get()
+	
+	ACT_ActionSet(i_ACTION_Vol_Standard)
+	BC_ref_speed_set(Cf_speed_vol)
+	i_cadavre_mode = Ci_cadavre_mode_deplacement
+	f_obstacle_duration = 0.0		// check obstacle pour aller chopper de la bouffe
+	
+	// TEST DISTANCE JOUEUR
+	i_cadavre_joueur_proche_flag = faux
+	f_cadavre_joueur_proche_duree = 0.0
+	
+	f_cadavre_atterissage_delay = 0.0	// MATH_RandFloat(0.5,1.5)			// min 0.5 pour l'orientation à la fin sinon saute lors de l'anim d'aterrissage
+	f_cadavre_occupation_delay = MATH_RandFloat(15.0, 20.0)		// délai max je reste occupé sans pouvoir attarrir (interet foodchain)
+	i_cadavre_atterrissage_1st_test_done = faux
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+
+
+// ANALYSE =========================================================
+
+// EMERGENCY ABORT ============================= 
+if( o_cadavre && ! BC_TargetActive(o_cadavre) )
+{
+	DBG_TraceObject(OBJ_Me())
+	DBG_TraceString(" : EMERGENCY ABORT : Target non active (")
+	DBG_TraceObject(o_cadavre)	
+	DBG_TraceString(")")
+	DBG_TraceEOL()	
+	
+	BC_Cadavre_Del(o_cadavre)
+	o_cadavre = nobody
+	AI_Execute("BC_exec_init_attente")
+}
+
+// Vision ------------------------------------------------------------------------------------
+if( f_time_start_etat > 0.5 )
+{
+	if( ! BC_Seen_Actor_Test(o_cadavre, tmid_vision) )
+	{
+		BC_DBG_Trace_Etat_Gao("plus de message vision, je repars en laissant", o_cadavre)
+		AI_Execute("BC_exec_init_attente")
+	}
+}
+
+
+// TEST CADAVRE DANS TERRITOIRE (FEU ???)
+if( ! BC_Gao_in_Territory(o_cadavre, vrai) )
+{
+	BC_DBG_Trace_Etat_Gao("ma proie n'est plus dans mon territoire (feu ???) alors je repars", o_cadavre)
+	AI_Execute("BC_exec_init_attente")
+}
+
+
+// Obstacle ----------------------------------------------------------------------------------
+AI_Execute("BC_exec_check_obstacle")
+if( i_flag_obstacle )
+{
+	BC_DBG_Trace_Etat_Gao("un obstacle l'empeche d'atteindre", o_cadavre)
+	AI_Execute("BC_exec_init_attente")
+}
+
+
+// COMPORTEMENT =================================================
+
+BC_Interet_Update(mid_interet_charogne, C_EVENT_InteretStatusFoodchain, o_cadavre, tmid_vision)
+
+i_flag_neck = vrai
+v_look_pos = v_cible_pos
+
+// TEST JOUEUR PROCHE PENDANT CYCLE FOODCHAIN
+AI_Execute("BC_exec_cadavre_joueur_proche")
+
+
+// DUREE D'OCCUPATION MAX =========================================
+if( i_mode_agressif_ON )
+{
+	// bats agressive temporairement charognard
+	f_cadavre_occupation_delay -= MATH_FloatMin(f_cadavre_occupation_delay, TIME_GetDt())
+	if( ! f_cadavre_occupation_delay )
+	{
+		BC_DBG_Trace_Etat_Gao("temps d'occupation du cadavre écoulé, je repars en abandonnant...", o_cadavre)
+	//			BC_Cadavre_Del(o_cadavre)
+		f_speed = 0.0
+		o_cadavre = nobody
+		AI_Execute("BC_exec_init_attente")
+	}
+}
+
+switch( i_cadavre_mode )
+{
+	case Ci_cadavre_mode_deplacement :
+//		if( i_reseau_wp_count == 1 )
+//			i_flag_frein = vrai
+//		else
+			i_flag_frein = faux
+		// update cadavre qui bouge (bidoche)
+		if( i_flag_depl_wp_apres_reseau )
+		{
+			BC_Calc_Pos_Cadavre_Update()
+		}
+		AI_Execute("BC_exec_MOVE_beziers")
+		if( i_flag_depl_fini && ( ! i_reseau_wp_count ) )
+		{
+			i_cadavre_mode = Ci_cadavre_mode_observe
+			i_vitesse_derapage_init = vrai
+		}
+		break
+		
+	case Ci_cadavre_mode_observe :
+		// blend orientation violent sinon risque de saute au début de l'anim d'atterrissage
+		if( i_cadavre_atterrissage_1st_test_done )
+			i_wait_sinus_flag = vrai		// sinus si on nous a déjà refusé l'atterrissage (sinon pas de sinus car la position calculée est nickel pour l'anim d'atterrissage)
+		OBJ_BankingGeneralSet(
+			MATH_VecBlendRotate(OBJ_SightGet(), @o_cadavre OBJ_PosGet() - OBJ_PosGet(), 10.0 * TIME_GetDt()),
+			MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 10.0 * TIME_GetDt()))
+		// test orientation
+		tv_sight = OBJ_SightGet()
+		tv_sight.z = 0.0
+		if( ! MATH_VecNullToler(tv_sight, 0.1) )
+			MATH_VecSetNormalize(tv_sight)
+		else
+			tv_sight = OBJ_SightGet()
+		DBG_RenderVector(OBJ_PosGet(), tv_sight, color_jaune)
+		tv_me_to_cadavre = @o_cadavre OBJ_PosGet() - OBJ_PosGet()
+		tv_me_to_cadavre.z = 0.0
+		if( ! MATH_VecNullToler(tv_me_to_cadavre, 0.1) )
+			MATH_VecSetNormalize(tv_me_to_cadavre)
+		else
+			tv_me_to_cadavre = OBJ_SightGet()
+		DBG_RenderVector(OBJ_PosGet(), tv_me_to_cadavre, color_cyan)
+		tf_dot = MATH_VecDotProduct(tv_sight, tv_me_to_cadavre)
+		
+		// délai
+		f_cadavre_atterissage_delay -= MATH_FloatMin(f_cadavre_atterissage_delay, TIME_GetDt())
+		
+		if( ! f_cadavre_atterissage_delay && tf_dot > Cf_Cos10 )
+		{
+			i_cadavre_atterrissage_1st_test_done = vrai
+			if( BC_Cadavre_Libre(o_cadavre) && BC_Cadavre_Safe(o_cadavre) && ! BC_Gao_Is_Near_Fire(o_cadavre) )
+			{
+				// c safe je peux me poser
+				i_atterrissage_mode = Ci_atterrissage_sur_charogne
+				o_cible = o_cadavre
+				i_charogne_ID = BC_Get_ID(o_cadavre)
+				BC_Interet_Update(mid_interet_charogne, C_EVENT_InteretStatusFoodchainLocked, o_cadavre, tmid_vision)	// il est à moi !!!
+				macro_change_etat("BC_ETAT_Move_Atterrit")
+			}
+			else
+			{
+				if( i_mode_agressif_ON )
+				{
+					// cadavre pas safe mais je dois rester occupé quand même, je vais retester s'il est dispo dans un moment
+					BC_DBG_Trace_Etat_Gao("pas libre ou trop dangereux, je n'atterrit pas, j'attend un peu... ", o_cadavre)
+					f_cadavre_atterissage_delay = MATH_RandFloat(1.5, 3.0)
+				}
+				else
+				{
+					BC_DBG_Trace_Etat_Gao("cadavre pas safe ou pas dispo mais je suis un vrai charognard, je repars en abandonnant...", o_cadavre)
+					f_speed = 0.0
+					o_cadavre = nobody
+					AI_Execute("BC_exec_init_attente")
+				}
+			}
+		}
+		break
+}
+
+

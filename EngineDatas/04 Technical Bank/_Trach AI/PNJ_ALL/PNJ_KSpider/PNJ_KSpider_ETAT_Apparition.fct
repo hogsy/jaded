@@ -1,0 +1,56 @@
+#include "PNJ_KSpider_defines.var"
+
+int			ti_flag_ok
+
+vector	tv_pos
+
+if (i_flag_sortie_etat)
+{
+	i_flag_sortie_etat = faux
+	return
+}
+
+if (i_etat_courant != ETAT_Apparition)
+{
+	// INTIALISATION
+	i_dernier_etat = i_etat_courant
+	i_etat_courant = ETAT_Apparition
+	
+	if (fct_last_etat)
+	{
+		i_flag_sortie_etat = vrai
+		AI_Execute(fct_last_etat)
+	}
+	
+	fct_last_etat = AI_TrackCurGet()
+	
+	tv_pos = @o_target OBJ_PosGet()
+	tv_pos += MATH_VecRotate(cvector(1.0, 0.0, 0.0), Cv_VerticalVector, MATH_RandFloat(0.0, Cf_2Pi)) * MATH_RandFloat(2.0, 5.0)
+	tv_pos.z -= 1.0
+	OBJ_PosSet(tv_pos)
+
+	OBJ_BankingGeneralSet(MATH_VecRotate(cvector(1.0, 0.0, 0.0), Cv_VerticalVector, MATH_RandFloat(0.0, Cf_2Pi)), Cv_VerticalVector)
+
+	f_delay_before_jump = MATH_RandFloat(0.25, 0.75)
+
+	OBJ_ZoomSet(MATH_RandFloat(1.0, 1.75))
+
+	OBJ_FlagInvisibleSet(faux)
+
+	f_time_start_etat = 0.0
+}
+else
+{
+	f_time_start_etat += TIME_GetDt()
+}
+	
+// ANALYSE ===============================================================
+if (f_time_start_etat > f_delay_before_jump)
+	macro_change_etat("PNJ_KSpider_ETAT_Attaque")
+
+// COMPORTEMENT =========================================================
+tv_pos = OBJ_PosGet()
+tv_pos.z += TIME_GetDt() / f_delay_before_jump
+OBJ_PosSet(tv_pos)
+
+

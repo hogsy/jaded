@@ -1,0 +1,134 @@
+
+#include "AS_define.var"
+
+int					ti_loop
+int					ti_found
+int					ti_iter 
+message		tm_msg
+float				tf_delay
+int					ti_indice_target 
+object			to_target
+
+if (f_time_attaque < 0)
+{
+	// CHECK de blindage si tous le monde est bien caché.
+	for (ti_loop = 0 ; ti_loop < i_nbr_PNJ_current; ti_loop++)
+	{
+		if (ai_barrier[ti_loop] && !@ao_pnj_list[ti_loop] OBJ_CapaTest(Capa_PNJ_Ready))
+		{
+			// Abort car un perso n'est pas ready
+			f_time_attaque = 0.5
+			stop
+		}
+	}
+
+	// CHECK Perso dans Zone si BV specifié
+	if (o_bv_detect_human)
+	{
+		AI_Execute("AS_Exec_get_human")
+		if (!i_nbr_perso_dans_zone)
+		{
+			// Abort car pas de perso a attaquer alors que la zone est specifié
+			f_time_attaque = 0.5
+			stop
+		}
+	}
+
+	// J'attaque
+	f_time_attaque = f_tps_entre_attaque
+	if (f_tps_entre_attaque_random)
+		f_time_attaque += MATH_RandFloat(-f_tps_entre_attaque_random,f_tps_entre_attaque_random)
+
+	// Choix des PNJ
+	for (ti_loop = 0 ; ti_loop < AS_nbr_PNJ_max; ti_loop++)
+		ai_barrier[ti_loop] = 0
+
+	i_abort = faux
+	
+	ti_found = 0
+	ti_iter = 0
+	while (ti_found<i_seq_nbr_attaquant[i_step_sequence])
+	{
+		// Cherche des PNJ
+		if (!ai_barrier[i_barrier])
+		{
+			// Il n'a pas etet choisi
+			if (ti_iter > 50 || i_nbr_PNJ_current == i_seq_nbr_attaquant[i_step_sequence] )
+			{
+				ai_barrier[i_barrier] = vrai	// Je le prend d'office il y a eu trop d'iteration
+				ti_found++
+			}
+			else if (MATH_RandInt(0,100) > 50)
+			{
+				ai_barrier[i_barrier] = vrai	// Le random le prend librement
+				ti_found++
+			}
+		}
+		ti_iter ++
+		i_barrier = MATH_Modulo(i_barrier + 1, i_nbr_PNJ_current)
+	}
+	
+	// Envoie des ordres aux PNJ selectionnés
+	ti_indice_target = 0
+	tf_delay = f_seq_delai_entre_tir[i_step_sequence]
+	for (ti_loop = 0 ; ti_loop < i_nbr_PNJ_current; ti_loop++)
+	{
+		if (ai_barrier[ti_loop])
+		{
+			if (i_nbr_perso_dans_zone)
+			{
+				to_target = ao_perso_dans_zone[ti_indice_target]
+				ti_indice_target  = MATH_Modulo(ti_indice_target + 1, i_nbr_perso_dans_zone)
+			}
+			else
+				to_target = AI_MainActorGet(C_ID_Joueur)		// Target = Main actor
+			
+			@ao_pnj_list[ti_loop] OBJ_CapaSet(Capa_PNJ_Attaque, none)
+			// Envoie du message de parametrage du PNJ
+			tm_msg.msg_id = 667
+			tm_msg.msg_sender = OBJ_Me()
+			tm_msg.msg_gao1 = to_target
+			tm_msg.msg_vec1 = cvector(tf_delay,0,0) 
+			@ao_pnj_list[ti_loop] MSG_Send(tm_msg)
+			tf_delay += f_seq_delai_entre_tir[i_step_sequence]
+		}
+	}
+
+	// Gestion des etapes dans les sequences
+	i_step_sequence ++
+	if (!i_seq_nbr_attaquant[i_step_sequence])
+		i_step_sequence = 0
+}
+else
+{
+	// Gestion du timmer	
+	f_time_attaque -= TIME_GetDt()
+
+	// Gestion des PBs sur mes sbires
+
+	// Test PAF pour ordre de rentrez tous.
+	if (!i_abort)
+	{
+		for (ti_loop = 0 ; ti_loop < i_nbr_PNJ_current; ti_loop++)
+		{
+			if (ai_barrier[ti_loop])
+			{
+				if (@ao_pnj_list[ti_loop] OBJ_CapaTest(Capa_PNJ_Hit))
+				{
+					i_abort = vrai
+					break
+				}
+			}
+		}
+		if (i_abort)
+		{
+			f_time_attaque += f_tps_rajoute_si_paf
+			for (ti_loop = 0 ; ti_loop < i_nbr_PNJ_current; ti_loop++)
+			{
+				if (ai_barrier[ti_loop])
+					@ao_pnj_list[ti_loop] OBJ_CapaSet(Capa_PNJ_Hide, none)
+			}
+		}
+	}
+}
+
