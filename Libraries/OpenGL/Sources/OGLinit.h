@@ -24,7 +24,6 @@
 #include "BASe/BAStypes.h"
 #include "SOFT/SOFTstruct.h"
 
-
 #if defined (__cplusplus) && !defined(JADEFUSION)
 extern "C"
 {
@@ -35,6 +34,19 @@ extern "C"
     Macros
  ***************************************************************************************************
  */
+
+#	if !defined( NDEBUG )
+    #include <assert.h>
+#		define OGL_CALL( X )                     \
+			{                                     \
+				glGetError();                     \
+				X;                                \
+				unsigned int _err = glGetError(); \
+				assert( _err == GL_NO_ERROR );    \
+			}
+#	else
+#		define OGL_CALL( X ) X
+#	endif
 
 #define OGL_M_SD(_pst_DD)   ((OGL_tdst_SpecificData *) _pst_DD->pv_SpecificData)
 #define OGL_M_RS(_pst_DD)   (&((OGL_tdst_SpecificData *) _pst_DD->pv_SpecificData)->st_RS)
