@@ -30,7 +30,7 @@
 
 	extern void OGL_DrawText(int X,int Y,char *P_String,long Color,float Alpha,float SizeFactor);
 
-int FBTexture[10] = {0xC0DE2004,0xC0DE2004,0xC0DE2004,0xC0DE2004,0xC0DE2004,0xC0DE2004,0xC0DE2004,0xC0DE2004};
+static int FBTexture[10] = {0xC0DE2004,0xC0DE2004,0xC0DE2004,0xC0DE2004,0xC0DE2004,0xC0DE2004,0xC0DE2004,0xC0DE2004};
 
 static float SKYZ = -0.999999f;
 
@@ -431,19 +431,19 @@ static GLbitfield  OGL_AE_ATTRIB_SAVE =
 
 void OGL_ES_PushState()
 {
-	glPushAttrib(OGL_AE_ATTRIB_SAVE);
+	OGL_CALL( glPushAttrib(OGL_AE_ATTRIB_SAVE) );
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glDisable(GL_ALPHA_TEST);
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE);
 	glDepthMask(GL_FALSE);
 
-	glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_FALSE);
+	OGL_CALL( glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_FALSE) );
 }
 
 void OGL_ES_PopState()
 {
-	glPopAttrib();
+	OGL_CALL( glPopAttrib() );
 }
 
 
@@ -474,21 +474,16 @@ void OGL_AE_ValidateTexture(int *TexHan,int Mode,int ScreenSize,int ScreenSize_V
 #endif
 	{
 		int Viewporti[4];
-		glGetIntegerv(GL_VIEWPORT  ,  Viewporti);
-#ifdef JADEFUSION
-		glGenTextures(1, (GLuint*)TexHan);
-#else
-		glGenTextures(1, TexHan);
-#endif
-		glBindTexture(GL_TEXTURE_2D, *TexHan);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BORDER,0);
+		OGL_CALL( glGetIntegerv(GL_VIEWPORT  ,  Viewporti) );
+		OGL_CALL( glGenTextures(1, (GLuint*)TexHan) );
+		OGL_CALL( glBindTexture(GL_TEXTURE_2D, *TexHan) );
+		OGL_CALL( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP) );
+		OGL_CALL( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP) );
 
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glEnable(GL_TEXTURE_2D);
-		glCopyTexImage2D(GL_TEXTURE_2D, 0 , Mode, Viewporti[0] , Viewporti[1] , ScreenSize, ScreenSize_V, 0);
+		OGL_CALL( glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR) );
+		OGL_CALL( glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR) );
+		OGL_CALL( glEnable(GL_TEXTURE_2D) );
+		OGL_CALL( glCopyTexImage2D(GL_TEXTURE_2D, 0 , Mode, Viewporti[0] , Viewporti[1] , ScreenSize, ScreenSize_V, 0) );
 	}
 }
 
