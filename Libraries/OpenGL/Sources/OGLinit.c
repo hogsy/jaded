@@ -627,7 +627,7 @@ void OGL_ShadowImgLoad(u32 TexNum)
 	glMatrixMode(GL_MODELVIEW);
 	glGetFloatv(GL_MODELVIEW_MATRIX, (GLfloat *) &st_SavedMatrix);
 	glLoadIdentity();
-	glBegin(GL_POLYGON); 
+	glBegin(GL_POLYGON);
 	glColor4ubv((GLubyte *) &Color);
 	glTexCoord2f(0,0);
 	glVertex3f (-1,1,0.0);
@@ -689,7 +689,7 @@ void OGL_SetTextureTarget(ULONG Num , ULONG Clear)
 		{
 			u32 ulColor;
 			ulColor = 0x0;
-			glBegin(GL_POLYGON); 
+			OGL_CALL( glBegin(GL_POLYGON) ); 
 			glColor4ubv((GLubyte *) &ulColor);
 			glVertex3f ( 10000, 10000,0);
 			glVertex3f (-10000, 10000,0);
@@ -1293,11 +1293,11 @@ LONG OGL_l_DrawElementIndexedTriangles
 					{
 						OGL_RenderSlope(t)
 						OGL_SetColorRGBA(t->auw_Index[0]);
-						glVertex3fv((float *) &_pst_Point[t->auw_Index[0]]);
+						OGL_CALL( glVertex3fv((float *) &_pst_Point[t->auw_Index[0]]) );
 						OGL_SetColorRGBA(t->auw_Index[1]);
-						glVertex3fv((float *) &_pst_Point[t->auw_Index[1]]);
+						OGL_CALL( glVertex3fv((float *) &_pst_Point[t->auw_Index[1]]) );
 						OGL_SetColorRGBA(t->auw_Index[2]);
-						glVertex3fv((float *) &_pst_Point[t->auw_Index[2]]);
+						OGL_CALL( glVertex3fv((float *) &_pst_Point[t->auw_Index[2]]) );
 					}
 				    t++;
 			    }
@@ -1309,15 +1309,15 @@ LONG OGL_l_DrawElementIndexedTriangles
 					OGL_TestHideTriangle(t)
 					{
 						OGL_RenderSlope(t)
-						glTexCoord2fv(&_pst_UV[t->auw_Index[0]].fU);
+						OGL_CALL( glTexCoord2fv(&_pst_UV[t->auw_Index[0]].fU) );
 						OGL_SetColorRGBA(t->auw_Index[0]);
-						glVertex3fv((float *) &_pst_Point[t->auw_Index[0]]);
-						glTexCoord2fv(&_pst_UV[t->auw_Index[1]].fU);
+						OGL_CALL( glVertex3fv((float *) &_pst_Point[t->auw_Index[0]]) );
+						OGL_CALL( glTexCoord2fv(&_pst_UV[t->auw_Index[1]].fU) );
 						OGL_SetColorRGBA(t->auw_Index[1]);
-						glVertex3fv((float *) &_pst_Point[t->auw_Index[1]]);
-						glTexCoord2fv(&_pst_UV[t->auw_Index[2]].fU);
+						OGL_CALL( glVertex3fv((float *) &_pst_Point[t->auw_Index[1]]) );
+						OGL_CALL( glTexCoord2fv(&_pst_UV[t->auw_Index[2]].fU) );
 						OGL_SetColorRGBA(t->auw_Index[2]);
-						glVertex3fv((float *) &_pst_Point[t->auw_Index[2]]);
+						OGL_CALL( glVertex3fv((float *) &_pst_Point[t->auw_Index[2]]) );
 					}
 					t++;
 				}
@@ -1329,15 +1329,15 @@ LONG OGL_l_DrawElementIndexedTriangles
 					OGL_TestHideTriangle(t)
 					{
 						OGL_RenderSlope(t)
-						glTexCoord2fv((float *) &_pst_UV[((t->ul_MaxFlags >> 7) & 3)]);
+						OGL_CALL( glTexCoord2fv((float *) &_pst_UV[((t->ul_MaxFlags >> 7) & 3)]) );
 						OGL_SetColorRGBA(t->auw_Index[0]);
-						glVertex3fv((float *) &_pst_Point[t->auw_Index[0]]);
-						glTexCoord2fv((float *) &_pst_UV[((t->ul_MaxFlags >> 9) & 3)]);
+						OGL_CALL( glVertex3fv((float *) &_pst_Point[t->auw_Index[0]]) );
+						OGL_CALL( glTexCoord2fv((float *) &_pst_UV[((t->ul_MaxFlags >> 9) & 3)]) );
 						OGL_SetColorRGBA(t->auw_Index[1]);
-						glVertex3fv((float *) &_pst_Point[t->auw_Index[1]]);
-						glTexCoord2fv((float *) &_pst_UV[((t->ul_MaxFlags >> 11) & 3)]);
+						OGL_CALL( glVertex3fv((float *) &_pst_Point[t->auw_Index[1]]) );
+						OGL_CALL( glTexCoord2fv((float *) &_pst_UV[((t->ul_MaxFlags >> 11) & 3)]) );
 						OGL_SetColorRGBA(t->auw_Index[2]);
-						glVertex3fv((float *) &_pst_Point[t->auw_Index[2]]);
+						OGL_CALL( glVertex3fv((float *) &_pst_Point[t->auw_Index[2]]) );
 					}
 				    t++;
 			    }
@@ -1364,7 +1364,7 @@ LONG OGL_l_DrawElementIndexedTriangles
 		    }
 
 	    	PRO_StartTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_End);
-			OGL_CALL( glEnd() );
+			glEnd();
 
 		    PRO_StopTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_End);
         }
@@ -1384,7 +1384,7 @@ LONG OGL_l_DrawElementIndexedTriangles
 		{
 			pStrip = _pst_Element->pst_StripData->pStripList;
 			pStripEnd = pStrip + _pst_Element->pst_StripData->ulStripNumber;
-			glDisable(GL_TEXTURE_2D);
+			OGL_CALL( glDisable(GL_TEXTURE_2D) );
 
 			for(j = 0; pStrip < pStripEnd; pStrip++, j++)
 			{
@@ -1399,7 +1399,7 @@ LONG OGL_l_DrawElementIndexedTriangles
 				}
 
 				PRO_StartTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_Begin);
-				glBegin(GL_TRIANGLE_STRIP/*GL_TRIANGLE_FAN/*GL_TRIANGLE_STRIP*/);
+				OGL_CALL( glBegin(GL_TRIANGLE_STRIP/*GL_TRIANGLE_FAN/*GL_TRIANGLE_STRIP*/ ));
 				PRO_StopTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_Begin);
 
 				if(pst_Color == NULL)
@@ -1496,7 +1496,7 @@ LONG OGL_l_DrawElementIndexedTriangles
 				}
 
 				PRO_StartTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_End);
-				OGL_CALL( glEnd() );
+				glEnd();
 				PRO_StopTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_End);
 			}
 		}
@@ -1554,8 +1554,6 @@ void OGL_SetTextureBlending(ULONG _l_Texture, ULONG BM)
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 			else
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BORDER,0);
-
 		}
 
 		if(Delta & MAT_Cul_Flag_TileV)
@@ -1564,8 +1562,6 @@ void OGL_SetTextureBlending(ULONG _l_Texture, ULONG BM)
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 			else
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BORDER,0);
-
 		}
 
 		if(Delta & MAT_Cul_Flag_Bilinear)
@@ -2239,7 +2235,7 @@ void OGL_l_DrawSPG2_SPRITES_2X(
 
 		}
 
-		OGL_CALL( glEnd() );
+		glEnd();
 	}
 }
 

@@ -97,7 +97,7 @@ void OGL_Texture_Unload(GDI_tdst_DisplayData *_pst_DD)
 	if(!(_pst_DD->st_TexManager.ul_Flags & TEX_Manager_FixVRam))
 	{
 		wglMakeCurrent(pst_SD->h_DC, pst_SD->h_RC);
-		glBindTexture(GL_TEXTURE_2D, 0);
+		OGL_CALL( glBindTexture(GL_TEXTURE_2D, 0) );
 		OGL_RS_UseTexture(pst_SD, -1);
 	}
 
@@ -110,11 +110,10 @@ void OGL_Texture_Unload(GDI_tdst_DisplayData *_pst_DD)
 		for(; pul_Texture < pul_LastTexture; pul_Texture++)
 		{
 			if ( (*pul_Texture) && (*pul_Texture != -1) )
-#ifdef JADEFUSION
-				glDeleteTextures(1, (const GLuint*)pul_Texture);
-#else
-				glDeleteTextures(1, pul_Texture);
-#endif 
+			{
+				OGL_CALL( glDeleteTextures( 1, pul_Texture ) );
+			}
+
 			*pul_Texture = -1;
 		}
 	}
@@ -226,37 +225,6 @@ void    OGL_Set_Texture_Palette( GDI_tdst_DisplayData *_pst_DD, ULONG _ulTexNum,
  */
 void OGL_Texture_SetPalette(int _i_Palette)
 {
-    TEX_tdst_Palette *pst_Pal;
-    float   f_RMap[256], f_GMap[256], f_BMap[256], f_AMap[256];
-    int     i, i_Number;
-    ULONG   *pul_Color;
-
-    if ( (_i_Palette < 0) || (_i_Palette >= TEX_gst_GlobalList.l_NumberOfPalettes) )
-        return;
-
-    pst_Pal = TEX_gst_GlobalList.dst_Palette + _i_Palette;
-    pul_Color = pst_Pal->pul_Color;
-    if (!pul_Color) return;
-    i_Number = (pst_Pal->uc_Flags & TEX_uc_Palette16) ? 16 : 256;
-    for (i = 0; i < i_Number; i++, pul_Color++)
-    {
-        f_RMap[ i ] = ((float) (*pul_Color & 0xFF)) * 0.003921569f;
-        f_GMap[ i ] = ((float) ((*pul_Color >> 8)& 0xFF)) * 0.003921569f;
-        f_BMap[ i ] = ((float) ((*pul_Color >> 16)& 0xFF)) * 0.003921569f;
-        f_AMap[ i ] = ((float) (*pul_Color >> 24)) * 0.003921569f;
-    }
-
-    glPixelMapfv(GL_PIXEL_MAP_I_TO_R, i_Number, f_RMap );
-    glPixelMapfv(GL_PIXEL_MAP_I_TO_G, i_Number, f_GMap );
-    glPixelMapfv(GL_PIXEL_MAP_I_TO_B, i_Number, f_BMap );
-
-    if (pst_Pal->uc_Flags & TEX_uc_AlphaPalette)
-        glPixelMapfv(GL_PIXEL_MAP_I_TO_A, i_Number, f_AMap );
-    else
-    {
-        f_AMap[0] = 1;
-        glPixelMapfv(GL_PIXEL_MAP_I_TO_A, 1, f_AMap );
-    }
 }
 
 /*
@@ -361,9 +329,9 @@ ULONG OGL_ul_Texture_Create( ULONG ul_Key, int i_Mipmap )
     ULONG ul_Texture;
 
     // création de la texture 
-	glEnable(GL_TEXTURE_2D);
-    glGenTextures(1, (GLuint*)&ul_Texture);
-    glBindTexture(GL_TEXTURE_2D, ul_Texture);
+	OGL_CALL( glEnable(GL_TEXTURE_2D) );
+    OGL_CALL( glGenTextures(1, (GLuint*)&ul_Texture) );
+    OGL_CALL( glBindTexture(GL_TEXTURE_2D, ul_Texture) );
 
 #ifdef OPTOGLTEX
 	if(TEX_DD->st_TexManager.ul_Flags & TEX_Manager_FixVRam)
@@ -376,15 +344,19 @@ ULONG OGL_ul_Texture_Create( ULONG ul_Key, int i_Mipmap )
 #endif
 
     /* Initialisation */
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BORDER,0);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+#define GL_CLAMP_TO_EDGE 0x812F
+	OGL_CALL( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE) );
+	OGL_CALL( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE) );
+	OGL_CALL( glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR) );
 
     if (i_Mipmap == 0)
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	{
+		OGL_CALL( glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR ) );
+	}
     else
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+	{
+		OGL_CALL( glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR ) );
+	}
 
     return ul_Texture;
 }
@@ -405,7 +377,7 @@ LONG OGL_Texture_LoadCB( ULONG ul_Texture, ULONG _ul_Key, ULONG *_pul_Texture, i
 
     TEX_DD->st_TexManager.l_MemoryTakenByLoading += (W * H * BPP) >> 3;
     GDI_M_TimerStart(GDI_f_Delay_AttachWorld_TextureCreate_LoadHard);
-    glTexImage2D(GL_TEXTURE_2D, MMC, 4, W, H, 0, format, GL_UNSIGNED_BYTE, p_Buffer );
+	OGL_CALL( glTexImage2D( GL_TEXTURE_2D, MMC, GL_RGBA, W, H, 0, format, GL_UNSIGNED_BYTE, p_Buffer ) );
     GDI_M_TimerStop(GDI_f_Delay_AttachWorld_TextureCreate_LoadHard);
     
     return 1;
@@ -486,7 +458,6 @@ void OGL_Texture_InternalLoad
     ULONG					*pul_ConvertBuffer;
     int                     i_MipmapLevel;
     ULONG					l_MipmapFlag;
-    char                    *p_Buf;
     TEX_tdst_Data           *pst_RawPal;
     short                   w_Pal;          
     UCHAR                   uc_ColorMap;
@@ -558,82 +529,90 @@ void OGL_Texture_InternalLoad
     l_MipmapFlag = _pst_Tex->st_Params.uw_Flags & (TEX_FP_MipmapUseAlpha | TEX_FP_MipmapUseColor | TEX_FP_MipmapKeepBorder);
     pul_ConvertBuffer = (ULONG *) _pst_Tex->p_Bitmap;
 
-    if(BPP == 32)
-    {
-        while((TX > 0) && (TY > 0))
+    char *p_Buf = NULL;
+    // So it turns out with some drivers (or mine at least), palleted textures don't work so great
+    // so we'll do some conversion here - core spec drops support for palleted textures anyway, so ~hogsy
+	if ( BPP != 32 )
+	{
+		// loop through texture to find a good association
+		if ( TEX_DD->st_TexManager.ul_Flags & TEX_Manager_OneTexForRawPal )
+		{
+			pst_RawPal = TEX_gst_GlobalList.dst_Texture;
+			for ( c = 0; c < TEX_gst_GlobalList.l_NumberOfTextures; c++, pst_RawPal++ )
+			{
+				if ( ( pst_RawPal->uw_Flags & TEX_uw_RawPal ) && ( pst_RawPal->w_Height == ( SHORT ) _ul_Texture ) )
+				{
+					// watch if palette is updatable, in such case we have to keep the buffer and association of buffer and palette
+					if ( TEX_gst_GlobalList.dst_Palette[ pst_RawPal->w_Width ].uc_Flags & TEX_uc_UpdatablePal )
+					{
+						OGL_Texture_AddDataForUpdatablePalette( TEX_SD, ( short ) c, pst_RawPal->w_Width, ( short ) TX, ( short ) TY, TX * TY, ( char * ) pul_ConvertBuffer );
+					}
+					break;
+				}
+			}
+		}
+		else
+		{
+			pst_RawPal = TEX_gst_GlobalList.dst_Texture;
+			for ( c = 0; c < TEX_gst_GlobalList.l_NumberOfTextures; c++, pst_RawPal++ )
+			{
+				if ( ( pst_RawPal->uw_Flags & TEX_uw_RawPal ) && ( pst_RawPal->w_Height == ( SHORT ) _ul_Texture ) )
+				{
+					break;
+				}
+			}
+
+			// watch if palette is updatable, in such case we have to keep the buffer and association of buffer and palette
+			if ( c != TEX_gst_GlobalList.l_NumberOfTextures )
+			{
+				if ( TEX_gst_GlobalList.dst_Palette[ pst_RawPal->w_Width ].uc_Flags & TEX_uc_UpdatablePal )
+				{
+					OGL_Texture_AddDataForUpdatablePalette( TEX_SD, _pst_TexData->w_Index, pst_RawPal->w_Width, ( short ) TX, ( short ) TY, TX * TY, ( char * ) pul_ConvertBuffer );
+				}
+			}
+		}
+
+		size_t size = TX * TY;
+		p_Buf = ( char * ) L_malloc( size * 4 );
+		L_zero( p_Buf, size * 4 );
+		if ( BPP == 4 )
+		{
+			TEX_Convert_4To32( ( unsigned char * ) p_Buf, pul_ConvertBuffer, TEX_gst_GlobalList.dst_Palette[ pst_RawPal->w_TexPal ].pul_Color, size );
+			pul_ConvertBuffer = ( ULONG * ) p_Buf;
+		}
+		else if ( BPP == 8 )
+		{
+			TEX_Convert_8To32( ( unsigned char * ) p_Buf, pul_ConvertBuffer, TEX_gst_GlobalList.dst_Palette[ pst_RawPal->w_TexPal ].pul_Color, size );
+			pul_ConvertBuffer = ( ULONG * ) p_Buf;
+		}
+		else
+		{
+			assert( 0 );
+		}
+	}
+
+    while ( ( TX > 0 ) && ( TY > 0 ) )
+	{
+		LoadCB( _ul_Texture, _pst_TexData->ul_Key, &ul_Texture, i_MipmapLevel, MMC, 32, TX, TY, GL_RGBA, pul_ConvertBuffer, -1 );
+
+		if ( !( _pst_Tex->st_Params.uw_Flags & TEX_FP_MipmapOn ) ) 
         {
-            LoadCB( _ul_Texture, _pst_TexData->ul_Key, &ul_Texture, i_MipmapLevel, MMC, BPP, TX, TY, GL_RGBA, pul_ConvertBuffer, -1 );
+			break;
+		}
 
-            if(!(_pst_Tex->st_Params.uw_Flags & TEX_FP_MipmapOn)) break;
-            if ( OGL_l_Texture_ComputeNextMipmapLevel_32( l_MipmapFlag, i_MipmapLevel, &TX, &TY, pul_ConvertBuffer, c ) == 0)
-                break;
-            MMC++;
-            i_MipmapLevel--;
-        }
-    }
-    else if ( (BPP == 8) || (BPP == 4) )
-    {
-        glGetBooleanv( GL_MAP_COLOR, &uc_ColorMap );
-        if (!uc_ColorMap) 
-            glPixelTransferi(GL_MAP_COLOR,TRUE);
+		if ( OGL_l_Texture_ComputeNextMipmapLevel_32( l_MipmapFlag, i_MipmapLevel, &TX, &TY, pul_ConvertBuffer, c ) == 0 )
+		{
+			break;
+		}
 
-        if (BPP == 4)
-        {
-            p_Buf = (char *) L_malloc( TX * TY );
-#ifdef JADEFUSION
-			TEX_Convert_4To8( (unsigned char *) p_Buf, (unsigned char *) pul_ConvertBuffer, TX, TY );
-#else
-			TEX_Convert_4To8( (char *) p_Buf, (char *) pul_ConvertBuffer, TX, TY );
-#endif
-			pul_ConvertBuffer = (ULONG *) p_Buf;
-        }
+		MMC++;
+		i_MipmapLevel--;
+	}
 
-        // loop through texture to find a good association
-        if (TEX_DD->st_TexManager.ul_Flags & TEX_Manager_OneTexForRawPal)
-        {
-            pst_RawPal = TEX_gst_GlobalList.dst_Texture;
-            for (c = 0; c < TEX_gst_GlobalList.l_NumberOfTextures; c++, pst_RawPal++)
-            {
-                if ( (pst_RawPal->uw_Flags & TEX_uw_RawPal) && (pst_RawPal->w_Height == (SHORT) _ul_Texture) )
-                {
-                    // watch if palette is updatable, in such case we have to keep the buffer and association of buffer and palette
-                    if (TEX_gst_GlobalList.dst_Palette[ pst_RawPal->w_Width ].uc_Flags & TEX_uc_UpdatablePal )
-                        OGL_Texture_AddDataForUpdatablePalette( TEX_SD, (short) c, pst_RawPal->w_Width, (short) TX, (short) TY, TX * TY, (char *) pul_ConvertBuffer );
-
-                    LoadCB( c, pst_RawPal->ul_Key, &ul_Texture, 0, 0, BPP, TX, TY, GL_COLOR_INDEX, pul_ConvertBuffer, pst_RawPal->w_Width );
-
-                    TEX_SD->dul_Texture[ c ] = ul_Texture;
-                    ul_Texture = -1;
-                }
-            }
-        }
-        else
-        {
-            pst_RawPal = TEX_gst_GlobalList.dst_Texture;
-            for (c = 0; c < TEX_gst_GlobalList.l_NumberOfTextures; c++, pst_RawPal++)
-            {
-                if ( (pst_RawPal->uw_Flags & TEX_uw_RawPal) && (pst_RawPal->w_Height == (SHORT) _ul_Texture) )
-                    break;
-            }
-
-            // watch if palette is updatable, in such case we have to keep the buffer and association of buffer and palette
-            if (c != TEX_gst_GlobalList.l_NumberOfTextures)
-            {
-                if (TEX_gst_GlobalList.dst_Palette[ pst_RawPal->w_Width ].uc_Flags & TEX_uc_UpdatablePal )
-                    OGL_Texture_AddDataForUpdatablePalette( TEX_SD, _pst_TexData->w_Index, pst_RawPal->w_Width, (short) TX, (short) TY, TX * TY, (char *) pul_ConvertBuffer );
-                w_Pal = pst_RawPal->w_Width;
-            }
-            else
-                w_Pal = -1;
-
-            LoadCB( _ul_Texture, _pst_TexData->ul_Key, &ul_Texture, 0, 0, BPP, TX, TY, GL_COLOR_INDEX, pul_ConvertBuffer, w_Pal );
-        }
-
-        if (BPP == 4) L_free( p_Buf );
-
-        if (!uc_ColorMap)
-            glPixelTransferi(GL_MAP_COLOR,FALSE);
-    }
+    if ( BPP != 32 )
+	{
+		L_free( p_Buf );
+	}
 
     TEX_SD->dul_Texture[ _ul_Texture ] = ul_Texture;
 }
@@ -730,7 +709,7 @@ void OGL_Texture_UnloadInterfaceTex( GDI_tdst_DisplayData *_pst_DD)
     
     TEX_SD = (OGL_tdst_SpecificData *) _pst_DD->pv_SpecificData;
     wglMakeCurrent( TEX_SD->h_DC, TEX_SD->h_RC);
-	glBindTexture(GL_TEXTURE_2D, 0);
+	OGL_CALL( glBindTexture(GL_TEXTURE_2D, 0) );
 	OGL_RS_UseTexture(TEX_SD, -1);
 
     TEX_SD = (OGL_tdst_SpecificData *) _pst_DD->pv_SpecificData;
@@ -742,7 +721,7 @@ void OGL_Texture_UnloadInterfaceTex( GDI_tdst_DisplayData *_pst_DD)
 #ifdef JADEFUSION
 			glDeleteTextures(1, (const GLuint*)&ul_Texture);
 #else
-			 glDeleteTextures(1, &ul_Texture);
+			 OGL_CALL( glDeleteTextures(1, &ul_Texture) );
 #endif
             TX = pst_ITex->W;
             TY = pst_ITex->H;
