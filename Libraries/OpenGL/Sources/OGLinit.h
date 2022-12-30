@@ -36,7 +36,7 @@ extern "C"
  */
 
 #	if !defined( NDEBUG )
-    #include <assert.h>
+#		include <assert.h>
 #		define OGL_CALL( X )                     \
 			{                                     \
 				glGetError();                     \

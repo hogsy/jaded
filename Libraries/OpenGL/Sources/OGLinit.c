@@ -2568,31 +2568,19 @@ void OGL_SetDCPixelFormat(HDC _hDC)
 	/* Set the pixel format for the device context */
 	SetPixelFormat(_hDC, l_PixelFormat, &pfd);
 
-	/* Test 
-	{
-		int i_Format;
-		i_Format = GetPixelFormat( _hDC );
-		DescribePixelFormat( _hDC, i_Format, sizeof( pfd ), &pfd );
-		i_Format = 0;
-	}
-	*/
-
 #ifdef ACTIVE_EDITORS
-	DescribePixelFormat(_hDC, l_PixelFormat, sizeof(pfd), &pfd);
-	if ((pfd.cColorBits != 24) && (bFirst))
+	DescribePixelFormat( _hDC, l_PixelFormat, sizeof( pfd ), &pfd );
+	if ( ( pfd.cColorBits < 24 ) && ( bFirst ) )
 	{
-		MessageBox
-		(
-			NULL,
-			"Your desktop must be configured in 24bit mode (True colors) for making OPENGL working properly.. \n\n"
-			"Some graphics features will not be enabled \n\n" 
-			"Jade must be restarted for taking effect of your eventual modification.",
-			"OpenGL warning",
-			MB_OK | MB_ICONWARNING | MB_TASKMODAL
-		);
+		MessageBox(
+		        NULL,
+		        "Your desktop must be configured in at least 24bit mode (True colors) for making OPENGL working properly.. \n\n"
+		        "Some graphics features will not be enabled \n\n"
+		        "Jade must be restarted for taking effect of your eventual modification.",
+		        "OpenGL warning",
+		        MB_OK | MB_ICONWARNING | MB_TASKMODAL );
 		bFirst = 0;
 	}
-
 #endif
 }
 
