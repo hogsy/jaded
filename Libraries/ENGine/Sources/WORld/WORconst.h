@@ -46,9 +46,9 @@ for more information
 
 /* Default values for activation */
 #define WOR_C_MaxNbWorlds				((ULONG) 4)		/* Max number of worlds */
-#define WOR_C_MaxNbActObjects			2000			/* Maximum number of activ objects */
-#define WOR_C_MaxNbVisObjects			2000			/* Maximum number of visible objects */
-#define WOR_C_MaxNbLights				100				/* Maximum number of lights */
+#define WOR_C_MaxNbActObjects           16384           /* Maximum number of activ objects */
+#define WOR_C_MaxNbVisObjects			16384			/* Maximum number of visible objects */
+#define WOR_C_MaxNbLights				2000			/* Maximum number of lights */
 #define WOR_Cf_DefaultBVRefreshTime		0.1f			/* Time in seconds between 2 refresh of the BV structure */
 
 /* Flag for view (store in one byte) */
