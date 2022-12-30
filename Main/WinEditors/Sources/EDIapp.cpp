@@ -767,11 +767,20 @@ BOOL EDI_cl_App::InitInstance(void)
 	AfxInitRichEdit2();
 #endif // #ifdef WIN32
 
+	HKEY h_Key;
+	if ( RegOpenKey( HKEY_CURRENT_USER, KEY_ROOT, &h_Key ) != ERROR_SUCCESS )
+	{
+		BIG_SetKeyID( BIG_uc_ComputeKeyID() );
+	}
+	else
+	{
+		RegCloseKey( h_Key );
+	}
+
 #if !defined(XML_CONV_TOOL)
     strcpy(EDI_az_LogFileName,"binerr.log");
 
     ULONG ulRegBFSize = BIG_ul_GetRegistryBfSize();
-
 
 	/* Test command line */
 	*masz_ToOpen = 0;
