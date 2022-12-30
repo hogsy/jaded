@@ -35,7 +35,10 @@ extern "C"
  ***************************************************************************************************
  */
 
-#	if !defined( NDEBUG )
+#	define GL_CLAMP_TO_EDGE 0x812F
+
+#	define OGL_DEBUG_CALLS
+#	if !defined( NDEBUG ) && defined( OGL_DEBUG_CALLS )
 #		include <assert.h>
 #		define OGL_CALL( X )                     \
 			{                                     \

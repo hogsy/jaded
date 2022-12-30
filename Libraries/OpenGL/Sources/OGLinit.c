@@ -591,8 +591,8 @@ void OGL_ShadowBindTexture(u32 Value)
 		OGL_CALL( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,GL_LINEAR) );
 		OGL_CALL( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,GL_LINEAR) );
 		OGL_CALL( glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA,SHADOW_TEX_RESOLUTION,SHADOW_TEX_RESOLUTION, 0,GL_RGBA, GL_UNSIGNED_BYTE, NULL) );
-		OGL_CALL( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP) );
-		OGL_CALL( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP) );
+		OGL_CALL( glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE ) );
+		OGL_CALL( glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE ) );
 	}
 	OGL_CALL( glBindTexture(GL_TEXTURE_2D, SHADOW_TEX_HANDLE[Value]) );
 }
@@ -1553,7 +1553,7 @@ void OGL_SetTextureBlending(ULONG _l_Texture, ULONG BM)
 			if(Flag & MAT_Cul_Flag_TileU)
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 			else
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
 		}
 
 		if(Delta & MAT_Cul_Flag_TileV)
@@ -1561,7 +1561,7 @@ void OGL_SetTextureBlending(ULONG _l_Texture, ULONG BM)
 			if(Flag & MAT_Cul_Flag_TileV)
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 			else
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
 		}
 
 		if(Delta & MAT_Cul_Flag_Bilinear)

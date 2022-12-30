@@ -467,11 +467,7 @@ void OGL_AE_SetViewport(float *W , float *H)
 void OGL_AE_ValidateTexture(int *TexHan,int Mode,int ScreenSize,int ScreenSize_V)
 {
 	u32 Dummy;
-#ifdef JADEFUSION
 	if((*TexHan == 0xC0DE2004) || (!glAreTexturesResident(1,(GLuint* )TexHan,(GLboolean* )&Dummy )))
-#else
-	if((*TexHan == 0xC0DE2004) || (!glAreTexturesResident(1,TexHan,(GLboolean *)&Dummy )))
-#endif
 	{
 		int Viewporti[4];
 		OGL_CALL( glGetIntegerv(GL_VIEWPORT  ,  Viewporti) );
