@@ -8,6 +8,7 @@
 #define VC_EXTRALEAN		// Exclude rarely-used stuff from Windows headers
 #endif
 
+#if 0
 // Modify the following defines if you have to target a platform prior to the ones specified below.
 // Refer to MSDN for the latest info on corresponding values for different platforms.
 #ifndef WINVER				// Allow use of features specific to Windows 95 and Windows NT 4 or later.
@@ -27,6 +28,7 @@
 #elif _WIN32_IE < 0x0500
 #undef _WIN32_IE
 #define _WIN32_IE 0x0500    // enable shell v5 features
+#endif
 #endif
 
 

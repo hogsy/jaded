@@ -528,7 +528,7 @@ CString CSMTPMessage::GetHeader() const
 
   //Create the "Cc:" part of the header
   CString sCc;
-  for (i=0; i<GetNumberOfRecipients(CC); i++)
+  for (int i=0; i<GetNumberOfRecipients(CC); i++)
   {
     CSMTPAddress recipient = GetRecipient(i, CC);
     if (i)
@@ -825,7 +825,7 @@ BOOL CSMTPConnection::SendMessage(CSMTPMessage& Message)
   }
 
   //Then the "CC" recipients
-  for (i=0; i<Message.GetNumberOfRecipients(CSMTPMessage::CC); i++)
+  for (int i=0; i<Message.GetNumberOfRecipients(CSMTPMessage::CC); i++)
   {
     CSMTPAddress recipient = Message.GetRecipient(i, CSMTPMessage::CC);
     if (!SendRCPTForRecipient(recipient))
@@ -833,7 +833,7 @@ BOOL CSMTPConnection::SendMessage(CSMTPMessage& Message)
   }
 
   //Then the "BCC" recipients
-  for (i=0; i<Message.GetNumberOfRecipients(CSMTPMessage::BCC); i++)
+  for (int i=0; i<Message.GetNumberOfRecipients(CSMTPMessage::BCC); i++)
   {
     CSMTPAddress recipient = Message.GetRecipient(i, CSMTPMessage::BCC);
     if (!SendRCPTForRecipient(recipient))
@@ -891,7 +891,7 @@ BOOL CSMTPConnection::SendMessage(CSMTPMessage& Message)
   }
 
   //Send all the attachments
-  for (i=0; i<Message.m_Attachments.GetSize(); i++)
+  for (int i=0; i<Message.m_Attachments.GetSize(); i++)
   {
     CSMTPAttachment* pAttachment = Message.m_Attachments.GetAt(i);
 

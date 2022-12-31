@@ -109,7 +109,7 @@ void ExtractPathFromFullName( char* _pzPath, const char* _pzFullName)
 
 const char* pzGetFileNameFromFullPath(const char* _pzFullName)
 {
-    char* pName = strrchr(_pzFullName, '\\' );
+    const char* pName = strrchr(_pzFullName, '\\' );
     if(pName) 
         return pName+1;
     else 

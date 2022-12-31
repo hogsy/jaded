@@ -195,7 +195,7 @@ void ExtractPathFromFullName( char* _pzPath, const char* _pzFullName)
 
 const char* pzGetFileNameFromFullPath(const char* _pzFullName)
 {
-    char* pName = strrchr(_pzFullName, '\\' );
+    const char* pName = strrchr(_pzFullName, '\\' );
     if(pName) 
         return pName+1;
     else 
@@ -204,7 +204,7 @@ const char* pzGetFileNameFromFullPath(const char* _pzFullName)
 
 const char* pzSimpleMapName( const char* _pzMapName )   
 {   // Map name (without path)
-    char* pName = strrchr(_pzMapName, '/' );
+    const char* pName = strrchr(_pzMapName, '/' );
     if(pName) 
         return pName+1;
     else 
