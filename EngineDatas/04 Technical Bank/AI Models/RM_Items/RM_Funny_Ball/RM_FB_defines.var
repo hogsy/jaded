@@ -1,0 +1,19 @@
+// ETAT
+#define ETAT_Basic														000
+#define ETAT_Death														001
+
+// TRACK
+#define Ci_Track_Reflex										00
+#define Ci_Track_Etat											01
+
+#define macro_change_etat(etat)																				\
+{																															\
+	if (AI_TrackCurGetNum() == Ci_Track_Etat)																\
+		AI_TrackCurChangeNow(etat)																				\
+	else																													\
+		AI_TrackChange(Ci_Track_Etat, etat)																	\
+	return																													\
+}
+
+// COL
+#define Cf_zdm_size			0.5

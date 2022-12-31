@@ -1,0 +1,57 @@
+// Define at least one function in a track
+// function track0 = "name"
+// function track1 = "name"
+function track2 = "PNJ_Pigeon_Init"
+// function track3 = "name"
+// function track4 = "name"
+
+
+// Groupe de pigeons
+object					o_start_wp									// Départ du réseau de vol
+int							i_count = 1									// Nombre de pigeons
+float						f_boot_camp_size = 10.0				// Taille de la zone préférée
+
+// Pigeon
+private float				f_change_state_timer					// Temps restant avant de changer d'état
+private int				i_bored_by_someone					// Vrai si le pigeon a décollé à cause de quelqu'un (paf ou proximité)
+private vector			v_boot_camp								// Position de la zone préférée au sol
+private object			o_father										// Gao qui a créé celui-là
+
+// Ride
+private object			o_rided_actor								// Acteur qui chevauche le pigeon
+private messageid	mid_Rided_LNK_ID
+
+// Au sol
+private int				i_etat_au_sol
+private vector			v_cur_dir
+
+// Vol
+private float				f_flying_speed = 2.0
+private float				f_flying_speed_normal
+private float				f_factor
+
+// Spline de vol
+private network		n_travel_network
+private object			o_travel_wp_from
+private object			o_travel_wp_to
+private float				f_travel_coef
+private vector			v_travel_start
+private vector			v_travel_start_sight
+private vector			v_travel_end
+private vector			v_travel_end_sight
+private float				f_travel_length
+
+// Battement d'ailes
+private float				f_battement
+private int				i_battement_sens
+
+// Paf
+private vector			v_paf
+
+// Etats
+private int				i_sort_etat
+private int				i_etat_courant = -1
+private int				i_dernier_etat = -1
+private function		fct_last_etat
+private float				f_time_start_etat
+

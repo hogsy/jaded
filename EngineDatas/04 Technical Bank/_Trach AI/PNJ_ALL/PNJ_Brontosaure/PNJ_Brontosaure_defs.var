@@ -1,0 +1,51 @@
+// #############################################
+// # 	CONSTANTES                                                  #
+// #############################################
+
+//--------( CONSTANTES ETAT )--------
+#define 		BRONTO_ETAT_wait				0
+#define 		BRONTO_ETAT_walk				1
+#define		BRONTO_ETAT_follower_wait	10
+#define		BRONTO_ETAT_follower_walk	11
+
+//--------( CONSTANTES ACTION )--------
+#define		BRONTO_ACT_wait					0
+#define		BRONTO_ACT_walk					1
+#define		BRONTO_ACT_run					2
+
+
+//--------( CONSTANTES SOUND )----------------
+#define 		BRONTO_Snd_						5
+
+//--------( CONSTANTES BONES )----------------
+#define 		BRONTO_Bones_FrontRight			0
+#define 		BRONTO_Bones_FrontLeft			1
+#define 		BRONTO_Bones_RearRight			2
+#define 		BRONTO_Bones_RearLeft				3
+
+//--------( CONSTANTES IA )------------------
+#define 		BRONTO_SavedPosNb					20
+
+//--------( CONSTANTES SONS )------------------
+#define 		BRONTO_Sound_step					1
+#define 		BRONTO_Sound_paf					5
+#define 		BRONTO_Sound_moan				6
+#define 		BRONTO_Sound_paffed				7
+
+
+// #############################################
+// # 	MACROS                                                         #
+// #############################################
+
+//--------( Changement d'état )--------
+#define macro_change_etat(etat)					\
+{																\
+	if (AI_TrackCurGetNum() == 2)					\
+		AI_TrackCurChangeNow(etat)					\
+	else														\
+		AI_TrackChange(2, etat)		\
+}
+
+//#define bronto_get_leader	"PNJ_Pacifique/PNJ_Brontosaure" move_o_Lead
+#define bronto_get_orga	"PNJ_Pacifique/PNJ_brontosaure_organizer" troupe_o_orga
+

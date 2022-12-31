@@ -1,0 +1,1195 @@
+// MATH ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#define Cf_Epsilon		0.0000001
+#define Cf_Infinit			99999999999999.0
+
+#define Cf_1Degre		Cf_PiBy180
+#define Cf_PiBy180		0.01745329251994329
+#define Cf_PiBy8			0.3926990816987241
+#define Cf_PiBy6			0.5235987755983
+#define Cf_PiBy4			0.7853981633974482
+#define Cf_PiBy3			1.047197551197
+#define Cf_PiBy2			1.570796326794896
+#define Cf_Pi				3.141592653589793
+#define Cf_3PiBy2		4.712388980385
+#define Cf_3PiBy4		2.356194490192344
+#define Cf_2Pi				6.283185307179586
+#define Cf_E				2.718281828459045
+#define Cf_1By2Pi		0.1591549430919
+#define Cf_1BySqrt2		0.7071067811865475
+#define Cf_Sqrt3By2		0.866025403784
+#define Cf_Sqrt2			1.414213562373095
+#define Cf_Sqrt3			1.732050807568877
+#define Cf_Sqrt5			2.236067977499790
+
+#define Cf_Sin30			0.5
+#define Cf_Sin45			Cf_1BySqrt2
+#define Cf_Sin60			Cf_Sqrt3By2
+
+#define Cf_Cos0			1.0
+#define Cf_Cos5			0.9961946980917455322950104024738
+#define Cf_Cos10			0.9848077530122080593667430245895
+#define Cf_Cos15			0.9659258262890682867497431997289
+#define Cf_Cos20			0.9396926207859083840541092773247
+#define Cf_Cos25			0.9063077870366499632425526567543
+#define Cf_Cos30			0.8660254037844386467637231707529
+#define Cf_Cos35			0.8191520442889917896844883859168
+#define Cf_Cos40			0.7660444431189780352023926505554
+#define Cf_Cos45			0.7071067811865475244008443621048
+#define Cf_Cos50			0.6427876096865393263226434099072
+#define Cf_Cos55			0.5735764363510460961080319128261
+#define Cf_Cos60			0.5
+#define Cf_Cos65			0.4226182617406994361869784896477
+#define Cf_Cos70			0.3420201433256687330440996146822
+#define Cf_Cos75			0.2588190451025207623488988376240
+#define Cf_Cos80			0.1736481776669303488517166267693
+#define Cf_Cos85			0.0871557427476581735580642708374
+#define Cf_Cos90			0.0
+
+#define DT_60				(TIME_GetDt() * 60)
+#define DT_30				(TIME_GetDt() * 30)
+#define DT_20				(TIME_GetDt() * 20)
+
+// VECTOR -----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#define Cv_NullVector								cvector(0.0, 0.0, 0.0)
+#define Cv_VerticalVector							cvector(0.0, 0.0, 1.0)
+
+// Identity Flags [READ ONLY] -------------------------------------------------------------------------------------------------------------------------------------------
+
+#define OBJ_C_IdentityFlag_Bone					0x00000001		// l'objet est un bone... 
+#define OBJ_C_IdentityFlag_Anims					0x00000002		// Objets qui ont une animation à jouer
+																						// (cette liste inclut les objets de la liste LIS_AnimsEvent)
+#define OBJ_C_IdentityFlag_Dyna					0x00000004		// Objets en mouvement qui ne sont pas triés par priorités
+																						// (à traiter par le module dynamique)
+#define	OBJ_C_IdentityFlag_SharedMatrix		0x00000008		// Interne (matrix partagé avec autre gao) 
+#define OBJ_C_IdentityFlag_Lights					0x00000010		// Lumières (ou plutôt, des objets qui ont une lumière dynamique sur eux)
+#define OBJ_C_IdentityFlag_AI						0x00000020		// Objets qui ont une AI à exécuter
+#define OBJ_C_IdentityFlag_DesignStruct		0x00000040  		// Structure design alloué
+#define OBJ_C_IdentityFlag_Waypoints			0x00000080		// Objets qui servent de repère pour les déplacements d'acteurs
+#define OBJ_C_IdentityFlag_ColMap				0x00000100		// Objets contre lesquels on peut collisionner physiquement
+																						// (ZDR = Zone de recalage, les ZDMs collisionnent contre les ZDRs )
+#define OBJ_C_IdentityFlag_ZDM					0x00000200		// Objets qui collisionnent physiquement contre d'autres (ZDM=Zone de mouvements)
+#define OBJ_C_IdentityFlag_ZDE					0x00000400		// Objets qui ont des zones de collisions de type evenement
+#define OBJ_C_IdentityFlag_OrientedObject		0x00000800		// Object with a full matrix, not only a position
+#define OBJ_C_IdentityFlag_BaseObject			0x00001000		// Object with base data
+#define OBJ_C_IdentityFlag_ExtendedObject	0x00002000		// Object with extended data
+#define OBJ_C_IdentityFlag_Visu					0x00004000		// Object with visu data, must be used with base
+#define OBJ_C_IdentityFlag_Msg					0x00008000		// Object that can receive messages
+#define OBJ_C_IdentityFlag_HasInitialPos		0x00010000		// Object with two pos : current and init
+#define OBJ_C_IdentityFlag_Generated			0x00020000		// Object has been generated (must not be save)
+#define OBJ_C_IdentityFlag_Links					0x00040000		// Object has some links to other objects
+#define OBJ_C_IdentityFlag_OBBox				0x00080000		// 
+#define OBJ_C_IdentityFlag_DesignHelper		0x00100000		// Special designer flag
+#define OBJ_C_IdentityFlag_AdditionalMatrix 	0x00200000		// L'objet a des gizmos 
+#define OBJ_C_IdentityFlag_Hierarchy			0x00400000		// L'objets est hierarchise (il a un pere)
+#define OBJ_C_IdentityFlag_Group					0x00800000		// L'objet continent un groupe moteur
+#define OBJ_C_IdentityFlag_AddMatArePointer 0x01000000		// Les gizmos sont des pointeurs sur matrices et pas des matrices
+#define OBJ_C_IdentityFlag_Events				0x02000000		// Structure Event alloué
+#define OBJ_C_IdentityFlag_FlashMatrix			0x04000000		// L'objet contient une matrice de flash
+#define OBJ_C_IdentityFlag_Sound					0x08000000		// Structure Sound alloué
+#define OBJ_C_IdentityFlag_ODE					0x10000000		// Objects "visible" for ODE solver */
+
+// Status Flags [READ ONLY] --------------------------------------------------------------------------------------------------------------------------------------------
+
+#define OBJ_C_StatusFlag_Active				1						// Flag that indicates if the object is active or not
+#define OBJ_C_StatusFlag_Visible				2						// Indicates if object is visible by one or more world views
+#define OBJ_C_StatusFlag_Culled				4						// Indicates if object has a father or not
+//#define OBJ_C_StatusFlag_HasFather		4						// Indicates if object has a father or not
+
+// Custom Bits  -----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#define OBJ_CBits_0								0b0000000100000000		// Design bit #0
+#define OBJ_CBits_1								0b0000001000000000		// Design bit #1
+#define OBJ_CBits_2								0b0000010000000000		// Design bit #2
+#define OBJ_CBits_3								0b0000100000000000		// Design bit #3
+#define OBJ_CBits_4								0b0001000000000000		// Design bit #4
+#define OBJ_CBits_5								0b0010000000000000		// Design bit #5
+#define OBJ_CBits_6								0b0100000000000000		// Design bit #6
+#define OBJ_CBits_7								0b1000000000000000		// Design bit #7
+
+#define OBJ_CBits_All								0b1111111100000000		// Design All bits TRUE
+
+// ExtraFlags -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#define OBJ_C_ExtraFlag_FreezePlayer		0x01		// Freeze le player meme la BMagique
+#define OBJ_C_ExtraFlag_NoNBlendBone	0x1000	// No Blend On Bone
+#define OBJ_C_ExtraFlag_AlwaysPlay		0x2000	// Always play animation, even if culled
+
+
+// Design flag (4 collisions & global tag !) ---------------------------------------------------------------------------------------------------------------------------
+
+#define OBJ_C_TypeFlag_Friend			0x01		// Friend of the main character
+#define OBJ_C_TypeFlag_Enemy			0x02		// Enemy of the main character
+#define OBJ_C_TypeFlag_Projectile		0x04		// Projectile
+#define OBJ_C_TypeFlag_Custom1		0x08		//
+#define OBJ_C_TypeFlag_Custom2		0x10		//
+#define OBJ_C_TypeFlag_DodgeCamera	0x20		// L'objet gêne la camera
+#define OBJ_C_TypeFlag_Space			0x40		// Objet espace
+#define OBJ_C_TypeFlag_Pushable		0x80		// Pushable
+
+
+// Capa  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#define OBJ_Capa_0								0b00000000000000000000000000000001		// Design capa #0
+#define OBJ_Capa_1								0b00000000000000000000000000000010		// Design capa #1
+#define OBJ_Capa_2								0b00000000000000000000000000000100		// Design capa #2
+#define OBJ_Capa_3								0b00000000000000000000000000001000		// Design capa #3
+#define OBJ_Capa_4								0b00000000000000000000000000010000		// Design capa #4
+#define OBJ_Capa_5								0b00000000000000000000000000100000		// Design capa #5
+#define OBJ_Capa_6								0b00000000000000000000000001000000		// Design capa #6
+#define OBJ_Capa_7								0b00000000000000000000000010000000		// Design capa #7
+#define OBJ_Capa_8								0b00000000000000000000000100000000		// Design capa #8
+#define OBJ_Capa_9								0b00000000000000000000001000000000		// Design capa #9
+#define OBJ_Capa_10								0b00000000000000000000010000000000		// Design capa #10
+#define OBJ_Capa_11								0b00000000000000000000100000000000		// Design capa #11
+#define OBJ_Capa_12								0b00000000000000000001000000000000		// Design capa #12
+#define OBJ_Capa_13								0b00000000000000000010000000000000		// Design capa #13
+#define OBJ_Capa_14								0b00000000000000000100000000000000		// Design capa #14
+#define OBJ_Capa_15								0b00000000000000001000000000000000		// Design capa #15
+#define OBJ_Capa_16								0b00000000000000010000000000000000		// Design capa #16
+#define OBJ_Capa_17								0b00000000000000100000000000000000		// Design capa #17
+#define OBJ_Capa_18								0b00000000000001000000000000000000		// Design capa #18
+#define OBJ_Capa_19								0b00000000000010000000000000000000		// Design capa #19
+#define OBJ_Capa_20								0b00000000000100000000000000000000		// Design capa #20
+#define OBJ_Capa_21								0b00000000001000000000000000000000		// Design capa #21
+#define OBJ_Capa_22								0b00000000010000000000000000000000		// Design capa #22
+#define OBJ_Capa_23								0b00000000100000000000000000000000		// Design capa #23
+#define OBJ_Capa_24								0b00000001000000000000000000000000		// Design capa #24
+#define OBJ_Capa_25								0b00000010000000000000000000000000		// Design capa #25
+#define OBJ_Capa_26								0b00000100000000000000000000000000		// Design capa #26
+#define OBJ_Capa_27								0b00001000000000000000000000000000		// Design capa #27
+#define OBJ_Capa_28								0b00010000000000000000000000000000		// Design capa #28
+#define OBJ_Capa_29								0b00100000000000000000000000000000		// Design capa #29
+#define OBJ_Capa_30								0b01000000000000000000000000000000		// Design capa #30
+#define OBJ_Capa_31								0b10000000000000000000000000000000		// Design capa #30
+
+
+#define OBJ_Capa_All								0xFFFFFFFF		// Design All capa TRUE
+
+// Control Flags ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#define OBJ_C_ControlFlag_AutoActivableObject				0x00010000		// Indicates if the object shopuld be used by the auto activation system
+#define OBJ_C_ControlFlag_SecInvisible							0x00020000		// 
+#define OBJ_C_ControlFlag_ForceDetectionList				0x00100000		// Forces the object to have a detecion list 
+#define OBJ_C_ControlFlag_ForceInvisible						0x00200000		// Set to true to force an object to be invisible
+#define OBJ_C_ControlFlag_ForceInactive						0x00400000		// Set to true to force an object to be inactive
+#define OBJ_C_ControlFlag_LookAt								0x00800000		// Set to true to force object to look at camera
+#define OBJ_C_ControlFlag_RayInsensitive						0x01000000		// Set to true to force object to look at camera
+#define OBJ_C_ControlFlag_EditableBV							0x02000000		// Indicates if the BV of the object can be edit
+#define OBJ_C_ControlFlag_InPause								0x04000000		// Actor is in pause
+#define OBJ_C_ControlFlag_AlwaysActive						0x08000000		// Actor always active
+#define OBJ_C_ControlFlag_AlwaysVisible						0x10000000		// Actor always visible
+#define OBJ_C_ControlFlag_DesableAnimPlayerOnMe		0x80000000		// Anim
+#define OBJ_C_ControlFlag_SectoInvisible						0x00010000
+#define OBJ_C_ControlFlag_SectoInactive						0x00020000
+
+// DYNAMIC ----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#define DYN_C_NoForces											0x00000001	// No forces are used to control the movement, the speed is used directly as a command sdsdlkls
+#define DYN_C_OneConstantForce								0x00000002	// No ODE to solve , only one constant force is used
+#define DYN_C_BasicForces										0x00000004	// ODE will be solved using true solution
+#define DYN_C_ComplexForces									0x00000008	// ODE will be solved using numerical methods
+#define DYN_C_SkipFrictionWhenSpeedFromAnim		0x00000010	// Comme le nom l'indique !
+#define DYN_C_SlipOnGroundEdge							0x00000020	// Glisse sur les edges ground, étonnant non ?
+#define DYN_C_AutoOrient										0x00000200	// The orientation of the matrix follows the Speed
+#define DYN_C_AutoOrientInertiaNo							0x00000000	// No inertia when AutoOrient is ON
+#define DYN_C_AutoOrientInertiaLo							0x00000400	// Low inertia when AutoOrient is ON
+#define DYN_C_AutoOrientInertiaMedium						0x00000800	// Medium inertia when AutoOrient is ON
+#define DYN_C_AutoOrientInertiaHi								0x00000C00	// Hi inertia when AutoOrient is ON
+#define DYN_C_VectorFriction									0x00001000	// Use a different friction for each axes (local)
+#define DYN_C_Solid 												0x00010000	// Alloc Torc & Rotation speed structure.
+#define DYN_C_AutoOrientHorizontal							0x00002000	// Only Horizontal AutoOrientation !
+#define DYN_C_Col													0x00020000	// Alloc Slide and Rebound structure.
+#define DYN_C_IgnoreGravity										0x00040000	// Ignore the gravity force
+#define DYN_C_IgnoreTraction									0x00080000	//Ignore the traction force
+#define DYN_C_IgnoreStream									0x00100000	//Ignore the stream force
+#define DYN_C_IgnoreForces        					  			0x001C0000	// Ignore all forces, and keep the speed given by anim or AI
+#define DYN_C_Constraint            								0x00200000	// Allocates Constrained forces
+#define DYN_C_OptimizeColDisable							0x00800000	// Disable optimisation
+#define DYN_C_NeverDynamicHierarchy						0x01000000	// This GameObject will never have dynamic hierarchy
+#define DYN_C_ApplyRec											0x02000000	// My speed can be updated by an object that collides me
+#define DYN_C_NoSpeedFactor									0x04000000	// Permet de ne affecter l'alteration de vitesse
+#define DYN_C_GlobalFriction									0x08000000	// Permet de definir une friction globale plutot qu'une friction locale (defaut)
+#define DYN_C_NeverDynamicFather							0x00008000	// Interdit au gao de devenir dynamiquement le père d'un autre gao
+#define DYN_C_HorizontalGrounds								0x40000000	// In REC Module, ground collisions for this GO are always considered as horizontal
+#define DYN_C_NoReboundOnGround							0x80000000	// No Rebound on Grounds for this GO
+
+// DRAW MASK ------------------------------------------------------------------------
+
+#define DM_C_UseTexture			    			0x00000001
+#define DM_C_DontForceColor		    			0x00000002
+#define DM_C_DontShowBV			    			0x00000004
+#define DM_C_Draw					    				0x00000008
+#define DM_C_NotWired				    			0x00000010
+#define DM_C_Lighted				    				0x00000020
+#define DM_C_UseRLI				    				0x00000040
+#define DM_C_MaterialColor		    				0x00000080
+#define DM_C_UseAmbient			    			0x00000100
+#define DM_C_DoNotSort			    				0x00000200
+#define DM_C_ComputeSpecular				0x00000400
+#define DM_C_TestBackFace					0x00000800
+#define DM_C_HidePoint			    				0x00001000
+#define DM_C_NotInvertBF			    			0x00002000
+#define DM_C_Fogged				    				0x00004000
+#define DM_C_Symetric				    			0x00008000
+#define DM_C_ReceiveDynSdw		    			0x00010000
+#define DM_C_ActiveSkin			   				0x00020000
+#define DM_C_RadioCut				    			0x00040000
+#define DM_C_EmitRadShadows				0x00080000
+#define DM_C_UseNormalMaterial				0x00100000
+#define DM_C_UseBVForLightRejection		0x00200000
+#define DM_C_DontUseAmbient2				0x00400000
+#define DM_C_DontRecomputeNormales 	0x00800000
+#define DM_C_ZTest                    				0x01000000
+#define DM_C_DontScaleRLI             			0x02000000
+#define DM_C_All					    				0xFFFFFFFF
+
+// SPRITES -------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#define SPR_C_Visible								2					// (bit 2) Set the current sprite visible 
+
+// COLLISIONS --------------------------------------------------------------------------------------------------------------------------------------------------
+#define COL_C_Ground													0x0040			// Flag de Sol 
+#define COL_C_Wall													0x0080			// Flag de Wall
+#define COL_C_Ray														0xFFFF			// Lancé de Rayon (Non compatible avec Wall & Ground)
+#define COL_C_Corner													0x10000			// Si on touche deux faces qui forment un angle de - de 90°
+#define COL_C_crossable												0x2000			// Face traversable
+#define COL_C_Edge12												0x0002
+#define COL_C_Edge13												0x0004
+#define COL_C_Edge23												0x0008
+#define COL_C_Edge													(COL_C_Edge12 | COL_C_Edge13 | COL_C_Edge23)
+#define COL_C_Triangle												0x0001
+#define COL_C_ReportIndex 											0x80000000
+#define COL_C_Zone_ZDM											0x01
+#define COL_C_Zone_ZDE											0x04
+#define COL_C_Zone_NoScale										0x08
+#define COL_C_Zone_FlagX											0x10
+#define COL_C_Zone_Camera										0x80
+#define COL_C_SlipperyEdge										0x00000800
+#define COL_C_Extra_SlipperyEdge 								0x00020000
+#define COL_C_Extra_ODE			 								0x00080000
+#define COL_C_Extra_Corner			 								0x00010000
+
+#define COL_C_Zone_Box												1
+#define COL_C_Zone_Sphere											2
+#define COL_C_Zone_Cylinder										3
+#define COL_C_Zone_Triangles										5
+
+#define COL_C_Ray_on_visuel										0
+#define COL_C_Ray_on_ColMap_NoCrossable					1
+#define COL_C_Ray_on_ColMap_Crossable						2
+#define COL_C_Ray_on_ColMap_NoCrossable_Camera		3
+#define COL_C_Ray_on_ColMap_NoCrossable_NoFlagX	4
+#define COL_C_Ray_on_ColMap_Crossable_NoFlagX		5
+#define COL_C_Ray_use_SpecificCrossableSet 				0x80000000
+#define COL_C_Ray_on_visuel_and_bone_volumes			11
+#define COL_C_Ray_on_COB_if_possible						20
+
+#define COL_C_MathSphere											0x0100
+#define COL_C_MathBox												0x0200
+#define COL_C_MathCylinder											0x0400
+#define COL_C_IgnoreEdgeWall										0x40000000	// Flag pour que l'algo ne retourne jamais la normale d'un edge d'un mur
+
+#define COL_C_Snd_None											0
+#define COL_C_Snd_Dirt												1
+#define COL_C_Snd_Veget											2
+#define COL_C_Snd_Stone											3
+#define COL_C_Snd_Water											4
+#define COL_C_Snd_Flesh											5
+#define COL_C_Snd_Wood											6
+#define COL_C_Snd_Steel											7
+
+#define COL_C_Snd_Number											8
+
+// JOYSTICK BUTTON  ---------------------------------------------------------------------------------------------------------------------------------------
+
+#define enum_boutons	enum ("Bouton Croix" 0 "Bouton Carré" 2 "Bouton Triangle" 3 "Bouton Rond" 1 "Bouton Select" 8 "Bouton Start" 9 "Bouton L1" 4 "Bouton L2" 6 "Bouton R1" 5 "Bouton R2" 7)
+
+#define joy_button_A				0
+#define joy_button_B				1
+#define joy_button_C				2
+#define joy_button_D				3
+#define joy_button_L				4
+#define joy_button_R				5
+#define joy_button_L2   			6
+#define joy_button_R2				7  
+#define joy_button_Select			8 
+#define joy_button_Start			9 
+#define joy_button_StickR			10 
+#define joy_button_StickL			11
+#define joy_button_Up				12
+#define joy_button_Right			13 
+#define joy_button_Down			14
+#define joy_button_Left				15
+
+#define JoyPSX_Button_croix		0
+#define JoyPSX_Button_rond		1
+#define JoyPSX_Button_carre	2
+#define JoyPSX_Button_triangle	3
+
+#define joy_bit_button_Croix		0x00000001
+#define joy_bit_button_Rond		0x00000002
+#define joy_bit_button_Carre		0x00000004
+#define joy_bit_button_Triangle	0x00000008
+#define joy_bit_button_L			0x00000010
+#define joy_bit_button_R			0x00000020
+#define joy_bit_button_L2   		0x00000040
+#define joy_bit_button_R2			0x00000080
+#define joy_bit_button_Select		0x00000100
+#define joy_bit_button_Start		0x00000200
+#define joy_bit_button_StickR	0x00000400
+#define joy_bit_button_StickL		0x00000800
+#define joy_bit_button_Up			0x00001000
+#define joy_bit_button_Right		0x00002000
+#define joy_bit_button_Down		0x00004000
+#define joy_bit_button_Left		0x00008000
+#define joy_bit_button_Joy0		0x01000000
+#define joy_bit_button_Joy1		0x02000000
+
+
+#define joy_freeze_A			0x00000001
+#define joy_freeze_B			0x00000002
+#define joy_freeze_C			0x00000004
+#define joy_freeze_D			0x00000008
+#define joy_freeze_L				0x00000010
+#define joy_freeze_R			0x00000020
+#define joy_freeze_L2   		0x00000040
+#define joy_freeze_R2			0x00000080
+#define joy_freeze_Select		0x00000100
+#define joy_freeze_Start		0x00000200
+#define joy_freeze_StickR		0x00000400
+#define joy_freeze_StickL		0x00000800
+#define joy_freeze_Up			0x00001000
+#define joy_freeze_Right		0x00002000
+#define joy_freeze_Down		0x00004000
+#define joy_freeze_Left			0x00008000
+#define joy_freeze_joy			0x01000000
+#define joy_freeze_joy1			0x02000000
+
+#define joy_freeze_none		0
+#define joy_freeze_all			0xFFFFFFFF
+
+// ZONES ID -------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// Pour l'identification de zones (collisionZDEZDE de la zone ID1 sur la zone ID2)
+
+#define C_zdm_pied							0				// ground mvt collision ID
+#define C_zde_corps						1				// body collision ID
+#define C_zde_vision						2				// vision collision ID
+#define C_zde_action						3				// Action lié au bouton action
+#define C_zdm_recalagespecial	 		4				//
+#define C_zde_saut							5				// Action lié au objets selectionne dans l'inventaire
+#define C_zde_objet							5				// Action lié au objets selectionne dans l'inventaire
+#define C_zde_fight							6				// Action lié au coup donnés pour un combat
+#define C_zde_tete							7				// head collision ID
+
+//Pour l'activation ou la desactivations de zone (COL_ActivationSet(0,C_bit_zdm_pied))
+
+#define C_bit_zdm_pied					0b0000000000000001	// ground mvt collision bit
+#define C_bit_zde_corps					0b0000000000000010	// body collision bit
+#define C_bit_zde_vision					0b0000000000000100	// vision collision bit
+#define C_bit_zde_action					0b0000000000001000	// action collision bit
+#define C_bit_zdm_recalagespecial		0b0000000000010000	// zdmspecial collision bit
+#define C_bit_zde_objet					0b0000000000100000	// Action lié au objets selectionne dans l'inventaire
+#define C_bit_zde_fight						0b0000000001000000	// Action lié au coup donnés pour un combat
+#define C_bit_zde_tete						0b0000000010000000	// head collision bit
+
+#define C_bit_zde_all						C_bit_zde_action+C_bit_zde_fight+C_bit_zde_objet+C_bit_zde_corps+C_bit_zde_vision+C_bit_zde_tete
+
+// FIX ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#define NotFix		0
+#define Fix_id1	1
+#define Fix_id2	2
+#define Fix_id3	3
+
+// YES-NO / VRAI-FAUX --------------------------------------------------------------------------------------------------------------------------------------
+
+#define vrai			1
+#define faux		0
+#define all			-1
+#define none		0
+
+// Design FLAGS (ZDE collide) -----------------------------------------------------------------------------------------------------------------------------
+
+#define C_friend			0b00000001
+#define C_enemy			0b00000010
+#define C_projectile 		0b00000100
+#define C_space 			0b01000000
+#define C_pushable 		0b10000000
+
+// ANIMATIONS ----------------------------------------------------------------------------------------------------------------------------------
+
+#define ANI_stop_player	0b0000000000000001			// Stop le player d'anim qd c'est mis à 1
+
+#define ANI_DSF_Do_Not_Attack			0b0000000000000100			// Indique qu'on ne doit pas attaquer l'acteur
+
+#define ani_mode0	0		// Vitesse de l'anim + gravité
+#define ani_mode1	1		// Vitesse de l'IA. La vitesse de l'anim est modifié pour que ca colle visuellement
+#define ani_mode2	2		// Mode developpé (Comme dans SIOUX)
+#define ani_mode3	3		// Vitesse de l'IA (comme mode1) sans addaptation de la vitesse de lecture de l'anim
+
+// NetNextWP -------------------------
+
+#define NetNextWP_Mode_le_premier					0
+#define NetNextWP_Mode_aleatoire					1
+#define NetNextWP_Mode_poids_le_plus_faible	2
+#define NetNextWP_Mode_axe_de_visee				3
+#define NetNextWP_Mode_vitesse						5
+#define NetNextWP_Mode_choix_de_lindice		6
+#define NetNextWP_Mode_capa_aleatoire			7
+
+// KEYBOARD ----------------------------------------------------------------------------------------------------
+
+#define VK_LBUTTON				0x01
+#define VK_RBUTTON				0x02
+#define VK_CANCEL	 			0x03
+#define VK_MBUTTON				0x04
+
+#define VK_BACK					0x08
+#define VK_TAB						0x09
+
+#define VK_CLEAR					0x0C
+#define VK_RETURN	 			0x0D
+
+#define VK_SHIFT					0x10
+#define VK_CONTROL				0x11
+#define VK_MENU					0x12
+#define VK_PAUSE					0x13
+#define VK_CAPITAL				0x14
+
+#define VK_ESCAPE	 			0x1B
+
+#define VK_CONVERT				0x1C
+#define VK_NONCONVERT		0x1D
+#define VK_ACCEPT	 			0x1E
+#define VK_MODECHANGE		0x1F
+
+#define VK_SPACE					0x20
+#define VK_PRIOR					0x21
+#define VK_NEXT					0x22
+#define VK_END						0x23
+#define VK_HOME					0x24
+#define VK_LEFT						0x25
+#define VK_UP						0x26
+#define VK_RIGHT					0x27
+#define VK_DOWN					0x28
+#define VK_SELECT	 			0x29
+#define VK_PRINT					0x2A
+#define VK_EXECUTE				0x2B
+#define VK_SNAPSHOT			0x2C
+#define VK_INSERT	 				0x2D
+#define VK_DELETE	 			0x2E
+#define VK_HELP					0x2F
+
+// VK_0 thru VK_9 are the same as ASCII '0' thru '9' (0x30 - 0x39)
+// VK_A thru VK_Z are the same as ASCII 'A' thru 'Z' (0x41 - 0x5A)
+
+#define VK_LWIN				0x5B
+#define VK_RWIN				0x5C
+#define VK_APPS				0x5D
+
+#define VK_NUMPAD0			0x60
+#define VK_NUMPAD1			0x61
+#define VK_NUMPAD2			0x62
+#define VK_NUMPAD3			0x63
+#define VK_NUMPAD4			0x64
+#define VK_NUMPAD5			0x65
+#define VK_NUMPAD6			0x66
+#define VK_NUMPAD7			0x67
+#define VK_NUMPAD8			0x68
+#define VK_NUMPAD9			0x69
+#define VK_MULTIPLY			0x6A
+#define VK_ADD					0x6B
+#define VK_SEPARATOR		0x6C
+#define VK_SUBTRACT		0x6D
+#define VK_DECIMAL			0x6E
+#define VK_DIVIDE	 			0x6F
+#define VK_F1					0x70
+#define VK_F2					0x71
+#define VK_F3					0x72
+#define VK_F4					0x73
+#define VK_F5					0x74
+#define VK_F6					0x75
+#define VK_F7					0x76
+#define VK_F8					0x77
+#define VK_F9					0x78
+#define VK_F10					0x79
+#define VK_F11					0x7A
+#define VK_F12					0x7B
+#define VK_F13					0x7C
+#define VK_F14					0x7D
+#define VK_F15					0x7E
+#define VK_F16					0x7F
+#define VK_F17					0x80
+#define VK_F18					0x81
+#define VK_F19					0x82
+#define VK_F20					0x83
+#define VK_F21					0x84
+#define VK_F22					0x85
+#define VK_F23					0x86
+#define VK_F24					0x87
+
+#define VK_NUMLOCK			0x90
+#define VK_SCROLL			0x91
+
+#define VK_LSHIFT	 			0xA0
+#define VK_RSHIFT	 			0xA1
+#define VK_LCONTROL		0xA2
+#define VK_RCONTROL		0xA3
+#define VK_LMENU				0xA4
+#define VK_RMENU				0xA5
+
+
+// --- System de FILTRE ---
+#define Ci_Filter_IdentityFlag			0
+#define Ci_Filter_TypeFlag				1
+#define Ci_Filter_DesStructFlag		2
+#define Ci_Filter_CapaFlag			3
+#define Ci_Filter_Design2Flag		4
+#define Ci_Filter_CBitsFlag			5
+
+#define Ci_Filter_Flag_Ou				0
+#define Ci_Filter_Flag_Et				10
+
+// --- EFFET GFX ---
+#define GFX_ligne				1
+#define GFX_eclair				2
+#define GFX_flare					4	
+#define GFX_complex_flare	5
+
+// --- EFFETS AFTER FX ---
+#define	GSP_Depth_Blur			0
+#define	GSP_Motion_Blur		1
+#define	GSP_Screen_Smooth	2
+#define	GSP_Emboss				3
+#define	GSP_Motion_Smooth	4
+#define	GSP_Zoom_Smooth		5
+#define	GSP_Rotate_Smooth	6
+#define	GSP_Remanence		7
+#define	GSP_Brightness			8
+#define	GSP_Contrast				9
+#define	GSP_Near_Blur			14
+#define	GSP_Fade					15
+
+// --- Enum ---
+#define vrai_faux enum ("faux" 0 "vrai" 1)
+#define faux_vrai enum ("vrai" 1 "faux" 0)
+
+
+// --- PARTICLE GENERATOR ---
+#define ParticleG_OffsetZ								0		// Offset Z par rapport a l'acteur
+#define ParticleG_Param0								1		// Parametre custom 0		Si Rect: P0 = X, P1 = Y   Si Cercle ou Sphere: P0 = Rayon
+#define ParticleG_Param1								2		// Parametre custom 1		Si Cylindre: P0= Rayon, P1= Hauteur
+#define ParticleG_Param2								3		// Parametre custom 2 		Si Boite: P0 = X, P1= Y, P2= Z
+#define ParticleG_SpeedFactorMin					4		// 
+#define ParticleG_SpeedFactorMax				5		// 
+#define ParticleG_Angle1								6		// 
+#define ParticleG_Angle2								7		// 
+#define ParticleG_SizeXMin							8		// 
+#define ParticleG_SizeXMax							9		// 
+#define ParticleG_SizeYMin							10		// 
+#define ParticleG_SizeYMax							11		// 
+#define ParticleG_TimeMin							12		// Temps de vie Min sans compter Birth & Death
+#define ParticleG_TimeMax							13		// Temps de vie Max sans compter Birth & Death
+#define ParticleG_DeathTimeMin					14		// 
+#define ParticleG_DeathTimeMax					15		// 
+#define ParticleG_BirthTimeMin						16		// 
+#define ParticleG_BirthTimeMax						17		// 
+#define ParticleG_DeathSizeFactor					18		// 
+#define ParticleG_AccelerationX						19		//
+#define ParticleG_AccelerationY						20		//
+#define ParticleG_AccelerationZ						21		//
+#define ParticleG_Friction								22		// 
+#define ParticleG_ZMin									23		// Hauteur Min
+#define ParticleG_ZMinStrength						24		// 
+#define ParticleG_ZMax								25		// Hauteur Max
+#define ParticleG_ZMaxStrength						26		// 
+#define ParticleG_RotationMin						27		// 
+#define ParticleG_RotationMax						28		// 
+#define ParticleG_RotationSpeedMin				29		// 
+#define ParticleG_RotationSpeedMax				30		// 
+
+#define ParticleGFlags_Transparant				0b0000000000000001
+#define ParticleGFlags_RGBEquAlpha			0b0000000000000010
+#define ParticleGFlags_SquareParticules			0b0000000000000100
+#define ParticleGFlags_DeathDecreaseAlpha	0b0000000000001000
+#define ParticleGFlags_DeathDecreaseSize		0b0000000000010000
+#define ParticleGFlags_DeathIncreaseSize		0b0000000000100000
+#define ParticleGFlags_Active						0b0000000001000000
+#define ParticleGFlags_Freeze						0b0000000010000000
+#define ParticleGFlags_BirthIncreaseAlpha		0b0000000100000000
+#define ParticleGFlags_BirthIncreaseSize		0b0000001000000000
+#define ParticleGFlags_UseZMin					0b0000010000000000
+#define ParticleGFlags_UseZMax					0b0000100000000000
+#define ParticleGFlags_UseRotation				0b0001000000000000
+#define ParticleGFlags_UseFriction					0b0010000000000000
+
+
+// --- Materiaux ---
+#define MaterialFlags_TilingU							0b0000000000000001
+#define MaterialFlags_TilingV							0b0000000000000010
+#define MaterialFlags_BilinearFiltering				0b0000000000000100
+#define MaterialFlags_TrilinearFiltering				0b0000000000001000
+#define MaterialFlags_AlphaTest					0b0000000000010000
+#define MaterialFlags_HideAlpha					0b0000000000100000
+#define MaterialFlags_HideColor						0b0000000001000000
+#define MaterialFlags_InvertAlpha					0b0000000010000000
+#define MaterialFlags_WriteOnlyOnSameZ		0b0000000100000000
+#define MaterialFlags_NoZBuffer						0b0000001000000000
+#define MaterialFlags_UseLocalAlpha				0b0000010000000000
+#define MaterialFlags_ActiveLayer					0b0000100000000000
+#define MaterialFlags_OnlyAdditionalLayer		0b0001000000000000
+
+// Pour CallBack System
+#define CallBack_Before_Display		0
+#define CallBack_After_Display			1
+#define CallBack_After_Rec				2
+#define CallBack_After_Blend			3
+#define CallBack_WhenDestroy			4
+#define CallBack_ShortWay				5
+#define CallBack_SectoActOn     		6
+#define CallBack_SectoActOff     		7
+#define CallBack_SectoVisOn     		8
+#define CallBack_SectoVisOff     		9
+
+// Pour CallBack Infodesign
+#define CallBack_Client					20
+#define CallBack_Tir							21
+#define CallBack_After_Camera			22
+#define CallBack_Reinit					23
+#define CallBack_TagOn					24
+#define CallBack_TagOff					25
+#define CallBack_Info						26
+
+#define CallBack_KamMod				30
+
+#define CTX_Normal							0
+#define CTX_AfterRec						1
+#define CTX_AfterBlend						2
+
+// Pour la fonction de rotation tete !
+#define C_RT_flags_regarde_la_tete_du_perso						0x00010000
+#define C_RT_flags_custom_limit_value								0x08000000
+#define C_RT_flags_ne_tourne_pas_le_torse						0x10000000
+#define C_RT_flags_ratio_de_rotation_torcetete_identique		0x20000000
+#define C_RT_flags_plus_de_limite_dangles							0x40000000
+#define C_RT_flags_regarde_devant_si_perso_dans_le_dos	0x80000000
+#define C_RT_flags_tourne_aussi_le_ventre							0x04000000
+
+#define C_RT_type_acteur_sally 										0
+#define C_RT_type_acteur_militaire 									1
+#define C_RT_type_acteur_peyj											2
+
+// ------------------------SHAPE --------------------------
+#define		ShapeSelect_Invisible								0xFD
+#define		ShapeSelect_Visible								0xFE
+
+// -------------------------------------------------------------------
+// Optimisation d'anim -------------------------------------
+// -------------------------------------------------------------------
+
+#define EVE_LOD_FreezeSkeleton								0x01		// Lorsque uc_LOD_vis < 10
+#define EVE_LOD_OneFrameOutOfTwo						0x02		// Lorsque uc_LOD_vis < 25
+#define EVE_LOD_SkipTranslations							0x04		// Lorsque uc_LOD_vis < 100
+#define EVE_LOD_SkipExtremityBones						0x08		// Lorsque uc_LOD_vis < 100
+
+#define EVE_LOD_OnlyMagicBoxWhenCulled				0x80		// Tout le temps si Flag mis.
+
+
+// ------------------------ ID des MODIFIERs -----------------------
+#define MDF_C_Modifier_Snap         				0
+#define MDF_C_Modifier_OnduleTonCorps		1
+#define MDF_C_Modifier_Explode					2
+#define MDF_C_Modifier_LegLink					3
+#define MDF_C_Modifier_Morphing					4
+#define MDF_C_Modifier_SemiLookAt				5
+#define MDF_C_Modifier_Shadow					6
+#define MDF_C_Modifier_SpecialLookAt			7
+#define MDF_C_Modifier_Sound						8
+#define MDF_C_Modifier_XMEN						9
+#define MDF_C_Modifier_XMEC						10
+#define MDF_C_Modifier_SPG						11
+#define MDF_C_Modifier_Symetrie					12
+#define MDF_C_Modifier_ROTR						13
+#define MDF_C_Modifier_SNAKE					14
+#define MDF_C_Modifier_SoundFx					15
+#define MDF_C_Modifier_PROTEX					16
+#define MDF_C_Modifier_SaveAddMatrix			17
+#define MDF_C_Modifier_PAG						18
+#define MDF_C_Modifier_SoundLoading			19
+#define MDF_C_Modifier_InfoPhoto					20
+#define MDF_C_Modifier_DynamicFogSphereEmiter			51
+
+// WTR EFFECT CONSTANTES
+#define Ci_WTR_sky_color							0
+#define Ci_WTR_bottom_color						1
+#define Ci_WTR_water_color							2
+
+#define Ci_WTR_Waves_Height						0
+#define Ci_WTR_Choppy								1
+#define Ci_WTR_Tiling									2
+#define Ci_WTR_Speed								3
+#define Ci_WTR_Water_Height						4
+#define Ci_WTR_Wave_dir								5
+#define Ci_WTR_Wave_Prop							6
+#define Ci_WTR_Cloud_Shading_Activated		7
+
+// ---------------------------- STRING -----------------------------------------
+#define CSTR_XLeft						0x0000
+#define CSTR_XCenter					0x0001
+#define CSTR_XRight					0x0002
+#define CSTR_YTop						0x0000
+#define CSTR_YCenter					0x0004
+#define CSTR_YBottom				0x0008
+#define CSTR_NotFixed				0x0010
+#define CSTR_FrameAdaptToText	0x0020
+#define CSTR_FrameShow			0x0100
+#define CSTR_IndLetter					0x0200
+#define CSTR_Hide						0x0400
+
+#define CSTR_ComboCC				0x0015
+#define CSTR_ComboCCH			0x0415
+#define CSTR_ComboH					0x0410
+
+#define CSTR_Ext_SetText			0x00010000
+#define CSTR_Ext_SetSize			0x00020000
+#define CSTR_Ext_SetPivot			0x00040000
+#define CSTR_Ext_SetAlign			0x00080000
+#define CSTR_Ext_SetFlags			0x00100000
+#define CSTR_Ext_AlignXCenter		0
+#define CSTR_Ext_AlignYCenter	0x01000000
+#define CSTR_Ext_AlignXBottom	0x020001000
+
+#define CSTR_Ext_ComboFTSPA	0x001F0000
+#define CSTR_Ext_ComboFTSP		0x00170000
+#define CSTR_Ext_ComboFTS		0x00130000
+#define CSTR_Ext_ComboFSP		0x00160000
+
+// ################################
+//			--- GRID & Type de TAGs ---
+// ################################
+
+#define tag_grid_occupe_msk						0b11000000
+#define tag_grid_terrain									0b00001111
+#define tag_grid_occupe								0b01000000
+#define tag_grid_terraindyn_1							0b00010000
+#define tag_grid_terraindyn_2							0b00100000
+#define tag_grid_terraindyn_3							0b00110000
+#define tag_grid_terraindyn_mask(a)				((a & 0x30) >> 4)
+
+#define tag_type_0x0									-1
+
+#define tag_type_normal_mask						0x000000FF
+#define tag_type_1x1									0x00000001
+#define tag_type_2x2									0x00000000
+#define tag_type_3x3									0x00000002
+
+#define tag_type_free_mask							0x0000FF00
+#define tag_type_free									0x00000100
+
+#define tag_type_dyn_mask							0x00FF0000
+#define tag_type_2x2_dyn								0x00010000
+
+#define tag_type_vector_mask						0xFF000000
+#define tag_type_1x2									0xFF000000
+#define tag_type_2x1									0x7F000000
+
+#define tag_mode_default								0
+#define tag_mode_tag_on_yellow					1
+
+
+#define Cv_NormalGravity								cvector( 0, 0, -20.0)
+#define DesHelpCapa_HauteurGrille				OBJ_Capa_14
+
+#define Gmat_bit_hauteur_grille						0x00800000
+#define DesHelpCapa_GrilleBasse 					-1
+
+// couleur
+#define color_rouge						0x7F0000FF
+#define color_vert							0x7F00FF00
+#define color_jaune						0x7F00FFFF
+#define color_bleu						0x7FFF0000
+#define color_blanc						0x7FFFFFFF
+#define color_noire						0x7F000000
+#define color_rose						0x7F7F00FF
+#define color_cyan						0x7FFF00FF
+
+// Canaux specifiques jack
+#define	Anim_Canal_AvantBrasDroit2			24
+#define	Anim_Canal_AvantBrasGauche2	44
+
+// Canaux d'animation
+#define	Anim_Canal_Tete 						0
+#define	Anim_Canal_Cou							1
+#define	Anim_Canal_Torse		 				2
+#define	Anim_Canal_Ventre						3
+#define	Anim_Canal_Bassin						19
+
+#define	Anim_Canal_MainDroite				20
+#define	Anim_Canal_AvantBrasDroit			21
+#define	Anim_Canal_BrasDroit					22
+#define	Anim_Canal_EpauleDroite				23
+#define	Anim_Canal_PouceD1					120
+#define	Anim_Canal_PouceD2					121
+#define	Anim_Canal_DoigtD1					122
+#define	Anim_Canal_DoigtD2					123
+#define	Anim_Canal_Snap_MainD				125
+#define	Anim_Canal_Annex1					125
+#define	Anim_Canal_Annex2					126
+#define	Anim_Canal_Annex3					127
+#define	Anim_Canal_Annex4					128
+#define	Anim_Canal_Annex5					129
+#define	Anim_Canal_Annex6					130
+
+#define	Anim_Canal_MainGauche				40
+#define	Anim_Canal_AvantBrasGauche		41
+#define	Anim_Canal_BrasGauche				42
+#define	Anim_Canal_EpauleGauche			43
+#define	Anim_Canal_PouceG1					140
+#define	Anim_Canal_PouceG2					141
+#define	Anim_Canal_DoigtG1					142
+#define	Anim_Canal_DoigtG2					143
+#define	Anim_Canal_Snap_MainG				145
+
+#define	Anim_Canal_PiedDroit					60
+#define	Anim_Canal_JambeDroite				61
+#define	Anim_Canal_CuisseDroite				62
+#define	Anim_Canal_HancheDroite			63
+#define	Anim_Canal_OrteilDroit					160
+
+#define	Anim_Canal_PiedGauche				80
+#define	Anim_Canal_JambeGauche			81
+#define	Anim_Canal_CuisseGauche			82
+#define	Anim_Canal_HancheGauche			83
+#define	Anim_Canal_OrteilGauche				180
+
+#define	Anim_Canal_Queue						100
+
+#define	Anim_Canal_Cheveux					200
+#define	Anim_Canal_PupilleDroite				201
+#define	Anim_Canal_PupilleGauche			202
+
+#define	Anim_Canal_Grab_Target				210
+#define	Anim_Canal_Snap_Ann				211
+#define	Anim_Canal_Snap_Bassin			212
+#define	Anim_Canal_Snap_KONG				212		// canal de snap dans les anims de la big bat
+
+#define	Anim_Canal_OreilleGauche			220
+#define	Anim_Canal_OreilleDroite				240
+#define	Anim_Canal_Grab_MainD				240
+#define	Anim_Canal_Grab_MainG				241
+
+#define	Anim_Canal_Lunette					242
+
+#define	Anim_Canal_Machoire					245
+#define	Anim_Canal_WeakPoint				246
+
+
+//#define	Anim_Canal_Snap_Morfle				10
+//#define	Anim_Canal_Pluggin1					30
+//#define	Anim_Canal_Pluggin2					31
+//#define	Anim_Canal_Pluggin3					32
+//#define	Anim_Canal_Pluggin4					33
+//#define	Anim_Canal_Pluggin5					34
+//#define	Anim_Canal_Pluggin6					35
+//#define	Anim_Canal_Pluggin7					36
+//#define	Anim_Canal_Pluggin8					37
+//#define	Anim_Canal_Pluggin9					38
+//#define	Anim_Canal_Pluggin10					39
+//
+//#define	Anim_Canal_PlugMainG				40			// Annexe 3
+//
+//#define	Anim_Canal_Objet1						50
+
+
+
+// ANI CB
+#define Ani_CB_NonInterruptible					0b00000001
+#define Ani_CB_StopTraction						0b00000010
+#define Ani_CB_EnableRotation					0b00000100
+#define Ani_CB_EnablePosHand				0b00001000
+#define Ani_CB_EnablePilotTorse				0b00010000
+
+// 		#################################
+// 		#			LIAISONS							#
+// 		#################################
+
+//--------( Type de liaison )--------
+#define Ci_LNK_EVENT_OFFSET							64
+
+#define Ci_LNK_GRAB_OBJECT							00
+#define Ci_LNK_GRAB_EAGLE								01
+#define Ci_LNK_USE											02
+//#define Ci_LNK_RIDE_DINO									03			// un NMI ride Kong
+//#define Ci_LNK_KKGRAB_OBJECT						04			// KK Grab a une main
+//#define Ci_LNK_KKGRAB_FORCE							05			// ----- Not used anymore -----
+//#define Ci_LNK_KKGRAB_COMBAT						06			// ----- Not used anymore -----
+//#define Ci_LNK_INTERACTION								07
+//#define Ci_LNK_CARRY										08
+//#define Ci_LNK_PSSS											09
+//#define Ci_LNK_GRAB_TRANSPORTE					10
+//#define Ci_LNK_BACKSTAB									11
+//#define Ci_LNK_GRAB_KONG								12			// KK Grab 2 mains de KONG
+//#define Ci_LNK_KKFINISH_ON_KONG					13			// KK FINISH d'ennemi sur KONG
+#define Ci_LNK_RIDE_ON_NMI								14			// Rayman ride un NMI
+#define Ci_LNK_TYPE_NB									15
+
+//--------( liaison interaction : sous type )--------
+#define Ci_LNK_INTERACTION_FIGHT					1
+#define Ci_LNK_INTERACTION_HEAL						2
+#define Ci_LNK_INTERACTION_USE						3
+#define Ci_LNK_INTERACTION_MUNITION				4
+#define Ci_LNK_INTERACTION_DONNE					5
+#define Ci_LNK_INTERACTION_CARRY					6
+#define Ci_LNK_INTERACTION_HIDE						7
+
+//--------( liaison interaction : constantes pour le status du client )--------
+//#define	Ci_Interaction_CStatus_Deplacement		1
+//#define	Ci_Interaction_CStatus_Interaction			2
+#define 	Ci_LNKINT_CSTATUS_Move					1
+#define 	Ci_LNKINT_CSTATUS_Interact				2
+#define 	Ci_LNKINT_CSTATUS_Wait					255
+
+//--------( liaison interaction : constant pour param de l'interaction type use )--------
+#define Ci_LNKINT_USE_Ramasse						1
+#define Ci_LNKINT_USE_Mecanisme					2
+#define Ci_LNKINT_USE_Film							3
+#define Ci_LNKINT_USE_RamasseUp					4
+#define Ci_LNKINT_USE_Porte							5			
+
+// TEXTES ASSOCIES AUX INTERACTIONS
+// quand une interaction est ajouté, pensez à mettre à jour la constante Ci_DISPLAY_NUMBER
+// et l'init du tableau Humains_ActionType dans exec_universe_initvars
+#define Ci_DISPLAY_NOTHING								0
+#define Ci_DISPLAY_FIGHT									1
+#define Ci_DISPLAY_HEAL									2
+#define Ci_DISPLAY_USE										3
+#define Ci_DISPLAY_COVER								4
+#define Ci_DISPLAY_CANCEL								5
+#define Ci_DISPLAY_PSSS									6
+#define Ci_DISPLAY_DONNE								7
+#define Ci_DISPLAY_HIDE									8
+#define Ci_DISPLAY_TAKE									9
+#define Ci_DISPLAY_DUMMY								10
+#define Ci_DISPLAY_FIGHTPROPOSE					11
+#define Ci_DISPLAY_HEALANN								12
+#define Ci_DISPLAY_FIGHTBLOQUE						13
+#define Ci_DISPLAY_PUT										14
+
+#define Ci_DISPLAY_NUMBER								15
+// quand une interaction est ajouté, pensez à mettre à jour la constante Ci_DISPLAY_NUMBER
+// et l'init du tableau Humains_ActionType dans exec_universe_initvars
+
+
+#define Ci_LNK_max_proposition							10
+#define Ci_LNK_max_liaison									100
+
+#define	Ci_GPG_Create							0
+#define	Ci_GPG_Destroy							1
+
+// TYPE SOL
+#define Ci_sol_plaine											0
+#define Ci_sol_mur												1
+#define Ci_sol_herbe											2
+#define Ci_sol_eau												3
+#define Ci_sol_herbe_haute									4
+#define Ci_sol_herbe_ronce									5
+#define Ci_sol_plafondbas										6
+#define Ci_sol_cache_raptor									6
+#define Ci_sol_cache_bats									7
+#define Ci_sol_cache_raptor_bats							8
+#define Ci_sol_eau_basse										9
+#define Ci_sol_eau_herbe										10
+#define Ci_sol_eau_basse_herbe							11
+#define Ci_sol_eau_mouche_feu								12
+
+#define Ci_Grid2_Danger										1
+#define Ci_Grid2_DangerInter									2
+#define Ci_Grid2_MuretJack									4
+#define Ci_Grid2_Inflammable								8
+#define Ci_Grid2_EnFeu										64
+#define Ci_Grid2_Brule											128
+
+// MSG GLOBAL
+#define GAO1									0
+#define GAO2									1
+#define GAO3									2
+#define GAO4									3
+#define GAO5									4
+
+#define SERVEUR							0
+#define CLIENT								1
+
+#define INT1									0
+#define INT2									1
+#define INT3									2
+#define INT4									3
+#define INT5									4
+
+#define VEC1									0
+#define VEC2									1
+#define VEC3									2
+#define VEC4									3
+#define VEC5									4
+
+#define VEC_ALL							0
+#define VEC_X								1
+#define VEC_Y								2
+#define VEC_Z								3
+
+#define 	Ci_LNK_GrabStatus_AuSol			0
+#define 	Ci_LNK_GrabStatus_Souleve			1
+#define 	Ci_LNK_GrabStatus_Lance			2
+#define 	Ci_LNK_GrabStatus_Pause			3
+#define 	Ci_LNK_GrabStatus_TREX_TT		4			
+
+// LIBRAIRIE GST_CLIMB
+#define Ci_QUADRILATAIRE_CONVEXE				4
+#define Ci_QUADRILATAIRE_CONCAVE				2
+#define Ci_QUADRILATAIRE_CROISE				0
+#define Ci_QUADRILATAIRE_QUELCONQUE		-1
+
+#define	Ci_ActionSet_Force_SameAction			0x80000000
+#define	Ci_ActionSet_Force_No_Blend				0x40000000
+#define	Ci_ActionSet_Force_FrameZero				0x20000000
+
+// ETAT vie
+#define Life_ETAT_Normal			0			// En pleine forme
+#define Life_ETAT_Agonisant		1			// Blessé
+#define Life_ETAT_Conval			2			// Soigné
+#define Life_ETAT_Mort			3			// Mort
+
+// Durée des pafs
+#define	Paf_Faible_Timer			5.0
+#define	Paf_Moyen_Timer		10.0
+#define	Paf_Fort_Timer			15.0
+#define	Paf_Gap_Delay			0.5		// Délai pendant lequel le perso ne chnage pas d'état (fin d'un paf)
+
+// TRANSITIONS DEFAULT
+#define ACT_C_TF_BlendProgressive       	0x01
+#define ACT_C_TF_BlendProgressiveInv    	0x02
+#define ACT_C_TF_BlendFreezeBones       	0x04
+#define ACT_C_TF_BlendFreezeMagicBox  0x08
+#define ACT_C_TF_DefaultTransition			0x10
+#define ACT_C_TF_BlendStock					0x20
+#define ACT_C_TF_NextDefaultTransition		0x40
+#define ACT_C_TF_BlendBetweenActionItem      	0x80
+
+// DYNAM
+#define C_Time_Dyna								5.0
+
+#define Param_AE_BlackAndWhite		0
+#define Param_AE_Blur						1
+#define Param_AE_Brightness				2
+#define Param_AE_ColorBalance1			3
+#define Param_AE_ColorBalance2			4
+#define Param_AE_Contraste				5
+#define Param_AE_MotionBlur				6
+#define Param_AE_MotionSmooth			7
+#define Param_AE_Remanence				8
+#define Param_AE_RotationSmooth		9
+#define Param_AE_Wrap						10
+#define Param_AE_ZoomSmooth			11
+#define Param_AE_Glow						12
+#define Param_AE_ZoomSmoothCenter	13
+
+#define Param_AE_Number					14
+
+#define Include_UltraProcedure_Header	#include "ROOT\EngineDatas\04 Technical Bank\AI Models\Global Library\UltraProcedure_Header.fct"
+
+#define PRIO_PICK_BAMBOU_CASSE	5
+#define PRIO_PICK_BAMBOU_PETIT		6
+#define PRIO_PICK_BAMBOU_MOY		7
+#define PRIO_PICK_BAMBOU				8
+#define PRIO_PICK_ARME					9
+#define PRIO_PICK_LEVIER					10
+
+//====[ CONSTANTS INO SAVE ]=============================
+
+#define INO_e_SavMsg_None							0x10000000
+#define INO_e_SavMsg_Accessing						0x10000010
+#define INO_e_SavMsg_NoCard							0x10000020
+#define INO_e_SavMsg_UnformattedCard				0x10000030
+#define INO_e_SavMsg_NoSaving						0x10000040
+#define INO_e_SavMsg_NoMoreSpace				0x10000050
+#define INO_e_SavMsg_ErrorWhileSaving			0x10000060
+#define INO_e_SavMsg_ErrorWhileLoading			0x10000070
+#define INO_e_SavMsg_ErrorWhileFormating		0x10000080
+#define INO_e_SavMsg_SuccessWhileSaving		0x10000090
+#define INO_e_SavMsg_SuccessWhileLoading		0x100000A0
+#define INO_e_SavMsg_SuccessWhileFormating	0x100000B0
+#define INO_e_SavMsg_Retrying						0x100000C0
+#define INO_e_SavMsg_Formating						0x100000D0
+#define INO_e_SavMsg_FormatConfirmation			0x100000E0
+#define INO_e_SavMsg_CancelSave					0x100000F0
+#define INO_e_SavMsg_WrongFormatCard			0x10000100
+#define INO_e_SavMsg_WrongDevice					0x10000110
+#define INO_e_SavMsg_NotFunctionnalCard			0x10000120
+#define INO_e_SavMsg_BeforeAccessing			0x10000130
+#define INO_e_SavMsg_ConfirmSave					0x10000140
+#define INO_e_SavMsg_ConfirmOverwriting			0x10000170
+#define INO_e_SavMsg_BadFileOnMc					0x10000180
+#define INO_e_SavMsg_Saving							0x10000190
+#define INO_e_SavMsg_Loading							0x100001A0
+#define INO_e_SavMsg_Dummy							0xFFFFFFFF
+
+#define 	INO_e_SavRq_SaveSaveBuffer			1
+#define	INO_e_SavRq_RestoreSaveBuffer		2
+#define 	INO_e_SavRq_CardId						0x20000000
+#define 	INO_e_SavRq_Space						0x20000010
+#define 	INO_e_SavRq_Status						0x20000020
+#define 	INO_e_SavRq_UserMessageId			0x20000030
+#define 	INO_e_SavRq_ReadAllHeaders			0x20000040
+#define 	INO_e_SavRq_ReadOneProfile			0x20000050
+#define 	INO_e_SavRq_WriteOneProfile			0x20000060
+#define 	INO_e_SavRq_ClearMessageId			0x20000070
+#define 	INO_e_SavRq_FreeRessource			0x20000080
+#define 	INO_e_SavRq_BootupTest					0x20000090
+#define 	INO_e_SavRq_TestMemCard				0x200000A0
+#define 	INO_e_SavRq_UserAction					0x200000B0
+#define 	INO_e_SavRq_SetRetryFlag				0x200000C0
+#define 	INO_e_SavRq_Dummy						0xFFFFFFFF
+
+
+
+#define 	INO_e_SavDbgRq_NoCardInserted		0x30000000
+#define 	INO_e_SavDbgRq_NoSpace				0x30000010
+#define 	INO_e_SavDbgRq_NoSave				0x30000020
+#define 	INO_e_SavDbgRq_Unformatted			0x30000030
+#define 	INO_e_SavDbgRq_AccessError			0x30000040
+#define 	INO_e_SavDbgRq_Dummy				0xFFFFFFFF
+
+//====[ CONSTANTS INO LANG ]=============================
+#define 	INO_e_French			0
+#define 	INO_e_English		1
+#define 	INO_e_Danish			2
+#define 	INO_e_Dutch			3
+#define 	INO_e_Finnish			4
+#define 	INO_e_German		5
+#define 	INO_e_Italian			6
+#define 	INO_e_Spanish		7
+#define 	INO_e_Portuguese	8
+#define 	INO_e_Swedish		9
+#define 	INO_e_Polish			10
+#define 	INO_e_Russian		11
+#define 	INO_e_Japanese		12
+#define 	INO_e_Chinese		13
+#define 	INO_e_Albanian		14
+#define 	INO_e_Arabic			15
+#define 	INO_e_Bulgarian		16
+#define 	INO_e_Byelorussian	17
+#define 	INO_e_Greek			18
+#define 	INO_e_Korean			19
+#define 	INO_e_Norwegian	20
+#define 	INO_e_Romanian		21
+#define 	INO_e_Serbian		22
+#define 	INO_e_Slovak			23
+#define 	INO_e_Slovenian		24
+#define 	INO_e_Turkish			25
+#define 	INO_e_Czech			26
+#define 	INO_e_Hungarian		27
+#define 	INO_e_Taiwanese	28
+
+

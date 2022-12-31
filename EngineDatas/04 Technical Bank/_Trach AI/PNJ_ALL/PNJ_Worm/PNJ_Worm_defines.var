@@ -1,0 +1,65 @@
+// BEST TARGET =================================================================================
+#define Cf_delay_between_target_switching				4.0
+
+// TRACK =======================================================================================
+#define Ci_Track_TagOff										00
+#define Ci_Track_Reflex										01
+#define Ci_Track_Etat											02
+#define Ci_Track_TagOn										03
+
+#define macro_change_etat(etat)																				\
+{																															\
+	if (AI_TrackCurGetNum() == Ci_Track_Etat)																\
+		AI_TrackCurChangeNow(etat)																				\
+	else																													\
+		AI_TrackChange(Ci_Track_Etat, etat)																	\
+	return																													\
+}
+
+// ETAT ===========================================================================================
+#define ETAT_IDLE																	00
+#define ETAT_FIGHT																01
+#define ETAT_GRAB																02
+#define ETAT_PAF																	03
+#define ETAT_MORT																04
+#define ETAT_CATCH																05
+#define ETAT_SAUT																	06
+
+// ACTION =========================================================================================
+#define Action_Attente																00
+#define Action_Marche																01
+
+#define Action_Grab_appel														05
+#define Action_Grab_deb															06
+#define Action_Grab_fin															07
+#define Action_Grab_cycl															08
+#define Action_Attaque_deb														09
+#define Action_Attaque_fin														10
+
+
+#define Action_Paf																	20
+#define Action_Mort_Paf															21
+#define Action_Mort																	22
+#define Action_Paf_Rafale															23
+
+#define Action_Saut_deb															30
+#define Action_Saut_cycl															31
+#define Action_Saut_fin																32
+
+// PERCEIVED STATUS ===============================================================================
+//#define Ci_PERCEIVED_NEAR_SHOT								0b0000000000000001
+//#define Ci_PERCEIVED_HEARD_SHOT								0b0000000000000010
+//#define Ci_PERCEIVED_NEAR_IN_MOVE_CONE				0b0000000000000100
+//#define Ci_PERCEIVED_COLLIDED_ACTOR						0b0000000000001000
+//#define Ci_PERCEIVED_PAF											0b0000000000010000
+//#define Ci_PERCEIVED_JAVELIN_PAF								0b0000000000100000
+//#define Ci_PERCEIVED_STUNNED									0b0000000001000000
+//#define Ci_PERCEIVED_HEARD										0b0000000010000000
+//#define Ci_PERCEIVED_ALREADY_GRABBED					0b0000000100000000
+
+// DYN ===========================================================================================
+#define Cv_Scorpion_Gravity												cvector(0.0, 0.0, -20.0)
+#define Cv_Scorpion_Friction												cvector(4.0, 4.0, 0.0)
+
+#define Cf_Scorpion_Jump_Friction									2.0
+#define Cv_Scorpion_Jump_Friction									cvector(Cf_Scorpion_Jump_Friction, Cf_Scorpion_Jump_Friction, 0.0)

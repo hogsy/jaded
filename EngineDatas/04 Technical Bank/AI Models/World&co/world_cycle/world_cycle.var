@@ -1,0 +1,83 @@
+// Define at least one function in a track
+function track0 = "world_init"
+function track1 = "world_planetes"
+// function track2 = "name"
+// function track3 = "name"
+// function track4 = "name"
+// function callback_beforedisplay = "name"
+// function callback_afterdisplay = "name"
+// function callback_afterrec = "name"
+
+int					des_i_numplanete
+object			des_o_teleport
+object			des_o_env
+object			des_o_sun
+object			des_o_moon
+object			des_o_moon_light
+object			des_o_moon_rayon
+object			des_o_fog
+object			des_o_sky
+object			des_o_stars
+//object			des_o_center
+vector			des_v_center_world = cvector(0,0,0)
+float				des_f_distance = 1000
+object			des_o_desactivate
+
+separator		"Altitude => Heure"
+float				des_f_Z_jour			= 10000
+float				des_f_Z_lever			= 2000
+float				des_f_Z_aurore		= -2500
+float				des_f_Z_nuit			= - 5000
+
+separator		"Fog (calme/attaque)"
+float				des_f_fog_time_jour	= 7.0
+float				des_f_fog_blend_jour = 1.0
+float				des_f_fog_near = 0
+float				des_f_fog_far = 6000
+float				des_f_fog_time_nuit = 19.0
+float				des_f_fog_blend_nuit = 1.0
+float				des_f_fog_near_nuit= 0
+float				des_f_fog_far_nuit = 5000
+
+separator		"Couleurs (calme/attaque) "
+color				des_ac_jour[10]
+color				des_ac_coucher[10]
+color				des_ac_aurore[10]
+color				des_ac_nuit[10]
+color				des_c_moon_light
+
+separator		"RLI"
+float				des_f_RLI_jour			= 0.7			// 0 => Pas de RLI / 1 => RLI
+float				des_f_RLI_coucher	= 0.7
+float				des_f_RLI_aurore		= 0.7
+float				des_f_RLI_nuit			= 0.7
+
+separator		"Spécifique World Cycle"
+object			des_standard_world_cycle						// GAO qui correspond au world_cycle de base
+int					des_copy_all_but_colors = vrai_faux		// Si à vrai, je recopie les variables de des_standard_world_cycle exceptées les couleurs
+
+private color	ac_color[10]
+private color	ac_color_attaque[10]
+private color	ac_color_final[10]
+
+private color	c_moon_light
+
+private float		f_firstnorm = 0
+private vector	v_normvais
+
+private float		f_time
+
+float				f_vitesse_transition_vers_attaque				= 0.4
+float				f_vitesse_transition_retour_vers_normal		= 0.4
+private float		f_coef_attaque = 0
+
+private vector	v_rel_lune_lgt
+private float		f_time_moon
+private int		i_soleil_ok
+
+private vector	pos_air
+private vector	pos_cam
+
+vector			des_v_center_to_repos = cvector(-374.8, 4501.6, -93.83)
+private float		f_coef_jour_nuit
+private float		f_blend_stop

@@ -1,0 +1,72 @@
+#define Ci_virtual_wp_nb										30
+
+// FIRE
+#define Cf_fire_sqr_dist											25.0
+
+// TRACK
+#define Ci_Track_TagOff										00
+#define Ci_Track_Reflex										01
+#define Ci_Track_Etat											02
+#define Ci_Track_TagOn										03
+
+#define Ci_Modele_Clair										0
+#define Ci_Modele_Standard									1
+#define Ci_Modele_Sombre									2
+#define Ci_Modele_Big											3
+
+#define macro_change_etat(etat)																				\
+{																															\
+	if (AI_TrackCurGetNum() == Ci_Track_Etat)																\
+		AI_TrackCurChangeNow(etat)																				\
+	else																													\
+		AI_TrackChange(Ci_Track_Etat, etat)																	\
+	return																													\
+}
+
+// NET CAPA
+#define Capa_Water										OBJ_Capa_0
+#define Capa_Stop										OBJ_Capa_1
+#define Capa_Motor_Stop								OBJ_Capa_2
+
+// DYN
+#define Cv_Scolo_Gravity								cvector(0.0, 0.0, -20.0)
+
+#define Cf_Scolo_Jump_Friction						2.0
+#define Cv_Scolo_Jump_Friction						cvector(Cf_Scolo_Jump_Friction, Cf_Scolo_Jump_Friction, 0.0)
+
+#define Cf_impulsion_max_jack						20.0
+#define Cf_impulsion_max_kong						40.0
+
+// ETAT
+#define ETAT_Attente																								000
+#define ETAT_Cine																									001
+#define ETAT_TEST																									667
+
+
+// TYPE
+#define Ci_TYPE_FIXE																								0
+
+#define Ci_TYPE_RAMPANT																						2
+
+// TARGET SELECTION
+#define Ci_TARGET_AI																								0
+#define Ci_TARGET_TRIGGER																					1
+
+//// PERCEIVED STATUS ===============================================================================
+//#define Ci_PERCEIVED_NEAR_SHOT								0b0000000000000001
+//#define Ci_PERCEIVED_STUNNED									0b0000000000000010
+//#define Ci_PERCEIVED_NEAR_IN_MOVE_CONE				0b0000000000000100
+//#define Ci_PERCEIVED_GET_FIRE									0b0000000000001000
+//#define Ci_PERCEIVED_PAF											0b0000000000010000
+//#define Ci_PERCEIVED_JAVELIN_PAF								0b0000000000100000
+//#define Ci_PERCEIVED_IS_DEAD										0b0000000001000000
+//#define Ci_PERCEIVED_HEARD										0b0000000010000000
+//#define Ci_PERCEIVED_ALREADY_GRABBED					0b0000000100000000
+//#define Ci_PERCEIVED_NEAR_FIRE									0b0000001000000000
+
+#define Cf_delay_between_target_switching							4.0
+
+// SOUND ========================================================================================
+#define SND_MOTOR_LOOP_1																0
+#define SND_MOTOR_LOOP_2																1
+#define SND_MOTOR_LOOP_WATER													2

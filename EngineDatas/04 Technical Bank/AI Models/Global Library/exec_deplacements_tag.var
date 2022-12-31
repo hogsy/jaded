@@ -1,0 +1,28 @@
+// ------------------------------	GRID --------------------------------
+
+//--- Le TAG c'est l'art d'ecrire dans la/les cases pour marquer les occupations :)
+private vector			tag_vectorpos										// TAG*: Position Tag
+private vector			tag_vectorsight									// TAG*: Sight Tag
+private int				tag_flag = vrai_faux								// TAG*: Faux = non taggé, Vrai = taggé
+private int				tag_value = tag_grid_occupe					// TAG*: Valeur du Tag
+private int				tag_change_value = tag_grid_occupe		// TAG : Nouvelle Valeur de Tag (pris en compte au moment de tagger uniquement)
+private int				tag_type = tag_type_2x2						// TAG*: Type du Tag effectué
+private int				tag_change_type = tag_type_2x2			// TAG : Nouveau type de TAG (pris en compte au moment de tagger uniquement)
+																					// 0 = Tag 2x2   1 = Tag 1x2
+private int				tag_mode = tag_mode_default				// TAG*: Mode de TAG
+private int				tag_change_mode = tag_mode_default	// TAG : Nouveau mode de TAG (pris en compte au moment de tagger uniquement)
+private int				tag_etage											// Etage courant du perso
+int							tag_etage_force = -1								// Etage force ? ( -1 = Etage Auto, 0 = Etage 0, 1 = Etage 1 )
+
+private vector			tag_2x2dyn_pos[4]								// Tableau utilisé pour le TAG dynamique
+private float				tag_size = 0.35									// TAG*: Rayon de la zdm pour le TAG dynamique
+private float				tag_change_size = 0.35						// TAG : Nouveau rayon (pris en compte au moment de tagger uniquement)
+
+private vector			tag_change_free_pos1 = cvector(-0.3,-0.3,0)		// TAG position d'une des extremité
+private vector			tag_free_pos1 												// TAG* position d'une des extremité (ne pas modif)
+private vector			tag_change_free_pos2	= cvector(0.3,0.3,0)		// TAG position d'une des extremité
+private vector			tag_free_pos2 												// TAG* position d'une des extremité (ne pas modif)
+private vector			tag_free_pos												// TAG* position d'une des extremité (ne pas modif)
+private vector			tag_free_sight												// TAG* position d'une des extremité (ne pas modif)
+
+// * ATTENTION: NE JAMAIS MODIFIER DIRECTEMENT CETTE VALEUR !! (Utilisez Change...)

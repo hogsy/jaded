@@ -1,0 +1,109 @@
+// Define at least one function in a track
+// function track0 = "name"
+// function track1 = "name"
+function track2 = "weapon_init"
+// function track3 = "name"
+// function track4 = "name"
+
+
+private	int		i_type		= enum ("1 - Grenade" 1 "2 - Gun" 2 "3 - Clé" 3 "4 - Carotte" 4 "6 - Gourdin" 6)
+
+separator	"GUN"
+int		i_nb_munitions = 20
+private int	i_must_miss
+int		i_mitraillette = vrai_faux
+
+separator	"GRENADE"
+int		i_explose_type = enum ("Contact" 1 "Timer" 2)
+float	f_delai_before_boom	= 0.0		// If 0 : explose when collide
+float	f_aire_deffet = 5.0
+float	f_pct_paf_fort = 0.5
+
+separator "GOURDIN"
+int		i_duree_de_vie = 1
+private	float		f_gourdin_last_use
+
+separator	"CLEF & PTIZETRE"
+int			i_key_type = enum ("1 - or" 1 "2 - argent" 2 "3 - bronze" 3 "4 - PtiZetre" 4)
+
+separator	"OBJECTIF"
+int						i_Objectif_ID = -1
+object				o_Objectif_Donjon_BV = nobody
+object				o_Objectif_Exterieur_Pos = nobody
+int						i_Objectif_Display_Mode = enum("0 - By SF" 0 "1 - Always" 1 )
+color					c_Objectif_Color = 0x8F52D141
+private int			i_GFX_Obj_Halo = -1
+private int			i_GFX_Obj_Faisceau = -1
+private float			f_GFX_Obj_blend = 0.0
+private float			f_halo_extraction = 10.0
+private int			i_Objectif_already_grabbed
+private int			i_GFX_Obj_can_i_display = vrai
+private int			i_GFX_state = 0
+
+separator	"Genéralité"
+float	f_portee	= 10.0
+float	f_dommage = 10.0
+trigger	TrigExec_Grabbed
+
+separator "Ptizetre"
+float					f_PZ_Far = 30.0
+float					f_PZ_Near = 10.0
+//int						i_Souffrant = vrai_faux
+
+private	vector	v_proj_sens
+private	int			i_mode
+private	object	o_serveur_grab
+private	object	o_actor_grab
+
+private	messageid	mid_grabbed_LNK_ID
+
+// USED
+private vector		v_used_sens
+private object		o_used_target
+
+
+private float			f_GFX_rayon 
+private int			i_GFX_Explosion = -1
+
+private int			i_hotspot
+private int			i_grenade_active = vrai_faux
+
+private object		o_spawn_grab_actor = nobody
+private vector		v_last_grab_actor_sight
+
+private float			f_grab_coef
+
+// LAUNCH
+private vector		v_pos_old
+private vector		v_pos
+
+// SFX
+private float			f_dist_max_AE = 0.125
+
+private float			f_explosed_snd_delai
+
+// FRAPPE NB
+private object		ao_frappe_target[20]
+private int			i_frappe_target_nb						// nb de persos paffés ce coup-ci
+private float			f_frappe_timer_reset
+
+
+private object		o_main_actor
+
+private int			i_frame_nb
+
+private object		o_gfx_obj
+
+
+// CASSAGE AU SOL SI DROP PAF
+private int			i_drop_paf_cpt = 3
+private int			i_drop_paf_destroy_flag
+
+
+// SPEECH
+private float			f_Delay_Speech
+private float			f_PZ_Far2
+private float			f_PZ_Near2
+private int			i_AVuRM = faux
+
+private int			SF_GrabbedOnce

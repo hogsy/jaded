@@ -1,0 +1,197 @@
+// Define at least one function in a track
+function track0 = "SFX_Atmosphere_INIT"
+
+
+separator "REGLAGES HEURE / METEO / ENVIRONNEMENT"
+float				f_heure_depart = 12.0				// Heure de départ (0 ou 24 : minuit, 12 : midi, etc)
+private float		f_val_jour = 0.0
+private float		f_temp = 0.0
+bool				i_activation_cycle = faux_vrai		// Activation / désactivation du cycle jour / nuit
+int					i_meteo = enum("Ensoleillé" 0)	// "Un peu nuageux" 1 "Très nuageux" 2 "Couvert / annonce orage" 3 "Orage" 4 "Tempête" 5)	// Météo désirée
+float				f_vitesse	 = 0.0						// Vitesse de défilement du cycle jour / nuit (1 = 24H, 10 = 2.4H, etc.)
+float				f_vitesse_fog = 1						// Vitesse de changement du fog lors de l'activation du cycle jour / nuit
+private float		f_time_fog = 0.0
+private color	tc_old_fog
+private int		b_activ_blend_fog = 0
+private float		f_vitesse_old = 0.0
+object			o_sky									// Objet ciel
+object			o_atmosphere							// Objet atmosphère
+object			o_espace								// Objet espace (étoiles)
+object			o_fog										// Objet Fog
+private int		i_alpha_atmos			 				// Transparence du halo entourant
+private float		f_heure_actuelle = 0.0
+private float		f_heure_lune = 12.0
+private int		i_alpha_sky = 0
+private int		i_alpha_clouds = 0
+private color	c_rli_dest = LIGHT_RLIDestColorGet()
+private int		i_start_env = faux
+private int		i_start_fog = faux
+
+separator "REGLAGES SOLEIL"
+object			o_lgt_sun								// Lumière servant de soleil
+bool				b_activ_godray = faux_vrai			// Activation du GodRay
+float				f_intensite_godray = 0.3			// Intensité du God Ray
+private float		f_attenuation_godray = 0.0
+float				f_sun_ang_zenith = 65.0			// Angle du soleil par rapport à la verticale une fois à son zenith (en degrés)
+float				f_sun_ang_trajec = 0.0				// Angle de la trajectoire du soleil par rapport à l'axe des Y (en degrés)
+float				f_sun_aplat_trajec = 0.0			// Applatissement de la trajectoire du soleil (0 = arc de cercle, 0.5 = demi ballon de rigby, 1 = droite)
+float				f_sun_dist = 3000					// Distance du soleil par rapport au joueur
+
+separator "REGLAGES LUNE"
+object			o_moon									// Objet Lune
+object			o_lgt_moon								// Lumière servant de lune
+object			o_sight_moon							// Objet servant à éclairer la lune
+bool				i_affichage_moon = faux_vrai		// Affichage ou non de la lune
+float				f_vitesse_moon = 0.35				// Vitesse du mouvement de la lune
+float				f_moon_amplitude = 10.0			// Amplitude verticale du mouvement de la lune (en degrés)
+float				f_angle_init = 20.0					// Angle vertical initial
+float				f_moon_ang_trajec = 22.5			// Angle initial de la trajectoire de la lune par rapport à l'axe des Y
+float				f_moon_dist = 18500				// Distance de la lune par rapport au joueur
+
+separator "REGLAGES MER DE NUAGES"
+object			o_mer_mobile										// Objet mer de nuage suivant le joueur
+object			o_mer_lointaine									// Objet mer de nuages basse def lointaine
+object			o_sphere_fog										// Objet servant de fog local lorsqu'on est dans la mer de nuages
+object			o_omega											// Objet de référence pour la hauteur de la mer de nuages
+float				f_dist_mer_nuages = 25.0						// Distance à partir de laquelle on considère qu'on est dans la mer de nuages
+int					i_center_RM = enum("Oui" 0 "Non" 1)		// Rayman en tant que référence de la mer de nuages
+private float		f_facteur_inside_mer = 0.0
+
+separator "COULEURS LEVER SOLEIL (6H)"
+color				c_amb_sun_beg = COLOR_SetRGBA(84,53,0,0)		// Ambient à l'aube dans l'axe du sight
+color				c_nuages_beg = COLOR_SetRGBA(0,0,0,0)			// Couleur des nuages (utilisez l'alpha pour définir leur transparence)
+color				c_aura_sun_beg = COLOR_SetRGBA(0,0,0,0)			// Couleur de l'aura du soleil
+color				c_amb2_sun_beg = COLOR_SetRGBA(84,53,0,0)		// Ambient2 à l'aube dans l'axe du sight
+color				c_sun_beg	= COLOR_SetRGBA(156,98,0,0)			// Couleur du soleil à l'aube
+color				c_moon_end = COLOR_SetRGBA(74,71,52,0)			// Couleur de la lune à l'aube
+color				c_amb_ciel_beg = COLOR_SetRGBA(92,93,66,49)	// Couleur du ciel à l'aube (utiliser l'alpha pour la transparence du ciel)
+color				c_base_ciel_beg							// Couleur base du ciel
+color				c_fog_sun_beg = COLOR_SetRGBA(48,49,36,49)		// Couleur du Fog
+color				c_fog_sun_beg2 = COLOR_SetRGBA(193,143,68,0)	// Couleur du Fog
+float				f_fog_near_sun_beg = 175.0									// Fog near
+float				f_fog_far_sun_beg = 750.0										// Fog far
+vector			v_wind_sun_beg = cvector(1.0,1.0,1.0)						// Direction du vent
+float				f_wind_beg = 2.0													// Force du vent
+float				f_rand_wind_beg = 0.5											// Random sur la force du vent
+
+separator "COULEURS 9H DU MATIN"
+color				c_amb_sun_beg_mid = COLOR_SetRGBA(125,84,0,49)			// Ambiante en milieu de matinée dans l'axe du sight
+color				c_nuages_beg_mid = COLOR_SetRGBA(0,0,0,0)					// Couleur des nuages (utilisez l'alpha pour définir leur transparence)
+color				c_aura_sun_beg_mid = COLOR_SetRGBA(0,0,0,0)				// Couleur de l'aura du soleil
+color				c_amb2_sun_beg_mid = COLOR_SetRGBA(125,84,0,49)		// Ambiant2 en milieu de matinée dans l'axe du sight
+color				c_sun_beg_mid = COLOR_SetRGBA(197,159,131,0)				// Couleur du soleil en milieu de matinée
+color				c_amb_ciel_beg_mid = COLOR_SetRGBA(69,46,0,22)			// Couleur du ciel en milieu de matinée (utiliser l'alpha pour la transparence du ciel)
+color				c_base_ciel_beg_mid							// Couleur base du ciel
+color				c_fog_sun_beg_mid = COLOR_SetRGBA(129,86,0,22)			// Couleur du Fog
+color				c_fog_sun_beg_mid2 = COLOR_SetRGBA(84,56,0,22)			// Couleur du Fog
+float				f_fog_near_sun_beg_mid = 175.0										// Fog near
+float				f_fog_far_sun_beg_mid = 750.0											// Fog far
+vector			v_wind_sun_beg_mid = cvector(1.0,1.0,1.0)							// Direction du vent
+float				f_wind_beg_mid = 2.0														// Force du vent
+float				f_rand_wind_beg_mid = 1.5												// Random sur la force du vent
+
+separator "COULEURS MIDI"
+color				c_amb_sun_mid = COLOR_SetRGBA(65,120,129,0)				// Ambient lorsque le soleil est à son zenith dans l'axe du sight
+color				c_nuages_mid = COLOR_SetRGBA(236,237,233,255)			// Couleur des nuages (utilisez l'alpha pour définir leur transparence)
+color				c_aura_sun_mid = COLOR_SetRGBA(165,139,121,255)			// Couleur de l'aura du soleil
+color				c_amb2_sun_mid = COLOR_SetRGBA(65,120,129,0)			// Ambient2 lorsque le soleil est à son zenith dans l'axe du sight
+color				c_sun_mid = COLOR_SetRGBA(200,200,194,0)					// Couleur du soleil en milieu de journée
+color				c_amb_ciel_mid = COLOR_SetRGBA(91,198,194,118)			// Couleur du ciel en plein jour (utiliser l'alpha pour la transparence du ciel)
+color				c_base_ciel_mid = COLOR_SetRGBA(186,199,193,12)			// Couleur base du ciel
+color				c_fog_sun_mid = COLOR_SetRGBA(186,199,193,12)			// Couleur du Fog
+color				c_fog_sun_mid2 = COLOR_SetRGBA(108,201,195,12)			// Couleur du Fog
+float				f_fog_near_sun_mid = 0.0													// Fog near
+float				f_fog_far_sun_mid = 800.0													// Fog far
+vector			v_wind_sun_mid = cvector(0.0,1.0,1.0)									// Direction du vent
+float				f_wind_mid = 2.0																// Force du vent
+float				f_rand_wind_mid = 1.0														// Random sur la force du vent
+
+
+separator "COULEURS 15H"
+color				c_amb_sun_mid_end = COLOR_SetRGBA(93,57,58,0)			// Ambient en milieu d'après midi dans l'axe du sight
+color				c_nuages_mid_end = COLOR_SetRGBA(0,0,0,0)					// Couleur des nuages (utilisez l'alpha pour définir leur transparence)
+color				c_aura_sun_mid_end = COLOR_SetRGBA(0,0,0,0)				// Couleur de l'aura du soleil
+color				c_amb2_sun_mid_end = COLOR_SetRGBA(93,57,58,0)			// Ambient2 en milieu d'après midi dans l'axe du sight
+color				c_sun_mid_end = COLOR_SetRGBA(51,33,47,0)					// Couleur du soleil en milieu d'après midi
+color				c_amb_ciel_mid_end = COLOR_SetRGBA(54,66,72,7)			// Couleur du ciel en milieu d'après midi (utiliser l'alpha pour la transparence du ciel)
+color				c_base_ciel_mid_end							// Couleur base du ciel
+color				c_fog_sun_mid_end = COLOR_SetRGBA(136,167,177,65)		// Couleur du Fog
+color				c_fog_sun_mid_end2 = COLOR_SetRGBA(136,167,177,65)	// Couleur du Fog
+float				f_fog_near_sun_mid_end = 175.0										// Fog near
+float				f_fog_far_sun_mid_end = 750.0											// Fog far
+vector			v_wind_sun_mid_end = cvector(0.0,1.0,0.0)							// Direction du vent
+float				f_wind_mid_end = 2.0														// Force du vent
+float				f_rand_wind_mid_end = 2.5												// Random sur la force du vent
+
+
+separator "COULEURS COUCHER DU SOLEIL (18H)"
+color				c_amb_sun_end = COLOR_SetRGBA(55,31,57,0)					// Ambient au crépuscule dans l'axe du sight
+color				c_nuages_end = COLOR_SetRGBA(0,0,0,0)						// Couleur des nuages (utilisez l'alpha pour définir leur transparence)
+color				c_aura_sun_end = COLOR_SetRGBA(0,0,0,0)						// Couleur de l'aura du soleil
+color				c_amb2_sun_end = COLOR_SetRGBA(55,31,57,0)				// Ambient2 au crépuscule dans l'axe du sight
+color				c_sun_end = COLOR_SetRGBA(51,33,47,0)						// Couleur du soleil au crépuscule
+color				c_moon_beg = COLOR_SetRGBA(70,66,56,0)						// Couleur de la lune au crépuscule
+color				c_amb_ciel_end = COLOR_SetRGBA(42,27,38,215)				// Couleur du ciel au crépuscule (utiliser l'alpha pour la transparence du ciel)
+color				c_base_ciel_end							// Couleur base du ciel
+color				c_fog_sun_end = COLOR_SetRGBA(80,51,73,215)				// Couleur du Fog
+color				c_fog_sun_end2 = COLOR_SetRGBA(42,27,38,215)				// Couleur du Fog
+float				f_fog_near_sun_end = 175.0												// Fog near
+float				f_fog_far_sun_end = 750.0													// Fog far
+vector			v_wind_sun_end = cvector(1.0,0.0,1.0)									// Direction du vent
+float				f_wind_end = 2.0																// Force du vent
+float				f_rand_wind_end = 3.0														// Random sur la force du vent
+
+
+separator "COULEURS 21H"
+color				c_nuages_moon_beg_mid = COLOR_SetRGBA(0,0,0,0)			// Couleur des nuages (utilisez l'alpha pour définir leur transparence)
+color				c_aura_moon_beg_mid = COLOR_SetRGBA(0,0,0,0)				// Couleur de l'aura du soleil
+color				c_amb_moon_beg_mid = COLOR_SetRGBA(37,66,137,0)		// Ambient en milieu de soirée dans l'axe du sight
+color				c_amb2_moon_beg_mid = COLOR_SetRGBA(37,66,137,0)	// Ambient2 en milieu de soirée dans l'axe du sight
+color				c_moon_beg_mid	 = COLOR_SetRGBA(40,55,89,0)				// Couleur de la lune enen milieu de soirée
+color				c_amb_ciel_moon_beg_mid = COLOR_SetRGBA(0,0,0,255)	// Couleur du ciel à 21H (utiliser l'alpha pour la transparence du ciel)
+color				c_base_ciel_moon_beg_mid							// Couleur base du ciel
+color				c_fog_moon_beg_mid = COLOR_SetRGBA(9,0,57,0)				// Couleur du Fog
+color				c_fog_moon_beg_mid2 = COLOR_SetRGBA(7,0,48,0)			// Couleur du Fog
+float				f_fog_near_moon_beg_mid = 175.0										// Fog near
+float				f_fog_far_moon_beg_mid = 750.0										// Fog far
+vector			v_wind_moon_beg_mid	= cvector(0.0,0.0,1.0)						// Direction du vent
+float				f_wind_moon_beg_mid = 2.0												// Force du vent
+float				f_rand_wind_moon_beg_mid = 1.0										// Random sur la force du vent
+
+
+separator "COULEURS MINUIT"
+color				c_nuages_moon_mid = COLOR_SetRGBA(0,0,0,0)				// Couleur des nuages (utilisez l'alpha pour définir leur transparence)
+color				c_aura_moon_mid = COLOR_SetRGBA(0,0,0,0)					// Couleur de l'aura du soleil
+color				c_amb_moon_mid = COLOR_SetRGBA(37,66,137,0)				// Ambient à minuit dans l'axe du sight
+color				c_amb2_moon_mid = COLOR_SetRGBA(37,66,137,0)			// Ambient2 à minuit dans l'axe du sight
+color				c_moon_mid = COLOR_SetRGBA(44,59,72,0)						// Couleur de la lune à minuit
+color				c_amb_ciel_moon_mid = COLOR_SetRGBA(0,0,0,255)			// Couleur du ciel à minuit (utiliser l'alpha pour la transparence du ciel)
+color				c_base_ciel_moon_mid							// Couleur base du ciel
+color				c_fog_moon_mid = COLOR_SetRGBA(8,0,51,0)					// Couleur du Fog
+color				c_fog_moon_mid2 = COLOR_SetRGBA(8,0,51,0)					// Couleur du Fog
+float				f_fog_near_moon_mid = 175.0											// Fog near
+float				f_fog_far_moon_mid = 750.0												// Fog far
+vector			v_wind_moon_mid = cvector(1.0,1.0,1.0)								// Direction du vent
+float				f_wind_moon_mid = 2.0													// Force du vent
+float				f_rand_wind_moon_mid = 0.5												// Random sur la force du vent
+
+
+separator "COULEURS 3H DU MATIN"
+color				c_nuages_moon_mid_end = COLOR_SetRGBA(0,0,0,0)				// Couleur des nuages (utilisez l'alpha pour définir leur transparence)
+color				c_aura_moon_mid_end = COLOR_SetRGBA(0,0,0,0)					// Couleur de l'aura du soleil
+color				c_amb_moon_mid_end = COLOR_SetRGBA(37,66,137,0)			// Ambient en fin de nuit dans l'axe du sight
+color				c_amb2_moon_mid_end = COLOR_SetRGBA(37,66,137,0)		// Ambient2 en fin de nuit dans l'axe du sight
+color				c_moon_mid_end = COLOR_SetRGBA(36,49,80,0)					// Couleur de la lune en fin de nuit
+color				c_amb_ciel_moon_mid_end = COLOR_SetRGBA(41,41,30,181)	// Couleur du ciel à 3H (utiliser l'alpha pour la transparence du ciel)
+color				c_base_ciel_moon_mid_end							// Couleur base du ciel
+color				c_fog_moon_mid_end = COLOR_SetRGBA(76,76,56,181)			// Couleur du Fog
+color				c_fog_moon_mid_end2 = COLOR_SetRGBA(41,41,30,181)			// Couleur du Fog
+float				f_fog_near_moon_mid_end = 175.0											// Fog near
+float				f_fog_far_moon_mid_end = 750.0											// Fog far
+vector			v_wind_moon_mid_end = cvector(1.0,0.0,1.0)							// Direction du vent
+float				f_wind_moon_mid_end = 2.0													// Force du vent
+float				f_rand_wind_moon_mid_end = 0.0											// Random sur la force du vent
+
+// GFX
+private int		i_GFX_Nuages = -1
+private int		i_alpha_nuages

@@ -1,0 +1,207 @@
+#include "KAnn_defines.var"
+
+// Define at least one function in a track
+function track0 = "KAnn_TRACK_init"
+// function track1 = "name"
+// function track2 = "name"
+// function track3 = "name"
+// function track4 = "name"
+
+// SANTE
+separator "SANTE"
+int								i_life_init = enum("En forme" 1 "Blessee" 0)
+private 	int					i_life_state
+private	float				f_time_mort = 0.0
+
+// DEBUG
+separator "DEBUG"
+int			i_DBG_display_KONG_link = vrai_faux
+int			i_DBG_display_interaction = vrai_faux
+int			i_DBG_display_death_timer = vrai_faux
+int			i_DBG_display_death_music = vrai_faux
+int			i_DBG_display_LD_CAPA = vrai_faux
+
+// AU SOL
+private	int					i_au_sol_mode
+private	int					i_au_sol_flag
+private 	int					i_au_sol_move_coll_flag		// flag qui indique que ANN a collisionné un mur en se déplaçant au sol
+private 	object 			o_safe_wp
+private 	int					i_ground_ID
+private	float				f_time_se_soigne
+private	network			n_net							// active net followed by Ann
+private	float				f_action_timer
+private	int					i_CINE_force_new_safe_WP
+private 	int					i_fear = 0
+private 	vector			v_old_pos
+
+// FIGHT
+private 	object 			o_fight_actor
+private 	float				f_fight_actor_maj
+private 	int 				i_has_weapon = 0
+
+// INIT
+private 	float				f_interet = 120.0
+private	int					i_id_humain = 2	// C_ID_Ann
+
+// SERVEURS
+private	messageid		amid_SRV_LIAISON_ID[Ci_LNK_TYPE_NB]
+private 	int					ai_SRV_ENABLE[Ci_LNK_TYPE_NB]
+private	object			ao_SRV[Ci_LNK_TYPE_NB]
+private 	function			afct_SRV[Ci_LNK_TYPE_NB]
+
+// KONG
+private	object			o_KONG
+private	object			o_JACK
+private	message		msg_KK_pose_ANN
+
+// CAMERA
+private 	int					i_cine_ANN_attack_played
+private 	float				f_time_Kamera
+
+// GRABBED
+private	object			o_grabbed_KK_actor
+private 	int					i_grabbed_KK_transition				// transitions quand KONG prend ANN
+private 	float				f_pos_blend_coef						// coef de blend pour le positionnement afterblend
+private	object			o_grabbed_raptor_actor
+private	object			o_grabbed_bat_actor
+private	vector			v_grabbed_old_pos
+private	int					i_grabbed_bat_afterblend_type
+
+// PAF
+private	object			o_paf_sender
+private 	int					i_paf_type
+private	vector			v_paf_dir
+private	float				f_paf_force 
+
+// PROJETE
+private	int					i_projete_mode
+
+// ETAT
+separator "ETAT"
+private 	int					i_etat_courant				= -1
+private 	int					i_dernier_etat				= -1
+private 	int					i_sort_etat
+private 	float				f_time_start_etat
+private 	function			fct_last_etat
+
+separator "TAG"
+#include "ROOT\EngineDatas\04 Technical Bank\AI Models\Global Library\exec_deplacements.var"
+
+// RAG DOLL
+separator "IK - RAG DOLL"
+private 	object			ao_bones[6]
+private 	float				af_bone_length[6]
+private 	vector			av_rd_pos[6]
+private 	vector			av_rd_speed[6]
+
+// IK LEGS
+//separator "IK - LEGS"
+private 	int					i_flag_climb_IK[4]
+private 	int					i_flag_walk_IK[2]
+private 	float				f_walk_offset[2]
+private 	float				f_IK_coef[4]
+private 	float				f_IK_speed[4]
+private 	float				f_IK_ground_coef[2]
+private 	vector			v_virtual_banking = Cv_VerticalVector
+private 	vector			v_IK_ground_normale[2]
+private 	vector			v_IK_dest_pos[4]
+private	vector			v_IK_local_offset[4]
+private	float				f_bassin_Z_offset
+
+// REGARD
+separator "REGARD"
+private 	object			o_suivi_regard_object
+private 	vector			v_suivi_regard_position
+private 	float				f_suivi_regard_coef
+private 	vector			v_cible_tete		// vecteur tête -> cible du regard
+private	int 				i_suivi_regard
+
+// IK REGARD
+separator "IK - REGARD"
+private	object			o_bassin 
+private 	object			ao_IK_bones[4][4]
+private 	float				af_IK_bones_length[4][2]
+private 	vector			v_IK_bone_local_pos[2]
+private 	vector			v_IK_bone_last_valid_sight[2]
+private 	vector			v_IK_bone_last_valid_banking[2]
+private	object			o_vision_target
+
+// ATTACK
+float f_head_dist
+float f_prev_head_dist
+
+separator "NET"
+private network 	n_current_net
+private object		o_old_safe_wp 
+private int			i_action 
+private int 			i_link_action_type = 0
+private int			i_old_link_action_type
+private int			i_at_end
+private float			f_total_dist
+private float			f_delta_z 
+private float 		f_dyn_timer
+private int			i_javelin_launched 
+private object		o_javelin_target
+private float			f_javelin_time_last_throw
+private float			f_javelin_time_last_throw_delay
+private int			i_wp_already_set = 0
+private int			i_wp_just_changed = 0
+
+
+// ACTION
+private int 		i_action_id
+private int 		i_sub_action_id
+private int 		i_action_pos_safe
+private int		i_back_to_safe_wp = 0
+private float		f_attack_timer
+private object	o_old_interaction_object
+private int 		i_in_cache
+private float		f_attack_reaction_delay
+private int		i_dodge_side
+private int 		i_action_dodge
+private int		i_freezeSight
+private vector	v_sight
+private object	o_target
+private object	ao_last_target[3]
+private float		ao_last_target_time[3]
+private int		i_canThrowJavAtTgt
+private object	o_projectile
+private int		i_action_completed
+private int		i_action_forced
+private int		i_interaction = 0
+private	float	f_projectile_blend_pos_coef
+
+// GRABBED TREX
+private	object	o_grabbed_TREX_actor
+
+// ZIK TIMER MORT
+private	int			i_snd_injure = -1
+private	int			i_snd_injure1 = -1
+private	float		f_blend_injure
+private	float		f_total_time = 0.0
+
+// INTERACTION ET SPEECH
+private	int			i_interaction_modulo
+private 	int			i_interaction_timer_speech_done
+private	float		f_interaction_fight_time_cpt
+private	int			i_interaction_fight_init_speech
+private	int			i_interaction_fight_1st_attack_speech
+private	int			i_interaction_fight_middle_timer_speech
+private	float		f_interaction_fight_change_actor_delay
+private	float		f_interaction_fight_spider_attack_delay
+private	int			i_interaction_fight_action_attack_modulo
+private	float		f_bigbat_grabbed_scream_delay
+private	object	o_tumatuer = nobody
+
+// SOUND
+private	float		f_run_breath_delay
+private	int			i_run_breath_enabled
+private	int			i_javelin_set_fire
+
+
+// VINC
+private	vector	v_joy_speed
+private	vector	v_joy_sight
+private	float		f_joy_move_norm
+private	float		f_joy_sight_cote
+private	float		f_joy_sight_blend 

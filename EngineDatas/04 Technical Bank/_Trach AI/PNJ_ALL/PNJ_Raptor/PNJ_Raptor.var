@@ -1,0 +1,730 @@
+ #include "PNJ_Raptor_defines.var"
+
+// Define at least one function in a track
+function track0 = "PNJ_Raptor_init"
+// function track1 = "name"
+// function track2 = "name"
+// function track3 = "name"
+// function track4 = "name"
+
+//object		ao_test[10]
+object o_test_gao[2]
+object o_test_gao1
+//object o_test_gao2
+
+// LIFE
+private float				f_life
+private float				f_lifecur
+
+separator "SOUND SETUP"
+int							YOAN = vrai_faux
+int							PLAY_THIS_ACTION = -1
+
+separator "DINO TYPE"
+int							raptor_type = enum("Raptor" 14 "Galiminus" 22 "Tyranosaure" 16) // C_ID_Raptor C_ID_Galiminus C_ID_Tyranosaure
+private int				raptor_category = enum("Standard" 0 "Light" 1 "Heavy" 2)
+int							raptor_network_initialisator = vrai_faux
+float						LD_galiminus_zoom
+int							mode_requin_allowed = faux_vrai
+float						override_life
+float						override_point_de_viande = -1.0
+int							difficulte_dynamique = vrai_faux
+trigger					trigger_DD
+int							always_jumping = vrai_faux
+
+//separator "E3"
+//float						E3_LIFE
+
+separator "SF"
+int								i_SF_NePasSeRejouerSiMort		= vrai_faux		// Flag qui indique si l'acteur gere ou pas un SF de mort
+private int					i_SF_AlreadyDead						= -1				// N° du SF (Alloué Dynamiquement)
+
+separator "TRIGGER"
+trigger					trigger_activation
+trigger					trigger_leave_hide_position 
+trigger					trigger_force_target
+trigger					trigger_leave_stalk_mode
+
+separator "ATTAQUE"
+int							Jack_Is_The_Best_Target = vrai_faux
+float						delay_between_grab = 60.0
+
+separator "RODE"
+float						delay_rode = 10.0
+
+separator "DEPLACEMENT"
+network					n_net
+
+separator "ODE"
+object					ode_bassin
+
+// RESEAU
+private int				i_net_wp_nb
+private object			ao_net_wp[100]
+private float				af_net_wp_dist[100]
+
+// TERRITOIRES
+private int				i_net_territory_ID_nb
+private int				ai_net_territory_ID[16]
+private int				ai_net_territory_first_wp_index[16]
+private int				ai_net_territory_wp_nb[16]
+private int				ai_territory_link[16]
+private int				ai_territory_link2[16]
+private int				ai_net_territory_ID_index[32]
+private int				i_net_territory_bit_field
+private int				i_net_territory_ID_bit_field
+
+private int				i_my_territory_ID			= -1
+private int				i_target_territory_ID		= -1
+private int				i_dest_pos_territory_ID	= -1
+private int				i_flag_in_my_territory
+
+private int				i_net_invalid_wp_nb
+
+// HIDING PLACES
+private int				i_net_hiding_place_nb
+private object			ao_net_hiding_place[10]
+
+separator "Deplacement"
+#include "ROOT\EngineDatas\04 Technical Bank\AI Models\Global Library\exec_deplacements.var"
+
+separator "Debug"
+int							DBG_Display_Vision = vrai_faux
+int							DBG_Display_Sound = vrai_faux
+int							DBG_Display_Pilotage = vrai_faux
+int							DBG_Display_Way = vrai_faux
+int							DBG_Display_Text = faux_vrai
+int							DBG_Display_Jump = vrai_faux
+int							DBG_Display_Territory = vrai_faux
+int							DBG_Hide_Invalid_Territory_Wp = vrai_faux
+int							DBG_Warning_Allowed = faux_vrai
+int							DBG_Log_Allowed = faux_vrai
+
+// DIVERS
+private object			o_main_actor
+private float				f_me_to_main_dist
+
+// ETAT
+private int				i_etat_courant				= -1
+private int				i_dernier_etat				= -1
+private int				i_sort_etat
+private int				i_flag_reinit_etat
+ 
+private float				f_time_start_etat
+private float				f_activation_duration
+
+private function		fct_main_etat
+private function		fct_last_etat
+
+// ANALYSE
+private int				i_flag_audio_check_done
+private int				i_flag_visual_check_done
+private int				i_flag_paf_check_done
+private int				i_flag_collision_check_done
+private int				i_flag_shoot_check_done
+private int				i_flag_budies_check_done
+private int				i_flag_vala_check_done
+private int				i_flag_check_best_interet_done
+
+private int				i_flag_select_action_done
+
+// JOYSTICK
+private float				f_joy_norm
+
+// PISTAGE
+private int				i_flag_head_search
+private int				i_flag_change_target
+private int				i_flag_change_target_while_jumping
+private int				i_flag_1st_detection
+private int				i_flag_force_seen_time_update
+private int				i_flag_en_chasse
+
+private float				f_time_change_target
+private float				f_time_last_best_interet_paf
+private float				f_head_search_hyteresis
+
+private messageid	mid_best_interet
+
+private int				i_perceived_main_actor_index
+private int				i_perceived_best_actor_index
+private int				i_perceived_bit_field
+
+private int				i_perceived_actor_nb
+private int				ai_perceived_seen[20]
+private int				ai_perceived_accessible[20]
+private int				ai_perceived_territory[20]
+private int				ai_perceived_status[20]
+private int				ai_perceived_hiding_place_index[20]
+private int				ai_perceived_ID[20]
+
+private float				af_perceived_dist[20]
+private float				af_perceived_interest[20]
+private float				af_perceived_life_ratio[20]
+
+private vector			av_perceived_position[20]
+
+private object			ao_perceived_actor[20]
+private object			ao_perceived_nearest_wp[20]
+
+separator "Test pilotage tete"
+object				o_test_pilotage_tete
+
+// SUIVI REGARD
+private int				i_flag_look
+private int				i_flag_look_best_interet
+private int				i_flag_perfect_look
+
+private float				f_look_blend_coef
+private float				f_look_angle_blend_speed = 8.0
+private float				f_look_head_coef
+private float				f_look_axis_length
+private float				f_look_force_duration
+private float				f_look_in_dead_cone_sign
+
+private vector			v_look_pos
+private vector			v_last_look_pos
+private vector			v_look_pivot_pos
+private vector			v_look_axis
+private vector			v_look_head_pos
+private vector			v_look_last_head_pos
+private vector			v_look_banking
+private vector			v_look_virtual_sight
+private vector			v_look_force_pos
+
+private int				i_head_bone_nb
+private object			ao_head_bones[6]
+private object			o_ventre
+private object			o_force_look_actor
+
+// BEZIER NECK
+private vector		v_bezier_head_look_pos
+
+private float			f_neck_vert_coef
+private float			f_neck_col_duration
+private float			f_neck_B_weight
+private float			f_neck_C_weight
+private float			f_neck_bezier_coef					= 1.0
+private float			af_neck_bone_bezier_coef[5]		= (1.0, 0.8, 0.6, 0.4, 0.2)
+private float			f_neck_length
+private float			af_neck_bone_length[4]
+
+private float			f_head_Z_min
+private float			f_head_col_ray_Z_speed			= 1.0
+private float			f_head_col_ray_Z_offset
+private float			f_time_head_col
+private vector		v_neck_head_anti_col_pos
+private vector		v_neck_col_normale
+private vector		v_neck_col_pos
+
+// DEPLACEMENT
+private int				i_flag_dijkstra_way
+private int				i_way_status
+private int				i_way_last_status
+private int				i_way_occluder_status
+private int				i_flag_run
+private int				i_flag_blesse
+private int				i_flag_run_after_paf
+private int				i_way_computation_mode			= -1
+private int				i_way_computation_old_mode	= -1
+private int				i_flag_dont_use_grid
+private int				i_flag_occluder_alllowed
+private int				i_occluder_territory
+private int				i_way_wp_nb
+private int				i_flag_find_safe_pos
+private int				i_grid_width
+private int				i_flag_rode_come_back
+private int				i_flag_in_my_net_cine_wp
+private int				i_cine_vala_dest_territory
+private int				i_flag_cine_vala_orient
+
+private float				f_wait_delay
+private float				f_course_duration
+private float				f_trot_duration
+private float				f_requin_mode_duration
+private float				f_force_requin_mode_duration
+private float				f_requin_mode_extended_duration
+private float				f_force_run_duration
+private float				f_force_slow_duration
+private float				af_way_ponderation[16] = (1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
+private float				af_way_dyn_ponderation[4] = (1.0, 0.0, 1.0, 0.0)
+private float				f_way_sqr_next_case_dist
+private float				f_way_bezier_sight_weight = 1.0
+private float				f_grid_use_duration
+private float				f_current_wp_speed
+
+private vector			v_init_pos
+private vector			v_way_position_to_reach
+private vector			v_way_last_destpos
+private vector			v_way_last_case_dest
+private vector			v_way_last_out_grid_pos
+private vector			v_way_last_invalid_research_pos
+private vector			v_way_last_before_dyn_pos
+
+private object			ao_way_wp[30]
+private object			o_current_wp
+private object			o_next_wp
+private object			o_next_next_wp
+private object			o_path_start_wp
+private object			o_path_dest_wp
+private object			o_fuite_wp
+private object			o_balade_1st_wp
+private object			o_last_skiped_wp
+private object			o_cine_vala_wp
+
+// PAF
+private int				i_flag_paf_repousse
+private int				i_flag_paf_visual
+private int				i_flag_paf_slide
+private int				i_flag_paf_fall
+private int				i_flag_paf_bronto
+private int				i_flag_paf_fly
+private int				i_paf_type
+private int				i_paf_canal
+private int				i_flag_paf_can_reduce_speed
+private int				i_flag_grab_hit_cpt
+
+private float				f_paf_puissance
+private float				f_paf_jauge
+private float				f_devore_paf_jauge
+private float				f_paf_jauge_requin
+private float				f_time_last_shot_paf
+private float				f_time_last_repousse
+
+private object			o_paf_actor
+
+private vector			v_paf_dir
+private vector			v_paf_speed
+
+private float				f_visual_paf_time
+private vector			v_visual_paf_dir
+
+private int				i_flag_del_paf_sender
+private int				i_paf_sender_nb
+private object			ao_paf_sender[20]
+private float				af_paf_sender_dommage[20]
+
+// FIGHT
+private int				i_flag_bite
+private int				i_flag_zde_fight_enable
+private int				i_flag_bite_ok
+private int				i_flag_bite_no_wall
+private int				i_flag_reachable_test_done
+private int				i_flag_last_chance_grab
+
+// GRAB
+private int				i_flag_bite_leg
+private float				f_head_bite_angle
+private float				f_grab_phase_duration
+private float				f_grab_on_ground_duration
+private float				f_grab_main_hysteresis
+private object			o_grab_actor
+private messageid	mid_grab_actor_LNK_ID
+private int				i_grab_disable
+
+ // CONTACT
+private int				i_flag_head_contact
+ 
+// LANCE
+private int				i_flag_projection_done
+private float				f_projection_side
+private vector			v_projection_pos
+
+// GROUND COL
+private float			f_ground_col_time
+private vector		v_ground_normal = Cv_VerticalVector
+
+// IK LEGS
+private float			f_bassin_rotation_angle
+private float			f_bassin_Z_offset
+
+private int			i_flag_leg_IK[2]
+
+private float			f_IK_Z_offset[2]
+private float			f_IK_coef[2]
+private float			f_IK_snap_coef[2]
+private float			f_IK_speed[2]
+private float			f_IK_tenseur[2]
+private float			af_IK_bones_length[2][3]
+private float			f_IK_leg_length[2]
+private float			f_IK_ground_coef[2]
+
+private float			f_IK_bassin_look_rot_coef
+
+private float			f_IK_bassin_ground_rot_coef
+
+private float			f_IK_bassin_eat_rot_coef
+private vector		v_IK_bassin_eat_pos
+
+private float			f_IK_bassin_bite_rot_coef
+private vector		v_IK_bassin_bite_pos
+private vector		v_IK_bassin_bite_start_quat
+private object		o_IK_bassin_bite_actor
+
+private vector		v_IK_ref_ground_pos
+private vector		v_virtual_banking = Cv_VerticalVector
+
+private vector		v_IK_dest_pos[2]
+private vector		v_IK_local_offset[2]
+private vector		v_IK_bone_last_valid_sight[2]
+private vector		v_IK_bone_last_valid_banking[2]
+private vector		v_IK_ground_pos[2]
+private vector		v_IK_ground_normale[2]
+private vector		v_IK_feet_Z_axis[2]
+
+private vector		v_IK_bassin_banking
+private vector		v_IK_bassin_pos
+
+private object		ao_IK_bones[2][4]
+
+// GFX FEET SMOKE
+//private float			f_force_GFX_Feet_Smoke_duration
+//private float			f_feet_contact_duration[4]
+//private int			GFX_Feet_Smoke[2] = (-1, -1)
+private vector		av_feet_last_pos[2]
+
+//// GFX BLOOD
+//private int			GFX_Blood[10] = (-1, -1, -1, -1, -1, -1, -1, -1, -1, -1)
+//private int			ai_blood_bone_index[10]
+//private float			af_blood_delay[10]
+//private vector		av_blood_bone_offset[10]
+//private vector		av_blood_bone_normale[10]
+
+// ACTIVATION
+private int			i_flag_activation
+
+// TEST
+separator "Test"
+private int				i_flag_test_look = vrai
+
+// ACTION
+private int				i_flag_dont_change_action
+private float				f_use_current_wp_action_duration
+private int				i_flag_recul
+private int				i_flag_force_cri_haut
+
+
+// FUITE
+private int				i_flag_force_fuite
+private int				i_flag_outside_territory
+private int				i_flag_display_i_am_back
+
+private float				f_fuite_jauge
+
+// TEST INERTIE
+private vector			v_dyn_speed
+private vector			v_last_dyn_speed
+
+// ACTIONS
+private int				i_flag_cri
+private int				i_flag_roar
+private float				f_delay_before_next_shout_mix			= 1.0
+
+// ANIM MIX
+private int			ai_bones[40]
+private int			i_bone_nb
+
+// ON SCREEN ?
+private float			f_on_screen_pourcent
+private float			f_on_screen_duration
+
+// BODY ROT SPEED
+private float			f_body_rot_speed
+
+// OBBOX
+private float			f_obbox_size_coef = -1.0
+
+// BUDY
+private int					i_budy_nb
+private object				ao_budy[20]
+
+// CADAVRE
+private float					f_delay_between_eat
+private object				o_charogne
+private object				o_charogne_bone
+
+// FORCE TARGET
+private int					i_flag_ignore_force_target
+private messageid		mid_force_target
+
+// VALA
+private messageid		mid_vala
+
+// VISION PARAM
+private float					f_vision_close_to_head_sqr_dist
+private float					f_vision_close_to_feet_sqr_dist
+private float					f_vision_near_in_move_dist
+
+// STALK
+private int					i_flag_stalk
+
+// ANIM SPEEDS
+private int					i_normal_action_first_index
+private int					i_normal_action_last_index
+private int					i_blesse_action_first_index
+private int					i_blesse_action_last_index
+private int					i_renifle_action_first_index
+private int					i_renifle_action_last_index
+private int					ai_action_index[10]
+private float					af_action_speed[10]
+
+private float					f_wanted_speed
+private float					f_wanted_speed_modifier
+private float					f_wanted_boost_duration
+private float					f_wanted_boost_delay
+
+// POINT DE VIANDE
+private float					f_point_de_viande
+
+// BODY SPEED ROTATION
+private float					f_body_rot_coef
+//private vector				v_last_pos
+//private vector				v_last_speed
+//
+//private vector				v_grav_last_pos
+//private vector				v_grav_last_speed
+
+// FORCE SLIDE
+private float					f_force_slide_duration
+private float					f_slide_duration
+private vector				v_slide_dir
+
+// SOUND
+private float					f_SNF_last_paf_time
+private float					f_SNF_between_paf_duration
+private float					f_SND_between_growl_duration
+private float					f_SND_between_scream_duration
+
+private int					i_SND_flag_play_bodyfall
+private int					i_SND_flag_play_agonie
+//private int					i_SND_flag_leaving_requin_mode
+private int					i_SND_flag_attaque_hors_champs
+private int					i_SND_flag_1st_attack
+//private int					i_SND_flag_fade_group_2
+private int					i_SND_flag_play_growl
+
+private int					i_SND_instance_burn					= -1
+private int					i_SND_instance_move					= -1
+private int					i_SND_instance_devore				= -1
+private int					i_SND_instance_breath				= -1
+private int					i_SND_instance_attack				= -1
+private int					i_SND_instance_grab					= -1
+
+private int					i_SND_roar_index						= -1
+
+
+// DESTRUCTION CACHE
+private int					i_flag_hiding_place_hit_enable
+private int					i_attaque_phase
+private int					i_hiding_place_index
+
+private float					f_attaque_wait_duration
+
+private object				o_cache_best_wp
+
+// MEMOIRES
+private int					i_memorised_wp_nb
+private object				ao_memorised_wp[50]
+//private int					i_memorised_body_nb
+//private object				ao_memorised_body[50]
+
+// SNAP
+private int					i_flag_snap_pos
+private vector				v_snap_pos
+
+// JUMP
+private int					i_jump_reception_action
+private int					i_flag_force_jump_cycl
+
+private float					f_jump_friction
+private float					f_jump_duration
+private float					f_jump_total_duration
+private float					f_jump_freq_coef
+private float					f_jump_reception_link_coef
+private float					f_jump_reception_link_length
+private float					f_jump_reception_speed
+private float					f_jump_impulsion_speed
+
+private vector				v_jump_friction
+private vector				v_jump_gravity
+
+private vector				v_jump_start_pos
+private vector				v_jump_dest_pos
+
+private vector				v_jump_bassin_reception_pos
+private vector				v_jump_bassin_reception_speed
+private vector				v_jump_bassin_reception_weight
+private vector				v_jump_reception_sight
+private vector				v_jump_reception_banking
+
+private vector				v_jump_bassin_impulsion_pos
+private vector				v_jump_bassin_impulsion_speed
+private vector				v_jump_bassin_impulsion_weight
+private vector				v_jump_impulsion_sight
+private vector				v_jump_impulsion_banking
+
+private vector				av_IK_bassin_reception_offset[3]
+private vector				av_IK_bassin_saut_offset[3]
+
+//private int					i_jump_link_nb
+//private object				ao_jump_link[100][2]
+
+private object				o_occluder_jump
+private object				o_occluder_jump_wp
+
+private network			n_occluder_jump_net
+
+// DEVORE
+private float					f_devore_near_actor_duration
+
+// TELEPORTATATION
+private int					i_flag_teleport
+
+// ULTRA TAG
+private int					i_ultra_tag_nb
+private object				ao_ultra_tag[20]
+
+// ALIEN MOVE
+private int					i_flag_alien_move
+
+// TEST QUATERNION
+private int					i_quat_index
+
+private float					f_quat_last_time
+private float					af_quat_time[10] = (-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0)
+private float					af_quat_coef[10] 
+
+private vector				av_quat_start[10]
+private vector				av_quat_end[10]
+
+// INDEX FILE
+private int					i_file_start_index
+private int					i_file_end_index
+private int					i_file_size
+private int					ai_file[100]
+
+// GAO FILE
+private int					i_gao_file_start_index
+private int					i_gao_file_end_index
+private int					i_gao_file_size
+private object				ao_gao_file[100]
+
+// SAUT
+private int					i_flag_saut
+
+//// UNCOLLIDE LIST
+//private int					i_uncollide_gao_nb
+//private float					af_uncollide_duration[20]
+//private object				ao_uncollide_gao[20]
+
+//private int					ai_way_wp_flag[100]
+//private int					ai_way_wp_father_index[100]
+//private float					ai_way_wp_dist[100]
+
+// DESYNCHRO
+private float					f_anim_speed_coef
+private float					f_delay_before_shout
+
+// GRID LINE TEST
+private int					ai_grid_line_flag[5]
+private vector				av_grid_line_start_pos[5]
+private vector				av_grid_line_dest_pos[5]
+
+// COLLISIONS MOLLES
+private int					i_flag_soft_collision
+private float					f_soft_collision_duration
+
+// CINE
+private int				i_flag_ennemi_fake
+private int				i_cine_close
+private message		am_CineStack[30]
+private int				i_CineStack
+private int				i_CineStackChanged
+private message		m_CineWaitDefault
+private int				i_CineWaitDefault
+
+// TREX BITE QUATERNION
+private int				ai_bite_action_num[4]
+private vector			av_bassin_bite_quat[4]
+private vector			av_gao_bite_quat[4]
+
+// NEAR SHOT
+private float				f_time_near_shot
+
+// RODE
+private float				f_rode_duration
+private float				f_rode_duration_limit
+
+// JACKATTACK
+private float				f_time_last_jackattack
+
+// CAMERA
+private object			o_camera
+
+// ACTIVATION
+private int				i_frame_nb
+
+// COLLISION
+private float				f_max_step
+
+// ETAT MORD
+private int				i_mord_action_index
+
+// ATTACK FAKE
+private int				i_fake_attack_counter
+//private int 				i_flag_fake_attack
+
+// ZOOM SMOOTH
+private int				i_flag_zoom_smooth
+private float				f_zoom_smooth_coef
+
+// GRABED
+private object				o_predateur
+private messageid		mid_predateur_LNK
+
+// FORCE REQUIN MODE EN SORTIE PAF SLIDE
+private int					i_flag_force_requin_mode
+
+// OCCLUDER
+private object				o_destructible_occluder
+private object				o_destructible_occluder_ode
+
+// COODBOOL
+private float					f_time_recul
+
+// GFX BAVE
+private int					GFX_Bave_ID[10] // = (-1, -1, -1, -1, -1, -1, -1, -1, -1, -1)
+private float					GFX_Bave_Time[10]
+private vector				GFX_Bave_Pos[10]
+private float					GXF_ave_Length[10]
+
+// REX CHASE TARGET
+private int					i_flag_chase_target
+private float					f_chase_dist_min
+private float					f_chase_dist_max
+private float					f_chase_last_dist
+
+// BITE ANIM IA
+private float					f_machoire_rot_coef
+private float					f_machoire_clap_duration
+
+// RADEAU
+private vector				v_target_last_pos
+
+// DEBUG TRUC MEGA ZARBE
+private int					i_finished_action_trame_nb
+private int					i_finished_action
+
+// DYNAMIQUE
+private float					f_friction
+
+// ABORT ATTACK
+private float					f_force_dont_move_duration
+
+// HYSTERESIS TAS JAVELOT
+private float					f_time_last_javelin_paf
+
+// BURN
+private float					f_burning_duration
+
+// BLOOD
+private int					i_flag_can_gen_blood

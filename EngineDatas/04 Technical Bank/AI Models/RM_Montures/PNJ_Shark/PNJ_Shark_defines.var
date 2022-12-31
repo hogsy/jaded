@@ -1,0 +1,42 @@
+// ETAT
+#define ETAT_Basic												00
+#define ETAT_Grabbed											01
+
+// TRACK
+#define Ci_Track_Reflex										00
+#define Ci_Track_Etat											01
+
+#define macro_change_etat(etat)																				\
+{																															\
+	if (AI_TrackCurGetNum() == Ci_Track_Etat)																\
+		AI_TrackCurChangeNow(etat)																				\
+	else																													\
+		AI_TrackChange(Ci_Track_Etat, etat)																	\
+	return																													\
+}
+
+
+
+// SNAKE
+#define Ci_snake_first_bone							0
+
+// VIRTUAL NET
+#define Ci_virtual_wp_nb										20
+
+// VIRTUAL NET FLAG
+#define Ci_virtual_net_ground_col					0x00000001
+#define Ci_virtual_net_wall_col						0x00000002
+#define Ci_virtual_net_water_col						0x00000004
+
+// Creatures
+#define Ci_CreatureType_Requin					0
+#define Ci_CreatureType_PoissonLumiere		1
+
+// SOUND
+#define Ci_SND_Water_Out							4
+#define Ci_SND_Water_In								5
+
+#define Ci_SND_Move_Loop1						10
+#define Ci_SND_Move_Loop2_L					11
+#define Ci_SND_Move_Loop2_R					12
+#define Ci_SND_Move_Loop3						13

@@ -1,0 +1,527 @@
+// CAPA
+#define	CAPA_Mort						OBJ_Capa_15
+
+#define	Ci_spawned_max_nb	10
+
+
+#define		Ci_test_attack_bite_only				1
+#define		Ci_test_attack_bite_and_jump		2
+
+#define		Ci_ride_try_ask							1
+#define		Ci_ride_try_failed							2
+
+
+// BODY SIZE
+#define	Ci_BODYSIZE_NormalRaptor			0
+#define	Ci_BODYSIZE_SmallGaliminus		1
+
+// SOUND
+#define	Ci_SND_SeeSomething	1
+#define	Ci_SND_Paf_Die				2		// paf qui tue
+#define	Ci_SND_Paf_Small			3		// petit / moyen paf
+#define	Ci_SND_Paf					4		// gros paf
+#define	Ci_SND_Roar					5		// before an attack
+//#define	Ci_SND_Attack				6		// 
+#define	Ci_SND_Bite					7		// mord
+#define	Ci_SND_Injured				9		// paffé au sol, agonisant
+#define	Ci_SND_Respiration			11
+#define	Ci_SND_ChocMur			13		// se prend un mur ou un sol qd projeté
+#define	Ci_SND_Woosh				18		// projeté
+//#define	Ci_SND_Attack_ANN		19		// not used...
+#define	Ci_SND_Attack_KONG		20		// ok
+#define	Ci_SND_Paf_Projete		22
+
+// Defines DEBUG
+#define	Ci_DBG_DRAW_TMP						0b0000000000000001
+#define	Ci_DBG_DRAW_DEMITOUR				0b0000000000000010
+#define	Ci_DBG_DRAW_PILOTAGE				0b0000000000000100
+#define	Ci_DBG_DRAW_OCCLUDER			0b0000000000001000
+#define	Ci_DBG_DRAW_REQUIN					0b0000000000010000
+#define	Ci_DBG_DRAW_NETWORK				0b0000000000100000
+#define	Ci_DBG_DRAW_PAF						0b0000000001000000
+#define	Ci_DBG_DRAW_WALL_PRBLM		0b0000000010000000
+#define	Ci_DBG_DRAW_GRP_ATTACK			0b0000000100000000
+#define	Ci_DBG_DRAW_INTERACT_ANN		0b0000001000000000
+
+
+// define one to force paf tests
+//#define	Ci_DBG_ALL_KONG_PAF_FAIBLE
+//#define	Ci_DBG_ALL_KONG_PAF_MOYEN
+//#define	Ci_DBG_ALL_KONG_PAF_FORT
+
+#define	Ci_nbr_of_blind_zone	3
+
+//#ifndef _MAGDBG_
+//#define	KRDBG_DRAWVECTOR( ti_type, tv_start, tv_offset, ti_color )
+//#define	KRDBG_DRAWSPHERE( ti_type, tv_pos, tf_rayon, ti_color )
+//#endif
+//
+//#ifdef _MAGDBG_
+#define	KRDBG_DRAWVECTOR( ti_type, tv_start, tv_offset, ti_color ) KR_DrawDbgVector( tv_start, tv_offset, ti_color, 1, 1)
+#define	KRDBG_DRAWSPHERE( ti_type, tv_pos, tf_rayon, ti_color ) KR_DrawDbgSphere( tv_pos, tf_rayon, ti_color, 1, 1 )
+//#endif
+
+
+//===================================================
+// Points de vie perdu
+#define	Ci_PAF_LIFEPOINTS_Fall	5.0
+#define	Ci_PAF_MOYEN_Recul		40.0		// force du recul lors des pafs moyens au sol
+#define	Ci_PAF_FAIBLE_Recul		20.0		// force du recul lors des pafs faibles au sol
+#define	Ci_PAF_FORT_TravelDist		15.0
+
+
+//===================================================
+// Table de valeurs calculees une seule fois par trame (see PRECOMPUTED section)
+#define	Ci_PCOMP_KONG		0
+#define	Ci_PCOMP_ANN			1
+#define	Ci_PCOMP_NB			2
+
+//
+// TABLEAU RECAPITULATIF DES IDS DES MESSAGES ENVOYES =============================
+//
+// 	msg_id_KK_send_projectile
+//
+
+// Mode de projectile
+#define	Ci_projectile_lache								1
+#define	Ci_projectile_lance_unknown					2
+#define	Ci_projectile_lance_target						3
+#define	Ci_projectile_lance_aveugle					4
+#define	Ci_projectile_paffe_target						5
+#define	Ci_projectile_paffe_aveugle					6
+
+#define	Cf_dist_aide_tir_min								10
+#define	Cf_dist_aide_tir_max							50
+
+// Deplacement / Résolution locale
+#define	Ci_max_wall										20
+
+// ACITON A L INIT
+#define	Ci_action_init_Force_Jump					1
+#define	Ci_action_init_Spawn_Finish					2
+
+// FIGHT
+#define	Ci_fight_init											-1
+#define	Ci_fight_ANN_wait								1
+#define	Ci_fight_ANN_deplacement					2
+#define	Ci_fight_ANN_intimidation						3
+#define	Ci_fight_KONG_wait								4
+#define	Ci_fight_KONG_preparation_attaque		7
+#define	Ci_fight_KONG_saut_cycle					8
+#define	Ci_fight_KONG_saut_reception				9
+#define	Ci_fight_KONG_move							10
+#define	Ci_fight_KONG_orient_avant_attaque		11		// orient before back jump or front bite attack
+#define	Ci_fight_KONG_bite								12		// biting kong
+
+#define	Ci_RAPTORS_FOR_FINISH_ATTACK		2			// nb of raptors to launch a finish attack
+
+#define	Ci_MAX_RAPTORS_FIGHTING_ANN		1			// the others aim for Kong
+
+#define	Ci_FinishAttack_OFF							0			// not in finish attack
+#define	Ci_FinishAttack_WaitForAllRiders			1			// waiting for other riders to arrive (land)
+#define	Ci_FinishAttack_AbortWindow				2			// waiting for kong to grab one of us and abort finish
+#define	Ci_FinishAttack_WaitForLink					3			// waiting for the finish link to be ok with kong
+#define	Ci_FinishAttack_Finishing						4			// waiting for other riders to arrive (land)
+#define	Ci_FinishAttack_Aborting						5			// aborting the finish : jump off or something
+
+
+#define	Ci_PAF_POINTS_RIDE_EXIT					10.0
+#define	Ci_PAF_POINTS_FRONT_BITE				10.0
+#define	Cf_ATTENTE_REGARD_FOURBE			0.4		// before jumping on it's prey wait this much with a look to kill
+
+
+// INTERET
+#define	Cf_interet_duree									5.0
+
+// Where is Ann ?
+#define	Ci_AnnLocation_OnGround					0
+#define	Ci_AnnLocation_KongShoulder				1
+#define	Ci_AnnLocation_KongHand					2
+
+// How available is Ann ?
+#define	Ci_AnnAvailability_NotAvailable			0
+#define	Ci_AnnAvailability_CanBeFollowed		1
+#define	Ci_AnnAvailability_CanBeAttacked		2
+
+
+// DiSTANCES DE FIGHT
+#define	Cf_dist_grab_ANN								16.0		// ^2
+#define	Cf_dist_fight_ANN								10000.0 //625.0	// ^2
+#define	Cf_dist_fight_KONG								10000.0 //2500.0	// ^2
+#define	Cf_FA_DstKongOffsetToFavorAnnSqr		100.0	// ^2
+#define	Cf_FrontBiteAttackMaxDistFactor			0.98	// if raptor is within this*KK_f_dist_saute_loin_sqr a front bite attack is available
+
+// RIDE CONSTANTES
+//#define	Ci_ride_grab_ann							1		// (init) va grabber ann
+//#define	Ci_ride_grab_sur_kong_init_jump	2		// calcul de la destination du saut (après avoir grabbé et jeté ann)
+#define	Ci_ride_paf_kong							3		// (init) va paffer kong
+//#define	Ci_ride_paf_kong_done					4		// calcul de la destination du saut (après avoir paffé kong)
+//#define	Ci_ride_orientation_jump				5		// orientation avant le saut
+//#define	Ci_ride_grab_sur_kong_done			6		// orientation vers destination du saut ok, début de la séquence de saut
+#define	Ci_ride_grab_impulsion					7		// impulsion pour sauter
+#define	Ci_ride_grab_descend					8		// saut en cours
+#define	Ci_ride_grab_au_sol						9		// saut terminé
+#define	Ci_ride_wait_for_finish					10		// a été spawné et attend le finish
+#define	Ci_ride_finish_on_KONG				11		// est passé en finish sur kong
+
+// Distances pour le saut exit ride
+#define	Cf_ride_jump_dist_devant_default	4.0
+#define	Cf_ride_jump_dist_cote_default		8.0
+
+// Distances pour le lancer de ANN (raptor au sol)
+#define	Cf_ground_lance_dist_devant_default	6.0
+#define	Cf_ground_lance_dist_cote_default		8.0
+
+// Distance de lancé (sans cible) du raptor
+#define	Cf_DST_LANCE_AVEUGLE				20.0
+
+// TRACK
+#define Ci_Track_TagOff								00
+#define Ci_Track_Reflex								01
+#define Ci_Track_Etat									02
+#define Ci_Track_TagOn								03
+#define Ci_Track_Debug								04
+
+// ETATS
+#define ETAT_attente									0
+#define ETAT_fight										3
+#define ETAT_paf											11
+#define ETAT_mord										12
+#define ETAT_grab										13
+#define ETAT_lance										14
+#define ETAT_KK_grabbed							21
+#define ETAT_KK_ride									22
+#define ETAT_KK_intimide							23
+#define ETAT_KK_fuit									24
+#define ETAT_projectile									25
+#define ETAT_mort										26
+#define ETAT_fight_ANN								27
+#define ETAT_fight_KONG								28
+#define ETAT_track_change							29
+#define ETAT_chute										30
+#define ETAT_WaitActivation							31
+#define ETAT_FinishAttack							32
+#define ETAT_moving									33
+#define ETAT_FollowNetwork							34
+#define ETAT_Desintegrate							35
+#define ETAT_interact_ANN							36
+#define ETAT_Finish_on_KONG						37
+#define ETAT_Retour									38
+
+// DYNA
+#define Cv_Raptor_Gravity								cvector( 0.0, 0.0, -40.0)
+#define Cv_Raptor_friction								cvector(4.0, 4.0, 0.0)
+#define Cf_Raptor_friction_chute						2.0
+#define Cv_Raptor_friction_chute					cvector(Cf_Raptor_friction_chute, Cf_Raptor_friction_chute, 0.0)
+#define Cf_Raptor_jump_friction						2.0
+#define Cv_Raptor_jump_friction						cvector(Cf_Raptor_jump_friction, Cf_Raptor_jump_friction, 0.0)
+#define Cv_Raptor_friction_ride						Cv_NullVector
+#define Cf_Raptor_jump_heightOverLength		0.35
+
+// DUREES
+#define Cf_duree_fuite_observe						9.0		// Nb de secondes ou le raptor raptor observe après avoir atteint un wp de fuite
+#define Cf_delai_check_fury							0.25		// Fréquence de vérification de l'intimidation
+#define Cf_delai_ride									5.0		// Délai entre 2 rides
+#define Cf_delai_finishAbort							5.0		// quand tout les raptors en place, attente avant de passer en finish
+#define Cf_delai_fightAfterActive						2.0		// after a raptor is activated, wait this bit before attacking kong
+#define Cf_delai_avantDesintegration				5.0		// seconds dead before desintegration
+#define Cf_delai_fightKongApresPaf				10.0		// attack Kong after he's paffed me for x seconds then come back to previous target choice
+
+
+// COMBAT
+#define	Ci_fight_actor_Humain						0
+#define	Ci_fight_actor_KONG						1
+//#define	Ci_fight_actor_TREX							2
+
+#define	Ci_ATTACK_TYPE_BackJump			0
+#define	Ci_ATTACK_TYPE_FrontBite				1
+
+
+
+
+// DUREES
+#define	Cf_delay_check_proie_groupe				3.0
+#define	Cf_duree_check_ANN_KKGrab				1.0
+#define	Cf_delay_ride_attack							2.0//0.75
+#define	Cf_delay_check_proie_groupe_grabbed	1.0
+#define	Cf_delay_check_stimulis						3.0
+#define	Cf_delay_cri_ANN								5.0
+#define	Cf_delay_bite_ANN								15.0
+#define	Cf_delay_abortFinish							5.0			// if finish hasn't sarted after this time : abort
+
+#define	Cf_FLEE_TIME_AFTER_PAFFING			4.0			// how long de we flee ater paffing kong
+#define	Cf_FLEE_TIME_AFTER_BITE				4.0			// how long do we flee after biting kong
+#define	Cf_FLEE_TIME_AFTER_PAF				4.0			// how long do we flee after beeing paffed
+#define	Cf_FLEE_TIME_MODE_WAR				2.0
+#define	Cf_ATTACK_FREQUENCY					1.0//0.1			// time to wait in between attacks on kong
+	
+#define	Cf_ORBITTING_COUNTDOWN_MIN		2.0
+#define	Cf_ORBITTING_COUNTDOWN_MAX		4.0
+
+
+
+
+
+// JUMPING STATES
+#define	Ci_Jump_notJumping			0		// not currently jumping
+#define	Ci_Jump_bite						1		// land attack 
+#define	Ci_Jump_wait_bite_end			2
+#define	Ci_Jump_scream					3
+#define	Ci_Jump_landing					4		// landing on the ground
+#define	Ci_Jump_cycle					5		// flying in mid air
+#define	Ci_Jump_impulse_exit			6
+#define	Ci_Jump_withimpulse			7//6		// do an impulse before jumping
+#define	Ci_Jump_impulse_small		8//7		// preparing for small jump
+#define	Ci_Jump_noimpulse				9//8		// no impulse before jumping
+#define	Ci_Jump_impulse_big			10//9		// preparing for long jump
+
+// distance from wich we need a big impulse
+#define	Cf_Jump_DistForBigImpulse	20.0
+
+
+
+// MOVING STATES
+#define	Ci_MOVING_STATE_none				0		// will go back to waiting
+#define	Ci_MOVING_STATE_flee					1		// flees o_flee_actor (opposite direction)
+#define	Ci_MOVING_STATE_goto					2		// walk or runs towards the next slowly towards
+
+// MOVING SPEED (determines the animation to play)
+#define	Ci_MOVING_SPEED_slow				0		// walk
+#define	Ci_MOVING_SPEED_fast					1		// run
+#define	Ci_MOVING_SPEED_NB					2
+
+
+
+//====================
+// NETWORK
+#define	Ci_NETWORK_USE_Disabled		0
+#define	Ci_NETWORK_USE_AtStart			1
+#define	Ci_NETWORK_USE_Triggered		2
+#define Cs_NETWORK_USE_ENUM enum ("0-Disabled" 0 "1-Use at start" 1 "2-Use t_net_triggerNavigation" 2)
+
+// Action to do when a node is reached
+#define	Ci_NETWORK_NODE_ACT_Bypass				0	// just go through that node and on to the next
+#define	Ci_NETWORK_NODE_ACT_Wait					1	// wait on that node 
+#define	Ci_NETWORK_NODE_ACT_Eat					2	// eat at that node
+#define	Ci_NETWORK_NODE_ACT_Scream				3	// scream then wait
+#define	Ci_NETWORK_NODE_ACT_AttackKong			4	// leave network and start attacking  Kong
+#define	Ci_NETWORK_NODE_ACT_AttackAnn			5	// leave network and start attacking Ann
+#define	Ci_NETWORK_NODE_ACT_PlayAction			6	// plays action specified in design struct int1
+#define	Ci_NETWORK_NODE_ACT_Destroy				7	// raptor is detroyed 
+#define	Ci_NETWORK_NODE_ACT_NextNetwork		8	// start following another network 
+#define Cs_NETWORK_NODE_ACT_ENUM enum ( "0-Bypass" 0 "1-Wait" 1 "2-Eat" 2 "3-Scream" 3 "4-Attack Kong" 4 "5-Attack Ann" 5 "6-Play action" 6 "7-Destroy" 7 )
+
+// how to go to the next link
+#define	Ci_NETWORK_LINK_MOVE_DefaultOrLast		0
+#define	Ci_NETWORK_LINK_MOVE_Walk					1
+#define	Ci_NETWORK_LINK_MOVE_Run					2
+#define	Ci_NETWORK_LINK_MOVE_Trot					3
+#define	Ci_NETWORK_LINK_MOVE_Jump					4
+#define	Ci_NETWORK_LINK_MOVE_WallRun			5
+#define	Ci_NETWORK_LINK_MOVE_Teleport				6
+#define Cs_NETWORK_LINK_MOVE_ENUM enum ( "0-Default/last" 0 "1-Walk" 1 "2-Run" 2 "3-Trot" 3 "4-Jump" 4 "5-Wall walk" 5 "6-Teleport" 6 )
+
+// Look at setup
+#define	Ci_NETWORK_NODE_LOOK_DefaultOrLast	0	// if a look at was setup before, keep using it
+#define	Ci_NETWORK_NODE_LOOK_Ahead				1	// look straight ahead
+#define	Ci_NETWORK_NODE_LOOK_AtNode			2	// look at the upcoming node
+#define	Ci_NETWORK_NODE_LOOK_AtKong			3	// look at Kong
+#define	Ci_NETWORK_NODE_LOOK_AtAnn				4	// look at Ann
+#define	Ci_NETWORK_NODE_LOOK_AtGao				5	// look at specified gao in perso2
+
+// Special requirements on next node reached
+#define	Ci_NETWORK_NNR_REQ_NotUsed				0
+#define	Ci_NETWORK_NNR_REQ_ForceNeverReach	1
+#define	Ci_NETWORK_NNR_REQ_ForceReached		2
+
+// Operation from a received message
+#define	Ci_MSG_OP_UNDEF									0
+#define	Ci_MSG_OP_ATTACK_PERSO						1	// perso to attack in object1
+#define	Ci_MSG_OP_FOLLOW_NET							2	// network head in object1
+#define	Ci_MSG_OP_FOLLOW_CLOSEST_NET			3	// choose network head among all gao with the Ci_NETWORK_NODE_DesFlag_HeadNode bit
+
+// flags in Des Flags
+#define	Ci_NETWORK_NODE_DesFlag_HeadNode	0b00100000000000000000000000000000
+
+#define macro_change_etat(etat)																				\
+{																															\
+	if (AI_TrackCurGetNum() == Ci_Track_Etat)																\
+		AI_TrackCurChangeNow(etat)																				\
+	else																													\
+		AI_TrackChange(Ci_Track_Etat, etat)																	\
+	return																													\
+}
+
+// local IK defines ===============================
+
+#define Ci_IKRaptor_pied_gauche 								0
+#define Ci_IKRaptor_pied_droit 									1
+#define Ci_IKRaptor_main_gauche 								2
+#define Ci_IKRaptor_main_droite 								3
+#define Ci_IKRaptor_Cou											4
+#define Ci_IKRaptor_NbMax										5
+
+#define DBG_NB_UNCOLLIDEABLE						100
+
+// to easily change between walk/run/etc
+#define Ci_Action_FrontBiteWalk				Action_Fight_FrontBiteWalk
+
+#define Ci_Nb_tremble_bone		6
+
+
+// Custom Bits =================================
+#define Ci_CustomBit_IK_FootLeft				0b10000000
+#define Ci_CustomBit_IK_FootRight			0b01000000
+#define Ci_CustomBit_IK_HandLeft				0b00100000
+#define Ci_CustomBit_IK_HandRight			0b00010000
+#define Ci_CustomBit_IK_Neck					0b00001000
+
+
+//=================================
+// PAFS
+
+// offsets used with the following actions 
+// (Where the paf comes from, from raptor's point of view. Raptor will move opposite to that)
+#define Ci_Action_Paf_4Dir_Face							0
+#define Ci_Action_Paf_4Dir_Droite							1
+#define Ci_Action_Paf_4Dir_Gauche						2
+#define Ci_Action_Paf_4Dir_Dos								3
+
+
+
+
+// ACTIONS KANN ==============================
+#define	Action_Grabed_raptor_jambe						091
+
+// ACTIONS KRaptor =============================
+#define Action_Normal_Attente								000
+#define Action_Normal_Marche								001
+#define Action_Normal_Trot									002
+#define Action_Normal_Course								003
+#define Action_Cri												004
+#define Action_Recul_Intimide								005
+#define Action_Devore											006
+#define Action_RegardDos_Attente							007
+
+#define Action_KKHandGrabbedDeadStop				009
+#define Action_Renifle_Attente								010
+#define Action_Observe											011 
+#define Action_Observe_Fourbe								011				// à remplacer !!!!
+
+#define Action_KKHandGrabbedDead						012//014
+#define Action_KKHandGrabbed								013//014
+
+// Paf lorsque deja mort
+#define Action_Paf_Sol_sur_place							014//018
+
+
+// Petit Paf lorsqu'au sol -> reste au sol
+#define Ci_Action_Paf_PetitSol								015
+//#define Action_Paf_PetitSol_Face					015
+//#define Action_Paf_PetitSol_D							016
+//#define Action_Paf_PetitSol_G						017
+//#define Action_Paf_PetitSol_Dos						018
+#define Ci_Action_Paf_PetitSol_tr_att						019
+//#define Action_Paf_PetitSol_tr_att_Face			019
+//#define Action_Paf_PetitSol_tr_att_D				020
+//#define Action_Paf_PetitSol_tr_att_G				021
+//#define Action_Paf_PetitSol_tr_att_Dos				022
+
+#define	Action_Tombe_SeReleve						020
+
+// Paf lorsqu'au sol -> reste au sol
+#define Action_Paf_Sol											025
+//#define Action_Paf_Sol_Face								025
+#define Action_Paf_Sol_D									026
+#define Action_Paf_Sol_G									027
+//#define Action_Paf_Sol_Dos								028
+
+// Paf lorsqu'au sol -> revolle en l'air
+#define Action_Paf_Revol										030
+//#define Action_Paf_Revol_Face							030
+//#define Action_Paf_Revol_D									031
+//#define Action_Paf_Revol_G								032
+//#define Action_Paf_Revol_Dos								033
+
+// Airborn
+#define Action_Paf_Air_cycle									035//025
+#define Action_Paf_Reception								036//026
+
+#define Action_Paf_Reception_Releve						038//028
+
+// Se fait écraser
+#define Action_Paf_Ecrase									041
+#define Action_Paf_Ecrase_mort							042 
+
+// Splat contre un mur
+#define Action_Paf_mur										043
+#define Action_Paf_mur_chute								044
+
+// PAFS
+//=================================
+
+#define Action_Thrown_In_the_Air							046
+
+// Agonie et Mort
+#define Action_Mort												050	//040
+#define Action_Agonie											051
+#define Action_Agonie_Fin_Lente							052					// se releve lentement apres une agonie
+#define Action_Agonie_Fin_Lente_Tr_Attente			053
+#define Action_Agonie_Fin_Rapide							054					// se releve rapidement apres une agonie
+#define Action_Agonie_Fin_Rapide_Tr_Attente			055
+
+#define Action_Fight_FrontBiteWalk						058
+
+#define Action_Fight_Grosse_Impulsion					060				// à remplacer !!!!
+#define Action_Fight_Saut_deb								060
+#define Action_Fight_Saut_cycl								061
+#define Action_Fight_Saut_derape							062
+#define Action_Fight_Saut_fin_surplace					063
+#define Action_Fight_Saut_cycl_attack					064
+#define Action_Fight_Saut_Landing							065
+
+#define Action_Fight_MordRapide							066
+#define Action_Fight_Mord									067
+#define Action_Fight_Secoue									068
+#define Action_Ride_Attack									069
+#define Action_Ride_Attente									070
+#define Action_Ride_LandingOnKong						071
+#define Action_Ride_MordKong								072
+#define Action_Ride_Ejection									073
+
+#define Action_Jump_Impulse								074
+#define Action_Jump_Impulse_Moving						075
+
+// jump impulse transitions to cycle depending on angle of jump
+#define Action_Jump_Impulse_High_tr						078
+#define Action_Jump_Impulse_Med_tr						079
+#define Action_Jump_Impulse_Long_tr					080
+
+#define Action_Network_WallRun							082
+
+#define Action_InteractAnn_Attack							084
+#define Action_InteractAnn_GetHit							085
+
+
+#define	ACTION_Finish_on_KONG_01_deb						90
+#define	ACTION_Finish_on_KONG_01_challenge				91
+#define	ACTION_Finish_on_KONG_01_KK_a_gagne		92
+#define	ACTION_Finish_on_KONG_01_KK_a_perdu			93
+
+#define	ACTION_Finish_on_KONG_02_deb						95
+#define	ACTION_Finish_on_KONG_02_challenge				96
+#define	ACTION_Finish_on_KONG_02_KK_a_gagne		97
+#define	ACTION_Finish_on_KONG_02_KK_a_perdu			98
+
+
+#define	Raptor_Finish_on_KONG_Canal_Anim_01			Anim_Canal_MainDroite
+#define	Raptor_Finish_on_KONG_Canal_Anim_02			Anim_Canal_MainGauche
+#define	Raptor_Finish_on_KONG_Canal_Fake_01			Anim_Canal_Bassin
+#define	Raptor_Finish_on_KONG_Canal_Fake_02			Anim_Canal_Torse
+#define	Raptor_Finish_on_KONG_Canal_Fake_03			Anim_Canal_Cou
+
+#define	Finish_on_KONG_Role_Anim_01				1
+#define	Finish_on_KONG_Role_Anim_02				2
+#define	Finish_on_KONG_Role_Fake_01				3
+#define	Finish_on_KONG_Role_Fake_02				4
+#define	Finish_on_KONG_Role_Fake_03				5

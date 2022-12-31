@@ -1,0 +1,496 @@
+//-----------------------------------------------------------------------------------------------
+// STRING CONSTANT (désolé Roland de pourrir ton beau fichier de constantes)
+//-----------------------------------------------------------------------------------------------
+#define	STRINGAME_ENCART					0
+#define 	STRINGAME_DLG0						1
+#define 	STRINGAME_DLG1						2
+#define 	STRINGAME_VISEUR					3
+#define 	STRINGAME_LEVIER					4
+#define 	STRINGAME_WEAPON				5
+#define 	STRINGAME_LANCE					6	
+#define 	STRINGAME_MUNITION				7
+#define 	STRINGAME_SLASH					8
+#define 	STRINGAME_RESERVE				9
+#define  STRINGAME_WorkInProgress		10
+
+//-----------------------------------------------------------------------------------------------
+// HELPER TXT
+//-----------------------------------------------------------------------------------------------
+#define TXT_Cte_ReferenceSize									5
+#define Cte_DialogNb												2
+
+
+//-----------------------------------------------------------------------------------------------
+// SPEECH FLAGS
+//-----------------------------------------------------------------------------------------------
+#define SPEECH_Cte_FlagsTestTriggerWhenRetrying	0x00000001
+#define SPEECH_Cte_FlagsUseHumanId					0x00000002
+
+
+//-----------------------------------------------------------------------------------------------
+// SPEECH PRIORITY
+//-----------------------------------------------------------------------------------------------
+#define SPEECH_Cte_PrioUltraHight  		10
+#define SPEECH_Cte_PrioVeryHight 		20
+#define SPEECH_Cte_PrioHight  			30
+#define SPEECH_Cte_PrioNormal  		40
+#define SPEECH_Cte_PrioLow 			 	50
+#define SPEECH_Cte_PrioVeryLow 		60
+#define SPEECH_Cte_PrioUltraLow 		70
+
+#define SPEECH_tden_Priority	enum("normal"40 "ultra higth"10 "very higth"20 "hight"30 "low"50 "very low"60 "ultra low"70)
+
+
+//---------------------------------------------------------------------------------------------------------------------------------------------------
+// GENERIC CONFIG
+//---------------------------------------------------------------------------------------------------------------------------------------------------
+#define SPEECH_Cte_TimeOutDefault	0.1
+#define SPEECH_Cte_PriorityDefault		-1
+#define SPEECH_Cte_RandomSize		5
+
+
+
+//---------------------------------------------------------------------------------------------------------------------------------------------------
+//  RequestPost prototype + encapsulation
+//---------------------------------------------------------------------------------------------------------------------------------------------------
+//procedure messageid SPEECH_RequestPost
+//(
+//	object	argo_Sender, 
+//	object 	argo_Target, 
+//	int 		argi_TxgKey, 
+//	int 		argi_EntryKey, 
+//	float 		argf_TimeOut, 
+//	int 		argi_Priority, 
+//	int 		argi_RandomSize,
+//	int			argi_ListId,
+//	int			argi_ListIndex,
+//	int			argi_Flags
+//)
+//
+
+#define SPEECH_M_RqHuman(__perso_id, __text_id)	 SPEECH_RequestPost\
+	(\
+		OBJ_Me(), \
+		nobody, \
+		__perso_id,\
+		__text_id,\
+		SPEECH_Cte_TimeOutDefault,\
+		SPEECH_Cte_PriorityDefault,\
+		SPEECH_Cte_RandomSize,\
+		0,\
+		0,\
+		SPEECH_Cte_FlagsUseHumanId\
+	)
+
+#define SPEECH_M_RqHumanTimeOut(__perso_id, __text_id, __timeout)	 SPEECH_RequestPost\
+	(\
+		OBJ_Me(), \
+		nobody, \
+		__perso_id,\
+		__text_id,\
+		__timeout,\
+		SPEECH_Cte_PriorityDefault,\
+		SPEECH_Cte_RandomSize,\
+		0,\
+		0,\
+		SPEECH_Cte_FlagsUseHumanId\
+	)
+
+#define SPEECH_M_RqOneText(__text)	 SPEECH_RequestPost\
+	(\
+		OBJ_Me(), \
+		nobody, \
+		TEXT_FileGet(__text),\
+		TEXT_EntryGet(__text),\
+		SPEECH_Cte_TimeOutDefault,\
+		SPEECH_Cte_PriorityDefault,\
+		0,\
+		0,\
+		0,\
+		0\
+	)
+
+#define SPEECH_M_RqOneText2Params(__txg, __entrykey)	 SPEECH_RequestPost\
+	(\
+		OBJ_Me(), \
+		nobody, \
+		__txg,\
+		__entrykey,\
+		SPEECH_Cte_TimeOutDefault,\
+		SPEECH_Cte_PriorityDefault,\
+		0,\
+		0,\
+		0,\
+		0\
+	)
+
+
+//---------------------------------------------------------------------------------------------------------------------------------------------------
+// TXG CONSTANTS
+//---------------------------------------------------------------------------------------------------------------------------------------------------
+#define SPEECH_CteTxg_GenJack		0xD0004DF5
+#define SPEECH_CteTxg_SpeJack			0xD00054D7
+#define SPEECH_CteTxg_GenAnn			0xD0004DEE
+#define SPEECH_CteTxg_SpeAnn			0xD00054D2
+#define SPEECH_CteTxg_GenDenham	0xD0004DFC
+#define SPEECH_CteTxg_SpeDenham	0xD00054D4
+#define SPEECH_CteTxg_GenHayes		0xD0004F3A
+#define SPEECH_CteTxg_SpeHayes		0xD00054D6
+#define SPEECH_CteTxg_GenJimmy		0xD00054D8
+#define SPEECH_CteTxg_SpeJimmy		0xD00054E6
+//
+#define SPEECH_CteTxg_SpeKann		0xD0005AC3
+#define SPEECH_CteTxg_SpeKong		0x8700323D
+#define SPEECH_CteTxg_GenKong		0xFFFFFFFF
+#define SPEECH_CteTxg_SpeIndigene  	0xD00066C9
+#define SPEECH_CteTxg_SpeNewYork  	0xD0008076
+
+
+//---------------------------------------------------------------------------------------------------------------------------------------------------
+// TEXT ENTRY ID
+//---------------------------------------------------------------------------------------------------------------------------------------------------
+//
+// GENERIC
+//
+#define Gene_C_help					0			
+#define Gene_C_caught				1			
+#define Gene_C_see_hurt_low		2			
+#define Gene_C_see_hurt_med		3			
+#define Gene_C_see_hurt_urg		4			
+#define Gene_C_see_Ann_low		5			
+#define Gene_C_see_Ann_med		6			
+#define Gene_C_see_Ann_urg		7			
+#define Gene_C_pointed_by_gun	8			
+#define Gene_C_limping				9			
+#define Gene_C_almost_dying		10			
+#define Gene_C_friend_dying			11			
+#define Gene_C_call_help				12			
+#define Gene_C_call_cover			13			
+#define Gene_C_call_team_cover	14			
+#define Gene_C_friend_passed		15			
+#define Gene_C_cover_Jack			16			
+#define Gene_C_cover_team			17			
+#define Gene_C_Jack_life_low		18			
+#define Gene_C_answer				19			
+#define Gene_C_answer_loud		20			
+#define Gene_C_mission_ok			21			
+#define Gene_C_call_far				22			
+#define Gene_C_call_near				23			
+#define Gene_C_call_near_low		24			
+#define Gene_C_call_cover_bis		25			
+#define Gene_C_breath_run			26			
+#define Gene_C_breath_run_fear	27
+#define Gene_C_breath_stop			28
+#define Gene_C_breath_stop_fear	29
+#define Gene_C_blow_take			30
+#define Gene_C_warn_right			31
+#define Gene_C_warn_left				32
+#define Gene_C_warn_generic		33
+#define Gene_C_thanks_for_saving	34
+#define Gene_C_warn_right_hurt		35	
+#define Gene_C_warn_left_hurt			36
+#define Gene_C_warn_generic_hurt		37
+#define Gene_C_help_hurt					38
+#define Gene_C_An_dying					39
+#define Gene_C_De_dying					40
+#define Gene_C_Ha_dying					41
+#define Gene_C_Ja_dying					42
+#define Gene_C_Ji_dying					43
+#define Gene_C_man_dying_no_Ann	44
+#define Gene_C_enemy_killed			45
+#define Gene_C_throw_spear				46
+#define Gene_C_send_to_hide			47
+#define Gene_C_Ja_hurt_no_An			48
+#define Gene_C_hidden					49
+#define Gene_C_minor_talk				50
+#define Gene_C_friend_is_far				51
+#define Gene_C_look_for_2_levers		52
+#define Gene_C_look_for_1_lever		53
+#define Gene_C_1_lever_left				54
+#define Gene_C_all_levers_found		55
+#define Gene_C_opening_door			56
+#define Gene_C_door_ok					57
+#define Gene_C_big_surprise				58
+#define Gene_C_heard_a_noise			59
+#define Gene_C_occupied_med				60	
+#define Gene_C_occupied_urg				61
+#define Gene_C_acknowledge				62
+#define Gene_C_see_hurt_no_ann_med	63
+#define Gene_C_see_hurt_no_ann_urg	64
+#define Gene_C_too_far						65
+#define Gene_C_excuse						66
+#define Gene_C_got_it							67
+#define Gene_C_encourage					68
+#define Gene_C_obj_answer					69
+#define Gene_C_obj_answer_hurt			70
+#define Gene_C_An_hurt						71
+#define Gene_C_De_hurt						72
+#define Gene_C_Ha_hurt						73
+#define Gene_C_Ja_hurt						74
+#define Gene_C_Ji_hurt						75
+#define Gene_C_wait_for_help				76
+#define Gene_C_fighting						77
+//
+#define G_NombreMax							78
+//
+
+
+
+//
+// SPECIFIC
+#define GeneNY_C_car_see_kong			0xD000808B
+#define GeneNY_C_car_retreat				0xD0008090
+#define GeneNY_C_car_retreat_panic		0xD0008095
+#define GeneNY_C_car_caught				0xD000809A
+#define GeneNY_C_car_hit_kong			0xD000809F
+#define GeneNY_C_tank_see_kong		0xD00080A4
+#define GeneNY_C_tank_will_shoot		0xD00080A9
+#define GeneNY_C_tank_shoot				0xD00080AE
+#define GeneNY_C_tank_hit_kong			0xD00080B3
+#define GeneNY_C_tank_panic				0xD00080B8
+#define GeneNY_C_snipe_see_kong		0xD00080BD
+#define GeneNY_C_snipe_panic				0xD00080C2
+#define GeneNY_C_snipe_shoot				0xD00080C7
+#define GeneNY_C_snipe_hit_kong			0xD00080CC
+#define GeneNY_C_men_panic				0xD00080D1
+#define GeneNY_C_women_panic			0xD00080D6
+#define GeneNY_C_plane_hit_by_kong	0xD00080DB
+#define GeneNY_C_plane_shoot				0xD00080E0
+#define GeneNY_C_plane_hit_kong			0xD00080E5
+#define GeneNY_C_plane_weak_kong		0xD00080EA
+//
+#define GeneInd_C_attack						0xD00066D0
+#define GeneInd_C_flee							0xD0006F3C
+#define GeneInd_C_death						0xD0006F41
+//
+#define GeneKon_C_breath_run				0x87003244
+#define GeneKon_C_breath_run_stop		0x87003249
+#define GeneKon_C_breath_injured			0x8700324E
+#define GeneKon_C_breath_injured_stop	0x87003253
+#define GeneKon_C_breath_fury				0x87003290
+#define GeneKon_C_breath_fury_stop		0x87003295
+#define GeneKon_C_mashing_lift			0x870032F9	
+#define GeneKon_C_mashing_bite			0x870032FE	
+#define GeneKon_C_mashing_strangled	0x87003303	
+#define GeneKon_C_mashing_finish		0x87003308	
+#define GeneKon_C_mashing_lift_pillar_win	0x870034EA
+#define GeneKon_C_mashing_lift_trex_win	0x870034F7
+#define GeneKon_C_reward_roar 				0x87003506		
+//
+#define GeneAnn_C_medikit_low			0xD000513A	
+#define GeneAnn_C_arm_hurt				0xD000513F	
+#define GeneAnn_C_leg_hurt					0xD0005144	
+#define GeneAnn_C_head_hurt				0xD0005149	
+#define GeneAnn_C_generic_hurt			0xD000514E	
+#define GeneAnn_C_cure_Jack_start		0xD0005153	
+#define GeneAnn_C_cure_Jack_end		0xD0005158	
+#define GeneAnn_C_cure_friend				0xD0005162	
+#define GeneAnn_C_see_Jack_hurt_low	0xD00058DA
+#define GeneAnn_C_see_Jack_hurt_urg	0xD00058DF
+#define GeneAnn_C_give_stick_low		0xD0005C2C
+#define GeneAnn_C_give_stick_urg			0xD0005C31
+#define GeneAn_C_cure_herself 			0xD000674D		
+//
+#define GeneKAnn_C_danger_fear			0xD0005ACA
+#define GeneKAnn_C_danger_need		0xD0005B11
+#define GeneKAnn_C_danger_trust			0xD0005B16
+#define GeneKAnn_C_fall_from_kong		0xD0005B1B
+#define GeneKAnn_C_leave_me_fear		0xD0005B20
+#define GeneKAnn_C_leave_me_need		0xD0005B25
+#define GeneKAnn_C_leave_me_trust		0xD0005B2A
+#define GeneKAnn_C_come_to_me		0xD0005B2F
+#define GeneKAnn_C_bitten					0xD0005B34
+#define GeneKAnn_C_death					0xD0006f22
+#define GeneKAnn_C_danger_grabbed	0x87003fd3
+#define GeneKAnn_C_breath_run_fear		0x87003fd8
+#define GeneKAnn_C_throw_spear			0x87003fdd
+#define GeneKAnn_C_blow_take			0x87003fe2
+//
+#define GeneJim_C_medikit_low				0xD0005812
+#define GeneJim_C_arm_hurt					0xD0005817
+#define GeneJim_C_leg_hurt					0xD000581C
+#define GeneJim_C_head_hurt					0xD0005821
+#define GeneJim_C_generic_hurt				0xD0005826
+#define GeneJim_C_cure_Jack_start			0xD000582B
+#define GeneJim_C_cure_Jack_end			0xD0005830
+#define GeneJim_C_cure_friend				0xD0005835
+#define GeneJim_C_see_Jack_hurt_low		0xD00058E4
+#define GeneJim_C_see_Jack_hurt_urg		0xD00058E9
+#define GeneJim_C_no_more_muni_low		0xd0005a63
+#define GeneJim_C_last_one_low			0xd0005a68
+#define GeneJim_C_last_but_one_low		0xd0005a6d
+#define GeneJim_C_last_but_two_low		0xd0005a72
+#define GeneJim_C_no_more_muni_urg	0xd0005a77
+#define GeneJim_C_last_one_urg			0xd0005a7c
+#define GeneJim_C_last_but_one_urg		0xd0005a81
+#define GeneJim_C_last_but_two_urg		0xd0005a86
+#define GeneJim_C_jack_full_ammo		0x6101b120
+#define GeneJim_C_found_ammo		0xd0005ad0
+//
+#define GeneBru_C_give_ammo_low	0xD0005337	
+#define GeneBru_C_give_ammo_urg	0xD000533C	
+#define GeneBru_C_low_muni			0xD0005418	
+#define GeneBru_C_no_more_muni		0xD000541D	
+//
+#define GeneDen_C_jack_hurt			0xD00052BF	
+#define GeneDen_C_filming				0xD00052C4	
+#define GeneDen_C_show_film			0xD00053B9	
+#define GeneDen_C_give_stick_low	0xD0005C36
+#define GeneDen_C_give_stick_urg		0xD0005C3B
+#define GeneDen_C_Jack_in_shot		0xD0005D14
+#define GeneDen_C_to_Hayes			0xD000673F
+//
+#define GeneHay_C_warn_danger			0xD00053AF	
+#define GeneHay_C_do_not_move			0xD0005478	
+#define GeneHay_C_send_team_low		0xD00053B4	
+#define GeneHay_C_send_team_near		0xD00053BE	
+#define GeneHay_C_send_team_far		0xD00053C3	
+#define GeneHay_C_send_team_urg		0xD00053C8	
+#define GeneHay_C_swap_gun_low		0xD00053CD	
+#define GeneHay_C_swap_gun_med		0xD00053D2	
+#define GeneHay_C_swap_gun_far			0xD00053D7	
+#define GeneHay_C_give_stick_low		0xD00053DC	
+#define GeneHay_C_give_stick_med		0xD00053E1	
+#define GeneHay_C_give_stick_urg			0xD00053E6	
+#define GeneHay_C_go_take_stick			0xD00053EB	
+#define GeneHay_C_choose_enemy		0xD00053F0	
+#define GeneHay_C_enemy_on_jack		0xD00053F5	
+#define GeneHay_C_with_Jack_low		0xD000547D	
+#define GeneHay_C_with_Jack_med		0xD0005482	
+#define GeneHay_C_mecanism_effort		0xD000565F	
+#define GeneHay_C_warn_danger_low		0xD000580D
+#define GeneHay_C_way_cleared			0xD000583A
+#define GeneHay_C_enemy_on_bud		0xD000583F
+#define GeneHay_C_door						0xd00058ef
+#define GeneHay_C_no_weapon_low			0xd0005a8b
+#define GeneHay_C_no_weapon_urg			0xd0005a90
+#define GeneHay_C_in_camp					0xd0005a95
+#define GeneHay_C_leaving_camp			0xd0005a9f
+#define GeneHay_C_stressing1				0xd0005aa4
+#define GeneHay_C_stressing6				0xd0005aa9
+#define GeneHay_C_stressing11				0xd0005aae
+#define GeneHay_C_stressing16				0xd0005ab3
+#define GeneHay_C_stressing21				0xd0005ab8
+#define GeneHay_C_almost_opened		0xd0005ada
+#define GeneHay_C_get_ammo_low		0xd0005aee	
+#define GeneHay_C_get_ammo_urg		0xd0005af3
+#define GeneHay_C_get_from_jimmy		0xd0005af8
+#define GeneHay_C_no_ammo_low		0xd0005b02
+#define GeneHay_C_no_ammo_urg			0xd0005b0c
+#define GeneHay_C_to_Denham			0xD0006744
+#define GeneHay_C_propose_swap_low	0xD0006e10
+#define GeneHay_C_propose_swap_urg	0xD0006e15
+
+//
+#define GeneJak_C_send_to_hide		0xD00051F7	
+#define GeneJak_C_call_friend_low		0xD00051FC	
+#define GeneJak_C_call_friend_med	0xD0005201	
+#define GeneJak_C_call_friend_urg		0xD0005206	
+#define GeneJak_C_call_Ann_low		0xD000520B	
+#define GeneJak_C_call_Ann_med		0xD0005210	
+#define GeneJak_C_call_Ann_urg		0xD0005215	
+#define GeneJak_C_cure_Ann_start	0xD000521A	
+#define GeneJak_C_cure_Ann_end		0xD000521F	
+#define GeneJak_C_full_ammo			0xd0005ae9
+#define GeneJak_C_call_Denham_low		0xD0005AD2
+#define GeneJak_C_call_Denham_med	0xD0005AD7
+#define GeneJak_C_call_Denham_urg	0x6101b0f7
+#define GeneJak_C_call_Jimmy_low	0xD0005AE1
+#define GeneJak_C_call_Jimmy_med	0x6101b0fb
+#define GeneJak_C_call_Jimmy_urg	0x6101b0ff
+#define GeneJak_C_call_Hayes_low	0x6101b104
+#define GeneJak_C_call_Hayes_med	0x6101b109
+#define GeneJak_C_call_Hayes_urg	0x6101b10e
+#define GeneJak_C_look_01_bullet		0xD0005AFF
+#define GeneJak_C_look_02_bullets		0x6101b113
+#define GeneJak_C_look_03_bullets		0xD0005B09
+#define GeneJak_C_look_04_bullets		0x6101b118
+#define GeneJak_C_look_05_bullets		0xD0005B78
+#define GeneJak_C_look_06_bullets		0xD0005B7D
+#define GeneJak_C_look_07_bullets		0xD0005B82
+#define GeneJak_C_look_08_bullets		0xD0005B87
+#define GeneJak_C_look_09_bullets		0xD0005B8C
+#define GeneJak_C_look_10_bullets		0xD0005B91
+#define GeneJak_C_look_15_bullets		0xD0005B96
+#define GeneJak_C_look_20_bullets		0xD0005B9B
+#define GeneJak_C_look_30_bullets		0xD0005BA0
+#define GeneJak_C_look_40_bullets		0xD0005BA5
+#define GeneJak_C_look_50_bullets		0xD0005BAA
+#define GeneJak_C_look_01_magazine		0xD0005BAF
+#define GeneJak_C_look_02_magazines	0xD0005BB4
+#define GeneJak_C_look_03_magazines	0xD0005BB9
+#define GeneJak_C_look_04_magazines	0xD0005BBE
+#define GeneJak_C_look_05_magazines	0xD0005BC3
+#define GeneJak_C_look_01_in_pocket	0xD0005BE1
+#define GeneJak_C_look_02_in_pocket	0xD0005BE6
+#define GeneJak_C_look_03_in_pocket	0xD0005BEB
+#define GeneJak_C_look_04_in_pocket	0xD0005BF0
+#define GeneJak_C_look_05_in_pocket	0xD0005BF5
+#define GeneJak_C_look_06_in_pocket	0xD0005BFA
+#define GeneJak_C_look_07_in_pocket	0xD0005BFF
+#define GeneJak_C_look_08_in_pocket	0xD0005C04
+#define GeneJak_C_look_09_in_pocket	0xD0005C09
+#define GeneJak_C_look_10_in_pocket	0xD0005C0E
+#define GeneJak_C_look_15_in_pocket	0xD0005C13
+#define GeneJak_C_look_20_in_pocket	0xD0005C18
+#define GeneJak_C_look_30_in_pocket	0xD0005C1D
+#define GeneJak_C_look_40_in_pocket	0xD0005C22
+#define GeneJak_C_look_50_in_pocket	0xD0005C27
+#define GeneJak_C_look_01_bullet_urg	0xD0005D19
+#define GeneJak_C_look_02_bullet_urg	0xD0005D1E
+#define GeneJak_C_look_03_bullet_urg	0xD0005D23
+#define GeneJak_C_look_04_bullet_urg	0xD0005D28
+#define GeneJak_C_look_05_bullet_urg	0xD0005D2D
+#define GeneJak_C_look_06_bullet_urg	0xD0005D32
+#define GeneJak_C_look_07_bullet_urg	0xD0005D37
+#define GeneJak_C_look_08_bullet_urg	0xD0005D3C
+#define GeneJak_C_look_09_bullet_urg	0xD0005D41
+#define GeneJak_C_look_10_bullet_urg	0xD0005D46
+#define GeneJak_C_look_15_bullet_urg	0xD0005D4B
+#define GeneJak_C_look_20_bullet_urg	0xD0005D50
+#define GeneJak_C_look_30_bullet_urg	0xD0005D55
+#define GeneJak_C_look_40_bullet_urg	0xD0005D5A
+#define GeneJak_C_look_50_bullet_urg	0xD0005D5F
+#define GeneJak_C_look_01_mag_urg		0xD0005D64
+#define GeneJak_C_look_02_mag_urg		0xD0005D69
+#define GeneJak_C_look_03_mag_urg		0xD0005D6E
+#define GeneJak_C_look_04_mag_urg		0xD0005D73
+#define GeneJak_C_look_05_mag_urg		0xD0005D78
+#define GeneJak_C_look_01_pocket_urg	0xD0005D7D
+#define GeneJak_C_look_02_pocket_urg	0xD0005D82
+#define GeneJak_C_look_03_pocket_urg	0xD0005D87
+#define GeneJak_C_look_04_pocket_urg	0xD0005D8C
+#define GeneJak_C_look_05_pocket_urg	0xD0005D91
+#define GeneJak_C_look_06_pocket_urg	0xD0005D96
+#define GeneJak_C_look_07_pocket_urg	0xD0005D9B
+#define GeneJak_C_look_08_pocket_urg	0xD0005DA0
+#define GeneJak_C_look_09_pocket_urg	0xD0005DA5
+#define GeneJak_C_look_10_pocket_urg	0xD0005DAA
+#define GeneJak_C_look_15_pocket_urg	0xD0005DAF
+#define GeneJak_C_look_20_pocket_urg	0xD0005DB4
+#define GeneJak_C_look_30_pocket_urg	0xD0005DB9
+#define GeneJak_C_look_40_pocket_urg	0xD0005DBE
+#define GeneJak_C_look_50_pocket_urg	0xD0005DC3
+#define GeneJak_C_no_weapon				0xD0005EDD
+#define GeneJak_C_no_bullet				0xD0005EE2
+#define GeneJak_C_soon_dry				0xD0005EE7
+#define GeneJak_C_soon_reload			0xD0005EEC
+#define GeneJak_C_no_weapon_urg		0xD0005F8E
+#define GeneJak_C_no_bullet_urg			0xD0005F93
+#define GeneJak_C_soon_dry_urg			0xD0005F98
+#define GeneJak_C_soon_reload_urg		0xD0005F9D
+#define GeneJak_C_look_00_mag_urg		0xD0006034
+#define GeneJak_C_look_00_magazine	0xD0006039
+#define GeneJak_C_door_alone				0xD0006065
+#define GeneJak_C_many_mag				0xD000688D
+#define GeneJak_C_many_mag_urg		0xD0006892
+#define GeneJak_C_info_Denham			0xD0006752
+#define GeneJak_C_info_Hayes				0xD0006757
+#define GeneJak_C_info_Ann					0xD000675C
+#define GeneJak_C_info_Jimmy				0xD0006761
+#define GeneJak_C_die_fall					0xD00069C1
+#define GeneJak_C_already_reloaded		0xD0006e0b
+
+
+
+

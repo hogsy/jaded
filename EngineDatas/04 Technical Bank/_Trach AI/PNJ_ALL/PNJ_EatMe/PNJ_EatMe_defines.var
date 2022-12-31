@@ -1,0 +1,66 @@
+// POINT DE VIANDE
+#define Cf_Bidoche_Meat_Point								10.0
+
+// LOD
+#define Cf_LOD_Activation										0.08
+#define Cf_LOD_Visibilite										0.05
+
+// VITUAL NET
+#define Ci_virtual_wp_nb										10
+
+// TRACK
+#define Ci_Track_TagOff										00
+#define Ci_Track_Reflex										01
+#define Ci_Track_Etat											02
+#define Ci_Track_TagOn										03
+
+#define macro_change_etat(etat)																				\
+{																															\
+	if (AI_TrackCurGetNum() == Ci_Track_Etat)																\
+		AI_TrackCurChangeNow(etat)																				\
+	else																													\
+		AI_TrackChange(Ci_Track_Etat, etat)																	\
+	return																													\
+}
+
+// BIDOCHE CAPA
+//#define Capa_Snapped_must_Fall					OBJ_Capa_0
+//#define Capa_Forget_Me								OBJ_Capa_1
+//#define Capa_Snapped									OBJ_Capa_2
+//#define Capa_On_Javelin_Snapped					OBJ_Capa_3
+#define Capa_Destroyed								OBJ_Capa_15
+
+// NET CAPA
+#define Capa_Net_Destroy							OBJ_Capa_0
+#define Capa_Net_Wait_Enemy						OBJ_Capa_1
+#define Capa_Net_Switch_Net_Mode				OBJ_Capa_2
+
+// DYN
+#define Cv_ScoloJack_Gravity						cvector(0.0, 0.0, -20.0)
+#define Cv_ScoloKong_Gravity						cvector(0.0, 0.0, -40.0)
+
+#define Cf_Scolo_Jump_Friction						2.0
+#define Cv_Scolo_Jump_Friction						cvector(Cf_Scolo_Jump_Friction, Cf_Scolo_Jump_Friction, 0.0)
+
+#define Cf_impulsion_max_jack						50.0
+#define Cf_impulsion_max_humain					30.0
+#define Cf_impulsion_max_raptor					20.0
+#define Cf_impulsion_max_kong						70.0
+
+// ETAT
+#define ETAT_Ground																								000
+#define ETAT_Fall																									001
+#define ETAT_Snap																									002
+#define ETAT_Water																								003
+#define ETAT_Fly																									004
+
+// SOUND ========================================================================================
+#define SND_MOVE_1																1
+#define SND_MOVE_2																2
+#define SND_EAT																	3
+#define SND_GETUP																4
+#define SND_ATTACK																5
+#define SND_ROLLUP																3
+#define SND_PAF																	6
+#define SND_DIE																		7
+#define SND_BITE																	8

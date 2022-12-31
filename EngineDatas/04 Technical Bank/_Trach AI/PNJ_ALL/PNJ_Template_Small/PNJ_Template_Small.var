@@ -1,0 +1,83 @@
+// Define at least one function in a track
+// function track0 = "name"
+// function track1 = "name"
+function track2 = "PNJ_TplS_Init"
+// function track3 = "name"
+// function track4 = "name"
+
+private	function	f_track[10][5]
+
+separator "Trigger declanchement"
+int				i_nb_zone
+int				i_type		= enum ( " Visibility" 1 "Sound" 2 "Sang" 16)  // C_EVENT_TYPE_Visibility C_EVENT_TYPE_Sound C_EVENT_TYPE_Odor
+vector		av_center[5]
+float			af_rayon[5]
+float			af_delai_avt_trigger[5]
+
+separator "Chuis La : Annonce"
+float			f_frequence		= 2.0
+float			f_delta			= 0.2
+float			f_duree			= 1.0
+
+separator "Attente"
+float			f_attente_duree = 8.0
+
+separator "Attaque"
+float			f_duree_annonce		= 1.0
+float			f_duree_attaque
+
+separator "Grab"
+int				i_grab_apres_paf		= faux_vrai
+
+separator "zone perso"
+vector		v_perso_center
+float			f_perso_rayon
+
+separator "zone vulnerable"
+vector		v_vulnerable_center
+float			f_vulnerable_rayon
+
+// *** Stimuli ***
+private	object		o_target_stimulus_trigger = nobody
+private	vector		v_target_stimulus_triger
+private	object		o_target_stimulus_paf = nobody
+
+// *** Initialisation des modes ***
+private	int			i_mode_attente_ini			= vrai_faux
+private	int			i_mode_attaque_ini			= vrai_faux
+private	int			i_mode_paf_ini				= vrai_faux
+private	int			i_mode_grip_ini				= vrai_faux
+private	int			i_mode_retour_ini				= vrai_faux
+private	int			i_fin_mode						= vrai_faux
+
+// *** Trigger ***
+private	vector	av_centerGlob[5]
+private	float		af_delaiDsTrigger[5]
+
+// *** Attente ***
+private	vector	v_attente_position
+private	float		f_attente_time
+
+// *** Attaque ***
+private	object	o_attaque_target				= nobody
+private	int			i_attaque_etape
+private	float		f_attaque_time
+private	vector	v_attaque_pos
+private	float		f_attaque_time_attente
+private	int			i_attaque_filtre
+
+// *** Grip ***
+private	float				f_grip_time
+private	messageid		mid_grab_LNK
+private	object			o_grabed_actor
+
+// *** Paf ***
+private	vector	v_paf_sens
+private	float		f_paf_time
+
+// *** Chuis La ***
+private	float		f_chuisla_time
+private	float		f_chuisla_annonce
+
+private	int			i_retour_etat
+

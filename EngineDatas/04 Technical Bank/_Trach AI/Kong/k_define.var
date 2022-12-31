@@ -1,0 +1,901 @@
+//
+//	System constants ================================================================
+//	
+//	#define Ani_CB_EnableRotation		0b00000100	(pas utilisé dans Kong…)
+//	#define Ani_CB_EnablePosHand	0b00001000	Autorise un os de snap dans la main
+//	#define Ani_CB_EnablePilotTorse	0b00010000	Autorise la rotation du torse
+//	
+//	Custom Bits des Anims ============================================================
+//	
+//	0b10000000			Autorise l’IK sur le pied gauche
+//	0b01000000			Autorise l’IK sur le pied droit
+//	0b00100000			Autoris l’IK sur le bras gauche
+//	0b00010000			Autorise l’IK sur le bras droit
+//	0b00001000			Pas de Rotation de Camera sur cette Anim
+//	0b00000100			Autorise le contrôle de la tête de Kong
+//	0b00000010			Mets le Z du vecteur speed de l’anim à 0.0
+//	0b00000001			Indique que l’anim est non cyclique
+//	
+//	Custom Bits de KONG ============================================================
+//	
+//	Aucun utilisé
+//	
+//	Design Flags des Anims ===========================================================
+//	
+//	0b1000000000000000	(no use)
+//	0b0100000000000000	(no use)
+//	0b0010000000000000	(no use)
+//	0b0001000000000000	(no use)
+//	0b0000100000000000	(no use)
+//	0b0000010000000000	(no use)
+//	0b0000001000000000	(no use)
+//	0b0000000100000000	(no use)
+//	0b0000000010000000	Indique une anim de deplacement(marche, course dash) sert pour activer les arret rapide.
+//	0b0000000001000000	Indique une animation ou l'orientation en fight peux etre active.
+//	0b0000000000100000	Indique que l IK peux jouer le mode blessé sur la pte de Kong
+//	0b0000000000010000	kong is not allowed to launch an attack during this action
+//	0b0000000000001000	Indique que c'est une anim de grabTT sur le cote
+//	0b0000000000000100	Indique que le raptor ne doit pas sauter sur KONG pendant cette anim
+//	0b0000000000000010	Indique qu'il ne faut pas effectuer ce &#£@ de ROTX de ç^£$# !
+//	0b0000000000000001	Indique que Kong ne prend pas de pafs pendant cette anim (test réalisé par l'acteur qui veut paffer KONG)
+//	
+//	Capacités de KONG ============================================================
+//	
+//	OBJ_Capa_0 : indique que la zde fight de KONG est allumée (anim de frappe)
+//  OBJ_Capa_1 : force le regard de KONG dans son sight
+//	OBJ_Capa_2 : permet de détecter l'accrochage et le release en Swing (Arch déjà)
+//	OBJ_Capa_3 : vrai pendant que Kong Frappe(permet au TREX de contrer les cousp)
+//	OBJ_Capa_4 : Cri de victoire
+//	OBJ_Capa_5 : Capa_Buffer_X
+//	OBJ_Capa_6 : Capa_Buffer_T
+//	OBJ_Capa_7 : Capa_Buffer_C
+//	OBJ_Capa_8 : Capa_Buffer_Interrupt
+//	OBJ_Capa_9 : Capa_Mode_Cine demandé : ON/OFF
+//	OBJ_Capa_10 : Capa_Refuse_Ride_and_Grab
+//	OBJ_Capa_11 : Capa_Fall_On_Ground_PAF
+//	OBJ_Capa_14 : Capa_KAMERA_Rumble
+//
+//	Capacités de ANN ===========================================================
+//	
+//	OBJ_Capa_5 : interdiction de poser ANN
+//	
+//	Capacités des WP ===========================================================
+//	
+//	Jump
+//	--------
+//	CBIT_5 sur un WP en fait un Hot Spot
+//	OBJ_Capa_0 : ce HS a une orientation pour etre détecté
+//	OBJ_Capa_1 : Swing Horizontal
+//	OBJ_Capa_2 : Swing Vertical 
+//	OBJ_Capa_3 : Saut précis qui passe par le hot spot
+//	OBJ_Capa_4 : Saut d'attaque sur un ennemi 
+// 	OBJ_Capa_8 : Inactivation de Hotspot
+
+//	Climb
+//	--------
+//	OBJ_Capa_1 : Vrai quand un coup doit porter.(test ZDE actif)
+//	OBJ_Capa_2 : si vrai c une branche, sinon c une corniche
+//
+//	Swing
+//	---------
+//	OBJ_Capa_14 : Swing vertical : choix du côté du swing
+//	OBJ_Capa_15 : Swing vertical : choix du côté du swing
+//
+//	Cine Gao (NYC Theater)
+//	-----------------------------------
+//	OBJ_Capa_0 : Vrai tant que Kong ne peut pas se libérer
+//	OBJ_Capa_1 : Vrai dès Kong peut se libérer
+//	OBJ_Capa_2 : Vrai dès que kong a gagné
+//
+
+// GLADIATOR
+#define		Cf_Timer_gladiator						10.0
+#define		Cf_Timer_gladiator_invulnerabilite	5.0
+
+// FX PAF
+#define		Cf_Paf_FX_width			0.5
+
+// FINISH
+#define		Ci_finish_type_TREX					1
+#define		Ci_finish_type_Big_Bat					2
+
+// FINISHED
+#define		Ci_condition_gagne_fin_d_anim			1
+#define		Ci_condition_gagne_debut_d_anim		2
+#define		Ci_moment_difficulte_max_debut_d_anim		1
+#define		Ci_moment_difficulte_max_fin_d_anim				2
+#define		Ci_finished_max_count				5
+// RUMBLE
+#define Cf_Rumble_Amplitude			50.0
+
+// DEPLACEMENT
+#define Cf_Speed_Factor_Run			1.0
+#define Cf_Speed_Factor_Normal		1.0
+#define Cf_Speed_Factor_Trample		1.0
+
+// LIFE & TIREDNESS
+#define Cf_Life_Max					100.0
+#define Cf_Tired_Delai				10.0
+#define Cf_Tired_Lim				20.0
+
+
+// BUFFER
+#define C_Button_Action 				1
+#define C_Button_Repulse 			2
+#define C_Button_Coup					3
+#define C_Button_Grab					4
+
+// CAPA
+#define C_Button_All						10
+#define Capa_ZDE_Fight_ON		 		OBJ_Capa_0
+#define Capa_Force_Regard_Sight 		OBJ_Capa_1
+#define Capa_Swing_Detect_StartEnd	OBJ_Capa_2
+#define Capa_Anim_d_Attaque			OBJ_Capa_3
+#define Capa_Plus_dExpression			OBJ_Capa_4
+#define Capa_Buffer_X						OBJ_Capa_5
+#define Capa_Buffer_T						OBJ_Capa_6
+#define Capa_Buffer_C						OBJ_Capa_7
+#define Capa_Buffer_Interrupt				OBJ_Capa_8
+#define Capa_Mode_Cine					OBJ_Capa_9
+#define Capa_Refuse_Ride_and_Grab	OBJ_Capa_10
+#define Capa_Fall_On_Ground_PAF	OBJ_Capa_11
+#define Capa_KAMERA_Rumble		OBJ_Capa_14
+
+#define	Capa_NYC_Theater_Mashing_Interdit		OBJ_Capa_0
+#define	Capa_NYC_Theater_Mashing_Possible	OBJ_Capa_1
+#define	Capa_NYC_Theater_Mashing_Gagne		OBJ_Capa_2
+#define	Capa_NYC_Theater_SND_Ambiance		OBJ_Capa_8
+
+#define	Capa_HS_Inactif					OBJ_Capa_8
+
+//#define	Capa_ANN_Grabbed_non_posable			OBJ_Capa_5
+
+// DAMAGE
+#define	Cf_DMG_Normal					10.0
+#define	Cf_DMG_FuryAdd				10.0
+#define	Cf_DMG_GrabdedObject		15.0
+
+// COMBO
+#define	Ci_frappe_combo_max_nb_normal		3
+#define	Ci_frappe_combo_max_nb_fury			6
+#define  Ci_Frappe_Avec_Corps                      10
+#define  Ci_Frappe_Ga_Coup_1						2
+#define  Ci_Frappe_Ga_Coup_2						3
+#define  Ci_Frappe_Ga_Coup_3						4
+#define  Ci_Frappe_Dr_Coup_1						5
+#define  Ci_Frappe_Dr_Coup_2						6
+#define  Ci_Frappe_Dr_Coup_3						7
+#define  Ci_Frappe_Ga_Coup_3_1H				12
+
+// Trample
+#define Cf_Trample_Delai_Autorise_Trample					0.6
+
+// GRAB KONG
+#define	Ci_Attrape			1
+#define	Ci_Jete				2
+#define	Ci_Repousse		3
+#define	Cf_charge_Kong_speed_min	15.0
+#define	Cf_Force_Jete						90.0									// Force du lancé du TREX par Kong
+
+// TRACK
+#define Ci_Track_TagOff										00
+#define Ci_Track_Reflex										01
+#define Ci_Track_Etat											02
+#define Ci_Track_TagOn										03
+
+#define Cf_Kong_taille_zdm				2.4
+#define Cf_ZDE_SizeFight					cvector(3.0,3.0, 3.0)
+#define Ci_kong_bras_droit				0
+#define Ci_kong_bras_gauche			1
+
+#define Ci_kong_bras_main				0
+#define Ci_kong_bras_avbras				1
+#define Ci_kong_bras_bras				2
+
+//	Utile pour les TipTopPointGet
+#define Cf_largeur_Kong					2.4
+
+#define	Cf_Hauteur_Mini_Accroch			8.0
+#define	Cf_Hauteur_Mur_Accroch_Auto 10.0
+
+// Comportement de Kong face à la puissance des pafs reçus
+#define	Ci_puissance_paf_desequilibre		2
+
+#define Ci_climb_jump_anim_nb						12
+#define Ci_Climb_Offset_Impulsion					0
+#define Ci_Climb_Offset_Jump						1
+
+#define Cv_Kong_zdm_pos							cvector(0.0, -0.5, Cf_Kong_taille_zdm)
+#define Cf_max_step									1.90
+#define Cf_delay_ground_col_tolerance			0.06 /// * 5.0
+
+#define Cv_Kong_Gravity								cvector(0.0, 0.0, -60.0)
+#define Cf_impulsion_max_X							30.0
+#define Cf_impulsion_max_Z							35.0
+
+
+#define Cf_Kong_Air_Friction							3.0
+#define Cv_Kong_Air_Friction							cvector(Cf_Kong_Air_Friction, Cf_Kong_Air_Friction, 0.0)
+
+//#define Capa_prise_HS									OBJ_Capa_0
+
+#define Ci_PONDERATION_CLIMB_IMPULSION			0
+#define Ci_PONDERATION_CLIMB_SLIDE					1
+#define Ci_PONDERATION_JUMP_IMPULSION			2
+#define Ci_PONDERATION_JUMP_SLIDE					3
+
+// GRID
+#define Cv_Kong_Tag_Size_V1		cvector(-1.0, -1.5, 0.0)
+#define Cv_Kong_Tag_Size_V2		cvector(1.0, 2.5, 0.0)
+
+// FURY / RAGE
+//#define Cf_Fury_Angle_Max				Cf_PiBy4
+//#define Cf_Fury_SlowMotion				0.75		// Ralemntissement du moteur
+//#define Cf_Rage_Bonus_Decreasing_Factor		0.2			// Facteur de décroissance du bonus de fury
+//#define Cf_Rage_Bonus_Start_Decreasing		Cf_Fury_Duration - 4.0		// Delai restant a la fury pour commencer a décroitre la valeur de bonus
+//#define Cf_Rage_Bonus_Increasing_Factor 0.05
+#define Cf_Fury_Puissance_Max			30.0
+#define Cf_Fury_Time_Max					20.0		// Duree max de la fury
+#define Cf_Fury_Time_Cap					3.0		// duree pour atteindre le cap de la longueur/angle de la fury- i.e. val courante = val max)
+#define Cf_Fury_Init_Bonus_Anim			3.0
+#define Cf_Fury_Duration_Normal			15.0	// 20.0		// durée de la Fury si pas blessé
+#define Cf_Fury_Duration_Bleeding			15.0	// 20.0		// durée de la Fury si blessé
+#define Cf_Fury_AFX_end_delay				5.0
+#define Cf_Fury_Increasing_Time			1.5		// 3.0	// 1.5		// Augmenter la durée de la fury a chaque coup réussi: but pouvoir la maintenir
+#define Cf_Fury_Cap							0.8		// Valeur limite au dela de laquelle Kong est en fury
+#define Cf_Rage_Increasing_Factor			0.10
+#define Cf_Fury_Paf_DecreaseBig			5.0
+#define Cf_Fury_Paf_DecreaseSmall		2.5
+#define Cf_Fury_Maximum_Walling			8.0
+#define Cf_Fury_Maximum_Swing			8.0
+
+// SONS
+#define Ci_KSound_Impulsion			17
+#define Ci_KSound_Accroche			03
+#define Ci_KSound_Reception			11
+#define Ci_KSound_Enjambe				22
+#define Ci_KSound_PafNormal			10
+#define Ci_KSound_PafFort				09
+
+
+#define Cf_Swing_Cone						Cf_1Degre * 30.0
+
+#define Cf_Trample_Delai_entre_2		0.25
+#define Cf_Trample_Duree					1.0
+
+#define	Ci_Ride_Client_Nb				5
+
+
+#define	Cf_Kamera_cut_ANN_duree_min			0.2
+
+#define	Cf_fight_dist_fight_actor		100 * 100			// Rayon dans lequel on prend le perso le plus dans l'axe
+
+
+// ANIMS ======================================================================================
+
+#define Ci_Kanim_NoAnim				-1
+#define Ci_Kanim_Attente					0
+#define Ci_Kanim_AttenteNo_Cycl		1
+
+#define Ci_Kanim_AttenteBlesse		3
+
+#define Ci_Kanim_StopRapide			4
+#define Ci_Kanim_ArretRapide			5
+#define Ci_Kanim_esquiveD				6
+#define Ci_Kanim_esquiveG				7
+#define Ci_Kanim_AttenteAngry			8
+
+#define Ci_Kanim_Marche_FPS			9
+#define Ci_Kanim_GalopeD				10
+#define Ci_Kanim_GalopeG				11
+#define Ci_Kanim_courseD				12
+#define Ci_Kanim_courseG				13
+#define Ci_Kanim_NewDashTest		14
+
+#define Ci_Kanim_dash					14//20
+
+#define Ci_Kanim_courseDD				16
+#define Ci_Kanim_courseGG				17
+
+#define Ci_Kanim_Dash_Grab			20
+#define Ci_Kanim_Dash_Attack			22
+
+
+//#define Ci_Kanim_frappe					25
+#define Ci_Kanim_frappeDr				23
+#define Ci_Kanim_frappeDr_Fin			24
+#define Ci_Kanim_frappeGa				25
+#define Ci_Kanim_frappeGa_Fin			26
+#define Ci_Kanim_coup_C_1		 		27
+#define Ci_Kanim_coup_C_1_Fin		28
+#define Ci_Kanim_coup_C_2		 		29
+#define Ci_Kanim_coup_C_2_Fin		30
+#define Ci_Kanim_coup_T_3				31
+#define Ci_Kanim_coup_T_1		 		172
+#define Ci_Kanim_coup_T_2		 		171
+
+
+#define Ci_Kanim_Paf_petite_morsure		39
+#define Ci_Kanim_Paf_Face					40
+#define Ci_Kanim_Paf_Dos					41
+#define Ci_Kanim_Paf_face_D				42
+#define Ci_Kanim_Paf_face_G				43
+#define Ci_Kanim_Paf_Fort_Face			44
+#define Ci_Kanim_Paf_Fort_Dos				45
+#define Ci_Kanim_Paf_Fort_face_D			46
+#define Ci_Kanim_Paf_Fort_face_G		47
+
+
+
+#define Ci_Kanim_QuartDr					50
+#define Ci_Kanim_QuartGa				51
+#define Ci_Kanim_DemiDr					52
+#define Ci_Kanim_DemiGa				53
+
+
+#define Ci_Kanim_saute_cycl_swing_after		56			// Saut apres un SWING
+#define Ci_Kanim_saute_rapide_up		57						// Anim de saut rapide partantsd une position accroché a un rebord
+#define Ci_Kanim_saute_ptt_amorti	58						// Reception avec un petit amorti après un saut
+#define Ci_Kanim_saute_chutte			59						// Chute pendant un PAF
+#define Ci_Kanim_saute_deb				60						// Anim de préparation de saut par defaut
+#define Ci_Kanim_saute_chut_cycl		61						// Anim de cycl de chute
+#define Ci_Kanim_saute_cycl			62						// anim de cycle de saut
+#define Ci_Kanim_saute_fin				63						// anim de grosse reception de saut
+#define Ci_Kanim_coup_bas_cycl		64						// Anim de saut préparation frapper le sol
+#define Ci_Kanim_coup_bas_fin			65						// anim de frapper au sol
+
+#define Ci_Kanim_saute_9M				66						// Enjamber un obstacle de 9m
+#define Ci_Kanim_saute_3M				67						// Enjamber un obstacle de 3m
+#define Ci_Kanim_saute_5M				68						// Passer un obstacle de 5m rapidement
+#define Ci_Kanim_saute_7M				69						// remonter un obstacle de 7m
+#define Ci_Kanim_climb_attente			70						// Anim d attente accrochée sur un rebord
+#define Ci_Kanim_climb_slide			71						// Anim en mode slide A VIRER
+#define Ci_Kanim_climb_accroche		72						// Anim d amortie de l accrochage sur un rebord
+
+#define Ci_Kanim_climb_left				75						// anim de deplacement latéral en accroche
+#define Ci_Kanim_climb_right			76						// anim de deplacement latéral en accroche
+#define Ci_Kanim_climb_fast				77						// Anim de remonté rapide en accrochage
+
+// CLIMB JUMP ANIMS
+#define Ci_Kanim_Accroch_mur_demi_tour_Jump		78
+//#define Ci_Kanim_jump_demi_tourD						79
+//#define Ci_Kanim_impulsion_demi_tourD				92
+//#define Ci_Kanim_jump_demi_tourD						93
+
+// Block d anim pour la reception detecté par climb_find_best_pos
+// Tenter de virer tout ca ???
+#define Ci_Kanim_impulsion				80							
+#define Ci_Kanim_jump						81
+
+#define Ci_Kanim_impulsion_up					80
+#define Ci_Kanim_jump_up						81
+#define Ci_Kanim_impulsion_up_left			82
+#define Ci_Kanim_jump_up_left					83
+#define Ci_Kanim_impulsion_right_up			84
+#define Ci_Kanim_jump_right_up				85
+#define Ci_Kanim_impulsion_down				86
+//#define Ci_Kanim_jump_down					87
+#define Ci_Kanim_se_raccroche					87
+#define Ci_Kanim_impulsion_left_down		88
+#define Ci_Kanim_jump_left_down				89
+#define Ci_Kanim_impulsion_right_down		90
+#define Ci_Kanim_jump_right_down			91
+
+#define Ci_Kanim_saute_chute_paf_g_recep	94
+#define Ci_Kanim_saute_accroche					95
+#define Ci_Kanim_saute_chute_paf					96
+#define Ci_Kanim_saute_chute_paf_chute		97
+#define Ci_Kanim_saute_chute_paf_recep		98
+
+
+#define Ci_Kanim_Grab_recal						099					// anim ou Kong va saisir le TREX
+#define Ci_Kanim_GrabTT_att						100					// anim ou Kong tiens le TREX
+#define Ci_Kanim_GrabTT_tireD						101					// anim ou Kong fais tourner le TREX
+#define Ci_Kanim_GrabTT_tireG						102					// anim ou Kong fais tourner le TREX
+#define Ci_Kanim_GrabTT_tireD_Att				103					// TREX DE COTE
+#define Ci_Kanim_GrabTT_tireG_Att				104					// TREX DE COTE
+
+#define Ci_Kanim_GrabTT_pafD_byREX			107					// Anim ou le REX jete Kong du grab
+#define Ci_Kanim_GrabTT_pafG_byREX			108					// Anim ou le REX jete Kong du grab
+#define Ci_Kanim_GrabTT_Frappe					162					// anim de coup en grab
+
+
+#define Ci_Kanim_Walling_frappeG					128					// TEST frapper en walling
+
+#define Ci_Kanim_Walling_courseD				130					// WALLING deplacement
+#define Ci_Kanim_Walling_courseG				131					// WALLING deplacement
+#define Ci_Kanim_Walling_derape					132					// WALLING derape
+#define Ci_Kanim_Walling_cornerD					133					// Montée en CORNERING
+
+#define Ci_Kanim_Walling_ImpulsionD			134					// Saut en walling
+#define Ci_Kanim_Walling_ImpulsionG			135					// Saut en walling
+#define Ci_Kanim_Walling_StopAtt					136					// Walling stop en bas d un mur pour ne pas tomber ds le vide
+#define Ci_Kanim_Walling_Stop						137					// Walling stop
+#define Ci_Kanim_Walling_StopRapide			138					// Walling stop quand Kong glisse rapidement
+
+#define Ci_Kanim_Walling_impulDemiD			139					// Cornering saut a 180°
+#define Ci_Kanim_Walling_impulDemiG			140					// Cornering saut a 180°
+
+
+#define Ci_Kanim_Swing_Jump						142					// Saut pour attraper un Hotspot avant un swing
+#define Ci_Kanim_Swing_Hor_Balance			143
+#define Ci_Kanim_Swing_Hor_Balance_DemiT	144
+
+#define Ci_Kanim_Swing_Ver_D						145					// anim de Swing Vertical Droite
+#define Ci_Kanim_Swing_Ver_G						146					// anim de Swing Vertical Droite
+#define Ci_Kanim_Swing_Jump_D					147					// saut qui va attraper le HS de swing sur a droite
+#define Ci_Kanim_Swing_Jump_G					148					// saut qui va attraper le HS de swing sur a droite
+
+#define Ci_Kanim_Attrape_D							150					// anim de grab main Droite
+#define Ci_Kanim_Attrape_G							151					// anim de grab main Gauche
+#define Ci_Kanim_Jete_D								152					// anim de lancé main Droite
+#define Ci_Kanim_Jete_Tendu						153					// anim de lancé main Droite
+#define Ci_Kanim_Jete_2M							155					// anim de lancé main Droite
+
+//#define Ci_Kanim_Attrape_G_Frappe_D			160
+//#define Ci_Kanim_Attrape_D_Frappe_G			161
+//#define Ci_Kanim_Attrape_D_Frappe_D			162
+//#define Ci_Kanim_Attrape_G_Frappe_G		163
+
+#define Ci_Kanim_Lache_D							164					// anim de lancé de TREX en grab
+#define Ci_Kanim_Lache_G							165					// anim de lancé de TREX en grab
+#define Ci_Kanim_AttrapeDos_D					166					// anim d attrape du Raptor dans le dos
+
+#define Ci_Kanim_AttrapeAnn						168					// Anim pour attraper Ann
+#define Ci_Kanim_AttrapeAnnG						169					// Anim pour attraper Ann
+
+// INTIMIDATION
+//#defi ne Ci_Kanim_IntimidD							170
+#define Ci_Kanim_IntimidG							171
+#define Ci_Kanim_Intimid_Fin						172
+#define Ci_Kanim_Intimid_Furie						173
+#define Ci_Kanim_Intimid_FurieCri					174
+#define Ci_Kanim_Intimid_FinishFurieCri			177
+#define Ci_Kanim_Intimid_FinishFurieReward	178
+#define Ci_Kanim_Swing_Arch_Tr_Arch			179
+
+
+// DEPLACEMENT ET COMBAT AU TRONC D'ARBRE
+#define Ci_Kanim_souche_attente									190
+#define Ci_Kanim_souche_marche									192
+#define Ci_Kanim_souche_frappe_droite							194
+#define Ci_Kanim_souche_frappe_droite_tr_face				195
+#define Ci_Kanim_souche_frappe_gauche						196
+#define Ci_Kanim_souche_frappe_gauche_tr_face				197
+#define Ci_Kanim_souche_frappe_face							198
+#define Ci_Kanim_souche_frappe_face_tr_coup_droite		199
+#define Ci_Kanim_souche_frappe_face_tr_coup_gauche		200
+#define Ci_Kanim_souche_frappe_face_tr_attente_droite	201
+#define Ci_Kanim_souche_frappe_face_tr_attente_gauche	202
+#define Ci_Kanim_souche_lance									205
+
+// KONg KILL
+#define Ci_Kanim_Kill_Bat												206
+
+// KONG ATTRAPPE ET POSE ANN
+#define	Ci_Kanim_GO_PoseDosMainD							210
+#define	Ci_Kanim_GO_PoseMainGMainD						211
+#define	Ci_Kanim_GO_PoseSol									212
+#define	Ci_Kanim_GO_PoseHaut									213
+#define	Ci_Kanim_GO_PoseMainSol_gauche					214
+#define	Ci_Kanim_GO_SwapMain_DG							215
+#define	Ci_Kanim_GO_SwapMain_GD							216
+
+#define	Ci_Kanim_Fracasse_Saut									220
+#define	Ci_Kanim_Fracasse_Action								221
+
+#define	Ci_Kanim_Colonne_Grab									225
+#define	Ci_Kanim_Colonne_Mord									226
+#define	Ci_Kanim_Colonne_Lance									227
+
+#define	Ci_Kanim_Finish_SePlace								230
+#define	Ci_Kanim_Finish_Deb										231
+#define	Ci_Kanim_Finish_Fin										232
+
+#define	Ci_Kanim_FinishedRex_SePlace						233
+#define	Ci_Kanim_FinishedRex_Deb								234
+#define	Ci_Kanim_FinishedRex_Gagne							235
+#define	Ci_Kanim_FinishedRex_Perd								236
+			
+//#define	Ci_Kanim_GK_SePlaceG									240
+//#define	Ci_Kanim_GK_JeteG										241
+//#define	Ci_Kanim_GK_JeteD										242
+//#define	Ci_Kanim_GK_SePlaceD									243
+//
+//#define	Ci_Kanim_GK_AttJeteD									245
+//#define	Ci_Kanim_GK_AttJeteG									246
+
+#define	Ci_Kanim_Leve_Pierre_Positionne						250
+#define	Ci_Kanim_Leve_Pierre_Challenge						251
+#define	Ci_Kanim_Leve_Pierre_Gagne_cycle					252
+#define	Ci_Kanim_Leve_Pierre_Gagne							253
+#define	Ci_Kanim_Leve_Pierre_Perdu							254
+
+#define	Ci_Kanim_MashingObject_Position						255
+#define	Ci_Kanim_MashingObject_Challenge					256
+#define	Ci_Kanim_MashingObject_Win							257
+#define	Ci_Kanim_MashingObject_Loose						258
+
+#define	Ci_Kanim_Colonne_SautG								259
+#define	Ci_Kanim_Colonne_Grimpe								260
+#define	Ci_Kanim_Colonne_Att										261
+#define	Ci_Kanim_Colonne_TourneD								262
+#define	Ci_Kanim_Colonne_TourneG								263
+#define	Ci_Kanim_Colonne_FrappeD								264
+#define	Ci_Kanim_Colonne_FrappeG								265
+#define	Ci_Kanim_Colonne_FrappeDFin							266
+#define	Ci_Kanim_Colonne_Saut									267
+#define	Ci_Kanim_saute_colonne									268
+#define	Ci_Kanim_saute_colonne_from_Swing					269
+#define	Ci_Kanim_Colonne_Reception							270
+//#define	Ci_Kanim_Colonne_Pos_Ann								271
+//#define	Ci_Kanim_Colonne_Prend_Ann							272
+
+#define	Ci_Kanim_Mord_Deb										273
+#define	Ci_Kanim_Mord_Chall										274
+#define	Ci_Kanim_Mord_Win										275
+#define	Ci_Kanim_Mord_Lose										276
+
+//#define	Ci_Kanim_Flanc_choppeG								279
+//#define	Ci_Kanim_Flanc_Cycl										280
+//#define	Ci_Kanim_Flanc_Win										283
+//#define	Ci_Kanim_Flanc_CoupG									285
+
+#define	Ci_Kanim_Flanc_Deb										281
+#define	Ci_Kanim_Flanc_Chall										282
+#define	Ci_Kanim_Flanc_Lose										284
+#define	Ci_Kanim_Flanc_crashATerre							286
+
+//#define	Ci_Kanim_Flanc_choppeD									289
+//#define	Ci_Kanim_Flanc_Cycl										290
+//#define	Ci_Kanim_Flanc_Deb										291
+//#define	Ci_Kanim_Flanc_Chall										292
+//#define	Ci_Kanim_Flanc_Win										293
+//#define	Ci_Kanim_Flanc_Lose										294
+//#define	Ci_Kanim_Flanc_CoupD									295
+//#define	Ci_Kanim_Flanc_crashATerre							296
+
+#define	Ci_Kanim_FinishedBats_SePlace						300
+#define	Ci_Kanim_FinishedBats_Deb								301
+#define	Ci_Kanim_FinishedBats_Gagne							302
+#define	Ci_Kanim_FinishedBats_Perd							303
+
+#define	Ci_Kanim_FinishedRaptors_SePlace					305
+#define	Ci_Kanim_FinishedRaptors_Deb							306
+#define	Ci_Kanim_FinishedRaptors_Gagne						307
+#define	Ci_Kanim_FinishedRaptors_Perd						308
+
+#define	Ci_Kanim_FinishBigBat_SePlace						310
+#define	Ci_Kanim_FinishBigBat_Deb								311
+#define	Ci_Kanim_FinishBigBat_Gagne							312
+#define	Ci_Kanim_FinishBigBat_Perd							313
+
+#define	Ci_Kanim_FinishBigScolo_SePlace					315
+#define	Ci_Kanim_FinishBigScolo_Deb							316
+#define	Ci_Kanim_FinishBigScolo_Gagne						317
+#define	Ci_Kanim_FinishBigScolo_Perd							318
+
+#define	Ci_Kanim_Mort_Gene										320
+#define	Ci_Kanim_Mort_Chute										321
+#define	Ci_Kanim_Mort_Digwazai									322
+#define	Ci_Kanim_Mort_Lava										323
+#define	Ci_Kanim_Mort_Piranha									324
+
+#define	Ci_Kanim_FinishedScolos_SePlace					325
+#define	Ci_Kanim_FinishedScolos_Deb							326
+#define	Ci_Kanim_FinishedScolos_Gagne						327
+#define	Ci_Kanim_FinishedScolos_Perd							328
+
+
+//==========================================================
+// ANIMS CINE : 350 à 370
+//--------------------------------------------------------------------------------------------------------------------
+// Cine 10B : Paf utilisée sur un paf de type 512 (C_PAF_KK_MashingCine)
+#define	Ci_Kanim_Cine_Paf_Mashing							350
+//--------------------------------------------------------------------------------------------------------------------
+// Cine 20A : NYC Theater / Mashing brise chaînes
+#define	Ci_Kanim_Cine_Theatre_Att								350
+#define	Ci_Kanim_Cine_Theatre_Att_Grogne					351
+#define	Ci_Kanim_Cine_Theatre_Colere							352
+#define	Ci_Kanim_Cine_Theatre_Mashing						353
+#define	Ci_Kanim_Cine_Theatre_Mashing_tr_Intimid			354
+#define	Ci_Kanim_Cine_Theatre_Intimid							355
+//-------------------------------------------------------------------------------------------------------------------
+// NYC Bus Mashing
+#define	Ci_Kanim_NY_Bus_Positionne							360
+#define	Ci_Kanim_NY_Bus_Challenge							361
+#define	Ci_Kanim_NY_Bus_Reussite								362
+#define	Ci_Kanim_NY_Bus_Echec								363
+#define	Ci_Kanim_NY_Bus_Echec_tr_Att						364
+//-------------------------------------------------------------------------------------------------------------------
+
+// DESIGN FLAGS
+#define	Ci_KACT_ASF_Anim_Move				0b0000000010000000	// anim de deplacement
+#define	Ci_KACT_ASF_Orient_Target			0b0000000001000000	// anim de deplacement
+#define	Ci_KACT_DesFlag_Blesse_Available	0b0000000000100000	// (design flag) kong is allowed to play Ik for bleed
+#define	Ci_KACT_ASF_Attak_forbid				0b0000000000010000	// (design flag) kong is not allowed to launch an attack during this action
+#define	Ci_KACT_ASF_PriseTT_Cote			0b0000000000001000	
+#define	Ci_KACT_ASF_NoRotX						0b0000000000000010	// with this flag on in an action no rotation around x occurs
+
+
+// MACROS =========================================================================================
+
+#define	Test_Walling																						\
+{																													\
+	if ( WALLING_Test_Valid())																			\
+		macro_change_etat("k_ETAT_walling")												\
+}
+
+
+#define macro_render_Vector( mtv_pos, mtv_vec, mtc_color)	\
+//if ( i_etat_courant == i_DBG_mode)									\
+	DBG_RenderVector( mtv_pos, mtv_vec, mtc_color)
+
+#define macro_render_Cone( mtv_pos, mtv_vec, mtf_angle, mtc_color)	\
+if ( i_etat_courant == i_DBG_mode)									\	
+DBG_RenderCone(mtv_pos, mtv_vec, mtf_angle, mtc_color)
+
+
+
+#define macro_change_etat(etat)															\
+{																										\
+	if (AI_TrackCurGetNum() == Ci_Track_Etat)											\
+		AI_TrackCurChangeNow(etat)															\
+	else																								\
+		AI_TrackChange(Ci_Track_Etat, etat)												\
+//	return																								\
+}
+
+
+//#define macro_change_etat_paf																							\
+//{																																	\
+//	object		mo_tete																										\
+//	int				mi_grab																										\
+////	if ( o_GrabKong_Target)																								\
+////		AI_CBDel( o_GrabKong_Target, CallBack_After_Blend, "k_exec_Ik_GrabKong")					\
+////	if ( i_GrabKong_MainBloquee != -1)																					\
+////		ao_CL_GRABKONG[i_GrabKong_MainBloquee] = LNK_ClientGet(Ci_LNK_GRAB_KONG, amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee], faux, nofunc, nofunc, nofunc) \
+////	i_GrabKong_MainBloquee = -1																						\
+////	o_GrabKong_Target	= nobody																						\
+//	mi_grab = vrai																												\
+//	if ((((i_etat_courant == ETAT_desequilibre 																\
+//	|| i_etat_courant == ETAT_jump) 														\
+//	|| i_etat_courant == ETAT_fury) 																			\
+//	|| i_etat_courant == ETAT_commun_accroch_mur) 																\
+//	|| i_paf_type & C_EVENT_PAF_Mise_Au_Sol)																	\
+//		AI_TrackChange(Ci_Track_Etat, "k_ETAT_paf_tombe")											\
+//	else if( i_paf_puissance >= Ci_puissance_paf_desequilibre )												\
+//		AI_TrackChange(Ci_Track_Etat, "k_ETAT_paf_desequilibre")									\
+//	else																															\
+//	{																																\
+//		mi_grab = faux																										\
+//		mo_tete = ANI_CanalObjectGet(Anim_Canal_Tete)														\
+//		f_coef_recul = 0.0																									\
+//		GST_PAF_Trans_Rotate( OBJ_PosGet(), @mo_tete OBJ_PosGet() - OBJ_PosGet(), v_paf_position, v_paf_dir, v_add_speed, f_add_rotation)		\
+//	}																																\
+//	if ( i_GrabKong_MainBloquee != -1 && mi_grab)																\
+//	{	ao_CL_GRABKONG[i_GrabKong_MainBloquee] = nobody												\
+//		i_GrabKong_MainBloquee = -1																					\
+//		AI_CBDel( o_GrabKong_Target, CallBack_After_Blend, "k_exec_Ik_GrabKong")					\
+//		o_GrabKong_Target = nobody}																					\
+//}
+
+
+#define macro_correction_banking( mv_sight, mv_banking, mf_blend) 										\
+	OBJ_BankingGeneralSet( mv_sight, MATH_VecBlendRotate( OBJ_BankingGet(),  mv_banking, mf_blend * TIME_GetDt()))
+
+#define Fury_End													\
+{																		\
+	f_time_fury = 0.0												\
+	f_fury_charge = 0.0											\
+	i_fury_on = faux												\
+}
+
+#define FURY_Paf_Decrease																									\
+{																																		\
+	float		tf_fury_lose																											\
+	if( f_time_fury > Cf_Fury_AFX_end_delay )	// ne pas remonter la furie à 1.0								\
+	{																																	\
+		if( i_paf_type & ( C_PAF_KK_Fort | C_PAF_KK_Moyen ) )													\
+			tf_fury_lose = Cf_Fury_Paf_DecreaseBig																		\
+		else																															\
+			tf_fury_lose = Cf_Fury_Paf_DecreaseSmall																	\
+		f_time_fury = MATH_FloatLimit(f_time_fury, Cf_Fury_AFX_end_delay, f_time_fury - tf_fury_lose)	\
+		if( EVENT_LIFE_Est_Blesse(ID_LIFE) )	// je deviens blessé, la durée est limitée						\
+			f_time_fury = MATH_FloatLimit(f_time_fury, Cf_Fury_AFX_end_delay, Cf_Fury_Duration_Bleeding)	\
+	}																																	\
+}
+
+
+// ------ INIT MODE ------
+// INIT MODE T2 : FURY
+#define FURY_INIT				\
+{ f_fury_charge_time = 0.0		\
+f_safe_delay = 0.5				\
+}
+// ------ INIT MODE ------
+
+#define macro_render_Vector_define( mtv_pos, mtv_vec, mtc_color, md)	\
+{																									\
+	#ifndef _FINAL_																			\
+		if (md)																					\
+			DBG_RenderVector( mtv_pos, mtv_vec, mtc_color)					\
+	#endif																						\
+}
+
+
+#define COUP_ACTION_TEST_FINISH_COMMUN\
+{\
+	i_GrabKong_Type = Ci_GrabKong_Type_Finish\
+	v_grab_object_pos = OBJ_PosGet() + v_joy_sight				// Position du point de grab demandé\
+	v_frappe_sight = v_joy_sight\
+	ao_CL_GRABKONG[0] = LNK_ClientGet(Ci_LNK_GRAB_KONG, amid_CL_LIAISON_ID_GRABKONG[0], !i_Grab_Torse_ANN, "k_exec_grab_object_param", nofunc, nofunc)\
+	if ( ao_CL_GRABKONG[0] && LNK_GrabStatusGet(amid_CL_LIAISON_ID_GRABKONG[0]) & Ci_GrabKong_Type_Finish)\
+	{\
+		// LE COUP LANCE LE FINISH\
+		i_GrabKong_MainActionGrab = 0\
+		macro_change_etat("k_ETAT_finish")		// Passer en finish\
+	}\
+}
+
+
+#define COUP_ACTION_TEST_FINISH\
+{\
+	if ( i_flag_just_coup || KBUFFER_Buffered( C_Button_Coup))\
+	{\
+		COUP_ACTION_TEST_FINISH_COMMUN\
+	}\
+}
+
+
+#define COUP_ACTION_TEST_FINISH_GRAB\
+{\
+	if( ! i_flag_just_grab_JACK )	\
+	{	\
+		if( i_flag_just_grab || i_buffer_Grab )	\
+		{	\
+			@get_global i_KK_Ask_Finish_Button = JoyPSX_Button_rond	\
+			COUP_ACTION_TEST_FINISH_COMMUN	\
+			@get_global i_KK_Ask_Finish_Button = -1	\
+		}	\
+	}	\
+}
+
+#define COUP_ACTION_TEST_COUP	\
+{\
+	if ( i_flag_just_coup )\
+	{\
+		// DEMANDE DE COUPS CARRE\
+		COUP_CHANGE_To_Combo1(0)\
+		return\
+	}\
+}
+
+#define COUP_ACTION_TEST_RAGE	\
+{\
+	if ( i_flag_just_Rage  || KBUFFER_Buffered( C_Button_Repulse)) // && !i_fury_enabled)\
+	{\
+		// DEMANDE DE COUP TRIANGLE\
+		if ( i_Grab_Torse_Main != -1 && !i_Grab_Torse_ANN && LNK_ClientGet(Ci_LNK_GRAB_KONG, amid_CL_LIAISON_ID_GRABKONG[i_Grab_Torse_Main], vrai, "k_exec_grab_object_param", nofunc, nofunc))\
+		{	if (EVENT_LIFE_CurLifeGet( EVENT_LIFE_MSGID_Get( ao_CL_GRABKONG[0])))\
+				COUP_CHANGE_To_KILL()\
+			else\
+				COUP_CHANGE_To_Repulse()\
+		}else\
+			COUP_CHANGE_To_Repulse()\
+		return\
+	}\
+}
+
+#define COUP_ACTION_TEST_ACTION	\
+{\
+	if ( RIDE_Get_Actor_Nb() < 2)\
+	{ if (i_flag_trample || KBUFFER_Buffered( C_Button_Action))\
+	{\
+		// DASH\
+		if (i_flag_just_Action || KBUFFER_Buffered( C_Button_Action))\
+		{\
+			if ( ! o_fight_actor)\
+				HOTSPOT_Detect( Cv_NullVector, faux)\
+			else \
+			{	 if ( (OBJ_PosGet().z - @o_fight_actor OBJ_PosGet().z) > 4.0 )\
+					HOTSPOT_Detect( Cv_NullVector, vrai)\
+				else	HOTSPOT_Detect( Cv_NullVector, faux)	}\
+			JUMP_HOTSPOT\
+			AI_Execute("k_exec_check_colonnes")\
+			if( o_colonne)\
+			{	COUP_CHANGE_To_Pillar( o_colonne, Ci_Kanim_Colonne_Grimpe)\
+				return}\
+		}\
+		if ( COUP_MODE() != C_Mode_Dash)\
+			COUP_CHANGE_To_Dash()\
+	}}\
+}
+
+#define COUP_ACTION_TEST_GRAB\
+{\
+	AI_Execute("k_TEST_Grab")\
+}
+
+#define	Sweep_pre_calculs\
+		DBG_RenderVector( OBJ_PosGet(), v_GrabKong_axe * 5.0, color_vert)\
+		tv_temp = OBJ_PosGet() - @ao_CL_GRABKONG[i_GrabKong_MainBloquee] OBJ_PosGet() \
+		MATH_VecSetHorzNormalize( tv_temp)\
+		tv_temp2 = MATH_VecRotate( tv_temp, Cv_VerticalVector, f_GrabKong_rot_sign * Cf_PiBy2)\
+		tv_posA = @ao_CL_GRABKONG[i_GrabKong_MainBloquee] OBJ_PosGet() + (tv_temp2 * 5)\
+		tv_posB = OBJ_PosGet() - (tv_temp2 * 5)\
+		tv_temp = MATH_VecNormalize(tv_posB - tv_posA)\
+		DBG_RenderVector( OBJ_PosGet(), tv_temp, color_rouge)\
+		tv_posA = @ao_CL_GRABKONG[i_GrabKong_MainBloquee] OBJ_PosGet() - (tv_temp2 * 5)\
+		tv_posB = OBJ_PosGet() + (tv_temp2 * 5)\
+		tv_temp2 = MATH_VecNormalize(tv_posB - tv_posA)\
+		DBG_RenderVector( OBJ_PosGet(), tv_temp2, color_rouge)\
+		DBG_RenderCircle( OBJ_PosGet(), 5, Cv_VerticalVector, color_rouge)\
+		DBG_RenderCircle( @ao_CL_GRABKONG[i_GrabKong_MainBloquee] OBJ_PosGet(), 5, Cv_VerticalVector, color_rouge)\
+		tf_dot = MATH_VecDotProduct( tv_temp, tv_temp2 )\
+		i_GrabKong_force_sweep = faux\
+		if ( ACT_DesignFlagGet() & Ci_KACT_ASF_PriseTT_Cote)\
+		{	tv_sens_KT = @ao_CL_GRABKONG[i_GrabKong_MainBloquee]  OBJ_PosGet() - OBJ_PosGet()\
+			MATH_VecSetHorzNormalize( tv_sens_KT)\
+			DBG_RenderVector( OBJ_PosGet(),-tv_sens_KT, color_jaune)\
+			tf_dot2 = MATH_VecDotProduct( tv_sens_KT, @ao_CL_GRABKONG[i_GrabKong_MainBloquee] OBJ_SightGet())\
+			if ( MATH_VecDotProduct( -v_GrabKong_axe, OBJ_SightGet()) > tf_dot2 \
+			&& MATH_VecDotProduct( -v_GrabKong_axe, @ao_CL_GRABKONG[i_GrabKong_MainBloquee] OBJ_SightGet()) > tf_dot2 )\
+				i_GrabKong_force_sweep = vrai\
+		}
+
+
+#define  	SND_GRAB_STOP\
+{\
+	if ( i_SND_Grab_LoopA != -1)\
+	SND_Stop( i_SND_Grab_LoopA)\
+	i_SND_Grab_LoopA = -1\
+	if ( i_SND_Grab_LoopB != -1)\
+	SND_Stop( i_SND_Grab_LoopB)\
+	i_SND_Grab_LoopB = -1\
+}
+
+#define		RUMBLE_INIT\
+{	f_rumble_time_press = 0.0\
+	f_rumble_power = 50.0\
+}
+
+
+#define		JUMP_HOTSPOT\
+if ( o_jump_hotspot)\
+{\
+	i_flag_auto_grab = faux\
+	f_time_collide_ground = 0.0 				// pas de chute\
+	f_jump_force_distance = 10.0\
+	i_jump_check_hotspot = vrai	// On peux enchainer les HOT SPOT\
+	macro_change_etat("k_ETAT_jump")\
+}
+
+#define	TROP_LOIN	\
+{	if( tf_dist < f_GrabKong_Dash_Dist)\
+	{f_GrabKong_Dash_Dist = tf_dist\
+	o_GrabKong_Dash_Target = MSG_GlobalGetGao(tmid_proposition, CLIENT)}\
+	i_GrabKong_Dash = vrai\
+	MSG_GlobalSetGao(tmid_proposition, nobody, CLIENT)\
+}
+
+// KONG EXPRESSIONS ============================
+
+#define Ci_Kexp_Canal_BoucheLips					0
+#define Ci_Kexp_Canal_BoucheIntentions			6
+#define Ci_Kexp_Canal_Sourcils						1
+#define Ci_Kexp_Canal_PaupiereH						2
+#define Ci_Kexp_Canal_PaupiereB						7
+#define Ci_Kexp_Canal_SourcilP						4
+#define Ci_Kexp_Canal_Nez								5
+#define Ci_Kexp_Canal_Bouche							3
+
+#define Ci_Kexp_Neutre									0
+#define Ci_Kexp_Combat									1
+#define Ci_Kexp_Colere									2
+#define Ci_Kexp_SourireGrand							3
+#define Ci_Kexp_Triste										4
+#define Ci_Kexp_Sourire									5
+#define Ci_Kexp_Peur										6
+
+// KONG EXPRESSIONS ============================

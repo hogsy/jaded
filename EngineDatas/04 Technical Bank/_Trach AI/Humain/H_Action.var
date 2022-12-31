@@ -1,0 +1,329 @@
+#include "H_Action_Inf.var"		// COMPIL !!!!
+
+//// ACTION =====================================================================================
+//#define Action_Stress_Attente_Script						000
+//#define Action_Humain_Normal_Attente					000
+//#define Action_Humain_Normal_Marche					001
+//#define Action_Humain_Normal_Trot						002
+//
+//#define Action_Humain_Nage									005
+//#define Action_Humain_Ejection								006
+//#define Action_Humain_NageAtt								007
+//
+//#define Action_Stress_Attente								010
+//#define Action_Stress_Marche								011
+//#define Action_Stress_Trot									012
+//#define Action_Stress_Course								013
+//#define Action_Stress_Recul									014
+//#define Action_Stress_Marche_Rapide					015
+//#define Action_Terrorise_Attente							016
+//#define Action_Terrorise_Recule								017
+//#define Action_sprotege										018
+//
+//#define Action_chute_deb										020
+//#define Action_chute3M_fin									021
+//#define Action_chute5M_fin									022
+//
+//#define Action_Cache_Att										025
+//#define Action_Cache_Marche								026
+//#define Action_Cache_Trot									027
+//#define Action_Cache_Recule								028
+//#define Action_Contre_Mur									029
+//#define Action_DemiTour										030
+//#define Action_Cache_Protege								031
+//#define Action_DemiTourG									032
+//#define Action_DemiTourD										033
+//
+//#define Action_CacheF_Att									035
+//#define Action_Cache_MarcheF								036
+//#define Action_CacheF_Trot									037
+//#define Action_Cache_ReculeF								038
+//#define Action_Contre_Mur_Flingue						039
+//
+//#define Action_etourdit_sol									041
+//#define Action_etourdit_crouch								042
+//#define Action_etourdit_nage									043
+//
+//#define Action_TraineAtt										045
+//#define Action_Traine											046
+//#define Action_SeFaitTrainerAtt								047
+//#define Action_SeFaitTrainer									048
+//#define Action_RamasseTerre								049
+//#define Action_RamasseDebout								050
+//#define Action_TraineDeb										051
+//
+//#define Action_Paf_Nage										055
+//#define Action_Paf_Accroupi									056
+//#define Action_Paf_Sol											057
+//#define Action_Humain_Mort									058
+//
+//#define Action_Conval_Att										060
+//#define Action_Conval_1ms									061
+//#define Action_Conval_2ms									062
+//
+//#define Action_AttEau_Cou									065
+//#define Action_Marche_Eau_cou							066
+//#define Action_AttEau_Cou_Flingue						067
+//#define Action_Marche_Eau_cou_Flingue				068
+//
+//#define Action_Marche_Eau_Taille							070
+//#define Action_Marche_Eau_Taille_Flingue				071
+//#define Action_Att_Eau_Taille								072
+//#define Action_Att_Eau_Taille_Flingue					073
+//#define Action_Recule_Eau_Taille							074
+//#define Action_Att_EnJoue_Bambou						075
+//#define Action_Att_EnJoue_Snipe							076
+//#define Action_Att_EnJoue_Gun								077
+//#define Action_Recule_Eau_Taille_Terrorise				078
+//
+//#define Action_Humain_Blesse_Attente					080
+//#define Action_Humain_Blesse_Marche					081
+//#define Action_Humain_Blesse_Assis						082
+//#define Action_Humain_Blesse_Repousse				085
+//#define Action_Humain_Blesse_MarcheBas				086
+//
+//#define Action_Grabed_Crab_cycle							088
+//#define Action_Grabed_Crab_mort							089
+//#define Action_Grabed_raptor_bras							090
+//#define Action_Grabed_raptor_jambe						091
+//#define Action_Bambou_lance								092
+//#define Action_Lance_Objet									093
+//#define Action_SeFaitSoignerDebout						094
+//#define Action_FrappeBambou								095
+//#define Action_BambouAtt									096
+//#define Action_FrappeBambou1								097
+//
+//#define Action_DonneBambou								100
+//#define Action_Pousse_Att									101
+//#define Action_Pousse_Marche								102
+//#define Action_DonneBambouLoin							103
+//
+//#define Action_Chute											170
+//#define Action_Chute2											171
+//#define Action_Chute3											172
+//#define Action_Chute4											173
+//
+//#define Action_Att_Observe									176
+//
+//// DENHAM ==============================================================================
+//#define Action_Den_Camera_Deb							105
+//#define Action_Den_Camera									106
+//#define Action_Den_Camera_Fin							107
+//#define Action_Den_Mecanisme								108
+//#define Action_Den_CamBricole								110
+//#define Action_Den_AttVrt1									111
+//#define Action_Den_AttVrt2									112
+//#define Action_Den_AttVrt3									113
+//#define Action_Den_AttVrt4									114
+//#define Action_Den_AttVrt5									115
+//#define Action_Den_AttVrt6									116
+//#define Action_Den_AttBlaBla								120
+//#define Action_Den_AttBlaBla1								121
+//#define Action_Den_AttBlaBla2								122
+//
+//// JIMMY ==============================================================================
+//#define Action_Jimmy_LanceAmmo						109
+//
+//// HAYES ==============================================================================
+//#define Action_Hayes_Attaque_CoupDeCrosse			105
+//#define Action_Hayes_LanceReception_Arme			107
+//#define Action_Hayes_Lance_Arme						108
+//#define Action_Hayes_LanceReception_ArmeLoin		110
+//#define Action_Hayes_Lance_ArmeLoin					111
+//
+//#define Action_Hayes_Recharge_Mix						115
+//#define Action_Hayes_AttBlaBla							120
+//#define Action_Hayes_AttBlaBla1							121
+//#define Action_Hayes_AttBlaBla2							122
+//
+//#define Action_Hayes_Tir_Mix								125
+//
+//#define Action_Hayes_ShotGun_Rearme					135
+//#define Action_Hayes_Snipe_Ouvre						136
+//#define Action_Hayes_Snipe_Rearme						137
+//
+//#define Action_Hayes_Gun_Mix								143
+//#define Action_Hayes_Snipe_Mix							144
+//#define Action_Hayes_Arme_Attente_Pistolet			145
+//#define Action_Hayes_Arme_Attente_Tommy			146
+//#define Action_Hayes_Arme_Attente_Shotgun			147
+//#define Action_Hayes_Arme_Attente_Snipe				148
+//
+//#define Action_Hayes_Arme_Marche						150
+//#define Action_Hayes_AttVrt									152
+//#define Action_Hayes_AttVrt1								153
+//#define Action_Hayes_AttVrt2								154
+//#define Action_Hayes_AttVrt3								155
+//#define Action_Hayes_AttVrt4								156
+//#define Action_Hayes_AttVrt5								157
+//
+//#define Action_Hayes_Arme_Trot							160
+//#define Action_Hayes_Arme_Course						161
+//#define Action_Hayes_Arme_Recule						162
+//#define Action_Hayes_Stress_MarcheF_Rapide		163
+//#define Action_Hayes_Tommy_Recule					164
+//#define Action_Hayes_Tommy_Marche					165
+//#define Action_Hayes_Tommy_MarcheRapide			166
+//#define Action_Hayes_Tommy_Trot						167
+//
+//#define Action_Hayes_Att_Observe_Gun					177
+//
+//#define Action_CacheMur_Gauche							178
+//#define Action_CacheMur_Droite							179
+//#define Action_Cache_Gauche								180
+//#define Action_Cache_Droite									181
+//
+//// JACK ==============================================================================
+//#define Action_Jack_AttMainLibres							1
+//#define Action_Jack_AttMainLibres_Arme				2
+//#define Action_Jack_AttMainLibres_Montre				3
+//#define Action_Jack_AttMainLibres_Attrape				4
+//#define Action_Jack_AttMainLibres_Bambou			5
+//#define Action_Jack_AttMainLibres_TNT					6
+//#define Action_Jack_Declenche								7
+//
+//#define Action_Jack_MarcheMainLibres					10
+//#define Action_Jack_MarcheMainLibres_Bambou		11
+//#define Action_Jack_MarcheMainLibres_TNT			12
+//
+//#define Action_Jack_Pousse_Deb							14
+//#define Action_Jack_Pousse									15
+//#define Action_Jack_Pousse_Att							16
+//#define Action_Jack_Pousse_Bloque						17
+//#define Action_Jack_Pousse_tr_Tire						18
+//#define Action_Jack_Pousse_AttPause					19
+//
+//
+//
+//#define Action_Jack_EnvoiReception_Flingue			20
+//#define Action_Jack_Reception_Flingue					21
+//#define Action_Jack_Envoi_Flingue							22
+//#define Action_Jack_EnvoiReception_Tommy			23
+//#define Action_Jack_Reception_Tommy					24
+//#define Action_Jack_Reception_Bambou					25
+//#define Action_Jack_Reception_TNT						26
+//
+//#define Action_Jack_RepousseHerbeG					30
+//#define Action_Jack_RepousseHerbeD					31
+//#define Action_Jack_RamasseF								34
+//#define Action_Jack_Ramasse								35
+//#define Action_Jack_SeFaitSoigner						36
+//
+//#define Action_Jack_Att_Colt									40
+//#define Action_Jack_Arme_Att								41
+//#define Action_Jack_Att_Shotgun							42
+//#define Action_Jack_Att_Snipe								43
+//#define Action_Jack_Att_Bambou							44
+//#define Action_Jack_Att_TNT									45
+//
+//#define Action_Jack_Marche_Colt							50
+//#define Action_Jack_Arme_Marche							51
+//#define Action_Jack_Marche_Shotgun						52
+//#define Action_Jack_Marche_Snipe						53
+//#define Action_Jack_Marche_Bambou						54
+//#define Action_Jack_Marche_TNT							55
+//
+//#define Action_Jack_ColtAttCible							58
+//#define Action_Jack_ShotgunAttCible						59
+//#define Action_Jack_TommyAttCible						60
+//#define Action_Jack_BambouAttCible						61
+//
+//#define Action_Jack_Bambou_Tr							66
+//
+//#define Action_Jack_Att_Bambou_Crouch				75
+//#define Action_Jack_Marche_Bambou_Crouch			76
+//
+//#define Action_Jack_Tire_Deb								80
+//#define Action_Jack_Tire										81
+//#define Action_Jack_Tire_Att									82
+//#define Action_Jack_Tire_Bloque							83
+//#define Action_Jack_Tire_tr_Pousse						84
+//#define Action_Jack_Tire_AttPause						85
+//
+//#define Action_Jack_TNTLance								86
+//#define Action_Jack_TNTAllume								87
+//
+//#define Action_Jack_NageAtt									150
+//#define Action_Jack_NageAttGun							151
+//#define Action_Jack_NageAttBambou						152
+//#define Action_Jack_NageAttLevier							153
+//#define Action_Jack_NageRecul								160
+//#define Action_Jack_NageReculGun						161
+//#define Action_Jack_Nage										170
+//#define Action_Jack_NageGun								171
+//#define Action_Jack_NageBambou							172
+//#define Action_Jack_NageLevier								173
+//
+//#define Action_Jack_Bambou_FBas						093
+//#define Action_Jack_Bambou_FHaut						094
+//
+//#define Action_Jack_Paf_Face								100
+//
+//#define Action_Jack_AttEau_1Main_Levier				103
+//#define Action_Jack_MarcheEau_1Main_Levier			104
+//#define Action_Jack_AttEau_1Main_Flingue				105
+//#define Action_Jack_MarcheEau_1Main_Flingue		106
+//#define Action_Jack_AttEau_2Main_Shot				107
+//#define Action_Jack_AttEau_2Main_Tommy				108
+//#define Action_Jack_AttEau_2Main_Snipe				109
+//#define Action_Jack_MarcheEau_2Main_Shot			110
+//#define Action_Jack_MarcheEau_2Main_Tommy		111
+//#define Action_Jack_MarcheEau_2Main_Snipe			112
+//#define Action_Jack_MarcheEau_2Main_Bambou		113
+//#define Action_Jack_AttEau_2Main_Bambou			114
+//
+//#define Action_Jack_TirCible_Mix							130
+//
+//#define Action_Jack_CoupPoing								175
+//#define Action_Jack_CoupCrosse							176
+//
+//// ANN ==============================================================================
+//#define Action_Ann_AttVrt										034
+//#define Action_Ann_AttVrt1									035
+//#define Action_Ann_AttVrt2									036
+//#define Action_Ann_AttVrt3									037
+//#define Action_Ann_AttVrt4									038
+//#define Action_Ann_AttVrt5									039
+//
+//#define Action_Ann_SoigneG									105
+//#define Action_Ann_SoigneD									106
+//#define Action_Ann_SoigneDebout							107
+//#define Action_Ann_SeSoigne								108
+//#define Action_Ann_SoigneJack								109
+//#define Action_Ann_SeSoigneAssis						110
+//
+//#define Action_Ann_Grimpe_Att								115
+//#define Action_Ann_Grimpe_Haut							116
+//#define Action_Ann_Grimpe_Droite							117
+//#define Action_Ann_Grimpe_Gauche						118
+//#define Action_Ann_Grimpe_Paf								119
+//#define Action_Ann_Grimpe_Glisse						120
+//#define Action_Ann_Grimpe_Chute							121
+//#define Action_Ann_Grab_Bat_Attend						125
+//#define Action_Ann_Grab_Bat_SeDebat					127
+//
+//#define Action_Ann_Grimpe_montedeb					135
+//#define Action_Ann_Grimpe_monte							136
+//#define Action_Ann_Grimpe_montefin						137
+//#define Action_Ann_Grimpe_descentedeb				138
+//#define Action_Ann_Grimpe_descente						139
+//#define Action_Ann_Grimpe_descentefin					140
+//#define Action_Ann_Grimpe_coteD							141
+//#define Action_Ann_Grimpe_coteG							142
+//#define Action_Ann_Grimpe_Attente						143
+//#define Action_Ann_Grimpe_ChercheAccroche			144
+//#define Action_Ann_Grimpe_PafPaf						145
+//
+//#define Action_Ann_Grimpe_Phrase1						150
+//
+//#define Action_Ann_AttBlaBla								160
+//#define Action_Ann_AttBlaBla1								161
+//#define Action_Ann_AttBlaBla2								162
+//#define Action_Ann_AttBlaBla3								163
+//
+//#define Action_Ann_FinGrimpe_Bas						200
+//#define Action_Ann_FinGrimpe_Haut						201
+//#define Action_Ann_DebutGrimpe_Bas					203
+//#define Action_Ann_GrimpeTrGrimpeFin					209
+//
+//

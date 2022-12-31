@@ -1,0 +1,232 @@
+#include "PNJ_Spider_defines.var"
+
+// Define at least one function in a track
+function track0 = "PNJ_Spider_Init"
+// function track1 = "name"
+// function track2 = "name"
+// function track3 = "name"
+// function track4 = "name"
+
+separator "CONFIGURATION"
+int					tutorial = vrai_faux
+int					number = 20
+int					DBG_Log_Alllowed = vrai_faux
+
+separator "SF"
+int								i_SF_NePasSeRejouerSiMort		= vrai_faux		// Flag qui indique si l'acteur gere ou pas un SF de mort
+private int					i_SF_AlreadyDead						= -1				// N° du SF (Alloué Dynamiquement)
+
+separator "RESEAU BALADE"
+object		o_start_wp
+private network	n_net2
+
+
+separator "RESEAU DEPLACEMENT"
+network		n_net
+private vector	v_net_next_pos
+private int		i_net_way_wp_nb
+private object	ao_net_way_wp[10]
+
+separator "TARGET"
+int					target_selection = enum("IA" 0 "Trigger GAO5" 1)
+object			o_force_target
+object			o_ignore_target
+
+separator "BV LIMITATION"
+object			BV_ZoneTerritoire
+object			BV_Attack
+
+separator "ACTIVATION"
+trigger			trigger_apparition
+trigger			trigger_attaque
+
+separator "DEPLACEMENT"
+float				rayon_balade				= 1.0
+float				move_speed				= 2.0
+float				move_acceleration		= 2.0
+
+private float			f_size_coef				= 1.0
+private float			f_sqr_size_coef
+
+// ETAT
+private int			i_etat_courant		= -1
+private int			i_dernier_etat		= -1
+private int			i_flag_sortie_etat
+
+private int			i_etat_phase
+
+private float			f_time_start_etat
+private float			f_etat_phase_duration
+
+private function	fct_main_etat
+private function	fct_last_etat
+
+// ANALYSE
+//private int				i_flag_audio_check_done
+private int				i_flag_visual_check_done
+private int				i_flag_paf_check_done
+//private int				i_flag_collision_check_done
+private int				i_flag_shoot_check_done
+//private int				i_flag_budies_check_done
+//private int				i_flag_vala_check_done
+//private int				i_flag_check_best_interet_done
+
+private int					i_flag_change_target
+private float					f_time_change_target
+
+// PERCEIVED
+private int					i_perceived_main_actor_index
+private int					i_perceived_best_actor_index
+
+private int					i_perceived_actor_nb
+private int					ai_perceived_status[20]
+private int					ai_perceived_ID[20]
+	
+private float					af_perceived_dist[20]
+private float					af_perceived_interest[20]
+
+private vector				av_perceived_position[20]
+
+private object				ao_perceived_actor[20]
+private object				ao_perceived_nearest_wp[20]
+
+// DEPLACEMENT
+private int			i_flag_net_start
+private int			i_flag_net_end
+private int			i_flag_half_exited
+private int			i_current_wp_index
+
+private float			f_move_length
+private float			f_move_speed
+//private float			f_net_length
+private float			f_diplayed_length
+private float			f_link_coef
+private float			f_angle_oscillation
+
+// PAF
+private int			i_flag_paf
+
+private float			f_time_last_paf
+
+private vector		v_paf_dir
+
+// COLLISION
+private float			f_delay_until_last_ground_col
+private float			f_delay_until_last_wall_col
+
+private vector		v_ground_pos
+private vector		v_last_collided_pos
+private vector		v_ground_normal				= Cv_VerticalVector
+
+private vector		v_wall_normal
+
+// ATTAQUE
+private int			i_flag_hit
+
+// BEST INTERET
+private messageid		mid_best_interet
+private object				o_best_interet_target
+
+// ATTAQUE
+private float					f_jump_duration
+
+// MAIN ACTOR
+private object				o_main_actor
+
+// UNCOLLIDE LIST
+private int					i_uncollide_gao_nb
+private float					af_uncollide_duration[20]
+private object				ao_uncollide_gao[20]
+
+// LIFE
+separator "VIE"
+float							f_life = 20.0
+private float					f_lifecur
+
+// TRIGGER
+private int					i_flag_trigger_used
+
+// DEATH FIXE
+private float					f_angle_death
+
+// MEMOIRES
+private int					i_memorised_body_nb
+private object				ao_memorised_body[30]
+
+// MAIN PAF TIMER
+private float					f_timer_after_main_collision
+
+// SOUND
+private int					SND_move_1_loop = -1
+private int					SND_move_2_loop = -1
+private int					SND_move_3_loop = -1
+private int					SND_move
+
+private int					i_flag_death_sound_played
+
+private vector				v_last_pos
+
+private float					f_time_last_paf_sound
+private float					f_delay_between_paf_sound
+
+// DISPARITION
+private int					i_flag_desappear
+
+// INIT POS
+private vector				v_init_pos
+
+private float					f_snaped_speed
+private float					f_delay_before_moving_again
+private float					f_snaped_bone_length
+private float					f_on_snaped_bone_length
+
+// FRAME COUNT
+private int					i_frame_nb
+
+//// MORPH
+//private float					f_morph_progression
+
+// ATTACK
+private float					f_delay_before_attack
+private float					f_attack_duration
+
+// BANKING
+private vector				v_dest_banking = Cv_VerticalVector
+
+// ON SCREEN ?
+private int					i_flag_on_screen_attack
+private float					f_on_screen_pourcent
+private float					f_on_screen_duration
+
+// FIRE
+private int					i_flag_dodge_fire
+private int					i_flag_dodge_javelin_fire
+private int					i_fire_gao_nb
+
+private object				ao_fire_gao[50]
+
+// BALADE
+private float			f_rand_pos_duration
+private vector		v_rand_dest_pos
+
+private float			f_force_Z_axis_duration
+
+// BLINDAGE KILL BILL
+private float			f_main_accessible_duration
+private float			f_time_send_paf
+
+// SNAP
+private object		o_snap_actor
+
+private float			f_grab_Z
+private float			f_rot_angle
+private float			f_rot_speed
+
+// SECTO
+private int			i_flag_secto
+private vector		v_secto_speed
+
+private vector		v_snap_pos
+private vector		v_snap_sight
+private vector		v_snap_banking
+

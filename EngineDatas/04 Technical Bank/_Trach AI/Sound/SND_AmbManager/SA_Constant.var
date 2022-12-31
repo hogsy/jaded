@@ -1,0 +1,45 @@
+//--------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------
+#define Cte_Vol_DontTouch					0
+#define Cte_Vol_StartFade					1
+#define Cte_Vol_StartFadeToFullPower	2	
+#define Cte_Vol_Reinit							3
+// --
+#define Cte_Fade_Off	0
+#define Cte_Fade_In		1
+#define Cte_Fade_Out	2
+// --
+#define Cte_TransitionLoopNb	4
+
+//--------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------
+#define M_TestAreaTrig(_trigger, _prio, _cte_area, _gaolist)\
+{\
+	if(ti_prio > _prio)\
+	{\
+		if( AI_TriggerIsValid(_trigger)  )\
+		{\
+			if(_gaolist[0])\
+			{\
+				msg = AI_TriggerGetMsg(_trigger)\
+				for(titi=0; titi<5; titi++)\
+				{\
+					msg.msg_gao1 = _gaolist[titi]\
+					AI_TriggerSetMsg(_trigger, msg)\
+					if(call_trigger(_trigger))\
+					{\
+						ti_prio = _prio\
+						ti_area = _cte_area\
+						break\
+					}\
+				}\
+			}\
+			else if( call_trigger(_trigger) ) \
+			{\
+				ti_prio = _prio\
+				ti_area = _cte_area\
+			}\
+		}\
+	}\
+}
+// -- 

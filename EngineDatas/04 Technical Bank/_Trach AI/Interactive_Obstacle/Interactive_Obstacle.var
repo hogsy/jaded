@@ -1,0 +1,46 @@
+// Define at least one function in a track
+// function track0 = "name"
+// function track1 = "name"
+function track2 = "IOB_Etat_Init"
+// function track3 = "name"
+// function track4 = "name"
+
+
+#include "IOB_Defines.var"
+
+int						i_poing_Inoperant = vrai_faux
+float					f_puissance_ejection_normale = 10.0
+
+float					f_destroyall_paf_force = 10.0
+float					f_puissance_ejection_destroy = 15.0
+
+object				ODE_Objects[Ci_IOB_NbrOfObjectMax]
+
+private float			af_ode_vitesseL_frame[Ci_IOB_NbrOfObjectMax]
+private float			af_ode_deriveeL_frame[Ci_IOB_NbrOfObjectMax]
+private float			af_ode_vitesseA_frame[Ci_IOB_NbrOfObjectMax]
+private float			af_ode_deriveeA_frame[Ci_IOB_NbrOfObjectMax]
+
+private float			af_ode_vitesseL_old_frame[Ci_IOB_NbrOfObjectMax]
+private float			af_ode_deriveeL_old_frame[Ci_IOB_NbrOfObjectMax]
+private float			af_ode_vitesseA_old_frame[Ci_IOB_NbrOfObjectMax]
+private float			af_ode_deriveeA_old_frame[Ci_IOB_NbrOfObjectMax]
+
+//--SEUILS DE DETECTION DES CHOCS LOCAUX
+float					f_linear_threshold = 450.0
+float					f_angular_threshold = 400.0
+
+private float			af_vibrating[Ci_IOB_NbrOfObjectMax]
+
+int						ODE_Steps[Ci_IOB_NbrOfObjectMax]
+private float			ODE_LifeTime[Ci_IOB_NbrOfObjectMax]
+private int			i_step_current
+private int			i_step_last
+private int			f_jauge
+
+private int			i_SF_AlreadyPlayed 
+
+separator "Tag Size"
+float					mf_TagX = 4
+float					mf_TagY = 1
+int						i_tagged

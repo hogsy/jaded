@@ -1,0 +1,34 @@
+#include "SFX_Mur_destruction_VAR.var"
+
+// Fonction lancée à l'INIT
+function track0 = "SFX_Mur_destruction_INIT"
+
+separator		"PARAMETRES GENERAUX"
+int					i_nb_modules = 5														// Nombre de modules destructibles (ne pas compter le module initial)
+int					i_type_paf = enum("Gun" 0 "Grenade" 1 "Tout" 2)				// Type de paf pris en compte
+int					i_type_SFX = enum("Explosion + poussière" 0 "Vitres" 1)	// Type de SFX lors de la destruction
+int					i_type_force_paf = enum("Fort" 0 "Moyen" 1 "Moyen et fort" 2)		// Force du paf nécessaire pour détruire les blocs
+
+separator		"OBJET SIMPLE INITIAL"
+object 			o_obj_init																	// Objet initial
+object			o_ref_sol																	// WP de référence pour la hauteur du sol
+
+separator		"MODULES DESTRUCTIBLES"
+object			o_modules[NB_MODULES]											// Modules destructibles
+int					i_reaction_chaine = enum("Non" 0 "Oui" 1)						// Réaction en chaîne des modules
+int					i_liens_destruction[NB_MODULES]								// Liaisons entre les modules
+private int		i_etat_modules[NB_MODULES]	
+private vector	v_etat_modules[NB_MODULES]
+private vector	v_rot_modules[NB_MODULES]
+private float		f_vit_rot_mod = 5.0
+private int 		i_nb_mod_detruits = 0
+
+separator		"OCCLUDEUR"
+object			o_occludeur
+
+private int		i_etat_init = 0
+
+private vector	v_pos_collide = Cv_NullVector
+private vector	v_dir_collide = Cv_NullVector
+private int		i_is_paf = faux
+private vector	v_gravite = cvector(0.0,0.0,-0.25)

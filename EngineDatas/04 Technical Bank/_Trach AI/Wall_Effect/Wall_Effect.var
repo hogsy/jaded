@@ -1,0 +1,233 @@
+#include "Wall_Effect_defines.var"
+
+// Define at least one function in a track
+// function track0 = "name"
+// function track1 = "name"
+ function track2 = "Wall_Effect_init"
+// function track3 = "name"
+// function track4 = "name"
+
+
+separator	"KONG - GFX Ground Objects"																				//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+object 				o_GroundSoundID[NUM_SOUNDS][NUM_GFX]												//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+float	 				f_GroundSoundID_Delay[NUM_SOUNDS][NUM_GFX]										//the delay (in seconds) for each of the ground GFX effects													
+private float 		f_GroundSoundID_StartTimes[NUM_SOUNDS][NUM_GFX]
+private int			i_GroundSoundID_isActive[NUM_SOUNDS][NUM_GFX]
+
+separator	"KONG - GFX Wall Objects"																					//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+object 				o_WallPunchSoundID[NUM_SOUNDS][NUM_GFX]											//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+float	 				f_WallPunchSoundID_Delay[NUM_SOUNDS][NUM_GFX]									//the delay (in seconds) for each of the ground GFX effects
+private float 		f_WallPunchSoundID_StartTimes[NUM_SOUNDS][NUM_GFX]
+private int			i_WallPunchSoundID_isActive[NUM_SOUNDS][NUM_GFX]
+
+separator	"KONG - GFX Walling Objects"																				//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+object 				o_WallingSoundID[NUM_SOUNDS][NUM_GFX]												//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+
+separator	"KONG - GFX Movement Objects"				
+object				o_MovementSoundID[NUM_SOUNDS][NUM_MOVEMENTS ][NUM_GFX]				//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+float	 				f_MovementSoundID_Delay[NUM_SOUNDS][NUM_MOVEMENTS ][NUM_GFX]		//the delay (in seconds) for each of the ground GFX effects
+private float 		f_MovementSoundID_StartTimes[NUM_SOUNDS][NUM_MOVEMENTS ][NUM_GFX]
+private int			i_MovementSoundID_isActive[NUM_SOUNDS][NUM_MOVEMENTS ][NUM_GFX]
+
+////PRIVATE DUPLICATIONS ON GFX FOR HAND/FEET
+//private object		o_WallingLeftSoundID[NUM_SOUNDS][NUM_MOVEMENTS ][NUM_GFX]			//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+//private float	 		f_WallingLeftSoundID_Delay[NUM_SOUNDS][NUM_MOVEMENTS ][NUM_GFX]	//the delay (in seconds) for each of the ground GFX effects
+//private float 		f_WallingLeftSoundID_StartTimes[NUM_SOUNDS][NUM_MOVEMENTS ][NUM_GFX]
+//private int			i_WallingLeftSoundID_isActive[NUM_SOUNDS][NUM_MOVEMENTS ][NUM_GFX]
+//
+//private object		o_WallingLeft1SoundID[NUM_SOUNDS][NUM_MOVEMENTS ][NUM_GFX]			//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+//private float	 		f_WallingLeft1SoundID_Delay[NUM_SOUNDS][NUM_MOVEMENTS ][NUM_GFX]	//the delay (in seconds) for each of the ground GFX effects
+//private float 		f_WallingLeft1SoundID_StartTimes[NUM_SOUNDS][NUM_MOVEMENTS ][NUM_GFX]
+//private int			i_WallingLeft1SoundID_isActive[NUM_SOUNDS][NUM_MOVEMENTS ][NUM_GFX]
+//
+//private object		o_WallingRight1SoundID[NUM_SOUNDS][NUM_MOVEMENTS ][NUM_GFX]			//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+//private float	 		f_WallingRight1SoundID_Delay[NUM_SOUNDS][NUM_MOVEMENTS ][NUM_GFX]	//the delay (in seconds) for each of the ground GFX effects
+//private float 		f_WallingRight1SoundID_StartTimes[NUM_SOUNDS][NUM_MOVEMENTS ][NUM_GFX]
+//private int			i_WallingRight1SoundID_isActive[NUM_SOUNDS][NUM_MOVEMENTS ][NUM_GFX]
+
+
+//RAPTOR GFX
+separator	"RAPTOR - GFX Walking Objects"																			//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+object 				o_RaptorMovementSoundID[NUM_SOUNDS][NUM_GFX]									//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+float	 				f_RaptorMovementSoundID_Delay[NUM_SOUNDS][NUM_GFX]							//the delay (in seconds) for each of the ground GFX effects
+private float 		f_RaptorMovementSoundID_StartTimes[NUM_SOUNDS][NUM_GFX]
+private int			i_RaptorMovementSoundID_isActive[NUM_SOUNDS][NUM_GFX]
+
+
+//PRIVATE DUPLICATES FOR EACH FOOT																																		//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+//private object 		o_RaptorRightSoundID[NUM_RAPTORS][NUM_SOUNDS][NUM_GFX]				//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+//private float	 		f_RaptorRightSoundID_Delay[NUM_RAPTORS][NUM_SOUNDS][NUM_GFX]		//the delay (in seconds) for each of the ground GFX effects
+//private float 		f_RaptorRightSoundID_StartTimes[NUM_RAPTORS][NUM_SOUNDS][NUM_GFX]
+//private int			i_RaptorRightSoundID_isActive[NUM_RAPTORS][NUM_SOUNDS][NUM_GFX]
+//
+//private object 		o_RaptorLeftSoundID[NUM_RAPTORS][NUM_SOUNDS][NUM_GFX]				//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+//private float	 		f_RaptorLeftSoundID_Delay[NUM_RAPTORS][NUM_SOUNDS][NUM_GFX]		//the delay (in seconds) for each of the ground GFX effects
+//private float 		f_RaptorLeftSoundID_StartTimes[NUM_RAPTORS][NUM_SOUNDS][NUM_GFX]
+//private int			i_RaptorLeftSoundID_isActive[NUM_RAPTORS][NUM_SOUNDS][NUM_GFX]
+
+
+//RAPTOR GFX
+separator	"RAPTOR - GFX THROWN IMPACT Objects"														//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+object 				o_RaptorImpactSoundID[NUM_SOUNDS][NUM_GFX]									//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+float	 				f_RaptorImpactSoundID_Delay[NUM_SOUNDS][NUM_GFX]							//the delay (in seconds) for each of the ground GFX effects
+private float 		f_RaptorImpactSoundID_StartTimes[NUM_SOUNDS][NUM_GFX]
+private int			i_RaptorImpactSoundID_isActive[NUM_SOUNDS][NUM_GFX]
+
+
+////PRIVATE DUPLICATES FOR IMPACTS																				//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+//private object 		o_RaptorImpactDupSoundID[NUM_RAPTORS][NUM_SOUNDS][NUM_GFX]		//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+//private float	 		f_RaptorImpactDupSoundID_Delay[NUM_RAPTORS][NUM_SOUNDS][NUM_GFX]	//the delay (in seconds) for each of the ground GFX effects
+//private float 		f_RaptorImpactDupSoundID_StartTimes[NUM_RAPTORS][NUM_SOUNDS][NUM_GFX]
+//private int			i_RaptorImpactDupSoundID_isActive[NUM_RAPTORS][NUM_SOUNDS][NUM_GFX]
+
+
+//TREX GFX
+separator	"TREX - GFX Walking Objects"																			//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+object 				o_TrexMovementSoundID[NUM_SOUNDS][NUM_GFX]									//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+float	 				f_TrexMovementSoundID_Delay[NUM_SOUNDS][NUM_GFX]							//the delay (in seconds) for each of the ground GFX effects
+private float 		f_TrexMovementSoundID_StartTimes[NUM_SOUNDS][NUM_GFX]
+private int			i_TrexMovementSoundID_isActive[NUM_SOUNDS][NUM_GFX]
+
+//PRIVATE DUPLICATES FOR EACH FOOT																																		//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+//private object 		o_TrexRightSoundID[NUM_RAPTORS][NUM_SOUNDS][NUM_GFX]					//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+//private float	 		f_TrexRightSoundID_Delay[NUM_RAPTORS][NUM_SOUNDS][NUM_GFX]		//the delay (in seconds) for each of the ground GFX effects
+//private float 		f_TrexRightSoundID_StartTimes[NUM_RAPTORS][NUM_SOUNDS][NUM_GFX]
+//private int			i_TrexRightSoundID_isActive[NUM_RAPTORS][NUM_SOUNDS][NUM_GFX]
+//
+//private object 		o_TrexLeftSoundID[NUM_RAPTORS][NUM_SOUNDS][NUM_GFX]					//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+//private float	 		f_TrexLeftSoundID_Delay[NUM_RAPTORS][NUM_SOUNDS][NUM_GFX]			//the delay (in seconds) for each of the ground GFX effects
+//private float 		f_TrexLeftSoundID_StartTimes[NUM_RAPTORS][NUM_SOUNDS][NUM_GFX]
+//private int			i_TrexLeftSoundID_isActive[NUM_RAPTORS][NUM_SOUNDS][NUM_GFX]
+
+
+//TREX GFX	
+separator	"TREX - GFX THROWN IMPACT Objects"														//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+object 				o_TrexImpactSoundID[NUM_SOUNDS][NUM_GFX]									//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+float	 				f_TrexImpactSoundID_Delay[NUM_SOUNDS][NUM_GFX]							//the delay (in seconds) for each of the ground GFX effects
+private float 		f_TrexImpactSoundID_StartTimes[NUM_SOUNDS][NUM_GFX]
+private int			i_TrexImpactSoundID_isActive[NUM_SOUNDS][NUM_GFX]
+
+
+//PRIVATE DUPLICATES FOR IMPACTS																				//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+//private object 		o_TrexImpactDupSoundID[NUM_RAPTORS][NUM_SOUNDS][NUM_GFX]			//0-Snd_None   1-Snd_Dirt   2-Snd_Veget   3-Snd_Stone   4-Snd_Water   5-Snd_Flesh   6-Snd_Wood   7-Snd_Steel
+//private float	 		f_TrexImpactDupSoundID_Delay[NUM_RAPTORS][NUM_SOUNDS][NUM_GFX]	//the delay (in seconds) for each of the ground GFX effects
+//private float 		f_TrexImpactDupSoundID_StartTimes[NUM_RAPTORS][NUM_SOUNDS][NUM_GFX]
+//private int			i_TrexImpactDupSoundID_isActive[NUM_RAPTORS][NUM_SOUNDS][NUM_GFX]
+
+
+separator	"Impact Textures"
+object				o_Ground_Impact_Textures[NUM_SOUNDS]
+object				o_WallPunch_Impact_Textures[NUM_SOUNDS]
+object				o_Walling_Impact_Texture[NUM_SOUNDS]
+object 				o_empty_wayPoint													//an empty o_empty_wayPoint	 point used to position objects on the wall/ground
+
+separator	"Number of Punch Textures that exist simultaneoulsy"
+int 					i_numberPunchObjects = 5										//MAX ALLOCATED IS 15!!
+int						i_numberWallObjects = 8  										//MAX ALLOCATED IS 15!!
+int						i_numberGroundObjects = 5										//MAX ALLOCATED IS 15!!
+
+//Delay variables
+private float 		f_global_time =0.0
+private float 		f_start_time   =0.0
+private float			f_start_punch_time = 0.0
+private float			f_delay_until_next_punch = 0.5
+private float			f_delay_until_next_fall = 1.0
+private float			f_start_fall_time = 0.0
+//private int			is_WaterHit[5] 	
+//private int			is_WallHit[5] 		
+//private int			is_GroundHit[5] 	
+//private int			is_Walling[5]
+private int 			sound																	//sound ID for the material (water, vegetation etc...)
+private float 		punchSensitivity = 0.1												//when the texture should appear on the wall, hoe "smooth" should the wall have to be...
+private int 			i_duplicateTexture = vrai
+private int			i_landFirst 
+private int 			k = 0
+private int 			j  = 0
+private int			l = 0
+private int			p = 0
+private object 		o_num_punchTextures[8]											//number of punch textures stored in an array
+private object  		duplicated 
+private vector 		firstPoint
+private vector 		firstNormal
+private vector 		firstArmPoint 
+private vector 		ray_endPoint
+
+//kong animation variables
+private object 		o_Kong_neck
+private object 		o_Kong
+private object 		o_Kong_fist
+private object 		o_Kong_arm
+private object 		o_firstContact
+private float 		empty = vrai
+private int 			kong_Action
+private vector 		neck_offset
+private object		o_Kong_fistD			
+private object		o_Kong_finger			
+private object		o_Kong_fingerD		
+private object		o_Kong_upArm
+private object		o_Kong_upArmD	
+private object		o_Kong_torso	
+private object		o_Kong_footG			
+private object		o_Kong_footD
+private object		o_Kong_JambeD 
+private object		o_Kong_JambeG 	
+
+//edge detection variable
+separator	"Ground Texture Measurements"
+float 					x_LandLength = 6.0														//positive value for the length in the X axis
+float 					y_LandLength= 6.0														//positive value for the length in the Y axis
+
+float 					x_PunchLength = 1.0
+float 					y_PunchLength = 1.0
+
+private vector		xOffset 			
+private vector		yOffset 			
+
+private vector		xPunchOffset 			
+private vector		xPunchNegOffset 	
+private vector		yPunchOffset 			
+private vector		yPunchNegOffset 
+
+private object 		o_test_ray
+private object 		o_test_ray1
+private object 		o_test_ray2 
+private object 		o_test_ray3    
+
+private int 			i_texture_out_of_bounds =faux //change to faux
+private int			i_number_GFX = 5
+private int			i_number_sounds = 8
+
+//walling variables
+private object		o_num_WallTextures[15]  //15
+private int			currentNum = 0
+private int			i_duplicateWallTexture = vrai
+private float			timeStart  = 0.0
+private float	 		f_start_walling_time = 0.0
+private float		 	f_delay_until_next_walling = 0.7
+
+//ground impact variables
+private object		o_num_GroundTextures[15]  //15
+private int			currentGroundNum = 0
+private int			i_duplicateGroundTexture = vrai
+
+separator	"Texture Fading Durations"	
+//fading delay variables
+int i_wall_punch_fade_delay		= 5
+int i_ground_impact_fade_delay	= 5
+int i_footsteps_fade_delay			= 5
+
+//raptor variables
+private float f_raptor_RightfootGFX_time = 0.0
+private float f_raptor_footGFX_delay 
+private float f_raptor_LeftfootGFX_time	=0.0
+
+//TREX variables
+private float  f_Trex_LeftfootGFX_time = 0.0
+private float  f_Trex_RightfootGFX_time = 0.0
+private float  f_Trex_footGFX_delay = 0.5
+
+private vector		v_kong_upper_arm 
+private vector		v_kong_finger
+private vector		v_kong_offset
+private vector		v_kong_pos
+private int 			i_number_movements  = 2

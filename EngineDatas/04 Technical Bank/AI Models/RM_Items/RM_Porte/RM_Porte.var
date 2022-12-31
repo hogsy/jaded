@@ -1,0 +1,54 @@
+#include "Por_Defines.var"
+
+// Define at least one function in a track
+// function track0 = "name"
+// function track1 = "name"
+function track2 = "Por_init"
+// function track3 = "name"
+// function track4 = "name"
+
+separator "GAO PORTE & TARGET GAO"
+object		o_porte_ferme[Ci_Porte_Nbr_Of_Element_Max]				// GAO a deplacer/Orienter (Pos INIT en position PORTE FERME
+object		o_porte_ouverte[Ci_Porte_Nbr_Of_Element_Max]				// WP de destination pour l'ouverture
+int				i_etat_init = enum ("0 - Fermé" 0 "1 - Ouverte" 1)				// Etat init
+
+private int	SF_ID
+private int	i_etat 
+private int	i_lock
+
+separator "OUVERTURE"
+trigger		t_ouverture																	// Trigger d'ouverture de la porte (Capa Switch sur moi ouvre aussi)
+float			f_ouverture_vitesse = 1.0												// Vitesse d'ouverture
+int				i_ouverture_methode = enum("1- Blend" 1 "2- Lineaire" 2 "3- LineraireAmorie" 3)		// Type d'ouverture
+trigger		t_ouverture_exec[3]														// Triggers executés au moment de l'ouverture de la porte (init aussi si etat init ouvert)
+
+separator "FERMETURE"
+trigger		t_fermeture																	// Trigger de fermeture de la porte (Ne laissez pas la capa Swith sur moi car elle est prio sur tout)
+float			f_fermeture_vitesse = 1.0												// Vitesse de fermeture
+int				i_fermeture_methode = enum("1- Blend" 1 "2- Lineaire" 2 "3- LineraireAmorie" 3)	// Type de fermeture
+trigger		t_fermeture_exec[3]														// Triggers executés au moment de la fermeture de la porte (init aussi si etat init fermé)
+
+separator "DIVERS"
+int				i_lock_if_new_status = vrai_faux										// Permet de locker la porte dans l'etat different de l'etat par defaut
+int				i_gestion_colmap_AI = faux_vrai										// Desactive la gestion des colmap par AI (Devient LD: Utiliser Trigger Exec)
+float			i_pourcentage_open = 0.5
+int				i_dynOn = vrai_faux
+
+private float			f_progression
+private float			f_progression_old
+private float			f_vitesse_cur
+private network	n_net
+private int			i_flag_init = vrai
+
+private vector	v_porte_initpos[Ci_Porte_Nbr_Of_Element_Max]
+private vector	v_porte_initsight[Ci_Porte_Nbr_Of_Element_Max]
+private vector	v_porte_initbanking[Ci_Porte_Nbr_Of_Element_Max]
+
+// ETATS
+private int				i_sort_etat
+private int				i_etat_courant
+private int				i_dernier_etat
+private function		fct_last_etat = nofunc
+
+private int				i_snd_loop = -1
+private int				i_snd_end = faux

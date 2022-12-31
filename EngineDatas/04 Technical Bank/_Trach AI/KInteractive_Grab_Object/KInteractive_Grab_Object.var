@@ -1,0 +1,94 @@
+#include "KIGO_defines.var"
+
+// Define at least one function in a track
+// function track0 = "name"
+// function track1 = "name"
+function track2 = "KIGO_init"
+// function track3 = "name"
+// function track4 = "name"
+
+// INIT
+separator				"Object type"
+int							i_grab_entite	= 	enum( "1 Handed Grab( Roc)" 0 "2 Handed Grab( Souche)" 1)
+int							i_grab_detail 	= 	enum( "Roc" 0 "Tree" 1 "tank" 2)
+int							i_projectile_dmg = enum("0 - fort" 0 "1 - kitue" 1 )
+
+separator				"Case 2 Hand"
+float						f_centre_zde	=	3.5
+float						f_rayon_zde	=	3.0
+separator				"Case 1 Hand"
+separator				"Parameters"
+float						f_puissance_projectile	= 75.0	// power
+float						f_damage_projectile		= 15.0		// power (KiTue petit ennemi donc plutot utile pour REX)
+
+private	int				i_TYPE			//= enum ( "Souche" 0 "Block" 1)
+private	vector		av_offset[5][2]
+private	vector		av_rotation[5][2]
+private	float			f_dist_grab
+
+// ETATS
+private	int				i_etat_courant = -1
+private	int				i_dernier_etat = -1
+private 	int				i_sort_etat
+private 	function		fct_last_etat
+
+// GRABBED
+private	object		o_snap_actor								// acteur de grab backup
+private	object		o_snap_bone								// os de l'acteur
+private	object		o_grabbed_actor_KK					// acteur de grab courant (test liaison)
+private	messageid	mid_grabbed_by_Kong_LNK_ID		// lien grab
+private 	vector		v_centre_pos								// position du centre du tronc
+private 	float			f_snap_bone_pos_coef					// coef de positionnement du tronc par rapport à l'os de snap
+
+// PROJECTILE
+private	vector		v_proj_pos
+private	int				i_proj_etat
+private 	vector		v_proj_rot_vect
+private	vector		v_last_speed
+private	object		o_projectile_actor							// acteur qui a lancé le tronc
+
+// Memo des targets a etre paff pendant le mode projectile
+private	object		ao_frappe_target[20] 
+private	int				i_frappe_target_nb
+
+// ROTATION
+private 	float			f_proj_rot_coef_cur
+private	float			f_proj_rot_coef_final
+private	float			f_proj_rot_coef_blend
+
+// NB COUPS
+private	int				i_nb_coup_avt_destruction
+private	int				i_nb_coup
+private	vector		v_sum_pafs_dir
+private	vector		v_add_speed
+
+// POSITION
+private int 				i_flag_vertical = vrai
+private float				f_horizontal_blend_coef = 0.0
+
+// UNCOL
+private object			ao_uncol_list[10]
+private int				ai_uncol_done[10]
+private int				i_nb_uncol
+
+// ACTEURS
+private object			o_ANN
+private object			o_KONG
+
+private float				f_time_ground
+
+// GFX
+private int				GFX_Explose = -1
+
+// PAF
+private object			o_PAF_actor
+
+private	int				i_setpos_anim_paf
+
+private	int				i_orient_horiz_mode
+private	vector		v_orient_horiz_banking_cur
+private	vector		v_orient_horiz_banking_perfect
+
+private	int				i_tombe_impact_done
+
+private	float			f_time_start_etat

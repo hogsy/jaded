@@ -1,0 +1,388 @@
+#include "CR_defines.var"
+
+//================================================================================
+//                                                DOCUMENTATION SUR LES CRABES
+//================================================================================
+// DOC :            Y:\KK_Prod_site\Archive_Docs\Docs_Briques\Crabe.doc
+//================================================================================
+// INFOS :         Les paramètres et différentes capas sont dans CR_defines.var
+//================================================================================
+
+// Define at least one function in a track
+// function track0 = "name"
+// function track1 = "name"
+function track2 = "CR_TRACK_Init"
+// function track3 = "name"
+// function track4 = "name"
+
+// CONFIGURATION GENERALE
+separator "Configuration"
+int							i_actif = faux_vrai
+int							i_modele = enum("Geant" 0 "Petit" 1)		// MODELE_Geant ; MODELE_Petit
+private	int				i_id_modele
+object					o_territoire = nobody					// territoire du crabe
+object					o_change_target = nobody		// zone de changement de target si idle
+trigger					trig_attaque
+int							i_trig_attack_type = enum("GAO5" 0 "GAO spécifique" 1)
+object					o_attack_gao = nobody			// gao spécfiique à attaquer
+int							i_LD_attack_from_network = vrai_faux
+private	int				i_attack_from_network
+float						f_LD_time_attack_forbidden
+object					o_DBG_force_attack_gao = nobody
+object					o_ignore_target = nobody
+object					o_blind_zone[Ci_blind_zone_max_nb]
+int							i_HumanDontShootOnMe = vrai_faux		// si vrai, les marins ne tirent pas sur la bat
+int							i_attaque_en_hauteur = vrai_faux			// si vrai, aucun test de hauteur. si faux, teste target Z <= mon Z + f_attaque_hauteur_Z
+float						f_attaque_hauteur_Z = 2.0
+float						f_grab_delay = 10.0			// délai depuis le dernier grab de n'importe quel crabe pour pouvoir grabber (et pas forcer un paf à la place)
+int							i_attaque_si_perso_accessible = faux_vrai		// par défaut, le crabe a le droit d'attaquer un perso présent dans son territoire
+int							i_no_trigger_attaque_perso_proche = vrai_faux				// s'il n'a pas de trigger d'attaque, le crabe attaquera un perso proche grace à ce flag
+separator "petit crabe"
+int							i_petit_crabe_grab_ON = faux_vrai
+int							i_petit_crabe_grab_stop = enum( "mur" 0 "mur et eau" 1 )
+float						f_duree_grab_force_blesse = 0.0
+// NETWORK
+separator "NETWORK"
+object					o_net_apparition_wp
+trigger					trig_net_apparition
+private	int				i_net_apparition_done
+private	network		net_apparition
+private	object		o_net_last_wp = nobody
+private	object		o_net_next_wp = nobody
+private	int				i_net_done_flag = vrai		// vrai par défaut, mis à faux à l'init s'il y a un réseau de défini
+private	object		o_net_paf_actor = nobody
+private	object		o_net_trigger_actor = nobody
+network					net_idle
+private	object		o_net_idle_last_wp = nobody
+private	object		o_net_idle_next_wp = nobody
+object					o_crabe_geant_fuite_wp = nobody
+private	int				i_net_idle_return_done
+private	float			f_net_idle_intim_delai
+// SPECIAL FLAGS
+separator "SF"
+int								i_SF_NePasSeRejouerSiMort		= vrai_faux		// Flag qui indique si l'acteur gere ou pas un SF de mort
+private int					i_SF_AlreadyDead						= -1				// N° du SF (Alloué Dynamiquement)
+// FOOD CHAIN
+separator "FOOD CHAIN"
+private	float			f_viande_max = 0.0
+private	float			f_viande_cur = 0.0
+float						f_mange_paf_dmg = 0.0
+float						f_mange_paf_delai = 0.0
+private	int				i_cadavre_nb = 0
+private	object		ao_cadavre[Ci_cadavre_max_nb]
+private	int				ai_cadavre_nouveau[Ci_cadavre_max_nb]
+private	object		o_mange_actor = nobody
+private	float			f_delay_blood_gen = 0.0
+object					o_force_decompose_BV = nobody
+float						f_force_decompose_duree = 10.0
+// PAFS & HP
+separator "PAFS & HP"
+private	float			f_HP_max = 0.0
+private 	float			f_HP_cur = 0.0
+private	object		o_paf_actor = nobody
+private	int				i_paf_check_flag = faux
+private	int				i_paf_main_actor_flag = faux
+private	int				i_paf_important_flag = faux
+private	int				i_paf_moyen_flag = faux
+private	int				i_paf_faible_flag = faux
+private	int				i_paf_repousse_flag = faux
+private	float			f_paf_cumul_dmg = 0.0
+private	vector		v_paf_dir = Cv_NullVector
+private	vector		v_paf_recul_backup = Cv_NullVector
+private	float			f_time_mort
+private	float			f_paf_repousse_norm
+private	float			f_paf_dmg_multiplicateur
+private	float			f_paf_dmg_reduction
+private	float			f_paf_rotation_force = 0.0
+private	float			f_paf_rotation_coef = 1.0
+private	float			af_paf_cumul_time[20]
+private	float			af_paf_cumul_dmg[20]
+private	int				i_paf_cumul_nb = 0
+private	float			f_paf_grab_lache_norm
+private	int				i_paf_grab_lache_flag
+private	float			f_time_last_paf
+private	int				i_paf_lance_flag
+private	int				i_paf_accumulation
+private	int				i_paf_force_anim
+private	float			f_mort_delai_depuis_dernier_paf
+// ATTACK & GRAB
+separator "ATTACK & GRAB"
+private	int				i_grab = vrai_faux
+private	messageid	mid_best_interet
+private	object		o_fight_actor = nobody
+private	object		o_grab_actor_backup = nobody
+private	float			f_time_grab_no_coll_paf = 0.0		// durée pendant laquelle le crabe est interdit d'envoyer un paf en collision à l'acteur qu'il grabbait
+private	int				i_fight_actor_ID = -1
+private	messageid	mid_grab
+private	vector		v_grab_pos = Cv_NullVector
+private	int				i_attack_intimidation_done = faux
+private	int				i_attack_paf_done = faux
+private	int				i_grab_test_done = faux
+private	int				i_paf_to_send_type
+private	float			f_paf_to_send_timer
+private	int				i_change_target_flag = faux
+float						f_dist_to_actor_change_target = 0.0		// distance à laquelle le crabe va changer de cible pour attaquer
+private	float			f_dist_to_actor_change_target_network
+private	float			f_attack_delay = 0.0
+private	float			f_attack_delay_min = 0.0			// délai après une attaque ou un grab
+private	float			f_attack_delay_max = 0.0			// délai après une attaque ou un grab
+private	int				i_grab_paf_inter_send = faux		// flag pour mémoriser qu'on a envoyé le paf intermédiaire avant le paf mortel
+private	int				i_grab_mange_fini_flag = faux	// flag pour mémoriser qu'on a mangé le perso, et qu'on attend qu'il soit détruit...
+private	float			f_delay_humain_last_paf_time
+private	float			f_delay_change_target = 0.0
+private	int				i_attaque45forcee_flag
+// GRAB TRAINE
+private	int				i_grab_traine_force_blesse = faux
+private	float			f_grab_traine_duration = 0.0
+private	int				i_grille_stop_nb = 0
+private	int				ai_grille_stop[10]
+private	vector		v_grab_traine_axis
+// MOVE & STRAFE
+separator "MOVE & STRAFE"
+private	vector		v_antre_pos = Cv_NullVector		// position de l'antre du crabe
+private	int				i_antre_move_flag = faux			// flag qui indique que le crabe retourne à son antre
+private	float			f_way_strafe_delay = 0.0						// délai de strafe
+private	float			f_way_strafe_duration = 0.0					// durée de strafe
+private	float			f_intimidation_delay = 0.0				// délai d'intimidation
+private	float			f_intimidation_delay_min		// délai min d'intimidation
+private	float			f_intimidation_delay_max		// délai max d'intimidation
+private	float			f_way_rotation_coef
+private	float			f_way_rotation_coef_cur
+private	float			af_rotation_coef[Ci_rotation_coef_max_nb][2]
+private	float			af_speed_coef[Ci_speed_coef_max_nb][2]
+private	int				i_way_mode_strafe = Ci_way_mode_strafe_aucun_ou_requin		// sous-mode de déplacement strafe
+private	float			f_way_dist_position_fight_jack = 0.0					// distance de fight face à la cible
+private	float			f_way_dist_position_fight_pnj = 0.0					// distance de fight face à la cible
+private	float			f_way_dist_position_fight_strafe = 0.0			// distance de fight en arrivée strafe devant la cible
+private	float			f_way_dist_position_cadavre = 0.0
+private	float			f_way_cos_attack_strafe = Cf_Cos30				// angle pour déterminer si on rentre en strafe
+private	float			f_way_cos_strafe_exit = Cf_Cos70					// angle pour déterminer si on quitte le strafe
+private	float			f_way_cos_attack_pince = Cf_Cos20				// angle max pour l'orientation du crabe en face à face pour intimider / attaquer sa proie
+private	float			f_way_strafe_sens_pref = 0.0
+private	float			f_way_dist_strafe_fight_rot = 0.0					// distance à partir de laquelle le crabe ne strafe plus en ligne droite mais en obliquant pour se tourner face à sa cible
+private	float			f_way_requin_radian = 0.0
+float						f_way_requin_coef = 0.0					// coef de rotation pour le strafe requin : 0.0 (0°) à 1.0 (90°) (défaut : 0.25)
+private	float			f_way_dist_reset_intimid = 0.0			// dist d'éloignement qui resete l'intimidation de début de fight
+private	float			f_way_dist_intimidation = 0.0				// distance pour intimider (trop proche n'intimide pas)
+private	float			f_time_force_requin = 0.0					// délai pour forcer à se déplacer (après un paf ou un paf pendant grab)
+private	int				i_positionnement_force_requin = faux	// flag pour forcer à se déplacer (pour se mettre en face et éviter les attaques hors champ)
+// attaque strafe de face pour les petits crabes --------------------
+private	float			f_attack_strafe_face_delay = 0.0
+private	float			f_attack_strafe_face_delay_min = 0.0
+private	float			f_attack_strafe_face_delay_max = 0.0
+private	float			f_attack_strafe_face_duration = 0.0
+private	float			f_attack_strafe_face_duration_min = 0.0
+private	float			f_attack_strafe_face_duration_max = 0.0
+private	float			f_attack_strafe_face_dist_trop_loin = 0.0
+private	float			f_attack_strafe_face_dist_deb = 0.0
+private	float			f_attack_strafe_face_dist_fin = 0.0
+// strafe requin ------------------------------------------------------------------
+private	float			f_strafe_requin_delay = 0.0
+private	float			f_strafe_requin_delay_min = 0.0
+private	float			f_strafe_requin_delay_max = 0.0
+private	float			f_strafe_requin_duration = 0.0
+private	float			f_strafe_requin_duration_min = 0.0
+private	float			f_strafe_requin_duration_max = 0.0
+private	float			f_strafe_requin_dist = 0.0					// dist à laquelle le crabe ne fait plus de strafe requin (trop proche)
+// VISION
+separator "VISION"
+private	int				i_vision_check_flag = faux
+private 	int				i_perceived_actor_nb
+private 	object		ao_perceived_actor[20]
+private 	messageid	amid_perceived_actor[20]
+// BUDY
+private 	messageid	amid_budy_vision_event[Ci_budy_max_nb]
+private 	int				i_budy_nb = 0
+private 	object		ao_budy[Ci_budy_max_nb]
+// ACTORS
+private	object		o_main_actor = nobody
+// GROUND
+private 	float			f_delay_until_last_ground_col = 0.0
+private 	vector		v_ground_normale = Cv_VerticalVector
+private 	vector		v_ground_normale_old = Cv_VerticalVector
+// ON SCREEN ?
+private 	float			f_on_screen_pourcent = 0.0
+private 	float			f_on_screen_duration = 0.0
+// COLLISION HUMAINS
+private	float			af_col_paf_time[20]
+private	object		ao_col_paf_actor[20]
+private	int				i_col_paf_nb = 0
+// TAG
+separator "Tag"
+#include "ROOT/EngineDatas/04 Technical Bank/AI Models/Global Library/exec_deplacements_tag.var"
+// BONES & CARAPACE
+separator "Bones"
+private	vector		v_carapace_banking_initial = Cv_NullVector
+private	vector		v_carapace_banking_neutral = Cv_NullVector
+private	vector		v_carapace_banking_current = Cv_NullVector
+private	object		o_bone_pere = nobody
+private	object		o_bone_carapace = nobody
+private	object		o_bone_pinceD = nobody
+private	object		o_bone_pinceG = nobody
+private	object		o_bone_patteD = nobody
+private	object		o_bone_patteG = nobody
+private	float			f_angle_inclinaison_max
+private	float			f_angle_inclinaison_max_shotgun
+private	float			f_dot_test_inclinaison_paf
+private	float			f_blend_current_to_neutral_vulnerable
+private	float			f_blend_current_to_neutral_invulnerable_paf
+private	float			f_blend_current_to_neutral_invulnerable_no_paf
+private	float			f_blend_neutral_to_initial
+private	float			f_time_hyst_carapace = 0.0
+private	float			f_orientation_carapace_angle1
+private	float			f_orientation_carapace_angle2
+
+// ETATS
+separator "Etat"
+private 	int				i_etat_courant = -1									// état courant
+private 	function 		fct_etat_courant = nofunc							// fonction de l'état courant
+private 	function 		fct_etat_main = nofunc								// fonction de l'état principal
+private 	int				i_etat_ancien = -1									// dernier état
+private 	int				i_sort_etat = faux										// test sortie d'état
+private 	float			f_time_start_etat = 0.0
+
+// ZOOM
+private 	float			f_zoom 
+
+// PAF DYN SPEED
+private 	vector		v_paf_dyn_pos
+private 	vector		v_paf_dyn_speed
+private 	float			f_paf_dyn_speed
+private	float			f_paf_dyn_min_norm
+private	float			f_paf_dyn_cumul_max
+private	float			f_paf_dyn_friction
+
+// ODE
+private	int				i_ODE
+
+// ULTRA TAG
+private int				i_ultra_tag_nb
+private object			ao_ultra_tag[20]
+
+// GRILLE
+separator "Grille"
+private	object		o_target
+private	int				i_grid[4]
+private	vector		v_grid_normale[4]
+private	vector		v_corner_pos[4][4]
+private	int				i_last_side = -1
+private	int				i_last_front = -1
+private	int				i_last_sec = -1
+private	int				i_last_frontB = -1		// N° du mur devant moi (backupé pour la trame suivante)
+private	int				i_front_lock = -1
+private	float			f_front_delay = 0
+private	int				i_grid_nb_case_check
+private	vector		v_grid_check_offset[4]
+private	vector		v_zdm_size
+
+// QUATERNION
+private int					i_quat_index
+private float					f_quat_last_time
+private float					af_quat_time[10] = (-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0)
+private float					af_quat_coef[10] 
+private vector				av_quat_start[10]
+private vector				av_quat_end[10]
+
+// CONFIG DEBUG
+separator "Debug"
+private	int				i_DBG_display_paf = vrai_faux
+int							i_DBG_display_fight_stats = vrai_faux
+int							i_DBG_display_all_infos = vrai_faux
+int							i_DBG_render_grille_check = vrai_faux
+int							i_DBG_render_ground_normale = vrai_faux
+int							i_DBG_render_cone_strafe = vrai_faux
+int							i_DBG_render_banking = vrai_faux
+int							i_DBG_trace_soft_coll = vrai_faux
+int							i_DBG_trace_etat = vrai_faux
+int							i_DBG_trace_paf = vrai_faux
+int							i_DBG_trace_move_infos = vrai_faux
+int							i_DBG_track_GRID = vrai_faux
+int							i_DBG_track_test = vrai_faux
+int							i_DBG_render_cone_vision = vrai_faux
+int							i_DBG_display_attack45_timer = vrai_faux
+int							i_DBG_no_crab_but_me = vrai_faux
+int							i_DBG_vague = vrai_faux
+int							i_DBG_display_rot_coef = vrai_faux
+int							i_DBG_force_cote_grab = enum("0-normal" 0 "1-gauche" 1 "2-droite" 2)
+int							i_DBG_NMI_State = vrai_faux
+
+// WP DE REPLI A CHECKER SI MA CIBLE SE PLANQUE
+private	int				i_fight_mode
+private	int				i_repli_cur_wp_nb
+private	int				i_repli_first_wp_index
+private	object		o_repli_wp = nobody
+private	object		o_repli_wp_father = nobody
+private	int				i_repli_wp_count
+private	float			f_repli_wp_wait				// attente aux point de li
+
+// FIN DE COMBAT
+private	int				i_fight_end_countdown_done		// hystérésis fin de combat
+private	float			f_fight_end_countdown		// hystérésis fin de combat
+private	int				i_zone_restreinte_flag
+
+// COMPORTEMENT EN COMBAT (ATTENTE - ATTAQUE)
+private	int				i_fight_comportement
+
+// SOUND
+private	int				i_snd_eat
+private	int				i_snd_grab
+private	int				i_snd_move
+private	int				i_snd_move_playing
+private	int				i_snd_charge45
+private	int				i_snd_charge45_playing
+
+// VITESSE
+private 	vector		v_vitesse_last_move
+private 	vector		v_vitesse_last_pos
+private	float			f_vitesse
+
+// AFX
+private	float			f_zoom_smooth_coef
+
+int							i_DBG_display_etat = vrai_faux
+private	string			str_etat
+
+private	float			f_shake_cam_coef
+
+// UNCOLLIDE LIST
+private 	int				i_uncollide_gao_nb
+private 	float			af_uncollide_duration[100]
+private 	object		ao_uncollide_gao[100]
+
+private	int				i_agonisant_change_target_done
+private	object		o_agonisant_change_target_gao
+
+// GRAB
+private	int				i_des_int1
+private	float			f_grab_mange_duration
+private	float			f_grab_mange_paf_delay
+
+
+// EMERGENCY ABORT =============================
+private	object		o_emergency_abort_actor
+
+// EXPLOSE DEBRIS
+private	int				i_paf_explose
+private	int				i_explose_nb
+private	int				ai_explose_index[Ci_max_explose_bones]
+private	object		ao_explose_bones[Ci_max_explose_bones]
+private	vector		av_explose_dir[Ci_max_explose_bones]
+private	vector		av_explose_grav[Ci_max_explose_bones]
+private	float			af_explose_duree[Ci_max_explose_bones]
+private	vector		av_explose_sol_banking[Ci_max_explose_bones]
+private	float			af_explose_sol_Z[Ci_max_explose_bones]
+private	int				ai_explose_est_au_sol[Ci_max_explose_bones]
+private	float			af_explose_est_au_sol_duree[Ci_max_explose_bones]
+private	int				ai_explose_phase[Ci_max_explose_bones]
+
+private	int				i_fade_flag
+
+private	float			f_net_force_wait_wp_countdown = -1.0
+
+private	float			f_net_force_wait_intim_delai
+
+private	object		o_Ann
+private	object		o_Hayes
+private	object		o_Denham
+
+private	int				i_grab_reussi

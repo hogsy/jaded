@@ -1,0 +1,274 @@
+// Define at least one function in a track
+// function track0 = "name"
+function track1 = "uni_init"
+// function track2 = "name"
+// function track3 = "name"
+// function track4 = "name"
+
+////////////////////////////////////////// WORLD ////////////////////////////////////////////////// 
+int						Engine						= faux
+int 					load_world 					= vrai_faux		//Variable qui definit s'il y a un chargement ou pas
+int						world_ID						= -1				// Indice du World a charger
+int						world_entrance_ID		= -1				// Indice de l'entrée du world a utiliser.
+int 					world_key										// Key of the activated world
+int 					world_loaded_id								// ID of the activated world
+int						world_cur_ID				= -1				// current loaded world ID
+int						i_force_newgame_reinit						// mette à 1 pour forcer le reinit des var univers lors d'un load
+
+////////////////////////////////////////// MAPS DESCRIPTION ////////////////////////////////////////////////// 
+#define 				WORLD_Key_Nbr_de_Map_Max		150
+
+int						WORLD_Key_Map_ID[ WORLD_Key_Nbr_de_Map_Max ]
+int						WORLD_Key_Map_Key[ WORLD_Key_Nbr_de_Map_Max ]
+int						WORLD_Key_Map_Entry[ WORLD_Key_Nbr_de_Map_Max ]
+string					WORLD_Key_Map_Name[ WORLD_Key_Nbr_de_Map_Max ]
+int						WORLD_Key_Map_Menu[ WORLD_Key_Nbr_de_Map_Max ]
+int						WORLD_Key_Map_Nbr = 0
+
+////////////////////////////////////////// DIVERS ////////////////////////////////////////////////// 
+int						Cheat_i_Flags										// Flag de Cheat
+int						Cheat_i_ModeNeuneuExploit					// gère le mode neuneu, exploit ...
+int						i_cheat_page										// page de cheat
+int						i_frame_nbr											// numéro de frame courante
+int						i_jack  = enum( "Jack" 1 "Kong" 0 )		// mode jack ou mode kong 
+
+////////////////////////////////////////// SF ////////////////////////////////////////////////// 
+reinit save int		Flag_speciaux_sauve[200]				// y acceder avec SF_MinById	 	200 = 6400 valeurs
+reinit save float	Float_speciaux_sauve[200]			// y acceder avec SF_MinByVal		200 = 200 val
+reinit save vector 	Vector_speciaux_sauve[200]			// y acceder avec SF_MinByVal		200 = 200 val
+
+////////////////////////////////////// RAYMAN ///////////////////////////////////////////////////////
+
+reinit save int		i_RM_Current_Weapon_ID						// Indice de l'arme courante
+reinit save int		i_RM_Current_Key_ID							// Indice de la Clef/Pritezetre courant
+reinit save int		i_RM_RideMontureID							// Indice de la monture courante
+reinit save float	f_RM_Mana										// Quantité de MANA 
+reinit save int		i_RM_Lums										// Nbr de lums récupérés
+reinit save int		i_RM_powerUP									// Bit par Power UP de RM
+
+// ---------------------------- SHAPE et DEGUISEMENTS --------------------------------
+reinit save int		i_shape_tete											// Indice du shape de la TETE
+reinit save int		i_shape_pied											// Indice du shape du PIED
+reinit save int		i_shape_corps											// Indice du shape du CORPS
+reinit save int		i_shape_lunette										// Indice du shape des LUNETTES
+
+reinit save int		i_shape_current										//
+
+reinit save int		ai_disguise[RM_Disguise_Max]					// Bit Partie de Deguisement + Bit Slip + 
+
+////////////////////////////////////////// HUMAIN ////////////////////////////////////////////////// 
+reinit save float	LIFE_HumainEtat[C_ID_Number_ToBeSaved]			// points de vie courant
+reinit save int		LIFE_HumainPeau[C_ID_Number_ToBeSaved]			// shape peau
+reinit int				ai_HumainIsHere[C_ID_Number_ToBeSaved]			// Presente les ids d'humains qui sont présents actuellement
+reinit	object		ao_AllHumains[C_ID_Number]								// Les humains s'enregistrent dans cette table
+float					Humains_PafTimer[C_ID_Number_ToBeSaved]			// si le timer est à 0 l'humain peut etre attaqué sinon non
+float					Humains_LastPafTime[C_ID_Number_ToBeSaved]		// Indique a quel moment a eu lieu le dernier PAF sur ce perso.
+//reinit save int		i_jack_cpt_plug
+
+int						Marins_i_Number													// nombre de marins
+//int						Marins_ai_Index[C_ID_Marin_number]					// index des marins
+int						Marins_ai_Index[C_ID_Last_Compagnon]					// index des marins
+
+int						Humains_ActionType[ Ci_DISPLAY_NUMBER ] 
+
+//////////////////////////////////////////// STATS ///////////////////////////////////////////////////
+save float			STATS[ STATS_NbMaps ][ STATS_NbVal ]
+int						STATS_WorldID
+
+saveal float			STATS_f_TempsDeJeu
+saveal float			STATS_f_TempsTotal	
+
+saveal float			STATS_f_Time
+saveal float			STATS_f_Mort
+saveal float			STATS_f_MortJoueur
+
+////////////////////////////////////////// ENNEMIES ////////////////////////////////////////////////// 
+float					Enemy_af_ReaDist[ C_ID_Number ][ C_EnemyDist_Number ]
+float					Enemy_af_Height[ C_ID_Number ]
+float					Enemy_af_Radius[ C_ID_Number ]
+float					Enemy_af_Poids[ C_ID_Number ]
+float					Enemy_af_Danger[ C_ID_Number ]
+vector				Enemy_av_GrabTransporte_Offset[ C_ID_Number ]
+
+////////////////////////////////////////// WEAPON ////////////////////////////////////////////////// 
+reinit save int		i_weapon_ID[C_ID_Number_ToBeSaved]									// id de l'arme possédé par chaque perso
+reinit save int		i_weapon_ID_Save[C_ID_Number_ToBeSaved]							// id de l'arme possédé par chaque perso
+reinit save int		i_weapon_ID_second[C_ID_Number_ToBeSaved]						// id de le 2e arme possédée par chaque perso
+reinit save int		i_weapon_ammunition[20][C_ID_Number_ToBeSaved]				// inventaire munitions chargées dans l'arme
+reinit save int		i_weapon_ammunition_reserve[20][C_ID_Number_ToBeSaved]		// inventaire munitions dans le sac
+reinit 	save int		i_weapon_ammunition_max[20][C_ID_Number_ToBeSaved]		// max munitions dans le sac
+reinit save int		i_objenmain_param[C_ID_Number_ToBeSaved]						// paramètres de l'objet en main
+
+int						i_weapon_paf_type[Ci_weapon_ID_max]
+int						i_weapon_change = -1															// changement d'arme demandé (pour le perso principal)
+reinit int				i_ramasse_objet = -1
+reinit object			o_ramasse_objet_who
+reinit int				i_ramasse_objet_param = 0
+reinit int				i_lance_cpt_plug
+reinit int				i_ramasse_nbr = 0
+reinit float			f_ramasse_objet_param = 0
+reinit save float	f_last_extra_ball
+reinit save int		i_jack_has_levier
+reinit save float 	Humains_BlaBlaFreq[50]
+
+float					Weapon_af_range[ Ci_weapon_ID_max ] 									// range de chacune des armes
+float					Weapon_af_pointblankrange[ Ci_weapon_ID_max ]					// range "bout portant" des armes
+float					Weapon_af_middlerange[ Ci_weapon_ID_max ]							// range "bout portant" des armes
+int						Weapon_ai_clipsize[ Ci_weapon_ID_max ]								// nombre max de munitions dans un chargeur
+int						Weapon_ai_slottaken[ Ci_weapon_ID_max ]								// nombre de slot pris par une arme
+float					Weapon_af_Damage[ Ci_weapon_ID_max ][ 3 ]						// damage des armes
+
+object				Weapon_SFX = nobody
+int						Weapon_SFX_ON = 0
+
+
+////////////////////////////////////////// SOUND ////////////////////////////////////////////////// 
+saveal int 			SND_gi_RenderMode = 0x40		// console settings by default
+int 					SND_gi_GameMode = 0 			// playing by default
+//
+reinit int				SND_gi_GlobalCommand=0		// set when a new command appears
+//
+saveal float			SND_gaf_UsrGroupVolume[SND_Cte_UserGroupNb]	= (1.0, 1.0, 1.0, 1.0)// group volume (static part)
+float 					SND_gaf_GroupVolume[SND_Cte_GroupNb]			// group volume (volatile part)
+float					SND_gaf_GroupVolumeFinal[SND_Cte_GroupNb]
+reinit float			SND_gaf_GroupVolumeDuration[SND_Cte_GroupNb]
+reinit float			SND_gaf_GroupVolumePattern[SND_Cte_GroupNb][SND_Cte_VolPattern] // volume pattern
+reinit int				SND_gai_GroupVolumePatternNew[SND_Cte_GroupNb] // volume pattern
+reinit float			SND_gaf_GroupVolRq[SND_Cte_GroupNb] // group vol rq
+//
+reinit object			SND_go_MicroRef = nobody		// gao to locate the new micro pos
+//
+reinit int				SND_gi_MusicPhase = -1
+reinit int				SND_gi_MusicType = 0
+reinit int				SND_gi_AmbiencePhase = -1
+reinit int				SND_gi_AmbienceArea = 0
+saveal int			SND_gi_ShowSubtitle = faux_vrai
+//
+save int				SND_SKMM_mi_CurrentLine = 0 
+save int				SND_SKMM_mi_CurrentActiveTriggerExec = -1
+
+/////////////////////////////////// VIDEO ////////////////////////////////////////////////
+saveal int			VID_gi_DisplayMode = 1  // 1 = 4/3BB, 2 = 4/3, 3 = 19/9
+saveal int 			VID_gi_InvertHoriz = 0
+saveal int			VID_gi_ModeOldMovie
+
+////////////////////////////////////////// CAMERA && CONTROL ////////////////////////////////////////////////// 
+saveal int			CAM_SensHoriz = -1
+saveal int			CAM_SensVert = 1
+saveal int			CAM_Viseur = faux
+saveal int			CAM_Rotation = faux
+saveal int			PAD_Vibration = faux_vrai
+
+////////////////////////////////////////// ENNEMIES MANAGER ////////////////////////////////////////////////// 
+object				ORGANIZE_SwampCrawler = nobody
+
+saveal	int			i_death_counter = 0
+int						i_death_shield = 0
+int						i_death_exploit = 0
+saveal 	int			i_deathplayer_counter
+
+////////////////////////////// VAR MENUS ////////////////////////////////////////:
+reinit	float			MENU_f_LockedDuring = 0
+
+saveal 	int			MENU_i_ShowInterface = vrai_faux
+saveal 	int			MENU_i_ShowLifeBar = vrai_faux
+saveal 	int			MENU_i_ShowAmmoLeft = vrai_faux
+saveal 	int			MENU_i_ShowInventory = vrai_faux
+
+		float			MENU_f_LifeBar_JackState
+		float			MENU_f_LifeBar_Appear
+		float			MENU_f_LifeBar_CurState[ 3 ]
+		float			MENU_f_LifeBar_State[ 3 ]
+		
+		int				MENU_NZ = 0
+		int				MENU_Playtest = vrai_faux
+		
+		int				MENU_ProfileIndex = -1	
+		int				MENU_PlayWithoutSaving = 0
+		int				MENU_PlayWithoutSaving_LastMap = 0
+
+		
+		int				MENUDEMO_NbMap
+		int				MENUDEMO_Chain
+		int				MENUDEMO_Transition
+		int				MENUDEMO_TransitionN
+		int				MENUDEMO_QuitWhenAllDone = 0
+		int				MENUDEMO_QuitWhenDying = 0
+		int				MENUDEMO_BeforeTransition = 0
+		int				MENUDEMO_Map[ 100 ]
+		int				MENUDEMO_ES[ 100 ]
+		int				MENUDEMO_Trans[ 100 ]
+		int				MENUDEMO_Loaded[ 100 ]
+		int				MENUDEMO_DyeMap
+		int				MENUDEMO_DyeES
+		int				MENUDEMO_DyeNumber
+		float			MENUDEMO_QuitTimer
+		
+		int				MENU_LangVost = 0	
+
+		
+		object		Texte_InGame = nobody
+		object		Texte_Menu = nobody
+		
+////////////////////////////// Progression ////////////////////////////////////////
+reinit save	int				PROG_i_MapCur
+reinit save 	int				PROG_i_Map
+reinit save  int				PROG_i_ES
+				int				PROG_i_MapNumber
+				int				PROG_ai_MapId[ 50 ]
+				int				PROG_ai_MapES[ 50 ]
+				int				PROG_ai_MapVignette[ 50 ]
+				int				PROG_ai_MapTexte[ 50 ]
+				int				PROG_ai_MapJackArme[ 50 ]
+				int				PROG_ai_MapJackMunition[ 50 ]
+				int				PROG_ai_MapHayesArme[ 50 ]
+				int				PROG_ai_MapHayesMunition[ 50 ]
+				int				PROG_ES_0to1 = vrai_faux
+				int				PROG_i_MapReplay = vrai_faux
+				int				PROG_i_MapReplayExit
+				int				PROG_i_MapReplayIndex
+				int				PROG_i_FinAlternative = 0
+				int				PROG_i_XtraUnlocked_Old
+				int				PROG_i_XtraUnlocked
+				int				PROG_i_MapFromExtra = 0
+				int				PROG_i_EndOfGameReached = 0
+				int				PROG_i_FirstPlay = 0
+		
+reinit saveal	float		PROG_Score[ SCORE_NbMaps ][ SCORE_NbVal ]
+reinit saveal  	float		PROG_GameCumul_JackMort = 0
+reinit saveal  	float		PROG_GameCumul_JackKll = 0
+reinit saveal  	float		PROG_GameCumul_JackBullet = 0
+reinit saveal  	float		PROG_GameCumul_KongMort = 0
+reinit saveal  	float		PROG_GameCumul_KongKill = 0
+reinit saveal  	float		PROG_GameCumul_KongTime = 0
+		
+save 	int				PROG_ai_XtraUnlocked[ 32 ]
+
+//#include "ROOT\EngineDatas\04 Technical Bank\AI Models\Kanada\Univers\Univers_Kanada.var"
+
+// --------- Planetes ------------------------------------------------------------------------------------------------
+#define 	INIT_ROT	-1.4
+save float				Planetes_CurRotation[32] = (INIT_ROT, INIT_ROT, -0.4, INIT_ROT, INIT_ROT, INIT_ROT, INIT_ROT, INIT_ROT, INIT_ROT)
+float						Planetes_CurHour
+save float				Planetes_CurHourOld	= 0
+save int					Planetes_CurDay 		= 0
+
+
+// Préférences Weapon
+save int		Weapon_Pref_Arc_Horiz = 1
+
+
+reinit object			o_ramasse_objet_what
+
+
+
+// TRASH VARS !! ===============================================================
+
+// LIFE/MANA DE RM
+save float		f_RM_Life
+save int			i_RM_Life_Nb_Bonus		// Géré par des items au autre mais en attendant 
+save int			i_RM_Mana_Nb_Bonus		// Géré par des items ou autre mais ne attendant.
+
+
+
+

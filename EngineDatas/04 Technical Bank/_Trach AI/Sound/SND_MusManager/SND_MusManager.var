@@ -1,0 +1,155 @@
+//-----------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------
+#include "SM_Constants.var"
+
+
+//-----------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------
+// Define at least one function in a track
+function track0 = "SM_Init_Map"
+// function track1 = "name"
+// function track2 = "name"
+// function track3 = "name"
+// function track4 = "name"
+
+
+//-----------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------
+private int	mi_1stRqDone = 0
+private int 	mi_SchedulerState = 0
+private float	mf_Timer = 0.0
+private int	mi_NextInstanceIdx = -1
+private int	mi_InstanceIdx = -1
+private int	mi_PrevInstanceIdx = -1	
+private int	mai_MusicInstance[SND_Cte_MusicSnkSize]
+private int	mi_JingleIdx = -1
+private int	mi_JingleSubIdx = -1
+private float mf_FightTimer = 0.0
+private int  	mi_1stTime = 1
+private float	mf_Delay = 0.0
+//--
+private float	mf_ScanTimer = 0.0
+//--
+private int mai_wait[Cte_FilterSize]
+private int mai_fight[Cte_FilterSize]
+private int mai_neutral[Cte_FilterSize]
+private int mai_death[Cte_FilterSize]
+private int mai_injured[Cte_FilterSize]
+private int mai_stalk[Cte_FilterSize]
+private int mi_wait = 0
+private int mi_fight = 0	
+private int mi_bigfight = 0	
+private int mi_neutral = 0
+private int mi_death = 0
+private int mi_injured = 0
+private int mi_stalk = 0
+private int mi_silence = 0
+private int mi_counter_locked = 0
+//--
+private int mi_Phase = enum ("None"-1 "Cool"0 "Stress"1 "Stalk"2 "Fight"3 "BigFight"4 "Injure" 5 "Advantage"6)
+private int mi_PrevPhase = -1
+private int mi_CurrKit = -1
+private int mi_ReinitKit = Cte_KitState_Idle
+//
+private int mi_RqKit = -1
+//
+private int mai_JingleDone[SND_Cte_MusJingle_Nb]
+// 
+private int 	mi_ScriptSoundIndex = -1
+private int 	mi_ScriptTransSoundIndex = -1
+private int 	mi_ScriptMode
+private float mf_ScriptDelay
+//
+private int 	mi_VolPhase = -1
+private float mf_VolTimer = 0.0
+private int 	mi_VolModeAuto = 1
+private int   mi_InjureFxDone = 0
+// 
+private float mf_FightDuration = 0.0
+
+
+
+//------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------------------
+separator "Settings"
+float			f_RangeMin = Cte_RangeMin
+float			f_RangeMax = Cte_RangeMax
+int				i_InjureIsAlwaysUsed = enum("no"0 "yes"1) 	// injure est prioritaire vis a vis du force SIG
+int				i_ChangeMusOnNewKit = enum("no"0 "yes"1) 	// force la prise en compte du tous changement de kit
+//--
+separator "INIT KIT"
+int 		i_InitKit = enum("None"-1 "0"0 "1"1 "2"2 "3"3 "4"4 "5"5 "6"6 "7"7 "8"8 "9"9) 
+optim trigger 	at_InitKitTrigger[SND_Cte_MusKit_Nb]
+separator "KIT"
+trigger 	at_KitTrigger[SND_Cte_MusKit_Nb]							// kit 0 has the highest priority
+//--
+separator "PHASE COOL"
+int 	i_Cool_BeginSpeed = enum ("chain"0 "cut"1)					// transition mode = "chain" or "cut"
+int 	i_Cool_BeginSoundIndex = -1										// transition sound index in snk
+float 	f_Cool_BeginSoundDelay = 0.0										// play date before the chaining act (chain mode)
+float	f_Cool_VolumeAttenuation = Cte_VolAttDef						// volume attenuation (%)
+float	f_Cool_VolumeAttTime = Cte_VolAttTimeDef					// volume attenuation duration (sec)
+int		i_Cool_BetweenSilenceDuration = Cte_BetweenSilence		// seconds (when playing pattern)
+int		i_Cool_EndSilenceDuration = Cte_EndSilence					// seconds (when change phase "lo")
+//--
+separator "PHASE STRESS"
+int 	i_Stress_BeginSpeed = enum ("chain"0 "cut"1)				// chain mode
+int 	i_Stress_BeginSoundIndex = -1							
+float 	f_Stress_BeginSoundDelay = 0.0						
+float	f_Stress_VolumeAttenuation = Cte_VolAttDef						// volume attenuation (%)
+float	f_Stress_VolumeAttTime = Cte_VolAttTimeDef					// volume attenuation duration (sec)
+int		i_Stress_BetweenSilenceDuration = Cte_BetweenSilence	// seconds
+int		i_Stress_EndSilenceDuration = Cte_EndSilence				// seconds
+//--
+separator "PHASE STALK"
+int 	i_Stalk_BeginSpeed = enum ("chain"0 "cut"1)				// chain mode
+int 	i_Stalk_BeginSoundIndex = -1						// index in snk
+float 	f_Stalk_BeginSoundDelay = 0.0									// 
+float	f_Stalk_VolumeAttenuation = Cte_VolAttDef						// volume attenuation (%)
+float	f_Stalk_VolumeAttTime = Cte_VolAttTimeDef					// volume attenuation duration (sec)
+int		i_Stalk_BetweenSilenceDuration = Cte_BetweenSilence	// seconds
+int		i_Stalk_EndSilenceDuration = Cte_EndSilence				// seconds
+//--
+separator "PHASE FIGHT"
+int 	i_Fight_BeginSpeed = enum ("chain"0 "cut"1)				// chain mode
+int 	i_Fight_BeginSoundIndex = -1							// index in snk
+float 	f_Fight_BeginSoundDelay = 0.0									// 
+float	f_Fight_VolumeAttenuation = Cte_VolAttDef						// volume attenuation (%)
+float	f_Fight_VolumeAttTime = Cte_VolAttTimeDef					// volume attenuation duration (sec)
+int		i_Fight_BetweenSilenceDuration = Cte_BetweenSilence	// seconds
+int		i_Fight_EndSilenceDuration = Cte_EndSilence				// seconds
+int		i_Fight_MinDuration = 15
+//--
+separator "  +      BigFight"
+trigger	at_BigFightTrigger
+int 		i_BigFight_Threshold = 3													// enemy nb
+int 		i_BigFight_BeginSoundIndex = -1							// index in snk
+float 		f_BigFight_BeginSoundDelay = 0.0									// 
+//--
+separator "  +      Advantage"
+int 	i_Advantage_Threshold = 80													// enemy nb
+int 	i_Advantage_BeginSoundIndex = -1							// index in snk
+float 	f_Advantage_BeginSoundDelay = 0.0									// 
+//--
+separator "PHASE INJURE"
+int 	i_Injure_BeginSpeed = enum ("chain"0 "cut"1)				// chain mode
+int 	i_Injure_BeginSoundIndex = -1							// index in snk
+float 	f_Injure_BeginSoundDelay = 0.0									// 
+float	f_Injure_VolumeAttenuation = Cte_VolAttDef						// volume attenuation (%)
+float	f_Injure_VolumeAttTime = Cte_VolAttTimeDef					// volume attenuation duration (sec)
+int		i_Injure_BetweenSilenceDuration = Cte_BetweenSilence	// seconds
+int		i_Injure_EndSilenceDuration = Cte_EndSilence				// seconds
+int		i_Injure_MinDuration = 15
+//--
+separator "JINGLE"
+trigger 	at_JingleTrigger[SND_Cte_MusJingle_Nb]			// caution 0 = death
+trigger 	at_AndJingleTrigger[SND_Cte_MusJingle_Nb]			// caution 0 = death
+float 		af_JingleDelay[SND_Cte_MusJingle_Nb]			
+int 		ai_BeginSoundIndex[SND_Cte_MusJingle_Nb] = (-1, -1, -1, -1, -1, -1, -1, -1, -1, -1)
+float 		af_Fight_BeginSoundDelay[SND_Cte_MusJingle_Nb] = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+int 		ai_EndSilence[SND_Cte_MusJingle_Nb]
+trigger 	at_JingleForceStop[SND_Cte_MusJingle_Nb]			// stop le jingle si lecture en cours
+trigger 	at_AndJingleForceStop[SND_Cte_MusJingle_Nb]			// stop le jingle si lecture en cours
+//--
+separator "DEBUG"
+int		i_Debug = enum("none"0 "level 1"1 "level 2"2)

@@ -1,0 +1,41 @@
+#include "SKMM_Constant.var"
+
+// Define at least one function in a track
+function track0 = "SKMM_Init"
+// function track1 = "SKMM_Loop"
+// function track2 = "name"
+// function track3 = "name"
+// function track4 = "name"
+
+///////////////////////////////////////////////////////////////////
+private int	mi_CurrentLine = 0
+private int	mi_CurrentActiveTriggerExec = -1
+//
+private int	mi_Death  = 0
+private int 	mi_DeathInstance = -1
+private int	mai_Instance[SKMM_Cte_MaxBankSize]
+private int	mi_CurrentPlayingInstance = -1
+private float	mf_ChainDelay = 0.0
+private int	mi_AnnSignal = 0
+private int	mi_MashingSignal = 0
+private int	mi_InjureSignal = 0
+private int	mi_NewSignal = 0
+//
+private float	mf_IA_VolRq = 1.0
+private int	mi_MaskMashingSignal = 0
+//
+private int	mi_VolState = -1
+private float mf_VolTimer = 0.0
+private float maf_Automation[6]
+//
+private float	mf_InitTimer = 0.0
+//
+///////////////////////////////////////////////////////////////////
+separator	"Signals"
+trigger		t_AnnSignal
+trigger		t_MashingSignal
+trigger		t_InjureSignal
+separator	"Script list"
+trigger 		at_Script[SKMM_Cte_MaxSize]
+separator	"Debug"
+int				i_DebugMode = enum("Quiet"0 "Verbose"1)

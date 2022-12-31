@@ -1,0 +1,68 @@
+// Define at least one function in a track
+function track0 = "PNJ_Tank_Init"
+// function track1 = "name"
+// function track2 = "name"
+// function track3 = "name"
+// function track4 = "name"
+
+separator "Configuration"
+object				o_start_wp
+trigger				trigger_move
+float					speed = 4.0
+object				o_tourelle
+trigger				t_activation
+object				o_militaire
+vector				v_offet_militaire = cvector(0.0, 1.60, -0.2)
+int						dodged_by_car = vrai_faux
+
+// ETAT
+private int			i_etat_courant = -1
+private int			i_dernier_etat = -1
+private int			i_sort_etat = faux
+
+private float			f_time_start_etat
+
+private function	fct_main_etat
+private function	fct_last_etat
+
+// MAIN
+private object		o_main_actor
+private float			f_me_to_main_dist
+
+// NET
+private network	n_net
+
+// CAR
+private int			i_my_index = -1
+private object		o_car_manager
+
+// PAF
+private float			f_delai_avant_tir
+private float			f_delai_after_shoot
+
+private float			f_shoot
+private int			i_shoot
+
+private int			i_flag_paf
+
+int						i_ODE_nb
+object				o_ODE[10]
+
+float					f_profondeur
+
+private int			i_SF_AlreadyPlayed
+
+private int			i_trig 
+private int			i_snd_loop 
+
+int						dbg
+
+private float			f_time_min
+private int			i_flag_jump_on_me
+
+int						i_flag_Shoot2Kill = faux_vrai
+int						i_render_dist = vrai_faux
+float					f_SQRdistKill = 400
+
+separator			"Blindage anti CAR"
+object				o_BV_Shoot_force

@@ -1,0 +1,172 @@
+// Define at least one function in a track
+function track0 = "PNJ_Worm_Init"
+// function track1 = "name"
+// function track2 = "name"
+// function track3 = "name"
+// function track4 = "name"
+
+separator "Configuration"
+trigger						trigger_attaque
+int								target_selection = enum("AI" 0 "Trigger GAO5" 1)
+
+separator "Deplacement"
+#include "ROOT\EngineDatas\04 Technical Bank\AI Models\Global Library\exec_deplacements.var"
+
+// ETAT
+private int					i_etat_courant				= -1
+private int					i_dernier_etat				= -1
+private int					i_flag_sort_etat
+private int					i_etat_phase
+
+private float					f_time_start_etat
+private float					f_time_etat_phase
+
+private function			fct_last_etat
+private function			fct_main_etat
+
+// ANALYSE
+//private int				i_flag_audio_check_done
+private int				i_flag_visual_check_done
+private int				i_flag_paf_check_done
+//private int				i_flag_collision_check_done
+private int				i_flag_shoot_check_done
+//private int				i_flag_budies_check_done
+//private int				i_flag_vala_check_done
+//private int				i_flag_check_best_interet_done
+
+// MAIN ACTOR
+private object				o_main_actor			
+
+// ON SCREEN ?
+private float					f_on_screen_pourcent
+private float					f_on_screen_duration
+
+// BEST TARGET
+private int					i_flag_change_target
+private float					f_time_change_target
+private messageid		mid_best_interet
+
+// PERCEIVED
+private int					i_perceived_main_actor_index
+private int					i_perceived_best_actor_index
+
+private int					i_perceived_actor_nb
+private int					ai_perceived_seen[20]
+private int					ai_perceived_accessible[20]
+private int					ai_perceived_territory[20]
+private int					ai_perceived_status[20]
+private int					ai_perceived_hiding_place_index[20]
+private int					ai_perceived_ID[20]
+private int					ai_perceived_in_wide_cone[20]
+private int					ai_perceived_in_small_cone[20]
+	
+private float					af_perceived_dist[20]
+private float					af_perceived_interest[20]
+
+private vector				av_perceived_position[20]
+
+private object				ao_perceived_actor[20]
+
+// UNCOLLIDE LIST
+private int					i_uncollide_gao_nb
+private float					af_uncollide_duration[100]
+private object				ao_uncollide_gao[100]
+
+// BUDY
+private int					i_budy_nb
+private object				o_nearest_budy
+private object				ao_budy[20]
+private messageid		amid_budy_vision_event[20]
+
+// VISIBILITY EVENT
+messageid					mid_visibility
+
+// DEPLACEMENT
+private float					f_joy_norm
+private float					f_way_length
+private vector				v_joy_dir
+private vector				v_way_dest_pos
+
+//// RES LOCAL
+//private int 					i_collision_report_nb
+//private int					ai_gmat_id[100]
+//
+//private float					f_way_force_side
+//
+//private vector				av_collision_normales[100]
+//private vector				v_way_best_normal
+
+// GRID PONDERATION
+private float					af_way_ponderation[16]
+private float					af_way_dyn_ponderation[4] = (1.0, 0.0, 0.0, 0.0)
+
+// ACTION SPEED COEF
+private int					i_flag_dont_change_action
+
+private float					f_action_speed_coef
+private float					f_action_speed_max
+
+// COLLISION
+private float					f_delay_until_last_ground_col
+
+private vector				v_ground_normale
+
+// PAF
+private object				o_paf_actor
+
+private int					i_paf_type
+private int					i_flag_paf_important
+private int					i_flag_paf_moyen
+private int					i_flag_paf_faible
+
+private vector				v_paf_dir
+
+// LIFE
+private float					f_lifecur
+private float					f_life
+
+// GRAB
+private int					i_grab_disable
+private int					i_grab_hit_enable
+
+private float					f_duration_before_next_paf
+
+private object				o_grab_actor
+
+private messageid		mid_grab_actor_LNK_ID
+
+// JUMP
+private int					i_flag_dodge_shot_jump
+
+private float					f_delay_before_next_jump
+private float					f_jump_duration
+private float					f_jump_freq_coef
+
+private vector				v_jump_dest_pos
+private vector 				v_jump_impulsion
+private vector				v_jump_dodge_pos
+
+
+// OBBOX
+private float					f_obbox_size_coef = -1.0
+
+// TRIGGER
+private int					i_flag_trigger_used
+
+// IK
+separator "IK TEST"
+object						o_test_pilotage_tete
+private object				ao_head_bone[4]
+
+private int					i_ik_modules_nb
+
+private float					af_bone_length[4]
+private float					f_head_length
+
+private float					f_IK_bezier_coef
+private float					f_IK_B_weight
+private float					f_IK_C_weight
+private float					af_IK_bezier_coef[20]
+
+private vector				v_IK_pos
+private vector				v_IK_sight

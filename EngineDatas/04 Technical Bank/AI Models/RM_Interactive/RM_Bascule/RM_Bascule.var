@@ -1,0 +1,76 @@
+// Define at least one function in a track
+function track0 = "RM_Bascule_Init"
+// function track1 = "name"
+// function track2 = "name"
+// function track3 = "name"
+// function track4 = "name"
+
+separator "Configuration"
+vector				v_rot_friction = cvector(12.0, 12.0, 12.0)
+float					base_torque	= 100.0
+vector				v_grav_offset
+int						liaison = enum("Rotule" 0 "Sight Axis" 1 "Horizon Axis" 2 "Banking Axis" 3)
+object				hotspot_list[10]
+int						keep_init_sight = vrai_faux			
+
+separator "Linear Dyn"
+int						linear_dyn = vrai_faux
+float					f_spring_friction = 6.0
+float					f_spring_coef = 10.0
+
+separator "Test"
+float					f_angle_limit // VITESSE DE ROTATION QUI DECLANCHE LA CAPA 0
+float					f_angle_min = -180.0
+float					f_angle_max = 180.0
+float					f_rebound = 0.8
+
+separator "Other Gao"
+object				ao_rot_gao[10]
+int						ai_rot_axis[10] = enum("X - Axis" 0 "Y - Axis" 1 "Z - Axis" 2)
+float					af_rot_speed_coef[10]
+
+separator "Paf"
+float					f_expulsion_limit = 0.0
+float					f_paf_moyen = 5.0
+float					f_paf_fort = 10.0
+
+separator "Tourniquet"
+int						accept_additionnal_traction = vrai_faux
+
+// ETAT
+private int			i_etat_courant		= -1
+private int			i_dernier_etat		= -1
+private int			i_flag_sortie_etat
+
+private int			i_etat_phase
+
+private float			f_time_start_etat
+private float			f_etat_phase_duration
+
+private function	fct_main_etat
+private function	fct_last_etat
+
+// DYN
+private vector		v_force
+private vector		v_speed
+
+private vector		v_torque
+private vector		v_rot_speed
+
+// SIGHT
+private object		o_father
+private vector		v_init_pos
+private vector		v_init_horizon
+private vector		v_init_sight
+private vector		v_init_banking
+
+// ROPE MANAGER
+private object		o_rope_manager	
+
+// TEST SIMU INERTIA
+private int			i_inertia_actor
+private object		ao_inertia_actor[30]
+private float			af_inertia_actor_weight[30]
+
+// Z SPRING MODE
+private int			i_spring_Z_mode

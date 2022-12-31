@@ -1,0 +1,289 @@
+// CAPA DES CRABES
+#define	CAPA_mort							OBJ_Capa_15			// pour les spawners !!!
+
+// CAPAS DES RESEAUX DES CRABES
+#define	CAPA_Reseau_Avance				OBJ_Capa_0
+#define	CAPA_Reseau_StrafeG			OBJ_Capa_1
+#define	CAPA_Reseau_StrafeD			OBJ_Capa_2
+#define	CAPA_Reseau_Can_Attack		OBJ_Capa_10
+#define	CAPA_Reseau_Force_Attente	OBJ_Capa_11
+
+// HP DES CRABES GEANTS
+#define	Cf_Crabe_Geant_Life_Max		60.0 * PAF_Unit
+#define	Cf_Crabe_Geant_Dmg_Mult		1.0
+#define	Cf_Crabe_Geant_Dmg_Reduc	3.0 * PAF_Unit		// 15
+#define	Cf_Crabe_Geant_Dmg_Cumul	10.0 * PAF_Unit
+
+// HP DES PETITS CRABES
+#define	Cf_Crabe_Petit_Life_Max			12.0 * PAF_Unit		// 16
+#define	Cf_Crabe_Petit_Dmg_Mult			2.0
+#define	Cf_Crabe_Petit_Dmg_Reduc		0.0 * PAF_Unit		// 19
+#define	Cf_Crabe_Petit_Dmg_Cumul		12.0 * PAF_Unit
+
+// SOUND
+#define	Ci_SND_Move				1
+#define	Ci_SND_Grab				3
+#define	Ci_SND_Attack			5
+#define	Ci_SND_Paf				6
+#define	Ci_SND_Death			7
+#define	Ci_SND_Bite				8
+#define	Ci_SND_Intimid			9
+#define	Ci_SND_Eat				10
+#define	Ci_SND_Charge45		11
+
+// COMPORTEMENT DE COMBAT (petits crabes)
+#define	Ci_fight_comportement_wait			1
+#define	Ci_fight_comportement_fight			2
+
+// TYPE DE DEPLACEMENT
+#define	Ci_fight_mode_target			1
+#define	Ci_fight_mode_retour			2
+#define	Ci_fight_mode_cadavre			3
+#define	Ci_fight_mode_cherche			4
+
+// CARAPACE
+#define	Cf_time_min_invulnerable		0.2
+#define	Cf_time_hyst_carapace			1.0 // 0.35
+
+#define	Cf_hauteur_Z_sol_default		- 666.0
+
+#define		Cf_time_force_requin			1.0		// au moins 1 sec !!!
+
+// CHANGE TARGET
+#define		Cf_delay_change_target	4.0
+
+// DIVERS
+#define		Cf_antre_delta_pos			1.0
+
+// ANIM CBITS
+#define		CBit_Vulnerable_Devant				0b00000001
+#define		CBit_Vulnerable_Derriere				0b00000010
+
+// GRAB
+#define		Cf_GRAB_anim_mange_length		4.1
+#define		Cf_GRAB_delai_entre_1er_paf_et_fin_anim		0.75		// 1.25
+
+// Règles de choix de target
+#define		Ci_regle_trigger_gao5					1
+#define		Ci_regle_trigger_gao_spec				2
+#define		Ci_regle_paf_main_actor				3
+#define		Ci_regle_paf_actor						4
+#define		Ci_regle_dbg_force_attack				5
+#define		Ci_regle_idle_main_actor_dispo		6
+#define		Ci_regle_actor_devant_proche		7
+#define		Ci_regle_idle_actor_dispo				8
+#define		Ci_regle_nouveau_cadavre				9
+#define		Ci_regle_net_paf_actor					10
+#define		Ci_regle_net_trigger_actor				11
+
+// PAFS
+#define		Ci_paf_dmg_colmap					5.0 * PAF_Unit
+#define		Ci_paf_dmg_pince					5.0 * PAF_Unit
+#define		Ci_paf_dmg_grab_deb				5.0 * PAF_Unit
+#define		Ci_paf_dmg_grab_fin				99.0 * PAF_Unit
+
+// FOOD-CHAIN
+#define		Cf_paf_delai_mange_cadavre_geant	1.0 * PAF_Unit
+#define		Ci_paf_dmg_mange_cadavre_geant		1.0 * PAF_Unit
+#define		Cf_paf_delai_mange_cadavre_petit		2.0 * PAF_Unit
+#define		Ci_paf_dmg_mange_cadavre_petit		1.0 * PAF_Unit
+
+// DIVERS
+#define		Ci_budy_max_nb					20
+#define		Ci_paf_cumul_max				20
+#define		Ci_javelin_max_nb				20
+#define		Cf_javelin_duration				0.0
+#define		Ci_cadavre_max_nb				20
+#define		Ci_blind_zone_max_nb			10
+#define		Ci_max_explose_bones		10
+#define		Cf_delay_blood_gen				1.0
+
+// OBSTACLE
+#define		Cf_obstacle_strafe_cote_backup_delay		1.0		// délai pendant lequel le crabe ne repartira pas en strafe du côté duquel il vient après avori strafé pour éviter un obstacle
+
+// SOUS-ETATS DE DEPLACEMENT
+#define		Ci_way_mode_strafe_aucun_ou_requin			20			// avance ou fait un strafe requin (mon sight vers ma cible) (ou ma cible est dans mon dos)
+#define		Ci_way_mode_strafe_attack_cote					21			// strafe vers ma cible (sight à 90°)
+#define		Ci_way_mode_strafe_attack_face_debut			22			// se tourne de côté pour partir en strafe attaque
+#define		Ci_way_mode_strafe_attack_face_marche		23			// attaque en cours (sight à 90°)
+#define		Ci_way_mode_strafe_attack_face_retour			24			// fin de l'attaque, se retourne pour revenir en position "avance"
+
+// COEF ROTATION INDEX
+#define	Ci_rotation_coef_attente						0
+#define	Ci_rotation_coef_strafe							1
+#define	Ci_rotation_coef_avance						2
+#define	Ci_rotation_coef_sur_place					3
+#define	Ci_rotation_coef_intimidation					4
+#define	Ci_rotation_coef_attaque						5
+#define	Ci_rotation_coef_null							6
+#define	Ci_rotation_coef_max_nb						7
+
+// COEF SPEED
+#define	Ci_avance_speed_coef							0
+#define	Ci_avance_network_speed_coef				1
+#define	Ci_avance_obstacle_speed_coef			2
+#define	Ci_strafe_attack_speed_coef					3
+#define	Ci_strafe_requin_speed_coef					4
+#define	Ci_strafe_network_speed_coef				5
+#define	Ci_strafe_obstacle_speed_coef				6
+#define	Ci_intimidation_speed_coef					7
+#define	Ci_speed_coef_max_nb						8
+
+// ATTACK
+#define	Ci_frame_grab_test_deb		40		// 15		// 10
+#define	Ci_frame_grab_test_fin			50		// 24
+
+// MORT
+#define	Cf_Mort_Duration_Geant				5.0
+#define	Cf_Mort_Duration_Petit					2.0	//1.0		// laisser le temps à la bat de venir !!!
+#define	Cf_Mort_Duration_Petit_Explose	0.75	//1.0		// laisser le temps à la bat de venir !!!
+
+// DISTANCES
+#define	Cf_CRAB_rayon_default		1.5
+#define	Cf_distance_anticipation_actor		4.0
+
+// INTERET
+#define	Cf_CRAB_Interet					100.0
+#define	Cf_Proie_Default_Interet		100.0
+#define	Cf_CRAB_Interet_Duration		1.0
+
+// DYNAMIQUE
+#define	Cv_Friction_Crab			cvector(5.0, 5.0, 0.0)
+
+// MODELE
+#define	MODELE_Geant			0
+#define	MODELE_Petit			1
+
+
+// TAG
+#define	TAG_Min 					cvector(-1.0, -1.0, 0.0)
+#define	TAG_Max 					cvector(1.0, 1.0, 0.0)
+
+// TRACKS
+#define	Ci_Track_TagOff										00
+#define	Ci_Track_Reflex										01
+#define	Ci_Track_Etat											02
+#define	Ci_Track_TagOn										03
+
+
+// MACROS =============================================================
+
+// Changement d'état
+#define macro_change_etat(etat)																				\
+{																															\
+	if (AI_TrackCurGetNum() == Ci_Track_Etat)																\
+		AI_TrackCurChangeNow(etat)																				\
+	else																													\
+		AI_TrackChange(Ci_Track_Etat, etat)																	\
+}
+
+// ETATS ===============================================================
+#define	ETAT_IDLE								1
+#define	ETAT_APPARITION					2
+#define	ETAT_FIGHT							3
+#define	ETAT_GRAB							4
+#define	ETAT_PAF								5
+#define	ETAT_MANGE						6
+#define	ETAT_MORT							7
+#define	ETAT_FADE							9
+#define	ETAT_REPOUSSE					10
+#define	ETAT_TRAINE							11
+#define	ETAT_TEST							999
+
+// ACTIONS ===============================================================
+#define	ACTION_Attente						0
+#define	ACTION_SurPlace					1
+#define	ACTION_Avance						3
+#define	ACTION_Recule						5
+#define	ACTION_StrafeD						8
+#define	ACTION_StrafeG						12
+#define	ACTION_AttackHaut					15
+#define	ACTION_GrabDdeb					17
+#define	ACTION_GrabDmange				18
+#define	ACTION_GrabDrate					19
+#define	ACTION_GrabGdeb					21
+#define	ACTION_GrabGmange				22
+#define	ACTION_GrabGrate					23
+
+#define	ACTION_Paf_Standard				25		// fermé
+#define	ACTION_Paf_Mortel					27		// fermé
+#define	ACTION_Mort							28
+#define	ACTION_Paf_Mortel_Variante	30		// ouvert
+#define	ACTION_Mort_Variante				31
+#define	ACTION_Paf_Lance_deb			33		// ouvert
+#define	ACTION_Paf_Lance_fin_std		34
+#define	ACTION_Paf_Lance_fin_Mort		35
+#define	ACTION_Mort_Paf_Lance			36
+
+#define	ACTION_Intimidation				38
+#define	ACTION_Repousse					39
+#define	ACTION_Mange						40
+#define	ACTION_TourneG45debut			42
+#define	ACTION_TourneG45marche		43
+#define	ACTION_TourneG45fin				44
+#define	ACTION_TourneD45debut			46
+#define	ACTION_TourneD45marche		47
+#define	ACTION_TourneD45fin				48
+
+#define	macro_banking		\
+MATH_VecBlendRotate(OBJ_BankingGet(), v_ground_normale, 6.0 * TIME_GetDt())
+
+
+// EMERGENCY ABORT =============================
+#define	Macro_Emergency_Abort		\
+if( o_emergency_abort_actor && ! CR_TargetActive(o_emergency_abort_actor) )		\
+{	\
+	DBG_TraceObject(OBJ_Me())	\
+	DBG_TraceString(" : EMERGENCY ABORT : Target non active (")	\
+	DBG_TraceObject(o_emergency_abort_actor)	\
+	DBG_TraceString(")")	\
+	DBG_TraceEOL()		\
+	o_fight_actor = nobody		\
+	o_mange_actor = nobody		\
+	macro_change_etat("CR_ETAT_IDLE")	\
+}
+
+
+
+// CANAUX IA
+#define		Crab_Canal_Snap_GrabD					125		// boîte à oeil pour le grab
+#define		Crab_Canal_Snap_GrabG					126		// boîte à oeil pour le grab
+#define		Crab_Canal_Carapace						18			// = Bassin
+#define		Crab_Canal_Pere								19			// Fixe
+#define		Crab_Canal_Vulnerable_Devant			240		// Yeux
+#define		Crab_Canal_Vulnerable_Derriere			250		// Cul
+// Pince D pour grabber (basse)
+#define		Crab_Canal_PinceD							120		// Pince D pour grabber
+#define		Crab_Canal_PinceD3						20			// sous-canal Pince D pour grabber
+#define		Crab_Canal_PinceD2						21			// sous-canal Pince D pour grabber
+#define		Crab_Canal_PinceD1						22			// sous-canal Pince D pour grabber
+// Patte D pour paffer (haute)
+#define		Crab_Canal_PatteD							130		// Patte D pour paffer
+#define		Crab_Canal_PatteD2						30			// sous-canal Patte D pour paffer
+#define		Crab_Canal_PatteD1						31			// sous-canal Patte D pour paffer
+// Patte D pour marcher
+#define		Crab_Canal_PatteMarcheD11			81
+#define		Crab_Canal_PatteMarcheD12			80
+#define		Crab_Canal_PatteMarcheD21			71
+#define		Crab_Canal_PatteMarcheD22			70
+#define		Crab_Canal_PatteMarcheD31			62
+#define		Crab_Canal_PatteMarcheD32			61
+#define		Crab_Canal_PatteMarcheD33			60
+// Pince G pour grabber (basse)
+#define		Crab_Canal_PinceG							140		// Pince G pour grabber
+#define		Crab_Canal_PinceG3						40			// sous-canal Pince G pour grabber
+#define		Crab_Canal_PinceG2						41			// sous-canal Pince G pour grabber
+#define		Crab_Canal_PinceG1						42			// sous-canal Pince G pour grabber
+// Patte G pour paffer (haute)
+#define		Crab_Canal_PatteG							150		// Patte G pour paffer
+#define		Crab_Canal_PatteG2						50			// sous-canal Patte G pour paffer
+#define		Crab_Canal_PatteG1						51			// sous-canal Patte G pour paffer
+// Patte G pour marcher
+#define		Crab_Canal_PatteMarcheG11			83
+#define		Crab_Canal_PatteMarcheG12			82
+#define		Crab_Canal_PatteMarcheG21			73
+#define		Crab_Canal_PatteMarcheG22			72
+#define		Crab_Canal_PatteMarcheG31			65
+#define		Crab_Canal_PatteMarcheG32			64
+#define		Crab_Canal_PatteMarcheG33			63
+

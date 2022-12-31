@@ -1,0 +1,45 @@
+// ETAT
+#define ETAT_Basic												00
+#define ETAT_Fight												01
+#define ETAT_Fuite												02
+#define ETAT_Taunt												03
+#define ETAT_Ride												04
+#define ETAT_Paf												05
+#define ETAT_Ronde											06
+#define ETAT_Balade											07
+#define ETAT_Interception										08
+#define ETAT_Largage											09
+#define ETAT_In_The_Sky										10
+#define ETAT_Buggy											11
+#define ETAT_Crash												12
+
+// TRACK
+#define Ci_Track_Reflex										00
+#define Ci_Track_Etat											01
+
+#define macro_change_etat(etat)																				\
+{																															\
+	if (AI_TrackCurGetNum() == Ci_Track_Etat)																\
+		AI_TrackCurChangeNow(etat)																				\
+	else																													\
+		AI_TrackChange(Ci_Track_Etat, etat)																	\
+	return																													\
+}
+
+// COL
+#define Cf_hysteresis_no_ground_col		0.3
+
+// ZDM
+#define Cf_zdm_size			1.0
+
+// MODE
+#define Ci_Mode_Agressif				0
+#define Ci_Mode_Fuite					1
+#define Ci_Mode_Ride					2
+#define Ci_Mode_Transport			3
+#define Ci_Mode_In_The_Sky		4
+#define Ci_Mode_Buggy				5
+
+// SOUND
+#define Ci_SND_Move_Loop1			1
+#define Ci_SND_Move_Loop2			2

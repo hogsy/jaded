@@ -1,0 +1,671 @@
+// Define at least one function in a track
+function track0 = "GST_Global_init"
+// function track1 = "name"
+// function track2 = "name"
+// function track3 = "name"
+// function track4 = "name"
+
+// CAPA 0 = NO FX (Temporaire)
+
+// CAMERA
+private int				i_cam_joueur_accroupi
+private int				i_cam_joueur_plaque_contre
+
+// Pour l'exec JOY
+vector					v_joy_camera											// Valeur du joy dans le repert de la camera
+private 	vector		v_joy_camera_old									// Valeur du joy dans le repert de la camera (backup)
+private 	vector		v_joy_camera_startblend							// Valeur du Joy transformé au debut du blend
+vector					v_joy_camera_normalized							// Valeur du joy dans le repert de la camera
+private 	vector		v_joy_camera_normalized_old					// Valeur du joy dans le repert de la camera
+vector					v_joy_camera_normalized_startblend			// Valeur du joy dans le repert de la camera
+private 	vector		v_joy_cam_sight										// Visee camera
+private 	vector		v_joy_cam_sight_old								// Visee camera trame précédante
+float						f_joy_norm	=	0										// Norm de la valeur du joy
+private 	float			f_joy_norm_startblend =	0						// Norm de la valeur du joy au debut du blend
+private 	float			f_joy_norm_old = 0									// Old norm
+private 	int				i_joy_transition_en_cours	=	0					// Vrai ou faux transition en cours ?
+private	float			f_joy_timeref 											// Temps de ref pour les transitions cutcam
+private 	object		o_joy_acteur											// Acteur qui simule le JOY
+private	vector		v_joy_camera_pour_blend
+private 	vector		v_joy_camera_Z										// Valeur du joy dans le plan de la camera
+private 	vector		v_joy_camera_normalized_Z						// Valeur du joy dans le plan de la camera
+
+// -------- Game Speed --------
+private 	float			f_game_speed					= 1
+private 	float			f_cheat_speed					= 1
+private 	float			f_old_game_speed			= -1
+private 	float			f_old_old_game_speed		= -1
+private	int				i_BigPerso_SlowGameSpeed
+private	int				i_BigPerso_SlowGameSpeed_last		// backup trame d'avant
+private	float			f_BigPerso_SlowGameSpeed = 1.0
+
+// ORIENTATION
+private vector			v_orient			= Cv_NullVector
+
+// DETECTION MAP JUST RESET & CO
+private int				i_frame_nbr  	= 0
+
+// DEBUG
+private int				i_jack				= vrai_faux
+
+// for cheat change map
+private vector 		v_joy_tmp
+private int 			i_choix_map
+private int 			i_choix_entree
+private int 			i_etape
+private int         	i_tmp    = vrai_faux
+object				tab_found[10]
+int						id_obj_Interet = 0
+
+// ARBRES
+private float					f_wind_timer
+private float					f_wind_duration
+private vector				v_wind_current
+private vector				v_wind_last
+private vector				v_wind_next
+
+// Game Status 
+//#define						Ci_ennemi_counter_in_fight				0
+//#define						Ci_ennemi_counter_in_stalk				1
+//#define						Ci_ennemi_counter_waiting				2
+private int					i_ennemi_counter_old[10]					// Conpteur d'ennemi dans different etats (trame precedante)
+private int					i_ennemi_counter_new[10]				// Conpteur d'ennemi dans different etats (trame courante)
+
+// COMPTEUR
+private int					i_cpt_shot_nb
+private int					i_cpt_hit_nb
+private int					i_cpt_dead_nb
+private int					i_cpt_Ann_shot_nb
+
+// TRAJ
+private vector				av_all_pos_main[50]
+private int					i_oldest_pos_main
+private int					i_max_pos_main = 25
+
+// TERRITORY
+private object				o_territory_colmap
+																				
+// TEMP
+private int					i_stress_marin
+
+// POSITIONS INACCESSIBLES
+private int					i_GST_Climb_NearestSightReachableWaypoint_Warning
+private int					i_GST_Climb_NearestSightReachableWaypoint_Invalid_Pos_nb
+private vector				av_GST_Climb_NearestSightReachableWaypoint_Invalid_Pos[200]
+private object				ao_GST_Climb_NearestSightReachableWaypoint_Invalid_Pos_Nearest_Wp[200]
+
+private int					i_GST_Climb_Territory_Get_Call
+private int					i_raptor_ray_on_visual_nb
+private int					i_raptor_ray_on_colmap_nb
+
+// MARINS
+private int					i_capa_progession = 1
+private object				o_cache_preferee
+private int					i_progression_stress
+private int					i_progression_stress_lente
+private int					i_progression_hayes_retrait
+private int					i_progression_hayes_normal
+private network			move_network
+private int					i_flag_rage
+private int					i_jack_grab
+private object				o_qqun_grab
+private object				o_qqun_carry
+private object				o_qqun_walkstunned
+private int					i_qqun_marasme
+private int					i_CB_way_num
+private object				i_CB_way_obj[200]
+private int					i_CB_way_danger[200]
+private int					i_CB_PosValid
+private vector				i_CB_PosValidSrc[50]
+private vector				i_CB_PosValidDst[50]
+private int					i_CB_PosValidResult[50]
+private float					i_CB_PosValidTime[50]
+private int					i_humain_opt_enn
+private int					i_humain_teleport
+private int					i_progression_hayes_is_suivi
+private float					f_hayes_shoot_neuneu
+
+// --------( LANCES )--------
+private object				ao_Lances[ Ci_bambou_maxinmap ]
+private int					i_LanceNb = 0
+private object				o_last_lance_jack
+private int					i_cpt_lance_jack
+
+
+// TEAM STATUS PAGE
+int				i_TeamStatus_displayed = vrai_faux
+int				i_indice_text
+int				i_ammo_ID
+
+// OBJET IMPORTANT POUR LA CAM
+private object	o_prio_camera
+
+// GRAB RAPTOR
+private float					f_raptor_last_grab_time = -1000.0
+
+// COMMUNICATION ENNEMI
+private vector	v_flag_pos_accessible
+private int		i_flag_pos_accessible
+
+// INITIALISATION DES RESEAUX
+private int				i_precal_nb
+private network		an_precal[20]
+private int				ai_precal_wp_nb[20]
+private object 			ao_precal_wp[20][100]
+private int				ai_precal_territory_ID_nb[20]
+private int				ai_precal_territory_ID[20][16]
+private int				ai_precal_territory_first_wp_index[20][16]
+private int				ai_precal_territory_wp_nb[20][16]
+private int				ai_precal_territory_link[20][16]
+private int				ai_precal_territory_link2[20][16]
+private int				ai_precal_territory_ID_index[20][32]
+
+object					o_camera			// Gao de la camera courante.
+
+// PROCEDURE INTERSECTION OBB OBB
+private float				af_matrix_R[3][3]
+
+//#include "ROOT/EngineDatas/04 Technical Bank/AI Models/Kanada/GST_Global/GST_Global_KK.var"
+
+// OPTIMISATION RECHERCHE CHEMIN RAPTOR
+private int				i_raptor_short_way_call_nb
+
+private int				i_raptor_way_wp_nb
+private int				i_raptor_way_precal_wp_used
+private network		an_raptor_way_net[10]
+private vector			av_raptor_way_pos[10]
+private object			ao_raptor_way_wp[10]
+
+private int				i_raptor_net_way_nb
+private int				i_raptor_net_way_precal_used
+private object 			ao_raptor_net_way_wp[5][50]
+private int				i_raptor_net_way_wp_nb[5]
+	
+//// OPTIMISATION EVALUATION POSITION RAPTOR
+//private int				i_raptor_precal_pos_index
+//private int				i_raptor_precal_pos_used_nb
+//private network		an_raptor_precal_pos_net[20]
+//private int				ai_raptor_precal_pos_bit_field[20]
+//private vector			av_raptor_precal_pos[20]
+//private int				ai_raptor_precal_pos_flag[20]
+
+// OPTIMISATION CHECK VISION GALIMINUS
+private int				i_galiminus_precal_nb
+private network		an_galiminus_precal[5]
+private int				ai_galiminus_bit_field[5]
+
+private int				i_perceived_main_actor_index[5]
+
+private int				i_perceived_actor_nb[5]
+private int				ai_perceived_seen[5][20]
+private int				ai_perceived_accessible[5][20]
+private int				ai_perceived_territory[5][20]
+private int				ai_perceived_status[5][20]
+private int				ai_perceived_ID[5][20]
+private int				ai_perceived_hiding_place_index[5][20]
+
+private float				af_perceived_interest[5][20]
+private float				af_perceived_life_ratio[5][20]
+
+private vector			av_perceived_position[5][20]
+
+private object			ao_perceived_actor[5][20]
+
+private int				i_budy_nb[5]
+private object			ao_budy[5][20]
+
+// RASTER
+private int				i_quick_sort_call_nb
+private int				i_quick_sort_wp_nb
+
+private int				i_reachable_from_call_nb
+private int				i_reachable_from_case_nb
+
+// OPTIMISATION GRID LINE TESTED
+private int				i_grid_line_nb
+private network		an_grid_line_net[10]
+private int				ai_grid_line_bit_field[10]
+private int				ai_grid_line_tested_nb[10]
+private int				ai_grid_line_tested_flag[10][10]
+private vector			av_grid_line_tested_start[10][10]
+private vector			av_grid_line_tested_dest[10][10]
+
+//// ----( After FX )----
+separator "AFX"
+private	object		o_AFX_godray = nobody
+
+// RASTER REFRESG TERRITORY
+private int	i_refresh_territory_call_nb
+private int	i_refresh_territory_iteration_nb
+
+// BLOCKAGE JACK
+private int		i_cam_blocked_trans
+private int		i_cam_blocked_rot
+private float		f_cam_blocked_x
+private float		f_cam_blocked_z
+private float		f_cam_blocked_mz
+private vector	v_cam_original_sight
+private vector	v_cam_original_pos
+private int		i_cam_mode_recal
+
+// KK ANN VARS
+private 	float		f_time_KK_ANN_avant_la_mort		// timer avant Game Over
+private	int			i_KK_ANN_Fear_Mode			// Comporement de ANN vis à vis de KONG
+private	int			i_KK_ANN_On_Shoulder
+private	int			i_KAnn_fake_attack_index		// indique à KAnn si l'attaque faké portée par son NMI est à droite, à gauche....
+private	int			f_flee_distance_enemy = 15.0
+private	int			f_flee_distance_kong = 45.0
+private	int			i_KAnn_check_paf_on_network		// indique à KAnn si l'attaque faké portée par son NMI est à droite, à gauche....
+private	int			i_KAnn_Drop_Javelin
+
+// KK VARS
+private	object	o_KK_trunc = nobody
+
+separator "SCRIPTS"
+int				DEBUG_SCRIPT = vrai_faux
+private int 	DEBUG_TCINE
+int				DEBUG_ACTIVATORTRIGGER = vrai_faux
+
+// FREQUENCE ATTAQUE GALIMINUS
+private float			f_time_last_gali_attack
+
+// Pour les Feux !
+private	int			i_nbr_de_feux_en_cours
+private	int			i_nbr_de_feux_en_cours_now
+
+// POUR LES SCORPIONS
+private float			f_delay_since_last_scorpion_dash
+private object		o_last_scorpion_dasher
+private int			i_last_death_action_num
+
+// GRID LIB
+private vector		v_grid_lib_last_blocked_pos
+
+// POUR LES (K/J)BATS ================================================================
+private	float		f_time_bats_last_plongeon = 0.0			// heure du dernier plongeon d'attaque d'une bat
+private	int			i_bat_vol_cycle_variante_nb = 0				// cycle d'anim de vol
+private	float		af_time_bats_attaque_desynchro[4]		// heures de fin d'attaque (désynchronisation fin d'attaque)
+private	float		f_time_bat_noire_escape = 0.0				// heure à laquelle la bat noire s'enfuie après un paf (délai d'attaque pour les grises)
+private	int			i_bat_noire_lieutenant_nb						// nb de bats "bras droit" d'une bat noire boss
+private	int			i_Bat_On_TRex_Position_Index				// indice de positionnement d'une bat sur un cadavre de TREX
+private	int			i_bat_perchee_plongeon_modulo
+private	float		f_bat_plongeon_delay = 0.0					// délai avant le prochain plongeon autorisé pour la prochaine bat
+private	int			i_Bat_finish_expulsion_cpt					// num de la bats expulsée par Kong en finish
+private	int			i_foodchain_bats_nb
+private	int			i_bats_count
+private	int			i_KBigBat_anti_mashing
+private	object	o_KBigBat_instant_grab_Ann
+private	int			i_KBigBat_instant_grab_Ann_reset
+private	int			i_KSmallBats_death_action
+private	object	o_BatsKillZone = nobody
+// POUR LES (K/J)BATS ================================================================
+
+// ULTRA TAG
+private int					i_ultra_tag_touched
+private int					i_ultra_tag_last_id = -1
+private int					i_ultra_tag_nb
+private object				ao_ultra_tag[20]
+
+// GALIMINUS ANNONCE
+private float					f_time_last_gali_annonce
+
+// MONSTRE MARIN
+private	object			o_monstre_marin = nobody
+
+// HYPER TAG
+private int					ai_hyper_tag[18][18]
+private object				o_hyper_tag_actor[3]
+private int					i_hyper_tag_case_sector[3]
+private int					ai_hyper_tag_case_nb[3][25]
+private int					ai_hyper_tag_recompute_bloc[3][25]
+private vector				av_hyper_tag_ref_pos[3][25]
+private vector				av_hyper_tag_start_pos[3][25]
+private vector				av_hyper_tag_case[3][25][50]
+
+// AFTERFX ======================================================================================
+int			AFE_Flags[Param_AE_Number]						// Flag qui indique si cette valeur est modifié par l'AI ou pas.
+float		AFE_AiValue[Param_AE_Number]						// Valeur pour la trame courant donnée par l'AI (valeur de reference source lors des blends)
+float		AFE_DefaultValue[Param_AE_Number]				// Valeur par defaut donné par la MM (on blend vers cette valeur)
+float		AFE_CurrentValue[Param_AE_Number]				// Valeur reelle courante 
+float		AFE_BlendValue[Param_AE_Number]				// de 0 a 1
+float		AFE_BlendSpeedValue[Param_AE_Number]		// Vitesse du reduction de valeur
+vector	AFE_ZoomSmoothPos										// Position du ZoomSmooth
+// AFTERFX ======================================================================================
+
+// SND
+private float f_SndLoading = 0.0
+
+// --------( TEXT )--------
+private	int		GLOBAL_i_PlayGenericSpeech = faux_vrai
+
+// PROJECTILES
+private	int			i_projectile_nb = 0
+private	object	ao_projectile[ Ci_projectile_maxinmap ]
+
+
+// Kong Fight ========================================================
+private vector			v_KongFight_TargetAddPos[50]				// Position
+private float				f_KongFight_TargetAddSize[50]				// Taille
+private object			o_KongFight_TargetAddGao[50]				// Gao
+private float				f_KongFight_TargetAddPrio[50] 				// Prio
+private int				i_KongFight_TargetAddInt[50]				// Dummy
+
+private int				i_KongFight_TargetAddNbrOfItem			// Nbr total d'elements
+// Kong Fight ========================================================
+
+// Spider
+private float				f_spider_time_last_jump
+private float				f_spider_time_last_bite
+private int				i_spider_on_camera_nb
+
+private int				i_spider_perceived_main_actor_index
+private int				i_spider_sound_done
+
+private int				i_spider_perceived_actor_nb
+private int				ai_spider_perceived_territory[20]
+private int				ai_spider_perceived_status[20]
+private int				ai_spider_perceived_ID[20]
+
+private float				af_spider_perceived_interest[20]
+private float				af_spider_perceived_life_ratio[20]
+
+private vector			av_spider_perceived_position[20]
+
+private object			ao_spider_perceived_actor[20]
+private object			ao_spider_perceived_nearest_wp[20]
+
+private int				i_spider_budy_nb
+private object			ao_spider_budy[40]
+
+private int				i_spider_dist_computed
+private float				af_spider_dist[30][30]
+
+// Textes de buts
+private text				text_buts[20]
+
+//////////////////////// LANCES //////////////////////////
+private int				HL_Requete[30]
+private int				HL_AcceptRequete[30]
+private float				HL_DistRequete[30]
+private object			o_cam_on
+private object			o_cam_cut
+
+///////////////////////// PLUIE //////////////////////////
+private int				ENV_pluie_interdit
+private int				ENV_pluie_encours
+private int				ENV_poleine_herbe
+private int				ENV_nape_brume
+
+///////////////////////// STATS /////////////////////////
+//private int				i_cheat_stat
+private int				i_cheat_2_nbr
+private int				i_cheat_2_last_prio
+private object			i_cheat_2_last_gao
+
+
+///////////////////////// OCCLUDER AND WAY_LIB //////////////////////////////////
+private int				WAY_LIB_used_occluder_index				= -1
+private int				WAY_LIB_dest_pos_occluder_index		= -1
+private int				WAY_LIB_TEST_GRID
+private int				WAY_LIB_Main_Actor_Occluder_index 	= -1
+private int				WAY_LIB_Territory_List_Size
+private int				WAY_LIB_Territory_List[100]
+
+
+//////////////////////// FIRE //////////////////////////////////
+private int				i_fire_flag_already_checked
+private int				i_fire_gao_nb
+private object			ao_fire_gao[100]
+private float				f_fire_duration
+private float				f_fire_propag
+
+////////////////////////// CARS //////////////////////////////
+private object			o_car_manager
+
+//////////////////////////// BIDOCHE LANCE //////////////////
+private object			o_bidoche_plug_jack
+private object			o_bidoche_gao
+private int				i_bidoche_coup
+
+private int				gfx_light_gun
+
+//////////////////// KTREX FIGHT ///////////////////////////
+private	float			f_KTREX_reattack_delay
+private	float			f_KTREX_attack_ANN_last_time
+
+////////////// FINISH NMI SUR KONG ////////////////////
+private	object		o_KNMI_finish_leader
+private 	int    			i_KNMI_finish_fake_actor_count
+private	int				i_KNMI_finish_spawn_actor_count
+private 	int    			i_KNMI_finish_all_actor_count
+private 	int    			i_KNMI_finish_type = -1		// car 0 = trex
+private 	int    			i_KNMI_finish_repousse		// indy a repoussé le finish, info pour le leader
+private	int				i_KNMI_finish_kong_a_gagne
+private	int				i_Small_KNMI_must_die
+private	object		o_KK_finish_arena_center
+private	int				i_KongTriesToGrabABigScolo
+private	int				i_KK_Ask_Finish_Button
+
+
+////////////// BRONTO /////////////////////////////////////////////
+private int					i_bronto_leg_nb
+private object				ao_bronto_leg[40]
+private float					af_bronto_leg_size[40]
+
+////////////// TEXTE /////////////////////////////////////////////
+private object				o_Texte_Menu = nobody
+private object				o_Texte_Game = nobody
+
+private float		f_mus_injure = 666
+private int		fade_paf
+private float		f_time_rage
+
+//////////////////// DBG ES /////////////////////////////////////////////
+private int		i_dbg_ES[50]
+
+//////////////////////// CRABS //////////////////////////////////
+private	float			f_CRAB_next_attaque_45degre			// time minimum pour la prochaine attaque à 45°
+private	float			f_crab_last_grab_time = -1000.0
+private	int				i_CRAB_vague_attaque_flag
+private	int				i_CRAB_humain_attack_compteur
+private	object		ao_CRAB_attacking_humans[20]
+private	int				i_CRAB_humain_attack_max_nb = 3
+private	int				i_CRAB_death_action_modulo
+private	float			f_CRAB_idle_net_intimidation
+
+/////////////////////// BIDOCHE ///////////////////////////////
+private object			o_bidoche_crab
+private object			o_bidoche_bat
+private object			o_bidoche_gali
+private object			o_bidoche_scorpion
+
+////////////////////// CRI RAPTOR /////////////////////////////
+private float				f_time_last_raptor_roar
+
+private object			o_jack_last_paf
+
+private object			i_Global_KamID[5]						// Global Kam
+
+private	object		o_cine_gao = nobody
+
+int							i_mode_neuneu
+private float				f_time_neuneu
+
+////////////////////// REGISTER ///////////////////////////////
+private	object		o_global_light_and_smoke_kanada = nobody
+
+/////////////////////// MORT GALI ET RAPTOR //////////////////////////
+private int				pnj_raptor_death_ID
+
+/////////////////////// KONG /////////////////////////////////////
+private	int				i_Kong_ignore_paf
+private	color			SFX_Fumee_Walk
+private	color			SFX_Fumee_Walling
+private	color			SFX_Fumee_Impact_Sol
+
+/////////////////////// IK SUR VISUEL OU SUR COLMAP ////////////////////
+private int				i_IK_LEG_Target
+private int				i_IK_LEG_Off
+private int				i_IK_NECK_Off
+
+int							i_debug_all_swamp = vrai_faux
+
+//////////////////////// SOFT COLLISION BAT ////////////////////////////////////
+private int				i_soft_col_bat_computed
+private int				i_soft_col_bat_nb
+private object			ao_soft_col_bat[30]
+private vector			av_soft_sol_bat_pos[30]
+private float				af_soft_col_bat_dist[30][30]
+
+private float 			f_force_eclaire
+
+private	int				i_natives_nb
+
+private	int				i_ann_background = 666
+
+int							i_AI_show_target = vrai_faux
+
+//private	float			f_KK_Zoom_coef = Cf_Kong_Zoom_coef_default
+
+// PERSONNAGE CONTROLE PAR LE JOUEUR
+private	int				i_Player_is_Kong = vrai
+//private	float			f_Player_Swapped_last_time
+private	int				i_Player_on_KK_Shoulder = faux
+//private	int				i_FPS_Shoulder_disabled
+private	int				i_FPS_Shoulder_force_new_entry		// pour forcer à lacher puis réappuyer le shift FPS
+
+
+int		i_FPS_Lances_Infinies = vrai_faux
+
+// ---------- ROTATION DES PLANETES ------------
+float 						f_Hour_Set = -2
+
+// ARMES
+private	object		o_joueur_last_bow
+
+// PIRANHAS
+private	float			f_time_to_eat
+
+// REWARD
+private	object		ao_Reward[20]
+private	int				i_Reward_count
+
+// MONTURES MANAGER
+private object			o_montures_manager
+
+// ROPE MANAGER
+private object			o_rope_manager
+
+
+
+// CAMERA KK -----------------------------------------------------------
+private message 			mes_kong_camera_fight
+
+private int					i_kong_camera_status_old		// Backup
+private messageid		mid_kong_camera_status_old	// Backup
+private int					i_kong_camera_status				// Id du mode de Cam de Kong
+private messageid		mid_kong_camera_status
+
+private int					i_kong_finish_id						// Id du Plan pour le Finish
+private object				o_kong_finish_target
+private vector				v_kong_camera_vector
+
+private int					i_jack_camera_status_old
+private messageid		mid_jack_camera_status_old
+private int					i_jack_camera_status
+private messageid		mid_jack_camera_status
+
+private message 			m_cam_plan
+private int					i_cam_plan_id = 1
+
+private int					i_map_kong
+
+// GRAPPIN
+private int					i_grappin_hotspot_nmi_died
+private int					i_GRAPPIN_OutOfControl_flag
+private object				o_GRAPPIN_OutOfControl_actor
+
+private int					i_SND_BEAT					// Beat Zic
+private int					i_SND_BEAT_Tempo 		// Tempo de la ZIC
+
+private int					i_world_stopped
+
+// PATH LIB OPTIM
+private object				PATH_LIB_main_actor_wp
+private int					i_BVTerritory_LinkHasChanged
+private int					PATH_LIB_current_client_ID
+private int					PATH_LIB_new_client_ID
+private int					PATH_LIB_dodge_current_client_ID
+private int					PATH_LIB_dodge_new_client_ID
+
+// DEBUG
+private int					i_DBG_PNJ_Lapin = vrai
+private int					i_DBG_Grappin
+private int					i_DBG_PNJ_MiniRobot = vrai
+
+// LAPINS
+private float					f_Lapin_Encerclement_last_sign = 1.0
+
+private object				o_mashing_action
+
+//// CRICKET
+private int					i_cricket_nb
+//private int					i_cricket_on_screen
+//private int					i_cricket_dist_computed
+private int					i_cricket_respawn
+//private object				ao_cricket[200]
+
+// MY SNP
+private int					i_snp_gao_nb
+private object				ao_snp_gao[128]
+private int					ai_snp_col_gao_nb[128]
+private object				ao_snp_col_gao[128][128]
+
+private int					i_snp_entry_nb
+
+// Tableaux d'index
+private int					ai_snp_AxisTableNodeIndex[3][256]
+
+// 3 Tableaux de 256 nodes
+private object				ao_snp_AxisNodeGao[3][256]
+private int					ai_snp_AxisNodeRef[3][256]
+private int					ai_snp_AxisNodeFlag[3][256]
+private float					af_snp_AxisNodeOffset[3][256]
+private float					af_snp_AxisNodeVal[3][256]
+
+// 3 Tableaux de 128 * 128bit - 128 (la diagonale) / 2 (symétrie) soit 8064 bit soit 254 int32
+private int					ai_snp_AxisTableFlag[3][254]
+
+//LIMITATION DE VITESSE
+private float					f_vitesse_limit
+
+// OBJECTIFS
+private object				o_Objectif_Manager = nobody
+
+// SECTO AI
+private object				o_AI_secto_gao
+private int					i_secto_atmosphere1
+private int					i_secto_atmosphere2
+private int					i_secto_merdenuage1
+private int					i_secto_merdenuage2
+
+// Minirobots
+private int					i_MR_Nblink = 0
+
+// DANSE
+private int					ai_danse_memo[Ci_nb_Danse_Max]
+private int					ai_danse_memofreq[Ci_nb_Danse_Max]
+private int					i_danse_pos
+private int					i_danse_nb_pas
+
+// WEARSHOP
+private int					i_wearshop_active_flag
+private object				o_wearshop_rayman
+private int					i_lums_absorbes
+private int					i_lums_generes
+
+// DANSE POSITION
+private int					i_Danse_Actors_nb
+private object				ao_Danse_Actors[Ci_nb_LAPIN_Danse_Max]
+private int					i_Danse_Actors_pos_recompute
+

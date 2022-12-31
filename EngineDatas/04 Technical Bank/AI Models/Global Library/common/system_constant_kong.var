@@ -1,0 +1,652 @@
+#define Obj_Capa_Switch								OBJ_Capa_8
+#define Obj_Capa_Fight								OBJ_Capa_16
+
+// Special logique PNJ-ATTaque (FRED) -----------------
+#define Capa_PNJ_Attaque		OBJ_Capa_0
+#define Capa_PNJ_Hide			OBJ_Capa_1
+#define Capa_PNJ_Desactivate	OBJ_Capa_2
+#define Capa_PNJ_Hit				Obj_Capa_Switch
+#define Capa_PNJ_Ready			OBJ_Capa_9
+
+// Limite Sol - Mur
+#define 	Cf_Jack_Angle_Mur_sol		Cf_Cos60
+// Enemy ---------------------------------------------------------------------------------------------------------------------------
+#define get_enemy_waiting_nb		@ get_global i_ennemi_counter_old[Ci_ennemi_counter_waiting]
+#define get_enemy_attacking_nb	@ get_global i_ennemi_counter_old[Ci_ennemi_counter_attacking]
+#define get_enemy_fighting_nb		@ get_global i_ennemi_counter_old[Ci_ennemi_counter_in_fight]
+#define get_enemy_stalking_nb		@ get_global i_ennemi_counter_old[Ci_ennemi_counter_in_stalk]
+
+// Joy --------------------------------------------------------------------------------------------------------------------------------
+#define glob_joyvector_get						@get_global v_joy_camera
+#define glob_joyvector_get_normalized	@get_global v_joy_camera_normalized
+#define glob_joynorm_get						@get_global f_joy_norm
+#define glob_blendcam_reset					@get_global i_joy_transition_en_cours = faux
+#define tolerance_joynull						0.25																// Tolerance du joy (considéré null si inferieur a cette valeur)
+#define tolerance_joymax						0.925																// Tolerance du joy (considéré a 1 si > a cette valeur)
+
+// CAMERA - JACK - STATUS ------------------------------------------
+//#define Ci_Jcamera_deplacement						1		// Pour les deplacements sauf en fight
+//#define Ci_Jcamera_visee									2		// Mode shoot
+
+// Paf -------------------------------------------------------------------------------------------------------------------------------
+#define PAF_Unit												1
+
+#define MEDICIT_Value										(2 * PAF_Unit)
+
+#define BLESSURE_Tete									1
+#define BLESSURE_Bras									2
+#define BLESSURE_Pieds								3
+
+// enemy counter -------------------------------------------------------------------------------------------------------------------------
+#define Ci_ennemi_counter_in_fight						0		// Nbr d'ennemi en fight
+#define Ci_ennemi_counter_in_stalk					1		// Nbr d'ennemi en approche
+#define Ci_ennemi_counter_waiting						2		// Nbr d'ennemi en attente
+#define Ci_ennemi_counter_attacking					3		// Nbr d'ennemi entrain de faire leur attaque
+
+// WEAPON -----------------------------------------------------------------------------------------------------------
+// OLD WEAPONS
+//#define Ci_weapon_ID_colt								1		// to be deleted...
+//#define Ci_weapon_ID_tommy_gun					2		// to be deleted...
+//#define Ci_weapon_ID_shotgun						3		// to be deleted...
+//#define Ci_weapon_ID_sniper_rifle						4		// to be deleted...
+//#define Ci_weapon_ID_grenade						5		// to be deleted...
+//#define Ci_weapon_ID_bambou						6
+//#define Ci_weapon_ID_bambou_moy					7		// to be deleted...
+//#define Ci_weapon_ID_bambou_petit					8		// to be deleted...
+//#define Ci_weapon_ID_crane							9
+//#define Ci_weapon_ID_levier							10
+// NEW WEAPONS
+#define Ci_weapon_ID_bambou							1
+#define Ci_weapon_ID_arc									2
+#define Ci_weapon_ID_sarbacane						3
+#define Ci_weapon_ID_hachette							4
+#define Ci_weapon_ID_crane								5
+#define Ci_weapon_ID_ossement						6
+#define Ci_weapon_ID_levier								7
+
+// MAX
+#define Ci_weapon_ID_max								20		// Nbre d'armes (A METTRE A JOUR)
+#define Ci_weapon_ID_munition							21		// APRES !!!
+#define Ci_weapon_ID_munition_end					30		// APRES !!!
+
+#define weap_colt											0
+#define weap_fusil											1
+#define weap_lance											2
+#define weap_jetable										3
+
+
+#define Cf_colt_range										50.0
+#define Cf_colt_range_pointblank						5.0
+#define Cf_colt_range_medium							25.0
+#define Cf_colt_paf_pointblank							(8 * PAF_Unit)
+#define Cf_colt_paf											(4 * PAF_Unit)
+#define Cf_colt_paf_far										(2 * PAF_Unit)
+
+#define Cf_tommy_gun_range							80.0
+#define Cf_tommy_gun_range_pointblank				5.0
+#define Cf_tommy_gun_range_medium				10.0
+#define Cf_tommy_gun_paf_pointblank				(2.0 * PAF_Unit)
+#define Cf_tommy_gun_paf								(1.0 * PAF_Unit)
+#define Cf_tommy_gun_paf_far							(1.0 * PAF_Unit)
+
+#define Cf_shotgun_range									25.0
+#define Cf_shotgun_range_pointblank					5.0
+#define Cf_shotgun_range_medium						10.0
+#define Cf_shotgun_cone									(Cf_1Degre * 10)
+#define Cf_shotgun_cos_cone							Cf_Cos10
+#define Ci_shotgun_ray_by_frame						4
+#define Cf_shotgun_paf_pointblank						(20.0 * PAF_Unit)
+#define Cf_shotgun_paf										(10.0 * PAF_Unit)
+#define Cf_shotgun_paf_far								(5.0 * PAF_Unit)
+
+#define Cf_sniper_rifle_range								250.0
+#define Cf_sniper_rifle_range_pointblank				5.0
+#define Cf_sniper_rifle_range_medium					50.0
+#define Cf_sniper_rifle_paf_pointblank					(15.0 * PAF_Unit)
+#define Cf_sniper_rifle_paf									(10.0 * PAF_Unit)
+#define Cf_sniper_rifle_paf_far							(10.0 * PAF_Unit)
+
+#define Cf_grenade_range									15.0		// distance de lancer
+#define Cf_grenade_range_pointblank					2.5		// rayon de la sphère max damage
+#define Cf_grenade_range_medium						5.0		// rayon de la sphere min damage
+#define Cf_grenade_pointblank							(25.0 * PAF_Unit)
+#define Cf_grenade_paf										(2.0 * PAF_Unit)
+#define Cf_grenade_paf_far								(2.0 * PAF_Unit)
+
+
+#define Cf_bamboumiddle_paf							(7.0 * PAF_Unit)
+#define Cf_bamboumiddle_paf_pointblank				(7.0 * PAF_Unit)
+#define Cf_bamboumiddle_paf_far						(3.0 * PAF_Unit)
+
+#define Cf_bamboulittle_paf								(2.0 * PAF_Unit)
+#define Cf_bamboulittle_paf_pointblank				(3.0 * PAF_Unit)
+#define Cf_bamboulittle_paf_far							(1.0 * PAF_Unit)
+
+#define Ci_colt_clip_size									8
+#define Ci_sniper_rifle_clip_size							5
+#define Ci_shotgun_clip_size								5
+#define Ci_tommy_gun_clip_size						50
+#define Ci_grenade_clip_size								1
+#define Ci_bambou_clip_size								1
+#define Ci_ossement_clip_size							1
+#define Ci_arc_clip_size									1
+#define Ci_hachette_clip_size							1
+#define Ci_sarbacane_clip_size							1
+#define Ci_crane_clip_size								1
+
+
+// NEW WEAPONS !!!!! =================================
+#define Cf_levier_range										7.5
+
+#define Cf_bambou_range									20.0
+#define Cf_bambou_range_pointblank					5.0
+#define Cf_bambou_range_medium						10.0
+#define Cf_bambou_paf										(11.0 * PAF_Unit)
+#define Cf_bambou_paf_pointblank						(11.0 * PAF_Unit)
+#define Cf_bambou_paf_far								(5.0 * PAF_Unit)
+
+#define Cf_ossement_range								20.0
+#define Cf_ossement_range_pointblank				5.0
+#define Cf_ossement_range_medium					10.0
+#define Cf_ossement_paf									(2.0 * PAF_Unit)
+#define Cf_ossement_paf_pointblank					(3.0 * PAF_Unit)
+#define Cf_ossement_paf_far								(1.0 * PAF_Unit)
+
+#define Cf_hachette_range									20.0
+#define Cf_hachette_range_pointblank					5.0
+#define Cf_hachette_range_medium					10.0
+#define Cf_hachette_paf									(11.0 * PAF_Unit)
+#define Cf_hachette_paf_pointblank						(11.0 * PAF_Unit)
+#define Cf_hachette_paf_far								(5.0 * PAF_Unit)
+
+#define Cf_arc_range										250.0
+#define Cf_arc_range_pointblank							5.0
+#define Cf_arc_range_medium							50.0
+#define Cf_arc_paf											(11.0 * PAF_Unit)
+#define Cf_arc_paf_pointblank							(11.0 * PAF_Unit)
+#define Cf_arc_paf_far										(5.0 * PAF_Unit)
+
+#define Cf_sarbacane_range								20.0
+#define Cf_sarbacane_range_pointblank				5.0
+#define Cf_sarbacane_range_medium					10.0
+#define Cf_sarbacane_paf									(2.0 * PAF_Unit)
+#define Cf_sarbacane_paf_pointblank					(3.0 * PAF_Unit)
+#define Cf_sarbacane_paf_far								(1.0 * PAF_Unit)
+
+#define Cf_crane_range										7.5
+#define Cf_crane_range_pointblank						5.0
+#define Cf_crane_range_medium						10.0
+#define Cf_crane_paf										(20.0 * PAF_Unit)
+#define Cf_crane_paf_pointblank							(20.0 * PAF_Unit)
+#define Cf_crane_paf_far									(20.0 * PAF_Unit)
+
+#define Ci_projectile_maxinmap							16
+
+
+// CONSTANTES IK -----------------------------------------------------------------------------------------------------------
+#define Ci_IK_pied_gauche 								0
+#define Ci_IK_pied_droit 									1
+#define Ci_IK_main_gauche 								2
+#define Ci_IK_main_droite 								3
+
+// ENUMS -----------------------------------------------------------------------------------------------------------
+#define	Enum_AllCapa	enum("00 Capa 0"1 "01 Capa 1"2 "02 Capa 2"4 "03 Capa 3"8 "04 Capa 4"16 "05 Capa 5"32 "06 Capa 6"64 "07 Capa 7"128 "08 Capa 8"256 "09 Capa 9"512 "10 Capa 10" 1024 "11 Capa 11" 2048 "12 Capa 12" 4096 "13 Capa 13" 8192 "14 Capa 14" 16384 "15 Capa 15"32768)
+
+// IDs -----------------------------------------------------------------------------------------------------------
+//#define	C_ID_Kong								0		// Indice de Kong
+//#define	C_ID_Jack								1		// Indice de Jack
+//#define	C_ID_Ann								2		// Indice de Ann
+//#define	C_ID_Marin_premier					3		// Indice du premier marin
+//#define	C_ID_Hayes							3
+//#define  C_ID_DummyHumain				4
+//#define	C_ID_Denham							5
+//#define	C_ID_Jimmy							6
+//#define	C_ID_Marin1							7
+//#define	C_ID_Marin2							8
+//#define	C_ID_Marin3							9
+//#define	C_ID_Marin4							10
+//#define	C_ID_Marin5							11
+//#define	C_ID_Marin_number					10		// Nbr Max de marins
+//#define	C_ID_Marin_dernier					12		// Indice du dernier marin
+//#define	C_ID_Indigene1						13
+//#define	C_ID_Indigene2						14
+//#define	C_ID_Indigene3						15
+//#define	C_ID_Indigene4						16
+//#define	C_ID_Indigene5						17
+//#define	C_ID_Number_ToBeSaved			18		// Nbr d'ID a sauver
+
+// IDs -----------------------------------------------------------------------------------------------------------
+#define	C_ID_Rayman							0		// Indice de Rayman
+#define	C_ID_Kong								0		// Indice de Kong
+#define	C_ID_Joueur							1		// Indice du Joueur
+#define	C_ID_Last_Compagnon				2
+#define	C_ID_Number_ToBeSaved			2		// Nbr d'ID a sauver
+
+#define	C_ID_Prune							6		// basic nmi
+#define	C_ID_MiniRobot						7		// basic nmi
+#define 	C_ID_Bidoche							8
+#define	C_ID_Scooter							9		// basic nmi
+#define	C_ID_Lapin								10		// basic nmi
+#define	C_ID_Monture_Rhino				11		// basic nmi
+#define	C_ID_Monture_Aigle					12		// basic nmi
+#define	C_ID_Monture_Serpent				13		// basic nmi
+#define	C_ID_Monture_Requin				14		// basic nmi
+#define	C_ID_Monture_PoissonLumiere	15		// basic nmi
+#define	C_ID_Monture_Araignee			16		// basic nmi
+#define	C_ID_Monture_Bat					17		// basic nmi
+#define	C_ID_Monture_Tigre					18		// basic nmi
+#define	C_ID_Monture_Rope					19		// basic nmi
+#define	C_ID_Monture_Quadripode		20		// basic nmi
+#define	C_ID_Mouton							21		// basic nmi
+#define	C_ID_Pigeon							22		// basic nmi
+#define	C_ID_Monture_Soucoupe			23
+#define	C_ID_Monture_Transport			24
+
+#define	C_ID_Number							25
+
+#define enum_toutes_les_montures		enum("0 - Aucune" 0 "11 - Rhino" 11 "12 - Aigle" 12 "13 - Serpent" 13 "14 - Requin" 14 "15 - PoissonLumiere" 15 "16 - Araignee" 16 "17 - Bat" 17 "18 - Tigre" 18)
+
+//#define	C_ID_Indigene							13
+//#define	C_ID_SwampCrawler				15
+//#define	C_ID_Tyranosaure					16
+//#define	C_ID_Loup								17
+//#define	C_ID_Chien							18
+//#define	C_ID_Cible								19
+//#define	C_ID_BatCharognard				20
+//#define	C_ID_Dummy							21
+//#define	C_ID_Galiminus						22
+//#define	C_ID_SwampCrawlerSmall		23
+//#define 	C_ID_GenericCompagnons		24
+//#define 	C_ID_Scorpion						25
+//#define	C_ID_Scolo							26
+//#define	C_ID_CrabePetit						27
+//#define	C_ID_CrabeGeant					28
+//#define	C_ID_OiseauCrouch					29
+//#define	C_ID_Dynamite						30
+//#define	C_ID_MonstreMarin					31
+//#define	C_ID_Spider							32
+//#define	C_ID_Cricket							34
+//#define	C_ID_Triceratops						35
+
+//#define IsThis_ID_Humain(ITID_perso_ID)					(ITID_perso_ID>C_ID_Kong && ITID_perso_ID<= C_ID_Marin_dernier)
+//#define IsThis_ID_HumainIndigene(ITID_perso_ID)		((ITID_perso_ID>=C_ID_Indigene1 && ITID_perso_ID<= C_ID_Indigene2) || ITID_perso_ID == C_ID_Indigene)
+//#define IsThis_ID_Marin(ITID_perso_ID)					(ITID_perso_ID>=C_ID_Marin_premier && ITID_perso_ID<= C_ID_Marin_dernier)
+
+#define IsThis_ID_Humain(ITID_perso_ID)					(ITID_perso_ID>C_ID_Kong && ITID_perso_ID<= C_ID_Last_Compagnon)
+#define IsThis_ID_HumainIndigene(ITID_perso_ID)		(ITID_perso_ID == C_ID_Indigene)
+#define IsThis_ID_Marin(ITID_perso_ID)					(0)
+
+
+#define	Check_This_Gao5(CTG5)																									\
+			#ifndef _FINAL_																												\
+			if (!CTG5) DBG_Error("Ce Trigger ne retourne pas de GAO5, utilisez un GAO specifique ou changez de Trigger")	\
+			#endif
+			
+// ENEMY TYPE FOR STATS --------------------------------------------------------------------
+//#define C_EnemyType_Unkonwn			0
+//#define C_EnemyType_Bat_Grosse		1	
+//#define C_EnemyType_Bat_Noire			2
+//#define C_EnemyType_Bat_Normale		3	
+//#define C_EnemyType_Bat_Rouge			4
+//#define C_EnemyType_Crabe				5
+//#define C_EnemyType_Crabe_Gros		6
+//#define C_EnemyType_Gallimini				7
+//#define C_EnemyType_Native				8
+//#define C_EnemyType_Raptor				9
+//#define C_EnemyType_Scolo_Gros		10
+//#define C_EnemyType_Scolo_Noir			11
+//#define C_EnemyType_Scolo_Normal		12
+//#define C_EnemyType_Scorpion			13
+//#define C_EnemyType_Swamp				14
+//#define C_EnemyType_Trex					15
+//#define C_EnemyType_Voiture				16
+
+
+
+// ENEMY DIST SIGNIFICATION --------------------------------------------------------------------
+#define 	C_EnemyDist_Fear					0
+#define 	C_EnemyDist_Stress				1
+#define 	C_EnemyDist_Fight					2
+
+#define	C_EnemyDist_Number				3
+
+
+// SOUND CONSTANTS ---------------------------------------------------------------------------------
+
+// ----( JACK )----
+#define SND_Jack_CrouchDown				1
+#define SND_Jack_CrouchUp					2
+#define SND_Jack_Paf							3
+#define SND_Jack_Jump						4
+
+#define SND_Jack_InjuredLoop				7
+#define SND_Jack_LethalLoop				8
+
+#define SND_Jack_WalkDirt					11
+#define SND_Jack_WalkVeget				12
+#define SND_Jack_WalkStone				13
+#define SND_Jack_WalkWater				14
+
+#define SND_Jack_BambooFire				31
+#define SND_Jack_BambooSwap			32
+#define SND_Jack_BambooArme			33
+
+#define SND_Jack_BulletNone				40
+#define SND_Jack_BulletDirt					41
+#define SND_Jack_BulletVeget				42
+#define SND_Jack_BulletStone				43
+#define SND_Jack_BulletWater				44
+#define SND_Jack_BulletFlesh				45
+#define SND_Jack_BulletWood				46
+
+#define SND_Jack_ColtShoot					50
+#define SND_Jack_ColtTake					52
+#define SND_Jack_ColtNoAmmo			55
+#define SND_Jack_ColtLastShoot			57
+
+#define SND_Jack_TommygunShoot		60
+#define SND_Jack_TommygunEndLoop	61
+#define SND_Jack_TommygunTake		62
+#define SND_Jack_TommygunShootB		64
+#define SND_Jack_TommygunNoAmmo	65
+
+#define SND_Jack_ShotgunShoot			70
+#define SND_Jack_ShotgunTake			72
+#define SND_Jack_ShotgunNoAmmo		75
+#define SND_Jack_ShotgunLastShoot		77
+
+#define SND_Jack_SniperRifleShoot		80
+#define SND_Jack_SniperRifleTake			82
+#define SND_Jack_SniperRifleNoAmmo	85
+#define SND_Jack_SniperRifleLastShoot	87
+
+#define SND_Jack_GrenadeLaunch			90
+#define SND_Jack_GrenadeTake			92
+
+#define SND_Jack_OffsetWeaponTake	2
+
+// Mouvement Additionnels de Pafs sur les gros acteurs
+#define Cf_add_rot_amorti_blend 							4.0		// Vitesse de blend vers 0 de la rotation
+#define Cf_add_rot_speed_init								5.0		// Vitesse init de rotation
+
+// CINE --------------------------------------------------------------------------------------------------------------
+#define CINE_Wait								100001
+#define CINE_Vala								100002
+#define CINE_Speech							100003
+#define CINE_Reset								100004
+#define CINE_WaitDefault						100005
+#define CINE_ResetWaitDefault				100006
+#define CINE_ForceEtat						100007
+#define CINE_Fight								100008
+#define CINE_Eat								100009
+#define CINE_Look								100010
+#define CINE_Roar								100011
+#define CINE_Bite								100012
+
+#define CINE_NATIVE_Move					100011
+#define CINE_NATIVE_Launch				100012
+#define CINE_NATIVE_Loop					100013
+
+#define CINE_MONSTREMARIN_MoveTo			100014
+#define CINE_MONSTREMARIN_Reset			100015
+#define CINE_MONSTREMARIN_Teleport		100016
+#define CINE_MONSTREMARIN_MoveInTime	100017
+
+#define CINE_PauseScript						0x12348765
+
+// Life Status
+#define Cf_Life_Full_Life						1.0
+#define Cf_Life_Blesse							0.3
+#define Cf_Life_Agonisant						0.15
+#define Cf_Life_Dead							0.0
+
+//// Cine
+#define CM_Cine_ForceAxis			1
+#define CM_Cine_SfxShake			2
+#define CM_Cine_SfxRamble			3
+#define CM_Cine_CutCam				4
+
+// DESGIGN FLAGS
+//#define	DSF_HotSpot_info_en_int1		0b10000000000000000000000000000000			// HotSpots
+//#define	DSF_WP_Safe_ANN_KK			0b01000000000000000000000000000000			// WP de cache sélectionnables par ANN KK
+//#define	DSF_WP_Chute_Bats				0b00100000000000000000000000000000			// WP de chute pour les bats
+//#define	DSF_WP_Lianes_info_en_int1	0b00010000000000000000000000000000			// Lianes
+
+// DESIGN FLAGS
+#define DSF_Occluder								0x80000000			// Occluders
+#define DSF_Water									0x40000000			// Water Zone
+#define DSF_Piege									0x20000000			// Piege
+#define DSF_HotSpot								0x10000000			// Hotspot
+
+
+// Proto... (pour faire plaisir a CB) =================================================================
+#define Proto_CameraSet								procedure_ultra void Proc_CameraSet(object gao);
+#define Proto_CameraGet 								procedure_ultra object Proc_CameraGet();
+// Proto... (pour faire plaisir a CB) =================================================================
+
+// OCCLUDERS
+#define Ci_OCCLUDER_DEST_POS_IS_IN_OCCLUDER													0x00000001
+#define Ci_OCCLUDER_START_POS_IS_IN_OCCLUDER													0x00000002
+#define Ci_OCCLUDER_COLLISION																				0x00000004
+#define Ci_OCCLUDER_JUMP																						0x00000008
+#define Ci_OCCLUDER_BREAK																						0x00000010
+#define Ci_OCCLUDER_HIDE																						0x00000020
+
+
+// ===========[ Couleur des impacts des tirs ]========================
+#define Ci_Color_Impact_Etincelle 		0x40C0C0C0
+#define Ci_Color_Impact_Sang 			0xFF000040
+#define Ci_Color_Impact_Eau				0x8FB6AF7F
+
+// ===========[ CHEAT FLAGS for @"univ" Cheat_i_Flags ]============
+#define 	CHEAT_Invicible								0x00000001
+#define 	CHEAT_PafFort								0x00000002
+#define 	CHEAT_ShowVersion						0x00000004
+#define 	CHEAT_MenuCheat							0x00000008
+#define 	CHEAT_MenuReinit							0x00000010
+//#define 	CHEAT_HideMenuStats				0x00000020
+#define 	CHEAT_MenuCheatFinal					0x00000040
+#define	CHEAT_UnlockAllMaps					0x00000080
+#define	CHEAT_UnlockAllBonus					0x00000100
+#define 	CHEAT_GodMode							0x00000200
+#define	CHEAT_ExitMap								0x00000400
+#define 	CHEAT_DumpStats							0x00000800
+#define 	CHEAT_ShowModeNeuneu				0x00001000
+#define 	CHEAT_InfiniteSpears						0x00002000
+#define 	CHEAT_IKOnVisuel							0x00004000
+#define 	CHEAT_ShowSlotInfo						0x00008000
+#define	CHEAT_IK_LEG_Off							0x00010000
+#define	CHEAT_IK_NECK_Off						0x00020000
+#define	CHEAT_Raptor_Jump						0x00040000
+#define	CHEAT_Disable_Kong_AI_Move			0x00080000
+#define	CHEAT_CHEAT_CHEAT					0x10000000
+
+// ===========[ XTRA ]============
+#define XTRA_Video_OldMovie			1
+#define XTRA_Video_ContrastBoost	4
+#define XTRA_GaucherMode				8
+
+// ===========[ Constante d'affichage interface ]============
+#define INTDISPLAY_TEXTE				55
+#define INTDISPLAY_GAMETEXTE		60
+#define INTDISPLAY_MENU				70
+#define INTDISPLAY_MENUBGLIGHT	72
+#define INTDISPLAY_MENUBGLOGO	73
+#define INTDISPLAY_MENUBG			75
+#define INTDISPLAY_VIGNETTE0		76
+#define INTDISPLAY_VIGNETTE1		77
+#define INTDISPLAY_VIGNETTE2		78
+#define INTDISPLAY_VIGNETTEL		79
+#define INTDISPLAY_VIGNETTER		80
+#define INTDISPLAY_SNIPEVISOR	100
+
+
+///////////////////////////////////////////////////////// STATS ///////////////////////////////////////////////////////////////
+#define STATS_NbMaps		50
+#define STATS_NbVal			20
+
+#define STATS_DureeMap			0
+#define STATS_NbCoup			1
+#define STATS_NbMort				2
+#define STATS_NbBullet			3
+#define STATS_NbSpears			4
+#define STATS_NbMortJoueur 	5
+#define STATS_KilledJack			6
+#define STATS_KilledNPC			7
+#define STATS_KilledGroup0		8
+#define STATS_KilledGroup1		9
+#define STATS_KilledGroup2		10
+#define STATS_KilledGroup3		11
+#define STATS_KilledGroup4		12
+#define STATS_Injuries				13
+#define STATS_BuddyInjured		14
+#define STATS_NbAttack			15
+
+
+///////////////////////////////////////////////////////// Score ///////////////////////////////////////////////////////////////
+#define SCORE_NbMaps			50
+#define SCORE_NbVal				10
+
+#define SCORE_Jack_BigKills			0
+#define SCORE_Jack_PredatorKill		1
+#define SCORE_Jack_PestKill			2
+#define SCORE_Jack_Bullets			3
+#define SCORE_Jack_Spears			4
+#define SCORE_Jack_Deaths			5
+#define SCORE_Jack_Injuries			6
+#define SCORE_Jack_BuddyInjured	7
+
+#define SCORE_Kong_BeastKill			0
+#define SCORE_Kong_PestKill			1
+#define SCORE_Kong_Attacks			2
+#define SCORE_Kong_Time				3
+#define SCORE_Kong_Deaths			4
+
+
+
+#define SCOREFACTOR_Jack_BigKills			5000
+#define SCOREFACTOR_Jack_PredatorKill		1000
+#define SCOREFACTOR_Jack_PestKill			500
+#define SCOREFACTOR_Jack_Bullets			-100
+#define SCOREFACTOR_Jack_Spears			-20
+#define SCOREFACTOR_Jack_Deaths			-5000
+#define SCOREFACTOR_Jack_Injuries			-1000
+#define SCOREFACTOR_Jack_BuddyInjured	-1000
+
+#define SCOREFACTOR_Kong_BeastKill		5000
+#define SCOREFACTOR_Kong_PestKill			500
+#define SCOREFACTOR_Kong_Attacks			-50
+#define SCOREFACTOR_Kong_Time				-20
+
+
+// IDs to be used with the camera finish mode ==========================
+#define		Ci_Kamera_Finish_id_TRex								0		// KONG finit un TREX au sol
+#define		Ci_Kamera_Finish_id_MashingBus						1		// MASHING Bus
+#define		Ci_Kamera_Finish_id_Pieu								2		// KONG empale un TREX sur un pieu
+#define		Ci_Kamera_Finish_id_Muret								3		// (inutilisé ???) KONG balance un REX par-dessus un muret
+#define  		Ci_Kamera_Finished_id_TREX 							4		// un TREX fait un finish à KONG (finish en cours ou KONG a gagné)
+#define  		Ci_Kamera_Finished_id_Bats 							5		// finish des BATS sur KONG
+#define  		Ci_Kamera_Finished_id_Raptor 							6		// finish des RAPTORS sur KONG
+#define  		Ci_Kamera_Finish_id_MashingPillier					7		// (inutilisé ???) Mashing
+#define  		Ci_Kamera_Finish_id_MorsureTREX					8		// KONG mord un TREX en grab
+#define  		Ci_Kamera_Finished_id_TREX_Won					9		// un TREX a gagné son finish sur KONG
+#define  		Ci_Kamera_Finish_id_FlancMashG						10		// Kong prise flanc G
+#define  		Ci_Kamera_Finish_id_FlancMashD						11		// Kong prise flanc D
+#define  		Ci_Kamera_Finish_id_PoseAnn							12		// Qd on pose Ann au sol pour la premier fois
+#define  		Ci_Kamera_Finish_id_KONG_Won						13		// Qd Kong a Fini le dernier des TREXs.
+#define  		Ci_Kamera_Finish_id_KONG_WonSimple			14		// Qd Kong a Fini le dernier des TREXs. (Mode Simple)
+#define  		Ci_Kamera_Finished_id_Bats_Won					15		// des BATS ont gagné leur finish sur KONG
+#define  		Ci_Kamera_Finished_id_Raptors_Won				16		// des RAPTORS ont gagné leur finish sur KONG
+#define		Ci_Kamera_Finish_id_BigBat								17		// KONG finit une BAT Géante au sol
+#define		Ci_Kamera_Finish_id_BigBat_KongWins				18		// KONG a gagné le finish sur une BAT Géante
+#define		Ci_Kamera_Finished_id_Bats_KongWin				19		// KONG a gagné le finish sur les petites BATs
+#define		Ci_Kamera_AnnDeath										20		// Ann Meurt !
+#define		Ci_Kamera_Finished_id_Raptors_KongWin			21		// KONG a gagné le finish sur les RAPTORS
+#define  		Ci_Kamera_Finished_id_BigScolo 						22		// Fight de finish(ed) avec le Big Scolo (en cours)
+#define  		Ci_Kamera_Finished_id_BigScolo_Won 				23		// Fight de finish(ed) avec le Big Scolo : le scolo a gagné
+#define  		Ci_Kamera_Finished_id_BigScolo_KongWins		24		// Fight de finish(ed) avec le Big Scolo : Kong a gagné
+#define  		Ci_Kamera_Finished_id_Scolos 						25		// Fight finished avec les petits Scolos (en cours)
+#define  		Ci_Kamera_Finished_id_Scolos_Won 				26		// Fight finished avec les petits Scolos (en cours)
+#define  		Ci_Kamera_Finished_id_Scolos_KongWins			27		// Fight finished avec les petits Scolos (en cours)
+#define 		Ci_Kcamera_saut_mort_digwazai						28		// Mort par Digwazai
+#define		Ci_Kcamera_saut_mort_chute							29		// Mort par chute vertigineuse
+#define		Ci_Kcamera_saut_mort_lava								30		// Mort par lave
+#define		Ci_Kcamera_saut_mort_gladiator						31		// Mort par coup en gladiator
+#define		Ci_Kcamera_AnnDeath_BBat							32		// Mort de Ann par BBat
+#define		Ci_Kcamera_mort_piranha									33		// Mort par piranha
+
+#define  		Ci_Kamera_Finish_id_MAX  								35
+
+#define		Ci_Kamera_FPSMode_DisableJoyDuration			0.75	// Durée pendant laquelle le joy de Jack est désactivé lors du passage en mode FPS
+
+
+// IDs to be used with the camera finish mode ==========================
+
+#define 		Ci_KK_JumpStatus_NotInJump	0
+#define 		Ci_KK_JumpStatus_Impulse		1
+#define 		Ci_KK_JumpStatus_Jumping		2
+
+//GFX
+#define SFX_ID_ImpactOnWall				0
+#define SFX_ID_ImpactOnGround				1
+#define SFX_ID_ImpactOnLeftFoot			2
+#define SFX_ID_ImpactOnRightFoot			3
+#define SFX_ID_ImpactOnLeftHand			4
+#define SFX_ID_ImpactOnRightHand			5
+#define SFX_ID_ImpactOnLeftFoot_Walk		6
+#define SFX_ID_ImpactOnRightFoot_Walk		7
+#define SFX_ID_ImpactOnLeftHand_Walk		8
+#define SFX_ID_ImpactOnRightHand_Walk		9
+
+// BIDOCHE TYPE
+#define Ci_Bidoche_Larve				0
+#define Ci_Bidoche_Swamp			1
+#define Ci_Bidoche_Crochax			2
+#define Ci_Bidoche_Gali				3
+#define Ci_Bidoche_Crab				4
+#define Ci_Bidoche_Bat				5
+#define Ci_Bidoche_Scorpion			6
+#define Ci_Bidoche_Scolo				7
+
+// JAVELIN PLUG CPT
+#define PLUG_CASSE 				6
+#define PLUG_CASSE_MED 	4
+
+
+// JAVELIN STATE
+#define Ci_bambou_maxinmap							32
+#define Ci_bambou_state_initwait						0
+#define Ci_bambou_state_launch						1
+#define Ci_bambou_state_ground						2
+#define Ci_bambou_state_plug							3
+#define Ci_bambou_state_grabbed						4
+
+
+//// PAF SYSTEM
+////========================================================================================
+////#define	C_PAF_KK_Repousse								0b00000000000000000000000000000001
+////#define	C_PAF_KK_Javelin									0b00000000000000000000000000000010
+////#define	C_PAF_KK_Poison									0b00000000000000000000000000000100
+//#define	C_PAF_KK_Fire										0b00000000000000000000000000001000
+////#define	C_PAF_KK_Arrow									0b00000000000000000000000000010000		// ARC
+////#define	C_PAF_KK_Faible									0b00000000000000000000000000100000
+//#define	C_PAF_KK_Moyen									0b00000000000000000000000001000000
+//#define	C_PAF_KK_Fort										0b00000000000000000000000010000000
+////#define	C_PAF_KK_Jacks_Punch							0b00000000000000000000000100000000		// Jack repousse au poing
+////#define	C_PAF_KK_Punch									0b00000000000000000000000100000000		// Jack repousse au poing
+////#define	C_PAF_KK_Ecrasement							0b00000000000000000000001000000000
+//#define	C_PAF_KK_KiTue									0b00000000000000000000010000000000
+////#define	C_PAF_KK_Projection								0b00000000000000000000100000000000
+////#define	C_PAF_KK_Digwazai								0b00000000000000000001000000000000
+////#define	C_PAF_KK_Exit_Colmap							0b00000000000000000010000000000000
+////#define 	C_PAF_KK_MashingCine							0b00000000000000000100000000000000		// Pour JP, ciné map 10B
+////#define 	C_PAF_KK_Micro									0b00000000000000001000000000000000	
+////#define	C_PAF_KK_FoodChain								0b00000000000000010000000000000000		// FoodChain
+////#define	C_PAF_KK_GetBidoche							0b00000000000000100000000000000000		// Pour chopper une bidoche avec uen lance
+////#define	C_PAF_KK_NON_DODGEABLE				0b00000000000001000000000000000000	
+////#define	C_PAF_KK_Weapon								0b00000000000010000000000000000000		// Ancien paf balle.....
+//#define	C_PAF_KK_ODE										0b00000000000100000000000000000000
+////#define	C_PAF_KK_CraneMolotov							0b00000000001000000000000000000000
+////#define	C_PAF_KK_Piranha									0b00000000010000000000000000000000
+//#define	C_PAF_KK_Choc									0b00000000100000000000000000000000
+//

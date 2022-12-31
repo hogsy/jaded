@@ -1,0 +1,64 @@
+//-----------------------------------------------------------------------------------------------------------------------------------------
+// INCLUDE
+//-----------------------------------------------------------------------------------------------------------------------------------------
+#include "TXT_Constant.var"
+
+
+//-----------------------------------------------------------------------------------------------------------------------------------------
+// TRACK
+//-----------------------------------------------------------------------------------------------------------------------------------------
+// Define at least one function in a track
+function track0 = "TXT_Init"
+//function track1 = "TXT_UpdateTriggerState"
+// function track2 = "name"
+// function track3 = "name"
+// function track4 = "name"
+
+
+//-----------------------------------------------------------------------------------------------------------------------------------------
+// PRIVATE VAR
+//-----------------------------------------------------------------------------------------------------------------------------------------
+private int	i_current_index
+private int 	i_text_nb
+private int 	ai_played_text[TXT_Cte_ReferenceSize]
+private float f_time
+private int 	i_TriggerState // force the initial state (1st frame)
+
+
+//-----------------------------------------------------------------------------------------------------------------------------------------
+// GLOBAL VAR
+//-----------------------------------------------------------------------------------------------------------------------------------------
+separator "TEXT"
+int			i_Mode = enum("sequencial"1 "random"2)
+//
+// mode 1 => 
+// les textes sont tous lus, mais ils tous lies.
+// Donc assure l'ordre de passage et s'il y a une coupure au milieu de la liste
+// tous les textes restant de la liste sont annulé
+// 
+// mode 2 =>
+// un texte est choisi au hasard dans la liste
+//
+text		at_Text[TXT_Cte_ReferenceSize] 					// text value
+float		af_RequestTimeOut[TXT_Cte_ReferenceSize] =(SPEECH_Cte_TimeOutDefault, SPEECH_Cte_TimeOutDefault, SPEECH_Cte_TimeOutDefault, SPEECH_Cte_TimeOutDefault, SPEECH_Cte_TimeOutDefault)	// life time of the request (sec)
+int			b_TestTriggerWhenRetrying = enum("no"0 "yes"1)		// test the trigger state when the request can be treated ?
+//--
+separator "TRIGGER"
+trigger 	t_Activation0														// send request when true
+int			i_Operator = enum("and"0 "or"1 "xor"2)
+trigger 	t_Activation1														// send request when true
+//--
+separator "IA ACTIVATION"
+float		f_ReactivePeriod = -1.0										    // once all text displayed, the AI will be active again after this time (sec)
+int			i_WaitActivationEnd = enum("no"0 "yes"1)			
+
+int					i_SF_NePlusSeRejouer = vrai_faux
+private int		i_SF_AlreadyCP
+
+
+//--
+separator "CALLBACK"
+trigger	at_CallBack[TXT_Cte_ReferenceSize]						// called when displaying a text (use trigger_exec)
+
+
+

@@ -1,0 +1,43 @@
+// Define at least one function in a track
+function track0 = "NET_Follower_init"
+// function track1 = "name"
+// function track2 = "name"
+// function track3 = "name"
+// function track4 = "name"
+
+separator"Declanchement"
+object				o_decl_actor_capa								// Perso qui declanche (Distance si pas de Gao)
+int						i_decl_capa					= Enum_AllCapa	// 0 = Acteur Declanché 1= Acteur Mort.
+float					f_decl_distance				= 30				// Distance de declanchement (sauf si declancheur GAO Precisé)
+float					f_decl_delay					= 0				// Attente avant Apparition
+
+separator "Configuration"
+object				o_1st_wp
+float					f_speed						= 2.0
+float					f_rot_blend_speed		= -1.0				// -1.0 => Orientation instantanée
+float					f_speed_blend_speed	= -1.0				// -1.0 => Vitesse instantannée
+int						start_mode = enum("From current pos" 0 "From first wp" 1)
+int						play_mode = enum("One Shot" 0 "Loop" 1)
+int						move_mode = enum("Smooth Trajectory" 0 "Straight Trajectory" 1)
+int						des_i_orientation	=	enum("00 Auto"00 "01 Avion"01 "02 Autre GAO"02)
+object				des_o_cible	=	nobody
+
+// ETAT
+private int			i_etat_courant				= -1
+private float			f_time_start_etat
+
+// DECLANCEMENT
+private int			i_flag_go
+
+// RESEAU
+private network	n_net
+
+private float			f_link_speed
+private float			f_link_coef
+private float			f_link_length
+
+private object		o_last_wp
+private object		o_next_wp
+
+// VOL
+private vector		v_offset

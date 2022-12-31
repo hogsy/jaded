@@ -1,0 +1,104 @@
+//------------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------------------------
+#include "SA_Constant.var"
+
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+// TRACK
+//------------------------------------------------------------------------------------------------------------------------------------------
+// Define at least one function in a track
+function track0 = "SND_Amb_Init"
+// function track1 = "name"
+// function track2 = "name"
+// function track3 = "name"
+// function track4 = "name"
+
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+// PRIVATE VAR
+//------------------------------------------------------------------------------------------------------------------------------------------
+private int 	mai_AmbienceInstance[SND_Cte_AmbienceNb]
+private int 	mi_AmbienceIdx = -1
+private int 	mi_Next = -1
+private int 	mi_Previous = -1
+private float mf_Timer = 0.0
+// --
+private int	mi_CurrInstance = -1
+private float	mf_CurrVolume = 1.0
+// --
+private float mf_FadeFactor = 0.0
+private float mf_FadeDate = 0.0
+private float mf_FadeFinal = 1.0
+private int	mi_FadeMode = Cte_Fade_Off
+
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+// GLOBAL VAR
+//------------------------------------------------------------------------------------------------------------------------------------------
+separator "INIT"
+int i_Area = enum("None"-1 "A"0 "B"1 "C"2 "D"3 "E"4 "F"5 "G"6 "H"7 "I"8 "J"9)
+private int i_Phase = -1
+//--
+separator "AREA - A -"
+trigger 	t_Area_A
+object	ao_GaoList_A[5]
+int 		i_Area_A = 127
+separator "AREA - B -"
+trigger 	t_Area_B
+object	ao_GaoList_B[5]
+int 		i_Area_B = 127
+separator "AREA - C -"
+trigger 	t_Area_C
+object	ao_GaoList_C[5]
+int 		i_Area_C = 127
+separator "AREA - D -"
+trigger 	t_Area_D
+object	ao_GaoList_D[5]
+int 		i_Area_D = 127
+separator "AREA - E -"
+trigger 	t_Area_E
+object	ao_GaoList_E[5]
+int 		i_Area_E = 127
+separator "AREA - F -"
+trigger 	t_Area_F
+object	ao_GaoList_F[5]
+int 		i_Area_F = 127
+separator "AREA - G -"
+trigger 	t_Area_G
+object	ao_GaoList_G[5]
+int 		i_Area_G = 127
+separator "AREA - H -"
+trigger 	t_Area_H
+object	ao_GaoList_H[5]
+int 		i_Area_H = 127
+separator "AREA - I -"
+trigger 	t_Area_I
+object	ao_GaoList_I[5]
+int 		i_Area_I = 127
+separator "AREA - J -"
+trigger 	t_Area_J
+object	ao_GaoList_J[5]
+int 		i_Area_J = 127
+
+//--
+separator "COOL"
+int 		i_Cool_Begin = enum("chain"0 "cut"1)
+int			i_Cool_BeginSound = -1
+float 		f_Cool_GrpVol = 1.0
+//--
+separator "STRESS"
+int 		i_Wait_Begin = enum("chain"0 "cut"1)
+int			i_Wait_BeginSound = -1
+float 		f_Wait_GrpVol = 0.7
+//--
+separator "FIGHT"
+int 		i_Fight_Begin = enum("chain"0 "cut"1)
+int			i_Fight_BeginSound = -1
+float 		f_Fight_GrpVol = 0.2
+//--
+separator "Group fades"
+float 		f_FadeDuration = 4.0
+
+
+
+

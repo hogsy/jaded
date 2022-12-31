@@ -1,0 +1,193 @@
+//==========================================================
+//
+//	This model is the fake King Kong seen on top of the Empire State Building
+//
+//==========================================================
+#include "PLKJ_Defines.var"
+function track0="PLKJ_beforemaintrack"
+function track2="PLKJ_bhv_Init"
+function track4="PLKJ_aftermaintrack"
+
+//------------------------------------------------------------------------------------------------------------------
+//	Objects Kong needs to know
+//------------------------------------------------------------------------------------------------------------------
+separator "templates"
+object			PlaneKong
+object			Jack
+object			Kamera
+object			Column
+object			KamIntro				// start kam, for intro
+object			KamDefaultR			// normal kam right
+
+//------------------------------------------------------------------------------------------------------------------
+//	Setting for the gameplay
+//------------------------------------------------------------------------------------------------------------------
+separator "settings - Phase Kong"
+int					HP_Normal=5
+int					HP=20
+private int		HP_Max
+int					NbEnemies=12
+object			Waypoints[C_PLKJ_MaxNetworks]
+float				Delays[C_PLKJ_MaxNetworks]
+
+//------------------------------------------------------------------------------------------------------------------
+//	Setting for the alternative end
+//------------------------------------------------------------------------------------------------------------------
+separator "settings - Phase Jack"
+int					HP_Alternative=5
+
+//------------------------------------------------------------------------------------------------------------------
+//	Speech infos
+//------------------------------------------------------------------------------------------------------------------
+separator "Speech"
+text				txPilots[20]				// enemy pilots speech
+// 0~5=1x au début, 6=1er avion mort, 7~10=projos on, 11(5)=hit by kong, 12(5)=hit kong, 13(5)=shoot, 14(5)=weak, 15(4)=escape, 19=projos on
+
+text				txAnn[2]					// big hurt on Kong
+object			Ann
+
+//------------------------------------------------------------------------------------------------------------------
+//	Cinematics info
+//------------------------------------------------------------------------------------------------------------------
+separator "Cinematic"
+object			EvtCine[2]
+private object	EvtObject
+
+//------------------------------------------------------------------------------------------------------------------
+//	Kamera
+//------------------------------------------------------------------------------------------------------------------
+// status
+private int		KamMode
+
+// movement and speed
+private float		KamMvt
+private float		KamSpd
+private float		KamBlend
+
+// focale
+private float		KamHPFocal
+
+// user view
+private float		KamUserX
+private float		KamUserZ
+
+// hit effect
+private float		HitSlowDown
+
+// special cut
+private object	SpecialCutPlane
+private float		SpecialCutDelay
+
+//------------------------------------------------------------------------------------------------------------------
+//	Timer
+//------------------------------------------------------------------------------------------------------------------
+private float		TimerDelay
+private int		TimerEvent
+private int		TimerValue
+
+//------------------------------------------------------------------------------------------------------------------
+//	Life
+//------------------------------------------------------------------------------------------------------------------
+private float		Armor=C_PLKJ_Armor
+private float		DelayRestoreArmor
+private float		DelayInvulnerable
+private float		GladiatorTime
+
+//------------------------------------------------------------------------------------------------------------------
+//	Anim inertia when stopping a movement
+//------------------------------------------------------------------------------------------------------------------
+private float		AnimSpeed=C_PLKJ_Anim_DefaultSpeed
+
+//------------------------------------------------------------------------------------------------------------------
+//	Enemies
+//------------------------------------------------------------------------------------------------------------------
+// closest enemy
+private object	ClosestEnemy
+private float		ClosestDistance=999999
+
+// enemy spawning
+private int		EnemyCurrent=0
+private float		EnemyDelay=0
+
+// grab
+private object	GrabedPlane
+private float		GrabedPlaneBlend
+private int		GrabedPlaneBroken
+
+//------------------------------------------------------------------------------------------------------------------
+//	Attack combo
+//------------------------------------------------------------------------------------------------------------------
+// attack
+private int		AttackBuffer[C_PLKJ_ComboMax]
+private int		AttackJoyBuffer[C_PLKJ_ComboMax]
+private int		AttackNb				// nb of attacks in buffer
+private int		AttackCombo			// current attack
+private int		AttackPreviousDir	// direction of the last animation
+private float		AttackTimer			// time when the current attack starts
+
+//------------------------------------------------------------------------------------------------------------------
+//	Movement
+//------------------------------------------------------------------------------------------------------------------
+// movement
+private vector	CurrentDirection		// in global world
+private vector	NewDirection			// in global world
+private vector	JoyDirection			// in global world
+private int		JoyAngleWithDir
+private float		JoyAngleTimer
+private vector	Joy2Direction
+
+// buttons
+private int		JoyButton=C_PLKJ_Button_None
+
+//------------------------------------------------------------------------------------------------------------------
+//	Head movements
+//------------------------------------------------------------------------------------------------------------------
+private float		HeadRotationZ
+
+//------------------------------------------------------------------------------------------------------------------
+//	IK
+//------------------------------------------------------------------------------------------------------------------
+private float		af_IK_bones_length[4][2]
+private object	ao_IK_bones[4][3]
+private vector	IK_Offset
+private float		IK_Angle
+
+//------------------------------------------------------------------------------------------------------------------
+//	Misc
+//------------------------------------------------------------------------------------------------------------------
+// global
+private float		clock
+private float		dt
+private int		act
+private int		cb
+private float		SpeedFactor=1
+private int		flags
+
+// speech
+private float		SpeechTimer
+private int		SpeechIndex
+private int		AnnSpeechIndex
+
+// bones
+private object	B_ZdeFight
+private object	B_ZdeBody
+private object	B_PlaneGrab
+private object	B_RightHand
+
+private int		PafBones[C_PLKJ_NbPafBones]=(Anim_Canal_Bassin,Anim_Canal_EpauleDroite,Anim_Canal_EpauleGauche,Anim_Canal_Torse,Anim_Canal_Tete)
+
+// sound injure fx
+private int 		mi_InjureFxDone=faux
+
+// gladiator fx
+private int		i_gladiator_pifpaf
+private int		i_gladiator_on
+private float		f_gladiator_AFX_coef
+private float		f_gladiator_AFE_Border
+private float		f_gladiator_paf_agonisant
+private float		f_gladiator_pulse_border
+private float		f_gladiator_colorbalance1=1
+private float		f_gladiator_colorbalance2=0.52
+private float		f_gladiator_blacknwhite=1
+private float		f_gladiator_remanance=0.4
+private color	c_gladiator_AFE_BorderColor

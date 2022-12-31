@@ -1,0 +1,491 @@
+// REX CAPA =========================================
+#define	Capa_CINE_Crier							OBJ_Capa_0			// pour forcer un cri vers KONG (n'interrompt pas un paf, une attaque...)
+#define	Capa_CINE_Attaque_Jack				OBJ_Capa_1			// pour forcer à attaquer JACK (n'interrompt pas un paf, une attaque...)
+#define	Capa_Paffe									OBJ_Capa_2			// pour exécuter le test exec_zdf_zdc (CapaSet dans l'anim)
+#define	Capa_Suivi_Regard						OBJ_Capa_3			// Suivi de regard autorisé (prioritaire sur le cbit de l'action) (CapaSet dans l'anim)
+//			(dispo)										OBJ_Capa_4
+#define	Capa_Passe_Muret						OBJ_Capa_5			// Mode ou il peux passer le muret (CapaSet dans l'anim)
+//			(dispo)										OBJ_Capa_6
+//			(dispo)										OBJ_Capa_7
+//			(dispo)										OBJ_Capa_8
+//			(dispo)										OBJ_Capa_9
+#define	Capa_KO_au_Sol						OBJ_Capa_10
+#define	Capa_Fall_On_Ground_PAF			OBJ_Capa_11			// Impact au sol
+//			(dispo)										OBJ_Capa_12
+//			(dispo)										OBJ_Capa_13
+#define	Capa_KAMERA_Rumble				OBJ_Capa_14
+#define	Capa_Mort									OBJ_Capa_15			// Dead...
+
+// PERSOS CAPA ========================================
+#define	Capa_BAT_is_Dead_on_Ground		OBJ_Capa_9
+
+// GAO CBITS
+#define	CBit_Hot_Spot							OBJ_CBits_5			// hot spot pour KONG
+
+// ANIM CBITS
+#define	CBit_Fix_Cumul_Speed_Z					0b10000000
+#define	CBit_GrabbedKK_Anim_Speciale		0b01000000
+#define	CBit_Suivi_Regard_ON						0b00000100
+#define	CBit_SFX_ON									0b00000010
+
+//==================================================================================
+
+
+// état initial
+#define	Ci_life_init_normal		0
+#define	Ci_life_init_blesse		1
+#define	Ci_life_init_mort			2
+
+// TIMER KONG
+#define	Cf_delay_KONG_not_on_me			1.0
+#define	Cf_delay_on_KONG						10.0	// 15.0
+#define	Cf_paf_mur_delay						5.0
+
+//// INTERACTION KANN
+//#define	Ci_script_KAnn_cycle_max			3
+
+
+
+// RUMBLE
+#define Cf_Rumble_Amplitude			50.0
+
+// FILTRES DE CRI
+#define	Ci_CRI_A_PAFFE_KONG					0b000001			// cri suite à un paf donné à KONG
+#define	Ci_CRI_FORCE_HAUT_SI_PAF			0b000010			// criera en haut (suite à un paf donné à KONG)
+#define	Ci_CRI_FORCE_BAS_SI_PAF			0b000100			// criera en bas (suite à un paf donné à KONG)
+#define	Ci_CRI_INTERACTION_FIN				0b001000			// cri de la fin de la séquence d'intéraction
+#define	Ci_CRI_CAPA_CINE						0b010000			// cri demandé en LD
+#define	Ci_CRI_PAS_D_ATTENTE_BLESSE	0b100000			// force une anim de cri, même si REX est blessé
+
+// OCCLUDER
+#define	Cf_no_occluder_duration_min		0.5
+
+// DERAP SOUS-MODE
+#define	Ci_derap_demi_tour						1
+#define	Ci_derap_stop_rapide_deb_only		2
+#define	Ci_derap_stop_rapide_deb_fin		3
+
+// Cible en hauteur
+#define	Ci_Cible_Pas_En_Hauteur								0
+#define	Ci_Cible_En_Hauteur_Mode_Walling				1
+#define	Ci_Cible_En_Hauteur_Mode_Pas_Walling		2
+
+
+// DMG envoyés
+#define			Cf_DMG_Attack_Machoire			10.0
+#define			Cf_DMG_Attack_CoupDeTete		10.0
+#define			Cf_DMG_Attack_CoupDeQueue		10.0
+#define			Cf_DMG_Attack_Charge				10.0
+#define			Cf_DMG_Projection						20.0		// comme un paf mur !!!!
+#define			Cf_DMG_Balayage						10.0		// en sweep grab kong
+#define			Cf_DMG_Choppe							5.0
+#define			Cf_DMG_Zone_Presence				1.0		// ça sert à quelque chose le AddEventPafZone dans reflex ???
+
+// DMG reçus
+#define			Cf_PAF_Projectile_Mur					20.0
+#define			Cf_PAF_Charge_Mur					20.0
+#define			Cf_PAF_seuil_recuperation			20.0
+#define			Cf_PAF_GrabMashing					20.0
+
+// SOUND
+#define			Ci_SND_Paf_Moyen						3
+#define			Ci_SND_Paf_Fort							4
+#define			Ci_SND_Mord								7
+#define			Ci_SND_Bite								15
+#define 			Ci_SND_MangeAuSol					18
+#define 			Ci_SND_Growl							19
+
+// COLMAP
+#define	Cv_Colmap_min			cvector(-2.14, -3.59, 0.33)
+#define	Cv_Colmap_max			cvector(2.14, 5.20, 5.33)
+
+// CHARGE
+#define		Cf_Charge_Paf_Kong_Angle_Move		Cf_PiBy4
+#define		Cf_Charge_Paf_Kong_Angle_Paf		Cf_PiBy8
+#define		Cf_charge_delai_after_proj					3.0
+//#define 		Cf_charge_vitesse_peut_freiner			20.0		// vitesse max à laquelle REX peut s'arrêter au lieu de se paffer dans un mur
+#define		Cf_charge_delai_recup						10.0
+#define		Cf_charge_distance							20.0		// 25.0
+#define		Cf_charge_distance_de_dos				10.0		// 15.0
+#define		Cf_charge_delai_recup_de_dos			2.5		// 5.0
+
+//#define		Ci_charge_mode_en_cours				0			// en train de charger
+//#define		Ci_charge_mode_coll_wall_on			1			// se fait paffer s'il prend un mur
+//#define		Ci_charge_mode_coll_wall_off			2			// ne se fait pas paffer s'il prend un mur
+//#define		Ci_charge_mode_coll_wall_stop			3			// s'arrête devant un vide ou après avoir détecté un mur (sans prendre de paf)
+
+#define		Ci_charge_en_cours				0			// en train de charger
+#define		Ci_charge_stoppee				1			// en train de charger
+
+
+
+#define		Cf_interet_standard							100.0		// intérêt par défaut pour un acteur
+
+// JAUGE pour le PAF RECUL
+#define	Cf_jauge_croutage_max		3.0
+#define	Cf_jauge_croutage_palier		1.55		// 1.3
+
+// JAUGE D'INTERET POUR KONG
+//#define	Cf_time_KONG_petit_paf						3.0
+//#define	Cf_time_KONG_chute_au_sol				5.0
+//#define	Cf_max_time_KONG							5.0				// durée max accordée à KONG pour détourner l'attention de REX
+
+// DISTANCES D'ACTIVATION FIGHT DE REX
+#define	Cf_dist_fight_ANN 								1600
+#define	Cf_dist_fight_KONG 							10000
+#define	Cf_dist_fight_force_KONG 					121
+
+
+// DISTANCE POSITIONNEMENT AUTRES ATTAQUES 
+#define	Cf_fight_dist_coup_tete_max					8.0
+#define	Cf_fight_dist_coup_queue_dos_max		9.00		// 8.75
+#define	Cf_fight_dist_coup_queue_cote_max		8.0
+
+// Types des ZDE Fight
+#define	Ci_zde_fight_type_machoire						1
+#define	Ci_zde_fight_type_corps							2
+#define	Ci_zde_fight_type_charge							3
+#define	Ci_zde_fight_type_projectile						4
+#define	Ci_zde_fight_type_coup_de_tete				5
+//#define	Ci_zde_fight_type_se_releve						6
+#define	Ci_zde_fight_type_coup_de_queue				7
+#define	Ci_zde_fight_type_projection_laterale			8
+
+// Tailles des ZDE Fight
+#define	Cv_zde_fight_machoire_size				cvector(1.25,1.25,1.25)
+#define	Cv_zde_fight_machoire_size_ANN		cvector(1.5,1.5,1.5)
+#define	Cv_zde_fight_machoire_size_hauteur	cvector(1.5,1.5,1.5)
+#define	Cv_zde_fight_corps_size					cvector(2.5, 2.5, 2.5)			// grab + se releve
+#define	Cv_zde_fight_charge_size					cvector(1.5, 1.5, 1.5)			// charge + projectile
+#define	Cv_zde_fight_coup_de_tete_size		cvector(1.65, 1.65, 1.65)
+#define	Cv_zde_fight_releve_size					cvector(2.5, 2.5, 2.5)
+//#define	Cv_zde_fight_coup_de_queue_size		cvector(1.25,1.25,1.25)
+#define	Cv_zde_fight_coup_de_queue_size		cvector(1.75, 1.75, 1.75)
+
+// KAMERA
+#define Cv_Offset_Cam_TREX 								cvector(0.0, 0.0, 4.0)
+
+#define Cf_Rayon_De_Vision		0.4
+
+// TRACK
+#define Ci_Track_TagOff										00
+#define Ci_Track_Reflex										01
+#define Ci_Track_Etat											02
+#define Ci_Track_TagOn										03
+
+#define Cf_Neck_Size											4.0
+
+#define	Cf_duree_entre_2_hurlements			2.0
+#define	Cf_tolerence_time_chute					0.1
+
+// GFX Blood
+#define	Ci_GFX_Blood_Petit_Paf						1
+#define	Ci_GFX_Blood_Paf_Mur						2
+#define	Ci_GFX_Blood_Finish_Bras_de_Fer		3
+#define	Ci_GFX_Blood_Finish_Pieux					4
+
+
+
+#define	Ci_blind_zone_max_nb		3
+
+
+// ETATS =======================================================================================
+
+#define ETAT_attente											0
+#define ETAT_charge											4
+//#define ETAT_hesite											10
+#define ETAT_paf													11
+#define ETAT_KO_au_sol										12
+//#define ETAT_mord											13
+//#define ETAT_grab												14
+//#define ETAT_terrasse										15
+//#define ETAT_block											16
+//#define ETAT_KK_fight											19
+#define ETAT_projectile											20
+#define ETAT_chute												21
+#define ETAT_mort												22
+#define ETAT_JumpAttak										23
+#define ETAT_attaque										24
+//#define ETAT_KK_defense									25
+#define ETAT_derap												26
+#define ETAT_cri													27
+#define ETAT_fight_KONG										28
+//#define ETAT_fight_ANN										29
+#define ETAT_fight_cible_hauteur							30
+#define ETAT_fight_JACK										31
+#define	ETAT_FoodChain										32
+#define	ETAT_Grab_Proie									33
+
+#define ETAT_KK_grabbedTT									101
+#define ETAT_KK_choppe_projectile						106
+#define ETAT_KK_grabbedFinish							108
+#define ETAT_Finish_sur_Kong						109
+
+
+#define ETAT_TEST												666
+
+// CONSTANTES ==============================================================================
+
+
+#define Ci_grabbed_Prise_Tete								0
+#define Ci_grabbed_Prise_Ventre							1
+#define Ci_grabbed_Prise_CoteD							2
+#define Ci_grabbed_Prise_CoteG							3
+
+
+#define Ci_joy_KK_ForceD									1
+#define Ci_joy_KK_ForceG									2
+#define Ci_joy_KK_Tire											3
+#define Ci_joy_KK_Pousse									4
+#define Cf_KK_joy_max										15.0
+
+#define Cf_vitesse_decal_tete								15.0
+
+#define Cf_grabbed_amorti_speed							4.0
+
+#define Cf_add_speed_amorti_blend 						3.5		// Vitesse de blend de la vitesse vers 0
+
+#define	Cf_Force_Recul		20.0
+#define	Cf_Angle_Recul		1.4
+
+// GRAB
+#define	Cf_grabbed_arme_coup								1.0
+#define	Cf_grabbed_lance_coup							10.0
+#define	Cf_grabbed_delai_chain							5.0	// délai min entre 2 fins de grab (paf ou eject) pour ne pas déclencher l'anti-grab
+#define	Cf_grabbed_delai_refuse							5.0	// délai pendant lequel REX refuse d'être grabbé si l'anti-grab est déclenché
+
+// COMBO
+#define	Ci_paf_combo_nb					4
+#define	Ci_paf_combo_palier_poing		1
+#define	Ci_paf_combo_palier_tronc		2
+
+// DYN ============================================================================================
+#define Cv_TREX_friction_marche			cvector(30.0, 30.0, 10.0)
+#define Cv_TREX_friction_chute				cvector(20.0, 20.0, 0.0)
+#define Cv_TREX_friction_projectile			cvector( 4.5, 4.5, 10.0)
+#define Cv_TREX_friction_charge_belier			Cv_NullVector
+
+#define	Ci_paf_nb_max				20
+
+// Effet des coup sur la fatigue
+#define	Cf_fatigue_add_paf_wall			0.25		// Qd il se cogne a un mur (charge ou porjection)
+#define	Cf_fatigue_add_paf_croutage		0.25		// Qd il se fait renversé sur le coté
+#define	Cf_fatigue_add_paf_fracasse		0.50		// Qd il se fait exploser au sol par Kong qui saute
+
+// Deplacement / Résolution locale
+#define	Ci_max_wall					20
+
+// Délai pour réattaquer
+#define	Ci_reattack_delay_cycl1		0.5	//0.8
+#define	Ci_reattack_delay_cycl2		0.9	// 1.2
+#define	Ci_reattack_delay_cycl3		1.5	// 1.8
+
+
+
+#define macro_change_etat(etat)																				\
+{																															\
+	if (AI_TrackCurGetNum() == Ci_Track_Etat)																\
+		AI_TrackCurChangeNow(etat)																				\
+	else																													\
+		AI_TrackChange(Ci_Track_Etat, etat)																	\
+//	return																													\
+}
+
+#define macro_checkchute												\
+{																					\
+	if ( KT_CheckChute())													\
+	{																				\
+		DYN_FrictionVectorSet(Cv_NullVector)						\
+		macro_change_etat( "KT_ETAT_chute")						\
+	}																				\
+}
+
+
+#define Macro_Check_Capa_CINE_Crier								\
+{																					\
+	if( OBJ_CapaTest(Capa_CINE_Crier) )								\
+	{																				\
+		OBJ_CapaSet(none, Capa_CINE_Crier)						\
+		if( o_fight_actor )														\
+			o_fury_actor = o_fight_actor									\
+		else																		\
+			o_fury_actor = o_Kong										\
+		i_cri_filtre = Ci_CRI_CAPA_CINE								\
+		macro_change_etat("KT_ETAT_cri")							\
+	}																				\
+}
+
+
+#define Macro_Crie_Vers_Fight_Actor									\
+{																					\
+	o_fury_actor = o_fight_actor											\
+	macro_change_etat("KT_ETAT_cri")								\
+}
+
+
+// FOODCHAIN
+#define	Ci_cadavre_max_nb									10
+#define	Ci_foodchain_step_1er_cri							1
+#define	Ci_foodchain_step_avance							2
+#define	Ci_foodchain_step_devore							3
+#define	Ci_foodchain_step_cri_fini_de_manger			4
+
+
+// CRIER SUITE A L'ACCUMULATION DE PAFS
+#define Macro_Check_Paf_Jauge_Crier	\
+{	\
+//	Str_DisplayFloatOnce(f_Jack_paf_jauge, cvector(0.5,0.3,0))	\
+	if( f_Jack_paf_jauge >= 10.0 )	\
+	{	\
+		f_Jack_paf_jauge = 0.0	\
+		fct_main_etat = "KT_ETAT_fight_JACK"	\
+		o_fury_actor = o_Jack	\
+		macro_change_etat("KT_ETAT_cri")	\
+	}	\
+}
+
+
+// ACTIONS =====================================================================================
+
+#define Action_Normal_Attente								000
+#define Action_Normal_Marche_Rapide					001
+#define Action_Normal_Trot									003
+#define Action_Attak_Mord_Haut							004
+#define Action_Normal_Charge								005
+#define Action_Normal_Projectile							006
+#define Action_Normal_ChargeFrein						007
+#define Action_Normal_ChargeDerap						008
+#define Action_Normal_ChargeBelier						009
+
+#define Action_Attak_CpdeFace								010
+#define Action_Attak_CpTeteD								012
+#define Action_Attak_CpTeteG								013
+#define Action_Attak_CpQueueD							014
+#define Action_Attak_CpQueueG							015
+#define Action_Fight_Attak_Humain						011
+//#define Action_Fight_AttacJack_fin							0112
+//#define Action_Fight_AttacJack_tr_att						0113
+
+#define Action_Normal_Recul									016
+
+#define Action_PafD												017
+#define Action_PafG												018 
+
+#define Action_KO_au_sol										021
+#define Action_Paf_Tombe									022
+#define Action_Fight_Chute									023
+
+#define Action_Croutage_Face								025
+#define Action_Paf_SeRelevePAF							026
+
+#define Action_Paf_au_sol_mort								028
+#define Action_Paf_Mur_Tombe								029
+#define Action_Paf_SeReleve									030
+#define Action_Paf_au_sol										032
+#define Action_Paf_Rapide_Agonie_D						033
+#define Action_Paf_Rapide_Agonie_G						034
+
+//#define Action_Fight_Hurle									035
+#define Action_Fight_Cri_Bas								035
+#define Action_Fight_Cri_Haut								036
+
+#define Action_Paf_au_sol_chute							038
+#define Action_Paf_Mur_Petit								039
+
+#define Action_Fracasse										041
+
+#define Action_Fight_GrabTT_TireD_Att					044
+#define Action_Fight_GrabTT_TireG_Att					045
+#define Action_Fight_GrabTT_ReculD						046
+#define Action_Fight_GrabTT_ReculG						047
+#define Action_Fight_GrabTT_TireD							048
+#define Action_Fight_GrabTT_TireG						049
+#define Action_Fight_GrabTT_cycl							050
+#define Action_Fight_GrabTT_Paf							051
+#define Action_Fight_GrabTT_JeteD						052
+#define Action_Fight_GrabTT_JeteG						053
+#define Action_Fight_GrabTT_Projectile_Arr				054
+#define Action_Agonie_finish_Deb							055
+#define Action_Agonie_finish_Fin							056
+#define Action_Agonie_finish_Gagne						057
+
+#define Action_Agonie											060
+#define Action_Esquive_D										061
+#define Action_Esquive_G										062
+
+#define Action_Fight_GrabTT_Projectile_SePlace		065
+#define Action_Fight_GrabTT_Projectile_G				066
+#define Action_Fight_GrabTT_Projectile_D				067
+#define Action_Fight_GrabTT_Projectile_SePlaceDvt	069
+
+#define	Action_Fight_GrabTT_Proj_Att_G					070
+#define	Action_Fight_GrabTT_Proj_Att_D					071
+#define	Action_Fight_Projectile_D								072
+#define	Action_Fight_Projectile_G								073
+
+#define Action_Choppe											080
+#define Action_Choppe_Lance								081
+#define Action_Choppe_Avale								082
+
+#define Action_Fight_Paf_G_Defense						084
+#define Action_Fight_Paf_D_Defense						085
+
+#define Action_DEF_Face										090
+#define Action_DEF_CpTeteD								091
+#define Action_DEF_CpTeteG								092
+#define Action_DEF_CpQueueD								093
+#define Action_DEF_CpQueueG								094
+
+#define Action_Mange											096
+#define Action_CriChain										097
+
+#define Action_PAF_Fort_Face								100
+#define Action_PAF_Fort_Droite								101
+#define Action_PAF_Fort_Gauche							102
+#define Action_PAF_Fort_Dos								103
+#define Action_PAF_Moy_Face								104
+#define Action_PAF_Moy_Droite							105
+#define Action_PAF_Moy_Gauche							106
+#define Action_PAF_Moy_Dos								107
+#define Action_PAF_Repousse								108
+
+#define Action_Blesse_Attente								110
+#define Action_Blesse_Marche								111
+
+#define Action_I_finish_Deb									115
+#define Action_I_finish_Challenge							116
+#define Action_I_finish_Win									117
+#define Action_I_finish_Loose								118
+
+#define Action_Grabbed_Bited_Deb						120
+#define Action_Grabbed_Bited_Chall						121
+#define Action_Grabbed_Bited_Win						122
+#define Action_Grabbed_Bited_Lose						123
+
+//#define Action_Normal_DemiTourRapide					127
+
+//#define Action_FlancG_Cycl									135
+#define Action_FlancG_Deb									136
+#define Action_FlancG_Chall									137
+#define Action_FlancG_Lose									138
+//#define Action_FlancG_Win									139
+//#define Action_FlancG_Coup									140
+#define Action_FlancG_Crash								141
+
+#define Action_StopRapideDdeb								145
+#define Action_StopRapideDfin								146
+#define Action_StopRapideGdeb								147
+#define Action_StopRapideGfin								148
+#define Action_DemiTourRapideD							149
+#define Action_DemiTourRapideG							150
+
+//#define Action_FlancD_Cycl									155
+//#define Action_FlancG_Deb									156
+//#define Action_FlancG_Chall								157
+//#define Action_FlancG_Lose								158
+//#define Action_FlancG_Win									159
+//#define Action_FlancD_Coup									160
+#define Action_FlancD_Crash								161
+
+#define Action_Fight_Attak_FPS							165
+

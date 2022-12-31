@@ -1,0 +1,43 @@
+// Define at least one function in a track
+// function track0 = "name"
+// function track1 = "name"
+function track2 = "RM_dpl_init"
+// function track3 = "name"
+// function track4 = "name"
+
+//#define RM_Disguise_RM				0
+//#define RM_Disguise_Punk				1
+//#define RM_Disguise_Mamy			2
+//#define RM_Disguise_Funky			3
+//#define RM_Disguise_Elvis				4
+//#define RM_Disguise_Hiphop			5
+//#define RM_Disguise_6					6
+//#define RM_Disguise_7					7
+//#define RM_Disguise_8					8
+//#define RM_Disguise_9					9
+//#define RM_Disguise_Slip				10
+
+
+//int			i_disguise = enum ( )
+separator	"trig de création des clones et TP de RM"
+trigger		t_duplication
+separator	"trig de destruction des clones"
+trigger		t_destroy[2]
+separator	"trig de TP de RM au retour"
+trigger		t_TP_RM_OUT
+object		o_pos_RM_retour
+
+separator	"TEST de costume spécifique"
+int				i_costume = enum( "1 Punk" 1 " 2 Mamy" 2 "3 Funky" 3 "4 Elvis" 4 "5 HipHop" 5 "6" 6 "7" 7 "8" 8 "9" 9)
+separator	"Positionnement"
+object		o_pos_RM
+object		o_position[5]
+private	object	o_dupl[5]
+
+// ETATS
+private int				i_sort_etat
+private int				i_etat_courant 		= -1
+private int				i_dernier_etat			= -1
+private function		fct_last_etat
+private float				f_time_start_etat
+

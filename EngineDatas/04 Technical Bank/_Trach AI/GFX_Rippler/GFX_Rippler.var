@@ -1,0 +1,71 @@
+#include "GFX_Ripple_Defines.var"
+
+// Define at least one function in a track
+// function track0 = "name"
+// function track1 = "name"
+function track2 = "GFX_Ripple_Init.fct"
+// function track3 = "name"
+// function track4 = "name"
+
+separator "Settings"
+	float				mf_MinLifeTime														= 0.5												// Durée de vie de chaque sprite (random between minimum and maximim, below)
+	float				mf_MaxLifeTime														= 1.0												// Durée de vie de chaque sprite
+	int 				mi_AutoDestrution													= enum( "None" 0 "After Last Sprite" -1 "After Last Ripple " -2 )	// the effect dissappears and auto destroys...
+	
+	float				mf_Duration															= 2.0												// total time this GFX is played.  After this, it will stop and be deleted.
+	int					mi_IsPersistent 														= vrai_faux										// duration will be ignored: the GFX will keep playing unless other factors stop it (total sprites, etc.)
+	
+	private int		mi_IsChild 																= vrai_faux
+	
+separator "Material"
+	object			mo_Material															= nobody										// material for the ripple effect
+	
+	int					mi_MaterialIndex 														= 0												// index to the sub-material
+	
+	int 				mi_DynamicMaterialIndex[C_Max_Dynamic_Materials]	= ( -1, -1, -1, -1 )								// sub mat index to be used in random selection of materials for dynamic change (N.B.: -1 means no material for this entry)
+	private int		mi_NumberOfDynamicMaterials									= 0
+	private float		mf_LastMatChangeTime											= 0
+	float 				mf_MaterialChangeInterval 										= 0.035											// seconds between each random selection of materials
+
+separator "Dynamics"
+	float				mf_SpeedIncreaseBase											= 1.5												// actual velocity of system will be mf_SpeedIncreaseBase + random between mf_SpdIncMinAdd and mf_SpdIncMaxAdd
+	float				mf_SpdIncMinAdd													= 0.8
+	float				mf_SpdIncMaxAdd													= 1.2
+
+	float 				mf_Speed																= 0.0												// Vitesse de déplacement des sprites en mètres par secondes
+
+separator "Sprites"
+	float 				mf_GenerationRate													= 0.0												// temps séparant la génération de 2 sprites
+	int					mi_SetNumber														= 1												// Nombre maximum de sprite
+
+separator "Size"
+	float				mf_StartSize															= 0.1												// taille initiale du sprite
+	
+separator "Appearance"
+	color				mc_StartColour														= 0x001010100								// Couleur initiale du sprite
+	color				mc_EndColour															= 0x000000000								// Couleur finale du sprite
+	
+separator "State"
+	private int		mi_GFX_Key															= C_Invalid_GFX
+	
+	private float		mf_StartTime															= 0.0
+	
+	private float		mf_LastRandMoveTime 											= 0.0
+	
+separator "Position"
+	vector 			mv_Direction															= cvector( 0.0, 0.0, 1.0 )						// direction of the ripple
+	vector 			mv_Banking															= cvector( 1.0, 0.0, 0.0 )						// banking orientation of the ripple
+	
+	int					mi_UseRandomMoving												= faux_vrai										// reposition 
+	vector			mv_MinPosOffset														= cvector( -0.3, -0.3, 0.0 )						// random moving will update the position by an offset in each direction from MinPosOffset to MaxPosOffset
+	vector			mv_MaxPosOffset													= cvector( 0.3, 0.3, 0.0 )						// random moving will update the position by an offset in each direction from MinPosOffset to MaxPosOffset
+	float				mf_RandomMoveInterval 											= 0.7												// number of seconds between each random move
+	
+separator "Start Delay Settings"
+	int 				mi_UseStartDelay													= vrai_faux										// for debugging only!: wait the following delay before running the init of this GFX
+	float				mf_StartDelay															= 0.5												// seconds to wait between initializations of this GFX
+	private float		mf_TimeRunning														= 0.0
+	
+separator "Ambiance Controller"
+	object o_GFX_Ambiant_Controller			//fill this with the GFX ambiant AI waypoint
+	private int i_no_death  = faux																												//ADDED SURESH: if we don't want a GFX that is a child to be destroyed, set this to true

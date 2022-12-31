@@ -1,0 +1,64 @@
+#include "RM_Stele_Defines.var"
+
+// Define at least one function in a track
+// function track0 = "name"
+// function track1 = "name"
+function track2 = "RM_Stele_Track_init"
+// function track3 = "name"
+// function track4 = "name"
+
+
+int			i_Type = enum("0 - Stele" 0 "1 - Menhir" 1)
+object	ao_Socles[Ci_RM_Stele_NbSocle_Max]
+object	o_Creature
+color		c_CouleurHalo = 0xFFFF00
+object	o_DUP_Ptizetre
+trigger	TrigExec_Ptiztre
+trigger	TrigExec_Convocation
+trigger	TrigTest_Activation
+
+// ETATS
+private int				i_sort_etat
+private int				i_etat_courant 		= -1
+private int				i_dernier_etat			= -1
+private function		fct_last_etat
+private float				f_time_start_etat
+
+// CLIENT SERVEUR
+private object			o_Serveur_Use
+private messageid	mid_Use
+
+// GFX
+private int				ai_GFX_Halo[Ci_RM_Stele_NbSocle_Max]
+private int				i_GFX_Halo_Spawn 
+private int				GFX_Halo = -1
+private int				GFX_Line[50]
+private vector			av_gfx_line_Z[50]
+private float				af_gfx_line_Z_speed[50]
+private vector			v_FX_Apparition
+private int				i_GFX_Signalisation = -1
+private int				i_GFX_Signalisation2 = -1
+private int				i_GFX_Signalisation3 = -1
+
+// NEW GFX
+private int				i_GFX_Stele[Ci_RM_Stele_GFX_NbMax]
+private int				i_GFX_Etincelles_stele[Ci_RM_Stele_NbSocle_Max]
+private int				i_GFX_Stele_attente[Ci_RM_Stele_NbSocle_Max]
+private float				f_dist_incant = 0.75
+private float				f_speed_rot_incant = 800.0
+private float				f_hauteur_max_incant = 2.5
+private float				f_hauteur_incant[Ci_RM_Stele_GFX_NbMax]
+private float				f_facteur_incant[Ci_RM_Stele_GFX_NbMax]
+private int				i_activ_incant[Ci_RM_Stele_GFX_NbMax]
+
+// AUTRES
+private int				ai_Socles_Valide[Ci_RM_Stele_NbSocle_Max]
+private int				i_EnValidation = -1
+private int				i_Reste
+private int				ai_SF_ID[Ci_RM_Stele_NbSocle_Max]
+private int				i_NbSocles = 0
+private object			ao_Ptizetres[Ci_RM_Stele_NbSocle_Max]
+private float				af_PtizetresBlend[Ci_RM_Stele_NbSocle_Max]
+private int				i_Loin
+private int				i_PopLife = 0
+private float				f_Lod = 1.0

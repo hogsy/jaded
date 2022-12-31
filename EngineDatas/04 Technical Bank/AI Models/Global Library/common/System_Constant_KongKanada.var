@@ -1,0 +1,300 @@
+
+// Constantes Globales partagées automatiquement par toutes les AI
+// Utiliser un Header "KK" par exemple pour eviter les conflits de merge
+// Si des fois on cree la meme constante que vous il y aura un conflit au merge.
+
+// GET - KONG
+
+// Types WP pour AI AnnAuSol
+#define Ci_PoseAnn_CacheToi				1
+#define Ci_PoseAnn_VaBoire					2
+#define Ci_PoseAnn_VaAgir					3
+#define Ci_PoseAnn_SuisReseau			4						//new nicolas
+
+// CONSTANTES POUR KANN
+#define	Cf_KAnn_Death_Timer_Max_Value			15.0
+#define	Ci_KAnn_fake_attack_a_droite				0
+#define	Ci_KAnn_fake_attack_a_gauche			1
+
+// DESGIGN FLAGS
+#define	DSF_HotSpot_info_en_int1		0b10000000000000000000000000000000			// HotSpots
+#define	DSF_WP_Safe_ANN_KK			0b01000000000000000000000000000000			// WP de cache sélectionnables par ANN KK
+#define	DSF_WP_Chute_Bats				0b00100000000000000000000000000000			// WP de chute pour les bats
+#define	DSF_WP_Lianes_info_en_int1	0b00010000000000000000000000000000			// Lianes
+#define	DSF_CSwing_info_en_int1			0b00001000000000000000000000000000			// Corner Swing
+#define	DSF_Colones_info_en_int1		0b00000100000000000000000000000000			// Colonnes pour que KK monte a son sommet
+#define	DSF_WP_Natives					0b00000010000000000000000000000000			// WP de navigation pour natives
+#define	DSF_WP_KRaptor_NetStart		0b00000001000000000000000000000000			// bit 24: WP at head of a KRaptor network
+#define	DSF_WP_Natives_Spread			0b00000000100000000000000000000000			// WP d'eparpillement pour natives
+#define	DSF_Stream							0b00000000010000000000000000000000			// stream
+
+// CONE DU FURY
+#define	Cv_KK_Fury_decalage_position				cvector(0,3,0)
+
+// FURY
+#define	Ci_KK_Fury_Type_Intimidate					1		// KONG va passer en furie
+#define	Ci_KK_Fury_Type_Roar						2		// KONG grogne
+
+// CONSTANTE DE GrabKong
+#define Ci_GrabKong_LIFT_Hit								14
+
+//GFX
+#define SFX_ID_RaptorImpactOnRightHand 		10
+#define SFX_ID_RaptorImpactOnLeftHand 		11
+#define SFX_ID_TrexImpactOnRightHand 		12
+#define SFX_ID_TrexImpactOnLeftHand 			13
+#define SFX_ID_RaptorImpactOnGround			14
+#define SFX_ID_TrexImpactOnGround				15
+
+#define SFX_ID_RaptorImpactOnRightHand_Walk 		16
+#define SFX_ID_RaptorImpactOnLeftHand_Walk  			17
+#define SFX_ID_TrexImpactOnRightHand_Walk  			18
+#define SFX_ID_TrexImpactOnLeftHand_Walk 				19
+
+#define SFX_ID_ImpactOnLeftFoot_Walling					20
+#define SFX_ID_ImpactOnRightFoot_Walling				21
+#define SFX_ID_ImpactOnLeftHand_Walling					22
+#define SFX_ID_ImpactOnRightHand_Walling				23
+#define GFX_DELETE_CHILD									666
+
+//actors
+#define	isTREX											0
+#define	isRAPTOR										1
+
+#define M_DeclareInteraction_Common				#include "ROOT/EngineDatas/04 Technical Bank/AI Models/Kanada/_KInteraction_VAR.var"                                                                                                           
+
+#define M_DeclareInteraction_Kong						#include "ROOT/EngineDatas/04 Technical Bank/AI Models/Kanada2/Kong/k_interaction.var"
+
+#define M_DeclareInteraction_Kamera					#include "ROOT/EngineDatas/04 Technical Bank/AI Models/Kanada/Kam/Mtl/Kam_Camera/KC_3_ActorCom_Defines.var"                                      
+
+#define Include_UltraProcedure_Header_Kanada	#include "ROOT\EngineDatas\04 Technical Bank\AI Models\Global Library\UltraProcedure_Header_Kanada.fct"                                               
+
+
+
+// types of finishes on Kong
+#define	Ci_GrabKong_Finished_TREX						0
+#define	Ci_GrabKong_Finished_Raptors						1
+#define	Ci_GrabKong_Finished_Bats							2
+#define	Ci_GrabKong_Finished_Scolo						3
+#define	Ci_GrabKong_Finished_BigScolo					4
+
+#define	Cf_GrabKong_EscapeDuration						5.0
+#define	Cf_NMI_Rided_Escape_Delai							30.0
+
+// Angle SOL/MUR
+#define 	Cf_Kong_Angle_Mur_sol		Cf_Cos45
+
+// types of Finish Synchro states see C_EVENT_INFOTYPE_FINISHSYNCHRO
+#define	Ci_FINISHSYNCHRO_STATE_NoFinish					0		// no finish currently going on
+#define	Ci_FINISHSYNCHRO_STATE_Prepare					1		// preparing the finish
+#define	Ci_FINISHSYNCHRO_STATE_Finishing					2		// doing the finish
+#define	Ci_FINISHSYNCHRO_STATE_Done						3		// informs participants they should leave the finish
+#define	Ci_FINISHSYNCHRO_STATE_DoneWin					4		// finishers have won : participants should leave the finish
+#define	Ci_FINISHSYNCHRO_STATE_DoneLoose				5		// finishers have lost : participants should leave the finish
+
+// types of attacks on an actor
+#define	Ci_LASTATTACK_TYPE_NoAttack							0
+#define	Ci_LASTATTACK_TYPE_StealAnn							1
+#define	Ci_LASTATTACK_TYPE_Normal							2
+#define	Ci_LASTATTACK_TYPE_Grab								3
+#define	Ci_LASTATTACK_TYPE_Finish								4
+
+// Offset pour les mains de KONG
+#define Cv_KONG_Offset_Creux_MainDroite_Std				cvector(-0.7,0,0.5)
+#define Cv_KONG_Offset_Creux_MainGauche_Std			cvector(0.7,0,0.5)
+#define Cv_KONG_Offset_Creux_MainDroite_ANN				cvector(-0.1, 0.3, 0.7)
+#define Cv_KONG_Offset_Creux_MainGauche_ANN			cvector(0.1, 0.3, 0.7)
+
+// PRIO D AIDE AU TIR
+#define C_AIDE_AU_TIR_Prio_Min					0.0
+#define C_AIDE_AU_TIR_Prio_Mur					10.0
+#define C_AIDE_AU_TIR_Prio_Ennemi			20.0
+#define C_AIDE_AU_TIR_Prio_AttackAnn		30.0
+#define C_AIDE_AU_TIR_Prio_GrabAnn			40.0
+#define C_AIDE_AU_TIR_Prio_Max					100.0
+
+// BIT D AIDE AU TIR				
+#define C_AIDE_AU_TIR_Bit_Use_Prio					0b00000001
+#define C_AIDE_AU_TIR_Bit_Only_On_Screen		0b00000010
+
+// ANN INTERACTION FIGHT TYPE
+#define C_INTER_FIGHT_WAIT_FOR_ANN 							0
+#define C_INTER_FIGHT_ANN_READY								1
+#define C_INTER_FIGHT_ENNEMY_ATTACK						2
+#define C_INTER_FIGHT_ENEMY_FAKE_ATTACK				3	// Ennemy takes two <N>s
+#define C_INTER_FIGHT_ENNEMY_FAKE_ATTACK				3
+#define C_INTER_FIGHT_ANN_ATTACKING							4
+#define C_INTER_FIGHT_ANN_FAKING_ATTACK					5
+//#define C_INTER_FIGHT_WAIT_FOR_ENEMY						6
+#define C_INTER_FIGHT_ENEMY_READY							7
+
+
+// ID pour le TrigTest_ActorIsTargeted
+#define	C_Trig_ID_KTREX		0b00000001	// 1
+#define	C_Trig_ID_KRaptor		0b00000010	// 2
+#define	C_Trig_ID_KBat			0b00000100	// 4
+#define	C_Trig_ID_KBigBat		0b00001000	// 8
+#define	C_Trig_ID_JBat			0b00010000	// 16
+
+// HOTSPOT
+#define	HOTSPOT_Type_Horiz					0b0000000000000001
+#define	HOTSPOT_Type_Vert					0b0000000000000010
+#define	HOTSPOT_Type_Fight					0b0000000000000100
+#define	HOTSPOT_Type_Limit1_4				0b0000000000001000
+#define	HOTSPOT_Type_Limit1_2				0b0000000000010000
+#define	HOTSPOT_Type_ForceD				0b0000000000100000
+#define	HOTSPOT_Type_ForceG				0b0000000001000000
+#define	HOTSPOT_Type_Saut					0b0000000010000000
+#define	HOTSPOT_Type_VertInterdit			0b0000000100000000
+#define	HOTSPOT_Type_NonVertInterdit    0b0000001000000000
+#define	HOTSPOT_Type_ForceSautGrab  	0b0000010000000000
+#define	HOTSPOT_Type_Colonne			  	0b0000100000000000
+#define	HOTSPOT_Type_Arch1Shot		  	0b0001000000000000
+#define	HOTSPOT_Type_Foce_Sens		  	0b0010000000000000
+
+// KAMERA - KONG - STATUS ------------------------------------------
+#define Ci_Kcamera_deplacement						1		// Pour les deplacements sauf en fight
+#define Ci_Kcamera_fight									2		// Pour le fight (messageID pour precision)
+#define Ci_Kcamera_grab_arbre							3		// Qd on grab un arbre
+#define Ci_Kcamera_grab_lance							4		// Qd on grab un rocher les bras en l'air pres a le lancer
+#define Ci_Kcamera_grab_dyno							5		// Qd on grab un dyno
+#define Ci_Kcamera_grab_grimpe						6		// Qd on est en varappe (hors saut entre les prises)
+#define Ci_Kcamera_grab_saute							7		// Qd on saute (tous sauts)
+#define Ci_Kcamera_saute								8		// Qd on saute (tous sauts)
+#define Ci_Kcamera_reception							9		// Qd on saute (tous sauts)
+#define Ci_Kcamera_walling								10		// Qd on marche sur les murs
+#define Ci_Kcamera_grab_branche						11		// Qd Kong joue au balancier sur une branche
+#define Ci_Kcamera_swing_arch						11		// Qd Kong joue au balancier sur une branche (ancien swing vertical)
+#define Ci_Kcamera_swing_pillard						12		// Qd Kong joue au balancier sur un pillier (ancien swing horizontal)
+#define Ci_Kcamera_accroch								13		// Qd Kong est en accroch standart
+#define Ci_Kcamera_finish									14		// Qd Kong est en finish
+#define Ci_Kcamera_saut_swing_arch					15		// Saut pour accroch en arch swing (anciennement swing vertical)
+#define Ci_Kcamera_saut_swing_pillard				16		// Saut pour accroch en pillard swing (anciennement swing horizontal)
+#define Ci_Kcamera_saut_swing_fght					17		// Saut pour tomber sur l ennemi
+#define Ci_Kcamera_saut_raccroch					18		// Saut pour accroch sol
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//		MASHING (Power Action)    - begin
+//
+// MASHING - NUMEROS DE KITS ===========================
+#define	Ci_Kmashing_Kit_00			0
+#define	Ci_Kmashing_Kit_01			1
+#define	Ci_Kmashing_Kit_02			2
+#define	Ci_Kmashing_Kit_03			3
+#define	Ci_Kmashing_Kit_04			4
+#define	Ci_Kmashing_Kit_05			5
+#define	Ci_Kmashing_Kit_06			6
+#define	Ci_Kmashing_Kit_Count		7
+// MASHING - INT PARAMS ================================
+#define	Ci_Kmashing_Anim_Positionne							0			// N° d'anim positionnement challenge
+#define	Ci_Kmashing_Anim_Challenge							1			// N° d'anim challenge
+#define	Ci_Kmashing_Anim_KK_Gagne						2			// N° d'anim challenge gagné
+#define	Ci_Kmashing_Anim_KK_Perdu							3			// N° d'anim challenge perdu
+#define	Ci_Kmashing_Anim_Obj_Wait							4			// N° d'anim d'attente pour l'objet
+#define	Ci_Kmashing_Kamera_Status							5			// Status de la Kaméra
+#define	Ci_Kmashing_Kamera_Finish_ID						6			// Finish ID de la Kaméra
+#define	Ci_Kmashing_Challenge_Type							7			// indique si KONG peut gagner, perdre ou les deux
+#define	Ci_Kmashing_INT_Params_Count						8
+// MASHING - FLOAT PARAMS ============================
+#define	Ci_Kmashing_Frame_Debut_Challenge				0		// N° de frame à laquelle KONG se positionne au début du challenge
+#define	Ci_Kmashing_Frame_KK_Gagne						1		// N° de frame à laquelle KONG gagne ( Cf_Infinit pour gagner à la fin de l'anim)
+#define	Ci_Kmashing_Frame_KK_Perdu						2		// N° de frame à laquelle KONG perd
+#define	Ci_Kmashing_Force_Coef_Kong_Down				3		// coef de diminution de la force de KONG
+#define	Ci_Kmashing_Force_Coef_Object_Up				4		// coef d'augmentation de la force de l'objet
+#define	Ci_Kmashing_Force_Activate_Object					5		// force max de KONG pour activer la force de l'objet
+#define	Ci_Kmashing_Force_Diminution_Object				6		// palier de diminution de force de l'objet quand le joueur appuie
+#define	Ci_Kmashing_Force_Trigger_Kong					7		// force max de KONG quand le joueur appuie
+#define	Ci_Kmashing_FLOAT_Params_Count				8
+// MASHING - FUNCTION PARAMS =========================
+#define	Ci_Kmashing_Fct_KK_Gagne				0
+#define	Ci_Kmashing_Fct_KK_Perdu				1
+#define	Ci_Kmashing_FCT_Params_Count		2
+// MASHING - VECTOR PARAMS ==========================
+#define	Ci_Kmashing_Position							0
+#define	Ci_Kmashing_Orientation						1
+#define	Ci_Kmashing_VEC_Params_Count		2
+// MASHING - CONSTANTES - RESULTATS ==================
+#define	Ci_Kmashing_Type_Kong_Gagne_Toujours			1			// KONG ne peut que gagner (l'objet ne résiste pas)
+#define	Ci_Kmashing_Type_Kong_Perd_Toujours			2			// KONG ne peut que perdre (l'objet résiste et ne cède jamais)
+#define	Ci_Kmashing_Type_Kong_Gagne_Ou_Perd		3			// KONG peut gagner ou perdre (l'objet résiste)
+// MASHING - CONSTANTES - RESULTATS ==================
+#define	Ci_Kmashing_Result_Positionne		32		// positionnement de KONG
+#define	Ci_Kmashing_Result_EnCours			33		// challenge en cours
+#define	Ci_Kmashing_Result_KongGagne		34		// KONG a gagné le challenge
+#define	Ci_Kmashing_Result_KongPerdu		35		// KONG a perdu le challenge
+#define	Ci_Kmashing_Result_Annule_EnCours			36 	// KONG a annulé (en train de rembonbier)
+#define	Ci_Kmashing_Result_Annule_Termine			37 	// KONG a annulé (fini de rembobiner)
+//
+//		MASHING (also known as Power Action)		- end
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// GRAB KONG Pondération -----------------------------------------------------------------------------
+#define	Ci_Grab_Kong_Pond_Dead					500			// les persos morts sont moins importants que les persos vivants
+#define	Ci_Grab_Kong_Pond_Bad_Axe				200			// mauvaise orientation
+
+#define	Ci_Grab_Kong_Pond_TRex					0
+#define	Ci_Grab_Kong_Pond_Raptor_Kong			5000
+#define	Ci_Grab_Kong_Pond_Bat_Kong				6000
+#define	Ci_Grab_Kong_Pond_MashingObject		8000
+#define	Ci_Grab_Kong_Pond_Souche				10000		// Souches et Rochers ODE
+// GRAB KONG Pondération -----------------------------------------------------------------------------
+// MODES DE KONG TESTABLE PAR D AUTRES ACTEUR EN ULTRA
+#define C_Mode_Combo1								1		// Coup 1
+#define C_Mode_Combo2								2		// Coup 2
+#define C_Mode_Repulse								3		// Kong repousse en levant les bras( C'est aussi un coup)
+#define C_Mode_Fury									4
+#define C_Mode_Combo3								5		// Kong frappe au sol avec ses 2 mains
+#define C_Mode_Dash_Attack						6
+#define C_Mode_Dash									7
+#define C_Mode_Esquive								8
+#define C_Mode_Retour								9
+#define C_Mode_Kill										10		// Kong bouffe un raptor/bat
+#define C_Mode_Pillar									11
+#define C_Mode_Swing_Catch						12
+#define C_Mode_Swing_Release					13
+#define C_Mode_Dash_To_Grab						14
+#define C_Mode_VineClimbTop 						15
+#define C_Mode_JumpSeRaccroch					16
+
+#define	ETAT_Kong_cine								050
+#define	ETAT_Kong_mort								100
+#define	ETAT_Kong_deplacement					200
+#define	ETAT_Kong_depl_souche					250
+#define	ETAT_Kong_fps								300
+#define	ETAT_Kong_grab								350	// anim de grab et tout le grab a 2mains avec un TREX
+#define	ETAT_Kong_grab_ANN						351
+#define	ETAT_Kong_grab_mashing				352	// Pilliers a deplacer
+#define	ETAT_Kong_desequilibre					600
+#define	ETAT_Kong_desequilibre_paf_petit				601
+#define	ETAT_Kong_desequilibre_paf_moyen			602
+#define	ETAT_Kong_desequilibre_paf_fort				603
+#define	ETAT_Kong_desequilibre_paf_mashing		604
+#define	ETAT_Kong_tombe							610
+#define	ETAT_Kong_lance							700
+#define	ETAT_Kong_fury								802
+#define	ETAT_Kong_track_change				803
+#define	ETAT_Kong_cheat_mode					804
+#define	ETAT_Kong_finish							850
+#define	ETAT_Kong_finished						851
+#define	ETAT_Kong_fracasse						852
+#define	ETAT_Kong_colonne 						860
+//  >900 pour ne pas avoir de rot X
+#define 	ETAT_Kong_climb_impulsion				900
+#define 	ETAT_Kong_accroch_mur					901
+#define 	ETAT_Kong_climb_rapide					905
+
+#define 	ETAT_Kong_swing_arch					950
+#define 	ETAT_Kong_swing_pillard					951
+
+#define	ETAT_Kong_walling							1000
+#define 	ETAT_Kong_jump							1001
+
+
+
+
+
+ 
+
+

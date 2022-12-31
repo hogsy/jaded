@@ -1,0 +1,101 @@
+//////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//  CAPA_0   : spawner actif
+//	CAPA_1   : spawner fini
+//	CAPA_2   : (flag) génération d'un ennemi
+//	CAPA_3   : au moins un ennemi a été généré
+//	CAPA_15 : spawner fini
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+function track0 = "Spawner_init"
+function track1 = "Spawner_reflex"
+
+separator "SF"
+			int				SF_i_NePasRejouerSiMort = vrai_faux
+private	int				SF_i_AlreadyDead = -1
+
+separator "Quand donc ?"	
+			float			mf_GenTime																		// min gen time
+			float			mf_GenTimeMax																	// max gen time
+			trigger		mt_GenTriggerTest
+			int				mi_GenTriggerBoolOp_01 = enum ( "et" 0 "ou" 1 "ou exclu" 2 )
+			trigger		mt_GenTriggerTest1
+			int				mi_GenTriggerBoolOp_12  = enum ( "et" 0 "ou" 1 "ou exclu" 2 )
+			trigger		mt_GenTriggerTest2
+
+private	int				mi_TriggerTest
+			int				mi_TestOneTime = vrai_faux
+			trigger		mt_GenTriggerExec
+			float			mf_PauseTime = 0																// time between two waves
+			int				mi_WaveNumber = -1
+			
+			int 			mi_ForceHumainStress = vrai_faux
+			
+separator "usqu'à quand ?"
+			trigger		mt_MaisArreteDonc
+
+separator "Y'a des limites !"	
+			int				mi_MaxActive
+			int				mi_NbBeforeDying
+			int				mi_DieWhenNoEnnemyLeft = vrai_faux
+			trigger		mt_EndTrigger
+private	int				mi_EnemyActive
+private 	int				mi_EnemyCount
+
+			int				mi_UseEnemyPerWave = vrai_faux
+			int				mai_EnemyPerWave[ 16 ]
+private	int				mi_CurWave
+
+separator "y'a d'autres limites"
+			int				mi_Add_Nb = 0										// nb d'ennemi à rajouter
+			trigger		mt_Add_Trig1											// trig test 1 (si trig1 test trig2 est vrai, la génération additionnelle est stoppée)
+			trigger		mt_Add_Trig2											// trig test 2
+			int				mi_Add_TrigOp = enum("or" 0 "and" 1 )		// operator entre les 2 trigger
+private	int				mi_Add_Done = vrai_faux							// phase additionnelle en cours
+			
+
+separator "Quoi donc ?"
+			object		mo_Enemy
+			trigger		mt_GenEnemy
+			object		mo_Enemy1
+			trigger		mt_Trigger_EnemyIsDead
+			int				me_GenEnemyState = enum( "invisible one trame" 0 "invisible" 1 "visible" 2 )
+			int				me_GenEnemySect = enum( "dont touch" 0 "copy from spawner" 1 "copy from enemy model" 2 )
+			object		mao_SeveralEnemy[ 16 ]
+			trigger		mat_SeveralEnemy_GenTrigExec[ 16 ]
+			trigger		mat_SeveralEnemy_GenTrig[ 16 ]
+private	int				mi_SeveralEnemy_Counter = 0
+private 	object		mao_Enemy[ 16 ]
+private	object		mo_EnemyToShow
+private	int				mi_EnemyCur
+
+
+separator "Ou donc ?"
+			object		mao_WP[ 16 ]
+			float			mf_DistanceMin = 4
+			float			maf_FrontRatio = 0.6
+			float			maf_GroupRatio = 0.2
+			int				mi_UsePannel = faux_vrai
+			int				mi_GenWPSequential = vrai_faux
+			int				mi_WhenTriggerFalseChangeWP = faux_vrai
+			vector		mv_GenerationOffset = Cv_NullVector
+private	float			maf_WPTimer[ 16 ]
+private	int				mai_WPFlags[ 16 ]
+private	int				mi_WPNb
+private	int				mi_WPCur
+private	int				mi_WPFront
+private	int				mi_WPGroup
+			
+separator "Comment donc ?"
+			float			mf_WarnTime
+			trigger		mt_WarnTriggerExec
+			
+separator "Bon y vas m'voir oui ou bien quoi chier merde"
+			float 			mf_CallingTime = 1.0
+private	int				mi_HeSeeMe
+private	float			mf_WatchTime 
+			
+private  	float			mf_TimeLeft
+
+

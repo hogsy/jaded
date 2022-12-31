@@ -1,0 +1,55 @@
+// Define at least one function in a track
+// function track0 = "name"
+// function track1 = "name"
+function track2 = "Mus_Init"
+// function track3 = "name"
+// function track4 = "name"
+
+separator "Conditions"
+trigger 		t_Condition1
+int				i_activationOp_1 = enum ( "et" 0 "ou" 1 "ou exclu" 2 )
+trigger		t_Condition2
+int				i_activationOp_2  = enum ( "et" 0 "ou" 1 "ou exclu" 2 )
+trigger		t_Condition3
+
+float			f_filtre_duree_min											// La condition doit etre vrai au moins pendant ce delay
+private float f_filtre_duree_min_cur									// Valeur courante
+
+float			f_periode_repos											// La condition doit etre fausse moins pendant ce delay apres s'etre joué une fois...
+private float f_periode_repos_cur										// Valeur courante
+
+private int	mi_TriggerTest 
+
+separator "Play"
+float			f_priorite = 100.0											// La plus Haute prio Gagne
+float			f_delay_before_play										// Delay avant de lancer le son
+int 			i_play_mode = enum("0: Cut" 0 "1: Chain" 1)	// Attend ou pas un marqueur pour lancer la Zic
+float			f_begin_sound_delay = -1								// Lancer un Son de transition N seconde avant le prochain marqueur (-1 = No Sound)
+
+separator "Filtre Play"
+float			f_play_duree_mini
+float			f_filtre_off
+
+separator "Mixage"
+int				i_Group[3] = enum("None" 0 "Sfx" 1 "Music" 2 "Ambience" 3 "Dialog" 4 "Cutscene" 5 "Interface" 6 "GrpA" 7 "GrpB" 8)
+int				f_Stage1_Speed[3] 
+int				f_Stage1_Volume[3]
+int				f_Stage1_Duration[3]
+int				f_Stage2_Speed[3]
+int				f_Stage2_Volume[3]
+
+separator "Stop"
+int				i_JEU_ne_se_lancer_qune_fois = vrai_faux					// Ne se lance qu'une fois dans tous le JEU (SF)
+int				i_MAP_ne_se_lancer_qune_fois = vrai_faux					// Ne se lance qu'une fois dans la map et se detruit
+int				i_MAP_reactivation_mode = vrai_faux							// se désactive et attend une reactivation
+
+
+private int	i_SF_AlreadyPlayed = -1
+
+private int			i_played_once = vrai_faux
+private object		o_master
+private int			i_mon_instance = -1
+
+// forcer à continuer à jouer une musique pas loop
+private int			i_played_once_no_loop = faux
+

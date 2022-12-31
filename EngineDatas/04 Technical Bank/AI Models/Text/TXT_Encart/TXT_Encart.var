@@ -1,0 +1,59 @@
+// Define at least one function in a track
+// function track0 = "name"
+// function track1 = "name"
+function track2 = "TXTEncart_init"
+// function track3 = "name"
+// function track4 = "name"
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// CAPAS - CAPAS - CAPAS - CAPAS - CAPAS - CAPAS - CAPAS - CAPAS //
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// CAPA_0 = force l'encart a etre effacé
+// CAPA_1 = force l'encart à etre affiché
+// CAPA_2 : 0 = encart off, 1 = encart on
+// CAPA_3 : 1 = encart affiché au moins une fois
+// CAPA_4 : 1 = IA terminée
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// TRIGGER : 
+// Attention si vous mettez un trigger de délai placez le en première position
+//(mt_TriggerOn0 ou mt_TriggerOff0)
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+			text			mtxt_Encart
+			vector		mv_EncartPos = cvector( 0.5, 0.8, 0)
+			
+			int 			mi_Type = enum( "generique" 0 "hayes psstable" 1 "hayes psste" 2 )
+			
+			trigger		mt_TriggerOn0
+			int				mt_TriggerOnOp_01 = enum ( "et" 0 "ou" 1 "ou exclu" 2 )
+			trigger		mt_TriggerOn1
+			int				mt_TriggerOnOp_12  = enum ( "et" 0 "ou" 1 "ou exclu" 2 )
+			trigger		mt_TriggerOn2
+private	int				mi_TriggerOn
+
+			trigger		mt_TriggerOff0
+			int				mt_TriggerOffOp_01 = enum ( "et" 0 "ou" 1 "ou exclu" 2 )
+			trigger		mt_TriggerOff1
+			int				mt_TriggerOffOp_12  = enum ( "et" 0 "ou" 1 "ou exclu" 2 )
+			trigger		mt_TriggerOff2
+private	int				mi_TriggerOff
+
+			int				mi_Loop_Nb = 0
+			float			mf_Loop_TimeBetween = 0
+			trigger		mt_Loop_Trigger
+			
+			int				mi_NewLoop
+			
+private	float			mf_Loop_Timer
+private	int				mi_End_Init = 0
+private	int				mi_Text_Displayed = 0
+
+
+int					i_SF_NePlusSeRejouer = vrai_faux
+private int		i_SF_AlreadyCP
+
+
+
+			
+

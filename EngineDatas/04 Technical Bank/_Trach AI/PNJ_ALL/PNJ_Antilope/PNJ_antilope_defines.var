@@ -1,0 +1,33 @@
+
+
+// ETATS =======================================================================================
+#define ETAT_PA_WAIT			1
+#define ETAT_PA_FLEE			2
+#define ETAT_PA_DEAD			3
+#define ETAT_PA_GRABBED	4
+#define ETAT_PA_THROWN		5
+#define ETAT_PA_PAF				6
+
+// PARAMETRES
+#define Cf_Paf_Recul				10.0
+#define Cf_Thrown_Friction		1.25
+#define Cv_Gravity  					cvector(0.0,0.0, -20.0)
+#define Cv_Friction 					cvector(4.0, 4.0, 0.0)
+
+// ACTIONS
+#define PA_Attente					0
+#define PA_Marche					1
+#define PA_Fuite						3
+#define Action_Mort					17
+#define PA_Paf						22
+#define Action_KKHandGrabbedDead	111
+#define Action_KKHandGrabbedDeadStop	112
+#define Action_Thrown				48
+
+#define macro_change_etat(etat)																				\
+{																															\
+	if (AI_TrackCurGetNum() == 2)																				\
+		AI_TrackCurChangeNow(etat)																				\
+	else																													\
+		AI_TrackChange(2, etat)																					\
+}

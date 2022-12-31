@@ -1,0 +1,68 @@
+#include "PNJ_Slalomator_defines.var"
+
+// Define at least one function in a track
+function track0 = "PNJ_Slalomator_Init"
+// function track1 = "name"
+// function track2 = "name"
+// function track3 = "name"
+// function track4 = "name"
+
+separator "Configuration"
+object				o_pivot
+float					dist_min = 1000.0
+float					dist_max = 2000.0
+
+// ETAT
+private int			i_etat_courant		= -1
+private int			i_dernier_etat		= -1
+private int			i_flag_sortie_etat
+
+private int			i_etat_phase
+
+private float			f_time_start_etat
+private float			f_etat_phase_duration
+
+private function	fct_main_etat
+private function	fct_last_etat
+
+// MAIN ACTOR
+private object		o_main_actor
+private float			f_me_to_main
+private vector		v_me_to_main
+
+// MOVE
+private vector		v_last_pos
+private vector		v_dest_pos
+private float			f_dest_Z
+private float			f_last_ray_time
+
+// PENDULE
+private vector		v_grav_pos
+private vector		v_grav_speed		
+
+// SMOKE
+private int			GFX_Smoke = -1	
+
+// LASER
+private int			i_laser_state = Ci_Laser_Wait
+private float			f_laser_phase_duration = Cf_Infinit
+private vector		v_laser_shoot_pos
+private int			GFX_Line = -1
+private vector		v_GFX_Line_dest_pos
+
+
+// BOMBES
+private float				f_bomb_state_duration
+private int				i_bomb_shoot_mode
+private int				i_bomb_launch_index
+private float				f_bomb_delay			
+private float				f_bomb_wall_dist	
+private vector			v_wall_dest_pos
+private int				ai_bomb_state[100]
+private vector			av_bomb_pos[100]
+private vector			av_bomb_speed[100]
+private vector			av_bomb_dest_pos[100]
+private vector			av_bomb_dest_normal[100]
+private int				ai_bomb_halo[100]
+private float				af_bomb_move_duration[100]
+private float				af_bomb_radius[100]

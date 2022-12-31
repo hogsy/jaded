@@ -1,0 +1,148 @@
+// LIFE & POINT DE VIANDE ===============================================================================
+
+#define Cf_Scolo_Standard_Life								12.0
+#define Cf_Scolo_Sombre_Life								8.0
+
+#define Cf_Scolo_Standard_Meat_Point					10.0
+#define Cf_Scolo_Sombre_Meat_Point					5.0
+
+
+#define Ci_virtual_wp_nb										25
+
+// FIRE
+#define Cf_fire_sqr_dist											25.0
+
+// TRACK
+#define Ci_Track_TagOff										00
+#define Ci_Track_Reflex										01
+#define Ci_Track_Etat											02
+#define Ci_Track_TagOn										03
+
+#define Ci_Modele_Clair										0
+#define Ci_Modele_Standard									1
+#define Ci_Modele_Sombre									2
+#define Ci_Modele_Big											3
+#define Ci_Modele_Pit											4
+#define Ci_Modele_Cine										5
+
+#define macro_change_etat(etat)																				\
+{																															\
+	if (i_etat_courant == ETAT_Attaque)																		\
+	{																														\
+		AI_TrackChange(Ci_Track_Etat, etat)																	\
+		AI_Execute(etat)																								\
+	}																														\
+	else																													\
+	{																														\
+		if (AI_TrackCurGetNum() == Ci_Track_Etat)															\
+			AI_TrackCurChangeNow(etat)																			\
+		else																												\
+			AI_TrackChange(Ci_Track_Etat, etat)																\
+	}																														\
+	return																													\
+}
+
+// CAPA
+#define Capa_NetEnd									OBJ_Capa_0
+#define Capa_Big_Scolo_Grabbable				OBJ_Capa_1
+#define Capa_GetUp									OBJ_Capa_10
+
+// NET CAPA
+#define Capa_Net_Destroy							OBJ_Capa_0
+#define Capa_Net_Wait_Enemy						OBJ_Capa_1
+#define Capa_Net_Switch_Net_Mode				OBJ_Capa_2
+
+// VIRTUAL NET FLAG
+#define Ci_virtual_net_ground_col					0x00000001
+#define Ci_virtual_net_wall_col						0x00000002
+#define Ci_virtual_net_water_col						0x00000004
+
+// DYN
+//#define Cv_ScoloJack_Gravity						cvector(0.0, 0.0, -20.0)
+//#define Cv_ScoloKong_Gravity						cvector(0.0, 0.0, -40.0)
+
+#define Cf_Scolo_Jump_Friction						2.0
+#define Cv_Scolo_Jump_Friction						cvector(Cf_Scolo_Jump_Friction, Cf_Scolo_Jump_Friction, 0.0)
+
+#define Cf_impulsion_max_jack						50.0
+#define Cf_impulsion_max_humain					30.0
+#define Cf_impulsion_max_raptor					20.0
+#define Cf_impulsion_max_bat						15.0
+#define Cf_impulsion_max_kong						70.0
+
+// ETAT
+#define ETAT_Attente																								000
+#define ETAT_Apparition																							001
+#define ETAT_Sol																									002
+#define ETAT_Attaque																								003
+#define ETAT_Paf																									004
+#define ETAT_Snap																									005
+#define ETAT_Grabbed_Predateur																				006
+#define ETAT_Wait_For_Grab																					007
+#define ETAT_Grabbed_By_Kong																				008
+#define ETAT_Pit																										009
+#define ETAT_Jump																									010
+#define ETAT_Disparition																							011
+#define ETAT_KKRide																								012
+#define ETAT_KKFinish																							013
+#define ETAT_Cine_Move																							014
+#define ETAT_Cine_GetUp																						015
+#define ETAT_KKIFinish																							016
+#define ETAT_Devore																								017
+#define ETAT_KKBite																								018
+
+#define ETAT_TEST																									667
+
+
+// TYPE
+#define Ci_TYPE_FIXE																								0
+
+#define Ci_TYPE_RAMPANT																						2
+
+// TARGET SELECTION
+#define Ci_TARGET_AI																								0
+#define Ci_TARGET_TRIGGER																					1
+
+// PERCEIVED STATUS ===============================================================================
+//#define Ci_PERCEIVED_NEAR_SHOT								0x00000001
+//#define Ci_PERCEIVED_STUNNED									0x00000002
+//#define Ci_PERCEIVED_NEAR_IN_MOVE_CONE				0x00000004
+//#define Ci_PERCEIVED_GET_FIRE									0x00000008
+//#define Ci_PERCEIVED_PAF											0x00000010
+//#define Ci_PERCEIVED_JAVELIN_PAF								0x00000020
+//#define Ci_PERCEIVED_IS_DEAD										0x00000040
+//#define Ci_PERCEIVED_HEARD										0x00000080
+//#define Ci_PERCEIVED_ALREADY_GRABBED					0x00000100
+//#define Ci_PERCEIVED_NEAR_FIRE									0x00000200
+//
+//#define Ci_PERCEIVED_MEMORY_MASK							0xFF000000
+
+// MEMOIRE
+//#define Ci_PERCEIVED_IDENTIFIED									0x01000000
+//#define Ci_PERCEIVED_BODY_MEMORISED						0x02000000
+//#define Ci_PERCEIVED_BODY_UNREACHABLE					0x04000000
+
+#define Cf_delay_between_target_switching							4.0
+
+// SOUND ========================================================================================
+#define SND_MOVE_1																1
+#define SND_MOVE_2																2
+#define SND_EAT																	3
+#define SND_GETUP																4
+#define SND_ATTACK																5
+#define SND_ROLLUP																3
+#define SND_PAF																	6
+#define SND_DIE																		7
+#define SND_BITE																	8
+
+#define SND_FIRE_LOOP															10
+#define SND_FIRE_START														11
+#define SND_FIRE_SCREAM													12
+
+#define SND_KONG_PAFFED													10
+
+
+// LIFE =======================
+#define	Cf_KK_Big_Scolo_Life_Max_For_Asking_Finish				0		// 20
+#define	Cf_KK_Big_Scolo_Life_Max_For_Allowing_Grab_Finish		40
+

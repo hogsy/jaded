@@ -1,0 +1,26 @@
+// Define at least one function in a track
+// function track0 = "name"
+// function track1 = "name"
+function track2 = "RMSC_ETAT_spawn"
+// function track3 = "name"
+// function track4 = "name"
+
+
+object					o_object						// Objet à dupliquer
+float						f_delay = 2.0				// Délai entre deux duplications d'objets
+float						f_speed = 2.0				// Vitesse de déplacement des objets
+object					o_start_wp					// Waypoint de départ
+
+private object			ao_objects[10]				// Objets dupliqués
+private object			ao_net_wp[10]				// Waypoints du network
+private int				i_net_wp_count			// Nombre de waypoints dans le network
+private int				ai_objects_wp[10]		// Index du waypoint cible courant pour chaque objet dupliqué
+private float				f_current_delay			// Délai jusqu'à la prochaine duplication
+private float				f_previous_speed			// Vitesse à la trame précédente
+
+// Etats
+private int				i_sort_etat
+private int				i_etat_courant = -1
+private int				i_dernier_etat = -1
+private function		fct_last_etat
+private float				f_time_start_etat

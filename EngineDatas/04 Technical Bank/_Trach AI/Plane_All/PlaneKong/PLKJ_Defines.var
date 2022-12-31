@@ -1,0 +1,195 @@
+//------------------------------------------------------------------------------------------------------------------
+//	Gameplay
+//------------------------------------------------------------------------------------------------------------------
+#define C_PLKJ_MaxNetworks					20
+#define C_PLKJ_Armor								45		// nb of successive bullets to loose a HP
+#define C_PLKJ_ArmorAlternative				18		// same thing but for the alternative end
+#define C_PLKJ_DelayArmor						1		// delay with no bullets to restore the full armor
+#define C_PLKJ_DelayInvulnerable				3
+#define C_PLKJ_GladiatorTime					30
+
+//------------------------------------------------------------------------------------------------------------------
+//	Flags
+//------------------------------------------------------------------------------------------------------------------
+#define C_PLKJ_Flag_SpecialCutDone		0x01	// the special cut has been done at least once
+
+//------------------------------------------------------------------------------------------------------------------
+//	Cinematics
+//------------------------------------------------------------------------------------------------------------------
+#define C_PLKJ_Cine_Escape					0
+#define C_PLKJ_Cine_ProjosOn					1
+
+#define C_PLKJ_Cine_LastOne					0
+
+//------------------------------------------------------------------------------------------------------------------
+//	Timer
+//------------------------------------------------------------------------------------------------------------------
+#define C_PLKJ_TimerEvent_KamMode		0
+#define C_PLKJ_TimerEvent_AlternativeEnd	1
+#define C_PLKJ_TimerEvent_SetCapa			2
+#define C_PLKJ_TimerEvent_StartCine		3
+
+//------------------------------------------------------------------------------------------------------------------
+//	Enemies
+//------------------------------------------------------------------------------------------------------------------
+// distances
+#define C_PLKJ_Enemy_IgnoreSqDistance	(100*100)
+#define C_PLKJ_Enemy_CloseSqDistance	(20*20)
+
+//------------------------------------------------------------------------------------------------------------------
+//	AI stats
+//------------------------------------------------------------------------------------------------------------------
+#define C_PLKJ_AI_Wait							0.4
+#define C_PLKJ_AI_TurnForward				0.8
+#define C_PLKJ_AI_TurnBackward				0.9
+#define C_PLKJ_AI_Attack						0.95
+#define C_PLKJ_AI_Grab							1.0
+
+//------------------------------------------------------------------------------------------------------------------
+//	Attack buffer
+//------------------------------------------------------------------------------------------------------------------
+#define C_PLKJ_ComboMax						2
+
+// attack type
+#define C_PLKJ_Combo_Attack					1
+#define C_PLKJ_Combo_Grab					2
+#define C_PLKJ_Combo_Throw					3
+
+// attack timings
+#define C_PLKJ_Combo_Tolerance				0.3
+#define C_PLKJ_Combo_PostDelay			0.5
+
+//------------------------------------------------------------------------------------------------------------------
+//	Directions
+//------------------------------------------------------------------------------------------------------------------
+#define C_PLKJ_Rotation_Backward			-1
+#define C_PLKJ_Rotation_None					0
+#define C_PLKJ_Rotation_Forward				1
+#define C_PLKJ_Rotation_180					2
+
+//------------------------------------------------------------------------------------------------------------------
+//	Kamera
+//------------------------------------------------------------------------------------------------------------------
+// mode
+#define C_PLKJ_KamMode_Intro				0
+#define C_PLKJ_KamMode_Default			1
+#define C_PLKJ_KamMode_SpecialCut		2
+#define C_PLKJ_KamMode_SpecialCutPaf	3
+
+// movement
+#define C_PLKJ_Kam_SpeedFactor			0.7
+#define C_PLKJ_Kam_Acceleration			1.5
+#define C_PLKJ_Kam_IntroSpeed				0.4
+
+// fx
+#define C_PLKJ_DureeFade						0.3
+
+// focale
+#define C_PLKJ_Focal_Default					1.3
+#define C_PLKJ_Focal_SpecialCut				0.5
+
+// special cut
+#define C_PLKJ_Kam_SpecialCutDelay		0.1
+#define C_PLKJ_Kam_SpecialCutFreq		8
+#define C_PLKJ_Kam_SpecialCutDamage	30
+
+// hit slow down
+//#define C_PLKJ_Kam_HitEffectDuration		1
+
+//------------------------------------------------------------------------------------------------------------------
+//	Joypad
+//------------------------------------------------------------------------------------------------------------------
+// buttons
+#define C_PLKJ_Button_None					-1
+#define C_PLKJ_Button_Attack					JoyPSX_Button_croix
+#define C_PLKJ_Button_Grab					JoyPSX_Button_rond
+
+// joy noise
+#define C_PLKJ_Joy_Noise						0.2
+
+//------------------------------------------------------------------------------------------------------------------
+//	Capas
+//------------------------------------------------------------------------------------------------------------------
+#define C_PLKJ_Capa_TestCollision			1
+#define C_PLKJ_Capa_ReadyToPlay			2
+#define C_PLKJ_Capa_AlternativeEnd			4
+#define C_PLKJ_Capa_KongIsDead			8
+#define C_PLKJ_Capa_ThrowPlane				16
+#define C_PLKJ_Capa_CanGrab					32
+#define C_PLKJ_Capa_Injured					64
+#define C_PLKJ_Capa_BreakPlane				128
+#define C_PLKJ_Capa_NoDamage				256
+#define C_PLKJ_Capa_AltEndUnlocked		1024
+
+//------------------------------------------------------------------------------------------------------------------
+//	Custom bits
+//------------------------------------------------------------------------------------------------------------------
+#define C_PLKJ_CB_Attack						0x01
+#define C_PLKJ_CB_Move						0x02
+#define C_PLKJ_CB_DontMoveHead			0x04
+#define C_PLKJ_CB_NoDamage				0x08
+#define C_PLKJ_CB_Interruptible				0x80
+
+//------------------------------------------------------------------------------------------------------------------
+//	Bones
+//------------------------------------------------------------------------------------------------------------------
+#define C_PLKJ_Bone_ZdeFight					Anim_Canal_AvantBrasDroit
+#define C_PLKJ_Bone_ZdeBody					Anim_Canal_Bassin	//Anim_Canal_Torse
+#define C_PLKJ_Bone_PlaneGrab				Anim_Canal_Annex1
+#define C_PLKJ_Bone_RightHand				Anim_Canal_MainDroite
+
+#define C_PLKJ_NbPafBones					5
+
+//------------------------------------------------------------------------------------------------------------------
+//	Grab
+//------------------------------------------------------------------------------------------------------------------
+#define C_PLKJ_Grab_BlendSpeed				3
+
+//------------------------------------------------------------------------------------------------------------------
+//	Anim speed
+//------------------------------------------------------------------------------------------------------------------
+#define C_PLKJ_Anim_DefaultSpeed			64
+#define C_PLKJ_Anim_SlowSpeed				32
+#define C_PLKJ_Anim_GrowingSpeed			70
+
+//------------------------------------------------------------------------------------------------------------------
+//	Actions
+//------------------------------------------------------------------------------------------------------------------
+#define C_PLKJ_ACT_Climb						0
+#define C_PLKJ_ACT_Wait						1
+#define C_PLKJ_ACT_TurnBwd					2
+#define C_PLKJ_ACT_TurnFwd					3
+#define C_PLKJ_ACT_GrabR						4
+#define C_PLKJ_ACT_AttackR					5
+#define C_PLKJ_ACT_AttackL					6
+#define C_PLKJ_ACT_Wait_Plane				7
+#define C_PLKJ_ACT_GrabL						8
+#define C_PLKJ_ACT_UngrabR					9
+#define C_PLKJ_ACT_Wait_Hurt				10
+#define C_PLKJ_ACT_UngrabL					11
+#define C_PLKJ_ACT_GrabR_Fail				12
+#define C_PLKJ_ACT_GrabR_Success		13
+#define C_PLKJ_ACT_FastTurnFwd			14
+#define C_PLKJ_ACT_FastTurnBwd			15
+#define C_PLKJ_ACT_ClimbDown				17
+#define C_PLKJ_ACT_JumpAway				18
+#define C_PLKJ_ACT_Ungrab					19
+#define C_PLKJ_ACT_PafR						20
+#define C_PLKJ_ACT_PafL						21
+
+//------------------------------------------------------------------------------------------------------------------
+//	Injure config
+//------------------------------------------------------------------------------------------------------------------
+#define Cte_InjureFx_iMode		SND_Cte_FxMode_Space
+#define Cte_InjureFx_iDelay		500
+#define Cte_InjureFx_iFeedback	70
+#define Cte_InjureFx_fWetVol	0.5
+#define Cte_InjureFx_iWetPan	0
+#define Cte_InjureFadeVol			0.1
+#define Cte_InjureFadeTime		4.0
+#define SND_M_FadeGroup(iId, vol, duration)\
+	{\
+		@ "univ" SND_gaf_GroupVolumeFinal[iId] = vol\
+		@ "univ" SND_gaf_GroupVolumeDuration[iId] = duration\
+		@ "univ" SND_gi_GlobalCommand |= SND_Cte_exec_GrpVol\
+	}

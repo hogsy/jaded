@@ -1,0 +1,217 @@
+#include "PNJ_Brontosaure_defs.var"
+
+//=================================
+//	CAPA:
+//		0 => Tag
+//		1 => IK Legs off
+//		2 => ne respawnera plus
+//		3 => bronto invisible / inactif
+//=================================
+
+// Define at least one function in a track
+// function track0 = "name"
+// function track1 = "name"
+function track2 = "pnjbronto_init"
+// function track3 = "name"
+// function track4 = "name"
+
+separator "Optimisation"
+int					no_IK_LEG = vrai_faux
+int					no_IK_NECK = vrai_faux
+int					no_SMOKE = vrai_faux
+
+separator "mode troupeau"
+					object		troupe_o_orga = nobody
+					int				troupe_i_command = 0
+private			float			troupe_f_speed
+private			float			troupe_f_speedfactor
+private			float			troupe_f_speedadd
+private			vector		troupe_v_param
+					
+					float			troupe_f_zoommin = 1.5
+					float			troupe_f_zoommax = 2
+
+separator "Move"
+					network		move_network
+					float			move_f_speedwalk = 0.0
+					object		move_o_Lead
+					int				move_i_FollowerId
+					int				move_i_Respawn = vrai_faux
+					float			move_f_RespawnDistance = 50.0
+					float			move_f_Ecartement = 0
+				
+	private		int				move_network_init = faux
+	private		object		move_o_WP[ 3 ]
+	private		vector		move_v_dest[ 2 ]
+	private		float			move_f_speed
+	private 		int				move_i_neardest
+	private		int 			move_i_AlreadyRespawn = 0
+	
+	private		int				move_i_netwpnb
+	private		object		move_ao_netwp[ 100 ]
+	private		float			move_f_progress
+	
+separator "LÈPaPattes" 
+					object		Pattes_o_Object[ 4 ]
+	private		object		Pattes_o_Bones[ 4 ]
+	private		int				Pattes_i_Canal[ 4 ]
+					int				Pattes_Shake = vrai_faux	
+	
+separator "Sound"	
+	private		object		Pattes_o_SendPaf = nobody
+	private		int				Sound_i_Moan = 0
+ 
+separator "Leader / Follower"
+					int				Follower_Nb
+					vector		Follower_Pos[ 10 ]
+	private		vector		Follower_ComputedPos[ 10 ]
+
+	private		vector		Lead_PrevPos
+	private		vector		Lead_Pos[ BRONTO_SavedPosNb ]
+	private		vector		Lead_Normal[ BRONTO_SavedPosNb ]
+	private		float			Lead_Width[ BRONTO_SavedPosNb ]
+	private		float			Lead_PosInterval = 10.0
+	private		float			Lead_Dist
+	
+					int				WPBV_i_Use = vrai_faux
+					float			WPBV_f_MaxWidth = 40.0
+					float			WPBV_f_MinWidth = 10.0
+	private		float			WPBV_f_CurWidth
+
+separator "State"
+	private	int			etat_i_courant
+	private 	int			etat_i_ancien 
+	private	int			etat_i_quitte = vrai_faux
+	private 	function 	etat_fct										// fonction du dernier Ètat
+	private	float		etat_f_timer
+	private	int			etat_i_state
+	private	int			etat_i_param
+	private	int			etat_i_endofpath
+	
+separator "DiverZÈAvariÈ"
+				float		f_Zoom = 2.0
+				
+				int			tag_i_IsOff = faux_vrai
+	private	int			tag_flag[ 2 ]
+	private	vector	tag_vectorpos[ 2 ]
+	private	vector	tag_vectorsight[ 2 ]
+	
+	private	float		IK_af_Height[ 4 ]
+	private	object	IK_ao_Knee[ 4 ]
+	private	object	IK_ao_Leg[ 4 ]
+	private	int			IK_ai_PatteState[ 4 ]
+	private	vector	IK_av_PattePos[ 4 ]
+	
+	private	int			stimul_i_paf
+	
+	private	float		dbg_speed
+	private	float		dbg_dist
+	private	float		dbg_time
+
+
+// IK LEGS
+private float			f_bassin_rotation_angle
+private float			f_bassin_Z_offset
+
+private int			i_flag_leg_IK[4]
+
+private float			f_IK_Z_offset[4]
+private float			f_IK_coef[4]
+private float			f_IK_snap_coef[4]
+private float			f_IK_speed[4]
+private float			f_IK_tenseur[4]
+private float			af_IK_bones_length[4][3]
+private float			f_IK_leg_length[4]
+private float			f_IK_ground_coef[4]
+
+private float			f_IK_bassin_look_rot_coef
+
+private float			f_IK_bassin_ground_rot_coef
+
+private float			f_IK_bassin_eat_rot_coef
+private vector		v_IK_bassin_eat_pos
+
+private float			f_IK_bassin_bite_rot_coef
+private vector		v_IK_bassin_bite_pos
+private vector		v_IK_bassin_bite_start_quat
+private object		o_IK_bassin_bite_actor
+
+private vector		v_IK_ref_ground_pos
+private vector		v_virtual_banking = Cv_VerticalVector
+
+private vector		v_IK_dest_pos[4]
+private vector		v_IK_local_offset[4]
+private vector		v_IK_bone_last_valid_sight[4]
+private vector		v_IK_bone_last_valid_banking[4]
+private vector		v_IK_ground_pos[4]
+private vector		v_IK_ground_normale[4]
+
+private vector		v_IK_bassin_banking
+private vector		v_IK_bassin_pos
+
+private object		ao_IK_bones[4][3]
+private object		o_bassin
+
+
+// SUIVI REGARD
+private int				i_flag_look
+private int				i_flag_look_main
+private int				i_flag_look_best_interet
+private int				i_flag_perfect_look
+private float				f_look_timer = 0.0
+private float				f_timer_paftete = 0.0
+
+private float				f_look_blend_coef
+private float				f_look_angle_blend_speed
+private float				f_look_head_coef
+private float				f_look_axis_norm
+private float				f_look_axis_length
+private float				f_look_force_duration
+private float				f_look_in_dead_cone_sign
+
+private vector			v_look_pos
+private vector			v_last_look_pos
+private vector			v_look_pivot_pos
+private vector			v_look_axis
+private vector			v_look_head_pos
+private vector			v_look_last_head_pos
+private vector			v_look_banking
+private vector			v_look_virtual_sight
+
+private int				i_head_bone_nb
+private object			ao_head_bones[6]
+private object			o_ventre
+
+private vector		v_bezier_head_look_pos
+
+private float			f_neck_vert_coef
+private float			f_neck_col_duration
+private float			f_neck_B_weight
+private float			f_neck_C_weight
+private float			f_neck_bezier_coef					= 1.0
+private float			af_neck_bone_bezier_coef[5]		= (1.0, 0.8, 0.6, 0.4, 0.2)
+private float			f_neck_length
+private float			af_neck_bone_length[4]
+
+private float			f_head_Z_min
+
+// TEST QUATERNION
+private int					i_quat_index
+
+private float					f_quat_last_time
+private float					af_quat_time[10] = (-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0)
+private float					af_quat_coef[10] 
+
+private vector				av_quat_start[10]
+private vector				av_quat_end[10]
+
+// PAF IA
+private float					f_visual_paf_time
+private vector				v_visual_paf_dir
+
+// REGARD ALEATOIRE
+private float					f_look_rand_duration
+private vector				v_look_rand_pos
+
+// BLEND SPEED
+private float					f_wanted_speed

@@ -1,0 +1,135 @@
+#include "GFX_Sampler_Defines.var"
+
+// Define at least one function in a track
+// function track0 = "name"
+// function track1 = "name"
+function track2 = "GFX_Sampler_Init.fct"
+// function track3 = "name"
+// function track4 = "name"
+
+separator "GFX Settings"
+	private int 		mi_GFX_Type				= enum( "Explosion" 13 "Ligne" 1 "Eclair" 2 "Explosion de face" 3 "Halo lumineux" 4 "Lens flare" 5 "Fumée" 6 "Vitesse" 8 "Etincelles" 9 "Bord photo" 14 "Soleil" 18 "Ripple" 20 "Autre Halo" 21 )	// DOES NOT WORK (USE 13)! the type of GFX you want to add
+	int 				mi_GFX_Activation		= enum( "Actif" 1 "desactivé" 0 )									// should the GFX be active
+	
+	float				mf_LifeSpan				=	1.0																	// how long should each instance of this emitter keep playing, in seconds
+	
+	int					mi_IsPersistant 			= vrai_faux																// should the particle system emmit constantly, or die off after mf_LifeSpan seconds have elapsed.
+	
+	int					mi_IsRecreatingOn		= vrai_faux																// will destroy the FX and reacreate a new one if set to true (N.B. mi_IsPersistant should be set to true...mf_LifeSpan will be ignored)
+	float				mf_RecreationPeriod	= 7.0																		// number of seconds before total recreation (delete of old effect, and add of new one with same properties)
+			
+separator "Source Object"
+	object			mo_SourceObject																					// you can position the FX at the position of another object, otherwise it is sourced from this WP
+	
+	int					mi_FollowSourceObj		=	faux_vrai																// if 'vrai' then the object follows the sourced object with a frame-by-frame position update
+	
+separator "Material"
+	object 			mo_Material				= nobody																// material game object to reference
+
+	int					mi_MaterialIndex 			= 0																		// sous materiau utilise par les 4 elements
+	
+	int 				mi_SpecElement1Mat 	= vrai_faux																// use specified element 1 material
+	int 				mi_SpecElement2Mat 	= vrai_faux																// use specified element 2 material
+	int 				mi_SpecElement3Mat 	= vrai_faux																// use specified element 3 material
+	int 				mi_SpecElement4Mat 	= vrai_faux																// use specified element 4 material
+	
+	int 				mi_Element1Mat			= 0																		// Sous materiau utilise par l'element 1
+	int 				mi_Element2Mat			= 0																		// Sous materiau utilise par l'element 2
+	int 				mi_Element3Mat			= 0																		// Sous materiau utilise par l'element 3
+	int 				mi_Element4Mat			= 0																		// Sous materiau utilise par l'element 4
+	
+	int 				mi_MatOpacity			= enum( "matériau transparent" 1 "matériau opaque" 0 )	// should the material be transparent or opaque
+	
+	int 				mi_Elem2SubMat		= 8																		// Sous materiau utilise par l'element 2
+
+separator "Sprites"
+	int					mi_NumberOfSprites 	= 10000																	// Nombre de sprite a genere
+	int 				mi_IsZOrdered				= vrai_faux																// Tri des spirtes on / off
+	
+	float				mf_GenerationRate		= 0.0																		// Taux de generation
+	
+	int					mi_MaxSprites 			= 50																		// Nombre maxi de sprites
+	
+separator "Dynamics"
+	float				mf_GrowthSpeedMin	= 0.3																		// Vitesse de croissance minimum
+	float				mf_GrowthSpeedMax	= 0.9																		// Vitesse de croissance maximum
+
+	float				mf_GrowthFriction		= 0.001																	// Friction
+	
+	float				mf_TGravity					= -20.0																	// Gravite
+	
+	vector			mv_FrictionSpeed         = cvector( 0.01, 0.01, 0.01 )										// Friction
+	
+	float				mf_NormSpeedMin 		= 5.0																		// Vitesse min
+	float				mf_NormSpeedMax		= 7.0																		// Vitesse max
+	
+	vector			mv_SpeedMin				= cvector( 0.0, 0.0, 0.0 )											// Speed min
+	vector			mv_SpeedMax				= cvector( 0.0, 0.0, 0.0 )											// Speed max
+	
+	vector			mv_Wind 					= cvector( 0.0, 0.0, 0.0 )											// Vent
+	
+	vector			mv_CreationSpeed 		= cvector( 0.0, 0.0, 0.0 )											// Vitesse de la position de creation (additionnee a la vitesse generee)
+	
+	vector			mv_PositionFriction 		= cvector( 0.0, 0.0, 0.0 )											// Friction pour la position
+	
+separator "Timing"
+	float 				mf_Phase1Duration		= 0.4																		// Temps passe dans la premiere phase
+	float				mf_Phase2Duration		= 0.6																		// Temps passe dans la seconde phase
+	
+	float				mf_RandDurationCoef 	= 0.0																		// Coefficent de random sur le temps de vie de chaque particule
+	
+separator "Size"
+	float				mf_CreationSizeMin		= 0.1																		// Taille min a la creation
+	float				mf_CreationSizeMax	= 0.3																		// Taille max a la creation
+	
+	float				mf_CreaPosAxeX			= 0.2																		// Volume de creation (Edge 1)
+    float				mf_CreaPosAxeY		= 0.2																		// Volume de creation (Edge 2)
+    float				mf_CreaPosAxeZ			= 0.2																		// Volume de creation (Edge 3)
+	
+separator "Appearance"		
+	color				mh_Phase0Colour		= 0xD0C0C0C0														// Couleur phase 1
+	color				mh_Phase1Colour		= 0xB0C0C0C0														// Couleur fin phase 1 - debut phase 2
+	color				mh_Phase2Colour		= 0x00000000															// Couleur fin phase 2
+	
+separator "Position"
+	float				mf_GroundHeight			= 0.0																		// Hauteur de sol
+	vector			mv_PositionOffset		= cvector( 0.0, 0.0, 1.0 )											// meters offset from the GAO WP
+	
+separator "State Storage"
+	private int		mi_GFX_Key				= C_Invalid_GFX
+	
+	private float		mf_StartTime				= 0.0
+	
+	private int		i_Mod						= 13
+	
+	private int		mi_IsChild 					= faux
+	
+	private float		mf_InitTime					= 0.0
+	
+separator "Wind Modifiers"
+	int					mi_UseSineOnWind		= vrai_faux																// flags weather we should apply a sine wave over time on the wind property of this GFX
+	float				mf_WindSineFreq		= 1000.0																// frequency of wind sine wave (how rapidly wave repeats)
+	float 				mf_WindSinePhase		= 0.0																		// starting point of sine wave
+	float				mf_MinWindSpeed		= 1.0																		// min wind speed in meters per second
+	float				mf_MaxWindSpeed		= 10.0																	// max wind speed in meters per second
+	private vector	mv_NormalStartWind
+
+separator "DEBUG"
+	//vector			mv_DEBUG
+	
+separator "Start Delay Settings"
+	int 				mi_UseStartDelay													= vrai_faux					// for debugging only!: wait the following delay before running the init of this GFX
+	float				mf_StartDelay															= 0.5							// seconds to wait between initializations of this GFX
+	private float		mf_TimeRunning														= 0.0
+	
+separator "Material Rotation"
+	int					mi_UseMaterialRotation 											= vrai_faux					// Activate the rotation on GFX
+
+	float				mf_MinRotation														= 0.0							// initial minimum rotation (-1.0 to 1.0)
+	float				mf_MaxRotation														= 0.0							// Initital maximum rotation (-1.0 to 1.0)
+	float				mf_AngulerSpeedMin												= 0.0							// Angular Speed minimum
+	float				mf_AngulerSpeedMax												= 0.0							// Angular Speed maximum
+	
+separator "Ambiance Controller"
+	private int i_no_death  = faux																							//ADDED SURESH: if we don't want a GFX that is a child to be destroyed, set this to true
+	object o_GFX_Ambiant_Controller																					//fill this with the GFX ambiant AI waypoint

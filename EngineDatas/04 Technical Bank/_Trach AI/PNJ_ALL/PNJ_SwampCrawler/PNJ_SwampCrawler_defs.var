@@ -1,0 +1,108 @@
+// #############################################
+// # 	CONSTANTES                                                  #
+// #############################################
+
+//--------( CONSTANTES TABLEAU )--------
+#define		SC_MaxWPInNet					50
+
+//--------( CONSTANTES ETAT )--------
+#define 		SCETAT_ground				0
+#define 		SCETAT_water				1
+#define		SCETAT_gotowater			2
+#define		SCETAT_gotoground		3
+#define 		SCETAT_nage					4
+#define		SCETAT_hunt					5
+#define		SCETAT_paf					6
+#define		SCETAT_mort					7
+
+#define		SCETAT_fight					8
+
+//--------( CONSTANTES PARAM ETAT PAF )--------
+#define 		SCETATPARAM_PafOne			1
+#define 		SCETATPARAM_PafFightOne	2
+#define 		SCETATPARAM_PafFightMort	3
+
+//--------( CONSTANTES ACTION )--------
+#define		SCACT_water_wait				0
+#define		SCACT_water_swin				1
+#define		SCACT_water_attack			2
+#define		SCACT_ground_wait				5
+#define		SCACT_ground_walk			6
+#define		SCACT_ground_attack			7
+#define		SCACT_paf_water				10
+#define 		SCACT_paf_mort					12
+
+//--------( CONSTANTES TIMER )--------
+#define		SCTIMER_ground_min			1
+#define		SCTIMER_ground_max			2
+
+#define		SCTIMER_nage_min			5
+#define		SCTIMER_nage_max			10
+
+#define		SCTIMER_water_min			2
+#define		SCTIMER_water_max			4
+
+#define		SCTIMER_waitafterpaf_min	10
+#define		SCTIMER_waitafterpaf_max	15
+
+//--------( CONSTANTES SPEED )--------
+#define 		SCSPEED_Ground				1
+#define 		SCSPEED_Water				1.5
+#define		SCSPEED_AttackSlow			2
+#define		SCSPEED_AttackFast			4
+
+//--------( CONSTANTES ONDULATION )--------
+#define 		SCONDULE_AmplitudeMin	(home_f_waterdepth * 0.25 )
+#define 		SCONDULE_AmplitudeMax	(home_f_waterdepth * 0.75 )
+#define		SCONDULE_SpeedMin			Cf_Pi
+#define		SCONDULE_SpeedMax		Cf_2Pi
+#define		SCONDULE_Amplitude 		MATH_RandFloat( SCONDULE_AmplitudeMin,SCONDULE_AmplitudeMax)
+#define 		SCONDULE_Speed				MATH_RandFloat( SCONDULE_SpeedMin, SCONDULE_SpeedMax )
+
+#define		SCONDULE_ZStatic				(home_f_zmax - (home_f_waterdepth * 0.65 ))
+
+
+//--------( CONSTANTES RANDOM )--------
+#define		SCRAND_GotoGround			0
+
+// #############################################
+// # 	MACROS                                                         #
+// #############################################
+
+//--------( accès raccouri sur l'organizer )--------
+#define M_Org @"PNJ_Predators/PNJ_SwampCrawler_Organizer" Organizer 
+#define M_SC( _o_SC ) @"PNJ_Predators/PNJ_SwampCrawler" _o_SC
+
+//--------( Changement d'état )--------
+#define macro_change_etat(etat)					\
+{																\
+	if (AI_TrackCurGetNum() == 2)					\
+		AI_TrackCurChangeNow(etat)					\
+	else														\
+		AI_TrackChange(2, etat)		\
+}
+
+//--------( Changement d'état : goto water )--------
+#define macro_gotowater( mf_speed )\
+{\
+	AI_Execute( "SC_compute_NearestCaseOfWater" )\
+	move_v_dest = compute_v_pos \
+	move_v_dest += (move_v_dest - OBJ_PosGet()) * 5\
+	move_f_speed = mf_speed\
+	macro_change_etat( "SC_ETAT_gotowater" )\
+}
+
+//--------( Changement d'état : take a paf )--------
+#define macro_takeapaf( typepaf )\
+{\
+	etat_i_param = typepaf\
+	macro_change_etat( "SC_ETAT_paf" )\
+}
+
+
+
+
+
+
+
+

@@ -1,0 +1,460 @@
+#include "KR_defines.var"
+
+// Define at least one function in a track
+function track0 = "KR_TRACK_init"
+// function track1 = "name"
+// function track2 = "name"
+// function track3 = "name"
+// function track4 = "name"
+
+#ifndef FINAL
+// *** DEBUG ***
+separator	"DEBUG"
+int										i_DBG_immortal_ON = vrai_faux		// le raptor devient immortel !!!
+int										i_DBG_Display_Pilotage = vrai_faux
+int										i_DBG_drawVectorOption				// activation bits	see Ci_DBG_VDRW_xxx
+object								o_DBG_pilotage_tete
+int										i_DBG_Demo_PS2 = vrai_faux
+int										i_DBG_test_finish_sur_KONG = vrai_faux
+int										i_DBG_trace_finish = vrai_faux
+int										i_DBG_Finish_on_Kong_Forbidden = vrai_faux
+int										i_DBG_trace_send_paf = vrai_faux
+int										i_DBG_trace_interaction = vrai_faux
+
+private	int							i_DBG_lastCall
+private	int							i_DBG_lastInterestSet = -1
+private	vector					v_DBG_decal
+private	int							DBG_i_nbUncollideable
+private	object					DBG_ao_uncollideables[DBG_NB_UNCOLLIDEABLE]
+#endif
+
+separator "CONFIG"
+int										i_actif = faux_vrai
+int										i_body_size = enum( "0-Normal raptor" 0 "1-Small galiminus" 1 )
+int										i_action_init = enum ( "0-Normal Mode" 0 "1-Jump on KK" 1)
+float									f_anticipation_time_init = 0.0
+int										i_wait_trigger_attack = vrai_faux
+
+separator "ATTACK TRIGGER"
+trigger						trigger_attaque
+int								target_selection = enum("Use o_triggered_target" 0 "Use Trigger's GAO5" 1 "Normal target" 2)
+object						o_triggered_target	// used whith target_selection AI mode 0
+
+private object				o_force_target				// absolutely attack only that gao otherwise wait like a twit
+//private object						o_ignore_target
+
+separator "BV LIMITATION"
+object						BV_ZoneTerritoire	// only attack gaos inside this BV
+object						o_blind_zone[Ci_nbr_of_blind_zone]	// don't attack when gao in blind zone
+
+separator "SPECIAL FLAGS"
+int								i_SF_NePasSeRejouerSiMort		= vrai_faux		// Flag qui indique si l'acteur gere ou pas un SF de mort
+private int					i_SF_AlreadyDead_SFID				= -1				// N° du SF (Alloué Dynamiquement)
+
+
+
+// KONG
+separator "ACTEURS"
+private	object					o_KONG
+private	object					o_ANN
+
+message						m_interaction	// interaction utility message
+
+
+
+// GESTION DE LA VIE
+separator "LIFE"
+float									i_life_max = 20.0							// life points at start
+
+// PRECOMPUTED (computed once)
+private vector					v_PC_Dir[Ci_PCOMP_NB]
+private vector					v_PC_HDir[Ci_PCOMP_NB]
+private float						f_PC_Dist[Ci_PCOMP_NB]
+private float						f_PC_HDist[Ci_PCOMP_NB]
+
+// INTIMIDATION et FUITE
+separator "INTIMIDATION et FUITE"
+private	object					o_intimidator							// acteur qui intimide le raptor actuellement
+private	object					o_old_intimidator						// acteur qui a intimidé le raptor au début
+private 	float						f_time_last_check_fury = 0.0		// test de la fury de Kong
+private	int							i_intimidation_mode					// sous-mode d'intimidation (comportement)
+private	int							i_intimidation_type = 0				// type d'intimidation
+private	float						f_intimidation_reussie_delai_wait
+
+// ATTAQUE GROUPEE (autour de ANN)
+separator "ATTAQUE GROUPEE"
+private 	object					o_proie_groupe = nobody					// Proie d'une attaque groupée : ANN only
+private 	float						f_time_check_proie_groupe = 0.0		// heure de test d'attaque en groupe sur ANN
+private	int							i_proie_groupe_wait_done = vrai			// flag qui indique que le raptor a fini son attente avant de passer sur ANN
+private 	float						f_time_proie_groupe_wait = 0.0			// durée d'attente avant de passer à ANN
+private 	float						time_check_proie_groupe_grabbed		// heure de test si ANN s'était déjà faite grabbée par un autre raptor
+private	int							i_proie_groupe_grabbed					// indique que ANN s'est déjà faite grabbée par un autre raptor
+private 	float						f_proie_groupe_wait_delay					// délai d'observation avant de passer de KONG à ANN
+
+// INTERACTION
+private	messageid				mid_interaction								// fight interaction message
+private	object					o_interaction_target							// fight interaction client
+private	float						f_interaction_timer
+private	float						f_interaction_timer_max
+
+
+// FIGHT
+separator "FIGHT"
+float									f_dist_saute_loin				= 14.0		// dist max de saut sur le fight actor
+float									f_dist_saute_pres			= 9.0			// dist min de saut sur le fight actor
+float									f_randomise_jump_dist		= 0.10		// increase value for bigger randomness (ex: 0.1 brings 10% randomness)
+float									f_dist_safe_orbit				= 10.0		// orbit offset from f_dist_saute used after fleeing
+private	float						KK_f_dist_saute_loin_sqr					// f_dist_saute_loin ^2
+private	float						KK_f_dist_saute_pres_sqr					// f_dist_saute_pres ^2
+private	int							KK_i_fight_etat								// sous-mode des état fight (ANN et KONG)
+private	object					o_fight_actor									// proie
+private 	int							i_flag_grosse_impulsion = faux			// indique que le raptor va faire une grosse impulsion pour le saut car il a attendu
+private	float						f_time_last_cri_ANN = 0.0					// heure a laquelle le raptor a crié sur ANN pour la dernière fois
+private	int							i_flag_attente_fourbe						// indique que le raptor est en train d'observer KONG en attente d'attaque
+private	messageid				mid_best_interet								// message d'intéret
+private	int							i_flag_zde_fight_enable						// active la ZDE fight en afterblend
+//private	int							i_group_finish_attack						// see Ci_FinishAttack_xxx
+private	float						f_regard_fourbe_time						// how long have we been in <regard fourbe>
+private	int							i_attack_type									// see Ci_ATTACK_TYPE_xxx
+private	float						f_use_safe_orbit_timer						// timer to keep safe distance from kong by using the safe orbit
+private	messageid				mid_lastKongAttack							// data on the last attack on kong
+private	int							i_iam_a_kong_target						// target help for kong should he consider me?
+private	int							i_iam_a_kam_target							// should the kamera bother trying to have me in view
+private	float						f_locked_FA_timer							// countdown timer to keep attacking the same actor for a certain time
+private	object					o_locked_FA									// the locked fight actor
+private	float						f_wait_before_next_attack = 0.0
+
+
+// ORBIT CHAOS (to give more life and variation to raptors going around a target)
+private	float						f_orbitting_countdown						// how until the next change in the orbit so it doesn't look like the earth around the sun
+private	int							i_orbitting_speed								// slow or fast
+private	int							i_orbitting_uturn								// change turning side
+private	float						f_orbitting_angleOffset						// how many degrees off perpendicular we go
+
+// FINISH
+separator "FINISH"
+private float				f_finish_frame								// N° de frame courant de l'anim finish bras de fer
+private int				i_finish_end									// flag fin du bras de fer (gagné ou perdu)
+private float				f_finish_force_kong						// force de KONG pendant le bras de fer
+private float				f_finish_force_rex							// force de REX pendant le bras de fer
+
+private	float			f_I_finish_hardness	= 1.0				// Difficulté de la résistance au Finish
+private	float			f_I_finish_frequency	= 0.25			// Frequence de la tentative( enter 0.0 et 1.0)
+//private	int				i_I_finish_allowed							// Pour permettre 1 seule tentative de finish par attack
+private	messageid	mid_finishSynchro						// global message to synchronise the attack on kong
+private	float			f_timeSinceFinish						// how long have we been finishing (it's smaller then f_time_start_etat because of the abort time at begin)
+
+// RIDE SUR KONG
+separator "RIDE SUR KONG"
+private	int							i_ride_try_flag							// indique que le raptor peut demander une liaison ride (0 = not used,  1 = fais une demande, 2 = demande faite et echouee)
+private	object					o_bone_ride_KK						// bone de ride
+private	object					o_bone_ride_KK_uncol				// bone uncollide
+private	messageid				mid_bone_ride_KK_LNK_ID		// liaison de ride
+private	int							i_ride_attak								// flag qui indique que le raptor attaque Ann ou Kong pendant le ride sur Kong
+private	vector					v_ride_end_jump_pos				// position ou le raptor jète ANN après l'avoir grabbée
+private	int							i_ride_mode							// sous-mode de ride
+private	float						f_time_last_ride						// durée entre 2 attaques Ride
+private 	float						f_pos_blend_coef_ride				// coef de blend de positionnement en ride
+private	messageid				mid_finish_LNK_ID					// when trying to finish kong
+private	messageid				DBG_mid								// to be used everywhere instead of local (uninspectable)
+private	int							i_ride_pafGiven						// was a paf given during the ride						
+private	float						f_ride_attack_delay
+
+// BITE
+separator "BITE"
+private	int							i_flag_bite						// indique que le raptor peut paffer / grabber
+private	int							i_flag_bite_ok					// indique que le raptor a réussi à paffer / grabber
+private	int							i_flag_bite_leg					// indique que la proie est grabbé par la jambe
+private	int							i_flag_head_contact			// indique que la ZDE fight du raptor est en collision avec la ZDE corps de la proie
+private	float						f_head_bite_angle			// pour le suivi du regard
+
+// GRAB
+separator "GRAB"
+private	object					o_grab_actor							// acteur grabbé
+private	messageid				mid_grab_actor_LNK_ID			// liaison de grab_raptor
+// Deplacement en grab
+private	float						f_joy_norm
+private	vector					v_joy_dir
+private	float						f_way_rot_speed
+
+// LANCE
+separator "LANCE"
+private	vector					v_lance_pos					// position à laquelle le raptor a lancé sa proie qu'il grabbait 
+private	float						f_lance_side					// côté duquel le raptor a lancé sa proie qu'il grabbait (1.0 ou -1.0)
+private	int							i_flag_lance_done			// indique que le raptor a lancé sa proie qu'il grabbait
+
+// GRABBED BY KONG
+separator "GRABBED BY KONG"
+private	object					o_grabbed_actor_KK					// acteur qui me grabbe
+private	object					o_snap_actor								// acteur sur lequel je suis snappé
+private	vector					v_grabbed_pos_init_blend				// position init du positionnement afterblend en mode grabbé
+private	messageid				mid_grabbed_by_Kong_LNK_ID		// liaison grabbé
+private	vector					v_projection_dir							// Sens du lancer du Raptor
+private	int							i_projectile_mode = 0					// sous-mode de projectile
+private 	float						f_pos_blend_coef							// coef de blend de positionnement en état grabbed
+
+// ETATS
+separator "ETATS"
+private	int							i_sort_etat
+private	int							i_etat_courant = -1
+private	int							i_dernier_etat = -1
+private	function					fct_last_etat							// dernier état
+private	function					fct_main_etat							// état principal
+private	float						f_time_start_etat
+private	function					fct_track_change
+
+// SAUT
+separator "SAUT"
+private	int							i_jump_etat				// étape d'un saut
+private	vector					v_jump_pos			// position de destination du saut
+private	int							i_jump_seatnum		// which seat number (might be more than one) we're jumping on FA (fight actor)
+private	vector					v_jump_computedSpd
+private	float						f_jump_duration
+
+// DEPLACEMENT
+separator "DEPLACEMENT"
+private	int							i_moving_subState			// see Ci_MOVING_STATE_xxx
+private	int							i_moving_speedType		// animation choice based on this (unless actionType setup)
+private	int							i_moving_actionType		//
+private	object					o_moving_target				// target to follow
+private	object					o_flee_actor					// actor we need to flee (used when in Ci_MOVING_STATE_flee)
+private	float						f_flee_time						// if non null we need to go away from FA
+
+// NETWORK
+separator "NETWORK"
+int										i_net_mode = Cs_NETWORK_USE_ENUM
+object								o_net_head						// first node in the network to start with (can be a single gao)
+trigger								t_net_triggerNavigation		// when true, network is used by raptor
+//int										i_net_playHeadAtStart		// consider head network node already reached when starting network
+int										i_net_preHeadLinkMove = Cs_NETWORK_LINK_MOVE_ENUM	// how to move when going to the first node
+private	network					n_net_current_navnet		// current network used for navigation
+//private	object					o_net_current_node			// current node affecting our behaviour (it`s behind us as we move forward to the next node)
+private	object					o_net_nextNode				// current node affecting our behaviour (it`s behind us as we move forward to the next node)
+private	object					o_net_oldNode				// preveously traversed node or nobody
+private	int							i_net_justEnteredNode		// just entered the node's bv, we need to play it's action
+private	int							i_net_curLinkMove			// the way to move on the current link (see Ci_NETWORK_LINK_MOVE_xxx)
+private	int							i_net_curNodeAction		// current node's action to perform
+private	float						f_net_nodeActionTimer		// countdown for the current node action, when 0 go to next node
+private	int							i_net_doingNodeAction		// otherwise we are moving on a link
+private	vector					v_net_targetedPos			// next position to reach
+private	int							i_net_jumpLeftGround		// == 1 when we have become airborn and we can test for landing
+private	int							i_net_curLookOption		// where does the raptor look while on the current link
+private	object					o_net_lookGao				// if used, the gao looked by the raptor
+private	int							i_net_nodeReachedReq	// special behaviour on node reached 0 : not used  1 : don't reach  2 : force reached
+
+// PAF
+separator "PAF"
+private	int							i_paf_mortel = faux						// flag paf mortel
+private	int							i_snd_mort_done = faux
+private	int							i_flag_paf_check_done = vrai_faux	// flag détection des pafs déjà faite cette trame
+private	int							i_paf_type									// type de pafs (filtres)
+private	vector					v_paf_add_speed							// vitesse additionnelle à cause des pafs
+private	vector					v_paf_dir										// sens du paf
+private	object					o_paf_actor									// acteur qui m'a paffé (reset every frame to recompute)
+private	object					o_last_paf_actor							// acteur qui m'a paffé (reset every frame to recompute)
+private	int							i_mode_paf_action						// sous-mode de paf
+private	int							i_paf_projete								// 1 = flag effet baseball		-1 = ecrase au sol
+private	object					o_aide_tir_actor							// acteur vers lequel le raptor est projeté
+
+// DEAD
+private	float						f_time_before_desintegration			// when dead, this goes down to 0, when 0 -> desintegration happens
+// GESTION DE CHUTE
+private	float						f_time_en_lair				// durée de la chute
+
+// GFX FEET SMOKE
+//private 	float						f_feet_contact_duration[2]
+private 	int							GFX_Feet_Smoke[2] = (-1, -1)
+
+// CAMERA 
+private 	float		f_duree_dans_champ_camera = 0.0
+private 	float		f_duree_hors_champ_camera = 0.0
+private 	float		f_duree_champ_camera_min
+
+// ORIENTATION
+separator "ORIENTATION"
+private	vector				v_sens_deplacement			// direction de déplacement
+private	vector				v_sens_orientation				// direction d'orientation
+private	int						i_flag_rotation										// rotation demandée
+private	int						i_flag_rotation_requin							// mode requin
+private 	float					f_orbit_tangent_offset_angle = 0.0			// angle d'offset par rapport a la tangente d'orbitte pour s'en eloigner
+private	float					f_rotation_requin_sign_perfect = 0.0		// sens de contournement en requin (clockwise D=-1.0) (counter clockwise G=1.0)
+private	int						i_requin_demi_tour_flag			// indique que le raptor est en train de changer de sens de rotation requin
+private	vector				v_requin_demi_tour_vector			// nouvelle normale
+// OCCLUDERS
+private	int						i_pathToFAIsOccluded					// the direct path to where we're going (Kong, Ann, etc.) goes around occluder(s)
+
+// DEPLACEMENT & ANIM
+separator "TAG"
+#include "ROOT\EngineDatas\04 Technical Bank\AI Models\Global Library\exec_deplacements.var"
+
+// IK FEEDBACK VISUEL PAF ==========================
+private 	float						f_visual_paf_coef
+private	float						f_visual_paf_last_time
+private	vector					v_visual_paf_dir
+// IK PAFS ========================================
+private vector						v_bassin_pos
+private float							f_visual_paf_Z_offset
+private float							f_visual_paf_rot_coef
+private vector						v_visual_paf_quaternion
+// IK GENERALE ===================================
+separator "IK GENERALE"
+private	 float						f_bassin_Z_offset
+private 	vector					v_IK_bassin_paf_offset
+private 	float						f_walk_offset[Ci_IKRaptor_NbMax]
+private	int							i_flag_climb_IK[Ci_IKRaptor_NbMax]
+private	int							i_flag_walk_IK[Ci_IKRaptor_NbMax]
+private	float						f_IK_speed[Ci_IKRaptor_NbMax]
+private 	float						f_IK_ground_coef[Ci_IKRaptor_NbMax]
+private 	vector					v_virtual_banking = Cv_VerticalVector
+private	float						f_IK_coef[Ci_IKRaptor_NbMax]
+private 	vector					v_IK_dest_pos[Ci_IKRaptor_NbMax]
+private 	vector					v_IK_local_offset[Ci_IKRaptor_NbMax]
+private 	vector					v_IK_ground_normale[Ci_IKRaptor_NbMax]
+private	vector					v_IK_bone_last_valid_sight[Ci_IKRaptor_NbMax]
+private	vector					v_IK_bone_last_valid_banking[Ci_IKRaptor_NbMax]
+private	float						af_IK_bones_length[Ci_IKRaptor_NbMax][2]
+private	object					ao_IK_bones[Ci_IKRaptor_NbMax][4]
+private	float						f_IK_bassin_rot_angle
+private 	int							i_head_bone_nb
+private	object					ao_head_bones[6]
+// REGARD ======================================
+private	vector					v_look_virtual_sight
+private	float						f_look_angle_blend_speed
+private	int							i_flag_look
+private	vector					v_look_pos
+private	vector					v_look_head_pos
+private	vector					v_look_banking
+private	float						f_look_blend_coef
+// IK LEGS =======================================
+private	int							raptor_type = C_ID_Raptor
+private	int							i_flag_IK_ground_index
+private float							f_IK_offset[Ci_IKRaptor_NbMax][2]
+// LOOK =========================================
+private vector			v_look_axis
+private vector			v_last_look_pos
+private vector			v_look_pivot_pos
+private vector			v_bezier_head_look_pos
+private int				i_flag_look_best_interet
+private int				i_flag_perfect_look
+private float				f_look_in_dead_cone_sign
+private float				f_look_axis_length
+private float				f_look_dot_product
+// IK NECK =======================================
+private int			i_flag_back_jump
+// BEZIER NECK ==================================
+private float			f_neck_vert_coef
+private float			f_neck_col_duration
+private float			f_neck_B_weight
+private float			f_neck_C_weight
+private float			f_neck_bezier_coef					= 1.0
+private float			af_neck_bone_bezier_coef[5]		= (1.0, 0.8, 0.6, 0.4, 0.2)
+private float			f_neck_length
+private float			af_neck_bone_length[4]
+private float			f_look_head_coef
+
+// BUDY (COPAINS)
+private 	int			i_budy_nb
+private 	object	ao_budy[20]
+private 	int			i_flag_visual_check_done
+
+// UNCOL
+private	int			i_uncol
+private	object	o_uncol_actor
+
+// GFX BLOOD
+private int			GFX_Blood[10] = (-1, -1, -1, -1, -1, -1, -1, -1, -1, -1)
+private int			ai_blood_bone_index[10]
+private float			af_blood_delay[10]
+private vector		av_blood_bone_offset[10]
+private vector		av_blood_bone_normale[10]
+
+
+separator "WALL EFFECT AI  FOR GFX"
+object 				o_Wall_Effect //MUST HAVE /06 levels/_Kanada/_basic/_basic_SFX_light_and_smoke_KK  included in all maps!!!  If not, comment the default value out
+private float 		f_global_time
+private float 		f_raptor_RightfootRunGFX_time = 0.0
+private float 		f_raptor_LeftfootRunGFX_time = 0.0
+private float 		f_raptor_RightfootWalkGFX_time = 0.0
+private float 		f_raptor_LeftfootWalkGFX_time = 0.0
+private float 		f_raptor_runGFX_delay = 0.3
+private float 		f_raptor_walkGFX_delay = 0.8
+private float 		f_throwTime = 0.0
+private float 		f_throw_delay= 1.0
+
+
+
+private float		f_tremble_time[Ci_Nb_tremble_bone]
+private float		f_tremble_delai[Ci_Nb_tremble_bone]
+private float		f_a[Ci_Nb_tremble_bone]
+private float		f_a1[Ci_Nb_tremble_bone]
+private float		f_b[Ci_Nb_tremble_bone]
+private float		f_b1[Ci_Nb_tremble_bone]
+private int		i_tremble_axe[Ci_Nb_tremble_bone]
+
+
+// GESTION DE LA VIE
+private messageid	ID_LIFE
+
+vector			v_sight_epaule = cvector(-0.0925, 0.9361, 0.3393)
+vector			v_banking_epaule = cvector(-0.1425, 0.3248, -0.9350) 
+vector			v_pos_epaule = cvector(-0.0491, 0.4429, 0.2857)
+
+private int			i_KK_blesse
+
+private	float		f_delai_change_anim_attente
+
+private	int			i_interaction_modulo
+
+private	float		f_time_way_block
+private	float		f_time_way_block_last_attack
+private	int			i_way_block_attack = faux_vrai
+
+
+// REGLAGE FINISH
+separator "REGLAGE FINISH"
+float							f_X_pos = -0.7
+float							f_Y_pos = 0.1
+float							f_Z_pos = 0.5
+vector						v_sight = cvector(0,1,0)
+vector						v_banking = cvector(0,0,1)
+
+// FINISH SUR KONG
+private	object				ao_spawned[Ci_spawned_max_nb]
+private	int						i_spawned
+private	messageid			mid_I_finish_LNK_ID
+private	object				o_I_finish_actor
+private	object				o_I_finish_actor_ref		// backup de l'acteur à l'init du mode
+private	vector				v_I_finish_pos_init
+private	int						i_I_finish_leader
+private	float					f_I_finish_pos_coef
+private	int						i_I_finish_role
+private	int						i_jump_exit		// pour le ride
+private	int						i_I_finish_init_done
+private	int						i_I_finish_synchronized_nmi
+private	int						i_I_finish_action_seplace
+private	int						i_I_finish_action_challenge
+private	int						i_I_finish_action_kong_perd
+private	int						i_I_finish_action_kong_gagne
+private	int						i_I_finish_action_liaison
+private	int						i_I_finish_start_frame
+private	float					f_I_finish_fake_attitude_timer
+
+// STATS
+private	int						i_stats_nmi_killed_done
+
+private	int						i_snd_respiration_loop = -1
+
+private	float					f_time_intimidate_observe
+
+// RETOUR
+separator	"RETOUR"
+object				o_retour_WP = nobody
+private	network				n_retour_net
+
+
+private	float		f_time_last_bite_Jack
+
+
+private	int				i_foodchain_eat_slots_nb = 1
+private	int				i_foodchain_eat_slots_free
+float						f_point_de_viande = 5.0

@@ -1,0 +1,63 @@
+// Define at least one function in a track
+function track0 = "TROW_Init"
+// function track1 = "name"
+// function track2 = "name"
+// function track3 = "name"
+// function track4 = "name"
+
+separator "Dynamique Point"
+float					f_X_friction = 8.0
+float					f_Y_friction = 4.0
+
+separator "Moteur"
+float					f_analog_speed = 10.0
+float					f_speed_max = 20.0
+
+float					f_acceleration = 50.0
+float					f_decceleration = 50.0
+
+// ETAT
+private int			i_etat_courant		= -1
+private int			i_dernier_etat		= -1
+private int			i_flag_sortie_etat
+
+private int			i_etat_phase
+
+private float			f_time_start_etat
+private float			f_etat_phase_duration
+
+private function	fct_main_etat
+private function	fct_last_etat
+
+// COLLISION
+private int			i_col_gmat_id
+
+private float			f_delay_since_last_ground_col
+private float			f_ground_col_duration = Cf_Infinit
+
+private float			f_delay_since_last_wall_col
+private vector		v_col_wall_normal
+
+private vector		v_col_ground_pos
+private vector		v_col_ground_normal = Cv_VerticalVector
+
+// PENCHING TM
+private vector			v_last_real_banking
+private vector			v_last_speed
+private float				f_speed_angle
+
+// DYN
+private int				i_flag_Y_slide
+
+private float				f_real_speed
+private float				f_wanted_speed
+private float				f_wanted_traction
+
+// BACKUP SIGHT & BANKING
+private vector			v_real_banking
+private vector			v_real_sight
+
+// TEST GRAV AGAINST WALL
+private vector			v_before_wall_col_speed
+private float				f_wall_walk_coef
+private float				f_on_ground_duration

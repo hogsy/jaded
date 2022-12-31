@@ -1,0 +1,39 @@
+// Define at least one function in a track
+//function track0 = "C_reflex"
+// function track1 = "name"
+function track2 = "C_init"
+// function track3 = "name"
+// function track4 = "name"
+
+// CONFIG
+separator "Config"
+int							type = enum("Raptor"14 "Galiminus"22 "Trex"16 "Bat"20 "Indigene"13 "SwampCrawler"15 "BidocheLance"33 )
+int							i_always_active_ON = faux_vrai				// flag qui indique que le cadavre saigne même si le jouer n'est pas à proximité
+float						f_point_de_viande		= -1.0
+int							i_LD_grab_transporte_ON = faux_vrai				
+int							Update_Territory = vrai_faux
+
+// ETATS
+separator "Etat"
+private int				i_etat_courant = -1		// état courant
+private int				i_etat_ancien = -1		// dernier état
+private int				i_sort_etat = faux			// test sortie d'état
+private function 		fct_last_etat				// fonction du dernier état
+
+// GRAB
+separator "Grab"
+private messageid	mid_grab											// messageid pour le grab_transporte
+private vector			v_decalage_pos = Cv_NullVector			// vecteur de positionnement entre le cadavre et le perso qui l'a attrapé
+
+// CALLBACK
+private object			o_afterblend_actor
+private vector			v_local_sight
+private vector			v_local_banking
+
+// TERRITORY
+private int				i_territory = -1
+private vector			v_last_pos
+
+//BIDOCHE
+private object			o_plug_to
+private int				i_propose = faux_vrai

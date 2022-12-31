@@ -1,0 +1,198 @@
+// Define at least one function in a track
+function track0 = "PNJ_Quadri_Init"
+// function track1 = "name"
+// function track2 = "name"
+// function track3 = "name"
+// function track4 = "name"
+
+int						creature_type = enum("Rhino" 0 "Tigre" 1)
+private int			i_monture_ID = -1
+int						agressif = vrai_faux
+
+separator "Pouvoir"
+int						monture_action = enum("Saut" 0 "Dash" 1)
+
+separator "Dynamique Point"
+float					f_X_friction = 3.0
+float					f_X_slide_friction = 1.0
+float					f_X_limit_speed = 7.0 
+
+float					f_Y_friction = 6.0
+float					f_Y_slide_friction = 2.0
+float					f_Y_limit_speed = 7.0
+
+separator "Dynamique Rotation"
+float					f_rot_friction = 2.0
+float					f_rot_speed_max = 2.5
+
+separator "Moteur"
+float					f_analog_speed = 8.0
+float					f_speed_max = 20.0
+
+float					f_acceleration = 12.0
+float					f_decceleration = 4000.0
+
+separator "Dash"
+float					dash_duration = 2.0
+
+separator "Collision"
+float					big_collision_speed = 15.0
+
+separator "Course"
+int						DISPLAY = faux_vrai
+float					f_course_pilotage_coef = 0.0 // -1.0 => Nul / 1.0 => Tout à la corde
+
+// ETAT
+private int			i_etat_courant		= -1
+private int			i_dernier_etat		= -1
+private int			i_flag_sortie_etat
+
+private int			i_etat_phase
+
+private float			f_time_start_etat
+private float			f_etat_phase_duration
+
+private function	fct_main_etat
+private function	fct_last_etat
+
+// MAIN ACTOR
+private object		o_main_actor
+
+// JOY
+private vector		v_joy_dir
+
+// COLLISION
+private int			i_col_gmat_id
+private int			i_flag_quadri_collision
+
+private float			f_delay_since_last_ground_col
+private float			f_ground_col_duration = Cf_Infinit
+
+private float			f_delay_since_last_wall_col
+
+private vector		v_col_ground_pos
+private vector		v_col_ground_normal = Cv_VerticalVector
+
+private vector		v_col_front_left
+private vector		v_col_front_right
+private vector		v_col_back
+
+// ACTION
+private float				f_stop_duration
+private int				i_last_action
+private int				i_last_frame
+private int				ai_action_index[10]
+private float				af_action_speed[10]
+
+// PILOTAGE
+private vector			v_head_sight = cvector(0.0, -1.0, 0.0)
+
+// PENCHING TM
+private vector			v_last_speed
+private vector			v_virtual_banking
+private float				f_speed_angle
+
+// DASH
+private float				f_dash_duration
+
+// IK LEGS
+private float			f_bassin_Z_offset
+
+private int			i_flag_leg_IK[4]
+
+private float			f_IK_Z_offset[4]
+private float			f_IK_coef[4]
+private float			af_IK_bones_length[4][3]
+private float			f_IK_leg_length[4]
+private float			f_IK_ground_coef[4]
+
+private vector		v_IK_ref_ground_pos
+private vector		v_IK_ground_normale[4]
+
+private object		ao_IK_bones[4][3]
+
+private object		o_bassin
+
+
+// RIDED
+private	object		o_Rided_Actor
+private	messageid	mid_Rided_LNK_ID
+private	float			f_Rided_Jump_coef
+private	float			f_Rided_last_time
+private	int				i_Rided_last_trame
+
+
+// DYN
+private int				i_flag_Y_slide
+
+private float				f_real_speed
+private float				f_wanted_speed
+private float				f_wanted_traction
+
+// VEHICULE MANAGER
+private object		o_montures_manager
+private int			i_my_index = -1
+private int			i_dodge_index = -1
+private float			f_dodge_extrusion
+
+// COURSE
+private network	n_course_net
+
+private object		o_previous_wp
+private object		o_current_wp
+private object		o_next_wp
+
+// ROPE MANAGER
+private object		o_rope_manager
+
+// PSEUDO SOLID ROT SPEED
+private float			f_rot_speed
+private float			f_rot_torque
+private float			f_rot_current_friction = 1.0
+
+private	vector	v_last_sight
+
+// TRAME
+private int			i_trame_nb
+
+// JUMP
+private int			i_flag_jump
+
+// COURSE RANK
+private int			i_my_rank
+
+// FAKE PILOT
+private object		o_fake_pilot
+
+// WATER
+private int			i_flag_water_col
+
+private float			f_in_water_depth
+
+private vector		v_water_pos
+private vector		v_water_normal
+
+// GRABED
+private object				o_snap_bone
+private object				o_eagle
+private messageid		mid_eagle_LNK
+
+// PENDULE
+private vector				v_grav_pos
+private vector				v_grav_speed
+
+// SNAP IK
+private float				f_grab_side_sign
+
+// GFX EYES
+private int				GFX_Halo_G = -1
+private int				GFX_Halo_D = -1
+
+// GFX SMOKE
+private int				GFX_Smoke[4] = (-1, -1, -1, -1)
+
+private int				i_hotspot
+
+// BACKUP SIGHT & BANKING
+private vector			v_real_banking
+private vector			v_real_sight

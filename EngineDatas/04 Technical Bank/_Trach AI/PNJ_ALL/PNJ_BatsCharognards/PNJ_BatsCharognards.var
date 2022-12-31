@@ -1,0 +1,543 @@
+#include "BC_defines.var"
+
+//================================================================================================
+// 															DOCUMENTATIONS SUR LES BATS
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// 		file:///Y:/KK_Prod_site/Archive_Docs/Doc_LD/Aides_Techniques_LD/LD_Doc_Instanciation_Bats.doc
+// 		file:///Y:/KK_Prod_site/Archive_Docs/Doc_GD/Fiche%20Monstre%20Bat%20EN.doc
+//================================================================================================
+
+// function track0 = "name"
+//function track1 = "name"
+function track2 = "BC_init"
+//function track3 = "name"
+// function track4 = "name"
+
+// CONFIGURATION GENERALE
+separator "CONFIG GENERALE"
+int							i_actif = faux_vrai
+int							i_modele = enum( "0 - Grise (standard)" 2 "1 - Rouge (facile)" 1 "2 - Noire (difficile)" 3 "3 - Mini (Bidoche)" 4 )	// Ci_MODELE_Bat_Grise ; Ci_MODELE_Bat_Rouge ; Ci_MODELE_Bat_Noire ; Ci_MODELE_Bat_Mini
+int							i_etat_init = enum( "0 - En Vol" 0 "1 - Perchee" 1 "2 - Cachee" 2 )
+int							i_bat_perchee_retour = enum( "Retour Perchee" 1 "Retour Vol Ronde" 0 )
+network					n_net														// réseau pour l'attente en ronde
+network					n_attaque												// réseau pour les déplacements (attaque, fuite, suivi de charogne...)
+object					o_zone_activite = nobody							// Territoire de la bat (none => pas de limite)
+object					o_blind_zone = nobody								// BV dans laquelle la bat ne voit rien
+int							i_LD_HumanDontShootOnMe = vrai_faux		// si vrai, les marins ne tirent pas sur la bat
+private	float			f_zoom = 0.0											// taille de la bat (coef de zoom) 0.0 => random IA
+private	int				i_repousse_pendant_attaque = vrai_faux		// si vrai, un repousse peut interrompre une attaque
+int							i_batR_acceleration_flag = faux_vrai		// si vrai, les bats rouge accélèrent lorsqu'elle attaquent et qu'elles sont hors de l'écran
+separator "HP et FoodChain"
+float						f_LD_HP_max									// Nb de HP max (0.0 = default)
+private	float			f_HP_max										// Points de vie max
+private 	float			f_HP												// Points de vie courant
+float						f_LD_PointsViande							// Nb de Pts Viande max (-1.0 annule la foodchain / 0.0 = default)
+private	float			f_point_de_viande								// Points de viande (food-chain)
+private	float			f_time_meat_bite
+int							i_points_de_chute = faux_vrai					// si vrai, la bat cherche un point de chute pour tomber, sinon elle tombe en vrille à la renverse
+separator "CHOIX DU MODE"
+int							i_mode_agressif_ON = enum( "Charognard" 0 "Agressive" 1 )
+separator "SPECIAL - DO NOT USE WITHOUT VINCE -"
+int							i_disable_net_optim = vrai_faux							// suppr l'optim calcul réseau aller-retour
+int							i_disable_atterrissage_dist_check = vrai_faux		// ne pas tester si on a atterrit exactement où on voulait
+separator "CONFIG AGRESSIVE"
+private	int				i_agressive 					// si vrai, la bat est agressive au lieu d'être un charognard
+trigger					trig_attaque												// trigger pour que la bat apparaisse et attaque immédiatement
+int							i_trig_attaque_cible = enum("GAO5" 0 "GAO spécifique" 1)		// le Gao5 retourné par trig_attaque ou o_attaque_gao_specifique
+object					o_attaque_gao_specifique = nobody			// gao à attaquer si i_trig_attaque_cible = 'GAO spécifique'
+object					o_zone_choix_target = nobody					// Zone dans laquelle la bat agressive peut choisir une nouvelle cible si sa cible principale disparait (none => zone de territoire)
+object					o_ignore_target = nobody
+trigger					trig_stop_attaque
+int							i_attaque_a_partir_de_la_ronde = vrai_faux 	// si vrai, la bat reste sur le réseau de ronde jusqu'à ce qu'elle obtienne la priorité pour attaquer
+int							i_attaque_a_partir_des_wp = faux_vrai			// si vrai, la bat attend d'être positionnée sur un wp d'attaque pour attaquer
+private	int				i_attaque_infinie = vrai_faux						// si vrai, pas de timer de fin d'attaque
+int							i_paf_change_target = vrai_faux					// si vrai, la cible devient l'auteur du paf
+private	float			f_last_time_paf_change_target
+float						f_LD_attaque_delai = 0.0
+private	float			f_attaque_delai								// délai entre 2 attaques
+// BOSS (MODE ATTAQUE FINALE)
+separator "BOSS & Co"
+int							i_config_boss = enum ( "0 - Default" 0 "1 - Lieutenant" 1 "2 - Boss" 2 "3 - Follower" 3 )
+private	object		o_attaque_finale_wp_chute		// wp de chute spécifique
+object					o_attaque_finale_decor				// gao animé correspondant au point de chute
+private	int				i_attaque_finale_paf					// indique si la bat s'est pris son paf d'attaque finale (coup de grâce)
+private	int				i_attaque_finale_cine_paf			// flag qui indique que la bat noire s'est prise un paf pour la ciné de fin 03B
+object					ao_boss_attack_wp[Ci_boss_attack_wp_nb]
+object					ao_boss_retreat_wp[Ci_boss_attack_wp_nb]
+private	object		o_boss_attack_wp
+private	object		o_boss_retreat_wp
+private	int				i_boss_last_wp_index = -1		// aucune exclusion de wp la 1ère fois
+private	int				i_boss_attack_init
+private	int				i_lieutenant_count_old
+int							i_mode_neuneu = vrai_faux
+int							i_DBG_boss_display_infos = vrai_faux
+separator "--- Boss' Followers ---"
+private	float			f_boss_attack_speed_pct = 0.7
+private	float			f_boss_ronde_delai_take_paf
+object					o_follow_gao
+vector					v_follow_offset
+private	int				i_follow_already_seen
+private	float			f_follow_not_visible_duration
+float						f_follow_sin_desynchro = 1.0
+private	float			f_follow_blend_coef
+// GRAB ATTACK
+separator "GRAB (BATS GRISES ET NOIRES)"
+int							i_LD_grab_on = vrai_faux				// permet de brider la fonction de grab sur les bats grises et noires
+private	int				i_model_grab_on = vrai_faux
+private	object		ao_grab_target[10]
+private	int				i_grab_target_nb = 0
+			object		o_grab_target_1 = nobody				// gao à grabber supplémentaire
+			object		o_grab_target_2 = nobody				// gao à grabber supplémentaire
+			object		o_grab_target_3 = nobody				// gao à grabber supplémentaire
+private	int				i_grab_all_but_jack = faux
+// SPECIAL FLAG
+separator "SF"
+int							i_SF_NePasSeRejouerSiMort		= vrai_faux		// Flag qui indique si l'acteur gere ou pas un SF de mort
+private 	int				i_SF_AlreadyDead						= -1				// N° du SF (Alloué Dynamiquement)
+// VARS DEVENUES PRIVEES
+private	float			f_attaque_dist_stoppe_poursuite			// distance max de déplacement de la cible pour annuler la poursuite
+private	float			f_attaque_duree_poursuite					// durée max de la poursuite
+// [DEBUT] OFFSET DE POSITIONNEMENT PAR RAPPORT A LA TETE DE LA CIBLE
+// position d'attente
+private	float			f_attaque_pos_horiz_wait
+private	float			f_attaque_pos_vert_wait
+// position pour lancer l'attaque
+private	float			f_attaque_pos_horiz
+private	float			f_attaque_pos_vert
+// position pendant l'anim d'attaque
+private	float			f_attaque_pos_horiz_anim
+private	float			f_attaque_pos_vert_anim
+// [FIN] OFFSET DE POSITIONNEMENT PAR RAPPORT A LA TETE DE LA CIBLE
+private	int				i_take_paf = faux_vrai								// si faux, la bat est insensible aux pafs (defaut : vrai)
+private	int				i_paf_cut_cine = faux_vrai							// si vrai, les pafs sortent la bat du mode ciné
+private 	int				i_nb_attaques_simultanees					// nombre d'attaques simultanées
+private	float			f_attaque_delai_change_wp					// délai pour changer de wp d'attaque
+private	int				i_cine_attaque_fake_nb = 0
+// PAUSE
+separator "Vol Pause"
+private 	int				i_pause_mode
+private 	object		o_wp_pause											// wp de pause courant
+private 	object		ao_tab_wp_pause[10]								// Tableau des wp de pause (réseau de ronde, atterrissage forcé)
+private	int				i_tab_wp_pause_count								// Nb de wp de pause
+// CHAROGNE
+separator "Charogne"
+private object			o_cible = nobody			 							// cible du déplacement (wp, charogne)
+private int				i_charogne_ID	= -1									// ID de la charogne
+private float				f_cible_poids = 0.0									// poide de la cible
+private messageid	mid_grab_charogne									// message id pour la synchro avec la charogne transportée
+private vector			v_grab_object_pos									// position de grab
+private messageid 	mid_interet_charogne								// id du message d'intérêt concernant la charogne (pour que d'autres bats ne viennent pas)
+private int				i_mange_mode = -1									// manger pour gouter / emporter (bat charognard) ou bien pour tuer (bat agressive dans son nid)
+
+// ATTAQUE
+separator "Attaques"
+private object			o_cible_attaque = nobody							// cible de l'attaque (agresseur)
+private object			o_cible_attaque_contact = nobody				// cible de l'attaque (agresseur) RENSEIGNE UNIQUEMENT LORSQUE LA BAT EST ARRIVEE AU CONTACT (pour savoir s'il faut reparcourir le réseau ou pas)
+private int				i_agresseur_ID = -1									// ID de l'agresseur
+private messageid 	mid_interet_attaque									// id du message d'intérêt concernant l'acteur à attaquer
+private int				i_flag_obstacle = faux								// flag qui indique que le bat a rencontré un obstacle sur le chemin de son attaque
+private	float			f_obstacle_duration = 0.0							// durée pendant laquelle la bat reste en face d'un obstacle
+private int				i_flag_net_1st_move = faux						// flag pour le 1er positionnement de la bat sur le réseau		// vagues successives ( si on lui a retiré dessus pendant qu'il attaquait)
+private int				i_attack_mode	 = Ci_attack_mode_aucun		// mode d'attaque : attaque en piqué ou tentative de grab
+private float				f_time_last_attaque = TIME_Get()							// délai entre 2 lancements d'attaques
+private float				f_time_debut_wait_hors_champ = 0.0			// heure à laquelle la bat a commencé à attendre hors champ
+private int				i_flag_exit_mode = faux							// flag indiquant qu'il faut arrêter la poursuite de la cible
+private float				f_rotation_angle_courant						// angle max de rotation en attaque falaise
+private float				f_check_obstacle_dist = Cf_dist_obstacle_vol		// distance de check obstacle
+private vector			v_falaise_init_cible_pos								// position initiale de la proie lors du passage en mode attaque falaise
+private int				i_flag_reserve_interet = faux						// flag mis à vrai dans le cas d'une bat qui attaque depuis le réseau de ronde et pas uniquement depuis un wp d'attaque
+private int				i_paf_send = faux
+private float				f_zde_fight_size_coef = 1.0
+private int				i_paf_to_send_type = 0								// type de paf à envoyer
+private	float			f_delay_humain_last_paf_time = 0.0
+private	int				i_attaque_positionnement = 0
+private	int				i_fight_wait_begin_mode = 0
+private	float			f_attaque_pos_delta
+private	float			f_time_attaque_fin_desynchro = 0.0
+private	int				i_attaque_fin_desynchro_flag = faux		// désynchronisation des bats pour la fin de l'attaque
+private 	object		o_attaque_fin_desynchro_gao = nobody
+private	float			f_time_attaque_fin_desynchro_min
+private	float			f_time_attaque_fin_desynchro_max
+private	float			f_time_attaque_fin_desynchro_delai_min
+private	int				i_fight_exit_flag = faux
+private	int				i_fight_fake_wait = faux
+private	float			f_time_fight_fake_wait = 0.0
+private	vector		v_fight_fake_position				// position à atteindre lors d'un déccrochage d'une bat perchée réveillée, mais personne dans sa BV
+private	vector		v_fight_wait_pos
+private	float			f_time_since_last_obstacle = 0.0		// temps écoulé depuis le dernier obstacle détecté
+private	float			f_plongeon_abort_dist = 0.0
+private	float			f_plongeon_cos_min = 0.0
+private	float			f_plongeon_desynchro_time = 0.0
+private	int				i_1st_attaque_flag
+
+// PAFS & PV
+separator "Pafs"
+private int				i_flag_agonie = faux									// flag qui indique que la bat agonise
+private object			o_best_paf_pere = nobody							// père du plus gros paf reçu
+private float				f_sum_pafs_force = 0.0								// dégats des pafs de la trame
+private vector			v_sum_pafs_dir = Cv_NullVector					// vecteur de recul des pafs de la trame
+private vector			v_last_paf_sight = Cv_NullVector				// opposé du sight du dernier paf reçu (pour s'orienter vers la source)
+private vector			v_pos_avant_paf = Cv_NullVector				// position du bat avant de se prendre un paf
+private int				i_paf_type												// types des pafs reçus
+private int				i_ecrase_snd_mort = faux
+private	float			f_paf_head_multiplicateur = 0.0
+private	float			f_paf_wing_multiplicateur = 0.0
+private	float			f_paf_moyen_dmg
+private	float			f_paf_cumul_dmg
+private	float			f_paf_important_dmg
+private	int				i_paf_faible_flag
+private	int				i_paf_moyen_flag
+private	int				i_paf_important_flag
+private	float			af_paf_cumul_time[Ci_paf_cumul_max]		// pour cumuler les pafs qui font [Cf_tommy_gun_paf] dégats
+private	float			af_paf_cumul_dmg[Ci_paf_cumul_max]		// pour cumuler les pafs qui font [Cf_tommy_gun_paf] dégats
+private	int				i_paf_cumul_nb = 0
+private	int				i_paf_explose_flag
+private	int				i_paf_explose_type
+private	float			f_paf_pause_time = 0.0
+private	float			f_paf_moyen_pause_time = 0.0
+private	float			f_paf_important_pause_time = 0.0
+private	float			f_paf_offset_coef = 0.0
+private	vector		v_paf_offset
+private	float			f_paf_faible_recul_coef = 0.0
+private	float			f_paf_moyen_recul_coef = 0.0
+private	float			f_paf_important_recul_coef = 0.0
+private	float			f_paf_repousse_recul_coef = 0.0
+private	float			f_paf_explose_recul_coef_shotgun = 0.0
+private	float			f_paf_explose_recul_coef_sniper = 0.0
+private	float			f_paf_delai_aucune_attaque = 0.0			// délai pour ne pas réattaquer aprs un moyen ou gros paf (pour la bat noire)
+
+// DEPLACEMENT
+separator "Déplacement"
+private vector			v_cible_pos = Cv_NullVector						// position de la cible (trace de sang ou agresseur)
+private vector			v_dest_pos = Cv_NullVector						// position de la cible (trace de sang ou agresseur)
+private vector			v_dest_sight = Cv_NullVector						// sight du wp de destination
+private vector			v_decalage = Cv_NullVector						// altitude à laquelle reste le bat au-dessus de la cible
+private int				i_flag_depl_horiz = faux								// flag qui indique que le bat vole à l'horizontale
+private int				i_flag_depl_fini = faux								// flag qui indique que le lien a été parcouru en entier
+private float				f_rot_blend_coef = 0.0								// coef de blend pour se tourner
+private object			o_cible_depl = nobody								// objet cible du déplacement sur le réseau
+private int				i_mode_depl = 0										// mode de déplacement sur le réseau
+private int				i_flag_depl_wp_apres_reseau = faux			// flag qui indique que le bat effectue son dernier depl après le réseau (suivi charogne)
+private int				i_flag_reach_attack_wp = faux					// flag qui indique que le bat effectue un déplacement pour se positionner sur un point d'attaque
+private object			o_backup_nearest_cible_wp = nobody			// backup du wp de déplacement de la cible au moment du calcul du wp d'attaque
+																						// (pour savoir si la cible a bougé et qu'il faut recalculer un nouveau point d'attaque ou non)
+private object			o_backup_wp_depl_utilise = nobody			// backup du wp de depl auquel la bat s'est positionnée pour ensuite attaquer
+private	int				i_attak_wp_reserve = faux
+private	int				i_speed_beziers_flag = faux						// si vrai indique que la vitesse à calculer va servir pour une béziers				
+private	int				i_speed_vertical_flag = faux						// si vrai indique que la vitesse à calculer va servir pour une béziers				
+
+// RESEAU DE DEPLACEMENT
+separator "Réseau"
+private network		n_reseau												// réseau du dépacement courant
+private object			ao_reseau_wp[Ci_max_reseau_wp]				// tableau des wp pour le réseau à suivre
+private int				i_reseau_wp_count = 0								// nb de wp à franchir pour parcourir le réseau
+private int				i_flag_net_1st_calcul = faux						// flag 1er calcul du réseau (à utiliser qd le bat rentre dans un réseau alors qu'il n'était pas dans un réseau avant)
+private int				i_flag_reseau_array = faux							// flag qui indique que le bat suit le réseau calculé dans ao_reseau_wp
+private int				i_net_move_wp_nb									// nb de wp du réseau
+private object			ao_net_move_wp[Ci_max_reseau_wp]			// tab des wp du réseau
+
+// BALANCIER
+separator "Balancier"
+private vector			v_balancier_pos = Cv_NullVector				// position du balancier
+private vector			v_balancier_speed = Cv_NullVector				// vitesse du balancier
+
+// DUREES
+separator "Durees"
+private float				f_time_action = 0.0						// timers spécifiques aux actions
+private float				f_time_mort = 0.0
+private float				f_time_agonie = 0.0
+
+private float				f_time_air = 0.0							// temps écoulé depuis que le bat a décollé
+
+// CAMERA
+private int				i_flag_attente_hors_champ
+private float				f_duree_dans_champ_camera = 0.0			// durée depuis laquelle la bat n'est plus hors-champ
+private float				f_duree_wait_hors_champ = Cf_duree_wait_hors_champ
+private float				f_duree_min_dans_champ = Cf_duree_min_dans_champ
+private	float			f_on_screen_pourcent = 0.0
+
+// SUIVI DU REGARD
+separator "Vision - suivi du regard"
+private 	vector		v_look_pos												// position de l'objet à regarder (destination)
+private 	vector		v_cur_look_pos										// point de regard actuel
+private 	int				i_flag_neck = faux									// flag pour activer le suivi du regard
+
+// CONE DE VISION
+separator "Cone de vision"
+private object			ao_head_bones[Ci_head_bones_count]		// tableau des os de la tête
+private vector			v_look_head_pos										// position de la tête du bat
+private vector			v_look_axis												// axe de vision du bat (en fait c'est le banking de l'os de la tête)
+private int				i_seen_actor_nb = 0								// nb d'acteurs vus
+private messageid	amid_seen_actor[50]								// tableau des acteurs vus
+
+// TAG
+separator "Tag"
+#include "ROOT/EngineDatas/04 Technical Bank/AI Models/Global Library/exec_deplacements_tag.var"
+
+// ETATS
+separator "Etat"
+private int				i_etat_courant = -1									// état courant
+private int				i_etat_ancien = -1									// dernier état
+private int				i_etat_ancien_ancien = -1									// dernier état
+private int				i_sort_etat = faux										// test sortie d'état
+private function 		fct_last_etat											// fonction du dernier état
+private float				f_time_start_etat = 0.0
+
+// MAIN ACTORS
+separator "Main Actors"
+private object			o_jack													// Jack
+private object			o_ann													// Ann
+private object			o_jimmy													// le gamin
+private object			o_denham
+
+// ENVOL
+private	int				i_envol_palier											// N° de palier pour l'envol
+private 	float			f_envol_wait											// durée à attendre avant de s'envoler
+private	int				i_envol_check_jack_Z
+
+// ZDM
+private	vector		v_zdm_cur_size
+private	vector		v_zdm_cur_offset
+
+// ATTERRISSAGE
+private 	int				i_atterrissage_mode
+
+// SOUNDS
+private	float			f_time_cri_paf = 0.0						// délai entre 2 cris dus à de spafs
+private	float			f_time_cri_presence = 0.0				// délai entre 2 cris annonce de présence
+private 	int				i_sound_mange
+
+// VIANDE
+private	float			f_paf_mange_countdown
+private	float			f_paf_mange_delai
+
+// CHUTE
+private 	object		o_chute_bats_wp = nobody
+private	int				i_chute_reservation_flag = faux
+private	int				i_chute_wp_deja_dedans = faux
+
+// VISION ET COPAINS
+private	int				i_flag_check_vision_done
+private	int				i_budy_nb
+private	object		ao_budy[Ci_budy_nb_max]
+
+// Fréquence de vitesse / actions
+private	float			f_freq_action_coef = 1.0
+
+// CINE
+private int				i_cine_close
+private message		am_CineStack[30]
+private int				i_CineStack
+private int				i_CineStackChanged
+private message		m_CineWaitDefault
+private int				i_CineWaitDefault
+private int				i_flag_cine = faux
+private object			o_cine_vala_gao = nobody
+
+// DESYNCHRONISATION DES BATS
+private	float			f_time_wait_desyncho = 0.0
+//private	int				i_flag_wait_desyncho = faux
+
+// SOUND
+private	int				i_flag_check_sound_valide = faux
+private	int				i_flag_silent_kill = faux
+private	int				i_flag_hurle = faux
+
+// FEU
+private	int				i_fire = faux
+
+// VARIANTE ANIM
+private	int				i_ACTION_Vol_Standard
+
+// COURBE DE BEZIERS
+separator "Courbe de Béziers"
+private object			o_next_wp = nobody								// prochain WP
+private object			o_last_wp  = nobody								// ancien WP
+private object			o_ronde_next_wp = nobody						// backup du prochain WP en vol ronde (le wp temp est positionné à l'intersection de la bv de ce wp)
+private float				f_link_length = 0.0									// longueur d'un lien du réseau
+private float				f_link_coef = 0.0										// longueur parcourrue pour le lien courant
+private int				i_flag_reseau_oneway = faux						// flag qui indique si le bat est en train de suivre un réseau
+private object			o_tmp_obj_last = nobody							// wp temporaire
+private object			o_tmp_obj_next = nobody							// wp temporaire
+private int				i_force_test_inclinaison = faux					// pour palier au pb de l'inclinaison dans les courbes de béziers
+private float				f_angle_rotation_max = Cf_angle_rotation_max_default					// angle max de rotation de la bat en vol
+private	vector		v_beziers_sight = Cv_NullVector
+private	vector		v_beziers_banking = Cv_NullVector
+private	int				i_beziers_flag_last_trame = faux
+private	int				i_beziers_flag_cette_trame = faux
+private	float			f_beziers_speed = 0.0		// vitesse de progression sur la beziers cette trame
+private	float			f_beziers_pourcent
+// SOFT COLL
+private	vector		v_softcol_decal_perfect = Cv_NullVector
+private	vector		v_softcol_decal_current = Cv_NullVector
+private	float			f_softcol_rayon_perfect = 0.0
+private	float			f_softcol_rayon_current = Cf_softcol_rayon_en_vol		// val init car la bat noire ne change jamais cette valeur (pas de soft col) et la val est important pour le dépl béziers
+private	vector		v_softcol_pos_backup = Cv_NullVector
+private	int				i_softcol_flag = faux
+private	float			f_softcol_link_length = Cf_Infinit
+private	float			f_softcol_link_speed = 0.0
+private	float			f_softcol_no_down_delai = 0.0				// force les décalages softcol à l'horizontale
+// VITESSE
+separator "Vitesse"
+private 	int				i_flag_frein = faux										// flag qui indique si la bat doit être à l'arrêt lorsqu'il termine son mouvement
+private 	float			f_speed = 0.0											// vitesse courante
+private 	float			f_ref_speed	= 0.0										// vitesse de référence (variable selon l'état)
+private 	float			f_speed_blend_coef = Cf_coef_blend_speed_def		// coef de blend de la vitesse courante vers la vitesse de référence
+private 	float			f_batR_max_speed = 0.0						// backup de la vitesse max de la bat rouge (pour la remettre quand elle revient dans le champ de la caméra)
+//private 	int				i_batR_frein = faux
+private 	float			f_vitesse_fight_network = Cf_speed_fight_network
+private 	float			f_vitesse_fight_approche = Cf_speed_fight_approche
+private 	float			f_vitesse_fight_approche_fake = 4.0
+private 	float			f_vitesse_fight_contact = Cf_speed_fight_contact
+private 	float			f_vitesse_fight_contact_recule = 3.0
+private 	float			f_vitesse_fight_contact_horschamp = Cf_speed_fight_contact
+private 	float			f_vitesse_move_ronde = Cf_speed_move_ronde
+private 	float			f_vitesse_move_network = Cf_speed_move_network
+private 	float			f_vitesse_grab = Cf_speed_grab
+private 	float			f_vitesse_fight_remonte
+private	float			f_freq_speed_coef = 0.0
+// VITESSE AU CONTACT
+private	vector		v_contact_vitesse_max = Cv_NullVector
+private	vector		v_contact_vitesse_cur = Cv_NullVector
+// VITESSE COURANTE
+private	vector		v_vitesse_last_pos = Cv_NullVector
+private	vector		v_vitesse_last_move = Cv_NullVector
+// DERAPAGE (ARRIVEE WP ATTAQUE)
+private	vector		v_vitesse_derapage = Cv_NullVector
+private	int				i_vitesse_derapage_init = faux
+// SHOOT
+private	int				i_flag_check_shoot_done
+private	int				i_near_shoot_flag
+// GROUND
+private	vector		v_ground_normale = Cv_NullVector
+private	int				i_ground_lray_test_done = faux
+// QUATERNION (PAF)
+private int				i_quat_index
+private float				f_quat_last_time
+private float				af_quat_time[10] = (-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0)
+private float				af_quat_coef[10] 
+private vector			av_quat_start[10]
+private vector			av_quat_end[10]
+private object			o_bassin
+private object			o_torse		
+// DEBUG
+separator "DEBUG"
+int							i_DBG_mode = vrai_faux
+int							i_DBG_trace_beziers_ON = faux_vrai			// si vrai, les courbes de vol sont dessinées en mode "Display AI Vector"
+int							i_DBG_render_fight_position = vrai_faux
+float						f_DBG_freq_speed_coef = 1.0
+int							i_DBG_look_pos = vrai_faux
+int							i_DBG_look_all = vrai_faux
+int							i_trace_paf = vrai_faux
+int							i_DBG_trace_etat = vrai_faux
+int							i_DBG_trace_etat_paf = vrai_faux
+int							i_DBG_track_test = enum( "0 - disabled (normal)" 0 "1 - track test only" 1 "2 - track test + autres" 2 )
+object					o_track_test_wp = nobody
+int							i_nobody_but_me = vrai_faux
+int							i_DBG_no_fade_out = vrai_faux
+int							i_DBG_music = vrai_faux
+int							i_DBG_cine_mort_bat_noire = vrai_faux
+float						f_DBG_cine_mort_bat_noire_duree
+int							i_DBG_YOAN = vrai_faux
+
+// GRABBED
+private	object		o_predateur
+private	object		o_predateur_new
+private	messageid	mid_predateur
+// ATTENTE PERCHEE
+private	vector		v_perchee_init_pos
+private	vector		v_perchee_init_sight
+private	vector		v_perchee_init_banking
+private	int				i_perchee_retour_flag					// flag qui indique que la bat retourne se percher
+private	int				i_perchee_retour_post_rezo_flag	// flag qui indique que c'est le déplacement entre le réseau et l'accrochage
+private	float			f_perchee_action_time							// durée de l'action accroche standard
+private	int				i_perchee_action_next							// N° de la prochaine anim de variante d'accroche
+//private	float			f_perchee_delai_plongeon				// délai avant le plongeon de la bat
+private	int				i_perchee_fake_attaque				// flag attaque fake (cible hors de mon territoire)
+private	int				i_perchee_decroche_flag
+
+// DEBUG
+private	float			f_time_total = 0.0
+
+// ATTAQUE FPS
+private	float			f_fps_contourne_duration			// Durée depuis laquelle la bat contourne Jack pour se positionner
+
+private	int				i_calc_pos_suivi_visuel_done
+
+//private	float			f_charognard_forced_duration
+private	float			f_charognard_delai_aucune_attaque
+private	float			f_boss_delai_aucune_attaque
+
+private	float			f_cine_vala_speed
+
+private	float			f_anim_frequency_ref
+private	float			f_anim_frequency_cur
+
+private	int				i_cb_destroy_called
+private	int				i_cb_destroy_manual
+private	int				i_obbox_on
+
+private	int				i_decolle_near_shoot_flag
+private	vector		v_decolle_near_shoot_pos
+
+private	int				i_splash_flag
+
+private float				f_water_Z = -Cf_Infinit
+
+// STATS
+private	int				i_stats_nmi_killed_done
+
+private	int				i_paf_sol_mort_flag
+
+// ACTION ETAT APPROCHE
+private	float			f_approche_plane_countdown
+private	float			f_approche_falaise_countdown
+
+// CADAVRE
+private	int				i_cadavre_nb = 0
+private	object		ao_cadavre[Ci_cadavre_max_nb]
+private	int				ai_cadavre_nouveau[Ci_cadavre_max_nb]
+private	int				i_cadavre_mode
+private	object		o_cadavre
+private	int				i_cadavre_joueur_proche_flag
+private	float			f_cadavre_joueur_proche_duree
+private	float			f_cadavre_atterissage_delay
+private	float			f_cadavre_occupation_delay
+private	int				i_cadavre_atterrissage_1st_test_done
+
+// UNCOLLIDE LIST
+private 	int				i_uncollide_gao_nb
+private 	float			af_uncollide_duration[100]
+private 	object		ao_uncollide_gao[100]
+
+private	int				i_DBG_VINCE
+
+private	int				i_global_bat_number
+
+// WAIT SINUS
+private	int				i_wait_sinus_flag
+private	vector		v_wait_sinus
+private	float			f_wait_sinus_frequence
+private	float			f_wait_sinus_duration
+
+private	float			f_obbox_size_coef = 1.2
+
+// BARBEUC PARTY
+private	int				i_flag_barbeuc
+private	int				i_snd_barbeuc = -1
+private	float			f_snd_barbeuc_scream_delay
+
+private	float			f_contact_speed_blend_coef
+
+// FIRE
+private 	int				i_fire_gao_nb
+private 	object		ao_fire_gao[50]
+
+// SOFT COL
+private 	int				i_my_index = -1
+
+// ANTI BUG MITRAILLETTE JAVELOT 
+private	int				i_boss_delai_paf_perforant_init
+private	float			f_boss_delai_paf_perforant
+
+

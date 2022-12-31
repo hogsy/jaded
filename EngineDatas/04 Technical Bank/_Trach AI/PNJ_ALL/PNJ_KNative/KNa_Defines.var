@@ -1,0 +1,84 @@
+
+#define 		Ci_Filtre_NoCol			0b00000001
+#define 		Ci_Filtre_Destroy			0b00000010
+
+#define		Ci_nbr_of_blind_zone	10
+
+#define		Cv_Scorpion_Gravity		cvector(0,0,-20)
+#define		Cv_Scorpion_Friction	cvector(6,6,0)
+
+#define		ETAT_Launch				1
+#define		ETAT_Move				2
+#define		ETAT_Wait					3
+#define		ETAT_WaitActivation	4
+#define		ETAT_Paf					5
+#define		ETAT_GotoWP			6
+#define 		ETAT_Borg					7
+#define		ETAT_follow_network	8
+#define		ETAT_Dead				9
+
+#define		Macro_Script_Next		i_script_next = vrai
+
+
+/////////////////////// WAYPOINTS ACTIONS //////////////////////////////////
+
+#define		Ci_No_Action						0
+#define 		Ci_Action_Wait 					1
+#define		Ci_Spread							2
+#define 		Ci_Throw_Spears_Normal 		3
+#define 		Ci_Throw_Spears_Digwazai	4
+#define		Ci_Destroy							5
+#define		Ci_Teleport							6
+
+// TRACK =======================================================================================
+#define Ci_Track_TagOff										00
+#define Ci_Track_Reflex										01
+#define Ci_Track_Etat											02
+#define Ci_Track_TagOn										03
+
+#define macro_change_etat(etat)																				\
+{																															\
+	if (AI_TrackCurGetNum() == Ci_Track_Etat)																\
+		AI_TrackCurChangeNow(etat)																				\
+	else																													\
+		AI_TrackChange(Ci_Track_Etat, etat)																	\
+	return																													\
+}
+// TRACK =======================================================================================
+
+
+#define		Ci_AnimNative_Attente				00
+#define		Ci_AnimNative_Deplacement		01
+#define		Ci_AnimNative_Lance				05
+
+#define		Ci_AnimNative_Droite				08
+#define		Ci_AnimNative_Gauche				09
+
+#define		Ci_AnimNative_Paf					10
+#define		Ci_AnimNative_PafChuteSol		11
+#define		Ci_AnimNative_PafChuteSol_Alt	12
+
+#define		Ci_AnimNative_ChuteMort			15
+#define		Ci_AnimNative_Marche				16
+
+#define		Ci_AnimNative_Reload				19
+
+#define 		Ci_AnimNative_Chute				21
+
+#define		Ci_AnimNative_MortSol				13
+
+// WP CAPA ---------------------------------------------------------------------
+#define		Ci_WP_Capa_Action				OBJ_Capa_13
+
+// NATIVES CAPA ------------------------------------------------------------
+#define		Ci_Capa_Go_Follow_Network	OBJ_Capa_0
+#define		Ci_Capa_Digwazai_Attack			OBJ_Capa_1
+#define		Ci_Capa_Normal_Attack			OBJ_Capa_2
+#define		Ci_Capa_Action						OBJ_Capa_13
+#define		Ci_Capa_No_Gravity					OBJ_Capa_14
+#define		Ci_Capa_Dead						OBJ_Capa_15
+
+
+// SND ======================================
+#define		Ci_SND_Paf_Kong_Hit				18
+

@@ -1,0 +1,60 @@
+#include "RM_Plateforme_defines.var"
+
+// Define at least one function in a track
+// function track0 = "name"
+// function track1 = "name"
+function track2 = "RM_Plateforme_Init"
+// function track3 = "name"
+// function track4 = "name"
+
+
+object		o_WP_Origine
+int				i_SensDeplacement = enum ("Arriere" 0 "Avant" 1)
+int				i_SensWP =  enum ("Arriere" -1 "Avant" 1)
+//int				i_Penche = vrai_faux
+int				i_Orientation = enum ("0 - No" 0 "1 - Sight" 1 "2 - Sight & Banking" 2 "2 - Sight & Banking & Tangage" 3)
+float			f_SpeedMax = 10.0
+float			f_SpeedMin = 2.0
+trigger		trig_Activation
+trigger		trig_Electricite
+int				i_RMSensitive = faux_vrai
+
+// RESEAU
+
+private network		n_Network
+private object			o_DestWPForce
+private object			o_LastWP
+private object			o_DestWP
+private float				f_WaitingTime = 0.0
+
+
+// SPLINE
+
+private float 			f_spline_segment_length
+private vector			v_spline_start_axis
+private vector			v_spline_dest_axis
+private vector 			v_B_pos
+private vector 			v_C_pos
+private float				f_spline_coef
+
+// ETATS
+private int				i_sort_etat
+private int				i_etat_courant
+private int				i_dernier_etat
+private function		fct_last_etat = nofunc
+private function		fct_previous_etat = nofunc
+private float				f_time_start_etat
+
+// AUTRES
+private object			ao_Passagers[Ci_RM_PF_PassagerMax]
+private object			o_Passager
+//private vector			v_Destination
+//private vector			v_VitesseCourante
+//private vector			v_VitesseVoulue
+//private float				f_Frottement = 0.9
+private float				f_Prog = 0.0
+private float				f_VitesseCourante
+private int				i_DestTrouvee = faux
+
+private vector			v_grav_pos
+private vector			v_grav_speed

@@ -1,0 +1,131 @@
+// 05 test protection !!!
+
+#include"KNa_Defines.var"
+
+// Define at least one function in a track
+// function track0 = "name"
+// function track1 = "name"
+function track2 = "KNa_Init"
+// function track3 = "name" 
+// function track4 = "name"
+
+separator "MODELE"
+int								i_modele = enum("1 - Standard" 1)
+
+separator "SF"
+int								i_SF_NePasSeRejouerSiMort		= vrai_faux		// Flag qui indique si l'acteur gere ou pas un SF de mort
+private int					i_SF_AlreadyDead						= -1				// N° du SF (Alloué Dynamiquement)
+
+separator "TARGET"
+trigger						trigger_attaque
+int								target_selection = enum("IA" 0 "Trigger GAO5" 1)
+object						o_force_target
+object						o_ignore_target
+
+separator "BV LIMITATION"
+object						BV_ZoneTerritoire
+object						o_blind_zone[Ci_nbr_of_blind_zone]
+
+
+// ETAT ---------------------------------------------------------------
+private int					i_etat_courant				= -1
+private int					i_dernier_etat				= -1
+private int					i_flag_sort_etat
+private int					i_etat_phase
+
+private float					f_time_start_etat
+private float					f_time_etat_phase
+
+private function			fct_last_etat
+private function			fct_main_etat
+
+// ETAT ---------------------------------------------------------------
+
+separator "SCRIPT"
+private int					i_script_running 					= vrai_faux
+private int					i_script_next						= faux_vrai
+private int					i_script_indice						= 0
+private message			m_script
+
+object						o_init_pos							// Position Init du Native
+trigger						trig_script[20]						// Script du Native
+private network			net_deplacement
+
+private object				o_move_dest_pos
+private object				o_move_cur_pos
+private object				o_move_list[10]
+private vector				v_move_init_pos
+private int					i_move_nbr_wp
+private object				o_target
+
+private int					i_action_item_old 
+private object				o_projectile 
+private object				o_main
+private float					f_time_ground
+private float					f_time_not_on_ground
+//private float					f_time_wall 
+
+private object				ao_IK_bones[4][4]
+
+private int					i_init_done = 0
+
+separator "INTERACTIONS"
+trigger						t_trigger_JohnWayne
+
+
+
+separator "LIFE/CHUTE/ARMEMENT"
+private vector				v_paf_dir
+private float					f_paf_degats 
+private float					f_lifecur
+float							f_life = 10
+private object				EVT_Paf_Pere
+int 							i_no_paf = 0 
+
+private messageid		mid_visibility
+
+object						o_fall_direction
+
+object						o_Weapon 										// Arme du Native
+int								i_Tir_HorsEcran_Nbr_de_Miss = 2		// Nbr de tir devant le joueur s'il est hors ecran
+int								i_Tir_Pourcentage_Reussite = 50		// % de reussite de 0 a 100 (10 = 10 chance sur 100...)
+
+int								i_Weapon_FlamOnInit = faux				// force flame on init of natives first load of javs.
+int								i_Weapon_Ray_on_visuel = faux
+
+private vector				v_move_shoot_pos 
+private vector				v_tagon_speed
+private int					i_move_flag_shootinmove 
+private int					i_target_none
+
+int 							i_invincible = 0
+float							f_no_paf_time = 0.0
+private	int 				i_chute
+
+// new members
+separator "GROUP"
+int 									i_borg = 0								// is that AI part of a Native Group
+private object						o_cur_wp = nobody						// wp the native will go to when group splits
+private int							i_action
+private object						o_old_wp = nobody
+private network					n_current_net
+private int							i_at_end = 0
+
+separator "STATS"
+private int							i_stats_done = 0
+
+// SPAWN
+private	object		o_group
+
+private	float			f_total_time
+
+private	int				i_snd_attack_done
+
+private	float			f_GroundZ
+private	int				i_GroundFade = faux
+private	float			f_GroundFadeBlend = 0.0
+private	int				i_paf_from_grab
+
+// OPTIM ==========
+private	int				i_global_native_nb
+

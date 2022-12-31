@@ -1,0 +1,79 @@
+#include "number2Test_defines.var" 
+
+// Define at least one function in a track
+// function track0 = "name"
+// function track1 = "name"
+ function track2 = "number2Test_init"
+// function track3 = "name"
+// function track4 = "name"
+
+separator "Objects"
+object 	o_Piller_Peices[NUM_PILLERS]
+object	ao_objets_non_paffables[15]  //objects in game that should not affect this AI
+private object 	tao_zdecol_objects[16]		
+//object 	obj1
+//object 	obj2
+//object 	obj3
+//object 	obj4
+
+separator "RESISTANCE TIME"
+float					pushTime			= 1.5
+float					speedThreshold	= 7.0
+
+separator "VARIABLES"
+private int 			num
+float					speed1 = 0.0
+float					speed2 = 0.0
+private vector 		speedVector
+int						i1, j,k,l
+private int			once =faux
+private int 			hitOnce = vrai
+private int			kongHit = faux 
+private float			ti_paf_force 
+private vector		tv_paf_dir1 
+private float			f_globalTime
+private vector		speedVector1
+private vector		tv_paf_pos
+private int 			ODE_active = faux
+private int			GFX_Explose
+private float			f_time_start_explode =0.0
+private int 			explode = vrai
+private vector 		initPos
+private object		ODE_Floor
+
+private float 		maxX 
+private float 		minX  
+private float 		maxY 
+private float 		minY  
+private vector 		point
+float					resistanceTimer = 0.0
+int					mi_IsKnocking = faux
+int					speedHigh = faux
+float 				gloTime
+float				delta
+int					fat=faux
+
+separator "Particle Emitters"
+object 			o_Particle_Systems[NUM_SYSTEMS]		//actual particle system (rocks/dust)
+object			o_Particle_Position[NUM_SYSTEMS]			//position of the waypoints for location of particle system
+float				f_Duration[NUM_SYSTEMS]
+private float		f_Start_time[NUM_SYSTEMS] 		
+private vector	v_Position[NUM_SYSTEMS] 		
+
+separator "Trigger - Declenchement"
+trigger					trig_general
+private int				i_trig_general_active = vrai_faux
+trigger					trig_paf 
+private int				i_trig_paf_active = vrai_faux
+trigger					trig_projectile
+private int				i_trig_projectile_active = vrai_faux
+
+separator "Gestion PAF"
+int							i_genere_impulsion_si_paf = vrai_faux
+float						f_force_valeur_impulsion
+private object			o_element_paf
+private vector			v_dir_paf
+private vector			v_pos_paf
+private int		    		i_power_paf
+private int				i_type_paf
+

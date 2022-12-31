@@ -1,0 +1,215 @@
+#include "PNJ_Bipod_defines.var"
+
+// Define at least one function in a track
+function track0 = "PNJ_Bipod_Init"
+// function track1 = "name"
+// function track2 = "name"
+// function track3 = "name"
+// function track4 = "name"
+
+separator "Configuration"
+int			mode = enum("Normal" 0 "Wii" 1)
+object	o_start_wp
+object	o_Town
+object	o_hostile_BV
+float		dist_detection = 1000.0
+float		dist_attaque = 500.0
+float		dist_capa2 = 200.0
+
+separator "Attaque"
+trigger	trigger_attaque
+
+separator "Spawner"
+trigger	spawn_bunny
+int			max_bunny_nb
+object	bunny
+
+separator "Mort"
+trigger	trigger_death
+
+separator "Saut"
+trigger	trigger_saute
+
+// OPTIMISATION
+private float		f_dt
+
+// GRILLE
+private object	o_grille
+private object	o_grille_barreau
+
+// COL
+private object	col_tete
+private object	col_cuisse_G
+private object	col_cuisse_D
+private object	col_molet_G
+private object	col_molet_D
+private object	col_pied_G
+private object	col_pied_D
+private object	col_orteil_G1
+private object	col_orteil_G2
+private object	col_orteil_D1
+private object	col_orteil_D2
+private object	col_oreille_G
+private object	col_oreille_D
+
+private int		i_col_modules_nb
+private object	ao_col_module[20]
+private object	ao_col_father[20]
+
+// ETAT
+private int			i_etat_courant		= -1
+private int			i_dernier_etat		= -1
+private int			i_flag_sortie_etat
+
+private int			i_etat_phase
+
+private float			f_time_start_etat
+private float			f_etat_phase_duration
+
+private function	fct_main_etat
+private function	fct_last_etat
+
+// MAIN ACTOR
+private object		o_main_actor
+private float			f_me_to_main
+private vector		v_me_to_main
+
+private int			i_flag_main_on_me
+private float			f_main_hier_duration
+private object		o_last_main_father
+
+// IK LEGS
+private int			i_flag_can_stop_ik
+private int			i_flag_ik_shoot
+private int			i_lock_feet
+private float			f_speed
+private float			f_foot_side_sign = 1.0
+private float			f_low_pos_duration
+private float			f_bassin_Z_offset
+
+private object		o_bassin
+
+private float			f_walk_angle
+private float			f_walk_force_angle = -1.0
+private float			f_bassin_shake
+private float			f_bassin_blend_coef
+
+private int			i_flag_get_quat_axis[2]
+
+private float			f_IK_Z_offset[2]
+private float			f_IK_snap_coef[2]
+private float			af_IK_bones_length[2][3]
+private float			f_IK_ground_coef[2]
+private float			f_IK_anticipation_dist[2]
+private float			f_IK_leg_length[2]
+
+private vector		v_IK_ref_ground_pos
+private vector		v_IK_constraint_sight
+private vector		v_IK_move_dir
+private vector		v_IK_feet_sight
+private vector		v_IK_bassin_sight
+
+private vector		v_IK_dest_pos[2]
+private vector		v_IK_ground_pos[2]
+private vector		v_IK_ground_normale[2]
+
+private vector		v_IK_bassin_banking
+private vector		v_IK_bassin_pos
+
+private object		ao_IK_bones[2][5]
+
+private vector		av_hanche_sight[2]
+private vector		av_hanche_banking[2]
+
+
+//// BOMBES
+//private float				f_bomb_state_duration
+//private int				i_bomb_launch_index
+//private float				f_bomb_delay			
+//private float				f_bomb_wall_dist	
+//private vector			v_wall_dest_pos
+//private int				ai_bomb_state[100]
+//private vector			av_bomb_pos[100]
+//private vector			av_bomb_speed[100]
+//private vector			av_bomb_dest_pos[100]
+//private vector			av_bomb_dest_normal[100]
+//private int				ai_bomb_halo[100]
+//private float				af_bomb_move_duration[100]
+//private float				af_bomb_radius[100]
+
+// LASER
+private int			i_laser_state = Ci_Laser_Wait
+private float			f_laser_phase_duration = Cf_Infinit
+private vector		v_laser_shoot_pos
+private int			GFX_Line = -1
+private int			GFX_Laser_Impact = -1
+
+// ACCUMULATION
+private int			ai_GFX_Line[20]
+private vector		av_GFX_Line_pos[20]
+
+
+// SOUND
+private int			i_SND_Wind_Loop1 = -1
+private int			i_SND_Wind_Loop2 = -1
+private int			i_SND_Motor_Loop = -1
+private int			i_SND_Move_Loop = -1
+private int			i_SND_Laser_Loop = -1
+private int			i_SND_Charge_Loop = -1
+
+// OREILLE
+private float			af_oreille_angle[2]
+private vector		av_oreille_last_pos[2]
+private vector		av_oreille_speed[2]
+private float			af_oreille_tension_coef[2]
+private float			af_oreille_friction_coef[2]
+
+// DEPLACEMENT
+private object		o_last_wp
+
+// DUPLICATION BUNNY
+private int			i_flag_spider_on_me
+private float			f_bunny_gen_delay
+private int			i_duplicated_bunny_nb
+private object		ao_duplicated_bunny[10]
+
+// MEURT
+private float			f_mort_coef
+private vector		v_bassin_speed
+private int			i_rebound_nb
+private int			i_flag_crash_done
+private vector		v_ground_normale
+private float			f_feet_Z_offset[2]
+private float			f_feet_Z_speed[2]
+private float			f_impact_delay
+private vector		v_impact_pos
+
+// SMOKE
+private int			GFX_Smoke[7] = (-1, -1, -1, -1, -1, -1, -1)
+
+// DEATH HALO
+private int			GFX_Death_Halo = -1
+
+// DISABLE ALL
+private int			i_flag_disable
+
+// JUMP
+private int			i_flag_jump
+
+// WII
+private vector		v_dest_move
+private vector		v_dest_sight
+private int			i_flag_stop_move
+private float			f_lastmovetimer_right
+private int			i_move_num_right
+private float			f_lastmovetimer_left
+private int			i_move_num_left
+private int			Gfx_Test = -1
+
+
+// GFX
+separator			"GFX"
+object				o_shockwave
+float					f_time_shockwave = 0.0
+float					f_scale_shockwave = 1.0
+int						i_GFX_fumee[3]

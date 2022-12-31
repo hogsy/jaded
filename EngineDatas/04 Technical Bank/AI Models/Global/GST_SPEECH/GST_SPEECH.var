@@ -1,0 +1,108 @@
+//---------------------------------------------------------------------------------------------------------------------------
+// INCLUDE
+//---------------------------------------------------------------------------------------------------------------------------
+#include "SPEECH_Constant.var"
+
+
+//---------------------------------------------------------------------------------------------------------------------------
+// TRACK
+//---------------------------------------------------------------------------------------------------------------------------
+// Define at least one function in a track
+function track0 = "SPEECH_Init"
+// function track1 = "name"
+// function track2 = "name"
+// function track3 = "name"
+// function track4 = "name"
+
+
+//---------------------------------------------------------------------------------------------------------------------------
+// PRIVATE VAR
+//---------------------------------------------------------------------------------------------------------------------------
+//-- constant
+//private int 		ai_TextConfig[C_ID_Marin_dernier][G_NombreMax]
+private int 		ai_TextConfig[C_ID_Last_Compagnon][G_NombreMax]
+//-- data request
+private object	ao_data_sender[Cte_StackSize]
+private object	ao_data_target[Cte_StackSize]
+private text 		at_data_text[Cte_StackSize]
+private int 		ai_data_priority[Cte_StackSize]
+private float		af_data_timeout[Cte_StackSize]
+private int 		ai_data_flag[Cte_StackSize]
+private int 		ai_data_listid[Cte_StackSize]
+private int 		ai_data_listindex[Cte_StackSize]
+//-- request sorted list
+private int 		ai_request_sortedlist[Cte_StackSize]
+private int 		i_request_number
+//-- current requests
+private object	ao_current_sender[Cte_DialogNb]
+private object	ao_current_target[Cte_DialogNb]
+private text 		at_current_text[Cte_DialogNb]
+private int 		ai_current_priority[Cte_DialogNb]
+private float		af_current_timeout[Cte_DialogNb]
+private int 		ai_current_flag[Cte_DialogNb]
+private int 		ai_current_listid[Cte_DialogNb]
+private int 		ai_current_listindex[Cte_DialogNb]
+private int 		ai_previous_listid[Cte_DialogNb]
+//-- current treatment
+private float		af_current_playtime[Cte_DialogNb]
+private float		af_current_sndtime[Cte_DialogNb]
+private int 		ai_current_sndinstance[Cte_DialogNb]
+private int 		ai_current_sndkey[Cte_DialogNb]
+private int 		ai_current_strinstance[Cte_DialogNb]
+private int		ai_urgent_request[Cte_DialogNb]
+private float		af_current_positionmoveto[Cte_DialogNb]
+//-- temp dialog list storage
+private int		ai_tmp_dialoglist[Cte_StackSize]
+//-- sound
+private int		ai_sndtrackid[Cte_DialogNb] = (SND_Cte_Track_C, SND_Cte_Track_D)
+private int		i_snd_new_play
+private float		af_snd_volume[Cte_DialogNb]
+private float		af_snd_timer[Cte_DialogNb]
+private float		af_snd_factor[Cte_DialogNb]
+private float		af_snd_muteduration[Cte_DialogNb]
+//-- speakers
+private object 	o_speaker[Cte_DialogNb]
+//-- filter gen
+private int		mai_GenTextUsed[G_NombreMax]
+//private int 		mai_GenRequestId[C_ID_Marin_dernier][G_NombreMax]
+private int 		mai_GenRequestId[C_ID_Last_Compagnon][G_NombreMax]
+//
+private float		maf_GenericLastTime[G_NombreMax]
+private float		maf_GenericPeriodMin[G_NombreMax]
+//
+private string	mas_CurrentContent[Cte_DialogNb]
+private int		mai_CurrentHasContent[Cte_DialogNb]
+// -- 3D config
+private float 	mf_SoundNearDistance 	
+private float 	mf_SoundMiddleDistance	
+private float 	mf_SoundFarDistance		
+private float 	mf_SoundMiddleCoeff		
+private float 	mf_SoundFarCoeff			
+// -- map is kong or jak ?
+private int		mi_MapIsJaks
+// -- 
+private int		mai_GrpVolRq[SND_Cte_MasterGrp]
+private float		mf_GrpVol = 1.0
+private float 	mf_GrpVolFadeFactor 
+private float 	mf_GrpMuteDuration 
+private int		mi_VolFadeMode = -1
+// --
+private float		mf_GrpDialVol = 1.0
+private float		mf_GrpDialFadeFactor = 0.0
+private int		mi_GrpDialMode = -1
+private int		mi_PrevMode	= 0
+// --
+//private float		maf_HumanTxtLastTime[C_ID_Marin_dernier]
+private float		maf_HumanTxtLastTime[C_ID_Last_Compagnon]
+//--
+private int		mi_urgent_rq_is_part_of_list = -1
+
+//---------------------------------------------------------------------------------------------------------------------------
+// GLOBAL VAR
+//---------------------------------------------------------------------------------------------------------------------------
+separator	"Config"
+vector			av_DisplayPosition[Cte_DialogNb]  // display position
+float 				f_SecondByLetter = 0.1				// used when there is no sound (sec)
+float				f_Latency = 0.1 							// minimal time between 2 actions (sec)
+separator	"Debug"
+int					i_DebugMode = enum("Quiet"0 "Verbose"1)

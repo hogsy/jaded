@@ -1,0 +1,20 @@
+#include "SFX_Chaine_VAR.var"
+
+// Define at least one function in a track
+function track0 = "SFX_Chaine_INIT"
+
+separator	"PARAMETRES GENERAUX"
+trigger				TRIG_REMOVE
+trigger				TRIG_ADD
+int						i_type = enum("Waypoint" 0 "Coeurs" 1)
+int						i_nb_modules											// Nombre de maillons à la chaîne (en comptant le module initial)
+float					i_espacement											// Espacement entre les modules
+float					f_taille_coeurs = 0.25								// Taille des modules
+vector				v_gravite = cvector(0.0,0.0,-5.0)					// Gravité appliquée aux coeurs
+float					f_turbulence = 0.5									// Force des turbulences appliquées aux coeurs
+private object		o_modules[Ci_NB_MODULE_MAX]
+private vector		v_dir_modules[Ci_NB_MODULE_MAX]
+private vector		v_pos_modules[Ci_NB_MODULE_MAX]
+private int			i_GFX_Coeurs[Ci_NB_MODULE_MAX]
+
+private color		c_couleur_coeurs = COLOR_SetRGBA(255,255,255,128)

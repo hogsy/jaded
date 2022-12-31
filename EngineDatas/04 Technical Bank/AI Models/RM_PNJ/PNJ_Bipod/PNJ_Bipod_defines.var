@@ -1,0 +1,54 @@
+// ETAT
+#define ETAT_Basic												00
+#define ETAT_Titube											01
+#define ETAT_Tombe											02
+#define ETAT_Explose											03
+#define ETAT_Saute												04
+#define ETAT_Wii_Move										05
+#define ETAT_Wii_Rumble									06
+
+// TRACK
+#define Ci_Track_Reflex										00
+#define Ci_Track_Etat											01
+
+#define macro_change_etat(etat)																				\
+{																															\
+	if (AI_TrackCurGetNum() == Ci_Track_Etat)																\
+		AI_TrackCurChangeNow(etat)																				\
+	else																													\
+		AI_TrackChange(Ci_Track_Etat, etat)																	\
+	return																													\
+}
+
+// BOMB
+#define Ci_Bomb_Wait		0
+#define Ci_Bomb_Init		1
+#define Ci_Bomb_Move		2
+#define Ci_Bomb_Impact	3
+
+// LASER
+#define Ci_Laser_Wait		0
+#define Ci_Laser_Charge	1
+#define Ci_Laser_Move		2
+
+// SOUND
+#define Ci_SND_Ground_Impact				1
+#define Ci_SND_Ground_Impact2			2
+#define Ci_SND_Move_Start					3
+#define Ci_SND_Move_Loop					4
+#define Ci_SND_Motor_Loop					5
+#define Ci_SND_Laser_Charge				6
+#define Ci_SND_Laser_Start					7
+#define Ci_SND_Laser_Loop					8
+
+#define Ci_SND_Wind_Loop1					10
+#define Ci_SND_Wind_Loop2					11
+
+// WII
+#define Cf_MoveTimer_ForRumble			0.5
+#define Ci_MaxMvt_BeforeRumble			2
+
+// GFX
+#define Cf_GFX_TimeLifeShockwave		0.5
+//#define Ci_GFX_SizeMaxShockwave		200
+#define Cf_GFX_RatioSizeTime				300 / Cf_GFX_TimeLifeShockwave

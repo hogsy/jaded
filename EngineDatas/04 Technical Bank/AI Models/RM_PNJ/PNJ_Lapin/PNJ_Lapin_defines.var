@@ -1,0 +1,497 @@
+// SOUND ========================================================================================
+#define	Ci_SND_Apparition_Sol_Smoke				4		// [SND OK] 	// annonce que le lapin va sortir du sol
+#define	Ci_SND_Jump_Impulsion						5		// [SND OK] 	// chaque impulsion de saut
+#define	Ci_SND_Eau_Splash_In						8		// [SND OK] 	// rentrer dans l'eau
+#define	Ci_SND_Eau_Splash_Out						28		// [SND OK] 	// sortir de l'eau
+#define	Ci_SND_Cache_Reached						12		// [SND OK] 	// ça y est je suis caché !
+#define	Ci_SND_PAF_Medium							15		// [SND OK] 	// paf normal
+#define	Ci_SND_PAF_Big								16		// [SND OK] 	// gros paf (me fait décoller du sol)
+#define	Ci_SND_PAF_Die								17		// [SND OK] 	// paf qui me met ko au sol
+#define	Ci_SND_PAF_Stun								15		// paf qui me stun 2 sec (rayman m'a sauté dessus)
+#define	Ci_SND_PAF_Alternatif						29		// [SND OK] 	// paf alternatif selon modèle
+#define	Ci_SND_FIGHT_Melee_Try_to_Hit			24		// [SND OK] 	// je lance une attaque au corps à corps
+#define	Ci_SND_FIGHT_Melee_Hit					25		// [SND OK] 	// mon attaque au corps à corps a touché qqu'un
+//#define	Ci_SND_FIGHT_Counter_Dodge				26		// je fais mon esquive pour ma contre attaque
+#define	Ci_SND_FIGHT_Counter_Attack				24		// je lance ma contre attaque
+#define	Ci_SND_FIGHT_Counter_Hit					25		// ma contre attaque a touché qqu'un
+#define	Ci_SND_FIGHT_BullRush_Anounce		24		// je crie pour prévenir que je vais charger 
+#define	Ci_SND_FIGHT_BullRush_Charge			24		// je charge
+#define	Ci_SND_FIGHT_BullRush_Hit				25		// ma charge a touché qqu'un
+#define	Ci_SND_FIGHT_GOGO_Start				24		// le joueur s'amuse avec son grappin à mes dépends
+#define	Ci_SND_FIGHT_GOGO_End					24		// ça y est je suis libéré du grappin
+#define	Ci_SND_FIGHT_GOGO_Hit					25		// je frappe quelqu'un parce qu'on joue au grappin avec moi
+#define	Ci_SND_FIGHT_Dodge							24		// je dodge (un gun, le grappin...)
+#define	Ci_SND_FIGHT_Protect						24		// je me protège avec mon bouclier (un gun, le grappin...)
+#define	Ci_SND_FUITE_Oscour						24		// cassos ! il est temps de fuir !!!
+#define	Ci_SND_RIDED									24		// grrrmmmbl... il m'a eu il me tient par la laisse maintenant..
+#define	Ci_SND_ASPIRE_Cri_Presence				24		// à l'aiiiiiiiiide !!!!
+#define	Ci_SND_ASPIRE_Choc_Mur					24		// outch !!!!!
+#define	Ci_SND_PIEGE_Cri_Presence				24		// à l'aiiiiiiiiide !!!!!
+#define	Ci_SND_FUITE_AuxAbris						24		// ça va péter cassez-vous !!!!
+#define	Ci_SND_GRABBED								24		// à l'aiiiiiiiiide !!!! l'aigle ou le requin m'a choppé
+#define	Ci_SND_TERMINATOR_CourtCircuit		26		// [SND OK] 	// gzzzzit
+#define	Ci_SND_TERMINATOR_Explose			27		// [SND OK] 	// boum
+#define	Ci_SND_ITEM_RunTowards_Gun			5		// vite je dois ramasser un gun
+#define	Ci_SND_ITEM_RunTowards_Grenade		5		// vite je dois ramasser une grenade
+#define	Ci_SND_ITEM_RunTowards_Clef			5		// vite je dois ramasser une clef
+#define	Ci_SND_ITEM_RunTowards_Mount			5		// vite je dois grimper sur une monture
+#define	Ci_SND_ITEM_RunTowards_Carotte		5		// miam une carotte en vue ! :p
+#define	Ci_SND_ITEM_RunTowards_Gourdin		5		// vite je dois ramasser un gourdin / matraque
+#define	Ci_SND_ITEM_RunTowards_LumsCage	5		// vite je dois ramasser un cage à Lums
+#define	Ci_SND_ITEM_Get_Gun						12		// je ramasse un gun
+#define	Ci_SND_ITEM_Get_Grenade					12		// je ramasse une grenade
+#define	Ci_SND_ITEM_Get_Clef						12		// je ramasse une clef
+#define	Ci_SND_ITEM_Get_Mount					12		// je grimpe sur une monture
+#define	Ci_SND_ITEM_Get_Carotte					12		// je ramasse une carotte
+#define	Ci_SND_ITEM_Get_Gourdin					12		// je ramasse un gourdin / une matraque
+//#define	Ci_SND_ITEM_Use_Gun						90		// j'utilise un gun
+//#define	Ci_SND_ITEM_Use_Grenade					91		// j'utilise une grenade
+//#define	Ci_SND_ITEM_Use_Clef						92		// j'utilise une clef
+//#define	Ci_SND_ITEM_Use_Carotte					94		// je mange une carotte
+//#define	Ci_SND_ITEM_Use_Gourdin					95		// j'utilise un gourdin / une matraque
+#define	Ci_SND_BEAT_Start							100	// ouééééé y'a d'la zik !!!!
+#define	Ci_SND_BEAT_Alert							101	// bordel vite couper cette zik !!!
+
+// ETATS =======================================================================================
+#define ETAT_Lapin_ATTENTE						1
+//#define ETAT_Lapin_SEARCH						2
+#define ETAT_Lapin_FIGHT							3
+#define ETAT_Lapin_MELEE							4
+#define ETAT_Lapin_PAF								5
+#define ETAT_Lapin_MORT							6
+#define ETAT_Lapin_GET_ITEM						7
+#define ETAT_Lapin_USE_ITEM						8
+#define ETAT_Lapin_JUMP							9
+#define ETAT_Lapin_DODGE							10
+#define ETAT_Lapin_CACHE							11
+#define ETAT_Lapin_FUITE							12
+#define ETAT_Lapin_APPARITION					13
+#define ETAT_Lapin_RIDED							15
+#define ETAT_Lapin_CHUTE							16
+#define ETAT_Lapin_GRABBED						17
+#define ETAT_Lapin_PROTECT						18
+#define ETAT_Lapin_GOGO							19
+#define ETAT_Lapin_RIDE_MOUNT				20
+#define ETAT_Lapin_PAF_STUN					21
+#define ETAT_Lapin_COUNTER						22
+#define ETAT_Lapin_BULLRUSH					23
+#define ETAT_Lapin_GRAPPIN_CONTROL		24
+#define ETAT_Lapin_GET_MOUNT					25
+#define ETAT_Lapin_TAUPE							26
+#define ETAT_Lapin_ASPIRE							27
+#define ETAT_Lapin_PIEGE							28
+#define ETAT_Lapin_BEAT_DANSE				29
+#define ETAT_Lapin_BEAT_ALERT					30
+#define ETAT_Lapin_USE_POWERMOUNT		31
+#define ETAT_Lapin_DESTROYED					32
+
+
+// CAPAS ===========================================================================================
+#define Capa_ZDE_Fight_ON		 		OBJ_Capa_0
+#define Capa_KO						 		OBJ_Capa_14
+#define Capa_MORT				 		OBJ_Capa_15
+
+
+// CONFIGS DE LAPINS ================================================================================
+#define Config_Lapin_Custom								0
+#define Config_Lapin_Fourbe									1
+#define Config_Lapin_SplinterCell							2
+#define Config_Lapin_VoleurDeClef_Peureux			3
+#define Config_Lapin_Brutus									4
+#define Config_Lapin_Zombie									5
+#define Config_Lapin_Terminator								6
+#define Config_Lapin_VoleurDeClef_Agressif				7
+#define Config_Lapin_Boucher								8
+
+// EXPRESSION ======================================================================================
+#define Cf_Expr_Mouth_Closed		1.0		// fermée
+#define Cf_Expr_Mouth_Middle		2.0		// moitié ouverte = quand il frappe
+#define Cf_Expr_Mouth_Full			3.0		// grande ouverte = quand il prend un paf ou quand il charge
+
+
+// DYNA ============================================================================================
+#define Cv_DYN_Gravity				cvector(0.0, 0.0, -30.0)
+#define Cf_DYN_SpeedZLimit			1.0
+
+#define Cf_DYN_Traction_ICE_Factor		 	10.0
+
+#define Cf_DYN_Friction_Ground	15.0
+#define Cv_DYN_Friction_Ground	cvector(Cf_DYN_Friction_Ground, Cf_DYN_Friction_Ground, 1.0)
+#define Cf_DYN_Friction_Jump		2.0
+#define Cv_DYN_Friction_Jump		cvector(Cf_DYN_Friction_Jump, Cf_DYN_Friction_Jump, 1.0)
+#define Cv_DYN_Friction_Jump_Precis		cvector(Cf_DYN_Friction_Jump, Cf_DYN_Friction_Jump, 0.0)
+#define Cf_DYN_Friction_Ice			0.5
+#define Cv_DYN_Friction_Ice			cvector(Cf_DYN_Friction_Ice, Cf_DYN_Friction_Ice, 1.0)
+#define Cf_DYN_Friction_Water		2.0
+#define Cv_DYN_Friction_Water		cvector(Cf_DYN_Friction_Water, Cf_DYN_Friction_Water, Cf_DYN_Friction_Water)
+
+#define	Cv_ZDM_Offset_default		cvector(0,0,0.5)
+
+// MACROS =========================================================================================
+#define macro_change_etat(etat)																				\
+{																															\
+	if (AI_TrackCurGetNum() == 2)																\
+		AI_TrackCurChangeNow(etat)																				\
+	else																													\
+		AI_TrackChange(2, etat)																	\
+}
+
+#define MACRO_GO_IDLE(check_previous)	\
+{	\
+//	if( check_previous )	\
+//		i_use_previous_etat = vrai	\
+	f_IDLE_time = 0.0	\
+	macro_change_etat("Lapin_exec_IDLE")	\
+}
+
+#define MACRO_CHECK_CHUTE	\
+{	\
+	if( ! i_ground_flag && ! i_is_in_water && ! o_RideMount_Actor )	\
+		macro_change_etat("Lapin_ETAT_CHUTE")	\
+}
+
+#define MACRO_CHECK_PAFS	\
+{	\
+AI_Execute("Lapin_exec_check_paf")	\
+if( ! f_LIFE_cur )	\
+	macro_change_etat("Lapin_ETAT_PAF")	\
+else if( i_flag_paf_stun )	\
+	macro_change_etat("Lapin_ETAT_PAF_STUN")	\
+else if( i_flag_paf )	\
+	macro_change_etat("Lapin_ETAT_PAF")	\
+}
+
+#define MACRO_FORCE_VALID_INTERET	\
+{	\
+	int		ti_tmp_index	\
+	if( o_main_actor )	\
+	{	\
+		AI_Execute("Lapin_exec_check_vision")	\
+		ti_tmp_index = ARR_ObjSearch(&ao_perceived_actor[0], i_perceived_actor_nb, o_main_actor)	\
+		if( ti_tmp_index == -1 )	\
+			returntrack	\
+		i_interet_force_identification_gao = vrai	\
+//		ai_perceived_status[ti_index] |= Ci_PERCEIVED_IDENTIFIED	\
+		Lapin_Best_Interet_Update(ti_tmp_index)			// créer un intéret sur le main actor	\
+	}	\
+}
+
+
+#define	Ci_perceived_max_nb			50
+
+
+#define MACRO_2D	\
+VIEW_3dWorldTo2d(0,OBJ_PosGet())
+
+
+// DIVERS ============================================================================================
+
+// AI PRIORITY
+#define	Ci_AI_Priority_NORMAL				127
+#define	Ci_AI_Priority_APRES					128
+
+
+//#define Cf_delay_before_lose_target					1.5
+#define Cf_delay_between_target_switching			4.0
+#define Cf_interet_attack_countdown					1.0
+
+#define	Cf_Atk_Vision_Angle_default			1.4
+#define	Cf_Fuite_Vision_Angle_default		0.7
+
+
+
+
+// ATTENTE ===================================================
+#define Att_Mode_Sur_Place					0
+#define Att_Mode_Ronde_Network			1
+#define Att_Mode_RandomBVPos			2
+#define Att_Mode_AnimWP					3
+
+// Item_Arme
+#define Ci_Item_Arme_None								0
+#define Ci_Item_Arme_All									1
+#define Ci_Item_Arme_Guns_only						2
+#define Ci_Item_Arme_Grenades_only					3
+#define Ci_Item_Arme_Gourdins_only					4
+
+
+// FUITE ================================================================
+
+// Fuite_Apres_Pafs
+#define Ci_Fuite_Apres_Pafs_Jamais								0
+#define Ci_Fuite_Apres_Pafs_A_Chaque_Paf					1
+#define Ci_Fuite_Apres_Pafs_Cumul_de_Pafs					2
+
+// Fuite_Apres_Attaque
+#define Ci_Fuite_Apres_Attaque_Jamais							0
+#define Ci_Fuite_Apres_Attaque_Toujours						1
+#define Ci_Fuite_Apres_Attaque_Poing							2
+#define Ci_Fuite_Apres_Attaque_Gun								3
+#define Ci_Fuite_Apres_Attaque_Grenade						4
+
+// Fuite_Apres_Dodge
+#define	Ci_Fuite_Apres_Dodge_Jamais							0
+#define	Ci_Fuite_Apres_Dodge_Toujours						1
+#define	Ci_Fuite_Apres_Dodge_Grappin							2
+#define	Ci_Fuite_Apres_Dodge_Gun								3
+#define	Ci_Fuite_Apres_Dodge_Grenade						4
+
+// Fuite_HP
+#define Ci_Fuite_HP_Aucune											0
+#define Ci_Fuite_HP_50pct											1
+
+// Fuite_Deplacement
+#define Ci_Fuite_Deplacement_OpposeNmi						0
+#define Ci_Fuite_Deplacement_Caches							1
+#define Ci_Fuite_Deplacement_WP_Speficique					2
+#define Ci_Fuite_Deplacement_Rentre_dans_le_Sol			3
+#define Ci_Fuite_Deplacement_Grenades						4
+#define Ci_Fuite_Deplacement_BV_Voisine						5
+
+// Fuite WP
+#define	Ci_Fuite_wp_max_nb										5
+#define	Ci_Fuite_wp_specifique_suffisament_loin				0
+#define	Ci_Fuite_wp_specifique_type_le_plus_loin			1
+#define	Cf_fuite_dist_safe_hysteresis								5.0
+
+// Progression_Strategie
+#define Ci_Atk_Deplacement_Tout_Droit									0
+#define Ci_Atk_Deplacement_Occluders_Caches_GoMelee		1
+#define Ci_Atk_Deplacement_Occluders_Caches_FleeMelee		2
+
+
+// CACHE MODE
+#define Ci_CACHE_Mode_Fuite				0
+#define Ci_CACHE_Mode_Progression	1
+#define	Ci_progression_cache_max		10
+
+// Item_Prioritaire
+#define	Ci_Item_Prioritaire_Aucun			0
+#define	Ci_Item_Prioritaire_CLE			1
+
+// item find
+#define	Ci_FIND_ITEM_WEAPON			1
+#define	Ci_FIND_ITEM_KEY					2
+#define	Ci_FIND_ITEM_CAROTTE			3
+
+// APPARITION
+#define	Cbit_ACTION_Jump						OBJ_CBits_0			// valeur = 1
+#define	Cbit_ACTION_Sortir_du_Sol			OBJ_CBits_1			// valeur = 2
+#define	Cbit_ACTION_Rentrer_dans_Sol		OBJ_CBits_2			// valeur = 4
+#define	Cbit_ACTION_WP_Fuite_Valide		OBJ_CBits_7			// valeur = 128
+
+// APPARITION MODE
+#define	Ci_APPARITION_mode_Run		0
+#define	Ci_APPARITION_mode_Jump	1
+#define	Ci_APPARITION_mode_Ground	2
+
+// JUMP DIST
+#define	Cf_Jump_Dist_Lapin_Petit			3.0
+#define	Cf_Jump_Dist_Lapin_Moyen		6.0
+#define	Cf_Jump_Dist_Lapin_Geant		10.0
+
+// Atk_Dodge
+#define	Ci_Atk_Dodge_None				0
+#define	Ci_Atk_Dodge_All					1
+#define	Ci_Atk_Dodge_Grappin				2
+#define	Ci_Atk_Dodge_Gun					3
+#define	Ci_Atk_Dodge_Grenade			4
+
+// Atk_Protect
+#define	Ci_Atk_Protect_None				0
+#define	Ci_Atk_Protect_All					1
+#define	Ci_Atk_Protect_Grappin			2
+#define	Ci_Atk_Protect_Gun					3
+#define	Ci_Atk_Protect_Grenade			4
+
+// Dodge_Mode
+#define	Ci_Dodge_Mode_Grappin			1
+#define	Ci_Dodge_Mode_Gun				2
+#define	Ci_Dodge_Mode_Grenade			3
+
+// ZDE Fight
+#define	Cv_zde_fight_size_melee					cvector(0.35,0.35,0.35)
+#define	Cv_zde_fight_size_melee_rided			cvector(1.0,1.0,1.0)
+#define	Cv_zde_fight_size_appartion_ground	cvector(1.0,1.0,1.0)
+#define	Cv_zde_fight_size_mode_gogo			cvector(2.0,2.0,2.0)
+#define	Cv_zde_fight_size_explosion				cvector(3.0,3.0,3.0)
+#define	Cv_zde_fight_size_counter				cvector(1.5,1.5,1.5)
+#define	Cv_zde_fight_size_bullrush				cvector(1.0,1.0,1.0)
+#define	Cv_zde_fight_size_anti_mashing					cvector(1.5,1.5,1.5)
+
+// SPEED MAX
+#define	Cf_Speed_Max_Lapin_Petit			8.0
+#define	Cf_Speed_Max_Lapin_Moyen		6.0
+#define	Cf_Speed_Max_Lapin_Geant			4.0
+
+// CACHE TYPE
+#define	Ci_cache_type_Occluder				0
+#define	Ci_cache_type_Geometrie				1
+
+// i_item_cant_use
+#define	Ci_item_cant_use_too_close				1
+#define	Ci_item_cant_use_too_far					2
+#define	Ci_item_cant_use_wait_reload			3
+#define	Ci_item_cant_use_obstacle				4
+#define	Ci_item_cant_use_temps_mort			5
+#define	Ci_item_cant_use_interest_maxnb		6
+
+// i_powermount_cant_use
+#define	Ci_powermount_cant_use_reload					1
+#define	Ci_powermount_cant_use_interest_maxnb		2
+
+// GFX
+#define	Cf_GFX_Ground_Apparition_delai	0.2
+
+// BULLRUSH
+#define	Ci_BullRush_mode_Annonce						0
+#define	Ci_BullRush_mode_Charge						1
+#define	Ci_BullRush_mode_ChargeFin					2
+#define	Ci_BullRush_mode_Derape						3
+#define	Ci_BullRush_mode_Search						4
+#define	Ci_cannot_BullRush_wait_atk_prio				1
+#define	Ci_cannot_BullRush_wait_delai					2
+
+
+// BEAT
+#define	Ci_BEAT_Config_Ignore					0
+#define	Ci_BEAT_Config_Sensible					1
+#define	Ci_BEAT_Config_Alert						2
+
+
+// LOD
+#define	Ci_Lapin_LOD_Full							0
+#define	Ci_Lapin_LOD_NoFur						1
+#define	Ci_Lapin_LOD_LowDetail					2
+#define	Ci_Lapin_LOD_Invisible						3
+
+
+// ACTION FAMILIES =======================================================================================
+#define Action_Family_Normal								0
+#define Action_Family_Beat									1
+#define Action_Family_Nage									2
+#define Action_Family_RideMount							3
+#define Action_Family_Shield								4		// Lem rules ! :)
+#define Action_Family_Ventilo								5
+
+
+// ACTIONS ==============================================================================================
+#define Action_Normal_Attente								000
+#define Action_Normal_Marche								001
+#define Action_Normal_Trot									002
+#define Action_Normal_Course								003
+
+#define Action_Nage_Attente									005
+#define Action_Nage_Cycle									006
+#define Action_Nage_attack									007
+
+#define Action_Fight_Annonce								008
+#define Action_Fight_Gourdin									009
+#define Action_Fight_Melee_CoupDroit					010
+#define Action_Fight_Melee_CoupRevers					011
+#define Action_Fight_Grenade_Launch					012
+#define Action_Fight_Gun_Shoot							013
+#define Action_Fight_Dodge_droite							014
+#define Action_Fight_Dodge_gauche						015
+#define Action_Fight_Dodge_rouleboule					042
+#define Action_Fight_Protect									017
+#define Action_Fight_Counter_Dodge						018
+#define Action_Fight_Counter_Attack						019
+#define Action_Fight_BullRush_Anounce					020
+#define Action_Fight_BullRush_Charge					021
+#define Action_Fight_BullRush_Derap						022
+#define Action_Fight_BullRush_Search					023
+#define Action_Fight_GrappinControl						024
+
+#define Action_Paf_petit_face								025
+#define Action_Paf_fort_face									026
+#define Action_Paf_fort_face_get_up						027
+#define Action_Paf_fort_crete									028
+#define Action_Paf_fort_reception							029
+#define Action_Mort												030
+#define Action_Paf_Combo_Petit1							031
+#define Action_Paf_Combo_Petit2							032
+#define Action_Paf_Combo_Petit3							033
+#define Action_Paf_Combo_Fort								034
+#define Action_Paf_Combo_Finish							035
+
+#define Action_Cache_Att										045
+#define Action_Cache_Surprise								046
+#define Action_Cache_SurpriseTest						047
+
+#define Action_Jump_Impulsion								050
+#define Action_Jump_Cycle									051
+#define Action_Jump_Chute									052
+#define Action_Jump_Chute_Paf								053
+#define Action_Jump_Reception								054
+#define Action_Jump_Reception_Paf						055
+#define Action_Fuite_Taupe									056
+#define Action_Jump_Taupe									057
+
+#define Action_Grabbed_cycle								060
+#define Action_Gogo_cycle									061
+#define Action_Gogo_eject									062
+
+#define Action_RideMount_att								065
+#define Action_RideMount_cycl								066
+
+#define Action_Piege											070
+#define Action_Ventilo_faible									072
+#define Action_Ventilo_fort									073
+#define Action_Aspire											075
+
+#define Action_Carotte_Mange								078
+
+#define Action_Danse_TurnOff								080
+#define Action_Danse_GetPower							081
+#define Action_Danse_Att										082
+#define Action_Danse_Marche20							083
+#define Action_Danse_Marche60							084
+#define Action_Danse_Toupie								085
+#define Action_Danse_MoonWalk							086
+#define Action_Danse_MoonWalk_QuartDeTour		087
+#define Action_Danse_PasChasse							088
+#define Action_Danse_Echauffe								089
+
+#define Action_Shield_Attente								100
+#define Action_Shield_Marche								101
+#define Action_Shield_Course								102
+
+
+#define Action_Attente_Dodo									110
+#define Action_Attente_Pipi									111
+#define Action_Attente_Ordi									112
+#define Action_Attente_Blabla1								113
+#define Action_Attente_Blabla2								114
+#define Action_Attente_Torture_Lums						115
+
+
+// MATERIAU
+#define	Ci_MATERIAU_SubMat_nb			5
+#define	Ci_MATERIAU_Layer_nb				2
+
+// SFX
+#define	Ci_SFX_NB_ETOILES					5
+
+#define	Cf_PAF_STUN_duree					2.5
+
+
+#define MACRO_LAPIN_DESTROY	\
+{	\
+	macro_change_etat("Lapin_ETAT_DESTROYED")		\
+	return		\
+}
+
+// SPECIAL FLAGS ID
+#define	Ci_SF_DejaMort						0
+#define	Ci_SF_LumDejaRecupere			1
+
+#define	cf_danse_offet					1.75
+
+
+// Lapin_Chasseur
+#define	Ci_Lapin_Chasseur_Rien			0
+#define	Ci_Lapin_Chasseur_Tout			1
+#define	Ci_Lapin_Chasseur_Pigeons		2
+#define	Ci_Lapin_Chasseur_Moutons		3
+#define	Ci_Lapin_Chasseur_Prunes		4

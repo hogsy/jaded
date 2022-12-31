@@ -1,0 +1,130 @@
+
+// TYPES DE DECOR ======================
+#define		Ci_decor_type_rocher			1
+#define		Ci_decor_type_arbre				2
+
+// MASHING SETTINGS ======================
+#define		Ci_MashSettings_FromKit		0
+#define		Ci_MashSettings_Manual		1
+
+// DYNAMICS Options =======================
+#define		Ci_DynaOption_Static			0		// object is only moved by animation
+#define		Ci_DynaOption_Dynamic		1		// object is moved by dynamic all the time
+#define		Ci_DynaOption_DynaAtWin	2		// object is static at start but moved by dynamic when kong wins
+#define		Ci_DynaOption_ODE			3		// object is controlled by ODE all the time
+#define		Ci_DynaOption_ODEAtWin	4		// object is static at start but moved by ODE when kong wins
+
+
+// PARAM SELON LE TYPE =================
+#define		Ci_dist_grab_rocher				3.5
+#define		Ci_dist_grab_arbre				3.0
+
+// ETATS ===============================
+#define		ETAT_Wait							1
+#define		ETAT_Mashing					2
+#define		ETAT_Projete						3
+#define		ETAT_Mashing_Interupted		4
+
+// GRAB ===============================
+#define		Cf_dist_grab_carre						25.0	//49.0
+#define		Cf_delay_accept_grab					1.0
+
+// CAPA Bits exposing current state ===========
+#define		Ci_CAPA_InAction						OBJ_Capa_0
+#define		Ci_CAPA_InsideChallenge				OBJ_Capa_1
+#define		Ci_CAPA_KongWinning				OBJ_Capa_2
+#define		Ci_CAPA_KongLoosing				OBJ_Capa_3
+#define		Ci_CAPA_Canceling						OBJ_Capa_4
+
+#define		Ci_CAPA_KongHasWon				OBJ_Capa_10
+#define		Ci_CAPA_KongHasLost				OBJ_Capa_11
+
+
+// ANIMS ===============================
+
+// common to all
+#define		Ci_Action_0										00		// used by engine
+#define		Ci_Action_wait									05
+#define		Ci_Action_positionne							10
+#define		Ci_Action_challenge								15
+#define		Ci_Action_gagne									20
+#define		Ci_Action_gagne_variante						21
+#define		Ci_Action_perdu									25
+
+// le raptor en boule
+#define		Ci_action_pierre_wait						00
+#define		Ci_action_pierre_positionne				01
+#define		Ci_action_pierre_challenge				02
+#define		Ci_action_pierre_KK_gagne				03
+#define		Ci_action_pierre_KK_gagne_cycle		04
+#define		Ci_action_pierre_KK_perdu				05
+
+// le GrabObject fait a montreal
+#define		Ci_action_GrabObject_position			07
+#define		Ci_action_GrabObject_challenge 		08
+#define		Ci_action_GrabObject_win					09
+#define		Ci_action_GrabObject_loose				10
+
+// Pilier a soulever et lancer a la droite (FPP Kong)
+#define		Ci_action_PilierKong_position			13
+#define		Ci_action_PilierKong_challenge 			14
+#define		Ci_action_PilierKong_win					15
+#define		Ci_action_PilierKong_loose				16
+
+//GFX
+//ADDED SURESH
+#define 		NUM_LOCATIONS							5
+#define 		NUM_GFX										2
+#define 		START_FINISH								666
+#define 		MIDDLE											-666
+
+
+// TRACK
+#define	Ci_Track_Reflex										01
+#define	Ci_Track_Etat											02
+
+// Changement d'état
+#define macro_change_etat(etat)																				\
+{																															\
+	if (AI_TrackCurGetNum() == Ci_Track_Etat)																\
+		AI_TrackCurChangeNow(etat)																				\
+	else																													\
+		AI_TrackChange(Ci_Track_Etat, etat)																	\
+}
+
+
+//#define	macro_anim_KONG_perd		\
+//if( ACT_ActionFinished() || (i_kit == Ci_Kmashing_Kit_06 && ANI_CurrentFrameGet(0) > 40) )		\
+//{	\
+//	OBJ_CapaSet( 0, Ci_CAPA_KongLoosing )		\
+//	OBJ_CapaSet( Ci_CAPA_KongHasLost, 0 )		\
+//	macro_change_etat("KIMO_ETAT_Wait")		\
+//}		\
+//else		\
+//	OBJ_CapaSet( Ci_CAPA_KongLoosing, 0 )
+//
+//
+//#define	macro_anim_KONG_gagne		\
+//{		\
+//	if( i_dyna_option == Ci_DynaOption_DynaAtWin )		\
+//		DYN_GravitySet(Cv_NormalGravity)		\
+//	if( i_dyna_option == Ci_DynaOption_ODEAtWin )		\
+//		ODE_Enable(vrai)		\
+//	if( ACT_ActionFinished() )		\
+//	{	\
+//		OBJ_CapaSet( 0, Ci_CAPA_KongWinning )		\
+//		OBJ_CapaSet( Ci_CAPA_KongHasWon, 0 )		\
+//		OBJ_CapaSet( 0, Ci_CAPA_InAction )		\
+//		SetBackInitPos_GFX()		\
+//		if( i_kit_Anim_KK_Gagne_fixe == -1 )		\
+//			OBJ_Destroy()		\
+//		else	\
+//			ACT_ActionSet(i_kit_Anim_KK_Gagne_fixe)		\
+//	}		\
+//	else		\
+//		OBJ_CapaSet( Ci_CAPA_KongWinning, 0 )		\
+//}
+
+#define	ZDM_Size			cvector(2.0, 2.0, 2.0)
+#define	ZDM_Pos			cvector(0.0, 0.0, 2.0)
+#define	ZDM_Pos2			cvector(0.0, 0.0, 1.85)

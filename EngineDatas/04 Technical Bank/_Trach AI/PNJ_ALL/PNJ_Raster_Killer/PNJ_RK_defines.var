@@ -1,0 +1,23 @@
+// ETAT
+#define ETAT_Attente					00
+#define ETAT_Fuite						01
+#define ETAT_Reinit						02
+
+// ACTION
+#define Ci_Action_Attente				00
+#define Ci_Action_Peur					05
+#define Ci_Action_Fuite				10
+
+// TRACK
+#define Ci_Track_Reflex				00
+#define Ci_Track_Etat					01
+
+#define macro_change_etat(etat)																				\
+{																															\
+	if (AI_TrackCurGetNum() == Ci_Track_Etat)																\
+		AI_TrackCurChangeNow(etat)																				\
+	else																													\
+		AI_TrackChange(Ci_Track_Etat, etat)																	\
+	return																													\
+}
+

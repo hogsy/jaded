@@ -1,0 +1,336 @@
+
+
+#define	macro_change_tag_value(value)					tag_change_value = value			// Value = valeur (couleur) de TAG
+//#define	macro_change_tag_type(type)					tag_change_type = type			// Type = Type (taille 2x2, 1x2...) de TAG
+//#define	macro_change_tag_mode(mode)				tag_change_mode = mode		// Mode = Mode d'application des couleurs
+//#define	macro_change_tag_size(size)					tag_change_size = size			// Size = rayon de la zone d'occupation en 2x2dyn
+
+// Change la taille du TAG -----------------------------------------------------------
+#define	macro_change_tag_size(vec1, vec2)			\
+					tag_change_free_pos1 = vec1			\
+					tag_change_free_pos2 = vec2
+// Change la taille du TAG -----------------------------------------------------------
+					
+#define macro_update_grid_level \
+{if (COL_CollideType(COL_C_Ground))\
+{\
+	// On a toucher un sol donc j'update le ma hauteur grille.\
+	if (COL_GMAT_FlagsGet(COL_C_Ground) & Gmat_bit_hauteur_grille)\
+	{\
+		// Hauteur 1\
+		OBJ_CapaSet( DesHelpCapa_HauteurGrille, none)\
+	}\
+	else\
+	{\
+			// Hauteur 0\
+		OBJ_CapaSet( none, DesHelpCapa_HauteurGrille)\
+	}\
+}}
+
+#define macro_render_cone_Angle( position, orientation, longueur, angle, couleur)							\
+{																																		\
+	vector	macro_tv_vct																										\
+	macro_tv_vct = orientation																									\
+	DBG_RenderVector( position, macro_tv_vct * longueur, couleur)												\
+	macro_tv_vct = MATH_VecRotate( macro_tv_vct, Cv_VerticalVector, angle)								\
+	DBG_RenderVector( position, macro_tv_vct * longueur, i_color )												\
+	DBG_RenderVector( position + ( orientation * longueur), (macro_tv_vct - orientation) * longueur , couleur)	\
+	macro_tv_vct = OBJ_SightGet()																							\
+	macro_tv_vct = MATH_VecRotate( macro_tv_vct, Cv_VerticalVector, -angle)								\
+	DBG_RenderVector( position, macro_tv_vct * longueur, i_color )												\
+	DBG_RenderVector( position + ( orientation * longueur), (macro_tv_vct - orientation) * longueur , couleur)	\
+}
+
+#define macro_render_cone_CosAngle( position, orientation, longueur, cosangle, couleur)				\
+{																																		\
+	vector	macro_tv_vct																										\
+	vector	macro_tv_vct1																										\
+	vector	macro_tv_vct2																										\
+	vector	macro_tv_ortho																									\
+	macro_tv_ortho = MATH_VecRotate( orientation, Cv_VerticalVector, Cf_PiBy2)							\
+	macro_tv_vct = orientation																									\
+	DBG_RenderVector( position, macro_tv_vct * longueur, couleur)												\
+	macro_tv_vct = orientation * cosangle																					\
+	macro_tv_vct2 = macro_tv_ortho * MATH_FloatSqrt( 1 - (cosangle * cosangle))							\
+	macro_tv_vct1 = macro_tv_vct + macro_tv_vct2																	\
+	DBG_RenderVector( position, macro_tv_vct1 * longueur, i_color )												\
+	DBG_RenderVector( position + ( orientation * longueur), (macro_tv_vct1 - orientation) * longueur , couleur)\
+	macro_tv_vct1 = macro_tv_vct - macro_tv_vct2																		\
+	DBG_RenderVector( position, macro_tv_vct1 * longueur, i_color )												\
+	DBG_RenderVector( position + ( orientation * longueur), (macro_tv_vct1 - orientation) * longueur , couleur)\
+}
+
+
+#define 		Str_DisplayVectorOnce( disp_vector, disp_position )		\
+				{int		ti_indice														\
+				ti_indice = STR_CreateText("",disp_position, 0)				\
+				STR_AppendVector(ti_indice, disp_vector)}
+
+#define 		Str_DisplayGaoOnce( disp_gao, disp_position )			\
+				{int		ti_indice														\
+				ti_indice = STR_CreateText("",disp_position, 0)				\
+				STR_AppendGao(ti_indice, disp_gao)}
+
+#define 		Str_DisplayFloatOnce( disp_float, disp_position )			\
+				{int		ti_indice														\
+				ti_indice = STR_CreateText("",disp_position, 0)				\
+				STR_AppendFloat(ti_indice, disp_float, 3)}
+
+#define 		Str_DisplayFloatDecOnce( disp_float, disp_dec, disp_position )			\
+				{int		ti_indice														\
+				ti_indice = STR_CreateText("",disp_position, 0)				\
+				STR_AppendFloat(ti_indice, disp_float, disp_dec)}
+
+#define 		Str_DisplayIntOnce( disp_int, disp_position )				\
+				{int		ti_indice														\
+				ti_indice = STR_CreateText("",disp_position, 0)				\
+				STR_AppendInt(ti_indice, disp_int)}
+
+#define 		Str_DisplayTextOnce( disp_str, disp_position )				\
+				{int		ti_indice														\
+				ti_indice = STR_CreateText("",disp_position, 0)				\
+				STR_AppendText(ti_indice, disp_str)}
+
+
+
+#define 		Str_DisplayTxtVectorOnce(disp_txt, disp_vector, disp_position )		\
+				{int		ti_indice														\
+				ti_indice = STR_CreateText(disp_txt,disp_position, 0)				\
+				STR_AppendVector(ti_indice, disp_vector)}
+
+#define 		Str_DisplayTxtGaoOnce(disp_txt, disp_gao, disp_position )			\
+				{int		ti_indice														\
+				ti_indice = STR_CreateText(disp_txt,disp_position, 0)				\
+				STR_AppendGao(ti_indice, disp_gao)}
+
+#define 		Str_DisplayTxtFloatOnce(disp_txt, disp_float, disp_position )			\
+				{int		ti_indice														\
+				ti_indice = STR_CreateText(disp_txt,disp_position, 0)				\
+				STR_AppendFloat(ti_indice, disp_float, 3)}
+
+#define 		Str_DisplayTxtFloatDecOnce(disp_txt, disp_float, disp_dec, disp_position )			\
+				{int		ti_indice														\
+				ti_indice = STR_CreateText(disp_txt,disp_position, 0)				\
+				STR_AppendFloat(ti_indice, disp_float, disp_dec)}
+
+#define 		Str_DisplayTxtIntOnce( disp_txt, disp_int, disp_position )				\
+				{int		ti_indice														\
+				ti_indice = STR_CreateText(disp_txt,disp_position, 0)				\
+				STR_AppendInt(ti_indice, disp_int)}
+								
+#define macro_Affiche_LNK(LNK_ID,tv_pos)															\
+{																													\
+	int id_texte																									\
+																													\
+																													\
+	id_texte = STR_CreateText("\h0.03\Serveur : ", tv_pos, 0)									\
+	if (MSG_GlobalGetGao(LNK_ID,SERVEUR))													\
+		STR_AppendGao(id_texte, MSG_GlobalGetGao(LNK_ID,SERVEUR))				\
+	else																											\
+		STR_AppendText(id_texte, "None")																\
+	tv_pos += cvector(0,0.025,0)																			\
+	id_texte = STR_CreateText("\h0.03\Client : ", tv_pos, 0)										\
+	if (MSG_GlobalGetGao(LNK_ID,CLIENT))															\
+		STR_AppendGao(id_texte, MSG_GlobalGetGao(LNK_ID,CLIENT))					\
+	else																											\
+		STR_AppendText(id_texte, "None")																\
+	tv_pos += cvector(0,0.025,0)																			\
+	id_texte = STR_CreateText("\h0.03\", tv_pos, 0)												\
+	if (MSG_GlobalGetGao(LNK_ID,2))																	\
+		STR_AppendGao(id_texte, MSG_GlobalGetGao(LNK_ID,2))							\
+	else																											\
+		STR_AppendText(id_texte, "None")																\
+	STR_AppendText(id_texte, " || ")																		\
+	if (MSG_GlobalGetGao(LNK_ID,3))																	\
+		STR_AppendGao(id_texte, MSG_GlobalGetGao(LNK_ID,3))							\
+	else																											\	
+		STR_AppendText(id_texte, "None")																\
+	STR_AppendText(id_texte, " || ")																		\
+	if (MSG_GlobalGetGao(LNK_ID,4))																	\
+		STR_AppendGao(id_texte, MSG_GlobalGetGao(LNK_ID,4))							\
+	else																											\
+		STR_AppendText(id_texte, "None")																\
+	tv_pos += cvector(0,0.025,0)																			\
+	id_texte = STR_CreateText("\h0.03\Vect0 : ", tv_pos, 0)										\
+	STR_AppendVector(id_texte, MSG_GlobalGetVector(LNK_ID,0))							\
+	tv_pos += cvector(0,0.025,0)																			\
+	id_texte = STR_CreateText("\h0.03\Vect1 : ", tv_pos, 0)										\
+	STR_AppendVector(id_texte, MSG_GlobalGetVector(LNK_ID,1))							\
+	tv_pos += cvector(0,0.025,0)																			\
+	id_texte = STR_CreateText("\h0.03\Vect2 : ", tv_pos, 0)										\
+	STR_AppendVector(id_texte, MSG_GlobalGetVector(LNK_ID,2))							\
+	tv_pos += cvector(0,0.025,0)																			\
+	id_texte = STR_CreateText("\h0.03\Vect3 : ", tv_pos, 0)										\
+	STR_AppendVector(id_texte, MSG_GlobalGetVector(LNK_ID,3))							\
+	tv_pos += cvector(0,0.025,0)																			\
+	id_texte = STR_CreateText("\h0.03\Vect4 : ", tv_pos, 0)										\
+	STR_AppendVector(id_texte, MSG_GlobalGetVector(LNK_ID,4))							\
+	tv_pos += cvector(0,0.025,0)																			\
+	id_texte = STR_CreateText("\h0.03\Int : ", tv_pos, 0)											\
+	STR_AppendInt(id_texte, MSG_GlobalGetInt(LNK_ID,0))									\
+	STR_AppendText(id_texte, " || ")																		\
+	STR_AppendInt(id_texte, MSG_GlobalGetInt(LNK_ID,1))									\
+	STR_AppendText(id_texte, " || ")																		\
+	STR_AppendInt(id_texte, MSG_GlobalGetInt(LNK_ID,2))									\
+	STR_AppendText(id_texte, " || ")																		\
+	STR_AppendInt(id_texte, MSG_GlobalGetInt(LNK_ID,3))									\
+	STR_AppendText(id_texte, " || ")																		\
+	STR_AppendInt(id_texte, MSG_GlobalGetInt(LNK_ID,4))									\
+	STR_AppendText(id_texte, " || ")																		\
+}
+
+#define macro_add_callback_tir(fonction_de_tir)																						\
+	AI_CBAdd(@get_global o_camera, CallBack_Tir, fonction_de_tir)																			
+
+#define macro_del_callback_tir(fonction_de_tir)																							\
+	AI_CBDel(@get_global o_camera, CallBack_Tir, fonction_de_tir)	
+
+#define macro_add_callback_after_cam(fonction_de_tir)																				\
+	AI_CBAdd(@get_global o_camera, CallBack_After_Camera, fonction_de_tir)
+
+#define macro_del_callback_after_cam(fonction_de_tir)																				\
+	AI_CBDel(@get_global o_camera, CallBack_After_Camera, fonction_de_tir)
+	
+#define macro_set_danger( _objet )\
+{\
+	object		to_cam\
+	to_cam = @get_global o_camera\
+	if (_objet)\
+	{\
+		if ( @get_camera_path to_cam i_danger_lookat )\
+		{\
+			@get_camera_path to_cam o_danger_nexttarget = _objet\
+			@get_camera_path to_cam f_danger_nexttimer = 10.0\
+		}\
+		else\
+		{\
+			@get_camera_path to_cam o_danger_target = _objet\
+			@get_camera_path to_cam f_danger_timer = 10.0\
+		}\
+	}\
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#define SF_MinByVal	1
+#define SF_MaxByVal	200
+#define SF_MinById		201
+#define SF_MaxById	4999
+// 5000 >> 6399 ==> SF Statique Multimap
+
+#define SpecialFlag_set(bit)																							\
+{																																\
+	if (bit > 0)																												\
+	ARR_BitSet(&@"univ" Flag_speciaux_sauve[0],bit)														 \
+}
+
+#define SpecialFlag_change(bit)																						\
+{																																\
+	if (bit > 0)																												\
+		ARR_BitChange(&@"univ" Flag_speciaux_sauve[0],MATH_Modulo(bit,15000))				\
+}
+
+#define SpecialFlag_reset(bit)																						\
+{																																\
+	if (bit > 0)																												\
+	ARR_BitClear(&@"univ" Flag_speciaux_sauve[0], bit) 													\
+}
+
+#define SpecialFlag_get(bit, bitID)																					\
+{																																\
+	if (bit > 0)																												\
+		bitID = ARR_BitTest(&@"univ" Flag_speciaux_sauve[0], bit) 										\
+	else bitID = faux																										\
+}
+
+#define Super_SpecialFlag_set(bit)																					\
+{																																\
+	if (bit > 0)																												\
+	{																															\
+		if (bit >= 15000)																									\
+			ARR_BitClear(&@"univ" Flag_speciaux_sauve[0], bit-15000)									\
+		else																													\
+			ARR_BitSet(&@"univ" Flag_speciaux_sauve[0],bit)											 	\
+	}																															\
+}
+
+#define Super_SpecialFlag_reset(bit)																				\
+{																																\
+	if (bit > 0)																												\
+	{																															\
+		if (bit >= 15000)																									\
+			ARR_BitSet(&@"univ" Flag_speciaux_sauve[0],bit-15000)										 \
+		else																													\
+			ARR_BitClear(&@"univ" Flag_speciaux_sauve[0], bit)											\
+	}																															\
+}
+
+#define Super_SpecialFlag_get(bit, bitID)																			\
+{																																\
+	if (bit > 0)																												\
+	{																															\
+		if (bit>=15000)																										\
+			bitID = vrai - ARR_BitTest(&@"univ" Flag_speciaux_sauve[0], bit-15000) 					\
+		else																													\
+			bitID = ARR_BitTest(&@"univ" Flag_speciaux_sauve[0], bit) 									\
+	}																															\
+	else bitID = faux																										\
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Fixe la durée pendant laquelle la lance doit rester plantée avant de tomber
+#define	macro_set_javelin_plug_timer(obj, timer )\
+{\
+	if ( obj && @obj AI_IsModel(get_Arme_Lance_path) )\
+		@get_Arme_Lance_path obj f_plug_timer = timer\
+}
+
+// Fixe la durée pendant laquelle la fleche doit rester plantée avant de tomber
+#define	macro_set_fleche_plug_timer(obj, timer )\
+{\
+	if ( obj && @obj AI_IsModel(get_Arme_Fleche_path) )\
+		@get_Arme_Fleche_path obj f_plug_timer = timer\
+}
+
+// Ajoute un projectile dans le global
+#define macro_projectile_add(obj)	\
+{	\
+	if( obj && @obj AI_IsModel(get_Projectile_path) )\
+	{	\
+		if( @get_global i_projectile_nb == Ci_projectile_maxinmap )\
+			macro_projectile_del( @get_global ao_projectile[ 0 ] )\
+		@get_global ao_projectile[@get_global i_projectile_nb] = obj	\
+		@get_global i_projectile_nb++	\
+	}	\
+}
+
+
+// Supprime un projectile dans le global
+#define macro_projectile_del(obj)	\
+{	\
+	int		ti_projectile_indice	\
+	ti_projectile_indice = ARR_ObjSearch(&@get_global ao_projectile[0], @get_global i_projectile_nb, obj)	\
+	if( ti_projectile_indice != -1 )	\
+	{	\
+		@get_global ao_projectile[ti_projectile_indice] = @get_global ao_projectile[@get_global i_projectile_nb-1]	\
+		@get_global ao_projectile[@get_global i_projectile_nb-1] = nobody	\
+		@get_global i_projectile_nb--	\
+	}	\
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//		DUMP STATS  ( PC VERSION ONLY )
+//			if you will use this macro you'll have to includ LIB_STATS lib in your model
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//#define macro_STATS_Dump( _type, _object )	STATS_DumpDebugData( _type, _object )
+#define macro_STATS_Dump( _type, _object )
+
+
+
+
+
+
+
+

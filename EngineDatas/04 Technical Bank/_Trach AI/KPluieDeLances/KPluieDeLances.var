@@ -1,0 +1,130 @@
+//////////////////////////////////////////////////////////////////////////
+// Pluie de lances
+//
+// Les emetteurs, simples waypoints occludes par 
+// une geometrie quelconque, envoient des lances 
+// dans la direction des cibles.  
+//
+// Les emetteurs sont independants les uns des autres.
+// Il sont actives a chaque intervale de 
+// random(f_min_temps_entre_lances, f_max_temps_entre_lances)
+// secondes
+//
+// Un bassin de i_nombre_de_lances lances est cree a 
+// l init et fourni les emetteurs en lances.  Les lances sont 
+// recyclees lorsque le bassin est vide.  
+//
+// Les lances sont envoyees 
+// a f_distance_cible en avant de la cible, dans un radius
+// de f_radius.  Cette distance peut diminuer avec le temps
+// si la variable f_distance_diminue_avec_temps est vraie, et
+// elle diminue graduellement selon un facteur de la distance
+// normale : f_fact_distance_cible_stop si la cible est a 
+// l arret; f_fact_distance_cible_back si la cible recule
+// 
+// Zones (bv) : on doit placer les zones suivantes:
+// tr_attaque : quand une cible est dans cette zone, les emetteurs 
+// lancent des lances! 
+// tr_son : quand le joueur est dans cette zone, le son de clameur des
+// indigenes est active
+// tr_custom_auto_paf_list (optionnel) : quand le joueur est dans une de 
+// ces zones, le nombre de lances avant qu il soit paffer est lu dans le 
+// tableau ai_lances_avant_paf_trigger, a l index de la meme position.  La
+// valeur par defaut est -1, ce qui signifie qu il n y a pas de paf 
+// automatiques (il ne se fait jamais paffer).  Lorsqu il en ressort, le compteur 
+// est reinitialiser a la valeur i_lances_avant_paf_move. 
+//
+// Les compagnons sont vises, mais ne sont jamais touches.
+// Le joueur est touche a chaque i_lances_avant_paf_move s il 
+// est en movement, ou a chaque i_lance_avant_paf_stop s il 
+// est a l arret.  La variable f_norme_vitesse_min definie la vitesse
+// minimale a laquelle le joueur est considere en movement. 
+//
+// CAPA 2 est mis a vrai sur chaque javolot lance par 
+// un generateur
+// CAPA 3 est mis sur les lances qui ne doivent absolument
+// pas causer de domages
+//
+//////////////////////////////////////////////////////////////////////////
+
+#include "KPluieDeLances_defines.var"
+
+function track2 = "KPluieDeLances_init"
+
+separator "ETAT"
+private int 					i_sort_etat
+private int 					i_etat_courant 
+private int 					i_dernier_etat
+private function 			fct_last_etat
+private function 			fct_main_etat
+
+separator "EMETTEURS DE LANCES"	 
+object 				ao_liste_emetteurs[Ci_nombre_max_d_emetteurs] 	// liste des emetteurs de lances
+private float 		ao_liste_temps_emetteurs[Ci_nombre_max_d_emetteurs]
+object				o_lance_reference
+
+separator "BASSIN DE LANCE"
+int 					i_nombre_de_lances = Ci_nombre_max_de_lances 	// nombre de lances a creer a l init
+int						i_max_lance_a_lancer = -1
+int						i_lance_lancee_compteur = 0
+//private object 		ao_liste_lances[Ci_nombre_max_de_lances]
+//private int			i_lance_courante = 0
+
+separator "TEMPS"
+float 					f_min_temps_entre_lances = 0.0			// temps minimum entre deux tirs de lance
+float 					f_max_temps_entre_lances = 1.0 			// temps maximum entre deux tirs de lance
+
+separator "ZONES / TRIGGERS"
+trigger 				tr_attaque 											// zone ou l attaque est activee.  JD: Triggers are not needed if this is Digwaszai controlled.
+trigger				tr_son 												// zone ou le son est active
+optim trigger				tr_custom_auto_paf_list[Ci_nombre_max_custom_auto_paf_trigger] 	// liste de zones dans lesquelles le joueur ne doit pas etre paffer
+int 					ai_lances_avant_paf_trigger[Ci_nombre_max_custom_auto_paf_trigger] = (-1, -1, -1, -1, -1, -1, -1, -1, -1, -1)	// nombre de lances avant un paf quand joueur est dans une des bv
+
+
+separator "CIBLE"
+private object 		o_cible = nobody
+private object 		ao_cible_list[Ci_nombre_cibles]
+private int			i_nombre_cible
+		object		ao_cible_fixe[Ci_nombre_cibles]
+
+separator "PAF"
+float 					f_temps_avant_paf  = 0.0  						// temps en secondes avant qu il y ait un paf
+private float 		f_temps_avant_paf_courant
+private int 			i_lances_avant_paf
+private int 			i_lances_avant_paf_just_changed = faux
+private int 			i_lances_avant_paf_courant
+int 					i_lances_avant_paf_move  = 15 				// nombre de lances avant un paf, quand joueur est en mouvement
+int 					i_lances_avant_paf_stop  = 5 				// nombre de lances avant un paf, quand joueur est a l arret
+int 					i_fait_pafs = vrai 									// les lances paffent le joueur
+
+separator "VISEE"
+float					f_max_distance = Cf_Infinit					// distance max de tir
+float 					f_distance_cible = 10.0							// distance en avant du joueur ou les lances sont lancees
+float 					f_radius = 3.0										// radius dans lequel seront lances les lances, a f_distance_cible du joueur
+float 					f_fact_distance_cible_stop = 0.5				// facteur de f_distance_cible a utiliser quand le joueur est a l arret
+float 					f_fact_distance_cible_back = 0.3			// facteur de f_distance_cible a utiliser quand le joueur recule
+int						i_distance_diminue_avec_temps = vrai	// est-ce que la distance diminue selon un facteur quand le joueur est a l arret ou recule
+float					f_norme_vitesse_min = 1.0					// vitesse en deca de laquelle le joueur est considerer a l arret
+
+separator "IMPULSION"
+vector 				f_gravite = Cv_NormalGravity / 10.0		// gravite des lances
+float 					f_friction = 1.0									// friction des lances
+float					f_hauteur = 0.5								// hauteur desiree (en z) par laquelle les lances doivent passer
+float 					f_time = 0.0									// temps desire pour un tir de lance (0 = plus petit possible)
+int						i_flag_Z_friction = faux
+
+separator "SON"
+private int			i_ref_son = -1
+
+separator "GFX"
+int						i_flamme = faux
+
+separator "Digwazsai Support"
+private int			mi_IsExternalForceFire		= vrai_faux
+int						mi_IsDigwazsaiControlled	= vrai_faux	// is this
+private int			mi_ForceFireComplete		= faux_vrai
+private object		mo_WaszaiTarget
+private int			mi_IsDWZActive				= faux
+private float			mf_InactiveDWZFreq			= 0.0
+private int			mi_IsAccurate					= faux
+private object		mo_WaszaiStaticTarget

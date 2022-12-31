@@ -1,0 +1,478 @@
+//------------------------------------------------------------------------------------------------
+// DEBUG MACROS
+//------------------------------------------------------------------------------------------------
+//
+#ifdef _FINAL_
+#define SND_M_Assert(_cond, _text) 
+#endif
+
+#ifndef _FINAL_
+#define SND_M_Assert(_cond, _text) \
+	{\
+		if(!(_cond)) \
+		{\
+		DBG_TraceString(_text)\
+		DBG_TraceEOL()\
+		DBG_BreakPoint()\
+		}\
+	}
+#endif
+
+
+//------------------------------------------------------------------------------------------------
+// SND_TrackStatusGet()
+//------------------------------------------------------------------------------------------------
+#define SND_Cte_Track_A		0
+#define SND_Cte_Track_B		1
+#define SND_Cte_Track_C		2
+#define SND_Cte_Track_D		3
+
+
+//------------------------------------------------------------------------------------------------
+// SND_TrackGeti()
+//------------------------------------------------------------------------------------------------
+#define SND_Cte_TrackRq_ChainInstance	0x10000001
+#define SND_Cte_TrackRq_ChainDelay		0x10000002
+#define SND_Cte_TrackRq_Instance			0x10000003
+#define SND_Cte_TrackRq_PauseAll			0x10000004
+#define SND_Cte_TrackRq_UnpauseAll		0x10000005
+
+
+//------------------------------------------------------------------------------------------------
+// SND_TrackChain()
+//------------------------------------------------------------------------------------------------
+#define SND_Cte_TrackRq_ModeWaitMarker	0x20000001
+#define SND_Cte_TrackRq_ModeWaitRegion	0x20000002
+#define SND_Cte_TrackRq_ModeNoWait			0x20000003
+//
+#define SND_Cte_TrackRq_TagStart				0x30000001
+#define SND_Cte_TrackRq_TagLoop				0x30000002
+#define SND_Cte_TrackRq_TagEnd				0x30000004
+
+
+//------------------------------------------------------------------------------------------------
+// SND_MdFGetStatus()
+//------------------------------------------------------------------------------------------------
+#define MDF_Cte_SndStopped		0x00000001
+#define MDF_Cte_SndPlaying		0x00000002
+#define MDF_Cte_SndPaused		0x00000004
+
+//------------------------------------------------------------------------------------------------
+// SND_Request
+//------------------------------------------------------------------------------------------------
+#define C_SND_Request_DestroyWhenFinished			0x00000080	// destroy when finished (destruction des ressources dés que la fin du play est détecté)
+#define C_SND_Request_3DSound 							0x18000000	// 3D (calcul du volume + pan en fonction de la position du GAO)
+#define C_SND_Request_3DSound_Only_Volume			0x10000000	// 3D (calcul du volume en fonction de la position du GAO)
+#define C_SND_Request_3DSound_Only_Pan				0x08000000	// 3D (pan en fonction de la position du GAO)
+#define C_SND_Request_AutoPlay								0x00000800	// autoplay (play immédiat à la création de l'instance)
+#define C_SND_GlobalSoundReferencing						0x00000020	// the request sound index is global (not an index fron a snk)
+
+
+//------------------------------------------------------------------------------------------------
+// SND_FlagSet
+//------------------------------------------------------------------------------------------------
+#define SND_Cte_RandomPos									0x40000800	// play at random pos (seulement stream)
+
+#define SND_Cul_SF_PlayingLoop                				0x00800000
+
+//------------------------------------------------------------------------------------------------
+// SND_InstanceGeti(,) / SND_InstanceGetf(,) ...
+//------------------------------------------------------------------------------------------------
+#define SND_Cte_SetInstNearFar0								0x00001000
+#define SND_Cte_SetInstNearFar1								0x00001001
+#define SND_Cte_SetInstNearFar2								0x00001002
+#define SND_Cte_SetInstMiddle0								0x00001003
+#define SND_Cte_SetInstMiddle1								0x00001004
+#define SND_Cte_SetInstMiddle2								0x00001005
+#define SND_Cte_SetInstFarCoeff								0x00001006
+#define SND_Cte_SetInstMiddleCoeff							0x00001007
+#define SND_Cte_SetInstDeltaFar								0x00001008
+#define SND_Cte_SetInstMinPan								0x00001009
+#define SND_Cte_SetInstNear0									0x0000100A
+#define SND_Cte_SetInstFar0									0x0000100B
+#define SND_Cte_SetInstNear1									0x0000100C
+#define SND_Cte_SetInstFar1									0x0000100D
+#define SND_Cte_SetInstNear2									0x0000100E
+#define SND_Cte_SetInstFar2									0x0000100F
+#define SND_Cte_GetInstStreamPlayingStatus				0x00001010
+#define SND_Cte_SetInstCylinderHeight						0x00001011
+#define SND_Cte_SetInstDelay                					0x00001012
+#define SND_Cte_SetInstGao				    					0x00001013
+#define SND_Cte_GetInstDuration								0x00001014
+#define SND_Cte_SetInstStartDate								0x00001015
+#define SND_Cte_GetInstFadeIn									0x00001016
+#define SND_Cte_GetInstFadeOut								0x00001017
+#define SND_Cte_GetInstFxCore								0x00001018
+#define SND_Cte_GetInstTrack									0x00001019
+#define SND_Cte_SetInstDoppler								0x0000101A
+#define SND_Cte_SetInstGroup									0x0000101B
+#define SND_Cte_SetInstFxVolLeft								0x0000101C
+#define SND_Cte_SetInstFxVolRight							0x0000101D
+#define SND_Cte_GetInstSoundKey							0x0000101E
+#define SND_Cte_GetInstFlags                   				0x0000101F
+#define SND_Cte_GetInstLoop                    				0x00001020
+
+//
+#define SND_Cte_SetiGrpSpecialFX							0x00000001
+#define SND_Cte_SetiGrpMusic									0x00000002
+#define SND_Cte_SetiGrpAmbience							0x00000004
+#define SND_Cte_SetiGrpDialog									0x00000008
+#define SND_Cte_SetiGrpCutScene							0x00000010
+#define SND_Cte_SetiGrpInterface								0x00000020
+#define SND_Cte_SetiGrpA										0x00000040
+#define SND_Cte_SetiGrpB										0x00000080
+
+
+//------------------------------------------------------------------------------------------------
+// GST_SOUND
+//------------------------------------------------------------------------------------------------
+// exec flags
+#define SND_Cte_exec_UsrVol					0x00000001
+#define SND_Cte_exec_GrpVol					0x00000002
+#define SND_Cte_exec_Micro					0x00000004
+#define SND_Cte_exec_Fx						0x00000008
+#define SND_Cte_exec_3D						0x00000010
+#define SND_Cte_exec_FadeIn					0x00000020
+#define SND_Cte_exec_FadeOut				0x00000040
+#define SND_Cte_exec_GrpPatternReset		0x00000080
+#define SND_Cte_exec_DeathFadeOut		0x00000100
+
+
+// music and ambience snk managing
+#define SND_Cte_MusKit_A								0
+#define SND_Cte_MusKit_B								1
+#define SND_Cte_MusKit_C								2
+#define SND_Cte_MusKit_D								3
+#define SND_Cte_MusKit_E								4
+#define SND_Cte_MusKit_F								5
+#define SND_Cte_MusKit_G								6
+#define SND_Cte_MusKit_H								7
+#define SND_Cte_MusKit_I								8
+#define SND_Cte_MusKit_J								9
+#define SND_Cte_MusKit_Nb								10
+//
+#define SND_Cte_MusPhase_Cool						0
+#define SND_Cte_MusPhase_Stress					1
+#define SND_Cte_MusPhase_Stalk					2
+#define SND_Cte_MusPhase_Fight						3
+#define SND_Cte_MusPhase_BigFight     			4
+#define SND_Cte_MusPhase_Injure					5
+#define SND_Cte_MusPhase_Advantage				6
+#define SND_Cte_MusPhase_Nb						10
+//
+#define SND_Cte_MusJingle_0							0
+#define SND_Cte_MusJingle_1							1
+#define SND_Cte_MusJingle_2							2
+#define SND_Cte_MusJingle_3							3
+#define SND_Cte_MusJingle_4							4
+#define SND_Cte_MusJingle_5							5
+#define SND_Cte_MusJingle_6							6
+#define SND_Cte_MusJingle_7							7
+#define SND_Cte_MusJingle_8							8
+#define SND_Cte_MusJingle_9							9
+#define SND_Cte_MusJingle_Nb							10
+//
+#define SND_Cte_MusTransition_Nb					20
+//
+#define SND_Cte_MusicSnkSize						130 // 100 wam + 10 wam + 20 wav
+//
+#define SND_M_GetMusIdx 								( (@ "univ" SND_gi_MusicPhase) + ((@ "univ" SND_gi_MusicType)*SND_Cte_MusPhase_Nb) )
+#define SND_M_EvalMusIdx(phase, type) 			( (phase) + (( type)*SND_Cte_MusPhase_Nb) )
+#define SND_M_GetMusPhase 							@ "univ" SND_gi_MusicPhase
+#define SND_M_GetMusType 							@ "univ" SND_gi_MusicType
+#define SND_M_GetJingleIdx(i)							( (i) + 100)
+//
+#define SND_M_SetMusPhase(iPhase)\
+	{\
+		@ "univ" SND_gi_MusicPhase = iPhase\
+	}
+//	
+#define SND_M_SetMusType(iType)\
+	{\
+		@ "univ" SND_gi_MusicType = iType\
+	}
+//
+//
+//	
+#define SND_Cte_AmbArea_A							0
+#define SND_Cte_AmbArea_B							1
+#define SND_Cte_AmbArea_C							2
+#define SND_Cte_AmbArea_D							3
+#define SND_Cte_AmbArea_E							4
+#define SND_Cte_AmbArea_F							5			
+#define SND_Cte_AmbArea_G							6
+#define SND_Cte_AmbArea_H							7
+#define SND_Cte_AmbArea_I								8
+#define SND_Cte_AmbArea_J							9
+#define SND_Cte_AmbArea_Nb							10
+//
+#define SND_Cte_AmbPhase_Cool						0
+#define SND_Cte_AmbPhase_Stress					1
+#define SND_Cte_AmbPhase_2							2
+#define SND_Cte_AmbPhase_Fight					3
+#define SND_Cte_AmbPhase_4							4
+#define SND_Cte_AmbPhase_5							5
+#define SND_Cte_AmbPhase_6							6
+#define SND_Cte_AmbPhase_7							7
+#define SND_Cte_AmbPhase_8							8
+#define SND_Cte_AmbPhase_Transition				9
+#define SND_Cte_AmbPhase_Nb						10
+// 
+#define SND_Cte_AmbienceNb							130
+//
+#define SND_M_GetAmbIdx 								( (@ "univ" SND_gi_AmbiencePhase) + ((@ "univ" SND_gi_AmbienceArea)*SND_Cte_AmbPhase_Nb) )
+#define SND_M_GetAmbPhase 							@ "univ" SND_gi_AmbiencePhase
+#define SND_M_GetAmbArea 							@ "univ" SND_gi_AmbienceArea
+#define SND_M_GetAmbTransitionIdx 				( SND_Cte_AmbPhase_Transition + (@ "univ" SND_gi_AmbienceArea * SND_Cte_AmbArea_Nb))
+//
+#define SND_M_SetAmbPhase(iPhase)\
+	{\
+		@ "univ" SND_gi_AmbiencePhase = iPhase\
+	}
+//	
+#define SND_M_SetAmbArea(iArea)\
+	{\
+		@ "univ" SND_gi_AmbienceArea = iArea\
+	}
+
+
+//------------------------------------------------------------------------------------------------
+// FX
+//------------------------------------------------------------------------------------------------
+// params
+#define SND_Cte_Fx_iEnable				0x00001001
+#define SND_Cte_Fx_iMode					0x00001002
+#define SND_Cte_Fx_iDelay					0x00001003
+#define SND_Cte_Fx_iFeedback			0x00001004
+#define SND_Cte_Fx_fWetVol				0x00001005
+#define SND_Cte_Fx_iWetPan				0x00001006
+#define SND_Cte_Fx_iCoreId					0x00001007
+#define SND_Cte_Fx_iContext				0x00001008
+// mode 
+#define SND_Cte_FxMode_Off				0x00000000
+#define SND_Cte_FxMode_Room			0x00000001
+#define SND_Cte_FxMode_StudioA		0x00000002
+#define SND_Cte_FxMode_StudioB		0x00000003
+#define SND_Cte_FxMode_StudioC		0x00000004
+#define SND_Cte_FxMode_Hall				0x00000005
+#define SND_Cte_FxMode_Space			0x00000006
+#define SND_Cte_FxMode_Echo			0x00000007
+#define SND_Cte_FxMode_Delay			0x00000008
+#define SND_Cte_FxMode_Pipe				0x00000009
+#define SND_Cte_FxMode_Mountains		0x0000000A
+#define SND_Cte_FxMode_City				0x0000000B
+#define SND_Cte_FxMode_Nb				0x0000000C
+// id
+#define SND_Cte_FxCoreA				0
+#define SND_Cte_FxCoreB				1
+// context
+#define SND_Cte_FxContextLocal		0
+#define SND_Cte_FxContextGlobal		1
+// activation state
+#define SND_Cte_FxState_Inactive     0
+#define SND_Cte_FxState_Active       1
+#define SND_Cte_FxState_Lock         2
+#define SND_Cte_FxState_Unlock       3
+
+
+
+//------------------------------------------------------------------------------------------------
+// global params
+//------------------------------------------------------------------------------------------------
+#define SND_Cte_SetDopplerFactor				0x00000000
+#define SND_Cte_SetRolloffFactor					0x00000001
+#define SND_Cte_SetSurroundFactor				0x00000002
+#define SND_Cte_SetFreeze3DVol					0x00000007
+#define SND_Cte_SetFreezeDynamicPan		0x00000008
+#define SND_Cte_SetLoading						0x00000009
+#define SND_Cte_SetLoadingFadeInTime			0x0000000B
+#define SND_Cte_SetLoadingFadeOutTime		0x0000000C
+#define SND_Cte_SetDopplerSoundSpeed		0x0000000D
+#define SND_Cte_SetRenderMode					0x0000000E
+#define SND_Cte_GetRenderModeCapacity		0x0000000F
+
+
+//------------------------------------------------------------------------------------------------
+// modes
+//------------------------------------------------------------------------------------------------
+// game
+#define SND_Cte_ModeMask			0x0FFFFFFF
+#define SND_Cte_SubModeMask	0xF0000000
+
+#define SND_Cte_ModePlaying	0
+#define SND_Cte_ModeMenu		1
+#define SND_Cte_ModeLoading	2
+#define SND_Cte_ModeDying	3
+#define SND_Cte_SubModeA		0x80000000
+#define SND_Cte_SubModeB		0x40000000
+
+// --- interface ---
+#define SND_M_SetGameMode(iMode) \
+	{\
+		@"univ" SND_gi_GameMode &= ~SND_Cte_ModeMask\
+		@"univ" SND_gi_GameMode |= (iMode & SND_Cte_ModeMask)\
+	}
+
+#define SND_M_SetGameSubMode(iMode) \
+	{\
+		@"univ" SND_gi_GameMode &= ~SND_Cte_SubModeMask\
+		@"univ" SND_gi_GameMode |= (iMode & SND_Cte_SubModeMask)\
+	}
+//
+#define SND_M_GetGameMode  (@"univ" SND_gi_GameMode &  SND_Cte_ModeMask)
+// render
+#define SND_Cte_RenderMono						1	//0x00000001
+#define SND_Cte_RenderStereo				    		2	//0x00000002
+#define SND_Cte_RenderDolbyPrologicII			16	//0x00000010
+#define SND_Cte_RenderDolbyDigital			  	32	//0x00000020
+#define SND_Cte_RenderUseConsoleSettings	64	//0x00000040
+// --- interface --- 
+#define SND_M_SetRenderMode(iMode)\
+	{\
+		SND_M_Assert(\
+			(iMode == SND_Cte_RenderMono) || (iMode == SND_Cte_RenderStereo) || \
+			(iMode == SND_Cte_RenderDolbyPrologicII) || (iMode == SND_Cte_RenderDolbyDigital) ||\
+			(iMode == SND_Cte_RenderUseConsoleSettings),  \
+			"[GST_SOUND] bad render mode")\
+		\
+		@"univ" SND_gi_RenderMode = iMode\
+	}
+//
+#define SND_M_GetRenderMode @"univ" SND_gi_RenderMode
+
+
+//------------------------------------------------------------------------------------------------
+// GROUP
+//------------------------------------------------------------------------------------------------
+#define 	SND_Cte_GrpSpecialFX			0
+#define	SND_Cte_GrpMusic					1
+#define	SND_Cte_GrpAmbience			2
+#define	SND_Cte_GrpDialog					3
+#define	SND_Cte_GrpCutScene			4
+#define	SND_Cte_GrpInterface				5
+#define	SND_Cte_GrpA						6
+#define 	SND_Cte_GrpB					 	7
+#define	SND_Cte_MasterGrp			 	8
+//
+#define	SND_Cte_UserGrpMusic		 	9
+#define	SND_Cte_UserGrpDialog		 	10
+#define	SND_Cte_UserGrpSpecialFX		11
+#define	SND_Cte_UserGrpMaster			12
+//
+#define  SND_Cte_GroupNb					13
+#define  SND_Cte_UserGroupNb			4
+//
+#define SND_Cte_VolPattern					16
+
+// --- interface ---
+//
+// user vol -----------------------------------------------------------------------------------------------------------------------------------------------------
+//
+#define SND_M_SetUserVol(iId, fVolume)\
+	{\
+		SND_M_Assert( (iId >= SND_Cte_UserGrpMusic) && (iId <= SND_Cte_UserGrpMaster) , "[GST_SOUND] bad user volume id")\
+		SND_M_Assert( (fVolume >= 0.0) && (fVolume <= 1.0) , "[GST_SOUND] bad volume value")\
+		@"univ" SND_gaf_UsrGroupVolume[iId-SND_Cte_UserGrpMusic] = fVolume\
+		@ "univ" SND_gi_GlobalCommand |= SND_Cte_exec_UsrVol\
+	}
+//
+#define SND_M_GetUserVol(iId) @"univ" SND_gaf_UsrGroupVolume[iId-SND_Cte_UserGrpMusic]
+//
+// group vol -----------------------------------------------------------------------------------------------------------------------------------------------------
+//
+#define SND_M_SetGroupVol(iId, fVolume)\
+	{\
+		SND_M_Assert( (iId >= SND_Cte_GrpSpecialFX) && (iId <= SND_Cte_MasterGrp) , "[GST_SOUND] bad group volume id")\
+		SND_M_Assert( (fVolume >= 0.0) && (fVolume <= 1.0) , "[GST_SOUND] bad volume value")\
+		@ "univ" SND_gaf_GroupVolumeFinal[iId] = 0.0\
+		@ "univ" SND_gaf_GroupVolumeDuration[iId] = 0.0\
+		@"univ" SND_gaf_GroupVolume[iId] = fVolume\
+		@ "univ" SND_gi_GlobalCommand |= SND_Cte_exec_GrpVol\
+	}
+//
+#define SND_M_GetGroupVol(iId) @"univ" SND_gaf_GroupVolume[iId]
+//
+#define SND_M_FadeGroup(iId, vol, duration)\
+	{\
+		@ "univ" SND_gaf_GroupVolumeFinal[iId] = vol\
+		@ "univ" SND_gaf_GroupVolumeDuration[iId] = duration\
+		@ "univ" SND_gi_GlobalCommand |= SND_Cte_exec_GrpVol\
+	}
+//
+#define SND_M_GroupPatternSet(group, rank, vol, time) \
+	{\
+		@ "univ" SND_gaf_GroupVolumePattern[group][2*rank] = time\
+		@ "univ" SND_gaf_GroupVolumePattern[group][2*rank+1] = vol\
+		@ "univ" SND_gai_GroupVolumePatternNew[group] = 1\
+		@ "univ" SND_gi_GlobalCommand |= SND_Cte_exec_GrpVol\
+	}
+//
+// vol request -----------------------------------------------------------------------------------------------------------------------------------------------------
+//
+#define SND_M_SetGroupVolRq(iId, fVolume)\
+	{\
+		@ "univ" SND_gaf_GroupVolRq[iId] = fVolume\
+		@ "univ" SND_gi_GlobalCommand |= SND_Cte_exec_GrpVol\
+	}
+#define SND_M_SetAllVolButA(fVolume)\
+	{\
+		int ti\
+		for(ti=SND_Cte_GrpSpecialFX; ti<SND_Cte_MasterGrp; ti++)\
+		{\
+			if(ti==SND_Cte_GrpA) continue\
+			@ "univ" SND_gaf_GroupVolRq[ti] = fVolume\
+		}\
+		@ "univ" SND_gi_GlobalCommand |= SND_Cte_exec_GrpVol\
+	}
+#define SND_M_SetAllVolButB(fVolume)\
+	{\
+		int ti\
+		for(ti=SND_Cte_GrpSpecialFX; ti<SND_Cte_MasterGrp; ti++)\
+		{\
+			if(ti==SND_Cte_GrpB) continue\
+			@ "univ" SND_gaf_GroupVolRq[ti] = fVolume\
+		}\
+		@ "univ" SND_gi_GlobalCommand |= SND_Cte_exec_GrpVol\
+	}
+
+#define SND_M_SetAllVolButMus(fVolume)\
+	{\
+		int ti\
+		for(ti=SND_Cte_GrpSpecialFX; ti<SND_Cte_MasterGrp; ti++)\
+		{\
+			if(ti==SND_Cte_GrpMusic) continue\
+			@ "univ" SND_gaf_GroupVolRq[ti] = fVolume\
+		}\
+		@ "univ" SND_gi_GlobalCommand |= SND_Cte_exec_GrpVol\
+	}
+
+#define SND_M_SetAllVolButMusAndB(fVolume)\
+	{\
+		int ti\
+		for(ti=SND_Cte_GrpSpecialFX; ti<SND_Cte_MasterGrp; ti++)\
+		{\
+			if(ti==SND_Cte_GrpMusic) continue\
+			if(ti==SND_Cte_GrpB) continue\
+			@ "univ" SND_gaf_GroupVolRq[ti] = fVolume\
+		}\
+		@ "univ" SND_gi_GlobalCommand |= SND_Cte_exec_GrpVol\
+	}
+
+
+//-----------------------------------------------------------------------------------------------
+// MICRO
+//-----------------------------------------------------------------------------------------------
+#define SND_M_SetMicro(gao) \
+	{\
+		@ "univ" SND_go_MicroRef = gao\
+		@ "univ" SND_gi_GlobalCommand |= SND_Cte_exec_Micro\
+	}		
+//
+#define SND_M_GetMicro()	@ "univ" SND_go_MicroRef
+
+
+#define Ci_SndBeat_Beat			0b0000000000000001
+#define Ci_SndBeat_Jin1			0b0000000000010000
+#define Ci_SndBeat_Jin2			0b0000000000100000
+#define Ci_SndBeat_Jin3			0b0000000001000000
+#define Ci_SndBeat_Jin4			0b0000000010000000

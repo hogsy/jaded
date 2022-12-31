@@ -1,0 +1,1012 @@
+#include"k_define.var"
+
+// Define at least one function in a track
+// function track0 = "name"
+// function track1 = "name" 
+function track2 = "k_init"
+// function track3 = "name"
+// function track4 = "name"
+
+color				color_test = 0x00605C6A
+
+private int		i_Grab_Torse_ANN = faux					// si vrai, indique que KONG grabbe ANN près de ton torse (elle est blessée)
+private int		i_Grab_Torse_Actor = faux				// si vrai, indique que KONG grabbe un acteur (ANN ou autre) près de ton torse
+private int		i_Grab_Torse_Main = -1					// 0 ou 1 : main dans laquelle KONG grabbe l'acteur près de son torse
+
+separator "reglages"
+int				i_walling_on		= faux_vrai
+int				i_SFX_on			= faux_vrai
+float			f_walling_gravity 	= 5.0
+int				i_hotspot_mode	= enum( "Auto" 0 "Manual" 1)
+float			f_GrabKong_angle = 0.0
+float			f_GrabKong_distance = 8.5
+float			f_life_init = Cf_Life_Max
+int				i_debut_force = enum( " 0 Aucun" 0 " 1 Fracasse" 1) 		// faites chier qd meme
+
+separator "DBG"
+int				i_DBG_mode = enum( "Walling" 1000  "Climb 0D" 901 "Deplacement" 200 "Jump_impulsion" 800 "Swing Hor" 951 "Swing Vertical" 950  )
+int				i_DBG_DISPLAY_TARGET = vrai_faux
+int				i_DBG_TRACE_TARGET = vrai_faux
+int				i_DBG_DISPLAY_ANIM = vrai_faux
+int				i_DBG_DISPLAY_WALLING = vrai_faux
+int				DBG_WITHOUT_LOCK = vrai_faux
+
+separator "---"
+// ETATS
+private	int				i_sort_etat
+private	int				i_etat_courant 		= -1
+private	int				i_dernier_etat			= -1
+
+private	function		fct_last_etat
+private	float			f_time_start_etat
+private	float			f_time_start_blend
+             
+// BOUTONS SWITCH / TOGGLE
+private	int		i_flag_galop
+private	int		i_flag_trample
+private	int		i_flag_trample_old
+private	int		i_flag_just_Rage
+private	int		i_flag_just_grab
+private	int		i_flag_just_throw
+private	int		i_flag_just_dodge
+private	int		i_flag_just_Action
+private	int		i_flag_just_coup
+private	int		i_flag_intimidateD
+private	int		i_flag_intimidateG
+private 	int		i_flag_just_jump_swing
+private	int		i_flag_just_jump
+private	int		i_flag_just_Rage_Any_Button
+private	int		i_flag_just_grab_JACK
+private	int		i_flag_just_pose_JACK
+
+
+#include "ROOT/EngineDatas/04 Technical Bank/AI Models/Global Library/exec_deplacements_tag.var"
+
+// SERVEURS
+private messageid	amid_SRV_LIAISON_ID[Ci_LNK_TYPE_NB]
+private int				ai_SRV_ENABLE[Ci_LNK_TYPE_NB]
+private object			ao_SRV[Ci_LNK_TYPE_NB]
+private function		afct_SRV[Ci_LNK_TYPE_NB]
+
+// CLIENTS
+private messageid	amid_CL_LIAISON_ID[Ci_LNK_TYPE_NB]
+private object			ao_CL[Ci_LNK_TYPE_NB]
+
+// GRAB KONG
+private messageid	amid_CL_LIAISON_ID_GRABKONG[2]
+private object			ao_CL_GRABKONG[2]
+private object			o_GrabKong_Target
+private int				i_GrabKong_MainBloquee	 = -1
+private int				i_GrabKong_MainActionGrab = -1
+private int				i_GrabKong_mode
+private int				i_GrabKong_attrape_jete
+private int				i_GrabKong_orient
+private int				i_GrabKong_Souche
+private int				i_GrabKong_1_attrape_par_action
+private int				i_GrabKong_Type
+private int				i_GrabKong_Positionnement_Attrape
+private int				i_GrabKong_sweep_degagement
+private int				i_GrabKong_positionnement_fini
+private float				f_GrabKong_BlendPosInit
+private float				f_GrabKong_blend_pos
+private float				f_GrabKong_blend_orient
+private float				f_GrabKong_frein
+private float				f_GrabKong_wheel_speed
+private float				f_GrabKong_wheel_speed_invert
+private float				f_GrabKong_wheel_speed_col
+private float				f_GrabKong_wheel_change_speed
+private float				f_GrabKong_wheel
+private float				f_GrabKong_rot_sign
+private float				f_GrabKong_speed_grab_min
+private vector			v_GrabKong_init_grab
+private vector			v_GrabKong_last_joy
+private vector			v_GrabKong_speed_grab
+private vector			v_GrabKong_speed_derape
+private vector			v_Grab_Kong_Offset_init
+private vector			v_GrabKong_axe
+private vector			v_GrabKong_attrape_orient
+private int				i_GrabKong_Throw
+private int				i_GrabKong_Lance_Anim
+private int				i_flag_grab_raptor_en_cours
+private int				i_GrabKong_raptor_test
+private int				i_GrabKong_cote
+private int				i_GrabKong_send_PAF
+private int				i_GrabKong_je_vais_etre_jete 
+private vector			v_GrabKong_my_pos_before_rec
+private int				i_GrabKong_sweep_Throw
+private int				i_GrabKong_force_sweep
+private int				i_GrabKong_Sens_cote
+private int				i_GrabKong_ModeKill_PafSend = faux
+private int				i_GrabKong_Mash_with_X = faux
+private int				i_GrabKong_posset_allowed = vrai_faux
+private int				i_GrabKong_grabAnnAccepte = vrai_faux
+private float				f_GrabKong_dist_min_1m
+private int				i_GrabKong_Dash
+private object			o_GrabKong_Dash_Target
+private float				f_GrabKong_Dash_Dist
+private float				f_GrabKong_SND_timer_exit = 0.0
+private int				i_GrabAnn_Tested = vrai_faux
+
+private object			o_Throw_Target					// acteur ciblé pour le lancer d'un objet
+private int				i_Throw_Target = -1
+
+// PAF MASHING =======================================================
+private	int				i_paf_mashing					// flag j'ai été paffé pendant un mashing
+private	int				i_paf_mashing_cine			// idem, mais cas particulier
+private	vector		v_paf_mashing_sens		// sens dégagement en paf en mode mashing
+private	object		o_paf_mashing_actor		// mémo pour uncol
+private	object		o_paf_mashing_object
+
+// GRAB MASHING =====================================================
+private	int				ai_GrabKong_Mashing_liaison_active		// flag pour autoriser une liaison ou non
+private 	vector		v_GrabKong_Mashing_position				// vecteur de positionnement pour un grab mashing
+private 	vector		v_GrabKong_Mashing_orientation			// vecteur d'orientation pour un grab mashing
+private 	int				i_GrabKong_Mashing_positionnement		// flag qui indique que KONG est en train de se positionner pour un grab mashing
+private 	float			f_GrabKong_Mashing_blend					// blend de positionnement / orientation
+private	float			f_GrabKong_Mashing_frame_SND			// Ftrame du dernier son jouer
+private	object		o_GrabKong_Mashing_backup				// pour mémoriser le pilier
+
+// Runtime values
+private	float			f_GrabKong_Mashing_force_kong			// force de KONG
+private	float			f_GrabKong_Mashing_force_object			// force de l'objet
+private	float			f_GrabKong_Mashing_frame_inc				// current frame increment (smoothed for animation)
+private	float			f_GrabKong_Mashing_regressTime			// how long has the player regressed in total
+
+// KIT ---------------------------------------
+private	int				i_GrabKong_Mashing_kit			// N° de KIT à utiliser
+// INT KIT INFOS -----------------------
+private	int				ai_GrabKong_Mashing_kit_infos[Ci_Kmashing_Kit_Count][Ci_Kmashing_INT_Params_Count]
+private	int				i_GrabKong_Mashing_anim_positionne	// anim de positionnement
+private	int				i_GrabKong_Mashing_anim_challenge		// anim de challenge en cours / challenge gagné
+private	int				i_GrabKong_Mashing_anim_kk_gagne	// anim de challenge gagné
+private	int				i_GrabKong_Mashing_anim_kk_perdu		// anim de challenge perdu
+private	int				i_GrabKong_Mashing_challenge_type		// type de challenge (kong peut-il perdre et/ou gagner ?)
+private	int				i_GrabKong_Mashing_annule					// flag qui indique que le challenge a été annulé
+private	trigger		trig_GrabKong_Mashing_win_restriction	// trigger à vérifier pour valider la réussite du mashing
+// FLOAT KIT INFOS -----------------
+private	float			af_GrabKong_Mashing_kit_infos[Ci_Kmashing_Kit_Count][Ci_Kmashing_FLOAT_Params_Count]
+private	float			f_GrabKong_Mashing_frame					// frame courante du challenge
+private	float			f_GrabKong_Mashing_frame_debut			// frame du début du challenge
+private	float			f_GrabKong_Mashing_frame_kk_perdu	// frame à laquelle KONG a perdu
+private	float			f_GrabKong_Mashing_frame_kk_gagne	// frame à laquelle KONG a gagné
+private	float			f_GrabKong_Mashing_force_coef_kong_down			// coef de diminution de la force de KONG
+private	float			f_GrabKong_Mashing_force_coef_object_up				// coef d'augmentation de la force de l'objet
+private	float			f_GrabKong_Mashing_force_activate_object				// force max de KONG pour activer la force de l'objet
+private	float			f_GrabKong_Mashing_force_diminution_object			// palier de diminution de force de l'objet quand le joueur appuie
+private	float			f_GrabKong_Mashing_force_coef_trigger_kong			// force max de KONG quand le joueur appuie
+private	int				i_GrabKong_Mashing_annule_terminee					// finir l annulation
+
+// FURY ===============================================================
+private float				f_Fury_time_end
+private messageid	mid_fury
+private float				f_fury_angle
+private float				f_fury_puissance
+private float				f_fury_last_punch_time
+private int				i_fury_step
+private vector			v_fury_axis
+private float				f_fury_charge_time												// When > f_safe_delay : end of fury( miss)
+private float				f_safe_delay 														// Increase when C Pressed
+private float		f_time_fury 						// Temp Fury... Si != 0 alors je suis en mode Fury
+private int		i_valide
+private int		i_error
+private int		i_fury_enabled
+private float		f_fury_charge
+private int		i_fury_on		= vrai_faux
+private float		f_fury_time_Volnull
+private	int		i_fury_increased_this_action
+
+// Suivi des YEUX
+object					o_look_cine
+vector					v_look_position
+private	int				i_look_enable
+private 	float			f_look_angleV
+
+float						f_head_angle_X
+float						f_head_angle_Z
+vector					v_head_virtual_sight
+vector					v_head_banking
+
+// Mode FORCE
+vector					v_blend_joy		= Cv_NullVector
+
+vector					v_pos_main, v_main_sight,v_main_bank
+float						f_dist1, f_dist2
+
+vector					v_pos_main_old 
+
+int							i_mode 
+int							i_extreme
+
+object		o_tracked 
+
+vector		v_tete
+
+object		o_bras[2][3]				// ID du bras, module de ce bras
+object		o_tete[5]
+
+vector		v_grab_force_pos
+vector		v_grab_object_pos
+
+
+// JOY
+private		int			i_joy_flag_dash
+private		int			i_joy_flag_dash_old
+private		int			i_joy_flag_esquive
+private		int			i_joy_toggle_shift
+private		float		f_joy_toggle_shift_delai
+private		vector	v_joy_sight
+private		vector	v_joy_sight_normalized
+private		vector	v_joy_sight_old
+private		float		f_joy_sweep_angle
+private		float		f_joy_sweep_force
+private		int			i_joy_disable_control
+
+// IK
+private float		f_IK_offset_left_leg
+private float		f_IK_offset_right_leg
+private float		f_IK_offset_left_arm
+private float		f_IK_offset_right_arm
+
+
+// Mode FORCE
+private	float			f_grab_blend_pos
+private	float			f_grab_blend_main
+private	float			f_grab_incline
+private	float			f_grab_incline_avt
+
+
+private	float			f_dist_main_coude_G
+private	float			f_dist_bras_coude_G
+private	float			f_dist_main_coude_D
+private	float			f_dist_bras_coude_D
+
+// CHUTE
+private	vector		v_jump_normale_chute 
+private	int				i_WP_generated
+private	vector		v_jump_last_joy_vector
+private	vector		v_jump_init_joy_vector
+private	int				i_climb_0D_force_blend_banking
+private	float			f_climb_rapide_blend		
+private	int				i_jump_chute
+
+// SAUT
+private int			i_jump_reception
+private int			i_jump_flag_force_reception
+private int			i_jump_auto_rattraping						// Passe a vrai si one st en autorattraping
+private int			i_jump_flag_ratraping_allowed			// autorise les test d auto rattraping
+
+private float			f_jump_length
+private float			f_jump_friction
+private float			f_jump_angle_a_compenser
+private vector		v_jump_offset
+private vector		v_jump_last_speed
+private int			i_jump_clean_freq
+
+private int			i_jump_to_grab = vrai_faux
+private int			i_jump_to_frappe = vrai_faux
+
+// ***************************************
+// Variables de gestion du saut forcé
+
+private vector		v_jump_force_sens
+private float			f_jump_force_distance
+private int			i_jump_force_no_impulsion
+private float			f_jump_force_hauteur
+private vector		v_jump_force_chute_orient
+private int			i_jump_check_hotspot = faux_vrai
+private int			i_jump_check_hotspot_fight = faux_vrai
+private int			i_jump_force_anim_cycl
+private int			i_jump_force_anim_impulsion
+private int			i_jump_force_no_orient_impulsion = vrai_faux
+private int			i_jump_force_chute = vrai_faux
+private int			i_jump_force_zdm_impulsion = faux_vrai
+private int			i_jump_force_keep_Z_speed = vrai_faux
+private int			i_jump_force_accroch = vrai_faux
+private int			i_jump_autorise_accroch = faux_vrai
+private int			i_jump_force_no_clear_bat = vrai_faux
+private float			f_jump_force_amplitude
+private vector		v_jump_force_pos
+private int			i_jump_without_attack
+private float			f_jump_ground_col
+
+// ***************************************
+
+// Hot Spot
+private object		o_jump_hotspot
+private float			f_jump_hotspot_dist
+private vector		v_jump_hotspot_speed
+private object		o_jump_hotspot_last
+
+// CLIMB GENERAL
+private int			i_flag_auto_grab
+private int			i_flag_climb_wall
+private int			i_flag_climb_impulsion_done
+private int			i_flag_climb_last_chance
+private int			i_climb_jump_index
+private int			i_climb_ponderation_mode
+private int			i_climb_ask_jump					= vrai_faux
+
+private float			f_climb_rotation_angle
+private float			f_climb_impulsion_time
+private float			f_climb_impulsion_coef
+private float			f_climb_impulsion_duration
+private float			f_climb_force_strafe_dist
+private float			f_climb_blend_bassin
+
+private vector		v_climb_hand_offset
+private vector		av_climb_hand_offset[Ci_climb_jump_anim_nb][2]
+private vector		v_last_hand_pos
+private vector		v_last_hand_offset
+
+private vector		v_climb_speed
+private vector		v_climb_normale
+private vector		v_climb_position
+private vector		v_climb_impulsion_force
+private vector		v_climb_impulsion_dir
+private vector		v_climb_ground_pos
+
+private object		o_climb_target_wp
+
+
+// CLIMB 0D
+private object		o_climb_0D_wp
+private object		o_climb_0D_last_wp
+private vector		v_climb_0D_offset_accroch
+private int			i_climb_0D_GMAT		= -1
+private object		o_climb_0D_Wall = nobody
+
+// CLIMB 1D
+private float			f_climb_1D_axis_dist
+private float			f_climb_1D_axis_length
+
+private object		o_climb_1D_current_wp
+private object		o_climb_1D_next_wp
+private object		o_climb_1D_last_current_wp
+private object		o_climb_1D_last_next_wp
+
+private vector		v_climb_1D_axis
+
+private network	n_climb_1D
+
+// PAF
+private	vector		v_paf_dir
+private	vector		v_paf_blend_direction 
+private	vector		v_paf_sight
+private	vector		v_paf_position
+private	object		o_paf_actor
+private	object		o_paf_actor_backup = nobody
+private	int				i_paf_type
+private	int				i_paf_puissance
+private	int				i_flag_paf_check_done 
+private	int				i_paf_recul_type
+//private	float			f_paf_time_recul
+//private	float			f_paf_time_esquive
+private 	float			f_coef_recul		= 1.0
+private 	float			f_paf_blend_compense
+private 	float			f_paf_blend
+private	int    			i_paf_frame_lache_ann
+private	int				i_paf_Digwazai_cumul
+private	float			f_paf_Digwazai_last
+private	float			f_paf_recul
+private	int				i_paf_fall_on_ground_done
+
+// PAF EXIT COLMAP TREX
+private	float			f_exit_colmap_coef_recul = 1.0
+private	vector		v_exit_colmap_add_speed
+
+
+// MOUVEMENTS ADDITIONELS
+private	vector		v_add_speed
+private	float			f_add_rotation
+private	float			f_add_rot_increment
+
+
+// KO
+private 	float			f_ko_delay
+
+// FORCE
+private	float			f_force_time_move
+private	vector		v_force_last_dir
+private	vector		v_force_init_grab
+private	int				id_force
+private	int				i_force_status
+private	int				i_force_wait_info
+
+// COMBAT
+separator "FIGHT"
+private	object		o_fight_actor
+private	int				i_fight_paf
+private	int				i_frappe_coup
+private	int				i_frappe_next_coup
+private	vector		v_frappe_speed
+private	vector		v_frappe_sweep
+private	int				i_dbg_lock_actor = faux_vrai
+private	vector		v_frappe_sight
+private	int				i_frappe_read_joy
+private	object		ao_frappe_target[30]			
+private	int				i_frappe_target_nb						// nb de persos paffés ce coup-ci
+private	int				i_frappe_target_nb_backup			// backup du nb de persos paffés au coup d'avant
+private	int				i_frappe_mvt_frein
+private 	int				i_frappe_change_cote
+private 	int				i_frappe_meme_cote
+private	float			f_frappe_speed_blend
+private	int				i_frappe_genere_ODE
+private	vector		v_frappe_ODE_pos
+private	vector		v_frappe_ODE_force
+private	int				i_frappe_combo_max_nb				// nb max de coups en combo
+private	int				i_frappe_combo_count					// compteur de coups en combo
+private	vector		v_frappe_pied_fixe						// Pied fixe en enchainement TEST
+private	int				i_frappe_buffer								// Memorise les demande de coup pour les combos
+private	int				i_frappe_impact	= vrai_faux
+private	int				i_try_to_hit_backup						// Backup mémorisant le momment ou Kong tente de frapepr
+
+private	vector		av_fight_kong_to_actor[20]				// Liste des axes normalisé KONG vers ENNEMIS
+private	vector		av_fight_actor_pos[20]						// Liste des positions des ENNEMIS
+private	object		ao_fight_actor_list[20]						// Liste des GAO des ENNEMIS
+private	int				ai_fight_actor_flag[20]						// Liste des Flags des ENNEMIS
+private	int				i_fight_actor_nbr								// Nbr d'ENNEMI
+private	int				i_fight_actor_cur								// Indice du Meilleur ENNEMI
+private	object		o_esquive_actor
+private	vector		v_esquive_to_actor
+
+//COUP PUISSANT (BOUTTON MAINTENU)
+separator "COUP PUISSANT"
+private	float			f_frappe_puissante_freq_cur				// fréquence courante
+private	float			f_frappe_puissante_freq_init				// fréquence référence
+private 	int				i_frappe_puissante_en_cours						// indique que le joueur est en train de faire une frappe puissante
+private 	int				i_frappe_puissante_done							// indique que le joueur a réussi à faire une frappe puissante
+private	vector		v_frappe_puissante_speed							// vecteur d'impulsion
+
+
+// RIDE
+private int				i_bone_index
+private object			ao_bone_rider[Ci_Ride_Client_Nb]
+private messageid	amid_bone_rider_LNK_ID[Ci_Ride_Client_Nb]
+private	int				i_ride_just_clear			// si vrai, induque que KONG a dans la trame refusé tous les ride, donc ne pas réactiver les ride tout de suite...
+private	int				i_rider_nb
+private	float			f_ride_paf_time
+
+// Demi/Quart & co
+private vector		v_sight_quart 
+private float			f_angle_quart
+private int			i_next_move_orientation 
+private int			i_reflex_anim = -1
+private float			f_move_dt
+private vector 		v_speed_afterblend 
+private float			f_move_side
+float					f_rush_speed 
+//vector				v_rush_speed
+
+vector				v_depl_esquive
+vector				v_delp_esquive_normale
+float					f_depl_esquive_speed
+float					f_depl_esquive_rotation_speed
+float					f_delp_esquive_delai 
+
+// Inertie sur le cul ------------------------
+vector				v_speed_cul
+vector				v_reflex_cul_pos
+// Inertie sur le cul ------------------------
+
+// Look ----------------------------------------
+float					f_look_angleH
+float					f_look_angleH_blend
+int						i_look_do_sight_ennemi_old
+float					f_look_ennemi_not_time
+float					f_look_ennemi_time
+vector				v_look_direction
+float					f_look_angle_old
+float					f_look_coef_cul 
+private	vector	v_look_sens_epaule
+private	vector	v_pos_centre_epaules
+private	vector	v_head_pos
+
+// Look ----------------------------------------
+
+object				o_memo_collide
+
+messageid 			mid_fight_actor
+
+private	float		f_reflex_speed
+private	float		f_reflex_speed_old
+private	float		f_reflex_time_mouvement
+
+vector				v_pos_zoneX, v_last_banking 
+float					f_time_collide_ground, f_angle
+
+// SFX poussiere ----------------------------
+private int		i_GFX_reception
+private int 		GFX_Marche_smock[4] 
+private int 		GFX_Marche_herbe[4] 
+
+private int		i_index_membre    = 0
+private vector	v_pos_poussiere[4]
+private vector	v_pos_poussiere_old[4]
+private vector 	v_vitesse_membre
+private float		f_speed_membre
+private int		i_Last_GroundId[4]
+
+int					i_exit_mode 
+int					i_old_action
+
+
+int					tai_ground_flag[4]
+float				f_time_attrappe
+
+private vector	v_last_ground_pos
+
+vector			v_joy, v_sight 
+
+private	object			o_grabbed_CBADD
+
+
+// WALLING
+private	vector	v_walling_normal
+private	vector	v_walling_horizon
+private	vector	v_walling_banking 
+private	vector	v_walling_axe_incidence
+private	vector	v_walling_gravity
+private	float		f_walling_quit
+private	float		f_walling_acceleration
+private	float		f_walling_speed_in
+private	vector	v_walling_speed		// DEBUG TRACe VECTOR
+private	float		f_walling_time_decroche
+private	int			i_walling_grimper
+private	int			i_walling_corner
+private	int			i_walling_cornerSwing	// swinging around a 'convex' corner
+private	int			i_walling_liane
+private	vector	v_walling_corner_normal
+private	vector	v_walling_ground 
+private	int			i_walling_action_impulsion_before_jump
+private	int			i_walling_fumee
+private 	int			i_walling_force_no_detection
+private	object	o_walling_liane
+private	float		f_walling_ignore_joy	// in seconds remaining
+private	int			i_walling_stop
+private	float		f_walling_speed_z 
+private	int			i_walling_nb_col
+private	vector	v_walling_liane_pos
+private	object	o_walling_HS
+private	int			i_walling_forget_joy 
+private	float		f_walling_need_reception
+private	vector	v_walling_pos
+private	int			i_walling_trop_haut 
+private	int			i_walling_entree_saut
+private	float		f_walling_frein
+private	int			i_walling_nb_bat
+private	int			i_walling_force_sfx
+// DASH
+private	int			i_dash_for_walling
+private	vector	v_dash_for_walling_axis
+private	object	o_dash_for_walling_actor
+private	vector	v_dash_direction
+
+// --- BACK FACE ---
+private	float		f_time_zdm_walling
+private	vector	v_last_zdm_walling_pos
+
+// SLOW
+private	float		f_slow_speed = 1.0
+
+// SWING
+private	object	o_swing_reference_sol
+private	vector	v_swing_sight
+private	vector	v_swing_kong_sight
+
+private	int			i_swing_limite
+private	vector	v_swing_limite
+private	float		f_swing_sign
+
+// MATTH VAR
+
+// Climb Inertia
+private int			i_inertia_allowed
+
+private float			f_inertia_IK_coef
+
+private vector		v_inertia_pivot_pos
+private vector		v_inertia_normale
+
+private vector		v_bassin_last_pos
+private vector		v_bassin_pos
+private vector		v_bassin_speed
+
+// SAUTE
+private vector	v_joy_dir
+private float		f_joy_norm
+
+// CLIMB 2D
+
+// SLIDE SFX
+private int			GFX_Climb_Slide_Hand_Smoke[4]		= (-1, -1, -1, -1)
+
+// IK ===========================================
+object				o_bassin_snap
+private int			i_flag_bassin_rotation
+private float			f_bassin_rotation_angle
+private float			f_bassin_Z_offset
+private int			i_flag_climb_IK[4]
+private int			i_flag_walk_IK[4]
+private int			i_flag_freeze_pos_IK[4]
+private float			f_walk_offset[4]
+private float			f_IK_coef[4]
+private float			f_IK_speed[4]
+private float			af_IK_bones_length[4][2]
+private float			f_IK_ground_coef[4]
+private float			f_Decalage_Epaules[2]
+private vector		v_IK_dest_pos[4]
+private vector		v_IK_local_offset[4]
+private vector		v_IK_ground_normale[4]
+private vector		v_IK_bone_local_pos[4]
+private vector		v_IK_bone_last_valid_pos[4]
+private object		ao_IK_bones[4][4]
+private vector		av_IK_memo[5][3]
+
+// JUMP SFX
+private int			GFX_Jump_Smoke[4] = (-1, -1, -1, -1)
+
+// OBSTACLE
+private float		f_hauteur_obstacle
+private float		f_delay_before_collision
+private float		f_speed_before_obstacle
+private float		f_obstacle_dist
+private float		f_time_12M_auto_grab
+private int		i_obstacle_GMAT
+private float		f_obstacle_dist_a_compenser
+private float		f_obstacle_dist_true
+private float		f_obstacle_z_a_compenser
+
+private vector	v_obstacle_normale
+private vector	v_obstacle_dest_pos
+private vector	v_obstacle_pos_to_grab
+private vector	v_obstacle_normale_bkup
+private vector	v_obstacle_pente_sol
+private vector	v_obstacle_normale_sol
+private vector	v_obstacle_top_point
+private vector	v_obstacle_top_point_backup
+private vector	v_obstacle_pos_offset_total
+private vector	v_obstacle_pos_offset_courant
+
+// AUTO WALK
+private float		f_time_auto_walk
+private vector	v_auto_walk_dir
+
+// ZDM
+private float		f_time_change_zdm
+private vector	v_zdm_pos
+private vector	v_old_zdm_pos
+
+// ANN PHY
+private vector	v_ann_pos
+private vector	v_ann_speed
+// PIEd PHY
+private vector	v_pied_blesse_pos
+private vector	v_pied_blesse_speed
+
+
+// Aide au deplacement
+private vector	v_depl_aide_orien_wall
+
+private float		f_epaule_rotate
+
+// Rotation autour des pieds
+private float		f_coef_pied_d_appui			// coef pied droit (0) / pied gauche (1)
+
+// Combat avec la souche
+separator "TRONC"
+private int		i_souche_cote							// 0 : tronc à droite / 1 : tronc à gauche
+
+private int		i_flag_just_Action_swing
+
+// REPULSION D UN ACTEUR
+private object	o_col_repulsion 
+private vector	v_col_speed_last
+
+// MODE TRAMPLE
+private float		f_trample_last_time
+
+// ANN
+private object		o_Joueur
+//private object		o_JACK
+
+//private object		o_WP_pose_ANN_en_cours
+//private object		o_WP_pose_ANN_this_trame
+private	int		i_flag_pose_ANN_en_cours		// indique que KONG est en train de poser ANN sur un point SAFE
+private	int		i_flag_pose_ANN_this_trame		// indique que cette trame-ci, KONG a reçu un message d'un WP "Pose ANN"
+private	int		i_flag_positionne_ANN				// indique que KONG vient d'attrapper ANN, on est en train de la positionner
+private	int		i_flag_positionne_souche = faux	// indique que KONG a indiqué le bone de positionnement a la souche
+private	int		i_Grab_ANN_pose_epaule = faux
+
+// MESSAGES
+private message		msg_last_message			// dernier message reçu
+private message		msg_pose_ANN				// message lu par KONG lui communiquant les infos du WP "Pose ANN"
+private message		msg_fight						// Msg ennemi
+
+// TEST ZDF ZDE
+private 	int				i_test_zdf_zdc_done
+private	int				i_frappe_phase_before_zde_fight		// flag qui indique que l'anim de frappe en cours est dans la phase avant la phase de test de ZDE fight
+
+// UNCOL
+private	int				i_uncol							// si vrai on a un acteur que l on ne collisionne plus
+private	object		o_uncol_actor					// la cible
+
+// ODE ODE ODE
+object					o_ODE_Punch
+private	object		o_ODE_Punch_coup
+private 	vector		v_pos_ODEPunch_coup
+//private 	vector		v_ODE_Punch_init_pos = Cv_NullVector
+//private	float			f_ODE_Punch_time	
+
+
+// SOUND
+private	int				i_SND_walling_derape
+private	int				i_SND_Grab_LoopA
+private	int				i_SND_Grab_LoopB
+private	float			f_SND_Grab_insert
+private	int				i_SND_mash_advantage
+
+
+private	int				i_frappe_orient_joy
+
+private	float			f_snd_grogne = 10.0
+
+// IK GRAB
+private	int				i_IK_end					= vrai_faux
+
+//int							i_je_dois_chopper_ann_a_init = faux_vrai
+private	int				i_je_dois_chopper_ann_a_init = faux
+private	float			f_time_start_fury
+
+//debug
+private	vector		v_joy_grab_lance_TREX
+
+private	function		fct_track_change
+
+private	object		o_Kamera
+private 	int				i_Kamera_cut_ANN_flag				// flag qui indique que KONG demande la Kaméra pour ANN
+private	float			f_Kamera_cut_ANN_time				// heure à laquelle la Kaméra pour ANN a été demandée
+private	float			i_Kamera_cut_ANN_flag_external	// flag externe qui demande un plan ANN.
+
+private	object		o_WP_swing
+
+// glisse (pour éviter de rester penché dans un escalier ou sur un muret)
+private	vector		v_glisse_add_speed = Cv_NullVector
+
+// CHEAT MODE
+private	int				i_cheat_mode = faux
+
+// TIRENESS & LIFE
+private	messageid	ID_LIFE
+
+// INTERACTION
+private	int				i_Interaction_ReadInputs			= faux_vrai
+private	vector		v_Interaction_NormalUnderKong
+
+// DASH
+private	float			f_time_dash_init
+
+// DEPLACEMENT
+private	float			f_deplacement_speed_factor
+
+// SCOLO
+private	messageid	mid_scolo_LNK_ID
+private	object		o_scolo_actor
+
+// COUPS
+private	int				i_buffer_X		= faux
+private	int				i_buffer_C		= faux
+private	int				i_buffer_T		= faux
+private	int				i_buffer_Grab	= faux
+private	int				i_coup_mode
+private	int				i_coup_retourne 	= vrai_faux
+private	int				i_coup_orient 	= vrai_faux
+private	float			f_coup_orient_blend_max
+private	float			f_coup_orient_blend_current
+private	float			f_coup_orient_sens_forceed
+
+
+private	object		o_colonne = nobody
+private	vector		v_colonne_pos_init
+private	vector		v_colonne_pos_end
+private	vector		v_colonne_best_axe 
+private	float			f_colonne_pos_blend
+private	int				i_colonne_combo
+private	vector		v_colonne_bone_pos
+private	int				i_colonne_blend_coup
+private	float			f_colonne_time_lance
+
+// FINISH
+private	object		o_finish_actor
+private	messageid	mid_finish_LNK_ID
+private	vector		v_finish_pos_init
+private	float			f_finish_frame 
+private	float			f_finish_force_kong
+private	float			f_finish_force_rex
+private	float			i_finish_end
+private	float			i_finish_init
+private	int				i_finish_repousse		// flag qui indique si le paf repousse + le shake kam ont été envoyés
+private	float			f_finish_pos_blend
+private	float			f_finish_orient_blend
+private	float			f_finish_challenge_duration
+
+// VOLUME
+private	float			f_volume_fury = 1.0
+private	int				i_sound_chest 
+private	float			f_sound_volume_B = 1.0
+
+// VAL POUR INFO EXTERNE
+private	int				i_in_jump
+
+// SPEECH
+private	float			f_sound_norun
+private	float			f_sound_run
+private	int				i_request_txt = -1
+private	int				i_last_request_txt = -1
+private	int				i_request_txt_forced = -1
+private	float			f_time_texte
+private	float			f_sound_rand_delai
+
+// RUMBLE
+private float				f_rumble_power
+private float				f_rumble_time_press
+
+// DBG
+private	int				i_WALLING_DBG_Corner
+private	int				i_WALLING_DBG_nbRapport
+private	int				i_WALLING_DBG_Gmat[20]
+private	vector		v_WALLING_DBG_Position[20]
+private	vector		v_WALLING_DBG_Normal[20]
+
+// IK
+private	float			f_IK_blesse
+private	int				i_nb_gound_col
+
+	
+//ADDED SURESH
+private 	float 		f_global_time 
+private 	float 		f_start_walkD_SFX_time = 0.0
+private 	float 		f_start_walkG_SFX_time = 0.0
+private 	float 		f_start_walkD1_SFX_time = 0.0
+private 	float 		f_start_walkG1_SFX_time = 0.0
+private 	float 		f_delay_dash_SFX = 0.5
+private 	float 		f_SFX_time_PAF_Ground = 0.0
+
+// KAMERA POSE ANN
+private	float		f_kamera_cine_ann_posee_delay
+private	int			i_kamera_cine_ann_posee
+
+// SFX HOME
+private	int	ai_walling_SFX[ 4]
+color	Kcol = 0x003D3F30
+color	Kcol2 = 0x00809A82
+color	Kcol3 = 0x00809A82
+
+// MORT
+private	int			i_mode_mort
+private	vector	v_mort_pos
+
+// FINISHED ==============================
+private	int			i_finished_end
+private	float		f_finished_frame 
+private	float		f_finished_force_kong
+private	float		f_finished_force_nmi
+private	int			ai_finished_count[Ci_finished_max_count]
+private	int			i_finished_SFX
+private	float		f_finished_challenge_duration
+private	int			i_finished_force_lose_flag
+private	int			i_finished_big_scolo_kong_grab		// si vrai, c kong qui a grabbé le big scolo. si faux, c le big scolo qui a sauté sur kong
+private	float		f_finished_just_paf_delay_no_finished			// délai après un finished coupé par un paf, pendant lequel kong refuse les autres finished
+private	float		f_finished_dual_timer
+
+// TREMBLE
+private	vector	v_tremble_offset
+private	float		f_tremble_time
+private	float		f_tremble_delai
+private	vector	v_tremble_current
+
+private	int			i_Kamera_Finish_id_Forced = -1 // Plan forcé avant le cri de Kong.
+
+// BLOCAGE JOY INIT
+private	float		f_time_ES_init
+
+// DBG DEMO
+private	int			i_DBG_TETE_ON = faux_vrai
+private	int			i_DBG_ROTX_ON = faux_vrai
+private	int			i_DBG_IK_ON = faux_vrai
+
+// DEATH AFX 
+separator "DEATH AFX "
+int						i_DBG_Death_AFX = vrai_faux
+float					f_death_afx_brightness = 0.1
+float					f_death_afx_contraste = 0.0
+float					f_death_afx_colorbalance1 = 1.0
+float					f_death_afx_colorbalance2 = 0.5
+float					f_death_afx_blur = 0.8
+float					f_death_afx_remanance = 0.0
+
+private	float		f_kong_game_speed  		// Vitesse slow down mort
+private	int			i_fade 							// Flag de Fade dans la mort
+
+// PAF AFX
+private	int				i_paf_afx_eclair_phase
+private	float			f_paf_afx_eclair_brightness
+private	float			f_paf_afx_eclair_contraste
+private	float			f_paf_afx_eclair_bw
+private	float			f_paf_afx_slow_motion_time
+private	float			f_paf_afx_slow_motion_speed = 1.0
+private	int				i_paf_afx_done
+
+// PAF DES STRUCTURES ODE
+private	int				mi_PaffedODEThisSwing
+
+separator "FURY AFX"
+private	float				f_fury_afx_blackandwhite = 0.5		// 0.0
+private	float				f_fury_afx_contraste = 0.4				// 1.0
+private	float				f_fury_afx_remanance = 0.5			//1.0
+private	float				f_fury_afx_colorbalance1 = 0.3		// 0.6		// 0.1		// 0.2
+private	float				f_fury_afx_colorbalance2 = 0.6		// 0.15	// 0.6
+private	float				f_fury_afx_blur = 0.3
+private	float				f_fury_afx_coef
+private	float				f_zoom_smooth_coef
+
+// EXPRESSIONS
+private int		ai_exp_target[8]
+private float		af_exp_factor[8]
+private float		af_exp_speed[8]
+private int		i_exp_current
+private int		i_expdefault_current 
+private float		f_exp_duration
+private float		f_max
+private float		f_coef_retour
+private int		i_finish_frame_last
+
+// MORT
+private float		f_blend_mort
+
+// IK PETIT PAF
+private float		f_IK_recul_bassin_paf
+private int		i_IK_bassin_paf
+private vector	v_IK_sens_bassin_paf
+
+// SND MASHING
+private float		f_snd_mashing
+private int		i_snd_mashing_loopA = -1
+private int		i_snd_mashing_loopB = -1
+
+// GLADIATOR
+private	int				i_blesse_on
+private	int				i_gladiator_on
+private	float			f_gladiator_timer
+private	int				i_gladiator_pifpaf
+private	float			f_gladiator_pulse
+private	int				i_gladiator_prio_fade = 10
+private	float			f_gladiator_AFE_Border
+private	color			c_gladiator_AFE_BorderColor
+private	float			f_gladiator_pulse_border
+private	float			f_gladiator_paf_agonisant
+private	float			f_gladiator_AFX_coef
+private	float			f_gladiator_colorbalance1 = 1.0
+private	float			f_gladiator_colorbalance2 = 0.52
+private	float			f_gladiator_blacknwhite = 1.0
+private	float			f_gladiator_remanance = 0.4
+
+// AUTO FIGHT
+private	float			f_auto_joy_sens		= 1.0
+private	float			f_auto_delai_action
+
+// TEST ON SCREEN
+private	float			f_on_screen_pct
+
+// backup de la liaison Kong/Ann en cas d'un paf pendant un poser / prendre
+private	int			i_grab_ann_liaison_backup
+private	object	o_grab_ann_bone_backup
+
+int			i_Kong_chienchien = vrai_faux
+
+int			i_disable_friendly_fire = vrai_faux
+
+private	float		f_fps_speed
+private	vector	v_fps_speed
+
+private	int			i_LD_disable_Kong_move		// empêche Kong de bouger tout seul
+

@@ -1,0 +1,1003 @@
+#include "H_defines.var"
+
+// CAPAS
+// 0 => chaiplus
+// 1 => indigere
+// 2 => IK interdit
+// 3 => force speak reserve (pickup arme)
+// 4 
+// 5 
+// 6 => force jack a virer sa lance
+// 7 => perso en psss
+// 8 => chaloupes (pas d'orientation)
+// 9 
+// 10// 11 => autorisation demarrage script (wait disponibility)
+// 12 => scripts
+// 13 => scripts
+// 14 => chaloupes
+// 15 => interaction
+
+// Define at least one function in a track
+function track0 = "H_TRACK_init"
+// function track1 = "name"
+// function track2 = "name"
+// function track3 = "name" 
+//function track4 = "H_TRACK_Post"
+// function callback_beforedisplay = "name"
+// function callback_afterdisplay = "name"
+// function callback_afterrec = "name"
+separator "DBG"	
+//int							i_DGB_flag	= vrai_faux
+private	int							i_id_humain = C_ID_Joueur
+
+#include "ROOT\EngineDatas\04 Technical Bank\AI Models\Global Library\exec_deplacements.var"
+
+// GLOBAL
+private object			o_main_actor
+
+// ETAT
+private int				i_etat_courant				= -1
+private int				i_dernier_etat				= -1
+private int				i_sort_etat
+//int							i_jack_meurt_si_je_meurt = faux_vrai
+int							i_fantome_vision = vrai_faux
+int							i_soin_interdit = vrai_faux
+int							i_force_suivi = vrai_faux
+int							i_force_hide = vrai_faux
+int							i_ramasse_suivi = vrai_faux
+int							i_interdit_tir = vrai_faux
+int							i_interdit_ramasse = vrai_faux
+int							i_interdit_psss = vrai_faux
+int							i_no_variante = vrai_faux
+int							i_interdit_echange = vrai_faux
+int							i_noanim_stunned = vrai_faux
+int							i_no_gengen = vrai_faux
+int							i_interdit_aide = vrai_faux
+int							i_force_crouch = vrai_faux
+int							i_mode_script = vrai_faux
+network					o_private_network
+separator "Test Anim"
+int							i_test_anim = vrai_faux
+int							i_test_anim_number = -1
+int							i_test_anim_no_pilotage = vrai_faux
+int							i_test_anim_sequence
+object					o_test_anim_regard
+
+private float				f_time_start_etat
+
+private function		fct_main_etat
+private function		fct_last_etat
+private function		fct_prev_etat
+private function		fct_etat_cine
+private function		fct_main_etat_cine
+private function		fct_last_etat_cine
+private function		fct_prev_etat_cine
+
+// COLLISION
+private float				f_time_ground_col
+private int				i_ground_ID
+private int				i_real_ground_ID
+private vector			v_ground_normal
+private vector			v_ground_pos
+
+private float				f_time_wall_col
+private vector			v_wall_normal
+private float				f_time_noground
+
+// ACTION SWITCH
+private int				i_flag_tir
+private int				i_flag_en_chute
+private int				i_flag_tir_secondaire
+private int				i_flag_snap_tir
+private int				i_flag_crouch
+private int				i_flag_disable_auto_crouch
+private int				i_flag_crouch_old
+private int				i_flag_run
+private int				i_flag_sprint
+private int				i_flag_old_run
+private int				i_flag_old_sprint
+private int				i_flag_grab
+private int				i_flag_grab_old
+private int				i_flag_stress
+private int				i_flag_detect_stress
+private int				i_flag_tir_continu
+private int				i_flag_recharge
+private int				i_flag_snipe
+private int				i_flag_old_snipe
+private int				i_flag_change_arme
+private int				i_flag_recul
+private int				i_flag_disable_recul
+private int				i_flag_arme_basse
+private int				i_flag_arme_haute
+private int				i_flag_arme_basse_action
+private int				i_flag_force_attente
+private int				i_flag_force_marche
+private int				i_flag_force_course
+private int				i_flag_force_sprint
+private int				i_flag_disable_marche
+private int				i_flag_disable_sprint
+private int				i_flag_suivi_regard
+private int				i_flag_stunned
+private int				i_flag_panique
+private int				i_flag_cache
+private int				i_flag_marche_rapide
+private int				i_flag_noammosoundplayed
+private int				i_flag_oriente_vers
+private int				i_flag_danger
+private int				i_flag_force_rapide
+private int				i_flag_hasbeen_carried
+private int				i_flag_nage
+private int				i_flag_etourdit
+
+private float				f_timer_notake = 0
+
+private float				f_time_crouch
+private float				f_delay_crouch
+private float				f_delay_arme_basse2haute
+private float				f_delay_forcearmehaute
+private float				f_delay_swaparme
+
+private float				f_time_shoot_disable
+private float				f_time_psss
+private int				i_soin_en_cours
+
+private int				i_etat_state
+private float				f_etat_statetimer
+
+private float				f_time_force_strafe
+
+// CONTEXTUAL GROUND POSITION
+private float				f_time_attend				
+private float				f_time_marche							// Temps ou on marche
+private float				f_time_run
+private float				f_time_sprint
+private float				f_time_stress
+private float				f_time_disable_recule
+private float				f_time_recule
+
+// JOYSTICK
+private int				i_read_joy_move
+private float				f_joy_norm
+
+private vector			v_joy_dir
+
+private float				f_time_move
+
+// VISION
+private object			o_target_stimulus_vis		
+private object			o_pref_target_stimulus_vis	
+private object			o_target_stimulus_hide		
+private object			o_last_target_stimulus_vis
+private vector			v_target_stimulus_vis
+private messageid	msgid_target_stimulus_vis
+
+// PAF
+private int				i_paf_type
+private int				i_flag_paf
+private object			o_paf_sender
+private vector			v_paf_dir
+private float				f_paf_force
+private float				f_paf_disable_duration
+
+private vector			v_bassin_pos
+
+private float				f_visual_paf_last_time
+private float				f_visual_paf_rot_coef
+
+private vector			v_visual_paf_quaternion
+private vector			v_visual_paf_dir
+private vector			v_visual_paf_bassin_offset
+
+// COMBAT
+separator "command from fight manager"
+
+// IK LEGS
+private float			f_bassin_rotation_angle
+private float			f_bassin_Z_offset
+
+private int			i_flag_leg_IK[4]
+private int			i_flag_leg_bend[2]
+
+private float			f_IK_Z_offset[4]
+private float			f_IK_coef[4]
+private float			f_IK_snap_coef[4]
+private float			f_IK_speed[4]
+private float			f_IK_tenseur[4]
+private float			af_IK_bones_length[4][3]
+private float			f_IK_leg_length[4]
+private float			f_IK_ground_coef[4]
+
+private float			f_IK_bassin_look_rot_coef
+
+private float			f_IK_bassin_ground_rot_coef
+
+private float			f_IK_bassin_eat_rot_coef
+private vector		v_IK_bassin_eat_pos
+
+private float			f_IK_bassin_bite_rot_coef
+private vector		v_IK_bassin_bite_pos
+private vector		v_IK_bassin_bite_start_quat
+private object		o_IK_bassin_bite_actor
+
+private vector		v_IK_ref_ground_pos
+
+private vector		v_IK_dest_pos[4]
+private vector		v_IK_local_offset[4]
+private vector		v_IK_bone_last_valid_sight[4]
+private vector		v_IK_bone_last_valid_banking[4]
+private vector		v_IK_ground_pos[4]
+private vector		v_IK_ground_normale[4]
+
+private vector		v_IK_bassin_banking
+private vector		v_IK_bassin_pos
+
+private object		ao_IK_bones[4][4]
+private object		o_bassin
+private object		o_ground_col
+
+private vector		v_grab_hand_pos
+private vector		v_grab_hand_axis
+private int			i_flag_init_hand_grab = vrai
+
+private vector		v_grab_foot_pos
+private vector		v_grab_foot_axis
+private int			i_grab_foot_sight_enabled
+private vector		v_grab_crab_pos
+private float			f_grab_crab_coef
+private float			f_grab_crab_bouche_dist
+private float			f_grab_crab_old_status
+
+// FRAPPE
+private int				i_flag_zde_fight_enable
+private int				i_coup_gauche
+
+// EAU
+private float				f_hauteur_eau
+private vector			v_hauteur_eau
+private int				i_eau_weaponup = 0
+
+// S&B
+private float				f_sight_blend_speed			= 8.0
+
+// TIR
+private int				i_flag_add_shoot
+private int				i_tir_nb
+private float				f_tir_time
+private vector			v_tir_pos_help
+private object			o_tir_target
+private float				f_tir_dispertion
+private int				i_shotgun_target_nb
+private object			ao_shotgun_target[50]
+private int				i_recharge_arme			// En train de recharger mon arme
+private float				f_time_recharge   		// Temps de recharge avant nouveau tir
+private int				i_interrupt_charge 		// Je peux interrompre le rechargement
+private int				i_arme_shotgun 			// shotgun reamre
+private int				i_loading_balle1			// Chargement de la première balle
+private float				f_time_mix
+private float				f_time_disable_tir
+private float				f_dist_max_shoot
+private int				i_in_fight
+private float				f_time_in_fight
+private float				f_time_last_fight
+private float				f_time_last_shoot
+private float				f_dot_cible_arme
+private float				f_time_help
+
+// SERVEURS
+private messageid	amid_SRV_LIAISON_ID[Ci_LNK_TYPE_NB]
+private int				ai_SRV_ENABLE[Ci_LNK_TYPE_NB]
+private object			ao_SRV[Ci_LNK_TYPE_NB]
+private function		afct_SRV[Ci_LNK_TYPE_NB]
+
+// CLIENTS
+private messageid	amid_CL_LIAISON_ID[Ci_LNK_TYPE_NB]
+private object			ao_CL[Ci_LNK_TYPE_NB]
+
+// CONFIANCE
+//int							i_confiance	= enum("Courageux" 1 "Lache" 2 )
+
+// SUIVI DE REGARD 
+separator "Suivi Regard"
+vector					v_cible_suivi_des_yeux
+vector					v_cible_arme
+vector					v_cible_tete
+float						f_time_coup_oeil
+float						f_rand_coup_oeil
+
+// RIDE
+private object			o_ride_bone
+private object			o_grab_actor							// acteur qui me grabbe
+private int				i_grab_actor_ID = -1
+private float				f_grab_time = 0.0						// durée du grab
+private float				f_delay_no_select_action = 0.0	// délai pendant lequel Jack n'a pas le select action (pour le recul d'un grab crabe)
+private vector			v_projete_init_pos					// position avant chute
+
+// BLOCK & GRAB
+private int				i_nb_hit
+private vector			v_grab_grav_pos
+
+// HIDE MODE
+private object			o_hide_0D
+private object			o_in_cache_0D
+private int				i_cache_surface
+private float				f_time_search_hide
+private float				f_time_freq_danger
+private vector			v_pos_fuite
+private int				i_cherche_cache_dangereux
+private int				i_cherche_cache_visible
+private float				f_cherche_cache_max_dist
+private object			o_ref_cache_0D
+object					ao_cache_safe[20]
+int							i_num_cache_safe
+private object			o_hide_0D_dangereux
+private object			o_memo_wp_dangereux
+private int				i_memo_type_cache_dangereux
+private vector			v_memo_pos_dangereux
+
+// INTERET
+private float				f_interet
+
+// MY RAG DOLL
+private int				i_flag_init_rag_doll
+private int				i_flag_rag_doll_test_Z
+
+private float				af_bone_length[6]
+
+private vector			av_rd_pos[6]
+private vector			av_rd_speed[6]
+
+private object			ao_bones[6]
+
+// WAY
+private int				i_can_tag
+private vector			v_way_last_destpos
+private float				f_way_time_search_pos
+private network		move_network
+private float				f_eval_dist_move
+private float				f_min_dist_attend
+private object			ao_eliminate_hum[20]
+private int				i_eliminate_hum
+private object			way_objs[100]
+private int				way_num_objs
+private vector			way_v_pos
+private vector			way_real_pos
+
+private object		 	way_o_climb
+private object			way_o_climbto
+private object			way_o_climbvaladest = nobody
+private int				way_i_climb = 0
+private float				climb_f_speed
+private vector			climb_v_posavantchute
+private float				climb_f_timer
+private int				climb_i_etatavantpaf
+private int				climb_i_piedaterre
+private int				climb_i_nocolset = 0
+private vector			climb_i_actionstart
+private int				climb_i_actionnum
+private int				climb_i_actionfirstloop
+private int				climb_i_phrase
+private int				climb_i_actionframe
+private int				climb_i_down
+
+// BONE
+private int				i_bone_nb
+private int				ai_bones[40]
+
+// GRENADE
+private float				f_time_tir_grenade
+private object			o_grenade
+private	int				i_grenade_launched
+
+// PILOTAGE LORS DES TIRS
+private int				i_flag_pilotage
+private float				f_pilotage_coef
+private float				f_pilotage_bras_duration
+private float				f_pilotage_bras_coef
+private float				f_pilotage_rot_coef
+
+private vector			v_pilotage_dest_sight
+
+private int				i_anim_recharge
+private int				i_anim_mix_loop
+
+// DYN
+private float				f_dest_speed
+private float				f_blend_speed
+private vector			v_previous_speed
+
+// GFX WEAPON
+private float				f_time_GFX_Tommygun
+private int				GFX_Weapon_Tommygun = -1
+private int				GFX_Weapon_TommygunRicochet = 0
+private int				GFX_Weapon_TommygunNextRicochet = -1
+
+private float				f_time_GFX_Shotgun
+private int				GFX_Weapon_Shotgun = -1
+
+private 	int				GFX_Flamme = -1
+private	int				GFX_Spark = -1
+private	vector		GFX_FlammePos = cvector( 0, 0, 0)
+private	vector		GFX_FlammeAxe = cvector( 0, 0, 0)
+private 	vector		GFX_FlammeOldPos = cvector( 0, 0, 0 )
+private	vector		GFX_FlammeFXPos = cvector( 0, 0, 0)
+private 	vector		GFX_FlammeFXOldPos = cvector( 0, 0, 0 )
+private 	int				GFX_FlammeType = 0
+
+private	int				GFX_Flamme2[ 20 ]
+private 	int				GFX_Flamme2_Halo = -1
+private	vector		GFX_Flamme2_lastpos
+private	vector		GFX_Flamme2_lastlastpos
+
+
+// WEAPON
+private int				i_snd_tommygun = -1
+private int				i_snd_tommygunB = -1
+private int				i_snd_weaponout = -1
+private float				f_snd_weaponout 
+
+// MATTH RAGDOLL
+private int				i_sortie_fight = vrai
+private object			o_nearest_me
+private object			o_nearest_cible
+
+private	object		o_ZdeFight_Pos
+private	vector		v_ZdeFight_Pos
+private	float			f_ZdeFight_Size
+
+// INTERACTION
+private int				i_interaction_type
+private int				i_flag_interaction_ok
+private int				i_flag_donne
+private object			o_interaction
+private messageid	mid_interaction
+private int				i_flag_interaction_on
+private object			o_obj_interaction
+
+// HEAL
+private object			o_healer
+private messageid	mid_healer
+private object			o_healer_mort
+private messageid	mid_healer_mort
+private object			o_carry
+private messageid	mid_carry
+private int				i_flag_carry
+private float				f_time_carry
+
+// DECALAGE
+private vector			v_pos_decalage
+private int				i_way_evite_ennemi
+
+// CULLED
+private int				i_flag_culled
+private int				i_flag_culled_enface
+private float				f_time_culled_enface
+private float				f_time_noculled_enface
+private int				i_ch_cache_attend
+
+// MULTICOVER
+private int				i_multicover_oriente_jack
+private int				i_multicover_mode
+private float				f_multicover_time
+private object			o_multicover_go
+private float				f_time_mc_safe
+private float				f_time_arrivee_mc
+
+// GRAB TRANSPORTE
+private vector			v_local_sight
+private vector			v_local_banking
+
+// MISC
+private int				i_cache_arme
+private object			o_ennemi_proche
+private object			o_last_ennemi_proche
+private vector			v_ennemi_proche
+private int				i_ennemi_proche_type
+private int				i_ennemi_proche_state
+private int				i_arme_bas = vrai
+private float				f_speed_jack
+private float				f_prev_speed
+private float				f_step_period
+private float				f_step_timer
+private float				f_step_period_desync
+
+// CINE
+private int				i_cine_speaking
+private int				i_cine_close
+private object			o_cine_regarde
+private float				f_cine_regarde
+private int				i_cine_action = -1
+private object			o_obj_suivi_des_yeux
+private object			o_force_regard_time
+private vector			v_force_regard_time
+private float				f_force_regard_time
+private message		am_CineStack[30]
+private int				i_CineStack
+private int				i_CineStackChanged
+private message		m_CineWaitDefault
+private int				i_CineWaitDefault
+
+// TEXTE
+private int				i_request_txt = -1
+private int				i_request_txt_humain = -1
+private int				i_last_request_txt = -1
+private float				f_time_texte
+
+//////// TIR
+private int 				i_tir_idle
+private int 				i_tir_idle1
+private object 			ao_tir_idle[30]
+private vector			av_tir_idle_impact[30]
+private vector			av_tir_idle_normal[30]
+private int				ai_tir_idle_canal[30]
+private int				ai_tir_idle_sound[30]
+private float				af_tir_idle_dist[30]
+
+private vector			v_tir_centre_impact
+
+private object			o_tir_prefered
+private vector			v_tir_prefered_impact
+private vector			v_tir_prefered_normal
+private int				i_tir_prefered_canal
+private int				i_tir_prefered_sound
+
+private float				f_time_col_humain
+private float				f_time_no_colmap
+
+private object			o_obj_lance_hayes
+private object			o_obj_lance_jack
+private int				i_obj_lance_type_hayes
+private int				i_obj_lance_type_jack
+private int				i_mode_attrape
+private float				f_blend_speed_lance
+
+private int				i_snd_etatlifeindex = 0
+private int				i_snd_etatlife = -1
+private int				i_snd_fire = -1
+
+private int				i_mur_en_face = -1
+private vector			v_pos_mur_en_face
+
+private float				f_sound_run
+private float				f_sound_norun
+private int				i_play_run
+
+private float				f_oriente_proche
+private float				f_time_demitour
+private float				f_time_bute_jack
+private int				i_bute_jack_mode
+private float				f_time_echec_use
+private int				i_flag_ik_bras
+private int				i_flag_test_danger_me
+
+private vector			v_last_pos
+private float				f_real_speed
+private int				i_flag_arrived
+
+private float				f_time_ramasse
+private float				f_time_ramasse_bambou
+private float				i_flag_force_recul
+private float				f_time_force_attend
+private float				f_time_force_crouch
+
+// morph sur arme
+private	int				i_morph_shoot
+private	float			f_morph_time
+private	float			f_morph_speed
+
+// ULTRA TAG
+private object			ao_ultra_tag[20]
+private int				i_ultra_tag_nb
+
+private object			o_last_prog
+private object			o_last_prog_prev
+private vector			v_last_prog
+private float				f_time_prog
+private int				i_stunned_eau
+private int				i_stunned_begin
+private int				i_flag_stunned_crouch
+private int				i_flag_force_tir
+
+// CALLBACK WAY
+private float				f_paf_timer
+private float				f_paf_agonisant
+private int				i_prio_fade = 10
+private int				i_flag_jesoigne
+private float				f_time_agonisant
+
+private float				Humains_BlaBlaFreq[50]									// frequence des phrases
+private float				f_time_sortie_fight
+private float				f_time_enjoue
+private float				f_time_mort_jack
+private object			o_wp_chute_hauteur
+private float				f_best_lance
+private float				f_best_lance_copy
+
+///////////////// LB
+object					ao_all_caches[50]
+//////////////////////////
+private float				f_time_propose_heal
+//////////////////////////
+private vector			v_cam_last_sight
+private vector			v_cam_last_bank
+private vector			v_cam_last_joy1
+private float				f_repousse_herbe
+//private int				i_repousse_herbe
+private int				i_flag_tape_bambou
+private int				i_flag_frappe_jack
+private float				f_time_last_coup
+
+private messageid	ao_AllEnemy[100]
+private int				ai_AllEnemy
+private int				i_help_no_cache
+
+private object			o_water
+private vector			v_water_impact
+
+////////////// CHEAT ///////////////////////
+private int				i_flag_old_cheat_move
+private int				i_flag_cheat_move
+//////////////////////////////
+private float				f_time_no_fire
+private int				i_leave_object_in_hand
+private float				f_time_dynamite
+private int				i_flag_ressucite
+private int				i_camera_animee
+private float				f_time_help_interdit
+private int				i_auto_paf
+
+private int				i_cur_shape = -1
+private int				i_shape_hide = -1
+private object			o_canal_maind
+private vector			v_pos_nearest
+private vector			v_pos_nearest_grid
+private float				f_time_fail_vala
+private int				i_found_cache
+private int				mi_force_s
+private float				f_time_fail_move
+private float				f_flag_en_chute
+private object           o_grab_transporte_bone
+private float				f_flag_en_chute_old
+private int				i_snd_film = -1
+private float				f_rand_tir
+private float				f_time_gladiator = 10
+
+
+private float				AFE_SpeedDecrease
+private float				AFE_Brightness_1_cur
+private float				AFE_ColorBalance_1_cur
+private float				AFE_ColorBalance_2_cur
+private float				AFE_MotionBlur_1_cur
+private float				AFE_Remanence_1_cur
+private float				AFE_Contraste_1_cur
+private float				AFE_Border
+private float				AFE_Border1
+private color			AFE_BorderColor
+
+private int				i_cache_leave
+private int				i_psss_nomove
+
+///////// PORTE
+private object			o_obj_porte
+private object			o_obj_levier
+private float				f_speed_porte
+private vector			v_org_pos_trans
+
+private object			o_last_repousse
+private float				f_time_loin
+private int				i_flag_ammo_dry
+private object			o_cine_shoot
+private int				i_cine_shoot_mode
+private int				i_heal_move
+private float				f_time_heal_1
+private float				f_time_heal_2
+private float				f_time_case_mortel
+private float				f_time_case_ronce
+private vector			v_org_sight
+private float				f_time_capa_0
+private float				f_hys_enjoue
+private int				i_valide_enjoue
+private int				type_target_stimulus_vis
+private float				f_time_recompute_hide
+private int				i_flag_pousse
+private vector			v_sight_pousse
+private int				i_flag_coup_oeil
+private int				i_flag_rush
+private float				f_time_etourdit
+private int				i_flag_force_rate
+private float				f_time_disable_intention
+private float				f_rand_rate
+
+//LIPS
+private float				f_sequence_freg
+private int				ai_sequence_lip_data[70]
+private int				ai_sequence_lip[140]
+private float				af_sequence_lip[140]
+private int				i_sequence_lip_num
+private int				i_sequence_begin
+private int				i_sequence_cur
+private float				f_sequence_cur
+private float				f_factor_mul_lip
+private float				f_cur_factor
+private int				i_sequence_shooted
+private int				i_sequence_screamed
+private int				i_type_lip
+private float				f_glob_lip = 1
+
+// BLINK
+private float				f_time_last_blink
+private float				f_rank_blink
+private int				i_blink_en_cours
+private vector			v_cible_yeux
+private float				f_time_yeux_rand
+private float				f_rand_yeux
+private vector			v_rand_yeux
+
+// EXPRESSION
+private int				i_changing_expression
+private float				f_speed_expression
+private float				f_dest_factor_expression[10]
+private float				f_speed_factor_expression[10]
+private int				i_test_expression
+private int				i_cur_expression = -1
+private float				f_paupiere_bas
+private float				f_paupiere_haut
+private int				i_lips_repos
+private float				f_lips_repos_factor
+
+private int				i_fade_mort
+private int				i_flag_big_trot
+private int				i_dir_soin
+private float				f_meilleur_soin
+private vector			v_pos_fin_soin
+private vector			v_last_pos_soin
+private float				f_disable_coup
+private int				i_wait_release_enjoue
+private vector			v_sum_ronce
+private float				f_time_propose_porte
+private float				f_time_prout
+private int				i_pourcentage_rate
+
+///// BASTON
+private float				f_time_ripple
+
+private int				i_prev_soin_jack
+private int				i_force_regard_toujours
+private float				mf_Speed
+private int				i_autorise_capa7
+private int				i_psss_ack
+private int				i_flag_invincible
+private vector			v_pos_lance
+private vector			v_sight_lance
+private vector			v_bank_lance
+private vector			v_pos_lance_jack
+private vector			v_sight_lance_jack
+private vector			v_bank_lance_jack
+private float				f_time_light_gun
+private float				f_max_light_gun
+private float				f_time_att_carry
+private float				f_time_bricole
+private int				i_flag_release_snipe
+private int				i_wait_arme_bas
+private int				i_no_cut_cam
+
+private float				af_pilote[5]
+private int				i_force_generique
+
+// BODY SPEED ROTATION
+private vector				v_dyn_speed
+private vector				v_last_dyn_speed
+private float					f_time_intention_att
+private float					f_time_derriere
+private float					f_last_cible_tete
+private vector				v_last_cible_tete
+private int					i_swap_auto
+private int					i_snd_injure = -1
+private int					i_snd_injure1 = -1
+private float					f_blend_injure
+private int					i_flag_no_intention_dir
+private float					f_toler_cache = 4
+private int					i_mus_paf = -1
+private int					i_att_vrt
+private int					i_flag_va_mourrir
+
+private int        			AFE_NoDecrease
+private float					f_time_prev_attend
+private int					i_qqchose
+private float					f_time_last_goal
+
+private object				o_obj_last_suivi_des_yeux
+private float					f_time_same_look
+private int					i_who_look = 1
+private float					f_rand_who_look
+private object				o_last_hide_0D
+private float					f_time_hide_0D
+private int					mi_numero_hide
+private int					i_rand_move_cache
+
+private float					f_time_idle_enter
+private object				PRG_Idle
+private int					PRG_Idle_Num
+private float					f_time_idle_in
+private int					i_mode_idle
+private vector				v_org_speed
+private float					f_time_speak
+private int					i_force_intention
+private float					f_time_last_expression
+private float					f_hys_shoot
+private int					type_interet
+private int					i_memo_killed
+private int					i_pas_mort_chute
+private int					i_mode_cine_morph
+private int					i_has_trex
+private int					i_feu_pas_loin
+private int					i_flag_grosse_panique
+private int					i_flag_declenche
+private float					f_time_conval
+private int					i_spec_agoni
+private float					f_time_prestunned
+
+private int					i_global_look
+private vector				v_glob_cible_tete
+private vector				v_glob_cible_arme
+private vector				v_glob_cible_yeux
+
+// GFX WATER TRACE
+private int					GFX_Water_Trace = -1
+private float					f_water_Z = Cf_water_Z_unknown			// old one !!!
+private float					f_water_Z_world = Cf_water_Z_unknown
+private float					f_time_trace_off
+private int					i_pifpaf
+
+private int					psss_far
+private int					i_mode_neuneu
+private int					i_sort_idx
+private int					i_use_porte
+private object				o_obj_declenche
+
+// DEBUG TRUC MEGA ZARBE
+private int					i_finished_action_trame_nb
+private int					i_finished_action
+private float					f_pulse_border
+private int					i_big_gladiator
+private int					i_bk_color
+
+private float					f_interdit_generique
+private int					i_first_trame
+private float					f_help_empty
+
+private float					f_blend_mort
+private vector				v_blend_mort
+private color				col_blend_mort
+private float					f_time_txt_cover
+private float					f_bloque
+private float					f_blend_bassin
+private float					f_time_last_nage
+
+private int					i_gfx_fumee1 = -1
+private int					i_gfx_fumee2 = -1
+private float					f_time_opening
+private float					f_gladiator_AFX_coef
+
+//////////////
+object	a_HL_ObjDevantObj1[30]
+object	a_HL_ObjDevantObj2[30]
+vector	av_HL_ObjDevantObj1[30]
+vector	av_HL_ObjDevantObj2[30]
+int			a_HL_ObjDevantObjR[30]
+int			recup_arme
+float		hys_fight = 5
+float		f_time_sfx_grimpe
+float		f_time_sfx_rand_grimpe
+int			last_key_lip
+
+////////////////////
+int 		i_force_expression
+float		f_force_expression_time
+
+int			i_no_zdm
+float		speak_use_porte
+float		time_pshhhh
+float		time_pshhhh1
+
+/////////////////////////////////// KING KONG 2 //////////////////////////////////////
+separator "=== King Kong 2 ==="
+object				o_Indy3rd = nobody
+private	object	o_KONG = nobody
+
+// SUR KONG
+int					i_DBG_display_KONG_link = vrai_faux
+private	float	f_pos_blend_coef
+private	int		i_grabbed_KK_transition
+
+private	int			i_jump_flag
+private	int			i_jump_from_KK_flag
+private	int			i_jump_from_echelle_flag
+private	float		f_jump_from_echelle_timer
+private	vector	v_jump_destination
+private	vector	v_jump_from_KK_speed
+
+private	float		f_fps_shoulder_duree
+
+
+private	float		f_nage_wall_contact_duration
+private	float		f_nage_wall_contact_Z_offset
+
+// GRAB OBJECT
+private	object		ao_grabbed_object[Ci_Joueur_GrabObject_max_nb]
+//private	messageid	amid_grabbed_object[Ci_Joueur_GrabObject_max_nb]
+private	int				ai_grabbed_object_ID[Ci_Joueur_GrabObject_max_nb]
+private	object		o_grabbed_object_en_main = nobody
+private	int				i_grabbed_object_index = -1
+private	float			f_grabbed_object_ramasse_time
+private	float			f_grabbed_object_jete_time
+private    messageid    mid_LNK_Ramasse
+
+///////////////////////////////////////////////////////////////////////
+// PARAMETRAGE DE PROGRESSION
+///////////////////////////////////////////////////////////////////////
+
+//private int				PRG_Suivi_DistMin = -1			// Distance min à jack
+//private int				PRG_Suivi_TubeCote = 666		// Largeur tube coté
+//private object			PRG_Intention
+//private object			PRG_SuiviCarotte
+//private int				PRG_i_GlobalEvt
+//private float				f_desynchro_evt
+//private int				PRG_i_PrevGlobalEvt
+//private int				PRG_i_NextGlobalEvt
+//private message		PRG_m_GlobalEvt
+
+// NEW JOY SYSTEM
+private	int		i_joy_flag_viser		// L2
+private	int		i_joy_flag_zoom		// stick R
+private	int		i_joy_flag_tir			// R2
+private	int		i_joy_flag_repousse	// R2
+private	int		i_joy_flag_drop		// triangle
+private	int		i_joy_flag_reload		// R1
+private	int		i_joy_flag_lancer		// R2
+private	int		i_joy_flag_swap		// L1
+private	float	f_joy_viser_duree
+private	int		i_joy_flag_ramasse	// R2
+private	int		i_flag_action_wait_for_end
+
+private	object	o_dup_fleche
+
+// BACKUP INFOS BONES ANNEXES
+private	object	o_canal_annexe1
+private	vector	v_pos_annexe1
+private	vector	v_sight_annexe1
+private	vector	v_bank_annexe1
+private	object	o_canal_fleche
+private	vector	v_pos_fleche
+private	vector	v_sight_fleche
+private	vector	v_bank_fleche
+
+private	int			i_weapon_delete_n_destroy
+
+
+// REWARD
+private	object		o_Reward
+private	int				i_Reward_Type = -1
+private	object		o_Reward_Actor
+private	float			f_Reward_AFE_coef
+
+// DEBUG
+separator "DEBUG"
+int			i_DBG_Action = vrai_faux
+int			i_DBG_Ground = vrai_faux
+int			i_DBG_Jump = vrai_faux
+int			i_DBG_Water = vrai_faux
+int			i_DBG_Echelle = vrai_faux
+
+private	int				i_action = -1
+
+// ECHELLE
+private	int				i_echelle_flag
+private	float			f_echelle_startingZ
+private	float			f_echelle_hauteur
+private	float			f_echelle_gmat_timer
+private	float			f_echelle_snap_coef
+private	int				i_echelle_snap_flag		// pour la caméra
+private	float			f_echelle_speed_coef
+
+// ARC
+private	float			f_Arc_tendu_duree

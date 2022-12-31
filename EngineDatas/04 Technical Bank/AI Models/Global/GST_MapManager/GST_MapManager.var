@@ -1,0 +1,167 @@
+// Define at least one function in a track
+// function track0 = "name"
+function track1 = "GST_MM_Init"
+// function track2 = "name"
+// function track3 = "name"
+// function track4 = "name"
+
+separator		"General Setting"
+int 				Numero_entree_ParDefaut 
+object			Centrer_La_Grille
+object			o_territory_colmap
+//int					i_disable_Kong_Move = vrai_faux
+
+separator		"POWER UP"
+int					i_course_mashing		= faux_vrai
+int					i_grappin_moyen			= faux_vrai
+int					i_grappin_long				= faux_vrai
+int					i_grappin_incassable	= faux_vrai
+int					i_helico_infini				= faux_vrai
+int					i_mode_spider_infini		= faux_vrai
+
+separator  		"MOUNT TAMING"
+int					i_mount_rhyno 			= faux_vrai
+int					i_mount_shark 			= faux_vrai
+int					i_mount_snake 			= faux_vrai
+int					i_mount_eagle				= faux_vrai
+int					i_mount_tiger 				= faux_vrai
+int					i_mount_fish	 			= faux_vrai
+int					i_mount_spider 			= faux_vrai
+int					i_mount_bat	 			= faux_vrai
+
+separator		"COSTUMES"
+int					i_RM_Disguise_Punk	= faux_vrai
+int					i_RM_Disguise_Mamy	= faux_vrai
+int					i_RM_Disguise_Funky	= vrai_faux
+int					i_RM_Disguise_Elvis	= vrai_faux
+int					i_RM_Disguise_Hiphop	= vrai_faux
+//int					i_RM_Disguise_6			= vrai_faux
+//int					i_RM_Disguise_7			= vrai_faux
+//int					i_RM_Disguise_8			= vrai_faux
+//int					i_RM_Disguise_9			= vrai_faux
+int					i_RM_Disguise_Current = enum( "0 Rien" 0 "1 Punk" 1 "2 Mamy" 2 "3 Funcky" 3 "4 Elvis" 4 "5 HipHop" 5)// MET LES LUNETTES
+int					i_RM_Disguise_Vest	 = enum( "faux" 0 "vrai" 1)
+int					i_RM_Disguise_Shoes	 = enum( "faux" 0 "vrai" 8)
+int					i_RM_Disguise_Hair		 = enum( "faux" 0 "vrai" 2)
+separator 		"After FX"
+int					AFX_Always = vrai_faux
+float 				AFX_BlackAndWhite_1
+float 				AFX_Blur_1
+float 				AFX_Brightness_1
+float 				AFX_ColorBalance_1
+float 				AFX_ColorBalance_2
+float 				AFX_Contraste_1
+float 				AFX_MotionBlur_1
+float 				AFX_MotionSmooth_1
+float 				AFX_Remanence_1
+float 				AFX_RotationSmooth_1
+float 				AFX_Wrap_1
+float 				AFX_ZoomSmooth_1
+float				AFX_Glow_1
+float				AFX_SuperGlow_1
+float				AFX_SuperGlow_2
+float				AFX_SuperGlow_3
+
+separator        "Eclairs"
+trigger			Trigger_Eclairs
+float				f_delai_min			= 10.0
+float				f_delai_max		= 30.0
+private float		f_current_delay
+
+separator        "Eau"
+float				des_f_zsol = 2.8
+private float		f_next_freq_ripple = 0.2
+
+separator        "Wind"
+float				des_f_defaultwind = 0.5
+
+private int		i_phase_eclair
+private float		f_phase_time
+private float		f_phase_brightness_value
+private float		f_phase_contrast_value
+private float		f_phase_bw_value 
+private float		f_brightness
+private float		f_contrast
+private float		f_bw
+
+private int		i_wind 
+private int		i_rain
+
+private float		f_last_gen_ripple
+private float		f_cur_wind
+private vector	v_cur_win = cvector(1,1,0)
+private float		f_time_rafal
+private float		f_intensity_rain
+private float		f_time_last_win
+private float		f_time_force_wind
+
+separator "Pluie"
+object		o_zone_interdit[20]
+object		o_zone_static[20]
+int				i_force_pluie = vrai_faux
+object		o_objet_pluie
+
+separator "SFX generique"
+int				sfx_poleine_herbe = faux_vrai
+int				sfx_nappe_brume = vrai_faux
+int				sfx_light_gun = vrai_faux
+
+separator "MAX munitions"
+int				des_i_max_colt
+int				des_i_max_shotgun
+int				des_i_max_tommy
+int				des_i_max_snipe
+
+separator                      "WATER"
+object						des_acteur_eau
+int                                WTR_activation= vrai_faux
+color                            WTR_sky_color
+color                            WTR_bottom_color
+color                            WTR_water_color
+float                             WTR_Waves_Height= 0.075
+float                             WTR_Choppy= 0.2
+float                             WTR_Tiling= 0.02
+float                             WTR_Speed= 0.15
+float                             WTR_Water_Height
+float                             WTR_Wave_dir= 1
+float                             WTR_Wave_Prop= 2
+private float                   f_WTR_Waves_Height
+key								WTR_TextureBigKey
+float							WTR_TextureTile
+
+separator	"FOG"
+int								i_use_FogCorrection = vrai_faux
+float							sfx_FogPSX_near
+float							sfx_FogPSX_far
+
+separator "BACK"
+color							col_back
+int								change_col_back = vrai_faux
+
+separator "SECTORISATIONS"
+int					i_RM_SectoMode = enum("1 - Rayman" 1 "0 - Camera" 0)
+int					i_secto_atmosphere1
+int					i_secto_atmosphere2
+int					i_secto_merdenuage1
+int					i_secto_merdenuage2
+
+separator "DIVERS"
+
+//////////////////////////////////////////////////////////
+private float		f_time_vent_pluie
+private float		f_time_dt_pluie
+private float		f_time_rand_pluie
+private vector 	v_time_rand_pluie
+
+private vector	av_pos_gouttes[32]
+private float		af_time_gouttes[32]
+private float		af_speed_gouttes[32]
+private int		ai_cpt_gouttes[32]
+
+private int		i_mode_old_movie = -1
+
+//////////////////////////////////////////////////////////
+int 				i_force_wind = vrai_faux
+int 				i_force_rafale = vrai_faux
+
+private float		f_time_beat = 5.0	// on commence pas en Zik

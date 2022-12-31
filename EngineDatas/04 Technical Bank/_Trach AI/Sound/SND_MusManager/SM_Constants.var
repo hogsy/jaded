@@ -1,0 +1,68 @@
+//-----------------------------------------------------------------------------------------------
+// min - max for random values
+#define Cte_RangeMin			0.7
+#define Cte_RangeMax			1.1
+#define Cte_FilterSize			2
+#define Cte_SignalTime			15
+
+//-----------------------------------------------------------------------------------------------
+// default values
+#define Cte_BetweenSilence		90
+#define Cte_EndSilence			0
+#define Cte_PatternNb				5
+#define Cte_Pattern					(2, 1, 3, 1, 2)
+#define Cte_VolAttTimeDef		50.0					
+#define Cte_VolAttDef				0.75
+#define Cte_VolAttFadeOutTime	10.0
+#define Cte_InjureFadeVol			0.2
+#define Cte_InjureFadeTime		1.5
+
+//-----------------------------------------------------------------------------------------------
+// scheduler state
+#define Cte_State_Init												0
+#define Cte_State_Jingle_Play									10
+#define Cte_State_Jingle_WaitStop								20
+#define Cte_State_Jingle_WaitSilence							30
+#define Cte_State_ChangePhaseToLower					40
+#define Cte_State_ChangePhaseToLower_WaitStop		50
+#define Cte_State_ChangePhaseToLower_WaitSilence	60
+#define Cte_State_ChangePhaseToHigher 					70
+#define Cte_State_Pattern_WaitSilence						90
+#define Cte_State_SilenceStart									100
+#define Cte_State_SilenceMode									110
+
+//-----------------------------------------------------------------------------------------------
+// script mode
+#define Cte_ScriptState_Play					1000
+#define Cte_ScriptState_WaitingExit		1010
+
+//-----------------------------------------------------------------------------------------------
+// kit-reinit state
+#define Cte_KitState_Idle			0
+#define Cte_KitState_Reinit		100
+#define Cte_KitState_WaitStop 	110
+#define Cte_KitState_DoInit		120
+
+//-----------------------------------------------------------------------------------------------
+// injure config
+#define Cte_InjureFx_iMode		SND_Cte_FxMode_Space
+#define Cte_InjureFx_iDelay		500
+#define Cte_InjureFx_iFeedback	70
+#define Cte_InjureFx_fWetVol	0.5
+#define Cte_InjureFx_iWetPan	0
+
+//-----------------------------------------------------------------------------------------------
+// debug
+#define DBG_NONE			0
+#define DBG_LV1			1
+#define DBG_LV2			2
+
+#ifdef _FINAL_
+#define dbg_print(level, str, obj)
+#define dbg_printInt(level, str, i)
+#endif
+
+#ifndef _FINAL_
+#define dbg_print(level, str, obj)	MUS_DebugPrint(level, str, obj)
+#define dbg_printInt(level, str, i)	MUS_DebugPrintInt(level, str, i)
+#endif

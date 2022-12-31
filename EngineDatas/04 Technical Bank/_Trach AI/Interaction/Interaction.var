@@ -1,0 +1,41 @@
+// Define at least one function in a track
+function track0 = "Interaction_init"
+// function track1 = "name"
+// function track2 = "name"
+// function track3 = "name"
+// function track4 = "name"
+
+//#define Ci_LNK_INTERACTION_FIGHT						1
+//#define Ci_LNK_INTERACTION_HEAL						2
+//#define Ci_LNK_INTERACTION_USE						3
+//#define Ci_LNK_INTERACTION_COVER					4
+
+// USED Capa 0 à vrai : bloque les interactions
+// USED Capa 1 à vrai : force l'interaction
+// USED (porte) Capa 5 : pilier à sens inversé
+// USED Capa SWITCH = 8: On m'active !
+
+
+separator "Configuration"
+trigger					trigger_activation
+trigger					trigger_destruction
+trigger					trigger_jack
+int							type_interaction = enum("USE" 3)
+int							type_use = enum("RIEN" 0 "MECANISME" 2 "FILM" 3 "PORTE" 5)
+int							manual = faux_vrai
+int							nombre_de_client = 1 // MAX 10
+object					ao_liste_clients[10]
+int							size = 1
+vector					offset
+int							activate_always = vrai_faux
+object					position_interaction
+int							test_capa_0 = vrai_faux
+int							mode_i_onlyoneclient = vrai_faux
+
+// SERVEURS
+private messageid	mid_CL_LIAISON_ID[10]
+private object			o_CL[10]
+private int				i_auto_activation
+private int				i_capa_15
+private int				i_init_i
+private int				i_activate_once

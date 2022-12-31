@@ -1,0 +1,72 @@
+#include "KBM_defines.var"
+
+//====================================================================
+//                         GESTIONNAIRE DE COMBAT DES K BIG BATS									//
+//====================================================================
+
+// Define at least one function in a track
+function track0 = "KBM_Track_Init.fct"
+// function track1 = "name"
+// function track2 = "name"
+// function track3 = "name"
+// function track4 = "name"
+
+// CONFIGURATION
+separator "BIGS BATS"
+object				ao_bigbats[ci_bigbats_nb]
+private	int			i_bigbat_count = 0
+
+separator "POINTS ET CONDITIONS D'ATTAQUE"
+trigger				at_cond_attack_wp[ci_attack_wp_nb]
+object				ao_init_attack_wp[ci_attack_wp_nb]
+object				ao_post_attack_wp[ci_attack_wp_nb]
+private	object	o_attack_wp_backup
+private	float		f_bigbat_reattack_delay
+
+separator "INTERRUPTIONS"
+int						i_1ere_sequence_pafs_max_nb = 1
+int						i_1ere_sequence_passages_max_nb = 3
+int						i_nieme_sequence_pafs_max_nb = 2
+int						i_nieme_sequence_passages_max_nb = 4
+private	int			i_passages_count			// compteur commun du nb d'attaques
+private	int			i_pafs_count					// compteur commun du nb de pafs reçus
+
+separator "SPAWNER"
+object				o_spawner = nobody
+int						i_spawner_vagues_max_nb = -1
+int						i_spawner_attendre_mort = faux_vrai
+private	int			i_spawner_count			// compteur commun du nb de phases de spawner
+private	int			i_spawner_init_done
+private	int			i_spawner_end
+private	float		f_spawner_end_reattack_delay
+
+//private	int			ai_smallbats_vague_count[ci_bigbats_nb]
+//int						i_smallbats_vague_cpt_type = enum("0 - Compteur Perso" 0 "1 - Compteur Commun" 1 )
+//private	int			ai_bigbat_nb_paf[ci_bigbats_nb]							// nb de pafs encaissés sur cette séquence
+//private	int			ai_bigbat_1ere_sequence_done[ci_bigbats_nb]		// 1ère séquence déjà effectuée
+//private	int			ai_bigbat_just_paffee[ci_bigbats_nb]					// vient juste d'être paffée
+//private	int			ai_bigbat_attack_just_done[ci_bigbats_nb]			// vient juste de terminer une attaque (touché ou raté)
+//private	int			ai_passages_count[ci_bigbats_nb]			// compteur du nb d'attaques
+//private	int			ai_bigbat_attack_reinit[ci_bigbats_nb]					// flag raz nouvelle séquence
+//private	int			ai_bigbat_just_abort[ci_bigbats_nb]						// vient de canceler
+
+// COMPTEURS
+
+// PHASE
+//private	int			ai_phase[ci_bigbats_nb]
+//private	int			ai_phase_interrompue[ci_bigbats_nb]
+
+
+//private	float		af_capa_1er_plan_duree[ci_bigbats_nb]
+
+// SPAWNER
+
+// ETAT
+separator "ETAT DU MANAGER"
+private	int			i_etat_courant
+private	float		f_time_start_etat
+private	int			i_attack_1ere_phase = vrai
+
+// DEBUG
+private	int			i_DBG_Manager = faux
+

@@ -1,0 +1,42 @@
+// Define at least one function in a track
+// function track0 = "name"
+function track1 = "SIG_Init"
+// function track2 = "name"
+// function track3 = "name"
+// function track4 = "name"
+
+//
+#define enum_AndOrXor enum("and"0 "or"1 "xor"2)
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+separator "SIGNAL"
+int			i_SignalMode = enum("Force"0 "Normal"1) // do you want to force the music state ?
+int 		i_Signal = enum("Stress"100 "Fight"101  "BigFight"116 "Paf"102 "Cool"103 "Death"104 "Injure"105 "Stalk"106 "Jingle1"107 "Jingle2"108 "Jingle3"109 "Jingle4"110 "Jingle5"111 "Jingle6"112 "Jingle7"113 "Jingle8"114 "Jingle9"115 "Silence"117)
+//
+separator "ACTIVATION"
+int			i_Activation = enum("Always"1 "One Shot"2) 
+//
+separator "ON"
+trigger 	t_trigger_0
+int			i_Operator_01 = enum_AndOrXor 
+trigger 	t_trigger_1
+int			i_Operator_12 = enum_AndOrXor 
+trigger 	t_trigger_2
+int			i_Operator_23 = enum_AndOrXor 
+trigger 	t_trigger_3
+optim trigger	at_OnCallback[3]	
+//
+separator "OFF"
+trigger 	t_Off_0
+int			i_OffOpe_01 = enum_AndOrXor 
+trigger 	t_Off_1
+int			i_OffOpe_12 = enum_AndOrXor 
+trigger 	t_Off_2
+int			i_OffOpe_23 = enum_AndOrXor 
+trigger 	t_Off_3
+optim trigger	at_OffCallback[3]
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+private int	mi_TrigMode 
+private int 	mb_IsSending = 0
