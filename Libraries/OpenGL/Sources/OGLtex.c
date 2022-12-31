@@ -584,10 +584,6 @@ void OGL_Texture_InternalLoad
 			TEX_Convert_8To32( ( unsigned char * ) p_Buf, pul_ConvertBuffer, TEX_gst_GlobalList.dst_Palette[ pst_RawPal->w_TexPal ].pul_Color, size );
 			pul_ConvertBuffer = ( ULONG * ) p_Buf;
 		}
-		else
-		{
-			assert( 0 );
-		}
 	}
 
     while ( ( TX > 0 ) && ( TY > 0 ) )
