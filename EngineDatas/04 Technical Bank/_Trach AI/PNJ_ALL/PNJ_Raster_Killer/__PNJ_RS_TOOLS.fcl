@@ -1,0 +1,48 @@
+procedure_local void PNJ_RS_Soft_Col()
+{
+	int			ti_i
+	
+	float		tf_dist
+	float		tf_dt
+
+	vector	tv_me_to_passant
+	vector	tv_recalage
+	
+	if ( ! OBJ_LodVisGet() )
+		return
+
+	tv_recalage = Cv_NullVector
+
+	tf_dt = TIME_GetDt()
+
+	for (ti_i = 0; ti_i < i_nb_passant; ti_i++)
+	{
+		if (@ao_passant[ti_i] OBJ_FlagsControlGet() & (OBJ_C_ControlFlag_SectoInactive | OBJ_C_ControlFlag_ForceInactive | OBJ_C_ControlFlag_ForceInvisible))
+			continue
+			
+		if ( ! (@ao_passant[ti_i] OBJ_LodVisGet() ))
+			continue
+	
+		tv_me_to_passant = @ao_passant[ti_i] OBJ_PosGet()
+		tv_me_to_passant -= OBJ_PosGet()
+		tv_me_to_passant.z = 0.0
+		
+		tf_dist = MATH_VecSquareNorm(tv_me_to_passant)
+		
+		if (tf_dist > 0.01 && tf_dist < 1.0)
+		{
+			tf_dist = MATH_FloatSqrt(tf_dist)
+			
+			DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, tv_me_to_passant, color_rouge)	
+	
+			tv_me_to_passant /= tf_dist
+			tv_me_to_passant *= MATH_FloatMax(1.0 - tf_dist, tf_dt)
+			
+			tv_recalage -= tv_me_to_passant
+		}
+	}
+
+	tv_recalage -= MATH_VecDotProduct(tv_recalage, OBJ_SightGet()) * OBJ_SightGet()
+	tv_recalage += OBJ_PosGet()
+	OBJ_PosSet(tv_recalage)
+}

@@ -1,0 +1,170 @@
+procedure_local int RM_FB_Send_Paf()
+{
+	int		ti_i
+	int		ti_zde_corps_nb
+	int		ti_return
+	int		ti_index	
+
+	object	to_target
+	object	tao_zde_corps_gao[100]
+	object	to_main_actor
+	object	to_monture
+
+	ti_return = faux
+
+	to_main_actor = AI_MainActorGet(0)
+	to_monture = @to_main_actor PROC_RM_MontureGet()
+
+	ti_zde_corps_nb =  COL_ZDE_ZDEListGet(&tao_zde_corps_gao[0], C_zde_fight, C_zde_corps, all, none, Ci_Filter_IdentityFlag)
+	for (ti_i = 0; ti_i < ti_zde_corps_nb; ti_i++)
+	{
+		to_target = tao_zde_corps_gao[ti_i]
+
+		if ( to_target == o_sender )
+			continue
+
+		if ( to_target == o_sender_2 )
+			continue
+
+		ti_index = ARR_ObjSearch(&ao_mem_paf_actor[0], i_mem_paf_actor_nb, to_target)
+		if (ti_index != -1)
+			continue
+
+		if (to_target == to_main_actor && to_monture && to_monture != to_target)
+			continue
+			
+		ao_mem_paf_actor[i_mem_paf_actor_nb] = to_target
+		i_mem_paf_actor_nb++
+
+		ti_return = vrai
+		EVENT_AddEventPafCanal( C_EVENT_FILTER_Object,  C_PAF_RM_Fort, o_sender, Cf_EVENT_Duree_1Trame, to_target, -1, 30.0, OBJ_SightGet(), OBJ_PosGet())
+	}
+		
+	return(ti_return)
+}
+
+procedure_local int RM_FB_Soft_Col(byref vector tv_soft_col)
+{
+	int			ti_i
+	int			ti_overlap_nb
+	int			ti_return
+
+	float		tf_norm
+
+	vector	tv_recalage
+	
+
+	object	to_other_gao
+	object	tao_overlap[100]
+
+	ti_return = faux
+	tv_soft_col = Cv_NullVector
+
+	OBJ_CapaSet(OBJ_Capa_0, none)
+
+	ti_overlap_nb = COL_BVGetAllOverlaps(&tao_overlap[0], OBJ_C_IdentityFlag_AI, OBJ_C_IdentityFlag_Anims | OBJ_C_IdentityFlag_Visu, Ci_Filter_IdentityFlag)
+	for (ti_i = 0; ti_i < ti_overlap_nb; ti_i++)
+	{
+		to_other_gao = tao_overlap[ti_i] 
+
+		if ( ! AI_HaveSameModel(to_other_gao) )
+			continue
+			
+//		if (@to_other_gao OBJ_CapaTest(OBJ_Capa_0))
+//			continue
+			
+		tv_recalage	= OBJ_PosGet() - @to_other_gao OBJ_PosGet()
+		tf_norm = MATH_VecSquareNorm(tv_recalage)
+		if (tf_norm < 9.0)
+		{
+			ti_return	= vrai
+			
+			DBG_RenderSphere(OBJ_PosGet(), 3.0, color_cyan)	
+	
+			tf_norm = MATH_FloatSqrt(tf_norm)
+			tv_recalage /= tf_norm
+			tv_recalage *= 3.0
+			tv_recalage += @to_other_gao OBJ_PosGet()
+
+			tv_soft_col += tv_recalage - OBJ_PosGet()
+		}
+	}
+	
+	return(ti_return)
+}
+
+procedure_local void RM_FB_GFX()
+{
+	vector	tv_pos
+	vector	tv_wind	
+
+//	tv_wind = DYN_SpeedGetVector()
+	tv_wind = Cv_NullVector
+
+	tv_pos = OBJ_PosGet()
+	tv_pos += DYN_SpeedGetVector() * TIME_GetDt()
+
+	if (GFX_Smoke== -1)
+	{
+		GFX_Smoke = GFX_Add(13)																// Create the boum
+					
+		GFX_MaterialSet(GFX_Smoke, get_SFX_light_and_smoke, -1)						// met le materiau
+		GFX_Seti(GFX_Smoke, 13101, 17)															// Materiau 0
+		GFX_Seti(GFX_Smoke, 13110, 18)															// Materiau 1
+		GFX_Seti(GFX_Smoke, 13111, 19)															// Materiau 2
+		GFX_Seti(GFX_Smoke, 13112, 17)															// Materiau 3
+	
+		GFX_Seti(GFX_Smoke, 13100, 50)															// *Buffer number of sprite
+		GFX_Seti(GFX_Smoke, 13106, 0xFFFFFFFF)											// *number of sprite to generate
+		
+		GFX_Setf(GFX_Smoke, 13003, 0.1)															// Time fase 1
+		GFX_Setf(GFX_Smoke, 13004, 0.3)														// Time fase 2
+		
+		GFX_Seti(GFX_Smoke, 13107, 0)															// Sprites non triés
+		
+		GFX_FlagSet(GFX_Smoke, 0 , 1)
+		GFX_FlagSet(GFX_Smoke, 2 , 1)
+		
+		GFX_Setf(GFX_Smoke, 13000, 0.5)														// Growing speed min
+		GFX_Setf(GFX_Smoke, 13001, 1.0)														// Growing speed max
+		GFX_Setf(GFX_Smoke, 13002, 0.0001)													// Friction Grow
+		
+		GFX_Setf(GFX_Smoke, 13005, 0.4)														// Creation size min
+		GFX_Setf(GFX_Smoke, 13006, 0.6)														// Creation size max
+		
+		GFX_Setv(GFX_Smoke, 13203, cvector(0.1, 0.1, 0.1))							// friction speed
+		
+		if (i_GFX_Smoke_color)
+		{
+			GFX_Seti(GFX_Smoke, 13103, 0xFF000000 | (i_GFX_Smoke_color & 0x00FFFFFF))		// Color fase 0
+			GFX_Seti(GFX_Smoke, 13104, 0x80000000 | (i_GFX_Smoke_color & 0x00FFFFFF))		// Color fase 1
+			GFX_Seti(GFX_Smoke, 13105, 0x00000000 | (i_GFX_Smoke_color & 0x00FFFFFF))		// Color fase 2
+		}
+		else
+		{
+			GFX_Seti(GFX_Smoke, 13103, 0xFFCCFF88)		// Color fase 0
+			GFX_Seti(GFX_Smoke, 13104, 0x00CCFF88)		// Color fase 1
+			GFX_Seti(GFX_Smoke, 13105, 0x00CCFF88)		// Color fase 2
+		}
+
+		GFX_Setf(GFX_Smoke, 13009, 4.0)														// Norm speed min
+		GFX_Setf(GFX_Smoke, 13010, 4.0)														// Norm speed max
+		
+		GFX_Setv(GFX_Smoke, 13205, Cv_NullVector)										// Mainposspeed
+		GFX_Setv(GFX_Smoke, 13206, Cv_NullVector)										// Mainpossfriction
+			
+		GFX_Setf(GFX_Smoke, 13007, 0.0)															// Gravity
+
+		GFX_Setv(GFX_Smoke, 13201, cvector(-1.0, -1.0, -1.0))	// Speed min
+		GFX_Setv(GFX_Smoke, 13202, cvector(1.0, 1.0, 1.0))		// Speed max
+
+		GFX_Setf(GFX_Smoke, 13012, 0.75)														// Time random
+		GFX_Setf(GFX_Smoke, 13008, 0.01)		// generation rate
+	}
+
+	GFX_Setv(GFX_Smoke, 13200, tv_pos) 	// Creation Pos
+//	GFX_Setv(GFX_Smoke, 13207, tv_pos)		// CreaPosAxe X
+//	GFX_Setf(GFX_Smoke, 13011, v_col_ground_pos.z) // Z min	
+
+	GFX_Setv(GFX_Smoke, 13204, tv_wind)											// wind
+}

@@ -1,0 +1,366 @@
+//============================================================
+// Ponderation grille
+procedure void GRID_PondHumain()
+{
+	float		taf_pond[20]
+	int			ti_capa
+	vector	tv_temp
+	
+	taf_pond[0] = 1.0
+	taf_pond[1] = 0.0
+	taf_pond[2] = 1.0
+	taf_pond[3] = 1.0
+	taf_pond[4] = 1.0
+	taf_pond[5] = 666.0 // Ronces
+	taf_pond[6] = 1.0
+	taf_pond[7] = 1.0
+	taf_pond[8] = 1.0
+	taf_pond[9] = 1.0
+	taf_pond[10] = 1.0
+	taf_pond[11] = 1.0
+	taf_pond[12] = 666.0 // Mouches feu
+	taf_pond[13] = 1.0
+	taf_pond[14] = 1.0
+	taf_pond[15] = 1.0
+	GRID_SetPond( &taf_pond[0])
+
+	taf_pond[0] = 1.0
+	taf_pond[1] = 0.0
+	taf_pond[2] = 0.0
+	taf_pond[3] = 0.0
+	GRID_SetPondDyn( &taf_pond[0])
+}
+
+//============================================================
+// Determine si une case est bloquée ou non
+procedure int GRID_Blocked(vector v, int dyn)
+{
+	int capa
+	int brule
+	
+	capa = GRID_CapaGet(v)
+	
+	// Occupation
+	if(dyn && (capa & tag_grid_occupe_msk)) return 1
+	
+	// Terrain
+	capa &= tag_grid_terrain
+	if(GRID_GetPond(capa) == 0) return 2
+
+	// Herbe qui peut bruler	
+	if(GRID_GetPond(capa) == 666.0)
+	{
+		brule = faux
+		if(GRID_Has(1))
+		{
+			GRID_CurrentSet(1)
+			if(GRID_CapaGet(v) & Ci_Grid2_Brule) brule = vrai
+			GRID_CurrentSet(0)
+		}
+		
+		if(!brule) return 2
+	}
+	
+	// Terrain dyn
+	capa = tag_grid_terraindyn_mask(GRID_CapaGet(v))
+	if(GRID_GetPondDyn(capa) == 0) return 3
+	return 0
+}
+
+//============================================================
+// Un mur (en ligne droite) entre src et dst ?
+procedure int GRID_PosValidDyn(vector src, vector dst)
+{
+	vector	tv_temp, tv_lsrc
+	float		tf_norm, tf_tot, tf_norm1
+	int			ti_capa
+	
+	ti_capa = GRID_CapaGet(src)
+	if(ti_capa & tag_grid_occupe_msk) return faux
+	ti_capa = GRID_CapaGet(dst)
+	if(ti_capa & tag_grid_occupe_msk) return faux
+	src = GRID_PosGet(src)
+	dst = GRID_PosGet(dst)
+	tv_temp = dst - src
+	tv_temp.z = 0
+	tf_norm = MATH_VecNorm(tv_temp)
+	if(tf_norm < 0.1) return vrai
+	if(tf_norm > 8) 
+	{
+		tf_norm = 8
+		MATH_VecSetNorm(tv_temp, 8)
+	}
+
+	tf_norm1 = MATH_FloatMax(MATH_AbsFloat(tv_temp.x), MATH_AbsFloat(tv_temp.y))
+	tv_temp.x /= tf_norm1
+	tv_temp.y /= tf_norm1	
+	tf_norm1 = MATH_VecNorm(tv_temp)
+
+	tf_tot = 0
+	tv_lsrc = src
+	while(tf_tot < tf_norm)
+	{
+		src += tv_temp
+		tf_tot += tf_norm1
+		if(tf_tot > tf_norm) src = dst
+		ti_capa = GRID_CapaGet(src)
+		if(ti_capa & tag_grid_occupe_msk) return faux
+		tv_lsrc = src
+	}
+	
+	return vrai
+}
+
+//============================================================
+// Un mur (en ligne droite) entre src et dst ?
+procedure vector GRID_LastPosValid(vector src, vector dst, int dyn)
+{
+	vector	tv_temp, tv_lsrc
+	float		tf_norm, tf_tot, tf_norm1
+	
+	if(GRID_Blocked(src, dyn)) return src
+	src = GRID_PosGet(src)
+	dst = GRID_PosGet(dst)
+	tv_temp = dst - src
+	tv_temp.z = 0
+	tf_norm = MATH_VecNorm(tv_temp)
+	if(tf_norm < 0.1) return src
+	
+	tf_norm1 = MATH_FloatMax(MATH_AbsFloat(tv_temp.x), MATH_AbsFloat(tv_temp.y))
+	tv_temp.x /= tf_norm1
+	tv_temp.y /= tf_norm1	
+	tf_norm1 = MATH_VecNorm(tv_temp)
+
+	tf_tot = 0
+	tv_lsrc = src
+	while(tf_tot < tf_norm)
+	{
+		src += tv_temp
+		tf_tot += tf_norm1		
+		if(tf_tot > tf_norm) src = dst
+		if(GRID_Blocked(src, dyn)) return tv_lsrc
+		tv_lsrc = src
+	}
+	
+	return dst
+}
+
+//============================================================
+// Un mur (en ligne droite) entre src et dst ?
+procedure vector GRID_PosValidSimplifie(vector src, vector dst, int dyn)
+{
+	vector	tv_temp, tv_temp1, tv_lsrc
+	float		tf_norm, tf_tot, tf_norm1
+	
+	if(GRID_Blocked(src, dyn)) return Cv_NullVector
+	src = GRID_PosGet(src)
+	dst = GRID_PosGet(dst)
+	tv_temp = dst - src
+	tv_temp.z = 0
+	tf_norm = MATH_VecNorm(tv_temp)
+	if(tf_norm < 0.1) return src
+//	if(tf_norm > 10) 
+//	{
+//		tf_norm = 10
+//		MATH_VecSetNorm(tv_temp, 10)
+//	}
+
+	tf_norm1 = MATH_FloatMax(MATH_AbsFloat(tv_temp.x), MATH_AbsFloat(tv_temp.y))
+	tf_norm1 *= 2
+	tv_temp.x /= tf_norm1
+	tv_temp.y /= tf_norm1	
+	tf_norm1 = MATH_VecNorm(tv_temp)
+	
+	tv_temp1 = MATH_VecCrossProduct(tv_temp, Cv_VerticalVector)
+	MATH_VecSetNorm(tv_temp1, 0.6)
+	
+	tf_tot = 0
+	tv_lsrc = src
+	while(tf_tot < tf_norm)
+	{
+		// Ne prend plus en compte les bloquage dynamiques au dela d'une distance
+		if(tf_tot > 4) dyn = faux
+		
+		if(GRID_Blocked(src + tv_temp1, dyn)) return Cv_NullVector
+		if(GRID_Blocked(src - tv_temp1, dyn)) return Cv_NullVector
+		src += tv_temp
+		if(GRID_Blocked(src, dyn)) return Cv_NullVector
+		tf_tot += tf_norm1
+		tv_lsrc = src
+	}
+	
+	return tv_lsrc
+}
+
+//============================================================
+procedure int Humains_GetIndex( object	gao )
+{
+	int pi
+	
+//	for ( pi = C_ID_Jack; pi <= C_ID_Marin_dernier; pi++)
+	for ( pi = C_ID_Joueur; pi <= C_ID_Last_Compagnon; pi++)
+	{
+		if ( !@"univ" ai_HumainIsHere[ pi ] ) continue
+		if ( @"univ" ao_AllHumains[ pi ] == gao )
+			return pi
+	}
+	return -1
+}
+
+//============================================================
+procedure vector GRID_FreeCurPos( vector pos, vector destpos )
+{
+	vector	tv_temp
+	
+	tv_temp = destpos - pos
+	MATH_VecSetHorzNormalize(tv_temp)
+	tv_temp += OBJ_PosGet()	
+	if(!GRID_Blocked(tv_temp, vrai)) return tv_temp
+	return GRID_ComputeDest(pos, 0)
+}
+
+//=============================================================
+// scale un vecteur pour qu'il atteigne le bord d'nu rectangle
+// le rectangle est donné par la BV de l'objet po_GaoBV
+// le vecteur a pour origine le point pv_Pos
+// et pour direction le vecteur pv_Dir
+// le point origine est sensé etre à l'intérieur du rectangle
+// si ce n'est pas le cas la solution retournée sera invalide
+//=============================================================
+procedure vector GRID_ScaleVectorToFitWithRectBorder( object po_GaoBV, vector pv_Pos, vector pv_Dir )
+{
+	vector 	v_Min, v_Max, v_Res
+		
+	v_Res.z = 0
+	v_Min = @po_GaoBV OBJ_PosGet() - pv_Pos
+	v_Max = v_Min + @po_GaoBV BV_MaxGet()
+	v_Min += @po_GaoBV BV_MinGet()
+		
+	if (pv_Dir.x != 0)
+	{
+		if (pv_Dir.x > 0 )
+			v_Res.x = v_Max.x
+		else
+			v_Res.x = v_Min.x
+		v_Res.y = (v_Res.x / pv_Dir.x) * pv_Dir.y
+		if ( (v_Res.y >= v_Min.y) && (v_Res.y <= v_Max.y) )
+			return v_Res
+	}
+	
+	if (pv_Dir.y == 0)
+		return Cv_NullVector
+		
+	if (pv_Dir.y > 0 )
+		v_Res.y = v_Max.y
+	else
+		v_Res.y = v_Min.y
+	v_Res.x = (v_Res.y / pv_Dir.y) * pv_Dir.x
+	return v_Res
+}
+
+//=============================================================
+//=============================================================
+procedure int CaseBrulee(vector pos)
+{
+	int	capa, oui
+	
+	oui = faux
+	if(!GRID_Has(1)) return 0
+	GRID_CurrentSet(1)
+	capa = GRID_CapaGet(pos)
+	if(capa & Ci_Grid2_Brule) oui = vrai
+	GRID_CurrentSet(0)
+	return oui
+}
+
+//=============================================================
+//=============================================================
+procedure int CaseEnFeu(vector pos)
+{
+	int	capa, oui
+	
+	oui = faux
+	if(!GRID_Has(1)) return 0
+	GRID_CurrentSet(1)
+	capa = GRID_CapaGet(pos)
+	if(capa & Ci_Grid2_EnFeu) oui = vrai
+	GRID_CurrentSet(0)
+	return oui
+}
+
+
+//=============================================================
+//=============================================================
+//procedure int IsBambou(int weapon)
+//{
+//	if(weapon == Ci_weapon_ID_bambou) return vrai
+////	if(weapon == Ci_weapon_ID_bambou_moy) return vrai
+////	if(weapon == Ci_weapon_ID_bambou_petit) return vrai
+//	return faux
+//}
+//
+////=============================================================
+////=============================================================
+//procedure int IsJetable(int weapon)
+//{
+//	if(weapon == Ci_weapon_ID_levier) return vrai
+//	if(weapon == Ci_weapon_ID_crane) return vrai
+//	if(weapon == Ci_weapon_ID_grenade) return vrai
+//	return faux
+//}
+
+//=============================================================
+//=============================================================
+procedure int IsSolPaf(vector ground)
+{
+	int			x, y
+	int 		ti_capa
+	vector	tv_temp
+	
+	ground = GRID_PosGet(ground)
+	ti_capa = GRID_CapaGet(ground) & tag_grid_terrain
+	if(ti_capa == Ci_sol_herbe_ronce) return vrai
+	if(ti_capa == Ci_sol_eau_mouche_feu) return vrai
+	
+	if(ti_capa == Ci_sol_mur)
+	{
+		for(x = -1; x < 2; x++)
+		{
+			for(y = -1; y < 2; y++)
+			{
+				if(x == 0 && y == 0) continue
+				tv_temp = ground
+				tv_temp.x += x
+				tv_temp.y += y
+				if(CaseBrulee(tv_temp)) continue
+				
+				ti_capa = GRID_CapaGet(tv_temp) & tag_grid_terrain
+				if(ti_capa == Ci_sol_herbe_ronce) return vrai
+				if(ti_capa == Ci_sol_eau_mouche_feu) return vrai
+			}
+		}
+	}
+	
+	return faux
+}
+
+//=============================================================
+//=============================================================
+procedure int CacheTientLaPos(object cache)
+{
+	if(!cache) return faux
+	if(!@cache AI_IsModel("Progression/PRG_CacheSafe")) return faux
+	if(@"Progression/PRG_CacheSafe" cache des_i_tient_la_position) return vrai
+	return faux
+}
+
+//=============================================================
+//=============================================================
+procedure int CacheFonceVersMoi(object cache)
+{
+	if(!cache) return faux
+	if(!@cache AI_IsModel("Progression/PRG_CacheSafe")) return faux
+	if(@"Progression/PRG_CacheSafe" cache des_i_fonce_vers_moi) return vrai
+	return faux
+}
+

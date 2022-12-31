@@ -1,0 +1,50 @@
+#include "RM_Levier_defines.var"
+
+procedure_ultra vector Proc_Levier_HotSpot_PosGet()
+{
+	vector	tv_pos
+	tv_pos = @o_levier OBJ_PosGet() + (f_levier_longueur * @o_levier OBJ_SightGet() )
+	switch( i_type )
+	{
+		case Ci_Levier_Type_Double :
+			tv_pos += 0.9 * @o_levier OBJ_BankingGet()
+			tv_pos -= 0.25 * @o_levier OBJ_SightGet()
+			break
+		case Ci_Levier_Type_Porte_a_Clones_D :
+			tv_pos = @o_levier OBJ_PosGet() - (f_levier_longueur * @o_levier OBJ_SightGet() )
+		case Ci_Levier_Type_Porte_a_Clones_G :
+			tv_pos += 1.4  * @o_levier OBJ_BankingGet()
+			tv_pos += -1.3 * @o_levier OBJ_HorizonGet()
+			break
+		case Ci_Levier_Type_Standard :
+
+		case Ci_Levier_Type_Impossible :
+			break
+	}
+	return tv_pos
+}
+
+procedure_ultra float Proc_Levier_GetRopeDistRenormalisation(int ti_monture_ID)
+{
+	if( ti_monture_ID )
+		return 15.0
+	else
+		return 3.0
+}
+
+procedure_ultra int Proc_Levier_IsGrabbed()
+{
+//	if ((f_delai_tire > 0.0) || OBJ_CapaTest(CAPA_Reussi))
+//	if (OBJ_CapaTest(CAPA_Rope) && OBJ_CapaTest(CAPA_RopeReady))
+	if (OBJ_CapaTest(CAPA_Rope))
+		return 1
+	return 0
+}
+
+procedure_ultra int Proc_Levier_IsReady()
+{
+//	if ((f_delai_tire > 0.0) || OBJ_CapaTest(CAPA_Reussi))
+	if (OBJ_CapaTest(CAPA_Rope) && OBJ_CapaTest(CAPA_RopeReady))
+		return 1
+	return 0
+}

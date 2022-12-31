@@ -1,0 +1,132 @@
+M_DeclareInteraction_Common
+//M_DeclarePrecomp_Kam_Common
+
+//---------------------------------------------------------------------------------------------------------------------------------------------
+// Interaction for the camera
+//---------------------------------------------------------------------------------------------------------------------------------------------
+procedure_ultra	message	fn_CamInteractionMsg(message msg);
+//---------------------------------------------------------------------------------------------------------------------------------------------
+// Interaction for the kong
+//---------------------------------------------------------------------------------------------------------------------------------------------
+procedure_ultra message fn_KongInteractionMsg(message msg);
+
+//---------------------------------------------------------------------------------------------------------------------------------------------
+// Interaction for the GFX objects
+//---------------------------------------------------------------------------------------------------------------------------------------------
+procedure_ultra message fn_GFXSampler_InteractionMsg( message msg );
+
+//---------------------------------------------------------------------------------------------------------------------------------------------
+// Interaction for the GFX smoke objects
+//---------------------------------------------------------------------------------------------------------------------------------------------
+procedure_ultra message fn_GFXSmokey_InteractionMsg( message msg );
+
+//---------------------------------------------------------------------------------------------------------------------------------------------
+// Interaction for the GFX ripple objects
+//---------------------------------------------------------------------------------------------------------------------------------------------
+procedure_ultra message fn_GFXRipple_InteractionMsg( message msg );
+
+//---------------------------------------------------------------------------------------------------------------------------------------------
+// Interaction for the GFX ripple objects
+//---------------------------------------------------------------------------------------------------------------------------------------------
+procedure_ultra message fn_SFX_Fade_Impact_InteractionMsg(message msg );
+
+//---------------------------------------------------------------------------------------------------------------------------------------------
+// Interaction for the Wall Effect objects
+//---------------------------------------------------------------------------------------------------------------------------------------------
+procedure_ultra message fn_Wall_Effect_InteractionMsg(message msg );
+
+//---------------------------------------------------------------------------------------------------------------------------------------------
+// Interaction for the KPluieDeLances objects
+//---------------------------------------------------------------------------------------------------------------------------------------------
+procedure_ultra message fn_KPluieDeLances_InteractionMsg(message msg );
+
+
+//---------------------------------------------------------------------------------------------------------------------------------------------
+// Interaction for the GFX Ambiant setting
+//---------------------------------------------------------------------------------------------------------------------------------------------
+procedure_ultra message fn_GFX_AmbianceSet_InteractionMsg(message msg );
+
+
+
+//***************************************************************************************
+// Dispatch an interaction
+//***************************************************************************************
+procedure_ultra message Dispatch_Interaction(object objDest, message interactionMsg)
+{
+	message tm_MessageOut
+	MSG_SetNull(tm_MessageOut)
+	tm_MessageOut.msg_id 			= C_Interaction_ResultFailed
+	tm_MessageOut.msg_sender 	= get_global
+	
+	if (!objDest)
+	{
+		return 	tm_MessageOut
+	}
+
+	// Interaction to Kong ?	-> Send it
+	if (@objDest AI_IsModel(get_Kong_Path))
+	{
+		tm_MessageOut = @objDest fn_KongInteractionMsg(interactionMsg)
+	}
+	else if ( @objDest AI_IsModel( "Kanada/GFX_Sampler" ) )
+	{
+		@objDest fn_GFXSampler_InteractionMsg( interactionMsg )
+	}
+	else if ( @objDest AI_IsModel( "Kanada/GFX_Smokey" ) )
+	{
+		@objDest fn_GFXSmokey_InteractionMsg( interactionMsg )
+	}
+	else if ( @objDest AI_IsModel( "Kanada/GFX_Rippler" ) )
+	{
+		@objDest fn_GFXRipple_InteractionMsg( interactionMsg )
+	}
+	else if ( @objDest AI_IsModel( "Kanada/SFX_Fade_Impact" ) ) //Kanada/SFX_Fade_Impact
+	{
+		@objDest fn_SFX_Fade_Impact_InteractionMsg( interactionMsg )
+	}
+	else if ( @objDest AI_IsModel( "Kanada/Wall_Effect" ) )
+	{
+		tm_MessageOut = @objDest fn_Wall_Effect_InteractionMsg( interactionMsg )
+	}
+	else if ( @objDest AI_IsModel( "Kanada/KPluieDeLances" ) )
+	{
+		//tm_MessageOut = @objDest fn_KPluieDeLances_InteractionMsg( interactionMsg )
+	}
+	else if ( @objDest AI_IsModel( "Kanada/GFX_GlobalAmbientSet" ) )
+	{
+		tm_MessageOut = @objDest fn_GFX_AmbianceSet_InteractionMsg( interactionMsg )
+	}
+
+
+	// Interaction for old camera ?	-> Send it to new
+//	else if (@objDest AI_IsModel(get_Kamera_Path))
+//	{
+//		objDest = get_Kam_Kamera
+//		
+//		tm_MessageOut = @objDest fn_CamInteractionMsg(interactionMsg)	
+//	}
+//	// Interaction for new camera ?	-> Send it
+//	else if (@objDest AI_IsModel(get_Kam_Kamera_Path))
+//	{
+//		tm_MessageOut = @objDest fn_CamInteractionMsg(interactionMsg)	
+//	}
+	
+
+	return 	tm_MessageOut
+}
+
+
+
+
+//---------------------------------------------------------------------------------------------------------------------------------------------
+// Usefull fn to setup basic fields in an interaction request as this is done every time we interact
+//---------------------------------------------------------------------------------------------------------------------------------------------
+procedure_ultra void fn_InitInteractionRequest( byref message requestMsg, object sender, int requestId )
+{
+	MSG_SetNull(requestMsg)
+	requestMsg.msg_id = requestId
+	requestMsg.msg_sender = sender
+}
+
+
+

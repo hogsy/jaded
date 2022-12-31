@@ -1,0 +1,166 @@
+Include_UltraProcedure_Header
+
+#include "Kam_Defines.var"
+
+procedure_ultra void Proc_Kam_ComboFinish(object to_actor)
+{
+	f_Kam_ComboFinish = 6.0
+	o_Kam_ComboFinish = to_actor
+}
+
+procedure_ultra float Proc_Kam_SpeedGet()
+{
+	return ( MATH_VecNorm(v_delta) / TIME_GetDt() )
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------
+
+procedure_ultra void Proc_Kam_FinishMode_Set( int ti_finish_ID, object to_gao)
+{
+	i_kong_finish = vrai
+	@get_global i_kong_finish_id	= ti_finish_ID
+	@get_global o_kong_finish_target = to_gao
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------
+
+procedure_ultra int Proc_Kam_KamModifierID_Get()
+{
+	i_cc_kam_KamModifierID++
+	return i_cc_kam_KamModifierID
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------
+
+procedure_ultra int Proc_Kam_IsInFIGHT_Get()
+{
+	return ( i_kam_in_fight )
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------
+
+procedure_ultra void Proc_Kam_RumbleSet(float tf_ramble, float tf_speed)
+{
+	// 0.01
+	f_sfx_ramble = tf_ramble
+	f_sfx_ramble_speed = tf_speed
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------
+
+procedure_ultra int Proc_Kam_IsInGame()
+{
+	if( i_kong_camera_mode == Ci_Kamera_mode_CINE )
+		return faux
+	
+	if( OBJ_CapaTest(Kam_Capa_Cine) )
+		return faux
+	
+	if( VIEW_GetObject(0) != OBJ_Me() )
+		return faux
+	
+	return vrai
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------
+
+procedure_ultra int Proc_Kam_FamilyGet()
+{
+	return i_kam_family
+}
+
+// FPS ------------------------------------------------------------------------------------------------------------------------------
+procedure_ultra void Proc_Kam_FPSMode_Set()
+{
+	i_cam_fps = vrai
+}
+procedure_ultra int Proc_Kam_FPSMode_Get()
+{
+//	return i_cam_fps
+	if( i_kong_camera_mode == Ci_Kamera_mode_FPS )
+		return vrai
+	else
+		return faux
+}
+procedure_ultra float Proc_Kam_FPSMode_DurationGet()
+{
+	if( Proc_Kam_FPSMode_Get() )
+		return f_fps_duration
+	else
+		return 0.0
+}
+procedure_ultra void Proc_Kam_RewardMode_Set(int ti_reward, object to_actor)
+{
+	i_Reward_Type = ti_reward
+	o_Reward_Actor = to_actor
+}
+// FPS ------------------------------------------------------------------------------------------------------------------------------
+
+
+// POSITIONNER LA KAMERA POUR LES ES
+procedure_ultra void Proc_Kam_Position_and_Orientation_Set(vector tv_pos, vector tv_sight, vector tv_banking)
+{
+	object	to_jack
+	OBJ_PosSet(tv_pos)
+	COL_StartMatrixSet(tv_pos)
+	OBJ_SightGeneralSet(tv_sight, tv_banking)
+	v_camera_curent_pos = tv_pos
+	v_MECA_cam_pos = tv_pos
+	vG_chm_cam_pos = tv_pos
+	v_sfx_sight = Cv_NullVector
+	v_MECA_orientation_locale = Cv_NullVector
+	v_MECA_cam_sight = tv_sight
+	v_OldMECA_cam_sight = tv_sight		// pour la cam mode normal
+	v_MECA_cam_banking = tv_banking
+	vG_chm_cam_sight = tv_sight
+	v_MECA_cam_target = tv_pos + tv_sight
+	vG_chm_cam_target = tv_pos + tv_sight
+	v_MECA_cam_target_delta = Cv_NullVector
+	vG_chm_cam_target_delta = Cv_NullVector
+	f_chm_coef = 1.0	
+	f_chm_coef_bis = 10.0
+//	f_chm_speed_forced = Cf_Infinit		// CUT
+	if( i_kong_camera_mode == Ci_Kamera_mode_FPS )
+	{
+		to_jack = AI_MainActorGet(C_ID_Joueur)
+		if( to_jack )
+			@to_jack OBJ_SightGeneralSet(tv_sight, tv_banking)
+	}
+}
+
+
+//procedure_ultra vector Proc_Kam_FPS_SightContraintConeGet()
+//{
+//	object	to_kong
+//	object	to_jack
+//	object	to_target
+//	object	to_bone
+//	vector	tv_sight
+//	to_kong = AI_MainActorGet(C_ID_Kong)
+//	to_jack = AI_MainActorGet(C_ID_Joueur)
+//	tv_sight = Cv_NullVector
+//	if( to_kong )
+//	{
+//		to_target = @get_Kong_Path to_kong o_fight_actor
+//		if( to_target )
+//		{
+//			to_bone = @to_target ANI_CanalObjectGet(Anim_Canal_Bassin)
+//			if( ! to_bone )
+//				to_bone = to_target
+//			tv_sight = @to_bone OBJ_PosGet() - @to_jack OBJ_PosGet()
+//		}
+//		else if( @to_kong Proc_KK_Test_Mode(ETAT_Kong_walling) )
+//			tv_sight = @get_Kamera OBJ_SightGet()
+//		else if( @to_kong Proc_KK_Test_Mode(ETAT_Kong_swing_arch) )
+//			tv_sight = @get_Kamera OBJ_SightGet()
+//		else if( @to_kong Proc_KK_JumpStatusGet() )
+//			tv_sight = @get_Kamera OBJ_SightGet()
+//		else
+//			tv_sight = @to_kong Proc_KK_LookDirectionGet()
+//	}
+//	if( MATH_VecNullEpsilon(tv_sight) )
+//		tv_sight = @get_Kamera OBJ_SightGet()		// si kong n'a pas de look
+//	MATH_VecSetNormalize(tv_sight)
+//	return tv_sight
+//}
+

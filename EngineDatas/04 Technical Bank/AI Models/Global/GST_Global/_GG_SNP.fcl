@@ -1,0 +1,449 @@
+#define Ci_Axis_X								0
+#define Ci_Axis_Y								1
+#define Ci_Axis_Z								2
+
+#define Ci_SNP_Pos_Min						0x01
+#define Ci_SNP_Pos_Max						0x02
+
+#define Ci_SNP_MaxObjects					128
+#define Ci_SNP_MaxNode						256
+#define Ci_SNP_MaxFlags					254 // ( ( Ci_SNP_MaxNode * Ci_SNP_MaxNode) - Ci_SNP_MaxNode ) / 2  ) / 32
+
+procedure_local int GG_SNP_FullSetFlag(int ti_axis, int ti_ref_A, int ti_ref_B, byref int ti_bit_index, byref int ti_bit_offset, int ti_flag)
+{
+	int		ti_flag_already_set
+	int		ti_index
+	int		ti_ref_min
+	int		ti_ref_max
+	int		ti_temp
+	
+	float	tf_half
+
+	if (ti_ref_A < ti_ref_B)
+	{
+		ti_ref_min = ti_ref_A
+		ti_ref_max = ti_ref_B
+	}
+	else
+	{
+		ti_ref_min = ti_ref_B
+		ti_ref_max = ti_ref_A
+	}
+
+	ti_index = ti_ref_min * Ci_SNP_MaxObjects
+
+	ti_temp = ti_ref_min + 1
+	ti_temp = (ti_temp * ti_temp) - ti_temp
+	ti_temp >>= 1
+
+//	tf_half = ti_ref_min + 1
+//	tf_half = (tf_half * tf_half) - tf_half
+//	tf_half *= 0.5
+//	tf_half -= 0.5
+//	ti_temp = tf_half
+
+	ti_index -= ti_temp
+	ti_index += ti_ref_max - ti_ref_min - 1
+
+	ti_bit_index = ti_index >> 5
+	ti_bit_offset = ti_index - (ti_bit_index << 5)
+
+	ti_flag_already_set = ai_snp_AxisTableFlag[ti_axis][ti_bit_index] & (1 << ti_bit_offset)
+	if (ti_flag)
+		ai_snp_AxisTableFlag[ti_axis][ti_bit_index] |= (1 << ti_bit_offset)
+	else
+		ai_snp_AxisTableFlag[ti_axis][ti_bit_index] &= ~(1 << ti_bit_offset)
+
+	return(ti_flag_already_set)
+}
+
+procedure_local int GG_SNP_GetFlag(int ti_axis, int ti_ref_A, int ti_ref_B, int ti_bit_index, int ti_bit_offset)
+{
+	return(ai_snp_AxisTableFlag[ti_axis][ti_bit_index] & (1 << ti_bit_offset) )
+}
+
+procedure_local void GG_SNP_AddOverlap(int ti_ref_A, int ti_ref_B)
+{
+	ao_snp_col_gao[ti_ref_A][ai_snp_col_gao_nb[ti_ref_A]] = ao_snp_gao[ti_ref_B]
+	ai_snp_col_gao_nb[ti_ref_A]++
+
+	ao_snp_col_gao[ti_ref_B][ai_snp_col_gao_nb[ti_ref_B]] = ao_snp_gao[ti_ref_A]
+	ai_snp_col_gao_nb[ti_ref_B]++
+}
+
+procedure_local void GG_SNP_RemoveOverlap(int ti_ref_A, int ti_ref_B)
+{
+	int		ti_i	
+
+	for (ti_i = 0; ti_i < ai_snp_col_gao_nb[ti_ref_A]; ti_i++)
+	{
+		if (ao_snp_col_gao[ti_ref_A][ti_i] == ao_snp_gao[ti_ref_B])
+		{
+			ai_snp_col_gao_nb[ti_ref_A]--
+			ao_snp_col_gao[ti_ref_A][ti_i] = ao_snp_col_gao[ti_ref_A][ai_snp_col_gao_nb[ti_ref_A]]
+			ao_snp_col_gao[ti_ref_A][ai_snp_col_gao_nb[ti_ref_A]] = nobody
+		}
+	}
+
+	for (ti_i = 0; ti_i < ai_snp_col_gao_nb[ti_ref_B]; ti_i++)
+	{
+		if (ao_snp_col_gao[ti_ref_B][ti_i] == ao_snp_gao[ti_ref_A])
+		{
+			ai_snp_col_gao_nb[ti_ref_B]--
+			ao_snp_col_gao[ti_ref_B][ti_i] = ao_snp_col_gao[ti_ref_B][ai_snp_col_gao_nb[ti_ref_B]]
+			ao_snp_col_gao[ti_ref_B][ai_snp_col_gao_nb[ti_ref_B]] = nobody
+		}
+	}
+}
+
+procedure_local void GG_SNP_ComputeInversion(int ti_axis, int ti_ref_A, int ti_ref_B, int ti_flag_A_start, int ti_flag_B_start)
+{
+	int		ti_A_is_already_set	
+	int		ti_bit_index
+	int		ti_bit_offset
+
+	if ( ti_flag_B_start && ! ti_flag_A_start )
+	{
+		ti_A_is_already_set = GG_SNP_FullSetFlag(ti_axis, ti_ref_A, ti_ref_B, ti_bit_index, ti_bit_offset, vrai)
+
+		if ( ! ti_A_is_already_set && GG_SNP_GetFlag(MATH_Modulo(ti_axis + 1, 3), ti_ref_A, ti_ref_B, ti_bit_index, ti_bit_offset) && GG_SNP_GetFlag(MATH_Modulo(ti_axis + 2, 3), ti_ref_A, ti_ref_B, ti_bit_index, ti_bit_offset) )
+		{
+			ti_A_is_already_set = ti_A_is_already_set
+			GG_SNP_AddOverlap(ti_ref_A, ti_ref_B)
+		}
+	}
+	else if ( ! ti_flag_B_start && ti_flag_A_start )
+	{
+		ti_A_is_already_set = GG_SNP_FullSetFlag(ti_axis, ti_ref_A, ti_ref_B, ti_bit_index, ti_bit_offset, faux)
+
+		if ( ti_A_is_already_set )
+		{
+			ti_A_is_already_set = ti_A_is_already_set
+			GG_SNP_RemoveOverlap(ti_ref_A, ti_ref_B)
+		} 
+	}
+}
+
+procedure_local void GG_SNP_UpdateInternalValue(int ti_node_index, int ti_axis)
+{
+	vector	tv_pos
+	
+	tv_pos = @ao_snp_AxisNodeGao[ti_axis][ti_node_index] OBJ_PosGet()
+
+	switch(ti_axis)
+	{
+		case Ci_Axis_X :
+			af_snp_AxisNodeVal[ti_axis][ti_node_index] = af_snp_AxisNodeOffset[ti_axis][ti_node_index] + tv_pos.x
+			break
+		case Ci_Axis_Y :
+			af_snp_AxisNodeVal[ti_axis][ti_node_index] = af_snp_AxisNodeOffset[ti_axis][ti_node_index] + tv_pos.y
+			break
+		case Ci_Axis_Z :
+			af_snp_AxisNodeVal[ti_axis][ti_node_index] = af_snp_AxisNodeOffset[ti_axis][ti_node_index] + tv_pos.z
+			break
+	}
+}
+
+procedure_local void GG_SNP_InsertionSort()
+{
+	int		ti_i
+	int		ti_axis
+
+	int		ti_first_node
+	int		ti_last_node
+	int		ti_NodeUp
+	int		ti_NodeDown
+
+	int		ti_flag_already_sorted
+
+	float	tf_previous_val
+	float	tf_UpVal
+
+	float	tf_UpCoord
+	float	tf_DownCoord
+
+	// UN NODE LOCAL
+	int		ti_backup_node	
+
+//	object	to_AxisNodeGao
+//	int			ti_AxisNodeRef
+//	int			ti_AxisNodeFlag
+//	float		tf_AxisNodeOffset
+//	float		tf_AxisNodeVal
+	
+	if ( ! i_snp_entry_nb )
+		return
+
+	for (ti_axis = Ci_Axis_X; ti_axis <= Ci_Axis_Z; ti_axis++)
+	{
+		// Pour chaque axe
+		ti_first_node = 0
+		ti_last_node = i_snp_entry_nb - 1
+		ti_NodeUp = ti_first_node
+
+		GG_SNP_UpdateInternalValue(ai_snp_AxisTableNodeIndex[ti_axis][ti_first_node], ti_axis)
+
+		tf_previous_val = af_snp_AxisNodeVal[ti_axis][ai_snp_AxisTableNodeIndex[ti_axis][ti_NodeUp]]
+		
+		while(ti_NodeUp < ti_last_node)
+		{
+			ti_NodeUp++
+			GG_SNP_UpdateInternalValue(ai_snp_AxisTableNodeIndex[ti_axis][ti_NodeUp], ti_axis)
+			
+			tf_UpVal = af_snp_AxisNodeVal[ti_axis][ai_snp_AxisTableNodeIndex[ti_axis][ti_NodeUp]] 
+			if (tf_UpVal + 0.001 < tf_previous_val)
+			{
+				ti_flag_already_sorted = vrai
+				tf_UpCoord = tf_UpVal
+				
+				ti_NodeDown = ti_NodeUp - 1
+				tf_DownCoord = af_snp_AxisNodeVal[ti_axis][ai_snp_AxisTableNodeIndex[ti_axis][ti_NodeDown]] 
+				
+				while(tf_UpCoord + 0.001 < tf_DownCoord)
+				{
+					if (ti_flag_already_sorted)
+					{
+						ti_backup_node = ai_snp_AxisTableNodeIndex[ti_axis][ti_NodeUp]
+						ti_flag_already_sorted = faux
+					}
+
+					GG_SNP_ComputeInversion(	ti_axis,
+															ai_snp_AxisNodeRef[ti_axis][ai_snp_AxisTableNodeIndex[ti_axis][ti_NodeDown]],
+															ai_snp_AxisNodeRef[ti_axis][ti_backup_node],
+															ai_snp_AxisNodeFlag[ti_axis][ai_snp_AxisTableNodeIndex[ti_axis][ti_NodeDown]] & Ci_SNP_Pos_Min,
+															ai_snp_AxisNodeFlag[ti_axis][ti_backup_node] & Ci_SNP_Pos_Min)	
+					
+					ti_NodeDown--
+					if (ti_NodeDown < ti_first_node)
+						break
+						
+					tf_DownCoord = af_snp_AxisNodeVal[ti_axis][ai_snp_AxisTableNodeIndex[ti_axis][ti_NodeDown]] 
+				}
+				
+				if ( ! ti_flag_already_sorted )
+				{
+					for (ti_i = ti_NodeUp - ti_NodeDown - 1; ti_i > 0; ti_i--)
+						ai_snp_AxisTableNodeIndex[ti_axis][ti_NodeDown + ti_i + 1] =  ai_snp_AxisTableNodeIndex[ti_axis][ti_NodeDown + ti_i]
+
+					ai_snp_AxisTableNodeIndex[ti_axis][ti_NodeDown + 1] = ti_backup_node
+				}
+			}
+		
+			tf_previous_val = af_snp_AxisNodeVal[ti_axis][ai_snp_AxisTableNodeIndex[ti_axis][ti_NodeUp]]
+		}
+	}
+}
+
+
+//procedure_local void GG_SNP_InsertionSort()
+//{
+//	int		ti_i
+//	int		ti_axis
+//
+//	int		ti_first_node
+//	int		ti_last_node
+//	int		ti_NodeUp
+//	int		ti_NodeDown
+//
+//	int		ti_flag_already_sorted
+//
+//	float	tf_previous_val
+//	float	tf_UpVal
+//
+//	float	tf_UpCoord
+//	float	tf_DownCoord
+//
+//	// UN NODE LOCAL
+//	object	to_AxisNodeGao
+//	int			ti_AxisNodeRef
+//	int			ti_AxisNodeFlag
+//	float		tf_AxisNodeOffset
+//	float		tf_AxisNodeVal
+//	
+//	if ( ! i_snp_entry_nb )
+//		return
+//
+//	for (ti_axis = Ci_Axis_X; ti_axis <= Ci_Axis_Z; ti_axis++)
+//	{
+//		// Pour chaque axe
+//		ti_first_node = 0
+//		ti_last_node = i_snp_entry_nb - 1
+//		ti_NodeUp = ti_first_node
+//
+//		GG_SNP_UpdateInternalValue(ti_first_node, ti_axis)
+//
+//		tf_previous_val = af_snp_AxisNodeVal[ti_axis][ti_NodeUp]
+//		
+//		while(ti_NodeUp < ti_last_node)
+//		{
+//			ti_NodeUp++
+//			GG_SNP_UpdateInternalValue(ti_NodeUp, ti_axis)
+//			
+//			tf_UpVal = af_snp_AxisNodeVal[ti_axis][ti_NodeUp] 
+//			if (tf_UpVal + 0.001 < tf_previous_val)
+//			{
+//				ti_flag_already_sorted = vrai
+//				tf_UpCoord = tf_UpVal
+//				
+//				ti_NodeDown = ti_NodeUp - 1
+//				tf_DownCoord = af_snp_AxisNodeVal[ti_axis][ti_NodeDown] 
+//				
+//				while(tf_UpCoord + 0.001 < tf_DownCoord)
+//				{
+//					if (ti_flag_already_sorted)
+//					{
+//						to_AxisNodeGao = ao_snp_AxisNodeGao[ti_axis][ti_NodeUp]
+//						ti_AxisNodeRef = ai_snp_AxisNodeRef[ti_axis][ti_NodeUp]
+//						ti_AxisNodeFlag = ai_snp_AxisNodeFlag[ti_axis][ti_NodeUp]
+//						tf_AxisNodeOffset = af_snp_AxisNodeOffset[ti_axis][ti_NodeUp]
+//						tf_AxisNodeVal = af_snp_AxisNodeVal[ti_axis][ti_NodeUp]
+//				
+//						ti_flag_already_sorted = faux
+//					}
+//
+//					GG_SNP_ComputeInversion(	ti_axis,
+//															ai_snp_AxisNodeRef[ti_axis][ti_NodeDown],
+//															ti_AxisNodeRef ,
+//															ai_snp_AxisNodeFlag[ti_axis][ti_NodeDown] & Ci_SNP_Pos_Min,
+//															ti_AxisNodeFlag & Ci_SNP_Pos_Min)	
+//					
+//					ti_NodeDown--
+//					if (ti_NodeDown < ti_first_node)
+//						break
+//						
+//					tf_DownCoord = af_snp_AxisNodeVal[ti_axis][ti_NodeDown] 
+//				}
+//				
+//				if ( ! ti_flag_already_sorted )
+//				{
+//					for (ti_i = ti_NodeUp - ti_NodeDown - 1; ti_i > 0; ti_i--)
+//					{
+//						ao_snp_AxisNodeGao[ti_axis][ti_NodeDown + ti_i + 1] = ao_snp_AxisNodeGao[ti_axis][ti_NodeDown + ti_i]
+//						ai_snp_AxisNodeRef[ti_axis][ti_NodeDown + ti_i + 1] = ai_snp_AxisNodeRef[ti_axis][ti_NodeDown + ti_i]
+//						ai_snp_AxisNodeFlag[ti_axis][ti_NodeDown + ti_i + 1] = ai_snp_AxisNodeFlag[ti_axis][ti_NodeDown + ti_i]
+//						af_snp_AxisNodeOffset[ti_axis][ti_NodeDown + ti_i + 1] = af_snp_AxisNodeOffset[ti_axis][ti_NodeDown + ti_i]
+//						af_snp_AxisNodeVal[ti_axis][ti_NodeDown + ti_i + 1] = af_snp_AxisNodeVal[ti_axis][ti_NodeDown + ti_i]
+//					}
+//
+//					ao_snp_AxisNodeGao[ti_axis][ti_NodeDown + 1] = to_AxisNodeGao
+//					ai_snp_AxisNodeRef[ti_axis][ti_NodeDown + 1] =ti_AxisNodeRef 
+//					ai_snp_AxisNodeFlag[ti_axis][ti_NodeDown + 1] = ti_AxisNodeFlag 
+//					af_snp_AxisNodeOffset[ti_axis][ti_NodeDown + 1] = tf_AxisNodeOffset 
+//					af_snp_AxisNodeVal[ti_axis][ti_NodeDown + 1] = tf_AxisNodeVal 
+//
+//				}
+//			}
+//		
+//			tf_previous_val = af_snp_AxisNodeVal[ti_axis][ti_NodeUp]
+//		}
+//	}
+//}
+
+procedure_local void GG_SNP_AddNode(int ti_ref, object to_gao, vector tv_BV, int ti_flag)
+{
+	int		ti_axis	
+	
+	vector	tv_pos
+	
+	tv_pos = @to_gao OBJ_PosGet()
+
+	for (ti_axis = Ci_Axis_X; ti_axis <= Ci_Axis_Z; ti_axis++)
+	{
+		// Pour chaque axe
+		ao_snp_AxisNodeGao[ti_axis][i_snp_entry_nb] = to_gao
+		ai_snp_AxisNodeFlag[ti_axis][i_snp_entry_nb] |= ti_flag
+		ai_snp_AxisNodeRef[ti_axis][i_snp_entry_nb] = ti_ref
+
+		ai_snp_AxisTableNodeIndex[ti_axis][i_snp_entry_nb] = i_snp_entry_nb
+
+		switch(ti_axis)
+		{
+			case Ci_Axis_X :
+				af_snp_AxisNodeOffset[ti_axis][i_snp_entry_nb] = tv_BV.x
+				af_snp_AxisNodeVal[ti_axis][i_snp_entry_nb] = tv_pos.x + tv_BV.x
+				break
+			case Ci_Axis_Y :
+				af_snp_AxisNodeOffset[ti_axis][i_snp_entry_nb] = tv_BV.y
+				af_snp_AxisNodeVal[ti_axis][i_snp_entry_nb] = tv_pos.y + tv_BV.y
+				break
+			case Ci_Axis_Z :
+				af_snp_AxisNodeOffset[ti_axis][i_snp_entry_nb] = tv_BV.z
+				af_snp_AxisNodeVal[ti_axis][i_snp_entry_nb] = tv_pos.z + tv_BV.z
+				break
+		}
+	}
+
+	i_snp_entry_nb++
+}
+
+procedure_local void GG_SNP_RenderBV(object to_gao, int ti_color)
+{
+	vector	tv_min
+	vector	tv_max
+	vector	tv_temp
+
+	tv_min = @to_gao BV_MinGet()
+	tv_max = @to_gao BV_MaxGet()
+
+	tv_temp = @to_gao OBJ_PosGet()
+	tv_temp += tv_min
+	DBG_RenderVector(tv_temp, cvector(tv_max.x - tv_min.x, 0.0, 0.0), ti_color)
+	DBG_RenderVector(tv_temp, cvector(0.0, tv_max.y - tv_min.y, 0.0), ti_color)
+	DBG_RenderVector(tv_temp, cvector(0.0, 0.0, tv_max.z - tv_min.z), ti_color)
+
+	tv_temp += cvector(0.0, 0.0, tv_max.z - tv_min.z)
+	DBG_RenderVector(tv_temp, cvector(tv_max.x - tv_min.x, 0.0, 0.0), ti_color)
+	DBG_RenderVector(tv_temp, cvector(0.0, tv_max.y - tv_min.y, 0.0), ti_color)
+
+	tv_temp += cvector(tv_max.x - tv_min.x, 0.0, 0.0)
+	DBG_RenderVector(tv_temp, cvector(0.0, 0.0, tv_min.z - tv_max.z), ti_color)
+
+	tv_temp = @to_gao OBJ_PosGet()
+	tv_temp += tv_max
+	DBG_RenderVector(tv_temp, cvector(tv_min.x - tv_max.x, 0.0, 0.0), ti_color)
+	DBG_RenderVector(tv_temp, cvector(0.0, tv_min.y - tv_max.y, 0.0), ti_color)
+	DBG_RenderVector(tv_temp, cvector(0.0, 0.0, tv_min.z - tv_max.z), ti_color)
+
+	tv_temp += cvector(0.0, 0.0, tv_min.z - tv_max.z)
+	DBG_RenderVector(tv_temp, cvector(tv_min.x - tv_max.x, 0.0, 0.0), ti_color)
+	DBG_RenderVector(tv_temp, cvector(0.0, tv_min.y - tv_max.y, 0.0), ti_color)
+	
+	tv_temp += cvector(tv_min.x - tv_max.x, 0.0, 0.0)
+	DBG_RenderVector(tv_temp, cvector(0.0,  0.0, tv_max.z - tv_min.z), ti_color)
+}
+
+
+procedure_local void GG_SNP_Display_BVBVCol()
+{
+	int		ti_i
+	int		ti_k
+
+	object	to_gao_i
+	object	to_gao_k
+	
+	for (ti_i = 0; ti_i < i_snp_gao_nb; ti_i ++)
+	{
+		to_gao_i	 = ao_snp_gao[ti_i]
+	
+		for (ti_k = 0; ti_k < ai_snp_col_gao_nb[ti_i]; ti_k++)
+		{
+			to_gao_k = ao_snp_col_gao[ti_i][ti_k]
+			DBG_RenderVector(@to_gao_i OBJ_PosGet(), @to_gao_k OBJ_PosGet() - @to_gao_i OBJ_PosGet(), color_rouge)
+		}
+	}
+}
+
+procedure_ultra int GG_SNP_AddGao(object to_gao)
+{
+	int		ti_index	
+
+	ti_index = i_snp_gao_nb
+
+	ao_snp_gao[i_snp_gao_nb] = to_gao
+	GG_SNP_AddNode(i_snp_gao_nb, to_gao, @to_gao BV_MinGet(), Ci_SNP_Pos_Min)
+	GG_SNP_AddNode(i_snp_gao_nb, to_gao, @to_gao BV_MaxGet(), Ci_SNP_Pos_Max)
+	GG_SNP_InsertionSort()
+	i_snp_gao_nb++
+
+	return(ti_index)
+}

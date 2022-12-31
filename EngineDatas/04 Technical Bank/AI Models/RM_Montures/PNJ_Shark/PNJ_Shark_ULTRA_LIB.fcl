@@ -1,0 +1,102 @@
+#include "PNJ_Shark_defines.var"
+
+procedure_ultra int Proc_PNJ_Shark_StatusGet()
+{
+	return (i_shark_status_flags)	
+}
+
+
+
+procedure_ultra vector Proc_PNJ_Shark_RidedPosGet()
+{
+	object	to_bone
+	vector	tv_pos
+
+	switch (creature_type)
+	{
+		case Ci_CreatureType_Requin :
+	
+			to_bone = ANI_CanalObjectGet(Anim_Canal_Cou)
+			tv_pos = @to_bone OBJ_PosGet()
+			tv_pos -= @to_bone OBJ_SightGet() * (f_size_coef * 0.3)
+			break
+		
+		case 	Ci_CreatureType_PoissonLumiere :
+	
+			to_bone = ANI_CanalObjectGet(Anim_Canal_Cou)
+			tv_pos = @to_bone OBJ_PosGet()
+			tv_pos -= @to_bone OBJ_SightGet() * (f_size_coef * 0.3)
+			tv_pos += OBJ_SightGet() * 0.5
+			break
+	}
+	return( tv_pos )
+}
+
+procedure_ultra vector Proc_PNJ_Shark_RidedSightGet()
+{
+//	object	to_bone
+//	to_bone = ANI_CanalObjectGet(Anim_Canal_Cou)
+//	return( @to_bone OBJ_BankingGet() )
+
+	return( OBJ_SightGet() )
+
+}
+
+procedure_ultra vector Proc_PNJ_Shark_RidedBankingGet()
+{
+//	object	to_bone
+//	to_bone = ANI_CanalObjectGet(Anim_Canal_Cou)
+//	return( - @to_bone OBJ_SightGet() )
+	return( OBJ_BankingGet() )
+}
+
+procedure_ultra vector Proc_PNJ_Shark_VirtualSightGet()
+{
+	return (v_virtual_sight)
+}
+
+procedure_ultra vector Proc_PNJ_Shark_HotSpot_PosGet()
+{
+	return Proc_PNJ_Shark_RidedPosGet()	
+}
+
+procedure_ultra int Proc_PNJ_Shark_CreatureTypeGet()
+{
+	return i_monture_ID
+}
+
+procedure_ultra vector PROC_Shark_StreamGet( vector	pv_pos, byref int pi_asp, object to_gao)
+{
+	float		tf_dist
+	float		tf_dot_product
+	
+	vector	tv_start_pos
+	
+	object	to_me
+
+	if (to_gao == OBJ_Me())
+		return(Cv_NullVector)
+
+	// TOUJOURS ASPIRE
+	pi_asp = vrai
+	
+	if ( ! i_flag_in_water )
+		return(Cv_NullVector)
+
+	tv_start_pos = @o_machoire OBJ_PosGet()
+	tv_start_pos += OBJ_SightGet()
+
+//	procedure float MATH_LIB_ZoneInCone(vector tv_start_pos, vector tv_sight, float tf_cos_angle, float tf_dist_max, vector tv_dest_pos, float tf_zone_rayon, int ti_flag_2D, byref float tf_dot_product, int ti_color_cone, int ti_color_sphere)
+	if (@to_gao COL_ZoneTypeGet( C_zde_corps))
+		tf_dist = MATH_LIB_ZoneInCone(tv_start_pos, OBJ_SightGet(), Cf_Cos30, 20.0, pv_pos, @to_gao COL_ZoneSizeGet(C_zde_corps) + 1.0, faux, tf_dot_product, color_rouge, color_vert)
+	else
+		tf_dist = MATH_LIB_ZoneInCone(tv_start_pos, OBJ_SightGet(), Cf_Cos30, 20.0, pv_pos, 1.0, faux, tf_dot_product, color_rouge, color_vert)
+
+	if (tf_dist)
+		return((tv_start_pos - pv_pos) / tf_dist * 40.0)
+
+	return Cv_NullVector
+}
+
+
+

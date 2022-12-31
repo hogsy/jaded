@@ -1,0 +1,51 @@
+#include "Arc_defines.var"
+
+// Force l'état grabbé à l'init
+procedure_ultra void Arc_SetGrabbed(object to_grab_actor)
+{
+	i_Spawned_Grabbed = vrai
+	o_Spawned_Grabbed_Actor = to_grab_actor
+}
+
+// BANDER L'ARC ===================================================
+procedure_local void Arc_Corde_Update(vector tv_pos, vector tv_sight, vector tv_banking, float tf_norm)
+{
+	vector	tv_temp
+	float		tf_blend
+//	tf_blend = 20 * TIME_GetDt()
+//	tf_blend = 1.0
+	tf_blend = f_blend_coef
+	f_extremite_corde_norm = MATH_FloatBlend(f_extremite_corde_norm, tf_norm, tf_blend)
+	@o_corde OBJ_PosSet(MATH_VecBlend(@o_corde OBJ_PosGet(), tv_pos, tf_blend))
+	@o_corde OBJ_SightGeneralSet(
+		MATH_VecBlendRotate(@o_corde OBJ_SightGet(), tv_sight, tf_blend),
+		MATH_VecBlendRotate(@o_corde OBJ_BankingGet(), tv_banking, tf_blend))
+	// ramener les extrémités de l'arc
+	tv_temp = @o_poignee OBJ_PosGet() + @o_poignee MATH_VecLocalToGlobal(v_extremite1_offset)
+	tv_temp -= @o_corde OBJ_PosGet()
+	MATH_VecSetNorm(tv_temp, f_extremite_corde_norm)
+//	DBG_RenderVector(@o_corde OBJ_PosGet(), tv_temp, color_vert)
+	@o_extremite1 OBJ_PosSet(@o_corde OBJ_PosGet() + tv_temp)
+	// ramener les extrémités de l'arc
+	tv_temp = @o_poignee OBJ_PosGet() + @o_poignee MATH_VecLocalToGlobal(v_extremite2_offset)
+	tv_temp -= @o_corde OBJ_PosGet()
+	MATH_VecSetNorm(tv_temp, f_extremite_corde_norm)
+//	DBG_RenderVector(@o_corde OBJ_PosGet(), tv_temp, color_vert)
+	@o_extremite2 OBJ_PosSet(@o_corde OBJ_PosGet() + tv_temp)
+}
+
+procedure_local void Arc_Corde_Reset()
+{
+	vector	tv_pos
+	tv_pos = @o_poignee OBJ_PosGet() + @o_poignee MATH_VecLocalToGlobal(v_corde_offset)
+//	DBG_RenderVector(@o_poignee OBJ_PosGet(), v_corde_offset, color_bleu)
+//	tv_pos = @o_poignee OBJ_PosGet() - (0.1 * @o_poignee OBJ_SightGet())
+	Arc_Corde_Update(tv_pos, @o_poignee OBJ_SightGet(), @o_poignee OBJ_BankingGet(), f_extremite_corde_norm_init)
+}
+
+procedure_ultra void Arc_Tendre_Corde()
+{
+	i_arc_corde_tendue = vrai
+}
+
+

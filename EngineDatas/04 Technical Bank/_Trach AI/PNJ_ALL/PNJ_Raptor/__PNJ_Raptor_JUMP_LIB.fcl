@@ -1,0 +1,565 @@
+#include "PNJ_Raptor_defines.var"
+
+procedure_local vector PNJ_Raptor_Body_Speed_Rotate()
+{
+	int				ti_action	
+	int				ti_flag_stop_rot
+
+	float			tf_dist
+	float			tf_coef
+
+	vector		tv_move
+	vector		tv_start_axis
+	vector		tv_dest_axis
+	vector		tv_spline_sight	
+	vector		tv_sight
+
+	vector		tv_point_A
+	vector		tv_point_B
+	vector		tv_point_C
+	vector		tv_point_D
+
+	v_IK_bassin_banking = OBJ_BankingGet()
+
+//	if (raptor_type == C_ID_Tyranosaure)
+//		return(v_IK_bassin_banking)
+
+	ti_action = ACT_ActionGet()
+
+	switch(ti_action)
+	{
+//		case Action_Saut_deb :
+//	
+//			v_jump_bassin_impulsion_speed = @ao_head_bones[i_head_bone_nb] OBJ_PosGet() - v_IK_bassin_pos
+//			v_jump_bassin_impulsion_speed /= TIME_GetDt()
+//	
+//			f_body_rot_coef -= MATH_FloatSign(f_body_rot_coef) * MATH_FloatMin(MATH_AbsFloat(f_body_rot_coef), 6.0 * TIME_GetDt())
+//			
+//			v_grav_last_pos = OBJ_PosGet()
+//			v_grav_last_pos.z -= Cf_pendule_length
+//
+//			v_grav_last_speed = Cv_NullVector
+//			break
+
+
+		case Action_Saut_Reception_G :
+		case Action_Saut_Reception_D :
+
+			// ON AVANCE SUR LA SPLINE
+			tf_coef = MATH_FloatBlend(f_jump_reception_speed, f_jump_impulsion_speed, f_jump_reception_link_coef)
+			tf_coef *= 1.0 - (MATH_Sin(f_jump_reception_link_coef * Cf_Pi) * 0.8)
+			tf_coef *= 0.5
+			
+//			tf_coef = 2.0
+			
+			f_jump_reception_link_coef += MATH_FloatLimit(tf_coef, 2.0, 25.0) * TIME_GetDt()
+			f_jump_reception_link_coef = MATH_FloatMin(f_jump_reception_link_coef, 1.0)
+
+//			f_jump_reception_link_coef = ANI_RatioGet(0)
+//			ACT_LIB_ActionFrequencyMultiply(1.0)
+
+			// 4 POINTS DE LA SPLINE
+			tv_point_A = v_jump_bassin_reception_pos
+			tv_point_B = tv_point_A
+			tv_point_B += v_jump_bassin_reception_weight
+			tv_point_D = v_jump_bassin_impulsion_pos
+			tv_point_C = tv_point_D
+			tv_point_C -= v_jump_bassin_impulsion_weight
+
+#ifndef _FINAL_
+			if (DBG_Display_Jump)
+			{	
+				MATH_LIB_Bezier_Display(30, tv_point_A, tv_point_B, tv_point_C, tv_point_D)
+				DYN_LIB_Display_Trajectory(v_jump_bassin_impulsion_pos, v_jump_bassin_impulsion_speed, v_jump_gravity, v_jump_friction, f_jump_duration, 50, 0.0)
+				DBG_RenderVector(v_jump_bassin_reception_pos, v_jump_bassin_reception_weight, color_rouge)
+				DBG_RenderVector(v_jump_bassin_impulsion_pos, -v_jump_bassin_impulsion_weight, color_vert)
+			}
+#endif
+
+			// ON SE POSITIONNE DANS L'ANIM EN FONCTION DE LA POSITION ENTRE LE DEBUT ET LA FIN DE LA SPLINE			
+			ANI_RatioSet(0, f_jump_reception_link_coef)
+
+			// POSITION DU BASSIN SUR LA SPLINE
+			tv_point_A = MATH_LIB_Bezier_Pos_Get(f_jump_reception_link_coef, tv_point_A, tv_point_B, tv_point_C, tv_point_D, tv_spline_sight)
+
+			tf_coef = f_jump_reception_link_coef
+			tf_coef *= tf_coef
+
+			tv_sight = MATH_VecBlendRotate(v_jump_reception_sight, v_jump_impulsion_sight, tf_coef)
+			OBJ_BankingGeneralSet(tv_sight, v_jump_impulsion_banking)
+
+			v_IK_ref_ground_pos = @ao_head_bones[i_head_bone_nb] MATH_VecGlobalToLocal(v_IK_ref_ground_pos - @ao_head_bones[i_head_bone_nb] OBJ_PosGet())
+			v_IK_bassin_banking = @ao_head_bones[i_head_bone_nb] MATH_VecGlobalToLocal(v_IK_bassin_banking)
+
+			// POSITIONNEMENT ET ROTATION DU BASSIN
+			@ao_head_bones[i_head_bone_nb] OBJ_PosSet(tv_point_A)
+
+//			tv_banking = MATH_VecBlend(@ao_head_bones[i_head_bone_nb] OBJ_BankingGet(), tv_spline_sight, 0.6 * ((1.0 - f_jump_reception_link_coef) * MATH_Sin(f_jump_reception_link_coef * Cf_Pi)))
+////			DBG_RenderVector(@ao_head_bones[i_head_bone_nb - 1] OBJ_PosGet(), tv_banking * 10.0, color_bleu)
+//			@ao_head_bones[i_head_bone_nb] OBJ_Rotate_FromTo(cvector(0.0, 0.0, 1.0), @ao_head_bones[i_head_bone_nb] MATH_VecGlobalToLocal(tv_banking))
+
+			// ROTATION DU BASSIN AUTOUR DE SON AXE Z POUR QUE LE PIED D'APPUIE SOIT DANS L'AXE BASSIN / WP
+			if (ti_action == Action_Saut_Reception_G)
+				tv_point_B = @ao_head_bones[i_head_bone_nb] MATH_VecGlobalToLocal(@ao_IK_bones[Ci_IK_pied_gauche][3] OBJ_PosGet() - tv_point_A)
+			else
+				tv_point_B = @ao_head_bones[i_head_bone_nb] MATH_VecGlobalToLocal(@ao_IK_bones[Ci_IK_pied_droit][3] OBJ_PosGet() - tv_point_A)
+			tv_point_B.z = 0.0
+	
+			tv_point_C = @ao_head_bones[i_head_bone_nb] MATH_VecGlobalToLocal(v_jump_start_pos - tv_point_A)
+			tv_point_C.z = 0.0
+
+			@ao_head_bones[i_head_bone_nb] OBJ_Rotate_FromTo(tv_point_B,  tv_point_C)
+
+			v_IK_ref_ground_pos = @ao_head_bones[i_head_bone_nb] MATH_VecLocalToGlobal(v_IK_ref_ground_pos)
+			v_IK_ref_ground_pos += @ao_head_bones[i_head_bone_nb] OBJ_PosGet()
+
+			v_IK_bassin_banking = @ao_head_bones[i_head_bone_nb] MATH_VecLocalToGlobal(v_IK_bassin_banking)
+			return(v_IK_bassin_banking)
+	
+			break
+
+		case Action_Renifle_Marche :
+		case Action_Renifle_Marche_Rapide :
+		case Action_Renifle_Trot :
+	
+		case Action_Blesse_Marche :
+		case Action_Blesse_Marche_Rapide :
+
+		case Action_Normal_Marche :
+		case Action_Normal_Marche_Rapide :
+		case Action_Normal_Trot :
+		case Action_Normal_Course :
+
+		case Action_Stop :
+		case Action_Stop_Rapide :
+
+			ti_flag_stop_rot = faux
+
+			if (raptor_type == C_ID_Galiminus)
+				ti_flag_stop_rot = vrai
+			else if (raptor_type == C_ID_Raptor && (i_way_status & Ci_WAY_STATUS_GRID_USED) )
+				ti_flag_stop_rot = vrai
+			else if (i_flag_alien_move)
+				ti_flag_stop_rot = vrai
+			else if (i_flag_soft_collision)
+				ti_flag_stop_rot = vrai
+			else if (f_slide_duration)
+				ti_flag_stop_rot = vrai
+
+			if (ti_flag_stop_rot)
+			{
+				f_body_rot_coef -= MATH_FloatSign(f_body_rot_coef) * MATH_FloatMin(MATH_AbsFloat(f_body_rot_coef), 2.0 * TIME_GetDt())
+				
+//				v_grav_last_pos = OBJ_PosGet()
+//				v_grav_last_pos.z -= Cf_pendule_length
+//	
+//				v_grav_last_speed = Cv_NullVector
+			}
+			else
+			{
+//				v_grav_last_pos.z += OBJ_PosGet().z - v_last_pos.z
+//			
+//				tv_move = v_grav_last_pos
+//
+//				switch(raptor_type)
+//				{
+//					case C_ID_Raptor :			
+//						v_grav_last_speed *= MATH_Exp(-2.0 * TIME_GetDt())
+//						v_grav_last_speed.z = 0.0
+//						v_grav_last_pos.z -= 4.0 * TIME_GetDt()
+//						break
+//						
+//					case C_ID_Tyranosaure :
+//						v_grav_last_speed *= MATH_Exp(-1.5 * TIME_GetDt())
+//						v_grav_last_speed.z = 0.0
+//						v_grav_last_pos.z -= 3.0 * TIME_GetDt()
+//						break
+//				}
+//
+//				v_grav_last_pos += v_grav_last_speed * TIME_GetDt()
+//			
+//				v_grav_last_pos -= OBJ_PosGet()
+//			
+//				v_grav_last_pos -= MATH_VecDotProduct(v_grav_last_pos, OBJ_SightGet()) * OBJ_SightGet()
+//				
+//				tf_dist = MATH_VecNorm(v_grav_last_pos)
+//				v_grav_last_pos /= tf_dist
+//			
+//				tf_coef = MATH_VecDotProduct(-v_grav_last_pos, OBJ_HorizonGet())
+//				tf_coef = MATH_FloatLimit(tf_coef, -1.0, 1.0)
+//	
+//				v_grav_last_pos *= Cf_pendule_length * OBJ_ZoomGet()
+//		
+////				DBG_RenderVector(@ao_head_bones[i_head_bone_nb] OBJ_PosGet(), v_grav_last_pos, color_cyan)
+////				DBG_RenderVector(@ao_head_bones[i_head_bone_nb] OBJ_PosGet() + v_grav_last_pos, v_grav_last_speed, color_jaune)
+//		
+//				v_grav_last_pos += OBJ_PosGet()
+//	
+//				v_grav_last_speed = (v_grav_last_pos - tv_move) /  TIME_GetDt()
+
+				// TEST TEST
+				tv_move = (v_dyn_speed - v_last_dyn_speed) / TIME_GetDt()
+				tv_move.z = 0.0
+				DBG_RenderVector(@ao_head_bones[i_head_bone_nb] OBJ_PosGet(), MATH_VecDotProduct(tv_move, OBJ_HorizonGet()) * OBJ_HorizonGet(), color_jaune)
+				tf_coef = MATH_VecDotProduct(tv_move * 0.035, OBJ_HorizonGet())
+				tf_coef = MATH_FloatLimit(tf_coef, -1.0, 1.0)
+				// TEST TEST
+
+				f_body_rot_coef = MATH_FloatBlend(f_body_rot_coef, tf_coef, 4.0 * TIME_GetDt())
+			}
+		
+			break
+
+		case Action_Saut_cycl :
+		case Action_Saut_Pied_G :
+		case Action_Saut_Pied_D :
+
+			v_jump_bassin_reception_pos = DYN_LIB_Position_After_N_Seconds(v_jump_bassin_reception_pos, v_jump_bassin_reception_speed, v_jump_friction, v_jump_gravity, TIME_GetDt(), 0.0)
+			OBJ_PosSet(OBJ_PosGet() + (v_jump_bassin_reception_pos - @ao_head_bones[i_head_bone_nb] OBJ_PosGet()))
+
+#ifndef _FINAL_
+			if (DBG_Display_Jump)
+			{
+				DYN_LIB_Display_Trajectory(v_jump_bassin_reception_pos, v_jump_bassin_reception_speed, v_jump_gravity, v_jump_friction, f_jump_duration, 50, 0.0)
+				v_jump_bassin_impulsion_pos = v_jump_bassin_impulsion_pos
+			}
+#endif
+			// PAS DE BREAK
+			
+		default:
+		
+			f_body_rot_coef -= MATH_FloatSign(f_body_rot_coef) * MATH_FloatMin(MATH_AbsFloat(f_body_rot_coef), 2.0 * TIME_GetDt())
+			
+//			v_grav_last_pos = OBJ_PosGet()
+//			v_grav_last_pos.z -= Cf_pendule_length
+//
+//			v_grav_last_speed = Cv_NullVector
+	}
+
+	if (raptor_type == C_ID_Galiminus)
+		return(v_IK_bassin_banking)
+
+	if (0)
+	{
+		tv_move = @ao_head_bones[i_head_bone_nb] MATH_VecGlobalToLocal(@ao_head_bones[i_head_bone_nb] OBJ_PosGet() - OBJ_PosGet())
+	
+		tv_start_axis = @ao_head_bones[i_head_bone_nb] MATH_VecGlobalToLocal(OBJ_BankingGet())
+		tv_dest_axis = MATH_VecBlendRotate(tv_start_axis, @ao_head_bones[i_head_bone_nb] MATH_VecGlobalToLocal(MATH_FloatSign(f_body_rot_coef) * OBJ_HorizonGet()), MATH_AbsFloat(f_body_rot_coef) * 0.3)
+		@ao_head_bones[i_head_bone_nb] OBJ_Rotate_FromTo(tv_start_axis, tv_dest_axis)
+	
+		tv_move = @ao_head_bones[i_head_bone_nb]  MATH_VecLocalToGlobal(tv_move)
+		tv_move += OBJ_PosGet()
+		@ao_head_bones[i_head_bone_nb] OBJ_PosSet(tv_move)
+	}
+	else
+	{
+		v_IK_ref_ground_pos = @ao_head_bones[i_head_bone_nb] MATH_VecGlobalToLocal(OBJ_PosGet() - @ao_head_bones[i_head_bone_nb] OBJ_PosGet())
+	
+		tv_start_axis = @ao_head_bones[i_head_bone_nb] MATH_VecGlobalToLocal(OBJ_BankingGet())
+		tv_dest_axis = MATH_VecBlendRotate(tv_start_axis, @ao_head_bones[i_head_bone_nb] MATH_VecGlobalToLocal(MATH_FloatSign(f_body_rot_coef) * OBJ_HorizonGet()), MATH_AbsFloat(f_body_rot_coef) * 0.3)
+		@ao_head_bones[i_head_bone_nb] OBJ_Rotate_FromTo(tv_start_axis, tv_dest_axis)
+	
+		v_IK_ref_ground_pos = @ao_head_bones[i_head_bone_nb] MATH_VecLocalToGlobal(v_IK_ref_ground_pos)
+		v_IK_ref_ground_pos += @ao_head_bones[i_head_bone_nb] OBJ_PosGet()
+	}
+
+	return(@ao_head_bones[i_head_bone_nb] MATH_VecLocalToGlobal(tv_dest_axis))
+}
+
+procedure_local void PNJ_Raptor_Next_Impulsion_Set(int ti_side)
+{
+	int			ti_action
+
+	float		tf_dist
+	float		tf_altitude
+
+	vector	tv_dest_pos_bassin_offset
+	vector	tv_virtual_link
+	vector	tv_me_to_dest_pos
+
+	ti_action = ACT_ActionGet()
+	switch(ti_action)
+	{
+		case Action_Normal_Marche :
+		case Action_Normal_Marche_Rapide :
+		case Action_Normal_Trot :
+		case Action_Normal_Course :
+
+		case Action_Blesse_Marche :
+		case Action_Blesse_Marche_Rapide :
+
+		case Action_Renifle_Marche :
+		case Action_Renifle_Marche_Rapide :
+		case Action_Renifle_Trot :
+
+			v_jump_bassin_reception_pos = v_IK_bassin_pos
+
+			v_jump_bassin_reception_speed	 = MATH_VecBlendRotate(OBJ_SightGet(), -OBJ_BankingGet(), 0.4)
+			v_jump_bassin_reception_speed *= MATH_FloatMax(DYN_SpeedGet() * 0.7, 0.5)
+	
+			v_jump_start_pos = v_IK_ground_pos[ti_side]
+			break
+			
+		default:
+			v_jump_start_pos = OBJ_PosGet()
+
+			v_jump_bassin_reception_speed	 = MATH_VecBlendRotate(v_jump_bassin_reception_speed, -Cv_VerticalVector * MATH_VecNorm(v_jump_bassin_reception_speed), 0.5)
+
+	}
+
+	i_flag_snap_pos = vrai
+	v_snap_pos = OBJ_PosGet()
+
+	v_jump_reception_sight = OBJ_SightGet()
+	v_jump_impulsion_banking = OBJ_BankingGet()
+
+	// ORIENTE VERS LE POINT DE SAUT
+	OBJ_BankingGeneralSet(v_jump_dest_pos - OBJ_PosGet(), v_jump_reception_banking)
+	tv_dest_pos_bassin_offset = MATH_VecLocalToGlobal(av_IK_bassin_reception_offset[MATH_Modulo(ti_side + 1, 2)])
+	OBJ_BankingGeneralSet(OBJ_SightGet(), v_jump_impulsion_banking)
+
+	v_jump_bassin_impulsion_pos = OBJ_PosGet()
+	v_jump_bassin_impulsion_pos += MATH_VecLocalToGlobal(av_IK_bassin_saut_offset[ti_side])
+
+	tv_me_to_dest_pos = v_jump_dest_pos
+	tv_me_to_dest_pos -= v_jump_start_pos
+	
+//	tf_dot_product = MATH_VecDotProduct(MATH_VecNormalize(tv_me_to_dest_pos), Cv_VerticalVector)
+
+	tf_altitude = tv_me_to_dest_pos.z
+	tv_me_to_dest_pos.z = 0.0
+
+	tv_virtual_link = v_jump_bassin_impulsion_pos - v_jump_bassin_reception_pos
+
+	f_jump_reception_link_coef = 0.0
+	f_jump_reception_link_length = MATH_VecNorm(tv_virtual_link)
+
+	if (tf_altitude < -2.0 || tf_altitude > 3.0)
+	{
+		// CALCUL DE L'IMPULSION MIN
+		f_jump_duration = 0.0
+		v_jump_bassin_impulsion_speed = DYN_LIB_ImpulsionGet_Friction(v_jump_bassin_impulsion_pos, v_jump_dest_pos + tv_dest_pos_bassin_offset, v_jump_gravity, f_jump_friction, f_jump_duration, faux, 0.0)
+	}
+	else
+	{
+		// CALCUL DE L'IMPULSION MIN
+		f_jump_duration = 0.0
+		v_jump_bassin_impulsion_speed = DYN_LIB_ImpulsionGet_Friction(v_jump_bassin_impulsion_pos, v_jump_dest_pos + tv_dest_pos_bassin_offset, v_jump_gravity, f_jump_friction, f_jump_duration, faux, 0.0)
+	
+		// CALCUL DE L'IMPULSION TENDUE
+		if (raptor_type == C_ID_Raptor)
+			f_jump_duration = MATH_FloatMax(0.7 * f_jump_duration, 0.1)
+		else
+			f_jump_duration = MATH_FloatMax(MATH_RandFloat(0.8, 1.0) * f_jump_duration, 0.1)
+		v_jump_bassin_impulsion_speed = DYN_LIB_ImpulsionGet_Friction(v_jump_bassin_impulsion_pos, v_jump_dest_pos + tv_dest_pos_bassin_offset, v_jump_gravity, f_jump_friction, f_jump_duration, faux, 0.0)
+	}
+	
+	f_jump_total_duration = f_jump_duration
+
+	// ON RETABLI L'ORIENTATION
+	OBJ_BankingGeneralSet(v_jump_reception_sight, v_jump_impulsion_banking)
+
+	f_jump_reception_speed = MATH_VecNorm(v_jump_bassin_reception_speed)
+	f_jump_impulsion_speed = MATH_VecNorm(v_jump_bassin_impulsion_speed)
+	
+//	f_jump_reception_speed *= 0.8
+//	f_jump_impulsion_speed *= 0.8
+
+	v_jump_bassin_reception_weight = v_jump_bassin_reception_speed / f_jump_reception_speed
+	v_jump_bassin_reception_weight *= MATH_FloatMin(f_jump_reception_speed * 0.5, f_jump_reception_link_length * 0.33)
+
+	v_jump_bassin_impulsion_weight = v_jump_bassin_impulsion_speed / f_jump_impulsion_speed
+	v_jump_bassin_impulsion_weight *= MATH_FloatMin(f_jump_impulsion_speed * 0.5, f_jump_reception_link_length * 0.33)
+
+	v_jump_impulsion_sight = v_jump_dest_pos
+	v_jump_impulsion_sight -= v_jump_start_pos
+	MATH_VecSetHorzNormalize(v_jump_impulsion_sight)
+
+#ifndef _FINAL_
+	if (DBG_Display_Jump)
+	{	
+		DBG_RenderVector(OBJ_PosGet(),  v_jump_bassin_impulsion_pos - OBJ_PosGet(), color_vert)
+		DBG_RenderVector(v_jump_dest_pos, tv_dest_pos_bassin_offset, color_jaune)
+		DYN_LIB_Display_Trajectory(v_jump_bassin_impulsion_pos, v_jump_bassin_impulsion_speed, v_jump_gravity, v_jump_friction, f_jump_duration, 20, 0.0)
+		MATH_LIB_Bezier_Display(30, v_jump_bassin_reception_pos, v_jump_bassin_reception_pos + v_jump_bassin_reception_weight, v_jump_bassin_impulsion_pos - v_jump_bassin_impulsion_weight, v_jump_bassin_impulsion_pos)
+		DBG_RenderVector(v_jump_bassin_reception_pos, v_jump_bassin_reception_weight, color_rouge)
+		DBG_RenderVector(v_jump_bassin_impulsion_pos, -v_jump_bassin_impulsion_weight, color_vert)
+	}
+#endif
+
+	return
+}
+
+procedure_local void PNJ_Raptor_Jump()
+{
+	int			ti_cycl_index
+	int			ti_cycle_anim
+//	int			ti_flag_try_to_keep_dir
+	int			ti_double_jump
+	int			ti_link_nb
+
+	float		tf_altitude	
+	float		tf_dot_product
+
+	vector	tv_sight	
+	vector	tv_dest_pos_bassin_offset
+	vector	tv_me_to_dest_pos
+	
+	object	to_next_wp
+
+	i_flag_snap_pos = faux	
+	
+//	ti_flag_try_to_keep_dir = faux
+
+	tv_me_to_dest_pos = v_jump_dest_pos
+	tv_me_to_dest_pos -= OBJ_PosGet()
+	
+	tf_dot_product = MATH_VecDotProduct(MATH_VecNormalize(tv_me_to_dest_pos), Cv_VerticalVector)
+
+	tf_altitude = tv_me_to_dest_pos.z
+	tv_me_to_dest_pos.z = 0.0
+
+	if (tf_altitude < -2.0 || ACT_ActionGet() == Action_Saut_Impulse_Long)
+		i_jump_reception_action = Action_Grosse_Reception // Saut vers le bas
+	else if (tf_altitude > 2.0)
+		i_jump_reception_action = Action_Saut_fin_surplace
+	else
+		i_jump_reception_action = Action_Saut_fin
+
+	switch(ACT_ActionGet())
+	{
+		case Action_Saut_Reception_D :
+			PNJ_Raptor_ActionSet(Action_Saut_Pied_D)
+
+//			f_jump_freq_coef = ACT_LIB_ActionDurationGet(ACT_ActionGet())
+			f_jump_freq_coef = ACT_DurationGet(ACT_ActionGet(), 0)
+			f_jump_freq_coef /= f_jump_duration
+			ACT_LIB_ActionFrequencyMultiply(f_jump_freq_coef)
+
+			v_jump_bassin_reception_pos = v_jump_bassin_impulsion_pos
+			v_jump_bassin_reception_speed = v_jump_bassin_impulsion_speed
+			break
+
+		case Action_Saut_Reception_G :
+			PNJ_Raptor_ActionSet(Action_Saut_Pied_G)
+
+//			f_jump_freq_coef = ACT_LIB_ActionDurationGet(ACT_ActionGet())
+			f_jump_freq_coef = ACT_DurationGet(ACT_ActionGet(), 0)
+			f_jump_freq_coef /= f_jump_duration
+			ACT_LIB_ActionFrequencyMultiply(f_jump_freq_coef)
+		
+			v_jump_bassin_reception_pos = v_jump_bassin_impulsion_pos
+			v_jump_bassin_reception_speed	= v_jump_bassin_impulsion_speed
+			break
+
+//		case Action_Saut_deb :
+//			ti_flag_try_to_keep_dir =vrai
+//			// PAS DE BREAK
+
+		default:
+
+			ti_double_jump = faux
+			if (o_occluder_jump_wp && n_occluder_jump_net && WAY_GetNumLinks(n_occluder_jump_net, o_occluder_jump_wp))
+				ti_double_jump = vrai
+			else if (i_way_wp_nb > 2 && WAY_LinkCapaGet(n_net, ao_way_wp[i_way_wp_nb - 1], ao_way_wp[i_way_wp_nb - 2]) & Ci_Capa_Link_Jump)
+				ti_double_jump = vrai
+			else if (o_next_wp && o_next_next_wp && @o_next_wp WAY_HasLinks(n_net, o_next_next_wp) && WAY_LinkCapaGet(n_net, o_next_wp, o_next_next_wp) & Ci_Capa_Link_Jump)
+				ti_double_jump = vrai
+			else if (o_next_wp && @o_next_wp OBJ_CapaTest(Ci_Capa_Out_Of_Grid))
+			{
+				// On regarde si on a des liens qui ne sont pas des sauts après le prochain wp
+				ti_double_jump = vrai
+				ti_link_nb = WAY_GetNumLinks(n_net, o_next_wp)
+				while(ti_link_nb)
+				{
+					ti_link_nb--
+					to_next_wp = WAY_NetNextWP(n_net, o_next_wp, 6, ti_link_nb)
+					if ( ! (WAY_LinkCapaGet(n_net, o_next_wp, to_next_wp) & Ci_Capa_Link_Jump) )
+					{
+						ti_double_jump = faux
+						break
+					}
+				}
+			}
+
+			if (ti_double_jump)
+			{
+//				ti_cycle_anim = -1
+				ti_cycle_anim = Action_Saut_Pied_D
+				ti_cycl_index = Ci_IK_pied_droit
+			}
+			else
+			{
+				ti_cycle_anim = Action_Saut_cycl
+				ti_cycl_index = 2
+			}
+
+			v_jump_bassin_reception_pos = @ao_head_bones[i_head_bone_nb] OBJ_PosGet()
+
+			tv_sight = OBJ_SightGet()
+
+			v_jump_start_pos = OBJ_PosGet()
+			v_jump_impulsion_banking = OBJ_BankingGet()
+
+			v_jump_impulsion_sight = v_jump_dest_pos
+			v_jump_impulsion_sight -= v_jump_start_pos
+			MATH_VecSetHorzNormalize(v_jump_impulsion_sight)
+
+//			if (ti_cycle_anim == -1)
+//			{
+//				OBJ_BankingGeneralSet(v_jump_impulsion_sight, Cv_VerticalVector)
+//				if (MATH_VecDotProduct(OBJ_HorizonGet(), v_jump_reception_banking) > 0.0)
+//					ti_cycle_anim = Action_Saut_Pied_G
+//				else 
+//					ti_cycle_anim = Action_Saut_Pied_D
+//			}
+			
+			OBJ_BankingGeneralSet(v_jump_impulsion_sight, v_jump_reception_banking)
+			tv_dest_pos_bassin_offset = MATH_VecLocalToGlobal(av_IK_bassin_reception_offset[ti_cycl_index])
+			OBJ_BankingGeneralSet(tv_sight, v_jump_impulsion_banking)
+
+			if (tf_altitude < -2.0 || tf_altitude > 3.0)
+			{
+				// CALCUL DE L'IMPULSION MIN
+				f_jump_duration = 0.0
+				v_jump_bassin_reception_speed = DYN_LIB_ImpulsionGet_Friction(v_jump_bassin_reception_pos, v_jump_dest_pos + tv_dest_pos_bassin_offset, v_jump_gravity, f_jump_friction, f_jump_duration, faux, 0.0)
+			}
+			else
+			{
+				// CALCUL DE L'IMPULSION MIN
+				f_jump_duration = 0.0
+				v_jump_bassin_reception_speed = DYN_LIB_ImpulsionGet_Friction(v_jump_bassin_reception_pos, v_jump_dest_pos + tv_dest_pos_bassin_offset, v_jump_gravity, f_jump_friction, f_jump_duration, faux, 0.0)
+				
+				// CALCUL DE L'IMPULSION TENDUE
+				if (raptor_type == C_ID_Raptor)
+					f_jump_duration = MATH_FloatMax(0.7 * f_jump_duration, 0.1)
+				else
+					f_jump_duration = MATH_FloatMax(MATH_RandFloat(0.8, 1.0) * f_jump_duration, 0.1)
+	
+				v_jump_bassin_reception_speed = DYN_LIB_ImpulsionGet_Friction(v_jump_bassin_reception_pos, v_jump_dest_pos + tv_dest_pos_bassin_offset, v_jump_gravity, f_jump_friction, f_jump_duration, faux, 0.0)
+			}
+			
+			f_jump_total_duration = f_jump_duration
+
+			PNJ_Raptor_ActionSet(ti_cycle_anim)
+
+//			f_jump_freq_coef = ACT_LIB_ActionDurationGet(ACT_ActionGet())
+			f_jump_freq_coef = ACT_DurationGet(ACT_ActionGet(), 0)
+			f_jump_freq_coef /= f_jump_duration
+			ACT_LIB_ActionFrequencyMultiply(f_jump_freq_coef)
+	}
+		
+#ifndef _FINAL_
+	if (DBG_Display_Jump)
+	{
+		DBG_RenderVector(v_jump_dest_pos, tv_dest_pos_bassin_offset, color_jaune)
+		DYN_LIB_Display_Trajectory(v_jump_bassin_reception_pos, v_jump_bassin_reception_speed, v_jump_gravity, v_jump_friction, f_jump_duration, 20, 0.0)
+	}
+#endif
+
+//	v_way_case_dest = v_way_destpos
+	i_flag_force_jump_cycl = faux
+
+	COL_ColSetActivationSet(none, C_bit_zdm_pied)
+//	COL_ColMapActivationSet(none, all)
+}

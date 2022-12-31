@@ -1,0 +1,98 @@
+Include_UltraProcedure_Header
+
+procedure_ultra vector Proc_PNJ_Bunny_Saucer_RidedPosGet()
+{
+	vector	tv_pos
+	
+	if (o_bascule)
+	{
+		tv_pos = @o_bascule OBJ_PosGet()
+		tv_pos += @o_bascule OBJ_SightGet() * 0.5
+		tv_pos += @o_bascule OBJ_BankingGet() * 1.0
+	}
+	else
+	{
+		tv_pos = OBJ_PosGet()
+		tv_pos += OBJ_SightGet() * 0.35
+		tv_pos += OBJ_BankingGet() * (0.75 - 0.57)
+	}
+	return(tv_pos)
+}
+
+procedure_ultra vector Proc_PNJ_Bunny_Saucer_RidedSightGet()
+{
+	if (o_bascule)
+		return(@o_bascule OBJ_SightGet())
+	else	
+		return(OBJ_SightGet())
+}
+
+procedure_ultra vector Proc_PNJ_Bunny_Saucer_RidedBankingGet()
+{
+	if (o_bascule)
+		return(@o_bascule OBJ_BankingGet())
+	else	
+		return(OBJ_BankingGet())
+}
+
+procedure_ultra vector Proc_PNJ_Bunny_Saucer_Traction_Add(vector tv_traction)
+{
+	vector	tv_add
+	tv_add = Cv_NullVector
+	if( MATH_VecNorm(tv_traction) > 3.33 * OBJ_ZoomGet())
+		tv_add = tv_traction
+//	v_Traction_Exterieure += tv_add
+	return tv_add
+}
+
+procedure_ultra vector Proc_PNJ_Bunny_Saucer_HotSpot_PosGet()
+{
+	return Proc_PNJ_Bunny_Saucer_RidedPosGet()	
+}
+
+
+procedure_ultra int Proc_PNJ_Bunny_Saucer_GetRopeTractionCategory(int ti_perso_ID)
+{
+	int		ti_category
+	
+	if( ti_perso_ID == C_ID_Monture_Rhino )
+		ti_category = RopeTractionCategory_Coef_05		// tiré par un autre tricé
+	else
+		ti_category = 0.9 // RopeTractionCategory_Coef_1
+
+	
+//	if( (COL_ColSetActivationGet() & C_bit_zdm_pied) && COL_GMAT_FlagsGet(COL_C_Ground) & Gmat_RM_Ice )
+//		ti_category--
+	
+	return ti_category
+}
+
+
+procedure_ultra float Proc_PNJ_Bunny_Saucer_GetRopeDistRenormalisation(int ti_monture_ID)
+{
+	switch( ti_monture_ID )
+	{
+		case C_ID_Monture_Aigle :
+		case C_ID_Monture_Araignee :
+		case C_ID_Monture_Bat :
+		case C_ID_Monture_PoissonLumiere :
+		case C_ID_Monture_Requin :
+		case C_ID_Monture_Rhino :
+		case C_ID_Monture_Serpent :
+		case C_ID_Monture_Tigre :
+			return 15.0
+		default:
+			return 10.0
+	}
+}
+
+procedure_ultra int Proc_PNJ_Bunny_Saucer_CreatureTypeGet()
+{
+	return i_monture_ID
+}
+
+
+ 
+
+
+

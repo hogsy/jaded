@@ -1,0 +1,791 @@
+// PROCEDURES ==================================================================================
+procedure int DYN_LIB_Is_Accessible(vector	tv_start_pos, vector tv_dest_pos, vector tv_gravity, float tf_X_speed_max, float tf_Z_speed_max, byref float tf_time)
+{
+	int			ti_flag_accessible	
+
+	float		tf_dist
+	float		tf_gravity
+	float		tf_coef
+	float		tf_dot_product
+	float		tf_add_speed_max	
+
+	vector	tv_start_to_dest
+	
+	// Récupération de la norme de la gravité et normalisation
+	tf_gravity = MATH_VecNorm(tv_gravity)
+	tv_gravity /= tf_gravity
+	
+	// Norme et direction du mouvement
+	tv_start_to_dest = tv_dest_pos
+	tv_start_to_dest -= tv_start_pos
+	tf_dist = MATH_VecNorm(tv_start_to_dest)
+	tv_start_to_dest /= tf_dist
+	
+	// Calcul de la norme de l'impulsion
+	tf_dot_product	 = MATH_VecDotProduct(tv_start_to_dest, -tv_gravity)
+	tf_coef = 1.0 + tf_dot_product
+	tf_coef = MATH_FloatSqrt(tf_coef * tf_dist * tf_gravity)
+
+	// La force de l'impulsion max est différente selon l'orientation
+	tf_add_speed_max = MATH_FloatBlend(tf_X_speed_max, tf_Z_speed_max, MATH_FloatMax(tf_dot_product, 0.0))
+	
+	// Est-ce que pour atteindre la position donnée on dépasse la vitesse max autorisée ?
+	ti_flag_accessible = vrai
+
+	if (tf_coef > tf_add_speed_max)
+	{
+		ti_flag_accessible = faux
+		tf_time = -1.0
+	}
+	else if (tf_time)
+	{
+		tf_time = MATH_FloatSqrt(2.0 / tf_gravity * tf_dist)
+	}
+	
+	return(ti_flag_accessible)
+}
+
+procedure vector DYN_LIB_ImpulsionGet(vector tv_start_pos, vector tv_dest_pos, vector tv_gravity, float tf_X_speed_max, float tf_Z_speed_max, byref float tf_time)
+{
+	int			ti_flag_accessible	
+
+	float		tf_dist
+	float		tf_gravity
+	float		tf_coef
+	float		tf_dot_product
+	float		tf_add_speed_max
+	
+	vector	tv_start_to_dest
+	
+	// Récupération de la norme de la gravité et normalisation
+	tf_gravity = MATH_VecNorm(tv_gravity)
+	tv_gravity /= tf_gravity
+	
+	// Norme et direction du mouvement
+	tv_start_to_dest = tv_dest_pos
+	tv_start_to_dest -= tv_start_pos
+	tf_dist = MATH_VecNorm(tv_start_to_dest)
+	tv_start_to_dest /= tf_dist
+	
+	// Calcul de la norme de l'impulsion
+	tf_dot_product	 = MATH_VecDotProduct(tv_start_to_dest, -tv_gravity)
+	tf_coef = 1.0 + tf_dot_product
+	tf_coef = MATH_FloatSqrt(tf_coef * tf_dist * tf_gravity)
+
+	// La force de l'impulsion max est différente selon l'orientation
+	tf_add_speed_max = MATH_FloatBlend(tf_X_speed_max, tf_Z_speed_max, MATH_FloatMax(tf_dot_product, 0.0))
+	
+	// On bride l'impulsion
+	if (tf_coef > tf_add_speed_max)
+	{
+		tf_coef = tf_add_speed_max
+		tf_time = -1.0
+	}
+	else if (tf_time)
+	{
+		tf_time = MATH_FloatSqrt(2.0 / tf_gravity * tf_dist)
+	}
+	
+	// Vecteur impulsion	
+	tv_start_to_dest = MATH_VecBlendRotate(tv_start_to_dest, -tv_gravity, 0.5) * tf_coef
+
+	return(tv_start_to_dest)
+}
+
+// ==========================================================================================================
+// LA PLUS BELLE FONCTION DE TOUTE CETTE LIBRAIRIE !!!
+// ==========================================================================================================
+procedure vector DYN_LIB_ImpulsionGet_Friction(vector tv_start_pos, vector tv_dest_pos, vector tv_gravity, float tf_friction, byref float tf_time, int ti_flag_Z_friction, float tf_hauteur_saut)
+{
+	int			ti_i	
+
+	float		tf_last_time
+	float		tf_exp_Ft
+	float		tf_exp_minus_Ft
+	float		tf_cos_h_Ft
+	float		tf_sin_h_Ft
+	float		tf_derive_en_t
+	float		tf_tangente_en_t	
+	float		tf_precal_derivee
+	float		tf_precal_tangente
+	float		tf_x2_plus_y2
+	float		tf_G2_sur_4
+	float		tf_inv_time
+	float		tf_inv_sqr_time
+	
+	float		tf_precal
+
+	vector	tv_A
+	vector	tv_M
+	vector	tv_precal
+	vector	tv_start_to_dest
+	vector	tv_impulsion
+	vector	tv_vt1
+	vector	tv_vt2
+
+	// VECTEUR DEPLACEMENT
+	tv_start_to_dest = tv_dest_pos
+	tv_start_to_dest -= tv_start_pos
+
+	tv_A = tv_gravity / tf_friction
+
+	if (tf_hauteur_saut > 0.0)
+	{
+		if (ti_flag_Z_friction)
+		{
+			// JE N'AI PAS FAIT LE CALCUL AVEC UNE FRICTION GLOBALE, CA PEUT SE FAIRE...
+			DBG_BreakPoint()
+		}
+		else
+		{
+			tf_precal = -2.0 * tv_gravity.z * tf_hauteur_saut
+			tf_time = - MATH_FloatSqrt(tf_precal)
+	
+			tf_precal = 2.0 * tv_gravity.z * (-tv_start_to_dest.z - tf_hauteur_saut)
+//			tf_precal = MATH_AbsFloat(tf_precal)
+			tf_precal = MATH_FloatMax(tf_precal, 0.0)
+			tf_time -= MATH_FloatSqrt(tf_precal) 
+			tf_time /= tv_gravity.z
+		}
+	}
+
+	if (tf_time <= 0.0)
+	{
+		// ON VEUT CALCULER LE TEMPS QUI CORRESPOND A L'IMPULSION MIN
+		// RESOLUTION NUMERIQUE PAR LA METHODE DE NEWTON
+
+		tf_time = 0.5
+		tf_last_time = 10.0
+		ti_i = 0
+
+		if (ti_flag_Z_friction)
+		{
+			// FRICTION UNIFORME SUR LES AXES	
+			tv_M = tv_start_to_dest
+		
+			while (! MATH_FloatNullToler(tf_time, 0.0001) && (MATH_AbsFloat(tf_time - tf_last_time) > 0.001 && ti_i < 10))
+			{
+				ti_i++	
+			
+				tf_exp_Ft = MATH_Exp(tf_friction * tf_time)
+				tf_exp_minus_Ft = 1.0 / tf_exp_Ft
+			
+				tf_cos_h_Ft = (tf_exp_Ft + tf_exp_minus_Ft) * 0.5
+			
+				tv_precal = (tv_A * tf_time) - tv_start_to_dest
+				tv_precal *= tf_friction
+		
+				tv_vt1 = tv_precal
+				tv_vt2 = tv_precal
+				
+				tv_vt1 += tv_A * (1.0 - tf_exp_Ft)
+				tv_vt2 += tv_A * (tf_exp_minus_Ft - 1.0)
+				
+				tf_derive_en_t = MATH_VecDotProduct(tv_vt1, tv_vt2)
+			   
+				tf_tangente_en_t = 2.0 * tf_friction
+				tf_tangente_en_t *= (1.0 - tf_cos_h_Ft)
+				tf_tangente_en_t *= MATH_VecDotProduct(tv_precal, tv_A)
+		
+				tf_last_time = tf_time
+		
+				tf_time = (tf_tangente_en_t * tf_time) - tf_derive_en_t
+				tf_time /= tf_tangente_en_t
+			}
+		}
+		else
+		{
+			// FRICTION SUR X ET Y ET NULLE EN Z	
+			tv_M = tv_start_to_dest
+		
+			tv_M.x *= tv_M.x
+			tv_M.y *= tv_M.y
+			tv_M.z *= tv_M.z
+		
+			tf_x2_plus_y2 = tv_M.x + tv_M.y
+		
+			tf_precal_derivee = tf_friction * tf_friction
+			tf_precal_tangente = tf_precal_derivee * tf_precal_derivee * 0.5 * tf_x2_plus_y2
+			tf_precal_derivee *= tf_friction * 0.5 * tf_x2_plus_y2
+		
+			tf_G2_sur_4 = tv_gravity.z * tv_gravity.z
+			tf_G2_sur_4 *= 0.25
+
+			while (! MATH_FloatNullToler(tf_time, 0.0001) && (MATH_AbsFloat(tf_time - tf_last_time) > 0.001 && ti_i < 10))
+			{
+				ti_i++	
+			
+				tf_exp_Ft = MATH_Exp(tf_friction * tf_time)
+				tf_exp_minus_Ft = 1.0 / tf_exp_Ft
+		
+				tf_cos_h_Ft = (tf_exp_Ft + tf_exp_minus_Ft) * 0.5
+				tf_sin_h_Ft = (tf_exp_Ft - tf_exp_minus_Ft) * 0.5
+		
+				tf_inv_time = 1.0 / tf_time
+				tf_inv_sqr_time = tf_inv_time * tf_inv_time
+		
+				tf_derive_en_t = tf_precal_derivee
+				tf_derive_en_t /= tf_cos_h_Ft - 1.0
+				tf_derive_en_t += ( (tf_G2_sur_4 * tf_time) - (tv_M.z * tf_inv_sqr_time * tf_inv_time) ) * (tf_exp_minus_Ft - 1.0)
+		
+				// (cosH(FT) - 1.0)^2
+				tf_cos_h_Ft = 1.0 - tf_cos_h_Ft
+				tf_cos_h_Ft *= tf_cos_h_Ft
+		
+				tf_tangente_en_t = ( tf_G2_sur_4 + (3.0 * (tv_M.z * tf_inv_sqr_time * tf_inv_sqr_time)) ) * (tf_exp_minus_Ft - 1.0)
+				tf_tangente_en_t -= tf_friction * tf_exp_minus_Ft * ((tv_gravity.z * tf_time) - (tv_M.z * tf_inv_sqr_time * tf_inv_time))
+				tf_tangente_en_t -= tf_precal_tangente * (tf_sin_h_Ft / tf_cos_h_Ft)
+		
+				tf_last_time = tf_time
+				tf_time -= tf_derive_en_t / tf_tangente_en_t
+			}
+		}
+	}
+
+	if (ti_flag_Z_friction)
+	{
+		tv_impulsion = (tv_A * tf_time) - tv_start_to_dest
+		tv_impulsion *= tf_friction
+		tv_impulsion /= MATH_Exp(-tf_friction* tf_time) - 1.0
+		tv_impulsion += tv_A
+	}
+	else
+	{
+		tv_impulsion = -tv_start_to_dest
+		tv_impulsion.z = 0.0
+		tv_impulsion *= tf_friction
+		tv_impulsion /= MATH_Exp(-tf_friction* tf_time) - 1.0
+		tv_impulsion.z = (tv_start_to_dest.z / tf_time) - (0.5 * tv_gravity.z * tf_time)
+	}
+
+	return(tv_impulsion)
+} 
+
+procedure vector DYN_LIB_Impulsion_Dir_Friction(vector tv_start_pos, vector tv_dest_pos, vector tv_gravity, float tf_friction, byref float tf_time, int ti_flag_Z_friction, vector tv_dir, int ti_max_iteration)
+{
+	int			ti_i	
+
+	float		tf_coef
+	float		tf_time_min
+	float		tf_time_max
+
+	vector	tv_impulsion
+	vector	tv_impulsion_dir
+
+	tf_time_min = 0.01
+	tf_time_max = 3.0
+
+	ti_i = 0
+	while(ti_i < ti_max_iteration)
+	{
+		tf_coef = ti_i
+		tf_coef /= ti_max_iteration
+
+		ti_i++
+	
+		tf_time = (tf_time_max - tf_time_min) * 0.5
+		tf_time += tf_time_min
+		
+		tv_impulsion = DYN_LIB_ImpulsionGet_Friction(tv_start_pos, tv_dest_pos, tv_gravity, tf_friction, tf_time, ti_flag_Z_friction, 0.0)
+		
+		DBG_RenderVector(OBJ_PosGet(), tv_impulsion, COLOR_Blend(color_rouge, color_vert, tf_coef))	
+
+		tv_impulsion_dir = MATH_VecNormalize(tv_impulsion)
+		if (tv_impulsion_dir.z > tv_dir.z)
+			tf_time_max = tf_time
+		else
+			tf_time_min = tf_time
+	}
+
+	return(tv_impulsion)
+}
+
+procedure void DYN_LIB_Jump(vector tv_dest_pos, vector tv_gravity, float tf_X_speed_max, float tf_Z_speed_max, byref float tf_time)
+{
+	DYN_GravitySet(tv_gravity)
+	DYN_TractionSet(Cv_NullVector)
+	DYN_StreamSet(Cv_NullVector)
+	DYN_FrictionVectorSet(Cv_NullVector)
+	
+	DYN_SpeedSetVector(DYN_LIB_ImpulsionGet(OBJ_PosGet(), tv_dest_pos, tv_gravity, tf_X_speed_max, tf_Z_speed_max, tf_time))
+}
+
+
+procedure float DYN_LIB_Time_To_Reach_Speed(vector tv_init_speed, float tf_friction, vector tv_forces, float tf_wanted_speed)
+{
+	float		tf_time
+	float		tf_A
+	float		tf_B
+	float		tf_C
+	float		tf_DELTA
+	
+	vector	tv_forces_under_friction
+	vector	tv_forces_under_friction_minus_init_speed
+
+	tf_wanted_speed *= tf_wanted_speed
+
+	tv_forces_under_friction = tv_forces
+	tv_forces_under_friction /= tf_friction
+
+	tv_forces_under_friction_minus_init_speed = tv_forces_under_friction
+	tv_forces_under_friction_minus_init_speed -= tv_init_speed
+
+	tf_A = MATH_VecDotProduct(tv_forces_under_friction_minus_init_speed, tv_forces_under_friction_minus_init_speed)
+	if (tf_A == 0.0)
+		return(Cf_Infinit)
+	
+	tf_B = -2.0 * MATH_VecDotProduct(tv_forces_under_friction, tv_forces_under_friction_minus_init_speed)
+	tf_C = MATH_VecDotProduct(tv_forces_under_friction, tv_forces_under_friction) - tf_wanted_speed
+	
+	tf_DELTA = tf_B * tf_B
+	tf_DELTA -= 4.0 * tf_A * tf_C
+
+	if (tf_DELTA < 0.0)
+	{
+		return(Cf_Infinit)
+	}
+	else if (tf_DELTA == 0.0)
+	{
+		tf_time = -tf_B
+		tf_time /= 2.0 * tf_A
+		
+		if (tf_time <= 0.0)
+			return(Cf_Infinit)
+
+		tf_time = - MATH_Ln(tf_time)
+		tf_time /= tf_friction
+	}
+	else
+	{
+		tf_DELTA = MATH_FloatSqrt(tf_DELTA)
+		
+		tf_time = -tf_B + tf_DELTA
+		tf_time /= 2.0 * tf_A
+
+		if (tf_time <= 0.0)
+			return(Cf_Infinit)
+
+		tf_time = - MATH_Ln(tf_time)
+		tf_time /= tf_friction
+	}
+	
+	return(tf_time)
+}
+
+// RETOURNE LA POSITION APRES X SECONDES, tv_init_speed CONTIENT LA VITESSE APRES X SECONDES
+procedure vector DYN_LIB_Position_After_N_Seconds(vector tv_init_pos, byref vector tv_init_speed, vector tv_friction, vector tv_gravity, float tf_time, float tf_exp)
+{
+	float		tf_exp_friction_X_dt
+	float		tf_exp_friction_Y_dt
+	float		tf_exp_friction_Z_dt
+
+	vector	tv_A
+	vector	tv_B
+	vector	tv_V0
+	vector	tv_move
+
+	tv_V0 = tv_init_speed
+	
+	if (tv_friction.x)
+	{
+		if (tf_exp)
+			tf_exp_friction_X_dt = tf_exp
+		else
+			tf_exp_friction_X_dt = MATH_Exp(-tf_time * tv_friction.x)	
+	
+		tv_A.x = tv_gravity.x / tv_friction.x
+		tv_B.x = (tv_A.x - tv_V0.x) * tf_exp_friction_X_dt
+	
+		tv_init_speed.x = tv_A.x - tv_B.x
+
+		tv_move.x = tv_A.x * tf_time
+		tv_move.x -= (tv_A.x - tv_V0.x) / tv_friction.x
+		tv_move.x += tv_B.x / tv_friction.x
+	}
+	else
+	{
+		tv_init_speed.x = tv_V0.x + (tv_gravity.x  * tf_time)
+
+		tv_move.x = tv_V0.x * tf_time
+		tv_move.x += 0.5 * tv_gravity.x * (tf_time * tf_time)
+	}
+
+	if (tv_friction.y)
+	{
+		if (tf_exp)
+			tf_exp_friction_Y_dt = tf_exp
+		else if (tv_friction.y == tv_friction.x)
+			tf_exp_friction_Y_dt = tf_exp_friction_X_dt
+		else
+			tf_exp_friction_Y_dt = MATH_Exp(-tf_time * tv_friction.y)	
+	
+		tv_A.y = tv_gravity.y / tv_friction.y
+		tv_B.y = (tv_A.y - tv_V0.y) * tf_exp_friction_Y_dt
+	
+		tv_init_speed.y = tv_A.y - tv_B.y
+
+		tv_move.y = tv_A.y * tf_time
+		tv_move.y -= (tv_A.y - tv_V0.y) / tv_friction.y
+		tv_move.y += tv_B.y / tv_friction.y
+	}
+	else
+	{
+		tv_init_speed.y = tv_V0.y + (tv_gravity.y  * tf_time)
+
+		tv_move.y = tv_V0.y * tf_time
+		tv_move.y += 0.5 * tv_gravity.y * (tf_time * tf_time)
+	}
+
+	if (tv_friction.z)
+	{
+		if (tf_exp)
+			tf_exp_friction_Z_dt = tf_exp
+		else if (tv_friction.z == tv_friction.x)
+			tf_exp_friction_Z_dt = tf_exp_friction_X_dt
+		else if (tv_friction.z == tv_friction.y)
+			tf_exp_friction_Z_dt = tf_exp_friction_Y_dt
+		else
+			tf_exp_friction_Z_dt = MATH_Exp(-tf_time * tv_friction.z)	
+
+		tv_A.z = tv_gravity.z / tv_friction.z
+		tv_B.z = (tv_A.z - tv_V0.z) * tf_exp_friction_Z_dt
+	
+		tv_init_speed.z = tv_A.z - tv_B.z
+
+		tv_move.z = tv_A.z * tf_time
+		tv_move.z -= (tv_A.z - tv_V0.z) / tv_friction.z
+		tv_move.z += tv_B.z / tv_friction.z
+	}
+	else
+	{
+		tv_init_speed.z = tv_V0.z + (tv_gravity.z * tf_time)
+
+		tv_move.z = tv_V0.z * tf_time
+		tv_move.z += 0.5 * tv_gravity.z * (tf_time * tf_time)
+	}
+
+	return(tv_init_pos + tv_move)	
+}
+
+// RETOURNE LA POSITION A LA FIN DE LA TRAME
+procedure vector DYN_LIB_Position_Next_Trame(vector tv_init_pos, byref vector tv_init_speed, vector tv_friction, vector tv_gravity)
+{
+	float		tf_time
+	float		tf_exp_friction_X_dt
+	float		tf_exp_friction_Y_dt
+	float		tf_exp_friction_Z_dt
+
+	vector	tv_A
+	vector	tv_B
+	vector	tv_V0
+	vector	tv_move
+
+	tv_V0 = tv_init_speed
+	
+	tf_time = TIME_GetDt()
+
+	if (tv_friction.x)
+	{
+		tf_exp_friction_X_dt = MATH_Exp(-tf_time * tv_friction.x)	
+	
+		tv_A.x = tv_gravity.x / tv_friction.x
+		tv_B.x = (tv_A.x - tv_V0.x) * tf_exp_friction_X_dt
+	
+		tv_init_speed.x = tv_A.x - tv_B.x
+
+		tv_move.x = tv_A.x * tf_time
+		tv_move.x -= (tv_A.x - tv_V0.x) / tv_friction.x
+		tv_move.x += tv_B.x / tv_friction.x
+	}
+	else
+	{
+		tv_init_speed.x = tv_V0.x + (tv_gravity.x  * tf_time)
+	}
+
+	tv_move.x = (tv_V0.x + tv_init_speed.x) * 0.5 * tf_time
+
+	if (tv_friction.y)
+	{
+		if (tv_friction.y == tv_friction.x)
+			tf_exp_friction_Y_dt = tf_exp_friction_X_dt
+		else
+			tf_exp_friction_Y_dt = MATH_Exp(-tf_time * tv_friction.y)	
+	
+		tv_A.y = tv_gravity.y / tv_friction.y
+		tv_B.y = (tv_A.y - tv_V0.y) * tf_exp_friction_Y_dt
+	
+		tv_init_speed.y = tv_A.y - tv_B.y
+	}
+	else
+	{
+		tv_init_speed.y = tv_V0.y + (tv_gravity.y  * tf_time)
+	}
+
+	tv_move.y = (tv_V0.y + tv_init_speed.y) * 0.5 * tf_time
+
+	if (tv_friction.z)
+	{
+		if (tv_friction.z == tv_friction.x)
+			tf_exp_friction_Z_dt = tf_exp_friction_X_dt
+		else if (tv_friction.z == tv_friction.y)
+			tf_exp_friction_Z_dt = tf_exp_friction_Y_dt
+		else
+			tf_exp_friction_Z_dt = MATH_Exp(-tf_time * tv_friction.z)	
+
+		tv_A.z = tv_gravity.z / tv_friction.z
+		tv_B.z = (tv_A.z - tv_V0.z) * tf_exp_friction_Z_dt
+	
+		tv_init_speed.z = tv_A.z - tv_B.z
+	}
+	else
+	{
+		tv_init_speed.z = tv_V0.z + (tv_gravity.z  * tf_time)
+	}
+
+	tv_move.z = (tv_V0.z + tv_init_speed.z) * 0.5 * tf_time
+
+	return(tv_init_pos + tv_move)	
+}
+
+
+procedure float DYN_LIB_Time_To_Reach_Z(vector tv_start_speed, vector tv_gravity, float tf_Z, int ti_flag_en_montee)
+{
+	float		tf_Delta
+	float		tf_duration
+
+	tf_Delta	= tv_start_speed.z * tv_start_speed.z
+	tf_Delta += 2.0 * tv_gravity.z * tf_Z
+	
+	// PAS DE SOLUTION
+	if (tf_Delta < 0.0)
+		return(-1.0)	
+
+	tf_Delta = MATH_FloatSqrt(tf_Delta)
+
+	if (tv_start_speed.z > 0.0)
+	{
+		if (ti_flag_en_montee)
+			tf_duration = -tv_start_speed.z + tf_Delta
+		else
+			tf_duration = -tv_start_speed.z - tf_Delta
+	}
+	else
+	{
+		tf_duration = -tv_start_speed.z - tf_Delta
+	}
+
+	tf_duration /= tv_gravity.z
+	
+	return(tf_duration)
+}
+
+// TEST LA TRAJECTOIRE
+procedure int DYN_LIB_Test_Trajectory(vector tv_start_pos, vector tv_start_speed, vector tv_gravity, vector tv_friction, byref float tf_duration, int ti_iteration_nb, float tf_Z)
+{
+	int		ti_i
+	
+	float		tf_exp
+	vector	tv_dest_pos
+	vector	tv_init_speed
+	vector	tv_init_pos
+
+	// ON VEUT TEST UN DEPLACEMENT VERTICAL
+	if (tf_Z)
+		tf_duration = DYN_LIB_Time_To_Reach_Z(tv_start_speed, tv_gravity, tf_Z, faux)
+
+	tf_duration /= ti_iteration_nb - 1
+
+	tv_init_speed = tv_start_speed
+	tv_init_pos = tv_start_pos
+
+	tf_exp = MATH_Exp(-tf_duration * tv_friction.x)
+
+	for (ti_i = 1; ti_i < ti_iteration_nb; ti_i++)
+	{
+		tv_dest_pos = DYN_LIB_Position_After_N_Seconds(tv_start_pos, tv_start_speed, tv_friction, tv_gravity, tf_duration, tf_exp)
+
+		if (COL_RayObject_Vector(tv_start_pos, tv_dest_pos - tv_start_pos, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable))
+		{
+			tv_dest_pos = COL_RayObject_PosGet()
+			DBG_RenderVector(tv_start_pos, tv_dest_pos - tv_start_pos, color_rouge)
+		
+			tf_Z = tv_dest_pos.z - tv_init_pos.z
+		
+			if (tv_start_speed.z > 0.0)
+				tf_duration = DYN_LIB_Time_To_Reach_Z(tv_init_speed, tv_gravity, tf_Z, vrai)
+			else
+				tf_duration = DYN_LIB_Time_To_Reach_Z(tv_init_speed, tv_gravity, tf_Z, faux)
+
+			return(vrai)
+		}
+		else
+		{
+			DBG_RenderVector(tv_start_pos, tv_dest_pos - tv_start_pos, color_jaune)
+			tv_start_pos = tv_dest_pos
+		}
+	}
+	
+//	DBG_RenderVector(tv_dest_pos, cvector(0.0, 0.0, -tf_Z), color_cyan)
+
+	return(faux)
+}
+
+
+procedure void DYN_LIB_Display_Trajectory(vector tv_start_pos, vector tv_start_speed, vector tv_gravity, vector tv_friction, float tf_duration, int ti_iteration_nb, float tf_Z)
+{
+#ifndef _FINAL_
+	int		ti_i
+	
+	float		tf_exp
+	vector	tv_dest_pos
+	vector	tv_init_speed
+
+	// ON VEUT TEST UN DEPLACEMENT VERTICAL
+	if (tf_Z)
+		tf_duration = DYN_LIB_Time_To_Reach_Z(tv_start_speed, tv_gravity, tf_Z, faux)
+
+	tf_duration /= ti_iteration_nb - 1
+
+	tv_init_speed = tv_start_speed
+
+	tf_exp = MATH_Exp(-tf_duration * tv_friction.x)
+
+	for (ti_i = 1; ti_i < ti_iteration_nb; ti_i++)
+	{
+		tv_dest_pos = DYN_LIB_Position_After_N_Seconds(tv_start_pos, tv_init_speed, tv_friction, tv_gravity, tf_duration, tf_exp)
+		DBG_RenderVector(tv_start_pos, tv_dest_pos - tv_start_pos, color_jaune)
+		tv_start_pos = tv_dest_pos
+	}
+	
+//	DBG_RenderVector(tv_dest_pos, cvector(0.0, 0.0, -tf_Z), color_cyan)
+#endif
+}
+
+
+procedure vector DYN_LIB_Traction_To_Reach_Speed(vector tv_current_speed, vector tv_wanted_speed, vector tv_friction, vector tv_gravity, vector tv_traction, vector tv_stream, float tf_dt)
+{
+	float		tf_exp_m_dt_X
+	float		tf_exp_m_dt_Y
+	float		tf_exp_m_dt_Z
+
+	vector	tv_return_traction
+	
+	if (tv_friction.x)
+	{
+		tf_exp_m_dt_X = MATH_Exp( - tv_friction.x *  tf_dt )
+	
+		tv_return_traction.x = - tv_friction.x * tf_exp_m_dt_X * tv_current_speed.x
+		tv_return_traction.x += tv_friction.x * tv_wanted_speed.x
+		tv_return_traction.x /= 1.0 - tf_exp_m_dt_X
+	}
+	else
+	{
+		tv_return_traction.x = (tv_wanted_speed.x - tv_current_speed.x) / tf_dt
+	}
+
+	if (tv_friction.y)
+	{
+		if (tv_friction.y == tv_friction.x)
+			tf_exp_m_dt_Y = tf_exp_m_dt_X
+		else
+			tf_exp_m_dt_Y = MATH_Exp( - tv_friction.y *  tf_dt )
+	
+		tv_return_traction.y = - tv_friction.y * tf_exp_m_dt_Y * tv_current_speed.y
+		tv_return_traction.y += tv_friction.y * tv_wanted_speed.y
+		tv_return_traction.y /= 1.0 - tf_exp_m_dt_Y
+	}
+	else
+	{
+		tv_return_traction.y = (tv_wanted_speed.y - tv_current_speed.y) / tf_dt
+	}
+
+	if (tv_friction.z)
+	{
+		if (tv_friction.z == tv_friction.x)
+			tf_exp_m_dt_Z = tf_exp_m_dt_X
+		else if (tv_friction.z == tv_friction.y)
+			tf_exp_m_dt_Z = tf_exp_m_dt_Y
+		else
+			tf_exp_m_dt_Z = MATH_Exp( - tv_friction.z *  tf_dt )
+	
+		tv_return_traction.z = - tv_friction.z * tf_exp_m_dt_Z * tv_current_speed.z
+		tv_return_traction.z += tv_friction.z * tv_wanted_speed.z
+		tv_return_traction.z /= 1.0 - tf_exp_m_dt_Z
+	}
+	else
+	{
+		tv_return_traction.z = (tv_wanted_speed.z - tv_current_speed.z) / tf_dt
+	}
+
+	tv_return_traction -= tv_gravity
+	tv_return_traction -= tv_traction
+	tv_return_traction -= tv_stream
+
+	return(tv_return_traction)
+}
+
+procedure vector DYN_LIB_Traction_To_Reach_Pos(vector tv_current_speed, vector tv_wanted_move, vector tv_friction, vector tv_gravity, vector tv_traction, vector tv_stream, float tf_dt)
+{
+	float		tf_f_under_1
+	float		tf_exp_m_dt_X
+	float		tf_exp_m_dt_Y
+	float		tf_exp_m_dt_Z
+
+	vector	tv_return_traction
+	
+	if (tv_friction.x)
+	{
+		tf_exp_m_dt_X = MATH_Exp( - tv_friction.x *  tf_dt )
+	
+		tf_f_under_1 = 1.0 / tv_friction.x
+
+		tv_return_traction.x = tv_wanted_move.x
+		tv_return_traction.x -= (tv_current_speed.x * tf_f_under_1) * (1.0 - tf_exp_m_dt_X)
+		tv_return_traction.x /= tf_f_under_1 * (tf_dt - tf_f_under_1 + (tf_f_under_1 * tf_exp_m_dt_X))
+	}
+	else
+	{
+	}
+
+	if (tv_friction.y)
+	{
+		if (tv_friction.y == tv_friction.x)
+			tf_exp_m_dt_Y = tf_exp_m_dt_X
+		else
+			tf_exp_m_dt_Y = MATH_Exp( - tv_friction.y *  tf_dt )
+	
+		tf_f_under_1 = 1.0 / tv_friction.y
+
+		tv_return_traction.y = tv_wanted_move.y
+		tv_return_traction.y -= (tv_current_speed.y * tf_f_under_1) * (1.0 - tf_exp_m_dt_Y)
+		tv_return_traction.y /= tf_f_under_1 * (tf_dt - tf_f_under_1 + (tf_f_under_1 * tf_exp_m_dt_Y))
+	}
+	else
+	{
+	}
+
+	if (tv_friction.z)
+	{
+		if (tv_friction.z == tv_friction.x)
+			tf_exp_m_dt_Z = tf_exp_m_dt_X
+		else if (tv_friction.z == tv_friction.y)
+			tf_exp_m_dt_Z = tf_exp_m_dt_Y
+		else
+			tf_exp_m_dt_Z = MATH_Exp( - tv_friction.z *  tf_dt )
+	
+		tf_f_under_1 = 1.0 / tv_friction.z
+
+		tv_return_traction.z = tv_wanted_move.z
+		tv_return_traction.z -= (tv_current_speed.z * tf_f_under_1) * (1.0 - tf_exp_m_dt_Z)
+		tv_return_traction.z /= tf_f_under_1 * (tf_dt - tf_f_under_1 + (tf_f_under_1 * tf_exp_m_dt_Z))
+	}
+	else
+	{
+	}
+
+	tv_return_traction -= tv_gravity
+	tv_return_traction -= tv_traction
+	tv_return_traction -= tv_stream
+
+	return(tv_return_traction)
+}

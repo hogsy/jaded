@@ -1,0 +1,318 @@
+#include "RM_Prune_defines.var"
+
+procedure_local void Prune_Send_PAF(int pi_mode)
+{
+	vector	tv_sens, tv_pos
+	object	tao_zde_zde_list[20]
+	object	to_target
+	int			ti_i
+	int			ti_nb
+	int			ti_type
+	float		tf_dmg
+//	SND_RequestPlay(Ci_SND_Explode)
+	COL_ColSetActivationSet(C_bit_zde_fight, none)
+	COL_ZonePosSet(C_zde_fight,cvector(0.0, 0.0, 0.0))
+	switch(pi_mode)
+	{
+		case 0:
+			COL_ZoneSizeSet(C_zde_fight,cvector(Cf_Prune_Taille_ZDE_Fight, Cf_Prune_Taille_ZDE_Fight, Cf_Prune_Taille_ZDE_Fight))
+			tf_dmg=10.0
+			break
+		case 1:
+			COL_ZoneSizeSet(C_zde_fight,cvector(1.0, 1.0, 1.0))
+			tf_dmg=0.0
+			break
+	}
+	
+	ti_nb = COL_ZDE_ZDEListGet( &tao_zde_zde_list[0], C_zde_fight, C_zde_corps, all, none, Ci_Filter_IdentityFlag)
+	for (ti_i = 0; ti_i < ti_nb; ti_i++)
+	{
+		to_target = tao_zde_zde_list[ti_i]
+		tv_pos = OBJ_PosGet()
+		tv_sens = @to_target OBJ_PosGet() - OBJ_PosGet()
+		ti_type = C_PAF_RM_Fort
+		if(tao_zde_zde_list[ti_i]!=get_rayman)
+		{
+			EVENT_AddEventPafCanal( C_EVENT_FILTER_Object, ti_type, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_target, -1, tf_dmg, tv_sens, tv_pos)
+		}
+	}
+	COL_ColSetActivationSet(none, C_bit_zde_fight)
+}
+
+procedure_local void	GlowBones(object po_obj, int pc_color)
+{
+	int ti_halo
+	int	ti_i
+	int	ti_rnd
+	object to_bone
+	float tf_dist
+	to_bone=nobody
+
+	if(!@po_obj ANI_CanalObjectGet(0))
+		return	
+
+	tf_dist =MATH_FloatMax(MATH_VecDistance(@get_Kamera OBJ_PosGet(),@po_obj OBJ_PosGet()) - 5.0,0.5)
+
+	for(ti_i=0;ti_i<2;ti_i++)
+	{
+		while(!to_bone)
+		{
+			ti_rnd=MATH_RandInt(0,85)
+			to_bone=@po_obj ANI_CanalObjectGet(ti_rnd)		
+		}
+	
+		ti_halo = @po_obj GFX_Add(21)
+		GFX_MaterialSet(ti_halo, get_SFX_light_and_smoke, 0)
+		GFX_FlagSet(ti_halo, 4,1)								// Destruction avec redusction de taille.
+		GFX_Setf(ti_halo, 21000, 1.0 / tf_dist)						// taille
+		GFX_Setf(ti_halo, 21002, tf_dist )						// extraction par rapport au point de génération (vers la cam)
+		GFX_Seti(ti_halo, 21103, 1)							// type de halo
+		GFX_Seti(ti_halo, 21101, pc_color)			// couleur   //0x50CB32EE
+		GFX_Setv(ti_halo, 21200, @to_bone OBJ_PosGet() + (cvector(MATH_RandFloat(-0.5,0.5),MATH_RandFloat(-0.5,0.5),MATH_RandFloat(-0.5,0.5))* 0.1) )				// position du halo
+		GFX_Setf(ti_halo, 21005, 0.2)							// temps de mort
+		GFX_Seti(ti_halo, 21100, 16 )							// flags qui dit que la mort va entrainer une réduction de la taille
+		GFX_LifeTimeSet(ti_halo,0.2)						// Durée de vie
+	}
+}
+
+procedure_local void Prune_CheckPaf()
+{
+	message		tm_messPaf
+	int					ti_rank
+	messageid		tmid_messPaf
+	vector			tv_sensPaf
+	vector			tv_speed
+	float				tf_recul
+	int					ti_type
+
+	MSG_SetNull(tm_messPaf)
+	tm_messPaf.msg_gao1 = OBJ_Me()
+	ti_rank = -1
+	o_Pafeur = nobody
+
+	tmid_messPaf = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tm_messPaf)
+	while(MSG_GlobalIsValid(tmid_messPaf))
+	{
+//		ti_typePaf=EVENT_PafTypeGet(tmid_messPaf)
+		o_Pafeur = EVENT_PereGet(tmid_messPaf)
+		o_AFuir = o_Pafeur
+		if(i_etat_courant!=ETAT_Prune_PASSIVEWAIT)
+		{
+			tv_sensPaf = EVENT_PafDirGet(tmid_messPaf)
+			tv_sensPaf = MATH_VecNormalize(tv_sensPaf)
+			tv_sensPaf += Cv_VerticalVector * 0.5
+			ti_type = EVENT_PafTypeGet(tmid_messPaf)
+			if(ti_type&C_PAF_RM_Fort)
+				tf_recul=15.0
+			else if(ti_type&C_PAF_RM_Moyen)
+				tf_recul=10.0
+			else if(ti_type&C_PAF_RM_Faible)
+				tf_recul=5.0
+			else if(ti_type&C_PAF_RM_ComboPetit)
+				tf_recul=1.0
+			else tf_recul=3.0
+			
+			tv_speed = DYN_SpeedGetVector()
+			tv_speed+=tv_sensPaf * tf_recul
+			DYN_SpeedSetVector(tv_speed)
+			v_SightVoulu = tv_sensPaf
+		}
+		tmid_messPaf = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tm_messPaf)
+	}
+}
+
+procedure_local void Prune_Rebondit()
+{
+	vector	tv_normale
+	vector	tv_impact
+	vector	tv_speed
+//	float		tf_oldforce
+
+	if(f_ForceRebond!=0.0)
+	{	
+		DYN_TractionSet(Cv_NullVector)
+		if(COL_CollideType(COL_C_Ground))
+		{			
+			tv_normale=COL_NormalGet(COL_C_Ground)
+			v_BankingVoulu = tv_normale
+			if(tv_normale.z>0.0)
+			{
+				tv_speed=DYN_SpeedGetVector()
+				tv_speed.z=f_ForceRebond
+				DYN_SpeedSetVector(tv_speed)
+				v_ForceActu=v_ForceVoulue
+			}
+			if( i_etat_courant == ETAT_Prune_RIDED )
+			{
+	//				PROC_SFX_EXPLOSION_CARTOON(OBJ_PosGet())
+					tv_impact=COL_CollidedPointGet(COL_C_Ground)
+					PROC_SFX_SMOKE_01(OBJ_PosGet())
+					Prune_Send_PAF(1)
+			}
+		}
+		else
+		{
+			DBG_RenderVector(OBJ_PosGet(),DYN_SpeedGetVector(),color_rouge)
+			DBG_RenderVector(OBJ_PosGet(),OBJ_HorizonGet(),color_vert)
+			v_BankingVoulu = MATH_VecBlendRotate(Cv_VerticalVector, MATH_VecCrossProduct(DYN_SpeedGetVector(),OBJ_HorizonGet()),0.2)
+		}
+	}
+	else
+	{
+		v_BankingVoulu=COL_NormalGet(COL_C_Ground)
+		v_ForceActu=Cv_NullVector	
+	}
+	DBG_RenderVector(OBJ_PosGet(),v_BankingVoulu,color_bleu)
+	v_BankingVoulu = v_BankingVoulu
+}
+
+procedure_local int Prune_CheckHotSpot()
+{
+	if( @get_rayman PROC_RM_Current_HotSpot_Get() == OBJ_Me() )
+	{
+		if( @get_rayman i_grappin_accroche ) return vrai
+	}
+	return faux
+}
+
+procedure_local object Prune_ROPE_Get_Gao(byref vector tv_pos_A, byref vector tv_pos_B, byref int ti_flag_tension)
+{
+	object	to_gao	
+
+	float		tf_sqr_rope_length
+	float 		tf_rope_length
+	float 		tf_rope_ratio
+
+	vector	tv_offset_A
+	vector	tv_offset_B
+	vector	tv_rope_AB
+
+	ti_flag_tension = faux
+
+	to_gao = @o_rope_manager Rope_Manager_Get_Linked_Gao(OBJ_Me(), tf_rope_length, tf_rope_ratio, tv_offset_A, tv_offset_B)
+	if (to_gao)
+	{
+		if (tf_rope_ratio <  1.0)
+		{
+			tv_pos_A = OBJ_PosGet() + MATH_VecLocalToGlobal(tv_offset_A)
+			tv_pos_B = @to_gao OBJ_PosGet() + @to_gao MATH_VecLocalToGlobal(tv_offset_B)
+		
+//			DBG_RenderVector(tv_rope_pos, -tv_rope_AB, color_cyan)	
+	
+			tf_sqr_rope_length = tf_rope_length * 0.7
+			tf_sqr_rope_length *= tf_sqr_rope_length
+			
+			if (MATH_VecSquareNorm(tv_pos_B - tv_pos_A) > tf_sqr_rope_length)
+				ti_flag_tension = vrai
+
+			return(to_gao)
+		}
+	}
+	
+	return(nobody)
+}
+
+
+
+procedure_local int Prune_ROPE_Gogo_Mode()
+{
+	int			ti_return	
+	int			ti_flag_tension
+
+	float		tf_speed
+	float		tf_duree
+
+	vector	tv_pos_A
+	vector	tv_pos_B
+	vector	tv_AB
+	vector	tv_temp
+	vector	tv_main_sight
+	object	to_rope_gao
+
+	ti_return = faux
+	
+	if( i_gogo_test_done )
+		return i_gogo_last_result
+	
+	i_gogo_test_done = vrai
+
+	tv_main_sight = IO_JoyGetMove()
+	if ( MATH_VecSquareNorm(tv_main_sight) < tolerance_joynull * tolerance_joynull )
+		tv_main_sight = Cv_NullVector
+	else
+		MATH_VecSetNormalize(tv_main_sight)
+		
+	to_rope_gao = Prune_ROPE_Get_Gao(tv_pos_A, tv_pos_B, ti_flag_tension)
+	if ( to_rope_gao && ( to_rope_gao == get_rayman || to_rope_gao == @get_rayman PROC_RM_MontureGet() ) )
+	{
+		tv_AB = tv_pos_B - tv_pos_A
+			
+		tf_speed = MATH_VecSquareNorm(DYN_SpeedGetVector())
+
+		tv_temp = MATH_VecCrossProduct(tv_main_sight, v_last_main_sight)
+	
+		if (MATH_AbsFloat(tv_temp.z) > 3.5 * TIME_GetDt()) // 0.1)
+		{
+			if (tf_speed < 64.0 || MATH_FloatSign(tv_temp.z) == MATH_FloatSign(MATH_VecCrossProduct(tv_AB, DYN_SpeedGetVector()).z))
+			{
+				f_main_gogo_duration += MATH_FloatMin(1.0 - f_main_gogo_duration, TIME_GetDt())
+			}
+			else
+			{
+				f_main_gogo_duration -= MATH_FloatMin(f_main_gogo_duration, TIME_GetDt())
+				DBG_RenderSphere(@to_rope_gao OBJ_PosGet(), 2.0, color_jaune)
+			}
+		}
+		else
+		{
+			f_main_gogo_duration -= MATH_FloatMin(f_main_gogo_duration, 0.5 * TIME_GetDt())
+			DBG_RenderSphere(@to_rope_gao OBJ_PosGet(), 2.0, color_rouge)
+		}
+		
+		// passage en gogo ?
+		tf_duree = 0.3
+		
+		if (f_main_gogo_duration > tf_duree)
+		{
+			ti_return	= vrai
+		
+			if (tf_speed < 64.0 && ! MATH_VecNullEpsilon(tv_temp) )
+			{
+				tv_AB = MATH_VecCrossProduct(tv_temp, tv_AB)
+			}
+			else
+			{
+				tv_temp = MATH_VecCrossProduct(tv_AB, DYN_SpeedGetVector())	
+
+				if( MATH_VecNullEpsilon(tv_temp) )
+					tv_temp	= Cv_VerticalVector
+
+				tv_AB = MATH_VecCrossProduct(tv_AB, tv_temp)
+
+				if( MATH_VecNullEpsilon(tv_AB) )
+					tv_AB = cvector(1.0, 0.0, 0.0)
+
+				tv_AB *= MATH_FloatSign(MATH_VecDotProduct(tv_AB, DYN_SpeedGetVector()))
+			}
+	
+			MATH_VecSetNormalize(tv_AB)
+			
+			tv_AB *= 5.0	
+			DBG_RenderVector( OBJ_PosGet(), tv_AB, color_bleu)
+			v_traction_GOGO += tv_AB
+		}
+	}
+	else
+	{
+		f_main_gogo_duration = 0.0
+	}
+	
+	f_gogo_backup_joy_dt += TIME_GetDt()
+	if (f_gogo_backup_joy_dt > 0.05)
+	{
+		f_gogo_backup_joy_dt -= 0.05
+		v_last_main_sight = tv_main_sight
+	}
+	i_gogo_last_result = ti_return
+	return(ti_return)
+}

@@ -1,0 +1,2165 @@
+#include"r_defines.var"
+
+//Include_UltraProcedure_Header
+
+procedure_local void Proc_RM_Use_Weapon();
+procedure_local void Proc_RM_GFX_Smoke();
+
+// COLSET ON
+procedure	void	COLSET_ON_OFF( int	pi_bit_type, int pi_on_off)
+{
+	if ( pi_on_off)
+		COL_ColSetActivationSet(pi_bit_type,none)
+	else
+		COL_ColSetActivationSet(none, pi_bit_type)
+}
+
+procedure_local int	Proc_RM_Glise_Contre_Mur()
+{
+	if ( ! i_ground_flag && ! i_is_in_water && COL_CollideType(COL_C_Wall) && DYN_SpeedGetVector().z < 0.0 && COL_NormalGet(COL_C_Wall).z >=  Cf_Cos80)
+	return vrai
+else
+	return faux
+}
+
+procedure_local object Proc_RM_BestTargetGet( float	pf_dist2, int	pi_calcul, byref vector pv_offset)
+{
+	int	ti_i, ti_j, ti_nmi_nb, ti_indice
+	float	tf_sqr_dist, pf_dot, tf_dot
+	object	po_target, po_torse, tao_nmi[50]
+	vector	tav_hotspot_good[50]
+	float		taf_hotspot_good[50]
+	vector	tav_offset[50]
+	vector	tv_target, tv_sens, tv_joy, tv_pos
+	
+	po_torse = ANI_CanalObjectGet(Anim_Canal_Torse)
+	ti_nmi_nb = 0
+	
+	if( PROC_RM_ModeLookON() )
+		tv_joy = @get_Kamera OBJ_SightGet()
+	else if ( o_ride_actor)
+	{
+		tv_joy = MATH_VecCrossProduct( v_joy_sight_normalized, OBJ_BankingGet()) 
+		tv_joy = MATH_VecCrossProduct( OBJ_BankingGet(), tv_joy) 				
+	}
+//	else if ( MATH_FloatNullEpsilon( f_joy_norm))
+//		tv_joy = @get_Kamera OBJ_SightGet()	
+	else if ( i_ground_flag)
+	{
+		tv_joy = MATH_VecCrossProduct( v_joy_sight_normalized , v_ground_normale) 
+		tv_joy = MATH_VecCrossProduct( v_ground_normale, tv_joy) 
+	}
+	else
+	{
+		tv_joy = v_joy_sight_normalized 
+		
+//		tv_sens =  IO_JoyGetMove() //glob_joyvector_get
+//		tv_joy = tv_sens.y * @get_Kamera OBJ_SightGet()
+//		tv_joy -= tv_sens.x * @get_Kamera OBJ_HorizonGet()
+//		if ( MATH_FloatNullEpsilon( f_joy_norm ))
+		if ( ACT_ActionGet() == RM_Act_Jump_Fly) // || ACT_ActionGet() == RM_Act_Jump_FreeFall )
+		{
+			tv_joy = @get_Kamera OBJ_SightGet()
+			tv_sens =  IO_JoyGetMove() //glob_joyvector_get
+			tv_joy += tv_sens.y * @get_Kamera OBJ_BankingGet() * 0.4
+			tv_joy -= tv_sens.x * @get_Kamera OBJ_HorizonGet() * 0.5
+
+		}
+	}
+
+	v_use_sight = tv_joy 
+
+	pf_dot = Cf_Cos40
+	tv_pos = @po_torse OBJ_PosGet()
+
+
+	for ( ti_i = 0; ti_i < @get_list_manager i_target_nb; ti_i++)
+	{
+		po_target = @get_list_manager ao_target[ti_i]
+		tv_target = @get_list_manager av_target[ti_i]
+		tv_target = @po_target OBJ_PosGet() + @po_target MATH_VecLocalToGlobal( tv_target)
+		tv_sens = tv_target - tv_pos
+
+		tf_sqr_dist = MATH_VecDotProduct(tv_sens, tv_sens)
+
+		tv_sens = Proc_Vec_HorzNormalise(tv_sens, v_joy_sight_normalized)
+		if (tf_sqr_dist < pf_dist2)
+		{
+			tf_dot = MATH_VecDotProduct( tv_joy, tv_sens)
+			if( tf_dot > pf_dot)
+			{
+				// Brand new Nmi
+//				tao_nmi[ti_nmi_nb] = po_target
+//				ti_nmi_nb++
+
+				// TRI	
+				tf_dot = tf_dot //- ( MATH_FloatSqrt(tf_sqr_dist) / 30.0)
+
+				if ( !ti_nmi_nb)
+				{
+					ti_j = -1
+				}
+				else
+				{
+					for ( ti_j = ti_nmi_nb - 1; ti_j >= 0; ti_j--)
+					{
+						if( tf_dot  > taf_hotspot_good[ti_j])
+						{
+							tav_hotspot_good[ti_j+1] = tav_hotspot_good[ti_j] 
+							tao_nmi[ti_j+1] = tao_nmi[ti_j]
+							taf_hotspot_good[ti_j+1] = taf_hotspot_good[ti_j]
+							tav_offset[ti_j+1] = tav_offset[ti_j]
+						}
+						else
+						{
+							break
+						}
+					}	
+				}
+				tav_hotspot_good[ti_j+1] = tv_target
+				tao_nmi[ti_j+1] = po_target
+				taf_hotspot_good[ti_j+1] = tf_dot
+				tav_offset[ti_j+1] = @get_list_manager av_target[ti_i]
+				ti_nmi_nb++							
+
+				if ( i_DBG_Target)
+				{
+					ti_indice = STR_CreateText("\jxy\", VIEW_3dWorldTo2d(0,tv_target), 0)			
+					DBG_RenderSphere( tv_target, 0.2, 0xDA00FF00)
+					STR_AppendText(ti_indice, "\c0000FF00\")
+					STR_AppendText(ti_indice, "\\h0.08\")
+					STR_AppendFloat(ti_indice, tf_dot, 2)	
+				}
+			}
+			else if ( i_DBG_Target)
+			{ 
+				ti_indice = STR_CreateText("\jxy\", VIEW_3dWorldTo2d(0,tv_target), 0)			
+				DBG_RenderSphere( tv_target, 0.2, 0xDAFF0000)
+				STR_AppendText(ti_indice, "\c00FF0000\")
+				STR_AppendText(ti_indice, "\\h0.08\")
+				STR_AppendFloat(ti_indice, MATH_FloatSqrt(tf_sqr_dist), 2)	
+			}
+			
+		}
+		else if ( i_DBG_Target)
+		{ 
+			ti_indice = STR_CreateText("\jxy\", VIEW_3dWorldTo2d(0,tv_target), 0)			
+			DBG_RenderSphere( tv_target, 0.2, 0xDA0000FF)
+			STR_AppendText(ti_indice, "\c000000FF\")
+			STR_AppendText(ti_indice, "\\h0.08\")
+			STR_AppendFloat(ti_indice, MATH_FloatSqrt(tf_sqr_dist), 2)	
+		}
+
+	}
+
+	po_target = nobody
+	if ( ti_nmi_nb && pi_calcul)
+	{
+		// Fonction de recherche a recoder.
+//		ti_i = ARR_ObjBestSight( &tao_nmi[0], ti_nmi_nb, OBJ_PosGet(), v_joy_sight, 10.0)
+//		po_target = tao_nmi[ti_i]
+		for ( ti_i = 0; ti_i < ti_nmi_nb; ti_i++)
+		{
+			
+		 	DBG_RenderVector(tv_pos , tav_hotspot_good[ti_i] - tv_pos, color_bleu)
+			COL_SpecificCrossableSet( Gmat_RM_Crossable_Default)
+			@tao_nmi[ti_i] OBJ_FlagsControlSet( OBJ_C_ControlFlag_RayInsensitive, none)
+			if (! COL_RayIsCut_Dist( tv_pos , tav_hotspot_good[ti_i] - tv_pos, 1.0 , all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable + COL_C_Ray_use_SpecificCrossableSet))		
+			{
+				pv_offset = tav_offset[ti_i]
+				return tao_nmi[ti_i]
+			}
+			@tao_nmi[ti_i] OBJ_FlagsControlSet( none, OBJ_C_ControlFlag_RayInsensitive)
+		}
+	}		
+	return nobody
+}
+
+
+// ===============================  FIGHT  ============================================
+procedure_local object Proc_RM_BestJoyFightActorGet( float	pf_dist2, float pf_dot)
+{
+	int				ti_rank
+	int				ti_nmi_nb
+	float			tf_sqr_dist
+	object		tao_nmi[30]
+	object		po_target
+	vector		tv_sens
+	vector		tv_joy
+	messageid	EVT_ID
+	
+
+	// Je choisis le plus proche dans la liste de tous les ennemi (s'il est pas au dela d'une distance max)
+	ti_rank = -1
+	ti_nmi_nb = 0
+	EVT_ID = MSG_GlobalScan( C_EVENT_TYPE_Enemy, &ti_rank)
+	while (MSG_GlobalIsValid(EVT_ID))
+	{
+		tao_nmi[ti_nmi_nb] = EVENT_PereGet(EVT_ID)
+		po_target = tao_nmi[ti_nmi_nb]
+		if( PROC_RM_ModeLookON() )
+		{
+			tv_joy = @get_Kamera OBJ_SightGet()
+			pf_dot = Cf_Cos20
+			tv_sens = @tao_nmi[ti_nmi_nb] OBJ_PosGet() - @get_Kamera OBJ_PosGet()
+		}
+		else
+		{
+			tv_joy = v_joy_sight_normalized
+			tv_sens = @tao_nmi[ti_nmi_nb] OBJ_PosGet() - OBJ_PosGet()
+			tv_sens.z = 0.0
+		}
+		tf_sqr_dist = MATH_VecDotProduct(tv_sens, tv_sens)
+
+		if ( MATH_VecNullEpsilon(tv_sens))
+			tv_sens = v_joy_sight_normalized
+		else 
+			tv_sens = MATH_VecNormalize(tv_sens)
+
+		if (tf_sqr_dist < pf_dist2 && MATH_VecDotProduct( tv_joy, tv_sens) > pf_dot)
+		{
+			// Brand new Nmi
+			ti_nmi_nb++
+		}
+		EVT_ID = MSG_GlobalScan( C_EVENT_TYPE_Enemy, &ti_rank)
+	}
+
+	po_target = nobody
+	if ( ti_nmi_nb)
+	{
+		// Fonction de recherche a recoder.
+		ti_rank = ARR_ObjBestSight( &tao_nmi[0], ti_nmi_nb, OBJ_PosGet(), v_joy_sight, 10.0)
+		po_target = tao_nmi[ti_rank]
+	}
+	return po_target
+}
+
+
+// ==============================  JUMP ===========================================
+// LES PROCEDURES SUIVANTES SONT LIE
+procedure_local	float	JUMP_Time_Impuls()
+{
+	switch ( i_jump_mashing )
+	{
+		case 0:
+			return 0.2
+		case 1:
+			return 0.1
+		case 2:
+			return 0.05
+		case 3:
+			return 0.0
+		default:
+			return 0.0
+	}
+}
+
+procedure_local	int	JUMP_Pump_Limit()
+{
+	if ( i_jump_mashing > 2)
+		return vrai
+	else
+		return faux
+}
+
+
+
+// ==============================  BUFFER  ===========================================
+// LE BOUTON EST IL MEMO
+procedure_local int BUFFER_Buffered( int pi_button)
+{
+	int		pi_capa
+	pi_capa = faux
+	switch ( pi_button)
+	{
+		case C_Button_All :
+			if ( i_buffer_X || i_buffer_T || i_buffer_C || i_buffer_O)
+				pi_capa = vrai
+			else
+				pi_capa = faux
+			break
+		case	C_Button_X :
+			pi_capa = i_buffer_X
+			break
+		case	C_Button_C :
+			pi_capa = i_buffer_C
+			break
+		case	C_Button_T :
+			pi_capa = i_buffer_T
+			break
+		case	C_Button_O :
+			pi_capa = i_buffer_O
+			break
+	}
+	return pi_capa 
+}
+
+procedure_local int BUFFER_Zone_Interrupt()
+{
+	if ( OBJ_CapaTest( Capa_Buffer_Interrupt))
+		return vrai
+	else
+		return faux
+}
+// LE BOUTON PEUX IL ETRE MEMO
+procedure_local int BUFFER_Zone_CanBuffer( int	pi_button)
+{
+	int		pi_capa
+	switch ( pi_button)
+	{
+		case	C_Button_X :
+			pi_capa = Capa_Buffer_X
+			break
+		case	C_Button_T :
+			pi_capa = Capa_Buffer_T
+			break
+		case	C_Button_C :
+			pi_capa = Capa_Buffer_C
+			break
+		case 	C_Button_O :
+			pi_capa = Capa_Buffer_O
+	}
+	return ( OBJ_CapaTest( pi_capa))
+}
+
+procedure_local void BUFFER_DEL_ALL()
+{
+	i_buffer_T = faux
+	i_buffer_X = faux
+	i_buffer_C = faux	
+	i_buffer_O = faux
+}
+
+procedure_local void BUFFER_All()
+{
+	if ( i_flag_just_T && BUFFER_Zone_CanBuffer(C_Button_T))
+	{
+		if ( ! i_buffer_T )
+			f_danse_buffer_time = f_danse_time
+		BUFFER_DEL_ALL()
+		i_buffer_T = vrai
+	}
+	if ( i_flag_just_X && BUFFER_Zone_CanBuffer(C_Button_X))
+	{
+		if ( ! i_buffer_X )
+			f_danse_buffer_time = f_danse_time
+		BUFFER_DEL_ALL()
+		i_buffer_X = vrai
+	}
+	if ( i_flag_just_C  && BUFFER_Zone_CanBuffer(C_Button_C))
+	{
+		if ( ! i_buffer_C )
+			f_danse_buffer_time = f_danse_time
+
+		BUFFER_DEL_ALL()
+		i_buffer_C = vrai
+	}
+	if ( i_flag_just_O && BUFFER_Zone_CanBuffer(C_Button_O))
+	{
+		if ( ! i_buffer_O )
+			f_danse_buffer_time = f_danse_time
+
+		BUFFER_DEL_ALL()
+		i_buffer_O = vrai
+	}
+}
+
+// ==============================  SPE MOVES  =============================================
+// GIVE THE MODE
+procedure_local int MOVE_MODE()
+{
+	return i_move_mode
+}
+
+// RESET MODE
+procedure_local void MOVE_MODE_DEL()
+{
+	i_move_mode = 0
+}
+
+// SET MODE
+procedure_local void MOVE_Set_Mode( int pi_coup)
+{
+	i_move_mode = pi_coup
+	i_frappe_target_nb = 0
+	i_move_valid = 0
+	i_jump_copter = faux
+	i_choix_anim = faux
+	i_game_ralenti = faux
+
+	Proc_RM_DESTROY_GFX_Fire()
+	PROC_DESTROY_SFX(i_GFX_Feu_bubules)
+
+	DYN_GravitySet( Cv_DYN_Gravity)
+	BUFFER_DEL_ALL()
+	OBJ_CapaSet( none, Capa_ZDE_Fight_ON)
+	COLSET_ON_OFF( C_bit_zdm_pied, ON)
+
+}
+
+// CHANGE TO DANSE
+procedure_local void MOVE_CHANGE_To_Danse()
+{
+	f_danse_time = 0.0
+	@get_global i_Danse_Actors_pos_recompute = vrai
+	DYN_TractionSet( Cv_NullVector)
+	DYN_SpeedSetVector( Cv_NullVector)
+	MOVE_Set_Mode( C_Move_Danse)
+}
+
+// CHOOSE ANIM IN JUMP
+procedure_local void MOVE_Jump_GOTO_Chute()
+{
+	BUFFER_DEL_ALL()
+	
+	if( i_jump_copter )
+		ACT_ActionSet(RM_Act_Copter)
+	else if ( ! MATH_VecNullEpsilon(v_force_STREAM))
+		ACT_ActionSet(RM_Act_Jump_FreeFall)
+	else if ( f_speed_norm > Cf_Speed_For_TGV && ! i_grappin_accroche)
+	{
+		if ( MATH_FloatNullEpsilon(f_joy_norm))
+			ACT_ActionSet( RM_Act_Jump_FreeFall)
+		else
+			ACT_ActionSet( RM_Act_Jump_Fly)
+	}
+	else if ( Proc_RM_Glise_Contre_Mur()) // COL_CollideType(COL_C_Wall))
+		ACT_ActionSet(RM_Act_ChuteContreMur)
+	else
+		ACT_ActionSet(RM_Act_Chute)
+//	if ( i_jump_copter)
+//		ACT_ActionSet( RM_Act_Copter)
+//	else
+//		ACT_ActionSet(RM_Act_Chute)
+}		
+
+// NEXT MOVE IS JUMP
+procedure_local void MOVE_CHANGE_To_Jump( vector pv_speed, int pi_impulsion, int pi_cancel_copter)
+{
+	vector	tv_impulsion_force, tv_speed
+	float		tf_duration, tf_ratio
+	int			ti_jump_copter, ti_freq
+	int			ti_action
+	
+	f_jump_speed_limit = Cf_Jump_Speed_Z_Limit
+	if ( pi_impulsion)
+	{
+		// Impulsion
+		if( i_ground_flag )
+		{
+			i_flag_just_jump_from_ground = vrai		// For Rabbits
+			i_jump_mashing = faux
+		}
+		
+		tf_duration = 0.0
+
+		if ( ! MATH_VecNullEpsilon(v_force_jump))
+		{
+			f_jump_time = 0.0
+			tv_impulsion_force = v_force_jump
+			v_jump_impulsion_force2 = tv_impulsion_force
+			v_jump_impulsion_force = v_jump_impulsion_force2
+			if ( MOVE_MODE() == C_Move_Jump)
+				DYN_SpeedSetVector(v_jump_impulsion_force2)
+			v_force_jump = Cv_NullVector
+			ACT_ActionSet(RM_Act_Jump_Impulsion)
+		}
+		else if ( MOVE_MODE() == C_Move_Jump)
+		{
+			tv_impulsion_force = pv_speed
+//			if ( !i_ground_flag && COL_CollideType(COL_C_Wall) && DYN_SpeedGetVector().z < 0.0 && COL_NormalGet(COL_C_Wall).z >= 0)
+			if( Proc_RM_Glise_Contre_Mur())
+			{
+				tv_impulsion_force = MATH_VecCrossProduct( COL_NormalGet(COL_C_Wall), Cv_VerticalVector)
+				tv_impulsion_force = MATH_VecRotate( Cv_VerticalVector, tv_impulsion_force, -Cf_PiBy3) * 11.0
+//				tv_impulsion_force = COL_NormalGet(COL_C_Wall) * 11.0
+				v_jump_impulsion_force2 = tv_impulsion_force
+				v_jump_impulsion_force = v_jump_impulsion_force2
+				DYN_SpeedSetVector(v_jump_impulsion_force2)
+				ACT_ActionSet(RM_Act_SpiderImpul)
+			}
+			else if ( o_jump_rebound)
+			{
+				DYN_SpeedSetVector(v_jump_impulsion_force)
+			}
+			else if (i_grappin_accroche)
+			{
+				tv_impulsion_force.z = Cf_Jump_Altitude
+				v_jump_impulsion_force2 = tv_impulsion_force
+				tv_impulsion_force.z = Cf_Jump_AltitudeTarzan
+				DYN_SpeedSetVector(tv_impulsion_force)
+			}
+			else if ( i_ground_flag )
+			{
+				f_jump_time = 0.0
+				tv_impulsion_force.z = Cf_Jump_Altitude
+				v_jump_impulsion_force2 = tv_impulsion_force
+				v_jump_impulsion_force = v_jump_impulsion_force2
+				DYN_SpeedSetVector(v_jump_impulsion_force2)
+			}
+			else
+			{
+				i_jump_mashing++
+				tf_duration = v_jump_impulsion_force2.z
+//				if( 0.9 * tf_duration > tv_impulsion_force.z)
+//				{
+					v_jump_impulsion_force2 = tv_impulsion_force
+					if ( JUMP_Pump_Limit())
+						v_jump_impulsion_force2.z = 0.7 * tf_duration 
+					else
+						v_jump_impulsion_force2.z = v_jump_impulsion_force.z
+					if ( ! MATH_VecNullEpsilon(v_jump_impulsion_force2))
+						DYN_SpeedSetVector(v_jump_impulsion_force2)
+					v_jump_impulsion_force = v_jump_impulsion_force2
+//				}
+			}
+//			RM_Update_SPEED
+//			if ( ! COL_CollideType(COL_C_Wall))
+			ti_action = ACT_ActionGet()
+			if ( ti_action != RM_Act_SpiderImpul)
+			{
+				if ( ti_action == RM_Act_Jump_FlyPump )
+					ACT_ActionSet(RM_Act_Jump_FlyPump2 + Ci_ActionSet_Force_SameAction + Ci_ActionSet_Force_FrameZero)
+				else if ( ti_action == RM_Act_Jump_FreeFall || ti_action == RM_Act_Jump_FlyPump2 )
+					ACT_ActionSet(RM_Act_Jump_FlyPump + Ci_ActionSet_Force_SameAction + Ci_ActionSet_Force_FrameZero)
+				else if( f_speed_hor > Cf_Speed_For_TGV && !o_jump_rebound)
+				{
+					if ( ACT_ActionGet() == RM_Act_Jump_FlyPump2 )
+						ACT_ActionSet(RM_Act_Jump_FlyPump + Ci_ActionSet_Force_SameAction + Ci_ActionSet_Force_FrameZero)
+					else
+						ACT_ActionSet(RM_Act_Jump_FlyPump2 + Ci_ActionSet_Force_SameAction + Ci_ActionSet_Force_FrameZero)
+				}
+				else if ( i_jump_mashing)
+				{
+					if ( i_jump_mashing <= 1 && ! MATH_FloatNullEpsilon( f_joy_norm))
+					{
+						SND_RequestPlay(C_SND_Jump)
+						ACT_ActionSet(RM_Act_JumpPump + Ci_ActionSet_Force_SameAction + Ci_ActionSet_Force_FrameZero)
+//						tf_ratio = 0.4 / 0.17
+//						ti_freq = MATH_FloatLimit( ACT_FrequencyGet(ACT_ActionGet(), ACT_ActionItemGet()) * tf_ratio, 1.0, 255.0)
+//						ANI_FrequencySet(0, 54)
+					}
+					else //if ( ACT_ActionGet() != RM_Act_JumpMash || ( ACT_ActionItemGet() && ANI_CurrentFrameGet(0) > 5))
+						ACT_ActionSet(RM_Act_JumpMash + Ci_ActionSet_Force_SameAction + Ci_ActionSet_Force_FrameZero)
+				}
+				else
+					ACT_ActionSet(RM_Act_Jump + Ci_ActionSet_Force_SameAction + Ci_ActionSet_Force_FrameZero)
+			}
+		}
+		else
+		{
+			f_jump_time = 0.0
+			tv_impulsion_force = pv_speed
+			if ( ( f_speed_hor < Cf_Traction_Fly || i_ground_flag ) && f_joy_norm)
+				tv_impulsion_force += v_joy_sight_normalized * Cf_Traction_Fly
+			tv_impulsion_force.z = Cf_Jump_Altitude
+			v_jump_impulsion_force = tv_impulsion_force
+			DYN_TractionSet( Cv_NullVector)
+			DYN_FrictionVectorSet(Cv_DYN_Friction_Jump)
+			if ( MOVE_MODE() == C_Move_Rider )
+			{
+				i_jump_mashing = faux
+				ACT_ActionSet(RM_Act_RideImpuls)
+				DYN_SpeedSetVector(v_jump_impulsion_force)
+			}
+			else if ( MOVE_MODE() == C_Move_Varap)
+				ACT_ActionSet(RM_Act_SpiderImpul)
+//			else if ( MOVE_MODE() == C_Move_Esquive)
+//			{
+//				ACT_ActionSet(RM_Act_Jump_Impulsion)
+//				v_jump_impulsion_force.z = 120.0
+//			}
+			else if ( i_is_in_water)
+			{
+				i_jump_mashing = faux
+				SND_RequestPlay( C_SND_Plouf_ressort)
+				tv_speed = DYN_SpeedGetVector()
+				tv_speed.z = MATH_FloatMax( tv_speed.z, 0.0)
+				DYN_SpeedSetVector( tv_speed)
+				ACT_ActionSet(RM_Act_SwimImpul)
+				IsInWater( OBJ_PosGet(), f_water_Z)
+				if( f_water_Z > OBJ_PosGet().z)
+				{
+					f_water_jump_add = f_water_Z + 0.1 - OBJ_PosGet().z
+					f_water_jump_add /= 0.4
+				}
+				else
+					f_water_jump_add = 0.0
+
+			}
+			else
+			{
+				v_jump_impulsion_force.z = Cf_Jump_Altitude	* (1 + MATH_FloatMin(f_joy_jump_pressed, 1.0))
+				ACT_ActionSet(RM_Act_Jump_Impulsion)
+			}
+			v_jump_impulsion_force2 = v_jump_impulsion_force
+			v_jump_impulsion_force2.z = Cf_Jump_Altitude
+		}
+	}
+	else
+	{
+		f_jump_time = 10.0
+//		v_jump_impulsion_force = Cv_NullVector
+		if ( ACT_ActionGet() == RM_Act_PafFCrete || ACT_ActionGet() == RM_Act_PafFCreteBig 
+		|| ACT_ActionGet() == RM_Act_PafFAir)
+			ACT_ActionSet( RM_Act_Jump_ChuteNoControl)
+		else if ( i_jump_copter)
+			ACT_ActionSet(RM_Act_Copter)
+		else
+			ACT_ActionSet(RM_Act_Chute)
+	}
+	f_jump_copter_time = 0.0
+	if ( ! i_keep_hierarchy)
+		OBJ_HierarchyReset()			// Car les hierarchy dynamique ne se coupent pas toute seule quand on est plus en colision !!!
+	DYN_GravitySet( Cv_DYN_Gravity)
+	ti_jump_copter = i_jump_copter
+	MOVE_Set_Mode(C_Move_Jump)
+	if ( ! pi_cancel_copter)
+		i_jump_copter = ti_jump_copter
+	tv_speed = v_jump_impulsion_force
+	tv_speed.z = 0.0
+	f_traction_multiplier  = MATH_FloatMax( f_speed_hor, MATH_VecNorm( tv_speed))
+}
+
+procedure_local int	ACT_FIGHT_SELECT( int pi_coup, vector tv_sens)
+{
+	int	pi_action
+	vector	pv_sens, pv_sens_non_norm
+
+	// COUP AVEC RETOURNEMENT PERMIS
+	if ( MATH_VecDotProduct( tv_sens, OBJ_SightGet()) < 0.0)
+	{
+		// Droite
+		if ( MATH_VecDotProduct( tv_sens, OBJ_HorizonGet()) < 0.0)
+		{			
+			if ( ACT_ActionGet() == RM_Act_PunchR0)
+				i_coup_action2 = 3	// Pose qui enchaine
+			else if ( ACT_ActionGet() == RM_Act_PunchUR2)
+				i_coup_action2 = 4 	// Pose qui enchaine
+			else
+				i_coup_action2 = MATH_Modulo( i_coup_action2 + 1, 3)	// Random coups			
+
+			switch( i_coup_action2)
+			{
+				case 0 :
+					pi_action = RM_Act_PunchR0
+					break
+				case 1 : 
+					pi_action = RM_Act_PunchR2
+					break
+				case 2 : 
+					pi_action = RM_Act_PunchR5
+					break
+				case 3 : 
+					pi_action = RM_Act_PunchUR0
+					break
+				case 4 : 
+					pi_action = RM_Act_PunchUR2
+					break
+			}
+		}
+		// Gauche
+		else
+		{
+			if ( ACT_ActionGet() == RM_Act_PunchR0)
+				i_coup_action3 = 3	// Pose qui enchaine
+			else if ( ACT_ActionGet() == RM_Act_PunchUR2)
+				i_coup_action3 = 4 	// Pose qui enchaine
+			else
+				i_coup_action3 = MATH_Modulo( i_coup_action3 + 1, 3)	// Random coups			
+			switch( i_coup_action3)
+			{
+				case 0 :
+					pi_action = RM_Act_PunchR0
+					break
+				case 1 : 
+					pi_action = RM_Act_Punch2
+					break
+				case 2 : 
+					pi_action = RM_Act_PunchR4
+					break
+				case 3 : 
+					pi_action = RM_Act_PunchUR0
+					break
+				case 4 : 
+					pi_action = RM_Act_PunchUR2
+					break
+			}
+		}
+	}
+	else
+		pi_action = pi_coup
+	v_frappe_joy = tv_sens
+	return pi_action
+}
+
+// NEXT MOVE IS USE 
+procedure_local void MOVE_CHANGE_To_Use()
+{
+	int	ti_jump_copter 
+	int	ti_action
+	vector tv_offset
+	if ( o_grab_cle )
+	{
+		o_client_use = LNK_ClientGet( Ci_LNK_USE, mid_use, vrai, "raym_exec_init_use", nofunc, nofunc)				
+		if ( o_client_use)
+		{
+			ti_action = ACT_ActionGet()
+			if ( ti_action != RM_Act_Use_CleForce && ti_action != RM_Act_Use_CleMarche && ti_action != RM_Act_Use_CleEchec)
+			{
+				// Il y a une utilisation
+				if ( LNK_Use_TypeGet( mid_use) & LNK_KKGrabObject_SubTypeGet( mid_grab_cle) )
+				{
+					// Bonne clé
+					ACT_ActionSet(RM_Act_Use_CleMarche)
+					LNK_Use_ActeurSupSet( mid_use, o_grab_cle )
+				}
+				else
+				{
+					// Mauvaise clé
+					ACT_ActionSet(RM_Act_Use_CleEchec)
+				}
+				LNK_Use_TypeSet( mid_use, LNK_KKGrabObject_SubTypeGet( mid_grab_cle))
+			}
+			return
+		}		
+	}
+	
+	if( o_grab_object )
+	{
+		i_use_ON = vrai
+		v_use_sight = v_joy_sight_normalized
+//		if( PROC_RM_ModeLookON() && o_fight_actor)
+//		{
+//			o_use_target = o_fight_actor
+//		}
+//		else
+		if ( ! PROC_RM_ModeLookON())
+			o_use_target = Proc_RM_BestTargetGet( Cf_RM_Fight_Dist_Target_Use, vrai, v_use_offset)
+		else
+		{
+			o_use_target = nobody
+			v_use_sight = @get_Kamera OBJ_SightGet()
+		}
+		switch ( @o_grab_object PROC_WEAPON_TypeGet())
+		{
+			case RM_WEAPON_TYPE_GRENADE :
+				ACT_ActionSet(RM_Act_Use_Grenade)
+				break	
+			case RM_WEAPON_TYPE_GOURDIN :
+				ACT_ActionSet(RM_Act_Use_Matraque)
+				break	
+			case RM_WEAPON_TYPE_GUN :
+				if ( ACT_ActionGet() != RM_Act_Jump_Fly) // && ACT_ActionGet() != RM_Act_Jump_FreeFall)
+				{
+					if ( ACT_ActionGet() != RM_Act_Use_Gun || ANI_CurrentFrameGet(0) > 5)
+					{
+						ACT_ActionSet(RM_Act_Use_Gun + Ci_ActionSet_Force_SameAction+ Ci_ActionSet_Force_FrameZero)
+						Proc_RM_Use_Weapon() 
+					}
+				}
+				else
+					Proc_RM_Use_Weapon() 
+
+				break
+			case RM_WEAPON_TYPE_CLE :				
+				o_client_use = LNK_ClientGet( Ci_LNK_USE, mid_use, vrai, nofunc, nofunc, nofunc)				
+				if ( o_client_use)
+				{
+					// Il y a une utilisation
+					if ( LNK_Use_TypeGet( mid_use) & LNK_KKGrabObject_SubTypeGet( mid_grab_object) )
+					{
+						// Bonne clé
+						ACT_ActionSet(RM_Act_Use_CleMarche)
+					}
+					else
+					{
+						// Mauvaise clé
+						ACT_ActionSet(RM_Act_Use_CleEchec)
+					}
+					LNK_Use_TypeSet( mid_use, LNK_KKGrabObject_SubTypeGet( mid_grab_object))
+				}		
+				else
+				{
+					// Mauvaise clé
+					ACT_ActionSet(RM_Act_Use_CleEchec)
+				}		
+				break	
+		}
+	}
+}
+
+
+// NEXT MOVE IS PUNCH
+procedure_local void MOVE_CHANGE_To_Drop()
+{
+	float		tf_force
+	vector	tv_sens, tv_offset
+	object	to_target
+	
+	if  ( o_grab_object)
+	{
+		if ( f_joy_punch_pressed > 3.0)
+			tf_force = 8.0
+		else if ( f_joy_punch_pressed > 1.0)
+		 	tf_force = 5.0
+		else
+			tf_force = 3.0
+		to_target = Proc_RM_BestTargetGet( 400.0,vrai, tv_offset)
+		if (to_target )
+		{
+			tv_sens = @to_target OBJ_PosGet() +@to_target MATH_VecLocalToGlobal( tv_offset) - OBJ_PosGet()
+			tv_sens = Proc_Vec_HorzNormalise( tv_sens, v_joy_sight_normalized)
+		}
+		else
+			tv_sens = v_joy_sight_normalized
+		@o_grab_object PROC_WEAPON_Projectile( tf_force, tv_sens)	
+		o_grab_object = nobody
+	}
+			
+}
+
+// NEXT MOVE IS PUNCH
+procedure_local void MOVE_CHANGE_To_Punch( int ti_coup)
+{
+	int		ti_mode, ti_freq
+	object	po_target
+	vector	tv_sens
+	
+//	o_fight_actor_best_joy = Proc_RM_BestJoyFightActorGet(Cf_RM_Fight_Dist_Joy, 0.0)
+	SND_RequestPlay(C_SND_COUP)
+
+	i_frappe_ultra_memo =faux		// Necessaire a cause des ultras.
+	{
+		if ( o_fight_actor_best_joy)
+		{
+			tv_sens = @o_fight_actor_best_joy OBJ_PosGet() - OBJ_PosGet()
+			tv_sens = Proc_Vec_HorzNormalise(tv_sens, v_joy_sight_normalized)
+		}
+		else
+			tv_sens = v_joy_sight_normalized
+	
+		if ( o_fight_actor_best_joy && Proc_PNJ_Paf_Jauge_is_Ready( o_fight_actor_best_joy) 
+		&& (ACT_ActionGet() == RM_Act_PunchU3 || ACT_ActionGet() == RM_Act_PunchU3v1 || ACT_ActionGet() == RM_Act_PunchU3v2
+				|| ACT_ActionGet() == RM_Act_PunchUR0 || ACT_ActionGet() == RM_Act_PunchUR2 )
+		&& ACT_ActionGet() != RM_Act_PunchDragon)
+		{
+			// ATTAQUE SPECIALE EN UPERCUT
+			ACT_ActionSet( RM_Act_PunchDragon)	
+			v_frappe_joy = tv_sens
+			MOVE_Set_Mode(C_Move_Punch)
+		}
+		else if ( f_speed_hor > Cf_Speed_For_TGV )//&& Proc_RM_ManaGet() >= Cf_Mana_Cost_DASH)
+		{
+			// ATTAQUE SPECIALE EN SPEED
+			ACT_ActionSet( RM_Act_PunchTGV_Sol)
+			if ( Proc_RM_ManaGet() >= Cf_Mana_Cost_DASH)
+			{
+				Proc_RM_LifeManaSet( -1.0, MATH_FloatMax( 0.0, Proc_RM_ManaGet() - Cf_Mana_Cost_DASH))		
+				i_coup_super = vrai
+			}
+			else
+				i_coup_super = faux
+			v_frappe_joy = tv_sens
+			f_traction_multiplier *= Cf_Coef_Frein_Coup
+			MOVE_Set_Mode(C_Move_Punch)
+
+			f_display_mana = 1.0
+		}
+		else
+		{
+			// CAS GENERAL
+			if ( f_speed_hor > Cf_Speed_For_TGV )	// Pas assrez de mana afficher la jauge
+				f_display_mana = 1.0	
+	
+			// CAS PARTICULIERS
+			if ( ACT_ActionGet() == RM_Act_Punch3) // && o_fight_actor_best_joy)
+				i_coup_action = 11		// Random coups ultra qui s enchaine				
+			else if ( ACT_ActionGet() == RM_Act_PunchR0) // &&  o_fight_actor_best_joy)
+				i_coup_action = 12		// Random coups ultra qui s enchaine
+			else if ( ACT_ActionGet() == RM_Act_PunchR2) // && o_fight_actor_best_joy)
+				i_coup_action = 18		// Random coups ultra qui s enchaine
+			else if ( ACT_ActionGet() == RM_Act_PunchU3)
+				i_coup_action = 16		// Suite de cet ultra
+			else if ( ACT_ActionGet() == RM_Act_PunchU3v1)
+				i_coup_action = 17		// Suite de cet ultra
+			else if ( ACT_ActionGet() == RM_Act_PunchUR0)
+			{
+				// 12 to 15
+				if ( i_coup_action == 15)
+					i_coup_action = 10			
+				else
+					i_coup_action++
+			}
+			else if ( ACT_ActionGet() == RM_Act_PunchUR2)
+			{
+				// 18 to 19
+				if ( i_coup_action == 19)
+					i_coup_action = 7		
+				else
+					i_coup_action++
+			}
+			else if ( i_coup_action == 11 || i_coup_action == 16 || i_coup_action == 17 )
+				i_coup_action = 4		// Reprise des coups normaux apres ULTRA 3
+			else if ( i_coup_action == 12 || i_coup_action == 13 || i_coup_action == 14 || i_coup_action == 15)
+				i_coup_action = 10		// Reprise des coups normaux apres ULTRA R0
+			else if ( i_coup_action == 18 || i_coup_action == 19 )
+				i_coup_action = 7		// Reprise des coups normaux apres ULTRA R2
+//			else if ( ! o_fight_actor_best_joy)
+//				i_coup_action = MATH_Modulo( i_coup_action + 1, 3)	// coups diffirents limités
+			else
+				i_coup_action = MATH_Modulo( i_coup_action + 1, 11)	// Random coups lents
+			
+			switch ( i_coup_action)
+			{
+				case 0 :
+					ACT_ActionSet( ACT_FIGHT_SELECT( RM_Act_Punch0, tv_sens))
+					break
+				case 1 :
+					ACT_ActionSet( ACT_FIGHT_SELECT( RM_Act_Punch1, tv_sens))
+					break
+				case 2 :
+					ACT_ActionSet( ACT_FIGHT_SELECT( RM_Act_Punch2, tv_sens))
+					break
+				case 3 :
+					ACT_ActionSet( ACT_FIGHT_SELECT( RM_Act_Punch3, tv_sens))
+					break
+				case 4 :
+					ACT_ActionSet( ACT_FIGHT_SELECT( RM_Act_Punch4, tv_sens))
+					break
+				case 5 :
+					ACT_ActionSet( ACT_FIGHT_SELECT( RM_Act_PunchR1, tv_sens))	
+					break
+				case 6 :
+					ACT_ActionSet( ACT_FIGHT_SELECT( RM_Act_PunchR2, tv_sens))	
+					break
+				case 7 :
+					ACT_ActionSet( ACT_FIGHT_SELECT( RM_Act_PunchR3, tv_sens))	
+					break
+				case 8 :
+					ACT_ActionSet( ACT_FIGHT_SELECT( RM_Act_PunchR4, tv_sens))	
+					break
+				case 9 :
+					ACT_ActionSet( ACT_FIGHT_SELECT( RM_Act_PunchR0, tv_sens))	
+					break
+				case 10 :
+					ACT_ActionSet( ACT_FIGHT_SELECT( RM_Act_PunchR5, tv_sens))	
+					break
+				case 11 :
+					ACT_ActionSet( ACT_FIGHT_SELECT( RM_Act_PunchU3, tv_sens))	
+					break
+				case 12 :
+				case 13 :
+				case 14 :
+				case 15 :
+					ACT_ActionSet( ACT_FIGHT_SELECT( RM_Act_PunchUR0, tv_sens))	
+					break
+				case 16 :
+					ACT_ActionSet( ACT_FIGHT_SELECT( RM_Act_PunchU3v1, tv_sens))	
+					break
+				case 17 :
+					ACT_ActionSet( ACT_FIGHT_SELECT( RM_Act_PunchU3v2, tv_sens))	
+					break
+				case 18 :
+				case 19 :
+					ACT_ActionSet( ACT_FIGHT_SELECT( RM_Act_PunchUR2, tv_sens))	
+					break
+			}
+			MOVE_Set_Mode(C_Move_Punch)
+		}
+	}	
+
+
+	// ZDE FIGHT
+	switch ( ACT_ActionGet())
+	{
+		case RM_Act_Punch0 :
+		case RM_Act_Punch1 :
+		case RM_Act_Punch2 :
+		case RM_Act_Punch4 :
+		case RM_Act_PunchR0 :
+		case RM_Act_PunchR1 :
+		case RM_Act_PunchR3 :
+		case RM_Act_PunchR4 :
+		case RM_Act_PunchR5 :
+		case RM_Act_PunchDragon :
+			COL_ZoneSizeSet(C_zde_fight,cvector(0.7,0.7,0.7))
+			COL_ZonePosSet(C_zde_fight,cvector(0.0,-0.8,0.8))
+			break
+		case RM_Act_PunchR2 :
+			COL_ZoneSizeSet(C_zde_fight,cvector(0.7,0.7,0.7))
+			COL_ZonePosSet(C_zde_fight,cvector(0.0,-1.2,0.8))		
+			break				
+		
+		case RM_Act_Punch3 :
+			COL_ZoneSizeSet(C_zde_fight,cvector(0.7,0.7,0.7))
+			COL_ZonePosSet(C_zde_fight,cvector(0.0,-1.0,0.8))		
+			break				
+		case RM_Act_PunchInAir :
+		case RM_Act_PunchInAir2 :
+			COL_ZoneSizeSet(C_zde_fight,cvector(0.7,0.7,0.7))
+			COL_ZonePosSet(C_zde_fight,cvector(0.0,-0.8,0.8))		
+			break
+		case RM_Act_PunchFinish :
+			COL_ZoneSizeSet(C_zde_fight,cvector(1.2, 1.2, 1.2))
+			COL_ZonePosSet(C_zde_fight,cvector(0.0,0.0, 0.6))
+			break
+		case RM_Act_PunchTGV_Sol :
+			COL_ZoneSizeSet(C_zde_fight,cvector(1.0, 1.0, 1.0))
+			COL_ZonePosSet(C_zde_fight,cvector(0.0,-0.7,0.8))
+			break
+		default:
+			COL_ZoneSizeSet(C_zde_fight,cvector(0.6,0.6,0.6))
+			COL_ZonePosSet(C_zde_fight,cvector(0.0,-0.7,0.8))
+	}
+
+	DYN_TractionSet(Cv_NullVector)
+}
+
+// NEXT MOVE IS ACCROCH
+procedure_local void MOVE_CHANGE_To_Accroch( )	
+{
+	ACT_ActionSet( RM_Act_Accroch)
+	MOVE_Set_Mode(C_Move_Accroch)
+	COLSET_ON_OFF( C_bit_zdm_pied, OFF)
+	DYN_GravitySet(Cv_NullVector)	
+	DYN_TractionSet(Cv_NullVector)	
+}			
+
+// NEXT MOVE IS ACCROCH
+procedure_local void MOVE_CHANGE_To_Swim( )	
+{
+	MOVE_Set_Mode(C_Move_Swim)
+	DYN_TractionSet(Cv_NullVector)	
+}			
+
+// NEXT MOVE IS ACCROCH
+procedure_local void MOVE_CHANGE_To_Varap( )	
+{
+	v_varap_pos = OBJ_PosGet()
+	v_varap_normal = v_grappin_normale
+	f_varap_time = 0.0
+	ACT_ActionSet( RM_Act_SpiderAtt)
+	GRAPPIN_Return()
+	MOVE_Set_Mode(C_Move_Varap )
+	DYN_TractionSet(Cv_NullVector)	
+	DYN_GravitySet( Cv_NullVector)
+}			
+
+// NEXT MOVE IS RIDE
+procedure_local void MOVE_CHANGE_To_Ride()
+{
+	if( ! o_ride_cb_actor )
+	{
+		// new ride
+		i_ride_actor_ID = LNK_GrabObjectIdGet(mid_ride_LNK_ID)
+		o_ride_cb_actor = o_ride_actor
+		if ( @o_ride_cb_actor OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Anims))
+			AI_CBAdd(o_ride_cb_actor, CallBack_After_Blend, "raym_cb_set_pos")
+		else
+			AI_CBAdd(o_ride_cb_actor, CallBack_After_Rec, "raym_cb_set_pos")
+		
+		f_ride_snap_coef = 0.0
+		if( o_ride_actor == o_grappin_hotspot )
+			GRAPPIN_Return()
+	}
+	MOVE_Set_Mode(C_Move_Rider)
+	COLSET_ON_OFF(C_bit_zdm_pied, faux)
+	DYN_GravitySet(Cv_NullVector)
+	DYN_SpeedSetVector(Cv_NullVector)
+	ACT_ActionSet(RM_Act_Ride)
+}
+
+// NEXT MOVE IS LAUNCH
+procedure_local void MOVE_CHANGE_To_Launch()
+{
+//	if( PROC_RM_ModeLookON() && o_fight_actor)
+//	{
+//		v_grappin_lance_memo_dir  = HotSpot_PosGet( o_fight_actor) - OBJ_PosGet()
+//		MATH_VecSetNormalize( v_grappin_lance_memo_dir)
+//	}
+//	else if( PROC_RM_ModeLookON())
+//		v_grappin_lance_memo_dir  = @get_Kamera OBJ_SightGet()
+//	else
+//		v_grappin_lance_memo_dir  = v_joy_sight_normalized
+//
+	i_grappin_must_be_launched = vrai		// buffer create grappin
+//
+//	// DETECT HOTSPOT
+//	o_grappin_hotspot = GRAPPIN_Check_HotSpot(v_grappin_lance_memo_dir, vrai)
+	ACT_ActionSet(RM_Act_Grappin_Launch)
+	if ( o_grappin_hotspot)
+	{
+		OBJ_RegisterKill(o_grappin_hotspot,&o_grappin_hotspot)
+		v_grappin_lance_memo_dir = HotSpot_PosGet( o_grappin_hotspot) - OBJ_PosGet()
+		MATH_VecSetNormalize( v_grappin_lance_memo_dir)
+	}
+}
+
+// NEXT MOVE IS GRAB
+procedure_local void MOVE_CHANGE_To_Grab()
+{
+	if ( f_speed_hor < 1.0)
+		ACT_ActionSet(RM_Act_Ramasse)
+	else
+		ACT_ActionSet(RM_Act_RamasseMove)
+}
+
+// NEXT MOVE IS DODGE
+procedure_local void MOVE_CHANGE_To_ReceptionBoost()
+{
+	v_esquive_joy = v_joy_sight
+	f_traction_multiplier = MATH_FloatMax( f_traction_multiplier, f_speed_hor)
+	ACT_ActionSet(RM_Act_ReceptionRoulade)
+	MOVE_Set_Mode(C_Move_ReceptionRoulade)	
+}
+
+						
+// NEXT MOVE IS DODGE
+procedure_local void MOVE_CHANGE_To_Dodge()
+{
+	v_esquive_joy = v_joy_sight
+	ACT_ActionSet(RM_Act_Esquive)
+	MOVE_Set_Mode(C_Move_Esquive)	
+}
+
+// NEXT MOVE IS DEFAULT
+procedure_local void MOVE_CHANGE_To_Default()
+{
+	DYN_FrictionVectorSet(Cv_DYN_Friction)
+	MOVE_Set_Mode(0)
+}
+
+// CANCEL DEFAULT MODE
+procedure_local void MOVE_Cancel_Mouvment( )
+{
+	i_move_retourne = vrai
+}
+
+// IS DEFAULT MODE CANCELED
+procedure_local int MOVE_Canceled_Mouvment()
+{
+	return ( i_move_retourne)
+}
+
+// ================================= RESTAURATION  ==============================
+procedure_local void RESTORE_Cancel_Mouvment( )
+{
+	i_move_retourne = faux
+}
+
+// DETECTION COLSET COLLIISION
+procedure_local int COLSET_TryToHit( )
+{
+	object	to_gao
+	if( OBJ_CapaTest(Capa_ZDE_Fight_ON) )
+		return vrai
+	else
+		return faux
+}
+
+
+// DYN ON
+procedure_local void DYN_RM_ON_OFF( int pi_vrai_faux)
+{
+	if ( ! pi_vrai_faux)
+	{
+		DYN_GravitySet(Cv_NullVector)
+		DYN_TractionSet(Cv_NullVector)
+		DYN_SpeedSetVector(Cv_NullVector)
+	}
+	else 
+	{
+		DYN_On()
+		DYN_FlagsSet(DYN_C_BasicForces + DYN_C_OptimizeColDisable + DYN_C_HorizontalGrounds + DYN_C_SlipOnGroundEdge+ DYN_C_VectorFriction + DYN_C_GlobalFriction + DYN_C_SkipFrictionWhenSpeedFromAnim, none)
+		DYN_GravitySet(Cv_DYN_Gravity)
+		DYN_FrictionVectorSet(Cv_DYN_Friction)
+		DYN_MaxStepSet(0.3)
+	}
+}
+
+
+procedure_local void RM_OrientWithJoyMove()
+{
+	vector tv_sight
+	switch ( MOVE_MODE())
+	{
+		case C_Move_Punch :
+			tv_sight = @o_fight_actor_best_joy OBJ_PosGet() - OBJ_PosGet()
+			tv_sight.z = 0.0
+			MATH_VecNormalize(tv_sight)
+			OBJ_BankingGeneralSet( MATH_VecBlendRotate( OBJ_SightGet(), tv_sight, 5.0 * TIME_GetDt()), Cv_VerticalVector)	
+			break
+			break
+		default:
+			OBJ_BankingGeneralSet( MATH_VecBlendRotate( OBJ_SightGet(), v_joy_sight, 5.0 * TIME_GetDt()), Cv_VerticalVector)	
+	}
+}
+
+procedure_local void HELICO_GFX_Destroy()
+{
+	if ( i_helico_gfx != -1 )
+	{
+		GFX_Del(i_helico_gfx)
+		i_helico_gfx = -1
+	}
+}
+procedure_local void HELICO_GFX_Line_Segment( vector tv_pos_start, vector tv_pos_end)
+{
+	if( i_helico_gfx == -1 )
+	{
+		i_helico_gfx = GFX_Add(1)		// Ligne
+		GFX_FlagSet(i_helico_gfx , 0, 1)
+		GFX_FlagSet(i_helico_gfx, 2, 1)
+		GFX_MaterialSet(i_helico_gfx, get_SFX_light_and_smoke, 3)
+		GFX_Setf(i_helico_gfx, 1000, Cf_Grappin_largeur)		// Epaisseur de la ligne
+		GFX_Seti(i_helico_gfx, 1100, 0x802DA8EE)		// Couleur de la ligne
+	}
+	GFX_Setv(i_helico_gfx, 1200, tv_pos_start)		// Coordonnée de la position 3D du début du faisceau	
+	GFX_Setv(i_helico_gfx, 1201, tv_pos_end)		// Coordonnée de la position 3D de la fin du faisceau
+}
+
+
+procedure_local int RM_Choix_Anim_Deplacement( vector	tv_wanted_speed)
+{
+	float	tf_speed_ask, tf_used_speed
+	float	tf_dot
+	int		ti_family, ti_min, ti_i
+	int		ti_freq, ti_report
+	float	tf[10], tf_min
+	int		ti_orient, ti_type
+	vector	tv_ortho
+	ti_type = 0
+	ti_orient = faux
+
+	#define CHOIX_TYPE	\
+	{		\
+		switch (MOVE_MODE())		\
+		{		\
+			case C_Move_Swim :		\
+				ti_type = Ci_Familly_Nage			\
+				break		\
+			default:		\
+				ti_type = Ci_Familly_Normal		\
+				break		\
+		}		\
+	}
+
+	if ( (ACT_CustomBitGet() & Ani_CB_NonInterruptible) && ! ACT_ActionFinished())
+	{
+		i_family = Ci_Familly_Normal
+		
+	if ( ( ACT_ActionGet() == RM_Act_DemiTourG || ACT_ActionGet() == RM_Act_DemiTourD ) && ANI_CurrentFrameGet(0) > 9 && ! MATH_FloatNullEpsilon( f_joy_norm))
+		i_family = Ci_Familly_Normal	// On enchaine
+	else
+		return 1	// ORIENT
+	}
+
+	switch ( ACT_ActionGet())
+	{
+		case RM_Act_Ramasse : 
+		case RM_Act_RamasseMove : 
+			i_family = Ci_Familly_Normal
+			OBJ_BankingGeneralSet( MATH_VecBlendRotate( OBJ_SightGet(), v_joy_sight_normalized, 6.0 * TIME_GetDt()) , Cv_VerticalVector)
+			if( !ACT_ActionFinished())
+				break
+			CHOIX_TYPE
+		default: 
+			CHOIX_TYPE
+	}
+	
+	// BEARK TEST BEARK TEST
+	if ( o_grappin_hotspot && Proc_PNJ_Grappin_GogoMode(o_grappin_hotspot))
+	{
+		i_family = Ci_Familly_Normal
+		ACT_ActionSet( RM_Act_Grappin_Marto)
+		f_grappin_blend_marto = MATH_FloatMin( 1.0, f_grappin_blend_marto +  (5.0 * TIME_GetDt()))
+		ti_type = 0
+		ti_orient = 1
+	}
+	else 
+		f_grappin_blend_marto = 0.0
+
+	if ( ! MATH_VecNullToler(v_force_STREAM,4.0) && ( ! i_grappin_accroche || MATH_FloatNullEpsilon( f_joy_norm)))
+	{
+		i_family = Ci_Familly_Normal
+		if( MATH_VecDotProduct( v_force_STREAM, glob_joyvector_get) >= 0.0)
+		{
+			if ( COL_BestAngleWallGaoGet( v_force_STREAM, Cf_Cos60,&ti_report))
+				ACT_ActionSet( RM_Act_StreamMur) 
+			else
+				ACT_ActionSet( RM_Act_StreamAspire) 
+			OBJ_BankingGeneralSet( MATH_VecBlendRotate( OBJ_SightGet(), -v_force_STREAM, 6.0 * TIME_GetDt()) , Cv_VerticalVector)
+			ti_orient = 0
+		}
+		else
+		{
+			ACT_ActionSet( RM_Act_StreamFreine) 		
+			ti_orient = 1
+		}
+		ti_type = 0
+
+	}
+
+
+	if ( ti_type)
+	{
+		tf_speed_ask = MATH_VecNorm( tv_wanted_speed)
+		if ( MATH_AbsFloat(tf_speed_ask - f_speed_hor) > 1.0)
+			tf_used_speed = tf_speed_ask
+		else
+			tf_used_speed = f_speed_hor
+			
+		if ( ti_type != 0)
+			ti_family= ti_type - 1
+		else
+			ti_family= 0
+		if ( ! MATH_FloatNullEpsilon(f_joy_norm))
+		{
+			i_family = ti_type
+			
+			// 1 - Chois de l anim avec la meilleure orientation
+			if ( i_family != Ci_Familly_Nage && f_speed_hor > 5.0 && MATH_VecDotProduct( v_speed_hor, v_joy_sight) < 0.0 )
+			{	
+				tv_ortho.x = -v_speed_hor.y
+				tv_ortho.y = v_speed_hor.x
+				tv_ortho.z = 0.0
+				if ( MATH_VecDotProduct( v_joy_sight, tv_ortho) > 0.0)
+					ACT_ActionSet( RM_Act_DemiTourG)
+				else
+					ACT_ActionSet( RM_Act_DemiTourD)
+				ti_orient = faux
+			}
+			else
+			{	
+				// 2 - Choix de l anim avec la meilleure Vitesse
+				tf_min = 100.0
+				for ( ti_i = 1; ti_i < i_action_nb_each_family && !MATH_FloatNullEpsilon(af_action_speed[ti_i][ti_family]); ti_i++)
+				{
+					if ( MATH_FloatNullEpsilon(af_action_speed[ti_i][ti_family]))
+					{
+						tf[ti_i] = MATH_AbsFloat(1 - tf_used_speed)
+					}
+					else
+						tf[ti_i] = tf_used_speed / af_action_speed[ti_i][ti_family]
+					if ( MATH_AbsFloat(tf[ti_i] - 1.0) < tf_min)
+					{
+						if ( i_flag_boost || ai_action_index[ti_i][ti_family] != RM_Act_Boost)
+						{
+							tf_min = MATH_AbsFloat(tf[ti_i] - 1.0)
+							ti_min = ti_i
+						}
+					}
+				}
+				ACT_ActionSet( ai_action_index[ti_min][ti_family])
+				if ( ACT_ActionGet() == RM_Act_Run)
+				{
+					tf_min = MATH_FloatLimit( tf[ti_min] , 0.15, 1.1)
+					ti_freq = MATH_FloatLimit( ACT_FrequencyGet(ACT_ActionGet(), ACT_ActionItemGet()) * tf_min, 1.0, 255.0)
+					ANI_FrequencySet(0, ti_freq)
+				}
+				else if ( ACT_ActionGet() != RM_Act_Boost)
+				{
+					tf_min = MATH_FloatLimit( tf[ti_min] , 0.15, 1.6)
+					ti_freq = MATH_FloatLimit( ACT_FrequencyGet(ACT_ActionGet(), ACT_ActionItemGet()) * tf_min, 1.0, 255.0)
+					ANI_FrequencySet(0, ti_freq)
+				}
+				ti_orient = vrai
+			}
+		}
+		else
+		{
+			// ATTENTE OU DERAP
+			if ( i_grappin_accroche)
+			{
+				if( ! MATH_FloatNullToler( f_speed_hor, 1.0))
+				{
+					ACT_ActionSet( RM_Act_Grappin_Tire)
+					Proc_RM_GFX_Smoke()
+				}
+				else
+				{
+					ACT_ActionSet(ai_action_index[0][ti_family])
+					ti_i = 0
+				}							
+			}
+//			else if ( ti_family != (Ci_Familly_Nage - 1) && ! MATH_FloatNullToler( f_speed_hor, 3.0) 
+//			|| ( ACT_ActionGet() == ai_action_index[0][Ci_Familly_Derape - 1] && ! ACT_ActionFinished() ))
+//				ACT_ActionSet(ai_action_index[0][Ci_Familly_Derape - 1])
+//			else
+//				ACT_ActionSet(ai_action_index[0][ti_family])
+
+			else if ( i_family == Ci_Familly_Nage)
+				ACT_ActionSet(ai_action_index[0][ti_family])
+			else if ( i_family == Ci_Familly_Derape)
+			{
+				if ( ACT_ActionFinished())
+				{
+					ACT_ActionSet(ai_action_index[0][ti_family])
+					i_family = Ci_Familly_Normal
+					ti_family = Ci_Familly_Normal - 1
+				}
+				else
+					ti_family = Ci_Familly_Derape -1			
+			}
+			else if (  ! MATH_FloatNullToler( f_speed_hor, 1.0) && ACT_ActionGet() != RM_Act_Wait )
+			{
+				i_family = Ci_Familly_Derape 
+				ti_family = Ci_Familly_Derape -1
+				if ( ACT_ActionGet() == RM_Act_Esquive || ( ACT_ActionGet() == RM_Act_ReceptionRoulade && f_speed_hor > 10.0))
+					ACT_ActionSet(114)
+				else if ( (ACT_ActionGet() == RM_Act_Run && ANI_FrequencyGet(0) > 29 ) || ACT_ActionGet() == RM_Act_Boost || ACT_ActionGet() == RM_Act_ReceptionRoulade)
+				{
+					ACT_ActionSet(ai_action_index[MATH_RandInt(2,4)][ti_family])	
+				}
+				else
+				{
+					ACT_ActionSet(ai_action_index[MATH_RandInt(0,2)][ti_family])	
+				}
+			}
+			else
+			{
+				i_family = ti_family + 1
+				ACT_ActionSet(ai_action_index[0][ti_family])			
+			}
+//			if ( ti_family == 3)
+//				ti_orient = faux			// Derape
+//			else
+				ti_orient = vrai
+		}	
+	}
+	return ti_orient
+}
+
+procedure_local	void Proc_RM_Use_Weapon()
+{
+	vector	pv_sens
+	int			ti_muni
+
+	if ( ACT_ActionGet() != RM_Act_Jump_Fly && ACT_ActionGet() != RM_Act_Jump_FreeFall)
+		f_traction_multiplier *= Cf_Coef_Frein_Use
+	if ( o_use_target)
+	{
+		@o_grab_object PROC_WEAPON_Use( v_use_offset, o_use_target)
+	}
+	else if ( o_grappin_hotspot)
+	{
+		pv_sens = @o_grappin_hotspot OBJ_PosGet() - OBJ_PosGet()
+		MATH_VecSetHorzNormalize( pv_sens)
+		
+		if( PROC_RM_ModeLookON() )
+			@o_grab_object PROC_WEAPON_Use( @get_Kamera OBJ_SightGet(), nobody)
+		else if ( MATH_VecDotProduct( pv_sens, v_joy_sight_normalized) > Cf_Cos30)
+			@o_grab_object PROC_WEAPON_Use( Cv_NullVector, o_grappin_hotspot)
+		else
+			@o_grab_object PROC_WEAPON_Use( v_joy_sight_normalized, nobody)
+	}
+	else if( PROC_RM_ModeLookON() )
+	{
+		pv_sens = @get_Kamera OBJ_SightGet()
+//		if( COL_RayObject_Vector( @get_Kamera OBJ_PosGet(), @get_Kamera OBJ_SightGet() * 30.0, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable))
+//			pv_sens = COL_RayObject_PosGet() - OBJ_PosGet()
+		@o_grab_object PROC_WEAPON_Use( pv_sens, nobody)
+	}
+	else if ( ACT_ActionGet() == RM_Act_Jump_Fly )
+	{
+		v_use_sight += DYN_SpeedGetVector()
+		@o_grab_object PROC_WEAPON_Use( v_use_sight, nobody)	
+	}
+	else
+		@o_grab_object PROC_WEAPON_Use( v_use_sight, nobody)
+}
+
+procedure_local	void Proc_RM_Mode_Weapon()
+{
+	vector	tv_sight 
+	
+	if ( o_grab_cle )
+	{
+		switch( ACT_ActionGet())
+		{
+			case RM_Act_Use_CleMarche :
+				i_choix_anim = faux
+				if (  ACT_ActionFinished())
+				{
+					f_use_time_mash = 0.0
+					f_use_time = 0.0
+//					ACT_ActionSet(RM_Act_Use_CleForce)
+					
+					// MARCHE DIRECT
+					i_use_ON = faux
+					i_choix_anim = vrai
+					LNK_Use_ActivationSet(mid_use)  
+					o_client_use = nobody
+					// On ouvre avec la clé ca a marché
+					@o_grab_cle PROC_WEAPON_Use( Cv_NullVector, nobody)
+					o_grab_cle = nobody
+				}
+				break
+			case  RM_Act_Use_CleEchec :
+				i_choix_anim = faux
+				if ( ACT_ActionFinished())
+				{
+					i_use_ON = faux
+//					LNK_Use_ActivationSet(mid_use)  
+					o_client_use = LNK_ClientGet( Ci_LNK_USE, mid_use, faux, nofunc, nofunc, nofunc)				
+					i_choix_anim = vrai
+				}
+				break
+			case RM_Act_Use_CleForce :
+				i_choix_anim = faux
+				if ( f_use_time_mash > 0.3)
+				{
+					f_use_time_mash = 0.0
+					if ( BUFFER_Buffered(C_Button_C))
+					{
+						BUFFER_DEL_ALL()
+					}
+					else
+					{
+						// PAs reussi le mashing
+						o_client_use = LNK_ClientGet( Ci_LNK_USE, mid_use, faux, nofunc, nofunc, nofunc)				
+						i_use_ON = faux
+						i_choix_anim = vrai
+						ACT_ActionSet(RM_Act_Wait)
+						return
+					}				
+				}
+	
+				f_use_time_mash += TIME_GetDt()
+				f_use_time += TIME_GetDt()
+
+				if ( f_use_time > 2.0)
+				{
+					i_use_ON = faux
+					i_choix_anim = vrai
+					LNK_Use_ActivationSet(mid_use)  
+					o_client_use = nobody
+					// On ouvre avec la clé ca a marché
+					@o_grab_cle PROC_WEAPON_Use( Cv_NullVector, nobody)
+					o_grab_cle = nobody
+				}			
+				break
+		}
+	}
+
+	if ( ! o_grab_object || ! i_use_ON)
+	{
+		i_use_ON = faux
+		return
+	}
+	i_choix_anim = faux
+	switch ( @o_grab_object PROC_WEAPON_TypeGet())
+	{
+		case RM_WEAPON_TYPE_GRENADE :
+			if ( ACT_ActionGet() != RM_Act_Use_Grenade || ACT_ActionFinished())
+			{
+				i_use_ON = faux
+				Proc_RM_Use_Weapon()
+				o_grab_object = nobody
+				
+//				if( o_ride_actor )
+//					MOVE_CHANGE_To_Ride()
+//				else if (  ! i_ground_flag)
+//					MOVE_CHANGE_To_Jump( DYN_SpeedGetVector(), faux, faux)		
+//				else
+//					MOVE_CHANGE_To_Default()			
+			}
+			break
+		case RM_WEAPON_TYPE_GOURDIN :
+			Proc_RM_Use_Weapon()
+			if ( ACT_ActionFinished())
+			{
+				i_use_ON = faux
+			}
+			break
+		case RM_WEAPON_TYPE_GUN :
+			if ( ACT_ActionGet() != RM_Act_Use_Gun || ACT_ActionFinished())
+			{
+				i_use_ON = faux
+//				if( o_ride_actor )
+//					MOVE_CHANGE_To_Ride()
+//				else if (  ! i_ground_flag)
+//					MOVE_CHANGE_To_Jump( DYN_SpeedGetVector(), faux, faux)		
+//				else
+//					MOVE_CHANGE_To_Default()			
+			}
+			break
+		case RM_WEAPON_TYPE_CLE :
+			if ( ACT_ActionFinished())
+			{
+				i_use_ON = faux
+				LNK_Use_ActivationSet(mid_use)  
+				o_client_use = nobody
+				if ( ACT_ActionGet() == RM_Act_Use_CleMarche)
+				{
+					// On lache la clé ca a marché
+					@o_grab_object PROC_WEAPON_Use( Cv_NullVector, nobody)
+					o_grab_object = nobody
+				}
+				
+//				MOVE_CHANGE_To_Default()
+			}				
+			break				
+	}
+}
+
+
+procedure_local	int Proc_RM_I_Can_Swim()
+{
+	if ( MOVE_MODE() == C_Move_Rider)
+		return faux
+	else if ( i_etat_courant == ETAT_RM_paf && i_paf_type & C_PAF_RM_Fort && DYN_SpeedGetVector().z > 0.0)
+		return faux
+	else if  ( ACT_ActionGet() == RM_Act_SwimImpul )
+		return faux
+	else if ( i_grappin_snap_to_dest)
+		return faux
+	else
+		return vrai
+}
+
+
+procedure void RM_Proc_Freq_Change( float pf_coef)
+{
+	float	tf_freq
+	int		ti_freq
+
+	ti_freq = ACT_FrequencyGet(ACT_ActionGet(), ACT_ActionItemGet())
+	ti_freq = MATH_FloatLimit(ti_freq * pf_coef, 1.0, 255.0)
+	ANI_FrequencySet(0, ti_freq)
+}
+
+
+
+procedure_local	int	ARR_RemoveGao( byrefarr object pao_uncol, byref int pi_nb, object po_uncol)
+{
+	int		pi_i
+	int		pi_pos
+	pi_pos = ARR_ObjSearch(&pao_uncol[0] , pi_nb, po_uncol)	
+	if ( pi_pos != -1)
+	{
+		for ( pi_i = pi_pos ; pi_i < ( pi_nb - 1); pi_i++)
+		{
+			pao_uncol[ pi_i] = pao_uncol[ pi_i +1] 
+		}
+		pao_uncol[ pi_nb -1] = nobody
+		pi_nb -- 
+		return pi_nb
+	}
+	else
+		return 0
+}
+
+procedure_local	void RM_Proc_Uncol_Add( object po_uncol)
+{
+	int		pi_pos
+	pi_pos = ARR_ObjSearch(&ao_uncol[0] , i_uncol_nb, po_uncol)
+	if ( pi_pos == -1)
+	{
+		ao_uncol[i_uncol_nb ] = po_uncol
+		i_uncol_nb++
+	}
+}
+
+procedure_local	void 	RM_Proc_Uncol_Check( )
+{
+	int		pi_i
+	int		pi_pos
+	// Clean des acteur qui ne serontplus UNCOL
+ 	for ( pi_i = 0; pi_i < i_uncol_old_nb; pi_i++)
+	{
+		pi_pos = ARR_ObjSearch(&ao_uncol[0] , i_uncol_old_nb, ao_uncol_old[pi_i])	
+		if ( pi_pos == -1)
+		{
+			// on ne demande plus de uncol avec cet acteur : demander a le rétablir
+			pi_pos = pi_pos
+			if ( !OBJ_LIB_Virtual_Collision(OBJ_Me(), ao_uncol_old[pi_i], faux))
+			{
+				// Pas de collision virtuelle, on réactive
+				COL_UnCollidableDel( ao_uncol_old[pi_i])
+				ARR_RemoveGao( &ao_uncol_old[0], i_uncol_old_nb, ao_uncol_old[pi_i])
+			}
+		}
+	}	
+	
+	// Ajout des nouveaux acteurs UNCOL
+	for ( pi_i = 0; pi_i < i_uncol_nb; pi_i++)
+	{
+		pi_pos = ARR_ObjSearch(&ao_uncol_old[0] , i_uncol_old_nb, ao_uncol[pi_i])	
+		if ( pi_pos == -1)
+		{
+			COL_UnCollidableAdd( ao_uncol[pi_i])
+			ao_uncol_old[i_uncol_old_nb] = ao_uncol[pi_i]
+			i_uncol_old_nb++
+		}		
+		ao_uncol[pi_i] = nobody
+	}
+	i_uncol_nb = 0
+}
+
+procedure_local int	GRAPPIN_Detection()
+{
+	if( i_flag_just_grappin || i_flag_just_release_grappin)
+	{
+		if( i_grappin_retour) // || i_flag_just_release_grappin)
+		{
+			if ( o_grappin )
+				i_flag_just_use = faux
+			GRAPPIN_Destroy()
+		}
+		if( ! o_grappin && ! i_flag_just_release_grappin)
+		{
+			MOVE_CHANGE_To_Launch()
+			MOVE_Cancel_Mouvment()
+			return vrai
+		}
+		else
+		{
+			if ( o_grappin )
+			{
+				i_flag_just_jump = faux
+				i_flag_just_use = faux
+			}
+			GRAPPIN_Return()
+		}
+	}
+	return faux
+}
+
+
+procedure_local float Proc_RM_NearGet( object to_gao)
+{
+	if ( AI_IsModel(get_PNJ_Lapin_path))
+		return @to_gao Proc_PNJ_Lapin_NearDistGet()
+	else
+		return 4.0
+}
+
+procedure_local object Proc_RM_CheckRebond( )
+{
+	int				ti_rank
+	int				ti_nmi_nb
+	float			tf_sqr_dist
+	object		tao_nmi[30]
+	object		po_target
+	vector		tv_temp
+	vector		tv_joy
+	messageid	EVT_ID
+	
+
+	// Je choisis le plus proche dans la liste de tous les ennemi (s'il est pas au dela d'une distance max)
+	po_target = nobody
+	if ( i_flag_just_jump)
+	{
+		ti_rank = -1
+		ti_nmi_nb = 0
+		EVT_ID = MSG_GlobalScan( C_EVENT_TYPE_Enemy, &ti_rank)
+		while (MSG_GlobalIsValid(EVT_ID))
+		{
+			po_target =EVENT_PereGet(EVT_ID)
+	
+			if ( po_target  && @po_target   AI_IsModel(get_PNJ_Lapin_path) && @po_target  Proc_Lapin_Trampoline_Enabled())
+			{
+				DBG_RenderCylinder( @po_target  OBJ_PosGet(), cvector( 0.0, 0.0, @po_target  Proc_Lapin_Trampoline_Enabled()), 1.0,0x1F00FF00 )
+				tv_temp = OBJ_PosGet() - @po_target OBJ_PosGet()
+				if ( tv_temp .z < (@po_target Proc_Lapin_Trampoline_Enabled() + 0.3) &&  OBJ_SqrDistHorz(po_target) < 1.0)
+				{
+					return po_target
+				}
+			}
+			EVT_ID = MSG_GlobalScan( C_EVENT_TYPE_Enemy, &ti_rank)
+		}
+		po_target = nobody
+	}
+
+	return po_target
+}
+
+procedure_local vector Proc_RM_Normale()
+{
+
+	int				ti_collision_nb, ti_collision_nb2
+	int				ti_i
+	int				ti_collision_report_ID[50]
+	float			tf_norm
+	float			tf_angle
+	
+	vector		tv_last_pos, tv_sens, tv_norm
+	
+
+	tv_sens = Cv_NullVector
+	ti_collision_nb = 0
+//	ti_collision_nb = COL_ReportsNumberAndRanksGet(&ti_collision_report_ID[0], 50, COL_C_Wall)	
+//	for (ti_i = 0; ti_i < ti_collision_nb; ti_i++)
+//	{
+//		tv_norm = COL_NormalGet(COL_C_ReportIndex + ti_collision_report_ID[ti_i])
+//		tv_sens += tv_norm
+//	}
+
+	ti_collision_nb2 = COL_ReportsNumberAndRanksGet(&ti_collision_report_ID[0], 50, COL_C_Ground)	
+	for (ti_i = 0; ti_i < ti_collision_nb2; ti_i++)
+	{
+		tv_norm = COL_NormalGet(COL_C_ReportIndex + ti_collision_report_ID[ti_i])
+		tv_sens += tv_norm
+	}
+
+	if ( ti_collision_nb + ti_collision_nb2)
+		tv_sens /= (ti_collision_nb+ti_collision_nb2)
+	else if ( i_ground_flag )
+	{
+		if( COL_RayObject_Vector( OBJ_PosGet(), -Cv_VerticalVector, all, OBJ_C_IdentityFlag_AI, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable))
+			tv_sens = COL_RayObject_NormalGet()
+		else	
+			tv_sens = Cv_VerticalVector
+	}
+	else
+			tv_sens = Cv_VerticalVector
+	if ( MATH_VecNullEpsilon( tv_sens))
+		tv_sens  = Cv_VerticalVector
+	return -tv_sens
+}
+
+
+
+//==========={ ADDING A TEXT WITH STR FUNCTION ]=======================
+procedure_local int Proc_RM_DisplayFloat( string ps_text, float pf_value, vector pv_pos, float pf_height, int pi_color )
+{
+#ifndef _FINAL_
+	int ti_texte
+
+	ti_texte = STR_CreateTextGroup( "", pv_pos, 0, 1 )
+
+	STR_AppendText( ti_texte, "\c")
+	STR_AppendHexa( ti_texte, pi_color )
+	STR_AppendText( ti_texte, "\")
+
+	STR_AppendText( ti_texte, "\h" )
+	STR_AppendFloat( ti_texte, pf_height, 2)
+	STR_AppendText( ti_texte, "\")
+	
+//	if ( pi_justify )
+//	{
+//		STR_AppendText( ti_texte, "\j" )
+//		if (pi_justify & 1)
+//			STR_AppendText( ti_texte, "x" )
+//		else if (pi_justify & 2)
+//			STR_AppendText( ti_texte, "r" )
+//		if (pi_justify & 4)
+//			STR_AppendText( ti_texte, "y" )
+//		else if (pi_justify & 8)
+//			STR_AppendText( ti_texte, "b" )
+//		STR_AppendText( ti_texte, "\")
+//	}
+	STR_AppendText( ti_texte,ps_text)
+	STR_AppendFloat( ti_texte, pf_value, 0 )
+	return ti_texte
+#endif //_FINAL_
+
+	return 0
+}
+
+procedure_local vector	Proc_RM_MultiplierCalc()
+{
+	vector	tv_traction_joy 
+	vector	tv_pos
+	
+	if ( MATH_FloatNullEpsilon(f_joy_norm) || MOVE_Canceled_Mouvment())	
+	{
+		f_traction_speed_time = 0.0
+		tv_traction_joy = Cv_NullVector
+		f_traction_multiplier = 0.0 //MATH_FloatBlend( f_traction_multiplier, 0.0, 0.6 * TIME_GetDt())
+	}
+	else
+	{
+		if ( MATH_VecNullEpsilon( v_force_GRAVITY) )
+			v_force_GRAVITY = Proc_RM_Normale()
+		tv_traction_joy = MATH_VecCrossProduct( v_joy_sight , -v_force_GRAVITY)
+		tv_traction_joy = MATH_VecCrossProduct( -v_force_GRAVITY, tv_traction_joy) 
+		MATH_VecSetNorm( tv_traction_joy , f_joy_norm)
+	
+		// LONGER LES MURS
+	//	if ( COL_BestAngleWallGaoGet(OBJ_SightGet(), Cf_Cos30, &ti_report))
+	//	{
+	//		tv_wall_normal = COL_NormalGet( COL_C_ReportIndex  + ti_report)
+	//		tv_wall_ortho = MATH_VecCrossProduct( tv_wall_normal , Cv_VerticalVector)
+	////		tv_wall_ortho.x = -tv_wall_normal.y
+	////		tv_wall_ortho.y = tv_wall_normal.x
+	////		tv_wall_ortho.z = tv_wall_normal.z
+	////		tv_wall_ortho -= tv_wall_normal * 0.2
+	//		MATH_VecSetNormalize(tv_wall_ortho)
+	//		tv_traction_joy = MATH_FloatSign( MATH_VecDotProduct( tv_wall_ortho, tv_traction_joy)) * tv_wall_ortho
+	//	}
+		
+		if ( MOVE_MODE() == C_Move_Jump )
+		{	
+			f_traction_speed_time += TIME_GetDt()
+			//  || ( f_jump_time > 1.0 && MATH_FloatNullEpsilon(f_joy_norm - 1.0))
+			if ( ACT_ActionGet() == RM_Act_JumpPump )
+			{
+				f_traction_multiplier = MATH_FloatMax( f_traction_multiplier , 2.0)
+			}
+			else if ( i_flag_boost || ACT_ActionGet() == RM_Act_Jump_FreeFall ||  ACT_ActionGet() == RM_Act_Jump_Fly || ACT_ActionGet() == RM_Act_Jump_FlyPump || ACT_ActionGet() == RM_Act_Jump_FlyPump2
+			|| ACT_ActionGet() == RM_Act_PunchTGV_Air)//			i_flag_boost || 
+			{
+				if ( i_jump_copter || i_grappin_accroche)
+				{
+					f_traction_multiplier = MATH_FloatBlend( f_traction_multiplier, Cf_Traction_Fly , 1.0 * TIME_GetDt())
+					f_traction_limit = Cf_Traction_Fly
+				}
+				else
+				{
+					f_traction_multiplier = MATH_FloatBlend( f_traction_multiplier, Cf_Traction_Fly_Boost , 1.0 * TIME_GetDt())
+					f_traction_limit = Cf_Traction_Fly_Boost
+				}
+			}
+			else
+				f_traction_multiplier = MATH_FloatMax( Cf_Traction_Fly, MATH_FloatBlend( f_traction_multiplier, Cf_Traction_Fly, 1.0 * TIME_GetDt()))
+//			f_traction_multiplier = MATH_FloatMin( f_traction_limit, f_traction_multiplier)
+		}
+		else if ( MOVE_MODE() == C_Move_Swim)
+		{
+			f_traction_speed_time = 0.0
+			f_traction_multiplier = MATH_FloatBlend( f_traction_multiplier, Cf_Traction_Swim , 1.0 * TIME_GetDt())
+		}
+		else if ( MOVE_MODE() == C_Move_ReceptionRoulade)
+		{
+			v_esquive_joy = MATH_VecInCone( tv_traction_joy, v_esquive_joy, Cf_PiBy8, 0.0) 
+			tv_traction_joy = v_esquive_joy
+			f_traction_speed_time = MATH_FloatMax(f_traction_speed_time + TIME_GetDt(), 2.0)
+			if ( MATH_VecDotProduct( v_speed_hor, v_joy_sight) < 0.0)
+				f_traction_multiplier = MATH_FloatBlend( f_traction_multiplier, Cf_Traction_Walk, 1.0 * TIME_GetDt())
+			else
+				f_traction_multiplier = MATH_FloatBlend( f_traction_multiplier, Cf_Traction_Boost, 0.4 * TIME_GetDt())
+		}
+		else if ( MOVE_MODE() == C_Move_Esquive)
+		{
+			f_traction_speed_time = 2.0
+			if ( ANI_CurrentFrameGet(0) <=1)
+			{
+				tv_traction_joy = v_esquive_joy * Cf_Traction_Dodge 
+				f_traction_multiplier = 1.0
+			}
+			else
+			{
+				if ( MATH_FloatNullEpsilon(glob_joynorm_get))
+				{
+					if ( ANI_CurrentFrameGet(0) <=12)
+					{
+						tv_traction_joy = v_esquive_joy
+						f_traction_multiplier = 2.0
+					}
+					else
+						tv_traction_joy = Cv_NullVector
+				}
+				else
+				{
+					v_esquive_joy = MATH_VecInCone( tv_traction_joy, v_esquive_joy, Cf_PiBy8, 0.0) 
+					tv_traction_joy = v_esquive_joy
+					if ( MATH_VecDotProduct( v_speed_hor, v_joy_sight) < 0.0)
+						f_traction_multiplier = MATH_FloatBlend( f_traction_multiplier, Cf_Traction_Walk, 1.0 * TIME_GetDt())
+					else
+						f_traction_multiplier = MATH_FloatBlend( f_traction_multiplier, Cf_Traction_Boost, 0.4 * TIME_GetDt())
+				}
+			}
+		}
+		else if ( MOVE_MODE() == C_Move_Punch)
+		{
+			if ( ACT_ActionGet() == RM_Act_PunchTGV_Sol)
+			{
+//				f_traction_speed_time += TIME_GetDt()
+//				if ( f_traction_speed_time > 2.0)
+//					f_traction_multiplier = MATH_FloatBlend( f_traction_multiplier, Cf_Traction_Boost, 0.2 * TIME_GetDt())
+//				else
+//					f_traction_multiplier = MATH_FloatBlend( f_traction_multiplier, Cf_Traction_Walk , 2.0 * TIME_GetDt())				
+				f_traction_multiplier = MATH_FloatBlend( f_traction_multiplier, Cf_Traction_Boost, 0.2 * TIME_GetDt())
+				tv_traction_joy =  v_frappe_joy
+			}
+			else if ( ANI_CurrentFrameGet(0) <= 1)
+			{
+				tv_traction_joy = v_frappe_joy
+				f_traction_multiplier = Cf_Traction_Punch
+			}
+			else
+			{
+				tv_traction_joy = Cv_NullVector
+				f_traction_multiplier = 0.0
+			}
+		}
+		else if ( i_etat_courant == ETAT_RM_paf)
+		{
+			// Plus d acceleration
+			if ( f_joy_norm > 0.9 && !o_grappin_hotspot)
+			{
+				f_traction_multiplier = f_traction_multiplier
+			}
+			else
+			{
+				f_traction_multiplier = MATH_FloatBlend( f_traction_multiplier, Cf_Traction_Walk , 2.0 * TIME_GetDt())
+			}
+		}
+		else if ( f_joy_norm > 0.9 && !o_grappin_hotspot)
+		{ 
+			if ( MATH_VecDotProduct( v_joy_sight_normalized, OBJ_SightGet()) > Cf_Cos45)
+			{
+				f_traction_speed_time += TIME_GetDt()
+				if ( f_traction_speed_time > 2.0 )
+					f_traction_multiplier = MATH_FloatBlend( f_traction_multiplier, Cf_Traction_Boost, 0.2 * TIME_GetDt())
+				else
+					f_traction_multiplier = MATH_FloatBlend( f_traction_multiplier, Cf_Traction_Walk , 2.0 * TIME_GetDt())				
+			}
+			else
+			{
+				if ( f_traction_multiplier < (Cf_Traction_Walk + 1.0))
+					f_traction_speed_time = 0.0
+				f_traction_multiplier = MATH_FloatBlend( f_traction_multiplier, Cf_Traction_Walk, 1.0 * TIME_GetDt())
+			}		
+		}
+		else
+		{
+			f_traction_speed_time = 0.0
+			f_traction_multiplier = MATH_FloatBlend( f_traction_multiplier, Cf_Traction_Walk , 2.0 * TIME_GetDt())
+		}
+		
+		f_traction_multiplier = MATH_FloatMin( f_traction_limit, f_traction_multiplier)
+		tv_traction_joy = tv_traction_joy * f_traction_multiplier
+		
+	}
+	if ( @"univ" i_cheat_page == 3 )
+	{
+		tv_pos = VIEW_3dWorldTo2d(0, OBJ_PosGet() - cvector(0.0,0.0, 0.17))
+		DBG_RenderVector( OBJ_PosGet(),tv_traction_joy, color_rouge)
+		Str_DisplayFloatOnce( MATH_VecNorm(tv_traction_joy ), tv_pos)
+		Str_DisplayFloatOnce( f_speed_hor, tv_pos + cvector(0.0,0.05,0.0))
+		Str_DisplayFloatOnce( f_speed_norm, tv_pos + cvector(0.0,0.1,0.0))
+	}
+	return tv_traction_joy
+}
+				
+			
+		
+// WATER DETECTION
+procedure_local void Proc_RM_Water()
+{
+	vector	tv_speed
+	vector	tv_grav
+	
+	if ( !i_cheat_mode && Proc_RM_I_Can_Swim() && IsInWater( OBJ_PosGet(), f_water_Z)) 
+	{
+		// Les pieds sous le niveau de l eau
+		if ( ! i_water_splash)
+		{
+			// Splash la 1ere fois
+			i_water_splash = vrai
+			SND_RequestPlay(C_SND_Plouf)
+			Proc_RM_GFX_Splash( OBJ_PosGet(), 0.0)
+		}
+			
+		if ( i_ground_flag && ( f_water_Z - OBJ_PosGet().z < 0.9))
+		{
+			// on a que les pieds dans l eau
+			i_is_in_water = faux
+			i_walk_in_water = vrai
+			f_water_blend = 0.0
+		}	
+		else
+		{
+			// RM est sous l eau
+			object to_tete
+			to_tete = ANI_CanalObjectGet( Anim_Canal_Bassin)
+
+		 	tv_speed = DYN_SpeedGetVector()
+			if ( !i_is_in_water)
+			{
+				tv_speed.z *= 0.5	// Impact
+				DYN_SpeedSetVector( tv_speed)
+			}
+			i_is_in_water = vrai
+			i_walk_in_water = faux
+			MOVE_CHANGE_To_Swim( )
+			tv_grav = Cv_NullVector
+			if ( f_water_Z - OBJ_PosGet().z > 0.9)
+				tv_grav.z = (f_water_Z - OBJ_PosGet().z) * 10.0
+			else if ( tv_speed.z < -2.0 )
+				tv_grav.z = -10.0
+	
+			v_force_GRAVITY = tv_grav -Cv_DYN_Gravity
+//			DYN_GravitySet(tv_grav)
+		}
+	}
+	else
+	{
+		i_is_in_water = faux
+		i_walk_in_water = faux
+		i_water_splash = faux
+		f_water_blend = 0.0
+	}
+}
+
+// DEATH AFX ======================================================
+procedure_local void Proc_RM_Death()
+{
+	float	tf_game_speed 
+	if ( Proc_RM_LifeGet() <= 0.0)
+	{
+		@get_global Proc_AE_BlackAndWhiteSet(MATH_FloatBlend(@get_global Proc_AE_BlackAndWhiteGet(), 1.0, TIME_GetDt()))
+		@get_global Proc_AE_BrightnessSet(MATH_FloatBlend(@get_global Proc_AE_BrightnessGet(), 0.1, TIME_GetDt()))
+		@get_global Proc_AE_ContrasteSet(MATH_FloatBlend(@get_global Proc_AE_ContrasteGet(), 0.0, TIME_GetDt()))
+		@get_global Proc_AE_ColorBalanceSet(MATH_FloatBlend(@get_global Proc_AE_ColorBalance1Get(), 1.0, TIME_GetDt()), 1.1)
+		@get_global Proc_AE_MotionBlurSet(MATH_FloatBlend(@get_global Proc_AE_MotionBlurGet(), 0.8, TIME_GetDt()))
+		@get_global Proc_AE_RemanenceSet(MATH_FloatBlend(@get_global Proc_AE_RemanenceGet(), 0.0, TIME_GetDt()))
+	
+		tf_game_speed = @get_global f_game_speed
+		tf_game_speed = MATH_FloatBlend(tf_game_speed, 0.15, 3.0 * TIME_GetDt() / @get_global f_old_old_game_speed )
+		@get_global f_game_speed = tf_game_speed
+	}
+}
+
+
+procedure_local void Proc_RM_DisguiseCut( int pi_disguise)
+{
+	i_disguise_cut |= (1 << pi_disguise)
+}
+
+procedure_local int Proc_RM_Is_DisguiseCut( int pi_disguise)
+{
+	return (i_disguise_cut & ( 1 << pi_disguise))
+}
+
+procedure_local void RM_Update_SPEED()
+{
+	vector	tv_speed
+	v_speed_hor = (OBJ_PosGet() - v_speed_pos) / TIME_GetDt()
+	f_speed_norm = MATH_VecNorm(v_speed_hor)
+	v_speed_hor_old = v_speed_hor
+	v_speed_hor.z = 0.0
+	v_speed_pos = OBJ_PosGet()
+	f_speed_hor  = MATH_VecNorm(v_speed_hor)
+	v_speed_engine = DYN_SpeedGetVector()
+	tv_speed = v_speed_engine
+	tv_speed.z = 0.0
+	f_speed_engine_hor = MATH_VecNorm( tv_speed)
+}
+
+
+procedure_local int PROC_RM_Mount_Jump_OFF( object po_ride, int pi_ride)
+{
+	if ( TIME_Get() - f_ride_jump < 0.2)
+	{
+		return vrai
+	}
+	f_ride_jump = TIME_Get()
+//	switch ( pi_ride)
+//	{
+//		case C_ID_Monture_Araignee :
+//		case C_ID_Monture_Quadripode : 
+//			if ( ! @po_ride Proc_PNJ_Snake_No_Col())
+//				return faux
+//			break
+//		case C_ID_Prune : 
+//			if ( ! @po_ride Proc_RM_Prune_Dismount())
+//				return faux
+//			break
+//	}
+	return faux
+}

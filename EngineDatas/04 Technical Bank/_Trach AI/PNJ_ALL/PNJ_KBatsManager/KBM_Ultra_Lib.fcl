@@ -1,0 +1,61 @@
+#include "KBM_defines.var"
+
+procedure_ultra void KBM_BigBat_Mashing(int ti_bigbat_index)
+{
+	if( i_DBG_Manager )
+	{
+		DBG_TraceString("********** Interruption Mashing attack pour")
+		DBG_TraceObject(ao_bigbats[ti_bigbat_index])
+		DBG_TraceEOL()
+	}
+}
+
+procedure_ultra void KBM_BigBat_Paffee(int ti_bigbat_index)
+{
+	i_pafs_count++
+	f_bigbat_reattack_delay = Cf_reattack_delay		// pour la caméra
+	if( i_DBG_Manager )
+	{
+		DBG_TraceString("********** INC NB PAFS : ")
+		DBG_TraceInt(i_pafs_count)
+		DBG_TraceString(" / ")
+		DBG_TraceInt(KBM_PafsNbMaxGet())
+		DBG_TraceEOL()
+	}
+}
+
+procedure_ultra void KBM_BigBat_AttackIncCpt(int ti_bigbat_index)
+{
+	i_passages_count++
+	f_bigbat_reattack_delay = Cf_reattack_delay		// pour la caméra
+	if( i_DBG_Manager )
+	{
+		DBG_TraceString("********** INC NB PASSAGES : ")
+		DBG_TraceInt(i_passages_count)
+		DBG_TraceString(" / ")
+		DBG_TraceInt(KBM_PassagesNbMaxGet())
+		DBG_TraceEOL()
+	}
+}
+
+procedure_ultra void KBM_BigBat_Abort(int ti_bigbat_index)
+{
+	if( i_DBG_Manager )
+	{
+		DBG_TraceString("********** Abort attack pour ")
+		DBG_TraceObject(ao_bigbats[ti_bigbat_index])
+		DBG_TraceEOL()
+	}
+}
+
+procedure_ultra void KBM_GlobalReattackDelaySet(float tf_delay)
+{
+	f_bigbat_reattack_delay = tf_delay
+}
+
+procedure_ultra int KBM_BigBatsCountGet()
+{
+	return i_bigbat_count
+}
+
+

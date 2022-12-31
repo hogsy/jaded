@@ -1,0 +1,219 @@
+procedure_local void PNJ_Worm_IK_Init(int ti_modules_nb)
+{
+	int		ti_i
+	
+	vector	tv_start_pos
+
+	f_IK_bezier_coef = 0.0
+
+	for (ti_i = 0; ti_i < ti_modules_nb; ti_i++)
+		af_IK_bezier_coef[ti_i] = 0.0
+
+	tv_start_pos = @ao_head_bone[ti_modules_nb] OBJ_PosGet()
+	tv_start_pos += @ao_head_bone[ti_modules_nb] OBJ_SightGet() * (i_ik_modules_nb * 0.05)
+
+	v_IK_pos = OBJ_PosGet()
+	v_IK_pos -= tv_start_pos
+
+	v_IK_sight = OBJ_SightGet()
+}
+
+procedure_local void PNJ_Worm_IK(vector tv_head_pos, vector tv_head_sight, float tf_IK_coef)
+{
+	int			ti_i
+	int			ti_k
+	
+	float		tf_borne_inf
+	float		tf_borne_sup
+	float		tf_coef
+	float		tf_totale_norm
+	float		tf_pourcentage
+	float		tf_step
+	float		tf_perfect_length
+	float		tf_sqr_length
+		
+	vector	tv_point_A
+	vector	tv_point_B
+	vector	tv_point_C
+	vector	tv_point_D
+	
+	vector	tv_start_pos
+	vector	tv_dest_pos
+	vector	tv_pseudo_bone
+
+	vector	tv_new_sight
+	vector	tv_new_banking
+
+	// PAS DU TOUT DE PILOTAGE !!!!
+	if (!tf_IK_coef)
+		return
+
+	if (o_test_pilotage_tete)
+	{
+		tv_head_pos = @o_test_pilotage_tete OBJ_PosGet()
+//		tv_head_pos += @o_test_pilotage_tete OBJ_HorizonGet() * (MATH_Sin(TIME_Get() * 4.0))
+	
+		tv_head_sight = @o_test_pilotage_tete OBJ_SightGet()
+//		tv_head_sight = MATH_VecRotate(tv_head_sight, @o_test_pilotage_tete OBJ_BankingGet(), MATH_Sin(TIME_Get() * 8.0) * 0.3)
+	}
+
+	f_head_length = 0.0
+	for (ti_i = 0; ti_i < 4; ti_i++)
+	{
+		ao_head_bone[ti_i] = ANI_CanalObjectGet(Anim_Canal_Tete + ti_i)
+		if (ti_i)
+		{
+			af_bone_length[ti_i - 1] = MATH_VecNorm(@ao_head_bone[ti_i] OBJ_PosGet() - @ao_head_bone[ti_i - 1] OBJ_PosGet())
+			f_head_length += af_bone_length[ti_i - 1]
+		}
+	}
+	
+	tf_step = 1.0 
+	tf_step /= 4
+	
+	tf_perfect_length = f_head_length
+	
+	f_IK_B_weight = tf_perfect_length
+	f_IK_C_weight = tf_perfect_length
+
+	// C'EST PARTI POUR TROUVER UNE BONNE BEZIER ============================================
+	tv_point_A = @ao_head_bone[3] OBJ_PosGet()
+	tv_point_D = tv_head_pos
+	
+	// =============================================================================
+	// On fait une première dichotomie pour trouver en gros une courbe de la même longueur que celle du cou
+	// =============================================================================
+	tf_borne_inf = 0.0
+	tf_borne_sup = 2.0
+	ti_k = 0
+	tf_totale_norm = 0.0
+	while(ti_k < 10)
+	{
+		ti_k++
+	
+		tf_totale_norm	= 0.0
+	
+		tf_pourcentage = tf_borne_inf
+		tf_pourcentage += (tf_borne_sup - tf_borne_inf) * 0.5
+	
+		tv_point_B = tv_point_A
+		tv_point_B += @ao_head_bone[3] OBJ_BankingGet() * (f_IK_B_weight * tf_pourcentage)
+
+		tv_point_C = tv_point_D	
+		tv_point_C -= tv_head_sight * (f_IK_B_weight * tf_pourcentage)
+	
+		tv_start_pos = tv_point_A
+		tv_dest_pos = tv_start_pos
+	
+		for (ti_i = 1; ti_i < 3; ti_i++)
+		{
+			tf_coef = ti_i * tf_step
+			tv_start_pos = tv_dest_pos
+			tv_dest_pos = MATH_LIB_Bezier_Pos_Get(tf_coef, tv_point_A, tv_point_B, tv_point_C, tv_point_D, tv_new_sight)
+			tf_totale_norm += MATH_VecNorm(tv_dest_pos - tv_start_pos)
+		}
+
+		tf_totale_norm	+= MATH_VecNorm(tv_point_D - tv_dest_pos)
+
+		if (MATH_AbsFloat(tf_totale_norm - tf_perfect_length) < 0.02)
+		{
+			// OK, C'est bon
+			ti_k = ti_k
+			break
+		}
+		else if (tf_totale_norm > tf_perfect_length)
+		{
+			tf_borne_sup -= tf_borne_inf
+			tf_borne_sup *= 0.5
+			tf_borne_sup += tf_borne_inf 
+		}
+		else
+		{
+			tf_borne_inf -= tf_borne_sup
+			tf_borne_inf *= 0.5
+			tf_borne_inf += tf_borne_sup
+		}
+	}
+	
+	if (f_IK_bezier_coef)
+		f_IK_bezier_coef = MATH_FloatBlend(f_IK_bezier_coef, tf_pourcentage, 20.0 * TIME_GetDt())
+	else
+		f_IK_bezier_coef = tf_pourcentage
+
+	tf_pourcentage = f_IK_bezier_coef
+	
+	// ON A ENFIN NOS 4 POINTS QUI DETERMINE LA COURBE ==============================================
+	tv_point_B = tv_point_A
+	tv_point_B += @ao_head_bone[3] OBJ_BankingGet() * (f_IK_B_weight * tf_pourcentage)
+
+	tv_point_C = tv_point_D	
+	tv_point_C -= tv_head_sight * (f_IK_C_weight * tf_pourcentage)
+
+#ifndef _FINAL_
+	MATH_LIB_Bezier_Display(100, tv_point_A, tv_point_B, tv_point_C, tv_point_D)
+#endif	
+
+	tf_borne_inf = 0.0
+	tv_start_pos = tv_point_A
+	
+	// =========================================================================
+	// Pour les bones, on va rechercher une position sur la courbe telle que la longueur de l'os soit correcte
+	// =========================================================================
+	for (ti_i = 3; ti_i > 0; ti_i--)
+	{
+		tf_borne_sup = 1.0
+	
+		ti_k = 0
+	
+		tf_sqr_length = af_bone_length[ti_i]
+		tf_sqr_length *= tf_sqr_length
+	
+		while (ti_k < 10)
+		{
+			ti_k++
+	
+			tf_coef = tf_borne_inf 
+			tf_coef += (tf_borne_sup - tf_borne_inf) * 0.5
+		
+			tv_dest_pos = MATH_LIB_Bezier_Pos_Get(tf_coef, tv_point_A, tv_point_B, tv_point_C, tv_point_D, tv_new_sight)
+	
+			tv_pseudo_bone = tv_dest_pos - tv_start_pos
+			tf_totale_norm = MATH_VecDotProduct(tv_pseudo_bone, tv_pseudo_bone)
+	
+			if (MATH_AbsFloat(tf_totale_norm - tf_sqr_length) < 0.001)
+			{
+				// OK, C'est bon
+				break
+			}
+			else if (tf_totale_norm > tf_sqr_length)
+			{
+				tf_borne_sup -= tf_borne_inf
+				tf_borne_sup *= 0.5
+				tf_borne_sup += tf_borne_inf 
+			}
+			else
+			{
+				tf_borne_inf -= tf_borne_sup
+				tf_borne_inf *= 0.5
+				tf_borne_inf += tf_borne_sup
+			}
+		}
+
+//		if (af_IK_bezier_coef[ti_i])
+//			af_IK_bezier_coef[ti_i] = MATH_FloatBlend(af_IK_bezier_coef[ti_i], tf_coef, 20.0 * TIME_GetDt())
+//		else
+//			af_IK_bezier_coef[ti_i] = tf_coef
+//
+//		tf_coef = af_IK_bezier_coef[ti_i]
+//	
+//		tv_dest_pos = MATH_LIB_Bezier_Pos_Get(tf_coef, tv_point_A, tv_point_B, tv_point_C, tv_point_D, tv_new_sight)
+
+		@ao_head_bone[ti_i] OBJ_Rotate_FromToBlend(cvector(0.0, 0.0, 1.0), @ao_head_bone[ti_i] MATH_VecGlobalToLocal(tv_dest_pos - @ao_head_bone[ti_i] OBJ_PosGet()), tf_IK_coef)
+
+		tv_start_pos = tv_dest_pos
+	}
+	
+	@ao_head_bone[0] OBJ_Rotate_FromToBlend(cvector(0.0, 0.0, 1.0), @ao_head_bone[0] MATH_VecGlobalToLocal(tv_head_sight), tf_IK_coef)
+	
+	return
+}

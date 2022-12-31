@@ -1,0 +1,65 @@
+#include "SA_Constant.var"
+
+//------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------
+//procedure_local void SND_TestAreaTrig(_trigger, _prio, _cte_area)\
+//	{\
+//		if(ti_prio > _prio)\
+//		{\
+//			if( AI_TriggerIsValid(_trigger)  &&  call_trigger(_trigger)  )\
+//			{\
+//				ti_prio = _prio\
+//				ti_area = _cte_area\
+//			}\
+//		}\
+//	}
+//
+//------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------
+procedure_local int SND_GetBeginMode(int phase)
+{
+	switch(phase)
+	{
+	case SND_Cte_AmbPhase_Cool :	return i_Cool_Begin
+	case SND_Cte_AmbPhase_Stress : return i_Wait_Begin
+	case SND_Cte_AmbPhase_Fight : return i_Fight_Begin
+	default: return 0
+	}
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------
+procedure_local int SND_GetBeginSound(int phase)
+{
+	switch(phase)
+	{
+	case SND_Cte_AmbPhase_Cool : return i_Cool_BeginSound
+	case SND_Cte_AmbPhase_Stress : return i_Wait_BeginSound
+	case SND_Cte_AmbPhase_Fight : return i_Fight_BeginSound
+	default: return -1
+	}
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------
+procedure_local void SND_StartFade(float argf_final_vol, float argf_time)
+{
+	mf_FadeDate = argf_time
+	if(mf_FadeDate == 0.0) mf_FadeDate = 0.01
+	
+	mf_FadeFinal = argf_final_vol
+	if(mf_FadeFinal < 0.0) mf_FadeFinal = 0.0
+	if(mf_FadeFinal > 1.0) mf_FadeFinal = 1.0
+	
+	mf_FadeFactor = (mf_FadeFinal - mf_CurrVolume) / mf_FadeDate
+	
+	if(mf_FadeFactor > 0)
+		mi_FadeMode = Cte_Fade_In
+	else if(mf_FadeFactor < 0)
+		mi_FadeMode = Cte_Fade_Out
+	else
+		mi_FadeMode = Cte_Fade_Off
+}
+
+
+

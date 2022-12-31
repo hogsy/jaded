@@ -1,0 +1,166 @@
+#include "Box_defines.var"
+
+
+procedure_ultra int Proc_Box_Explosive()
+{
+	if( Explose_Si_Coup )
+		return vrai
+	if( Explose_Si_Collision_Mur )
+		return vrai
+	if( Explose_Si_Trigger )
+		return vrai
+	return faux
+}
+
+
+procedure_ultra vector Proc_Box_HotSpot_PosGet()
+{
+	vector	tv_offset	
+//	return ( OBJ_PosGet() + ( 0.75 * Cf_HotSpot_Box_Largeur * OBJ_BankingGet() * OBJ_ZoomGet() ) )
+	if( Proc_Box_Explosive() )
+		tv_offset = 0.5 * OBJ_BankingGet()
+	else
+		tv_offset = Cv_NullVector
+	return (OBJ_PosGet() +  tv_offset)
+}
+
+procedure_ultra vector Proc_Box_Traction_Add(vector tv_traction)
+{
+	return Cv_NullVector
+}
+
+//procedure_ultra vector Proc_Box_Traction_Add(vector tv_traction)
+//{
+//	float	tf_norm_min
+//	float	tf_mult
+//	float	tf_current_norm
+//	float	tf_needed_norm
+//	vector	tv_pos
+//	vector	tv_add
+//	
+//	if( DYN_Immovable )
+//		return Cv_NullVector
+//	
+//	if( MATH_FloatNullToler(DYN_SpeedGet(), 0.01) )	// à l'arrêt
+//	{
+//		if( tv_traction.z < f_grappin_norm_Zmin_arret )
+//			tv_traction.z = 0.0
+//	}
+//	
+//	tf_mult = 3.0
+//	
+//	if( i_ground_flag )	// au sol
+//	{
+//		tf_current_norm = MATH_VecNorm(tv_traction)
+//		tf_needed_norm = (f_grappin_norm_min_ground * Size)
+//		if( i_grappin_reglage_DISPLAY )
+//		{
+//			tv_pos = OBJ_PosGet() + (0.5 * Size * Cv_VerticalVector)
+//			tv_pos = VIEW_3dWorldTo2d(0, tv_pos)
+//			Str_DisplayTextOnce("norm ", tv_pos)
+//			Str_DisplayFloatOnce(tf_current_norm, tv_pos + cvector(0.07,0,0))
+//			Str_DisplayTextOnce(" / ", tv_pos + cvector(0.12,0,0))
+//			Str_DisplayFloatOnce(tf_needed_norm, tv_pos + cvector(0.16,0,0))
+//		}
+//		if( tf_current_norm < tf_needed_norm )
+//			return Cv_NullVector
+//	}
+//	
+//	tv_add = ( tf_mult * tv_traction )
+//	v_Traction_Exterieure += tv_add
+//	return tv_add
+//}
+
+
+procedure_ultra int Proc_Box_GetRopeTractionCategory(int ti_perso_ID)
+{
+	int		ti_category
+	
+	if( DYN_Immovable )
+		return RopeTractionCategory_Coef_1		// je ne bougerai pas
+	
+	if( EstUneMontureMajestueuse_ID(ti_perso_ID) )
+		return RopeTractionCategory_Coef_0		// je glisse !!!!
+	
+	ti_category = RopeTractionCategory_Coef_1	// par défaut je ne bouge pas
+	if( Size == 1.0 )
+		ti_category = RopeTractionCategory_Coef_0
+	else if( Size == 2.0 )
+		ti_category = RopeTractionCategory_Coef_025
+	else if( Size == 4.0 )
+		ti_category = RopeTractionCategory_Coef_05
+	else if( Size == 8.0 )
+		ti_category = RopeTractionCategory_Coef_075
+	else
+		DBG_Error("c quoi cette size de caisse ???")
+	
+	if( Materiau ) 	// Metal
+		ti_category++
+	
+	if( COL_GMAT_FlagsGet(COL_C_Ground) & Gmat_RM_Ice )
+		ti_category = ti_category - 2
+	
+	if (force_category != -1)
+		ti_category = force_category
+
+	return ti_category
+}
+
+
+procedure_ultra int Proc_Box_Grappin_GogoMode()
+{
+	if( f_joy_cycl_duration > Cf_joy_cycl_duration_gogo )
+		return vrai
+	else
+		return faux
+}
+
+procedure_ultra int Proc_Box_GetRopeDistRenormalisation(int ti_perso_ID)
+{
+//	if( Proc_Box_Grappin_GogoMode() )
+//		return Cf_Corde_distance_GogoMode
+	if( EstUneMontureMajestueuse_ID(ti_perso_ID) )
+		return 15.0
+	if( Size == 1.0 )
+		return 3.0
+	if( Size == 2.0 )
+		return 5.0
+	if( Size == 4.0 )
+		return 7.0
+	if( Size == 8.0 )
+		return 9.0
+	DBG_Error("c quoi cette size de caisse ???")				// cas foireux
+	return 0.0
+}
+
+
+procedure_ultra void Proc_Box_Push(vector tv_traction)
+{
+	vector	tv_add
+	tv_add = tv_traction
+	tv_add /= Size
+	tv_add /= 2.0
+	v_Traction_Exterieure += tv_add
+}
+
+
+procedure_ultra int Proc_Box_TypeMetalGet()
+{
+	return Materiau
+}
+
+
+procedure_ultra int Proc_Box_Explose_Si_Coup()
+{
+	return Explose_Si_Coup
+}
+
+procedure_ultra int Proc_Box_Explose_Activee()
+{
+	return i_explose
+}
+
+procedure_ultra void Proc_Box_Propulse( vector pv_sens)
+{
+	v_Speed_Propulse = pv_sens
+}

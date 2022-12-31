@@ -1,0 +1,2987 @@
+#include "PNJ_Lapin_defines.var"
+Include_UltraProcedure_Header
+
+
+procedure_local object Lapin_BestTargetGet(vector tv_axis_init)
+{
+	int	ti_i, ti_j, ti_nmi_nb, ti_indice
+	float	tf_sqr_dist, pf_dot, tf_dot, pf_dist2
+	object	po_target, po_torse, tao_nmi[20]
+	vector	tav_hotspot_good[20]
+	float		taf_hotspot_good[20]
+	vector	tv_target, tv_sens, tv_pos, tv_axis
+	int			i_DBG_Target
+	
+	i_DBG_Target = vrai
+	pf_dist2 = 900.0
+	ti_nmi_nb = 0
+	tv_axis = tv_axis_init
+	tv_axis.z = 0.0
+	MATH_VecSetNormalize(tv_axis)
+	DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, tv_axis * 10, color_cyan)
+	
+	pf_dot = Cf_Cos40
+	tv_pos = OBJ_PosGet()
+	
+	for ( ti_i = 0; ti_i < @get_list_manager i_target_nb; ti_i++)
+	{
+		po_target = @get_list_manager ao_target[ti_i]
+		tv_target = @get_list_manager av_target[ti_i]
+		tv_target = @po_target OBJ_PosGet() + @po_target MATH_VecLocalToGlobal(tv_target)
+		tv_sens = tv_target - tv_pos
+		tv_sens.z = 0.0		
+		DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, tv_sens, color_bleu)
+		
+		tf_sqr_dist = MATH_VecDotProduct(tv_sens, tv_sens)
+
+		if ( MATH_VecNullEpsilon(tv_sens))
+			tv_sens = tv_axis
+		else 
+			tv_sens = MATH_VecNormalize(tv_sens)
+		if (tf_sqr_dist < pf_dist2)
+		{
+			tf_dot = MATH_VecDotProduct(tv_axis, tv_sens)
+			if( tf_dot > pf_dot)
+			{
+				// Brand new Nmi
+//				tao_nmi[ti_nmi_nb] = po_target
+//				ti_nmi_nb++
+
+				// TRI	
+				tf_dot = tf_dot // - ( MATH_FloatSqrt(tf_sqr_dist) / 50.0)
+
+				if ( !ti_nmi_nb)
+				{
+					ti_j = -1
+				}
+				else
+				{
+					for ( ti_j = ti_nmi_nb - 1; ti_j >= 0; ti_j--)
+					{
+						if( tf_dot  > taf_hotspot_good[ti_j])
+						{
+							tav_hotspot_good[ti_j+1] = tav_hotspot_good[ti_j] 
+							tao_nmi[ti_j+1] = tao_nmi[ti_j]
+							taf_hotspot_good[ti_j+1] = taf_hotspot_good[ti_j]
+						}
+						else
+						{
+							break
+						}
+					}	
+				}
+				tav_hotspot_good[ti_j+1] = tv_target
+				tao_nmi[ti_j+1] = po_target
+				taf_hotspot_good[ti_j+1] = tf_dot
+				ti_nmi_nb++							
+
+				if ( i_DBG_Target)
+				{
+					ti_indice = STR_CreateText("\jxy\", VIEW_3dWorldTo2d(0,tv_target), 0)			
+					DBG_RenderSphere( tv_target, 0.2, 0xDA00FF00)
+					STR_AppendText(ti_indice, "\c0000FF00\")
+					STR_AppendText(ti_indice, "\\h0.08\")
+					STR_AppendFloat(ti_indice, tf_dot, 2)	
+				}
+			}
+			else if ( i_DBG_Target)
+			{ 
+				ti_indice = STR_CreateText("\jxy\", VIEW_3dWorldTo2d(0,tv_target), 0)			
+				DBG_RenderSphere( tv_target, 0.2, 0xDAFF0000)
+				STR_AppendText(ti_indice, "\c00FF0000\")
+				STR_AppendText(ti_indice, "\\h0.08\")
+				STR_AppendFloat(ti_indice, MATH_FloatSqrt(tf_sqr_dist), 2)	
+			}
+			
+		}
+		else if ( i_DBG_Target)
+		{ 
+			ti_indice = STR_CreateText("\jxy\", VIEW_3dWorldTo2d(0,tv_target), 0)			
+			DBG_RenderSphere( tv_target, 0.2, 0xDA0000FF)
+			STR_AppendText(ti_indice, "\c000000FF\")
+			STR_AppendText(ti_indice, "\\h0.08\")
+			STR_AppendFloat(ti_indice, MATH_FloatSqrt(tf_sqr_dist), 2)	
+		}
+	}
+
+	po_target = nobody
+	if ( ti_nmi_nb )
+	{
+		// Fonction de recherche a recoder.
+//		ti_i = ARR_ObjBestSight( &tao_nmi[0], ti_nmi_nb, OBJ_PosGet(), v_joy_sight, 10.0)
+//		po_target = tao_nmi[ti_i]
+		for ( ti_i = 0; ti_i < ti_nmi_nb; ti_i++)
+		{
+		 	DBG_RenderVector(tv_pos , tav_hotspot_good[ti_i] - tv_pos, color_bleu)
+			COL_SpecificCrossableSet( Gmat_RM_Crossable_Default)
+			@tao_nmi[ti_i] OBJ_FlagsControlSet( OBJ_C_ControlFlag_RayInsensitive, none)
+			if (! COL_RayIsCut_Dist( tv_pos , tav_hotspot_good[ti_i] - tv_pos, 1.0 , all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable + COL_C_Ray_use_SpecificCrossableSet))		
+			{
+				return tao_nmi[ti_i]
+			}
+			@tao_nmi[ti_i] OBJ_FlagsControlSet( none, OBJ_C_ControlFlag_RayInsensitive)
+		}
+	}		
+	return nobody
+}
+
+
+procedure_local void Lapin_ACTION_FreqSet(int ti_freq)
+{
+	ANI_FrequencySet(0, ti_freq)
+}
+
+procedure_local void Lapin_ACTION_Set(int ti_action)
+{
+	int		ti_freq
+	int		ti_old_action
+	ti_old_action = ACT_ActionGet()
+	ACT_ActionSet(ti_action)
+	if( ! i_action_keep_freq )
+	{
+		ti_freq = MATH_FloatLimit(ACT_FrequencyGet(ACT_ActionGet(), ACT_ActionItemGet()) * f_action_desynchro, 1.0, 255.0)
+		ANI_FrequencySet(0, ti_freq)
+	}
+	i_action_keep_freq = faux
+}
+
+procedure_local void Lapin_ACTION_RandomFreqSet(float tf_min, float tf_max)
+{
+
+	int		ti_freq
+	ti_freq = MATH_FloatLimit(ACT_FrequencyGet(ACT_ActionGet(), ACT_ActionItemGet()) * MATH_RandFloat( tf_min, tf_max), 1.0, 255.0)
+	Lapin_ACTION_FreqSet( ti_freq)
+}
+
+procedure_local void Lapin_ACTION_Danse_Select()
+{
+	int		ti_action
+	ti_action = ACT_ActionGet()
+	while( ti_action == ACT_ActionGet() )
+	{
+		ti_action = Action_Danse_Marche20 + MATH_RandInt(0,7)
+	}
+	Lapin_ACTION_Set(ti_action)
+}
+
+procedure_local int Lapin_ACTION_Danse_Jingle_Sensitive()
+{
+	switch( Beat_Jingle )
+	{
+		case 1 :
+			if( i_Global_SND_Beat & Ci_SndBeat_Jin1 )
+				return vrai
+			break
+		case 2 :
+			if( i_Global_SND_Beat & Ci_SndBeat_Jin2 )
+				return vrai
+			break
+		case 3 :
+			if( i_Global_SND_Beat & Ci_SndBeat_Jin3 )
+				return vrai
+			break
+		case 4 :
+			if( i_Global_SND_Beat & Ci_SndBeat_Jin4 )
+				return vrai
+			break
+		default:	// tous
+			return vrai
+			break
+	}
+	return faux
+}
+
+//procedure_local float Lapin_Choose_Best_Action(float tf_speed)
+//{
+//	int			ti_i
+//	int			ti_start_action_index
+//	int			ti_last_action_index
+//	int			ti_action
+//	int			ti_freq	
+//
+//	float		tf_coef	
+//	float		tf_action_A_mult_coef
+//	float		tf_action_B_mult_coef
+//
+//		
+//	if (i_flag_blesse)
+//	{
+//		ti_start_action_index = i_blesse_action_first_index
+//		ti_last_action_index = i_blesse_action_last_index
+//	}
+//	else if (i_etat_courant == ETAT_Lapin_SEARCH && i_flag_head_search)
+//	{
+//		ti_start_action_index = i_renifle_action_first_index
+//		ti_last_action_index = i_renifle_action_last_index
+//	}
+//	else
+//	{
+//		ti_start_action_index = i_normal_action_first_index
+//		ti_last_action_index = i_normal_action_last_index
+//	}
+//
+//	if (ti_start_action_index == ti_last_action_index)
+//	{
+//		ti_action = ti_start_action_index
+//	}
+//	else
+//	{
+//		// Plusieurs anim de déplacement
+//		for (ti_i = ti_start_action_index; ti_i < ti_last_action_index; ti_i++)
+//		{
+//			if (tf_speed < af_action_speed[ti_i])
+//			{
+//				ti_action = ti_i
+//				break
+//			}
+//			else if (tf_speed > af_action_speed[ti_i + 1])
+//			{
+//				ti_action = ti_i + 1
+//				continue
+//			}
+//							
+//			tf_action_A_mult_coef = tf_speed / af_action_speed[ti_i]
+//			tf_action_B_mult_coef = af_action_speed[ti_i + 1] / tf_speed
+//
+//			if (tf_action_A_mult_coef < tf_action_B_mult_coef)
+//				ti_action = ti_i
+//			else
+//				ti_action = ti_i + 1	
+//		
+//			break
+//		}
+//	}
+//
+//	Lapin_ActionSet(ai_action_index[ti_action])
+//
+//	tf_coef = tf_speed
+//	tf_coef /= af_action_speed[ti_action]
+//	
+//	return(tf_coef)
+//}
+//
+
+
+
+procedure_local void Lapin_Del_Perceived_Actor(int ti_index)
+{
+	i_perceived_actor_nb--
+
+	// EST-CE QU'ON EFFACE LA CIBLE COURANTE ?
+		
+	if (ti_index == i_perceived_best_actor_index)
+		i_perceived_best_actor_index = -1
+	
+	// EST-CE QU'ON DEPLACE LE MAIN OU LA CIBLE COURANTE ?
+	
+	if (i_perceived_actor_nb == i_perceived_best_actor_index)
+		i_perceived_best_actor_index = ti_index
+
+	// ON ECRASE CET ACTEUR AVEC LE DERNIER
+	ai_perceived_accessible[ti_index] = ai_perceived_accessible[i_perceived_actor_nb]
+//	ai_perceived_hiding_place_index[ti_index] = ai_perceived_hiding_place_index[i_perceived_actor_nb]
+	ai_perceived_ID[ti_index] = ai_perceived_ID[i_perceived_actor_nb]
+	ai_perceived_seen[ti_index] = ai_perceived_seen[i_perceived_actor_nb]
+	ai_perceived_status[ti_index] = ai_perceived_status[i_perceived_actor_nb]
+	ai_perceived_territory[ti_index] = ai_perceived_territory[i_perceived_actor_nb]
+	
+	af_perceived_dist[ti_index] = af_perceived_dist[i_perceived_actor_nb]
+	af_perceived_interest[ti_index] = af_perceived_interest[i_perceived_actor_nb]
+	
+	ao_perceived_actor[ti_index] = ao_perceived_actor[i_perceived_actor_nb]
+	
+	av_perceived_position[ti_index] = av_perceived_position[i_perceived_actor_nb]
+
+	// ON EFFACE LES DONNEES DU DERNIER 
+	ai_perceived_accessible[i_perceived_actor_nb] = faux
+//	ai_perceived_hiding_place_index[i_perceived_actor_nb] = -1
+	ai_perceived_ID[i_perceived_actor_nb] = -1
+	ai_perceived_seen[i_perceived_actor_nb] = faux
+	ai_perceived_status[i_perceived_actor_nb] = 0
+	ai_perceived_territory[i_perceived_actor_nb] = -1
+	
+	af_perceived_dist[i_perceived_actor_nb] = -1.0
+	af_perceived_interest[i_perceived_actor_nb] = -1.0
+	
+	ao_perceived_actor[i_perceived_actor_nb] = nobody
+	
+	av_perceived_position[i_perceived_actor_nb] = Cv_NullVector
+}
+
+procedure_local void Lapin_Check_Perceived_Actor()
+{
+	int		ti_i
+	
+	for (ti_i = 0; ti_i < i_perceived_actor_nb; ti_i++)
+	{
+		if (i_perceived_bit_field & (1 << ti_i))
+			continue
+			
+		Lapin_Del_Perceived_Actor(ti_i)
+	}
+}
+
+
+procedure_local int Lapin_Add_Perceived_Actor(object to_actor, int ti_status, messageid tmid_visibility_ref)
+{
+	int					ti_index
+	int					ti_rank
+	int					ti_world_ID
+	int					ti_ID
+	int					ti_ok
+	int					ti_i
+	
+	object			to_nearest_wp
+	object			to_serveur
+	object			to_gao
+	object			to_bv
+	
+	vector			tv_pos
+
+	message		tmsg_filter
+
+	messageid		tmid_lnk
+	messageid 		tmid_visibility
+	messageid		tmid_interet	
+	
+	tmid_visibility = tmid_visibility_ref
+	
+	ti_ID = EVENT_VisionIDGet(tmid_visibility)
+	switch( ti_ID )
+	{
+		case C_ID_Rayman :
+			break
+		case C_ID_Prune :
+			if( Lapin_Chasseur != Ci_Lapin_Chasseur_Tout && Lapin_Chasseur != Ci_Lapin_Chasseur_Prunes )
+				return -1		// ignoré
+			break
+		case C_ID_Mouton :
+			if( Lapin_Chasseur != Ci_Lapin_Chasseur_Tout && Lapin_Chasseur != Ci_Lapin_Chasseur_Moutons )
+				return -1		// ignoré
+			break
+		case C_ID_Pigeon :
+			if( Lapin_Chasseur != Ci_Lapin_Chasseur_Tout && Lapin_Chasseur != Ci_Lapin_Chasseur_Pigeons )
+				return -1		// ignoré
+			break
+		default:
+			return -1		// les autres types de personnages sont ignorés
+	}
+	
+	// EST-CE QU'ON RAJOUTE CE PERSO A LA LISTE DE CEUX QU'ON VOIT ?
+	ti_index = ARR_ObjSearch(&ao_perceived_actor[0], i_perceived_actor_nb, to_actor)
+	if (ti_index == -1)
+	{
+		// ON RAJOUTE UN ACTEUR
+		if (i_perceived_actor_nb == Ci_perceived_max_nb)
+		{
+			DBG_Error("Trop d'acteur dans cette map")
+			return(-1)
+		}	
+		
+		ti_index = i_perceived_actor_nb
+		i_perceived_actor_nb ++
+	}
+	
+	// SI ON N'A PAS ENCORE MIS LES INFOS A JOUR CETTE TRAME
+	if ( ! (i_perceived_bit_field & (1 << ti_index)) )
+	{
+		i_perceived_bit_field |= 1 << ti_index
+		ao_perceived_actor[ti_index] = to_actor
+
+//		ai_perceived_hiding_place_index[ti_index] = -1
+
+		ai_perceived_seen[ti_index] = faux
+
+		ai_perceived_status[ti_index] &= Ci_PERCEIVED_MEMORY_MASK
+
+		if (MSG_GlobalIsValid(tmid_visibility))
+		{
+			// EST-CE QUE C'EST UN CADAVRE DEJA TRAITE ?
+			ai_perceived_ID[ti_index] = ti_ID
+			
+			ai_perceived_status[ti_index] &= ~(Ci_PERCEIVED_BODY_MEMORISED | Ci_PERCEIVED_BODY_UNREACHABLE)
+			
+			if (ai_perceived_ID[ti_index] == C_ID_Rayman)
+			{
+				if ( @to_actor OBJ_HierarchyGet())
+					af_perceived_interest[ti_index] = 200.0
+				else
+					af_perceived_interest[ti_index] = EVENT_VisionInteretGet(tmid_visibility)
+			}
+			else
+				af_perceived_interest[ti_index] = EVENT_VisionInteretGet(tmid_visibility)
+			
+			if (to_actor == AI_MainActorGet(C_ID_Rayman))
+				av_perceived_position[ti_index] = @to_actor OBJ_PosGet()
+			else
+				av_perceived_position[ti_index] = EVENT_PositionGet(tmid_visibility)
+
+			ai_perceived_territory[ti_index] = Lapin_PROC_GAO_GET_TERRITORY_ID(to_actor)
+
+			tv_pos = av_perceived_position[ti_index]
+			
+//			if( Territory_BV )
+//			{
+//				if( Lapin_Pos_in_Territory_BV(tv_pos) )
+//					ai_perceived_accessible[ti_index] = vrai
+//				else
+//					ai_perceived_accessible[ti_index] = faux
+//			}
+//			else
+//				ai_perceived_accessible[ti_index] = Lapin_PROC_WAY_TERRITORY_ID_ALLOWED( ai_perceived_territory[ti_index])
+			
+			ai_perceived_accessible[ti_index] = Lapin_TERRITORY_ALL_Accessible_Pos(tv_pos)
+		}
+		else
+		{
+			af_perceived_interest[ti_index] = 30.0
+			ai_perceived_ID[ti_index] = -1
+
+			av_perceived_position[ti_index] = @to_actor OBJ_PosGet()
+
+			ai_perceived_territory[ti_index] = GST_EVENT_Territory_Get(av_perceived_position[ti_index])
+
+			tv_pos = av_perceived_position[ti_index]
+			
+//			if( Territory_BV )
+//			{
+//				if( Lapin_Pos_in_Territory_BV(tv_pos) )
+//					ai_perceived_accessible[ti_index] = vrai
+//				else
+//					ai_perceived_accessible[ti_index] = faux
+//			}
+//			else
+//				ai_perceived_accessible[ti_index] = Lapin_PROC_WAY_TERRITORY_ID_ALLOWED( ai_perceived_territory[ti_index])
+			
+			ai_perceived_accessible[ti_index] = Lapin_TERRITORY_ALL_Accessible_Pos(tv_pos)
+		}
+		
+		af_perceived_dist[ti_index] = MATH_VecNorm(av_perceived_position[ti_index] - OBJ_PosGet())
+		
+		if ( ! (ai_perceived_status[ti_index]	& Ci_PERCEIVED_IS_DEAD) )
+		{
+			// DEJA ATTAQUE ??? ==========================================================================
+			if( to_actor && ai_perceived_accessible[ti_index] ) // Lapin_TERRITORY_ALL_Accessible_Pos(@to_actor OBJ_PosGet()) )
+			{
+				// si cette target est accessible
+				ai_perceived_targeted[ti_index] = 0
+				ti_rank = -1
+				MSG_SetNull(tmsg_filter)
+				tmsg_filter.msg_gao1 = to_actor
+				tmsg_filter.msg_int2 = C_EVENT_InteretStatusLock
+				tmsg_filter.msg_int3 = i_Perso_ID
+				
+				for(	tmid_interet = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tmsg_filter);
+						MSG_GlobalIsValid(tmid_interet);
+						tmid_interet = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tmsg_filter) )
+				{
+					if( ! EVENT_InteretTargetAlreadySeen(tmid_interet) )
+						continue
+					
+					to_gao = EVENT_PereGet(tmid_interet)
+					
+					if( to_gao == OBJ_Me() )
+						continue
+					
+					if( OBJ_SqrDist(to_gao) > ( Atk_Meute_Dist_Detection * Atk_Meute_Dist_Detection ) )
+						continue
+	
+					if( ! Lapin_TERRITORY_ALL_Accessible_Pos(@to_gao OBJ_PosGet()) )
+						continue		// quelqu'un hors de mon territoire => je n'en tiens pas compte
+						
+	//				if( Territory_BV && ! Lapin_Pos_in_Territory_BV(@to_actor OBJ_PosGet()) )
+	//					continue		// pas sur mon territoire
+	//				
+	//				if( Territory_Colmap && ! Lapin_PROC_WAY_TERRITORY_ID_ALLOWED(Lapin_PROC_GAO_GET_TERRITORY_ID(to_actor)) )
+	//					continue		// pas sur mon territoire
+	//				
+	//				if( Territory_Path )
+	//				{
+	//					ti_ok = faux
+	//					
+	//					// LISTER LES BV VOISINES POUR FAIRE DU TEST PIVOT/BV AU LIEU DE FAIRE DU A*
+	//					i_path_voisin_wp_nb = 50		// taille
+	//					PATH_LIB_Fill_Wp_Array(o_path_current_wp, 
+	//														Territory_Path, 
+	//														&ao_path_net_wp[0],				// LES WPS DU RESEAU
+	//														i_path_net_wp_nb,					// LE NOMBRE DE POINTS DU RESEAU
+	//														&ao_path_voisin_wp[0],
+	//														i_path_voisin_wp_nb,
+	//														3)
+	//					
+	//					// TEST PIVOT/BV AU LIEU DU A* !!!! =)
+	//					for( ti_i = 0; ti_i < i_path_voisin_wp_nb; ti_i++ )
+	//					{
+	//						to_bv = ao_path_voisin_wp[ti_i]
+	//						if( @to_actor COL_Pivot_BVCollide(to_bv) )
+	//						{
+	//							ti_ok = vrai		// dans une BV voisine avec accès
+	//							break
+	//						}
+	//					}
+	//					
+	//					if( ! ti_ok )
+	//						continue
+	//				}
+					
+					ai_perceived_status[ti_index] |= Ci_PERCEIVED_ATTACKED
+					ai_perceived_targeted[ti_index] ++
+				}
+			}
+		}
+	}
+
+	ai_perceived_status[ti_index] |= ti_status
+
+	return(ti_index)
+}
+
+procedure_local void Lapin_Del_Interest()
+{
+	if (MSG_GlobalIsValid(mid_best_interet))
+	{
+		MSG_GlobalDelete(mid_best_interet, C_EVENT_DEL)
+		MSG_GlobalSetInvalid(mid_best_interet)
+	}
+}
+
+// param in = i_interet_force_identification_gao si on veut valider la vision et l'accessibilité
+procedure_local int Lapin_Best_Interet_Update(int ti_index)
+{
+	int				ti_flag_update_best_interet	
+	int				ti_flag_update_pos
+	int				ti_flag_update_seen_time
+
+	object		to_identified_actor
+	object		to_last_best_interest_target
+	
+	vector		tv_temp
+	
+	if (ti_index == -1)
+		return(-1)
+
+	i_perceived_best_actor_index = ti_index
+
+	ti_flag_update_pos = faux
+	ti_flag_update_seen_time = faux
+	to_identified_actor = nobody
+	
+	if( i_interet_force_identification_gao )
+	{
+		// force gao identification !!!
+		i_interet_force_identification_gao = faux
+		
+		ti_flag_update_seen_time = vrai
+		ti_flag_update_pos = vrai
+		to_identified_actor = ao_perceived_actor[ti_index]
+		ai_perceived_status[ti_index] |= Ci_PERCEIVED_IDENTIFIED
+	}
+	else if ( ai_perceived_seen[ti_index] || (ai_perceived_status[ti_index] & (Ci_PERCEIVED_ATTACKED | Ci_PERCEIVED_IS_DEAD)) )
+	{
+		ti_flag_update_seen_time = vrai
+		ti_flag_update_pos = vrai
+		to_identified_actor = ao_perceived_actor[ti_index]
+	}
+	else if (ai_perceived_status[ti_index] & Ci_PERCEIVED_PAF )
+	{
+		tv_temp = av_perceived_position[ti_index] - OBJ_PosGet()
+		if( MATH_VecDotProduct(tv_temp, tv_temp) < 15*15 )
+		{
+			ti_flag_update_pos = vrai
+			ti_flag_update_seen_time = vrai
+			to_identified_actor = ao_perceived_actor[ti_index]
+		}
+		else
+			ti_flag_update_pos = vrai		// je ne le vois pas
+	}
+	else if (ai_perceived_status[ti_index] & Ci_PERCEIVED_HEARD )
+	{
+		ti_flag_update_pos = vrai
+		switch(i_etat_courant)
+		{
+			case ETAT_Lapin_FIGHT :
+			case ETAT_Lapin_MELEE :
+			case ETAT_Lapin_USE_ITEM :
+			case ETAT_Lapin_APPARITION :
+			case ETAT_Lapin_BULLRUSH :
+			case ETAT_Lapin_COUNTER :
+			case ETAT_Lapin_DODGE :
+			case ETAT_Lapin_GRAPPIN_CONTROL :
+			case ETAT_Lapin_PROTECT :
+			case ETAT_Lapin_TAUPE :
+				to_identified_actor = ao_perceived_actor[ti_index]
+				break
+		}
+	}
+	else if (ai_perceived_status[ti_index] & Ci_PERCEIVED_BODY_MEMORISED)
+	{
+		// Je me souviens de ce machin
+		ti_flag_update_pos = vrai
+		to_identified_actor = ao_perceived_actor[ti_index]
+	}
+	
+			
+	if ( ! ti_flag_update_pos && MSG_GlobalIsValid(mid_best_interet) && EVENT_TargetGet(mid_best_interet) != ao_perceived_actor[ti_index] )
+		ti_flag_update_pos = vrai
+//		DBG_Error("On va droit au bug là !!!")
+
+	if (ti_flag_update_pos)
+	{
+		if (! MSG_GlobalIsValid(mid_best_interet))
+		{
+			// JE N'AVAIS PAS D'INTERET
+	
+//			if (ti_index == i_perceived_main_actor_index)
+//				i_SND_flag_attaque_hors_champs = vrai
+//			else
+//				i_SND_flag_attaque_hors_champs = faux
+		
+			mid_best_interet = EVENT_AddEventInteret(OBJ_Me(), Cf_Infinit, af_perceived_interest[ti_index], av_perceived_position[ti_index], to_identified_actor)
+			EVENT_InteretVisionIDSet(mid_best_interet, i_Perso_ID)
+
+		}	
+		else
+		{
+			to_last_best_interest_target = EVENT_InteretTargetGet(mid_best_interet)
+
+			 if (ao_perceived_actor[ti_index] != to_last_best_interest_target)
+			{
+				// INTERET DIFFERENT DE L'ANCIEN
+//				if (ti_index == i_perceived_main_actor_index)
+//					i_SND_flag_attaque_hors_champs = vrai
+//				else
+//					i_SND_flag_attaque_hors_champs = faux
+
+				EVENT_Delete(mid_best_interet, C_EVENT_DEL)
+				mid_best_interet = EVENT_AddEventInteret(OBJ_Me(), Cf_Infinit, af_perceived_interest[ti_index], av_perceived_position[ti_index], to_identified_actor)
+				EVENT_InteretVisionIDSet(mid_best_interet, i_Perso_ID)
+
+			}
+		}
+		
+		EVENT_InteretPositionSet(mid_best_interet, av_perceived_position[ti_index])
+		
+		// STILL VISIBLE ???
+//		if( ti_flag_update_seen_time )
+//		{
+//			if( ! Lapin_TERRITORY_BV_and_COLMAP_ValidPos(av_perceived_position[ti_index]) )
+//			{
+//				if( ! Territory_Path )
+//					ti_flag_update_seen_time = faux
+//			}
+//		}
+	}
+	
+	if (ti_flag_update_seen_time)
+	{
+		EVENT_InteretTargetSet(mid_best_interet, to_identified_actor)
+		EVENT_InteretSeenTimeSet(mid_best_interet, TIME_Get())
+	}
+
+	if (ai_perceived_status[ti_index] & Ci_PERCEIVED_IS_DEAD)
+		ai_perceived_status[ti_index] |= Ci_PERCEIVED_BODY_MEMORISED
+//		PNJ_Raptor_Memorise_Body(ao_perceived_actor[ti_index])
+
+	i_target_territory_ID = ai_perceived_territory[ti_index]
+
+	return(ti_index)
+}
+
+
+
+//===================================================================================
+// Retourne un vecteur de déplacement (avance, recule ou ne bouge pas)
+// Si on veut tester avec les occluders, il faut mettre ti_testOccluders a vrai, alors
+// le déplacement retourné sera sera le vecteur différence au premier obstacle
+//===================================================================================
+procedure_local vector Lapin_Compute_Deplacement(vector tv_dest_pos, float tf_dist_min_sqr, float tf_dist_max_sqr, int ti_testOccluders, byref int ti_report, byref object to_cache)
+{
+	vector				tv_offset
+	vector				tv_depl
+	int						ti_occluderResult
+	int						ti_i
+	int						ti_pathToTargetIsOccluded
+	vector				tv_occluderNextPos
+	object				to_occluderJump
+	object				tao_fake[50]
+	float					taf_fake[50]
+	float 					tf_orbitOffset
+	float					tf_sqrDistToActor
+	object				to_blockingWall
+	vector				tv_sens_depart
+	int						ti_occluder_add
+	
+	tv_offset = tv_dest_pos - OBJ_PosGet()
+	ti_pathToTargetIsOccluded = faux
+	ti_report = 0
+
+	if (ti_testOccluders)
+	{
+		// LAPIN OCCLUSION
+		ti_occluder_add = 0
+//		for( ti_i = 0; ti_i < i_budy_nb; ti_i++)
+//		{
+//			taf_fake[ti_i] = @ao_budy[ti_i] OBJ_ZoomGet()
+//			tao_fake[ti_i] = ao_budy[ti_i]
+//			ti_occluder_add++
+//		}
+		DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, tv_dest_pos - OBJ_PosGet(), color_vert)
+		
+//		if( i_etat_courant == ETAT_Lapin_CACHE )
+//			tv_sens_depart = OBJ_PosGet() - @o_cache_actor OBJ_PosGet()
+//		else 
+		if( ! MATH_VecNullToler(v_force_move_occluder_sight, 0.01) )
+		{
+			DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, v_force_move_occluder_sight, color_rouge)
+			tv_sens_depart = MATH_VecBlendRotate(OBJ_SightGet(), v_force_move_occluder_sight, 0.75)
+		}
+		else
+			tv_sens_depart = OBJ_SightGet()
+		
+		// TEST DES OCCLUDERS !!! -------------------------------------------------------------------------------------------------------
+		if( o_RideMount_Actor && i_RideMount_ID == C_ID_Scooter )
+		{
+			ti_occluderResult = 0		// soucoupe = pas d'occluder
+		}
+		else if( o_Commander_cur ) // && i_etat_courant == ETAT_Lapin_ATTENTE )
+		{
+			ti_occluderResult = 0		// attente suivi de commander = pas d'occluder
+		}
+		else
+		{
+			ti_occluderResult = WAY_LIB_Test_Occluder( 	OBJ_PosGet() + Cv_VerticalVector, 
+																		tv_sens_depart, 
+																		Lapin_MOVE_Offset_Get(),
+																		tv_dest_pos, 
+																		i_my_territory_ID, //-1,	// territory not used for now
+																		tv_occluderNextPos,
+																		to_occluderJump, 
+//																		&tao_fake[0],
+																		&ao_Territory_BV_Occluders[0],
+																		&taf_fake[0],
+//																		ti_occluder_add,
+																		i_Territory_BV_Occluders_nb,
+																		0)
+		}
+		
+		ti_report = ti_occluderResult		// BYREF !!!
+		
+		i_cache_inside_occluder = faux
+		if ( i_cache_global_index != -1 && ti_occluderResult & Ci_OCCLUDER_START_POS_IS_IN_OCCLUDER && i_etat_courant == ETAT_Lapin_CACHE && i_cache_global_index == @get_global WAY_LIB_used_occluder_index)
+		{
+			// On est dans l'occluder derrière lequel on cherche à se cacher	
+			i_cache_inside_occluder = vrai
+		}
+		
+		if (ti_occluderResult != 0)
+		{
+			tv_depl = tv_occluderNextPos - OBJ_PosGet()
+			ti_pathToTargetIsOccluded= vrai
+			DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, tv_depl, color_rouge)
+		}
+	}
+
+	if ( ! ti_pathToTargetIsOccluded)
+	{
+		tv_depl = tv_dest_pos - OBJ_PosGet()
+	}
+
+	// keep it in 2d	
+	tv_depl.z = 0.0
+
+	return	 tv_depl
+}
+
+procedure_local void Lapin_BV_Init()
+{
+//BV_MinSet(cvector(-1.0, -1.0, -0.25) * OBJ_ZoomGet())
+//BV_MaxSet(cvector(1.0, 1.0, 1.75) * OBJ_ZoomGet())
+	BV_MinSet(cvector(-0.6, -0.6, -0.6) * OBJ_ZoomGet())
+	BV_MaxSet(cvector(0.6, 0.6, 1.7) * OBJ_ZoomGet())
+}	
+
+procedure_local void Lapin_Set_OBBOX( float tf_size_coef)
+{
+	object	to_bone
+	return
+	to_bone = ANI_CanalObjectGet(Anim_Canal_Machoire)
+	@to_bone BV_OBBoxMinSet(cvector(-0.15 * tf_size_coef, -0.1 * tf_size_coef, -0.1))
+	@to_bone BV_OBBoxMaxSet(cvector(0.15 * tf_size_coef, 0.1 * tf_size_coef, 0.8))
+	
+	// TETE A BASSIN
+	@o_head_bone BV_OBBoxMinSet(cvector(-0.15 * tf_size_coef, -0.3 * tf_size_coef, -0.1))
+	@o_head_bone BV_OBBoxMaxSet(cvector(0.15 * tf_size_coef, 0.2 * tf_size_coef, 0.8))
+		
+	to_bone = ANI_CanalObjectGet(4)
+	@to_bone BV_OBBoxMinSet(cvector(-0.5 * tf_size_coef, -0.4 * tf_size_coef, -0.1))
+	@to_bone BV_OBBoxMaxSet(cvector(0.5 * tf_size_coef, 0.3 * tf_size_coef, 0.8))
+
+	@ao_IK_bones[Ci_IK_pied_gauche][0] BV_OBBoxMinSet(cvector(-0.2 * tf_size_coef, -0.25 * tf_size_coef, 0.0))
+	@ao_IK_bones[Ci_IK_pied_gauche][0] BV_OBBoxMaxSet(cvector(0.2 * tf_size_coef, 0.25 * tf_size_coef, 1.0))
+	
+	@ao_IK_bones[Ci_IK_pied_gauche][1] BV_OBBoxMinSet(cvector(-0.1 * tf_size_coef, -0.2 * tf_size_coef, -0.1))
+	@ao_IK_bones[Ci_IK_pied_gauche][1] BV_OBBoxMaxSet(cvector(0.1 * tf_size_coef, 0.1 * tf_size_coef, 0.95))
+	
+	@ao_IK_bones[Ci_IK_pied_gauche][2] BV_OBBoxMinSet(cvector(-0.1 * tf_size_coef, -0.1 * tf_size_coef, -0.05))
+	@ao_IK_bones[Ci_IK_pied_gauche][2] BV_OBBoxMaxSet(cvector(0.1 * tf_size_coef, 0.1 * tf_size_coef, 0.6))
+	
+	@ao_IK_bones[Ci_IK_pied_gauche][3] BV_OBBoxMinSet(cvector(-0.2 * tf_size_coef, -0.1 * tf_size_coef, -0.05))
+	@ao_IK_bones[Ci_IK_pied_gauche][3] BV_OBBoxMaxSet(cvector(0.3 * tf_size_coef, 0.1 * tf_size_coef, 0.7))
+	
+	@ao_IK_bones[Ci_IK_pied_droit][0] BV_OBBoxMinSet(cvector(-0.2 * tf_size_coef, -0.25 * tf_size_coef, 0.0))
+	@ao_IK_bones[Ci_IK_pied_droit][0] BV_OBBoxMaxSet(cvector(0.2 * tf_size_coef, 0.25 * tf_size_coef, 1.0))
+	
+	@ao_IK_bones[Ci_IK_pied_droit][1] BV_OBBoxMinSet(cvector(-0.1 * tf_size_coef, -0.2 * tf_size_coef, -0.1))
+	@ao_IK_bones[Ci_IK_pied_droit][1] BV_OBBoxMaxSet(cvector(0.1 * tf_size_coef, 0.1 * tf_size_coef, 0.95))
+	
+	@ao_IK_bones[Ci_IK_pied_droit][2] BV_OBBoxMinSet(cvector(-0.1 * tf_size_coef, -0.1 * tf_size_coef, -0.05))
+	@ao_IK_bones[Ci_IK_pied_droit][2] BV_OBBoxMaxSet(cvector(0.1 * tf_size_coef, 0.1 * tf_size_coef, 0.6))
+	
+	@ao_IK_bones[Ci_IK_pied_droit][3] BV_OBBoxMinSet(cvector(-0.3 * tf_size_coef, -0.1 * tf_size_coef, -0.05))
+	@ao_IK_bones[Ci_IK_pied_droit][3] BV_OBBoxMaxSet(cvector(0.2 * tf_size_coef, 0.1 * tf_size_coef, 0.7))
+			
+	to_bone = ANI_CanalObjectGet(Anim_Canal_EpauleDroite)
+	@to_bone BV_OBBoxMinSet(cvector(-0.1 * tf_size_coef, -0.1 * tf_size_coef, -0.1))
+	@to_bone BV_OBBoxMaxSet(cvector(0.1 * tf_size_coef, 0.1 * tf_size_coef, 0.4))
+	
+	to_bone = ANI_CanalObjectGet(Anim_Canal_BrasDroit)
+	@to_bone BV_OBBoxMinSet(cvector(-0.05 * tf_size_coef, -0.05 * tf_size_coef, -0.1))
+	@to_bone BV_OBBoxMaxSet(cvector(0.05 * tf_size_coef, 0.05 * tf_size_coef, 0.5))
+	
+	to_bone = ANI_CanalObjectGet(Anim_Canal_AvantBrasDroit)
+	@to_bone BV_OBBoxMinSet(cvector(-0.05 * tf_size_coef, -0.05 * tf_size_coef, -0.05))
+	@to_bone BV_OBBoxMaxSet(cvector(0.05 * tf_size_coef, 0.05 * tf_size_coef, 0.2))
+	
+	to_bone = ANI_CanalObjectGet(Anim_Canal_MainDroite)
+	@to_bone BV_OBBoxMinSet(cvector(-0.15 * tf_size_coef, -0.05 * tf_size_coef, -0.05))
+	@to_bone BV_OBBoxMaxSet(cvector(0.15 * tf_size_coef, 0.05 * tf_size_coef, 0.5))
+	
+	to_bone = ANI_CanalObjectGet(Anim_Canal_DoigtD1)
+	if (to_bone)
+		@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+	
+	to_bone = ANI_CanalObjectGet(Anim_Canal_PouceD1)
+	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+	
+	to_bone = ANI_CanalObjectGet(Anim_Canal_EpauleGauche)
+	@to_bone BV_OBBoxMinSet(cvector(-0.1 * tf_size_coef, -0.1 * tf_size_coef, -0.1))
+	@to_bone BV_OBBoxMaxSet(cvector(0.1 * tf_size_coef, 0.1 * tf_size_coef, 0.4))
+	
+	to_bone = ANI_CanalObjectGet(Anim_Canal_BrasGauche)
+	@to_bone BV_OBBoxMinSet(cvector(-0.05 * tf_size_coef, -0.05 * tf_size_coef, -0.1))
+	@to_bone BV_OBBoxMaxSet(cvector(0.05 * tf_size_coef, 0.05 * tf_size_coef, 0.5))
+	
+	to_bone = ANI_CanalObjectGet(Anim_Canal_AvantBrasGauche)
+	@to_bone BV_OBBoxMinSet(cvector(-0.05 * tf_size_coef, -0.05 * tf_size_coef, -0.05))
+	@to_bone BV_OBBoxMaxSet(cvector(0.05 * tf_size_coef, 0.05 * tf_size_coef, 0.2))
+	
+	to_bone = ANI_CanalObjectGet(Anim_Canal_MainGauche)
+	@to_bone BV_OBBoxMinSet(cvector(-0.15 * tf_size_coef, -0.05 * tf_size_coef, -0.05))
+	@to_bone BV_OBBoxMaxSet(cvector(0.15 * tf_size_coef, 0.05 * tf_size_coef, 0.5))
+	
+	to_bone = ANI_CanalObjectGet(Anim_Canal_DoigtG1)
+	if (to_bone)
+		@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+	
+	to_bone = ANI_CanalObjectGet(Anim_Canal_PouceG1)
+	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+
+}
+
+
+//procedure float VIEW_LIB_Pourcent_On_Screen(vector tv_pos, float tf_size, float tf_X_size, float tf_Y_size, byref vector tv_2D_center_pos, int ti_draw_debug_info)
+//{
+//	int			ti_i	
+//	int			ti_flag_zone_in_zone
+//
+//	float		tf_X_min
+//	float		tf_X_max
+//	float		tf_Y_min
+//	float		tf_Y_max
+//
+//	float		tf_test_zone_surface
+//	float		tf_zone_surface
+//	float		tf_inside_surface
+//
+//	vector	tv_point_A	
+//	vector	tv_point_B
+//
+//	vector	tv_upper_left_corner
+//	vector	tv_bottom_right_corner
+//	vector	tv_clipped_upper_left_corner
+//	vector	tv_clipped_bottom_right_corner
+//
+//
+//	object	to_camera	
+//
+//	color		tc_color
+//
+//	tf_test_zone_surface = tf_X_size * tf_Y_size
+//
+//	tf_X_size *= 0.5
+//	tf_Y_size *= 0.5
+//
+//	tf_X_min = 0.5 - tf_X_size
+//	tf_X_max = 0.5 + tf_X_size
+//	tf_Y_min = 0.5 - tf_Y_size
+//	tf_Y_max = 0.5 + tf_Y_size
+//
+//	to_camera = VIEW_GetObject(0)
+//
+//	tv_upper_left_corner = tv_pos
+//	tv_upper_left_corner += @to_camera OBJ_HorizonGet() * tf_size
+//	tv_upper_left_corner += @to_camera OBJ_BankingGet() * tf_size
+//
+//	tv_bottom_right_corner = tv_pos
+//	tv_bottom_right_corner -= @to_camera OBJ_HorizonGet() * tf_size
+//	tv_bottom_right_corner -= @to_camera OBJ_BankingGet() * tf_size
+//
+//	tv_upper_left_corner = VIEW_3dWorldTo2d(0, tv_upper_left_corner)
+//	tv_bottom_right_corner = VIEW_3dWorldTo2d(0, tv_bottom_right_corner)
+//
+//	if (tv_upper_left_corner.x < 0.0 && tv_bottom_right_corner.x < 0.0)
+//		return(-1.0)
+//
+//	if (tv_upper_left_corner.x > 1.0 && tv_bottom_right_corner.x > 1.0)
+//		return(-1.0)
+//
+//	if (tv_upper_left_corner.y < 0.0 && tv_bottom_right_corner.y < 0.0)
+//		return(-1.0)
+//
+//	if (tv_upper_left_corner.y > 1.0 && tv_bottom_right_corner.y > 1.0)
+//		return(-1.0)
+//
+//	tf_zone_surface = tv_bottom_right_corner.x - tv_upper_left_corner.x
+//	tf_zone_surface *= tv_bottom_right_corner.y - tv_upper_left_corner.y
+//
+//	if (tf_zone_surface < 0.001)
+//		return(-1.0)
+//
+//	if (tf_zone_surface > tf_test_zone_surface)
+//	{
+//		tc_color = 0x00008000
+//		tf_zone_surface = tf_test_zone_surface
+//	}
+//	else
+//	{
+//		tc_color = 0x00FFFFFF
+//	}
+//
+//#ifndef _FINAL_
+//	if (ti_draw_debug_info)
+//	{
+//		// Affichage de la zone ok
+//		DBG_Render2DRect(tv_upper_left_corner, tv_bottom_right_corner, 0x00FFFFFF)
+//	}
+//#endif
+//
+//	tv_clipped_upper_left_corner.x = MATH_FloatLimit(tv_upper_left_corner.x, tf_X_min, tf_X_max)
+//	tv_clipped_upper_left_corner.y = MATH_FloatLimit(tv_upper_left_corner.y, tf_Y_min, tf_Y_max)
+//	tv_clipped_upper_left_corner.z = 0.01
+//
+//	tv_clipped_bottom_right_corner.x = MATH_FloatLimit(tv_bottom_right_corner.x, tf_X_min, tf_X_max)
+//	tv_clipped_bottom_right_corner.y = MATH_FloatLimit(tv_bottom_right_corner.y, tf_Y_min, tf_Y_max)
+//	tv_clipped_bottom_right_corner.z = 0.01
+//
+//	tf_inside_surface = tv_clipped_bottom_right_corner.x - tv_clipped_upper_left_corner.x
+//	tf_inside_surface *= tv_clipped_bottom_right_corner.y - tv_clipped_upper_left_corner.y
+//
+//	tf_inside_surface /= tf_zone_surface
+//
+//#ifndef _FINAL_
+//	if (ti_draw_debug_info)
+//	{
+//		if (tf_inside_surface)
+//		{
+//			// Affichage de la zone ok
+//			DBG_Render2DRect(tv_clipped_upper_left_corner, tv_clipped_bottom_right_corner, 0x80008000)
+//		}
+//		else
+//		{
+//			// Affichage de la zone ok
+//			DBG_Render2DRect(tv_upper_left_corner, tv_bottom_right_corner, 0x800000FF)
+//		}
+//	
+//		DBG_Render2DRect(cvector(tf_X_min, tf_Y_min, 0.0), cvector(tf_X_max, tf_Y_max, 0.0), tc_color)
+//	}
+//#endif
+//
+//	tv_2D_center_pos = tv_clipped_upper_left_corner
+//	tv_2D_center_pos += (tv_clipped_bottom_right_corner - tv_clipped_upper_left_corner) * 0.5
+//
+//	return(tf_inside_surface)
+//}
+
+
+
+procedure_local vector Lapin_Soft_Col()
+{
+	int		ti_i
+	
+	float		tf_dist
+	float		tf_test_dist
+	float		tf_test_sqr_dist
+
+	vector	tv_me_to_budy
+	vector	tv_col_move_axis
+	vector	tv_traction_softcol
+	
+	tv_traction_softcol = Cv_NullVector
+	
+	switch(i_etat_courant)
+	{
+		case ETAT_Lapin_CHUTE :
+		case ETAT_Lapin_PAF :
+		case ETAT_Lapin_PAF_STUN :
+		case ETAT_Lapin_MORT : 
+		case ETAT_Lapin_JUMP :
+		case ETAT_Lapin_GRABBED :
+		case ETAT_Lapin_APPARITION :
+		case ETAT_Lapin_GOGO :
+		case ETAT_Lapin_RIDE_MOUNT :
+		case ETAT_Lapin_TAUPE :
+		case ETAT_Lapin_PIEGE :
+		case ETAT_Lapin_BEAT_DANSE :
+		case ETAT_Lapin_BEAT_ALERT :
+		case ETAT_Lapin_USE_POWERMOUNT :
+			return Cv_NullVector
+			break
+		default:
+			if( o_RideMount_Actor )
+				return Cv_NullVector
+			break
+	}
+	
+	switch( ACT_ActionGet() )
+	{
+		case Action_Attente_Dodo :
+		case Action_Attente_Pipi :
+		case Action_Attente_Ordi :
+		case Action_Attente_Blabla1 :
+		case Action_Attente_Blabla2 :
+			return Cv_NullVector
+			break
+	}
+	
+//	tv_col_move_axis = Cv_NullVector
+//	
+//	for (ti_i = 0; ti_i < i_budy_nb; ti_i++)
+//	{
+//		if (ao_budy[ti_i] == OBJ_Me())
+//			continue
+//		
+//		if( @get_PNJ_Lapin_path ao_budy[ti_i] o_Rided_Actor )
+//			continue		// c'est la monture de rayman alors il ne compte pas c un nmi
+//		
+//		tf_test_dist = 0.5 * OBJ_ZoomGet()
+//		tf_test_dist += 0.5 * @ao_budy[ti_i] OBJ_ZoomGet()
+//		tf_test_sqr_dist = tf_test_dist * tf_test_dist
+//	
+//		tv_me_to_budy = @ao_budy[ti_i] OBJ_PosGet() - OBJ_PosGet()
+//		tv_me_to_budy.z = 0.0
+//		
+//		tf_dist = MATH_VecDotProduct(tv_me_to_budy, tv_me_to_budy) 
+//
+//		if (tf_dist < tf_test_sqr_dist) // && OBJ_LIB_Virtual_Colmap_Collision(OBJ_Me(), ao_budy[ti_i], vrai) )
+//		{
+//			tf_dist = MATH_FloatSqrt(tf_dist)
+//
+//			if (tf_dist)
+//				tv_me_to_budy /= tf_dist
+//			else
+//				tv_me_to_budy = OBJ_HorizonGet()
+//
+//			tv_me_to_budy *= 1.0 - (tf_dist / tf_test_dist)
+//			
+//			tv_col_move_axis -= tv_me_to_budy
+//		}
+//	}
+
+	if( COL_LIB_Soft_Col(OBJ_Me(), tv_col_move_axis) )
+	{
+		tv_col_move_axis.z = 0.0
+	
+		tv_col_move_axis = DYN_LIB_Traction_To_Reach_Pos(v_speedgetvector, tv_col_move_axis, DYN_FrictionVectorGet(), DYN_GravityVectorGet(), DYN_TractionVectorGet(), DYN_StreamVectorGet(), 2.0)
+	//	tv_col_move_axis = DYN_LIB_Traction_To_Reach_Speed(DYN_SpeedGetVector(), tv_col_move_axis * 0.1, DYN_FrictionVectorGet(), DYN_GravityVectorGet(), DYN_TractionVectorGet(), DYN_StreamVectorGet(), 0.5)
+	
+		tv_col_move_axis.z = 0.0
+		tv_col_move_axis -= MATH_FloatMin(MATH_VecDotProduct(tv_col_move_axis, OBJ_SightGet()), 0.0) * OBJ_SightGet()
+	//	tv_col_move_axis += DYN_TractionVectorGet()
+	 	tv_traction_softcol = tv_col_move_axis
+	}
+ 	return tv_traction_softcol
+}
+
+
+procedure int	Lapin_NEAR_Pos( vector tv_target_pos, float tf_dist2)
+{
+	vector	tv_dist
+
+	tv_dist = OBJ_PosGet() - tv_target_pos
+	tv_dist.z = 0.0
+	if ( MATH_VecDotProduct( tv_dist,tv_dist) < tf_dist2)
+		return vrai
+	else
+		return faux
+}
+
+procedure_local int	Lapin_In_Danger()
+{
+	int		ti_i
+	for (ti_i = 0; ti_i < i_perceived_actor_nb; ti_i++)
+	{
+		if ( ai_perceived_ID[ti_i] == C_ID_Rayman && (ai_perceived_status[ti_i] & Ci_PERCEIVED_IN_RED_ZONE))
+			return ti_i
+	}
+	return -1
+}
+
+procedure_local int Lapin_Choose_Target()
+{
+	float	tf_best_dist 
+	int		ti_i
+	int		ti_new_interet_index 
+	int		ti_nb_max
+	
+	if( o_Commander_cur )
+		return -1		// je suis dépendant d'un autre lapin c'est lui qui fait les tests pas moi
+	
+//	if( i_perceived_best_actor_index == -1 )
+//		return -1
+		
+	ti_new_interet_index = Lapin_In_Danger()
+	if ( ti_new_interet_index != -1)
+	{
+		// This Index is the danger
+		return ti_new_interet_index
+	}
+	
+	// If ( je ne suis pas accessible Kong)
+	//	target = Jack
+	// else
+	
+	// chosse the less attacked interest
+	ti_new_interet_index = -1
+	tf_best_dist = Cf_Infinit
+//	ti_nb_max = ai_perceived_targeted[i_perceived_best_actor_index] - 1	// nb actor on my target
+	
+	for (ti_i = 0; ti_i < i_perceived_actor_nb; ti_i++)
+	{
+		if ( ! Lapin_PROC_WAY_TERRITORY_ID_ALLOWED(ai_perceived_territory[ti_i]))
+			continue
+			
+		if( ! ai_perceived_seen[ti_i] )
+			continue
+		
+		if( ! ai_perceived_accessible[ti_i] )
+			continue
+		
+		// Astuce : use negative values( In Red Zone) to be inferior than normal values
+//		if (ai_perceived_status[ti_i] & Ci_PERCEIVED_IN_RED_ZONE)
+//		{
+//			// IN RED ZONE
+////		 	if ( ( ti_nb_max  > 0 && ai_perceived_targeted[ti_i] < ti_nb_max)
+////		 	|| ( ti_nb_max < 0 && ai_perceived_targeted[ti_i] < (-ti_nb_max)))
+//		 	{
+//				ti_new_interet_index = ti_i
+//				ti_nb_max = -ai_perceived_targeted[ti_i]
+//			}
+//		}
+//		else 
+//	 	{
+//		 	// NORMAL
+////		 	if ( ai_perceived_targeted[ti_i] < ti_nb_max)
+//		 	{
+//				ti_new_interet_index = ti_i
+//				ti_nb_max = ai_perceived_targeted[ti_i]
+//			}
+//		}
+
+		// VINCE
+//		if( ! ai_perceived_targeted[ti_i] )
+//		{
+			ti_new_interet_index = ti_i
+			break
+//		}
+	}
+		
+	return ti_new_interet_index
+}
+
+
+// DYNAMICS
+procedure_local void Lapin_DYNA(int ti_vrai)
+{
+	if( ti_vrai )
+	{
+		DYN_On()
+		DYN_FlagsSet(DYN_C_BasicForces | DYN_C_NeverDynamicFather | DYN_C_VectorFriction | DYN_C_GlobalFriction | DYN_C_SkipFrictionWhenSpeedFromAnim | DYN_C_HorizontalGrounds | DYN_C_SlipOnGroundEdge, none)
+		DYN_GravitySet(Cv_DYN_Gravity)
+		DYN_FrictionVectorSet(Cv_DYN_Friction_Ground)
+		DYN_StreamSet(Cv_NullVector)
+	}
+	else
+		DYN_Off()
+}
+
+// ACTIONS ============================================================================================================
+procedure_local void Lapin_ACTION_Speed_Init()
+{
+	int			ti_i
+	int			ti_k
+	
+	// FAMILLE 0 = DEPLACEMENT NORMAL
+	ti_i = 0
+	ai_action_index[ti_i][i_action_nb_family] = Action_Normal_Attente
+	ACT_MagicBoxMoveGet(&av_action_speed[ti_i][i_action_nb_family], &af_action_speed[ti_i][i_action_nb_family], ai_action_index[ti_i][i_action_nb_family], 0)
+	ti_i++
+	
+	ai_action_index[ti_i][i_action_nb_family] = Action_Normal_Marche
+	ACT_MagicBoxMoveGet(&av_action_speed[ti_i][i_action_nb_family], &af_action_speed[ti_i][i_action_nb_family], ai_action_index[ti_i][i_action_nb_family], 0)
+	ti_i++
+	
+	ai_action_index[ti_i][i_action_nb_family] = Action_Normal_Trot
+	ACT_MagicBoxMoveGet(&av_action_speed[ti_i][i_action_nb_family], &af_action_speed[ti_i][i_action_nb_family], ai_action_index[ti_i][i_action_nb_family], 0)
+	ti_i++
+	
+	ai_action_index[ti_i][i_action_nb_family] = Action_Normal_Course
+	ACT_MagicBoxMoveGet(&av_action_speed[ti_i][i_action_nb_family], &af_action_speed[ti_i][i_action_nb_family], ai_action_index[ti_i][i_action_nb_family], 0)
+	ti_i++
+	
+	i_action_nb_each_family = MATH_FloatMax(ti_i, i_action_nb_each_family)
+	i_action_nb_family++
+	
+	// FAMILLE 1 = BEAT
+	ti_i = 0
+	ai_action_index[ti_i][i_action_nb_family] = Action_Danse_Att
+	ACT_MagicBoxMoveGet(&av_action_speed[ti_i][i_action_nb_family], &af_action_speed[ti_i][i_action_nb_family], ai_action_index[ti_i][i_action_nb_family], 0)
+	ti_i++
+	
+	ai_action_index[ti_i][i_action_nb_family] = Action_Danse_Marche20
+	ACT_MagicBoxMoveGet(&av_action_speed[ti_i][i_action_nb_family], &af_action_speed[ti_i][i_action_nb_family], ai_action_index[ti_i][i_action_nb_family], 0)
+	ti_i++
+	
+	ai_action_index[ti_i][i_action_nb_family] = Action_Danse_Marche60
+	ACT_MagicBoxMoveGet(&av_action_speed[ti_i][i_action_nb_family], &af_action_speed[ti_i][i_action_nb_family], ai_action_index[ti_i][i_action_nb_family], 0)
+	ti_i++
+	
+	i_action_nb_each_family = MATH_FloatMax(ti_i, i_action_nb_each_family)
+	i_action_nb_family++
+	
+	// FAMILLE 2 = SWIM
+	ti_i = 0
+	ai_action_index[ti_i][i_action_nb_family] = Action_Nage_Attente
+	ACT_MagicBoxMoveGet(&av_action_speed[ti_i][i_action_nb_family], &af_action_speed[ti_i][i_action_nb_family], ai_action_index[ti_i][i_action_nb_family], 0)
+	ti_i++
+	
+	ai_action_index[ti_i][i_action_nb_family] = Action_Nage_Cycle
+	ACT_MagicBoxMoveGet(&av_action_speed[ti_i][i_action_nb_family], &af_action_speed[ti_i][i_action_nb_family], ai_action_index[ti_i][i_action_nb_family], 0)
+	ti_i++
+	
+	i_action_nb_each_family = MATH_FloatMax(ti_i, i_action_nb_each_family)
+	i_action_nb_family++
+	
+	// FAMILLE 3 = RIDEMOUNT
+	ti_i = 0
+	ai_action_index[ti_i][i_action_nb_family] = Action_RideMount_att
+	ACT_MagicBoxMoveGet(&av_action_speed[ti_i][i_action_nb_family], &af_action_speed[ti_i][i_action_nb_family], ai_action_index[ti_i][i_action_nb_family], 0)
+	ti_i++
+	
+	ai_action_index[ti_i][i_action_nb_family] = Action_RideMount_cycl
+	ACT_MagicBoxMoveGet(&av_action_speed[ti_i][i_action_nb_family], &af_action_speed[ti_i][i_action_nb_family], ai_action_index[ti_i][i_action_nb_family], 0)
+	ti_i++
+	
+	i_action_nb_each_family = MATH_FloatMax(ti_i, i_action_nb_each_family)
+	i_action_nb_family++
+	
+	// FAMILLE 4 = THE SHIELD :)
+	ti_i = 0
+	ai_action_index[ti_i][i_action_nb_family] = Action_Shield_Attente
+	ACT_MagicBoxMoveGet(&av_action_speed[ti_i][i_action_nb_family], &af_action_speed[ti_i][i_action_nb_family], ai_action_index[ti_i][i_action_nb_family], 0)
+	ti_i++
+	
+	ai_action_index[ti_i][i_action_nb_family] = Action_Shield_Marche
+	ACT_MagicBoxMoveGet(&av_action_speed[ti_i][i_action_nb_family], &af_action_speed[ti_i][i_action_nb_family], ai_action_index[ti_i][i_action_nb_family], 0)
+	ti_i++
+	
+	ai_action_index[ti_i][i_action_nb_family] = Action_Shield_Course
+	ACT_MagicBoxMoveGet(&av_action_speed[ti_i][i_action_nb_family], &af_action_speed[ti_i][i_action_nb_family], ai_action_index[ti_i][i_action_nb_family], 0)
+	ti_i++
+	
+	i_action_nb_each_family = MATH_FloatMax(ti_i, i_action_nb_each_family)
+	i_action_nb_family++
+	
+	// FAMILLE 5 = VENTILO
+	ti_i = 0
+	ai_action_index[ti_i][i_action_nb_family] = Action_Ventilo_faible
+	ACT_MagicBoxMoveGet(&av_action_speed[ti_i][i_action_nb_family], &af_action_speed[ti_i][i_action_nb_family], ai_action_index[ti_i][i_action_nb_family], 0)
+	ti_i++
+	
+//	ai_action_index[ti_i][i_action_nb_family] = Action_Ventilo_fort
+//	ACT_MagicBoxMoveGet(&av_action_speed[ti_i][i_action_nb_family], &af_action_speed[ti_i][i_action_nb_family], ai_action_index[ti_i][i_action_nb_family], 0)
+//	ti_i++
+	
+	i_action_nb_each_family = MATH_FloatMax(ti_i, i_action_nb_each_family)
+	i_action_nb_family++
+	
+	//for( ti_k = 0; ti_k < ti_i; ti_k++ )
+	//{
+	//	DBG_TraceString("af_action_speed[")
+	//	DBG_TraceInt(ti_k)
+	//	DBG_TraceString("][0] = ")
+	//	DBG_TraceFloat(af_action_speed[ti_k][0])
+	//	DBG_TraceEOL()
+	//}
+}
+
+procedure_local int Lapin_ACTION_Family_Get()
+{
+	vector	tv_temp1
+	vector	tv_temp2
+	if( ! MATH_VecNullToler(v_traction_stream, 0.05) )
+	{
+		tv_temp1 = OBJ_SightGet()
+		tv_temp1.z = 0.0
+		MATH_VecSetNormalize(tv_temp1)
+		tv_temp2 = v_traction_stream
+		tv_temp2.z = 0.0
+		MATH_VecSetNormalize(tv_temp2)
+		if( MATH_VecDotProduct(tv_temp1, tv_temp2) < 0.0 )
+			return Action_Family_Ventilo
+	}
+	if( o_RideMount_Actor )
+		return Action_Family_RideMount
+	if( i_is_in_water )
+		return Action_Family_Nage
+//	if( i_Beat_flag_danse )
+//		return Action_Family_Beat
+	if( o_shield )
+		return Action_Family_Shield
+	return Action_Family_Normal
+}
+
+procedure_local int Lapin_ACTION_Attente_Get()
+{
+	switch( Lapin_ACTION_Family_Get() )
+	{
+		case Action_Family_RideMount :
+			return Action_RideMount_att
+		case Action_Family_Beat :
+			return Action_Danse_Att
+		case Action_Family_Nage :
+			return Action_Nage_Attente
+		case Action_Family_Shield :
+			return Action_Shield_Attente
+		case Action_Family_Ventilo :
+			return Action_Ventilo_faible
+		default:
+			return Action_Normal_Attente
+	}
+}
+
+procedure_local float Lapin_Cache_Dist_Get()
+{
+	switch( Type )
+	{
+		case Lapin_Type_Petit :
+			return 0.5
+			break
+		case Lapin_Type_Moyen :
+			return 1.0
+			break
+		case Lapin_Type_Geant :
+			return 1.0
+			break
+		default:
+			DBG_Error("????")
+			return 0.0
+	}
+}
+
+procedure_local float Lapin_Fight_Melee_Dist_Get()
+{
+	switch( Type )
+	{
+		case Lapin_Type_Petit :
+			return 0.5
+			break
+		case Lapin_Type_Moyen :
+			return 1.0
+			break
+		case Lapin_Type_Geant :
+			return 1.5
+			break
+		default:
+			DBG_Error("????")
+			return 0.0
+	}
+}
+
+procedure_local float Lapin_Attente_Dist_Get()
+{
+	switch( Type )
+	{
+		case Lapin_Type_Petit :
+			return 0.75
+			break
+		case Lapin_Type_Moyen :
+			return 1.0
+			break
+		case Lapin_Type_Geant :
+			return 1.0
+			break
+		default:
+			DBG_Error("????")
+			return 0.0
+	}
+}
+
+procedure_local float Lapin_Get_Item_Dist_Get()
+{
+	float tf_offset
+	switch( Type )
+	{
+		case Lapin_Type_Petit :
+			tf_offset = 0.5
+			break
+		case Lapin_Type_Moyen :
+			tf_offset = 0.75
+			break
+		case Lapin_Type_Geant :
+			tf_offset = 1.0
+			break
+		default:
+			DBG_Error("????")
+			return 0.0
+	}
+//	tf_offset += 2.0		// 2.0 = dist ramasse item
+	return tf_offset
+}
+
+
+//procedure_local int Lapin_SEE_Pos_Simple(vector tv_target_pos)
+//{
+//	vector	tv_sens
+//	vector	tv_sight
+//	vector	tv_sens_cone
+//	float		tf_dot
+//	float		tf_dist
+//	
+//	tv_sens = tv_target_pos - OBJ_PosGet()
+//	tf_dist = MATH_VecNorm(tv_sens)
+//	tv_sens.z = 0.0
+//	MATH_VecSetNormalize(tv_sens)
+//	tv_sight = OBJ_SightGet()
+//	tv_sight.z = 0.0
+//	MATH_VecSetNormalize(tv_sight)
+//	tf_dot = MATH_VecDotProduct(tv_sight, tv_sens)
+//	DBG_RenderCone(OBJ_PosGet() + Cv_VerticalVector, v_look_virtual_sight * f_dist, f_angle, 0x8800FF00)
+//	if ( tf_dot > Atk_Vision_Angle && tf_dist < Atk_Vision_Dist )
+//		return vrai
+//	else
+//		return faux
+//}
+//
+
+procedure_local int Lapin_VISION_TailleRestreinte()
+{
+	if( i_etat_courant == ETAT_Lapin_FUITE )
+		return vrai
+	if( i_etat_courant == ETAT_Lapin_CACHE && i_cache_reached_once )
+		return vrai
+	return faux
+}
+
+procedure_local float Lapin_VISION_AngleGet()
+{
+	if( Lapin_VISION_TailleRestreinte() )
+		return Fuite_Vision_Angle
+	else
+		return Atk_Vision_Angle
+}
+
+procedure_local int Lapin_VISION_Test(vector tv_target_pos, float tf_speed)
+{
+	vector	tv_sens
+	vector	tv_sight
+	vector	tv_sens_cone
+	vector	tv_pos
+	vector	tv_head_pos
+	float		tf_dot
+	float		tf_dist
+	float		tf_snd_dist
+	object	to_obj
+	
+	tv_sens = tv_target_pos - v_look_head_pos
+	tf_dist = MATH_VecNorm(tv_sens)
+	
+	// Test 1bis : distance et vitesse
+	tf_snd_dist = Atk_Sound_Dist
+	if( o_RideMount_Actor )
+		tf_snd_dist *= 2.0
+	tf_snd_dist *= OBJ_ZoomGet()
+	DBG_RenderCircle(@o_canal_bassin OBJ_PosGet(), tf_snd_dist, Cv_VerticalVector, color_vert)
+	if( tf_speed > Atk_Sound_Speed )
+	{
+		DBG_RenderCircle(@o_canal_bassin OBJ_PosGet(), tf_snd_dist, Cv_VerticalVector, color_rouge)
+		if( tf_dist < tf_snd_dist )
+			return vrai
+	}
+	
+	if( ACT_ActionGet()	== Action_Attente_Dodo )
+		return faux			// Dodo = détection sonore uniquement
+	
+	// Test 1 : distance
+	if( tf_dist > Atk_Vision_Dist )
+		return faux
+	
+	// Test 2 : proche et devant
+	tv_sens.z = 0.0
+	tv_sight = v_look_virtual_sight
+//	if( ! Lapin_VISION_TailleRestreinte() && tf_dist < 5.0 && MATH_VecDotProduct(tv_sight, tv_sens) > 0.0 )
+//		return vrai
+	
+	// Test 3 : vec in cone
+	MATH_VecSetNormalize(tv_sens)
+	tv_sens_cone = MATH_VecInCone(tv_sens, tv_sight, Lapin_VISION_AngleGet(), 0)
+	tv_head_pos = MATH_VecLocalToGlobal(v_look_head_pos)
+	if( DBG_Display_Vision )
+	{
+		DBG_RenderVector(tv_head_pos, tv_sens, color_bleu)
+		DBG_RenderVector(tv_head_pos, tv_sens_cone, color_cyan)
+		DBG_RenderCone(tv_head_pos, tv_sight * Atk_Vision_Dist * MATH_Cos(Lapin_VISION_AngleGet()), Lapin_VISION_AngleGet(), 0x8800FF00)
+	}
+	if( tv_sens != tv_sens_cone )
+		return faux
+	
+	// Test 4:  LRAY
+	tv_sens = tv_target_pos - tv_head_pos
+	MATH_VecSetNormalize(tv_sens)
+	DBG_RenderVector(tv_head_pos + Cv_VerticalVector, tv_sens * tf_dist, color_cyan)
+	to_obj = COL_RayObject_Dist(tv_head_pos + Cv_VerticalVector, tv_sens, tf_dist, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+	if( to_obj )
+		return faux
+	
+	// bon... oki :)
+	return vrai
+}
+
+//procedure_local int Lapin_SEE_Pos_Complex(vector tv_target_pos)
+//{
+//	float		tf_dot_product
+//	if( MATH_LIB_ZoneInCone(v_look_head_pos, v_look_banking, -0.3, Lapin_Vision_Dist_Get(), tv_target_pos, 1.0, vrai, tf_dot_product, 0, 0) )
+//		return vrai
+//	else
+//		return faux
+//}
+
+procedure_local float Lapin_Traction_Walk_Get()
+{
+	float	tf_max
+	float	tf_speed
+	if( i_etat_courant == ETAT_Lapin_BEAT_DANSE )
+		tf_speed = 15.0		// courir pour me positionner !!!!
+	else if( i_etat_courant == ETAT_Lapin_BULLRUSH )
+	{
+		switch( i_BullRush_mode )
+		{
+			case Ci_BullRush_mode_Charge :
+			case Ci_BullRush_mode_ChargeFin :
+				tf_max = 15.0
+				break
+			case Ci_BullRush_mode_Derape :
+				tf_max = 0.0
+				break
+			default:
+				tf_max = 0.0
+				break
+		}
+		f_BullRush_traction = MATH_FloatBlend(f_BullRush_traction, tf_max, 5 * TIME_GetDt())
+		tf_speed = f_BullRush_traction
+	}
+	else if( i_etat_courant == ETAT_Lapin_TAUPE )
+		tf_speed = 15.0
+	else if( i_is_in_water )
+		tf_speed = Depl_Speed_Max_Nage
+	else if( i_etat_courant == ETAT_Lapin_CACHE || i_etat_courant == ETAT_Lapin_FUITE )
+		tf_speed = Fuite_Speed_Max
+	else if( i_etat_courant == ETAT_Lapin_APPARITION )
+		tf_speed = App_Speed_Max
+	else if( i_etat_courant == ETAT_Lapin_FIGHT && i_anti_mashing_flag )
+		tf_speed = 20.0
+	else 
+		tf_speed = Depl_Speed_Max_Course
+	// boost
+	if( i_etat_courant == ETAT_Lapin_RIDED && Proc_JOY_Boost_Pressed() )
+		tf_speed *= 2.0
+	// désynchro
+	tf_speed *= f_action_desynchro
+	return tf_speed
+}
+
+
+// OBBOX ======================================================================================================
+procedure_local void Lapin_OBBOX_Remove(int ti_canal)
+{
+	object	to_bone
+	to_bone = ANI_CanalObjectGet(ti_canal)
+	if( to_bone )
+		@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+}
+
+procedure_local void Lapin_OBBOX_Init(float tf_coef)
+{
+	object	to_bone
+//	to_bone = ANI_CanalObjectGet(Anim_Canal_)
+//	@to_bone BV_OBBoxMinSet(cvector(, , ) * tf_coef)
+//	@to_bone BV_OBBoxMaxSet(cvector(, , ) * tf_coef)
+	to_bone = ANI_CanalObjectGet(Anim_Canal_Tete)
+	@to_bone BV_OBBoxMinSet(cvector(-0.3, -0.4, -0.1) * tf_coef)
+	@to_bone BV_OBBoxMaxSet(cvector(0.3, 0.25, 0.5) * tf_coef)
+	to_bone = ANI_CanalObjectGet(Anim_Canal_Bassin)
+	@to_bone BV_OBBoxMinSet(cvector(-0.25, -0.25, -0.1) * tf_coef)
+	@to_bone BV_OBBoxMaxSet(cvector(0.25, 0.25, 0.5) * tf_coef)
+	to_bone = ANI_CanalObjectGet(Anim_Canal_Torse)
+	@to_bone BV_OBBoxMinSet(cvector(-0.2, -0.2, -0.2) * tf_coef)
+	@to_bone BV_OBBoxMaxSet(cvector(0.2, 0.2, 0.2) * tf_coef)
+	to_bone = ANI_CanalObjectGet(Anim_Canal_Cou)
+	@to_bone BV_OBBoxMinSet(cvector(-0.2, -0.2, -0.2) * tf_coef)
+	@to_bone BV_OBBoxMaxSet(cvector(0.2, 0.2, 0.2) * tf_coef)
+	to_bone = ANI_CanalObjectGet(Anim_Canal_BrasDroit)
+	@to_bone BV_OBBoxMinSet(cvector(-0.1, -0.1, -0.2) * tf_coef)
+	@to_bone BV_OBBoxMaxSet(cvector(0.1, 0.1, 0.2) * tf_coef)
+	to_bone = ANI_CanalObjectGet(Anim_Canal_AvantBrasDroit)
+	@to_bone BV_OBBoxMinSet(cvector(-0.1, -0.1, -0.2) * tf_coef)
+	@to_bone BV_OBBoxMaxSet(cvector(0.1, 0.1, 0.3) * tf_coef)
+	to_bone = ANI_CanalObjectGet(Anim_Canal_BrasGauche)
+	@to_bone BV_OBBoxMinSet(cvector(-0.1, -0.1, -0.2) * tf_coef)
+	@to_bone BV_OBBoxMaxSet(cvector(0.1, 0.1, 0.2) * tf_coef)
+	to_bone = ANI_CanalObjectGet(Anim_Canal_AvantBrasGauche)
+	@to_bone BV_OBBoxMinSet(cvector(-0.1, -0.1, -0.2) * tf_coef)
+	@to_bone BV_OBBoxMaxSet(cvector(0.1, 0.1, 0.3) * tf_coef)
+	to_bone = ANI_CanalObjectGet(Anim_Canal_JambeDroite)
+	@to_bone BV_OBBoxMinSet(cvector(-0.1, -0.1, -0.2) * tf_coef)
+	@to_bone BV_OBBoxMaxSet(cvector(0.1, 0.1, 0.2) * tf_coef)
+	to_bone = ANI_CanalObjectGet(Anim_Canal_JambeGauche)
+	@to_bone BV_OBBoxMinSet(cvector(-0.1, -0.1, -0.2) * tf_coef)
+	@to_bone BV_OBBoxMaxSet(cvector(0.1, 0.1, 0.2) * tf_coef)
+	to_bone = ANI_CanalObjectGet(Anim_Canal_OreilleGauche)
+	if( to_bone )
+	{
+		@to_bone OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_OBBox, none)
+		@to_bone BV_OBBoxMinSet(cvector(-0.15, -0.15, -0.1) * tf_coef)
+		@to_bone BV_OBBoxMaxSet(cvector(0.15, 0.15, 0.5) * tf_coef)
+	}
+	to_bone = ANI_CanalObjectGet(Anim_Canal_OreilleDroite)
+	if( to_bone )
+	{
+		@to_bone OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_OBBox, none)
+		@to_bone BV_OBBoxMinSet(cvector(-0.15, -0.15, -0.1) * tf_coef)
+		@to_bone BV_OBBoxMaxSet(cvector(0.15, 0.15, 0.5) * tf_coef)
+	}
+	Lapin_OBBOX_Remove(Anim_Canal_AvantBrasDroit2)
+	Lapin_OBBOX_Remove(Anim_Canal_AvantBrasGauche2)
+	Lapin_OBBOX_Remove(Anim_Canal_Cheveux)
+	Lapin_OBBOX_Remove(Anim_Canal_CuisseDroite)
+	Lapin_OBBOX_Remove(Anim_Canal_CuisseGauche)
+	Lapin_OBBOX_Remove(Anim_Canal_DoigtD1)
+	Lapin_OBBOX_Remove(Anim_Canal_DoigtD2)
+	Lapin_OBBOX_Remove(Anim_Canal_DoigtG1)
+	Lapin_OBBOX_Remove(Anim_Canal_DoigtG2)
+	Lapin_OBBOX_Remove(Anim_Canal_EpauleDroite)
+	Lapin_OBBOX_Remove(Anim_Canal_EpauleGauche)
+	Lapin_OBBOX_Remove(Anim_Canal_MainDroite)
+	Lapin_OBBOX_Remove(Anim_Canal_MainGauche)
+	Lapin_OBBOX_Remove(Anim_Canal_OrteilDroit)
+	Lapin_OBBOX_Remove(Anim_Canal_OrteilGauche)
+	Lapin_OBBOX_Remove(Anim_Canal_PiedDroit)
+	Lapin_OBBOX_Remove(Anim_Canal_PiedGauche)
+	Lapin_OBBOX_Remove(Anim_Canal_PouceD1)
+	Lapin_OBBOX_Remove(Anim_Canal_PouceD2)
+	Lapin_OBBOX_Remove(Anim_Canal_PouceG1)
+	Lapin_OBBOX_Remove(Anim_Canal_PouceG2)
+	Lapin_OBBOX_Remove(Anim_Canal_PupilleDroite)
+	Lapin_OBBOX_Remove(Anim_Canal_PupilleGauche)
+}
+
+
+// DEBUG ======================================================================================================
+procedure_local int Lapin_DBG_Display_ON()
+{
+	if( @get_global i_DBG_PNJ_Lapin && @"univ" i_cheat_page == 1 )
+		return vrai
+	else
+		return faux
+}
+
+
+procedure_local void Lapin_DBG_Trace_String(int ti_trace, string txt)
+{
+	if( ti_trace )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" ")
+		DBG_TraceString(txt)
+		DBG_TraceEOL()
+	}
+}
+
+procedure_local void Lapin_DBG_Trace_String_et_Gao(int ti_trace, string txt, object to_gao)
+{
+	if( ti_trace )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" ")
+		DBG_TraceString(txt)
+		if( to_gao )
+		{
+			DBG_TraceString(" : ")
+			DBG_TraceObject(to_gao)
+		}
+		DBG_TraceEOL()
+	}
+}
+
+
+// TARGETTING ============================================================================================
+procedure_local void Lapin_TARGETTING(int ti_on)
+{
+	float	tf_offset
+	if( ti_on )
+	{
+		if( Grappin_HotSpot )
+			HotSpot_Add_Obj(OBJ_Me(), vrai)
+		
+		switch( Type )
+		{
+			case Lapin_Type_Petit :
+				tf_offset = 0.5
+				break
+			case Lapin_Type_Moyen :
+				tf_offset = 0.75
+				break
+			case Lapin_Type_Geant :
+				tf_offset = 1.2
+				break
+			default:
+				DBG_Error("???")
+		}
+		RM_TARGET_Add(OBJ_Me(), cvector( 0.0, 0.0, tf_offset))
+	}
+	else
+	{
+		HotSpot_Del_Obj(OBJ_Me())
+		RM_TARGET_Del(OBJ_Me())
+	}
+}
+
+
+// ITEM ====================================================================================================
+
+procedure_local void Lapin_ITEM_Lose()
+{
+	if( o_item )
+		@o_item OBJ_CapaSet(RM_WEAPON_CAPA_DROP, none)
+	o_item = LNK_ClientGet(Ci_LNK_GRAB_OBJECT, mid_item_LNK_ID, faux, nofunc, nofunc, nofunc)
+}
+
+procedure_local void Lapin_ITEM_Key_Lose()
+{
+	if( o_key )
+	{
+		@o_key OBJ_CapaSet(RM_WEAPON_CAPA_DROP, none)
+		Lapin_DBG_Trace_String_et_Gao(DBG_Trace_Etat, "perd la clef", o_key)
+	}
+	o_key = LNK_ClientGet(Ci_LNK_GRAB_OBJECT, mid_key_LNK_ID, faux, nofunc, nofunc, nofunc)
+}
+
+procedure_local int Lapin_ITEM_Is_Reloading()
+{
+	if( f_item_reload_delai )
+		return vrai
+	return faux
+}
+
+procedure_local void Lapin_ITEM_Key_Init_Values()
+{
+	SND_RequestPlay(Ci_SND_ITEM_Get_Clef)
+	// secto
+	@o_key SCT_SetOf(0,0,0,0)
+}
+
+procedure_local void Lapin_ITEM_Init_Values()
+{
+	int		ti_1
+	int		ti_2
+	int		ti_3
+	int		ti_4
+	
+	i_item_ID = LNK_KKGrabObject_TypeGet(mid_item_LNK_ID)
+	
+	f_item_range = @o_item PROC_WEAPON_RangeGet()
+	f_item_range = MATH_FloatMax(f_item_range, Atk_Vision_Dist)
+	
+	f_item_blend = 0.0
+	switch( i_item_ID )
+	{
+		case RM_WEAPON_TYPE_GUN :
+			f_item_dist_too_close = 5.0
+			SND_RequestPlay(Ci_SND_ITEM_Get_Gun)
+			break
+		case RM_WEAPON_TYPE_GRENADE :
+			f_item_dist_too_close = 5.0
+			SND_RequestPlay(Ci_SND_ITEM_Get_Grenade)
+			break
+		case RM_WEAPON_TYPE_CAROTTE :
+			f_item_dist_too_close = 0.0
+			SND_RequestPlay(Ci_SND_ITEM_Get_Carotte)
+			break
+		case RM_WEAPON_TYPE_GOURDIN :
+			f_item_dist_too_close = 0.0
+			SND_RequestPlay(Ci_SND_ITEM_Get_Gourdin)
+			break
+		default:
+			DBG_Error("????")
+	}
+	// secto
+	SCT_GetOf(&ti_1,&ti_2,&ti_3,&ti_4)
+	@o_item SCT_SetOf(ti_1,ti_2,ti_3,ti_4)
+}
+
+procedure_local int Lapin_ITEM_Has_Weapon()
+{
+	if( o_item && RM_ITEM_IS_WEAPON(i_item_ID) )
+		return vrai
+	return faux
+}
+
+procedure_local int Lapin_ITEM_Has_Key()
+{
+	if( o_key )
+		return vrai
+	return faux
+}
+
+procedure_local int Lapin_ITEM_Has_Carotte()
+{
+	if( o_item && i_item_ID == RM_WEAPON_TYPE_CAROTTE )
+		return vrai
+	return faux
+}
+
+procedure_local int Lapin_ITEM_Has_Gourdin()
+{
+	if( o_item && i_item_ID == RM_WEAPON_TYPE_GOURDIN )
+		return vrai
+	return faux
+}
+
+procedure_local void Lapin_FUITE(object to_actor)
+{
+	if( to_actor )
+	{
+		if( to_actor == OBJ_Me() )
+			o_fuite_actor = o_main_actor
+		else
+			o_fuite_actor = to_actor
+		i_fuite_flag = vrai
+	}
+}
+
+
+procedure_local void Lapin_PROTECT(object to_actor, int ti_mode)
+{
+	if( to_actor )
+	{
+		if( to_actor == OBJ_Me() )
+			o_protect_actor = o_main_actor
+		else
+			o_protect_actor = to_actor
+		i_protect_flag = vrai
+		i_protect_mode = ti_mode
+	}
+}
+
+
+procedure_local void Lapin_DODGE(object to_actor, int ti_mode)
+{
+	if( to_actor )
+	{
+		if( to_actor == OBJ_Me() )
+			o_dodge_actor = o_main_actor
+		else
+			o_dodge_actor = to_actor
+		i_dodge_flag = vrai
+		i_dodge_mode = ti_mode
+	}
+}
+
+procedure_local void Lapin_GRAPPIN_Control(object to_actor)
+{
+	if( to_actor )
+	{
+		if( to_actor == OBJ_Me() )
+			o_Grappin_Control_actor = o_main_actor
+		else
+			o_Grappin_Control_actor = to_actor
+		i_Grappin_Control_flag = vrai
+	}
+}
+
+procedure_local int Lapin_GRAPPIN_Control_Test()
+{
+	if( @get_global i_GRAPPIN_OutOfControl_flag 
+		&& @get_global o_GRAPPIN_OutOfControl_actor == OBJ_Me() )
+		return vrai
+	return faux
+}
+
+procedure_local void Lapin_GRAPPIN_Control_Activate(int ti_on)
+{
+	if( ti_on )
+	{
+		if( ! @get_global i_GRAPPIN_OutOfControl_flag  )
+		{
+			@get_global i_GRAPPIN_OutOfControl_flag = vrai
+			@get_global o_GRAPPIN_OutOfControl_actor = OBJ_Me()
+		}
+	}
+	else
+	{
+		if( @get_global o_GRAPPIN_OutOfControl_actor == OBJ_Me() )
+		{
+			@get_global i_GRAPPIN_OutOfControl_flag = faux
+			@get_global o_GRAPPIN_OutOfControl_actor = nobody
+		}
+	}
+}
+
+
+//procedure_local void Lapin_TAUPE_Paf()
+//{
+//	vector	tv_temp
+//	vector	tv_temp1
+//	object	tao_zde_zde_list[20]
+//	object	to_target
+//	int			ti_collision_nb
+//	int			ti_paf_type
+//	int			ti_i
+//	float		tf_dmg
+//	
+//	// PAFFER TOUT AUTOUR DE MOI
+//	OBJ_PosSet(OBJ_PosGet() - (2.0 * Cv_VerticalVector * OBJ_ZoomGet()))
+//	tv_temp = (2.0 * Cv_VerticalVector * OBJ_ZoomGet())
+//	COL_ZonePosSet(C_zde_fight, tv_temp / OBJ_ZoomGet())
+//	COL_ZoneSizeSet(C_zde_fight, Cv_zde_fight_size_appartion_ground)
+//	COL_ColSetActivationSet(C_bit_zde_fight, none)
+//	ti_collision_nb = COL_ZDE_ZDEListGet(&tao_zde_zde_list[0], C_zde_fight, C_zde_corps, all, none, Ci_Filter_IdentityFlag)
+//	for( ti_i = 0; ti_i < ti_collision_nb; ti_i++ )
+//	{
+//		to_target = tao_zde_zde_list[ti_i]
+//		if( to_target == OBJ_Me() )
+//			continue		// no SM :)
+//		if( @to_target AI_IsModel(get_PNJ_Lapin_path) )
+//			continue		// no melee colateral dmg :)
+//		SND_RequestPlayOnObjCanal(Ci_SND_FIGHT_Melee_Hit, Anim_Canal_Tete)
+//		ti_paf_type = C_PAF_RM_Fort
+//		tf_dmg = 10.0
+//		tv_temp = @to_target OBJ_PosGet() - OBJ_PosGet()
+//		tv_temp1 = tv_temp
+//		tv_temp1.z = 0.0
+//		if( MATH_VecNullToler(tv_temp1, 0.01) )		// je vais envoyer un paf vertical
+//		{
+//			tv_temp1 = OBJ_SightGet()
+//			tv_temp1.z = tv_temp.z
+//			tv_temp = tv_temp1
+//		}
+//		EVENT_AddEventPaf(C_EVENT_FILTER_All, ti_paf_type, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_target, tf_dmg, tv_temp)
+//	}
+//}
+
+
+procedure_local void Lapin_MORT_PourDeFaux()
+{
+	// life & raz flags
+//	EVENT_LIFE_CurLifeSet(ID_LIFE, EVENT_LIFE_MaxLifeGet(ID_LIFE) )
+	f_LIFE_cur = f_LIFE_max
+	i_fuite_flag = faux
+	i_dodge_flag = faux
+	i_dodge_mode = 0
+	i_protect_flag = faux
+	i_Mort_Duplication_done = faux
+	i_Mort_JeMeNoie_flag = faux
+	fct_main_etat = "Lapin_ETAT_ATTENTE"
+}
+
+procedure_local vector Lapin_FUITE_sous_terre_jump_pos(vector tv_surface_pos)
+{
+	int		ti_cote
+	int		ti_cote_done[9]
+	int		ti_cpt
+	int		ti_ok
+	int		ti_i
+	float	tf_dist
+	vector	tv_ray_dir
+	vector	tv_pos
+	object	to_ray
+	object	to_wp
+	float		tf_dist_min
+	float		tf_dist_max
+	// test config est-ce qu'on m'a indiqué des endroits pour ressortir du sol ???
+	ti_ok = faux
+	if( Surgit_du_sol_wp[0] )
+	{
+		while( ! ti_ok )
+		{
+			ti_i = MATH_RandInt(0, 5)
+			while( ! Surgit_du_sol_wp[ti_i] )
+				ti_i = MATH_RandInt(0, 5)
+			to_wp = Surgit_du_sol_wp[ti_i]
+			if( OBJ_SqrDistHorz(to_wp) > 25.0 )
+				ti_ok = vrai
+		}
+		return @to_wp OBJ_PosGet()
+	}
+//	if( Surgit_du_sol_wp[0] )
+//	{
+//		ti_i = MATH_RandInt(0, 5)
+//		while( ! Surgit_du_sol_wp[ti_i] )
+//		{
+//			ti_i = MATH_RandInt(0, 5)
+//		}
+//		to_wp = Surgit_du_sol_wp[ti_i]
+//		return @to_wp OBJ_PosGet()
+//	}
+	// test contre-attaque ou 8 directions
+	for( ti_i = 0; ti_i < 9; ti_i++ )
+		ti_cote_done[ti_i] = faux
+	ti_ok = faux
+	ti_cpt = -1
+	tf_dist_min = 5.0
+	tf_dist_max = 15.0
+	while( ! ti_ok )
+	{
+		if( ti_cpt == -1 && o_fuite_actor )
+		{
+			tv_ray_dir = @o_fuite_actor OBJ_PosGet() - OBJ_PosGet()
+			tv_ray_dir.z = 0.0
+			tf_dist = MATH_VecNorm(tv_ray_dir)
+			MATH_VecSetNormalize(tv_ray_dir)
+			if( tf_dist < tf_dist_max )
+				ti_cote = 4
+			else
+				ti_cote = MATH_RandInt(0,4)
+		}
+		else
+			ti_cote = MATH_RandInt(0,4)
+		if( ti_cpt == -1 )
+			ti_cpt = 0
+		while( ti_cote_done[ti_cote] )
+		{
+			if( ti_cpt < 4 )
+				ti_cote = MATH_RandInt(0,4)
+			else
+				ti_cote = MATH_RandInt(5,9)
+		}
+		ti_cote_done[ti_cote] = vrai		// checké
+		if( ti_cote != 4 )
+		{
+			ti_cpt++
+			tf_dist = MATH_RandFloat(tf_dist_min, tf_dist_max)
+		}
+		switch( ti_cote )
+		{
+			case 0 :
+				tv_ray_dir = OBJ_HorizonGet()
+				break
+			case 1 :
+				tv_ray_dir = - OBJ_HorizonGet()
+				break
+			case 2 :
+				tv_ray_dir = OBJ_SightGet()
+				break
+			case 3 :
+				tv_ray_dir = - OBJ_SightGet()
+				break
+			case 4 :
+				// vers mon fuite actor
+				break
+			case 5 :
+				tv_ray_dir = MATH_VecBlendRotate(OBJ_HorizonGet(), OBJ_SightGet(), 0.5)
+				break
+			case 6 :
+				tv_ray_dir = MATH_VecBlendRotate(OBJ_SightGet(), - OBJ_HorizonGet(), 0.5)
+				break
+			case 7 :
+				tv_ray_dir = MATH_VecBlendRotate(- OBJ_HorizonGet(), - OBJ_SightGet(), 0.5)
+				break
+			case 8 :
+				tv_ray_dir = MATH_VecBlendRotate(- OBJ_SightGet(), OBJ_HorizonGet(), 0.5)
+				break
+		}
+		DBG_RenderVector(tv_surface_pos + cvector(0,0,1), tv_ray_dir * tf_dist, color_rouge)
+		to_ray = COL_RayObject_Dist(tv_surface_pos + cvector(0,0,1), tv_ray_dir, tf_dist, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+		if( ! to_ray )
+		{
+			ti_ok = vrai
+			tv_pos = (tv_surface_pos + (tv_ray_dir * tf_dist) )
+			DBG_RenderVector(tv_surface_pos + cvector(0,0,1), tv_ray_dir * tf_dist, color_vert)
+		}
+		if( ti_cpt == 8 )
+		{
+			ti_ok = vrai		// rien de valide
+			tv_pos = tv_surface_pos
+		}
+	}
+	return tv_pos
+}
+
+
+// ROPE ====================================================================================================
+
+procedure_local object Lapin_ROPE_Get_Gao(byref vector tv_pos_A, byref vector tv_pos_B, byref int ti_flag_tension)
+{
+	object	to_gao	
+
+	float		tf_sqr_rope_length
+	float 		tf_rope_length
+	float 		tf_rope_ratio
+
+	vector	tv_offset_A
+	vector	tv_offset_B
+	vector	tv_rope_AB
+
+	ti_flag_tension = faux
+
+	to_gao = @o_rope_manager Rope_Manager_Get_Linked_Gao(OBJ_Me(), tf_rope_length, tf_rope_ratio, tv_offset_A, tv_offset_B)
+	if (to_gao)
+	{
+		if (tf_rope_ratio <  1.0)
+		{
+			tv_pos_A = OBJ_PosGet() + MATH_VecLocalToGlobal(tv_offset_A)
+			tv_pos_B = @to_gao OBJ_PosGet() + @to_gao MATH_VecLocalToGlobal(tv_offset_B)
+		
+//			DBG_RenderVector(tv_rope_pos, -tv_rope_AB, color_cyan)	
+	
+			tf_sqr_rope_length = tf_rope_length * 0.7
+			tf_sqr_rope_length *= tf_sqr_rope_length
+			
+			if (MATH_VecSquareNorm(tv_pos_B - tv_pos_A) > tf_sqr_rope_length)
+				ti_flag_tension = vrai
+
+			return(to_gao)
+		}
+	}
+	
+	return(nobody)
+}
+
+
+
+procedure_local int Lapin_ROPE_Gogo_Mode()
+{
+	int			ti_return	
+	int			ti_flag_tension
+
+	float		tf_speed
+	float		tf_duree
+
+	vector	tv_pos_A
+	vector	tv_pos_B
+	vector	tv_AB
+	vector	tv_temp
+	vector	tv_main_sight
+	object	to_rope_gao
+
+	ti_return = faux
+	
+	if( i_gogo_test_done )
+		return i_gogo_last_result
+	
+	i_gogo_test_done = vrai
+
+	tv_main_sight = IO_JoyGetMove()
+	if ( MATH_VecSquareNorm(tv_main_sight) < tolerance_joynull * tolerance_joynull )
+		tv_main_sight = Cv_NullVector
+	
+//	tv_main_sight = @o_main_actor OBJ_SightGet()
+	to_rope_gao = Lapin_ROPE_Get_Gao(tv_pos_A, tv_pos_B, ti_flag_tension)
+	if ( to_rope_gao && ( to_rope_gao == o_main_actor || to_rope_gao == @o_main_actor PROC_RM_MontureGet() ) )
+	{
+		tv_AB = tv_pos_B - tv_pos_A
+			
+		tf_speed = MATH_VecSquareNorm(v_speedgetvector)
+
+		tv_temp = MATH_VecCrossProduct(tv_main_sight, v_last_main_sight)
+	
+		if (MATH_AbsFloat(tv_temp.z) > 3.5 * TIME_GetDt()) // 0.1)
+		{
+			if (tf_speed < 64.0 || MATH_FloatSign(tv_temp.z) == MATH_FloatSign(MATH_VecCrossProduct(tv_AB, v_speedgetvector).z))
+			{
+				f_main_gogo_duration += MATH_FloatMin(1.0 - f_main_gogo_duration, TIME_GetDt())
+			}
+			else
+			{
+				f_main_gogo_duration -= MATH_FloatMin(f_main_gogo_duration, TIME_GetDt())
+				DBG_RenderSphere(@to_rope_gao OBJ_PosGet(), 2.0, color_jaune)
+			}
+		}
+		else
+		{
+			f_main_gogo_duration -= MATH_FloatMin(f_main_gogo_duration, 0.5 * TIME_GetDt())
+			DBG_RenderSphere(@to_rope_gao OBJ_PosGet(), 2.0, color_rouge)
+		}
+		
+		// passage en gogo ?
+		if( Lapin_GRAPPIN_Control_Test() )
+			tf_duree = 0.6
+		else
+			tf_duree = 0.3
+		
+		if (f_main_gogo_duration > tf_duree)
+		{
+			ti_return	= vrai
+		
+//			DBG_RenderVector(tv_pos_A, tv_AB, color_jaune)	
+		
+			if (tf_speed < 64.0 && ! MATH_VecNullEpsilon(tv_temp) )
+			{
+				tv_AB = MATH_VecCrossProduct(tv_temp, tv_AB)
+			}
+			else
+			{
+				tv_temp = MATH_VecCrossProduct(tv_AB, v_speedgetvector)	
+
+				if( MATH_VecNullEpsilon(tv_temp) )
+					tv_temp	= Cv_VerticalVector
+
+				tv_AB = MATH_VecCrossProduct(tv_AB, tv_temp)
+
+				if( MATH_VecNullEpsilon(tv_AB) )
+					tv_AB = cvector(1.0, 0.0, 0.0)
+
+				tv_AB *= MATH_FloatSign(MATH_VecDotProduct(tv_AB, v_speedgetvector))
+			}
+	
+			MATH_VecSetNormalize(tv_AB)
+			
+//			if( i_ground_flag )
+//				tv_AB *= 45.0
+//			else
+//				tv_AB *= 60.0
+		
+			tv_AB *= 30.0	
+
+			v_traction_gogo += tv_AB
+		}
+	}
+	else
+	{
+		f_main_gogo_duration = 0.0
+	}
+	
+	f_gogo_backup_joy_dt += TIME_GetDt()
+	if (f_gogo_backup_joy_dt > 0.05)
+	{
+		f_gogo_backup_joy_dt -= 0.05
+		v_last_main_sight = tv_main_sight
+	}
+	i_gogo_last_result = ti_return
+	return(ti_return)
+}
+
+procedure_local void Lapin_Backup_1stInGame_ValidPos()
+{
+	if( MATH_VecNullToler(v_1st_ingame_valid_pos, 0.01) )
+		v_1st_ingame_valid_pos = OBJ_PosGet()
+}
+
+
+procedure_local int Lapin_Atk_Simultannees_IsValid(object to_actor, byref int ti_cpt)
+{
+	int				ti_rank
+	int				ti_txt
+	int				ti_done
+	int				ti_display
+	object		to_gao
+	message	tmsg_filter
+	messageid	tmid_interet
+	
+	ti_cpt = 0
+	ti_done = faux
+	// display ?
+	ti_display = faux
+	if( i_Atk_Simultannees_main_flag_done && Lapin_DBG_Display_ON() )
+		ti_display = vrai
+	if( to_actor )
+	{
+		// selon acteur à tester
+		if( to_actor == o_main_actor )
+		{
+			// si c'est le main actor : je calcule dans le reflex et si veux recalculer dans un état je retourne la valeur calculée 
+			if( i_Atk_Simultannees_main_flag_done )
+			{
+				ti_cpt = i_Atk_Simultannees_main_nb
+				ti_done = vrai
+			}
+			else
+				i_Atk_Simultannees_main_flag_done = vrai
+		}
+		else
+		{
+			// si ce n'est pas le main : si c'est -1 je me fous de calculer la valeur
+			if( Atk_Simultanees_max_nb == -1 )
+				ti_done = vrai
+		}
+		// calcul de la valeur ?
+		if( ! ti_done )
+		{
+			ti_rank = -1
+			MSG_SetNull(tmsg_filter)
+			tmsg_filter.msg_gao1 = to_actor
+			tmsg_filter.msg_int2 = C_EVENT_InteretStatusAttack
+			tmsg_filter.msg_int3 = i_Perso_ID		// lapinous
+			for(	tmid_interet = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tmsg_filter);
+					MSG_GlobalIsValid(tmid_interet);
+					tmid_interet = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tmsg_filter) )
+			{
+					to_gao = EVENT_PereGet(tmid_interet)
+					if( to_gao != OBJ_Me() )
+						ti_cpt++
+			}
+			if( ti_display )
+			{
+				ti_txt = STR_CreateText("\cFF\\h0.1\", VIEW_3dWorldTo2d(0,OBJ_PosGet()) + cvector(0,-0.1,0), 0.0)
+				STR_AppendInt(ti_txt, ti_cpt)
+				STR_AppendText(ti_txt, " / ")
+				STR_AppendInt(ti_txt, Atk_Simultanees_max_nb)
+			}
+		}
+		// moins que le max
+		if( ti_cpt <= Atk_Simultanees_max_nb )
+			return vrai
+	}
+	// toujours valide
+	if( Atk_Simultanees_max_nb == -1 )
+		return vrai
+	return faux
+}
+
+
+procedure_local void Lapin_INTERET_Attack()
+{
+	EVENT_InteretStatusSet(mid_best_interet, C_EVENT_InteretStatusAttack)
+	f_interet_attack_countdown = Cf_interet_attack_countdown
+}
+
+procedure_local void Lapin_PRIORITY_Set(int ti_prio)
+{
+	AI_PrioritySet(ti_prio)
+}
+
+
+procedure_local void Lapin_COUNTER_PositionCompute()
+{
+	vector	tv_temp1
+	vector	tv_temp2
+	vector	tv_temp3
+	vector	tv_temp4
+
+	tv_temp1 = v_Counter_start_pos - v_Counter_start_nmi_pos
+	tv_temp1.z = 0.0
+	tv_temp4 = MATH_VecNormalize(tv_temp1)
+	tv_temp2 = - 0.5 * tv_temp4
+	tv_temp2.z = 0.0
+	DBG_RenderVector(v_Counter_start_nmi_pos, tv_temp1, color_jaune)
+	DBG_RenderVector(v_Counter_start_nmi_pos, tv_temp2, color_cyan)
+	tv_temp3 = MATH_VecBlendRotate(tv_temp1, tv_temp2, f_Counter_angle * f_Counter_coef)
+	DBG_RenderVector(v_Counter_start_nmi_pos, tv_temp3, color_rouge)
+	v_Counter_next_pos = v_Counter_start_nmi_pos + tv_temp3
+}
+
+procedure_local void Lapin_RIDEMOUNT_Callback_Cancel()
+{
+	switch( i_RideMount_ID )
+	{
+		case C_ID_Scooter :
+		case C_ID_Monture_Transport :
+		case C_ID_Monture_Soucoupe :
+			AI_CBDel(o_RideMount_Callback_Actor, CallBack_After_Rec, "Lapin_callback_RideMount")
+			break
+		case C_ID_Monture_Rope :
+			// :)
+			break
+		default:
+			AI_CBDel(o_RideMount_Callback_Actor, CallBack_After_Blend, "Lapin_callback_RideMount")
+			break
+	}
+	o_RideMount_Callback_Actor = nobody
+	i_RideMount_ID = 0
+}
+
+procedure_local void Lapin_RIDEMOUNT_Cancel()
+{
+	if( o_RideMount_Actor )
+	{
+		o_RideMount_Actor = LNK_ClientGet(Ci_LNK_RIDE_ON_NMI, mid_RideMount_LNK_ID, faux, nofunc, nofunc, nofunc)
+		Lapin_RIDEMOUNT_Callback_Cancel()
+		Lapin_DYNA(vrai)
+	}
+}
+
+procedure_local vector Lapin_GFX_GoutteSueur_PosGet()
+{
+	vector	tv_pos
+	tv_pos = @o_canal_tete OBJ_PosGet()
+	tv_pos += @o_canal_tete OBJ_BankingGet() * 0.2 * OBJ_ZoomGet()
+	tv_pos += @o_canal_tete OBJ_SightGet() * 0.37 * OBJ_ZoomGet()
+	return tv_pos
+}
+
+procedure_local void Lapin_GFX_GoutteSueur_Creation()
+{
+	f_GFX_GoutteSueur_taille = MATH_RandFloat(0.75,1.5) * OBJ_ZoomGet()
+	v_GFX_GoutteSueur_pos = Lapin_GFX_GoutteSueur_PosGet()
+	f_GFX_GoutteSueur_dist = 0.5 * OBJ_ZoomGet()
+	f_GFX_GoutteSueur_duree = 0.5
+	i_GFX_GoutteSueur1 = -1
+	i_GFX_GoutteSueur2 = -1
+	PROC_SFX_GOUTTES_LAPIN_01(v_GFX_GoutteSueur_pos, f_GFX_GoutteSueur_taille, f_GFX_GoutteSueur_dist, i_GFX_GoutteSueur1, i_GFX_GoutteSueur2)
+}
+
+
+// APPARITION ? ===================================================================================================
+procedure_local int Lapin_APPARITION_Terminee()
+{
+	if( i_App_Trigger_done && ! o_App_next_wp && i_etat_courant != ETAT_Lapin_APPARITION )
+		return vrai
+	else
+		return faux
+}
+
+procedure_local void Lapin_APPARITION_Initialisation()
+{
+	object 	to_gao
+	vector	tv_pos
+	vector	tv_pos0
+	vector	tv_offset
+	int			ti_i
+	int			ti_cpt
+	
+	if( ! App_WP )	// il y a un trigger mais pas de wp
+		App_WP = OBJ_Me()		// alors j'apparaitrait là où on m'a positionné
+	i_App_Trigger_done = faux
+	o_App_next_wp = App_WP		// init next
+	i_invisible_flag = vrai
+	if( o_item )
+		@o_item OBJ_FlagInvisibleSet(vrai)
+	if( o_key )
+		@o_key OBJ_FlagInvisibleSet(vrai)
+	if( o_RideMount_Actor )
+	{
+		@o_RideMount_Actor OBJ_FlagInvisibleSet(vrai)
+		ti_cpt = 2
+		tv_pos0 = @App_WP OBJ_PosGet() + cvector(0,0,1)
+		tv_offset = @o_RideMount_Actor MATH_VecGlobalToLocal(OBJ_PosGet() - @o_RideMount_Actor OBJ_PosGet())
+	}
+	else
+	{
+		ti_cpt = 1
+		tv_pos0 = @App_WP OBJ_PosGet()
+		tv_offset = Cv_NullVector
+	}
+	for( ti_i = 0; ti_i < ti_cpt; ti_i++ )
+	{
+		if( ! ti_i )
+		{
+			to_gao = OBJ_Me()
+			tv_pos = tv_pos0
+			if( o_RideMount_Actor )
+				tv_pos += @o_RideMount_Actor MATH_VecLocalToGlobal(tv_offset)
+		}
+		else
+		{
+			to_gao = o_RideMount_Actor
+			tv_pos = tv_pos0
+		}
+		@to_gao OBJ_PosSet(tv_pos)
+		@to_gao OBJ_BankingGeneralSet(@App_WP OBJ_SightGet(), v_ground_normale ) //@Spawn_WP OBJ_BankingGet())
+		@to_gao COL_StartMatrixSet(@to_gao OBJ_PosGet())
+	}
+	v_last_pos = OBJ_PosGet()
+	v_Apparition_init_pos = OBJ_PosGet()
+}
+
+
+procedure_local object Lapin_Get_Target(object to_target)
+{
+	object	to_gao
+	if( Atk_Activate_Explosive_Box && to_target == o_main_actor )
+	{
+		to_gao = @o_main_actor PROC_RM_Current_HotSpot_Get()
+		if( to_gao && @to_gao AI_IsModel(get_RM_Box_path) 
+		&& @to_gao Proc_Box_Explose_Si_Coup() 
+		&& ! @to_gao Proc_Box_Explose_Activee() )
+		{
+			return to_gao
+		}
+	}
+	return to_target
+}
+
+
+
+procedure_local int Lapin_Target_Reachable(object to_target)
+{	
+	int			ti_result
+	
+	object	to_target_bone	
+	object	to_bone
+	object	to_gao
+	
+	vector	tv_start_pos
+	vector	tv_me_to_target
+	vector	tv_offset
+
+	if ( ! to_target )
+		return faux
+	
+	// si rayman est derrière une mine alors je considère que c bon je peux attaquer
+	to_gao = Lapin_Get_Target(to_target)
+	if( to_gao != to_target )
+		return vrai
+	
+	to_target_bone = @to_target ANI_CanalObjectGet(Anim_Canal_Tete)
+	if (!to_target_bone)
+		to_target_bone = to_target
+	
+	tv_start_pos = OBJ_PosGet()
+//	tv_start_pos.z = @ao_head_bones[i_head_bone_nb] OBJ_PosGet().z
+	to_bone = ANI_CanalObjectGet(Anim_Canal_Bassin)
+	tv_start_pos.z = @to_bone OBJ_PosGet().z
+	
+	if (COL_LIB_Can_See_Actor(to_target, tv_start_pos, @to_target_bone OBJ_PosGet(), all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable))
+		return vrai		// Le lancer de rayon n'a rien touché
+		
+	return faux
+}
+
+
+procedure_local void Lapin_BONUS_Generate(vector tv_axis)
+{
+	vector	tv_temp
+	vector	tv_pos
+	vector	tv_dir
+	object	to_gao
+	int			ti_i
+	int			ti_SND
+	int			ti_nb
+	int			ti_life
+	ti_nb = Bonus_Life + Bonus_Mana
+	tv_pos = cvector(MATH_RandFloat(-0.5,0.5), MATH_RandFloat(0.0,0.5), MATH_RandFloat(-0.5,0.5)) * OBJ_ZoomGet()
+	tv_pos += @o_canal_tete OBJ_PosGet()
+	tv_axis.z = 0.0
+	for( ti_i = 0; ti_i < ti_nb; ti_i++ )
+	{
+		tv_dir = tv_axis
+		tv_temp = MATH_VecCrossProduct(tv_dir, Cv_VerticalVector)
+		tv_dir += MATH_RandFloat(-2.0, 2.0) * tv_temp
+		tv_dir += MATH_RandFloat(-0.2,2.0) * Cv_VerticalVector
+		MATH_VecSetNormalize(tv_dir)
+		tv_dir *= MATH_RandFloat(5.0,14.0)
+		if( ti_i < Bonus_Life )
+			ti_life = vrai
+		else
+			ti_life = faux
+		to_gao = Proc_RM_GenerateLifeMana(ti_life, 1 - ti_life, tv_pos, tv_dir)
+		if( ! ti_i )
+		{
+			ti_SND = @to_gao SND_Request(1, 0)
+			SND_Play(ti_SND)
+		}
+	}
+}
+
+
+procedure_local void Lapin_EXPRESSION(float tf_expr)
+{
+	f_expr_mouth = tf_expr
+}
+
+procedure_local void Proc_PNJ_Lapin_Ptizetre_GFX_display(int ti_vrai)
+{
+	i_Ptizetre_GFX_display = ti_vrai
+	if( o_key && @o_key PROC_KEY_TypeGet() == KEY_TYPE_PTIZETRE )
+	{
+		@o_key PROC_KEY_Objectif_ID_Display(ti_vrai)
+	}
+}
+
+
+
+// TAUPE ======================================================================================================
+procedure_local vector Lapin_TAUPE_Jump_Pos_Get(vector tv_surface_pos)
+{
+	return Lapin_FUITE_sous_terre_jump_pos(tv_surface_pos)
+}
+
+procedure_local void Lapin_TAUPE_Paffe()
+{
+	i_flag_zde_fight_enable = vrai
+	i_taupe_attack_flag = vrai
+	if( i_taupe_in_back_flag )
+		i_taupe_in_back_attack_flag = vrai
+
+}
+
+procedure_local void Lapin_TAUPE_GFX()
+{
+	v_GFX_ground_pos = OBJ_PosGet()
+	if( o_RideMount_before_Taupe_backup )
+	{
+//		PROC_SFX_EXPLOSION_CARTOON(OBJ_PosGet())		// masquer la monture
+		f_GFX_smoke_delai = 1.0
+		f_GFX_ground_christophe_delai = 0.5
+	}
+	else
+	{
+		f_GFX_smoke_delai = 1.0
+		f_GFX_ground_christophe_delai = Cf_GFX_Ground_Apparition_delai
+	}
+}
+
+
+procedure_local void Lapin_TAILLE_Init(byref float tf_zoom)
+{
+	float	tf_life
+	switch( Type )
+	{
+		case Lapin_Type_Petit :
+			tf_life = 30.0 * PAF_Unit
+			tf_zoom = MATH_RandFloat(0.5,0.6)
+			f_ani_freq = MATH_RandFloat(0.8, 1.2)
+			f_paf_jauge_max = 10.0
+			f_cache_hauteur_min = 1.0
+			if( Atk_Sound_Dist <= 0.0 )
+				Atk_Sound_Dist = 2.0
+			if( Atk_Sound_Speed <= 0.0 )
+				Atk_Sound_Speed = 3.5
+			break
+		case Lapin_Type_Moyen :
+			tf_life = 100.0 * PAF_Unit
+			tf_zoom = MATH_RandFloat(0.9,1.1)
+			f_ani_freq = MATH_RandFloat(0.8, 1.2)
+			f_paf_jauge_max = 60.0
+			f_cache_hauteur_min = 1.5
+			if( Atk_Sound_Dist <= 0.0 )
+				Atk_Sound_Dist = 3.0
+			if( Atk_Sound_Speed <= 0.0 )
+				Atk_Sound_Speed = 3.5
+			break
+		case Lapin_Type_Geant :
+			tf_life = 200.0 * PAF_Unit
+			tf_zoom = MATH_RandFloat(1.95,2.2)
+			f_ani_freq = 1.0
+			f_paf_jauge_max = 100.0
+			f_cache_hauteur_min = 2.0
+			if( Atk_Sound_Dist <= 0.0 )
+				Atk_Sound_Dist = 4.0
+			if( Atk_Sound_Speed <= 0.0 )
+				Atk_Sound_Speed = 3.5
+			break
+		default:
+			DBG_Error("?????")
+	}
+	if( Life_Max > 0.0 )
+		tf_life = Life_Max
+	f_LIFE_max = tf_life
+}
+
+
+procedure_local void Lapin_SND_Cache()
+{
+	if( TIME_Elapsed(f_SND_Cache_Reached, 5.0) )
+	{
+		f_SND_Cache_Reached = TIME_Get()
+		SND_RequestPlay(Ci_SND_Cache_Reached)
+	}
+}
+
+procedure_local void Lapin_SND_Paf(int ti_snd)
+{
+	if( Config_Lapin != Config_Lapin_Terminator )
+		SND_RequestPlay(ti_snd)
+	else
+	{
+		switch( i_decomposition_phase )
+		{
+			case 0 : // FOURRURE
+				SND_RequestPlay(ti_snd)
+				break
+			case 1 :	// INTERMEDIAIRE
+				SND_RequestPlay(ti_snd)
+				SND_RequestPlay(Ci_SND_PAF_Alternatif)
+				break
+			case 2 : // TERMINATOR
+				SND_RequestPlay(Ci_SND_PAF_Alternatif)
+				break
+		}
+	}
+}
+
+// DANSE =======================================================================================================
+procedure_local int Lapin_DANSE_Add()
+{
+	int	pi_indice
+	pi_indice = ARR_ObjSearch(&@get_global ao_Danse_Actors[0], @get_global i_Danse_Actors_nb, OBJ_Me())
+	if( pi_indice == -1 )
+	{
+		@get_global ao_Danse_Actors[@get_global i_Danse_Actors_nb] = OBJ_Me()
+		pi_indice = @get_global i_Danse_Actors_nb
+		@get_global i_Danse_Actors_nb++
+	}
+//	DBG_TraceObject(OBJ_Me())
+//	DBG_TraceString(" : indice de danse n°")
+//	DBG_TraceInt(pi_indice)
+//	DBG_TraceEOL()
+	return	 pi_indice
+}
+
+procedure_local void Lapin_DANSE_Del()
+{
+	int	pi_indice
+	int	pi_i
+	pi_indice = ARR_ObjSearch(&@get_global ao_Danse_Actors[0], @get_global i_Danse_Actors_nb, OBJ_Me())
+	if( pi_indice != -1 )
+	{
+		@get_global i_Danse_Actors_nb--
+		for( pi_i = pi_indice; pi_i < @get_global i_Danse_Actors_nb; pi_i ++)
+			@get_global ao_Danse_Actors[pi_i] = @get_global ao_Danse_Actors[(pi_i +1)]
+	}
+}
+
+procedure_local int Lapin_DANSE_PosGet(byref vector tv_pos)
+{
+	int			ti_i
+	int			ti_nb
+	
+	tv_pos = Cv_NullVector
+	
+	// récup index de positionnement
+	if( i_Danse_pos_index == -1 )
+	{
+		i_Danse_pos_index = Lapin_DANSE_Add()
+//		for( ti_i = 0; ti_i < 10; ti_i++ )
+//		{
+//			if( @get_global ai_LAPIN_Danse_index[ti_i] )
+//				continue
+//			@get_global ai_LAPIN_Danse_index[ti_i] = vrai
+//			i_Danse_pos_index = ti_i
+//			@get_global i_Danse_Actors_nb++
+//			break
+//		}
+	}
+	// récup info de positionnement
+	if( i_Danse_pos_index != -1 )
+	{
+		ti_nb = @get_global i_Danse_Actors_nb
+		switch( ti_nb )
+		{
+			case 1 : 		// formation de danse en solo
+				tv_pos = @o_main_actor OBJ_PosGet()
+				tv_pos += (cf_danse_offet * @o_main_actor OBJ_SightGet() )
+				break
+				
+			case 2 : 		// formation de danse en duo
+				tv_pos = @o_main_actor OBJ_PosGet()
+				switch( i_Danse_pos_index )
+				{
+					case 0 :
+						tv_pos += (cf_danse_offet * @o_main_actor OBJ_HorizonGet() )
+						break
+					case 1 :
+						tv_pos -= (cf_danse_offet * @o_main_actor OBJ_HorizonGet() )
+						break
+				}
+				break
+				
+			case 3 : 		// formation de danse en trio
+				tv_pos = @o_main_actor OBJ_PosGet()
+				switch( i_Danse_pos_index )
+				{
+					case 0 :
+						tv_pos += (cf_danse_offet * @o_main_actor OBJ_HorizonGet() )
+						break
+					case 1 :
+						tv_pos -= (cf_danse_offet * @o_main_actor OBJ_HorizonGet() )
+						break
+					case 2 :
+						tv_pos += (cf_danse_offet * @o_main_actor OBJ_SightGet() )
+						break
+				}
+				break
+				
+			case 4 : 		// formation de danse à 4...
+				tv_pos = @o_main_actor OBJ_PosGet()
+				switch( i_Danse_pos_index )
+				{
+					case 0 :
+						tv_pos += (cf_danse_offet * @o_main_actor OBJ_HorizonGet() )
+						break
+					case 1 :
+						tv_pos -= (cf_danse_offet * @o_main_actor OBJ_HorizonGet() )
+						break
+					case 2 :
+						tv_pos += (cf_danse_offet * @o_main_actor OBJ_SightGet() )
+						break
+					case 3 :
+						tv_pos -= (cf_danse_offet * @o_main_actor OBJ_SightGet() )
+						break
+				}
+				break
+				
+//			case 5 : 		// formation de danse à 5...
+//				break
+//			case 6 : 		// formation de danse à 6...
+//				break
+//			case 7 : 		// formation de danse à 7...
+//				break
+//			case 8 : 		// formation de danse à 8...
+//				break
+//			case 9 : 		// formation de danse à 9...
+//				break
+//			case 10 : 		// formation de danse à 10...
+//				break
+		}
+	}
+	if( ! MATH_VecNullToler(tv_pos, 0.01) )
+	{
+		DBG_RenderVector(OBJ_PosGet() + Cv_VerticalVector, tv_pos - OBJ_PosGet() - Cv_VerticalVector, color_rouge)
+		return vrai
+	}
+	return faux
+}
+
+
+procedure_local void Lapin_ZOOM_Reduction()
+{
+	if( Type == Lapin_Type_Geant )
+	{
+		Lapin_TYPE_Set(Lapin_Type_Moyen)
+		Lapin_TAILLE_Init(f_zoom)
+		i_zoom_reduction = vrai
+	}
+}
+
+procedure_local void Lapin_Check_Vision(object to_pere, messageid EVT_Visibility_ID )
+{
+	int			ti_rank
+	int			ti_index
+	int			ti_flag_ok
+	int			ti_check_territory
+	int			ti_check_visibility
+	
+	float		tf_dist2
+	
+	vector	tv_target_pos
+	vector	tv_temp
+	
+	// RECUPERATION DE L'INDEX DE CE PERSO DANS LE TABLEAU DES ACTEURS PERCUS
+	ti_index = Lapin_Add_Perceived_Actor(to_pere, Ci_PERCEIVED_HEARD, EVT_Visibility_ID)		// Je veux un status pour l attaquer
+
+	// SI POUR UNE RAISON OU POUR UNE AUTRE, CET ACTEUR N'A PAS ETE VALIDE...
+	if (ti_index == -1)
+		return
+	
+	// ON MET A JOUR L'INDEX DES INFOS DE NOTRE MEILLEUR INTERET
+	if( MSG_GlobalIsValid(mid_best_interet) && to_pere == EVENT_InteretTargetGet(mid_best_interet) )
+		i_perceived_best_actor_index = ti_index
+	
+	// LES CADAVRES SONT PERCUS DE TOUTE MANIERE
+	if (ai_perceived_status[ti_index] & Ci_PERCEIVED_IS_DEAD)
+	{
+		ai_perceived_seen[ti_index] = vrai
+		return
+	}
+	
+	
+	// PERSO VISIBLE ???? ==========================================================================
+	tv_target_pos = EVENT_PositionGet(EVT_Visibility_ID)
+	tv_target_pos.z += 1.0
+	ti_flag_ok = faux
+	ti_check_territory = faux
+	
+	if( ai_perceived_status[ti_index] & Ci_PERCEIVED_IDENTIFIED )
+	{
+		// PERSO DEJA IDENTIFIE ------------------------------------------------------------------------------------------------------------------------------------------------
+		ti_check_territory = vrai			// Est-il toujours sur mon territoire ?
+	}
+	else
+	{
+		// PERSO NON IDENTIFIE -------------------------------------------------------------------------------------------------------------------------------------------------
+		switch( ai_perceived_ID[ti_index] )
+		{
+			case C_ID_Rayman :
+				if( to_pere == o_Commander_Force_Target )
+					ti_check_territory = vrai
+				else if( Lapin_VISION_Test(tv_target_pos, @to_pere DYN_SpeedGet()) )
+					ti_check_territory = vrai
+				else if( @get_rayman PROC_RM_Current_HotSpot_Get() == OBJ_Me() && @get_rayman i_grappin_accroche )
+					ti_flag_ok  = vrai		// il m'a grappiné donc je le vois
+				break
+			default:
+				ti_check_territory = vrai
+				break
+		}
+	}
+	
+	
+	// TEST DE TERRITOIRE ===========================================================================
+	if( ti_check_territory )
+	{
+		ti_flag_ok = faux
+		if( ! Territory_BV || Lapin_Pos_in_Territory_BV(tv_target_pos) )
+		{
+			if( ! Territory_Colmap || Lapin_PROC_WAY_TERRITORY_ID_ALLOWED(ai_perceived_territory[ti_index]) )
+			{
+				if( ! Territory_Path || to_pere != o_main_actor || o_path_main_actor_wp )
+				{
+					ti_flag_ok = vrai
+				}
+			}
+		}
+	}
+	
+	if( ti_flag_ok )
+	{
+		// PERSO VISIBLE & ACCESSIBLE !!! ==============================================================
+		ai_perceived_seen[ti_index] = vrai
+		ai_perceived_status[ti_index] |= Ci_PERCEIVED_IDENTIFIED
+		
+		// Est-il dans ma zone rouge ?
+		switch( Type )
+		{
+			case Lapin_Type_Petit :
+				tf_dist2 = 16.0
+				break
+			case Lapin_Type_Moyen :
+				tf_dist2 = 16.0
+				break
+			case Lapin_Type_Geant :
+				tf_dist2 = 16.0
+				break
+			default:
+				DBG_Error("???")
+		}
+		if( Lapin_NEAR_Pos(tv_target_pos, tf_dist2) )
+			ai_perceived_status[ti_index] |= Ci_PERCEIVED_IN_RED_ZONE
+	}
+	else
+	{
+		// PERSO NON VISIBLE OU INACCESSIBLE =========================================================
+		ai_perceived_seen[ti_index] = faux
+		ai_perceived_status[ti_index] &= (~Ci_PERCEIVED_IN_RED_ZONE)
+		ai_perceived_status[ti_index] &= (~Ci_PERCEIVED_IDENTIFIED)
+	}
+}
+

@@ -1,0 +1,92 @@
+#include "RM_Prune_defines.var"
+
+procedure_ultra int Proc_RM_Prune_Dismount()
+{
+	object	to_touche
+	vector	tv_speed
+	float		tf_dist
+	float		tf_oldforce
+
+	if(TIME_Get() - f_TimeLastJumpJoy<0.2)
+		return vrai
+		
+	f_TimeLastJumpJoy = TIME_Get()
+	
+	if(i_Template==Ci_Template_Prune)
+	{
+		if(f_TimeLastJump<=0.2)
+		{
+			tv_speed=DYN_SpeedGetVector()
+//			tv_speed.z =MATH_FloatMin(tv_speed.z + (f_JumpBoostCoef * tv_speed.z), f_MaxJump)
+			
+			tf_oldforce=f_ForceRebond
+			f_ForceRebond = MATH_FloatMin(f_ForceRebond + (f_JumpBoostCoef * f_ForceRebond), f_MaxJump)
+			tv_speed.z+=f_ForceRebond - tf_oldforce			
+
+			DYN_SpeedSetVector(tv_speed)
+			f_CoefJump = MATH_FloatMin(f_CoefJump + (f_JumpBoostCoef * f_CoefJump), f_MaxJump)
+			f_TimeLastJumpJoy = TIME_Get()
+		}
+		else
+		{
+			v_OldPos = OBJ_PosGet() - v_OldPos
+			v_OldPos.z *= 0.2 / TIME_GetDt()
+			v_OldPos.x = 0.0
+			v_OldPos.y = 0.0
+			to_touche=COL_RayObject_Vector(OBJ_PosGet()-(Cv_VerticalVector*f_Prune_Taille),v_OldPos,all,OBJ_C_IdentityFlag_Anims,Ci_Filter_IdentityFlag,COL_C_Ray_on_ColMap_NoCrossable)
+			DBG_RenderVector(OBJ_PosGet()-Cv_VerticalVector*f_Prune_Taille,v_OldPos ,color_bleu)
+	//		DBG_RenderVector(OBJ_PosGet()-Cv_VerticalVector*f_Prune_Taille,-Cv_VerticalVector*0.1,color_bleu)
+	//		to_touche=COL_RayObject_Dist(OBJ_PosGet()-(Cv_VerticalVector*f_Prune_Taille),-Cv_VerticalVector,0.3,all,OBJ_C_IdentityFlag_Anims,Ci_Filter_IdentityFlag,COL_C_Ray_on_ColMap_NoCrossable)
+			if( to_touche )
+			{
+				i_BoostJump = vrai
+				f_TimeLastJumpJoy = TIME_Get()
+			}			
+		}
+	}
+	return faux
+}
+
+procedure_ultra vector Proc_RM_Prune_RidedPosGet()
+{
+	return OBJ_PosGet()+(Cv_VerticalVector * f_Prune_Taille) - (Cv_VerticalVector * 0.3)
+}
+
+procedure_ultra vector Proc_RM_Prune_RidedSightGet()
+{
+	return OBJ_SightGet()
+}
+
+procedure_ultra vector Proc_RM_Prune_RidedBankingGet()
+{
+	return OBJ_BankingGet()
+}
+
+procedure_ultra int Proc_RM_Prune_Grappin_GogoMode()
+{
+	if(i_etat_courant == ETAT_Prune_GOGO)
+		return vrai
+	else
+		return faux
+}
+
+procedure_ultra float Proc_RM_Prune_GetRopeDistRenormalisation()
+{
+	if(i_etat_courant == ETAT_Prune_GOGO)
+		return Cf_Prune_Corde_Gogo
+	else if(i_etat_courant == ETAT_Prune_PASSIVEWAIT)
+		return 10.0
+	else
+		return 5.0
+}
+
+procedure_ultra int Proc_RM_Prune_GetRopeTractionCategory(int pi_Monture)
+{
+	if(i_etat_courant == ETAT_Prune_GOGO)
+		return RopeTractionCategory_Coef_0
+	else if(i_etat_courant == ETAT_Prune_PASSIVEWAIT)
+		return RopeTractionCategory_Coef_025
+	else
+		return RopeTractionCategory_Coef_025
+	
+}

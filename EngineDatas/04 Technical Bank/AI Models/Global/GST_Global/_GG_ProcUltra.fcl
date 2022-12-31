@@ -1,0 +1,433 @@
+//---------------------------------------------------------------------------------------------------------------------------------------------
+// 
+//---------------------------------------------------------------------------------------------------------------------------------------------
+procedure_ultra int Proc_Global_SND_BeatGet()
+{
+	if (!i_SND_BEAT_Tempo)
+		return (-1)							// Means NO Tempo ZIC
+	else
+		return (i_SND_BEAT)
+}
+procedure_ultra int Proc_Global_SND_BeatTempoGet()
+{
+	return (i_SND_BEAT_Tempo)
+}
+
+//---------------------------------------------------------------------------------------------------------------------------------------------
+// Get Registered Camera
+//---------------------------------------------------------------------------------------------------------------------------------------------
+procedure_ultra object Proc_CameraGet()
+{
+	return o_camera
+}
+
+//---------------------------------------------------------------------------------------------------------------------------------------------
+// Register a Camera
+//---------------------------------------------------------------------------------------------------------------------------------------------
+procedure_ultra void Proc_CameraSet(object gao)
+{
+	// Gao is valid ?
+	if (gao != nobody)
+	{
+		DBG_TraceString("Registering Camera : ")
+		DBG_TraceObject(gao)
+		DBG_TraceEOL()
+		o_camera = gao
+		@gao VIEW_AssignObject(0)
+
+		
+		if (@o_camera AI_IsModel(get_Kamera_Path))
+			i_map_kong = vrai
+		else
+			i_map_kong = faux
+
+	}
+}
+//---------------------------------------------------------------------------------------------------------------------------------------------
+
+//---------------------------------------------------------------------------------------------------------------------------------------------
+// AFTER FX - AFTER FX - AFTER FX - AFTER FX - AFTER FX - AFTER FX - AFTER FX - AFTER 
+//---------------------------------------------------------------------------------------------------------------------------------------------
+procedure_ultra void Proc_AE_BlackAndWhiteSet(float AFE_Param)
+{
+	if (AFE_DefaultValue[Param_AE_BlackAndWhite] <= AFE_Param)
+	{
+		if (!AFE_Flags[Param_AE_BlackAndWhite] || (AFE_Flags[Param_AE_BlackAndWhite] && AFE_AiValue[Param_AE_BlackAndWhite] < AFE_Param) )
+		{
+			if (@"univ" VID_gi_ModeOldMovie != 1)
+			{
+				AFE_Flags[Param_AE_BlackAndWhite] = vrai
+				AFE_AiValue[Param_AE_BlackAndWhite] = AFE_Param
+			}
+		}
+	}
+}
+procedure_ultra float Proc_AE_BlackAndWhiteGet()
+{
+	return AFE_CurrentValue[Param_AE_BlackAndWhite]
+}
+procedure_ultra float Proc_AE_BlackAndWhiteDefaultGet()
+{
+	return AFE_DefaultValue[Param_AE_BlackAndWhite]
+}
+procedure_ultra void Proc_AE_BlurSet(float AFE_Param)
+{
+	if (AFE_DefaultValue[Param_AE_Blur] <= AFE_Param)
+	{
+		if (!AFE_Flags[Param_AE_Blur] || (AFE_Flags[Param_AE_Blur] && AFE_AiValue[Param_AE_Blur] < AFE_Param) )
+		{
+			AFE_Flags[Param_AE_Blur] = vrai
+			AFE_AiValue[Param_AE_Blur] = AFE_Param
+		}
+	}
+}
+procedure_ultra float Proc_AE_BlurGet()
+{
+	return AFE_CurrentValue[Param_AE_Blur]
+}
+procedure_ultra float Proc_AE_BlurDefaultGet()
+{
+	return AFE_DefaultValue[Param_AE_Blur]
+}
+procedure_ultra void Proc_AE_BrightnessSet(float AFE_Param)
+{
+	if (AFE_DefaultValue[Param_AE_Brightness] <= AFE_Param)
+	{
+		if (!AFE_Flags[Param_AE_Brightness] || (AFE_Flags[Param_AE_Brightness] && AFE_AiValue[Param_AE_Brightness] < AFE_Param) )
+		{
+			AFE_Flags[Param_AE_Brightness] = vrai
+			AFE_AiValue[Param_AE_Brightness] = AFE_Param
+		}
+	}
+}
+procedure_ultra float Proc_AE_BrightnessGet()
+{
+	return AFE_CurrentValue[Param_AE_Brightness]
+}
+procedure_ultra float Proc_AE_BrightnessDefaultGet()
+{
+	return AFE_DefaultValue[Param_AE_Brightness]
+}
+procedure_ultra void Proc_AE_ColorBalanceSet(float AFE_Param1, float AFE_Param2)
+{
+	if (AFE_DefaultValue[Param_AE_ColorBalance1] <= AFE_Param1)
+	{
+		if (!AFE_Flags[Param_AE_ColorBalance1] || (AFE_Flags[Param_AE_ColorBalance1] && AFE_AiValue[Param_AE_ColorBalance1] < AFE_Param1) )
+		{
+			AFE_Flags[Param_AE_ColorBalance1] = vrai
+			AFE_AiValue[Param_AE_ColorBalance1] = AFE_Param1
+			if (@"univ" VID_gi_ModeOldMovie != 1)
+			{
+				AFE_Flags[Param_AE_ColorBalance2] = vrai
+				AFE_AiValue[Param_AE_ColorBalance2] = AFE_Param2
+			}
+		}
+	}
+}
+procedure_ultra float Proc_AE_ColorBalance1Get()
+{
+	return AFE_CurrentValue[Param_AE_ColorBalance1]
+}
+procedure_ultra float Proc_AE_ColorBalance1DefaultGet()
+{
+	return AFE_DefaultValue[Param_AE_ColorBalance1]
+}
+procedure_ultra float Proc_AE_ColorBalance2Get()
+{
+	return AFE_CurrentValue[Param_AE_ColorBalance2]
+}
+procedure_ultra float Proc_AE_ColorBalance2DefaultGet()
+{
+	return AFE_DefaultValue[Param_AE_ColorBalance2]
+}
+procedure_ultra void Proc_AE_ContrasteSet(float AFE_Param)
+{
+	if (AFE_DefaultValue[Param_AE_Contraste] <= AFE_Param)
+	{
+		if (!AFE_Flags[Param_AE_Contraste] || (AFE_Flags[Param_AE_Contraste] && AFE_AiValue[Param_AE_Contraste] < AFE_Param) )
+		{
+			AFE_Flags[Param_AE_Contraste] = vrai
+			AFE_AiValue[Param_AE_Contraste] = AFE_Param
+		}
+	}
+}
+procedure_ultra float Proc_AE_ContrasteGet()
+{
+	return AFE_CurrentValue[Param_AE_Contraste]
+}
+procedure_ultra float Proc_AE_ContrasteDefaultGet()
+{
+	return AFE_DefaultValue[Param_AE_Contraste]
+}
+procedure_ultra void Proc_AE_MotionBlurSet(float AFE_Param)
+{
+	if (AFE_DefaultValue[Param_AE_MotionBlur] <= AFE_Param)
+	{
+		if (!AFE_Flags[Param_AE_MotionBlur] || (AFE_Flags[Param_AE_MotionBlur] && AFE_AiValue[Param_AE_MotionBlur] < AFE_Param) )
+		{
+			AFE_Flags[Param_AE_MotionBlur] = vrai
+			AFE_AiValue[Param_AE_MotionBlur] = AFE_Param
+		}
+	}
+}
+procedure_ultra float Proc_AE_MotionBlurGet()
+{
+	return AFE_CurrentValue[Param_AE_MotionBlur]
+}
+procedure_ultra float Proc_AE_MotionBlurDefaultGet()
+{
+	return AFE_DefaultValue[Param_AE_MotionBlur]
+}
+procedure_ultra void Proc_AE_MotionSmoothSet(float AFE_Param)
+{
+	if (AFE_DefaultValue[Param_AE_MotionSmooth] <= AFE_Param)
+	{
+		if (!AFE_Flags[Param_AE_MotionSmooth] || (AFE_Flags[Param_AE_MotionSmooth] && AFE_AiValue[Param_AE_MotionSmooth] < AFE_Param) )
+		{
+			AFE_Flags[Param_AE_MotionSmooth] = vrai
+			AFE_AiValue[Param_AE_MotionSmooth] = AFE_Param
+		}
+	}
+}
+procedure_ultra float Proc_AE_MotionSmoothGet()
+{
+	return AFE_CurrentValue[Param_AE_MotionSmooth]
+}
+procedure_ultra float Proc_AE_MotionSmoothDefaultGet()
+{
+	return AFE_DefaultValue[Param_AE_MotionSmooth]
+}
+procedure_ultra void Proc_AE_RemanenceSet(float AFE_Param)
+{
+	if (AFE_DefaultValue[Param_AE_Remanence] <= AFE_Param)
+	{	
+		if (!AFE_Flags[Param_AE_Remanence] || (AFE_Flags[Param_AE_Remanence] && AFE_AiValue[Param_AE_Remanence] < AFE_Param) )
+		{
+			if (@"univ" VID_gi_ModeOldMovie != 1)
+			{
+				AFE_Flags[Param_AE_Remanence] = vrai
+				AFE_AiValue[Param_AE_Remanence] = AFE_Param
+			}
+		}
+	}
+}
+procedure_ultra float Proc_AE_RemanenceGet()
+{
+	return AFE_CurrentValue[Param_AE_Remanence]
+}
+procedure_ultra float Proc_AE_RemanenceDefaultGet()
+{
+	return AFE_DefaultValue[Param_AE_Remanence]
+}
+procedure_ultra void Proc_AE_RotationSmoothSet(float AFE_Param)
+{
+	if (AFE_DefaultValue[Param_AE_RotationSmooth] <= AFE_Param)
+	{	
+		if (!AFE_Flags[Param_AE_RotationSmooth] || (AFE_Flags[Param_AE_RotationSmooth] && AFE_AiValue[Param_AE_RotationSmooth] < AFE_Param) )
+		{
+			AFE_Flags[Param_AE_RotationSmooth] = vrai
+			AFE_AiValue[Param_AE_RotationSmooth] = AFE_Param
+		}
+	}
+}
+procedure_ultra float Proc_AE_RotationSmoothGet()
+{
+	return AFE_CurrentValue[Param_AE_RotationSmooth]
+}
+procedure_ultra float Proc_AE_RotationSmoothDefaultGet()
+{
+	return AFE_DefaultValue[Param_AE_RotationSmooth]
+}
+procedure_ultra void Proc_AE_WrapSet(float AFE_Param)
+{
+	if (AFE_DefaultValue[Param_AE_Wrap] <= AFE_Param)
+	{	
+		if (!AFE_Flags[Param_AE_Wrap] || (AFE_Flags[Param_AE_Wrap] && AFE_AiValue[Param_AE_Wrap] < AFE_Param) )
+		{
+			AFE_Flags[Param_AE_Wrap] = vrai
+			AFE_AiValue[Param_AE_Wrap] = AFE_Param
+		}
+	}
+}
+procedure_ultra float Proc_AE_WrapGet()
+{
+	return AFE_CurrentValue[Param_AE_Wrap]
+}
+procedure_ultra float Proc_AE_WrapDefaultGet()
+{
+	return AFE_DefaultValue[Param_AE_Wrap]
+}
+procedure_ultra void Proc_AE_ZoomSmoothSet(float AFE_Param)
+{
+	if (AFE_DefaultValue[Param_AE_ZoomSmooth] <= AFE_Param)
+	{	
+		if (!AFE_Flags[Param_AE_ZoomSmooth] || (AFE_Flags[Param_AE_ZoomSmooth] && AFE_AiValue[Param_AE_ZoomSmooth] < AFE_Param) )
+		{
+			AFE_Flags[Param_AE_ZoomSmooth] = vrai
+			AFE_AiValue[Param_AE_ZoomSmooth] = AFE_Param
+		}
+	}
+}
+procedure_ultra float Proc_AE_ZoomSmoothGet()
+{
+	return AFE_CurrentValue[Param_AE_ZoomSmooth]
+}
+procedure_ultra float Proc_AE_ZoomSmoothDefaultGet()
+{
+	return AFE_DefaultValue[Param_AE_ZoomSmooth]
+}
+procedure_ultra void Proc_AE_ZoomSmoothCenterSet(float AFE_Param, vector AFE_Vector)
+{
+	if (AFE_DefaultValue[Param_AE_ZoomSmoothCenter] <= AFE_Param)
+	{	
+		if ( (AFE_Param<0 || !AFE_Flags[Param_AE_ZoomSmoothCenter]) || ( AFE_Flags[Param_AE_ZoomSmoothCenter] && AFE_AiValue[Param_AE_ZoomSmoothCenter] < AFE_Param ) )
+		{
+			AFE_Flags[Param_AE_ZoomSmoothCenter] = vrai
+			AFE_AiValue[Param_AE_ZoomSmoothCenter] = MATH_AbsFloat(AFE_Param)
+			AFE_ZoomSmoothPos = AFE_Vector
+		}
+	}
+}
+procedure_ultra float Proc_AE_ZoomSmoothCenterGet()
+{
+	return AFE_CurrentValue[Param_AE_ZoomSmoothCenter]
+}
+procedure_ultra float Proc_AE_ZoomSmoothCenterDefaultGet()
+{
+	return AFE_DefaultValue[Param_AE_ZoomSmoothCenter]
+}
+
+procedure_ultra void Proc_AE_GlowSet(float AFE_Param)
+{
+	if (AFE_DefaultValue[Param_AE_Glow] <= AFE_Param)
+	{	
+		if (!AFE_Flags[Param_AE_Glow] || (AFE_Flags[Param_AE_Glow] && AFE_AiValue[Param_AE_Glow] < AFE_Param) )
+		{
+			AFE_Flags[Param_AE_Glow] = vrai
+			AFE_AiValue[Param_AE_Glow] = AFE_Param
+		}
+	}
+}
+procedure_ultra float Proc_AE_GlowGet()
+{
+	return AFE_CurrentValue[Param_AE_Glow]
+}
+procedure_ultra float Proc_AE_GlowDefaultGet()
+{
+	return AFE_DefaultValue[Param_AE_Glow]
+}
+//---------------------------------------------------------------------------------------------------------------------------------------------
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+procedure_local void LanceTestHumain(int i_id_humain, float maxdist)
+{
+	// Lances
+	if(HL_Requete[i_id_humain])
+	{
+	 	if(!HL_AcceptRequete[i_id_humain])
+	 	{
+			HL_DistRequete[i_id_humain] += 2
+			if(HL_DistRequete[i_id_humain] > maxdist) HL_DistRequete[i_id_humain] = 2
+		}
+		else
+		{
+			HL_DistRequete[i_id_humain] = 2
+		}
+	}
+	
+	HL_Requete[i_id_humain]  = 0
+	HL_AcceptRequete[i_id_humain]  = 0	
+}
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// PLAYER SWAP
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+procedure_ultra int Proc_Global_Player_Swap_Enabled()
+{
+	object	to_jack
+// FRED
+//	to_jack = AI_MainActorGet(C_ID_Joueur)
+//	if( to_jack && @get_Humain_path to_jack i_jump_from_KK_flag )
+//		return faux
+//	else
+		return vrai
+}
+procedure_ultra void Proc_Global_Player_Swap_to_Kong()
+{
+	i_Player_is_Kong = vrai
+	i_Player_on_KK_Shoulder = faux
+	SCT_SetMode(1)		// Kong déclenche la secto
+}
+procedure_ultra void Proc_Global_Player_Swap_to_Indigene()
+{
+	i_Player_is_Kong = faux
+	SCT_SetMode(0)		// la Caméra déclenche la secto
+}
+
+procedure_ultra int Proc_Fire_State(vector tv_watch_pos)
+{
+	int	ti_capa_grid0
+	int ti_capa_grid1
+	GRID_CurrentSet(0)
+	ti_capa_grid0 = GRID_CapaGet(tv_watch_pos)
+	GRID_CurrentSet(1)
+	ti_capa_grid1 = GRID_CapaGet(tv_watch_pos)
+
+	if ( ti_capa_grid1 & Ci_Grid2_EnFeu)
+		return C_FIRE_STATE_BURNING	// BURNING
+	else if(  ti_capa_grid1 & Ci_Grid2_Inflammable)
+		return C_FIRE_STATE_NONE	// NOT BURN
+	else if ( ti_capa_grid1 & Ci_Grid2_Brule)
+		return C_FIRE_STATE_BURNED	// BURNED
+	else
+		return 0	// NOT BURN and will NEVER BURN
+
+}
+
+procedure_ultra void Proc_Global_Reward_Add(object to_obj)
+{
+	if( i_Reward_count < 20 )
+	{
+		ao_Reward[i_Reward_count] = to_obj
+		i_Reward_count++
+	}
+}
+
+//// Activation d'un nouvel objectif
+//procedure_ultra void Proc_Global_OBJECTIF_Activation(int ti_num, object to_pos, object to_visuel, color tc_color)
+//{
+//	if( ! o_Objectif_Manager )
+//		DBG_Error("pour pouvoir activer un nouvel objectif vous devez avoir une instance de RM_ObjectifManager et attendre au moins 1 trame")
+//	@o_Objectif_Manager PROC_OBJECTIF_Manager_Activation(ti_num, to_pos, to_visuel, tc_color)
+//	
+//	#ifndef _FINAL_
+//	DBG_TraceString("GST_Global : active l'objectif n°")
+//	DBG_TraceInt(ti_num)
+//	DBG_TraceString(" / ")
+//	DBG_TraceObject(to_pos)
+//	DBG_TraceString(" / ")
+//	DBG_TraceObject(to_visuel)
+//	DBG_TraceEOL()
+//	#endif
+//}
+//
+//
+//// Validation d'un objectif
+//procedure_ultra void Proc_Global_OBJECTIF_Validation(int ti_num)
+//{
+//	if( ! o_Objectif_Manager )
+//		DBG_Error("pour pouvoir valider un objectif existant vous devez avoir une instance de RM_ObjectifManager et attendre au moins 1 trame")
+//	@o_Objectif_Manager PROC_OBJECTIF_Manager_Validation(ti_num)
+//	
+//	#ifndef _FINAL_
+//	DBG_TraceString("GST_Global : valide l'objectif n°")
+//	DBG_TraceInt(ti_num)
+//	DBG_TraceEOL()
+//	#endif
+//}
+//

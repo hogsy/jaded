@@ -1,0 +1,645 @@
+#include "PNJ_PNY_defines.var"
+
+
+procedure_local void Proc_Spot_GunStartFX(vector pos, float sizemin, float sizemax, float time1, float time2)
+{
+	int		ti_GFX_Feu 
+
+	// FEU
+	ti_GFX_Feu = GFX_Add(13)																// Create the boum
+	
+	GFX_MaterialSet(ti_GFX_Feu, get_SFX_light_and_smoke, -1)      // met le materiau
+	GFX_Seti(ti_GFX_Feu, 13101, 17)               // Materiau 0
+	GFX_Seti(ti_GFX_Feu, 13110, 18)               // Materiau 1
+	GFX_Seti(ti_GFX_Feu, 13111, 19)               // Materiau 2
+	GFX_Seti(ti_GFX_Feu, 13112, 17)               // Materiau 3
+	
+	GFX_Seti(ti_GFX_Feu, 13100, 5)               // *Buffer number of sprite
+	GFX_Seti(ti_GFX_Feu, 13106, 5)           // *number of sprite to generate
+	
+	GFX_Setf(ti_GFX_Feu, 13003, time1)             // Time fase 1
+	GFX_Setf(ti_GFX_Feu, 13004, time2)             // Time fase 2
+	  
+	GFX_Seti(ti_GFX_Feu, 13107, 0)               // Sprites non triés
+	  
+	GFX_FlagSet(ti_GFX_Feu, 0 , 1)
+	GFX_FlagSet(ti_GFX_Feu, 2 , 1)
+	  
+	GFX_Setf(ti_GFX_Feu, 13012, 0.5)              // Time random
+	   
+	GFX_Setv(ti_GFX_Feu, 13201, Cv_NullVector)            // Speed min
+	GFX_Setv(ti_GFX_Feu, 13202, Cv_NullVector)           // Speed max
+	  
+	GFX_Setf(ti_GFX_Feu, 13000, 0.1)              // Growing speed min
+	GFX_Setf(ti_GFX_Feu, 13001, 0.5)              // Growing speed max
+	GFX_Setf(ti_GFX_Feu, 13002, 0.004)              // Friction Grow
+	  
+	GFX_Setf(ti_GFX_Feu, 13005, sizemin)              // Creation size min
+	GFX_Setf(ti_GFX_Feu, 13006, sizemax)              // Creation size max
+	  
+	GFX_Setv(ti_GFX_Feu, 13203, cvector(0.0000, 0.0000, 0.0025))       // friction speed
+	  
+	GFX_Seti(ti_GFX_Feu, 13103, 0x0060A7FF)           // Color fase 0
+	GFX_Seti(ti_GFX_Feu, 13104, 0x70000818)           // Color fase 1
+	GFX_Seti(ti_GFX_Feu, 13105, 0x00000000)           // Color fase 2
+	  
+	GFX_Setf(ti_GFX_Feu, 13009, 0.0)              // Norm speed min
+	GFX_Setf(ti_GFX_Feu, 13010, 0.0)              // Norm speed max
+	  
+	GFX_Setf(ti_GFX_Feu, 13008, 0.01  )              // generation rate
+	  
+	GFX_Setv(ti_GFX_Feu, 13205, Cv_NullVector)          // Mainposspeed
+	GFX_Setv(ti_GFX_Feu, 13206, Cv_NullVector)          // Mainpossfriction
+	   
+	GFX_Setf(ti_GFX_Feu, 13007, 2.0)              			 // Gravity
+	
+	GFX_Setv(ti_GFX_Feu, 13204, Cv_NullVector)			// wind
+		
+	GFX_Setv(ti_GFX_Feu, 13200, pos) 								// Creation Pos
+}
+
+
+
+procedure_local void PNJ_PNY_GFX_Explode( )
+{
+	int				ti_smoke
+	int				ti_spark
+	int				ti_fire
+	int				ti_glass
+
+	vector		tv_pos	
+	vector		tv_wind
+	
+	object		to_camera
+	object	to_light_n_smoke
+	
+	if (!o_car_manager)
+		return
+
+	tv_wind = v_paf_dir * 5.0 // Cv_NullVector // ODE_Getv(0) * 0.85
+		
+	tv_pos = OBJ_PosGet()
+	tv_pos += OBJ_BankingGet()
+
+	tv_pos -= tv_wind * TIME_GetDt()
+
+//	ti_fire = @o_main_actor GFX_Add(13)																// Create the boum
+				
+//	GFX_MaterialSet(ti_fire, get_SFX_light_and_smoke, -1)						// met le materiau
+////	GFX_Seti(ti_fire, 13101, 17)															// Materiau 0
+////	GFX_Seti(ti_fire, 13110, 18)															// Materiau 1
+////	GFX_Seti(ti_fire, 13111, 19)															// Materiau 2
+////	GFX_Seti(ti_fire, 13112, 17)															// Materiau 3
+//	GFX_Seti(ti_fire, 13101, 34)															// Materiau 0
+//	GFX_Seti(ti_fire, 13110, 35)															// Materiau 1
+//	GFX_Seti(ti_fire, 13111, 36)															// Materiau 2
+//	GFX_Seti(ti_fire, 13112, 37)															// Materiau 3
+//
+//	GFX_Seti(ti_fire, 13100, 40)															// *Buffer number of sprite
+//	GFX_Seti(ti_fire, 13106, 40)											// *number of sprite to generate
+//	
+//	GFX_Setf(ti_fire, 13003, 0.1)															// Time fase 1
+//	GFX_Setf(ti_fire, 13004, 0.8)														// Time fase 2
+//	
+//	GFX_Seti(ti_fire, 13107, 0)															// Sprites non triés
+//	
+//	GFX_FlagSet(ti_fire, 0 , 1)
+//	GFX_FlagSet(ti_fire, 2 , 1)
+//	
+//	GFX_Setf(ti_fire, 13012, 0.75)														// Time random
+//	
+//	GFX_Setv(ti_fire, 13201, tv_pos + cvector(-1.0, -1.0, 2.0))												// Speed min
+//	GFX_Setv(ti_fire, 13202, tv_pos + cvector(1.0, 1.0, 3.0))											// Speed max
+//	
+//	GFX_Setf(ti_fire, 13000, -0.05)														// Growing speed min
+//	GFX_Setf(ti_fire, 13001, -0.025)														// Growing speed max
+//	GFX_Setf(ti_fire, 13002, 0.01)													// Friction Grow
+//	
+//	GFX_Setf(ti_fire, 13005, 0.4)														// Creation size min
+//	GFX_Setf(ti_fire, 13006, 0.7)														// Creation size max
+//	
+//	GFX_Setv(ti_fire, 13203, cvector(0.02, 0.02, 0.02))							// friction speed
+//	
+//	GFX_Seti(ti_fire, 13103, 0xFF000000)											// Color fase 0
+//	GFX_Seti(ti_fire, 13104, 0x8027A0FC)											// Color fase 1
+//	GFX_Seti(ti_fire, 13105, 0x00)													// Color fase 2
+//
+//	GFX_Setf(ti_fire, 13009, 0.0)														// Norm speed min
+//	GFX_Setf(ti_fire, 13010, 4.0)														// Norm speed max
+//	
+//	GFX_Setf(ti_fire, 13008, 0.0)														// generation rate
+//	
+//	GFX_Setv(ti_fire, 13205, Cv_NullVector)										// Mainposspeed
+//	GFX_Setv(ti_fire, 13206, Cv_NullVector)										// Mainpossfriction
+//		
+//	GFX_Setf(ti_fire, 13007, 6.0)															// Gravity
+//
+//	GFX_Setv(ti_fire, 13200, tv_pos) 												// Creation Pos
+//	GFX_Setv(ti_fire, 13207, OBJ_HorizonGet() * 1.5)							// CreaPosAxe X
+//	GFX_Setv(ti_fire, 13208, OBJ_SightGet() * 2.0)						// CreaPosAxe Y
+//	GFX_Setv(ti_fire, 13209, OBJ_BankingGet() * 1.5)					// CreaPosAxe Z
+//	GFX_Setv(ti_fire, 13204, tv_wind)											// wind
+
+	ti_smoke = @o_main_actor GFX_Add(13)																// Create the boum
+				
+	GFX_MaterialSet(ti_smoke, get_SFX_light_and_smoke, 8)						// met le materiau
+
+	GFX_Seti(ti_smoke, 13100, 10)															// *Buffer number of sprite
+	GFX_Seti(ti_smoke, 13106, 10)											// *number of sprite to generate
+	
+	GFX_Setf(ti_smoke, 13003, 0.05)															// Time fase 1
+	GFX_Setf(ti_smoke, 13004, 2.0)														// Time fase 2
+	
+	GFX_Seti(ti_smoke, 13107, 0)															// Sprites non triés
+	
+	GFX_FlagSet(ti_smoke, 0 , 1)
+	GFX_FlagSet(ti_smoke, 2 , 1)
+	
+	GFX_Setf(ti_smoke, 13012, 0.75)													// Time random
+	
+	GFX_Setv(ti_smoke, 13201, cvector(-1.0, -1.0, -1.0))							// Speed min
+	GFX_Setv(ti_smoke, 13202, cvector(1.0, 1.0, 1.0))								// Speed max
+	
+	GFX_Setf(ti_smoke, 13000, 0.5)														// Growing speed min
+	GFX_Setf(ti_smoke, 13001, 1.5)														// Growing speed max
+	GFX_Setf(ti_smoke, 13002, 0.0001)												// Friction Grow
+	
+	GFX_Setf(ti_smoke, 13005, 0.5)														// Creation size min
+	GFX_Setf(ti_smoke, 13006, 1.5)														// Creation size max
+	
+	GFX_Setv(ti_smoke, 13203, cvector(0.1, 0.1, 0.2))								// friction speed
+	
+	GFX_Seti(ti_smoke, 13103, 0x80DDDDFF)										// Color fase 0
+	GFX_Seti(ti_smoke, 13104, 0x80202020)											// Color fase 1
+	GFX_Seti(ti_smoke, 13105, 0x00)													// Color fase 2
+
+	GFX_Setf(ti_smoke, 13009, 5.0)														// Norm speed min
+	GFX_Setf(ti_smoke, 13010, 20.0)													// Norm speed max
+	
+	GFX_Setf(ti_smoke, 13008, 0.0)														// generation rate
+	
+	GFX_Setv(ti_smoke, 13205, Cv_NullVector)										// Mainposspeed
+	GFX_Setv(ti_smoke, 13206, Cv_NullVector)										// Mainpossfriction
+		
+	GFX_Setf(ti_smoke, 13007, -4.0)													// Gravity
+
+	GFX_Setv(ti_smoke, 13200, tv_pos) 												// Creation Pos
+	GFX_Setv(ti_smoke, 13204, tv_wind)												// wind
+
+	GFX_Setf(ti_smoke, 13011, @"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager f_car_ground_Z)	// Z min
+
+	ti_spark = @o_main_actor GFX_Add(13)																// Create the boum
+				
+	GFX_MaterialSet(ti_spark, get_SFX_light_and_smoke, -1)						// met le materiau
+	GFX_Seti(ti_spark, 13101, 34)															// Materiau 0
+	GFX_Seti(ti_spark, 13110, 35)															// Materiau 1
+	GFX_Seti(ti_spark, 13111, 36)															// Materiau 2
+	GFX_Seti(ti_spark, 13112, 37)															// Materiau 3
+
+	GFX_Seti(ti_spark, 13100, 40)															// *Buffer number of sprite
+	GFX_Seti(ti_spark, 13106, 40)											// *number of sprite to generate
+	
+	GFX_Setf(ti_spark, 13003, 0.8)															// Time fase 1
+	GFX_Setf(ti_spark, 13004, 0.5)														// Time fase 2
+	
+	GFX_Seti(ti_spark, 13107, 0)															// Sprites non triés
+	
+	GFX_FlagSet(ti_spark, 0 , 1)
+	GFX_FlagSet(ti_spark, 2 , 1)
+	
+	GFX_Setf(ti_spark, 13012, 0.75)														// Time random
+	
+	GFX_Setv(ti_spark, 13201, cvector(-1.0, -1.0, -0.0))							// Speed min
+	GFX_Setv(ti_spark, 13202, cvector(1.0, 1.0, 1.0))								// Speed max
+	
+	GFX_Setf(ti_spark, 13000, 0.0)														// Growing speed min
+	GFX_Setf(ti_spark, 13001, 0.0)														// Growing speed max
+	GFX_Setf(ti_spark, 13002, 0.0001)													// Friction Grow
+	
+	GFX_Setf(ti_spark, 13005, 0.05)														// Creation size min
+	GFX_Setf(ti_spark, 13006, 0.1)														// Creation size max
+	
+	GFX_Setv(ti_spark, 13203, cvector(0.01, 0.01, 0.0))							// friction speed
+	
+	GFX_Seti(ti_spark, 13103, 0xFFC0FFFF)											// Color fase 0
+	GFX_Seti(ti_spark, 13104, 0x802020FF)											// Color fase 1
+	GFX_Seti(ti_spark, 13105, 0x00)													// Color fase 2
+
+	GFX_Setf(ti_spark, 13009, 6.0)														// Norm speed min
+	GFX_Setf(ti_spark, 13010, 12.0)														// Norm speed max
+	
+	GFX_Setf(ti_spark, 13008, 0.0)														// generation rate
+	
+	GFX_Setv(ti_spark, 13205, Cv_NullVector)										// Mainposspeed
+	GFX_Setv(ti_spark, 13206, Cv_NullVector)										// Mainpossfriction
+		
+	GFX_Setf(ti_spark, 13007, -20.0)													// Gravity
+
+	GFX_Setv(ti_spark, 13200, tv_pos) 													// Creation Pos
+	GFX_Setv(ti_spark, 13207, OBJ_HorizonGet() * 0.5)							// CreaPosAxe X
+	GFX_Setv(ti_spark, 13208, OBJ_SightGet() * 0.5)								// CreaPosAxe Y
+	GFX_Setv(ti_spark, 13209, OBJ_BankingGet() * 0.5)							// CreaPosAxe Z
+	GFX_Setv(ti_spark, 13204, tv_wind)													// wind
+
+	GFX_Setf(ti_spark, 13011, @"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager f_car_ground_Z)									// Z min
+	
+	// DEBRIS DE VERRE
+	to_light_n_smoke = @get_global o_global_light_and_smoke_kanada
+	if( ! to_light_n_smoke )
+		return
+	ti_glass = @o_main_actor GFX_Add(13)
+	GFX_MaterialSet( ti_glass, to_light_n_smoke, -1)
+	GFX_FlagSet( ti_glass, 0 , 1)
+	GFX_FlagSet( ti_glass, 2 , 1)
+
+	GFX_Seti( ti_glass, 13110,33)
+	GFX_Seti( ti_glass, 13111,34)
+	GFX_Seti( ti_glass, 13112,24)
+	GFX_Seti( ti_glass, 13113,25)
+
+//	GFX_Seti( ti_glass, 13101,24)
+//	GFX_Seti( ti_glass, 13102,25)
+	GFX_Seti( ti_glass, 13100, 50)
+	GFX_Seti( ti_glass, 13106,50)
+
+	GFX_Setf( ti_glass, 13003, 0.100000)
+	GFX_Setf( ti_glass, 13004, 1.000000)
+
+	GFX_Seti( ti_glass, 13012, 0.500000)	// Time random
+
+	GFX_Seti( ti_glass, 13107,0)
+
+	GFX_Setf( ti_glass, 13000, 0.0) // Growing speed min
+	GFX_Setf( ti_glass, 13001, 0.0) // Growing speed max
+	GFX_Setf( ti_glass, 13002, 0.0) // Growing speed friction
+
+	GFX_Setf( ti_glass, 13005,0.1)
+	GFX_Setf( ti_glass, 13006,0.3)
+
+	GFX_Setf(ti_glass, 13007, -15.0)													// Gravity
+
+	GFX_Setv(ti_glass, 13203, cvector(0.01, 0.01, 0.0))							// friction speed
+
+	GFX_Seti(ti_glass, 13103, 0x0)														// Color fase 0
+	GFX_Seti(ti_glass, 13104, 0xFFFFFFFF)											// Color fase 1
+	GFX_Seti(ti_glass, 13105, 0x00FFFFFF)											// Color fase 2
+
+	GFX_Setv( ti_glass, 13204,cvector(0.00000, 0.00000, 0.00000))
+	GFX_Setv( ti_glass, 13205,cvector(0.00000, 0.00000, 0.00000))
+	GFX_Setv( ti_glass, 13206,cvector(0.00000, 0.00000, 0.00000))
+
+	GFX_Seti( ti_glass, 13114,1)
+	GFX_Setf( ti_glass, 13013,-1.000000)
+	GFX_Setf( ti_glass, 13014,1.000000)
+	GFX_Setf( ti_glass, 13015,-0.150000)
+	GFX_Setf( ti_glass, 13016,0.150000)
+	GFX_Setf( ti_glass, 13008,0.000000)
+
+	GFX_Setv(ti_glass, 13201, cvector(-1.0, -1.0, -1.0))												// Speed min
+	GFX_Setv(ti_glass, 13202, cvector(1.0, 1.0, 1.0))											// Speed max
+
+	GFX_Setf(ti_glass, 13009, 6.0)														// Norm speed min
+	GFX_Setf(ti_glass, 13010, 10.0)														// Norm speed max
+
+	GFX_Setv(ti_glass, 13200, tv_pos) 												// Creation Pos
+	GFX_Setv(ti_glass, 13207, OBJ_HorizonGet() * 0.5)							// CreaPosAxe X
+	GFX_Setv(ti_glass, 13208, OBJ_SightGet() * 0.5)						// CreaPosAxe Y
+	GFX_Setv(ti_glass, 13209, OBJ_BankingGet() * 0.5)					// CreaPosAxe Z
+	GFX_Setv(ti_glass, 13204, tv_wind)											// wind
+	GFX_Setf(ti_glass, 13011, @"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager f_car_ground_Z)	// Z min
+}
+
+
+procedure_local int PNJ_PNY_ODE_Collision()
+{
+	int		ti_i
+	int		ti_car_index
+	int		ti_report_nb	
+	int		tai_report_ID[100]
+	int		ti_wp_nb
+	int		ti_k
+	int		ti_ode_flag
+
+	float		tf_best_dist
+	float		tf_link_length
+	float		tf_on_axis_dist
+	float		tf_speed
+	float		tf_mass
+
+	vector	tv_collide_pos
+	vector	tv_delta_speed
+	vector	tv_normal
+	vector	tv_sight
+	vector	tv_axis
+	vector	tv_my_speed
+	vector	tv_ray_start_pos
+	vector	tv_ray
+
+	object	to_car
+	object	to_wp
+
+	return(faux)
+
+	COL_ODEKeepNext()
+	ti_report_nb = COL_ReportsNumberAndRanksGet(&tai_report_ID[0], 100, COL_C_Extra_ODE)
+	for (ti_i = 0; ti_i < ti_report_nb; ti_i++)
+	{
+		to_car = COL_ObjectGet(COL_C_ReportIndex + tai_report_ID[ti_i])
+//		if (to_car == o_main_actor)
+//			 continue	
+
+		ti_ode_flag = @to_car ODE_Geti(0) // Récupération des flags ODE de l'objet
+		if (ti_ode_flag & 0b10)
+			tf_mass = ODE_Getf(0) // Récupération de la masse de l'objet s'il a un rigid body
+		else
+			tf_mass = Cf_Infinit
+	
+		if (tf_mass < 1000.0)
+			continue
+
+		tv_normal = COL_NormalGet(COL_C_ReportIndex + tai_report_ID[ti_i])
+		tv_collide_pos = COL_CollidedPointGet(COL_C_ReportIndex + tai_report_ID[ti_i])
+
+		return(vrai)
+	}
+
+	return(faux)
+}
+
+
+procedure void PNJ_PNY_GFX_GunsTrace( vector tv_start_pos, vector tv_dest_pos)
+{
+	int		ti_GFX_Smoke
+	
+	vector	tv_axis
+
+	tv_axis = tv_dest_pos - tv_start_pos
+	tv_axis *= 0.5
+
+	ti_GFX_Smoke = GFX_Add(13)																// Create the boum
+	GFX_MaterialSet(ti_GFX_Smoke, get_SFX_light_and_smoke, -1)						// met le materiau
+	GFX_Seti(ti_GFX_Smoke, 13101, 8)															// Materiau 0
+	GFX_Seti(ti_GFX_Smoke, 13100, 50)															// *Buffer number of sprite
+	GFX_Seti(ti_GFX_Smoke, 13106, 50)												// *number of sprite to generate
+	GFX_Setf(ti_GFX_Smoke, 13003, 0.1)															// Time fase 1
+	GFX_Setf(ti_GFX_Smoke, 13004, 0.5)															// Time fase 2
+	GFX_Seti(ti_GFX_Smoke, 13107, 0)															// Sprites non triés
+	GFX_FlagSet(ti_GFX_Smoke, 0 , 1)
+	GFX_FlagSet(ti_GFX_Smoke, 2 , 1)
+	GFX_Setf(ti_GFX_Smoke, 13012, 0.75)														// Time random
+	GFX_Setf(ti_GFX_Smoke, 13005, 0.15)														// Creation size min
+	GFX_Setf(ti_GFX_Smoke, 13006, 0.25)														// Creation size max
+	GFX_Setv(ti_GFX_Smoke, 13201, cvector(-1.0, -1.0, 0.0))							// Speed min
+	GFX_Setv(ti_GFX_Smoke, 13202, cvector(1.0, 1.0, 1.0))								// Speed max
+	GFX_Setf(ti_GFX_Smoke, 13009, 0.0)							// Norm speed min
+	GFX_Setf(ti_GFX_Smoke, 13010, 0.0)									// Norm speed max
+	GFX_Setv(ti_GFX_Smoke, 13203, cvector(0.05, 0.05, 0.05))					// friction speed
+	GFX_Setf(ti_GFX_Smoke, 13000, 0.25)														// Growing speed min
+	GFX_Setf(ti_GFX_Smoke, 13001, 0.5)														// Growing speed max
+	GFX_Setf(ti_GFX_Smoke, 13002, 0.0001)													// Friction Grow
+	GFX_Setf(ti_GFX_Smoke, 13007, -5.0)														// Gravity
+	GFX_Seti(ti_GFX_Smoke, 13103, 0x20909090)											// Color fase 0
+	GFX_Seti(ti_GFX_Smoke, 13104, 0x10A0A0A0)											// Color fase 1
+	GFX_Seti(ti_GFX_Smoke, 13105, 0x00000000)											// Color fase 2
+	GFX_Setf(ti_GFX_Smoke, 13008, 0.001)														// generation rate
+	GFX_Setv(ti_GFX_Smoke, 13205, Cv_NullVector)										// Mainposspeed
+	GFX_Setv(ti_GFX_Smoke, 13206, Cv_NullVector)		 								// Mainpossfriction
+	GFX_Setv(ti_GFX_Smoke, 13204, Cv_NullVector)												// wind
+	GFX_Setv(ti_GFX_Smoke, 13200, tv_start_pos + tv_axis) 								// Creation Pos
+	GFX_Setv(ti_GFX_Smoke, 13207, tv_axis)	// CreaPosAxe X
+}
+
+// LIBGFX_GunsImpact =======================================================
+// IN: 
+// 				Position
+// 				Axis
+// 				Gao sur qui il y a l'impact
+// 				L'os d'un de son Squelette (If applicable (!= -1))
+//
+// OUT:
+//				None 
+// =======================================================================
+procedure void PNJ_PNY_GFX_GunsImpact( vector tv_pos, vector tv_direction, object to_gao, int ti_boneID, int ti_forced_color , int TypeOfMaterial, float tf_Z_min)
+{
+	int		ti_GFX_Impact
+	int		ti_GFX_Smoke
+	int		ti_GFX_Rock
+
+	if (ti_boneID == -1)
+	{
+		ti_GFX_Impact = GFX_Add(9)
+		GFX_FlagSet(ti_GFX_Impact , 0, 1)
+		GFX_FlagSet(ti_GFX_Impact , 2, 1)
+		GFX_MaterialSet(ti_GFX_Impact , get_SFX_light_and_smoke, 5)
+		GFX_Setf(ti_GFX_Impact, 9000, Cf_PiBy2)												// angle d'ouverture
+		GFX_Seti(ti_GFX_Impact, 9100, 30)														// Nombre
+		GFX_Seti(ti_GFX_Impact, 9101, 0xFFB0F8EC) 										// couleur
+		GFX_Setf(ti_GFX_Impact, 9003, 0.99)														// friction
+		GFX_Setf(ti_GFX_Impact, 9001, 4.0)														// vitesse initiale minimum
+		GFX_Setf(ti_GFX_Impact, 9002, 6.0)														// vitesse initiale maximum
+		GFX_Setf(ti_GFX_Impact, 9004, 0.05)													// épaisseur
+		GFX_Setf(ti_GFX_Impact, 9005, 0.2)														// durée de vie minimum
+		GFX_Setf(ti_GFX_Impact, 9006, 1.5)														// durée de vie maximum
+		GFX_Setf(ti_GFX_Impact, 9007, 1.9)														// multiplicateur de longueur
+		GFX_Setf(ti_GFX_Impact, 9008, 0.0)														// generation périod
+		GFX_Setf(ti_GFX_Impact, 9009, 0.05)														// durée de mort minimun
+		GFX_Setf(ti_GFX_Impact, 9010, 0.1)														// durée de mort maximun
+		GFX_Seti(ti_GFX_Impact, 9102, 0b11000)												// Flags (1 => agrandissement centré)
+		GFX_Setv(ti_GFX_Impact, 9200, tv_pos)													// Origine des étincelles
+		GFX_Setv(ti_GFX_Impact, 9201, tv_direction)											// Direction
+		GFX_Setv(ti_GFX_Impact, 9202, cvector(0.0, 0.0, -5.0) )								// gravity
+		GFX_Seti(ti_GFX_Impact, 9103, 3) 												// Zorder
+
+//		ti_GFX_Rock = GFX_Add(13)																// Create the boum
+//		GFX_MaterialSet(ti_GFX_Rock, @get_global o_global_light_and_smoke_kanada, 3) //19)					// met le materiau
+//		GFX_FlagSet(ti_GFX_Rock, 0 , 1)
+//		GFX_FlagSet(ti_GFX_Rock, 2 , 1)
+//		GFX_Seti(ti_GFX_Rock, 13101, 3)															// Materiau 8
+//		GFX_Seti(ti_GFX_Rock, 13100, 10)															// *Buffer number of sprite
+//		GFX_Seti(ti_GFX_Rock, 13106, 10)															// *number of sprite to generate
+//		GFX_Setf(ti_GFX_Rock, 13003, 0.2)														// Time fase 1
+//		GFX_Setf(ti_GFX_Rock, 13004, 1.0)														// Time fase 2
+//		GFX_Seti(ti_GFX_Rock, 13107, 0)															// Sprites non triés
+//		GFX_Setf(ti_GFX_Rock, 13012, 0.50)														// Time random
+//		GFX_Setf(ti_GFX_Rock, 13000, 0.0)														// Growing speed min
+//		GFX_Setf(ti_GFX_Rock, 13001, 0.0)														// Growing speed max
+//		GFX_Setf(ti_GFX_Rock, 13002, 0.0001)													// Friction Grow
+//		GFX_Setf(ti_GFX_Rock, 13005, 0.25)														// Creation size min
+//		GFX_Setf(ti_GFX_Rock, 13006, 0.35)														// Creation size max
+//		GFX_Setv(ti_GFX_Rock, 13203, cvector(0.02, 0.02, 0.0))							// friction speed
+//		GFX_Seti(ti_GFX_Rock, 13103, 0xFF808080)								// Color fase 0
+//		GFX_Seti(ti_GFX_Rock, 13104, 0xFF808080)								// Color fase 1
+//		GFX_Seti(ti_GFX_Rock, 13105, 0)													// Color fase 2
+//		GFX_Setf(ti_GFX_Rock, 13009, 5.0)														// Norm speed min
+//		GFX_Setf(ti_GFX_Rock, 13010, 10.0)															// Norm speed max
+//		GFX_Setf(ti_GFX_Rock, 13007, -20.0)													// Gravity
+//		GFX_Setf(ti_GFX_Rock, 13008, 0.0)														// generation rate
+//		GFX_Setv(ti_GFX_Rock, 13204, Cv_NullVector)									// wind
+//		GFX_Setv(ti_GFX_Rock, 13205, Cv_NullVector)										// Mainposspeed
+//		GFX_Setv(ti_GFX_Rock, 13206, Cv_NullVector)										// Mainpossfriction
+//		GFX_Setv(ti_GFX_Rock, 13200, tv_pos) 												// Creation Pos
+//		GFX_Setf(ti_GFX_Rock, 13011, tf_Z_min)									// Z min
+//		GFX_Setv(ti_GFX_Rock, 13201, cvector( -5.0, -5.0, 0.0))							// Speed min
+//		GFX_Setv(ti_GFX_Rock, 13202, cvector( 5.0, 5.0, 5.0))								// Speed max
+	}
+
+	ti_GFX_Smoke = GFX_Add(13)																// Create the boum
+	GFX_MaterialSet(ti_GFX_Smoke, get_SFX_light_and_smoke, -1)						// met le materiau
+	GFX_Seti(ti_GFX_Smoke, 13101, 8)															// Materiau 0
+	GFX_Seti(ti_GFX_Smoke, 13100, 20)															// *Buffer number of sprite
+	GFX_Seti(ti_GFX_Smoke, 13106, 20)												// *number of sprite to generate
+	GFX_Setf(ti_GFX_Smoke, 13003, 0.5)															// Time fase 1
+	GFX_Setf(ti_GFX_Smoke, 13004, 2.0)															// Time fase 2
+	GFX_Seti(ti_GFX_Smoke, 13107, 0)															// Sprites non triés
+	GFX_FlagSet(ti_GFX_Smoke, 0 , 1)
+	GFX_FlagSet(ti_GFX_Smoke, 2 , 1)
+	GFX_Setf(ti_GFX_Smoke, 13012, 0.75)														// Time random
+	GFX_Setf(ti_GFX_Smoke, 13005, 0.15)														// Creation size min
+	GFX_Setf(ti_GFX_Smoke, 13006, 0.25)														// Creation size max
+	GFX_Setv(ti_GFX_Smoke, 13201, tv_direction + cvector(-1.0, -1.0, -1.0))							// Speed min
+	GFX_Setv(ti_GFX_Smoke, 13202, tv_direction + cvector(1.0, 1.0, 1.0))								// Speed max
+	GFX_Setf(ti_GFX_Smoke, 13009, 3.0)							// Norm speed min
+	GFX_Setf(ti_GFX_Smoke, 13010, 5.0)									// Norm speed max
+	GFX_Setv(ti_GFX_Smoke, 13203, cvector(0.05, 0.05, 0.05))					// friction speed
+	GFX_Setf(ti_GFX_Smoke, 13000, 0.25)														// Growing speed min
+	GFX_Setf(ti_GFX_Smoke, 13001, 0.5)														// Growing speed max
+	GFX_Setf(ti_GFX_Smoke, 13002, 0.0001)													// Friction Grow
+	GFX_Setf(ti_GFX_Smoke, 13007, -5.0)														// Gravity
+	GFX_Seti(ti_GFX_Smoke, 13103, 0x40909090)											// Color fase 0
+	GFX_Seti(ti_GFX_Smoke, 13104, 0x20A0A0A0)											// Color fase 1
+	GFX_Seti(ti_GFX_Smoke, 13105, 0x00000000)											// Color fase 2
+	GFX_Setf(ti_GFX_Smoke, 13008, 0.001)														// generation rate
+	GFX_Setv(ti_GFX_Smoke, 13205, Cv_NullVector)										// Mainposspeed
+	GFX_Setv(ti_GFX_Smoke, 13206, Cv_NullVector)		 								// Mainpossfriction
+	GFX_Setv(ti_GFX_Smoke, 13204, Cv_NullVector)												// wind
+	GFX_Setv(ti_GFX_Smoke, 13200, tv_pos) 								// Creation Pos
+	GFX_Setf(ti_GFX_Smoke, 13011, tf_Z_min)									// Z min
+//	GFX_Setv(ti_GFX_Smoke, 13207, cvector(0.5, 0.0, 0.0))	// CreaPosAxe X
+//	GFX_Setv(ti_GFX_Smoke, 13208, cvector(0.0, 0.5, 0.0))	// CreaPosAxe Y
+}
+
+
+procedure_local void PNJ_PNY_Shoot()
+{
+	int			ti_canal
+	int			ti_sound
+	int			ti_fake 
+
+	vector	tv_impact
+	vector	tv_normal
+	vector	tv_start_pos
+	vector	tv_ray_dir
+
+	object	to_object
+	
+	if (f_shoot_duration != -1.0)
+		f_shoot_duration += TIME_GetDt()
+
+	if (f_before_shot_delay > 0.0)
+		return
+
+	f_before_shot_delay = MATH_RandFloat(0.05, 0.15)
+	SND_RequestPlay(Ci_SND_shoot)
+		
+	to_object = ANI_CanalObjectGet(1)
+	tv_start_pos = @to_object OBJ_PosGet()
+
+	to_object = AI_MainActorGet(C_ID_Kong)
+
+	if (f_inside_bv_duration > 3.0)
+	{
+		// Tir pour TUER
+		to_object = @to_object ANI_CanalObjectGet(Anim_Canal_Ventre)
+
+		tv_ray_dir = @to_object OBJ_PosGet()
+		tv_ray_dir.x += MATH_RandFloat(-1.0, 1.0)
+		tv_ray_dir.y += MATH_RandFloat(-1.0, 1.0)
+		tv_ray_dir.z += MATH_RandFloat(-1.0, 0.5)
+
+		tv_ray_dir -= tv_start_pos 
+		MATH_VecSetNormalize(tv_ray_dir)
+		ti_fake = faux 
+		
+		if (f_shoot_duration == -1.0)
+			f_shoot_duration = 0.0
+	}
+	else
+	{
+		// Tir FAKE
+		tv_ray_dir = @to_object OBJ_PosGet()
+		tv_ray_dir += MATH_VecRotate(-OBJ_SightGet(), Cv_VerticalVector, MATH_RandFloat(-Cf_PiBy2, Cf_PiBy2)) * MATH_RandFloat(1.5, 3.5)
+		tv_ray_dir -= tv_start_pos 
+		MATH_VecSetNormalize(tv_ray_dir)
+		ti_fake = vrai
+		
+		f_shoot_duration = -1.0
+	}
+	
+	COL_SpecificCrossableSet(all)
+	to_object = COL_RayObject_Dist(tv_start_pos + (tv_ray_dir * 5.0), tv_ray_dir, 1000.0, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_visuel_and_bone_volumes | COL_C_Ray_use_SpecificCrossableSet)
+	if (to_object)
+	{
+		DBG_RenderVector(tv_start_pos, COL_RayObject_PosGet() - tv_start_pos, color_rouge)	
+
+		to_object = COL_RayObject_ActorGet()
+		ti_canal = COL_RayObject_CanalGet()
+		tv_impact = COL_RayObject_PosGet()
+		tv_normal = COL_RayObject_NormalGet()
+		ti_sound = COL_RayObject_SoundGet()
+		tv_normal = MATH_VecBlendRotate(tv_normal, tv_ray_dir, 0.25)
+
+		if (f_fake_tir)
+		{
+			// Pour que le tir ne s'arrete pas de suite qd on touche Kong
+			f_fake_tir -= MATH_FloatMin(f_fake_tir,TIME_GetDt())
+			if (!f_fake_tir)
+			{
+				if (o_militaire_tommy)
+					@o_militaire_tommy ACT_ActionSet(12)
+				f_inside_bv_duration = -2.0
+			}
+		}
+		else if ( !ti_fake && to_object == o_main_actor)
+		{	
+			if (f_shoot_duration > 1.5)
+			{
+	//			EVENT_AddEventPafCanal( int EVT_func_Filter, int EVT_func_Type, object EVT_func_Pere, float EVT_func_DureeDeVie, object EVT_func_Target, int EVT_func_Canal, int EVT_func_Puissance, vector EVT_func_Sens, vector EVT_func_position)
+				EVENT_AddEventPafCanal(C_EVENT_FILTER_All, C_PAF_KK_Moyen, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_object, ti_canal, f_domage * PAF_Unit, OBJ_SightGet(), tv_impact)
+				f_fake_tir = 0.15
+
+				// Shooted
+				SPEECH_RequestPost
+				(
+					OBJ_Me(),
+					OBJ_Me(), 
+					SPEECH_CteTxg_SpeNewYork, 
+					GeneNY_C_snipe_hit_kong, 
+					1.0, 
+					SPEECH_Cte_PriorityDefault, 
+					5,
+					0,
+					0,
+					0
+				)
+			}
+			else
+			{
+				EVENT_AddEventPafCanal(C_EVENT_FILTER_All, C_PAF_KK_Micro, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_object, ti_canal, 0.0 * PAF_Unit, OBJ_SightGet(), tv_impact)
+			}
+		}
+
+		if (o_militaire_tommy)
+		{
+			object	to_gao
+			vector	tv_pos 
+			to_gao = @o_militaire_tommy ANI_CanalObjectGet(125)
+			tv_pos = @to_gao OBJ_PosGet() + (@to_gao OBJ_SightGet() * 0.7)
+			Proc_Spot_GunStartFX(tv_pos, 0.2, 0.4, 0.05, 0.2)
+		}
+
+		if (o_car_manager)
+			PNJ_PNY_GFX_GunsImpact( tv_impact, tv_normal, to_object, ti_canal, 0 , ti_sound , @"PNJ_Pacifique/PNJ_Car_Manager" o_car_manager f_car_ground_Z)
+	}
+}
+
+

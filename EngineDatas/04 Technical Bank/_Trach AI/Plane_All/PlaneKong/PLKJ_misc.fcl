@@ -1,0 +1,478 @@
+#include "PLKJ_Defines.var"
+//------------------------------------------------------------------------------------------------------------------
+//	Get the given flags
+//------------------------------------------------------------------------------------------------------------------
+procedure_local int PLKJ_GetFlag(int f)
+{
+	return flags&f
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Set the flag to the given value (false or true)
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_SetFlag(int f,int v)
+{
+	// if the value is true
+	if(v)
+	{
+		// add the flag
+		flags|=f
+	}
+	// else if the value is false
+	else
+	{
+		// remove the flag
+		flags&=~f
+	}
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Blend object o between objects a and b with ratio f
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_RejoinAndOrientBlend(object o,object a,object b,float f,int fixedbanking)
+{
+	vector v
+	if(fixedbanking)
+	{
+		v=cvector(0,0,1)
+	}
+	else
+	{
+		v=MATH_VecBlendRotate(@a OBJ_BankingGet(),@b OBJ_BankingGet(),f)
+	}
+	@o OBJ_PosSet(MATH_VecBlendRotate(@a OBJ_PosGet(),@b OBJ_PosGet(),f))
+	@o OBJ_BankingSet(v)
+	@o OBJ_SightSet(MATH_VecBlendRotate(@a OBJ_SightGet(),@b OBJ_SightGet(),f))
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Place zde on bones
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_PlaceZones()
+{
+	vector v
+	// position body zde
+	COL_ZonePosSet(C_zde_corps,MATH_VecGlobalToLocal(@B_ZdeBody OBJ_PosGet()-OBJ_PosGet()-OBJ_HorizonGet()))
+	COL_ZoneSizeSet(C_zde_corps,2.2*cvector(1,1,1))
+	// position fight zde
+	v=@B_ZdeFight OBJ_PosGet()-OBJ_PosGet()
+	v+=@B_ZdeFight OBJ_BankingGet()*3
+	COL_ZonePosSet(C_zde_fight,MATH_VecGlobalToLocal(v))
+	COL_ZoneSizeSet(C_zde_fight,2*cvector(1,1,1))
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Calculate paf position
+//------------------------------------------------------------------------------------------------------------------
+procedure_local vector PLKJ_GetPafPosition(vector v_Pos)
+{
+	int i,best
+	object o
+	float f,fbest
+	fbest=9999999
+	for(i=0;i<C_PLKJ_NbPafBones;i++)
+	{
+		o=ANI_CanalObjectGet(PafBones[i])
+		f=MATH_VecSquareNorm(v_Pos-@o OBJ_PosGet())
+		if(f<fbest)
+		{
+			best=i
+			fbest=f
+		}
+	}
+	o=ANI_CanalObjectGet(PafBones[best])
+	return @o OBJ_PosGet()
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Read and manage messages
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_GetMessages()
+{
+	message msg
+	object o
+	float f
+	while(MSG_GetCount())
+	{
+		// get message
+		msg=MSG_Get()
+		// if I'm hit by a bullet OR I need to loose one HP
+		if(msg.msg_id==3 || msg.msg_id==2222)
+		{
+			o=msg.msg_sender
+			if(MATH_RandFloat(0,1)<0.2)
+			{
+				if(MATH_RandFloat(0,1)<0.5)
+				{
+					// flesh sound
+					SND_RequestPlay(60)
+					// small hurt sound
+					SND_RequestPlay(10)
+				}
+				// add a big impact for IK
+				PLKJ_IK_BigImpact()
+			}
+			// detect begining of an attack to start a "FIRE!" like speech
+			if(Armor==C_PLKJ_Armor && MATH_RandFloat(0,1)<0.2)
+			{
+				PLKJ_Say(txPilots[13],5)
+			}
+			if(DelayInvulnerable<clock && !(cb&C_PLKJ_CB_NoDamage))
+			{
+				// loose some armor points
+				Armor-=1
+			}
+			// fx
+			if(MATH_RandFloat(0,1)<0.2)
+			{
+				PLKJ_Paf_Particules(PLKJ_GetPafPosition(@o OBJ_PosGet()),msg.msg_vec1,6)
+				// rumble
+				IO_PafSet(100,1)
+			}
+			// do not restore armor for next second
+			DelayRestoreArmor=clock+C_PLKJ_DelayArmor
+			// if armor is too low (and if I'm not dead yet), get hit
+			if((Armor<=0 || msg.msg_id==2222) && HP && !OBJ_CapaTest(C_PLKJ_Capa_NoDamage))
+			{
+				// decrease hit points
+				HP--
+				// rumble
+				IO_PafSet(100,12)
+				// big hurt sound
+				SND_RequestPlay(9)
+				// ungrab any plane
+				PLKJ_UngrabPlane()
+				// anim
+				if(MATH_VecDotProduct(OBJ_HorizonGet(),msg.msg_vec1)<0)
+				{
+					PLKJ_SetAction(C_PLKJ_ACT_PafR)
+				}
+				else
+				{
+					PLKJ_SetAction(C_PLKJ_ACT_PafL)
+				}
+				// more fx
+				PLKJ_Paf_Particules(PLKJ_GetPafPosition(@o OBJ_PosGet()),msg.msg_vec1,40)
+				// if I don't have any HP left
+				if(!HP)
+				{
+					if(OBJ_CapaTest(C_PLKJ_Capa_AlternativeEnd))
+					{
+						PLKJ_SetTimer(0.3,C_PLKJ_TimerEvent_SetCapa,C_PLKJ_Capa_KongIsDead)
+					}
+					else
+					{
+						PLKJ_SetTimer(2.2,C_PLKJ_TimerEvent_SetCapa,C_PLKJ_Capa_KongIsDead)
+					}
+				}
+				else
+				{
+					// may start a special cut
+					if(PLKJ_IsSpecialCutReady())
+					{
+						PLKJ_SetTimer(C_PLKJ_Kam_SpecialCutDelay,C_PLKJ_TimerEvent_KamMode,C_PLKJ_KamMode_SpecialCutPaf)
+					}
+					// restore armor
+					DelayRestoreArmor=0
+					// Ann screams
+					if(MATH_RandFloat(0,1)<0.4)
+					{
+						if(PLKJ_Say(txAnn[AnnSpeechIndex],0))
+						{
+							AnnSpeechIndex++
+							if(AnnSpeechIndex>1)
+							{
+								AnnSpeechIndex=0
+							}
+						}
+					}
+					// if I'm injured or quite injured
+					if(OBJ_CapaTest(C_PLKJ_Capa_Injured))
+					{
+						// "he's getting weaker"
+						PLKJ_Say(txPilots[14],5)
+					}
+					else
+					{
+						// "I hit kong"
+						PLKJ_Say(txPilots[12],5)
+					}
+				}
+			}
+			else
+			{
+				// add a small impact for IK
+				PLKJ_IK_Impact(msg.msg_vec1)
+			}
+		}
+		// else if I need to play a pilot speech
+		else if(msg.msg_id==666)
+		{
+			SpeechTimer=0
+			PLKJ_Say(txPilots[msg.msg_int1],0)
+		}
+		// else if I need to start a cinematic
+		else if(msg.msg_id==999)
+		{
+			PLKJ_StartEvt(msg.msg_int1,vrai)
+		}
+//		// else if I need to start a small fade
+//		else if(msg.msg_id==1111)
+//		{
+//			LIBGFX_Fade(31,0x00000000,0xff000000,0.0,0.3,0.3,0.3,0.0,10)
+//		}
+		// else if I can restaure my HP during alternative end
+		else if(msg.msg_id==21)
+		{
+			HP=HP_Alternative
+			PLKJ_SetInjure(faux)
+		}
+	}
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Set the direction used to snap Kong's rotation
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_SetCurrentDirection(int rot)
+{
+	vector v
+	// if roration is a 180°, neg the direction
+	if(rot==C_PLKJ_Rotation_180)
+	{
+		NewDirection=-CurrentDirection
+	}
+	// else if rotation is a turn forward, do a 90° to the direction
+	else if(rot==C_PLKJ_Rotation_Forward)
+	{
+		v=CurrentDirection
+		NewDirection.x=-v.y
+		NewDirection.y=v.x
+	}
+	// else if rotation is a turn backward, do a -90° to the direction
+	else if(rot==C_PLKJ_Rotation_Backward)
+	{
+		v=CurrentDirection
+		NewDirection.x=v.y
+		NewDirection.y=-v.x
+	}
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Return true if Kong has to go forward, favoring Kong going in front of the camera
+//------------------------------------------------------------------------------------------------------------------
+procedure_local int PLKJ_CanITurnForward()
+{
+	// if Kong is on left or right and the player wants to go the other side
+	if(CurrentDirection.x!=0 && JoyAngleWithDir==C_PLKJ_Rotation_180)
+	{
+		if(CurrentDirection.x<0) return vrai
+		return faux
+	}
+	// else normal behaviour
+	else if(JoyAngleWithDir>0)
+	{
+		return vrai
+	}
+	return faux
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Armor regeneration
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_Regenerate()
+{
+	// always regenerate armor
+//	Armor=MATH_FloatMin(C_PLKJ_Armor,Armor+(dt*(C_PLKJ_Armor*0.5)))
+	if(DelayRestoreArmor<clock)
+	{
+		if(OBJ_CapaTest(C_PLKJ_Capa_AlternativeEnd))
+		{
+			Armor=C_PLKJ_ArmorAlternative
+		}
+		else
+		{
+			Armor=C_PLKJ_Armor
+		}
+	}
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Set action
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_SetAction(int a)
+{
+	act=a
+	ACT_ActionSet(act)
+	cb=ACT_CustomBitGet()
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Memorize the attack buttons
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_BufferizeAttacks()
+{
+	// if a plane is grabed, force the attack to be a throw
+	if(JoyButton!=C_PLKJ_Button_None && PLKJ_IsPlaneGrabed())
+	{
+		PLKJ_AddAttack(C_PLKJ_Combo_Throw)
+	}
+	// else if button is an attack
+	else if(JoyButton==C_PLKJ_Button_Attack)
+	{
+		PLKJ_AddAttack(C_PLKJ_Combo_Attack)
+	}
+	// else if button is a grab
+	else if(JoyButton==C_PLKJ_Button_Grab)
+	{
+		PLKJ_AddAttack(C_PLKJ_Combo_Grab)
+	}
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Set default action when the previous is finished
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_SetDefaultActions()
+{
+	if(ACT_ActionFinished())
+	{
+		// empty buffer after a successful grab to avoid unwanted plane throw
+		if((act==C_PLKJ_ACT_GrabR_Success || act==C_PLKJ_ACT_UngrabL) && PLKJ_IsPlaneGrabed())
+		{
+			PLKJ_FlushAttackBuffer()
+		}
+		else if(act==C_PLKJ_ACT_PafL || act==C_PLKJ_ACT_PafR)
+		{
+			PLKJ_SetInvulnerable()
+			PLKJ_FlushAttackBuffer()
+		}
+		// finish the GrabR action
+		if(act==C_PLKJ_ACT_GrabR)
+		{
+			if(PLKJ_IsPlaneGrabed()) PLKJ_SetAction(C_PLKJ_ACT_GrabR_Success)
+			else PLKJ_SetAction(C_PLKJ_ACT_GrabR_Fail)
+		}
+		// or start next attack
+		else if(PLKJ_IsAttackInBuffer())
+		{
+			PLKJ_StartAttack()
+		}
+		// else if Kong is injured
+		else if(PLKJ_IsInjured())
+		{
+			// ungrab any plane, he is too weak
+			PLKJ_UngrabPlane()
+			// set the action
+			PLKJ_SetAction(C_PLKJ_ACT_Wait_Hurt)
+		}
+		// or Kong has a plane
+		else if(PLKJ_IsPlaneGrabed())
+		{
+			PLKJ_SetAction(C_PLKJ_ACT_Wait_Plane)
+		}
+		// else wait
+		else
+		{
+			PLKJ_SetAction(C_PLKJ_ACT_Wait)
+		}
+	}
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Trigger urgent actions that may break the current one
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_SetUrgentActions()
+{
+	// if the current action can be interrupted
+	if(cb&C_PLKJ_CB_Interruptible)
+	{
+		// if we have some attacks ready, do it
+		if(PLKJ_IsAttackInBuffer())
+		{
+			PLKJ_StartAttack()
+		}
+		// if a new direction is given with the joy
+		else if(JoyAngleWithDir)
+		{
+			// if I can turn forward to do this movement
+			if(PLKJ_CanITurnForward())
+			{
+				// if I'm not yet going in this direction
+				if(act!=C_PLKJ_ACT_TurnFwd)
+				{
+					// add some inertia if I was going the other way
+					if(act==C_PLKJ_ACT_TurnBwd)
+					{
+						PLKJ_AddInertiaToAnim(C_PLKJ_Anim_SlowSpeed)
+					}
+					// set animation
+					PLKJ_SetAction(C_PLKJ_ACT_TurnFwd)
+					// set new direction
+					PLKJ_SetCurrentDirection(C_PLKJ_Rotation_Forward)
+				}
+			}
+			// else if I must turn backward
+			else
+			{
+				// if I'm not yet going in this direction
+				if(act!=C_PLKJ_ACT_TurnBwd)
+				{
+					// add some inertia if I was going the other way
+					if(act==C_PLKJ_ACT_TurnFwd)
+					{
+						PLKJ_AddInertiaToAnim(C_PLKJ_Anim_SlowSpeed)
+					}
+					// set the animation
+					PLKJ_SetAction(C_PLKJ_ACT_TurnBwd)
+					// set the new direction
+					PLKJ_SetCurrentDirection(C_PLKJ_Rotation_Backward)
+				}
+			}
+		}
+	}
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Slow the animation speed
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_AddInertiaToAnim(int v)
+{
+	AnimSpeed=v
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Adjust the animation speed when a slow down has been set
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_ManageAnimationSpeed()
+{
+	if(AnimSpeed<C_PLKJ_Anim_DefaultSpeed)
+	{
+		AnimSpeed=MATH_FloatMin(C_PLKJ_Anim_DefaultSpeed,AnimSpeed+(TIME_GetDt()*C_PLKJ_Anim_GrowingSpeed))
+		ANI_FrequencySet(0,AnimSpeed)
+	}
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Make sure Kong ends on the given direction
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_SnapOnDirection()
+{
+	if(~cb&C_PLKJ_CB_Move)
+	{
+		OBJ_BankingSet(@Column OBJ_BankingGet())
+		OBJ_SightSet(MATH_VecBlendRotate(OBJ_SightGet(),-NewDirection,dt*3))
+	}
+	OBJ_PosSet(@Column OBJ_PosGet())
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Detect end of anim and start next animation
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_Animate()
+{
+	PLKJ_BufferizeAttacks()
+	PLKJ_SetDefaultActions()
+	PLKJ_SetUrgentActions()
+	PLKJ_UpdateAttack()
+	PLKJ_SnapOnDirection()
+	PLKJ_ManageAnimationSpeed()
+}

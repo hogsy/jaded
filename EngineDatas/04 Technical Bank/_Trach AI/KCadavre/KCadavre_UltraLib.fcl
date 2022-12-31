@@ -1,0 +1,39 @@
+#include "KCadavre_defines.var"
+Include_UltraProcedure_Header
+
+procedure_ultra int KCadavre_EmplacementGetDisponibleIndex()
+{
+	int		ti_i
+	for( ti_i = 0; ti_i < Ci_emplacements_max_nb; ti_i++ )
+	{
+		if( ! ai_occupe[ti_i] )
+		{
+			if( ao_emplacements[ti_i] )
+			{
+				ai_occupe[ti_i] = vrai
+				return ti_i
+			}
+		}
+	}
+	return -1
+}
+
+procedure_ultra vector KCadavre_EmplacementGetPosition(int ti_index)
+{
+	int		ti_i
+	object	to_obj
+	if( ao_emplacements[ti_index] )
+	{
+		to_obj = ao_emplacements[ti_index]
+		return @to_obj OBJ_PosGet()
+	}
+	return Cv_NullVector
+}
+
+procedure_ultra void KCadavre_EmplacementLibere(int ti_index)
+{
+	if( ti_index >= 0 && ti_index < Ci_emplacements_max_nb )
+		ai_occupe[ti_index] = faux
+}
+
+

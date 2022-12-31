@@ -1,0 +1,499 @@
+#include "MM_defines.var"
+
+procedure_local void BigMonster_HierarchyReset()
+{
+	int			ti_i
+	
+	i_modules_nb = 0
+	for (ti_i = 0; ti_i < Ci_queue_bone_nb; ti_i++)
+	{
+		i_modules_nb++
+		ao_modules[ti_i] = ANI_CanalObjectGet(Ci_queue_canal_premier + ti_i)
+		if( ! ti_i )
+		{
+			// TETE (QUEUE 01)
+//			@ao_modules[ti_i] OBJ_HierarchyResetCurrent()
+		}
+		if (ti_i)
+		{
+			// QUEUE 0X
+//			if( i_mouvement == Ci_mouvement_IA_only )
+				@ao_modules[ti_i] OBJ_HierarchyResetCurrent()		// on garde la hiérarchie pour les anims
+		}
+	}
+}
+
+
+procedure_local void BigMonster_Init_Modules()
+{
+	int			ti_i
+	
+	for (ti_i = 0; ti_i < Ci_queue_bone_nb; ti_i++)
+	{
+		if( ! ti_i )
+		{
+			// TETE (QUEUE 01)
+			af_modules_dist_to_head[ti_i] = 0.0
+			af_modules_dist_to_prev[ti_i] = 0.0
+		}
+		if (ti_i)
+		{
+			// QUEUE 0X
+			af_modules_dist_to_head[ti_i] = MATH_VecNorm(@ao_modules[0] OBJ_PosGet() - @ao_modules[ti_i] OBJ_PosGet())
+			af_modules_dist_to_prev[ti_i] = MATH_VecNorm(@ao_modules[ti_i - 1] OBJ_PosGet() - @ao_modules[ti_i] OBJ_PosGet())
+		}
+	}
+}
+
+procedure_local void BigMonster_Update_Last_Virtual_Wp(object to_module)
+{
+	int		ti_before_index	
+
+	ti_before_index = MATH_Modulo(i_virtual_net_last_wp_index + 99, 100)
+
+	av_virtual_wp_pos[i_virtual_net_last_wp_index] = @to_module OBJ_PosGet()
+
+//	if( i_force_pos_update_flag )
+//		ai_virtual_wp_flag[i_virtual_net_last_wp_index] = vrai
+//	else
+//		ai_virtual_wp_flag[i_virtual_net_last_wp_index] = faux
+
+//	af_virtual_link_length[i_virtual_net_last_wp_index] = MATH_VecNorm(av_virtual_wp_pos[ti_before_index] - av_virtual_wp_pos[i_virtual_net_last_wp_index])
+
+	if (to_module == OBJ_Me())
+	{
+		av_virtual_wp_sight[i_virtual_net_last_wp_index] = @to_module OBJ_BankingGet()
+//		av_virtual_wp_banking[i_virtual_net_last_wp_index] = - @to_module OBJ_SightGet()
+	}
+	else
+	{
+		av_virtual_wp_sight[i_virtual_net_last_wp_index] = @to_module OBJ_SightGet()
+//		av_virtual_wp_banking[i_virtual_net_last_wp_index] = @to_module OBJ_BankingGet()
+	}
+}
+
+procedure_local int BigMonster_Add_Virtual_Wp(object to_module)
+{
+	int				ti_before_index	
+
+	ti_before_index = i_virtual_net_last_wp_index
+	i_virtual_net_last_wp_index = MATH_Modulo(i_virtual_net_last_wp_index + 1, 100)	
+
+	av_virtual_wp_pos[i_virtual_net_last_wp_index] = @to_module OBJ_PosGet()
+
+//	if( i_force_pos_update_flag )
+//		ai_virtual_wp_flag[i_virtual_net_last_wp_index] = vrai
+//	else
+//		ai_virtual_wp_flag[i_virtual_net_last_wp_index] = faux
+
+//	if (ti_before_index != -1)
+//		af_virtual_link_length[i_virtual_net_last_wp_index] = MATH_VecNorm(av_virtual_wp_pos[ti_before_index] - av_virtual_wp_pos[i_virtual_net_last_wp_index])
+//	else
+//		af_virtual_link_length[i_virtual_net_last_wp_index] = 0.0
+
+	if (to_module == OBJ_Me())
+	{
+		av_virtual_wp_sight[i_virtual_net_last_wp_index] = @to_module OBJ_BankingGet()
+//		av_virtual_wp_banking[i_virtual_net_last_wp_index] = - @to_module OBJ_SightGet()
+	}
+	else
+	{
+		av_virtual_wp_sight[i_virtual_net_last_wp_index] = @to_module OBJ_SightGet()
+//		av_virtual_wp_banking[i_virtual_net_last_wp_index] = @to_module OBJ_BankingGet()
+	}
+
+	return(i_virtual_net_last_wp_index)
+}
+
+procedure_local void BigMonster_Virtual_Net_Init()
+{
+	int			ti_i
+
+	for (ti_i = i_modules_nb - 1; ti_i >= 0; ti_i--)
+	{
+		DBG_RenderVector(@ao_modules[ti_i] OBJ_PosGet(), Cv_VerticalVector, color_rouge)
+		BigMonster_Add_Virtual_Wp(ao_modules[ti_i])
+	}
+
+	return
+}
+
+procedure_local void BigMonster_Snake(int ti_first_index)
+{
+	int			ti_i
+	int			ti_iterations
+	
+	vector	tav_last_pos[20]
+	vector	tv_pos
+	vector	tv_new_sight
+	vector	tv_new_banking
+	
+	if (ti_first_index >= i_modules_nb - 1)
+		return
+
+//	// AJOUTER LA VITESSE ET LA GRAVITE
+//	for (ti_i = ti_first_index; ti_i < i_modules_nb; ti_i++)
+//	{
+//		tav_last_pos[ti_i] = @ao_modules[ti_i] OBJ_PosGet()
+//		
+//		if (ti_i > ti_first_index)
+//		{
+//			tv_pos = @ao_modules[ti_i] OBJ_PosGet()
+//			tv_pos+= av_modules_speed[ti_i] * 0.6 * TIME_GetDt()
+//			@ao_modules[ti_i] OBJ_PosSet(tv_pos)
+//		}
+//	}
+	
+	// CORPS
+	for (ti_i = ti_first_index; ti_i < i_modules_nb; ti_i++)
+	{
+		tv_pos = @ao_modules[ti_i - 1] OBJ_PosGet()
+
+		tv_new_sight = MATH_VecBlendRotate(@ao_modules[ti_i] OBJ_SightGet(), @ao_modules[ti_i - 1] OBJ_SightGet(), 6.0 * TIME_GetDt())
+
+//		DBG_RenderVector(tv_pos, @ao_modules[ti_i - 1] OBJ_BankingGet() * af_modules_dist_to_prev[ti_i], color_rouge)
+		tv_new_banking = MATH_VecNormalize(@ao_modules[ti_i] OBJ_PosGet() - @ao_modules[ti_i - 1] OBJ_PosGet())
+//		DBG_RenderVector(tv_pos, tv_new_banking * af_modules_dist_to_prev[ti_i], color_vert)
+		tv_new_banking = MATH_VecBlendRotate(tv_new_banking, @ao_modules[ti_i - 1] OBJ_BankingGet(), 4.0 * TIME_GetDt())
+//		DBG_RenderVector(tv_pos, tv_new_banking * af_modules_dist_to_prev[ti_i], color_bleu)
+
+		tv_pos += tv_new_banking * af_modules_dist_to_prev[ti_i]
+		@ao_modules[ti_i] OBJ_PosSet(tv_pos)
+		@ao_modules[ti_i] OBJ_BankingGeneralSet(tv_new_sight, tv_new_banking)	
+	}
+
+//	// CALCUL DES SPEED
+//	for (ti_i = ti_first_index; ti_i < i_modules_nb; ti_i++)
+//	{
+//		av_modules_speed[ti_i] = @ao_modules[ti_i] OBJ_PosGet() - tav_last_pos[ti_i]
+//		av_modules_speed[ti_i] /= TIME_GetDt()
+//	}
+}
+
+
+procedure_local void BigMonster_Modules_Update()
+{
+	int			ti_i
+	int			ti_current_wp_index
+	int			ti_next_wp_index
+	int			ti_before_index
+
+	float		tf_dist	
+	float		tf_coef
+	float		tf_net_length
+	float		tf_norm
+	float		tf_X
+	float		tf_B
+	float		tf_C
+	float		tf_DELTA
+	float		tf_dot_product
+	float		tf_net_link_length_sum
+
+	object	to_wp	
+
+	vector	tv_point_A
+	vector	tv_point_B
+	vector	tv_point_C
+	vector	tv_point_D
+	vector	tv_pos_A
+	vector	tv_pos_B
+	vector	tv_pos_C
+	vector	tv_pos_D	
+
+	vector	tv_start_pos
+	vector	tv_dest_pos
+	vector	tv_start_sight
+	vector	tv_dest_sight
+	vector	tv_start_banking
+	vector	tv_dest_banking
+
+	if (i_body_mode == Ci_Body_Mode_Chain)
+	{
+		// INIT ?
+		if (i_body_old_mode != i_body_mode)
+		{
+			i_body_old_mode = i_body_mode
+			BigMonster_Virtual_Net_Init()
+		}
+		else
+		{
+			f_virtual_net_offset = 0.0
+		
+			ti_current_wp_index = i_virtual_net_last_wp_index
+			ti_before_index = MATH_Modulo(i_virtual_net_last_wp_index + 99, 100)
+	
+			tv_point_A = av_virtual_wp_pos[ti_before_index]
+		
+			tf_dist = MATH_VecNorm(tv_point_A - OBJ_PosGet())
+			if (tf_dist >= Cf_dist_between_virtual_net_wp)
+				BigMonster_Add_Virtual_Wp(OBJ_Me())
+			else
+				BigMonster_Update_Last_Virtual_Wp(OBJ_Me())
+		}
+	
+		if( i_2D_virtual_network )
+		{
+			tf_dot_product = MATH_VecDotProduct(OBJ_BankingGet(), Cv_VerticalVector)
+			if ( ! MATH_FloatNullToler(tf_dot_product, 0.01) )
+			{
+				for (ti_i = 0; ti_i < 100; ti_i++)
+				{
+					tf_X = MATH_VecDotProduct(OBJ_PosGet() - av_virtual_wp_pos[ti_i], OBJ_BankingGet()) / tf_dot_product
+					av_virtual_wp_pos[ti_i].z += tf_X
+				}
+			}
+		}
+		
+		tf_net_length = f_virtual_net_offset
+	
+		ti_current_wp_index = i_virtual_net_last_wp_index
+		ti_next_wp_index = MATH_Modulo(ti_current_wp_index + 99, 100)
+	
+		for (ti_i = 0; ti_i < 100; ti_i++)
+			DBG_RenderVector(av_virtual_wp_pos[ti_i], av_virtual_wp_sight[ti_i], color_bleu)
+	
+		tv_pos_A = @ao_modules[0] OBJ_PosGet()	
+	
+		for (ti_i = 0; ti_i < i_modules_nb - 1; ti_i++)			// PAS POUR LA TETE (QUEUE 01)
+		{
+			tf_net_link_length_sum	= 0.0
+
+			while(1)
+			{
+				tv_pos_B = av_virtual_wp_pos[ti_current_wp_index]
+				tv_pos_C = av_virtual_wp_pos[ti_next_wp_index] - tv_pos_B
+				tf_dist = MATH_VecNorm(tv_pos_C)
+				tf_dist = MATH_FloatMax(tf_dist, 0.1)
+				
+				tf_net_link_length_sum	+= tf_dist
+				if (tf_net_link_length_sum < af_modules_dist_to_prev[ti_i + 1])
+				{
+					ti_current_wp_index = ti_next_wp_index
+					ti_next_wp_index = MATH_Modulo(ti_current_wp_index + 99, 100)
+				}
+				else
+				{
+					tv_pos_C /= tf_dist
+					tv_pos_D = tv_pos_B - tv_pos_A
+				
+					tf_B = 2.0 * MATH_VecDotProduct(tv_pos_D, tv_pos_C)	
+		
+					tf_C = af_modules_dist_to_prev[ti_i + 1]
+					tf_C *= tf_C
+					tf_C = MATH_VecDotProduct(tv_pos_D, tv_pos_D) - tf_C
+					
+					tf_DELTA = tf_B * tf_B
+					tf_DELTA -= 4.0 * tf_C
+					
+					if (tf_DELTA >= 0.0)
+					{
+						tf_DELTA = MATH_FloatSqrt(tf_DELTA)
+						
+						tf_X = -tf_B + tf_DELTA
+						tf_X /= 2.0
+						
+						if (tf_X <= tf_dist)
+						{
+							DBG_RenderVector(tv_pos_B, tv_pos_C * tf_X, color_jaune)
+							tv_pos_B += tv_pos_C * tf_X
+							DBG_RenderVector(tv_pos_A, tv_pos_B - tv_pos_A, color_blanc)
+							@ao_modules[ti_i] OBJ_RestoreInitMatrix()
+//							@ao_modules[ti_i] OBJ_Rotate_FromTo(cvector(0.0, 0.0, 1.0), @ao_modules[ti_i] MATH_VecGlobalToLocal(tv_pos_B - tv_pos_A))
+							@ao_modules[ti_i] OBJ_BankingGeneralSet(av_virtual_wp_sight[i_virtual_net_last_wp_index], tv_pos_B - tv_pos_A)
+							tv_pos_A = tv_pos_B
+							break
+						}
+						else
+						{
+							ti_current_wp_index = ti_next_wp_index
+							ti_next_wp_index = MATH_Modulo(ti_current_wp_index + 99, 100)
+						}
+					}
+				}
+			}
+			
+			@ao_modules[9] OBJ_RestoreInitMatrix()
+		}
+	}
+	
+	if (i_body_mode == Ci_Body_Mode_Snake)
+	{
+		// INIT ?
+		if (i_body_old_mode != i_body_mode)
+		{
+			i_body_old_mode = i_body_mode
+		}
+	
+		BigMonster_Snake(i_no_snake_modules_nb)
+	}
+}
+
+
+procedure_local void BigMonster_Anim_Update(int ti_first_module_index)
+{
+	int			ti_i
+	int			ti_current_wp_index
+	int			ti_next_wp_index
+	int			ti_before_index
+
+	float		tf_dist
+	float		tf_norm
+	float		tf_virtual_bone_length[10]
+	float		tf_X
+	float		tf_B
+	float		tf_C
+	float		tf_DELTA
+	float		tf_dot_product
+
+	object	to_wp	
+
+	vector	tv_point_A
+	vector	tv_point_B
+	vector	tv_point_C
+	vector	tv_point_D
+	
+	vector	tv_modules_sight_quat[10]	
+
+	if ( ! ti_first_module_index )
+	{
+		f_virtual_net_offset = 0.0
+	
+		ti_current_wp_index = i_virtual_net_last_wp_index
+		ti_before_index = MATH_Modulo(i_virtual_net_last_wp_index + 99, 100)
+
+		tv_point_A = av_virtual_wp_pos[ti_before_index]
+	
+//		tf_dist = MATH_VecNorm(tv_point_A - @ao_modules[0] OBJ_PosGet())
+//		if (tf_dist >= Cf_dist_between_virtual_net_wp)
+//			BigMonster_Add_Virtual_Wp(ao_modules[0])
+//		else
+//			BigMonster_Update_Last_Virtual_Wp(ao_modules[0])
+
+		tf_dist = MATH_VecNorm(tv_point_A - OBJ_PosGet())
+		if (tf_dist >= Cf_dist_between_virtual_net_wp)
+			BigMonster_Add_Virtual_Wp(OBJ_Me())
+		else
+			BigMonster_Update_Last_Virtual_Wp(OBJ_Me())
+	}
+
+	if( i_2D_virtual_network )
+	{
+		tf_dot_product = MATH_VecDotProduct(OBJ_BankingGet(), Cv_VerticalVector)
+		if ( ! MATH_FloatNullToler(tf_dot_product, 0.01) )
+		{
+			for (ti_i = 0; ti_i < 100; ti_i++)
+			{
+				tf_X = MATH_VecDotProduct(OBJ_PosGet() - av_virtual_wp_pos[ti_i], OBJ_BankingGet()) / tf_dot_product
+				av_virtual_wp_pos[ti_i].z += tf_X
+//				av_virtual_wp_pos[ti_i].z = MATH_FloatBlend(av_virtual_wp_pos[ti_i].z, av_virtual_wp_pos[ti_i].z + tf_X, 2.0 * TIME_GetDt())
+			}
+		}
+	}
+	
+	for (ti_i = 0; ti_i < 100; ti_i++)
+	{
+//		if (ai_virtual_wp_flag[ti_i])
+//			DBG_RenderVector(av_virtual_wp_pos[ti_i], av_virtual_wp_sight[ti_i], color_rouge)
+//		else
+//			DBG_RenderVector(av_virtual_wp_pos[ti_i], av_virtual_wp_sight[ti_i], color_bleu)
+
+//		if (ai_virtual_wp_flag[ti_i])
+//			DBG_RenderVector(av_virtual_wp_pos[ti_i], Cv_VerticalVector, color_rouge)
+//		else
+			DBG_RenderVector(av_virtual_wp_pos[ti_i], Cv_VerticalVector, color_bleu)
+	}
+
+	// BIDOUILLE AVANT TEST (SIMULATION D'ANIM)
+//	@ao_modules[0] OBJ_RestoreInitMatrix()
+//	
+//	f_angle_oscillation += 5.0 * TIME_GetDt()
+//	if (f_angle_oscillation > Cf_2Pi)
+//		f_angle_oscillation -= Cf_2Pi 
+//
+//	for (ti_i = 1; ti_i < i_modules_nb; ti_i++)
+//	{
+//		@ao_modules[ti_i] OBJ_RestoreInitMatrix()
+//		@ao_modules[ti_i] OBJ_RotateLocalY(MATH_Sin(f_angle_oscillation + (ti_i * (Cf_2Pi * 0.1))) * -0.1)
+//	}
+
+	tf_dist = 0.0
+	for (ti_i = 0; ti_i < i_modules_nb - 1; ti_i++)
+	{
+		tf_norm = MATH_VecDotProduct(@ao_modules[ti_i + 1] OBJ_PosGet() - @ao_modules[ti_i] OBJ_PosGet(), -OBJ_SightGet())
+		tf_virtual_bone_length[ti_i] = tf_norm
+		DBG_RenderVector(OBJ_PosGet() - (OBJ_SightGet() * tf_dist), -OBJ_SightGet() * tf_virtual_bone_length[ti_i], color_cyan)
+		tf_dist += tf_virtual_bone_length[ti_i]
+		tv_modules_sight_quat[ti_i] = @ao_modules[ti_i] MATH_VecGlobalToLocal(-OBJ_SightGet())
+	}
+
+	// ON CHERCHE A REORIENTE LA COLONNE VERTEBRALE VIRTUELLE
+	ti_current_wp_index = i_virtual_net_last_wp_index
+	ti_next_wp_index = MATH_Modulo(ti_current_wp_index + 99, 100)
+
+	for (ti_i = 0; ti_i < i_modules_nb - 4; ti_i++)
+	{
+		// TEST INTERSECTION
+		tv_point_A = @ao_modules[ti_i] OBJ_PosGet()
+
+		while(1)
+		{
+			tv_point_B = av_virtual_wp_pos[ti_current_wp_index]
+			tv_point_C = av_virtual_wp_pos[ti_next_wp_index] - tv_point_B
+			tf_dist = MATH_VecNorm(tv_point_C)
+			if (MATH_FloatNullToler(tf_dist, 0.001))
+			{
+				ti_current_wp_index = ti_next_wp_index
+				ti_next_wp_index = MATH_Modulo(ti_current_wp_index + 99, 100)
+			}
+			else
+			{
+				tv_point_C /= tf_dist
+				tv_point_D = tv_point_B - tv_point_A
+			
+				tf_B = 2.0 * MATH_VecDotProduct(tv_point_D, tv_point_C)	
+	
+				tf_C = tf_virtual_bone_length[ti_i]
+				tf_C *= tf_C
+				tf_C = MATH_VecDotProduct(tv_point_D, tv_point_D) - tf_C
+				
+				tf_DELTA = tf_B * tf_B
+				tf_DELTA -= 4.0 * tf_C
+				
+				if (tf_DELTA >= 0.0)
+				{
+					tf_DELTA = MATH_FloatSqrt(tf_DELTA)
+					
+					tf_X = -tf_B + tf_DELTA
+					tf_X /= 2.0
+					
+					if (tf_X <= tf_dist)
+					{
+						DBG_RenderVector(tv_point_B, tv_point_C * tf_X, color_jaune)
+						tv_point_B += tv_point_C * tf_X
+						DBG_RenderVector(tv_point_A, tv_point_B - tv_point_A, color_blanc)
+					
+						if ( ! IO_KeyPressed(VK_SPACE))
+						{
+							tv_point_C = MATH_VecBlendRotate(tv_modules_sight_quat[ti_i], @ao_modules[ti_i] MATH_VecGlobalToLocal(tv_point_B - tv_point_A), 0.5)
+							tv_point_C = @ao_modules[ti_i] MATH_VecGlobalToLocal(tv_point_B - tv_point_A)
+							@ao_modules[ti_i] OBJ_Rotate_FromTo(tv_modules_sight_quat[ti_i], tv_point_C)	
+						}
+						
+						tv_point_A = tv_point_B
+					
+						break
+					}
+					else
+					{
+						ti_current_wp_index = ti_next_wp_index
+						ti_next_wp_index = MATH_Modulo(ti_current_wp_index + 99, 100)
+					}
+				}
+			}
+		}
+	}
+}
+
+
+
+

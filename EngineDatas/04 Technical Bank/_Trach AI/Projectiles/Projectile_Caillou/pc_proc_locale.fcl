@@ -1,0 +1,47 @@
+procedure_local void PC_GFX_Particules(vector tv_pos, vector tv_paf_dir) 
+{
+	int			pi_GFX_Blood
+	color 		materiau_color
+	vector	tv_lat2_axis, tv_lat_axis 
+	
+	materiau_color = 0x002E2E41
+	
+	tv_lat_axis = MATH_VecCrossProduct(tv_paf_dir, Cv_VerticalVector)
+	tv_lat2_axis = MATH_VecCrossProduct(tv_paf_dir, tv_lat_axis)
+	
+	pi_GFX_Blood = GFX_Add(13)																// Create the boum	
+	GFX_MaterialSet(pi_GFX_Blood, get_SFX_light_and_smoke, -1)
+	GFX_FlagSet(pi_GFX_Blood, 0 , 1)
+	GFX_FlagSet(pi_GFX_Blood, 2 , 1)
+	GFX_Seti(pi_GFX_Blood, 13101, 6)															// Materiau N°
+	GFX_Seti(pi_GFX_Blood, 13100, 80)														// *Buffer number of sprite
+	GFX_Seti(pi_GFX_Blood, 13106, 80)														// *number of sprite to generate
+	GFX_Setf(pi_GFX_Blood, 13003, 0.2)														// Time fase 1
+	GFX_Setf(pi_GFX_Blood, 13004, 0.5)														// Time fase 2
+	GFX_Seti(pi_GFX_Blood, 13107, 0)															// Sprites non triés
+	GFX_Setf(pi_GFX_Blood, 13012, 0.0)														// Time random
+	GFX_Setf(pi_GFX_Blood, 13000, 0.1)														// Growing speed min
+	GFX_Setf(pi_GFX_Blood, 13001, 0.3)														// Growing speed max
+	GFX_Setf(pi_GFX_Blood, 13002, 0.0001)													// Friction Grow
+	GFX_Setf(pi_GFX_Blood, 13005, 0.15 )													// Creation size min
+	GFX_Setf(pi_GFX_Blood, 13006, 0.3 )														// Creation size max
+	GFX_Setv(pi_GFX_Blood, 13203, cvector(0.02, 0.02, 0.02))							// friction speed
+	GFX_Seti(pi_GFX_Blood, 13103, 0x00000000 + materiau_color)					// Color fase 0
+	GFX_Seti(pi_GFX_Blood, 13104, 0xFF000000 + materiau_color)					// Color fase 1
+	GFX_Seti(pi_GFX_Blood, 13105, 0x00000000 + materiau_color)					// Color fase 2
+	GFX_Setf(pi_GFX_Blood, 13009, 5)															// Norm speed min
+	GFX_Setf(pi_GFX_Blood, 13010, 20)														// Norm speed max
+	GFX_Setf(pi_GFX_Blood, 13007, -15.0)													// Gravity
+	GFX_Setf(pi_GFX_Blood, 13008, 0.0)														// generation rate
+	GFX_Setv(pi_GFX_Blood, 13204, Cv_NullVector)										// wind
+	GFX_Setv(pi_GFX_Blood, 13205, Cv_NullVector)										// Mainposspeed
+	GFX_Setv(pi_GFX_Blood, 13206, Cv_NullVector)										// Mainpossfriction
+	GFX_Setv(pi_GFX_Blood, 13200, tv_pos) 												// Creation Pos
+
+//	DBG_RenderSphere(OBJ_PosGet() + (tv_lat_axis * 1.2) + (tv_lat2_axis * 1.2),0.2,color_rouge)
+//	DBG_RenderSphere(OBJ_PosGet() + (tv_paf_dir ) - (tv_lat_axis * 1.2 ) - (tv_lat2_axis * 1.2 ),0.2,color_rouge)
+
+ 	GFX_Setv(pi_GFX_Blood, 13201, (tv_lat_axis * 1.2) + (tv_lat2_axis * 1.2) )					// Speed min
+	GFX_Setv(pi_GFX_Blood, 13202, (tv_paf_dir ) - (tv_lat_axis * 1.2 ) - (tv_lat2_axis * 1.2 ) )			// Speed max
+
+}

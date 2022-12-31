@@ -1,0 +1,155 @@
+procedure int COL_LIB_Can_See_Actor(object to_actor, vector tv_start_pos, vector tv_actor_pos, int ti_true, int ti_false, int ti_filter_type, int ti_crossable_type)
+{
+	int		ti_return_value
+	int		ti_flag_ray_insensitive
+	
+	float		tf_dist
+
+	vector	tv_dir
+
+	ti_flag_ray_insensitive = @to_actor OBJ_FlagsControlGet() & OBJ_C_ControlFlag_RayInsensitive
+	@to_actor OBJ_FlagsControlSet(OBJ_C_ControlFlag_RayInsensitive, none)
+
+	tv_dir = tv_actor_pos - tv_start_pos
+	tf_dist = MATH_VecNorm(tv_dir)
+	tv_dir /= tf_dist
+
+	ti_return_value	= COL_RayIsCut_Dist(tv_start_pos, tv_dir, tf_dist, ti_true, ti_false, ti_filter_type, ti_crossable_type)
+	if (ti_return_value)
+	{
+		ti_return_value = faux
+//#ifndef _FINAL_
+//		if (AI_GetCurSystem() == 10)
+//		{
+//			COL_RayObject_Dist(tv_start_pos, tv_dir, tf_dist, ti_true, ti_false, ti_filter_type, ti_crossable_type)
+//			DBG_RenderVector(tv_start_pos, COL_RayObject_PosGet() - tv_start_pos, color_rouge)	
+//		}
+//#endif
+	}
+	else
+	{
+		ti_return_value = vrai
+//		DBG_RenderVector(tv_start_pos, tv_actor_pos - tv_start_pos, color_vert)	
+	}
+
+
+	if ( ! ti_flag_ray_insensitive )
+		@to_actor OBJ_FlagsControlSet(none, OBJ_C_ControlFlag_RayInsensitive)
+
+	return(ti_return_value)
+}
+
+
+procedure int COL_LIB_RayIsCut_Vector(vector tv_start_pos, vector tv_dir, int ti_true, int ti_false, int ti_filter_type, int ti_crossable_type)
+{
+	int		ti_return_value
+	
+	float		tf_dist
+
+	tf_dist = MATH_VecNorm(tv_dir)
+	tv_dir /= tf_dist
+	return(COL_RayIsCut_Dist(tv_start_pos, tv_dir, tf_dist, ti_true, ti_false, ti_filter_type, ti_crossable_type))
+}
+
+procedure float COL_LIB_Soft_Col_Size_Get(object to_gao)
+{
+	float		tf_size
+	
+	object	to_object1
+
+	if (@to_gao OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_DesignStruct))
+		to_object1 = to_gao.des_object1
+	else
+		to_object1 = nobody
+	
+	if (to_object1 && @to_object1 AI_IsModel(get_PNJ_Bipod_Path))
+		tf_size = 80.0
+	else if (@to_gao AI_IsModel(get_PNJ_Snake_path))
+		tf_size = 1.250
+	else if (@to_gao AI_IsModel(get_PNJ_Volant_path))
+		tf_size = 1.5
+	else if (@to_gao AI_IsModel(get_PNJ_Quadri_Path))
+		tf_size = 4.0
+	else if (@to_gao AI_IsModel(get_PNJ_Shark_path))
+		tf_size = 1.5
+	else if (@to_gao AI_IsModel(get_PNJ_Lapin_path))
+		tf_size = 1.0
+	else if (@to_gao AI_IsModel(get_Stupid_Bunny_path))
+		tf_size = 0.35
+	else
+		tf_size = 1.0
+
+	tf_size *= @to_gao OBJ_ZoomGet()
+
+	return(tf_size)
+}
+
+procedure int COL_LIB_Soft_Col(object to_gao, byref vector tv_soft_col)
+{
+	int			ti_i
+	int			ti_overlap_nb
+	int			ti_return
+	int			ti_flag_true
+
+	float		tf_size
+	float		tf_other_size
+	float		tf_min_dist
+	float		tf_sqr_dist
+	float		tf_norm
+
+	vector	tv_recalage
+
+	object	to_other_gao
+	object	tao_overlap[100]
+
+	ti_return	= faux
+	tv_soft_col = Cv_NullVector
+
+	@to_gao OBJ_FlagsTypeSet(OBJ_C_TypeFlag_Pushable, none)
+
+	tf_size = COL_LIB_Soft_Col_Size_Get(to_gao)
+
+	ti_overlap_nb = @to_gao COL_BVGetAllOverlaps(&tao_overlap[0], OBJ_C_TypeFlag_Pushable, none, Ci_Filter_TypeFlag)
+	for (ti_i = 0; ti_i < ti_overlap_nb; ti_i++)
+	{
+		to_other_gao = tao_overlap[ti_i] 
+
+		if (to_other_gao == to_gao)
+			continue
+	
+//		if ( ! @to_gao AI_HaveSameModel(to_other_gao) )
+//			continue
+			
+		tf_other_size = COL_LIB_Soft_Col_Size_Get(to_other_gao) 
+	
+		tf_min_dist	= tf_size + tf_other_size
+		tf_sqr_dist = tf_min_dist * tf_min_dist
+	
+		tv_recalage	= @to_gao OBJ_PosGet() - @to_other_gao OBJ_PosGet()
+		tf_norm = MATH_VecSquareNorm(tv_recalage)
+		if (tf_norm < tf_sqr_dist)
+		{
+			DBG_RenderSphere(@to_gao OBJ_PosGet(), tf_size, 0x80808080)
+			DBG_RenderSphere(@to_other_gao OBJ_PosGet(), tf_other_size, 0x80808080)
+		
+			ti_return	= vrai
+
+			if (tf_norm > 0.01)
+			{
+				tf_norm = MATH_FloatSqrt(tf_norm)
+				tv_recalage /= tf_norm
+			}
+			else
+			{
+				tv_recalage = MATH_VecRotate(OBJ_SightGet(), OBJ_BankingGet(), MATH_RandFloat(0.0, Cf_2Pi))
+			}
+
+			tv_recalage *= tf_min_dist
+			tv_recalage += @to_other_gao OBJ_PosGet()
+
+			tv_soft_col += tv_recalage - @to_gao OBJ_PosGet()
+		}
+	}
+	
+	return(ti_return)
+}

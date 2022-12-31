@@ -1,0 +1,2429 @@
+// CAPA RESERVEES
+//OBJ_Capa_31
+//OBJ_Capa_30
+//OBJ_Capa_29
+//OBJ_Capa_28
+
+procedure void PATH_LIB_RenderBV(object to_gao, int ti_color)
+{
+	vector	tv_min
+	vector	tv_max
+	vector	tv_temp
+
+	tv_min = @to_gao BV_MinGet()
+	tv_max = @to_gao BV_MaxGet()
+
+	tv_temp = @to_gao OBJ_PosGet()
+	tv_temp += tv_min
+	DBG_RenderVector(tv_temp, cvector(tv_max.x - tv_min.x, 0.0, 0.0), ti_color)
+	DBG_RenderVector(tv_temp, cvector(0.0, tv_max.y - tv_min.y, 0.0), ti_color)
+	DBG_RenderVector(tv_temp, cvector(0.0, 0.0, tv_max.z - tv_min.z), ti_color)
+
+	tv_temp += cvector(0.0, 0.0, tv_max.z - tv_min.z)
+	DBG_RenderVector(tv_temp, cvector(tv_max.x - tv_min.x, 0.0, 0.0), ti_color)
+	DBG_RenderVector(tv_temp, cvector(0.0, tv_max.y - tv_min.y, 0.0), ti_color)
+
+	tv_temp += cvector(tv_max.x - tv_min.x, 0.0, 0.0)
+	DBG_RenderVector(tv_temp, cvector(0.0, 0.0, tv_min.z - tv_max.z), ti_color)
+
+	tv_temp = @to_gao OBJ_PosGet()
+	tv_temp += tv_max
+	DBG_RenderVector(tv_temp, cvector(tv_min.x - tv_max.x, 0.0, 0.0), ti_color)
+	DBG_RenderVector(tv_temp, cvector(0.0, tv_min.y - tv_max.y, 0.0), ti_color)
+	DBG_RenderVector(tv_temp, cvector(0.0, 0.0, tv_min.z - tv_max.z), ti_color)
+
+	tv_temp += cvector(0.0, 0.0, tv_min.z - tv_max.z)
+	DBG_RenderVector(tv_temp, cvector(tv_min.x - tv_max.x, 0.0, 0.0), ti_color)
+	DBG_RenderVector(tv_temp, cvector(0.0, tv_min.y - tv_max.y, 0.0), ti_color)
+	
+	tv_temp += cvector(tv_min.x - tv_max.x, 0.0, 0.0)
+	DBG_RenderVector(tv_temp, cvector(0.0,  0.0, tv_max.z - tv_min.z), ti_color)
+}
+
+
+// GAO FILE ========================================================
+procedure_local void PATH_LIB_Clean_Gao_File(byref int ti_gao_file_size, byref int ti_gao_file_start_index, byref int ti_gao_file_end_index)
+{
+	ti_gao_file_size = 0
+	ti_gao_file_start_index = 0
+	ti_gao_file_end_index = 0
+}
+
+procedure_local void PATH_LIB_Gao_Enfile(object to_gao, byref int ti_gao_file_size, byrefarr object tao_gao_file, byref int ti_gao_file_end_index)
+{
+	ti_gao_file_size++
+	tao_gao_file[ti_gao_file_end_index] = to_gao
+	ti_gao_file_end_index = MATH_Modulo(ti_gao_file_end_index + 1, 100)
+}
+
+procedure object PATH_LIB_Gao_Defile(byref int ti_gao_file_size, byrefarr object tao_gao_file, byref int ti_gao_file_start_index)
+{
+	object	to_gao
+	
+	ti_gao_file_size--
+	to_gao = tao_gao_file[ti_gao_file_start_index]
+	tao_gao_file[ti_gao_file_start_index] = nobody
+	ti_gao_file_start_index = MATH_Modulo(ti_gao_file_start_index + 1, 100)
+	return(to_gao)
+} 
+
+procedure void PATH_LIB_Fill_Territory_IDs(object to_start_wp, network tn_net, byrefarr object tao_wp, int ti_wp_nb, byrefarr int tai_territory_ids, byref int ti_array_size, int ti_depth)
+{
+	// FILE
+	int			ti_gao_file_size
+	int			ti_gao_file_start_index
+	int			ti_gao_file_end_index
+	object	tao_gao_file[100]
+
+	int			ti_touched_wp_nb
+	object	tao_touched_wp[100]
+	
+	// WP
+	object	to_wp
+	object	to_next_wp
+	object	to_return_gao
+	
+	// LINK
+	int			ti_i
+	int			ti_link_nb
+	
+	// TERRITORY ID
+	int			ti_territory_ID_nb
+	
+//	// STATUS
+//	int			ti_status
+
+	if ( ! to_start_wp )
+	{
+		ti_territory_ID_nb = 0
+		DBG_Error("On ne peut pas appeler cette fonction dans un wp de depart")
+		return
+	}
+
+	PATH_LIB_Clean_Gao_File(ti_gao_file_size, ti_gao_file_start_index, ti_gao_file_end_index)
+	PATH_LIB_Gao_Enfile(to_start_wp, ti_gao_file_size, &tao_gao_file[0], ti_gao_file_end_index)
+	
+	ti_touched_wp_nb = 1
+	tao_touched_wp[0] = to_start_wp
+
+	@to_start_wp OBJ_CapaSet(OBJ_Capa_31, none)
+	to_start_wp.des_int1 = 0 // Profondeur
+	to_start_wp.des_object2 = nobody
+	
+	ti_territory_ID_nb = 1
+	tai_territory_ids[0] = to_start_wp.des_int2
+	
+	while(ti_gao_file_size)
+	{
+		to_wp = PATH_LIB_Gao_Defile(ti_gao_file_size, &tao_gao_file[0], ti_gao_file_start_index)
+
+		if (to_wp.des_int1 < ti_depth)
+		{
+			// ON RAJOUTE LES WPS QUI PARTENT DE CE WP
+			ti_link_nb = WAY_GetNumLinks(tn_net, to_wp)
+			for (ti_i = 0; ti_i < ti_link_nb; ti_i++)
+			{
+				to_next_wp = WAY_NetNextWP(tn_net, to_wp, NetNextWP_Mode_choix_de_lindice, ti_i)	
+	
+				if (@to_next_wp OBJ_CapaTest(OBJ_Capa_31))
+					continue
+	
+				if (WAY_LinkCapaGet(tn_net, to_wp, to_next_wp)	& OBJ_Capa_0)
+					continue
+
+				tao_touched_wp[ti_touched_wp_nb] = to_next_wp
+				ti_touched_wp_nb++
+
+				@to_next_wp OBJ_CapaSet(OBJ_Capa_31, none)
+				to_next_wp.des_int1 = to_wp.des_int1 + 1
+				to_next_wp.des_object2 = to_wp
+	
+//				DBG_RenderVector(@to_wp OBJ_PosGet() + Cv_VerticalVector, @to_next_wp OBJ_PosGet() - @to_wp OBJ_PosGet(), color_rose)	
+	
+				tai_territory_ids[ti_territory_ID_nb] = to_next_wp.des_int2
+				ti_territory_ID_nb++
+	
+				if (ti_territory_ID_nb >= ti_array_size)
+					break
+		
+				PATH_LIB_Gao_Enfile(to_next_wp, ti_gao_file_size, &tao_gao_file[0], ti_gao_file_end_index)
+			}
+		}
+	}
+	
+	for (ti_i = 0; ti_i < ti_touched_wp_nb; ti_i++)
+		@tao_touched_wp[ti_i] OBJ_CapaSet(none, OBJ_Capa_31)
+	
+	ti_array_size = ti_territory_ID_nb
+}
+
+procedure void PATH_LIB_Fill_Wp_Array(object to_start_wp, network tn_net, byrefarr object tao_wp, int ti_wp_nb, byrefarr object tao_touched_wp, byref int ti_array_size, int ti_depth)
+{
+	// FILE
+	int			ti_gao_file_size
+	int			ti_gao_file_start_index
+	int			ti_gao_file_end_index
+	object	tao_gao_file[100]
+
+	int			ti_touched_wp_nb
+	
+	// WP
+	object	to_wp
+	object	to_next_wp
+	object	to_return_gao
+	
+	// LINK
+	int			ti_i
+	int			ti_link_nb
+	
+	if ( ! to_start_wp )
+	{
+		ti_array_size = 0
+		DBG_Error("On ne peut pas appeler cette fonction dans un wp de depart")
+		return
+	}
+
+	PATH_LIB_Clean_Gao_File(ti_gao_file_size, ti_gao_file_start_index, ti_gao_file_end_index)
+	PATH_LIB_Gao_Enfile(to_start_wp, ti_gao_file_size, &tao_gao_file[0], ti_gao_file_end_index)
+	
+	ti_touched_wp_nb = 1
+	tao_touched_wp[0] = to_start_wp
+
+	@to_start_wp OBJ_CapaSet(OBJ_Capa_31, none)
+	to_start_wp.des_int1 = 0 // Profondeur
+	to_start_wp.des_object2 = nobody
+	
+	while(ti_gao_file_size)
+	{
+		to_wp = PATH_LIB_Gao_Defile(ti_gao_file_size, &tao_gao_file[0], ti_gao_file_start_index)
+
+		if (to_wp.des_int1 < ti_depth)
+		{
+			// ON RAJOUTE LES WPS QUI PARTENT DE CE WP
+			ti_link_nb = WAY_GetNumLinks(tn_net, to_wp)
+			for (ti_i = 0; ti_i < ti_link_nb; ti_i++)
+			{
+				to_next_wp = WAY_NetNextWP(tn_net, to_wp, NetNextWP_Mode_choix_de_lindice, ti_i)	
+	
+				if (@to_next_wp OBJ_CapaTest(OBJ_Capa_31))
+					continue
+		
+				if (WAY_LinkCapaGet(tn_net, to_wp, to_next_wp)	& OBJ_Capa_0)
+					continue
+
+				tao_touched_wp[ti_touched_wp_nb] = to_next_wp
+				ti_touched_wp_nb++
+
+				@to_next_wp OBJ_CapaSet(OBJ_Capa_31, none)
+				to_next_wp.des_int1 = to_wp.des_int1 + 1
+				to_next_wp.des_object2 = to_wp
+	
+//				DBG_RenderVector(@to_wp OBJ_PosGet() + Cv_VerticalVector, @to_next_wp OBJ_PosGet() - @to_wp OBJ_PosGet(), color_rose)	
+	
+				if (ti_touched_wp_nb >= ti_array_size)
+					break
+		
+				PATH_LIB_Gao_Enfile(to_next_wp, ti_gao_file_size, &tao_gao_file[0], ti_gao_file_end_index)
+			}
+		}
+	}
+	
+	for (ti_i = 0; ti_i < ti_touched_wp_nb; ti_i++)
+		@tao_touched_wp[ti_i] OBJ_CapaSet(none, OBJ_Capa_31)
+	
+	ti_array_size = ti_touched_wp_nb
+}
+
+procedure object PATH_LIB_Get_Wp2(vector tv_pos, object to_last_wp, network tn_net, byrefarr object tao_wp, int ti_wp_nb, int ti_depth)
+{
+	// FILE
+	int			ti_gao_file_size
+	int			ti_gao_file_start_index
+	int			ti_gao_file_end_index
+	object	tao_gao_file[100]
+	
+	int			ti_touched_wp_nb
+	object	tao_touched_wp[100]
+
+	// WP
+	object	to_wp
+	object	to_next_wp
+	object	to_return_gao
+	
+	// LINK
+	int			ti_i
+	int			ti_link_nb
+	
+//	// STATUS
+//	int			ti_status
+
+	to_return_gao = nobody
+
+	PATH_LIB_Clean_Gao_File(ti_gao_file_size, ti_gao_file_start_index, ti_gao_file_end_index)
+	PATH_LIB_Gao_Enfile(to_last_wp, ti_gao_file_size, &tao_gao_file[0], ti_gao_file_end_index)
+	
+	ti_touched_wp_nb = 1
+	tao_touched_wp[0] = to_last_wp
+
+	@to_last_wp OBJ_CapaSet(OBJ_Capa_31, none)
+	to_last_wp.des_int1 = 0 
+	to_last_wp.des_object2 = nobody
+
+	while(ti_gao_file_size)
+	{
+		to_wp = PATH_LIB_Gao_Defile(ti_gao_file_size, &tao_gao_file[0], ti_gao_file_start_index)
+
+		if (@to_wp COL_BV_PointCollide(tv_pos))
+		{
+			to_return_gao = to_wp
+			break
+		}
+
+		if (to_wp.des_int1 < ti_depth)
+		{
+			// ON RAJOUTE LES WPS QUI PARTENT DE CE WP
+			ti_link_nb = WAY_GetNumLinks(tn_net, to_wp)
+			for (ti_i = 0; ti_i < ti_link_nb; ti_i++)
+			{
+				to_next_wp = WAY_NetNextWP(tn_net, to_wp, NetNextWP_Mode_choix_de_lindice, ti_i)	
+	
+				if (@to_next_wp OBJ_CapaTest(OBJ_Capa_31))
+					continue
+	
+				tao_touched_wp[ti_touched_wp_nb] = to_next_wp
+				ti_touched_wp_nb++
+	
+				@to_next_wp OBJ_CapaSet(OBJ_Capa_31, none)
+				to_next_wp.des_int1 = to_wp.des_int1 + 1
+				to_next_wp.des_object2 = to_wp
+	
+	//			DBG_RenderVector(@to_wp OBJ_PosGet() + Cv_VerticalVector, @to_next_wp OBJ_PosGet() - @to_wp OBJ_PosGet(), color_rose)	
+				PATH_LIB_Gao_Enfile(to_next_wp, ti_gao_file_size, &tao_gao_file[0], ti_gao_file_end_index)
+			}
+		}
+	}
+	
+	for (ti_i = 0; ti_i < ti_touched_wp_nb; ti_i++)
+		@tao_touched_wp[ti_i] OBJ_CapaSet(none, OBJ_Capa_31)
+
+	return(to_return_gao)
+}
+
+procedure int PATH_LIB_Get_Wp(vector tv_pos, object to_gao_pos, byref object to_last_wp, network tn_net, byrefarr object tao_wp, int ti_wp_nb)
+{
+	int				ti_i
+	int				ti_lnk_nb
+	int				ti_way_wp_nb
+
+	object 		to_wp
+	object		to_next_wp	
+	object		to_previous_wp	
+
+	int			ti_overlap_nb
+	object	tao_overlap[100]
+	object	to_snp_bv
+
+	if ( to_last_wp && @to_last_wp COL_BV_PointCollide(tv_pos) )
+		return(Ci_PATH_LIB_SAME_WP)
+
+	// AVEC LE SNP ?
+	to_snp_bv = nobody
+	if (to_gao_pos)
+	{
+		ti_overlap_nb = @to_gao_pos COL_BVGetAllOverlaps(&tao_overlap[0], OBJ_C_IdentityFlag_Links, none, Ci_Filter_IdentityFlag)
+		for (ti_i = 0; ti_i < ti_overlap_nb; ti_i++)
+		{
+			to_wp = tao_overlap[ti_i]
+			if (@to_wp WAY_NetOfObj() == tn_net && @to_wp COL_BV_PointCollide(tv_pos))
+			{
+				to_snp_bv = to_wp
+				break
+			}
+		}
+		
+		if ( ! to_snp_bv ) 
+		{
+			// LE GAO POS NE TOUCHE AUCUNE BV NET, PAS LA PEINE D'ALLER PLUS LOIN
+			to_last_wp = nobody
+			return(Ci_PATH_LIB_NO_WP)
+		}
+	}
+
+	if ( to_last_wp )
+	{
+		// ON AVAIT UN WP	
+	
+		// EST-CE UN VOISIN ?
+		ti_lnk_nb = WAY_GetNumLinks(tn_net, to_last_wp)
+		for (ti_i = 0; ti_i < ti_lnk_nb; ti_i++)
+		{
+			to_wp = WAY_NetNextWP(tn_net, to_last_wp, NetNextWP_Mode_choix_de_lindice, ti_i)
+
+			if (@to_wp COL_BV_PointCollide(tv_pos))
+			{
+				// OK ON EST DANS UN WP VOISIN DE CELUI OU ON ETAIT	
+				if (WAY_LinkCapaGet(tn_net, to_last_wp, to_wp) & OBJ_Capa_0)
+				{
+					to_last_wp = to_wp
+					return(Ci_PATH_LIB_INVALID_NEIGHBOUR_WP)
+				}
+			
+				if (WAY_LinkCapaGet(tn_net, to_wp, to_last_wp) & OBJ_Capa_0)
+				{
+					to_last_wp = to_wp
+					return(Ci_PATH_LIB_ON_WAY_NEIGHBOUR_WP)
+				}
+	
+				to_last_wp = to_wp
+				return(Ci_PATH_LIB_NEIGHBOUR_WP)
+			}
+		}
+
+		// C'EST PAS UN VOISIN : ON PART DU DERNIER WP OU ON ETAIT
+		if (to_gao_pos)
+			// SI ON CONNAIT LE WP D'ARRIVEE, ON PLONGE MOINS LOIN VU
+			to_wp = PATH_LIB_Get_Wp2(tv_pos, to_last_wp, tn_net, &tao_wp[0], ti_wp_nb, 10) 
+		else
+			// ON CHERCHE A ATTEINDRE UNE POSITION, ON PARCOURS TOUT LE RESEAU
+			to_wp = PATH_LIB_Get_Wp2(tv_pos, to_last_wp, tn_net, &tao_wp[0], ti_wp_nb, 1000)
+
+		if ( ! to_wp )
+		{
+			// ON N'A RIEN TROUVE
+			to_last_wp = nobody
+			return(Ci_PATH_LIB_NO_WP)
+		}
+
+		if (to_wp.des_int1 > 10)
+		{
+			// C'EST UN WP QUI EST A PLUS DE DIX WP DE DIST, ON VA REPASSER PAR LE SHORT WAY
+			to_last_wp = to_wp
+			return(Ci_PATH_LIB_NEW_WP)
+		}
+
+		// LE WP EST A MOINS DE 10 WP DU DERNIER WP
+		to_next_wp = to_wp
+		to_previous_wp = to_next_wp.des_object2
+		while(to_previous_wp)
+		{
+			if (WAY_LinkCapaGet(tn_net, to_previous_wp, to_next_wp)	 & OBJ_Capa_0)
+			{
+				// LE CHEMIN PASSE PAR UN LIEN INVALIDE
+				to_last_wp = to_wp
+				return(Ci_PATH_LIB_NEW_WP)
+			}
+		
+			to_next_wp = to_previous_wp
+			to_previous_wp = to_next_wp.des_object2
+		}
+	
+		to_last_wp = to_wp
+		return(Ci_PATH_LIB_WAY_STOCKED)
+	}
+
+	if (	to_snp_bv)
+	{
+		// ON VA VERS LE WP TROUVE PAR LE SNP
+		to_last_wp = to_snp_bv
+		return(Ci_PATH_LIB_NEW_WP)
+	}
+
+	if ( ! to_last_wp )
+	{
+		// ON DOIT CHERCHER AU HASARD
+		for (ti_i = 0; ti_i < ti_wp_nb; ti_i++)
+		{
+			if (@tao_wp[ti_i] COL_BV_PointCollide(tv_pos))
+			{
+				to_last_wp = tao_wp[ti_i]
+				return(Ci_PATH_LIB_NEW_WP)
+			}
+		}
+	}
+	
+	// ON N'A RIEN TROUVE
+	to_last_wp = nobody
+	return(Ci_PATH_LIB_NO_WP)
+}
+
+
+procedure int PATH_LIB_Get_Door(object to_start_wp, object to_dest_wp, float tf_size, byref vector tv_min_pos, byref vector tv_max_pos)
+{
+	int			ti_axis	
+
+	float		tf_dist	
+
+	vector	tv_min_A
+	vector	tv_max_A
+	vector	tv_min_B
+	vector	tv_max_B
+
+	tv_min_A = @to_start_wp OBJ_PosGet()
+	tv_max_A = tv_min_A
+	tv_min_A += @to_start_wp BV_MinGet()
+	tv_max_A += @to_start_wp BV_MaxGet()
+
+	tv_min_B = @to_dest_wp OBJ_PosGet()
+	tv_max_B = tv_min_B
+	tv_min_B += @to_dest_wp BV_MinGet()
+	tv_max_B += @to_dest_wp BV_MaxGet()
+
+	tv_min_pos.x = MATH_FloatMax(tv_min_A.x, tv_min_B.x)
+	tv_min_pos.y = MATH_FloatMax(tv_min_A.y, tv_min_B.y)
+
+	tv_max_pos.x = MATH_FloatMin(tv_max_A.x, tv_max_B.x)
+	tv_max_pos.y = MATH_FloatMin(tv_max_A.y, tv_max_B.y)	
+
+//#ifndef _FINAL_
+//	if (AI_GetCurSystem() == 10)
+//	{
+//		tv_min_pos.z = MATH_FloatMax(tv_min_A.z, tv_min_B.z)
+//		tv_max_pos.z = MATH_FloatMin(tv_max_A.z, tv_max_B.z)
+//		tv_min_pos.z += tv_max_pos.z
+//		tv_min_pos.z *= 0.5
+//		tv_max_pos.z = tv_min_pos.z
+//	}
+//#endif
+
+	if (MATH_AbsFloat(tv_min_pos.x - tv_max_pos.x) > MATH_AbsFloat(tv_min_pos.y - tv_max_pos.y))
+	{
+		ti_axis = 0
+		
+		tf_dist = tv_max_pos.y - tv_min_pos.y
+		tf_dist *= 0.5
+
+//		tf_dist = tv_max_B.y - tv_min_pos.y
+
+		tv_min_pos.y += tf_dist
+		tv_max_pos.y -= tf_dist
+
+		tv_min_pos.x += tf_size
+		tv_max_pos.x -= tf_size
+	}
+	else
+	{
+		ti_axis = 1
+		
+		tf_dist = tv_max_pos.x - tv_min_pos.x
+		tf_dist *= 0.5
+
+//		tf_dist = tv_max_B.x - tv_min_pos.x
+
+		tv_min_pos.x += tf_dist
+		tv_max_pos.x -= tf_dist
+
+		tv_min_pos.y += tf_size
+		tv_max_pos.y -= tf_size
+	} 
+	
+//	DBG_RenderVector(tv_min_pos, tv_max_pos - tv_min_pos, color_cyan)
+//	DBG_RenderVector(tv_min_pos + cvector(0.0, 0.0, 5.0), tv_max_pos - tv_min_pos, color_cyan)
+//	DBG_RenderVector(tv_min_pos, cvector(0.0, 0.0, 5.0), color_cyan)
+//	DBG_RenderVector(tv_max_pos, cvector(0.0, 0.0, 5.0), color_cyan)
+
+//	tv_min_pos.x +=	tf_size
+//	tv_min_pos.y +=	tf_size
+//
+//	tv_max_pos.x -=	tf_size
+//	tv_max_pos.y -=	tf_size
+
+	return(ti_axis)
+}
+
+procedure vector PATH_LIB_Get_Next_Wp_Pos(vector tv_start_pos, vector tv_dest_pos, float tf_extrusion, int ti_way_wp_nb, byrefarr object tao_way_wp)
+{
+	int			ti_flag_break
+	int			ti_axis
+
+	float		tf_min_dist
+	float		tf_max_dist
+	float		tf_X_proj_min
+	float		tf_X_proj_max
+	float		tf_diff
+	float		tf_lod
+
+	vector	tv_pos
+	vector	tv_min_pos
+	vector	tv_max_pos
+	vector	tv_door_min_pos
+	vector	tv_door_max_pos
+	vector	tv_AB
+	vector	tv_dir
+
+	object	to_next_wp	
+	object	to_next_next_wp
+
+//	if (ti_way_wp_nb == 1)
+//		return(@ao_way_wp[0] OBJ_PosGet())
+
+	ti_flag_break = faux
+
+	if (ti_way_wp_nb < 2)
+		return(tv_dest_pos)
+
+	tf_lod = OBJ_LodVisGet()
+
+	ti_way_wp_nb--
+	to_next_wp = tao_way_wp[ti_way_wp_nb]
+
+	tv_min_pos.z = tv_start_pos.z
+	tv_max_pos.z = tv_start_pos.z
+
+	ti_way_wp_nb--
+	to_next_next_wp = tao_way_wp[ti_way_wp_nb]
+	ti_axis = PATH_LIB_Get_Door(to_next_wp, to_next_next_wp, tf_extrusion, tv_min_pos, tv_max_pos)
+
+	tv_door_min_pos = tv_min_pos
+	tv_door_max_pos = tv_max_pos
+	
+//	tv_min_pos.x += tf_X_offset
+//	tv_min_pos.y += tf_X_offset
+//
+//	tv_max_pos.x -= tf_X_offset
+//	tv_max_pos.y -= tf_X_offset
+
+	while(ti_way_wp_nb)
+	{
+		to_next_wp = 	to_next_next_wp
+	
+		ti_way_wp_nb--
+		to_next_next_wp = tao_way_wp[ti_way_wp_nb]
+
+		// On trouve la porte !!!
+		ti_axis = PATH_LIB_Get_Door(to_next_wp, to_next_next_wp, tf_extrusion, tv_door_min_pos, tv_door_max_pos)
+
+		tv_door_min_pos.z = tv_start_pos.z
+		tv_door_max_pos.z = tv_start_pos.z
+
+		tv_AB = tv_door_min_pos - tv_start_pos
+
+		// On projete la borne max dans le plan de la prochaine porte
+		tv_dir = tv_max_pos - tv_start_pos
+		if (ti_axis)
+		{
+			if (tv_dir.x)
+			{
+				tf_max_dist = tv_AB.x /  tv_dir.x
+				tv_pos = tv_start_pos + (tv_dir * tf_max_dist)
+			}
+			else
+			{
+				tf_max_dist = 1.0
+				tv_pos = tv_door_max_pos
+			}
+		}
+		else
+		{
+			if (tv_dir.y)
+			{
+				tf_max_dist = tv_AB.y /  tv_dir.y
+				tv_pos = tv_start_pos + (tv_dir * tf_max_dist)
+			}
+			else
+			{
+				tf_max_dist = 1.0
+				tv_pos = tv_door_max_pos
+			}
+		}
+		
+
+		if (tf_max_dist > 0.0)
+		{
+			// La projection est devant
+			if (ti_axis)
+				tf_X_proj_max = MATH_FloatLimit(tv_pos.y, tv_door_min_pos.y, tv_door_max_pos.y)
+			else
+				tf_X_proj_max = MATH_FloatLimit(tv_pos.x, tv_door_min_pos.x, tv_door_max_pos.x)
+		}
+		else
+		{
+			// La projection est derrière
+			if (ti_axis)
+			{
+				if (tv_dir.y > 0.0)
+					tf_X_proj_max = tv_door_max_pos.y
+				else
+					tf_X_proj_max = tv_door_min_pos.y
+			}
+			else
+			{
+				if (tv_dir.x > 0.0)
+					tf_X_proj_max = tv_door_max_pos.x
+				else
+					tf_X_proj_max = tv_door_min_pos.x
+			}
+		}
+
+		// On projete la borne min dans le plan de la prochaine porte
+		tv_dir = tv_min_pos - tv_start_pos
+		if (ti_axis)
+		{
+			if (tv_dir.x)
+			{
+				tf_min_dist = tv_AB.x /  tv_dir.x
+				tv_pos = tv_start_pos + (tv_dir * tf_min_dist)
+			}
+			else
+			{
+				tf_min_dist = 1.0
+				tv_pos = tv_door_min_pos
+			}
+		}
+		else
+		{
+			if (tv_dir.y)
+			{
+				tf_min_dist = tv_AB.y /  tv_dir.y
+				tv_pos = tv_start_pos + (tv_dir * tf_min_dist)
+			}
+			else
+			{
+				tf_min_dist = 1.0
+				tv_pos = tv_door_min_pos
+			}
+		}
+
+		if (tf_min_dist > 0.0)
+		{
+			// La projection est devant
+			if (ti_axis)
+				tf_X_proj_min = MATH_FloatLimit(tv_pos.y, tv_door_min_pos.y, tv_door_max_pos.y)
+			else
+				tf_X_proj_min = MATH_FloatLimit(tv_pos.x, tv_door_min_pos.x, tv_door_max_pos.x)
+		}
+		else
+		{
+			// La projection est derrière
+			if (ti_axis)
+			{
+				if (tv_dir.y > 0.0)
+					tf_X_proj_min = tv_door_max_pos.y
+				else
+					tf_X_proj_min = tv_door_min_pos.y
+			}
+			else
+			{
+				if (tv_dir.x > 0.0)
+					tf_X_proj_min = tv_door_max_pos.x
+				else
+					tf_X_proj_min = tv_door_min_pos.x
+			}
+		}
+
+		if (ti_axis)
+		{
+			tv_door_min_pos = cvector(tv_door_min_pos.x, tf_X_proj_min, tv_door_min_pos.z)
+			tv_door_max_pos = cvector(tv_door_max_pos.x, tf_X_proj_max, tv_door_max_pos.z)
+		}
+		else
+		{
+			tv_door_min_pos = cvector(tf_X_proj_min, tv_door_min_pos.y, tv_door_min_pos.z)
+			tv_door_max_pos = cvector(tf_X_proj_max, tv_door_max_pos.y, tv_door_max_pos.z)
+		}
+
+		if (MATH_AbsFloat(tf_X_proj_max - tf_X_proj_min) < 0.001 || (tf_min_dist < 0.0 && tf_max_dist < 0.0) )
+		{
+			ti_flag_break = vrai
+
+			if (MATH_VecDotProduct(tv_door_min_pos - tv_min_pos, tv_max_pos - tv_min_pos) > 0.0)
+				tv_pos = tv_max_pos
+			else
+				tv_pos = tv_min_pos
+
+			DBG_RenderVector(tv_start_pos + Cv_VerticalVector, tv_min_pos - tv_start_pos, color_vert)
+			DBG_RenderVector(tv_start_pos + Cv_VerticalVector, tv_max_pos - tv_start_pos, color_rouge)
+			DBG_RenderVector(tv_pos, Cv_VerticalVector * 10.0, color_blanc)
+
+			break
+		}
+//		else if ( ti_way_wp_nb && tf_lod < 0.2)
+//		{
+//			ti_flag_break = vrai
+//		
+//			tv_pos = tv_max_pos + tv_min_pos
+//			tv_pos *= 0.5
+//
+//			DBG_RenderVector(tv_start_pos + Cv_VerticalVector, tv_min_pos - tv_start_pos, color_vert)
+//			DBG_RenderVector(tv_start_pos + Cv_VerticalVector, tv_max_pos - tv_start_pos, color_rouge)
+//			DBG_RenderVector(tv_pos, Cv_VerticalVector * 10.0, color_blanc)
+//			
+//			break
+//		}
+
+		tv_min_pos = tv_door_min_pos
+		tv_max_pos = tv_door_max_pos
+	}
+	
+	if ( ! ti_flag_break )
+	{
+		tv_AB = tv_min_pos - tv_start_pos
+		tv_dir = tv_dest_pos - tv_start_pos
+	
+		if (ti_axis)
+		{
+			if ( tv_dir.x )
+			{
+				tf_max_dist = tv_AB.x /  tv_dir.x
+				tv_pos = tv_start_pos + (tv_dir * tf_max_dist)	
+		
+				if (tv_pos.y < tv_min_pos.y)
+					tv_pos = tv_min_pos
+				else if (tv_pos.y > tv_max_pos.y)
+					tv_pos = tv_max_pos
+				else
+					tv_pos = tv_dest_pos
+			}
+			else
+			{
+				tv_pos = tv_dest_pos
+			}
+		}
+		else
+		{
+			if ( tv_dir.y ) 
+			{
+				tf_max_dist = tv_AB.y /  tv_dir.y
+				tv_pos = tv_start_pos + (tv_dir * tf_max_dist)
+				
+				if (tv_pos.x < tv_min_pos.x)
+					tv_pos = tv_min_pos
+				else if (tv_pos.x > tv_max_pos.x)
+					tv_pos = tv_max_pos
+				else
+					tv_pos = tv_dest_pos
+			}
+			else
+			{
+				tv_pos = tv_dest_pos
+			}	
+		}
+
+		DBG_RenderVector(tv_start_pos+ Cv_VerticalVector, tv_min_pos - tv_start_pos, color_vert)
+		DBG_RenderVector(tv_start_pos+ Cv_VerticalVector, tv_max_pos - tv_start_pos, color_rouge)
+		DBG_RenderVector(tv_pos, Cv_VerticalVector * 1000.0, color_blanc)
+	}
+
+	return(tv_pos)
+}
+
+
+procedure void PATH_LIB_Remove_Way_Loop(	byref int ti_way_wp_nb,
+																	byrefarr object tao_way_wp)
+{
+	int			ti_i	
+	int			ti_k
+	int			ti_loop_wp_nb
+		
+	object	to_loop_wp
+
+	for (ti_i = ti_way_wp_nb - 1; ti_i >= 0; ti_i--)
+	{
+//		if (ti_i)
+//			DBG_RenderVector(@tao_way_wp[ti_i] OBJ_PosGet() + Cv_VerticalVector, @tao_way_wp[ti_i - 1] OBJ_PosGet() - @tao_way_wp[ti_i] OBJ_PosGet(), color_blanc)	
+	
+		if (@tao_way_wp[ti_i] OBJ_CapaTest(OBJ_Capa_31))
+		{
+			// On a détecté une boucle !!!
+			ti_loop_wp_nb = 1
+
+			// On va avancer tant qu'on revient en arrière
+			to_loop_wp = tao_way_wp[ti_i]
+			while(ti_i && @tao_way_wp[ti_i - 1] OBJ_CapaTest(OBJ_Capa_31))
+			{
+//				DBG_RenderVector(@tao_way_wp[ti_i] OBJ_PosGet() + cvector(0.0, 0.0, 2.0), @tao_way_wp[ti_i - 1] OBJ_PosGet() - @tao_way_wp[ti_i] OBJ_PosGet(), color_rouge)
+				ti_i--
+				to_loop_wp = tao_way_wp[ti_i]
+			}
+			
+			// On revient au debut de la boucle
+			ti_i++
+			while(tao_way_wp[ti_i] != to_loop_wp)
+			{
+//				DBG_RenderVector(@tao_way_wp[ti_i] OBJ_PosGet() + cvector(0.0, 0.0, 2.0), @tao_way_wp[ti_i - 1] OBJ_PosGet() - @tao_way_wp[ti_i] OBJ_PosGet(), color_rouge)
+				@tao_way_wp[ti_i] OBJ_CapaSet(none, OBJ_Capa_31)
+				ti_loop_wp_nb++
+				ti_i++
+			}
+
+			ti_way_wp_nb -= ti_loop_wp_nb
+			ti_i -= ti_loop_wp_nb
+
+			for (ti_k = ti_i; ti_k < ti_way_wp_nb; ti_k++)
+				tao_way_wp[ti_k] = tao_way_wp[ti_k + ti_loop_wp_nb]
+				
+//			DBG_EraseAllVectors()
+//			for (ti_k = ti_way_wp_nb - 1; ti_k > 0; ti_k--)
+//				DBG_RenderVector(@tao_way_wp[ti_k] OBJ_PosGet() + cvector(0.0, 0.0, 1.0 + (ti_k * 0.1)), @tao_way_wp[ti_k - 1] OBJ_PosGet() - @tao_way_wp[ti_k] OBJ_PosGet(), color_blanc)	
+//			ti_k = ti_k
+		}
+		
+		
+		@tao_way_wp[ti_i] OBJ_CapaSet(OBJ_Capa_31, none)
+	}
+	
+	for (ti_i = ti_way_wp_nb - 1; ti_i >= 0; ti_i--)
+		@tao_way_wp[ti_i] OBJ_CapaSet(none, OBJ_Capa_31)
+}
+
+procedure int PATH_LIB_Way_Invalid(network tn_net, int ti_way_wp_nb, byrefarr object tao_way_wp)
+{
+	int		ti_i	
+
+	if (@get_global i_BVTerritory_LinkHasChanged != 1)
+		return(faux)
+		
+	for (ti_i = 0; ti_i < ti_way_wp_nb - 1; ti_i++)
+	{
+		if (WAY_LinkCapaGet(tn_net, tao_way_wp[ti_i + 1], tao_way_wp[ti_i]) & OBJ_Capa_0)
+			return(vrai)
+	}
+
+	return(faux)
+}
+
+procedure vector PATH_LIB_Get_Next_Pos(	vector tv_start_pos,
+															object to_start_gao,
+															byref object to_start_wp,
+															vector tv_dest_pos,
+															object to_dest_gao,
+															byref object to_dest_wp,
+															float tf_extrusion,
+															network tn_net,
+															int ti_wp_nb,
+															byrefarr object tao_wp,
+															byref int ti_way_wp_nb,
+															byrefarr object tao_way_wp,
+															int ti_force_recompute,
+															byref int ti_client_ID)
+{
+
+	int			ti_i
+	int			ti_add_wp_nb
+	int			ti_flag_recompute_way
+	int			ti_start_wp_state
+	int			ti_dest_wp_state
+
+	object	to_last_start_wp
+	object	to_last_dest_wp
+	object	tao_backup_wp[10]
+	object	to_last_wp
+	object	to_wp
+
+	vector	tv_return_pos
+
+	DBG_StartRaster(9, "PATH_LIB_Get_Next_Pos")
+
+	to_last_start_wp = to_start_wp
+	to_last_dest_wp = to_dest_wp
+
+	ti_start_wp_state = PATH_LIB_Get_Wp(tv_start_pos, to_start_gao, to_start_wp, tn_net, &tao_wp[0], ti_wp_nb)
+	ti_dest_wp_state = PATH_LIB_Get_Wp(tv_dest_pos, to_dest_gao, to_dest_wp, tn_net, &tao_wp[0], ti_wp_nb)
+
+	if  ( ! to_start_wp )
+		to_start_wp = to_last_start_wp
+
+//	if  ( ! to_dest_wp )
+//		to_dest_wp = to_last_dest_wp
+
+	tv_return_pos = tv_start_pos
+
+	if (to_start_wp && to_dest_wp)
+	{
+		if (to_start_wp == to_dest_wp)
+		{
+			tv_return_pos = tv_dest_pos
+
+			tao_way_wp[0] = to_dest_wp
+			ti_way_wp_nb = 1
+		}
+		else
+		{
+			ti_flag_recompute_way	= faux
+	
+			if (PATH_LIB_Way_Invalid(tn_net, ti_way_wp_nb, &tao_way_wp[0]))
+			{
+				// On doit recalculer le chemin car un lien a changé d'état
+				ti_flag_recompute_way	= vrai
+			}
+			else if (ti_force_recompute || ( @get_global i_BVTerritory_LinkHasChanged == 1 && ! ti_way_wp_nb) )
+			{
+				// On force le calcul de chemin
+				ti_flag_recompute_way	= vrai
+			}
+			else
+			{
+				if (ti_way_wp_nb)
+				{
+					if (tao_way_wp[0] != to_last_dest_wp)
+					{
+						// On ne peut pas s'appuyer sur le chemin existant vu qu'il n'amenait pas au wp de la position dest
+					}
+					else if (ti_dest_wp_state == Ci_PATH_LIB_WAY_STOCKED)
+					{
+						// On doit rajouter quelques wps, c'est là que les tableaux inversés sont pénibles :)
+						tao_backup_wp[0] = tao_way_wp[0]
+						tao_way_wp[0] = to_dest_wp
+						ti_add_wp_nb = 1
+
+						to_wp = to_dest_wp.des_object2
+						while(to_wp != tao_backup_wp[0])
+						{
+							tao_backup_wp[ti_add_wp_nb] = tao_way_wp[ti_add_wp_nb]
+							tao_way_wp[ti_add_wp_nb] = to_wp
+							ti_add_wp_nb++
+							to_wp = to_wp.des_object2
+						}
+						
+						for (ti_i = ti_way_wp_nb - 1; ti_i >= ti_add_wp_nb; ti_i--)
+							tao_way_wp[ti_i + ti_add_wp_nb] = tao_way_wp[ti_i]
+
+						for (ti_i = 0; ti_i < ti_add_wp_nb; ti_i++)
+							tao_way_wp[ti_i + ti_add_wp_nb] = tao_backup_wp[ti_i]
+							
+						ti_way_wp_nb += ti_add_wp_nb
+						
+						PATH_LIB_Remove_Way_Loop(ti_way_wp_nb, &tao_way_wp[0])
+					}
+					else if (ti_dest_wp_state == Ci_PATH_LIB_NEIGHBOUR_WP || ti_dest_wp_state == Ci_PATH_LIB_ON_WAY_NEIGHBOUR_WP)
+					{
+						if (ti_way_wp_nb < 2 || to_dest_wp != tao_way_wp[1])
+						{
+							// On doit rajouter un wp à la fin de notre chemin
+							for (ti_i = ti_way_wp_nb; ti_i > 0; ti_i--)
+								tao_way_wp[ti_i] = tao_way_wp[ti_i - 1]
+							tao_way_wp[0] = to_dest_wp
+							ti_way_wp_nb++
+						}
+						else
+						{
+							// Le wp dest est l'avant dernier wp de notre chemin
+							ti_way_wp_nb--
+							for (ti_i = 0; ti_i < ti_way_wp_nb; ti_i++)
+								tao_way_wp[ti_i] = tao_way_wp[ti_i + 1]
+						}
+					}
+		
+					if (ti_start_wp_state == Ci_PATH_LIB_NEIGHBOUR_WP || ti_start_wp_state == Ci_PATH_LIB_ON_WAY_NEIGHBOUR_WP)
+					{
+						if (ti_way_wp_nb < 2 || to_start_wp != tao_way_wp[ti_way_wp_nb - 2])
+						{
+							// On doir rajouter un wp au début de notre chemin
+							tao_way_wp[ti_way_wp_nb] = to_start_wp
+							ti_way_wp_nb++
+						}
+						else if (ti_way_wp_nb > 1) 
+						{
+							// Le wp de départ est le deuxième wp de notre chemin
+							ti_way_wp_nb--
+						}
+					}
+					else if (ti_start_wp_state == Ci_PATH_LIB_SAME_WP && ti_way_wp_nb > 1 && @tao_way_wp[ti_way_wp_nb - 2] COL_BV_PointCollide(tv_start_pos))
+					{
+						// Le wp de départ est le deuxième wp de notre chemin
+						ti_way_wp_nb--
+						to_start_wp = tao_way_wp[ti_way_wp_nb - 1]
+					}
+				}
+				else
+				{
+					if (ti_dest_wp_state == Ci_PATH_LIB_NEIGHBOUR_WP)
+					{
+						// ON N'A PAS DE CHEMIN MAIS ON VA QUAND MEME STOCKER LE CHANGEMENT DE WP
+						tao_way_wp[0] = to_dest_wp
+					}
+
+					 if (ti_start_wp_state == Ci_PATH_LIB_NEIGHBOUR_WP)
+					{
+						// ON N'A PAS DE CHEMIN MAIS ON VA QUAND MEME STOCKER LE CHANGEMENT DE WP
+						tao_way_wp[1] = to_start_wp
+					}
+				}
+				
+				if (tao_way_wp[0] != to_dest_wp)
+					ti_flag_recompute_way	= vrai
+				else if (ti_way_wp_nb && tao_way_wp[ti_way_wp_nb - 1] != to_start_wp)
+					ti_flag_recompute_way	= vrai
+				else if (!ti_way_wp_nb && tao_way_wp[1] != to_start_wp)
+					ti_flag_recompute_way	= vrai
+			}	
+	
+			if (ti_flag_recompute_way && @get_global PATH_LIB_current_client_ID > ti_client_ID)
+			{
+				ti_client_ID = @get_global PATH_LIB_new_client_ID
+				@get_global PATH_LIB_new_client_ID++
+			}
+		}
+	}
+	else
+	{
+		ti_way_wp_nb = 0
+		ti_client_ID = -1
+	}
+	
+	if (ti_client_ID != -1)
+	{
+		if (ti_client_ID == @get_global PATH_LIB_current_client_ID)
+		{
+			ti_client_ID = -1
+			DBG_RenderSphere(OBJ_PosGet() + Cv_VerticalVector, 2.0, color_rouge)
+
+			ti_way_wp_nb = WAY_ShortWay(tn_net, &tao_way_wp[0], to_start_wp, to_dest_wp, all, OBJ_Capa_0)
+			if ( ! ti_way_wp_nb )
+			{
+				tao_way_wp[0] = to_dest_wp
+				tao_way_wp[1] = to_start_wp
+			}
+		}
+		else
+		{
+			ti_way_wp_nb	= 0
+			tao_way_wp[0] = to_dest_wp
+			tao_way_wp[1] = to_start_wp
+		}
+	}
+
+	if (ti_way_wp_nb) 
+	{
+//		for (ti_i = ti_way_wp_nb - 1; ti_i > 0; ti_i--)
+//			DBG_RenderVector(@tao_way_wp[ti_i] OBJ_PosGet() + Cv_VerticalVector, @tao_way_wp[ti_i - 1] OBJ_PosGet() - @tao_way_wp[ti_i] OBJ_PosGet(), color_blanc)
+//		DBG_RenderVector(@tao_way_wp[0] OBJ_PosGet() + Cv_VerticalVector, tv_dest_pos - @tao_way_wp[0] OBJ_PosGet(), color_blanc)
+	
+		tv_return_pos = PATH_LIB_Get_Next_Wp_Pos(	tv_start_pos,
+																				tv_dest_pos,
+																				tf_extrusion,
+																				ti_way_wp_nb,
+																				&tao_way_wp[0] )
+	}
+	
+	DBG_StopRaster(9)
+
+	return(tv_return_pos)
+}
+
+procedure int PATH_LIB_Check_Volume_Occlusion(vector tv_start_pos, object to_next_wp, object to_next_next_wp, int ti_axis, byref vector tv_pos, float tf_size, vector tv_actor_pos)
+{
+	int			ti_i
+	int			ti_flag_return_pos
+	int			ti_flag_pos0_find
+	int			ti_flag_pos1_find
+
+	float		tf_X
+	float		tf_A
+	float		tf_Z
+	float		tf_borne_inf
+	float		tf_borne_max
+	float		tf_sign
+	float		tf_cross_sign
+	float		tf_tolerance
+	
+	vector	tv_pos0
+	vector	tv_pos1
+	vector	tv_pos2
+	vector	tv_pos3
+	vector	tv_min_pos
+	vector	tv_max_pos
+	vector	tv_AB
+	vector	tv_dir
+	vector	tv_angle_pos
+	vector	tv_front_min
+	vector	tv_front_max
+	vector	tv_offset_pos
+	vector	tv_circle_pos
+
+	ti_flag_return_pos = vrai
+
+	tv_min_pos = to_next_next_wp.des_vec1
+	tv_max_pos = to_next_next_wp.des_vec2
+
+//	DBG_RenderVector(tv_min_pos, Cv_VerticalVector * 1000.0, color_bleu)
+//	DBG_RenderVector(tv_max_pos, Cv_VerticalVector * 1000.0, color_jaune)
+
+	tf_Z = @to_next_next_wp OBJ_PosGet().z
+
+	tv_min_pos.z = tf_Z
+	tv_max_pos.z = tf_Z
+	tv_front_min.z = tf_Z
+	tv_front_max.z = tf_Z
+
+	if ( ! ti_axis )
+	{
+		if (	tv_min_pos.x > tv_max_pos.x)
+		{
+			tv_AB = tv_min_pos
+			tv_min_pos = tv_max_pos
+			tv_max_pos = tv_AB
+		}
+		
+		tv_front_min.y = tv_max_pos.y
+		tv_front_max.y = tv_max_pos.y
+		
+		tv_front_min.x = @to_next_next_wp OBJ_PosGet().x + @to_next_next_wp BV_MinGet().x
+		tv_front_max.x = @to_next_next_wp OBJ_PosGet().x + @to_next_next_wp BV_MaxGet().x
+	}
+	else
+	{
+		if (	tv_min_pos.y > tv_max_pos.y)
+		{
+			tv_AB = tv_min_pos
+			tv_min_pos = tv_max_pos
+			tv_max_pos = tv_AB
+		}
+
+		tv_front_min.x = tv_max_pos.x
+		tv_front_max.x = tv_max_pos.x
+		
+		tv_front_min.y = @to_next_next_wp OBJ_PosGet().y + @to_next_next_wp BV_MinGet().y
+		tv_front_max.y = @to_next_next_wp OBJ_PosGet().y + @to_next_next_wp BV_MaxGet().y
+	}
+
+	tf_tolerance = tf_size - 0.01
+
+	tf_cross_sign = MATH_FloatSign(MATH_VecCrossProduct(tv_max_pos - tv_start_pos, tv_min_pos - tv_start_pos).z)
+
+//	DBG_RenderVector(tv_front_min, Cv_VerticalVector * 1000.0, color_rouge)
+//	DBG_RenderVector(tv_front_max, Cv_VerticalVector * 1000.0, color_vert)
+
+	ti_flag_pos0_find = faux
+	ti_flag_pos1_find = faux
+
+	for (ti_i = 0; ti_i < 2; ti_i++)
+	{
+		if ( ti_i )
+			tv_angle_pos = tv_max_pos
+		else
+			tv_angle_pos = tv_min_pos
+
+		tv_dir = tv_angle_pos - tv_start_pos
+
+		tv_AB = @to_next_next_wp OBJ_PosGet()
+		if ( ti_axis )
+		{
+			tv_AB.x = tv_angle_pos.x
+			if (tv_dir.y > 0.0)
+				tv_AB.y += @to_next_next_wp BV_MaxGet().y
+			else
+				tv_AB.y += @to_next_next_wp BV_MinGet().y
+		}
+		else
+		{
+			tv_AB.y = tv_angle_pos.y
+			if (tv_dir.x > 0.0)
+				tv_AB.x += @to_next_next_wp BV_MaxGet().x
+			else
+				tv_AB.x += @to_next_next_wp BV_MinGet().x
+		}
+		tv_AB -= tv_start_pos
+	
+		if ( ! ti_axis )
+		{
+			if (tv_dir.x)
+			{
+				tf_X = tv_AB.x /  tv_dir.x
+				tv_pos = tv_start_pos + (tv_dir * tf_X)
+			}
+			else
+				continue
+
+			tv_pos2 = tv_pos
+			tv_pos3 = tv_pos
+			
+			if (MATH_FloatNullToler(1.0 - tf_X, 0.001))
+				continue
+
+//			tf_borne_inf = @to_next_next_wp OBJ_PosGet().y + @to_next_next_wp BV_MinGet().y
+//			tf_borne_max = @to_next_next_wp OBJ_PosGet().y + @to_next_next_wp BV_MaxGet().y
+
+			if (tv_dir.y > 0.0)
+			{
+				tf_borne_inf = tv_front_min.y
+				tf_borne_max = @to_next_next_wp OBJ_PosGet().y + @to_next_next_wp BV_MaxGet().y
+			
+				if (tv_pos.y > tf_borne_max)
+				{
+					tv_pos2.y = tf_borne_max 
+					if (ti_i)
+						tv_pos2.x = tv_front_max.x
+					else
+						tv_pos2.x = tv_front_min.x
+
+					tv_AB = tv_pos2
+					tv_AB -= tv_start_pos
+	
+					tf_X = tv_AB.y /  tv_dir.y
+					tv_pos = tv_start_pos + (tv_dir * tf_X)
+					tv_pos3 = tv_pos2
+				}
+				else if (AI_GetCurSystem() == Ci_CurSystem_Editeur && ((ti_i && tv_dir.x < 0.0) || (!ti_i && tv_dir.x > 0.0))) // OK ON TOUCHE PLUS
+				{
+					tv_pos2 = tv_pos
+					tv_pos2.y = tf_borne_max
+
+					tv_pos3.y = tf_borne_max 
+					if (ti_i)
+						tv_pos3.x = tv_front_max.x
+					else
+						tv_pos3.x = tv_front_min.x
+				}
+			}
+			else
+			{
+				tf_borne_inf = @to_next_next_wp OBJ_PosGet().y + @to_next_next_wp BV_MinGet().y
+				tf_borne_max = tv_front_max.y
+				
+				if (tv_pos.y < tf_borne_inf)
+				{
+					tv_pos2.y = tf_borne_inf
+					if (ti_i)
+						tv_pos2.x = tv_front_max.x
+					else
+						tv_pos2.x = tv_front_min.x
+
+					tv_AB = tv_pos2
+					tv_AB -= tv_start_pos
+
+					tf_X = tv_AB.y /  tv_dir.y
+					tv_pos = tv_start_pos + (tv_dir * tf_X)
+					tv_pos3 = tv_pos2
+				}
+				else if (AI_GetCurSystem() == Ci_CurSystem_Editeur && ((ti_i && tv_dir.x < 0.0) || (!ti_i && tv_dir.x > 0.0))) // OK ON TOUCHE PLUS !!!
+				{
+					tv_pos2 = tv_pos
+					tv_pos2.y = tf_borne_inf
+
+					tv_pos3.y = tf_borne_inf 
+					if (ti_i)
+						tv_pos3.x = tv_front_max.x
+					else
+						tv_pos3.x = tv_front_min.x
+				}
+			}
+
+			if (AI_GetCurSystem() == Ci_CurSystem_Editeur)
+			{
+				tv_pos.z = tf_Z	
+				tv_pos2.z = tf_Z	
+				tv_pos3.z = tf_Z	
+
+				DBG_RenderVector(tv_angle_pos + Cv_VerticalVector, tv_pos - tv_angle_pos, color_jaune)
+				DBG_RenderVector(tv_pos + Cv_VerticalVector, tv_pos2 - tv_pos, color_jaune)
+				DBG_RenderVector(tv_pos2 + Cv_VerticalVector, tv_pos3- tv_pos2, color_jaune)
+				if (ti_i)
+				{
+					DBG_RenderVector(tv_pos3 + Cv_VerticalVector,  tv_front_max - tv_pos3, color_jaune)
+					DBG_RenderVector(tv_front_max + Cv_VerticalVector, tv_angle_pos - tv_front_max, color_jaune)
+				}
+				else
+				{
+					DBG_RenderVector(tv_pos3 + Cv_VerticalVector,  tv_front_min - tv_pos3, color_jaune)
+					DBG_RenderVector(tv_front_min + Cv_VerticalVector, tv_angle_pos - tv_front_min, color_jaune)
+				}
+			}
+
+			// EST-CE QUE LE CERCLE RENTRE ?
+			tf_sign = MATH_FloatSign(MATH_FloatSign(tv_dir.y))
+			
+			tf_A = tf_size * tf_size
+			tf_A /= (tv_dir.x * tv_dir.x) + (tv_dir.y * tv_dir.y)
+			tf_A = MATH_FloatMax(tf_A, 0.0)
+			tf_A = MATH_FloatSqrt(tf_A)
+		
+			if (ti_i)
+			{
+				tv_offset_pos = tv_start_pos + cvector(tf_cross_sign * tv_dir.y * tf_A, - tf_cross_sign * tv_dir.x * tf_A, 1.0)
+
+				tv_AB = tv_front_max
+				tv_AB.y += tf_sign * tf_size
+				tv_AB -= tv_offset_pos
+			}
+			else
+			{
+				tv_offset_pos = tv_start_pos + cvector( - tf_cross_sign * tv_dir.y * tf_A, tf_cross_sign * tv_dir.x * tf_A, 1.0)
+
+				tv_AB = tv_front_min
+ 				tv_AB.y += tf_sign * tf_size
+				tv_AB -= tv_offset_pos
+			}
+			
+//			DBG_RenderVector(tv_offset_pos, tv_dir * 1000.0, 0xFF8080)
+
+			tf_X = tv_AB.y /  tv_dir.y
+			tv_circle_pos = tv_offset_pos
+			tv_circle_pos += tv_dir * tf_X
+		
+			if (tv_circle_pos.x >= tv_front_min.x + tf_tolerance && tv_circle_pos.x <= tv_front_max.x - tf_tolerance && tv_circle_pos.y >= tf_borne_inf + tf_tolerance && tv_circle_pos.y <= tf_borne_max - tf_tolerance)
+			{
+//				DBG_RenderSphere(tv_circle_pos, tf_size, color_jaune)
+
+				if (ti_flag_return_pos)
+				{
+					if (ti_i)
+					{
+						ti_flag_pos1_find	= vrai
+						tv_pos1 = tv_circle_pos
+					}
+					else
+					{
+						ti_flag_pos0_find = vrai
+						tv_pos0 = tv_circle_pos
+					}
+				}
+			}
+			else
+			{
+//				DBG_RenderVector(tv_circle_pos, Cv_VerticalVector * 5.0, color_rouge)
+//				DBG_RenderCircle(tv_circle_pos, tf_size, Cv_VerticalVector, color_rouge)
+			
+				if (ti_i)
+				{
+					tv_AB = tv_front_max
+					tv_AB.x -= tf_size
+					tv_AB -= tv_offset_pos
+				}
+				else
+				{
+					tv_AB = tv_front_min
+ 					tv_AB.x += tf_size
+					tv_AB -= tv_offset_pos
+				}
+
+				tf_X = tv_AB.x /  tv_dir.x
+				tv_circle_pos = tv_offset_pos
+				tv_circle_pos += tv_dir * tf_X
+			
+				if (tv_circle_pos.x >= tv_front_min.x + tf_tolerance && tv_circle_pos.x <= tv_front_max.x - tf_tolerance && tv_circle_pos.y >= tf_borne_inf + tf_tolerance && tv_circle_pos.y <= tf_borne_max - tf_tolerance)
+				{
+//					DBG_RenderSphere(tv_circle_pos, tf_size, color_jaune)
+
+					if (ti_flag_return_pos)
+					{
+						if (ti_i)
+						{
+							ti_flag_pos1_find	= vrai
+							tv_pos1 = tv_circle_pos
+						}
+						else
+						{
+							ti_flag_pos0_find = vrai
+							tv_pos0 = tv_circle_pos
+						}
+					}
+				}
+//				else
+//				{
+//					DBG_RenderVector(tv_circle_pos, Cv_VerticalVector * 5.0, color_rouge)
+//					DBG_RenderCircle(tv_circle_pos, tf_size, Cv_VerticalVector, color_rouge)
+//				}
+			}
+		}
+		else
+		{
+			if (tv_dir.y)
+			{
+				tf_X = tv_AB.y /  tv_dir.y
+				tv_pos = tv_start_pos + (tv_dir * tf_X)
+			}
+			else
+				continue
+
+			tv_pos2 = tv_pos
+			tv_pos3 = tv_pos
+
+			if (MATH_FloatNullToler(1.0 - tf_X, 0.001))
+				continue
+
+//			tf_borne_inf = @to_next_next_wp OBJ_PosGet().x + @to_next_next_wp BV_MinGet().x
+//			tf_borne_max = @to_next_next_wp OBJ_PosGet().x + @to_next_next_wp BV_MaxGet().x
+			
+			if (tv_dir.x > 0.0)
+			{
+				tf_borne_inf = tv_front_min.x
+				tf_borne_max = @to_next_next_wp OBJ_PosGet().x + @to_next_next_wp BV_MaxGet().x
+
+				if (tv_pos.x > tf_borne_max)
+				{
+					tv_pos2.x = tf_borne_max
+					if (ti_i)
+						tv_pos2.y = tv_front_max.y
+					else
+						tv_pos2.y = tv_front_min.y
+					tv_AB = tv_pos2
+					tv_AB -= tv_start_pos
+	
+					tf_X = tv_AB.x /  tv_dir.x
+					tv_pos = tv_start_pos + (tv_dir * tf_X)
+					tv_pos3 = tv_pos2
+				}
+				else if (AI_GetCurSystem() == Ci_CurSystem_Editeur && ((ti_i && tv_dir.y < 0.0) || (!ti_i && tv_dir.y > 0.0))) // OK ON NE TOUCHE PLUS
+				{
+					tv_pos2 = tv_pos
+					tv_pos2.x = tf_borne_max
+
+					tv_pos3.x = tf_borne_max 
+					if (ti_i)
+						tv_pos3.y = tv_front_max.y
+					else
+						tv_pos3.y = tv_front_min.y
+				}
+			}
+			else
+			{
+				tf_borne_inf = @to_next_next_wp OBJ_PosGet().x + @to_next_next_wp BV_MinGet().x
+				tf_borne_max = tv_front_max.x
+
+				if (tv_pos.x < tf_borne_inf)
+				{
+					tv_pos2.x = tf_borne_inf
+					if (ti_i)
+						tv_pos2.y = tv_front_max.y
+					else
+						tv_pos2.y = tv_front_min.y
+
+					tv_AB = tv_pos2
+					tv_AB -= tv_start_pos
+	
+					tf_X = tv_AB.x /  tv_dir.x
+					tv_pos = tv_start_pos + (tv_dir * tf_X)
+					tv_pos3 = tv_pos2
+				}
+				else if (AI_GetCurSystem() == Ci_CurSystem_Editeur && ((ti_i && tv_dir.y < 0.0) || (!ti_i && tv_dir.y > 0.0))) // OK ON NE TOUCHE PLUS
+				{
+					tv_pos2 = tv_pos
+					tv_pos2.x = tf_borne_inf
+
+					tv_pos3.x = tf_borne_inf 
+					if (ti_i)
+						tv_pos3.y = tv_front_max.y
+					else
+						tv_pos3.y = tv_front_min.y
+				}
+			}
+
+			if (AI_GetCurSystem() == Ci_CurSystem_Editeur)
+			{
+				tv_pos.z = tf_Z	
+				tv_pos2.z = tf_Z	
+				tv_pos3.z = tf_Z	
+			
+				DBG_RenderVector(tv_angle_pos + Cv_VerticalVector, tv_pos - tv_angle_pos, color_jaune)
+				DBG_RenderVector(tv_pos + Cv_VerticalVector, tv_pos2 - tv_pos, color_jaune)
+				DBG_RenderVector(tv_pos2 + Cv_VerticalVector, tv_pos3- tv_pos2, color_jaune)
+				if (ti_i)
+				{
+					DBG_RenderVector(tv_pos3 + Cv_VerticalVector,  tv_front_max - tv_pos3, color_jaune)
+					DBG_RenderVector(tv_front_max + Cv_VerticalVector, tv_angle_pos - tv_front_max, color_jaune)
+				}
+				else
+				{
+					DBG_RenderVector(tv_pos3 + Cv_VerticalVector,  tv_front_min - tv_pos3, color_jaune)
+					DBG_RenderVector(tv_front_min + Cv_VerticalVector, tv_angle_pos - tv_front_min, color_jaune)
+				}
+			}
+
+			// EST-CE QUE LE CERCLE RENTRE ?
+			tf_sign = MATH_FloatSign(MATH_FloatSign(tv_dir.x))
+
+			tf_A = tf_size * tf_size
+			tf_A /= (tv_dir.x * tv_dir.x) + (tv_dir.y * tv_dir.y)
+			tf_A = MATH_FloatMax(tf_A, 0.0)
+			tf_A = MATH_FloatSqrt(tf_A)
+		
+			if (ti_i)
+			{
+				tv_offset_pos = tv_start_pos + cvector( tf_cross_sign * tv_dir.y * tf_A, - tf_cross_sign * tv_dir.x * tf_A, 1.0)
+
+				tv_AB = tv_front_max
+				tv_AB.x += tf_sign * tf_size
+				tv_AB -= tv_offset_pos
+			}
+			else
+			{
+				tv_offset_pos = tv_start_pos + cvector(- tf_cross_sign * tv_dir.y * tf_A, tf_cross_sign * tv_dir.x * tf_A, 1.0)
+
+				tv_AB = tv_front_min
+ 				tv_AB.x += tf_sign * tf_size
+				tv_AB -= tv_offset_pos
+			}
+			
+			tf_X = tv_AB.x /  tv_dir.x
+			tv_circle_pos = tv_offset_pos
+			tv_circle_pos += tv_dir * tf_X
+		
+			if (tv_circle_pos.x >= tf_borne_inf + tf_tolerance && tv_circle_pos.x <= tf_borne_max - tf_tolerance && tv_circle_pos.y >= tv_front_min.y + tf_tolerance && tv_circle_pos.y <= tv_front_max.y - tf_tolerance)
+			{
+//				DBG_RenderSphere(tv_circle_pos, tf_size, color_jaune)
+
+				if (ti_flag_return_pos)
+				{
+					if (ti_i)
+					{
+						ti_flag_pos1_find	= vrai
+						tv_pos1 = tv_circle_pos
+					}
+					else
+					{
+						ti_flag_pos0_find = vrai
+						tv_pos0 = tv_circle_pos
+					}
+				}
+			}
+			else
+			{
+//				DBG_RenderVector(tv_circle_pos, Cv_VerticalVector * 5.0, color_rouge)
+//				DBG_RenderCircle(tv_circle_pos, tf_size, Cv_VerticalVector, color_rouge)
+			
+				if (ti_i)
+				{
+					tv_AB = tv_front_max
+					tv_AB.y -= tf_size
+					tv_AB -= tv_offset_pos
+				}
+				else
+				{
+					tv_AB = tv_front_min
+ 					tv_AB.y += tf_size
+					tv_AB -= tv_offset_pos
+				}
+
+				tf_X = tv_AB.y /  tv_dir.y
+				tv_circle_pos = tv_offset_pos
+				tv_circle_pos += tv_dir * tf_X
+				
+				MATH_VecRound(tv_circle_pos, 0.001)
+
+				if (tv_circle_pos.x >= tf_borne_inf + tf_tolerance && tv_circle_pos.x <= tf_borne_max - tf_tolerance && tv_circle_pos.y >= tv_front_min.y + tf_tolerance && tv_circle_pos.y <= tv_front_max.y - tf_tolerance)
+				{
+//					DBG_RenderSphere(tv_circle_pos, tf_size, color_jaune)
+
+					if (ti_flag_return_pos)
+					{
+						if (ti_i)
+						{
+							ti_flag_pos1_find	= vrai
+							tv_pos1 = tv_circle_pos
+						}
+						else
+						{
+							ti_flag_pos0_find = vrai
+							tv_pos0 = tv_circle_pos
+						}
+					}
+				}
+//				else
+//				{
+//					DBG_RenderVector(tv_circle_pos, Cv_VerticalVector * 5.0, color_rouge)
+//					DBG_RenderCircle(tv_circle_pos, tf_size, Cv_VerticalVector, color_rouge)
+//				}
+			}
+		}
+	}
+
+	if (ti_flag_pos0_find)
+	{
+		tv_pos0.z = tf_Z
+	
+		tv_pos2 = @to_next_next_wp OBJ_PosGet()
+		tv_pos2 += @to_next_next_wp BV_MinGet()
+		tv_pos2  += (@to_next_next_wp BV_MaxGet() - @to_next_next_wp BV_MinGet()) * 0.5
+		
+		tv_dir = 	tv_pos0 - tv_pos2
+		tv_dir.z = 0.0
+		tf_X = MATH_VecNorm(tv_dir)
+		tv_dir /= tf_X
+
+		if (COL_RayObject_Dist(tv_pos2, tv_dir, tf_X, all, OBJ_C_IdentityFlag_AI | OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable))
+		{
+			DBG_RenderSphere(tv_pos0, tf_size, color_rouge)
+			DBG_RenderVector(tv_pos2 , COL_RayObject_PosGet() - tv_pos2, color_rouge)
+			ti_flag_pos0_find = faux
+		}
+		else
+		{
+			DBG_RenderSphere(tv_pos0, tf_size, color_jaune)
+		}
+	}
+
+	if (ti_flag_pos1_find)
+	{
+		tv_pos1.z = tf_Z	
+	
+		tv_pos2 = @to_next_next_wp OBJ_PosGet()
+		tv_pos2 += @to_next_next_wp BV_MinGet()
+		tv_pos2  += (@to_next_next_wp BV_MaxGet() - @to_next_next_wp BV_MinGet()) * 0.5
+		
+		tv_dir = 	tv_pos1 - tv_pos2
+		tv_dir.z = 0.0
+		tf_X = MATH_VecNorm(tv_dir)
+		tv_dir /= tf_X
+
+//		tv_pos1.z = tv_start_pos.z
+
+		if (COL_RayObject_Dist(tv_pos2, tv_dir, tf_X, all, OBJ_C_IdentityFlag_AI | OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable))
+		{
+			DBG_RenderSphere(tv_pos1, tf_size, color_rouge)
+			DBG_RenderVector(tv_pos2 , COL_RayObject_PosGet() - tv_pos2, color_rouge)
+			ti_flag_pos1_find = faux
+		}
+		else
+		{
+			DBG_RenderSphere(tv_pos1, tf_size, color_jaune)
+		}
+	}
+
+	if (ti_flag_pos0_find && ti_flag_pos1_find)
+	{
+		if (MATH_VecSquareNorm(tv_pos0 - tv_actor_pos) < MATH_VecSquareNorm(tv_pos1 - tv_actor_pos))
+			tv_pos = tv_pos0
+		else
+			tv_pos = tv_pos1
+		return(vrai)
+	}
+	else if (ti_flag_pos0_find)
+	{
+		tv_pos = tv_pos0
+		return(vrai)
+	}
+	else if (ti_flag_pos1_find)
+	{
+		tv_pos = tv_pos1
+		return(vrai)
+	}
+
+	return(faux)
+}
+
+// Check Visibility =======================================================
+procedure int PATH_LIB_Check_Visibility(vector tv_start_pos, object to_next_wp, object to_next_next_wp, byref int ti_axis)
+{
+	float		tf_min_dist
+	float		tf_max_dist
+	float		tf_X_proj_min
+	float		tf_X_proj_max
+	float		tf_diff
+
+	vector	tv_pos
+	vector	tv_min_pos
+	vector	tv_max_pos
+	vector	tv_door_min_pos
+	vector	tv_door_max_pos
+	vector	tv_AB
+	vector	tv_dir
+
+	if (@to_next_next_wp OBJ_CapaTest(OBJ_Capa_29))
+		return(@to_next_next_wp OBJ_CapaTest(OBJ_Capa_28))
+
+	tv_min_pos = to_next_wp.des_vec1
+	tv_max_pos = to_next_wp.des_vec2
+
+	ti_axis = PATH_LIB_Get_Door(to_next_wp, to_next_next_wp, 0.0, tv_door_min_pos, tv_door_max_pos)
+
+//	tv_door_min_pos.z = tv_start_pos.z
+//	tv_door_max_pos.z = tv_start_pos.z
+
+	tv_door_min_pos.z = @to_next_wp OBJ_PosGet().z
+	tv_door_max_pos.z = tv_door_min_pos.z
+
+	tv_AB = tv_door_min_pos - tv_start_pos
+
+	// On projete la borne max dans le plan de la prochaine porte
+	tv_dir = tv_max_pos - tv_start_pos
+	if (ti_axis)
+	{
+		if (tv_dir.x)
+		{
+			tf_max_dist = tv_AB.x /  tv_dir.x
+			tv_pos = tv_start_pos + (tv_dir * tf_max_dist)
+		}
+		else
+		{
+			tf_max_dist = 1.0
+			tv_pos = tv_door_max_pos
+		}
+	}
+	else
+	{
+		if (tv_dir.y)
+		{
+			tf_max_dist = tv_AB.y /  tv_dir.y
+			tv_pos = tv_start_pos + (tv_dir * tf_max_dist)
+		}
+		else
+		{
+			tf_max_dist = 1.0
+			tv_pos = tv_door_max_pos
+		}
+	}
+	
+
+	if (tf_max_dist > 0.0)
+	{
+		// La projection est devant
+		if (ti_axis)
+			tf_X_proj_max = MATH_FloatLimit(tv_pos.y, tv_door_min_pos.y, tv_door_max_pos.y)
+		else
+			tf_X_proj_max = MATH_FloatLimit(tv_pos.x, tv_door_min_pos.x, tv_door_max_pos.x)
+	}
+	else
+	{
+		// La projection est derrière
+		if (ti_axis)
+		{
+			if (tv_dir.y > 0.0)
+				tf_X_proj_max = tv_door_max_pos.y
+			else
+				tf_X_proj_max = tv_door_min_pos.y
+		}
+		else
+		{
+			if (tv_dir.x > 0.0)
+				tf_X_proj_max = tv_door_max_pos.x
+			else
+				tf_X_proj_max = tv_door_min_pos.x
+		}
+	}
+
+	// On projete la borne min dans le plan de la prochaine porte
+	tv_dir = tv_min_pos - tv_start_pos
+	if (ti_axis)
+	{
+		if (tv_dir.x)
+		{
+			tf_min_dist = tv_AB.x /  tv_dir.x
+			tv_pos = tv_start_pos + (tv_dir * tf_min_dist)
+		}
+		else
+		{
+			tf_min_dist = 1.0
+			tv_pos = tv_door_min_pos
+		}
+	}
+	else
+	{
+		if (tv_dir.y)
+		{
+			tf_min_dist = tv_AB.y /  tv_dir.y
+			tv_pos = tv_start_pos + (tv_dir * tf_min_dist)
+		}
+		else
+		{
+			tf_min_dist = 1.0
+			tv_pos = tv_door_min_pos
+		}
+	}
+
+	if (tf_min_dist > 0.0)
+	{
+		// La projection est devant
+		if (ti_axis)
+			tf_X_proj_min = MATH_FloatLimit(tv_pos.y, tv_door_min_pos.y, tv_door_max_pos.y)
+		else
+			tf_X_proj_min = MATH_FloatLimit(tv_pos.x, tv_door_min_pos.x, tv_door_max_pos.x)
+	}
+	else
+	{
+		// La projection est derrière
+		if (ti_axis)
+		{
+			if (tv_dir.y > 0.0)
+				tf_X_proj_min = tv_door_max_pos.y
+			else
+				tf_X_proj_min = tv_door_min_pos.y
+		}
+		else
+		{
+			if (tv_dir.x > 0.0)
+				tf_X_proj_min = tv_door_max_pos.x
+			else
+				tf_X_proj_min = tv_door_min_pos.x
+		}
+	}
+
+	if (ti_axis)
+	{
+		tv_door_min_pos = cvector(tv_door_min_pos.x, tf_X_proj_min, tv_door_min_pos.z)
+		tv_door_max_pos = cvector(tv_door_max_pos.x, tf_X_proj_max, tv_door_max_pos.z)
+	}
+	else
+	{
+		tv_door_min_pos = cvector(tf_X_proj_min, tv_door_min_pos.y, tv_door_min_pos.z)
+		tv_door_max_pos = cvector(tf_X_proj_max, tv_door_max_pos.y, tv_door_max_pos.z)
+	}
+
+	if (MATH_AbsFloat(tf_X_proj_max - tf_X_proj_min) < 0.001 || (tf_min_dist < 0.0 && tf_max_dist < 0.0) )
+	{
+//		DBG_RenderVector(tv_start_pos + Cv_VerticalVector, tv_door_min_pos - tv_start_pos, color_rouge)
+//		DBG_RenderVector(tv_start_pos + Cv_VerticalVector, tv_door_max_pos - tv_start_pos, color_rouge)
+		return(faux)
+	}
+	
+	to_next_next_wp.des_vec1 = tv_door_min_pos
+	to_next_next_wp.des_vec2 = tv_door_max_pos
+
+//	DBG_RenderVector(tv_start_pos + Cv_VerticalVector, tv_door_min_pos - tv_start_pos, color_rouge)
+//	DBG_RenderVector(tv_door_min_pos + Cv_VerticalVector, tv_door_max_pos - tv_door_min_pos, color_vert)
+//	DBG_RenderVector(tv_door_max_pos + Cv_VerticalVector, tv_start_pos - tv_door_max_pos, color_bleu)
+		
+	return(vrai)
+}
+
+procedure object PATH_LIB_Get_Nearest_From_Pos(byref int ti_gao_file_size, byrefarr object tao_gao_file, byref int ti_gao_file_start_index, byref int ti_gao_file_end_index)
+{
+	int		ti_i	
+	int		ti_best_index
+
+	float		tf_dist
+	float		tf_best_dist
+
+	object	to_gao
+	
+	tf_best_dist = Cf_Infinit
+	for (ti_i = 0; ti_i < ti_gao_file_size; ti_i++)
+	{
+		to_gao = tao_gao_file[MATH_Modulo(ti_gao_file_start_index + ti_i, 100)]
+		tf_dist = to_gao.des_float1
+		if (tf_dist < tf_best_dist)
+		{
+			tf_best_dist = tf_dist
+			ti_best_index = ti_gao_file_start_index + ti_i
+		}
+	}
+
+	to_gao = tao_gao_file[ti_best_index]
+
+	ti_gao_file_end_index = MATH_Modulo(ti_gao_file_end_index + 99, 100)
+	tao_gao_file[ti_best_index] = tao_gao_file[ti_gao_file_end_index]
+	tao_gao_file[ti_gao_file_end_index] = nobody
+
+	ti_gao_file_size--
+	return(to_gao)
+}
+
+procedure object PATH_LIB_Get_Best_Dodge_Wp(byref int ti_gao_file_size, byrefarr object tao_gao_file, byref int ti_gao_file_start_index, byref int ti_gao_file_end_index, vector tv_my_pos, vector tv_dodge_pos, object to_dodge_wp)
+{
+	int		ti_i	
+	int		ti_best_index
+
+	float		tf_dist
+	float		tf_best_dist
+	float		tf_dot_product
+
+	object	to_gao
+
+	tf_best_dist = Cf_Infinit
+
+	for (ti_i = 0; ti_i < ti_gao_file_size; ti_i++)
+	{
+		to_gao = tao_gao_file[MATH_Modulo(ti_gao_file_start_index + ti_i, 100)]
+		
+		tf_dist = to_gao.des_float1
+
+		// MALUS
+		if (to_gao.des_object2 == to_dodge_wp && MATH_VecDotProduct(@to_gao OBJ_PosGet() - tv_my_pos, tv_my_pos - tv_dodge_pos) < 0.0)
+			tf_dist += 10000.0
+
+		if (tf_dist < tf_best_dist)
+		{
+			tf_best_dist = tf_dist
+			ti_best_index = ti_gao_file_start_index + ti_i
+		}
+	}
+
+	to_gao = tao_gao_file[ti_best_index]
+
+	ti_gao_file_end_index = MATH_Modulo(ti_gao_file_end_index + 99, 100)
+	tao_gao_file[ti_best_index] = tao_gao_file[ti_gao_file_end_index]
+	tao_gao_file[ti_gao_file_end_index] = nobody
+
+	ti_gao_file_size--
+	return(to_gao)
+}
+
+procedure object PATH_LIB_Get_Best_Sight_Wp(byref int ti_gao_file_size, byrefarr object tao_gao_file, byref int ti_gao_file_start_index, byref int ti_gao_file_end_index, vector tv_my_pos, vector tv_dodge_pos, object to_dodge_wp, vector tv_ref_sight)
+{
+	int		ti_i	
+	int		ti_best_index
+
+	float		tf_dot
+	float		tf_best_dot
+	object	to_gao
+
+	tf_best_dot = -1.0
+
+	for (ti_i = 0; ti_i < ti_gao_file_size; ti_i++)
+	{
+		to_gao = tao_gao_file[MATH_Modulo(ti_gao_file_start_index + ti_i, 100)]
+		
+		tf_dot = to_gao.des_float2
+		if (tf_dot > tf_best_dot)
+		{
+			tf_best_dot = tf_dot
+			ti_best_index = ti_gao_file_start_index + ti_i
+		}
+	}
+
+	to_gao = tao_gao_file[ti_best_index]
+
+	ti_gao_file_end_index = MATH_Modulo(ti_gao_file_end_index + 99, 100)
+	tao_gao_file[ti_best_index] = tao_gao_file[ti_gao_file_end_index]
+	tao_gao_file[ti_gao_file_end_index] = nobody
+
+	ti_gao_file_size--
+	return(to_gao)
+}
+
+
+procedure void PATH_LIB_Rand_Index(byrefarr int index, int ti_array_size)
+{
+	int			ti_i
+	int			tai_index[10]
+	int			ti_size
+	int			ti_index
+	
+	for (ti_i = 0; ti_i < ti_array_size; ti_i++)
+		tai_index[ti_i] = ti_i
+
+	ti_size = ti_array_size
+	for (ti_i = 0; ti_i < ti_array_size; ti_i++)
+	{
+		ti_index = MATH_RandInt(0, ti_size)
+		index[ti_i] = tai_index[ti_index]
+
+		ti_size--
+		tai_index[ti_index] = tai_index[ti_size]
+	}
+}
+
+
+procedure void PATH_LIB_Avoid_Visibility(	vector tv_dodge_pos,			// POS DE L'ACTEUR QUI REGARDE
+															object to_dodge_gao, 			// ACTEUR QUI REGARDE
+															byref object to_dodge_wp,
+															byref vector tv_dest_pos,	// POSITION CACHEE
+															byref object to_dest_wp,	// WP DE LA POSITION CACHEE
+															network tn_net,
+															int ti_wp_nb,
+															byrefarr object tao_wp,
+															float tf_size,					// TAILLE DE L'ACTEUR QUI VEUT SE CACHER
+															vector tv_my_pos,			// POSITION DE L'ACTEUR QUI VEUT SE CACHER
+															object to_my_wp,			// WP OU SE TROUVE L'ACTEUR QUI VEUT SE CACHER
+															int	ti_capa,						// JE NE GERE QUE LES POINTS QUI SONT PRE-MARQUES
+															function fct_accept)			// FONCTION D'ACCEPTATION DE WP
+{
+	// FILE
+	int			ti_gao_file_size
+	int			ti_gao_file_start_index
+	int			ti_gao_file_end_index
+	object	tao_gao_file[100]
+
+	int			ti_i
+	int			ti_k
+	int			ti_link_nb
+	int			ti_axis
+	int			ti_touched_wp_nb	
+	int			ti_flag_ok
+
+	color		tc_color
+
+	object	to_wp
+	object	to_wp_father
+	object	to_next_wp
+	object	tao_touched_wp[200]
+
+	vector	tv_min_pos
+	vector	tv_max_pos
+	vector	tv_X
+	vector	tv_Y
+	vector	tv_ref_sight
+	vector	tv_sight
+
+	float		taf_sqr_dist[20]
+	float		tf_sqr_norm
+
+	DBG_StartRaster(8, "PATH_LIB_Avoid_Visibility")
+
+	PATH_LIB_Get_Wp(tv_dodge_pos, to_dodge_gao, to_dodge_wp, tn_net, &tao_wp[0], ti_wp_nb)
+
+	if ( ! to_dodge_wp )
+	{
+		DBG_StopRaster(8)	
+		return
+	}
+
+	PATH_LIB_Clean_Gao_File(ti_gao_file_size, ti_gao_file_start_index, ti_gao_file_end_index)
+	PATH_LIB_Gao_Enfile(to_dodge_wp, ti_gao_file_size, &tao_gao_file[0], ti_gao_file_end_index)
+	
+	ti_touched_wp_nb = 1
+	tao_touched_wp[0] = to_dodge_wp
+
+	to_dodge_wp.des_object2 = nobody
+	
+	if (to_my_wp)
+	{
+		ti_capa = OBJ_Capa_30
+		@to_dodge_wp OBJ_CapaSet(OBJ_Capa_31, OBJ_Capa_30)
+	}
+	else
+	{
+		@to_dodge_wp OBJ_CapaSet(OBJ_Capa_31, none)
+	}
+
+//	to_my_wp = nobody
+//	tv_dodge_pos.z += 5.0
+
+	tv_ref_sight = tv_my_pos - tv_dodge_pos
+	tv_ref_sight.z = 0.0
+	MATH_VecSetNormalize(tv_ref_sight)
+
+	to_wp = nobody
+	to_dest_wp = nobody
+
+	while(ti_gao_file_size)
+	{
+//		to_wp = PATH_LIB_Gao_Defile(ti_gao_file_size, &tao_gao_file[0], ti_gao_file_start_index)
+
+//		to_wp = PATH_LIB_Get_Best_Sight_Wp(ti_gao_file_size, &tao_gao_file[0], ti_gao_file_start_index, ti_gao_file_end_index, tv_my_pos, tv_dodge_pos, to_dodge_wp, tv_ref_sight)
+		to_wp = PATH_LIB_Get_Best_Dodge_Wp(ti_gao_file_size, &tao_gao_file[0], ti_gao_file_start_index, ti_gao_file_end_index, tv_my_pos, tv_dodge_pos, to_dodge_wp)
+
+		if (to_my_wp && to_wp == to_my_wp)
+			@to_wp OBJ_CapaSet(OBJ_Capa_30, none)
+
+		// ANALYSE DU WP
+		to_wp_father = to_wp.des_object2
+		if (to_wp_father)
+		{
+			if (to_my_wp && @to_wp_father OBJ_CapaTest(OBJ_Capa_30))
+				@to_wp	OBJ_CapaSet(OBJ_Capa_30, none)
+				
+			DBG_RenderVector(@to_wp_father OBJ_PosGet() + Cv_VerticalVector, @to_wp OBJ_PosGet() - @to_wp_father OBJ_PosGet(), color_blanc)
+		
+			if (to_wp_father == to_dodge_wp)
+			{
+				tv_min_pos.z = @to_wp OBJ_PosGet().z
+				tv_max_pos.z = tv_min_pos.z
+			
+				ti_axis = PATH_LIB_Get_Door(to_wp_father, to_wp, 0.0, tv_min_pos, tv_max_pos)
+				
+				to_wp.des_vec1 = tv_min_pos
+				to_wp.des_vec2 = tv_max_pos
+
+				DBG_RenderVector(tv_dodge_pos + Cv_VerticalVector, tv_min_pos - tv_dodge_pos, color_rouge)
+				DBG_RenderVector(tv_min_pos + Cv_VerticalVector, tv_max_pos - tv_min_pos, color_vert)
+				DBG_RenderVector(tv_max_pos + Cv_VerticalVector, tv_dodge_pos - tv_max_pos, color_bleu)
+
+				ti_flag_ok = faux
+				if (ti_capa == all)
+					ti_flag_ok = vrai
+				else if (@to_wp OBJ_CapaTest(ti_capa))
+					ti_flag_ok = vrai
+					
+				if (ti_flag_ok && PATH_LIB_Check_Volume_Occlusion(tv_dodge_pos, to_wp_father, to_wp, ti_axis, tv_dest_pos, tf_size, tv_my_pos))
+				{
+					to_dest_wp = to_wp
+
+					if (fct_accept)
+					{
+						push(to_wp)
+						push(tv_dest_pos)
+						AI_Execute(fct_accept)
+						ti_flag_ok = pop
+					}
+					
+					if (ti_flag_ok)
+						break
+				}
+			}
+			else
+			{
+				if (PATH_LIB_Check_Visibility(tv_dodge_pos, to_wp_father, to_wp, ti_axis))
+				{
+					// ON VOIT UNE PARTIE DU VOLUME SUIVANT
+					ti_flag_ok = faux
+					if (ti_capa == all)
+						ti_flag_ok = vrai
+					else if (@to_wp OBJ_CapaTest(ti_capa))
+						ti_flag_ok = vrai
+	
+					if (ti_flag_ok && PATH_LIB_Check_Volume_Occlusion(tv_dodge_pos, to_wp_father, to_wp, ti_axis, tv_dest_pos, tf_size, tv_my_pos))
+					{
+						to_dest_wp = to_wp
+
+						if (fct_accept)
+						{
+							push(to_wp)
+							push(tv_dest_pos)
+							AI_Execute(fct_accept)
+							ti_flag_ok = pop
+						}
+
+						if (ti_flag_ok)
+							break
+					}
+//					else
+//					{
+//						DBG_RenderVector(tv_dodge_pos + Cv_VerticalVector, to_wp.des_vec1 - tv_dodge_pos, color_rouge)
+//						DBG_RenderVector(tv_dodge_pos + Cv_VerticalVector, to_wp.des_vec2 - tv_dodge_pos, color_vert)
+//					}
+				}
+				else
+				{
+					// ON NE VOIT PAS LE VOLUME SUIVANT
+					PATH_LIB_RenderBV(to_wp, color_rouge)
+	
+					to_wp.des_vec1 = Cv_NullVector
+					to_wp.des_vec2 = Cv_NullVector
+
+					tv_dest_pos = @to_wp OBJ_PosGet() 
+
+					ti_flag_ok = faux
+					if (ti_capa == all)
+						ti_flag_ok = vrai
+					else if (@to_wp OBJ_CapaTest(ti_capa))
+						ti_flag_ok = vrai
+
+					if (ti_flag_ok && fct_accept)
+					{
+						push(to_wp)
+						push(tv_dest_pos)
+						AI_Execute(fct_accept)
+						ti_flag_ok = pop
+					}
+
+					if (ti_flag_ok)
+					{
+						to_dest_wp = to_wp
+						break
+					}
+					
+					continue
+				}
+			}
+		}
+
+		// ON RAJOUTE LES WPS QUI PARTENT DE CE WP
+		ti_link_nb = WAY_GetNumLinks(tn_net, to_wp)
+		for (ti_i = 0; ti_i < ti_link_nb; ti_i++)
+		{
+			to_next_wp = WAY_NetNextWP(tn_net, to_wp, NetNextWP_Mode_choix_de_lindice, ti_i)	
+
+			if (@to_next_wp OBJ_CapaTest(OBJ_Capa_31))
+				continue
+
+			tao_touched_wp[ti_touched_wp_nb] = to_next_wp
+			ti_touched_wp_nb++
+
+			to_next_wp.des_object2 = to_wp
+
+			to_next_wp.des_float1 = MATH_VecSquareNorm(@to_next_wp OBJ_PosGet() - tv_my_pos)
+
+//			tv_sight	= @to_next_wp OBJ_PosGet() - tv_dodge_pos
+//			tv_sight.z = 0.0
+//			MATH_VecSetNormalize(tv_sight)
+//			to_next_wp.des_float2 = MATH_VecDotProduct(tv_sight, tv_ref_sight)
+
+			if (WAY_LinkCapaGet(tn_net, to_wp, to_next_wp) & OBJ_Capa_0)
+			{
+				// LIEN INTERDIT, ON NE FAIT QU'UPDATER LA VISIBILITE 
+				@to_next_wp OBJ_CapaSet(none, OBJ_Capa_29)	
+			
+				DBG_RenderVector(@to_wp OBJ_PosGet() + Cv_VerticalVector, @to_next_wp OBJ_PosGet() - @to_wp OBJ_PosGet(), color_rouge)	
+
+				if (to_wp == to_dodge_wp)
+				{
+					@to_next_wp OBJ_CapaSet(OBJ_Capa_28, none)	
+				
+					tv_min_pos.z = @to_wp OBJ_PosGet().z
+					tv_max_pos.z = tv_min_pos.z
+				
+					ti_axis = PATH_LIB_Get_Door(to_wp, to_next_wp, 0.0, tv_min_pos, tv_max_pos)
+					
+					to_wp.des_vec1 = tv_min_pos
+					to_wp.des_vec2 = tv_max_pos
+	
+					DBG_RenderVector(tv_dodge_pos + Cv_VerticalVector, tv_min_pos - tv_dodge_pos, color_rouge)
+					DBG_RenderVector(tv_min_pos + Cv_VerticalVector, tv_max_pos - tv_min_pos, color_vert)
+					DBG_RenderVector(tv_max_pos + Cv_VerticalVector, tv_dodge_pos - tv_max_pos, color_bleu)
+				}
+				else
+				{
+					if (PATH_LIB_Check_Visibility(tv_dodge_pos, to_wp, to_next_wp, ti_axis))
+						@to_next_wp OBJ_CapaSet(OBJ_Capa_28, none)
+				}
+
+				@to_next_wp OBJ_CapaSet(OBJ_Capa_29, none)
+				
+			}
+			else
+			{
+				@to_next_wp OBJ_CapaSet(OBJ_Capa_31, none)
+				PATH_LIB_Gao_Enfile(to_next_wp, ti_gao_file_size, &tao_gao_file[0], ti_gao_file_end_index)
+			}
+		}
+	}
+
+	if (to_my_wp)
+	{
+		for (ti_i = 0; ti_i < ti_touched_wp_nb; ti_i++)
+			@tao_touched_wp[ti_i] OBJ_CapaSet(none, OBJ_Capa_28 | OBJ_Capa_29 | OBJ_Capa_30 | OBJ_Capa_31)
+	}
+	else
+	{
+		for (ti_i = 0; ti_i < ti_touched_wp_nb; ti_i++)
+			@tao_touched_wp[ti_i] OBJ_CapaSet(none, OBJ_Capa_28 | OBJ_Capa_29 | OBJ_Capa_31)
+	}
+
+	DBG_StopRaster(8)	
+		
+	return
+}
+
+
+procedure vector PATH_LIB_Flee_Get_Next_Pos(	vector tv_start_pos,
+															object to_start_gao,
+															byref object to_start_wp,
+															byref object to_last_wp,
+															vector tv_dodge_pos,
+															float tf_dist_min, 
+															float tf_extrusion,
+															network tn_net,
+															int ti_wp_nb,
+															byrefarr object tao_wp,
+															byref int ti_way_wp_nb,
+															byrefarr object tao_way_wp)
+{
+	int			ti_i
+	int			ti_neighbour_nb
+	int			ti_start_wp_state
+	int			ti_good_link_nb
+
+	float		tf_dot
+	float		tf_best_dot	
+	float		tf_norm
+
+	object	to_wp
+	object	to_best_wp
+	object	to_last_start_wp
+
+	vector	tv_pos_min
+	vector	tv_pos_max
+	vector	tv_ref_sight
+	vector	tv_door_pos
+	vector	tv_return_pos
+
+	to_last_start_wp = to_start_wp
+	ti_start_wp_state = PATH_LIB_Get_Wp(tv_start_pos, to_start_gao, to_start_wp, tn_net, &tao_wp[0], ti_wp_nb)
+	if  ( ! to_start_wp )
+		to_start_wp = to_last_start_wp
+
+	tf_best_dot = -1000.0
+	to_best_wp = nobody
+
+	tv_ref_sight = tv_start_pos - tv_dodge_pos
+	tv_ref_sight.z = 0.0
+	tf_norm = MATH_VecNorm(tv_ref_sight)
+	tv_ref_sight /= tf_norm
+
+	if (to_start_wp && tf_norm < tf_dist_min)
+	{
+		ti_good_link_nb = 0
+
+		if (ti_way_wp_nb && tao_way_wp[0] != to_start_wp)
+		{
+			// EST-CE QUE LA SOLUTION STOCKEE EST ENCORE BONNE ?	
+		
+			to_wp = tao_way_wp[0]
+		
+			PATH_LIB_Get_Door(to_start_wp, to_wp, 0.0, tv_pos_min, tv_pos_max)
+			tv_door_pos = MATH_VecBlend(tv_pos_min, tv_pos_max, 0.5)
+			tv_door_pos -= OBJ_PosGet()
+			tv_door_pos.z = 0.0
+			
+			tf_norm = MATH_VecSquareNorm(tv_door_pos)
+			if ( ! tf_norm )
+			{
+				tf_dot = -1.0
+			}
+			else if (to_wp == to_last_wp)
+			{
+				tf_dot = -1.0
+			}
+			else
+			{
+				tv_door_pos /= MATH_FloatSqrt(tf_norm)
+				tf_dot = MATH_VecDotProduct(tv_ref_sight, tv_door_pos)
+			}
+
+			if (tf_dot > 0.0)
+				to_best_wp = to_wp
+		}
+
+		if  ( ! to_best_wp )
+		{
+			// ON DOIT TROUVER UNE SOLUTION
+		
+			ti_neighbour_nb = WAY_GetNumLinks(tn_net, to_start_wp)
+			for (ti_i = 0; ti_i < ti_neighbour_nb; ti_i ++)
+			{
+				to_wp = WAY_NetNextWP(tn_net, to_start_wp, NetNextWP_Mode_choix_de_lindice, ti_i)
+	
+				if (WAY_LinkCapaGet(tn_net, to_start_wp, to_wp) & OBJ_Capa_0)
+					continue
+		
+				ti_good_link_nb++
+	
+				PATH_LIB_Get_Door(to_start_wp, to_wp, 0.0, tv_pos_min, tv_pos_max)
+				tv_door_pos = MATH_VecBlend(tv_pos_min, tv_pos_max, 0.5)
+				tv_door_pos -= OBJ_PosGet()
+				tv_door_pos.z = 0.0
+				
+				tf_norm = MATH_VecSquareNorm(tv_door_pos)
+				if ( ! tf_norm )
+					continue
+	
+				if (to_wp == to_last_wp)
+				{
+					tf_dot = -1.0
+				}
+				else
+				{
+					tv_door_pos /= MATH_FloatSqrt(tf_norm)
+					tf_dot = MATH_VecDotProduct(tv_ref_sight, tv_door_pos)
+					
+					// POUR CREER UN ALEATOIRE SUR LES SOLUTIONS QUI PERMETTENT DE FUIRE
+					if (tf_dot > 0.0)
+						tf_dot = MATH_RandFloat(0.0, 1.0)
+				}
+				
+				if (tf_dot > tf_best_dot)
+				{
+					tf_best_dot = tf_dot
+					to_best_wp = to_wp
+				}
+			}
+		}
+	
+		if (ti_good_link_nb == 1)	
+			to_last_wp = to_start_wp
+	}
+
+	if (to_best_wp)
+	{
+		ti_way_wp_nb = 2
+		tao_way_wp[0] = to_best_wp
+		tao_way_wp[1] = to_start_wp
+
+		tv_return_pos = PATH_LIB_Get_Next_Wp_Pos(	tv_start_pos,
+																			@to_best_wp OBJ_PosGet(),
+																			tf_extrusion,
+																			ti_way_wp_nb,
+																			&tao_way_wp[0] )
+	}
+	else
+	{
+		ti_way_wp_nb = 0
+		tv_return_pos = tv_start_pos
+	}
+	
+	if (to_last_wp && to_start_wp && to_start_wp != to_last_wp && ! (@to_start_wp WAY_HasLinks(tn_net, to_last_wp)) )
+		to_last_wp = nobody
+
+
+	return(tv_return_pos)
+}

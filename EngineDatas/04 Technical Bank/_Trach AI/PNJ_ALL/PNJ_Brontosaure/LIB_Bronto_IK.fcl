@@ -1,0 +1,202 @@
+#include "PNJ_Brontosaure_defs.var"
+
+procedure_local void Bronto_Add_Visual_Paf(messageid tmid_paf_event)
+{
+	int				ti_flag_ok
+	int				ti_i
+	int				ti_bone_canal
+	int				ti_paf_type
+
+	float			tf_puissance
+
+	vector		tv_paf_dir
+
+	object		to_bone
+
+	if (AI_GetCurSystem() == 1)
+	{
+		// PS2
+		return
+	}
+
+	ti_paf_type = EVENT_PafTypeGet(tmid_paf_event)
+	tv_paf_dir = EVENT_PafDirGet(tmid_paf_event)
+
+	if (TIME_Elapsed(f_visual_paf_time, 0.5))
+	{
+		f_visual_paf_time = TIME_Get()
+		v_visual_paf_dir = tv_paf_dir
+	}
+
+	// ROTATION BASSIN EN FONCTION DU PAF
+	if ( ti_paf_type & (C_PAF_KK_Repousse | C_PAF_KK_Weapon | C_PAF_KK_Javelin) && TIME_Elapsed(f_quat_last_time, 0.15) )
+	{
+		if (TIME_Elapsed(f_quat_last_time, 0.5))
+			af_quat_coef[i_quat_index] = 0.1
+		else
+			af_quat_coef[i_quat_index] = 0.05
+
+		f_quat_last_time = TIME_Get()
+		af_quat_time[i_quat_index] = f_quat_last_time
+
+		av_quat_start[i_quat_index] = EVENT_PafPositionGet(tmid_paf_event)
+		av_quat_start[i_quat_index] -= @ao_head_bones[i_head_bone_nb] OBJ_PosGet()
+		MATH_VecSetNormalize(av_quat_start[i_quat_index])
+
+		av_quat_end[i_quat_index] = MATH_VecCrossProduct(tv_paf_dir, av_quat_start[i_quat_index])
+		av_quat_end[i_quat_index] = MATH_VecCrossProduct(av_quat_start[i_quat_index], av_quat_end[i_quat_index])
+
+		MATH_VecSetNormalize(av_quat_end[i_quat_index])
+
+		i_quat_index = MATH_Modulo(i_quat_index + 1, 10)
+	}
+}
+
+
+procedure_local void Bronto_Init_IK()
+{
+	int			ti_i
+	int			ti_k
+	int			ti_membre_index
+	
+	o_bassin = ANI_CanalObjectGet(Anim_Canal_Bassin)
+	
+	// IK NECK INIT ================================================================================================
+	i_head_bone_nb = 4
+	
+	for (ti_i = 0; ti_i < i_head_bone_nb; ti_i++)
+	{
+		ao_head_bones[ti_i] = ANI_CanalObjectGet(Anim_Canal_Tete + ti_i)
+	
+		if (ti_i)	
+		{
+			af_neck_bone_length[ti_i - 1] = MATH_VecNorm(@ao_head_bones[ti_i - 1] OBJ_PosGet() - @ao_head_bones[ti_i] OBJ_PosGet())
+			f_neck_length += af_neck_bone_length[ti_i - 1]
+		}
+	}
+	
+	o_ventre = ANI_CanalObjectGet(5)
+	ao_head_bones[i_head_bone_nb] = o_bassin
+
+	v_look_last_head_pos = @ao_head_bones[0] OBJ_PosGet()
+	v_look_head_pos = MATH_VecGlobalToLocal(@ao_head_bones[0] OBJ_PosGet() - OBJ_PosGet())
+	v_look_banking = MATH_VecGlobalToLocal(@ao_head_bones[0] OBJ_BankingGet())
+	
+	f_look_axis_length = 20.0 * OBJ_ZoomGet()
+	v_look_axis = OBJ_SightGet() * f_look_axis_length
+
+	for (ti_i = 0; ti_i < 4; ti_i++)
+	{
+		switch(ti_i)
+		{
+			case Ci_IK_pied_gauche :
+				ti_membre_index = Anim_Canal_PiedGauche
+				break
+			case Ci_IK_pied_droit :
+				ti_membre_index = Anim_Canal_PiedDroit
+				break
+			case Ci_IK_main_gauche :
+				ti_membre_index = Anim_Canal_MainGauche
+				break
+			case Ci_IK_main_droite :
+				ti_membre_index = Anim_Canal_MainDroite
+				break
+		}	
+	
+		for (ti_k = 0; ti_k < 3; ti_k++)
+			ao_IK_bones[ti_i][ti_k] = ANI_CanalObjectGet(ti_membre_index + (2 - ti_k))
+	
+		af_IK_bones_length[ti_i][0] = MATH_VecNorm(@ao_IK_bones[ti_i][1] OBJ_PosGet() - @ao_IK_bones[ti_i][0] OBJ_PosGet())
+		af_IK_bones_length[ti_i][1] = MATH_VecNorm(@ao_IK_bones[ti_i][2] OBJ_PosGet() - @ao_IK_bones[ti_i][1] OBJ_PosGet())
+	
+		f_IK_leg_length[ti_i] = af_IK_bones_length[ti_i][0]
+		f_IK_leg_length[ti_i] += af_IK_bones_length[ti_i][1]
+		f_IK_leg_length[ti_i] *= 1.75
+	
+		v_IK_bone_last_valid_sight[ti_i] = @ao_IK_bones[ti_i][2] OBJ_SightGet()
+		v_IK_bone_last_valid_banking[ti_i] = @ao_IK_bones[ti_i][2] OBJ_BankingGet()
+	}
+}
+
+procedure_local float Bronto_Get_Move_Coef(int ti_leg)
+{
+	int		ti_action
+	
+	float		tf_coef
+
+//	return(-1.0)
+
+//	if (ANI_IsInBlend())
+//		return(-1.0)
+
+	switch(ACT_ActionGet())
+	{
+		case BRONTO_ACT_walk :
+
+			switch(ti_leg)
+			{
+				case Ci_IK_pied_gauche :
+					return(ACT_LIB_Get_Move_Coef(0.1, 0.5))
+		
+				case Ci_IK_pied_droit :
+					return(ACT_LIB_Get_Move_Coef(0.55, 1.0))
+					
+				case Ci_IK_main_gauche :
+					return(ACT_LIB_Get_Move_Coef(0.6, 0.1))					
+					
+				case Ci_IK_main_droite :
+					return(ACT_LIB_Get_Move_Coef(0.2, 0.55))	
+			}		
+			
+			break
+
+		case BRONTO_ACT_run :
+
+			switch(ti_leg)
+			{
+				case Ci_IK_pied_gauche :
+					return(ACT_LIB_Get_Move_Coef(0.4, 1.0))
+		
+				case Ci_IK_pied_droit :
+					return(ACT_LIB_Get_Move_Coef(0.9, 0.4))
+					
+				case Ci_IK_main_gauche :
+					return(ACT_LIB_Get_Move_Coef(0.05, 0.65))					
+					
+				case Ci_IK_main_droite :
+					return(ACT_LIB_Get_Move_Coef(0.65, 0.2))	
+			}		
+			
+			break
+
+	}
+
+	return(-1.0)
+}
+
+procedure_local void Bronto_Reset_IK_Legs()
+{
+	int			ti_i	
+
+	// IK LEG
+	f_bassin_rotation_angle = 0.0
+	f_IK_bassin_look_rot_coef = 0.0
+	f_bassin_Z_offset = 0.0
+
+	v_IK_bassin_pos = @o_bassin OBJ_PosGet()
+	v_IK_ref_ground_pos = OBJ_PosGet()
+
+	for (ti_i = 0; ti_i < 4; ti_i++)
+	{
+		i_flag_leg_IK[ti_i] = faux
+
+		f_IK_Z_offset[ti_i] = 0.0
+		f_IK_coef[ti_i] = 0.0
+		f_IK_tenseur[ti_i] = 0.5
+		f_IK_ground_coef[ti_i] = 0.0
+		f_IK_snap_coef[ti_i] = 0.0
+
+		v_IK_dest_pos[ti_i] = @ao_IK_bones[ti_i][2] OBJ_PosGet()
+		v_IK_local_offset[ti_i] = MATH_VecGlobalToLocal(v_IK_dest_pos[ti_i] - OBJ_PosGet())
+	}
+}

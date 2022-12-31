@@ -1,0 +1,1119 @@
+#include"k_define.var"
+
+// ULTRA
+procedure_ultra int Proc_KK_WhereIsAnn()
+{
+	if ( ao_CL[Ci_LNK_KKGRAB_OBJECT]) 
+	{
+		if ( i_Grab_Torse_ANN)
+			return 2
+		else
+			return 1
+	}
+	else
+		return 0
+}
+
+procedure_ultra int Proc_KK_CutCamAllowed()
+{
+	switch( i_etat_courant)
+	{
+		case ETAT_Kong_finish :
+		case ETAT_Kong_finished :
+		case ETAT_Kong_grab :
+		case ETAT_Kong_grab_mashing :
+		case ETAT_Kong_grab_ANN :
+			return faux
+			break
+		default:
+			switch ( ACT_ActionGet())
+			{
+				case Ci_Kanim_Intimid_FinishFurieReward :
+				case Ci_Kanim_Intimid_FinishFurieCri :
+					return faux 
+					break
+				default:
+					return vrai
+
+			}
+	}
+}
+
+procedure_ultra int Proc_KK_Test_Mode( int pi_mode)
+{
+	switch ( pi_mode)
+	{
+		case C_Mode_Swing_Catch :
+			if ( i_etat_courant == ETAT_Kong_swing_arch && OBJ_CapaTest( Capa_Swing_Detect_StartEnd))
+				return vrai
+			else
+				return faux
+			break
+		case C_Mode_Swing_Release :
+			if ( Proc_KK_JumpStatusGet() &&  OBJ_CapaTest(Capa_Swing_Detect_StartEnd))
+				return vrai
+			else
+				return faux
+			break
+		case C_Mode_VineClimbTop :
+			if ( i_etat_courant == ETAT_Kong_accroch_mur
+			&& ACT_ActionGet() == Ci_Kanim_saute_7M)
+				return vrai
+			else
+				return faux
+			break
+		case C_Mode_JumpSeRaccroch :
+			if ( i_etat_courant == ETAT_Kong_jump
+			&& ACT_ActionGet() == Ci_Kanim_se_raccroche)
+				return vrai
+			else
+				return faux
+			break
+		case C_Mode_Combo1	:
+		case C_Mode_Combo2	:
+		case C_Mode_Repulse	:
+		case C_Mode_Fury	:
+		case C_Mode_Combo3	:
+		case C_Mode_Dash_Attack	:
+		case C_Mode_Dash	:
+		case C_Mode_Esquive :
+		case C_Mode_Retour :
+		case C_Mode_Kill :
+		case C_Mode_Pillar	:
+			if ( i_coup_mode == pi_mode)
+				return vrai
+			else
+				return faux
+			break
+		case ETAT_Kong_fury	:
+			if(  !MATH_FloatNullEpsilon( f_time_fury))
+				return vrai
+			else
+				return faux
+			break
+		case ETAT_Kong_jump	:
+			return ( Proc_KK_JumpStatusGet())
+			break
+		case ETAT_Kong_deplacement	:
+			if ( o_colonne || i_etat_courant != pi_mode)
+				return faux
+			else
+				return vrai
+			break
+		case ETAT_Kong_colonne :
+			if ( o_colonne)
+				return vrai
+			else
+				return faux
+			break
+		case ETAT_Kong_depl_souche	:
+		case ETAT_Kong_grab	:
+		case ETAT_Kong_grab_mashing	:
+		case ETAT_Kong_desequilibre   :
+		case ETAT_Kong_finish	:
+		case ETAT_Kong_finished	:
+		case ETAT_Kong_fracasse :
+		case ETAT_Kong_swing_arch :
+		case ETAT_Kong_swing_pillard	:
+		case ETAT_Kong_walling	:
+		case ETAT_Kong_accroch_mur :		// accroch mur
+		case ETAT_Kong_fps :
+			if ( i_etat_courant == pi_mode)
+				return vrai
+			else
+				return faux
+			break
+		case ETAT_Kong_desequilibre_paf_petit :
+			if( ACT_ActionGet() == Ci_Kanim_Paf_petite_morsure )
+				return vrai
+			else
+				return faux
+			break
+		case ETAT_Kong_desequilibre_paf_moyen :
+			switch( ACT_ActionGet() )
+			{
+				case Ci_Kanim_Paf_Dos : 
+				case Ci_Kanim_Paf_Face :
+				case Ci_Kanim_Paf_face_D :
+				case Ci_Kanim_Paf_face_G :
+					return vrai
+				default:
+					return faux
+			}
+			break
+		case ETAT_Kong_desequilibre_paf_fort :
+			switch( ACT_ActionGet() )
+			{
+				case Ci_Kanim_Paf_Fort_Dos : 
+				case Ci_Kanim_Paf_Fort_Face :
+				case Ci_Kanim_Paf_Fort_face_D :
+				case Ci_Kanim_Paf_Fort_face_G :
+					return vrai
+				default:
+					return faux
+			}
+			break
+		case ETAT_Kong_desequilibre_paf_mashing :
+			if( i_paf_mashing )
+				return vrai
+			else
+				return faux
+		default:
+			return faux
+	}
+}
+
+procedure_ultra object	Proc_KK_Need_Help( float pf_danger)
+{
+	float	tf_frame
+	if (i_etat_courant == ETAT_Kong_finished) 
+	{
+		tf_frame = ANI_NbFrameGet(0)
+		if ( ACT_ActionGet() == Ci_Kanim_FinishedRex_Deb && ANI_CurrentFrameGet(0) > (pf_danger * tf_frame))
+			return o_finish_actor
+	}
+	return nobody
+}
+
+procedure_ultra float	Proc_KK_Mashing_Pct( )
+{
+	float		tf_a
+	int			pi_action
+	object	to_cine_gao
+	switch( i_etat_courant)
+	{
+		case ETAT_Kong_finish :
+			switch ( ACT_ActionGet())
+			{
+				case Ci_Kanim_Finish_SePlace :
+				case Ci_Kanim_FinishBigBat_SePlace :
+					return 0.0
+					break
+				case Ci_Kanim_Finish_Deb :
+					tf_a = 1.0 / (ANI_NbFrameGet(0) - 102.0)
+					return  MATH_FloatMax((ANI_CurrentFrameGet(0) - 102.0) * tf_a, 0.0)
+					break
+				case Ci_Kanim_FinishBigBat_Deb :
+					tf_a = 1.0 / (ANI_NbFrameGet(0))
+					return  MATH_FloatMax((ANI_CurrentFrameGet(0)) * tf_a, 0.0)
+					break
+				case Ci_Kanim_FinishBigBat_Gagne :
+				case Ci_Kanim_Finish_Fin :
+					return 1.0
+					break
+				default:
+					return 0.0
+			}	
+			break
+			
+		case ETAT_Kong_finished :
+			switch ( ACT_ActionGet())
+			{
+				// se place
+				case Ci_Kanim_FinishedRex_SePlace :
+				case Ci_Kanim_FinishedBats_SePlace :
+				case Ci_Kanim_FinishedRaptors_SePlace :
+				case Ci_Kanim_FinishedScolos_SePlace :
+				case Ci_Kanim_FinishBigScolo_SePlace :
+				// perdu
+				case Ci_Kanim_FinishedRex_Perd :
+				case Ci_Kanim_FinishedBats_Perd :
+				case Ci_Kanim_FinishedRaptors_Perd :
+				case Ci_Kanim_FinishedScolos_Perd :
+				case Ci_Kanim_FinishBigScolo_Perd :
+					return 0.0
+					break
+				// challenge
+				case Ci_Kanim_FinishedRex_Deb :
+				case Ci_Kanim_FinishedBats_Deb :
+				case Ci_Kanim_FinishedRaptors_Deb :
+				case Ci_Kanim_FinishedScolos_Deb :
+				case Ci_Kanim_FinishBigScolo_Deb :
+					return ANI_RatioGet(0)		// on rembobine l'anim
+					break
+				// gagne
+				case Ci_Kanim_FinishedRex_Gagne :
+				case Ci_Kanim_FinishedBats_Gagne :
+				case Ci_Kanim_FinishedRaptors_Gagne :
+				case Ci_Kanim_FinishedScolos_Gagne :
+				case Ci_Kanim_FinishBigScolo_Gagne :
+					return 1.0
+					break
+				default:
+					return 0.0
+					break
+			}
+			break
+			
+		case ETAT_Kong_grab :
+			if( i_GrabKong_MainBloquee != -1 && MSG_GlobalIsValid( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee]))
+			{
+				switch ( LNK_GrabKong_ActionGet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee]))
+				{
+					case Ci_GrabKong_Flanc_MashSePlace :
+					case Ci_GrabKong_FinishSePlace : 
+					case Ci_GrabKong_Flanc_MashPerdu :
+					case Ci_GrabKong_FinishPerdu : 
+						return 0.0
+						break
+					case Ci_GrabKong_Flanc_MashDeb :
+					case Ci_GrabKong_FinishDeb :
+						if ( f_finish_frame <= 0.0 )
+							return 0.0			// CORRIGE LE BUG DE SAUTE DE KAMERA !!!!
+						else
+							return ANI_RatioGet(0)
+						break
+					case Ci_GrabKong_Flanc_MashGagne :
+					case Ci_GrabKong_Flanc_MashCoup :
+					case Ci_GrabKong_FinishGagne : 
+						return 1.0
+						break
+					default:
+						return 0.0
+						break
+				}	
+			}
+			else
+				return 0.0
+			break
+			
+		case ETAT_Kong_grab_mashing :
+			pi_action= ACT_ActionGet()	// PAs de constante = pas de switch possible
+			if ( pi_action  == i_GrabKong_Mashing_anim_positionne
+			||  pi_action== i_GrabKong_Mashing_anim_kk_perdu)
+				return 0.0
+			else if ( pi_action == i_GrabKong_Mashing_anim_challenge)
+			{
+//				f_GrabKong_Mashing_frame_kk_gagne
+//				f_GrabKong_Mashing_frame_kk_perd
+				return 1.0 //ANI_RatioGet(0)
+			}
+			else if ( pi_action  == i_GrabKong_Mashing_anim_kk_gagne)
+				return 1.0
+			else
+				return 0.0				
+			break
+			
+		case ETAT_Kong_cine :
+			to_cine_gao = @get_global o_cine_gao
+			if( to_cine_gao && @to_cine_gao OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_DesignStruct) && to_cine_gao.des_int1 == 1 )
+			{
+				// NYC Theater
+				switch( ACT_ActionGet() )
+				{
+					case Ci_Kanim_Cine_Theatre_Mashing :
+						return ANI_RatioGet(0)
+						break
+					case Ci_Kanim_Cine_Theatre_Mashing_tr_Intimid :
+					case Ci_Kanim_Cine_Theatre_Intimid :
+						return 1.0
+						break
+					default:
+						return 0.0
+						break
+				}
+			}
+			else
+				return 0.0
+			break
+			
+		default:
+			return 0.0
+			break
+	}
+}
+
+procedure_ultra int	Proc_KK_RAGE_Test()
+{
+	return ( !MATH_FloatNullEpsilon(f_time_fury))
+}
+
+procedure_ultra object	Proc_KK_FightActorGet()
+{
+	return o_fight_actor
+}
+
+procedure_ultra int Proc_KK_Mashing_Button_Just_Pressed()
+{
+	return ( i_flag_just_Rage_Any_Button | i_flag_just_grab)
+}
+
+procedure_ultra object Proc_KK_HotSpotGet()
+{
+	return o_jump_hotspot
+}
+procedure_ultra object Proc_KK_HotSpotFightGet()
+{
+	if (o_jump_hotspot && (o_jump_hotspot.des_int1 & HOTSPOT_Type_Fight) )	
+		return o_jump_hotspot 
+	else 
+		return nobody
+}
+
+procedure_ultra int Proc_KK_JumpStatusGet()
+{
+	// 0 = On est pas en Jump
+	// 1 = On est en Implusion Jump
+	// 2 = On est dans la courbe de saut.
+	// 3 = On est en reception de saut
+
+	if ( i_etat_courant == ETAT_Kong_jump)
+	{
+		switch (i_in_jump)
+		{
+			case 2 :
+				return 3
+			case 1 :
+				return 2
+			case 0 :
+				return 1
+			default:
+				return 0
+		}
+	}
+	else
+		return faux
+}
+
+procedure_ultra int Proc_KK_IsMoveable()
+{
+	if( Proc_KK_JumpStatusGet())
+		return faux
+	
+	switch ( i_etat_courant )
+	{
+		case ETAT_Kong_swing_arch :
+		case ETAT_Kong_swing_pillard :
+		case ETAT_Kong_accroch_mur :
+		case ETAT_Kong_walling :
+		case ETAT_Kong_finished :
+		case ETAT_Kong_finish :
+		case ETAT_Kong_grab :
+		case ETAT_Kong_cheat_mode :
+			return faux
+			break
+		default:
+			break
+	}
+	
+	switch( ACT_ActionGet() )
+	{
+		case Ci_Kanim_saute_3M :
+		case Ci_Kanim_saute_5M :
+		case Ci_Kanim_saute_9M :
+			return faux
+			break
+		default:
+			break
+	}
+	
+	return vrai
+}
+
+// Kong ne peux pas etre attaqué
+procedure_ultra int Proc_KK_IsInBadSituation(int ti_id)
+{
+	switch ( ACT_ActionGet())
+	{
+		case Ci_Kanim_Intimid_FinishFurieCri :
+		case Ci_Kanim_Intimid_FinishFurieReward :
+			return vrai
+			break
+	}
+	
+	switch( i_etat_courant )
+	{
+		case ETAT_Kong_finish :
+		case ETAT_Kong_finished :
+			return vrai
+		//--------------------------------------------------------
+		case ETAT_Kong_grab :
+			if( i_GrabKong_MainBloquee == -1)
+				return faux
+			
+			if( ! MSG_GlobalIsValid(amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee]) )
+				return faux
+			
+			switch( LNK_GrabKong_ActionGet( amid_CL_LIAISON_ID_GRABKONG[i_GrabKong_MainBloquee]) )
+			{
+				// finish et morsure
+				case Ci_GrabKong_FinishSePlace :
+				case Ci_GrabKong_FinishDeb :
+				case Ci_GrabKong_FinishFin :
+				case Ci_GrabKong_FinishGagne :
+				case Ci_GrabKong_FinishPerdu :
+				// grab flanc
+				case Ci_GrabKong_Flanc_MashSePlace :
+				case Ci_GrabKong_Flanc_MashDeb :
+				case Ci_GrabKong_Flanc_MashFin :
+				case Ci_GrabKong_Flanc_MashGagne :
+				case Ci_GrabKong_Flanc_MashPerdu :
+				case Ci_GrabKong_Flanc_MashCoup :
+					return vrai
+				default:
+					return faux
+			}
+		//--------------------------------------------------------	
+		default:
+			return faux
+	}
+	return faux
+}
+
+procedure_ultra vector	Proc_KK_LookDirectionGet()
+{
+	return v_look_direction
+}
+
+procedure_ultra object Proc_KK_Dodge_Actor_Get()
+{
+	switch( ACT_ActionGet() )
+	{
+		case Ci_Kanim_esquiveD :
+		case Ci_Kanim_esquiveG :
+		case Ci_Kanim_Dash_Attack :
+			return o_esquive_actor
+			break
+		default:
+			return nobody
+	}
+}
+
+procedure_ultra int Proc_KK_RefusePaf()
+{
+	if( @get_global i_Kong_ignore_paf )
+		return vrai
+	if( i_paf_mashing )
+		return vrai
+	switch( ACT_ActionGet() )
+	{
+//		case Ci_Kanim_dash :
+		case Ci_Kanim_esquiveD :
+		case Ci_Kanim_esquiveG :
+		case Ci_Kanim_Dash_Attack :
+			return vrai
+		default:
+			return faux
+	}
+}
+
+procedure_ultra int Proc_KK_RefusePafFromGao(object to_gao)
+{
+	if( Proc_KK_RefusePaf() )
+		return vrai		// refuse tous les pafs
+	else
+	{
+		if( ARR_ObjSearch(&ao_frappe_target[0], i_frappe_target_nb, to_gao) != -1 )
+			return vrai		// je l'ai déjà paffé, je refuse son paf
+		else
+			return faux		// j'accepte son paf
+	}
+}
+
+
+procedure_ultra int Proc_KK_Get_BIG_NMI_Count(object to_excluded_gao)
+{
+	messageid		EVT_ID
+	int					ti_rank
+	object			to_gao
+	int					ti_cpt
+	
+	// On scan les EVENTS LOCKCAM
+	ti_cpt = 0
+	ti_rank = -1
+	EVT_ID = MSG_GlobalScan(C_EVENT_TYPE_LockCam, &ti_rank)
+	while(MSG_GlobalIsValid(EVT_ID))
+	{
+		// J'ai Event Lock Cam
+		to_gao = EVENT_PereGet(EVT_ID)
+		if( to_gao != to_excluded_gao )
+		{
+			if (@to_gao AI_IsModel(get_PNJ_KTREX_Path)
+			|| ( @to_gao AI_IsModel(get_PNJ_KBats_path) && @to_gao KBC_IsABigBat())
+			|| ( @to_gao AI_IsModel(get_PNJ_Scolo_Path)  && @to_gao Proc_KK_BigScolo()))
+			{
+				// C'est un GROS
+				if (OBJ_SqrDist(to_gao) < Cf_fight_dist_fight_actor)
+				{
+					ti_cpt++
+				}
+			}
+		}
+		EVT_ID = MSG_GlobalScan(C_EVENT_TYPE_LockCam, &ti_rank)				// Next Please !
+	}
+	return ti_cpt
+}
+
+
+procedure_local float Proc_KK_Grab_Blend( int pi_pos_orient)
+{
+	float		pf_blend	
+	switch( ACT_ActionGet())
+	{
+		case 190 :
+		case 192 :
+		case 199 :
+		case 201 :
+			pf_blend = 1.0
+			break
+		case 195 :
+		case 197 :
+		case 198 :
+			break
+		case 191 :
+		case 193 :
+			if ( ANI_IsInBlend() && ACT_BlendActionGet() == 150)
+				pf_blend = 1.0 - MATH_FloatMin( ANI_CurrentFrameGet(0) / 10.0, 1.0)
+			else
+				pf_blend = 0.0
+			break
+		case	200 :
+		case	202 :
+			pf_blend = 0.0
+			break
+		case 150 :
+			pf_blend = 1.0
+			break
+		case 196 :
+			if ( ANI_CurrentFrameGet(0) < 15 )
+			{
+				pf_blend = 0.0
+			}
+			else
+			{
+				pf_blend = (ANI_CurrentFrameGet(0) - 15) / ( 30.0 - 15.0)
+				pf_blend = MATH_FloatLimit( pf_blend, 0.0, 1.0)
+			}
+			break
+		case 194 :
+			if ( ANI_CurrentFrameGet(0) > 15 )
+			{
+				pf_blend = 1 - ((ANI_CurrentFrameGet(0) - 15) / ( 30.0 - 15.0))
+				pf_blend = MATH_FloatLimit( pf_blend, 0.0, 1.0)
+			}
+			else
+			{
+				pf_blend = 1.0
+			}
+			break
+		default:
+			pf_blend = 0.0
+	}
+	return	pf_blend	
+}
+
+procedure_ultra vector	Proc_KK_Grab_PosGet( int	pi_type)
+{
+	int			pi_pos
+	float		pf_blend
+	object	po_bone
+	vector	pv_sens, pv_sens1, pv_sens2
+	
+	switch( pi_type)
+	{
+		case C_ID_Scolo :
+		// CONSTANTES A UTILISER PAR LA SUITE
+			switch( ACT_ActionGet())
+			{
+				case 190 :
+				case 192 :
+				case 199 :
+				case 201 :
+					pi_pos = 2
+					break
+				case 195 :
+				case 197 :
+				case 198 :
+
+				case 191 :
+				case 193 :
+				case	200 :
+				case	202 :
+					pi_pos = 1
+					break
+				case 196 :
+					if ( ANI_CurrentFrameGet(0) < 25 )
+						pi_pos = 1
+					else
+						pi_pos = 12
+					break
+				case 194 :
+					if ( ANI_CurrentFrameGet(0) > 25 )
+						pi_pos = 21
+					else
+						pi_pos = 2
+					break
+				
+			}
+			if ( pi_pos == 1)
+			{
+				po_bone = ANI_CanalObjectGet( Anim_Canal_MainGauche)
+				pv_sens = @po_bone OBJ_PosGet()
+				pv_sens += 0.2 * @po_bone OBJ_SightGet() // 0.0
+				pv_sens += 0.7 * @po_bone OBJ_BankingGet() // 0.5
+				pv_sens += 0.5 * @po_bone OBJ_HorizonGet() // 0.5
+			}
+			else if ( pi_pos == 2)
+			{
+				po_bone = ANI_CanalObjectGet( Anim_Canal_MainDroite)
+				pv_sens = @po_bone OBJ_PosGet()
+				pv_sens += 0.5 * @po_bone OBJ_BankingGet()	// 0.7
+				pv_sens -= 0.5 * @po_bone OBJ_HorizonGet()	// -0.5
+			}
+			else
+			{
+				po_bone = ANI_CanalObjectGet( Anim_Canal_MainGauche)
+				pv_sens1 = @po_bone OBJ_PosGet()
+//				pv_sens1 += TEST_pos_s * @po_bone OBJ_SightGet() // 0.0
+				pv_sens1 += 0.5 * @po_bone OBJ_BankingGet() // 0.5
+				pv_sens1 += 0.5 * @po_bone OBJ_HorizonGet() // 0.5	
+				
+				po_bone = ANI_CanalObjectGet( Anim_Canal_MainDroite)
+				pv_sens2 = @po_bone OBJ_PosGet()
+				pv_sens2 += 0.7 * @po_bone OBJ_BankingGet()	// 0.7
+				pv_sens2 -= 0.5 * @po_bone OBJ_HorizonGet()	// -0.5
+				pf_blend = (ANI_CurrentFrameGet(0) - 25) / ( ANI_NbFrameGet(0) - 25.0)
+				pv_sens = MATH_VecBlend( pv_sens1, pv_sens2, pf_blend)
+			}
+			break
+		default:
+			po_bone = ANI_CanalObjectGet( Anim_Canal_MainGauche)
+			pv_sens1 = @po_bone OBJ_PosGet()
+//			pv_sens1 += TEST_s * @po_bone OBJ_SightGet() // 0.1
+//			pv_sens1 += TEST_b * @po_bone OBJ_BankingGet() // 0.5
+//			pv_sens1 += TEST_h * @po_bone OBJ_HorizonGet() // 0.6
+			pv_sens1 += 0.1  * @po_bone OBJ_SightGet() // 0.1
+			pv_sens1 += 0.5* @po_bone OBJ_BankingGet() // 0.5
+			pv_sens1 += 0.6 * @po_bone OBJ_HorizonGet() // 0.6
+						
+			po_bone = ANI_CanalObjectGet( Anim_Canal_MainDroite)
+			pv_sens2 = @po_bone OBJ_PosGet()
+//			pv_sens2 += TEST_pos_s * @po_bone OBJ_SightGet()	// 0.1
+//			pv_sens2 += TEST_pos_b * @po_bone OBJ_BankingGet()	// 0.5
+//			pv_sens2 += TEST_pos_h * @po_bone OBJ_HorizonGet()	// -0.5
+			pv_sens2 += 0.1 * @po_bone OBJ_SightGet()	// 0.1
+			pv_sens2 += 0.5 * @po_bone OBJ_BankingGet()	// 0.5
+			pv_sens2 += -1.1* @po_bone OBJ_HorizonGet()	// -0.5
+			pv_sens = MATH_VecBlend( pv_sens1, pv_sens2, Proc_KK_Grab_Blend(0))
+			return pv_sens 
+
+	}
+	return pv_sens 
+}
+
+procedure_ultra vector	Proc_KK_Grab_SightGet( int	pi_type)
+{
+	vector	pv_sens, pv_sens1, pv_sens2
+	object	po_bone
+	int			pi_pos
+	float		pf_blend
+	
+	// CONSTANTES A UTILISER PAR LA SUITE
+	po_bone = ANI_CanalObjectGet( Anim_Canal_MainGauche)
+	pv_sens1 = @po_bone OBJ_HorizonGet()
+
+	po_bone = ANI_CanalObjectGet( Anim_Canal_MainDroite)
+	pv_sens2 = @po_bone OBJ_HorizonGet()
+
+	pv_sens = MATH_VecBlend( pv_sens1, pv_sens2, Proc_KK_Grab_Blend(1))
+	MATH_VecSetNormalize(pv_sens)
+	return pv_sens 
+}
+
+procedure_ultra vector	Proc_KK_Grab_BankingGet( int	pi_type)
+{
+	object	po_bone
+	int			pi_pos
+	vector	pv_sens, pv_sens1, pv_sens2
+	float		pf_blend
+	
+	po_bone = ANI_CanalObjectGet( Anim_Canal_MainGauche)
+	pv_sens1 = @po_bone OBJ_SightGet() * 0.3
+	pv_sens1 -= @po_bone OBJ_BankingGet() * 0.6
+
+	po_bone = ANI_CanalObjectGet( Anim_Canal_MainDroite)
+	pv_sens2 = @po_bone OBJ_SightGet() * 0.3
+	pv_sens2 -= @po_bone OBJ_BankingGet() * 0.6
+	pv_sens = MATH_VecBlend( pv_sens1, pv_sens2, Proc_KK_Grab_Blend(1))
+	MATH_VecSetNormalize(pv_sens)
+	return pv_sens
+}
+
+procedure_ultra vector	Proc_KK_Grab_HorizonGet( int	pi_type)
+{
+	object	po_bone
+	int			pi_pos
+	vector	pv_sens, pv_sens1, pv_sens2, pv_sight1, pv_sight2, pv_banking1, pv_banking2
+	float		pf_blend
+	
+	po_bone = ANI_CanalObjectGet( Anim_Canal_MainGauche)
+	pv_sight1 = @po_bone OBJ_HorizonGet()
+	pv_banking1 = @po_bone OBJ_SightGet() * 0.3
+	pv_banking1 -= @po_bone OBJ_BankingGet() * 0.6
+	pv_sens1 = MATH_VecCrossProduct( pv_sight1, pv_banking1)
+	po_bone = ANI_CanalObjectGet( Anim_Canal_MainDroite)
+	pv_sight2 = -@po_bone OBJ_HorizonGet()
+	pv_banking2 =  @po_bone OBJ_SightGet() * 0.3
+	pv_banking2 -= @po_bone OBJ_BankingGet() * 0.6
+	pv_sens2 = MATH_VecCrossProduct( pv_sight2, -pv_banking2)
+	pv_sens = MATH_VecBlend( pv_sens1, pv_sens2, Proc_KK_Grab_Blend(1))
+	MATH_VecSetNormalize(pv_sens)
+	return pv_sens
+}
+
+procedure_ultra int Proc_KK_PosCollideWithBone(vector pos, int bone)
+{
+            vector tv_pos
+            switch (bone)
+            {
+                        case Anim_Canal_MainDroite :
+                                   tv_pos = v_pos_poussiere[3]
+                                   break    
+                        case Anim_Canal_MainGauche :
+                                   tv_pos = v_pos_poussiere[2]                  
+                                   break    
+                        case Anim_Canal_PiedDroit :
+                                   tv_pos = v_pos_poussiere[1]                  
+                                   break    
+                        case Anim_Canal_PiedGauche :
+                                   tv_pos = v_pos_poussiere[0]                  
+                                   break                                                                                                              
+            }
+            
+            if (MATH_VecDistance(tv_pos,pos) < 1.0)
+                        return 1
+            else
+                        return 0
+}
+
+procedure_ultra int Proc_KK_Grabbed_Can_I_Posset( )
+{
+	if ( i_GrabKong_posset_allowed)
+		return vrai
+	else
+		return faux
+}
+
+procedure_ultra int	Proc_KK_Try_To_Hit()
+{
+	return i_try_to_hit_backup
+}
+
+procedure_ultra object Proc_KK_Colonne_Get()
+{
+	return o_colonne
+}
+
+
+// Retourne le nb de ride actors sur KONG en fonction du type de perso spécifié (tous si nobody)
+procedure_ultra int Proc_KK_RIDE_Get_Actor_Nb_By_Model(object to_model_gao)
+{
+	int			ti_nb
+	int			ti_i
+	object	to_gao
+	
+//	// test présence de scolo
+//	if( o_scolo_actor )
+//		ti_nb = 1
+//	else
+//		ti_nb = 0
+	
+	ti_nb = 0
+
+	if( ! to_model_gao )
+		ti_nb += RIDE_Get_Actor_Nb()		// bats et raptors
+	else
+	{
+		// bats ou raptors only
+		for (ti_i = 0; ti_i < Ci_Ride_Client_Nb; ti_i++)
+		{
+			to_gao = ao_bone_rider[ti_i]
+			if( to_gao && @to_gao AI_HaveSameModel(to_model_gao))
+				ti_nb ++
+		}
+	}
+	return ti_nb
+}
+
+procedure_ultra void Proc_KK_SFX_Ground( vector pv_pos, float pf_size)
+{
+	int pi_GFX_Blood
+	object	to_light_n_smoke
+	to_light_n_smoke = @get_global o_global_light_and_smoke_kanada
+	if( ! to_light_n_smoke )
+		return
+	if (WOR_GetKey() == 0xc101fedb || WOR_GetKey() == 0x28000105)
+		return
+	if ( COL_GMAT_FlagsGet(COL_C_Ground) & Gmat_KK_Force_In_Water )
+		return 
+	pi_GFX_Blood = GFX_Add(13)																// Create the boum	
+	GFX_MaterialSet(pi_GFX_Blood, to_light_n_smoke, 1)					// met le materiau
+	GFX_FlagSet(pi_GFX_Blood, 0 , 1)
+	GFX_FlagSet(pi_GFX_Blood, 2 , 1)
+	GFX_Seti(pi_GFX_Blood, 13101, 8)															// Materiau 8
+	GFX_Seti(pi_GFX_Blood, 13100, 30)														// *Buffer number of sprite
+	GFX_Seti(pi_GFX_Blood, 13106, 30) //0xFFFFFFFF)									// *number of sprite to generate
+	GFX_Setf(pi_GFX_Blood, 13003, 0.2)														// Time fase 1
+	GFX_Setf(pi_GFX_Blood, 13004, 1.0)														// Time fase 2
+	GFX_Seti(pi_GFX_Blood, 13107, 0)															// Sprites non triés
+	GFX_Setf(pi_GFX_Blood, 13012, 0.50)														// Time random
+	GFX_Setf(pi_GFX_Blood, 13000, 0.5)														// Growing speed min
+	GFX_Setf(pi_GFX_Blood, 13001, 0.9)														// Growing speed max
+	GFX_Setf(pi_GFX_Blood, 13002, 0.0001)													// Friction Grow
+	GFX_Setf(pi_GFX_Blood, 13005, 0.15 * pf_size)										// Creation size min
+	GFX_Setf(pi_GFX_Blood, 13006, 0.3 * pf_size)											// Creation size max
+	GFX_Setv(pi_GFX_Blood, 13203, cvector(0.02, 0.02, 0.02))							// friction speed
+	if ( @get_global SFX_Fumee_Walk)
+	{
+		GFX_Seti(pi_GFX_Blood, 13103, 0x30000000 + @get_global SFX_Fumee_Walk)	// Color fase 0
+		GFX_Seti(pi_GFX_Blood, 13104, 0x60000000 + @get_global SFX_Fumee_Walk)	// Color fase 1
+	}
+	else
+	{
+		GFX_Seti(pi_GFX_Blood, 13103, 0x30000000 + 0x00BAC8BB) //0x00809A82)						// Color fase 0
+		GFX_Seti(pi_GFX_Blood, 13104, 0x60000000 + 0x00BAC8BB) //0x00809A82)						// Color fase 1
+	}
+	GFX_Seti(pi_GFX_Blood, 13105, Kcol)													// Color fase 2
+	GFX_Setf(pi_GFX_Blood, 13009, 0.5)														// Norm speed min
+	GFX_Setf(pi_GFX_Blood, 13010, 3)															// Norm speed max
+	GFX_Setf(pi_GFX_Blood, 13007, -2.0)													// Gravity
+	GFX_Setf(pi_GFX_Blood, 13008, 0.0)														// generation rate
+	GFX_Setv(pi_GFX_Blood, 13204, Cv_NullVector)										// wind
+	GFX_Setv(pi_GFX_Blood, 13205, Cv_NullVector)										// Mainposspeed
+	GFX_Setv(pi_GFX_Blood, 13206, Cv_NullVector)										// Mainpossfriction
+	GFX_Setv(pi_GFX_Blood, 13200, pv_pos) 												// Creation Pos
+	GFX_Setv(pi_GFX_Blood, 13201, cvector( -5.0, -5.0, -5.0))							// Speed min
+	GFX_Setv(pi_GFX_Blood, 13202, cvector( 5.0, 5.0, 5.0))								// Speed max
+}
+
+procedure_ultra int Proc_KK_TestMashing(int ti_SND_test)
+{
+	object	to_gao
+	int			ti_action
+	switch ( i_etat_courant)
+	{
+		case ETAT_Kong_finish :
+		case ETAT_Kong_finished :
+			return vrai
+			break
+			
+		case ETAT_Kong_grab  :
+			ti_action = ACT_ActionGet()
+			switch( ti_action )
+			{
+				// Morsure
+				case Ci_Kanim_Mord_Deb :
+				case Ci_Kanim_Mord_Chall : 
+				case Ci_Kanim_Mord_Win :
+				case Ci_Kanim_Mord_Lose :
+				// Souleve G
+//				case Ci_Kanim_Flanc_Cycl :
+				case Ci_Kanim_Flanc_Deb :
+				case Ci_Kanim_Flanc_Chall :
+//				case Ci_Kanim_Flanc_Win :
+				case Ci_Kanim_Flanc_Lose :
+//				case Ci_Kanim_Flanc_CoupG :
+				case Ci_Kanim_Flanc_crashATerre :
+					if ( ti_SND_test)
+						f_GrabKong_SND_timer_exit = 1.0
+					return vrai
+					break
+			}
+			ti_action -= 10		// Souleve D = Souleve G + 10
+			switch( ti_action )
+			{
+				// Souleve G
+//				case Ci_Kanim_Flanc_Cycl :
+				case Ci_Kanim_Flanc_Deb :
+				case Ci_Kanim_Flanc_Chall :
+//				case Ci_Kanim_Flanc_Win :
+				case Ci_Kanim_Flanc_Lose :
+//				case Ci_Kanim_Flanc_CoupG :
+				case Ci_Kanim_Flanc_crashATerre :
+					if ( ti_SND_test)
+						f_GrabKong_SND_timer_exit = 1.0
+					return vrai
+					break
+			}
+			break
+			
+		default:
+			if( ti_SND_test )
+			{
+				if ( ! MATH_FloatNullEpsilon(f_GrabKong_SND_timer_exit)) 	// Delai apres certaines action mashing
+					return vrai
+			}
+			break
+	}
+	return faux
+}
+
+// Declenche les AFX de pafs
+procedure_ultra void Proc_KK_Pafs_Effects(int ti_force)
+{
+	if( @get_global i_Player_is_Kong )
+	{
+		if( ! i_paf_afx_done || ti_force )
+		{
+			i_paf_afx_done = vrai		// réinitialisé par Kong au prochain coup
+			KK_AFX_Eclairs()
+			KK_AFX_SlowMotion(vrai)
+		}
+	}
+}
+
+procedure_ultra void Proc_KK_SetCannotPaf_KID()
+{
+	mi_PaffedODEThisSwing = vrai
+}
+
+procedure_ultra int Proc_KK_GetCannotPaf_KID()
+{
+	return mi_PaffedODEThisSwing
+}
+
+procedure_ultra int Proc_KK_EstUnEnnemiDeKong(object to_actor)
+{
+	if( ! to_actor )
+		return faux
+	if( ! @to_actor OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+		return faux
+	if( @to_actor AI_IsModel(get_PNJ_KTREX_Path) )
+		return vrai
+	if( @to_actor AI_IsModel(get_PNJ_KBats_path) )
+		return vrai
+	if( @to_actor AI_IsModel(get_PNJ_KRaptor_path) )
+		return vrai
+	if( @to_actor AI_IsModel(get_PNJ_Scolo_Path) )
+		return vrai
+	if( @to_actor AI_IsModel(get_PNJ_Car_Path) )
+		return vrai
+	if( @to_actor AI_IsModel(get_PNJ_Tank_Path) )
+		return vrai
+	return faux
+}
+
+procedure_ultra int Proc_KK_GrabbedNMICanEscape()
+{
+	switch( ACT_ActionGet() )
+	{
+		case Ci_Kanim_Jete_2M :				// Lancer de Raptor à 2 mains
+		case Ci_Kanim_Jete_D :				// Lance 1m sur cible TREX( i.e. donne a manger)
+		case Ci_Kanim_Jete_Tendu :			// Lance a 100% de puissance
+			return faux
+			break
+		default:
+			return vrai
+			break
+	}
+}
+
+procedure_ultra int Proc_KK_Grabbed2M()
+{
+	if ( i_GrabKong_MainBloquee != -1)
+		return vrai
+	else
+		return faux
+}
+
+
+procedure_ultra void Proc_KK_FreinClimbing( float	pf_limit)
+{
+	f_walling_frein = pf_limit * 5.0
+}
+
+
+procedure_ultra void Proc_KK_RAGE_Speed()
+{
+	if ( ! MATH_FloatNullEpsilon( f_time_fury))
+		@get_global f_game_speed = 0.5
+}
+
+procedure_ultra int Proc_KK_ModeGladiator()
+{
+	return i_gladiator_on
+}
+
+
+procedure_ultra int Proc_KK_RefusePafFrom(object po_cible)
+{
+	if( @get_global i_Kong_ignore_paf 
+	|| i_paf_mashing)
+		return vrai
+	if ( @po_cible AI_IsModel("PNJ_Pacifique/PNJ_Tank"))
+	{
+		switch( ACT_ActionGet() )
+		{
+			case Ci_Kanim_esquiveD :
+			case Ci_Kanim_esquiveG :
+				return vrai
+			default:
+				return faux
+		}				
+	}
+	else if( Proc_KK_RefusePaf() )
+		return vrai
+	else
+		return faux
+}
+
+procedure_ultra object Proc_KK_Souche()
+{
+	return ao_CL_GRABKONG[0]
+}
+
+procedure_ultra int Proc_KK_Frappe()
+{
+	// POINGS et COUP D'EPAULE
+	if( Proc_KK_Test_Mode(C_Mode_Combo1)
+		|| Proc_KK_Test_Mode(C_Mode_Combo1)
+		|| Proc_KK_Test_Mode(C_Mode_Combo2)
+		|| Proc_KK_Test_Mode(C_Mode_Combo3)
+		|| Proc_KK_Test_Mode(C_Mode_Dash_Attack) )
+		return vrai
+	
+	// SOUCHE
+	switch( ACT_ActionGet() )
+	{
+		case Ci_Kanim_souche_frappe_face :
+		case Ci_Kanim_souche_frappe_gauche_tr_face :
+		case Ci_Kanim_souche_frappe_droite_tr_face :	
+		case Ci_Kanim_souche_frappe_gauche :						
+		case Ci_Kanim_souche_frappe_face_tr_coup_droite :	
+//		case Ci_Kanim_souche_frappe_face_tr_attente_droite :	
+		case Ci_Kanim_souche_frappe_droite :						
+		case Ci_Kanim_souche_frappe_face_tr_coup_gauche :
+//		case Ci_Kanim_souche_frappe_face_tr_attente_gauche :
+			return vrai
+			break
+		default:
+			return faux
+			break
+	}
+	
+	return faux
+}
+
+// Retourne la phase de l'anim de frappe en cours : 
+// 0 : début de l'anim, avant les tests de ZDE Fight
+// 1 : pendant la phase où Kong frappe
+// 2 : fin de l'anim
+procedure_ultra int Proc_KK_Frappe_Phase_Get()
+{
+	if( i_frappe_phase_before_zde_fight )
+		return 0
+	else if( OBJ_CapaTest(Capa_ZDE_Fight_ON) )
+		return 1
+	else
+		return 2
+}
+
+procedure_ultra int Proc_KK_FPS_Shoulder_Entering_Can_Rotate()
+{
+	if( Proc_KK_Test_Mode(ETAT_Kong_finished) )
+		return faux
+	if( Proc_KK_Test_Mode(ETAT_Kong_colonne) )
+		return faux
+	return vrai
+}
+

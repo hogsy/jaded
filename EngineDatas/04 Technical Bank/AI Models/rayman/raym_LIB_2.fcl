@@ -1,0 +1,560 @@
+#include "r_defines.var"
+
+procedure_local void MOVE_Set_Mode( int pi_coup);
+procedure	void	COLSET_ON_OFF( int	pi_bit_type, int pi_on_off);
+procedure_local int MOVE_MODE();
+
+//=========================  PAFS  =====================================
+
+procedure_local void RM_PAF_Filtre_Rouge()
+{
+	@get_global Proc_AE_ColorBalanceSet(MATH_FloatBlend(@get_global Proc_AE_ColorBalance1Get(), 1.0, 5.0 * TIME_GetDt()), 0.52)
+	@get_global Proc_AE_RemanenceSet(MATH_FloatBlend(@get_global Proc_AE_RemanenceGet(), 0.4, 5.0 * TIME_GetDt()))
+	@get_global Proc_AE_BlackAndWhiteSet(MATH_FloatBlend(@get_global Proc_AE_BlackAndWhiteGet(), 1.0, 5.0 * TIME_GetDt()))
+}
+
+
+//========================  GRAPPIN  ====================================
+
+// CREATE GRAPPIN
+//procedure_local void GRAPPIN_Create(vector pv_sight)
+//{
+//	int		ti_i
+//	object	to_obj, to_torse
+//	vector	tv_pos
+//	
+//	to_obj = ANI_CanalObjectGet(Anim_Canal_MainGauche)
+//	if( PROC_RM_ModeLookON() )
+//		o_grappin = @o_Punch OBJ_Duplicate(@get_camera OBJ_PosGet())
+//	else
+//	{
+//		to_torse = ANI_CanalObjectGet(Anim_Canal_Torse)
+//		tv_pos = @to_obj OBJ_PosGet()
+//		if ( COL_RayObject_Vector( @to_torse OBJ_PosGet(), tv_pos - @to_torse OBJ_PosGet(), all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable))
+//			tv_pos = COL_RayObject_PosGet()
+//		o_grappin = @o_Punch OBJ_Duplicate( tv_pos)
+//	}
+//	
+//	f_grappin_zoom = Cf_grappin_zoom_init
+//	@o_grappin OBJ_ZoomSet(f_grappin_zoom)
+//	@o_grappin OBJ_SightGeneralSet(pv_sight, - Cv_VerticalVector)
+//	@o_grappin DYN_On()
+//	@o_grappin DYN_FlagsSet(DYN_C_BasicForces, none)
+//	@o_grappin DYN_GravitySet(Cv_NullVector)
+//	@o_grappin DYN_FrictionVectorSet(Cv_NullVector)
+//	@o_grappin DYN_TractionSet(Cv_NullVector)
+//	f_grappin_blend = 0.0
+//	f_grappin_life = 0.0
+//	i_grappin_created = vrai
+//	i_grappin_accroche = faux		// not yet
+//	i_grappin_retour = faux
+//	i_grappin_must_be_launched = faux		// not yet
+//	f_grappin_collision_timer = 0.0
+//	f_grappin_speed = Cf_Grappin_Speed_Launch_Init + ( 10.0 * f_speed_hor )
+//	v_grappin_normale = Cv_NullVector		// on n'est pas planét dans un mur
+//	to_obj = ANI_CanalObjectGet(RM_Canal_Grappin)
+//	v_grappin_last_pos = @to_obj OBJ_PosGet()
+//	i_grappin_mur = faux
+//	i_grappin_snap_to_dest = faux
+//	i_grappin_mur_accroch_mode = faux
+//	i_grappin_nmi_dodge = faux
+//	// RAZ GFX
+//	i_grappin_gfx = -1
+//	for( ti_i = 0; ti_i < Ci_Grappin_TipTopNb; ti_i++ )
+//		ai_grappin_gfx[ti_i] = -1
+//	for (ti_i = 0; ti_i < Ci_Grappin_Corde_Segments_Nb; ti_i++)
+//		ai_grappin_gfx_corde[ti_i] = -1
+//	// GFX Matth
+//	to_obj = ANI_CanalObjectGet(RM_Canal_Grappin)
+//	v_grappin_gfx_corde_B_pos = @to_obj OBJ_PosGet()
+//	v_grappin_gfx_corde_B_speed = Cv_NullVector
+//	v_grappin_gfx_corde_C_pos = @to_obj OBJ_PosGet()
+//	v_grappin_gfx_corde_C_speed = Cv_NullVector
+//}
+
+// GRAPPIN ATOMISATION
+procedure_local void GRAPPIN_Destroy()
+{
+	int		ti_i
+	if ( o_grappin )
+	{
+		if ( i_SND_Grappin)
+		{
+			SND_Destroy( i_SND_Grappin)
+			i_SND_Grappin = 0
+		}
+		SND_RequestPlay(C_SND_Range_Grappin)
+		@o_grappin OBJ_Destroy()
+		o_grappin = nobody
+	}
+	o_grappin_hotspot = nobody
+	i_grappin_accroche = faux		// no more
+	f_grappin_blend = 0.0	// no more
+	f_grappin_life = 0.0
+	i_grappin_retour = faux		// no more
+	f_grappin_nolife = 0.0
+	f_grappin_collision_timer = 0.0
+	i_grappin_mur_accroch_mode = faux
+	v_grappin_last_pos = Cv_NullVector
+	v_grappin_accroche_offset = Cv_NullVector
+	v_grappin_accroche_dir = Cv_NullVector
+	// RAZ GFX
+	if ( i_grappin_gfx != -1)
+	{
+		GFX_Del( i_grappin_gfx)
+		i_grappin_gfx = -1
+	}
+	for( ti_i = 0; ti_i < Ci_Grappin_TipTopNb; ti_i++ )
+	{
+		if( ai_grappin_gfx[ti_i] != -1 )
+		{
+			GFX_Del(ai_grappin_gfx[ti_i])
+			ai_grappin_gfx[ti_i] = -1
+		}
+	}
+	for (ti_i = 0; ti_i < Ci_Grappin_Corde_Segments_Nb; ti_i++)
+	{
+		if( ai_grappin_gfx_corde[ti_i] != -1 )
+		{
+			GFX_Del(ai_grappin_gfx_corde[ti_i])
+			ai_grappin_gfx_corde[ti_i] = -1
+		}
+	}
+	if (i_grappin_GFX_Halo1 != -1)
+	{
+		GFX_Del(i_grappin_GFX_Halo1)
+		i_grappin_GFX_Halo1 = -1
+	}
+
+	if (i_grappin_GFX_Halo2 != -1)
+	{
+		GFX_Del(i_grappin_GFX_Halo2)
+		i_grappin_GFX_Halo2 = -1
+	}
+}
+
+// COME BACK MY GRAPPIN !!!
+procedure_local void GRAPPIN_Return()
+{
+	if( o_grappin )
+	{
+		if ( i_SND_Grappin)
+		{
+			SND_Destroy( i_SND_Grappin)
+			i_SND_Grappin = 0
+		}
+		SND_RequestPlay( C_SND_Reviens_Grappin)
+		i_SND_Grappin = SND_RequestPlayLoop(C_SND_ReviensLoop_Grappin)
+
+		i_flag_just_grab = faux
+		i_flag_just_punch = faux
+
+		i_grappin_accroche = faux
+		i_grappin_retour = vrai
+		f_grappin_nolife = 0.0
+		v_grappin_return_startpos = @o_grappin OBJ_PosGet()
+		f_grappin_speed = 0.0
+		f_grappin_blend = 0.0		// no more set pos
+		@o_grappin_dup_wp OBJ_HierarchyReset()
+		i_grappin_mur_accroch_mode = faux
+		v_grappin_accroche_offset = Cv_NullVector
+		v_grappin_accroche_dir = Cv_NullVector
+	}
+}
+
+
+// LE GRAPPIN SE PLUG!!!
+procedure_local void GRAPPIN_SePlante()
+{
+	SND_RequestPlay( C_SND_Plante_Grappin)
+	if ( i_SND_Grappin)
+	{
+		SND_Destroy( i_SND_Grappin)
+		i_SND_Grappin = 0
+	}
+}
+
+procedure_local void GRAPPIN_SetRayInsensitive(int ti_vrai)
+{
+	int		ti_on
+	int		ti_off
+	if( ti_vrai )
+	{
+		ti_on = OBJ_C_ControlFlag_RayInsensitive
+		ti_off = 0
+	}
+	else
+	{
+		ti_on = 0
+		ti_off = OBJ_C_ControlFlag_RayInsensitive	
+	}
+	OBJ_FlagsControlSet(ti_on, ti_off)
+	@o_grappin OBJ_FlagsControlSet(ti_on, ti_off)
+//	if( o_grappin_hotspot )
+//		@o_grappin_hotspot OBJ_FlagsControlSet(ti_on, ti_off)
+}
+
+// A LA RECHERCHE D'UN HOTSPOT
+procedure_local object GRAPPIN_Check_HotSpot(vector pv_sight, int pi_calcul_on)
+{
+	int 		ti_i, ti_j
+	int			ti_good_nb
+	int			ti_indice
+	float		tf_z
+	float		tf_dist2
+	float		tf_dot1
+	float		tf_dot2
+	float		tf_dotmax
+	float		tf_dist_max
+	float		tf_dot
+	vector	tv_sens
+	vector	tv_temp
+	vector	tv_JOY
+	vector	tv_pos , tv_hotspot_pos
+	vector	tv_axe
+	vector	tv_dest_pos
+	vector	tv_sight
+	object	to_hotspot
+	object	to_torse
+	object	to_ray_col
+	object	tao_hotspot_good[20]
+	vector	tav_hotspot_good[20]
+	float		taf_hotspot_good[20]
+	int			ti_ok
+
+
+//	if( i_ground_flag )	
+//		return nobody
+	tv_pos = OBJ_PosGet() + (OBJ_BankingGet() * 2.0)
+	
+	ti_good_nb = 0
+	for( ti_i = 0; ti_i < @get_list_manager i_hotspot_nb; ti_i++)
+	{
+		// Validite
+		to_hotspot = @get_list_manager ao_hotspot[ti_i]
+		if( ! (@to_hotspot OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Active) )
+			continue
+		if( to_hotspot == o_ride_actor )
+			continue		// je suis dessus
+//		if( @to_hotspot VIEW_Culled(0))
+//			continue		// je suis dessus
+		if ( OBJ_CapaTest( Capa_FAKE) && to_hotspot == @get_rayman PROC_RM_Current_HotSpot_Get())
+			continue		// Ne pas récup le même HS que le vrai RM
+		// Calculs
+		tv_hotspot_pos = HotSpot_PosGet(to_hotspot)
+		to_torse = ANI_CanalObjectGet(Anim_Canal_Torse)
+//		tv_sens = tv_hotspot_pos - (OBJ_PosGet() + (0.75 * OBJ_BankingGet()))
+		tv_sens = tv_hotspot_pos - @to_torse OBJ_PosGet()
+		tf_dist2 = MATH_VecDotProduct( tv_sens, tv_sens) 
+		
+		tf_dist_max = f_grappin_lancer_distmax
+		tf_dist_max *= tf_dist_max
+		
+//		if ( MOVE_MODE() == C_Move_Jump)
+//		{
+			if ( !@to_hotspot OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI))
+			{
+				tf_dist_max = 900.0
+				tf_dotmax= Cf_Cos60
+			}
+			else if ( @to_hotspot AI_IsModel(get_RM_Weapon_path))
+			{
+				tf_dist_max = 900.0
+				tf_dotmax= Cf_Cos60
+			}
+			else
+			{
+				tf_dist_max = 225.0
+				tf_dotmax= 0.0
+			}
+//		}
+//		else
+//			tf_dist_max = 0.0 // Ne PAS LE CHOPPER
+
+		// FUSCKING DEBUG
+		if ( i_DBG_HS)
+		{
+			ti_indice = STR_CreateText("\jx\HS\n", VIEW_3dWorldTo2d(0,tv_hotspot_pos), 0)			
+		}
+
+		if ( tf_dist2 < tf_dist_max)										// Le HS doit etre a moins de 25m
+		{
+			// Un HOT SPOT dans l axe de 'lecture' du saut ( le joy doit aller dans le sens du sight sinon le HotSpot est pas valide
+			tv_temp = tv_sens
+			tv_temp.z = 0.0
+			tv_temp= MATH_VecNormalize( tv_temp)
+			tf_dot = MATH_VecDotProduct( tv_temp, pv_sight)
+			// dans l'axe ?
+			ti_ok = faux
+			if( tf_dot > tf_dotmax || tf_dist2 < 4.0) 
+				ti_ok = vrai
+//			else if( @to_hotspot AI_IsModel(get_RM_Levier_path) 
+//				&& tf_dist2 < 1.0)
+ //				ti_ok = vrai
+			if( ti_ok )
+			{
+				// Un HOT SPOT dans l axe du joy
+				
+				// TRI	
+				MATH_VecSetNormalize(tv_sens)
+				tf_dot = MATH_VecDotProduct( tv_sens, pv_sight)
+				tf_dot = tf_dot - ( MATH_FloatSqrt(tf_dist2) / 20.0)
+				
+			
+				if ( i_DBG_HS)
+				{
+					DBG_RenderSphere( tv_hotspot_pos, 0.2, 0xDA00FF00)
+					STR_AppendText(ti_indice, "\c0000FF00\")
+					STR_AppendText(ti_indice, "\\h0.08\")
+					STR_AppendFloat(ti_indice, tf_dot, 1)	
+				}
+		
+				if ( !ti_good_nb	)
+				{
+					ti_j = -1
+				}
+				else
+				{
+					for ( ti_j = ti_good_nb - 1; ti_j >= 0; ti_j--)
+					{
+						if( tf_dot  > taf_hotspot_good[ti_j])
+						{
+							tav_hotspot_good[ti_j+1] = tav_hotspot_good[ti_j] 
+							tao_hotspot_good[ti_j+1] = tao_hotspot_good[ti_j]
+							taf_hotspot_good[ti_j+1] = taf_hotspot_good[ti_j]
+						}
+						else
+						{
+							break
+						}
+					}	
+				}
+				tav_hotspot_good[ti_j+1] = tv_hotspot_pos
+				tao_hotspot_good[ti_j+1] = to_hotspot
+				taf_hotspot_good[ti_j+1] = tf_dot
+				ti_good_nb++							
+			}
+			else if ( i_DBG_HS)
+			{
+				DBG_RenderSphere( tv_hotspot_pos, 0.2, 0xDAFF0000)
+				STR_AppendText(ti_indice, "\c00FF0000\")
+				STR_AppendText(ti_indice, "\\h0.08\")
+				STR_AppendFloat(ti_indice, tf_dot, 1)	
+			}
+		}
+		else if ( i_DBG_HS)
+		{
+			DBG_RenderSphere( tv_hotspot_pos, 0.2, 0xDA0000FF)
+			STR_AppendText(ti_indice, "\c000000FF\")
+			STR_AppendText(ti_indice, "\\h0.06\")
+			STR_AppendFloat(ti_indice, MATH_FloatSqrt(tf_dist2), 1)
+		}
+	}
+	
+	// HOTSPOT TRI
+	if( ti_good_nb  && pi_calcul_on)
+	{
+		// Une fois ordoné, on cherche le 1er accessible par LRAY
+		tv_pos = OBJ_PosGet() + (OBJ_BankingGet() * 1.0)
+
+		for ( ti_i = 0; ti_i < ti_good_nb; ti_i++)
+		{
+		 	DBG_RenderVector(tv_pos , tav_hotspot_good[ti_i] - tv_pos, color_bleu)
+			COL_SpecificCrossableSet(Gmat_RM_Crossable_Default | Gmat_RM_Crossable_Grappin)
+			@tao_hotspot_good[ti_i] OBJ_FlagsControlSet( OBJ_C_ControlFlag_RayInsensitive, none)
+			if( ! COL_RayIsCut_Dist( tv_pos , MATH_VecNormalize(tav_hotspot_good[ti_i] - tv_pos), MATH_VecNorm(tav_hotspot_good[ti_i] - tv_pos) , all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable + COL_C_Ray_use_SpecificCrossableSet))
+			{
+			 	o_grappin_hotspot_last = o_grappin_hotspot
+				@tao_hotspot_good[ti_i] OBJ_FlagsControlSet( none, OBJ_C_ControlFlag_RayInsensitive)
+				return tao_hotspot_good[ti_i]
+			}
+			@tao_hotspot_good[ti_i] OBJ_FlagsControlSet( none, OBJ_C_ControlFlag_RayInsensitive)
+		}		
+	}
+	return nobody
+}
+
+
+procedure_local float GRAPPIN_ComputeRopeTractionCoef(object to_obj)
+{
+	float	tf_obj_coef
+	int		ti_category
+	int		ti_monture_ID
+	
+	ti_monture_ID = PROC_RM_MontureIDGet()
+	if( ! @to_obj OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+	{
+		switch( ti_monture_ID )
+		{
+			case C_ID_Rayman :
+		//		ti_category = RopeTractionCategory_Coef_1
+				if( @to_obj OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_DesignStruct) )
+				{
+					if( to_obj.des_float1 > 0.0 )
+						tf_obj_coef = to_obj.des_float1
+					else
+						tf_obj_coef = 1.0		// par défaut 
+				}
+				else
+					tf_obj_coef = 1.0		// par défaut 
+				return (1.0 - tf_obj_coef)		// coef de rayman
+				break
+			default:
+				ti_category = RopeTractionCategory_Coef_025
+				break
+		}
+	}
+	else if( @to_obj AI_IsModel(get_RM_Box_path) )
+		ti_category = @to_obj Proc_Box_GetRopeTractionCategory(ti_monture_ID)
+	else if( @to_obj AI_IsModel(get_PNJ_MiniRobot_path) )
+		ti_category = @to_obj Proc_PNJ_MiniRobot_GetRopeTractionCategory(ti_monture_ID)
+	else if( @to_obj AI_IsModel(get_RM_Prune_path) )
+		ti_category = @to_obj Proc_RM_Prune_GetRopeTractionCategory(ti_monture_ID)
+	else if( @to_obj AI_IsModel(get_PNJ_Quadri_Path) )
+		ti_category = @to_obj Proc_PNJ_Quadri_GetRopeTractionCategory(ti_monture_ID)
+	else if( @to_obj AI_IsModel(get_PNJ_Lapin_path) )
+		ti_category = @to_obj Proc_PNJ_Lapin_GetRopeTractionCategory(ti_monture_ID)
+	else if( @to_obj AI_IsModel(get_PNJ_Bunny_Saucer_path) )
+		ti_category = @to_obj Proc_PNJ_Bunny_Saucer_GetRopeTractionCategory(ti_monture_ID)
+	else if( @to_obj AI_IsModel(get_RM_Weapon_path) )
+		ti_category = RopeTractionCategory_Coef_0		// viens voir papa :)
+	else if( @to_obj AI_IsModel(get_RM_Levier_path) )
+		ti_category = RopeTractionCategory_Coef_075
+	else
+		ti_category = RopeTractionCategory_Coef_05
+	
+	// Limites min et max (modifs glace & autres...)
+	if( ti_category < RopeTractionCategory_Coef_0 )
+		ti_category = RopeTractionCategory_Coef_0
+	else if( ti_category > RopeTractionCategory_Coef_1 )
+		ti_category = RopeTractionCategory_Coef_1
+	
+	switch( ti_category )
+	{
+		case RopeTractionCategory_Coef_0 :
+			tf_obj_coef = 0.0
+			break
+		case RopeTractionCategory_Coef_025 :
+			tf_obj_coef = 0.25
+			break
+		case RopeTractionCategory_Coef_05 :
+			tf_obj_coef = 0.5
+			break
+		case RopeTractionCategory_Coef_075 :
+			tf_obj_coef = 0.75
+			break
+		case RopeTractionCategory_Coef_1 :
+			tf_obj_coef = 1.0
+			break
+	}
+	return (1.0 - tf_obj_coef)		// coef de rayman
+}
+
+
+procedure_local float GRAPPIN_ComputeRopeDistRenormalisation(object to_obj, byref float tf_rope_length_blend)
+{
+	int		ti_monture_ID
+	ti_monture_ID = PROC_RM_MontureIDGet()
+
+	// VITESSE DE REDUCTION DE LA CORDE
+	if( @get_global i_GRAPPIN_OutOfControl_flag )
+		tf_rope_length_blend = 3.0
+	else if( @o_grappin_hotspot AI_IsModel(get_RM_Weapon_path) )
+		tf_rope_length_blend = 30.0
+	else if( i_grappin_snap_to_dest )
+	{
+		tf_rope_length_blend = 12.0
+		f_rope_coef = 0.0
+	}
+	else 	if ( PROC_RM_Type_HotspotGet() == C_HS_Type_Crochet)
+		tf_rope_length_blend = 25.0
+	else
+		tf_rope_length_blend = 5.0		// par défaut 
+	
+	// LONGUEUR DE LA CORDE
+	if( @get_global i_GRAPPIN_OutOfControl_flag )		// un lapin me tire à lui
+		return 1.0
+	if( i_grappin_snap_to_dest )		// grappiné à 1 mur, je suis en jump ou j'ai sauté avant
+		return Cf_grappin_mur_accroch_length
+	if( ! @to_obj OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+	{
+		if( ti_monture_ID )
+			return 15.0
+		else
+		{
+			// default (objet sans IA)
+			if( @to_obj OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_DesignStruct) && to_obj.des_float2 > 0.0 )
+				return to_obj.des_float2
+			else
+				return 5.0		// par défaut 
+		}
+	}
+	if ( MOVE_MODE() == C_Move_Jump)
+	{
+		if( PROC_RM_IS_MOUNT_GAO_TAMED( to_obj))	
+			return Cf_grappin_mur_accroch_length
+	}
+	if( @to_obj AI_IsModel(get_RM_Box_path) )
+		return @to_obj Proc_Box_GetRopeDistRenormalisation(ti_monture_ID)
+	if( @to_obj AI_IsModel(get_PNJ_Quadri_Path) )
+		return @to_obj Proc_PNJ_Quadri_GetRopeDistRenormalisation(ti_monture_ID)
+	if( @to_obj AI_IsModel(get_PNJ_Lapin_path) )
+		return @to_obj Proc_PNJ_Lapin_GetRopeDistRenormalisation(ti_monture_ID)
+	if( @to_obj AI_IsModel(get_PNJ_Bunny_Saucer_path) )
+		return @to_obj Proc_PNJ_Bunny_Saucer_GetRopeDistRenormalisation(ti_monture_ID)
+	if( @to_obj AI_IsModel(get_PNJ_MiniRobot_path) )
+		return @to_obj Proc_PNJ_MiniRobot_GetRopeDistRenormalisation()
+	if( @to_obj AI_IsModel(get_RM_Prune_path) )
+		return @to_obj Proc_RM_Prune_GetRopeDistRenormalisation()
+	if( @to_obj AI_IsModel(get_RM_Weapon_path) )
+		return 1.0		// viens voir papa :)
+	if( @to_obj AI_IsModel(get_RM_Levier_path) )
+		return @to_obj Proc_Levier_GetRopeDistRenormalisation(ti_monture_ID)
+	// default (objet avec IA)
+	if( @to_obj OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_DesignStruct) && to_obj.des_float2 > 0.0 )
+		return to_obj.des_float2
+	else
+		return 5.0		// par défaut 
+}
+
+procedure_local int GRAPPIN_EnnemiDodge(object to_obj)
+{
+	if( to_obj && @to_obj OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+	{
+		if( @to_obj AI_IsModel(get_PNJ_Lapin_path) )
+			return @to_obj Proc_PNJ_Lapin_Grappin_Dodge()
+	}
+	return faux
+}
+
+
+procedure_local int GRAPPIN_EnnemiProtege(object to_obj)
+{
+	if( to_obj && @to_obj OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+	{
+		if( @to_obj AI_IsModel(get_PNJ_Lapin_path) )
+			return @to_obj Proc_PNJ_Lapin_Grappin_Protege()
+	}
+	return faux
+}
+
+// Longueur du grappin ?
+procedure_local void GRAPPIN_Lenght_Update()
+{
+	if( RM_POWERUP_IS_ACTIF(RM_POWER_GRAP_LONG) )
+	{
+		f_grappin_lancer_distmax = 15.0
+		i_grappin_gfx_color = 0x809D51AC
+	}
+	else if( RM_POWERUP_IS_ACTIF(RM_POWER_GRAP_MED) )
+	{
+		f_grappin_lancer_distmax = 10.0
+		i_grappin_gfx_color = 0x8017E61B
+	}
+	else
+	{
+		f_grappin_lancer_distmax = 5.0
+		i_grappin_gfx_color = 0x800FEDD8
+	}
+}
+

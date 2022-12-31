@@ -1,0 +1,504 @@
+// PlanesForKong ultra procedures
+procedure_ultra void PFK_GrabByKong();
+procedure_ultra void PFK_UngrabByKong(vector d);
+procedure_ultra void PFK_SetWaypoint(object w);
+procedure_ultra object PFK_GetExplosed();
+procedure_ultra void PFK_Throw(vector d);
+procedure_ultra void PFK_ExplosedByKong(float rnd,vector ImpactPos,vector ImpactSpeed);
+
+// PlaneExplosed ultra procedures
+procedure_ultra void PE_RejoinAndOrient(object o);
+procedure_ultra void PE_DropChunk(int n,vector CurrentSpeed,vector ImpactPos,vector ImpactSpeed);
+
+#include "PLKJ_Defines.var"
+//------------------------------------------------------------------------------------------------------------------
+//	Return the closest enemy or nobody
+//------------------------------------------------------------------------------------------------------------------
+procedure_local object PLKJ_GetClosestEnemy()
+{
+	if(ClosestDistance<C_PLKJ_Enemy_IgnoreSqDistance)
+	{
+		return ClosestEnemy
+	}
+	return nobody
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Return true if an enemy is close enough to be hit
+//------------------------------------------------------------------------------------------------------------------
+procedure_local int PLKJ_IsEnemyVeryClose()
+{
+	if(ClosestEnemy && ClosestDistance<C_PLKJ_Enemy_CloseSqDistance)
+	{
+		return vrai
+	}
+	return faux
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Return true if the closest enemy is behind me
+//------------------------------------------------------------------------------------------------------------------
+procedure_local int PLKJ_IsClosestEnemyJustBehind()
+{
+	if(PLKJ_IsEnemyVeryClose() && MATH_VecDotProduct(OBJ_HorizonGet(),@ClosestEnemy OBJ_PosGet()-OBJ_PosGet())>0)
+	{
+		return vrai
+	}
+	return faux
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Spawn new ennemies
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_SpawnEnemies()
+{
+	object o
+	message msg
+	int i
+	// if we didn't finish the first part
+	if(NbEnemies)
+	{
+		// dicrease delay
+		EnemyDelay-=dt
+		// if delay is over
+		if(EnemyDelay<=0)
+		{
+			// get next waypoint (skip empty places)
+			i=0
+			while(i<C_PLKJ_MaxNetworks && !Waypoints[EnemyCurrent])
+			{
+				EnemyCurrent++
+				if(EnemyCurrent==C_PLKJ_MaxNetworks)
+				{
+					EnemyCurrent=0
+				}
+				i++
+			}
+			// if I found a waypoint
+			if(i!=C_PLKJ_MaxNetworks)
+			{
+				// duplicate the plane template
+				o=@PlaneKong OBJ_Duplicate(OBJ_PosGet())
+				// set the initial waypoint
+				@o PFK_SetWaypoint(Waypoints[EnemyCurrent])
+				// reset the delay with the value corresponding to this plane
+				EnemyDelay+=Delays[EnemyCurrent]
+				// go to next enemy
+				EnemyCurrent++
+				// if end of table, restart
+				if(EnemyCurrent==C_PLKJ_MaxNetworks)
+				{
+					EnemyCurrent=0
+				}
+			}
+		}
+	}
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	count enemies killed if alternative end is available
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_CountKilledEnemies()
+{
+	// if I'm not yet in alternative end and this alternative end is unlocked
+	if(!OBJ_CapaTest(C_PLKJ_Capa_AlternativeEnd) && OBJ_CapaTest(C_PLKJ_Capa_AltEndUnlocked))
+	{
+		// decrease remaining enemies
+		NbEnemies--
+		// if there's no more enemy
+		if(!NbEnemies)
+		{
+			// set a timer to trigger the alternative end
+			PLKJ_SetTimer(4.0,C_PLKJ_TimerEvent_AlternativeEnd,0)
+		}
+	}
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	grab the plane
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_GrabPlane(object o)
+{
+	// flush the attack buffer, to avoid accidental throws
+	PLKJ_FlushAttackBuffer()
+	// grab the plane
+	GrabedPlaneBroken=faux
+	GrabedPlane=o
+	GrabedPlaneBlend=0
+	@GrabedPlane PFK_GrabByKong()
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	snap the grabed plane in the right hand
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_SnapPlaneToHand()
+{
+	vector v
+	object o
+	if(GrabedPlane)
+	{
+		// if blend in progress
+		if(GrabedPlaneBlend<1)
+		{
+			GrabedPlaneBlend=MATH_FloatMin(1,GrabedPlaneBlend+(dt*C_PLKJ_Grab_BlendSpeed))
+			PLKJ_RejoinAndOrientBlend(GrabedPlane,GrabedPlane,B_PlaneGrab,GrabedPlaneBlend,faux)
+		}
+		// else go directly to the bone
+		else
+		{
+			@GrabedPlane OBJ_RejoinAndOrient(B_PlaneGrab)
+		}
+		// put the destroyed version of the plane on the plane itself
+		o=@GrabedPlane PFK_GetExplosed()
+		if(o) @o PE_RejoinAndOrient(GrabedPlane)
+	}
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	ungrab the plane
+//------------------------------------------------------------------------------------------------------------------
+procedure_ultra void PLKJ_UngrabPlane()
+{
+	if(GrabedPlane)
+	{
+		@GrabedPlane PFK_UngrabByKong(Cv_NullVector)
+		GrabedPlane=nobody
+	}
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	throw the plane
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_ThrowPlane()
+{
+	vector v
+	object o
+	float f
+	if(GrabedPlane)
+	{
+		o=ClosestEnemy//PLKJ_GetClosestEnemy()
+		if(o && ClosestDistance<Cf_1Degre*50)
+		{
+			v=@o OBJ_PosGet()-OBJ_PosGet()
+			f=MATH_VecNorm(v)
+			v+=@o OBJ_SightGet()*f*0.25
+			v+=OBJ_BankingGet()*f*0.35
+			v=MATH_VecNormalize(v)
+		}
+		else
+		{
+			v=-OBJ_SightGet()
+			v.z+=0.4
+		}
+		// throw the plane
+		@GrabedPlane PFK_Throw(v*55)
+		// reset the variable
+		GrabedPlane=nobody
+	}
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	break some parts of the plane during the grab
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_BreakPlane()
+{
+	object o
+	vector v
+	if(GrabedPlane)
+	{
+		// get the explosed version of the plane
+		o=@GrabedPlane PFK_GetExplosed()
+		if(o)
+		{
+			// set the direction for the chunks
+			v=OBJ_SightGet()*20
+			// remove the chunks
+			// 3=left lower wing
+			@o PE_DropChunk(3,-OBJ_SightGet(),@B_RightHand OBJ_PosGet(),OBJ_SightGet()*5)
+			// 5=wheels
+			@o PE_DropChunk(5,-OBJ_SightGet(),@B_RightHand OBJ_PosGet(),OBJ_SightGet()*4)
+		}
+	}
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	manage the grabed plane
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_ManageGrab()
+{
+	if(GrabedPlane)
+	{
+		// break the plane when Kong grabs hit and touch the Empire
+		if(OBJ_CapaTest(C_PLKJ_Capa_BreakPlane) && !GrabedPlaneBroken)
+		{
+			// break the plane
+			PLKJ_BreakPlane()
+			GrabedPlaneBroken=vrai
+			// if Kong is injured, he cannot keep the plane and ungrabs it
+			if(OBJ_CapaTest(C_PLKJ_Capa_Injured))
+			{
+				PLKJ_UngrabPlane()
+			}
+		}
+		// throw the plane
+		if(OBJ_CapaTest(C_PLKJ_Capa_ThrowPlane))
+		{
+			PLKJ_ThrowPlane()
+		}
+	}
+	OBJ_CapaSet(0,C_PLKJ_Capa_BreakPlane|C_PLKJ_Capa_ThrowPlane)
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	return true if Kong has a plane in hand
+//------------------------------------------------------------------------------------------------------------------
+procedure_local int PLKJ_IsPlaneGrabed()
+{
+	if(GrabedPlane) return vrai
+	return faux
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Test collision with the closest enemy
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_TryToHit()
+{
+	message msg
+	object enemy
+	vector v
+	int o_Jack
+	// if I can activate my collision
+	if(OBJ_CapaTest(C_PLKJ_Capa_TestCollision))
+	{
+		// get the closest enemy
+		enemy=PLKJ_GetClosestEnemy()
+		// in I have an enemy, I'm not grabing anyone and our zde collide
+		if(enemy && !PLKJ_IsPlaneGrabed() && !PLKJ_GoingOnSpecialCut() && COL_ZDE_ZDECollide(enemy,C_zde_fight,C_zde_corps))
+		{
+			o_Jack=@enemy AI_IsModel("kontreuil/TestPlane")
+			if(!o_Jack)
+			{
+				// add some dialogs from the pilot
+				PLKJ_Say(txPilots[11],5)
+			}
+			// if grab is activated
+			if(OBJ_CapaTest(C_PLKJ_Capa_CanGrab) && !o_Jack)
+			{
+				// grab the plane
+				PLKJ_GrabPlane(enemy)
+			}
+			// else I hit the plane
+			else
+			{
+				// count enemies killed, in case the alternative end is available
+				PLKJ_CountKilledEnemies()
+				// if I can do a special cut
+				if(!o_Jack && PLKJ_IsSpecialCutReady())
+				{
+					// prepare the special cut
+					PLKJ_PrepareSpecialCut(enemy)
+				}
+				// else do a normal hit
+				else
+				{
+					// set the proper direction
+					if(act==C_PLKJ_ACT_AttackL)
+					{
+						v=OBJ_HorizonGet()
+					}
+					else
+					{
+						v=-OBJ_HorizonGet()
+					}
+					if(o_Jack)
+					{
+						msg.msg_id=4015
+						@enemy MSG_Send(msg)
+					}
+					else
+					{
+						// explose the plane
+						@enemy PFK_ExplosedByKong(0.4,@B_RightHand OBJ_PosGet()+OBJ_SightGet(),v*20)
+					}
+					// if I'm not preparing another effect
+					if(!PLKJ_IsTimerUsed())
+					{
+						// set the standard hit effect
+						PLKJ_StartHitEffect()
+					}
+				}
+			}
+		}
+		// remove capacities
+		OBJ_CapaSet(0,C_PLKJ_Capa_TestCollision|C_PLKJ_Capa_CanGrab)
+	}
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Return true if an attack is bufferised
+//------------------------------------------------------------------------------------------------------------------
+procedure_local int PLKJ_IsAttackInBuffer()
+{
+	// if I didn't use all the attacks from the buffer
+	if(AttackCombo<AttackNb) return vrai
+	return faux
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Calculate the attack rotation to store in AttackJoyBuffer
+//------------------------------------------------------------------------------------------------------------------
+procedure_local float PLKJ_CalculateAttackRotation()
+{
+	// store the rotation, if a direction is given
+	if(JoyAngleWithDir)
+	{
+		// don't allow 180° unless an enemy is very close
+		if(JoyAngleWithDir==C_PLKJ_Rotation_180 && PLKJ_IsEnemyVeryClose())
+		{
+			return C_PLKJ_Rotation_180 
+		}
+		// set the turning angle
+		if(PLKJ_CanITurnForward())
+		{
+			return C_PLKJ_Rotation_Forward
+		}
+		else
+		{
+			return C_PLKJ_Rotation_Backward
+		}
+	}
+	// else store no direction
+	return C_PLKJ_Rotation_None
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Flush the attack buffer
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_FlushAttackBuffer()
+{
+	AttackCombo=0
+	AttackNb=0
+}
+//------------------------------------------------------------------------------------------------------------------
+//	Adds an attack in the attack buffer
+//	!!!a is C_PLKJ_Combo_Attack or C_PLKJ_Combo_Grab, not an action!!!
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_AddAttack(int a)
+{
+	// if I'm not doing an attack and (I didn't use a full combo or the delay between combo is over)
+	if(~cb&C_PLKJ_CB_Attack && (AttackNb<C_PLKJ_ComboMax || AttackTimer+C_PLKJ_Combo_PostDelay<clock))
+	{
+		// reset the attack buffer
+		PLKJ_FlushAttackBuffer()
+	}
+	// if the attack buffer isn't full
+	if(AttackNb<C_PLKJ_ComboMax)
+	{
+		// save the attack type
+		AttackBuffer[AttackNb]=a
+		// save the attack direction
+		AttackJoyBuffer[AttackNb]=PLKJ_CalculateAttackRotation()
+		// add new attack
+		AttackNb++
+	}
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Update attack rotation is the joy is moved soon enough
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_UpdateAttack()
+{
+	// if an attack started with no rotation and it's soon enough to modify it
+	if(AttackCombo &&  !AttackJoyBuffer[AttackCombo-1] && AttackTimer>clock)
+	{
+		AttackJoyBuffer[AttackCombo-1]=PLKJ_CalculateAttackRotation()
+	}
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Set the animation direction (not the attack rotation)
+//------------------------------------------------------------------------------------------------------------------
+procedure_local int PLKJ_CalculateAnimDirection()
+{
+	// if the player gives a direction, set the anim in this direction
+	if(AttackJoyBuffer[AttackCombo]!=C_PLKJ_Rotation_None)
+	{
+		return AttackJoyBuffer[AttackCombo]
+	}
+	// else if an enemy is just behind use backward animation
+	else if(PLKJ_IsClosestEnemyJustBehind())
+	{
+		return C_PLKJ_Rotation_Backward
+	}
+	// else during a combo alternate forward and backward
+	else if(AttackCombo && AttackPreviousDir==C_PLKJ_Rotation_Forward)
+	{
+		return C_PLKJ_Rotation_Backward
+	}
+	// else use forward animation
+	return C_PLKJ_Rotation_Forward
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Start the next attack in buffer
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_StartAttack()
+{
+	int a,d
+	// if I didn't perform all the attacks from the buffer
+	if(AttackCombo<AttackNb)
+	{
+		// memorize attack time
+		AttackTimer=clock+C_PLKJ_Combo_Tolerance
+		// if no direction has been saved, take the current joy direction
+		if(AttackJoyBuffer[AttackCombo]==C_PLKJ_Rotation_None)
+		{
+			AttackJoyBuffer[AttackCombo]=PLKJ_CalculateAttackRotation()
+		}
+		// calculate the animation direction
+		d=PLKJ_CalculateAnimDirection()
+		// set the correction animation, according to the attack type and the direction
+		switch(AttackBuffer[AttackCombo])
+		{
+			// grab animation
+			case C_PLKJ_Combo_Grab :
+			{
+				if(d==C_PLKJ_Rotation_Backward)
+				{
+					a=C_PLKJ_ACT_GrabL
+				}
+				else
+				{
+					a=C_PLKJ_ACT_GrabR
+				}
+				break
+			}
+			// throw animation
+			case C_PLKJ_Combo_Throw :
+			{
+				a=C_PLKJ_ACT_Ungrab
+				break
+			}
+			// attack animation
+			default:
+			{
+				if(d==C_PLKJ_Rotation_Backward)
+				{
+					a=C_PLKJ_ACT_AttackL
+				}
+				else
+				{
+					a=C_PLKJ_ACT_AttackR
+				}
+			}
+		}
+		// store the animation direction
+		AttackPreviousDir=d
+		// set the animation
+		PLKJ_SetAction(a)
+		// set the current direction
+		PLKJ_SetCurrentDirection(AttackJoyBuffer[AttackCombo])
+		// update the current combo
+		AttackCombo++
+	}
+}

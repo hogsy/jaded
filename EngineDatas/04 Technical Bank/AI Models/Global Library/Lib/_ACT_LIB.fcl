@@ -1,0 +1,81 @@
+procedure float ACT_LIB_ActionDurationGet(int ti_action)
+{
+	int		ti_i
+
+	float	tf_ActionItemDuration
+	float	tf_ActionDuration
+	
+	ti_i = 0
+	tf_ActionDuration = 0.0
+	tf_ActionItemDuration = ACT_DurationGet(ti_action, ti_i)
+	while(tf_ActionItemDuration != -1.0)
+	{
+		ti_i++
+		tf_ActionDuration += tf_ActionItemDuration
+		tf_ActionItemDuration = ACT_DurationGet(ti_action, ti_i)
+	}
+	
+	return(tf_ActionDuration)
+}
+
+procedure void ACT_LIB_ActionFrequencyMultiply(float tf_coef)
+{
+	int	ti_freq
+
+	ti_freq = ACT_FrequencyGet(ACT_ActionGet(), ACT_ActionItemGet())
+	ti_freq = MATH_FloatLimit(ti_freq * tf_coef, 1.0, 255.0)
+	ANI_FrequencySet(0, ti_freq)
+}
+
+procedure_local float ACT_LIB_Get_Move_Coef(float tf_start_coef, float tf_end_coef)
+{
+	float		tf_coef
+	float		tf_move_range	
+
+	tf_coef = ANI_RatioGet(0)
+
+	if (tf_start_coef < tf_end_coef)
+	{
+		// On démarre en étant immobile
+		tf_move_range	 = tf_end_coef - tf_start_coef
+	
+		if (tf_coef >= tf_start_coef && tf_coef <= tf_end_coef)
+		{
+			tf_coef -= tf_start_coef
+			tf_coef /= tf_move_range
+			return(tf_coef)
+		}
+		else
+		{
+			// On ne bouge pas
+			return(1.0)
+		}
+	}
+	else
+	{
+		// On démarre en étant mobile
+		tf_move_range	 = tf_start_coef - tf_end_coef 
+		tf_move_range = 1.0 - tf_move_range
+		
+		if (tf_coef >= tf_start_coef)
+		{
+			// Début du mouvement
+			tf_coef -= tf_start_coef
+			tf_coef /= tf_move_range
+			return(tf_coef)
+		}
+		else if (tf_coef <= tf_end_coef)
+		{
+			// Fin du mouvement
+			tf_coef += 1.0 - tf_start_coef 
+			tf_coef /= tf_move_range
+			return(tf_coef)
+		}
+		else
+		{
+			// On ne bouge pas
+			return(1.0)
+		}
+	}
+}
+

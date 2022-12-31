@@ -1,0 +1,3305 @@
+#include "KBC_defines.var"
+Include_UltraProcedure_Header
+
+//=================================================================================================
+// TESTS DES MESSAGES D'INTERET
+//=================================================================================================
+procedure_local int KBC_Get_Interet_Status_Model_Nb(object po_actor, int pi_status, int pi_meme_IA)
+{
+	int					ti_rank
+	message		tm_filter
+	messageid		tmid_interet_ID
+	object			to_pere
+	int					ti_cpt
+	
+	ti_cpt = 0
+	ti_rank = -1
+	MSG_SetNull(tm_filter)
+	
+	if( pi_meme_IA )
+		tm_filter.msg_int3 = C_ID_BatCharognard
+	
+	if( po_actor )
+		tm_filter.msg_gao1 = po_actor
+	
+	for (	tmid_interet_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tm_filter);
+			MSG_GlobalIsValid(tmid_interet_ID);
+			tmid_interet_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tm_filter) )
+		{
+			to_pere = EVENT_PereGet(tmid_interet_ID)
+			if( to_pere != OBJ_Me() )
+			{
+				if( pi_status == -1 || EVENT_InteretStatusGet(tmid_interet_ID) == pi_status )
+				{
+					// compteur
+					if( pi_meme_IA )
+						ti_cpt+= @to_pere KBC_Interet_Slots_Nb_Get()
+					else
+						ti_cpt++
+				}
+			}
+		}
+	return ti_cpt
+}
+procedure_local int KBC_Gao_Has_Interet_From_Bat(object po_actor, int pi_big_bat)
+{
+	int					ti_rank
+	message		tm_filter
+	messageid		tmid_interet_ID
+	object			to_pere
+	
+	ti_rank = -1
+	MSG_SetNull(tm_filter)
+	
+	// messages des bats
+	tm_filter.msg_int3 = C_ID_BatCharognard
+	
+	// sur mon acteur
+	tm_filter.msg_gao1 = po_actor
+	
+	for (	tmid_interet_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tm_filter);
+			MSG_GlobalIsValid(tmid_interet_ID);
+			tmid_interet_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tm_filter) )
+		{
+			to_pere = EVENT_PereGet(tmid_interet_ID)
+			if( to_pere != OBJ_Me() )
+			{
+				if( pi_big_bat == -1 )
+					return vrai
+				else
+				{
+					if( @to_pere KBC_IsABigBat() == pi_big_bat )
+						return vrai
+					else
+						return faux
+				}
+			}
+		}
+	return faux
+}
+procedure_local void KBC_Interet_Update(byref messageid pmid_interet, int pi_status, object po_interet_target, messageid pmid_vision)
+{
+	float		tf_interet
+	vector	tv_pos
+	float		tf_duree
+	if( ! po_interet_target )
+		return
+	tf_duree = 1.0
+	tf_interet = 100.0
+	tv_pos = @po_interet_target OBJ_PosGet()
+	
+	// Test event intérêt
+	if( ! MSG_GlobalIsValid(pmid_interet) )
+	{
+		pmid_interet = EVENT_AddEventInteret(OBJ_Me(), tf_duree, tf_interet, tv_pos, po_interet_target)
+		EVENT_InteretVisionIDSet(pmid_interet, C_ID_BatCharognard)
+	}
+	else
+	{
+		EVENT_LifeSet(pmid_interet, tf_duree)
+		EVENT_InteretTargetSet(pmid_interet, po_interet_target)
+		EVENT_InteretPositionSet(pmid_interet, tv_pos)
+		EVENT_InteretSet(pmid_interet, tf_interet)
+	}
+	EVENT_InteretSeenTimeSet(pmid_interet, TIME_Get())
+	if( pi_status != -1 )
+		EVENT_InteretStatusSet(pmid_interet, pi_status)
+}
+
+
+
+//==========================================================================================
+// TESTS DES ETATS DE KONG
+//==========================================================================================
+procedure_local int KBC_KongModeProcheMur()
+{
+	if( @o_Kong Proc_KK_Test_Mode(ETAT_Kong_accroch_mur)
+		|| @o_Kong Proc_KK_Test_Mode(C_Mode_JumpSeRaccroch)
+		||  @o_Kong Proc_KK_Test_Mode(ETAT_Kong_walling) )
+		return vrai
+	return faux
+}
+procedure_local int KBC_KONG_is_in_Walling()
+{
+	if( @o_Kong Proc_KK_Test_Mode(ETAT_Kong_walling) )
+		return vrai
+	if( @o_Kong Proc_KK_Test_Mode(ETAT_Kong_accroch_mur) )
+		return vrai
+	if( @o_Kong Proc_KK_Test_Mode(ETAT_Kong_colonne) )
+		return vrai
+	return faux
+}
+procedure_local int KBC_KONG_is_in_Mashing()
+{
+	if( @o_Kong Proc_KK_Test_Mode(ETAT_Kong_grab_mashing) )
+		return vrai
+	return faux
+}
+procedure_local int KBC_KONG_is_on_Ground()
+{
+	if( KBC_KONG_is_in_Walling() )
+		return faux
+	// 0 = On est pas en Jump
+	// 1 = On est en Implusion Jump
+	// 2 = On est dans la courbe de saut.
+	if( @o_Kong Proc_KK_JumpStatusGet() != 0 )		// saut ou chute...
+		return faux
+	return vrai
+}
+procedure_local int KBC_KONG_in_Walling_Attack_Enabled()
+{
+	if( ! i_big_bat && i_threatens_KONG_in_walling && o_cible_attaque == o_Kong && i_KONG_is_in_walling )
+		return vrai
+	return faux
+}
+procedure_local int KBC_KONG_in_Mashing_Attack_Enabled()
+{
+	if( o_cible_attaque == o_Kong && i_KONG_is_in_mashing )
+	{
+		if( i_big_bat )
+			return vrai		// big bat qui va aller paffer KONG en mashing car il n'est pas venu l'achever
+		if( ! i_big_bat && i_threatens_KONG_in_mashing )
+			return vrai		// petites bats configurées pour aller paffer KONG en mashing
+	}
+	return faux
+}
+procedure_local int KBC_Claw_Attack_Enabled()
+{
+	// Test autres bats en ride ou en coup de griffe
+	if( ! TIME_Elapsed(f_time_last_attaque, f_attaque_delai) )
+		return faux
+	if ( KBC_Get_Interet_Status_Model_Nb(o_cible_attaque, C_EVENT_InteretStatusAttackGriffe, vrai) != 0 )
+		return faux
+	if( o_cible_attaque == o_Kong && @o_Kong Proc_KK_IsInBadSituation(C_ID_BatCharognard ) )
+		return faux
+	return vrai
+}
+
+
+
+//==========================================================================================
+// TRACES & DEBUG
+//==========================================================================================
+procedure_local void KBC_DBG_Trace_Gao_Float_Int(int ti_trace, string str_txt, object to_gao, float tf_float, int ti_int)
+{
+	if( ti_trace )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : ")
+		DBG_TraceString(str_txt)
+		if( to_gao )
+		{
+			DBG_TraceString(" ")
+			DBG_TraceObject(to_gao)
+		}
+		if( tf_float != 0.0 )
+		{
+			DBG_TraceString(" ")
+			DBG_TraceFloat(tf_float)
+		}
+		if( ti_int != 0 )
+		{
+			DBG_TraceString(" ")
+			DBG_TraceInt(ti_int)
+		}
+		DBG_TraceEOL()
+	}
+}
+procedure_local void KBC_DBG_Trace(int ti_trace, string str_txt)
+{
+	KBC_DBG_Trace_Gao_Float_Int(ti_trace, str_txt, nobody, 0.0, 0)
+}
+procedure_local void KBC_DBG_Trace_Gao(int ti_trace, string str_txt, object to_gao)
+{
+	KBC_DBG_Trace_Gao_Float_Int(ti_trace, str_txt, to_gao, 0.0, 0)
+}
+procedure_local void KBC_DBG_Trace_Float(int ti_trace, string str_txt, float tf_float)
+{
+	KBC_DBG_Trace_Gao_Float_Int(ti_trace, str_txt, nobody, tf_float, 0)
+}
+procedure_local void KBC_DBG_Trace_Int(int ti_trace, string str_txt, int ti_int)
+{
+	KBC_DBG_Trace_Gao_Float_Int(ti_trace, str_txt, nobody, 0.0, ti_int)
+}
+procedure_local int KBC_TargetStillActive(object to_target)
+{
+	int	ti_active
+	ti_active = vrai
+	if( ! ( @to_target OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Active ) )
+		ti_active = faux
+	if( ! ti_active )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : TARGET ")
+		DBG_TraceObject(to_target)	
+		DBG_TraceString(" INACTIVE !!!! -> EXIT ETAT ")
+		DBG_TraceInt(i_etat_courant)
+		DBG_TraceEOL()	
+	}
+	return ti_active
+}
+
+
+
+//=======================================================================================
+// TEST DE L'ETAT DE LA BAT
+//=======================================================================================
+procedure_ultra int KBC_IsEtatAttaque(int ti_etat)
+{
+	if( ti_etat == -1 )
+		ti_etat = i_etat_courant
+	
+	switch( ti_etat )
+	{
+		case ETAT_Fight_Approche :
+		case ETAT_Fight_Contact :
+		case ETAT_Fight_Network :
+		case ETAT_Fight_Pause :
+		case ETAT_Fight_Wait_Begin :
+		case ETAT_Fight_Wait_Prio :
+//		case ETAT_Fight_Pique_Remonte :
+//		case ETAT_Fight_Poursuit :
+		case ETAT_BigBat_Fight_Dodged :
+		case ETAT_BigBat_Fight_Griffe :
+		case ETAT_BigBat_Fight_Plonge :
+		case ETAT_BigBat_Fight_Poursuit :
+		case ETAT_BigBat_Fight_Repart :
+			return vrai
+		default: 
+			return faux
+	}
+}
+procedure_local int KBC_IsEtatCine(int ti_etat)
+{
+	switch(ti_etat)
+	{
+		case ETAT_CINE_Attaque :
+		case ETAT_CINE_Vala :
+		case ETAT_CINE_Wait :
+		case ETAT_CINE_Wait_Default :
+		case ETAT_CINE_Force_Etat :
+			return(vrai)
+		default:
+			if( i_flag_cine )
+				return(vrai)
+			else
+				return(faux)
+	}
+}
+procedure_local int KBC_est_au_sol()
+{
+	switch( i_etat_courant )
+	{
+		case ETAT_Mange :
+		case ETAT_Mort :
+		case ETAT_Fade :
+		case ETAT_Paf_KK_Ecrase :
+		case ETAT_Sol_Ecrasement :
+		case ETAT_Agonie :
+		case ETAT_Sol_Interaction_Ann :
+			return vrai
+			break
+		
+		case ETAT_Move_Atterrit :
+			if( ACT_ActionGet() == ACTION_Mange_Attente )
+				return vrai
+			else
+				return faux
+			break
+		
+		case ETAT_Chute_WP :
+		default:
+			return faux
+			break
+	}
+}
+procedure_local int KBC_IsHorsChampCamera()
+{
+	if( f_on_screen_pourcent < 0.15 ) 
+		return vrai
+	else
+		return faux
+}
+procedure_local int KBC_Special_Ride_Walling_Attack_en_cours()		// Attaque en cours sur KONG en ride walling ?
+{
+	if( i_KONG_ride_walling_bat && ! i_paf_send && o_next_reacheable_wp_backup )
+		return vrai
+	return faux
+}
+
+
+
+//===================================================================================
+// CHECK VISION
+//===================================================================================
+procedure_local void KBC_Seen_Actor_Add(messageid tmid_visibility_ID)
+{
+	amid_seen_actor[i_seen_actor_nb] = tmid_visibility_ID
+	i_seen_actor_nb++
+}
+procedure_local int KBC_Seen_Actor_Test(object po_actor, byref messageid pmid_vision)
+{
+	messageid			tmid_vis_ID	
+	int						ti_i
+	int						ti_cible_attaque_vue
+
+	ti_cible_attaque_vue = faux
+	
+	
+	// le bat voit des acteurs
+	for( ti_i = 0; ti_i < i_seen_actor_nb; ti_i++)
+	{
+		// test de tous les acteurs vus
+		tmid_vis_ID = amid_seen_actor[ti_i]
+		if( EVENT_PereGet(tmid_vis_ID) == po_actor )
+		{
+			// le bat voit son agresseur => maj intérêt
+			pmid_vision = tmid_vis_ID
+			ti_cible_attaque_vue = vrai
+			break
+		}
+	}
+	return ti_cible_attaque_vue
+}
+procedure_local int KBC_Vision_Get_ID(object to_actor)
+{
+	messageid 		tmid_vision
+	tmid_vision = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility, to_actor, nobody)
+	if( MSG_GlobalIsValid(tmid_vision) )
+		return EVENT_VisionIDGet(tmid_vision)
+	else
+		return -1
+}
+
+
+
+//===================================================================================
+// Retourne le wp choisit comme cible du déplacement
+//===================================================================================
+procedure_local object KBC_Choix_Cible_Deplacement_Calme()
+{
+	object		to_obj_resultat
+	object		to_obj1
+	object		to_obj2
+	
+	to_obj_resultat = nobody
+	
+	// init du wp cible du prochain déplacement pour commencer à m'orienter vers lui
+	if( MSG_GlobalIsValid( mid_grab_charogne ) )
+	{
+		// vers le nid pour y apporter sa proie (charogne / humain)
+		if( i_big_bat )
+		{
+			to_obj_resultat = WAY_WPNearestOfPos( OBJ_PosGet(), net_idle, all, CAPA_WP_pause | CAPA_WP_depart_apres_mashing, Ci_Filter_CapaFlag)
+		}
+		else
+		{
+			to_obj_resultat = WAY_WPNearestOfPos( OBJ_PosGet(), net_move, CAPA_WP_mange_charogne, CAPA_WP_depart_apres_mashing, Ci_Filter_CapaFlag)
+			if( ! to_obj_resultat )
+				DBG_Error("je n'ai pas de wp pour manger !!!! (capa 2)")
+		}
+	}
+	else
+	{
+		// décolle d'ailleurs, rejoint le réseau
+		to_obj1 = nobody
+		to_obj2 = nobody
+		if( net_idle )
+			to_obj1 = WAY_WPNearestOfPos( OBJ_PosGet(), net_idle, all, CAPA_WP_pause, Ci_Filter_CapaFlag)
+		if( net_move )
+		{
+			if( i_flag_net_1st_move || ! to_obj1 )
+				to_obj2 = WAY_WPNearestOfPos( OBJ_PosGet(), net_move, CAPA_WP_deplacement, none, Ci_Filter_CapaFlag)
+			else
+				to_obj2 = WAY_WPNearestOfPos( @to_obj1 OBJ_PosGet(), net_move, CAPA_WP_deplacement, none, Ci_Filter_CapaFlag)
+		}
+		if( to_obj1 && ! to_obj2 )
+			to_obj_resultat = to_obj1
+		else if( to_obj2 && ! to_obj1 )
+			to_obj_resultat = to_obj2
+		else if( to_obj1 && to_obj2 )
+		{
+			if( OBJ_SqrDist(to_obj1) < OBJ_SqrDist(to_obj2) )
+				to_obj_resultat = to_obj1
+			else
+				to_obj_resultat = to_obj2
+		}
+		// else il n'y a aucun réseau de configuré !!!
+	}
+	return to_obj_resultat
+}
+
+
+//==================================================================================
+// VITESSE & FREQUENCE D'ANIM
+//==================================================================================
+procedure_local void KBC_ref_speed_set(float tf_speed)
+{
+	float		tf_bigbat_mult
+	
+	f_ref_speed = tf_speed * f_freq_speed_coef * f_DBG_freq_speed_coef
+	if( i_big_bat )
+	{
+		if( KBC_IsEtatAttaque(i_etat_courant) )
+			tf_bigbat_mult = 1.0
+		else
+			tf_bigbat_mult = f_big_bat_speed_multiplier
+		f_ref_speed *= tf_bigbat_mult
+	}
+}
+procedure_local void KBC_action_frequency_set(float tf_freq)
+{
+	f_anim_frequency_ref = tf_freq * f_freq_action_coef
+}
+procedure_local float KBC_Move_Speed_Dot()
+{
+	vector		tv_sight_horiz
+	vector		tv_move_horiz
+	float			tf_dot
+	
+	tf_dot = 1.0
+	tv_sight_horiz = OBJ_SightGet()
+	tv_move_horiz = tv_sight_horiz		// par défaut, dot = 1.0
+	if( i_big_bat )
+		return 1.0
+	if( i_etat_courant == ETAT_Chute_WP )	
+		return 1.0
+	if( i_etat_courant == ETAT_Move_JourNuit )
+		return 1.0
+	if( i_etat_courant == ETAT_Fight_Contact )
+	{
+		// vers ma position d'attaque (retrait ou coup de griffe)
+		switch( i_attaque_positionnement )
+		{
+			case Ci_attaque_positionnement_retrait_initial :
+			case Ci_attaque_positionnement_paffe :
+			case Ci_attaque_positionnement_attack_en_cours :
+				// avance
+				tv_move_horiz = v_dest_pos - OBJ_PosGet()
+				break
+			case Ci_attaque_positionnement_retrait :
+			case Ci_attaque_positionnement_poursuit :
+			default:
+				// recule : pas de réduction de vitesse
+				break
+		}
+	}
+	else if( i_etat_courant == ETAT_Move_Atterrit )
+	{
+		tv_move_horiz = @o_next_wp OBJ_SightGet()
+	}
+	else if( i_speed_beziers_flag )
+	{
+		// vers mon next wp
+		i_speed_beziers_flag = faux
+		if( @o_next_wp OBJ_PosGet() != @o_last_wp OBJ_PosGet() )
+			tv_move_horiz = @o_next_wp OBJ_PosGet() - @o_last_wp OBJ_PosGet()
+	}
+	else if( i_speed_vertical_flag )
+	{
+		// décolle
+		i_speed_vertical_flag = faux
+		tv_move_horiz = v_dest_pos - OBJ_PosGet()
+	}
+	if( MATH_VecNullEpsilon(tv_move_horiz) )
+		return 1.0
+	MATH_VecSetNormalize(tv_move_horiz)
+	tf_dot = MATH_VecDotProduct(tv_sight_horiz, tv_move_horiz)
+	tf_dot *=0.25
+	tf_dot += 0.75
+	return tf_dot
+}
+procedure_local float KBC_GetSpeedDistCoef(float tf_min, float tf_max, float tf_dist)	// coef de vitesse de 0.0 à 1.0 en fonction des distances spécifiées
+{
+	float		tf_tmp
+	tf_min *= tf_min
+	tf_max *= tf_max
+	if( tf_dist < tf_min )
+		tf_tmp = 1.0
+	else if( tf_dist > tf_max )
+		tf_tmp = 0.0
+	else
+	{
+		tf_dist -= tf_min
+		tf_tmp = 1.0 - (tf_dist / (tf_max - tf_min))
+	}
+	return tf_tmp
+}
+
+
+
+
+
+//================================================================================
+// Sélectionne l'action à jouer; retourne si l'action a été modifiée ou non
+//================================================================================
+procedure_local int KBC_select_action()
+{
+	int 		ti_action
+	float		tf_freq
+	int			ti_action_changed
+	
+	tf_freq = 1.0
+	ti_action_changed = faux
+	
+	if( i_KONG_ride_walling_bat )
+	{
+		if( @o_next_reacheable_wp_backup OBJ_CapaTest(CAPA_WP_ride_walling_attaque_pique) )
+		{
+			ti_action = ACTION_Vol_Plane
+		}
+		else if( @o_next_reacheable_wp_backup OBJ_CapaTest(CAPA_WP_ride_walling_remonte) )
+		{
+			ti_action = i_ACTION_Vol_Standard
+			tf_freq = 3.0
+		}
+		else
+		{
+			ti_action = i_ACTION_Vol_Standard
+		}
+//		Str_DisplayFloatOnce(tf_freq, cvector(0.5,0.5,0.0))
+	}
+	else if( MSG_GlobalIsValid(mid_grab_charogne) )
+	{
+		ti_action = ACTION_Vol_Proie
+	}
+	else
+	{
+		ti_action = i_ACTION_Vol_Standard
+	}
+	
+	if( ACT_ActionGet() != ti_action )
+	{
+		ACT_ActionSet(ti_action)
+		ti_action_changed = vrai
+	}
+	
+	KBC_action_frequency_set(tf_freq)
+
+	return ti_action_changed
+}
+
+
+
+//===================================================================================
+// SOFTCOL - COLLISIONS MOLLES
+//===================================================================================
+procedure_local int KBC_ReseauSoftColRayonOptimEnabled(int ti_etat)
+{
+	switch( ti_etat )
+	{
+		case ETAT_Move_Ronde :
+		case ETAT_Move_Network :
+		case ETAT_Move_Cadavre :
+			// je considère que j'attend le wp dès que mon rayon de col molle le touche
+			return vrai
+		case ETAT_Fight_Network :
+			if( i_reseau_wp_count > 1 )
+				return vrai
+			else
+				return faux		// je n'autorise pas l'optimisation lorsque je vais au point d'attaque, sinon je vais être mal orienté
+		default:
+			// dans les autres états je veux atteindre le point spécfiié
+			return faux
+	}
+}
+procedure_ultra int KBC_SoftCol_IsEnabled()
+{
+	if( ! ( OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Active ) )
+		return faux		// inactive
+		
+	if( ! MSG_GlobalIsValid(ID_LIFE) )
+		return faux		// morte
+	
+	if( EVENT_LIFE_CurLifeGet(ID_LIFE) <= 0.0 )
+		return faux		// morte
+	
+	if( i_follower )
+		return faux
+	
+	if( i_big_bat )
+		return faux
+	
+	switch( i_etat_courant )
+	{
+		case ETAT_Mort :
+		case ETAT_Paf :
+		case ETAT_Paf_KK_Ecrase :
+		case ETAT_Sol_Ecrasement :
+		case ETAT_Chute_Libre :
+		case ETAT_Chute_WP :
+		case ETAT_Move_Decolle :
+		case ETAT_Move_Atterrit :
+		case ETAT_Mange :
+		case ETAT_Sol_Interaction_Ann :
+		case ETAT_Wait_Grotte :
+		case ETAT_Wait_Perche :
+		case ETAT_Wait_JourNuit :
+		case ETAT_Agonie :
+		case ETAT_KK_Ride : 
+		case ETAT_KK_Grabbed_by_Kong : 
+		case ETAT_KK_Projectile : 
+		case ETAT_KK_Finish : 
+		case ETAT_KK_Finished : 
+			return faux
+		case ETAT_Fight_Contact :
+				return vrai
+		case ETAT_Move_Cadavre : 
+				return vrai
+		default:
+			if( KBC_IsEtatCine(i_etat_courant) )
+				return faux
+			else
+				return vrai
+	}
+}
+procedure_local void KBC_SoftCol_Rayon_Resize()
+{
+	if( i_etat_courant == ETAT_Fight_Contact )
+		f_softcol_rayon_perfect = Cf_softcol_rayon_contact
+	else
+		f_softcol_rayon_perfect = Cf_softcol_rayon_en_vol
+
+	f_softcol_rayon_current = MATH_FloatBlend(f_softcol_rayon_current, f_softcol_rayon_perfect, 5 * TIME_GetDt())
+}
+procedure_local void KBC_SoftCol_Precompute_Dist()
+{
+	int		ti_i
+	int		ti_k	
+	int		ti_iterations_nb
+	float	tf_dist
+	object	to_bat_i
+	object	to_bat_k
+	vector	tv_temp
+	vector	tv_move_dir[100]
+
+	if (@get_global i_soft_col_bat_computed)
+		return
+	@get_global i_soft_col_bat_computed = vrai
+	for (ti_i = 0; ti_i < @get_global i_soft_col_bat_nb; ti_i++)
+	{
+		to_bat_i	 = @get_global ao_soft_col_bat[ti_i]
+		@get_global av_soft_sol_bat_pos[ti_i] = @to_bat_i OBJ_PosGet()
+		
+		ti_iterations_nb = 0
+		for (ti_k = ti_i + 1; ti_k < @get_global i_soft_col_bat_nb; ti_k++)
+		{
+			ti_iterations_nb++
+			to_bat_k = @get_global ao_soft_col_bat[ti_k]
+			if (@to_bat_i KBC_SoftCol_IsEnabled() && @to_bat_k KBC_SoftCol_IsEnabled())
+			{
+				tv_temp = @to_bat_i OBJ_PosGet() - @to_bat_k OBJ_PosGet()
+				DBG_RenderVector(@to_bat_k OBJ_PosGet(), tv_temp, color_blanc)
+				tf_dist = MATH_VecSquareNorm(tv_temp)
+			}
+			else
+				tf_dist = Cf_Infinit
+			@get_global af_soft_col_bat_dist[ti_i][ti_k] = tf_dist
+			@get_global af_soft_col_bat_dist[ti_k][ti_i] = tf_dist
+		}
+	}
+	return
+}
+procedure_local int KBC_SoftCol_Check(byref vector tv_col_move_axis)
+{
+	int			ti_i
+	float		tf_dist_to_budy
+	float		tf_intersection_dist
+	float		tf_intersection_sqr_dist
+	vector	tv_me_to_budy
+	float		tf_dist_proj_horiz
+	object	to_nearest_budy
+	int			ti_decal_horiz
+	float		tf_Z
+	float		tf_dist_decal
+	float		tf_norm
+	object	to_bat			
+
+	if (i_my_index == -1)
+		return(faux)
+
+	tv_col_move_axis = Cv_NullVector
+	tf_Z = 0.0
+	
+	if( KBC_est_au_sol() )
+		return faux
+		
+	KBC_SoftCol_Precompute_Dist()
+
+	if( i_etat_courant == ETAT_Fight_Contact )
+		ti_decal_horiz = vrai
+	else
+		ti_decal_horiz = faux
+
+	for (ti_i = 0; ti_i < @get_global i_soft_col_bat_nb; ti_i++)
+	{
+		if( ti_i == i_my_index )
+			continue
+		
+		to_bat = @get_global ao_soft_col_bat[ti_i]
+	
+		tf_intersection_dist = f_softcol_rayon_current * f_zoom
+		tf_intersection_dist += @to_bat KBC_SoftCol_Rayon_Get() * @to_bat OBJ_ZoomGet()
+
+		tf_intersection_sqr_dist = tf_intersection_dist * tf_intersection_dist
+		
+		tv_me_to_budy = @get_global av_soft_sol_bat_pos[ti_i] - @get_global av_soft_sol_bat_pos[i_my_index]
+		
+		tf_dist_to_budy = @get_global af_soft_col_bat_dist[i_my_index][ti_i]
+		if (tf_dist_to_budy > 0.001 && tf_dist_to_budy < tf_intersection_sqr_dist )
+		{
+			DBG_RenderSphere(@get_global av_soft_sol_bat_pos[i_my_index], f_softcol_rayon_current * f_zoom, 0x80000080)	
+		
+			tf_dist_to_budy = MATH_FloatSqrt(tf_dist_to_budy)
+		
+			tv_me_to_budy /= tf_dist_to_budy
+			tv_me_to_budy *= tf_intersection_dist - tf_dist_to_budy
+
+			if( ti_decal_horiz )
+				tv_me_to_budy.z = 0.0			// décalage forcé à l'horizontale
+			
+			if( f_softcol_no_down_delai )		// décalage vers le bas interdit
+				tv_me_to_budy.z = MATH_FloatMax(tv_me_to_budy.z, 0.0)
+	
+			tv_col_move_axis -= tv_me_to_budy
+		}
+	}
+	if( ! MATH_VecNullEpsilon(tv_col_move_axis) )
+	{
+		// il y a soft coll
+		if( MATH_VecDotProduct(OBJ_SightGet(), tv_col_move_axis) < 0 )
+		{
+			tf_Z = tv_col_move_axis.z
+			tf_dist_proj_horiz = MATH_VecDotProduct(OBJ_HorizonGet(), tv_col_move_axis)
+			tv_col_move_axis = OBJ_HorizonGet() * tf_dist_proj_horiz
+			if( ! ti_decal_horiz )
+				tv_col_move_axis.z = tf_Z
+			DBG_RenderVector(OBJ_PosGet(), tv_col_move_axis, color_cyan)
+		}
+		// collisions molles limitées
+		tf_norm = MATH_VecSquareNorm(tv_col_move_axis)
+		if (tf_norm > Cf_soft_coll_norm_max * Cf_soft_coll_norm_max)
+		{
+			tf_norm = MATH_FloatSqrt(tf_norm)
+			tv_col_move_axis /= tf_norm * Cf_soft_coll_norm_max
+		}
+		return vrai
+	}
+	else
+		return faux
+}
+procedure_local void KBC_SoftCol_ForgetMe()
+{
+	object to_bat
+	if (i_my_index != -1)
+	{
+		@get_global i_soft_col_bat_nb--
+		@get_global ao_soft_col_bat[i_my_index] = @get_global ao_soft_col_bat[@get_global i_soft_col_bat_nb]
+		to_bat = @get_global ao_soft_col_bat[@get_global i_soft_col_bat_nb]
+		@get_global ao_soft_col_bat[@get_global i_soft_col_bat_nb] = nobody
+	
+		if (to_bat && @to_bat AI_IsModel(get_PNJ_KBats_path))
+			@get_PNJ_KBats_path to_bat i_my_index = i_my_index
+	
+		i_my_index	 = -1
+	}
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Effectue un blend en rotation, mais avec une vitesse angulaire a ne pas depasser
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+procedure vector KBC_BlendRotate(vector src, vector dst, float speed, float maxspeed)
+{
+	vector	tv_temp, tv_normal
+	float		tf_angle
+	
+	maxspeed *= TIME_GetDt()
+	tv_temp = MATH_VecBlendRotate(src, dst, speed * TIME_GetDt())
+	
+	tv_normal = MATH_VecCrossProduct(src, dst)
+	if(MATH_VecNullEpsilon(tv_normal)) return tv_temp
+	
+	tf_angle = MATH_VecAngle(src, tv_temp, tv_normal)
+	if(MATH_AbsFloat(tf_angle) > maxspeed)
+	{
+		tv_temp = MATH_VecRotate(src, tv_normal, maxspeed * MATH_FloatSign(tf_angle))
+	}
+	
+	return tv_temp
+}
+
+//==========================================================================
+// Calcule et retourne un délai pour désynchroniser les fins d'attaques des bats
+//==========================================================================
+procedure_local float KBC_Attaque_Desynchro_Time_Get()
+{
+	float			tf_delay_random
+	float			tf_delay_min
+	float			tf_delay_total
+	float			tf_time_delta
+	
+	if( TIME_Elapsed(@get_global af_time_bats_attaque_desynchro[i_big_bat], f_time_attaque_fin_desynchro_delai_min) )
+		tf_delay_min = 0.0
+	else
+	{
+		tf_time_delta = @get_global af_time_bats_attaque_desynchro[i_big_bat] - TIME_Get()
+		tf_delay_min = tf_time_delta + f_time_attaque_fin_desynchro_delai_min
+	}
+	
+	tf_delay_random = MATH_RandFloat(f_time_attaque_fin_desynchro_min, f_time_attaque_fin_desynchro_max)
+	
+	tf_delay_total = tf_delay_min + tf_delay_random
+	@get_global af_time_bats_attaque_desynchro[i_big_bat] = ( TIME_Get() + tf_delay_total )
+	
+	return tf_delay_total
+}
+
+
+
+//===============================================================================
+// SOUND
+//===============================================================================
+procedure_local void KBC_Sound_Cri_Presence_Play()
+{
+	SND_RequestPlay(Ci_SND_Cri_Presence)
+	if( i_big_bat )
+		f_time_cri_presence = MATH_RandFloat(5.0, 10.0)
+	else
+		f_time_cri_presence = MATH_RandFloat(10.0, 20.0)
+}
+procedure_local void KBC_Sound_Fly_Play()
+{
+	if( ! i_sound_fly_playing )
+	{
+		SND_PlayLooped(i_sound_fly_request, -1)
+		i_sound_fly_playing = vrai
+	}
+}
+procedure_local void KBC_Sound_Fly_Stop()
+{
+	if( i_sound_fly_playing )
+	{
+		SND_Stop(i_sound_fly_request)
+		i_sound_fly_playing = faux
+	}
+}
+procedure_local void KBC_SND_Ride_Init()
+{
+	float	tf_min
+	float	tf_max
+	if( i_etat_courant == ETAT_KK_Finish )
+	{
+		tf_min = 0.75
+		tf_max = 1.5
+	}
+	else
+	{
+		tf_min = 1.0
+		tf_max = 2.0	
+	}
+	f_snd_ride_delay = MATH_RandFloat(tf_min,tf_max)
+}
+procedure_local void KBC_SND_Ride_Check()
+{
+	f_snd_ride_delay -= MATH_FloatMin(f_snd_ride_delay, TIME_GetDt())
+	if( ! f_snd_ride_delay )
+	{
+		KBC_SND_Ride_Init()
+		i_snd_ride_modulo = MATH_Modulo(i_snd_ride_modulo +1, 2)
+		if( ! i_snd_ride_modulo )
+			SND_RequestPlay(Ci_SND_Ride1)
+		else
+			SND_RequestPlay(Ci_SND_Ride2)
+	}
+}
+
+
+
+//==========================================================================
+// RESERVATION DES WP D'ATTAQUE
+//==========================================================================
+procedure_local void KBC_WP_Reservation_Add(object to_wp)
+{
+	if( to_wp && @to_wp OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_ExtendedObject) )
+	{
+		@to_wp OBJ_CapaSet(CAPA_WP_point_reserve, none)		// réserve ce wp
+		i_attak_wp_reserve = vrai
+	}
+}
+procedure_local void KBC_WP_Reservation_Del(object to_wp)
+{
+	if( i_attak_wp_reserve )
+	{
+		if( to_wp )
+		{
+			@to_wp OBJ_CapaSet(none, CAPA_WP_point_reserve)		// enlève la réservation car on quitte le wp
+			i_attak_wp_reserve = faux
+		}
+	}
+}
+
+
+//======================================================================
+// DEPLACEMENT BEZIERS
+//======================================================================
+procedure_local void KBC_Calc_Beziers(byref vector tv_pos_new, byref vector tv_sight_new, float tf_coef)
+{
+	vector	tv_point_A
+	vector	tv_point_B
+	vector	tv_point_C
+	vector	tv_point_D
+	
+	tv_point_A = @o_last_wp OBJ_PosGet()
+	
+	tv_point_B = tv_point_A
+//	DBG_RenderVector(@o_last_wp OBJ_PosGet(), @o_last_wp OBJ_SightGet() * 10, color_bleu)
+ 	tv_point_B += @o_last_wp OBJ_SightGet() * (f_link_length * f_beziers_pourcent)
+	
+	tv_point_D = @o_next_wp OBJ_PosGet()
+	
+	tv_point_C = tv_point_D
+//	DBG_RenderVector(@o_next_wp OBJ_PosGet(), @o_next_wp OBJ_SightGet() * 10, color_rouge)
+	tv_point_C -= @o_next_wp OBJ_SightGet() * (f_link_length * f_beziers_pourcent)
+	
+	tv_point_A += (tv_point_B - tv_point_A) * tf_coef
+	tv_point_B += (tv_point_C - tv_point_B) * tf_coef
+	tv_point_C += (tv_point_D - tv_point_C) * tf_coef
+	
+	tv_point_A += (tv_point_B - tv_point_A) * tf_coef
+	tv_point_B += (tv_point_C - tv_point_B) * tf_coef
+	
+	tv_sight_new = tv_point_B - tv_point_A
+	
+	tv_point_A += (tv_point_B - tv_point_A) * tf_coef
+	
+	tv_pos_new = tv_point_A
+	
+//	DBG_RenderVector(tv_point_A, Cv_VerticalVector * 2, color_bleu)
+//	DBG_RenderVector(tv_point_B, Cv_VerticalVector * 2, color_rouge)
+}
+procedure_local void KBC_Beziers_Display(float tf_coef, int ti_color)
+{
+	int			ti_i
+	vector	tv_last_pos
+	vector	tv_point_A
+	vector	tv_point_B
+	vector	tv_point_C
+	vector	tv_point_D
+	
+	tv_last_pos = @o_last_wp OBJ_PosGet()
+	
+	for (ti_i = 1; ti_i < 30; ti_i++)
+	{
+		tf_coef = ti_i / 30.0
+	
+		tv_point_A = @o_last_wp OBJ_PosGet()
+		
+		tv_point_B = tv_point_A 
+		tv_point_B += @o_last_wp OBJ_SightGet() * (f_link_length * f_beziers_pourcent )
+			
+		tv_point_D = @o_next_wp OBJ_PosGet()
+		
+		tv_point_C = tv_point_D
+		tv_point_C -= @o_next_wp OBJ_SightGet() * (f_link_length * f_beziers_pourcent )
+		
+		//DBG_RenderVector(tv_point_A, tv_point_B - tv_point_A, color_rouge)
+		//DBG_RenderVector(tv_point_B, tv_point_C - tv_point_B, color_rouge)
+		//DBG_RenderVector(tv_point_C, tv_point_D - tv_point_C, color_rouge)
+		
+		tv_point_A += (tv_point_B - tv_point_A) * tf_coef
+		tv_point_B += (tv_point_C - tv_point_B) * tf_coef
+		tv_point_C += (tv_point_D - tv_point_C) * tf_coef
+		//DBG_RenderVector(tv_point_A, tv_point_B - tv_point_A, color_vert)
+		//DBG_RenderVector(tv_point_B, tv_point_C - tv_point_B, color_vert)
+		
+		tv_point_A += (tv_point_B - tv_point_A) * tf_coef
+		tv_point_B += (tv_point_C - tv_point_B) * tf_coef
+		//DBG_RenderVector(tv_point_A, tv_point_B - tv_point_A, color_bleu)
+		
+		// calcul du sight
+		tv_point_A += (tv_point_B - tv_point_A) * tf_coef
+	
+		DBG_RenderVector(tv_last_pos, tv_point_A - tv_last_pos, ti_color)
+		tv_last_pos = tv_point_A
+	}
+}
+procedure_local void KBC_beziers_init_position()
+{
+	vector		tv_to_dest
+	
+	@o_tmp_obj_last OBJ_PosSet(OBJ_PosGet())	
+	@o_tmp_obj_last OBJ_BankingGeneralSet(v_beziers_sight, v_beziers_banking)
+	o_last_wp = o_tmp_obj_last
+	f_link_coef = 0.0
+	tv_to_dest = @o_next_wp OBJ_PosGet() - OBJ_PosGet()
+	f_link_length = MATH_VecNorm(tv_to_dest)
+//	DBG_RenderVector(OBJ_PosGet(), tv_to_dest, color_vert)
+}
+
+
+
+
+//======================================================================
+// FIRE + TESTS BV + TERRITOIRE
+//======================================================================
+procedure_local void KBC_Fill_Fire_Array()
+{
+	int					ti_i
+	int					ti_rank
+	messageid		tmid_fire
+	
+	if (@get_global i_fire_flag_already_checked)
+	{
+		i_fire_gao_nb = @get_global i_fire_gao_nb
+		for (ti_i = 0; ti_i < i_fire_gao_nb; ti_i++)
+			ao_fire_gao[ti_i] = @get_global ao_fire_gao[ti_i]
+	}
+	else
+	{
+		@get_global i_fire_flag_already_checked = vrai	
+		@get_global i_fire_gao_nb = 0
+		i_fire_gao_nb = 0
+		ti_rank = -1
+		for (tmid_fire = MSG_GlobalScan(C_EVENT_TYPE_Fire, &ti_rank); 
+			MSG_GlobalIsValid(tmid_fire); 
+			tmid_fire = MSG_GlobalScan(C_EVENT_TYPE_Fire, &ti_rank))
+		{
+			ao_fire_gao[i_fire_gao_nb] = EVENT_PereGet(tmid_fire)
+			@get_global ao_fire_gao[i_fire_gao_nb] = ao_fire_gao[i_fire_gao_nb]
+
+			i_fire_gao_nb++
+			@get_global i_fire_gao_nb = i_fire_gao_nb
+		}
+	}
+}
+procedure_local int KBC_Pos_Is_Near_Fire(vector tv_pos)
+{
+	int		ti_k
+	vector	tv_temp
+	object	to_bone_jack
+	if( i_big_bat )
+		return faux		// pas peur du feu
+	if( o_Jack )
+		to_bone_jack = @o_Jack ANI_CanalObjectGet(Anim_Canal_Annex1)
+	else
+		to_bone_jack = nobody
+	for (ti_k = 0; ti_k < i_fire_gao_nb; ti_k++)
+	{
+		if( ! to_bone_jack || ao_fire_gao[ti_k] != to_bone_jack )		// ne pas avoir peur de Jack qui a une lance enflammée
+		{
+			tv_temp = tv_pos - @ao_fire_gao[ti_k] OBJ_PosGet()
+			if( MATH_VecNorm(tv_temp) < Cf_fire_danger_dist)
+				return vrai
+		}
+	}
+	return faux
+}
+procedure_local int KBC_Gao_Is_Near_Fire(object to_obj)
+{
+	if( ! to_obj )
+		return faux
+	else
+		return KBC_Pos_Is_Near_Fire(@to_obj OBJ_PosGet() )
+}
+procedure int KBC_Pos_in_BV(vector pv_pos, object po_zone) 
+{
+	if( ! po_zone )
+		return vrai
+	else if( ! ( @po_zone OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Active ) )
+		return faux
+	else
+		return( @po_zone COL_BV_PointCollide(pv_pos) )
+}
+procedure int KBC_Gao_in_BV(object to_gao, object po_zone) 
+{
+	if( ! to_gao )
+		return faux
+	else
+		return KBC_Pos_in_BV(@to_gao OBJ_PosGet(), po_zone)
+}
+procedure_local int KBC_Pos_in_Territory(vector tv_pos, int ti_check_fire)
+{
+	int		ti_type_sol
+	int		ti_return
+	int		ti_i
+	
+	if( o_zone_activite && ! KBC_Pos_in_BV(tv_pos, o_zone_activite) )
+		return faux
+	
+	if( o_zone_activite2 && ! KBC_Pos_in_BV(tv_pos, o_zone_activite2) )
+		return faux
+	
+	for( ti_i = 0; ti_i < Ci_blind_zone_max_nb; ti_i++ )
+	{
+		if( ao_blind_zone[ti_i] && @ao_blind_zone[ti_i] COL_BV_PointCollide(tv_pos) )
+			return faux
+	}
+	
+	ti_return = vrai
+	if( GRID_Has(1) )
+	{
+		GRID_CurrentSet(1)
+		ti_type_sol = GRID_CapaGet(tv_pos)
+		
+		// Test Cache
+		ti_type_sol &= tag_grid_terrain
+		if( ti_type_sol == Ci_sol_cache_bats )
+			ti_return = faux		// dans une cache pour bats
+		
+		// Test Feu
+		if( ti_check_fire )
+		{
+			if( @get_global i_nbr_de_feux_en_cours && (ti_type_sol & Ci_Grid2_EnFeu) )
+				ti_return = faux		// la case en question est en train de brûler
+			else if( KBC_Pos_Is_Near_Fire(tv_pos) )
+				ti_return = faux		// proche d'une source de feu
+		}
+		GRID_CurrentSet(0)
+	}
+	if( ! ti_return )
+		return faux
+		
+	return vrai
+}
+procedure_local int KBC_Gao_in_Territory(object to_gao, int ti_check_fire)
+{
+	if( ! to_gao )
+		return faux
+	else
+		return KBC_Pos_in_Territory(@to_gao OBJ_PosGet(), ti_check_fire)
+}
+procedure_local int KBC_est_dans_nid( object to_object )	// Retourne vrai si l'objet spécifié est dans la BV d'un des nids de la bat
+{
+	int			pi_found
+	int			ti_i
+
+	pi_found = faux
+	for( ti_i = 0; ti_i < i_tab_wp_pause_count; ti_i++)
+	{
+		if( KBC_Pos_in_BV(@to_object OBJ_PosGet(), ao_tab_wp_pause[ti_i]) )
+		{
+			pi_found = vrai
+			break
+		}
+	}
+	return pi_found
+}
+
+
+
+//======================================================================
+// CADAVRES & FOOD-CHAIN
+//======================================================================
+procedure_local int KBC_Cadavre_Nouveau_Test(object to_actor)
+{
+	int				ti_indice
+	ti_indice = ARR_ObjSearch(&ao_cadavre[0], i_cadavre_nb, to_actor)
+	if( ti_indice != -1 && ai_cadavre_nouveau[ti_indice] )
+		return vrai
+	else
+		return faux
+}
+procedure_local int KBC_Cadavre_Find(object to_actor)
+{
+	int		ti_indice
+	ti_indice = ARR_ObjSearch(&ao_cadavre[0], i_cadavre_nb, to_actor)
+	if( ti_indice != -1 )
+		return vrai
+	else
+		return faux
+}
+procedure_local void KBC_Cadavre_Add(object to_actor)
+{
+	if( i_cadavre_nb < Ci_cadavre_max_nb )
+	{
+		if( ! KBC_Cadavre_Find(to_actor) )
+		{
+			KBC_DBG_Trace_Gao(i_DBG_trace_etat, "détecte un cadavre :", to_actor)
+			ao_cadavre[i_cadavre_nb] = to_actor
+			ai_cadavre_nouveau[i_cadavre_nb] = vrai
+			i_cadavre_nb++
+		}
+	}
+}
+procedure_local void KBC_Cadavre_Del(object to_actor)
+{
+	int		ti_indice
+	int		ti_k	
+	if( to_actor )
+	{
+		ti_indice = ARR_ObjSearch(&ao_cadavre[0], i_cadavre_nb, to_actor)
+		if( ti_indice != -1 )
+		{
+			for(ti_k = ti_indice; ti_k < i_cadavre_nb; ti_k++)
+			{
+				ao_cadavre[ti_k] = ao_cadavre[ti_k + 1]
+				ai_cadavre_nouveau[ti_k] = ai_cadavre_nouveau[ti_k + 1]
+			}
+			i_cadavre_nb--
+		}
+	}
+}
+procedure_local int KBC_Cadavre_Get_ID(object to_actor)
+{
+	messageid 		tmid_cadavre
+	tmid_cadavre = EVENT_FindEventPereTarget(C_EVENT_TYPE_Cadavre, to_actor, nobody)
+	if( MSG_GlobalIsValid(tmid_cadavre) )
+		return EVENT_CadavreIDGet(tmid_cadavre)
+	else
+		return -1
+}
+procedure_local int KBC_EstToujoursUnCadavre(object to_actor)
+{
+	messageid 		tmid_cadavre
+	tmid_cadavre = EVENT_FindEventPereTarget(C_EVENT_TYPE_Cadavre, to_actor, nobody)
+	if( MSG_GlobalIsValid(tmid_cadavre) )
+		return vrai
+	else
+		return faux
+}
+procedure_local int KBC_Cadavre_Test(object to_actor, int ti_ID)
+{
+	if( IsThis_ID_Humain(ti_ID) )
+		return faux		// pas les humains
+	else if( ti_ID == C_ID_BatCharognard )
+		return faux		// pas ceux de mon espèce
+	else if( @to_actor AI_IsModel(get_PNJ_Bidoche_path) )
+	{
+		if( @to_actor PNJ_EatMe_GetBidocheType() == Ci_Bidoche_Bat )
+			return faux
+		else
+			return vrai
+	}
+	else if( @to_actor AI_IsModel(get_OBJ_Cadavre_path) )
+		return faux		// c'est un VIEUX cadavre fake... -> à proscrire !!!!!
+	else if( @to_actor AI_IsModel(get_KCadavre_path) )
+		return vrai		// c'est un NOUVEAU cadavre fake... -> miam :)
+	else
+		return vrai		// ce n'est pas un cadavre fake -> miam :)
+}
+procedure_local object KBC_Cadavre_Nearest(int ti_nouveau)
+{
+	object		to_obj
+	object		to_best_obj
+	int				ti_i
+	float			tf_dist
+	float			tf_best_dist
+	if( i_big_bat )
+		return (nobody)
+	if( f_dont_check_cadavre )
+		return (nobody)
+	to_best_obj = nobody
+	tf_best_dist = Cf_Infinit
+	if( i_cadavre_nb )
+	{
+		for( ti_i = 0; ti_i < i_cadavre_nb; ti_i++)
+		{
+			if( ! ti_nouveau || ai_cadavre_nouveau[ti_i] )
+			{
+				to_obj = ao_cadavre[ti_i]
+				if( to_obj && KBC_Gao_in_Territory(to_obj, vrai) )		// sécurité : peut avoir été déplacé hors de mon territoire depuis l'ajout
+				{
+					tf_dist = OBJ_SqrDist(to_obj)
+					if( tf_dist < tf_best_dist )
+					{
+						tf_best_dist = tf_dist
+						to_best_obj = to_obj
+					}
+				 }
+			}
+		}
+	}
+	return to_best_obj
+}
+procedure_local void KBC_Cadavre_Nouveau_Select(object to_actor)
+{
+	int				ti_indice
+	ti_indice = ARR_ObjSearch(&ao_cadavre[0], i_cadavre_nb, to_actor)
+	if( ti_indice != -1 )
+		ai_cadavre_nouveau[ti_indice] = faux
+}
+procedure_local void KBC_Cadavre_Check()
+{
+	object		to_obj
+	object		to_best_obj
+	int				ti_i
+	float			tf_dist
+	float			tf_best_dist
+	messageid		tmid_cadavre
+	for( ti_i = 0; ti_i < i_cadavre_nb; ti_i++)
+	{
+		to_obj = ao_cadavre[ti_i]
+		tmid_cadavre = EVENT_FindEventPereTarget(C_EVENT_TYPE_Cadavre, to_obj, nobody)
+		if( ! MSG_GlobalIsValid(tmid_cadavre) )
+		{
+			KBC_Cadavre_Del(to_obj)
+		}
+	}
+}
+procedure_local void KBC_Cadavre_Check_New()
+{
+	int		ti_i	
+	int		ti_index
+	int		ti_flag_del_body
+	for (ti_i = 0; ti_i < i_cadavre_nb; ti_i++)
+	{
+		if ((@ao_cadavre[ti_i] AI_IsModel(get_PNJ_Bidoche_path)) && (@ao_cadavre[ti_i] OBJ_CapaTest(CAPA_Bidoche_Oublie_Moi)) )
+			ai_cadavre_nouveau[ti_i] = vrai
+	}
+}
+procedure_local int KBC_Cadavre_Libre(object to_gao)
+{
+	message	tmsg_filter
+	messageid	tmid_ID
+	int				ti_rank
+	object		to_pere
+	int				ti_cpt
+	int				ti_max
+	if( ! to_gao )
+		return faux
+	if( @to_gao AI_IsModel(get_PNJ_KTREX_Path) )
+		return vrai	// oui un KTREX mort est considéré toujours libre, y'a à manger pour tout le monde :)
+	// recherche d'un message d'intérêt d'autres ennemis sur le cadavre
+	ti_cpt = 0
+	ti_max = @get_global i_foodchain_bats_nb
+	MSG_SetNull(tmsg_filter)
+	tmsg_filter.msg_gao1 = to_gao
+	ti_rank = -1
+	for (	tmid_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tmsg_filter);
+			MSG_GlobalIsValid(tmid_ID);
+			tmid_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tmsg_filter) )
+	{
+		to_pere = EVENT_PereGet(tmid_ID)
+		if( to_pere != OBJ_Me() )
+		{
+			if( @to_pere AI_IsModel(get_PNJ_KBats_path) )
+			{
+				// une bat interdit aux autres bats de venir uniquement si elle a commencé à atterrir / manger le cadavre
+				switch( EVENT_InteretStatusGet(tmid_ID) )
+				{
+					case C_EVENT_InteretStatusFoodchain :
+						ti_cpt++
+						if( ti_cpt > ( ti_max - 1) )
+							return faux			// 3 bats maxi pour aller voir un cadavre
+						break
+					case C_EVENT_InteretStatusFoodchainLocked :
+						return faux				// 1 bat qui atterrit / mange et c mort pour moi
+				}
+			}
+			else if( ! @to_pere AI_IsModel(get_Humain_path) )
+			{
+				// les autres ennemis enpêchent une bat de venir (anti oscillation repart / revient des bats)
+				// sauf s'il est nouveau (je viens qd même 1 fois) ou que c le cadavre que j'ai déà commencé à aller voir)
+				if( ! KBC_Cadavre_Nouveau_Test(to_gao) && to_gao != o_cadavre )
+					return faux
+			}
+		}
+	}
+	return vrai
+}
+
+procedure_local int KBC_Cadavre_Safe(object to_gao)
+{
+	messageid		tmid_tmp
+	float		tf_danger
+	int			ti_i
+	object	to_pere
+	vector	tv_temp
+	int			ti_safe
+	// TEST DU NIVEAU DE DANGER
+	if( ! to_gao )
+		return vrai
+	tf_danger = 0.0
+	ti_safe = vrai
+	for(ti_i = 0; ti_i < i_seen_actor_nb; ti_i++)
+	{
+		// analyse des persos visibles
+		tmid_tmp = amid_seen_actor[ti_i]
+		to_pere = EVENT_PereGet(tmid_tmp)
+		if( to_pere != to_gao && ( ! o_Jack || to_pere != o_Jack ) && ! @to_pere AI_IsModel(get_PNJ_KBats_path) )
+		{
+			// ce n'est pas l'event de visibilité de la cible ni de jack (je ne le compte pas car je peux l'attaquer s'il approche trop) ni d'une bat
+			if( EVENT_VisionLifeStateGet(tmid_tmp) > Cf_Life_Dead )
+			{
+				// cet acteur est vivant
+				tv_temp = EVENT_PositionGet(tmid_tmp) - @to_gao OBJ_PosGet()
+				DBG_RenderVector(@to_gao OBJ_PosGet(), tv_temp, color_rouge)
+//				tv_temp.z = 0.0
+				if( MATH_VecNorm(tv_temp) <= 5.0 )
+				{
+					// ce perso est trop proche de la charogne
+					tf_danger = MATH_FloatMax(tf_danger, @"univ" Enemy_af_Danger[EVENT_VisionIDGet(tmid_tmp)])
+					ti_safe = faux
+					if( i_DBG_trace_etat )
+					{
+						DBG_TraceObject(OBJ_Me())
+						DBG_TraceString(" !!! DANGER !!! : ")
+						DBG_TraceObject(to_pere)
+						DBG_TraceString(" trop proche de ")
+						DBG_TraceObject(to_gao)
+						DBG_TraceEOL()
+					}
+				}
+			}
+		}
+	}
+	return ti_safe
+}
+procedure vector KBC_Calc_Pos_Decalage(vector pv_axe_decal,  float pf_decal_horiz, float pf_decal_vert, int ti_careful_about_zoom)
+{
+	vector tv_temp
+	
+	tv_temp = pv_axe_decal
+	tv_temp.z = 0.0
+	if( ! MATH_VecNullEpsilon(tv_temp) )
+		MATH_VecSetNormalize(tv_temp)
+	tv_temp *= pf_decal_horiz
+	tv_temp.z = pf_decal_vert
+	if( ti_careful_about_zoom )
+		tv_temp *= OBJ_ZoomGet()
+	return	 tv_temp
+}
+procedure_local void KBC_Calc_Pos_Cadavre()
+{
+	v_cible_pos = @o_cadavre OBJ_PosGet()
+	v_dest_sight = v_cible_pos - OBJ_PosGet()
+	v_decalage = KBC_Calc_Pos_Decalage( - v_dest_sight, Cf_atterrissage_decal_H, Cf_atterrissage_decal_Z, vrai)
+	v_dest_pos = v_cible_pos + v_decalage	
+	DBG_RenderVector(v_cible_pos, v_dest_pos - v_cible_pos, color_bleu)
+}
+procedure_local void KBC_Calc_Pos_Cadavre_Update()
+{
+	KBC_Calc_Pos_Cadavre()
+	// next wp
+	@o_tmp_obj_next OBJ_PosSet(v_dest_pos)
+	@o_tmp_obj_next OBJ_BankingGeneralSet(v_cible_pos - v_dest_pos, Cv_VerticalVector)
+	o_next_wp = o_tmp_obj_next
+	o_cible_depl = o_tmp_obj_next
+}
+
+
+
+//===================================================================================
+// Envoie un message avec l'id spécifié à l'acteur spécifié
+//===================================================================================
+procedure_local void KBC_send_msg( object po_target, int pi_id)
+{
+	message		tm_projectile
+		
+	if( po_target && @po_target OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Msg) )
+	{
+		MSG_SetNull(	tm_projectile)
+		tm_projectile.msg_id = pi_id
+		tm_projectile.msg_sender = OBJ_Me()
+		@po_target MSG_Send(tm_projectile)
+	}
+}
+
+
+procedure_local int KBC_Balancier_Enabled()
+{
+	switch( i_etat_courant )
+	{
+		case ETAT_Fade :
+		case ETAT_Chute_Libre :
+		case ETAT_TEST :
+		case ETAT_Paf :
+		case ETAT_Sol_Ecrasement :
+		case ETAT_Wait_Perche :
+		case ETAT_Wait_JourNuit :
+		case ETAT_Move_Atterrit :
+		case ETAT_Mange :
+		case ETAT_Sol_Interaction_Ann :
+		case ETAT_Mort :
+		case ETAT_Paf_KK_Ecrase :
+		case ETAT_KK_Projectile :
+		case ETAT_KK_Ride :
+		case ETAT_KK_Grabbed_by_Kong :
+		case ETAT_KK_Finish :
+		case ETAT_KK_Finished :
+		case ETAT_Agonie :
+			return faux
+		default:
+			return vrai
+	}
+}
+
+
+//=========================================================================================
+// Retourne vrai si l'acteur est une cible autorisée, faux sinon
+//=========================================================================================
+procedure_ultra int KBC_Target_Check(object to_target)
+{
+	int					ti_loop
+	object			to_gao
+	message 		tm_filter
+	messageid		tmid_interet
+	messageid		tmid_vision
+	int 				ti_rank
+	int 				ti_interet_on_ann
+	int 				ti_visibility_context
+	int 				ti_type_sol
+	
+	if( ! to_target )
+		return faux
+	
+	for( ti_loop = 0; ti_loop < Ci_ignore_target_max_nb; ti_loop++)
+	{
+		if( ao_ignore_target[ti_loop] && to_target == ao_ignore_target[ti_loop] )
+			return faux
+	}
+	
+	if( ! KBC_Gao_in_Territory(to_target, faux) )	// on ne teste pas le feu
+		return faux
+	
+//	if( o_Jack && to_target == o_Jack && @o_Jack Proc_KIndigene_Kong_LiaisonStatusGet() != Ci_Kong_KIndigene_LinkStatus_None )
+//		return faux
+	
+	if( to_target == o_Kong )
+	{
+		if( @to_target Proc_KK_Test_Mode(ETAT_Kong_climb_rapide)
+			|| @to_target Proc_KK_Test_Mode(ETAT_Kong_accroch_mur) )
+			return faux
+	}
+	
+	if( i_big_bat && i_etat_courant == ETAT_Move_Ronde && o_ronde_next_wp && @o_ronde_next_wp OBJ_CapaTest(CAPA_WP_BigBat_Do_Not_Attack) )
+		return faux
+	
+	return vrai
+}
+
+
+procedure_local void KBC_BigBatAttack_GetNextPos()
+{
+	switch( i_etat_courant )
+	{
+		case ETAT_Move_Decolle :
+			// a pris de l'altitude avant d'aller au wp d'attaque
+			o_cible_depl = o_big_bat_attack_wp
+			v_dest_pos = @o_cible_depl OBJ_PosGet()
+			v_dest_sight = @o_cible_depl OBJ_SightGet()
+			v_cible_pos = v_dest_pos
+			@o_tmp_obj_next OBJ_PosSet(v_dest_pos)
+	 		@o_tmp_obj_next OBJ_BankingGeneralSet(v_dest_sight, Cv_VerticalVector)
+			break
+			
+		case ETAT_Fight_Network :
+			if( i_big_bat_attack_init )
+			{
+				i_big_bat_attack_init = faux
+				// en atente : va vers le point du début de l'attaque
+				o_cible_depl = o_big_bat_attack_wp
+				v_dest_pos = @o_cible_depl OBJ_PosGet()
+				v_dest_sight = @o_cible_depl OBJ_SightGet()
+				v_cible_pos = v_dest_pos
+				@o_tmp_obj_next OBJ_PosSet(v_dest_pos)
+		 		@o_tmp_obj_next OBJ_BankingGeneralSet(v_dest_sight, Cv_VerticalVector)
+			}
+			else
+			{
+				// wp attaque atteint : plonge vers la cible
+				o_cible_depl = o_big_bat_target
+				v_dest_pos = @o_big_bat_target OBJ_PosGet() + cvector(0,0,3)
+				v_dest_sight = @o_big_bat_target OBJ_PosGet() - OBJ_PosGet()
+				v_cible_pos = v_dest_pos
+				@o_tmp_obj_next OBJ_PosSet(v_dest_pos)
+				@o_tmp_obj_next OBJ_BankingGeneralSet(v_dest_sight, Cv_VerticalVector)
+			}
+			break
+		
+		case ETAT_Fight_Wait_Begin :
+			// wp attaque atteint : plonge vers la cible
+			o_cible_depl = o_big_bat_target
+			v_dest_pos = @o_big_bat_target OBJ_PosGet() + cvector(0,0,3)
+			v_dest_sight = @o_big_bat_target OBJ_PosGet() - OBJ_PosGet()
+			v_cible_pos = v_dest_pos
+			@o_tmp_obj_next OBJ_PosSet(v_dest_pos)
+			@o_tmp_obj_next OBJ_BankingGeneralSet(v_dest_sight, Cv_VerticalVector)
+			break
+		
+		case ETAT_BigBat_Fight_Plonge :
+		case ETAT_BigBat_Fight_Dodged :
+			// cible paffée ou ratée : je vais vers le wp de retraite
+			o_cible_depl = o_big_bat_retreat_wp
+			v_dest_pos = @o_big_bat_retreat_wp OBJ_PosGet()
+			v_dest_sight = @o_big_bat_retreat_wp OBJ_SightGet()
+			v_cible_pos = v_dest_pos
+			@o_tmp_obj_next OBJ_PosSet(v_dest_pos)
+	 		@o_tmp_obj_next OBJ_BankingGeneralSet(v_dest_sight, Cv_VerticalVector)
+	 		break	
+			
+		case ETAT_BigBat_Fight_Repart :
+			// point de retraite atteint : fin de l'attaque
+			break
+	}
+	o_next_wp = o_tmp_obj_next
+}
+
+
+//===================================================================================
+// Retourne la position calculée pour attaquer la proie
+//===================================================================================
+//procedure_local vector KBC_Attaque_Calc_Position(int pi_attaque)
+//{
+//	object		to_head
+//	vector		tv_temp
+//	vector		tv_pos
+//	float			tf_H
+//	float			tf_V
+//	
+//	to_head = o_cible_attaque		// par défaut, offset par rapport au pivot
+//	
+//	// CALCUL DES OFFSETS DE POSITIONNEMENT
+//	switch( pi_attaque )
+//	{
+//		case Ci_attaque_positionnement_paffe :
+//		case Ci_attaque_positionnement_attack_en_cours :
+//		case Ci_attaque_positionnement_poursuit :
+//			// position pour attaquer
+//			if( i_paf_send )
+//			{
+//				to_head = @o_cible_attaque ANI_CanalObjectGet(Anim_Canal_Tete)		// offset par rapport à la tete !!!
+//				tv_temp = @to_head OBJ_PosGet() - v_paf_sent_offset
+//				if( i_DBG_render_fight_position )
+//					DBG_RenderVector(OBJ_PosGet(), tv_temp - OBJ_PosGet(), color_rouge)
+//				return (tv_temp)
+//			}
+//			else
+//			{
+//				// paf pas encore envoyé : on suit la cible
+//				if (o_Jack && o_cible_attaque == o_Jack ) // && @o_Jack Proc_KIndigene_Kong_LiaisonStatusGet() == Ci_Kong_KIndigene_LinkStatus_None ) //KBC_WhereIsAnn() == Ci_AnnLocation_OnGround)
+//				{
+//					tf_H = 1.5
+//					tf_V = 1.0
+//				}
+//				else
+//				{
+//					tf_H = f_attaque_pos_horiz
+//					tf_V = f_attaque_pos_vert
+//				}
+//			}
+//			break
+//			
+//		case Ci_attaque_positionnement_retrait :
+//		case Ci_attaque_positionnement_retrait_initial :
+//			if (o_Jack && o_cible_attaque == o_Jack ) // && @o_Jack Proc_KIndigene_Kong_LiaisonStatusGet() == Ci_Kong_KIndigene_LinkStatus_None ) // KBC_WhereIsAnn() == Ci_AnnLocation_OnGround)
+//			{
+//				// ANN au sol
+//				tf_H = 3.0
+//				tf_V = 2.5
+//			}
+//			else
+//			{
+//				tf_H = f_attaque_pos_horiz_wait
+//				tf_V = f_attaque_pos_vert_wait
+//			}
+//			break
+//		
+//		default:
+//			tf_H = 0.0
+//			tf_V = 0.0
+//			break
+//	}
+//	
+//	// POSITION
+//	if( o_cible_attaque == o_Kong )
+//	{
+//		if( i_KONG_is_in_walling )
+//		{
+//			tf_H = 3.5
+//			tf_V = 0.0
+//		}
+//		else if( i_KONG_is_in_mashing )
+//		{
+//			tf_H = 2.5
+//			tf_V = 4.0
+//		}
+//	}
+//	tv_pos = @to_head OBJ_PosGet()
+//	tv_temp = OBJ_PosGet() - @to_head OBJ_PosGet()
+//	tv_temp.z = 0.0
+//	if( ! MATH_VecNullEpsilon(tv_temp) )
+//		MATH_VecSetNormalize(tv_temp)
+//
+//	tv_pos += (tf_H * tv_temp)
+//	tv_pos += (tf_V * Cv_VerticalVector)
+//	if( i_DBG_render_fight_position )
+//		DBG_RenderVector(OBJ_PosGet(), tv_pos - OBJ_PosGet(), color_bleu)
+//	return tv_pos
+//}
+
+
+
+
+
+
+
+
+
+//=============================================================================================
+// NETWORK - RESEAU
+//=============================================================================================
+procedure_local object KBC_WAY_NetNextWP(network tnet_idle, object to_last_wp, int ti_on, int ti_off)
+{
+	object		to_next_wp
+	network		tn_old_wp_network
+	
+	tn_old_wp_network = @to_last_wp WAY_NetOfObj()
+	if( tnet_idle == tn_old_wp_network )
+		to_next_wp = WAY_NetNextWP(tnet_idle, to_last_wp, ti_on, ti_off)
+	else
+		to_next_wp = WAY_WPNearestOfOBJ(tnet_idle, all, CAPA_WP_depart_apres_mashing, Ci_Filter_CapaFlag)
+	return to_next_wp
+}
+procedure_local void KBC_Net_Ronde_INIT()
+{
+	float		tf_Z_min
+	object	to_wp_1
+	object	to_wp_2
+	object	to_wp_3
+	vector	tv_vec1
+	vector	tv_vec2
+	vector	tv_normale
+	vector	tv_biscectrice
+	if ( net_idle )
+	{
+		to_wp_1 = WAY_WPNearestOfOBJ(net_idle, all, none, Ci_Filter_CapaFlag)
+		to_wp_2 = WAY_NetNextWP(net_idle, to_wp_1, 0, 0)
+		to_wp_3 = WAY_NetNextWP(net_idle, to_wp_2, 0, 0)
+		while (to_wp_3 && ! @to_wp_2 OBJ_CapaTest(CAPA_WP_net_ronde_init_sight))
+		{
+			tv_vec1 = @to_wp_1 OBJ_PosGet() - @to_wp_2 OBJ_PosGet()
+			tv_vec2 = @to_wp_3 OBJ_PosGet() - @to_wp_2 OBJ_PosGet()
+			tv_normale = MATH_VecCrossProduct(tv_vec1, tv_vec2)
+			MATH_VecSetNormalize(tv_normale)
+			tv_biscectrice = MATH_VecBlendRotate(tv_vec1, tv_vec2, 0.5)
+			@to_wp_2 OBJ_SightGeneralSet(MATH_VecCrossProduct(tv_normale, tv_biscectrice), Cv_VerticalVector)		// la tangente de l'angle (1,2)(2,3) devient le sight du WP 2
+			@to_wp_2 OBJ_CapaSet(CAPA_WP_net_ronde_init_sight, none)	
+			to_wp_1 = to_wp_2
+			to_wp_2 = to_wp_3
+			to_wp_3 = WAY_NetNextWP(net_idle, to_wp_3, 0, 0)
+		}
+	}
+}
+procedure_local void KBC_Net_Deplacement_INIT()
+{
+	int			ti_i
+	object	to_wp
+	if ( net_move )
+	{
+		i_net_move_wp_nb = WAY_NetFill(net_move, WAY_RootGet(net_move), &ao_net_move_wp[0])
+		for( ti_i=0; ti_i < i_net_move_wp_nb; ti_i++)
+		{
+			to_wp = ao_net_move_wp[ti_i]
+			if( i_big_bat )
+			{
+				if( ! @to_wp OBJ_CapaTest(CAPA_WP_deplacement) 
+				&& ! @to_wp OBJ_CapaTest(CAPA_WP_pause)
+				&& ! @to_wp OBJ_CapaTest(CAPA_WP_JourNuit) )
+					@to_wp OBJ_CapaSet(CAPA_WP_deplacement, none)		// pour la big bat, le réseau de depl est le même que le réseau de ronde
+			}
+			else
+			{
+				if( ! @to_wp OBJ_CapaTest(CAPA_WP_deplacement) 
+				&& ! @to_wp OBJ_CapaTest(CAPA_WP_point_d_attaque) 
+				&& ! @to_wp OBJ_CapaTest(CAPA_WP_mange_charogne)
+				&& ! @to_wp OBJ_CapaTest(CAPA_WP_JourNuit) )
+					@to_wp OBJ_CapaSet(CAPA_WP_deplacement, none)
+			}
+		}
+	}
+}
+procedure_local void KBC_Net_Pause_WP_INIT()
+{
+	object		tao_tab_wp[Ci_max_reseau_wp]
+	int				ti_tab_wp_count
+	int				ti_i
+	i_tab_wp_pause_count = 0
+	if( net_idle )
+	{
+		ti_tab_wp_count = WAY_NetFill(net_idle, WAY_RootGet(net_idle), &tao_tab_wp[0])
+		for( ti_i = 0; ti_i < ti_tab_wp_count; ti_i ++)
+		{
+			if( @tao_tab_wp[ti_i] OBJ_CapaTest(CAPA_WP_pause) )
+			{
+				ao_tab_wp_pause[i_tab_wp_pause_count] = tao_tab_wp[ti_i]
+				i_tab_wp_pause_count++
+			}
+		}
+	}
+	if( net_move && ! i_big_bat )
+	{
+		ti_tab_wp_count = WAY_NetFill(net_move, WAY_RootGet(net_move), &tao_tab_wp[0])
+		for( ti_i = 0; ti_i < ti_tab_wp_count; ti_i ++)
+		{
+			if( @tao_tab_wp[ti_i] OBJ_CapaTest(CAPA_WP_mange_charogne) )
+			{
+				ao_tab_wp_pause[i_tab_wp_pause_count] = tao_tab_wp[ti_i]
+				i_tab_wp_pause_count++
+			}
+		}
+	}
+}
+procedure_local void KBC_Networks_INIT()
+{
+	if( i_big_bat )
+		net_move = net_idle		// toujours conserver les mêmes réseaux pour la big bat
+	KBC_Net_Ronde_INIT()
+	KBC_Net_Deplacement_INIT()
+	KBC_Net_Pause_WP_INIT()
+}
+
+
+
+
+//===================================================================================
+// RIDE SUR KONG
+//===================================================================================
+procedure_local void KBC_RIDE_Reset()
+{
+	f_speed = 0.0
+	COL_ColSetActivationSet(C_bit_zdm_pied, none)
+	AI_CBDel(o_bone_ride_KK_uncol, CallBack_After_Blend, "KBC_cb_set_pos")
+	o_bone_ride_KK = LNK_ClientGet(Ci_LNK_RIDE_DINO, mid_bone_ride_KK_LNK_ID, faux, nofunc, nofunc, nofunc)
+	i_ride_attak = faux
+	f_time_last_ride = TIME_Get()
+}
+procedure_local vector KBC_Get_Ride_Pos()
+{
+	vector tv_pos
+	object to_bone
+	
+	to_bone = LNK_GrabBoneGet(mid_bone_ride_KK_LNK_ID)
+	
+	if (i_bone_id == 0)
+		tv_pos = @to_bone OBJ_PosGet() + @to_bone MATH_VecLocalToGlobal(cvector(0.0, 2.0, 0.0))
+	else
+		tv_pos = @to_bone OBJ_PosGet() + @to_bone MATH_VecLocalToGlobal(cvector(0.0, 2.0, 0.0))
+
+	return tv_pos
+}
+
+
+
+procedure_local void KBC_Init_Next_Attack()
+{
+//	i_paf_send = faux
+	i_attaque_positionnement = Ci_attaque_positionnement_retrait
+//	f_rotation_angle_courant = 0.0		// Rotation
+	v_paf_sent_position = Cv_NullVector		// raz !!!
+	f_time_last_attaque = TIME_Get()		// ne pas réattaquer tout de suite
+	f_speed = 0.0
+}
+
+procedure_local void KBC_Spawn_Budy()
+{
+	object	to_spawned_bat
+	int			sect0
+	int			sect1
+	int			sect2
+	int			sect3
+	
+	to_spawned_bat = OBJ_Duplicate(OBJ_PosGet())
+	if( to_spawned_bat )
+	{
+		// orientation & position
+		@to_spawned_bat OBJ_BankingGeneralSet(OBJ_SightGet(), OBJ_BankingGet())
+		@to_spawned_bat OBJ_PosSet(OBJ_PosGet())
+		@to_spawned_bat COL_StartMatrixSet(@to_spawned_bat OBJ_PosGet())
+		// sectorisation
+		SCT_GetOf(&sect0, &sect1, &sect2, &sect3)
+		@to_spawned_bat SCT_SetOf( sect0, sect1, sect2, sect3)
+		// init état
+		@to_spawned_bat KBC_Init_Spawn_Finish()
+		// référencement
+		ao_spawned_bats[i_spawned_bats] = to_spawned_bat
+		OBJ_RegisterKill(ao_spawned_bats[i_spawned_bats], &ao_spawned_bats[i_spawned_bats])
+		i_spawned_bats++
+	}
+}
+
+procedure_local void KBC_Finish_Initialisation(int ti_leader)
+{
+	object		to_bone
+	int				ti_spawn_cpt
+	int				ti_ride_nb
+	
+	f_pos_blend_coef_ride = 1.0		// coef de blend au max !!!! testé par KONG, raison de + !!! :)
+	@get_global i_KNMI_finish_all_actor_count++
+	if( ti_leader )
+	{
+		// le leader est + dur à toucher
+		f_zoom = MATH_FloatMin(f_zoom, 0.8)
+		OBJ_ZoomSet(f_zoom)
+		KBC_DBG_Trace(i_DBG_trace_etat, "=== FINISH LEADER ===")
+		i_I_finish_leader = vrai
+		@get_global o_KNMI_finish_leader = OBJ_Me()
+		@get_global i_Bat_finish_expulsion_cpt = 0
+		LNK_Finish_ActionSet(mid_I_finish_LNK_ID, Ci_GrabKong_FinishSePlace)
+		LNK_Finish_FinisherTypeSet(mid_I_finish_LNK_ID, Ci_GrabKong_Finished_Bats)
+//		LNK_GrabBoneSet(mid_bone_ride_KK_LNK_ID, @o_I_finish_actor ANI_CanalObjectGet(Anim_Canal_AvantBrasGauche) )
+		LNK_GrabBoneSet(mid_bone_ride_KK_LNK_ID, @o_I_finish_actor ANI_CanalObjectGet(Anim_Canal_CuisseDroite) )
+		AI_CBDel(o_bone_ride_KK_uncol, CallBack_After_Blend, "KBC_cb_set_pos")		// position gérée dans l'état !!!!		// spawn des X bats supplémentaires
+		@get_global i_KNMI_finish_spawn_actor_count = 0
+		ti_ride_nb = @o_I_finish_actor Proc_KK_RIDE_Get_Actor_Nb_By_Model(OBJ_Me())
+		ti_spawn_cpt = 5 - ti_ride_nb
+		KBC_DBG_Trace_Int(i_DBG_trace_etat, "doit spawner X bats : ", ti_spawn_cpt)
+		while( ti_spawn_cpt > 0 )
+		{
+			KBC_Spawn_Budy()
+			ti_spawn_cpt--
+		}
+	}
+	else
+	{
+		KBC_DBG_Trace(i_DBG_trace_etat, "=== FINISH FAKE ACTOR ===")
+		o_I_finish_actor = o_Kong
+		if( i_etat_init == Ci_etat_init_spawn_finish_IA )
+		{
+			// specific spawned bats
+		}
+		switch( @get_global i_KNMI_finish_fake_actor_count )
+		{
+			case 0 : 
+				LNK_GrabBoneSet(mid_bone_ride_KK_LNK_ID, @o_I_finish_actor ANI_CanalObjectGet(Anim_Canal_EpauleGauche) )
+				break
+			case 1 : 
+				LNK_GrabBoneSet(mid_bone_ride_KK_LNK_ID, @o_I_finish_actor ANI_CanalObjectGet(Anim_Canal_EpauleDroite) )
+				break
+			case 2 : 
+				LNK_GrabBoneSet(mid_bone_ride_KK_LNK_ID, @o_I_finish_actor ANI_CanalObjectGet(Anim_Canal_MainGauche) )
+				AI_CBDel(o_bone_ride_KK_uncol, CallBack_After_Blend, "KBC_cb_set_pos")		// position gérée dans l'état !!!!
+				break
+			case 3 : 
+//				LNK_GrabBoneSet(mid_bone_ride_KK_LNK_ID, @o_I_finish_actor ANI_CanalObjectGet(Anim_Canal_CuisseDroite) )
+				LNK_GrabBoneSet(mid_bone_ride_KK_LNK_ID, @o_I_finish_actor ANI_CanalObjectGet(Anim_Canal_AvantBrasGauche) )
+				AI_CBDel(o_bone_ride_KK_uncol, CallBack_After_Blend, "KBC_cb_set_pos")		// position gérée dans l'état !!!!
+				break
+		}
+		@get_global i_KNMI_finish_fake_actor_count++
+	}
+}
+
+
+procedure_local void KBC_Finish_Reset(int ti_leader)
+{
+	i_I_finish_leader = faux
+	if( ti_leader )
+	{
+		@get_global o_KNMI_finish_leader = nobody
+		o_I_finish_actor = LNK_ThisClientGet(o_I_finish_actor,Ci_LNK_KKFINISH_ON_KONG, mid_I_finish_LNK_ID, faux, nofunc, nofunc, nofunc)
+	}
+	else
+	{
+		o_I_finish_actor = nobody
+	}
+	// finish repoussé ?
+	@get_global i_KNMI_finish_all_actor_count--
+	if( @get_global i_KNMI_finish_all_actor_count == 3 )
+	{
+		// == 3 et pas <= 3 pour éviter que le flaf revienne à 1 et empêche les nouveaux finish...
+		@get_global i_KNMI_finish_repousse = vrai
+	}
+	// etat init (sinon risque de bug pour les bats vivantes)
+	if( i_etat_init == Ci_etat_init_spawn_finish_IA 
+		|| i_etat_init == Ci_etat_init_spawn_finish_LD )
+		i_etat_init = Ci_etat_init_vol_ronde
+}
+
+
+
+//=======================================================================================================
+// Recherche d'une autre proie dans la zone de choix de cible. 
+// Retourne vrai s'il y a une autre cible
+//=======================================================================================================
+procedure_local int KBC_Check_New_Target(byref object to_new_target)
+{
+	messageid			tmid_vis_ID
+	object				to_actor
+	object				to_best_actor
+	int						ti_i
+	
+	if( i_follower )
+		return faux 	// pas le droit d'attaquer
+	
+	to_new_target = nobody
+	to_best_actor = nobody
+	for( ti_i = 0; ti_i < i_seen_actor_nb; ti_i++)
+	{
+		tmid_vis_ID = amid_seen_actor[ti_i]
+		to_actor = EVENT_PereGet(tmid_vis_ID)
+		if( to_actor != o_cible_attaque )
+			if( IsThis_ID_Humain(KBC_Vision_Get_ID(to_actor)) )
+				if( KBC_Pos_in_BV(@to_actor OBJ_PosGet(), o_zone_change_target) )
+					if( KBC_Pos_in_Territory(@to_actor OBJ_PosGet(), faux) )
+						if( ! to_best_actor || to_actor == o_Jack)
+							to_best_actor = to_actor				// Jack est prioritaire sur les autres
+	}
+	to_new_target = to_best_actor
+	if( to_new_target )
+		return vrai
+	else
+		return faux
+}
+
+procedure_local void KBC_AttackModeSelect()
+{
+	if( ! i_big_bat && o_cible_attaque == o_Kong && i_LD_attack_config == Ci_LD_attack_config_grab )
+		i_attack_mode = Ci_attack_mode_grab
+	else
+		i_attack_mode = Ci_attack_mode_paf		
+}
+
+
+//==================================================================================
+// Test d'attaque (trigger, pafs)
+//==================================================================================
+procedure_local int KBC_Test_Attaque()
+{
+	message		tmsg_trigger
+	float				tf_time_bat_noire
+	float				tf_dist
+	object			to_gao
+	
+	o_cible_attaque = nobody
+	
+	if( i_follower )
+		return faux		// j'attaquerai qd le boss sera mort
+	
+	// TRIGGER ATTAQUE INTERDITE	
+	if( AI_TriggerIsValid(trig_do_not_attack) && call_trigger(trig_do_not_attack) )
+		return faux
+	
+	// TEST GRAB
+	if( MSG_GlobalIsValid(mid_grab_charogne) )
+		return faux
+	
+	if( i_big_bat && f_bigbat_delai_no_attack )
+		return faux
+	
+	// RESTRICTION DU TRIGGER D'ATTAQUE
+	if( AI_TriggerIsValid(trig_attaque_restriction) && ! call_trigger(trig_attaque_restriction) )
+		return faux
+	
+	// BIG BAT ATTAQUE SCRIPTEE 
+	if( i_big_bat_attack_init && KBC_Target_Check(o_big_bat_target) )
+	{
+		o_cible_attaque = o_big_bat_target
+		i_big_bat_attack = vrai
+		return vrai
+	}
+	
+	// ATTACK WALLING
+	if( KBC_KONG_in_Walling_Attack_Enabled() )
+	{
+		if( KBC_Target_Check(o_Kong) )
+		{
+			o_cible_attaque = o_Kong
+			return vrai
+		}
+	}
+	
+	// ATTACK MASHING
+	if( KBC_KONG_in_Mashing_Attack_Enabled() )
+	{
+		if( KBC_Target_Check(o_Kong) )
+		{
+			o_cible_attaque = o_Kong
+			return vrai
+		}
+	}
+	
+	// DELAI PAS D'ATTAQUE APRES UN PAF
+	if( f_paf_delai_aucune_attaque )
+		return faux
+	
+	// DELAI PAS D'ATTAQUE APRES UNE INTERACTION
+	if( f_attack_interaction_delai )
+		return faux
+	
+	// PAF ACTOR
+	if( KBC_Target_Check(o_best_paf_pere_enabled) )
+	{
+		o_cible_attaque = o_best_paf_pere_enabled
+		return vrai
+	}
+	
+	// SMALL BAT : CHECK ATTACK ON ANN
+//	if( ! i_big_bat && o_Jack && KBC_Target_Check(o_Jack) )
+//	{
+//		o_cible_attaque = o_Jack
+//		return vrai
+//	}
+	
+	// TRIGGER D'ATTAQUE
+	if( AI_TriggerIsValid(trig_attaque) && call_trigger(trig_attaque) && ! i_big_bat )
+	{
+		switch(i_trig_attaque_type)
+		{
+			case Ci_trig_attaque_type_GAO5 :
+				tmsg_trigger = AI_TriggerGetMsg(trig_attaque)
+				Check_This_Gao5(tmsg_trigger.msg_gao5)
+				if( KBC_Target_Check(tmsg_trigger.msg_gao5) )
+				{
+					o_cible_attaque = tmsg_trigger.msg_gao5
+					return vrai
+				}
+				break
+			
+			case Ci_trig_attaque_type_specifique :
+				if( KBC_Target_Check(o_attaque_gao_specifique) )
+				{
+					o_cible_attaque = o_attaque_gao_specifique
+					return vrai
+				}
+				break
+				
+			case Ci_trig_attaque_type_joueur :
+				if( @get_global i_Player_is_Kong )
+					to_gao = o_Kong
+				else
+					to_gao = o_Jack
+				if( KBC_Target_Check(to_gao) )
+				{
+					o_cible_attaque = to_gao
+					return vrai
+				}
+				break
+		}
+	}
+	return faux
+}
+
+
+// TAILLE ET POSITION DE LA ZDE FIGHT ========================================================
+procedure_local void KBC_ZDE_Size_n_Pos()
+{
+	vector		tv_pivot_tete
+	vector		tv_pos
+	vector		tv_zde_fight_size
+	vector		tv_temp
+	
+	object		to_tete
+	object		to_piedD
+	object		to_piedG
+	
+	if( KBC_Special_Ride_Walling_Attack_en_cours() )
+	{
+		// attaque piqué de la bat ride walling
+		to_tete = ANI_CanalObjectGet(Anim_Canal_Machoire)
+		tv_pivot_tete = @to_tete OBJ_PosGet() - OBJ_PosGet()
+	}
+	else if( i_big_bat_attack )
+	{
+		// attaque piqué de la big bat
+		to_tete = ANI_CanalObjectGet(Anim_Canal_Machoire)
+		tv_pivot_tete = @to_tete OBJ_PosGet() - OBJ_PosGet()
+	}
+	else if( KBC_est_au_sol() )
+	{
+		// attaque au sol
+		to_tete = ANI_CanalObjectGet(Anim_Canal_Tete)
+		tv_pivot_tete = @to_tete OBJ_PosGet() - OBJ_PosGet()
+	}
+	else if (i_etat_courant == ETAT_KK_Projectile)
+	{
+		tv_pivot_tete = Cv_NullVector
+		tv_zde_fight_size = cvector( 2.0 * f_zoom, 2.0 * f_zoom, 2.0 * f_zoom)
+	}
+	else
+	{
+		// attaque en vol
+		to_piedD = ANI_CanalObjectGet(Anim_Canal_OrteilDroit)
+		to_piedG = ANI_CanalObjectGet(Anim_Canal_OrteilGauche)
+		tv_temp = @to_piedD OBJ_PosGet() - @to_piedG OBJ_PosGet()
+		tv_pos = @to_piedG OBJ_PosGet() + (0.5 * tv_temp)
+		tv_pivot_tete = tv_pos - OBJ_PosGet()
+	}
+	if( i_big_bat )
+	{
+		if( i_etat_courant == ETAT_Fight_Contact )
+			tv_zde_fight_size = Cv_zde_fight_size_big_bat_anti_mashing_or_climbing
+		else
+			tv_zde_fight_size = Cv_zde_fight_size_big_bat
+	}
+	else
+		tv_zde_fight_size = Cv_zde_fight_size_normal
+	COL_ZoneSizeSet(C_zde_fight, tv_zde_fight_size)
+	COL_ZonePosSet(C_zde_fight, MATH_VecGlobalToLocal(tv_pivot_tete) / f_zoom)
+}
+
+
+procedure_local void KBC_Paf_n_Pursuit()
+{
+	object		to_head
+	vector		tv_temp
+	float			ti_dmg
+	if( ! i_big_bat )
+		ti_dmg = 10
+	else if( i_bigbat_attack_imparable )
+		ti_dmg = 0		// attaque ciné
+	else if( i_etat_courant == ETAT_Fight_Contact )
+		ti_dmg = 30		// attaque anti-mashing
+	else
+		ti_dmg = 100		// attaque piqué
+	tv_temp = OBJ_PosGet()
+	f_poursuit_backup_Z = tv_temp.z
+	to_head = @o_cible_attaque ANI_CanalObjectGet(Anim_Canal_Tete)
+	if( ! to_head )
+		to_head = o_cible_attaque
+	tv_temp = @o_cible_attaque OBJ_PosGet() - OBJ_PosGet()
+	v_paf_sent_offset = @to_head OBJ_PosGet() - OBJ_PosGet()
+	MATH_VecSetNorm(v_paf_sent_offset, MATH_FloatMax(MATH_VecNorm(v_paf_sent_offset), 3.0))
+	DBG_RenderVector(OBJ_PosGet(), v_paf_sent_offset, color_vert)
+	i_paf_send = vrai
+	v_paf_sent_position = OBJ_PosGet()
+	f_paf_sent_pursuit_time = 0.0
+	SND_RequestPlay(Ci_SND_Envoie_Paf)		// son si paf ou ride
+	if( ! i_DBG_send_paf_OFF )
+		EVENT_AddEventPaf( C_EVENT_FILTER_Enemy, i_paf_to_send_type, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_cible_attaque, ti_dmg, tv_temp)
+}
+
+
+//==========================================================================================
+// La bat a perdu son agresseur : RAZ des infos d'attaque
+//==========================================================================================
+procedure_local void KBC_reset_attaque()
+{
+	if( ! i_flag_do_not_reset_attaque_values )
+	{
+		i_agresseur_ID = -1
+		o_cible_attaque = nobody
+		o_cible_attaque_contact = nobody
+		i_attack_mode = Ci_attack_mode_aucun
+		i_flag_reserve_interet = faux
+		i_attaque_fin_desynchro_flag = faux
+		o_attaque_fin_desynchro_gao = nobody
+		if( MSG_GlobalIsValid(mid_interet_attaque) )
+			EVENT_Delete(mid_interet_attaque, C_EVENT_EOFDEL)
+		f_obstacle_duration = 0.0		// réinit durée obstacle
+		i_flag_frein = faux
+		f_angle_rotation_max = Cf_angle_rotation_max_default
+		i_paf_send = faux
+		f_paf_sent_pursuit_time = 0.0
+		v_paf_sent_position = Cv_NullVector
+		// BIG BAT ATTACK
+		i_big_bat_attack = faux			// cette var est à réinitialiser !!!!
+		o_big_bat_target = nobody	// cette var est à réinitialiser !!!!
+		i_big_bat_attack_scream = faux
+	//	o_big_bat_attack_wp = nobody
+	//	o_big_bat_retreat_wp = nobody
+	//	i_big_bat_attack_init = faux
+		// CADAVRES
+		o_cadavre = nobody
+		OBJ_CapaSet(none, CAPA_BigBat_Attaque_Mashing)
+		OBJ_CapaSet(none, CAPA_BigBat_attaque_en_cours)
+//		OBJ_CapaSet(CAPA_BigBat_attaque_possible, none)			// abracadabra		// commenté pour le MANAGER
+		KBC_DBG_Trace(i_DBG_trace_etat, "--- reset attaque ---")		// abracadabra
+	}
+	else
+		KBC_DBG_Trace(i_DBG_trace_etat, "--- reset attaque (ignoré !!!) ---")		// abracadabra
+	i_flag_do_not_reset_attaque_values = faux
+}
+
+
+procedure_local int KBC_Take_Paf()
+{
+	// RESTRICTION PAF EN LD
+	if( OBJ_CapaTest(CAPA_Ignore_Pafs) )
+		return faux
+	
+	// RESTRICTION PAFS POUR LE BOSS
+	if( i_big_bat )
+	{
+		switch( i_etat_courant )
+		{
+			case ETAT_Fight_Contact :
+			case ETAT_Agonie :
+				return faux
+				break
+				
+			case ETAT_Paf :
+				if(  i_paf_repousse_flag )
+					return faux			// blindage : pas 2 pafs d'affilée (sauf si le 1er était un paf repousse)
+				break
+		}
+		
+		if( f_big_bat_no_paf > 0.0 )
+			return faux			// blindage : pas 2 pafs d'affilée
+	}
+	
+	// RESTRICTION PAFS SUR LES FOLLOWER
+//	if( i_follower )
+//		return faux
+	
+	// RESTRICTION PAF ETAT OU CINE
+	if( ! i_take_paf )
+		return faux
+	
+	return vrai
+}
+
+
+
+//======================================================================================
+// UNCOL
+//======================================================================================
+procedure_local void KBC_BigBat_UncolAdd()
+{
+	o_big_bat_uncol = o_cible_attaque
+	@o_big_bat_uncol COL_UnCollidableAdd(OBJ_Me())
+}			
+procedure_local void KBC_BigBat_UncolDel()
+{
+	if( o_big_bat_uncol )
+	{
+		i_big_bat_uncol_end_flag = vrai
+	}
+}
+
+
+
+//======================================================================================
+// SFX & GFX
+//======================================================================================
+procedure_local void KBC_SFX_Ring( vector pv_pos, vector pv_normal)
+{
+	int 		mi_GFX_Key
+	vector	pv_temp
+	object	to_light_n_smoke
+	
+	to_light_n_smoke = @get_global o_global_light_and_smoke_kanada
+	if( ! to_light_n_smoke )
+		return
+	
+	mi_GFX_Key = GFX_Add( 13)
+	
+	GFX_FlagSet( mi_GFX_Key, 0 , 1)
+	GFX_FlagSet( mi_GFX_Key, 2 , 1)
+	
+	GFX_MaterialSet( mi_GFX_Key, to_light_n_smoke, -1 )
+	GFX_Seti( mi_GFX_Key, 13101, 1)
+
+	GFX_Seti( mi_GFX_Key, 13102, 1)
+	
+	GFX_Seti( mi_GFX_Key, 13100, 50)		// *Buffer number of sprite
+	GFX_Seti( mi_GFX_Key, 13106, 25)		// *number of sprite to generate
+	GFX_Seti( mi_GFX_Key, 13107, 0)			// Sprites non triés
+
+	GFX_Setf( mi_GFX_Key, 13003, 0.4)		// Time fase 1
+	GFX_Setf( mi_GFX_Key, 13004, 0.8)		// Time fase 2
+	
+	GFX_Setf( mi_GFX_Key, 13012, 0.7)		// Time random
+	
+	GFX_Setf( mi_GFX_Key, 13000, 0.5)		// Growing speed min
+	GFX_Setf( mi_GFX_Key, 13001, 1.5)		// Growing speed max
+	GFX_Setf( mi_GFX_Key, 13002, 0.05)		// Friction Grow
+		
+	GFX_Setf( mi_GFX_Key, 13005, 0.1)		// Creation size min
+	GFX_Setf( mi_GFX_Key, 13006, 0.5)		// Creation size max
+	GFX_Setf( mi_GFX_Key, 13007, -3.0)		// Gravity
+	
+	GFX_Setv( mi_GFX_Key, 13203, cvector( 0.012,0.012,0.025))		// friction speed
+	
+	GFX_Seti( mi_GFX_Key, 13103, 0x9D93A99F)		// Color fase 0
+	GFX_Seti( mi_GFX_Key, 13104, 0x6782A196)		// Color fase 1
+	GFX_Seti( mi_GFX_Key, 13105, 0x00768D87)		// Color fase 2
+
+	GFX_Setf( mi_GFX_Key, 13009, -7.0)		// Norm speed min
+	GFX_Setf( mi_GFX_Key, 13010, -9.0)		// Norm speed max
+	
+	GFX_Setf( mi_GFX_Key,  13011, -1000.0)
+	
+	GFX_Setv( mi_GFX_Key, 13200, pv_pos)
+								
+	GFX_Setv( mi_GFX_Key, 13201, Cv_NullVector )				// Speed min
+	GFX_Setv( mi_GFX_Key, 13202, cvector(0.0,0.0, 0.1) )		// Speed max
+	
+	GFX_Setv( mi_GFX_Key, 13204, Cv_NullVector )				// wind
+	
+	GFX_Setv( mi_GFX_Key, 13205, Cv_NullVector )				// Mainposspeed
+	
+	GFX_Setv( mi_GFX_Key, 13206, Cv_NullVector)				// Mainpossfriction
+	
+	if ( MATH_VecNull(pv_normal)
+	||MATH_VecDotProduct( pv_normal, OBJ_BankingGet()) > Cf_Cos5)
+	{
+		GFX_Setv( mi_GFX_Key, 13207, OBJ_HorizonGet() )
+		GFX_Setv( mi_GFX_Key, 13208, OBJ_SightGet() )
+		GFX_Setv( mi_GFX_Key, 13209, 0.1* OBJ_BankingGet() )
+	}
+	else
+	{
+		pv_temp = MATH_VecCrossProduct( pv_normal, OBJ_HorizonGet()) 
+		GFX_Setv( mi_GFX_Key, 13207, pv_temp)
+		GFX_Setv( mi_GFX_Key, 13208, MATH_VecCrossProduct( pv_normal, pv_temp ))
+		GFX_Setv( mi_GFX_Key, 13209, 0.1* pv_normal )		
+	}
+	
+	// material rotation and scaling mods
+	GFX_Seti( mi_GFX_Key, 13114, 0.0)
+	
+	GFX_Setf( mi_GFX_Key, 13013, 0.0)
+	GFX_Setf( mi_GFX_Key, 13014, 0.0)
+	GFX_Setf( mi_GFX_Key, 13015, 0.0)
+	GFX_Setf( mi_GFX_Key, 13016, 0.0)
+	
+	GFX_Setf( mi_GFX_Key, 13008, 0.0)
+}
+procedure_local void KBC_GFX_Particules_PafDeKong(vector tv_pos, vector tv_paf_dir)
+{
+	int			pi_GFX_Blood
+	color 		materiau_color
+	vector	tv_lat2_axis, tv_lat_axis 
+	object	to_light_n_smoke
+	
+	to_light_n_smoke = @get_global o_global_light_and_smoke_kanada
+	if( ! to_light_n_smoke )
+		return
+	
+	materiau_color  = 0x0024304B
+	
+	tv_lat_axis = MATH_VecCrossProduct(tv_paf_dir, Cv_VerticalVector)
+	tv_lat2_axis = MATH_VecCrossProduct(tv_paf_dir, tv_lat_axis)
+	
+	pi_GFX_Blood = GFX_Add(13)																// Create the boum	
+	GFX_MaterialSet(pi_GFX_Blood, to_light_n_smoke, -1)
+	GFX_FlagSet(pi_GFX_Blood, 0 , 1)
+	GFX_FlagSet(pi_GFX_Blood, 2 , 1)
+	GFX_Seti(pi_GFX_Blood, 13101, 22)															// Materiau N°
+	GFX_Seti(pi_GFX_Blood, 13110, 10)															// Materiau N°
+	GFX_Seti(pi_GFX_Blood, 13100, 40)														// *Buffer number of sprite
+	GFX_Seti(pi_GFX_Blood, 13106, 40)														// *number of sprite to generate
+	GFX_Setf(pi_GFX_Blood, 13003, 0.08)														// Time fase 1
+	GFX_Setf(pi_GFX_Blood, 13004, 0.4)														// Time fase 2
+	GFX_Seti(pi_GFX_Blood, 13107, 0)															// Sprites non triés
+	GFX_Setf(pi_GFX_Blood, 13012, 0.0)														// Time random
+	GFX_Setf(pi_GFX_Blood, 13000, 0.1)														// Growing speed min
+	GFX_Setf(pi_GFX_Blood, 13001, 0.5)														// Growing speed max
+	GFX_Setf(pi_GFX_Blood, 13002, 0.0001)													// Friction Grow
+	GFX_Setf(pi_GFX_Blood, 13005, 0.2 )						 								// Creation size min
+	GFX_Setf(pi_GFX_Blood, 13006, 0.4 )														// Creation size max
+	GFX_Setv(pi_GFX_Blood, 13203, cvector(0.02, 0.02, 0.02))							// friction speed
+	GFX_Seti(pi_GFX_Blood, 13103, 0xF0000000 + materiau_color)					// Color fase 0
+	GFX_Seti(pi_GFX_Blood, 13104, 0xF0000000 + materiau_color)					// Color fase 1
+	GFX_Seti(pi_GFX_Blood, 13105, 0x00000000 + materiau_color)					// Color fase 2
+	GFX_Setf(pi_GFX_Blood, 13009, 5)															// Norm speed min
+	GFX_Setf(pi_GFX_Blood, 13010, 15)														// Norm speed max
+	GFX_Setf(pi_GFX_Blood, 13007, -10.0)														// Gravity
+	GFX_Setf(pi_GFX_Blood, 13008, 0.0)														// generation rate
+	GFX_Setv(pi_GFX_Blood, 13204, tv_paf_dir)												// wind
+	GFX_Setv(pi_GFX_Blood, 13205, Cv_NullVector)										// Mainposspeed
+	GFX_Setv(pi_GFX_Blood, 13206, Cv_NullVector)										// Mainpossfriction
+	GFX_Setv(pi_GFX_Blood, 13200, tv_pos) 												// Creation Pos
+	GFX_Setv(pi_GFX_Blood, 13201, tv_paf_dir + (tv_lat_axis * 0.2) + (tv_lat2_axis * 0.2) )					// Speed min
+	GFX_Setv(pi_GFX_Blood, 13202, (tv_paf_dir * 5.0) - (tv_lat_axis * 1.2 ) - (tv_lat2_axis * 1.2 ) )											// Speed max
+}
+
+procedure_local void BC_GFX_Particules_PafDeJack(vector tv_pos, vector tv_paf_dir) 
+{
+	int			pi_GFX_Blood
+	color 		tc_materiau_color
+	vector	tv_lat2_axis, tv_lat_axis 
+	
+	tc_materiau_color = 0x0048201c
+	tv_lat_axis = MATH_VecCrossProduct(tv_paf_dir, Cv_VerticalVector)
+	tv_lat2_axis = MATH_VecCrossProduct(tv_paf_dir, tv_lat_axis)
+	
+	pi_GFX_Blood = GFX_Add(13)																// Create the boum
+	GFX_MaterialSet(pi_GFX_Blood, get_SFX_light_and_smoke, -1)
+	GFX_FlagSet(pi_GFX_Blood, 0 , 1)
+	GFX_FlagSet(pi_GFX_Blood, 2 , 1)
+	GFX_Seti(pi_GFX_Blood, 13101, 35)														// Materiau N°
+	GFX_Seti(pi_GFX_Blood, 13100, 100)														// *Buffer number of sprite
+	GFX_Seti(pi_GFX_Blood, 13106, 50)														// *number of sprite to generate
+	GFX_Setf(pi_GFX_Blood, 13003, 0.2)														// Time fase 1
+	GFX_Setf(pi_GFX_Blood, 13004, 0.8)														// Time fase 2
+	GFX_Seti(pi_GFX_Blood, 13107, 0)															// Sprites non triés
+	GFX_Setf(pi_GFX_Blood, 13012, 0.0)														// Time random
+	GFX_Setf(pi_GFX_Blood, 13000, 0.2)														// Growing speed min
+	GFX_Setf(pi_GFX_Blood, 13001, 0.5)														// Growing speed max
+	GFX_Setf(pi_GFX_Blood, 13002, 0.0001)													// Friction Grow
+	GFX_Setf(pi_GFX_Blood, 13005, 0.15 )													// Creation size min
+	GFX_Setf(pi_GFX_Blood, 13006, 0.3 )														// Creation size max
+	GFX_Setv(pi_GFX_Blood, 13203, cvector(0.02, 0.02, 0.02))							// friction speed
+	GFX_Seti(pi_GFX_Blood, 13103, 0x00000000 + tc_materiau_color)					// Color fase 0
+	GFX_Seti(pi_GFX_Blood, 13104, 0xFF000000 + tc_materiau_color)					// Color fase 1
+	GFX_Seti(pi_GFX_Blood, 13105, 0x00000000 + tc_materiau_color)					// Color fase 2
+	GFX_Setf(pi_GFX_Blood, 13009, 5)															// Norm speed min
+	GFX_Setf(pi_GFX_Blood, 13010, 10)														// Norm speed max
+	GFX_Setf(pi_GFX_Blood, 13007, -1.0)														// Gravity
+	GFX_Setf(pi_GFX_Blood, 13008, 0.0)														// generation rate
+	GFX_Setv(pi_GFX_Blood, 13204, tv_paf_dir)												// wind
+	GFX_Setv(pi_GFX_Blood, 13205, Cv_NullVector)										// Mainposspeed
+	GFX_Setv(pi_GFX_Blood, 13206, Cv_NullVector)										// Mainpossfriction
+	GFX_Setv(pi_GFX_Blood, 13200, tv_pos) 												// Creation Pos
+	GFX_Setv(pi_GFX_Blood, 13201, (tv_paf_dir * 5.0) + (tv_lat_axis * 5.0) + (tv_lat2_axis * 5.0) )	// Speed min
+	GFX_Setv(pi_GFX_Blood, 13202, (- tv_paf_dir * 5.0) - (tv_lat_axis * 5.0 ) - (tv_lat2_axis * 5.0 ) )	// Speed max
+}
+procedure_local int KBC_Pafs_Effects_Check(int ti_paf_type)
+{
+	if( ! KBC_Take_Paf() )
+		return faux
+	if( i_etat_courant == ETAT_Mort )
+		return faux
+	if( i_etat_courant == ETAT_Fade )
+		return faux
+	if( ti_paf_type & C_PAF_KK_Repousse )
+		return faux
+	if( i_big_bat )
+	{
+//		if( ! EVENT_TL_LifeGet(ID_LIFE) )
+			return vrai		// paf qui met au sol (big bat only)
+		if( ti_paf_type & C_PAF_KK_Fort )
+			return vrai
+	}
+	if( @o_Kong Proc_KK_RAGE_Test() )
+		return vrai
+	return faux
+}
+
+
+
+// STATS ==============================================================
+procedure_local void KBC_STATS_NMI_Killed(object to_enemy_killed_sender)
+{
+	if( ! i_stats_nmi_killed_done )
+	{
+		i_stats_nmi_killed_done = vrai
+		if ( ! to_enemy_killed_sender)
+			to_enemy_killed_sender = o_Kong
+		if( i_big_bat )
+			STATS_IncEnemyKilled_New(to_enemy_killed_sender, C_EnemyType_Bat_Grosse, 0 ) 
+		else
+			STATS_IncEnemyKilled_New(to_enemy_killed_sender, C_EnemyType_Bat_Normale, 0 ) 
+	}
+}
+
+
+// BANKING EN PAF ===========================================================
+procedure_local vector KBC_Paf_BankingGet()
+{
+	vector	tv_banking
+	float		tf_coef
+	if( i_paf_rotate_flag && ! i_big_bat && ( EVENT_LIFE_CurLifeGet(ID_LIFE) <= 0.0 || i_etat_courant == ETAT_KK_Projectile ) )
+		tv_banking = MATH_VecRotate(OBJ_BankingGet(), OBJ_SightGet(), f_paf_dead_rotate_coef * TIME_GetDt())
+	else
+		tv_banking = MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 5 * TIME_GetDt())
+	return tv_banking
+}
+
+procedure_local void KBC_Paf_BankingReset()
+{
+	f_paf_dead_rotate_coef = MATH_FloatSign(MATH_RandFloat(-1.0,1.0)) * MATH_RandFloat(4.0, 8.0)
+}
+
+procedure_local int KBC_InstantGrabAnn()
+{
+	if( o_Jack )
+	{
+		o_cible = LNK_ThisClientGet(o_Jack, Ci_LNK_GRAB_TRANSPORTE, mid_grab_charogne, vrai, "KBC_exec_grab_param", nofunc, nofunc)
+		if( MSG_GlobalIsValid(mid_grab_charogne) )
+		{
+			LNK_GrabStatusSet(mid_grab_charogne, Ci_GrabTransporte_Type_Vole)		// la proie change d'anim
+			i_request_txt_forced = GeneKAnn_C_danger_need
+			SND_RequestPlay(Ci_SND_Cri_Presence)
+			return vrai
+		}
+	}
+	return faux
+}
+
+procedure_ultra void KBC_Set_Ready_For_Attack_Sequence()
+{
+	i_bigbat_AttackSequenceReady = vrai
+	KBC_DBG_Trace(i_DBG_trace_etat, "Okay, I'm Ready for the attack sequence... It's gonna bleed 8-] Moua-ha-ha !!!")
+}
+
+procedure_local void KBC_BigBat_AttackIncCpt()
+{
+	if( i_big_bat && ! i_bigbat_manager_count_done && o_bigbat_manager && (@o_bigbat_manager OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Active) )
+	{
+		i_bigbat_manager_count_done = vrai
+		@o_bigbat_manager KBM_BigBat_AttackIncCpt(i_bigbat_manager_index)		// informe le MANAGER
+	}
+}
+
+procedure_local void KBC_BigBat_ReattackDelay()
+{
+	// pas de nouveau message d'attaque
+	if( i_etat_courant == ETAT_Fight_Contact )
+	{
+		f_bigbat_delai_no_attack = 1.5
+		if( o_bigbat_manager && (@o_bigbat_manager OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Active) )
+		{
+			if( @o_bigbat_manager KBM_BigBatsCountGet() > 1 )
+				@o_bigbat_manager KBM_GlobalReattackDelaySet(1.5)	// délai pour les 2 big bats
+		}
+	}
+	else 
+		f_bigbat_delai_no_attack = 0.0
+	OBJ_CapaSet(none, CAPA_BigBat_attaque_possible)
+}
+
+procedure_local void KBC_BigBat_Abort()
+{
+	if( i_big_bat && o_bigbat_manager && (@o_bigbat_manager OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Active) )
+		@o_bigbat_manager KBM_BigBat_Abort(i_bigbat_manager_index)
+	KBC_BigBat_ReattackDelay()
+}
+
+procedure_local void KBC_BigBat_Abort_for_Mashing_Attack()
+{
+	if( i_big_bat && o_bigbat_manager && (@o_bigbat_manager OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Active) )
+		@o_bigbat_manager KBM_BigBat_Abort(i_bigbat_manager_index)
+	KBC_BigBat_ReattackDelay()
+}
+
+procedure_local void KBC_ZDM_Sol_Get(byref vector tv_size, byref vector tv_offset)
+{
+	if( i_big_bat )
+	{
+		tv_size = cvector(0.7,0.7,0.7)
+		tv_offset = cvector(0.0, 0.0, 0.7)
+	}
+	else
+	{
+		tv_size = cvector(0.7,0.7,0.7)
+		tv_offset = cvector(0.0, 0.0, 0.7)
+	}
+}
+
+
+
+
+
+
+//=================================================================================================
+// CUMULS DE PAFS
+//=================================================================================================
+// Ajoute un paf (pour le test de cumul des petit pafs)
+procedure_local void KBC_Paf_Cumul_Add(float tf_paf_puiss)
+{
+	if( i_paf_cumul_nb < Ci_paf_cumul_max )
+	{
+		af_paf_cumul_time[i_paf_cumul_nb] = 0.8
+		af_paf_cumul_dmg[i_paf_cumul_nb] = tf_paf_puiss
+		i_paf_cumul_nb++
+	}
+}
+// Supprime un paf pour le test de cumul des petit pafs
+procedure_local void KBC_Paf_Cumul_Del(int ti_indice)
+{
+	int			ti_k
+	for(ti_k = ti_indice; ti_k < i_paf_cumul_nb; ti_k++)
+	{
+		af_paf_cumul_time[ti_k] = af_paf_cumul_time[ti_k + 1]
+		af_paf_cumul_dmg[ti_k] = af_paf_cumul_dmg[ti_k + 1]
+	}
+	i_paf_cumul_nb--
+}
+// Supprime les paf conservé pour le cumul dont la durée de cumul est écoulée
+procedure_local void KBC_Paf_Cumul_Check_Time()
+{
+	int		ti_i
+	int		ti_k
+	for( ti_i = 0; ti_i < i_paf_cumul_nb; ti_i++)
+	{
+		af_paf_cumul_time[ti_i] -= MATH_FloatMin(af_paf_cumul_time[ti_i], TIME_GetDt())
+		if( ! af_paf_cumul_time[ti_i] )
+			KBC_Paf_Cumul_Del(ti_i)
+	}
+}
+procedure_local void KBC_Paf_Cumul_Clear()
+{
+	while( i_paf_cumul_nb )
+		KBC_Paf_Cumul_Del(0)
+}
+// Retourne vrai si la somme des petits pafs cumulés permet de faire un paf moyen, faux sinon
+procedure_local int KBC_Paf_Cumul_Check_Cumul()
+{
+	int		ti_i
+	float	tf_cumul
+	int		ti_k
+	int		ti_ok
+	ti_ok = faux
+	tf_cumul = 0.0
+	if( ! i_big_bat )
+	{
+		if( i_paf_type & C_PAF_KK_Javelin )	// un paf lance doit forcément devenir un paf cumul
+			ti_ok = vrai
+//		else if( i_paf_type & C_PAF_KK_Repousse )	// un paf repousse coupe l'attaque
+//			ti_ok = vrai
+	}
+	if( ! ti_ok )
+	{
+		for( ti_i = 0; ti_i < i_paf_cumul_nb; ti_i++)
+		{
+			tf_cumul += af_paf_cumul_dmg[ti_i]
+			if( tf_cumul >= f_paf_cumul_dmg )
+			{
+				ti_ok = vrai
+				break
+			}
+		}
+	}
+	if( ti_ok )
+	{
+		// suppr de tous les pafs cumulés
+		KBC_Paf_Cumul_Clear()
+		return vrai
+	}
+	return faux
+}
+
+
+
+//====================================================================================================
+// TESTS WATER 
+//====================================================================================================
+//procedure_local int KBC_GroundIsWater(vector tv_pos)
+//{
+//	int		ti_capa	
+//	ti_capa = GRID_CapaGet(tv_pos)
+//	ti_capa &= tag_grid_terrain
+//	switch(ti_capa)
+//	{
+//		case Ci_sol_eau :
+//		case Ci_sol_eau_basse :
+//		case Ci_sol_eau_basse_herbe :
+//		case Ci_sol_eau_herbe :
+//		case Ci_sol_eau_mouche_feu :
+//			return(vrai)
+//		default:
+//			return(faux)
+//	}
+//}
+//procedure_local void KBC_Check_WaterZ()
+//{
+//	vector		tv_ray_start
+//	object		to_collide_object
+//	float			tf_ray_length
+//	if( i_big_bat )
+//		tf_ray_length = 10.0
+//	else
+//	tf_ray_length = 2.0
+//	if( KBC_GroundIsWater(OBJ_PosGet()) && f_water_Z < -1000.0)
+//	{
+//		tv_ray_start = OBJ_PosGet()
+//		tv_ray_start.z += (tf_ray_length * 0.5)		// penser à la bat noire !!!
+//		DBG_RenderVector(tv_ray_start,  - Cv_VerticalVector * tf_ray_length, color_blanc)
+//		to_collide_object = COL_RayObject_Dist(tv_ray_start, - Cv_VerticalVector, tf_ray_length, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_Crossable)
+//		if (to_collide_object && COL_GMAT_FlagsGet(COL_C_Ray) & Gmat_KK_Face_eau)
+//			f_water_Z = COL_RayObject_PosGet().z
+//	}
+//}
+procedure_local float KBC_Get_Water_DiffZ()
+{
+	if( i_big_bat )
+		return 4.5		// noire
+	else if( i_little_bat )
+		return 0.5		// rouge
+	else
+		return 1.8		// grise
+}
+
+
+
+
+procedure_local float KBC_PafReculGet(int ti_cur_paf_type, object to_cur_paf_pere)
+{
+	float	tf_recul_coef
+	if( ti_cur_paf_type & C_PAF_KK_Repousse )
+	{
+		if( to_cur_paf_pere == o_Kong )
+		{
+			// paf de kong
+			if( i_big_bat )
+				tf_recul_coef = 0.0		// bat noire
+			else if( i_little_bat )
+				tf_recul_coef = 1.0		// bat rouge
+			else
+				tf_recul_coef = 3.0		// bat grise
+		}
+		else
+		{
+			// paf de jack (ou autre)
+			if( i_big_bat ) 
+				tf_recul_coef = 2.0		// bat noire
+			else if( i_little_bat )
+				tf_recul_coef = 0.5		// bat rouge
+			else
+				tf_recul_coef = 2.0		// bat grise
+		}
+	}
+	else if( ti_cur_paf_type & C_PAF_KK_Ecrasement )
+	{
+		// paf de kong
+		if( i_big_bat )
+			tf_recul_coef = 5.0		// bat noire
+		else if( i_little_bat )
+			tf_recul_coef = 10.0		// bat rouge
+		else
+			tf_recul_coef = 7.0		// bat grise
+	}
+	else if( ti_cur_paf_type & C_PAF_KK_Fort )
+	{
+		if( to_cur_paf_pere == o_Kong )
+		{
+			// paf de kong
+			if( i_big_bat )
+				tf_recul_coef = 5.0		// bat noire
+			else if( i_little_bat )
+				tf_recul_coef = 10.0		// bat rouge
+			else
+				tf_recul_coef = 7.0		// bat grise
+		}
+		else
+		{
+			// paf de jack (ou autre)
+			if( i_big_bat ) 
+				tf_recul_coef = 5.0		// bat noire
+			else if( i_little_bat )
+				tf_recul_coef = 10.0		// bat rouge
+			else
+				tf_recul_coef = 7.0		// bat grise
+		}
+	}
+	else if( ti_cur_paf_type & ( C_PAF_KK_Moyen | C_PAF_KK_Javelin ) )
+	{
+		if( to_cur_paf_pere == o_Kong )
+		{
+			// paf de kong
+			if( i_big_bat )
+				tf_recul_coef = 4.0		// bat noire
+			else if( i_little_bat )
+				tf_recul_coef = 6.0		// bat rouge
+			else
+				tf_recul_coef = 4.0		// bat grise
+		}
+		else
+		{
+			// paf de jack (ou autre)
+			if( i_big_bat ) 
+				tf_recul_coef = 3.0		// bat noire
+			else if( i_little_bat )
+				tf_recul_coef = 6.0		// bat rouge
+			else
+				tf_recul_coef = 4.0		// bat grise
+		}
+	}
+	else	// if( ti_cur_paf_type & C_PAF_KK_Faible )
+	{
+		if( to_cur_paf_pere == o_Kong )
+		{
+			// paf de kong
+			if( i_big_bat )
+				tf_recul_coef = 1.0		// bat noire
+			else if( i_little_bat )
+				tf_recul_coef = 1.0		// bat rouge
+			else
+				tf_recul_coef = 1.0		// bat grise
+		}
+		else
+		{
+			// paf de jack (ou autre)
+			if( i_big_bat ) 
+				tf_recul_coef = 1.0		// bat noire
+			else if( i_little_bat )
+				tf_recul_coef = 1.0		// bat rouge
+			else
+				tf_recul_coef = 1.0		// bat grise
+		}
+	}
+	return tf_recul_coef
+}
+
+
+// Retourne vrai si la bat doit se positionner pour attaquer Jack de face
+procedure_local int KBC_AttackHorsChampSurJackPositionnementNeeded()
+{
+	if( f_fps_contourne_duration > 4.0 )
+		return faux		// 4.0 sec que je lui tourne autour = tant pis pour lui !!!!
+
+//	return vrai
+	
+	if( o_cible_attaque == o_Jack && f_on_screen_pourcent < 0.25 ) 
+		return vrai
+	else
+		return faux
+}
+
+procedure_local vector KBC_Attaque_Calc_Position(int pi_attaque)
+{
+	object		to_head
+	vector		tv_temp
+	vector		tv_pos
+	float			tf_H
+	float			tf_V
+	int				ti_target_index
+	
+	if( o_cible_attaque == o_Kong )
+	{
+		ti_target_index = 0
+		to_head = @o_cible_attaque ANI_CanalObjectGet(Anim_Canal_Torse)
+	}
+	else
+	{
+		ti_target_index = 1
+		to_head = @o_cible_attaque ANI_CanalObjectGet(Anim_Canal_Tete)
+	}
+	
+	if( ! to_head )
+		to_head = o_cible_attaque
+	
+	// OFFSET ?
+	if( o_cible_attaque == o_Kong && i_KONG_is_in_walling )
+	{
+		tf_H = 3.5
+		tf_V = 0.0
+		tv_temp = OBJ_PosGet() - @to_head OBJ_PosGet()
+	}
+	else if( o_cible_attaque == o_Kong && i_KONG_is_in_mashing )
+	{
+		tf_H = 2.5
+		tf_V = 4.0
+		tv_temp = OBJ_PosGet() - @to_head OBJ_PosGet()
+	}
+	else
+	{
+		// OFFSET
+		switch( pi_attaque )
+		{
+			case Ci_attaque_positionnement_attack_en_cours :
+				// position pendant l'anim d'attaque
+				tf_H = af_attaque_pos_horiz_anim[i_Bat_Model][ti_target_index]
+				tf_V = af_attaque_pos_vert_anim[i_Bat_Model][ti_target_index]
+				break
+			case Ci_attaque_positionnement_paffe :
+				// position pour lancer l'attaque
+				tf_H = af_attaque_pos_horiz[i_Bat_Model][ti_target_index]
+				tf_V = af_attaque_pos_vert[i_Bat_Model][ti_target_index]
+				break
+			case Ci_attaque_positionnement_retrait :
+			case Ci_attaque_positionnement_retrait_initial :
+				// position d'observation en retrait (une autre bat attaque)
+				tf_H = af_attaque_pos_horiz_wait[i_Bat_Model][ti_target_index]
+				tf_V = af_attaque_pos_vert_wait[i_Bat_Model][ti_target_index]
+				break
+			default:
+				tf_H = 0.0
+				tf_V = 0.0
+				break
+		}
+		// DIRECTION
+		if( pi_attaque == Ci_attaque_positionnement_attack_en_cours )
+		{
+			tv_temp = OBJ_PosGet() - @to_head OBJ_PosGet()
+		}
+		else if( KBC_AttackHorsChampSurJackPositionnementNeeded() )
+		{
+			if( pi_attaque == Ci_attaque_positionnement_paffe )
+			{
+				// attaque hors champ sur jack pas encore lancée
+				if( MATH_FloatNullToler(f_fps_contourne_duration, 0.05) )
+					SND_RequestPlay(Ci_SND_Cri_Attack_Griffe)
+				f_fps_contourne_duration += TIME_GetDt()
+				tv_temp = @to_head OBJ_SightGet()		// sight de la caméra
+			}
+			else
+				tv_temp = @to_head OBJ_SightGet()		// sight de la caméra
+		}
+		else
+			tv_temp = OBJ_PosGet() - @to_head OBJ_PosGet()
+	}
+	
+	// POSITION ?
+	tv_pos = @to_head OBJ_PosGet()
+	tv_temp.z = 0.0
+	if( ! MATH_VecNullEpsilon(tv_temp) )
+		MATH_VecSetNormalize(tv_temp)
+	tv_pos += (tf_H * tv_temp)
+	tv_pos += (tf_V * Cv_VerticalVector)
+	if( i_DBG_render_fight_position )
+		DBG_RenderVector(OBJ_PosGet(), tv_pos - OBJ_PosGet(), color_bleu)
+	return tv_pos
+}
+
+
+//==========================================================================================
+// Calcule les wp pour la béziers pour se descendre devant la proie
+//==========================================================================================
+procedure_local void KBC_Attaque_Calc_Deplacement(int pi_attaque)
+{
+	vector		tv_old_cible_pos
+	vector		tv_sight
+	
+	tv_old_cible_pos = v_cible_pos
+	v_cible_pos = KBC_Attaque_Calc_Position(pi_attaque)
+	v_dest_pos = v_cible_pos
+//	DBG_RenderSphere(v_dest_pos,1.0,color_vert)
+	@o_tmp_obj_next OBJ_PosSet(v_dest_pos)
+	tv_sight = @o_cible_attaque OBJ_PosGet() - @o_tmp_obj_last OBJ_PosGet()		// garder une courbe similaire, sans que ça me fasse tourner autour
+	@o_tmp_obj_next OBJ_BankingGeneralSet( tv_sight, Cv_VerticalVector)
+	o_next_wp = o_tmp_obj_next
+}
+
+
+//==================================================================
+//BAT PERCHEE
+//==================================================================
+procedure_local int KBC_RetourneSePercher_Config()
+{
+	if( i_etat_init == Ci_etat_init_perchee && i_retourne_se_percher )
+		return vrai
+	return faux
+}
+procedure_local int KBC_RetourneSePercher_EnCours()
+{
+	if( KBC_RetourneSePercher_Config() && i_etat_courant != ETAT_Wait_Perche && ! o_cible_attaque )
+		return vrai
+	return faux
+}
+
+
+//==================================================================
+// WP DE CHUTE
+//==================================================================
+procedure_local int KBC_Chute_WP_mode_reservation(object to_wp)
+{
+	if( to_wp )
+		if( to_wp.des_flags & DSF_Jack_Bats_Chute_Reservation )
+			return vrai
+	return faux
+}
+procedure_local int KBC_Chute_WP_reservation_get(object to_wp)
+{
+	if( to_wp )
+		if( to_wp.des_flags & DSF_Jack_Bats_Chute_Reserved )
+			return vrai
+	return faux
+}
+procedure_local void KBC_Chute_WP_reservation_set(object to_wp)
+{
+	if( to_wp )
+		to_wp.des_flags |= DSF_Jack_Bats_Chute_Reserved
+}
+procedure_local void KBC_Chute_WP_reservation_free(byref object to_wp)
+{
+	if( to_wp )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : libère le point de chute : ")
+		DBG_TraceObject(to_wp)
+		DBG_TraceEOL()
+		to_wp.des_flags &= ~DSF_Jack_Bats_Chute_Reserved
+		to_wp = nobody
+	}
+	i_chute_wp_deja_dedans = faux
+}
+procedure_local int KBC_Chute_WP_Special_Bat_Noire(object to_wp)
+{
+	if( to_wp )
+		if( to_wp.des_flags & DSF_Jack_Bat_Noire_Chute )
+			return vrai
+	return faux
+}
+procedure_local int KBC_Chute_WP_Select()
+{
+	int				ti_i
+	object		to_wp
+	object		to_best_wp
+	object		to_best_wp_noire
+	float			tf_dist
+	float			tf_best_dist
+	float			tf_best_dist_noire
+	to_best_wp = nobody
+	tf_best_dist = Cf_Infinit
+	to_best_wp_noire = nobody
+	tf_best_dist_noire = Cf_Infinit
+	if( ! i_points_de_chute )
+		return faux
+	// si la bat a été configurée pour checker les points de chute
+	for( ti_i = 0; ti_i < @get_list_manager i_chute_bats_wp_nb; ti_i++ )
+	{
+		// recherche des points de chute dans la liste globale
+		to_wp = @get_list_manager ao_chute_bats_wp[ti_i]
+		if( @to_wp OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Active )
+		{
+			// s'il n'y a pas besoin de réserver ce point ou s'il est libre
+			if( ! KBC_Chute_WP_mode_reservation(to_wp) || ! KBC_Chute_WP_reservation_get(to_wp) )
+			{
+				tf_dist = OBJ_SqrDist(to_wp)
+				
+				// calcul wp special bat noire
+				if( i_big_bat && KBC_Chute_WP_Special_Bat_Noire(to_wp) )
+				{
+					if( tf_dist < tf_best_dist_noire)
+					{
+						to_best_wp_noire = to_wp
+						tf_best_dist_noire = tf_dist
+					}
+				}
+				
+				// calcul wp standard
+				if( tf_dist < tf_best_dist)
+				{
+					to_best_wp = to_wp
+					tf_best_dist = tf_dist
+				}
+			}
+		}
+	}
+	// j'ai 1 wp special bat noire, je prend celui là
+	if( to_best_wp_noire )
+	{
+		to_best_wp = to_best_wp_noire
+		tf_best_dist = tf_best_dist_noire
+	}
+	// j'ai 1 wp de chute
+	if( to_best_wp )
+	{
+		o_chute_bats_wp = to_best_wp
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : choisit de mourir sur le point de chute : ")
+		DBG_TraceObject(to_best_wp)
+		if( KBC_Chute_WP_mode_reservation(to_best_wp) )
+		{
+			KBC_Chute_WP_reservation_set(to_best_wp)		// le réserver !!!
+			DBG_TraceString(" (wp réservé)")
+		}
+		DBG_TraceEOL()
+		return vrai
+	}
+	else
+		return faux
+}
+
+
+
+
+//====================================================================
+// GESTION UNCOL 
+//====================================================================
+procedure_local void KBC_UncollideAdd(object to_gao, float tf_duration)
+{
+	int		ti_index
+	ti_index = ARR_ObjSearch(&ao_uncollide_gao[0], i_uncollide_gao_nb, to_gao)
+	if (ti_index == -1)
+	{
+		ao_uncollide_gao[i_uncollide_gao_nb] = to_gao
+		af_uncollide_duration[i_uncollide_gao_nb] = tf_duration
+		i_uncollide_gao_nb++
+		COL_UnCollidableAdd(to_gao)
+		if( i_DBG_trace_etat )
+		{
+			DBG_TraceObject(OBJ_Me())
+			DBG_TraceString(" : uncol ADD avec")
+			DBG_TraceObject(to_gao)
+			DBG_TraceEOL()
+		}
+	}
+	else
+		af_uncollide_duration[ti_index] = tf_duration
+}
+
+procedure_local void KBC_UncollideDel(object to_gao)
+{
+	int		ti_index
+	ti_index = ARR_ObjSearch(&ao_uncollide_gao[0], i_uncollide_gao_nb, to_gao)
+	if (ti_index != -1)
+		af_uncollide_duration[ti_index] = 0.0
+}
+
+procedure_local void KBC_UncollideCheck()
+{
+	int		ti_i
+	for (ti_i = 0; ti_i < i_uncollide_gao_nb; ti_i++)
+	{
+		if (af_uncollide_duration[ti_i] == -1.0)
+			continue
+
+		if (af_uncollide_duration[ti_i] <= 0.0 && ! OBJ_LIB_Virtual_Collision(OBJ_Me(), ao_uncollide_gao[ti_i], faux))
+		{
+			if( i_DBG_trace_etat )
+			{
+				DBG_TraceObject(OBJ_Me())
+				DBG_TraceString(" : uncol DEL avec")
+				DBG_TraceObject(ao_uncollide_gao[ti_i])
+				DBG_TraceEOL()
+			}
+			COL_UnCollidableDel(ao_uncollide_gao[ti_i])
+			i_uncollide_gao_nb--
+			af_uncollide_duration[ti_i] = af_uncollide_duration[i_uncollide_gao_nb]
+			ao_uncollide_gao[ti_i] = ao_uncollide_gao[i_uncollide_gao_nb]
+			af_uncollide_duration[i_uncollide_gao_nb] = -1.0
+			ao_uncollide_gao[i_uncollide_gao_nb] = nobody
+		}
+
+		af_uncollide_duration[ti_i] -= MATH_FloatMin(af_uncollide_duration[ti_i], TIME_GetDt())
+	}
+}
+
+
+
+procedure_local void KBC_GFX_Splash(vector tv_pos)
+{
+	int	mi_GFX_Key
+
+	mi_GFX_Key = GFX_Add(13)
+	GFX_MaterialSet( mi_GFX_Key, get_SFX_light_and_smoke, -1 )
+	GFX_FlagSet( mi_GFX_Key, 0 , 1)
+	GFX_FlagSet( mi_GFX_Key, 2 , 1)
+	GFX_Seti( mi_GFX_Key, 13101,37)
+	GFX_Seti( mi_GFX_Key, 13102,38)
+	GFX_Seti( mi_GFX_Key, 13100,30)
+	GFX_Seti( mi_GFX_Key, 13106,30)
+	GFX_Setf( mi_GFX_Key, 13003,0.200000)
+	GFX_Setf( mi_GFX_Key, 13004,0.400000)
+	GFX_Seti( mi_GFX_Key, 13012,0.500000)
+	GFX_Seti( mi_GFX_Key, 13107,0)
+	GFX_Setf( mi_GFX_Key, 13000,0.250000)
+	GFX_Setf( mi_GFX_Key, 13001,0.4900000)
+	GFX_Setf( mi_GFX_Key, 13002,0.010000)
+	GFX_Setf( mi_GFX_Key, 13005,0.100000)
+	GFX_Setf( mi_GFX_Key, 13006,0.300000)
+	GFX_Setf( mi_GFX_Key, 13007,-5.000000)
+	GFX_Setv( mi_GFX_Key, 13203,cvector(0.01500, 0.01500, 0.02500))
+	GFX_Seti( mi_GFX_Key, 13103,-3551556)
+	GFX_Seti( mi_GFX_Key, 13104,-1178087748)
+	GFX_Seti( mi_GFX_Key, 13105,12306608)
+	GFX_Setf( mi_GFX_Key, 13009,-1.000000)
+	GFX_Setf( mi_GFX_Key, 13010,-4.000000)
+	GFX_Setf( mi_GFX_Key, 13011,-1000)
+	GFX_Setv( mi_GFX_Key, 13200, tv_pos)
+	GFX_Setv( mi_GFX_Key, 13201,cvector(0.00000, 0.00000, -0.15000))
+	GFX_Setv( mi_GFX_Key, 13202,cvector(0.00000, 0.00000, -0.35000))
+	GFX_Setv( mi_GFX_Key, 13204,cvector(0.00000, 0.00000, 0.00000))
+	GFX_Setv( mi_GFX_Key, 13205,cvector(0.00000, 0.00000, 0.00000))
+	GFX_Setv( mi_GFX_Key, 13206,cvector(0.00000, 0.00000, 0.00000))
+	GFX_Setv( mi_GFX_Key, 13207,0.150000 * OBJ_HorizonGet() )
+	GFX_Setv( mi_GFX_Key, 13208,0.150000 * OBJ_SightGet() )
+	GFX_Setv( mi_GFX_Key, 13209,0.100000  * OBJ_BankingGet())
+	GFX_Seti( mi_GFX_Key, 13114,1)
+	GFX_Setf( mi_GFX_Key, 13013,-1.000000)
+	GFX_Setf( mi_GFX_Key, 13014,1.000000)
+	GFX_Setf( mi_GFX_Key, 13015,-0.050000)
+	GFX_Setf( mi_GFX_Key, 13016,0.050000)
+	GFX_Setf( mi_GFX_Key, 13008,0.000000)
+}
+
+
+
+procedure_local int KBC_ModeCharognardKongTropProche()
+{
+	if( ! i_big_bat )
+	{
+		// les petites bats se renvollent si kong est trop proche mais pas la big bat (food chain)
+		if( o_Kong && OBJ_SqrDist(o_Kong) < 100 )
+		{
+			return vrai
+		}
+	}
+	return faux	
+}

@@ -1,0 +1,52 @@
+#include "PNJ_Volant_defines.var"
+
+procedure_ultra vector Proc_PNJ_Volant_RidedPosGet()
+{
+	object	to_bone
+	vector	tv_pos
+	
+	switch(creature_type)
+	{
+		case Ci_CreatureType_Aigle :
+			to_bone = ANI_CanalObjectGet(Anim_Canal_Cou)
+			tv_pos = @to_bone OBJ_PosGet()
+			tv_pos -= OBJ_BankingGet() * 0.25
+			break
+			
+		case Ci_CreatureType_Bat :
+			to_bone = ANI_CanalObjectGet(Anim_Canal_Cou)
+			tv_pos = @to_bone OBJ_PosGet()
+			tv_pos -= OBJ_SightGet() * 0.1
+			tv_pos -= OBJ_BankingGet() * 0.25
+			break
+			
+		case Ci_CreatureType_Soucoupe :
+			tv_pos = OBJ_PosGet()
+			tv_pos += OBJ_SightGet() * 0.2
+			tv_pos += OBJ_BankingGet() * 0.5
+			break
+	}
+	
+	return( tv_pos )
+}
+
+procedure_ultra vector Proc_PNJ_Volant_RidedSightGet()
+{
+	return( OBJ_SightGet() )
+}
+
+procedure_ultra vector Proc_PNJ_Volant_RidedBankingGet()
+{
+	return( OBJ_BankingGet() )
+}
+
+
+procedure_ultra vector Proc_PNJ_Volant_HotSpot_PosGet()
+{
+	return Proc_PNJ_Volant_RidedPosGet()	
+}
+
+procedure_ultra int Proc_PNJ_Volant_CreatureTypeGet()
+{
+	return i_monture_ID
+}

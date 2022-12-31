@@ -1,0 +1,369 @@
+// King Kong ultra procedure
+procedure_ultra void PLKJ_ForgetEnemy(object o);
+
+// Jack (test) Plane ultra procedure
+procedure_ultra void TP_ResetEnemy(object o);
+
+// Plane Projectile ultra procedure
+procedure_ultra void PRO_SetFather(object o);
+
+// Plane Explosed ultra procedure
+procedure_ultra void PE_RejoinAndOrient(object o);
+procedure_ultra object PE_Initialize();
+procedure_ultra void PE_DestroyChunks();
+procedure_ultra void PE_DropChunk(int n,vector CurrentSpeed,vector ImpactPos,vector ImpactSpeed);
+procedure_ultra void PE_Explode(float rnd,vector CurrentSpeed,vector ImpactPos,vector ImpactSpeed);
+
+// Plane Chunk ultra procedure
+procedure_ultra vector PLC_GetSpeed();
+
+// Local procedures
+procedure_ultra void PFK_ExplosedByKong(float rnd,vector ImpactPos,vector ImpactSpeed);
+
+procedure_local void PFK_SetCrashMvt(vector InitialSpeed,vector ImpactPos,vector ImpactSpeed)
+{
+	if(ExplosedMe)
+	{
+		@ExplosedMe PE_DropChunk(0,InitialSpeed,ImpactPos,ImpactSpeed)
+	}
+}
+
+procedure_local void PFK_GoToDogFight()
+{
+	if(!DelayDogfight)
+	{
+		DelayDogfight=TIME_Get()+20
+		AI_TrackChange(2,"PFk_bhv_dogfight")
+	}
+}
+
+procedure_local void PFK_CreateExplosedMe()
+{
+	message msg
+	if(Explosed && !ExplosedMe)
+	{
+		ExplosedMe=@Explosed OBJ_Duplicate(OBJ_PosGet())
+		if(ExplosedMe)
+		{
+			HP=0
+			DestroyBody=@ExplosedMe PE_Initialize()
+			@ExplosedMe PE_RejoinAndOrient(OBJ_Me())
+		}
+		OBJ_FlagInvisibleSet(vrai)
+	}
+}
+
+procedure_local void PFK_KillExplosedMe()
+{
+	if(ExplosedMe)
+	{
+		@ExplosedMe PE_DestroyChunks()
+		@ExplosedMe OBJ_Destroy()
+		DestroyBody=nobody
+		ExplosedMe=nobody
+	}
+}
+
+procedure_local void PFK_StopLoop_Gun()
+{
+	if(Sound_Gun!=-1)
+	{
+		SND_Stop(Sound_Gun)
+		Sound_Gun=-1
+		SND_RequestPlay(3)
+	}
+}
+
+procedure_local void PFK_StopLoop_Engine()
+{
+	if(Sound_Engine!=-1)
+	{
+		SND_Stop(Sound_Engine)
+		Sound_Engine=-1
+	}
+}
+
+procedure_local vector PFK_GetRandomPos()
+{
+	vector v
+	#define DistanceMax	30
+	#define HeightMax		15
+	v.x=MATH_RandFloat(-DistanceMax,DistanceMax)
+	v.y=MATH_RandFloat(-DistanceMax,DistanceMax)
+	v.z=MATH_RandFloat(-HeightMax,HeightMax)
+	return v	
+}
+
+procedure_local void PFK_SetDestination()
+{
+	vector v
+	v=RefPos-OBJ_PosGet()
+	v.z=0
+	if(MATH_VecSquareNorm(v)<400)
+	{
+		if(CurrentWp)
+		{
+			CurrentWp=WAY_NetNextWP(Net,CurrentWp,0,0)
+			if(!CurrentWp)
+			{
+				AI_TrackChange(2,"PFK_bhv_death")
+			}
+			else RefPos=@CurrentWp OBJ_PosGet()
+		}
+		else
+		{
+			
+			RefPos=@Target OBJ_PosGet()-RefPos
+			RefPos.z=0
+			if(FakePlane)
+			{
+				RefPos=MATH_VecNormalize(RefPos)*150
+			}
+			else
+			{
+				RefPos=MATH_VecNormalize(RefPos)*60
+			}
+			RefPos=@Target OBJ_PosGet()+RefPos+PFK_GetRandomPos()
+		}
+	}
+}
+
+procedure_local void PFK_AI()
+{
+	vector v
+	float f
+	v=RefPos-OBJ_PosGet()
+	f=MATH_VecAngle(OBJ_SightGet(),v,cvector(0,0,1))
+	joy.x=MATH_FloatBlend(joy.x,f/-Cf_Pi,dt*2)
+	joy.y=MATH_FloatBlend(joy.y,MATH_FloatLimit(v.z*-0.01,-1,1),dt*2)
+}
+
+procedure_local void PFK_Fly()
+{
+	vector v
+	float f
+	#define C_Plane_RotationZSpeed		(150*Cf_1Degre)
+	#define C_Plane_RotationZMax			(80*Cf_1Degre)
+	#define C_Plane_BankingFactor			0.7
+	#define C_Plane_RotationXSpeed		(40*Cf_1Degre)
+	#define C_Plane_RotationXMax			(120*Cf_1Degre)
+	#define C_Plane_RotationXDSpeed		(60*Cf_1Degre)
+	#define C_Plane_RotationXDMax		(100*Cf_1Degre)
+	#define C_Plane_FlyingSpeedMin		25
+	#define C_Plane_FlyingSpeedMax		25
+	if(CurrentWp)
+	{
+		RotationZ=MATH_FloatLimit(MATH_FloatBlend(RotationZ,-joy.x*C_Plane_RotationZSpeed,dt*5),-C_Plane_RotationZMax*1.5,C_Plane_RotationZMax*1.5)
+		if(joy.y)
+		{
+			if(joy.y<0) RotationX=MATH_FloatBlend(RotationX,joy.y*C_Plane_RotationXSpeed,dt)
+			else RotationX=MATH_FloatBlend(RotationX,joy.y*C_Plane_RotationXDSpeed,dt*1.3)
+		}
+		RotationX=MATH_FloatLimit(RotationX,-C_Plane_RotationXMax,C_Plane_RotationXMax)	OBJ_BankingSet(cvector(0,0,1))
+	}
+	else
+	{
+		RotationZ=MATH_FloatLimit(MATH_FloatBlend(RotationZ,-joy.x*C_Plane_RotationZSpeed,dt),-C_Plane_RotationZMax,C_Plane_RotationZMax)
+		if(joy.y)
+		{
+			if(joy.y<0) RotationX=MATH_FloatBlend(RotationX,joy.y*C_Plane_RotationXSpeed,dt)
+			else RotationX=MATH_FloatBlend(RotationX,joy.y*C_Plane_RotationXDSpeed,dt*1.3)
+		}
+		RotationX=MATH_FloatLimit(RotationX,-C_Plane_RotationXMax,C_Plane_RotationXMax)	OBJ_BankingSet(cvector(0,0,1))
+	}
+	OBJ_RotateLocalX(RotationX)
+	OBJ_RotateLocalY((RotationZ*C_Plane_BankingFactor)+Roll)
+	OBJ_RotateGlobalZ(RotationZ*dt)
+	v=OBJ_SightGet()
+	Speed=MATH_FloatLimit(Speed+(v.z*dt*-25),C_Plane_FlyingSpeedMin,C_Plane_FlyingSpeedMax)
+	v=dt*Speed*OBJ_SightGet()
+	v+=OBJ_PosGet()
+	v+=Roll*OBJ_HorizonGet()*15*dt
+	OBJ_PosSet(v)
+	Roll=MATH_FloatBlend(Roll,0,dt*1.7)
+	@B_Propeller OBJ_RotateLocalY(dt*0.3)
+}
+
+procedure_local void PFK_Shoot(object o_target)
+{
+	int i
+	object o
+	vector v
+	float f
+	#define C_Plane_ShootRecoil			(1.5*Cf_1Degre)
+	#define C_Plane_DelayShoot				0.05
+	if(CanIShoot)
+	{
+		if(!o_target)
+		{
+			o_target=Target
+		}
+		v=@o_target OBJ_PosGet()-OBJ_PosGet()
+		f=MATH_VecSquareNorm(v)
+		if(Jack && o_target==Jack)
+		{
+			if(f<40000 && MATH_VecDotProduct(MATH_VecNormalize(v),OBJ_SightGet())>Cf_Cos15) i=1
+			else i=0
+		}
+		else if(!@Target OBJ_CapaTest(256) && f<10000 && f>100 && MATH_VecDotProduct(MATH_VecNormalize(v),OBJ_SightGet())>Cf_Cos15) i=1
+		else i=0
+		if(i && Projectile && TimeBorn+5<TIME_Get())
+		{
+			if(Sound_Gun==-1) Sound_Gun=SND_RequestPlayLoop(2)
+			o=@Projectile OBJ_Duplicate(@B_Propeller OBJ_PosGet()+(0.2*OBJ_BankingGet()))
+			if(o)
+			{
+				@o PRO_SetFather(OBJ_Me())
+				@o OBJ_SightSet(@o_target OBJ_PosGet()-@o OBJ_PosGet())
+				@o OBJ_RotateGlobalZ(MATH_RandFloat(-C_Plane_ShootRecoil,C_Plane_ShootRecoil))
+				@o OBJ_RotateLocalX(MATH_RandFloat(-C_Plane_ShootRecoil,C_Plane_ShootRecoil))
+			}
+			TimerShoot=C_Plane_DelayShoot
+		}
+		else TimerShoot-=dt
+		if(!i) PFK_StopLoop_Gun()
+	}
+}
+
+procedure_local void PFJ_Unregister()
+{
+	PFK_StopLoop_Engine()
+	PFK_StopLoop_Gun()
+	if(Jack) @Jack TP_ResetEnemy(OBJ_Me())
+	if(Target && @Target AI_IsModel("Kontreuil/PlaneKong")) @Target PLKJ_ForgetEnemy(OBJ_Me())
+}
+
+procedure_local void PFK_Crash()
+{
+	message msg
+	PFJ_Unregister()
+	MSG_Clear()
+	if(Jack)
+	{
+		msg.msg_id=4002
+		msg.msg_sender=OBJ_Me()
+		@Jack MSG_Send(msg)
+		Jack=nobody
+	}
+	TimerShoot=TIME_Get()+8
+	AI_TrackChange(2,"PFK_bhv_crash")
+}
+
+procedure_local void PFK_Down()
+{
+	message msg
+	PFJ_Unregister()
+	MSG_Clear()
+	if(Jack)
+	{
+		msg.msg_id=4002
+		msg.msg_sender=OBJ_Me()
+		@Jack MSG_Send(msg)
+		Jack=nobody
+	}
+	TimerShoot=TIME_Get()
+	Roll=MATH_FloatSign(MATH_RandFloat(-10000,10000))*MATH_RandFloat(2,5)
+	AI_TrackChange(2,"PFK_bhv_down")
+}
+
+procedure_local void PFK_GetMessages()
+{
+	message msg
+	object o
+	vector v
+	while(MSG_GetCount())
+	{
+		msg=MSG_Get()
+		o=msg.msg_sender
+		if(msg.msg_id==3)	// hit by a bullet
+		{
+			if(!CurrentWp)
+			{
+				if(MATH_RandFloat(0,1)<0.25)
+				{
+					SND_RequestPlay(9)
+				}
+				if(HP)
+				{
+					HP--
+					if(MATH_RandFloat(0,1)<0.1) PFK_SmokeFX(4)
+					if(!HP)
+					{
+						SmokeDelay=0
+						PFK_Down()
+						SND_RequestPlay(4)	// dive scream
+					}
+					else if(Jack && msg.msg_gao1==Jack)
+					{
+						PFK_GoToDogFight()
+					}
+				}
+			}
+		}
+	}
+}
+
+procedure_local void PFK_UrgentTurn(vector v)
+{
+	joy.y=MATH_FloatBlend(joy.y,MATH_FloatLimit(v.z*0.01,-1,1),dt*15)
+	joy.x=MATH_FloatBlend(joy.x,MATH_FloatSign(MATH_VecAngle(OBJ_SightGet(),v,cvector(0,0,1))),dt*15)
+}
+
+procedure_local void PFK_KeepSafeDistance()
+{
+	vector v
+	float d
+	v=@Target OBJ_PosGet()-OBJ_PosGet()
+	d=v.z
+	v.z=0
+	if(d>30) d=60*60
+	else d=SafeDistance
+	if(MATH_VecSquareNorm(v)<d) PFK_UrgentTurn(v)
+}
+
+procedure_local void PFK_AvoidJack()
+{
+	vector v
+	if(Jack)
+	{
+		v=@Jack OBJ_PosGet()-OBJ_PosGet()
+		if(MATH_VecSquareNorm(v)<1600 && MATH_VecDotProduct(OBJ_SightGet(),@Jack OBJ_SightGet())<0)
+		{
+			v.z=MATH_FloatMin(0.1,v.z)
+			PFK_UrgentTurn(v)
+		}
+		if(OBJ_CapaTest(1024))
+		{
+			PFK_GoToDogFight()
+		}
+	}
+	OBJ_CapaSet(0,1024)
+}
+
+procedure_local void PFK_TestCrashWithFriends()
+{
+	object tHits[6]
+	int n,i
+	vector v,v2
+	if(!OBJ_CapaTest(32))
+	{
+		n=COL_ZDE_ZDEListGet(&tHits[0],C_zde_fight,C_zde_corps,all,none,Ci_Filter_IdentityFlag)
+		if(n)
+		{
+			for(i=0;i<n;i++)
+			{
+				if(tHits[i] && !@tHits[i] OBJ_CapaTest(32) && @tHits[i] AI_IsModel("Kontreuil/PlanesForKong"))
+				{
+					if(DestroyBody)
+					{
+						v=@DestroyBody PLC_GetSpeed()
+					}
+					v2=0.1*(@tHits[i] OBJ_PosGet()+OBJ_PosGet())
+					PFK_ExplosedByKong(0.3,OBJ_PosGet()+v2,20*@tHits[i] OBJ_SightGet())
+					@tHits[i] PFK_ExplosedByKong(0.3,@tHits[i] OBJ_PosGet()+v2,v)
+					OBJ_CapaSet(32,0)	// I'm destroyed
+				}
+			}
+		}
+	}
+}

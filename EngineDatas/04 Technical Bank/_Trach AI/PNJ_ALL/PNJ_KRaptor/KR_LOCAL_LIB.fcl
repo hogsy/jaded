@@ -1,0 +1,2618 @@
+#include "KR_defines.var"
+Include_UltraProcedure_Header
+
+// KR TRACE ========================================================================
+procedure_local void KR_DBG_Trace_Gao_Float_Int(int ti_trace, string str_txt, object to_gao, float tf_float, int ti_int)
+{
+	if( ti_trace )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : ")
+		DBG_TraceString(str_txt)
+		if( to_gao )
+		{
+			DBG_TraceString(" ")
+			DBG_TraceObject(to_gao)
+		}
+		if( tf_float != 0.0 )
+		{
+			DBG_TraceString(" ")
+			DBG_TraceFloat(tf_float)
+		}
+		if( ti_int != 0 )
+		{
+			DBG_TraceString(" ")
+			DBG_TraceInt(ti_int)
+		}
+		DBG_TraceEOL()
+	}
+}
+procedure_local void KR_DBG_Trace(int ti_trace, string str_txt)
+{
+	KR_DBG_Trace_Gao_Float_Int(ti_trace, str_txt, nobody, 0.0, 0)
+}
+procedure_local void KR_DBG_Trace_Gao(int ti_trace, string str_txt, object to_gao)
+{
+	KR_DBG_Trace_Gao_Float_Int(ti_trace, str_txt, to_gao, 0.0, 0)
+}
+procedure_local void KR_DBG_Trace_Float(int ti_trace, string str_txt, float tf_float)
+{
+	KR_DBG_Trace_Gao_Float_Int(ti_trace, str_txt, nobody, tf_float, 0)
+}
+procedure_local void KR_DBG_Trace_Int(int ti_trace, string str_txt, int ti_int)
+{
+	KR_DBG_Trace_Gao_Float_Int(ti_trace, str_txt, nobody, 0.0, ti_int)
+}
+// KR TRACE ========================================================================
+
+
+procedure_local int KR_GetPaf4DirOffset( vector tv_paf_dir )
+{
+	int 	ti_animDirOffset
+
+	if( MATH_VecDotProduct(OBJ_SightGet(), MATH_VecNormalize(tv_paf_dir)) >= Cf_Cos45 )
+		ti_animDirOffset = Ci_Action_Paf_4Dir_Dos
+	else if( MATH_VecDotProduct(OBJ_SightGet(), MATH_VecNormalize(tv_paf_dir)) <= - Cf_Cos45 )
+		ti_animDirOffset = Ci_Action_Paf_4Dir_Face
+	else if( MATH_VecDotProduct(OBJ_HorizonGet(), MATH_VecNormalize(tv_paf_dir)) > 0.0 )
+		ti_animDirOffset = Ci_Action_Paf_4Dir_Droite
+	else
+		ti_animDirOffset = Ci_Action_Paf_4Dir_Gauche
+		
+	return ti_animDirOffset
+}
+
+procedure_local int KR_IsAirborne()
+{
+	if (	!COL_CollideType(COL_C_Ground) )
+		return vrai
+
+	return faux
+}
+
+//================================================================
+// Where is Ann ?
+// -1 : not in the map
+// 0 : she's on the gound
+// 1 : she's on kong's shoulder
+// 2 : she's in kong's hand
+//================================================================
+procedure_local int KR_WhereIsAnn()
+{
+	messageid 	tmid_grabAnn	
+	int 			ti_ann_kkgrab
+	int				ti_grabType
+	int				ti_whereSheIs
+	
+	if( ! o_ANN )
+		return -1
+	
+	ti_whereSheIs = Ci_AnnLocation_OnGround
+	
+	tmid_grabAnn = EVENT_FindEventPereTarget(Ci_LNK_EVENT_OFFSET + Ci_LNK_KKGRAB_OBJECT, o_ANN, o_KONG)
+	ti_ann_kkgrab = MSG_GlobalIsValid( tmid_grabAnn)
+	if ( ti_ann_kkgrab )
+	{
+		ti_grabType = LNK_KKGrabObject_TypeGet(tmid_grabAnn)
+		if ( 	ti_grabType == Ci_KKGrabObject_Porte_Epaule ||
+				ti_grabType == Ci_KKGrabObject_Porte_Epaule_TroncD ||
+				ti_grabType == Ci_KKGrabObject_Porte_Epaule_TroncG )
+		{
+			// ANN is on the shoulder
+			ti_whereSheIs = Ci_AnnLocation_KongShoulder
+		}
+		else
+		{
+			// ANN is necessarily in the hand
+			ti_whereSheIs = Ci_AnnLocation_KongHand
+		}
+	}
+
+	return ti_whereSheIs
+}
+
+procedure_local int KR_KongCanGrab()
+{
+	// Is Kong in a position to grab me
+	messageid 	tmid_grab	
+	int				ti_grabType
+	
+	//Ci_LNK_KKGRAB_OBJECT
+	tmid_grab = EVENT_FindEventPereTarget(Ci_LNK_EVENT_OFFSET + Ci_LNK_GRAB_KONG, nobody, o_KONG)
+	if (MSG_GlobalIsValid(tmid_grab))
+		return 0
+
+	return 1
+}
+
+
+//=================================================================================================
+// Uncollideable debug functions
+//=================================================================================================
+
+procedure_local void KR_UncollideableAdd( object to_actor )
+{
+#ifndef _FINAL_
+	int ti_i
+	
+	for (ti_i = 0; ti_i < DBG_i_nbUncollideable; ti_i++)
+	{
+		if (DBG_ao_uncollideables[ti_i] == to_actor)
+		{
+//			DBG_BreakPoint()	// adding : is already there
+			break
+		}
+	}	
+	if (ti_i == DBG_i_nbUncollideable)
+	{
+		DBG_ao_uncollideables[DBG_i_nbUncollideable] = to_actor
+		DBG_i_nbUncollideable++
+	}
+#endif	
+	COL_UnCollidableAdd(to_actor)
+}
+
+procedure_local void KR_UncollideableDel( object to_actor )
+{
+#ifndef _FINAL_
+	int ti_i
+	
+	for (ti_i = 0; ti_i < DBG_i_nbUncollideable; ti_i++)
+	{
+		if (DBG_ao_uncollideables[ti_i] == to_actor)
+		{
+			break
+		}
+	}	
+	if (ti_i < DBG_i_nbUncollideable)
+	{
+		DBG_ao_uncollideables[ti_i] = nobody
+		DBG_i_nbUncollideable--
+	}
+	else
+	{
+//		DBG_BreakPoint()
+	}
+#endif	
+	COL_UnCollidableDel(to_actor)	
+}
+
+procedure void KR_DrawDbgVector( vector tv_origin, vector tv_offset, int ti_color, int ti_activationBits, int ti_optionBit )
+{
+	if (ti_activationBits & ti_optionBit)
+		DBG_RenderVector( tv_origin, tv_offset, ti_color )
+}
+
+procedure void KR_DrawDbgSphere( vector tv_center, float tf_rayon, int ti_color,  int ti_activationBits, int ti_optionBit )
+{
+	if (ti_activationBits & ti_optionBit)
+		DBG_RenderSphere( tv_center, tf_rayon, ti_color )
+}
+
+//===================================================================================
+// Envoie un message avec l'id spécifié à l'acteur spécifié
+//===================================================================================
+procedure_local void KR_send_msg( object po_target, int pi_id)
+{
+	message		tm_projectile
+		
+	if( po_target && @po_target OBJ_FlagsIdentityTest( OBJ_C_IdentityFlag_Msg) )
+	{
+		MSG_SetNull(	tm_projectile)
+		tm_projectile.msg_id = pi_id
+		tm_projectile.msg_sender = OBJ_Me()
+		@po_target MSG_Send(tm_projectile)
+	}
+}
+
+
+//===================================================================================
+// Test dans ou hors du champ de la caméra
+//===================================================================================
+procedure_local int KR_hors_champ()
+{
+	int			ti_hors_champ
+	vector	tv_2D_pos
+	
+	ti_hors_champ = vrai
+
+	tv_2D_pos = VIEW_3dWorldTo2d(0, OBJ_PosGet())
+	if( ( tv_2D_pos.x >= 0.0 ) && ( tv_2D_pos.x <= 1.0 ) && ( tv_2D_pos.y >= 0.0 ) && ( tv_2D_pos.y <= 1.0 ) )
+	{
+		// projection 2D du gao dans le champ de la caméra, mais il peut etre devant ou derrière la caméra...
+		if( MATH_VecDotProduct(OBJ_PosGet() - @get_Kamera OBJ_PosGet(), @get_Kamera OBJ_SightGet()) >= 0 )
+			ti_hors_champ = faux			// devant la caméra
+	}
+	
+	return ti_hors_champ
+}
+
+//===================================================================================
+// Retourne un vecteur de déplacement (avance, recule ou ne bouge pas)
+// Si on veut tester avec les occluders, il faut mettre ti_testOccluders a vrai, alors
+// le déplacement retourné sera sera le vecteur différence au premier obstacle
+//===================================================================================
+procedure_local vector KR_Compute_Deplacement_Requin(vector tv_dest_pos, float tf_dist_min_sqr, float tf_dist_max_sqr, int ti_testOccluders, int ti_useSafeOrbit)
+{
+	vector				tv_offset
+	vector				tv_depl
+	int						ti_occluderResult
+	int						ti_occlu_add
+	vector				tv_occluderNextPos
+	object				to_occluderJump
+	object				tao_fake[1]
+	float					taf_fake[1]
+	float 					tf_orbitOffset
+	float					tf_sqrDistToActor
+	object				to_blockingWall
+	
+	tv_offset = tv_dest_pos - OBJ_PosGet()
+	i_pathToFAIsOccluded = faux
+	
+	if (ti_testOccluders)
+	{
+		ti_occlu_add = 0
+		ti_occluderResult = WAY_LIB_Test_Occluder( 	OBJ_PosGet() + Cv_VerticalVector, 
+																		OBJ_SightGet(), 
+																		COL_ZoneSizeGet(C_zdm_pied) + 0.1,
+																		tv_dest_pos, 
+																		-1,	// territory not used for now
+																		tv_occluderNextPos,
+																		to_occluderJump, 
+																		&tao_fake[0],
+																		&taf_fake[0],
+																		ti_occlu_add,
+																		C_Occl_Type_All )
+
+		if (ti_occluderResult != 0)
+		{
+			if (ti_occluderResult & Ci_OCCLUDER_JUMP)
+			{
+				DBG_Error("jump occluders not supported yet")
+			}
+			tv_depl = tv_occluderNextPos - OBJ_PosGet()
+			i_pathToFAIsOccluded = vrai
+			DBG_RenderVector( OBJ_PosGet(), tv_depl, color_blanc )		
+		}
+	}
+
+	if (!i_pathToFAIsOccluded)
+	{
+		if (ti_useSafeOrbit)
+			tf_orbitOffset = f_dist_safe_orbit*f_dist_safe_orbit
+		else
+			tf_orbitOffset = 0.0
+		tf_sqrDistToActor = OBJ_SqrDist(o_fight_actor)
+
+		if( tf_sqrDistToActor > (tf_dist_max_sqr + tf_orbitOffset - 0.5)  )
+		{
+			tv_depl = tv_offset
+		}
+		else if( tf_sqrDistToActor < (tf_dist_min_sqr + tf_orbitOffset + 0.5) )
+		{
+			tv_depl = - tv_offset
+		}
+		else
+			tv_depl = Cv_NullVector
+	}
+
+	// keep it in 2d	
+	tv_depl.z = 0.0
+	
+	return	 tv_depl
+}	
+
+
+//===================================================================================
+// Choisit de passer en mode paf ou projectile, exécute l'aide au tir dans le 2è cas
+//===================================================================================
+procedure_local void KR_Select_Paf_Etat(byref function fct)
+{
+	int						ti_rank
+	messageid			tmid_NMI
+	object				to_actor
+	vector				tv_sens
+	vector				tv_sens_lance
+	float					tf_norm
+	
+	fct = nofunc
+	
+	if ( i_paf_projete == 1 )
+	{
+		// PAF QUI PROJETE
+		o_aide_tir_actor = nobody
+		
+		// RECHERCHE D'UN ENNEMI A LOCKER
+		ti_rank = -1
+		for(	tmid_NMI = MSG_GlobalScan( C_EVENT_TYPE_Enemy, &ti_rank);
+				MSG_GlobalIsValid( tmid_NMI);
+				tmid_NMI = MSG_GlobalScan( C_EVENT_TYPE_Enemy, &ti_rank) )
+		{
+			to_actor = MSG_GlobalGetSender(tmid_NMI)
+			if( to_actor == OBJ_Me() )
+				continue
+			tv_sens = @to_actor OBJ_PosGet() - OBJ_PosGet()
+			tv_sens.z = 0.0
+			tf_norm = MATH_VecNorm(tv_sens )
+			if( ( tf_norm >= Cf_dist_aide_tir_min ) && ( tf_norm <= 20.0 ) ) // Fo pas abuser....
+			{
+				tv_sens /= tf_norm
+				if ( MATH_VecDotProduct( v_paf_dir, tv_sens) > Cf_Cos30)
+				{
+					tv_sens_lance = tv_sens
+					o_aide_tir_actor = to_actor
+					break
+				}
+			}
+		}
+		
+		// MODE PROJECTILE
+		if( o_aide_tir_actor )
+			i_projectile_mode = Ci_projectile_paffe_target
+		else
+			i_projectile_mode = Ci_projectile_paffe_aveugle
+		SND_RequestPlay( Ci_SND_Paf_Projete)
+		
+		fct = "KR_ETAT_projectile"
+	}
+	else
+		fct = "KR_ETAT_paf"
+}
+
+
+//===================================================================================
+// Calcule l'impulsion du saut à effectuer
+//
+//===================================================================================
+procedure_local vector KR_Compute_Impulsion(int ti_jump_anticipe_Kong)
+{
+	object		to_canal
+	vector		tv_fight_actor_speed
+	vector		tv_temp
+	vector		tv_dir
+	float			tf_amplitude
+	float			tf_time
+	float			tf_friction
+	float			tf_dist
+
+	
+	if (ti_jump_anticipe_Kong)
+	{
+		to_canal = @o_fight_actor ANI_CanalObjectGet(Anim_Canal_EpauleDroite)
+		v_jump_pos = @to_canal OBJ_PosGet()
+		v_jump_pos -= cvector(0,0,2)
+		DBG_RenderVector(OBJ_PosGet(), v_jump_pos - OBJ_PosGet(), color_rouge)
+		tv_fight_actor_speed = @o_fight_actor DYN_SpeedGetVector()
+		tv_fight_actor_speed.z = 0.0
+		if ( !MATH_VecNullEpsilon( tv_fight_actor_speed))
+			MATH_VecSetNorm( tv_fight_actor_speed, @get_Kong_Path o_fight_actor f_walling_speed_in)
+		tf_amplitude = 2.0
+		if ( MATH_FloatNullEpsilon( f_anticipation_time_init))
+			tf_time = 0.5
+		else
+		{
+			tf_time = f_anticipation_time_init
+			f_anticipation_time_init = 0.0
+		}
+		tf_friction = Cf_Raptor_jump_friction
+		v_jump_pos = v_jump_pos + ( tv_fight_actor_speed * tf_time)	// Anticipation a 1s
+	}
+	else if ( i_etat_courant == ETAT_fight_KONG)
+	{
+		tf_friction = Cf_Raptor_jump_friction * 0.25
+		tf_amplitude = 0.5
+	}
+	else if ( i_etat_courant == ETAT_KK_ride)
+	{
+		tf_friction = Cf_Raptor_jump_friction
+		tf_amplitude = 1.5
+	}
+	else if (i_etat_courant == ETAT_projectile)
+	{
+		tf_friction = Cf_Raptor_jump_friction
+		tf_dist = MATH_VecNorm(v_jump_pos - OBJ_PosGet())
+		
+		// calcul de la hauteur du saut
+		if( i_projectile_mode == Ci_projectile_lache )
+			tf_amplitude = 0.5					// pas lancé mais laché....
+		else if ( i_projectile_mode == Ci_projectile_lance_aveugle)
+			tf_amplitude = tf_dist * 0.2
+		else
+			tf_amplitude = tf_dist * MATH_RandFloat( 0.15, 0.35)		// 0.2 // lancé : 3.5 m de haut pour 10 m de dist	
+	}
+	else if (i_etat_courant == ETAT_FollowNetwork)
+	{
+		tf_friction = Cf_Raptor_jump_friction
+		tf_amplitude = 10.5
+	}
+	else
+	{
+		tf_friction = Cf_Raptor_jump_friction
+		tf_amplitude = 1.5
+	}
+	tv_temp = DYN_LIB_ImpulsionGet_Friction(OBJ_PosGet(), v_jump_pos, DYN_GravityVectorGet(), tf_friction, tf_time, faux, tf_amplitude)
+	DYN_FrictionVectorSet(cvector( tf_friction, tf_friction, 0.0))
+//	DYN_SpeedSetVector(tv_temp)
+	return tv_temp
+}
+
+
+//===================================================================================
+// Retourne vrai si la position est safe (pour sauter ou pour lancer), faux sinon
+//===================================================================================
+procedure_local int KR_Safe_Ground_Pos(byref vector tv_pos)
+{
+	object		to_obj1
+	object		to_obj2
+	vector		tv_lray_sight
+	vector		tv_lray_pos
+	float			tf_lray_dist
+	vector		tv_col_pos
+	
+	tv_lray_sight = - Cv_VerticalVector
+	tv_lray_pos = tv_pos + cvector(0,0,1)
+	
+	if( i_ride_attak && ( @get_global i_kong_camera_status == Ci_Kcamera_walling || @get_global i_kong_camera_status == Ci_Kcamera_saute) )
+		tf_lray_dist = 30.0
+	else
+		tf_lray_dist = 3.0
+	
+	to_obj1 = COL_RayObject_Dist( tv_lray_pos, tv_lray_sight, tf_lray_dist, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable )
+	if( to_obj1 )
+	{
+		// il y a un sol
+		tv_col_pos = COL_RayObject_PosGet()
+		to_obj2 = COL_RayObject_Vector( OBJ_PosGet(), tv_col_pos - OBJ_PosGet(), all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+		if( ! to_obj2 || to_obj2 == to_obj1 )
+		{
+			// pas d'obstacle pour atteindre cette position
+			KRDBG_DRAWVECTOR(Ci_DBG_DRAW_TMP,tv_lray_pos, tv_lray_sight * tf_lray_dist, color_vert)
+			KRDBG_DRAWVECTOR(Ci_DBG_DRAW_TMP,OBJ_PosGet(), tv_col_pos - OBJ_PosGet(), color_vert)
+			tv_pos = COL_RayObject_PosGet()		// MAJ bonne position : l'endroit ou le lray a touché le sol
+			return vrai
+		}
+		else
+		{
+			// présence d'un obstacle pour atteindre cette position
+			KRDBG_DRAWVECTOR(Ci_DBG_DRAW_TMP,tv_lray_pos, tv_lray_sight * tf_lray_dist, color_bleu)
+			KRDBG_DRAWVECTOR(Ci_DBG_DRAW_TMP,OBJ_PosGet(), tv_col_pos - OBJ_PosGet(), color_bleu)
+			return faux
+		}
+	}
+	else
+	{
+		// il n'y a pas de sol
+		KRDBG_DRAWVECTOR(Ci_DBG_DRAW_TMP,tv_lray_pos, tv_lray_sight * tf_lray_dist, color_rouge)
+		return faux
+	}
+}
+
+
+//===================================================================================
+// Calcule la position de saut pour sortir du mode ride (et éventuellement la position ou lancer ANN)
+//----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// plf_force_cote : -1.0 ou 1.0
+// BYREF tv_jump_pos : position ou le raptor va sauter
+// ti_compute_lance_pos : vrai pour calculer également une position pour lancer ANN, faux sinon
+// BYREF tv_lance_pos : position ou ANN va être lancée
+//===================================================================================
+procedure_local void KR_Compute_Ride_Jump_Pos(float tf_force_cote, byref vector tv_jump_pos, int ti_compute_lance_pos, byref vector tv_lance_pos)
+{
+	vector		tv_temp
+	vector		tv_normale
+	vector		tv_lance_axis
+	float 			tf_dist_devant
+	float 			tf_dist_cote
+	float			tf_cote
+	int				ti_i
+	int				ti_done
+	
+	ti_done = faux
+	
+	for( ti_i = 0; ti_i < 2; ti_i++)
+	{
+		if( ti_done )
+			continue
+		else if( ! ti_i )
+			tf_cote = tf_force_cote		// 1ère série de tests : du côté spécifié
+		else
+			tf_cote = - tf_force_cote	// 2ème série de tests : de l'autre côté
+		
+		for( tf_dist_devant = Cf_ride_jump_dist_devant_default; tf_dist_devant > 0.0; tf_dist_devant -= 2.0 )
+		{
+			if( ti_done )
+				continue
+			else for( tf_dist_cote = Cf_ride_jump_dist_cote_default; tf_dist_cote > 0.0; tf_dist_cote -= 2.0 )
+			{
+				if( ti_done )
+					continue
+				else
+				{
+					tv_jump_pos = OBJ_PosGet()
+					tv_temp = @o_KONG OBJ_SightGet()
+					MATH_VecSetHorzNormalize(tv_temp)
+					tv_jump_pos += tf_dist_devant * tv_temp
+					tv_normale = tf_cote * MATH_VecCrossProduct(tv_temp, Cv_VerticalVector)
+					tv_jump_pos += tf_dist_cote * tv_normale			// distance à laquelle je saute
+					tv_jump_pos.z = @o_KONG OBJ_PosGet().z
+					if( KR_Safe_Ground_Pos(tv_jump_pos) )
+					{
+						// Destination safe pour le raptor
+						if( ! ti_compute_lance_pos )
+						{
+							// pas besoin de calculer une position ou jeter ANN
+							KRDBG_DRAWVECTOR(Ci_DBG_DRAW_TMP, OBJ_PosGet(), tv_jump_pos - OBJ_PosGet(), color_jaune)
+							ti_done = vrai
+						}
+						else
+						{
+							// j'ai besoin de calculer une position ou jeter ANN
+							tv_lance_axis = tv_jump_pos - OBJ_PosGet()
+							MATH_VecSetHorzNormalize(tv_lance_axis)
+							tv_lance_pos = tv_jump_pos + (3.0 * tv_lance_axis)
+							if( KR_Safe_Ground_Pos(tv_lance_pos) )
+							{
+								// Destination safe pour ANN
+								KRDBG_DRAWVECTOR(Ci_DBG_DRAW_TMP, OBJ_PosGet(), tv_jump_pos - OBJ_PosGet(), color_jaune)
+								KRDBG_DRAWVECTOR(Ci_DBG_DRAW_TMP, OBJ_PosGet(), tv_lance_pos - OBJ_PosGet(), color_bleu)
+								ti_done = vrai
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	if( ! ti_done )
+	{
+		// positions safes par défaut
+		tv_jump_pos = @o_KONG OBJ_PosGet()
+		tv_lance_pos = @o_KONG OBJ_PosGet()
+	}
+}
+
+
+//===================================================================================
+// Calcule la position ou jeter ANN (raptor au sol)
+//----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// plf_force_cote : -1.0 ou 1.0
+// BYREF tv_jump_pos : position ou ANN va être lancée
+//===================================================================================
+procedure_local void KR_Compute_Ground_Lance_Pos(float tf_force_cote, byref vector tv_pos)
+{
+	float 			tf_dist_devant
+	float 			tf_dist_cote
+	float			tf_cote
+	int				ti_i
+	int				ti_done
+	
+	ti_done = faux
+	
+	for( ti_i = 0; ti_i < 2; ti_i++)
+	{
+		if( ti_done )
+			continue
+		else if( ! ti_i )
+			tf_cote = tf_force_cote		// 1ère série de tests : du côté spécifié
+		else
+			tf_cote = - tf_force_cote	// 2ème série de tests : de l'autre côté
+		
+		for( tf_dist_devant = Cf_ground_lance_dist_devant_default; tf_dist_devant > 0.0; tf_dist_devant -= 2.0 )
+		{
+			if( ti_done )
+				continue
+			else for( tf_dist_cote = Cf_ground_lance_dist_cote_default; tf_dist_cote > 0.0; tf_dist_cote -= 2.0 )
+			{
+				if( ti_done )
+					continue
+				else
+				{
+					tv_pos = OBJ_PosGet()
+					tv_pos += tf_dist_devant * OBJ_SightGet()
+					tv_pos += tf_cote * ( tf_dist_cote * OBJ_HorizonGet() )
+					if( KR_Safe_Ground_Pos(tv_pos) )
+					{
+						KRDBG_DRAWVECTOR(Ci_DBG_DRAW_TMP, OBJ_PosGet(), tv_pos - OBJ_PosGet(), color_jaune)
+						ti_done = vrai
+					}
+				}
+			}
+		}
+	}
+	if( ! ti_done ) 
+		tv_pos = OBJ_PosGet() 		// position safe par défaut
+}
+
+
+//==================================================================================================
+// DETECTION DES COLLISIONS MOLLES
+//==================================================================================================
+procedure_local void KR_Soft_Collision()
+{
+	int		ti_i
+	
+	float		tf_dist
+	float		tf_test_dist
+	float		tf_test_sqr_dist
+
+	vector	tv_me_to_budy
+	vector	tv_col_move_axis
+	
+	tf_test_dist = 5.0
+	tf_test_sqr_dist = tf_test_dist * tf_test_dist
+	
+	switch(i_etat_courant)
+	{
+		case ETAT_chute :
+		case ETAT_paf :
+		case ETAT_mord	: 
+		case ETAT_grab :
+		case ETAT_lance : 
+		case ETAT_KK_grabbed :
+		case ETAT_KK_ride : 
+		case ETAT_FinishAttack :
+		case ETAT_projectile :
+		case ETAT_mort :
+		case ETAT_track_change :
+		case ETAT_Finish_on_KONG :
+			return
+	}
+	
+	if (i_jump_etat || ( ! f_duree_dans_champ_camera ) || ( ! OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna) ) )
+	{
+		return	
+	}
+	
+	tv_col_move_axis = Cv_NullVector
+
+	for (ti_i = 0; ti_i < i_budy_nb; ti_i++)
+	{
+		if (ao_budy[ti_i] == OBJ_Me())
+			continue
+	
+		tv_me_to_budy = @ao_budy[ti_i] OBJ_PosGet() - OBJ_PosGet()
+		tv_me_to_budy.z = 0.0
+		
+		tf_dist = MATH_VecDotProduct(tv_me_to_budy, tv_me_to_budy) 
+
+		if (tf_dist < tf_test_sqr_dist) // && OBJ_LIB_Virtual_Colmap_Collision(OBJ_Me(), ao_budy[ti_i], vrai) )
+		{
+			tf_dist = MATH_FloatSqrt(tf_dist)
+
+			if (tf_dist)
+				tv_me_to_budy /= tf_dist
+			else
+				tv_me_to_budy = OBJ_HorizonGet()
+
+			tv_me_to_budy *= 1.0 - (tf_dist / tf_test_dist)
+			
+			tv_col_move_axis -= tv_me_to_budy
+		}
+	}
+	
+	tv_col_move_axis -= MATH_FloatMin(MATH_VecDotProduct(tv_col_move_axis, OBJ_SightGet()), 0.0) * OBJ_SightGet()
+	tv_col_move_axis *= 40.0 * DYN_FrictionGet()
+	tv_col_move_axis += DYN_TractionVectorGet()
+	DYN_TractionSet(tv_col_move_axis)
+}
+
+procedure_local int KR_IsAnimEnDeplacement()
+{
+	int	ti_curAnim
+	
+	ti_curAnim = ACT_ActionGet()
+	
+	switch (ti_curAnim)
+	{
+		case Action_Normal_Marche :
+		case Action_Normal_Trot :
+		case Action_Normal_Course :
+		case Action_Recul_Intimide :
+			return vrai
+	}
+
+	return faux
+}
+
+
+
+//==================================================================================================
+// Is the actor's tiredness level indicating he's bleeding ?
+//==================================================================================================
+procedure int KR_ActorIsBleeding( object to_fightActor )
+{
+	messageid	tmid_actorLife
+	
+	tmid_actorLife = EVENT_LIFE_MSGID_Get( to_fightActor )
+	if (!tmid_actorLife)
+		return faux	// no life management
+
+	return EVENT_LIFE_Est_Blesse(tmid_actorLife)
+}
+
+
+// excluding myself, how many can fight
+procedure_local int KR_GetNbFightingBudies()
+{
+	int	ti_total
+	int ti_i
+	messageid	tmid_tmp
+	
+	ti_total = 0
+	for (ti_i = 0; ti_i < i_budy_nb; ti_i++)
+	{
+		tmid_tmp = @get_PNJ_KRaptor_path ao_budy[ti_i] mid_best_interet
+		if (MSG_GlobalIsValid(tmid_tmp))
+		{
+			if (EVENT_InteretStatusGet(tmid_tmp) != C_EVENT_InteretStatusNone)
+				ti_total++
+		}
+	}
+	
+	return ti_total
+}
+procedure int KR_GetNbCloserInterestedEnemies( object to_fightActor, int ti_meme_IA )
+{
+	float tf_myDistSqr
+	float tf_hisDistSqr
+	int ti_i
+	int ti_nbCloserInterets
+	int ti_rank
+	message tm_filter
+	messageid tmid_interet_ID
+	object to_pere
+
+	tf_myDistSqr = OBJ_SqrDist(to_fightActor)
+	ti_nbCloserInterets = 0
+	ti_rank = -1
+	MSG_SetNull(tm_filter)
+	tm_filter.msg_gao1 = to_fightActor
+	
+	for (	tmid_interet_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tm_filter);
+			MSG_GlobalIsValid(tmid_interet_ID);
+			tmid_interet_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tm_filter) )
+	{
+		to_pere = EVENT_PereGet(tmid_interet_ID)
+		if ( 	(to_pere != OBJ_Me()) && 
+				(!ti_meme_IA || AI_HaveSameModel(to_pere)) &&
+				(EVENT_InteretStatusGet(tmid_interet_ID) != C_EVENT_InteretStatusNone)
+			)
+		{
+			tf_hisDistSqr = @to_pere OBJ_SqrDist(to_fightActor)
+			if (tf_hisDistSqr <= tf_myDistSqr)
+				ti_nbCloserInterets++
+		}
+	}
+
+	return ti_nbCloserInterets
+}
+
+
+
+
+//
+////==================================================================================================
+//// Can we (raptor group) launch a finish attack on our Fight Actor
+//// we can if:
+//// 1- attacked is bleeding (tired)
+//// 2- are we enough
+//// 3- are we well placed
+////
+//// NOTE: was used for synchronised group attack
+////==================================================================================================
+//procedure int KR_CanLaunchGroupFinishAttack( object to_attackedActor )
+//{
+////	int ti_nbLocked
+//	int ti_nbAttacking
+//
+//	//=========================================
+//	//	1- attacked is bleeding (tired)
+//	//=========================================
+//	if ( !KR_ActorIsBleeding(to_attackedActor) )
+//		return faux	// not bleeding
+//		
+//	//=========================================
+//	// 2- Already enough
+//	//=========================================
+//	ti_nbAttacking = KR_GetNbRaptorsAttacking(to_attackedActor,vrai)
+//	if (ti_nbAttacking >= Ci_RAPTORS_FOR_FINISH_ATTACK)
+//		return faux	// too many
+//
+//	return vrai
+//	
+//	// following was for synchronised jumping for finish attack
+//			
+////	//=========================================
+////	// 2- are we enough ?
+////	//=========================================
+////	ti_nbAttacking = KR_GetNbRaptorsAttacking(to_attackedActor,vrai)
+////	if (ti_nbAttacking > 0)
+////		return faux	// a raptor is already attacking
+////	
+////	ti_nbLocked = KR_GetNbRaptorsLocked(to_attackedActor,vrai)
+////	if (ti_nbLocked < Ci_RAPTORS_FOR_FINISH_ATTACK)
+////		return faux
+////		
+////	//=========================================
+////	// 3- we're well placed ?
+////	//=========================================
+////	//.. todo	
+////	
+////	return vrai
+//}
+
+
+//==================================================================================================
+// Are we at a good distance to FA for jumping ?
+// returns -1 if too close +1 if too far and 0 if ok
+//==================================================================================================
+procedure_local int KR_GetJumpOnFightActorStatus( object to_fightActor )
+{
+	float tf_orbitOffset
+	float tf_sqrDist
+	
+	if ( f_use_safe_orbit_timer > 0.0)
+		tf_orbitOffset = f_dist_safe_orbit*f_dist_safe_orbit
+	else
+		tf_orbitOffset = 0.0
+	
+	tf_sqrDist = OBJ_SqrDist(to_fightActor)
+	if ( i_KK_blesse)
+	{
+		if  ( tf_sqrDist < 9.0) 
+			return -1
+		else if ( tf_sqrDist > 225.0)
+			return 1
+		else
+			return 0
+		
+	}
+	
+	if (tf_sqrDist > (KK_f_dist_saute_loin_sqr + tf_orbitOffset))
+		return 1
+		
+	if (tf_sqrDist < (KK_f_dist_saute_pres_sqr + tf_orbitOffset))
+		return -1
+		
+	return 0
+}
+
+
+procedure_local void KR_ResetRide()
+{
+	DYN_GravitySet(Cv_Raptor_Gravity)
+	COL_ColSetActivationSet(C_bit_zdm_pied, none)
+	if( o_bone_ride_KK_uncol )
+	{
+		KR_UncollideableDel(o_bone_ride_KK_uncol)
+		AI_CBDel(o_bone_ride_KK_uncol, CallBack_After_Blend, "KR_CALLBACK_set_pos")
+	}
+	o_bone_ride_KK = LNK_ClientGet(Ci_LNK_RIDE_DINO, mid_bone_ride_KK_LNK_ID, faux, nofunc, nofunc, nofunc)
+	i_ride_attak = faux			// le raptor n'est pas (plus) en train de mordre pendant un ride
+	f_time_last_ride = TIME_Get()
+}
+
+
+// gathers the unique finish synchronisation message on the finished actor
+// if none is found, a new message is created
+// on return true means a new message was created, false means an existing message was found
+
+procedure_local int KR_GetOrCreateFinishSynchroMsg(object to_beeingFinished, byref messageid tmid_result)
+{
+	int					ti_rank
+	messageid		tmid_info_event
+	message		tm_tmp
+	object			to_me
+
+	MSG_SetNull(tm_tmp)
+	tm_tmp.msg_sender = nobody
+	tm_tmp.msg_gao1 = to_beeingFinished
+	tm_tmp.msg_int1 = C_EVENT_INFOTYPE_FINISHSYNCHRO
+
+	ti_rank = -1
+	tmid_info_event = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Info, &ti_rank, tm_tmp)
+	if (MSG_GlobalIsValid(tmid_info_event))	
+	{
+		tmid_result = tmid_info_event
+		return faux
+	}
+	
+	MSG_SetNull( tm_tmp )
+	tm_tmp.msg_int1 = C_EVENT_INFOTYPE_FINISHSYNCHRO
+	tm_tmp.msg_gao1 = to_beeingFinished
+	to_me = OBJ_Me()
+	tmid_result = @to_me MSG_GlobalSend( C_EVENT_TYPE_Info, 0.0, tm_tmp, C_EVENT_Infini )
+	return vrai		
+}
+
+
+
+// returns the angle between my position and this actor's sight
+// 0 is in front
+// pi/2 is to his left
+// -pi/2 is to his right
+// pi is behind
+procedure_local float KR_GetAngleToActorSight(object to_actor)
+{
+	vector tv_meToHimDir
+	vector tv_hisSightXY
+	vector tv_hisHorizXY
+	float tf_dotSight
+	float tf_dotHoriz
+	float tf_angle
+	
+	
+	tv_meToHimDir = OBJ_PosGet() - @to_actor OBJ_PosGet()
+	tv_meToHimDir.z = 0
+	if (MATH_VecNull(tv_meToHimDir))
+	{
+		// at the same position!
+		return 0.0
+	}
+	MATH_VecSetHorzNormalize(tv_meToHimDir)
+	
+	tv_hisSightXY = @to_actor OBJ_SightGet()
+	tv_hisSightXY.z = 0
+	if (MATH_VecNull(tv_hisSightXY))
+	{
+		// actor is in a weird position
+		return 0.0
+	}
+	MATH_VecSetHorzNormalize(tv_hisSightXY)
+	
+	tf_dotSight = MATH_VecDotProduct(tv_meToHimDir,@to_actor OBJ_SightGet())
+
+	tv_hisHorizXY = @to_actor OBJ_HorizonGet()
+	tv_hisHorizXY.z = 0
+	if (MATH_VecNull(tv_hisHorizXY))
+	{
+		// actor is in a weird position
+		return 0.0
+	}
+	MATH_VecSetHorzNormalize(tv_hisHorizXY)
+
+	tf_dotHoriz = MATH_VecDotProduct(tv_meToHimDir,tv_hisHorizXY)
+	
+	// bullet proof imprecisions
+	tf_dotHoriz = MATH_FloatLimit(tf_dotHoriz, -1.0, 1.0)	
+	tf_dotSight = MATH_FloatLimit(tf_dotSight, -1.0, 1.0)	
+	
+	if (tf_dotHoriz > 0.0)
+	{
+		// to the left of to_actor : range [0..PI]
+		if (tf_dotSight >= 0.0)
+		{
+			// in front
+			tf_angle = MATH_ACos(tf_dotSight)
+		}
+		else
+		{
+			// behind
+			tf_angle = Cf_Pi - MATH_ACos(-tf_dotSight)
+		}
+	}
+	else
+	{
+		// to the right of to_actor : range [0..-PI]
+		if (tf_dotSight >= 0.0)
+		{
+			// in front
+			tf_angle = -MATH_ACos(tf_dotSight)
+		}
+		else
+		{
+			// behind
+			tf_angle = -Cf_Pi + MATH_ACos(-tf_dotSight)
+		}
+	}
+	return tf_angle
+}
+
+// checks to see if the raptor can reach (jump or walk) the actor's canal
+// return if it is possible or not to reach
+// if not to_collided will contain the object found colliding unless an occluder is preventing the jump
+procedure_local int KR_CanReachActor( object to_actor, int ti_objectCanal, byref object to_collide_object )
+{
+	vector tv_pos_start
+	vector tv_pos_end
+	object to_canal
+	int ti_occl_res
+	vector tv_occl_nextPos
+	object to_occl_jump
+	object tao_occl_fake[1]
+	float taf_occl_fake[1]
+	
+
+	tv_pos_start = OBJ_PosGet() + cvector( 0.0, 0.0, 2.0)
+	to_canal = @o_fight_actor ANI_CanalObjectGet(ti_objectCanal)
+	tv_pos_end = @to_canal OBJ_PosGet()
+	to_collide_object = COL_RayObject_Vector( tv_pos_start, tv_pos_end - tv_pos_start, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable )
+	
+	if (to_collide_object && to_collide_object != to_actor)
+		return faux		
+
+	// occluder empeche de sauter ?
+	ti_occl_res = WAY_LIB_Test_Occluder( 	tv_pos_start, 
+															OBJ_SightGet(), 
+															COL_ZoneSizeGet(C_zdm_pied) + 0.1,
+															tv_pos_end, 
+															-1,	// territory not used for now
+															tv_occl_nextPos,
+															to_occl_jump, 
+															&tao_occl_fake[0],
+															&taf_occl_fake[0],
+															0,
+															C_Occl_Type_All )
+
+	if ( ti_occl_res != 0 )
+		return faux
+		
+	return vrai
+}
+
+
+procedure_local void KR_ComputeNewJumpDistances()
+{
+	float tf_pres
+	float tf_loin
+	float tf_randomOffset
+
+
+	tf_pres = f_dist_saute_pres
+	tf_loin = f_dist_saute_loin
+
+	// Distances
+	if (f_randomise_jump_dist != 0.0)
+	{
+			
+		tf_randomOffset = MATH_RandFloat(-f_randomise_jump_dist, f_randomise_jump_dist)
+		tf_randomOffset *= tf_loin
+		tf_pres += tf_randomOffset
+		tf_loin += tf_randomOffset
+	}
+	
+	KK_f_dist_saute_pres_sqr 	= tf_pres*tf_pres
+	KK_f_dist_saute_loin_sqr 		= tf_loin*tf_loin
+}
+
+procedure_local void KR_ComputeNewOrbit()
+{
+	// change speed
+	i_orbitting_speed = MATH_RandInt(0,Ci_MOVING_SPEED_NB)
+	i_orbitting_speed = 0
+	
+	// change orbit sign
+	if (MATH_RandInt(0,5) == 2)
+	i_orbitting_uturn = vrai		// will make uturn in next KR_exec_orientation
+
+	// change orbit
+	if (MATH_RandInt(0,2))
+	{
+		KR_ComputeNewJumpDistances()
+	}
+
+	// reset timer for next new orbit
+	f_orbitting_countdown = MATH_RandFloat(Cf_ORBITTING_COUNTDOWN_MIN, Cf_ORBITTING_COUNTDOWN_MAX)
+}
+
+
+procedure_local void KR_RandomiseOrbitNormal(float tf_distSqr, byref vector tv_normale)
+{
+	KRDBG_DRAWVECTOR(Ci_DBG_DRAW_TMP, OBJ_PosGet(), tv_normale*10, color_bleu)	
+	
+	f_orbitting_angleOffset -= TIME_GetDt()*0.1
+
+	if (f_orbitting_angleOffset <= 0.0)
+		f_orbitting_angleOffset = MATH_RandFloat(0.1,0.2)
+
+	if (tf_distSqr < ((KK_f_dist_saute_pres_sqr + KK_f_dist_saute_loin_sqr)/2.0) )
+	{
+		// in lower half : try to go up
+		if (f_rotation_requin_sign_perfect <= 0)
+			tv_normale = MATH_VecRotate(tv_normale,Cv_VerticalVector, f_orbitting_angleOffset)
+		else
+			tv_normale = MATH_VecRotate(tv_normale,Cv_VerticalVector, -1.0*f_orbitting_angleOffset)
+	}		
+	else
+	{
+		// in top half : try to go down
+		if (f_rotation_requin_sign_perfect <= 0)
+			tv_normale = MATH_VecRotate(tv_normale,Cv_VerticalVector, -1.0*f_orbitting_angleOffset)
+		else
+			tv_normale = MATH_VecRotate(tv_normale,Cv_VerticalVector, f_orbitting_angleOffset)
+	}
+	
+	KRDBG_DRAWVECTOR(Ci_DBG_DRAW_TMP, OBJ_PosGet(), tv_normale*10, color_rouge)	
+}
+
+
+
+procedure_local void KR_SetupToLookAtHead( object to_actor )
+{
+	object to_canal
+	
+	i_flag_look = vrai
+	to_canal = @to_actor  ANI_CanalObjectGet(Anim_Canal_Tete)
+	if( to_canal )
+		v_look_pos = @to_canal OBJ_PosGet()
+	else
+		v_look_pos = @to_actor OBJ_PosGet()
+}
+
+procedure_local void KR_SetupToLookAtPos( vector to_position )
+{
+	i_flag_look = vrai
+	v_look_pos = to_position
+}
+
+procedure_local void KR_SetCrossableDefault()
+{
+	COL_CrossableSet(Gmat_KK_Crossable_Default, none)
+	COL_CrossableSet(none, Gmat_KK_Cross_All_But_Kong_And_Raptors)
+}
+
+procedure_local void KR_SetCrossableBlownaway()
+{
+	COL_CrossableSet(Gmat_KK_Cross_All_But_Kong_And_Raptors,none)
+}
+
+procedure_local int KR_IsInMyBVFightZone(object to_gao)
+{
+	int ti_blindZone
+	
+	if (BV_ZoneTerritoire)
+	{
+		if (!@BV_ZoneTerritoire COL_BV_PointCollide(@to_gao OBJ_PosGet()))
+			return faux
+	}	
+
+	for (ti_blindZone = 0; ti_blindZone < Ci_nbr_of_blind_zone; ti_blindZone++)
+	{
+		if (o_blind_zone[ti_blindZone] == nobody)
+			continue
+
+		if ( @o_blind_zone[ti_blindZone] COL_BV_PointCollide(@to_gao OBJ_PosGet()) )
+			return faux
+	}
+	return vrai
+}
+
+
+//=====================================
+// NETWORK
+//=====================================
+
+procedure int KR_NetGetNodeAction( object to_node )
+{
+	if (@to_node OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct)
+		return (to_node.des_int1 & 0x000000FF)		// int1 (c1)
+	return 0
+}
+
+procedure float KR_NetGetNodeActionTime( object to_node )
+{
+	if (@to_node OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct)
+		return to_node.des_float1
+	return 0.0
+}
+
+// it's the value of the int1 argument to WAY_NetNextWP (3rd param) values are:
+// int1 = 0 <NetNextWP_Mode_le_premier> retourne le WP qui est au bout du premier lien (defini lors de la creation du reseau)
+// int1 = 1 <NetNextWP_Mode_aleatoire> retourne le WP qui est au bout d'un lien pris au hasard
+// int1 = 2 <NetNextWP_Mode_poids_le_plus_faible> retourne le WP qui est au bout du lien qui a la poid le plus faible
+// int1 = 3 <NetNextWP_Mode_axe_de_visee> retourne le WP qui est au bout du lien qui est le plus dans l'axe de visée du perso courant (ou Ultra)
+// int1 = 4 retourne le WP qui est au bout du lien qui est le plus dans l'axe de visée du WP de depart
+// int1 = 5 <NetNextWP_Mode_vitesse>         
+// int1 = 6 <NetNextWP_Mode_choix_de_lindice>               
+
+procedure int KR_NetGetNodeLinkChoiceType( object to_node )
+{
+	if (@to_node OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct)
+		return ((to_node.des_int1 & 0x0000FF00) >> 8)	// int1 (c2)
+	return 0
+}
+
+// used with node action <Play Action>
+procedure int KR_NetGetNodeActionToPlay( object to_node )
+{
+	if (@to_node OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct)
+		return to_node.des_int2
+	return Action_Normal_Attente
+}
+
+
+procedure int KR_NetAimRandomInBV( object to_node )
+{
+	if ( @to_node OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct )
+		return ((to_node.des_int1 & 0x00FF0000) >> 16)	// int1 (c3)
+	return 0
+}
+
+procedure int KR_NetGetLinkMoveType( network tn_net, object to_nodeStart, object to_nodeEnd )
+{
+	return WAY_LinkDesignGet(tn_net,to_nodeStart,to_nodeEnd)	
+}
+
+procedure int KR_NetNextNetworkLink( object to_node )
+{
+	if (@to_node OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct) 
+		return ((to_node.des_int1 & 0xFF000000) >> 24)		// int1 (c4)
+	return Ci_NETWORK_LINK_MOVE_DefaultOrLast
+}
+
+procedure object KR_NetGetNextNetworkHead( object to_node )
+{
+	if (@to_node OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct) 
+		return to_node.des_object1
+	return nobody
+}
+
+procedure int KR_NetGetLookOption( object to_node )
+{
+	if (@to_node OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct) 
+		return to_node.des_int3 & 0x00FF
+	return Ci_NETWORK_NODE_LOOK_DefaultOrLast	
+}
+
+// returns the ratio of height over length
+procedure float KR_NetGetJumpHeightOverLength( object to_node )
+{
+	int ti_ratioPercent
+	float tf_ratio
+	
+	if (@to_node OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct) 
+	{
+		ti_ratioPercent = (to_node.des_int3 & 0xFF00) >> 8
+		if (ti_ratioPercent > 0)
+		{
+			tf_ratio = ti_ratioPercent
+			tf_ratio /= 100.0
+			return tf_ratio
+		}
+	}
+	return Cf_Raptor_jump_heightOverLength	
+}
+
+
+// setup how and what the raptor will look at until he reaches the next waypoint
+procedure_local void KR_NetSetupLook()
+{
+	int ti_lookOption
+	object to_lookGao
+
+	
+	if (!o_net_nextNode)
+		return
+
+	if (! (@o_net_nextNode OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct) )
+		return		// intentionnal : no change
+	
+	ti_lookOption = KR_NetGetLookOption(o_net_nextNode)
+	if (ti_lookOption != Ci_NETWORK_NODE_LOOK_DefaultOrLast)
+		i_net_curLookOption = ti_lookOption
+
+	switch (i_net_curLookOption)
+	{
+		case Ci_NETWORK_NODE_LOOK_DefaultOrLast :
+			break
+			
+		case Ci_NETWORK_NODE_LOOK_Ahead :
+			o_net_lookGao = nobody
+			break
+	
+		case Ci_NETWORK_NODE_LOOK_AtNode :
+			o_net_lookGao = o_net_nextNode
+			break
+			
+		case Ci_NETWORK_NODE_LOOK_AtKong	:
+			o_net_lookGao = o_KONG
+			break
+		
+		case Ci_NETWORK_NODE_LOOK_AtAnn :
+			if( o_ANN )
+				o_net_lookGao = o_ANN
+			else
+				o_net_lookGao = o_KONG
+			break
+	
+		case Ci_NETWORK_NODE_LOOK_AtGao :
+ 			if ( (ti_lookOption != Ci_NETWORK_NODE_LOOK_DefaultOrLast) && (@o_net_nextNode OBJ_FlagsIdentityGet() & OBJ_C_IdentityFlag_DesignStruct) )
+			{
+				o_net_lookGao = o_net_nextNode.des_object2
+			}
+			else
+			{
+				if (!o_net_lookGao)
+				{
+					DBG_Warning("PNJ_KRaptor has no design struct for gao to look at")
+					DBG_TraceObject(OBJ_Me())
+					DBG_TraceString(" using node ")
+					DBG_TraceObject(o_net_nextNode)
+					DBG_TraceEOL()
+				}
+			}
+			break
+	}
+}
+
+procedure_local void KR_LeaveNetwork()
+{
+	o_net_oldNode = o_net_nextNode
+	o_net_nextNode = nobody
+	i_net_curNodeAction = -1
+}
+
+procedure_local void KR_InitNetworkFollowing( object to_net_head, int ti_preHeadLinkMove )
+{
+	n_net_current_navnet = @to_net_head WAY_NetOfObj()
+	o_net_nextNode = to_net_head
+	o_net_oldNode = nobody
+	if (ti_preHeadLinkMove != Ci_NETWORK_LINK_MOVE_DefaultOrLast)
+		i_net_curLinkMove = ti_preHeadLinkMove
+	else
+		i_net_curLinkMove = Ci_NETWORK_LINK_MOVE_Run
+	i_net_justEnteredNode = vrai
+	i_net_curNodeAction = Ci_NETWORK_NODE_ACT_Bypass
+	i_net_doingNodeAction = faux
+	i_net_curLookOption = Ci_NETWORK_NODE_LOOK_Ahead
+	KR_NetSetupLook()
+}
+
+procedure_local int KR_NetNodeIsReached( object to_node, int ti_linkMove )
+{
+	if (i_net_nodeReachedReq == Ci_NETWORK_NNR_REQ_ForceReached)
+	{
+		i_net_nodeReachedReq = Ci_NETWORK_NNR_REQ_NotUsed
+		return vrai
+	}
+
+	if ( !@to_node COL_BV_PointCollide(OBJ_PosGet()) )
+		return faux
+		
+	// special requirements based on action
+	if (i_net_nodeReachedReq == Ci_NETWORK_NNR_REQ_ForceNeverReach)
+		return faux
+	
+	return vrai
+}
+
+procedure_local int KR_GetAnnAttackAvailability(byref vector tv_pos)
+{
+	int				ti_availability
+	messageid 	tmid_vision_ID
+	int 			ti_visibility_context
+	int				ti_type_sol
+	
+	if (! o_ANN )
+		return Ci_AnnAvailability_NotAvailable
+	
+	tmid_vision_ID = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility, o_ANN, nobody)
+	if( MSG_GlobalIsValid(tmid_vision_ID) )
+	{
+		EVENT_VisionContextGetAll(tmid_vision_ID,ti_visibility_context,ti_type_sol)
+		
+		if (ti_type_sol != 2) // ann on pilier
+		{
+			if ( ti_visibility_context == C_EVENT_CONTEXT_DEBOUT)
+				ti_availability = Ci_AnnAvailability_CanBeAttacked
+			else if ( ti_visibility_context == C_EVENT_CONTEXT_ACCROUPI )
+				ti_availability = Ci_AnnAvailability_CanBeFollowed
+			else
+				ti_availability = Ci_AnnAvailability_NotAvailable
+		}
+		else
+		{
+			ti_availability = Ci_AnnAvailability_NotAvailable
+		}
+
+			
+		tv_pos = EVENT_PositionGet(tmid_vision_ID)
+	}
+	else
+	{
+		tv_pos = @o_ANN OBJ_PosGet()
+		ti_availability = Ci_AnnAvailability_NotAvailable
+	}
+
+	return ti_availability
+}
+
+// check for minimal attack conditions on Kong
+procedure_local int KR_CanHaveFightActor_Kong()
+{
+	if ( 
+		( KR_IsInMyBVFightZone(o_KONG) ) &&
+		( OBJ_SqrDistHorz(o_KONG) <= Cf_dist_fight_KONG ) && 
+		( @get_global i_kong_camera_status != Ci_Kcamera_walling ) 
+       )
+       return vrai
+
+	return faux
+}
+
+// check for minimal attack conditions on Kong
+procedure_local int KR_CanHaveFightActor_Ann( int ti_nbLimit )
+{
+	int			ti_whereIsAnn
+	int			ti_nbRaptorsOnAnn	
+	int			ti_annAvailability
+	vector	tv_annPos
+	
+	if( ! o_ANN )	
+		return faux
+	
+	if( i_DBG_test_finish_sur_KONG )
+		return faux
+	
+	if( @o_KONG Proc_KK_IsInBadSituation(C_ID_Raptor) )
+		return faux		// calceler les attaques sur ANN si KONG subit un mashing
+
+	//========================
+	// 1- Is she inside territory and not inside blind zone
+	if ( ! KR_IsInMyBVFightZone(o_ANN) )
+		return faux
+	
+	//========================
+	// 1.5 - si ej suis déjà en intéraction avec ANN, je ne fais plus les auters tests !!!
+//	if( i_etat_courant == ETAT_interact_ANN )
+//		return vrai
+	
+	//========================
+	// 2- only if she is on the ground	
+//	ti_whereIsAnn	= KR_WhereIsAnn()
+//	if (ti_whereIsAnn != Ci_AnnLocation_OnGround)
+//		return faux
+	
+	if( @o_ANN Proc_KIndigene_Kong_LiaisonStatusGet() != Ci_Kong_KIndigene_LinkStatus_None )
+		return faux
+	
+	//========================
+	// 3- only if she's close enough
+	tv_annPos = @o_ANN OBJ_PosGet() - OBJ_PosGet()
+	if ( tv_annPos.z > 6.0)
+		return faux
+	if ( OBJ_SqrDist(o_ANN) > Cf_dist_fight_ANN )
+		return faux
+
+	//========================
+	// 4- Too many already attacking her
+//	if (	ti_nbLimit > 0)
+//	{
+////		ti_nbRaptorsOnAnn = 	KR_Check_Presence_Interet_Statut_Model( o_ANN, C_EVENT_InteretStatusLock, vrai, faux)
+////		ti_nbRaptorsOnAnn += KR_Check_Presence_Interet_Statut_Model( o_ANN, C_EVENT_InteretStatusLock, vrai, faux)
+//		ti_nbRaptorsOnAnn = KR_GetNbCloserInterestedEnemies(o_ANN, vrai)
+//		
+//		if (ti_nbRaptorsOnAnn >= ti_nbLimit)
+//			return faux
+//	}
+			
+	//========================
+	// 5- and she is available
+//	ti_annAvailability = KR_GetAnnAttackAvailability( tv_annPos )
+//	if (ti_annAvailability == Ci_AnnAvailability_NotAvailable)
+//		return faux
+
+	// no reason not to attack her!
+	return vrai
+}
+
+
+// if we are moving, the impulse will be too
+procedure int KR_GetImpulseAction()
+{
+//	if (DYN_SpeedGet() > 1.0)
+//		return Action_Jump_Impulse_Moving
+		
+	switch (ACT_ActionGet())
+	{
+		case Action_Normal_Course :
+		case Action_Normal_Trot :
+		case Action_Normal_Marche :
+			return Action_Jump_Impulse_Moving					
+	}
+
+	return Action_Jump_Impulse
+}
+
+// based on jump's angle choose an appropriate action to exit the jump
+// the action returned is a transition to a jump cycle action
+procedure int KR_GetImpulseExitAction( vector tv_jumpDir )
+{
+	int ti_impulseAction
+	
+	// determine best impulse action to play
+	MATH_VecSetNormalize(tv_jumpDir)
+	if (tv_jumpDir.z < Cf_Sin30)
+		ti_impulseAction = Action_Jump_Impulse_Long_tr
+	else if (tv_jumpDir.z > Cf_Sin60)
+		ti_impulseAction = Action_Jump_Impulse_High_tr
+	else
+		ti_impulseAction = Action_Jump_Impulse_Med_tr
+
+	return ti_impulseAction
+}
+
+
+// test collisions between my ti_zde1 and other's ti_zde2
+// send paf when they do collide and return vrai
+// returns faux otherwise
+procedure_local int KR_TestCollision_ZDE_ZDE( int ti_zde1, int ti_zde2, object to_excluded_gao)
+{
+	int						ti_collision_nb
+	int						ti_i
+	int 					ti_puissance
+	int						ti_visibilityType
+	messageid			tmid_visibility
+	object				tao_zde_zde_list[20]
+	object				to_collided
+//	int						ti_paf_allowed
+	int						ti_pafTypeToSend
+	int						ti_target_is_trex
+	int						ti_paf_type
+	vector				tv_dyn_H				// horizontal dyn vector
+	vector				tv_meToCollided_H	// direction ov 
+	vector				tv_paf
+	int						ti_hit
+	int						ti_shouldDie	// dies instantly depending on what he collides with
+
+	ti_hit	= faux
+	
+	// get only colliding AI
+	ti_collision_nb = COL_ZDE_ZDEListGet( &tao_zde_zde_list[0], ti_zde1, ti_zde2, all, none, Ci_Filter_IdentityFlag)
+	for (ti_i = 0; ti_i < ti_collision_nb; ti_i++)
+	{
+		to_collided = tao_zde_zde_list[ti_i]
+		if( to_collided == to_excluded_gao )
+			continue
+		
+		ti_pafTypeToSend = -1
+		ti_shouldDie = faux
+		
+		//  determine if this gao is interesting for us
+		if( @to_collided OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+		{
+			if (@to_collided AI_IsModel(get_PNJ_KRaptor_path))
+			{
+				ti_pafTypeToSend = C_PAF_KK_Moyen | C_PAF_KK_KiTue
+				ti_shouldDie = vrai
+			}
+			else if (@to_collided AI_IsModel(get_KNativeGroup_path))
+			{
+				ti_pafTypeToSend = C_PAF_KK_Moyen | C_PAF_KK_KiTue
+				ti_shouldDie = vrai
+			}
+			else if (@to_collided AI_IsModel(get_PNJ_KNative_path))
+			{
+				ti_pafTypeToSend = C_PAF_KK_Moyen | C_PAF_KK_KiTue
+				ti_shouldDie = vrai
+			}
+			else if (@to_collided AI_IsModel(get_PNJ_KBats_path))
+			{
+				ti_pafTypeToSend = C_PAF_KK_Moyen | C_PAF_KK_KiTue
+				ti_shouldDie = vrai
+			}
+			else
+			{
+				ti_pafTypeToSend = C_PAF_KK_Moyen 
+			}
+		}
+
+		if (ti_pafTypeToSend == -1)
+			continue
+		
+		tv_meToCollided_H = @to_collided OBJ_PosGet() - OBJ_PosGet()
+		tv_meToCollided_H.z = 0
+		
+		tv_dyn_H = DYN_SpeedGetVector()
+		tv_dyn_H.z = 0
+		
+		if (MATH_VecNull(tv_meToCollided_H) || MATH_VecNull(tv_dyn_H))
+		{
+			tv_paf = OBJ_SightGet()
+		}
+		else
+		{
+			tv_paf = MATH_VecBlend(tv_meToCollided_H,tv_dyn_H,0.5)
+			MATH_VecSetNorm(tv_paf,2.0)
+		}
+		
+		EVENT_AddEventPafCanal(C_EVENT_FILTER_All, ti_pafTypeToSend, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_collided, -1, 0.0, tv_paf, COL_ZonePosGet(ti_zde1))
+		KR_DBG_Trace(i_DBG_trace_send_paf, "paf (0 dmg) dans KR_TestCollision_ZDE_ZDE")
+		if (ti_shouldDie)
+		{
+			EVENT_LIFE_CurLifeSet(ID_LIFE, 0.0)			// I die immediately
+			ti_hit	= vrai		// stop me here
+		}
+	}
+	return ti_hit
+}
+
+// adjust the frequency of the current action so that it lasts the duration provided
+// for example if the action lasts 1 second and we need it to last 2 we will slow the frequency by half
+// NOTE: only for actions with 1 animation
+procedure void KR_AdjustActionFrequencyForTime( float tf_durationWanted )
+{
+	float tf_aniDuration
+	float tf_ratio
+	int	ti_curAction
+	int ti_freq
+
+
+	ti_curAction = ACT_ActionGet()
+	tf_aniDuration = ACT_DurationGet( ti_curAction, 0 )
+	tf_ratio = tf_aniDuration / tf_durationWanted
+	ti_freq = (tf_ratio * ACT_FrequencyGet(ti_curAction,0)) - 1.0		// -1 to make sure it doesn't come to an end
+	ANI_FrequencySet(	0, ti_freq )
+}
+
+
+
+
+// if there is some server interacting with the target, returns vrai
+// otherwise returns faux
+procedure_local int KR_IsInteracting(object to_target, byref object to_server)
+{
+	messageid		tmid_temp
+	
+	if ( to_target )
+	{
+		tmid_temp = EVENT_FindEventPereTarget(Ci_LNK_EVENT_OFFSET + Ci_LNK_INTERACTION, to_target, nobody)
+		if ( MSG_GlobalIsValid(tmid_temp) )
+		{
+			to_server = EVENT_TargetGet(tmid_temp)		// il y a bien un serveur (ce n'est pas une liaison vide d'une demande d'un client)
+			if ( to_server )
+			{
+				return vrai
+			}
+		}
+	}
+	return faux
+}
+
+// compute once each loop
+procedure_local void KR_PrecomputeEachLoop()
+{
+	int ti_i
+	object to_gao
+	
+
+	for	(ti_i = 0; ti_i < 2; ti_i++)
+	{
+		switch (ti_i)
+		{
+			case 0 :
+				to_gao = o_KONG
+				break
+			case 1 :
+				to_gao = o_ANN
+				break
+		}
+		
+		if (to_gao)
+		{
+			v_PC_Dir[ti_i] = @to_gao OBJ_PosGet() - OBJ_PosGet()
+	
+			v_PC_HDir[ti_i] = v_PC_Dir[ti_i]
+			v_PC_HDir[ti_i].z = 0
+			
+			f_PC_Dist[ti_i] = MATH_VecNorm(v_PC_Dir[ti_i])
+			if (f_PC_Dist[ti_i] != 0.0)
+				v_PC_Dir[ti_i] = v_PC_Dir[ti_i] / f_PC_Dist[ti_i]
+			else
+				v_PC_Dir[ti_i] = OBJ_SightGet()
+				
+			f_PC_HDist[ti_i] = MATH_VecNorm(v_PC_HDir[ti_i])
+			if (f_PC_HDist[ti_i] != 0.0)
+				v_PC_HDir[ti_i] = v_PC_HDir[ti_i] / f_PC_HDist[ti_i]
+			else
+				v_PC_HDir[ti_i] = cvector(1.0, 0, 0)
+		}
+		else
+		{
+			v_PC_Dir[ti_i] = OBJ_SightGet()
+			v_PC_HDir[ti_i] = cvector(1,0,0)
+			f_PC_Dist[ti_i] = Cf_Infinit
+			f_PC_HDist[ti_i] = Cf_Infinit
+		}		
+	}
+}
+
+
+procedure_local void KR_GFX_Particules(vector tv_pos, vector tv_paf_dir) 
+{
+	int			pi_GFX_Blood
+	color 		materiau_color
+	vector	tv_lat2_axis, tv_lat_axis 
+	object	to_light_n_smoke
+	
+	to_light_n_smoke = @get_global o_global_light_and_smoke_kanada
+	if( ! to_light_n_smoke )
+		return
+
+	materiau_color  = 0x00474A5E //0x0071837D
+
+	tv_lat_axis = MATH_VecCrossProduct(tv_paf_dir, Cv_VerticalVector)
+	tv_lat2_axis = MATH_VecCrossProduct(tv_paf_dir, tv_lat_axis)
+	
+	pi_GFX_Blood = GFX_Add(13)																// Create the boum	
+	GFX_MaterialSet(pi_GFX_Blood, to_light_n_smoke, -1)
+	GFX_FlagSet(pi_GFX_Blood, 0 , 1)
+	GFX_FlagSet(pi_GFX_Blood, 2 , 1)
+	GFX_Seti(pi_GFX_Blood, 13101, 22)															// Materiau N°
+	GFX_Seti(pi_GFX_Blood, 13110, 10)															// Materiau N°
+	GFX_Seti(pi_GFX_Blood, 13100, 40)														// *Buffer number of sprite
+	GFX_Seti(pi_GFX_Blood, 13106, 40)														// *number of sprite to generate
+	GFX_Setf(pi_GFX_Blood, 13003, 0.08)														// Time fase 1
+	GFX_Setf(pi_GFX_Blood, 13004, 0.4)														// Time fase 2
+	GFX_Seti(pi_GFX_Blood, 13107, 0)															// Sprites non triés
+	GFX_Setf(pi_GFX_Blood, 13012, 0.0)														// Time random
+	GFX_Setf(pi_GFX_Blood, 13000, 0.1)														// Growing speed min
+	GFX_Setf(pi_GFX_Blood, 13001, 0.5)														// Growing speed max
+	GFX_Setf(pi_GFX_Blood, 13002, 0.0001)													// Friction Grow
+	GFX_Setf(pi_GFX_Blood, 13005, 0.2 )						 								// Creation size min
+	GFX_Setf(pi_GFX_Blood, 13006, 0.4 )														// Creation size max
+	GFX_Setv(pi_GFX_Blood, 13203, cvector(0.02, 0.02, 0.02))							// friction speed
+	GFX_Seti(pi_GFX_Blood, 13103, 0xF0000000 + materiau_color)					// Color fase 0
+	GFX_Seti(pi_GFX_Blood, 13104, 0xF0000000 + materiau_color)					// Color fase 1
+	GFX_Seti(pi_GFX_Blood, 13105, 0x00000000 + materiau_color)					// Color fase 2
+	GFX_Setf(pi_GFX_Blood, 13009, 5)															// Norm speed min
+	GFX_Setf(pi_GFX_Blood, 13010, 15)														// Norm speed max
+	GFX_Setf(pi_GFX_Blood, 13007, -10.0)														// Gravity
+	GFX_Setf(pi_GFX_Blood, 13008, 0.0)														// generation rate
+	GFX_Setv(pi_GFX_Blood, 13204, tv_paf_dir)												// wind
+	GFX_Setv(pi_GFX_Blood, 13205, Cv_NullVector)										// Mainposspeed
+	GFX_Setv(pi_GFX_Blood, 13206, Cv_NullVector)										// Mainpossfriction
+	GFX_Setv(pi_GFX_Blood, 13200, tv_pos) 												// Creation Pos
+	GFX_Setv(pi_GFX_Blood, 13201, tv_paf_dir + (tv_lat_axis * 0.2) + (tv_lat2_axis * 0.2) )					// Speed min
+	GFX_Setv(pi_GFX_Blood, 13202, (tv_paf_dir * 5.0) - (tv_lat_axis * 1.2 ) - (tv_lat2_axis * 1.2 ) )											// Speed max
+}
+
+
+//ADDED SURESH
+procedure_local void KR_GFX_FootSteps() 
+{
+	
+	message m_Msg_GFX
+	object to_foot
+	object to_leg
+
+	if (KR_IsAnimEnDeplacement() || ACT_ActionGet() == Action_Fight_FrontBiteWalk)
+	{
+					
+		if(ACT_ActionGet()==Action_Normal_Course || ACT_ActionGet() == Action_Fight_FrontBiteWalk)
+		{
+			if(f_global_time - f_raptor_RightfootRunGFX_time >= f_raptor_runGFX_delay)
+			{
+				to_foot = ANI_CanalObjectGet(Anim_Canal_PiedGauche)
+				to_leg = ANI_CanalObjectGet(Anim_Canal_OrteilGauche)
+				m_Msg_GFX.msg_int1 = SFX_ID_RaptorImpactOnRightHand
+				m_Msg_GFX.msg_vec1 = @to_foot OBJ_PosGet() 
+				m_Msg_GFX.msg_vec2 = @to_leg OBJ_PosGet() 
+				Dispatch_Interaction(o_Wall_Effect, m_Msg_GFX)
+				f_raptor_RightfootRunGFX_time = TIME_Get()
+			}
+			if(f_global_time - f_raptor_LeftfootRunGFX_time >= f_raptor_runGFX_delay)
+			{
+				to_foot = ANI_CanalObjectGet(Anim_Canal_PiedDroit)
+				to_leg = ANI_CanalObjectGet(Anim_Canal_OrteilDroit)
+				m_Msg_GFX.msg_int1 = SFX_ID_RaptorImpactOnLeftHand
+				m_Msg_GFX.msg_vec1 =	@to_foot OBJ_PosGet()
+				m_Msg_GFX.msg_vec2 =	@to_leg OBJ_PosGet() 
+				Dispatch_Interaction(o_Wall_Effect, m_Msg_GFX)
+				f_raptor_LeftfootRunGFX_time = TIME_Get()
+			}
+			
+		}
+		else
+		{
+			if(f_global_time - f_raptor_RightfootWalkGFX_time >= f_raptor_walkGFX_delay)
+			{
+				to_foot = ANI_CanalObjectGet(Anim_Canal_PiedGauche)
+				to_leg = ANI_CanalObjectGet(Anim_Canal_OrteilGauche)
+				m_Msg_GFX.msg_int1 = SFX_ID_RaptorImpactOnRightHand_Walk 
+				m_Msg_GFX.msg_vec1 = @to_foot OBJ_PosGet() 
+				m_Msg_GFX.msg_vec2 = @to_leg OBJ_PosGet() 
+				Dispatch_Interaction(o_Wall_Effect, m_Msg_GFX)
+				f_raptor_RightfootWalkGFX_time  = TIME_Get()
+			}
+			if(f_global_time - f_raptor_LeftfootWalkGFX_time >= f_raptor_walkGFX_delay)
+			{
+				to_foot = ANI_CanalObjectGet(Anim_Canal_PiedDroit)
+				to_leg = ANI_CanalObjectGet(Anim_Canal_OrteilDroit)
+				m_Msg_GFX.msg_int1 = SFX_ID_RaptorImpactOnLeftHand_Walk
+				m_Msg_GFX.msg_vec1 =	@to_foot OBJ_PosGet()
+				m_Msg_GFX.msg_vec2 =	@to_leg OBJ_PosGet() 
+				Dispatch_Interaction(o_Wall_Effect, m_Msg_GFX)
+				f_raptor_LeftfootWalkGFX_time = TIME_Get()
+			}
+		
+		}
+	}
+
+}
+
+//ADDED SURESH
+procedure_local void KR_GFX_Impact(vector v_collidedPoint) 
+{
+	
+	message m_Msg_GFX
+	object to_tete
+	
+	if(f_global_time - f_throwTime >= f_throw_delay)
+	{
+		//ADDED SURESH
+		to_tete = ANI_CanalObjectGet(Anim_Canal_Tete)
+		m_Msg_GFX.msg_int1 = SFX_ID_RaptorImpactOnGround
+		m_Msg_GFX.msg_vec1 =  @to_tete OBJ_PosGet() 
+		m_Msg_GFX.msg_vec2 =  v_collidedPoint //COL_CollidedPointGet(COL_C_Wall)
+		Dispatch_Interaction(o_Wall_Effect, m_Msg_GFX)
+		f_throwTime = TIME_Get()
+			
+	}
+}
+
+
+procedure_local vector KR_WorldBankingGet()
+{
+	if( COL_CollideType(COL_C_Ground) )
+		return COL_NormalGet(COL_C_Ground)
+	else
+		return Cv_VerticalVector
+}
+
+
+//============================================================================================
+// FINISH SUR KIONG !!! 
+//============================================================================================
+procedure_local void KR_Spawn_Budy()
+{
+	object	to_spawned
+	int			sect0
+	int			sect1
+	int			sect2
+	int			sect3
+	
+	to_spawned = OBJ_Duplicate(OBJ_PosGet())
+	if( to_spawned )
+	{
+		// orientation & position
+		@to_spawned OBJ_BankingGeneralSet(OBJ_SightGet(), OBJ_BankingGet())
+		@to_spawned OBJ_PosSet(OBJ_PosGet())
+		@to_spawned COL_StartMatrixSet(@to_spawned OBJ_PosGet())
+		// sectorisation
+		SCT_GetOf(&sect0, &sect1, &sect2, &sect3)
+		@to_spawned SCT_SetOf( sect0, sect1, sect2, sect3)
+		// init état
+		@to_spawned KR_Init_Spawn_Finish()
+		// référencement
+		ao_spawned[i_spawned] = to_spawned
+		OBJ_RegisterKill(ao_spawned[i_spawned], &ao_spawned[i_spawned])
+		i_spawned++
+	}
+}
+
+procedure_local void KR_Finish_Initialisation(int ti_leader)
+{
+	object		to_bone
+	int				ti_spawn_cpt
+	int				ti_ride_nb
+	
+	f_pos_blend_coef_ride = 1.0		// coef de blend au max !!!! testé par KONG, raison de + !!! :)
+	i_ride_mode = Ci_ride_finish_on_KONG
+	i_I_finish_init_done = faux
+	if( ti_leader )
+	{
+		KR_DBG_Trace(i_DBG_trace_finish, "=== FINISH LEADER ===")
+		i_I_finish_leader = vrai
+		@get_global o_KNMI_finish_leader = OBJ_Me()
+		LNK_Finish_ActionSet(mid_I_finish_LNK_ID, Ci_GrabKong_FinishSePlace)
+		LNK_Finish_FinisherTypeSet(mid_I_finish_LNK_ID, Ci_GrabKong_Finished_Raptors)
+		LNK_GrabBoneSet(mid_bone_ride_KK_LNK_ID, @o_I_finish_actor ANI_CanalObjectGet(Raptor_Finish_on_KONG_Canal_Anim_01) )
+		i_I_finish_role = Finish_on_KONG_Role_Anim_01
+		AI_CBDel(o_bone_ride_KK_uncol, CallBack_After_Blend, "KR_CALLBACK_set_pos")		// pos & orient gérées dans l'état !!!!
+		// spawn des X raptors supplémentaires
+		@get_global i_KNMI_finish_spawn_actor_count = 0
+		ti_ride_nb = @o_I_finish_actor Proc_KK_RIDE_Get_Actor_Nb_By_Model(OBJ_Me())
+		ti_spawn_cpt = 4 - ti_ride_nb
+		KR_DBG_Trace_Int(i_DBG_trace_finish, "je vais spawner X copains :", ti_spawn_cpt)
+		while( ti_spawn_cpt > 0 )
+		{
+			KR_Spawn_Budy()
+			ti_spawn_cpt--
+		}
+	}
+	else
+	{
+		KR_DBG_Trace(i_DBG_trace_finish, "=== FINISH FAKE ACTOR ===")
+		o_I_finish_actor = o_KONG
+		switch( @get_global i_KNMI_finish_fake_actor_count )
+		{
+			case 0 : 
+				LNK_GrabBoneSet(mid_bone_ride_KK_LNK_ID, @o_I_finish_actor ANI_CanalObjectGet(Raptor_Finish_on_KONG_Canal_Anim_02) )
+				i_I_finish_role = Finish_on_KONG_Role_Anim_02
+				AI_CBDel(o_bone_ride_KK_uncol, CallBack_After_Blend, "KR_CALLBACK_set_pos")		// pos & orient gérées dans l'état !!!!
+				break
+			case 1 : 
+				LNK_GrabBoneSet(mid_bone_ride_KK_LNK_ID, @o_I_finish_actor ANI_CanalObjectGet(Raptor_Finish_on_KONG_Canal_Fake_01) )
+				i_I_finish_role = Finish_on_KONG_Role_Fake_01
+				AI_CBAdd(o_bone_ride_KK_uncol, CallBack_After_Blend, "KR_CALLBACK_set_pos")		// au cas où elle aurait déjà été coupée
+				break
+			case 2 : 
+				LNK_GrabBoneSet(mid_bone_ride_KK_LNK_ID, @o_I_finish_actor ANI_CanalObjectGet(Raptor_Finish_on_KONG_Canal_Fake_02) )
+				i_I_finish_role = Finish_on_KONG_Role_Fake_02
+				AI_CBAdd(o_bone_ride_KK_uncol, CallBack_After_Blend, "KR_CALLBACK_set_pos")		// au cas où elle aurait déjà été coupée
+				break
+			case 3 : 
+//				LNK_GrabBoneSet(mid_bone_ride_KK_LNK_ID, @o_I_finish_actor ANI_CanalObjectGet(Raptor_Finish_on_KONG_Canal_Fake_03) )
+//				i_I_finish_role = Finish_on_KONG_Role_Fake_03
+//				AI_CBAdd(o_bone_ride_KK_uncol, CallBack_After_Blend, "KR_CALLBACK_set_pos")		// au cas où elle aurait déjà été coupée
+				OBJ_Destroy() // on ne veut que 2 raptors sur le dos !!!
+				break
+		}
+		@get_global i_KNMI_finish_fake_actor_count++
+	}
+}
+
+procedure_local void KR_Finish_Reset(int ti_leader)
+{
+	i_I_finish_leader = faux
+	i_I_finish_role = 0
+	if( ti_leader )
+	{
+		@get_global o_KNMI_finish_leader = nobody
+		o_I_finish_actor = LNK_ThisClientGet(o_I_finish_actor,Ci_LNK_KKFINISH_ON_KONG, mid_I_finish_LNK_ID, faux, nofunc, nofunc, nofunc)
+	}
+	else
+	{
+		o_I_finish_actor = nobody
+	}
+}
+//============================================================================================
+// FINISH SUR KONG !!!
+//============================================================================================
+
+procedure_local int KR_Pafs_Effects_Check(int ti_paf_type)
+{
+	if( EVENT_LIFE_CurLifeGet(ID_LIFE) <= 0.0 )
+		return faux		// déjà mort
+	if( ti_paf_type & C_PAF_KK_Repousse )
+		return faux
+	if( @o_KONG Proc_KK_RAGE_Test() )
+		return vrai
+	return faux
+}
+
+// STATS ==============================================================
+procedure_local void KR_STATS_NMI_Killed(object to_enemy_killed_sender)
+{
+	if( ! to_enemy_killed_sender )
+		to_enemy_killed_sender = o_KONG
+	if( ! i_stats_nmi_killed_done )
+	{
+		i_stats_nmi_killed_done = vrai
+		switch (i_body_size)
+		{
+			case Ci_BODYSIZE_NormalRaptor :
+				STATS_IncEnemyKilled_New(to_enemy_killed_sender, C_EnemyType_Raptor, 0 ) 
+				break
+			case Ci_BODYSIZE_SmallGaliminus :
+				STATS_IncEnemyKilled_New(to_enemy_killed_sender, C_EnemyType_Gallimini, 0 ) 
+				break
+		}
+	}
+}
+
+
+//=================================================================================================
+// Retourne combien il y a de messages d'intérêt d'autres ennemis (du même type ou non) sur l'acteur spécifié et avec le statut spécifié
+// si pi_meme_IA, considere uniquement les IA avec le meme modele que moi sinon considere toutes les IA
+// si pi_includeMe va m'inclure dans le compte
+//=================================================================================================
+procedure_local int KR_Check_Presence_Interet_Statut_Model( object po_actor, int pi_statut, int pi_meme_IA, int pi_includeMe)
+{
+	int					ti_rank
+	message		tm_filter
+	messageid		tmid_interet_ID
+	object			to_pere
+	int					ti_nbInterets
+	
+	ti_nbInterets = 0
+	ti_rank = -1
+	MSG_SetNull(tm_filter)
+	tm_filter.msg_gao1 = po_actor
+	
+	for (	tmid_interet_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tm_filter);
+			MSG_GlobalIsValid(tmid_interet_ID);
+			tmid_interet_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tm_filter) )
+	{
+		to_pere = EVENT_PereGet(tmid_interet_ID)
+		if ( 	(pi_includeMe || to_pere != OBJ_Me()) && 
+				(!pi_meme_IA || AI_HaveSameModel(to_pere)) &&
+				(EVENT_InteretStatusGet(tmid_interet_ID) == pi_statut)	)
+		{
+			ti_nbInterets++
+		}
+	}
+
+	return ti_nbInterets
+}
+
+
+// Mainly put as procedure to be able to more easily debug
+procedure_local void KR_SetInterestType( int ti_interestType )
+{
+	if (MSG_GlobalIsValid(mid_best_interet))
+	{
+		EVENT_InteretStatusSet(mid_best_interet, ti_interestType)
+		i_DBG_lastInterestSet = ti_interestType
+	}
+}
+
+
+procedure_local void KR_DelInterestMsg(int ti_optionnel)
+{
+	if (!ti_optionnel)
+	{	
+		if (MSG_GlobalIsValid(mid_best_interet))
+			MSG_GlobalDelete(mid_best_interet, C_EVENT_EOFDEL)
+	}
+}
+
+
+//===================================================================================
+// Mise à jour de l'intérêt
+//===================================================================================
+procedure_local void KR_Update_Interet(messageid pmid_vision, object po_interet_target)
+{
+	if( ! MSG_GlobalIsValid(mid_best_interet) )
+		mid_best_interet = EVENT_AddEventInteret(OBJ_Me(), Cf_interet_duree, EVENT_VisionInteretGet(pmid_vision), EVENT_PositionGet(pmid_vision), po_interet_target)
+	else
+	{
+		EVENT_LifeSet(mid_best_interet, Cf_interet_duree)
+		EVENT_InteretTargetSet(mid_best_interet, po_interet_target)
+		EVENT_InteretPositionSet(mid_best_interet, EVENT_PositionGet(pmid_vision))
+		EVENT_InteretSet(mid_best_interet, EVENT_VisionInteretGet(pmid_vision))
+	}
+	EVENT_InteretSeenTimeSet(mid_best_interet, TIME_Get())
+}
+
+procedure_local void KR_INTERET_StatusSet(int ti_interestStatus)
+{
+	if (MSG_GlobalIsValid(mid_best_interet))
+		EVENT_InteretStatusSet(mid_best_interet, ti_interestStatus)
+}
+
+procedure_local void KR_INTERET_Update(object to_interet_target, int ti_interet_status)
+{
+	if( to_interet_target )
+	{
+		if( ! MSG_GlobalIsValid(mid_best_interet) )
+			mid_best_interet = EVENT_AddEventInteret(OBJ_Me(), Cf_interet_duree, 100.0, @to_interet_target OBJ_PosGet(), to_interet_target)
+		else
+		{
+			EVENT_LifeSet(mid_best_interet, Cf_interet_duree)
+			EVENT_InteretTargetSet(mid_best_interet, to_interet_target)
+			EVENT_InteretPositionSet(mid_best_interet, @to_interet_target OBJ_PosGet())
+			EVENT_InteretSet(mid_best_interet, 100.0)
+		}
+		EVENT_InteretSeenTimeSet(mid_best_interet, TIME_Get())
+		KR_INTERET_StatusSet(ti_interet_status)
+	}
+}
+
+
+procedure_local void KR_INTERET_Delete()
+{
+	if (MSG_GlobalIsValid(mid_best_interet))
+		MSG_GlobalDelete(mid_best_interet, C_EVENT_EOFDEL)
+}
+
+
+
+//===================================================================================
+// Vérifie que l'intérêt du raptor est bien porté sur son fight actor, crée un message d'intérêt le cas échéant
+// retourne le <nouveau> fight actor ou nobody
+//===================================================================================
+procedure_local object KR_Check_Fight_Actor_Interet()
+{
+	messageid	mmid_vision_ID																		
+	float			mf_interet 																				
+	int				ti_new_msg																			
+	messageid mmid_vision																			
+	int				mi_index 																				
+	int				ti_destroy_best_interet																
+																												
+	ti_new_msg = faux																					
+	ti_destroy_best_interet = faux																	
+	
+	// Intérêt invalide ou ne concernant pas le bon acteur => nouvel intérêt				
+	if( ! MSG_GlobalIsValid(mid_best_interet) || o_fight_actor != EVENT_InteretTargetGet(mid_best_interet) )
+	{																											
+		mmid_vision = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility, o_fight_actor, nobody)		
+		if( MSG_GlobalIsValid(mmid_vision) )
+			KR_Update_Interet(mmid_vision, o_fight_actor)
+		else
+		{
+			KR_INTERET_Delete()
+			o_fight_actor = nobody
+		}
+	}
+	
+	if( MSG_GlobalIsValid(mid_best_interet) )
+		o_fight_actor = EVENT_TargetGet(mid_best_interet)
+	else
+		o_fight_actor = nobody
+	
+	return o_fight_actor
+}
+
+
+
+//===================================================================================
+// Si ANN est la cible, teste si elle est grabbée par KONG afin de choisir KONG comme cible
+//===================================================================================
+procedure_local void KR_Check_KK_Grab_ANN()
+{																												
+	int					mi_index																			
+	messageid		mmid_vision																		
+	int					ti_destroy_best_interet																
+	int					ti_whereIsAnn
+																												
+	ti_destroy_best_interet = faux																	
+																												
+	if( o_ANN && o_fight_actor == o_ANN ) 																		
+	{					
+		ti_whereIsAnn = KR_WhereIsAnn()
+		if (ti_whereIsAnn != Ci_AnnLocation_OnGround)
+		{																																												
+			mmid_vision = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility, o_KONG, nobody)		
+			if( MSG_GlobalIsValid(mmid_vision) )													
+			{																									
+				o_fight_actor = o_KONG
+				KR_Update_Interet(mmid_vision, o_KONG)
+			}																									
+			else																								
+				ti_destroy_best_interet = vrai															
+		}																										
+	}																										
+																							
+	if ( ti_destroy_best_interet)
+		KR_DelInterestMsg(faux)
+}
+
+
+
+//=============================================================================================
+// Teste si un des autres raptors attaque ANN. Si c'est le cas, le gao se joint à l'autre raptor pour mener une attaque groupée.
+//=============================================================================================
+procedure_local void KR_check_proie_groupe(byref int pi_proie_groupe_wait_done)
+{																																					
+	int					mi_ann_kkgrab																												
+	message		tm_filter
+	int					ti_rank 
+	messageid		tmid_interet_ID
+	messageid		tmid_vision_ID
+	object			to_pere
+	int					ti_sender_ID
+	
+	if( o_ANN )
+	{
+		if( ( ! o_proie_groupe ) && ( ! i_jump_etat ) && TIME_Elapsed( f_time_check_proie_groupe, Cf_delay_check_proie_groupe) ) 	
+			// recherche d'une attaque groupée (sauf si le raptor est en train de faire un saut)								
+			// ou mise à jour de l'intérêt (ANN a peut etre été ramassée par KONG depuis -> la cible devient KONG)			
+		{
+			f_time_check_proie_groupe = TIME_Get()
+			
+			if( KR_Check_Presence_Interet_Statut_Model( o_ANN, C_EVENT_InteretStatusAttack, vrai, vrai) > 0)
+			{
+				o_proie_groupe = o_ANN
+				pi_proie_groupe_wait_done = faux
+			}
+		}
+		
+		// Test ANN grabbée par KONG																										
+		if( MSG_GlobalIsValid(EVENT_FindEventPereTarget(Ci_LNK_EVENT_OFFSET + Ci_LNK_KKGRAB_OBJECT, o_ANN, o_KONG)) )	
+			pi_proie_groupe_wait_done = vrai			// le raptor attaque KONG														
+																																						
+		if( o_proie_groupe && ( ! pi_proie_groupe_wait_done ) )																		
+		{																																				
+			// Le raptor observe ANN avant d'aller l'attaquer (ANN est forcément au sol)										
+			if( f_time_proie_groupe_wait == 0.0 )																							
+				ACT_ActionSet(Action_Observe)																							
+			
+			if( f_time_proie_groupe_wait < f_proie_groupe_wait_delay )
+				f_time_proie_groupe_wait += TIME_GetDt()																				
+			else																																		
+				pi_proie_groupe_wait_done = vrai																								
+		}
+	}
+}
+
+
+procedure int KR_GetNbRaptorsLocked( object to_fightActor, int pi_includeMe )
+{
+	return KR_Check_Presence_Interet_Statut_Model( to_fightActor, C_EVENT_InteretStatusLock, vrai, pi_includeMe )
+}
+
+procedure int KR_GetNbRaptorsAttacking( object to_fightActor, int pi_includeMe )
+{
+	int	ti_total
+	
+	ti_total = KR_Check_Presence_Interet_Statut_Model( to_fightActor, C_EVENT_InteretStatusAttack, vrai, pi_includeMe )
+	ti_total += KR_Check_Presence_Interet_Statut_Model( to_fightActor, C_EVENT_InteretStatusRide, vrai, pi_includeMe )
+	return ti_total
+}
+
+procedure_local void KR_SetRaptorWaitingForFinish( object to_fightActor )
+{
+	KR_SetInterestType(C_EVENT_InteretStatusCharge)		// doesnt quite speak but it's used for that anyway
+}
+
+procedure int KR_GetNbRaptorsWaitingForFinish( object to_fightActor, int pi_includeMe )
+{
+	int ti_total
+	
+	ti_total = KR_Check_Presence_Interet_Statut_Model( to_fightActor, C_EVENT_InteretStatusCharge, vrai, pi_includeMe)
+	ti_total += KR_Check_Presence_Interet_Statut_Model( to_fightActor, C_EVENT_InteretStatusAttack, vrai, pi_includeMe)
+	return ti_total
+}
+
+
+//==================================================================================================
+// usefull to know if we can launch a one raptor attack on kong
+procedure_local int KR_AnotherRaptorIsSingleAttacking()
+{
+	int ti_nbAttacksOnKong			// how many are attacking kong directly
+	int ti_nbAttacksOnAnnOnKon	// how many are attacking ann who's on kong
+	int ti_finishState
+	
+	ti_nbAttacksOnKong = KR_GetNbRaptorsAttacking(o_KONG, faux)
+	if (ti_nbAttacksOnKong != 0)
+	{
+		// if there is a finish attack there can't be a raptor single attacking
+		if (MSG_GlobalIsValid(mid_finishSynchro))
+		{
+			if (EVENT_Info_FinishStateGet(mid_finishSynchro) != Ci_FINISHSYNCHRO_STATE_NoFinish)
+				return faux
+		}
+		return vrai	
+	}
+
+	return faux
+	
+// when raptor throws ann while on kong, interest is on ann
+//	if (KR_WhereIsAnn() == Ci_AnnLocation_KongShoulder)
+//	{
+//		ti_nbAttacksOnAnnOnKon = KR_GetNbRaptorsAttacking(o_ANN, faux)
+//		if (ti_nbAttacksOnAnnOnKon != 0)
+//			return vrai
+//	}
+	if( o_ANN )
+	{
+		ti_nbAttacksOnAnnOnKon = KR_Check_Presence_Interet_Statut_Model( o_ANN, C_EVENT_InteretStatusRide, vrai, faux )
+		if (ti_nbAttacksOnAnnOnKon != 0)
+			return vrai
+	}
+	
+	return faux
+}
+
+
+procedure_local void KR_OBBOX_Set(float tf_size_coef)
+{
+	object	to_bone
+
+//	if (tf_size_coef == f_obbox_size_coef)
+//		return
+
+//	f_obbox_size_coef = tf_size_coef
+
+	switch(raptor_type)
+	{
+		case C_ID_Tyranosaure :
+		
+			to_bone = ANI_CanalObjectGet(Anim_Canal_Machoire)
+			@to_bone BV_OBBoxMinSet(cvector(-0.5, -0.2, -0.1))
+			@to_bone BV_OBBoxMaxSet(cvector(0.5, 0.4, 1.6))
+			
+			// TETE A BASSIN
+			@ao_head_bones[0] BV_OBBoxMinSet(cvector(-0.5, -0.8, -0.3))
+			@ao_head_bones[0] BV_OBBoxMaxSet(cvector(0.5, 0.6, 1.6))
+			
+			@ao_head_bones[1] BV_OBBoxMinSet(cvector(-0.4, -0.6, -0.1))
+			@ao_head_bones[1] BV_OBBoxMaxSet(cvector(0.4, 0.6, 1.5))
+			
+			@ao_head_bones[2] BV_OBBoxMinSet(cvector(-0.6, -1.0, -0.5))
+			@ao_head_bones[2] BV_OBBoxMaxSet(cvector(0.6, 0.6, 1.2))
+			
+			@ao_head_bones[3] BV_OBBoxMinSet(cvector(-0.8, -1.5, -0.4))
+			@ao_head_bones[3] BV_OBBoxMaxSet(cvector(0.8, 1.0, 1.4))
+			
+			@ao_head_bones[4] BV_OBBoxMinSet(cvector(-0.8, -1.2, -0.3))
+			@ao_head_bones[4] BV_OBBoxMaxSet(cvector(0.8, 1.0, 1.8))
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_Queue)
+			@to_bone BV_OBBoxMinSet(cvector(-0.4, -0.6, -0.1))
+			@to_bone BV_OBBoxMaxSet(cvector(0.4, 1.0, 0.8))
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_Queue + 1)
+			@to_bone BV_OBBoxMinSet(cvector(-0.4, -0.6, -0.1))
+			@to_bone BV_OBBoxMaxSet(cvector(0.4, 0.8, 2.0))
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_Queue + 2) 
+			@to_bone BV_OBBoxMinSet(cvector(-0.4, -0.4, -0.3))
+			@to_bone BV_OBBoxMaxSet(cvector(0.4, 0.6, 1.8))
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_Queue + 3)
+			@to_bone BV_OBBoxMinSet(cvector(-0.4, -0.3, -0.3))
+			@to_bone BV_OBBoxMaxSet(cvector(0.4, 0.5, 1.6))
+
+			to_bone = ANI_CanalObjectGet(Anim_Canal_Queue + 4)
+			@to_bone BV_OBBoxMinSet(cvector(-0.4, -0.2, -0.3))
+			@to_bone BV_OBBoxMaxSet(cvector(0.4, 0.4, 1.8))
+			
+			@ao_IK_bones[Ci_IK_pied_gauche][0] BV_OBBoxMinSet(cvector(-0.4, -0.6, 0.0))
+			@ao_IK_bones[Ci_IK_pied_gauche][0] BV_OBBoxMaxSet(cvector(0.4, 0.6, 2.0))
+			
+			@ao_IK_bones[Ci_IK_pied_gauche][1] BV_OBBoxMinSet(cvector(-0.2, -0.4, -0.1))
+			@ao_IK_bones[Ci_IK_pied_gauche][1] BV_OBBoxMaxSet(cvector(0.2, 0.4, 1.0))
+			
+			@ao_IK_bones[Ci_IK_pied_gauche][2] BV_OBBoxMinSet(cvector(-0.2, -0.2, -0.05))
+			@ao_IK_bones[Ci_IK_pied_gauche][2] BV_OBBoxMaxSet(cvector(0.2, 0.4, 1.2))
+			
+			@ao_IK_bones[Ci_IK_pied_gauche][3] BV_OBBoxMinSet(cvector(-0.4, -0.2, -0.05))
+			@ao_IK_bones[Ci_IK_pied_gauche][3] BV_OBBoxMaxSet(cvector(0.4, 0.2, 1.0))
+
+			@ao_IK_bones[Ci_IK_pied_droit][0] BV_OBBoxMinSet(cvector(-0.4, -0.6, 0.0))
+			@ao_IK_bones[Ci_IK_pied_droit][0] BV_OBBoxMaxSet(cvector(0.4, 0.6, 2.0))
+			
+			@ao_IK_bones[Ci_IK_pied_droit][1] BV_OBBoxMinSet(cvector(-0.2, -0.4, -0.1))
+			@ao_IK_bones[Ci_IK_pied_droit][1] BV_OBBoxMaxSet(cvector(0.2, 0.4, 1.0))
+			
+			@ao_IK_bones[Ci_IK_pied_droit][2] BV_OBBoxMinSet(cvector(-0.2, -0.2, -0.05))
+			@ao_IK_bones[Ci_IK_pied_droit][2] BV_OBBoxMaxSet(cvector(0.2, 0.4, 1.2))
+			
+			@ao_IK_bones[Ci_IK_pied_droit][3] BV_OBBoxMinSet(cvector(-0.4, -0.2, -0.05))
+			@ao_IK_bones[Ci_IK_pied_droit][3] BV_OBBoxMaxSet(cvector(0.4, 0.2, 1.0))
+
+			to_bone = ANI_CanalObjectGet(Anim_Canal_EpauleDroite)
+			@to_bone BV_OBBoxMinSet(cvector(-0.1, -0.1, -0.1))
+			@to_bone BV_OBBoxMaxSet(cvector(0.1, 0.1, 1.0))
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_BrasDroit)
+			@to_bone BV_OBBoxMinSet(cvector(-0.1, -0.1, -0.1))
+			@to_bone BV_OBBoxMaxSet(cvector(0.1, 0.1, 0.4))
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_AvantBrasDroit)
+			@to_bone BV_OBBoxMinSet(cvector(-0.1, -0.1, -0.05))
+			@to_bone BV_OBBoxMaxSet(cvector(0.1, 0.1, 0.5))
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_MainDroite)
+			@to_bone BV_OBBoxMinSet(cvector(-0.1, -0.1, -0.05))
+			@to_bone BV_OBBoxMaxSet(cvector(0.1, 0.1, 0.3))
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_EpauleGauche)
+			@to_bone BV_OBBoxMinSet(cvector(-0.1, -0.1, -0.1))
+			@to_bone BV_OBBoxMaxSet(cvector(0.1, 0.1, 1.0))
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_BrasGauche)
+			@to_bone BV_OBBoxMinSet(cvector(-0.1, -0.1, -0.1))
+			@to_bone BV_OBBoxMaxSet(cvector(0.1, 0.1, 0.4))
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_AvantBrasGauche)
+			@to_bone BV_OBBoxMinSet(cvector(-0.1, -0.1, -0.05))
+			@to_bone BV_OBBoxMaxSet(cvector(0.1, 0.1, 0.5))
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_MainGauche)
+			@to_bone BV_OBBoxMinSet(cvector(-0.1, -0.1, -0.05))
+			@to_bone BV_OBBoxMaxSet(cvector(0.1, 0.1, 0.3))
+			
+			break
+
+		case C_ID_Raptor :
+//		case C_ID_Galiminus :
+		
+			to_bone = ANI_CanalObjectGet(Anim_Canal_Machoire)
+			@to_bone BV_OBBoxMinSet(cvector(-0.15 * tf_size_coef, -0.1 * tf_size_coef, -0.1))
+			@to_bone BV_OBBoxMaxSet(cvector(0.15 * tf_size_coef, 0.1 * tf_size_coef, 0.8))
+			
+			// TETE A BASSIN
+			@ao_head_bones[0] BV_OBBoxMinSet(cvector(-0.15 * tf_size_coef, -0.3 * tf_size_coef, -0.1))
+			@ao_head_bones[0] BV_OBBoxMaxSet(cvector(0.15 * tf_size_coef, 0.2 * tf_size_coef, 0.8))
+			
+			@ao_head_bones[1] BV_OBBoxMinSet(cvector(-0.15 * tf_size_coef, -0.3 * tf_size_coef, -0.1))
+			@ao_head_bones[1] BV_OBBoxMaxSet(cvector(0.15 * tf_size_coef, 0.2 * tf_size_coef, 0.5))
+			
+			@ao_head_bones[2] BV_OBBoxMinSet(cvector(-0.15 * tf_size_coef, -0.3 * tf_size_coef, -0.1))
+			@ao_head_bones[2] BV_OBBoxMaxSet(cvector(0.15 * tf_size_coef, 0.2 * tf_size_coef, 0.5))
+			
+			@ao_head_bones[3] BV_OBBoxMinSet(cvector(-0.5 * tf_size_coef, -0.6 * tf_size_coef, -0.2))
+			@ao_head_bones[3] BV_OBBoxMaxSet(cvector(0.5 * tf_size_coef, 0.3 * tf_size_coef, 0.9))
+			
+			to_bone = ANI_CanalObjectGet(4)
+			@to_bone BV_OBBoxMinSet(cvector(-0.5 * tf_size_coef, -0.4 * tf_size_coef, -0.1))
+			@to_bone BV_OBBoxMaxSet(cvector(0.5 * tf_size_coef, 0.3 * tf_size_coef, 0.8))
+
+			@ao_head_bones[4] BV_OBBoxMinSet(cvector(-0.55 * tf_size_coef, -0.5 * tf_size_coef, -0.3))
+			@ao_head_bones[4] BV_OBBoxMaxSet(cvector(0.55 * tf_size_coef, 0.2 * tf_size_coef, 0.7))
+		
+			to_bone = ANI_CanalObjectGet(Anim_Canal_Queue)
+			@to_bone BV_OBBoxMinSet(cvector(-0.15 * tf_size_coef, -0.25 * tf_size_coef, -0.1))
+			@to_bone BV_OBBoxMaxSet(cvector(0.15 * tf_size_coef, 0.25 * tf_size_coef, 0.6))
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_Queue + 1)
+			@to_bone BV_OBBoxMinSet(cvector(-0.15 * tf_size_coef, -0.2 * tf_size_coef, -0.1))
+			@to_bone BV_OBBoxMaxSet(cvector(0.15 * tf_size_coef, 0.2 * tf_size_coef, 1.3))
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_Queue + 2) 
+			@to_bone BV_OBBoxMinSet(cvector(-0.1 * tf_size_coef, -0.1 * tf_size_coef, -0.1))
+			@to_bone BV_OBBoxMaxSet(cvector(0.1 * tf_size_coef, 0.1 * tf_size_coef, 1.2))
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_Queue + 3)
+			@to_bone BV_OBBoxMinSet(cvector(-0.1 * tf_size_coef, -0.1 * tf_size_coef, -0.1))
+			@to_bone BV_OBBoxMaxSet(cvector(0.1 * tf_size_coef, 0.1 * tf_size_coef, 1.2))
+
+			to_bone = ANI_CanalObjectGet(Anim_Canal_Queue + 4)
+			@to_bone BV_OBBoxMinSet(cvector(-0.1 * tf_size_coef, -0.1 * tf_size_coef, -0.1))
+			@to_bone BV_OBBoxMaxSet(cvector(0.1 * tf_size_coef, 0.1 * tf_size_coef, 1.2))
+
+			@ao_IK_bones[Ci_IK_pied_gauche][0] BV_OBBoxMinSet(cvector(-0.2 * tf_size_coef, -0.25 * tf_size_coef, 0.0))
+			@ao_IK_bones[Ci_IK_pied_gauche][0] BV_OBBoxMaxSet(cvector(0.2 * tf_size_coef, 0.25 * tf_size_coef, 1.0))
+			
+			@ao_IK_bones[Ci_IK_pied_gauche][1] BV_OBBoxMinSet(cvector(-0.1 * tf_size_coef, -0.2 * tf_size_coef, -0.1))
+			@ao_IK_bones[Ci_IK_pied_gauche][1] BV_OBBoxMaxSet(cvector(0.1 * tf_size_coef, 0.1 * tf_size_coef, 0.95))
+			
+			@ao_IK_bones[Ci_IK_pied_gauche][2] BV_OBBoxMinSet(cvector(-0.1 * tf_size_coef, -0.1 * tf_size_coef, -0.05))
+			@ao_IK_bones[Ci_IK_pied_gauche][2] BV_OBBoxMaxSet(cvector(0.1 * tf_size_coef, 0.1 * tf_size_coef, 0.6))
+			
+			@ao_IK_bones[Ci_IK_pied_gauche][3] BV_OBBoxMinSet(cvector(-0.2 * tf_size_coef, -0.1 * tf_size_coef, -0.05))
+			@ao_IK_bones[Ci_IK_pied_gauche][3] BV_OBBoxMaxSet(cvector(0.3 * tf_size_coef, 0.1 * tf_size_coef, 0.7))
+			
+			@ao_IK_bones[Ci_IK_pied_droit][0] BV_OBBoxMinSet(cvector(-0.2 * tf_size_coef, -0.25 * tf_size_coef, 0.0))
+			@ao_IK_bones[Ci_IK_pied_droit][0] BV_OBBoxMaxSet(cvector(0.2 * tf_size_coef, 0.25 * tf_size_coef, 1.0))
+			
+			@ao_IK_bones[Ci_IK_pied_droit][1] BV_OBBoxMinSet(cvector(-0.1 * tf_size_coef, -0.2 * tf_size_coef, -0.1))
+			@ao_IK_bones[Ci_IK_pied_droit][1] BV_OBBoxMaxSet(cvector(0.1 * tf_size_coef, 0.1 * tf_size_coef, 0.95))
+			
+			@ao_IK_bones[Ci_IK_pied_droit][2] BV_OBBoxMinSet(cvector(-0.1 * tf_size_coef, -0.1 * tf_size_coef, -0.05))
+			@ao_IK_bones[Ci_IK_pied_droit][2] BV_OBBoxMaxSet(cvector(0.1 * tf_size_coef, 0.1 * tf_size_coef, 0.6))
+			
+			@ao_IK_bones[Ci_IK_pied_droit][3] BV_OBBoxMinSet(cvector(-0.3 * tf_size_coef, -0.1 * tf_size_coef, -0.05))
+			@ao_IK_bones[Ci_IK_pied_droit][3] BV_OBBoxMaxSet(cvector(0.2 * tf_size_coef, 0.1 * tf_size_coef, 0.7))
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_EpauleDroite)
+			@to_bone BV_OBBoxMinSet(cvector(-0.1 * tf_size_coef, -0.1 * tf_size_coef, -0.1))
+			@to_bone BV_OBBoxMaxSet(cvector(0.1 * tf_size_coef, 0.1 * tf_size_coef, 0.4))
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_BrasDroit)
+			@to_bone BV_OBBoxMinSet(cvector(-0.05 * tf_size_coef, -0.05 * tf_size_coef, -0.1))
+			@to_bone BV_OBBoxMaxSet(cvector(0.05 * tf_size_coef, 0.05 * tf_size_coef, 0.5))
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_AvantBrasDroit)
+			@to_bone BV_OBBoxMinSet(cvector(-0.05 * tf_size_coef, -0.05 * tf_size_coef, -0.05))
+			@to_bone BV_OBBoxMaxSet(cvector(0.05 * tf_size_coef, 0.05 * tf_size_coef, 0.2))
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_MainDroite)
+			@to_bone BV_OBBoxMinSet(cvector(-0.15 * tf_size_coef, -0.05 * tf_size_coef, -0.05))
+			@to_bone BV_OBBoxMaxSet(cvector(0.15 * tf_size_coef, 0.05 * tf_size_coef, 0.5))
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_DoigtD1)
+			if (to_bone)
+				@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_PouceD1)
+			@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_EpauleGauche)
+			@to_bone BV_OBBoxMinSet(cvector(-0.1 * tf_size_coef, -0.1 * tf_size_coef, -0.1))
+			@to_bone BV_OBBoxMaxSet(cvector(0.1 * tf_size_coef, 0.1 * tf_size_coef, 0.4))
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_BrasGauche)
+			@to_bone BV_OBBoxMinSet(cvector(-0.05 * tf_size_coef, -0.05 * tf_size_coef, -0.1))
+			@to_bone BV_OBBoxMaxSet(cvector(0.05 * tf_size_coef, 0.05 * tf_size_coef, 0.5))
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_AvantBrasGauche)
+			@to_bone BV_OBBoxMinSet(cvector(-0.05 * tf_size_coef, -0.05 * tf_size_coef, -0.05))
+			@to_bone BV_OBBoxMaxSet(cvector(0.05 * tf_size_coef, 0.05 * tf_size_coef, 0.2))
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_MainGauche)
+			@to_bone BV_OBBoxMinSet(cvector(-0.15 * tf_size_coef, -0.05 * tf_size_coef, -0.05))
+			@to_bone BV_OBBoxMaxSet(cvector(0.15 * tf_size_coef, 0.05 * tf_size_coef, 0.5))
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_DoigtG1)
+			if (to_bone)
+				@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_PouceG1)
+			@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			
+			break
+
+		
+		case C_ID_Galiminus :
+		
+			to_bone = ANI_CanalObjectGet(Anim_Canal_Machoire)
+			@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			
+			// TETE A BASSIN
+			@ao_head_bones[0] BV_OBBoxMinSet(cvector(-0.5 * tf_size_coef, -0.5 * tf_size_coef, -1.5))
+			@ao_head_bones[0] BV_OBBoxMaxSet(cvector(0.5 * tf_size_coef,  0.5 * tf_size_coef, 1.0))
+
+			@ao_head_bones[1] OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			@ao_head_bones[2] OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			@ao_head_bones[3] OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+//			@ao_head_bones[4] OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+
+			to_bone = ANI_CanalObjectGet(4)
+//			@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)			
+			@to_bone BV_OBBoxMinSet(cvector(-0.75 * tf_size_coef, -0.5 * tf_size_coef, -0.5))
+			@to_bone BV_OBBoxMaxSet(cvector(0.75 * tf_size_coef,  0.5 * tf_size_coef, 1.5))
+			
+			@ao_head_bones[4] BV_OBBoxMinSet(cvector(-0.75 * tf_size_coef, -2.0 * tf_size_coef, -3.0))
+			@ao_head_bones[4] BV_OBBoxMaxSet(cvector(0.75 * tf_size_coef,  0.5 * tf_size_coef, 1.0))
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_Queue)
+			@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)			
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_Queue + 1)
+			@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_Queue + 2) 
+			@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_Queue + 3)
+			@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+
+			to_bone = ANI_CanalObjectGet(Anim_Canal_Queue + 4)
+			@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			
+			@ao_IK_bones[Ci_IK_pied_gauche][0] OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			@ao_IK_bones[Ci_IK_pied_gauche][1] OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			@ao_IK_bones[Ci_IK_pied_gauche][2] OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			@ao_IK_bones[Ci_IK_pied_gauche][3] OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			
+			@ao_IK_bones[Ci_IK_pied_droit][0] OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			@ao_IK_bones[Ci_IK_pied_droit][1] OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			@ao_IK_bones[Ci_IK_pied_droit][2] OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			@ao_IK_bones[Ci_IK_pied_droit][3] OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_EpauleDroite)
+			@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_BrasDroit)
+			@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_AvantBrasDroit)
+			@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_MainDroite)
+			@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_DoigtD1)
+			@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_PouceD1)
+			@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_EpauleGauche)
+			@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_BrasGauche)
+			@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_AvantBrasGauche)
+			@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_MainGauche)
+			@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_DoigtG1)
+			@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			
+			to_bone = ANI_CanalObjectGet(Anim_Canal_PouceG1)
+			@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+			
+			break
+	}
+}

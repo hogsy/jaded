@@ -1,0 +1,276 @@
+Include_UltraProcedure_Header
+#include "KIMO_defines.var"
+
+procedure_local void KIMO_SetupKit
+(
+	int	ti_kit_Anim_Obj_Wait,
+	int ti_kit_Anim_Positionne,
+	int ti_kit_Anim_Challenge,
+	int ti_kit_Anim_KK_Gagne,
+	int ti_kit_Anim_KK_Perdu,
+	int ti_kit_Challenge_Type,
+	int ti_kit_Kamera_Status,
+	int ti_kit_Kamera_Finish_ID,
+	
+	function tfn_kit_KK_Gagne,
+	function tfn_kit_KK_Perdu,
+	
+	vector tv_kit_Mashing_Position,
+	vector tv_kit_Mashing_Orientation,
+	
+	float tf_ms_Force_Coef_Kong_Down,
+	float tf_ms_Force_Coef_Object_Up,
+	float tf_ms_Force_Activate_Object,
+	float tf_ms_Force_Diminution_Object,
+	float tf_ms_Force_Trigger_Kong,
+	int ti_kit_Anim_KK_Gagne_fixe
+)
+{
+	i_kit_Anim_Obj_Wait = ti_kit_Anim_Obj_Wait
+	i_kit_Anim_Positionne = ti_kit_Anim_Positionne
+	i_kit_Anim_Challenge = ti_kit_Anim_Challenge
+	i_kit_Anim_KK_Gagne = ti_kit_Anim_KK_Gagne
+	i_kit_Anim_KK_Gagne_fixe = ti_kit_Anim_KK_Gagne_fixe
+	i_kit_Anim_KK_Perdu = ti_kit_Anim_KK_Perdu
+	i_kit_Challenge_Type = ti_kit_Challenge_Type
+	i_kit_Kamera_Status = ti_kit_Kamera_Status
+	i_kit_Kamera_Finish_ID = ti_kit_Kamera_Finish_ID
+	
+	fn_kit_KK_Gagne = tfn_kit_KK_Gagne
+	fn_kit_KK_Perdu = tfn_kit_KK_Perdu
+	
+	v_kit_Mashing_Position = tv_kit_Mashing_Position
+	v_kit_Mashing_Orientation = tv_kit_Mashing_Orientation
+	
+	if (i_mashSettings == Ci_MashSettings_FromKit)
+	{
+		if( f_ms_Force_Coef_Kong_Down < 0.0 )
+			f_ms_Force_Coef_Kong_Down = MATH_AbsFloat(f_ms_Force_Coef_Kong_Down)
+		else
+			f_ms_Force_Coef_Kong_Down = tf_ms_Force_Coef_Kong_Down
+		
+		if( f_ms_Force_Coef_Object_Up < 0.0 )
+			f_ms_Force_Coef_Object_Up = MATH_AbsFloat(f_ms_Force_Coef_Object_Up)
+		else
+			f_ms_Force_Coef_Object_Up = tf_ms_Force_Coef_Object_Up
+		
+		if( f_ms_Force_Activate_Object < 0.0 )
+			f_ms_Force_Activate_Object = MATH_AbsFloat(f_ms_Force_Activate_Object)
+		else
+			f_ms_Force_Activate_Object = tf_ms_Force_Activate_Object
+		
+		if( f_ms_Force_Diminution_Object < 0.0 )
+			f_ms_Force_Diminution_Object = MATH_AbsFloat(f_ms_Force_Diminution_Object)
+		else
+			f_ms_Force_Diminution_Object = tf_ms_Force_Diminution_Object
+		
+		if( f_ms_Force_Trigger_Kong < 0.0 )
+			f_ms_Force_Trigger_Kong = MATH_AbsFloat(f_ms_Force_Trigger_Kong)
+		else
+			f_ms_Force_Trigger_Kong = tf_ms_Force_Trigger_Kong
+	}
+}
+
+
+procedure_local void KIMO_Change_Anim()
+{
+	int		ti_anim
+	
+	if( MSG_GlobalIsValid(mid_mashing_LNK_ID) )
+	{
+		switch( LNK_GrabKong_Mashing_Action_Get(mid_mashing_LNK_ID) )
+		{
+			case Ci_Kmashing_Anim_Positionne :
+				ti_anim = i_kit_Anim_Positionne
+				break
+			case Ci_Kmashing_Anim_Challenge :
+				ti_anim = i_kit_Anim_Challenge
+				break
+			case Ci_Kmashing_Anim_KK_Gagne :
+				ti_anim = i_kit_Anim_KK_Gagne
+				break
+			case Ci_Kmashing_Anim_KK_Perdu :
+				ti_anim = i_kit_Anim_KK_Perdu
+				break
+		}
+		if( ACT_ActionGet() != ti_anim && ti_anim != -1 )
+			ACT_ActionSet(ti_anim)
+	}
+}
+
+//ADDED SURESH
+procedure_local void GFX_Execute(int i_type)
+{
+	int i, j
+	message m_Msg
+	object o_duplicatedGFX
+
+	if((f_global_time - f_start_Start_Finish_AnimationGFX_time >= f_delay && i_type==START_FINISH)  || (f_global_time - f_start_Middle_AnimationGFX_time >= f_delay && i_type==MIDDLE) )	
+	{
+		for(i=0; i<NUM_LOCATIONS; i++)
+		{
+			if(o_GFX_Locations[i])
+			{
+				for(j=0; j<NUM_GFX; j++)
+				{
+					if(i_type==START_FINISH)
+					{
+						if(o_GFX_Start_Finish_Animation_Effects[j])
+						{
+							o_duplicatedGFX = @o_GFX_Start_Finish_Animation_Effects[j] OBJ_Duplicate( @o_GFX_Locations[i] OBJ_PosGet() ) //@o_GFX_Locations[i] OBJ_PosGet()
+							@o_duplicatedGFX OBJ_SightSet( @o_GFX_Locations[i] OBJ_SightGet() )
+						}
+					}
+					if(i_type==MIDDLE)
+					{
+						if(o_GFX_Middle_Of_Animation_Effects[j]) 
+						{
+							o_duplicatedGFX = @o_GFX_Middle_Of_Animation_Effects[j] OBJ_Duplicate( @o_GFX_Locations[i] OBJ_PosGet() ) //@o_GFX_Locations[i] OBJ_PosGet()
+							@o_duplicatedGFX OBJ_SightSet( @o_GFX_Locations[i] OBJ_SightGet() )
+						}
+					}
+					m_Msg.msg_sender = o_GFX_Locations[i]
+					Dispatch_Interaction(o_duplicatedGFX, m_Msg)
+					
+				}
+			}
+		}
+		if(i_type==START_FINISH)
+			 f_start_Start_Finish_AnimationGFX_time = TIME_Get()
+		if(i_type==MIDDLE)	 
+			f_start_Middle_AnimationGFX_time = TIME_Get()
+		
+	}
+}
+
+
+//ADDED SURESH
+procedure_local void SetBackInitPos_GFX()
+{
+	int i
+	for(i = 0; i < NUM_LOCATIONS; i++)
+	{
+		if(o_GFX_Locations[i])
+		{
+			@o_GFX_Locations[i] OBJ_HierarchyReset()
+			@o_GFX_Locations[i] OBJ_PosSet(o_GFX_InitPos[i])	 
+		}
+	}
+}
+
+procedure_local void KIMO_SFXGlass(float tf_cote)
+{
+	int			mi_GFX_Key
+	object	to_light_n_smoke
+	object	to_bus
+	vector	tv_pos
+	
+	return
+
+	to_light_n_smoke = @get_global o_global_light_and_smoke_kanada
+	if( ! to_light_n_smoke )
+		return
+	to_bus = ANI_CanalObjectGet(0)
+	if( ! to_bus )	
+		return
+	tv_pos = @to_bus OBJ_PosGet()
+	tv_pos += 2.0 * @to_bus OBJ_BankingGet()
+	tv_pos -= tf_cote * 1.0 * @to_bus OBJ_HorizonGet()
+	DBG_RenderVector(tv_pos - cvector(2,0,0), cvector(4,0,0), color_rouge)
+	DBG_RenderVector(tv_pos - cvector(0,2,0), cvector(0,4,0), color_rouge)
+	mi_GFX_Key = @to_bus GFX_Add(13)
+	GFX_MaterialSet( mi_GFX_Key, to_light_n_smoke, -1)
+	GFX_FlagSet( mi_GFX_Key, 0 , 1)
+	GFX_FlagSet( mi_GFX_Key, 2 , 1)
+	GFX_Setf( mi_GFX_Key, 13003,0.100000)		// Temps passé dans la première phase
+	GFX_Setf( mi_GFX_Key, 13004,1.000000)		// Temps passé dans la deuxième phase
+	GFX_Seti( mi_GFX_Key, 13101,24)					// Matériau
+	GFX_Seti( mi_GFX_Key, 13102,25)					// Matériau
+	GFX_Seti( mi_GFX_Key, 13106,5)					// Sprites nb
+	GFX_Seti( mi_GFX_Key, 13100,5)					// Sprites buffer
+	GFX_Seti( mi_GFX_Key, 13107,0)					// Tri des sprites on / off
+	GFX_Seti( mi_GFX_Key, 13012,0.000000)		// Time random
+	GFX_Setf( mi_GFX_Key, 13000,0.050000)		// Vitesse de croissance minimum
+	GFX_Setf( mi_GFX_Key, 13001,0.0900000)		// Vitesse de croissance maximum
+	GFX_Setf( mi_GFX_Key, 13002,0.0010000)		// Friction
+	GFX_Setf( mi_GFX_Key, 13005,0.100000)		// Taille min à la création
+	GFX_Setf( mi_GFX_Key, 13006,0.300000)		// Taille max à la création
+	GFX_Setf( mi_GFX_Key, 13007,-5.000000)		// Gravité
+	GFX_Setv( mi_GFX_Key, 13203,cvector(0.01500, 0.01500, 0.02000))	// Friction
+	GFX_Seti( mi_GFX_Key, 13103,-3551556)		// Couleur phase 0
+	GFX_Seti( mi_GFX_Key, 13104,0xFFFFFFFF)	// Couleur phase 1
+	GFX_Seti( mi_GFX_Key, 13105,0x00FFFFFF)	// Couleur phase 2
+	GFX_Setf( mi_GFX_Key, 13008,0.000000)		// Taux de génération
+	GFX_Setv( mi_GFX_Key, 13204,cvector(0.00000, 0.00000, 0.00000))	// Vent
+	GFX_Setv( mi_GFX_Key, 13205,cvector(0.00000, 0.00000, 0.00000))	// Vitesse de la position de création
+	GFX_Setv( mi_GFX_Key, 13206,cvector(0.00000, 0.00000, 0.00000))	// Friction pour la position
+	GFX_Setf( mi_GFX_Key, 13011,7.4)				// Hauteur du sol
+	GFX_Setf( mi_GFX_Key, 13009, -2.000000)		// Vitesse norme min
+	GFX_Setf( mi_GFX_Key, 13010, -5.000000)		// Vitesse norme max
+	GFX_Setv( mi_GFX_Key, 13200, tv_pos)			// Position de création
+	GFX_Setv( mi_GFX_Key, 13201, @to_bus MATH_VecLocalToGlobal(tf_cote * cvector(0.0, -1.0, -1.0)))	// Speed min
+	GFX_Setv( mi_GFX_Key, 13202, @to_bus MATH_VecLocalToGlobal(tf_cote * cvector(205.0, 1.0, 1.0)))	// Speed max
+	GFX_Setv( mi_GFX_Key, 13207, 0.1 * @to_bus OBJ_HorizonGet() )		// volume de création
+	GFX_Setv( mi_GFX_Key, 13208, 5.0 * @to_bus OBJ_SightGet() )		// volume de création
+	GFX_Setv( mi_GFX_Key, 13209, 1.0  * @to_bus OBJ_BankingGet())	// volume de création
+	// Rotation Aléatoire
+	GFX_Seti( mi_GFX_Key, 13114,1)					// Rotation ON / OFF
+	GFX_Setf( mi_GFX_Key, 13013,-1.000000)		// Rotation Aléatoire a la naissance Min
+	GFX_Setf( mi_GFX_Key, 13014,1.000000)		// Rotation Aléatoire a la naissance Max
+	GFX_Setf( mi_GFX_Key, 13015,-0.150000)		// Speed rotation Min
+	GFX_Setf( mi_GFX_Key, 13016,0.150000)		// Speed rotation Max
+}
+
+
+procedure_local int KIMO_Anim_KONG_Perd()
+{
+	if( ACT_ActionFinished() || (i_kit == Ci_Kmashing_Kit_06 && ANI_CurrentFrameGet(0) > 40) )
+	{
+		OBJ_CapaSet( 0, Ci_CAPA_KongLoosing )
+		OBJ_CapaSet( Ci_CAPA_KongHasLost, 0 )
+//		macro_change_etat("KIMO_ETAT_Wait")
+		return 1
+	}
+	else
+	{
+		OBJ_CapaSet( Ci_CAPA_KongLoosing, 0 )
+		return 0
+	}
+}
+
+
+procedure_local int KIMO_Anim_KONG_Gagne()
+{
+	vector	tv_pos
+	if (i_MemoBrokenStatus)
+		SpecialFlag_set(i_SF_AlreadyPlayed) 
+	if( i_dyna_option == Ci_DynaOption_DynaAtWin )
+		DYN_GravitySet(Cv_NormalGravity)
+	if( i_dyna_option == Ci_DynaOption_ODEAtWin )
+		ODE_Enable(vrai)
+	if( i_kit == Ci_Kmashing_Kit_06 )
+	{
+		f_SFX_gen_delay = 1.0
+		if( ANI_CurrentFrameGet(0) > 45 )
+		{
+			KIMO_SFXGlass(-1.0)
+			KIMO_SFXGlass(1.0)
+		}
+	}
+	if( ACT_ActionFinished() )
+	{
+		OBJ_CapaSet( 0, Ci_CAPA_KongWinning )
+		OBJ_CapaSet( Ci_CAPA_KongHasWon, 0 )
+		OBJ_CapaSet( 0, Ci_CAPA_InAction )
+		SetBackInitPos_GFX()
+		if( i_kit_Anim_KK_Gagne_fixe == -1 )
+			return -1
+		else
+			ACT_ActionSet(i_kit_Anim_KK_Gagne_fixe)
+	}
+	else
+		OBJ_CapaSet( Ci_CAPA_KongWinning, 0 )
+	return 0
+}
+
+

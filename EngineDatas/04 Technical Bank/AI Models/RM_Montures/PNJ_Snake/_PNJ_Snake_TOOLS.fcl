@@ -1,0 +1,2265 @@
+#include "PNJ_Snake_defines.var"
+
+Include_UltraProcedure_Header
+
+#define Cf_pourcentage			0.3333
+#define Cf_angle_ondule_ton_corps				0.5
+
+procedure_local void PNJ_Snake_Init_OBBOX(float tf_size_coef)
+{
+	int			ti_i
+	object	to_bone	
+
+	if (f_obbox_size_coef == tf_size_coef)
+		return
+		
+	f_obbox_size_coef = tf_size_coef
+
+	for (ti_i = 0; ti_i < i_modules_nb; ti_i++)
+	{
+		if (ti_i == i_modules_nb - 1)
+			to_bone = ANI_CanalObjectGet(Anim_Canal_Bassin)
+		else
+			to_bone = ANI_CanalObjectGet(ti_i)
+
+		@to_bone OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_OBBox, none)
+
+		@to_bone BV_OBBoxMinSet(cvector(-0.25 * tf_size_coef, -0.25, -0.25 * tf_size_coef))
+		@to_bone BV_OBBoxMaxSet(cvector(0.25 * tf_size_coef, 0.25 , 0.25 * tf_size_coef))
+
+		@to_bone BV_MinSet(cvector(-f_size_coef, -f_size_coef, -f_size_coef) * 0.75)
+		@to_bone BV_MaxSet(cvector(f_size_coef, f_size_coef, f_size_coef) * 0.75)
+		
+//		DBG_RenderSphere(@to_bone OBJ_PosGet(), f_size_coef * 0.5, color_rouge)
+	}
+	
+	return
+}
+
+
+procedure_local void PNJ_Snake_Init_Modules()
+{
+	int			ti_i
+	
+	float		tf_size
+
+	switch( creature_type )
+	{
+		case 	Ci_CreatureType_Spider :
+		case	Ci_CreatureType_Quadri :
+			break
+	
+		case Ci_CreatureType_Snake :
+
+			// TETE ============================================================================================
+			if (!ao_modules[0])
+			{	
+				ao_modules[0] = OBJ_Me()
+				@ao_modules[0] OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)	
+		
+				tf_size = i_modules_nb * dist_between_module
+				tf_size *= 1.1
+		
+				@ao_modules[0] BV_MinSet(-cvector(tf_size, tf_size, tf_size))
+				@ao_modules[0] BV_MaxSet(cvector(tf_size, tf_size, tf_size))
+		
+				@ao_modules[0] OBJ_ScaleSet(@ao_modules[0] OBJ_ScaleGet() * f_size_coef)
+			}
+	
+			// CORPS ===========================================================================================
+			for (ti_i = 1; ti_i < i_modules_nb - 1; ti_i++)
+			{
+				af_modules_length[ti_i] = ti_i * dist_between_module
+		
+				if (!ao_modules[ti_i])
+				{	
+					ao_modules[ti_i] = ANI_CanalObjectGet(ti_i)
+					@ao_modules[ti_i] OBJ_HierarchyResetCurrent()
+		//			@ao_modules[ti_i] OBJ_ZoomSet(f_size_coef)
+					@ao_modules[ti_i] OBJ_ScaleSet(@ao_modules[ti_i] OBJ_ScaleGet() * f_size_coef)
+					@ao_modules[ti_i] OBJ_PosSet(@ao_modules[ti_i - 1] OBJ_PosGet() - (@ao_modules[ti_i - 1] OBJ_SightGet() * dist_between_module))
+				}
+			}
+			
+			// QUEUE =============================================================================================
+			af_modules_length[ti_i] = af_modules_length[ti_i - 1] + dist_tail
+		
+			if (!ao_modules[ti_i])
+			{
+				ao_modules[ti_i] = ANI_CanalObjectGet(Anim_Canal_Bassin)
+				@ao_modules[ti_i] OBJ_HierarchyResetCurrent()
+		//		@ao_modules[ti_i] OBJ_ZoomSet(f_size_coef)
+				@ao_modules[ti_i] OBJ_ScaleSet(@ao_modules[ti_i] OBJ_ScaleGet() * f_size_coef)
+				@ao_modules[ti_i] OBJ_PosSet(@ao_modules[ti_i - 1] OBJ_PosGet() - (@ao_modules[ti_i - 1] OBJ_SightGet() * dist_between_module))
+			}
+			
+			PNJ_Snake_Init_OBBOX(1.4)
+			
+			break
+	}
+
+	return
+}
+
+procedure_local void PNJ_Snake_Align_Modules()
+{
+	int			ti_i
+	
+	// CORPS ===========================================================================================
+	for (ti_i = 1; ti_i < i_modules_nb - 1; ti_i++)
+	{
+		@ao_modules[ti_i] OBJ_PosSet(@ao_modules[ti_i - 1] OBJ_PosGet() - (@ao_modules[ti_i - 1] OBJ_SightGet() * dist_between_module))
+		@ao_modules[ti_i] OBJ_SightGeneralSet(@ao_modules[ti_i - 1] OBJ_PosGet() - @ao_modules[ti_i] OBJ_PosGet(), @ao_modules[ti_i - 1] OBJ_BankingGet())
+	}
+	
+	// QUEUE =============================================================================================
+	@ao_modules[ti_i] OBJ_PosSet(@ao_modules[ti_i - 1] OBJ_PosGet() - (@ao_modules[ti_i - 1] OBJ_SightGet() * dist_tail))
+	@ao_modules[ti_i] OBJ_SightGeneralSet(@ao_modules[ti_i - 1] OBJ_PosGet() - @ao_modules[ti_i] OBJ_PosGet(), @ao_modules[ti_i - 1] OBJ_BankingGet())
+	
+	return
+}
+
+procedure_local void PNJ_Snake_Update_Last_Virtual_Wp(object to_module, object to_father)
+{
+	int			ti_before_index	
+
+	float		tf_Z_offset
+
+	vector	tv_pos	
+
+	tf_Z_offset = COL_ZoneSizeGet(C_zdm_pied)
+
+	if (to_father == nobody)
+		to_father = OBJ_HierarchyGet()
+
+	if (to_father == nobody)
+	{
+		if (f_delay_until_last_ground_col < 0.1)
+			to_father = o_ground_actor
+		else if (f_delay_until_last_wall_col < 0.1)
+			to_father = o_wall_actor
+	}
+
+	ti_before_index = MATH_Modulo(i_virtual_net_last_wp_index + Ci_virtual_wp_nb - 1, Ci_virtual_wp_nb)
+
+	av_virtual_wp_pos[i_virtual_net_last_wp_index] = @to_module OBJ_PosGet()
+//	av_virtual_wp_pos[i_virtual_net_last_wp_index] += @to_module OBJ_BankingGet() * f_Z_noise
+
+	ai_virtual_wp_flag[i_virtual_net_last_wp_index] = 0
+	if (f_delay_until_last_ground_col < 0.2)
+		ai_virtual_wp_flag[i_virtual_net_last_wp_index] |= Ci_virtual_net_ground_col
+	if (f_delay_until_last_wall_col < 0.2)
+		ai_virtual_wp_flag[i_virtual_net_last_wp_index] |= Ci_virtual_net_wall_col
+	if (@to_module OBJ_PosGet().z < f_water_Z + tf_Z_offset)
+		ai_virtual_wp_flag[i_virtual_net_last_wp_index] |= Ci_virtual_net_water_col
+
+	if (ao_virtual_wp_father[ti_before_index])
+		tv_pos = @ao_virtual_wp_father[ti_before_index] OBJ_PosGet() + @ao_virtual_wp_father[ti_before_index] MATH_VecLocalToGlobal(av_virtual_wp_pos[ti_before_index])
+	else
+		tv_pos = av_virtual_wp_pos[ti_before_index]
+	af_virtual_link_length[i_virtual_net_last_wp_index] = MATH_VecNorm(tv_pos - av_virtual_wp_pos[i_virtual_net_last_wp_index])
+
+	av_virtual_wp_sight[i_virtual_net_last_wp_index] = @to_module OBJ_SightGet()
+	av_virtual_wp_banking[i_virtual_net_last_wp_index] = @to_module OBJ_BankingGet()
+
+	ao_virtual_wp_father[i_virtual_net_last_wp_index] = to_father
+
+	if (to_father)
+	{	
+		av_virtual_wp_pos[i_virtual_net_last_wp_index] = @ao_virtual_wp_father[i_virtual_net_last_wp_index] MATH_VecGlobalToLocal(av_virtual_wp_pos[i_virtual_net_last_wp_index] - @ao_virtual_wp_father[i_virtual_net_last_wp_index] OBJ_PosGet())
+		av_virtual_wp_sight[i_virtual_net_last_wp_index] = @ao_virtual_wp_father[i_virtual_net_last_wp_index] MATH_VecGlobalToLocal(av_virtual_wp_sight[i_virtual_net_last_wp_index])
+		av_virtual_wp_banking[i_virtual_net_last_wp_index] = @ao_virtual_wp_father[i_virtual_net_last_wp_index] MATH_VecGlobalToLocal(av_virtual_wp_banking[i_virtual_net_last_wp_index])
+	}
+}
+
+procedure_local int PNJ_Snake_Add_Virtual_Wp(object to_module, object to_father)
+{
+	int				ti_before_index	
+
+	float			tf_Z_offset
+
+	vector		tv_pos
+	
+	tf_Z_offset = COL_ZoneSizeGet(C_zdm_pied)
+
+	if (to_father == nobody)
+		to_father = OBJ_HierarchyGet()
+
+	if (to_father == nobody)
+	{
+		if (f_delay_until_last_ground_col < 0.1)
+			to_father = o_ground_actor
+		else if (f_delay_until_last_wall_col < 0.1)
+			to_father = o_wall_actor
+	}
+
+	ti_before_index = i_virtual_net_last_wp_index
+	i_virtual_net_last_wp_index = MATH_Modulo(i_virtual_net_last_wp_index + 1, Ci_virtual_wp_nb)	
+
+	av_virtual_wp_pos[i_virtual_net_last_wp_index] = @to_module OBJ_PosGet()
+	av_virtual_wp_pos[i_virtual_net_last_wp_index] += @to_module OBJ_BankingGet() * f_Z_noise
+
+	ai_virtual_wp_flag[i_virtual_net_last_wp_index] = 0
+	if (f_delay_until_last_ground_col < 0.2)
+		ai_virtual_wp_flag[i_virtual_net_last_wp_index] |= Ci_virtual_net_ground_col
+	if (f_delay_until_last_wall_col < 0.2)
+		ai_virtual_wp_flag[i_virtual_net_last_wp_index] |= Ci_virtual_net_wall_col
+	if (@to_module OBJ_PosGet().z < f_water_Z + tf_Z_offset)
+		ai_virtual_wp_flag[i_virtual_net_last_wp_index] |= Ci_virtual_net_water_col
+
+	if (ti_before_index != -1)
+	{
+		if (ao_virtual_wp_father[ti_before_index])
+			tv_pos = @ao_virtual_wp_father[ti_before_index] OBJ_PosGet() + @ao_virtual_wp_father[ti_before_index] MATH_VecLocalToGlobal(av_virtual_wp_pos[ti_before_index])
+		else
+			tv_pos = av_virtual_wp_pos[ti_before_index]
+		af_virtual_link_length[i_virtual_net_last_wp_index] = MATH_VecNorm(tv_pos - av_virtual_wp_pos[i_virtual_net_last_wp_index])
+	}
+
+	av_virtual_wp_sight[i_virtual_net_last_wp_index] = @to_module OBJ_SightGet()
+	av_virtual_wp_banking[i_virtual_net_last_wp_index] = @to_module OBJ_BankingGet()
+
+	ao_virtual_wp_father[i_virtual_net_last_wp_index] = to_father
+
+	if (to_father)
+	{
+		av_virtual_wp_pos[i_virtual_net_last_wp_index] = @ao_virtual_wp_father[i_virtual_net_last_wp_index] MATH_VecGlobalToLocal(av_virtual_wp_pos[i_virtual_net_last_wp_index] - @ao_virtual_wp_father[i_virtual_net_last_wp_index] OBJ_PosGet())
+		av_virtual_wp_sight[i_virtual_net_last_wp_index] = @ao_virtual_wp_father[i_virtual_net_last_wp_index] MATH_VecGlobalToLocal(av_virtual_wp_sight[i_virtual_net_last_wp_index])
+		av_virtual_wp_banking[i_virtual_net_last_wp_index] = @ao_virtual_wp_father[i_virtual_net_last_wp_index] MATH_VecGlobalToLocal(av_virtual_wp_banking[i_virtual_net_last_wp_index])
+	}
+
+	return(i_virtual_net_last_wp_index)
+}
+
+procedure_local void PNJ_Snake_Virtual_Net_Init(int ti_flag_update_wp_flag, object to_father)
+{
+	int			ti_i
+	int			ti_index
+
+	f_Z_noise = 0.0
+
+	if (ti_flag_update_wp_flag)
+	{
+		i_on_ground_modules_nb = 0
+		i_in_water_modules_nb = 0
+	
+		f_delay_until_last_ground_col = 1000.0
+		f_delay_until_last_wall_col = 1000.0
+	}
+
+	if (creature_type == Ci_CreatureType_Snake)
+	{
+		for (ti_i = i_modules_nb - 1; ti_i >= 0; ti_i--)
+		{
+			ti_index = PNJ_Snake_Add_Virtual_Wp(ao_modules[ti_i], to_father)
+	
+			if (ti_flag_update_wp_flag)
+				ai_virtual_wp_flag[ti_index] = 0
+		}
+	}
+
+	return
+}
+
+procedure_local void PNJ_Snake_Snake(int ti_first_index, float tf_rigidity_coef, vector tv_father_speed, float tf_gravity)
+{
+	int			ti_i
+	int			ti_iterations
+	
+	float		tf_norm
+	float		tf_Z_offset
+	float		tf_friction	
+	float		tf_dot_product
+	float		tf_time_offset
+	float		tf_inv_dt
+
+	vector	tv_move
+	vector	tav_last_pos[15]
+	vector	tv_precedent
+	vector	tv_temp
+	
+	if (ti_first_index >= i_modules_nb )
+	{
+		v_ray_pos = OBJ_PosGet()
+		v_ray_pos.z -= f_size_coef * 10.0
+		v_ray_normal = Cv_VerticalVector
+		return
+	}
+
+	tf_inv_dt = 1.0 / TIME_GetDt()
+	tf_Z_offset = COL_ZoneSizeGet(C_zdm_pied)
+
+	// AJOUTER LA VITESSE ET LA GRAVITE
+	for (ti_i = ti_first_index; ti_i < i_modules_nb; ti_i++)
+	{
+		tav_last_pos[ti_i] = @ao_modules[ti_i] OBJ_PosGet()
+		
+		tv_move = Cv_NullVector
+		if (ti_i > ti_first_index)
+			tv_move += 0.6 * av_modules_speed[ti_i]
+		tv_move.z += tf_gravity
+		tv_move += tv_father_speed
+		tv_move *= TIME_GetDt()
+	
+		tv_temp = @ao_modules[ti_i] OBJ_PosGet()
+		tv_temp += tv_move
+
+		tf_dot_product = MATH_VecDotProduct(tv_temp - v_ray_pos, v_ray_normal) - tf_Z_offset
+		if (tf_dot_product < 0.0)
+		{
+			tv_temp -= tf_dot_product * v_ray_normal
+			tav_last_pos[ti_i] -= (MATH_VecDotProduct(tav_last_pos[ti_i]  - v_ray_pos, v_ray_normal) - tf_Z_offset) * v_ray_normal
+		}
+		
+		@ao_modules[ti_i] OBJ_PosSet(tv_temp)
+	}
+	
+	// EN SNAKE
+	
+	// CORPS
+	for (ti_i = ti_first_index; ti_i < i_modules_nb - 1; ti_i++)
+	{
+		tv_temp = @ao_modules[ti_i] OBJ_PosGet() - @ao_modules[ti_i - 1] OBJ_PosGet()
+		MATH_VecSetNormalize(tv_temp)
+		tv_temp = MATH_VecBlendRotate(tv_temp, - @ao_modules[ti_i - 1] OBJ_SightGet(), tf_rigidity_coef * TIME_GetDt())
+		@ao_modules[ti_i] OBJ_SightGeneralSet(-tv_temp, @ao_modules[ti_i - 1] OBJ_BankingGet())	
+
+		tv_temp *= dist_between_module
+		tv_temp += @ao_modules[ti_i - 1] OBJ_PosGet()
+		@ao_modules[ti_i] OBJ_PosSet(tv_temp)
+	}
+
+	// QUEUE
+	tv_temp = @ao_modules[ti_i] OBJ_PosGet() - @ao_modules[ti_i - 1] OBJ_PosGet()
+	MATH_VecSetNormalize(tv_temp)
+	tv_temp = MATH_VecBlendRotate(tv_temp, - @ao_modules[ti_i - 1] OBJ_SightGet(), tf_rigidity_coef * TIME_GetDt())
+	@ao_modules[ti_i] OBJ_SightGeneralSet(-tv_temp, @ao_modules[ti_i - 1] OBJ_BankingGet())	
+
+	tv_temp *= dist_tail
+	tv_temp += @ao_modules[ti_i - 1] OBJ_PosGet()
+	@ao_modules[ti_i] OBJ_PosSet(tv_temp)
+
+	// ROTATION PAR MODULES
+	f_Z_angle += TIME_GetDt() * (DYN_SpeedGet() * 4.0)
+	while (f_Z_angle > Cf_2Pi)
+		f_Z_angle -= Cf_2Pi
+
+	tf_time_offset = 0.8
+
+	// CALCUL DES SPEED
+	for (ti_i = ti_first_index; ti_i < i_modules_nb; ti_i++)
+	{
+//		@ao_modules[ti_i] OBJ_RotateLocalZ(MATH_Sin((ti_i * tf_time_offset) + f_Z_angle) * 4)
+	
+		av_modules_speed[ti_i] = @ao_modules[ti_i] OBJ_PosGet() - tav_last_pos[ti_i]
+		av_modules_speed[ti_i] *= tf_inv_dt
+	}
+}
+
+procedure_local void PNJ_Snake_Inv_Snake(int ti_first_index, float tf_rigidity_coef, vector tv_father_speed, float tf_gravity)
+{
+	int			ti_i
+	int			ti_iterations
+	
+	float		tf_norm
+	float		tf_Z_offset
+	float		tf_friction	
+	float		tf_dot_product
+	float		tf_time_offset
+	float		tf_inv_dt
+
+	vector	tv_move
+	vector	tav_last_pos[15]
+	vector	tv_precedent
+	vector	tv_temp
+	
+	tf_inv_dt = 1.0 / TIME_GetDt()
+	tf_Z_offset = COL_ZoneSizeGet(C_zdm_pied)
+
+	// AJOUTER LA VITESSE ET LA GRAVITE
+	for (ti_i = ti_first_index; ti_i >= 0; ti_i--)
+	{
+		tav_last_pos[ti_i] = @ao_modules[ti_i] OBJ_PosGet()
+		
+		tv_move = Cv_NullVector
+		if (ti_i > ti_first_index)
+			tv_move += 0.6 * av_modules_speed[ti_i]
+		tv_move.z += tf_gravity
+		tv_move += tv_father_speed
+		tv_move *= TIME_GetDt()
+	
+		tv_temp = @ao_modules[ti_i] OBJ_PosGet()
+		tv_temp += tv_move
+
+		tf_dot_product = MATH_VecDotProduct(tv_temp - v_ray_pos, v_ray_normal) - tf_Z_offset
+		if (tf_dot_product < 0.0)
+		{
+			tv_temp -= tf_dot_product * v_ray_normal
+			tav_last_pos[ti_i] -= (MATH_VecDotProduct(tav_last_pos[ti_i]  - v_ray_pos, v_ray_normal) - tf_Z_offset) * v_ray_normal
+		}
+		
+		@ao_modules[ti_i] OBJ_PosSet(tv_temp)
+	}
+	
+	// EN SNAKE
+	
+	// CORPS
+	for (ti_i = ti_first_index; ti_i >= 0; ti_i--)
+	{
+		tv_temp = @ao_modules[ti_i] OBJ_PosGet() - @ao_modules[ti_i + 1] OBJ_PosGet()
+		MATH_VecSetNormalize(tv_temp)
+		tv_temp = MATH_VecBlendRotate(tv_temp, @ao_modules[ti_i + 1] OBJ_SightGet(), tf_rigidity_coef * TIME_GetDt())
+
+		@ao_modules[ti_i] OBJ_SightGeneralSet(tv_temp, @ao_modules[ti_i + 1] OBJ_BankingGet())	
+
+		tv_temp *= dist_between_module
+		tv_temp += @ao_modules[ti_i + 1] OBJ_PosGet()
+		@ao_modules[ti_i] OBJ_PosSet(tv_temp)
+	}
+
+	// CALCUL DES SPEED
+	for (ti_i = ti_first_index; ti_i >= 0; ti_i--)
+	{
+		av_modules_speed[ti_i] = @ao_modules[ti_i] OBJ_PosGet() - tav_last_pos[ti_i]
+		av_modules_speed[ti_i] *= tf_inv_dt
+	}
+}
+
+
+procedure_local void PNJ_Snake_Modules_Update(int ti_first_module_index, object to_father)
+{
+	int			ti_i
+	int			ti_current_wp_index
+	int			ti_next_wp_index
+	int			ti_before_index
+
+	float		tf_dist	
+	float		tf_coef
+	float		tf_time_offset	
+	float		tf_net_length
+	float		tf_inv_dt
+
+	object	to_wp	
+
+	vector	tv_point_A
+	vector	tv_point_B
+	vector	tv_point_C
+	vector	tv_point_D
+	
+	vector	tv_start_pos
+	vector	tv_dest_pos
+	vector	tv_start_sight
+	vector	tv_dest_sight
+	vector	tv_start_banking
+	vector	tv_dest_banking
+
+	if (creature_type != Ci_CreatureType_Snake)
+		return
+
+//	if (!f_move_length && i_etat_courant != -1)
+//		return
+
+//	i_on_ground_modules_nb = 0
+	i_on_virtual_net_modules_nb = 0
+
+	tf_time_offset = 0.8
+	tf_inv_dt = 1.0 / TIME_GetDt()
+
+	if ( ! ti_first_module_index )
+	{
+		f_virtual_net_offset = 0.0
+	
+		ti_current_wp_index = i_virtual_net_last_wp_index
+		ti_before_index = MATH_Modulo(i_virtual_net_last_wp_index + Ci_virtual_wp_nb - 1, Ci_virtual_wp_nb)
+
+		if (ao_virtual_wp_father[ti_before_index])
+			tv_point_A = @ao_virtual_wp_father[ti_before_index] OBJ_PosGet() + @ao_virtual_wp_father[ti_before_index] MATH_VecLocalToGlobal(av_virtual_wp_pos[ti_before_index])
+		else
+			tv_point_A = av_virtual_wp_pos[ti_before_index]
+	
+		tf_dist = MATH_VecNorm(tv_point_A - OBJ_PosGet())
+		if (tf_dist >= dist_between_module)
+			PNJ_Snake_Add_Virtual_Wp(OBJ_Me(), to_father)
+		else
+			PNJ_Snake_Update_Last_Virtual_Wp(OBJ_Me(), to_father)
+
+		av_modules_speed[0] = OBJ_PosGet() - v_head_last_pos
+		av_modules_speed[0] *= tf_inv_dt
+
+		f_Z_angle += TIME_GetDt() * (MATH_VecNorm(av_modules_speed[0]) * 4.0 / f_size_coef)
+		while (f_Z_angle > Cf_2Pi)
+			f_Z_angle -= Cf_2Pi
+	}
+
+	tf_net_length = f_virtual_net_offset
+
+	ti_current_wp_index = i_virtual_net_last_wp_index
+	ti_next_wp_index = MATH_Modulo(ti_current_wp_index + Ci_virtual_wp_nb - 1, Ci_virtual_wp_nb)
+
+//	for (ti_i = 0; ti_i < Ci_virtual_wp_nb; ti_i++)
+//		DBG_RenderVector(av_virtual_wp_pos[ti_i], Cv_VerticalVector, color_bleu)
+
+	for (ti_i = 1; ti_i < i_modules_nb; ti_i++)
+	{
+		if (ao_virtual_wp_father[ti_current_wp_index] != ao_virtual_wp_father[ti_next_wp_index])
+		{
+			if (ao_virtual_wp_father[ti_current_wp_index])
+				tv_start_pos = @ao_virtual_wp_father[ti_current_wp_index] OBJ_PosGet() + @ao_virtual_wp_father[ti_current_wp_index] MATH_VecLocalToGlobal(av_virtual_wp_pos[ti_current_wp_index])
+			else
+				tv_start_pos = av_virtual_wp_pos[ti_current_wp_index]
+		
+			if (ao_virtual_wp_father[ti_next_wp_index])
+				tv_dest_pos = @ao_virtual_wp_father[ti_next_wp_index] OBJ_PosGet() + @ao_virtual_wp_father[ti_next_wp_index] MATH_VecLocalToGlobal(av_virtual_wp_pos[ti_next_wp_index])
+			else
+				tv_dest_pos = av_virtual_wp_pos[ti_next_wp_index]
+
+			af_virtual_link_length[ti_current_wp_index] = MATH_VecNorm(tv_dest_pos - tv_start_pos)
+		}
+	
+		tf_coef = af_modules_length[ti_i]
+		tf_coef -= tf_net_length
+		tf_coef /= af_virtual_link_length[ti_current_wp_index]
+
+//		DBG_RenderVector(av_virtual_wp_pos[ai_virtual_wp_index[ti_i]], av_virtual_wp_pos[ai_virtual_wp_index[ti_i] + 1] - av_virtual_wp_pos[ai_virtual_wp_index[ti_i]], color_rouge)	
+
+		// On dépasse la longueur du lien ?
+		while(tf_coef > 1.0)
+		{
+			tf_net_length += af_virtual_link_length[ti_current_wp_index]
+		
+			ti_current_wp_index = ti_next_wp_index
+			ti_next_wp_index = MATH_Modulo(ti_current_wp_index + Ci_virtual_wp_nb - 1, Ci_virtual_wp_nb)
+
+			if (ao_virtual_wp_father[ti_current_wp_index] != ao_virtual_wp_father[ti_next_wp_index])
+			{
+				if (ao_virtual_wp_father[ti_current_wp_index])
+					tv_start_pos = @ao_virtual_wp_father[ti_current_wp_index] OBJ_PosGet() + @ao_virtual_wp_father[ti_current_wp_index] MATH_VecLocalToGlobal(av_virtual_wp_pos[ti_current_wp_index])
+				else
+					tv_start_pos = av_virtual_wp_pos[ti_current_wp_index]
+			
+				if (ao_virtual_wp_father[ti_next_wp_index])
+					tv_dest_pos = @ao_virtual_wp_father[ti_next_wp_index] OBJ_PosGet() + @ao_virtual_wp_father[ti_next_wp_index] MATH_VecLocalToGlobal(av_virtual_wp_pos[ti_next_wp_index])
+				else
+					tv_dest_pos = av_virtual_wp_pos[ti_next_wp_index]
+	
+				af_virtual_link_length[ti_current_wp_index] = MATH_VecNorm(tv_dest_pos - tv_start_pos)
+			}
+
+			tf_coef = af_modules_length[ti_i]
+			tf_coef -= tf_net_length
+			tf_coef /= af_virtual_link_length[ti_current_wp_index]
+		}
+
+		// Tout module sur un wp virtuel collision ou hierarchisé ou dans l'eau ne sera plus animé en snake
+		if (ti_i > i_on_ground_modules_nb)
+		{
+			if (ao_virtual_wp_father[ti_current_wp_index] && ao_virtual_wp_father[ti_next_wp_index])
+				i_on_ground_modules_nb = ti_i
+			else if (ai_virtual_wp_flag[ti_current_wp_index] & (Ci_virtual_net_ground_col | Ci_virtual_net_wall_col))
+				i_on_ground_modules_nb = ti_i
+			else if ( ! ai_virtual_wp_flag[ti_current_wp_index] )
+				break
+		}
+		
+		// Ce module est positionné sur le réseau virtuel, c'est à dire qu'il n'est pas "en l'air"
+		i_on_virtual_net_modules_nb = ti_i
+
+		if (ti_i < ti_first_module_index)
+			continue	
+
+		if (ao_virtual_wp_father[ti_current_wp_index])
+		{
+			tv_start_pos = @ao_virtual_wp_father[ti_current_wp_index] OBJ_PosGet() + @ao_virtual_wp_father[ti_current_wp_index] MATH_VecLocalToGlobal(av_virtual_wp_pos[ti_current_wp_index])
+			tv_start_sight = @ao_virtual_wp_father[ti_current_wp_index] MATH_VecLocalToGlobal(av_virtual_wp_sight[ti_current_wp_index])
+			tv_start_banking = @ao_virtual_wp_father[ti_current_wp_index] MATH_VecLocalToGlobal(av_virtual_wp_banking[ti_current_wp_index])
+		}
+		else
+		{
+			tv_start_pos = av_virtual_wp_pos[ti_current_wp_index]
+			tv_start_sight = av_virtual_wp_sight[ti_current_wp_index]
+			tv_start_banking = av_virtual_wp_banking[ti_current_wp_index]
+		}
+
+		if (ao_virtual_wp_father[ti_next_wp_index])
+		{
+			tv_dest_pos = @ao_virtual_wp_father[ti_next_wp_index] OBJ_PosGet() + @ao_virtual_wp_father[ti_next_wp_index] MATH_VecLocalToGlobal(av_virtual_wp_pos[ti_next_wp_index])
+			tv_dest_sight = @ao_virtual_wp_father[ti_next_wp_index] MATH_VecLocalToGlobal(av_virtual_wp_sight[ti_next_wp_index])
+			tv_dest_banking = @ao_virtual_wp_father[ti_next_wp_index] MATH_VecLocalToGlobal(av_virtual_wp_banking[ti_next_wp_index])
+		}
+		else
+		{
+			tv_dest_pos = av_virtual_wp_pos[ti_next_wp_index]
+			tv_dest_sight = av_virtual_wp_sight[ti_next_wp_index]
+			tv_dest_banking = av_virtual_wp_banking[ti_next_wp_index]
+		}
+		
+		// Linear Interpolation
+		tv_point_A = MATH_VecBlend(tv_start_pos, tv_dest_pos, tf_coef)
+		if (ti_i == ti_first_module_index)
+			tv_point_B = MATH_VecBlendRotate(tv_start_sight, tv_dest_sight, tf_coef)
+		else
+			tv_point_B = @ao_modules[ti_i - 1] OBJ_PosGet() - tv_point_A
+		tv_point_C = MATH_VecBlendRotate(tv_start_banking, tv_dest_banking , tf_coef)
+
+		if ( MATH_VecNullEpsilon(tv_point_B))
+			tv_point_B = @ao_modules[ti_i] OBJ_SightGet()
+		@ao_modules[ti_i] OBJ_SightGeneralSet(tv_point_B, tv_point_C)
+		if (ti_i && ai_virtual_wp_flag[ti_current_wp_index] & (Ci_virtual_net_ground_col | Ci_virtual_net_wall_col))
+			@ao_modules[ti_i] OBJ_RotateLocalZ(MATH_Sin((ti_i * tf_time_offset) + f_Z_angle) * Cf_angle_ondule_ton_corps)
+	
+		av_modules_speed[ti_i] = 	tv_point_A - @ao_modules[ti_i] OBJ_PosGet()
+		av_modules_speed[ti_i] *= tf_inv_dt
+		@ao_modules[ti_i] OBJ_PosSet(tv_point_A)
+
+//		// Bezier Interpolation
+//		tv_point_A = tv_start_pos
+//		
+//		tv_point_B = tv_point_A 
+//		tv_point_B -= tv_start_sight * (af_virtual_link_length[ti_current_wp_index] * Cf_pourcentage)
+//		
+//		tv_point_D = tv_dest_pos
+//			
+//		tv_point_C = tv_point_D
+//		tv_point_C += tv_dest_sight * (af_virtual_link_length[ti_current_wp_index] * Cf_pourcentage)
+//
+//		tv_dest_pos = MATH_LIB_Bezier_Pos_Get(tf_coef, tv_point_A, tv_point_B, tv_point_C, tv_point_D, tv_dest_sight)
+//		
+//		// Orientation
+//		tv_dest_banking = MATH_VecBlendRotate(tv_start_banking, tv_dest_banking, tf_coef)
+//		@ao_modules[ti_i] OBJ_SightGeneralSet(-tv_dest_sight, tv_dest_banking)
+//		@ao_modules[ti_i] OBJ_RotateLocalZ(MATH_Sin((ti_i * tf_time_offset) + f_Z_angle) * Cf_angle_ondule_ton_corps)
+//			
+//		// Position
+//		av_modules_speed[ti_i] = (tv_dest_pos - @ao_modules[ti_i] OBJ_PosGet())
+//		av_modules_speed[ti_i] *= tf_inv_dt
+//		@ao_modules[ti_i] OBJ_PosSet(tv_dest_pos)
+	}
+	
+	// La dernière partie du corps est gérée en snake
+	PNJ_Snake_Snake(ti_i, 12.0, Cv_NullVector, -1.0)
+}
+
+procedure_local void PNJ_Snake_Renormalisation(int ti_first_index, int ti_last_index, int ti_iteration_nb)
+{
+	int			ti_i
+	int			ti_k
+
+	float		tf_norm
+	float		tf_dot_product
+	float		tf_Z_offset
+	float		tf_inv_dt
+	float		tf_move_length
+
+	vector	tv_renormalisation[15]
+	vector	tv_temp	
+	vector	tv_col_pos
+	vector	tv_col_normal
+
+	tf_inv_dt = 1.0 / TIME_GetDt()
+	tf_Z_offset = COL_ZoneSizeGet(C_zdm_pied)
+
+	// LES POINTS ONT BOUGE
+	for (ti_k = 0; ti_k < ti_iteration_nb; ti_k++)
+	{
+		for (ti_i = ti_first_index; ti_i <= ti_last_index; ti_i++)
+		{
+			tv_renormalisation[ti_i] = Cv_NullVector
+
+			if ( ! ti_i )
+				continue
+
+			tv_temp = @ao_modules[ti_i - 1] OBJ_PosGet() - @ao_modules[ti_i] OBJ_PosGet()
+			tf_norm = MATH_VecDotProduct(tv_temp, tv_temp)
+			if (tf_norm > 0.001)
+			{
+				tf_norm = MATH_FloatSqrt(tf_norm)
+				tv_temp /= tf_norm
+				if (ti_i == i_modules_nb - 1)
+					tf_norm -= dist_tail
+				else
+					tf_norm -= dist_between_module
+				tv_temp  *= tf_norm
+			}
+			else
+			{
+				tv_temp = @ao_modules[ti_i] OBJ_BankingGet()
+				tv_temp *= af_modules_length[ti_i - 1]
+			}
+
+			tv_renormalisation[ti_i - 1] -= tv_temp * 0.5
+			tv_renormalisation[ti_i] += tv_temp * 0.5
+		}
+		
+		for (ti_i = ti_first_index; ti_i <= ti_last_index; ti_i++)
+		{
+			if (ai_modules_perfored[ti_i])
+				continue
+				
+			if (ai_modules_locked[ti_i])
+				continue
+
+			tv_renormalisation[ti_i] -= MATH_FloatMin(MATH_VecDotProduct(tv_renormalisation[ti_i], av_bone_col_normal[ti_i]), 0.0) * av_bone_col_normal[ti_i]
+	
+			@ao_modules[ti_i] OBJ_PosSet(@ao_modules[ti_i] OBJ_PosGet() + tv_renormalisation[ti_i])
+		}
+	}
+
+	return
+}
+
+
+procedure_local void PNJ_Snake_IK_Init(int ti_modules_nb)
+{
+	int		ti_i
+	
+	f_IK_bezier_coef = 0.0
+
+	i_on_ground_modules_nb = i_modules_nb - 1
+
+	for (ti_i = 0; ti_i < ti_modules_nb; ti_i++)
+	{
+		af_IK_bezier_coef[ti_i] = 0.0
+//		av_IK_bone_start_pos[ti_i] = @ao_modules[ti_i] OBJ_PosGet()
+	}
+
+	for (ti_i = 0; ti_i < i_modules_nb; ti_i++)
+		av_bone_col_normal[ti_i] = Cv_NullVector
+
+	v_IK_pos = OBJ_PosGet()
+	v_IK_sight = OBJ_SightGet()
+
+	if (ao_virtual_wp_father[i_virtual_net_last_wp_index])
+	{
+		v_IK_pos = @ao_virtual_wp_father[i_virtual_net_last_wp_index] MATH_VecGlobalToLocal(v_IK_pos - @ao_virtual_wp_father[i_virtual_net_last_wp_index] OBJ_PosGet())
+		v_IK_sight = @ao_virtual_wp_father[i_virtual_net_last_wp_index] MATH_VecGlobalToLocal(v_IK_sight)
+	}
+}
+
+procedure_local void PNJ_Snake_IK(int ti_modules_nb, vector tv_head_pos, vector tv_head_sight, float tf_IK_coef)
+{
+	int			ti_i
+	int			ti_k
+	
+	float		tf_borne_inf
+	float		tf_borne_sup
+	float		tf_coef
+	float		tf_totale_norm
+	float		tf_pourcentage
+	float		tf_step
+	float		tf_perfect_length
+	float		tf_sqr_length
+		
+	vector	tv_point_A
+	vector	tv_point_B
+	vector	tv_point_C
+	vector	tv_point_D
+	
+	vector	tv_start_pos
+	vector	tv_dest_pos
+	vector	tv_pseudo_bone
+
+	vector	tv_new_sight
+	vector	tv_new_banking
+
+//	if (!IO_KeyPressed(VK_SPACE))
+//	{
+//		PNJ_Snake_IK2(ti_modules_nb, tv_head_pos, tv_head_sight, tf_IK_coef)
+//		return
+//	}
+
+	// PAS DU TOUT DE PILOTAGE !!!!
+	if ( ! tf_IK_coef )
+		return
+
+//	if (o_test_pilotage_tete)
+//	{
+//		tv_head_pos = @o_test_pilotage_tete OBJ_PosGet()
+////		tv_head_pos += @o_test_pilotage_tete OBJ_HorizonGet() * (MATH_Sin(TIME_Get() * 4.0))
+//	
+//		tv_head_sight = @o_test_pilotage_tete OBJ_SightGet()
+////		tv_head_sight = MATH_VecRotate(tv_head_sight, @o_test_pilotage_tete OBJ_BankingGet(), MATH_Sin(TIME_Get() * 8.0) * 0.3)
+//	}
+	
+	tf_step = 1.0 
+	tf_step /= ti_modules_nb
+//	tf_step /= 20	
+
+	tf_perfect_length = ti_modules_nb * dist_between_module
+	tf_perfect_length *= 0.99
+
+	f_IK_B_weight = tf_perfect_length * 1.25
+	f_IK_C_weight = tf_perfect_length * 1.25
+
+//	f_Z_angle += TIME_GetDt() * 30.0
+//	while (f_Z_angle > Cf_2Pi)
+//		f_Z_angle -= Cf_2Pi
+	
+	// C'EST PARTI POUR TROUVER UNE BONNE BEZIER ============================================
+	tv_point_A = @ao_modules[ti_modules_nb] OBJ_PosGet()
+	tv_point_D = tv_head_pos
+	
+	// =============================================================================
+	// On fait une première dichotomie pour trouver en gros une courbe de la même longueur que celle du cou
+	// =============================================================================
+	tf_borne_inf = 0.0
+	tf_borne_sup = 2.0
+	ti_k = 0
+	tf_totale_norm = 0.0
+	while(ti_k < 10)
+	{
+		ti_k++
+	
+		tf_totale_norm	= 0.0
+	
+		tf_pourcentage = tf_borne_inf
+		tf_pourcentage += (tf_borne_sup - tf_borne_inf) * 0.5
+	
+		tv_point_B = tv_point_A
+		tv_point_B += @ao_modules[ti_modules_nb] OBJ_SightGet() * (f_IK_B_weight * tf_pourcentage)
+
+		tv_point_C = tv_point_D	
+		tv_point_C -= tv_head_sight * (f_IK_B_weight * tf_pourcentage)
+	
+		tv_start_pos = tv_point_A
+		tv_dest_pos = tv_start_pos
+	
+		for (ti_i = 1; ti_i < ti_modules_nb - 1; ti_i++)
+//		for (ti_i = 1; ti_i < 19; ti_i++)
+		{
+			tf_coef = ti_i * tf_step
+			tv_start_pos = tv_dest_pos
+			tv_dest_pos = MATH_LIB_Bezier_Pos_Get(tf_coef, tv_point_A, tv_point_B, tv_point_C, tv_point_D, tv_new_sight)
+			tf_totale_norm += MATH_VecNorm(tv_dest_pos - tv_start_pos)
+		}
+
+		tf_totale_norm	+= MATH_VecNorm(tv_point_D - tv_dest_pos)
+
+		if (MATH_AbsFloat(tf_totale_norm - tf_perfect_length) < 0.02)
+		{
+			// OK, C'est bon
+			ti_k = ti_k
+			break
+		}
+		else if (tf_totale_norm > tf_perfect_length)
+		{
+			tf_borne_sup -= tf_borne_inf
+			tf_borne_sup *= 0.5
+			tf_borne_sup += tf_borne_inf 
+		}
+		else
+		{
+			tf_borne_inf -= tf_borne_sup
+			tf_borne_inf *= 0.5
+			tf_borne_inf += tf_borne_sup
+		}
+	}
+	
+	if (f_IK_bezier_coef)
+		f_IK_bezier_coef = MATH_FloatBlend(f_IK_bezier_coef, tf_pourcentage, 20.0 * TIME_GetDt())
+	else
+		f_IK_bezier_coef = tf_pourcentage
+
+	tf_pourcentage = f_IK_bezier_coef
+	
+	// ON A ENFIN NOS 4 POINTS QUI DETERMINE LA COURBE ==============================================
+	tv_point_B = tv_point_A
+	tv_point_B += @ao_modules[ti_modules_nb] OBJ_SightGet() * (f_IK_B_weight * tf_pourcentage)
+
+	tv_point_C = tv_point_D	
+	tv_point_C -= tv_head_sight * (f_IK_C_weight * tf_pourcentage)
+
+#ifndef _FINAL_
+	MATH_LIB_Bezier_Display(ti_modules_nb, tv_point_A, tv_point_B, tv_point_C, tv_point_D, color_rouge)
+//	MATH_LIB_Bezier_Display(20, tv_point_A, tv_point_B, tv_point_C, tv_point_D, color_rouge)
+#endif	
+
+	tf_borne_inf = 0.0
+	tv_start_pos = tv_point_A
+	
+	// =========================================================================
+	// Pour les bones, on va rechercher une position sur la courbe telle que la longueur de l'os soit correcte
+	// =========================================================================
+	for (ti_i = ti_modules_nb - 1; ti_i > 0; ti_i--)
+	{
+		tf_borne_sup = 1.0
+	
+		ti_k = 0
+	
+		tf_sqr_length = dist_between_module
+		tf_sqr_length *= 0.98
+		tf_sqr_length *= tf_sqr_length
+	
+		while (ti_k < 10)
+		{
+			ti_k++
+	
+			tf_coef = tf_borne_inf 
+			tf_coef += (tf_borne_sup - tf_borne_inf) * 0.5
+		
+			tv_dest_pos = MATH_LIB_Bezier_Pos_Get(tf_coef, tv_point_A, tv_point_B, tv_point_C, tv_point_D, tv_new_sight)
+	
+			tv_pseudo_bone = tv_dest_pos - tv_start_pos
+			tf_totale_norm = MATH_VecDotProduct(tv_pseudo_bone, tv_pseudo_bone)
+	
+			if (MATH_AbsFloat(tf_totale_norm - tf_sqr_length) < 0.001)
+			{
+				// OK, C'est bon
+				break
+			}
+			else if (tf_totale_norm > tf_sqr_length)
+			{
+				tf_borne_sup -= tf_borne_inf
+				tf_borne_sup *= 0.5
+				tf_borne_sup += tf_borne_inf 
+			}
+			else
+			{
+				tf_borne_inf -= tf_borne_sup
+				tf_borne_inf *= 0.5
+				tf_borne_inf += tf_borne_sup
+			}
+		}
+
+		if (af_IK_bezier_coef[ti_i])
+			af_IK_bezier_coef[ti_i] = MATH_FloatBlend(af_IK_bezier_coef[ti_i], tf_coef, 20.0 * TIME_GetDt())
+		else
+			af_IK_bezier_coef[ti_i] = tf_coef
+
+		tf_coef = af_IK_bezier_coef[ti_i]
+	
+		tv_dest_pos = MATH_LIB_Bezier_Pos_Get(tf_coef, tv_point_A, tv_point_B, tv_point_C, tv_point_D, tv_new_sight)
+
+		@ao_modules[ti_i] OBJ_PosSet(tv_dest_pos)
+	
+		tv_new_banking = MATH_VecCrossProduct(tv_new_sight, @ao_modules[ti_i + 1] OBJ_HorizonGet())
+		tv_new_banking = MATH_VecBlendRotate(tv_new_banking, -tv_head_sight, tf_coef * tf_IK_coef)
+		@ao_modules[ti_i] OBJ_SightGeneralSet(tv_new_sight, tv_new_banking)
+
+//		@ao_modules[ti_i] OBJ_BankingGeneralSet(@ao_modules[ti_i + 1] OBJ_SightGet(), @ao_modules[ti_i + 1] OBJ_BankingGet())
+//		@ao_modules[ti_i] OBJ_Rotate_FromTo(cvector(0.0, -1.0, 0.0), @ao_modules[ti_i] MATH_VecGlobalToLocal(tv_new_sight))
+
+		tv_start_pos = tv_dest_pos
+	}
+	
+	@ao_modules[ti_i] OBJ_PosSet(tv_head_pos)
+
+	tv_new_banking = MATH_VecBlendRotate(@ao_modules[ti_i + 1] OBJ_BankingGet(), v_IK_banking, tf_IK_coef)
+	@ao_modules[ti_i] OBJ_SightGeneralSet(tv_head_sight, tv_new_banking)
+	
+//	@ao_modules[ti_i] OBJ_BankingGeneralSet(@ao_modules[ti_i + 1] OBJ_SightGet(), @ao_modules[ti_i + 1] OBJ_BankingGet())
+//	@ao_modules[ti_i] OBJ_Rotate_FromTo(cvector(0.0, -1.0, 0.0), @ao_modules[ti_i] MATH_VecGlobalToLocal(tv_head_sight))
+
+//	if (tf_IK_coef < 1.0)
+//		PNJ_Snake_Renormalisation(1, ti_modules_nb - 1, 10)
+
+	return
+}
+
+procedure_local void PNJ_Snake_Compute_Module_Speed()
+{
+	int				ti_i	
+
+	float			tf_friction
+	float			tf_ground_friction
+	float			tf_water_friction
+	float			tf_dt
+	float			tf_exp
+	float			tf_ground_exp
+	float			tf_water_exp
+	float			tf_javelin_exp
+	float			tf_archimede
+	float			tf_Z_offset
+
+	vector		tv_temp
+
+	tf_Z_offset = COL_ZoneSizeGet(C_zdm_pied)
+	
+	tf_dt = TIME_GetDt()
+
+	tf_friction = 1.0
+	tf_exp = MATH_Exp(-tf_dt * tf_friction)
+
+	tf_ground_friction = 6.0
+	tf_ground_exp = MATH_Exp(-tf_dt * tf_ground_friction)
+
+	tf_water_friction = 5.0
+	tf_water_exp = MATH_Exp(-tf_dt * tf_water_friction)
+
+	if (i_flag_start_ragdoll_damping)
+		f_ragdoll_damping -= MATH_FloatMin(f_ragdoll_damping, TIME_GetDt())
+	else
+		f_ragdoll_damping = 1.0
+
+	for (ti_i = 0; ti_i < i_modules_nb; ti_i++)
+	{
+		DBG_RenderVector(@ao_modules[ti_i] OBJ_PosGet(), av_modules_forces[ti_i], color_cyan)	
+	
+		if (ai_modules_locked[ti_i])
+		{
+			av_modules_speed[ti_i] = Cv_NullVector
+			continue
+		}	
+
+		if (ai_modules_perfored[ti_i])
+		{
+			av_modules_forces[ti_i] = cvector(0.0, 0.0, f_gravity)
+			tv_temp = av_modules_forces[ti_i] / tf_ground_friction
+			av_modules_speed[ti_i] = tv_temp - ( (tv_temp - av_modules_speed[ti_i]) * tf_ground_exp )
+			continue
+		}
+
+		// POUSSEE ARCHIMEDE
+//		tf_archimede = MATH_FloatMax(af_modules_water_Z[ti_i] - @ao_modules[ti_i] OBJ_PosGet().z + tf_Z_offset, 0.0)
+		tf_archimede = MATH_FloatMax(f_water_Z - @ao_modules[ti_i] OBJ_PosGet().z + tf_Z_offset, 0.0)
+		tf_archimede /= tf_Z_offset * MATH_RandFloat(0.95, 1.25)
+		tf_archimede = MATH_FloatLimit(tf_archimede, 0.0, 6.0)
+		DBG_RenderVector(@ao_modules[ti_i] OBJ_PosGet(), cvector(0.0, 0.0, tf_archimede), color_bleu)
+		af_modules_archimede[ti_i] = tf_archimede
+		tf_archimede *= -f_gravity
+
+//		av_modules_forces[ti_i] += cvector(0.0, 0.0, f_gravity)
+		av_modules_forces[ti_i].z += tf_archimede
+
+		tv_temp = av_modules_forces[ti_i]
+		
+		if (tf_archimede)
+		{
+			f_ragdoll_damping = 1.0
+
+			tv_temp /= tf_water_friction
+
+//			av_modules_speed[ti_i].x = tv_temp.x - ( (tv_temp.x - av_modules_speed[ti_i].x) * tf_water_exp )
+//			av_modules_speed[ti_i].y = tv_temp.y - ( (tv_temp.y - av_modules_speed[ti_i].y) * tf_water_exp )
+//			av_modules_speed[ti_i].z += f_gravity * tf_dt
+
+			av_modules_speed[ti_i] = tv_temp - ( (tv_temp - av_modules_speed[ti_i]) * tf_water_exp )
+			av_modules_speed[ti_i].z += f_gravity * tf_dt
+		}
+		else if (af_bone_ground_col_timer[ti_i] < 0.15)
+		{
+			tv_temp /= tf_ground_friction
+
+//			av_modules_speed[ti_i].x = tv_temp.x - ( (tv_temp.x - av_modules_speed[ti_i].x) * tf_ground_exp )
+//			av_modules_speed[ti_i].y = tv_temp.y - ( (tv_temp.y - av_modules_speed[ti_i].y) * tf_ground_exp )
+//			av_modules_speed[ti_i].z += f_gravity * tf_dt
+
+			av_modules_speed[ti_i] = tv_temp - ( (tv_temp - av_modules_speed[ti_i]) * tf_ground_exp )
+			av_modules_speed[ti_i].z += f_gravity * tf_dt
+		}
+		else
+		{
+			tv_temp /= tf_friction
+
+//			av_modules_speed[ti_i].x = tv_temp.x - ( (tv_temp.x - av_modules_speed[ti_i].x) * tf_exp )
+//			av_modules_speed[ti_i].y = tv_temp.y - ( (tv_temp.y - av_modules_speed[ti_i].y) * tf_exp )
+//			av_modules_speed[ti_i].z += f_gravity * tf_dt
+
+			av_modules_speed[ti_i] = tv_temp - ( (tv_temp - av_modules_speed[ti_i]) * tf_exp )
+			av_modules_speed[ti_i].z += f_gravity * tf_dt
+		}
+
+		av_modules_speed[ti_i] *= f_ragdoll_damping
+	}
+}
+
+procedure_local void PNJ_Snake_Rag_Doll(int ti_first_index)
+{
+	int			ti_i
+	int			ti_iterations
+	int			ti_bone_index
+
+	float		tf_norm
+	float		tf_Z_offset
+	float		tf_dot_product
+	float		tf_dt
+	float		tf_inv_dt
+	float		tf_sqr_n2_dist
+	float		tf_sqr_n3_dist
+	float		tf_sqr_n5_dist
+	float		tf_attenuation
+	float		tf_spring
+	float		tf_move_length
+
+	vector	tav_last_pos[15]
+	vector	tv_temp
+	vector	tv_col_pos
+	vector	tv_col_normal
+	vector	tv_force
+	vector	tv_dest_banking
+	vector	tv_delta_pos
+	vector	tv_delta_speed
+	vector	tv_A
+	vector	tv_B
+	vector	tv_prec
+	vector	tv_next
+	
+	object	to_collided_object
+
+	if (ti_first_index == i_modules_nb - 1)
+		return
+
+	tf_sqr_n2_dist = f_n2_dist * f_n2_dist 
+	tf_sqr_n3_dist = f_n3_dist * f_n3_dist 
+	tf_sqr_n5_dist = f_n5_dist * f_n5_dist
+
+	tf_Z_offset = COL_ZoneSizeGet(C_zdm_pied) 
+
+	tf_dt = TIME_GetDt()
+	tf_inv_dt = 1.0 / tf_dt
+
+	// DYNAMIQUE DES MODULES
+	for (ti_i = ti_first_index; ti_i < i_modules_nb; ti_i++)
+	{
+//		if (ti_i == i_snaped_bone_index)
+//			continue
+
+		tav_last_pos[ti_i] = @ao_modules[ti_i] OBJ_PosGet()
+
+		// GRAVITY
+		av_modules_forces[ti_i] = Cv_NullVector
+
+		// PAFs
+//		if (i_flag_paf)
+//		{
+//			if (ti_i == i_modules_pafed_index)
+//			{
+//				if (ai_modules_perfored[ti_i])
+//				{
+//				}
+//				else
+//				{	
+//					av_modules_speed[ti_i].x = v_module_paf_dir.x
+//					av_modules_speed[ti_i].y = v_module_paf_dir.y
+//	
+//					if (af_bone_ground_col_timer[ti_i] < 0.1 || av_modules_speed[ti_i].z < 0.0)
+//						av_modules_speed[ti_i].z = MATH_FloatMax(v_module_paf_dir.z, 4.0)
+//					else
+//						av_modules_speed[ti_i].z = v_module_paf_dir.z
+//				}
+//					
+//				af_bone_ground_col_timer[ti_i] = 1000.0
+//			}
+//			else
+//			{
+//				av_modules_speed[ti_i].x += v_module_paf_dir.x * 0.1
+//				av_modules_speed[ti_i].y += v_module_paf_dir.y * 0.1
+//
+//				if (af_bone_ground_col_timer[ti_i] < 0.1 || av_modules_speed[ti_i].z < 0.0)
+//					av_modules_speed[ti_i].z = MATH_FloatMax(v_module_paf_dir.z * 0.1, MATH_RandFloat(1.0, 2.0))
+//				else
+//					av_modules_speed[ti_i].z += v_module_paf_dir.z * 0.1
+//
+//				af_bone_ground_col_timer[ti_i] = 1000.0
+//			}
+//
+//			av_modules_speed[ti_i] -= MATH_FloatMin(MATH_VecDotProduct(av_modules_speed[ti_i], av_bone_col_normal[ti_i]), 0.0) * av_bone_col_normal[ti_i]
+//		}
+	}
+
+
+	// TENSIONS INTER MODULES
+	if (1)
+	{
+		tv_force = tav_last_pos[0]
+		tv_force -= tav_last_pos[5]
+		
+		tf_norm = MATH_VecDotProduct(tv_force, tv_force)
+		if (tf_norm > 0.001 && tf_norm < tf_sqr_n5_dist)
+		{
+			tf_norm = MATH_FloatSqrt(tf_norm)
+			tv_force /= tf_norm
+			tv_force *= 1.0 - (tf_norm / f_n5_dist)
+			tv_force *= f_rigidity_coef
+
+			av_modules_forces[0] += tv_force
+			av_modules_forces[5] -= tv_force
+		}
+
+		tv_force = tav_last_pos[0]
+		tv_force -= tav_last_pos[10]
+		
+		tf_norm = MATH_VecDotProduct(tv_force, tv_force)
+		if (tf_norm > 0.001 && tf_norm < tf_sqr_n5_dist)
+		{
+			tf_norm = MATH_FloatSqrt(tf_norm)
+			tv_force /= tf_norm
+			tv_force *= 1.0 - (tf_norm / f_n5_dist)
+			tv_force *= f_rigidity_coef
+
+			av_modules_forces[0] += tv_force
+			av_modules_forces[10] -= tv_force
+		}
+
+		tv_force = tav_last_pos[0]
+		tv_force -= tav_last_pos[14]
+		
+		tf_norm = MATH_VecDotProduct(tv_force, tv_force)
+		if (tf_norm > 0.001 && tf_norm < tf_sqr_n5_dist)
+		{
+			tf_norm = MATH_FloatSqrt(tf_norm)
+			tv_force /= tf_norm
+			tv_force *= 1.0 - (tf_norm / f_n5_dist)
+			tv_force *= f_rigidity_coef
+
+			av_modules_forces[0] += tv_force
+			av_modules_forces[14] -= tv_force
+		}
+
+		tv_force = tav_last_pos[14]
+		tv_force -= tav_last_pos[5]
+		
+		tf_norm = MATH_VecDotProduct(tv_force, tv_force)
+		if (tf_norm > 0.001 && tf_norm < tf_sqr_n5_dist)
+		{
+			tf_norm = MATH_FloatSqrt(tf_norm)
+			tv_force /= tf_norm
+			tv_force *= 1.0 - (tf_norm / f_n5_dist)
+			tv_force *= f_rigidity_coef
+
+			av_modules_forces[14] += tv_force
+			av_modules_forces[5] -= tv_force
+		}
+
+		tv_force = tav_last_pos[5]
+		tv_force -= tav_last_pos[10]
+		
+		tf_norm = MATH_VecDotProduct(tv_force, tv_force)
+		if (tf_norm > 0.001 && tf_norm < tf_sqr_n5_dist)
+		{
+			tf_norm = MATH_FloatSqrt(tf_norm)
+			tv_force /= tf_norm
+			tv_force *= 1.0 - (tf_norm / f_n5_dist)
+			tv_force *= f_rigidity_coef
+
+			av_modules_forces[5] += tv_force
+			av_modules_forces[10] -= tv_force
+		}
+	}
+
+	// RIGIDITE 2006 => CA MARCHE ENFIN !!!
+	if (1)
+	{
+		for (ti_i = 0; ti_i < i_modules_nb; ti_i++)
+		{
+			if (ti_i)
+			{
+				// PREC
+				tv_prec = @ao_modules[ti_i - 1] OBJ_PosGet()
+				tv_prec -= @ao_modules[ti_i] OBJ_PosGet()
+				tf_norm = MATH_VecNorm(tv_prec)
+	
+				if (tf_norm > 0.001)
+				{
+					tv_prec /= tf_norm
+					
+					tf_dot_product = MATH_VecDotProduct( - @ao_modules[ti_i] OBJ_SightGet(), tv_prec)
+					tf_dot_product += 1.0
+					tf_dot_product *= 0.5
+					
+					if (tf_dot_product > 0.001)
+					{
+						tv_A = MATH_VecCrossProduct(@ao_modules[ti_i] OBJ_SightGet(), tv_prec)
+						tv_A = MATH_VecCrossProduct(tv_prec, tv_A)
+						
+						tf_norm = MATH_VecSquareNorm(tv_A)
+						if (tf_norm > 0.001)
+						{
+							tf_norm = MATH_FloatSqrt(tf_norm)
+							tv_A /= tf_norm 
+							
+							tf_dot_product	= MATH_FloatMin(tf_dot_product * 2000.0, 400.0)	
+					
+							tv_A *= tf_dot_product
+							
+							if (ai_modules_locked[ti_i])	
+							{
+								av_modules_forces[ti_i - 1] += tv_A * 2.0
+							}
+							else if (ai_modules_locked[ti_i - 1])
+							{
+								av_modules_forces[ti_i] -= tv_A * 2.0
+							}
+							else
+							{
+								av_modules_forces[ti_i - 1] += tv_A
+								av_modules_forces[ti_i] -= tv_A
+							}
+						}
+					}
+				}
+			}
+
+			if (ti_i < i_modules_nb - 1)
+			{
+				// NEXT	
+				tv_next = @ao_modules[ti_i + 1] OBJ_PosGet()
+				tv_next -= @ao_modules[ti_i] OBJ_PosGet()
+				tf_norm = MATH_VecNorm(tv_next)
+	
+				if (tf_norm > 0.001)
+				{
+					tv_next /= tf_norm
+
+					tf_dot_product = MATH_VecDotProduct( @ao_modules[ti_i] OBJ_SightGet(), tv_next)
+					tf_dot_product += 1.0
+					tf_dot_product *= 0.5
+					
+					if (tf_dot_product > 0.001)
+					{
+						tv_A = MATH_VecCrossProduct(- @ao_modules[ti_i] OBJ_SightGet(), tv_next)
+						tv_A = MATH_VecCrossProduct(tv_next, tv_A)
+						
+						tf_norm = MATH_VecSquareNorm(tv_A)
+						if (tf_norm > 0.001)
+						{
+							tf_norm = MATH_FloatSqrt(tf_norm)
+							tv_A /= tf_norm 
+							
+							tf_dot_product	= MATH_FloatMin(tf_dot_product * 2000.0, 400.0)
+					
+							tv_A *= tf_dot_product
+							
+							if (ai_modules_locked[ti_i])
+							{
+								av_modules_forces[ti_i + 1] += tv_A * 2.0
+							}
+							else if (ai_modules_locked[ti_i + 1])
+							{
+								av_modules_forces[ti_i] -= tv_A * 2.0
+							}
+							else	
+							{	
+								av_modules_forces[ti_i + 1] += tv_A
+								av_modules_forces[ti_i] -= tv_A
+							}
+					
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// GIGOTAGE
+	if (f_lifecur && i_perfored_module_index != -1)
+	{
+		f_delay_before_bend -= MATH_FloatMin(f_delay_before_bend, TIME_GetDt())
+		if ( ! f_delay_before_bend )
+		{
+			f_delay_before_bend = MATH_RandFloat(0.1, 0.3)
+			for (ti_i = 0; ti_i < i_modules_nb; ti_i++)
+				av_modules_speed[ti_i] += cvector(MATH_RandFloat(-1.0, 1.0), MATH_RandFloat(-1.0, 1.0), MATH_RandFloat(-1.0, 1.0)) * (f_size_coef * 10.0)
+		}
+	}
+
+	if (f_ragdoll_damping)
+	{
+		// CALCUL DE LA DYNAMIQUE
+		PNJ_Snake_Compute_Module_Speed()
+	
+		// DEPLACEMENT
+		for (ti_i = ti_first_index; ti_i < i_modules_nb; ti_i++)
+		{
+			af_bone_col_timer[ti_i] += TIME_GetDt()
+			af_bone_ground_col_timer[ti_i] += TIME_GetDt()
+	
+//			DBG_RenderVector(tav_last_pos[ti_i], av_modules_speed[ti_i], color_jaune)
+			@ao_modules[ti_i] OBJ_PosSet(tav_last_pos[ti_i] + (av_modules_speed[ti_i] * tf_dt)) 
+		}
+
+		if (i_perfored_module_index != -1 && ! ai_modules_locked[i_perfored_module_index] )
+		{
+			if (MATH_VecDotProduct(av_modules_speed[i_perfored_module_index], av_modules_speed[i_perfored_module_index]) > 0.001)
+				@ao_modules[i_perfored_module_index] OBJ_Rotate_FromTo(av_modules_quat[i_perfored_module_index], @ao_modules[i_perfored_module_index] MATH_VecGlobalToLocal(av_modules_speed[i_perfored_module_index]))
+		}
+	
+		// COLLISIONS
+		if (1) // && i_etat_courant != ETAT_Grabbed_By_Kong)
+		{
+			for (ti_i = ti_first_index; ti_i < i_modules_nb; ti_i++)
+			{
+				if (ai_modules_locked[ti_i])
+				{
+					af_bone_col_timer[ti_i] = 0.0
+					continue
+				}
+	
+				tv_temp = @ao_modules[ti_i] OBJ_PosGet()
+				tv_temp -= tav_last_pos[ti_i]
+				tf_norm = MATH_VecNorm(tv_temp)
+	
+				tf_move_length = tf_norm
+	
+				ti_iterations = 0
+	
+				while (tf_norm > 0.001 && ti_iterations < 5)
+				{
+					ti_iterations++
+	
+					tv_temp /= tf_norm
+				
+					if ( ti_iterations == 1)
+						COL_CrossableSet(none, i_gmat_water_bit)
+					else
+						COL_CrossableSet(i_gmat_water_bit, none)
+
+					to_collided_object = COL_RayObject_Dist(tav_last_pos[ti_i], tv_temp, tf_norm + f_size_coef, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+					if (to_collided_object)
+					{
+						tv_col_pos = COL_RayObject_PosGet()
+						tv_col_normal = COL_RayObject_NormalGet()
+
+						if (COL_GMAT_FlagsGet(COL_C_Ray) & i_gmat_water_bit)
+						{
+							DBG_RenderVector(tv_col_pos, tv_col_normal, color_bleu)
+
+							if (MATH_AbsFloat(tv_col_normal.z) > Cf_Cos60)
+							{
+//								f_water_Z = MATH_FloatMax(f_water_Z, tv_col_pos.z)
+								f_water_Z = tv_col_pos.z
+							}
+							
+							COL_CrossableSet(i_gmat_water_bit, none)
+							if (COL_RayObject_Dist(tav_last_pos[ti_i], tv_temp, tf_norm + f_size_coef, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable))
+							{
+								tv_col_pos = COL_RayObject_PosGet()
+								tv_col_normal = COL_RayObject_NormalGet()
+							}
+							else
+							{
+								break
+							}
+						}
+
+						tf_dot_product = MATH_VecDotProduct(tv_temp, -tv_col_normal)
+						if (tf_dot_product > 0.3)
+							tf_dot_product = -tf_Z_offset / tf_dot_product
+						else
+							tf_dot_product = 1000.0
+							
+						if (tf_dot_product < tf_norm + tf_Z_offset)
+						{
+							tv_temp *= tf_dot_product
+							tv_temp += tv_col_pos
+						}
+						else
+						{
+							tv_temp = tv_col_pos
+							tv_temp += tv_col_normal * tf_Z_offset
+						}
+	
+//						if (MATH_VecDotProduct(tv_temp - tav_last_pos[ti_i], tv_temp - tav_last_pos[ti_i]) < tf_move_length) // * tf_move_length)
+						if (MATH_VecNorm(tv_temp - tav_last_pos[ti_i]) < tf_move_length + tf_Z_offset)
+						{
+							@ao_modules[ti_i] OBJ_PosSet(tv_temp)
+	
+							if (COL_GMAT_FlagsGet(COL_C_Ray) & i_gmat_death_bit)
+								i_flag_force_death = vrai
+		
+							af_bone_col_timer[ti_i] = 0.0
+		
+							if (ai_modules_perfored[ti_i])
+							{
+								ai_modules_locked[ti_i] = vrai
+								av_modules_speed[ti_i] = Cv_NullVector
+								break
+							}
+							else
+							{
+								if (tv_col_normal.z > Cf_Cos45)
+									af_bone_ground_col_timer[ti_i] = 0.0	
+				
+								if (ti_iterations > 1)
+									av_bone_col_normal[ti_i] = MATH_VecBlendRotate(av_bone_col_normal[ti_i], tv_col_normal, 0.5)
+								else
+									av_bone_col_normal[ti_i] = tv_col_normal
+		
+								// GLISSING !!!
+								tv_temp = tav_last_pos[ti_i]
+								tv_temp += av_modules_speed[ti_i] * tf_dt
+								tv_temp -= @ao_modules[ti_i] OBJ_PosGet()
+								tv_temp -= MATH_VecDotProduct(tv_temp, tv_col_normal) * tv_col_normal
+								
+								// BEUARK FRICTION
+								tv_temp *= 0.8
+		
+								@ao_modules[ti_i] OBJ_PosSet(@ao_modules[ti_i] OBJ_PosGet() + tv_temp)
+							
+								av_modules_speed[ti_i] -= MATH_VecDotProduct(av_modules_speed[ti_i], tv_col_normal) * tv_col_normal
+					
+								tv_temp = @ao_modules[ti_i] OBJ_PosGet()
+								tv_temp -= tav_last_pos[ti_i]
+								tf_norm = MATH_VecNorm(tv_temp)
+							}
+						}
+						else
+						{
+							break
+						}
+					}
+					else
+					{
+						break
+					}
+				}
+	
+				if (ti_iterations == 0)
+				{
+					tf_norm = tf_norm
+				}
+			}
+		}
+	
+	//	for (ti_i = ti_first_index; ti_i < i_modules_nb; ti_i++)
+	//		DBG_RenderSphere(@ao_modules[ti_i] OBJ_PosGet(), tf_Z_offset, 0x80804080)	
+	
+		// RENORMALISATION
+//		if (i_etat_courant == ETAT_Grabbed_By_Kong)	
+//			PNJ_Snake_Renormalisation(ti_first_index, i_modules_nb - 1, 20)
+//		else
+			PNJ_Snake_Renormalisation(ti_first_index, i_modules_nb - 1, 10)
+	}
+
+	i_on_ground_modules_nb = 0
+	i_in_water_modules_nb = 0
+	
+	// CALCUL DES SPEED ET DES ORIENTATIONS
+	for (ti_i = ti_first_index; ti_i < i_modules_nb; ti_i++)
+	{
+//		if (ti_i == i_snaped_bone_index)
+//			continue
+
+//		if (tai_bone_collision[ti_i] && ai_modules_perfored[ti_i])
+//			ai_modules_locked[ti_i] = vrai
+
+		if (af_modules_archimede[ti_i])
+		{
+			i_in_water_modules_nb++
+
+			if (af_modules_archimede[ti_i] < 1.5 && av_modules_speed[ti_i].z > -1.0)
+				i_on_ground_modules_nb++
+		}
+		else if (af_bone_ground_col_timer[ti_i] < 0.15)
+		{
+			i_on_ground_modules_nb++
+		}
+		else
+		{
+			av_bone_col_normal[ti_i] = Cv_NullVector
+		}
+
+//		tv_temp = @ao_modules[ti_i] OBJ_PosGet() - tav_last_pos[ti_i]
+//		tv_temp *= tf_inv_dt
+//		tv_temp -= MATH_VecDotProduct(tv_temp, av_bone_col_normal[ti_i]) * av_bone_col_normal[ti_i]
+//			
+//		av_modules_speed[ti_i] = tv_temp
+
+		if (i_perfored_module_index != -1)
+		{
+			tv_dest_banking = @ao_modules[i_perfored_module_index] OBJ_BankingGet()
+		}
+		else if (af_bone_col_timer[ti_i] < 0.1)
+		{
+			tv_dest_banking = av_bone_col_normal[ti_i]
+			if ( ! f_lifecur )
+				tv_dest_banking *= -1.0
+		}
+		else
+		{
+//			tv_dest_banking = v_dest_banking
+			if ( f_lifecur )
+				tv_dest_banking = Cv_VerticalVector
+			else
+				tv_dest_banking = -Cv_VerticalVector
+		}
+
+		tv_temp = @ao_modules[ti_i] OBJ_PosGet() - tav_last_pos[ti_i]
+		tv_temp *= tf_inv_dt
+		tv_temp -= MATH_VecDotProduct(tv_temp, av_bone_col_normal[ti_i]) * av_bone_col_normal[ti_i]
+			
+		av_modules_speed[ti_i] = tv_temp
+
+		if (ti_i)
+			tv_dest_banking = MATH_VecBlendRotate(tv_dest_banking, @ao_modules[ti_i - 1] OBJ_BankingGet(), 0.5)
+		else
+			tv_dest_banking = MATH_VecBlendRotate(tv_dest_banking, @ao_modules[ti_i + 1] OBJ_BankingGet(), 0.5)
+
+		tv_dest_banking = MATH_VecBlendRotate(@ao_modules[ti_i] OBJ_BankingGet(), tv_dest_banking, 4.0 * TIME_GetDt())
+
+		if ( ai_modules_locked[ti_i]  || ai_modules_perfored[ti_i] )
+			continue
+
+		if (ti_i == i_modules_nb - 1)
+			@ao_modules[ti_i] OBJ_SightGeneralSet(@ao_modules[ti_i - 1] OBJ_PosGet() - @ao_modules[ti_i] OBJ_PosGet(), tv_dest_banking)
+		else if (!ti_i)
+			@ao_modules[ti_i] OBJ_SightGeneralSet(@ao_modules[ti_i] OBJ_PosGet() - @ao_modules[ti_i + 1] OBJ_PosGet(), tv_dest_banking)
+		else
+			@ao_modules[ti_i] OBJ_SightGeneralSet(@ao_modules[ti_i - 1] OBJ_PosGet() - @ao_modules[ti_i + 1] OBJ_PosGet(), tv_dest_banking)
+	}
+	
+	if (!i_flag_start_ragdoll_damping && i_on_ground_modules_nb == 15)
+		i_flag_start_ragdoll_damping = vrai
+
+	COL_CrossableSet(i_gmat_water_bit, none)
+
+	return
+}
+
+procedure_local void PNJ_Snake_SetGFXTracePointData(int ti_point_index, int ti_color, vector tv_pos, vector tv_speed)
+{
+	#define noiseprop 0.15
+	#define Cf_Water_visual_offset 0.02
+
+	GFX_Seti(GFX_Water_Trace, 12104 , ti_point_index) // Actual point to set
+	GFX_Seti(GFX_Water_Trace, 12109 , ti_color) 	// Color
+	GFX_Setv(GFX_Water_Trace, 12200, tv_pos) 	// StartPos
+	GFX_Setv(GFX_Water_Trace, 12201, (1.0 - noiseprop ) * tv_speed) 	// Speed
+	GFX_Setv(GFX_Water_Trace, 12208, noiseprop * 	tv_speed) 	// Random Speed
+	GFX_Setf(GFX_Water_Trace, 12003, f_water_Z + Cf_Water_visual_offset)	// Constraint ZMin
+}
+
+procedure_local void PNJ_Snake_GFX_Trace()
+{
+	float		tf_coef
+	float		tf_Z_offset
+	vector 	tv_pos
+	vector	GX, GY, GZ
+	int			ti_temp
+	int 		Color
+
+	float		alpha_airtrace	
+	float		tf_Z_coef
+	float		Largeur_A
+	float		Largeur_B
+	float		Largeur_C
+	float		tf_speed
+	float		tf_norm
+	
+	object	to_visuel	
+
+	#define Force_Jet_SIDE 1.0
+	#define Force_Jet_UP 1.0
+	
+	tv_pos = OBJ_PosGet()
+
+	tf_Z_offset = COL_ZoneSizeGet(C_zdm_pied)
+
+	Largeur_A = tf_Z_offset * 1.5
+	Largeur_B = tf_Z_offset * 1.25
+	Largeur_C = tf_Z_offset
+	
+	if (OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna))
+		GY = DYN_SpeedGetVector()
+	else
+		GY = av_modules_speed[0]
+
+	GY.z = 0.0
+	tf_speed = MATH_VecNorm(GY)
+	if (tf_speed > 0.01)
+	{
+		GY /= tf_speed
+	}
+	else
+	{
+		GY = OBJ_SightGet()
+		GY.z = 0.0
+		tf_norm = MATH_VecNorm(GY)
+		if (tf_norm > 0.01)
+			GY /= tf_norm
+		else
+		{
+			GY = - OBJ_BankingGet()
+			MATH_VecSetHorzNormalize(GY)
+		}
+	}
+
+	tf_Z_coef = MATH_AbsFloat(tv_pos.z - f_water_Z)
+	tf_Z_coef = MATH_FloatMax(tf_Z_coef - tf_Z_offset, 0.0)
+	tf_Z_coef /= tf_Z_offset
+	tf_Z_coef = 1.0 - MATH_FloatMin(tf_Z_coef, 1.0)
+
+//	if (i_etat_courant == ETAT_Paf)
+//		tf_coef = MATH_FloatMin(MATH_VecNorm(av_modules_speed[0]), 2.0)
+//	else
+		tf_coef = MATH_FloatMin(DYN_SpeedGet(), 2.0)
+	tf_coef /= 2.0
+	tf_coef *= tf_Z_coef
+
+	if (i_flag_desappear)
+		alpha_airtrace = 0.0
+	else
+		alpha_airtrace = tf_coef
+
+	if ( ! tf_coef )
+	{
+		alpha_airtrace	= 0.0	
+	
+		f_time_trace_off += TIME_GetDt()
+	
+		if (GFX_Water_Trace == -1)
+		{
+			return
+		}
+		else if (f_time_trace_off > 1.0)
+		{
+			GFX_Del(GFX_Water_Trace)
+			GFX_Water_Trace = -1
+			return
+		}
+	}
+	else
+	{
+		if (f_time_trace_off)
+			alpha_airtrace	= 0.0
+
+		f_time_trace_off = 0.0
+	}
+
+	if(GFX_Water_Trace == -1)
+	{
+		alpha_airtrace	= 0.0
+	
+		to_visuel = ANI_CanalObjectGet(0)
+
+		GFX_Water_Trace = GFX_Add(12)
+		GFX_MaterialSet(GFX_Water_Trace, to_visuel, 1)	// met le materiau
+		GFX_Seti(GFX_Water_Trace, 12100 , 6)												// Number of point per profile
+		GFX_Seti(GFX_Water_Trace, 12101 , 5) 											// Number of Link per profile
+		GFX_Seti(GFX_Water_Trace, 12102 , 16) 											// Number of profiles
+		
+		GFX_Seti(GFX_Water_Trace, 12103 , 1) 											// start
+		GFX_Seti(GFX_Water_Trace, 12111 , 8) 											// UTiler
+		
+		GFX_Setf(GFX_Water_Trace, 12004 , 0.25) 											// Segment lenght min
+		GFX_Setv(GFX_Water_Trace, 12202, cvector(0.01,0.01,0)) 						// Friction
+		
+		GFX_Seti(GFX_Water_Trace, 12105 , 0) 											// Actual LINK to set
+		GFX_Seti(GFX_Water_Trace, 12106 , 0) 											// Point A
+		GFX_Seti(GFX_Water_Trace, 12107 , 1) 											// Point B
+		
+		GFX_Setf(GFX_Water_Trace, 12001 , 0.0) 											// Point VA
+		GFX_Setf(GFX_Water_Trace, 12002 , 0.33) 										// Point VB
+			
+		GFX_Seti(GFX_Water_Trace, 12105 , 1) 											// Actual LINK to set
+		GFX_Seti(GFX_Water_Trace, 12106 , 1) 											// Point A
+		GFX_Seti(GFX_Water_Trace, 12107 , 2) 											// Point B
+		
+		GFX_Setf(GFX_Water_Trace, 12001 , 0.33) 											// Point VA
+		GFX_Setf(GFX_Water_Trace, 12002 , 0.66) 											// Point VB
+			
+		GFX_Seti(GFX_Water_Trace, 12105 , 2) 											// Actual LINK to set
+		GFX_Seti(GFX_Water_Trace, 12106 , 2) 											// Point A
+		GFX_Seti(GFX_Water_Trace, 12107 , 3) 											// Point B
+		
+		GFX_Setf(GFX_Water_Trace, 12001 , 0.66) 									// Point VA
+		GFX_Setf(GFX_Water_Trace, 12002 , 1.0) 										// Point VB
+		
+		GFX_Seti(GFX_Water_Trace, 12105 , 3) 											// Actual LINK to set
+		GFX_Seti(GFX_Water_Trace, 12106 , 3) 											// Point A
+		GFX_Seti(GFX_Water_Trace, 12107 , 4) 											// Point B
+		GFX_Setf(GFX_Water_Trace, 12001 , 0.5) 											// Point VA
+		GFX_Setf(GFX_Water_Trace, 12002 , 0.75) 											// Point VB
+		
+		GFX_Seti(GFX_Water_Trace, 12105 , 4) 											// Actual LINK to set
+		GFX_Seti(GFX_Water_Trace, 12106 , 4) 											// Point A
+		GFX_Seti(GFX_Water_Trace, 12107 , 5) 											// Point B
+		GFX_Setf(GFX_Water_Trace, 12001 , 0.75) 										// Point VA
+		GFX_Setf(GFX_Water_Trace, 12002 , 1.0) 											// Point VB
+			
+		GFX_FlagSet(GFX_Water_Trace, 0 , 1)
+		GFX_FlagSet(GFX_Water_Trace, 2 , 1)
+	}
+
+//	Color = 0x00C0DFDF
+//	ti_temp = alpha_airtrace * 64
+//	Color |= (ti_temp << 24)
+
+	if (f_water_Z < -1000.0)
+		Color = 0
+	else
+		Color = COLOR_Blend(0, 0x40C0DFDF, alpha_airtrace)
+
+	// POSITIONNEMENT DES POINTS
+	PNJ_Snake_SetGFXTracePointData(0, Color, cvector(-Largeur_A, 0.0, 0.0), tf_coef * cvector(-Force_Jet_SIDE, 0.0, Force_Jet_UP) * 1.5)
+	PNJ_Snake_SetGFXTracePointData(5, Color, cvector(Largeur_A, 0.0, 0.0), tf_coef * cvector(Force_Jet_SIDE, 0.0, Force_Jet_UP) * 1.5)
+	PNJ_Snake_SetGFXTracePointData(1, Color, cvector(-Largeur_B, 0.0, 0.0), tf_coef * cvector(-Force_Jet_SIDE, 0.0, Force_Jet_UP))
+	PNJ_Snake_SetGFXTracePointData(4, Color, cvector(Largeur_B, 0.0, 0.0), tf_coef * cvector(Force_Jet_SIDE, 0.0, Force_Jet_UP))
+	PNJ_Snake_SetGFXTracePointData(2, Color, cvector(-Largeur_C, 0.0, 0.0), tf_coef * cvector(-Force_Jet_SIDE, 0.0, Force_Jet_UP) * 0.5)
+	PNJ_Snake_SetGFXTracePointData(3, Color, cvector(Largeur_C, 0.0, 0.0), tf_coef * cvector(Force_Jet_SIDE, 0.0, Force_Jet_UP) * 0.5)
+	
+	GFX_Setf(GFX_Water_Trace, 12000 , -5.0) 									// Gravity
+	
+	GY *= -1.0
+	GZ = Cv_VerticalVector
+	GX = MATH_VecCrossProduct(GY, GZ)
+//	DBG_RenderVector(OBJ_PosGet(), GX * 5.0, color_rouge)
+		
+	GFX_Setv(GFX_Water_Trace, 12203, GX) // GX
+	GFX_Setv(GFX_Water_Trace, 12204, GY) // GY
+	GFX_Setv(GFX_Water_Trace, 12205, GZ) // GZ
+	
+	tv_pos.z = f_water_Z + Cf_Water_visual_offset
+	GFX_Setv(GFX_Water_Trace, 12206, tv_pos) // GT
+	
+	// SI VUE INTERIEURE
+	GFX_Seti(GFX_Water_Trace, 12103 , 1) // Start
+}
+
+procedure_local void PNJ_Snake_Recompute_BV()
+{
+	int		ti_i
+
+	vector	tv_module_pos		
+	vector	tv_bv_min
+	vector	tv_bv_max
+
+	if (creature_type != Ci_CreatureType_Snake)
+		return
+
+	tv_bv_min = cvector(Cf_Infinit, Cf_Infinit, Cf_Infinit)
+	tv_bv_max = -tv_bv_min
+
+	for (ti_i = 0; ti_i < i_modules_nb; ti_i += 3)
+	{
+		tv_module_pos = @ao_modules[ti_i] OBJ_PosGet()
+
+		tv_bv_min.x = MATH_FloatMin(tv_module_pos.x, tv_bv_min.x) 
+		tv_bv_min.y = MATH_FloatMin(tv_module_pos.y, tv_bv_min.y) 
+		tv_bv_min.z = MATH_FloatMin(tv_module_pos.z, tv_bv_min.z) 
+
+		tv_bv_max.x = MATH_FloatMax(tv_module_pos.x, tv_bv_max.x) 
+		tv_bv_max.y = MATH_FloatMax(tv_module_pos.y, tv_bv_max.y) 
+		tv_bv_max.z = MATH_FloatMax(tv_module_pos.z, tv_bv_max.z) 
+		
+//		DBG_RenderSphere(tv_module_pos, f_size_coef, color_rouge)
+	}
+	
+	tv_bv_min -= OBJ_PosGet()
+	tv_bv_max -= OBJ_PosGet()
+	
+	tv_bv_min -= cvector(f_size_coef, f_size_coef, f_size_coef)
+	tv_bv_max += cvector(f_size_coef, f_size_coef, f_size_coef)
+	
+	BV_MinSet(tv_bv_min)
+	BV_MaxSet(tv_bv_max)
+}
+
+
+procedure_local void PNJ_Snake_Hide_Modules()
+{
+//	int		ti_i
+//	int		ti_index
+//	
+//	float	tf_sqr_dist
+//	
+//	tf_sqr_dist = f_size_coef * 2.0
+//	tf_sqr_dist *= tf_sqr_dist
+//	
+//	for (ti_i  = 0; ti_i < i_modules_nb; ti_i++)
+//	{
+//		if (ti_i < i_modules_nb - 1)
+//			ti_index = ti_i
+//		else
+//			ti_index = Anim_Canal_Bassin
+//			
+//		if (@get_Kamera OBJ_SqrDist(ao_modules[ti_i]) < tf_sqr_dist)
+//			ANI_ShapeSelect(ti_index, ShapeSelect_Invisible)
+////			@ao_modules[ti_i] OBJ_FlagInvisibleSet(vrai)
+//		else
+//			ANI_ShapeSelect(ti_index, ShapeSelect_Visible)
+////			@ao_modules[ti_i] OBJ_FlagInvisibleSet(faux)
+//	}
+}
+
+procedure_local void PNJ_Spider_Move_Sound_Off()
+{
+	if (i_SND_Move_LoopA != -1)
+	{
+		SND_Stop(i_SND_Move_LoopA)
+		i_SND_Move_LoopA = -1
+	}
+	if (i_SND_Move_LoopB_L != -1)
+	{
+		SND_Stop(i_SND_Move_LoopB_L)
+		i_SND_Move_LoopB_L = -1
+	}
+	if (i_SND_Move_LoopB_R != -1)
+	{
+		SND_Stop(i_SND_Move_LoopB_R)
+		i_SND_Move_LoopB_R = -1
+	}
+}
+
+procedure_local void PNJ_Spider_Move_Sound_On(float	tf_speed_insert_coef)
+{
+	if (i_SND_Move_LoopA == -1)
+		i_SND_Move_LoopA = SND_RequestPlayLoop(SND_LOOP_A)
+	SND_InsertVarSet(i_SND_Move_LoopA, 13, tf_speed_insert_coef)
+
+	if (i_SND_Move_LoopB_L == -1)
+		i_SND_Move_LoopB_L = SND_RequestPlayLoop(SND_LOOP_B_L)
+	SND_InsertVarSet(i_SND_Move_LoopB_L, 13, tf_speed_insert_coef)
+
+	if (i_SND_Move_LoopB_R == -1)
+		i_SND_Move_LoopB_R = SND_RequestPlayLoop(SND_LOOP_B_R)
+	SND_InsertVarSet(i_SND_Move_LoopB_R, 13, tf_speed_insert_coef)
+}
+
+procedure_local void PNJ_Spider_Wait_Sound_On()
+{
+	if (i_SND_Wait_Loop == -1)
+		i_SND_Wait_Loop = SND_RequestPlayLoopOnObjCanal(SND_WAIT_LOOP, Anim_Canal_Bassin)
+}
+
+procedure_local void PNJ_Spider_Wait_Sound_Off()
+{
+	if (i_SND_Wait_Loop != -1)
+	{
+		SND_Stop(i_SND_Wait_Loop)
+		i_SND_Wait_Loop = -1
+	}
+}
+
+procedure_local void PNJ_Snake_Clean_Sound()
+{
+	if (i_SND_Wait_Loop != -1)
+	{
+		SND_Destroy(i_SND_Wait_Loop)
+		i_SND_Wait_Loop = -1
+	}
+	if (i_SND_Move_LoopA != -1)
+	{
+		SND_Destroy(i_SND_Move_LoopA)
+		i_SND_Move_LoopA = -1
+	}
+	if (i_SND_Move_LoopB_L != -1)
+	{
+		SND_Destroy(i_SND_Move_LoopB_L)
+		i_SND_Move_LoopB_L = -1
+	}
+	if (i_SND_Move_LoopB_R != -1)
+	{
+		SND_Destroy(i_SND_Move_LoopB_R)
+		i_SND_Move_LoopB_R = -1
+	}
+}
+
+procedure_local void PNJ_Spider_All_Loop_Sound_Off()
+{
+	if (i_SND_Wait_Loop != -1)
+	{
+		SND_Stop(i_SND_Wait_Loop)
+		i_SND_Wait_Loop = -1
+	}
+	if (i_SND_Move_LoopA != -1)
+	{
+		SND_Stop(i_SND_Move_LoopA)
+		i_SND_Move_LoopA = -1
+	}
+	if (i_SND_Move_LoopB_L != -1)
+	{
+		SND_Stop(i_SND_Move_LoopB_L)
+		i_SND_Move_LoopB_L = -1
+	}
+	if (i_SND_Move_LoopB_R != -1)
+	{
+		SND_Stop(i_SND_Move_LoopB_R)
+		i_SND_Move_LoopB_R = -1
+	}
+}
+
+procedure_local void PNJ_Spider_Shoot()
+{
+	#define	halo_extraction	0.75
+	#define	halo_taille			1.5
+	#define	halo_color			0x7FAAFFFF//0x7FCCFF88
+	
+	vector	tv_pos
+	float		tf_coef
+	object	to_bone
+	object	to_dup
+	int			ti_force
+	int			ti_force_shoot
+	
+	ti_force_shoot = faux
+
+	if( ! i_atk_charge_flag )
+	{
+		if (o_Rided_Actor == o_main_actor)
+			ti_force_shoot = vrai
+		else
+			f_atk_charge_duree -= MATH_FloatMin(f_atk_charge_duree, 10 * TIME_GetDt())
+	}
+	else
+	{
+		if( i_GFX_charge == -1 )
+		{
+			i_GFX_charge = GFX_Add(21)	// Halo
+			GFX_FlagSet(i_GFX_charge, 4, 1)
+			GFX_MaterialSet(i_GFX_charge, get_SFX_light_and_smoke,0) // affectation du matériau
+			GFX_Seti(i_GFX_charge, 21103, 1)			// 0 (défaut) flare mural		1 flare très simple 
+			if (creature_type == Ci_CreatureType_Spider)
+				GFX_Seti(i_GFX_charge, 21101, halo_color)     // couleur du halo
+			else
+				GFX_Seti(i_GFX_charge, 21101, 0x1030F0)     // couleur du halo
+		}
+	}
+
+	if ( i_GFX_charge != -1 )
+	{
+		// GFX (augmentation ou reduction)
+		tf_coef = f_atk_charge_duree / Proc_PNJ_Snake_ChargeAttack_DureeGet()
+		tf_coef = MATH_FloatMin(tf_coef, 1.0)
+
+		GFX_Setf(i_GFX_charge, 21000, halo_taille * tf_coef * OBJ_ZoomGet())  // taille du halo
+		GFX_Setf(i_GFX_charge, 21002, halo_extraction * OBJ_ZoomGet())		// extraction par rapport au point de génération (vers la cam)
+		if (creature_type == Ci_CreatureType_Spider)
+		{
+			to_bone = ANI_CanalObjectGet(Anim_Canal_Tete)
+			tv_pos = @to_bone OBJ_PosGet()
+			tv_pos += ( 1.0 * OBJ_SightGet() * OBJ_ZoomGet() )
+		}
+		else
+		{
+			to_bone = ANI_CanalObjectGet(Anim_Canal_Bassin)
+			tv_pos = @to_bone OBJ_PosGet()
+			tv_pos += @to_bone OBJ_SightGet() * OBJ_ZoomGet()
+			tv_pos -= @to_bone OBJ_BankingGet() * 0.1 * OBJ_ZoomGet()
+		}
+
+		GFX_Setv(i_GFX_charge, 21200, tv_pos )      // position du halo
+
+		if ( (o_Rided_Actor != o_main_actor && tf_coef > 0.99) || ti_force_shoot )
+		{
+			// SHOOT !!!
+			tf_coef = MATH_FloatMax(tf_coef, 0.2)
+		
+			to_dup = @get_Spider_Ball OBJ_Duplicate(tv_pos)
+			@get_RM_Spider_Ball_path to_dup o_target = o_atk_charge_target
+			@get_RM_Spider_Ball_path to_dup o_sender = o_Rided_Actor
+			@get_RM_Spider_Ball_path to_dup o_sender_2 = OBJ_Me()
+			if (creature_type == Ci_CreatureType_Spider)
+				@get_RM_Spider_Ball_path to_dup i_GFX_Smoke_color = 0 // halo_color si 0 couleur par defaut
+			else
+				@get_RM_Spider_Ball_path to_dup i_GFX_Smoke_color = 0x102040// halo_color si 0 couleur par defaut
+			@get_RM_Spider_Ball_path to_dup f_life_time *= tf_coef * tf_coef
+			@to_dup OBJ_BankingGeneralSet(OBJ_SightGet(), OBJ_BankingGet())
+
+			if (o_Rided_Actor == o_main_actor)
+				f_atk_charge_delai = 0.5 // délai réattaque
+			else
+				f_atk_charge_delai = 2.0	// délai réattaque
+
+			f_atk_charge_duree = 0.0		// del gfx
+			
+			SND_RequestPlay(SND_SHOOT)
+		}
+		if (i_SND_atk_charge_Loop == -1)
+			i_SND_atk_charge_Loop = SND_RequestPlayLoop(SND_LOOP_CHARGE_SHOOT)
+	}
+	
+	if( ! f_atk_charge_duree )
+	{
+		if( i_GFX_charge != -1 )
+		{
+			GFX_Del(i_GFX_charge)
+			i_GFX_charge = -1
+		}
+		if (i_SND_atk_charge_Loop != -1)
+		{
+			SND_Stop(i_SND_atk_charge_Loop)
+			i_SND_atk_charge_Loop = -1
+		}
+	}
+	
+	i_atk_charge_flag = faux
+	o_atk_charge_target = nobody
+}
+
+procedure_local void PNJ_Snake_Clean_GFX()
+{
+	if (i_GFX_charge != -1)
+	{
+		GFX_Del(i_GFX_charge)
+		i_GFX_charge = -1
+	}
+	
+	if (GFX_Water_Trace != -1)
+	{
+		GFX_Del(GFX_Water_Trace)
+		GFX_Water_Trace = -1
+	}
+	
+	if (GFX_Fire != -1)
+	{
+		GFX_Seti(GFX_Fire, 13106, 0)											// *number of sprite to generate
+		GFX_Fire = -1
+	}
+
+	if (GFX_Fire_Smoke != -1)
+	{
+		GFX_Seti(GFX_Fire_Smoke, 13106, 0)											// *number of sprite to generate
+		GFX_Fire_Smoke = -1
+	}
+}
+
+procedure_local void PNJ_Quadri_GFX_Burn()
+{
+	float			tf_speed_coef	
+
+	vector		tv_pos	
+	vector		tv_wind
+	
+	object		to_camera
+
+//	if (!i_flag_can_explode)
+//	{
+//		if (GFX_Fire != -1)
+//		{
+//			GFX_Seti(GFX_Fire, 13106, 0)											// *number of sprite to generate
+//			GFX_Fire = -1
+//		}
+//
+//		if (GFX_Fire_Smoke != -1)
+//		{
+//			GFX_Seti(GFX_Fire_Smoke, 13106, 0)											// *number of sprite to generate
+//			GFX_Fire_Smoke = -1
+//		}
+//
+//		return
+//	}
+
+	if (creature_type != Ci_CreatureType_Quadri)
+		return
+	
+	if (f_burn_duration > 20.0)
+		return
+
+	tv_pos = OBJ_PosGet()
+	tv_pos -= OBJ_SightGet() * 0.4
+	tv_pos += OBJ_BankingGet() * 0.1
+
+	tv_wind = tv_pos - v_GFX_Fire_Smoke_Last_Pos
+	tv_wind /= TIME_GetDt()
+
+	tf_speed_coef = MATH_VecNorm(tv_wind)
+	tf_speed_coef = MATH_FloatLimit(tf_speed_coef / af_anim_speed[0], 0.0, 1.0)
+
+	tv_wind = Cv_NullVector
+	tv_pos -= tv_wind * TIME_GetDt()
+
+	if (GFX_Fire_Smoke == -1)
+	{
+		v_GFX_Fire_Smoke_Last_Pos = tv_pos 
+		
+		GFX_Fire_Smoke = GFX_Add(13)																// Create the boum
+					
+		GFX_MaterialSet(GFX_Fire_Smoke, get_SFX_light_and_smoke, 8)						// met le materiau
+	
+		GFX_Seti(GFX_Fire_Smoke, 13100, 40)															// *Buffer number of sprite
+		GFX_Seti(GFX_Fire_Smoke, 13106, 0xFFFFFFFF)											// *number of sprite to generate
+		
+		GFX_Setf(GFX_Fire_Smoke, 13003, 0.0)															// Time fase 1
+		GFX_Setf(GFX_Fire_Smoke, 13004, 1.0)														// Time fase 2
+		
+		GFX_Seti(GFX_Fire_Smoke, 13107, 0)															// Sprites non triés
+		
+		GFX_FlagSet(GFX_Fire_Smoke, 0 , 1)
+		GFX_FlagSet(GFX_Fire_Smoke, 2 , 1)
+		
+		GFX_Setf(GFX_Fire_Smoke, 13000, 1.0)														// Growing speed min
+		GFX_Setf(GFX_Fire_Smoke, 13001, 3.0)														// Growing speed max
+		GFX_Setf(GFX_Fire_Smoke, 13002, 0.0001)													// Friction Grow
+		
+		GFX_Setf(GFX_Fire_Smoke, 13005, 0.25)														// Creation size min
+		GFX_Setf(GFX_Fire_Smoke, 13006, 0.5)														// Creation size max
+		
+		GFX_Setv(GFX_Fire_Smoke, 13203, cvector(0.02, 0.02, 0.0))							// friction speed
+		
+		GFX_Seti(GFX_Fire_Smoke, 13103, 0xFF202020)											// Color fase 0
+		GFX_Seti(GFX_Fire_Smoke, 13104, 0x80202020)											// Color fase 1
+		GFX_Seti(GFX_Fire_Smoke, 13105, 0x00)													// Color fase 2
+	
+		GFX_Setf(GFX_Fire_Smoke, 13009, 2.0)														// Norm speed min
+		GFX_Setf(GFX_Fire_Smoke, 13010, 4.0)														// Norm speed max
+		
+		GFX_Setv(GFX_Fire_Smoke, 13205, Cv_NullVector)										// Mainposspeed
+		GFX_Setv(GFX_Fire_Smoke, 13206, Cv_NullVector)										// Mainpossfriction
+			
+		GFX_Setf(GFX_Fire_Smoke, 13007, 4.0)															// Gravity
+	}
+
+	GFX_Setf(GFX_Fire_Smoke, 13012, 0.75)														// Time random
+	GFX_Setf(GFX_Fire_Smoke, 13008, MATH_FloatBlend(0.2, 0.1, tf_speed_coef))		// generation rate
+
+	GFX_Setv(GFX_Fire_Smoke, 13200, MATH_VecBlend(tv_pos, v_GFX_Fire_Smoke_Last_Pos, 0.5)) 	// Creation Pos
+	GFX_Setv(GFX_Fire_Smoke, 13207, (v_GFX_Fire_Smoke_Last_Pos - tv_pos) * 0.5)	// CreaPosAxe X
+//	GFX_Setf(GFX_Fire_Smoke, 13011, v_col_ground_pos.z) // Z min	
+
+	GFX_Setv(GFX_Fire_Smoke, 13204, tv_wind)											// wind
+
+	GFX_Setv(GFX_Fire_Smoke, 13201, (-OBJ_SightGet() * 3.0) + cvector(-1.0, -1.0, 0.0))	// Speed min
+	GFX_Setv(GFX_Fire_Smoke, 13202, (-OBJ_SightGet() * 3.0) + cvector(1.0, 1.0, 0.0))		// Speed max
+	
+	if (f_burn_duration < 10.0)
+	{
+		if (GFX_Fire == -1)
+		{
+			GFX_Fire = GFX_Add(13)																// Create the boum
+						
+			GFX_MaterialSet(GFX_Fire, get_SFX_light_and_smoke, -1)						// met le materiau
+			GFX_Seti(GFX_Fire, 13101, 17)															// Materiau 0
+			GFX_Seti(GFX_Fire, 13110, 18)															// Materiau 1
+			GFX_Seti(GFX_Fire, 13111, 19)															// Materiau 2
+			GFX_Seti(GFX_Fire, 13112, 17)															// Materiau 3
+		
+			GFX_Seti(GFX_Fire, 13100, 40)															// *Buffer number of sprite
+			GFX_Seti(GFX_Fire, 13106, 0xFFFFFFFF)											// *number of sprite to generate
+			
+			GFX_Setf(GFX_Fire, 13003, 0.0)															// Time fase 1
+			GFX_Setf(GFX_Fire, 13004, 0.8)														// Time fase 2
+			
+			GFX_Seti(GFX_Fire, 13107, 0)															// Sprites non triés
+			
+			GFX_FlagSet(GFX_Fire, 0 , 1)
+			GFX_FlagSet(GFX_Fire, 2 , 1)
+			
+			GFX_Setf(GFX_Fire, 13000, -0.025)														// Growing speed min
+			GFX_Setf(GFX_Fire, 13001, -0.01)														// Growing speed max
+			GFX_Setf(GFX_Fire, 13002, 0.01)													// Friction Grow
+			
+			GFX_Setf(GFX_Fire, 13005, 0.3)														// Creation size min
+			GFX_Setf(GFX_Fire, 13006, 0.5)														// Creation size max
+			
+			GFX_Setv(GFX_Fire, 13203, cvector(0.02, 0.02, 0.0))							// friction speed
+			
+		
+			GFX_Seti(GFX_Fire, 13103, 0xFF000000)											// Color fase 0
+	//		GFX_Seti(GFX_Fire, 13104, 0x8027A0FC)											// Color fase 1
+			GFX_Seti(GFX_Fire, 13104, 0x40145086)											// Color fase 1
+			GFX_Seti(GFX_Fire, 13105, 0x00)													// Color fase 2
+		
+			GFX_Setf(GFX_Fire, 13009, 2.0)														// Norm speed min
+			GFX_Setf(GFX_Fire, 13010, 4.0)														// Norm speed max
+			
+			GFX_Setv(GFX_Fire, 13205, Cv_NullVector)										// Mainposspeed
+			GFX_Setv(GFX_Fire, 13206, Cv_NullVector)										// Mainpossfriction
+				
+			GFX_Setf(GFX_Fire, 13007, 4.0)															// Gravity
+		}
+
+		GFX_Setf(GFX_Fire, 13012, 0.75)														// Time random
+		GFX_Setf(GFX_Fire, 13008, MATH_FloatBlend(0.06, 0.03, tf_speed_coef))		// generation rate
+
+		GFX_Setv(GFX_Fire, 13200, MATH_VecBlend(tv_pos, v_GFX_Fire_Smoke_Last_Pos, 0.5)) 	// Creation Pos
+		GFX_Setv(GFX_Fire, 13207, (v_GFX_Fire_Smoke_Last_Pos - tv_pos) * 0.5)	// CreaPosAxe X
+//		GFX_Setf(GFX_Fire, 13011, v_col_ground_pos.z) // Z min	
+
+		GFX_Setv(GFX_Fire, 13204, tv_wind)											// wind
+
+		GFX_Setv(GFX_Fire, 13201, (-OBJ_SightGet() * 3.0) + cvector(-1.0, -1.0, 0.0))	// Speed min
+		GFX_Setv(GFX_Fire, 13202, (-OBJ_SightGet() * 3.0) + cvector(1.0, 1.0, 0.0))		// Speed max
+	}
+
+	v_GFX_Fire_Smoke_Last_Pos = tv_pos
+}

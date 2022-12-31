@@ -1,0 +1,72 @@
+//============================================================
+//============================================================
+//|||||||||||||||			LIBRARIE FOR BRONTOSAURE FONCTION                |||||||||||||||||||
+//============================================================
+//============================================================
+
+#define LIBBronto_Ref( _o_bronto ) @"PNJ_Pacifique/PNJ_Brontosaure" _o_bronto
+
+
+//============================================================
+// Param IN:
+//		pi_GFX_Fire  : id du gfx (-1 pour la création)
+//		v_Pos : position du javelot (OBJ_PosGet() + (2 * v_Axe))
+//		v_Axe : axe du javelot		(OBJ_SightGet() / 5)
+// Param OUT: none
+//============================================================
+procedure void LIBBronto_Teleport( object po_Bronto, vector pv_Pos, vector pv_Sight )
+{
+	object	wp0, wp1, wp2
+	vector	tv_temp, tv_PosOnNet, tv_main
+	float		x
+	int			ti_wp
+	
+	if ( !(LIBBronto_Ref( po_Bronto ) move_network_init) )
+		return
+
+	wp0 = nobody
+	wp1  = WAY_WPNearestOfPos( pv_Pos, LIBBronto_Ref( po_Bronto ) move_network,all, none, Ci_Filter_IdentityFlag)
+	
+	tv_temp = pv_Pos - @wp1 OBJ_PosGet()
+	if (MATH_VecDotProduct( tv_temp, pv_Sight ) > 0 )
+	{
+		wp0 = wp1
+		wp1 = WAY_NetNextWP( LIBBronto_Ref( po_Bronto ) move_network, wp0, 0,0)
+	}
+	else
+	{
+		for ( ti_wp = 0; ti_wp < LIBBronto_Ref( po_Bronto ) move_i_netwpnb; ti_wp++)
+		{
+			if ( LIBBronto_Ref( po_Bronto ) move_ao_netwp[ ti_wp ] == wp1 )
+				break
+		}
+		if (ti_wp > 0)
+			wp0 = LIBBronto_Ref( po_Bronto ) move_ao_netwp[ ti_wp - 1 ]
+	}
+	
+	if ( wp0 )
+		tv_temp = @wp1 OBJ_PosGet() - @wp0 OBJ_PosGet()
+	else
+		tv_temp = pv_Sight
+	
+	tv_main = pv_Pos - @wp1 OBJ_PosGet()
+	x = MATH_VecDotProduct( tv_temp, tv_main) / MATH_VecDotProduct( tv_temp, tv_temp )
+	tv_PosOnNet = @wp1 OBJ_PosGet() + (x * tv_temp)
+	tv_PosOnNet += cvector( 0, 0, 1 )
+
+	wp2 = WAY_NetNextWP( LIBBronto_Ref( po_Bronto ) move_network,wp1,0,0)
+	LIBBronto_Ref( po_Bronto ) move_o_WP[ 0 ] = wp0
+	LIBBronto_Ref( po_Bronto ) move_o_WP[ 1 ] = wp1
+	LIBBronto_Ref( po_Bronto ) move_o_WP[ 2 ] = wp2
+	
+	@po_Bronto OBJ_PosSet( tv_PosOnNet )
+	@po_Bronto COL_StartMatrixSet( tv_PosOnNet )
+	@po_Bronto OBJ_SightGeneralSet( pv_Sight, Cv_VerticalVector )
+
+	
+	LIBBronto_Ref( po_Bronto ) move_v_dest[0] = @wp1 OBJ_PosGet()
+	if ( wp2 )
+		LIBBronto_Ref( po_Bronto ) move_v_dest[1] = @wp2 OBJ_PosGet()
+	else
+		LIBBronto_Ref( po_Bronto ) move_v_dest[1] = @wp1 OBJ_PosGet()
+}

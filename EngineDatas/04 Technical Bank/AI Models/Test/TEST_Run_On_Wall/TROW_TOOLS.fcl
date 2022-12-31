@@ -1,0 +1,296 @@
+#include "TROW_defines.var"
+
+Include_UltraProcedure_Header
+
+procedure_local void TROW_Penching()
+{
+	float		tf_dot_product
+	float		tf_sign
+	
+	vector	tv_dir
+	vector	tv_pos
+	
+	// ACCELERATION => PENCHING
+	tv_dir = DYN_SpeedGetVector() - v_last_speed
+	tv_dir /= TIME_GetDt()
+	
+	tf_dot_product = MATH_VecDotProduct(tv_dir, OBJ_HorizonGet())
+	tf_dot_product *= 0.01
+	tf_dot_product = MATH_FloatLimit(tf_dot_product, -0.3, 0.3)
+	
+	f_speed_angle = MATH_FloatBlend(f_speed_angle, -tf_dot_product, 6.0 * TIME_GetDt())
+	
+	v_last_real_banking = OBJ_BankingGet()
+	OBJ_BankingGeneralSet(OBJ_SightGet(), MATH_VecRotate(OBJ_BankingGet(), OBJ_SightGet(), f_speed_angle))
+	
+	v_last_speed = DYN_SpeedGetVector()
+}
+
+
+procedure_local void TROW_Sight_And_Banking(vector tv_sight)
+{
+	float			tf_sight_blend_speed
+	float			tf_speed_coef	
+	float			tf_norm
+
+	vector		tv_A
+	vector		tv_B
+	vector		tv_C
+	vector		tv_banking
+	
+	vector		tv_speed
+	vector		tv_temp
+
+	tf_sight_blend_speed = 6.0
+
+//	if (TROW_Get_Rope_Gao(tv_A))
+//	{
+//		tf_sight_blend_speed = 6.0
+//		
+//		tv_sight = tv_A
+//		tv_sight -= OBJ_PosGet()
+////		DBG_RenderVector(OBJ_PosGet(), tv_sight, color_cyan)
+//		MATH_VecSetHorzNormalize(tv_sight)
+//	}
+
+	if (MATH_VecDotProduct(tv_sight, OBJ_SightGet()) < 0.0)
+	{
+		if (MATH_VecDotProduct(tv_sight, OBJ_HorizonGet()) > 0.0)
+			tv_sight = OBJ_HorizonGet()
+		else
+			tv_sight = -OBJ_HorizonGet()
+	}
+
+	if (COL_CollideType(COL_C_Wall))
+	{
+		f_delay_since_last_wall_col = 0.0
+		v_col_wall_normal = COL_NormalGet(COL_C_Wall)
+
+		if (f_wall_walk_coef == -1.0)
+		{
+			f_wall_walk_coef = MATH_VecNorm(v_before_wall_col_speed)
+			f_wall_walk_coef *= MATH_FloatMax(MATH_VecDotProduct(v_before_wall_col_speed / f_wall_walk_coef, -v_col_wall_normal), 0.0)
+			f_wall_walk_coef = MATH_FloatLimit(f_wall_walk_coef * 1.5, 0.0, 30.0)
+		}
+
+		if (f_wall_walk_coef > 0.0 && v_col_wall_normal.z > -0.1)
+		{
+			f_on_ground_duration = -0.2
+		
+			i_col_gmat_id = COL_GMAT_FlagsGet(COL_C_Wall)	
+						
+			v_col_ground_pos = COL_CollidedPointGet(COL_C_Wall)
+			v_col_ground_normal = MATH_VecNormalize(COL_ZonePosGet(C_zdm_pied) - v_col_ground_pos)
+		}
+	}
+	else
+	{
+		f_delay_since_last_wall_col += TIME_GetDt()
+	}
+
+	tv_speed = DYN_SpeedGetVector()	
+	if (f_wall_walk_coef > tv_speed.z && f_delay_since_last_wall_col < 0.2)
+	{
+		tv_speed.z = MATH_FloatMax(tv_speed.z, f_wall_walk_coef)
+		DYN_SpeedSetVector(tv_speed)
+		
+		if (f_delay_since_last_wall_col)
+			DYN_TractionSet(-v_col_wall_normal * 40.0)	
+		
+		@get_global f_game_speed = 0.5
+	}
+
+	if (f_wall_walk_coef != -1.0)
+		f_wall_walk_coef -= 30.0 * TIME_GetDt()
+
+	if (COL_CollideType(COL_C_Ground))
+	{
+		tv_banking = COL_NormalGet(COL_C_Ground)
+		if (tv_banking.z > 0.0)
+		{
+			i_col_gmat_id = COL_GMAT_FlagsGet(COL_C_Ground)	
+						
+			f_delay_since_last_ground_col = 0.0	
+	
+			v_col_ground_pos = COL_CollidedPointGet(COL_C_Ground)
+			v_col_ground_normal = Cv_VerticalVector //  MATH_VecNormalize(COL_ZonePosGet(C_zdm_pied) - v_col_ground_pos)
+		}
+	}
+
+	if (f_delay_since_last_ground_col < 0.2)
+		f_on_ground_duration += TIME_GetDt()
+	else
+		f_on_ground_duration = 0.0
+
+	if (f_on_ground_duration > 0.3)
+	{
+		f_wall_walk_coef = -1.0
+		v_before_wall_col_speed = DYN_SpeedGetVector()
+	}
+
+	if (IO_ButtonJustPressed(JoyPSX_Button_croix))
+	{
+		f_delay_since_last_ground_col = 1000.0
+		f_delay_since_last_wall_col = 1000.0
+
+		tv_speed = DYN_SpeedGetVector()
+		tv_speed.z += 20.0
+		DYN_SpeedSetVector(tv_speed)
+	}
+
+	if (f_delay_since_last_ground_col < 0.3 || f_delay_since_last_wall_col < 0.3)
+	{	
+		tv_banking = v_col_ground_normal
+
+//		if (f_wall_walk_coef <= 0.0 || f_delay_since_last_ground_col < f_delay_since_last_wall_col)
+//		{
+//			tv_C = OBJ_HorizonGet()
+//			tv_C.z = 0.0
+//			MATH_VecSetNormalize(tv_C)
+//			tv_banking -= MATH_VecDotProduct(tv_banking, tv_C) * tv_C
+//		}
+			
+		tv_banking = MATH_VecBlendRotate(OBJ_BankingGet(), tv_banking, 6.0 * TIME_GetDt())
+		tv_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_sight, tf_sight_blend_speed * TIME_GetDt())
+		OBJ_BankingGeneralSet(tv_sight, tv_banking)
+	}
+	else
+	{
+		tv_banking = MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 2.0 * TIME_GetDt())
+//		tv_sight = MATH_VecBlendRotate(OBJ_SightGet(), DYN_SpeedGetVector(), 2.0 * TIME_GetDt())
+//		OBJ_SightGeneralSet(tv_sight, tv_banking)
+		tv_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_sight, tf_sight_blend_speed * TIME_GetDt())
+		OBJ_BankingGeneralSet(tv_sight, tv_banking)
+	}
+
+	if (f_delay_since_last_ground_col < Cf_hysteresis_no_ground_col)
+		f_ground_col_duration += TIME_GetDt()
+	else
+	 	f_ground_col_duration = 0.0
+	 	
+	v_real_sight = OBJ_SightGet()
+	v_real_banking = OBJ_BankingGet()
+	OBJ_BankingGeneralSet(OBJ_SightGet(), cvector(0.0, 0.0, MATH_FloatSign(v_real_banking.z)))
+}
+
+procedure_local void TROW_Apply_Traction_And_Choose_Action(float tf_wanted_traction)
+{
+	int				ti_index	
+	int				ti_flag_acceleration
+
+	float			tf_X_friction
+	float			tf_Y_friction
+	float			tf_traction
+	float			tf_speed_coef	
+
+	vector		tv_speed
+	vector		tv_traction	
+
+	i_flag_Y_slide = faux
+
+
+	if (f_delay_since_last_ground_col < 0.2 || (f_delay_since_last_wall_col < 0.2 && f_wall_walk_coef > 0.0))
+		ti_flag_acceleration = vrai
+	else
+		ti_flag_acceleration = faux
+
+	if (tf_wanted_traction >= f_wanted_traction)
+		f_wanted_traction += MATH_FloatMin(tf_wanted_traction - f_wanted_traction, f_acceleration * TIME_GetDt())
+	else
+		f_wanted_traction -= MATH_FloatMin(f_wanted_traction, f_decceleration * TIME_GetDt())
+
+	tf_X_friction = f_X_friction
+
+	if (ti_flag_acceleration)
+		tf_Y_friction = f_Y_friction
+	else
+		tf_Y_friction = 1.0
+
+	tf_traction = f_wanted_traction * tf_Y_friction
+
+	if (f_delay_since_last_wall_col < 0.2)
+	{
+		tf_X_friction *= 2.0
+		tf_Y_friction *= 2.0
+		DBG_RenderSphere(OBJ_PosGet(), 1.0, color_bleu)
+	}
+
+	DYN_FlagsSet(none, DYN_C_GlobalFriction)
+	DYN_FrictionVectorSet(cvector(tf_X_friction, tf_Y_friction, 0.0))
+
+	tv_traction = OBJ_SightGet()
+	tv_traction *= tf_traction
+//	tv_traction.z = 0.0
+	tv_traction += DYN_TractionVectorGet()
+	DYN_TractionSet(tv_traction)
+
+	tv_speed = DYN_SpeedGetVector()
+	tv_speed.z = 0.0
+	f_real_speed = MATH_VecDotProduct(tv_speed, OBJ_SightGet())
+	
+	if (f_delay_since_last_ground_col > 0.2 && f_delay_since_last_wall_col > 0.2)
+	{
+		if (f_real_speed > 4.0)
+		{
+			ACT_ActionSet(51)
+		}
+		else
+		{
+			ACT_ActionSet(54)
+		}
+	}
+	else
+	{
+		if (f_delay_since_last_wall_col < 0.2 && f_wall_walk_coef > 0.0)
+		{
+			ACT_ActionSet(3.0)
+			ACT_LIB_ActionFrequencyMultiply(1.0)
+		}
+		else if (f_real_speed > 1.0)
+		{
+			ACT_ActionSet(3.0)
+			ACT_LIB_ActionFrequencyMultiply(MATH_FloatLimit(MATH_AbsFloat(f_real_speed) / 7.64, 0.0, 2.0))
+		}
+		else
+		{
+			ACT_ActionSet(0)
+		}
+	}
+
+	f_wanted_speed = f_wanted_traction
+}
+
+//procedure_local object	TROW_Rided_Get()
+//{
+//	int				ti_rank
+//	
+//	object		to_serveur
+//	object		to_client
+//
+//	message	tmsg_filter	
+//	
+//	messageid	EVT_LNK_RIDE_ON_NMI
+//
+//	ti_rank = -1
+//	for (	EVT_LNK_RIDE_ON_NMI = MSG_GlobalScan(Ci_LNK_EVENT_OFFSET + Ci_LNK_RIDE_ON_NMI, &ti_rank);
+//			MSG_GlobalIsValid(EVT_LNK_RIDE_ON_NMI);
+//			EVT_LNK_RIDE_ON_NMI = MSG_GlobalScan(Ci_LNK_EVENT_OFFSET + Ci_LNK_RIDE_ON_NMI, &ti_rank))
+//	{
+//		to_serveur = MSG_GlobalGetGao(EVT_LNK_RIDE_ON_NMI, SERVEUR)
+//		if (!to_serveur)
+//			continue
+//	
+//		to_client = MSG_GlobalGetSender(EVT_LNK_RIDE_ON_NMI)
+//		if (to_client == OBJ_Me())
+//			continue
+//	
+//		if (@to_client AI_IsModel(get_TROW_Path))
+//			return(to_client)
+//	}
+//
+//	return(nobody)
+//}
+
+
+
+

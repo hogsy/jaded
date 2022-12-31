@@ -1,0 +1,105 @@
+#include "H_defines.var"
+#include "H_action.var"
+
+
+// Retourne l'état de la liaison entre Kong et l'indigène
+// 0 : pas de liaison ou liaison en cours de rupture
+// 1 : sur l'épaule de Kong
+// 2 : dans la main de Kong
+// 3 : sur Kong, transition en cours (main ou épaule... ?)
+procedure_ultra int Proc_KIndigene_Kong_LiaisonStatusGet()
+{
+	if( ao_SRV[Ci_LNK_KKGRAB_OBJECT] && MSG_GlobalIsValid(amid_SRV_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT]) )
+	{
+		switch( LNK_KKGrabObject_TypeGet(amid_SRV_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT]) )
+		{
+			case Ci_KKGrabObject_Porte_Main :
+				return Ci_Kong_KIndigene_LinkStatus_Hand
+				break
+			case Ci_KKGrabObject_Porte_Epaule :
+			case Ci_KKGrabObject_Porte_Epaule_TroncD :
+			case Ci_KKGrabObject_Porte_Epaule_TroncG :
+			case Ci_KKGrabObject_Pose_Epaule :
+				return Ci_Kong_KIndigene_LinkStatus_Shoulder
+				break
+			case Ci_KKGrabObject_Depose :
+			case Ci_KKGrabObject_Lache :
+			case Ci_KKGrabObject_PoseSol :
+				return Ci_Kong_KIndigene_LinkStatus_None
+				break
+			case Ci_KKGrabObject_Attrappe_Attend :
+			case Ci_KKGrabObject_Attrappe_Dans_Main :
+				return Ci_Kong_KIndigene_LinkStatus_Transition
+				break
+		}
+	}
+	else
+		return Ci_Kong_KIndigene_LinkStatus_None
+}
+
+procedure_ultra object Proc_Joueur_3rdP_GaoGet()
+{
+	return get_joueur_3rd
+}
+
+//procedure_ultra object Proc_KIndigene_SniperVisor_GaoGet()
+//{
+//	return get_snipevisor
+//}
+
+procedure_ultra object Proc_KIndigene_CameraAnimee_GaoGet()
+{
+	return get_joueur_cam
+}
+
+procedure_ultra int Proc_KIndigene_CheckNearOfBigPerso(object to_perso, float tf_dist_proche)
+{
+	vector	tv_temp
+	float		tf_dist
+	if( @get_global i_Player_is_Kong )
+		return faux			// le joueur contrôle Kong
+	if( ! AI_MainActorGet(C_ID_Kong) )
+		return faux			// il n'y a pas Kong dans la map alors Jack ne ralenti pas le moteur (le ralenti sert à la coop Kong / KIndigene)
+	tv_temp = @to_perso OBJ_PosGet() - OBJ_PosGet()
+	tv_temp.z = 0.0
+	tf_dist = tf_dist_proche
+	if( @get_global i_BigPerso_SlowGameSpeed_last )
+		tf_dist += 1.0		// hystérésis
+	if( MATH_VecNorm(tv_temp) <= tf_dist )
+	{
+		@get_global i_BigPerso_SlowGameSpeed = vrai		// un gros perso est trop proche, je dois ralentir le game speed
+		return vrai
+	}
+	else
+		return faux
+}
+
+procedure_ultra int Proc_KIndigene_Joueur_ModeFPS_Get()
+{
+	if( i_etat_courant == ETAT_Fake )
+		return faux
+	else
+		return vrai
+}
+
+procedure_local void Proc_Joueur_Swap_to_1st()
+{
+	// affiche Indy et masque le fake
+	OBJ_FlagInvisibleSet(faux)			// Jack est réffiché par la caméra après un délai !!!!
+	@o_Indy3rd OBJ_FlagInvisibleSet(vrai)
+	@o_Indy3rd OBJ_FlagsControlSet(OBJ_C_ControlFlag_RayInsensitive, 0)
+	@o_Indy3rd ACT_ActionSet(In3rd_Action_Att_Kong)
+}
+
+procedure_local void Proc_Joueur_Swap_to_3rd()
+{
+	// masque Indy et affiche le fake
+	OBJ_FlagInvisibleSet(vrai)
+	ACT_ActionSet(Inf_Action_MainsLibres_Att)
+	@o_Indy3rd OBJ_PosSet(OBJ_PosGet())
+	@o_Indy3rd OBJ_BankingGeneralSet(OBJ_SightGet(), OBJ_BankingGet())
+	@o_Indy3rd OBJ_FlagInvisibleSet(faux)
+	@o_Indy3rd OBJ_FlagsControlSet(0, OBJ_C_ControlFlag_RayInsensitive)
+	@o_Indy3rd ACT_ActionSet(In3rd_Action_Att_Kong)
+}
+

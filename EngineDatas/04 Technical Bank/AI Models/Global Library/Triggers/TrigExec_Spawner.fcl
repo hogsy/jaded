@@ -1,0 +1,197 @@
+///TrigExec_Spawner_TransfertEnnemy
+//============================================================
+// Param IN:
+//		gao_source (gao1) 	=> gao qui contient les ennemis à transférer
+//		gao_target (gao2)		=> gao auquel on doit filer les ennemis
+//		gao_target (gao3)		=> gao auquel on doit filer les ennemis
+//		gao_target (gao4)		=> gao auquel on doit filer les ennemis
+// Param OUT (none)
+// retourne vrai (pour les exec, vrai indique que le trigger est terminé)
+//============================================================
+procedure_trigger int TrigExec_Spawner_TransfertEnnemy(byref message m_msg) // object1 gao_src object2 gao_tgt1 object3 gao_tgt2 object4 gao_tgt3
+{
+	int			i, j, nb_tgt, firsttgt, tgt, enemy[ 3 ]
+	object	o, o_src
+	object	o_tgt[ 3 ]
+	
+	o_src = m_msg.msg_gao1
+	if (o_src == nobody) return faux
+	nb_tgt = 0
+
+	for (i = 0; i < 3; i++)
+	{
+		switch (i)
+		{
+			case 0 :	o = m_msg.msg_gao2 break
+			case 1 :	o = m_msg.msg_gao3 break
+			case 2 :	o = m_msg.msg_gao4 break
+		}
+		if ( (o!=nobody) && ( @o AI_HaveSameModel( o_src ) ) )
+		{
+			o_tgt[ nb_tgt ] = o
+			enemy[ nb_tgt ] = 0
+			nb_tgt++
+		}
+	}
+	
+	tgt = 0
+	for (i = 0; i < 16; i++)
+	{
+		o = @get_Spawner_path o_src mao_Enemy[ i ]
+		if ( o != nobody)
+		{
+			firsttgt = tgt
+			while ( 1 )
+			{
+				for (j = enemy[ tgt ]; j < 16; j++)
+				{
+					if ( @get_Spawner_path o_tgt[ tgt ] mao_Enemy[j] == nobody )
+					{
+						@get_Spawner_path o_tgt[ tgt ] mao_Enemy[j] = o
+						OBJ_RegisterKill( o, &@get_Spawner_path o_tgt[ tgt ] mao_Enemy[j] )
+						break
+					}
+				}
+				enemy[ tgt ] = j
+				tgt = MATH_Modulo( tgt + 1, nb_tgt)
+				if ( ( j != 16 ) ||  (tgt == firsttgt))
+					break
+			}
+		}
+	}
+	
+	return vrai
+}
+
+
+///TrigExec_Spawner_NativeTransfertGao
+//============================================================
+// Param IN (none) 		En Interne : GAO1 = GaoDupliqué GAO2 = GaoDeSpawn
+// Param OUT (none)
+// retourne vrai (pour les exec, vrai indique que le trigger est terminé)
+//============================================================
+//procedure_trigger int TrigExec_Spawner_NativeTransfertGao(byref message m_msg)
+//{
+//	object	o_src
+//
+//	o_src = m_msg.msg_gao1	// Il faut que j'accede a ce GAO
+//	@"PNJ_Predators/PNJ_Native" o_src o_init_pos = m_msg.msg_gao2
+//	return	vrai
+//}
+
+///TrigExec_Spawner_CrabsTransfertGao
+//============================================================
+// Param IN (none) 		En Interne : GAO1 = GaoDupliqué GAO2 = GaoDeSpawn
+// Param OUT (none)
+// retourne vrai (pour les exec, vrai indique que le trigger est terminé)
+//============================================================
+//procedure_trigger int TrigExec_Spawner_CrabsTransfertGao(byref message m_msg)
+//{
+//	object	o_src
+//	o_src = m_msg.msg_gao1	// Il faut que j'accede a ce GAO
+//	
+//	@get_PNJ_Crab_path o_src o_net_apparition_wp  = m_msg.msg_gao2
+//	return	vrai
+//}
+
+///TrigExec_Spawner_ScoloTransfertGao
+//============================================================
+// Param IN (none) 		En Interne : GAO1 = GaoDupliqué GAO2 = GaoDeSpawn
+// Param OUT (none)
+// retourne vrai (pour les exec, vrai indique que le trigger est terminé)
+//============================================================
+//procedure_trigger int TrigExec_Spawner_ScoloTransfertGao(byref message m_msg)
+//{
+//	object	o_src
+//	o_src = m_msg.msg_gao1	// Il faut que j'accede a ce GAO
+//	@"PNJ_Predators/PNJ_Scolo" o_src o_start_wp  = m_msg.msg_gao2
+//	
+//	return	vrai
+//}
+
+///TrigExec_Spawner_ScorpionTransfertGao
+//============================================================
+// Param IN (none) 		En Interne : GAO1 = GaoDupliqué GAO2 = GaoDeSpawn
+// Param OUT (none)
+// retourne vrai (pour les exec, vrai indique que le trigger est terminé)
+//============================================================
+//procedure_trigger int TrigExec_Spawner_ScorpionTransfertGao(byref message m_msg)
+//{
+//	object	o_src
+//	o_src = m_msg.msg_gao1	// Il faut que j'accede a ce GAO
+//	@"PNJ_Predators/PNJ_Scorpion" o_src o_start_wp  = m_msg.msg_gao2
+//	
+//	return	vrai
+//}
+
+
+///TrigExec_Spawner_KRaptorTransfertGao
+//============================================================
+// Param IN (none) 		En Interne : GAO1 = GaoDupliqué GAO2 = GaoDeSpawn
+// Param OUT (none)
+// retourne vrai (pour les exec, vrai indique que le trigger est terminé)
+//============================================================
+//procedure_trigger int TrigExec_Spawner_KRaptorTransfertGao(byref message m_msg)
+//{
+//	object	o_src
+//	o_src = m_msg.msg_gao1	// Il faut que j'accede a ce GAO
+//	@get_PNJ_KRaptor_path o_src o_net_head = m_msg.msg_gao2
+//
+//	return	vrai
+//}
+
+///TrigExec_Spawner_NotShootable
+//============================================================
+// positionne le des_int1 de l'objet généré à FIGHTBLOQUE
+//
+// Param IN (none) 		En Interne : GAO1 = GaoDupliqué GAO2 = GaoDeSpawn
+//		int1 : type 
+//					0 => proba
+//					1 => tous les int2
+//		int2 : proba (entre 0 et 100) ou nombre
+// Param OUT (none)
+// retourne vrai (pour les exec, vrai indique que le trigger est terminé)
+//============================================================
+procedure_trigger int TrigExec_Spawner_NotShootable(byref message m_msg) // int1 type int2 param
+{
+	object	to_src
+	object	to_spawner
+	
+	to_src = m_msg.msg_gao1
+   	if ( !to_src ) return vrai
+   	if ( !@to_src OBJ_FlagsIdentityTest( OBJ_C_IdentityFlag_DesignStruct ) ) return vrai
+   	
+    switch ( m_msg.msg_int1 )
+    {
+	    case 0 :
+	    			if (MATH_RandInt( 0, 100) >= m_msg.msg_int2) 
+	    				return vrai
+	    			break
+	    	case 1:
+	    		to_spawner = m_msg.msg_sender
+	    		if ( MATH_Modulo( @get_Spawner_path to_spawner mi_EnemyCount, m_msg.msg_int2) )
+	    			return vrai
+	    		break
+	}
+
+   	to_src.des_int1 = Ci_DISPLAY_FIGHTBLOQUE 
+	return	vrai
+}
+
+
+///TrigExec_Spawner_Lapin_TransfertGao
+//============================================================
+// Param IN (none) 		En Interne : GAO1 = GaoDupliqué GAO2 = GaoDeSpawn
+// Param OUT (none)
+// retourne vrai (pour les exec, vrai indique que le trigger est terminé)
+//============================================================
+procedure_trigger int TrigExec_Spawner_Lapin_TransfertGao(byref message m_msg)
+{
+	object	o_src
+	o_src = m_msg.msg_gao1	// Il faut que j'accede a ce GAO
+	if( ! @o_src AI_IsModel(get_PNJ_Lapin_path) )
+		DBG_Error("o_src n'est pas un lapin !!!")
+	@get_PNJ_Lapin_path o_src App_WP = m_msg.msg_gao2
+	return	vrai
+}
+

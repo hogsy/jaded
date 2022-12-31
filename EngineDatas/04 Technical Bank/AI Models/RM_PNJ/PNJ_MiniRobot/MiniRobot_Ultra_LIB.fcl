@@ -1,0 +1,95 @@
+#include "PNJ_mr_defines.var"
+
+
+procedure_ultra vector PNJ_MR_PosGetEclair()
+{
+	return OBJ_PosGet() + (OBJ_BankingGet()*0.9)
+}
+
+procedure_ultra float PNJ_MiniRobot_SpeedGet()
+{
+	return f_move_speed
+}
+
+procedure_ultra vector	Proc_PNJ_MiniRobot_HotSpot_PosGet()
+{
+//	return COL_ZonePosGet(C_zde_corps)
+	return OBJ_PosGet()+(OBJ_BankingGet()*OBJ_ZoomGet()*Cf_MR_Hauteur_Poignet)
+//	return OBJ_PosGet()+(OBJ_BankingGet()*OBJ_ZoomGet()*3.9)
+
+}
+
+procedure_ultra int Proc_PNJ_MiniRobot_EstDispo()
+{
+	if(i_Linkable)
+	{
+		if((!i_NbLink!=0) 
+		&& (!i_Explosion)
+		&& (i_etat_courant != ETAT_PNJ_MR_Paf)
+		&& (i_etat_courant != ETAT_PNJ_MR_Gogo)
+		&& (OBJ_LodVisGet()>0.05)
+		&& (@get_global i_MR_Nblink<2))
+		{
+			return vrai
+		}
+	}
+	return faux
+}
+
+procedure_ultra void Proc_PNJ_MiniRobot_Link(object po_chef,int pi_NbLink)
+{
+	o_Partenaire[0]=po_chef
+	i_Chef=0
+	f_LinkDelayAct=Cf_MR_Link_DelayActivation
+	PNJ_MiniRobot_CheckLink()
+	f_FreezeMove=Cf_MR_Link_DelayActivation
+	f_move_speed=@o_Partenaire[i_Chef] PNJ_MiniRobot_SpeedGet()
+	i_NbLink=pi_NbLink
+	PNJ_MiniRobot_GFX_HaloLink()
+}
+
+procedure_ultra void Proc_PNJ_MiniRobot_Unlink()
+{
+	o_Partenaire[0]=nobody
+	i_Chef=0
+	i_NbLink=0
+	PNJ_MiniRobot_CheckLink()
+}
+
+
+
+procedure_ultra int Proc_PNJ_MiniRobot_Grappin_GogoMode()
+{
+	if(i_etat_courant == ETAT_PNJ_MR_Gogo)
+		return vrai
+	else
+		return faux
+}
+
+procedure_ultra float Proc_PNJ_MiniRobot_GetRopeDistRenormalisation()
+{
+	if( Proc_PNJ_MiniRobot_Grappin_GogoMode() )
+		return Cf_Corde_distance_GogoMode
+	else if(i_etat_courant == ETAT_PNJ_MR_Fusee)
+		return 4.0
+	else
+		return 2.5
+}
+
+procedure_ultra float Proc_PNJ_MiniRobot_GetRopeTractionCategory(int pi_monture)
+{
+	if(i_etat_courant == ETAT_PNJ_MR_Gogo)
+		return RopeTractionCategory_Coef_0
+	else if(i_etat_courant == ETAT_PNJ_MR_Fusee)
+		return RopeTractionCategory_Coef_1
+	else if(i_etat_courant == ETAT_PNJ_MR_Paf)
+		return RopeTractionCategory_Coef_0
+	else
+		return RopeTractionCategory_Coef_075
+		
+}
+
+procedure_ultra void Proc_PNJ_MiniRobot_Glow()
+{
+	f_GFX_DelayGlow=0.2
+}

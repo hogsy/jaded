@@ -1,0 +1,1044 @@
+#include "PNJ_Lapin_defines.var"
+
+// FILE ===========================================================
+procedure_local void Lapin_PROC_FILE_Clean()
+{
+	i_file_size = 0
+	i_file_start_index = 0
+	i_file_end_index = 0
+}
+
+procedure_local void Lapin_PROC_FILE_Enfile(int ti_index)
+{
+	i_file_size++
+	ai_file[i_file_end_index] = ti_index
+
+	i_file_end_index++
+	if (i_file_end_index == 100)
+		i_file_end_index = 0
+}
+
+procedure_local int Lapin_PROC_FILE_Defile()
+{
+	int		ti_val
+	
+	i_file_size--
+	ti_val = ai_file[i_file_start_index]
+	ai_file[i_file_start_index] = -1
+
+//	i_file_start_index = MATH_Modulo(i_file_start_index + 1, 100)
+	i_file_start_index++
+	if (i_file_start_index == 100)
+		i_file_start_index = 0
+
+	return(ti_val)
+} 
+
+procedure_local int Lapin_PROC_FILE_Size_Get()
+{
+	return(i_file_size)
+}
+
+// WAY ===========================================================
+procedure_local int Lapin_PROC_WAY_TERRITORY_NUM_ALLOWED(int ti_territory_num)
+{
+//	if( ti_territory_num == -1 )
+//		return(faux)
+//	else 
+	if (i_net_territory_bit_field & (1 << ti_territory_num) )
+		return(vrai)
+	else
+		return(faux)
+}
+
+procedure_local void Lapin_PROC_WAY_Display_Territory()
+{
+#ifndef _FINAL_
+	int		ti_i
+	int		ti_k
+	int		ti_m
+	int		ti_color
+	int		ti_string_ID
+
+	object	to_dest_wp
+
+	if ( ! DBG_Display_Territory )
+		return
+	
+	if (AI_GetCurSystem() != 10)
+		return
+
+	for (ti_i = 0; ti_i < i_net_territory_ID_nb; ti_i++)
+	{
+		if (Lapin_PROC_WAY_TERRITORY_NUM_ALLOWED(ti_i))	
+		{
+			for (ti_k = 0; ti_k < ai_net_territory_wp_nb[ti_i]; ti_k++)
+			{
+				to_dest_wp = ao_net_wp[ai_net_territory_first_wp_index[ti_i] + ti_k]
+				ti_string_ID = STR_CreateText("ID: ", VIEW_3dWorldTo2d(0, @to_dest_wp OBJ_PosGet() + cvector(0.0, 0.0, 0.5)), 0.01)
+				STR_AppendInt(ti_string_ID, ai_net_territory_ID[ti_i])
+			}
+		}
+		else
+		{
+			for (ti_k = 0; ti_k < ai_net_territory_wp_nb[ti_i]; ti_k++)
+			{
+				to_dest_wp = ao_net_wp[ai_net_territory_first_wp_index[ti_i] + ti_k]
+				ti_string_ID = STR_CreateText("\c000000FF\ID: ", VIEW_3dWorldTo2d(0, @to_dest_wp OBJ_PosGet() + cvector(0.0, 0.0, 0.5)), 0.01)
+				STR_AppendInt(ti_string_ID, ai_net_territory_ID[ti_i])
+			}
+		}
+	}
+	for ( ti_i = 0; ti_i < i_territory_links; ti_i++)
+	{
+		DBG_RenderVector( @o_territory_links[ti_i][0] OBJ_PosGet() + cvector( 0.0, 0.0, 0.5), @o_territory_links[ti_i][1] OBJ_PosGet() - @o_territory_links[ti_i][0] OBJ_PosGet(), color_rouge)
+	}
+#endif
+}
+
+
+// TRI RAPIDE DES GAO EN FONCTION DE PONDERATION VALEURS ==========================
+//procedure int LARR_LIB_Sub_Gao_QuickSort_Pivot_Get(byrefarr object gao, byrefarr float value, int ti_start_index, int ti_end_index)
+//{
+//	int			ti_i
+//	int			ti_pivot_index	
+//
+//	float		tf_pivot_value
+//	float		tf_temp
+//	
+//	object	to_temp
+//
+//	ti_pivot_index = ti_start_index
+//	tf_pivot_value = value[ti_start_index]
+//	
+//	for (ti_i = ti_start_index + 1; ti_i <= ti_end_index; ti_i++)
+//	{
+//		if (value[ti_i] < tf_pivot_value)
+//		{
+//			ti_pivot_index++
+//
+//			tf_temp = value[ti_i]
+//			value[ti_i] = value[ti_pivot_index]
+//			value[ti_pivot_index] = tf_temp
+//			
+//			to_temp = gao[ti_i]
+//			gao[ti_i] = gao[ti_pivot_index]
+//			gao[ti_pivot_index] = to_temp
+//		}
+//	}
+//
+//	tf_temp = value[ti_start_index]
+//	value[ti_start_index] = value[ti_pivot_index]
+//	value[ti_pivot_index] = tf_temp
+//
+//	to_temp = gao[ti_start_index]
+//	gao[ti_start_index] = gao[ti_pivot_index]
+//	gao[ti_pivot_index] = to_temp
+//
+//	return(ti_pivot_index)
+//}
+//procedure void LARR_LIB_Sub_Gao_QuickSort(byrefarr object gao, byrefarr float value, int ti_start_index, int ti_end_index)
+//{
+//	int ti_pivot_index	
+//
+//	if (ti_start_index < ti_end_index)
+//	{
+//		ti_pivot_index = LARR_LIB_Sub_Gao_QuickSort_Pivot_Get(&gao[0], &value[0], ti_start_index, ti_end_index)
+//		LARR_LIB_Sub_Gao_QuickSort(&gao[0], &value[0], ti_start_index, ti_pivot_index)
+//		LARR_LIB_Sub_Gao_QuickSort(&gao[0], &value[0], ti_pivot_index + 1, ti_end_index)
+//	}
+//}
+//procedure void LARR_LIB_Gao_QuickSort_Order(byrefarr object gao, byrefarr float value, int ti_array_size)
+//{
+//	LARR_LIB_Sub_Gao_QuickSort(&gao[0], &value[0], 0, ti_array_size - 1)
+//}
+//
+
+
+
+// TEST IF TERRITORY IS ALLOWED
+procedure_local int Lapin_PROC_WAY_TERRITORY_ID_ALLOWED(int ti_territory_ID)
+{
+	if( ! Territory_Colmap )
+		return vrai		// ce perso n'utilise pas les territoires
+	
+	if (ti_territory_ID == -1)
+		return(faux)	
+
+	if ( i_net_territory_ID_bit_field & (1 << ti_territory_ID) )
+		return(vrai)
+	
+	return(faux)
+}
+
+// TEST IF WP IS STILL INVALID
+procedure_local int Lapin_PROC_WAY_WP_IS_INVALID(object to_wp)
+{
+	int		ti_wp_territory_ID	
+
+
+	ti_wp_territory_ID	= to_wp.des_int2 
+	
+	if ( ti_wp_territory_ID != i_my_territory_ID && ! Lapin_PROC_WAY_TERRITORY_ID_ALLOWED(ti_wp_territory_ID) )
+		return(vrai)
+
+	return(faux)
+}
+
+// CLEAN WAY
+procedure_local void Lapin_PROC_WAY_CLEAN()
+{
+	o_next_wp = nobody
+	o_next_next_wp = nobody
+
+//	o_path_start_wp = nobody
+//	o_path_dest_wp = nobody
+	while(i_way_wp_nb)
+	{
+		i_way_wp_nb--
+		ao_way_wp[i_way_wp_nb] = nobody
+	}
+}
+
+// TEST IF LINK IS STILL INVALID
+procedure_local int Lapin_PROC_WAY_LINK_IS_INVALID(object to_start_wp, object to_dest_wp)
+{
+	int		ti_link_capa
+	
+	ti_link_capa = WAY_LinkCapaGet(Territory_Colmap, to_start_wp, to_dest_wp)
+	
+	if (ti_link_capa & Ci_Capa_Link_Invalid)
+		return(vrai)
+
+	return(faux)
+}
+
+// TEST IF WAY IS STILL VALID
+procedure_local void Lapin_PROC_WAY_CHECK()
+{
+	int			ti_i	
+	int			ti_link_capa
+
+	for (ti_i = i_way_wp_nb - 1; ti_i > 0; ti_i--)
+	{
+		if (Lapin_PROC_WAY_WP_IS_INVALID(ao_way_wp[ti_i]))
+		{
+	 		Lapin_PROC_WAY_CLEAN()	
+	 		return
+		}
+	
+		if (Lapin_PROC_WAY_LINK_IS_INVALID(ao_way_wp[ti_i], ao_way_wp[ti_i - 1]))
+		{
+	 		Lapin_PROC_WAY_CLEAN()	
+	 		return
+		}
+	}
+}
+
+procedure_local void Lapin_PROC_WAY_Init()
+{
+	int 	pi_i, ti_i
+	int		sect0, sect1, sect2, sect3
+	int		ti_last_territory_ID
+
+	float	taf_ponderation[100]
+	i_net_wp_nb = WAY_NetFill(Territory_Colmap, WAY_RootGet(Territory_Colmap), &ao_net_wp[0])
+	
+
+	for (pi_i = 0; pi_i < i_net_wp_nb; pi_i++)
+	{
+		@ao_net_wp[pi_i] OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_DesignStruct, none)
+#ifndef _FINAL_
+		@ao_net_wp[pi_i] SCT_GetOf(&sect0, &sect1, &sect2, &sect3)
+		if (sect0 || sect1 || sect2 || sect3)
+		{
+			DBG_TraceObject(ao_net_wp[pi_i])
+			DBG_TraceString(" ne doit pas être sectorisé")
+			DBG_TraceEOL()
+			DBG_Warning("WP sectorisé => LOG")
+		}
+#endif
+		if (! (@ao_net_wp[pi_i] OBJ_CapaTest(Ci_Capa_LD_Territory) ) )
+			ao_net_wp[pi_i].des_int2 = GST_EVENT_Territory_Get(@ao_net_wp[pi_i] OBJ_PosGet())	
+		else
+			ao_net_wp[pi_i].des_int2 = -1
+
+#ifndef _FINAL_
+		if (ao_net_wp[pi_i].des_int2 == 0)
+			DBG_Warning("Pas d'ID de territoire 0 !!!")
+		if (ao_net_wp[pi_i].des_int2 >= 16)
+			DBG_Warning("Pas d'ID de territoire au dela de 16 !!!")
+#endif
+
+
+		taf_ponderation[pi_i] = ao_net_wp[pi_i].des_int2
+		if (taf_ponderation[pi_i] == -1)
+		{
+			taf_ponderation[pi_i] = Cf_Infinit
+		}
+		else
+		{
+			taf_ponderation[pi_i] *= 10.0
+			
+			if (@ao_net_wp[pi_i] OBJ_CapaTest(Ci_Capa_Territory))
+				taf_ponderation[pi_i] += 0.0
+//			else if (@ao_net_wp[pi_i] OBJ_CapaTest(Ci_Capa_Use_Occluder))
+//				taf_ponderation[pi_i] += 1.0
+//			else if (@ ao_net_wp[pi_i] OBJ_CapaGet() & (Ci_Capa_Out_Of_Grid | Ci_Capa_Alien))
+//				taf_ponderation[pi_i] += 3.0
+			else
+				taf_ponderation[pi_i] += 2.0
+		}
+	}	
+	ARR_LIB_Gao_QuickSort_Order(&ao_net_wp[0], &taf_ponderation[0], i_net_wp_nb)
+	
+ 	ti_last_territory_ID = -1
+	i_net_territory_ID_nb = 0
+
+	for (ti_i = 0; ti_i < 16; ti_i++)
+		ai_net_territory_ID_index[ti_i] = -1
+
+	for (ti_i = 0; ti_i < i_net_wp_nb; ti_i++)
+	{
+		// Houla, pas de territoire pour ce wp ????
+		ao_net_wp[ti_i].des_int3 = ti_i
+	
+		if (ao_net_wp[ti_i].des_int2 == -1)
+			break	
+
+		if (ao_net_wp[ti_i].des_int2 != ti_last_territory_ID)
+		{
+			ti_last_territory_ID = ao_net_wp[ti_i].des_int2
+			// Mise a jour des bits de territoire accessible.
+			if ( ! (@ao_net_wp[ti_i] OBJ_CapaGet() & Ci_Capa_Exclude_Territory) )
+			{
+				i_net_territory_ID_bit_field |= (1 << ti_last_territory_ID)	// SAVE REACHABLE TERRITORIES
+			}
+			ai_net_territory_ID_index[ti_last_territory_ID] = i_net_territory_ID_nb
+			ai_net_territory_ID[i_net_territory_ID_nb] = ti_last_territory_ID
+			ai_net_territory_first_wp_index[i_net_territory_ID_nb] = ti_i
+			ai_net_territory_wp_nb[i_net_territory_ID_nb] = 1
+			i_net_territory_ID_nb++
+		}
+		else
+		{
+			ai_net_territory_wp_nb[i_net_territory_ID_nb - 1] ++
+		}
+	}
+		
+}
+
+
+
+//	ti_link_nb = WAY_GetNumLinks(n_net, to_start_wp)
+//	for (ti_i = 0; ti_i < ti_link_nb; ti_i++)
+//	{
+//		to_next_wp = WAY_NetNextWP(n_net, to_start_wp, 6, ti_i)
+
+
+procedure_local int Lapin_PROC_WAY_FIND_SHORT(object to_start_wp, object to_dest_wp, int ti_flag_can_jump, int ti_color)
+{
+	int			ti_i, ti_ind
+	int			ti_link_nb	
+	int			ti_flag_result
+	int			ti_flag_result2
+
+	object	to_next_wp
+	object	to_backup_before_LD_Ter
+	
+	ti_flag_result = faux
+	ti_flag_result2 = faux
+	@to_start_wp OBJ_CapaSet(Ci_Capa_Skip_This_Wp, none)
+	ti_link_nb = WAY_GetNumLinks(Territory_Colmap, to_start_wp)
+	for (ti_i = 0; ti_i < ti_link_nb; ti_i++)
+	{
+		to_next_wp = WAY_NetNextWP(Territory_Colmap, to_start_wp, 6, ti_i)
+
+		if (@to_next_wp OBJ_CapaTest(Ci_Capa_Skip_This_Wp))
+			continue
+		
+		if (!ti_flag_can_jump && (WAY_LinkCapaGet(Territory_Colmap, to_start_wp, to_next_wp) & Ci_Capa_Link_Jump) )
+			continue
+
+		if (! @to_next_wp OBJ_CapaTest( Ci_Capa_LD_Territory)
+		&& to_next_wp.des_int2 == to_dest_wp.des_int2)
+		{
+			ti_flag_result = vrai
+			ti_flag_result2 = vrai
+			for ( ti_ind = 0; ti_ind < i_territory_links; ti_ind++ )
+				if ( o_territory_links[ti_ind][0] == to_start_wp && o_territory_links[ti_ind][1] == to_next_wp)
+					break
+			if ( ti_ind == i_territory_links)
+			{
+				// Nouveau lien pas deja noté
+				if ( o_backup_before_LD_Ter)
+				{
+					ai_territory_links_ID[i_territory_links] = (o_backup_before_LD_Ter.des_int2 * 100) + to_next_wp.des_int2
+					o_territory_links[i_territory_links][0] = o_backup_before_LD_Ter
+					o_territory_links[i_territory_links][1] = to_next_wp		
+				}
+				else
+				{
+					ai_territory_links_ID[i_territory_links] = (to_start_wp.des_int2 * 100) + to_next_wp.des_int2
+					o_territory_links[i_territory_links][0] = to_start_wp
+					o_territory_links[i_territory_links][1] = to_next_wp		
+				}
+				// Type de Lien
+				switch ( WAY_LinkCapaGet(Territory_Colmap, to_start_wp, to_next_wp))
+				{
+					case Ci_Capa_Link_Jump :
+						ai_territory_links_bit[i_territory_links] = Ci_WAY_BIT_JUMP
+						break
+					case Ci_Capa_Link_Break :
+						ai_territory_links_bit[i_territory_links] = Ci_WAY_BIT_BREAK
+						break
+					default:
+						ai_territory_links_bit[i_territory_links] = 0
+				}
+
+				i_territory_links++			
+			}
+//			break
+		}
+
+		if ( @to_next_wp OBJ_CapaTest( Ci_Capa_LD_Territory))
+		{
+			if ( ! @to_start_wp OBJ_CapaTest( Ci_Capa_LD_Territory))
+				o_backup_before_LD_Ter = to_start_wp
+		}
+		else if (to_next_wp.des_int2 != to_start_wp.des_int2)
+			continue
+		
+		ti_flag_result = Lapin_PROC_WAY_FIND_SHORT(to_next_wp, to_dest_wp, ti_flag_can_jump, ti_color)
+		if (ti_flag_result)
+		{
+			ti_flag_result2 = vrai
+		}
+	}
+
+	@to_start_wp OBJ_CapaSet(none, Ci_Capa_Skip_This_Wp)
+	
+	if ( !ti_flag_result2)
+		o_backup_before_LD_Ter = nobody
+	
+	return(ti_flag_result2)
+}
+procedure_local void Lapin_PROC_WAY_CLEAR()
+{
+	while(i_way_wp_nb)
+	{
+		i_way_wp_nb--
+		ao_way_wp[i_way_wp_nb] = nobody
+	}
+	o_current_wp = nobody
+	o_next_wp = nobody	
+	o_next_next_wp = nobody
+	i_next_territory = -1
+	i_old_good_target_territory_ID = -1
+}
+
+procedure_local int Lapin_PROC_WAY_REACH_TERRITORY( int pi_start_territory, int pi_target_territory)
+{
+	int	ti_result
+	int	ti_i
+	int ti_skip_territory
+	
+	// ON NO TERRITORY ZONE
+	if( pi_start_territory == -1)
+	{
+		return -1
+	}
+	
+	ti_skip_territory = ai_net_territory_ID_index[pi_target_territory]
+	i_territory_skip |= (1 << ti_skip_territory)
+
+	if ( pi_start_territory == pi_target_territory
+	|| ( ai_territory_link[ai_net_territory_ID_index[pi_start_territory]] & (1 << ai_net_territory_ID_index[pi_target_territory])))
+		ti_result = pi_target_territory
+	else
+	{
+		// FUCK NO DIRECT LINK
+
+		ti_result = -1
+		for ( ti_i = 0; ti_i < i_net_territory_ID_nb; ti_i++)
+		{
+			if ( ai_territory_link[ai_net_territory_ID_index[pi_target_territory]] & (1 << ti_i))
+			{
+				// A LINK WITH A TERRITORY
+				if (  Lapin_PROC_WAY_TERRITORY_NUM_ALLOWED( ti_i)
+				&& ! ( i_territory_skip & (1 << ti_i)))
+				{
+					// I HAVE RIGHTS TO GO THERE
+					ti_result = Lapin_PROC_WAY_REACH_TERRITORY( pi_start_territory, ai_net_territory_ID[ti_i])
+					if ( ti_result != -1)
+						break
+				}
+			}
+		}
+	}
+	i_territory_skip &= ~(1 << ti_skip_territory)
+
+	return ti_result
+}
+
+procedure_local int Lapin_PROC_WAY_FLEE_TERRITORY( int pi_start_territory)
+{
+	int	ti_result
+	int	ti_i
+	
+	// I AM NOT IN A TERRITORY
+	if( pi_start_territory == -1 )
+	{
+//		DBG_Error("I have to flee from an unvalable territory -1")
+		return -1
+	}
+	// VINC ADD : -1 FAIT CRASHER !!!!
+	
+	ti_result = -1
+	for ( ti_i = 0; ti_i < i_net_territory_ID_nb; ti_i++)
+	{
+		if ( ai_territory_link[ai_net_territory_ID_index[pi_start_territory]] & (1 << ti_i))
+		{
+			// A LINK WITH A TERRITORY
+			if (  Lapin_PROC_WAY_TERRITORY_NUM_ALLOWED( ti_i))
+			{
+				// I HAVE RIGHTS TO GO THERE
+				if ( ti_result != -1)
+				{
+					// LOOKING FOR THE NEAREST
+						if ( OBJ_SqrDistHorz( o_territory_links[ti_i][0]) < OBJ_SqrDistHorz( o_territory_links[ti_result][0]))
+							ti_result = ti_i
+				}
+				else
+					ti_result = ti_i		// 1ST GOOD ONE
+			}
+		}
+	}
+	if ( ti_result != -1)
+		return ai_net_territory_ID[ti_result]
+	else
+		return -1
+}
+
+procedure_local int Lapin_PROC_WAY_TERRITORY_IS_PATH_VALID(  int pi_start_territory, int pi_target_territory, int pi_way_bit)
+{
+	int	pi_i
+	int	ti_way_wp_nb
+	object tao_way[10]
+	
+	// OUT OF TERITORY
+	if( pi_start_territory == -1)
+	{
+		return 0
+	}
+
+	// TARGET OUT OF TERRITORY
+	if( pi_target_territory == -1)
+	{
+		return 0
+	}
+
+	pi_i = 0
+	ti_way_wp_nb = 0
+	while ( o_territory_links[pi_i][0] )
+	{
+		if ( ai_territory_links_ID[pi_i] == ( pi_start_territory * 100) + pi_target_territory )
+		{
+			// PATH TO THE 2 TERRITORIES
+			if ( (pi_way_bit & ai_territory_links_bit[pi_i]) == ai_territory_links_bit[pi_i])
+			{
+				return vrai
+			}
+			break
+		}
+		pi_i++
+	}
+	return faux
+}
+
+procedure_local int Lapin_PROC_WAY_TERRITORY_PATH(  int pi_start_territory, int pi_target_territory, int pi_way_bit)
+{
+	int	pi_i
+	int	ti_way_wp_nb
+	object tao_way[10]
+	
+	// OUT OF TERITORY
+	if( pi_start_territory == -1)
+	{
+		return 0
+	}
+
+	// TARGET OUT OF TERRITORY
+	if( pi_target_territory == -1)
+	{
+		return -1
+	}
+
+	Lapin_PROC_WAY_CLEAR()
+
+	pi_i = 0
+	ti_way_wp_nb = 0
+	while ( o_territory_links[pi_i][0] )
+	{
+		if ( ai_territory_links_ID[pi_i] == ( pi_start_territory * 100) + pi_target_territory )
+		{
+			// PATH TO THE 2 TERRITORIES
+			if ( (pi_way_bit & ai_territory_links_bit[pi_i]) == ai_territory_links_bit[pi_i])
+			{
+				if ( i_way_wp_nb)
+				{
+					// On a deja trouvé une solution : chercher la meilleure
+					// LAW 1 : USE THE WAY WHERE START WP IS NEAREST OF ME( LEAVING AS FAST AS POSSIBLE THIS TERRITORY
+					if ( OBJ_SqrDistHorz( o_territory_links[pi_i][0]) < OBJ_SqrDistHorz( ao_way_wp[i_way_wp_nb-1]))
+						i_way_wp_nb = WAY_ShortWay(Territory_Colmap, &ao_way_wp[0], o_territory_links[pi_i][0], o_territory_links[pi_i][1],all, Ci_Capa_Link_Invalid)
+	
+				}
+				else
+					i_way_wp_nb = WAY_ShortWay(Territory_Colmap, &ao_way_wp[0], o_territory_links[pi_i][0], o_territory_links[pi_i][1],all, Ci_Capa_Link_Invalid)
+			}
+//			else	// BACKUP NOT A GOOD ONE BUT USE IT IF NOONE GOOD
+//				ti_way_wp_nb = WAY_ShortWay(WAY_Territory, &tao_way[0], o_territory_links[pi_i][0], o_territory_links[pi_i][1],all, Ci_Capa_Link_Invalid)
+		}
+		pi_i++
+	}
+//	if( ti_way_wp_nb && ! i_way_wp_nb)
+//	{
+//		i_way_wp_nb = ti_way_wp_nb
+//		for ( pi_i = 0; pi_i < i_way_wp_nb; pi_i++)
+//			ao_way_wp[ pi_i] = tao_way[ pi_i]
+//	}
+	return i_way_wp_nb
+}
+
+procedure_local void Lapin_PROC_WAY_Compute_Territory()
+{
+	int		ti_i
+	int		ti_k
+	int		ti_nb
+	int		ti_color	
+
+	object	to_start_wp
+	object	to_dest_wp
+	object	tao_way[100]
+	DBG_TraceString("Compute_Territory\n")
+	for (ti_i = 0; ti_i < i_net_territory_ID_nb; ti_i++)
+	{
+//		ai_net_territory_link_nb[ti_i] = 0
+//		ai_net_territory_link2_nb[ti_i] = 0
+
+		ai_territory_link[ti_i] = 0
+		ai_territory_link2[ti_i] = 0
+	}
+	
+	for (ti_i = 0; ti_i < i_net_territory_ID_nb; ti_i++)
+	{
+		to_start_wp	 = ao_net_wp[ai_net_territory_first_wp_index[ti_i]]
+
+//#ifndef _FINAL_
+//		if (DBG_Display_Territory)
+//			DBG_RenderVector(@to_start_wp OBJ_PosGet(), Cv_VerticalVector * 100.0, color_blanc)	
+//#endif
+
+		DBG_TraceString(" => ")
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" Le territoire ")
+		DBG_TraceInt(ai_net_territory_ID[ti_i])
+		DBG_TraceString(" est connecté aux territoires : ")
+		for (ti_k = 0; ti_k < i_net_territory_ID_nb; ti_k++)
+		{
+			if (ti_i == ti_k)
+				continue
+			
+			to_dest_wp	 = ao_net_wp[ai_net_territory_first_wp_index[ti_k]]
+
+			// Accessible a pied
+//			if (PROC_WAY_FIND_SHORT(to_start_wp, to_dest_wp, faux, ti_color))
+//			{
+//				ai_territory_link[ti_i] |= (1 << ti_k)
+//				ai_territory_link2[ti_i] |= (1 << ti_k)
+//
+//				DBG_TraceString(" ")
+//				DBG_TraceInt(ai_net_territory_ID[ti_k])
+//				DBG_TraceString(" sans saut ")
+//				continue
+//			}
+
+			// Accessible avec saut
+			if (Lapin_PROC_WAY_FIND_SHORT(to_start_wp, to_dest_wp, vrai, ti_color))
+			{
+				ai_territory_link[ti_i] |= (1 << ti_k)
+
+				DBG_TraceString(" ")
+				DBG_TraceInt(ai_net_territory_ID[ti_k])
+				DBG_TraceString(" accessible ")
+			}
+		}
+
+		DBG_TraceEOL()
+	}
+	return
+}
+
+// GIVE 1ST ARRAY INDEX OF THIS TERRITORY
+procedure_local int	Lapin_PROC_WAY_TERRITORY_INDEX_GET(int	pi_territory)
+{
+	if (pi_territory < 0 || pi_territory > 31)
+		return(-1)
+	else
+		return(ai_net_territory_ID_index[pi_territory])
+}
+
+// GIVE THE TERRITORY OF THIS POSITION
+procedure_local int Lapin_PROC_POS_GET_TERRITORY_ID(vector tv_pos0)
+{
+	int			ti_territory_num
+	object	to_gao
+	vector	tv_pos
+	
+	if( Territory_BV )
+		ti_territory_num = -2
+	else
+		ti_territory_num = -1
+	
+	if( ! Territory_Colmap )
+		return ti_territory_num		// -1
+	
+	to_gao = @get_global o_territory_colmap
+	if (to_gao)
+	{
+//		@get_global i_GST_Climb_Territory_Get_Call++
+		tv_pos = tv_pos0
+		tv_pos.z = tv_pos0.z + 1000.0
+	
+		@to_gao COL_ColMapActivationSet(all, none)
+		if (COL_RaySingleObject_Dist(to_gao, tv_pos, cvector(0.0, 0.0, -1.0), 2000.0, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_Crossable))
+			ti_territory_num = COL_GMAT_IDGet(COL_C_Ray)
+		@to_gao COL_ColMapActivationSet(none, all)
+	}
+	
+	return(ti_territory_num)
+}
+
+
+// GIVE THE TERRITORY OF THIS GAO
+procedure_local int Lapin_PROC_GAO_GET_TERRITORY_ID(object po_target)
+{
+	return Lapin_PROC_POS_GET_TERRITORY_ID(@po_target OBJ_PosGet())
+}
+
+// REFRESH TERRITORY
+procedure_local void Lapin_PROC_WAY_REFRESH_TERRITORY()
+{
+	int			ti_start_index
+	int			ti_dest_index
+	int			ti_link_nb
+	int			ti_territory_checked_bit_field
+	int			ti_wp_index
+	int			ti_string_ID
+	int			ti_territory_link
+
+	color		tc_color
+
+	object	to_start_wp
+	object	to_dest_wp
+
+	@get_global i_refresh_territory_call_nb ++
+
+	ti_territory_checked_bit_field = 0
+
+	ti_start_index = Lapin_PROC_WAY_TERRITORY_INDEX_GET(i_my_territory_ID)
+	if (ti_start_index == -1)
+	{
+		// Je ne suis sur aucun territoire ?
+		ti_start_index = 0
+	}
+
+	ti_wp_index = ai_net_territory_first_wp_index[ti_start_index]
+
+	 Lapin_PROC_FILE_Clean()
+	 Lapin_PROC_FILE_Enfile(ti_start_index)
+
+	// ON REMET A ZERO LE CHAMPS DE BIT DES TERRITOIRES ACCESSIBLES
+	i_net_territory_bit_field = 0
+	i_net_territory_ID_bit_field = 0
+
+	// LE SOMMET DE DEPART EST MARQUE COMME DEJA PARCOURU
+//	ai_net_territory_father_index[ti_start_index] = -1
+//	ai_net_territory_dist[ti_start_index] = 0
+
+	ti_territory_checked_bit_field |= (1 << ti_start_index)
+
+	if ( ! (@ao_net_wp[ti_wp_index] OBJ_CapaGet() & Ci_Capa_Exclude_Territory) )
+	{
+		i_net_territory_bit_field |= (1 << ti_start_index)
+		i_net_territory_ID_bit_field |= (1 << ai_net_territory_ID[ti_start_index])
+
+#ifndef _FINAL_
+		if (DBG_Display_Territory)
+		{
+			ti_string_ID = STR_CreateText("ID: ", VIEW_3dWorldTo2d(0, @ao_net_wp[ti_wp_index] OBJ_PosGet() + cvector(0.0, 0.0, 0.5)), 0.0)
+			STR_AppendInt(ti_string_ID, ai_net_territory_ID[ti_start_index])
+		}
+#endif
+	}
+
+	// POUR CHAQUE SOMMET DE LA FILE
+	while( Lapin_PROC_FILE_Size_Get())
+	{
+		ti_start_index =  Lapin_PROC_FILE_Defile()
+
+		ti_territory_link = ai_territory_link[ti_start_index]
+
+		// POUR CHAQUE LIEN DE CE SOMMET
+		for (ti_dest_index = 0; ti_dest_index < i_net_territory_ID_nb; ti_dest_index++)
+		{
+			// EST-CE QU'ON A UN LIEN DE CE TERRITOIRE VERS UN AURE TERRITOIRE
+			if (! (ti_territory_link & (1 << ti_dest_index) ) )
+				continue
+
+			// ON EST DEJA PASSE PAR CE SOMMET
+			if (ti_territory_checked_bit_field & (1 << ti_dest_index))
+				continue
+
+//			@get_global i_refresh_territory_iteration_nb	++
+
+			// ON MARQUE CE SOMMET
+			ti_territory_checked_bit_field |= (1 << ti_dest_index)
+
+			to_dest_wp = ao_net_wp[ai_net_territory_first_wp_index[ti_dest_index]]
+
+			// ON N'A PAS LE DROIT DE PASSER PAR CE SOMMET
+			if (@to_dest_wp OBJ_CapaGet() & Ci_Capa_Exclude_Territory)
+				continue
+			if ( ! Lapin_PROC_WAY_TERRITORY_IS_PATH_VALID(ai_net_territory_ID[ ti_start_index], ai_net_territory_ID[ ti_dest_index], i_way_move_bit))
+				continue
+			// CE SOMMET EST ATTEIGNABLE
+			i_net_territory_bit_field |= (1 << ti_dest_index)
+			i_net_territory_ID_bit_field |= (1 << ai_net_territory_ID[ti_dest_index])
+
+//			ai_net_territory_dist[ti_dest_index] = ai_net_territory_dist[ti_start_index] + 1
+//			ai_net_territory_father_index[ti_dest_index] = ai_net_territory_father_index[ti_start_index]
+
+//#ifndef _FINAL_
+//			if (DBG_Display_Territory)
+//			{
+//				tc_color = 0xFFFFFFFF
+//				to_start_wp = ao_net_wp[ai_net_territory_first_wp_index[ti_start_index]]
+//
+////				ti_string_ID = STR_CreateText("ID: ", VIEW_3dWorldTo2d(0, @to_dest_wp OBJ_PosGet() + cvector(0.0, 0.0, 0.5)), 0.0)
+////				STR_AppendInt(ti_string_ID, ai_net_territory_ID[ti_dest_index])
+//				
+//				DBG_RenderVector(@to_dest_wp OBJ_PosGet(), Cv_VerticalVector * 10.0,  tc_color)
+//				DBG_RenderVector(@to_start_wp OBJ_PosGet(), @to_dest_wp OBJ_PosGet() - @to_start_wp OBJ_PosGet(), tc_color)
+//			}
+//#endif
+			
+			Lapin_PROC_FILE_Enfile(ti_dest_index)
+		}
+	}
+
+	Lapin_PROC_WAY_Display_Territory()
+	return
+}
+
+
+// GIVE THE NEAREST WP OF THE POS IN THIS TERRITORY
+procedure_local object	Lapin_PROC_WAY_NEAREST_WP_GET( vector pv_dest_pos, int pi_territory_ID)
+{
+	int	ti_territory_index
+	int	ti_dest_index
+	int	pi_i
+	float tf_dist, tf_dist_max
+	
+	ti_territory_index = Lapin_PROC_WAY_TERRITORY_INDEX_GET(pi_territory_ID)
+
+	ti_dest_index = -1
+	tf_dist_max = Cf_Infinit
+	for ( pi_i = 0; pi_i < ai_net_territory_wp_nb[ti_territory_index]; pi_i++)
+	{
+		tf_dist = MATH_VecDistance( pv_dest_pos, @ao_net_wp[ai_net_territory_first_wp_index[ti_territory_index] + pi_i] OBJ_PosGet())
+		if ( tf_dist < tf_dist_max)
+		{
+			tf_dist_max = tf_dist
+			ti_dest_index = ai_net_territory_first_wp_index[ti_territory_index] + pi_i
+		}
+	}		
+	return ao_net_wp[ti_dest_index]
+}
+
+// CREATE SHORTEST WAY TO WP
+procedure_local void	Lapin_PROC_WAY_REACH_WP(object to_start_wp, object to_dest_wp)
+{
+	int	ti_flag_skip_next_wp
+	
+	i_way_wp_nb = WAY_ShortWay(Territory_Colmap, &ao_way_wp[0], to_start_wp, to_dest_wp, all, Ci_Capa_Link_Invalid)
+	Lapin_PROC_WAY_CHECK()
+	
+	// OPTIMISATION POUR ENLEVER UN WP DU RESAU
+	ti_flag_skip_next_wp = vrai
+
+	if (i_way_wp_nb < 2)
+		ti_flag_skip_next_wp = faux
+	else if (WAY_LinkCapaGet(Territory_Colmap, ao_way_wp[i_way_wp_nb - 1], ao_way_wp[i_way_wp_nb - 2]) & Ci_Capa_Link_Jump)
+		ti_flag_skip_next_wp = faux
+	else if (MATH_VecDotProduct(@ao_way_wp[i_way_wp_nb - 1] OBJ_PosGet() - OBJ_PosGet(), @ao_way_wp[i_way_wp_nb - 2] OBJ_PosGet() - OBJ_PosGet()) > 0.0)
+		ti_flag_skip_next_wp = faux
+	else
+	{
+		i_way_wp_nb--
+		o_current_wp = ao_way_wp[i_way_wp_nb]
+
+		ao_way_wp[i_way_wp_nb] = nobody
+	}
+	
+
+	if (i_way_wp_nb)
+		o_next_wp = ao_way_wp[i_way_wp_nb - 1]
+	else
+		o_next_wp = nobody
+	
+	if (i_way_wp_nb > 1)
+		o_next_next_wp = ao_way_wp[i_way_wp_nb - 2]
+	else
+		o_next_next_wp = nobody
+}
+
+// TERRITOIRE PATH LIB ================================================================================================
+procedure_local void Lapin_PATH_Init()
+{
+	if( ! i_path_init_done && Territory_Path )
+	{
+		i_path_init_done = vrai
+		i_path_net_wp_nb = WAY_NetFill(Territory_Path, WAY_RootGet(Territory_Path), &ao_path_net_wp[0])
+	}
+}
+
+
+// TERRITOIRE BV ================================================================================================
+// Retourne vrai si le vecteur de position situé est dans la BV de l'objet OU s'il n'y a pas d'objet à tester (pas de limite) ; faux sinon
+procedure_local int Lapin_Pos_in_BV(vector pv_pos, object po_zone) 
+{
+	if( ! po_zone )
+		return vrai
+	else
+		return( @po_zone COL_BV_PointCollide(pv_pos) )
+}
+
+// Retourne vrai si la position pv_pos est dans le territoire du lapin
+procedure_local int Lapin_Pos_in_Territory_BV(vector pv_pos)
+{
+	return Lapin_Pos_in_BV(pv_pos, Territory_BV)
+}
+
+// Retourne vrai si el gao to_gao est dans le territoire du lapin
+procedure_local int Lapin_Gao_in_Territory_BV(object to_gao)
+{
+	if( ! to_gao )
+		return faux
+	else
+		return Lapin_Pos_in_Territory_BV(@to_gao OBJ_PosGet())
+}
+
+
+
+// TERRITORY_ALL ===============================================================================================
+//procedure_local int Lapin_TERRITORY_BV_and_COLMAP_ValidPos(vector tv_pos)
+//{
+//	if( ! Territory_BV && ! Territory_Colmap )
+//		return vrai		// no limit
+//	if( Territory_BV && Lapin_Pos_in_Territory_BV(tv_pos) )
+//		return vrai
+//	if( Territory_Colmap && Lapin_PROC_POS_GET_TERRITORY_ID(tv_pos) == i_my_territory_ID )
+//		return vrai
+//	return faux
+//}
+//
+//procedure_local int Lapin_TERRITORY_BV_and_COLMAP_ValidGao(object to_gao)
+//{
+//	if( to_gao )
+//		return Lapin_TERRITORY_BV_and_COLMAP_ValidPos(@to_gao OBJ_PosGet())
+//	else
+//		return faux
+//}
+
+
+procedure_local int Lapin_TERRITORY_ERROR_Ignore()
+{
+	switch( i_etat_courant )
+	{
+		case ETAT_Lapin_GOGO :
+		case ETAT_Lapin_GRABBED :
+		case ETAT_Lapin_RIDED :
+		case ETAT_Lapin_CHUTE :
+		case ETAT_Lapin_JUMP :
+		case ETAT_Lapin_TAUPE :
+		case ETAT_Lapin_ASPIRE :
+		case ETAT_Lapin_PAF :
+		case ETAT_Lapin_PAF_STUN :
+		case ETAT_Lapin_BEAT_DANSE :
+		case ETAT_Lapin_BEAT_ALERT :
+		case ETAT_Lapin_PIEGE :
+			return vrai		// je me fous des erreurs territoire
+			break
+		default:
+			return faux
+			break
+	}
+}
+
+
+procedure_local int Lapin_TERRITORY_ALL_Accessible_Pos(vector tv_pos)
+{
+	int			ti_ok
+	int			ti_i
+	object	to_bv
+	
+	if( Territory_BV && ! Lapin_Pos_in_Territory_BV(tv_pos) )
+		return faux		// pas sur mon territoire
+	
+	if( Territory_Colmap && ! Lapin_PROC_WAY_TERRITORY_ID_ALLOWED(Lapin_PROC_POS_GET_TERRITORY_ID(tv_pos)) )
+		return faux		// pas sur mon territoire
+	
+	if( Territory_Path && o_path_current_wp )		// ne pas appeler la fct avec un gao vide
+	{
+		ti_ok = faux
+		
+		// LISTER LES BV VOISINES POUR FAIRE DU TEST PIVOT/BV AU LIEU DE FAIRE DU A*
+		i_path_voisin_wp_nb = 50		// taille
+		PATH_LIB_Fill_Wp_Array(o_path_current_wp, 
+											Territory_Path, 
+											&ao_path_net_wp[0],				// LES WPS DU RESEAU
+											i_path_net_wp_nb,					// LE NOMBRE DE POINTS DU RESEAU
+											&ao_path_voisin_wp[0],
+											i_path_voisin_wp_nb,
+											3)
+		
+		// TEST PIVOT/BV AU LIEU DU A* !!!! =)
+		for( ti_i = 0; ti_i < i_path_voisin_wp_nb; ti_i++ )
+		{
+			to_bv = ao_path_voisin_wp[ti_i]
+			if( @to_bv COL_BV_PointCollide(tv_pos) )
+			{
+				ti_ok = vrai		// dans une BV voisine avec accès
+				break
+			}
+		}
+		
+		if( ! ti_ok )
+			return faux		// pas de chemin
+	}
+	
+	return vrai
+}
+
+
+
+procedure_local int Lapin_TERRITORY_ALL_Accessible_Gao(object to_gao)
+{
+	if( to_gao )
+		return Lapin_TERRITORY_ALL_Accessible_Pos(@to_gao OBJ_PosGet())
+	else
+		return faux
+}
+
+

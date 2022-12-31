@@ -1,0 +1,45 @@
+#include "KID_Defines.var"
+
+//procedure_local int KID_TypeEnablesUncolWithTREX()
+//{
+//	switch( i_type_decor )
+//	{
+//		case Ci_type_decor_muret :
+//		case Ci_type_decor_pieu :
+//			return vrai
+//			break
+//		case Ci_type_decor_palmier :
+//		case Ci_type_decor_pilier :
+//		case Ci_type_decor_porte :
+//		default:
+//			return faux
+//			break
+//	}
+//}
+//
+//
+
+
+procedure_local void KID_Proc_ODE_Limit( object to_gao, float tf_L, float tf_A )
+{
+	vector	tv_speed 
+	float		tf_speed
+	
+	tv_speed = @to_gao ODE_Getv(0)
+	tf_speed = MATH_VecSquareNorm(tv_speed)
+	if (tf_speed > (tf_L * tf_L))
+	{
+		tv_speed /= MATH_FloatSqrt(tf_speed) 
+		tv_speed *= tf_L
+		@to_gao ODE_Setv(0, tv_speed)
+	}
+	
+	tv_speed = @to_gao ODE_Getv(3)
+	tf_speed = MATH_VecSquareNorm(tv_speed)
+	if (tf_speed > (tf_A * tf_A))
+	{
+		tv_speed /= MATH_FloatSqrt(tf_speed) 
+		tv_speed *= tf_A
+		@to_gao ODE_Setv(3, tv_speed)
+	}
+}

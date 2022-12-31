@@ -1,0 +1,11 @@
+
+procedure_ultra void RMA_Porte_PosSet(int ti_pidx)
+{
+	vector	tv_horiz
+	vector	tv_asc_pos
+	
+	tv_horiz = OBJ_HorizonGet()
+	tv_asc_pos = OBJ_PosGet()
+	@o_portes[ti_pidx][0] OBJ_PosSet(tv_asc_pos + 	v_porte_ipos[ti_pidx][0] + 	(f_porte_ouverture * f_porte_open[ti_pidx] * tv_horiz))
+	@o_portes[ti_pidx][1] OBJ_PosSet(tv_asc_pos + v_porte_ipos[ti_pidx][1] - (f_porte_ouverture * f_porte_open[ti_pidx] * tv_horiz))
+}

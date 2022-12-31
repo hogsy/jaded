@@ -1,0 +1,27 @@
+///TrigExec_GodRay
+//============================================================
+// Param IN :
+//		object1 : objet avec IA SFX_GodRay, si nobody : récup le GodRay actif (dans GST_Global)
+//		vec1 : params : x = intensity  (<0 : pas pris en compte)
+//							  y = max_angle ( <=0 : pas pris en compte)
+// Param OUT : None
+// ne fait rien du tout du tout troulalaitou
+//============================================================
+procedure_trigger int TrigExec_GodRay( byref message m_msg) // object1 gao vec1 params
+{
+	object	to_gao
+	vector	tv_params
+	
+	to_gao = m_msg.msg_gao1
+	if (!to_gao) to_gao = @get_global o_AFX_godray
+	if (!to_gao) return vrai
+	if (! @to_gao AI_IsModel("SFX/SFX_GodRays") ) return vrai
+	
+	tv_params = m_msg.msg_vec1
+	if (tv_params.x >= 0)
+		@"SFX/SFX_GodRays" to_gao des_f_max_intensity = tv_params.x
+	if (tv_params.y > 0)
+		@"SFX/SFX_GodRays" to_gao des_f_max_angle = tv_params.y
+	
+	return vrai
+}

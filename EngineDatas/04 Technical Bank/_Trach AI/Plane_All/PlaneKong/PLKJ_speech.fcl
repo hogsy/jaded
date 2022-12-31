@@ -1,0 +1,55 @@
+#include "PLKJ_Defines.var"
+//------------------------------------------------------------------------------------------------------------------
+//	the closest pilot available will say something
+//------------------------------------------------------------------------------------------------------------------
+procedure_local int PLKJ_Say(text t,int rnd)
+{
+	object o
+	if(clock>SpeechTimer)
+	{
+		SpeechTimer=clock+MATH_RandFloat(0,12)
+		// during a cine, don't use an enemy as the source of the speech
+		if(EvtObject)
+		{
+			o=nobody
+		}
+		else
+		{
+			// use the closest enemy
+			o=PLKJ_GetClosestEnemy()
+		}
+		if(!o)
+		{
+			o=VIEW_GetObject(0)
+		}
+		if(o)
+		{
+			SPEECH_RequestPost(
+				OBJ_Me(),
+				o,
+				TEXT_FileGet(t),
+				TEXT_EntryGet(t),
+				4.0,										// delay available
+				SPEECH_Cte_PriorityDefault,	// priority
+				rnd,										// random
+				0,
+				0,
+				0)
+			return vrai
+		}
+	}
+	return faux
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	speech sequence at the beginning of the gameplay
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_InitialSpeech()
+{
+	if(SpeechIndex<4 && SpeechTimer<clock)
+	{
+		PLKJ_Say(txPilots[SpeechIndex],0)
+		SpeechIndex++
+		SpeechTimer=clock+MATH_RandFloat(3,6)
+	}
+}

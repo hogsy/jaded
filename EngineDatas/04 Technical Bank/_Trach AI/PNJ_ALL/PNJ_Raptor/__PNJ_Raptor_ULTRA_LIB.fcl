@@ -1,0 +1,168 @@
+#include "ROOT\EngineDatas\04 Technical Bank\AI Models\PNJ_Predators\PNJ_Raptor\PNJ_Raptor_defines.var"
+//#include "ROOT\EngineDatas\04 Technical Bank\AI Models\Global Library\common\system_constant_kong.var"
+
+procedure_ultra void PNJ_Raptor_Init_Var()
+{
+	int				ti_i
+	int				ti_k
+	int				ti_index	
+	int				ti_WARNING
+	int				ti_out_of_grid_fuite_wp_nb
+	int				ti_on_grid_fuite_wp_nb
+
+	AI_Execute("PNJ_Raptor_exec_way_ponderation_set")
+
+	for (ti_i = 0; ti_i < 100; ti_i++)
+		ao_net_wp[ti_i] = nobody
+
+	ti_index = ARR_LIB_NetworkSearch( & @get_global an_precal[0], @get_global i_precal_nb, n_net)
+	if (ti_index == -1)
+	{
+		i_net_wp_nb = WAY_NetFill(n_net, WAY_RootGet(n_net), &ao_net_wp[0])
+		if (i_net_wp_nb > 100)
+			DBG_Error("Trop de wp sur le réseau")
+
+		i_net_invalid_wp_nb = 0
+	
+		PNJ_Raptor_Init_Network()
+	
+		ti_WARNING = faux
+	
+		if ( ! i_net_territory_ID_nb )
+			DBG_Error("Aucun Territoire !!!")
+
+		if (i_net_invalid_wp_nb)
+		{
+			if (DBG_Warning_Allowed)
+				DBG_Warning("Ces WPs sont hors territoires")
+		
+			ti_index = ai_net_territory_first_wp_index[i_net_territory_ID_nb - 1]
+			ti_index += ai_net_territory_wp_nb[i_net_territory_ID_nb - 1]
+	
+			for (ti_i = 0; ti_i < i_net_invalid_wp_nb; ti_i++)
+			{
+				DBG_TraceString("ERREUR => LE WP ")
+				DBG_TraceObject(ao_net_wp[ti_index + ti_i])
+				DBG_TraceString(" N'EST PAS SUR UN TERRITOIRE")
+				DBG_TraceEOL()
+			}
+			
+			DBG_TraceEOL()
+		}
+	
+		for (ti_i = 0; ti_i < i_net_territory_ID_nb; ti_i++)
+		{
+			ti_index = ai_net_territory_first_wp_index[ti_i]
+	
+			DBG_TraceString("--------> Le territoire ")
+			DBG_TraceInt(ai_net_territory_ID[ti_i])
+			DBG_TraceString(" est associe au wp ")
+			DBG_TraceObject(ao_net_wp[ti_index])
+			
+			if (@ao_net_wp[ti_index] OBJ_CapaTest(Ci_Capa_Territory))
+				DBG_TraceString(" CAPA TERRITORY ")
+	
+			DBG_TraceEOL()
+		}
+	
+		PNJ_Raptor_Compute_Territory_Net()
+	
+		ti_index = @get_global i_precal_nb
+	
+		@get_global i_precal_nb ++
+		@get_global an_precal[ti_index] = n_net
+		@get_global ai_precal_wp_nb[ti_index] = i_net_wp_nb
+		
+		for (ti_i = 0; ti_i < i_net_wp_nb; ti_i++)
+			@get_global ao_precal_wp[ti_index][ti_i] = ao_net_wp[ti_i]
+	
+		@get_global ai_precal_territory_ID_nb[ti_index] = i_net_territory_ID_nb
+		for (ti_i = 0; ti_i < i_net_territory_ID_nb; ti_i++)
+		{
+			@get_global ai_precal_territory_ID[ti_index][ti_i] = ai_net_territory_ID[ti_i]
+			@get_global ai_precal_territory_first_wp_index[ti_index][ti_i] = ai_net_territory_first_wp_index[ti_i]
+			@get_global ai_precal_territory_wp_nb[ti_index][ti_i] = ai_net_territory_wp_nb[ti_i]
+			@get_global ai_precal_territory_link[ti_index][ti_i] = ai_territory_link[ti_i]
+			@get_global ai_precal_territory_link2[ti_index][ti_i] =  ai_territory_link2[ti_i]
+		}
+
+		for (ti_i = 0; ti_i < 32; ti_i++)		
+			@get_global ai_precal_territory_ID_index[ti_index][ti_i] = ai_net_territory_ID_index[ti_i]
+	}
+	else
+	{
+		i_net_wp_nb = @get_global ai_precal_wp_nb[ti_index]
+		
+		for (ti_i = 0; ti_i < i_net_wp_nb; ti_i++)
+			ao_net_wp[ti_i] = @get_global ao_precal_wp[ti_index][ti_i]
+	
+		i_net_territory_ID_nb = @get_global ai_precal_territory_ID_nb[ti_index]
+		for (ti_i = 0; ti_i < i_net_territory_ID_nb; ti_i++)
+		{
+			ai_net_territory_ID[ti_i] = @get_global ai_precal_territory_ID[ti_index][ti_i]
+			ai_net_territory_first_wp_index[ti_i] = @get_global ai_precal_territory_first_wp_index[ti_index][ti_i]
+			ai_net_territory_wp_nb[ti_i] = @get_global ai_precal_territory_wp_nb[ti_index][ti_i]
+			ai_territory_link[ti_i] = @get_global ai_precal_territory_link[ti_index][ti_i]
+			ai_territory_link2[ti_i] = @get_global ai_precal_territory_link2[ti_index][ti_i]
+		}
+
+		for (ti_i = 0; ti_i < 32; ti_i++)		
+			ai_net_territory_ID_index[ti_i] = @get_global ai_precal_territory_ID_index[ti_index][ti_i]
+	}
+
+	i_net_hiding_place_nb = 0
+
+	ti_out_of_grid_fuite_wp_nb = 0
+	ti_on_grid_fuite_wp_nb = 0
+
+	for (ti_i = 0; ti_i < i_net_wp_nb; ti_i++)
+	{
+		// ON MEMORISE TOUTES LES CACHES
+//		if (raptor_type != C_ID_Galiminus && @ao_net_wp[ti_i] OBJ_CapaTest(Ci_Capa_Cache))
+		if (raptor_type != 22 && @ao_net_wp[ti_i] OBJ_CapaTest(Ci_Capa_Cache))
+		{
+			ao_net_hiding_place[i_net_hiding_place_nb] = ao_net_wp[ti_i]
+			i_net_hiding_place_nb++
+		}
+
+		// ON CHECK LES POINTS DE FUITE
+//		if (raptor_type != C_ID_Tyranosaure)
+		if (raptor_type != 16)
+		{
+			if (@ao_net_wp[ti_i] OBJ_CapaTest(Ci_Capa_Fuite))
+			{
+				if (@ao_net_wp[ti_i] OBJ_CapaTest(Ci_Capa_Out_Of_Grid))
+					ti_out_of_grid_fuite_wp_nb++
+				else
+					ti_on_grid_fuite_wp_nb++
+			}
+		}
+	}
+
+//	if (raptor_type == C_ID_Raptor)
+	if (raptor_type == 14)
+	{
+		if (!ti_out_of_grid_fuite_wp_nb)
+		{
+//			DBG_TraceObject(OBJ_Me())
+//			DBG_TraceString(" n'a pas de point de fuite hors grille")
+//			DBG_TraceEOL()
+			DBG_Warning("Pas de point de fuite hors grille !!!")
+		}
+	
+//		if (!ti_on_grid_fuite_wp_nb && raptor_type == C_ID_Raptor)
+		if (!ti_on_grid_fuite_wp_nb)
+		{
+//			DBG_TraceObject(OBJ_Me())
+//			DBG_TraceString(" n'a pas de point de fuite sur la grille")
+//			DBG_TraceEOL()
+			DBG_Warning("Pas de point de fuite sur la grille !!!")
+		}
+	}
+
+//	if (raptor_type == C_ID_Galiminus)
+	if (raptor_type == 22 && !ti_out_of_grid_fuite_wp_nb && !ti_on_grid_fuite_wp_nb)
+		DBG_Warning("Pas de point de fuite !!!")
+
+	DBG_VarsCurToInit()
+}

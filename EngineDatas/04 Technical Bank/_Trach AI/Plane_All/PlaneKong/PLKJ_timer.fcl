@@ -1,0 +1,55 @@
+#include "PLKJ_Defines.var"
+//------------------------------------------------------------------------------------------------------------------
+//	Set a timer with delay d, event type and value v
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_SetTimer(float d,int e,int v)
+{
+	TimerDelay=clock+d
+	TimerEvent=e
+	TimerValue=v
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Return true if the timer is used
+//------------------------------------------------------------------------------------------------------------------
+procedure_local int PLKJ_IsTimerUsed()
+{
+	if(TimerDelay)
+	{
+		return vrai
+	}
+	return faux
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//	Watch the timer and trigger the events
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PLKJ_TimerEvent()
+{
+	if(TimerDelay && TimerDelay<clock)
+	{
+		TimerDelay=0
+		switch(TimerEvent)
+		{
+			case C_PLKJ_TimerEvent_KamMode :
+				PLKJ_ChangeKamMode(TimerValue)
+				break
+			case C_PLKJ_TimerEvent_AlternativeEnd :
+				PLKJ_StartFade(0.0,C_PLKJ_DureeFade)
+				PLKJ_SetInjure(faux)
+				PLKJ_GotoAlternativeEnd()
+				break
+			case C_PLKJ_TimerEvent_SetCapa :
+				if(TimerValue==C_PLKJ_Capa_KongIsDead)
+				{
+					PLKJ_SetInjure(faux)
+					PLKJ_UngrabPlane()
+				}
+				OBJ_CapaSet(TimerValue,0)
+				break
+			case C_PLKJ_TimerEvent_StartCine :
+				PLKJ_StartEvt(TimerValue,vrai)
+				break
+		}
+	}
+}

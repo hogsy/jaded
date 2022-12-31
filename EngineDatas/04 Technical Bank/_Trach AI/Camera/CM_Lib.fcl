@@ -1,0 +1,267 @@
+//// Procedure KONG d'evitement
+//
+//procedure float CM_DistMaxGet(vector pos_src, vector pos_dst)
+//{
+//	float		tf_dist
+//	object	to_gao
+//	vector	tv_axis
+//	float		tf_subdist_max
+//
+//	float		tf_virtual_link_length
+//
+//	vector	tv_point_A
+//	vector	tv_point_B
+//	vector	tv_point_C
+//	vector	tv_point_D
+//	vector	tv_sight
+//
+//	tf_dist = MATH_VecNorm(pos_src - pos_dst)
+//	return tf_dist
+//	
+////	tf_subdist_max = 0
+////	
+////	tv_axis = pos_dst - pos_src
+////	tv_axis /= tf_dist
+////
+//////	tv_axis = MATH_VecRotate(tv_axis,Cv_VerticalVector,Cf_1Degre*30)
+//////	to_gao = COL_RayObject_Dist(pos_src, tv_axis, tf_dist, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+//////	if (to_gao)
+//////	{	tf_subdist_max = MATH_FloatMax( tf_dist - MATH_VecNorm( COL_RayObject_PosGet() - pos_src) * 0.50, tf_subdist_max)
+//////		DBG_RenderVector(pos_src,DBG_LastRayGet(),color_rouge)	
+//////	}
+//////
+//////	tv_axis = MATH_VecRotate(tv_axis,Cv_VerticalVector,-Cf_1Degre*15)
+//////	to_gao = COL_RayObject_Dist(pos_src, tv_axis, tf_dist, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+//////	if (to_gao)
+//////	{	tf_subdist_max = MATH_FloatMax( tf_dist - MATH_VecNorm( COL_RayObject_PosGet() - pos_src) * 0.75, tf_subdist_max)
+//////		DBG_RenderVector(pos_src,DBG_LastRayGet(),color_rouge)	
+//////	}
+////	
+//////	tv_axis = MATH_VecRotate(tv_axis,Cv_VerticalVector,-Cf_1Degre*15)
+//////	to_gao = COL_RayObject_Dist(pos_src, tv_axis, tf_dist, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+////	to_gao = COL_RayObject_Dist(pos_src, tv_axis, 15.0, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+////	if (to_gao)
+////	{
+////		tv_point_A = COL_RayObject_PosGet()
+////		tv_point_B = - COL_RayObject_NormalGet()
+////		
+////		tf_subdist_max = MATH_FloatMax( tf_dist - MATH_VecNorm( COL_RayObject_PosGet() - pos_src) * 1.0, tf_subdist_max)
+////		DBG_RenderVector(pos_src,DBG_LastRayGet(),color_rouge)	
+////	}
+////	else
+////	{
+////		DBG_RenderVector(pos_src, tv_axis * tf_dist,color_vert)	
+////
+////		tv_point_A = pos_src
+////		tv_point_A += tv_axis * tf_dist
+////		
+////		tv_point_B = tv_axis
+////	}
+////
+////	tv_axis = MATH_VecRotate(tv_axis,Cv_VerticalVector,-Cf_1Degre * 15.0)
+//////	to_gao = COL_RayObject_Dist(pos_src, tv_axis, tf_dist, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+////	to_gao = COL_RayObject_Dist(pos_src, tv_axis, 15.0, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+////	if (to_gao)
+////	{
+////		tv_point_D = COL_RayObject_PosGet()
+////		tv_point_C = - COL_RayObject_NormalGet()
+////	
+////		tf_subdist_max = MATH_FloatMax( tf_dist - MATH_VecNorm( COL_RayObject_PosGet() - pos_src) * 0.75, tf_subdist_max)
+////		DBG_RenderVector(pos_src,DBG_LastRayGet(),color_rouge)	
+////	}
+////	else
+////	{
+////		DBG_RenderVector(pos_src, tv_axis * tf_dist,color_vert)	
+////
+////		tv_point_D = pos_src
+////		tv_point_D += tv_axis * tf_dist
+////		
+////		tv_point_C = tv_axis
+////	}
+////
+////	tf_virtual_link_length = MATH_VecNorm(tv_point_D - tv_point_A)
+////	
+////	tv_point_B = MATH_VecCrossProduct(tv_point_B, Cv_VerticalVector)
+////	MATH_VecSetNormalize(tv_point_B)
+////	
+////	DBG_RenderVector(tv_point_A, tv_point_B * 3.0, color_jaune)	
+////
+////	tv_point_B *= tf_virtual_link_length * 0.5
+////	tv_point_B += tv_point_A
+////
+////
+////	tv_point_C = MATH_VecCrossProduct(Cv_VerticalVector, tv_point_C)
+////	MATH_VecSetNormalize(tv_point_C)
+////
+////	DBG_RenderVector(tv_point_D, tv_point_C * 3.0, color_jaune)	
+////
+////
+////	tv_point_C *= tf_virtual_link_length * 0.5
+////	tv_point_C += tv_point_D
+////	
+////	DBG_RenderVector(tv_point_A, tv_point_D - tv_point_A, color_blanc)
+////	MATH_LIB_Bezier_Display(20, tv_point_A, tv_point_B, tv_point_C, tv_point_D)
+////
+////	if (MATH_VecNorm(tv_point_A - pos_src) > MATH_VecNorm(tv_point_D - pos_src))
+////		tv_point_A = MATH_LIB_Bezier_Pos_Get(0.75, tv_point_A, tv_point_B, tv_point_C, tv_point_D, tv_sight)
+////	else
+////		tv_point_A = MATH_LIB_Bezier_Pos_Get(0.25, tv_point_A, tv_point_B, tv_point_C, tv_point_D, tv_sight)
+////
+//////	tv_axis = MATH_VecRotate(tv_axis,Cv_VerticalVector,-Cf_1Degre*15)
+//////	to_gao = COL_RayObject_Dist(pos_src, tv_axis, tf_dist, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+//////	if (to_gao)
+//////	{	tf_subdist_max = MATH_FloatMax( tf_dist - MATH_VecNorm( COL_RayObject_PosGet() - pos_src) * 0.50, tf_subdist_max)
+//////		DBG_RenderVector(pos_src,DBG_LastRayGet(),color_rouge)	
+//////	}
+////	
+//////	DBG_RenderCircle(pos_src,tf_dist - tf_subdist_max,Cv_VerticalVector,color_jaune)
+//////	return tf_dist - tf_subdist_max
+////
+////	tf_subdist_max = MATH_FloatMin(MATH_VecNorm(tv_point_A - pos_src), tf_dist)
+////	DBG_RenderCircle(pos_src, tf_subdist_max,Cv_VerticalVector,color_jaune)
+////	return tf_subdist_max
+//}
+//
+//
+//
+//
+//
+//// Lancé de rayon unitaire de poss a posd
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////:
+//procedure object CM_Ray(vector poss, vector posd)
+//{
+////	DBG_RenderVector( poss, posd - poss, 0xff)
+//	return COL_RayObject_Vector(poss, posd - poss, OBJ_C_IdentityFlag_ColMap, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+//}
+//
+//// Effectue un blend en rotation, mais avec une vitesse angulaire a ne pas depasser
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////:
+//procedure vector CM_BlendRotate(vector src, vector dst, float speed, float maxspeed)
+//{
+//	vector	tv_temp, tv_normal
+//	float		tf_angle
+//	
+//	maxspeed *= TIME_GetDt()
+//	tv_temp = MATH_VecBlendRotate(src, dst, speed * TIME_GetDt())
+//	
+//	tv_normal = MATH_VecCrossProduct(src, dst)
+//	if(MATH_VecNullEpsilon(tv_normal)) return tv_temp
+//	
+//	tf_angle = MATH_VecAngle(src, tv_temp, tv_normal)
+//	if(MATH_AbsFloat(tf_angle) > maxspeed)
+//	{
+//		tv_temp = MATH_VecRotate(src, tv_normal, maxspeed * MATH_FloatSign(tf_angle))
+//	}
+//	
+//	return tv_temp
+//}
+//
+//// Lancé du rayon d'évitement d'obstacles
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////:
+//procedure int CM_RayEvitement(object to_obj, vector v_pos_base, float f_z, float f_dist)
+//{
+//	vector	tv_temp, tv_temp1
+//	
+//	tv_temp = OBJ_SightGet()
+//	tv_temp.z = 0
+//	tv_temp1 = @to_obj OBJ_SightGet()
+//	tv_temp1.z = 0
+//	MATH_VecSetNormalize(tv_temp)
+//	MATH_VecSetNormalize(tv_temp1)
+//	if(MATH_VecDotProduct(tv_temp, tv_temp1) > 0)
+//	{
+//		tv_temp1 = MATH_VecCrossProduct(tv_temp, tv_temp1)
+//		tv_temp = @to_obj OBJ_PosGet() + cvector(0,0,f_z)
+//		if(tv_temp1.z < 0)
+//			tv_temp1 = @to_obj OBJ_HorizonGet()
+//		else
+//			tv_temp1 = -@to_obj OBJ_HorizonGet()
+//		tv_temp1 = tv_temp - (tv_temp1 * f_dist)
+//		if(CM_Ray(tv_temp, tv_temp1))
+//		{
+//			return 1
+//		}
+//	}
+//	
+//	return 0
+//}
+//
+//// Compute cible
+//// A pos cam, B pos perso, D pos cible
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////:
+//procedure vector CM_ComputeCible(vector posa, vector posb, vector posd, int horz)
+//{
+//	vector	AD, AB, ABX, AC
+//	float		fAX, fRes
+//	
+//	if(horz) 
+//	{
+//		posa.z = 0
+//		posb.z = 0
+//		posd.z = 0
+//	}
+//	
+//	AD = posd - posa
+//	AB = posb - posa
+//	ABX = MATH_VecNormalize(AB)
+//	fAX = MATH_VecDotProduct(AD, ABX)
+//	fRes = (MATH_VecNorm(AD) * MATH_VecNorm(AB)) / fAX
+//	
+//	AC = AD
+//	MATH_VecSetNorm(AC, fRes)
+//	AC -= AB
+//	return AC
+//}
+//
+//// Validate lock
+//// Determine si la sphere de l'info passe par le centre de l'ecran
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////:
+//procedure int CM_LockOk(object to_obj, float fradh, float fradv)
+//{
+//	vector	tv_temp, tv_temp2, tv_temp3
+//	float		tf_iradius, tf_radius, tf_norm
+//	
+//	if(!to_obj) return 0
+//	
+//	tv_temp = @to_obj OBJ_InfoPhotoPivotGet() - OBJ_PosGet()
+//	tv_temp.z = 0
+//	tv_temp2 = OBJ_SightGet()
+//	tv_temp2.z = 0
+//	if(MATH_VecDotProduct(tv_temp, tv_temp2) < 0) return 0
+//	
+//	tf_iradius = @to_obj OBJ_InfoPhotoRadiusGet()
+//	if(!tf_iradius) return 0
+//	if(MATH_VecDotProduct(tv_temp, tv_temp) < tf_iradius * tf_iradius) 
+//	{
+//		tf_iradius = tf_iradius 
+//		return 0
+//	}
+//
+//	tf_norm = MATH_VecNorm(tv_temp) / tf_iradius
+//	if(tf_norm > 20) 
+//	{
+//		tf_norm -= 20
+//		tf_iradius += tf_norm * 0.05
+//	}
+//	
+//	tv_temp = @to_obj OBJ_InfoPhotoPivotGet()
+//	tf_radius = tf_iradius * fradh
+//	tv_temp2 = MATH_VecNormalize((tv_temp + (OBJ_HorizonGet() * tf_radius)) - OBJ_PosGet())
+//	tv_temp3 = MATH_VecNormalize((tv_temp - (OBJ_HorizonGet() * tf_radius)) - OBJ_PosGet())
+//	tv_temp2 = MATH_VecCrossProduct(tv_temp2, OBJ_SightGet())
+//	tv_temp3 = MATH_VecCrossProduct(tv_temp3, OBJ_SightGet())
+//	if(MATH_FloatSign(tv_temp2.z) != MATH_FloatSign(tv_temp3.z))
+//	{
+//		tf_radius = tf_iradius * fradv
+//		tv_temp2 = MATH_VecNormalize((tv_temp + (OBJ_BankingGet() * tf_radius)) - OBJ_PosGet())
+//		tv_temp3 = MATH_VecNormalize((tv_temp - (OBJ_BankingGet() * tf_radius)) - OBJ_PosGet())
+//		tv_temp2 = MATH_VecCrossProduct(tv_temp2, OBJ_SightGet())
+//		tv_temp3 = MATH_VecCrossProduct(tv_temp3, OBJ_SightGet())
+//		if(MATH_VecDotProduct(tv_temp2, tv_temp3) < 0)
+//		{
+//			return 1
+//		}
+//	}
+//	
+//	return 0
+//}

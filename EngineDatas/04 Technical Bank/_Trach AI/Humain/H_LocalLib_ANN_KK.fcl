@@ -1,0 +1,73 @@
+
+#include "H_defines.var"
+
+//==========================================================================================
+// Génération de l'événement de vision
+//==========================================================================================
+procedure_local void ANN_KK_MakeVision( )
+{
+	float	tf_liferatio
+	float	tf_visibility
+	int 	ti_context
+	int		ti_ground
+	int		ti_capa
+	
+	if(i_etat_courant == ETAT_IA_Ann_au_sol && ( i_ANN_au_sol_mode == Ci_ANN_au_sol_sur_le_wp || i_ANN_au_sol_mode == Ci_ANN_au_sol_fight || OBJ_SqrDist(o_ANN_KK_safe_wp) < 25.0) )
+		ti_context  = C_EVENT_CONTEXT_DEBOUT			// sur le wp, en fight ou pas loin du wp : visible par REX et raptors
+	else
+		ti_context  = C_EVENT_CONTEXT_ACCROUPI		// pas visible REX et raptors
+	
+	// Type de terrains spéciaux indiqués sur la deuxieme grille
+	ti_ground = i_ground_ID
+	tf_visibility = C_EVENT_Visibility_Full_Mvt
+	ti_context += ti_ground * 10
+	tf_liferatio = @"univ" LIFE_HumainEtat[ i_id_humain ] 
+	EVENT_AddEventVision( i_id_humain, C_EVENT_FILTER_Marin, OBJ_Me(), Cf_EVENT_Duree_1Trame, OBJ_PosGet(), tf_visibility, Cf_Rayon_De_Vision, f_interet, ti_context, 0, tf_liferatio)
+}
+
+//==========================================================================================
+// Choix du WP vers ou se diriger quand ANN est au sol (déposée par KONG ou tombée de l'épaule de KONG)
+//==========================================================================================
+procedure_local object ANN_KK_Choix_du_WP_Safe()
+{
+	int				ti_i
+	int				ti_type
+	float			tf_dist
+	float			tf_wp_best_dist
+	object		to_WP
+	object		to_best_WP
+	
+	to_best_WP = nobody
+	if( msg_pose_ANN.msg_id != 0 )
+	{
+		// KONG a déposé ANN
+		i_cine_ANN_attack_played = faux
+		to_best_WP = msg_pose_ANN.msg_gao1
+	}
+	else
+	{
+		// choix du WP dans le list manager
+		tf_wp_best_dist = Cf_Infinit
+		for( ti_i = 0; ti_i < @get_list_manager i_ann_kk_wp_safe_nb; ti_i++ )
+		{
+			to_WP = @get_list_manager ao_ann_kk_wp_safe[ti_i]
+			if( @to_WP OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Active )
+			{
+				ti_type = @"Interactive/Interactive_Kong_Pose_Ann" to_WP i_action_type
+				if( ti_type == Ci_PoseAnn_VaBoire || ti_type == Ci_PoseAnn_CacheToi )
+				{
+					tf_dist = OBJ_SqrDist(to_WP)
+					if( tf_dist < tf_wp_best_dist)
+					{
+						to_best_WP = to_WP
+						tf_wp_best_dist = tf_dist
+					}
+				}
+			}
+		}
+	}
+//	DBG_TraceObject(to_best_WP)
+//	DBG_TraceEOL()
+	return to_best_WP
+}
+

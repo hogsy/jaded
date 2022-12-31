@@ -1,0 +1,57 @@
+#include "PNJ_antilope_defines.var"
+
+procedure_local void PA_Soft_Col()
+{
+	int		ti_i
+	
+	float		tf_dist
+	float		tf_test_dist
+	float		tf_test_sqr_dist
+
+	vector	tv_me_to_budy
+	vector	tv_col_move_axis
+	
+	tf_test_dist = 5.0
+	tf_test_sqr_dist = tf_test_dist * tf_test_dist
+	
+	switch(i_etat_courant)
+	{
+		case ETAT_PA_DEAD :
+		case ETAT_PA_GRABBED :
+			i_budy_nb = 0
+			return
+	}
+	
+	tv_col_move_axis = Cv_NullVector
+
+	for (ti_i = 0; ti_i < i_budy_nb; ti_i++)
+	{
+		if (ao_budy[ti_i] == OBJ_Me())
+			continue
+	
+		tv_me_to_budy = @ao_budy[ti_i] OBJ_PosGet() - OBJ_PosGet()
+		tv_me_to_budy.z = 0.0
+		
+		tf_dist = MATH_VecDotProduct(tv_me_to_budy, tv_me_to_budy) 
+
+		if (tf_dist < tf_test_sqr_dist) // && OBJ_LIB_Virtual_Colmap_Collision(OBJ_Me(), ao_budy[ti_i], vrai) )
+		{
+			tf_dist = MATH_FloatSqrt(tf_dist)
+
+			if (tf_dist)
+				tv_me_to_budy /= tf_dist
+			else
+				tv_me_to_budy = OBJ_HorizonGet()
+
+			tv_me_to_budy *= 1.0 - (tf_dist / tf_test_dist)
+			
+			tv_col_move_axis -= tv_me_to_budy
+		}
+	}
+	
+	tv_col_move_axis -= MATH_FloatMin(MATH_VecDotProduct(tv_col_move_axis, OBJ_SightGet()), 0.0) * OBJ_SightGet()
+	tv_col_move_axis *= 40.0 * DYN_FrictionGet()
+	tv_col_move_axis += DYN_TractionVectorGet()
+	DYN_TractionSet(tv_col_move_axis)
+	i_budy_nb = 0
+}

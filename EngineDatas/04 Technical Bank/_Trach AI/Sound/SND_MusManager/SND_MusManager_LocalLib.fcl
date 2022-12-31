@@ -1,0 +1,247 @@
+//----------------------------------------------------------------------------------------------------
+// INCLUDE
+//----------------------------------------------------------------------------------------------------
+#include "SM_Constants.var"
+
+
+//------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------
+procedure_local void MUS_DebugPrintInt(int argi_level, string args_debug, int argi_int)
+{
+	if(i_Debug  >= argi_level)
+	{
+		DBG_TraceString("[MUS][DEBUG] ")
+		DBG_TraceString(args_debug)
+		DBG_TraceInt(argi_int)
+		DBG_TraceEOL()
+	}
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------
+procedure_local void MUS_DebugPrint(int argi_level, string args_debug, object argo_obj)
+{
+	if(i_Debug  >= argi_level)
+	{
+		DBG_TraceString("[MUS][DEBUG] ")
+		DBG_TraceString(args_debug)
+		if(argo_obj)
+		{
+			DBG_TraceString(" gao : ")
+			DBG_TraceObject(argo_obj)
+		}
+		DBG_TraceEOL()
+	}
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------
+procedure_local void MUS_Filter(int argi_signal, byref int argi_lastvalue, byref int argi_cpt)
+{
+	if(argi_signal)
+	{
+		if(argi_lastvalue) 
+			argi_cpt++
+		else
+			argi_cpt = 1
+			
+		argi_lastvalue = argi_signal 	
+	}
+	else
+	{
+		argi_lastvalue = 0
+		argi_cpt = 0
+	}
+}
+	
+//------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------
+procedure_local void MUS_SetPhase(int argi_Phase)
+{
+	mi_PrevPhase = mi_Phase
+	mi_Phase = argi_Phase
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------
+procedure_local int MUS_GetBetweenSilence(int argi_Phase)
+{
+	switch(argi_Phase)
+	{
+	case SND_Cte_MusPhase_Cool : return i_Cool_BetweenSilenceDuration
+	case SND_Cte_MusPhase_Stress : return i_Stress_BetweenSilenceDuration
+	case SND_Cte_MusPhase_Stalk :	return i_Stalk_BetweenSilenceDuration
+	case SND_Cte_MusPhase_Injure : return i_Injure_BetweenSilenceDuration
+	case SND_Cte_MusPhase_Fight :
+	case SND_Cte_MusPhase_BigFight :
+	case SND_Cte_MusPhase_Advantage : return i_Fight_BetweenSilenceDuration
+	default: return 0
+	}
+}
+		
+//------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------
+procedure_local int MUS_GetEndSilence(int argi_Phase)
+{
+	switch(argi_Phase)
+	{
+	case SND_Cte_MusPhase_Cool : return i_Cool_EndSilenceDuration
+	case SND_Cte_MusPhase_Stress : 	return  i_Stress_EndSilenceDuration
+	case SND_Cte_MusPhase_Stalk :	return  i_Stalk_EndSilenceDuration
+	case SND_Cte_MusPhase_Injure : return i_Injure_EndSilenceDuration
+	case SND_Cte_MusPhase_Fight : 
+	case SND_Cte_MusPhase_BigFight :
+	case SND_Cte_MusPhase_Advantage : return i_Fight_EndSilenceDuration
+	default: return 0
+	}
+}	
+
+//------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------
+procedure_local int MUS_GetBeginSpeed(int argi_Phase)
+{
+	switch(argi_Phase)
+	{
+	case SND_Cte_MusPhase_Cool : return  i_Cool_BeginSpeed
+	case SND_Cte_MusPhase_Stress : return  i_Stress_BeginSpeed
+	case SND_Cte_MusPhase_Stalk :	return   i_Stalk_BeginSpeed
+	case SND_Cte_MusPhase_Injure : return   i_Injure_BeginSpeed
+	case SND_Cte_MusPhase_Fight :
+	case SND_Cte_MusPhase_BigFight : return  i_Fight_BeginSpeed
+	case SND_Cte_MusPhase_Advantage : return  0
+	default: return  0
+	}
+}	
+
+//------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------
+procedure_local int MUS_GetBeginSound(int argi_Phase)
+{
+	switch(argi_Phase)
+	{
+	case SND_Cte_MusPhase_Cool : return  i_Cool_BeginSoundIndex
+	case SND_Cte_MusPhase_Stress : return   i_Stress_BeginSoundIndex
+	case SND_Cte_MusPhase_Stalk : return   i_Stalk_BeginSoundIndex
+	case SND_Cte_MusPhase_Fight : return  i_Fight_BeginSoundIndex
+	case SND_Cte_MusPhase_BigFight : return  i_BigFight_BeginSoundIndex
+	case SND_Cte_MusPhase_Injure : return  i_Injure_BeginSoundIndex
+	case SND_Cte_MusPhase_Advantage : return  i_Advantage_BeginSoundIndex
+	default: return  -1
+	}
+}	
+
+//------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------
+procedure_local float MUS_GetBeginSoundDelay(int argi_Phase)
+{
+		switch(argi_Phase)
+		{
+		case SND_Cte_MusPhase_Cool : return  f_Cool_BeginSoundDelay
+		case SND_Cte_MusPhase_Stress : return  f_Stress_BeginSoundDelay
+		case SND_Cte_MusPhase_Stalk :	return f_Stalk_BeginSoundDelay
+		case SND_Cte_MusPhase_Fight : return f_Fight_BeginSoundDelay
+		case SND_Cte_MusPhase_BigFight : return f_BigFight_BeginSoundDelay
+		case SND_Cte_MusPhase_Injure : return f_Injure_BeginSoundDelay
+		case SND_Cte_MusPhase_Advantage : return f_Advantage_BeginSoundDelay
+		default: return 0.0
+		}
+}	
+
+//------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------
+procedure_local float MUS_GetlAttTime(int argi_Phase)
+{
+	switch(argi_Phase)
+	{
+	case SND_Cte_MusPhase_Cool : return  (2.0*f_Cool_VolumeAttTime) 
+	case SND_Cte_MusPhase_Stress : return   (2.0*f_Stress_VolumeAttTime)
+	case SND_Cte_MusPhase_Stalk :	return   (2.0*f_Stalk_VolumeAttTime)
+	case SND_Cte_MusPhase_Injure : return (2.0*f_Injure_VolumeAttTime)
+	case SND_Cte_MusPhase_Fight : 
+	case SND_Cte_MusPhase_BigFight :
+	case SND_Cte_MusPhase_Advantage : return  (2.0*f_Fight_VolumeAttTime)
+	default: return 0.0
+	}
+}	
+
+//------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------
+procedure_local float MUS_GetAttVol(int argi_Phase)
+{
+	switch(argi_Phase)
+	{
+	case SND_Cte_MusPhase_Cool : return  f_Cool_VolumeAttenuation 
+	case SND_Cte_MusPhase_Stress : return   f_Stress_VolumeAttenuation
+	case SND_Cte_MusPhase_Stalk :	return   f_Stalk_VolumeAttenuation
+	case SND_Cte_MusPhase_Injure : return f_Injure_VolumeAttenuation
+	case SND_Cte_MusPhase_Fight : 
+	case SND_Cte_MusPhase_BigFight :
+	case SND_Cte_MusPhase_Advantage : return  f_Fight_VolumeAttenuation
+	default: return 0.0
+	}
+}	
+
+//------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------
+procedure_local void MUS_InjureFxSet(int unused)
+{
+	int ti
+	
+	mi_InjureFxDone = 1
+	
+	for(ti=SND_Cte_GrpSpecialFX; ti<SND_Cte_MasterGrp; ti++)
+	{
+		if( ti == SND_Cte_GrpA) continue
+		if( ti == SND_Cte_GrpMusic) continue
+		SND_M_FadeGroup(ti, Cte_InjureFadeVol, Cte_InjureFadeTime)
+	}
+	
+	// force the Fx
+	SND_FxSeti(SND_Cte_Fx_iCoreId, SND_Cte_FxCoreA)
+	SND_FxSeti(SND_Cte_Fx_iContext, SND_Cte_FxContextGlobal)
+	SND_FxSeti(SND_Cte_Fx_iMode, Cte_InjureFx_iMode)
+	SND_FxSeti(SND_Cte_Fx_iDelay, Cte_InjureFx_iDelay)
+	SND_FxSeti(SND_Cte_Fx_iFeedback, Cte_InjureFx_iFeedback)
+	SND_FxSetf(SND_Cte_Fx_fWetVol, Cte_InjureFx_fWetVol)
+	SND_FxSeti(SND_Cte_Fx_iWetPan, Cte_InjureFx_iWetPan)
+	SND_FxSeti(SND_Cte_Fx_iEnable, SND_Cte_FxState_Active)
+	SND_FxSeti(SND_Cte_Fx_iEnable, SND_Cte_FxState_Lock) // lock
+	
+	SND_FxSeti(SND_Cte_Fx_iCoreId, SND_Cte_FxCoreB)
+	SND_FxSeti(SND_Cte_Fx_iContext, SND_Cte_FxContextGlobal)
+	SND_FxSeti(SND_Cte_Fx_iMode, Cte_InjureFx_iMode)
+	SND_FxSeti(SND_Cte_Fx_iDelay, Cte_InjureFx_iDelay)
+	SND_FxSeti(SND_Cte_Fx_iFeedback, Cte_InjureFx_iFeedback)
+	SND_FxSetf(SND_Cte_Fx_fWetVol, Cte_InjureFx_fWetVol)
+	SND_FxSeti(SND_Cte_Fx_iWetPan, Cte_InjureFx_iWetPan)
+	SND_FxSeti(SND_Cte_Fx_iEnable, SND_Cte_FxState_Active)
+	SND_FxSeti(SND_Cte_Fx_iEnable, SND_Cte_FxState_Lock) // lock
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------
+procedure_local void MUS_InjureFxReset(int unused)
+{
+	int ti
+	
+	if(!mi_InjureFxDone) return
+	
+	mi_InjureFxDone = 0
+	// restore the fx
+	SND_FxSeti(SND_Cte_Fx_iCoreId, SND_Cte_FxCoreA)
+	SND_FxSeti(SND_Cte_Fx_iContext, SND_Cte_FxContextGlobal)
+	SND_FxSeti(SND_Cte_Fx_iEnable, SND_Cte_FxState_Unlock) //unlock
+	
+	SND_FxSeti(SND_Cte_Fx_iCoreId, SND_Cte_FxCoreB)
+	SND_FxSeti(SND_Cte_Fx_iContext, SND_Cte_FxContextGlobal)
+	SND_FxSeti(SND_Cte_Fx_iEnable, SND_Cte_FxState_Unlock) //unlock
+	@ "univ" SND_gi_GlobalCommand |= SND_Cte_exec_Fx
+
+	// unmute all but group A
+	for(ti=SND_Cte_GrpSpecialFX; ti<SND_Cte_MasterGrp; ti++)
+	{
+		if( ti == SND_Cte_GrpA) continue
+		if( ti == SND_Cte_GrpMusic) continue
+		SND_M_FadeGroup(ti, 1.0, Cte_InjureFadeTime)
+	}
+}

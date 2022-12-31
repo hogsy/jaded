@@ -1,0 +1,491 @@
+#include "CR_defines.var"
+
+//===================================================================================
+// Fixe le coef de rotation selon le type d'action et la taille du crabe
+//===================================================================================
+procedure_local void CR_Rotation_Coef_Set(int ti_type, int ti_force_zero)
+{
+	f_way_rotation_coef = af_rotation_coef[ti_type][i_modele]		// 0=MODELE_Geant ; 1=MODELE_Petit
+	if( ti_force_zero )
+		f_way_rotation_coef_cur = 0.0
+}
+
+procedure_local void CR_Rotation_Coef_Blend()
+{
+	f_way_rotation_coef_cur = MATH_FloatBlend(f_way_rotation_coef_cur, f_way_rotation_coef, 1.0 * TIME_GetDt())
+}
+
+procedure_local int CR_Strafe_Horiz_En_Cours()
+{
+	switch( ACT_ActionGet() )
+	{
+		// STRAFE DROITE
+		case 7 :		// tr Att -> StrafeD
+		case ACTION_StrafeD :
+		// STRAFE GAUCHE
+		case 11 : 	// tr Att -> StrafeG
+		case ACTION_StrafeG :
+			return vrai
+	}
+	return faux
+}
+
+procedure_local int CR_Strafe_45_En_Cours()
+{
+	switch( ACT_ActionGet() )
+	{
+		// ATTAQUE STRAFE 45° DROITE
+		case ACTION_TourneD45debut :
+		case ACTION_TourneD45marche :
+		case ACTION_TourneD45fin :
+		// ATTAQUE STRAFE 45° GAUCHE
+		case ACTION_TourneG45debut :
+		case ACTION_TourneG45marche :
+		case ACTION_TourneG45fin :
+			return vrai
+	}
+	return faux
+}
+
+
+//===================================================================================
+// Retourne vrai si le crabe est en strafe, faux sinon
+//===================================================================================
+procedure_local int CR_Strafe_En_Cours()
+{
+	if( CR_Strafe_Horiz_En_Cours() )
+		return vrai
+	if( CR_Strafe_45_En_Cours() )
+		return vrai
+	return faux
+}
+
+
+//===================================================================================
+// Retourne vrai si le crabe est en strafe, faux sinon
+//===================================================================================
+procedure_local int CR_Strafe_Attaque_En_Cours()
+{
+	switch( ACT_ActionGet() )
+	{
+		// ATTAQUE STRAFE 45° DROITE
+		case ACTION_TourneD45debut :
+		case ACTION_TourneD45marche :
+		case ACTION_TourneD45fin :
+		// ATTAQUE STRAFE 45° GAUCHE
+		case ACTION_TourneG45debut :
+		case ACTION_TourneG45marche :
+		case ACTION_TourneG45fin :
+			return vrai
+		default:
+			return faux
+	}
+}
+
+
+
+//===================================================================================
+// Initialise le mouvement de strafe
+//===================================================================================
+procedure_local void CR_Strafe_Begin(float tf_cote)
+{
+	if( tf_cote == 1.0 )
+		ACT_ActionSet(ACTION_StrafeG)
+	else if( tf_cote == -1.0 )
+		ACT_ActionSet(ACTION_StrafeD)
+	else
+	{
+		tf_cote = MATH_FloatSign(MATH_RandFloat(-1.0, 1.0))
+		DBG_Error("CR_Strafe_Begin(0.0) !!!???")
+	}
+	CR_Rotation_Coef_Set(Ci_rotation_coef_strafe, vrai)
+}
+
+//===================================================================================
+// Retourne le côté sur lequel le crabe se déplace (G=+1.0 / D=-1.0)
+//===================================================================================
+procedure_local float CR_Strafe_Cote_Get()
+{
+	switch( ACT_ActionGet() )
+	{
+		case 7 :		// tr Att -> StrafeD
+		case ACTION_StrafeD :
+			return -1.0
+		
+		case 11 : 	// tr Att -> StrafeG
+		case ACTION_StrafeG :
+			return 1.0
+			
+		default:
+			return 0.0
+	}
+}
+
+
+//===================================================================================
+// Collisions Molles
+//===================================================================================
+procedure_local void CR_Soft_Collision()
+{
+	int		ti_i
+	
+	float		tf_min_dist
+	float		tf_dist
+	float		tf_intersection_dist
+	float		tf_intersection_sqr_dist
+	float		tf_coef_friction
+
+	vector	tv_me_to_budy
+	vector	tv_col_move_axis
+
+	object	to_nearest_budy
+	
+	if( ! CR_Soft_Collision_Enabled() )
+		return
+	
+	tv_col_move_axis = Cv_NullVector
+	
+	tf_min_dist = 2.0
+	
+	for (ti_i = 0; ti_i < i_budy_nb; ti_i++)
+	{
+		tf_intersection_dist = tf_min_dist * f_zoom
+		tf_intersection_dist += tf_min_dist * @ao_budy[ti_i] OBJ_ZoomGet()
+		
+		tf_intersection_sqr_dist = tf_intersection_dist * tf_intersection_dist
+		
+		tv_me_to_budy = @ao_budy[ti_i] OBJ_PosGet() - OBJ_PosGet()
+		tv_me_to_budy.z = 0.0
+		
+		tf_dist = MATH_VecDotProduct(tv_me_to_budy, tv_me_to_budy) 
+		
+		if( @ao_budy[ti_i] AI_IsModel(get_PNJ_Crab_path) && @ao_budy[ti_i] CR_Soft_Collision_Enabled() )
+		{
+			if (tf_dist < tf_intersection_sqr_dist)
+			{
+				if( i_DBG_trace_soft_coll )
+				{
+					DBG_TraceObject(OBJ_Me())
+					DBG_TraceString(" soft coll avec ")
+					DBG_TraceObject(ao_budy[ti_i])
+					DBG_TraceEOL()
+				}
+				DBG_RenderVector(OBJ_PosGet(), @ao_budy[ti_i] OBJ_PosGet() - OBJ_PosGet(), color_jaune)
+	
+				tf_dist = MATH_FloatSqrt(tf_dist)
+	
+				if (tf_dist)
+					tv_me_to_budy /= tf_dist
+				else
+					tv_me_to_budy = OBJ_SightGet()
+	
+				tf_dist /= tf_intersection_dist
+				tf_dist = 1.0 - tf_dist
+				tv_me_to_budy *= tf_dist
+				
+				tv_col_move_axis -= tv_me_to_budy
+			}
+		}
+	}
+	
+	//DBG_RenderVector(OBJ_PosGet(), tv_col_move_axis, color_blanc)
+	tf_coef_friction = 40.0
+	tv_col_move_axis *= tf_coef_friction * DYN_FrictionGet()
+	tv_col_move_axis += DYN_TractionVectorGet()
+	DBG_RenderVector(OBJ_PosGet(), tv_col_move_axis, color_blanc)
+	DYN_TractionSet(tv_col_move_axis)
+}
+
+
+//=========================================================================================
+// Retourne le prochain WP du réseau d'apparition
+//=========================================================================================
+procedure_local object CR_Net_Get_Next_Wp(network tnet, object to_last_wp)
+{
+	f_way_rotation_coef_cur = 0.0		// raz coef rotation à chaque wp
+	if( ! to_last_wp )
+		return WAY_WPNearestOfOBJ(tnet, all, none, Ci_Filter_CapaFlag)		// 1er wp pas encore atteint
+	else
+		return WAY_NetNextWP(tnet, to_last_wp, 0, 0)									// 1er wp  déjà atteint => wp suvant
+}
+
+
+
+//===================================================================================
+// STRAFE REQUIN
+//===================================================================================
+procedure_local int CR_Strafe_Requin_Allowed(float tf_dist_to_target)
+{
+	if( i_positionnement_force_requin )
+		return vrai
+	if( f_fight_end_countdown )
+		return faux
+	if( i_fight_mode != Ci_fight_mode_target )
+		return faux
+	if( f_time_force_requin )			// déplacé avant le test d'attaque à 45°
+		return vrai
+	if( tf_dist_to_target >= f_strafe_requin_dist )
+	{
+		if( i_modele == MODELE_Petit && i_fight_comportement == Ci_fight_comportement_fight )
+			return faux
+		if( ! CR_Strafe_En_Cours() && ! f_strafe_requin_delay )
+			return vrai
+		if( CR_Strafe_En_Cours() && f_strafe_requin_duration )
+			return vrai
+	}
+	return faux
+}
+procedure_local void CR_Strafe_Requin_Delay_Random()
+{
+	f_strafe_requin_delay = MATH_RandFloat(f_strafe_requin_delay_min, f_strafe_requin_delay_max)
+}
+procedure_local void CR_Strafe_Requin_Delay_Reset()
+{
+	f_strafe_requin_delay = 0.0
+}
+procedure_local void CR_Strafe_Requin_Duration_Random()
+{
+	f_strafe_requin_duration = MATH_RandFloat(f_strafe_requin_duration_min, f_strafe_requin_duration_max)
+}
+procedure_local void CR_Strafe_Requin_Duration_Reset()
+{
+	f_strafe_requin_duration = 0.0
+}
+
+
+//===================================================================================
+// ATTAQUES STRAFE DE FACE
+//===================================================================================
+procedure_local int CR_Strafe_Attack_Face_Allowed(float tf_dist_to_target)
+{
+	if( f_fight_end_countdown )
+		return faux
+	
+	if( i_fight_mode != Ci_fight_mode_target )
+		return faux
+	
+//	if( i_modele == MODELE_Petit && o_fight_actor && ( ( ! CR_Strafe_En_Cours() && ! f_attack_strafe_face_delay && tf_dist_to_target >= f_attack_strafe_face_dist_deb ) || ( CR_Strafe_En_Cours() && f_attack_strafe_face_duration && tf_dist_to_target >= f_attack_strafe_face_dist_fin ) ) )
+//		return vrai
+	
+	if( i_modele == MODELE_Petit && i_fight_mode == Ci_fight_mode_target )
+	{
+		if( i_attaque45forcee_flag )
+		{
+			i_attaque45forcee_flag = faux
+			return vrai
+		}
+		
+		if( ! CR_Strafe_En_Cours() )
+		{
+//			if( tf_dist_to_target >= f_attack_strafe_face_dist_deb && tf_dist_to_target <= f_attack_strafe_face_dist_trop_loin)
+			if( tf_dist_to_target >= f_attack_strafe_face_dist_fin && tf_dist_to_target <= f_attack_strafe_face_dist_trop_loin)
+			{
+				// dist min dans tous les cas (si trop proche, pas de 45°)
+//				if( ! f_attack_strafe_face_delay && TIME_Get() > @get_global f_CRAB_last_attaque_45degre )
+				if( TIME_Get() > @get_global f_CRAB_next_attaque_45degre )
+			 		return vrai
+			 	if( i_fight_comportement == Ci_fight_comportement_fight )
+			 		return vrai		// peut repartir en attaque 45° s'il est en fight
+			}
+		}
+		else if( CR_Strafe_45_En_Cours() )
+		{
+			// strafe attaque face et pas côté
+			
+//			if( f_attack_strafe_face_duration && tf_dist_to_target >= f_attack_strafe_face_dist_fin )
+			if( tf_dist_to_target >= f_attack_strafe_face_dist_fin )		// continuer l'attaque à 45° jusqu'à ma cible
+				return vrai
+		}
+	}
+	
+	return faux
+}
+procedure_local void CR_Strafe_Attack_Face_Delay_Random()
+{
+	f_attack_strafe_face_delay = MATH_RandFloat(f_attack_strafe_face_delay_min, f_attack_strafe_face_delay_max)
+}
+procedure_local void CR_Strafe_Attack_Face_Delay_Reset()
+{
+	f_attack_strafe_face_delay = 0.0
+}
+procedure_local void CR_Strafe_Attack_Face_Duration_Random()
+{
+	f_attack_strafe_face_duration = MATH_RandFloat(f_attack_strafe_face_duration_min, f_attack_strafe_face_duration_max)
+}
+procedure_local void CR_Strafe_Attack_Face_Duration_Reset()
+{
+	f_attack_strafe_face_duration = 0.0
+}
+
+//==================================================================================
+// Calcule les N° d'axes pour s'orienter vers la destination
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// retourne : le N° d'axe primaire
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// tv_me_to_target = vecteur vers ma destination
+// ti_sec = le N° d'axe secondaire
+//==================================================================================
+procedure_local int CRAB_GRID_Get_Sight_ID(vector tv_me_to_target, byref int ti_sec)
+{
+	int		ti_main 
+	if (MATH_AbsFloat(tv_me_to_target.x) > MATH_AbsFloat(tv_me_to_target.y))
+	{
+		// Horiz
+		if (tv_me_to_target.x>=0)
+			ti_main = 3
+		else
+			ti_main = 1
+		if (tv_me_to_target.y>=0)
+			ti_sec = 2
+		else
+			ti_sec = 0
+	}
+	else
+	{
+		// Verti
+		if (tv_me_to_target.y>=0)
+			ti_main = 2
+		else
+			ti_main = 0
+		if (tv_me_to_target.x>=0)
+			ti_sec = 3
+		else
+			ti_sec = 1
+	}
+	return (ti_main)
+}
+
+
+procedure_local vector CRAB_GRID_PosGet(vector tvp_pos)
+{
+	vector	tvp_posz 
+	
+	tvp_posz = tvp_pos
+	tvp_pos = GRID_PosGet(tvp_pos)
+	tvp_pos.z = tvp_posz.z
+	return tvp_pos
+}
+
+//==================================================================================
+// Calcule le nombre de cases bloquées sur l'ensemble de cases testées
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// retourne : le nombre de cases bloquées
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// tvp_pos = position initiale du test de la grille
+// tvp_add = offset de décalage sur la grille pour tester la case suivante
+// tvp_nbr = nombre de cases à tester
+// ti_this_id = N° du côté testé actuellement (pour stockage)
+// ti_last_front = N° de référence du mur locké s'il y en a un
+//==================================================================================
+procedure_local int CRAB_GRID_Check(vector tvp_pos, vector tvp_add, int tvp_nbr, int ti_this_id, int ti_last_front, int ti_render)
+{
+	int			ti_loop
+	int			ti_count
+	int			ti_grid
+	int			ti_grid1
+	int			ti_i
+	int			ti_sol_ok
+	
+//	if (ti_this_id == ti_last_front)
+//	{
+//		tvp_nbr+= 2
+//		tvp_pos-= tvp_add
+//	}
+	
+	ti_count = 0
+	
+	tvp_pos = CRAB_GRID_PosGet(tvp_pos)
+	
+	for (ti_loop = 0; ti_loop < tvp_nbr; ti_loop++)
+	{
+		// test grille
+		ti_grid = GRID_CapaGet(tvp_pos)
+		ti_sol_ok = vrai
+		for(ti_i = 0; ti_i < i_grille_stop_nb; ti_i++)
+		{
+			if (ti_grid == ai_grille_stop[ti_i] )
+			{
+				if( i_modele == MODELE_Geant )
+				{
+					// TEST GRILLE 1 (BLOC ODE)
+					GRID_CurrentSet(1)
+					ti_grid1 = GRID_CapaGet(tvp_pos)
+					GRID_CurrentSet(0)
+					if( ti_grid1 != 6 ) // Ci_sol_cache_raptor
+					{
+						ti_sol_ok = faux
+						break
+					}
+				}
+				else
+				{
+					ti_sol_ok = faux
+					break
+				}
+			}
+		}
+		
+		if( ! ti_sol_ok )
+		{
+			ti_count ++
+			if( ti_render )
+				DBG_RenderVector(tvp_pos-cvector(0,0,1),cvector(0,0,5),color_rouge)
+		}
+		else if( ti_render )
+			DBG_RenderVector(tvp_pos-cvector(0,0,1),cvector(0,0,5),color_jaune)
+		
+		tvp_pos+= tvp_add
+	}
+	return (ti_count)
+}
+
+
+//================================================================================================
+// Retourne le cosinus du test devant/côté/derrière
+//================================================================================================
+procedure_local float CR_Way_Strafe_Cosinus_Get()
+{
+	if( f_time_force_requin || i_positionnement_force_requin || i_way_mode_strafe == Ci_way_mode_strafe_aucun_ou_requin || i_way_mode_strafe == Ci_way_mode_strafe_attack_face_marche )
+	{
+		// la cible est devant
+		return f_way_cos_attack_strafe
+	}
+	else
+	{
+		// la cible est sur le côté
+		return f_way_cos_strafe_exit
+	}
+}
+
+//============================================================================
+// Stocke la position courante comme étant la position où revenir qd il n'a plus de proie
+//============================================================================
+procedure_local void CR_AntreBackupPos()
+{
+	if( MATH_VecNullEpsilon(v_antre_pos) )
+	{
+		if( i_DBG_trace_etat )
+		{
+			DBG_TraceObject(OBJ_Me())
+			DBG_TraceString(" : backup de la position de mon antre")
+			DBG_TraceEOL()
+		}
+		v_antre_pos = OBJ_PosGet()
+	}
+}
+
+
+procedure_local int CR_PafDynReculEnabled()
+{
+	return vrai
+//	switch( i_etat_courant )
+//	{
+//		case ETAT_MORT :
+//		case ETAT_FADE :
+//			return faux
+//		default:
+//			return vrai
+//	}
+}
+
+

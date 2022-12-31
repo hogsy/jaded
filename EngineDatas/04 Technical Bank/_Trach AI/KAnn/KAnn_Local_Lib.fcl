@@ -1,0 +1,464 @@
+Include_UltraProcedure_Header
+
+#include "KAnn_defines.var"
+
+
+//==========================================================================================
+// Choix du WP vers ou se diriger quand ANN est au sol (déposée par KONG ou tombée de l'épaule de KONG) VERSION SIMON
+//==========================================================================================
+procedure_local object KAnn_Choix_du_WP()
+{
+	int				ti_i
+	int				ti_type
+	float			tf_dist
+	float			tf_wp_best_dist
+	object		to_WP
+	object		to_best_WP
+	network		tn_net
+	float			tf_delta_z
+
+	to_best_WP = nobody
+
+	if( msg_KK_pose_ANN.msg_id != 0 )
+	{
+		// KONG a déposé ANN sur un wp et lui a communiqué ce wp
+		i_cine_ANN_attack_played = faux
+		to_best_WP = msg_KK_pose_ANN.msg_gao1
+	}
+	else
+	{
+		// choix du WP dans le list manager
+		tf_wp_best_dist = Cf_Infinit
+		for( ti_i = 0; ti_i < @get_list_manager i_ann_kk_wp_safe_nb; ti_i++ )
+		{
+			to_WP = @get_list_manager ao_ann_kk_wp_safe[ti_i]
+			
+			if( @to_WP OBJ_FlagsStatusGet() && 
+				@to_WP OBJ_CapaTest(WP_Capa_Disable_Entrypoint) == 0)
+			{		
+				tn_net = @to_WP WAY_NetOfObj()
+				
+				tf_dist = OBJ_SqrDist(to_WP)
+				
+				tf_delta_z = MATH_AbsFloat(OBJ_PosGet().z - @to_WP OBJ_PosGet().z)
+			
+				if( tf_dist < Cf_safe_wp_dist_max && tf_dist < tf_wp_best_dist ) // && @to_WP WAY_NetOfObj() != n_current_net)
+				{
+					// if action pilier and more than 10 meters higher than ann, dont choose wp
+					if ( ! (@to_WP OBJ_FlagsIdentityTest( OBJ_C_IdentityFlag_DesignStruct) &&
+						to_WP.des_int1 == WP_Action_Colonne &&
+						  ! @to_WP COL_BV_PivotCollide(OBJ_Me())))
+					{	
+						to_best_WP = to_WP
+						tf_wp_best_dist = tf_dist
+					}
+				}
+			}
+		}
+	}
+	
+	i_link_action_type = 0
+	
+	return to_best_WP
+}
+
+
+
+//===========================================================================================
+// Force le niveau de vie de ANN
+//===========================================================================================
+procedure_local void KAnn_Life_Set(int ti_life)
+{
+	@"univ" LIFE_HumainEtat[ i_id_humain ] = ti_life
+	i_life_state = ti_life
+}
+
+
+//===========================================================================================
+// Affichage d'un texte
+//==========================================================================================
+//procedure_local void KAnn_Texte(int ti_texte)
+//{
+////	SPEECH_M_RqHuman(i_id_humain, ti_texte)
+//}
+
+
+//==========================================================================================
+// Génération de l'événement de vision
+//==========================================================================================
+procedure_local void KAnn_MakeVision()
+{
+	float	tf_visibility
+	int 	ti_context
+	int		ti_ground
+	int		ti_capa
+	float	tf_liferatio
+	int 	ti_grabType
+	
+	if (	(i_etat_courant == ETAT_Action_Wait || 
+		i_etat_courant == ETAT_Action  ||
+		i_etat_courant == ETAT_paf) &&
+		i_action)
+			ti_context  = C_EVENT_CONTEXT_DEBOUT			// sur le wp, en fight ou pas loin du wp : visible par REX et raptors	
+	else if (i_etat_courant == ETAT_grabbed_KK)
+	{
+		 
+		if(MSG_GlobalIsValid( amid_SRV_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT]))
+		{
+			ti_grabType = LNK_KKGrabObject_TypeGet(amid_SRV_LIAISON_ID[Ci_LNK_KKGRAB_OBJECT])
+			if ( 	ti_grabType == Ci_KKGrabObject_Porte_Epaule ||
+					ti_grabType == Ci_KKGrabObject_Porte_Epaule_TroncD ||
+					ti_grabType == Ci_KKGrabObject_Porte_Epaule_TroncG )
+			{
+				// ANN is on the shoulder
+				ti_context  = C_EVENT_CONTEXT_ON_KONG_SHOULDER			// visible par REX et raptors
+			}
+			else
+			{
+				ti_context  = C_EVENT_CONTEXT_ON_KONG_HAND		// pas visible REX et raptors			
+			}	
+		}
+	}
+	else if (i_etat_courant == ETAT_sacrifice)
+		ti_context  = C_EVENT_CONTEXT_ON_KONG_HAND		// pas visible REX et raptors			
+	else
+		ti_context  = C_EVENT_CONTEXT_ACCROUPI		// pas visible REX et raptors
+	
+	// Type de terrains spéciaux indiqués sur la deuxieme grille
+	ti_ground = i_ground_ID
+	tf_visibility = C_EVENT_Visibility_Full_Mvt
+	ti_context += ti_ground * 10
+	
+	switch( i_life_state )
+	{
+		case Life_ETAT_Normal :
+		case Life_ETAT_Conval :
+			tf_liferatio = 1.0
+			break
+		
+		case Life_ETAT_Mort :
+			tf_liferatio = 0.0
+			break
+		
+		case Life_ETAT_Agonisant :
+			tf_liferatio = Cf_Life_Agonisant
+			break
+	}
+
+	EVENT_AddEventVision( i_id_humain, C_EVENT_FILTER_Marin, OBJ_Me(), Cf_EVENT_Duree_1Trame, OBJ_PosGet(), tf_visibility, Cf_Rayon_De_Vision, f_interet, ti_context, 0, tf_liferatio)
+}
+
+procedure_local int KAnn_Best_Interet_Get(byref messageid msgid)
+{
+	message tm_filter
+	messageid tmid_interet_ID
+	int ti_rank
+		
+	MSG_SetNull(tm_filter)
+	ti_rank = -1
+	tm_filter.msg_gao1 = OBJ_Me()
+	for (	tmid_interet_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tm_filter);
+			MSG_GlobalIsValid(tmid_interet_ID);
+			tmid_interet_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tm_filter) )
+	{
+		msgid = tmid_interet_ID
+		return vrai
+	}	
+	
+	return faux
+}
+
+procedure_local int KAnn_IsRaptorAttackingMe()
+{
+	message tm_filter
+	messageid tmid_interet_ID
+	int ti_rank
+	int ti_interestType
+	object to_pere
+	
+	MSG_SetNull(tm_filter)
+	ti_rank = -1
+	tm_filter.msg_gao1 = OBJ_Me()
+	for (	tmid_interet_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tm_filter);
+			MSG_GlobalIsValid(tmid_interet_ID);
+			tmid_interet_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tm_filter) )
+	{
+		to_pere = EVENT_PereGet(tmid_interet_ID)
+		if (@to_pere AI_IsModel(get_PNJ_KRaptor_path))
+		{
+			if (EVENT_InteretStatusGet(tmid_interet_ID) == C_EVENT_InteretStatusAttack)
+				return vrai
+		}
+	}
+	return faux
+}
+
+procedure_local object KAnn_GetNextWPOnNetwork()
+{
+	float tf_dot, tf_best_dot
+	int ti_i, ti_num_link 
+	vector tv_dir_target, tv_dir_wp
+	object to_next_wp, to_best_wp
+	int ti_action
+	float tf_prio
+
+	to_best_wp = nobody
+	if (n_current_net)
+	{
+		tf_best_dot = Cf_Infinit
+		ti_num_link = WAY_GetNumLinks(n_current_net, o_safe_wp)
+		
+		if (o_target)
+			tv_dir_target = @o_target OBJ_PosGet() - OBJ_PosGet()
+		else
+			tv_dir_target = - OBJ_SightGet()	
+		
+		if ( ! MATH_VecNullEpsilon(tv_dir_target))
+			MATH_VecSetNormalize(tv_dir_target)
+		
+		if (ti_num_link == 0)
+		{
+			to_best_wp = KAnn_Choix_du_WP()
+			if (to_best_wp)
+				n_current_net = @to_best_wp WAY_NetOfObj()	
+		}
+		
+		for (ti_i = 0; ti_i < ti_num_link; ti_i ++)
+		{
+			to_next_wp = WAY_NetNextWP(n_current_net,o_safe_wp,NetNextWP_Mode_choix_de_lindice, ti_i)	
+			// si pas un wp d'action ou WP d'action wait
+			if ( to_next_wp && ( ! @to_next_wp OBJ_FlagsIdentityTest( OBJ_C_IdentityFlag_DesignStruct)  ||
+				(@to_next_wp OBJ_FlagsIdentityTest( OBJ_C_IdentityFlag_DesignStruct) && to_next_wp.des_int1 == 0)) )
+			{
+				tv_dir_wp = @to_next_wp OBJ_PosGet() - @o_safe_wp OBJ_PosGet()
+				
+				if ( ! MATH_VecNullEpsilon(tv_dir_wp) )
+					MATH_VecSetNormalize(tv_dir_wp)
+				
+				tf_dot = MATH_VecDotProduct(tv_dir_target,tv_dir_wp)
+				if (tf_dot < tf_best_dot)
+				{
+					tf_best_dot = tf_dot
+					to_best_wp = to_next_wp
+				}
+			}
+			// un wp d'action : est-il important?
+			else if (@to_next_wp OBJ_CapaTest(WP_Capa_Action) && ! OBJ_CapaTest(Capa_Disable_Action))
+			{
+				ti_action = to_next_wp.des_int1
+				tf_prio = 0.0
+				if (ti_action == WP_Action_Javelin_Get && ! i_has_weapon && (to_next_wp.des_desflags & 0xF) > 0)  
+					tf_prio = WP_Action_Javelin_Get_Prio 
+				else if (ti_action == WP_Action_Fire && i_has_weapon && @get_Arme_Lance_path o_projectile mi_flamme == 0) 
+					tf_prio = WP_Action_Fire_Prio
+				else if (ti_action == WP_Action_Interaction_Attack && o_old_safe_wp != to_next_wp) 
+					tf_prio = WP_Action_Interaction_Attack_Prio
+			  	else if (ti_action ==WP_Action_Teleport )
+			  		tf_prio = WP_Action_Teleport_Prio
+			  	else if (ti_action == WP_Action_Javelin_Throw && i_has_weapon && (to_next_wp.des_desflags & 0xF) > 0) 
+			  		tf_prio = WP_Action_Javelin_Throw_Prio
+			  	else if (ti_action == WP_Action_Cache ) 
+			  		tf_prio = WP_Action_Cache_Prio
+			  	else if (ti_action == WP_Action_Interaction_Cache) 
+			  		tf_prio = WP_Action_Interaction_Cache_Prio
+			  	if (tf_prio != 0.0)
+			  	{
+					if ( - tf_prio < tf_best_dot)
+					{
+						tf_best_dot = - tf_prio
+						to_best_wp = to_next_wp
+					}
+				}
+			}
+		}
+	}
+	return to_best_wp
+}
+
+procedure_local void KAnn_Set_Target(object target)
+{
+	if (o_target != target)
+	{
+		o_target = target	
+	
+		ao_last_target[2]  = 	ao_last_target[1]  
+		ao_last_target[1]  = 	ao_last_target[0]  
+		ao_last_target[0]  = 	o_target
+	
+		ao_last_target_time[2] = ao_last_target_time[1]
+		ao_last_target_time[1] = ao_last_target_time[0]
+		ao_last_target_time[0] = TIME_Get()
+
+		o_target = target
+	}
+}
+
+procedure_local void KAnn_UpdateTarget()
+{
+	object	to_kong_attacker
+	object	to_interet_sender
+	object	to_target
+	messageid	tmid_interet
+	
+	to_kong_attacker = @o_KONG Proc_KK_Need_Help(0.6)
+	
+	if( KAnn_Best_Interet_Get(tmid_interet) )
+		to_interet_sender = MSG_GlobalGetSender(tmid_interet)
+	else
+		to_interet_sender = nobody
+	
+	to_target = nobody
+	
+	if ( OBJ_CapaTest(CAPA_No_Javelin_Attack) )
+		i_canThrowJavAtTgt = faux
+	else
+		i_canThrowJavAtTgt = vrai
+	
+	if (to_kong_attacker)
+		to_target = to_kong_attacker		// ennemy that is finishing kong 
+	else if( ao_SRV[Ci_LNK_INTERACTION] && MSG_GlobalIsValid(amid_SRV_LIAISON_ID[Ci_LNK_INTERACTION]) )
+		to_target = ao_SRV[Ci_LNK_INTERACTION]
+	else if (o_javelin_target)
+	{
+		// if javelin target is not dead
+		if ( ! @o_javelin_target	OBJ_CapaTest(OBJ_Capa_15))
+			to_target = o_javelin_target		// target to throw javelin to
+	}
+	else if (to_interet_sender)
+	{		
+		to_target = to_interet_sender		// ennemy that is targetting me
+		if ( KAnn_IsRaptorAttackingMe() )
+			i_canThrowJavAtTgt = faux	// wait for interaction 
+	}
+	
+	// si ann a peur et que sa cible est nulle ou que : ca cible est pas kong, qu'elle est trop loin et que kong est tout pres, utiliser kong comme cible (c simple!)
+	if (i_fear && (to_target == nobody || (to_target && to_target != o_KONG && MATH_VecDistance(OBJ_PosGet(),@to_target OBJ_PosGet()) >= @get_global f_flee_distance_enemy &&  
+		MATH_VecDistance(OBJ_PosGet(),@o_KONG OBJ_PosGet())  < @get_global f_flee_distance_kong)))
+	{
+		to_target = o_KONG
+	}
+	
+	KAnn_Set_Target(to_target)
+	o_vision_target = o_target
+	
+	i_freezeSight = faux		// will be set to vrai if appropriate later
+}
+
+
+// KANN DEATH TIMER ===============================================
+procedure_local void KAnn_Interaction_Attack_Reset()
+{
+	f_interaction_fight_time_cpt = 0.0
+	i_interaction_fight_1st_attack_speech = faux
+	i_interaction_fight_middle_timer_speech = faux
+	i_interaction_fight_init_speech = faux
+	f_interaction_fight_change_actor_delay = 0.0
+}
+procedure_local float KAnn_Death_Timer_Get()
+{
+	return @get_global f_time_KK_ANN_avant_la_mort
+}
+procedure_local void KAnn_Death_Timer_Set(float tf_float)
+{
+	@get_global f_time_KK_ANN_avant_la_mort = tf_float
+}
+procedure_local int KAnn_Death_Timer_Is_Activated()
+{
+	if( KAnn_Death_Timer_Get() != Cf_KAnn_Death_Timer_Max_Value )
+		return vrai
+	else
+		return faux
+}
+procedure_local void KAnn_Death_Timer_Reset()
+{
+	KAnn_Death_Timer_Set(Cf_KAnn_Death_Timer_Max_Value)
+	i_interaction_timer_speech_done = faux
+	KAnn_Interaction_Attack_Reset()
+}
+procedure_local void KAnn_Death_Timer_Countdown()
+{
+	float		tf_time
+	if( ! OBJ_CapaTest(CAPA_Unlimited_Interaction_Fight) )
+	{
+		if( i_action_id == WP_Action_Interaction_Attack || 	// Bat Raptors Scolos et Spiders
+            i_action_id == WP_Action_Interaction_Cache || 	// KTREX
+            i_etat_courant == ETAT_grabbed_bat ||				// Big Bat
+			@ao_SRV[Ci_LNK_INTERACTION] AI_IsModel(get_PNJ_KSpider_path) )		// Spiders mais pas en interaction fight
+		{
+			tf_time = KAnn_Death_Timer_Get()
+			tf_time -= MATH_FloatMin(tf_time, TIME_GetDt())
+			KAnn_Death_Timer_Set(tf_time)
+			if ( ! i_interaction_timer_speech_done && tf_time < 2.0)
+			{
+				i_interaction_timer_speech_done = vrai
+//				SPEECH_M_RqHuman(C_ID_Ann, GeneKAnn_C_danger_fear)
+			}
+		}
+	}
+}
+// KANN DEATH TIMER ===============================================
+
+procedure_local void KAnn_Set_Safe_Wp(object safe_wp)
+{
+	o_old_safe_wp = o_safe_wp
+	o_safe_wp = safe_wp
+	
+	if (o_safe_wp )
+		n_current_net = @o_safe_wp WAY_NetOfObj()
+	else 
+		n_current_net = nonet
+		
+	i_wp_just_changed = 1
+}
+
+procedure_local int KAnn_Is_Cornered()
+{
+	if (ao_last_target[0] == nobody || ao_last_target[2] == nobody)
+		return 0
+	else if (ao_last_target[0] == ao_last_target[2] )
+	{
+		if (ao_last_target_time[2] - ao_last_target_time[0] < 5.0)
+			return 1
+	}
+	
+	return 0
+}
+
+procedure_local void KAnn_Test_Capa_Force_Paf(object to_actor)
+{
+	if (OBJ_CapaTest(Capa_Ann_Can_Paf))
+		EVENT_AddEventPaf(C_EVENT_FILTER_Enemy, C_PAF_KK_Fort, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_actor, 0.0 * PAF_Unit, OBJ_SightGet())
+}
+
+
+// Return 1 si l'action en cours a été interrompue car Kong est trop proche
+procedure_local int KAnn_Action_Kong_Proche()
+{
+	if( o_target && o_target == o_KONG && MATH_VecDistance(OBJ_PosGet(), @o_target OBJ_PosGet()) < 10.0 )
+	{
+		// Kong proche
+		if( @o_KONG Proc_KK_Frappe() 
+			|| @o_KONG Proc_KK_Test_Mode(ETAT_Kong_finish) 
+			|| @o_KONG Proc_KK_Test_Mode(ETAT_Kong_finished) 
+			|| @o_KONG Proc_KK_Test_Mode(ETAT_Kong_grab) 
+			|| @o_KONG Proc_KK_Test_Mode(ETAT_Kong_desequilibre) )
+		{
+			// Kong en fight
+			ACT_ActionSet(Ann_Kong_Frappe_SeProtege)
+			return vrai
+		}
+		else
+		{
+			// Kong proche mais pas en fight
+//			if( i_etat_courant == ETAT_Action )		// appelé uniquement dans l'état action (cf commentaire etat follow network)
+//			{
+				ACT_ActionSet(Ann_Cache_Att)
+				return vrai
+//			}
+//			else
+//				return faux
+		}
+	}
+	return faux
+}
+

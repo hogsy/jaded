@@ -1,0 +1,25 @@
+
+procedure_ultra vector	PROC_Champi_StreamGet( vector	pv_pos, byref int pi_asp)
+{
+	pi_asp = faux
+	
+	return Cv_NullVector
+	
+	if (i_want_to_jump)
+	{		
+		if (@o_tgt DYN_SpeedGetVector().z < 0.0)
+			i_want_to_jump = 0
+			
+		return (i_want_to_jump * 20.0 * OBJ_BankingGet())
+	}
+	
+	else if (i_want_to_bounce)
+	{
+		if (@o_tgt DYN_SpeedGetVector().z < 0.0)
+			i_want_to_bounce = 0
+		
+		return i_want_to_bounce * 5.0 * OBJ_BankingGet()
+	}
+	
+	return Cv_NullVector
+}

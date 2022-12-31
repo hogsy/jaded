@@ -1,0 +1,2076 @@
+Include_UltraProcedure_Header
+
+#include "CR_defines.var"
+
+//================================================================================
+// Retourne vrai si le crabe est en position ouverte (carapace en arrière), faux sinon
+//================================================================================
+procedure_local int CR_IsVulnerable()
+{
+//	if( i_etat_courant == ETAT_TEST )
+//		return vrai
+	if( ACT_CustomBitTest(CBit_Vulnerable_Devant) || f_time_hyst_carapace < Cf_time_hyst_carapace )
+		return vrai
+	return faux
+}
+
+
+//=============================================================================================
+// Modification de la taille du taggage sur la grille
+//=============================================================================================
+procedure_local void CR_TagSize(int ti_on)
+{
+	vector		tv_tag_min
+	vector	 	tv_tag_max
+	
+	if( ti_on )
+	{
+		if( i_modele == MODELE_Geant )
+		{
+			tv_tag_min = cvector(-2,-1 ,0)
+			tv_tag_max = cvector(2,3,0)
+		}
+		else
+		{
+			tv_tag_min = cvector(-0.5,-0.5,0)
+			tv_tag_max = cvector(0.5,0.5,0)
+		}
+	}
+	else
+	{
+		tv_tag_min = Cv_NullVector
+		tv_tag_max = Cv_NullVector
+	}
+	macro_change_tag_size(tv_tag_min, tv_tag_max)
+}
+
+
+//=============================================================================================
+// Ajout d'un acteur vu (ou détecté) POUR LES HUMAINS UNIQUEMENT !!!!
+//=============================================================================================
+procedure_local int CR_Perceived_Actor_Add(object to_actor, byref messageid tmid_vision_event)
+{
+	int			ti_index
+	int			ti_ok
+	
+	ti_ok = faux
+	ti_index = ARR_ObjSearch(&ao_perceived_actor[0], i_perceived_actor_nb, to_actor)
+	if (ti_index == -1)
+	{
+		if( ! MSG_GlobalIsValid(tmid_vision_event) )
+			tmid_vision_event = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility, to_actor, nobody)
+		if( MSG_GlobalIsValid(tmid_vision_event) )
+		{
+			ti_index = i_perceived_actor_nb
+			amid_perceived_actor[ti_index] = tmid_vision_event
+			i_perceived_actor_nb ++
+			ao_perceived_actor[ti_index] = to_actor
+			ti_ok = vrai
+		}
+	}
+	else
+	{
+		tmid_vision_event = amid_perceived_actor[ti_index]
+		ti_ok = vrai
+	}
+	return(ti_ok)
+}
+
+
+//===================================================================================
+// Test acteur vu cette trame
+//===================================================================================
+procedure_local int CR_Perceived_Actor_Check(object po_actor, byref messageid pmid_vision)
+{
+	int						ti_i
+	int						ti_vu
+	
+	if( ! po_actor )
+		return faux
+	
+	ti_vu = faux
+	AI_Execute("CR_exec_CHECK_Vision")		// si ce n'a pas déjà été fait
+	
+	if( i_perceived_actor_nb )
+	{
+		for( ti_i = 0; ti_i < i_perceived_actor_nb; ti_i++)
+		{
+			if( ao_perceived_actor[ti_i] == po_actor )
+			{
+				pmid_vision = amid_perceived_actor[ti_i]
+				ti_vu = vrai
+				break
+			}
+		}
+	}
+	return ti_vu
+}
+
+
+//===================================================================================
+// Création / Mise à jour d'un intérêt
+//===================================================================================
+procedure_local void CR_Interet_Update(byref messageid pmid_interet, int pi_status, object po_interet_target, byref messageid pmid_vision)
+{
+	float		tf_interet
+	vector	tv_pos
+	
+	if( ! po_interet_target )
+		return
+	
+	// Test event vision
+	if( ! MSG_GlobalIsValid(pmid_vision))
+		pmid_vision = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility, po_interet_target, nobody)
+	
+	// Infos event vision
+	if( MSG_GlobalIsValid(pmid_vision))
+	{
+		tf_interet = EVENT_VisionInteretGet(pmid_vision)
+		tv_pos = EVENT_PositionGet(pmid_vision)
+	}
+	else
+	{
+		tf_interet = Cf_Proie_Default_Interet
+		tv_pos = @po_interet_target OBJ_PosGet()
+	}
+	
+	// Test event intérêt
+	if( ! MSG_GlobalIsValid(pmid_interet) )
+	{
+		// Création event intérêt
+		pmid_interet = EVENT_AddEventInteret(OBJ_Me(), Cf_CRAB_Interet_Duration, tf_interet, tv_pos, po_interet_target)
+		EVENT_InteretVisionIDSet(pmid_interet, i_id_modele)
+	}
+	else
+	{
+		// Update event intérêt
+		EVENT_LifeSet(pmid_interet, Cf_CRAB_Interet_Duration)
+		EVENT_InteretTargetSet(pmid_interet, po_interet_target)
+		EVENT_InteretPositionSet(pmid_interet, tv_pos)
+		EVENT_InteretSet(pmid_interet, tf_interet)
+	}
+	EVENT_InteretSeenTimeSet(pmid_interet, TIME_Get())
+	if( pi_status != -1 )
+		EVENT_InteretStatusSet(pmid_interet, pi_status)
+}
+
+
+//=============================================================================================
+// Ajout d'un pote :)
+//=============================================================================================
+procedure_local void CR_Budy_Add(messageid EVT_Visibility_ID)
+{
+	int			ti_territory
+	object	to_actor	
+
+	to_actor = EVENT_PereGet(EVT_Visibility_ID)
+	if (to_actor != OBJ_Me())
+	{
+		ao_budy[i_budy_nb] = to_actor
+		amid_budy_vision_event[i_budy_nb] = EVT_Visibility_ID
+		i_budy_nb++
+	}
+}
+
+
+//=============================================================================================
+// Retourne vrai si le paf induit un changement d'état
+//=============================================================================================
+procedure_local int CR_Paf_Check_Change_Etat()
+{
+	if( o_paf_actor && (i_paf_force_anim || i_paf_important_flag || i_paf_moyen_flag || i_paf_accumulation || ! f_HP_cur) )
+		return vrai
+	else
+		return faux
+}
+
+
+//=============================================================================================
+// Retourne vrai si l'action courante est une action de paf, faux sinon
+//=============================================================================================
+procedure_local int CR_Is_Paf_Action()
+{
+	if( ACT_ActionIsTransition() )
+		return vrai	// pour éviter des bugs
+	else
+	{
+		switch( ACT_ActionGet() )
+		{
+			case ACTION_Paf_Standard :
+			case ACTION_Paf_Mortel :
+			case ACTION_Paf_Mortel_Variante :
+			case ACTION_Paf_Lance_deb :
+			case ACTION_Paf_Lance_fin_std :
+			case ACTION_Paf_Lance_fin_Mort :
+				return vrai
+				
+			default:
+				return faux
+		}
+	}
+}
+
+
+//===================================================================================
+// Ajoute un acteur dans le tableau des acteurs paffés
+//===================================================================================
+procedure_local void CR_Paffed_Actor_Add(object to_actor)
+{
+	ao_col_paf_actor[i_col_paf_nb] = to_actor
+	af_col_paf_time[i_col_paf_nb] = 1.5
+	i_col_paf_nb++
+//	CR_Uncol_Actor_Add(to_actor)		// ne pas collisionner un acteur que je viens de paffer (paf colmap)
+}
+
+
+//===================================================================================
+// Supprime les acteurs dans le tableau des acteurs paffés
+//===================================================================================
+procedure_local void CR_Paffed_Actor_Check_Time()
+{
+	int		ti_i
+	int		ti_k
+	
+	for( ti_i = 0; ti_i < i_col_paf_nb; ti_i++)
+	{
+		af_col_paf_time[ti_i] -= MATH_FloatMin(af_col_paf_time[ti_i], TIME_GetDt())
+		if( ! af_col_paf_time[ti_i] && ( ! MSG_GlobalIsValid(mid_grab) || o_fight_actor != ao_col_paf_actor[ti_i]) )
+		{
+//			CR_Uncol_Actor_Del(ao_col_paf_actor[ti_i])		// suppr de l'uncol avec cet acteur
+			for(ti_k = ti_i; ti_k < i_col_paf_nb; ti_k++)
+			{
+				af_col_paf_time[ti_k] = af_col_paf_time[ti_k + 1]
+				ao_col_paf_actor[ti_k] = ao_col_paf_actor[ti_k + 1]
+			}
+			i_col_paf_nb--
+		}
+	}
+}
+
+
+//===================================================================================
+// Ajoute un paf (pour le test de cumul des petit pafs)
+//===================================================================================
+procedure_local void CR_Paf_Cumul_Add(float tf_dmg)
+{
+	if( CR_Is_Paf_Action() )
+		return
+	
+	if( i_paf_cumul_nb < Ci_paf_cumul_max )
+	{
+		af_paf_cumul_dmg[i_paf_cumul_nb] = tf_dmg
+		af_paf_cumul_time[i_paf_cumul_nb] = 0.75
+		i_paf_cumul_nb++
+	}
+}
+
+
+//===================================================================================
+// Supprime un paf pour le test de cumul des petit pafs
+//===================================================================================
+procedure_local void CR_Paf_Cumul_Del(int ti_indice)
+{
+	int			ti_k
+	
+	for(ti_k = ti_indice; ti_k < i_paf_cumul_nb; ti_k++)
+	{
+		af_paf_cumul_time[ti_k] = af_paf_cumul_time[ti_k + 1]
+		af_paf_cumul_time[ti_k + 1] = 0.0
+		af_paf_cumul_dmg[ti_k] = af_paf_cumul_dmg[ti_k + 1]
+		af_paf_cumul_dmg[ti_k + 1] = 0.0
+	}
+	i_paf_cumul_nb--
+}
+
+
+//===================================================================================
+// Supprime un paf conservé pour le cumul
+//===================================================================================
+procedure_local void CR_Paf_Cumul_Check_Time()
+{
+	int		ti_i
+	int		ti_k
+	
+	for( ti_i = 0; ti_i < i_paf_cumul_nb; ti_i++)
+	{
+		af_paf_cumul_time[ti_i] -= MATH_FloatMin(af_paf_cumul_time[ti_i], TIME_GetDt())
+		if( ! af_paf_cumul_time[ti_i] )
+			CR_Paf_Cumul_Del(ti_i)
+	}
+}
+
+
+//===================================================================================
+// Retourne vrai si la somme des petits pafs cumulés permet de faire un paf moyen, faux sinon
+//===================================================================================
+procedure_local int CR_Paf_Cumul_Check_Cumul()
+{
+	int		ti_i
+	float	tf_cumul
+	
+	tf_cumul = 0.0
+	if( i_paf_cumul_nb > 1 )
+	{
+		// cumul uniquement avec au moins 2 pafs, pas avec un seul paf assez gros
+		for( ti_i = 0; ti_i < i_paf_cumul_nb; ti_i++)
+		{
+			tf_cumul += af_paf_cumul_dmg[ti_i]
+			if( tf_cumul >= f_paf_cumul_dmg )
+			{
+				// suppr de tous les pafs cumulés
+				while( i_paf_cumul_nb )
+				{
+					CR_Paf_Cumul_Del(0)
+				}
+				return vrai
+			}
+		}
+	}
+	return faux
+}
+
+
+//===================================================================================
+// Impose un délai pour pouvoir intimider de nouveau
+//===================================================================================
+procedure_local void CR_Intimidation_Delay_Random()
+{
+	f_intimidation_delay = MATH_RandFloat(f_intimidation_delay_min, f_intimidation_delay_max)
+}
+
+
+//===================================================================================
+// Impose un délai pour pouvoir intimider de nouveau
+//===================================================================================
+procedure_local void CR_Intimidation_Delay_Reset()
+{
+	f_intimidation_delay = 0.0
+}
+
+
+//=================================================================================================
+// Retourne le nb de msg correspondant
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// po_actor : acteur cible de l'intérêt
+// pi_pere : si vrai, le gao courant a le droit d'être le père du msg d'intérêt recherché. Si faux, les msg d'intérêt du gao courant sont exclus
+// pi_statut : si différent de -1, recherche un msg avec le statut indiqué. Si -1, n'importe quel statut
+// pi_meme_IA : si vrai, recherche un msg dont le père a la même IA que le gao courant. Si faux, pas de test d'IA
+// ti_plus_proche_only : si vrai, ne comptabilise que les persos plus proches de la cible que moi
+//=================================================================================================
+procedure_local int CR_Check_Presence_Interet_Statut_Model( object po_actor, int pi_pere, int pi_statut, int pi_meme_IA, int ti_plus_proche_only)
+{
+	int					ti_rank
+	message		tm_filter
+	messageid		tmid_interet_ID
+	object			to_pere
+	int					ti_cpt
+	
+	ti_cpt = 0
+	ti_rank = -1
+	MSG_SetNull(tm_filter)
+//	if( pi_meme_IA )
+//		tm_filter.msg_int3 = C_ID_Crab
+	tm_filter.msg_gao1 = po_actor
+	
+	for (	tmid_interet_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tm_filter);
+			MSG_GlobalIsValid(tmid_interet_ID);
+			tmid_interet_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Interet, &ti_rank, tm_filter) )
+		{
+			to_pere = EVENT_PereGet(tmid_interet_ID)
+			if( ! ti_plus_proche_only || OBJ_SqrDist(po_actor) > @to_pere OBJ_SqrDist(po_actor) )
+			{
+				// si le test ne tient pas compte de la ditance à la cible ou si je suis plus proche que lui...
+				if( pi_pere || to_pere != OBJ_Me() )
+				{
+					if( pi_statut == -1 || EVENT_InteretStatusGet(tmid_interet_ID) == pi_statut )
+					{
+						if( ! pi_meme_IA || AI_HaveSameModel(to_pere) )
+							ti_cpt++
+					}
+				}
+			}
+		}
+	return ti_cpt
+}
+
+
+
+//==============================================================================================
+// Retourne vrai si la position pv_pos est dans la BV de l'objet po_zone
+//==============================================================================================
+procedure int CR_Pos_in_BV(vector pv_pos, object po_zone) 
+{
+	if( ! po_zone )
+		return vrai
+	else
+		return( @po_zone COL_BV_PointCollide(pv_pos) )
+}
+
+
+//==============================================================================================
+// Retourne vrai si la position pv_pos est dans la BV de l'objet po_zone
+//==============================================================================================
+procedure int CR_Gao_in_BV(object po_gao, object po_zone) 
+{
+	return CR_Pos_in_BV(@po_gao OBJ_PosGet(), po_zone)
+}
+
+
+//====================================================================
+// Est-ce qu'on force ce cadavre comme un nouveau
+//====================================================================
+procedure_local void CR_Cadavre_Check_New()
+{
+	int		ti_i	
+	int		ti_index
+	int		ti_flag_del_body
+
+	for (ti_i = 0; ti_i < i_cadavre_nb; ti_i++)
+	{
+		if ((@ao_cadavre[ti_i] AI_IsModel(get_PNJ_Bidoche_path)) && (@ao_cadavre[ti_i] OBJ_CapaTest(CAPA_Bidoche_Oublie_Moi)) )
+			ai_cadavre_nouveau[ti_i] = vrai
+	}
+}
+
+//====================================================================
+// Retourne vrai si le cadavre recherché est déjà référencé, faux sinon
+//====================================================================
+procedure_local int CR_Cadavre_Find(object to_actor)
+{
+	int		ti_indice
+	
+	if( ! to_actor )
+		return faux
+	else
+	{
+		ti_indice = ARR_ObjSearch(&ao_cadavre[0], i_cadavre_nb, to_actor)
+		if( ti_indice != -1 )
+			return vrai
+		else
+			return faux
+	}
+}
+
+
+//====================================================================
+// Mémorise un nouveau cadavre sur mon territoire
+//====================================================================
+procedure_local void CR_Cadavre_Add(object to_actor)
+{
+	if( i_cadavre_nb < Ci_cadavre_max_nb )
+	{
+		if( CR_Gao_in_BV(to_actor, o_territoire) )
+		{
+			if( ! CR_Cadavre_Find(to_actor) )
+			{
+				ao_cadavre[i_cadavre_nb] = to_actor
+				ai_cadavre_nouveau[i_cadavre_nb] = vrai
+				i_cadavre_nb++
+			}
+		}
+	}
+}
+
+
+//====================================================================
+// Supprime un cadavre de sa mémoire
+//====================================================================
+procedure_local void CR_Cadavre_Del(object to_actor)
+{
+	int		ti_indice
+	int		ti_k
+	
+	ti_indice = ARR_ObjSearch(&ao_cadavre[0], i_cadavre_nb, to_actor)
+	if( ti_indice != -1 )
+	{
+		for(ti_k = ti_indice; ti_k < i_cadavre_nb; ti_k++)
+		{
+			ao_cadavre[ti_k] = ao_cadavre[ti_k + 1]
+			ai_cadavre_nouveau[ti_k] = ai_cadavre_nouveau[ti_k + 1]
+		}
+		i_cadavre_nb--
+	}
+}
+
+
+//====================================================================
+// Retourne vrai si le perso est un cadavre, faux sinon
+//----------------------------------------------------------------------------------------------------------------------------------------
+// Par cadavre on entend toutes les bestioles d’une autre espèce, sauf les humains.
+//====================================================================
+procedure_local int CR_Cadavre_Test(object to_actor, messageid tmid_vision)
+{
+	int			ti_ID
+	float		tf_life_ratio
+	
+	ti_ID = EVENT_VisionIDGet(tmid_vision)
+	if( IsThis_ID_Humain(ti_ID) )
+		return faux		// pas les humains
+	else if( ti_ID == C_ID_CrabePetit )
+		return faux		// pas ceux de mon espèce
+	else if( ti_ID == C_ID_CrabeGeant )
+		return faux		// pas ceux de mon espèce
+	else
+	{
+		// tous les autres : test du niveau de santé
+		tf_life_ratio = EVENT_VisionLifeStateGet(tmid_vision)
+		if( tf_life_ratio <= Cf_Life_Dead && tf_life_ratio != -1)
+		{
+			if( @to_actor AI_IsModel(get_PNJ_Bidoche_path) )
+			{
+				if( @to_actor PNJ_EatMe_GetBidocheType() == Ci_Bidoche_Crab )
+					return faux		// pas ceux de mon espèce
+				else
+					return vrai
+			}
+			else
+				return vrai		// c'est un perso agonisant ou mort, à qui il reste des points de viande
+		}
+		else
+			return faux		// vivant ou déjà tout mangé
+	}
+}
+
+
+//====================================================================
+// Retourne vrai si le cadavre est nouveau (pas encore allé le voir), faux sinon
+//====================================================================
+procedure_local int CR_Cadavre_Nouveau_Test(object to_actor)
+{
+	int				ti_indice
+	
+	ti_indice = ARR_ObjSearch(&ao_cadavre[0], i_cadavre_nb, to_actor)
+	if( ti_indice != -1 && ai_cadavre_nouveau[ti_indice] )
+		return vrai
+	else
+		return faux
+}
+
+
+//====================================================================
+// Retourne le cadavre le + proche
+//---------------------------------------------------------------------------------------------------------------------------------------
+// ti_nouveau : si vrai, teste les nouveaux cadavres uniquement, si faux teste tous les cadavres
+//====================================================================
+procedure_local object CR_Cadavre_Nearest(int ti_nouveau)
+{
+	object		to_obj
+	object		to_best_obj
+	int				ti_i
+	float			tf_dist
+	float			tf_best_dist
+	
+	to_best_obj = nobody
+	tf_best_dist = Cf_Infinit
+	if( i_cadavre_nb )
+	{
+		for( ti_i = 0; ti_i < i_cadavre_nb; ti_i++)
+		{
+			if( ! ti_nouveau || ai_cadavre_nouveau[ti_i] )
+			{
+				to_obj = ao_cadavre[ti_i]
+//				if( ! CR_Check_Presence_Interet_Statut_Model(to_obj, faux, -1, faux) )
+				{
+					// si personne d'autre n'a déjà choisi d'aller manger ce cadavre
+					tf_dist = OBJ_SqrDist(to_obj)
+					if( tf_dist < tf_best_dist )
+					{
+						tf_best_dist = tf_dist
+						to_best_obj = to_obj
+					}
+				}
+			}
+		}
+	}
+	return to_best_obj
+}
+
+
+//====================================================================
+// Mémorise que ce nouveau cadavre a déjà été choisi
+//====================================================================
+procedure_local void CR_Cadavre_Nouveau_Select(object to_actor)
+{
+	int				ti_indice
+	
+	ti_indice = ARR_ObjSearch(&ao_cadavre[0], i_cadavre_nb, to_actor)
+	if( ti_indice != -1 )
+		ai_cadavre_nouveau[ti_indice] = faux
+}
+
+
+//====================================================================
+// Teste la validité des cadavres
+//====================================================================
+procedure_local void CR_Cadavre_Check()
+{
+	object		to_obj
+	object		to_best_obj
+	int				ti_i
+	float			tf_dist
+	float			tf_best_dist
+	messageid		tmid_vision
+	
+	for( ti_i = 0; ti_i < i_cadavre_nb; ti_i++)
+	{
+		to_obj = ao_cadavre[ti_i]
+		tmid_vision = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility, to_obj, nobody)
+		if( ! MSG_GlobalIsValid(tmid_vision) || EVENT_VisionLifeStateGet(tmid_vision) == -1 )
+		{
+			CR_Cadavre_Del(to_obj)
+		}
+	}
+}
+
+
+//=========================================================================================
+// Initialise une durée d'attente entre 2 attaques
+//=========================================================================================
+procedure_local void CR_Attack_Delay_Random()
+{
+	if( i_modele == MODELE_Petit )
+		f_attack_delay = 0.0		// attaque, intimide, attaque, intimide, ... sans pause
+	else
+		f_attack_delay = MATH_RandFloat(f_attack_delay_min, f_attack_delay_max)
+}
+
+//=========================================================================================
+// RAZ de la durée d'attente
+//=========================================================================================
+procedure_local void CR_Attack_Delay_Reset()
+{
+	f_attack_delay = 0.0
+}
+
+//=========================================================================================
+// Retourne vrai si on a le droit d'attaquer la cible, faux sinon
+//=========================================================================================
+procedure_local int CR_Attack_Enabled()
+{
+	if( f_fight_end_countdown )
+		return faux
+	if( i_fight_actor_ID == -1 )
+	{
+		DBG_Error("i_fight_actor_ID == -1 ???")
+		return faux
+	}
+	else
+	{
+//		if( @"univ" Humains_LastPafTime[i_fight_actor_ID] == 0.0 || TIME_Elapsed(@"univ" Humains_LastPafTime[i_fight_actor_ID], f_delay_humain_last_paf_time) )
+			return vrai
+//		else
+//			return faux
+	}
+}
+
+//====================================================================
+// Calcul de la rotation ajoutée due au paf
+//====================================================================
+procedure_local void CR_Paf_Rotation_Add( vector tv_inertie_pos, vector tv_axe_sight, vector tv_paf_position, vector tv_paf_sens, byref float tf_add_rotation)
+{
+	vector			tv_point_dimpact
+	float				tf_horiz_paf
+	vector			tv_axe_horizon
+	float				tf_proj
+	
+	if( MATH_VecNullEpsilon(tv_paf_position) )
+		tf_add_rotation = 0.0
+	else
+	{
+		// Calcul du sens de la rotation -----------------------------------------
+		tv_point_dimpact = tv_paf_position - tv_inertie_pos
+		tv_axe_horizon = MATH_VecCrossProduct(Cv_VerticalVector, tv_axe_sight)
+		tf_horiz_paf = MATH_FloatSign(MATH_VecDotProduct(tv_axe_horizon, tv_paf_sens))
+		
+		// test paf devant / derrière
+		if( MATH_VecDotProduct(tv_axe_sight, tv_point_dimpact) < 0 )
+			tf_horiz_paf *= -1.0
+		
+		// Calcul de la puissance de la rotation -----------------------------------------
+		tf_proj = MATH_AbsFloat(MATH_VecDotProduct(tv_point_dimpact, tv_axe_sight))
+		
+		// Rotation
+		tf_add_rotation = tf_horiz_paf * tf_proj
+	}
+}
+
+
+procedure_local void PNJ_Crab_Ulltra_Tag_Init()
+{
+	GRID_LIB_Ultra_Tag_Get(i_id_modele, &ao_ultra_tag[0], i_ultra_tag_nb)
+}
+
+procedure_local void PNJ_Crab_Ultra_TagOn()
+{
+	GRID_LIB_Ultra_Tag_On(i_id_modele, &ao_ultra_tag[0], i_ultra_tag_nb)
+}
+
+
+
+//===============================================================================================
+// FACES DE MORT
+//===============================================================================================
+procedure_local int CR_Face_De_Mort()
+{
+	if (COL_GMatReportGet(Gmat_KK_Face_de_mort) != -1)
+		return vrai
+	return faux
+}
+
+//===================================================================================
+// Initialisation du mode Fight (pour tout changement de cible)
+//===================================================================================
+procedure_local void	CR_Fight_Init()
+{
+	messageid			tmid_vision
+	object				to_actor
+	float					tf_dist
+	
+	// fight actor
+	o_fight_actor = nobody
+	i_fight_actor_ID = -1
+	if( MSG_GlobalIsValid(mid_best_interet) )
+	{
+		to_actor = EVENT_InteretTargetGet(mid_best_interet)
+		if( to_actor && CR_Perceived_Actor_Check(to_actor, tmid_vision) )
+		{
+			o_fight_actor = to_actor
+			i_fight_actor_ID = EVENT_VisionIDGet(tmid_vision)
+		}
+	}
+	
+	// raz déplacement
+	i_way_mode_strafe = Ci_way_mode_strafe_aucun_ou_requin
+//	i_way_obstacle_tourne_flag = faux
+//	i_way_obstacle_strafe_flag = faux
+//	i_way_obstacle_avance_flag = faux
+	i_positionnement_force_requin = faux
+	
+	// raz combat
+	i_attack_paf_done = faux
+	CR_Intimidation_Delay_Random()
+	if( o_fight_actor )
+	{
+		CR_Strafe_Attack_Face_Delay_Random()
+		CR_Strafe_Attack_Face_Duration_Reset()
+		CR_Strafe_Requin_Delay_Random()
+		CR_Strafe_Requin_Duration_Reset()
+	}
+	CR_Attack_Delay_Random()
+	i_fight_end_countdown_done = faux
+	o_repli_wp_father = nobody
+	o_repli_wp = nobody
+	f_way_rotation_coef_cur = 0.0		// raz rotation
+	i_agonisant_change_target_done = faux		// check autre target qd ma target devint agonisante
+}
+
+
+procedure_local void	CR_Fight_Mode_Init()
+{
+	i_fight_comportement = Ci_fight_comportement_wait		// raz sous mode si on passe en cadavre, maison...
+//	i_attaque45pasenface_flag = faux
+//	i_fight_mode = Ci_fight_mode_target			// par défaut (si ma proie n'est pas dans ma zone...)
+	if( i_DBG_trace_etat )
+	{
+		DBG_TraceObject(OBJ_Me())
+		DBG_TraceString(" : ETAT FIGHT : ")
+	}
+	if( i_antre_move_flag )
+	{
+		i_fight_mode = Ci_fight_mode_retour
+		if( i_DBG_trace_etat )
+			DBG_TraceString("retour à mon antre")
+	}
+	else if( CR_Cadavre_Find(o_fight_actor) )
+	{
+		i_fight_mode = Ci_fight_mode_cadavre
+		if( i_DBG_trace_etat )
+		{
+			DBG_TraceString("cadavre : ")
+			DBG_TraceObject(o_fight_actor)
+		}
+	}
+	else if( o_fight_actor )
+	{
+		i_fight_mode = Ci_fight_mode_target
+		if( i_DBG_trace_etat )
+		{
+			DBG_TraceString("proie : ")
+			DBG_TraceObject(o_fight_actor)
+		}
+	}
+	else
+	{
+		i_fight_mode = Ci_fight_mode_cherche
+//		DBG_Error("pas de proie ???? ")
+		if( i_DBG_trace_etat )
+		{
+			DBG_TraceString("ma proie n'est pas dans ma zone ?")
+		}
+	}
+	if( i_DBG_trace_etat )
+		DBG_TraceEOL()
+}
+
+procedure_local int CR_Target_Proche_Devant_Moi(object to_new_target)
+{
+	vector	tv_me_to_target
+	vector	tv_sight
+	float		tf_dist
+	float		tf_dist_max
+		
+	if( i_modele == MODELE_Geant )
+		tf_dist_max = 6.0
+	else
+		tf_dist_max = 3.0
+	if( @to_new_target AI_IsModel(get_Humain_path) )
+	{
+		tv_me_to_target = @to_new_target OBJ_PosGet() - OBJ_PosGet()
+		tv_me_to_target.z = 0.0
+		tf_dist = MATH_VecNorm(tv_me_to_target)
+		if( tf_dist < tf_dist_max )
+		{
+			return vrai
+//			tv_sight = OBJ_SightGet()
+//			tv_sight.z = 0.0
+//			if( ! MATH_VecNullToler(tv_me_to_target, 0.1) )
+//				MATH_VecSetNormalize(tv_me_to_target)
+//			else
+//				tv_me_to_target = OBJ_SightGet()
+//			if( ! MATH_VecNullToler(tv_sight, 0.1) )
+//				MATH_VecSetNormalize(tv_sight)
+//			else
+//				tv_sight = OBJ_SightGet()
+//			if( MATH_VecDotProduct(tv_sight, tv_me_to_target) > Cf_Cos45 )
+//				return vrai			// target proche devant moi
+		}
+	}
+	return faux
+}
+
+
+//=================================================================================
+// Accélère la vitesse de l'anim avec le coef de vitesse associé
+//=================================================================================
+procedure_local float CR_Speed_Coef_Get(int ti_obstacle)
+{
+	float			tf_speed_coef
+	
+	// COEF DE VITESSE -------------------------------------------------------------------------
+	tf_speed_coef = 1.0
+	switch( ACT_ActionGet() )
+	{
+		case ACTION_Avance :
+			if( i_etat_courant == ETAT_APPARITION )
+				tf_speed_coef = af_speed_coef[Ci_avance_network_speed_coef][i_modele]
+			else if( ti_obstacle )
+				tf_speed_coef = af_speed_coef[Ci_avance_obstacle_speed_coef][i_modele]
+			else
+				tf_speed_coef = af_speed_coef[Ci_avance_speed_coef][i_modele]
+			break
+		case ACTION_StrafeD :
+		case ACTION_StrafeG :
+			if( i_etat_courant == ETAT_APPARITION )
+			{
+				tf_speed_coef = af_speed_coef[Ci_strafe_network_speed_coef][i_modele]
+			}
+			else
+			{
+				if( ti_obstacle )
+					tf_speed_coef = af_speed_coef[Ci_strafe_obstacle_speed_coef][i_modele]
+				else if( i_way_mode_strafe == Ci_way_mode_strafe_aucun_ou_requin || i_way_mode_strafe == Ci_way_mode_strafe_attack_face_retour )
+					tf_speed_coef = af_speed_coef[Ci_strafe_requin_speed_coef][i_modele]
+				else
+					tf_speed_coef = af_speed_coef[Ci_strafe_attack_speed_coef][i_modele]
+			}
+			break
+		case ACTION_TourneD45marche :
+		case ACTION_TourneG45marche :
+			tf_speed_coef = 1.0
+			break
+		case ACTION_Intimidation :
+			tf_speed_coef = af_speed_coef[Ci_intimidation_speed_coef][i_modele]
+			break
+	}
+//	DYN_SpeedSetVector(DYN_SpeedGetVector() * tf_speed_coef)
+	return tf_speed_coef
+}
+
+
+//=================================================================================
+// Met la nouvelle action et applique le coef de rotation associé
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// retourne : vrai si l'action en cours est la bonne ou si la proc met la bonne anim, faux sinon
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// ti_action : action à mettre
+// ti_rot_coef : coef de rotation à appliquer (cf. tableau af_rotation_coef)
+//=================================================================================
+procedure_local int CR_ActionSet(int ti_action, int ti_rot_coef)
+{
+	int		ti_force_coef_zero
+	if( ACT_ActionGet() == ti_action )
+		ti_force_coef_zero = faux
+	else
+		ti_force_coef_zero = vrai
+	CR_Rotation_Coef_Set(ti_rot_coef, ti_force_coef_zero)
+	if( ACT_ActionGet() == ti_action )
+		return vrai
+	else if( ACT_ActionIsTransition() )
+		return faux
+	else
+	{
+		// ne pas couper les transitions avance/strafe
+		ACT_ActionSet(ti_action)
+		switch( i_way_mode_strafe )
+		{
+			case Ci_way_mode_strafe_attack_face_debut :
+				CR_Strafe_Attack_Face_Duration_Random()
+				break
+			case Ci_way_mode_strafe_aucun_ou_requin :
+				CR_Strafe_Requin_Duration_Random()
+				break
+		}
+		return vrai
+	}
+}
+
+
+//================================================================================
+// Resete le grab
+//================================================================================
+procedure_local void CR_Grab_Reset()
+{
+	LNK_ClientGet(Ci_LNK_GRAB_RAPTOR, mid_grab, faux, "CR_exec_GRAB_param", nofunc, "CR_exec_GRAB_param")
+//	CR_Uncol_Actor_Del(o_fight_actor)
+	if( ! i_grab_mange_fini_flag )
+		f_time_force_requin = Cf_time_force_requin		// grab pas terminé => j'ai été pafé => je pars en strafe
+	
+	// ne pas paffer si collision ----------------
+	f_time_grab_no_coll_paf = 1.0
+	o_grab_actor_backup = o_fight_actor
+}
+
+
+//================================================================================
+// Retourne vrai si le crabe doit strafer autour de sa cible pour se mettre face à elle, faux sinon
+//================================================================================
+procedure_local int CR_Need_Strafe_Positionnement(vector tv_me_to_target_N, vector tv_target_sight)
+{
+	// PETITS CRABES > Eviter les paf hors champs qui sont injustes: le crabe doit chercher à se mettre face au joueur, si ce n’est pas possible il fait son intimidation
+	if( i_modele == MODELE_Petit 
+		&& o_fight_actor == o_main_actor 
+		&& MATH_VecDotProduct(tv_me_to_target_N, tv_target_sight) > - Cf_Cos45 
+		&& OBJ_SqrDist(o_fight_actor) < (15*15) )
+			return vrai
+	
+	return faux
+}
+
+//================================================================================
+// Retourne l'offset de positionnement à la cible
+//================================================================================
+procedure_local float CR_Fight_Actor_Pos_Offset_Get()
+{
+	if( o_fight_actor == o_main_actor )
+		return f_way_dist_position_fight_jack
+	else
+		return f_way_dist_position_fight_pnj
+}
+
+
+procedure_local int CR_Get_Global_Death_Action()
+{
+	int			ti_action
+	switch( @get_global i_CRAB_death_action_modulo )
+	{
+		case 0 : 
+			ti_action = ACTION_Paf_Lance_deb
+			break
+		case 1 :
+			ti_action = ACTION_Paf_Mortel
+			break
+		case 2 :
+			ti_action = ACTION_Paf_Mortel_Variante
+			break
+		default:
+			ti_action = ACTION_Paf_Standard
+			break
+	}
+	@get_global i_CRAB_death_action_modulo = MATH_Modulo(@get_global i_CRAB_death_action_modulo +1, 3)
+	return ti_action
+}
+
+procedure_local void CR_Paf_Select_Action()
+{
+	float		tf_rand
+	float		tf_freq
+	int			ti_freq
+	
+	if( i_modele == MODELE_Geant )
+	{
+		// CRABE GEANT
+		if( i_paf_lance_flag )
+		{
+			// paf ouvert / qui ouvre
+			ACT_ActionSet(ACTION_Paf_Lance_deb)
+		}
+		else if( i_paf_accumulation || i_paf_important_flag || i_paf_moyen_flag || i_paf_grab_lache_flag )
+		{
+			// paf ferme / qui n'ouvre pas
+			ACT_ActionSet(ACTION_Paf_Standard)
+		}
+	}
+	else
+	{
+		// PETIT CRABE
+		if( i_paf_lance_flag || i_paf_accumulation )
+		{
+			// paf ouvert / qui ouvre
+			if( f_HP_cur )
+				ACT_ActionSet(ACTION_Paf_Lance_deb)
+			else
+				ACT_ActionSet(CR_Get_Global_Death_Action())
+		}
+		else if( i_paf_force_anim || (CR_IsVulnerable() && i_paf_faible_flag) || i_paf_grab_lache_flag )
+		{
+			// paf ferme / qui n'ouvre pas
+			if( f_HP_cur )
+				ACT_ActionSet(ACTION_Paf_Standard)
+			else
+				ACT_ActionSet(CR_Get_Global_Death_Action())
+		}
+	}
+	
+	// SOUND
+	if( CR_Is_Paf_Action() )
+	{
+		if( i_modele == MODELE_Petit )
+		{
+			tf_freq = ACT_FrequencyGet(ACT_ActionGet(), 0)
+			tf_freq *= MATH_RandFloat(0.6,1.9)
+			tf_freq = MATH_FloatLimit(tf_freq, 20.0, 240.0)
+			ti_freq = tf_freq			// caster en entier !!!!
+			ANI_FrequencySet(0, ti_freq)
+		}
+		if( f_HP_cur )
+			SND_RequestPlay(Ci_SND_Paf)
+		else
+			SND_RequestPlay(Ci_SND_Death)
+	}
+}
+
+
+//======================================================================================
+// Retourne vrai si le crabe est dans un état de grab, faux sinon
+//======================================================================================
+procedure_local int CR_Petit_Crabe_Grab_En_Cours()
+{
+	if( i_modele == MODELE_Petit && MSG_GlobalIsValid(mid_grab) )
+	{
+		 if( i_etat_courant == ETAT_GRAB || i_etat_courant == ETAT_TRAINE || i_etat_courant == ETAT_MANGE )
+		 	return vrai
+	}
+	return faux
+}
+
+//================================================================================
+// Retourne vrai si le crabe est arrivé à son antre, faux sinon
+//================================================================================
+procedure_local int CR_Arrive_A_Mon_Antre()
+{
+	vector		tv_to_antre
+	
+	tv_to_antre = v_antre_pos - OBJ_PosGet()
+	tv_to_antre.z = 0.0			// même test que mode fight
+	if( MATH_VecNorm(tv_to_antre) > (Cf_antre_delta_pos * OBJ_ZoomGet() + 2.0) )		// ajout d'un hystérésis pour ressortir du mode idle
+		return faux
+	else
+		return vrai
+}
+
+//================================================================================
+// Retourne vrai si le crabe est arrivé à son point de fuite, faux sinon
+//================================================================================
+procedure_local int CR_Arrive_A_Mon_Point_De_Fuite()
+{
+	vector		tv_to_wp
+	if( o_crabe_geant_fuite_wp )
+	{
+		tv_to_wp = @o_crabe_geant_fuite_wp OBJ_PosGet() - OBJ_PosGet()
+		tv_to_wp.z = 0.0
+		if( MATH_VecNorm(tv_to_wp) < 2.0 )
+			return vrai
+	}
+	return faux
+}
+
+//================================================================================
+// Retourne l'offset de positionnement (distance) selon le mode de déplacement
+//================================================================================
+//procedure_local float CR_Pos_Offset_Get()
+//{
+//	if( i_antre_move_flag )
+//		return Cf_antre_delta_pos * OBJ_ZoomGet()
+//	else if( CR_Cadavre_Find(o_fight_actor) )
+//		return f_way_dist_position_cadavre
+//	else if( ! CR_Strafe_En_Cours() )
+//		return CR_Fight_Actor_Pos_Offset_Get()
+//	else
+//		return f_way_dist_position_fight_strafe
+//}
+procedure_local float CR_Pos_Offset_Get()
+{
+	switch( i_fight_mode )
+	{
+		case Ci_fight_mode_retour :
+		case Ci_fight_mode_cherche :		// je vais à un wp, comme quand je rentre à la maison
+			return Cf_antre_delta_pos * OBJ_ZoomGet()
+		
+		case Ci_fight_mode_cadavre :
+			return f_way_dist_position_cadavre
+		
+		case Ci_fight_mode_target :
+		default:
+			if( ! CR_Strafe_En_Cours() )
+				return CR_Fight_Actor_Pos_Offset_Get()
+			else
+				return f_way_dist_position_fight_strafe
+	}
+}
+
+procedure_local void CR_Repli_Trace_WP(object to_father)
+{
+	int			ti_i
+	int			ti_nb
+	object	tao_children[10]
+	
+//	to_father = o_blind_zone[0]
+	DBG_TraceObject(to_father)
+	DBG_TraceString(" a ")
+	ti_nb = @to_father OBJ_HierarchyGetChilds(&tao_children[0])
+	DBG_TraceInt(ti_nb)
+	DBG_TraceString(" enfants : ")
+	DBG_TraceEOL()
+	for( ti_i = 0; ti_i < ti_nb; ti_i++)
+	{
+		DBG_TraceInt(ti_i)
+		DBG_TraceString(" : ")
+		DBG_TraceObject(tao_children[ti_i])
+		DBG_TraceEOL()
+	}
+}
+
+
+//procedure_local int CR_Repli_Get_Next_WP(object to_father, byref int ti_last_nb, byref object to_next_wp)
+//{
+//	int			ti_i
+//	int			ti_nb
+//	object	tao_children[10]
+//	
+//	ti_nb = @to_father OBJ_HierarchyGetChilds(&tao_children[0])
+//	if( i_DBG_trace_wp_repli )
+//	{
+//		DBG_TraceString("*************************************")
+//		DBG_TraceEOL()
+//		DBG_TraceObject(to_father)
+//		DBG_TraceString(" a ")
+//		DBG_TraceInt(ti_nb)
+//		DBG_TraceString(" enfants")
+//		DBG_TraceEOL()
+//		DBG_TraceString("dernier wp visité : ")
+//		DBG_TraceObject(to_next_wp)
+//		DBG_TraceString(" (n° ")
+//		DBG_TraceInt(ti_last_nb)
+//		DBG_TraceString(")")
+//		DBG_TraceEOL()
+//	}
+//	to_next_wp = nobody
+//	if( ti_last_nb == (ti_nb -1) )
+//	{
+//		if( i_DBG_trace_wp_repli )
+//		{
+//			DBG_TraceString("=> tous les wp ont été visités !!!")
+//			DBG_TraceEOL()
+//		}
+//		return faux
+//	}
+//	ti_i = 0
+//	while( ti_i <= ti_last_nb )
+//		ti_i++
+//	ti_last_nb = ti_i
+//	to_next_wp = tao_children[ti_i]
+//	i_repli_wp_count++
+//	if( i_DBG_trace_wp_repli )
+//	{
+//		DBG_TraceString("=> wp suivant : ")
+//		DBG_TraceObject(to_next_wp)
+//		DBG_TraceString(" (")
+//		DBG_TraceInt(ti_last_nb)
+//		DBG_TraceString(")")
+//		DBG_TraceEOL()
+//	}
+//	return vrai
+//}
+//
+
+
+
+procedure_local int CR_Repli_Get_Next_WP(object to_father, byref int ti_cur_index, byref object to_next_wp)
+{
+	int			ti_i
+	int			ti_nb
+	object	tao_children[10]
+	
+	to_next_wp = nobody
+	
+	if( i_modele == MODELE_Petit )
+		return faux
+	
+	if( ! to_father )
+		return faux
+	
+	ti_nb = @to_father OBJ_HierarchyGetChilds(&tao_children[0])
+	if( i_DBG_trace_etat )
+	{
+		DBG_TraceString("*************************************")
+		DBG_TraceEOL()
+		DBG_TraceObject(to_father)
+		DBG_TraceString(" a ")
+		DBG_TraceInt(ti_nb)
+		DBG_TraceString(" enfants")
+		DBG_TraceEOL()
+	}
+	
+	if( ti_nb > 0 )
+	{
+		ti_cur_index = MATH_Modulo(ti_cur_index, ti_nb)
+	//	if( i_repli_wp_count && ti_cur_index == i_repli_first_wp_index )
+	//	{
+	//		if( i_DBG_trace_etat )
+	//		{
+	//			DBG_TraceString("=> tous les wp ont été visités !!!")
+	//			DBG_TraceEOL()
+	//		}
+	//		return faux
+	//	}
+		to_next_wp = tao_children[ti_cur_index]
+		if( i_DBG_trace_etat )
+		{
+			DBG_TraceString("=> wp suivant : ")
+			DBG_TraceObject(to_next_wp)
+			DBG_TraceString(" (indice ")
+			DBG_TraceInt(ti_cur_index)
+			DBG_TraceString(")")
+			DBG_TraceEOL()
+		}
+		ti_cur_index++
+		if( to_next_wp )
+		{
+			i_repli_wp_count++		// ne pas comptabiliser s'il n'y a aucun enfant
+		}
+	}
+	return vrai
+}
+
+
+// Retoune vrai si la position spécifiée est dans le "cône" de vision du crabe, faux sinon
+procedure_local int CR_ConeDeVision_CalcPos(vector tv_dest_pos)
+{
+	float		tf_dist_max
+	float		tf_dist
+	float		tf_dot
+	vector	tv_me_to_target
+
+	if( i_modele == MODELE_Geant )
+		tf_dist_max = 25.0
+	else
+		tf_dist_max = 15.0
+	
+	tv_me_to_target = tv_dest_pos - OBJ_PosGet()
+//	DBG_RenderVector(OBJ_PosGet(), tv_me_to_target, color_rouge)
+	tf_dist = MATH_VecNorm(tv_me_to_target)
+	MATH_VecSetNormalize(tv_me_to_target)
+	tf_dot = MATH_VecDotProduct(OBJ_SightGet(), tv_me_to_target)		// de -1.0 à 1.0
+	
+	tf_dot += 1.5		// de 0.5 à 2.5
+	tf_dot /= 2.0		// de 0.25 à 1.25
+	tf_dot = MATH_FloatMin(tf_dot, 1.0)
+	
+//	tf_dot += 1.0		// de 0.0 à 2.0
+//	tf_dot /= 2.0		// de 0.0 à 1.0
+//	tf_dot = MATH_FloatMax(tf_dot, 0.25)
+
+	tf_dist_max *= tf_dot
+	DBG_RenderVector(OBJ_PosGet() + (tf_dist_max * tv_me_to_target), Cv_VerticalVector, color_cyan)
+	if( tf_dist <= tf_dist_max )
+		return vrai
+	else
+		return faux
+}
+
+
+// Retoune vrai si l'acteur spécifié est dans le "cône" de vision du crabe, faux sinon
+procedure_local int CR_ConeDeVision_Check(object to_gao)
+{
+	float		tf_dist_max
+	float		tf_dist
+	float		tf_dot
+	vector	tv_me_to_target
+	
+	vector	tv_dest_pos
+	int			ti_i
+	
+	return vrai
+	
+	if( i_DBG_render_cone_vision )
+	{
+		for( ti_i = 0; ti_i < 360; ti_i++ ) 
+		{			
+			tv_dest_pos = OBJ_PosGet()
+			tv_dest_pos += (20.0 * MATH_VecRotate(OBJ_SightGet(), Cv_VerticalVector, Cf_1Degre * ti_i))
+			CR_ConeDeVision_CalcPos(tv_dest_pos)
+		}
+	}
+	tv_dest_pos = @to_gao OBJ_PosGet()
+	DBG_RenderVector(OBJ_PosGet(), tv_dest_pos - OBJ_PosGet(), color_rouge)
+	return CR_ConeDeVision_CalcPos(tv_dest_pos)
+}
+
+
+
+procedure_local void CR_SND_Grab_Init()
+{
+	i_snd_grab = SND_Request(Ci_SND_Grab, C_SND_Request_3DSound | C_SND_Request_DestroyWhenFinished )
+	SND_PlayLooped(i_snd_grab, -1)
+}
+
+procedure_local void CR_SND_Move_Play()
+{
+	if( ! i_snd_move_playing )
+	{
+		SND_InsertActive(i_snd_move, 21, 1, 1)
+		SND_PlayLooped(i_snd_move, -1)
+		i_snd_move_playing = vrai
+	}
+}
+
+procedure_local void CR_SND_Move_Stop()
+{
+	if( i_snd_move_playing )
+	{
+		SND_Stop(i_snd_move)
+		i_snd_move_playing = faux
+	}
+}
+
+procedure_local int CR_SND_Move_Enabled()
+{
+	switch( i_etat_courant )
+	{
+		case ETAT_MORT :
+		case ETAT_FADE :
+			return faux
+		default:
+			switch( ACT_ActionGet() )
+			{
+				case ACTION_AttackHaut :
+				case ACTION_Intimidation :
+				case ACTION_Mange :
+				case ACTION_Mort :
+		//		case ACTION_Attente :
+		//		case ACTION_GrabDdeb :
+		//		case ACTION_GrabDmange :
+		//		case ACTION_GrabDrate :
+		//		case ACTION_GrabGdeb :
+		//		case ACTION_GrabGmange :
+		//		case ACTION_GrabGrate :
+					return faux
+				default:
+					return vrai
+			}
+			break
+	}
+}
+
+procedure_local void CR_SND_Charge45_Play()
+{
+	if( ! i_snd_charge45_playing )
+	{
+		SND_Play(i_snd_charge45)
+		i_snd_charge45_playing = vrai
+	}
+}
+
+procedure_local void CR_SND_Charge45_Stop()
+{
+	if( i_snd_charge45_playing )
+	{
+		SND_Stop(i_snd_charge45)
+		i_snd_charge45_playing = faux
+	}
+}
+
+procedure_local void CR_Net_Check_Attack_Enabled()
+{
+	if( @o_net_last_wp OBJ_CapaTest(CAPA_Reseau_Can_Attack) && i_LD_attack_from_network )
+		i_attack_from_network = vrai
+}
+
+procedure_local int CR_Human_Attack_Find(object to_actor)
+{
+	int		ti_indice
+	
+	if( ! to_actor )
+		return faux
+	else
+	{
+		ti_indice = ARR_ObjSearch(&@get_global ao_CRAB_attacking_humans[0], @get_global i_CRAB_humain_attack_compteur, to_actor)
+		if( ti_indice != -1 )
+			return vrai
+		else
+			return faux
+	}
+}
+
+procedure_local void CR_Human_Attack_Add(object to_actor)
+{
+	if( i_modele == MODELE_Petit )
+	{
+		if( @get_global i_CRAB_humain_attack_compteur < 20 )
+		{
+			if( ! CR_Human_Attack_Find(to_actor) )
+			{
+				@get_global ao_CRAB_attacking_humans[@get_global i_CRAB_humain_attack_compteur] = to_actor
+				@get_global i_CRAB_humain_attack_compteur++
+			}
+		}
+	}
+}
+
+
+procedure_local void CR_Human_Attack_Del(object to_actor)
+{
+	int		ti_indice
+	int		ti_k
+	
+	ti_indice = ARR_ObjSearch(&@get_global ao_CRAB_attacking_humans[0], @get_global i_CRAB_humain_attack_compteur, to_actor)
+	if( ti_indice != -1 )
+	{
+		for(ti_k = ti_indice; ti_k < @get_global i_CRAB_humain_attack_compteur; ti_k++)
+		{
+			@get_global ao_CRAB_attacking_humans[ti_k] = @get_global ao_CRAB_attacking_humans[ti_k + 1]
+		}
+		@get_global i_CRAB_humain_attack_compteur--
+	}
+}
+
+
+procedure_local void CR_Global_Idle_Intimidation_Update()
+{
+	float		tf_min
+	float		tf_max
+	if( i_modele == MODELE_Geant )
+	{
+		tf_min = 3.0
+		tf_max = 6.0
+	}
+	else
+	{
+		tf_min = 1.0
+		tf_max = 2.5
+	}
+	f_net_idle_intim_delai = @get_global f_CRAB_idle_net_intimidation + MATH_RandFloat(tf_min, tf_max)
+	@get_global f_CRAB_idle_net_intimidation = f_net_idle_intim_delai
+}
+
+
+
+////===================================================================================
+//// Ajoute un acteur non collisionnable
+////===================================================================================
+//procedure_local void CR_Uncol_Actor_Add(object to_actor)
+//{
+//	ao_uncol[i_uncol_nb] = to_actor
+//	ai_uncol_on[i_uncol_nb] = vrai		// on ne veut pas réactiver la collision
+//	i_uncol_nb++
+//	COL_UnCollidableAdd(to_actor)
+//}
+//
+//
+////===================================================================================
+//// Spécifie que l'on veut supprimer l'uncol avec cet acteur
+////===================================================================================
+//procedure_local void CR_Uncol_Actor_Del(object to_actor)
+//{
+//	int			ti_indice
+//	
+//	ti_indice = ARR_ObjSearch(&ao_uncol[0], i_uncol_nb, to_actor)
+//	if( ti_indice != -1 )
+//		ai_uncol_on[ti_indice] = faux		// on veut supprimer l'uncol
+//}
+//
+//
+////===================================================================================
+//// Spécifie que l'on veut supprimer l'uncol avec tous les acteurs
+////===================================================================================
+//procedure_local void CR_Uncol_Actor_Del_All()
+//{
+//	int			ti_i
+//	
+//	for( ti_i=0; ti_i < i_uncol_nb; ti_i++)
+//		ai_uncol_on[ti_i] = faux		// on veut supprimer l'uncol
+//}
+//
+//
+////===================================================================================
+//// Retire les acteurs spécifiés à nouveau collisionnables avec lesquels je ne suis plus en collision
+////===================================================================================
+//procedure_local void CR_Uncol_Actor_Check_Virtual_Col()
+//{
+//	int			ti_i
+//	int			ti_k
+//	
+//	for( ti_i=0; ti_i < i_uncol_nb; ti_i++)
+//	{
+//		if( ! ai_uncol_on[ti_i] )
+//		{
+//			// on veut supprimer l'uncol avec cet acteur
+//			if( ! OBJ_LIB_Virtual_Collision(OBJ_Me(), ao_uncol[ti_i], faux))
+//			{
+//				COL_UnCollidableDel(ao_uncol[ti_i])
+//				for( ti_k = ti_i; ti_k < i_uncol_nb; ti_k++ )
+//				{
+//					ao_uncol[ti_k] = ao_uncol[ti_k + 1]
+//					ai_uncol_on[ti_k] = ai_uncol_on[ti_k + 1]
+//				}
+//				i_uncol_nb--
+//			}
+//		}
+//	}
+//}
+//
+//
+
+procedure_local void CR_UncollideAdd(object to_gao, float tf_duration)
+{
+	int		ti_index
+	
+//	if (@to_gao OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Generated))
+//		return
+//		
+//	if (! (@to_gao OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_ColMap)) )
+//		return
+	
+	if( ! to_gao )
+		return
+	
+	ti_index = ARR_ObjSearch(&ao_uncollide_gao[0], i_uncollide_gao_nb, to_gao)
+	if (ti_index == -1)
+	{
+		ao_uncollide_gao[i_uncollide_gao_nb] = to_gao
+		af_uncollide_duration[i_uncollide_gao_nb] = tf_duration
+		i_uncollide_gao_nb++
+		COL_UnCollidableAdd(to_gao)
+		if( i_DBG_trace_etat )
+		{
+			DBG_TraceString("uncol ADD avec")
+			DBG_TraceObject(to_gao)
+			DBG_TraceEOL()
+		}
+//		if( 1 ) 
+//			Str_DisplayTextOnce("uncol", cvector(0.5,0.5,0))
+	}
+	else
+	{
+		af_uncollide_duration[ti_index] = tf_duration
+	}
+}
+
+procedure_local void CR_UncollideDel(object to_gao)
+{
+	int		ti_index
+	ti_index = ARR_ObjSearch(&ao_uncollide_gao[0], i_uncollide_gao_nb, to_gao)
+	if (ti_index != -1)
+		af_uncollide_duration[ti_index] = 0.0
+}
+
+procedure_local void CR_UncollideCheck()
+{
+	int		ti_i
+	
+	for (ti_i = 0; ti_i < i_uncollide_gao_nb; ti_i++)
+	{
+		if (af_uncollide_duration[ti_i] == -1.0)
+			continue
+
+		if (af_uncollide_duration[ti_i] <= 0.0 && ! OBJ_LIB_Virtual_Collision(OBJ_Me(), ao_uncollide_gao[ti_i], faux))
+		{
+			if( i_DBG_trace_etat )
+			{
+				DBG_TraceString("uncol DEL avec")
+				DBG_TraceObject(ao_uncollide_gao[ti_i])
+				DBG_TraceEOL()
+			}
+			COL_UnCollidableDel(ao_uncollide_gao[ti_i])
+			
+			i_uncollide_gao_nb--
+
+			af_uncollide_duration[ti_i] = af_uncollide_duration[i_uncollide_gao_nb]
+			ao_uncollide_gao[ti_i] = ao_uncollide_gao[i_uncollide_gao_nb]
+			
+			af_uncollide_duration[i_uncollide_gao_nb] = -1.0
+			ao_uncollide_gao[i_uncollide_gao_nb] = nobody
+		}
+		
+		af_uncollide_duration[ti_i] -= MATH_FloatMin(af_uncollide_duration[ti_i], TIME_GetDt())
+	}
+}
+
+procedure_local void CR_InfosMort()
+{
+	OBJ_CapaSet(CAPA_mort, none)
+	OBJ_Me().des_int1 = Ci_DISPLAY_NOTHING
+	OBJ_InfoPhotoParamSet(0, 0, 0, 0, 0.0, 0.0, 0.0, 0.0)
+}
+
+procedure_local void CR_DestInt1Modify()
+{
+	if( i_modele == MODELE_Geant )
+	{
+		i_des_int1 = OBJ_Me().des_int1
+		OBJ_Me().des_int1 = Ci_DISPLAY_FIGHTBLOQUE		// interdiction de tirer au début du grab
+	}
+}
+
+procedure_local void CR_DestInt1Restore()
+{
+	if( i_modele == MODELE_Geant )
+	{
+		OBJ_Me().des_int1 = i_des_int1
+	}
+}
+
+procedure_local int CR_TargetActive(object to_target)
+{
+	messageid	tmid_vision
+	if( ! ( @to_target OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Active ) )
+		return faux
+	tmid_vision = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility, to_target, nobody)
+	if( ! MSG_GlobalIsValid(tmid_vision) )
+		return faux
+	return vrai
+}
+
+
+//=========================================================================================
+// Retourne vrai si l'acteur est une cible autorisée, faux sinon
+//=========================================================================================
+procedure_local int CR_Target_Check(object to_target)
+{
+	int				ti_loop
+	int				ti_nb
+	object		to_gao
+	messageid	tmid_tmp
+	
+	if( ! to_target )
+		return faux
+	
+	if( ! CR_TargetActive(to_target) )
+		return faux
+	
+	if( to_target == o_agonisant_change_target_gao )
+		return faux		// je suis en train de tester si quelqu'un d'autre est dispo, je ne le veux pas !!!
+	
+	if( f_LD_time_attack_forbidden > 0.0 )
+		return faux
+
+	// Test territoire ou zone de changement de target
+	if( i_zone_restreinte_flag )
+		to_gao = o_change_target
+	else
+		to_gao = o_territoire
+	
+	if( ! CR_Gao_in_BV(to_target, to_gao) )
+		return faux
+	
+	// Test ignore target
+	if( o_ignore_target && to_target == o_ignore_target )
+		return faux
+	
+	// Test perso déjà grabbé par quelqu'un
+	if( CR_Check_Presence_Interet_Statut_Model(to_target, faux, C_EVENT_InteretStatusGrab, faux, faux) )
+		return faux
+	
+	// Test perso caché ou pas
+	if( o_blind_zone[0] )
+	{	
+		// Il y a au moins une zone hide
+		for (ti_loop = 0; ti_loop<Ci_blind_zone_max_nb; ti_loop++)
+		{
+			to_gao = o_blind_zone[ti_loop]
+			if (to_gao && @to_target COL_Pivot_BVCollide(to_gao))
+			{
+				if( i_fight_mode == Ci_fight_mode_target && to_target == o_fight_actor )
+				{
+					// la cible que j'étais en train de poursuive vient de se cacher
+					// -> je mémorise la blind zone pour trouver les points d'observation
+					o_repli_wp_father = to_gao
+				}
+				return faux		// La Target est dans une blind zone
+			}
+		}
+	}
+	return vrai
+}
+
+
+//==============================================================================
+// Retourne vrai si le changement de cible est autorisé, faux sinon
+//==============================================================================
+procedure_local int CR_Target_Change_Enabled(object to_new_target)
+{
+	int			ti_change
+	
+	ti_change = faux
+	
+	if( to_new_target )
+	{
+		if( CR_TargetActive(to_new_target) )
+		{
+			if( ! o_fight_actor )
+				ti_change = vrai			// pas encore d'adversaire
+			else if( to_new_target == o_fight_actor )
+			{
+				if( i_fight_mode != Ci_fight_mode_target )
+				{
+					// même cible, mais je l'avais perdue
+					if( CR_Target_Proche_Devant_Moi(to_new_target) )
+						ti_change = vrai			// target proche devant moi
+				}
+			}
+			else
+			{
+				if( @to_new_target AI_IsModel(get_PNJ_Bidoche_path) )
+					ti_change = vrai			// la bidoche est ultra prio !!!
+				else if( ! @o_fight_actor AI_IsModel(get_PNJ_Bidoche_path) )
+				{
+					// la bidoche reste prio
+					if( to_new_target == o_main_actor )
+						ti_change = vrai			// toujours vrai pour le main actor
+					else if( ! f_delay_change_target )
+						ti_change = vrai			// délai de changement de target dépassé
+				}
+			}
+		}
+	}
+	
+	if( ti_change )
+	{
+		i_attack_intimidation_done = faux
+		f_delay_change_target = Cf_delay_change_target
+		i_change_target_flag = vrai
+	}
+	return ti_change
+}
+
+
+procedure_local void CR_GFX_CBit_Impact_Sang(object to_bone)
+{
+	@to_bone OBJ_CustomBitsSet(none, OBJ_CBits_0 + OBJ_CBits_1)		// force GFX impact sang
+}
+
+procedure_local void CR_GFX_CBit_Impact_Mur(object to_bone)
+{
+	@to_bone OBJ_CustomBitsSet(OBJ_CBits_1, none)		// force GFX impact mur
+}
+
+
+// CANAUX IA
+//#define		Crab_Canal_Snap_GrabD					125		// boîte à oeil pour le grab
+//#define		Crab_Canal_Snap_GrabG					126		// boîte à oeil pour le grab
+//#define		Crab_Canal_Carapace						18			// = Bassin
+//#define		Crab_Canal_Pere								19			// Fixe
+//#define		Crab_Canal_Vulnerable_Devant			240		// Yeux
+//#define		Crab_Canal_Vulnerable_Derriere			250		// Cul
+//// Pince D pour grabber (basse)
+//#define		Crab_Canal_PinceD							120		// Pince D pour grabber
+//#define		Crab_Canal_PinceD3						20			// sous-canal Pince D pour grabber
+//#define		Crab_Canal_PinceD2						21			// sous-canal Pince D pour grabber
+//#define		Crab_Canal_PinceD1						22			// sous-canal Pince D pour grabber
+//// Patte D pour paffer (haute)
+//#define		Crab_Canal_PatteD							130		// Patte D pour paffer
+//#define		Crab_Canal_PatteD2						30			// sous-canal Patte D pour paffer
+//#define		Crab_Canal_PatteD1						31			// sous-canal Patte D pour paffer
+//// Patte D pour marcher
+//#define		Crab_Canal_PatteMarcheD11			81
+//#define		Crab_Canal_PatteMarcheD12			80
+//#define		Crab_Canal_PatteMarcheD21			71
+//#define		Crab_Canal_PatteMarcheD22			70
+//#define		Crab_Canal_PatteMarcheD31			62
+//#define		Crab_Canal_PatteMarcheD32			61
+//#define		Crab_Canal_PatteMarcheD33			60
+//// Pince G pour grabber (basse)
+//#define		Crab_Canal_PinceG							140		// Pince G pour grabber
+//#define		Crab_Canal_PinceG3						40			// sous-canal Pince G pour grabber
+//#define		Crab_Canal_PinceG2						41			// sous-canal Pince G pour grabber
+//#define		Crab_Canal_PinceG1						42			// sous-canal Pince G pour grabber
+//// Patte G pour paffer (haute)
+//#define		Crab_Canal_PatteG							150		// Patte G pour paffer
+//#define		Crab_Canal_PatteG2						50			// sous-canal Patte G pour paffer
+//#define		Crab_Canal_PatteG1						51			// sous-canal Patte G pour paffer
+//// Patte G pour marcher
+//#define		Crab_Canal_PatteMarcheG11			83
+//#define		Crab_Canal_PatteMarcheG12			82
+//#define		Crab_Canal_PatteMarcheG21			73
+//#define		Crab_Canal_PatteMarcheG22			72
+//#define		Crab_Canal_PatteMarcheG31			65
+//#define		Crab_Canal_PatteMarcheG32			64
+//#define		Crab_Canal_PatteMarcheG33			63
+//
+
+
+//procedure_local void CR_Explose_Init(int ti_canal, vector tv_dir)
+//{
+//	object	to_bone
+//	int			tai_bones_canaux[Ci_max_explose_bones]
+//	int			ti_i
+//	float		tf_rotate
+//	i_paf_explose = vrai
+//	switch( ti_canal )
+//	{
+//		// PATTES HAUTES POUR PAFFER
+//		case Crab_Canal_PatteD :
+//		case Crab_Canal_PatteD1 :
+//		case Crab_Canal_PatteD2 :
+//			i_explose_nb = 1
+//			tai_bones_canaux[0] = Crab_Canal_PatteD1
+//			break
+//		case Crab_Canal_PatteG :
+//		case Crab_Canal_PatteG1 :
+//		case Crab_Canal_PatteG2 :
+//			i_explose_nb = 1
+//			tai_bones_canaux[0] = Crab_Canal_PatteG1
+//			break
+//		// PATTES COTE POUR MARCHER
+//		case Crab_Canal_PatteMarcheG11 :
+//		case Crab_Canal_PatteMarcheG12 :
+//		case Crab_Canal_PatteMarcheG21 :
+//		case Crab_Canal_PatteMarcheG22 :
+//		case Crab_Canal_PatteMarcheG31 :
+//		case Crab_Canal_PatteMarcheG32 :
+//		case Crab_Canal_PatteMarcheG33 :
+//			i_explose_nb = 3
+//			tai_bones_canaux[0] = Crab_Canal_PatteMarcheG11
+//			tai_bones_canaux[1] = Crab_Canal_PatteMarcheG21
+//			tai_bones_canaux[2] = Crab_Canal_PatteMarcheG31
+//			break
+//		case Crab_Canal_PatteMarcheD11 :
+//		case Crab_Canal_PatteMarcheD12 :
+//		case Crab_Canal_PatteMarcheD21 :
+//		case Crab_Canal_PatteMarcheD22 :
+//		case Crab_Canal_PatteMarcheD31 :
+//		case Crab_Canal_PatteMarcheD32 :
+//		case Crab_Canal_PatteMarcheD33 :
+//			i_explose_nb = 3
+//			tai_bones_canaux[0] = Crab_Canal_PatteMarcheD11
+//			tai_bones_canaux[1] = Crab_Canal_PatteMarcheD21
+//			tai_bones_canaux[2] = Crab_Canal_PatteMarcheD31
+//			break
+//		// PINCES POUR GRABBER
+//		case Crab_Canal_PinceD :
+//		case Crab_Canal_PinceD1 :
+//		case Crab_Canal_PinceD2 :
+//		case Crab_Canal_PinceD3 :
+//			i_explose_nb = 1
+//			tai_bones_canaux[0] = Crab_Canal_PinceD1
+//			break
+//		case Crab_Canal_PinceG :
+//		case Crab_Canal_PinceG1 :
+//		case Crab_Canal_PinceG2 :
+//		case Crab_Canal_PinceG3 :
+//			i_explose_nb = 1
+//			tai_bones_canaux[0] = Crab_Canal_PinceG1
+//			break
+//		case Crab_Canal_Vulnerable_Derriere :		// dans le cul
+//			i_explose_nb = 2
+//			tai_bones_canaux[0] = Crab_Canal_PatteMarcheD31
+//			tai_bones_canaux[1] = Crab_Canal_PatteMarcheG31
+//			break
+//		default:		// dans le corps / de face
+////			i_explose_nb = 2
+////			if( MATH_RandFloat(-1.0, 1.0) < 0.0 )
+////				tai_bones_canaux[0] = Crab_Canal_PinceD1
+////			else
+////				tai_bones_canaux[0] = Crab_Canal_PinceG1
+////			if( MATH_RandFloat(-1.0, 1.0) < 0.0 )
+////				tai_bones_canaux[1] = Crab_Canal_PatteD1
+////			else
+////				tai_bones_canaux[1] = Crab_Canal_PatteG1
+//			i_explose_nb = 4
+//			tai_bones_canaux[0] = Crab_Canal_PinceD1
+//			tai_bones_canaux[1] = Crab_Canal_PinceG1
+//			tai_bones_canaux[2] = Crab_Canal_PatteD1
+//			tai_bones_canaux[3] = Crab_Canal_PatteG1
+//			break
+//	}
+//	// INIT DES PATTES ARRACHEES
+//	for( ti_i = 0; ti_i < i_explose_nb; ti_i++ )
+//	{
+//		to_bone = ANI_CanalObjectGet(tai_bones_canaux[ti_i])
+// 		ao_explose_bones[ti_i] = to_bone
+// 		if( tv_dir.z <= 0.0 )
+// 			tv_dir.z *= -1.0
+// 		if( ! MATH_VecNullToler(tv_dir, 0.1) )
+// 			MATH_VecSetNormalize(tv_dir)
+// 		else
+// 			tv_dir = OBJ_SightGet()
+// 		switch( ti_i )
+// 		{
+//	 		case 1 :
+//	 			tf_rotate = MATH_FloatSign(MATH_RandFloat(-1.0, 1.0)) * Cf_PiBy8
+//	 			break
+//			case 2 :
+//				tf_rotate = MATH_FloatSign(MATH_RandFloat(-1.0, 1.0)) * Cf_PiBy6
+//				break
+//			case 3 :
+//				tf_rotate = MATH_FloatSign(MATH_RandFloat(-1.0, 1.0)) * Cf_PiBy4
+//				break
+//			default:
+//		 		tf_rotate = 0.0		// dans l'axe
+//				break
+//		}
+// 		tv_dir = MATH_VecRotate(tv_dir, Cv_VerticalVector, tf_rotate)
+// 		MATH_VecSetNorm(tv_dir, (15.0 + ( 5.0 * ti_i ) ) )	// vitesse d'expulsion
+//		av_explose_dir[ti_i] = tv_dir
+//		av_explose_grav[ti_i] = Cv_NullVector
+//		af_explose_duree[ti_i] = 0.0
+//		@to_bone OBJ_HierarchyResetCurrent()
+//	}
+//}
+//
+//
+
+procedure_local int CR_Already_Explosed(int ti_canal)
+{
+	int		ti_indice
+	object	to_bone
+	to_bone = ANI_CanalObjectGet(ti_canal)
+	if( ! to_bone )
+		return faux
+	else
+	{
+		ti_indice = ARR_ObjSearch(&ao_explose_bones[0], i_explose_nb, to_bone)
+		if( ti_indice != -1 )
+			return vrai
+		else
+			return faux
+	}
+}
+
+procedure_local void CR_Explose_Init(int ti_canal, vector tv_dir)
+{
+	object	to_bone
+	int			ti_i
+	float		tf_rotate
+	int			ti_patte_marche
+	int			ti_nb_init
+	i_paf_explose = vrai
+	ti_nb_init = i_explose_nb
+	f_time_mort = Cf_Mort_Duration_Petit_Explose
+ 	ti_patte_marche = 0
+	if( ! CR_Already_Explosed(Crab_Canal_PinceD1) )
+	{
+		ai_explose_index[i_explose_nb] = Crab_Canal_PinceD1
+		i_explose_nb++
+	}
+	if( ! CR_Already_Explosed(Crab_Canal_PinceG1) )
+	{
+		ai_explose_index[i_explose_nb] = Crab_Canal_PinceG1
+		i_explose_nb++
+	}
+	if( ! CR_Already_Explosed(Crab_Canal_PatteG1) )
+	{
+		ai_explose_index[i_explose_nb] = Crab_Canal_PatteG1
+		i_explose_nb++
+	}
+	if( ! CR_Already_Explosed(Crab_Canal_PatteD1) )
+	{
+		ai_explose_index[i_explose_nb] = Crab_Canal_PatteD1
+		i_explose_nb++
+	}
+	if( ! CR_Already_Explosed(Crab_Canal_PatteMarcheD11) && ( MATH_RandFloat(0.0,1.0) < 0.33 || ti_nb_init > 4 ) )
+	{
+		ai_explose_index[i_explose_nb] = Crab_Canal_PatteMarcheD11
+		i_explose_nb++
+		ti_patte_marche++
+	}
+	if( ! CR_Already_Explosed(Crab_Canal_PatteMarcheG21) && ( MATH_RandFloat(0.0,1.0) < 0.33 || ti_nb_init > 4 ) )
+	{
+		ai_explose_index[i_explose_nb] = Crab_Canal_PatteMarcheG21
+		i_explose_nb++
+		ti_patte_marche++
+	}
+	if( ! CR_Already_Explosed(Crab_Canal_PatteMarcheD31) && ( MATH_RandFloat(0.0,1.0) < 0.33 || ti_nb_init > 4 ) )
+	{
+		ai_explose_index[i_explose_nb] = Crab_Canal_PatteMarcheD31
+		i_explose_nb++
+		ti_patte_marche++
+	}
+	if( ! CR_Already_Explosed(Crab_Canal_PatteMarcheG11) && ( MATH_RandFloat(0.0,1.0) < 0.33 || ti_nb_init > 4 ) )
+	{
+		ai_explose_index[i_explose_nb] = Crab_Canal_PatteMarcheG11
+		i_explose_nb++
+		ti_patte_marche++
+	}
+	if( ! CR_Already_Explosed(Crab_Canal_PatteMarcheD21) && ( MATH_RandFloat(0.0,1.0) < 0.33 || ti_patte_marche < 1|| ti_nb_init > 4 ) )
+	{
+		ai_explose_index[i_explose_nb] = Crab_Canal_PatteMarcheD21
+		i_explose_nb++
+		ti_patte_marche++
+	}
+	if( ! CR_Already_Explosed(Crab_Canal_PatteMarcheG31) && ( MATH_RandFloat(0.0,1.0) < 0.33 || ti_patte_marche < 2 || ti_nb_init > 4 ) )
+	{
+		ai_explose_index[i_explose_nb] = Crab_Canal_PatteMarcheG31
+		i_explose_nb++
+		ti_patte_marche++
+	}
+	// INIT DES PATTES ARRACHEES
+	for( ti_i = ti_nb_init; ti_i < i_explose_nb; ti_i++ )
+	{
+		to_bone = ANI_CanalObjectGet(ai_explose_index[ti_i])
+ 		ao_explose_bones[ti_i] = to_bone
+ 		if( tv_dir.z <= 0.0 )
+ 			tv_dir.z *= -1.0
+ 		if( ! MATH_VecNullToler(tv_dir, 0.1) )
+ 			MATH_VecSetNormalize(tv_dir)
+ 		else
+ 			tv_dir = OBJ_SightGet()
+ 		switch( ti_i )
+ 		{
+	 		case 1 :
+	 			tf_rotate = MATH_FloatSign(MATH_RandFloat(-1.0, 1.0)) * Cf_PiBy8
+	 			break
+			case 2 :
+				tf_rotate = MATH_FloatSign(MATH_RandFloat(-1.0, 1.0)) * Cf_PiBy6
+				break
+			case 3 :
+				tf_rotate = MATH_FloatSign(MATH_RandFloat(-1.0, 1.0)) * Cf_PiBy4
+				break
+			default:
+		 		tf_rotate = 0.0		// dans l'axe
+				break
+		}
+ 		tv_dir = MATH_VecRotate(tv_dir, Cv_VerticalVector, tf_rotate)
+ 		MATH_VecSetNorm(tv_dir, (10.0 + ( 3.0 * ti_i ) ) )	// vitesse d'expulsion
+		av_explose_dir[ti_i] = tv_dir
+		av_explose_grav[ti_i] = Cv_NullVector
+		af_explose_duree[ti_i] = 0.0
+		@to_bone OBJ_HierarchyResetCurrent()
+		av_explose_sol_banking[ti_i] = cvector(MATH_RandFloat(-1.0,1.0), MATH_RandFloat(-1.0,1.0), 0.0)
+		af_explose_sol_Z[ti_i] = Cf_hauteur_Z_sol_default
+		ai_explose_est_au_sol[ti_i] = faux
+		af_explose_est_au_sol_duree[ti_i] = 0.0
+		ai_explose_phase[ti_i] = 0
+	}
+}
+

@@ -1,0 +1,53 @@
+
+procedure_ultra void RMRT_UpdatePeersSpeed();
+
+procedure_ultra float RMRT_RayonGet()
+{
+	return f_rayon
+}
+
+procedure_ultra float RMRT_RotationSpeedGet()
+{
+	return f_rotation_speed
+}
+
+procedure_ultra void RMRT_RotationSpeedSet(float tf_rspeed, float tf_rayon, object to_last_grabbed)
+{
+	float		tf_new_speed
+	
+	if ((f_traction == 0.0) && (!i_updating_peers))
+	{
+		if (to_last_grabbed != nobody)
+			o_last_grabbed = to_last_grabbed
+		tf_new_speed = tf_rspeed * tf_rayon / f_rayon
+		if (tf_new_speed != f_rotation_speed)
+		{
+			f_rotation_speed = tf_new_speed
+			RMRT_UpdatePeersSpeed()
+		}
+	}
+}
+
+procedure_ultra void RMRT_UpdatePeersSpeed()
+{
+	int			ti_i
+
+ 	if (!i_updating_peers)
+ 	{
+		i_updating_peers = 1
+	 	for (ti_i = 0; ti_i < 5; ti_i++)
+		{
+			if (o_peers_same_axis[ti_i] != nobody)
+				@o_peers_same_axis[ti_i] RMRT_RotationSpeedSet(f_rotation_speed, @o_peers_same_axis[ti_i] RMRT_RayonGet(), o_last_grabbed)
+			
+			if (o_peers_orientation_same[ti_i] != nobody)
+				@o_peers_orientation_same[ti_i]  RMRT_RotationSpeedSet(f_rotation_speed, f_rayon, o_last_grabbed)
+	
+			if (o_peers_orientation_opposite[ti_i] != nobody)
+				@o_peers_orientation_opposite[ti_i] RMRT_RotationSpeedSet(-f_rotation_speed, f_rayon, o_last_grabbed)
+	
+		}
+		i_updating_peers = 0
+	}
+}
+

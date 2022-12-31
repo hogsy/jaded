@@ -1,0 +1,89 @@
+Include_UltraProcedure_Header
+
+procedure_ultra void Fleche_Tir(object to_sender, vector tv_speed)
+{
+	i_flag_tir = vrai
+	mo_Sender = to_sender
+	v_Tir_Speed = tv_speed
+}
+
+procedure_local int Fleche_DoNotHitKong()
+{
+	if( o_joueur && mo_Sender == o_joueur )
+		if( @get_global i_Player_on_KK_Shoulder )
+			if( ! @o_kong Proc_KK_Test_Mode(ETAT_Kong_finished) )
+				return vrai
+	return faux
+}
+
+procedure_local void Fleche_GFX_Impact()
+{
+	int		ti_GFX_Impact
+	ti_GFX_Impact = GFX_Add(9)		// Etincelles
+	GFX_FlagSet(ti_GFX_Impact , 0, 1)
+	GFX_FlagSet(ti_GFX_Impact , 2, 1)
+	GFX_MaterialSet(ti_GFX_Impact , get_SFX_light_and_smoke, 5)
+	GFX_Setf(ti_GFX_Impact, 9000, Cf_PiBy2)									// angle d'ouverture
+	GFX_Setf(ti_GFX_Impact, 9001, 1.0)											// vitesse initiale minimum
+	GFX_Setf(ti_GFX_Impact, 9002, 3.0)											// vitesse initiale maximum
+	GFX_Setf(ti_GFX_Impact, 9003, 0.95 )											// friction
+	GFX_Seti(ti_GFX_Impact, 9100, 20)												// Nombre
+	GFX_Setf(ti_GFX_Impact, 9004, 0.5)											// épaisseur
+	GFX_Setf(ti_GFX_Impact, 9005, 0.2)											// durée de vie minimum
+	GFX_Setf(ti_GFX_Impact, 9006, 0.7)											// durée de vie maximum
+	GFX_Setf(ti_GFX_Impact, 9008, 0.005 )										// generation périod
+	GFX_Setf(ti_GFX_Impact, 9007, 4.0 )											// multiplicateur de longueur
+	GFX_Setf(ti_GFX_Impact, 9009, 0.2)											// durée de mort minimun
+	GFX_Setf(ti_GFX_Impact, 9010, 0.4)											// durée de mort maximun
+	GFX_Seti(ti_GFX_Impact, 9102, 0b11000)									// Flags (1 => agrandissement centré)
+	GFX_Setv(ti_GFX_Impact, 9200, OBJ_PosGet())			// Origine des étincelles
+	GFX_Setv(ti_GFX_Impact, 9201, - OBJ_SightGet())							// Direction
+	GFX_Setv(ti_GFX_Impact, 9202, cvector(0.0, 0.0, -1.0) )					// gravity
+	GFX_Seti(ti_GFX_Impact, 9101, i_GFX_impactcolor) 		
+}
+
+
+
+procedure_local void Fleche_Trainee_GFX_9()
+{
+	int		ti_GFX_Impact
+
+	ti_GFX_Impact = GFX_Add(9)		// Etincelles
+	GFX_FlagSet(ti_GFX_Impact , 0, 1)
+	GFX_FlagSet(ti_GFX_Impact , 2, 1)
+	GFX_MaterialSet(ti_GFX_Impact, get_SFX_light_and_smoke, 5)
+	GFX_Setf(ti_GFX_Impact, 9000, 0)									// angle d'ouverture
+	GFX_Setf(ti_GFX_Impact, 9001, 1.0)											// vitesse initiale minimum
+	GFX_Setf(ti_GFX_Impact, 9002, 3.0)											// vitesse initiale maximum
+	GFX_Setf(ti_GFX_Impact, 9003, 0.95 )											// friction
+	GFX_Seti(ti_GFX_Impact, 9100, 5)												// Nombre
+	GFX_Setf(ti_GFX_Impact, 9004, 0.015)											// épaisseur
+	GFX_Setf(ti_GFX_Impact, 9005, 0.5)											// durée de vie minimum
+	GFX_Setf(ti_GFX_Impact, 9006, 0.75)											// durée de vie maximum
+	GFX_Setf(ti_GFX_Impact, 9008, 0.01 )										// generation périod
+	GFX_Setf(ti_GFX_Impact, 9007, 4.0 )											// multiplicateur de longueur
+	GFX_Setf(ti_GFX_Impact, 9009, 0.2)											// durée de mort minimun
+	GFX_Setf(ti_GFX_Impact, 9010, 0.4)											// durée de mort maximun
+	GFX_Seti(ti_GFX_Impact, 9102, 0b11000)									// Flags (1 => agrandissement centré)
+	GFX_Setv(ti_GFX_Impact, 9200, OBJ_PosGet())			// Origine des étincelles
+	GFX_Setv(ti_GFX_Impact, 9201, - OBJ_SightGet())							// Direction
+	GFX_Setv(ti_GFX_Impact, 9202, cvector(0.0, 0.0, 0.0) )					// gravity
+	GFX_Seti(ti_GFX_Impact, 9101, 0xFF808080) 		
+}
+
+
+procedure_local void Fleche_Trainee_GFX_8()
+{
+	if( i_GFX_Tir == -1 )
+	{
+		i_GFX_Tir = GFX_Add(8)		// Vitesse
+		GFX_FlagSet(i_GFX_Tir, 0, 1)	// GFX actif
+		GFX_FlagSet(i_GFX_Tir, 1, 1)	// GFX actif
+		GFX_FlagSet(i_GFX_Tir, 2, 1)	// Transparent
+		GFX_MaterialSet(i_GFX_Tir, get_SFX_light_and_smoke, 34)
+	}
+	GFX_Setf(i_GFX_Tir, 8003, 1.0)	// Durée de vie du sprite
+	GFX_Setf(i_GFX_Tir, 8004, 1.0)	// Epaisseur du sprite
+	GFX_Seti(i_GFX_Tir, 8100, 0xFF808080)		// Couleur du sprite
+	GFX_Setv(i_GFX_Tir, 8200, OBJ_PosGet())		// Coordonnée de la position 3D de l’effet
+}

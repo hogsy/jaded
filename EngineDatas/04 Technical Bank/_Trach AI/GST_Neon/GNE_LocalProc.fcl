@@ -1,0 +1,105 @@
+
+procedure int Proc_GNE_ColorIntGet(int col, float intencity)
+{
+	int		ti_red, ti_green, ti_blue
+	int		ti_int
+	float	tf_float
+
+	ti_int = (col & 0xFF)
+	tf_float = intencity * ti_int
+	ti_int = tf_float  
+	ti_red = ti_int & 0xFF
+
+	ti_int = (col & 0xFF00)
+	tf_float = intencity * ti_int
+	ti_int = tf_float  
+	ti_green = ti_int & 0xFF00
+
+	ti_int = (col & 0xFF0000)
+	tf_float = intencity * ti_int
+	ti_int = tf_float  
+	ti_blue = ti_int & 0xFF0000
+
+	return ( (col & 0xFF000000) | ti_red | ti_green | ti_blue )
+}
+
+
+procedure_local void Proc_GNE_SFXGlass(vector tv_pos, float grav, int nbr)
+{
+	int	mi_GFX_Key
+	object	to_light_n_smoke
+	to_light_n_smoke = @get_global o_global_light_and_smoke_kanada
+	if( ! to_light_n_smoke )
+		return
+	mi_GFX_Key = GFX_Add(13)
+	GFX_MaterialSet( mi_GFX_Key, to_light_n_smoke, -1)
+//	GFX_MaterialSet( mi_GFX_Key, get_SFX_light_and_smoke, -1 )
+	GFX_FlagSet( mi_GFX_Key, 0 , 1)
+	GFX_FlagSet( mi_GFX_Key, 2 , 1)
+	GFX_Seti( mi_GFX_Key, 13110,33)
+	GFX_Seti( mi_GFX_Key, 13111,34)
+	GFX_Seti( mi_GFX_Key, 13112,24)
+	GFX_Seti( mi_GFX_Key, 13113,25)
+	GFX_Seti( mi_GFX_Key, 13100,nbr)
+	GFX_Seti( mi_GFX_Key, 13106,nbr)
+	GFX_Setf( mi_GFX_Key, 13003,0.200000)
+	GFX_Setf( mi_GFX_Key, 13004,2.400000)
+	GFX_Seti( mi_GFX_Key, 13012,0.500000)
+	GFX_Seti( mi_GFX_Key, 13107,0)
+	GFX_Setf( mi_GFX_Key, 13000,0.050000)
+	GFX_Setf( mi_GFX_Key, 13001,0.0900000)
+	GFX_Setf( mi_GFX_Key, 13002,0.0010000)
+	GFX_Setf( mi_GFX_Key, 13005,0.200000)
+	GFX_Setf( mi_GFX_Key, 13006,0.600000)
+	GFX_Setf( mi_GFX_Key, 13007,grav)
+	GFX_Setv( mi_GFX_Key, 13203,cvector(0.01500, 0.01500, 0.02000))
+	GFX_Seti( mi_GFX_Key, 13103,-3551556)
+	GFX_Seti( mi_GFX_Key, 13104,0xFFFFFFFF) //-1178087748)
+	GFX_Seti( mi_GFX_Key, 13105,0x00FFFFFF)
+	GFX_Setf( mi_GFX_Key, 13009,-1.000000)
+	GFX_Setf( mi_GFX_Key, 13010,-4.000000)
+	GFX_Setf( mi_GFX_Key, 13011,7.4)
+	GFX_Setv( mi_GFX_Key, 13200, tv_pos)
+	GFX_Setv( mi_GFX_Key, 13201,OBJ_HorizonGet()) //cvector(1.00000, 0.00000, 0.0))
+	GFX_Setv( mi_GFX_Key, 13202,OBJ_HorizonGet()) // cvector(1.00000, 0.00000, 0.0))
+	GFX_Setv( mi_GFX_Key, 13204,cvector(0.00000, 0.00000, 0.00000))
+	GFX_Setv( mi_GFX_Key, 13205,cvector(0.00000, 0.00000, 0.00000))
+	GFX_Setv( mi_GFX_Key, 13206,cvector(0.00000, 0.00000, 0.00000))
+	GFX_Setv( mi_GFX_Key, 13207,0.10000 * OBJ_HorizonGet() )
+	GFX_Setv( mi_GFX_Key, 13208, 3.00000 * OBJ_SightGet() )
+	GFX_Setv( mi_GFX_Key, 13209,4.00000  * OBJ_BankingGet())
+	GFX_Seti( mi_GFX_Key, 13114,1)
+	GFX_Setf( mi_GFX_Key, 13013,-1.000000)
+	GFX_Setf( mi_GFX_Key, 13014,1.000000)
+	GFX_Setf( mi_GFX_Key, 13015,-0.050000)
+	GFX_Setf( mi_GFX_Key, 13016,0.050000)
+	GFX_Setf( mi_GFX_Key, 13008,0.000000)
+}
+
+procedure_local void Proc_GNE_SFXEtincelle(vector tv_pos, vector tv_direction)
+{
+	int	ti_GFX_Impact 
+
+	ti_GFX_Impact = GFX_Add(9)
+	GFX_FlagSet(ti_GFX_Impact , 0, 1)
+	GFX_FlagSet(ti_GFX_Impact , 2, 1)
+	GFX_MaterialSet(ti_GFX_Impact , get_SFX_light_and_smoke, 5)
+	GFX_Setf(ti_GFX_Impact, 9000, Cf_PiBy2)												// angle d'ouverture
+	GFX_Seti(ti_GFX_Impact, 9100, 5)														// Nombre
+	GFX_Seti(ti_GFX_Impact, 9101, Etincelle_Color) 										// couleur
+	GFX_Setf(ti_GFX_Impact, 9003, 0.99)														// friction
+	GFX_Setf(ti_GFX_Impact, 9001, 3.0)														// vitesse initiale minimum
+	GFX_Setf(ti_GFX_Impact, 9002, 6.0)														// vitesse initiale maximum
+	GFX_Setf(ti_GFX_Impact, 9004, 0.05)														// épaisseur
+	GFX_Setf(ti_GFX_Impact, 9005, 0.2)														// durée de vie minimum
+	GFX_Setf(ti_GFX_Impact, 9006, 1.3)														// durée de vie maximum
+	GFX_Setf(ti_GFX_Impact, 9007, 1.9)														// multiplicateur de longueur
+	GFX_Setf(ti_GFX_Impact, 9008, 0.0)														// generation périod
+	GFX_Setf(ti_GFX_Impact, 9009, 0.3)														// durée de mort minimun
+	GFX_Setf(ti_GFX_Impact, 9010, 0.51)														// durée de mort maximun
+	GFX_Seti(ti_GFX_Impact, 9102, 0b11000)												// Flags (1 => agrandissement centré)
+	GFX_Setv(ti_GFX_Impact, 9200, tv_pos)													// Origine des étincelles
+	GFX_Setv(ti_GFX_Impact, 9201, tv_direction)											// Direction
+	GFX_Setv(ti_GFX_Impact, 9202, cvector(0.0, 0.0, -5.0) )								// gravity
+	GFX_Seti(ti_GFX_Impact, 9103, 3) 												// Zorder
+}

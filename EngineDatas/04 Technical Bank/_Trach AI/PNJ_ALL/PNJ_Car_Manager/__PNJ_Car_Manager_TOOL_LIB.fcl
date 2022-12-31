@@ -1,0 +1,238 @@
+#include "PNJ_Car_Manager_defines.var"
+
+Include_UltraProcedure_Header
+
+procedure_ultra void PNJ_Car_Manager_Add_Gao(object to_gao, float tf_size, byref int ti_car_index)
+{
+	if (ti_car_index == -1)
+	{
+		ti_car_index = i_car_nb
+		ao_car[ti_car_index] = to_gao
+		af_car_size[ti_car_index] = tf_size
+		ai_car_remove[ti_car_index] = faux
+		i_car_nb++
+	}
+}
+
+procedure_ultra void PNJ_Car_Manager_Remove_Gao(object to_gao, byref int ti_car_index)
+{
+	if (ti_car_index != -1 && ao_car[ti_car_index] == to_gao)
+		ai_car_remove[ti_car_index] = vrai
+	ti_car_index = -1
+}
+
+procedure_ultra void PNJ_Car_Manager_Del_Gao(int ti_i)
+{
+	object	to_car_A	
+
+	if (ti_i != -1)
+	{
+		i_car_nb--
+
+		// ON INFORME LA VOITURE ENLEVEE QU'ELLE CHANGE D'INDEX
+		to_car_A = ao_car[ti_i]
+		if (to_car_A)
+		{
+			if (@to_car_A AI_IsModel("PNJ_Pacifique/PNJ_Car"))
+				@"PNJ_Pacifique/PNJ_Car" to_car_A i_my_index = -1
+			else if (@to_car_A AI_IsModel("PNJ_Pacifique/PNJ_Tank"))
+				@"PNJ_Pacifique/PNJ_Tank" to_car_A i_my_index = -1
+		}
+
+		// LES DERNIERS SERONT LES PREMIERS
+		ao_car[ti_i] = ao_car[i_car_nb]
+		af_car_size[ti_i] = af_car_size[i_car_nb]
+		av_car_speed[ti_i] = av_car_speed[i_car_nb]
+		ai_car_remove[ti_i] = ai_car_remove[i_car_nb]
+	
+		// ON EFFACE LE DERNIER
+		ao_car[i_car_nb] = nobody
+		af_car_size[i_car_nb] = 0.0
+		av_car_speed[i_car_nb] = Cv_NullVector
+		ai_car_remove[i_car_nb] = faux
+
+		// ON INFORME LA VOITURE DEPLACEE QU'ELLE CHANGE D'INDEX
+		to_car_A = ao_car[ti_i]
+		if (to_car_A)
+		{
+			if (@to_car_A AI_IsModel("PNJ_Pacifique/PNJ_Car"))
+				@"PNJ_Pacifique/PNJ_Car" to_car_A i_my_index = ti_i
+			else if (@to_car_A AI_IsModel("PNJ_Pacifique/PNJ_Tank"))
+				@"PNJ_Pacifique/PNJ_Tank" to_car_A i_my_index = ti_i
+		}
+	}
+}
+
+procedure_local void PNJ_Car_Manager_Inverse_Gao(int ti_index_A, int ti_index_B)
+{
+	object	to_car_A	
+	object	to_car_B
+
+	to_car_A = ao_car[ti_index_A]
+	to_car_B = ao_car[ti_index_B]
+
+	// TEMP = A
+	ao_car[i_car_nb] = ao_car[ti_index_A]
+	af_car_size[i_car_nb] = af_car_size[ti_index_A]
+	av_car_speed[i_car_nb] = av_car_speed[ti_index_A]
+	ai_car_remove[i_car_nb] = ai_car_remove[ti_index_A]
+
+	// A = B
+	ao_car[ti_index_A] = ao_car[ti_index_B]
+	af_car_size[ti_index_A] = af_car_size[ti_index_B]
+	av_car_speed[ti_index_A] = av_car_speed[ti_index_B]
+	ai_car_remove[ti_index_A] = ai_car_remove[ti_index_B]
+
+	// B = TEMP
+	ao_car[ti_index_B] = ao_car[i_car_nb]
+	af_car_size[ti_index_B] = af_car_size[i_car_nb]
+	av_car_speed[ti_index_B] = av_car_speed[i_car_nb]
+	ai_car_remove[ti_index_B] = ai_car_remove[i_car_nb]
+
+	// TEMP = NULL
+	ao_car[i_car_nb] = nobody
+	af_car_size[i_car_nb] = 0.0
+	av_car_speed[i_car_nb] = Cv_NullVector
+	ai_car_remove[i_car_nb] = faux
+
+	// ON INFORME LA VOITURE A QU'ELLE CHANGE D'INDEX
+	if (to_car_A)
+	{
+		if (@to_car_A AI_IsModel("PNJ_Pacifique/PNJ_Car"))
+			@"PNJ_Pacifique/PNJ_Car" to_car_A i_my_index = ti_index_B
+		else if (@to_car_A AI_IsModel("PNJ_Pacifique/PNJ_Tank"))
+			@"PNJ_Pacifique/PNJ_Tank" to_car_A i_my_index = ti_index_B
+	}
+
+	// ON INFORME LA VOITURE B QU'ELLE CHANGE D'INDEX
+	if (to_car_B)
+	{
+		if (@to_car_B AI_IsModel("PNJ_Pacifique/PNJ_Car"))
+			@"PNJ_Pacifique/PNJ_Car" to_car_B i_my_index = ti_index_A
+		else if (@to_car_B AI_IsModel("PNJ_Pacifique/PNJ_Tank"))
+			@"PNJ_Pacifique/PNJ_Tank" to_car_B i_my_index = ti_index_A
+	}
+	
+	return
+}
+
+
+procedure_local void PNJ_Car_Manager_Check_Collision()
+{
+	int			ti_i
+	int			ti_k
+	int			ti_intersection_nb
+	int			ti_moving_car_nb
+	
+	float		tf_inv_dt
+	float		tf_size_A
+	float		tf_size_B
+	float		tf_dot_product
+
+	vector	tv_pos_A
+	vector	tv_speed_A
+	vector	tv_pos_B	
+	vector	tv_speed_B
+	vector	tv_delta_speed	
+
+	object	to_car_A
+	object	to_car_B
+
+	tf_inv_dt = 1.0 / TIME_GetDt()
+
+	ti_intersection_nb = 0
+
+	// GESTION DE LA SECTO ET DES DESTRUCTION DE VOITURE
+	ti_moving_car_nb	= 0
+
+	for (ti_i = 0; ti_i < i_car_nb; ti_i++)
+	{
+		to_car_A = ao_car[ti_i]
+		if (@to_car_A OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna))
+			av_car_speed[ti_i] = @to_car_A DYN_SpeedGetVector()
+		else
+			av_car_speed[ti_i] = @to_car_A ODE_Getv(0)
+		
+		if (ai_car_remove[ti_i] || @to_car_A OBJ_FlagsControlGet() & (OBJ_C_ControlFlag_SectoInactive | OBJ_C_ControlFlag_ForceInactive))
+		{
+			PNJ_Car_Manager_Del_Gao(ti_i)
+			ti_i--
+		}
+		else if (@to_car_A AI_IsModel("PNJ_Pacifique/PNJ_Car") && ! (@to_car_A OBJ_CapaGet()) )
+		{
+			// Il faut mettre cette voiture au début
+			if (ti_i > ti_moving_car_nb)
+				PNJ_Car_Manager_Inverse_Gao(ti_moving_car_nb, ti_i)
+			ti_moving_car_nb++
+		}
+	}
+
+	// PREDICTION DE COLLISION
+	for (ti_i = 0; ti_i < ti_moving_car_nb; ti_i++)
+	{
+		AI_ClearStack()	
+	
+		for (ti_k = ti_i; ti_k < i_car_nb; ti_k++)
+		{
+			if (ti_i == ti_k)
+			{
+				af_car_col_time[ti_i][ti_k] = 0.0
+				continue	
+			}
+			
+			to_car_A = ao_car[ti_i]
+			to_car_B = ao_car[ti_k]
+			
+//			if (@to_car_A OBJ_CapaGet() && @to_car_B OBJ_CapaGet())
+//			{
+//				af_car_col_time[ti_i][ti_k] = Cf_Infinit
+//				af_car_col_time[ti_k][ti_i] = Cf_Infinit
+//				continue
+//			}
+	
+			if (@to_car_A OBJ_CapaTest(Capa_Grabbed) || @to_car_B OBJ_CapaTest(Capa_Grabbed))
+			{
+				af_car_col_time[ti_i][ti_k] = Cf_Infinit
+				af_car_col_time[ti_k][ti_i] = Cf_Infinit
+				continue
+			}
+		
+			ti_intersection_nb	++
+
+			tv_pos_A = @to_car_A OBJ_PosGet()
+			tv_speed_A = av_car_speed[ti_i]
+			tf_size_A = af_car_size[ti_i]
+		
+			tv_pos_B = @to_car_B OBJ_PosGet()
+			tv_speed_B = av_car_speed[ti_k]
+			tf_size_B = af_car_size[ti_k]
+
+			tf_dot_product = MATH_AbsFloat(MATH_VecDotProduct(@to_car_A OBJ_SightGet(), @to_car_B OBJ_SightGet()))
+			tf_dot_product = MATH_FloatBlend(1.0, 0.5, tf_dot_product)
+				
+			tf_size_A *= tf_dot_product
+			tf_size_B *= tf_dot_product
+
+			af_car_col_size[ti_i][ti_k] = tf_size_A
+			af_car_col_size[ti_k][ti_i] = tf_size_B
+
+//			DBG_RenderCircle(tv_pos_A + Cv_VerticalVector, tf_size_A, Cv_VerticalVector, color_blanc)
+//			DBG_RenderCircle(tv_pos_B + Cv_VerticalVector, tf_size_B, Cv_VerticalVector, color_blanc)
+		
+			af_car_col_time[ti_i][ti_k] = MATH_LIB_Get_Intersection_Time(tv_pos_A, tv_speed_A, tf_size_A, tv_pos_B, tv_speed_B, tf_size_B)
+			af_car_col_time[ti_k][ti_i] = af_car_col_time[ti_i][ti_k]
+			
+//			if (af_car_col_time[ti_i][ti_k] != Cf_Infinit && tf_size_A != tf_size_B)
+//			{
+//				DBG_RenderVector(tv_pos_A, tv_speed_A * af_car_col_time[ti_i][ti_k], color_rouge)
+//				DBG_RenderVector(tv_pos_B, tv_speed_B * af_car_col_time[ti_i][ti_k], color_rouge)
+//				DBG_RenderSphere(tv_pos_A + (tv_speed_A * af_car_col_time[ti_i][ti_k]), tf_size_A, 0x80000080)
+//				DBG_RenderSphere(tv_pos_B + (tv_speed_B * af_car_col_time[ti_i][ti_k]), tf_size_B, 0x80000080)
+//			}
+		}
+	}
+	
+	ti_intersection_nb = ti_intersection_nb
+
+	return
+}

@@ -1,0 +1,105 @@
+#include "KWC_Defines.var"
+
+//...also nicked from Martin G.
+//================================================================
+// Where is Ann ?
+// 0 : she's on the gound
+// 1 : she's on kong's shoulder
+// 2 : she's in kong's hand
+//================================================================
+procedure_local int KWC_WhereIsAnn()
+{
+	messageid 	tmid_grabAnn	
+	int 			ti_ann_kkgrab
+	int				ti_grabType
+	int				ti_whereSheIs
+	
+
+	ti_whereSheIs = Ci_AnnLocation_OnGround
+
+	tmid_grabAnn = EVENT_FindEventPereTarget( Ci_LNK_EVENT_OFFSET + Ci_LNK_KKGRAB_OBJECT, mo_ANN, mo_KONG )
+	ti_ann_kkgrab = MSG_GlobalIsValid( tmid_grabAnn)
+	if ( ti_ann_kkgrab )
+	{
+		ti_grabType = LNK_KKGrabObject_TypeGet(tmid_grabAnn)
+		if ( 	ti_grabType == Ci_KKGrabObject_Porte_Epaule ||
+				ti_grabType == Ci_KKGrabObject_Porte_Epaule_TroncD ||
+				ti_grabType == Ci_KKGrabObject_Porte_Epaule_TroncG )
+		{
+			// ANN is on the shoulder
+			ti_whereSheIs = Ci_AnnLocation_KongShoulder
+		}
+		else
+		{
+			// ANN is necessarily in the hand
+			ti_whereSheIs = Ci_AnnLocation_KongHand
+		}
+	}
+
+	return ti_whereSheIs
+}
+
+//...again, thanks MG
+procedure_local int KWC_GetAnnAttackAvailability(byref vector tv_pos)
+{
+	int				ti_availability
+	messageid 	tmid_vision_ID
+	int 			ti_visibility_context
+	int				ti_type_sol
+	
+
+	if (!mo_ANN)
+		return Ci_AnnAvailability_NotAvailable
+
+	tmid_vision_ID = EVENT_FindEventPereTarget(C_EVENT_TYPE_Visibility, mo_ANN, nobody)
+	if( MSG_GlobalIsValid(tmid_vision_ID) )
+	{
+		EVENT_VisionContextGetAll(tmid_vision_ID,ti_visibility_context,ti_type_sol)
+		
+		if ( ti_visibility_context == C_EVENT_CONTEXT_DEBOUT )
+			ti_availability = Ci_AnnAvailability_CanBeAttacked
+		else if ( ti_visibility_context == C_EVENT_CONTEXT_ACCROUPI )
+			ti_availability = Ci_AnnAvailability_CanBeFollowed
+		else
+			ti_availability = Ci_AnnAvailability_NotAvailable
+			
+		tv_pos = EVENT_PositionGet(tmid_vision_ID)
+	}
+	else
+	{
+		tv_pos = @mo_ANN OBJ_PosGet()
+		ti_availability = Ci_AnnAvailability_NotAvailable
+	}
+
+	return ti_availability
+}
+
+// nicked from Martin G....thanks Martin G. :)
+// check for minimal attack conditions on Kong
+procedure_local int KWC_CanHaveFightActor_Ann()
+{
+	int ti_whereIsAnn
+	int ti_annAvailability
+	vector tv_annPos
+	
+	if ( ( AI_TriggerIsValid( mt_AttackAnnTrigger ) ) )
+	{
+		if ( !call_trigger( mt_AttackAnnTrigger ) )
+		{
+			return faux
+		}
+	}
+	
+	//========================
+	ti_whereIsAnn	= KWC_WhereIsAnn()
+	if (ti_whereIsAnn != Ci_AnnLocation_OnGround)
+		return faux
+		
+	//========================
+	ti_annAvailability = KWC_GetAnnAttackAvailability( tv_annPos )
+	if (ti_annAvailability == Ci_AnnAvailability_NotAvailable)
+		return faux
+
+	// no reason not to attack her!
+	return vrai
+}

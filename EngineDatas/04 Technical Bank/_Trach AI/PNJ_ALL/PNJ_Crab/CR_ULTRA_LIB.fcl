@@ -1,0 +1,35 @@
+#include "CR_defines.var"
+
+procedure_ultra int CR_Soft_Collision_Enabled()
+{
+	if( i_modele == MODELE_Geant )
+		return faux
+	
+ 	if ( ! OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna) )
+		return faux
+
+	switch(i_etat_courant)
+	{
+		case ETAT_GRAB :
+			if( MSG_GlobalIsValid(mid_grab) )
+				return faux
+			else
+				return vrai
+			break
+		
+		case ETAT_MORT :
+		case ETAT_MANGE :
+		case ETAT_REPOUSSE :
+			return faux
+	}
+	
+	switch( ACT_ActionGet() )
+	{
+		case ACTION_Intimidation :
+			return faux
+	}
+	
+	return vrai
+}
+
+

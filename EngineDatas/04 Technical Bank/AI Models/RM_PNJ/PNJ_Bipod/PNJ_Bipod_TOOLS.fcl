@@ -1,0 +1,2209 @@
+#include "PNJ_Bipod_defines.var"
+
+Include_UltraProcedure_Header
+
+procedure_local void PNJ_Bipod_Disable_All()
+{
+	int		ti_i	
+
+	if ( ! i_flag_disable )
+	{
+		i_flag_disable = vrai
+
+		OBJ_FlagInvisibleSet(vrai)
+	
+		for (ti_i = 0; ti_i < i_col_modules_nb; ti_i++)
+		{
+			@ao_col_module[ti_i] OBJ_FlagInvisibleSet(vrai)
+			@ao_col_module[ti_i] OBJ_FlagInactiveSet(vrai)
+		}
+	}
+}
+
+procedure_local void PNJ_Bipod_Death_Halo()
+{
+	float		tf_coef
+	float		tf_dist
+	
+	vector	tv_pos
+	
+	object	to_camera
+	
+	if (f_time_start_etat > 1.5 && f_time_start_etat < 4.0)
+	{
+		if (GFX_Death_Halo == -1)
+		{
+			GFX_Death_Halo = GFX_Add( 18 )
+			GFX_MaterialSet( GFX_Death_Halo, get_SFX_light_and_smoke, 44)
+			GFX_FlagSet( GFX_Death_Halo, 2, 1)
+	
+			GFX_Setf( GFX_Death_Halo, 18000, 0.3)		// BIG Alpha
+			GFX_Setf( GFX_Death_Halo, 18001, 100.0)		// BIG Length Min
+			GFX_Setf( GFX_Death_Halo, 18002, 300.0)		// BIG Length Max
+			GFX_Setf( GFX_Death_Halo, 18003, 20.0)   	// BIG Width Min
+			GFX_Setf( GFX_Death_Halo, 18004, 100.0) 		// BIG Width Max
+			
+			GFX_Setf( GFX_Death_Halo, 18005, 0.3)		// SMALL Alpha
+			GFX_Setf( GFX_Death_Halo, 18006, 100.0) 		// SMALL Length Min
+			GFX_Setf( GFX_Death_Halo, 18007, 200.0)		// SMALL Length Max
+			GFX_Setf( GFX_Death_Halo, 18008, 25.0)	// SMALL Width Min
+			GFX_Setf( GFX_Death_Halo, 18009, 1)		// SMALL WIdth Max
+			
+			GFX_Setf( GFX_Death_Halo, 18010, 3.0)		// Facteur mulitplicatif de la longueur
+			GFX_Setf( GFX_Death_Halo, 18011, 1)		// Distance des points servant aux tests de visibilité
+			GFX_Setf( GFX_Death_Halo, 18012, 0.001)	// Temps d'apparition / disparition
+			
+			GFX_Seti( GFX_Death_Halo, 18101, 16)   					// Nombre de rayons
+			GFX_Seti( GFX_Death_Halo, 18103, 4)					// Flag ???
+	
+			GFX_Seti( GFX_Death_Halo, 18100, 1)					// Calcul des positions
+		}
+		
+		tv_pos = @o_bassin OBJ_PosGet()
+	
+		tf_coef = f_time_start_etat
+		tf_coef -= 1.5
+		tf_coef /= 2.5
+		tf_coef = 1.0 - tf_coef
+	
+		to_camera = VIEW_GetObject(0)
+		tf_dist = MATH_VecNorm(@to_camera OBJ_PosGet() - tv_pos)
+	
+		GFX_Setv( GFX_Death_Halo, 18200, tv_pos)		// Position
+	
+		GFX_Seti( GFX_Death_Halo, 18102, COLOR_Blend(0, 0xFFFFFFFF, tf_coef))		// Couleurs des rayons
+		GFX_Setf( GFX_Death_Halo, 18013, tf_dist - 200.0)												// Distance à la caméra
+	//	GFX_Seti( GFX_Death_Halo, 18100, 1)														// Calcul des positions
+	}
+	else
+	{
+		if (GFX_Death_Halo != -1)
+		{
+			GFX_Del(GFX_Death_Halo)
+			GFX_Death_Halo = -1
+		}
+	}
+}
+
+procedure_local void PNJ_Bipod_Death_Smoke()
+{
+	int		ti_i
+
+	vector	tv_wind
+	vector	tv_pos
+	vector	tv_offset
+	
+	if (i_flag_disable)
+	{
+		for (ti_i = 0; ti_i < 7; ti_i++)
+		{
+			if (GFX_Smoke[ti_i] != -1)
+			{
+				GFX_Del(GFX_Smoke[ti_i])
+				GFX_Smoke[ti_i] = -1
+			}
+		}
+		return
+	}
+	
+	for (ti_i = 0; ti_i < 7; ti_i++)
+	{
+		if (GFX_Smoke[ti_i] == -1)
+		{
+			GFX_Smoke[ti_i]= GFX_Add(13)																// Create the boum
+			
+			GFX_MaterialSet(GFX_Smoke[ti_i], get_SFX_light_and_smoke, -1)						// met le materiau
+			GFX_Seti(GFX_Smoke[ti_i], 13101, 8)															// Materiau 0
+	
+			GFX_Seti(GFX_Smoke[ti_i], 13100, 10)															// *Buffer number of sprite
+			GFX_Seti(GFX_Smoke[ti_i], 13106, 0xFFFFFFFF)												// *number of sprite to generate
+		
+			GFX_Setf(GFX_Smoke[ti_i], 13003, 0.2)															// Time fase 1
+			GFX_Setf(GFX_Smoke[ti_i], 13004, 1.0)															// Time fase 2
+		
+			GFX_Seti(GFX_Smoke[ti_i], 13107, 0)															// Sprites non triés
+		
+			GFX_FlagSet(GFX_Smoke[ti_i], 0 , 1)
+			GFX_FlagSet(GFX_Smoke[ti_i], 2 , 1)
+			
+			GFX_Setf(GFX_Smoke[ti_i], 13012, 0.75)														// Time random
+		
+			GFX_Setv(GFX_Smoke[ti_i], 13203, cvector(0.001, 0.001, 0.001))					// friction speed
+			GFX_Setf(GFX_Smoke[ti_i], 13000, 5.0)														// Growing speed min
+			GFX_Setf(GFX_Smoke[ti_i], 13001, 20.0)														// Growing speed max
+			GFX_Setf(GFX_Smoke[ti_i], 13002, 0.0001)													// Friction Grow
+	
+			GFX_Setf(GFX_Smoke[ti_i], 13007, 50.0)														// Gravity
+	
+			GFX_Setf(GFX_Smoke[ti_i], 13008, 0.2)														// generation rate
+		
+			GFX_Setv(GFX_Smoke[ti_i], 13205, Cv_NullVector)										// Mainposspeed
+			GFX_Setv(GFX_Smoke[ti_i], 13206, Cv_NullVector)										// Mainpossfriction
+	
+			GFX_Setf(GFX_Smoke[ti_i], 13009, 40.0)							// Norm speed min
+			GFX_Setf(GFX_Smoke[ti_i], 13010, 60.0)									// Norm speed max
+			GFX_Setf(GFX_Smoke[ti_i], 13005, 5.0)														// Creation size min
+			GFX_Setf(GFX_Smoke[ti_i], 13006, 10.0)														// Creation size max
+
+			GFX_Seti(GFX_Smoke[ti_i], 13103, 0x80202080)	// Color fase 0
+			GFX_Seti(GFX_Smoke[ti_i], 13104, 0xFF202040)	// Color fase 1
+			GFX_Seti(GFX_Smoke[ti_i], 13105, 0x00202020)	// Color fase 2
+		}
+	
+		tv_wind = Cv_NullVector
+		GFX_Setv(GFX_Smoke[ti_i], 13204, tv_wind)												// wind
+	
+		switch(ti_i)
+		{
+			case 0 :
+				tv_pos = @col_oreille_G OBJ_PosGet()
+				tv_offset = OBJ_HorizonGet() * 10.0 * OBJ_ZoomGet()
+				break
+			case 1 :
+				tv_pos = @col_oreille_D OBJ_PosGet()
+				tv_offset = -OBJ_HorizonGet() * 10.0 * OBJ_ZoomGet()
+				break
+			case 2 :
+				tv_pos = @col_cuisse_G OBJ_PosGet()
+				tv_offset = OBJ_HorizonGet() * 10.0 * OBJ_ZoomGet()
+				break
+			case 3 :
+				tv_pos = @col_cuisse_D OBJ_PosGet()
+				tv_offset = -OBJ_HorizonGet() * 10.0 * OBJ_ZoomGet()
+				break
+			case 4 :
+				tv_pos = @col_molet_G OBJ_PosGet()
+				tv_offset = OBJ_HorizonGet() * 10.0 * OBJ_ZoomGet()
+				break
+			case 5 :
+				tv_pos = @col_molet_D OBJ_PosGet()
+				tv_offset = -OBJ_HorizonGet() * 10.0 * OBJ_ZoomGet()
+				break
+			case 6 :
+				tv_pos = @o_grille OBJ_PosGet()
+				tv_offset = Cv_VerticalVector * 10.0 * OBJ_ZoomGet()
+				break
+
+		}
+
+		tv_pos -= tv_wind * TIME_GetDt()
+		GFX_Setv(GFX_Smoke[ti_i], 13200, tv_pos) 								// Creation Pos
+
+		GFX_Setv(GFX_Smoke[ti_i], 13201, tv_offset + cvector(-1.0, -1.0, -1.0))							// Speed min
+		GFX_Setv(GFX_Smoke[ti_i], 13202, tv_offset + cvector(1.0, 1.0, 1.0))								// Speed max
+
+	
+//		GFX_Setv(GFX_Smoke[ti_i], 13207, cvector(10.0, 0.0, 0.0))	// CreaPosAxe X
+//		GFX_Setv(GFX_Smoke[ti_i], 13208, cvector(0.0, 10.0, 0.0))	// CreaPosAxe Y
+//		GFX_Setv(GFX_Smoke[ti_i], 13209, cvector(0.0, 0.0, 10.0))	// CreaPosAxe Z
+//	
+//		GFX_Setf(GFX_Smoke[ti_i], 13011, tv_pos.z) // Z min
+	}
+}
+	
+
+procedure_local void PNJ_Bipod_GFX_Accumulation()
+{
+	int			ti_i	
+	int			ti_flag_ok
+
+	float		tf_norm
+	float		tf_coef
+
+	vector	tv_dir
+	vector	tv_pivot
+
+//	for (ti_i = 0; ti_i < 20; ti_i++)
+//	{
+//		if (ai_GFX_Line[ti_i] != -1)
+//		{
+//			GFX_Del(ai_GFX_Line[ti_i])
+//			ai_GFX_Line[ti_i] = -1
+//		}
+//	}
+
+	if (i_laser_state == Ci_Laser_Charge || (f_mort_coef && ! i_flag_crash_done ))
+	{
+		ti_flag_ok = vrai
+	
+		if (i_SND_Charge_Loop == -1)
+			i_SND_Charge_Loop = SND_RequestPlayLoopOnObjCanal(Ci_SND_Laser_Charge, Anim_Canal_Bassin)
+	}
+	else
+	{
+		ti_flag_ok = faux
+	
+		if (i_SND_Charge_Loop != -1)
+		{
+			SND_Stop(i_SND_Charge_Loop)
+			i_SND_Charge_Loop = -1
+		}	
+	}
+
+	for (ti_i = 0; ti_i < 20; ti_i++)
+	{
+		tf_coef = 1.0
+	
+		if (ti_flag_ok)
+		{
+			tf_coef = f_laser_phase_duration / 1.5
+			tf_coef = MATH_FloatMin(tf_coef, 1.0)
+
+			if (ti_i > tf_coef * 20.0)
+				continue
+		
+			if (ai_GFX_Line[ti_i] == -1)
+			{
+				ai_GFX_Line[ti_i] = GFX_Add(1)
+				GFX_FlagSet(ai_GFX_Line[ti_i] , 0, 1)
+				GFX_FlagSet(ai_GFX_Line[ti_i], 2, 1)
+				GFX_MaterialSet(ai_GFX_Line[ti_i], get_SFX_light_and_smoke, 59)
+				GFX_Setf(ai_GFX_Line[ti_i], 1000, 8.0)		// Epaisseur de la ligne
+
+				tv_pivot = MATH_VecRotate(@o_bassin OBJ_BankingGet(), @o_bassin OBJ_SightGet(), MATH_RandFloat(0.0, Cf_2Pi))
+				av_GFX_Line_pos[ti_i] = MATH_VecRotate(@o_bassin OBJ_SightGet(), tv_pivot, MATH_RandFloat(-Cf_PiBy6, Cf_PiBy6))
+				if (f_mort_coef)
+					av_GFX_Line_pos[ti_i] *= MATH_RandFloat(150.0, 200.0)
+				else
+					av_GFX_Line_pos[ti_i] *= MATH_RandFloat(75.0, 100.0)
+				av_GFX_Line_pos[ti_i] += @o_bassin OBJ_PosGet()
+			}
+		}
+		else
+		{
+			if (ai_GFX_Line[ti_i] == -1)
+				continue
+		}
+
+		tv_dir = av_GFX_Line_pos[ti_i] - @o_bassin OBJ_PosGet()
+	
+		if (MATH_VecDotProduct(tv_dir, @o_bassin OBJ_SightGet()) < 0.0)
+		{
+			if ( ! ti_flag_ok )	
+			{
+				GFX_Del(ai_GFX_Line[ti_i])
+				ai_GFX_Line[ti_i] = -1
+				continue
+			}
+			
+			tv_pivot = MATH_VecRotate(@o_bassin OBJ_BankingGet(), @o_bassin OBJ_SightGet(), MATH_RandFloat(0.0, Cf_2Pi))
+			av_GFX_Line_pos[ti_i] = MATH_VecRotate(@o_bassin OBJ_SightGet(), tv_pivot, MATH_RandFloat(-Cf_PiBy6, Cf_PiBy6))
+			if (f_mort_coef)
+				av_GFX_Line_pos[ti_i] *= MATH_RandFloat(150.0, 200.0)
+			else
+				av_GFX_Line_pos[ti_i] *= MATH_RandFloat(75.0, 100.0)
+			av_GFX_Line_pos[ti_i] += @o_bassin OBJ_PosGet()
+			
+			tv_dir = av_GFX_Line_pos[ti_i] - @o_bassin OBJ_PosGet()
+		}
+	
+		tf_norm = MATH_VecNorm(tv_dir)
+		if ( ! tf_norm )
+		{
+			GFX_Del(ai_GFX_Line[ti_i])
+			ai_GFX_Line[ti_i] = -1
+			continue
+		}	
+	
+		tv_dir /= tf_norm
+		av_GFX_Line_pos[ti_i] -= tv_dir * MATH_FloatBlend(100.0, 800.0, tf_coef) * TIME_GetDt()
+		
+		DBG_RenderVector(av_GFX_Line_pos[ti_i], tv_dir * 30.0, color_blanc)
+		GFX_Setv(ai_GFX_Line[ti_i], 1200, av_GFX_Line_pos[ti_i])
+		GFX_Setv(ai_GFX_Line[ti_i], 1201, av_GFX_Line_pos[ti_i] + (tv_dir * 50.0))
+		if (f_mort_coef)
+			GFX_Seti(ai_GFX_Line[ti_i], 1100, COLOR_Blend(0xFFFFFFFF, 0x0, tf_norm / 150.0))	// Couleur de la ligne
+		else
+			GFX_Seti(ai_GFX_Line[ti_i], 1100, COLOR_Blend(0xFFFFFFFF, 0x0, tf_norm / 75.0))	// Couleur de la ligne
+	}
+	return
+}
+
+procedure_local void PNJ_Bipod_Spawn()
+{
+	int			ti_i
+	int			ti_index
+	int			ti_sec1
+	int			ti_sec2
+	int			ti_sec3
+	int			ti_sec4
+
+	// SPAWNER DE LAPIN ========================================================================================
+	for (ti_i = 0; ti_i < 10; ti_i++)
+	{
+		if (ao_duplicated_bunny[ti_i] && @ao_duplicated_bunny[ti_i] OBJ_FlagsControlGet() & OBJ_C_ControlFlag_ForceInactive)
+		{
+			i_duplicated_bunny_nb--
+			ao_duplicated_bunny[ti_i] = nobody
+		}
+	}
+
+	f_bunny_gen_delay -= MATH_FloatMin(f_bunny_gen_delay, f_dt)
+	if (bunny && !f_bunny_gen_delay && i_duplicated_bunny_nb < max_bunny_nb && AI_TriggerIsValid(spawn_bunny) && call_trigger(spawn_bunny))
+	{
+		ti_index = ARR_ObjSearch(&ao_duplicated_bunny[0], 10, nobody)	
+		if (ti_index != -1)
+		{
+			f_bunny_gen_delay = 0.5
+			i_duplicated_bunny_nb++
+
+			ao_duplicated_bunny[ti_index] = @bunny OBJ_Duplicate(@o_grille_barreau OBJ_PosGet() + (@col_tete OBJ_BankingGet() * 6.0))
+			@ao_duplicated_bunny[ti_index] OBJ_HierarchySet(col_tete)
+			@bunny SCT_GetOf(&ti_sec1,&ti_sec2,&ti_sec3,&ti_sec4)
+			@ao_duplicated_bunny[ti_index] SCT_SetOf(ti_sec1,ti_sec2,ti_sec3,ti_sec4)
+		}
+	}
+}
+
+procedure_local void PNJ_Bipod_Oreille()
+{
+	int			ti_i
+
+	vector	tv_last_pos
+	vector	tv_pos
+	vector	tv_banking
+	vector	tv_tension
+
+	for (ti_i = 0; ti_i < 2; ti_i++)
+	{
+		@ao_col_father[1 + ti_i] OBJ_RestoreInitMatrix()
+		
+		if (i_flag_crash_done)
+		{
+		}
+		else if (f_mort_coef)
+		{
+			if (ti_i)
+				af_oreille_angle[ti_i] += 30.0 * TIME_GetDt()
+			else
+				af_oreille_angle[ti_i] -= 20.0 * TIME_GetDt()
+		}
+		else
+		{
+			if (ti_i)
+				af_oreille_angle[ti_i] += TIME_GetDt()
+			else
+				af_oreille_angle[ti_i] -= 0.8 * TIME_GetDt()
+		}
+			
+		
+		@ao_col_father[1 + ti_i] OBJ_RotateLocalZ(af_oreille_angle[ti_i])
+		av_oreille_last_pos[ti_i].z += (@o_bassin OBJ_PosGet().z - @col_tete OBJ_PosGet().z) * 0.5
+	
+		tv_last_pos = av_oreille_last_pos[ti_i]
+		av_oreille_last_pos[ti_i] += av_oreille_speed[ti_i] * af_oreille_friction_coef[ti_i] * f_dt
+		
+		tv_tension = @ao_col_father[1 + ti_i] OBJ_PosGet() + (@ao_col_father[1 + ti_i] OBJ_BankingGet() * 10.0)
+		if (OBJ_CapaTest(OBJ_Capa_1))
+		{
+			if (ti_i)
+			{
+				tv_tension -= @o_bassin OBJ_SightGet() * 5.0 * OBJ_ZoomGet()
+				tv_tension -= @o_bassin OBJ_HorizonGet() * 2.0 * OBJ_ZoomGet()
+			}
+			else
+			{	
+				tv_tension -= @o_bassin OBJ_SightGet() * 5.0 * OBJ_ZoomGet()
+				tv_tension += @o_bassin OBJ_HorizonGet() * 2.0 * OBJ_ZoomGet()
+			}
+		}
+		
+//		DBG_RenderVector(@ao_col_father[1 + ti_i] OBJ_PosGet(), @ao_col_father[1 + ti_i] OBJ_BankingGet() * 10.0, color_bleu)
+		tv_tension -= av_oreille_last_pos[ti_i]
+//		DBG_RenderVector(av_oreille_last_pos[ti_i], tv_tension, color_jaune)
+
+		av_oreille_last_pos[ti_i] += tv_tension * af_oreille_tension_coef[ti_i] * f_dt
+
+		tv_banking = av_oreille_last_pos[ti_i] - @ao_col_father[1 + ti_i] OBJ_PosGet()
+//		tv_banking = MATH_VecBlendRotate(tv_banking, @ao_col_father[1 + ti_i] OBJ_BankingGet(), 12.0 * f_dt)
+		@ao_col_father[1 + ti_i] OBJ_BankingGeneralSet(@ao_col_father[1 + ti_i] OBJ_SightGet(), tv_banking)
+		
+		av_oreille_last_pos[ti_i] = @ao_col_father[1 + ti_i] OBJ_PosGet()
+		av_oreille_last_pos[ti_i] += @ao_col_father[1 + ti_i] OBJ_BankingGet() * 10.0
+		
+		av_oreille_speed[ti_i] = av_oreille_last_pos[ti_i] - tv_last_pos
+		av_oreille_speed[ti_i] /= f_dt
+	}
+}
+
+procedure_local void PNJ_Bipod_Sound_Wind()
+{
+	vector	tv_pos	
+
+	if (COL_BV_PivotCollide(o_main_actor))
+	{
+		tv_pos = @o_main_actor OBJ_PosGet()
+		
+		if (i_SND_Wind_Loop2 == -1)
+		{
+			if (tv_pos.z > OBJ_PosGet().z + 150.0)
+			{
+				SND_M_FadeGroup(2, 0.1, 3.0)
+				i_SND_Wind_Loop2 = SND_RequestPlayLoop(Ci_SND_Wind_Loop2)
+				
+				if (i_SND_Wind_Loop1 != -1)
+				{
+					SND_Stop(i_SND_Wind_Loop1)
+					i_SND_Wind_Loop1 = -1
+				}
+			}
+		}
+		else
+		{
+			if (tv_pos.z < OBJ_PosGet().z + 140.0)
+			{
+				SND_Stop(i_SND_Wind_Loop2)
+				i_SND_Wind_Loop2 = -1
+			}
+		}
+
+		if (i_SND_Wind_Loop2 == -1)
+		{
+			if (i_SND_Wind_Loop1 == -1)
+			{
+				if (tv_pos.z > OBJ_PosGet().z + 60.0)
+				{
+					SND_M_FadeGroup(2, 0.5, 3.0)
+					i_SND_Wind_Loop1 = SND_RequestPlayLoop(Ci_SND_Wind_Loop1)
+				}
+			}
+			else
+			{
+				if (tv_pos.z < OBJ_PosGet().z + 50.0)
+				{
+					SND_M_FadeGroup(2, 1.0, 3.0)
+					SND_Stop(i_SND_Wind_Loop1)
+					i_SND_Wind_Loop1 = -1
+				}
+			}	
+		}
+	}
+	else
+	{
+		if (i_SND_Wind_Loop2 != -1)
+		{
+			SND_M_FadeGroup(2, 1.0, 3.0)
+			SND_Stop(i_SND_Wind_Loop2)
+			i_SND_Wind_Loop2 = -1
+		}
+
+		if (i_SND_Wind_Loop1 != -1)
+		{
+			SND_M_FadeGroup(2, 1.0, 3.0)
+			SND_Stop(i_SND_Wind_Loop1)
+			i_SND_Wind_Loop1 = -1
+		}
+	}
+}
+
+procedure_local void PNJ_Bipod_Pilot_Snake()
+{
+	int			ti_i
+	int			ti_k
+
+	float		tf_wanted_speed
+
+	object	to_spider
+
+	int			ti_snp_gao_nb	
+	object	toa_snp_overlap[100]
+
+	vector	tv_dest_pos
+
+	i_flag_spider_on_me = faux
+
+	ti_snp_gao_nb = COL_BVGetAllOverlaps(&toa_snp_overlap[0], OBJ_C_IdentityFlag_Anims, none, Ci_Filter_IdentityFlag)
+	for (ti_i = 0; ti_i < ti_snp_gao_nb; ti_i++)
+	{
+		to_spider = toa_snp_overlap[ti_i]
+		if ( ! @to_spider AI_IsModel(get_PNJ_Snake_path) )
+			continue
+
+		for (ti_k = 0; ti_k < i_col_modules_nb; ti_k++)
+		{
+			if (@to_spider OBJ_HierarchyGet() != ao_col_module[ti_k])
+				continue
+		
+			i_flag_spider_on_me	= vrai
+
+			switch(ti_k)
+			{
+				case 0 : // TETE
+				case 1 : // OREIILE GAUCHE
+				case 2 : // OREILLE DROITE
+				case 13 : // GRILLE SOCLE
+				case 14 : // GRILLE BARREAUX
+
+					tf_wanted_speed	= 50.0
+
+					if (MATH_VecSquareNorm(@col_cuisse_G OBJ_PosGet() - @to_spider OBJ_PosGet()) < MATH_VecSquareNorm(@col_cuisse_D OBJ_PosGet() - @to_spider OBJ_PosGet()))
+						tv_dest_pos = @col_cuisse_G OBJ_PosGet()
+					else
+						tv_dest_pos = @col_cuisse_D OBJ_PosGet()
+					break
+	
+				case 3 : // CUISSE GAUCHE
+
+					tf_wanted_speed	= 50.0
+
+					tv_dest_pos = @col_molet_G OBJ_PosGet()
+					break
+
+				case 4 : // CUISSE DROITE
+
+					tf_wanted_speed	= 50.0
+
+					tv_dest_pos = @col_molet_D OBJ_PosGet()
+					break
+
+
+				case 5 : // MOLET GAUCHE
+
+					tf_wanted_speed	= 50.0
+
+					tv_dest_pos = @col_pied_G OBJ_PosGet()
+					tv_dest_pos += @col_pied_G OBJ_BankingGet() * OBJ_ZoomGet() * 10.0
+					tv_dest_pos += @col_pied_G OBJ_SightGet() * OBJ_ZoomGet() * 4.0
+//					tv_dest_pos -= @col_pied_G OBJ_HorizonGet() * OBJ_ZoomGet() * 2.5
+
+					if (MATH_VecSquareNorm(tv_dest_pos - @to_spider OBJ_PosGet()) < 225.0)
+						@to_spider Proc_PNJ_Snake_External_Jump()
+					break					
+
+				case 7 : // PIED GAUCHE
+				case 9 : // ORTEIL G1
+				case 11 : // ORTEIL G2
+
+					tf_wanted_speed = -1.0
+
+					tv_dest_pos = @col_pied_G OBJ_PosGet()
+					tv_dest_pos += @col_pied_G OBJ_BankingGet() * OBJ_ZoomGet() * 10.0
+					tv_dest_pos += @col_pied_G OBJ_SightGet() * OBJ_ZoomGet() * 4.0
+//					tv_dest_pos -= @col_pied_G OBJ_HorizonGet() * OBJ_ZoomGet() * 2.5
+
+					if (MATH_VecSquareNorm(tv_dest_pos - @to_spider OBJ_PosGet()) < 225.0)
+						@to_spider Proc_PNJ_Snake_External_Jump()
+					break					
+
+				case 6 : // MOLET DROIT
+
+					tf_wanted_speed	= 50.0
+
+					tv_dest_pos = @col_pied_D OBJ_PosGet()
+					tv_dest_pos += @col_pied_D OBJ_BankingGet() * OBJ_ZoomGet() * 10.0
+					tv_dest_pos += @col_pied_D OBJ_SightGet() * OBJ_ZoomGet() * 4.0
+//					tv_dest_pos += @col_pied_D OBJ_HorizonGet() * OBJ_ZoomGet() * 2.5
+
+					if (MATH_VecSquareNorm(tv_dest_pos - @to_spider OBJ_PosGet()) < 225.0)
+						@to_spider Proc_PNJ_Snake_External_Jump()
+					break					
+
+				case 8 : // PIED DROIT
+				case 10 : // ORTEIL D1
+				case 12 : // ORTEIL D2
+
+					tf_wanted_speed = -1.0
+					
+					tv_dest_pos = @col_pied_D OBJ_PosGet()
+					tv_dest_pos += @col_pied_D OBJ_BankingGet() * OBJ_ZoomGet() * 10.0
+					tv_dest_pos += @col_pied_D OBJ_SightGet() * OBJ_ZoomGet() * 4.0
+//					tv_dest_pos += @col_pied_D OBJ_HorizonGet() * OBJ_ZoomGet() * 2.5
+
+					if (MATH_VecSquareNorm(tv_dest_pos - @to_spider OBJ_PosGet()) < 225.0)
+						@to_spider Proc_PNJ_Snake_External_Jump()
+					break					
+			}
+
+			@to_spider Proc_PNJ_Snake_External_Pilot(tv_dest_pos, tf_wanted_speed)
+		}
+	}
+}
+
+procedure_local void PNJ_Bipod_GFX_Smoke(vector tv_pos)
+{
+	int			ti_GFX_Smoke	
+
+	vector	tv_wind
+
+	if (OBJ_LodVisGet() <= 0.1)
+	{
+//		if (ti_GFX_Smoke != -1)
+//		{
+//			GFX_Seti(ti_GFX_Smoke, 13106, 0)												// *number of sprite to generate
+//			ti_GFX_Smoke = -1
+//		}
+		return
+	}
+
+//	if (ti_GFX_Smoke == -1)
+	{
+		ti_GFX_Smoke = GFX_Add(13)																// Create the boum
+		
+		GFX_MaterialSet(ti_GFX_Smoke, get_SFX_light_and_smoke, -1)						// met le materiau
+		GFX_Seti(ti_GFX_Smoke, 13101, 8)															// Materiau 0
+
+		GFX_Seti(ti_GFX_Smoke, 13100, 50)															// *Buffer number of sprite
+		GFX_Seti(ti_GFX_Smoke, 13106, 50)												// *number of sprite to generate
+	
+		GFX_Setf(ti_GFX_Smoke, 13003, 0.1)															// Time fase 1
+		GFX_Setf(ti_GFX_Smoke, 13004, 2.0)															// Time fase 2
+	
+		GFX_Seti(ti_GFX_Smoke, 13107, 0)															// Sprites non triés
+	
+		GFX_FlagSet(ti_GFX_Smoke, 0 , 1)
+		GFX_FlagSet(ti_GFX_Smoke, 2 , 1)
+		
+		GFX_Setf(ti_GFX_Smoke, 13012, 0.75)														// Time random
+	
+		GFX_Setv(ti_GFX_Smoke, 13203, cvector(0.01, 0.01, 0.0))					// friction speed
+		GFX_Setf(ti_GFX_Smoke, 13000, 1.0)														// Growing speed min
+		GFX_Setf(ti_GFX_Smoke, 13001, 2.0)														// Growing speed max
+		GFX_Setf(ti_GFX_Smoke, 13002, 0.0001)													// Friction Grow
+
+		GFX_Setf(ti_GFX_Smoke, 13007, -50.0)														// Gravity
+
+		GFX_Setf(ti_GFX_Smoke, 13008, 0.001)														// generation rate
+	
+		GFX_Setv(ti_GFX_Smoke, 13205, Cv_NullVector)										// Mainposspeed
+		GFX_Setv(ti_GFX_Smoke, 13206, Cv_NullVector)										// Mainpossfriction
+
+		GFX_Setv(ti_GFX_Smoke, 13201, cvector(-1.0, -1.0, 0.5))							// Speed min
+		GFX_Setv(ti_GFX_Smoke, 13202, cvector(1.0, 1.0, 0.5))								// Speed max
+		GFX_Setf(ti_GFX_Smoke, 13009, 75.0)							// Norm speed min
+		GFX_Setf(ti_GFX_Smoke, 13010, 120.0)									// Norm speed max
+		GFX_Setf(ti_GFX_Smoke, 13005, 10.0)														// Creation size min
+		GFX_Setf(ti_GFX_Smoke, 13006, 20.0)														// Creation size max
+	}
+
+	GFX_Seti(ti_GFX_Smoke, 13103, COLOR_Blend(0x40456779, 0x00000000 | (WOR_AmbiantColGet(0) & 0x00FFFFFF), 0.5))	// Color fase 0
+	GFX_Seti(ti_GFX_Smoke, 13104, COLOR_Blend(0xEE456779, 0x80000000 | (WOR_AmbiantColGet(0) & 0x00FFFFFF), 0.5))	// Color fase 1
+	GFX_Seti(ti_GFX_Smoke, 13105, COLOR_Blend(0x00456779, WOR_AmbiantColGet(0) & 0x00FFFFFF, 0.5))	// Color fase 2
+
+	tv_wind = Cv_NullVector
+	GFX_Setv(ti_GFX_Smoke, 13204, tv_wind)												// wind
+
+	tv_pos -= tv_wind * TIME_GetDt()
+	GFX_Setv(ti_GFX_Smoke, 13200, tv_pos) 								// Creation Pos
+
+//	GFX_Setv(ti_GFX_Smoke, 13207, cvector(10.0, 0.0, 0.0))	// CreaPosAxe X
+//	GFX_Setv(ti_GFX_Smoke, 13208, cvector(0.0, 10.0, 0.0))	// CreaPosAxe Y
+//	GFX_Setv(ti_GFX_Smoke, 13209, cvector(0.0, 0.0, 10.0))	// CreaPosAxe Z
+
+	GFX_Setf(ti_GFX_Smoke, 13011, tv_pos.z) // Z min
+
+}
+
+
+procedure_local void PNJ_Bipod_RayInsensitve(int ti_flag)
+{
+	int			ti_i
+	int			ti_flag_true
+	int			ti_flag_false
+
+	if (ti_flag)
+	{
+		ti_flag_true = OBJ_C_ControlFlag_RayInsensitive
+		ti_flag_false = none
+	}
+	else
+	{
+		ti_flag_true = none
+		ti_flag_false = OBJ_C_ControlFlag_RayInsensitive
+	}
+	
+	for (ti_i = 0; ti_i < i_col_modules_nb; ti_i++)
+		@ao_col_module[ti_i]  OBJ_FlagsControlSet(ti_flag_true, ti_flag_false)
+}
+
+procedure_local void PNJ_Bipod_Update_Col()
+{
+	int			ti_i
+
+	for (ti_i = 0; ti_i < i_col_modules_nb; ti_i++)
+	{
+		if (! ao_col_father[ti_i] )
+			continue
+
+		@ao_col_module[ti_i] OBJ_PosSet(@ao_col_father[ti_i] OBJ_PosGet())
+		@ao_col_module[ti_i] OBJ_BankingGeneralSet(@ao_col_father[ti_i] OBJ_SightGet(), @ao_col_father[ti_i] OBJ_BankingGet())
+	}
+}
+
+procedure_local void PNJ_Bipod_Init_IK()
+{
+	int			ti_i
+	int			ti_k
+	int			ti_membre_index
+
+	object	to_bone	
+
+	af_oreille_tension_coef[0] = MATH_RandFloat(4.0, 5.0)
+	af_oreille_tension_coef[1] = MATH_RandFloat(6.0, 8.0)
+
+	af_oreille_friction_coef[0]  = MATH_RandFloat(0.4, 0.5)
+	af_oreille_friction_coef[1]  = MATH_RandFloat(0.6, 0.7)
+
+	o_bassin = ANI_CanalObjectGet(Anim_Canal_Tete)
+	v_IK_bassin_pos = @o_bassin OBJ_PosGet()
+
+	v_IK_feet_sight = OBJ_SightGet()
+	v_IK_move_dir = OBJ_SightGet()
+	v_IK_constraint_sight = OBJ_SightGet()
+
+	for (ti_i = 0; ti_i < 2; ti_i++)
+	{
+		av_oreille_last_pos[ti_i] = @ao_col_father[1 + ti_i] OBJ_PosGet()
+		av_oreille_last_pos[ti_i] += @ao_col_father[1 + ti_i] OBJ_BankingGet() * 10.0
+
+		switch(ti_i)
+		{
+			case Ci_IK_pied_gauche :
+				ti_membre_index = Anim_Canal_PiedGauche
+				ao_IK_bones[ti_i][3] = ANI_CanalObjectGet(Anim_Canal_DoigtG1)
+				ao_IK_bones[ti_i][4] = ANI_CanalObjectGet(Anim_Canal_DoigtG2)
+				break
+			case Ci_IK_pied_droit :
+				ti_membre_index = Anim_Canal_PiedDroit
+				ao_IK_bones[ti_i][3] = ANI_CanalObjectGet(Anim_Canal_DoigtD1)
+				ao_IK_bones[ti_i][4] = ANI_CanalObjectGet(Anim_Canal_DoigtD2)
+				break
+		}	
+	
+		for (ti_k = 0; ti_k < 3; ti_k++)
+		{
+			to_bone = ANI_CanalObjectGet(ti_membre_index + (2 - ti_k))
+			ao_IK_bones[ti_i][ti_k] = to_bone
+		}
+
+		@ao_IK_bones[ti_i][0] OBJ_RestoreInitMatrix()
+		@ao_IK_bones[ti_i][1] OBJ_RestoreInitMatrix()
+		@ao_IK_bones[ti_i][2] OBJ_RestoreInitMatrix()
+		
+		af_IK_bones_length[ti_i][0] = MATH_VecNorm(@ao_IK_bones[ti_i][1] OBJ_PosGet() - @ao_IK_bones[ti_i][0] OBJ_PosGet())
+		af_IK_bones_length[ti_i][1] = MATH_VecNorm(@ao_IK_bones[ti_i][2] OBJ_PosGet() - @ao_IK_bones[ti_i][1] OBJ_PosGet())
+	
+		f_IK_leg_length[ti_i] = af_IK_bones_length[ti_i][0]
+		f_IK_leg_length[ti_i] += af_IK_bones_length[ti_i][1]
+	
+		av_hanche_sight[ti_i] = @ao_IK_bones[ti_i][0] OBJ_SightGet()
+		av_hanche_banking[ti_i] = @ao_IK_bones[ti_i][0] OBJ_BankingGet()
+		
+		v_IK_ground_pos[ti_i] = @ao_IK_bones[ti_i][2]  OBJ_PosGet()
+	}
+}
+
+procedure_local void PNJ_Bipod_IK()
+{
+	int			ti_i
+	int			ti_k
+	int			ti_flag_ok
+	int			ti_flag_force_ray
+	
+	float		tf_dt
+	float		tf_offset
+	float		tf_norm
+	float		tf_coef
+	float		tf_IK_coef
+	float		tf_sign
+	float		tf_dot_product
+	float		tf_walk_offset
+	float		tf_shake_cam_coef
+	float		tf_sound_insert_val
+	float		tf_bassin_offset
+
+	vector	tv_pied_pos
+	vector	tv_next_pied_pos
+	vector	tv_collide_pos
+	vector	tv_ray_start
+	vector	tv_ray_dir
+	vector	tv_ray_normale
+	vector	tv_bassin_dest_pos
+	vector	tv_dest_pos
+	vector	tv_X
+	vector	tv_Y
+	vector	tv_temp
+	vector	tv_start_quat
+	vector	tv_dest_quat
+	vector	tv_last_sight[2]
+	vector	tv_last_banking[2]
+	vector	tv_joy1_move
+	vector	tv_move_dir
+	
+	object	to_target
+	object	to_bone
+	
+	//vector	tv_queue_banking
+	//object	to_queue
+	
+	#define Ci_Feet_Index						2
+
+	#define Cf_walk_Z_blend_speed			20.0
+
+//	tf_coef = OBJ_LodVisGet() 
+//	if (tf_coef <= 0.001)
+//	{
+//		i_flag_IK_disable = vrai
+//		return
+//	}
+//	
+//	if (i_flag_IK_disable)
+//	{
+//		i_flag_IK_disable = faux
+//		PNJ_Bipod_Init_IK()
+//	}
+	
+	if (i_flag_can_stop_ik)
+		return
+
+	tf_dt = f_dt
+
+	// On rétabli la hierarchie vu qu'on n'a pas une anim
+	@o_bassin OBJ_RestoreInitMatrix()
+	for (ti_i = 0; ti_i < 2; ti_i++)
+	{
+		@ao_IK_bones[ti_i][0] OBJ_RestoreInitMatrix()
+		@ao_IK_bones[ti_i][1] OBJ_RestoreInitMatrix()
+		@ao_IK_bones[ti_i][2] OBJ_RestoreInitMatrix()
+		@ao_IK_bones[ti_i][3] OBJ_RestoreInitMatrix()
+		@ao_IK_bones[ti_i][4] OBJ_RestoreInitMatrix()
+	}
+
+	v_IK_ref_ground_pos = OBJ_PosGet()
+
+//	if (i_etat_courant == ETAT_Saute && f_time_start_etat > 1.0)
+//	{
+//		v_IK_ref_ground_pos += v_IK_bassin_pos - @o_bassin OBJ_PosGet()
+//		@o_bassin OBJ_PosSet(v_IK_bassin_pos)
+//	}
+
+	tv_ray_dir = OBJ_BankingGet()
+
+	// EST-CE QU'ON S'ADAPTE AU RELIEF DU SOL ??? =============================================================
+	tf_bassin_offset = 0.0
+	
+	PNJ_Bipod_RayInsensitve(vrai)
+
+	tf_shake_cam_coef = f_me_to_main - 100.0
+	tf_shake_cam_coef /= 200.0
+	tf_shake_cam_coef = MATH_FloatLimit(tf_shake_cam_coef, 0.0, 1.0)
+	tf_shake_cam_coef = 1.0 - tf_shake_cam_coef
+
+	for (ti_i = 0; ti_i < 2; ti_i++)
+	{
+		ti_flag_force_ray = faux
+		tf_walk_offset = 0.0
+
+		if (i_etat_courant == ETAT_Saute && f_time_start_etat > 1.0)
+		{
+			if (i_flag_jump)
+				tf_coef = MATH_FloatMin((f_time_start_etat - 1.0) * 2.0, 0.999)
+			else
+				tf_coef = 1.0
+		}
+		else if (i_lock_feet)
+		{
+			tf_coef = 1.0
+		}
+		else if (ti_i)
+		{
+			if (f_walk_angle > Cf_PiBy2)
+			{
+				tf_coef = 1.0
+			}
+			else
+			{
+				tf_coef = MATH_Sin(f_walk_angle)
+				tf_walk_offset = MATH_Sin(f_walk_angle * 2.0) 
+				tf_sound_insert_val = tf_walk_offset
+			}
+		}
+		else
+		{
+			if (f_walk_angle <= Cf_PiBy2)
+			{
+				tf_coef = 1.0
+			}
+			else
+			{
+				tf_coef = MATH_Sin(f_walk_angle - Cf_PiBy2)
+				tf_walk_offset = MATH_Sin((f_walk_angle - Cf_PiBy2) * 2.0)
+				tf_sound_insert_val = tf_walk_offset
+			}
+		}
+	
+		tf_walk_offset *= 10.0 * OBJ_ZoomGet()
+		tv_move_dir = v_IK_move_dir
+		
+		// OFFSET DE REFERENCE =================================================
+		switch(i_etat_courant)
+		{
+			case ETAT_Tombe :
+				break
+
+			case ETAT_Saute :
+				if (ti_i)
+					f_IK_anticipation_dist[ti_i] = MATH_FloatBlend(f_IK_anticipation_dist[ti_i], f_foot_side_sign * 15.0 * OBJ_ZoomGet(), 10.0 * f_dt)
+				else
+					f_IK_anticipation_dist[ti_i] = MATH_FloatBlend(f_IK_anticipation_dist[ti_i], -f_foot_side_sign * 15.0 * OBJ_ZoomGet(), 10.0 * f_dt)
+				break
+
+			case ETAT_Titube :
+				f_IK_anticipation_dist[ti_i] = MATH_FloatBlend(f_IK_anticipation_dist[ti_i], 0.9 * f_speed, 10.0 * f_dt)
+				break
+				
+			case ETAT_Wii_Rumble :
+
+				if (i_move_num_left > i_move_num_right)
+					tv_joy1_move = IO_JoyGetAcc(1)
+				else
+					tv_joy1_move = IO_JoyGetAcc(0)
+					
+				if ( i_flag_stop_move && MATH_VecSquareNorm(tv_joy1_move) > 0.01 &&  f_IK_snap_coef[ti_i] < 1.0)
+				{
+					tv_move_dir = tv_joy1_move
+					tf_norm = MATH_VecNorm(tv_move_dir)
+					if (tf_norm)
+						tv_move_dir /= tf_norm
+					f_IK_anticipation_dist[ti_i] = MATH_FloatBlend(f_IK_anticipation_dist[ti_i], tf_norm * 10.0 *  OBJ_ZoomGet(), 10.0 * f_dt)
+				}
+				else
+				{
+					f_IK_anticipation_dist[ti_i] = MATH_FloatBlend(f_IK_anticipation_dist[ti_i], 0.5 * f_speed, 10.0 * f_dt)
+				}
+		
+			case ETAT_Wii_Move :
+				if ( i_flag_ik_shoot )
+				{
+					tv_move_dir	= MATH_VecBlendRotate(OBJ_SightGet(), f_foot_side_sign * -OBJ_HorizonGet(), 0.25)
+				
+					if (ti_i)
+						f_IK_anticipation_dist[ti_i] = MATH_FloatBlend(f_IK_anticipation_dist[ti_i], f_foot_side_sign * 20.0 * OBJ_ZoomGet(), 10.0 * f_dt)
+					else
+						f_IK_anticipation_dist[ti_i] = MATH_FloatBlend(f_IK_anticipation_dist[ti_i], -f_foot_side_sign * 20.0 * OBJ_ZoomGet(), 10.0 * f_dt)
+				}
+				else
+				{
+					f_IK_anticipation_dist[ti_i] = MATH_FloatBlend(f_IK_anticipation_dist[ti_i], 0.5 * f_speed, 10.0 * f_dt)
+				}
+				break
+				
+			default:
+				if (i_flag_ik_shoot )
+				{
+					if (ti_i)
+						f_IK_anticipation_dist[ti_i] = MATH_FloatBlend(f_IK_anticipation_dist[ti_i], f_foot_side_sign * 20.0 * OBJ_ZoomGet(), 10.0 * f_dt)
+					else
+						f_IK_anticipation_dist[ti_i] = MATH_FloatBlend(f_IK_anticipation_dist[ti_i], -f_foot_side_sign * 20.0 * OBJ_ZoomGet(), 10.0 * f_dt)
+				}
+				else
+				{
+					f_IK_anticipation_dist[ti_i] = MATH_FloatBlend(f_IK_anticipation_dist[ti_i], 0.85 * f_speed, 10.0 * f_dt)
+				}
+		}
+
+		tv_next_pied_pos = @ao_IK_bones[ti_i][Ci_Feet_Index] OBJ_PosGet()
+		tv_next_pied_pos += tv_move_dir * tf_coef * f_IK_anticipation_dist[ti_i]
+//		DBG_RenderVector(tv_next_pied_pos, Cv_VerticalVector * 1000.0, color_rouge)
+
+		// ROTATION HANCHE ======================================================
+		if (tf_coef < 1.0)
+		{
+			i_flag_get_quat_axis[ti_i] = faux
+
+			// DEBLOCCAGE DE PIED			
+			tv_X = MATH_VecBlendRotate(av_hanche_sight[ti_i], @ao_IK_bones[ti_i][0] OBJ_SightGet(), tf_coef * 2.0)
+			tv_Y = MATH_VecBlendRotate(av_hanche_banking[ti_i], @ao_IK_bones[ti_i][0] OBJ_BankingGet(), tf_coef * 2.0)
+			@ao_IK_bones[ti_i][0] OBJ_BankingGeneralSet(tv_X, tv_Y)
+
+			// ANTICIPATION
+			tv_start_quat = OBJ_SightGet()
+			tv_dest_quat = v_IK_feet_sight
+			if (ti_i)
+				tv_dest_quat -= MATH_FloatMin(MATH_VecDotProduct(tv_dest_quat, -OBJ_HorizonGet()), 0.0) * -OBJ_HorizonGet()
+			else
+				tv_dest_quat -= MATH_FloatMin(MATH_VecDotProduct(tv_dest_quat, OBJ_HorizonGet()), 0.0) * OBJ_HorizonGet()
+			tv_dest_quat = MATH_VecBlendRotate(OBJ_SightGet(), tv_dest_quat, tf_coef)
+			tv_dest_quat -= MATH_VecDotProduct(tv_dest_quat, tv_ray_dir) * tv_ray_dir
+	
+			tv_start_quat = @ao_IK_bones[ti_i][0] MATH_VecGlobalToLocal(tv_start_quat)
+			tv_dest_quat = @ao_IK_bones[ti_i][0] MATH_VecGlobalToLocal(tv_dest_quat)
+			@ao_IK_bones[ti_i][0] OBJ_Rotate_FromTo(tv_start_quat, tv_dest_quat)
+
+			@ao_IK_bones[ti_i][Ci_Feet_Index] OBJ_RotateLocalX(- MATH_Sin(tf_coef * Cf_Pi) * 1.0)
+
+			if (tf_coef < 0.5)
+			{
+				@ao_IK_bones[ti_i][Ci_Feet_Index + 1] OBJ_RotateLocalX(MATH_Sin(tf_coef * Cf_2Pi) * 0.35)
+				@ao_IK_bones[ti_i][Ci_Feet_Index + 2] OBJ_RotateLocalX(MATH_Sin(tf_coef * Cf_2Pi) * 0.35)
+			}
+		}
+		else if ( ! i_flag_get_quat_axis[ti_i] )
+		{
+			i_flag_get_quat_axis[ti_i] = vrai
+
+			// ANTICIPATION
+			tv_start_quat = OBJ_SightGet()
+			tv_dest_quat = v_IK_feet_sight
+			if (ti_i)
+				tv_dest_quat -= MATH_FloatMin(MATH_VecDotProduct(tv_dest_quat, -OBJ_HorizonGet()), 0.0) * -OBJ_HorizonGet()
+			else
+				tv_dest_quat -= MATH_FloatMin(MATH_VecDotProduct(tv_dest_quat, OBJ_HorizonGet()), 0.0) * OBJ_HorizonGet()
+			tv_dest_quat -= MATH_VecDotProduct(tv_dest_quat, tv_ray_dir) * tv_ray_dir
+	
+			tv_start_quat = @ao_IK_bones[ti_i][0] MATH_VecGlobalToLocal(tv_start_quat)
+			tv_dest_quat = @ao_IK_bones[ti_i][0] MATH_VecGlobalToLocal(tv_dest_quat)
+			@ao_IK_bones[ti_i][0] OBJ_Rotate_FromTo(tv_start_quat, tv_dest_quat)
+
+			v_IK_constraint_sight = v_IK_feet_sight // OBJ_SightGet()
+	
+			av_hanche_sight[ti_i] = @ao_IK_bones[ti_i][0] OBJ_SightGet()
+			av_hanche_banking[ti_i] = @ao_IK_bones[ti_i][0] OBJ_BankingGet()
+		}
+		else
+		{
+			@ao_IK_bones[ti_i][0] OBJ_BankingGeneralSet(av_hanche_sight[ti_i], av_hanche_banking[ti_i])
+		}
+
+		// DEPLACEMENT PIED ==============================================================================
+		if (tf_coef < 1.0 || f_IK_snap_coef[ti_i] < 1.0)
+		{
+			// NE NOUS MARCHONS PAS SUR LES PIEDS
+			tv_temp = tv_next_pied_pos
+			tv_temp -= v_IK_ground_pos[MATH_Modulo(ti_i+ 1, 2)]
+			tv_temp -= MATH_VecDotProduct(tv_temp, tv_ray_dir) * tv_ray_dir
+			tf_norm = MATH_VecSquareNorm(tv_temp)
+			if (tf_norm < 2500.0)
+			{
+				tv_temp /= MATH_FloatSqrt(tf_norm)
+				tv_temp *= 50.0
+				tv_temp += v_IK_ground_pos[MATH_Modulo(ti_i+ 1, 2)]
+				tv_temp.z = tv_next_pied_pos.z
+				
+				tv_next_pied_pos = tv_temp
+			}
+		}
+
+		if (tf_coef < 1.0)
+		{
+			// Le pied bouge
+			if ( f_IK_snap_coef[ti_i] == 1.0)
+			{
+				if (i_SND_Move_Loop != -1)
+				{
+					SND_Stop(i_SND_Move_Loop)
+					i_SND_Move_Loop = -1
+				}
+
+				if (tf_coef)
+				{
+					if (ti_i)
+					{
+						SND_RequestPlayOnObjCanal(Ci_SND_Move_Start, Anim_Canal_PiedDroit)
+						i_SND_Move_Loop = SND_RequestPlayLoopOnObjCanal(Ci_SND_Move_Loop, Anim_Canal_JambeDroite)
+					}
+					else
+					{
+						SND_RequestPlayOnObjCanal(Ci_SND_Move_Start, Anim_Canal_PiedGauche)
+						i_SND_Move_Loop = SND_RequestPlayLoopOnObjCanal(Ci_SND_Move_Loop, Anim_Canal_JambeGauche)
+					}
+				}
+			}
+			
+			if (i_SND_Move_Loop != -1)
+				SND_InsertVarSet(i_SND_Move_Loop, 12, tf_sound_insert_val)
+	
+			f_IK_snap_coef[ti_i]	= 1.0 - tf_coef
+			f_IK_ground_coef[ti_i] = 1.0 - tf_coef
+
+			tv_pied_pos = v_IK_ground_pos[ti_i] 
+			tv_pied_pos += MATH_VecDotProduct(tv_next_pied_pos - tv_pied_pos, tv_ray_dir) * tv_ray_dir
+
+//			tv_pied_pos = MATH_VecBlendRotate(tv_pied_pos - OBJ_PosGet(), tv_next_pied_pos - OBJ_PosGet(), tf_coef)
+//			tv_pied_pos += OBJ_PosGet()
+
+			tv_pied_pos = MATH_VecBlend(tv_pied_pos, tv_next_pied_pos, tf_coef)
+		}
+		else 
+		{
+			// Le pied est posé
+			if (i_rebound_nb)
+				f_IK_ground_coef[ti_i] -= MATH_FloatMin(f_IK_ground_coef[ti_i], 2.0 * TIME_GetDt())
+			else
+				f_IK_ground_coef[ti_i] += MATH_FloatMin(1.0 - f_IK_ground_coef[ti_i], 6.0 * tf_dt)
+
+			if (f_IK_snap_coef[ti_i] == 1.0)
+			{
+				// OK, on a sauvé la position ou le pied a été posé
+				tv_pied_pos = v_IK_ground_pos[ti_i] 
+				tv_pied_pos -= MATH_VecDotProduct(tv_pied_pos - tv_next_pied_pos, tv_ray_dir) * tv_ray_dir
+			}
+			else
+			{
+				// Première trame ou le pied est posé
+				ti_flag_force_ray = vrai
+			
+				if (i_SND_Move_Loop != -1)
+				{
+					SND_Stop(i_SND_Move_Loop)
+					i_SND_Move_Loop = -1
+				}
+		
+				f_IK_snap_coef[ti_i] = 1.0	
+				tv_pied_pos = tv_next_pied_pos
+
+				PNJ_Bipod_GFX_Smoke(v_IK_ground_pos[ti_i])
+//				PROC_SFX_EXPLOSION_SOL(200.0, tv_pied_pos)
+
+				if (ti_i)
+				{
+					SND_RequestPlayOnObjCanal(Ci_SND_Ground_Impact, Anim_Canal_PiedDroit)
+					SND_RequestPlayOnObjCanal(Ci_SND_Ground_Impact2, Anim_Canal_PiedDroit)
+				}
+				else
+				{
+					SND_RequestPlayOnObjCanal(Ci_SND_Ground_Impact, Anim_Canal_PiedGauche)
+					SND_RequestPlayOnObjCanal(Ci_SND_Ground_Impact2, Anim_Canal_PiedGauche)
+				}
+
+				if ( ! i_flag_main_on_me )
+				{
+					if ( ! f_mort_coef )
+						f_bassin_shake = 0.3
+
+					if (@o_main_actor COL_CollideType(COL_C_Ground) && tf_shake_cam_coef)
+						@get_Kamera Proc_Kam_RumbleSet(tf_shake_cam_coef * 0.05, tf_shake_cam_coef * 6.0)
+				}
+			}
+		}
+	
+		tv_ray_start = tv_pied_pos
+		tv_ray_start -= MATH_VecDotProduct(tv_ray_start - @ao_IK_bones[ti_i][1] OBJ_PosGet(), tv_ray_dir) * tv_ray_dir
+	
+		if ( ! ti_flag_force_ray && f_IK_snap_coef[ti_i] == 1.0)
+		{
+			tv_collide_pos = v_IK_ground_pos[ti_i] 
+			tv_ray_normale = v_IK_ground_normale[ti_i]
+
+			tf_offset = MATH_VecDotProduct(tv_collide_pos - v_IK_ref_ground_pos, tv_ray_dir)
+		}
+		else if (COL_RayObject_Dist(tv_ray_start, -tv_ray_dir, f_IK_leg_length[ti_i] * 2.0, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable))
+		{
+			tv_collide_pos = COL_RayObject_PosGet()
+			tv_ray_normale = COL_RayObject_NormalGet()
+
+			tv_collide_pos.z -= 1.0 * OBJ_ZoomGet()	
+	
+			DBG_RenderVector(tv_ray_start, tv_collide_pos - tv_ray_start, color_vert)
+			DBG_RenderVector(tv_collide_pos, tv_ray_normale, color_jaune)
+
+			v_IK_ground_pos[ti_i] = tv_collide_pos 
+			v_IK_ground_normale[ti_i] = MATH_VecBlendRotate(v_IK_ground_normale[ti_i], tv_ray_normale, 4.0 * tf_dt)
+
+			tf_offset = MATH_VecDotProduct(tv_collide_pos - v_IK_ref_ground_pos, tv_ray_dir)
+
+//			tf_dot_product = MATH_VecDotProduct(@ao_IK_bones[ti_i][Ci_Feet_Index] OBJ_PosGet() - v_IK_ref_ground_pos, tv_ray_dir)
+//			tf_offset -= tf_dot_product
+//			tf_offset += tf_dot_product /  MATH_VecDotProduct(tv_ray_dir, tv_ray_normale)
+		}
+		else
+		{
+//			DBG_RenderVector(tv_ray_start, -tv_ray_dir * f_IK_leg_length[ti_i], color_rouge)
+
+			v_IK_ground_pos[ti_i] = tv_pied_pos
+			v_IK_ground_normale[ti_i] = MATH_VecBlendRotate(v_IK_ground_normale[ti_i], tv_ray_dir, 4.0 * tf_dt)
+			tf_offset = 0.0	
+		}
+		
+		if (tf_offset >= f_IK_Z_offset[ti_i])
+			f_IK_Z_offset[ti_i] = tf_offset // MATH_FloatBlend(f_IK_Z_offset[ti_i], tf_offset, 20.0 * tf_dt)
+		else
+			f_IK_Z_offset[ti_i] = MATH_FloatBlend(f_IK_Z_offset[ti_i], tf_offset, Cf_walk_Z_blend_speed * tf_dt)
+	
+		v_IK_dest_pos[ti_i] = tv_pied_pos
+		v_IK_dest_pos[ti_i] += tv_ray_dir * (f_IK_Z_offset[ti_i] + tf_walk_offset)
+
+		if (i_rebound_nb)
+		{
+			f_impact_delay -= MATH_FloatMin(f_impact_delay, TIME_GetDt())
+			if ( ! f_impact_delay || f_feet_Z_offset[ti_i])
+			{
+				f_feet_Z_speed[ti_i] -= 300.0 * TIME_GetDt()
+				f_feet_Z_offset[ti_i] += f_feet_Z_speed[ti_i] * TIME_GetDt()
+				f_feet_Z_offset[ti_i] = MATH_FloatMax(f_feet_Z_offset[ti_i], 0.0)
+			
+				v_IK_dest_pos[ti_i].z += f_feet_Z_offset[ti_i]
+			}
+		}
+	}
+	
+	// DECALAGE EN Z DU BASSIN POUR QUE LES PIEDS PUISSENT TOUCHER LE SOL ============================================
+	if (i_etat_courant == ETAT_Saute)
+	{
+		if (f_time_start_etat < 0.85)
+		{
+			tf_bassin_offset = MATH_FloatMin(f_IK_Z_offset[Ci_IK_pied_gauche], f_IK_Z_offset[Ci_IK_pied_droit]) * 0.85
+			
+			tf_coef = f_time_start_etat
+			tf_coef /= 0.85
+			tf_coef *= tf_coef
+			tf_coef *= tf_coef
+			tf_coef = MATH_Sin(tf_coef * Cf_Pi)
+			tf_bassin_offset -= tf_coef * 15.0 * OBJ_ZoomGet()
+
+			tv_bassin_dest_pos = @o_bassin OBJ_PosGet()
+			tv_bassin_dest_pos += tv_ray_dir * tf_bassin_offset
+	
+			tv_temp	= MATH_VecBlend(v_IK_dest_pos[1], v_IK_dest_pos[0], 0.5)
+			tv_temp -= @o_bassin OBJ_PosGet()
+			tv_temp -= MATH_VecDotProduct(tv_temp, tv_ray_dir) * tv_ray_dir
+
+			tv_bassin_dest_pos += tv_temp
+		
+			tv_temp = v_IK_bassin_pos
+			v_IK_bassin_pos	= MATH_VecBlend(v_IK_bassin_pos, tv_bassin_dest_pos, 8.0 * TIME_GetDt())
+
+			v_bassin_speed = (v_IK_bassin_pos - tv_temp) / TIME_GetDt()
+			v_bassin_speed.x *= 2.0
+			v_bassin_speed.y *= 2.0
+			v_bassin_speed.z = 320.0
+		}
+		else
+		{
+			if (i_flag_jump)
+			{	
+				v_IK_bassin_pos += v_bassin_speed * TIME_GetDt()
+				v_IK_bassin_pos.z += 0.5 * -600.0 * (TIME_GetDt() * TIME_GetDt())
+	
+				v_bassin_speed.z -= 600.0 * TIME_GetDt()
+			}
+			else
+			{
+				tv_temp	= MATH_VecBlend(v_IK_dest_pos[1], v_IK_dest_pos[0], 0.5)
+				tv_temp.z = @o_bassin OBJ_PosGet().z
+//				tv_temp.z += 600.0 / 20.0
+
+				tv_temp -= v_IK_bassin_pos
+				
+				DBG_RenderVector(v_IK_bassin_pos, tv_temp, color_jaune)	
+		
+				tv_temp.x *= 20.0
+				tv_temp.y *= 20.0
+				tv_temp.z *= 20.0
+
+				tv_temp.z -= 600.0
+
+				v_IK_bassin_pos = DYN_LIB_Position_After_N_Seconds(v_IK_bassin_pos, v_bassin_speed, cvector(2.0, 2.0, 4.0), tv_temp, TIME_GetDt(), 0.0)
+			}
+		}
+	}
+	else if (i_etat_courant == ETAT_Tombe)
+	{
+		if (i_flag_crash_done)
+		{
+			i_flag_can_stop_ik = vrai
+		}
+		else
+		{
+			v_bassin_speed *= MATH_Exp( -0.2 * TIME_GetDt())
+			v_bassin_speed.z -= 200.0 * TIME_GetDt()
+			
+			tv_temp = v_bassin_speed
+			tv_temp.x = 0.0
+			tv_temp.y = 0.0
+			tf_norm = MATH_VecNorm(tv_temp)
+			tv_temp = tv_temp / tf_norm
+			
+			if (tv_temp.z < 0.0)
+			{
+				tv_ray_start = v_IK_bassin_pos
+				if (COL_RayObject_Dist(tv_ray_start, tv_temp, (13.0 * OBJ_ZoomGet()) + (tf_norm * TIME_GetDt()), all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable))
+				{
+					DBG_RenderVector(tv_ray_start, tv_temp * ((13.0 * OBJ_ZoomGet()) + (tf_norm * TIME_GetDt())), color_rouge)
+					
+					i_rebound_nb++
+					f_impact_delay = 0.2
+				
+					if (i_rebound_nb < 3)
+					{
+						v_bassin_speed.x = 0.0
+						v_bassin_speed.y = 0.0
+						v_bassin_speed.z = (3 - i_rebound_nb) * 30.0
+						
+						if (f_feet_Z_offset[0] <= 0.0)
+							f_feet_Z_speed[0] = v_bassin_speed.z * 0.8
+						if (f_feet_Z_offset[1] <= 0.0)
+							f_feet_Z_speed[1] = v_bassin_speed.z * 0.8
+					}
+					else
+					{
+						i_flag_can_stop_ik = vrai	
+						i_flag_crash_done = vrai
+	
+						v_bassin_speed = Cv_NullVector
+					}
+								
+					v_ground_normale = COL_RayObject_NormalGet()
+					SND_RequestPlayOnObjCanal(Ci_SND_Ground_Impact, Anim_Canal_Tete)
+					SND_RequestPlayOnObjCanal(Ci_SND_Ground_Impact2, Anim_Canal_Tete)
+	
+					if (@o_main_actor COL_CollideType(COL_C_Ground) && tf_shake_cam_coef)
+						@get_Kamera Proc_Kam_RumbleSet(tf_shake_cam_coef * 0.05, tf_shake_cam_coef * 6.0)
+			
+					v_IK_bassin_pos = COL_RayObject_PosGet()
+					v_IK_bassin_pos -= tv_temp * 13.0 * OBJ_ZoomGet()
+				}
+				else
+				{
+					v_IK_bassin_pos += v_bassin_speed * TIME_GetDt()
+				}
+			}
+			else
+			{
+				v_IK_bassin_pos += v_bassin_speed * TIME_GetDt()
+			}
+		}
+	}
+	else
+	{
+		tf_bassin_offset = MATH_FloatMin(f_IK_Z_offset[Ci_IK_pied_gauche], f_IK_Z_offset[Ci_IK_pied_droit]) * 0.85
+	
+		// SHAKE QUAND ON POSE UN PIED
+		f_bassin_shake -= MATH_FloatMin(f_bassin_shake, tf_dt)
+		if (f_bassin_shake)
+		{
+			tf_coef = f_bassin_shake / 0.3
+			tf_bassin_offset -= MATH_Sin(tf_coef * Cf_Pi) * 2.0 * OBJ_ZoomGet()
+		}
+
+		tv_temp	= Cv_NullVector
+
+		if (f_mort_coef)
+		{
+			// JE TITUBE
+			
+			tf_coef = MATH_Sin((f_walk_angle * 4.0) - 1.9)
+			tf_bassin_offset -= f_mort_coef * 10.0 * OBJ_ZoomGet()
+			tf_bassin_offset += (tf_coef - 1.0) * 2.0 * OBJ_ZoomGet()
+			
+			tv_temp = OBJ_PosGet()
+			tv_temp += v_IK_move_dir * f_mort_coef * 25.0 * OBJ_ZoomGet()
+			tv_temp -= @o_bassin OBJ_PosGet()
+			tv_temp -= MATH_VecDotProduct(tv_temp, tv_ray_dir) * tv_ray_dir
+		}
+		else if ( OBJ_CapaTest(OBJ_Capa_1) )
+		{
+			// JE SUIS EN POSITION AGRESSIVE	
+		
+			if ( ! i_flag_ik_shoot )
+			{
+				// ON N'EST PAS ENCORE ORIENTE
+				tf_bassin_offset -= 5.0 * OBJ_ZoomGet()
+
+				tf_coef = MATH_Sin((f_walk_angle * 2.0) - Cf_PiBy4)
+				tv_temp	= MATH_VecBlend(v_IK_dest_pos[1], v_IK_dest_pos[0], (1.0 + tf_coef)  * 0.5)
+				tv_temp -= @o_bassin OBJ_PosGet()
+				tv_temp -= MATH_VecDotProduct(tv_temp, tv_ray_dir) * tv_ray_dir
+				tv_temp *= 0.5
+			}
+			else if (f_walk_force_angle != -1.0)
+			{
+				// ON FAIT LES DEUX DERNIERS PAS
+				f_low_pos_duration = 1.0
+			
+				tf_bassin_offset -= MATH_FloatBlend(5.0, 20.0, f_walk_force_angle / Cf_Pi) * OBJ_ZoomGet()
+
+				tf_coef = MATH_Sin((f_walk_angle * 2.0) - Cf_PiBy4)
+				tv_temp	= MATH_VecBlend(v_IK_dest_pos[1], v_IK_dest_pos[0], (1.0 + tf_coef)  * 0.5)
+				tv_temp -= @o_bassin OBJ_PosGet()
+				tv_temp -= MATH_VecDotProduct(tv_temp, tv_ray_dir) * tv_ray_dir
+				tv_temp *= 0.3
+			}
+			else
+			{
+				// PRES A TIRER
+				f_low_pos_duration = 1.0
+				
+				tf_bassin_offset -= 20.0 * OBJ_ZoomGet()
+
+				tv_temp	= OBJ_PosGet()
+				tv_temp -= @o_bassin OBJ_PosGet()
+				tv_temp -= MATH_VecDotProduct(tv_temp, tv_ray_dir) * tv_ray_dir
+				
+				if (i_laser_state == Ci_Laser_Move)
+					tv_temp -= MATH_VecNormalize(v_laser_shoot_pos - v_IK_bassin_pos) * 10.0 * OBJ_ZoomGet()
+			}
+		}
+		else if (i_lock_feet && f_speed < 5.0)
+		{
+			// JE SUIS A L'ARRET
+			tv_temp	= MATH_VecBlend(v_IK_dest_pos[1], v_IK_dest_pos[0], 0.5)
+			tv_temp -= @o_bassin OBJ_PosGet()
+			tv_temp -= MATH_VecDotProduct(tv_temp, tv_ray_dir) * tv_ray_dir
+			tv_temp *= 1.0 - f_low_pos_duration
+		}
+		else
+		{
+			// JE ME DEPLACE
+			tf_coef = MATH_Sin((f_walk_angle * 4.0) - 1.9)
+			tf_bassin_offset += (tf_coef - 1.0) * 2.0 * OBJ_ZoomGet()
+
+			tf_coef = MATH_Sin((f_walk_angle * 2.0) - Cf_PiBy4)
+			tv_temp	= MATH_VecBlend(v_IK_dest_pos[1], v_IK_dest_pos[0], (1.0 + tf_coef)  * 0.5)
+			tv_temp -= @o_bassin OBJ_PosGet()
+			tv_temp -= MATH_VecDotProduct(tv_temp, tv_ray_dir) * tv_ray_dir
+			tv_temp *= (1.0 - f_low_pos_duration) * 0.85
+		}
+
+		if (f_low_pos_duration)
+		{
+			// ON REVIENT D'UNE POSITION ACCROUPIE
+			f_low_pos_duration -= MATH_FloatMin(f_low_pos_duration, TIME_GetDt())
+			tf_bassin_offset = MATH_FloatMin(tf_bassin_offset, f_bassin_Z_offset + (40.0 * TIME_GetDt()))
+		}
+
+		f_bassin_Z_offset = tf_bassin_offset
+
+		tv_bassin_dest_pos = @o_bassin OBJ_PosGet()
+		tv_bassin_dest_pos += tv_ray_dir * f_bassin_Z_offset
+		tv_bassin_dest_pos += tv_temp
+	
+		tv_temp = v_IK_bassin_pos
+
+		f_bassin_blend_coef += MATH_FloatMin(1.0 - f_bassin_blend_coef, tf_dt) 
+
+		tv_temp = (tv_bassin_dest_pos - v_IK_bassin_pos)
+		tv_temp.x *= 40.0
+		tv_temp.y *= 40.0
+		tv_temp.z *= 20.0
+//		tv_temp.z -= 600.0
+
+		v_IK_bassin_pos = DYN_LIB_Position_After_N_Seconds(v_IK_bassin_pos, v_bassin_speed, cvector(8.0, 8.0, 4.0), tv_temp, TIME_GetDt(), 0.0)
+
+//		v_IK_bassin_pos.x = MATH_FloatBlend(v_IK_bassin_pos.x, tv_bassin_dest_pos.x, f_bassin_blend_coef * 6.0 * tf_dt)
+//		v_IK_bassin_pos.y = MATH_FloatBlend(v_IK_bassin_pos.y, tv_bassin_dest_pos.y, f_bassin_blend_coef * 6.0 * tf_dt)
+//		v_IK_bassin_pos.z = MATH_FloatBlend(v_IK_bassin_pos.z, tv_bassin_dest_pos.z, f_bassin_blend_coef * 8.0 * tf_dt)
+//		
+//		v_bassin_speed = (v_IK_bassin_pos - tv_temp) / TIME_GetDt()
+	}
+
+	@o_bassin OBJ_PosSet(v_IK_bassin_pos)
+	
+	if (i_etat_courant == ETAT_Saute && i_flag_jump && v_bassin_speed.z < 0.0 && f_time_start_etat > 1.0)
+	{
+		if (@ao_IK_bones[0][2] OBJ_PosGet().z < v_IK_dest_pos[0].z)
+			i_flag_jump = faux
+		else if (@ao_IK_bones[1][2] OBJ_PosGet().z < v_IK_dest_pos[1].z)
+			i_flag_jump = faux
+			
+		if (!i_flag_jump)
+			AI_Execute("PNJ_Bipod_exec_EarthQuake")
+	}
+
+	// ORIENTATION CORPS =====================================================================================
+	tv_last_sight[Ci_IK_pied_gauche] = @ao_IK_bones[Ci_IK_pied_gauche][0] OBJ_SightGet()
+	tv_last_banking[Ci_IK_pied_gauche] = @ao_IK_bones[Ci_IK_pied_gauche][0] OBJ_BankingGet()
+
+	tv_last_sight[Ci_IK_pied_droit] = @ao_IK_bones[Ci_IK_pied_droit][0] OBJ_SightGet()
+	tv_last_banking[Ci_IK_pied_droit] = @ao_IK_bones[Ci_IK_pied_droit][0] OBJ_BankingGet()
+
+	if (i_etat_courant == ETAT_Tombe)
+	{
+//		if (i_flag_crash_done)
+//		{
+////			tv_temp = v_ground_normale
+////			tv_temp -= MATH_VecDotProduct(tv_temp, @o_bassin OBJ_HorizonGet()) * @o_bassin OBJ_HorizonGet()
+////			v_IK_bassin_sight = MATH_VecBlendRotate(v_IK_bassin_sight, tv_temp, 2.0 * tf_dt)
+//		}
+//		else
+//		{
+//			tv_temp = -v_bassin_speed
+//			tv_temp -= MATH_VecDotProduct(tv_temp, @o_bassin OBJ_HorizonGet()) * @o_bassin OBJ_HorizonGet()
+//			v_IK_bassin_sight = MATH_VecBlendRotate(v_IK_bassin_sight, tv_temp, 6.0 * tf_dt)
+//		}
+//
+		tv_temp = MATH_VecBlendRotate(Cv_VerticalVector, v_IK_move_dir, f_mort_coef * 0.8)
+		tv_temp = MATH_VecCrossProduct(@o_bassin OBJ_HorizonGet(), tv_temp)
+		v_IK_bassin_sight = MATH_VecBlendRotate(v_IK_bassin_sight, tv_temp, 6.0 * tf_dt)
+	}
+	else if (i_etat_courant == ETAT_Titube)
+	{
+		tv_temp = MATH_VecBlendRotate(Cv_VerticalVector, v_IK_move_dir, f_mort_coef * 0.8)
+		tv_temp = MATH_VecCrossProduct(@o_bassin OBJ_HorizonGet(), tv_temp)
+		v_IK_bassin_sight = MATH_VecBlendRotate(v_IK_bassin_sight, tv_temp, 6.0 * tf_dt)
+	}
+	else if (i_etat_courant == ETAT_Saute)
+	{
+		tv_temp = MATH_VecBlendRotate(OBJ_SightGet(), -Cv_VerticalVector, 0.5)
+		v_IK_bassin_sight = MATH_VecBlendRotate(v_IK_bassin_sight, tv_temp, 1.0 * tf_dt)
+	}
+	else
+	{
+		if (i_etat_courant == ETAT_Wii_Move)
+			tv_temp = OBJ_PosGet() + (v_dest_sight * 200.0)
+		else if (i_laser_state != Ci_Laser_Wait)
+			tv_temp = v_laser_shoot_pos
+		else
+			tv_temp = @o_main_actor OBJ_PosGet()
+			
+		tv_temp -= @o_bassin OBJ_PosGet()
+	
+		if (OBJ_CapaTest(OBJ_Capa_1) && MATH_VecDotProduct(tv_temp, OBJ_SightGet()) > 5.0 * OBJ_ZoomGet())
+		{
+			if (i_laser_state != Ci_Laser_Move)
+				v_IK_bassin_sight = MATH_VecBlendRotate(v_IK_bassin_sight, tv_temp, 2.0 * tf_dt)
+			else
+				v_IK_bassin_sight = MATH_VecBlendRotate(v_IK_bassin_sight, tv_temp, 12.0 * tf_dt)
+		}
+		else
+		{
+			v_IK_bassin_sight = MATH_VecBlend(v_IK_bassin_sight, @o_bassin OBJ_SightGet(), 2.0 * tf_dt)
+		}
+
+		v_IK_bassin_sight -= MATH_VecDotProduct(v_IK_bassin_sight, @o_bassin OBJ_HorizonGet()) * @o_bassin OBJ_HorizonGet()
+	}
+
+	@o_bassin OBJ_SightGeneralSet(v_IK_bassin_sight, @o_bassin OBJ_BankingGet())
+
+	@ao_IK_bones[Ci_IK_pied_gauche][0] OBJ_BankingGeneralSet(tv_last_sight[Ci_IK_pied_gauche], tv_last_banking[Ci_IK_pied_gauche])
+	@ao_IK_bones[Ci_IK_pied_droit][0] OBJ_BankingGeneralSet(tv_last_sight[Ci_IK_pied_droit], tv_last_banking[Ci_IK_pied_droit])
+
+	PNJ_Bipod_RayInsensitve(faux)
+
+	// ON EXECUTE L'IK =============================================================================================================
+	for (ti_i = 0; ti_i < 2; ti_i++)
+	{
+		tv_pied_pos = v_IK_dest_pos[ti_i]
+
+		tv_last_sight[ti_i] = @ao_IK_bones[ti_i][Ci_Feet_Index] OBJ_SightGet()
+		tv_last_banking[ti_i] = @ao_IK_bones[ti_i][Ci_Feet_Index] OBJ_BankingGet()
+	
+//		OBJ_LIB_IK(	ao_IK_bones[ti_i][0], ao_IK_bones[ti_i][1], 
+//							af_IK_bones_length[ti_i][0], af_IK_bones_length[ti_i][1], 
+//							tv_pied_pos, @ao_IK_bones[ti_i][1] OBJ_SightGet(), 1.0)
+
+		OBJ_LIB_IK_Unaligned(	ao_IK_bones[ti_i][0], ao_IK_bones[ti_i][1], ao_IK_bones[ti_i][2],
+											af_IK_bones_length[ti_i][0], af_IK_bones_length[ti_i][1], 
+											tv_pied_pos, @ao_IK_bones[ti_i][0] OBJ_SightGet(), 1.0)
+
+		@ao_IK_bones[ti_i][Ci_Feet_Index] OBJ_BankingGeneralSet(tv_last_sight[ti_i], tv_last_banking[ti_i])
+
+		if (f_IK_ground_coef[ti_i])
+		{
+			tv_start_quat = @ao_IK_bones[ti_i][Ci_Feet_Index] MATH_VecGlobalToLocal(tv_ray_dir)
+			tv_dest_quat = MATH_VecBlend(tv_start_quat, @ao_IK_bones[ti_i][Ci_Feet_Index] MATH_VecGlobalToLocal(v_IK_ground_normale[ti_i]), f_IK_ground_coef[ti_i])
+			@ao_IK_bones[ti_i][Ci_Feet_Index] OBJ_Rotate_FromTo(tv_start_quat, tv_dest_quat)
+		}
+	}
+	
+	return
+}
+
+//procedure_local void PNJ_Bipod_Bomb()
+//{
+//	int			ti_i
+//	int			ti_kill_them_all
+//	int			ti_modulo
+//	
+//	float		tf_coef
+//	float		tf_dt
+//	float		tf_sqr_dt
+//	float		tf_grav_dt
+//	float		tf_grav_sqr_dt
+//	float		tf_duration
+//	float		tf_main_dist
+//	float		tf_temp
+//	float		tf_main_speed
+//	float		tf_speed_coef
+//	float		tf_cadence
+//	float		tf_radius
+//
+//	vector	tv_pos
+//	vector	tv_normal
+//	vector	tv_me_to_main
+//	vector	tv_orth_main
+//	vector	tv_temp
+//	vector	tv_main_speed_axis
+//	vector	tv_wall_pos
+//
+//	#define Cf_Bomb_Gravity				-40.0
+//	#define Cf_Bomb_Rand_Radius		10.0
+//
+//	if ( ! OBJ_CapaTest(OBJ_Capa_0) )
+//		ti_kill_them_all = vrai
+//	else
+//		ti_kill_them_all = @o_main_actor PROC_RM_Paf_Mode_Get()
+//
+//	tf_dt = TIME_GetDt()
+//	tf_sqr_dt = tf_dt * tf_dt
+//
+//	tf_grav_dt = Cf_Bomb_Gravity * tf_dt
+//	tf_grav_sqr_dt = Cf_Bomb_Gravity * tf_sqr_dt
+//
+//	tv_main_speed_axis = @o_main_actor DYN_SpeedGetVector()
+//	tv_main_speed_axis.z = 0.0
+//	tf_main_speed = MATH_VecNorm(tv_main_speed_axis)
+//	if (tf_main_speed > 20.0)
+//		tv_main_speed_axis *= 1.5
+//	else
+//		tv_main_speed_axis	= @o_main_actor OBJ_SightGet() * 10.0
+//
+//	tf_speed_coef = MATH_FloatBlend(0.0, 1.0, tf_main_speed * 0.1)
+//
+//	tv_me_to_main = @o_main_actor OBJ_PosGet()
+//	tv_me_to_main -= OBJ_PosGet()
+//	tv_me_to_main.z = 0.0
+//	tf_main_dist = MATH_VecNorm(tv_me_to_main)
+//	if (tf_main_dist)
+//		tv_me_to_main /= tf_main_dist
+//	else
+//		tv_me_to_main = OBJ_SightGet()
+//	
+//	tv_orth_main = tv_me_to_main
+//	tv_orth_main.z = tv_orth_main.x
+//	tv_orth_main.x = -tv_orth_main.y
+//	tv_orth_main.z = 0.0
+//
+//	tv_wall_pos = @o_main_actor OBJ_PosGet()
+//	if (tf_main_speed > 20.0)
+//		tv_wall_pos += @o_main_actor DYN_SpeedGetVector() * 1.8
+//	else
+//		tv_wall_pos -= tv_me_to_main * 10.0
+//	v_wall_dest_pos = MATH_VecBlend(v_wall_dest_pos, tv_wall_pos, 12.0 * TIME_GetDt())
+//	tv_wall_pos = v_wall_dest_pos
+//
+//	tf_cadence = 0.1
+//	tf_radius = Cf_Bomb_Rand_Radius
+//
+//	f_bomb_delay -= tf_dt
+//	if (f_bomb_delay < 0.0)
+//	{
+//		f_bomb_delay += tf_cadence
+//		if ( ! ti_kill_them_all )
+//		{
+//			ai_bomb_state[i_bomb_launch_index] = Ci_Bomb_Init
+//			i_bomb_launch_index = MATH_Modulo(i_bomb_launch_index + 1, 100)
+//		}
+//	}
+//
+//	for (ti_i = 0; ti_i < 100; ti_i++)
+//	{
+//		AI_ClearStack()	
+//	
+//		switch(ai_bomb_state[ti_i])
+//		{
+//			case Ci_Bomb_Init :
+//
+//				av_bomb_pos[ti_i] = @o_bassin OBJ_PosGet()
+//				av_bomb_pos[ti_i] += @o_bassin OBJ_SightGet() * 15.0 * OBJ_ZoomGet()
+//				av_bomb_pos[ti_i] += @o_bassin OBJ_BankingGet() * 10.0 * OBJ_ZoomGet()
+//
+//				tv_pos = @o_main_actor BV_RandomPosGet(0)
+//				tv_pos.z = OBJ_PosGet().z + 50.0
+//					
+//				COL_RayObject_Dist(tv_pos, cvector(0.0, 0.0, -1.0), 200.0, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+//				tv_pos = COL_RayObject_PosGet()
+//				tv_normal = COL_RayObject_NormalGet()
+//
+//				av_bomb_dest_pos[ti_i] = tv_pos + (tv_normal * 0.1)
+//				av_bomb_dest_normal[ti_i] = tv_normal
+//				af_bomb_radius[ti_i] = tf_radius
+//
+////				MATH_LIB_PHY_Impulsion_Get(vector tv_start_pos, vector tv_dest_pos, vector tv_gravity, float tf_wanted_speed, byref float tf_X)		
+//				av_bomb_speed[ti_i] = MATH_LIB_PHY_Impulsion_Get(av_bomb_pos[ti_i], av_bomb_dest_pos[ti_i], cvector(0.0, 0.0, Cf_Bomb_Gravity), 100.0, tf_duration, faux)
+//				if (tf_duration > 10.0)
+//					av_bomb_speed[ti_i] = MATH_LIB_PHY_Impulsion_Get(av_bomb_pos[ti_i], av_bomb_dest_pos[ti_i], cvector(0.0, 0.0, Cf_Bomb_Gravity), 150.0, tf_duration, vrai)
+//				af_bomb_move_duration[ti_i] = tf_duration
+//
+//				// GFX
+//				if ( ai_bomb_halo[ti_i] > 0)
+//				{
+//					GFX_Del(ai_bomb_halo[ti_i])
+//					ai_bomb_halo[ti_i] = -1
+//				}
+//				
+//				if ( ai_bomb_halo[ti_i] <= 0 )
+//				{
+//					ai_bomb_halo[ti_i] = GFX_Add(21)                                 	 //création du halo
+//					GFX_MaterialSet(ai_bomb_halo[ti_i], get_SFX_light_and_smoke,0) 	// affectation du matériau
+//					GFX_Setf(ai_bomb_halo[ti_i], 21000, tf_radius)             // taille du halo
+//					GFX_Setf(ai_bomb_halo[ti_i], 21004, 20.0)                       // taille du halo
+//					GFX_Seti(ai_bomb_halo[ti_i], 21101, 0xFF)          // couleur du halo
+//					GFX_Seti(ai_bomb_halo[ti_i], 21100, 4)
+//				}
+//				
+//				GFX_Setv(ai_bomb_halo[ti_i], 21200, av_bomb_pos[ti_i])
+//				GFX_Setv(ai_bomb_halo[ti_i], 21201, - MATH_VecNormalize(av_bomb_speed[ti_i]))
+//
+//				ai_bomb_state[ti_i] = Ci_Bomb_Move
+//
+//				break
+//				
+//			case Ci_Bomb_Move :
+//		
+//				af_bomb_move_duration[ti_i] -= TIME_GetDt()	
+//				if (af_bomb_move_duration[ti_i] > 0.0)
+//				{	
+//					// Dynamique
+//					av_bomb_pos[ti_i] += av_bomb_speed[ti_i] * tf_dt
+//					av_bomb_pos[ti_i].z += tf_grav_sqr_dt
+//					av_bomb_speed[ti_i].z += tf_grav_dt
+//					
+//					// GFX
+//					GFX_Setv(ai_bomb_halo[ti_i], 21200, av_bomb_pos[ti_i])
+//					GFX_Setv(ai_bomb_halo[ti_i], 21201, - MATH_VecNormalize(av_bomb_speed[ti_i]))
+//				}
+//				else
+//				{
+//					af_bomb_move_duration[ti_i]	= 1.0
+//				
+//					ai_bomb_state[ti_i] = Ci_Bomb_Impact
+//					GFX_Setv(ai_bomb_halo[ti_i], 21200, av_bomb_dest_pos[ti_i])
+//					GFX_Setv(ai_bomb_halo[ti_i], 21201, av_bomb_dest_normal[ti_i])
+//				}
+//			
+//				break
+//				
+//			case Ci_Bomb_Impact :
+//
+//				tf_coef = af_bomb_move_duration[ti_i]
+//				tf_coef /= 1.0
+//
+//				af_bomb_move_duration[ti_i] -= TIME_GetDt()	
+//				if (af_bomb_move_duration[ti_i] > 0.0)
+//				{
+//					tv_temp = @o_main_actor OBJ_PosGet() - av_bomb_dest_pos[ti_i]
+//					tf_temp = tv_temp.z
+//					tv_temp.z = 0.0
+//				
+//					if (tf_temp < tf_coef * 5.0)
+//					{
+//						tf_temp = af_bomb_radius[ti_i]
+//						tf_temp *= 0.75
+//						tf_temp *= tf_coef 
+//
+//						DBG_RenderCylinder(av_bomb_dest_pos[ti_i], av_bomb_dest_normal[ti_i] * tf_coef * 5.0, tf_temp, color_blanc)
+//
+//						tf_temp *= tf_temp
+//						if (MATH_VecSquareNorm(tv_temp) < tf_temp)
+//							EVENT_AddEventPafCanal( C_EVENT_FILTER_Object,  C_PAF_RM_Fort, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_main_actor, -1, 10.0, @o_main_actor OBJ_SightGet(), OBJ_PosGet())	
+//					}
+//				
+//					GFX_Setf(ai_bomb_halo[ti_i], 21000, tf_coef * af_bomb_radius[ti_i])
+//					GFX_Setf(ai_bomb_halo[ti_i], 21004, tf_coef * 20.0)                       // taille du halo
+//					GFX_Setv(ai_bomb_halo[ti_i], 21200, av_bomb_dest_pos[ti_i])
+//				}
+//				else
+//				{
+//					if (ai_bomb_halo[ti_i] != -1)	
+//					{
+//						GFX_Del(ai_bomb_halo[ti_i])
+//						ai_bomb_halo[ti_i] = -1
+//					}
+//				
+//					ai_bomb_state[ti_i] = Ci_Bomb_Wait
+//				}
+//
+//				break
+//		}
+//	}  
+//}
+
+procedure_local void PNJ_Bipod_Laser_Impact(vector tv_pos, vector tv_dir, float tf_size_coef)
+{
+	int		ti_GFX_Impact	
+
+	ti_GFX_Impact = GFX_Add(9)
+	GFX_FlagSet(ti_GFX_Impact , 0, 1)
+	GFX_FlagSet(ti_GFX_Impact , 2, 1)
+	GFX_MaterialSet(ti_GFX_Impact , get_SFX_light_and_smoke, 5)
+	GFX_Setf(ti_GFX_Impact, 9000, Cf_PiBy8)												// angle d'ouverture
+	GFX_Seti(ti_GFX_Impact, 9100, 10)														// Nombre
+	GFX_Seti(ti_GFX_Impact, 9101, 0xFF) //0xFFB0F8EC) 										// couleur
+	GFX_Setf(ti_GFX_Impact, 9003, 0.999)														// friction
+	GFX_Setf(ti_GFX_Impact, 9001, 30.0 * tf_size_coef)														// vitesse initiale minimum
+	GFX_Setf(ti_GFX_Impact, 9002, 100.0 * tf_size_coef)														// vitesse initiale maximum
+	GFX_Setf(ti_GFX_Impact, 9004, 0.4 * tf_size_coef)													// épaisseur
+	GFX_Setf(ti_GFX_Impact, 9005, 0.5 * tf_size_coef)														// durée de vie minimum
+	GFX_Setf(ti_GFX_Impact, 9006, 1.0)														// durée de vie maximum
+	GFX_Setf(ti_GFX_Impact, 9007, 1.95)														// multiplicateur de longueur
+	GFX_Setf(ti_GFX_Impact, 9008, 0.0)														// generation périod
+	GFX_Setf(ti_GFX_Impact, 9009, 0.05)														// durée de mort minimun
+	GFX_Setf(ti_GFX_Impact, 9010, 0.1)														// durée de mort maximun
+	GFX_Seti(ti_GFX_Impact, 9102, 0b11000)												// Flags (1 => agrandissement centré)
+	GFX_Setv(ti_GFX_Impact, 9200, tv_pos)													// Origine des étincelles
+//	GFX_Setv(ti_GFX_Impact, 9201, Cv_VerticalVector)											// Direction
+	GFX_Setv(ti_GFX_Impact, 9201, tv_dir)		// Direction
+	GFX_Setv(ti_GFX_Impact, 9202, cvector(0.0, 0.0, -10.0) )								// gravity
+	GFX_Seti(ti_GFX_Impact, 9103, 3) 												// Zorder
+}
+
+procedure_local void PNJ_Bipod_Death_Laser()
+{
+	float		tf_coef
+	float		tf_temp	
+	float		tf_wanted_speed
+	float		tf_main_speed
+	float		tf_size
+
+	vector	tv_start_pos	
+	vector	tv_temp
+
+	if (f_time_start_etat > 2.0)
+	{
+		if (GFX_Line != -1)
+		{
+			GFX_Del(GFX_Line)
+			GFX_Line = -1
+
+//			tv_start_pos = @o_bassin OBJ_PosGet()
+//			tv_start_pos += @o_bassin OBJ_SightGet() * 10.0 * OBJ_ZoomGet()
+//			
+//			PROC_SFX_EXPLOSION_REALISTE(20.0 * OBJ_ZoomGet(), 5.0 * OBJ_ZoomGet(), tv_start_pos)
+		}
+
+		if (i_SND_Laser_Loop != -1)
+		{
+			SND_Stop(i_SND_Laser_Loop)
+			i_SND_Laser_Loop = -1
+		}
+
+		return
+	}
+
+	tv_start_pos = @o_bassin OBJ_PosGet()
+	
+	PNJ_Bipod_Laser_Impact(tv_start_pos, @o_bassin OBJ_SightGet(), 4.0)
+
+	if (GFX_Line == -1)
+	{
+		GFX_Line = GFX_Add(1)
+		GFX_FlagSet(GFX_Line , 0, 1)
+		GFX_FlagSet(GFX_Line, 2, 1)
+		GFX_MaterialSet(GFX_Line, get_SFX_light_and_smoke, 50)
+	}
+
+	if (i_SND_Laser_Loop == -1)
+	{
+		i_SND_Laser_Loop = SND_RequestPlayLoopOnObjCanal(Ci_SND_Laser_Loop, Anim_Canal_Tete)
+		SND_RequestPlay(Ci_SND_Laser_Start)
+	}
+
+	tf_coef = MATH_FloatMin(f_time_start_etat * 0.5, 1.0)
+
+	tf_size = MATH_FloatBlend(1.0, 20.0, tf_coef) * OBJ_ZoomGet()
+
+	GFX_Seti(GFX_Line, 1100, COLOR_Blend(0, 0xFFFFFFFF, tf_coef * 4.0))		// Couleur de la ligne
+	GFX_Setf(GFX_Line, 1000, tf_size)		// Epaisseur de la ligne
+
+	GFX_Setv(GFX_Line, 1200, tv_start_pos)		// Coordonnée de la position 3D du début du faisceau
+	GFX_Setv(GFX_Line, 1201, tv_start_pos + (@o_bassin OBJ_SightGet() * tf_coef * 10000.0))		// Coordonnée de la position 3D de la fin du faisceau
+}
+
+
+procedure_local void PNJ_Bipod_Laser()
+{
+	float		tf_coef
+	float		tf_temp	
+	float		tf_wanted_speed
+	float		tf_main_speed
+	float		tf_size
+
+	vector	tv_start_pos	
+	vector	tv_temp
+
+	tv_start_pos = @o_bassin OBJ_PosGet()
+//	tv_start_pos += @o_bassin OBJ_SightGet() * 10.0 * OBJ_ZoomGet()
+//	tv_start_pos += @o_bassin OBJ_BankingGet() * 8.0  *OBJ_ZoomGet()
+
+	switch(i_laser_state)
+	{
+		case Ci_Laser_Wait :
+
+			v_laser_shoot_pos = OBJ_PosGet() + (OBJ_SightGet() * 20.0 * OBJ_ZoomGet())
+
+			if ( ! @o_main_actor PROC_RM_Paf_Mode_Get() && OBJ_CapaTest(OBJ_Capa_0) )
+			{
+				i_laser_state = Ci_Laser_Charge
+				f_laser_phase_duration = 0.0
+			}
+
+			break
+			
+		case Ci_Laser_Charge :
+
+			v_laser_shoot_pos = OBJ_PosGet() + (OBJ_SightGet() * 20.0 * OBJ_ZoomGet())
+
+			f_laser_phase_duration += f_dt
+			
+			if (f_laser_phase_duration > 1.5)
+			{
+				i_laser_state = Ci_Laser_Move
+				f_laser_phase_duration = 0.0
+			}
+
+			if ( @o_main_actor PROC_RM_Paf_Mode_Get() || ( ! OBJ_CapaTest(OBJ_Capa_0) ) )
+			{
+				i_laser_state = Ci_Laser_Wait
+				f_laser_phase_duration = 0.0
+			}
+			
+			break
+			
+		case Ci_Laser_Move :
+
+			f_laser_phase_duration += f_dt
+
+			if ( @o_main_actor PROC_RM_Paf_Mode_Get() || ( ! OBJ_CapaTest(OBJ_Capa_0) ) )
+			{
+				if (GFX_Line != -1)
+				{
+					GFX_Del(GFX_Line)
+					GFX_Line = -1
+				}
+
+				if (GFX_Laser_Impact != -1)
+				{
+					GFX_Del(GFX_Laser_Impact)
+					GFX_Laser_Impact = -1
+				}
+			
+				if (i_SND_Laser_Loop != -1)
+				{
+					SND_Stop(i_SND_Laser_Loop)
+					i_SND_Laser_Loop = -1
+				}	
+	
+				i_laser_state = Ci_Laser_Wait
+				f_laser_phase_duration = 0.0
+	
+			}
+			else if (f_laser_phase_duration > 0.5)
+			{
+				// ON PAF	
+			
+				if (GFX_Line != -1)
+				{
+					GFX_Del(GFX_Line)
+					GFX_Line = -1
+				}
+				
+				if (GFX_Laser_Impact != -1)
+				{
+					GFX_Del(GFX_Laser_Impact)
+					GFX_Laser_Impact = -1
+				}
+				
+				if (i_SND_Laser_Loop != -1)
+				{
+					SND_Stop(i_SND_Laser_Loop)
+					i_SND_Laser_Loop = -1
+				}
+			
+				if (o_Town)
+					EVENT_AddEventPafCanal( C_EVENT_FILTER_Object,  C_PAF_RM_Fort, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_main_actor, -1, 10.0, @o_main_actor OBJ_PosGet() - @o_Town OBJ_PosGet(), OBJ_PosGet())	
+				else
+					EVENT_AddEventPafCanal( C_EVENT_FILTER_Object,  C_PAF_RM_Fort, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_main_actor, -1, 10.0, OBJ_SightGet(), OBJ_PosGet())	
+
+				i_laser_state = Ci_Laser_Wait
+				f_laser_phase_duration = 0.0
+			}
+			else
+			{
+				if (GFX_Line == -1)
+				{
+					GFX_Line = GFX_Add(1)
+					GFX_FlagSet(GFX_Line , 0, 1)
+					GFX_FlagSet(GFX_Line, 2, 1)
+					GFX_MaterialSet(GFX_Line, get_SFX_light_and_smoke, 50)
+				}
+	
+				if (GFX_Laser_Impact == -1)
+				{
+					GFX_Laser_Impact = GFX_Add(21)
+					GFX_FlagSet(GFX_Laser_Impact, 4, 1)
+					GFX_MaterialSet(GFX_Laser_Impact , get_SFX_light_and_smoke, 59)	
+					GFX_Seti(GFX_Laser_Impact, 21100, 4)								// Flag : 4 => halo visible de dos
+					GFX_Seti(GFX_Laser_Impact, 21103, 1)								// 0 : Flare mural / 1 : Flare simple
+					GFX_Setf(GFX_Laser_Impact, 21002, 1.0)			// extraction par rapport au point de génération (vers la cam)
+					GFX_Seti(GFX_Laser_Impact, 21101, 0xFFFFFFFF)
+				}
+
+				if (i_SND_Laser_Loop == -1)
+				{
+					i_SND_Laser_Loop = SND_RequestPlayLoop(Ci_SND_Laser_Loop)
+					SND_RequestPlay(Ci_SND_Laser_Start)
+				}
+
+				tf_coef = f_laser_phase_duration / 0.5
+
+				tf_size = MATH_FloatBlend(10.0, 1.0, tf_coef * 2.0) * OBJ_ZoomGet()
+
+				GFX_Seti(GFX_Line, 1100, COLOR_Blend(0, 0xFFFFFFFF, tf_coef * 4.0))		// Couleur de la ligne
+				GFX_Setf(GFX_Line, 1000, tf_size)		// Epaisseur de la ligne
+
+				tv_temp = OBJ_PosGet() + (OBJ_SightGet() * 20.0 * OBJ_ZoomGet())
+				v_laser_shoot_pos = MATH_VecBlend(tv_temp, @o_main_actor OBJ_PosGet(), tf_coef)
+
+				@col_tete COL_RayObject_Vector(tv_start_pos, (v_laser_shoot_pos - tv_start_pos) * 2.0, all, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+				v_laser_shoot_pos = COL_RayObject_PosGet()
+				
+				SND_InstPosUpdate(i_SND_Laser_Loop, v_laser_shoot_pos)
+	
+				GFX_Setv(GFX_Line, 1200, tv_start_pos)		// Coordonnée de la position 3D du début du faisceau
+				GFX_Setv(GFX_Line, 1201, v_laser_shoot_pos)		// Coordonnée de la position 3D de la fin du faisceau
+				
+				GFX_Setf(GFX_Laser_Impact , 21000, tf_size * 2.0)				// rayon du halo
+				GFX_Setv(GFX_Laser_Impact, 21200, v_laser_shoot_pos)
+		
+				PNJ_Bipod_Laser_Impact(v_laser_shoot_pos, MATH_VecNormalize(@o_bassin OBJ_PosGet() - v_laser_shoot_pos), 1.0)	
+		
+//				if (MATH_VecSquareNorm(v_laser_shoot_pos - @o_main_actor OBJ_PosGet()) < 16.0)
+//				{
+//					EVENT_AddEventPafCanal( C_EVENT_FILTER_Object,  C_PAF_RM_Fort, OBJ_Me(), Cf_EVENT_Duree_1Trame, o_main_actor, -1, 10.0, @o_main_actor OBJ_PosGet() - @o_Town OBJ_PosGet(), OBJ_PosGet())	
+//
+//					i_laser_state = Ci_Laser_Wait
+//					f_laser_phase_duration = 0.0
+//				}
+			}
+
+			break
+	}
+}
+
+procedure_local void PNJ_Bipod_EarthQuake(object to_target)
+{
+	if (OBJ_SqrDistHorz(to_target) < 160000.0)
+		EVENT_AddEventPaf(0, C_PAF_RM_Fort | C_PAF_RM_EarthQuake, OBJ_Me(), Cf_EVENT_Duree_1Trame, to_target, 0.0, MATH_VecNormalize(Cv_VerticalVector + @to_target OBJ_PosGet() - OBJ_PosGet()))
+}
+
+
+procedure_local void PNJ_Bipod_Wii_Cam()
+{
+	vector	tv_speed
+	vector	tv_pos
+
+	@get_Kamera OBJ_FlagInactiveSet(vrai)
+	
+	if (IO_ButtonPressed(joy_button_R2) && i_flag_ik_shoot)
+	{
+		tv_pos = v_IK_bassin_pos
+		tv_pos.z += 200.0
+		tv_pos -= OBJ_SightGet() * 200.0
+	//	tv_pos += OBJ_HorizonGet() * 200.0
+	}
+	else
+	{
+		tv_pos = OBJ_PosGet()
+		tv_pos.z = v_IK_bassin_pos.z + 200.0
+		tv_pos -= OBJ_SightGet() * 200.0
+	}
+	
+	tv_pos = OBJ_PosGet() + MATH_VecBlendRotate(@get_Kamera OBJ_PosGet() - OBJ_PosGet(), tv_pos - OBJ_PosGet(), 4.0 * TIME_GetDt())
+
+	@get_Kamera OBJ_PosSet(tv_pos)
+	
+	tv_pos = OBJ_PosGet()
+	tv_pos += OBJ_SightGet() * 100.0
+	
+	@get_Kamera OBJ_SightGeneralSet(tv_pos - @get_Kamera OBJ_PosGet(), Cv_VerticalVector)
+	
+	@get_Kamera VIEW_AssignObject(0)
+}
+
+
+// REVO : FPS => recupérer la direction 3D pointée par le viseur
+procedure vector PNJ_Bipod_Wii_GetPointerDir()
+{
+	vector tv_temp
+	
+	tv_temp = IO_JoyGetPointer()
+	if (tv_temp.z > 0.0)
+	{
+		Str_DisplayTextOnce("X",tv_temp)
+		tv_temp.z = 1.0
+		tv_temp = VIEW_2dTo3d(0,tv_temp)
+		tv_temp = tv_temp  - @get_camera OBJ_PosGet()
+		MATH_VecSetNormalize(tv_temp)
+	}
+	else
+	{
+		tv_temp = -@get_camera OBJ_SightGet()
+	}
+	return tv_temp
+}
+
+
+//------------------------------------------------------------------------------------------------------------------
+// 					GFX DE SHOCKWAVE AVEC PARTICULES
+//------------------------------------------------------------------------------------------------------------------
+procedure_local void PROC_DISPLAY_SHOCKWAVE()
+{
+	float		tf_inc, tf_temp
+	vector	tv_scale, tv_pos2, tv_pos
+	int			ti_zone_paf, ti_paf_oui_non
+
+	tv_pos = @o_bassin OBJ_PosGet()
+
+	if (f_time_shockwave <	0.01)
+	{
+		PROC_SFX_EXPLOSION_MECA(tv_pos, 20.0)
+		PROC_SFX_EXPLOSION_MECA_ETINCELLES(tv_pos, 20.0)
+	}
+
+	ti_paf_oui_non = MATH_RandInt(0,15)
+
+	if (ti_paf_oui_non == 0)
+	{
+		ti_zone_paf = MATH_RandInt(0,8)
+		switch(ti_zone_paf)
+		{
+			case 0 :
+				tv_pos2 = @col_oreille_G OBJ_PosGet()
+				break
+			case 1 :
+				tv_pos2 = @col_oreille_D OBJ_PosGet()
+				break
+			case 2 :
+				tv_pos2 = @col_cuisse_G OBJ_PosGet()
+				break
+			case 3 :
+				tv_pos2 = @col_cuisse_D OBJ_PosGet()
+				break
+			case 4 :
+				tv_pos2 = @col_molet_G OBJ_PosGet()
+				break
+			case 5 :
+				tv_pos2 = @col_molet_D OBJ_PosGet()
+				break
+			case 6 :
+				tv_pos2 = @o_grille OBJ_PosGet()
+				break
+		}
+
+//		i_GFX_fumee[MATH_RandInt(0,4)]
+//		PROC_SFX_EXPLOSION_MECA(tv_pos2, 10.0)
+//		PROC_SFX_GEN_GROSSE_FUMEE(tv_pos2, 50.0, COLOR_SetRGBA(255,128,0,100))
+	}
+
+	f_time_shockwave += TIME_GetDt()
+
+	if ((f_time_shockwave < Cf_GFX_TimeLifeShockwave))
+	{
+		tv_scale = @o_shockwave OBJ_ScaleGet()
+		tf_inc = TIME_GetDt() * Cf_GFX_RatioSizeTime
+
+		@o_shockwave OBJ_FlagInvisibleSet(faux)
+		tv_scale.x += tf_inc
+		tv_scale.y += tf_inc
+		tv_scale.z += tf_inc
+		@o_shockwave OBJ_ScaleSet(tv_scale)
+		@o_shockwave OBJ_PosSet(tv_pos)
+		if (f_time_shockwave > Cf_GFX_TimeLifeShockwave * 0.75)
+			tf_temp = 255 - (255 * (f_time_shockwave * 0.75) / Cf_GFX_TimeLifeShockwave)
+		else
+			tf_temp = 255
+		@o_shockwave MAT_MT_SetLocalAlpha(0,1,tf_temp)
+	}
+	else
+		@o_shockwave OBJ_FlagInvisibleSet(vrai)
+}

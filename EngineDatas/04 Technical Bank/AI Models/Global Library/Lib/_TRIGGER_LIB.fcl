@@ -1,0 +1,350 @@
+procedure_trigger int TrigTest_In_Cone(byref message m_msg) // object1 source object2 dsetination vec1 CosAngle_Dist_Size int1 Flag_2D
+{
+	int			ti_result
+	int			ti_flag_2D	
+
+	float		tf_cos_angle	
+	float		tf_dist_max
+	float		tf_zone_rayon
+	float		tf_dot_product
+	float		tf_dist
+	float		tf_Adj
+	float		tf_Opp
+	float		tf_Hyp
+	float		tf_val
+	
+	vector	tv_start_pos
+	vector	tv_dest_pos
+	vector	tv_start_to_dest
+	vector	tv_dir
+	vector	tv_cone_limit
+	vector	tv_horizon
+	vector	tv_projection
+	vector	tv_vec1
+	vector	tv_sight
+
+	object	to_gao1
+	object	to_gao2	
+
+	to_gao1 = m_msg.msg_gao1
+	to_gao2 = m_msg.msg_gao2
+
+	tv_vec1 = m_msg.msg_vec1
+
+	tf_cos_angle = tv_vec1.x
+	tf_dist_max = tv_vec1.y
+	tf_zone_rayon = tv_vec1.z
+	
+	tf_cos_angle = Cf_Cos30
+
+	ti_flag_2D = m_msg.msg_int1
+
+	tv_start_pos = @to_gao1 OBJ_PosGet()
+	tv_sight = @to_gao1 OBJ_SightGet()
+	
+	tv_dest_pos = @to_gao2 OBJ_PosGet()
+
+	if (ti_flag_2D)
+	{
+//		tv_start_pos.z = 0.0
+//		tv_dest_pos.z = 0.0
+		
+		tv_dest_pos.z = tv_start_pos.z
+
+		if (tv_sight.z)
+			MATH_VecSetHorzNormalize(tv_sight)
+	}
+	
+	tv_start_to_dest = tv_dest_pos
+	tv_start_to_dest -= tv_start_pos
+	
+	tf_dist = MATH_VecDotProduct(tv_start_to_dest, tv_start_to_dest)
+	if (tf_dist <= tf_zone_rayon * tf_zone_rayon)
+	{
+		// INTERSECTION DIRECTE
+		DBG_RenderSphere(tv_dest_pos, tf_zone_rayon, 0x80008000)
+		DBG_RenderCone(tv_start_pos, tv_sight * tf_dist_max, MATH_ACos(tf_cos_angle), 0x80008000)
+		return(vrai)
+	}
+	else if (tf_dist <= (tf_dist_max + tf_zone_rayon) * (tf_dist_max + tf_zone_rayon))
+	{
+		// PAS TROP LOIN
+		tf_dist = MATH_FloatSqrt(tf_dist)
+		tv_dir = tv_start_to_dest / tf_dist
+		
+		tf_dot_product = MATH_VecDotProduct(tv_sight, tv_dir)
+		if (tf_dot_product >= tf_cos_angle)
+		{
+			// OK, C'EST DANS LE CONE
+			DBG_RenderSphere(tv_dest_pos, tf_zone_rayon, 0x80008000)
+			DBG_RenderCone(tv_start_pos, tv_sight * tf_dist_max, MATH_ACos(tf_cos_angle), 0x80008000)
+			return(vrai)
+		}
+		else
+		{
+			// ON N'EST PAS DANS LE CONE
+			tv_horizon = MATH_VecCrossProduct(tv_sight, tv_dir)
+			tv_horizon = MATH_VecCrossProduct(tv_sight, tv_horizon)
+			MATH_VecSetNormalize(tv_horizon)
+		
+			tf_Adj = MATH_AbsFloat(MATH_VecDotProduct(tv_start_to_dest, tv_sight))
+			
+			tf_val = tf_Adj * tf_Adj
+			tf_val = MATH_FloatSqrt((tf_val / (tf_cos_angle * tf_cos_angle)) - tf_val)
+			
+			tv_cone_limit = tv_sight * tf_Adj
+			tv_cone_limit -= tf_val * tv_horizon
+			MATH_VecSetNormalize(tv_cone_limit)
+
+			tv_projection = tv_start_pos
+			tv_projection += MATH_VecDotProduct(tv_start_to_dest, tv_cone_limit) * tv_cone_limit
+			tv_projection -= tv_dest_pos
+
+			tf_dist = MATH_VecDotProduct(tv_projection, tv_projection)
+			if (tf_dist <= tf_zone_rayon * tf_zone_rayon)
+			{
+				// INTERSECTION
+				DBG_RenderSphere(tv_dest_pos, tf_zone_rayon, 0x80008000)
+				DBG_RenderCone(tv_start_pos, tv_sight * tf_dist_max, MATH_ACos(tf_cos_angle), 0x80008000)
+				return(vrai)
+			}
+		}
+	}
+
+	DBG_RenderSphere(tv_dest_pos, tf_zone_rayon, 0x80000080)
+	DBG_RenderCone(tv_start_pos, tv_sight * tf_dist_max, MATH_ACos(tf_cos_angle), 0x80000080)
+
+	return(faux)
+}
+
+procedure_trigger int TrigTest_In_Quadrilatere(byref message m_msg) // object1 gao1_et_normal object2 gao2 object3 gao3 object4 gao4 object5 test_pos
+{
+	// CA MARCHE AVEC LES QUADRILATAIRES CONVEXES, CONCAVES ET CROISES
+	int			ti_i
+	int			ti_flag_in_quadrilataire	
+	int			ti_concave_point_index
+	int			ti_flag_in_triangle
+
+	float		tf_sign	
+	float		tf_point_sign[4]
+	float		tf_dot_product
+
+	vector	tv_pos
+	vector	tv_normale
+	vector	tv_point[4]
+	vector	tv_cross_product[4]
+	vector	tav_triangle_sommet[3]
+	vector	tav_triangle_normale[3]
+
+	object	to_gao
+
+	to_gao = m_msg.msg_gao1
+	tv_point[0] = @to_gao OBJ_PosGet()
+	tv_normale = @to_gao OBJ_BankingGet()
+
+	to_gao = m_msg.msg_gao2
+	tv_point[1] = @to_gao OBJ_PosGet()
+
+	to_gao = m_msg.msg_gao3
+	tv_point[2] = @to_gao OBJ_PosGet()
+
+	to_gao = m_msg.msg_gao4
+	tv_point[3] = @to_gao OBJ_PosGet()
+
+	to_gao = m_msg.msg_gao5
+	tv_pos = @to_gao OBJ_PosGet()
+
+#ifndef _FINAL_
+	tv_point[0] -= MATH_VecDotProduct(tv_point[0] - tv_pos, tv_normale) * tv_normale
+	tv_point[1] -= MATH_VecDotProduct(tv_point[1] - tv_pos, tv_normale) * tv_normale
+	tv_point[2] -= MATH_VecDotProduct(tv_point[2] - tv_pos, tv_normale) * tv_normale
+	tv_point[3] -= MATH_VecDotProduct(tv_point[3] - tv_pos, tv_normale) * tv_normale
+#endif
+
+	ti_flag_in_quadrilataire = vrai
+
+	// CALCUL DES NORMALES
+	for (ti_i = 0; ti_i < 4; ti_i++)
+		tv_cross_product[ti_i] = MATH_VecCrossProduct(tv_point[MATH_Modulo(ti_i + 1, 4)] - tv_point[ti_i], tv_normale)
+
+	tf_sign = 0.0
+	for (ti_i = 0; ti_i < 4; ti_i++)
+	{
+		tf_dot_product = MATH_VecDotProduct(tv_point[MATH_Modulo(ti_i + 2, 4)] - tv_point[ti_i], tv_cross_product[ti_i])
+		if (tf_dot_product)
+		{
+			tf_point_sign[ti_i] = MATH_FloatSign(tf_dot_product)
+			tf_sign += tf_point_sign[ti_i]
+		}
+		else
+		{
+			tf_point_sign[ti_i] = 0.0
+		}
+	}
+
+	if (MATH_AbsFloat(tf_sign) == 4.0)
+	{
+		// QUADRILATAIRE CONVEXE
+		for (ti_i = 0; ti_i < 4; ti_i++)
+		{
+			tf_dot_product = MATH_VecDotProduct(tv_pos - tv_point[ti_i], tv_cross_product[ti_i])
+			if (tf_dot_product && !ti_i)
+				tf_sign = MATH_FloatSign(tf_dot_product)
+			else if (tf_sign != MATH_FloatSign(tf_dot_product))
+				ti_flag_in_quadrilataire = faux
+		}
+	}
+	else if (MATH_AbsFloat(tf_sign) == 2.0)
+	{
+		// QUADRILATAIRE CONCAVE
+		ti_flag_in_quadrilataire = faux
+	
+		tf_sign = MATH_FloatSign(tf_sign)
+	
+		// RECHERCHE DU POINT DE CONCAVITE
+		for (ti_i = 0; ti_i < 4; ti_i++)
+		{
+			if (tf_point_sign[ti_i] != tf_sign)
+			{
+				ti_concave_point_index = MATH_Modulo(ti_i + 1, 4)
+				break
+			}
+		}
+		
+//		DBG_RenderVector(tv_point[ti_concave_point_index], tv_normale * 5.0, color_rouge)
+		
+		// TEST DES DEUX TRIANGLES
+		tav_triangle_sommet[0] = tv_point[ti_concave_point_index] 
+		tav_triangle_normale[0] = tv_cross_product[ti_concave_point_index]
+		
+		tav_triangle_sommet[1] = tv_point[MATH_Modulo(ti_concave_point_index + 1, 4)] 
+		tav_triangle_normale[1] = tv_cross_product[MATH_Modulo(ti_concave_point_index + 1, 4)]
+
+		tav_triangle_sommet[2] = tv_point[MATH_Modulo(ti_concave_point_index + 2, 4)] 
+		tav_triangle_normale[2] = MATH_VecCrossProduct(tav_triangle_sommet[0] - tav_triangle_sommet[2], tv_normale)
+
+		ti_flag_in_triangle = vrai
+
+		tf_sign = MATH_FloatSign(MATH_VecDotProduct(tv_pos - tav_triangle_sommet[0], tav_triangle_normale[0]))
+	
+		if (tf_sign != MATH_FloatSign(MATH_VecDotProduct(tv_pos - tav_triangle_sommet[1], tav_triangle_normale[1])))
+			ti_flag_in_triangle = faux
+		else if (tf_sign != MATH_FloatSign(MATH_VecDotProduct(tv_pos - tav_triangle_sommet[2], tav_triangle_normale[2])))
+			ti_flag_in_triangle = faux
+
+		if (ti_flag_in_triangle)
+		{
+			ti_flag_in_quadrilataire = vrai
+		}
+		else
+		{
+			tav_triangle_normale[0] = -tav_triangle_normale[2]
+			
+			tav_triangle_sommet[1] = tav_triangle_sommet[2]
+			tav_triangle_normale[1] = tv_cross_product[MATH_Modulo(ti_concave_point_index + 2, 4)]
+	
+			tav_triangle_sommet[2] = tv_point[MATH_Modulo(ti_concave_point_index + 3, 4)] 
+			tav_triangle_normale[2] = tv_cross_product[MATH_Modulo(ti_concave_point_index + 3, 4)]
+
+			ti_flag_in_triangle = vrai
+	
+			tf_sign = MATH_FloatSign(MATH_VecDotProduct(tv_pos - tav_triangle_sommet[0], tav_triangle_normale[0]))
+		
+			if (tf_sign != MATH_FloatSign(MATH_VecDotProduct(tv_pos - tav_triangle_sommet[1], tav_triangle_normale[1])))
+				ti_flag_in_triangle = faux
+			else if (tf_sign != MATH_FloatSign(MATH_VecDotProduct(tv_pos - tav_triangle_sommet[2], tav_triangle_normale[2])))
+				ti_flag_in_triangle = faux
+	
+			if (ti_flag_in_triangle)
+				ti_flag_in_quadrilataire = vrai
+		}
+	}
+	else
+	{
+		// QUADRILATAIRE CROISE
+		ti_flag_in_quadrilataire = faux
+
+		// RECHERCHE DU POINT DE CROISEMENT
+		tf_sign = tf_point_sign[0]
+	
+		for (ti_i = 1; ti_i < 4; ti_i++)
+		{
+			if (tf_point_sign[ti_i] != tf_sign)
+			{
+				ti_concave_point_index = MATH_Modulo(ti_i + 1, 4)
+				break
+			}
+		}
+		
+		// TEST DES DEUX TRIANGLES
+		tav_triangle_sommet[0] = tv_point[ti_concave_point_index] 
+		tav_triangle_normale[0] = tv_cross_product[ti_concave_point_index]
+		
+		tav_triangle_sommet[1] = tv_point[MATH_Modulo(ti_concave_point_index + 1, 4)] 
+		tav_triangle_normale[1] = tv_cross_product[MATH_Modulo(ti_concave_point_index + 1, 4)]
+
+		tav_triangle_sommet[2] = tav_triangle_sommet[0]
+		tav_triangle_normale[2] = tv_cross_product[MATH_Modulo(ti_concave_point_index + 3, 4)]
+
+		ti_flag_in_triangle = vrai
+
+		tf_sign = MATH_FloatSign(MATH_VecDotProduct(tv_pos - tav_triangle_sommet[0], tav_triangle_normale[0]))
+	
+		if (tf_sign != MATH_FloatSign(MATH_VecDotProduct(tv_pos - tav_triangle_sommet[1], tav_triangle_normale[1])))
+			ti_flag_in_triangle = faux
+		else if (tf_sign != MATH_FloatSign(MATH_VecDotProduct(tv_pos - tav_triangle_sommet[2], tav_triangle_normale[2])))
+			ti_flag_in_triangle = faux
+
+		if (ti_flag_in_triangle)
+		{
+			ti_flag_in_quadrilataire = vrai
+		}
+		else
+		{
+			tav_triangle_normale[2] = tav_triangle_normale[1]
+
+			tav_triangle_sommet[1] = tv_point[MATH_Modulo(ti_concave_point_index + 3, 4)] 
+			tav_triangle_normale[1] = tv_cross_product[MATH_Modulo(ti_concave_point_index + 3, 4)]
+
+			tav_triangle_sommet[0] = tv_point[MATH_Modulo(ti_concave_point_index + 2, 4)]
+			tav_triangle_normale[0] = tv_cross_product[MATH_Modulo(ti_concave_point_index + 2, 4)]
+
+			tav_triangle_sommet[2] = tav_triangle_sommet[0]
+
+			ti_flag_in_triangle = vrai
+	
+			tf_sign = MATH_FloatSign(MATH_VecDotProduct(tv_pos - tav_triangle_sommet[0], tav_triangle_normale[0]))
+		
+			if (tf_sign != MATH_FloatSign(MATH_VecDotProduct(tv_pos - tav_triangle_sommet[1], tav_triangle_normale[1])))
+				ti_flag_in_triangle = faux
+			else if (tf_sign != MATH_FloatSign(MATH_VecDotProduct(tv_pos - tav_triangle_sommet[2], tav_triangle_normale[2])))
+				ti_flag_in_triangle = faux
+	
+			if (ti_flag_in_triangle)
+				ti_flag_in_quadrilataire = vrai
+		}
+	}
+
+#ifndef _FINAL_
+	for (ti_i = 0; ti_i < 4; ti_i++)
+	{
+		if (ti_flag_in_quadrilataire)
+			DBG_RenderVector(tv_point[ti_i], tv_point[MATH_Modulo(ti_i + 1, 4)] - tv_point[ti_i], color_vert)
+		else
+			DBG_RenderVector(tv_point[ti_i], tv_point[MATH_Modulo(ti_i + 1, 4)] - tv_point[ti_i], color_rouge)
+	}
+
+	if (ti_flag_in_quadrilataire)
+		DBG_RenderVector(tv_pos, tv_normale * 5.0, color_vert)
+#endif
+
+	return(ti_flag_in_quadrilataire)
+}
+
+
+
+
+
+
+
+

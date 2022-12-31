@@ -1,0 +1,693 @@
+#include "PNJ_Scorpion_defines.var"
+
+procedure_local void PNJ_Scorpion_Del_Interest()
+{
+	i_perceived_best_actor_index = -1
+	if (MSG_GlobalIsValid(mid_best_interet))
+	{
+		MSG_GlobalDelete(mid_best_interet, C_EVENT_DEL)
+		MSG_GlobalSetInvalid(mid_best_interet)
+	}
+}
+
+procedure_local void PNJ_Scorpion_Remove_Life(float tf_life_loss, object to_killer)
+{
+	float tf_last_lifecur
+	
+	tf_last_lifecur = f_lifecur
+
+	f_lifecur -= MATH_FloatMin(f_lifecur, tf_life_loss)
+	f_lifecur = MATH_FloatRound(f_lifecur, 0.01)
+
+	if (tf_last_lifecur && !f_lifecur)
+	{
+//		SND_RequestPlay(SND_DIE)
+		STATS_IncEnemyKilled_New(to_killer, C_EnemyType_Scorpion, 0)	
+	}
+}
+
+procedure_local void PNJ_Scorpion_Minimise_Life(float tf_max_life, object to_killer)
+{
+	float tf_last_lifecur
+	
+	tf_last_lifecur = f_lifecur
+
+	f_lifecur = MATH_FloatMin(f_lifecur, tf_max_life)
+	f_lifecur = MATH_FloatRound(f_lifecur, 0.01)
+
+	if (tf_last_lifecur && !f_lifecur)
+	{
+//		SND_RequestPlay(SND_DIE)
+		STATS_IncEnemyKilled_New(to_killer, C_EnemyType_Scorpion, 0)	
+	}
+}
+
+
+procedure_local void PNJ_Scorpion_Del_Perceived_Actor(int ti_index)
+{
+	i_perceived_actor_nb--
+
+	// EST-CE QU'ON EFFACE LE MAIN OU LA CIBLE COURANTE ?
+	if (ti_index == i_perceived_main_actor_index)
+		i_perceived_main_actor_index = -1
+		
+	if (ti_index == i_perceived_best_actor_index)
+		i_perceived_best_actor_index = -1
+	
+	// EST-CE QU'ON DEPLACE LE MAIN OU LA CIBLE COURANTE ?
+	if (i_perceived_actor_nb == i_perceived_main_actor_index)
+		i_perceived_main_actor_index = ti_index
+		
+	if (i_perceived_actor_nb == i_perceived_best_actor_index)
+		i_perceived_best_actor_index = ti_index
+
+	// ON ECRASE CET ACTEUR AVEC LE DERNIER
+	ai_perceived_accessible[ti_index] = ai_perceived_accessible[i_perceived_actor_nb]
+	ai_perceived_hiding_place_index[ti_index] = ai_perceived_hiding_place_index[i_perceived_actor_nb]
+	ai_perceived_ID[ti_index] = ai_perceived_ID[i_perceived_actor_nb]
+	ai_perceived_seen[ti_index] = ai_perceived_seen[i_perceived_actor_nb]
+	ai_perceived_status[ti_index] = ai_perceived_status[i_perceived_actor_nb]
+	ai_perceived_territory[ti_index] = ai_perceived_territory[i_perceived_actor_nb]
+	
+	af_perceived_dist[ti_index] = af_perceived_dist[i_perceived_actor_nb]
+	af_perceived_interest[ti_index] = af_perceived_interest[i_perceived_actor_nb]
+//	af_perceived_life_ratio[ti_index] = af_perceived_life_ratio[i_perceived_actor_nb]
+	
+	ao_perceived_actor[ti_index] = ao_perceived_actor[i_perceived_actor_nb]
+//	ao_perceived_nearest_wp[ti_index] = ao_perceived_nearest_wp[i_perceived_actor_nb]
+	
+	av_perceived_position[ti_index] = av_perceived_position[i_perceived_actor_nb]
+
+	// ON EFFACE LES DONNEES DU DERNIER 
+	ai_perceived_accessible[i_perceived_actor_nb] = faux
+	ai_perceived_hiding_place_index[i_perceived_actor_nb] = -1
+	ai_perceived_ID[i_perceived_actor_nb] = -1
+	ai_perceived_seen[i_perceived_actor_nb] = faux
+	ai_perceived_status[i_perceived_actor_nb] = 0
+	ai_perceived_territory[i_perceived_actor_nb] = -1
+	
+	af_perceived_dist[i_perceived_actor_nb] = -1.0
+	af_perceived_interest[i_perceived_actor_nb] = -1.0
+//	af_perceived_life_ratio[i_perceived_actor_nb] = -1.0
+	
+	ao_perceived_actor[i_perceived_actor_nb] = nobody
+//	ao_perceived_nearest_wp[i_perceived_actor_nb] = nobody
+	
+	av_perceived_position[i_perceived_actor_nb] = Cv_NullVector
+}
+
+procedure_local void PNJ_Scorpion_Check_Perceived_Actor()
+{
+	int		ti_i
+	
+	for (ti_i = 0; ti_i < i_perceived_actor_nb; ti_i++)
+	{
+		if (i_perceived_bit_field & (1 << ti_i))
+			continue
+			
+		PNJ_Scorpion_Del_Perceived_Actor(ti_i)
+	}
+}
+
+
+procedure_local int PNJ_Scorpion_Add_Perceived_Actor(object to_actor, int ti_status, messageid tmid_visibility_ref)
+{
+	int					ti_index
+	int					ti_rank
+
+	float				tf_life_ratio
+
+	object			to_nearest_wp
+	object			to_serveur
+	
+	message		tmsg_filter
+
+	messageid		tmid_lnk	
+	messageid		tmid_visibility
+	
+	if (to_actor == o_ignore_target)
+		return(-1)
+
+	tmid_visibility = tmid_visibility_ref
+
+	// EST-CE QU'ON RAJOUTE CE PERSO A LA LISTE DE CEUX QU'ON VOIT ?
+	ti_index = ARR_ObjSearch(&ao_perceived_actor[0], i_perceived_actor_nb, to_actor)
+	if (ti_index == -1)
+	{
+		// ON RAJOUTE UN ACTEUR
+		if (i_perceived_actor_nb == 20)
+		{
+			DBG_Error("Trop d'acteur dans cette map")
+			return(-1)
+		}	
+	
+		ti_index = i_perceived_actor_nb
+		i_perceived_actor_nb ++
+	}
+		
+	// SI ON N'A PAS ENCORE MIS LES INFOS A JOUR CETTE TRAME
+	if ( ! (i_perceived_bit_field & (1 << ti_index)) )
+	{
+		ao_perceived_actor[ti_index] = to_actor
+
+		ai_perceived_hiding_place_index[ti_index] = -1
+
+		ai_perceived_seen[ti_index] = faux
+
+		ai_perceived_status[ti_index] &= Ci_PERCEIVED_MEMORY_MASK
+
+		if (MSG_GlobalIsValid(tmid_visibility))
+		{
+			// EST-CE QUE C'EST UN CADAVRE DEJA TRAITE ?
+			ai_perceived_ID[ti_index] = EVENT_VisionIDGet(tmid_visibility)
+
+			tf_life_ratio = EVENT_VisionLifeStateGet(tmid_visibility) 
+
+			if (ai_perceived_ID[ti_index] == C_ID_Joueur)
+			{
+				i_perceived_main_actor_index = ti_index
+			}
+			else if ( IsThis_ID_Humain(ai_perceived_ID[ti_index]) )
+			{
+				if ( ! tf_life_ratio && to_actor != o_grab_actor )
+				{
+					PNJ_Scorpion_Del_Perceived_Actor(ti_index)
+					return(-1)
+				}
+			}
+			else if (ai_perceived_ID[ti_index] == C_ID_Bidoche)
+			{
+				ai_perceived_status[ti_index] |= Ci_PERCEIVED_IS_DEAD
+				if (@to_actor OBJ_CapaTest(CAPA_Bidoche_Oublie_Moi))
+					ai_perceived_status[ti_index] &= ~(Ci_PERCEIVED_BODY_MEMORISED | Ci_PERCEIVED_BODY_UNREACHABLE)
+			}
+			else
+			{
+				if (tf_life_ratio > 0.0)
+					ai_perceived_status[ti_index] &= ~(Ci_PERCEIVED_BODY_MEMORISED | Ci_PERCEIVED_BODY_UNREACHABLE)
+				else
+					ai_perceived_status[ti_index]	|= Ci_PERCEIVED_IS_DEAD
+			}
+
+			af_perceived_interest[ti_index] = EVENT_VisionInteretGet(tmid_visibility)
+			av_perceived_position[ti_index] = EVENT_PositionGet(tmid_visibility)
+			
+			if (ai_perceived_ID[ti_index] == C_ID_Joueur)
+				i_perceived_main_actor_index = ti_index
+		}
+		else
+		{
+			af_perceived_interest[ti_index] = 30.0
+			ai_perceived_ID[ti_index] = -1
+			av_perceived_position[ti_index] = @to_actor OBJ_PosGet()
+		}
+
+		af_perceived_dist[ti_index] = MATH_VecNorm(av_perceived_position[ti_index] - OBJ_PosGet())
+
+		if ( ! BV_ZoneTerritoire || @to_actor COL_Pivot_BVCollide(BV_ZoneTerritoire))
+			ai_perceived_accessible[ti_index] = vrai
+		else
+			ai_perceived_accessible[ti_index] = faux
+
+		// Les bats ne sont accessibles qu'au sol.
+		if (ai_perceived_accessible[ti_index] && ai_perceived_ID[ti_index] == C_ID_BatCharognard && ! @to_actor OBJ_CapaTest(OBJ_Capa_9))
+			ai_perceived_accessible[ti_index] = faux
+
+		if (ai_perceived_accessible[ti_index] && ai_perceived_status[ti_index] &Ci_PERCEIVED_IS_DEAD)
+			i_flag_trigger_used = vrai
+
+		ti_rank = -1
+		MSG_SetNull(tmsg_filter)
+		tmsg_filter.msg_sender = to_actor
+		tmid_lnk = MSG_GlobalSearchIntGao(Ci_LNK_EVENT_OFFSET + Ci_LNK_GRAB_RAPTOR, &ti_rank, tmsg_filter)
+		if (MSG_GlobalIsValid(tmid_lnk))
+		{
+			to_serveur = MSG_GlobalGetGao(tmid_lnk, SERVEUR)
+			if (to_serveur && to_serveur != OBJ_Me())
+				ai_perceived_status[ti_index] |= Ci_PERCEIVED_ALREADY_GRABBED
+		}
+		
+		i_perceived_bit_field |= 1 << ti_index
+	}
+
+	ai_perceived_status[ti_index] |= ti_status
+
+	return(ti_index)
+}
+
+procedure_local int PNJ_Scorpion_Best_Interet_Update(int ti_index)
+{
+	object		to_identified_actor
+	object		to_last_best_interest_target
+
+	if (ti_index == -1)
+		return(-1)
+
+	i_perceived_best_actor_index = ti_index
+	to_identified_actor = ao_perceived_actor[ti_index]
+
+	if (! MSG_GlobalIsValid(mid_best_interet))
+	{
+		// JE N'AVAIS PAS D'INTERET
+		mid_best_interet = EVENT_AddEventInteret(OBJ_Me(), Cf_Infinit, af_perceived_interest[ti_index], av_perceived_position[ti_index], to_identified_actor)
+		EVENT_InteretVisionIDSet(mid_best_interet, C_ID_Scorpion)
+
+		if (ti_index == i_perceived_main_actor_index)
+			i_SND_flag_attaque_hors_champs = vrai
+		else
+			i_SND_flag_attaque_hors_champs = faux
+	}	
+	else
+	{
+		to_last_best_interest_target = EVENT_InteretTargetGet(mid_best_interet)
+
+		 if (ao_perceived_actor[ti_index] != to_last_best_interest_target)
+		{
+			// INTERET DIFFERENT DE L'ANCIEN
+			MSG_GlobalDelete(mid_best_interet, C_EVENT_DEL)
+			mid_best_interet = EVENT_AddEventInteret(OBJ_Me(), Cf_Infinit, af_perceived_interest[ti_index], av_perceived_position[ti_index], to_identified_actor)
+			EVENT_InteretVisionIDSet(mid_best_interet, C_ID_Scorpion)
+
+			if (ti_index == i_perceived_main_actor_index)
+				i_SND_flag_attaque_hors_champs = vrai
+			else
+				i_SND_flag_attaque_hors_champs = faux
+		}
+	}
+
+	EVENT_InteretPositionSet(mid_best_interet, av_perceived_position[ti_index])
+	EVENT_InteretTargetSet(mid_best_interet, to_identified_actor)
+	EVENT_InteretSeenTimeSet(mid_best_interet, TIME_Get())
+
+	if (ai_perceived_status[ti_index] & Ci_PERCEIVED_IS_DEAD)
+		ai_perceived_status[ti_index] |= Ci_PERCEIVED_BODY_MEMORISED
+
+	return(ti_index)
+}
+
+
+procedure_local void PNJ_Scorpion_Add_Budy(messageid EVT_Visibility_ID)
+{
+	int			ti_territory
+	object	to_actor	
+
+//	if (EVENT_VisionLifeStateGet(EVT_Visibility_ID) > 0.0)
+	{	
+		to_actor = EVENT_PereGet(EVT_Visibility_ID)
+		if (to_actor != OBJ_Me())
+		{
+			ao_budy[i_budy_nb] = to_actor
+			af_budy_size[i_budy_nb] = @to_actor OBJ_ZoomGet() * 0.5
+			amid_budy_vision_event[i_budy_nb] = EVT_Visibility_ID
+			i_budy_nb++
+		}
+	}
+}
+
+procedure_local void PNJ_Scorpion_UncollideAdd(object to_gao, float tf_duration)
+{
+	int		ti_index
+	
+	if (@to_gao OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Generated))
+		return
+		
+	if (! (@to_gao OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_ColMap)) )
+		return
+
+	ti_index = ARR_ObjSearch(&ao_uncollide_gao[0], i_uncollide_gao_nb, to_gao)
+	if (ti_index == -1)
+	{
+		ao_uncollide_gao[i_uncollide_gao_nb] = to_gao
+		af_uncollide_duration[i_uncollide_gao_nb] = tf_duration
+		i_uncollide_gao_nb++
+		COL_UnCollidableAdd(to_gao)
+	}
+	else
+	{
+		af_uncollide_duration[ti_index] = tf_duration
+	}
+}
+
+procedure_local void PNJ_Scorpion_UncollideDel(object to_gao)
+{
+	int		ti_index
+	ti_index = ARR_ObjSearch(&ao_uncollide_gao[0], i_uncollide_gao_nb, to_gao)
+	if (ti_index != -1)
+		af_uncollide_duration[ti_index] = 0.0
+}
+
+procedure_local void PNJ_Scorpion_UncollideCheck()
+{
+	int		ti_i
+	
+	for (ti_i = 0; ti_i < i_uncollide_gao_nb; ti_i++)
+	{
+		if (af_uncollide_duration[ti_i] == -1.0)
+			continue
+		
+		if (af_uncollide_duration[ti_i] <= 0.0 && ! OBJ_LIB_Virtual_Collision(OBJ_Me(), ao_uncollide_gao[ti_i], faux))
+		{
+			COL_UnCollidableDel(ao_uncollide_gao[ti_i])
+			
+			i_uncollide_gao_nb--
+
+			af_uncollide_duration[ti_i] = af_uncollide_duration[i_uncollide_gao_nb]
+			ao_uncollide_gao[ti_i] = ao_uncollide_gao[i_uncollide_gao_nb]
+			
+			af_uncollide_duration[i_uncollide_gao_nb] = -1.0
+			ao_uncollide_gao[i_uncollide_gao_nb] = nobody
+		}
+		
+		af_uncollide_duration[ti_i] -= MATH_FloatMin(af_uncollide_duration[ti_i], TIME_GetDt())
+	}
+}
+
+procedure_local void PNJ_Scorpion_Soft_Collision()
+{
+	int		ti_i
+	
+	float		tf_dist
+	float		tf_intersection_dist
+	float		tf_intersection_sqr_dist
+	vector	tv_me_to_budy
+	vector	tv_col_move_axis
+
+	object	to_nearest_budy
+
+ 	if ( ! OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna) )
+		return
+
+	if ( ! f_lifecur )
+		return
+
+	switch(i_etat_courant)
+	{
+		case ETAT_GRAB :
+		case ETAT_MORT :
+		case ETAT_SAUT :
+			return
+	}
+	
+	tv_col_move_axis = Cv_NullVector
+
+	for (ti_i = 0; ti_i < i_budy_nb; ti_i++)
+	{
+		tf_intersection_dist = 0.75 * OBJ_ZoomGet()
+		tf_intersection_dist += 0.75 * @ao_budy[ti_i] OBJ_ZoomGet()
+	
+		tf_intersection_sqr_dist = tf_intersection_dist
+		tf_intersection_sqr_dist *= tf_intersection_sqr_dist
+
+		tv_me_to_budy = @ao_budy[ti_i] OBJ_PosGet() - OBJ_PosGet()
+		tv_me_to_budy.z = 0.0
+		
+		tf_dist = MATH_VecDotProduct(tv_me_to_budy, tv_me_to_budy) 
+
+		if (tf_dist < tf_intersection_sqr_dist)
+		{
+			tf_dist = MATH_FloatSqrt(tf_dist)
+
+			if (tf_dist)
+				tv_me_to_budy /= tf_dist
+			else
+				tv_me_to_budy = OBJ_SightGet()
+
+			tf_dist /= tf_intersection_dist
+			tf_dist = 1.0 - tf_dist
+			tv_me_to_budy *= tf_dist
+			
+			tv_col_move_axis -= tv_me_to_budy
+		}
+	}
+	
+	tv_col_move_axis *= 40.0 * DYN_FrictionGet()
+	tv_col_move_axis += DYN_TractionVectorGet()
+	DYN_TractionSet(tv_col_move_axis)
+}
+
+procedure_local void PNJ_Scorpion_OBBOX_Set(float tf_size_coef)
+{
+	object	to_bone
+
+	if (tf_size_coef == f_obbox_size_coef)
+		return
+
+	f_obbox_size_coef = tf_size_coef
+
+	to_bone = ANI_CanalObjectGet(Anim_Canal_Tete)
+	@to_bone BV_OBBoxMinSet(cvector(-0.4 * tf_size_coef, -0.2 * tf_size_coef, -0.2))
+	@to_bone BV_OBBoxMaxSet(cvector(0.4 * tf_size_coef, 0.1 * tf_size_coef, 0.2))
+
+	to_bone = ANI_CanalObjectGet(Anim_Canal_Queue)
+	@to_bone BV_OBBoxMinSet(cvector(-0.4 * tf_size_coef, -0.1 * tf_size_coef, -0.2))
+	@to_bone BV_OBBoxMaxSet(cvector(0.4 * tf_size_coef, 0.2 * tf_size_coef, 0.2))
+	
+	to_bone = ANI_CanalObjectGet(Anim_Canal_Queue + 1)
+	@to_bone BV_OBBoxMinSet(cvector(-0.3 * tf_size_coef, -0.1 * tf_size_coef, -0.2))
+	@to_bone BV_OBBoxMaxSet(cvector(0.3 * tf_size_coef, 0.1 * tf_size_coef, 0.2))
+	
+	to_bone = ANI_CanalObjectGet(Anim_Canal_Queue + 2) 
+	@to_bone BV_OBBoxMinSet(cvector(-0.3 * tf_size_coef, -0.1 * tf_size_coef, -0.2))
+	@to_bone BV_OBBoxMaxSet(cvector(0.3 * tf_size_coef, 0.1 * tf_size_coef, 0.2))
+	
+	to_bone = ANI_CanalObjectGet(Anim_Canal_Queue + 3)
+	@to_bone BV_OBBoxMinSet(cvector(-0.4 * tf_size_coef, -0.1 * tf_size_coef, -0.2))
+	@to_bone BV_OBBoxMaxSet(cvector(0.4 * tf_size_coef, 0.1 * tf_size_coef, 0.2))
+
+	to_bone = ANI_CanalObjectGet(Anim_Canal_Queue + 4)
+	@to_bone BV_OBBoxMinSet(cvector(-0.4 * tf_size_coef, -0.1 * tf_size_coef, -0.1))
+	@to_bone BV_OBBoxMaxSet(cvector(0.4 * tf_size_coef, 0.1 * tf_size_coef, 0.35))
+
+	to_bone = ANI_CanalObjectGet(210)
+//	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+	@to_bone BV_OBBoxMinSet(cvector(-0.1 * tf_size_coef, -0.1 * tf_size_coef, -0.1))
+	@to_bone BV_OBBoxMaxSet(cvector(0.2 * tf_size_coef, 0.1 * tf_size_coef, 0.4))
+
+	to_bone = ANI_CanalObjectGet(220)
+//	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox) 
+	@to_bone BV_OBBoxMinSet(cvector(-0.2 * tf_size_coef, -0.1 * tf_size_coef, -0.1))
+	@to_bone BV_OBBoxMaxSet(cvector(0.1 * tf_size_coef, 0.1 * tf_size_coef, 0.4))
+
+	to_bone = ANI_CanalObjectGet(19)
+	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+
+	to_bone = ANI_CanalObjectGet(20)
+	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+	
+	to_bone = ANI_CanalObjectGet(21)
+//	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+	@to_bone BV_OBBoxMinSet(cvector(-0.05 * tf_size_coef, -0.1 * tf_size_coef, -0.2))
+	@to_bone BV_OBBoxMaxSet(cvector(0.2 * tf_size_coef, 0.2 * tf_size_coef, 0.2))
+
+	to_bone = ANI_CanalObjectGet(30)
+	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+
+	to_bone = ANI_CanalObjectGet(40)
+	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+
+	to_bone = ANI_CanalObjectGet(41)
+//	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+	@to_bone BV_OBBoxMinSet(cvector(-0.2 * tf_size_coef, -0.1 * tf_size_coef, -0.2))
+	@to_bone BV_OBBoxMaxSet(cvector(0.05 * tf_size_coef, 0.2 * tf_size_coef, 0.2))
+
+	to_bone = ANI_CanalObjectGet(50)
+	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+
+	to_bone = ANI_CanalObjectGet(60)
+	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+	to_bone = ANI_CanalObjectGet(61)
+	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+	to_bone = ANI_CanalObjectGet(62)
+	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+
+	to_bone = ANI_CanalObjectGet(70)
+	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+	to_bone = ANI_CanalObjectGet(71)
+	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+	to_bone = ANI_CanalObjectGet(72)
+	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+
+	to_bone = ANI_CanalObjectGet(80)
+	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+	to_bone = ANI_CanalObjectGet(81)
+	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+	to_bone = ANI_CanalObjectGet(82)
+	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+
+	to_bone = ANI_CanalObjectGet(90)
+	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+	to_bone = ANI_CanalObjectGet(91)
+	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+	to_bone = ANI_CanalObjectGet(92)
+	@to_bone OBJ_FlagsIdentitySet(none, OBJ_C_IdentityFlag_OBBox)
+}
+
+procedure_local int PNJ_Scorpion_Test_Target(object to_target)
+{
+	float tf_dot_product	
+
+	if ( ! to_target )
+		return(faux)
+
+	if ((GRID_CapaGet(@to_target OBJ_PosGet()) & tag_grid_terrain) == Ci_sol_herbe_ronce)
+		return(faux)
+
+//	if (MATH_LIB_ZoneInCone(OBJ_PosGet() + cvector(0.0, 0.0, 1.0), OBJ_SightGet(), Cf_Cos30, Cf_Grab_Dist * f_size_coef, @to_target COL_ZonePosGet(C_zde_corps),  @to_target COL_ZoneSizeGet(C_zde_corps), faux, tf_dot_product, 0x80000080, 0x80000080))
+	if (MATH_LIB_ZoneInCone(OBJ_PosGet() + cvector(0.0, 0.0, 1.0), OBJ_SightGet(), Cf_Cos30, Cf_Grab_Dist * f_size_coef, @to_target COL_ZonePosGet(C_zde_corps),  @to_target COL_ZoneSizeGet(C_zde_corps), faux, tf_dot_product, 0, 0))
+		return(vrai)
+	else
+		return(faux)
+
+}
+
+procedure_local int PNJ_Scorpion_Bite_Target(object to_target)
+{
+	float tf_dot_product	
+
+//	if (MATH_LIB_ZoneInCone(OBJ_PosGet() + cvector(0.0, 0.0, 1.0), OBJ_SightGet(), Cf_Cos30, Cf_Bite_Contact_Dist * f_size_coef, @to_target COL_ZonePosGet(C_zde_corps),  @to_target COL_ZoneSizeGet(C_zde_corps), faux, tf_dot_product, 0x80000080, 0x80000080))
+
+	if (to_target == AI_MainActorGet(C_ID_Joueur))
+	{
+		if (MATH_LIB_ZoneInCone(OBJ_PosGet() + cvector(0.0, 0.0, 1.0), OBJ_SightGet(), Cf_Cos30, Cf_Bite_Contact_Jack_Dist * f_size_coef, @to_target COL_ZonePosGet(C_zde_corps),  @to_target COL_ZoneSizeGet(C_zde_corps), faux, tf_dot_product, 0, 0))
+			return(vrai)
+		else
+			return(faux)
+	}
+	else if (to_target == AI_MainActorGet(C_ID_Kong))
+	{
+		if (MATH_LIB_ZoneInCone(OBJ_PosGet() + cvector(0.0, 0.0, 1.0), OBJ_SightGet(), Cf_Cos30, Cf_Bite_Contact_Kong_Dist * f_size_coef, @to_target COL_ZonePosGet(C_zde_corps),  @to_target COL_ZoneSizeGet(C_zde_corps), faux, tf_dot_product, 0, 0))
+			return(vrai)
+		else
+			return(faux)
+	}
+	else
+	{
+		if (MATH_LIB_ZoneInCone(OBJ_PosGet() + cvector(0.0, 0.0, 1.0), OBJ_SightGet(), Cf_Cos30, Cf_Bite_Contact_Dist * f_size_coef, @to_target COL_ZonePosGet(C_zde_corps),  @to_target COL_ZoneSizeGet(C_zde_corps), faux, tf_dot_product, 0, 0))
+			return(vrai)
+		else
+			return(faux)
+	}
+}
+
+procedure_local void PNJ_Raptor_Bite_Mix()
+{
+	int		ti_flag_ok	
+
+	ti_flag_ok = faux
+	switch(ACT_PartialActionGet())
+	{
+		case Action_Attaque_deb :
+			if (ACT_PartialActionFinished())
+				ti_flag_ok = vrai
+			break
+	
+		default:
+			ti_flag_ok = vrai
+	}
+
+	if (ti_flag_ok)
+	{
+		SND_RequestPlay(SND_ATTACK)
+
+		ACT_PartialActionOnOff(vrai)	
+		macro_action_new_mix
+		macro_action_mix_queue
+
+		ACT_PartialMaskSet(i_bone_nb, &ai_bones[0])
+		ACT_PartialBlendSet(6, 2)
+		ACT_PartialActionSet(Action_Attaque_deb)
+	}
+}
+
+procedure_local void PNJ_Scorpion_Ulltra_Tag_Init()
+{
+	GRID_LIB_Ultra_Tag_Get(C_ID_Scorpion, &ao_ultra_tag[0], i_ultra_tag_nb)
+}
+
+procedure_local void PNJ_Scorpion_Ultra_TagOn()
+{
+	GRID_LIB_Ultra_Tag_On(C_ID_Scorpion, &ao_ultra_tag[0], i_ultra_tag_nb)
+}
+
+
+
+//===================================================================================
+// Ajoute un paf (pour le test de cumul des petit pafs)
+//===================================================================================
+procedure_local void PNJ_Scorpion_Paf_Cumul_Add(float tf_dmg)
+{
+//	if( PNJ_Scorpion_Is_Paf_Action() )
+//		return
+	
+	if( i_paf_cumul_nb < Ci_paf_cumul_max )
+	{
+		af_paf_cumul_dmg[i_paf_cumul_nb] = tf_dmg
+		af_paf_cumul_time[i_paf_cumul_nb] = 0.5
+		i_paf_cumul_nb++
+	}
+}
+
+
+//===================================================================================
+// Supprime un paf pour le test de cumul des petit pafs
+//===================================================================================
+procedure_local void PNJ_Scorpion_Paf_Cumul_Del(int ti_indice)
+{
+	int			ti_k
+	
+	for(ti_k = ti_indice; ti_k < i_paf_cumul_nb; ti_k++)
+	{
+		af_paf_cumul_time[ti_k] = af_paf_cumul_time[ti_k + 1]
+		af_paf_cumul_time[ti_k + 1] = 0.0
+		af_paf_cumul_dmg[ti_k] = af_paf_cumul_dmg[ti_k + 1]
+		af_paf_cumul_dmg[ti_k + 1] = 0.0
+	}
+	i_paf_cumul_nb--
+}
+
+
+//===================================================================================
+// Supprime un paf conservé pour le cumul
+//===================================================================================
+procedure_local void PNJ_Scorpion_Paf_Cumul_Check_Time()
+{
+	int		ti_i
+	int		ti_k
+	
+	for( ti_i = 0; ti_i < i_paf_cumul_nb; ti_i++)
+	{
+		af_paf_cumul_time[ti_i] -= MATH_FloatMin(af_paf_cumul_time[ti_i], TIME_GetDt())
+		if( ! af_paf_cumul_time[ti_i] )
+			PNJ_Scorpion_Paf_Cumul_Del(ti_i)
+	}
+}
+
+
+//===================================================================================
+// Retourne vrai si la somme des petits pafs cumulés permet de faire un paf moyen, faux sinon
+//===================================================================================
+procedure_local int PNJ_Scorpion_Paf_Cumul_Check_Cumul()
+{
+	int		ti_i
+	float	tf_cumul
+	
+	tf_cumul = 0.0
+	if( i_paf_cumul_nb > 1 )
+	{
+		// cumul uniquement avec au moins 2 pafs, pas avec un seul paf assez gros
+		for( ti_i = 0; ti_i < i_paf_cumul_nb; ti_i++)
+		{
+			tf_cumul += af_paf_cumul_dmg[ti_i]
+			if( tf_cumul >= f_paf_cumul_dmg )
+			{
+				// suppr de tous les pafs cumulés
+				while( i_paf_cumul_nb )
+				{
+					PNJ_Scorpion_Paf_Cumul_Del(0)
+				}
+				return vrai
+			}
+		}
+	}
+	return faux
+}

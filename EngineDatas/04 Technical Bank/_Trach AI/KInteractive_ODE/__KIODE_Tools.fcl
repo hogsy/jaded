@@ -1,0 +1,170 @@
+#include "KIODE_defines.var"
+
+procedure_local void KIODE_Collision_Sound()
+{
+	int		ti_i
+	int		ti_car_index
+	int		ti_report_nb	
+	int		tai_report_ID[100]
+	
+	vector	tv_normal
+
+	if (i_etat_courant == ETAT_Grabbed)
+		return
+		
+	if ( (i_dernier_etat != ETAT_Grabbed || f_time_start_etat >  1.0) && f_camera_sqr_dist > Cf_SND_Sqr_Dist_On)
+		return
+
+	COL_ODEKeepNext()
+	ti_report_nb = COL_ReportsNumberAndRanksGet(&tai_report_ID[0], 100, COL_C_Extra_ODE)
+	for (ti_i = 0; ti_i < ti_report_nb; ti_i++)
+	{
+
+		tv_normal = COL_NormalGet(COL_C_ReportIndex + tai_report_ID[ti_i])
+		if (i_etat_courant == ETAT_Attente && MATH_AbsFloat(tv_normal.z) > Cf_Cos60)
+			continue
+	
+		if (TIME_Elapsed(f_time_snd_crash, 0.5) && MATH_VecSquareNorm(v_ode_speed - v_ode_last_speed) > 10.0)
+		{
+			f_time_snd_crash = TIME_Get()
+			SND_RequestPlay(Ci_SND_paf)
+			break
+		}
+	}
+}
+
+procedure_local int KIODE_ODE_Collision()
+{
+	int		ti_i
+	int		ti_car_index
+	int		ti_report_nb	
+	int		tai_report_ID[100]
+	int		ti_wp_nb
+	int		ti_k
+	int		ti_ode_flag
+
+	float		tf_best_dist
+	float		tf_link_length
+	float		tf_on_axis_dist
+	float		tf_speed
+	float		tf_mass
+
+	vector	tv_collide_pos
+	vector	tv_delta_speed
+	vector	tv_normal
+	vector	tv_sight
+	vector	tv_axis
+	vector	tv_my_speed
+	vector	tv_ray_start_pos
+	vector	tv_ray
+
+	object	to_car
+	object	to_wp
+
+	COL_ODEKeepNext()
+	ti_report_nb = COL_ReportsNumberAndRanksGet(&tai_report_ID[0], 100, COL_C_Extra_ODE)
+	for (ti_i = 0; ti_i < ti_report_nb; ti_i++)
+	{
+		to_car = COL_ObjectGet(COL_C_ReportIndex + tai_report_ID[ti_i])
+//		if (to_car == o_main_actor)
+//			 continue	
+
+		ti_ode_flag = @to_car ODE_Geti(0) // Récupération des flags ODE de l'objet
+		if (ti_ode_flag & 0b10)
+			tf_mass = ODE_Getf(0) // Récupération de la masse de l'objet s'il a un rigid body
+		else
+			tf_mass = Cf_Infinit
+	
+		if (tf_mass < 1000.0)
+			continue
+
+		tv_normal = COL_NormalGet(COL_C_ReportIndex + tai_report_ID[ti_i])
+		tv_collide_pos = COL_CollidedPointGet(COL_C_ReportIndex + tai_report_ID[ti_i])
+
+		return(vrai)
+	}
+
+	return(faux)
+}
+
+procedure_local void KIODE_GFX_Light()
+{
+	float		tf_coef
+	float		tf_val	
+
+	vector	tv_pos	
+
+	if (object_type != Ci_object_lampadaire)
+		return
+
+	if (i_etat_courant == ETAT_Attente)
+		f_time_light_off = 0.0
+	else
+		f_time_light_off += TIME_GetDt()
+
+	tf_coef = 0.5 - f_time_light_off
+	
+	if (tf_coef < 0.0)
+	{
+		if (GFX_Light != -1)
+		{
+			GFX_Del(GFX_Light)
+			GFX_Light = -1
+		}
+		
+		return
+	}
+
+	tf_coef *= 2.0
+
+	if (GFX_Light == -1)
+	{
+		GFX_Light = GFX_Add(21)
+		GFX_FlagSet(GFX_Light, 4, 1)
+		GFX_MaterialSet(GFX_Light, get_SFX_light_and_smoke, 0)	
+		GFX_Setf(GFX_Light, 21000, 0.3)	//des_f_Radius
+		GFX_Setf(GFX_Light, 21002, 0.0)	//des_f_Offset 
+		GFX_Setf(GFX_Light, 21003, 0.0)
+		GFX_Setf(GFX_Light, 21006, Cf_PiBy6)		//des_f_Angle 
+		GFX_Seti(GFX_Light, 21104, 4)						//des_i_Number 
+		GFX_Setf(GFX_Light, 21004, 6.0)		//des_f_Extrude  
+	}
+
+	GFX_Seti(GFX_Light, 21101, COLOR_Blend(0x0, 0xFFFFFFFF, tf_coef))	// Couleurs des rayons
+
+	tv_pos  = OBJ_PosGet()
+	tv_pos += OBJ_BankingGet() * 4.55
+	tv_pos -= OBJ_HorizonGet() * 0.58
+
+	GFX_Setv(GFX_Light, 21200, tv_pos)
+	GFX_Setv(GFX_Light, 21201, -OBJ_BankingGet())
+
+}
+
+procedure_local void KIODE_GFX_Spark()
+{
+	int		ti_GFX_Spark	
+
+	ti_GFX_Spark = GFX_Add(9)
+	GFX_FlagSet(ti_GFX_Spark , 0, 1)
+	GFX_FlagSet(ti_GFX_Spark , 2, 1)
+	GFX_MaterialSet(ti_GFX_Spark , get_SFX_light_and_smoke, 33)
+	GFX_Setf(ti_GFX_Spark, 9000, Cf_PiBy4)														// angle d'ouverture
+	GFX_Seti(ti_GFX_Spark, 9100, 30)																	// Nombre
+	GFX_Seti(ti_GFX_Spark, 9101, 0x80FDFDC9 )//0xFFFFC0C0) 													// couleur
+	GFX_Setf(ti_GFX_Spark, 9003, 0.98)																// friction
+	GFX_Setf(ti_GFX_Spark, 9001, 4.0)																// vitesse initiale minimum
+	GFX_Setf(ti_GFX_Spark, 9002, 10.0)																// vitesse initiale maximum
+	GFX_Setf(ti_GFX_Spark, 9004, 0.025)																// épaisseur
+	GFX_Setf(ti_GFX_Spark, 9005, 0.2)																// durée de vie minimum
+	GFX_Setf(ti_GFX_Spark, 9006, 1.0)																// durée de vie maximum
+	GFX_Setf(ti_GFX_Spark, 9007, 1.75 )																// multiplicateur de longueur
+	GFX_Setf(ti_GFX_Spark, 9008, 0.01 )																// generation périod
+	GFX_Setf(ti_GFX_Spark, 9009, 0.05)																// durée de mort minimun
+	GFX_Setf(ti_GFX_Spark, 9010, 0.1)																// durée de mort maximun
+	GFX_Seti(ti_GFX_Spark, 9102, 0b11000)															// Flags (1 => agrandissement centré)
+	GFX_Setv(ti_GFX_Spark, 9200, OBJ_PosGet() - (OBJ_BankingGet() * 0.25))			// Origine des étincelles
+	GFX_Setv(ti_GFX_Spark, 9201, OBJ_BankingGet())											// Direction
+	GFX_Setv(ti_GFX_Spark, 9202, cvector(0.0, 0.0, -8.0) )										// gravity
+	GFX_Seti(ti_GFX_Spark, 9103, 3) 																	// Zorder
+}

@@ -1,0 +1,1173 @@
+#include "PNJ_Bunny_Saucer_defines.var"
+
+Include_UltraProcedure_Header
+
+procedure_local void PNJ_Bunny_Spawn_Soucoupe()
+{
+	int				ti_spawn	
+
+	object		to_soucoupe
+
+	if ( ! o_soucoupe )
+		return
+	
+	ti_spawn = faux
+	if (AI_TriggerIsValid(trigger_soucoupe))
+		ti_spawn = call_trigger(trigger_soucoupe)
+	else if (IO_KeyJustPressed(VK_SPACE))
+		ti_spawn = vrai
+		
+	if (ti_spawn)
+	{
+		to_soucoupe = @o_soucoupe OBJ_Duplicate(@o_bascule OBJ_PosGet() + (@o_bascule OBJ_SightGet() * 2.0))
+		@to_soucoupe OBJ_BankingGeneralSet(@o_bascule OBJ_SightGet(), @o_bascule OBJ_BankingGet())
+		@to_soucoupe OBJ_HierarchySet(o_bascule)
+		@to_soucoupe OBJ_FlagsControlSet(none, OBJ_C_ControlFlag_ForceInactive | OBJ_C_ControlFlag_ForceInvisible)
+		@to_soucoupe COL_UnCollidableAdd(o_bascule)
+	}
+}
+
+procedure_local void PNJ_Bunny_Saucer_Shoot()
+{
+	int			ti_i	
+
+	float		tf_coef	
+	float		tf_dot_product
+	float		tf_best_dot
+	float		tf_norm
+	
+	vector	tv_pos
+	vector	tv_target_pos
+
+	object	to_gao
+	object	to_bullet
+	object	to_target
+	
+	if (o_Rided_Actor != o_main_actor)
+	{
+		if (GFX_Shoot != -1)
+		{
+			GFX_Del(GFX_Shoot)
+			GFX_Shoot = -1
+		}
+
+		return
+	}
+
+	tv_pos = OBJ_PosGet()
+	tv_pos += OBJ_SightGet() * 1.3
+	tv_pos += OBJ_BankingGet() * 0.5
+
+	if (IO_ButtonPressed(RM_Monture_Button_Action1) || IO_ButtonPressed(RM_Monture_Button_Action2))
+	{
+		f_shoot_duration += TIME_GetDt()
+
+		if (f_shoot_duration > 0.3)
+		{
+			tf_coef = MATH_FloatMin((f_shoot_duration - 0.3), 1.0)
+		
+			if( GFX_Shoot == -1 )
+			{
+				GFX_Shoot = GFX_Add(21)	// Halo
+				GFX_FlagSet(GFX_Shoot, 4, 1)
+				GFX_MaterialSet(GFX_Shoot, get_SFX_light_and_smoke,0) // affectation du matériau
+				GFX_Seti(GFX_Shoot, 21103, 1)			// 0 (défaut) flare mural		1 flare très simple 
+				GFX_Seti(GFX_Shoot, 21101, 0xC000C0)     // couleur du halo
+				GFX_Setf(GFX_Shoot, 21002, 1.0) // Extraction
+			}
+
+			GFX_Setf(GFX_Shoot, 21000, 4.0 * tf_coef)  // taille du halo
+			GFX_Setv(GFX_Shoot, 21200, tv_pos )      // position du halo
+		}
+	}
+	else if (f_shoot_duration )
+	{
+		if (GFX_Shoot != -1)
+		{
+			GFX_Del(GFX_Shoot)
+			GFX_Shoot = -1
+		}
+
+		if (f_shoot_duration < 0.3)
+		{
+			to_bullet = @get_Bullet OBJ_Duplicate(tv_pos)
+			@to_bullet OBJ_BankingGeneralSet(OBJ_SightGet(), OBJ_BankingGet())
+			@get_RM_Bullet_path to_bullet i_GFX_color = 0x800080
+			@get_RM_Bullet_path to_bullet f_GFX_taille = 4.0
+			to_bullet.des_object1 = o_main_actor
+			to_bullet.des_vec1 = cvector(MATH_VecDotProduct(DYN_SpeedGetVector(), OBJ_SightGet()) + 100.0, 0.0, 0.0) 
+			to_bullet.des_float1 = 10.0 // Dommage
+			to_bullet.des_float2 = 300.0 // Portée
+		}
+		else
+		{
+			tf_coef = MATH_FloatMin(f_shoot_duration / 1.0, 1.0)
+		
+			to_target = nobody
+			tf_best_dot = -1.0
+			
+			for (ti_i = 0; ti_i < @get_list_manager i_target_nb; ti_i++)
+			{
+				to_gao = @get_list_manager ao_target[ti_i]
+
+				tv_target_pos = @to_gao OBJ_PosGet()
+				tv_target_pos += @to_gao MATH_VecLocalToGlobal(@get_list_manager av_target[ti_i])
+				
+				tv_target_pos -= tv_pos
+
+				tf_norm = MATH_VecSquareNorm(tv_target_pos)
+				if (tf_norm > 40000.0)
+					continue
+					
+				if (tf_norm < 0.01)
+				{
+					to_target = to_gao
+					break
+				}
+
+				tf_norm = MATH_FloatSqrt(tf_norm)
+				tv_target_pos /= tf_norm
+				
+				tf_dot_product = MATH_VecDotProduct(OBJ_SightGet(), tv_target_pos)
+				if (tf_dot_product < Cf_Cos70)
+					continue
+			
+				if (tf_dot_product > tf_best_dot)
+				{
+					tf_best_dot = tf_dot_product
+					to_target = to_gao
+				}
+			}
+
+			to_bullet = @get_Spider_Ball OBJ_Duplicate(tv_pos)
+			@get_RM_Spider_Ball_path to_bullet o_target = to_target
+			@get_RM_Spider_Ball_path to_bullet o_sender = o_Rided_Actor
+			@get_RM_Spider_Ball_path to_bullet o_sender_2 = OBJ_Me()
+			@get_RM_Spider_Ball_path to_bullet i_GFX_Smoke_color = 0x800080
+			@get_RM_Spider_Ball_path to_bullet f_life_time = 3.0 * (tf_coef * tf_coef)
+			@get_RM_Spider_Ball_path to_bullet f_move_speed = MATH_VecDotProduct(DYN_SpeedGetVector(), OBJ_SightGet()) + 40.0
+			@to_bullet OBJ_BankingGeneralSet(OBJ_SightGet(), OBJ_BankingGet())
+
+		}
+		
+		f_shoot_duration = 0.0
+	}
+}
+
+procedure_local void PNJ_Bunny_Saucer_SND_Move_On()
+{
+	if (i_SND_Move_Loop1 == -1)
+		i_SND_Move_Loop1 = SND_RequestPlayLoop(Ci_SND_Move_Loop1)
+
+	if (i_SND_Move_Loop2 == -1)
+		i_SND_Move_Loop2 = SND_RequestPlayLoop(Ci_SND_Move_Loop2)
+}
+
+procedure_local void PNJ_Bunny_Saucer_SND_Move_Off()
+{
+	if (i_SND_Move_Loop1 != -1)
+	{
+		SND_Stop(i_SND_Move_Loop1)
+		i_SND_Move_Loop1 = -1
+	}
+
+	if (i_SND_Move_Loop2 != -1)
+	{
+		SND_Stop(i_SND_Move_Loop2)
+		i_SND_Move_Loop2 = -1
+	}
+}
+
+procedure_local vector PNJ_Bunny_Saucer_Dodge(vector tv_dest_pos)
+{
+	int				ti_i
+	int				ti_snp_gao_nb
+	
+	float			tf_move_length
+	float			tf_col_time	
+
+	object		to_obj
+	object		tao_snp_gao_list[200]
+	
+	vector		tv_move_dir
+	vector		tv_collide_pos
+	vector		tv_obj_pos
+	vector		tv_my_hor_speed
+	vector		tv_obj_hor_speed
+	
+	#define Cf_actor_size					1.5
+
+	tf_move_length = -1.0
+	tv_my_hor_speed = DYN_SpeedGetVector()
+	tv_my_hor_speed.z = 0.0
+
+	ti_snp_gao_nb = COL_BVGetAllOverlaps(&tao_snp_gao_list[0], OBJ_C_IdentityFlag_AI | OBJ_C_IdentityFlag_Dyna | OBJ_C_IdentityFlag_HasInitialPos | OBJ_C_IdentityFlag_ColMap | OBJ_C_IdentityFlag_Visu | OBJ_C_IdentityFlag_ZDM | OBJ_C_IdentityFlag_ZDE, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag)
+	for (ti_i = 0; ti_i < ti_snp_gao_nb; ti_i++)
+	{
+		to_obj = tao_snp_gao_list[ti_i]
+		if (AI_HaveSameModel(to_obj))
+		{
+			tv_obj_pos = @to_obj OBJ_PosGet()
+			
+			if (MATH_VecDotProduct(tv_obj_pos - OBJ_PosGet(), tv_my_hor_speed) < 0.0)
+				continue
+	
+			tv_obj_pos.z = OBJ_PosGet().z
+		
+			tv_obj_hor_speed	= @to_obj DYN_SpeedGetVector()
+			tv_obj_hor_speed.z = 0.0
+		
+			tf_col_time = MATH_LIB_Get_Intersection_Time(OBJ_PosGet(), tv_my_hor_speed, Cf_actor_size, tv_obj_pos, tv_obj_hor_speed, Cf_actor_size)
+			if (tf_col_time < 1.0)
+			{
+				if (tf_move_length == -1.0)
+				{
+					tv_move_dir = tv_dest_pos
+					tv_move_dir -= OBJ_PosGet()
+					tv_move_dir.z = 0.0
+					tf_move_length = MATH_VecNorm(tv_move_dir)
+					tv_move_dir /= tf_move_length
+				}
+	
+				tv_obj_pos += tv_obj_hor_speed * tf_col_time
+
+//				procedure int WAY_LIB_Collide_Sphere(vector tv_start_pos, vector tv_move_dir, float tf_move_length, float tf_size, vector tv_occluder_pos, float tf_occluder_size, byref vector tv_collide_pos)
+//				if (WAY_LIB_Collide_Sphere(OBJ_PosGet(), tv_move_dir, tf_move_length, Cf_actor_size, @to_obj OBJ_PosGet(), Cf_actor_size, tv_collide_pos))
+				{
+//					procedure vector WAY_LIB_Get_Sphere_Pos(vector tv_start_pos, vector tv_dest_pos, vector tv_sight, float tf_size, vector tv_occluder_pos, float tf_occluder_size, vector tv_occluder_sight, vector tv_occluder_horizon, int ti_flag_force_side)	
+					tv_dest_pos = WAY_LIB_Get_Sphere_Pos(OBJ_PosGet(), tv_dest_pos, OBJ_SightGet(), Cf_actor_size, @to_obj OBJ_PosGet(), Cf_actor_size, Cv_NullVector, Cv_NullVector, faux)	
+					
+					DBG_RenderVector(OBJ_PosGet(), tv_dest_pos - OBJ_PosGet(), color_blanc)	
+					DBG_RenderCircle(@to_obj OBJ_PosGet(), Cf_actor_size + Cf_actor_size,  Cv_VerticalVector, color_blanc)
+				
+					tf_move_length = -1.0
+				}
+			}
+		}
+	}
+	
+	return(tv_dest_pos)
+}
+
+procedure_local void PNJ_Bunny_Saucer_GFX_Halo()
+{
+	vector	tv_pos	
+
+	if ( ! f_door_coef )
+	{
+		if (GFX_Halo != -1)	
+		{
+			GFX_Del(GFX_Halo)
+			GFX_Halo = -1
+		}
+	
+		return
+	}
+
+	if (GFX_Halo == -1)
+	{
+		GFX_Halo = GFX_Add(21)                                 	 //création du halo
+		GFX_MaterialSet(GFX_Halo, get_SFX_light_and_smoke,0) 	// affectation du matériau
+		GFX_Seti(GFX_Halo, 21101, 0x403000)          // couleur du halo
+		GFX_Seti(GFX_Halo, 21100, 4)
+		GFX_Seti( GFX_Halo, 21104, 5) 		// Number
+
+//		v_Halo_Dir = MATH_VecGlobalToLocal(MATH_VecBlendRotate(-OBJ_SightGet(), OBJ_BankingGet(), 0.25))
+	}
+
+	tv_pos = @o_bascule OBJ_PosGet()
+	tv_pos -= @o_bascule OBJ_BankingGet() * 2.0
+	tv_pos -= @o_bascule OBJ_SightGet() * 0.4
+	GFX_Setv(GFX_Halo, 21200, tv_pos)
+	GFX_Setv(GFX_Halo, 21201, - @o_bascule OBJ_BankingGet())
+
+	GFX_Setf( GFX_Halo, 21006, f_door_coef * 1.0) 	// Angle
+	GFX_Setf(GFX_Halo, 21000, f_door_coef * 4.0)             // taille du halo
+	GFX_Setf(GFX_Halo, 21004, f_door_coef * 6.0)  // taille du halo
+}
+
+procedure_local void PNJ_Bunny_Saucer_GFX_Smoke()
+{
+	vector	tv_pos
+	vector	tv_wind
+
+//	f_time_GFX_Smoke_L -= TIME_GetDt()
+//	if (f_time_GFX_Smoke_L < 0.0)
+//	{
+//		f_time_GFX_Smoke_L = 0.05
+//
+//		tv_pos = OBJ_PosGet()
+//		tv_pos -= OBJ_HorizonGet()
+//		tv_pos.z = v_col_ground_pos.z
+//		PROC_SFX_EXPLOSION_SOL(MATH_RandFloat(1.0, 2.0), tv_pos)
+//	}
+//	
+//	f_time_GFX_Smoke_R -= TIME_GetDt()
+//	if (f_time_GFX_Smoke_R < 0.0)
+//	{
+//		f_time_GFX_Smoke_R = 0.05
+//
+//		tv_pos = OBJ_PosGet()
+//		tv_pos += OBJ_HorizonGet()
+//		tv_pos.z = v_col_ground_pos.z
+//		PROC_SFX_EXPLOSION_SOL(MATH_RandFloat(1.0, 2.0), tv_pos)
+//	}
+//	return
+	
+//	if (OBJ_LodVisGet()  < 0.1 || f_delay_since_last_ground_col > Cf_hysteresis_no_ground_col)
+//	{
+//		if (GFX_Smoke != -1)
+//		{
+//			GFX_Seti(GFX_Smoke, 13106, 0)												// *number of sprite to generate
+//			GFX_Smoke = -1
+//		}
+//		return
+//	}
+
+	if ( ! f_boost_duration ||  ! rabbit_allowed )
+	{
+		if (GFX_Smoke != -1)	
+		{
+			GFX_Seti(GFX_Smoke, 13106, 0)												// *number of sprite to generate
+			GFX_Smoke = -1
+		}
+	
+		return
+	}
+
+
+	if (GFX_Smoke == -1)
+	{
+		GFX_Smoke = GFX_Add(13)																// Create the boum
+		
+		GFX_MaterialSet(GFX_Smoke, get_SFX_light_and_smoke, -1)						// met le materiau
+		GFX_Seti(GFX_Smoke, 13101, 8)															// Materiau 0
+
+		GFX_Seti(GFX_Smoke, 13100, 100)															// *Buffer number of sprite
+		GFX_Seti(GFX_Smoke, 13106, 0xFFFFFFFF)												// *number of sprite to generate
+	
+		GFX_Setf(GFX_Smoke, 13003, 0.1)															// Time fase 1
+		GFX_Setf(GFX_Smoke, 13004, 1.9)															// Time fase 2
+	
+		GFX_Seti(GFX_Smoke, 13107, 0)															// Sprites non triés
+	
+		GFX_FlagSet(GFX_Smoke, 0 , 1)
+		GFX_FlagSet(GFX_Smoke, 2 , 1)
+		
+		GFX_Setf(GFX_Smoke, 13012, 0.75)														// Time random
+	
+		GFX_Setv(GFX_Smoke, 13203, cvector(0.01, 0.01, 0.01))					// friction speed
+		GFX_Setf(GFX_Smoke, 13000, 0.5)														// Growing speed min
+		GFX_Setf(GFX_Smoke, 13001, 1.0)														// Growing speed max
+		GFX_Setf(GFX_Smoke, 13002, 0.0001)													// Friction Grow
+
+		GFX_Setf(GFX_Smoke, 13007, 1.0)														// Gravity
+
+		GFX_Setf(GFX_Smoke, 13008, 0.05)														// generation rate
+	
+		GFX_Setv(GFX_Smoke, 13205, Cv_NullVector)										// Mainposspeed
+		GFX_Setv(GFX_Smoke, 13206, Cv_NullVector)										// Mainpossfriction
+
+		GFX_Setv(GFX_Smoke, 13201, cvector(-1.0, -1.0, 0.0))							// Speed min
+		GFX_Setv(GFX_Smoke, 13202, cvector(1.0, 1.0, 0.0))								// Speed max
+		GFX_Setf(GFX_Smoke, 13009, 4.0)							// Norm speed min
+		GFX_Setf(GFX_Smoke, 13010, 8.0)									// Norm speed max
+		GFX_Setf(GFX_Smoke, 13005, 0.5)														// Creation size min
+		GFX_Setf(GFX_Smoke, 13006, 1.0)														// Creation size max
+
+//		GFX_Seti(GFX_Smoke, 13103, 0x40456779)	// Color fase 0
+//		GFX_Seti(GFX_Smoke, 13104, 0xEE456779)	// Color fase 1
+//		GFX_Seti(GFX_Smoke, 13105, 0x00456779)	// Color fase 2
+	}
+
+	GFX_Seti(GFX_Smoke, 13103, COLOR_Blend(0x40456779, 0x00000000 | (WOR_AmbiantColGet(0) & 0x00FFFFFF), 0.5))	// Color fase 0
+	GFX_Seti(GFX_Smoke, 13104, COLOR_Blend(0xEE456779, 0x80000000 | (WOR_AmbiantColGet(0) & 0x00FFFFFF), 0.5))	// Color fase 1
+	GFX_Seti(GFX_Smoke, 13105, COLOR_Blend(0x00456779, WOR_AmbiantColGet(0) & 0x00FFFFFF, 0.5))	// Color fase 2
+
+//	tv_wind = DYN_SpeedGetVector() * 0.8
+	tv_wind = Cv_NullVector
+	GFX_Setv(GFX_Smoke, 13204, tv_wind)												// wind
+
+	tv_pos = OBJ_PosGet()
+//	tv_pos.z = v_col_ground_pos.z + 0.5
+	tv_pos -= tv_wind * TIME_GetDt()
+
+	GFX_Setv(GFX_Smoke, 13200, MATH_VecBlend(tv_pos, v_GFX_Last_Pos, 0.5)) 	// Creation Pos
+	GFX_Setv(GFX_Smoke, 13207, (v_GFX_Last_Pos - tv_pos) * 0.5)	// CreaPosAxe X
+	v_GFX_Last_Pos = tv_pos
+}
+
+procedure_local void PNJ_Bunny_Saucer_GFX_Burn()
+{
+	float			tf_speed_coef	
+
+	vector		tv_pos	
+	vector		tv_wind
+	
+	object		to_camera
+
+//	if (!i_flag_can_explode)
+//	{
+//		if (GFX_Fire != -1)
+//		{
+//			GFX_Seti(GFX_Fire, 13106, 0)											// *number of sprite to generate
+//			GFX_Fire = -1
+//		}
+//
+//		if (GFX_Fire_Smoke != -1)
+//		{
+//			GFX_Seti(GFX_Fire_Smoke, 13106, 0)											// *number of sprite to generate
+//			GFX_Fire_Smoke = -1
+//		}
+//
+//		return
+//	}
+
+	if (rabbit_allowed)
+		return
+
+	tv_pos = OBJ_PosGet()
+	tv_pos -= OBJ_SightGet() * 0.4
+	tv_pos += OBJ_BankingGet() * 0.1
+
+	tv_wind = tv_pos - v_GFX_Fire_Smoke_Last_Pos
+	tv_wind /= TIME_GetDt()
+
+	tf_speed_coef = MATH_VecNorm(tv_wind)
+	tf_speed_coef = MATH_FloatLimit(tf_speed_coef / f_min_speed, 0.0, 1.0)
+
+	tv_wind = Cv_NullVector
+	tv_pos -= tv_wind * TIME_GetDt()
+
+	if (GFX_Fire_Smoke== -1)
+	{
+		v_GFX_Fire_Smoke_Last_Pos = tv_pos 
+		
+		GFX_Fire_Smoke = GFX_Add(13)																// Create the boum
+					
+		GFX_MaterialSet(GFX_Fire_Smoke, get_SFX_light_and_smoke, 8)						// met le materiau
+	
+		GFX_Seti(GFX_Fire_Smoke, 13100, 100)															// *Buffer number of sprite
+		GFX_Seti(GFX_Fire_Smoke, 13106, 0xFFFFFFFF)											// *number of sprite to generate
+		
+		GFX_Setf(GFX_Fire_Smoke, 13003, 0.0)															// Time fase 1
+		GFX_Setf(GFX_Fire_Smoke, 13004, 1.0)														// Time fase 2
+		
+		GFX_Seti(GFX_Fire_Smoke, 13107, 0)															// Sprites non triés
+		
+		GFX_FlagSet(GFX_Fire_Smoke, 0 , 1)
+		GFX_FlagSet(GFX_Fire_Smoke, 2 , 1)
+		
+		GFX_Setf(GFX_Fire_Smoke, 13000, 1.0)														// Growing speed min
+		GFX_Setf(GFX_Fire_Smoke, 13001, 3.0)														// Growing speed max
+		GFX_Setf(GFX_Fire_Smoke, 13002, 0.0001)													// Friction Grow
+		
+		GFX_Setf(GFX_Fire_Smoke, 13005, 0.25)														// Creation size min
+		GFX_Setf(GFX_Fire_Smoke, 13006, 0.5)														// Creation size max
+		
+		GFX_Setv(GFX_Fire_Smoke, 13203, cvector(0.02, 0.02, 0.0))							// friction speed
+		
+		GFX_Seti(GFX_Fire_Smoke, 13103, 0xFF202020)											// Color fase 0
+		GFX_Seti(GFX_Fire_Smoke, 13104, 0x80202020)											// Color fase 1
+		GFX_Seti(GFX_Fire_Smoke, 13105, 0x00)													// Color fase 2
+	
+		GFX_Setf(GFX_Fire_Smoke, 13009, 2.0)														// Norm speed min
+		GFX_Setf(GFX_Fire_Smoke, 13010, 4.0)														// Norm speed max
+		
+		GFX_Setv(GFX_Fire_Smoke, 13205, Cv_NullVector)										// Mainposspeed
+		GFX_Setv(GFX_Fire_Smoke, 13206, Cv_NullVector)										// Mainpossfriction
+			
+		GFX_Setf(GFX_Fire_Smoke, 13007, 4.0)															// Gravity
+	}
+
+	GFX_Setf(GFX_Fire_Smoke, 13012, 0.75)														// Time random
+	GFX_Setf(GFX_Fire_Smoke, 13008, MATH_FloatBlend(0.2, 0.04, tf_speed_coef))		// generation rate
+
+	GFX_Setv(GFX_Fire_Smoke, 13200, MATH_VecBlend(tv_pos, v_GFX_Fire_Smoke_Last_Pos, 0.5)) 	// Creation Pos
+	GFX_Setv(GFX_Fire_Smoke, 13207, (v_GFX_Fire_Smoke_Last_Pos - tv_pos) * 0.5)	// CreaPosAxe X
+//	GFX_Setf(GFX_Fire_Smoke, 13011, v_col_ground_pos.z) // Z min	
+
+	GFX_Setv(GFX_Fire_Smoke, 13204, tv_wind)											// wind
+
+	GFX_Setv(GFX_Fire_Smoke, 13201, (-OBJ_SightGet() * 3.0) + cvector(-1.0, -1.0, 0.0))	// Speed min
+	GFX_Setv(GFX_Fire_Smoke, 13202, (-OBJ_SightGet() * 3.0) + cvector(1.0, 1.0, 0.0))		// Speed max
+	
+	if (f_burn_duration < 10.0)
+	{
+		if (GFX_Fire == -1)
+		{
+			GFX_Fire = GFX_Add(13)																// Create the boum
+						
+			GFX_MaterialSet(GFX_Fire, get_SFX_light_and_smoke, -1)						// met le materiau
+			GFX_Seti(GFX_Fire, 13101, 17)															// Materiau 0
+			GFX_Seti(GFX_Fire, 13110, 18)															// Materiau 1
+			GFX_Seti(GFX_Fire, 13111, 19)															// Materiau 2
+			GFX_Seti(GFX_Fire, 13112, 17)															// Materiau 3
+		
+			GFX_Seti(GFX_Fire, 13100, 100)															// *Buffer number of sprite
+			GFX_Seti(GFX_Fire, 13106, 0xFFFFFFFF)											// *number of sprite to generate
+			
+			GFX_Setf(GFX_Fire, 13003, 0.0)															// Time fase 1
+			GFX_Setf(GFX_Fire, 13004, 0.8)														// Time fase 2
+			
+			GFX_Seti(GFX_Fire, 13107, 0)															// Sprites non triés
+			
+			GFX_FlagSet(GFX_Fire, 0 , 1)
+			GFX_FlagSet(GFX_Fire, 2 , 1)
+			
+			GFX_Setf(GFX_Fire, 13000, -0.025)														// Growing speed min
+			GFX_Setf(GFX_Fire, 13001, -0.01)														// Growing speed max
+			GFX_Setf(GFX_Fire, 13002, 0.01)													// Friction Grow
+			
+			GFX_Setf(GFX_Fire, 13005, 0.3)														// Creation size min
+			GFX_Setf(GFX_Fire, 13006, 0.5)														// Creation size max
+			
+			GFX_Setv(GFX_Fire, 13203, cvector(0.02, 0.02, 0.0))							// friction speed
+			
+		
+			GFX_Seti(GFX_Fire, 13103, 0xFF000000)											// Color fase 0
+	//		GFX_Seti(GFX_Fire, 13104, 0x8027A0FC)											// Color fase 1
+			GFX_Seti(GFX_Fire, 13104, 0x40145086)											// Color fase 1
+			GFX_Seti(GFX_Fire, 13105, 0x00)													// Color fase 2
+		
+			GFX_Setf(GFX_Fire, 13009, 2.0)														// Norm speed min
+			GFX_Setf(GFX_Fire, 13010, 4.0)														// Norm speed max
+			
+			GFX_Setv(GFX_Fire, 13205, Cv_NullVector)										// Mainposspeed
+			GFX_Setv(GFX_Fire, 13206, Cv_NullVector)										// Mainpossfriction
+				
+			GFX_Setf(GFX_Fire, 13007, 4.0)															// Gravity
+		}
+
+		GFX_Setf(GFX_Fire, 13012, 0.75)														// Time random
+		GFX_Setf(GFX_Fire, 13008, MATH_FloatBlend(0.03, 0.01, tf_speed_coef))		// generation rate
+
+		GFX_Setv(GFX_Fire, 13200, MATH_VecBlend(tv_pos, v_GFX_Fire_Smoke_Last_Pos, 0.5)) 	// Creation Pos
+		GFX_Setv(GFX_Fire, 13207, (v_GFX_Fire_Smoke_Last_Pos - tv_pos) * 0.5)	// CreaPosAxe X
+//		GFX_Setf(GFX_Fire, 13011, v_col_ground_pos.z) // Z min	
+
+		GFX_Setv(GFX_Fire, 13204, tv_wind)											// wind
+
+		GFX_Setv(GFX_Fire, 13201, (-OBJ_SightGet() * 3.0) + cvector(-1.0, -1.0, 0.0))	// Speed min
+		GFX_Setv(GFX_Fire, 13202, (-OBJ_SightGet() * 3.0) + cvector(1.0, 1.0, 0.0))		// Speed max
+	}
+
+	v_GFX_Fire_Smoke_Last_Pos = tv_pos
+}
+
+procedure_local void PNJ_Bunny_Saucer_Penching()
+{
+	float		tf_dot_product
+	float		tf_sign
+	
+	vector	tv_dir
+	vector	tv_pos
+	
+	// ACCELERATION => PENCHING
+	if ( ! OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna)	)
+	{
+		v_last_real_banking = OBJ_BankingGet()
+		return
+	}
+	
+	if (i_etat_courant == ETAT_Buggy)
+	{
+		v_last_real_banking = OBJ_BankingGet()
+		return
+	}
+	
+	
+	tf_dot_product = MATH_VecDotProduct(-DYN_SpeedGetVector(), OBJ_HorizonGet())
+	tf_dot_product *= 0.05
+	
+	if (o_eagle)
+		f_speed_angle -= MATH_FloatSign(f_speed_angle) * MATH_FloatMin(MATH_AbsFloat(f_speed_angle), 2.0 * TIME_GetDt())
+	else
+		f_speed_angle = MATH_FloatBlend(f_speed_angle, -tf_dot_product, 6.0 * TIME_GetDt())
+	f_speed_angle = MATH_FloatLimit(f_speed_angle, -0.6, 0.6)
+	
+	v_last_real_banking = OBJ_BankingGet()
+	OBJ_BankingGeneralSet(OBJ_SightGet(), MATH_VecRotate(OBJ_BankingGet(), OBJ_SightGet(), f_speed_angle))
+}
+
+procedure_local void PNJ_Bunny_Saucer_Water_Col()
+{
+	int			ti_col_report_id	
+
+	float		tf_dot_product
+	float		tf_zdm_size
+
+	vector	tv_archimede
+
+	tf_zdm_size = COL_ZoneSizeGet(C_zdm_pied)
+
+	ti_col_report_id = COL_GMatReportGet(Gmat_RM_Face_eau) 
+	if (ti_col_report_id != -1)
+	{
+		v_water_pos = COL_CollidedPointGet(COL_C_ReportIndex + ti_col_report_id)
+		v_water_normal = COL_NormalGet(COL_C_ReportIndex + ti_col_report_id)
+		
+		if (v_water_normal.z < 0.0)
+			v_water_normal *= -1.0
+		
+		DBG_RenderVector(v_water_pos, v_water_normal * 10.0, color_bleu)
+	}
+	
+	f_in_water_depth = MATH_VecDotProduct(v_water_pos - OBJ_PosGet(), v_water_normal)
+	if (f_in_water_depth > 0.0)
+	{
+		i_flag_water_col = vrai	
+	
+		i_col_gmat_id |= Gmat_RM_Face_eau
+		
+		if (f_delay_since_last_ground_col > Cf_hysteresis_no_ground_col)
+			v_col_ground_normal = v_water_normal
+			
+		tf_dot_product = MATH_FloatLimit(f_in_water_depth, 0.0, tf_zdm_size * 3.0)
+		tf_dot_product /= tf_zdm_size * 2.0
+		tf_dot_product *= - DYN_GravityVectorGet().z
+
+		tv_archimede = cvector(0.0, 0.0, tf_dot_product)
+	
+		DBG_RenderVector(OBJ_PosGet(), tv_archimede, 0xFF8080)	
+	
+		DYN_TractionSet(DYN_TractionVectorGet() + tv_archimede)
+	}
+	else
+	{
+		i_flag_water_col = faux	
+	
+		v_water_pos = cvector(0.0, 0.0, -Cf_Infinit)
+		v_water_normal = Cv_VerticalVector
+	}
+}
+
+procedure_local int PNJ_Bunny_Saucer_Get_Rope_Gao(byref vector tv_rope_pos)
+{
+	object	to_gao	
+
+	float		tf_sqr_rope_length
+	float 		tf_rope_length
+	float 		tf_rope_ratio
+
+	vector	tv_offset_A
+	vector	tv_offset_B
+	vector	tv_rope_AB
+
+	to_gao = @o_rope_manager Rope_Manager_Get_Linked_Gao(OBJ_Me(), tf_rope_length, tf_rope_ratio, tv_offset_A, tv_offset_B)
+	if (to_gao)
+	{
+//		EVENT_AddEventLockCam(OBJ_Me(), C_EVENT_LockCamStatus_Fight, cvector(0.0, 0.0, 2.0)) 
+	
+		if (to_gao == o_eagle)
+		{
+			return(faux)
+		}
+		else if ( tf_rope_ratio == 1.0)
+		{
+			return(faux)
+		}
+		else
+		{
+			tv_rope_pos = @to_gao OBJ_PosGet() + @to_gao MATH_VecLocalToGlobal(tv_offset_B)
+		
+			tv_rope_AB	 = tv_rope_pos
+			tv_rope_AB -= OBJ_PosGet() + MATH_VecLocalToGlobal(tv_offset_A)
+	
+//			DBG_RenderVector(tv_rope_pos, -tv_rope_AB, color_cyan)	
+	
+			tf_sqr_rope_length = tf_rope_length * 0.8
+			tf_sqr_rope_length *= tf_sqr_rope_length
+			
+			if (MATH_VecSquareNorm(tv_rope_AB) > tf_sqr_rope_length)
+				return(vrai)
+		}
+	}
+	
+	return(faux)
+}
+
+procedure_local void PNJ_Bunny_Saucer_Sight_And_Banking(vector tv_sight)
+{
+	float			tf_sight_blend_speed
+	float			tf_speed_coef	
+
+	vector		tv_A
+	vector		tv_B
+	vector		tv_C
+	vector		tv_banking
+	vector		tv_speed
+	
+	if (o_Rided_Actor == o_main_actor)
+		tf_sight_blend_speed = 4.0
+	else
+		tf_sight_blend_speed = 2.0
+
+//	if (PNJ_Bunny_Saucer_Get_Rope_Gao(tv_A))
+//	{
+//		tf_sight_blend_speed = 6.0
+//		
+//		tv_sight = tv_A
+//		tv_sight -= OBJ_PosGet()
+////		DBG_RenderVector(OBJ_PosGet(), tv_sight, color_cyan)
+//		MATH_VecSetHorzNormalize(tv_sight)
+//	}
+
+	if (MATH_VecDotProduct(tv_sight, OBJ_SightGet()) < 0.0)
+	{
+		if (MATH_VecDotProduct(tv_sight, OBJ_HorizonGet()) > 0.0)
+			tv_sight = OBJ_HorizonGet()
+		else
+			tv_sight = -OBJ_HorizonGet()
+	}
+
+	PNJ_Bunny_Saucer_Water_Col()
+
+	if (COL_CollideType(COL_C_Wall))
+	{
+		f_delay_since_last_wall_col = 0.0
+		v_col_wall_normal = COL_NormalGet(COL_C_Wall)
+
+		if (f_wall_walk_coef == -1.0)
+		{
+			f_wall_walk_coef = MATH_VecNorm(v_before_wall_col_speed)
+			if (f_wall_walk_coef)
+			{
+				f_wall_walk_coef *= MATH_FloatMax(MATH_VecDotProduct(v_before_wall_col_speed / f_wall_walk_coef, -v_col_wall_normal), 0.0)
+				f_wall_walk_coef = MATH_FloatLimit(f_wall_walk_coef * 1.5, 0.0, 30.0)
+			}
+		}
+
+		if (f_wall_walk_coef > 0.0) //  && v_col_wall_normal.z > -0.1)
+		{
+			f_delay_since_last_ground_col = -0.2
+		
+			i_col_gmat_id = COL_GMAT_FlagsGet(COL_C_Wall)	
+						
+			v_col_ground_pos = COL_CollidedPointGet(COL_C_Wall)
+			v_col_ground_normal = MATH_VecNormalize(COL_ZonePosGet(C_zdm_pied) - v_col_ground_pos)
+		}
+	}
+	else
+	{
+		f_delay_since_last_wall_col += TIME_GetDt()
+	}
+
+	tv_speed = DYN_SpeedGetVector()	
+	if (f_wall_walk_coef > tv_speed.z && f_delay_since_last_wall_col < 0.2)
+	{
+		tv_speed.z = MATH_FloatMax(tv_speed.z, f_wall_walk_coef)
+		DYN_SpeedSetVector(tv_speed)
+		
+//		if (f_delay_since_last_wall_col)
+//			DYN_TractionSet(v_col_wall_normal * DYN_GravityVectorGet().z)	
+	}
+
+	if (f_wall_walk_coef != -1.0)
+		f_wall_walk_coef += DYN_GravityVectorGet().z * TIME_GetDt()
+
+	if (COL_CollideType(COL_C_Ground))
+	{
+		tv_banking = COL_NormalGet(COL_C_Ground)
+//		if (tv_banking.z > 0.0)
+		{
+			i_col_gmat_id = COL_GMAT_FlagsGet(COL_C_Ground)	
+						
+			f_delay_since_last_ground_col = 0.0	
+	
+			v_col_ground_pos = COL_CollidedPointGet(COL_C_Ground)
+			v_col_ground_normal = tv_banking
+		}
+	}
+
+	if (f_delay_since_last_ground_col < 0.2)
+		f_ground_col_duration += TIME_GetDt()
+	else
+		f_ground_col_duration = 0.0
+
+//	if (f_ground_col_duration > 0.3)
+	if (f_delay_since_last_wall_col > 0.3)
+	{
+		f_wall_walk_coef = -1.0
+		v_before_wall_col_speed = DYN_SpeedGetVector()
+	}
+
+	if (i_flag_water_col || f_delay_since_last_ground_col < Cf_hysteresis_no_ground_col || i_etat_courant == ETAT_Paf)
+	{	
+		tv_banking = v_col_ground_normal
+	
+//		tv_C = OBJ_HorizonGet()
+//		tv_C.z = 0.0
+//		MATH_VecSetNormalize(tv_C)
+//		tv_banking -= MATH_VecDotProduct(tv_banking, tv_C) * tv_C
+		
+		if (i_etat_courant == ETAT_Paf)
+			tv_banking = MATH_VecRotate(tv_banking, OBJ_HorizonGet(), -Cf_PiBy2)
+	
+		tv_banking = MATH_VecBlendRotate(OBJ_BankingGet(), tv_banking, 6.0 * TIME_GetDt())
+		tv_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_sight, tf_sight_blend_speed * TIME_GetDt())
+		OBJ_BankingGeneralSet(tv_sight, tv_banking)
+	}
+	else
+	{
+		tv_banking = MATH_VecBlendRotate(OBJ_BankingGet(), Cv_VerticalVector, 2.0 * TIME_GetDt())
+//		tv_sight = MATH_VecBlendRotate(OBJ_SightGet(), DYN_SpeedGetVector(), 2.0 * TIME_GetDt())
+//		OBJ_SightGeneralSet(tv_sight, tv_banking)
+		tv_sight = MATH_VecBlendRotate(OBJ_SightGet(), tv_sight, tf_sight_blend_speed * TIME_GetDt())
+		OBJ_BankingGeneralSet(tv_sight, tv_banking)
+	}
+
+	v_real_sight = OBJ_SightGet()
+	v_real_banking = OBJ_BankingGet()
+	OBJ_BankingGeneralSet(OBJ_SightGet(), Cv_VerticalVector)
+}
+
+procedure_local void PNJ_Bunny_Saucer_Apply_Traction_And_Choose_Action(float tf_wanted_traction)
+{
+	int				ti_index	
+	int				ti_flag_acceleration
+
+	float			tf_X_friction
+	float			tf_Y_friction
+	float			tf_traction
+	float			tf_speed_coef	
+
+	vector		tv_speed
+	vector		tv_traction	
+
+	#define Cv_Text_Friction			cvector(0.01, 0.9, 0.0)
+
+	i_flag_Y_slide = faux
+
+	if (o_Rided_Actor)
+		ti_flag_acceleration = vrai
+	else
+		ti_flag_acceleration = faux
+
+	if (tf_wanted_traction >= f_wanted_traction)
+		f_wanted_traction += MATH_FloatMin(tf_wanted_traction - f_wanted_traction, f_acceleration * TIME_GetDt())
+	else
+		f_wanted_traction -= MATH_FloatMin(f_wanted_traction, f_decceleration * TIME_GetDt())
+
+	if (f_wanted_traction)
+	{
+		PNJ_Bunny_Saucer_SND_Move_On()
+		SND_InsertVarSet(i_SND_Move_Loop1, 14, MATH_FloatMin(f_wanted_traction / 20.0, 1.0))
+	}
+	else
+		PNJ_Bunny_Saucer_SND_Move_Off()
+
+	tf_X_friction = f_X_friction
+
+	if (ti_flag_acceleration)
+		tf_Y_friction = f_Y_friction
+	else
+		tf_Y_friction = 1.0
+
+	tf_traction = f_wanted_traction * tf_Y_friction
+
+	if (ti_flag_acceleration)
+	{
+		DYN_FlagsSet(none, DYN_C_GlobalFriction)
+		if (i_flag_water_col)
+			DYN_FrictionVectorSet(cvector(tf_X_friction, tf_Y_friction, 3.0))
+		else
+			DYN_FrictionVectorSet(cvector(tf_X_friction, tf_Y_friction, 0.0))
+	}
+	else
+	{
+		DYN_FlagsSet(DYN_C_GlobalFriction, none)
+		if (i_flag_water_col)
+			DYN_FrictionVectorSet(cvector(tf_Y_friction, tf_Y_friction, 3.0))
+		else
+			DYN_FrictionVectorSet(cvector(tf_Y_friction, tf_Y_friction, 0.0))
+	}
+
+	tv_traction = OBJ_SightGet()
+	tv_traction *= tf_traction
+	tv_traction.z = 0.0
+	tv_traction += DYN_TractionVectorGet()
+	DYN_TractionSet(tv_traction)
+
+	tv_speed = DYN_SpeedGetVector()
+	tv_speed.z = 0.0
+	f_real_speed = MATH_VecDotProduct(tv_speed, OBJ_SightGet())
+	
+	f_wanted_speed = f_wanted_traction
+}
+
+//procedure_local object	PNJ_Bunny_Saucer_Rided_Get()
+//{
+//	int				ti_rank
+//	
+//	object		to_serveur
+//	object		to_client
+//
+//	message	tmsg_filter	
+//	
+//	messageid	EVT_LNK_RIDE_ON_NMI
+//
+//	ti_rank = -1
+//	for (	EVT_LNK_RIDE_ON_NMI = MSG_GlobalScan(Ci_LNK_EVENT_OFFSET + Ci_LNK_RIDE_ON_NMI, &ti_rank);
+//			MSG_GlobalIsValid(EVT_LNK_RIDE_ON_NMI);
+//			EVT_LNK_RIDE_ON_NMI = MSG_GlobalScan(Ci_LNK_EVENT_OFFSET + Ci_LNK_RIDE_ON_NMI, &ti_rank))
+//	{
+//		to_serveur = MSG_GlobalGetGao(EVT_LNK_RIDE_ON_NMI, SERVEUR)
+//		if (!to_serveur)
+//			continue
+//	
+//		to_client = MSG_GlobalGetSender(EVT_LNK_RIDE_ON_NMI)
+//		if (to_client == OBJ_Me())
+//			continue
+//	
+//		if (@to_client AI_IsModel(get_PNJ_Bunny_Saucer_Path))
+//			return(to_client)
+//	}
+//
+//	return(nobody)
+//}
+
+
+
+
+procedure_local void PNJ_Bunny_Saucer_Render_Trajectory(int ti_color)
+{
+#ifndef _FINAL_
+	float		tf_coef
+	float		tf_link_length	
+	float		tf_dot_product
+	float		tf_anticipation_dist
+	float		tf_coef_A
+	float		tf_coef_B
+	float		tf_coef_C
+	float		tf_coef_D
+	float		tf_zdm_size
+
+	vector	tv_link
+	vector	tv_pos
+	
+	vector	tv_A
+	vector	tv_B
+	vector	tv_C
+	vector	tv_D
+	vector	tv_sight
+	object	to_current_wp
+	object	to_next_wp
+	object	to_next_next_wp
+
+	network tn_net
+
+	if (AI_GetCurSystem() != Ci_CurSystem_Editeur || ! RENDER_TRAJECTORY )
+		return
+
+	tn_net = @o_start_wp WAY_NetOfObj()
+
+	tf_zdm_size = 0.0
+
+	to_current_wp = WAY_RootGet(tn_net)
+	to_next_wp = WAY_NetNextWP(tn_net, to_current_wp, NetNextWP_Mode_choix_de_lindice, 0)
+	
+	to_next_next_wp = WAY_NetNextWP(tn_net, to_current_wp, NetNextWP_Mode_choix_de_lindice, 1)
+	@to_current_wp OBJ_SightSet(MATH_VecCrossProduct(MATH_VecCrossProduct(@to_current_wp OBJ_PosGet() - @to_next_wp OBJ_PosGet(), @to_next_next_wp OBJ_PosGet() - @to_current_wp OBJ_PosGet()), MATH_VecBlendRotate(@to_next_wp OBJ_PosGet() - @to_current_wp OBJ_PosGet(), @to_next_next_wp OBJ_PosGet() - @to_current_wp OBJ_PosGet(), 0.5)))
+
+	to_next_next_wp = nobody
+
+	while(to_next_next_wp == nobody || to_current_wp != WAY_RootGet(tn_net))
+	{
+		tv_link = @to_next_wp OBJ_PosGet() - @to_current_wp OBJ_PosGet()
+		tf_link_length = WAY_LinkWeightGet(tn_net, to_current_wp, to_next_wp)
+		tv_link /= tf_link_length
+
+		to_next_next_wp = WAY_NetNextWP(tn_net, to_next_wp, NetNextWP_Mode_choix_de_lindice, 0)
+		if (to_next_next_wp == to_current_wp)
+			to_next_next_wp = WAY_NetNextWP(tn_net, to_next_wp, NetNextWP_Mode_choix_de_lindice, 1)
+
+		@to_next_wp OBJ_SightSet(MATH_VecCrossProduct(MATH_VecCrossProduct(@to_current_wp OBJ_PosGet() - @to_next_wp OBJ_PosGet(), @to_next_next_wp OBJ_PosGet() - @to_next_wp OBJ_PosGet()), MATH_VecBlendRotate(@to_current_wp OBJ_PosGet() - @to_next_wp OBJ_PosGet(), @to_next_next_wp OBJ_PosGet() - @to_next_wp OBJ_PosGet(), 0.5)))
+
+		tv_A	= @to_current_wp OBJ_PosGet()
+		tv_D = @to_next_wp OBJ_PosGet()
+	
+		tf_link_length = MATH_VecNorm(tv_D - tv_A)
+
+		tf_coef_B = 0.33 * tf_link_length
+		tf_coef_C = 0.33 * tf_link_length
+		
+		tv_B = tv_A + (@to_current_wp OBJ_SightGet() * tf_coef_B)
+		tv_C = tv_D - (@to_next_wp OBJ_SightGet() * tf_coef_C)
+	
+		MATH_LIB_Bezier_Display(10, tv_A, tv_B, tv_C, tv_D, ti_color)
+		
+		to_current_wp = to_next_wp
+		to_next_wp = to_next_next_wp
+	}
+#endif
+}
+
+procedure_local void PNJ_Bunny_Sauver_check_paf()
+{
+	messageid		tmid_ID
+	message	tmsg_filter
+	messageid		tmid_vision_event
+	int				ti_rank
+	int				ti_txt
+	object		to_pere
+	object		to_bone
+	int				ti_type
+	vector		tv_pos
+	vector		tv_dir
+	float			tf_dmg
+	int				ti_index
+	float			tf_hp_init
+	int				ti_bonus
+
+	if (i_flag_paf_check_done)
+		return
+	
+	i_flag_paf_check_done = vrai
+
+	i_flag_paf = faux
+	
+	MSG_SetNull(tmsg_filter)
+	tmsg_filter.msg_gao1 = OBJ_Me()
+	ti_rank = -1
+	for (	tmid_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tmsg_filter);
+			MSG_GlobalIsValid(tmid_ID);
+			tmid_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, tmsg_filter) )
+	{
+		to_pere = EVENT_PereGet(tmid_ID)
+		ti_type = EVENT_PafTypeGet(tmid_ID)
+		tv_pos = EVENT_PafPositionGet(tmid_ID)
+		tv_dir = EVENT_PafDirGet(tmid_ID)
+		tf_dmg = EVENT_PafPuisGet(tmid_ID) * PAF_Unit
+		
+		i_flag_paf = vrai
+	}
+	
+//	if (IO_KeyJustPressed(VK_SPACE))
+//		i_flag_paf = vrai
+}
+
+procedure_local void PNJ_Bunny_Saucer_Spark()
+{
+	int		ti_i
+	int		ti_GFX_Impact	
+
+	float		tf_norm
+	float		tf_dot_product
+
+	vector	tv_pos
+	vector	tv_speed
+
+	if (i_etat_courant != ETAT_Paf)
+		return
+	
+	tv_speed = DYN_SpeedGetVector()
+	tv_speed -= MATH_VecDotProduct(tv_speed, v_col_ground_normal) * v_col_ground_normal
+	tf_norm = MATH_VecSquareNorm(tv_speed)
+	
+	if (tf_norm < 0.5)
+		return
+		
+	tf_norm = MATH_FloatSqrt(tf_norm)
+	tv_speed /= tf_norm
+	tv_speed = MATH_VecBlendRotate(-tv_speed, v_col_ground_normal, 0.5)
+
+	tf_norm = MATH_FloatMin(tf_norm, 4.0)
+
+	for (ti_i  = 0; ti_i < 3; ti_i++)
+	{
+		switch(ti_i)
+		{
+			case 0 :
+				tv_pos = OBJ_PosGet()
+				tv_pos -= OBJ_SightGet() * 0.8
+				tv_pos += OBJ_BankingGet() * 0.5
+				break
+
+			case 1 :
+				tv_pos = OBJ_PosGet()
+				tv_pos -= OBJ_SightGet() * 0.6
+				tv_pos -= OBJ_HorizonGet() * 0.7
+				tv_pos += OBJ_BankingGet() * 1.8
+				break
+
+			case 2 :
+				tv_pos = OBJ_PosGet()
+				tv_pos -= OBJ_SightGet() * 0.6
+				tv_pos += OBJ_HorizonGet() * 0.7
+				tv_pos += OBJ_BankingGet() * 1.8
+				break
+		}	
+	
+		DBG_RenderVector(OBJ_PosGet(), tv_pos - OBJ_PosGet(), color_jaune)
+		
+		tf_dot_product = MATH_VecDotProduct(tv_pos - v_col_ground_pos, v_col_ground_normal) 
+		if (tf_dot_product > 0.3)
+			continue
+
+		ti_GFX_Impact = GFX_Add(9)
+		GFX_FlagSet(ti_GFX_Impact , 0, 1)
+		GFX_FlagSet(ti_GFX_Impact , 2, 1)
+		GFX_MaterialSet(ti_GFX_Impact , get_SFX_light_and_smoke, 5)
+		GFX_Setf(ti_GFX_Impact, 9000, Cf_PiBy8)												// angle d'ouverture
+		GFX_Seti(ti_GFX_Impact, 9100, 10)														// Nombre
+		GFX_Seti(ti_GFX_Impact, 9101, 0xFFFFFF) 										// couleur
+		GFX_Setf(ti_GFX_Impact, 9003, 0.999)														// friction
+		GFX_Setf(ti_GFX_Impact, 9001, tf_norm * 0.5)														// vitesse initiale minimum
+		GFX_Setf(ti_GFX_Impact, 9002, tf_norm)												// vitesse initiale maximum
+		GFX_Setf(ti_GFX_Impact, 9004, 0.03)													// épaisseur
+		GFX_Setf(ti_GFX_Impact, 9005, 0.5)														// durée de vie minimum
+		GFX_Setf(ti_GFX_Impact, 9006, 1.0)														// durée de vie maximum
+		GFX_Setf(ti_GFX_Impact, 9007, 1.95)														// multiplicateur de longueur
+		GFX_Setf(ti_GFX_Impact, 9008, 0.0)														// generation périod
+		GFX_Setf(ti_GFX_Impact, 9009, 0.05)														// durée de mort minimun
+		GFX_Setf(ti_GFX_Impact, 9010, 0.1)														// durée de mort maximun
+		GFX_Seti(ti_GFX_Impact, 9102, 0b11000)												// Flags (1 => agrandissement centré)
+		GFX_Setv(ti_GFX_Impact, 9200, tv_pos)													// Origine des étincelles
+		GFX_Setv(ti_GFX_Impact, 9201, tv_speed)											// Direction
+		GFX_Setv(ti_GFX_Impact, 9202, cvector(0.0, 0.0, -1.0) )								// gravity
+		GFX_Seti(ti_GFX_Impact, 9103, 3) 												// Zorder
+	}
+}
+
+procedure_local void PNJ_Bunny_Saucer_Clean_GFX()
+{
+	if (GFX_Smoke != -1)
+	{
+		GFX_Seti(GFX_Smoke, 13106, 0)												// *number of sprite to generate
+		GFX_Smoke = -1
+	}
+
+	if (GFX_Halo != -1)
+	{
+		GFX_Del(GFX_Halo)
+		GFX_Halo = -1
+	}
+
+	if (GFX_Fire != -1)
+	{
+		GFX_Seti(GFX_Fire, 13106, 0)												// *number of sprite to generate
+		GFX_Fire = -1
+	}
+	
+	if (GFX_Fire_Smoke != -1)
+	{
+		GFX_Seti(GFX_Fire_Smoke, 13106, 0)												// *number of sprite to generate
+		GFX_Fire_Smoke = -1
+	}
+}
+
+procedure_local void PNJ_Bunny_Saucer_Clean_Sound()
+{
+	if (i_SND_Move_Loop1 != -1)
+	{
+		SND_Destroy(i_SND_Move_Loop1)
+		i_SND_Move_Loop1 = -1
+	}
+	
+	if (i_SND_Move_Loop2 != -1)
+	{
+		SND_Destroy(i_SND_Move_Loop2)
+		i_SND_Move_Loop2 = -1
+	}		
+}

@@ -1,0 +1,71 @@
+Include_UltraProcedure_Header
+
+procedure_local void Proc_MM_SND_BeatManager()
+{
+	int ti_beat
+	float tf_time_beat
+	ti_beat = 0
+	if (SND_SignalIsActive("beat"))
+		ti_beat |= Ci_SndBeat_Beat
+	if ( SND_SignalIsActive("beaa"))
+		ti_beat |= Ci_SndBeat_Beat
+	if (SND_SignalIsActive("aaaat"))
+		ti_beat |= Ci_SndBeat_Beat
+	if (SND_SignalIsActive("bbbb"))
+		ti_beat |= Ci_SndBeat_Beat
+	if (SND_SignalIsActive("jin1"))
+		ti_beat |= (Ci_SndBeat_Jin1 | Ci_SndBeat_Beat)
+	if (SND_SignalIsActive("jin2"))
+		ti_beat |= (Ci_SndBeat_Jin2 | Ci_SndBeat_Beat)
+	if (SND_SignalIsActive("jin3"))
+		ti_beat |= (Ci_SndBeat_Jin3 | Ci_SndBeat_Beat)
+	if (SND_SignalIsActive("jin4"))
+		ti_beat |= (Ci_SndBeat_Jin4 | Ci_SndBeat_Beat)
+	@get_global i_SND_BEAT = ti_beat
+
+	if (ti_beat & Ci_SndBeat_Beat)
+		f_time_beat = 0
+//	{
+//		@get_global i_SND_BEAT_Tempo = (120.0 / (TIME_Get() - f_time_beat) )
+//		f_time_beat = TIME_Get()
+//	}
+//	else if (TIME_Elapsed(f_time_beat, 2.0))
+//		@get_global i_SND_BEAT_Tempo = 0
+	
+	f_time_beat += TIME_GetDt()
+//	if (ti_beat & Ci_SndBeat_Beat)
+//	{
+
+	if ( f_time_beat > 2.0)
+		@get_global i_SND_BEAT_Tempo = 0
+	else
+	{
+		ti_beat =  @get_rayman Proc_RM_FullDeguisementGet()
+		switch ( ti_beat  )
+		{
+			case 0 :
+			case 10 :
+				tf_time_beat = 90.0
+				break
+			case 1:
+				tf_time_beat = 100.0
+				break
+			case 15 :
+				tf_time_beat = 96
+				break
+			case 2:
+				tf_time_beat = 108.5
+				break
+			case 3:
+				tf_time_beat = 120
+				break
+			case 4:
+				tf_time_beat = 187
+				break
+			case 5 : 
+				tf_time_beat = 187
+				break
+		}
+		@get_global i_SND_BEAT_Tempo = tf_time_beat 
+	}
+}

@@ -1,0 +1,2624 @@
+#define	Ci_Invalid_Index										6666
+#define	Cf_tolerance_null										0.0001
+
+// ====================================================================================================================
+// COMMUN
+// ====================================================================================================================
+procedure void WAY_LIB_RenderBV(object to_gao, float tf_size, int ti_color)
+{
+	vector	tv_min
+	vector	tv_max
+	vector	tv_temp
+
+	tv_min = @to_gao BV_MinGet() + cvector(-tf_size, -tf_size, 0.0)
+	tv_max = @to_gao BV_MaxGet() + cvector(tf_size, tf_size, 0.0)
+
+	tv_temp = @to_gao OBJ_PosGet()
+	tv_temp += tv_min
+	DBG_RenderVector(tv_temp, cvector(tv_max.x - tv_min.x, 0.0, 0.0), ti_color)
+	DBG_RenderVector(tv_temp, cvector(0.0, tv_max.y - tv_min.y, 0.0), ti_color)
+	DBG_RenderVector(tv_temp, cvector(0.0, 0.0, tv_max.z - tv_min.z), ti_color)
+
+	tv_temp += cvector(0.0, 0.0, tv_max.z - tv_min.z)
+	DBG_RenderVector(tv_temp, cvector(tv_max.x - tv_min.x, 0.0, 0.0), ti_color)
+	DBG_RenderVector(tv_temp, cvector(0.0, tv_max.y - tv_min.y, 0.0), ti_color)
+
+	tv_temp += cvector(tv_max.x - tv_min.x, 0.0, 0.0)
+	DBG_RenderVector(tv_temp, cvector(0.0, 0.0, tv_min.z - tv_max.z), ti_color)
+
+	tv_temp = @to_gao OBJ_PosGet()
+	tv_temp += tv_max
+	DBG_RenderVector(tv_temp, cvector(tv_min.x - tv_max.x, 0.0, 0.0), ti_color)
+	DBG_RenderVector(tv_temp, cvector(0.0, tv_min.y - tv_max.y, 0.0), ti_color)
+	DBG_RenderVector(tv_temp, cvector(0.0, 0.0, tv_min.z - tv_max.z), ti_color)
+
+	tv_temp += cvector(0.0, 0.0, tv_min.z - tv_max.z)
+	DBG_RenderVector(tv_temp, cvector(tv_min.x - tv_max.x, 0.0, 0.0), ti_color)
+	DBG_RenderVector(tv_temp, cvector(0.0, tv_min.y - tv_max.y, 0.0), ti_color)
+	
+	tv_temp += cvector(tv_min.x - tv_max.x, 0.0, 0.0)
+	DBG_RenderVector(tv_temp, cvector(0.0,  0.0, tv_max.z - tv_min.z), ti_color)
+}
+
+
+
+// ============================================================
+// RETOURNE LE POINT D'INTERSECTION ENTRE UNE DIRECTION ET UNE BV
+// ============================================================
+procedure int WAY_LIB_Intersection_Dir_BV(object to_BV, vector tv_start_pos, vector tv_dir, float tf_extrusion, byref float tf_dist, byref vector tv_collide_pos)
+{
+	int		ti_i
+	
+	float		tf_X
+
+	vector	tv_bv_min_pos
+	vector	tv_bv_max_pos
+
+	tv_bv_min_pos = @to_BV OBJ_PosGet()
+	tv_bv_max_pos = tv_bv_min_pos
+	tv_bv_min_pos += @to_BV BV_MinGet()
+	tv_bv_max_pos += @to_BV BV_MaxGet()
+
+	tv_bv_min_pos.x -= tf_extrusion
+	tv_bv_min_pos.y -= tf_extrusion
+	
+	tv_bv_max_pos.x += tf_extrusion
+	tv_bv_max_pos.y += tf_extrusion
+
+	// SI ON EST DANS LA BV, ON COLLISIONNE
+	if (tv_start_pos.x >= tv_bv_min_pos.x && tv_start_pos.x <= tv_bv_max_pos.x && tv_start_pos.y >= tv_bv_min_pos.y && tv_start_pos.y <= tv_bv_max_pos.y)
+	{
+		tf_dist = 0.0
+		tv_collide_pos = tv_start_pos
+		return(vrai)
+	}
+
+	for (ti_i = 0; ti_i < 2; ti_i++)
+	{
+		// CHOIX DU COTE DE LA BV
+		switch(ti_i)
+		{
+			// TEST X FACE
+			case 0 :
+
+				if (!tv_dir.x)
+					continue
+				if (tv_dir.x > 0.0)
+					tf_dist = (tv_bv_min_pos.x - tv_start_pos.x) / tv_dir.x
+				else
+					tf_dist = (tv_bv_max_pos.x - tv_start_pos.x) / tv_dir.x
+
+				if (tf_dist < 0.0)
+					continue
+
+				tv_collide_pos = tv_start_pos
+				tv_collide_pos += tf_dist * tv_dir	
+		
+				if (tv_collide_pos.y < tv_bv_min_pos.y)
+					continue
+				if (tv_collide_pos.y > tv_bv_max_pos.y)
+					continue
+//				if (tv_collide_pos.z < tv_bv_min_pos.z)
+//					continue
+//				if (tv_collide_pos.z > tv_bv_max_pos.z)
+//					continue
+
+				return(vrai)
+
+			// TEST Y FACE
+			case 1 :
+
+				if (!tv_dir.y)
+					continue
+				if (tv_dir.y > 0.0)
+					tf_dist = (tv_bv_min_pos.y - tv_start_pos.y) / tv_dir.y
+				else
+					tf_dist = (tv_bv_max_pos.y - tv_start_pos.y) / tv_dir.y
+
+				if (tf_dist < 0.0)
+					continue
+			
+				tv_collide_pos = tv_start_pos
+				tv_collide_pos += tf_dist * tv_dir	
+		
+				if (tv_collide_pos.x < tv_bv_min_pos.x)
+					continue
+				if (tv_collide_pos.x > tv_bv_max_pos.x)
+					continue
+//				if (tv_collide_pos.z < tv_bv_min_pos.z)
+//					continue
+//				if (tv_collide_pos.z > tv_bv_max_pos.z)
+//					continue
+
+				return(vrai)
+
+//			// TEST Z FACE
+//			case 2 :
+//
+//				if (!tv_dir.z)
+//					continue
+//				if (tv_dir.z > 0.0)
+//					tf_dist = (tv_bv_min_pos.z - tv_start_pos.z) / tv_dir.z
+//				else
+//					tf_dist = (tv_bv_max_pos.z - tv_start_pos.z) / tv_dir.z
+//
+//				if (tf_dist < 0.0)
+//					continue
+//
+//				tv_collide_pos = tv_start_pos
+//				tv_collide_pos += tf_dist * tv_dir	
+//		
+//				if (tv_collide_pos.x < tv_bv_min_pos.x)
+//					continue
+//				if (tv_collide_pos.x > tv_bv_max_pos.x)
+//					continue
+//				if (tv_collide_pos.y < tv_bv_min_pos.y)
+//					continue
+//				if (tv_collide_pos.y > tv_bv_max_pos.y)
+//					continue
+//
+//				return(vrai)
+		}
+	}	
+
+	return(faux)
+}
+
+procedure void WAY_LIB_Occluder_BV_Set(object to_occluder)
+{
+	network	tway_occluder
+
+	int			ti_way_wp_nb
+	int			ti_i
+
+	float		tf_size
+
+	vector	tv_occluder_pos
+	vector	tv_occluder_scale
+	vector	tv_bv_min
+	vector	tv_bv_max
+	vector	tv_A
+	vector	tv_B
+
+	object	tao_wp[20]
+
+	tv_occluder_scale = @to_occluder OBJ_ScaleGet()
+
+	if( @to_occluder OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Links) )
+	{
+		// GEOMETRIE
+		tway_occluder = @to_occluder WAY_NetOfObj()
+		ti_way_wp_nb = WAY_NetFill(tway_occluder, WAY_RootGet(tway_occluder), &tao_wp[0])
+
+		// MIN ET MAX DES POS DES POINTS
+		tv_bv_min = cvector(Cf_Infinit, Cf_Infinit, 0.0)
+		tv_bv_max = cvector(-Cf_Infinit, -Cf_Infinit, 0.0)
+	
+		for( ti_i = 0; ti_i < ti_way_wp_nb; ti_i++ )
+		{
+			tv_occluder_pos = @tao_wp[ti_i] OBJ_PosGet()
+
+			if (tv_occluder_pos.x < tv_bv_min.x)
+				tv_bv_min.x = tv_occluder_pos.x
+			if (tv_occluder_pos.y < tv_bv_min.y)
+				tv_bv_min.y = tv_occluder_pos.y
+
+			if (tv_occluder_pos.x > tv_bv_max.x)
+				tv_bv_max.x = tv_occluder_pos.x
+			if (tv_occluder_pos.y > tv_bv_max.y)
+				tv_bv_max.y = tv_occluder_pos.y
+		}
+		
+		DBG_RenderVector(tv_bv_min, Cv_VerticalVector * 1000.0, color_rouge)	
+		DBG_RenderVector(tv_bv_max, Cv_VerticalVector * 1000.0, color_rouge)	
+
+		tv_bv_min -= @to_occluder OBJ_PosGet()
+		tv_bv_max -= @to_occluder OBJ_PosGet()
+		tv_bv_min.z = -10.0
+		tv_bv_max.z = 10.0
+
+		tf_size = tv_occluder_scale.x * 0.5
+	
+		tv_bv_min.x -= tf_size
+		tv_bv_min.y -= tf_size
+		tv_bv_max.x += tf_size
+		tv_bv_max.y += tf_size
+	}
+	else if ( ! @to_occluder OBJ_CustomBitsTest(OBJ_CBits_0) )
+	{
+		tv_bv_min = @to_occluder BV_MinGet()
+		tv_bv_max = @to_occluder BV_MaxGet()
+	}
+	else
+	{
+		if (tv_occluder_scale.x == tv_occluder_scale.y)
+		{
+			// SPHERE
+			tf_size = tv_occluder_scale.x * 0.5
+			tv_bv_min = cvector(-tf_size, -tf_size, -tf_size)
+			tv_bv_max = cvector(tf_size, tf_size, tf_size)
+		}
+		else
+		{
+			if (tv_occluder_scale.x > tv_occluder_scale.y)
+			{
+				// GELLULE X
+				tf_size = tv_occluder_scale.y
+				tf_size *= 0.5
+				
+				tv_A = @to_occluder OBJ_PosGet()
+				tv_A += @to_occluder OBJ_HorizonGet() * ((tv_occluder_scale.x * 0.5) - tf_size)
+	
+				tv_B = @to_occluder OBJ_PosGet()
+				tv_B -= @to_occluder OBJ_HorizonGet() * ((tv_occluder_scale.x * 0.5) - tf_size)
+			}
+			else
+			{
+				// GELLULE Y
+				tf_size = tv_occluder_scale.x
+				tf_size *= 0.5
+
+				tv_A = @to_occluder OBJ_PosGet()
+				tv_A += @to_occluder OBJ_SightGet() * ((tv_occluder_scale.y * 0.5) - tf_size)
+	
+				tv_B = @to_occluder OBJ_PosGet()
+				tv_B -= @to_occluder OBJ_SightGet() * ((tv_occluder_scale.y * 0.5) - tf_size)
+			}
+
+			if (tv_A.x > tv_B.x)
+			{
+				tv_bv_min.x = tv_B.x
+				tv_bv_max.x = tv_A.x
+			}
+			else
+			{
+				tv_bv_min.x = tv_A.x
+				tv_bv_max.x = tv_B.x
+			}
+
+			if (tv_A.y > tv_B.y)
+			{
+				tv_bv_min.y = tv_B.y
+				tv_bv_max.y = tv_A.y
+			}
+			else
+			{
+				tv_bv_min.y = tv_A.y
+				tv_bv_max.y = tv_B.y
+			}
+			
+			tv_bv_max -= @to_occluder OBJ_PosGet()
+			tv_bv_min -= @to_occluder OBJ_PosGet()
+	
+			tv_bv_min.x -= tf_size
+			tv_bv_min.y -= tf_size
+			tv_bv_min.z = -tf_size
+
+			tv_bv_max.x += tf_size
+			tv_bv_max.y += tf_size
+			tv_bv_max.z = tf_size
+		}
+	}
+	
+	@to_occluder  BV_MinSet(tv_bv_min)
+	@to_occluder  BV_MaxSet(tv_bv_max)
+}
+
+
+procedure vector WAY_LIB_Occluder_Position_Get(object to_occluder)
+{
+	network	tway_occluder
+	int			ti_way_wp_nb
+	int			ti_way_closed
+	int			ti_i
+	vector	tv_occluder_pos
+	object	tao_wp[20]
+	
+	if( @to_occluder OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Links) )
+	{
+		// GEOMETRIE
+		tway_occluder = @to_occluder WAY_NetOfObj()
+		ti_way_wp_nb = WAY_NetFill(tway_occluder, WAY_RootGet(tway_occluder), &tao_wp[0])
+		ti_way_closed = @tao_wp[ti_way_wp_nb - 1] WAY_HasLinks(tway_occluder, tao_wp[0])
+		// compute barycentre
+		tv_occluder_pos = Cv_NullVector
+		for( ti_i = 0; ti_i < ti_way_wp_nb; ti_i++ )
+			tv_occluder_pos += @tao_wp[ti_i] OBJ_PosGet()
+		tv_occluder_pos /= ti_way_wp_nb
+		return tv_occluder_pos
+	}
+	else
+	{
+		// GELLULE OU SPHERE
+		return @to_occluder OBJ_PosGet()
+	}
+}
+
+
+procedure float WAY_LIB_Occluder_Size_Get(object to_occluder)
+{
+	network	tway_occluder
+	int			ti_way_wp_nb
+	int			ti_i
+	vector	tv_occluder_pos
+	object	tao_wp[20]
+	float		tf_dist
+	float		tf_occluder_size
+	vector	tv_temp
+	vector	tv_temp2
+	
+	
+	tv_occluder_pos = WAY_LIB_Occluder_Position_Get(to_occluder)
+	if( @to_occluder OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Links) )
+	{
+		// GEOMETRIE
+		tway_occluder = @to_occluder WAY_NetOfObj()
+		ti_way_wp_nb = WAY_NetFill(tway_occluder, WAY_RootGet(tway_occluder), &tao_wp[0])
+		tf_occluder_size = 0.0
+		for( ti_i = 0; ti_i < ti_way_wp_nb; ti_i++ )
+		{
+			tv_temp = @tao_wp[ti_i] OBJ_PosGet() - tv_occluder_pos
+			tv_temp.z = 0.0
+			tf_dist = MATH_VecSquareNorm(tv_temp)
+			if( tf_dist > tf_occluder_size )
+				tf_occluder_size = tf_dist
+		}
+		tf_occluder_size = MATH_FloatSqrt(tf_occluder_size)
+	}
+	else if (@to_occluder OBJ_CustomBitsTest(OBJ_CBits_0))
+	{
+		// GELLULE OU SPHERE
+		tv_temp = @to_occluder OBJ_ScaleGet()
+		if (tv_temp.x > tv_temp.y)
+		{
+			tf_occluder_size = tv_temp.y
+			tf_occluder_size *= 0.5
+		}
+		else
+		{
+			tf_occluder_size = tv_temp.x
+			tf_occluder_size *= 0.5
+		}
+	}
+	else
+	{
+		// BV
+		tv_temp = @to_occluder BV_MaxGet() - @to_occluder BV_MinGet()
+		tv_temp *= 0.5
+		tf_occluder_size = MATH_FloatMax(tv_temp.x, tv_temp.y)
+	}
+	
+	return tf_occluder_size
+}
+
+
+procedure void	WAY_LIB_Get_Extreme_Pos(byrefarr vector av_position, int ti_array_size, vector tv_start_pos, vector tv_barycentre, byref vector tv_pos_A, byref vector tv_pos_B)
+{
+	int				ti_i	
+
+	float			tf_sign
+
+	vector		tv_start_to_A
+	vector		tv_start_to_B
+//	vector		tv_barycentre
+//
+//	tv_barycentre = Cv_NullVector
+//	for (ti_i = 0; ti_i < ti_array_size; ti_i++)
+//		tv_barycentre += av_position[ti_i]
+//	tv_barycentre.z = tv_start_pos.z
+//	tv_barycentre /= ti_array_size
+
+	tv_pos_A = tv_barycentre + (tv_barycentre - tv_start_pos)
+	tv_pos_B = tv_pos_A
+
+	for (ti_i = 0; ti_i < ti_array_size; ti_i++)
+	{
+//		DBG_RenderVector(tv_start_pos, av_position[ti_i] - tv_start_pos, color_blanc)
+//
+//		if (!ti_i)
+//		{
+//			tv_pos_A = av_position[ti_i]
+//			tv_pos_B = av_position[ti_i]
+//			continue
+//		}	
+
+//		if (MATH_VecCrossProduct(av_position[ti_i] - tv_start_pos, tv_pos_A - tv_start_pos).z < 0.0)
+//			tv_pos_A = av_position[ti_i]
+//
+//		if (MATH_VecCrossProduct(av_position[ti_i] - tv_start_pos, tv_pos_B - tv_start_pos).z > 0.0)
+//			tv_pos_B = av_position[ti_i]
+	
+		tf_sign = MATH_VecCrossProduct(av_position[ti_i] - tv_start_pos, tv_barycentre - tv_start_pos).z
+		if (tf_sign < 0.0 && MATH_VecCrossProduct(av_position[ti_i] - tv_start_pos, tv_pos_A - tv_start_pos).z < 0.0)
+			tv_pos_A = av_position[ti_i]
+		if (tf_sign > 0.0 && MATH_VecCrossProduct(av_position[ti_i] - tv_start_pos, tv_pos_B - tv_start_pos).z > 0.0)
+			tv_pos_B = av_position[ti_i]
+	}
+	
+	DBG_RenderVector(tv_start_pos, tv_pos_A - tv_start_pos, color_vert)
+	DBG_RenderVector(tv_start_pos, tv_pos_B - tv_start_pos, color_rouge)
+	
+	return
+}
+
+// ====================================================================================================================
+// OCCLUDER BV
+// ====================================================================================================================
+procedure int WAY_LIB_In_BV(vector tv_start_pos, vector tv_dir, float tf_size, object to_occluder, byref vector tv_next_pos)
+{
+	vector tv_min
+	vector tv_max
+	
+	tv_min = @to_occluder OBJ_PosGet()
+	tv_max = tv_min
+
+	tv_min += @to_occluder BV_MinGet()
+	tv_min.x -= tf_size
+	tv_min.y -= tf_size
+
+	tv_max += @to_occluder BV_MaxGet()
+	tv_max.x += tf_size
+	tv_max.y += tf_size
+
+//	WAY_LIB_RenderBV(to_occluder, tf_size, color_blanc)
+
+	if (tv_start_pos.x >= tv_min.x && tv_start_pos.x <= tv_max.x && tv_start_pos.y >= tv_min.y && tv_start_pos.y <= tv_max.y)
+	{
+		if (tv_start_pos.x - tv_min.x > tv_max.x - tv_start_pos.x)
+		{
+			// ON EST PLUS PROCHE DU X MAX
+			if (tv_start_pos.y - tv_min.y > tv_max.y - tv_start_pos.y)
+			{
+				// ON EST PLUS PROCHE DU Y MAX
+				if (tv_max.x - tv_start_pos.x < tf_size && tv_max.y - tv_start_pos.y)
+				{
+					// ON EST DANS L'ANGLE
+					tv_next_pos.x = tv_max.x + 0.25
+					tv_next_pos.y = tv_max.y + 0.25
+				}
+				else if (tv_max.x - tv_start_pos.x > tv_max.y - tv_start_pos.y)
+				{
+					// ON EST PLUS PROCHE DE L'AXE Y
+					tv_next_pos.x = tv_start_pos.x
+					tv_next_pos.y = tv_max.y + 0.25
+				}
+				else
+				{
+					// ON EST PLUS PROCHE DE L'AXE X
+					tv_next_pos.x = tv_max.x + 0.25
+					tv_next_pos.y = tv_start_pos.y
+				}
+			}
+			else
+			{
+				// ON EST PLUS PROCHE DU Y MIN
+				if (tv_max.x - tv_start_pos.x < tf_size &&  tv_start_pos.y - tv_min.y < tf_size)
+				{
+					// ON EST DANS L'ANGLE
+					tv_next_pos.x = tv_max.x + 0.25
+					tv_next_pos.y = tv_min.y - 0.25
+				}
+				else if (tv_max.x - tv_start_pos.x > tv_start_pos.y - tv_min.y)
+				{
+					// ON EST PLUS PROCHE DE L'AXE Y
+					tv_next_pos.x = tv_start_pos.x
+					tv_next_pos.y = tv_min.y - 0.25
+				}
+				else
+				{
+					// ON EST PLUS PROCHE DE L'AXE X
+					tv_next_pos.x = tv_max.x + 0.25
+					tv_next_pos.y = tv_start_pos.y
+				}
+			}
+		}
+		else
+		{
+			// ON EST PLUS PROCHE DU X MIN
+			if (tv_start_pos.y - tv_min.y > tv_max.y - tv_start_pos.y)
+			{
+				// ON EST PLUS PROCHE DU Y MAX
+				if (tv_start_pos.x - tv_min.x < tf_size &&  tv_max.y - tv_start_pos.y < tf_size)
+				{
+					// ON EST DANS L'ANGLE
+					tv_next_pos.x = tv_min.x - 0.25
+					tv_next_pos.y = tv_max.y + 0.25
+				}
+				else if (tv_start_pos.x - tv_min.x > tv_max.y - tv_start_pos.y)
+				{
+					// ON EST PLUS PROCHE DE L'AXE Y
+					tv_next_pos.x = tv_start_pos.x
+					tv_next_pos.y = tv_max.y + 0.25
+				}
+				else
+				{
+					// ON EST PLUS PROCHE DE L'AXE X
+					tv_next_pos.x = tv_min.x - 0.25
+					tv_next_pos.y = tv_start_pos.y
+				}
+			}
+			else
+			{
+				// ON EST PLUS PROCHE DU Y MIN
+				if (tv_start_pos.x - tv_min.x < tf_size &&  tv_start_pos.y - tv_min.y < tf_size)
+				{
+					// ON EST DANS L'ANGLE
+					tv_next_pos.x = tv_min.x - 0.25
+					tv_next_pos.y = tv_min.y - 0.25
+				}
+				else if (tv_start_pos.x - tv_min.x > tv_start_pos.y - tv_min.y)
+				{
+					// ON EST PLUS PROCHE DE L'AXE Y
+					tv_next_pos.x = tv_start_pos.x
+					tv_next_pos.y = tv_min.y - 0.25
+				}
+				else
+				{
+					// ON EST PLUS PROCHE DE L'AXE X
+					tv_next_pos.x = tv_min.x - 0.25
+					tv_next_pos.y = tv_start_pos.y
+				}
+			}
+		}
+
+		
+//		tv_next_pos.z = tv_start_pos.z
+//		WAY_LIB_RenderBV(to_occluder, tf_size, color_rouge)
+//		DBG_RenderVector(tv_start_pos, tv_next_pos - tv_start_pos, color_rouge)
+
+		return(vrai)
+	}
+	
+	return(faux)
+}
+
+procedure int WAY_LIB_Collide_BV(vector tv_start_pos, vector tv_dir, float tf_dist, float tf_size, object to_occluder, byref float tf_dist_collision, byref vector tv_collide_pos)
+{
+	if (WAY_LIB_Intersection_Dir_BV(to_occluder, tv_start_pos, tv_dir, tf_size, tf_dist_collision, tv_collide_pos))
+	{
+#ifndef _FINAL_
+		if (AI_GetCurSystem() == Ci_CurSystem_Editeur)
+		{
+			WAY_LIB_RenderBV(to_occluder, tf_size, color_blanc)	
+			DBG_RenderVector(tv_start_pos, tv_collide_pos - tv_start_pos, color_cyan)
+		}
+#endif 
+	
+		if (tf_dist_collision > tf_dist)
+			return(faux)
+		else
+			return(vrai)
+	}
+	return(faux)
+}
+
+procedure vector WAY_LIB_Get_BV_Pos(vector tv_start_pos, vector tv_dest_pos, vector tv_sight, float tf_size, object to_occluder)
+{
+	vector	tv_min
+	vector	tv_max
+	vector	tv_pos_A
+	vector	tv_pos_B
+	vector	tv_dodge_pos
+
+	tv_min = @to_occluder OBJ_PosGet()
+	tv_max = tv_min
+
+	tf_size += 0.25
+
+	tv_min += @to_occluder BV_MinGet()
+	tv_min.x -= tf_size
+	tv_min.y -= tf_size
+
+	tv_max += @to_occluder BV_MaxGet()
+	tv_max.x += tf_size
+	tv_max.y += tf_size
+	
+	tv_pos_A.z = tv_start_pos.z
+	tv_pos_B.z = tv_start_pos.z
+
+	if (tv_start_pos.x < tv_min.x)
+	{
+		if (tv_start_pos.y < tv_min.y)
+		{
+			// EN BAS A GAUCHE
+			tv_pos_A.x = tv_min.x
+			tv_pos_A.y = tv_max.y
+
+			tv_pos_B.x = tv_max.x
+			tv_pos_B.y = tv_min.y
+		}
+		else if (tv_start_pos.y < tv_max.y)
+		{
+			// A GAUCHE
+			tv_pos_A.x = tv_min.x
+			tv_pos_A.y = tv_min.y
+
+			tv_pos_B.x = tv_min.x
+			tv_pos_B.y = tv_max.y
+		}
+		else
+		{
+			// EN HAUT A GAUCHE
+			tv_pos_A.x = tv_min.x
+			tv_pos_A.y = tv_min.y
+
+			tv_pos_B.x = tv_max.x
+			tv_pos_B.y = tv_max.y
+		}
+	}
+	else if (tv_start_pos.x < tv_max.x)
+	{
+		if (tv_start_pos.y < tv_min.y)
+		{
+			// EN BAS
+			tv_pos_A.x = tv_min.x
+			tv_pos_A.y = tv_min.y
+
+			tv_pos_B.x = tv_max.x
+			tv_pos_B.y = tv_min.y
+		}
+		else
+		{
+			// EN HAUT
+			tv_pos_A.x = tv_min.x
+			tv_pos_A.y = tv_max.y
+
+			tv_pos_B.x = tv_max.x
+			tv_pos_B.y = tv_max.y
+		}
+	}
+	else
+	{
+		if (tv_start_pos.y < tv_min.y)
+		{
+			// EN BAS A DROITE
+			tv_pos_A.x = tv_min.x
+			tv_pos_A.y = tv_min.y
+
+			tv_pos_B.x = tv_max.x
+			tv_pos_B.y = tv_max.y
+		}
+		else if (tv_start_pos.y < tv_max.y)
+		{
+			// A DROITE
+			tv_pos_A.x = tv_max.x
+			tv_pos_A.y = tv_min.y
+
+			tv_pos_B.x = tv_max.x
+			tv_pos_B.y = tv_max.y
+		}
+		else
+		{
+			// EN HAUT A DROITE
+			tv_pos_A.x = tv_min.x
+			tv_pos_A.y = tv_max.y
+
+			tv_pos_B.x = tv_max.x
+			tv_pos_B.y = tv_min.y
+		}
+	}
+
+	DBG_RenderVector(tv_start_pos, tv_pos_A - tv_start_pos, color_vert)
+	DBG_RenderVector(tv_start_pos, tv_pos_B - tv_start_pos, color_rouge)
+
+	if (@to_occluder OBJ_CustomBitsTest(OBJ_CBits_1) && MATH_FloatSign(MATH_VecDotProduct(tv_dest_pos - @to_occluder OBJ_PosGet(), @to_occluder OBJ_HorizonGet())) != MATH_FloatSign(MATH_VecDotProduct(tv_start_pos - @to_occluder OBJ_PosGet(), @to_occluder OBJ_HorizonGet())))
+	{
+		if (MATH_VecDotProduct(MATH_VecNormalize(tv_pos_A - tv_start_pos), @to_occluder OBJ_SightGet()) > MATH_VecDotProduct(MATH_VecNormalize(tv_pos_B - tv_start_pos), @to_occluder OBJ_SightGet()))
+			return(tv_pos_A)
+		else
+			return(tv_pos_B)
+	}
+	else
+	{
+		if (MATH_VecDotProduct(MATH_VecNormalize(tv_pos_A - tv_start_pos), tv_sight) > MATH_VecDotProduct(MATH_VecNormalize(tv_pos_B - tv_start_pos), tv_sight))
+			return(tv_pos_A)
+		else
+			return(tv_pos_B)
+	}
+}
+
+// ====================================================================================================================
+// OCCLUDER SPHERE
+// ====================================================================================================================
+
+procedure int WAY_LIB_In_Sphere(vector tv_start_pos, vector tv_sight, float tf_size, vector tv_occluder_pos, float tf_occluder_size, vector tv_occluder_sight, vector tv_occluder_horizon, int ti_flag_force_side, byref vector tv_next_pos)
+{
+	float		tf_dist
+	float		tf_occluder_sqr_size
+
+	vector	tv_me_to_occluder
+
+	tf_occluder_size += tf_size
+	tf_occluder_sqr_size = tf_occluder_size * tf_occluder_size
+
+	tv_occluder_pos.z = tv_start_pos.z
+
+	tv_me_to_occluder = tv_occluder_pos - tv_start_pos
+	tf_dist = MATH_VecDotProduct(tv_me_to_occluder, tv_me_to_occluder)
+	if (tf_dist < tf_occluder_sqr_size)
+	{
+		// ON EST DANS L'OCCLUDER
+//		DBG_RenderCircle(tv_occluder_pos, tf_occluder_size, Cv_VerticalVector, color_rouge)
+
+		if (MATH_FloatNullToler(tf_dist, Cf_tolerance_null))
+		{
+			tv_me_to_occluder = OBJ_SightGet()
+		}
+		else
+		{
+			tf_dist = MATH_FloatSqrt(tf_dist)
+			tv_me_to_occluder /= tf_dist
+		}
+
+		tv_next_pos = tv_occluder_pos
+		tv_next_pos -= tv_me_to_occluder * (tf_occluder_size + 0.25)
+		
+		tv_me_to_occluder.z = tv_me_to_occluder.x
+		tv_me_to_occluder.x = tv_me_to_occluder.y
+		tv_me_to_occluder.y = - tv_me_to_occluder.z
+		tv_me_to_occluder.z = 0.0
+
+		if (ti_flag_force_side && MATH_FloatSign(MATH_VecDotProduct(tv_start_pos - tv_occluder_pos, tv_occluder_horizon)) != MATH_FloatSign(MATH_VecDotProduct(tv_next_pos - tv_occluder_pos, tv_occluder_horizon)))
+			tv_me_to_occluder *= MATH_FloatSign(MATH_VecDotProduct(tv_occluder_sight, tv_me_to_occluder))
+		else
+			tv_me_to_occluder *= MATH_FloatSign(MATH_VecDotProduct(tv_sight, tv_me_to_occluder))
+
+		tv_next_pos += tv_me_to_occluder * 0.25
+
+		return(vrai)
+	}
+	
+	return(faux)
+}
+
+procedure int WAY_LIB_Collide_Sphere(vector tv_start_pos, vector tv_move_dir, float tf_move_length, float tf_size, vector tv_occluder_pos, float tf_occluder_size, byref vector tv_collide_pos)
+{
+	float			tf_X
+	float			tf_Y
+	float			tf_occluder_sqr_size
+
+	vector 		tv_Y
+
+	tf_occluder_sqr_size = tf_occluder_size + tf_size
+
+	if ( ! tf_occluder_sqr_size )
+		return(faux)
+
+	tv_occluder_pos.z = tv_start_pos.z
+
+	tf_X = MATH_VecDotProduct(tv_occluder_pos - tv_start_pos, tv_move_dir)
+	if (tf_X < 0.0 || tf_X > tf_move_length + tf_occluder_sqr_size)
+		return(faux)
+
+	tf_occluder_sqr_size *= tf_occluder_sqr_size
+
+	tv_collide_pos = tv_start_pos 
+	tv_collide_pos += tv_move_dir * tf_X
+	
+	tv_Y = tv_collide_pos - tv_occluder_pos
+	tf_Y = MATH_VecSquareNorm(tv_Y) 
+	if (tf_Y < tf_occluder_sqr_size)
+	{
+		if ( MATH_FloatNullToler(tf_Y, Cf_tolerance_null) )
+		{
+			tv_collide_pos -= (tf_occluder_size + tf_size) * tv_move_dir
+		}
+		else
+		{
+			tf_Y = MATH_FloatSqrt(tf_Y)
+			tv_Y /= tf_Y
+			tf_X = MATH_FloatSqrt(tf_occluder_sqr_size - (tf_Y * tf_Y))
+			tv_collide_pos -= tf_X * tv_move_dir
+		}
+
+		DBG_RenderCircle(tv_occluder_pos, tf_occluder_size, Cv_VerticalVector, color_blanc)
+		DBG_RenderCircle(tv_occluder_pos, tf_occluder_size + tf_size, Cv_VerticalVector, color_blanc)
+
+		return(vrai)
+	}
+
+	return(faux)
+}
+
+procedure vector WAY_LIB_Get_Sphere_Pos(vector tv_start_pos, vector tv_dest_pos, vector tv_sight, float tf_size, vector tv_occluder_pos, float tf_occluder_size, vector tv_occluder_sight, vector tv_occluder_horizon, int ti_flag_force_side)
+{
+//	int			ti_capa_A
+//	int			ti_capa_B
+
+	float		tf_X
+	float		tf_Y
+	float		tf_occluder_sqr_size	
+	float		tf_sign
+
+	vector	tv_X
+	vector	tv_Y
+	vector	tv_pos_A
+	vector	tv_pos_B
+	vector	tv_temp
+
+	tf_occluder_size += tf_size
+
+	tf_occluder_sqr_size = tf_occluder_size
+	tf_occluder_sqr_size *= tf_occluder_sqr_size
+
+	tv_occluder_pos.z = tv_start_pos.z
+
+	tv_X = tv_start_pos
+	tv_X -= tv_occluder_pos
+	tv_X.z = 0.0
+
+	tf_Y = MATH_VecNorm(tv_X)
+	if (MATH_FloatNullToler(tf_Y, Cf_tolerance_null))
+	{
+		if (ti_flag_force_side)
+		{
+			tv_pos_A = tv_occluder_pos
+			tv_pos_A += tv_occluder_sight * tf_occluder_size
+			return(tv_pos_A)
+		}
+		else
+		{
+			tv_pos_A = tv_occluder_pos
+			tv_pos_A += tv_sight * tf_occluder_size
+			return(tv_pos_A)
+		}
+	}
+	
+	tv_X /= tf_Y
+	
+	if (tf_Y < tf_occluder_size)
+	{
+		// On est dans l'occluder...	
+		tv_pos_A = tv_occluder_pos
+		tv_pos_A += tv_X * (tf_occluder_size + 0.25)
+		
+		tv_X.z = tv_X.x
+		tv_X.x = tv_X.y
+		tv_X.y = - tv_X.z
+		tv_X.z = 0.0
+
+		if (ti_flag_force_side && MATH_FloatSign(MATH_VecDotProduct(tv_start_pos - tv_occluder_pos, tv_occluder_horizon)) != MATH_FloatSign(MATH_VecDotProduct(tv_pos_A - tv_occluder_pos, tv_occluder_horizon)))
+			tv_X *= MATH_FloatSign(MATH_VecDotProduct(tv_occluder_sight, tv_X))
+		else
+			tv_X *= MATH_FloatSign(MATH_VecDotProduct(tv_sight, tv_X))
+
+		tv_pos_A += tv_X * 0.25
+
+		return(tv_pos_A)
+	}
+
+	tv_Y.x = tv_X.y
+	tv_Y.y = -tv_X.x
+	tv_Y.z = 0.0
+
+	tf_X = tf_occluder_sqr_size
+	tf_X /= tf_Y
+
+	tf_Y = tf_occluder_sqr_size
+	tf_Y -= tf_X * tf_X
+	tf_Y = MATH_FloatSqrt(tf_Y)
+
+	tv_X *= tf_X + 0.25
+	tv_Y *= tf_Y + 0.25
+
+	if (ti_flag_force_side && MATH_FloatSign(MATH_VecDotProduct(tv_start_pos - tv_occluder_pos, tv_occluder_horizon)) != MATH_FloatSign(MATH_VecDotProduct(tv_dest_pos - tv_occluder_pos, tv_occluder_horizon)))
+	{
+		// SENS UNIQUE
+		tv_pos_A = tv_X
+		tv_pos_A += tv_Y
+
+		tv_pos_B = tv_X
+		tv_pos_B -= tv_Y
+
+		if (MATH_VecDotProduct(tv_occluder_sight, tv_pos_A) < MATH_VecDotProduct(tv_occluder_sight, tv_pos_B))
+		{
+			tv_temp = tv_pos_A
+			tv_pos_A = tv_pos_B
+			tv_pos_B = tv_temp
+		}
+			
+		tv_pos_A += tv_occluder_pos
+		tv_pos_B += tv_occluder_pos
+
+		if (@get_global WAY_LIB_TEST_GRID && (GRID_CapaGet(tv_pos_A) & tag_grid_terrain) == Ci_sol_mur && (GRID_CapaGet(tv_pos_B) & tag_grid_terrain) != Ci_sol_mur )
+		{
+			DBG_RenderVector(tv_start_pos, Cv_VerticalVector * 100.0, color_rouge)
+			tv_pos_A = tv_pos_B
+		}
+	}
+	else
+	{
+		// BEST SIGHT
+		tv_pos_A = tv_occluder_pos
+		tv_pos_A += tv_X
+
+		tv_pos_B = tv_pos_A
+
+		tf_sign = MATH_FloatSign(MATH_VecDotProduct(tv_sight, tv_Y))
+	
+		tv_pos_A += tf_sign * tv_Y
+		tv_pos_B -= tf_sign * tv_Y
+
+		if (@get_global WAY_LIB_TEST_GRID)
+		{
+//			DBG_RenderVector(tv_pos_A, Cv_VerticalVector * 10.0, color_rouge)	
+//			DBG_RenderVector(tv_pos_B, Cv_VerticalVector * 10.0, color_vert)
+//		
+//			ti_capa_A = GRID_CapaGet(tv_pos_A)
+//			ti_capa_A &= tag_grid_terrain
+//			
+//			ti_capa_B = GRID_CapaGet(tv_pos_B)
+//			ti_capa_B &= tag_grid_terrain
+
+			if ((GRID_CapaGet(tv_pos_A) & tag_grid_terrain) == Ci_sol_mur && (GRID_CapaGet(tv_pos_B) & tag_grid_terrain) != Ci_sol_mur)
+			{
+				DBG_RenderVector(tv_start_pos, Cv_VerticalVector * 100.0, color_rouge)
+				tv_pos_A = tv_pos_B
+			}
+		}
+	}
+	
+	return(tv_pos_A)
+}
+
+// ====================================================================================================================
+// OCCLUDER GELLULE
+// ====================================================================================================================
+
+procedure int WAY_LIB_In_Gellule(vector tv_start_pos, vector tv_sight, float tf_size,  object to_occluder, byref vector tv_next_pos)
+{
+	float			tf_dist
+	float			tf_occluder_size
+	float			tf_occluder_sqr_size
+	float			tf_occluder_length
+
+	vector		tv_occluder_pos
+	vector 		tv_occluder_axis
+	vector		tv_projection_pos
+	vector		tv_me_to_occluder
+
+	tv_occluder_pos = @to_occluder OBJ_ScaleGet()
+	if (tv_occluder_pos.x > tv_occluder_pos.y)
+	{
+		tv_occluder_axis = @to_occluder OBJ_HorizonGet()
+	
+		tf_occluder_size = tv_occluder_pos.y
+		tf_occluder_length = tv_occluder_pos.x - tf_occluder_size
+
+		tf_occluder_size *= 0.5
+		tf_occluder_size += tf_size
+	}
+	else
+	{
+		tv_occluder_axis = @to_occluder OBJ_SightGet()
+		
+		tf_occluder_size = tv_occluder_pos.x
+		tf_occluder_length = tv_occluder_pos.y - tf_occluder_size
+
+		tf_occluder_size *= 0.5
+		tf_occluder_size += tf_size
+	}
+
+	tf_occluder_sqr_size = tf_occluder_size * tf_occluder_size
+
+	tv_occluder_pos = @to_occluder OBJ_PosGet()
+	tv_occluder_pos.z = tv_start_pos.z
+	tv_occluder_pos -= tv_occluder_axis * (tf_occluder_length * 0.5)
+
+	tf_occluder_sqr_size = tf_occluder_size * tf_occluder_size
+
+	// EST-CE QUE JE SUIS DANS L'OCCLUDER ?
+	tv_projection_pos = MATH_FloatLimit(MATH_VecDotProduct(tv_start_pos - tv_occluder_pos, tv_occluder_axis), 0.0, tf_occluder_length) * tv_occluder_axis
+	tv_projection_pos += tv_occluder_pos
+	
+	tv_me_to_occluder = tv_projection_pos
+	tv_me_to_occluder -= tv_start_pos
+	tv_me_to_occluder.z = 0.0
+
+	tf_dist = MATH_VecDotProduct(tv_me_to_occluder, tv_me_to_occluder) 
+
+	if (tf_dist < tf_occluder_sqr_size)
+	{
+		// ON EST DANS L'OCCLUDER
+//		DBG_RenderCircle(tv_occluder_pos, tf_occluder_size, Cv_VerticalVector, color_blanc)
+//		DBG_RenderCircle(tv_occluder_pos + (tv_occluder_axis * tf_occluder_length), tf_occluder_size, Cv_VerticalVector, color_blanc)
+//		DBG_RenderVector(tv_occluder_pos, tv_occluder_axis * tf_occluder_length, color_blanc)
+//		DBG_RenderCircle(tv_projection_pos, tf_occluder_size, Cv_VerticalVector, color_rouge)
+
+		if (MATH_FloatNullToler(tf_dist, Cf_tolerance_null))
+		{
+			tv_me_to_occluder = OBJ_SightGet()
+		}
+		else
+		{
+			tf_dist = MATH_FloatSqrt(tf_dist)
+			tv_me_to_occluder /= tf_dist
+		}
+
+		tv_next_pos = tv_projection_pos
+		tv_next_pos -= tv_me_to_occluder * (tf_occluder_size + 0.25)
+		
+		tv_me_to_occluder.z = tv_me_to_occluder.x
+		tv_me_to_occluder.x = tv_me_to_occluder.y
+		tv_me_to_occluder.y = - tv_me_to_occluder.z
+		tv_me_to_occluder.z = 0.0
+
+		if (@to_occluder OBJ_CustomBitsTest(OBJ_CBits_1)  && MATH_FloatSign(MATH_VecDotProduct(tv_start_pos - tv_occluder_pos, @to_occluder OBJ_HorizonGet())) != MATH_FloatSign(MATH_VecDotProduct(tv_next_pos - tv_occluder_pos, @to_occluder OBJ_HorizonGet())))
+			tv_me_to_occluder *= MATH_FloatSign(MATH_VecDotProduct(@to_occluder OBJ_SightGet(), tv_me_to_occluder))
+		else
+			tv_me_to_occluder *= MATH_FloatSign(MATH_VecDotProduct(tv_sight, tv_me_to_occluder))
+
+		tv_next_pos += tv_me_to_occluder * 0.25
+
+//		DBG_RenderVector(tv_occluder_pos, tv_next_pos - tv_occluder_pos, color_rouge)
+		
+		return(vrai)
+	}
+
+	return(faux)
+}
+
+procedure int WAY_LIB_Collide_Gellule(vector tv_start_pos, vector tv_move_dir, float tf_move_length, float tf_size, object to_occluder, byref vector tv_collide_pos)
+{
+	float			tf_dist
+	float			tf_best_dist
+	float			tf_occluder_size
+	float			tf_occluder_length
+	float			tf_dot_product
+
+	vector		tv_occluder_pos
+	vector 		tv_occluder_axis
+	vector		tv_orth_plan
+	vector		tv_temp
+
+	tv_occluder_pos = @to_occluder OBJ_ScaleGet()
+	if (tv_occluder_pos.x > tv_occluder_pos.y)
+	{
+		tv_occluder_axis = @to_occluder OBJ_HorizonGet()
+	
+		tf_occluder_size = tv_occluder_pos.y
+		tf_occluder_length = tv_occluder_pos.x - tf_occluder_size
+		tf_occluder_size *= 0.5
+	}
+	else
+	{
+		tv_occluder_axis = @to_occluder OBJ_SightGet()
+		
+		tf_occluder_size = tv_occluder_pos.x
+		tf_occluder_length = tv_occluder_pos.y - tf_occluder_size
+		tf_occluder_size *= 0.5
+	}
+
+	tv_occluder_pos = @to_occluder OBJ_PosGet()
+	tv_occluder_pos.z = tv_start_pos.z
+	tv_occluder_pos -= tv_occluder_axis * (tf_occluder_length * 0.5)
+
+	tv_orth_plan = tv_move_dir
+	tv_orth_plan.z = tv_orth_plan.x
+	tv_orth_plan.x = -tv_orth_plan.y
+	tv_orth_plan.y = tv_orth_plan.z
+	tv_orth_plan.z = 0.0
+
+	tf_best_dist = Cf_Infinit
+
+	tf_dot_product = MATH_VecDotProduct(tv_occluder_axis, tv_orth_plan)
+	if (! MATH_FloatNullToler(tf_dot_product, Cf_tolerance_null) )
+	{
+		tf_dist = -MATH_VecDotProduct(tv_occluder_pos - tv_start_pos, tv_orth_plan) / tf_dot_product
+
+		tf_dot_product = MATH_AbsFloat(tf_dot_product)
+		tf_dot_product	 = (tf_occluder_size + tf_size) / tf_dot_product
+	
+		if (tf_dist < -tf_dot_product)
+			return(faux)
+
+		if (tf_dist > tf_occluder_length + tf_dot_product)
+			return(faux)
+
+		tv_collide_pos  = tv_occluder_pos
+		tv_collide_pos += tf_dist * tv_occluder_axis
+		tv_collide_pos -= tv_move_dir * tf_dot_product
+
+		tf_best_dist = MATH_VecDotProduct(tv_collide_pos - tv_start_pos, tv_move_dir)
+		if (tf_best_dist < 0.0)
+			tf_best_dist = Cf_Infinit
+	}
+
+	if (WAY_LIB_Collide_Sphere(tv_start_pos, tv_move_dir, tf_move_length, tf_size, tv_occluder_pos, tf_occluder_size, tv_temp))
+	{
+		tf_dist = MATH_VecDotProduct(tv_temp - tv_start_pos, tv_move_dir)
+		if (tf_dist < tf_best_dist)
+		{
+			tf_best_dist = tf_dist
+			tv_collide_pos = tv_temp
+		}
+	}
+
+	if (WAY_LIB_Collide_Sphere(tv_start_pos, tv_move_dir, tf_move_length, tf_size, tv_occluder_pos + (tv_occluder_axis * tf_occluder_length), tf_occluder_size, tv_temp))
+	{
+		tf_dist = MATH_VecDotProduct(tv_temp - tv_start_pos, tv_move_dir)
+		if (tf_dist < tf_best_dist)
+		{
+			tf_best_dist = tf_dist
+			tv_collide_pos = tv_temp
+		}
+	}
+
+	if (tf_best_dist > 0.0 && tf_best_dist != Cf_Infinit)
+	{
+#ifndef _FINAL_
+		if (AI_GetCurSystem() == Ci_CurSystem_Editeur)
+		{
+			tv_orth_plan = tv_occluder_axis
+			tv_orth_plan.z = tv_orth_plan.x
+			tv_orth_plan.x = -tv_orth_plan.y
+			tv_orth_plan.y = tv_orth_plan.z
+			tv_orth_plan.z = 0.0
+			DBG_RenderCircle(tv_occluder_pos, tf_occluder_size, Cv_VerticalVector, color_blanc)
+			DBG_RenderCircle(tv_occluder_pos + (tv_occluder_axis * tf_occluder_length), tf_occluder_size, Cv_VerticalVector, color_blanc)
+			DBG_RenderVector(tv_occluder_pos + (tv_orth_plan * tf_occluder_size), tv_occluder_axis * tf_occluder_length, color_blanc)
+			DBG_RenderVector(tv_occluder_pos - (tv_orth_plan * tf_occluder_size), tv_occluder_axis * tf_occluder_length, color_blanc)
+			DBG_RenderCircle(tv_occluder_pos, tf_occluder_size + tf_size, Cv_VerticalVector, color_blanc)
+			DBG_RenderCircle(tv_occluder_pos + (tv_occluder_axis * tf_occluder_length), tf_occluder_size + tf_size, Cv_VerticalVector, color_blanc)
+			DBG_RenderVector(tv_start_pos, tv_collide_pos - tv_start_pos, color_cyan)	
+			DBG_RenderVector(tv_occluder_pos + (tv_orth_plan * (tf_occluder_size + tf_size)), tv_occluder_axis * tf_occluder_length, color_blanc)
+			DBG_RenderVector(tv_occluder_pos - (tv_orth_plan * (tf_occluder_size + tf_size)), tv_occluder_axis * tf_occluder_length, color_blanc)
+		}
+#endif
+		return(vrai)
+	}
+	else
+	{
+		return(faux)
+	}
+}
+
+procedure vector WAY_LIB_Get_Gellule_Pos(vector tv_start_pos, vector tv_dest_pos, vector tv_sight, float tf_size, object to_occluder)
+{
+	float		tf_X
+	float		tf_Y	
+	float		tf_occluder_size
+	float		tf_occluder_sqr_size
+	float		tf_occluder_length
+
+	vector	tv_X
+	vector	tv_Y
+	vector	tv_occluder_pos
+	vector	tv_occluder_axis
+	vector	tav_position[4]
+
+	tv_occluder_pos = @to_occluder OBJ_ScaleGet()
+	if (tv_occluder_pos.x > tv_occluder_pos.y)
+	{
+		tv_occluder_axis = @to_occluder OBJ_HorizonGet()
+	
+		tf_occluder_size = tv_occluder_pos.y
+		tf_occluder_length = tv_occluder_pos.x - tf_occluder_size
+		tf_occluder_size *= 0.5
+	}
+	else
+	{
+		tv_occluder_axis = @to_occluder OBJ_SightGet()
+		
+		tf_occluder_size = tv_occluder_pos.x
+		tf_occluder_length = tv_occluder_pos.y - tf_occluder_size
+		tf_occluder_size *= 0.5
+	}
+
+	tv_occluder_pos = @to_occluder OBJ_PosGet()
+	tv_occluder_pos.z = tv_start_pos.z
+	tv_occluder_pos -= tv_occluder_axis * (tf_occluder_length * 0.5)
+
+	tf_occluder_sqr_size = tf_occluder_size
+	tf_occluder_sqr_size += tf_size
+	tf_occluder_sqr_size *= tf_occluder_sqr_size
+
+	// PREMIERE EXTREMITE ===========================================================================
+	tv_X = tv_start_pos
+	tv_X -= tv_occluder_pos
+	tv_X.z = 0.0
+
+	tf_Y = MATH_VecNorm(tv_X)
+	tv_X /= tf_Y
+	
+	tv_Y.x = tv_X.y
+	tv_Y.y = -tv_X.x
+	tv_Y.z = 0.0
+
+	tf_X = tf_occluder_sqr_size
+	tf_X /= tf_Y
+
+	tf_Y = tf_occluder_sqr_size
+	tf_Y -= tf_X * tf_X
+	tf_Y = MATH_FloatSqrt(tf_Y)
+
+	tv_X *= tf_X + 0.25
+	tv_Y *= tf_Y + 0.25
+
+	tav_position[0] = tv_occluder_pos
+	tav_position[0] += tv_X
+	tav_position[0] += tv_Y
+
+	tav_position[1] = tv_occluder_pos
+	tav_position[1] += tv_X
+	tav_position[1] -= tv_Y
+
+	// DEUXIEME EXTREMITE ===========================================================================
+	tv_occluder_pos += tv_occluder_axis * tf_occluder_length
+
+	tv_X = tv_start_pos
+	tv_X -= tv_occluder_pos
+	tv_X.z = 0.0
+
+	tf_Y = MATH_VecNorm(tv_X)
+	tv_X /= tf_Y
+	
+	tv_Y.x = tv_X.y
+	tv_Y.y = -tv_X.x
+	tv_Y.z = 0.0
+
+	tf_X = tf_occluder_sqr_size
+	tf_X /= tf_Y
+
+	tf_Y = tf_occluder_sqr_size
+	tf_Y -= tf_X * tf_X
+	tf_Y = MATH_FloatSqrt(tf_Y)
+
+	tv_X *= tf_X + 0.25
+	tv_Y *= tf_Y + 0.25
+
+	tav_position[2] = tv_occluder_pos
+	tav_position[2]+= tv_X
+	tav_position[2] += tv_Y
+
+	tav_position[3] = tv_occluder_pos
+	tav_position[3] += tv_X
+	tav_position[3] -= tv_Y
+
+	// ON A QUATRES POSITIONS, ON VEUT LES EXTREMES	
+	WAY_LIB_Get_Extreme_Pos(&tav_position[0], 4, tv_start_pos, @to_occluder OBJ_PosGet(), tv_X, tv_Y)
+
+	// SENS UNIQUE ???
+	if (@to_occluder OBJ_CustomBitsTest(OBJ_CBits_1)  && MATH_FloatSign(MATH_VecDotProduct(tv_start_pos - tv_occluder_pos, @to_occluder OBJ_HorizonGet())) != MATH_FloatSign(MATH_VecDotProduct(tv_dest_pos - tv_occluder_pos, @to_occluder OBJ_HorizonGet())))
+	{
+		if (MATH_VecDotProduct(@to_occluder OBJ_SightGet(), MATH_VecNormalize(tv_X - tv_occluder_pos)) < MATH_VecDotProduct(@to_occluder OBJ_SightGet(), MATH_VecNormalize(tv_Y - tv_occluder_pos)))
+			tv_X = tv_Y
+	}
+	else
+	// LE PLUS DANS L'AXE ??? ======================================================================
+	{
+		if (MATH_VecDotProduct(tv_sight, MATH_VecNormalize(tv_X - tv_start_pos)) < MATH_VecDotProduct(tv_sight, MATH_VecNormalize(tv_Y - tv_start_pos)))
+			tv_X = tv_Y
+	}
+
+	return(tv_X)
+}
+
+// ====================================================================================================================
+// OCCLUDER GEOMETRIQUE
+// ====================================================================================================================
+
+procedure int WAY_LIB_In_Geometrie(vector tv_start_pos, vector tv_sight, float tf_size, byrefarr object tao_occluder, int ti_array_size, byref vector tv_next_pos)
+{
+	return(faux)
+}
+
+procedure int WAY_LIB_Collide_Geometrie(vector tv_start_pos, vector tv_move_dir, float tf_move_length, float tf_size, byrefarr object tao_occluder, int ti_array_size, int ti_flag_closed, byref vector tv_projection_pos)
+{
+	int			ti_i	
+	
+	float		tf_occluder_size
+	float		tf_dist
+	float		tf_best_dist
+	float		tf_dot_product
+
+	vector	tv_pos
+	vector	tv_next_pos
+	vector	tv_orth_plan
+	vector	tv_collided_pos
+	
+	tv_orth_plan = tv_move_dir
+	tv_orth_plan.z = tv_orth_plan.x
+	tv_orth_plan.x = -tv_orth_plan.y
+	tv_orth_plan.y = tv_orth_plan.z
+	tv_orth_plan.z = 0.0
+
+	tf_best_dist = Cf_Infinit
+
+	if (ti_flag_closed)
+		tf_occluder_size = @tao_occluder[0] OBJ_ZoomGet() * 0.5
+	else
+		tf_occluder_size = 0.0
+	tf_occluder_size += tf_size
+
+	for (ti_i = 0; ti_i < ti_array_size; ti_i++)
+	{
+		tv_pos = @tao_occluder[ti_i] OBJ_PosGet()
+		tv_pos.z = tv_start_pos.z
+
+		if (WAY_LIB_Collide_Sphere(tv_start_pos, tv_move_dir, tf_move_length, tf_occluder_size, tv_pos, 0.0, tv_collided_pos))
+		{
+			tf_dist = MATH_VecDotProduct(tv_collided_pos - tv_start_pos, tv_move_dir)
+			if (tf_dist > 0.0)
+			{
+				DBG_RenderVector(tv_start_pos, tv_collided_pos - tv_start_pos, color_cyan)
+				DBG_RenderVector(tv_pos, tv_collided_pos - tv_pos, color_cyan)	
+				DBG_RenderCircle(tv_pos, tf_size, Cv_VerticalVector, color_cyan)
+	
+				if (tf_dist < tf_best_dist)
+				{
+					tf_best_dist = tf_dist
+					tv_projection_pos = tv_collided_pos
+				}
+			}
+		}
+
+		if (ti_flag_closed)
+			tv_pos -= @tao_occluder[ti_i] OBJ_HorizonGet() * tf_size
+		else if (ti_i == ti_array_size - 1)
+			break
+
+		tf_dot_product = MATH_VecDotProduct(@tao_occluder[ti_i] OBJ_SightGet(), tv_orth_plan)
+		if ( MATH_FloatNullToler(tf_dot_product, Cf_tolerance_null) )
+			continue
+	
+		tf_dist = -MATH_VecDotProduct(tv_pos - tv_start_pos, tv_orth_plan) / tf_dot_product
+
+		if (tf_dist < 0.0)
+			continue
+
+		tv_next_pos = @tao_occluder[MATH_Modulo(ti_i + 1, ti_array_size)] OBJ_PosGet()
+
+		if (tf_dist > MATH_VecDotProduct(tv_next_pos - tv_pos, @tao_occluder[ti_i] OBJ_SightGet()))
+			continue
+			
+		tv_collided_pos = tv_pos
+		tv_collided_pos += @tao_occluder[ti_i] OBJ_SightGet() * tf_dist
+	
+		tf_dist = MATH_VecDotProduct(tv_collided_pos - tv_start_pos, tv_move_dir)
+		if (tf_dist >= 0.0 && tf_dist < tf_best_dist)
+		{
+			tf_best_dist = tf_dist
+			tv_projection_pos = tv_collided_pos
+		}
+	}	
+
+	if (tf_best_dist == Cf_Infinit) 
+	{
+		return(faux)
+	}
+	else
+	{
+		DBG_RenderVector(tv_start_pos, tv_projection_pos - tv_start_pos, color_cyan)
+		return(vrai)
+	}
+}
+
+procedure vector WAY_LIB_Get_Geometrie_Pos(vector tv_start_pos, vector tv_next_pos, vector tv_sight, float tf_size, byrefarr object tao_occluder, int ti_array_size, int ti_flag_closed)
+{
+	int				ti_i	
+	int				ti_take_A_side 
+	int				ti_take_B_side 
+	int				ti_end 
+	
+	float			tf_X
+	float			tf_Y
+	float			tf_ocluder_size
+	float			tf_occluder_sqr_size
+	float			tf_sign
+
+	vector		tv_X
+	vector		tv_Y
+	vector		tv_occluder_pos
+	vector		tv_occluder_sight
+	vector		tv_occluder_horizon
+	vector		tv_pos_A
+	vector		tv_pos_B
+	vector		tv_pos_A_old[2]
+	vector		tv_pos_B_old[2]
+	vector		tv_tangente_A
+	vector		tv_tangente_B
+	vector		tv_barycentre
+
+	if (ti_flag_closed)
+		tf_ocluder_size = 0.0
+	else
+		tf_ocluder_size = @tao_occluder[0] OBJ_ZoomGet() * 0.5
+
+	tf_occluder_sqr_size = tf_ocluder_size
+	tf_occluder_sqr_size += tf_size 
+	tf_occluder_sqr_size *= tf_occluder_sqr_size
+
+	tv_barycentre = Cv_NullVector
+	for (ti_i = 0; ti_i < ti_array_size; ti_i++)
+		tv_barycentre += @tao_occluder[ti_i] OBJ_PosGet()
+	tv_barycentre /= ti_array_size
+//	tv_barycentre.z = tv_start_pos.z
+
+	// TEST TEST
+	tv_barycentre = tv_next_pos
+	// TEST TEST
+	
+	tv_pos_A = tv_barycentre + (tv_barycentre - tv_start_pos)
+	tv_pos_B = tv_pos_A
+	
+	DBG_RenderVector(tv_barycentre, Cv_VerticalVector * 1000.0, color_blanc)
+
+ 	ti_take_A_side = faux
+	ti_take_B_side = faux
+	ti_end = faux
+ 	ti_i = 0
+ 	ti_array_size--
+ 	for (ti_i = 0; ti_i <= ti_array_size; ti_i++)
+// 	while ( ! ti_end)
+	{
+		if ( ! (@tao_occluder[ti_i] OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Active))
+			continue
+		tv_occluder_pos = @tao_occluder[ti_i] OBJ_PosGet()
+		tv_occluder_pos.z = tv_start_pos.z
+	
+		DBG_RenderCircle(tv_occluder_pos, tf_ocluder_size, Cv_VerticalVector, color_blanc)
+		DBG_RenderCircle(tv_occluder_pos, tf_ocluder_size + tf_size, Cv_VerticalVector, color_blanc)
+
+		tv_X = tv_start_pos
+		tv_X -= tv_occluder_pos
+		tv_X.z = 0.0
+	
+		tf_Y = MATH_VecNorm(tv_X)
+		tv_X /= tf_Y
+		
+		tv_Y.x = tv_X.y
+		tv_Y.y = -tv_X.x
+		tv_Y.z = 0.0
+	
+		tf_X = tf_occluder_sqr_size
+		tf_X /= tf_Y
+	
+		tf_Y = tf_occluder_sqr_size
+		tf_Y -= tf_X * tf_X
+		tf_Y = MATH_FloatMax(tf_Y, 0.0)
+		tf_Y = MATH_FloatSqrt(tf_Y)
+	
+		tv_X *= tf_X + 0.25
+		tv_Y *= tf_Y + 0.25
+
+		tv_tangente_A = tv_occluder_pos
+		tv_tangente_A += tv_X
+		tv_tangente_A += tv_Y
+
+		tv_tangente_B = tv_occluder_pos
+		tv_tangente_B += tv_X
+		tv_tangente_B -= tv_Y
+	
+		DBG_RenderVector(tv_start_pos, tv_tangente_A - tv_start_pos, color_blanc)
+		DBG_RenderVector(tv_start_pos, tv_tangente_B - tv_start_pos, color_blanc)
+
+		// UN COTE INTERDIT ? ======================================================================
+		if ( ( ti_i == 0 || ti_i == ti_array_size)
+		&& @tao_occluder[ti_i] OBJ_CustomBitsTest(OBJ_CBits_1) )
+		{
+			if ( ! ti_i)
+			{
+				tv_pos_A_old[0] = tv_tangente_A
+				tv_pos_B_old[0] = tv_tangente_B
+			}
+			else
+			{
+				tv_pos_A_old[1] = tv_tangente_A
+				tv_pos_B_old[1] = tv_tangente_B
+			}
+		}
+		
+		tf_sign = MATH_VecCrossProduct(tv_tangente_A - tv_start_pos, tv_barycentre - tv_start_pos).z
+		if ( tf_sign < 0.0 && MATH_VecCrossProduct(tv_tangente_A - tv_start_pos, tv_pos_A - tv_start_pos).z < 0.0)
+			tv_pos_A = tv_tangente_A
+		if (  tf_sign > 0.0 && MATH_VecCrossProduct(tv_tangente_A - tv_start_pos, tv_pos_B - tv_start_pos).z > 0.0)
+			tv_pos_B = tv_tangente_A
+
+		tf_sign = MATH_VecCrossProduct(tv_tangente_B - tv_start_pos, tv_barycentre - tv_start_pos).z
+		if ( tf_sign < 0.0 && MATH_VecCrossProduct(tv_tangente_B - tv_start_pos, tv_pos_A - tv_start_pos).z < 0.0)
+			tv_pos_A = tv_tangente_B
+		if ( tf_sign > 0.0 && MATH_VecCrossProduct(tv_tangente_B - tv_start_pos, tv_pos_B - tv_start_pos).z > 0.0)
+			tv_pos_B = tv_tangente_B
+//	DBG_RenderVector(tv_start_pos, tv_pos_A - tv_start_pos, color_rouge)
+//	DBG_RenderVector(tv_start_pos, tv_pos_B - tv_start_pos, color_vert)
+//		if ( ! ti_take_B_side && tf_sign < 0.0 && MATH_VecCrossProduct(tv_tangente_A - tv_start_pos, tv_pos_A - tv_start_pos).z < 0.0)
+//			tv_pos_A = tv_tangente_A
+//		if (! ti_take_A_side && tf_sign > 0.0 && MATH_VecCrossProduct(tv_tangente_A - tv_start_pos, tv_pos_B - tv_start_pos).z > 0.0)
+//			tv_pos_B = tv_tangente_A
+//
+//		tf_sign = MATH_VecCrossProduct(tv_tangente_B - tv_start_pos, tv_barycentre - tv_start_pos).z
+//		if (! ti_take_B_side && tf_sign < 0.0 && MATH_VecCrossProduct(tv_tangente_B - tv_start_pos, tv_pos_A - tv_start_pos).z < 0.0)
+//			tv_pos_A = tv_tangente_B
+//		if (! ti_take_A_side && tf_sign > 0.0 && MATH_VecCrossProduct(tv_tangente_B - tv_start_pos, tv_pos_B - tv_start_pos).z > 0.0)
+//			tv_pos_B = tv_tangente_B
+			
+	
+//		if ( ti_i == 0)
+//			ti_i = ti_array_size
+//		else if ( ti_i == ti_array_size)
+//		{
+//			if( ti_array_size == 1)
+//				ti_end = vrai
+//			ti_i = 1
+//		}
+//		else if ( ti_i == ti_array_size -1)
+//			ti_end = vrai
+//		else
+//			ti_i++
+	}
+
+	DBG_RenderVector(tv_start_pos, tv_pos_A - tv_start_pos, color_rouge)
+	DBG_RenderVector(tv_start_pos, tv_pos_B - tv_start_pos, color_vert)
+
+
+	// LE PLUS DANS L'AXE ??? ======================================================================
+
+	if ( @tao_occluder[0] OBJ_CustomBitsTest(OBJ_CBits_1) )
+	{
+		if ( MATH_VecNullEpsilon(tv_pos_A_old[0] - tv_pos_A))
+			ti_take_B_side = vrai
+		if ( MATH_VecNullEpsilon(tv_pos_B_old[0] - tv_pos_B))
+			ti_take_A_side = vrai
+	}
+	else if ( @tao_occluder[ ti_array_size] OBJ_CustomBitsTest(OBJ_CBits_1) )
+	{
+		if ( MATH_VecNullEpsilon(tv_pos_A_old[1] - tv_pos_A))
+			ti_take_B_side = vrai
+		if ( MATH_VecNullEpsilon(tv_pos_B_old[1] - tv_pos_B))
+			ti_take_A_side = vrai
+	}
+	
+	
+	if ( ti_take_A_side)
+		tv_pos_A = tv_pos_A
+	else if ( ti_take_B_side)
+		tv_pos_A = tv_pos_B
+	else if (MATH_VecDotProduct(tv_sight, MATH_VecNormalize(tv_pos_A - tv_start_pos)) < MATH_VecDotProduct(tv_sight, MATH_VecNormalize(tv_pos_B - tv_start_pos)))
+		tv_pos_A = tv_pos_B
+	
+	return(tv_pos_A)
+}
+
+// ====================================================================================================================
+// COLLISION OCCLUDER
+// ====================================================================================================================
+procedure int WAY_LIB_Collide_Occluder_Gao(object to_occluder, vector tv_start_pos, vector tv_dest_pos, float tf_size, byref vector tv_projection_pos)
+{
+	int			ti_position_nb
+	int			ti_flag_closed
+	int			ti_unique_occluder_index
+	
+	float		tf_dist
+	float		tf_occluder_size
+	float 		tf_move_length
+	float		tf_occluder_length
+	float		tf_dist_collision
+
+	vector	tv_occluder_pos
+	vector	tv_occluder_axis
+	vector	tv_orth_plan
+	vector	tv_temp
+	vector	tv_move_dir
+
+//	object		to_occluder_jump_wp
+	object		tao_wp[20]
+
+	network	tn_net
+
+	ti_position_nb	= 0
+
+	// =============================================================================================
+	// OCCLUDER GLOBAUX
+	// =============================================================================================
+	tv_move_dir = tv_dest_pos - tv_start_pos
+	tv_move_dir.z = 0.0
+	tf_move_length = MATH_VecNorm(tv_move_dir)
+	tv_move_dir /= tf_move_length
+
+	if (@to_occluder OBJ_FlagsControlGet() & (OBJ_C_ControlFlag_SectoInactive | OBJ_C_ControlFlag_ForceInactive))
+		return(faux)
+
+	tv_occluder_pos = @to_occluder OBJ_PosGet()
+	tv_occluder_pos.z = tv_start_pos.z
+	
+	if (@to_occluder OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Links))
+	{
+		// =============================================================================================
+		// GEOMETRIE
+		// =============================================================================================
+		if ( ! WAY_LIB_Intersection_Dir_BV(to_occluder, tv_start_pos, tv_move_dir, tf_size, tf_dist, tv_temp) )
+			return(faux)
+
+		if (tf_dist > 	tf_move_length)
+			return(faux)
+
+		tn_net = @to_occluder WAY_NetOfObj()
+		ti_position_nb = WAY_NetFill(tn_net, WAY_RootGet(tn_net), &tao_wp[0])
+		ti_flag_closed = @tao_wp[ti_position_nb - 1] WAY_HasLinks(tn_net, tao_wp[0])
+
+		return( WAY_LIB_Collide_Geometrie(tv_start_pos, tv_move_dir, tf_move_length, tf_size, &tao_wp[0], ti_position_nb, ti_flag_closed, tv_projection_pos) )	
+	}
+	else if ( @to_occluder OBJ_CustomBitsTest(OBJ_CBits_0) )	
+	{
+		// =============================================================================================
+		// GELLULE OU SPHERE
+		// =============================================================================================
+		tv_temp = @to_occluder OBJ_ScaleGet()
+		if (tv_temp.x > tv_temp.y)
+		{
+			tv_occluder_axis = @to_occluder OBJ_HorizonGet()
+		
+			tf_occluder_size = tv_temp.y
+			tf_occluder_length = tv_temp.x - tf_occluder_size
+
+			tf_occluder_size *= 0.5
+		}
+		else
+		{
+			tv_occluder_axis = @to_occluder OBJ_SightGet()
+			
+			tf_occluder_size = tv_temp.x
+			tf_occluder_length = tv_temp.y - tf_occluder_size
+
+			tf_occluder_size *= 0.5
+		}
+		
+		if (tf_occluder_length)
+		{
+			// =============================================================================================
+			// GELLULE
+			// =============================================================================================
+			if ( ! WAY_LIB_Intersection_Dir_BV(to_occluder, tv_start_pos, tv_move_dir, tf_size, tf_dist, tv_temp) )
+				return(faux)
+
+			if (tf_dist > 	tf_move_length)
+				return(faux)
+
+			return( WAY_LIB_Collide_Gellule(tv_start_pos, tv_move_dir, tf_move_length, tf_size, to_occluder, tv_projection_pos) )	
+		}
+		else
+		{
+			// =============================================================================================
+			// SPHERE
+			// =============================================================================================
+			return( WAY_LIB_Collide_Sphere(tv_start_pos, tv_move_dir, tf_move_length, tf_size, tv_occluder_pos, tf_occluder_size, tv_projection_pos) )
+		}
+	}
+	else
+	{
+		// =============================================================================================
+		// BV
+		// =============================================================================================
+		return( WAY_LIB_Collide_BV(tv_start_pos, tv_move_dir, tf_move_length, tf_size, to_occluder, tf_dist_collision, tv_projection_pos) )	
+	}
+}
+
+procedure int WAY_LIB_Collide_Occluder(int ti_index, vector tv_start_pos, vector tv_dest_pos, float tf_size, byref vector tv_projection_pos)
+{
+	object		to_occluder
+	to_occluder = @get_list_manager ao_occluder[ti_index]
+	return(WAY_LIB_Collide_Occluder_Gao(to_occluder, tv_start_pos, tv_dest_pos, tf_size, tv_projection_pos))
+}
+
+// ====================================================================================================================
+// TESTE SI UNE POSITION EST DANS UN OCCLUDER
+//
+// tv_start_pos = position de départ du déplacement
+// tv_sight = la direction de référence au départ du déplacement
+// tf_size = rayon de l'acteur
+// ti_territory = -1 pour tester tous les occluders, ou bien une valeur pour tester uniquement les occluders d'un certain territoire
+// tv_next_pos = (retournée) la nouvelle position à viser pour éviter les occluders trouvés
+//
+// Valeur de retour : VRAI / FAUX
+// l'indice de l'occluder contenant la pos est à récupérer dans @get_global WAY_LIB_used_occluder_index
+// ====================================================================================================================
+procedure int WAY_LIB_Test_Pos_In_Occluder(vector tv_start_pos, vector tv_sight, float tf_size, int ti_territory, byref vector tv_next_pos, byrefarr object tao_add_occ, byrefarr float taf_add_occ_size, int ti_add_occ_nb, int ti_type)
+{
+	int			ti_i
+	int			ti_territory_list_id
+	int			ti_start_index
+	int			ti_flag_recompute_move_dir
+	int			ti_position_nb
+	int			ti_last_occluder_used_index
+	int			ti_return
+	int			ti_index
+	int			ti_flag_closed
+	
+	float		tf_move_length
+	float		tf_dist
+	float		tf_nearest_dist
+	float		tf_dot_product	
+	float		tf_occluder_size
+	float		tf_cos_half_angle
+	float		tf_occluder_length
+
+	vector	tv_move_dir
+	vector	tv_occluder_pos
+	vector	tv_occluder_axis
+	vector	tv_orth_plan
+	vector	tv_temp
+	vector	tv_exit_pos
+
+	object		to_occluder
+//	object		to_occluder_jump_wp
+	object		tao_wp[20]
+
+	network	tn_net
+	
+	ti_return = 0
+
+	// =============================================================================================	
+	// EST CE QUE LA POS A TESTER EST DANS UN OCCLUDER ???
+	// =============================================================================================	
+
+	if (@get_global WAY_LIB_Territory_List_Size)
+	{
+		ti_territory_list_id = 0
+		ti_territory = @get_global WAY_LIB_Territory_List[0]
+	}
+	else
+	{
+		ti_territory_list_id = -1
+	}
+
+	if (ti_territory == -2)
+	{
+		ti_start_index = @get_list_manager i_dyn_occluder_index
+		if (ti_start_index == Ci_Invalid_Index)
+			ti_start_index = @get_list_manager i_occluder_nb
+	}
+	else if (ti_territory != -1)
+		ti_start_index = @get_list_manager ai_occluder_index[ti_territory]
+	else
+		ti_start_index = 0
+
+	if (ti_start_index == Ci_Invalid_Index)
+	{
+		ti_territory = -1
+		ti_start_index = @get_list_manager i_dyn_occluder_index
+	}
+
+	for (ti_i = ti_start_index; ti_i < @get_list_manager i_occluder_nb + ti_add_occ_nb; ti_i++)
+	{
+		ti_position_nb	= 0
+
+		if (ti_i >= @get_list_manager i_occluder_nb)
+		{
+			// =============================================================================================
+			// OCCLUDER ADDITIONNELS
+			// =============================================================================================
+			ti_index = ti_i - @get_list_manager i_occluder_nb
+			to_occluder = tao_add_occ[ti_index]
+			tf_occluder_size = taf_add_occ_size[ti_index]
+		}
+		else
+		{
+			// =============================================================================================
+			// OCCLUDER GLOBAUX
+			// =============================================================================================
+			to_occluder = @get_list_manager ao_occluder[ti_i]
+		}
+
+		if (ti_i >= @get_list_manager i_occluder_nb && ti_territory != -2)
+		{
+			// =============================================================================================
+			// OCCLUDER ADDITIONNELS IA
+			// =============================================================================================
+			tv_occluder_pos = @to_occluder OBJ_PosGet()
+			tv_occluder_pos.z = tv_start_pos.z
+
+			// =============================================================================================
+			// SPHERE
+			// =============================================================================================
+			if (WAY_LIB_In_Sphere(tv_start_pos, tv_sight, tf_size, tv_occluder_pos, tf_occluder_size, @to_occluder OBJ_SightGet(), @to_occluder OBJ_HorizonGet(), @to_occluder OBJ_CustomBitsTest(OBJ_CBits_1), tv_next_pos))
+			{
+				@get_global WAY_LIB_used_occluder_index = ti_i
+				return(vrai)
+			}
+		}
+		else
+		{
+			// =============================================================================================
+			// OCCLUDER GLOBAUX
+			// =============================================================================================
+			if (ti_territory >= 0 && to_occluder.des_int2 != ti_territory)
+			{
+				if (ti_territory_list_id != -1 && ti_territory_list_id < @get_global WAY_LIB_Territory_List_Size - 1)
+				{
+					ti_territory_list_id++
+					ti_territory = @get_global WAY_LIB_Territory_List[ti_territory_list_id]
+
+					ti_i = @get_list_manager ai_occluder_index[ti_territory]
+					to_occluder = @get_list_manager ao_occluder[ti_i]
+				}
+				else
+				{
+//					ti_i = @get_list_manager i_occluder_nb - 1
+					ti_territory = -1
+					ti_i = @get_list_manager i_dyn_occluder_index - 1
+					continue
+				}
+			}
+
+			if (@to_occluder OBJ_FlagsControlGet() & (OBJ_C_ControlFlag_SectoInactive | OBJ_C_ControlFlag_ForceInactive))
+				continue
+				
+			if ( ti_type & (@to_occluder OBJ_CustomBitsGet() >> 8))
+				continue
+	
+			tv_occluder_pos = @to_occluder OBJ_PosGet()
+			tv_occluder_pos.z = tv_start_pos.z
+			
+			if (@to_occluder OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Links))
+			{
+				// =============================================================================================
+				// GEOMETRIE
+				// =============================================================================================
+				if (WAY_LIB_In_Geometrie(tv_start_pos, tv_sight, tf_size, &tao_wp[0], ti_position_nb, tv_next_pos))
+				{
+					@get_global WAY_LIB_used_occluder_index = ti_i
+					return(vrai)
+				}
+			}
+			else if ( @to_occluder OBJ_CustomBitsTest(OBJ_CBits_0) )
+			{
+				// =============================================================================================
+				// GELLULE OU SPHERE
+				// =============================================================================================
+				tv_temp = @to_occluder OBJ_ScaleGet()
+				if (tv_temp.x > tv_temp.y)
+				{
+					tf_occluder_size = tv_temp.y
+					tf_occluder_length = tv_temp.x - tf_occluder_size
+					tf_occluder_size *= 0.5
+				}
+				else
+				{
+					tf_occluder_size = tv_temp.x
+					tf_occluder_length = tv_temp.y - tf_occluder_size
+					tf_occluder_size *= 0.5
+				}
+		
+				if (tf_occluder_length)
+				{
+					// =============================================================================================
+					// GELLULE
+					// =============================================================================================
+					if (WAY_LIB_In_Gellule(tv_start_pos, tv_sight, tf_size, to_occluder, tv_next_pos))
+					{
+						@get_global WAY_LIB_used_occluder_index = ti_i
+						return(vrai)
+					}
+				}
+				else
+				{
+					// =============================================================================================
+					// SPHERE
+					// =============================================================================================
+					if (WAY_LIB_In_Sphere(tv_start_pos, tv_sight, tf_size, tv_occluder_pos, tf_occluder_size, @to_occluder OBJ_SightGet(), @to_occluder OBJ_HorizonGet(), @to_occluder OBJ_CustomBitsTest(OBJ_CBits_1), tv_next_pos))
+					{
+						@get_global WAY_LIB_used_occluder_index = ti_i
+						return(vrai)
+					}
+				}
+			}
+			else
+			{
+				// =============================================================================================
+				// BV
+				// =============================================================================================
+				if (WAY_LIB_In_BV(tv_start_pos, tv_sight, tf_size, to_occluder, tv_next_pos))
+				{
+					@get_global WAY_LIB_used_occluder_index = ti_i
+					return(vrai)
+				}
+			}	
+		}
+	}
+	
+	return(faux)
+}
+
+
+// ====================================================================================================================
+// OCLLUDER LE PLUS PROCHE
+// ====================================================================================================================
+procedure int WAY_LIB_Nearest_Occluder(vector tv_start_pos, vector tv_move_dir, float tf_move_length, float tf_size, int ti_territory, byrefarr object tao_add_occ, byrefarr float taf_add_occ_size, int ti_add_occ_nb, byrefarr int tai_flag_occluder_already_tested, int ti_type)
+{
+	int			ti_i
+	int			ti_territory_list_id
+	int			ti_start_index
+	int			ti_flag_recompute_move_dir
+	int			ti_position_nb
+	int			ti_return
+	int			ti_index
+	int			ti_best_index
+	int			ti_flag_closed
+	
+	float		tf_dist
+	float		tf_nearest_dist
+	float		tf_occluder_size
+	float		tf_occluder_length
+
+	vector	tv_occluder_pos
+	vector	tv_occluder_axis
+	vector	tv_orth_plan
+	vector	tv_temp
+	vector	tv_projection_pos
+
+	object		to_occluder
+	object		tao_wp[20]
+
+	network	tn_net
+
+	ti_best_index = -1
+	tf_nearest_dist = tf_move_length
+	
+	if (@get_global WAY_LIB_Territory_List_Size)
+	{
+		ti_territory_list_id = 0
+		ti_territory = @get_global WAY_LIB_Territory_List[0]
+	}
+	else
+	{
+		ti_territory_list_id = -1
+	}
+
+	if (ti_territory == -2)
+	{
+		ti_start_index = @get_list_manager i_dyn_occluder_index
+		if (ti_start_index == Ci_Invalid_Index)
+			ti_start_index = @get_list_manager i_occluder_nb
+	}
+	else if (ti_territory != -1)
+		ti_start_index = @get_list_manager ai_occluder_index[ti_territory]
+	else
+		ti_start_index = 0
+	
+	if (ti_start_index == Ci_Invalid_Index)
+	{
+		ti_territory = -1
+		ti_start_index = @get_list_manager i_dyn_occluder_index
+	}
+
+	// =============================================================================================	
+	// QUEL EST L'OCCLUDER TRAVERSE LE PLUS PROCHE ?
+	// =============================================================================================	
+ 	for (ti_i = ti_start_index; ti_i < @get_list_manager i_occluder_nb + ti_add_occ_nb; ti_i++)
+	{
+		if (tai_flag_occluder_already_tested[ti_i])
+			continue
+	
+		ti_position_nb	= 0
+
+		if (ti_i >= @get_list_manager i_occluder_nb)
+		{
+			// =============================================================================================
+			// OCCLUDER ADDITIONNELS
+			// =============================================================================================
+			ti_index = ti_i - @get_list_manager i_occluder_nb
+
+			to_occluder = tao_add_occ[ti_index]
+			tf_occluder_size = taf_add_occ_size[ti_index]
+		}
+		else
+		{
+			// =============================================================================================
+			// OCCLUDER GLOBAUX
+			// =============================================================================================
+			to_occluder = @get_list_manager ao_occluder[ti_i]
+		}
+		
+		if (ti_i >= @get_list_manager i_occluder_nb && ti_territory != -2)
+		{
+			// =============================================================================================
+			// OCCLUDER ADDITIONNELS IA
+			// =============================================================================================
+			tv_occluder_pos = @to_occluder OBJ_PosGet()
+			tv_occluder_pos.z = tv_start_pos.z
+
+			if (! WAY_LIB_Collide_Sphere(tv_start_pos, tv_move_dir, tf_nearest_dist, tf_size, tv_occluder_pos, tf_occluder_size, tv_projection_pos) )
+				continue
+
+			tf_dist = MATH_VecDotProduct(tv_projection_pos - tv_start_pos, tv_move_dir)
+		
+			if (tf_dist	< 0.0 || tf_dist > tf_nearest_dist)
+				continue
+
+			tf_nearest_dist = tf_dist
+			ti_best_index = ti_i
+		}
+		else
+		{
+			// =============================================================================================
+			// OCCLUDER GLOBAUX
+			// =============================================================================================
+			if (@to_occluder OBJ_FlagsControlGet() & (OBJ_C_ControlFlag_SectoInactive | OBJ_C_ControlFlag_ForceInactive))
+				continue
+		
+			if (ti_territory >= 0 && to_occluder.des_int2 != ti_territory)
+			{
+				if (ti_territory_list_id != -1 && ti_territory_list_id < @get_global WAY_LIB_Territory_List_Size - 1)
+				{
+					ti_territory_list_id++
+					ti_territory = @get_global WAY_LIB_Territory_List[ti_territory_list_id]
+
+					ti_i = @get_list_manager ai_occluder_index[ti_territory]
+					to_occluder = @get_list_manager ao_occluder[ti_i]
+				}
+				else
+				{
+//					ti_i = @get_list_manager i_occluder_nb - 1
+					ti_territory = -1
+					ti_i = @get_list_manager i_dyn_occluder_index - 1
+					continue
+				}
+			}
+
+			if ( ti_type & (@to_occluder OBJ_CustomBitsGet() >> 8))
+				continue
+
+			tv_occluder_pos = @to_occluder OBJ_PosGet()
+			tv_occluder_pos.z = tv_start_pos.z
+
+			if (@to_occluder OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Links))
+			{
+				// =============================================================================================
+				// GEOMETRIE
+				// =============================================================================================
+				if ( ! WAY_LIB_Intersection_Dir_BV(to_occluder, tv_start_pos, tv_move_dir, tf_size, tf_dist, tv_temp) )
+					continue
+	
+				if (tf_dist > 	tf_move_length)
+					continue
+
+				tn_net = @to_occluder WAY_NetOfObj()
+				ti_position_nb = WAY_NetFill(tn_net, WAY_RootGet(tn_net), &tao_wp[0])
+				ti_flag_closed = @tao_wp[ti_position_nb - 1] WAY_HasLinks(tn_net, tao_wp[0])
+	
+				if ( ! WAY_LIB_Collide_Geometrie(tv_start_pos, tv_move_dir, tf_nearest_dist, tf_size, &tao_wp[0], ti_position_nb, ti_flag_closed, tv_projection_pos) )	
+					continue
+	
+				tf_dist = MATH_VecDotProduct(tv_projection_pos - tv_start_pos, tv_move_dir)
+			
+				if (tf_dist	< 0.0 || tf_dist > tf_nearest_dist)
+					continue
+	
+				tf_nearest_dist = tf_dist
+				ti_best_index = ti_i
+			}
+			else if ( @to_occluder OBJ_CustomBitsTest(OBJ_CBits_0) )
+			{
+				// =============================================================================================
+				// GELLULE OU SPHERE
+				// =============================================================================================
+				tv_temp = @to_occluder OBJ_ScaleGet()
+				if (tv_temp.x > tv_temp.y)
+				{
+					tv_occluder_axis = @to_occluder OBJ_HorizonGet()
+				
+					tf_occluder_size = tv_temp.y
+					tf_occluder_length = tv_temp.x - tf_occluder_size
+		
+					tf_occluder_size *= 0.5
+				}
+				else
+				{
+					tv_occluder_axis = @to_occluder OBJ_SightGet()
+					
+					tf_occluder_size = tv_temp.x
+					tf_occluder_length = tv_temp.y - tf_occluder_size
+		
+					tf_occluder_size *= 0.5
+				}
+			
+				if (tf_occluder_length)
+				{
+					// GELLULE	
+					if ( ! WAY_LIB_Intersection_Dir_BV(to_occluder, tv_start_pos, tv_move_dir, tf_size, tf_dist, tv_temp) )
+						continue
+	
+					if (tf_dist > 	tf_move_length)
+						continue
+				}
+	
+				if (tf_occluder_length)
+				{
+					// =============================================================================================
+					// GELLULE
+					// =============================================================================================
+					if ( ! WAY_LIB_Collide_Gellule(tv_start_pos, tv_move_dir, tf_nearest_dist, tf_size, to_occluder, tv_projection_pos) )	
+						continue
+		
+					tf_dist = MATH_VecDotProduct(tv_projection_pos - tv_start_pos, tv_move_dir)
+				
+					if (tf_dist	< 0.0 || tf_dist > tf_nearest_dist)
+						continue
+		
+					tf_nearest_dist = tf_dist
+					ti_best_index = ti_i
+				}
+				else
+				{
+					// =============================================================================================
+					// SPHERE
+					// =============================================================================================
+					if (! WAY_LIB_Collide_Sphere(tv_start_pos, tv_move_dir, tf_nearest_dist, tf_size, tv_occluder_pos, tf_occluder_size, tv_projection_pos) )
+						continue
+		
+					tf_dist = MATH_VecDotProduct(tv_projection_pos - tv_start_pos, tv_move_dir)
+				
+					if (tf_dist	< 0.0 || tf_dist > tf_nearest_dist)
+						continue
+		
+					tf_nearest_dist = tf_dist
+					ti_best_index = ti_i
+				}
+			}
+			else
+			{
+				// =============================================================================================
+				// BV
+				// =============================================================================================
+				if ( ! WAY_LIB_Collide_BV(tv_start_pos, tv_move_dir, tf_nearest_dist, tf_size, to_occluder, tf_dist, tv_projection_pos) )	
+					continue
+	
+				if (tf_dist	< 0.0 || tf_dist > tf_nearest_dist)
+					continue
+	
+				tf_nearest_dist = tf_dist
+				ti_best_index = ti_i
+			}
+		}
+	}
+
+	return(ti_best_index)
+}
+
+// ====================================================================================================================
+// ITERATEUR SUR LES OCCLUDERS
+//
+// Fonction principale de navigation par évitement d'occluders
+//
+// tv_start_pos = position de départ du déplacement
+// tv_sight = la direction de référence au départ du déplacement
+// tf_size = rayon de l'acteur
+// tv_dest_pos = la position d'arrivée voulue pour le déplacement
+// ti_territory = -1 pour tester tous les occluders, ou bien une valeur pour tester uniquement les occluders d'un certain territoire
+// tv_next_pos = (retournée) la nouvelle position à viser pour éviter les occluders trouvés
+// to_jump_wp = wp position destination de saut
+// les _add_ = ajouter des occluders dynamiques (ex: pattes des brontos)
+//
+// Valeur de retour : un champs de bit
+// Ci_OCCLUDER_START_POS_IS_IN_OCCLUDER
+// Ci_OCCLUDER_DEST_POS_IS_IN_OCCLUDER
+// Ci_OCCLUDER_COLLISIONocclud
+// ====================================================================================================================
+procedure int WAY_LIB_Test_Occluder(vector tv_start_pos, vector tv_sight, float tf_size, vector tv_dest_pos, int ti_territory, byref vector tv_next_pos, byref object to_jump_wp, byrefarr object tao_add_occ, byrefarr float taf_add_occ_size, int ti_add_occ_nb, int ti_type)
+{
+	int			ti_i
+	int			ti_territory_list_id
+	int			ti_start_index
+	int			ti_flag_recompute_move_dir
+	int			ti_position_nb
+	int			ti_last_occluder_used_index
+	int			ti_return
+	int			ti_index
+	int			tai_occluder_already_tested[100]
+	int			ti_flag_closed
+	
+	float		tf_move_length
+	float		tf_dist
+	float		tf_nearest_dist
+	float		tf_dot_product	
+	float		tf_occluder_size
+	float		tf_cos_half_angle
+	float		tf_occluder_length
+
+	vector	tv_move_dir
+	vector	tv_occluder_pos
+	vector	tv_occluder_axis
+	vector	tv_orth_plan
+	vector	tv_temp
+	vector	tv_exit_pos
+
+	object		to_occluder
+//	object		to_occluder_jump_wp
+	object		tao_wp[20]
+
+	network	tn_net
+
+	tv_next_pos = tv_dest_pos
+//	to_jump_wp = nobody
+
+	@get_global WAY_LIB_used_occluder_index = -1
+	@get_global WAY_LIB_dest_pos_occluder_index = -1
+	
+	ti_return = 0
+
+	// =============================================================================================	
+	// EST CE QUE LA POSITION DESTINATION EST DANS UN OCCLUDER ???
+	// =============================================================================================
+	if (WAY_LIB_Test_Pos_In_Occluder(tv_dest_pos, tv_sight, tf_size, ti_territory, tv_next_pos, &tao_add_occ[0], &taf_add_occ_size[0], ti_add_occ_nb, ti_type))
+	{
+		ti_return |= Ci_OCCLUDER_DEST_POS_IS_IN_OCCLUDER
+		@get_global WAY_LIB_dest_pos_occluder_index = @get_global WAY_LIB_used_occluder_index
+		tv_dest_pos = tv_next_pos
+	}
+
+	// =============================================================================================	
+	// EST CE QU'ON EST DANS UN OCCLUDER ???
+	// =============================================================================================	
+	if (WAY_LIB_Test_Pos_In_Occluder(tv_start_pos, tv_sight, tf_size, ti_territory, tv_next_pos, &tao_add_occ[0], &taf_add_occ_size[0], ti_add_occ_nb, ti_type))
+		return(ti_return | Ci_OCCLUDER_START_POS_IS_IN_OCCLUDER)
+
+	// =============================================================================================	
+	// EST CE QU'ON TRAVERSE UN OCCLUDER ???
+	// =============================================================================================	
+	for (ti_i = 0; ti_i < @get_list_manager i_occluder_nb + ti_add_occ_nb; ti_i++)
+		tai_occluder_already_tested[ti_i] = faux
+
+	ti_flag_recompute_move_dir = faux
+	
+	tv_move_dir = tv_next_pos
+	tv_move_dir -= tv_start_pos
+	tv_move_dir.z = 0.0
+	tf_move_length = MATH_VecNorm(tv_move_dir)
+	if ( MATH_FloatNullToler(tf_move_length, Cf_tolerance_null) )
+		return(ti_return)
+	tv_move_dir /= tf_move_length
+	
+	tf_nearest_dist = tf_move_length
+	
+	ti_i = -1
+	ti_i = WAY_LIB_Nearest_Occluder(tv_start_pos, tv_move_dir, tf_move_length, tf_size, ti_territory, &tao_add_occ[0], &taf_add_occ_size[0], ti_add_occ_nb, &tai_occluder_already_tested[0], ti_type)
+	while(ti_i != -1)
+	{
+		// =============================================================================================	
+		// TANT QU'ON TRAVERSE UN OCCLUDER
+		// =============================================================================================	
+	
+		@get_global WAY_LIB_used_occluder_index = ti_i
+	
+		ti_return |= Ci_OCCLUDER_COLLISION
+	
+		tai_occluder_already_tested[ti_i] = vrai
+	
+		ti_position_nb	= 0
+
+		if (ti_i >= @get_list_manager i_occluder_nb)
+		{
+			// =============================================================================================
+			// OCCLUDER ADDITIONNELS
+			// =============================================================================================
+			ti_index = ti_i - @get_list_manager i_occluder_nb
+			to_occluder = tao_add_occ[ti_index]
+			tf_occluder_size = taf_add_occ_size[ti_index]
+		}
+		else
+		{
+			// =============================================================================================
+			// OCCLUDER GLOBAUX
+			// =============================================================================================
+			to_occluder = @get_list_manager ao_occluder[ti_i]
+		}
+
+		if (ti_i >= @get_list_manager i_occluder_nb && ti_territory != -2)
+		{
+			// =============================================================================================
+			// OCCLUDER IA
+			// =============================================================================================
+			tv_occluder_pos = @to_occluder OBJ_PosGet()
+			tv_occluder_pos.z = tv_start_pos.z
+
+			// =============================================================================================
+			// SPHERE
+			// =============================================================================================
+			tv_next_pos = WAY_LIB_Get_Sphere_Pos(tv_start_pos, tv_next_pos, tv_sight, tf_size, tv_occluder_pos, tf_occluder_size, @to_occluder OBJ_SightGet(), @to_occluder OBJ_HorizonGet(), @to_occluder OBJ_CustomBitsTest(OBJ_CBits_1))
+		}
+		else
+		{
+			// =============================================================================================
+			// OCCLUDER GLOBAUX
+			// =============================================================================================
+			tv_occluder_pos = @to_occluder OBJ_PosGet()
+			tv_occluder_pos.z = tv_start_pos.z
+
+			if (@to_occluder OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Links))
+			{
+				// =============================================================================================
+				// GEOMETRIE
+				// =============================================================================================
+				tn_net = @to_occluder WAY_NetOfObj()
+				ti_position_nb = WAY_NetFill(tn_net, WAY_RootGet(tn_net), &tao_wp[0])
+				ti_flag_closed = @tao_wp[ti_position_nb - 1] WAY_HasLinks(tn_net, tao_wp[0])
+
+				tv_next_pos = WAY_LIB_Get_Geometrie_Pos(tv_start_pos, tv_next_pos, tv_sight, tf_size, &tao_wp[0], ti_position_nb, ti_flag_closed)
+			}
+			else if ( @to_occluder OBJ_CustomBitsTest(OBJ_CBits_0) )
+			{
+				// =============================================================================================
+				// GELLULE OU SPHERE
+				// =============================================================================================
+				tv_temp = @to_occluder OBJ_ScaleGet()
+				if (tv_temp.x > tv_temp.y)
+				{
+					tv_occluder_axis = @to_occluder OBJ_HorizonGet()
+				
+					tf_occluder_size = tv_temp.y
+					tf_occluder_length = tv_temp.x - tf_occluder_size
+		
+					tf_occluder_size *= 0.5
+				}
+				else
+				{
+					tv_occluder_axis = @to_occluder OBJ_SightGet()
+					
+					tf_occluder_size = tv_temp.x
+					tf_occluder_length = tv_temp.y - tf_occluder_size
+		
+					tf_occluder_size *= 0.5
+				}
+				
+				if (tf_occluder_length)
+				{
+					// =============================================================================================
+					// GELLULE
+					// =============================================================================================
+					tv_next_pos = WAY_LIB_Get_Gellule_Pos(tv_start_pos, tv_next_pos, tv_sight, tf_size, to_occluder)
+				}
+				else
+				{
+					// =============================================================================================
+					// SPHERE
+					// =============================================================================================
+					tv_next_pos = WAY_LIB_Get_Sphere_Pos(tv_start_pos, tv_next_pos, tv_sight, tf_size, tv_occluder_pos, tf_occluder_size, @to_occluder OBJ_SightGet(), @to_occluder OBJ_HorizonGet(), @to_occluder OBJ_CustomBitsTest(OBJ_CBits_1))
+				}
+			}
+			else
+			{
+				// =============================================================================================
+				// BV
+				// =============================================================================================
+				tv_next_pos = WAY_LIB_Get_BV_Pos(tv_start_pos, tv_next_pos, tv_sight, tf_size, to_occluder)
+			}	
+		}
+	
+		tv_move_dir = tv_next_pos
+		tv_move_dir -= tv_start_pos
+		tv_move_dir.z = 0.0
+		tf_move_length = MATH_VecNorm(tv_move_dir)
+		if ( MATH_FloatNullToler(tf_move_length, Cf_tolerance_null) )
+			break
+		tv_move_dir /= tf_move_length
+
+		ti_i = WAY_LIB_Nearest_Occluder(tv_start_pos, tv_move_dir, tf_move_length, tf_size, ti_territory, &tao_add_occ[0], &taf_add_occ_size[0], ti_add_occ_nb, &tai_occluder_already_tested[0], ti_type)
+	}
+	
+	return(ti_return)	
+}
+
+procedure void WAY_LIB_Fill_Territory_List_With_Gao(int ti_territory_nb, byrefarr object tao_territory_gao)
+{
+	int		ti_i
+	int		ti_k
+	int		ti_territory_ID
+	
+	@get_global WAY_LIB_Territory_List_Size = 0
+
+	for (ti_i = 0; ti_i < ti_territory_nb; ti_i++)
+	{
+		ti_territory_ID = tao_territory_gao[ti_i].des_int2
+		if (	@get_list_manager ai_occluder_index[ti_territory_ID] == Ci_Invalid_Index)
+			continue
+	
+		ti_k = @get_global WAY_LIB_Territory_List_Size
+		while(ti_k > 0 && ti_territory_ID < @get_global WAY_LIB_Territory_List[ti_k - 1])
+		{
+			@get_global WAY_LIB_Territory_List[ti_k] = @get_global WAY_LIB_Territory_List[ti_k - 1]
+			ti_k--
+		}
+		@get_global WAY_LIB_Territory_List[ti_k] = ti_territory_ID
+		@get_global WAY_LIB_Territory_List_Size++
+	}
+}
+
+procedure void WAY_LIB_Fill_Territory_List(int ti_territory_nb, byrefarr int tai_territory_id)
+{
+	int		ti_i
+	int		ti_k
+	int		ti_territory_ID
+	
+	@get_global WAY_LIB_Territory_List_Size = 0
+
+	for (ti_i = 0; ti_i < ti_territory_nb; ti_i++)
+	{
+		ti_territory_ID = tai_territory_id[ti_i]
+		if (	@get_list_manager ai_occluder_index[ti_territory_ID] == Ci_Invalid_Index)
+			continue
+
+		ti_k = @get_global WAY_LIB_Territory_List_Size
+		while(ti_k > 0 && ti_territory_ID < @get_global WAY_LIB_Territory_List[ti_k - 1])
+		{
+			@get_global WAY_LIB_Territory_List[ti_k] = @get_global WAY_LIB_Territory_List[ti_k - 1]
+			ti_k--
+		}
+		@get_global WAY_LIB_Territory_List[ti_k] = ti_territory_ID
+		@get_global WAY_LIB_Territory_List_Size++
+	}
+}
+
+
+// ====================================================================================================================
+// DISPLAY OCCLUDER
+// ====================================================================================================================
+procedure void WAY_LIB_Display_Network(object to_occluder, int ti_color)
+{
+	int				ti_i
+	int				ti_position_nb
+
+	float			tf_size
+
+	object		tao_wp[20]
+	
+	network		tn_net
+
+	vector		tv_pos
+	vector		tv_axis
+
+	tf_size = @to_occluder OBJ_ZoomGet() * 0.5
+
+	tn_net = @to_occluder WAY_NetOfObj()
+	ti_position_nb = WAY_NetFill(tn_net, WAY_RootGet(tn_net), &tao_wp[0])
+
+	for (ti_i = 0; ti_i < ti_position_nb; ti_i++)
+	{
+		tv_pos = @tao_wp[ti_i] OBJ_PosGet()
+		DBG_RenderSphere(tv_pos, tf_size, ti_color)
+		if (ti_i)
+		{
+			tv_axis = tv_pos - @tao_wp[ti_i - 1] OBJ_PosGet()
+			DBG_RenderCylinder(tv_pos, -tv_axis, tf_size, ti_color)
+		}
+	}
+
+	if (@tao_wp[ti_position_nb - 1] WAY_HasLinks(tn_net, tao_wp[0]))
+	{
+		tv_axis = @tao_wp[0] OBJ_PosGet() - tv_pos
+		DBG_RenderCylinder(tv_pos, tv_axis, tf_size, ti_color)
+	}
+
+	return
+}
+
+procedure void WAY_LIB_Display_Gelule(object to_occluder, int ti_color)
+{
+	float			tf_dist
+	float			tf_occluder_size
+	float			tf_occluder_length
+
+	vector		tv_occluder_pos
+	vector 		tv_occluder_axis
+
+	tv_occluder_pos = @to_occluder OBJ_ScaleGet()
+	if (tv_occluder_pos.x > tv_occluder_pos.y)
+	{
+		tv_occluder_axis = @to_occluder OBJ_HorizonGet()
+	
+		tf_occluder_size = tv_occluder_pos.y
+		tf_occluder_length = tv_occluder_pos.x - tf_occluder_size
+
+		tf_occluder_size *= 0.5
+	}
+	else
+	{
+		tv_occluder_axis = @to_occluder OBJ_SightGet()
+		
+		tf_occluder_size = tv_occluder_pos.x
+		tf_occluder_length = tv_occluder_pos.y - tf_occluder_size
+
+		tf_occluder_size *= 0.5
+	}
+
+
+	tv_occluder_pos = @to_occluder OBJ_PosGet()
+	tv_occluder_pos -= tv_occluder_axis * (tf_occluder_length * 0.5)
+	
+	DBG_RenderSphere(tv_occluder_pos, tf_occluder_size, ti_color)
+	DBG_RenderCylinder(tv_occluder_pos, tv_occluder_axis * tf_occluder_length, tf_occluder_size, ti_color)
+	
+	tv_occluder_pos = @to_occluder OBJ_PosGet()
+	tv_occluder_pos += tv_occluder_axis * (tf_occluder_length * 0.5)
+	
+	DBG_RenderSphere(tv_occluder_pos, tf_occluder_size, ti_color)
+
+	return
+}
+
+
+procedure void WAY_LIB_Display_Occluder()
+{
+	int			ti_i
+	
+	float		tf_occluder_size
+	float		tf_occluder_length
+
+	vector	tv_occluder_pos
+	vector	tv_occluder_axis
+	vector	tv_orth_plan
+	vector	tv_temp
+
+	object		to_occluder
+
+	int				ti_color
+	
+	ti_color = 0x80FFFFFF
+
+	// =============================================================================================	
+	// EST CE QU'ON EST DANS UN OCCLUDER ???
+	// =============================================================================================	
+	for (ti_i = 0; ti_i < @get_list_manager i_occluder_nb; ti_i++)
+	{
+		to_occluder = @get_list_manager ao_occluder[ti_i]
+		
+		if (@to_occluder OBJ_FlagsControlGet() & (OBJ_C_ControlFlag_ForceInactive | OBJ_C_ControlFlag_SectoInactive))
+			continue
+
+		if (@to_occluder OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Links))
+		{
+			// GEOMETRIE
+		}
+		else if (@to_occluder OBJ_CustomBitsTest(OBJ_CBits_0))
+		{
+			// GELLULE OU SPHERE
+			tv_temp = @to_occluder OBJ_ScaleGet()
+			if (tv_temp.x > tv_temp.y)
+			{
+				tf_occluder_size = tv_temp.y
+				tf_occluder_length = tv_temp.x - tf_occluder_size
+				tf_occluder_size *= 0.5
+			}
+			else
+			{
+				tf_occluder_size = tv_temp.x
+				tf_occluder_length = tv_temp.y - tf_occluder_size
+				tf_occluder_size *= 0.5
+			}
+		}
+	
+		tv_occluder_pos = @to_occluder OBJ_PosGet()
+		
+		if (@to_occluder OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Links))
+		{
+			// =============================================================================================
+			// GEOMETRIE
+			// =============================================================================================
+			WAY_LIB_Display_Network(to_occluder, ti_color)
+		}
+		else if ( ! @to_occluder OBJ_CustomBitsTest(OBJ_CBits_0) )
+		{
+			// =============================================================================================
+			// BV
+			// =============================================================================================
+			WAY_LIB_RenderBV(to_occluder, 0.0, ti_color)
+		}	
+		else if (tf_occluder_length)
+		{
+			// =============================================================================================
+			// GELLULE
+			// =============================================================================================
+			WAY_LIB_Display_Gelule(to_occluder, ti_color)
+		}
+		else
+		{
+			// =============================================================================================
+			// SPHERE
+			// =============================================================================================
+			DBG_RenderCylinder(tv_occluder_pos + cvector(0.0, 0.0, -5.0), cvector(0.0, 0.0, 10.0), tf_occluder_size, ti_color)
+		}
+	}
+	
+	return
+}
+

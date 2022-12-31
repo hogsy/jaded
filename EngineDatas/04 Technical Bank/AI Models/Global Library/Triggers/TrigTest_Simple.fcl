@@ -1,0 +1,2502 @@
+
+Include_UltraProcedure_Header
+
+///TrigTest_MultiGaoActive
+//============================================================
+// Param IN:
+//		gao1 (gao1) 	=> gao à tester
+//		gao2 (gao2) 	=> gao à tester 
+//		gao3 (gao3) 	=> gao à tester 
+//		gao4 (gao4) 	=> gao à tester 
+//		inverse_test (int5)=> inverse le test (not)
+// Param OUT (none)
+// retourne vrai si tous les gao sont actif (ou inactif si int5 = 1)
+//============================================================
+procedure_trigger int TrigTest_MultiGaoActive(byref message m_msg) // object1 gao1 object2 gao2 object3 gao3 object4 gao4 int5 inverse_test
+{
+	int i
+	object o[4]
+	int ret_code 
+
+	m_msg.msg_gao5 = nobody
+
+	if (m_msg.msg_int5)
+		ret_code = faux
+	else
+		ret_code = vrai
+	
+#ifndef _FINAL_
+	if(@get_global DEBUG_TCINE) DBG_TraceString("TrigTest_MultiGaoActive\n")
+#endif
+
+	o[0] = m_msg.msg_gao1
+	o[1] = m_msg.msg_gao2
+	o[2] = m_msg.msg_gao3
+	o[3] = m_msg.msg_gao4
+	
+	for(i=0; i<4; i++)
+	{
+		if( !o[i] ) break
+		
+		if( (@o[i] OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Active ) == 0 )
+		{
+			return (vrai - ret_code) 
+		}
+	}
+
+	return ret_code
+}
+
+
+///TrigText_MapFromMenuDemo
+//============================================================
+// PARAM IN 
+//		int 1 : numéro du menu (1 à 4) ou 0 = n'importe lequel des menus
+// retourne vrai si la map a été chargée depuis un des menu démo
+//============================================================
+procedure_trigger int TrigText_MapFromMenuDemo(byref message m_msg) // int1 menu_num
+{
+	if (@"univ" MENU_NZ == 0)
+		return faux
+	if ( (m_msg.msg_int5 >= 1) && (m_msg.msg_int5 <= 4) )
+	{
+		if (m_msg.msg_int5 != @"univ" MENU_NZ)
+			return faux
+	}
+	return vrai
+}
+
+///TrigText_ReplayMap
+//============================================================
+// PARAM IN 
+// retourne vrai si on est en mode rejouage de map
+//============================================================
+procedure_trigger int TrigText_ReplayMap(byref message m_msg)
+{
+	return @"univ" PROG_i_MapReplay
+}
+
+
+///TrigTest_ALL_GAO
+//==========================================================
+// retourne vrai 
+//============================================================
+procedure_trigger int TrigTest_ALL_GAO(byref message m_msg) // object1 g1 object2 g2 object3 g3 object4 g4 object5 g5
+{
+	if ( @"univ" MENU_NZ == 0)
+		return faux
+	if ( (m_msg.msg_int1 >= 1) && (m_msg.msg_int1 <= 4) )
+	{
+		if (m_msg.msg_int1 != @"univ" MENU_NZ)
+			return faux
+	}
+	return vrai
+}
+
+///TrigTest_AlwaysFalse
+//============================================================
+// retourne vrai 
+//============================================================
+procedure_trigger int TrigTest_AlwaysFalse(byref message m_msg)
+{
+	m_msg.msg_gao5 = nobody
+
+#ifndef _FINAL_
+	if(@get_global DEBUG_TCINE) DBG_TraceString("TrigTest_AlwaysFalse\n")
+#endif
+
+	return faux
+}
+
+//TrigTest_AlwaysTrue
+//============================================================
+// retourne vrai 
+//============================================================
+procedure_trigger int TrigTest_AlwaysTrue(byref message m_msg)
+{
+	m_msg.msg_gao5 = nobody
+
+#ifndef _FINAL_
+	if(@get_global DEBUG_TCINE) DBG_TraceString("TrigTest_AlwaysTrue\n")
+#endif
+
+	return vrai
+}
+
+///TrigTest_Active
+//============================================================
+// Param IN:
+//		gao_capa (gao1) 	=> gao à tester (Defaut = Obj_me())
+//		inverse_test (int5)=> inverse le test (not)
+// Param OUT (none)
+// retourne vrai si le gao est actif (ou inactif si int5 = 1)
+//============================================================
+procedure_trigger int TrigTest_Active(byref message m_msg) // object1 gao int5 inverse_test
+{
+	object to_gao
+
+	m_msg.msg_gao5 = nobody
+	
+#ifndef _FINAL_
+	if(@get_global DEBUG_TCINE) DBG_TraceString("TrigTest_Active\n")
+#endif
+
+	to_gao = m_msg.msg_gao1
+	if (!to_gao)
+		to_gao = AI_MainActorGet(0)
+	
+	if (@to_gao OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Active )
+	{
+		if (m_msg.msg_int5 == 0)
+			return vrai
+	}
+	else
+	{
+		if (m_msg.msg_int5)
+			return vrai
+	}
+	return faux
+}
+
+
+///TrigTest_MultipleCapaBit
+//============================================================
+// Param IN:
+//		gao_capa (gao1) 	=> gao qui contient les capa à tester (optionnel)
+//		gao_capa (gao2) 	=> gao qui contient les capa à tester (optionnel)
+//		gao_capa (gao3) 	=> gao qui contient les capa à tester (optionnel)
+//		gao_capa (gao4) 	=> gao qui contient les capa à tester (optionnel)
+//		capa_bit (int1)		=> somme des capa bits à tester
+//		capa_logic (int2)	=> Et (1) Ou (0)
+//		inverse_test (int5)=> inverse le resultat du trigger
+// retourne vrai si les capa données sont à 1
+//============================================================
+#define retour( valeur )										\
+{																	\
+	if (!m_msg.msg_int5)									\
+		return(valeur)											\
+	else															\
+		return(vrai - valeur)									\
+}
+
+procedure_trigger int TrigTest_MultipleCapaBit(byref message m_msg) // object1 gao_capa1 object2 gao_capa2 object3 gao_capa3 object4 gao_capa4 int1 capa_value int2 capa_logic int5 inverse_test
+{
+	object	to_gao
+	int			ti_capa
+	int			rettrue
+	int			ti_ok
+	int			ti_nbr
+		
+	ti_nbr = 0
+	ti_ok = 0
+
+	m_msg.msg_gao5 = nobody
+	
+	ti_capa = m_msg.msg_int1
+
+	to_gao = m_msg.msg_gao1
+	if (to_gao)
+	{
+		ti_nbr ++
+		if ((@to_gao OBJ_CapaGet() & ti_capa) == ti_capa)
+		{
+			// Vrai
+			if (!m_msg.msg_int2)
+				retour( vrai )				// Ou
+			else
+				ti_ok ++					// Et
+		}
+		else
+		{
+			// Faux
+			if (m_msg.msg_int2)
+				retour( faux )			// Et
+		}
+	}
+
+	to_gao = m_msg.msg_gao2
+	if (to_gao)
+	{
+		ti_nbr ++
+		if ((@to_gao OBJ_CapaGet() & ti_capa) == ti_capa)
+		{
+			// Vrai
+			if (!m_msg.msg_int2)
+				retour( vrai )				// Ou
+			else
+				ti_ok ++					// Et
+		}
+		else
+		{
+			// Faux
+			if (m_msg.msg_int2)
+				retour( faux )			// Et
+		}
+	}
+
+	to_gao = m_msg.msg_gao3
+	if (to_gao)
+	{
+		ti_nbr ++
+		if ((@to_gao OBJ_CapaGet() & ti_capa) == ti_capa)
+		{
+			// Vrai
+			if (!m_msg.msg_int2)
+				retour( vrai )				// Ou
+			else
+				ti_ok ++					// Et
+		}
+		else
+		{
+			// Faux
+			if (m_msg.msg_int2)
+				retour( faux )			// Et
+		}
+	}
+
+	to_gao = m_msg.msg_gao4
+	if (to_gao)
+	{
+		ti_nbr ++
+		if ((@to_gao OBJ_CapaGet() & ti_capa) == ti_capa)
+		{
+			// Vrai
+			retour( vrai )				// OU ou ET
+		}
+		else
+		{
+			// Faux
+			retour( faux )				// OU ou ET
+		}
+	}
+
+	if ( ti_ok == ti_nbr )				// Et ?
+		retour( vrai )
+	else
+		retour( faux )
+					
+}	
+
+
+///TrigTest_CapaBit
+//============================================================
+// Param IN:
+//		gao_capa (gao1) 	=> gao qui contient les capa à tester  (defaut = obj_me)
+//		capa_bit (int1)		=> somme des capa bits à tester
+//		inverse_test (int5)=> inverse le test (not)
+// Param OUT
+//		gao_in		(gao5)  	=> gao_capa si il a la capa
+// retourne vrai si les capa données sont à 1
+//============================================================
+procedure_trigger int TrigTest_CapaBit(byref message m_msg) // object1 gao_capa int1 capa_value int5 inverse_test
+{
+	object	to_gao
+	int			rettrue
+
+	m_msg.msg_gao5 = nobody
+	
+#ifndef _FINAL_
+	if(@get_global DEBUG_TCINE) DBG_TraceString("TrigTest_CapaBit\n")
+#endif
+
+	if (m_msg.msg_int5 ) rettrue = faux else rettrue = vrai
+
+	to_gao = m_msg.msg_gao1
+	if (!to_gao)
+		to_gao = OBJ_Me()
+
+	if ( (@to_gao OBJ_CapaGet() & m_msg.msg_int1) == m_msg.msg_int1 )
+	{
+		m_msg.msg_gao5 = to_gao
+		return rettrue
+	}
+	return (1 - rettrue)
+}
+
+///TrigTest_CapaBitOr
+//============================================================
+// Param IN:
+//		gao_capa (gao1) 	=> gao qui contient les capa à tester (defaut = obj_me)
+//		capa_bit (int1)		=> capa bits à tester
+//		inverse_test (int5)=> inverse le test (not)
+// Param OUT
+//		gao_in		(gao5)  	=> gao_capa si il a la capa
+// retourne vrai si les capa données sont à 1
+//============================================================
+procedure_trigger int TrigTest_CapaBitOr(byref message m_msg) // object1 gao_capa int1 capa_value int5 inverse_test
+{
+	object	to_gao
+	int			rettrue
+
+	m_msg.msg_gao5 = nobody
+	
+#ifndef _FINAL_
+	if(@get_global DEBUG_TCINE) DBG_TraceString("TrigTest_CapaBit\n")
+#endif
+
+	if (m_msg.msg_int5 ) rettrue = faux else rettrue = vrai
+
+	to_gao = m_msg.msg_gao1
+	if (!to_gao)
+		to_gao = OBJ_Me()
+	if ( @to_gao OBJ_CapaGet() & m_msg.msg_int1)
+	{
+		m_msg.msg_gao5 = to_gao
+		return rettrue
+	}
+	return (1 - rettrue)
+}
+
+
+///TrigTest_IsNearEnough
+//============================================================
+// Param IN:
+//		gao_1 		(gao1) 	=> début de la ligne à mesurer (empty = Obj_Me)
+//		gao_2		(gao2)	=> fin de la ligne à mesurer (empty = MainActor)
+//		dist_inX		(vec1.x)	=> distance 
+//		inverse_test (int5)		=> inverse le resultat
+// Param OUT
+//		gao_in		(gao5)  	=> perso proche
+// retourne vrai si la distance entre gao_1 et gao_2 est inférieur
+//     à celle donnée dans vec1.x
+//============================================================
+procedure_trigger int TrigTest_IsNearEnough( byref message m_msg ) // object1 gao_1 object2 gao_2 vec1 dist_inX int5 inverse_test
+{
+	object 	o1, o2
+	vector 	v
+	int			ti_result
+	
+	m_msg.msg_gao5 = nobody
+	ti_result = faux
+	
+#ifndef _FINAL_
+	if(@get_global DEBUG_TCINE) DBG_TraceString("TrigTest_IsNearEnough\n")
+#endif
+
+	o1 = m_msg.msg_gao1
+	o2 = m_msg.msg_gao2
+
+	v = m_msg.msg_vec1
+
+	if (!o1)
+		o1 = OBJ_Me()
+	if (!o2)
+		o2 = AI_MainActorGet(0)
+	
+	// o2 spécifié
+	if ( @o1 OBJ_SqrDist( o2 ) < (v.x * v.x) )
+		ti_result = vrai
+
+	m_msg.msg_gao5 = o2	// le gao valide
+
+	if( m_msg.msg_int5 )
+		ti_result = 1- ti_result
+
+	return ti_result
+}
+
+
+//TrigTest_Probabilite
+//============================================================
+// Param IN:
+//		probabilite 		(float1) 	=> probabilite en pourcentages
+// Param OUT (none)
+// retourne vrai si on est sous la proba (au hasard)
+//============================================================
+procedure_trigger int TrigTest_Probabilite( byref message m_msg ) // vec1 probabilite
+{
+	vector tv_proba
+	
+	m_msg.msg_gao5 = nobody
+
+#ifndef _FINAL_
+	if(@get_global DEBUG_TCINE) DBG_TraceString("TrigTest_Probabilite\n")
+#endif
+
+	tv_proba = m_msg.msg_vec1
+	if(MATH_RandInt(0, 101) < tv_proba.x) return vrai
+	return faux
+}
+
+///TrigTest_Timer
+//============================================================
+// Param IN:
+//		time		(vec1.x) 		=> time to wait before trigger is true
+//		time_reinit		vrai 	=> le timer repard a 0 si vrai
+// Param OUT (none)
+// retourne vrai si on a dépassé le temps
+// vec1.y est utilisé (temps courant)
+//============================================================
+procedure_trigger int TrigTest_Timer( byref message m_msg ) // vec1 timer_inX int1 time_reinit
+{
+	vector tv_time
+
+	m_msg.msg_gao5 = nobody	
+
+#ifndef _FINAL_
+	if(@get_global DEBUG_TCINE) DBG_TraceString("TrigTest_Timer\n")
+#endif	
+	tv_time = m_msg.msg_vec1
+	if (tv_time.y > tv_time.x) 
+	{
+		if ( m_msg.msg_int1)
+		{
+			tv_time.y = 0.0
+			m_msg.msg_vec1 = tv_time
+		}
+		return vrai
+	}
+	tv_time.y += TIME_GetDt()
+	m_msg.msg_vec1 = tv_time
+	return faux
+}
+
+///TrigTest_TimerInverse
+//============================================================
+// Param IN:
+//		time		(vec1.x) 	=> time to wait before trigger is true
+// Param OUT (none)
+// retourne vrai si on a dépassé le temps
+// vec1.y est utilisé (temps courant)
+//============================================================
+procedure_trigger int TrigTest_TimerInverse( byref message m_msg ) // vec1 timer_inX
+{
+	vector v_time
+
+	m_msg.msg_gao5 = nobody	
+
+#ifndef _FINAL_
+	if(@get_global DEBUG_TCINE) DBG_TraceString("TrigTest_Timer\n")
+#endif	
+	v_time = m_msg.msg_vec1
+	if (v_time.y > v_time.x) return faux
+	v_time.y += TIME_GetDt()
+	m_msg.msg_vec1 = v_time
+	return vrai
+}
+
+
+///TrigTest_PivotInScreen
+//============================================================
+// Param IN:
+//		gao_pivot	(gao1 ou sender)	=> objet dont on veut le pivot à l'écran
+//		time_inX     (vec1.x) 				=> temps pendant lequel l'objet doit rester 
+//													dans l'écran pour que le test soit valide
+//													(peut valoir 0 => pas de timer)
+//		up_left_corner (vec2)				=> coordonnées du cadre ou l'objet doit etre (0, 0) par défaut
+//		down_right_corner( vec3)		=> coordonnées du cadre ou l'objet doit etre (1, 1) par défaut
+//		lance_rayon (int1)				=> lance un rayon pour tester la visibilité
+//		inverse_test (int5)					=> inverse le test (not)
+//		timeout_inX		(vect4.x)			=> valide seulement si vect4.x est > 0 
+//													si le temps d'appelle du trigger est supérieur à vect4.x alors il devient actif
+//
+// ------ New : Test Pivot in BV ----( Un Nobody dans BV ou Pivot skip ce test ) ---------
+//
+//		gao_Col_Pivot	(gao2)	   		=> Perso dont le PIVOT doit etre dans gao_Col_BV
+//		gao_Col_BV	(gao3)	    		=> Perso BV pour la detection
+//
+// Param OUT (none)
+// retourne vrai si le pivot de gao_pivot est dans le cadre de l'écran
+// (il peut etre occludé par le décor, sauf si la variable lance_rayon est à 1)
+// attention vec1.y est utilisé en interne ( timer )
+//============================================================
+procedure_trigger int TrigTest_PivotInScreen( byref message m_msg ) // object2 gao_Col_Pivot object3 gao_Col_BV object1 gao_pivot vec1 timer_inX vec2 up_left_corner vec3 down_right_corner vec4 timeout_inX int1 cast_ray int5 inverse_test
+{
+	object	o_Pivot, o_Col, o_Cam
+	vector	v, w, v_time, c0, c1
+	int			res, vis
+	object	to_pivot, to_bv
+
+	m_msg.msg_gao5 = nobody
+
+	#ifndef _FINAL_
+		if(@get_global DEBUG_TCINE) DBG_TraceString("TrigTest_PivotInScreen\n")
+	#endif	
+
+	// Si GAO2 et GAO3 defini alors je fais le test PIVOT-BV
+	if (m_msg.msg_gao2 && m_msg.msg_gao3)
+	{
+		to_pivot = m_msg.msg_gao2
+		to_bv = m_msg.msg_gao3
+		if ( !@to_pivot COL_Pivot_BVCollide(to_bv))
+			return faux	// Pas de col >> FAUX 
+	}
+
+	o_Pivot = m_msg.msg_gao1	
+	if (o_Pivot == nobody) o_Pivot = m_msg.msg_sender
+	if (o_Pivot == nobody) o_Pivot = OBJ_Me()
+		
+	// calcul la visibilité de la cible	
+	c0 = m_msg.msg_vec2
+	c1 = m_msg.msg_vec3
+	if (c1.x == 0)
+	{
+		c1.x = 1
+		c1.y = 1
+	}
+	v = VIEW_3dWorldTo2d( 0, @o_Pivot OBJ_PosGet() )
+	if ( (v.z < 0) || ( (v.x <= c0.x || v.x >= c1.x) || (v.y <= c0.y || v.y >= c1.y ) ) )
+		vis = faux
+	else
+	{
+		if ( m_msg.msg_int1 )
+		{
+			o_Cam = @get_global o_camera
+			v = @o_Cam OBJ_PosGet()
+			w = @o_Pivot OBJ_PosGet() - v
+			o_Col = COL_RayObject_Vector(v, w, OBJ_C_IdentityFlag_ColMap, OBJ_C_IdentityFlag_Anims, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable)
+			if ( (o_Col == nobody) || (o_Col == o_Pivot) )
+				vis = vrai
+			else
+				vis = faux
+		}
+		else
+			vis = vrai
+	}
+	
+	// time out
+	v_time = m_msg.msg_vec4
+	if (v_time.x > 0)
+	{
+		v_time.y += TIME_GetDt()
+		m_msg.msg_vec4 = v_time
+		if (v_time.y > v_time.x) 
+			return vrai
+	}
+
+	v_time = m_msg.msg_vec1
+	res = faux
+	//test inversé : hors de l'écran pendant le timer
+	if (m_msg.msg_int5 ) 
+	{
+		if ( vis )
+			v_time.y = 0
+		else
+		{
+			v_time.y += TIME_GetDt()
+			if ( v_time.y > v_time.x )
+				res = vrai
+		}
+	}
+	// test normal : dans l'écran pendant le timer
+	else
+	{
+		if ( vis )
+		{
+			v_time.y += TIME_GetDt()
+			if ( v_time.y > v_time.x )
+				res = vrai
+		}
+		else
+			v_time.y = 0
+	}
+	m_msg.msg_vec1 = v_time
+	return res
+}
+
+//TrigTest_Paf
+//============================================================
+// Param IN:
+//		gao_paf 		(gao1) 	=> gao qui test le paf (moi meme si none)
+//		gao_envoi	(gao2)	=> celui qui envoi le paf (tout le monde si none)
+// retourne vrai si gao1 a recu un paf de gao2
+// Param OUT:
+//		dir_paf		(vec5)		=> direction du paf
+//		pos_paf		(vec4)		=> position touchée par le paf
+//		force_paf	(int5)		=> force du paf
+//============================================================
+procedure_trigger int TrigTest_Paf(byref message m_msg) // object1 gao_paf object2 gao_envoi
+{
+	object			o, osend
+	int					ti_rank
+	messageid		EVT_ID
+	message		EVT_msg_filter
+	
+	m_msg.msg_gao5 = nobody
+
+#ifndef _FINAL_
+	if(@get_global DEBUG_TCINE) DBG_TraceString("TrigTest_Paf\n")
+#endif	
+	o = m_msg.msg_gao1
+	if(!o) o = OBJ_Me()
+	
+	MSG_SetNull( EVT_msg_filter)
+	EVT_msg_filter.msg_gao1 = o
+
+	ti_rank = -1
+	EVT_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, EVT_msg_filter)
+	while(MSG_GlobalIsValid(EVT_ID))
+	{
+		osend = MSG_GlobalGetMsg( EVT_ID).msg_sender
+		m_msg.msg_vec5 = MSG_GlobalGetMsg( EVT_ID).msg_vec1
+		m_msg.msg_vec4 = MSG_GlobalGetMsg( EVT_ID).msg_vec3
+		m_msg.msg_int5 = MSG_GlobalGetMsg( EVT_ID).msg_int3				
+		if(osend == m_msg.msg_gao2 || !m_msg.msg_gao2) return vrai
+		EVT_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, EVT_msg_filter)
+	}
+	
+	return faux
+}
+
+//TrigTest_Paf_Type
+//============================================================
+// Param IN:
+//		gao_paf 		(gao1) 	=> gao qui test le paf (moi meme si none)
+//		gao_envoi	(gao2)	=> celui qui envoi le paf (tout le monde si none)
+//		int_type		(int1)		=> type du paf a tester
+//										0 : all
+//										1 : grenade
+//										2 : gun
+//										256 : Dive Attack
+// retourne vrai si gao1 a recu un paf de gao2
+// Param OUT:
+//		dir_paf		(vec5)		=> direction du paf
+//		pos_paf		(vec4)		=> position touchée par le paf
+//		force_paf	(int5)		=> force du paf
+//============================================================
+procedure_trigger int TrigTest_Paf_Type(byref message m_msg) // object1 gao_paf object2 gao_envoi int1 int_type
+{
+	object			o, osend
+	int					ti_rank
+	messageid		EVT_ID
+	message		EVT_msg_filter, pm_msg
+	
+	m_msg.msg_gao5 = nobody
+
+#ifndef _FINAL_
+	if(@get_global DEBUG_TCINE) DBG_TraceString("TrigTest_Paf\n")
+#endif	
+	o = m_msg.msg_gao1
+	if(!o) o = OBJ_Me()
+	
+	MSG_SetNull( EVT_msg_filter)
+	EVT_msg_filter.msg_gao1 = o
+
+	ti_rank = -1
+	EVT_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, EVT_msg_filter)
+	while(MSG_GlobalIsValid(EVT_ID))
+	{
+		pm_msg = MSG_GlobalGetMsg( EVT_ID)
+		osend = pm_msg.msg_sender
+		m_msg.msg_vec5 = pm_msg.msg_vec1
+		m_msg.msg_vec4 = pm_msg.msg_vec3
+		m_msg.msg_int5 = pm_msg.msg_int3				
+		if(osend == m_msg.msg_gao2 || !m_msg.msg_gao2)
+		{
+			if ( !m_msg.msg_int1 || pm_msg.msg_int2 & m_msg.msg_int1 )
+				return vrai
+		}
+		EVT_ID = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Paf, &ti_rank, EVT_msg_filter)
+	}
+	
+	return faux
+}
+
+
+//TrigTest_AutoUse
+//============================================================
+// Param IN:
+// retourne vrai si une action peut etre declenchée automatiquement
+//============================================================
+procedure_trigger int TrigTest_AutoUse(byref message m_msg)
+{
+	int 				ti_rank
+	messageid		EVT_ID
+	int					ti_state
+	object			to_obj
+	float				tf_temp
+	int					ti_id
+	
+	m_msg.msg_gao5 = nobody
+
+#ifndef _FINAL_
+	if(@get_global DEBUG_TCINE) DBG_TraceString("TrigTest_AutoUse\n")
+#endif	
+	// Si un ennemi dangereux, on sort
+	ti_rank = -1
+	EVT_ID = MSG_GlobalScan(C_EVENT_TYPE_Enemy, &ti_rank)
+	while(MSG_GlobalIsValid(EVT_ID))
+	{
+		ti_state = MSG_GlobalGetInt( EVT_ID, INT2 )
+		ti_id = MSG_GlobalGetInt( EVT_ID, INT1 )
+		to_obj = MSG_GlobalGetSender(EVT_ID)
+		if (ti_state  == C_EVENT_EnemyState_Fight || ti_state  == C_EVENT_EnemyState_Wait || ti_state  == C_EVENT_EnemyState_Neutral)
+		{
+//			tf_temp = @"univ" Enemy_af_ReaDist[ti_id][C_EnemyDist_Stress]		
+//			if(OBJ_SqrDist(to_obj) < tf_temp * tf_temp) return faux
+			return faux
+		}
+		
+		EVT_ID = MSG_GlobalScan(C_EVENT_TYPE_Enemy, &ti_rank)
+	}
+
+	// Si un marin est proche, c'est ok
+//	for(ti_rank = C_ID_Marin_premier; ti_rank <= C_ID_Marin_dernier; ti_rank++)
+//	{
+//		to_obj = @"univ" ao_AllHumains[ti_rank]
+//		if(to_obj && OBJ_SqrDist(to_obj) < 10 * 10) return vrai
+//	}
+	
+	// Si caché, on sort
+	if(OBJ_FlagsControlGet() & OBJ_C_StatusFlag_Culled) return faux
+	return faux
+}
+
+///TrigTest_In_Cone
+//============================================================
+// Param IN:
+//		source (gao1) 	=> gao qui détemine la position origine du cone
+//								(et son sight est l'axe su cone)
+//		destination (gao2) => gao dont le le pivot est le centre de la zone
+//		CosAngle_Dist_Size (vec1) => cos du demi angle, longueur du cone, rayon de la zone
+//		Flag_2D (int1) => Flag qui détermine si le test est effectué en 2D (on ignore le Z)
+// Param OUT (none)
+// retourne vrai si le gao2 est dans le cone
+//============================================================
+
+procedure_trigger int TrigTest_In_Cone(byref message m_msg) // object1 source object2 destination vec1 CosAngle_Dist_Size int1 Flag_2D
+{
+	int			ti_result
+	int			ti_flag_2D	
+
+	float		tf_cos_angle	
+	float		tf_dist_max
+	float		tf_zone_rayon
+	float		tf_dot_product
+	float		tf_dist
+	float		tf_Adj
+	float		tf_Opp
+	float		tf_Hyp
+	float		tf_val
+	
+	vector	tv_start_pos
+	vector	tv_dest_pos
+	vector	tv_start_to_dest
+	vector	tv_dir
+	vector	tv_cone_limit
+	vector	tv_horizon
+	vector	tv_projection
+	vector	tv_vec1
+	vector	tv_sight
+
+	object	to_gao1
+	object	to_gao2	
+
+	m_msg.msg_gao5 = nobody
+
+#ifndef _FINAL_
+	if(@get_global DEBUG_TCINE) DBG_TraceString("TrigTest_In_Cone\n")
+#endif	
+	to_gao1 = m_msg.msg_gao1
+	to_gao2 = m_msg.msg_gao2
+
+	tv_vec1 = m_msg.msg_vec1
+
+	tf_cos_angle = tv_vec1.x
+	tf_dist_max = tv_vec1.y
+	tf_zone_rayon = tv_vec1.z
+	
+	tf_cos_angle = Cf_Cos30
+
+	ti_flag_2D = m_msg.msg_int1
+
+	tv_start_pos = @to_gao1 OBJ_PosGet()
+	tv_sight = @to_gao1 OBJ_SightGet()
+	
+	tv_dest_pos = @to_gao2 OBJ_PosGet()
+
+	if (ti_flag_2D)
+	{
+//		tv_start_pos.z = 0.0
+//		tv_dest_pos.z = 0.0
+		
+		tv_dest_pos.z = tv_start_pos.z
+
+		if (tv_sight.z)
+			MATH_VecSetHorzNormalize(tv_sight)
+	}
+	
+	tv_start_to_dest = tv_dest_pos
+	tv_start_to_dest -= tv_start_pos
+	
+	tf_dist = MATH_VecDotProduct(tv_start_to_dest, tv_start_to_dest)
+	if (tf_dist <= tf_zone_rayon * tf_zone_rayon)
+	{
+		// INTERSECTION DIRECTE
+		DBG_RenderSphere(tv_dest_pos, tf_zone_rayon, 0x80008000)
+		DBG_RenderCone(tv_start_pos, tv_sight * tf_dist_max, MATH_ACos(tf_cos_angle), 0x80008000)
+		return(vrai)
+	}
+	else if (tf_dist <= (tf_dist_max + tf_zone_rayon) * (tf_dist_max + tf_zone_rayon))
+	{
+		// PAS TROP LOIN
+		tf_dist = MATH_FloatSqrt(tf_dist)
+		tv_dir = tv_start_to_dest / tf_dist
+		
+		tf_dot_product = MATH_VecDotProduct(tv_sight, tv_dir)
+		if (tf_dot_product >= tf_cos_angle)
+		{
+			// OK, C'EST DANS LE CONE
+			DBG_RenderSphere(tv_dest_pos, tf_zone_rayon, 0x80008000)
+			DBG_RenderCone(tv_start_pos, tv_sight * tf_dist_max, MATH_ACos(tf_cos_angle), 0x80008000)
+			return(vrai)
+		}
+		else
+		{
+			// ON N'EST PAS DANS LE CONE
+			tv_horizon = MATH_VecCrossProduct(tv_sight, tv_dir)
+			tv_horizon = MATH_VecCrossProduct(tv_sight, tv_horizon)
+			MATH_VecSetNormalize(tv_horizon)
+		
+			tf_Adj = MATH_AbsFloat(MATH_VecDotProduct(tv_start_to_dest, tv_sight))
+			
+			tf_val = tf_Adj * tf_Adj
+			tf_val = MATH_FloatSqrt((tf_val / (tf_cos_angle * tf_cos_angle)) - tf_val)
+			
+			tv_cone_limit = tv_sight * tf_Adj
+			tv_cone_limit -= tf_val * tv_horizon
+			MATH_VecSetNormalize(tv_cone_limit)
+
+			tv_projection = tv_start_pos
+			tv_projection += MATH_VecDotProduct(tv_start_to_dest, tv_cone_limit) * tv_cone_limit
+			tv_projection -= tv_dest_pos
+
+			tf_dist = MATH_VecDotProduct(tv_projection, tv_projection)
+			if (tf_dist <= tf_zone_rayon * tf_zone_rayon)
+			{
+				// INTERSECTION
+				DBG_RenderSphere(tv_dest_pos, tf_zone_rayon, 0x80008000)
+				DBG_RenderCone(tv_start_pos, tv_sight * tf_dist_max, MATH_ACos(tf_cos_angle), 0x80008000)
+				return(vrai)
+			}
+		}
+	}
+
+	DBG_RenderSphere(tv_dest_pos, tf_zone_rayon, 0x80000080)
+	DBG_RenderCone(tv_start_pos, tv_sight * tf_dist_max, MATH_ACos(tf_cos_angle), 0x80000080)
+
+	return(faux)
+}
+
+procedure_trigger int TrigTest_In_Quadrilatere(byref message m_msg) // object1 gao1_et_normal object2 gao2 object3 gao3 object4 gao4 object5 test_pos
+{
+	// CA MARCHE AVEC LES QUADRILATAIRES CONVEXES, CONCAVES ET CROISES
+	int			ti_i
+	int			ti_flag_in_quadrilataire	
+	int			ti_concave_point_index
+	int			ti_flag_in_triangle
+
+	float		tf_sign	
+	float		tf_point_sign[4]
+	float		tf_dot_product
+
+	vector	tv_pos
+	vector	tv_normale
+	vector	tv_point[4]
+	vector	tv_cross_product[4]
+	vector	tav_triangle_sommet[3]
+	vector	tav_triangle_normale[3]
+
+	object	to_gao
+
+	to_gao = m_msg.msg_gao1
+	tv_point[0] = @to_gao OBJ_PosGet()
+	tv_normale = @to_gao OBJ_BankingGet()
+
+	to_gao = m_msg.msg_gao2
+	tv_point[1] = @to_gao OBJ_PosGet()
+
+	to_gao = m_msg.msg_gao3
+	tv_point[2] = @to_gao OBJ_PosGet()
+
+	to_gao = m_msg.msg_gao4
+	tv_point[3] = @to_gao OBJ_PosGet()
+
+	to_gao = m_msg.msg_gao5
+	tv_pos = @to_gao OBJ_PosGet()
+
+#ifndef _FINAL_
+	tv_point[0] -= MATH_VecDotProduct(tv_point[0] - tv_pos, tv_normale) * tv_normale
+	tv_point[1] -= MATH_VecDotProduct(tv_point[1] - tv_pos, tv_normale) * tv_normale
+	tv_point[2] -= MATH_VecDotProduct(tv_point[2] - tv_pos, tv_normale) * tv_normale
+	tv_point[3] -= MATH_VecDotProduct(tv_point[3] - tv_pos, tv_normale) * tv_normale
+#endif
+
+	ti_flag_in_quadrilataire = vrai
+
+	// CALCUL DES NORMALES
+	for (ti_i = 0; ti_i < 4; ti_i++)
+		tv_cross_product[ti_i] = MATH_VecCrossProduct(tv_point[MATH_Modulo(ti_i + 1, 4)] - tv_point[ti_i], tv_normale)
+
+	tf_sign = 0.0
+	for (ti_i = 0; ti_i < 4; ti_i++)
+	{
+		tf_dot_product = MATH_VecDotProduct(tv_point[MATH_Modulo(ti_i + 2, 4)] - tv_point[ti_i], tv_cross_product[ti_i])
+		if (tf_dot_product)
+		{
+			tf_point_sign[ti_i] = MATH_FloatSign(tf_dot_product)
+			tf_sign += tf_point_sign[ti_i]
+		}
+		else
+		{
+			tf_point_sign[ti_i] = 0.0
+		}
+	}
+
+	if (MATH_AbsFloat(tf_sign) == 4.0)
+	{
+		// QUADRILATAIRE CONVEXE
+		for (ti_i = 0; ti_i < 4; ti_i++)
+		{
+			tf_dot_product = MATH_VecDotProduct(tv_pos - tv_point[ti_i], tv_cross_product[ti_i])
+			if (tf_dot_product && !ti_i)
+				tf_sign = MATH_FloatSign(tf_dot_product)
+			else if (tf_sign != MATH_FloatSign(tf_dot_product))
+				ti_flag_in_quadrilataire = faux
+		}
+	}
+	else if (MATH_AbsFloat(tf_sign) == 2.0)
+	{
+		// QUADRILATAIRE CONCAVE
+		ti_flag_in_quadrilataire = faux
+	
+		tf_sign = MATH_FloatSign(tf_sign)
+	
+		// RECHERCHE DU POINT DE CONCAVITE
+		for (ti_i = 0; ti_i < 4; ti_i++)
+		{
+			if (tf_point_sign[ti_i] != tf_sign)
+			{
+				ti_concave_point_index = MATH_Modulo(ti_i + 1, 4)
+				break
+			}
+		}
+		
+//		DBG_RenderVector(tv_point[ti_concave_point_index], tv_normale * 5.0, color_rouge)
+		
+		// TEST DES DEUX TRIANGLES
+		tav_triangle_sommet[0] = tv_point[ti_concave_point_index] 
+		tav_triangle_normale[0] = tv_cross_product[ti_concave_point_index]
+		
+		tav_triangle_sommet[1] = tv_point[MATH_Modulo(ti_concave_point_index + 1, 4)] 
+		tav_triangle_normale[1] = tv_cross_product[MATH_Modulo(ti_concave_point_index + 1, 4)]
+
+		tav_triangle_sommet[2] = tv_point[MATH_Modulo(ti_concave_point_index + 2, 4)] 
+		tav_triangle_normale[2] = MATH_VecCrossProduct(tav_triangle_sommet[0] - tav_triangle_sommet[2], tv_normale)
+
+		ti_flag_in_triangle = vrai
+
+		tf_sign = MATH_FloatSign(MATH_VecDotProduct(tv_pos - tav_triangle_sommet[0], tav_triangle_normale[0]))
+	
+		if (tf_sign != MATH_FloatSign(MATH_VecDotProduct(tv_pos - tav_triangle_sommet[1], tav_triangle_normale[1])))
+			ti_flag_in_triangle = faux
+		else if (tf_sign != MATH_FloatSign(MATH_VecDotProduct(tv_pos - tav_triangle_sommet[2], tav_triangle_normale[2])))
+			ti_flag_in_triangle = faux
+
+		if (ti_flag_in_triangle)
+		{
+			ti_flag_in_quadrilataire = vrai
+		}
+		else
+		{
+			tav_triangle_normale[0] = -tav_triangle_normale[2]
+			
+			tav_triangle_sommet[1] = tav_triangle_sommet[2]
+			tav_triangle_normale[1] = tv_cross_product[MATH_Modulo(ti_concave_point_index + 2, 4)]
+	
+			tav_triangle_sommet[2] = tv_point[MATH_Modulo(ti_concave_point_index + 3, 4)] 
+			tav_triangle_normale[2] = tv_cross_product[MATH_Modulo(ti_concave_point_index + 3, 4)]
+
+			ti_flag_in_triangle = vrai
+	
+			tf_sign = MATH_FloatSign(MATH_VecDotProduct(tv_pos - tav_triangle_sommet[0], tav_triangle_normale[0]))
+		
+			if (tf_sign != MATH_FloatSign(MATH_VecDotProduct(tv_pos - tav_triangle_sommet[1], tav_triangle_normale[1])))
+				ti_flag_in_triangle = faux
+			else if (tf_sign != MATH_FloatSign(MATH_VecDotProduct(tv_pos - tav_triangle_sommet[2], tav_triangle_normale[2])))
+				ti_flag_in_triangle = faux
+	
+			if (ti_flag_in_triangle)
+				ti_flag_in_quadrilataire = vrai
+		}
+	}
+	else
+	{
+		// QUADRILATAIRE CROISE
+		ti_flag_in_quadrilataire = faux
+
+		// RECHERCHE DU POINT DE CROISEMENT
+		tf_sign = tf_point_sign[0]
+	
+		for (ti_i = 1; ti_i < 4; ti_i++)
+		{
+			if (tf_point_sign[ti_i] != tf_sign)
+			{
+				ti_concave_point_index = MATH_Modulo(ti_i + 1, 4)
+				break
+			}
+		}
+		
+		// TEST DES DEUX TRIANGLES
+		tav_triangle_sommet[0] = tv_point[ti_concave_point_index] 
+		tav_triangle_normale[0] = tv_cross_product[ti_concave_point_index]
+		
+		tav_triangle_sommet[1] = tv_point[MATH_Modulo(ti_concave_point_index + 1, 4)] 
+		tav_triangle_normale[1] = tv_cross_product[MATH_Modulo(ti_concave_point_index + 1, 4)]
+
+		tav_triangle_sommet[2] = tav_triangle_sommet[0]
+		tav_triangle_normale[2] = tv_cross_product[MATH_Modulo(ti_concave_point_index + 3, 4)]
+
+		ti_flag_in_triangle = vrai
+
+		tf_sign = MATH_FloatSign(MATH_VecDotProduct(tv_pos - tav_triangle_sommet[0], tav_triangle_normale[0]))
+	
+		if (tf_sign != MATH_FloatSign(MATH_VecDotProduct(tv_pos - tav_triangle_sommet[1], tav_triangle_normale[1])))
+			ti_flag_in_triangle = faux
+		else if (tf_sign != MATH_FloatSign(MATH_VecDotProduct(tv_pos - tav_triangle_sommet[2], tav_triangle_normale[2])))
+			ti_flag_in_triangle = faux
+
+		if (ti_flag_in_triangle)
+		{
+			ti_flag_in_quadrilataire = vrai
+		}
+		else
+		{
+			tav_triangle_normale[2] = tav_triangle_normale[1]
+
+			tav_triangle_sommet[1] = tv_point[MATH_Modulo(ti_concave_point_index + 3, 4)] 
+			tav_triangle_normale[1] = tv_cross_product[MATH_Modulo(ti_concave_point_index + 3, 4)]
+
+			tav_triangle_sommet[0] = tv_point[MATH_Modulo(ti_concave_point_index + 2, 4)]
+			tav_triangle_normale[0] = tv_cross_product[MATH_Modulo(ti_concave_point_index + 2, 4)]
+
+			tav_triangle_sommet[2] = tav_triangle_sommet[0]
+
+			ti_flag_in_triangle = vrai
+	
+			tf_sign = MATH_FloatSign(MATH_VecDotProduct(tv_pos - tav_triangle_sommet[0], tav_triangle_normale[0]))
+		
+			if (tf_sign != MATH_FloatSign(MATH_VecDotProduct(tv_pos - tav_triangle_sommet[1], tav_triangle_normale[1])))
+				ti_flag_in_triangle = faux
+			else if (tf_sign != MATH_FloatSign(MATH_VecDotProduct(tv_pos - tav_triangle_sommet[2], tav_triangle_normale[2])))
+				ti_flag_in_triangle = faux
+	
+			if (ti_flag_in_triangle)
+				ti_flag_in_quadrilataire = vrai
+		}
+	}
+
+#ifndef _FINAL_
+	for (ti_i = 0; ti_i < 4; ti_i++)
+	{
+		if (ti_flag_in_quadrilataire)
+			DBG_RenderVector(tv_point[ti_i], tv_point[MATH_Modulo(ti_i + 1, 4)] - tv_point[ti_i], color_vert)
+		else
+			DBG_RenderVector(tv_point[ti_i], tv_point[MATH_Modulo(ti_i + 1, 4)] - tv_point[ti_i], color_rouge)
+	}
+
+	if (ti_flag_in_quadrilataire)
+		DBG_RenderVector(tv_pos, tv_normale * 5.0, color_vert)
+#endif
+
+	return(ti_flag_in_quadrilataire)
+}
+
+///TrigTest_On_Screen
+//============================================================
+// Param IN:
+//		source (gao1) 					=> gao a tester
+//		offset (vec1)					=> offset en local du centre de la zone
+//		size_in_X 	(vec2.x)			=> rayon de la zone
+//		pourcent_in_X  (vec3.x)		=> pourcentage de la zone a l'ecran necessaire
+//		duration_in_X (vec4.x)		=> duree a l'ecran
+//		on_screen_size (vec5.x)	=> surface min que doit occuper la zone a l'ecran
+//		bone_index (int1)				=> numero du bone sur lequel on snap la zone
+//		DEBUG (int2)					=> Affiche les zones a l'ecran
+//		RAY (int3)						=> Lancer de rayon
+// Param OUT (none)
+// retourne vrai si le gao1 a au moins pourcent de la zone a l'ecran
+//============================================================
+
+procedure_trigger int TrigTest_On_Screen(byref message m_msg) // object1 source vec1 offset vec2 size_in_X vec3 pourcent_in_X vec4 duration_in_X vec5 on_screen_size int1 bone_index int2 DEBUG int3 RAY
+{
+	int			ti_i	
+	int			ti_flag_zone_in_zone
+	int			ti_draw_debug_info
+	int			ti_flag_ray
+	int			ti_flag_gao_ray_insensitive
+	int			ti_flag_bone_ray_insensitive
+
+	float		tf_zone_surface
+	float		tf_on_screen_surface
+	float		tf_dist
+
+	vector	tv_point_A	
+	vector	tv_point_B
+	vector	tv_dir
+
+	vector	tv_upper_left_corner
+	vector	tv_bottom_right_corner
+
+	object	to_camera
+	object	to_gao
+	object	to_bone
+	object	to_collide_object
+
+	color		tc_color
+
+	vector 	tv_pos
+	vector	tv_duration_info
+
+	float 		tf_size
+	float		tf_pourcent
+	float		tf_on_screen_size_min
+
+	m_msg.msg_gao5 = nobody
+
+#ifndef _FINAL_
+	if(@get_global DEBUG_TCINE) DBG_TraceString("TrigTest_On_Screen\n")
+#endif	
+	tv_pos = m_msg.msg_vec5
+	tf_on_screen_size_min = tv_pos.x
+
+	tv_duration_info = m_msg.msg_vec4
+
+	tv_pos = m_msg.msg_vec3
+	tf_pourcent = tv_pos.x
+
+	tv_pos = m_msg.msg_vec2
+	tf_size = tv_pos.x
+	
+	to_gao = m_msg.msg_gao1
+
+	ti_draw_debug_info = m_msg.msg_int2
+
+	ti_i = m_msg.msg_int1
+	to_bone = @to_gao ANI_CanalObjectGet(ti_i)
+	if (to_bone)
+	{
+		tv_pos = @to_bone MATH_VecLocalToGlobal(m_msg.msg_vec1)
+		tv_pos += @to_bone OBJ_PosGet()
+	}
+	else
+	{
+		tv_pos = @to_gao MATH_VecLocalToGlobal(m_msg.msg_vec1)
+		tv_pos += @to_gao OBJ_PosGet()
+	}
+
+	to_camera = VIEW_GetObject(0)
+	
+	ti_flag_ray = m_msg.msg_int3
+	
+	tv_upper_left_corner = tv_pos
+	tv_upper_left_corner += @to_camera OBJ_HorizonGet() * tf_size
+	tv_upper_left_corner += @to_camera OBJ_BankingGet() * tf_size
+
+	tv_bottom_right_corner = tv_pos
+	tv_bottom_right_corner -= @to_camera OBJ_HorizonGet() * tf_size
+	tv_bottom_right_corner -= @to_camera OBJ_BankingGet() * tf_size
+
+	tv_upper_left_corner = VIEW_3dWorldTo2d(0, tv_upper_left_corner)
+	tv_bottom_right_corner = VIEW_3dWorldTo2d(0, tv_bottom_right_corner)
+
+	if (tv_upper_left_corner.x < 0.0 && tv_bottom_right_corner.x < 0.0)
+	{
+		tv_duration_info.y = 0.0
+		m_msg.msg_vec4 = tv_duration_info
+		return(faux)
+	}
+
+	if (tv_upper_left_corner.x > 1.0 && tv_bottom_right_corner.x > 1.0)
+	{
+		tv_duration_info.y = 0.0
+		m_msg.msg_vec4 = tv_duration_info
+		return(faux)
+	}
+
+	if (tv_upper_left_corner.y < 0.0 && tv_bottom_right_corner.y < 0.0)
+	{
+		tv_duration_info.y = 0.0
+		m_msg.msg_vec4 = tv_duration_info
+		return(faux)
+	}
+
+	if (tv_upper_left_corner.y > 1.0 && tv_bottom_right_corner.y > 1.0)
+	{
+		tv_duration_info.y = 0.0
+		m_msg.msg_vec4 = tv_duration_info
+		return(faux)
+	}
+
+	tf_zone_surface = tv_bottom_right_corner.x - tv_upper_left_corner.x
+	tf_zone_surface *= tv_bottom_right_corner.y - tv_upper_left_corner.y
+
+	tv_upper_left_corner.x = MATH_FloatLimit(tv_upper_left_corner.x, 0.0, 1.0)
+	tv_upper_left_corner.y = MATH_FloatLimit(tv_upper_left_corner.y, 0.0, 1.0)
+	tv_bottom_right_corner.x = MATH_FloatLimit(tv_bottom_right_corner.x, 0.0, 1.0)
+	tv_bottom_right_corner.y = MATH_FloatLimit(tv_bottom_right_corner.y, 0.0, 1.0)
+
+	tf_on_screen_surface = tv_bottom_right_corner.x - tv_upper_left_corner.x
+	tf_on_screen_surface *= tv_bottom_right_corner.y - tv_upper_left_corner.y
+
+	tf_on_screen_size_min = MATH_FloatMax(tf_on_screen_size_min, 0.001)
+
+	if (tf_on_screen_surface < tf_on_screen_size_min)
+	{
+#ifndef _FINAL_
+		if (ti_draw_debug_info)
+		{
+			// Affichage de la zone ok
+			DBG_Render2DRect(tv_upper_left_corner, tv_bottom_right_corner, 0x80FF0000)
+		}
+#endif
+
+		tv_duration_info.y = 0.0
+		m_msg.msg_vec4 = tv_duration_info
+		return(faux)
+	}
+
+	if (tf_on_screen_surface / tf_zone_surface >= tf_pourcent)
+	{
+		if (ti_flag_ray)
+		{
+			ti_flag_gao_ray_insensitive = @to_gao OBJ_FlagsControlGet() & OBJ_C_ControlFlag_RayInsensitive
+			@to_gao OBJ_FlagsControlSet(OBJ_C_ControlFlag_RayInsensitive, none)
+
+			if (to_bone)
+			{
+				ti_flag_bone_ray_insensitive = @to_bone OBJ_FlagsControlGet() & OBJ_C_ControlFlag_RayInsensitive
+				@to_bone OBJ_FlagsControlSet(OBJ_C_ControlFlag_RayInsensitive, none)
+			}
+
+			tv_dir = tv_pos - @to_camera OBJ_PosGet()
+			tf_dist = MATH_VecNorm(tv_dir)
+			tv_dir /= tf_dist
+
+			COL_SpecificCrossableSet(all)
+			ti_flag_ray = COL_RayIsCut_Dist(@to_camera OBJ_PosGet(), tv_dir, tf_dist, all, none, Ci_Filter_IdentityFlag, COL_C_Ray_on_ColMap_NoCrossable | COL_C_Ray_use_SpecificCrossableSet)
+
+			if ( ! ti_flag_gao_ray_insensitive )
+				@to_gao OBJ_FlagsControlSet(none, OBJ_C_ControlFlag_RayInsensitive)
+
+			if (to_bone && ! ti_flag_bone_ray_insensitive)
+				@to_bone OBJ_FlagsControlSet(none, OBJ_C_ControlFlag_RayInsensitive)
+
+			if (ti_flag_ray)
+			{
+				// ON A TOUCHE UN TRUC	
+			
+				tv_duration_info.y = 0.0
+				m_msg.msg_vec4 = tv_duration_info
+
+#ifndef _FINAL_
+				if (ti_draw_debug_info)
+				{
+					// Affichage de la zone ok
+					DBG_Render2DRect(tv_upper_left_corner, tv_bottom_right_corner, 0x80FFFF00)
+				}
+#endif
+				return(faux)
+			}
+		}
+
+		tc_color = 0x8000FF00
+		tv_duration_info.y += TIME_GetDt()
+		m_msg.msg_vec4 = tv_duration_info
+	}
+	else
+	{
+		tc_color = 0x800000FF
+		tv_duration_info.y = 0.0
+		m_msg.msg_vec4 = tv_duration_info
+	}
+
+#ifndef _FINAL_
+	if (ti_draw_debug_info)
+	{
+		// Affichage de la zone ok
+		DBG_Render2DRect(tv_upper_left_corner, tv_bottom_right_corner, tc_color)
+	}
+#endif
+
+	if (tv_duration_info.y >= tv_duration_info.x)
+		return(vrai)
+	else
+		return(faux)
+}
+
+
+///TrigTest_ObjOfAIModelInBV
+//============================================================
+// Param IN:
+//	gao_ref (gao1) 	gao qui a la meme IA que les GO à tester
+//	flags	(int1)			1 ennemi généré
+// 	inverse (int5)		inverse le test (pas d'objet du model dans la BV)
+// Param OUT
+//		gao5 : le (ou un des) gao dans la BV 
+//============================================================
+procedure_trigger int TrigTest_ObjOfAIModelInBV(byref message m_msg)	// object1 gao_ref object2 gao_bv int1 flags int5 inverse
+{
+	int					ti_rank
+	int					ti_flags, ti_num
+	object			tao_obj[ 100 ], to_obj, to_ref
+	object			to_bv
+
+	m_msg.msg_gao5 = nobody
+	
+#ifndef _FINAL_
+	if(@get_global DEBUG_TCINE) DBG_TraceString("TrigTest_ObjOfAIModelInBV\n")
+#endif	
+
+	ti_flags = OBJ_C_IdentityFlag_AI
+	if ( m_msg.msg_int1 & 1)
+		ti_flags |= OBJ_C_IdentityFlag_Generated
+		
+	to_bv = m_msg.msg_gao2
+	if(!to_bv)
+		to_bv = OBJ_Me()
+		
+	ti_num = @to_bv COL_BV_PivotListGet( &tao_obj[0], OBJ_C_IdentityFlag_AI, none, Ci_Filter_IdentityFlag)
+	to_ref = m_msg.msg_gao1
+	for (ti_rank = 0; ti_rank < ti_num; ti_rank++)
+	{
+		to_obj = tao_obj[ ti_rank ]
+		if (@to_obj AI_HaveSameModel( to_ref ) )
+		{
+			m_msg.msg_gao5 = to_obj
+			if (m_msg.msg_int5)
+				return faux
+			else
+				return vrai
+		}
+	}
+
+	if (m_msg.msg_int5)
+		return vrai
+	else
+		return faux
+}
+
+//TrigTest_PivotInGroupOfBV
+//============================================================
+// Param IN:
+//		gao_bv 		(gao1) 	=> gao qui a un groupe de BV pour test collision 
+//                                         ( si nul = msg_sender )
+//		gao_pivot	(gao2)	=> gao dont le pivot est utilisé dans le test 
+//                                          (si nul = MainActor(0)
+//		inverse_test (int5)   	=> inverse le test (not)
+// Param OUT
+//		gao_in		(gao5)  	=> perso dans la BV
+// retourne vrai si le pivot de gao_pivot est à l'intérieur d'une BV du groupe associe a gao_bv
+//============================================================
+procedure_trigger int TrigTest_PivotInGroupOfBV( byref message m_msg ) // object1 gao_bv object2 gao_pivot int5 inverse_test
+{
+	object	gao_bv, gao_pivot, o
+	int			ti_ret, ti_size, ti_i
+	object	ao_GaoList[50]
+
+	m_msg.msg_gao5 = nobody
+	
+#ifndef _FINAL_
+	if(@get_global DEBUG_TCINE) DBG_TraceString("TrigTest_PivotInGroupOfBV\n")
+#endif	
+
+	if (m_msg.msg_int5 ) ti_ret = faux else ti_ret = vrai
+
+	gao_bv = m_msg.msg_gao1
+	if (!gao_bv)
+		gao_bv = OBJ_Me()
+
+	gao_pivot = m_msg.msg_gao2
+	if (!gao_pivot)
+		gao_pivot = AI_MainActorGet(0)
+	
+	ti_size = @gao_bv GRP_FillArray(&ao_GaoList[0])
+
+	for(ti_i = 0; ti_i<ti_size ; ti_i++)
+	{
+		o = ao_GaoList[ti_i]
+		if ( @o COL_BV_PivotCollide( gao_pivot ) )
+		{
+			m_msg.msg_gao5 = ao_GaoList[ti_i]
+			return ti_ret
+		}
+	}
+	return (1 - ti_ret)
+}
+
+//TrigTest_ActorLifeState
+//============================================================
+// Param IN:
+//		actor	 		(gao1) 	=> acteur a tester
+//                                         ( si nul = msg_sender )
+//		test_type	(int1)		=> -1 Decomposé / 0 mort / 1 agonisant / 2 blesse / 3 Full Life
+// Param OUT
+// retourne vrai si l'acteur est dans l'etat teste
+//============================================================
+procedure_trigger int TrigTest_ActorLifeState( byref message m_msg ) // object1 actor int1 test_type
+{
+	int					ti_rank	
+	int					ti_test_type
+
+	float				tf_life_state
+
+	messageid		tmid_vision	
+	message		tm_filter
+	
+	object			to_gao
+
+	m_msg.msg_gao5 = nobody
+
+#ifndef _FINAL_
+	if(@get_global DEBUG_TCINE) DBG_TraceString("TrigTest_ActorLifeState\n")
+#endif	
+
+	ti_test_type = m_msg.msg_int1
+	ti_rank = -1
+	MSG_SetNull(tm_filter)
+	tm_filter.msg_sender = m_msg.msg_gao1
+	tmid_vision = MSG_GlobalSearchIntGao(C_EVENT_TYPE_Visibility, &ti_rank, tm_filter)
+	if (MSG_GlobalIsValid(tmid_vision))
+	{
+		tf_life_state = MSG_GlobalGetVector(tmid_vision, VEC3).x
+		switch(ti_test_type)
+		{
+			case 0 :
+				if (tf_life_state <= Cf_Life_Dead)
+					return(vrai)
+				break
+			case 1 :
+				if (tf_life_state <= Cf_Life_Agonisant)
+					return(vrai)
+				break
+			case 2 :
+				if (tf_life_state <= Cf_Life_Blesse)
+					return(vrai)
+				break
+			case 3 :
+				if (tf_life_state == Cf_Life_Full_Life)
+					return(vrai)
+				break
+		}
+	}
+	else if(m_msg.msg_int1 == 0)
+	{
+		to_gao = m_msg.msg_gao1
+		if(!to_gao) to_gao = m_msg.msg_sender
+		if(@to_gao OBJ_CapaTest(OBJ_Capa_15)) return vrai
+	}
+	
+	return(faux)
+}
+
+//TrigTest_ActorGrabActor
+//============================================================
+// Param IN:
+//		grabeur	 		(gao1) 	=> predateur
+//		grabed	 		(gao2) 	=> proie
+// Param OUT
+// retourne vrai si l'acteur est dans l'etat teste
+//============================================================
+procedure_trigger int TrigTest_ActorGrabActor( byref message m_msg ) // object1 grabeur object2 grabed
+{
+	int					ti_rank	
+	int					ti_test_type
+
+	float				tf_life_state
+
+	messageid		tmid_lnk_grab	
+	message		tm_filter
+	
+	m_msg.msg_gao5 = nobody
+	
+#ifndef _FINAL_
+	if(@get_global DEBUG_TCINE) DBG_TraceString("TrigTest_ActorGrabActor\n")
+#endif	
+
+	ti_rank = -1
+	MSG_SetNull(tm_filter)
+	tm_filter.msg_sender = m_msg.msg_gao2
+	tm_filter.msg_gao1 = m_msg.msg_gao1
+	tm_filter.msg_gao2 = m_msg.msg_gao2
+	tmid_lnk_grab = MSG_GlobalSearchIntGao(Ci_LNK_EVENT_OFFSET + Ci_LNK_GRAB_EAGLE, &ti_rank, tm_filter)
+	if (MSG_GlobalIsValid(tmid_lnk_grab))
+		return(vrai)
+
+	return(faux)
+}
+
+//TrigTest_Pad
+//============================================================
+// Param IN:
+//  pad			- numero du pad (0 ou 1)
+//	seuil	(.x)	- seuil de test (0 a 1)
+//  inverse    (int5)  => inversion du test
+// Param OUT
+// retourne vrai si le pad est au dela du seuil
+//============================================================
+procedure_trigger int TrigTest_Pad(byref message m_msg) // int1 pad vec1 seuil int5 inverse
+{
+	vector	tv_temp, tv_temp1
+	int ti_ret
+	
+	tv_temp1 = m_msg.msg_vec1
+	if(m_msg.msg_int1 == 0)
+		tv_temp = IO_JoyGetMove()
+	else
+		tv_temp = IO_JoyGetMove1()
+	ti_ret = vrai
+	if(m_msg.msg_int5) ti_ret = faux
+	if(MATH_VecDotProduct(tv_temp, tv_temp) > tv_temp1.x * tv_temp1.x) return ti_ret
+	return !ti_ret
+}
+
+///TrigTest_AniSignal
+//============================================================
+// Param IN:
+//  mask			- masque pour le test de bit a bit (mettre 0 si pas de masque)
+//	value          - valeur recherchée apres masquage
+//	reverse		- inverse le résultat du test
+//	father			- gao sur lequel se joue l'anim
+// Param OUT
+// retourne vrai si le pad est au dela du seuil
+//============================================================
+procedure_trigger int TrigTest_AniSignal(byref message m_msg) // int1 mask int2 value int3 reverse gao1 father
+{
+	int ti_mask, ti_value, ti_reverse
+	int	ti_result
+	object to_obj
+	
+	ti_mask = m_msg.msg_int1
+	ti_value = m_msg.msg_int2
+	ti_reverse = m_msg.msg_int3
+	
+	to_obj = m_msg.msg_gao1
+	if(!to_obj)  return ti_reverse
+	
+	if(!ti_mask) ti_mask = 0xFFFFFFFF
+	
+	ti_result = @to_obj ANI_SignalGet()
+	ti_result = ti_mask & ti_result
+	
+	if(ti_result == ti_value)
+		ti_result = 1
+	else
+		ti_result = 0
+	
+	if( ti_reverse )
+		ti_result = 1 - ti_result
+
+	return ti_result
+}
+
+///TrigTest_ActionAnimFrame
+//============================================================
+// Permet de d'activer qqchose si on depasse tel frame de tel action / anim... sur tel perso
+// Param IN:
+//  Perso 		- Perso a tester (
+//	Action        - N° de l'ANIM
+//	ActionItem 	- N° de l'ACTION ITEM (-1 pas de test d action item)
+//	FrameNbr	- N° de la FRAME (-1 pas de test de frame)
+// Param OUT
+// 	retourne vrai si on a depasser la frame de l'action / action ID (ATTENTION, ne pas mettre des frames en fin d'anim)
+//============================================================
+procedure_trigger int TrigTest_ActionAnimFrame(byref message m_msg) // int1 Action int2 ActionItem int3 FrameNbr object1 Perso 
+{
+	object		to_gao
+	
+	to_gao = m_msg.msg_gao1
+	if (!to_gao)
+		to_gao = AI_MainActorGet(0)
+		
+	if (@to_gao ACT_ActionGet() == m_msg.msg_int1)
+	{
+		if ( m_msg.msg_int2 == -1 || @to_gao ACT_ActionItemGet() == m_msg.msg_int2)
+		{
+			if (m_msg.msg_int3 == -1 || @to_gao ANI_CurrentFrameGet(0) >= m_msg.msg_int3)
+				return vrai
+			else
+				return faux
+		}
+		else
+			return faux
+	}
+	else
+		return faux
+}
+
+///TrigTest_ButtonState
+//============================================================
+// Param IN:
+//	int1 : button id
+//				joy_button_A / CROIX			0
+//				joy_button_B / ROND			1
+//				joy_button_C / CARRE			2
+//				joy_button_D / TRIANGLE		3
+//				joy_button_L						4
+//				joy_button_R						5
+//				joy_button_L2   					6
+//				joy_button_R2						7  
+//				joy_button_Select				8 
+//				joy_button_Start					9 
+//				joy_button_StickR				10 
+//				joy_button_StickL				11
+//				joy_button_Up						12
+//				joy_button_Right					13 
+//				joy_button_Down					14
+//				joy_button_Left					15
+//	int2 ; state 
+//				0 : just pressed 
+//				1 : pressed
+//				2 : just released
+//				3 : released
+// Param OUT: retourne vrai si le bouton indiqué est dans l'état décrit par int2 
+//============================================================
+procedure_trigger int TrigTest_ButtonState( byref message m_msg )	// int1 button int2 state{
+{	
+	switch ( m_msg.msg_int2 )
+	{
+		case 0 : return IO_ButtonJustPressed( m_msg.msg_int1 ) break
+		case 1 : return IO_ButtonPressed( m_msg.msg_int1 ) break
+		case 2 : return IO_ButtonJustReleased( m_msg.msg_int1 ) break
+		case 3 : return !IO_ButtonPressed( m_msg.msg_int1 ) break
+	}
+	return 0
+}
+
+//TrigTest_NbrOfDeath
+//============================================================
+// Param IN:
+//						NbrOfDeath = Nbr Of Death in this specific Arena (NOD)
+// 						TestType	= 0 Equal a NOD / -1 Test Inferieur a NOD / 1 Test Superieur a NOD
+// 						Pivot			= Gao Pivot (optionnel pour le trigger mais necessaire pour rajouter un test BV-PIVOT)
+// 						BV			= Gao BV (optionnel pour le trigger mais necessaire pour rajouter un test BV-PIVOT)
+// Param OUT
+// 						Return 1 if Test OK
+//============================================================
+procedure_trigger int TrigTest_NbrOfDeath(byref message m_msg)	// int1 NbrOfDeath int2 TestType object2 Pivot object3 BV
+{
+	int ti_return
+	object to_pivot
+	object to_bv
+	
+	// Si GAO2 et GAO3 defini alors je fais le test PIVOT-BV
+	if (m_msg.msg_gao2 && m_msg.msg_gao3)
+	{
+		to_pivot = m_msg.msg_gao2
+		to_bv = m_msg.msg_gao3
+		if ( !@to_pivot COL_Pivot_BVCollide(to_bv))
+			return faux	// Pas de col >> FAUX 
+	}
+
+	ti_return = faux
+
+	if ( !m_msg.msg_int2 )
+	{
+		// =
+		if ( m_msg.msg_int1 == @"univ" i_death_shield)
+			ti_return = vrai
+	}
+	else if ( m_msg.msg_int2 > 0 )
+	{
+		// > 
+		if ( m_msg.msg_int1 > @"univ" i_death_shield)
+			ti_return = vrai
+	}
+	else
+	{				
+		// <
+		if ( m_msg.msg_int1 < @"univ" i_death_shield)
+			ti_return = vrai
+	}
+	return ( ti_return )
+}
+
+//TrigTest_Pivot_GoesINOUT_BV
+//===============================================================================================
+// Param IN:
+//						gao_Pivot (gao1) 	=> Gao Pivot
+//						gao_BV   (gao2) 	=> Gao BV (Zone)
+//						type        (int1)    => Type du test : 0 = Vrai qd on rentre dans la BV
+//										  	 	=> Type du test : 1 = Vrai qd on sort de la BV
+//												=> Type du test : 2 = Vrai qd on rentre ou sort de la BV
+//												>> +16 a cette valeur permet de repondre vrai un fois qu'on a repondu vrai une fois...
+//===============================================================================================
+procedure_trigger int TrigTest_Pivot_GoesINOUT_BV(byref message m_msg)	// object1 gao_Pivot object2 gao_BV int1 Type
+{
+	object	to_PIVOT
+	object	to_BV
+	int			ti_old 
+	int			ti_return
+	int			ti_in
+
+	to_PIVOT = m_msg.msg_gao1
+	to_BV = m_msg.msg_gao2
+
+	if (!to_PIVOT && !to_BV)
+		return vrai
+
+	ti_return = -1
+		
+	if ( @to_BV COL_BV_PivotCollide( to_PIVOT ))
+		ti_in = vrai
+	else
+		ti_in = faux
+
+	if (@get_global i_frame_nbr != (m_msg.msg_int3 + 1))
+		// Ma valeur est caduque !
+		ti_return = faux
+
+	ti_old = m_msg.msg_int2 
+	m_msg.msg_int2 = ti_in
+	m_msg.msg_int3 = @get_global i_frame_nbr
+
+	if (	ti_return == -1)
+	{
+		ti_return = faux
+		if (ti_old != ti_in)
+		{
+			// On sort ou on rentre
+			switch ( m_msg.msg_int1 & (~16) )
+			{
+				case 0 : 
+					if (ti_in)
+						ti_return = vrai
+					break
+											
+				case 1 :
+					if (!ti_in)
+						ti_return = vrai
+					break
+
+				case 2 :
+					ti_return = vrai
+					break
+			}
+		}		 
+	}
+
+	if (ti_return && (m_msg.msg_int1 & 16) )
+	{
+		m_msg.msg_gao1 = nobody
+		m_msg.msg_gao2 = nobody
+	}
+
+	return ti_return
+}
+
+
+//TrigTest_Spawner
+//===============================================================================================
+// Param IN:
+//						gao (gao1) => Gao du Spawner
+//						nbr   (int1)  => Nbr d'ennemi restant a generer à tester
+//                        test  (int2) => -1 0 ou 1 pour inferieur, = et superieur.
+//                        disp  (int3) => display on (1) /off (0).
+//===============================================================================================
+procedure_trigger int TrigTest_Spawner(byref message m_msg)	// object1 gao int1 nbr int2 test int3 disp
+{
+	object	to_gao
+	int			ti_left 
+
+	to_gao = m_msg.msg_gao1
+	if (!@to_gao AI_IsModel(get_Spawner_path))
+		DBG_Error("Ce gao n'est pas de type SPAWNER")
+	
+	ti_left = @get_Spawner_path to_gao mi_NbBeforeDying - @get_Spawner_path to_gao mi_EnemyCount
+
+	if (m_msg.msg_int3)
+	{
+		int		ti_indice
+
+		ti_indice = STR_CreateText("Spawner Nbr d'Ennemi Restant : ",cvector(0.03,0.95,0.0), 0)
+		STR_AppendInt(ti_indice, ti_left)
+	}
+
+	if (!m_msg.msg_int2)
+	{
+		if ( ti_left == m_msg.msg_int1 )
+				return vrai
+	}
+	else if (! (m_msg.msg_int2 < 0) )
+	{
+		if ( ti_left > m_msg.msg_int1 )
+				return vrai
+	}
+	else
+	{
+		if ( ti_left < m_msg.msg_int1 )
+			return vrai
+	}
+
+	return faux
+}
+
+
+
+///TrigTest_PivotInBV
+//============================================================
+// Param IN:
+//		gao_bv 		(gao1) 	=> gao avec BV pour test collision 
+//                                         ( si nul = Obj_Me)
+//		gao_pivot	(gao2)	=> gao dont le pivot est utilisé dans le test 
+//                                          (si nul = MainActor )
+//       any_perso_joueur (int 1)  => SI GAO2 = NUL ALORS 
+//                                          si int1 = faux, teste uniquement le personnage couramment controlé par le joueur
+//                                          si int1 = vrai, teste d'abord kong puis ensuite l'indigène, et valide dès que l'un d'eux est bon.
+//		inverse_test_script (int4)=> inverse le test (not) SCRIPT
+//		inverse_test (int5)=> inverse le test (not)
+// Param OUT
+//		gao_in		(gao5)  	=> perso dans la BV
+// retourne vrai si le pivot de gao_pivot est à l'intérieur de la BV du gao_bv
+//============================================================
+procedure_trigger int TrigTest_PivotInBV( byref message m_msg ) // object1 gao_bv object2 gao_pivot int5 inverse_test int4 inverse_test_script int1 any_perso_joueur
+{
+	object	o1, o2
+	int			rettrue
+	
+	m_msg.msg_gao5 = nobody
+
+#ifndef _FINAL_
+	if(@get_global DEBUG_TCINE) DBG_TraceString("TrigTest_PivotInBV\n")
+#endif
+
+	if (m_msg.msg_int5 || m_msg.msg_int4) rettrue= faux else rettrue= vrai
+
+	o1 = m_msg.msg_gao1		// BV
+	if (!o1)
+		o1 = OBJ_Me()
+
+	o2 = m_msg.msg_gao2		// PIVOT
+	if (!o2)
+		o2 = AI_MainActorGet(0)
+	
+	// gao pivot spécifié
+	if ( @o1 COL_BV_PivotCollide( o2 ) )
+	{
+		// Ya Collision
+		m_msg.msg_gao5 = o2
+		return rettrue
+	}
+	return (vrai - rettrue)
+}
+
+
+///TrigTest_PivotInOneBV
+//============================================================
+// Param IN:
+//		gao_bv1 		(gao1) 	=> gao avec BV pour test collision 
+//		gao_bv2 		(gao2) 	=> gao avec BV pour test collision 
+//		gao_bv3 		(gao3) 	=> gao avec BV pour test collision 
+//		gao_bv4 		(gao4) 	=> gao avec BV pour test collision 
+//		inverse_test (int5)=> inverse le test (not)
+// Param OUT
+//		gao_in		(gao5)  	=> perso dans la BV
+// retourne vrai si le pivot du mainactor(0) est à l'intérieur d'une des BV
+//============================================================
+procedure_trigger int TrigTest_PivotInOneBV( byref message m_msg ) // object1 gao_bv1 object2 gao_bv2 object3 gao_bv3 object4 gao_bv4 int5 inverse_test 
+{
+	object o_main, o1, o2, o3, o4
+	int			rettrue
+
+	m_msg.msg_gao5 = nobody
+
+#ifndef _FINAL_
+	if(@get_global DEBUG_TCINE) DBG_TraceString("TrigTest_PivotInOneBV\n")
+#endif
+
+	if (m_msg.msg_int5)
+		rettrue= faux
+	else
+		rettrue= vrai
+
+	o1 = m_msg.msg_gao1
+	o2 = m_msg.msg_gao2
+	o3 = m_msg.msg_gao3
+	o4 = m_msg.msg_gao4
+
+	o_main = AI_MainActorGet(0)
+
+	if (o_main)
+	{
+		// gao pivot spécifié
+		if ( @o1 COL_BV_PivotCollide( o_main )
+		|| ( o2 && @o2 COL_BV_PivotCollide( o_main ) )
+		|| ( o3 && @o3 COL_BV_PivotCollide( o_main ) )
+		|| ( o4 && @o4 COL_BV_PivotCollide( o_main ) ) )
+		{
+			m_msg.msg_gao5 = o_main
+			return rettrue
+		}
+	}
+	return (1 - rettrue)
+}
+
+
+//TrigTest_MainActorInMultipleBV
+//============================================================
+// Param IN:
+//		gao_bv1 		(gao1) 	=> gao avec BV pour test collision 
+//		gao_bv2 		(gao2) 	=> gao avec BV pour test collision 
+//		gao_bv3 		(gao3) 	=> gao avec BV pour test collision 
+//		gao_bv4 		(gao4) 	=> gao avec BV pour test collision 
+//		inverse_test 	(int5)		=> inverse le test (not)
+// Param OUT
+//		gao_in		(gao5)  	=> perso dans la BV
+// retourne vrai si le pivot du mainactor(0) est à l'intérieur d'une des BV
+//============================================================
+procedure_trigger int TrigTest_MainActorInMultipleBV( byref message m_msg ) // object1 gao_bv1 object2 gao_bv2 object3 gao_bv3 object4 gao_bv4 int5 inverse_test 
+{
+	object o_main, o1, o2, o3, o4
+	int			rettrue
+
+	m_msg.msg_gao5 = nobody
+
+#ifndef _FINAL_
+	if(@get_global DEBUG_TCINE) DBG_TraceString("TrigTest_PivotInMultipleBV\n")
+#endif
+
+	if (m_msg.msg_int5)
+		rettrue= faux
+	else
+		rettrue= vrai
+
+	o1 = m_msg.msg_gao1
+	o2 = m_msg.msg_gao2
+	o3 = m_msg.msg_gao3
+	o4 = m_msg.msg_gao4
+
+	o_main = AI_MainActorGet(0)
+
+	if (o_main)
+	{
+		// gao pivot spécifié
+		if ( @o1 COL_BV_PivotCollide( o_main )
+		|| ( o2 && @o2 COL_BV_PivotCollide( o_main ) )
+		|| ( o3 && @o3 COL_BV_PivotCollide( o_main ) )
+		|| ( o4 && @o4 COL_BV_PivotCollide( o_main ) ) )
+		{
+			m_msg.msg_gao5 = o_main
+			return rettrue
+		}
+	}
+	return (1 - rettrue)
+}
+
+// TrigTest_OnFire
+// Param IN:
+//                        sampleX		=>       gao position : where test fire
+//                        invers		=>		  Inverse result( see param OUT )
+// Param OUT:
+//						insers = 0
+//						 1 Burning
+//						 0 Not Burning
+//						 0 Burned
+//						insers = 1
+//						 0 Burning
+//						 1 Not Burning
+//						 2 Burned
+
+// return 1 if KREX is in this mode, else 0 ( test can be inverted)
+procedure_trigger int TrigTest_OnFire(byref message m_msg)  // object1 sample1 object2 sample2 object3 sample3 object4 sample4 object5 sample5 int1 invers
+{
+
+	int		tai_state[3]
+	int		ti_j
+	int		ti_nb 
+	object 	tao_WP_Samples[5]
+	
+	tao_WP_Samples[0] = m_msg.msg_gao1
+	tao_WP_Samples[1] = m_msg.msg_gao2
+	tao_WP_Samples[2] = m_msg.msg_gao3
+	tao_WP_Samples[3] = m_msg.msg_gao4
+	tao_WP_Samples[4] = m_msg.msg_gao5
+	GRID_CurrentSet(1)
+
+	for ( ti_j =0; ti_j < 5; ti_j++)
+	{
+		if ( tao_WP_Samples[ti_j])
+		{
+			tai_state [ti_j] = @get_global Proc_Fire_State( @tao_WP_Samples[ti_j] OBJ_PosGet())
+			if ( tai_state [ti_j] == C_FIRE_STATE_BURNING )
+			{
+				// BURNING
+				if ( m_msg.msg_int1)
+					return faux
+				else
+					return vrai
+			}
+		}
+	}
+
+	ti_nb = 0
+	for ( ti_j =0; ti_j < 3; ti_j++)
+	{
+		if ( tai_state [ti_j] == C_FIRE_STATE_BURNED)
+			ti_nb++			
+	}
+	switch ( ti_nb)
+	{
+		case 0:
+			// NONE
+			if ( m_msg.msg_int1)
+				return 1
+			else
+				return faux
+			break
+		case 1:
+		case 2:
+			// BURNING
+			if ( m_msg.msg_int1)
+				return faux
+			else
+				return vrai
+			break
+		case 3 :
+			// BURNED
+			if ( m_msg.msg_int1)
+				return 2
+			else
+				return faux
+			break
+	}
+	GRID_CurrentSet(0)
+}
+
+
+
+// TrigTest_Hierarchy
+// Param IN:
+//                         pere        =>             devine
+//                         fils  		=> 			devine
+//                         inverse              
+// Param OUT
+// return 1 if KREX is in this mode, else 0 ( test can be inverted)
+procedure_trigger int TrigTest_Hierarchy(byref message m_msg)  // object1 pere object2 fils int1 inverse
+{
+	object	to_fils
+	int			ti_ret
+	
+	to_fils = m_msg.msg_gao2
+	if ( m_msg.msg_gao1 == @to_fils OBJ_HierarchyGet())
+		ti_ret = 1
+	else
+		ti_ret = 0
+	
+	if ( m_msg.msg_int1)
+		return ( ! ti_ret)
+	else
+		return (ti_ret)
+}
+
+
+
+// TrigTest_Rain
+// Param IN:
+//                         time		=>		vrai s il pleut
+//                         inverse	=>		Inverse la réponse  	
+// Param OUT		retourne vrai s il pleut
+procedure_trigger int TrigTest_Rain(byref message m_msg)  // int1 inverse
+{
+	if ( ! m_msg.msg_int1)
+		return ( @get_global ENV_pluie_encours)
+	else
+		return ( ! @get_global ENV_pluie_encours)
+}
+
+
+
+// TrigTest_Hour
+// Param IN:
+//						  h_min	=>		heure min a tester
+//						  h_max	=>		heure max a tester
+//                         time		=>		1 : jour 8 - 19
+//                         			=>		2 : nuit 21 - 7
+//                         			=>		3 : coucher 19 - 21
+//                         			=>		4 : lever 7 - 8
+//                         inverse	=>		Inverse la réponse  	
+// Param OUT		retourne vrai si l heure est a la bonne période
+procedure_trigger int TrigTest_Hour(byref message m_msg)  // int1 h_min int2 h_max int3 inverse
+{
+	float 	tf_hour
+	int		ti_ret
+	float	h_min, h_max
+	h_min = m_msg.msg_int1
+	h_max = m_msg.msg_int2
+	tf_hour = @"univ" Planetes_CurHour
+	if ( h_min > h_max)
+	{
+		// nuit
+		if ( tf_hour > h_max || tf_hour < h_min)
+			ti_ret = 1
+		else
+			ti_ret = 0
+	}
+	else if ( tf_hour > h_min && tf_hour < h_max)
+		ti_ret = 1
+	else
+		ti_ret = 0
+	if ( m_msg.msg_int3)
+		return ( ! ti_ret)
+	else
+		return (ti_ret)
+}
+
+
+
+// TrigTest_RM_Current_HotSpot_Test
+// Param IN:
+//                         hotspot = le gao dont on veut savoir si c'est le hotspot de Rayman
+//                         inverse = si 1 alors retourne vrai si Rayman est accroché à un autre hotspot
+//                                       si 2 alors retourne vrai si Rayman n'est accroché à aucun hotspot
+procedure_trigger int TrigTest_RM_Current_HotSpot_Test(byref message m_msg)  // object1 hotspot int1 inverse
+{
+	object	to_rayman
+	object	to_currenthotpost
+	object	to_test
+	int			ti_result
+	ti_result = faux
+	to_rayman = AI_MainActorGet(C_ID_Rayman)
+	to_test = m_msg.msg_gao1
+	to_currenthotpost = nobody
+	if( to_rayman )
+	{
+		if( ! @get_Rayman_Path to_rayman i_grappin_accroche )
+			ti_result = faux		// trigger faux tant que le grappin ne "TIENT" pas le hotspot
+		else
+		{
+			to_currenthotpost = @to_rayman PROC_RM_Current_HotSpot_Get()
+			if( to_currenthotpost == to_test )
+				ti_result = vrai
+		}
+	}
+	if( ! to_currenthotpost && m_msg.msg_int1 == 2 )
+		return vrai
+	if( m_msg.msg_int1 == 1 )
+		ti_result = 1 - ti_result
+	return ti_result
+}
+
+/// TrigTest_RM_Current_Item
+// Param IN:
+//					type = type d item que RM a en main
+//						-1 = ARME (GRENADE OU GUN)
+//						0 = RIEN
+//						1 = GRENADE
+// 						2 = GUN
+//						3 = CLE
+//						5 = CAISSE-MINE
+//						6 = GOURDIN
+//                   objectif = OBJECTIF ID DU PTIZETRE
+//					inverse = pour inverser le test
+procedure_trigger int TrigTest_RM_Current_Item( byref message m_msg) // int1 type int2 objectif int5 inverse
+{
+	object	to_rayman
+	object	to_key
+	int			ti_item_ID
+	int			ti_retour
+	
+	to_rayman = AI_MainActorGet(C_ID_Rayman)
+	if( ! to_rayman )
+		ti_retour = faux
+	else
+	{
+		ti_item_ID = @to_rayman PROC_RM_ITEM_Get()
+		if( m_msg.msg_int2 > 0 )
+		{
+			// TEST OBJECTIF
+			ti_retour = faux
+			to_key = @to_rayman PROC_RM_ITEM_Has_Key()
+			if( to_key && @to_key PROC_KEY_TypeGet() == KEY_TYPE_PTIZETRE )
+			{
+				if( @to_key PROC_KEY_Objectif_IDGet() == m_msg.msg_int2 )
+					ti_retour = vrai
+			}
+		}
+		else if( m_msg.msg_int1 == -1 )
+		{
+			// TEST ANY WEAPON
+			switch( ti_item_ID )
+			{
+				case RM_WEAPON_TYPE_GUN :
+				case RM_WEAPON_TYPE_GRENADE :
+				case RM_WEAPON_TYPE_BOMBOX :
+				case RM_WEAPON_TYPE_GOURDIN :
+					ti_retour = vrai
+					break
+				default:
+					ti_retour = faux
+					break
+			}
+		}
+		else if( m_msg.msg_int1 == 3 )
+		{
+			// TEST KEY
+			if( @to_rayman PROC_RM_ITEM_Has_Key() )
+				ti_retour = vrai
+			else
+				ti_retour = faux
+		}
+		else
+		{
+			// TEST ANY OTHER
+			if ( ti_item_ID == m_msg.msg_int1)
+				ti_retour = vrai
+			else
+				ti_retour = faux
+		}
+	}
+	
+	if( m_msg.msg_int5 )
+		ti_retour = 1 - ti_retour
+	
+	return ti_retour
+}
+
+
+// TrigTest_ZDEZDE
+// Param IN:
+//                       detecteur			=>		acteur avec la ZDE fight
+//                       target					=>		acteur avec la ZDE corps
+// Param OUT		retourne vrai s il pleut
+procedure_trigger int TrigTest_ZDEZDE(byref message m_msg)  // object1 detecteur object2 target
+{
+	object	to_obj
+	to_obj = m_msg.msg_gao1 
+	if( @to_obj COL_ZDE_ZDECollide( m_msg.msg_gao2 , C_zde_fight, C_zde_corps))
+		return vrai
+	else
+		return faux
+}
+
+
+
+///TrigTest_Lapin_ModeCompagnon
+// Param IN : 			
+//							Lapin = gao avec l' IA PNJ_Lapin
+// Param OUT : 		VRAI si le lapin est en mode compagnon, FAUX sinon
+procedure_trigger int TrigTest_Lapin_ModeCompagnon(byref message m_msg) // object1 Lapin
+{
+	float	pf_force
+	vector	pv_temp
+	object	po_gao
+	po_gao = m_msg.msg_gao1
+	if( po_gao && @po_gao AI_IsModel(get_PNJ_Lapin_path) )
+		return @po_gao Proc_Lapin_ModeCompagnon_Get()
+	else
+		return faux
+}
+
+
+///TrigTest_RM_Current_Mount_ID
+// Param IN : 			
+//							type	Type de monture
+//							10		Lapin
+//							11		Monture_Rhino
+//							12		Monture_Aigle
+//							13		Monture_Serpent
+//							14		Monture_Requin
+//							15		Monture_PoissonLumiere
+//							16		Monture_Araignee
+//							17		Monture_Bat
+//							18		Monture_Tigre
+//							inverse = inverse le test
+// Param OUT : 		VRAI si la monture courante de Rayman est du type demandé, faux sinon
+procedure_trigger int TrigTest_RM_Current_Mount_ID(byref message m_msg) // int1 type int2 inverse
+{
+	float	pf_force
+	vector	pv_temp
+	object	po_gao
+	int			ti_ID
+	int			ti_return
+	ti_ID = m_msg.msg_int1
+	po_gao  = AI_MainActorGet(C_ID_Rayman)
+	if( ! po_gao )
+		return faux
+	if( ti_ID == @po_gao PROC_RM_MontureIDGet() )
+		ti_return = vrai
+	else
+		ti_return = faux
+	if( m_msg.msg_int2 )
+		ti_return = 1 - ti_return
+	return ti_return
+}
+
+
+
+///TrigTest_RM_JoyAxisTest
+		// Ce Trigger permet de tester si on met le joy dans un cone defini pas un axe et un angle.
+		// Si on met le joy dans ce cone, le trigger repond vrai
+		// Si on met le joy hors de ce cone, le trigger repond faux apres un delai optionnel
+// Param IN : 			
+		// AxeDeb = Wp Depart du Vecteur
+		// AxeFin = Wp Fin du Vecteur
+		//      Note: Si AxeDeb = AxeFin alors on prend le SIGHT de cet objet.
+	 	// AngleLimitDuree.x  = Angle de test entre le Joy et l'axe (1 = dans le meme axe du joy, -1 a l'opposé)
+		// AngleLimitDuree.y = Durée d'hysteresis permetant de repondre vrai pendant encore un pti moment.
+		//	inverse = inverse la reponse
+// Param OUT : 		VRAI si on met le joyt dans le cone et faux qd le joy n'est plus dans le cone au bout d'un moment...
+
+procedure_trigger int TrigTest_RM_JoyAxisTest(byref message m_msg) // object1 AxeDeb object2 AxeFin vec1 AngleLimitDuree  int2 inverse
+{
+	int			ti_return 
+	vector	tv_axe_joy
+	object	to_gao1
+	object	to_gao2
+	vector	tv_vec
+	vector	tv_axis
+
+	
+	ti_return = vrai
+	if (glob_joynorm_get)
+	{
+		// il y a un axe donc, je change 
+		tv_axe_joy = glob_joyvector_get_normalized
+		to_gao1= m_msg.msg_gao1
+		to_gao2= m_msg.msg_gao2
+		tv_vec = m_msg.msg_vec1
+		if (to_gao2 == to_gao1)
+		{
+			tv_axis = @to_gao1 OBJ_SightGet()
+			tv_axis.z = 0
+		}
+		else
+		{
+			tv_axis = @to_gao2 OBJ_PosGet() - @to_gao1 OBJ_PosGet()
+			tv_axis.z = 0
+		}
+
+		if (MATH_VecNullEpsilon(tv_axis))
+			DBG_Error("Erreur Sight est Null")
+		else
+			MATH_VecSetNormalize(tv_axis)
+			
+		if (MATH_VecDotProduct(tv_axe_joy, tv_axis) > tv_vec.x)
+		{
+			tv_vec.z = tv_vec.y
+		}
+		else
+		{
+			 tv_vec.z -= MATH_FloatMin(TIME_GetDt(), tv_vec.z)
+			if (!tv_vec.z)
+				ti_return = faux
+		}
+		m_msg.msg_vec1 = tv_vec 
+	}
+
+	if( m_msg.msg_int2 )
+		ti_return = 1 - ti_return
+		
+	return ti_return
+
+}
+
+// TrigTest_RM_Current_HotSpot_Test
+// Param IN:
+//                         hotspot = le gao dont on veut savoir si c'est le hotspot de Rayman
+procedure_trigger int TrigTest_RM_HotSpot_And_DiveAttack(byref message m_msg)  // object1 hotspot
+{
+	object	to_currenthotpost
+	to_currenthotpost = @get_rayman PROC_RM_Current_HotSpot_Get()
+	if( to_currenthotpost == m_msg.msg_gao1 && @get_rayman Proc_RM_Attack_DIVE())
+		return vrai
+	else
+		return faux
+}
+
+
+// TrigTest_LAPIN_Mode
+// Param IN : 
+//					lapin : le lapin à tester
+//					mode : le mode à tester
+//							0 Attente
+//							1 Fight
+//							2 Fuite
+//							3 Cache
+//							4 Paf
+//							5 KO
+//							6 Gogo
+//							7 Piege
+//							8 Danse
+//							9 Rided
+// Param OUT :
+//					VRAI si le lapin est dans le mode souhaité
+procedure_trigger int TrigTest_LAPIN_Mode(byref message m_msg)  // object1 lapin int1 mode
+{
+	object to_gao
+	to_gao = m_msg.msg_gao1
+	if( to_gao && @to_gao AI_IsModel(get_PNJ_Lapin_path) )
+	{
+		return @to_gao Proc_PNJ_Lapin_ModeTest(m_msg.msg_int1)
+	}
+	return faux
+}
+
+
+// TrigTest_ObjOfKindInBV
+//============================================================
+// Param IN:
+//	bv (gao1) 			gao portant la BV qui va etre testé (moi si aucun)
+//	flags	(int1)			type de perso a tester
+// 0 - rien
+// 1 - rayman
+// 2 - lapin
+// 4 - minirobot
+// Faire la somme pour plusieurs type de test. (3 pour rayman et lapins)
+// inverse (int5)		teste que aucun des types ci dessus n'est dans la bv
+// Param OUT
+//		neant
+//============================================================
+procedure_trigger int TrigTest_ObjOfKindInBV(byref message m_msg)	// object1 bv int1 flags int5 inverse
+{
+	int					ti_kind , ti_rank
+	int					ti_num,ti_res
+	object			tao_obj[100], to_obj, to_ref
+	object			to_bv
+
+#ifndef _FINAL_
+	if(@get_global DEBUG_TCINE) DBG_TraceString("TrigTest_ObjOfAIModelInBV\n")
+#endif	
+
+	to_bv = m_msg.msg_gao1
+	if(!to_bv)
+		to_bv = OBJ_Me()
+
+	ti_kind = m_msg.msg_int1
+	
+	if(m_msg.msg_int5==0)
+		ti_res=vrai
+	else
+		ti_res=faux
+	
+	ti_num = @to_bv COL_BV_PivotListGet( &tao_obj[0], OBJ_C_IdentityFlag_AI, none, Ci_Filter_IdentityFlag)
+	for (ti_rank = 0; ti_rank < ti_num; ti_rank++)
+	{
+		to_obj = tao_obj[ ti_rank ]
+		if((1&ti_kind)&&@to_obj AI_IsModel(get_Rayman_Path))
+			return ti_res
+		if((2&ti_kind)&&@to_obj AI_IsModel(get_PNJ_Lapin_path))
+			return ti_res
+		if((4&ti_kind)&&@to_obj AI_IsModel(get_PNJ_MiniRobot_path))
+			return ti_res
+	}
+	return !ti_res
+}
+
+// TrigTest_DanseMode
+//============================================================
+// Param IN:
+// Param OUT
+//		0		No Music
+//		1		Music Dance
+//		2		Music Winner
+//============================================================
+procedure_trigger int	TrigTest_DanseMode(byref message m_msg)
+{
+	if ( @get_Music_Manager Proc_SND_Juice())
+		return 1
+	else if ( @get_global i_Danse_Actors_nb )
+		return 2
+	else 
+		return 0
+}

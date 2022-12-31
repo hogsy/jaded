@@ -1,0 +1,511 @@
+#define Cf_pourcentage			0.33
+
+procedure_local void SFX_NET_Fire_Compute_Network()
+{
+#ifndef _FINAL_
+	float		tf_Z_min
+	
+	object	to_1st_wp
+	
+	object	to_wp_1
+	object	to_wp_2
+	object	to_wp_3
+	
+	vector	tv_vec1
+	vector	tv_vec2
+	
+	vector	tv_normale
+	vector	tv_biscectrice
+	
+	// On oriente le sight des wp du reseau de maniere à avoir la perpendiculaire de chaques sommets
+	
+	to_1st_wp = o_last_wp
+	
+	to_wp_1 = o_last_wp
+	to_wp_2 = WAY_NetNextWP(n_net, to_wp_1, 0, 0)
+	to_wp_3 = WAY_NetNextWP(n_net, to_wp_2, 0, 0)
+	
+	@to_wp_1 OBJ_ZoomSet(1.0)
+	
+	@to_wp_1 OBJ_CapaSet(none, all)
+	@to_wp_2 OBJ_CapaSet(none, all)
+	
+	if (compute_network)
+		@to_wp_1 OBJ_SightSet(@to_wp_2 OBJ_PosGet() - @to_wp_1 OBJ_PosGet())
+	
+	f_net_length = 0.0
+	
+	// Smooth trajectory
+	while (to_wp_2 != to_1st_wp && to_wp_3)
+	{
+	//	DBG_RenderVector(@to_wp_1 OBJ_PosGet(), @to_wp_2 OBJ_PosGet() - @to_wp_1 OBJ_PosGet(), color_rouge)
+	
+		tv_vec1 = @to_wp_1 OBJ_PosGet() - @to_wp_2 OBJ_PosGet()
+		f_net_length += MATH_VecNorm(tv_vec1)
+	
+	//	f_net_length += WAY_LinkWeightGet(n_net, to_wp_1, to_wp_2)	
+	
+		@to_wp_3 OBJ_CapaSet(none, all)
+	
+		if (compute_network)
+		{
+			@to_wp_2 OBJ_ZoomSet(1.0)	
+			@to_wp_3 OBJ_ZoomSet(1.0)
+		
+			tv_vec2 = @to_wp_3 OBJ_PosGet() - @to_wp_2 OBJ_PosGet()
+			
+			tv_normale = MATH_VecCrossProduct(tv_vec1, tv_vec2)
+			MATH_VecSetNormalize(tv_normale)
+			
+			tv_biscectrice = MATH_VecBlendRotate(tv_vec1, tv_vec2, 0.5)
+		
+			@to_wp_2 OBJ_SightSet(MATH_VecCrossProduct(tv_normale, tv_biscectrice))
+		}
+	
+		to_wp_1 = to_wp_2
+		to_wp_2 = to_wp_3
+		to_wp_3 = WAY_NetNextWP(n_net, to_wp_3, 0, 0)
+	}
+	
+	tv_vec1 = @to_wp_1 OBJ_PosGet() - @to_wp_2 OBJ_PosGet()
+	f_net_length += MATH_VecNorm(tv_vec1)
+	
+	//f_net_length += WAY_LinkWeightGet(n_net, to_wp_1, to_wp_2)	
+	
+	if (compute_network)
+	{
+		if (to_wp_3)	
+		{
+			tv_vec1 = @to_wp_1 OBJ_PosGet() - @to_wp_2 OBJ_PosGet()
+			tv_vec2 = @to_wp_3 OBJ_PosGet() - @to_wp_2 OBJ_PosGet()
+			
+			tv_normale = MATH_VecCrossProduct(tv_vec1, tv_vec2)
+			MATH_VecSetNormalize(tv_normale)
+			
+			tv_biscectrice = MATH_VecBlendRotate(tv_vec1, tv_vec2, 0.5)
+		
+			@to_wp_2 OBJ_SightSet(MATH_VecCrossProduct(tv_normale, tv_biscectrice))
+		}
+		else
+		{
+			@to_wp_2 OBJ_SightSet(@to_wp_2 OBJ_PosGet() - @to_wp_1 OBJ_PosGet())
+		}
+	}
+#endif
+}
+
+procedure_local vector SFX_NET_On_Spline_Pos(object to_start_wp, object to_dest_wp, float	tf_link_dist, float tf_link_length)
+{
+	float		tf_coef	
+
+	vector	tv_point_A	
+	vector	tv_point_B
+	vector	tv_point_C
+	vector	tv_point_D
+
+	tf_coef = tf_link_dist / tf_link_length
+
+	tv_point_A = @to_start_wp OBJ_PosGet()
+	
+	tv_point_B = tv_point_A 
+	tv_point_B += @to_start_wp OBJ_SightGet() * (tf_link_length * (Cf_pourcentage * @to_start_wp OBJ_ScaleGet().y))
+	
+	tv_point_D = @to_dest_wp OBJ_PosGet()
+		
+	tv_point_C = tv_point_D
+	tv_point_C -= @to_dest_wp OBJ_SightGet() * (tf_link_length * (Cf_pourcentage * @to_dest_wp OBJ_ScaleGet().y))
+	
+	tv_point_A += (tv_point_B - tv_point_A) * tf_coef
+	tv_point_B += (tv_point_C - tv_point_B) * tf_coef
+	tv_point_C += (tv_point_D - tv_point_C) * tf_coef
+	
+	tv_point_A += (tv_point_B - tv_point_A) * tf_coef
+	tv_point_B += (tv_point_C - tv_point_B) * tf_coef
+	
+	tv_point_A += (tv_point_B - tv_point_A) * tf_coef
+	
+	return(tv_point_A)
+}
+
+procedure_local vector SFX_NET_Fire_Position_Get()
+{
+	if (!o_next_wp)
+		return(Cv_NullVector)
+	
+	while(f_link_coef >= f_link_length)
+	{
+		@o_last_wp OBJ_CapaSet(OBJ_Capa_0, none)
+		@o_next_wp OBJ_CapaSet(OBJ_Capa_0, none)	
+	
+		o_last_wp = o_next_wp
+		o_next_wp = WAY_NetNextWP(n_net, o_last_wp, 0, 0)
+	
+		f_link_coef -= f_link_length
+	
+		if (!o_next_wp || o_last_wp == OBJ_Me())
+		{
+			f_net_coef = f_net_length
+			return(@o_last_wp OBJ_PosGet())
+		}
+	
+		f_link_length = MATH_VecNorm(@o_next_wp OBJ_PosGet() - @o_last_wp OBJ_PosGet())
+	}
+	
+	return(SFX_NET_On_Spline_Pos(o_last_wp, o_next_wp, f_link_coef, f_link_length))
+}
+
+procedure_local void SFX_NET_Fire_Add_GFX(int ti_i, vector tv_start_pos, vector tv_dest_pos)
+{
+	if (GFX_Strange_Line[ti_i] == -1)
+	{
+		i_nb_GFX++
+
+		GFX_Strange_Line[ti_i] = GFX_Add(13)																// Create the boum
+					
+		GFX_MaterialSet(GFX_Strange_Line[ti_i], get_SFX_light_and_smoke, -1)						// met le materiau
+		GFX_Seti(GFX_Strange_Line[ti_i], 13101, 34)															// Materiau 0
+		GFX_Seti(GFX_Strange_Line[ti_i], 13110, 35)															// Materiau 1
+		GFX_Seti(GFX_Strange_Line[ti_i], 13111, 36)															// Materiau 2
+		GFX_Seti(GFX_Strange_Line[ti_i], 13112, 34)															// Materiau 3
+	
+		GFX_Seti(GFX_Strange_Line[ti_i], 13100, 20)															// *Buffer number of sprite
+		GFX_Seti(GFX_Strange_Line[ti_i], 13106, 0xFFFFFFFF)											// *number of sprite to generate
+		
+		GFX_Setf(GFX_Strange_Line[ti_i], 13003, 0.1)															// Time fase 1
+		GFX_Setf(GFX_Strange_Line[ti_i], 13004, 1.0)														// Time fase 2
+		
+		GFX_Seti(GFX_Strange_Line[ti_i], 13107, 0)															// Sprites non triés
+		
+		GFX_FlagSet(GFX_Strange_Line[ti_i], 0 , 1)
+		GFX_FlagSet(GFX_Strange_Line[ti_i], 2 , 1)
+		
+		GFX_Setf(GFX_Strange_Line[ti_i], 13012, 0.75)														// Time random
+		
+		GFX_Setv(GFX_Strange_Line[ti_i], 13201, cvector(-1.0, -1.0, -1.0))												// Speed min
+		GFX_Setv(GFX_Strange_Line[ti_i], 13202, cvector(1.0, 1.0, 1.0))											// Speed max
+		
+		GFX_Setf(GFX_Strange_Line[ti_i], 13000, -0.2)														// Growing speed min
+		GFX_Setf(GFX_Strange_Line[ti_i], 13001, -0.1)														// Growing speed max
+		GFX_Setf(GFX_Strange_Line[ti_i], 13002, 0.0001)													// Friction Grow
+		
+		GFX_Setf(GFX_Strange_Line[ti_i], 13005, 0.4)														// Creation size min
+		GFX_Setf(GFX_Strange_Line[ti_i], 13006, 0.8)														// Creation size max
+		
+		GFX_Setv(GFX_Strange_Line[ti_i], 13203, cvector(0.02, 0.02, 0.02))							// friction speed
+		
+		GFX_Seti(GFX_Strange_Line[ti_i], 13103, 0xFF000000)											// Color fase 0
+//		GFX_Seti(GFX_Strange_Line[ti_i], 13104, 0x800037B2)											// Color fase 1
+		GFX_Seti(GFX_Strange_Line[ti_i], 13104, 0x8027A0FC)											// Color fase 1
+		GFX_Seti(GFX_Strange_Line[ti_i], 13105, 0x00)													// Color fase 2
+
+		GFX_Setf(GFX_Strange_Line[ti_i], 13009, 0.0)														// Norm speed min
+		GFX_Setf(GFX_Strange_Line[ti_i], 13010, 0.0)														// Norm speed max
+		
+		GFX_Setf(GFX_Strange_Line[ti_i], 13008, 0.25)														// generation rate
+		
+		GFX_Setv(GFX_Strange_Line[ti_i], 13205, Cv_NullVector)										// Mainposspeed
+		GFX_Setv(GFX_Strange_Line[ti_i], 13206, Cv_NullVector)										// Mainpossfriction
+			
+		GFX_Setf(GFX_Strange_Line[ti_i], 13007, 6.0)															// Gravity
+
+//		GFX_Seti( GFX_Strange_Line[ti_i], 13114, 1)														// Rotation active
+//		GFX_Setf( GFX_Strange_Line[ti_i], 13013, -1.000000) 											// Rotation Aléatoire a la naissance Min
+//		GFX_Setf( GFX_Strange_Line[ti_i], 13014, 1.000000) 											// Rotation Aléatoire a la naissance Max
+//		GFX_Setf( GFX_Strange_Line[ti_i], 13015, -0.150000) 											// Speed rotation Min
+//		GFX_Setf( GFX_Strange_Line[ti_i], 13016, 0.150000)												// Speed rotation Maw
+	}
+
+		
+	GFX_Setv(GFX_Strange_Line[ti_i], 13200, tv_start_pos) 								// Creation Pos
+
+//			DBG_RenderVector(tv_start_pos, -tv_dest_pos, color_blanc)
+//			DBG_RenderVector(tv_start_pos, tv_dest_pos, color_blanc)
+			
+	GFX_Setv(GFX_Strange_Line[ti_i], 13207, tv_dest_pos)								// CreaPosAxe X
+	
+//			GFX_Setv(GFX_Strange_Line[ti_i], 13204, MATH_VecNormalize(tv_dest_pos))												// wind
+}
+
+procedure_local vector SFX_Net_Fire_Nearest_Pos(vector tv_pos)
+{
+	int				ti_i	
+
+	float			tf_dist
+	float			tf_best_dist
+	float			tf_link_dist
+	float			tf_link_length
+	float			tf_length_limit
+
+	object		to_camera
+	object		to_current_wp
+	object		to_next_wp
+
+	vector		tv_nearest_pos
+	vector		tv_on_spline_pos
+	vector		tv_link_dir
+	vector		tv_temp
+
+	tv_nearest_pos = OBJ_PosGet()
+	tv_temp = tv_nearest_pos - tv_pos
+	tf_best_dist = MATH_VecDotProduct(tv_temp, tv_temp)
+
+	to_current_wp = OBJ_Me()
+	to_next_wp = WAY_NetNextWP(n_net, to_current_wp, 0, 0)
+	while(@to_current_wp OBJ_CapaTest(OBJ_Capa_0) && to_next_wp)
+	{
+		tf_link_length = WAY_LinkWeightGet(n_net, to_current_wp, to_next_wp)
+
+		if (@to_next_wp OBJ_CapaTest(OBJ_Capa_0))
+			tf_length_limit = tf_link_length
+		else
+			tf_length_limit = f_link_coef
+
+		tv_link_dir = @to_next_wp OBJ_PosGet() - @to_current_wp OBJ_PosGet()
+		tv_link_dir /= tf_link_length
+
+		tf_link_dist = MATH_VecDotProduct(tv_pos - @to_current_wp OBJ_PosGet(), tv_link_dir)
+		tf_link_dist = MATH_FloatLimit(tf_link_dist, 0.0, tf_length_limit)
+
+		tv_on_spline_pos = SFX_NET_On_Spline_Pos(to_current_wp, to_next_wp, tf_link_dist, tf_link_length)
+
+		tv_temp = tv_on_spline_pos - tv_pos
+		tf_dist = MATH_VecDotProduct(tv_temp, tv_temp)
+		if (tf_dist < tf_best_dist)
+		{
+			tf_best_dist = tf_dist
+			tv_nearest_pos = tv_on_spline_pos
+		}
+
+		if (to_next_wp == OBJ_Me())
+			break
+	
+		to_current_wp = to_next_wp
+		to_next_wp = WAY_NetNextWP(n_net, to_current_wp, 0, 0)
+	}
+
+	return(tv_nearest_pos)
+}
+
+procedure_local void SFX_Net_Fire_Javelin()
+{
+	int			ti_i	
+
+	object	to_main_actor	
+	object	to_javelin
+
+	vector	tv_javelin_pos
+	vector	tv_fire_pos
+
+	switch(@"univ" i_weapon_ID[C_ID_Joueur])
+	{
+		case Ci_weapon_ID_bambou :
+		case Ci_weapon_ID_ossement :
+//		case Ci_weapon_ID_bambou_moy :
+//		case Ci_weapon_ID_bambou_petit :
+			to_main_actor = AI_MainActorGet(C_ID_Joueur)
+
+			tv_javelin_pos = @to_main_actor OBJ_PosGet()
+			tv_javelin_pos += @to_main_actor OBJ_SightGet()
+
+			tv_fire_pos = SFX_Net_Fire_Nearest_Pos(tv_javelin_pos)
+			EVENT_AddEventFireCylindre(OBJ_Me(), tv_fire_pos, cvector(0.0, 0.0, 2.0), 0.5)
+			DBG_RenderCylinder(tv_fire_pos, cvector(0.0, 0.0, 2.0), 0.5, 0x800000FF)
+			break
+	}
+
+//	for (ti_i = 0; ti_i < Ci_bambou_maxinmap; ti_i++)
+//	{
+//		to_javelin = @get_global ao_Lances[ti_i]
+//
+//		if ( ! to_javelin )
+//			continue
+//
+//		switch(@"Projectiles/Projectile_Javelin" to_javelin mi_State)
+//		{
+//			case Ci_bambou_state_launch :
+////			case Ci_bambou_state_ground :
+//				tv_fire_pos = SFX_Net_Fire_Nearest_Pos(@to_javelin OBJ_PosGet())
+//				EVENT_AddEventFireCylindre(OBJ_Me(), tv_fire_pos, cvector(0.0, 0.0, 2.0), 1.0)
+//				DBG_RenderCylinder(tv_fire_pos, cvector(0.0, 0.0, 2.0), 1.0, 0x800000FF)
+//				break
+//		}
+//	}
+}
+
+procedure_local void SFX_Net_Fire_Sound()
+{
+	vector		tv_micro_pos	
+	vector		tv_sound_pos
+
+	object		to_camera
+
+	if (!play_presence)
+		return
+
+	if (SND_Loop_Presence == -1)
+		SND_Loop_Presence = SND_RequestPlayLoop(1)
+
+	if (SND_Loop_Presence == -1)
+		return
+
+	to_camera = VIEW_GetObject(0)
+	tv_micro_pos = @to_camera OBJ_PosGet()
+	
+	tv_sound_pos = SFX_Net_Fire_Nearest_Pos(tv_micro_pos)
+	DBG_RenderSphere(tv_sound_pos, 0.5, 0x8000FF00)
+	SND_InstPosUpdate(SND_Loop_Presence, tv_sound_pos)
+}
+
+procedure_local void SFX_Net_Fire_Draw()
+{
+	int			ti_i
+	int			ti_segment_nb
+	int			ti_break
+	
+	float		tf_segment_length
+	float		tf_temp
+	
+	vector	tv_point_A
+	vector	tv_start_pos
+	vector	tv_dest_pos
+	
+	if (!f_life_time)
+	{
+		for (ti_i = 0; ti_i < i_nb_GFX; ti_i++)
+		{
+			GFX_Seti(GFX_Strange_Line[ti_i], 13106, 0)											// *number of sprite to generate
+			GFX_Strange_Line[ti_i] = -1
+		}
+	
+		if (SND_Loop_Propagation != -1)
+		{
+			SND_Stop(SND_Loop_Propagation)
+			SND_Loop_Propagation = -1
+		}
+
+		if (SND_Loop_Presence != -1)
+		{
+			SND_Stop(SND_Loop_Presence)
+			SND_Loop_Presence = -1
+		}
+
+		return
+	}
+	
+	if (OBJ_FlagsControlGet() & (OBJ_C_ControlFlag_ForceInvisible | OBJ_C_ControlFlag_SectoInvisible))
+	{
+		for (ti_i = 0; ti_i < i_nb_GFX; ti_i++)
+		{
+			GFX_Del(GFX_Strange_Line[ti_i])
+			GFX_Strange_Line[ti_i] = -1
+		}
+	
+		i_nb_GFX = 0
+		i_nb_segments_complets = 0
+	
+		o_last_wp = OBJ_Me()
+		o_next_wp = WAY_NetNextWP(n_net, o_last_wp, 0, 0)
+		
+		v_GFX_last_pos = @o_last_wp OBJ_PosGet()
+		v_GFX_next_pos = v_GFX_last_pos
+		
+		f_link_coef = 0.0
+		f_link_length = MATH_VecNorm(@o_next_wp OBJ_PosGet() - @o_last_wp OBJ_PosGet())
+	
+		f_net_computed_length = 0.0
+	
+		return
+	}
+	
+	if (recompute_position)
+	{
+		o_last_wp = OBJ_Me()
+		o_next_wp = WAY_NetNextWP(n_net, o_last_wp, 0, 0)
+		
+		v_GFX_last_pos = @o_last_wp OBJ_PosGet()
+		v_GFX_next_pos = v_GFX_last_pos
+		
+		f_link_coef = 0.0
+		f_link_length = MATH_VecNorm(@o_next_wp OBJ_PosGet() - @o_last_wp OBJ_PosGet())
+		
+		f_net_computed_length = 0.0
+		i_nb_segments_complets = 0
+	}
+	
+	if (i_nb_GFX && f_net_coef == f_net_length)
+	{
+		if (SND_Loop_Propagation != -1)
+		{
+			SND_Stop(SND_Loop_Propagation)
+			SND_Loop_Propagation = -1
+		}	
+	
+		if (!recompute_position)
+			return
+	}
+	
+	if (play_propagation && SND_Loop_Propagation == -1)
+		SND_Loop_Propagation = SND_RequestPlayLoop(0)
+
+	@o_last_wp OBJ_CapaSet(OBJ_Capa_0, none)
+	
+	// Longueur parcourue sur le reseau
+	f_net_coef += MATH_FloatMin(f_net_length - f_net_coef, f_speed * TIME_GetDt())
+	
+	// Calcul du nombre total de segment à ce stade
+	tf_segment_length = f_net_coef
+	tf_segment_length /= f_step_length
+	tf_segment_length += 0.5
+	
+	ti_segment_nb = tf_segment_length
+	ti_segment_nb--
+	
+	// On va créer ou mettre à jour tout les segments complets
+	for (ti_i = i_nb_segments_complets; ti_i < ti_segment_nb; ti_i++)
+	{
+		// Il faut calculer de combien on va avancer pour atteindre la fin du segment	
+		tf_segment_length = (ti_i + 1) * f_step_length
+		tf_segment_length -= f_net_computed_length
+	
+		f_link_coef += tf_segment_length
+		f_net_computed_length += tf_segment_length
+	
+		v_GFX_last_pos = v_GFX_next_pos
+		v_GFX_next_pos = SFX_NET_Fire_Position_Get()
+	
+		tv_dest_pos = v_GFX_next_pos - v_GFX_last_pos
+	//	DBG_RenderVector(v_GFX_last_pos, tv_dest_pos, color_rouge)
+		tv_dest_pos *= 0.5
+		
+		tv_start_pos = v_GFX_last_pos
+		tv_start_pos += tv_dest_pos
+		
+		SFX_NET_Fire_Add_GFX(ti_i, tv_start_pos, tv_dest_pos)
+		
+		i_nb_segments_complets++
+	}
+	
+	// On ajoute le dernier tronçon
+	tf_segment_length = f_net_coef - f_net_computed_length
+	
+	f_link_coef += tf_segment_length
+	f_net_computed_length += tf_segment_length
+	
+	tv_dest_pos = SFX_NET_Fire_Position_Get()
+
+	if (SND_Loop_Propagation != -1)
+	{
+		SND_InstPosUpdate(SND_Loop_Propagation, tv_dest_pos)
+		DBG_RenderSphere(tv_dest_pos, 0.25, 0x800000FF)
+	}
+
+	tv_dest_pos -= v_GFX_next_pos
+	//DBG_RenderVector(v_GFX_next_pos, tv_dest_pos, color_blanc)
+	tv_dest_pos *= 0.5
+	
+	tv_start_pos = v_GFX_next_pos
+	tv_start_pos += tv_dest_pos
+	
+	SFX_NET_Fire_Add_GFX(i_nb_segments_complets, tv_start_pos, tv_dest_pos)
+	return
+}

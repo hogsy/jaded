@@ -1,0 +1,75 @@
+ 
+procedure_ultra void Proc_Pigeon_SetFather(object to_father)
+{
+	v_boot_camp = @to_father OBJ_PosGet()
+	o_father = to_father
+	i_count = 1
+}
+
+procedure_ultra void Pigeon_NextWP(object to_wp)
+{		
+	o_travel_wp_from = to_wp
+	o_travel_wp_to = WAY_NetNextWP(n_travel_network, o_travel_wp_from, NetNextWP_Mode_aleatoire, 0)
+	v_travel_start = @o_travel_wp_from OBJ_PosGet()
+	v_travel_start_sight = OBJ_SightGet()
+	v_travel_end = @o_travel_wp_to OBJ_PosGet()
+	v_travel_end_sight = @o_travel_wp_to OBJ_SightGet()
+	f_travel_coef = 0.0
+	f_travel_length = MATH_VecNorm(v_travel_end - v_travel_start)
+}
+
+procedure_ultra object Pigeon_GetNearestNMI()
+{
+	messageid		ti_mid
+	int					ti_rank
+	object			to_pere
+	object			to_nearest
+	float				tf_dist
+	float				tf_dist_best
+	
+	if (o_rided_actor)
+		return nobody
+		
+	ti_rank = -1
+	tf_dist_best = 10000.0
+	for (ti_mid = MSG_GlobalScan(C_EVENT_TYPE_Enemy , &ti_rank);
+			MSG_GlobalIsValid(ti_mid);
+			ti_mid = MSG_GlobalScan(C_EVENT_TYPE_Enemy, &ti_rank))
+	{
+		to_pere = EVENT_PereGet(ti_mid)
+		tf_dist = MATH_VecSquareNorm(OBJ_PosGet() - @to_pere OBJ_PosGet())
+		if (tf_dist < tf_dist_best)
+		{
+			tf_dist_best = tf_dist
+			to_nearest = to_pere
+		}
+	}
+
+	if (tf_dist_best > 16.0)
+	{
+		tf_dist_best = 16.0
+		to_nearest = nobody
+	}
+	
+	to_pere = AI_MainActorGet(0)
+	if (MATH_VecSquareNorm(OBJ_PosGet() - @to_pere OBJ_PosGet()) < tf_dist_best)
+		return to_pere
+		
+	return to_nearest
+}
+
+procedure_ultra vector Proc_PNJ_Pigeon_RidedPosGet()
+{
+	return OBJ_PosGet() + cvector(0.0, 0.0, 0.08)
+}
+
+procedure_ultra vector Proc_PNJ_Pigeon_RidedSightGet()
+{
+	return OBJ_SightGet()
+}
+
+procedure_ultra vector Proc_PNJ_Pigeon_RidedBankingGet()
+{
+	return OBJ_BankingGet()
+}
+

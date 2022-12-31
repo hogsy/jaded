@@ -1,0 +1,2450 @@
+Include_UltraProcedure_Header
+#include "H_defines.var"
+#include "H_action.var"
+
+procedure_local int H_Attitude( );
+procedure_local int H_SilenceDepuis(float t );
+
+//=============================================================
+//=============================================================
+procedure_local int LanceCassee( )
+{
+	return faux		/////// KING KONG 2 /////// on casse plus
+//	int	ti_max
+//	switch(@"univ" i_weapon_ID[C_ID_Jack])
+//	{
+//		case Ci_weapon_ID_bambou :			ti_max = PLUG_CASSE break
+//		case Ci_weapon_ID_bambou_moy :	ti_max = PLUG_CASSE_MED break
+//	}
+//	if(@"univ" i_jack_cpt_plug >= ti_max + 3) return 2
+//	if(@"univ" i_jack_cpt_plug >= ti_max) return 1
+//	return faux
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+// LIGNE DE MIR
+procedure_local void LigneDeMir( )
+{
+	object	to_obj, to_enn
+	vector	tv_temp, tv_temp1
+	float		tf_dot
+	int			ti_rank, ti_state
+	messageid	EVT_ID
+	float		tf_size
+	int			ti_ok, ti_type
+	
+	if(f_time_force_crouch && !i_flag_crouch)
+	{
+		f_time_force_crouch -= TIME_GetDt()
+		if(f_time_force_crouch < 0) f_time_force_crouch = 0
+		i_flag_crouch = vrai
+		f_joy_norm = 0
+	}
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+//procedure_local void CINE_IntentionArret(int val)
+//{
+//	int	ti_weapon
+//	
+//	if(val >= 1000)
+//	{
+//		i_cine_action = (val - 1000) + 255
+//		return
+//	}
+//	
+//	ti_weapon = @"univ" i_weapon_ID [i_id_humain]
+//	switch(val)
+//	{
+//		case 0 : i_cine_action = -1 break
+//	  	case 1 : i_cine_action = -1 break
+//	  		
+//	  	case 2 : 
+//	  		if(ti_weapon) 
+//	  		{
+//	  			switch(ti_weapon)
+//	  			{
+////	  			case Ci_weapon_ID_shotgun :			i_cine_action = Action_Hayes_Arme_Attente_Shotgun break
+////	  			case Ci_weapon_ID_colt :					i_cine_action = Action_Hayes_Arme_Attente_Pistolet break
+////	  			case Ci_weapon_ID_sniper_rifle :		i_cine_action = Action_Hayes_Arme_Attente_Snipe break
+////	  			case Ci_weapon_ID_tommy_gun :		i_cine_action = Action_Hayes_Arme_Attente_Tommy break
+//	  			case Ci_weapon_ID_bambou :			i_cine_action = Action_BambouAtt break
+//	  			case Ci_weapon_ID_ossement :			i_cine_action = Action_BambouAtt break
+////	  			case Ci_weapon_ID_bambou_moy :	i_cine_action = Action_BambouAtt break
+////	  			case Ci_weapon_ID_bambou_petit :	i_cine_action = Action_BambouAtt break
+//	  			default:											i_cine_action = -1 break
+//	  			}
+//	  		}
+//	  		else 
+//	  		{
+//	  			i_cine_action = -1 
+//	  		}
+//	  		
+//	  		break
+//	  	
+//	  	case 3 : 
+//	  		if(AnimWeapon()) 
+//	  			i_cine_action = Action_CacheF_Att 
+//	  		else 
+//	  			i_cine_action = Action_Cache_Att 
+//	  		break
+//	  		
+//	  	case 4 :
+//	  		i_cine_action = Action_Den_Camera
+//	  		break
+//	  		
+//	  	case 5 :
+//	  		i_cine_action = Action_Humain_Blesse_Assis
+//	  		break
+//	  		
+//	  	case 6 :
+//	  		i_cine_action = Action_RamasseTerre
+//	  		break
+//	  		
+//	  	case 7 :
+////	  		if(i_id_humain == C_ID_Denham)
+////	  			i_cine_action = Action_Den_Camera
+////	  		else
+//	  			i_cine_action = Action_Den_Mecanisme
+//	  		break
+//	  	
+//	  	case 8 :
+//	  		if(AnimWeapon()) 
+//		  		i_cine_action = Action_Contre_Mur_Flingue
+//		  	else
+//		  		i_cine_action = Action_Contre_Mur
+//	  		break
+//	  		
+//	  	case 9:
+//	  		i_force_intention = 4
+//	  		break
+//	 }
+//}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+//procedure_local int PeutSimplifierLeReseau( )
+//{
+//	if(i_etat_courant == ETAT_IA_multicover) return faux
+//	return vrai
+//}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+//procedure_local void ForceCrouch(  )
+//{
+//	messageid		EVT_ID, tmid_info
+//	object			to_obj
+//	int					ti_state
+//	int					ti_id
+//	float				tf_temp
+//	int					ie
+//	
+//	if(i_ground_ID != Ci_sol_herbe) return
+//	if(i_flag_disable_auto_crouch) return
+//	if(CaseBrulee(OBJ_PosGet())) return
+//	if(i_etat_courant == ETAT_IA_tir) return
+//	if(i_etat_courant == ETAT_IA_help) return
+//	if(f_pilotage_bras_duration) return
+//	
+//	// Si ennemi en fight dans le coin
+//	for(ie = 0; ie < ai_AllEnemy; ie++)
+//	{
+//		EVT_ID = ao_AllEnemy[ie]
+//		if(!MSG_GlobalIsValid(EVT_ID)) continue
+//		to_obj = EVENT_PereGet(EVT_ID)
+//		ti_state = EVENT_EnemyStateGet( EVT_ID )
+//		ti_id = EVENT_EnemyTypeGet( EVT_ID )
+//		
+//		tf_temp = @"univ" Enemy_af_ReaDist[ ti_id] [ C_EnemyDist_Fear ] * 2
+//		if(OBJ_SqrDist(to_obj) < tf_temp * tf_temp)
+//		{
+//			i_flag_crouch = vrai
+//			return
+//		}
+//	}
+//}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+procedure int MultiCoverInter(int capa)
+{
+	if(capa == 2 || capa == 7) return vrai
+	return faux
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+procedure int ZoneDangereuse( vector pos )
+{
+	int		ti_capa
+	
+	if(GRID_Has(1))
+	{
+		GRID_CurrentSet(1)
+		ti_capa = GRID_CapaGet(pos)
+		GRID_CurrentSet(0)
+		if(ti_capa == 1) return vrai	// Zone danger
+		if(ti_capa == Ci_sol_eau_mouche_feu) return vrai	// Zone danger
+		if(ti_capa & Ci_Grid2_EnFeu) return vrai// Case qui brule
+	}
+	
+	return faux
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+//procedure_local int EtatCine( )
+//{
+//	if(i_etat_courant == ETAT_CINE_Speech) return vrai
+//	if(i_etat_courant == ETAT_CINE_Vala) return vrai
+//	if(i_etat_courant == ETAT_CINE_Wait) return vrai
+//	if(i_etat_courant == ETAT_CINE_WaitDefault) return vrai
+//	if(i_etat_courant == ETAT_CINE_Shoot) return vrai
+//	return faux
+//}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+//procedure_local int AssezDePlacePourTomber( vector tv_pos )
+//{
+//	vector	tv_temp
+//	int			ti_capa
+//	int			x, y
+//	
+//	if(ZoneDangereuse(tv_pos)) return faux
+//	if(OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Hierarchy)) return vrai // Radeau
+//	if(f_hauteur_eau > 0.3) return faux
+//
+//	tv_pos = GRID_PosGet(tv_pos)
+//	for(x = -1; x < 2; x++)
+//	{
+//		for(y = -1; y < 2; y++)
+//		{
+//			if(x == 0 && y == 0) continue
+//			tv_temp = tv_pos
+//			tv_temp.x += x
+//			tv_temp.y += y
+//			ti_capa = GRID_CapaGet( tv_temp ) & tag_grid_terrain
+//			if (IsWater(ti_capa) && ti_capa != Ci_sol_eau_basse && ti_capa != Ci_sol_eau_basse_herbe)
+//				return faux
+//		}
+//	}
+//	
+//	return vrai
+//}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Un mur (en ligne droite) entre src et dst ?
+procedure_local int GRID_PosValid(vector src, vector dst)
+{
+	vector	src1, dst1
+	vector	tv_temp, tv_lsrc
+	float		tf_norm, tf_tot, tf_norm1
+	int			i
+	int			ti_result
+	
+	ti_result = vrai
+	
+	// Deja calculé une fois ?
+	src = GRID_PosGet(src)
+	dst = GRID_PosGet(dst)
+	src1 = src
+	dst1 = dst
+	for(i = 0; i < @get_global i_CB_PosValid; i++)
+	{
+		if(MATH_VecNullEpsilon(src - @get_global i_CB_PosValidSrc[i]) && MATH_VecNullEpsilon(dst - @get_global i_CB_PosValidDst[i]))
+		{
+			@get_global i_CB_PosValidTime[i] = TIME_Get()
+			return @get_global i_CB_PosValidResult[i]
+		}
+			
+		if(TIME_Elapsed(@get_global i_CB_PosValidTime[i], 3))
+		{
+			@get_global i_CB_PosValidSrc[i] = @get_global i_CB_PosValidSrc[@get_global i_CB_PosValid - 1]
+			@get_global i_CB_PosValidDst[i] = @get_global i_CB_PosValidDst[@get_global i_CB_PosValid - 1]
+			@get_global i_CB_PosValidResult[i] = @get_global i_CB_PosValidResult[@get_global i_CB_PosValid - 1]
+			@get_global i_CB_PosValidTime[i] = @get_global i_CB_PosValidTime[@get_global i_CB_PosValid - 1]
+			@get_global i_CB_PosValid--
+			i--
+		}
+	}
+
+	if(GRID_Blocked(src, faux)) ti_result = faux
+	if(GRID_Blocked(dst, faux)) ti_result = faux
+	
+	tv_temp = dst - src
+	tv_temp.z = 0
+	tf_norm = MATH_VecNorm(tv_temp)
+	if(ti_result && tf_norm > 0.1)
+	{
+		if(tf_norm > 8) 
+		{
+			tf_norm = 8
+			MATH_VecSetNorm(tv_temp, 8)
+		}
+	
+		tf_norm1 = MATH_FloatMax(MATH_AbsFloat(tv_temp.x), MATH_AbsFloat(tv_temp.y))
+		tv_temp.x /= tf_norm1
+		tv_temp.y /= tf_norm1	
+		tf_norm1 = MATH_VecNorm(tv_temp)
+	
+		tf_tot = 0
+		tv_lsrc = src
+		while(tf_tot < tf_norm)
+		{
+			src += tv_temp
+			tf_tot += tf_norm1
+			if(tf_tot > tf_norm) src = dst
+			if(GRID_Blocked(src, faux)) ti_result = faux
+			tv_lsrc = src
+		}
+	}
+	
+	if(@get_global i_CB_PosValid != 20)
+	{
+		@get_global i_CB_PosValidSrc[@get_global i_CB_PosValid] = src1
+		@get_global i_CB_PosValidDst[@get_global i_CB_PosValid] = dst1
+		@get_global i_CB_PosValidResult[@get_global i_CB_PosValid] = ti_result
+		@get_global i_CB_PosValidTime[@get_global i_CB_PosValid] = TIME_Get()
+		@get_global i_CB_PosValid++
+	}
+	
+	return ti_result
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+procedure_local void Jack_is_grabbed( )
+{
+	i_flag_crouch = vrai
+	i_flag_change_arme = faux
+	i_flag_recharge = faux
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+// retourne suivant l'arme si on doit utiliser les anim avec flingue ou sans flingue
+// 0 sans flingue
+// 1 avec flingue
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+procedure_local int AnimWeapon( )
+{
+	int 	ti_weapon
+//	ti_weapon = @"univ" i_weapon_ID [i_id_humain]
+//	switch(ti_weapon)
+//	{
+//		case Ci_weapon_ID_shotgun :		
+//		case Ci_weapon_ID_sniper_rifle :	
+//			return 1
+//	  				
+//		case Ci_weapon_ID_tommy_gun :	
+//			return 0
+//	}
+	return 0
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+//procedure_local void MakeGlobalEvt( )
+//{
+//	object	to_sender
+//	
+//	to_sender = PRG_m_GlobalEvt.msg_gao1
+//	if(!to_sender) to_sender = PRG_m_GlobalEvt.msg_sender
+//	ForceRegardSur(to_sender, 0.5)
+//	f_time_stress = 10
+//	
+//	if((PRG_i_GlobalEvt == 2) && !PRG_m_GlobalEvt.msg_int3)
+//	{
+//		if(H_SilenceDepuis(1.0))
+//		{
+//			AskText(TEXTE_CouvreHeal, Gene_C_heard_a_noise, 5, nobody) // j'y vais
+//		}
+//	}
+//	
+//	switch(PRG_i_GlobalEvt)
+//	{
+//		case 2:
+//		case 3:
+//			v_joy_dir = @to_sender OBJ_PosGet() - OBJ_PosGet()
+//			f_joy_norm = 0
+//			i_flag_oriente_vers = vrai
+//			
+////			if(i_id_humain == C_ID_Denham && PRG_i_GlobalEvt == 3)
+////			{
+////				if(f_time_attend < 1.0)
+////				{
+////					f_time_force_attend = 1.0
+////					ACT_ActionSet1(Action_Stress_Attente)
+////				}
+////				else
+////				{
+////					i_flag_suivi_regard = faux
+////					ACT_ActionSet1(Action_Den_Camera)			
+////					f_time_force_attend = 2.0
+////				}
+////			}
+////			else
+//			{
+//				if(f_hauteur_eau > Hauteur_Eau_Basse)
+//					ACT_ActionSet1(Action_Att_Eau_Taille)
+//				else
+//					ACT_ActionSet1(Action_Stress_Attente)
+//			}
+//			break
+//	}
+//}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+procedure_local vector CorrectShootSight( )
+{
+	object	to_my_bone
+	vector	tv_temp, tv_temp1
+	int			ti_weapon
+	
+	to_my_bone = o_canal_maind
+	tv_temp = @to_my_bone OBJ_SightGet()
+//	switch(@"univ" i_weapon_ID[i_id_humain])
+//	{
+//		case Ci_weapon_ID_tommy_gun :
+//			tv_temp.z += 0.4
+//			break
+//			
+//		case Ci_weapon_ID_sniper_rifle :
+//			tv_temp.z += 0.4
+//			break
+//			
+//		case Ci_weapon_ID_shotgun :
+//			tv_temp.z += 0.5
+//			break
+//	}
+	
+	MATH_VecSetNormalize(tv_temp)	
+	return tv_temp
+}
+
+//=============================================================
+// bit 7 => transition
+// bit 6 => interdit de couper
+// bit 5 => pas de suivi regard
+// bit 4 => pas d'orientation
+// bit 3 => suivi de regard, juste la tete
+// bit 1 => IK autorisée
+// bit 0 => mouvement
+//=============================================================
+procedure_local void ACT_ActionSet2(int act)
+{
+	int cbact, cbnext
+	
+	if(ACT_ActionGet() == act) return
+	if(ACT_ActionFinished())
+		cbact = 0
+	else
+		cbact = ACT_CustomBitGet()
+		
+	cbnext = ACT_CustomBitGetIndex(act)
+	if((cbact & 1) && (cbnext & 1))	// marche vers marche
+		ACT_DefaultTransitionParams(10, ACT_C_TF_DefaultTransition | ACT_C_TF_BlendProgressive | ACT_C_TF_BlendStock)
+	else if((cbact & 1) && !(cbnext & 1))	// marche vers attente
+		ACT_DefaultTransitionParams(10, ACT_C_TF_DefaultTransition | ACT_C_TF_BlendFreezeMagicBox | ACT_C_TF_BlendStock)
+	else if(!(cbact & 1) && (cbnext & 1))	// attente vers marche
+		ACT_DefaultTransitionParams(10, ACT_C_TF_DefaultTransition | ACT_C_TF_BlendProgressive | ACT_C_TF_BlendStock)
+	else 
+		ACT_DefaultTransitionParams(40, ACT_C_TF_DefaultTransition | ACT_C_TF_BlendStock)
+	ACT_ActionSet(act)
+}
+
+procedure_local void ACT_ActionSet1(int act)
+{
+	int cbact, cbnext
+	
+//	if
+//	(
+//		(act == Action_Stress_Trot && ACT_ActionGet() == Action_Stress_Course)
+//	||	(act == Action_Stress_Course && ACT_ActionGet() == Action_Stress_Trot)
+//	||	(act == Action_Stress_Marche && ACT_ActionGet() == Action_Stress_Trot)
+//	||	(act == Action_Stress_Marche && ACT_ActionGet() == Action_Stress_Course)
+//	)
+//	{
+//		if(ANI_CurrentFrameGet(0) > (ANI_NbFrameGet(0) / 6)) return
+//		ACT_DefaultTransitionParams(15, ACT_C_TF_DefaultTransition | ACT_C_TF_BlendStock)
+//		ACT_ActionSet(act)
+//		return
+//	}
+	
+	ACT_ActionSet(act)
+}
+
+//=============================================================
+//=============================================================
+//procedure_local int JetableEnMainSave()
+//{
+//	if(@"univ" i_weapon_ID_Save[i_id_humain] == Ci_weapon_ID_bambou) return vrai
+//	if(@"univ" i_weapon_ID_Save[i_id_humain] == Ci_weapon_ID_bambou_moy) return vrai
+//	if(@"univ" i_weapon_ID_Save[i_id_humain] == Ci_weapon_ID_bambou_petit) return vrai
+//	if(@"univ" i_weapon_ID_Save[i_id_humain] == Ci_weapon_ID_grenade) return vrai
+//	if(@"univ" i_weapon_ID_Save[i_id_humain] == Ci_weapon_ID_crane) return vrai
+//	if(@"univ" i_weapon_ID_Save[i_id_humain] == Ci_weapon_ID_levier) return vrai
+//	return faux
+//}
+
+//=============================================================
+//=============================================================
+procedure_local void SpeakBalles( int ti_reserve, int ingun )
+{
+//	if(ingun)
+//	{
+//		if(i_in_fight)
+//		{
+//			switch(ti_reserve)
+//			{
+//				case 1 : i_request_txt = GeneJak_C_look_01_bullet_urg break
+//				case 2 : i_request_txt = GeneJak_C_look_02_bullet_urg break
+//				case 3 : i_request_txt = GeneJak_C_look_03_bullet_urg break
+//				case 4 : i_request_txt = GeneJak_C_look_04_bullet_urg break
+//				case 5 : i_request_txt = GeneJak_C_look_05_bullet_urg break
+//				case 6 : i_request_txt = GeneJak_C_look_06_bullet_urg break
+//				case 7 : i_request_txt = GeneJak_C_look_07_bullet_urg break
+//				case 8 : i_request_txt = GeneJak_C_look_08_bullet_urg break
+//				case 9 : i_request_txt = GeneJak_C_look_09_bullet_urg break
+//				default:
+//					if(ti_reserve < 13)
+//						i_request_txt = GeneJak_C_look_10_bullet_urg
+//					else if(ti_reserve < 18)
+//						i_request_txt = GeneJak_C_look_15_bullet_urg
+//					else if(ti_reserve < 26)
+//						i_request_txt = GeneJak_C_look_20_bullet_urg
+//					else if(ti_reserve < 36)
+//						i_request_txt = GeneJak_C_look_30_bullet_urg
+//					else if(ti_reserve < 46)
+//						i_request_txt = GeneJak_C_look_40_bullet_urg
+//					else if(ti_reserve < 56)
+//						i_request_txt = GeneJak_C_look_50_bullet_urg
+//					break
+//			}
+//		}
+//		else
+//		{
+//			switch(ti_reserve)
+//			{
+//				case 1 : i_request_txt = GeneJak_C_look_01_bullet break
+//				case 2 : i_request_txt = GeneJak_C_look_02_bullets break
+//				case 3 : i_request_txt = GeneJak_C_look_03_bullets break
+//				case 4 : i_request_txt = GeneJak_C_look_04_bullets break
+//				case 5 : i_request_txt = GeneJak_C_look_05_bullets break
+//				case 6 : i_request_txt = GeneJak_C_look_06_bullets break
+//				case 7 : i_request_txt = GeneJak_C_look_07_bullets break
+//				case 8 : i_request_txt = GeneJak_C_look_08_bullets break
+//				case 9 : i_request_txt = GeneJak_C_look_09_bullets break
+//				default:
+//					if(ti_reserve < 13)
+//						i_request_txt = -1
+//					else if(ti_reserve < 18)
+//						i_request_txt = GeneJak_C_look_15_bullets
+//					else if(ti_reserve < 26)
+//						i_request_txt = GeneJak_C_look_20_bullets
+//					else if(ti_reserve < 36)
+//						i_request_txt = GeneJak_C_look_30_bullets
+//					else if(ti_reserve < 46)
+//						i_request_txt = GeneJak_C_look_40_bullets
+//					else if(ti_reserve < 56)
+//						i_request_txt = GeneJak_C_look_50_bullets
+//					break
+//			}
+//		}
+//	}
+//	else
+	{
+		if(i_in_fight)
+		{
+			switch(ti_reserve)
+			{
+				case 1 : i_request_txt = GeneJak_C_look_01_pocket_urg break
+				case 2 : i_request_txt = GeneJak_C_look_02_pocket_urg break
+				case 3 : i_request_txt = GeneJak_C_look_03_pocket_urg break
+				case 4 : i_request_txt = GeneJak_C_look_04_pocket_urg break
+				case 5 : i_request_txt = GeneJak_C_look_05_pocket_urg break
+				case 6 : i_request_txt = GeneJak_C_look_06_pocket_urg break
+				case 7 : i_request_txt = GeneJak_C_look_07_pocket_urg break
+				case 8 : i_request_txt = GeneJak_C_look_08_pocket_urg break
+				case 9 : i_request_txt = GeneJak_C_look_09_pocket_urg break
+				default:
+					if(ti_reserve == 0)
+						i_request_txt = GeneJak_C_look_00_mag_urg
+					else if(ti_reserve < 13)
+						i_request_txt = GeneJak_C_look_10_pocket_urg
+					else if(ti_reserve < 18)
+						i_request_txt = GeneJak_C_look_15_pocket_urg
+					else if(ti_reserve < 26)
+						i_request_txt = GeneJak_C_look_20_pocket_urg
+					else if(ti_reserve < 36)
+						i_request_txt = GeneJak_C_look_30_pocket_urg
+					else if(ti_reserve < 46)
+						i_request_txt = GeneJak_C_look_40_pocket_urg
+					else if(ti_reserve < 56)
+						i_request_txt = GeneJak_C_look_50_pocket_urg
+					break
+			}
+		}
+		else
+		{
+			switch(ti_reserve)
+			{
+				case 1 : i_request_txt = GeneJak_C_look_01_in_pocket break
+				case 2 : i_request_txt = GeneJak_C_look_02_in_pocket break
+				case 3 : i_request_txt = GeneJak_C_look_03_in_pocket break
+				case 4 : i_request_txt = GeneJak_C_look_04_in_pocket break
+				case 5 : i_request_txt = GeneJak_C_look_05_in_pocket break
+				case 6 : i_request_txt = GeneJak_C_look_06_in_pocket break
+				case 7 : i_request_txt = GeneJak_C_look_07_in_pocket break
+				case 8 : i_request_txt = GeneJak_C_look_08_in_pocket break
+				case 9 : i_request_txt = GeneJak_C_look_09_in_pocket break
+				default:
+					if(ti_reserve == 0)
+						i_request_txt = GeneJak_C_look_00_magazine
+					else if(ti_reserve < 13)
+						i_request_txt = GeneJak_C_look_10_in_pocket
+					else if(ti_reserve < 18)
+						i_request_txt = GeneJak_C_look_15_in_pocket
+					else if(ti_reserve < 26)
+						i_request_txt = GeneJak_C_look_20_in_pocket
+					else if(ti_reserve < 36)
+						i_request_txt = GeneJak_C_look_30_in_pocket
+					else if(ti_reserve < 46)
+						i_request_txt = GeneJak_C_look_40_in_pocket
+					else if(ti_reserve < 56)
+						i_request_txt = GeneJak_C_look_50_in_pocket
+					break
+			}
+		}
+	}
+}
+
+//=============================================================
+// mode 0 => automatique
+// mode 1 => manuel
+//=============================================================
+procedure_local void SpeakReserve( int mode )
+{
+	int ti_in_gun
+	int	ti_reserve
+	int	ti_clip
+	int	ti_weapon
+	int	ti_req_txt1
+	int freq
+	float tf_temp
+	
+	if(mode == 0 && !H_SilenceDepuis(2.0)) return
+	
+	i_request_txt = -1
+	ti_req_txt1 = -1
+	
+	ti_weapon = @"univ" i_weapon_ID[i_id_humain]
+//	if(ti_weapon && ti_weapon != Ci_weapon_ID_sniper_rifle && ti_weapon != Ci_weapon_ID_colt && ti_weapon != Ci_weapon_ID_shotgun && ti_weapon != Ci_weapon_ID_tommy_gun)
+//		ti_weapon = @"univ" i_weapon_ID_Save[i_id_humain]
+//	if(ti_weapon && ti_weapon != Ci_weapon_ID_sniper_rifle && ti_weapon != Ci_weapon_ID_colt && ti_weapon != Ci_weapon_ID_shotgun && ti_weapon != Ci_weapon_ID_tommy_gun)
+//		ti_weapon = @"univ" i_weapon_ID_second[i_id_humain]
+		
+	if(!ti_weapon) 
+	{
+//		if(mode == 1)
+//		{
+//			if(i_in_fight)
+//				i_request_txt = GeneJak_C_no_weapon_urg
+//			else
+//				i_request_txt = GeneJak_C_no_weapon
+//		}
+//		
+		return
+	}
+	
+	ti_in_gun = @"univ" i_weapon_ammunition[ti_weapon][i_id_humain]
+	ti_reserve = @"univ" i_weapon_ammunition_reserve[ti_weapon][i_id_humain]
+	ti_reserve += ti_in_gun
+	ti_clip = @"univ" Weapon_ai_clipsize[ti_weapon]
+	
+	if(!ti_reserve)
+	{
+		if(i_in_fight)
+			i_request_txt = GeneJak_C_no_bullet_urg
+		else
+			i_request_txt = GeneJak_C_no_bullet
+	}
+	else
+	{
+		if(ti_reserve < ti_clip)
+		{
+			SpeakBalles(ti_reserve, faux)
+			freq = 15
+		}
+		else
+		{
+			tf_temp = ti_reserve 
+			tf_temp /= ti_clip
+			ti_reserve = ti_reserve / ti_clip
+			if(tf_temp - ti_reserve > 0.5) ti_reserve++
+			
+			if(i_in_fight)
+			{
+				switch(ti_reserve)
+				{
+					case 0: break
+					case 1 : i_request_txt = GeneJak_C_look_01_mag_urg freq = 15 break
+					case 2 : i_request_txt = GeneJak_C_look_02_mag_urg freq = 30 break
+					case 3 : i_request_txt = GeneJak_C_look_03_mag_urg freq = 40 break
+					case 4 : i_request_txt = GeneJak_C_look_04_mag_urg freq = 60 break
+					case 5 : i_request_txt = GeneJak_C_look_05_mag_urg freq = 90 break
+					default: 	i_request_txt = GeneJak_C_many_mag_urg freq = 120 break
+				}
+			}
+			else
+			{
+				switch(ti_reserve)
+				{
+					case 0: break
+					case 1 : i_request_txt = GeneJak_C_look_01_magazine freq = 15 break
+					case 2 : i_request_txt = GeneJak_C_look_02_magazines freq = 30 break
+					case 3 : i_request_txt = GeneJak_C_look_03_magazines freq = 40 break
+					case 4 : i_request_txt = GeneJak_C_look_04_magazines freq = 60 break
+					case 5 : i_request_txt = GeneJak_C_look_05_magazines freq = 90 break
+					default: 	i_request_txt = GeneJak_C_many_mag freq = 120 break
+				}
+			}
+		}
+	}
+		
+	// Reserve
+	if(i_request_txt != -1)
+	{
+		if(mode || TIME_Elapsed(Humains_BlaBlaFreq[TEXTE_Ammo], freq))
+		{
+			Humains_BlaBlaFreq[TEXTE_Ammo] = TIME_Get()
+			SPEECH_M_RqHuman(i_id_humain, i_request_txt)			
+		}
+		
+		i_request_txt = -1
+	}
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//procedure_local void MoveNage( )
+//{
+//	vector	tv_new_speed, tv_new_sight
+//	vector	tv_temp
+//	float		tf_hauteur
+//	
+//	tv_temp = OBJ_PosGet()
+////	if(i_id_humain == C_ID_Ann)
+////	{
+//////		tf_hauteur = v_hauteur_eau.z - 1.30
+////		tf_hauteur = f_water_Z_world - 1.30
+////	}
+////	else
+////	{
+//////		tf_hauteur = v_hauteur_eau.z - 1.45
+//		tf_hauteur = f_water_Z_world - ( Hauteur_Eau_Nage - 0.05)
+//		tf_hauteur += MATH_Sin(TIME_Get() * 2) * 0.025	
+////	}
+//	tv_temp.z = MATH_FloatBlend(tv_temp.z, tf_hauteur, 10 * TIME_GetDt())
+//	if( f_nage_wall_contact_Z_offset )
+//	{
+//		tv_temp.z += f_nage_wall_contact_Z_offset
+////		COL_ColSetActivationSet(0, C_bit_zdm_pied)
+//	}
+//	if( ! i_flag_cheat_move )
+//		OBJ_PosSet(tv_temp)
+//	
+//	///////////////////////////////////////////////////////////////////////////////
+//	if( ! i_flag_nage )
+//	{
+//		// monter à un rebord
+//	}
+//	else if( i_flag_cheat_move )
+//		ACT_ActionSet1(Action_Jack_Nage)
+//	else if( ! f_joy_norm)
+//	{
+//		// nage attente
+//		if(i_etat_courant != ETAT_IA_lance)
+//		{
+//			if(BambouEnMain())
+//				ACT_ActionSet1(Action_Jack_NageAttBambou)
+//			else if(JetableEnMain())
+//				ACT_ActionSet1(Action_Jack_NageAttLevier)
+//			else if(@"univ" i_weapon_ID[i_id_humain])
+//			{
+//					switch(@"univ" i_weapon_ID[i_id_humain])
+//					{
+////						case Ci_weapon_ID_shotgun :		
+////							ACT_ActionSet1(169) 
+////							ANI_FrequencySet(0, 16)
+////							break
+////						case Ci_weapon_ID_sniper_rifle :		
+////							ACT_ActionSet1(168) 
+////							ANI_FrequencySet(0, 16)
+////							break
+//						default:
+//							ACT_ActionSet1(Action_Jack_NageAttGun)
+//							break
+//					}
+//			}
+//			else
+//				ACT_ActionSet1(Action_Jack_NageAtt)
+//		}
+//
+//		DYN_SpeedSetVector(Cv_NullVector)
+//	}
+//	else
+//	{
+//		// nage avance
+//		if(i_etat_courant != ETAT_IA_lance)
+//		{
+//			if(MATH_VecDotProduct(OBJ_SightGet(), v_joy_dir) < 0)
+//			{
+//				if(BambouEnMain())
+//					ACT_ActionSet1(Action_Jack_NageBambou)
+//				else if(JetableEnMain())
+//					ACT_ActionSet1(Action_Jack_NageLevier)
+//				else if(@"univ" i_weapon_ID[i_id_humain])
+//				{
+//					switch(@"univ" i_weapon_ID[i_id_humain])
+//					{
+////						case Ci_weapon_ID_shotgun :		
+////							ACT_ActionSet1(169) 
+////							ANI_FrequencySet(0, 64)
+////							break
+////						case Ci_weapon_ID_sniper_rifle :		
+////							ACT_ActionSet1(168) 
+////							ANI_FrequencySet(0, 64)
+////							break
+//						default:
+//							ACT_ActionSet1(Action_Jack_NageReculGun)
+//							break
+//					}
+//				}
+//				else
+//					ACT_ActionSet1(Action_Jack_NageRecul)
+//			}
+//			else
+//			{
+//				if(BambouEnMain())
+//					ACT_ActionSet1(Action_Jack_NageBambou)
+//				else if(JetableEnMain())
+//					ACT_ActionSet1(Action_Jack_NageLevier)
+//				else if(@"univ" i_weapon_ID[i_id_humain])
+//				{
+//					switch(@"univ" i_weapon_ID[i_id_humain])
+//					{
+////						case Ci_weapon_ID_shotgun :		
+////							ACT_ActionSet1(169) 
+////							ANI_FrequencySet(0, 64)
+////							break
+////						case Ci_weapon_ID_sniper_rifle :		
+////							ACT_ActionSet1(168) 
+////							ANI_FrequencySet(0, 64)
+////							break
+//						default:
+//							ACT_ActionSet1(Action_Jack_NageGun) 
+//							break
+//					}
+//				}
+//				else
+//					ACT_ActionSet1(Action_Jack_Nage)
+//			}
+//		}
+//		
+//		tv_new_speed	= v_joy_dir * f_joy_norm
+//		f_speed_jack = f_joy_norm
+//		DYN_SpeedSetVector(tv_new_speed)
+//	}
+//	if(i_etat_courant == ETAT_CINE_Vala)
+//		tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), v_joy_dir, 3.0 * TIME_GetDt())	
+//	else
+//		tv_new_sight = MATH_VecBlendRotate(OBJ_SightGet(), v_joy_dir, 0.5 * TIME_GetDt())	
+//	OBJ_BankingGeneralSet(tv_new_sight, Cv_VerticalVector)
+//	DYN_GravitySet(Cv_NullVector)
+//}
+
+//============================================================
+// procédure pour lacher l'objet que l'on a en main
+//============================================================
+procedure_local void Humains_LeaveObjectInHand( )
+{
+	object		to_main
+	object		to_bambou
+	int				i
+	message	tm_msg
+	vector		tv_temp
+	int				ti_weapon
+	float			tf_temp
+	object		to_obj
+	int				ti_index
+	
+	if( ! BambouEnMain() )
+		return
+	
+	to_main = o_canal_annexe1
+	to_bambou = nobody
+	
+	ti_weapon = @"univ" i_weapon_ID[ i_id_humain ]
+
+	// GRABBED OBJECT
+	ti_index = H_Joueur_GrabbedObject_GetIndex_ByID(@"univ" i_weapon_ID[i_id_humain])
+	if( ti_index != -1 )
+	{
+		to_bambou = ao_grabbed_object[ti_index]
+		@to_bambou OBJ_PosSet(@to_main OBJ_PosGet())
+		H_Joueur_GrabbedObject_Delete_ByIndex(ti_index)
+		o_grabbed_object_en_main = nobody
+	}
+
+	// Récup 2nde arme
+	@"univ" i_weapon_ID[ i_id_humain ] = @"univ" i_weapon_ID_Save[ i_id_humain ]
+	@"univ" i_weapon_ID_Save[ i_id_humain ] = 0
+	
+	ti_index = H_Joueur_GrabbedObject_GetIndex_ByID(@"univ" i_weapon_ID[i_id_humain])
+	if( ti_index != -1 )
+	{
+		o_grabbed_object_en_main = ao_grabbed_object[ti_index]
+	}
+	
+	if(@"univ" i_weapon_ID_second[i_id_humain] == Ci_weapon_ID_levier)
+	{
+		@"univ" i_weapon_ID_Save[ i_id_humain ] = @"univ" i_weapon_ID_second[i_id_humain]
+		@"univ" i_weapon_ID_second[i_id_humain] = 0
+	}	
+	
+	if( ! to_bambou )
+	{
+		to_bambou = to_bambou
+		return
+	}
+	
+	@to_bambou OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_Msg, 0)
+	switch( ti_weapon )
+	{
+		case Ci_weapon_ID_bambou :
+		case Ci_weapon_ID_ossement :
+//		case Ci_weapon_ID_bambou_moy :
+//		case Ci_weapon_ID_bambou_petit :
+			tv_temp = -3.8 * v_bank_annexe1
+			tv_temp += 1.1 * @to_main OBJ_HorizonGet()
+			tv_temp += -1.25 * v_sight_annexe1
+			@to_bambou OBJ_SightSet(-tv_temp)
+ 			@to_bambou OBJ_PosSet(v_pos_annexe1 - (tv_temp * 0.127))
+ 			break
+ 		default:
+			@to_bambou OBJ_PosSet(@o_canal_annexe1 OBJ_PosGet() + (OBJ_SightGet() * 0.2))
+			@to_bambou OBJ_SightGeneralSet( v_bank_annexe1, v_sight_annexe1 )
+			break
+	}
+	MSG_SetNull(tm_msg)
+	
+	// On rajoute une vitesse de sight qui depend de la vitesse du joueur
+	tf_temp = 1
+	tv_temp = DYN_SpeedGetVector()
+	tv_temp.z = 0
+	if( ! MATH_VecNullEpsilon(tv_temp) )
+	{
+		MATH_VecSetHorzNormalize(tv_temp)
+		tf_temp = MATH_AbsFloat(MATH_VecDotProduct(tv_temp, @get_camera OBJ_SightGet()))
+	}
+	
+	tm_msg.msg_id = msg_id_grenadefall
+	tm_msg.msg_sender = OBJ_Me()
+	
+	tv_temp = DYN_SpeedGetVector() * 2 * tf_temp
+	tv_temp.z += 3
+	tv_temp = MATH_VecGlobalToLocal(tv_temp)
+	if(tv_temp.y > 0) tv_temp.y = 0
+	tv_temp = MATH_VecLocalToGlobal(tv_temp)		
+	tm_msg.msg_vec1 = (OBJ_SightGet() * 2) + tv_temp
+
+	tm_msg.msg_vec2 = Cv_NormalGravity
+	tm_msg.msg_vec3 = cvector(1.0, 1.0, 0.0)
+	tm_msg.msg_vec4 = cvector( f_time_dynamite, 0, 0 )
+	
+	@to_bambou MSG_Send( tm_msg )
+	
+	// Bidoche plugée
+	if( @get_global o_bidoche_plug_jack)
+	{
+		to_obj = @get_global o_bidoche_gao
+		@get_PNJ_Bidoche_path to_obj o_javelin = to_bambou
+
+		to_obj = to_bambou
+		@get_Arme_Lance_path to_obj o_bidoche = @get_global o_bidoche_gao
+
+		@get_global o_bidoche_gao = nobody
+		@get_global o_bidoche_plug_jack = nobody
+	}
+	
+	if( H_Weapon_IsOnFire() )
+	{
+		tm_msg.msg_id = msg_id_grenadeburning
+		tm_msg.msg_vec1 = cvector( f_time_dynamite, 0, 0)
+		@to_bambou MSG_Send( tm_msg )
+	}
+	
+	f_time_tir_grenade = TIME_Get()
+}
+
+//============================================================
+//============================================================
+//procedure_local int JackPeutSeFaireSoigner( )
+//{
+//	if(IsWater(i_ground_ID) && f_hauteur_eau >= Hauteur_Eau_Haute)
+//		return faux
+//	if(i_flag_nage)
+//		return faux
+//	return vrai
+//}
+
+//============================================================
+//============================================================
+//procedure_local int AnimAutoriseTir( )
+//{
+//	// Je nage
+//	if(i_flag_nage)
+//	{
+//		return faux
+//	}
+//	
+//	// Interdiction pilotage arme	
+//	if(!ACT_ActionFinished() && ACT_CustomBitGet() & 0x20)
+//	{
+//		return faux
+//	}
+//	
+//	switch(ACT_ActionGet())
+//	{
+//		case Action_Marche_Eau_cou :
+//		case Action_AttEau_Cou :
+//		case Action_AttEau_Cou_Flingue :
+//		case Action_Humain_Normal_Attente :
+//		case Action_Humain_Normal_Marche :
+//		case Action_Humain_Normal_Trot :
+//		case Action_Att_Eau_Taille :
+//		case Action_Marche_Eau_Taille  :
+//			return faux
+//			
+//		case Action_Cache_Att :
+////			if(!BambouEnMain()) return faux
+//			break
+//	}
+//	
+//	return vrai
+//}
+
+//=============================================================
+//=============================================================
+procedure_local int IsLoadingWeapon( )
+{
+	if(i_recharge_arme || i_arme_shotgun) return vrai
+	return faux
+}
+
+//=============================================================
+//=============================================================
+//procedure_local void Humain_WeaponAfterLance( )
+//{
+//	int 	ti_remove
+//	int		ti_temp
+//	
+//	ti_remove = vrai
+//	
+//	// Les bambous petits, y'a une reserve de mes couilles
+//	if(@"univ" i_weapon_ID[i_id_humain] == Ci_weapon_ID_bambou_petit)
+//	{
+//		ti_remove = faux
+//		@"univ" i_weapon_ammunition[Ci_weapon_ID_bambou_petit][i_id_humain]--
+//		if(@"univ" i_weapon_ammunition[Ci_weapon_ID_bambou_petit][i_id_humain] == 0) 
+//			ti_remove = vrai
+//		else
+//		{
+////			H_OBJENMAIN_PARAM = 0 // Plus de feu sur les suivantes
+//			f_time_no_fire = 1
+//		}
+//	}
+//	
+//	if(ti_remove)
+//	{
+//		if(@"univ" i_weapon_ID_second[i_id_humain] == Ci_weapon_ID_levier)
+//		{
+//			@"univ" i_weapon_ID[i_id_humain] = Ci_weapon_ID_levier
+//			@"univ" i_weapon_ID_second[i_id_humain] = 0
+//		}	
+//		else if(@"univ" i_weapon_ID_Save[i_id_humain])
+//		{
+//			@"univ" i_weapon_ID[i_id_humain] = @"univ" i_weapon_ID_Save[i_id_humain]
+//			@"univ" i_weapon_ID_Save[i_id_humain] = 0
+//		}
+//		else
+//		{
+//			@"univ" i_weapon_ID[i_id_humain] = 0
+//		}		
+//	}
+//}
+
+//=============================================================
+//=============================================================
+//procedure int IsEtatGrab(int etat)
+//{
+//	if(etat == ETAT_IA_grabraptor) return vrai
+//	if(etat == ETAT_IA_grabcrab) return vrai
+//	if(etat == ETAT_IA_grabscolo) return vrai
+//	if(etat == ETAT_IA_grabscorpion) return vrai
+//	if(etat == ETAT_IA_grabswamp) return vrai
+//	if(etat == ETAT_IA_grabbigmonster) return vrai
+//	return faux
+//}
+
+//=============================================================
+//=============================================================
+procedure_local int GetCacheSoin( object to_serveur )
+{
+	float		tf_bestdist
+	int			i, cpt
+	object	to_obj
+	
+	ChercheCacheSafe()
+	if(!i_num_cache_safe) return faux
+	
+	tf_bestdist = Cf_Infinit
+	for(i = 0; i < i_num_cache_safe; i++)
+	{
+		to_obj = ao_cache_safe[i]
+		cpt = 0
+		
+		for(cpt = 0; cpt < 2;  cpt++)
+		{
+			// Si y'a un point de carry, on le prend
+			if(@to_obj AI_IsModel("Progression/PRG_CacheSafe"))
+			{
+				switch(cpt)
+				{
+					case 0:		if(@"Progression/PRG_CacheSafe" to_obj des_o_poscarry) to_obj = @"Progression/PRG_CacheSafe" to_obj des_o_poscarry break
+					case 1:		to_obj = @"Progression/PRG_CacheSafe" to_obj des_o_poscarry1 break
+				}
+			}
+			else if(cpt == 1)
+			{
+				break
+			}
+			
+			if(!to_obj) break
+			if(@to_serveur COL_Pivot_BVCollide(to_obj)) return faux
+			if(@to_serveur OBJ_SqrDist(to_obj) < 2 * 2) return faux
+			
+			if(OBJ_SqrDist(to_obj) < tf_bestdist)
+			{
+				tf_bestdist = OBJ_SqrDist(to_obj)
+				ao_cache_safe[0] = to_obj
+				i_num_cache_safe = 1
+			}
+			
+		}		
+	}
+	
+	return vrai
+}
+
+//=============================================================
+//=============================================================
+procedure_local void SetExpression( int what, float speed )
+{
+	object	to_obj
+	
+	if(i_mode_cine_morph) return
+	to_obj = ANI_CanalObjectGet(Anim_Canal_Tete)
+	f_speed_expression = speed
+	i_changing_expression = vrai
+	switch(what)
+	{
+		case EXPRESSION_NEUTRE :
+//			if(i_id_humain == C_ID_Ann)
+//			{
+//				@to_obj OBJ_MorphDataSet(1, 19, 2) 	// Sourire
+//				@to_obj OBJ_MorphDataSet(2, MORPH_NEUTRE, 2) 	// Sourcils
+//				f_speed_factor_expression[1] = 2.0
+//				f_speed_factor_expression[2] = 1.0
+//				
+//				f_dest_factor_expression[1] = 0.75
+//				f_dest_factor_expression[2] = 0.5
+//				f_paupiere_bas = 0.0
+//				f_paupiere_haut = 0.0
+//				i_lips_repos = MORPH_LIPSA
+//				f_lips_repos_factor = 0.0
+//			}
+//			else
+			{
+				@to_obj OBJ_MorphDataSet(1, MORPH_NEUTRE, 2) 	// Sourire
+				@to_obj OBJ_MorphDataSet(2, MORPH_NEUTRE, 2) 	// Sourcils
+				f_speed_factor_expression[1] = 2.0
+				f_speed_factor_expression[2] = 1.0
+				
+				f_dest_factor_expression[1] = 1.0
+				f_dest_factor_expression[2] = 1.0
+				f_paupiere_bas = 0.1
+				f_paupiere_haut = 0.1
+				i_lips_repos = MORPH_LIPSA
+				f_lips_repos_factor = 0.0
+			}
+			break
+			
+		case EXPRESSION_COLERE :
+		case EXPRESSION_COLERE_NEUTRE :
+			@to_obj OBJ_MorphDataSet(1, MORPH_SOURIRE_FACHE, 2) 	// Sourire
+			@to_obj OBJ_MorphDataSet(2, MORPH_SOUCRILS_FRONCE, 2) 	// Sourcils	
+			f_speed_factor_expression[1] = 2.0
+			f_speed_factor_expression[2] = 1.0
+			
+//			if(i_id_humain == C_ID_Denham)
+//			{
+//				f_dest_factor_expression[1] = 0.9
+//				f_dest_factor_expression[2] = 0.9	
+//				f_paupiere_bas = 0.4
+//				f_paupiere_haut = 0.1
+//				i_lips_repos = MORPH_M_PINCE
+//				f_lips_repos_factor = 0.5
+//			}
+//			else if(i_id_humain != C_ID_Ann)
+//			{
+				f_dest_factor_expression[1] = 0.4
+				f_dest_factor_expression[2] = 0.7	
+				f_paupiere_bas = 0.2
+				f_paupiere_haut = 0.1
+				i_lips_repos = MORPH_M_PINCE
+				f_lips_repos_factor = 0.2
+//			}
+//			else
+//			{
+//				@to_obj OBJ_MorphDataSet(1, 19, 2) 	// Sourire
+//				@to_obj OBJ_MorphDataSet(2, MORPH_SOUCRILS_FRONCE, 2) 	// Sourcils	
+//				f_dest_factor_expression[1] = 1.0
+//				f_dest_factor_expression[2] = 0.75
+//				f_paupiere_bas = 0.3
+//				f_paupiere_haut = -0.04
+//				i_lips_repos = MORPH_LIPSA
+//				f_lips_repos_factor = 0.0
+//			}
+			break
+			
+		case EXPRESSION_COMBAT :
+			f_speed_factor_expression[1] = 2.0
+			f_speed_factor_expression[2] = 1.0
+			
+//			if(i_id_humain == C_ID_Denham)
+//			{
+//				@to_obj OBJ_MorphDataSet(1, MORPH_SOURIRE_FACHE, 2) 	// Sourire
+//				@to_obj OBJ_MorphDataSet(2, MORPH_SOUCRILS_FRONCE, 2) 	// Sourcils	
+//				f_dest_factor_expression[1] = 1.2
+//				f_dest_factor_expression[2] = 1.1
+//				f_paupiere_bas = 0.35
+//				f_paupiere_haut = 0.15
+//				i_lips_repos = MORPH_LIPSA
+//				f_lips_repos_factor = 0.15
+//			}
+//			else 
+//			if(i_id_humain != C_ID_Ann)
+//			{
+				@to_obj OBJ_MorphDataSet(1, MORPH_SOURIRE_FACHE, 2) 	// Sourire
+				@to_obj OBJ_MorphDataSet(2, MORPH_SOUCRILS_FRONCE, 2) 	// Sourcils	
+				f_dest_factor_expression[1] = 0.8
+				f_dest_factor_expression[2] = 1.0
+				f_paupiere_bas = 0.2
+				f_paupiere_haut = 0.1
+				i_lips_repos = MORPH_LIPSA
+				f_lips_repos_factor = 0.2
+//			}
+//			else
+//			{
+//				f_dest_factor_expression[1] = 1.0
+//				f_dest_factor_expression[2] = 0.75
+//				f_paupiere_bas = 0.05
+//				f_paupiere_haut = -0.04
+//				i_lips_repos = MORPH_LIPSA
+//				f_lips_repos_factor = 0.0
+//			}
+			break
+			
+		case EXPRESSION_TRISTESSE :
+		case EXPRESSION_TRISTESSE_NEUTRE :
+			f_speed_factor_expression[1] = 2.0
+			f_speed_factor_expression[2] = 1.0
+			
+//			if(i_id_humain == C_ID_Denham)
+//			{
+//				@to_obj OBJ_MorphDataSet(1, MORPH_SOURIRE_FACHE, 2) 	// Sourire
+//				@to_obj OBJ_MorphDataSet(2, MORPH_SOURCILS_TRISTES, 2) 	// Sourcils	
+//				f_dest_factor_expression[1] = 0.3
+//				f_dest_factor_expression[2] = 0.7
+//				f_paupiere_bas = 0.55
+//				f_paupiere_haut = 0.1
+//				i_lips_repos = MORPH_M_PINCE
+//				f_lips_repos_factor = 0.6
+//			}
+//			else if(i_id_humain != C_ID_Ann)
+//			{
+				@to_obj OBJ_MorphDataSet(1, MORPH_SOURIRE_FACHE, 2) 	// Sourire
+				@to_obj OBJ_MorphDataSet(2, MORPH_SOURCILS_TRISTES, 2) 	// Sourcils	
+				f_dest_factor_expression[1] = 0.3
+				f_dest_factor_expression[2] = 0.7
+				f_paupiere_bas = 1.0
+				f_paupiere_haut = 0.1
+				i_lips_repos = MORPH_M_PINCE
+				f_lips_repos_factor = 0.9
+//			}
+//			else
+//			{
+//				@to_obj OBJ_MorphDataSet(1, 17, 2) 	// Sourire
+//				@to_obj OBJ_MorphDataSet(2, MORPH_SOURCILS_TRISTES, 2) 	// Sourcils	
+//				f_dest_factor_expression[1] = 0.75
+//				f_dest_factor_expression[2] = 0.75
+//				f_paupiere_bas = 0.0
+//				f_paupiere_haut = 0.0
+//				i_lips_repos = MORPH_M_PINCE
+//				f_lips_repos_factor = 0.0
+//			}
+			break
+			
+		case EXPRESSION_JOIE :
+			f_speed_factor_expression[1] = 2.0
+			f_speed_factor_expression[2] = 1.0
+			
+//			if(i_id_humain == C_ID_Denham)
+//			{
+//				@to_obj OBJ_MorphDataSet(1, MORPH_SOURIRE_FERME, 2) 	// Sourire
+//				@to_obj OBJ_MorphDataSet(2, MORPH_SOURCILS_HAUSSE, 2) // Sourcils	
+//				f_dest_factor_expression[1] = 0.4
+//				f_dest_factor_expression[2] = 0.4
+//				f_paupiere_bas = 0.1
+//				f_paupiere_haut = 0.1
+//				i_lips_repos = MORPH_LIPSA
+//				f_lips_repos_factor = 0.0
+//			}
+//			else if(i_id_humain != C_ID_Ann)
+//			{
+				@to_obj OBJ_MorphDataSet(1, MORPH_SOURIRE_FERME, 2) 	// Sourire
+				@to_obj OBJ_MorphDataSet(2, MORPH_SOURCILS_HAUSSE, 2) // Sourcils	
+				f_dest_factor_expression[1] = 0.5
+				f_dest_factor_expression[2] = 0.6
+				f_paupiere_bas = 0.0
+				f_paupiere_haut = -0.1
+				i_lips_repos = MORPH_LIPSA
+				f_lips_repos_factor = 0.0
+//			}
+//			else
+//			{
+//				@to_obj OBJ_MorphDataSet(1, MORPH_SOURIRE_FERME, 2) 	// Sourire
+//				@to_obj OBJ_MorphDataSet(2, 18, 2) // Sourcils	
+//				f_dest_factor_expression[1] = 1.0
+//				f_dest_factor_expression[2] = 1.0
+//				f_paupiere_bas = 0.35
+//				f_paupiere_haut = 0.0
+//				i_lips_repos = MORPH_LIPSA
+//				f_lips_repos_factor = 0.0
+//			}
+			break
+				
+		case EXPRESSION_PEUR :
+			f_speed_factor_expression[1] = 2.0
+			f_speed_factor_expression[2] = 1.0
+			
+//			if(i_id_humain == C_ID_Denham)
+//			{
+//				@to_obj OBJ_MorphDataSet(1, MORPH_SOURIRE_FACHE, 2) 		// Sourire
+//				@to_obj OBJ_MorphDataSet(2, MORPH_SOURCILS_HAUSSE, 2) 	// Sourcils	
+//				f_dest_factor_expression[1] = 0.8
+//				f_dest_factor_expression[2] = 0.9
+//				f_paupiere_bas = -0.5
+//				f_paupiere_haut = -0.2
+//				i_lips_repos = MORPH_LIPSA
+//				f_lips_repos_factor = 0.5
+//			}
+//			else if(i_id_humain != C_ID_Ann)
+//			{
+				@to_obj OBJ_MorphDataSet(1, MORPH_SOURIRE_FACHE, 2) 		// Sourire
+				@to_obj OBJ_MorphDataSet(2, MORPH_SOURCILS_HAUSSE, 2) 	// Sourcils					
+				f_dest_factor_expression[1] = 1.0
+				f_dest_factor_expression[2] = 1.0
+				f_paupiere_bas = -0.4
+				f_paupiere_haut = -0.4
+				i_lips_repos = MORPH_LIPSA
+				f_lips_repos_factor = 1.0
+//			}
+//			else
+//			{
+//				@to_obj OBJ_MorphDataSet(1, 19, 2) 		// Sourire
+//				@to_obj OBJ_MorphDataSet(2, MORPH_SOURCILS_TRISTES, 2) 	// Sourcils	
+//				f_dest_factor_expression[1] = 1.0
+//				f_dest_factor_expression[2] = 1.0
+//				f_paupiere_bas = -0.15
+//				f_paupiere_haut = -0.06
+//				i_lips_repos = MORPH_LIPSA
+//				f_lips_repos_factor = 0.5
+//			}
+			break
+					
+		case EXPRESSION_AMOUR :
+			@to_obj OBJ_MorphDataSet(1, MORPH_SOURIRE_FERME, 2) 	// Sourire
+			@to_obj OBJ_MorphDataSet(2, MORPH_SOURCILS_HAUSSE, 2) // Sourcils	
+			f_speed_factor_expression[1] = 2.0
+			f_speed_factor_expression[2] = 1.0
+			
+			f_dest_factor_expression[1] = 0.45
+			f_dest_factor_expression[2] = 0.4
+			f_paupiere_bas = 0.3
+			f_paupiere_haut = 0.1
+			i_lips_repos = MORPH_LIPSA
+			f_lips_repos_factor = 0.1
+			break	
+		}
+}
+
+//=============================================================
+//=============================================================
+procedure_local void UpdateExpression( )
+{
+	switch(i_cur_expression)
+	{
+		case EXPRESSION_COLERE_NEUTRE :
+			if(TIME_Elapsed(f_time_last_expression, 3) && !TIME_Elapsed(f_time_last_expression, 4))
+			{
+				f_time_last_expression -= 1.1
+				SetExpression(EXPRESSION_NEUTRE, 4.0)
+			}
+			
+			break
+			
+		case EXPRESSION_TRISTESSE_NEUTRE :
+//		case EXPRESSION_JOIE :
+			if(TIME_Elapsed(f_time_last_expression, 2) && !TIME_Elapsed(f_time_last_expression, 3))
+			{
+				f_time_last_expression -= 1.1
+				SetExpression(EXPRESSION_NEUTRE, 4.0)
+			}
+			
+			break
+			
+		case EXPRESSION_PEUR :
+			if(TIME_Elapsed(f_time_last_expression, 1) && !TIME_Elapsed(f_time_last_expression, 2))
+			{
+				f_time_last_expression -= 1.1
+				SetExpression(EXPRESSION_COLERE, 6.0)
+			}
+			
+			break
+	}	
+}
+
+//=============================================================
+//=============================================================
+procedure_local void ChangeExpression( int what, float speed )
+{
+	object	to_obj
+	
+	if(i_changing_expression) return
+	if(what == i_cur_expression) return
+	
+	i_cur_expression = what
+	f_time_last_expression = TIME_Get()	
+	SetExpression(what, speed)
+}
+
+//=============================================================
+//=============================================================
+procedure_local void ChangeExpressionNeutre( int what, float speed )
+{
+	if(i_cur_expression == EXPRESSION_NEUTRE) ChangeExpression(what, speed)
+}
+
+//=============================================================
+//=============================================================
+//procedure_local int IsAnimCoup( )
+//{
+//	int		ti_weapon
+//	
+//	ti_weapon = @"univ" i_weapon_ID [i_id_humain]
+//	if(ti_weapon && (ACT_ActionGet() == Action_Jack_CoupCrosse + ti_weapon - 1)) return 1
+//	
+//	switch(ACT_ActionGet())
+//	{
+//		case Action_Jack_CoupPoing :
+//		case Action_Jack_Bambou_FBas :
+//		case Action_Jack_TNTAllume :
+//			return vrai
+//	}
+//	
+//	return faux
+//}
+
+//=============================================================
+//=============================================================
+//		MORPH SUR ARME
+//=============================================================
+//=============================================================
+//procedure_local void	MORPH_Shoot( float pf_speed )
+//{
+//	if (pf_speed == 0)
+//		f_morph_speed = 0.1
+//	else
+//		f_morph_speed = 1 / pf_speed
+//	i_morph_shoot = 1
+//	f_morph_time = 1
+//}
+
+//procedure_local void MORPH_Weapon()
+//{
+//	int		ti_weapon
+//	int		ti_munition
+//	float	tf_prog
+//	
+//	ti_weapon = @"univ" i_weapon_ID [i_id_humain]
+//	ti_munition = @"univ" i_weapon_ammunition[ti_weapon][i_id_humain]
+//	if(!o_canal_annex1) o_canal_annex1 = ANI_CanalObjectGet(Anim_Canal_Annex1)
+//	if (i_morph_shoot)
+//	{
+//		f_morph_time -= TIME_GetDt() * f_morph_speed
+//		if (f_morph_time < 0)
+//		{
+//			f_morph_time = 0
+//			i_morph_shoot = 0
+//		}
+//	}
+//	
+//	switch( ti_weapon )
+//	{
+//		case Ci_weapon_ID_colt :
+//			if (f_morph_time >= 0.6 )
+//				tf_prog = 2.5 * (1 - f_morph_time)
+//			else
+//			{
+//				if ( ( !ti_munition ) || (f_morph_time > 0.4) )
+//					tf_prog = 1
+//				else 
+//					tf_prog = 2.5 * f_morph_time
+//			}
+//			tf_prog = (tf_prog * 2) + 1
+//			@o_canal_annex1 OBJ_MorphFactorSet( 0, 0.5) 
+//			@o_canal_annex1 OBJ_MorphProgSet( 0, tf_prog) 
+//			break
+//	}
+//}
+
+//=============================================================
+//=============================================================
+//		INTERFACE
+//=============================================================
+//=============================================================
+//procedure_local void INTERFACE_DisplayOld()
+//{
+//	vector	tv_pos
+//	int			ti_bullet_nb
+//	int			ti_clip_nb
+//	int			ti_index
+//	
+//	tv_pos = cvector(0.65, 0.9, 0.0)
+//	switch(@"univ" i_weapon_ID[i_id_humain])
+//	{
+//		case Ci_weapon_ID_shotgun :
+//			ti_bullet_nb = @"univ" i_weapon_ammunition[Ci_weapon_ID_shotgun][i_id_humain]
+//			ti_clip_nb = @"univ" i_weapon_ammunition_reserve[Ci_weapon_ID_shotgun][i_id_humain]
+//			if(ti_bullet_nb == 0) ti_index = STR_CreateText("\h.07\ \c6060ff\", tv_pos, 0.0)
+//			else ti_index = STR_CreateText("\h.07\", tv_pos, 0.0)
+//			STR_AppendInt(ti_index, ti_bullet_nb)
+//			STR_AppendText(ti_index, "/")
+//			STR_AppendInt(ti_index, Ci_shotgun_clip_size)
+//			STR_AppendText(ti_index, " Reserve  ")
+//			STR_AppendInt(ti_index, ti_clip_nb)
+//			break
+//
+//		case Ci_weapon_ID_sniper_rifle :
+//			ti_bullet_nb = @"univ" i_weapon_ammunition[Ci_weapon_ID_sniper_rifle][i_id_humain]
+//			ti_clip_nb = @"univ" i_weapon_ammunition_reserve[Ci_weapon_ID_sniper_rifle][i_id_humain]			
+//			if(ti_bullet_nb == 0) ti_index = STR_CreateText("\h.07\ \c6060ff\", tv_pos, 0.0)
+//			else ti_index = STR_CreateText("\h.07\", tv_pos, 0.0)
+//			STR_AppendInt(ti_index, ti_bullet_nb)
+//			STR_AppendText(ti_index, "/")
+//			STR_AppendInt(ti_index, Ci_sniper_rifle_clip_size)
+//			STR_AppendText(ti_index, " Reserve ")
+//			STR_AppendInt(ti_index, ti_clip_nb)			
+//			break
+//
+//		case Ci_weapon_ID_tommy_gun :
+//			ti_bullet_nb = @"univ" i_weapon_ammunition[Ci_weapon_ID_tommy_gun][i_id_humain]
+//			ti_clip_nb = @"univ" i_weapon_ammunition_reserve[Ci_weapon_ID_tommy_gun][i_id_humain]			
+//			if(ti_bullet_nb == 0) ti_index = STR_CreateText("\h.07\ \c6060ff\", tv_pos, 0.0)
+//			else ti_index = STR_CreateText("\h.07\", tv_pos, 0.0)
+//			STR_AppendInt(ti_index, ti_bullet_nb)
+//			STR_AppendText(ti_index, "/")
+//			STR_AppendInt(ti_index, Ci_tommy_gun_clip_size)
+//			STR_AppendText(ti_index, " Reserve ")
+//			STR_AppendInt(ti_index, ti_clip_nb)		
+//			break
+//
+//		case Ci_weapon_ID_grenade :
+//			ti_clip_nb = @"univ" i_weapon_ammunition_reserve[Ci_weapon_ID_grenade][i_id_humain]			
+//			ti_index = STR_CreateText("\h.07\", tv_pos, 0.0)				
+//			STR_AppendText(ti_index, " Reserve ")
+//			STR_AppendInt(ti_index, ti_clip_nb)			
+//			break
+//
+//		case Ci_weapon_ID_crane :
+//			ti_clip_nb = @"univ" i_weapon_ammunition_reserve[Ci_weapon_ID_crane][i_id_humain]			
+//			ti_index = STR_CreateText("\h.07\", tv_pos, 0.0)				
+//			STR_AppendText(ti_index, " Reserve ")
+//			STR_AppendInt(ti_index, ti_clip_nb)			
+//			break
+//			
+//		case Ci_weapon_ID_levier :
+//			ti_clip_nb = @"univ" i_weapon_ammunition_reserve[Ci_weapon_ID_levier][i_id_humain]			
+//			ti_index = STR_CreateText("\h.07\", tv_pos, 0.0)				
+//			STR_AppendText(ti_index, " Reserve ")
+//			STR_AppendInt(ti_index, ti_clip_nb)			
+//			break
+//			
+//		case Ci_weapon_ID_colt :	
+//			ti_bullet_nb = @"univ" i_weapon_ammunition[Ci_weapon_ID_colt][i_id_humain]
+//			ti_clip_nb = @"univ" i_weapon_ammunition_reserve[Ci_weapon_ID_colt][i_id_humain]	
+//			if(ti_bullet_nb == 0) ti_index = STR_CreateText("\h.07\ \c6060ff\", tv_pos, 0.0)
+//			else ti_index = STR_CreateText("\h.07\", tv_pos, 0.0)
+//			STR_AppendInt(ti_index, ti_bullet_nb)
+//			STR_AppendText(ti_index, "/")
+//			STR_AppendInt(ti_index, Ci_colt_clip_size)
+//			STR_AppendText(ti_index, " Reserve ")
+//			STR_AppendInt(ti_index, ti_clip_nb)		
+//			break
+//			
+//		case Ci_weapon_ID_bambou :
+//			ti_clip_nb = @"univ" i_weapon_ammunition_reserve[Ci_weapon_ID_bambou][i_id_humain]			
+//			ti_index = STR_CreateText("\h.07\", tv_pos, 0.0)				
+//			STR_AppendText(ti_index, " Reserve ")
+//			STR_AppendInt(ti_index, ti_clip_nb)			
+//			break
+//			
+//		case Ci_weapon_ID_bambou_moy :
+//			ti_clip_nb = @"univ" i_weapon_ammunition_reserve[Ci_weapon_ID_bambou_moy][i_id_humain]			
+//			ti_index = STR_CreateText("\h.07\", tv_pos, 0.0)				
+//			STR_AppendText(ti_index, " Reserve ")
+//			STR_AppendInt(ti_index, ti_clip_nb)			
+//			break	
+//			
+//		case Ci_weapon_ID_bambou_petit :
+//			ti_clip_nb = @"univ" i_weapon_ammunition_reserve[Ci_weapon_ID_bambou_petit][i_id_humain]			
+//			ti_index = STR_CreateText("\h.07\", tv_pos, 0.0)				
+//			STR_AppendText(ti_index, " Reserve ")
+//			STR_AppendInt(ti_index, ti_clip_nb)			
+//			break	
+//		}
+//}
+
+procedure_local void INTERFACE_DisplayInventory()
+{
+	object	to_Texte
+	int			ti_weapon
+	int			ti_levier
+	int			ti_lance
+	int			ti_casse
+	int			ti_test, ti_val[3]
+	int			ti_temp
+	float		center
+	vector	tv_size
+	
+	to_Texte = @"univ" Texte_InGame
+	if (!to_Texte)
+		return
+		
+	@to_Texte OBJ_TextSet( STRINGAME_MUNITION, "" )
+	@to_Texte OBJ_TextSet( STRINGAME_SLASH, "" )
+	@to_Texte OBJ_TextSet( STRINGAME_RESERVE, "" )
+	@to_Texte OBJ_TextSet( STRINGAME_WEAPON, "" )
+	@to_Texte OBJ_TextSet( STRINGAME_LANCE, "" )
+	@to_Texte OBJ_TextSet( STRINGAME_LEVIER, "" )
+		
+	if ( !@"univ" MENU_i_ShowAmmoLeft && !@"univ" MENU_i_ShowInventory)
+		return 
+		
+	ti_val[ 0 ] = @"univ" i_weapon_ID[ C_ID_Joueur ] 
+	ti_val[ 1 ] = @"univ" i_weapon_ID_Save[ C_ID_Joueur ] 
+	ti_val[ 2 ] = @"univ" i_weapon_ID_second[ C_ID_Joueur ] 
+	ti_weapon = 0
+	ti_lance = 0
+	ti_levier = 0
+		
+	for (ti_test = 0; ti_test < 3; ti_test++ )
+	{	
+		switch ( ti_val[ ti_test ] )
+		{
+//			case Ci_weapon_ID_colt : 
+//			case Ci_weapon_ID_tommy_gun :
+//			case Ci_weapon_ID_shotgun :
+//			case Ci_weapon_ID_sniper_rifle :
+//				ti_weapon = ti_val[ ti_test ]
+//				break
+				
+			case Ci_weapon_ID_bambou	:
+				ti_lance = Ci_weapon_ID_bambou
+				if(	@"univ" i_jack_cpt_plug >= PLUG_CASSE)
+					ti_casse = 1
+				else
+					ti_casse =0
+				break
+				
+			case Ci_weapon_ID_ossement	:
+				ti_lance = Ci_weapon_ID_ossement
+				if(	@"univ" i_jack_cpt_plug >= PLUG_CASSE)
+					ti_casse = 1
+				else
+					ti_casse =0
+				break
+				
+//			case Ci_weapon_ID_bambou_moy	:
+//			case Ci_weapon_ID_bambou_petit :
+//				ti_lance = Ci_weapon_ID_bambou_moy
+////				if(	@"univ" i_jack_cpt_plug >= PLUG_CASSE_MED)
+////					ti_casse = 1
+////				else
+//					ti_casse =0
+//				break
+			
+			case Ci_weapon_ID_levier	:
+				ti_levier = 1
+				break
+		}
+	}
+	
+	// ----( Ammo left )----		
+	if (	@"univ" MENU_i_ShowAmmoLeft && ti_weapon )
+	{
+		ti_temp = @"univ" i_weapon_ammunition[ti_weapon][i_id_humain]
+		if(recup_arme) ti_temp++
+		@to_Texte OBJ_TextIntInsert( STRINGAME_MUNITION, -1, ti_temp )
+		@to_Texte OBJ_TextPivotSet( STRINGAME_MUNITION, cvector( 0.832, 0.1, 0 ) )
+		@to_Texte OBJ_TextFlagSet( STRINGAME_MUNITION, 22 )
+		@to_Texte OBJ_TextSizeSet( STRINGAME_MUNITION, 0, -1, cvector( -1, 0, 0) )
+		
+		@to_Texte OBJ_TextSet( STRINGAME_SLASH, "/"  )
+		@to_Texte OBJ_TextPivotSet( STRINGAME_SLASH, cvector( 0.84, 0.1, 0 ) )
+		@to_Texte OBJ_TextFlagSet( STRINGAME_SLASH, 21 )
+		@to_Texte OBJ_TextSizeSet( STRINGAME_SLASH, 0, -1, cvector( -1, 0, 0) )
+	
+		ti_temp = @"univ" i_weapon_ammunition_reserve[ti_weapon][i_id_humain]
+		if(recup_arme) ti_temp--
+		@to_Texte OBJ_TextIntInsert( STRINGAME_RESERVE, -1, ti_temp )
+		@to_Texte OBJ_TextPivotSet( STRINGAME_RESERVE, cvector( 0.848, 0.1, 0 ) )
+		@to_Texte OBJ_TextFlagSet( STRINGAME_RESERVE, 20 )
+		@to_Texte OBJ_TextSizeSet( STRINGAME_RESERVE, 0, -1, cvector( -1, 0, 0) )
+	}
+	
+	// ----( inventaire )----
+	if ( @"univ" MENU_i_ShowInventory )
+	{
+		switch( ti_weapon )
+		{
+//			case Ci_weapon_ID_colt :				@to_Texte OBJ_TextSet( STRINGAME_WEAPON, "\P13\A" ) break
+//			case Ci_weapon_ID_tommy_gun :	@to_Texte OBJ_TextSet( STRINGAME_WEAPON, "\P13\B" ) break
+//			case Ci_weapon_ID_shotgun :		@to_Texte OBJ_TextSet( STRINGAME_WEAPON, "\P13\C" ) break
+//			case Ci_weapon_ID_sniper_rifle :	@to_Texte OBJ_TextSet( STRINGAME_WEAPON, "\P13\D" ) break
+			default: if (!ti_lance && !ti_levier ) @to_Texte OBJ_TextSet( STRINGAME_WEAPON, "\P13\?" ) break
+		}
+		@to_Texte OBJ_TextPivotSet( STRINGAME_WEAPON, cvector( 0.85, 0.15, 0 ) )
+		@to_Texte OBJ_TextFlagSet( STRINGAME_WEAPON, 21 )
+		@to_Texte OBJ_TextSizeSet( STRINGAME_WEAPON, 0, -1, cvector( -1, 1.3, 0) )
+		
+		switch( ti_lance )
+		{
+			case Ci_weapon_ID_bambou :				
+				if (ti_casse)
+					@to_Texte OBJ_TextSet( STRINGAME_LANCE, "\P13\5" ) 
+				else
+					@to_Texte OBJ_TextSet( STRINGAME_LANCE, "\P13\0" )
+				break
+//			case Ci_weapon_ID_bambou_moy :		
+			case Ci_weapon_ID_ossement :
+				if (ti_casse)
+					@to_Texte OBJ_TextSet( STRINGAME_LANCE, "\P13\6" )
+				else
+					@to_Texte OBJ_TextSet( STRINGAME_LANCE, "\P13\1" )
+				break
+			default: @to_Texte OBJ_TextSet( STRINGAME_LANCE, "" ) break
+		}
+		@to_Texte OBJ_TextPivotSet( STRINGAME_LANCE, cvector( 0.85, 0.2, 0 ) )
+		@to_Texte OBJ_TextFlagSet( STRINGAME_LANCE, 21 )
+		@to_Texte OBJ_TextSizeSet( STRINGAME_LANCE, 0, -1, cvector( -1, 1.3, 0) )
+		
+		if (ti_levier )
+		{
+			@to_Texte OBJ_TextSet( STRINGAME_LEVIER, "\P13\4" )
+			@to_Texte OBJ_TextPivotSet( STRINGAME_LEVIER, cvector( 0.85, 0.25, 0 ) )
+			@to_Texte OBJ_TextFlagSet( STRINGAME_LEVIER, 21 )
+			@to_Texte OBJ_TextSizeSet( STRINGAME_LEVIER, 0, -1, cvector( -1, 1.3, 0) )
+		}
+		else
+			@to_Texte OBJ_TextSet( STRINGAME_LEVIER, "" )
+	}
+}
+
+//procedure_local float H_Get_Move_Coef(int ti_leg) 
+//{
+//	int		ti_action
+//	int		ti_ok
+//	float	tf_coef
+//
+//	if (OBJ_HierarchyGet())
+//		return(-1.0)
+//
+////	if (ANI_IsInBlend())
+////		return(-1.0)	
+//
+////	if (ACT_ActionIsTransition())
+////		return(-1.0)
+//
+//	ti_action = ACT_ActionGet()
+//	ti_ok = faux
+//	switch(ti_action)
+//	{
+//		case Action_Humain_Blesse_Attente :
+//		case Action_Humain_Normal_Attente :
+//		case Action_Stress_Attente :
+//		case Action_Terrorise_Attente :
+//		case Action_Att_EnJoue_Bambou :
+//		case Action_BambouAtt :
+//			ti_ok = vrai
+//			break
+//	}
+//	
+////	if(i_id_humain == C_ID_Hayes || i_id_humain == C_ID_Jimmy)
+////	{
+////		switch(ti_action)
+////		{
+////			case Action_Hayes_Arme_Attente_Pistolet :
+////			case Action_Hayes_Arme_Attente_Shotgun :
+////			case Action_Hayes_Arme_Attente_Snipe :
+////			case Action_Hayes_Arme_Attente_Tommy :
+////			case Action_Hayes_AttVrt :
+////			case Action_Hayes_AttVrt1 :
+////			case Action_Hayes_AttVrt2 :
+////			case Action_Hayes_AttVrt3 :
+////			case Action_Hayes_AttVrt4 :
+////			case Action_Att_EnJoue_Gun :
+////			case Action_Att_EnJoue_Snipe :
+////			case 102:
+////				ti_ok = vrai
+////				break
+////		}
+////	}
+////	else if(i_id_humain == C_ID_Ann)
+////	{
+////		switch(ti_action)
+////		{
+////		case Action_Ann_AttVrt :
+////		case Action_Ann_AttVrt1 :
+////		case Action_Ann_AttVrt2 :
+////		case Action_Ann_AttVrt3 :
+////		case Action_Ann_AttVrt4 :
+////			ti_ok = vrai
+////			break
+////		}
+////	}
+////	else if(i_id_humain == C_ID_Denham)
+////	{
+////		switch(ti_action)
+////		{
+////		case Action_Den_CamBricole :
+////		case Action_Den_AttVrt1 :
+////		case Action_Den_AttVrt2 :
+////		case Action_Den_AttVrt3 :
+////		case Action_Den_AttVrt4 :
+////		case Action_Den_Camera :
+////			ti_ok = vrai
+////			break
+////		}
+////	}
+//	
+////	switch(ti_action)
+////	{
+////		case Action_Humain_Normal_Marche :
+////		case Action_Stress_Marche :
+////		case Action_Hayes_Tommy_Marche :
+////			switch(i_id_humain)
+////			{
+////				case C_ID_Ann :
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.5, 0.1))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.1, 0.5))
+////				case C_ID_Denham :
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.5, 0.2))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.2, 0.6))
+////				default:
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.5, 1.0))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(1.0, 0.5))
+////			}
+////			break
+////
+////		case Action_Hayes_Arme_Marche :
+////			switch(i_id_humain)
+////			{
+////				case C_ID_Ann :
+////				case C_ID_Denham :
+////					return(-1.0)
+////				default:
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.5, 1.0))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(1.0, 0.5))
+////			}
+////			break
+////
+////
+////		case Action_Marche_Eau_cou :
+////		case Action_Marche_Eau_cou_Flingue :
+////			switch(i_id_humain)
+////			{
+////				case C_ID_Ann :
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.8, 0.4))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.4, 0.9))
+////				case C_ID_Denham :
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.0, 0.5))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.5, 1.0))
+////				default:
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.9, 0.4))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.5, 1.0))
+////			}
+////			break
+////
+////		case Action_Stress_Marche_Rapide :
+////		case Action_Hayes_Tommy_MarcheRapide :
+////			switch(i_id_humain)
+////			{
+////				case C_ID_Ann :
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.5, 0.0))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.0, 0.5))
+////				case C_ID_Denham :
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.6, 1.0))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.1, 0.5))
+////				default:
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.5, 1.0))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(1.0, 0.5))
+////			}
+////			break
+////
+////		case Action_Humain_Normal_Trot :
+////		case Action_Hayes_Tommy_Trot :
+////		case Action_Hayes_Arme_Trot :
+////			switch(i_id_humain)
+////			{
+////				case C_ID_Ann :
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.35, 0.2))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.85, 0.7))
+////				case C_ID_Denham :
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.25, 1.0))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.78, 0.5))
+////				default:
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.25, 1.0))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.75, 0.5))
+////			}
+////			break
+////
+////		case Action_Stress_Trot :
+////		case Action_Stress_Course :
+////			switch(i_id_humain)
+////			{
+////				case C_ID_Ann :
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.35, 0.2))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.85, 0.7))
+////				case C_ID_Denham :
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.15, 1.0))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.65, 0.5))
+////				default:
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.15, 1.0))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.65, 0.5))
+////			}
+////			break
+////
+////		case Action_Cache_Trot :	
+////			switch(i_id_humain)
+////			{
+////				case C_ID_Ann :
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.4, 1.0))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(1.0, 0.5))
+////				case C_ID_Denham :
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.5, 0.1))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.9, 0.6))
+////				default:
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.5, 1.0))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(1.0, 0.5))
+////			}
+////			break
+////
+////		case Action_Stress_Recul :
+////		case Action_Recule_Eau_Taille :
+////			switch(i_id_humain)
+////			{
+////				case C_ID_Ann :
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.5, 1.0))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.1, 0.5))
+////				case C_ID_Denham :
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.9, 0.3))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.4, 0.8))
+////				default:
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.4, 0.95))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(1.0, 0.4))
+////			}
+////			break
+////
+////		case Action_Terrorise_Recule :
+////		case Action_Recule_Eau_Taille_Terrorise :
+////			switch(i_id_humain)
+////			{
+////				case C_ID_Ann :
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.6, 1.0))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.0, 0.5))
+////				case C_ID_Denham :
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.3, 0.6))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.8, 1.0))
+////				default:
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.35, 0.7))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.8, 0.1))
+////			}
+////			break
+////
+////		case Action_Marche_Eau_Taille :
+////		case 	Action_Marche_Eau_Taille_Flingue :
+////			switch(i_id_humain)
+////			{
+////				case C_ID_Ann :
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.5, 1.0))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.0, 0.5))
+////				case C_ID_Denham :
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.5, 1.0))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.0, 0.6))
+////				default:
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.9, 0.4))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.5, 0.9))
+////			}
+////			break
+////
+////		case Action_Humain_Blesse_Marche :
+////			switch(i_id_humain)
+////			{
+////				case C_ID_Ann :
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.7, 0.2))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.3, 0.7))
+////				case C_ID_Denham :
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.5, 1.0))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.0, 0.6))
+////				default:
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.3, 1.0))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.9, 0.4))
+////			}
+////			break
+////
+////		case Action_Humain_Blesse_MarcheBas :
+////			switch(i_id_humain)
+////			{
+////				case C_ID_Ann :
+////				case C_ID_Denham :
+////					return(-1.0)
+////				default:
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.2, 0.5))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.5, 1.0))
+////			}
+////			break
+////
+////		case Action_Cache_Marche :	
+////		case Action_Cache_MarcheF :	
+////			switch(i_id_humain)
+////			{
+////				case C_ID_Ann :
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.6, 0.9))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.1, 0.4))
+////				case C_ID_Denham :
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.5, 0.9))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.9, 0.5))
+////				default:
+////					if (ti_leg == Ci_IK_pied_gauche)
+////						return(ACT_LIB_Get_Move_Coef(0.4, 0.9))
+////					else
+////						return(ACT_LIB_Get_Move_Coef(0.1, 0.4))
+////			}
+////			break
+////
+////		case Action_Hayes_Arme_Course :
+////
+////			if (ti_leg == Ci_IK_pied_gauche)
+////				return(ACT_LIB_Get_Move_Coef(0.3, 1.0))
+////			else
+////				return(ACT_LIB_Get_Move_Coef(0.8, 0.5))
+////
+////			break
+//
+////		case Action_Pousse_Marche :	
+////			if (ti_leg == Ci_IK_pied_gauche)
+////				return(ACT_LIB_Get_Move_Coef(0.35, 0.6))
+////			else
+////				return(ACT_LIB_Get_Move_Coef(0.55, 1.0))
+////			break
+////}
+//
+//	if(ti_ok)
+//	{		
+////		if (ANI_IsInBlend())
+////			return -1.0
+//	
+//		if (ti_leg == Ci_IK_pied_gauche)
+//			tf_coef = MATH_Sin(TIME_Get() * 8.0)
+//		else
+//			tf_coef = -MATH_Sin(TIME_Get() * 8.0)
+//	
+//		if (tf_coef < 0.0)
+//			return 1.0
+//		else
+//			return tf_coef
+//	}
+//	
+//	return -1.0
+//}
+
+procedure_local void H_Reset_IK_Legs()
+{
+	int			ti_i	
+
+	// IK LEG
+	f_bassin_rotation_angle = 0.0
+	f_bassin_Z_offset = 0.0
+
+	v_IK_bassin_pos = @o_bassin OBJ_PosGet()
+
+	for (ti_i = 0; ti_i < 2; ti_i++)
+	{
+		i_flag_leg_IK[ti_i] = faux
+
+		f_IK_Z_offset[ti_i] = 0.0
+		f_IK_coef[ti_i] = 0.0
+		f_IK_tenseur[ti_i] = 0.5
+		f_IK_ground_coef[ti_i] = 0.0
+
+		f_IK_bassin_look_rot_coef = 0.0
+
+		v_IK_ref_ground_pos = OBJ_PosGet()
+
+		v_IK_dest_pos[ti_i] = @ao_IK_bones[ti_i][2] OBJ_PosGet()
+		v_IK_local_offset[ti_i] = MATH_VecGlobalToLocal(v_IK_dest_pos[ti_i] - OBJ_PosGet())
+	}
+}
+
+
+//procedure_local vector H_Body_Speed_Rotate()
+//{
+//	int				ti_action	
+//	int				ti_flag_rot
+//
+//	float			tf_dist
+//	float			tf_coef
+//
+//	vector		tv_move
+//	vector		tv_start_axis
+//	vector		tv_dest_axis
+//	vector		tv_spline_sight	
+//	vector		tv_sight
+//
+//	vector		tv_point_A
+//	vector		tv_point_B
+//	vector		tv_point_C
+//	vector		tv_point_D
+//
+//	v_IK_bassin_banking = Cv_VerticalVector
+//	return Cv_VerticalVector
+//	v_IK_bassin_banking = OBJ_BankingGet()
+//	return(OBJ_BankingGet())
+
+//	ti_flag_rot = vrai
+//
+//	if (OBJ_HierarchyGet())
+//		ti_flag_rot = faux
+//	else if (! i_flag_leg_IK[Ci_IK_pied_gauche] )
+//		ti_flag_rot = faux
+//	else if (! i_flag_leg_IK[Ci_IK_pied_droit] )
+//		ti_flag_rot = faux		
+//
+//	if (ti_flag_rot)
+//	{
+//		tv_move = (v_dyn_speed - v_last_dyn_speed) / TIME_GetDt()
+//		tv_move.z = 0.0
+//		tf_coef = MATH_VecDotProduct(tv_move * 0.035, OBJ_HorizonGet())
+//		tf_coef = MATH_FloatLimit(tf_coef, -1.0, 1.0)
+//
+//		f_body_rot_coef = MATH_FloatBlend(f_body_rot_coef, tf_coef, 4.0 * TIME_GetDt())
+//	}
+//	else
+//	{
+//		f_body_rot_coef -= MATH_FloatSign(f_body_rot_coef) * MATH_FloatMin(MATH_AbsFloat(f_body_rot_coef), 2.0 * TIME_GetDt())
+//	}
+//
+//	if (f_body_rot_coef)
+//	{
+//		v_IK_ref_ground_pos = @o_bassin MATH_VecGlobalToLocal(OBJ_PosGet() - @o_bassin OBJ_PosGet())
+//	
+//		tv_start_axis = @o_bassin MATH_VecGlobalToLocal(OBJ_BankingGet())
+//		tv_dest_axis = MATH_VecBlendRotate(tv_start_axis, @o_bassin MATH_VecGlobalToLocal(MATH_FloatSign(f_body_rot_coef) * OBJ_HorizonGet()), MATH_AbsFloat(f_body_rot_coef) * 0.3)
+//		@o_bassin OBJ_Rotate_FromTo(tv_start_axis, tv_dest_axis)
+//	
+//		v_IK_ref_ground_pos = @o_bassin MATH_VecLocalToGlobal(v_IK_ref_ground_pos)
+//		v_IK_ref_ground_pos += @o_bassin OBJ_PosGet()
+//	
+//		return(@o_bassin MATH_VecLocalToGlobal(tv_dest_axis))
+//	}
+//	else
+//	{
+//		return(OBJ_BankingGet())
+//	}
+//}
+
+//=============================================================
+//=============================================================
+//procedure_local void H_ActionStressAttente(int act)
+//{
+//	int			ti_ok
+//	vector	tv_temp
+//	object	to_obj
+//	int			ti_act
+//	
+//	ti_ok = vrai
+//	switch(act)
+//	{
+//		case Action_Stress_Attente :
+//		case Action_Hayes_Arme_Attente_Pistolet :
+//			break
+//		default:
+//			ti_ok = faux
+//			break
+//	}
+//	
+//	// Oriente vers jack si trop longue attente
+////	if(f_time_attend > 10 && !i_in_fight && i_etat_courant == ETAT_IA_suivi && !i_mode_idle && H_Attitude() != 4)
+////	{
+////		to_obj = AI_MainActorGet(C_ID_Jack)
+////		v_joy_dir = @to_obj OBJ_PosGet() - OBJ_PosGet()
+////	}
+//	
+////	if(i_id_humain != C_ID_Hayes && i_id_humain != C_ID_Jimmy)
+//		ti_ok = faux
+//	if(!o_ennemi_proche) ti_ok = faux
+//	if(!i_in_fight) ti_ok = faux
+//	
+//	if(ti_ok)
+//	{
+//		if(OBJ_SqrDist(o_ennemi_proche) < 8*8) ti_ok = faux
+//		tv_temp = @o_ennemi_proche OBJ_PosGet() - OBJ_PosGet()
+//		MATH_VecSetHorzNormalize(tv_temp)
+//		if(MATH_VecDotProduct(tv_temp, OBJ_SightGet()) < 0.5) ti_ok = faux
+//	}
+//	
+//	if(!ti_ok)
+//	{
+//		ACT_ActionSet1(act)
+//		return
+//	}
+//	
+//	ti_act = ACT_ActionGet()
+//	switch(ti_act)
+//	{
+//		case Action_Att_Observe :
+//		case Action_Hayes_Att_Observe_Gun :
+//			if(ACT_ActionFinished() )
+//			{
+//				f_time_intention_att = TIME_Get()
+//				ti_ok = faux
+//			}
+//			
+//			break
+//			
+//		default:
+//			 if(!TIME_Elapsed(f_time_intention_att, 8))
+//				ti_ok = faux
+//			break
+//	}
+//	
+//	if(!ti_ok)
+//	{
+//		ACT_ActionSet1(act)
+//		return
+//	}
+//	
+//	switch(act)
+//	{
+//		case Action_Stress_Attente : 						act = Action_Att_Observe break
+//		case Action_Hayes_Arme_Attente_Pistolet :	act = Action_Hayes_Att_Observe_Gun break
+//	}
+//	
+//	ACT_ActionSet1(act)
+//}
+
+//=============================================================
+//=============================================================
+//procedure_local void H_ActionCacheAtt( )
+//{
+//	int			ti_sens
+//	vector	tv_temp
+//	float		tf_temp
+//	float		tf_dot
+//	
+//	// Ennemi dans le dos, qqpart
+//	ti_sens = 0
+//	if(o_ennemi_proche)
+//	{
+//		tv_temp = @o_ennemi_proche OBJ_PosGet() - OBJ_PosGet()
+//		MATH_VecSetHorzNormalize(tv_temp)
+//		tf_dot = MATH_VecDotProduct(OBJ_SightGet(), tv_temp)
+//		if(tf_dot < 0)
+//		{
+//			tv_temp = MATH_VecCrossProduct(OBJ_SightGet(), tv_temp)
+//			ti_sens = MATH_FloatSign(tv_temp.z)
+//		}
+//		else if(tf_dot > 0.4)
+//		{
+//			tf_temp = OBJ_SqrDist(o_ennemi_proche)
+//			if(tf_temp < 4 * 4 && HasInteretOnMe(o_ennemi_proche))
+//				ti_sens = 666
+//			else if(tf_temp < 2 * 2)
+//				ti_sens = 666
+//		}
+//	}
+//	
+//	if(ACT_ActionGet() == Action_Cache_Gauche || ACT_ActionGet() == Action_Cache_Droite)
+//	{
+//		if(ACT_ActionFinished() )
+//		{
+//			f_time_intention_att = TIME_Get()
+//			ti_sens = 0
+//		}
+//		else if(!ti_sens)
+//		{
+//			if(ACT_ActionGet() == Action_Cache_Gauche)
+//				ti_sens = 1
+//			else
+//				ti_sens = -1
+//		}
+//	}
+//	else if(ti_sens && (!TIME_Elapsed(f_time_intention_att, 5) || (f_time_attend < 1)))
+//		ti_sens = 0
+//	else if(!ti_sens && TIME_Elapsed(f_time_intention_att, 15) && (f_time_attend > 1))
+//		ti_sens = MATH_RandInt(-1, 2)
+//	
+//	if(ti_sens == 666 && i_ennemi_proche_state == C_EVENT_EnemyState_Fight)
+//		ACT_ActionSet1(Action_Cache_Protege)			
+//	else if(ti_sens > 0)
+//		ACT_ActionSet1(Action_Cache_Gauche)
+//	else if(ti_sens < 0)
+//		ACT_ActionSet1(Action_Cache_Droite)
+//	else if (AnimWeapon())
+//		ACT_ActionSet1(Action_CacheF_Att)
+//	else
+//		ACT_ActionSet1(Action_Cache_Att)
+//}
+
+
+//=============================================================
+//=============================================================
+procedure_local vector H_BlendRotate(vector v1, vector v2, float speed, float disable)
+{
+	float	tf_dot
+	
+	tf_dot = 1
+	
+	if(MATH_VecNullEpsilon(v1)) v1 = v2
+	
+	if(!disable)
+	{
+		MATH_VecSetNormalize(v1)
+		MATH_VecSetNormalize(v2)
+		tf_dot = MATH_AbsFloat(MATH_VecDotProduct(v1, v2))
+		tf_dot = (0.5 * tf_dot) + 0.5
+//		tf_dot *= tf_dot
+//		tf_dot *= tf_dot
+		if(tf_dot < 0.1) tf_dot = 0.1
+	}
+	
+	return MATH_VecBlendRotate(v1, v2, tf_dot * speed * TIME_GetDt())	
+}
+
+//=============================================================
+//=============================================================
+//procedure int H_RealCrouch( )
+//{
+//	int ti_crouch
+//	
+//	ti_crouch = faux
+//	switch(ACT_ActionGet())
+//	{
+//		case Action_Cache_Att :
+//		case Action_Cache_Droite :
+//		case Action_Cache_Gauche :
+//		case Action_CacheF_Att :
+//			ti_crouch = vrai
+//			break
+//	}
+//	
+//	return ti_crouch
+//}
+
+

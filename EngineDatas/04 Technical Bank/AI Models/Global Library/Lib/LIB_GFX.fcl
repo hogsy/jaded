@@ -1,0 +1,1892 @@
+//============================================================
+// Param IN:
+//		ai_GFX_Fire : tableau de 20 id gfx initalisé à -1
+//		ai_GFX_Halo : id du halo
+//		tv_pos : position du javelot
+//		tv_axis : axe du javelot
+//		ti_flag_on_off : explicite non ?
+// Param OUT: none
+//============================================================
+procedure void LIBGFX_JavelinFire2(vector tv_pos, vector tv_axis, float tf_size, int ti_flag_on_off, byrefarr int ai_GFX_Fire, byref int ti_GFX_Halo, byref vector tv_last_last_pos, byref vector tv_last_pos)
+{
+	int				ti_i
+	int				ti_k
+	int				ti_flag_force_draw
+	int				ti_GFX_Spark
+	
+	vector		tv_temp
+	vector		tv_tempZ
+	vector		tv_point_A
+	vector		tv_point_B
+	vector		tv_point_C
+	vector		tv_dir_1
+	vector		tv_dir_2
+	vector		tv_move
+	vector		tv_wind
+	vector		tav_pos[20]
+	
+	float			tf_increment
+	float			tf_gen_rate
+	float			tf_coef
+	
+	object		to_camera
+	object 		to_Temp
+	
+	color			tc_color_0
+	color			tc_color_1
+	color			tc_color_2
+	
+	#define Ci_GFX_NB			5
+	#define Cf_step_length		0.2 // (1.0 / Ci_GFX_NB)
+	
+	tc_color_0 = 0x0027A0FC
+	tc_color_1 = 0x40303030
+	tc_color_2 = 0x0
+	
+	to_Temp = @"univ" Weapon_SFX
+	if ((to_Temp != nobody) && ! MATH_VecNullEpsilon(tv_axis) )
+	{
+		tv_temp = tv_pos
+		tv_tempZ = cvector(0,0,-1)
+		if (!ti_flag_on_off)
+			tv_temp .z = -100000
+		@"univ" Weapon_SFX_ON = 1
+		@to_Temp OBJ_PosSet(tv_temp)
+		@to_Temp OBJ_BankingGeneralSet(tv_tempZ ,tv_axis)
+		tv_pos += tv_axis * 0.2
+		@to_Temp OBJ_DrawAtEnd()
+	}
+		
+	
+	if ( ! ti_flag_on_off )
+	{
+		if (ti_GFX_Halo != -1)
+		{
+			GFX_Del(ti_GFX_Halo)
+			ti_GFX_Halo = -1
+		}
+		
+		for (ti_i = 0; ti_i < Ci_GFX_NB; ti_i++)
+		{
+			if (ai_GFX_Fire[ti_i] != -1)
+			{
+				GFX_Del(ai_GFX_Fire[ti_i])
+				ai_GFX_Fire[ti_i] = -1
+			}
+		}
+		
+		return
+	}
+
+	tv_point_A = tv_last_last_pos + ((tv_last_pos - tv_last_last_pos) * 0.5)
+	tv_point_B = tv_last_pos
+	tv_point_C = tv_last_pos + ((tv_pos - tv_last_pos) * 0.5)
+	
+//	DBG_RenderVector(tv_pos, Cv_VerticalVector, color_rouge)
+//	DBG_RenderVector(tv_last_pos, Cv_VerticalVector, color_vert)
+//	DBG_RenderVector(tv_last_last_pos, Cv_VerticalVector, color_bleu)
+
+	tv_dir_1 = (tv_point_C - tv_point_B) * Cf_step_length
+	tv_dir_2 = (tv_point_B - tv_point_A) * Cf_step_length
+	
+	// Casteljau
+	tf_increment = 0.0
+	
+	for (ti_i = 0; ti_i < Ci_GFX_NB; ti_i++)
+	{
+		tv_temp = tv_point_B + (ti_i * tv_dir_1)
+		tav_pos[ti_i] = tv_point_A + (ti_i * tv_dir_2)
+		tav_pos[ti_i] += (tv_temp - tav_pos[ti_i]) * tf_increment
+		
+		tf_increment += Cf_step_length
+	}
+	
+//	for (ti_i = 0; ti_i < Ci_GFX_NB - 1; ti_i++)
+//		DBG_RenderVector(tav_pos[ti_i], tav_pos[ti_i + 1] - tav_pos[ti_i], color_blanc)
+	
+	tv_last_last_pos = tv_last_pos
+	tv_last_pos = tv_pos
+	
+	if (ti_GFX_Halo == -1)
+	{
+		tv_last_last_pos = tv_pos
+		tv_last_pos = tv_pos
+	
+		ti_GFX_Halo = 1
+
+//		ti_GFX_Halo = GFX_Add(21)
+//		GFX_FlagSet(ti_GFX_Halo, 4, 1)
+//		GFX_MaterialSet(ti_GFX_Halo, get_SFX_light_and_smoke, 0)	
+//		GFX_Setf(ti_GFX_Halo, 21002, 0.1)							// extraction par rapport au point de génération (vers la cam)
+//		GFX_Seti(ti_GFX_Halo, 21103, 1)		
+//		GFX_Seti(ti_GFX_Halo, 21101, 0x00106EDE)
+//		GFX_Setf(ti_GFX_Halo, 21000, 0.2 * tf_size)			// rayon
+		
+		for (ti_i= 0; ti_i < Ci_GFX_NB; ti_i++)
+			ai_GFX_Fire[ ti_i ] = -1
+	}
+
+//	GFX_Setv(ti_GFX_Halo, 21200, tv_last_pos) // + (tv_axis * MATH_RandFloat(-0.5, 0.5)))				// position du halo
+
+	tv_wind = Cv_NullVector
+	ti_flag_force_draw = vrai
+
+	to_camera = VIEW_GetObject(0)
+	tv_temp = @to_camera OBJ_PosGet()
+	tv_temp -= @to_camera OBJ_SightGet() * 100000000
+
+	tv_move = Cv_NullVector
+
+	for (ti_i = Ci_GFX_NB - 1; ti_i > 0; ti_i--)
+	{
+		if (ti_flag_force_draw || MATH_VecDotProduct(tv_move, tv_move) > 0.01)
+		{
+			ti_flag_force_draw = faux
+
+			tv_move *= 0.5
+			tv_pos += tv_move
+			
+			//	FLAMME
+			if (ai_GFX_Fire[ti_i] == -1)
+			{
+				ai_GFX_Fire[ti_i] = GFX_Add(13)																	// Create the boum
+
+				GFX_Seti(ai_GFX_Fire[ti_i], 13100, 40)															// *Buffer number of sprite
+				GFX_Seti(ai_GFX_Fire[ti_i], 13106, 0xFFFFFFFF)											// *number of sprite to generate
+				GFX_Setf(ai_GFX_Fire[ti_i], 13008, 0.03)														// generation rate
+
+				GFX_MaterialSet(ai_GFX_Fire[ti_i] , get_SFX_light_and_smoke, -1)									// met le materiau
+				GFX_Seti(ai_GFX_Fire[ti_i], 13101, 8)															// Materiau 0
+				GFX_Seti(ai_GFX_Fire[ti_i], 13110, 8)															// Materiau 1
+				GFX_Seti(ai_GFX_Fire[ti_i], 13111, 8)															// Materiau 2
+				GFX_Seti(ai_GFX_Fire[ti_i], 13112, 8)															// Materiau 3
+
+				GFX_Seti(ai_GFX_Fire[ti_i], 13107, 0)															// Affichage des sprites non trié
+
+				// Size
+				GFX_Setf(ai_GFX_Fire[ti_i], 13005, 0.035 * tf_size * 1.5)								// Creation size min
+				GFX_Setf(ai_GFX_Fire[ti_i], 13006, 0.085 * tf_size * 1.5)								// Creation size max
+				GFX_Setf(ai_GFX_Fire[ti_i], 13000, -0.05)														// Grwing speed min
+				GFX_Setf(ai_GFX_Fire[ti_i], 13001, -0.025)														// Grwing speed max
+				GFX_Setf(ai_GFX_Fire[ti_i], 13002, 0.025)														// Friction Grow
+//				GFX_Setf(ai_GFX_Fire[ti_i], 13000, 0.05)														// Grwing speed min
+//				GFX_Setf(ai_GFX_Fire[ti_i], 13001, 0.1)														// Grwing speed max
+//				GFX_Setf(ai_GFX_Fire[ti_i], 13002, 0.05)														// Friction Grow
+
+				// Color
+				GFX_Seti(ai_GFX_Fire[ti_i], 13103, tc_color_0)											// Color fase 0
+				GFX_Seti(ai_GFX_Fire[ti_i], 13104, tc_color_1)	
+				GFX_Seti(ai_GFX_Fire[ti_i], 13105, tc_color_2)											// Color fase 2
+			
+				// Translation
+				GFX_Setf(ai_GFX_Fire[ti_i], 13009, 0.25)										// Norm speed min
+				GFX_Setf(ai_GFX_Fire[ti_i], 13010, 0.45)								// Norm speed max
+			
+				GFX_Setv(ai_GFX_Fire[ti_i], 13201, cvector(-0.01, -0.01, 0.59))		// Speed min
+				GFX_Setv(ai_GFX_Fire[ti_i], 13202, cvector(0.01, 0.01, 0.6))			// Speed max
+
+				GFX_Setv(ai_GFX_Fire[ti_i], 13203, cvector(0.1, 0.1, 0.0))								// friction speed
+				GFX_FlagSet(ai_GFX_Fire[ti_i], 0 , 1)
+				GFX_FlagSet(ai_GFX_Fire[ti_i], 2 , 1)
+				GFX_Setf(ai_GFX_Fire[ti_i], 13012, 0.75)														// Time random
+			}
+
+			tf_coef = TIME_GetDt() / (Ci_GFX_NB - 1)
+			GFX_Setf(ai_GFX_Fire[ti_i], 13003, 0.0)		// Time fase 1
+			GFX_Setf(ai_GFX_Fire[ti_i], 13004, MATH_FloatMax((0.79 - TIME_GetDt()) + (tf_coef * ti_i), 0.0))		// Time fase 2
+
+			GFX_Setv(ai_GFX_Fire[ti_i], 13204, tv_wind)			// wind
+			GFX_Setv(ai_GFX_Fire[ti_i], 13200, tv_pos - (tv_wind * TIME_GetDt()))				// Creation Pos
+
+			DBG_RenderVector(tv_pos, Cv_VerticalVector, color_cyan)
+
+			GFX_Setv(ai_GFX_Fire[ti_i], 13207, tv_axis)								// CreaPosAxe X
+			DBG_RenderVector(tv_pos, -tv_axis, color_vert)
+			DBG_RenderVector(tv_pos, tv_axis, color_vert)
+
+			if (ti_i != Ci_GFX_NB - 1)
+			{
+				GFX_Setv(ai_GFX_Fire[ti_i], 13208, tv_move)								// CreaPosAxe Y
+				DBG_RenderVector(tv_pos, -tv_move, color_blanc)
+				DBG_RenderVector(tv_pos, tv_move, color_blanc)
+			}
+			
+			tv_pos += tv_move
+		}
+		else if (ai_GFX_Fire[ti_i] != -1)
+		{
+			GFX_Setv(ai_GFX_Fire[ti_i], 13200, tv_temp)													// Creation Pos
+		}
+
+		tv_move = tav_pos[ti_i] - tv_pos
+	}
+
+}
+
+//============================================================
+// Param IN:
+//		pi_GFX_Fire  : id du gfx (-1 pour la création)
+//		v_Pos : position du javelot (OBJ_PosGet() + (2 * v_Axe))
+//		v_Axe : axe du javelot		(OBJ_SightGet() / 5)
+// Param OUT: none
+//============================================================
+procedure void LIBGFX_JavelinFire( byref int pi_GFX_Fire, vector  pv_Pos, vector pv_Axe)
+{
+//	if ( pi_GFX_Fire == -1 )
+//	{
+//		pi_GFX_Fire = GFX_Add(13)													// Create the boum
+//		GFX_FlagSet(pi_GFX_Fire, 0 , 1)
+//		GFX_FlagSet(pi_GFX_Fire, 2 , 1)
+//
+//		GFX_MaterialSet(pi_GFX_Fire, get_SFX_light_and_smoke, -1)     // met le materiau
+//		GFX_Seti(pi_GFX_Fire, 13101, 17)              								// Materiau 0
+//		GFX_Seti(pi_GFX_Fire, 13110, 18)               							// Materiau 1
+//		GFX_Seti(pi_GFX_Fire, 13111, 19)              								// Materiau 2
+//		GFX_Seti(pi_GFX_Fire, 13112, 17)              								// Materiau 3
+//
+//		GFX_Seti(pi_GFX_Fire, 13100, 50)               							// Buffer number of sprite
+//		GFX_Seti(pi_GFX_Fire, 13106, 0xFFFFFFFF)           				// Number of sprite to generate
+//		GFX_Seti(pi_GFX_Fire, 13107, 0)               								// Sprites non triés
+//
+//		GFX_Setf(pi_GFX_Fire, 13003, 0.5)               							// Time fase 1
+//		GFX_Setf(pi_GFX_Fire, 13004, 1)              								// Time fase 2
+//		GFX_Setf(pi_GFX_Fire, 13012, 0)              								// Time random
+//	   
+//		GFX_Setv(pi_GFX_Fire, 13201, cvector(0, 0, 0))            				// Speed min
+//		GFX_Setv(pi_GFX_Fire, 13202, cvector(0, 0, 0))           				// Speed max
+//	  
+//		GFX_Setf(pi_GFX_Fire, 13000, 0.5)              							// Growing speed min
+//		GFX_Setf(pi_GFX_Fire, 13001, 0.8)              							// Growing speed max
+//		GFX_Setf(pi_GFX_Fire, 13002, 0.01)              							// Friction Grow
+//		  
+//		GFX_Setf(pi_GFX_Fire, 13005, 0)            								// Creation size min
+//		GFX_Setf(pi_GFX_Fire, 13006, 0)           									// Creation size max
+//		  
+//		GFX_Setv(pi_GFX_Fire, 13203, cvector(0.0, 0.0, 0.1))      			// friction speed
+//	  
+//		//GFX_Seti(pi_GFX_Fire, 13103, 0x004087FF)          					// Color fase 0
+//		//GFX_Seti(pi_GFX_Fire, 13104, 0x00000818)           					// Color fase 1
+//		GFX_Seti(pi_GFX_Fire, 13103, 0x0040E0C0)          					// Color fase 0
+//		GFX_Seti(pi_GFX_Fire, 13104, 0x00000000)           					// Color fase 1
+//		GFX_Seti(pi_GFX_Fire, 13105, 0x00000000)           					// Color fase 2
+//	  
+//		GFX_Setf(pi_GFX_Fire, 13009, 0)              								// Norm speed min
+//		GFX_Setf(pi_GFX_Fire, 13010, 0)              								// Norm speed max
+//	  
+//		GFX_Setf(pi_GFX_Fire, 13008, 0.1 )             							// generation rate
+//	  
+//		GFX_Setv(pi_GFX_Fire, 13205, Cv_NullVector)          				// Mainposspeed
+//		GFX_Setv(pi_GFX_Fire, 13206, Cv_NullVector)          				// Mainpossfriction
+//	   
+//		GFX_Setf(pi_GFX_Fire, 13007, 0.0)               							// Gravity
+//	}
+//
+//	GFX_Setv(pi_GFX_Fire, 13200, pv_Pos ) 										// Creation Pos
+//	GFX_Setv(pi_GFX_Fire, 13207, pv_Axe )										// CreaPosAxe X
+
+	//	FLAMME
+	if (pi_GFX_Fire == -1)
+	{
+		pi_GFX_Fire = GFX_Add(13)																	// Create the boum
+
+		GFX_Seti(pi_GFX_Fire, 13100, 40)															// *Buffer number of sprite
+		GFX_Seti(pi_GFX_Fire, 13106, 0xFFFFFFFF)											// *number of sprite to generate
+		GFX_Setf(pi_GFX_Fire, 13008, 0.04)														// generation rate
+
+		GFX_MaterialSet(pi_GFX_Fire , get_SFX_light_and_smoke, -1)									// met le materiau
+		GFX_Seti(pi_GFX_Fire, 13101, 17)															// Materiau 0
+		GFX_Seti(pi_GFX_Fire, 13110, 18)															// Materiau 1
+		GFX_Seti(pi_GFX_Fire, 13111, 19)															// Materiau 2
+		GFX_Seti(pi_GFX_Fire, 13112, 17)															// Materiau 3
+
+		GFX_Seti(pi_GFX_Fire, 13107, 0)															// Affichage des sprites non trié
+
+		// Size
+		GFX_Setf(pi_GFX_Fire, 13005, 0.05)								// Creation size min
+		GFX_Setf(pi_GFX_Fire, 13006, 0.15)								// Creation size max
+		GFX_Setf(pi_GFX_Fire, 13000, -0.05)														// Grwing speed min
+		GFX_Setf(pi_GFX_Fire, 13001, -0.025)														// Grwing speed max
+		GFX_Setf(pi_GFX_Fire, 13002, 0.025)														// Friction Grow
+
+		// Color
+		GFX_Seti(pi_GFX_Fire, 13103, 0x4027A0FC)											// Color fase 0
+		GFX_Seti(pi_GFX_Fire, 13104, 0x4027A0FC)	
+		GFX_Seti(pi_GFX_Fire, 13105, 0x0)											// Color fase 2
+	
+		// Translation
+		GFX_Setf(pi_GFX_Fire, 13009, 0.5)										// Norm speed min
+		GFX_Setf(pi_GFX_Fire, 13010, 1.0)								// Norm speed max
+	
+//		GFX_Setv(pi_GFX_Fire, 13201, cvector(-0.01, -0.01, 0.59))		// Speed min
+//		GFX_Setv(pi_GFX_Fire, 13202, cvector(0.01, 0.01, 0.6))			// Speed max
+
+		GFX_Setv(pi_GFX_Fire, 13201, cvector(-1.0, -1.0, 0.0))		// Speed min
+		GFX_Setv(pi_GFX_Fire, 13202, cvector(1.0, 1.0, 1.0))			// Speed max
+
+		GFX_Setv(pi_GFX_Fire, 13203, cvector(0.1, 0.1, 0.01))								// friction speed
+		GFX_FlagSet(pi_GFX_Fire, 0 , 1)
+		GFX_FlagSet(pi_GFX_Fire, 2 , 1)
+		GFX_Setf(pi_GFX_Fire, 13012, 0.75)														// Time random
+
+		GFX_Setf(pi_GFX_Fire, 13003, 0.0)		// Time fase 1
+		GFX_Setf(pi_GFX_Fire, 13004, 0.5)		// Time fase 2
+	
+		GFX_Setv(pi_GFX_Fire, 13204, Cv_NullVector)			// wind
+	}
+
+	GFX_Setv(pi_GFX_Fire, 13200, pv_Pos)				// Creation Pos
+	GFX_Setv(pi_GFX_Fire, 13207, pv_Axe)				// CreaPosAxe X
+
+	GFX_Setf(pi_GFX_Fire, 13007, MATH_RandFloat(1.0, 2.0))               							// Gravity
+}
+
+
+//============================================================
+//====>	LIBGFX_ProjectileFire
+//============================================================
+//procedure void LIBGFX_ProjectileFire( byref int pi_GFX_Fire, vector  pv_Pos, vector pv_Axe, vector pv_Sight, vector pv_LastPos, vector pv_LastSight, float pf_TrailWidth )
+//{
+//	vector	vaxe
+//	vector	vpos
+//	
+//	vector 	tv_temp
+//	vector	tv_sight
+//	vector	tv_pos
+//	
+//	int			ti_gfx
+//	
+//	float		f_dist
+//	float		f_deltadist
+//	float		f_curdist
+//	float		tf_ratio
+//	
+//	object	to_obj
+//	
+//	LIBGFX_JavelinFire( pi_GFX_Fire, pv_Pos, pv_Axe )
+//	EVENT_AddEventFire( 0, OBJ_Me(), pv_Pos, pv_Axe )
+//
+//	tv_temp = pv_Pos - pv_LastPos
+//	f_dist = MATH_VecDotProduct( tv_temp, tv_temp )
+//
+//	if ( f_dist > 0.25 )
+//	{
+//		f_dist = MATH_FloatSqrt( f_dist )
+//		f_deltadist = 0.5
+//		f_curdist = f_deltadist
+//		
+//		while (f_curdist < f_dist )
+//		{
+//			tf_ratio = f_curdist / f_dist
+//			tv_sight = (tf_ratio * pv_Sight) + ((1 - tf_ratio) * pv_LastSight )
+//			MATH_VecSetNormalize( tv_sight )
+//			tv_pos = (tf_ratio * pv_Pos) + ((1 - tf_ratio) * pv_LastPos)
+//		
+//			vaxe = tv_sight / 4
+//			vpos = tv_pos + vaxe
+//			ti_gfx = -1
+//			DBG_RenderVector( vpos, vaxe, color_rouge )
+//			DBG_RenderVector( vpos, -vaxe, color_bleu )
+//			LIBGFX_JavelinFire( ti_gfx , vpos, vaxe )
+//			GFX_Setf(ti_gfx, 13003, 0.1 )               					// Time fase 1
+//			GFX_Setf(ti_gfx, 13004, 0.15 )              					// Time fase 2
+//			GFX_Setf(ti_gfx, 13000, 0.15 * pf_TrailWidth )           	// Growing speed min
+//			GFX_Setf(ti_gfx, 13001, 0.15 * pf_TrailWidth )           	// Growing speed max
+//			GFX_Setf(ti_gfx, 13005, 0.15 * pf_TrailWidth )    		// Creation size min
+//			GFX_Setf(ti_gfx, 13006, 0.15 * pf_TrailWidth )			// Creation size max
+//			GFX_Setf(ti_gfx, 13008, 0.02 )             					// generation rate
+//			GFX_LifeTimeSet( ti_gfx, 0.15 + (TIME_GetDt() * tf_ratio) )
+//			f_curdist += f_deltadist
+//		}
+//	}
+//}
+
+//============================================================
+// Param IN:
+//		pi_GFX_Fire  : id du gfx (-1 pour la création)
+//		v_Pos : position du javelot (OBJ_PosGet() + (2 * v_Axe))
+//		v_Axe : axe du javelot		(OBJ_SightGet() / 5)
+// Param OUT: none
+//============================================================
+procedure void LIBGFX_FireBoum( vector  pv_Pos, vector pv_Normal )
+{
+	int i_GFX
+	
+	i_GFX = GFX_Add(13)													// Create the boum
+	GFX_FlagSet(i_GFX, 0 , 1)
+	GFX_FlagSet(i_GFX, 2 , 1)
+
+	GFX_MaterialSet(i_GFX, get_SFX_light_and_smoke, -1)     // met le materiau
+	GFX_Seti(i_GFX, 13101, 17)              								// Materiau 0
+	GFX_Seti(i_GFX, 13110, 18)               							// Materiau 1
+	GFX_Seti(i_GFX, 13111, 19)              								// Materiau 2
+	GFX_Seti(i_GFX, 13112, 17)              								// Materiau 3
+
+	GFX_Seti(i_GFX, 13100, 50)               							// Buffer number of sprite
+	GFX_Seti(i_GFX, 13106, 50)				           					// Number of sprite to generate
+	GFX_Seti(i_GFX, 13107, 0)               								// Sprites non triés
+
+	GFX_Setf(i_GFX, 13003, 0.5)               							// Time fase 1
+	GFX_Setf(i_GFX, 13004, 0.2)              							// Time fase 2
+	GFX_Setf(i_GFX, 13012, 0.1)             								// Time random
+	   
+	GFX_Setv(i_GFX, 13201, cvector(0, 0, 0))            				// Speed min
+	GFX_Setv(i_GFX, 13202, pv_Normal )           					// Speed max
+	  
+	GFX_Setf(i_GFX, 13000, 1.0)             								// Growing speed min
+	GFX_Setf(i_GFX, 13001, 1.6)             								// Growing speed max
+	GFX_Setf(i_GFX, 13002, 0.01)           								// Friction Grow
+		  
+	GFX_Setf(i_GFX, 13005, 0)            									// Creation size min
+	GFX_Setf(i_GFX, 13006, 0.2)           								// Creation size max
+		  
+	GFX_Setv(i_GFX, 13203, cvector(0.0, 0.0, 0.1))      			// friction speed
+	  
+	GFX_Seti(i_GFX, 13103, 0x004087FF)          					// Color fase 0
+	GFX_Seti(i_GFX, 13104, 0x70000818)           					// Color fase 1
+	GFX_Seti(i_GFX, 13105, 0x00000000)           					// Color fase 2
+	  
+	GFX_Setf(i_GFX, 13009, 0)              								// Norm speed min
+	GFX_Setf(i_GFX, 13010, 1)              								// Norm speed max
+	  
+	GFX_Setf(i_GFX, 13008, 0.001 )             							// generation rate
+	  
+	GFX_Setf(i_GFX, 13007, -5.0)               							// Gravity
+
+	GFX_Setv(i_GFX, 13200, pv_Pos ) 										// Creation Pos
+		
+	GFX_LifeTimeSet( i_GFX, 0.1 )
+}
+
+//============================================================
+// Param OUT: id of cerated GFX
+//============================================================
+procedure int LIBGFX_WaterTrace_Create( )
+{
+	int ret
+	
+	ret = GFX_Add(12)
+	GFX_FlagSet(ret, 0 , 1)
+	GFX_FlagSet(ret, 2 , 1)
+	GFX_MaterialSet(ret, get_SFX_water, 0)	// met le materiau
+
+	GFX_Seti(ret , 12100 , 6)									// Number of point per profile
+	GFX_Seti(ret , 12101 , 5) 									// Number of Link per profile
+	GFX_Seti(ret , 12102 , 16)									// Number of profiles
+	GFX_Seti(ret, 12103 , 1) 									// start
+	GFX_Seti(ret, 12111 , 8) 									// UTiler
+
+	//GFX_Setf(ret, 12000 , -95.5) 							// Gravity
+	GFX_Setf(ret, 12000 , -10) 								// Gravity
+	GFX_Setf(ret, 12004 , 0.1) 								// Segment lenght min
+	GFX_Setv(ret, 12202, cvector(0.02,0.02,0)) 			// Friction
+	
+	GFX_Seti(ret, 12105 , 0) 									// set link 0
+	GFX_Seti(ret , 12106 , 0) 									// Point A
+	GFX_Seti(ret , 12107 , 1) 									// Point B
+	GFX_Setf(ret , 12001 , 0.0) 								// Point VA
+	GFX_Setf(ret, 12002 , 0.4) 								// Point VB
+		
+	GFX_Seti(ret , 12105 , 1) 									// set link 1
+	GFX_Seti(ret , 12106 , 1) 									// Point A
+	GFX_Seti(ret , 12107 , 2) 									// Point B
+	GFX_Setf(ret , 12001 , 0.4) 								// Point VA
+	GFX_Setf(ret , 12002 , 0.4) 								// Point VB
+		
+	GFX_Seti(ret , 12105 , 2) 									// set link 2
+	GFX_Seti(ret , 12106 , 2) 									// Point A
+	GFX_Seti(ret, 12107 , 3) 									// Point B
+	GFX_Setf(ret, 12001 , 0.4) 								// Point VA
+	GFX_Setf(ret, 12002 , 0.6) 								// Point VB
+
+	GFX_Seti(ret , 12105 , 3) 									// set link 3
+	GFX_Seti(ret , 12106 , 3) 									// Point A
+	GFX_Seti(ret , 12107 , 4) 									// Point B
+	GFX_Setf(ret , 12001 , 0.6) 								// Point VA
+	GFX_Setf(ret , 12002 , 0.6) 								// Point VB
+
+	GFX_Seti(ret , 12105 , 4) 									// set link 4
+	GFX_Seti(ret , 12106 , 4) 									// Point A
+	GFX_Seti(ret , 12107 , 5) 									// Point B
+	GFX_Setf(ret , 12001 , 0.6) 								// Point VA
+	GFX_Setf(ret , 12002 , 1.0) 								// Point VB
+	
+	return ret
+}	
+	
+procedure void LIBGFX_WaterTrace_Update( int trace, int on, vector pos, vector axe, float width )
+{
+	vector 	X, Y, Z
+	vector	Xold, Yold
+	
+	int			i_Color, i_C[3]
+	int			i_Index
+	
+	float		norm
+	float		f_SY
+	float		f_SX0
+	float		f_SX1
+	float		f_SX2
+	float		f_SZ1
+	float		f_SZ2
+	float		f_MulLeft
+	float		f_MulRight
+		
+	vector	vspeed[6]
+	
+	// effect off
+	if (!on)
+	{
+effect_off:
+		GFX_Seti(trace, 12103 , 0) // Start
+		return
+	}
+	
+	pos.z += 0.05
+	Y = axe
+	Z = Cv_VerticalVector
+	X = MATH_VecCrossProduct( Y, Z )
+	norm = MATH_VecNorm( X )
+	if (norm < Cf_Epsilon)
+		goto effect_off
+	X /= norm
+	Y = MATH_VecCrossProduct(Z, X)
+	
+	Xold = GFX_Getv(trace, 12203 ) 
+	Yold = GFX_Getv(trace, 12204 )
+	norm = MATH_VecDotProduct( Y, Yold )
+	norm = (MATH_VecDotProduct( Y, Yold ) - 0.95) * 20
+	if (norm < 0.2) norm = 0.2
+	if (MATH_VecDotProduct( Y, Xold ) > 0 )
+	{
+		f_MulRight = norm
+		f_MulLeft = 2.0 - norm
+	}
+	else
+	{
+		f_MulLeft = norm
+		f_MulRight = 2.0 - norm
+	}
+	
+	i_C[0] = 0x9F2F4F2F
+	i_C[1] = 0x3F2F4F2F
+	i_C[2] = 0x002F4F2F
+	f_SY = -2					// Y SPEED
+	f_SX0 = 0.1
+	f_SX1 = 0.4 
+	f_SX2 = 0.8
+	f_SZ1 = 0.5
+	f_SZ2 = 1.2
+	
+	// POSITIONNEMENT DES POINTS
+	vspeed[ 0 ] = f_MulRight  * cvector(f_SX2, f_SY, f_SZ2)
+	vspeed[ 1 ] = f_MulRight  * cvector(f_SX1, f_SY, f_SZ1)
+	vspeed[ 2 ] = f_MulRight  * cvector( f_SX0, f_SY, 0)
+	vspeed[ 3 ] = f_MulLeft * cvector(-f_SX0, f_SY, 0)
+	vspeed[ 4 ] = f_MulLeft * cvector(-f_SX1, f_SY, f_SZ1)
+	vspeed[ 5 ] = f_MulLeft * cvector( -f_SX2, f_SY, f_SZ2)
+		
+	for (i_Index = 0; i_Index < 6; i_Index++)
+	{
+		// POSITIONNEMENT DES POINTS
+		i_Color = MATH_AbsFloat( 2.5 - i_Index ) - 0.5
+		GFX_Seti(trace, 12104 , i_Index ) 									// Actual point to set
+		GFX_Seti(trace, 12109 , i_C[i_Color] ) 							// Color
+		GFX_Setv(trace, 12200, Cv_NullVector )							// pos
+		GFX_Setv(trace, 12207, Cv_NullVector ) 							// 
+		GFX_Setv(trace, 12201, vspeed[ i_Index ] )						// speed
+		GFX_Setv(trace, 12208, vspeed[ i_Index ] * 0.2 )				// random speed
+		GFX_Setf(trace, 12003, pos.z)										// Constraint ZMin
+	}
+		
+	GFX_Seti(trace, 12103 , 1) // Start
+	GFX_Setv(trace, 12203, X) 
+	GFX_Setv(trace, 12204, Y) 
+	GFX_Setv(trace, 12205, Z) 
+	GFX_Setv(trace, 12206, pos) 
+	GFX_Setv(trace, 12207, cvector(0, 0, 0)) 	// Random POS
+}	
+
+//============================================================
+//============================================================
+procedure int LIBGFX_Fade( int mat, int col1, int col2, float t0, float t1, float t2, float t3, float t4, int prio )
+{
+	int	ti_i
+	
+	ti_i = GFX_AddSorted(11, prio)
+	GFX_FlagSet( ti_i, 0, 1)          										// active l'effet
+	GFX_FlagSet( ti_i, 2, 1 )          										// met le flag materiau transparent a vrai
+	GFX_MaterialSet( ti_i, get_SFX_light_and_smoke, mat)   	// met le materiau
+	GFX_Seti( ti_i, 11100, col1)        	// couleur 0
+	GFX_Seti( ti_i, 11101, col2)    		// couleur 1
+	GFX_Setf( ti_i, 11000, t0)         	// t0
+	GFX_Setf( ti_i, 11001, t1)         	// t1
+	GFX_Setf( ti_i, 11002, t2)         	// t2
+	GFX_Setf( ti_i, 11003, t3)         	// t3
+	GFX_Setf( ti_i, 11004, t4)      		// t4
+	return ti_i
+}
+
+//============================================================
+//============================================================
+procedure void LIBGFX_RambleCam( float amplitude)
+{
+	message	msg
+	vector		tv_temp
+	object		to_camera 
+		
+	msg.msg_id = 3
+	tv_temp = Cv_NullVector
+	tv_temp.x = amplitude
+	msg.msg_vec1 = tv_temp
+	
+	to_camera = @get_global o_camera
+	@to_camera MSG_Send(msg)
+}
+
+//============================================================
+// LIBGFX_ShakeCam(0.1, 35.0, 0.1, 20.0, 0.2, 1.1)
+//============================================================
+procedure void LIBGFX_ShakeCam( float amplitude, float frequence, float amplbank, float freqbank, float speed, float attenuation)
+{
+	message	msg
+	vector		tv_temp
+	object		to_camera 
+	
+	msg.msg_id = 2
+	tv_temp.z = 0
+	
+	tv_temp.x = amplitude
+	tv_temp.y = frequence
+	msg.msg_vec1 = tv_temp
+	
+	tv_temp.x = amplbank
+	tv_temp.y = freqbank
+	msg.msg_vec2 = tv_temp
+	
+	tv_temp.x = speed
+	tv_temp.y = attenuation
+	msg.msg_vec3 = tv_temp
+	to_camera = @get_global o_camera
+	@to_camera MSG_Send(msg)
+}
+procedure void LIBGFX_CheckCam( float amplitude, float frequence, float amplbank, float freqbank, float speed, float attenuation)
+{
+	LIBGFX_ShakeCam( amplitude, frequence, amplbank, freqbank, speed, attenuation)
+}
+
+//============================================================
+//		BLOOD EFFECT
+//============================================================
+procedure void LIBGFX_Blood( byref int pi_GFX_Blood, vector pv_Pos, vector pv_Axe )
+{
+//	if (pi_GFX_Blood == -1)
+//	{
+//		pi_GFX_Blood = GFX_Add(13)																// Create the boum
+//			
+//		GFX_MaterialSet(pi_GFX_Blood, get_SFX_light_and_smoke, -1)					// met le materiau
+//		GFX_FlagSet(pi_GFX_Blood, 0 , 1)
+//		GFX_FlagSet(pi_GFX_Blood, 2 , 1)
+//		GFX_Seti(pi_GFX_Blood, 13101, 8)															// Materiau 8
+//		GFX_Seti(pi_GFX_Blood, 13100, 100)														// *Buffer number of sprite
+//		GFX_Seti(pi_GFX_Blood, 13106, 0xFFFFFFFF)										// *number of sprite to generate
+//		GFX_Setf(pi_GFX_Blood, 13003, 0.5)														// Time fase 1
+//		GFX_Setf(pi_GFX_Blood, 13004, 0.5)														// Time fase 2
+//		GFX_Seti(pi_GFX_Blood, 13107, 0)															// Sprites non triés
+//		GFX_Setf(pi_GFX_Blood, 13012, 0.75)														// Time random
+//		GFX_Setf(pi_GFX_Blood, 13000, 0.1)														// Growing speed min
+//		GFX_Setf(pi_GFX_Blood, 13001, 0.3)														// Growing speed max
+//		GFX_Setf(pi_GFX_Blood, 13002, 0.0001)													// Friction Grow
+//		GFX_Setf(pi_GFX_Blood, 13005, 0.05)														// Creation size min
+//		GFX_Setf(pi_GFX_Blood, 13006, 0.1)														// Creation size max
+//		GFX_Setv(pi_GFX_Blood, 13203, cvector(0.02, 0.02, 0.02))							// friction speed
+//		GFX_Seti(pi_GFX_Blood, 13103, 0x800000C0)											// Color fase 0
+//		GFX_Seti(pi_GFX_Blood, 13104, 0x400000C0)											// Color fase 1
+//		GFX_Seti(pi_GFX_Blood, 13105, 0x000000C0)											// Color fase 2
+//		GFX_Setf(pi_GFX_Blood, 13009, 0.5)														// Norm speed min
+//		GFX_Setf(pi_GFX_Blood, 13010, 1)														// Norm speed max
+//		GFX_Setf(pi_GFX_Blood, 13007, -4.0)														// Gravity
+//		GFX_Setf(pi_GFX_Blood, 13008, 0.01)														// generation rate
+//		GFX_Setv(pi_GFX_Blood, 13204, Cv_NullVector)										// wind
+//		GFX_Setv(pi_GFX_Blood, 13205, Cv_NullVector)										// Mainposspeed
+//		GFX_Setv(pi_GFX_Blood, 13206, Cv_NullVector)										// Mainpossfriction
+//	}
+//		
+//	GFX_Setv(pi_GFX_Blood, 13200, pv_Pos) 													// Creation Pos
+//	GFX_Setv(pi_GFX_Blood, 13201, cvector( -1, -1, -1))						// Speed min
+//	GFX_Setv(pi_GFX_Blood, 13202, cvector( 1, 1, 1))						// Speed max
+//	GFX_Setv(pi_GFX_Blood, 13204, pv_Axe)													// wind
+}
+
+procedure void LIBGFX_BloodStop( byref int pi_GFX_Blood )
+{
+	if (pi_GFX_Blood != -1)
+	{
+//		GFX_Seti(pi_GFX_Blood, 13106, 0)						// *number of sprite to generate
+//		pi_GFX_Blood = -1
+	}
+}
+
+
+procedure void LIBGFX_Explosion_mur_temp( byref int mi_GFX_Explose, vector mv_pos)
+{
+	if ( mi_GFX_Explose == -1)
+	{
+		mi_GFX_Explose = GFX_Add(13)												// Create the boum
+		GFX_FlagSet(mi_GFX_Explose, 0 , 1)					
+		GFX_FlagSet(mi_GFX_Explose, 2 , 1)
+		
+		GFX_MaterialSet(mi_GFX_Explose, get_SFX_light_and_smoke, -1)	// met le materiau
+		GFX_Seti(mi_GFX_Explose, 13101, 8)										// Materiau 0
+	
+		GFX_Seti(mi_GFX_Explose, 13100, 50)										// *Buffer number of sprite
+		GFX_Seti(mi_GFX_Explose, 13106, 10000)						// *number of sprite to generate
+	
+		GFX_Setf(mi_GFX_Explose, 13003, 0.4)										// Time fase 1
+		GFX_Setf(mi_GFX_Explose, 13004, 0.6)										// Time fase 2
+		
+		GFX_Setf(mi_GFX_Explose, 13012, 0.0) //16)								// Time random de temps de vie
+				
+		GFX_Seti(mi_GFX_Explose, 13107, 0)											// Sprites non triés
+			GFX_Setf(mi_GFX_Explose, 13000, 0.3)										// Growing speed min
+		GFX_Setf(mi_GFX_Explose, 13001, 0.9)										// Growing speed max
+		GFX_Setf(mi_GFX_Explose, 13002, 0.001)								// Friction Grow
+		
+		GFX_Setf(mi_GFX_Explose, 13005, 0.1)									// Creation size min
+		GFX_Setf(mi_GFX_Explose, 13006, 0.3)									// Creation size max
+		GFX_Setf(mi_GFX_Explose, 13007, -20.0)  										// TGravity
+		
+		GFX_Setv(mi_GFX_Explose, 13203, cvector(0.01, 0.01, 0.01))		// friction speed
+		
+		GFX_Seti(mi_GFX_Explose, 13103, 0xD0C0C0C0)					// Color fase 0
+		GFX_Seti(mi_GFX_Explose, 13104, 0xB0C0C0C0)					// Color fase 1
+		GFX_Seti(mi_GFX_Explose, 13105, 0x00000000)						// Color fase 2
+	
+		GFX_Setf(mi_GFX_Explose, 13008, 0.00)								// generation rate
+		
+		GFX_Setv(mi_GFX_Explose, 13204, Cv_NullVector)					// wind
+		GFX_Setv(mi_GFX_Explose, 13206, Cv_NullVector)					// Mainpossfriction
+		GFX_Setv(mi_GFX_Explose, 13205, Cv_NullVector)					// Mainposspeed
+		
+		GFX_Setf(mi_GFX_Explose, 13009, 5.0)		// Norm speed min
+		GFX_Setf(mi_GFX_Explose, 13010, 7.0)		// Norm speed max
+		
+		GFX_Setv(mi_GFX_Explose, 13200, mv_pos) 						// Creation Pos
+		
+		GFX_Setv(mi_GFX_Explose, 13207, 0.2 * OBJ_HorizonGet())				// CreaPosAxe X
+		GFX_Setv(mi_GFX_Explose, 13208, 0.2 * OBJ_SightGet())					// CreaPosAxe Y
+		GFX_Setv(mi_GFX_Explose, 13209, 0.2 * OBJ_BankingGet())				// CreaPosAxe Z
+	}
+}
+
+//============================================================
+procedure void LIBGFX_GridFire(vector pos, int tolerance)
+{
+	int			ti_capa
+	object	to_obj
+	int			x, y
+	vector	tv_temp
+	int			ti_ok
+	
+	if(!GRID_Has(1)) return
+	GRID_CurrentSet(1)
+	
+	ti_ok = faux
+	ti_capa = GRID_CapaGet(pos) 
+	if(((ti_capa & tag_grid_terrain) == Ci_Grid2_Inflammable) && !(ti_capa & 64) && !(ti_capa & 128)) ti_ok = vrai
+	
+	if(!ti_ok && tolerance)
+	{
+		for(x = -1; x <= 1; x++)
+		{
+			for(y = -1; y <= 1; y++)
+			{
+				if(x == 0 && y == 0) continue
+				tv_temp = pos
+				tv_temp.x += x
+				tv_temp.y += y
+				ti_capa = GRID_CapaGet(tv_temp) 
+				if(((ti_capa & tag_grid_terrain) == Ci_Grid2_Inflammable) && !(ti_capa & 64) && !(ti_capa & 128)) 
+				{
+					pos = tv_temp
+					ti_ok = vrai
+					break
+				}
+			}
+			
+			if(ti_ok) break
+		}
+	}
+	
+	if(ti_ok) 
+	{
+		to_obj = @get_SFX_GridFire OBJ_Duplicate(pos)
+		@get_SFX_GridFire_path to_obj i_original = faux
+	}
+	
+	GRID_CurrentSet(0)
+}
+
+//============================================================
+procedure void LIBGFX_DynamiteExplosion( vector position )
+{
+	int ti, proc_GFX, Npa
+	float	tf_size_coef, OoSpeedcoef , tf_speed_coef , OoSizecoef
+	
+	//ti = -1
+	//LIBGFX_Explosion_mur_temp(ti, position)
+	//GFX_LifeTimeSet(ti, 1.0)
+	
+	// SMOKE
+	tf_speed_coef = 1.0
+	tf_size_coef = 10.0
+	OoSpeedcoef = 1.0
+	OoSizecoef = 0.05
+	Npa = 11
+
+	proc_GFX = GFX_Add(13)												// Create the boum
+	GFX_Seti(proc_GFX, 13100, Npa)									// *Buffer number of sprite
+	GFX_Seti(proc_GFX, 13106, Npa )									// *number of sprite to generate
+	GFX_MaterialSet( proc_GFX , get_SFX_light_and_smoke, -1)				// met le materiau
+	GFX_Seti(proc_GFX, 13101, 1)										// *Material sub-mat num
+
+	GFX_Setv(proc_GFX, 13200, position )							// Creation Pos
+	GFX_Seti(proc_GFX, 13103, 0x111111 )//86FB)							// Color fase 0
+	GFX_Seti(proc_GFX, 13104, 0xF0000000)						// Color fase 1
+	GFX_Seti(proc_GFX, 13105, 0)										// Color fase 2
+
+	GFX_Seti(proc_GFX, 13107, 1)										// Affichage des sprites trié
+
+	GFX_Setf(proc_GFX, 13005, 0.3 * tf_size_coef)					// Creation size min
+	GFX_Setf(proc_GFX, 13006, 0.7 * tf_size_coef)					// Creation size max
+	GFX_Setf(proc_GFX, 13000, 0.1 * tf_size_coef)					// Grwing speed min
+	GFX_Setf(proc_GFX, 13001, 0.2 * tf_size_coef)					// Grwing speed max
+	GFX_Setf(proc_GFX, 13002, 0.0001)								// Friction Grow
+
+	GFX_Setf(proc_GFX, 13003, 10 * OoSpeedcoef )				// Time fase 1
+	GFX_Setf(proc_GFX, 13004, 10 * OoSpeedcoef )				// Time fase 2
+
+	GFX_Setf(proc_GFX, 13008, 0.005 * OoSpeedcoef)			// generation rate
+	GFX_Setf(proc_GFX, 13009, 2 * tf_size_coef)						// Norm speed min
+	GFX_Setf(proc_GFX, 13010, 3 * tf_size_coef)					// Norm speed max
+	GFX_Setv(proc_GFX, 13201, cvector(-1,-1,0))					// Speed min
+	GFX_Setv(proc_GFX, 13202, cvector(1,1,1))						// Speed max
+	GFX_Setv(proc_GFX, 13203, OoSpeedcoef * cvector(0.05, 0.051, 0.2 ))		// friction speed
+	GFX_Setv(proc_GFX, 13204, OoSpeedcoef * cvector(0.0, 0, 0.1 * tf_size_coef))				// wind
+	GFX_FlagSet(proc_GFX, 0, 1)
+	GFX_FlagSet(proc_GFX, 2, 2)
+	GFX_Setf(proc_GFX, 13012, 20)	
+	
+	tf_size_coef = 2.0
+	
+	// SPARKS
+	proc_GFX = GFX_Add(13)																	// Create the boum
+	GFX_Seti(proc_GFX, 13100,Npa)														// *Buffer number of sprite
+	GFX_Seti(proc_GFX, 13106,Npa)														// *number of sprite to generate
+	GFX_MaterialSet( proc_GFX , get_SFX_light_and_smoke, -1)					// met le materiau
+	GFX_Seti(proc_GFX, 13101, 7)															// *Material sub-mat num
+	GFX_Setv(proc_GFX, 13200, position )												// Creation Pos
+
+	GFX_Setf(proc_GFX, 13003, 1  * tf_speed_coef)									// Time fase 1
+	GFX_Setf(proc_GFX, 13004, 0.5 * tf_speed_coef)									// Time fase 2
+	GFX_Seti(proc_GFX, 13103, 0xFFFFFFFF)											// Color fase 0
+	GFX_Seti(proc_GFX, 13104, 0x1186FB)												// Color fase 1
+	GFX_Seti(proc_GFX, 13105, 0)															// Color fase 2
+	
+	GFX_Seti(proc_GFX, 13107, 1)															// Affichage des sprites trié
+	
+	GFX_Setf(proc_GFX, 13005, 0.45 * tf_size_coef)									// Creation size min
+	GFX_Setf(proc_GFX, 13006, 0.60* tf_size_coef)										// Creation size max
+	GFX_Setf(proc_GFX, 13000, 0.5* tf_size_coef )										// Grwing speed min
+	GFX_Setf(proc_GFX, 13001, 2* tf_size_coef )										// Grwing speed max
+	GFX_Setf(proc_GFX, 13002, 0.08 )								// Friction Grow
+	
+	GFX_Setf(proc_GFX, 13008, 0.001 * tf_speed_coef)								// generation rate
+	
+	GFX_Setf(proc_GFX, 13009, 2 * tf_size_coef )										// Norm speed min
+	GFX_Setf(proc_GFX, 13010, 3.5  * tf_size_coef  )									// Norm speed max
+	GFX_Setv(proc_GFX, 13201, cvector(-1,-1, -1))										// Speed min
+	GFX_Setv(proc_GFX, 13202, cvector(1,1, 1))											// Speed max
+	GFX_Setv(proc_GFX, 13203, (OoSizecoef*2) * cvector(0.5,0.5,0.5 ))	// friction speed
+	//GFX_Setv(GFX, 13204, cvector(0,0,0.2*f_size_coef )) 					// wind
+	GFX_FlagSet(proc_GFX, 0 , 1)
+	GFX_FlagSet(proc_GFX, 2 , 1)
+	GFX_Setf(proc_GFX, 13012, 10)															// Time random
+
+
+}
+
+//============================================================
+procedure void LIBGFX_DynamiteInFire(byref int ti_GFX, vector tv_pos, vector tv_sight, float factor)
+{
+	int 		i
+	
+	if (ti_GFX == -1)
+	{
+		ti_GFX = GFX_Add(9)													// ajout de l’effet
+	 	GFX_FlagSet(ti_GFX,0,1) 												// activation de l’effet
+	 	GFX_FlagSet(ti_GFX, 2, 1) 											// matériau transparent
+ 		GFX_MaterialSet(ti_GFX , get_SFX_light_and_smoke ,5) 	// matériau
+ 		GFX_Setv( ti_GFX, 9202, cvector( 0, 0, 0) )						// gravité
+		GFX_Seti( ti_GFX, 9100, 100)										// nb max d’étincelles
+		GFX_Seti( ti_GFX, 9101, 0x00637EC2)						
+		GFX_Seti( ti_GFX, 9102, 65)										
+		GFX_Setf( ti_GFX, 9000, 3 )	 									// angle
+		GFX_Setf( ti_GFX, 9001, 0.1)	 										// speed min
+		GFX_Setf( ti_GFX, 9002, 0.3)	 										// speed max
+		GFX_Setf( ti_GFX, 9003, 0.9)	 										// friction
+		GFX_Setf( ti_GFX, 9004, 0.01 )	 									// width
+		GFX_Setf( ti_GFX, 9005, 0.3 )	 									// time min
+		GFX_Setf( ti_GFX, 9006, 0.6 )	 									// time max
+		GFX_Setf( ti_GFX, 9007, 2 )	 									// scale
+		GFX_Setf( ti_GFX, 9008, 0.01 )	 									// period
+		GFX_Setf( ti_GFX, 9011, 0.1 )	 									// max dist
+
+	}
+	
+	GFX_Setv( ti_GFX, 9200, tv_pos + (factor * tv_sight) )							//position
+	GFX_Setv( ti_GFX, 9201, MATH_VecNormalize( tv_sight ) )		// axe du cone de vitesse
+}
+
+
+// LIBGFX_GunsImpact =======================================================
+// IN: 
+// 				Position
+// 				Axis
+// 				Gao sur qui il y a l'impact
+// 				L'os d'un de son Squelette (If applicable (!= -1))
+//
+// OUT:
+//				None 
+// =======================================================================
+procedure void LIBGFX_GunsImpact( vector tv_pos, vector tv_direction, object to_gao, int ti_boneID, int ti_forced_color , int TypeOfMaterial)
+{
+
+	vector	tv_temp
+	vector 	tv_temp2
+	int			ti_GFX_Impact
+	int			ti_color
+	int 		ti_GFX_Feu
+	color		tc_color
+	object	to_bones
+	object	o2
+	float 		SizeFactor
+
+	// Si le CBit 0 est a vrai on utilise un effet Custom !
+	if (ti_boneID != -1)
+	{
+		// Le bones existe
+		to_bones = @to_gao ANI_CanalObjectGet(ti_boneID)
+		if (@to_bones OBJ_CustomBitsTest(OBJ_CBits_0))									// CustomBit 0 sur le Bones >> Pas de FX
+			return
+	}
+	
+	// Determination de la couleur !
+	if ( ti_forced_color )
+		ti_color = ti_forced_color
+	else
+	{
+		ti_color = Ci_Color_Impact_Sang															// Couleur par defaut (SANG)
+		if(ti_boneID == -1 || @to_bones OBJ_CustomBitsTest(OBJ_CBits_1))			// CustomBit 1 sur le Bones >> FX forcé a Etincelle (Pas de Sang)
+			ti_color = Ci_Color_Impact_Etincelle
+	}
+	
+	// PAS DE SANG POUR LES GROS CONS DE RICAINS
+	if (ti_color == Ci_Color_Impact_Sang)
+		ti_color = 0x04303030 // 1D293A
+		
+	tc_color = ti_color
+
+// FEU sur les bestiolles
+//if (TypeOfMaterial == 5)
+//{
+//ti_GFX_Feu = GFX_Add(13)																// Create the boum
+//
+//GFX_MaterialSet(ti_GFX_Feu, get_SFX_light_and_smoke, -1)      // met le materiau
+//GFX_Seti(ti_GFX_Feu, 13101, 17)               // Materiau 0
+//GFX_Seti(ti_GFX_Feu, 13110, 18)               // Materiau 1
+//GFX_Seti(ti_GFX_Feu, 13111, 19)               // Materiau 2
+//GFX_Seti(ti_GFX_Feu, 13112, 17)               // Materiau 3
+//
+//GFX_Seti(ti_GFX_Feu, 13100, 5)               // *Buffer number of sprite
+//GFX_Seti(ti_GFX_Feu, 13106, 5)           // *number of sprite to generate
+//  
+//GFX_Setf(ti_GFX_Feu, 13003, 0.07)               // Time fase 1
+//GFX_Setf(ti_GFX_Feu, 13004, 0.05)              // Time fase 2
+//  
+//GFX_Seti(ti_GFX_Feu, 13107, 0)               // Sprites non triés
+//  
+//GFX_FlagSet(ti_GFX_Feu, 0 , 1)
+//GFX_FlagSet(ti_GFX_Feu, 2 , 1)
+//  
+//GFX_Setf(ti_GFX_Feu, 13012, 0.5)              // Time random
+//   
+//GFX_Setv(ti_GFX_Feu, 13201, Cv_NullVector)            // Speed min
+//GFX_Setv(ti_GFX_Feu, 13202, Cv_NullVector)           // Speed max
+//  
+//GFX_Setf(ti_GFX_Feu, 13000, 0.1)              // Growing speed min
+//GFX_Setf(ti_GFX_Feu, 13001, 0.5)              // Growing speed max
+//GFX_Setf(ti_GFX_Feu, 13002, 0.004)              // Friction Grow
+//  
+//GFX_Setf(ti_GFX_Feu, 13005, 0.05)              // Creation size min
+//GFX_Setf(ti_GFX_Feu, 13006, 0.1)              // Creation size max
+//  
+//GFX_Setv(ti_GFX_Feu, 13203, cvector(0.0000, 0.0000, 0.0025))       // friction speed
+//  
+//GFX_Seti(ti_GFX_Feu, 13103, 0x0060A7FF)           // Color fase 0
+//GFX_Seti(ti_GFX_Feu, 13104, 0x70000818)           // Color fase 1
+//GFX_Seti(ti_GFX_Feu, 13105, 0x00000000)           // Color fase 2
+//  
+//GFX_Setf(ti_GFX_Feu, 13009, 0.0)              // Norm speed min
+//GFX_Setf(ti_GFX_Feu, 13010, 0.0)              // Norm speed max
+//  
+//GFX_Setf(ti_GFX_Feu, 13008, 0.01  )              // generation rate
+//  
+//GFX_Setv(ti_GFX_Feu, 13205, Cv_NullVector)          // Mainposspeed
+//GFX_Setv(ti_GFX_Feu, 13206, Cv_NullVector)          // Mainpossfriction
+//   
+//GFX_Setf(ti_GFX_Feu, 13007, 2.0)               // Gravity
+//GFX_Setv(ti_GFX_Feu, 13200, tv_pos + (0.3 * tv_direction)) 													// Creation Pos
+//
+//}
+			
+	o2 = VIEW_GetObject(0)
+	tv_temp2 = @o2 OBJ_PosGet()
+	SizeFactor = 0.20 * MATH_Sin(VIEW_FocaleGet(0)*0.5) / MATH_Cos(VIEW_FocaleGet(0)*0.5)
+ 	SizeFactor = SizeFactor *MATH_VecNorm(tv_pos - tv_temp2 )
+ 	if(SizeFactor < 0.001) return
+	tv_temp  = 2.0*MATH_VecNormalize(tv_pos - tv_temp2 )
+	if ((TypeOfMaterial == 4) || (TypeOfMaterial == 5) || (tv_direction.z > 0.8))
+	{
+	// Water spash
+		tv_temp2  = MATH_VecNormalize((1.2*tv_temp)+tv_direction )
+		
+		ti_GFX_Impact = GFX_Add(9)
+		GFX_FlagSet(ti_GFX_Impact , 0, 1)
+		GFX_FlagSet(ti_GFX_Impact , 2, 1)
+		GFX_MaterialSet(ti_GFX_Impact , get_SFX_light_and_smoke, 33)
+		if (TypeOfMaterial == 4)		
+		{
+			GFX_Setf(ti_GFX_Impact, 9000, Cf_PiBy2*MATH_RandFloat(0.1,0.5))												// angle d'ouverture
+			GFX_Seti(ti_GFX_Impact, 9100, 90)															// Nombre
+			GFX_Seti(ti_GFX_Impact, 9101, 0x80404040) 												// couleur}
+			GFX_Setf(ti_GFX_Impact, 9003, 0.97 )														// friction
+		}
+		else
+		{
+			GFX_Setf(ti_GFX_Impact, 9000, Cf_PiBy2)												// angle d'ouverture
+			GFX_Seti(ti_GFX_Impact, 9100, 50)															// Nombre
+			GFX_Seti(ti_GFX_Impact, 9101, 0xA0000000) 												// couleur}
+			GFX_Setf(ti_GFX_Impact, 9003, 0.9 )		
+			SizeFactor*=1.0												// friction
+		}
+
+		GFX_Setf(ti_GFX_Impact, 9001, 1.0)														// vitesse initiale minimum
+		GFX_Setf(ti_GFX_Impact, 9002, 15.0)														// vitesse initiale maximum
+		GFX_Setf(ti_GFX_Impact, 9004, 0.025 * SizeFactor)													// épaisseur
+		GFX_Setf(ti_GFX_Impact, 9005, 0.2)														// durée de vie minimum
+		GFX_Setf(ti_GFX_Impact, 9006, 1.5)														// durée de vie maximum
+		GFX_Setf(ti_GFX_Impact, 9007, 1.75 )														// multiplicateur de longueur
+		GFX_Setf(ti_GFX_Impact, 9008, 0.000005 )													// generation périod
+		GFX_Setf(ti_GFX_Impact, 9009, 0.05)														// durée de mort minimun
+		GFX_Setf(ti_GFX_Impact, 9010, 0.1)														// durée de mort maximun
+		GFX_Seti(ti_GFX_Impact, 9102, 0b11000)												// Flags (1 => agrandissement centré)
+		GFX_Setv(ti_GFX_Impact, 9200, tv_pos)													// Origine des étincelles
+		GFX_Setv(ti_GFX_Impact, 9201, tv_temp2  )											// Direction
+		GFX_Setv(ti_GFX_Impact, 9202, cvector(0.0, 0.0, -5.0) )								// gravity
+		GFX_Seti(ti_GFX_Impact, 9103, 3) 												// Zorder
+	} 
+	if (TypeOfMaterial	 != 4)
+	{
+		// FUMEE
+		ti_GFX_Impact = GFX_Add(13)																	// Create the boum
+					
+		GFX_MaterialSet(ti_GFX_Impact, get_SFX_light_and_smoke, -1)						// met le materiau
+		GFX_Seti(ti_GFX_Impact, 13101, 8)															// Materiau 0
+		
+		GFX_Seti(ti_GFX_Impact, 13100, 6)															// *Buffer number of sprite
+		GFX_Seti(ti_GFX_Impact, 13106, 6)															// *number of sprite to generate
+		
+		GFX_Setf(ti_GFX_Impact, 13003, 0.02)															// Time fase 1
+		GFX_Setf(ti_GFX_Impact, 13004, 1.0)															// Time fase 2
+		
+		GFX_Seti(ti_GFX_Impact, 13107, 0)															// Sprites non triés
+		
+		GFX_FlagSet(ti_GFX_Impact, 0 , 1)
+		GFX_FlagSet(ti_GFX_Impact, 2 , 1)
+		
+		GFX_Setf(ti_GFX_Impact, 13012, 0.0)														// Time random
+		
+		GFX_Setf(ti_GFX_Impact, 13000, 5.05)														// Growing speed min
+		GFX_Setf(ti_GFX_Impact, 13001, 10.2)															// Growing speed max
+		GFX_Setf(ti_GFX_Impact, 13002, 0.2)														// Friction Grow
+		
+		GFX_Setf(ti_GFX_Impact, 13005, 0.0)														// Creation size min
+		GFX_Setf(ti_GFX_Impact, 13006, 0.0)															// Creation size max
+		
+		GFX_Setv(ti_GFX_Impact, 13203, cvector(0.15, 0.15, 0.15))							// friction speed
+		
+		tc_color = COLOR_SetRGBA(COLOR_GetR(tc_color), COLOR_GetG(tc_color), COLOR_GetB(tc_color), 0xA0)
+		GFX_Seti(ti_GFX_Impact, 13103, tc_color)													// Color fase 0
+		tc_color = COLOR_SetRGBA(COLOR_GetR(tc_color), COLOR_GetG(tc_color), COLOR_GetB(tc_color), 0x18)
+		GFX_Seti(ti_GFX_Impact, 13104, tc_color)													// Color fase 1
+		tc_color = COLOR_SetRGBA(COLOR_GetR(tc_color), COLOR_GetG(tc_color), COLOR_GetB(tc_color), 0x0)
+		GFX_Seti(ti_GFX_Impact, 13105, tc_color)													// Color fase 2
+		
+		GFX_Setf(ti_GFX_Impact, 13009, 2.5)															// Norm speed min
+		GFX_Setf(ti_GFX_Impact, 13010, 8.5)															// Norm speed max
+	
+		GFX_Setf(ti_GFX_Impact, 13008, 0.005)														// generation rate
+		
+		GFX_Setv(ti_GFX_Impact, 13205, Cv_NullVector)											// Mainposspeed
+		GFX_Setv(ti_GFX_Impact, 13206, Cv_NullVector)											// Mainpossfriction
+			
+		GFX_Setf(ti_GFX_Impact, 13007, 2.0)															// Gravity
+			
+		GFX_Setv(ti_GFX_Impact, 13200, tv_pos) 													// Creation Pos
+		
+		tv_temp = tv_direction * 1.5
+		GFX_Setv(ti_GFX_Impact, 13201, tv_temp + cvector(-1.0, -1.0, -1.0))				// Speed min
+		GFX_Setv(ti_GFX_Impact, 13202, tv_temp + cvector(1.0, 1.0, 1.0))					// Speed max
+		// ETINCELLES
+		ti_GFX_Impact = GFX_Add(9)
+		GFX_FlagSet(ti_GFX_Impact , 0, 1)
+		GFX_FlagSet(ti_GFX_Impact , 2, 1)
+		GFX_MaterialSet(ti_GFX_Impact , get_SFX_light_and_smoke, 5)
+		GFX_Setf(ti_GFX_Impact, 9000, Cf_PiBy2*0.75)												// angle d'ouverture
+		GFX_Setf(ti_GFX_Impact, 9001, 2.0)														// vitesse initiale minimum
+		GFX_Setf(ti_GFX_Impact, 9002, 15.0)														// vitesse initiale maximum
+		GFX_Setf(ti_GFX_Impact, 9003, 0.95 )														// friction
+		GFX_Setf(ti_GFX_Impact, 9004, 0.018*SizeFactor )													// épaisseur
+		GFX_Setf(ti_GFX_Impact, 9005, 0.02)														// durée de vie minimum
+		GFX_Setf(ti_GFX_Impact, 9006, 0.20)														// durée de vie maximum
+		GFX_Setf(ti_GFX_Impact, 9007, 0.75 )														// multiplicateur de longueur
+		GFX_Setf(ti_GFX_Impact, 9008, 0.005 )													// generation périod
+		GFX_Setf(ti_GFX_Impact, 9009, 0.05)														// durée de mort minimun
+		GFX_Setf(ti_GFX_Impact, 9010, 0.1)														// durée de mort maximun
+		GFX_Seti(ti_GFX_Impact, 9100, 10)															// Nombre
+		GFX_Seti(ti_GFX_Impact, 9102, 0b11000)												// Flags (1 => agrandissement centré)
+		GFX_Setv(ti_GFX_Impact, 9200, tv_pos)													// Origine des étincelles
+		GFX_Setv(ti_GFX_Impact, 9201, tv_direction)											// Direction
+		GFX_Setv(ti_GFX_Impact, 9202, cvector(0.0, 0.0, -2.0) )								// gravity
+		GFX_Seti(ti_GFX_Impact, 9101, 0xf080c0ff) 												// couleur}
+	}
+}
+
+// =======================================================================
+//	qui			-	0	humain
+//					- 	1 	bronto
+//
+//	HUMAIN:	poussiere générée en course de temps en temps
+// =======================================================================
+procedure void LIBGFX_PoussierePas(int qui, vector position)
+{
+	int	col
+	int ti_gfx
+	vector	tv_wind	
+
+	// HUMAIN
+	if(qui == 0)
+	{
+		ti_gfx = GFX_Add(13)												// Create the boum
+		GFX_FlagSet(ti_gfx, 0 , 1)					
+		GFX_FlagSet(ti_gfx, 2 , 1)		
+		GFX_MaterialSet(ti_gfx, get_SFX_light_and_smoke, -1)	// met le materiau
+		GFX_Seti(ti_gfx, 13101, 8)										// Materiau 0	
+		GFX_Seti(ti_gfx, 13100, 50)										// *Buffer number of sprite
+		GFX_Seti(ti_gfx, 13106, 0xFFFFFFFF)						// *number of sprite to generate	
+	
+		GFX_Setf(ti_gfx, 13003, 0.25)										// Time fase 1
+		GFX_Setf(ti_gfx, 13004, 0.25)										// Time fase 2		
+		GFX_Setf(ti_gfx, 13012, 0.16)								// Time random				
+		GFX_Seti(ti_gfx, 13107, 0)											// Sprites non triés	
+		GFX_Setf(ti_gfx, 13000, 0.5)										// Growing speed min
+		GFX_Setf(ti_gfx, 13001, 0.5)										// Growing speed max
+		GFX_Setf(ti_gfx, 13002, 0.0001)								// Friction Grow
+		GFX_Setf(ti_gfx, 13005, 0.2)									// Creation size min
+		GFX_Setf(ti_gfx, 13006, 0.5)									// Creation size max
+		GFX_Setv(ti_gfx, 13203, cvector(0.01, 0.01, 0.01))		// friction speed
+		col = COLOR_Blend(WOR_AmbiantColGet(0), 0xFFFFFFFF, 0.4)
+		col &= 0x00FFFFFF
+		GFX_Seti(ti_gfx, 13103, col)					// Color fase 0
+		GFX_Seti(ti_gfx, 13105, col)					// Color fase 2
+		col |= 0x20000000
+		GFX_Seti(ti_gfx, 13104, col)					// Color fase 1
+		GFX_Setf(ti_gfx, 13008, 0.15)								// generation rate		
+		GFX_Setv(ti_gfx, 13204, Cv_NullVector)					// wind
+		GFX_Setv(ti_gfx, 13206, Cv_NullVector)					// Mainpossfriction
+		GFX_Setv(ti_gfx, 13205, Cv_NullVector)					// Mainposspeed			
+		GFX_Setv(ti_gfx, 13201, cvector(0.12, 0.12, 0.13))	// volume Speed min
+		GFX_Setv(ti_gfx, 13202, cvector(0.12, 0.12, 0.13))	// volume Speed max				
+		GFX_Setv(ti_gfx, 13200, position) 	// Creation Pos			
+		GFX_Setv(ti_gfx, 13207, 0.25 * OBJ_HorizonGet())				// CreaPosAxe X
+		GFX_Setv(ti_gfx, 13208, 0.25 * OBJ_SightGet())					// CreaPosAxe Y
+		GFX_LifeTimeSet(ti_gfx, 0.5)
+	}
+	
+	// Bronto
+	else if(qui == 1)
+	{
+		ti_gfx = GFX_Add(13)												// Create the boum
+		GFX_FlagSet(ti_gfx, 0 , 1)					
+		GFX_FlagSet(ti_gfx, 2 , 1)		
+		GFX_MaterialSet(ti_gfx, get_SFX_light_and_smoke, -1)	// met le materiau
+		GFX_Seti(ti_gfx, 13101, 8)										// Materiau 0	
+		GFX_Seti(ti_gfx, 13100, 5)										// *Buffer number of sprite
+		GFX_Seti(ti_gfx, 13106, 5)						// *number of sprite to generate	
+
+		GFX_Setf(ti_gfx, 13003, 0.2)										// Time fase 1
+		GFX_Setf(ti_gfx, 13004, 1.5)										// Time fase 2
+		GFX_Setf(ti_gfx, 13012, 0.16)								// Time random	
+		GFX_Seti(ti_gfx, 13107, 0)											// Sprites non triés
+
+		GFX_Setf(ti_gfx, 13005, 2.0)									// Creation size min
+		GFX_Setf(ti_gfx, 13006, 4.0)									// Creation size max
+
+		GFX_Setf(ti_gfx, 13000, 4.0)										// Growing speed min
+		GFX_Setf(ti_gfx, 13001, 8.0)										// Growing speed max
+		GFX_Setf(ti_gfx, 13002, 0.01)									// Friction Grow		
+
+		col = COLOR_Blend(WOR_AmbiantColGet(0), 0xFFFFFFFF, 0.4)
+		col &= 0x00FFFFFF
+		GFX_Seti(ti_gfx, 13103, col)					// Color fase 0
+		GFX_Seti(ti_gfx, 13105, col)					// Color fase 2
+		col |= 0x40000000
+		GFX_Seti(ti_gfx, 13104, col)					// Color fase 1
+		GFX_Setf(ti_gfx, 13008, 0.001)								// generation rate		
+//		GFX_Setv(ti_gfx, 13204, Cv_NullVector)					// wind
+
+		tv_wind = DYN_SpeedGetVector() * 0.25
+		tv_wind.z = 0.0
+		GFX_Setv(ti_gfx, 13204, tv_wind)					// wind
+
+		GFX_Setv(ti_gfx, 13206, Cv_NullVector)					// Mainpossfriction
+		GFX_Setv(ti_gfx, 13205, Cv_NullVector)					// Mainposspeed
+		GFX_Setf(ti_gfx, 13007, 3.0)               							// Gravity
+		
+		GFX_Setf(ti_gfx, 13009, 4.0)										// Norm speed min
+		GFX_Setf(ti_gfx, 13010, 8.0)										// Norm speed max
+		GFX_Setv(ti_gfx, 13201, cvector(-1.0, -1.0, 0.0))			// volume Speed min
+		GFX_Setv(ti_gfx, 13202, cvector(1.0, 1.0, 0.0))				// volume Speed max
+		GFX_Setv(ti_gfx, 13203, cvector(0.1, 0.1, 0.1))				// friction speed
+
+		GFX_Setv(ti_gfx, 13200, position - (tv_wind * TIME_GetDt())) 	// Creation Pos
+		GFX_Setv(ti_gfx, 13207, OBJ_HorizonGet())				// CreaPosAxe X
+		GFX_Setv(ti_gfx, 13208, OBJ_SightGet())					// CreaPosAxe Y
+
+		GFX_Setf(ti_gfx, 13011, position.z)									// Z min
+	}
+}
+
+// =======================================================================
+//  position		-	du point de contact avec l'eau
+//  vitesse		- 	vitesse de deplacement (m/s) (DYN_SpeedGetVector(), Z annulé)
+//	qui			-	0	humain
+// =======================================================================
+procedure void LIBGFX_MarcheDansEau(vector position, vector speed, int qui, byref float time, int colsfx)
+{
+	int			ripple
+	vector	tv_temp
+	
+	// HUMAIN
+	if(qui == 0 && MATH_VecNorm(speed) > 0.1 && TIME_Elapsed(time, 0.2))
+	{
+		time = TIME_Get()
+		ripple = GFX_Add(20)
+		GFX_MaterialSet(ripple, get_SFX_light_and_smoke, 16 )
+		GFX_FlagSet(ripple,0,1) // activation de l’effet
+		GFX_FlagSet(ripple, 2, 1) // matériau transparent
+		GFX_Setf(ripple,20000, MATH_RandFloat(0.5, 1.0))		// durée de vie
+		GFX_Setf(ripple,20001,1.5 + MATH_RandFloat(0.8, 1.2))		// vitesse 
+		GFX_Setf(ripple,20002,0)		// frequence gen sprites
+		GFX_Setf(ripple,20003,0)		// speed
+		GFX_Setf(ripple,20004,MATH_RandFloat(0.4, 0.8))		// speed
+		
+		GFX_Seti(ripple, 20100, 1)		// Nbre
+		GFX_Seti(ripple, 20100, -2)	// Pour destruction auto
+		GFX_Seti(ripple, 20101, colsfx)
+		GFX_Seti(ripple, 20102, 0x00000000)
+		
+		tv_temp = position + cvector(0,0,0.03)
+		if(OBJ_Me() != AI_MainActorGet(C_ID_Joueur))
+		{
+			speed = MATH_VecNormalize(speed)
+			tv_temp += (speed * 0.25)
+		}
+		
+		GFX_Setv(ripple,20200, tv_temp)	// pos	
+		GFX_Setv(ripple,20201, Cv_VerticalVector)	// pos		
+		GFX_Setv(ripple,20202, cvector(1,0,0))	// pos		
+		GFX_LifeTimeSet(ripple, 1)
+	}
+}
+
+// =======================================================================
+// =======================================================================
+procedure void LIBGFX_Bave(
+object local, 
+vector position, 
+vector sight, 
+float randsize, 
+float randsizes, 
+float maxtime, 
+byrefarr int allid, 
+byrefarr float alltime, 
+byrefarr vector allpos, 
+byrefarr float alllen1, 
+float speed,
+int colorb,
+int cangener
+)
+{
+	int			i
+	vector	tv_temp, tv_temp1
+
+	for(i = 0; i < 10; i++)
+	{
+		if(allid[i])
+		{
+			if(!TIME_Elapsed(alltime[i], maxtime / 2))
+			{
+				tv_temp = @local MATH_VecLocalToGlobal(allpos[i]) + @local OBJ_PosGet()
+				GFX_Setv(allid[i], 1200, tv_temp)
+				tv_temp.z += alllen1[i]
+				GFX_Setv(allid[i], 1201, tv_temp)
+			}
+			
+			if(alllen1[i] < 0)
+			{
+				GFX_Del(allid[i])
+				allid[i] = 0
+			}
+		}
+		
+		if(cangener && allid[i] == 0)
+		{
+			alltime[i] = TIME_Get() - MATH_RandFloat(0, 0.5)
+			allid[i] = GFX_Add(1)
+			GFX_Setf(allid[i], 1000, 0.01 + MATH_RandFloat(0, 0.01))
+			GFX_Seti(allid[i], 1100, colorb)
+		    GFX_FlagSet(allid[i], 0, 1)            // activation de l’effet
+		    GFX_FlagSet(allid[i], 2, 1)            // le matériau utilié sera transparent
+			GFX_MaterialSet(allid[i], get_SFX_light_and_smoke, 15)
+			tv_temp = position
+			tv_temp += sight * MATH_RandFloat(-randsizes, randsizes)
+			tv_temp1 = MATH_VecCrossProduct(sight, Cv_VerticalVector)
+			tv_temp += tv_temp1 * MATH_RandFloat(-randsize, randsize)
+			GFX_Setv(allid[i], 1200, tv_temp)
+			alllen1[i] = 0.1
+			tv_temp.z += alllen1[i]
+			GFX_Setv(allid[i], 1201, tv_temp)
+			
+			tv_temp -= @local OBJ_PosGet()
+			allpos[i] = @local MATH_VecGlobalToLocal(tv_temp)
+		}
+		else if (alltime[i] && allid[i])
+		{
+			if(TIME_Elapsed(alltime[i], maxtime / 2))
+			{
+				tv_temp = GFX_Getv(allid[i], 1200)
+				tv_temp.z -= speed * 2.6 * TIME_GetDt()
+				GFX_Setv(allid[i], 1200, tv_temp)
+				
+				tv_temp = GFX_Getv(allid[i], 1200)
+				alllen1[i] -= speed * 1.8 * TIME_GetDt()
+				tv_temp.z -=alllen1[i]
+				GFX_Setv(allid[i], 1201, tv_temp)
+			}
+			else
+			{
+				tv_temp = GFX_Getv(allid[i], 1200)
+				alllen1[i] += speed * TIME_GetDt()
+				tv_temp.z -=alllen1[i]
+				GFX_Setv(allid[i], 1201, tv_temp)
+			}
+		}
+	}
+}
+
+// =======================================================================
+// =======================================================================
+procedure void LIBGFX_BaveTRex
+(
+byrefarr int allid,
+byrefarr float alltime, 
+byrefarr vector allpos, 
+byrefarr float alllen1, 
+int cangener
+)
+{
+	object 	to_obj
+	vector	tv_temp
+	vector	tv_axe
+	to_obj = ANI_CanalObjectGet(245)
+	tv_axe = @to_obj OBJ_BankingGet() - (@to_obj OBJ_SightGet() * 0.9)
+	tv_temp = @to_obj OBJ_PosGet() + tv_axe
+	LIBGFX_Bave(to_obj, tv_temp, tv_axe, 0.25, 0.4, 1.5, &allid[0], &alltime[0], &allpos[0], &alllen1[0], 2.5, 0xFF888888, cangener)
+}
+
+// =======================================================================
+// =======================================================================
+procedure void LIBGFX_BaveRaptor
+(
+byrefarr int allid,
+byrefarr float alltime, 
+byrefarr vector allpos, 
+byrefarr float alllen1, 
+int cangener
+)
+{
+	object 	to_obj
+	vector	tv_temp
+	vector	tv_axe
+	to_obj = ANI_CanalObjectGet(245)
+	tv_axe = (@to_obj OBJ_BankingGet() * 0.45) - (@to_obj OBJ_SightGet() * 0.15)
+	tv_temp = @to_obj OBJ_PosGet() + tv_axe
+	LIBGFX_Bave(to_obj, tv_temp, tv_axe, 0.10, 0.35, 1.0, &allid[0], &alltime[0], &allpos[0], &alllen1[0], 1.0, 0xFF777777, cangener)
+}
+
+// =======================================================================
+// =======================================================================
+procedure void LIBGFX_SplashHumain(int canal, byref float time)
+{
+	object	to_obj
+	vector	tv_temp
+	int			i_Gfx
+	
+//	if(!TIME_Elapsed(time, 0.1)) return
+	time = TIME_Get()
+	to_obj = ANI_CanalObjectGet(canal)
+	if(!to_obj) return
+    tv_temp = @to_obj OBJ_PosGet()
+    if(MATH_AbsFloat(tv_temp.z - OBJ_PosGet().z) > 0.1) return
+    tv_temp.z -= 0.25
+	i_Gfx = GFX_Add(9)  // ajout de l’effet
+	GFX_FlagSet(i_Gfx,0,1) // activation de l’effet
+	GFX_FlagSet(i_Gfx, 2, 1) // matériau transparent
+	GFX_MaterialSet(i_Gfx, get_SFX_light_and_smoke,5)	// matériau
+	GFX_Setv( i_Gfx, 9200, tv_temp) //position
+	GFX_Setv( i_Gfx, 9201, cvector( 0, 0, 0.1)) // axe du cone de vitesse
+	 GFX_Setv( i_Gfx, 9202, cvector( 0, 0, -2) )	 // gravité
+	 GFX_Seti( i_Gfx, 9100, 40)	 // nb max d’étincelles
+ 	GFX_Seti( i_Gfx, 9101, 0x80060606)	 // couleur
+	 GFX_Seti (i_Gfx, 9102, 24) // flags : 16 => bit 4 à 1 => temps de mort
+	 GFX_Setf( i_Gfx, 9000, 0.1 )	 // angle
+	 GFX_Setf( i_Gfx, 9001, 15) // speed min
+	 GFX_Setf( i_Gfx, 9002, 20) // speed max
+	 GFX_Setf( i_Gfx, 9003, 0.99) // friction
+	 GFX_Setf( i_Gfx, 9004, 0.04 ) // width
+	 GFX_Setf( i_Gfx, 9005, 0.5 ) // time min
+	 GFX_Setf( i_Gfx, 9006, 1.0 ) // time max
+	 GFX_Setf( i_Gfx, 9007, 2 ) // scale
+	 GFX_Setf( i_Gfx, 9008, 0.001  ) // period
+	 GFX_Setf( i_Gfx, 9009, 0.2  ) // temps de mort minimum
+	 GFX_Setf( i_Gfx, 9010, 0.3  ) // temps de mort maxi
+}
+
+// =======================================================================
+// type - 0	grille
+// type - 1	torche
+// type - 2	feu qui s'éteind sur lance
+// =======================================================================
+procedure void LIGGFX_Fumee(byref int i_gfx1, byref int i_gfx2, vector pos_feu, int ti_type)
+{
+	vector	tv_temp
+
+	if(i_gfx1 == -1 || ti_type == 2)
+	{
+		i_gfx1 = GFX_Add(13)																// Create the boum
+			
+		GFX_MaterialSet(i_gfx1, get_SFX_light_and_smoke, -1)					// met le materiau
+		GFX_Seti(i_gfx1, 13101, 8)														// Materiau 0
+		
+		GFX_Seti(i_gfx1, 13100, 100)														// *Buffer number of sprite
+		GFX_Seti(i_gfx1, 13106, 0xFFFFFFFF)										// *number of sprite to generate
+		
+		if(ti_type == 2)
+		{
+			GFX_Setf(i_gfx1, 13003, 0.5)														// Time fase 1
+			GFX_Setf(i_gfx1, 13004, 1.0)														// Time fase 2
+		}
+		else
+		{
+			GFX_Setf(i_gfx1, 13003, 1.0)														// Time fase 1
+			GFX_Setf(i_gfx1, 13004, 1.5)														// Time fase 2
+		}
+		
+		GFX_Seti(i_gfx1, 13107, 0)														// Sprites non triés
+		GFX_FlagSet(i_gfx1, 0 , 1)
+		
+		GFX_FlagSet(i_gfx1, 2 , 1)
+			
+		GFX_Setf(i_gfx1, 13012, 0.5)													// Time random
+		
+		if(ti_type == 0)
+		{
+			GFX_Setf(i_gfx1, 13000, 0.5)														// Growing speed min
+			GFX_Setf(i_gfx1, 13001, 2.0)														// Growing speed max
+		}
+		else if(ti_type == 1)
+		{
+			GFX_Setf(i_gfx1, 13000, 0.5)														// Growing speed min
+			GFX_Setf(i_gfx1, 13001, 1.0)														// Growing speed max
+		}
+		else if(ti_type == 2)
+		{
+			GFX_Setf(i_gfx1, 13000, 0.25)														// Growing speed min
+			GFX_Setf(i_gfx1, 13001, 0.5)														// Growing speed max
+		}
+		
+		GFX_Setf(i_gfx1, 13002, 0.0001)													// Friction Grow
+			
+		GFX_Setv(i_gfx1, 13203, cvector(0.02, 0.02, 0.02))						// friction speed
+			
+		if(ti_type == 0)
+		{
+			GFX_Seti(i_gfx1, 13103, 0x20888888)											// Color fase 0
+			GFX_Seti(i_gfx1, 13104, 0x10333333)											// Color fase 1
+			GFX_Seti(i_gfx1, 13105, 0x00000000)											// Color fase 2
+			GFX_Setf(i_gfx1, 13005, 0.0)														// Creation size min
+			GFX_Setf(i_gfx1, 13006, 0.0)														// Creation size max
+		}
+		else if(ti_type == 1)
+		{
+			GFX_Seti(i_gfx1, 13103, 0x20555555)											// Color fase 0
+			GFX_Seti(i_gfx1, 13104, 0x05222222)											// Color fase 1
+			GFX_Seti(i_gfx1, 13105, 0x00000000)											// Color fase 2
+			GFX_Setf(i_gfx1, 13005, 0.0)														// Creation size min
+			GFX_Setf(i_gfx1, 13006, 0.0)														// Creation size max		
+		}
+		else if(ti_type == 2)
+		{
+			GFX_Seti(i_gfx1, 13103, 0x10FFFFFF)											// Color fase 0
+			GFX_Seti(i_gfx1, 13104, 0x05FFFFFF)											// Color fase 1
+			GFX_Seti(i_gfx1, 13105, 0x00000000)											// Color fase 2
+			GFX_Setf(i_gfx1, 13005, 0.1)														// Creation size min
+			GFX_Setf(i_gfx1, 13006, 0.2)														// Creation size max
+		}
+			
+		if(ti_type == 0)
+		{
+			GFX_Setf(i_gfx1, 13009, 1.0)														// Norm speed min
+			GFX_Setf(i_gfx1, 13010, 2.0)														// Norm speed max
+		}
+		else if(ti_type == 1)
+		{
+			GFX_Setf(i_gfx1, 13009, 1.0)														// Norm speed min
+			GFX_Setf(i_gfx1, 13010, 2.0)														// Norm speed max
+		}
+		else
+		{
+			GFX_Setf(i_gfx1, 13009, 0.1)														// Norm speed min
+			GFX_Setf(i_gfx1, 13010, 0.2)														// Norm speed max
+		}
+			
+		if(ti_type == 2)
+		{
+			GFX_Setf(i_gfx1, 13007, 0.5)													// Gravity
+			GFX_Setf(i_gfx1, 13008, 0.05)													// generation rate
+		}
+		else
+		{
+			GFX_Setf(i_gfx1, 13007, 2.5)													// Gravity
+			GFX_Setf(i_gfx1, 13008, 0.1)													// generation rate
+		}
+		
+		GFX_Setv(i_gfx1, 13205, Cv_NullVector)										// Mainposspeed
+		GFX_Setv(i_gfx1, 13206, Cv_NullVector)										// Mainpossfriction
+
+		GFX_Setv(i_gfx1, 13204, cvector(0,0.1,0))										// wind
+
+		GFX_Setv(i_gfx1, 13200, pos_feu) 								// Creation Pos
+		
+		if(ti_type == 0)
+		{
+			GFX_Setv(i_gfx2, 13207, OBJ_HorizonGet() * 1.0)			// CreaPosAxe X
+			GFX_Setv(i_gfx2, 13208, OBJ_SightGet() * 1.0)				// CreaPosAxe Y
+			GFX_Setv(i_gfx2, 13209, OBJ_BankingGet() * 1.0)			// CreaPosAxe Y
+		}
+		else if(ti_type == 1)
+		{
+			GFX_Setv(i_gfx2, 13207, OBJ_HorizonGet() * 0.5)			// CreaPosAxe X
+			GFX_Setv(i_gfx2, 13208, OBJ_SightGet() * 0.5)				// CreaPosAxe Y
+			GFX_Setv(i_gfx2, 13209, OBJ_BankingGet() * 0.5)			// CreaPosAxe Y
+		}
+		else if(ti_type == 2)
+		{
+			GFX_Setv(i_gfx2, 13207, OBJ_HorizonGet() * 0.5)			// CreaPosAxe X
+			GFX_Setv(i_gfx2, 13208, OBJ_SightGet() * 0.5)				// CreaPosAxe Y
+			GFX_Setv(i_gfx2, 13209, OBJ_BankingGet() * 0.5)			// CreaPosAxe Y
+		}
+		
+		tv_temp	= OBJ_BankingGet() * 30
+		GFX_Setv(i_gfx1, 13201, tv_temp + cvector(-4.0, -4.0, -4.0))			// Speed min
+		GFX_Setv(i_gfx1, 13202, tv_temp + cvector(4.0, 4.0, 4.0))				// Speed max
+		
+		/////////////////////////////////////////////////
+		
+		if(ti_type == 2) 
+		{
+			GFX_LifeTimeSet(i_gfx1, 0.5)
+			return	
+		}
+
+		i_gfx2 = GFX_Add(13)																// Create the boum
+			
+		GFX_MaterialSet(i_gfx2, get_SFX_light_and_smoke, -1)					// met le materiau
+		GFX_Seti(i_gfx2, 13101, 1)														// Materiau 0
+		
+		if(ti_type == 0)
+			GFX_Seti(i_gfx2, 13100, 25)														// *Buffer number of sprite
+		else
+			GFX_Seti(i_gfx2, 13100, 10)														// *Buffer number of sprite
+		GFX_Seti(i_gfx2, 13106, 0xFFFFFFFF)										// *number of sprite to generate
+		
+		GFX_Setf(i_gfx2, 13003, 0.5)														// Time fase 1
+		GFX_Setf(i_gfx2, 13004, 0.5)														// Time fase 2
+		
+		GFX_Seti(i_gfx2, 13107, 0)														// Sprites non triés
+		GFX_FlagSet(i_gfx2, 0 , 1)
+		
+		GFX_FlagSet(i_gfx2, 2 , 1)
+			
+		GFX_Setf(i_gfx2, 13012, 1.0)													// Time random
+		
+		GFX_Setf(i_gfx2, 13000, 0.1)														// Growing speed min
+		GFX_Setf(i_gfx2, 13001, 0.2)														// Growing speed max
+		GFX_Setf(i_gfx2, 13002, 0.0001)													// Friction Grow
+			
+		GFX_Setf(i_gfx2, 13005, 0.0)														// Creation size min
+		GFX_Setf(i_gfx2, 13006, 0.0)														// Creation size max
+			
+		GFX_Setv(i_gfx2, 13203, cvector(0.02, 0.02, 0.02))						// friction speed
+			
+		
+		GFX_Seti(i_gfx2, 13103, 0x102575D5)											// Color fase 0
+		GFX_Seti(i_gfx2, 13104, 0xFF2575D5)										// Color fase 1
+		GFX_Seti(i_gfx2, 13105, 0x00000000)											// Color fase 2
+			                    
+		GFX_Setf(i_gfx2, 13009, 1.0)														// Norm speed min
+		GFX_Setf(i_gfx2, 13010, 5.0)														// Norm speed max
+			
+		GFX_Setf(i_gfx2, 13007, 1.0)													// Gravity
+		
+		GFX_Setf(i_gfx2, 13008, 0.001)													// generation rate
+		
+		GFX_Setv(i_gfx2, 13205, Cv_NullVector)										// Mainposspeed
+		GFX_Setv(i_gfx2, 13206, Cv_NullVector)										// Mainpossfriction
+
+		GFX_Setv(i_gfx2, 13204, cvector(0,0.1,0))										// wind
+
+		GFX_Setv(i_gfx2, 13200, pos_feu) 								// Creation Pos
+		if(ti_type== 0)
+		{
+			GFX_Setv(i_gfx2, 13207, OBJ_HorizonGet() * 1.5)			// CreaPosAxe X
+			GFX_Setv(i_gfx2, 13208, OBJ_SightGet() * 1.5)				// CreaPosAxe Y
+			GFX_Setv(i_gfx2, 13209, OBJ_BankingGet() * 1.5)			// CreaPosAxe Y
+		}
+		else if(ti_type== 1)
+		{
+			GFX_Setv(i_gfx2, 13207, OBJ_HorizonGet() * 0.25)			// CreaPosAxe X
+			GFX_Setv(i_gfx2, 13208, OBJ_SightGet() * 0.25)				// CreaPosAxe Y
+			GFX_Setv(i_gfx2, 13209, OBJ_BankingGet() * 0.25)			// CreaPosAxe Y
+		}
+		
+		tv_temp	= OBJ_BankingGet() * 30
+		GFX_Setv(i_gfx2, 13201, tv_temp + cvector(-4.0, -4.0, -4.0))			// Speed min
+		GFX_Setv(i_gfx2, 13202, tv_temp + cvector(4.0, 4.0, 4.0))				// Speed max		
+	}
+	
+	GFX_Setv(i_gfx1, 13200, pos_feu) 								// Creation Pos
+	GFX_Setv(i_gfx2, 13200, pos_feu) 								// Creation Pos
+}
+
+procedure void LIBGFX_Mat_Blood(vector tv_pos, float tf_speed)
+{
+	int		ti_GFX_Blood	
+	
+	ti_GFX_Blood = GFX_Add(13)																// Create the boum
+	GFX_MaterialSet(ti_GFX_Blood, get_SFX_light_and_smoke, -1)						// met le materiau
+//	GFX_Seti(ti_GFX_Blood, 13101, 8)															// Materiau 0
+	GFX_Seti(ti_GFX_Blood, 13101, 40)															// Materiau 0
+	GFX_Seti(ti_GFX_Blood, 13100, 10)															// *Buffer number of sprite
+	GFX_Seti(ti_GFX_Blood, 13106, 10)												// *number of sprite to generate
+	GFX_Setf(ti_GFX_Blood, 13003, 0.5)															// Time fase 1
+	GFX_Setf(ti_GFX_Blood, 13004, 1.0)															// Time fase 2
+	GFX_Seti(ti_GFX_Blood, 13107, 0)															// Sprites non triés
+	GFX_FlagSet(ti_GFX_Blood, 0 , 1)
+	GFX_FlagSet(ti_GFX_Blood, 2 , 1)
+	GFX_Setf(ti_GFX_Blood, 13012, 0.75)														// Time random
+	GFX_Setf(ti_GFX_Blood, 13005, 0.05 * tf_speed)														// Creation size min
+	GFX_Setf(ti_GFX_Blood, 13006, 0.075 * tf_speed)														// Creation size max
+	GFX_Setv(ti_GFX_Blood, 13201, cvector(-1.0, -1.0, 1.5))							// Speed min
+	GFX_Setv(ti_GFX_Blood, 13202, cvector(1.0, 1.0, 1.5))								// Speed max
+	GFX_Setf(ti_GFX_Blood, 13009, tf_speed * 0.5)							// Norm speed min
+	GFX_Setf(ti_GFX_Blood, 13010, tf_speed)									// Norm speed max
+	GFX_Setv(ti_GFX_Blood, 13203, cvector(0.01, 0.01, 0.0))					// friction speed
+//	GFX_Setf(ti_GFX_Blood, 13000, 0.25)														// Growing speed min
+//	GFX_Setf(ti_GFX_Blood, 13001, 0.5)														// Growing speed max
+//	GFX_Setf(ti_GFX_Blood, 13002, 0.001)													// Friction Grow
+	GFX_Setf(ti_GFX_Blood, 13007, -0.75 * tf_speed)														// Gravity
+	GFX_Seti(ti_GFX_Blood, 13103, 0xFF202020)											// Color fase 0
+	GFX_Seti(ti_GFX_Blood, 13104, 0xFF202020)											// Color fase 1
+	GFX_Seti(ti_GFX_Blood, 13105, 0x00202020)											// Color fase 2
+	GFX_Setf(ti_GFX_Blood, 13008, 0.0001)														// generation rate
+	GFX_Setv(ti_GFX_Blood, 13205, Cv_NullVector)										// Mainposspeed
+	GFX_Setv(ti_GFX_Blood, 13206, Cv_NullVector)		 								// Mainpossfriction
+	GFX_Setv(ti_GFX_Blood, 13204, Cv_NullVector)												// wind
+	GFX_Setv(ti_GFX_Blood, 13200, tv_pos) 								// Creation Pos
+//	GFX_Setf(ti_GFX_Blood, 13011, tf_Z_min)									// Z min
+
+//	GFX_Setv(ti_GFX_Blood, 13207, cvector(0.5, 0.0, 0.0))	// CreaPosAxe X
+//	GFX_Setv(ti_GFX_Blood, 13208, cvector(0.0, 0.5, 0.0))	// CreaPosAxe Y
+}
+
+
+
+//============================================================
+// Param IN:
+//		pi_GFX_Fire  : id du gfx (-1 pour la création)
+//		v_Pos : position du javelot (OBJ_PosGet() + (2 * v_Axe))
+//		v_Axe : axe du javelot		(OBJ_SightGet() / 5)
+// Param OUT: none
+//============================================================
+procedure void LIBGFX_PoisonFlamme( byref int pi_GFX_Fire, vector  pv_Pos, vector pv_Axe)
+{
+	//	GAZ
+	if (pi_GFX_Fire == -1)
+	{
+		pi_GFX_Fire = GFX_Add(13)																	// Create the boum
+
+		GFX_Seti(pi_GFX_Fire, 13100, 40)															// *Buffer number of sprite
+		GFX_Seti(pi_GFX_Fire, 13106, 0xFFFFFFFF)											// *number of sprite to generate
+		GFX_Setf(pi_GFX_Fire, 13008, 0.04)														// generation rate
+
+		GFX_MaterialSet(pi_GFX_Fire , get_SFX_light_and_smoke, -1)									// met le materiau
+		GFX_Seti(pi_GFX_Fire, 13101, 17)															// Materiau 0
+		GFX_Seti(pi_GFX_Fire, 13110, 18)															// Materiau 1
+		GFX_Seti(pi_GFX_Fire, 13111, 19)															// Materiau 2
+		GFX_Seti(pi_GFX_Fire, 13112, 17)															// Materiau 3
+
+		GFX_Seti(pi_GFX_Fire, 13107, 0)															// Affichage des sprites non trié
+
+		// Size
+		GFX_Setf(pi_GFX_Fire, 13005, 0.05)								// Creation size min
+		GFX_Setf(pi_GFX_Fire, 13006, 0.15)								// Creation size max
+		GFX_Setf(pi_GFX_Fire, 13000, -0.05)														// Grwing speed min
+		GFX_Setf(pi_GFX_Fire, 13001, -0.025)														// Grwing speed max
+		GFX_Setf(pi_GFX_Fire, 13002, 0.025)														// Friction Grow
+
+		// Color
+		GFX_Seti(pi_GFX_Fire, 13103, 0x0000FF00)											// Color fase 0
+		GFX_Seti(pi_GFX_Fire, 13104, 0x0000FF00)	
+		GFX_Seti(pi_GFX_Fire, 13105, 0x0)											// Color fase 2
+	
+		// Translation
+		GFX_Setf(pi_GFX_Fire, 13009, 0.5)										// Norm speed min
+		GFX_Setf(pi_GFX_Fire, 13010, 1.0)								// Norm speed max
+	
+//		GFX_Setv(pi_GFX_Fire, 13201, cvector(-0.01, -0.01, 0.59))		// Speed min
+//		GFX_Setv(pi_GFX_Fire, 13202, cvector(0.01, 0.01, 0.6))			// Speed max
+
+		GFX_Setv(pi_GFX_Fire, 13201, cvector(-1.0, -1.0, 0.0))		// Speed min
+		GFX_Setv(pi_GFX_Fire, 13202, cvector(1.0, 1.0, 1.0))			// Speed max
+
+		GFX_Setv(pi_GFX_Fire, 13203, cvector(0.1, 0.1, 0.01))								// friction speed
+		GFX_FlagSet(pi_GFX_Fire, 0 , 1)
+		GFX_FlagSet(pi_GFX_Fire, 2 , 1)
+		GFX_Setf(pi_GFX_Fire, 13012, 0.75)														// Time random
+
+		GFX_Setf(pi_GFX_Fire, 13003, 0.0)		// Time fase 1
+		GFX_Setf(pi_GFX_Fire, 13004, 0.5)		// Time fase 2
+	
+		GFX_Setv(pi_GFX_Fire, 13204, Cv_NullVector)			// wind
+	}
+
+	GFX_Setv(pi_GFX_Fire, 13200, pv_Pos)				// Creation Pos
+	GFX_Setv(pi_GFX_Fire, 13207, pv_Axe)				// CreaPosAxe X
+
+	GFX_Setf(pi_GFX_Fire, 13007, MATH_RandFloat(1.0, 2.0))               							// Gravity
+}
+
+
+procedure void LIBGFX_PoisonGaz(byref int tGFX_Ga, vector pv_Pos, vector pv_Axe, int ti_poison_type)
+{
+	color		tc_fase_0
+	color		tc_fase_1
+	color		tc_fase_2
+	
+//	LIBGFX_PoisonFlamme(tGFX_Ga, pv_Pos, pv_Axe)
+//	return
+	
+	switch( ti_poison_type )
+	{
+		case Ci_Poison_Type_Sick :
+			tc_fase_0 = 0x600000FF
+			tc_fase_1 = 0x800000FF
+			tc_fase_2 = 0x000000FF
+			break
+		case Ci_Poison_Type_Sleep :
+			tc_fase_0 = 0x60FF0000
+			tc_fase_1 = 0x80FF0000
+			tc_fase_2 = 0x00FF0000
+			break
+		case Ci_Poison_Type_Standard :
+		default:
+			tc_fase_0 = 0x6000FF00
+			tc_fase_1 = 0x8000FF00
+			tc_fase_2 = 0x0000FF00
+			break
+	}
+	
+	tGFX_Ga = GFX_Add(13)																// Create the boum
+	
+	GFX_MaterialSet(tGFX_Ga, get_SFX_light_and_smoke, 8)					// met le materiau
+	
+	GFX_Seti(tGFX_Ga, 13100, 1)														// *Buffer number of sprite
+	GFX_Seti(tGFX_Ga, 13106, 1)														// *number of sprite to generate
+	
+	GFX_Setf(tGFX_Ga, 13003, 0.1)														// Time fase 1
+	GFX_Setf(tGFX_Ga, 13004, 0.2)														// Time fase 2
+	
+	GFX_Seti(tGFX_Ga, 13107, 0)														// Sprites non triés
+	
+	GFX_FlagSet(tGFX_Ga, 0 , 1)
+	GFX_FlagSet(tGFX_Ga, 2 , 1)
+	
+	GFX_Setf(tGFX_Ga, 13012, 0.75)													// Time random
+	
+	GFX_Setv(tGFX_Ga, 13201, cvector(-1.0, -1.0, -1.0))							// Speed min
+	GFX_Setv(tGFX_Ga, 13202, cvector(1.0, 1.0, 1.0))								// Speed max
+	
+	GFX_Setf(tGFX_Ga, 13000, 1.0)														// Growing speed min
+	GFX_Setf(tGFX_Ga, 13001, 1.2)														// Growing speed max
+	GFX_Setf(tGFX_Ga, 13002, 0.0001)												// Friction Grow
+	
+	GFX_Setf(tGFX_Ga, 13005, 0.1)														// Creation size min
+	GFX_Setf(tGFX_Ga, 13006, 0.3)														// Creation size max
+	
+	GFX_Setv(tGFX_Ga, 13203, cvector(0.1, 0.1, 0.2))								// friction speed
+	
+//	GFX_Seti(tGFX_Ga, 13103, 0x6080FFFF)										// Color fase 0
+//	GFX_Seti(tGFX_Ga, 13104, 0x8020341B)											// Color fase 1
+//	GFX_Seti(tGFX_Ga, 13105, 0x0020341B)											// Color fase 2
+
+	GFX_Seti(tGFX_Ga, 13103, tc_fase_0)										// Color fase 0
+	GFX_Seti(tGFX_Ga, 13104, tc_fase_1)											// Color fase 1
+	GFX_Seti(tGFX_Ga, 13105, tc_fase_2)											// Color fase 2
+	
+	GFX_Setf(tGFX_Ga, 13009, 0.15)													// Norm speed min
+	GFX_Setf(tGFX_Ga, 13010, 0.5)													// Norm speed max
+	
+	GFX_Setf(tGFX_Ga, 13008, 0.0)														// generation rate
+	
+	GFX_Setv(tGFX_Ga, 13205, Cv_NullVector)										// Mainposspeed
+	GFX_Setv(tGFX_Ga, 13206, Cv_NullVector)										// Mainpossfriction
+	
+	GFX_Setv(tGFX_Ga, 13204, Cv_NullVector)										// wind
+	
+	GFX_Setf(tGFX_Ga, 13007, 0.0)														// Gravity
+	GFX_Setv(tGFX_Ga, 13200, pv_Pos) 				// Creation Pos	
+	GFX_Setv(tGFX_Ga, 13207, pv_Axe)				// CreaPosAxe X
+}
+

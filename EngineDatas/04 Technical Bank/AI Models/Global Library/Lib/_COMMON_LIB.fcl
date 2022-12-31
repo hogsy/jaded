@@ -1,0 +1,1355 @@
+Include_UltraProcedure_Header
+
+procedure void DBG_RenderBox2(vector pv_min, vector pv_max, int pi_color)
+{
+	vector	tv_temp1,tv_temp2
+	tv_temp1=pv_min
+	tv_temp2=cvector(pv_min.x,pv_max.y,pv_min.z)
+	tv_temp2-=pv_min
+	DBG_RenderVector(tv_temp1,tv_temp2,pi_color)
+
+	tv_temp1.z=pv_max.z
+	DBG_RenderVector(tv_temp1,tv_temp2,pi_color)
+
+	tv_temp1.x=pv_max.x
+	DBG_RenderVector(tv_temp1,tv_temp2,pi_color)
+
+	tv_temp1.z=pv_min.z
+	DBG_RenderVector(tv_temp1,tv_temp2,pi_color)
+
+	tv_temp2.y=0.0
+	tv_temp2.x=pv_min.x-pv_max.x
+	DBG_RenderVector(tv_temp1,tv_temp2,pi_color)
+
+	tv_temp1.z=pv_max.z
+	DBG_RenderVector(tv_temp1,tv_temp2,pi_color)
+
+	tv_temp1.y=pv_max.y
+	DBG_RenderVector(tv_temp1,tv_temp2,pi_color)
+
+	tv_temp1.z=pv_min.z
+	DBG_RenderVector(tv_temp1,tv_temp2,pi_color)
+
+	tv_temp2.x=0.0
+	tv_temp2.z=pv_max.z-pv_min.z
+	DBG_RenderVector(tv_temp1,tv_temp2,pi_color)
+
+	tv_temp1.y=pv_min.y
+	DBG_RenderVector(tv_temp1,tv_temp2,pi_color)
+
+	tv_temp1.x=pv_min.x
+	DBG_RenderVector(tv_temp1,tv_temp2,pi_color)
+
+	tv_temp1.y=pv_max.y
+	DBG_RenderVector(tv_temp1,tv_temp2,pi_color)
+
+}
+
+procedure int RM_ITEM_IS_WEAPON(int ti_item_id)
+{
+	switch( ti_item_id )
+	{
+		case RM_WEAPON_TYPE_GRENADE :
+		case RM_WEAPON_TYPE_GUN :
+		case RM_WEAPON_TYPE_GOURDIN :
+			return vrai
+		default:
+			return faux
+	}
+}
+
+// GESTION DES POWERS UP
+procedure int	RM_POWERUP_IS_ACTIF( int	pi_power)
+{
+	return ( @"univ" i_RM_powerUP & pi_power)
+}
+
+
+procedure int RM_POWERUP_SET( int	pi_powerON, int	pi_powerOFF)
+{
+	@"univ" i_RM_powerUP |= pi_powerON
+	@"univ" i_RM_powerUP &= (~pi_powerOFF)
+	return vrai
+}
+
+procedure int	RM_POWERUP_GET( )
+{
+	return ( @"univ" i_RM_powerUP)
+}
+
+procedure int RM_Disguise_Get( int pi_shape)
+{
+	if ( (@"univ" ai_disguise[pi_shape] & RM_POWER_DISGUISE_FULL) == RM_POWER_DISGUISE_FULL)
+		return vrai
+	else
+		return faux
+}
+
+procedure int RM_Disguise_ItemGet( int pi_shape, int pi_item)
+{
+	if ( (@"univ" ai_disguise[pi_shape] & pi_item))
+		return vrai
+	else
+		return faux
+}
+
+
+procedure void RM_Disguise_Add( int	pi_shape, int pi_item)
+{
+	@"univ" ai_disguise[pi_shape] |= pi_item
+}
+
+procedure void RM_Disguise_Set( int	pi_shape, int pi_item)
+{
+	@"univ" ai_disguise[pi_shape] = pi_item
+}
+
+// GESTION DES TARGETS  ===================================
+
+// POSITION
+procedure void RM_TARGET_SetPos( int pi_indice, vector pv_pos)
+{
+	@get_list_manager av_target[ pi_indice] = pv_pos
+}
+
+// AJOUT DYNAMIQUE D'UNE TARGET
+procedure int RM_TARGET_Add(object po_cible, vector pv_pos)
+{
+	int	pi_indice
+	int	pi_i
+	pi_indice = -1
+	if( po_cible )
+	{
+		@po_cible OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_DesignStruct, none)
+		pi_indice = ARR_ObjSearch(&@get_list_manager ao_target[0], @get_list_manager i_target_nb, po_cible)
+		if( pi_indice == -1 )
+		{
+			@get_list_manager ao_target[@get_list_manager i_target_nb] = po_cible
+			@get_list_manager av_target[@get_list_manager i_target_nb] = pv_pos
+			pi_indice = @get_list_manager i_target_nb
+			@get_list_manager i_target_nb++
+			if( @get_list_manager i_target_nb >= 100)
+				DBG_Error("TOO MANY TARGETS ALLOCATED")
+		}
+	}
+	return	( pi_indice)
+}
+
+// SUPPRESSION DYNAMIQUE D'UNE TARGET
+procedure void RM_TARGET_Del( object	po_cible)
+{
+	int	pi_indice
+	int	pi_i
+	pi_indice = ARR_ObjSearch(&@get_list_manager ao_target[0], @get_list_manager i_target_nb, po_cible)
+	if( pi_indice != -1 )
+	{
+		@get_list_manager i_target_nb--
+		for( pi_i = pi_indice; pi_i < @get_list_manager i_target_nb; pi_i ++)
+			@get_list_manager ao_target[pi_i] = @get_list_manager ao_target[(pi_i +1)]
+	}
+}
+
+
+procedure vector Traction_Add(object to_obj, vector tv_traction)
+{
+	vector	tv_traction1
+	tv_traction1 = tv_traction
+//	if( tv_traction1.z > 0.0 )
+//		tv_traction1.z = 0.0
+	if( to_obj && @to_obj OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+	{
+		if( @to_obj AI_IsModel(get_RM_Box_path) )
+			return @to_obj Proc_Box_Traction_Add(tv_traction1)
+		if( @to_obj AI_IsModel(get_PNJ_Quadri_Path) )
+			return @to_obj Proc_PNJ_Quadri_Traction_Add(tv_traction1)
+//		if( @to_obj AI_IsModel(get_PNJ_RaptorSlim_path) )
+//			return @to_obj Proc_PRS_Traction_Add(tv_traction1)
+	}
+	return Cv_NullVector
+}
+
+
+
+procedure int	PROC_RM_IS_MOUNT( object po_obj)
+{
+	if( @po_obj AI_IsModel(get_PNJ_Quadri_Path) )
+		return @po_obj Proc_PNJ_Quadri_CreatureTypeGet()
+	if( @po_obj AI_IsModel(get_PNJ_Shark_path) )
+		return @po_obj Proc_PNJ_Shark_CreatureTypeGet()
+	if( @po_obj AI_IsModel(get_PNJ_Snake_path) )
+		return @po_obj Proc_PNJ_Snake_CreatureTypeGet()
+	if( @po_obj AI_IsModel(get_PNJ_Volant_path) )
+		return @po_obj Proc_PNJ_Volant_CreatureTypeGet()
+	if( @po_obj AI_IsModel(get_PNJ_Lapin_path) )
+		return C_ID_Lapin
+	if( @po_obj AI_IsModel(get_PNJ_Bunny_Saucer_path) )
+		return @po_obj Proc_PNJ_Bunny_Saucer_CreatureTypeGet()
+	return 0
+}
+
+procedure int	PROC_RM_IS_MOUNT_ID_TAMED( int	pi_id, object	po_mount)
+{
+	// Test montures spécifiques.
+	switch ( pi_id)
+	{
+		case C_ID_Lapin :
+				return @po_mount Proc_PNJ_Lapin_Is_Ride_Enabled()
+			break
+		case C_ID_Scooter :
+				return vrai
+			break
+		case C_ID_Monture_Rhino :
+			if ( @"univ" i_RM_powerUP & RM_POWER_MOUNT_RHYNO )
+				return vrai
+			else
+				return faux
+			break
+		case C_ID_Monture_Aigle :
+			if ( @"univ" i_RM_powerUP & RM_POWER_MOUNT_EAGLE )
+				return vrai
+			else
+				return faux
+			break
+		case C_ID_Monture_Araignee :
+			if ( @"univ" i_RM_powerUP & RM_POWER_MOUNT_SPIDER )
+				return vrai
+			else
+				return faux
+			break
+		case C_ID_Monture_Bat :
+			if ( @"univ" i_RM_powerUP & RM_POWER_MOUNT_BAT )
+				return vrai
+			else
+				return faux
+			break
+		case C_ID_Monture_PoissonLumiere :
+			if ( @"univ" i_RM_powerUP & RM_POWER_MOUNT_FISH )
+				return vrai
+			else
+				return faux
+			break
+		case C_ID_Monture_Requin :
+			if ( @"univ" i_RM_powerUP & RM_POWER_MOUNT_SHARK )
+				return vrai
+			else
+				return faux
+			break
+		case C_ID_Monture_Serpent :
+			if ( @"univ" i_RM_powerUP & RM_POWER_MOUNT_SNAKE )
+				return vrai
+			else
+				return faux
+			break
+		case C_ID_Monture_Tigre :
+			if ( @"univ" i_RM_powerUP & RM_POWER_MOUNT_TIGER )
+				return vrai
+			else
+				return faux
+			break
+	}
+	return faux			// On ne peux rien rider
+}
+
+procedure int	PROC_RM_IS_MOUNT_GAO_TAMED( object po_mount)
+{
+	return ( PROC_RM_IS_MOUNT_ID_TAMED( PROC_RM_IS_MOUNT( po_mount), po_mount))
+}
+
+
+
+// POSITION DEs HOTSPOT
+procedure vector HotSpot_PosGet(object to_obj)
+{
+	if( to_obj )
+	{
+		if( @to_obj OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+		{
+			if( @to_obj AI_IsModel(get_RM_Box_path) )
+				return @to_obj Proc_Box_HotSpot_PosGet()
+			if( @to_obj AI_IsModel(get_RM_Weapon_path) )
+				return @to_obj PROC_WEAPON_HotSpot_PosGet()
+			if( @to_obj AI_IsModel(get_PNJ_Quadri_Path) )
+				return @to_obj Proc_PNJ_Quadri_HotSpot_PosGet()
+			if( @to_obj AI_IsModel(get_PNJ_Lapin_path) )
+				return @to_obj Proc_PNJ_Lapin_HotSpot_PosGet()
+			if( @to_obj AI_IsModel(get_PNJ_Volant_path) )
+				return @to_obj Proc_PNJ_Volant_HotSpot_PosGet()
+			if( @to_obj AI_IsModel(get_PNJ_Snake_path) )
+				return @to_obj Proc_PNJ_Snake_Rided_HotSpot_PosGet()
+			if ( @to_obj AI_IsModel(get_PNJ_Shark_path))
+				return @to_obj Proc_PNJ_Shark_HotSpot_PosGet()
+			if( @to_obj AI_IsModel(get_RM_Levier_path) )
+				return @to_obj Proc_Levier_HotSpot_PosGet()
+			if( @to_obj AI_IsModel(get_PNJ_Bunny_Saucer_path) )
+				return @to_obj Proc_PNJ_Bunny_Saucer_HotSpot_PosGet()
+			if( @to_obj AI_IsModel(get_PNJ_MiniRobot_path) )
+				return @to_obj Proc_PNJ_MiniRobot_HotSpot_PosGet()
+				
+//			DBG_TraceObject(to_obj)
+//			DBG_TraceString(" : modèle d'IA non reconnu (modèle standard ou map non sauvegardée et réouverte.")
+//			DBG_TraceEOL()
+//			DBG_Warning("modèle d'IA non reconnu")
+		}
+		return @to_obj OBJ_PosGet()
+	}
+	return Cv_NullVector
+}
+
+
+procedure void PROC_UNIV_RMMontureID_Set( int ti_ID)
+{
+	@"univ" i_RM_RideMontureID = ti_ID
+}
+
+procedure int PROC_UNIV_RMMontureID_Get()
+{
+	return @"univ" i_RM_RideMontureID
+}
+
+
+
+procedure int PROC_Valid_Ride(int	ti_mount_ID, vector tv_serveur_pos, object to_serveur)
+{
+	int			ti_color
+	
+	float		tf_x
+	float		tf_y
+	float		tf_ym
+	float		tf_z
+	float		tf_zm 
+	float		tf_zoom
+	
+	vector	tv_min 
+	vector	tv_max
+	vector	tv_temp
+	vector	tv_pos	
+
+	tv_pos = HotSpot_PosGet( OBJ_Me())
+	if( to_serveur == get_rayman )
+	{
+		if( @get_rayman PROC_RM_Current_HotSpot_Get() == OBJ_Me() 
+			&& MATH_VecSquareDistance( tv_pos, @get_rayman OBJ_PosGet()) < 9.0)
+			return vrai
+		if ( MATH_VecDotProduct( tv_pos - @get_rayman OBJ_PosGet(), @get_rayman OBJ_SightGet()) < 0
+		&& MATH_VecSquareDistance( tv_pos, @get_rayman OBJ_PosGet()) > 1.0)
+			return faux
+	}
+	switch (ti_mount_ID)
+	{
+		case C_ID_Monture_Bat :
+			tf_x = 1.4
+			tf_y = 1.9
+			tf_ym = -1.5
+			tf_z = 2.0
+			tf_zm = -0.5
+			break
+		case C_ID_Monture_Aigle :
+			tf_x = 1.0
+			tf_y = 0.5
+			tf_ym = -2.0
+			tf_z = 2.0
+			tf_zm = 0.0
+			break
+		case C_ID_Monture_Requin :
+			tf_x = 1.0 
+			tf_y = 1.5
+			tf_ym = -2.0
+			tf_z = 1.5
+			tf_zm = -1.0
+			break
+		case C_ID_Monture_PoissonLumiere :
+			tf_x = 0.8
+			tf_y = 2.0
+			tf_ym = -1.5
+			tf_z = 0.7
+			tf_zm = -1.5
+			break
+		case C_ID_Monture_Rhino :
+			tf_x = 1.2 
+			tf_y = 3.0
+			tf_ym = -3.5
+			tf_z = 3.6
+			tf_zm = 0.0
+			break
+		case C_ID_Monture_Tigre :
+			tf_x = 1.0 
+			tf_y = 3.5
+			tf_ym = -3.0
+			tf_z = 3.6
+			tf_zm = 0.0
+			break
+		case C_ID_Monture_Serpent :
+			tf_x = 0.5
+			tf_y = 0.7
+			tf_ym = -0.8
+			tf_z = 0.56
+			tf_zm = -0.6
+			break
+		case C_ID_Monture_Araignee :
+		case C_ID_Monture_Quadripode :
+			tf_x = 1.0
+			tf_y = 1.2
+			tf_ym = -1.0
+			tf_z = 0.8
+			tf_zm = -0.2
+			break
+		case C_ID_Monture_Rope :
+			tf_x = 1.0
+			tf_y = 1.2
+			tf_ym = -1.0
+			tf_z = 0.8
+			tf_zm = -0.2
+			break
+		case C_ID_Lapin :
+			switch ( Proc_Lapin_Type_Get() )
+			{
+				case Lapin_Type_Geant :
+					tf_x = 0.6
+					tf_y = 1.5
+					tf_ym = -0.5
+					tf_z = 0.8
+					tf_zm = 0.0
+					break
+				case Lapin_Type_Moyen :
+					tf_x = 0.6
+					tf_y = 1.5
+					tf_ym = -0.5
+					tf_z = 0.8
+					tf_zm = 0.0
+					break
+				case Lapin_Type_Petit :
+					tf_x = 1.2
+					tf_y = 2.0
+					tf_ym = -0.5
+					tf_z = 1.5
+					tf_zm = 0.0
+					break
+			}
+			break
+		case C_ID_Scooter :
+		case C_ID_Monture_Soucoupe :
+		case C_ID_Monture_Transport :
+			tf_x = 1.4
+			tf_y = 1.9
+			tf_ym = -1.5
+			tf_z = 2.0
+			tf_zm = -0.5
+			break
+		default:
+			DBG_Error("Nouveau truc a rider il faut definir la zone valide !!!!")
+	}
+	tf_zoom = OBJ_ZoomGet()
+	tv_min = cvector(-tf_x, tf_ym, tf_zm) * tf_zoom
+	tv_max = cvector(tf_x, tf_y, tf_z) * tf_zoom
+	
+	#ifndef _FINAL_
+	ti_color = color_bleu
+	tv_temp = OBJ_PosGet()
+	tv_temp += MATH_VecLocalToGlobal(tv_min)
+	DBG_RenderVector(tv_temp, (tv_max.x - tv_min.x) * OBJ_HorizonGet(), ti_color)
+	DBG_RenderVector(tv_temp, (tv_max.y - tv_min.y) * - OBJ_SightGet(), ti_color)
+	DBG_RenderVector(tv_temp, (tv_max.z - tv_min.z) * OBJ_BankingGet(), ti_color)
+
+	tv_temp += OBJ_BankingGet() * (tv_max.z - tv_min.z)
+	DBG_RenderVector(tv_temp, (tv_max.x - tv_min.x) * OBJ_HorizonGet(), ti_color)
+	DBG_RenderVector(tv_temp, (tv_max.y - tv_min.y) * - OBJ_SightGet(), ti_color)
+
+	tv_temp += (tv_max.x - tv_min.x) * OBJ_HorizonGet()
+	DBG_RenderVector(tv_temp, (tv_min.z - tv_max.z) * OBJ_BankingGet(), ti_color)
+
+	tv_temp = OBJ_PosGet()
+	tv_temp += MATH_VecLocalToGlobal(tv_max)
+	DBG_RenderVector(tv_temp, (tv_min.x - tv_max.x) * OBJ_HorizonGet(), ti_color)
+	DBG_RenderVector(tv_temp, (tv_min.y - tv_max.y) * -OBJ_SightGet(), ti_color)
+	DBG_RenderVector(tv_temp, (tv_min.z - tv_max.z) * OBJ_BankingGet(), ti_color)
+
+	tv_temp += OBJ_BankingGet() * (tv_min.z - tv_max.z)
+	DBG_RenderVector(tv_temp, (tv_min.x - tv_max.x) * OBJ_HorizonGet(), ti_color)
+	DBG_RenderVector(tv_temp, (tv_min.y - tv_max.y) * - OBJ_SightGet(), ti_color)
+	
+	tv_temp += (tv_min.x - tv_max.x) * OBJ_HorizonGet()
+	DBG_RenderVector(tv_temp, (tv_max.z - tv_min.z) * OBJ_BankingGet(), ti_color)
+	#endif
+
+	tv_serveur_pos = MATH_VecGlobalToLocal(tv_serveur_pos - OBJ_PosGet())
+	if ( tv_serveur_pos.x < tv_max.x && tv_serveur_pos.x > tv_min.x )
+	{
+		if ( tv_serveur_pos.y < tv_max.y && tv_serveur_pos.y > tv_min.y )
+		{
+			if ( tv_serveur_pos.z < tv_max.z && tv_serveur_pos.z > tv_min.z  )
+			{
+				return vrai		
+			}	
+			else
+				return faux
+		}	
+		else
+				return faux	
+	}
+	else
+		return faux
+}
+
+
+procedure float JOUR_NUIT_HeureGet()
+{
+	return @"univ" Planetes_CurHour
+}
+procedure int JOUR_NUIT_HeureCorrecte(float tf_h_debut, float tf_h_fin)
+{
+	float	tf_hour
+//	if( tf_h_debut != -1 && tf_h_fin != -1 )
+//	{
+		tf_hour = JOUR_NUIT_HeureGet()
+		if( tf_h_debut < tf_h_fin )
+		{
+			// dans 1 même journée
+			if( tf_hour > tf_h_debut && tf_hour < tf_h_fin )
+				return vrai
+			else
+				return faux
+		}
+		else
+		{
+			// à cheval sur 2 jours
+			if( tf_hour > tf_h_debut || tf_hour < tf_h_fin )
+				return vrai
+			else
+				return faux
+		}
+//	}
+//	else
+//		return vrai		// config jour-nuit pas valide donc pas de limite
+}
+
+
+// GESTION EXTERNE DES HOT SPOTS ===================================
+
+// AJOUT DYNAMIQUE D'UN HOTSPOT
+procedure int HotSpot_Add_Obj(object po_cible, int pi_fight)
+{
+	int	pi_indice
+	int	pi_i
+	pi_indice = -1
+	if( po_cible )
+	{
+		@po_cible OBJ_FlagsIdentitySet(OBJ_C_IdentityFlag_DesignStruct, none)
+		po_cible.des_desflags = po_cible.des_desflags | DSF_HotSpot_info_en_int1
+		if ( pi_fight)
+			po_cible.des_int1 |= 0b100	// Fight
+		pi_indice = ARR_ObjSearch(&@get_list_manager ao_hotspot[0], @get_list_manager i_hotspot_nb, po_cible)
+		if( pi_indice == -1 )
+		{
+			@get_list_manager ao_hotspot[@get_list_manager i_hotspot_nb] = po_cible
+			pi_indice = @get_list_manager i_hotspot_nb
+			@get_list_manager i_hotspot_nb++
+		}
+	}
+	return	( pi_indice)
+}
+
+// SUPPRESSION DYNAMIQUE D'UN HOTSPOT
+procedure void HotSpot_Del_Obj( object	po_cible)
+{
+	int	pi_indice
+	int	pi_i
+	pi_indice = ARR_ObjSearch(&@get_list_manager ao_hotspot[0], @get_list_manager i_hotspot_nb, po_cible)
+	if( pi_indice != -1 )
+	{
+		@get_list_manager i_hotspot_nb--
+		for( pi_i = pi_indice; pi_i < @get_list_manager i_hotspot_nb; pi_i ++)
+			@get_list_manager ao_hotspot[pi_i] = @get_list_manager ao_hotspot[(pi_i +1)]
+	}
+}
+
+procedure vector PROC_ForceStreamGet(vector	pv_pos, byref int pi_aspire)
+{
+	int			ti_i, ti_asp
+	object	to_stream
+	vector	pv_stream
+	vector	pv_tmp_stream
+	
+	pv_stream = Cv_NullVector
+	for ( ti_i = 0; ti_i < @get_list_manager i_stream_nb; ti_i++)
+	{
+		to_stream = @get_list_manager ao_stream[ti_i]
+		if (@to_stream AI_IsModel(get_PNJ_Shark_path))
+			pv_tmp_stream = @to_stream PROC_Shark_StreamGet(pv_pos, ti_asp, OBJ_Me())
+		else
+			pv_tmp_stream = @to_stream PROC_StreamGet(pv_pos, ti_asp)
+		pv_stream += pv_tmp_stream
+		if( ti_asp && ! MATH_VecNullToler(pv_tmp_stream, 0.01) )
+			pi_aspire = vrai
+	}
+	return pv_stream
+}
+
+
+procedure int EstUneMontureMajestueuse_ID(int ti_ID)
+{
+	switch( ti_ID )
+	{
+		case C_ID_Monture_Aigle :
+		case C_ID_Monture_Araignee :
+		case C_ID_Monture_Bat :
+		case C_ID_Monture_PoissonLumiere :
+		case C_ID_Monture_Requin :
+		case C_ID_Monture_Rhino :
+		case C_ID_Monture_Serpent :
+		case C_ID_Monture_Tigre :
+			return vrai
+		default:
+			return faux
+	}
+}
+
+// Montures majestueuses only
+procedure int EstUneMontureMajestueuse(object to_gao)
+{
+	if( to_gao && @to_gao OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+	{
+		if( @to_gao AI_IsModel(get_PNJ_Quadri_Path) )
+			return vrai
+		if( @to_gao AI_IsModel(get_PNJ_Volant_path) )
+			return vrai
+		if( @to_gao AI_IsModel(get_PNJ_Snake_path) )
+			return vrai
+		if( @to_gao AI_IsModel(get_PNJ_Shark_path) )
+			return vrai
+	}
+	return faux
+}
+
+procedure vector Proc_PNJ_JoyGetMove(object to_actor)
+{
+	if( to_actor && @to_actor OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+	{
+		if( @to_actor AI_IsModel(get_PNJ_Lapin_path) )
+			return @to_actor Proc_PNJ_Lapin_JoyGetMove()
+	}
+	return Cv_NullVector
+}
+
+procedure vector Proc_PNJ_VirtualSightGet(object to_actor)
+{
+	if( to_actor && @to_actor OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+	{
+		if( @to_actor AI_IsModel(get_PNJ_Lapin_path) )
+			return @to_actor Proc_PNJ_Lapin_VirtualSightGet()
+	}
+	return Cv_NullVector
+}
+
+
+procedure object Proc_MontureGet(object to_actor)
+{
+	if( to_actor && @to_actor OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+	{
+		if( to_actor == AI_MainActorGet(C_ID_Rayman) )
+			return @to_actor PROC_RM_MontureGet()
+		if( @to_actor AI_IsModel(get_PNJ_Lapin_path) )
+			return @to_actor Proc_PNJ_Lapin_MontureGet()
+	}
+	return nobody
+}
+
+procedure int Proc_MontureIDGet(object to_actor)
+{
+	if( to_actor && @to_actor OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+	{
+		if( to_actor == AI_MainActorGet(C_ID_Rayman) )
+			return @to_actor PROC_RM_MontureIDGet()
+		if( @to_actor AI_IsModel(get_PNJ_Lapin_path) )
+			return @to_actor Proc_PNJ_Lapin_MontureIDGet()
+	}
+	return 0
+}
+
+
+procedure int Proc_CreatureTypeGet(object to_actor)
+{
+	if( to_actor && @to_actor OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+	{
+		if( @to_actor AI_IsModel(get_PNJ_Quadri_Path) )
+			return @to_actor Proc_PNJ_Quadri_CreatureTypeGet()
+		if( @to_actor AI_IsModel(get_PNJ_Shark_path) )
+			return @to_actor Proc_PNJ_Shark_CreatureTypeGet()
+		if( @to_actor AI_IsModel(get_PNJ_Snake_path) )
+			return @to_actor Proc_PNJ_Snake_CreatureTypeGet()
+		if( @to_actor AI_IsModel(get_PNJ_Volant_path) )
+			return @to_actor Proc_PNJ_Volant_CreatureTypeGet()
+		if( @to_actor AI_IsModel(get_PNJ_Bunny_Saucer_path) )
+			return @to_actor Proc_PNJ_Bunny_Saucer_CreatureTypeGet()
+		if( @to_actor AI_IsModel(get_SplinterRope_path) )
+			return C_ID_Monture_Rope
+	}
+	return 0
+}
+
+
+procedure vector Proc_PNJ_RidedPosGet(object to_actor)
+{
+	if( to_actor && @to_actor OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+	{
+		if( @to_actor AI_IsModel(get_PNJ_Quadri_Path) )
+			return @to_actor Proc_PNJ_Quadri_RidedPosGet()
+		if( @to_actor AI_IsModel(get_PNJ_Shark_path) )
+			return @to_actor Proc_PNJ_Shark_RidedPosGet()
+		if( @to_actor AI_IsModel(get_PNJ_Snake_path) )
+			return @to_actor Proc_PNJ_Snake_RidedPosGet()
+		if( @to_actor AI_IsModel(get_PNJ_Volant_path) )
+			return @to_actor Proc_PNJ_Volant_RidedPosGet()
+		if( @to_actor AI_IsModel(get_PNJ_Bunny_Saucer_path) )
+			return @to_actor Proc_PNJ_Bunny_Saucer_RidedPosGet()
+		if( @to_actor AI_IsModel(get_PNJ_Lapin_path) )
+			return @to_actor Proc_PNJ_Lapin_RidedPosGet()
+		if( @to_actor AI_IsModel(get_SplinterRope_path) )
+			return @to_actor Splinter_Bunny_RidedPosGet()
+		if( @to_actor AI_IsModel(get_RM_Prune_path) )
+			return @to_actor Proc_RM_Prune_RidedPosGet()
+		return @to_actor OBJ_PosGet()
+	}
+	return Cv_NullVector
+}
+
+procedure vector Proc_PNJ_RidedSightGet(object to_actor)
+{
+	if( to_actor && @to_actor OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+	{
+		if( @to_actor AI_IsModel(get_PNJ_Quadri_Path) )
+			return @to_actor Proc_PNJ_Quadri_RidedSightGet()
+		if( @to_actor AI_IsModel(get_PNJ_Shark_path) )
+			return @to_actor Proc_PNJ_Shark_RidedSightGet()
+		if( @to_actor AI_IsModel(get_PNJ_Snake_path) )
+			return @to_actor Proc_PNJ_Snake_RidedSightGet()
+		if( @to_actor AI_IsModel(get_PNJ_Volant_path) )
+			return @to_actor Proc_PNJ_Volant_RidedSightGet()
+		if( @to_actor AI_IsModel(get_PNJ_Bunny_Saucer_path) )
+			return @to_actor Proc_PNJ_Bunny_Saucer_RidedSightGet()
+		if( @to_actor AI_IsModel(get_PNJ_Lapin_path) )
+			return @to_actor Proc_PNJ_Lapin_RidedSightGet()
+		if( @to_actor AI_IsModel(get_SplinterRope_path) )
+			return @to_actor Splinter_Bunny_RidedSightGet()
+		if( @to_actor AI_IsModel(get_RM_Prune_path) )
+			return @to_actor Proc_RM_Prune_RidedSightGet()
+		return @to_actor OBJ_SightGet()
+	}
+	return Cv_NullVector
+}
+
+procedure vector Proc_PNJ_RidedBankingGet(object to_actor)
+{
+	if( to_actor && @to_actor OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+	{
+		if( @to_actor AI_IsModel(get_PNJ_Quadri_Path) )
+			return @to_actor Proc_PNJ_Quadri_RidedBankingGet()
+		if( @to_actor AI_IsModel(get_PNJ_Shark_path) )
+			return @to_actor Proc_PNJ_Shark_RidedBankingGet()
+		if( @to_actor AI_IsModel(get_PNJ_Snake_path) )
+			return @to_actor Proc_PNJ_Snake_RidedBankingGet()
+		if( @to_actor AI_IsModel(get_PNJ_Volant_path) )
+			return @to_actor Proc_PNJ_Volant_RidedBankingGet()
+		if( @to_actor AI_IsModel(get_PNJ_Bunny_Saucer_path) )
+			return @to_actor Proc_PNJ_Bunny_Saucer_RidedBankingGet()
+		if( @to_actor AI_IsModel(get_PNJ_Lapin_path) )
+			return @to_actor Proc_PNJ_Lapin_RidedBankingGet()
+		if( @to_actor AI_IsModel(get_SplinterRope_path) )
+			return @to_actor Splinter_Bunny_RidedBankingGet()
+		if( @to_actor AI_IsModel(get_RM_Prune_path) )
+			return @to_actor Proc_RM_Prune_RidedBankingGet()
+		return @to_actor OBJ_BankingGet()
+	}
+	return Cv_NullVector
+}
+
+
+
+// retourne vrai si l'acteur est en mode gogo
+procedure int Proc_PNJ_Grappin_GogoMode(object to_actor)
+{
+	if( to_actor && @to_actor OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+	{
+		if( @to_actor AI_IsModel(get_PNJ_Lapin_path) )
+			return @to_actor Proc_Lapin_Grappin_GogoMode()
+		if( @to_actor AI_IsModel(get_RM_Box_path) )
+			return @to_actor Proc_Box_Grappin_GogoMode()
+		if( @to_actor AI_IsModel(get_PNJ_MiniRobot_path) )
+			return @to_actor Proc_PNJ_MiniRobot_Grappin_GogoMode()
+	}
+	return faux
+}
+
+
+procedure void Proc_PNJ_Push(object to_actor, vector tv_traction)
+{
+	if( to_actor && @to_actor OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+	{
+		if( @to_actor AI_IsModel(get_RM_Box_path) )
+			@to_actor Proc_Box_Push(tv_traction)
+		if( @to_actor AI_IsModel(get_PNJ_Lapin_path) )
+			@to_actor Proc_PNJ_Lapin_Push(tv_traction)
+	}
+}
+
+
+procedure void PIEGE_Add_Obj(object po_cible)
+{
+	int		pi_indice
+	
+	pi_indice = ARR_ObjSearch(&@get_list_manager ao_piege_a_nmi[0], @get_list_manager i_piege_a_nmi_nb, po_cible)
+	if( pi_indice == -1 )
+	{
+		@get_list_manager ao_piege_a_nmi[@get_list_manager i_piege_a_nmi_nb] = po_cible
+		pi_indice = @get_list_manager i_piege_a_nmi_nb
+		@get_list_manager i_piege_a_nmi_nb++
+	}
+}
+
+
+procedure void PIEGE_Del_Obj(object po_cible)
+{
+	int		pi_indice
+	int		pi_i
+	
+	pi_indice = ARR_ObjSearch(&@get_list_manager ao_piege_a_nmi[0], @get_list_manager i_piege_a_nmi_nb, po_cible)
+	if( pi_indice != -1 )
+	{
+		@get_list_manager i_piege_a_nmi_nb--
+		for( pi_i = pi_indice; pi_i < @get_list_manager i_piege_a_nmi_nb; pi_i ++)
+			@get_list_manager ao_piege_a_nmi[pi_i] = @get_list_manager ao_piege_a_nmi[(pi_i +1)]
+	}
+}
+
+procedure object PIEGE_PositionCheck(vector pv_pos)
+{
+	int		pi_i
+	object	po_piege
+	for( pi_i = 0; pi_i < @get_list_manager i_piege_a_nmi_nb; pi_i++ )
+	{
+		po_piege = @get_list_manager ao_piege_a_nmi[pi_i]
+		if( ! po_piege )
+			continue
+		if( ! ( @po_piege OBJ_FlagsStatusGet() & OBJ_C_StatusFlag_Active ) )
+			continue
+		if( @po_piege COL_BV_PointCollide(pv_pos) )
+			return po_piege
+	}
+	return nobody
+}
+
+
+procedure int Proc_PNJ_Can_Dodge_Weapon(object to_actor, object to_sender, int ti_weapon_ID)
+{
+	if( to_actor && @to_actor OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+	{
+		if( @to_actor AI_IsModel(get_PNJ_Lapin_path) )
+			return @to_actor Proc_PNJ_Lapin_Can_Dodge_Weapon(to_sender, ti_weapon_ID)
+	}
+	return faux
+}
+
+procedure void Proc_PNJ_Dodge_Actor_Set(object to_actor, object to_dodge_actor, int ti_dodge_mode)
+{
+	if( to_actor && @to_actor OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+	{
+		if( @to_actor AI_IsModel(get_PNJ_Lapin_path) )
+			@to_actor Proc_PNJ_Lapin_Dodge_Actor_Set(to_dodge_actor, ti_dodge_mode)
+	}
+}
+
+
+procedure int Proc_PNJ_Can_Protect_Weapon(object to_actor, object to_sender, int ti_weapon_ID)
+{
+	if( to_actor && @to_actor OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+	{
+		if( @to_actor AI_IsModel(get_PNJ_Lapin_path) )
+			return @to_actor Proc_PNJ_Lapin_Can_Protect_Weapon(to_sender, ti_weapon_ID)
+	}
+	return faux
+}
+
+procedure void Proc_PNJ_Protect_Actor_Set(object to_actor, object to_dodge_actor, int ti_dodge_mode)
+{
+	if( to_actor && @to_actor OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+	{
+		if( @to_actor AI_IsModel(get_PNJ_Lapin_path) )
+			@to_actor Proc_PNJ_Lapin_Protect_Actor_Set(to_dodge_actor, ti_dodge_mode)
+	}
+}
+
+procedure int Proc_PNJ_Paf_Jauge_is_Ready(object to_actor)
+{
+	if( to_actor && @to_actor OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+	{
+		if( @to_actor AI_IsModel(get_PNJ_Lapin_path) )
+			return @to_actor Proc_PNJ_Lapin_Paf_Jauge_is_Ready()
+	}
+	return faux
+}
+
+procedure int Proc_PNJ_Paf_Combo_Waiting_for_Finish(object to_actor)
+{
+	if( to_actor && @to_actor OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+	{
+		if( @to_actor AI_IsModel(get_PNJ_Lapin_path) )
+			return @to_actor Proc_PNJ_Lapin_Paf_Combo_Waiting_for_Finish()
+	}
+	return faux
+}
+
+procedure void Proc_Mashing_Actor_Add(object	to_actor)
+{
+	@get_global o_mashing_action = to_actor
+}
+
+procedure object Proc_Mashing_Actor_Get()
+{
+	return @get_global o_mashing_action
+}
+
+
+procedure vector Proc_Vec_HorzNormalise(vector pv_sens, vector pv_default)
+{
+	pv_sens.z = 0.0
+	if ( ! MATH_VecNullEpsilon( pv_sens))
+		MATH_VecSetNormalize(pv_sens)
+	else
+	{
+		if ( ! MATH_VecNullEpsilon( pv_default))
+			pv_sens = pv_default
+		else
+			DBG_Error("Normalisation du vecteur par défaut sur un vecteur null !!!! Boulet")
+	}
+	return pv_sens
+}
+
+
+
+// LIFE AND MANA --------------------------------------------------------------------------------------------------------------------------------
+procedure float Proc_RM_LifeMaxGet( )
+{
+	return (C_RM_LIFE_INIT + (@"univ" i_RM_Life_Nb_Bonus * C_RM_LIFE_BONUS))
+}
+
+procedure float Proc_RM_ManaMaxGet( )
+{
+	return ( C_RM_MANA_INIT + (@"univ" i_RM_Mana_Nb_Bonus * C_RM_MANA_BONUS))
+}
+
+procedure float Proc_RM_LifeGet( )
+{
+	return ( @"univ" f_RM_Life)
+}
+
+procedure float Proc_RM_ManaGet( )
+{
+	return ( @"univ" f_RM_Mana)
+}
+
+procedure void Proc_RM_LifeManaSet( float life, float mana)
+{
+	object	to_RM
+	to_RM =  get_rayman
+	if( OBJ_Me() != get_rayman )
+		return 
+	if ( life != -1)
+	{
+		@"univ" f_RM_Life = MATH_FloatMax( life, 0.0)
+		@get_Rayman_Path to_RM f_display_life = 1.0
+	}
+	if ( mana != -1)
+	{
+		@"univ" f_RM_Mana = MATH_FloatMax( mana, 0.0)
+		@get_Rayman_Path to_RM f_display_mana = 1.0
+	}
+}
+
+procedure void Proc_RM_LifeManaAdd( float life, float mana)
+{
+	object	to_RM
+	to_RM =  get_rayman
+	if ( life != -1)
+	{
+		@"univ" f_RM_Life = MATH_FloatMin( @"univ" f_RM_Life + life, Proc_RM_LifeMaxGet())
+		@get_Rayman_Path to_RM f_display_life = 1.0
+	}
+	if ( mana != -1)
+	{
+		@"univ" f_RM_Mana = MATH_FloatMin( @"univ" f_RM_Mana + mana, Proc_RM_ManaMaxGet())
+		@get_Rayman_Path to_RM f_display_mana = 1.0
+	}	
+}
+
+
+procedure object Proc_RM_GenerateLifeMana( int p_life, int p_mana, vector pv_pos, vector pv_sens)
+{
+	object to_item
+	message	tm_msg
+	
+	MSG_SetNull( tm_msg)
+	tm_msg.msg_id  = msg_id_BonusLifeMana
+	tm_msg.msg_vec1 = pv_sens
+	if ( p_life )
+	{
+		to_item = @get_ITEM_Life OBJ_Duplicate( pv_pos)
+		@to_item COL_StartMatrixSet(pv_pos)
+		tm_msg.msg_int1 = p_life
+		tm_msg.msg_int2 = 0
+		@to_item MSG_Send( tm_msg)	
+	}		
+	if ( p_mana )
+	{
+		to_item = @get_ITEM_Mana OBJ_Duplicate( pv_pos)
+		@to_item COL_StartMatrixSet(pv_pos)
+		tm_msg.msg_int1 = 0
+		tm_msg.msg_int2 = p_mana
+		@to_item MSG_Send( tm_msg)	
+	}
+	return to_item
+}
+
+// LUMS -------------------------------------------------------------------------------------------------------------------------------------------------------
+procedure int Proc_RM_Lums_NbGet()
+{
+	return (@"univ" i_RM_Lums)
+}
+
+procedure int Proc_RM_Lums_Add()
+{
+	@"univ" i_RM_Lums ++
+	@get_rayman Proc_RM_DisguiseReinit()
+	return (@"univ" i_RM_Lums)
+}
+
+procedure object Proc_RM_GenerateLums( int pi_nb, vector tv_pos)
+{
+	object to_item
+	int		ti_i
+	vector	tv_offset
+	vector	tv_pos2
+	
+	to_item = nobody
+	for ( ti_i = 0; ti_i < pi_nb; ti_i++)
+	{
+		switch( @get_global i_lums_generes )
+		{
+			case 1 :
+				tv_offset = @get_Kamera OBJ_HorizonGet()
+				break
+			case 2 :
+				tv_offset = - @get_Kamera OBJ_HorizonGet()
+				break
+			case 3 :
+				tv_offset = @get_Kamera OBJ_BankingGet()
+				break
+			case 4 :
+				tv_offset = - @get_Kamera OBJ_BankingGet()
+				break
+			default:
+				tv_offset = Cv_NullVector
+				break
+		}
+		@get_global i_lums_generes++
+		tv_pos2 = tv_pos + tv_offset
+		to_item = @get_ITEM_Lum OBJ_Duplicate(tv_pos2)
+		@to_item COL_StartMatrixSet(tv_pos2)
+	}
+	return to_item
+}
+
+procedure int Proc_JOY_Boost_Pressed()
+{
+	if (IO_ButtonPressed(RM_Monture_Button_SpeedUP) || IO_ButtonPressed(RM_Joy_Punch))
+		return(vrai)
+		
+	return(faux)
+}
+
+procedure int Proc_JOY_Boost_JustPressed()
+{
+	if (IO_ButtonJustPressed(RM_Monture_Button_SpeedUP) || IO_ButtonJustPressed(RM_Joy_Punch))
+		return(vrai)
+		
+	return(faux)
+}
+
+
+// MONTURE ATTACK ----------------------------------------------------------------------------------------------------------------------------------
+procedure void Proc_Monture_ChargeAttack(object to_gao, object to_target)
+{
+	if( to_gao && @to_gao OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+	{
+		if( @to_gao AI_IsModel(get_PNJ_Snake_path) )
+			@to_gao Proc_PNJ_Snake_ChargeAttack(to_target)
+	}
+}
+
+
+procedure int Proc_Monture_ChargeAttack_Available(object to_gao)
+{
+	switch( Proc_CreatureTypeGet(to_gao) )
+	{
+		case C_ID_Monture_Araignee :
+		case C_ID_Monture_Quadripode :
+			return vrai
+		default:
+			return faux
+	}
+}
+
+
+procedure float Proc_Monture_ChargeAttack_DureeGet(object to_gao)
+{
+	if( to_gao && @to_gao OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+	{
+		if( @to_gao AI_IsModel(get_PNJ_Snake_path) )
+			return @to_gao Proc_PNJ_Snake_ChargeAttack_DureeGet()
+	}
+	return 0.0
+}
+
+
+
+procedure float Proc_Monture_ChargeAttack_RangeGet(object to_gao)
+{
+	if( to_gao && @to_gao OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_AI) )
+	{
+		if( @to_gao AI_IsModel(get_PNJ_Snake_path) )
+			return @to_gao Proc_PNJ_Snake_ChargeAttack_RangeGet()
+	}
+	return 0.0
+}
+
+
+procedure void RM_Bascule_Refresh(float tf_weight, vector tv_last_speed, vector tv_current_speed, byref object to_bascule)
+{
+	object	to_obj	
+	object	to_father
+
+	// BASCULE =================================================================================
+	if (to_bascule && @to_bascule OBJ_FlagsControlGet() & (OBJ_C_ControlFlag_ForceInactive | OBJ_C_ControlFlag_SectoInactive))
+	{
+		to_bascule = nobody
+
+		if (OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna))
+			DYN_FlagsSet(DYN_C_OptimizeColDisable, none)
+	}
+
+	if (COL_CollideType(COL_C_Ground) && (AI_IsModel(get_PNJ_Snake_path) || COL_NormalGet(COL_C_Ground).z > 0.0))
+		to_obj = COL_ObjectGet(COL_C_Ground)
+	else if (COL_CollideType(COL_C_Wall) && (AI_IsModel(get_PNJ_Snake_path) || COL_NormalGet(COL_C_Wall).z > 0.0))
+		to_obj = COL_ObjectGet(COL_C_Wall)
+	else
+		to_obj = nobody
+	
+	if (to_obj && ! @to_obj AI_IsModel(get_RM_Bascule_path))
+	{
+		to_father = @to_obj OBJ_HierarchyGet()
+		while(to_father)
+		{
+			if (to_father && @to_father AI_IsModel(get_RM_Bascule_path))
+			{
+				to_obj = to_father
+				break
+			}
+			
+			to_father = @to_father OBJ_HierarchyGet()	
+		}
+	}
+
+	if (to_obj)
+	{
+		if ( to_bascule )
+		{
+			if (to_obj == to_bascule)
+			{
+				@to_bascule RM_Bascule_Add(OBJ_Me(), Cv_NullVector, tf_weight)
+			}
+			else if (@to_obj AI_IsModel(get_RM_Bascule_path))
+			{
+				@to_bascule RM_Bascule_Add(OBJ_Me(), -tv_current_speed, tf_weight)
+				to_bascule = to_obj
+				@to_bascule RM_Bascule_Add(OBJ_Me(), tv_last_speed, tf_weight)
+			}
+		}
+		else if (@to_obj AI_IsModel(get_RM_Bascule_path))
+		{
+			to_bascule = to_obj
+			@to_bascule RM_Bascule_Add(OBJ_Me(), tv_last_speed, tf_weight)
+		}
+	}
+	else if (to_bascule)
+	{
+		@to_bascule RM_Bascule_Add(OBJ_Me(), -tv_current_speed, tf_weight)
+		to_bascule = nobody
+	}
+
+	// TOURNIQUET	=========================================================================
+	if (COL_CollideType(COL_C_Wall) && OBJ_FlagsIdentityTest(OBJ_C_IdentityFlag_Dyna))
+	{
+		to_obj = COL_ObjectGet(COL_C_Wall)
+		if (@to_obj AI_IsModel(get_RM_Bascule_path))
+		{
+			if (to_obj != to_bascule)
+				@to_obj RM_Bascule_Add_Force(OBJ_Me(), DYN_TractionVectorGet() * tf_weight)
+		}
+		else
+		{
+			to_father = @to_obj OBJ_HierarchyGet()
+			while(to_father)
+			{
+				if (to_father && @to_father AI_IsModel(get_RM_Bascule_path))
+				{
+					to_obj = to_father
+					if (to_obj != to_bascule)
+						@to_obj RM_Bascule_Add_Force(OBJ_Me(), DYN_TractionVectorGet() * tf_weight)
+					break
+				}
+				
+				to_father = @to_father OBJ_HierarchyGet()	
+			}
+		}
+	}
+}
+
+
+
+// DANSE ---------------------------------------------------------------------------------------------------------------------------------
+// PAS PLUS DE 256( 2^8, AH AH AH) ANIM DE DANSE
+procedure int	Proc_RM_Danse_Action_Get( float tf_retard, byref int ti_freq)
+{
+	int	ti_decal
+	int	ti_ind
+	int ti_pos
+	int	ti_rep
+	int ti_filtre
+	int	ti_retard
+	float	tf_time
+	
+
+	tf_time = 0.0
+	ti_pos = MATH_Modulo( @get_global i_danse_pos + Ci_nb_Danse_Memo_Max - 1, Ci_nb_Danse_Memo_Max)
+
+	ti_decal = MATH_Modulo( ti_pos , 4)
+	ti_ind = ( ti_pos - ti_decal) / 4
+
+	while ( tf_time < tf_retard)
+	{
+
+		ti_decal *= 8
+		ti_filtre = 0xFF	 << ti_decal
+		ti_rep = @get_global ai_danse_memo[ ti_ind] & ti_filtre 
+		ti_rep = ( ti_rep >> ti_decal) & 0xFF
+		ti_rep += RM_Act_Danse_Att
+		ti_freq = @get_global ai_danse_memofreq[ ti_ind] & ti_filtre
+		ti_freq = ( ti_freq >> ti_decal) & 0xFF
+	
+		tf_time += ACT_DurationGet( ti_rep, 0) * ti_freq / 30.0
+		ti_pos = MATH_Modulo( ti_pos + Ci_nb_Danse_Memo_Max - 1, Ci_nb_Danse_Memo_Max)
+		ti_decal = MATH_Modulo( ti_pos , 4)
+		ti_ind = ( ti_pos - ti_decal) / 4
+	}
+	ti_retard = tf_retard
+
+
+	
+	if ( ti_retard >= Ci_nb_Danse_Memo_Max)
+		DBG_Error("retard demandé trop grand")
+	if ( ti_retard >= @get_global i_danse_nb_pas )
+		return -1
+
+//	ti_retard -= Ci_nb_Danse_Memo_Max		// Pour ne pas faire de modulo avec un nombre negatif( pt1 de Jade)
+//	ti_decal = MATH_Modulo( MATH_Modulo( @get_global i_danse_pos - ti_retard - 1, Ci_nb_Danse_Memo_Max) , 4)
+//	ti_ind = ( MATH_Modulo( @get_global i_danse_pos - ti_retard - 1, 40) - ti_decal) / 4
+	
+	ti_decal *= 8
+	ti_filtre = 0xFF	 << ti_decal
+	ti_rep = @get_global ai_danse_memo[ ti_ind] & ti_filtre 
+	ti_rep = ( ti_rep >> ti_decal) & 0xFF
+	ti_rep += RM_Act_Danse_Att
+	ti_freq = @get_global ai_danse_memofreq[ ti_ind] & ti_filtre
+	ti_freq = ( ti_freq >> ti_decal) & 0xFF
+
+	return ti_rep
+}
+
+procedure int	Proc_RM_Danse_Nb_Action_Delayed_Get( int ti_retard, byref int ti_freq)
+{
+	int	ti_decal
+	int	ti_ind
+	int ti_pos
+	int	ti_rep
+	int ti_filtre
+	float	tf_time
+	
+
+	tf_time = 0.0
+	ti_pos = MATH_Modulo( @get_global i_danse_pos + Ci_nb_Danse_Memo_Max - 1, Ci_nb_Danse_Memo_Max)
+
+	ti_decal = MATH_Modulo( ti_pos , 4)
+	ti_ind = ( ti_pos - ti_decal) / 4
+
+	
+	if ( ti_retard >= Ci_nb_Danse_Memo_Max)
+		DBG_Error("retard demandé trop grand")
+	if ( ti_retard >= @get_global i_danse_nb_pas )
+		return -1
+
+	ti_retard -= Ci_nb_Danse_Memo_Max		// Pour ne pas faire de modulo avec un nombre negatif( pt1 de Jade)
+	ti_decal = MATH_Modulo( MATH_Modulo( @get_global i_danse_pos - ti_retard - 1, Ci_nb_Danse_Memo_Max) , 4)
+	ti_ind = ( MATH_Modulo( @get_global i_danse_pos - ti_retard - 1, 40) - ti_decal) / 4
+	
+	ti_decal *= 8
+	ti_filtre = 0xFF	 << ti_decal
+	ti_rep = @get_global ai_danse_memo[ ti_ind] & ti_filtre 
+	ti_rep = ( ti_rep >> ti_decal) & 0xFF
+	ti_rep += RM_Act_Danse_Att
+	ti_freq = @get_global ai_danse_memofreq[ ti_ind] & ti_filtre
+	ti_freq = ( ti_freq >> ti_decal) & 0xFF
+
+	return ti_rep
+}
+
+
+
+procedure void	Proc_RM_Danse_Action_Set(int	pi_action, int pi_freq)
+{
+	int	ti_decal
+	int	ti_ind
+	int	pi_val, pi_freq_val, ti_i
+	
+//	DBG_TraceString("Anim Danse Sauvee : ")
+//	DBG_TraceInt( pi_action )
+//	DBG_TraceString(" : ")
+//	DBG_TraceInt( pi_freq)
+//	DBG_TraceEOL()
+
+
+	ti_decal = MATH_Modulo( @get_global i_danse_pos, 4)
+	ti_ind = (@get_global i_danse_pos - ti_decal) / 4
+	
+	pi_val = 0
+	pi_freq_val = 0
+	for (ti_i = 0; ti_i < 4; ti_i++)
+	{
+		if ( ti_i == ti_decal)
+		{
+			pi_val |= (pi_action - RM_Act_Danse_Att ) << (ti_decal * 8)
+			pi_freq_val |= pi_freq << (ti_decal * 8)
+		}
+		else
+		{
+			pi_val |= (@get_global ai_danse_memo[ ti_ind] & (0xFF << ( ti_i * 8)))
+			pi_freq_val |= (@get_global ai_danse_memofreq[ ti_ind] & (0xFF << ( ti_i * 8)))
+		}
+	}
+//	ti_decal = @get_global ai_danse_memo[ ti_ind] & pi_val
+	@get_global ai_danse_memo[ ti_ind] = pi_val
+	@get_global ai_danse_memofreq[ ti_ind] = pi_freq_val
+	
+	@get_global i_danse_pos ++
+	@get_global i_danse_nb_pas ++
+	// Blindage : 4 fois la taille du tableau d entier
+	if ( @get_global i_danse_pos == Ci_nb_Danse_Memo_Max)
+		@get_global i_danse_pos = 0
+}

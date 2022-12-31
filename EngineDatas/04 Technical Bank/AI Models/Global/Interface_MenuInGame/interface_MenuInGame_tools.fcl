@@ -1,0 +1,2649 @@
+#include "ROOT/EngineDatas/04 Technical Bank/AI Models/Global Library/menu_constant.var"
+#include "Interface_MenuInGame_defs.var"
+
+procedure_local int IntMIG_HOF_GetPlayerOverallScore();
+procedure_local void IntMIG_ProfileGet_MapES( int i_Slot );
+
+
+//============================================
+// unlock the time
+//============================================
+procedure_local void IntMIG_TimeUnlock()
+{
+	if ( mi_TimeLocked )
+	{
+		mi_TimeLocked = 0
+		TIME_Unlock()
+		DBG_TraceString( "----( TIME UNLOCK )----" )
+		DBG_TraceEOL()
+	}
+}
+
+//============================================
+// set text and dialog num following the choosen langage
+//============================================
+procedure_local void IntMIG_SetLangId( int pi_lang )
+{
+	int lang_dialog, lang_subtitle
+	
+	switch (pi_lang)
+	{
+	case	INO_e_French :
+	case	INO_e_English :		
+	case	INO_e_German :		
+	case	INO_e_Italian		:	
+	case	INO_e_Spanish	:	
+		@"univ" MENU_LangVost = 0
+		lang_dialog = pi_lang
+		lang_subtitle = pi_lang
+		break
+
+	case	INO_e_Danish	 :		
+	case	INO_e_Dutch	:		
+	case	INO_e_Finnish	:	
+	case	INO_e_Swedish		:
+	case	INO_e_Norwegian	:
+	case	INO_e_Polish			:
+	case	INO_e_Russian		:
+	case	INO_e_Japanese		:
+		@"univ" MENU_LangVost = 1
+		lang_dialog = INO_e_English 
+		lang_subtitle = pi_lang
+		break
+
+	case	INO_e_Portuguese :	
+	case	INO_e_Chinese		:
+	case	INO_e_Albanian		:
+	case	INO_e_Arabic			:
+	case	INO_e_Bulgarian		:
+	case	INO_e_Byelorussian	:
+	case	INO_e_Greek			:
+	case	INO_e_Korean			:
+	case	INO_e_Romanian		:
+	case	INO_e_Serbian		:
+	case	INO_e_Slovak			:
+	case	INO_e_Slovenian		:
+	case	INO_e_Turkish		:
+	case	INO_e_Czech		:	
+	case	INO_e_Hungarian	:	
+	case	INO_e_Taiwanese :	
+		@"univ" MENU_LangVost = 0
+		lang_dialog = INO_e_English 
+		lang_subtitle = INO_e_English 
+		break
+	}
+	
+	TEXT_SetSndLanguage( lang_dialog )
+	TEXT_SetLanguage( lang_subtitle  )
+
+}
+
+//============================================
+// OPTIONS METRICS
+//============================================
+
+procedure_local void IntMIG_Option_StartMetrics( float pf_height )
+{
+	mf_Opt_LineHeight = pf_height
+	mf_Opt_Height = 0
+	mf_Opt_Width[ 0 ] = 0
+	mf_Opt_Width[ 1 ] = 0
+}
+
+procedure_local void IntMIG_Option_AddMetrics( int pi_right, int pi_line, int pi_txg, int pi_txt )
+{
+	vector	size
+	float		h
+	
+	if (pi_txg != -1)
+	{
+		@mo_Texte OBJ_TextSet( mi_PageString, "" )
+		if (pi_txg == 0)
+		{
+			if (pi_line == 1 )
+				@mo_Texte OBJ_TextSet( mi_PageString, "\P13\%%%%%%%%%%%%%%%%%%%%" )
+		}
+		else
+			@mo_Texte OBJ_TextSet( mi_PageString, TEXT_Get( pi_txg, pi_txt ) )
+		@mo_Texte OBJ_TextPageSet( mi_PageString, 0, -1, 1, 0 )
+	}
+	
+	@mo_Texte OBJ_TextFlagSet( mi_PageString, 16 )
+	@mo_Texte OBJ_TextPivotSet( mi_PageString, cvector( 0, 0, 0 ) )
+	@mo_Texte OBJ_TextSizeSet(  mi_PageString, 0, -1, cvector( -1, 0, 0) )
+	
+	 size = @mo_Texte OBJ_TextSizeGet( mi_PageString, 0, -1)
+	 if (pi_right < 2 )
+	 {
+	 	if (size.x > mf_Opt_Width[ pi_right ]) mf_Opt_Width[ pi_right ] = size.x
+	 }
+	 h = pi_line
+	 size.y += mf_Opt_LineHeight * h
+	 if (size.y > mf_Opt_Height) mf_Opt_Height = size.y
+}
+
+procedure_local void IntMIG_Option_EndMetrics( vector pv_Center )
+{
+	float d
+	
+	d = pv_Center.x - 0.02 - mf_Opt_Width[ 0 ]
+	if ( d < 0.05 )
+		pv_Center.x = 0.07 + mf_Opt_Width[ 0 ]
+	else
+	{
+		d = pv_Center.x + 0.02 + mf_Opt_Width[ 1 ]
+		if (d > 0.95 )
+			pv_Center.x = 0.93 - mf_Opt_Width[ 1 ]
+	}
+	mf_Opt_X = pv_Center.x
+	mf_Opt_Height += 0.04
+	mf_Opt_Y = pv_Center.y - (mf_Opt_Height / 2)
+}
+
+procedure_local vector IntMIG_Option_Pos( int pi_right, int pi_line )
+{
+	vector v
+	v.z = 0
+	v.y = pi_line
+	v.y = mf_Opt_Y + (mf_Opt_LineHeight * v.y )
+	if (pi_right == 2)
+		v.y += 0.05
+	
+	if (pi_right == 3)
+		v.x = mf_Opt_X
+	else if (pi_right == 1)
+		v.x = mf_Opt_X + 0.02
+	else
+		v.x = mf_Opt_X - 0.02
+	return v
+}
+
+//============================================
+// UNIV : swap a cheat flags
+//============================================
+procedure_local void UNIV_SwapCheatFlags( int pi_Flags )
+{
+	if (@"univ" Cheat_i_Flags & pi_Flags )
+		@"univ" Cheat_i_Flags &= ~pi_Flags
+	else
+		@"univ" Cheat_i_Flags |= pi_Flags
+}
+
+procedure_local void UNIV_SetCheatFlags( int pi_Flags )
+{
+	@"univ" Cheat_i_Flags |= pi_Flags
+}
+
+procedure_local int UNIV_TestCheatFlags( int pi_Flags )
+{
+	if (@"univ" Cheat_i_Flags & pi_Flags )
+		return 1
+	else
+		return 0
+}
+
+//============================================
+// cheat
+//============================================
+procedure_local void IntMIG_Cheat_ExitMap( )
+{
+	object	to_obj
+	int			ti_number
+	int			ti_index
+	
+	if ( mi_StartMenu )
+	{
+		if (mi_Page_Map )
+		{
+			for (ti_index = 0; ti_index < 200; ti_index++)
+			{
+				@"univ" Flag_speciaux_sauve[ ti_index ] = 0
+				@"univ" Float_speciaux_sauve[ ti_index ] = 0
+				@"univ" Vector_speciaux_sauve[ ti_index ] = cvector( 0, 0, 0)
+			}
+			UNIV_SetReplayAmmo( mi_Cur )
+			@"univ" PROG_i_MapCur = mi_Cur
+			@"univ" PROG_i_Map = @"univ" PROG_ai_MapId[ mi_Cur ]
+			@"univ" PROG_i_ES = @"univ" PROG_ai_MapES[ mi_Cur ]
+		}
+	}
+	else
+	{
+		ti_number = WOR_GetNumObject(0)
+		for (ti_index = 0; ti_index < ti_number; ti_index++)
+		{
+			AI_ClearStack()
+			to_obj = WOR_GetObject(0, ti_index)
+			if (to_obj)
+			{
+				if ( @to_obj AI_IsModel("Global/ES_Map") )
+				{
+					if ( @"Global/ES_Map" to_obj des_mode == 0 )
+					{
+						@to_obj OBJ_FlagsControlSet(OBJ_C_ControlFlag_AlwaysActive, none)
+						@to_obj OBJ_FlagInactiveSet( 0 )
+						@"univ" Cheat_i_Flags |= CHEAT_ExitMap
+						mi_ExitAsked = 1
+					}
+				}
+			}
+		}
+	}
+}
+
+procedure_local void IntMIG_Cheat_BuildESList()
+{
+	object	to_obj
+	int			ti_number
+	int			ti_index
+
+	mi_ES_Num = 0
+	mi_ES_Cur = 0
+	ti_number = WOR_GetNumObject(0)
+	for (ti_index = 0; ti_index < ti_number; ti_index++)
+	{
+		AI_ClearStack()
+		to_obj = WOR_GetObject(0, ti_index)
+		if (to_obj)
+		{
+			if ( @to_obj AI_IsModel("Global/ES_Map") )
+			{
+				if ( @"Global/ES_Map" to_obj des_mode == 1 )
+				{
+					mi_ES[ mi_ES_Num ] = @"Global/ES_Map" to_obj des_numero_de_l_entree
+					if ( @"univ" world_entrance_ID == mi_ES[ mi_ES_Num ] )
+						mi_ES_Cur = mi_ES_Num
+					mi_ES_Num++
+				}
+			}
+		}
+	}
+}
+
+
+//============================================
+// SOUND function : play a sound
+//============================================
+procedure_local void IntMIG_PlaySound( int pi_Sound )
+{
+	int pi_loop
+#ifdef INTMIG_SOUND
+	if ( pi_Sound == INTMIG_SOUND_JAUGELOOP ) 
+		pi_Sound = INTMIG_SOUND_JAUGEMASTER
+	if ( (pi_Sound >= INTMIG_SOUND_JAUGEMASTER)  && (pi_Sound <= INTMIG_SOUND_JAUGEEFFECT) )
+	{
+		pi_loop = pi_Sound - INTMIG_SOUND_JAUGEMASTER + 1
+		if ( (mi_snd_jaugeloop_instance != -1) && (mi_snd_jaugeloop_cur != pi_loop) )
+		{
+			SND_Destroy( mi_snd_jaugeloop_instance )
+			mi_snd_jaugeloop_instance = -1
+		}
+		mi_snd_jaugeloop = pi_loop
+	}
+	else
+	{
+		SND_RequestPlay( pi_Sound )
+	}
+#endif
+}
+
+procedure_local void IntMIG_ManageSound( )
+{
+	if ( mi_snd_jaugeloop )
+	{
+		if (mi_snd_jaugeloop_instance == -1 )
+		{
+			mi_snd_jaugeloop_instance = SND_Request( INTMIG_SOUND_JAUGELOOP , 0)
+			switch (mi_snd_jaugeloop )
+			{
+				case 2 : SND_InstanceSeti( mi_snd_jaugeloop_instance, SND_Cte_SetInstGroup, SND_Cte_SetiGrpDialog ) break
+				case 3 : SND_InstanceSeti( mi_snd_jaugeloop_instance, SND_Cte_SetInstGroup, SND_Cte_SetiGrpMusic) break
+				case 4 : SND_InstanceSeti( mi_snd_jaugeloop_instance, SND_Cte_SetInstGroup, SND_Cte_SetiGrpSpecialFX ) break
+				default:	SND_InstanceSeti( mi_snd_jaugeloop_instance, SND_Cte_SetInstGroup, -1) break
+			}
+			SND_PlayLooped( mi_snd_jaugeloop_instance, -1)
+		}
+		mi_snd_jaugeloop_cur = mi_snd_jaugeloop
+		mi_snd_jaugeloop = 0
+	}
+	else if (mi_snd_jaugeloop_instance != -1)
+	{
+		mi_snd_jaugeloop_cur = 0
+		SND_Destroy( mi_snd_jaugeloop_instance )
+		mi_snd_jaugeloop_instance = -1
+	}
+}
+
+//============================================
+// Compute text color factor
+//============================================
+procedure_local float IntMIG_GetTextColorFactor( )
+{
+	float	f_Factor 
+	
+	f_Factor = mf_GenLum 
+	if ( AI_TrackCurGetNum() == 2 )
+		f_Factor *= 1 - (mf_ChangePageTimer  / INTMIG_ChangePageTimer)
+	else
+		f_Factor *= mf_ChangePageTimer / INTMIG_ChangePageTimer
+	return f_Factor
+}
+
+//============================================
+// compute default used color with string color factor
+//============================================
+procedure_local void IntMIG_ComputeDefaultColor( float pf_factor )
+{
+	mi_ColorTitle = COLOR_Blend(0,INTMIG_Color_Title, pf_factor)
+	mi_ColorLineSel = COLOR_Blend(0, INTMIG_Color_LineSel, pf_factor )
+	mi_ColorLine = COLOR_Blend( 0, INTMIG_Color_Line, pf_factor )
+	mi_ColorWhite = COLOR_Blend(0,0xFFFFFFFF,pf_factor)
+	mi_ColorBlue = COLOR_Blend(0, 0xFFA5918A, pf_factor)
+}
+
+//============================================
+// get line color according it is sel or not
+//============================================
+procedure_local int IntMIG_GetLineColor( int pi_Line )
+{
+	if ( mi_Cur == pi_Line )
+		return mi_ColorLineSel
+	return mi_ColorLine
+}
+
+
+//============================================
+// get line color according it is sel or not (for TEXTE function)
+//============================================
+procedure_local int IntMIG_GetTextLineColor( int pi_Line )
+{
+	if (mi_Cur == pi_Line )
+		return INTMIG_Color_Sel
+	return INTMIG_Color_NotSel
+}
+
+//============================================
+// to know if frame is to be displayed around line or not
+//============================================
+procedure_local int IntMIG_GetFrame( int pi_Line )
+{
+	if ( (pi_Line == mi_Cur ) && (mf_GenLum == 1) && (!mi_ChangePage) )
+		return 1
+	return 0
+}	
+
+//============================================
+// Set parameters for current page
+//============================================
+procedure_local int IntMIG_SetPageParams( )
+{
+	if ( mi_MenuState == 0)
+		return 0
+		
+	if ( AI_TrackCurGetNum() == 2 )
+	{
+		mi_ChangePageSaveCur = mi_Cur
+		mi_PageString = mai_PageString[ 0 ]
+		mi_Cur = mi_ChangePageCur 
+	}
+	else
+	{
+		mi_PageString = mai_PageString[ 1 ]
+	}
+	IntMIG_ComputeDefaultColor( IntMIG_GetTextColorFactor() )
+	return 1
+}
+
+//============================================
+// Restore parameters of page after page makes its display
+//============================================
+procedure_local void IntMIG_RestorePageParams( )
+{
+	if ( AI_TrackCurGetNum() == 2 )
+		mi_Cur = mi_ChangePageSaveCur 
+}
+
+//============================================
+// Set joy timer factor
+//============================================
+procedure_local void IntMIG_SetJoyFactorExt( float f0, float f1, float f2, float f3, float f4, float f5, float f6, float f7 )
+{
+	mf_JoyTimerFactor[ 0 ] = f0
+	mf_JoyTimerFactor[ 1 ] = f1
+	mf_JoyTimerFactor[ 2 ] = f2
+	mf_JoyTimerFactor[ 3 ] = f3
+	mf_JoyTimerFactor[ 4 ] = f4
+	mf_JoyTimerFactor[ 5 ] = f5
+	mf_JoyTimerFactor[ 6 ] = f6
+	mf_JoyTimerFactor[ 7 ] = f7
+}
+
+procedure_local void IntMIG_SetJoyFactor( float f )
+{
+	int i
+	for (i = 0; i < 8; i++)
+		mf_JoyTimerFactor[ i ] = f
+}
+
+//============================================
+// Update joy state
+//============================================
+procedure_local void IntMIG_UpdateJoy( int pi_Dir, float pf_Val, int pi_button )
+{
+	if (pf_Val > 0.8 || pi_button)
+	{
+		if ( !mi_Joy[ pi_Dir ]  )
+		{
+			mi_Joy[ pi_Dir ] = 1
+			mf_JoyTimer[ pi_Dir ] = 0.7
+			mf_JoyTimerMax[ pi_Dir ] = 0.5
+		}
+		else
+		{
+			mf_JoyTimer[ pi_Dir ] -= TIME_GetDt() * mf_JoyTimerFactor[ pi_Dir ]
+			if (mf_JoyTimer[ pi_Dir ] < 0 )
+			{
+				mi_Joy[ pi_Dir ] = 1
+				mf_JoyTimer[ pi_Dir ] = mf_JoyTimerMax[ pi_Dir ]
+				mf_JoyTimerMax[ pi_Dir ] *= 0.98
+				if (mf_JoyTimerMax[ pi_Dir ] < 0.3 )
+					mf_JoyTimerMax[ pi_Dir ] = 0.3
+			}
+			else
+				mi_Joy[ pi_Dir ] = 2
+		}
+	}
+	else
+		mi_Joy[ pi_Dir ] = 0
+}
+
+//============================================
+// check cur selection
+//============================================
+procedure_local void IntMIG_CheckCur( int pi_max )
+{
+	if (mi_Cur < 0) mi_Cur = 0
+	else if (mi_Cur >= pi_max ) mi_Cur = pi_max
+}
+
+//============================================
+// update cur selection
+//============================================
+procedure_local void IntMIG_UpdateCur_Vertical( int pi_max, int pi_loop )
+{
+	if ( joy_down )
+	{
+		mi_Cur++
+		if (mi_Cur >= pi_max )
+		{
+			if (pi_loop ) mi_Cur = 0
+			else mi_Cur = pi_max - 1
+		}
+	}
+	
+	if ( joy_up )
+	{
+		mi_Cur--
+		if (mi_Cur < 0)
+		{
+			if (pi_loop) mi_Cur = pi_max - 1
+			else mi_Cur = 0
+		}
+	}
+}
+
+//============================================
+// update cur selection (extended )
+//============================================
+procedure_local void IntMIG_UpdateCur( int pi_max, int pi_loop, int pi_down, int pi_up, int pi_left, int pi_right, int pi_down1, int pi_up1, int pi_left1, int pi_right1 )
+{
+	if ( joy_down )
+		mi_Cur += pi_down 
+	if (joy_up )
+		mi_Cur += pi_up
+	if (joy_left)
+		mi_Cur += pi_left
+	if (joy_right)
+		mi_Cur += pi_right
+	if ( joy1_down )
+		mi_Cur += pi_down1
+	if (joy1_up )
+		mi_Cur += pi_up1
+	if (joy1_left)
+		mi_Cur += pi_left1
+	if (joy1_right)
+		mi_Cur += pi_right1
+	
+	if (pi_loop)
+	{
+		if (mi_Cur >= pi_max) 
+			mi_Cur = 0
+		if (mi_Cur < 0 )
+			mi_Cur = pi_max - 1
+	}
+	else
+	{
+		if (mi_Cur >= pi_max )
+			mi_Cur = pi_max - 1
+		else if (mi_Cur < 0 )
+			mi_Cur = 0
+	}
+}
+
+//============================================
+// update cur selection with joypad 2
+//============================================
+procedure_local void IntMIG_UpdateCur2( int pi_max, int pi_loop, int pi_down, int pi_up, int pi_left, int pi_right, int pi_down1, int pi_up1, int pi_left1, int pi_right1 )
+{
+	int ti_Save
+	ti_Save = mi_Cur
+	mi_Cur = mi_Cur2
+	IntMIG_UpdateCur( pi_max, pi_loop, pi_down, pi_up, pi_left, pi_right, pi_down1, pi_up1, pi_left1, pi_right1 )
+	mi_Cur2 = mi_Cur
+	mi_Cur = ti_Save
+}
+
+//==========={ ADDING A TEXT WITH STR FUNCTION ]=======================
+procedure_local int IntMIG_AddText_dbg( int pi_txg, int pi_texte, vector pv_pos, float pf_height, int pi_justify, int pi_color, int pi_frame )
+{
+#ifndef _FINAL_
+	int ti_texte
+	
+	ti_texte = STR_CreateTextGroup( "", pv_pos, 0, 1 )
+	
+	if (pi_frame)
+		STR_AppendText( ti_texte, "\f\" )
+	
+	STR_AppendText( ti_texte, "\c")
+	STR_AppendHexa( ti_texte, pi_color )
+	STR_AppendText( ti_texte, "\")
+
+	STR_AppendText( ti_texte, "\h" )
+	STR_AppendFloat( ti_texte, pf_height, 2)
+	STR_AppendText( ti_texte, "\")
+	
+	if ( pi_justify )
+	{
+		STR_AppendText( ti_texte, "\j" )
+		if (pi_justify & 1)
+			STR_AppendText( ti_texte, "x" )
+		else if (pi_justify & 2)
+			STR_AppendText( ti_texte, "r" )
+		if (pi_justify & 4)
+			STR_AppendText( ti_texte, "y" )
+		else if (pi_justify & 8)
+			STR_AppendText( ti_texte, "b" )
+		STR_AppendText( ti_texte, "\")
+	}
+	
+	if (pi_texte!= -1)
+		STR_AppendText( ti_texte, TEXT_Get(pi_txg, pi_texte ) )
+	return ti_texte
+#endif //_FINAL_
+
+	return 0
+}
+
+//==========={ FRAME FUNCTION ]=======================
+
+//----( Set Frame with coordinates, if coordinates is a null rect, set frame for text )------
+procedure_local void IntMIG_Text_SetFrameXY( int pi_id, int pi_color, vector min, vector max, int framechar, float border )
+{	
+	int self
+	
+	if (framechar != 33)
+		return
+	
+	if (min==max) self = 1
+	else self = 0
+	if (!self)
+	{
+		@mo_Texte OBJ_TextSet( pi_id, " " )
+		@mo_Texte OBJ_TextPivotSet( pi_id, cvector( 0, 0, 0))
+		@mo_Texte OBJ_TextColorSet( pi_id, 0, -1, 0xFFFFFFFF )
+	}
+	//@mo_Texte OBJ_TextFrameSet( pi_id, 9, 33 )
+	@mo_Texte OBJ_TextFrameSet( pi_id, 9, framechar )
+	if (border == 0.0) border = 0.02
+	@mo_Texte OBJ_TextFrameBorderSet(pi_id, border )
+	@mo_Texte OBJ_TextFrameColorSet( pi_id, pi_color )
+	if ( self )
+		@mo_Texte OBJ_TextFlagSet( pi_id, @mo_Texte OBJ_TextFlagGet(pi_id) | (256 + 32) )
+	else
+	{
+		@mo_Texte OBJ_TextFramePosSet( pi_id, min, max )
+		@mo_Texte OBJ_TextFlagSet( pi_id, 256 )
+	}
+}
+
+//----( one moer function for frame )----
+procedure_local void IntMIG_Frame_Start()
+{
+	mv_Frame_Min = cvector( 1000, 1000, 0 )
+	mv_Frame_Max = cvector( -1000, -1000, 0)
+}
+//----()----
+procedure_local void IntMIG_Frame_Add( int pi_texte )
+{
+	vector min, max
+	 min = @mo_Texte OBJ_TextRectGet( pi_texte, 0, -1, 0 )
+	 max = @mo_Texte OBJ_TextRectGet( pi_texte, 0, -1, 1 )
+	if ( min.x < mv_Frame_Min.x) mv_Frame_Min.x = min.x
+	if ( max.x > mv_Frame_Max.x ) mv_Frame_Max.x = max.x
+	if ( min.y < mv_Frame_Min.y) mv_Frame_Min.y = min.y
+	if ( max.y > mv_Frame_Max.y) mv_Frame_Max.y = max.y
+}
+//----()----
+procedure_local void IntMIG_Frame_End( int pi_id, int pi_color, float pf_extend, float pf_border, int pi_char)
+{
+	if (mv_Frame_Min.x == 1000) return
+	
+	mv_Frame_Min.x -= pf_extend
+	mv_Frame_Min.y -= pf_extend
+	mv_Frame_Max.x += pf_extend
+	mv_Frame_Max.y += pf_extend
+	
+	IntMIG_Text_SetFrameXY	( pi_id, pi_color, mv_Frame_Min, mv_Frame_Max, pi_char, pf_border)
+}
+
+//----( compute coordinates of rect that bound several string )------
+procedure_local void IntMIG_Text_SetFrame( int pi_id, int pi_color, float pf_border, int pi_t0, int pi_t1, int pi_t2, int pi_t3, int pi_t4, int pi_t5, int pi_framechar )
+{
+	vector 	min, Max, rect[ 2 ]
+	int			i, texte[ 6 ]
+	
+	texte[ 0 ] = pi_t0
+	texte[ 1 ] = pi_t1
+	texte[ 2 ] = pi_t2
+	texte[ 3 ] = pi_t3
+	texte[ 4 ] = pi_t4
+	texte[ 5 ] = pi_t5
+	
+	IntMIG_Frame_Start()
+	for (i = 0; i < 6; i++)
+	{
+		if (texte[ i ] == -1) break
+		IntMIG_Frame_Add( texte[ i ])
+	}
+	IntMIG_Frame_End( pi_id, pi_color, 0.0, pf_border, pi_framechar )
+}
+
+
+//============================================
+// Creting texte with normal string function
+//============================================
+
+//----( Start creation )-----
+procedure_local void IntMIG_CreateText_Start( int pi_id )
+{
+	@mo_Texte OBJ_TextSet( pi_id, "" )
+}
+
+//----( end of creation )-----
+procedure_local void IntMIG_CreateText_End( int pi_id, vector pv_pos, float pf_height, int pi_justify, int pi_align, int pi_color, int pi_frame, int pi_page )
+{
+	int	ti_flags
+	
+	@mo_Texte OBJ_TextPivotSet( pi_id, pv_pos )
+	if (pi_page)
+		@mo_Texte OBJ_TextPageSet(pi_id, 0, -1, pi_page, 0 )
+	ti_flags = pi_justify | 16
+	@mo_Texte OBJ_TextFlagSet( pi_id, ti_flags )
+	if (pi_color != 0xFFFFFF)
+		@mo_Texte OBJ_TextColorSet( pi_id, 0, -1, pi_color )
+	@mo_Texte OBJ_TextSizeSet( pi_id, 0, -1, cvector( -1, pf_height, 0 ) )
+	if (pi_align != -1) @mo_Texte OBJ_TextAlign( pi_id, 0 , -1, pi_align)
+	if ( pi_frame )
+		IntMIG_Text_SetFrameXY( pi_id, pi_color, Cv_NullVector, Cv_NullVector, 32 + pi_frame, 0.0 )
+}
+
+//----( create in one shot with sample string )-----
+procedure_local	int IntMIG_SetText( int pi_id, int pi_txg, int pi_texte, vector pv_pos, float pf_height, int pi_justify, int pi_align, int pi_color, int pi_frame )
+{
+	if (pi_texte != -1)
+		@mo_Texte OBJ_TextSet( pi_id, TEXT_Get( pi_txg, pi_texte ))
+	else
+		@mo_Texte OBJ_TextSet( pi_id, "" )
+		
+	IntMIG_CreateText_End( pi_id,pv_pos, pf_height, pi_justify, pi_align, pi_color, pi_frame, 0 )
+	return pi_id
+}
+
+//----( create in one shot with sample string )-----
+procedure_local	int IntMIG_SetText_Page( int pi_id, int pi_txg, int pi_texte, vector pv_pos, float pf_height, int pi_justify, int pi_align, int pi_color, int pi_frame, int pi_page )
+{
+	if (pi_texte != -1)
+		@mo_Texte OBJ_TextSet( pi_id, TEXT_Get( pi_txg, pi_texte ))
+	else
+		@mo_Texte OBJ_TextSet( pi_id, "" )
+		
+	IntMIG_CreateText_End( pi_id,pv_pos, pf_height, pi_justify, pi_align, pi_color, pi_frame, pi_page )
+	return pi_id
+}
+
+//----( create in one shot with sample string )-----
+procedure_local	int IntMIG_SetText_Option( int pi_id, int pi_txg, int pi_texte, vector pv_pos, float pf_height, int pi_justify, int pi_align, int pi_color, int pi_frame, int pi_page )
+{
+	@mo_Texte OBJ_TextSet( pi_id, TEXT_Get( pi_txg, pi_texte ))
+	if ( !mi_StartMenu )
+		@mo_Texte OBJ_TextToLower( pi_id, 1, -1)
+	IntMIG_CreateText_End( pi_id,pv_pos, pf_height, pi_justify, pi_align, pi_color, pi_frame, pi_page )
+	return pi_id
+}
+
+
+//----( change color )-----
+procedure_local void IntMIG_Text_ChangeColor( int pi_id, int pi_colorstart, int pi_colorend, float pf_time, float pf_delay )
+{
+	int i_effect
+	i_effect = @mo_Texte OBJ_TextEffectAdd( 4, pi_id, 0, -1 )
+	@mo_Texte OBJ_TextEffectSeti( i_effect, 1, 1)
+	@mo_Texte OBJ_TextEffectSeti( i_effect, 0, 1)
+	@mo_Texte OBJ_TextEffectSeti( i_effect, 400, pi_colorstart)
+	@mo_Texte OBJ_TextEffectSeti( i_effect, 401, pi_colorend)
+	@mo_Texte OBJ_TextEffectSetf( i_effect, 450, pf_time)
+	@mo_Texte OBJ_TextEffectSetf( i_effect, 451, pf_delay )
+}
+
+
+//----( Fade In )-----
+procedure_local void IntMIG_Text_FadeIn( int pi_id, float pf_time, float pf_delay )
+{
+	int i_effect
+	i_effect = @mo_Texte OBJ_TextEffectAdd( 1, pi_id, 0, -1 )
+	@mo_Texte OBJ_TextEffectSeti( i_effect, 1, 1)
+	@mo_Texte OBJ_TextEffectSeti( i_effect, 0, 1)
+	@mo_Texte OBJ_TextEffectSetf( i_effect, 150, pf_time)
+	@mo_Texte OBJ_TextEffectSetf( i_effect, 151, pf_delay )
+}
+
+//----( Multiple Fade In )-----
+procedure_local void IntMIG_Text_FadeInMulti( int pi_id_start, int pi_id_nb, float pf_time, float pf_delay )
+{
+	int i
+	for ( i = 0; i < pi_id_nb; i++)
+		IntMIG_Text_FadeIn( pi_id_start + i, pf_time, pf_delay )
+}
+
+//----( Fade Out )-----
+procedure_local void IntMIG_Text_FadeOut( int pi_id, float pf_time )
+{
+	int i_effect
+	i_effect = @mo_Texte OBJ_TextEffectAdd( 1, pi_id, 0, -1 )
+	@mo_Texte OBJ_TextEffectSeti( i_effect, 1, 1)
+	@mo_Texte OBJ_TextEffectSetf( i_effect, 150, pf_time)
+}
+
+//----( Multiple Fade In )-----
+procedure_local void IntMIG_Text_FadeOutMulti( int pi_id_start, int pi_id_nb, float pf_time )
+{
+	int i
+	for ( i = 0; i < pi_id_nb; i++)
+		IntMIG_Text_FadeOut( pi_id_start + i, pf_time )
+}
+
+//----( Reset several texte )-----
+procedure_local void IntMIG_ResetTexte( int pi_start, int pi_nb )
+{
+	int ti_index
+	for (ti_index =0; ti_index < pi_nb; ti_index++)
+	{
+		@mo_Texte OBJ_TextSet( pi_start+ ti_index, "" )
+		@mo_Texte OBJ_TextFlagSet( pi_start + ti_index, 0 )
+		@mo_Texte OBJ_TextEffectSeti( 1, -1, pi_start + ti_index )
+	}
+}
+
+//============================================
+// Build string with all character (used for creating profile and for cheat code
+//============================================
+procedure_local void IntMIG_BuildCharTable( int pi_Texte, vector pv_Pos, int pi_Page )
+{
+	int 		ti_line, ti_col, ti_index, ti_ascii
+	float		tf_width
+	vector	tv_pos
+	
+	// table des char
+	IntMIG_CreateText_Start( pi_Texte )
+	ti_index = 0
+	for ( ti_line = 0; ti_line < 4; ti_line++ )
+	{
+		for (ti_col = 0; ti_col < 16; ti_col++ )
+		{
+			if (ti_index < 26)			ti_ascii = 65 + ti_index
+			else if (ti_index < 52) 	ti_ascii = 97 + (ti_index - 26)
+			else if (ti_index < 62) 	ti_ascii = 48 + (ti_index - 52)
+			else if (ti_index == 63) 	ti_ascii = 92
+			else							ti_ascii = 32
+			ti_index++
+			
+			@mo_Texte OBJ_TextInsert( pi_Texte, -1, " " )
+			@mo_Texte OBJ_TextCharSet( pi_Texte, ti_index -1, ti_ascii)
+		}
+	}
+
+	IntMIG_CreateText_End( pi_Texte, cvector(0.0, 0.0, 0) , 0.0, 512, -1, INTMIG_Color_NotSel, 0, pi_Page )
+	@mo_Texte OBJ_TextColorSet( pi_Texte, 0, 1, INTMIG_Color_Sel )
+	
+	tv_pos = pv_Pos
+	ti_index = 0
+	for ( ti_line = 0; ti_line < 4; ti_line++ )
+	{
+		tv_pos.x = 0.2
+			
+		for (ti_col = 0; ti_col < 16; ti_col++ )
+		{
+			ti_index++
+			tf_width = @mo_Texte OBJ_TextSizeGet( pi_Texte, ti_index - 1, 1 ).x
+			@mo_Texte OBJ_TextPosSet( pi_Texte, ti_index - 1, 1, tv_pos - cvector( tf_width / 2, 0, 0) )
+			tv_pos.x += 0.04
+		}
+		tv_pos.y += 0.06
+	}
+}
+
+
+//============================================
+// FONCTION D'AFFICHAGE des VIGNETTES (MAP et XTRA)
+//============================================
+procedure_local void IntMIG_SetXtraOrder()
+{
+	mai_XTRA_Order[ 0 ] = INTMIG_BONUS_Trailer
+	mai_XTRA_Order[ 1 ] = INTMIG_BONUS_Credits
+	mai_XTRA_Order[ 2 ] = INTMIG_BONUS_ArtworkEnv1
+	mai_XTRA_Order[ 3 ] = INTMIG_BONUS_OldMovie
+	mai_XTRA_Order[ 4 ] = INTMIG_BONUS_ArtworkEnv2
+	mai_XTRA_Order[ 5 ] = INTMIG_BONUS_ArtworkCreature
+	mai_XTRA_Order[ 6 ] = INTMIG_BONUS_ArtworkKong1
+	mai_XTRA_Order[ 7 ] = INTMIG_BONUS_ModeGaucher
+	mai_XTRA_Order[ 8 ] = INTMIG_BONUS_ContrastBoost
+	mai_XTRA_Order[ 9 ] = INTMIG_BONUS_ArtworkKong2
+	mai_XTRA_Order[ 10 ] = INTMIG_BONUS_ArtworkEnv3
+	mai_XTRA_Order[ 11 ] = INTMIG_BONUS_IntPJ
+	mai_XTRA_Order[ 12 ] = INTMIG_BONUS_ArtworkKong3
+	mai_XTRA_Order[ 13 ] = INTMIG_BONUS_ArtworkKong4
+	mai_XTRA_Order[ 14 ] = INTMIG_BONUS_IntJB
+	mai_XTRA_Order[ 15 ] = INTMIG_BONUS_FinAlternative
+}
+
+procedure_local void IntMIG_XTRA_Compute( int score )
+{
+	int i, flag
+	float	f_Prog
+	
+	mi_XTRA_Nb = 16
+
+	i = INTMIG_BONUS_IntPJ					mai_XTRA_Score[ i ] = 75000		maf_XTRA_Prog[ i ] = -1	
+	i = INTMIG_BONUS_OldMovie			mai_XTRA_Score[ i ] = -1				maf_XTRA_Prog[ i ] = 0.15	
+	i = INTMIG_BONUS_FinAlternative		mai_XTRA_Score[ i ] = 250000		maf_XTRA_Prog[ i ] = 1	
+	i = INTMIG_BONUS_IntJB					mai_XTRA_Score[ i ] = -1				maf_XTRA_Prog[ i ] = 30.0	
+	i = INTMIG_BONUS_ContrastBoost	mai_XTRA_Score[ i ] = -1				maf_XTRA_Prog[ i ] = 20.0	
+	i = INTMIG_BONUS_ArtworkKong1		mai_XTRA_Score[ i ] = -1				maf_XTRA_Prog[ i ] = 0.75	
+	i = INTMIG_BONUS_ArtworkKong2		mai_XTRA_Score[ i ] = 20000		maf_XTRA_Prog[ i ] = -1	
+	i = INTMIG_BONUS_ArtworkEnv3		mai_XTRA_Score[ i ] = 50000		maf_XTRA_Prog[ i ] = -1	
+	i = INTMIG_BONUS_ModeGaucher		mai_XTRA_Score[ i ] = -1				maf_XTRA_Prog[ i ] = 1.0	
+	i = INTMIG_BONUS_ArtworkCreature	mai_XTRA_Score[ i ] = -1				maf_XTRA_Prog[ i ] = 0.5	
+	i = INTMIG_BONUS_ArtworkKong3		mai_XTRA_Score[ i ] = 100000		maf_XTRA_Prog[ i ] = -1	
+	i = INTMIG_BONUS_ArtworkKong4		mai_XTRA_Score[ i ] = 150000		maf_XTRA_Prog[ i ] = -1	
+	i = INTMIG_BONUS_ArtworkEnv1		mai_XTRA_Score[ i ] = -1				maf_XTRA_Prog[ i ] = 0.05	
+	i = 13												mai_XTRA_Score[ i ] = -100			maf_XTRA_Prog[ i ] = 0
+	i = 14												mai_XTRA_Score[ i ] = -100			maf_XTRA_Prog[ i ] = 0
+	i = INTMIG_BONUS_ArtworkEnv2		mai_XTRA_Score[ i ] = -1				maf_XTRA_Prog[ i ] = 10.0
+	i = 16												mai_XTRA_Score[ i ] = -100			maf_XTRA_Prog[ i ] = 0
+	i = 17												mai_XTRA_Score[ i ] = -100			maf_XTRA_Prog[ i ] = 0
+	i = INTMIG_BONUS_Credits				mai_XTRA_Score[ i ] = -1				maf_XTRA_Prog[ i ] = -1	
+	i = INTMIG_BONUS_Trailer				mai_XTRA_Score[ i ] = -1				maf_XTRA_Prog[ i ] = -1	
+
+	if ( @"univ" PROG_i_MapCur >= (@"univ" PROG_i_MapNumber - 1) )
+		mi_GameProg = 100
+	else
+	{
+		f_Prog = @"univ" PROG_i_MapCur
+		f_Prog /= (@"univ" PROG_i_MapNumber - 1)
+		f_Prog *= 100
+		mi_GameProg = f_Prog
+	}
+	f_Prog = mi_GameProg
+	f_Prog /= 100
+	
+	flag = 1
+	@"univ" PROG_i_XtraUnlocked = 0
+	for (i = 0; i < 20; i++)
+	{
+		if (mai_XTRA_Score[ i ] != -100)
+		{
+			if (maf_XTRA_Prog[ i ] > 9)
+			{
+				if ( @"univ" PROG_ai_XtraUnlocked[ i ] )
+					@"univ" PROG_i_XtraUnlocked |= flag
+			}
+			else if ( (f_Prog >= maf_XTRA_Prog[ i ]) && ( score >= mai_XTRA_Score[ i ] ) )
+			{
+				@"univ" PROG_i_XtraUnlocked |= flag
+			}
+		}
+		flag <<= 1
+	}
+	
+	// real number of XTRA ( exclude some )
+	//mi_XTRA_Nb = 13
+}
+
+procedure_local int IntMIG_XTRA_Diff()
+{
+	int i, flag
+	
+	IntMIG_SetXtraOrder()
+	mi_XTRA_Diff = 0
+	mi_XTRA_New = -1
+	for (i = 0; i < mi_XTRA_Nb; i++)
+	{
+		flag = 1 << mai_XTRA_Order[ i ]
+		if ( ( @"univ" PROG_i_XtraUnlocked & flag ) && !( @"univ" PROG_i_XtraUnlocked_Old & flag ) )
+		{
+			mi_XTRA_Diff++
+			if (	mi_XTRA_New == -1 )mi_XTRA_New = i
+		}
+	}
+	return mi_XTRA_Diff
+}
+
+procedure_local int IntMIG_MapIsUnlocked( int pi_Map )
+{
+	if (( pi_Map <= @"univ" PROG_i_MapCur ) || UNIV_TestCheatFlags( CHEAT_UnlockAllMaps ) )
+		return 1
+	return 0
+}
+
+procedure_local int IntMIG_BonusIsUnlocked( int pi_Bonus )
+{
+	if ( (@"univ" PROG_i_XtraUnlocked & (1 << pi_Bonus)) || UNIV_TestCheatFlags( CHEAT_UnlockAllBonus ))
+		return 1
+	return 0
+}
+
+procedure_local float ntMIG_BonusUnlockedVal( int pi_Bonus )
+{
+	if ( IntMIG_BonusIsUnlocked( pi_Bonus ))
+		return 1.0
+//	if ( (pi_Bonus == 0) || IntMIG_BonusIsUnlocked( pi_Bonus- 1 ))
+//		return 0.6
+//	if ( (pi_Bonus == 1) || IntMIG_BonusIsUnlocked( pi_Bonus - 2 ))
+//		return 0.4
+//	if ( (pi_Bonus == 2) || IntMIG_BonusIsUnlocked( pi_Bonus - 3 ))
+//		return 0.2
+	return 0.0
+}
+
+procedure_local void IntMIG_BonusString( int pi_BonusOrder, int pi_Bonus )
+{
+	float	tf_Val
+	int		ti_Color
+	
+	tf_Val = ntMIG_BonusUnlockedVal( pi_Bonus )
+	
+	if (tf_Val == 0.0 )
+	{
+		@mo_Texte OBJ_TextSet( mi_PageString + 9, "" )
+		
+		if ( maf_XTRA_Prog[ pi_Bonus ] > 9 )
+		{
+			@mo_Texte OBJ_TextInsert( mi_PageString + 9, -1, TEXT_Get(INTMIG_TXG, INTMIG_TEXT_ScoreNew + 8))
+			@mo_Texte OBJ_TextIntInsert( mi_PageString + 9, -1, maf_XTRA_Prog[ pi_Bonus ] / 10.0 )
+		}
+		else
+		{
+			if ( maf_XTRA_Prog[ pi_Bonus ] != -1 )
+			{
+				@mo_Texte OBJ_TextInsert( mi_PageString + 9, -1, TEXT_Get(INTMIG_TXG, INTMIG_TEXT_ScoreNew + 5))
+				@mo_Texte OBJ_TextIntInsert( mi_PageString + 9, -51, maf_XTRA_Prog[ pi_Bonus ] * 100 )
+				@mo_Texte OBJ_TextInsert ( mi_PageString + 9, -1, " \n" )
+			}
+			if (mai_XTRA_Score[ pi_Bonus ] != -1 )
+			{
+				@mo_Texte OBJ_TextInsert( mi_PageString + 9, -1, TEXT_Get(INTMIG_TXG, INTMIG_TEXT_ScoreNew + 6))
+				@mo_Texte OBJ_TextIntInsert( mi_PageString + 9, -53, mai_XTRA_Score[ pi_Bonus ] )
+			}
+		}
+		IntMIG_CreateText_End( mi_PageString + 9, cvector(0.5, 0.74, 0),  0.0, 1, 0, INTMIG_Color_NotSel, 0, 1 )
+		@mo_Texte  OBJ_TextSet( mi_PageString + 10, "" )
+		IntMIG_SetText_Page( mi_PageString + 2, INTMIG_TXG, INTMIG_TEXT_Xinfo, INTMIG_PosButton_BottomRight,  0.0, 6, -1, INTMIG_Color_Sel, 0, 1 )
+		mi_PageState = 1
+	}
+	else
+	{
+		ti_Color = COLOR_Blend(0, 0xFFFFFF, tf_Val )
+		@mo_Texte OBJ_TextMaxWidthSet( 0.8 )
+		IntMIG_SetText_Page( mi_PageString + 9, INTMIG_EXTRANAME_TXG, INTMIG_EXTRANAME_TITLE + pi_Bonus , cvector(0.5, 0.74, 0),  0.0, 1, 0, ti_Color, 0, 1 )
+		@mo_Texte OBJ_TextMaxWidthSet( 0 )
+		switch (pi_Bonus)
+		{
+		case 	INTMIG_BONUS_OldMovie :
+		case INTMIG_BONUS_ContrastBoost :
+		case INTMIG_BONUS_ModeGaucher :
+			IntMIG_SetText_Page( mi_PageString + 2, INTMIG_TXG, INTMIG_TEXT_Xinfo, INTMIG_PosButton_BottomRight,  0.0, 6, -1, INTMIG_Color_Sel, 0, 1 )
+			mi_PageState = 3
+			break
+		default:
+			IntMIG_SetText_Page( mi_PageString + 2, INTMIG_TXG, INTMIG_TEXT_Xselect, INTMIG_PosButton_BottomRight,  0.0, 6, -1, INTMIG_Color_Sel, 0, 1 )
+			mi_PageState = 2
+			break
+		}
+	}
+}
+
+procedure_local void IntMIG_DisplayBonusInfo( int pi_Bonus )
+{
+	int 		ti_score, ti_overall, ti_addok
+	float		tf_prog, tf_Val
+	vector	tv_size
+	
+	ti_addok = 1
+	ti_score = mai_XTRA_Score[ pi_Bonus ]
+	tf_prog = maf_XTRA_Prog[ pi_Bonus ]
+	
+	tf_Val = ntMIG_BonusUnlockedVal( pi_Bonus )
+	if (tf_Val == 0.0)
+	{
+		if (tf_prog > 9.0)
+		{
+			@mo_Texte OBJ_TextSet( mi_PageString + 11, TEXT_Get( INTMIG_TXG, INTMIG_TEXT_ScoreNew + 9 ) )
+			@mo_Texte OBJ_TextInsert( mi_PageString + 11, -1, " \n \n " )
+			@mo_Texte OBJ_TextInsert( mi_PageString + 11, -1, TEXT_Get( INTMIG_TXG, INTMIG_TEXT_Tback ) )
+			@mo_Texte OBJ_TextInsert( mi_PageString + 11, -1, "   " )
+			@mo_Texte OBJ_TextInsert( mi_PageString + 11, -1, TEXT_Get( INTMIG_TXG, INTMIG_TEXT_Xentercode ) )
+			ti_addok = 0
+		}
+		else
+		{
+			if ( ( tf_prog != -1 ) && ( ti_score != -1 ))
+			{
+				tf_prog = -1
+				if (mi_GameProg < 100 )
+				{
+					@mo_Texte OBJ_TextSet( mi_PageString + 11, TEXT_Get( INTMIG_TXG, INTMIG_TEXT_ScoreNew + 4 ) )
+					ti_score = -1
+				}
+			}
+			
+			if (ti_score != -1 )
+			{
+				ti_score = IntMIG_HOF_GetPlayerOverallScore()
+				@mo_Texte OBJ_TextSet( mi_PageString + 11, TEXT_Get( INTMIG_TXG, INTMIG_TEXT_ScoreNew + 2 ) )
+				@mo_Texte OBJ_TextIntInsert( mi_PageString + 11, -53, ti_score )
+				@mo_Texte OBJ_TextIntInsert( mi_PageString + 11, -54, mai_XTRA_Score[ pi_Bonus ]  )
+				if ( !ti_score )
+				{
+					@mo_Texte OBJ_TextInsert( mi_PageString + 11, -1, " \n" )
+					@mo_Texte OBJ_TextInsert( mi_PageString + 11, -1, TEXT_Get( INTMIG_TXG, INTMIG_TEXT_ScoreNew + 3 )  )
+				}
+			}
+			
+			if ( tf_prog != -1 )
+			{
+				ti_score = IntMIG_HOF_GetPlayerOverallScore()
+				@mo_Texte OBJ_TextSet( mi_PageString + 11, TEXT_Get( INTMIG_TXG, INTMIG_TEXT_ScoreNew + 1 ) )
+				@mo_Texte OBJ_TextIntInsert( mi_PageString + 11, -51, mi_GameProg )
+				@mo_Texte OBJ_TextIntInsert( mi_PageString + 11, -52, maf_XTRA_Prog[ pi_Bonus ] * 100 )
+			}
+		}
+	}
+	else
+	{
+		@mo_Texte OBJ_TextSet( mi_PageString + 11, TEXT_Get( INTMIG_TXG, INTMIG_TEXT_ScoreNew + 7 ) )
+		switch (pi_Bonus)
+		{
+		case INTMIG_BONUS_OldMovie :			@mo_Texte OBJ_TextInsert(mi_PageString + 11, -51, TEXT_Get( INTMIG_TXG, INTMIG_TEXT_OptionsVideo_Param + 5) ) break
+		case INTMIG_BONUS_ContrastBoost :	@mo_Texte OBJ_TextInsert(mi_PageString + 11, -51, TEXT_Get( INTMIG_TXG, INTMIG_TEXT_OptionsVideo_Param + 6) ) break
+		case INTMIG_BONUS_ModeGaucher :   	@mo_Texte OBJ_TextInsert(mi_PageString + 11, -51, TEXT_Get( INTMIG_TXG, INTMIG_TEXT_OptionsVideo + 3) ) break
+		}
+	}
+
+	if (ti_addok)
+	{
+		@mo_Texte OBJ_TextInsert( mi_PageString + 11, -1, " \n \n " )
+		@mo_Texte OBJ_TextInsert( mi_PageString + 11, -1, TEXT_Get( INTMIG_TXG, INTMIG_TEXT_Xcontinue ) )
+	}
+	@mo_Texte OBJ_TextMaxWidthSet( 0.8 )
+	IntMIG_CreateText_End( mi_PageString + 11, cvector( 0.5, 0.6, 0),  0.0, 1, 0, 0xFFFFFFFF, 1, 1 )
+	@mo_Texte OBJ_TextMaxWidthSet( 0 )
+
+	tv_size = @mo_Texte OBJ_TextSizeGet( mi_PageString + 11, 0, -1)
+	if (0.6 + tv_size.y > 0.9 )
+	{
+		@mo_Texte OBJ_TextFlagSet( mi_PageString + 11, @mo_Texte OBJ_TextFlagGet( mi_PageString + 11 ) | 8 )
+		@mo_Texte OBJ_TextPivotSet(mi_PageString + 11, cvector( 0.5, 0.9, 0) )
+	}
+
+	IntMIG_Text_FadeInMulti( mi_PageString + 11, 1, 0.3, 0.0 )
+	IntMIG_Text_FadeOutMulti( mi_PageString + 1, 4, 0.1 )
+	IntMIG_Text_FadeOutMulti( mi_PageString + 9, 1, 0.1 )
+}
+
+
+procedure_local void IntMIG_InitArtwork()
+{
+	object 	to_obj
+	int			ti_index
+		
+	for (ti_index = 0; ti_index < 3; ti_index++ )
+	{
+		to_obj = mao_MapArtwork[ ti_index ]
+		if ( !to_obj ) continue
+	
+		@to_obj GFX_AddSorted( 17, INTDISPLAY_VIGNETTE0 + ti_index )
+		GFX_FlagSet( INTDISPLAY_VIGNETTE0 + ti_index, 0, 1)
+		GFX_FlagSet( INTDISPLAY_VIGNETTE0 + ti_index, 2, 1)
+		@to_obj OBJ_SightGeneralSet( cvector(0, 0, 1), cvector( 0, 1, 0) )
+	}
+}
+
+procedure_local void IntMIG_SetArtworkPos( int xtra )
+{
+	object 	to_obj
+	int			ti_index
+	vector	tav_pos[ 3 ]
+	float		tf_Z, tf_X, tf_Zoom
+
+	if (xtra )	{		tf_Z = -0.1		tf_X = 0.25		tf_Zoom = 0.9	}
+	else		{		tf_Z = 0			tf_X = 0.25		tf_Zoom = 0.9		}
+	tav_pos[ 0 ] = cvector( tf_X, -1, tf_Z )
+	tav_pos[ 1 ] = cvector( 0, -1, tf_Z )
+	tav_pos[ 2 ] = cvector( -tf_X, -1, tf_Z )
+	
+	for (ti_index = 0; ti_index < 3; ti_index++ )
+	{
+		to_obj = mao_MapArtwork[ ti_index ]
+		if ( !to_obj ) continue
+		if (ti_index == 1)
+			@to_obj OBJ_ZoomSet( tf_Zoom )
+		else
+			@to_obj OBJ_ZoomSet( tf_Zoom - 0.1 )
+		@to_obj OBJ_PosSet( tav_pos[ ti_index ] )
+	}
+}
+
+procedure_local void IntMIG_ColorArtwork()
+{
+	int ti_art, ti_color
+	if ( mi_PageState )
+	{
+		for (ti_art = 0; ti_art < 3; ti_art++)
+		{
+			ti_color = @mao_MapArtwork[ ti_art ] MAT_ConstantGet(0) & 0xFF
+			if (ti_color != 0xFF )
+			{
+				ti_color += (TIME_GetDt() * 256)
+				if (ti_color > 0xFF) 
+					ti_color = 0xFF
+				ti_color |= ti_color << 8
+				ti_color |= ti_color << 16
+				@mao_MapArtwork[ ti_art ] MAT_ConstantSet( ti_color, 0)
+			}
+		}
+	}
+	else
+	{
+		for (ti_art = 0; ti_art < 3; ti_art++)
+		{
+			ti_color = @mao_MapArtwork[ ti_art ] MAT_ConstantGet(0) & 0xFF
+			if (ti_color != 0x7F )
+			{
+				ti_color -= (TIME_GetDt() * 256)
+				if (ti_color < 0x7F) ti_color = 0x7F
+				ti_color |= ti_color << 8
+				ti_color |= ti_color << 16
+				@mao_MapArtwork[ ti_art ] MAT_ConstantSet(ti_color, 0)
+			}
+		}
+	}
+}
+
+
+procedure_local void IntMIG_ShowArtwork( int xtra, int pid_R, int pid_L )
+{
+	int		ti_art, ti_ant, ti_alpha, ti_levelon, ti_leveloff, ti_unlocked, ti_last
+	float	tf_Factor
+	
+	if (!mi_OnlineCode)
+		IntMIG_ColorArtwork()
+	
+	ti_levelon = xtra
+	ti_leveloff = 1 - xtra
+	if (xtra)
+		ti_last = mi_XTRA_Nb - 1
+	else
+		ti_last = @"univ" PROG_i_MapNumber - 1
+
+	if (mi_Cur == 0)
+		@mo_Texte OBJ_TextFlagSet( pid_R, 1045 )
+	else
+		@mo_Texte OBJ_TextFlagSet( pid_R, 21 )
+			
+	if (mi_Cur == ti_last)
+		@mo_Texte OBJ_TextFlagSet( pid_L, 1045 )
+	else
+		@mo_Texte OBJ_TextFlagSet( pid_L, 21 )
+	
+	tf_Factor = IntMIG_GetTextColorFactor()
+	if (tf_Factor < 0.1)
+	{
+		for (ti_art = 0; ti_art < 3; ti_art++)
+			@mao_MapArtwork[ ti_art ] OBJ_FlagInvisibleSet( 1 )
+	}
+	else
+	{
+		for (ti_art = 0; ti_art < 3; ti_art++)
+		{
+			if ( mi_Cur - 1 + ti_art < 0 )
+				@mao_MapArtwork[ ti_art ] OBJ_FlagInvisibleSet( 1 )
+			else if (mi_Cur - 1 + ti_art > ti_last )
+				@mao_MapArtwork[ ti_art ] OBJ_FlagInvisibleSet( 1 )
+			else
+			{
+				@mao_MapArtwork[ ti_art ] OBJ_FlagInvisibleSet( 0 )
+				ti_alpha = (mi_ColorWhite >> 24) & 0xFF
+
+				//----( border )----				
+				if (ti_art == 1)
+					@mao_MapArtwork[ ti_art ] MAT_MT_SetLocalAlpha(1,0,ti_alpha)
+	
+				//----( virer xtra or map texture level )----
+				@mao_MapArtwork[ ti_art ] MAT_MT_EnableLevel(0,ti_leveloff,0)
+
+				//----( afficher map or xtra texture level )----				
+				@mao_MapArtwork[ ti_art ] MAT_MT_EnableLevel(0,ti_levelon, 1)
+				@mao_MapArtwork[ ti_art ] MAT_MT_SetLocalAlpha(0,ti_levelon,ti_alpha)
+				ti_ant = @mao_MapArtwork[ ti_art ] MAT_AntGet( 0, ti_levelon)
+				MAT_AntSeti(ti_ant, 1, 1 )
+			
+				if ( xtra )
+				{
+					tf_Factor = ntMIG_BonusUnlockedVal( mai_XTRA_Order[ mi_Cur - 1 + ti_art ] )
+					MAT_AntSeti(ti_ant, 2, mai_XTRA_Order[ mi_Cur - 1 + ti_art ] )
+				}
+				else
+				{
+					if ( @"univ" PROG_i_MapReplay )
+						tf_Factor = mi_ArtworkMapState[ ti_art ]
+					else
+					{
+						tf_Factor = IntMIG_MapIsUnlocked( mi_Cur - 1 + ti_art ) 
+						mi_ArtworkMapState[ ti_art ] = tf_Factor
+					}
+					MAT_AntSeti(ti_ant, 2, @"univ" PROG_ai_MapVignette[ mi_Cur - 1 + ti_art ] )
+				}
+			
+				if ( tf_Factor == 0 )
+					@mao_MapArtwork[ ti_art ] MAT_MT_EnableLevel(0,ti_levelon, 0)
+					
+				ti_alpha = ti_alpha * (1.0 - tf_Factor )
+				@mao_MapArtwork[ ti_art ] MAT_MT_EnableLevel(0,2,1)
+				@mao_MapArtwork[ ti_art ] MAT_MT_SetLocalAlpha(0,2, ti_alpha)
+			}
+		}
+	}
+}
+
+procedure_local void IntMIG_ResetAFX()
+{
+	if (@"univ" VID_gi_ModeOldMovie == 1)
+	{
+		// old movie
+		AE_BlackAndWhite(1)
+		AE_Brightness(-0.05)
+		AE_ColorBalance(0.2,0.6)
+		//AE_Remanece(0.75)
+	}
+	else if (@"univ" VID_gi_ModeOldMovie == 2)
+	{
+		// boost
+		AE_BlackAndWhite(0.3)
+		AE_Brightness(-0.05)
+		AE_ColorBalance(0,0)
+		//AE_Remanece(0.5)
+	}
+	else
+	{
+		// normal
+		AE_BlackAndWhite(0)
+		AE_Brightness(0)
+		AE_ColorBalance(0,0)
+		//AE_Remanece(0)
+	}
+	
+	if ( @"univ" VID_gi_InvertHoriz )
+		AE_Xinvert( 1 )
+	else
+		AE_Xinvert( 0 )
+
+	AE_Remanece(0)
+	AE_Blur(0)
+	AE_Contraste(0)
+	AE_MotionBlur(0)
+	AE_MotionSmooth(0)
+	AE_RotationSmooth(0)
+	AE_Wrap(0)
+	AE_ZoomSmooth(0)
+	AE_Glow(0)
+	AE_ZoomSmoothCenter(0,Cv_NullVector)
+	AE_FoggyBlur( 0 )
+}
+
+//==========={ move le boat ]=======================
+procedure_local void IntMIG_InitBoat()
+{
+	if ( mao_BG[ 5 ] )
+		@mao_BG[ 5 ] OBJ_MdfOTC_ResetAll()
+	mf_BG_Timer = 0
+}
+
+procedure_local void IntMIG_MoveBoat()
+{
+	object  	boat, front, rear
+	vector  	axe
+	float		f, add, mul, ampl, angle
+	float		angle_add, angle_mul, angle_ampl
+	
+	if (!mao_BG[ 2 ] ) return
+	boat = mao_BG[ 2 ]
+	front = mao_BG[ 3 ]
+	rear = mao_BG[ 4 ]
+
+	mf_BG_Timer += TIME_GetDt()
+	
+	add = Cf_Pi
+	mul = 1
+	ampl = 0.07
+	
+	angle_mul = 1
+	angle_add = Cf_PiBy2
+	angle_ampl = 0.05
+	
+	f = MATH_Sin( add + (mul * mf_BG_Timer))
+	angle = MATH_Sin( angle_add + (angle_mul * mf_BG_Timer))
+	
+	@boat OBJ_RestoreInitMatrix()
+	@boat OBJ_Move( f * ampl * @front OBJ_BankingGet() )
+	
+	axe = @boat MATH_VecGlobalToLocal(@front OBJ_HorizonGet())
+	@boat OBJ_RotateAroundVec( axe, angle * angle_ampl )
+	
+	axe = @boat MATH_VecGlobalToLocal(@front OBJ_SightGet())
+	@boat OBJ_RotateAroundVec( axe, angle * angle_ampl * 5 )
+}
+
+//==========={ traite le BG ]=======================
+procedure_local void IntMIG_BG_Show( float pf_Val )
+{
+	object 	to_cache
+	to_cache = mao_BG[0]
+	if (!to_cache) return
+	@to_cache MAT_MT_SetLocalAlpha( 4, 1, 255 * (1.0 - pf_Val) )
+}
+
+procedure_local int IntMIG_BG_Appear()
+{
+	object 	to_cache
+	object	to_group
+//	object	to_logo
+//	object	to_light
+	float		t, alpha, morph
+	
+	to_cache = mao_BG[0]
+	to_group = mao_BG[1]
+//	to_logo = mao_BG[6]
+//	to_light = mao_BG[7]
+	
+	if (!to_cache || !to_group)
+		return 0
+		
+	// init
+	if ( mf_BG_State[ 0 ] == 0)
+	{
+		IntMIG_InitBoat()
+		mi_snd_wooshplayed = 0
+		mi_snd_chocplayed  = 0
+		@to_cache OBJ_FlagInvisibleSet( 0 )
+		@to_cache MAT_MT_SetLocalAlpha( 4, 1, 255 )
+		@to_cache MAT_MT_SetLocalAlpha( 3, 1, 0 )
+		@to_cache OBJ_MorphProgSet(0, 1)
+		@to_group GRP_FlagInvisibleSet( 0 )
+	}
+	
+	mf_BG_State[ 0 ] += TIME_GetDt() 
+	t = mf_BG_State[ 0 ]
+	
+	// cache
+	if (t < 0.2)
+		alpha = 255
+	else if (t < 0.5)
+		alpha = (1 - ((t - 0.2) / 0.3)) * 255
+	else
+		alpha = 0
+//	if (@"univ" PROG_i_MapReplay)
+//		alpha = 255
+	@to_cache MAT_MT_SetLocalAlpha( 4, 1, alpha )
+	
+	// logo
+	if (t < 0.5)
+		alpha = 0
+	else if (t < 1.5 )
+	{
+//		if ( !mi_snd_chocplayed )
+//		{
+//			mi_snd_chocplayed = 1
+//			IntMIG_PlaySound( INTMIG_SOUND_BGCHOC )
+//		}
+		alpha = (t - 0.5) * 255
+	}
+	else
+		alpha = 255
+	@to_cache MAT_MT_SetLocalAlpha( 3, 1, alpha )
+	
+	// morph sur cache
+	if (t < 1.0)
+	{
+		morph = 2
+		alpha = 0
+	}
+	else if (t< 1.2 )
+	{
+		if ( !mi_snd_wooshplayed)
+		{
+			mi_snd_wooshplayed = 1
+			IntMIG_PlaySound( INTMIG_SOUND_BGWOOSH )
+		}
+
+		morph = 2 - (5 * (t - 1.0) )
+		alpha = 0
+	}
+	else if (t< 1.4)
+	{
+		morph = 0
+		alpha = (t - 1.2) * 5
+	}
+	else
+	{
+		morph = 0
+		alpha = 1
+	}
+	@to_cache OBJ_MorphProgSet(0, morph )
+	@to_cache MAT_ConstantSet( COLOR_Blend( 0, 0xFFFFFF, alpha), 2 )
+
+	if (t < 1.5)
+		return 1
+	else
+		return 0
+}
+
+//==========={ Reinit univ for a new profile ]=======================
+procedure_local void IntMIG_ReinitUniv()
+{
+	int i, j
+	
+	// divers
+	@"univ" Cheat_i_Flags = 0
+	
+	// stats & Xtra
+	@"univ" PROG_i_XtraUnlocked = 0
+	@"univ" PROG_i_XtraUnlocked_Old = 0
+	for (i = 0; i < STATS_NbMaps ; i++)
+		for (j = 0; j < STATS_NbVal; j++)
+			@"univ" STATS[ i ][ j ] = 0
+	@"univ" STATS_f_TempsDeJeu = 0
+	@"univ" STATS_f_TempsTotal = 0
+	@"univ" STATS_f_Time = 0
+	@"univ" 	STATS_f_Mort = 0
+	@"univ" 	STATS_f_MortJoueur = 0
+	@"univ"  i_death_counter = 0
+	@"univ" i_deathplayer_counter = 0
+
+	// options audio
+	SND_M_SetUserVol( SND_Cte_UserGrpMaster,  1.0 )
+	SND_M_SetUserVol( SND_Cte_UserGrpDialog,  1.0 )
+	SND_M_SetUserVol( SND_Cte_UserGrpMusic,  1.0 )
+	SND_M_SetUserVol( SND_Cte_UserGrpSpecialFX, 1.0 )
+	SND_M_SetRenderMode( SND_Cte_RenderUseConsoleSettings )
+	@"univ" SND_gi_ShowSubtitle = MENU_SUBTITLE
+
+#ifdef _JAPAN_
+	@"univ" SND_gi_ShowSubtitle = 1
+#endif
+	if ( @"univ" MENU_LangVost )
+		@"univ" SND_gi_ShowSubtitle = 1
+
+	
+	// options video
+	@"univ" VID_gi_DisplayMode = 1
+	@"univ" VID_gi_InvertHoriz = 0
+	@"univ" VID_gi_ModeOldMovie = 0
+	
+	// options control
+	@"univ" CAM_SensHoriz = -1
+	@"univ" 	CAM_SensVert = 1
+	@"univ" PAD_Vibration = vrai
+	
+	// options interface
+	@"univ" CAM_Viseur = faux
+	@"univ" MENU_i_ShowInterface = faux
+	@"univ" MENU_i_ShowLifeBar = faux
+	@"univ" MENU_i_ShowAmmoLeft = faux
+	@"univ" MENU_i_ShowInventory = faux
+	
+	
+}
+
+//==========={ Set Options parameters ]=======================
+procedure_local void IntMIG_RestoreOptions( )
+{
+	// audio
+	SND_M_SetUserVol( SND_Cte_UserGrpMaster  , SND_M_GetUserVol( SND_Cte_UserGrpMaster ) )
+	SND_M_SetUserVol( SND_Cte_UserGrpDialog  , SND_M_GetUserVol( SND_Cte_UserGrpDialog  ) )
+	SND_M_SetUserVol( SND_Cte_UserGrpMusic  , SND_M_GetUserVol( SND_Cte_UserGrpMusic  ) )
+	SND_M_SetUserVol( SND_Cte_UserGrpSpecialFX  , SND_M_GetUserVol( SND_Cte_UserGrpSpecialFX  ) )
+	
+	switch(AI_GetCurSystem())
+	{
+		case 0 : //PC
+				switch( SND_M_GetRenderMode )
+				{
+					case SND_Cte_RenderMono :	SND_M_SetRenderMode( SND_Cte_RenderMono ) 		break
+					case SND_Cte_RenderStereo :	SND_M_SetRenderMode( SND_Cte_RenderStereo ) break
+					default: SND_M_SetRenderMode( SND_Cte_RenderStereo ) break
+				}
+				break
+				
+		case 1 : //PS2
+				switch( SND_M_GetRenderMode )
+				{
+					case SND_Cte_RenderMono :	SND_M_SetRenderMode( SND_Cte_RenderMono ) 		break
+					case SND_Cte_RenderStereo :	SND_M_SetRenderMode( SND_Cte_RenderStereo ) break
+					default: SND_M_SetRenderMode( SND_Cte_RenderUseConsoleSettings ) break
+				}
+				break
+				
+		case 2 : //GC
+				if( (SND_Geti(SND_Cte_SetRenderMode) == SND_Cte_RenderStereo ) && (SND_M_GetRenderMode  == SND_Cte_RenderDolbyPrologicII) )
+				{
+					SND_M_SetRenderMode( SND_Cte_RenderDolbyPrologicII ) 
+				}
+				else
+				{
+					SND_M_SetRenderMode( SND_Cte_RenderUseConsoleSettings ) 
+				}
+				break
+			
+		case 3 :	//XBOX
+				SND_M_SetRenderMode( SND_Cte_RenderUseConsoleSettings ) break
+				
+
+		default:
+				switch( SND_M_GetRenderMode )
+				{
+					case SND_Cte_RenderMono :	SND_M_SetRenderMode( SND_Cte_RenderMono ) 		break
+					case SND_Cte_RenderStereo :	SND_M_SetRenderMode( SND_Cte_RenderStereo ) break
+					default: SND_M_SetRenderMode( SND_Cte_RenderUseConsoleSettings ) break
+				}
+				break
+	}
+
+	// video
+	VIEW_SetMode( @"univ" VID_gi_DisplayMode )
+	IntMIG_ResetAFX()
+	
+	// control
+	IO_PifPafEnable( @"univ" PAD_Vibration )
+}
+
+procedure_local void IntMIG_StoreOptions()
+{
+	// audio
+	mf_Opt_StoreFloat[ 0 ] = SND_M_GetUserVol( SND_Cte_UserGrpMaster )
+	mf_Opt_StoreFloat[ 1 ] = SND_M_GetUserVol( SND_Cte_UserGrpDialog )
+	mf_Opt_StoreFloat[ 2 ] = SND_M_GetUserVol( SND_Cte_UserGrpMusic )
+	mf_Opt_StoreFloat[ 3 ] = SND_M_GetUserVol( SND_Cte_UserGrpSpecialFX )
+	mi_Opt_StoreInt[ 0 ] = SND_M_GetRenderMode
+	mi_Opt_StoreInt[ 1 ] = @"univ" SND_gi_ShowSubtitle
+	// video
+	mi_Opt_StoreInt[ 2 ] = @"univ" VID_gi_DisplayMode
+	mi_Opt_StoreInt[ 3 ] = @"univ" VID_gi_ModeOldMovie
+	mi_Opt_StoreInt[ 4 ] = @"univ" VID_gi_InvertHoriz
+	// control
+	mi_Opt_StoreInt[ 5 ] = @"univ" PAD_Vibration
+	mi_Opt_StoreInt[ 6 ] = @"univ" CAM_SensVert
+	// interface
+	mi_Opt_StoreInt[ 7 ] = @"univ" CAM_Viseur
+	mi_Opt_StoreInt[ 8 ] = @"univ" MENU_i_ShowAmmoLeft
+	mi_Opt_StoreInt[ 9 ] = @"univ" MENU_i_ShowInventory
+}
+
+procedure_local void IntMIG_PasteOptions()
+{
+	// audio
+	SND_M_SetUserVol( SND_Cte_UserGrpMaster, mf_Opt_StoreFloat[ 0 ] )
+	SND_M_SetUserVol( SND_Cte_UserGrpDialog, mf_Opt_StoreFloat[ 1 ] )
+	SND_M_SetUserVol( SND_Cte_UserGrpMusic, mf_Opt_StoreFloat[ 2 ] )
+	SND_M_SetUserVol( SND_Cte_UserGrpSpecialFX, mf_Opt_StoreFloat[ 3 ] )
+	SND_M_SetRenderMode( mi_Opt_StoreInt[ 0 ] )
+	@"univ" SND_gi_ShowSubtitle = mi_Opt_StoreInt[ 1 ]
+	// video
+	@"univ" VID_gi_DisplayMode = mi_Opt_StoreInt[ 2 ]
+	@"univ" VID_gi_ModeOldMovie = mi_Opt_StoreInt[ 3 ]
+	@"univ" VID_gi_InvertHoriz = mi_Opt_StoreInt[ 4 ]
+	// control
+	@"univ" PAD_Vibration = mi_Opt_StoreInt[ 5 ]
+	@"univ" CAM_SensVert = mi_Opt_StoreInt[ 6 ]
+	// interface
+	@"univ" CAM_Viseur = mi_Opt_StoreInt[ 7 ]
+	@"univ" MENU_i_ShowAmmoLeft = mi_Opt_StoreInt[ 8 ]
+	@"univ" MENU_i_ShowInventory = mi_Opt_StoreInt[ 9 ]
+	SAVE_ValidateAl()
+}
+
+
+procedure_local int IntMIG_OptionsHasChanged()
+{
+	// manage change only in start menu mode
+	if ( !mi_StartMenu ) return 0
+	
+	// audio
+	if ( mf_Opt_StoreFloat[ 0 ] != SND_M_GetUserVol( SND_Cte_UserGrpMaster ) )	return 1
+	if ( mf_Opt_StoreFloat[ 1 ] != SND_M_GetUserVol( SND_Cte_UserGrpDialog ) ) 	return 1
+	if ( mf_Opt_StoreFloat[ 2 ] != SND_M_GetUserVol( SND_Cte_UserGrpMusic ) ) 		return 1
+	if ( mf_Opt_StoreFloat[ 3 ] != SND_M_GetUserVol( SND_Cte_UserGrpSpecialFX ) ) return 1
+	if ( mi_Opt_StoreInt[ 0 ] != SND_M_GetRenderMode ) return 1
+	if ( mi_Opt_StoreInt[ 1 ] != @"univ" SND_gi_ShowSubtitle ) return 1
+	// video
+	if ( mi_Opt_StoreInt[ 2 ] != @"univ" VID_gi_DisplayMode ) return 1
+	if ( mi_Opt_StoreInt[ 3 ] != @"univ" VID_gi_ModeOldMovie ) return 1
+	if ( mi_Opt_StoreInt[ 4 ] != @"univ" VID_gi_InvertHoriz ) return 1
+	// control
+	if ( mi_Opt_StoreInt[ 5 ] != @"univ" PAD_Vibration ) return 1
+	if ( mi_Opt_StoreInt[ 6 ] != @"univ" CAM_SensVert ) return 1
+	// interface
+	if ( mi_Opt_StoreInt[ 7 ] != @"univ" CAM_Viseur ) return 1
+	if ( mi_Opt_StoreInt[ 8 ] != @"univ" MENU_i_ShowAmmoLeft ) return 1
+	if ( mi_Opt_StoreInt[ 9 ] != @"univ" MENU_i_ShowInventory ) return 1
+	// no change
+	return 0
+}
+
+
+//==========={ AUDIO OPTIONS STRING FCTS ]=======================
+
+//----( Audio Type = stéréo, mono, .... )----
+procedure_local void IntMIG_OptionsAudioSring_Type( int pi_Texte, vector pv_Pos, int pi_Color )
+{
+	if ( SND_M_GetRenderMode == SND_Cte_RenderStereo )
+		IntMIG_SetText_Page( pi_Texte, INTMIG_TXG, INTMIG_TEXT_OptionsSound_Param + 1, pv_Pos,  0.0, 0, -1, pi_Color, 0, 1 )
+	else if ( SND_M_GetRenderMode == SND_Cte_RenderMono )
+		IntMIG_SetText_Page( pi_Texte, INTMIG_TXG, INTMIG_TEXT_OptionsSound_Param , pv_Pos,  0.0, 0, -1, pi_Color, 0, 1 )
+	else
+		IntMIG_SetText_Page( pi_Texte, INTMIG_TXG, INTMIG_TEXT_OptionsSound_Param + 2, pv_Pos,  0.0, 0, -1, pi_Color, 0, 1 )
+}
+
+//----( Subtitle = on / off )----
+procedure_local void IntMIG_OptionsAudioSring_Subtitle( int pi_Texte, vector pv_Pos, int pi_Color )
+{
+	if ( @"univ" SND_gi_ShowSubtitle )
+		IntMIG_SetText_Page( pi_Texte, INTMIG_TXG, INTMIG_TEXT_On, pv_Pos,  0.0, 0, -1, pi_Color, 0, 1 )
+	else
+		IntMIG_SetText_Page( pi_Texte, INTMIG_TXG, INTMIG_TEXT_Off, pv_Pos,  0.0, 0, -1, pi_Color, 0, 1 )
+}
+
+//----( Subtitle = on / off )----
+procedure_local void IntMIG_OptionsAudioSring_Volume( int pi_Texte, vector pv_Pos, int pi_Color, float pf_Volume )
+{
+	int ti_barre
+	
+	ti_barre = pf_Volume * 20.0
+	
+	IntMIG_CreateText_Start( pi_Texte )
+	if (pf_Volume == 0)
+	{
+		@mo_Texte OBJ_TextInsert( pi_Texte,  -1, TEXT_Get( INTMIG_TXG, INTMIG_TEXT_Off ) )
+	}
+	else
+	{
+		ti_barre = 1 + (pf_Volume * 19.0)
+		while (ti_barre)
+		{
+			@mo_Texte OBJ_TextInsert( pi_Texte, -1, "\P13\%" )
+			ti_barre--
+		}
+	}
+
+//	if (!ti_barre)
+//	{
+//		@mo_Texte OBJ_TextInsert( pi_Texte,  -1, TEXT_Get( INTMIG_TXG, INTMIG_TEXT_Off ) )
+//	}
+//	else
+//	{
+//		while (ti_barre)
+//		{
+//			@mo_Texte OBJ_TextInsert( pi_Texte, -1, "\P13\%" )
+//			ti_barre--
+//		}
+//	}
+
+	IntMIG_CreateText_End( pi_Texte, pv_Pos, 0.0, 0, -1, pi_Color, 0, 1  )
+}
+
+//==========={ VIDEO OPTIONS STRING FCTS ]=======================
+
+//----( Video mode = 4/3, 16/9.... )----
+procedure_local void IntMIG_OptionsVideoString_Mode( int pi_Texte, vector pv_Pos, int pi_Color )
+{
+	@"univ" VID_gi_DisplayMode = VIEW_SetMode( 0 )
+	IntMIG_SetText_Page( pi_Texte, INTMIG_TXG, INTMIG_TEXT_OptionsVideo_Param + @"univ" VID_gi_DisplayMode - 1, pv_Pos,  0.0, 0, -1, pi_Color, 0, 1 )
+	if (mi_OptVideoType_Small && (@"univ" VID_gi_DisplayMode == 1) )
+	{
+		@mo_Texte OBJ_TextPageSet( pi_Texte, 4, -1, 3, 1 )
+		@mo_Texte OBJ_TextSizeSet( pi_Texte, 0, -1, cvector( -1, 0, 0) )
+		@mo_Texte OBJ_TextAlign(pi_Texte,0,-1,2)
+	}
+}
+
+//----( Video special mode = old movie, overburned ...  )----
+procedure_local void IntMIG_OptionsVideoString_SpecialMode( int pi_Texte, vector pv_Pos, int pi_Color )
+{
+	int ti_Mode
+	
+	if (XTRA_ContrastBoost_Unlocked || XTRA_OldMovie_Unlocked || UNIV_TestCheatFlags( CHEAT_UnlockAllBonus ) )
+		ti_Mode = 4 + @"univ" VID_gi_ModeOldMovie
+	else
+		ti_Mode = 3
+	
+	IntMIG_SetText_Page( pi_Texte, INTMIG_TXG, INTMIG_TEXT_OptionsVideo_Param + ti_Mode, pv_Pos,  0.0, 0, -1, pi_Color, 0 , 1)
+}
+
+procedure_local void IntMIG_OptionsVideoString_InvertHoriz( int pi_Texte, vector pv_Pos, int pi_Color )
+{
+	if (XTRA_GaucherMode_Unlocked || UNIV_TestCheatFlags( CHEAT_UnlockAllBonus ) )
+	{
+		if (@"univ" VID_gi_InvertHoriz )
+			IntMIG_SetText_Page( pi_Texte, INTMIG_TXG, INTMIG_TEXT_Yes, pv_Pos,  0.0, 0, -1, pi_Color, 0, 1 )
+		else
+			IntMIG_SetText_Page( pi_Texte, INTMIG_TXG, INTMIG_TEXT_No, pv_Pos,  0.0, 0, -1, pi_Color, 0, 1 )
+	}
+	else
+	{
+		IntMIG_SetText_Page( pi_Texte, INTMIG_TXG, INTMIG_TEXT_OptionsVideo_Param + 3, pv_Pos,  0.0, 0, -1, pi_Color, 0, 1 )
+	}
+}
+
+//==========={ CONTROL OPTIONS STRING FCTS ]=======================
+
+//----( vibration = on / off )----
+procedure_local void IntMIG_OptionsControlString_Vibration( int pi_Texte, vector pv_Pos, int pi_Color )
+{
+	if (@"univ" PAD_Vibration)
+	//if ( IO_PifPafEnable( -1 ) )
+		IntMIG_SetText_Page( pi_Texte, INTMIG_TXG, INTMIG_TEXT_On, pv_Pos,  0.0, 0, -1, pi_Color, 0, 1 )
+	else
+		IntMIG_SetText_Page( pi_Texte, INTMIG_TXG, INTMIG_TEXT_Off, pv_Pos,  0.0, 0, -1, pi_Color, 0, 1 )
+}
+
+//----( vibration = on / off )----
+procedure_local void IntMIG_OptionsControlString_AimingAxis( int pi_Texte, vector pv_Pos, int pi_Color )
+{
+	if ( @"univ" CAM_SensVert > 0)
+		IntMIG_SetText_Page( pi_Texte, INTMIG_TXG, INTMIG_TEXT_OptionsControl_Param, pv_Pos,  0.0, 0, -1, pi_Color, 0, 1 )
+	else
+		IntMIG_SetText_Page( pi_Texte, INTMIG_TXG, INTMIG_TEXT_OptionsControl_Param + 1, pv_Pos,  0.0, 0, -1, pi_Color, 0, 1 )
+}
+
+//----( joy curve )----
+procedure_local void IntMIG_OptionsControlString_JoyCurve( int pi_Texte, vector pv_Pos, int pi_Color )
+{
+	@mo_Texte OBJ_TextSet( pi_Texte, "" )
+	@mo_Texte OBJ_TextFloatInsert( pi_Texte, -1, ConsoleSpecificOption(21), 0 )
+	IntMIG_CreateText_End( pi_Texte, pv_Pos,  0.0, 0, -1, pi_Color, 0, 0 )
+}
+
+//----( keylogger record )----
+procedure_local void IntMIG_OptionsControlString_KLRecord( int pi_Texte, vector pv_Pos, int pi_Color )
+{
+	if ( DBG_IsRecord() )
+		IntMIG_SetText( pi_Texte, INTMIG_TXG, INTMIG_TEXT_On, pv_Pos,  0.0, 0, -1, pi_Color, 0 )
+	else
+		IntMIG_SetText( pi_Texte, INTMIG_TXG, INTMIG_TEXT_Off, pv_Pos,  0.0, 0, -1, pi_Color, 0 )
+}
+
+//----( keylogger play )----
+procedure_local void IntMIG_OptionsControlString_KLPlay( int pi_Texte, vector pv_Pos, int pi_Color )
+{
+	if ( DBG_IsPlay() )
+		IntMIG_SetText( pi_Texte, INTMIG_TXG, INTMIG_TEXT_On, pv_Pos,  0.0, 0, -1, pi_Color, 0 )
+	else
+		IntMIG_SetText( pi_Texte, INTMIG_TXG, INTMIG_TEXT_Off, pv_Pos,  0.0, 0, -1, pi_Color, 0 )
+}
+
+//==========={ INTERFACE STRING FCTS ]=======================
+
+//----( viseur = on / off )----
+procedure_local void IntMIG_OptionsInterfaceString_Viseur( int pi_Texte, vector pv_Pos, int pi_Color )
+{
+	if ( @"univ" CAM_Viseur > 0)
+		IntMIG_SetText_Page( pi_Texte, INTMIG_TXG, INTMIG_TEXT_Yes, pv_Pos,  0.0, 0, -1, pi_Color, 0, 1 )
+	else
+		IntMIG_SetText_Page( pi_Texte, INTMIG_TXG, INTMIG_TEXT_No, pv_Pos,  0.0, 0, -1, pi_Color, 0, 1 )
+}
+
+procedure_local void IntMIG_OptionsInterfaceString_Camera( int pi_Texte, vector pv_Pos, int pi_Color )
+{
+	if ( @"univ" CAM_Rotation > 0)
+		IntMIG_SetText_Page( pi_Texte, INTMIG_TXG, INTMIG_TEXT_Yes, pv_Pos,  0.0, 0, -1, pi_Color, 0, 1 )
+	else
+		IntMIG_SetText_Page( pi_Texte, INTMIG_TXG, INTMIG_TEXT_No, pv_Pos,  0.0, 0, -1, pi_Color, 0, 1 )
+}
+
+//----( Ammo = on / off )----
+procedure_local void IntMIG_OptionsInterfaceString_Ammo( int pi_Texte, vector pv_Pos, int pi_Color )
+{
+	if (  @"univ" MENU_i_ShowAmmoLeft )
+		IntMIG_SetText_Page( pi_Texte, INTMIG_TXG, INTMIG_TEXT_Yes, pv_Pos,  0.0, 0, -1, pi_Color, 0, 1 )
+	else
+		IntMIG_SetText_Page( pi_Texte, INTMIG_TXG, INTMIG_TEXT_No, pv_Pos,  0.0, 0, -1, pi_Color, 0, 1 )
+}
+
+
+//----( Inventory = on / off )----
+procedure_local void IntMIG_OptionsInterfaceString_Inventory( int pi_Texte, vector pv_Pos, int pi_Color )
+{
+	if (  @"univ" MENU_i_ShowInventory )
+		IntMIG_SetText_Page( pi_Texte, INTMIG_TXG, INTMIG_TEXT_Yes, pv_Pos,  0.0, 0, -1, pi_Color, 0, 1 )
+	else
+		IntMIG_SetText_Page( pi_Texte, INTMIG_TXG, INTMIG_TEXT_No, pv_Pos,  0.0, 0, -1, pi_Color, 0, 1 )
+}
+
+//==========={ DISPLAY MAP NAME ]=======================
+procedure_local void IntMIG_DisplayMapName( int pi_ID, int pi_Map, vector pv_Pos, int pi_Justify, int pi_TestMap )
+{
+	int i, frame
+	
+	if (pi_TestMap)
+	{
+		frame = 0
+		if ( ( pi_Map == @"univ" PROG_i_MapCur) && ( pi_Map != @"univ" PROG_i_MapNumber -1) )
+		{
+			@mo_Texte OBJ_TextSet( mi_PageString + 6, "")
+			return
+		}
+	}
+	else
+		frame = 2
+
+	@mo_Texte OBJ_TextSet( pi_ID, TEXT_Get(INTMIG_MAPNAME_TXG, INTMIG_MAPNAME_TXT + @"univ" PROG_ai_MapTexte[ pi_Map ]) )
+	if (@mo_Texte OBJ_TextCharGet( pi_ID, 0 ) == 40 )
+	i = 1
+	while ( 1 )
+	{
+		i++
+		if ( @mo_Texte OBJ_TextCharGet( pi_ID, i-1) == 41 )
+		{
+			@mo_Texte OBJ_TextDelete( pi_ID, 0, i )
+			break
+		}
+		if (i >= @mo_Texte OBJ_TextLength( pi_ID ) )
+			break
+	}
+	@mo_Texte OBJ_TextPosSet( pi_ID, 0, -1, cvector( 0, 0, 0) )
+	IntMIG_CreateText_End( pi_ID, pv_Pos,  0.0, pi_Justify, -1, 0xFFFFFFFF, frame, 1 )
+}
+
+
+//==========={ HALL OF FAME INIT TABLE ]=======================
+
+procedure_local void IntMIG_HOF_InsertScore( int slot, int score )
+{
+	int i, j
+	
+	for (i = 0; i < 5; i++)
+	{
+		if (mai_HOF_Score[ i ] <= score )
+			break
+	}
+	
+	if (i == 5)
+		return
+		
+	for ( j = 4; j > i; j-- )
+	{
+		mai_HOF_Score[ j ] = mai_HOF_Score[ j - 1 ]
+		mai_HOF_Texte[ j ] = mai_HOF_Texte[ j - 1 ]
+	}
+	mai_HOF_Score[ i ] = score
+	mai_HOF_Texte[ i ] = 1000 + slot
+}
+
+procedure_local void IntMIG_HOF_SetData(  int MapBonus, float	MulAdd, float MulSub, int t0, int s0, int t1, int s1, int t2, int s2, int t3, int s3, int t4, int s4 )
+{
+	mf_HOF_MulAdd = MulAdd
+	mf_HOF_MulSub = MulSub
+	mi_HOF_MapBonus = MapBonus
+	mai_HOF_Texte[ 0 ]	= t0
+	mai_HOF_Score[ 0 ]	= s0
+	mai_HOF_Texte[ 1 ]	= t1
+	mai_HOF_Score[ 1 ] = s1
+	mai_HOF_Texte[ 2 ] = t2 
+	mai_HOF_Score[ 2 ] = s2
+	mai_HOF_Texte[ 3 ] = t3
+	mai_HOF_Score[ 3 ] = s3
+	mai_HOF_Texte[ 4 ] = t4
+	mai_HOF_Score[ 4 ] = s4
+}
+
+procedure_local void IntMIG_HOF_Init( int pi_Map, int pi_Score )
+{
+	int slot
+	
+	switch( UNIV_MapID( pi_Map ) )
+    {
+    //case 100 	: IntMIG_HOF_SetData( 0,  			0.0,	0.0, 	0, 20000, 7, 19000, 8, 17000, 9, 14000, 10, 10000 ) break
+    case 101 	: IntMIG_HOF_SetData( 10000, 		1.0,	1.0, 	0, 20000, 		1, 19000, 		2, 17000, 	3, 14000, 	4, 10000 ) break
+    case 201 	: IntMIG_HOF_SetData( 15000,  	0.5, 	1.0, 	5, 20000, 		6, 19000, 		7, 17000, 	8, 14000, 	9, 10000 ) break
+    case 203 	: IntMIG_HOF_SetData( 10000,  	1.0,	1.0, 	10, 20000, 		11, 19000, 		12, 17000, 	13, 14000, 	14, 10000 ) break
+    case 204 	: IntMIG_HOF_SetData( 10000,  	1.0,	1.0, 	15, 20000, 		16, 19000,		17, 17000, 	18, 14000, 	19, 10000 ) break
+    case 301 	: IntMIG_HOF_SetData( 10000,  	1.0,	1.0, 	20, 20000, 		21, 19000, 		22, 17000, 	23, 14000, 	24, 10000 ) break
+    case 302 	: IntMIG_HOF_SetData( 10000,  	0.5, 	1.0, 	25, 20000, 		26, 19000,		27, 17000, 	28, 14000, 	29, 10000 ) break
+    case 303 	: IntMIG_HOF_SetData( 10000,  	0.5, 	0.5, 	30, 20000, 		31, 19000, 		32, 17000, 	33, 14000, 	34, 10000 ) break
+    case 305 	: IntMIG_HOF_SetData( 20000,  	1.0,	0.5, 	35, 20000, 		36, 19000, 		37, 17000, 	38, 14000, 	39, 10000 ) break
+    case 306 	: IntMIG_HOF_SetData( 5000,  		1.0, 	0.5, 	40, 20000, 		41, 19000, 		42, 17000, 	43, 14000, 	44, 10000 ) break
+    case 304 	: IntMIG_HOF_SetData( 10000,  	0.5,	0.5, 	45, 20000, 		46, 19000, 		47, 17000, 	48, 14000, 	49, 10000 ) break
+    case 401 	: IntMIG_HOF_SetData( 10000,  	0.5, 	0.5, 	50, 20000, 		51, 19000, 		52, 17000, 	53, 14000, 	54, 10000 ) break
+    case 402 	: IntMIG_HOF_SetData( 15000,  	0.5, 	0.5, 	55, 20000, 		56, 19000, 		57, 17000, 	58, 14000, 	59, 10000 ) break
+    case 403 	: IntMIG_HOF_SetData( 15000,  	0.2, 	0.5, 	60, 20000, 		61, 19000, 		62, 17000, 	63, 14000, 	64, 10000 ) break
+    case 404 	: IntMIG_HOF_SetData( 15000,  	0.5, 	1.0, 	65, 20000, 		66, 19000, 		67, 17000, 	68, 14000, 	69, 10000 ) break
+    case 501 	: IntMIG_HOF_SetData( 10000,  	1.0, 	0.5, 	70, 20000, 		71, 19000, 		72, 17000, 	73, 14000, 	74, 10000 ) break
+    case 502 	: IntMIG_HOF_SetData( 20000,  	1.0, 	0.5, 	75, 20000, 		76, 19000, 		77, 17000, 	78, 14000, 	79, 10000 ) break
+    case 504 	: IntMIG_HOF_SetData( 15000,  	1.0, 	2.0, 	80, 20000, 		81, 19000, 		82, 17000, 	83, 14000, 	84, 10000 ) break
+    case 702 	: IntMIG_HOF_SetData( 15000,  	0.5, 	1.0, 	85, 20000, 		86, 19000, 		87, 17000, 	88, 14000, 	89, 10000 ) break
+    case 705 	: IntMIG_HOF_SetData( 15000,  	0.5, 	1.0, 	90, 20000, 		91, 19000, 		92, 17000, 	93, 14000, 	94, 10000 ) break
+    //case 907 	: IntMIG_HOF_SetData( 	0,  		0.0,	0.0, 	0, 20000, 7, 19000, 8, 17000, 9, 14000, 10, 10000 ) break
+    case 1002 	: IntMIG_HOF_SetData( 10000,  	0.5, 	2.0, 	95, 20000, 		96, 19000, 		97, 17000, 	98, 14000, 	99, 10000 ) break
+    case 1101 	: IntMIG_HOF_SetData( 25000, 		1.0, 	2.0, 	100, 20000, 	101, 19000, 	102, 17000,	103, 14000, 	104, 10000 ) break
+    //case 1200 	: IntMIG_HOF_SetData( 	0,  		0.0,	0.0, 	0, 20000, 7, 19000, 8, 17000, 9, 14000, 10, 10000 ) break
+    case 1201 	: IntMIG_HOF_SetData( 15000,  	0.2,	0.5, 	105, 20000, 	106, 19000, 	107, 17000, 	108, 14000, 	109, 10000 ) break
+    case 703 	: IntMIG_HOF_SetData( 15000,  	0.5, 	1.0, 	110, 20000, 	111, 19000, 	112, 17000, 	113, 14000, 	114, 10000 ) break
+    case 1401 	: IntMIG_HOF_SetData( 20000,  	1.0, 	2.0, 	115, 20000, 	116, 19000, 	117, 17000, 	118, 14000, 	119, 10000 ) break
+    case 1402 	: IntMIG_HOF_SetData( 10000, 		0.5, 	0.5, 	120, 20000, 	121, 19000, 	122, 17000, 	123, 14000, 	124, 10000 ) break
+    case 1501 	: IntMIG_HOF_SetData( 15000,  	0.2, 	1.0, 	125, 20000, 	126, 19000, 	127, 17000, 	128, 14000, 	129, 10000 ) break
+    case 1701 	: IntMIG_HOF_SetData( 15000,  	0.5, 	1.0, 	130, 20000, 	131, 19000, 	132, 17000, 	133, 14000, 	134, 10000 ) break
+    case 1702 	: IntMIG_HOF_SetData( 5000,  		1.0, 	1.0, 	135, 20000, 	136, 19000, 	137, 17000, 	138, 14000, 	139, 10000 ) break
+    case 1703 	: IntMIG_HOF_SetData( 10000,  	1.0, 	2.0, 	140, 20000, 	141, 19000, 	142, 17000, 	143, 14000, 	144, 10000 ) break
+    //case 1801 	: IntMIG_HOF_SetData( 	0,  		0.0,	0.0, 	0, 20000, 7, 19000, 8, 17000, 9, 14000, 10, 10000 ) break
+    case 1803 	: IntMIG_HOF_SetData( 15000,  	1.0, 	1.0, 	145, 20000, 	146, 19000, 	147, 17000, 	148, 14000, 	149, 10000 ) break
+    case 1804 	: IntMIG_HOF_SetData( 10000,  	1.0, 	1.0, 	150, 20000, 	151, 19000, 	152, 17000, 	153, 14000, 	154, 10000 ) break
+    //case 1805 	: IntMIG_HOF_SetData( 	0,  		0.0,	0.0, 	0, 20000, 7, 19000, 8, 17000, 9, 14000, 10, 10000 ) break
+    case 1901 	: IntMIG_HOF_SetData( 10000,  	0.5, 	0.5, 	155, 20000, 	156, 19000, 	157, 17000, 	158, 14000, 	159, 10000 ) break
+    //case 1902 	: IntMIG_HOF_SetData( 	0,  		0.0,	0.0, 	0, 20000, 7, 19000, 8, 17000, 9, 14000, 10, 10000 ) break
+    case 2001 	: IntMIG_HOF_SetData( 15000,  	1.0, 	1.0, 	160, 20000, 	161, 19000, 	162, 17000, 	163, 14000, 	164, 10000 ) break
+    //case 2003 	: IntMIG_HOF_SetData( 	0,  		0.0,	0.0, 	0, 20000, 7, 19000, 8, 17000, 9, 14000, 10, 10000 ) break
+    //case 2100 	: IntMIG_HOF_SetData( 	0,  		0.0,	0.0, 	0, 20000, 7, 19000, 8, 17000, 9, 14000, 10, 10000 ) break
+    //case 2004  : IntMIG_HOF_SetData( 	0,  		0.0,	0.0, 	0, 20000, 7, 19000, 8, 17000, 9, 14000, 10, 10000 ) break
+    //case 7 	: IntMIG_HOF_SetData( 	0,  	0.0,	0.0, 0, 20000, 7, 19000, 8, 17000, 9, 14000, 10, 10000 ) break
+    default:	  IntMIG_HOF_SetData( 	0,  	0.0,	0.0, 0, 20000, 7, 19000, 8, 17000, 9, 14000, 10, 10000 ) break	
+	}
+	
+	for ( slot = 0; slot < 5; slot++ )
+	{
+		if ( (slot == @"univ" MENU_ProfileIndex ) && (pi_Score > SAVE_HeaderGetScore( slot, pi_Map) ) )
+			IntMIG_HOF_InsertScore( slot, pi_Score )
+		else
+			IntMIG_HOF_InsertScore( slot, SAVE_HeaderGetScore( slot, pi_Map) )
+	}
+}
+
+procedure_local int IntMIG_HOF_GetPlayerScore( int pi_Map )
+{
+	if (@"univ" MENU_ProfileIndex == -1)
+		return -1
+	IntMIG_HOF_Init( pi_Map, 0 )
+	if (mf_HOF_MulAdd == 0)
+		return -1
+	else
+		return SAVE_HeaderGetScore( @"univ" MENU_ProfileIndex, pi_Map)
+}
+
+procedure_local int IntMIG_HOF_GetPlayerOverallScore()
+{
+	int ti_i, ti_sum, ti_val
+	
+	if ( (@"univ" MENU_ProfileIndex < 0) || (@"univ" MENU_ProfileIndex>= 5) )
+	{
+		IntMIG_XTRA_Compute( 0 )
+		return 0
+	}
+		
+	IntMIG_ProfileGet_MapES	( @"univ" MENU_ProfileIndex )
+	
+	ti_sum = 0
+	for (ti_i = 0; ti_i < @"univ" PROG_i_MapNumber; ti_i++)
+	{
+		ti_val = SAVE_HeaderGetScore( @"univ" MENU_ProfileIndex,  ti_i )
+		if ( (ti_i == @"univ" PROG_i_MapReplayIndex) && (@"univ" PROG_i_MapReplay) && (mi_ScoreMap > ti_val) ) 
+			ti_val = mi_ScoreMap
+		ti_sum += ti_val
+	}
+	
+	IntMIG_XTRA_Compute( ti_sum )
+	return ti_sum
+}
+
+procedure_local int IntMIG_HOF_DisplayScore( int pi_Map, int pi_TextID, vector pv_Pos, int pi_Just, int pi_Color )
+{
+	int ti_Score
+	
+	if ( (@"univ" MENU_ProfileIndex == -1) || (mi_Cur ==  @"univ" PROG_i_MapCur ) || !IntMIG_MapIsUnlocked( mi_Cur ) || (mi_Cur == @"univ" PROG_i_MapNumber -1) )
+	{
+		@mo_Texte OBJ_TextSet( pi_TextID, "" )
+		return -1
+	}
+	
+	ti_Score = IntMIG_HOF_GetPlayerScore( pi_Map )
+	if ( ti_Score == -1)
+	{
+		@mo_Texte OBJ_TextSet( pi_TextID, "" )
+		//IntMIG_SetText_Page( pi_TextID, INTMIG_TXG, INTMIG_TEXT_SCOREGEN + 1, pv_Pos,  0.0, pi_Just, -1, pi_Color, 0, 1 )
+		return ti_Score
+	}
+	
+	if ( (ti_Score == 0) && ( @"univ" PROG_i_MapCur < (@"univ" PROG_i_MapNumber - 1) ) )
+	{
+		@mo_Texte OBJ_TextSet( pi_TextID, "" )
+		return -1
+	}
+
+	
+	@mo_Texte OBJ_TextSet( pi_TextID, TEXT_Get(INTMIG_TXG, INTMIG_TEXT_SCOREGEN + 2) )
+	@mo_Texte OBJ_TextIntInsert( pi_TextID, -1, ti_Score )
+	IntMIG_CreateText_End( pi_TextID, pv_Pos,  0.0, pi_Just, -1, pi_Color, 0, 1 )
+	return ti_Score
+}
+
+procedure_local int IntMIG_HOF_IsKongMap( int pi_Map )
+{
+	pi_Map = UNIV_MapID( pi_Map )
+	if (pi_Map == 304) return 1
+	if (pi_Map == 504) return 1
+	if (pi_Map == 601) return 1
+	if (pi_Map == 705) return 1
+	if (pi_Map == 1002) return 1
+	if (pi_Map == 1402) return 1
+	if (pi_Map == 1703) return 1
+	if (pi_Map == 1901) return 1
+	if (pi_Map == 2001) return 1
+	if (pi_Map == 2002) return 1
+	if (pi_Map == 2003) return 1
+	if (pi_Map == 2004) return 1
+	if (pi_Map == 2100) return 1
+	return 0
+}
+
+//procedure_local int IntMIG_HOF_PestKill( int pi_Map )
+//{
+//	pi_Map = UNIV_MapID( pi_Map )
+//	if ( pi_Map == 705 ) return 0
+//	if ( pi_Map == 1002 ) return 0
+//	return 1
+//}
+
+procedure_local void IntMIG_HOF_StoreStats( int ti_save )
+{
+	int map, JD, JK, JB, KK, KD, KT
+	
+	if ( !mi_StartMenu || !@"univ" PROG_i_MapReplay )
+		return
+	
+	if ( !IntMIG_HOF_IsKongMap( mi_HOF_Map ) )
+	{
+		@"univ" PROG_Score[ mi_HOF_Map ][ SCORE_Jack_BigKills ]			= mai_ScoreVal[ 0 ]
+		@"univ" PROG_Score[ mi_HOF_Map ][ SCORE_Jack_PredatorKill ] 	= mai_ScoreVal[ 1 ]
+		@"univ" PROG_Score[ mi_HOF_Map ][ SCORE_Jack_PestKill ]			= mai_ScoreVal[ 2 ]
+		@"univ" PROG_Score[ mi_HOF_Map ][ SCORE_Jack_Bullets]			= mai_ScoreVal[ 3 ]
+		@"univ" PROG_Score[ mi_HOF_Map ][ SCORE_Jack_Spears]			= mai_ScoreVal[ 4 ]
+		@"univ" PROG_Score[ mi_HOF_Map ][ SCORE_Jack_Deaths ]			= mai_ScoreVal[ 5 ]
+		@"univ" PROG_Score[ mi_HOF_Map ][ SCORE_Jack_Injuries ] 			= mai_ScoreVal[ 6 ]
+		@"univ" PROG_Score[ mi_HOF_Map ][ SCORE_Jack_BuddyInjured ] 	= mai_ScoreVal[ 7 ]
+	}
+	else
+	{
+		@"univ" PROG_Score[ mi_HOF_Map ][ SCORE_Kong_BeastKill ] 	= mai_ScoreVal[ 0 ]
+		@"univ" PROG_Score[ mi_HOF_Map ][ SCORE_Kong_PestKill] 		= mai_ScoreVal[ 1 ]
+		@"univ" PROG_Score[ mi_HOF_Map ][ SCORE_Kong_Attacks ]		= mai_ScoreVal[ 2 ]
+		@"univ" PROG_Score[ mi_HOF_Map ][ SCORE_Kong_Time]			= mai_ScoreVal[ 3 ]
+		@"univ" PROG_Score[ mi_HOF_Map ][ SCORE_Kong_Deaths]		= mai_ScoreVal[ 4 ]
+	}
+	
+	if (!ti_save)
+	{
+		SAVE_ValidateAl()
+		return
+	}
+	
+	KD = 0 KT = 0 KK = 0
+	JD = 0 JB = 0 	JK = 0
+	for ( map = 0; map < @"univ" PROG_i_MapNumber; map++)
+	{
+		if (IntMIG_HOF_IsKongMap( map ) )
+		{
+			KD += @"univ" PROG_Score[ map ][ SCORE_Kong_Deaths]
+			KT += @"univ" PROG_Score[ map ][ SCORE_Kong_Time]
+			KK += @"univ" PROG_Score[ map ][ SCORE_Kong_BeastKill ]
+			KK += @"univ" PROG_Score[ map ][ SCORE_Kong_PestKill]
+		}
+		else
+		{
+			JD += @"univ" PROG_Score[ map ][ SCORE_Jack_Deaths ]
+			JB += @"univ" PROG_Score[ map ][ SCORE_Jack_Bullets]
+			JK += @"univ" PROG_Score[ map ][ SCORE_Jack_BigKills ]
+			JK += @"univ" PROG_Score[ map ][ SCORE_Jack_PredatorKill ]
+			JK += @"univ" PROG_Score[ map ][ SCORE_Jack_PestKill ]
+		}
+	}
+	
+	SAVE_HeaderSet( @"univ" MENU_ProfileIndex, -1, JD, JB, JK, 0 )
+	SAVE_HeaderSet( @"univ" MENU_ProfileIndex, -2, KD, KT, KK, 0 )
+	SAVE_HeaderSetScore( @"univ" MENU_ProfileIndex, mi_HOF_Map, mi_ScoreMap )
+	SAVE_ValidateAl()
+}
+
+// remet à 0 les stats de la map courante
+// mode = 0 : efface tout
+// mode = 1 : efface tout sauf les stats remanentes : nombre de mort,  temps
+//procedure_local void IntMIG_HOF_ResetStats( int mode )
+//{
+//	int i
+//	for (i = 0; i < STATS_NbVal; i++)
+//	{
+//		if (mode)
+//		{
+//			if (i == STATS_DureeMap) continue
+//			if (i == STATS_NbMort ) continue
+//			if (i == STATS_NbMortJoueur ) continue
+//		}
+//	}
+//	@"univ" STATS[ @"univ" STATS_WorldID ][ i ] = 0
+//}
+
+
+procedure_local void  IntMIG_Score_InitPage()
+{
+	int	ti_i
+	
+	IntMIG_HOF_Init( mi_HOF_Map , 0 ) 
+	mi_HOF_ScoreMapBonus = 0
+	
+	if (  mi_StartMenu && !@"univ" PROG_i_MapReplay )
+	{
+		if ( !IntMIG_HOF_IsKongMap( mi_HOF_Map ) )
+		{
+			mi_ScoreJack = 1
+			mai_ScoreVal[ 0 ] = @"univ" PROG_Score[ mi_HOF_Map ][ SCORE_Jack_BigKills ]
+			mai_ScoreVal[ 1 ] = @"univ" PROG_Score[ mi_HOF_Map ][ SCORE_Jack_PredatorKill ]
+			mai_ScoreVal[ 2 ] = @"univ" PROG_Score[ mi_HOF_Map ][ SCORE_Jack_PestKill ]
+			mai_ScoreVal[ 3 ] = @"univ" PROG_Score[ mi_HOF_Map ][ SCORE_Jack_Bullets]
+			mai_ScoreVal[ 4 ] = @"univ" PROG_Score[ mi_HOF_Map ][ SCORE_Jack_Spears]
+			mai_ScoreVal[ 5 ] = @"univ" PROG_Score[ mi_HOF_Map ][ SCORE_Jack_Deaths ]
+			mai_ScoreVal[ 6 ] = @"univ" PROG_Score[ mi_HOF_Map ][ SCORE_Jack_Injuries ]
+			mai_ScoreVal[ 7 ] = @"univ" PROG_Score[ mi_HOF_Map ][ SCORE_Jack_BuddyInjured ]
+		}
+		else
+		{
+			mi_ScoreJack = 0
+			mai_ScoreVal[ 0 ] = @"univ" PROG_Score[ mi_HOF_Map ][ SCORE_Kong_BeastKill ]
+			mai_ScoreVal[ 1 ] = @"univ" PROG_Score[ mi_HOF_Map ][ SCORE_Kong_PestKill]
+			mai_ScoreVal[ 2 ] = @"univ" PROG_Score[ mi_HOF_Map ][ SCORE_Kong_Attacks ]
+			mai_ScoreVal[ 3 ] = @"univ" PROG_Score[ mi_HOF_Map ][ SCORE_Kong_Time]
+			mai_ScoreVal[ 4 ] = @"univ" PROG_Score[ mi_HOF_Map ][ SCORE_Kong_Deaths]
+		}
+	}
+	else
+	{
+		mi_HOF_Map = @"univ" PROG_i_MapReplayIndex
+		if ( !IntMIG_HOF_IsKongMap( mi_HOF_Map ) )
+		{
+			mi_ScoreJack = 1
+			mai_ScoreVal[ 0 ] = @"univ" STATS[ mi_HOF_Map ][ STATS_KilledGroup0 ]
+			mai_ScoreVal[ 1 ] = @"univ" STATS[ mi_HOF_Map ][ STATS_KilledGroup1 ]
+			mai_ScoreVal[ 2 ] = @"univ" STATS[ mi_HOF_Map ][ STATS_KilledGroup2 ]
+			mai_ScoreVal[ 3 ] = @"univ" STATS[ mi_HOF_Map ][ STATS_NbBullet ]
+			mai_ScoreVal[ 4 ] = @"univ" STATS[ mi_HOF_Map ][ STATS_NbSpears ]
+			mai_ScoreVal[ 5 ] = @"univ" STATS[ mi_HOF_Map ][ STATS_NbMort ]
+			mai_ScoreVal[ 6 ] = @"univ" STATS[ mi_HOF_Map ][ STATS_Injuries ]
+			mai_ScoreVal[ 7 ] = @"univ" STATS[ mi_HOF_Map ][ STATS_BuddyInjured ]
+		}
+		else
+		{
+			mi_ScoreJack = 0
+			mai_ScoreVal[ 0 ] = @"univ" STATS[ mi_HOF_Map ][ STATS_KilledGroup3 ]
+			mai_ScoreVal[ 1 ] = @"univ" STATS[ mi_HOF_Map ][ STATS_KilledGroup4 ]
+			mai_ScoreVal[ 2 ] = @"univ" STATS[ mi_HOF_Map ][ STATS_NbAttack ]
+			mai_ScoreVal[ 3 ] = @"univ" STATS[ mi_HOF_Map ][ STATS_DureeMap ]
+			mai_ScoreVal[ 4 ] = @"univ" STATS[ mi_HOF_Map ][ STATS_NbMort ] 
+		}
+	}
+	
+	if ( mi_ScoreJack )
+	{
+		mi_Score_Count = 8
+		mai_ScoreFactor[ 0 ] = SCOREFACTOR_Jack_BigKills 
+		mai_ScoreFactor[ 1 ] = SCOREFACTOR_Jack_PredatorKill 
+		mai_ScoreFactor[ 2 ] = SCOREFACTOR_Jack_PestKill
+		mai_ScoreFactor[ 3 ] = SCOREFACTOR_Jack_Bullets 
+		mai_ScoreFactor[ 4 ] = SCOREFACTOR_Jack_Spears 
+		mai_ScoreFactor[ 5 ] = SCOREFACTOR_Jack_Deaths 
+		mai_ScoreFactor[ 6 ] = SCOREFACTOR_Jack_Injuries 
+		mai_ScoreFactor[ 7 ] = SCOREFACTOR_Jack_BuddyInjured
+		mi_ScoreFirstText = INTMIG_TEXT_SCORE + 0
+	}
+	else
+	{
+		mi_Score_Count= 4
+		mai_ScoreFactor[ 0 ] = SCOREFACTOR_Kong_BeastKill
+		mai_ScoreFactor[ 1 ] = SCOREFACTOR_Kong_PestKill
+		mai_ScoreFactor[ 2 ] = SCOREFACTOR_Kong_Attacks
+		mai_ScoreFactor[ 3 ] = SCOREFACTOR_Kong_Time
+		mi_ScoreFirstText = INTMIG_TEXT_SCORE + 10
+	}
+	
+	mi_HOF_ScoreMapBonus = 1
+//	if ( mi_StartMenu )
+//	{
+//		for (ti_i = 0; ti_i < mi_Score_Count; ti_i++)
+//		{
+//			if (mai_ScoreVal[ ti_i ]) 
+//				mi_HOF_ScoreMapBonus = 1
+//		}
+//	}
+}
+
+procedure_local int IntMIG_Score_DisplayLine( int pi_Text, int pi_Line, vector pv_Pos )
+{
+	float	ti_Factor, ti_chapterbonus
+	int 	ti_Col, ti_Val, ti_Neg
+	int		ti_TextKey, ti_Num
+	
+	if (pi_Line == -1)
+	{
+		ti_Factor = mi_HOF_MapBonus
+		ti_TextKey = INTMIG_TEXT_SCOREGEN + 6
+		ti_Num = mi_HOF_ScoreMapBonus
+		ti_chapterbonus = 1
+	}
+	else
+	{
+		ti_Factor = mai_ScoreFactor[ pi_Line ]
+		ti_TextKey = mi_ScoreFirstText + pi_Line
+		ti_Num = mai_ScoreVal[ pi_Line ]
+		ti_chapterbonus = 0
+	}	
+	
+	if ( ti_Factor < 0)
+	{
+		ti_Neg = 1
+		ti_Col = 0x7F7FFF
+		ti_Factor = -ti_Factor * mf_HOF_MulSub
+	}
+	else
+	{
+		ti_Neg = 0
+		ti_Col = 0x7FFF7F
+		if (!ti_chapterbonus)
+			ti_Factor *= mf_HOF_MulAdd
+	}
+	
+	pv_Pos.x = 0.4
+	@mo_Texte OBJ_TextMaxWidthSet(0.3)
+	IntMIG_SetText_Page( pi_Text, INTMIG_TXG, ti_TextKey, pv_Pos,  0.0, 6, 3, ti_Col, 0, 3 )
+	@mo_Texte OBJ_TextMaxWidthSet(0)
+		
+	if ( !ti_chapterbonus )
+	{
+		pv_Pos.x = 0.53
+		IntMIG_CreateText_Start( pi_Text + 1)
+		@mo_Texte OBJ_TextIntInsert( pi_Text + 1, -1, ti_Num )
+		IntMIG_CreateText_End( pi_Text + 1, pv_Pos,  0.0, 6, -1, ti_Col, 0, 1 )
+	
+		pv_Pos.x = 0.55
+		IntMIG_CreateText_Start( pi_Text + 2)
+		@mo_Texte OBJ_TextInsert( pi_Text + 2, -1, "x ")
+		@mo_Texte OBJ_TextIntInsert( pi_Text + 2, -1, ti_Factor )
+		IntMIG_CreateText_End( pi_Text + 2, pv_Pos,  0.0, 4, -1, ti_Col, 0, 3 )
+	}
+	else
+	{
+		@mo_Texte OBJ_TextSet( pi_Text + 1, "" )
+		@mo_Texte OBJ_TextSet( pi_Text + 2, "" )
+	}
+			
+	ti_Val = ti_Factor * ti_Num
+	if (ti_Neg) ti_Val  *= -1
+	pv_Pos.x = 0.85
+	IntMIG_CreateText_Start( pi_Text + 3)
+	//if (ti_Neg && ti_Val ) @mo_Texte OBJ_TextInsert( pi_Text + 3, -1, "- ")
+	@mo_Texte OBJ_TextIntInsert( pi_Text + 3, -1, ti_Val )
+	IntMIG_CreateText_End( pi_Text + 3, pv_Pos,  0.0, 6, -1, ti_Col, 0, 1 )
+			
+	return ti_Val
+}
+
+procedure_local void IntMIG_Score_DisplayLine2( int pi_Text, int pi_TextKey, int pi_Val, vector pv_Pos, int pi_Col )
+{
+	IntMIG_SetText_Page( pi_Text, INTMIG_TXG, pi_TextKey, pv_Pos - cvector( 0.25, 0, 0 ),  0.0, 6, -1, pi_Col, 0, 1 )
+	IntMIG_CreateText_Start( pi_Text + 1)
+	@mo_Texte OBJ_TextIntInsert( pi_Text + 1, -1, pi_Val )
+	IntMIG_CreateText_End( pi_Text + 1, pv_Pos,  0.0, 6, -1, pi_Col, 0, 1 )
+}
+
+procedure_local void IntMIG_Score_DisplayTotal( int pi_Text, int pi_TextKey, int pi_Val, vector pv_Pos, int pi_Col )
+{
+	IntMIG_Score_DisplayLine2( pi_Text, pi_TextKey, pi_Val, pv_Pos, pi_Col )
+	IntMIG_SetText( pi_Text + 2, INTMIG_TXG, INTMIG_TEXT_Souligne, pv_Pos + cvector( 0.02, -0.05, 0), 0.0, 6, -1, pi_Col, 0 )
+}
+
+
+
+
+
+//==========={ DEMO MENU INIT]=======================
+procedure_local void IntMIG_InitDemoMenuEntry( )
+{
+	int 	i
+	#define MENUDEMO_AddMap( map, es, trans )\
+		@"univ" MENUDEMO_Map[ i ] = map \
+		@"univ" MENUDEMO_ES[ i ] = es \
+		@"univ" MENUDEMO_Trans[ i ] = trans \
+		i++
+
+	@"univ" MENUDEMO_DyeMap = 0
+	@"univ" MENUDEMO_DyeES = 0
+	@"univ" MENUDEMO_DyeNumber = 0
+	
+	i = 0
+	if (@"univ"  MENU_NZ == 1)
+	{
+		@"univ" MENUDEMO_NbMap = MENU_DEMO1_NBMAPS
+		@"univ" MENUDEMO_Chain = MENU_DEMO1_CHAIN
+		@"univ" MENUDEMO_Transition = MENU_DEMO1_TRANSITIONMAP
+		@"univ" MENUDEMO_TransitionN = MENU_DEMO1_TRANSN
+		@"univ" MENUDEMO_QuitWhenAllDone = MENU_DEMO1_QUITWHENALLMAPDONE
+		@"univ" MENUDEMO_QuitWhenDying = MENU_DEMO1_QUITWHENDYING
+		if ( !@"univ" MENUDEMO_QuitTimer )
+			@"univ" MENUDEMO_QuitTimer = MENU_DEMO1_QUITTIMER
+		
+		MENUDEMO_AddMap( MENU_DEMO1_MAP0, MENU_DEMO1_ES0, MENU_DEMO1_TRANS0 )
+		MENUDEMO_AddMap( MENU_DEMO1_MAP1, MENU_DEMO1_ES1, MENU_DEMO1_TRANS1 )
+		MENUDEMO_AddMap( MENU_DEMO1_MAP2, MENU_DEMO1_ES2, MENU_DEMO1_TRANS2 )
+		MENUDEMO_AddMap( MENU_DEMO1_MAP3, MENU_DEMO1_ES3, MENU_DEMO1_TRANS3 )
+		MENUDEMO_AddMap( MENU_DEMO1_MAP4, MENU_DEMO1_ES4, MENU_DEMO1_TRANS4 )
+		MENUDEMO_AddMap( MENU_DEMO1_MAP5, MENU_DEMO1_ES5, MENU_DEMO1_TRANS5 )
+		MENUDEMO_AddMap( MENU_DEMO1_MAP6, MENU_DEMO1_ES6, MENU_DEMO1_TRANS6 )
+		MENUDEMO_AddMap( MENU_DEMO1_MAP7, MENU_DEMO1_ES7, MENU_DEMO1_TRANS7 )
+		MENUDEMO_AddMap( MENU_DEMO1_MAP8, MENU_DEMO1_ES8, MENU_DEMO1_TRANS8 )
+		MENUDEMO_AddMap( MENU_DEMO1_MAP9, MENU_DEMO1_ES9, MENU_DEMO1_TRANS9 )
+		MENUDEMO_AddMap( MENU_DEMO1_MAP10, MENU_DEMO1_ES10, MENU_DEMO1_TRANS10 )
+		MENUDEMO_AddMap( MENU_DEMO1_MAP11, MENU_DEMO1_ES11, MENU_DEMO1_TRANS11 )
+		MENUDEMO_AddMap( MENU_DEMO1_MAP12, MENU_DEMO1_ES12, MENU_DEMO1_TRANS12 )
+		MENUDEMO_AddMap( MENU_DEMO1_MAP13, MENU_DEMO1_ES13, MENU_DEMO1_TRANS13 )
+		MENUDEMO_AddMap( MENU_DEMO1_MAP14, MENU_DEMO1_ES14, MENU_DEMO1_TRANS14 )
+		MENUDEMO_AddMap( MENU_DEMO1_MAP15, MENU_DEMO1_ES15, MENU_DEMO1_TRANS15 )
+		MENUDEMO_AddMap( MENU_DEMO1_MAP16, MENU_DEMO1_ES16, MENU_DEMO1_TRANS16 )
+		MENUDEMO_AddMap( MENU_DEMO1_MAP17, MENU_DEMO1_ES17, MENU_DEMO1_TRANS17 )
+		MENUDEMO_AddMap( MENU_DEMO1_MAP18, MENU_DEMO1_ES18, MENU_DEMO1_TRANS18 )
+		MENUDEMO_AddMap( MENU_DEMO1_MAP19, MENU_DEMO1_ES19, MENU_DEMO1_TRANS19 )
+		MENUDEMO_AddMap( MENU_DEMO1_MAP20, MENU_DEMO1_ES20, MENU_DEMO1_TRANS20 )
+		MENUDEMO_AddMap( MENU_DEMO1_MAP21, MENU_DEMO1_ES21, MENU_DEMO1_TRANS21 )
+		MENUDEMO_AddMap( MENU_DEMO1_MAP22, MENU_DEMO1_ES22, MENU_DEMO1_TRANS22 )
+		MENUDEMO_AddMap( MENU_DEMO1_MAP23, MENU_DEMO1_ES23, MENU_DEMO1_TRANS23 )
+		MENUDEMO_AddMap( MENU_DEMO1_MAP24, MENU_DEMO1_ES24, MENU_DEMO1_TRANS24 )
+	}
+	else if (@"univ"  MENU_NZ == 2)
+	{
+		@"univ" MENUDEMO_NbMap = MENU_DEMO2_NBMAPS
+		@"univ" MENUDEMO_Chain = MENU_DEMO2_CHAIN
+		@"univ" MENUDEMO_Transition = MENU_DEMO2_TRANSITIONMAP
+		@"univ" MENUDEMO_TransitionN = MENU_DEMO2_TRANSN
+		@"univ" MENUDEMO_QuitWhenAllDone = MENU_DEMO2_QUITWHENALLMAPDONE
+		@"univ" MENUDEMO_QuitWhenDying = MENU_DEMO2_QUITWHENDYING
+				if ( !@"univ" MENUDEMO_QuitTimer )
+			@"univ" MENUDEMO_QuitTimer = MENU_DEMO2_QUITTIMER
+
+		MENUDEMO_AddMap( MENU_DEMO2_MAP0, MENU_DEMO2_ES0, MENU_DEMO2_TRANS0 )
+		MENUDEMO_AddMap( MENU_DEMO2_MAP1, MENU_DEMO2_ES1, MENU_DEMO2_TRANS1 )
+		MENUDEMO_AddMap( MENU_DEMO2_MAP2, MENU_DEMO2_ES2, MENU_DEMO2_TRANS2 )
+		MENUDEMO_AddMap( MENU_DEMO2_MAP3, MENU_DEMO2_ES3, MENU_DEMO2_TRANS3 )
+		MENUDEMO_AddMap( MENU_DEMO2_MAP4, MENU_DEMO2_ES4, MENU_DEMO2_TRANS4 )
+		MENUDEMO_AddMap( MENU_DEMO2_MAP5, MENU_DEMO2_ES5, MENU_DEMO2_TRANS5 )
+		MENUDEMO_AddMap( MENU_DEMO2_MAP6, MENU_DEMO2_ES6, MENU_DEMO2_TRANS6 )
+		MENUDEMO_AddMap( MENU_DEMO2_MAP7, MENU_DEMO2_ES7, MENU_DEMO2_TRANS7 )
+		MENUDEMO_AddMap( MENU_DEMO2_MAP8, MENU_DEMO2_ES8, MENU_DEMO2_TRANS8 )
+		MENUDEMO_AddMap( MENU_DEMO2_MAP9, MENU_DEMO2_ES9, MENU_DEMO2_TRANS9 )
+		MENUDEMO_AddMap( MENU_DEMO2_MAP10, MENU_DEMO2_ES10, MENU_DEMO2_TRANS10 )
+		MENUDEMO_AddMap( MENU_DEMO2_MAP11, MENU_DEMO2_ES11, MENU_DEMO2_TRANS11 )
+		MENUDEMO_AddMap( MENU_DEMO2_MAP12, MENU_DEMO2_ES12, MENU_DEMO2_TRANS12 )
+		MENUDEMO_AddMap( MENU_DEMO2_MAP13, MENU_DEMO2_ES13, MENU_DEMO2_TRANS13 )
+		MENUDEMO_AddMap( MENU_DEMO2_MAP14, MENU_DEMO2_ES14, MENU_DEMO2_TRANS14 )
+		MENUDEMO_AddMap( MENU_DEMO2_MAP15, MENU_DEMO2_ES15, MENU_DEMO2_TRANS15 )
+		MENUDEMO_AddMap( MENU_DEMO2_MAP16, MENU_DEMO2_ES16, MENU_DEMO2_TRANS16 )
+		MENUDEMO_AddMap( MENU_DEMO2_MAP17, MENU_DEMO2_ES17, MENU_DEMO2_TRANS17 )
+		MENUDEMO_AddMap( MENU_DEMO2_MAP18, MENU_DEMO2_ES18, MENU_DEMO2_TRANS18 )
+		MENUDEMO_AddMap( MENU_DEMO2_MAP19, MENU_DEMO2_ES19, MENU_DEMO2_TRANS19 )
+		MENUDEMO_AddMap( MENU_DEMO2_MAP20, MENU_DEMO2_ES20, MENU_DEMO2_TRANS20 )
+		MENUDEMO_AddMap( MENU_DEMO2_MAP21, MENU_DEMO2_ES21, MENU_DEMO2_TRANS21 )
+		MENUDEMO_AddMap( MENU_DEMO2_MAP22, MENU_DEMO2_ES22, MENU_DEMO2_TRANS22 )
+		MENUDEMO_AddMap( MENU_DEMO2_MAP23, MENU_DEMO2_ES23, MENU_DEMO2_TRANS23 )
+		MENUDEMO_AddMap( MENU_DEMO2_MAP24, MENU_DEMO2_ES24, MENU_DEMO2_TRANS24 )
+	}
+	else if (@"univ"  MENU_NZ == 3)
+	{
+		@"univ" MENUDEMO_NbMap = MENU_DEMO3_NBMAPS
+		@"univ" MENUDEMO_Chain = MENU_DEMO3_CHAIN
+		@"univ" MENUDEMO_Transition = MENU_DEMO3_TRANSITIONMAP
+		@"univ" MENUDEMO_TransitionN = MENU_DEMO3_TRANSN
+		@"univ" MENUDEMO_QuitWhenAllDone = MENU_DEMO3_QUITWHENALLMAPDONE
+		@"univ" MENUDEMO_QuitWhenDying = MENU_DEMO3_QUITWHENDYING
+		if ( !@"univ" MENUDEMO_QuitTimer )
+			@"univ" MENUDEMO_QuitTimer = MENU_DEMO3_QUITTIMER
+
+		MENUDEMO_AddMap( MENU_DEMO3_MAP0, MENU_DEMO3_ES0, MENU_DEMO3_TRANS0 )
+		MENUDEMO_AddMap( MENU_DEMO3_MAP1, MENU_DEMO3_ES1, MENU_DEMO3_TRANS1 )
+		MENUDEMO_AddMap( MENU_DEMO3_MAP2, MENU_DEMO3_ES2, MENU_DEMO3_TRANS2 )
+		MENUDEMO_AddMap( MENU_DEMO3_MAP3, MENU_DEMO3_ES3, MENU_DEMO3_TRANS3 )
+		MENUDEMO_AddMap( MENU_DEMO3_MAP4, MENU_DEMO3_ES4, MENU_DEMO3_TRANS4 )
+		MENUDEMO_AddMap( MENU_DEMO3_MAP5, MENU_DEMO3_ES5, MENU_DEMO3_TRANS5 )
+		MENUDEMO_AddMap( MENU_DEMO3_MAP6, MENU_DEMO3_ES6, MENU_DEMO3_TRANS6 )
+		MENUDEMO_AddMap( MENU_DEMO3_MAP7, MENU_DEMO3_ES7, MENU_DEMO3_TRANS7 )
+		MENUDEMO_AddMap( MENU_DEMO3_MAP8, MENU_DEMO3_ES8, MENU_DEMO3_TRANS8 )
+		MENUDEMO_AddMap( MENU_DEMO3_MAP9, MENU_DEMO3_ES9, MENU_DEMO3_TRANS9 )
+		MENUDEMO_AddMap( MENU_DEMO3_MAP10, MENU_DEMO3_ES10, MENU_DEMO3_TRANS10 )
+		MENUDEMO_AddMap( MENU_DEMO3_MAP11, MENU_DEMO3_ES11, MENU_DEMO3_TRANS11 )
+		MENUDEMO_AddMap( MENU_DEMO3_MAP12, MENU_DEMO3_ES12, MENU_DEMO3_TRANS12 )
+		MENUDEMO_AddMap( MENU_DEMO3_MAP13, MENU_DEMO3_ES13, MENU_DEMO3_TRANS13 )
+		MENUDEMO_AddMap( MENU_DEMO3_MAP14, MENU_DEMO3_ES14, MENU_DEMO3_TRANS14 )
+		MENUDEMO_AddMap( MENU_DEMO3_MAP15, MENU_DEMO3_ES15, MENU_DEMO3_TRANS15 )
+		MENUDEMO_AddMap( MENU_DEMO3_MAP16, MENU_DEMO3_ES16, MENU_DEMO3_TRANS16 )
+		MENUDEMO_AddMap( MENU_DEMO3_MAP17, MENU_DEMO3_ES17, MENU_DEMO3_TRANS17 )
+		MENUDEMO_AddMap( MENU_DEMO3_MAP18, MENU_DEMO3_ES18, MENU_DEMO3_TRANS18 )
+		MENUDEMO_AddMap( MENU_DEMO3_MAP19, MENU_DEMO3_ES19, MENU_DEMO3_TRANS19 )
+		MENUDEMO_AddMap( MENU_DEMO3_MAP20, MENU_DEMO3_ES20, MENU_DEMO3_TRANS20 )
+		MENUDEMO_AddMap( MENU_DEMO3_MAP21, MENU_DEMO3_ES21, MENU_DEMO3_TRANS21 )
+		MENUDEMO_AddMap( MENU_DEMO3_MAP22, MENU_DEMO3_ES22, MENU_DEMO3_TRANS22 )
+		MENUDEMO_AddMap( MENU_DEMO3_MAP23, MENU_DEMO3_ES23, MENU_DEMO3_TRANS23 )
+		MENUDEMO_AddMap( MENU_DEMO3_MAP24, MENU_DEMO3_ES24, MENU_DEMO3_TRANS24 )
+
+	}
+	else
+	{
+		@"univ" MENUDEMO_NbMap = MENU_DEMO4_NBMAPS
+		@"univ" MENUDEMO_Chain = MENU_DEMO4_CHAIN
+		@"univ" MENUDEMO_Transition = MENU_DEMO4_TRANSITIONMAP
+		@"univ" MENUDEMO_TransitionN = MENU_DEMO4_TRANSN
+		@"univ" MENUDEMO_QuitWhenAllDone = MENU_DEMO4_QUITWHENALLMAPDONE
+		@"univ" MENUDEMO_QuitWhenDying = MENU_DEMO4_QUITWHENDYING
+		if ( !@"univ" MENUDEMO_QuitTimer )
+			@"univ" MENUDEMO_QuitTimer = MENU_DEMO4_QUITTIMER
+
+		MENUDEMO_AddMap( MENU_DEMO4_MAP0, MENU_DEMO4_ES0, MENU_DEMO4_TRANS0 )
+		MENUDEMO_AddMap( MENU_DEMO4_MAP1, MENU_DEMO4_ES1, MENU_DEMO4_TRANS1 )
+		MENUDEMO_AddMap( MENU_DEMO4_MAP2, MENU_DEMO4_ES2, MENU_DEMO4_TRANS2 )
+		MENUDEMO_AddMap( MENU_DEMO4_MAP3, MENU_DEMO4_ES3, MENU_DEMO4_TRANS3 )
+		MENUDEMO_AddMap( MENU_DEMO4_MAP4, MENU_DEMO4_ES4, MENU_DEMO4_TRANS4 )
+		MENUDEMO_AddMap( MENU_DEMO4_MAP5, MENU_DEMO4_ES5, MENU_DEMO4_TRANS5 )
+		MENUDEMO_AddMap( MENU_DEMO4_MAP6, MENU_DEMO4_ES6, MENU_DEMO4_TRANS6 )
+		MENUDEMO_AddMap( MENU_DEMO4_MAP7, MENU_DEMO4_ES7, MENU_DEMO4_TRANS7 )
+		MENUDEMO_AddMap( MENU_DEMO4_MAP8, MENU_DEMO4_ES8, MENU_DEMO4_TRANS8 )
+		MENUDEMO_AddMap( MENU_DEMO4_MAP9, MENU_DEMO4_ES9, MENU_DEMO4_TRANS9 )
+//		MENUDEMO_AddMap( MENU_DEMO4_MAP10, MENU_DEMO4_ES10, MENU_DEMO4_TRANS10 )
+//		MENUDEMO_AddMap( MENU_DEMO4_MAP11, MENU_DEMO4_ES11, MENU_DEMO4_TRANS11 )
+//		MENUDEMO_AddMap( MENU_DEMO4_MAP12, MENU_DEMO4_ES12, MENU_DEMO4_TRANS12 )
+//		MENUDEMO_AddMap( MENU_DEMO4_MAP13, MENU_DEMO4_ES13, MENU_DEMO4_TRANS13 )
+//		MENUDEMO_AddMap( MENU_DEMO4_MAP14, MENU_DEMO4_ES14, MENU_DEMO4_TRANS14 )
+//		MENUDEMO_AddMap( MENU_DEMO4_MAP15, MENU_DEMO4_ES15, MENU_DEMO4_TRANS15 )
+//		MENUDEMO_AddMap( MENU_DEMO4_MAP16, MENU_DEMO4_ES16, MENU_DEMO4_TRANS16 )
+//		MENUDEMO_AddMap( MENU_DEMO4_MAP17, MENU_DEMO4_ES17, MENU_DEMO4_TRANS17 )
+//		MENUDEMO_AddMap( MENU_DEMO4_MAP18, MENU_DEMO4_ES18, MENU_DEMO4_TRANS18 )
+//		MENUDEMO_AddMap( MENU_DEMO4_MAP19, MENU_DEMO4_ES19, MENU_DEMO4_TRANS19 )
+//		MENUDEMO_AddMap( MENU_DEMO4_MAP20, MENU_DEMO4_ES20, MENU_DEMO4_TRANS20 )
+//		MENUDEMO_AddMap( MENU_DEMO4_MAP21, MENU_DEMO4_ES21, MENU_DEMO4_TRANS21 )
+//		MENUDEMO_AddMap( MENU_DEMO4_MAP22, MENU_DEMO4_ES22, MENU_DEMO4_TRANS22 )
+//		MENUDEMO_AddMap( MENU_DEMO4_MAP23, MENU_DEMO4_ES23, MENU_DEMO4_TRANS23 )
+//		MENUDEMO_AddMap( MENU_DEMO4_MAP24, MENU_DEMO4_ES24, MENU_DEMO4_TRANS24 )
+	}
+}
+
+procedure_local void IntMIG_DisplayDemoMenuEntry( int ti_Texte, int ti_Line, vector tv_Pos, int ti_Col, int ti_Frame )
+{
+	#define MENUDEMO_SetText(texte)\
+		@mo_Texte OBJ_TextSet( mi_PageString + ti_Texte, texte )\
+		IntMIG_CreateText_End( mi_PageString + ti_Texte, tv_Pos, 0.0, 6, -1, ti_Col, ti_Frame, 0)
+		
+	if (@"univ"  MENU_NZ == 1)
+	{
+		switch (ti_Line)
+		{
+			case 0:	MENUDEMO_SetText( MENU_DEMO1_NAME0 ) break
+			case 1:	MENUDEMO_SetText( MENU_DEMO1_NAME1 ) break
+			case 2:	MENUDEMO_SetText( MENU_DEMO1_NAME2 ) break
+			case 3:	MENUDEMO_SetText( MENU_DEMO1_NAME3 ) break
+			case 4:	MENUDEMO_SetText( MENU_DEMO1_NAME4 ) break
+			case 5: 	MENUDEMO_SetText( MENU_DEMO1_NAME5 ) break
+			case 6:	MENUDEMO_SetText( MENU_DEMO1_NAME6 ) break
+			case 7:	MENUDEMO_SetText( MENU_DEMO1_NAME7 ) break
+			case 8:	MENUDEMO_SetText( MENU_DEMO1_NAME8 ) break
+			case 9:	MENUDEMO_SetText( MENU_DEMO1_NAME9 ) break
+			case 10:	MENUDEMO_SetText( MENU_DEMO1_NAME10 ) break
+			case 11:	MENUDEMO_SetText( MENU_DEMO1_NAME11 ) break
+			case 12:	MENUDEMO_SetText( MENU_DEMO1_NAME12 ) break
+			case 13:	MENUDEMO_SetText( MENU_DEMO1_NAME13 ) break
+			case 14:	MENUDEMO_SetText( MENU_DEMO1_NAME14 ) break
+			case 15: MENUDEMO_SetText( MENU_DEMO1_NAME15 ) break
+			case 16:	MENUDEMO_SetText( MENU_DEMO1_NAME16 ) break
+			case 17:	MENUDEMO_SetText( MENU_DEMO1_NAME17 ) break
+			case 18:	MENUDEMO_SetText( MENU_DEMO1_NAME18 ) break
+			case 19:	MENUDEMO_SetText( MENU_DEMO1_NAME19 ) break
+			case 20:	MENUDEMO_SetText( MENU_DEMO1_NAME20 ) break
+			case 21:	MENUDEMO_SetText( MENU_DEMO1_NAME21 ) break
+			case 22:	MENUDEMO_SetText( MENU_DEMO1_NAME22 ) break
+			case 23:	MENUDEMO_SetText( MENU_DEMO1_NAME23 ) break
+			case 24:	MENUDEMO_SetText( MENU_DEMO1_NAME24 ) break
+		}
+	}
+	else if (@"univ"  MENU_NZ == 2)
+	{
+		switch (ti_Line)
+		{
+			case 0:	MENUDEMO_SetText(  MENU_DEMO2_NAME0 ) break
+			case 1:	MENUDEMO_SetText( MENU_DEMO2_NAME1 ) break
+			case 2:	MENUDEMO_SetText( MENU_DEMO2_NAME2 ) break
+			case 3:	MENUDEMO_SetText( MENU_DEMO2_NAME3 ) break
+			case 4:	MENUDEMO_SetText( MENU_DEMO2_NAME4 ) break
+			case 5: 	MENUDEMO_SetText( MENU_DEMO2_NAME5 ) break
+			case 6:	MENUDEMO_SetText( MENU_DEMO2_NAME6 ) break
+			case 7:	MENUDEMO_SetText( MENU_DEMO2_NAME7 ) break
+			case 8:	MENUDEMO_SetText( MENU_DEMO2_NAME8 ) break
+			case 9:	MENUDEMO_SetText( MENU_DEMO2_NAME9 ) break
+			case 10:	MENUDEMO_SetText( MENU_DEMO2_NAME10 ) break
+			case 11:	MENUDEMO_SetText( MENU_DEMO2_NAME11 ) break
+			case 12:	MENUDEMO_SetText( MENU_DEMO2_NAME12 ) break
+			case 13:	MENUDEMO_SetText( MENU_DEMO2_NAME13 ) break
+			case 14:	MENUDEMO_SetText( MENU_DEMO2_NAME14 ) break
+			case 15: MENUDEMO_SetText( MENU_DEMO2_NAME15 ) break
+			case 16:	MENUDEMO_SetText( MENU_DEMO2_NAME16 ) break
+			case 17:	MENUDEMO_SetText( MENU_DEMO2_NAME17 ) break
+			case 18:	MENUDEMO_SetText( MENU_DEMO2_NAME18 ) break
+			case 19:	MENUDEMO_SetText( MENU_DEMO2_NAME19 ) break
+			case 20:	MENUDEMO_SetText( MENU_DEMO2_NAME20 ) break
+			case 21:	MENUDEMO_SetText( MENU_DEMO2_NAME21 ) break
+			case 22:	MENUDEMO_SetText( MENU_DEMO2_NAME22 ) break
+			case 23:	MENUDEMO_SetText( MENU_DEMO2_NAME23 ) break
+			case 24:	MENUDEMO_SetText( MENU_DEMO2_NAME24 ) break
+		}
+	}
+	else if (@"univ"  MENU_NZ == 3)
+	{
+		switch (ti_Line)
+		{
+			case 0:	MENUDEMO_SetText(  MENU_DEMO3_NAME0 ) break
+			case 1:	MENUDEMO_SetText( MENU_DEMO3_NAME1 ) break
+			case 2:	MENUDEMO_SetText( MENU_DEMO3_NAME2 ) break
+			case 3:	MENUDEMO_SetText( MENU_DEMO3_NAME3 ) break
+			case 4:	MENUDEMO_SetText( MENU_DEMO3_NAME4 ) break
+			case 5: 	MENUDEMO_SetText( MENU_DEMO3_NAME5 ) break
+			case 6:	MENUDEMO_SetText( MENU_DEMO3_NAME6 ) break
+			case 7:	MENUDEMO_SetText( MENU_DEMO3_NAME7 ) break
+			case 8:	MENUDEMO_SetText( MENU_DEMO3_NAME8 ) break
+			case 9:	MENUDEMO_SetText( MENU_DEMO3_NAME9 ) break
+			case 10:	MENUDEMO_SetText( MENU_DEMO3_NAME10 ) break
+			case 11:	MENUDEMO_SetText( MENU_DEMO3_NAME11 ) break
+			case 12:	MENUDEMO_SetText( MENU_DEMO3_NAME12 ) break
+			case 13:	MENUDEMO_SetText( MENU_DEMO3_NAME13 ) break
+			case 14:	MENUDEMO_SetText( MENU_DEMO3_NAME14 ) break
+			case 15: MENUDEMO_SetText( MENU_DEMO3_NAME15 ) break
+			case 16:	MENUDEMO_SetText( MENU_DEMO3_NAME16 ) break
+			case 17:	MENUDEMO_SetText( MENU_DEMO3_NAME17 ) break
+			case 18:	MENUDEMO_SetText( MENU_DEMO3_NAME18 ) break
+			case 19:	MENUDEMO_SetText( MENU_DEMO3_NAME19 ) break
+			case 20:	MENUDEMO_SetText( MENU_DEMO3_NAME20 ) break
+			case 21:	MENUDEMO_SetText( MENU_DEMO3_NAME21 ) break
+			case 22:	MENUDEMO_SetText( MENU_DEMO3_NAME22 ) break
+			case 23:	MENUDEMO_SetText( MENU_DEMO3_NAME23 ) break
+			case 24:	MENUDEMO_SetText( MENU_DEMO3_NAME24 ) break
+		}
+	}
+	else
+	{
+		switch (ti_Line)
+		{
+			case 0:	MENUDEMO_SetText(  MENU_DEMO4_NAME0 ) break
+			case 1:	MENUDEMO_SetText( MENU_DEMO4_NAME1 ) break
+			case 2:	MENUDEMO_SetText( MENU_DEMO4_NAME2 ) break
+			case 3:	MENUDEMO_SetText( MENU_DEMO4_NAME3 ) break
+			case 4:	MENUDEMO_SetText( MENU_DEMO4_NAME4 ) break
+			case 5: 	MENUDEMO_SetText( MENU_DEMO4_NAME5 ) break
+			case 6:	MENUDEMO_SetText( MENU_DEMO4_NAME6 ) break
+			case 7:	MENUDEMO_SetText( MENU_DEMO4_NAME7 ) break
+			case 8:	MENUDEMO_SetText( MENU_DEMO4_NAME8 ) break
+			case 9:	MENUDEMO_SetText( MENU_DEMO4_NAME9 ) break
+//			case 10:	MENUDEMO_SetText( MENU_DEMO4_NAME10 ) break
+//			case 11:	MENUDEMO_SetText( MENU_DEMO4_NAME11 ) break
+//			case 12:	MENUDEMO_SetText( MENU_DEMO4_NAME12 ) break
+//			case 13:	MENUDEMO_SetText( MENU_DEMO4_NAME13 ) break
+//			case 14:	MENUDEMO_SetText( MENU_DEMO4_NAME14 ) break
+//			case 15: MENUDEMO_SetText( MENU_DEMO4_NAME15 ) break
+//			case 16:	MENUDEMO_SetText( MENU_DEMO4_NAME16 ) break
+//			case 17:	MENUDEMO_SetText( MENU_DEMO4_NAME17 ) break
+//			case 18:	MENUDEMO_SetText( MENU_DEMO4_NAME18 ) break
+//			case 19:	MENUDEMO_SetText( MENU_DEMO4_NAME19 ) break
+//			case 20:	MENUDEMO_SetText( MENU_DEMO4_NAME20 ) break
+//			case 21:	MENUDEMO_SetText( MENU_DEMO4_NAME21 ) break
+//			case 22:	MENUDEMO_SetText( MENU_DEMO4_NAME22 ) break
+//			case 23:	MENUDEMO_SetText( MENU_DEMO4_NAME23 ) break
+//			case 24:	MENUDEMO_SetText( MENU_DEMO4_NAME24 ) break
+		}
+	}
+}
+		
+	

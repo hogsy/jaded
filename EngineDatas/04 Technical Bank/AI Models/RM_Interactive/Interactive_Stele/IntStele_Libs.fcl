@@ -1,0 +1,40 @@
+#include "Interactive_Stele_defines.var"
+
+procedure_local int Proc_IS_DisplayMonturePos ( vector tv_pos, string ts_name, object to_creature)
+{
+	int			ti_return
+	int			ti_color
+	int			ti_txt
+	vector	tv_posz
+	string		tstr_color
+	
+	ti_return = faux
+
+	tv_posz = tv_pos
+	tv_posz.z = @get_rayman OBJ_PosGet().z 
+	if (MATH_VecDotProduct(tv_posz-@get_rayman OBJ_PosGet(),tv_posz-@get_rayman OBJ_PosGet()) <= (Cf_Dist_Collision_Monture*Cf_Dist_Collision_Monture))
+	{
+		ti_color = color_jaune
+		tstr_color = "\cFFFF\\h0.1\"
+		if (IO_ButtonJustPressed(joy_button_StickL))
+		{
+			if (OBJ_SqrDist(to_creature) > (7.0 * 7.0) )
+			{
+				v_FX_Apparition = tv_pos
+				o_creature = to_creature
+				ti_return = vrai
+			}
+		}
+	}
+	else
+	{
+		ti_color = color_vert
+		tstr_color = "\cFFFFFF\"
+	}
+	
+	DBG_RenderCircle(tv_pos,Cf_Dist_Collision_Monture,Cv_VerticalVector, ti_color )
+	
+	ti_txt = STR_CreateText(tstr_color, VIEW_3dWorldTo2d(0,tv_pos), 0)
+	STR_AppendText(ti_txt, ts_name)
+	return ti_return
+}

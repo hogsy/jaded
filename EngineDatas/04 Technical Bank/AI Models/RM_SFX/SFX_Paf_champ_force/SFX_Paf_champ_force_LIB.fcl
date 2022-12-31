@@ -1,0 +1,33 @@
+//----------------------------------------------------------------------------------------------------------------------------------------
+// 			PROCEDURE ULTRA ACTIVANT / DESACTIVANT LE CHAMP DE FORCE
+//----------------------------------------------------------------------------------------------------------------------------------------
+procedure_ultra void PROC_ACTIVE_CHAMP(int ti_active)
+{
+	i_stop = vrai
+}
+
+//----------------------------------------------------------------------------------------------------------------------------------------
+// 					ON LIBERE LE RESEAU PASSANT PAR LE MUR DETRUIT
+//----------------------------------------------------------------------------------------------------------------------------------------
+procedure_local void PROC_LIBERE_NETWORK(int ti_activ)
+{
+	network	tn_net
+	object	to_gao
+	int			ti_cpt
+
+	tn_net = WAY_NetOfObj()
+	
+	if (tn_net)
+	{
+		@get_global i_BVTerritory_LinkHasChanged = 2
+	
+		for (ti_cpt = 0; ti_cpt < WAY_GetNumLinks(tn_net, OBJ_Me()); ti_cpt++)
+		{
+			to_gao = WAY_NetNextWP(tn_net, OBJ_Me(), NetNextWP_Mode_choix_de_lindice, ti_cpt)
+			if (ti_activ)
+				WAY_LinkCapaSet(tn_net,OBJ_Me(),to_gao, none, OBJ_Capa_0) // On autorise le lien
+			else
+				WAY_LinkCapaSet(tn_net,OBJ_Me(),to_gao, OBJ_Capa_0, none) // On interdit le lien
+		}
+	}
+}

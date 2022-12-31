@@ -1,0 +1,21 @@
+// Génération d'une lance invisible pour répondre à la demande de grab du joueur ou d'un autre perso
+procedure_local void ArmeSpw_Generate()
+{
+	if( mi_Weapon )
+	{
+		// ARC
+		o_dup_weapon = @get_Arme_Arc OBJ_Duplicate(OBJ_PosGet())
+		@o_dup_weapon OBJ_FlagInvisibleSet(faux)
+		@o_dup_weapon OBJ_FlagInactiveSet(faux)
+	}
+	else
+	{
+		// LANCE
+		o_dup_weapon = @get_Arme_Lance OBJ_Duplicate(OBJ_PosGet())
+		@get_Arme_Lance_path o_dup_weapon o_rack_de_lances = OBJ_Me()
+		@o_dup_weapon OBJ_FlagInvisibleSet(vrai)
+		@o_dup_weapon OBJ_FlagInactiveSet(faux)
+	}
+	i_dup_weapon_generation = faux	// done !!!
+}
+
