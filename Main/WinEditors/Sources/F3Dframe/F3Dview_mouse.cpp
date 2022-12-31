@@ -571,7 +571,7 @@ void F3D_cl_View::OnMouseMove(UINT nFlags, CPoint point)
 			}
 
 			CAM_Move(&mst_WinHandles.pst_DisplayData->st_Camera, &v);
-			LINK_Refresh();
+			Refresh();
 		}
 
 		/*$2
@@ -614,7 +614,7 @@ void F3D_cl_View::OnMouseMove(UINT nFlags, CPoint point)
 				if(v.x)
 					MATH_RotateMatrix_AroundGlobalZAxis(&mst_WinHandles.pst_DisplayData->st_Camera.st_Matrix, v.x);
 				if(v.y) MATH_RotateMatrix_AroundLocalXAxis(&mst_WinHandles.pst_DisplayData->st_Camera.st_Matrix, v.y);
-				LINK_Refresh();
+				Refresh();
 			}
 
 			/* Target rotate */
@@ -649,7 +649,7 @@ void F3D_cl_View::OnMouseMove(UINT nFlags, CPoint point)
 					);
 				}
 
-				LINK_Refresh();
+				Refresh();
 			}
 		}
 
@@ -670,7 +670,7 @@ void F3D_cl_View::OnMouseMove(UINT nFlags, CPoint point)
 				v.x = v.y = 0;
 				v.z = ((float) mi_MousePosY - point.y) * 0.5f;
 				CAM_Move(&mst_WinHandles.pst_DisplayData->st_Camera, &v);
-				LINK_Refresh();
+				Refresh();
 			}
 
 			/* Rect zoom */
@@ -1908,7 +1908,7 @@ endOnMouseWheel:
 	if (b_SplitScreen) {
 		WOR_View_SplitView (pst_World);
 	}
-	LINK_Refresh();
+	Refresh();
 	return TRUE;
 }
 

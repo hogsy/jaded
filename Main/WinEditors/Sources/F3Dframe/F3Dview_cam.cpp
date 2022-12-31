@@ -507,7 +507,8 @@ void F3D_cl_View::MoveCamera(MATH_tdst_Vector *_pst_Move, char c_UseZ)
 		}
 	}
 
-	LINK_Refresh();
+	// Refresh is done anyway after every call to this, so not necessary ~hogsy
+	//Refresh();
 }
 
 /*
