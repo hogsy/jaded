@@ -82,7 +82,7 @@ void ParseCommandLine(int argc, char *argv[])
 				if(!_strnicmp(szArg + 1, "dll", strlen("dll")))
 				{
 					pz = (char *) szArg + 1;
-					pz1 = strchr(szArg + 1, '(');
+					pz1 = (char*)strchr(szArg + 1, '(');
 					if(pz1)
 					{
 						pz1++;

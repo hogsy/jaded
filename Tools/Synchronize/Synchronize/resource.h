@@ -2,7 +2,6 @@
 // Microsoft Visual C++ generated include file.
 // Used by Synchronize.rc
 //
-#define IDR_MANIFEST                    1
 #define ID_BTN_OPEN                     2
 #define ID_BTN_QUIT                     3
 #define IDM_ABOUTBOX                    0x0010
