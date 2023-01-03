@@ -467,6 +467,7 @@ void EBRO_cl_Frame::OnCtrlPopup(CPoint pt)
 		AddPopupMenuAction(&o_Menu, 0);
 		AddPopupMenuAction(&o_Menu, EBRO_ACTION_DELDIR);
 	}
+#if 0 // remove perforce ~hogsy
 	else 
 	{
 		AddPopupMenuAction(&o_Menu, 0);
@@ -488,6 +489,7 @@ void EBRO_cl_Frame::OnCtrlPopup(CPoint pt)
 		AddPopupMenuAction(&o_Menu, EBRO_ACTION_PERFORCE_DIFF);
 		AddPopupMenuAction(&o_Menu, EBRO_ACTION_PERFORCE_HISTORY);
 	}
+#endif
 
 	AddPopupMenuAction(&o_Menu, 0);
 	AddPopupMenuAction(&o_Menu, EBRO_ACTION_IGNORERECENT);

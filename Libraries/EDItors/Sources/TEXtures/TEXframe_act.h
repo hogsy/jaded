@@ -56,9 +56,6 @@ EXTERN char * ETEX_asz_ActionBase
     "\
 File=-1=--=0;\
 Create and Export TGA from tex=200==0;\
-#ifdef JADEFUSION\
-Create all Xenon native format textures (DDS)=201==0;\
-#endif\
 Display=-2=--=0;\
 Toggle Alpha Mode=1=a=201;\
 Show Name=2=n=201;\
