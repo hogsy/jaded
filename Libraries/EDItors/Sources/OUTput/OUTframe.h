@@ -290,6 +290,7 @@ public:
 	afx_msg void	OnSize(UINT, int, int);
 	afx_msg void	OnSetMode(void);
 	afx_msg void	OnRButtonDown(UINT, CPoint);
+	afx_msg void    OnMoving( UINT, LPRECT );
 	DECLARE_MESSAGE_MAP()
 };
 #endif /* ACTIVE_EDITORS */

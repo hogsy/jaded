@@ -138,6 +138,7 @@ BEGIN_MESSAGE_MAP(EOUT_cl_Frame, EDI_cl_BaseFrame)
 	ON_WM_DESTROY()
 	ON_WM_KEYUP()
 	ON_WM_RBUTTONDOWN()
+    ON_WM_MOVING()
 END_MESSAGE_MAP()
 
 /*$4
@@ -842,6 +843,11 @@ void EOUT_cl_Frame::OnRButtonDown(UINT nFlags, CPoint point)
 		b_Multi = SEL_l_CountItem(DW()->pst_Selection, SEL_C_SIF_Object) > 1;
 		OnGaoSelect(pst_GO, b_Multi, point);
 	}
+}
+
+void EOUT_cl_Frame::OnMoving( UINT, LPRECT )
+{
+	mpo_EngineFrame->UpdatePosSize();
 }
 
 void EOUT_cl_Frame::OnGaoSelect(OBJ_tdst_GameObject*pst_GO, BOOL b_Multi, CPoint point)

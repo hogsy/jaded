@@ -731,6 +731,19 @@ LRESULT EDI_cl_MainFrame::DefWindowProc(UINT message, WPARAM wParam, LPARAM lPar
 	LRESULT result;
 	/*~~~~~~~~~~~*/
 
+	// awful hack to sort out anim panel ~hogsy
+	if ( message == WM_MOVING )
+	{
+		for ( unsigned int i = 0; i < mi_TotalEditors; ++i )
+		{
+			if ( mast_ListOfEditors[ i ].po_Instance == nullptr )
+			{
+				continue;
+			}
+			mast_ListOfEditors[ i ].po_Instance->SendMessage( WM_MOVING, wParam, lParam );
+		}
+	}
+
 	if(MAI_b_TreatMainWndMessages(m_hWnd, message, wParam, lParam, &result)) return result;
 	return CFrameWnd::DefWindowProc(message, wParam, lParam);
 }
@@ -877,7 +890,7 @@ void EDI_cl_MainFrame::UpdateMainFrameTitle(void)
 #ifdef JADEFUSION
 	sprintf(asz_Temp, "JADE Version Xe-%03d(%03d,%03d)-%03d", BIG_Cu4_MontrealXeAppVersion, BIG_Cu4_MontrealAppVersion, BIG_Cu4_AppVersion, BIG_Cu4_Version);
 #else
-	sprintf(asz_Temp, "JADE Version %03d-%03d", BIG_Cu4_AppVersion, BIG_Cu4_Version);
+	sprintf(asz_Temp, "JADE Version %03d-%03d (hogsy's patched release)", BIG_Cu4_AppVersion, BIG_Cu4_Version);
 #endif
 #endif
 
@@ -896,6 +909,7 @@ void EDI_cl_MainFrame::UpdateMainFrameTitle(void)
 		L_strcat(asz_Temp, mst_ExternIni.asz_DataBigFileName);
 	}
 
+#if 0 // removing perforce ~hogsy
 	L_strcat(asz_Temp, " -- [Perforce: ");
 	if (DAT_CPerforce::GetInstance()->IsEnabled())
 	{	
@@ -908,6 +922,7 @@ void EDI_cl_MainFrame::UpdateMainFrameTitle(void)
 		L_strcat(asz_Temp, "DISABLED");
 	}
 	L_strcat(asz_Temp, "]");
+#endif
 
 	SetWindowText(asz_Temp);
 }

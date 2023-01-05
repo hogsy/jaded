@@ -395,8 +395,6 @@ Redraw_Label:
 				WOR_Render(pst_World, mst_WinHandles.pst_DisplayData);
 				DestroyPostIt();
 			}
-
-			
 		}
 
 		Helper_Render();
@@ -412,7 +410,6 @@ Redraw_Label:
 
         if (mpo_ToolBoxDialog && Selection_b_IsInSubObjectMode() )
             ((EDIA_cl_ToolBox_GROView *) mpo_ToolBoxDialog->mpo_ToolView[0])->UpdateNumberOfSubSel();
-
 	}
 
 	if ((g_ul_BIG_SNAPSHOT_COUNTER) && (!(g_ul_BIG_SNAPSHOT_COUNTER & 0x0f)))

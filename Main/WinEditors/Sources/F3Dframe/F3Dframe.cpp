@@ -109,7 +109,7 @@ LRESULT F3D_cl_Frame::DefWindowProc(UINT message, WPARAM wParam, LPARAM lParam)
     /* Special case to size selection dialog */
     if
     (
-        (message == WM_SIZE) &&
+	        ( message == WM_SIZE ) || (message == WM_MOVING) &&
         (
 			((mpo_DisplayView->mpo_SelectionDialog) && (mpo_DisplayView->mb_SelectOn))
 		||	((mpo_DisplayView->mpo_ToolBoxDialog) && (mpo_DisplayView->mb_ToolBoxOn))
@@ -179,20 +179,7 @@ LRESULT F3D_cl_Frame::DefWindowProc(UINT message, WPARAM wParam, LPARAM lParam)
             mpo_DisplayView->MoveWindow(&o_Rect);
         }
 
-		if(mpo_DisplayView->mpo_AnimDialog && mpo_DisplayView->mb_AnimOn)
-		{
-#ifdef JADEFUSION
-			if(!mpo_DisplayView->mb_ToolBoxOn && !mpo_DisplayView->mb_SelectOn && !mpo_DisplayView->mb_LightRejectOn)
-#else
-			if(!mpo_DisplayView->mb_ToolBoxOn && !mpo_DisplayView->mb_SelectOn)
-#endif
-			{
-				GetClientRect(&o_Rect);
-				mpo_DisplayView->MoveWindow(&o_Rect);
-			}
-            mpo_DisplayView->GetClientRect(&o_Rect);
-			mpo_DisplayView->mpo_AnimDialog->MoveWindow(o_Rect.left + 5, o_Rect.bottom - 50, o_Rect.Width() - 10, 40);
-		}
+		UpdatePosSize();
     }
 	else if(MAI_b_TreatOwnerWndMessages(m_hWnd, &mpo_DisplayView->mst_WinHandles, message, wParam, lParam, &result))
     {
@@ -256,6 +243,21 @@ void F3D_cl_Frame::UpdatePosSize(void)
     else
         GetParent()->GetClientRect(o_Rect);
     MoveWindow(o_Rect);
+
+	if ( mpo_DisplayView->mpo_AnimDialog && mpo_DisplayView->mb_AnimOn )
+	{
+#	ifdef JADEFUSION
+		if ( !mpo_DisplayView->mb_ToolBoxOn && !mpo_DisplayView->mb_SelectOn && !mpo_DisplayView->mb_LightRejectOn )
+#	else
+		if ( !mpo_DisplayView->mb_ToolBoxOn && !mpo_DisplayView->mb_SelectOn )
+#	endif
+		{
+			GetClientRect( &o_Rect );
+			mpo_DisplayView->MoveWindow( &o_Rect );
+		}
+		mpo_DisplayView->GetWindowRect( &o_Rect );
+		mpo_DisplayView->mpo_AnimDialog->MoveWindow( o_Rect.left + 5, o_Rect.bottom - 50, o_Rect.Width() - 10, 40 );
+	}
 }
 
 /*

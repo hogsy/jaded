@@ -16,6 +16,7 @@
 #include "EDIbaseframe.h"
 #include "EDIbaseview.h"
 #include "EDIsplitter.h"
+#include "F3Dframe/F3Dframe.h"
 
 #if MONTREAL_SPECIFIC
 #define EDI_VERSION_FILENAME_LENGTH 128
