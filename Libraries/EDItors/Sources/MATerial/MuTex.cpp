@@ -642,8 +642,6 @@ BOOL APIENTRY DllMain(HANDLE hInstDLL, ULONG ul_reason_for_call, LPVOID lpReserv
 	return TRUE;
 }
 
-static int (__stdcall *Defaultfunc) (void *, unsigned int, unsigned int, LONG);
-
 ULONG			DragResult;
 
 /* Edit float functions */
@@ -990,7 +988,7 @@ ULONG u4_Interpol2PackedColor(ULONG ulP1, ULONG ulP2, float fZClipLocalCoef)
  =======================================================================================================================
  =======================================================================================================================
  */
-BOOL CALLBACK MAD_MUTEX_CheckCLBK(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK MAD_MUTEX_CheckCLBK( HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData )
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	static ULONG	IsDraging = 0;
@@ -1191,14 +1189,14 @@ BOOL CALLBACK MAD_MUTEX_CheckCLBK(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM
 		break;
 	}
 
-	return Defaultfunc(hwndDlg, uMsg, wParam, lParam);
+	return DefSubclassProc( hwndDlg, uMsg, wParam, lParam );
 }
 
 /*
  =======================================================================================================================
  =======================================================================================================================
  */
-BOOL CALLBACK MAD_MUTEX_TextCLBK(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK MAD_MUTEX_TextCLBK( HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData )
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	static ULONG		IsDraging = 0;
@@ -1211,7 +1209,6 @@ BOOL CALLBACK MAD_MUTEX_TextCLBK(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM 
     static long         lXenonTextureSource = MUTEX_GSBR_XE_NONE;
     static long         lXenonDragTarget    = MUTEX_GSBR_XE_NONE;
 #endif
-	MUTEX_TextureLine	Swap;
 	POINT				MousePoint;
 	HWND				WhoIsIt;
 	LONG				TextureNumber;
@@ -1226,9 +1223,7 @@ BOOL CALLBACK MAD_MUTEX_TextCLBK(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM 
     case WM_RBUTTONDOWN:
         {
             void TextureLineToWindow_MORE(HWND hwndDlg, MUTEX_TextureLine *Line);
-            EMEN_cl_SubMenu     o_Menu(FALSE);
             int                 i_Res;
-            EBRO_cl_Frame       *po_Browser;
             ULONG               ul_Key, ul_Index;
 
             GetCursorPos( &MousePoint );
@@ -1250,6 +1245,7 @@ BOOL CALLBACK MAD_MUTEX_TextCLBK(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM 
             if (ThisTexture == -1) 
                 break;
 
+			EMEN_cl_SubMenu o_Menu( FALSE );
             M_MF()->InitPopupMenuAction(NULL, &o_Menu);
             M_MF()->AddPopupMenuAction(NULL, &o_Menu, 1, TRUE, "Show in browser", -1);
 		    i_Res = M_MF()->TrackPopupMenuAction(NULL, MousePoint, &o_Menu);
@@ -1263,7 +1259,7 @@ BOOL CALLBACK MAD_MUTEX_TextCLBK(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM 
                     ul_Index = BIG_ul_SearchKeyToFat( ul_Key );
                     if  (ul_Index != BIG_C_InvalidIndex)
                     {
-                        po_Browser = (EBRO_cl_Frame *) M_MF()->po_GetEditorByType(EDI_IDEDIT_BROWSER, 0);
+						EBRO_cl_Frame *po_Browser = ( EBRO_cl_Frame * ) M_MF()->po_GetEditorByType( EDI_IDEDIT_BROWSER, 0 );
                         po_Browser->i_OnMessage( EDI_MESSAGE_SELFILE, BIG_ParentFile( ul_Index ), ul_Index );
                     }
                 }
@@ -1332,15 +1328,15 @@ BOOL CALLBACK MAD_MUTEX_TextCLBK(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM 
 				}
 				else								/* Swap */
 				{
-					Swap = AllHinInf[HOTD].MutexMat->AllLine[TextureDetected];
+					const MUTEX_TextureLine *Swap = &AllHinInf[ HOTD ].MutexMat->AllLine[ TextureDetected ];
 					AllHinInf[HOTD].MutexMat->AllLine[TextureDetected].TEXTURE_ID = CHACCES(MutexMat)->AllLine[ThisTexture].TEXTURE_ID;
 					strcpy
 					(
 						AllHinInf[HOTD].MutexMat->AllLine[TextureDetected].TextureName,
 						CHACCES(MutexMat)->AllLine[ThisTexture].TextureName
 					);
-					CHACCES(MutexMat)->AllLine[ThisTexture].TEXTURE_ID = Swap.TEXTURE_ID;
-					strcpy(CHACCES(MutexMat)->AllLine[ThisTexture].TextureName, Swap.TextureName);
+					CHACCES(MutexMat)->AllLine[ThisTexture].TEXTURE_ID = Swap->TEXTURE_ID;
+					strcpy(CHACCES(MutexMat)->AllLine[ThisTexture].TextureName, Swap->TextureName);
 				}
 
 				MUTEX_SetMat(AllMotherWindw[ThisHinstance], CHACCES(MutexMat));
@@ -1564,7 +1560,7 @@ BOOL CALLBACK MAD_MUTEX_TextCLBK(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM 
 
 	}
 
-	return Defaultfunc(hwndDlg, uMsg, wParam, lParam);
+	return DefSubclassProc( hwndDlg, uMsg, wParam, lParam );
 }
 #ifdef JADEFUSION
 // ------------------------------------------------------------------------------------------------
@@ -2448,7 +2444,7 @@ BOOL CALLBACK MAD_MUTEX_OneLineCLBK(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 	static COLORREF color;
 	static HBRUSH	BackBrushEdit;
 	static COLORREF colorEdit;
-	LONG			Add, Style;
+	LONG			Style;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	CHACCES_DETECT(GetParent(GetParent(hwndDlg)));
@@ -2478,15 +2474,8 @@ BOOL CALLBACK MAD_MUTEX_OneLineCLBK(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 			BackBrushEdit = CreateSolidBrush(colorEdit);
 		}
 
-		Add = GetWindowLong(GetDlgItem(hwndDlg, IDC_CHECKOPENTEX), GWL_WNDPROC);
-		*(LONG *) &Defaultfunc = Add;
-		Add = (LONG) MAD_MUTEX_CheckCLBK;
-		SetWindowLong(GetDlgItem(hwndDlg, IDC_CHECKOPENTEX), GWL_WNDPROC, Add);
-
-		Add = GetWindowLong(GetDlgItem(hwndDlg, IDC_ChooseTexture), GWL_WNDPROC);
-		*(LONG *) &Defaultfunc = Add;
-		Add = (LONG) MAD_MUTEX_TextCLBK;
-		SetWindowLong(GetDlgItem(hwndDlg, IDC_ChooseTexture), GWL_WNDPROC, Add);
+		SetWindowSubclass( GetDlgItem( hwndDlg, IDC_CHECKOPENTEX ), MAD_MUTEX_CheckCLBK, 0, 0 );
+		SetWindowSubclass( GetDlgItem( hwndDlg, IDC_ChooseTexture ), MAD_MUTEX_TextCLBK, 0, 0 );
 
 #ifdef JADEFUSION
         // Drag and drop callback
