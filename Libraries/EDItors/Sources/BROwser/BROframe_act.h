@@ -153,19 +153,7 @@ Check InOut=56=^#Q=0;\
 Check Out=52=^#O=222;\
 Local Check Out=57=--=225;\
 Undo Check Out=53=^#U=223;\
-Get Latest Version=54=^#L=0;\
-Sep=0=--=0;\
-Perforce - CheckIn=150=--=0;\
-Perforce - CheckOut =143=--=0;\
-Perforce - CheckInOut=152=--=0;\
-Perforce - Undo CheckOut=151=--=0;\
-Perforce - GetLatest version=144=--=0;\
-Perforce - Force GetLatest version=142=--=0;\
-Perforce - Synchronize with server=149=--=0;\
-Perforce - Add to server=145=--=0;\
-Perforce - Delete from server=146=--=0;\
-Perforce - Show Difference=147=--=0;\
-Perforce - Show History=148=--=0;"   // string "break" required here to bypass compilation error related to length
+Get Latest Version=54=^#L=0;"   // string "break" required here to bypass compilation error related to length
 "Sep=0=--=0;\
 Delete Dir On Base=50=--=0;\
 Sep=0=--=0;\

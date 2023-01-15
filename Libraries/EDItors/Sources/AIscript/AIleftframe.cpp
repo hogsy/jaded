@@ -221,20 +221,6 @@ void EAI_cl_LeftFrame::OnRButtonDown(UINT n, CPoint pt)
 			mpo_Parent->AddPopupMenuAction(&o_Menu, EAI_ACTION_GETLATESTFILE);
 			mpo_Parent->AddPopupMenuAction(&o_Menu, 0);
 		}
-		else 
-		{
-
-			mpo_Parent->AddPopupMenuAction(&o_Menu, EAI_ACTION_P4_SUBMIT);
-			mpo_Parent->AddPopupMenuAction(&o_Menu, EAI_ACTION_P4_EDIT);
-			mpo_Parent->AddPopupMenuAction(&o_Menu, EAI_ACTION_P4_SUBMITEDIT);
-			mpo_Parent->AddPopupMenuAction(&o_Menu, EAI_ACTION_P4_REVERT);
-			mpo_Parent->AddPopupMenuAction(&o_Menu, EAI_ACTION_P4_SYNC);
-			mpo_Parent->AddPopupMenuAction(&o_Menu, EAI_ACTION_P4_ADD);
-			mpo_Parent->AddPopupMenuAction(&o_Menu, EAI_ACTION_P4_DELETE);
-			mpo_Parent->AddPopupMenuAction(&o_Menu, 0);
-			mpo_Parent->AddPopupMenuAction(&o_Menu, EAI_ACTION_P4_DIFF);
-			mpo_Parent->AddPopupMenuAction(&o_Menu, EAI_ACTION_P4_SHOWHISTORY);
-		}
 
 		mpo_Parent->TrackPopupMenuAction(pt, &o_Menu);
 	}

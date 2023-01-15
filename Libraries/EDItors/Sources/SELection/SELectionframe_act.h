@@ -63,11 +63,6 @@ Sep=0=--=0;\
 Show Only Selected Rows (in Grid)=61=--=0;\
 Show All Rows (in Grid)=62=--=0;\
 Data Control=-1=--=0;\
-Perforce - Check Out=50=--=0;\
-Perforce - Undo Check Out=59=--=0;\
-Sep=0=--=0;\
-Perforce - Show Difference=54=--=0;\
-Perforce - Show History=55=--=0;\
 ;\
 "
 #endif

@@ -211,15 +211,6 @@ void ESELection_cl_Frame::OnCtrlPopup(CPoint pt)
 
 	InitPopupMenuAction(&o_Menu);
 
-	AddPopupMenuAction(&o_Menu, ESELECTION_ACTION_PERFORCE_EDIT);
-	AddPopupMenuAction(&o_Menu, ESELECTION_ACTION_PERFORCE_REVERT);
-
-	if ( bSingleCellSelected )
-	{
-		AddPopupMenuAction(&o_Menu, 0);
-		AddPopupMenuAction(&o_Menu, ESELECTION_ACTION_PERFORCE_DIFF);
-		AddPopupMenuAction(&o_Menu, ESELECTION_ACTION_PERFORCE_HISTORY);
-	}
 	AddPopupMenuAction(&o_Menu, 0);
 	AddPopupMenuAction(&o_Menu, ESELECTION_ACTION_SHOW_INMATERIAL);
 	AddPopupMenuAction(&o_Menu, ESELECTION_ACTION_SHOW_SELECTED);

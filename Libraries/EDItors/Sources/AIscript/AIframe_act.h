@@ -124,16 +124,6 @@ CheckIn File=120=--=0;\
 CheckInOut File=122=--=0;\
 GetLatest Version File=124=--=0;\
 Sep=0=--=0;\
-Perforce - CheckIn File=137=--=0;\
-Perforce - CheckOut File=131=--=0;\
-Perforce - CheckInOut File=141=--=0;\
-Perforce - Undo Checkout File=132=--=0;\
-Perforce - GetLatest Version=133=--=0;\
-Perforce - Add to server =129=--=0;\
-Perforce - Delete from server=130=--=0;\
-Sep=0=--=0;\
-Perforce - Show difference=135=--=0;\
-Perforce - Show history=136=--=0;\
 Model=-1=--=0;\
 Speed Select Fct=101=--=0;\
 Speed Select Model=100=^#SPACE=0;\
@@ -196,11 +186,6 @@ CheckIn Model=41=--=0;\
 CheckInOut Model=42=--=0;\
 Undo CheckOut Model=44=--=0;\
 Sep=0=--=0;\
-Perforce - Get Latest Model Version=140=--=0;\
-Perforce - CheckOut Model=134=--=0;\
-Perforce - CheckIn Model=138=--=0;\
-Perforce - CheckInOut Model=142=--=0;\
-Perforce - Undo CheckOut Model=139=--=0;\
 Refresh=45=F4=0;\
 Options=-2=--=0;\
 ;\

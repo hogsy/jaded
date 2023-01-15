@@ -467,29 +467,6 @@ void EBRO_cl_Frame::OnCtrlPopup(CPoint pt)
 		AddPopupMenuAction(&o_Menu, 0);
 		AddPopupMenuAction(&o_Menu, EBRO_ACTION_DELDIR);
 	}
-#if 0 // remove perforce ~hogsy
-	else 
-	{
-		AddPopupMenuAction(&o_Menu, 0);
-		
-		AddPopupMenuAction(&o_Menu, EBRO_ACTION_PERFORCE_SUBMIT);
-		AddPopupMenuAction(&o_Menu, EBRO_ACTION_PERFORCE_EDIT);
-		AddPopupMenuAction(&o_Menu, EBRO_ACTION_PERFORCE_SUBMITEDIT);
-		AddPopupMenuAction(&o_Menu, EBRO_ACTION_PERFORCE_REVERT);
-		AddPopupMenuAction(&o_Menu, EBRO_ACTION_PERFORCE_SYNC);
-		AddPopupMenuAction(&o_Menu, EBRO_ACTION_PERFORCE_FORCESYNC);
-
-		// Add ServerSync entry only if ROOT is selected
-		HTREEITEM hItem =  mpo_TreeCtrl->GetSelectedItem();
-		if (  hItem && !mpo_TreeCtrl->GetItemData(hItem) && GetFocus() && GetFocus()->m_hWnd == mpo_TreeCtrl->m_hWnd )
-			AddPopupMenuAction(&o_Menu, EBRO_ACTION_PERFORCE_SERVERSYNC);
-
-		AddPopupMenuAction(&o_Menu, EBRO_ACTION_PERFORCE_ADD	);
-		AddPopupMenuAction(&o_Menu, EBRO_ACTION_PERFORCE_DELETE	);
-		AddPopupMenuAction(&o_Menu, EBRO_ACTION_PERFORCE_DIFF);
-		AddPopupMenuAction(&o_Menu, EBRO_ACTION_PERFORCE_HISTORY);
-	}
-#endif
 
 	AddPopupMenuAction(&o_Menu, 0);
 	AddPopupMenuAction(&o_Menu, EBRO_ACTION_IGNORERECENT);

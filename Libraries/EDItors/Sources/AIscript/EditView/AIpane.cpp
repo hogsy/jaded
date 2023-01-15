@@ -328,24 +328,6 @@ void EAI_cl_Pane::OnRButtonDown(UINT, CPoint pt)
             po_Act->mb_Disabled = b_Disable;
         }
 		
-		if (!EDI_gb_BatchModeWithoutPerforce) 
-		{
-			M_MF()->AddPopupMenuAction(mpo_Frame,&o_Menu, 0,TRUE, "" );
-			M_MF()->AddPopupMenuAction(mpo_Frame,&o_Menu, EAI_ACTION_P4_SYNC,TRUE, "Perforce - Getlatest");
-			M_MF()->AddPopupMenuAction(mpo_Frame,&o_Menu, EAI_ACTION_P4_EDIT,TRUE, "Perforce - Checkout");
-			M_MF()->AddPopupMenuAction(mpo_Frame,&o_Menu, EAI_ACTION_P4_SUBMIT,TRUE, "Perforce - Checkin");
-			M_MF()->AddPopupMenuAction(mpo_Frame,&o_Menu, EAI_ACTION_P4_SUBMITEDIT,TRUE, "Perforce - CheckinOut");
-			M_MF()->AddPopupMenuAction(mpo_Frame,&o_Menu, EAI_ACTION_P4_REVERT,TRUE, "Perforce - UndoCheckout");
-			M_MF()->AddPopupMenuAction(mpo_Frame,&o_Menu, EAIRightButtonSecondPane_Nothing,TRUE, "" );
-			M_MF()->AddPopupMenuAction(mpo_Frame,&o_Menu, EAI_ACTION_P4_FORCESYNC,TRUE, "Perforce - Force Getlatest");
-			M_MF()->AddPopupMenuAction(mpo_Frame,&o_Menu, EAI_ACTION_P4_ADD,TRUE, "Perforce - Add to server");
-			M_MF()->AddPopupMenuAction(mpo_Frame,&o_Menu, EAI_ACTION_P4_DELETE,TRUE, "Perforce - Delete from server");
-			M_MF()->AddPopupMenuAction(mpo_Frame,&o_Menu, EAIRightButtonSecondPane_Nothing,TRUE, "" );
-			M_MF()->AddPopupMenuAction(mpo_Frame,&o_Menu, EAI_ACTION_P4_DIFF,TRUE, "Perforce - Show diff");
-			M_MF()->AddPopupMenuAction(mpo_Frame,&o_Menu, EAI_ACTION_P4_SHOWHISTORY,TRUE, "Perforce - Show history");
-		}
-		
-		
 		i_Res = M_MF()->TrackPopupMenuAction(mpo_Frame, pt, &o_Menu);
         /* Treat result */
         if(i_Res && (i_Res != -1)) 
