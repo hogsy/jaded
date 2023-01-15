@@ -43,9 +43,7 @@
 #endif
 #define MAT_ACTION_BASE 256
 
-#ifdef JADEFUSION
 extern BOOL b_ShowCLPBRDMT;
-#endif
 /*
  =======================================================================================================================
  =======================================================================================================================
@@ -184,7 +182,6 @@ void EMAT_cl_Frame::OnAction(ULONG _ul_Action)
 		M_MF()->UnlockDisplay(this);
 		return;
 	}
-#ifdef JADEFUSION
 	if(_ul_Action == EMAT_ACTION_SHCLPBRDMAT)
 	{
 		b_ShowCLPBRDMT = !b_ShowCLPBRDMT;
@@ -193,7 +190,6 @@ void EMAT_cl_Frame::OnAction(ULONG _ul_Action)
 		M_MF()->UnlockDisplay(this);
 		return;
 	}
-#endif
 	if(_ul_Action == EMAT_ACTION_CHECKMULTIMAT)
 	{
 		TEX_4Edit_CheckMultiMat();
@@ -325,13 +321,13 @@ UINT EMAT_cl_Frame::ui_OnActionState(ULONG _ul_Action)
 		ui_State = DFCS_BUTTONCHECK;
 		if(ShowMLTSBMT) ui_State |= DFCS_CHECKED;
 	}
-#ifdef JADEFUSION
+
 	if(_ul_Action == EMAT_ACTION_SHCLPBRDMAT)
 	{
 		ui_State = DFCS_BUTTONCHECK;
 		if(b_ShowCLPBRDMT) ui_State |= DFCS_CHECKED;
 	}
-#endif
+
 	return ui_State;
 }
 

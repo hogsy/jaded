@@ -54,10 +54,8 @@ ULONG	EDI_OUT_gl_ForceSetMode = 0;
 #endif
 
 float	MAtClippoardProp = 0.7f;
-#ifdef JADEFUSION
 BOOL	b_AutoSetNormalMap = FALSE;
 BOOL	b_ShowCLPBRDMT = TRUE;
-#endif
 
 /*$4
  ***********************************************************************************************************************
@@ -890,9 +888,7 @@ BOOL CALLBACK MAT_MultiSubMatCLBK(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM
 			case IDC_BUTTONCLOSEMLTMT:
 				pc_MF->SetFocus();
 				pc_MF->ShowMLTSBMT = 0;
-#ifdef JADEFUSION				
 				b_ShowCLPBRDMT = FALSE;
-#endif				
 				M_MF()->LockDisplay(pc_MF);
 				pc_MF->OnSize(0, pc_MF->CurrentCX, pc_MF->CurrentCY);
 				M_MF()->UnlockDisplay(pc_MF);
@@ -1022,20 +1018,18 @@ void EMAT_cl_Frame::OnSize(UINT nType, int cx, int cy)
 
 		::GetClientRect(m_hWnd, &AdaptZone);
 		::GetClientRect(m_hWnd, &AdaptZone2);
-#ifdef JADEFUSION		
 		if(b_ShowCLPBRDMT)
-#endif
 		AdaptZone.bottom = AdaptZone.top + (int) ((float) (AdaptZone.bottom - AdaptZone.top) * MAtClippoardProp);
 		::MoveWindow(stw_MultiSM, 0, 0, ulCurrentMSMWidth, AdaptZone.bottom - AdaptZone.top, TRUE);
 		::ShowWindow(stw_MultiSM, SW_SHOW);
 		MUTEX_SetXYoffset(m_hWnd, ulCurrentMSMWidth, 0);
 	}
-#ifdef JADEFUSION
+
 	if(b_ShowCLPBRDMT)
 		::ShowWindow(stw_ClipBoard, SW_SHOW);
 	else
 		::ShowWindow(stw_ClipBoard, SW_HIDE);
-#endif
+
 	{
 		/*~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 		RECT	AdaptZone, AdaptZone2;
@@ -1053,9 +1047,8 @@ void EMAT_cl_Frame::OnSize(UINT nType, int cx, int cy)
 			AdaptZone.bottom - AdaptZone.top,
 			TRUE
 		);
-#ifdef JADEFUSION
+
 			if(b_ShowCLPBRDMT)
-#endif
 			MUTEX_AdaptToRect(stw_ClipBoard);
 
 	}
