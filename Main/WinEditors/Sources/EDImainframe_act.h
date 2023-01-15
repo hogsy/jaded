@@ -173,7 +173,7 @@ Save Workspace=30=^W=219;\
 Editors=-5=--=0;\
 Engine=-7=--=0;\
 Toggle Engine=2=F5=202;\
-Run Engine (Speed)=8=^F5=0;\
+Run Engine (Game Mode)=8=^F5=0;\
 Engine Step=3=PAUSE=0;\
 Sep=0=--=0;\
 Activate Universe=73=--=0;\
@@ -267,7 +267,7 @@ Save Workspace=30=^W=219;\
 Editors=-5=--=0;\
 Engine=-7=--=0;\
 Toggle Engine=2=F5=202;\
-Run Engine (Speed)=8=^F5=0;\
+Run Engine (Game Mode)=8=^F5=0;\
 Engine Step=3=PAUSE=0;\
 Sep=0=--=0;\
 Activate Universe=73=--=0;\
