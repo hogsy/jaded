@@ -587,8 +587,18 @@ void EOUT_cl_Frame::OneTrameEnding(void)
 	if(ENG_bg_FirstFrameSpeedRun)
 	{
 		OnAction(EOUT_ACTION_DISPLAYHIDEALL);
+		if ( !( DDD()->ul_DrawMask & GDI_Cul_DM_Fogged ) )
+		{
+			OnAction( EOUT_ACTION_DISPLAYNOFOG );
+		}
 		DDD()->uc_EngineCamera = 0;
 		OnAction(EOUT_ACTION_ENGINECAM);
+
+		// if no world is loaded, engine the 'active engine display' ~hogsy
+		if ( !mst_Ini.b_EngineDisplay && DW() == nullptr )
+		{
+			OnAction( EOUT_ACTION_ENGINEDISPLAY );
+		}
 	}
 
 	if(!mb_IsActivate) return;
