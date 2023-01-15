@@ -9,12 +9,12 @@
 #include "Dx9blending.h"
 #include "Dx9gauges.h"
 #include "Dx9init.h"
-#include "Dx9water.h"
+//#include "Dx9water.h"
 #include "d3dx9core.h"
 #include "BASe/MEMory/MEM.h"
 #include <assert.h>
-#include "AfterFx\Dx9AfterFX_Def.h"
-#include "Dx9Error.h"
+//#include "AfterFx\Dx9AfterFX_Def.h"
+//#include "Dx9Error.h"
 
 #ifdef _PC_MEMORY_CHECK
 #include "../Main/MainPC/Sources/MemoryTracker.h"

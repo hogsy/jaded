@@ -3,7 +3,7 @@
 
 #include "Dx9draw.h"
 #include "Dx9renderstate.h"
-#include "Dx9water.h"
+//#include "Dx9water.h"
 #include "Dx9uv.h"
 #include "GDInterface/GDInterface.h"
 #include <assert.h>

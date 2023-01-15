@@ -67,7 +67,7 @@
     <ClCompile>
       <AdditionalOptions>/Wall /wd4710 /wd4820 /wd4668 /wd4217 /wd4214 /wd4201 /wd4115 /wd4204 %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\Main\MainPC\Sources;..\..\Libraries\SDK\Sources;..\..\Libraries;..\..\Libraries\GraphicDK\Sources;..\..\Libraries\ENGine\Sources;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\Main\MainPC\Sources;..\..\Libraries\SDK\Sources;..\..\Libraries;..\..\Libraries\GraphicDK\Sources;..\..\Libraries\ENGine\Sources;..\..\Extern\DX9\Include;..\..\Extern\ode\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_PC_RETAIL;USE_D3D9;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -88,7 +88,7 @@
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
       <OmitFramePointers>true</OmitFramePointers>
-      <AdditionalIncludeDirectories>..\..\Main\MainPC\Sources;..\..\Libraries\SDK\Sources;..\..\Libraries;..\..\Libraries\GraphicDK\Sources;..\..\Libraries\ENGine\Sources;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\Main\MainPC\Sources;..\..\Libraries\SDK\Sources;..\..\Libraries;..\..\Libraries\GraphicDK\Sources;..\..\Libraries\ENGine\Sources;..\..\Extern\DX9\Include;..\..\Extern\ode\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_PC_RETAIL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -108,7 +108,7 @@
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
       <OmitFramePointers>true</OmitFramePointers>
-      <AdditionalIncludeDirectories>..\..\Main\MainPC\Sources;..\..\Libraries\SDK\Sources;..\..\Libraries;..\..\Libraries\GraphicDK\Sources;..\..\Libraries\ENGine\Sources;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\Main\MainPC\Sources;..\..\Libraries\SDK\Sources;..\..\Libraries;..\..\Libraries\GraphicDK\Sources;..\..\Libraries\ENGine\Sources;..\..\Extern\DX9\Include;..\..\Extern\ode\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_PC_RETAIL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -122,12 +122,20 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="AfterFX\Dx9AfterFX.c" />
+    <ClCompile Include="AfterFX\Dx9AfterFX.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Fastcap XBox|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release PC|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug PC|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="DX9blending.c" />
     <ClCompile Include="DX9buffer.c" />
     <ClCompile Include="DX9console.c" />
     <ClCompile Include="DX9draw.c" />
-    <ClCompile Include="Dx9flare.c" />
+    <ClCompile Include="Dx9flare.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Fastcap XBox|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release PC|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug PC|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="DX9gauges.c" />
     <ClCompile Include="DX9init.c" />
     <ClCompile Include="DX9matrix.c" />
@@ -135,19 +143,39 @@
     <ClCompile Include="DX9request.c" />
     <ClCompile Include="DX9samplerstate.c" />
     <ClCompile Include="DX9tex.c" />
-    <ClCompile Include="DX9text.c" />
+    <ClCompile Include="DX9text.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Fastcap XBox|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release PC|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug PC|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="DX9texturestagestate.c" />
-    <ClCompile Include="Dx9water.c" />
+    <ClCompile Include="Dx9water.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Fastcap XBox|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release PC|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug PC|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AfterFX\Dx9AfterFX_Def.h" />
+    <ClInclude Include="AfterFX\Dx9AfterFX_Def.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Fastcap XBox|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release PC|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug PC|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="Dx9bench.h" />
     <ClInclude Include="DX9blending.h" />
     <ClInclude Include="DX9buffer.h" />
     <ClInclude Include="DX9console.h" />
     <ClInclude Include="DX9draw.h" />
-    <ClInclude Include="Dx9Error.h" />
-    <ClInclude Include="Dx9flare.h" />
+    <ClInclude Include="Dx9Error.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Fastcap XBox|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release PC|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug PC|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="Dx9flare.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Fastcap XBox|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release PC|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug PC|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="DX9gauges.h" />
     <ClInclude Include="DX9init.h" />
     <ClInclude Include="DX9matrix.h" />
@@ -156,10 +184,18 @@
     <ClInclude Include="DX9samplerstate.h" />
     <ClInclude Include="DX9struct.h" />
     <ClInclude Include="DX9tex.h" />
-    <ClInclude Include="DX9text.h" />
+    <ClInclude Include="DX9text.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Fastcap XBox|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release PC|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug PC|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="DX9texturestagestate.h" />
     <ClInclude Include="DX9uv.h" />
-    <ClInclude Include="Dx9water.h" />
+    <ClInclude Include="Dx9water.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Fastcap XBox|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release PC|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug PC|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
