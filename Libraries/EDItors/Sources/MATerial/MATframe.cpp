@@ -1019,7 +1019,7 @@ void EMAT_cl_Frame::OnSize(UINT nType, int cx, int cy)
 		::GetClientRect(m_hWnd, &AdaptZone);
 		::GetClientRect(m_hWnd, &AdaptZone2);
 		if(b_ShowCLPBRDMT)
-		AdaptZone.bottom = AdaptZone.top + (int) ((float) (AdaptZone.bottom - AdaptZone.top) * MAtClippoardProp);
+			AdaptZone.bottom = AdaptZone.top + (int) ((float) (AdaptZone.bottom - AdaptZone.top) * MAtClippoardProp);
 		::MoveWindow(stw_MultiSM, 0, 0, ulCurrentMSMWidth, AdaptZone.bottom - AdaptZone.top, TRUE);
 		::ShowWindow(stw_MultiSM, SW_SHOW);
 		MUTEX_SetXYoffset(m_hWnd, ulCurrentMSMWidth, 0);
@@ -1048,7 +1048,7 @@ void EMAT_cl_Frame::OnSize(UINT nType, int cx, int cy)
 			TRUE
 		);
 
-			if(b_ShowCLPBRDMT)
+		if(b_ShowCLPBRDMT)
 			MUTEX_AdaptToRect(stw_ClipBoard);
 
 	}

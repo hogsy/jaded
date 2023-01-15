@@ -142,7 +142,7 @@ BOOL BIG_CheckHierarchy(BIG_INDEX ul_Root)
 	L_strcat(asz_Path, "/");
 	if(L_strlen(asz_Path) >= BIG_C_MaxLenPath)
 	{
-		sprintf(asz_Path, "ERROR : Total dir path name is too long !!!!!", asz_Path);
+		sprintf(asz_Path, "ERROR : Total dir path name is too long !!!!!");
 		LINK_gul_ColorTxt = 0x000000FF;
 		LINK_PrintStatusMsg(asz_Path);
 		b_Res = FALSE;
@@ -155,14 +155,15 @@ BOOL BIG_CheckHierarchy(BIG_INDEX ul_Root)
 		if(BIG_PrevDir(ul_File) != BIG_C_InvalidIndex)
 		{
 			LINK_gul_ColorTxt = 0x000000FF;
-			sprintf(asz_Msg, "ERROR : First dir of %s has not a good previous link", BIG_NameDir(ul_Root));
+			const char *dirName = BIG_DirName( ul_Root );
+			sprintf( asz_Msg, "ERROR : First dir of %s has not a good previous link", dirName );
 			LINK_PrintStatusMsg(asz_Msg);
 			b_Res = FALSE;
 
 			if(BIG_gb_CanClean)
 			{
 				LINK_gul_ColorTxt = 0x00FF0000;
-				sprintf(asz_Msg, "=> Break link", BIG_DirName(ul_Root));
+				sprintf( asz_Msg, "=> Break link (%s)", dirName );
 				LINK_PrintStatusMsg(asz_Msg);
 				if(BIG_NextDir(BIG_PrevDir(ul_File)) == ul_File)
 				{
@@ -183,7 +184,7 @@ BOOL BIG_CheckHierarchy(BIG_INDEX ul_Root)
 		if(ul_Next != -1)
 		{
 			LINK_gul_ColorTxt = 0x000000FF;
-			sprintf(asz_Msg, "ERROR : Dir %s is in more that one list", BIG_NameDir(ul_File));
+			sprintf( asz_Msg, "ERROR : Dir %s is in more that one list", BIG_DirName( ul_File ) );
 			LINK_PrintStatusMsg(asz_Msg);
 			b_Res = FALSE;
 		}
@@ -195,7 +196,7 @@ BOOL BIG_CheckHierarchy(BIG_INDEX ul_Root)
 		if(ul_Next != -1)
 		{
 			LINK_gul_ColorTxt = 0x000000FF;
-			sprintf(asz_Msg, "ERROR : Dir list is cycling in (%s)", BIG_NameDir(ul_Root));
+			sprintf( asz_Msg, "ERROR : Dir list is cycling in (%s)", BIG_DirName( ul_Root ) );
 			LINK_PrintStatusMsg(asz_Msg);
 			b_Res = FALSE;
 			break;
@@ -233,7 +234,7 @@ BOOL BIG_CheckHierarchy(BIG_INDEX ul_Root)
 		if(ul_Next != -1)
 		{
 			LINK_gul_ColorTxt = 0x000000FF;
-			sprintf(asz_Msg, "ERROR : Dir is present in deleted list (%s)", BIG_NameDir(ul_File));
+			sprintf( asz_Msg, "ERROR : Dir is present in deleted list (%s)", BIG_DirName( ul_File ) );
 			LINK_PrintStatusMsg(asz_Msg);
 			b_Res = FALSE;
 
@@ -265,7 +266,7 @@ BOOL BIG_CheckHierarchy(BIG_INDEX ul_Root)
 		if(ul_File > BIG_MaxFile())
 		{
 			LINK_gul_ColorTxt = 0x000000FF;
-			sprintf(asz_Msg, "ERROR : A dir is referenced a bad file", BIG_DirName(ul_Root));
+			sprintf(asz_Msg, "ERROR : A dir is referenced a bad file (%s)", BIG_DirName(ul_Root));
 			LINK_PrintStatusMsg(asz_Msg);
 			BIG_FirstFile(ul_Root) = BIG_C_InvalidIndex;
 			BIG_UpdateOneDirInFat(ul_Root);
@@ -291,7 +292,7 @@ BOOL BIG_CheckHierarchy(BIG_INDEX ul_Root)
 			if(BIG_gb_CanClean)
 			{
 				LINK_gul_ColorTxt = 0x00FF0000;
-				sprintf(asz_Msg, "=> Break link", BIG_DirName(ul_Root));
+				sprintf(asz_Msg, "=> Break link (%s)", BIG_DirName(ul_Root));
 				LINK_PrintStatusMsg(asz_Msg);
 				if(BIG_NextFile(BIG_PrevFile(ul_File)) == ul_File)
 				{
@@ -500,13 +501,32 @@ recom:
 			ul_Next1 = BIG_gst.dst_FileTableExt[ul_Next].st_ToSave.ul_Prev;
 			if(ul_Next1 != i)
 			{
+				const char *fileA = BIG_FileName( i ), fileA_tmp[ 64 ];
+				if ( *fileA == '\0' )
+				{
+					snprintf( fileA_tmp, sizeof( fileA_tmp ), "%x", BIG_FileKey( i ) );
+					fileA = fileA_tmp;
+				}
+				const char *fileB = BIG_FileName( ul_Next ), fileB_tmp[ 64 ];
+				if ( *fileB == '\0' )
+				{
+					snprintf( fileB_tmp, sizeof( fileB_tmp ), "%x", BIG_FileKey( ul_Next ) );
+					fileB = fileB_tmp;
+				}
+				const char *fileC = BIG_FileName( ul_Next1 ), fileC_tmp[ 64 ];
+				if ( *fileC == '\0' )
+				{
+					snprintf( fileC_tmp, sizeof( fileC_tmp ), "%x", BIG_FileKey( ul_Next1 ) );
+					fileC = fileC_tmp;
+				}
+
 				sprintf
 				(
 					asz_Msg,
 					"ERROR : File link corrupt (%s next = %s prev = %s)",
-					BIG_FileName(i),
-					BIG_FileName(ul_Next),
-					BIG_FileName(ul_Next1)
+					fileA,
+					fileB,
+					fileC
 				);
 				LINK_PrintStatusMsg(asz_Msg);
 				b_Res = FALSE;
@@ -514,13 +534,13 @@ recom:
 				if(BIG_gb_CanClean)
 				{
 					LINK_gul_ColorTxt = 0x00FF0000;
-					sprintf(asz_Msg, "=> Break next link of %s", BIG_FileName(ul_Next1));
+					sprintf(asz_Msg, "=> Break next link of %s", fileC);
 					LINK_PrintStatusMsg(asz_Msg);
 					BIG_NextFile(ul_Next1) = BIG_C_InvalidIndex;
 					if(ul_Next1 != BIG_C_InvalidIndex)
 					{
 						BIG_UpdateOneFileInFat(ul_Next1);
-						sprintf(asz_Msg, "=> Restoring prev link of %s", BIG_FileName(ul_Next));
+						sprintf(asz_Msg, "=> Restoring prev link of %s", fileB);
 						LINK_PrintStatusMsg(asz_Msg);
 					}
 
@@ -537,13 +557,32 @@ recom:
 			ul_Next1 = BIG_gst.dst_FileTableExt[ul_Next].st_ToSave.ul_Next;
 			if(ul_Next1 != i)
 			{
+				const char *fileA = BIG_FileName( i ), fileA_tmp[ 64 ];
+				if ( *fileA == '\0' )
+				{
+					snprintf( fileA_tmp, sizeof( fileA_tmp ), "%x", BIG_FileKey( i ) );
+					fileA = fileA_tmp;
+				}
+				const char *fileB = BIG_FileName( ul_Next ), fileB_tmp[ 64 ];
+				if ( *fileB == '\0' )
+				{
+					snprintf( fileB_tmp, sizeof( fileB_tmp ), "%x", BIG_FileKey( ul_Next ) );
+					fileB = fileB_tmp;
+				}
+				const char *fileC = BIG_FileName( ul_Next1 ), fileC_tmp[ 64 ];
+				if ( *fileC == '\0' )
+				{
+					snprintf( fileC_tmp, sizeof( fileC_tmp ), "%x", BIG_FileKey( ul_Next1 ) );
+					fileC = fileC_tmp;
+				}
+
 				sprintf
 				(
 					asz_Msg,
 					"ERROR : File link corrupt (%s prev = %s next = %s)",
-					BIG_FileName(i),
-					BIG_FileName(ul_Next),
-					BIG_FileName(ul_Next1)
+					fileA,
+					fileB,
+					fileC
 				);
 				LINK_PrintStatusMsg(asz_Msg);
 				b_Res = FALSE;
@@ -551,7 +590,7 @@ recom:
 				if(BIG_gb_CanClean)
 				{
 					LINK_gul_ColorTxt = 0x00FF0000;
-					sprintf(asz_Msg, "=> Break prev link of %s", BIG_FileName(i));
+					sprintf( asz_Msg, "=> Break prev link of %s", fileA );
 					LINK_PrintStatusMsg(asz_Msg);
 					BIG_PrevFile(i) = BIG_C_InvalidIndex;
 					BIG_UpdateOneFileInFat(i);
@@ -636,7 +675,15 @@ recom:
 	{
 		if(BAS_bsearch(i, &st_PosFile) == -1)
 		{
-			sprintf(asz_Msg, "ERROR : File is never referenced (%s)", BIG_FileName(i));
+			// seems some corrupted files have blank names? ~hogsy
+			const char *fileName = BIG_FileName( i ), tmp[ 64 ];
+			if ( *fileName == '\0' )
+			{
+				snprintf( tmp, sizeof( tmp ), "%x", BIG_FileKey( i ) );
+				fileName = tmp;
+			}
+
+			sprintf(asz_Msg, "ERROR : File is never referenced (%s)", fileName);
 			LINK_PrintStatusMsg(asz_Msg);
 			b_Res = FALSE;
 
@@ -805,10 +852,7 @@ BOOL BIG_b_CheckFile(BOOL _b_Stats)
 	LINK_PrintStatusMsg("------------------------------------------------------------");
 	if(b_Err)
 	{
-		do
-		{
-			ERR_X_ForceError("BIGFILE IS CORRUPT !!! (SHIFT + OK to continue)", NULL);
-		} while((GetAsyncKeyState(VK_SHIFT) >= 0) || !EDI_gb_NoVerbose);
+		ERR_X_ForceError("BIGFILE IS CORRUPT !!!", NULL);
 		return TRUE;
 	}
 

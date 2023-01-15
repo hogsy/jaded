@@ -14,9 +14,7 @@
 #define EMAT_ACTION_COPY_ALL		    105
 #define EMAT_ACTION_PASTE_ALL		    106
 #define EMAT_ACTION_SHMLTSUBMAT		    104
-#ifdef JADEFUSION
 #define EMAT_ACTION_SHCLPBRDMAT			103
-#endif
 #define EMAT_ACTION_CHECKMULTIMAT       107
 #define EMAT_ACTION_CHECKTEXTURE        108
 #define EMAT_ACTION_CHECKMATOWNER       109
@@ -44,9 +42,7 @@ EXTERN char *EMAT_asz_ActionBase
     "\
 General=-2=--=0;\
 Show Left Pane=104=^M=0;\
-#ifdef JADEFUSION\
 Show Clipboard=103=--=0;\
-#endif\
 Sep=0=--=0;\
 Check Multi Material=107==0;\
 Check Texture Ref=108==0;\
