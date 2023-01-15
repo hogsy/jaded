@@ -222,6 +222,7 @@ BOOL EDIA_cl_GaoInfo::PreTranslateMessage(MSG *p_Msg)
 
 			if(mul_Index != BIG_C_InvalidIndex)
 			{
+#if 0 // remove p4 ~hogsy
 				if ( po_Tree->ItemHasChildren(hItem) )
 				{
 					M_MF()->AddPopupMenuAction( NULL, &o_Menu, GAOINFO_ACTION_PERFORCE_EDITCHILD, TRUE, GAOINFO_TEXT_PERFORCE_EDITCHILD, -1 );
@@ -232,6 +233,7 @@ BOOL EDIA_cl_GaoInfo::PreTranslateMessage(MSG *p_Msg)
 
 				M_MF()->AddPopupMenuAction( NULL, &o_Menu, GAOINFO_ACTION_PERFORCE_EDIT, TRUE, GAOINFO_TEXT_PERFORCE_EDIT, -1 );
 				M_MF()->AddPopupMenuAction( NULL, &o_Menu, GAOINFO_ACTION_PERFORCE_REVERT, TRUE, GAOINFO_TEXT_PERFORCE_REVERT, -1 );
+#endif
 
 #ifdef JADEFUSION
 				M_MF()->AddPopupMenuAction( NULL, &o_Menu, GAOINFO_ACTION_PERFORCE_SHOWHISTORY, TRUE, GAOINFO_TEXT_PERFORCE_SHOWHISTORY, -1 );

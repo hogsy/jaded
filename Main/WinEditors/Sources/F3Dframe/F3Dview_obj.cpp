@@ -1960,7 +1960,7 @@ void F3D_cl_View::Selection_GAO_Duplicate(MATH_tdst_Vector *_pst_Move, BOOL _b_S
 
 	if(mst_WinHandles.pst_World == NULL) return;
 
-	st_DP.po_View = (_b_SwapSel ? this : NULL);
+	st_DP.po_View = this;
 	st_DP.i_Count = SEL_l_CountItem(mst_WinHandles.pst_World->pst_Selection, SEL_C_SIF_Object);
 	st_DP.pst_Src = (OBJ_tdst_GameObject **) L_malloc(st_DP.i_Count * 4);
 	st_DP.pst_Dup = (OBJ_tdst_GameObject **) L_malloc(st_DP.i_Count * 4);
