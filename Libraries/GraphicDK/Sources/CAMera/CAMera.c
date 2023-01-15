@@ -92,11 +92,8 @@ void CAM_Engine_Init(CAM_tdst_Camera *_pst_Cam)
 	_pst_Cam->ul_Flags = CAM_Cul_Flags_Perspective;
 
 	_pst_Cam->f_NearPlane = 1.0f;
-	_pst_Cam->f_FarPlane = 500000.0f;
-
-#ifdef ACTIVE_EDITORS
     _pst_Cam->f_FarPlane = 2000000.0f;
-#endif
+
 	_pst_Cam->f_FieldOfVision = Cf_PiBy2;
 	_pst_Cam->f_FactorX = 1.0f / fNormalTan(_pst_Cam->f_FieldOfVision / 2);
 	_pst_Cam->f_FactorY = _pst_Cam->f_FactorX;
