@@ -121,66 +121,6 @@ extern	void FOGDYN_Reset(void);
  ***********************************************************************************************************************
  */
 
-#ifdef PSX2_TARGET
-#include "SDK/Sources/IOP/RPC_Manager.h"
-/*$off*/
-BOOL ps2INO_b_Joystick_IsButtonDown(INO_tden_ButtonId _id);
-
-#define Mb_Cnd_Exit						(  ps2INO_b_Joystick_IsButtonDown( e_SEL) \
-										&& ps2INO_b_Joystick_IsButtonDown( e_R3) )
-
-#define Mb_Cnd_WorldsReset				(  ps2INO_b_Joystick_IsButtonDown( e_SEL) \
-										&& ps2INO_b_Joystick_IsButtonDown( e_START)\
-										&& ps2INO_b_Joystick_IsButtonDown( e_L1)\
-										&& ps2INO_b_Joystick_IsButtonDown( e_R1)\
-										&& ps2INO_b_Joystick_IsButtonDown( e_L2)\
-										&& ps2INO_b_Joystick_IsButtonDown( e_R2) )
-
-#define Mb_Cnd_RastersDisplay			(  ps2INO_b_Joystick_IsButtonDown( e_SEL) \
-										&& ps2INO_b_Joystick_IsButtonDown( e_TRIANGLE) )
-
-#define Mb_Cnd_RastersChangeCateg		(  ps2INO_b_Joystick_IsButtonDown( e_SEL) \
-										&& ps2INO_b_Joystick_IsButtonDown( e_CIRCLE) )
-
-#define Mb_Cnd_RastersChangeSubCateg	(  ps2INO_b_Joystick_IsButtonDown( e_SEL) \
-										&& ps2INO_b_Joystick_IsButtonDown( e_CROSS) )
-
-#define Mb_Cnd_RastersChangeName		(  ps2INO_b_Joystick_IsButtonDown( e_SEL) \
-										&& ps2INO_b_Joystick_IsButtonDown( e_SQUARE) )
-
-#define Mb_Cnd_PROPS2RastersDisplay		(	ps2INO_b_Joystick_IsButtonDown( e_SEL) \
-										&& ps2INO_b_Joystick_IsButtonDown( e_L2) \
-										&& ps2INO_b_Joystick_IsButtonDown( e_TRIANGLE) )
-
-#define Mb_Cnd_PROPS2RastersChange		(	ps2INO_b_Joystick_IsButtonDown( e_SEL) \
-										&& ps2INO_b_Joystick_IsButtonDown( e_L2) \
-										&& ps2INO_b_Joystick_IsButtonDown( e_CIRCLE) )
-
-#define Mb_Cnd_BIGioRastersDisplay		(	ps2INO_b_Joystick_IsButtonDown( e_SEL) \
-										&& ps2INO_b_Joystick_IsButtonDown( e_R1) \
-										&& ps2INO_b_Joystick_IsButtonDown( e_TRIANGLE) )
-#define Mb_Cnd_PROPS2RastersReset		(	ps2INO_b_Joystick_IsButtonDown( e_L3) \
-										&& ps2INO_b_Joystick_IsButtonDown( e_SEL) \
-										&& ps2INO_b_Joystick_IsButtonDown( e_R3) )
-#define Mb_Cnd_LoadingTime				(  ps2INO_b_Joystick_IsButtonDown( e_L3) \
-										&& ps2INO_b_Joystick_IsButtonDown( e_L2) \
-										&& ps2INO_b_Joystick_IsButtonDown( e_R2) )
-/*$on*/
-
-/*$2------------------------------------------------------------------------------------------------------------------*/
-
-extern BOOL ps2INO_b_Joystick_IsValid(void);
-extern void ps2SND_RefreshStatus(void);
-
-/*$2------------------------------------------------------------------------------------------------------------------*/
-
-#endif
-
-/*$4
- ***********************************************************************************************************************
- ***********************************************************************************************************************
- */
-
 extern void MEM_Defrag(int single);
 extern void SOFT_ZList_Clear(void);
 extern void MSG_GlobalReinit(void);
@@ -222,9 +162,6 @@ HWND			ENG_h_Rasters = 0;
 float			ENG_gf_TimeFinal;
 BOOL			ENG_gb_Raster = FALSE;
 #endif
-#ifdef _GAMECUBE
-#include <dolphin/os.h>
-#endif
 
 #ifdef JADEFUSION
 extern BOOL ENG_gb_InPause;
@@ -235,37 +172,6 @@ extern BOOL ENG_gb_InPause;
     MESSAGES
  ***********************************************************************************************************************
  */
-
-#ifdef PSX2_TARGET
-u_int			SavedStack;
-
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
-void ENG_EngineWithStack_in_Spr(void)
-{
-	SavedStack = GetSP();
-	SetSP(0x70000000 + 0x4000);
-	ENG_gp_Engine();
-	SetSP(SavedStack);
-}
-
-#if defined _FINAL_ || !defined GSP_PS2_BENCH
-#else /* !_FINAL_ */
-extern u_int	StackInit;
-extern u_int	StackMax;
-extern u_int	StackEngine;
-extern u_int	StackEngineMax;
-extern u_int	StackDisplay;
-extern u_int	StackDisplayMax;
-extern u_int	StackGO;
-extern void		Gsp_InitStack(void);
-extern u_int	Gsp_GetStackSize(void);
-#endif /* !_FINAL_ */
-
-#else /* !PSX2_TARGET */
-#endif /* !PSX2_TARGET */
 
 /*
  =======================================================================================================================
@@ -410,115 +316,6 @@ static void s_Display(HWND h, GDI_tdst_DisplayData *_pst_DD)
  
 }
 
-#ifdef _GAMECUBE
-void	    GC_s_CheckResetRequest(void);
-volatile BOOL GC_b_PuttonResetPushed = FALSE;
-volatile int  GC_gi_ResetCall = 0;
-volatile BOOL GC_b_ResetShortCutPresent = FALSE;
-volatile BOOL GC_b_ShouldInstallResetCallBack = TRUE;
-volatile ULONG GC_ul_ValidFrameBufferNb = 0;
-
-extern BOOL INO_gb_Writing;
-
-
-BOOL GC_b_IsExiting()
-{
-	return GC_b_PuttonResetPushed || GC_gi_ResetCall || ENG_gb_ExitApplication;
-}
-
-void GC_ResetCallBack()
-{
-	GC_b_ShouldInstallResetCallBack = TRUE;
-	if (OSGetResetButtonState())
-		GC_b_PuttonResetPushed = TRUE;
-}
-
-
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
- 
-#define GC_bCanResetNow() (!INO_gb_Writing && GC_ul_ValidFrameBufferNb >= 4)
- 
-void GC_s_CheckResetRequest(void)
-{
-	
-	// The reset callback is installed so that bink can know that the reset button has been pushed.
-	if (GC_b_ShouldInstallResetCallBack)
-	{
-		GC_b_ShouldInstallResetCallBack = FALSE;
-		OSSetResetCallback(&GC_ResetCallBack);
-	}
-
-    if(GC_bCanResetNow())
-    {
-        switch(GC_gi_ResetCall)
-        {
-        case 1:
-            ENG_gb_ExitApplication = TRUE; 
-            GC_gi_ResetCall=0;
-            break;
-            
-        case 2:
-			GC_b_PuttonResetPushed = FALSE;
-			ENG_gb_ExitApplication = TRUE;		
-            GC_gi_ResetCall=0;
-			break;
-			
-        default:
-            GC_gi_ResetCall=0;
-            break;
-        }
-    }
-
-	if(ENG_gb_ExitApplication)
-	{
-		/*~~*/
-		int i;
-		extern void GXI_FlushComplete ();
-		/*~~*/
-
-        if(!GC_bCanResetNow())
-        {
-            GC_gi_ResetCall = 1;
-            ENG_gb_ExitApplication = FALSE;
-            return;
-        }
-        
-        // Really start reset.
-		for(i = 0; i < PAD_MAX_CONTROLLERS; i++)
-		{
-			PADRecalibrate(PAD_CHAN0_BIT >> i);
-		}
-		
-		GXI_FlushComplete ();
-		
-		OSResetSystem(OS_RESET_RESTART, 0, FALSE);		
-	}
-
-	if(OSGetResetButtonState())
-		GC_b_PuttonResetPushed = TRUE;	
-	
-	if(GC_b_PuttonResetPushed)
-	{
-		if(!OSGetResetButtonState())
-		{
-            if(!GC_bCanResetNow())
-            {
-                GC_gi_ResetCall = 2;
-            }
-            else
-            {
-				GC_b_PuttonResetPushed = FALSE;
-				ENG_gb_ExitApplication = TRUE;		
-			}
-		}
-	}
-}
-
-#endif
-
 /*
  =======================================================================================================================
  =======================================================================================================================
@@ -661,249 +458,7 @@ void s_HandleWinMessages(void)
  -----------------------------------------------------------------------------------------------------------------------
  */
 
-#ifdef PSX2_TARGET
-
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
-static void PS2_s_EngineCheat(void)
-{
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-#ifdef RASTERS_ON
-	PRO_tdst_TrameRaster	*pst_Categ;
-#endif
-	static int				init = 0;
-	LONG					mask;
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-	return; // Philippe -> Kinkong bug P0
-
-	if(!ps2INO_b_Joystick_IsValid()) return;
-
-	/* refresh for 1st frame */
-	if(!init)
-	{
-		init++;
-		return;
-	}
-
-	mask = INO_l_JoystickMask;
-	INO_l_JoystickMask = -1;
-	
-	
-
-	if(Mb_Cnd_LoadingTime)
-	{
-		LOA_DisplayDuration();
-		while(Mb_Cnd_LoadingTime)
-		{
-			INO_Joystick_Update();
-		}
-
-		INO_l_JoystickMask = mask;
-		return;
-	}
-
-	if(Mb_Cnd_PROPS2RastersReset)
-	{
-		PROPS2_Init(1);
-		while(Mb_Cnd_PROPS2RastersReset)
-		{
-			INO_Joystick_Update();
-		}
-
-		INO_l_JoystickMask = mask;
-		return;
-	}
-
-	if(Mb_Cnd_BIGioRastersDisplay)
-	{
-		BIGio_PrintRasters();
-		while(Mb_Cnd_BIGioRastersDisplay)
-		{
-			INO_Joystick_Update();
-		}
-	}
-
-	if(Mb_Cnd_PROPS2RastersDisplay)
-	{
-		PROPS2_PrintRaster();
-		while(Mb_Cnd_PROPS2RastersDisplay)
-		{
-			INO_Joystick_Update();
-		}
-
-		INO_l_JoystickMask = mask;
-		return;
-	}
-
-	if(Mb_Cnd_PROPS2RastersChange)
-	{
-		PROPS2_ChangeDisplay();
-		while(Mb_Cnd_PROPS2RastersChange)
-		{
-			INO_Joystick_Update();
-		}
-
-		INO_l_JoystickMask = mask;
-		return;
-	}
-
-	if(Mb_Cnd_Exit)
-	{
-		ENG_gb_ExitApplication = TRUE;
-		printf("-Exit- command received\n");
-		while(Mb_Cnd_Exit)
-		{
-			INO_Joystick_Update();
-		}
-	}
-
-#ifdef RASTERS_ON
-
-	/* display rasters */
-	if(Mb_Cnd_RastersDisplay)
-	{
-		printf("-Display Rasters- command received\n");
-		sgb_DisplayRasters = sgb_DisplayRasters ? FALSE : TRUE;
-		while(Mb_Cnd_RastersDisplay)
-		{
-			INO_Joystick_Update();
-		}
-
-		mpst_CurrentCategory = _PRO_gpst_FirstTrameRaster;
-		mpst_CurrentSubCategory = NULL;
-		mpst_CurrentName = NULL;
-		INO_l_JoystickMask = mask;
-		return;
-	}
-
-	/* Rasters : Change categ */
-	if(Mb_Cnd_RastersChangeCateg)
-	{
-		printf("-Change Rasters Categ- command received\n");
-		if(sgb_DisplayRasters)
-		{
-			pst_Categ = mpst_CurrentCategory;
-			if(!pst_Categ)
-				pst_Categ = _PRO_gpst_FirstTrameRaster;
-			else
-			{
-				do
-				{
-					pst_Categ = pst_Categ->pst_NextRaster;
-					if(!pst_Categ) pst_Categ = _PRO_gpst_FirstTrameRaster;
-				} while
-				(
-					(pst_Categ != mpst_CurrentCategory)
-				&&	(!L_strcmpi(pst_Categ->psz_Category, mpst_CurrentCategory->psz_Category))
-				);
-			}
-
-			mpst_CurrentCategory = pst_Categ;
-		}
-
-		while(Mb_Cnd_RastersChangeCateg)
-		{
-			INO_Joystick_Update();
-		}
-
-		INO_l_JoystickMask = mask;
-		return;
-	}
-
-	/* Rasters : Change sub */
-	if(Mb_Cnd_RastersChangeSubCateg)
-	{
-		printf("-Change Rasters Sub Categ- command received\n");
-		if(sgb_DisplayRasters)
-		{
-			pst_Categ = mpst_CurrentSubCategory;
-			if(!pst_Categ)
-				pst_Categ = _PRO_gpst_FirstTrameRaster;
-			else
-			{
-				do
-				{
-					pst_Categ = pst_Categ->pst_NextRaster;
-					if(!pst_Categ) pst_Categ = _PRO_gpst_FirstTrameRaster;
-				} while
-				(
-					(pst_Categ != mpst_CurrentSubCategory)
-				&&	(!L_strcmpi(pst_Categ->psz_SubCategory, mpst_CurrentSubCategory->psz_SubCategory))
-				);
-			}
-
-			mpst_CurrentSubCategory = pst_Categ;
-		}
-
-		while(Mb_Cnd_RastersChangeSubCateg)
-		{
-			INO_Joystick_Update();
-		}
-
-		INO_l_JoystickMask = mask;
-		return;
-	}
-
-	/* Rasters : Change name */
-	if(Mb_Cnd_RastersChangeName)
-	{
-		printf("-Change Rasters Name- command received\n");
-		if(sgb_DisplayRasters)
-		{
-			pst_Categ = mpst_CurrentName;
-			if(!pst_Categ)
-				pst_Categ = _PRO_gpst_FirstTrameRaster;
-			else
-			{
-				do
-				{
-					pst_Categ = pst_Categ->pst_NextRaster;
-					if(!pst_Categ) pst_Categ = _PRO_gpst_FirstTrameRaster;
-				} while((pst_Categ != mpst_CurrentName) && (!L_strcmpi(pst_Categ->psz_Name, mpst_CurrentName->psz_Name)));
-			}
-
-			mpst_CurrentName = pst_Categ;
-		}
-
-		while(Mb_Cnd_RastersChangeName)
-		{
-			INO_Joystick_Update();
-		}
-
-		INO_l_JoystickMask = mask;
-		return;
-	}
-
-#endif /* RASTER */
-
-	INO_l_JoystickMask = mask;
-}
-
-/*$2
- -----------------------------------------------------------------------------------------------------------------------
- -----------------------------------------------------------------------------------------------------------------------
- */
-
-#elif defined(_GAMECUBE)
-#define Mb_Cnd_WorldsReset	(INO_b_Joystick_IsButtonDown(e_L1) && INO_b_Joystick_IsButtonDown(e_START))
-#define Mb_Cnd_ConsoleReset (GC_b_ResetShortCutPresent)
-#define Mb_Cnd_PadRecalibrate (INO_b_Joystick_IsButtonDown(e_TRIANGLE) && INO_b_Joystick_IsButtonDown(e_CIRCLE) && INO_b_Joystick_IsButtonDown(e_START))
-#define Mb_Cnd_OpenMenu (INO_b_Joystick_IsButtonDown(e_CIRCLE) && INO_b_Joystick_IsButtonDown(e_TRIANGLE))
-
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
-extern int GXI_gb_MenuMode; 
-void GC_s_EngineCheat(void)
-{
-}
-
-
-#elif defined(_XBOX) || defined(_XENON)
+#if defined(_XBOX) || defined(_XENON)
 
 #if defined(_XENON)
 
@@ -1321,153 +876,7 @@ static void s_EngineCheat(void)
  -----------------------------------------------------------------------------------------------------------------------
  */
 
-#if defined(PSX2_TARGET)
-
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
-void PS2_ResetWorld(void)
-{
-	TAB_tdst_PFelem *pst_CurrentElem;
-	TAB_tdst_PFelem *pst_EndElem;
-	WOR_tdst_World	*pst_World;
-	
-	LOA_InitLoadRaster();
-	SOFT_ZList_Clear();
-	MSG_GlobalReinit();
-	AI_ReinitUniverse();
-	pst_CurrentElem = TAB_pst_PFtable_GetFirstElem(&WOR_gst_Universe.st_WorldsTable);
-	pst_EndElem = TAB_pst_PFtable_GetLastElem(&WOR_gst_Universe.st_WorldsTable);
-	for(; pst_CurrentElem <= pst_EndElem; pst_CurrentElem++)
-	{
-		pst_World = (WOR_tdst_World *) pst_CurrentElem->p_Pointer;
-		if(TAB_b_IsAHole(pst_World)) continue;
-		ENG_ReinitOneWorld(pst_World, UNI_Cuc_TotalInit);
-	}
-
-	printf("-- reset world --\n");
-}
-
-static void PS2_s_EngineCheatFinal(void)
-{
-#ifndef _FINAL_ 
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	static int		init = 0;
-	LONG			mask;
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-	if(!ps2INO_b_Joystick_IsValid()) return;
-
-	/* refresh for 1st frame */
-	if(!init)
-	{
-		init++;
-		return;
-	}
-
-	mask = INO_l_JoystickMask;
-	INO_l_JoystickMask = -1;
-
-	/* Reinit all worlds */
-	/*
-	if(Mb_Cnd_WorldsReset)
-	{
-		while(Mb_Cnd_WorldsReset)
-		{
-			INO_Joystick_Update();
-		}
-		
-		PS2_ResetWorld();
-
-		init = 0;
-		return;
-	}*/
-
-	INO_l_JoystickMask = mask;
-#endif	
-}
-
-#elif defined(_GAMECUBE)
-
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
-static void GC_s_EngineCheatFinal(void)
-{
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	TAB_tdst_PFelem *pst_CurrentElem;
-	TAB_tdst_PFelem *pst_EndElem;
-	WOR_tdst_World	*pst_World;
-	static int		init = 0;
-	LONG			mask;
-	BOOL			INO_b_Joystick_IsButtonDown(LONG _l_ButtonIndex);
-	static u64		duration1 = 0;
-	static u64		u64_LastCall = 0;
-	u64				u64_CurrentDT, u64_CurrentCall;
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-	if(!init)
-	{
-		init++;
-		return;
-	}
-	
-	u64_CurrentCall = OSTicksToMicroseconds(OSGetTime());
-	u64_CurrentDT = u64_CurrentCall - u64_LastCall;
-	u64_LastCall = u64_CurrentCall;
-
-
-
-	mask = INO_l_JoystickMask;
-	INO_l_JoystickMask = -1;
-
-
-#ifndef _FINAL_	
-	if(Mb_Cnd_OpenMenu)
-	{
-	    
-		//while(Mb_Cnd_OpenMenu)
-		{
-			INO_Joystick_Update();
-		}
-		GXI_gb_MenuMode=1;
-	}
-
-#endif	
-	
-
-	if(Mb_Cnd_ConsoleReset)
-	{
-		if(!ENG_gb_ExitApplication)
-		{
-			duration1 += u64_CurrentDT;
-
-			// up to 0.5s => record the reset command
-			if(duration1 > 500000)
-			{
-		        if(INO_gb_Writing)
-		        {
-		            GC_gi_ResetCall = 1;
-		        }
-		        else
-		        {
-	            	ENG_gb_ExitApplication = TRUE;
-	            }
-				duration1=0;
-			}
-		}
-	}
-	else
-	{
-		duration1 = 0;
-	}
-
-	INO_l_JoystickMask = mask;
-}
-
-#elif defined(ACTIVE_EDITORS)
+#if defined(ACTIVE_EDITORS)
 
 /*
  =======================================================================================================================
@@ -1576,11 +985,7 @@ static void win32_s_EngineCheatFinal(void)
  */
 void s_EngineCheatFinal(void)
 {
-#if defined(PSX2_TARGET)
-	PS2_s_EngineCheatFinal();
-#elif defined(_GAMECUBE)
-	GC_s_EngineCheatFinal();
-#elif defined(ACTIVE_EDITORS)
+#if defined( ACTIVE_EDITORS )
 	EDI_s_EngineCheatFinal();
 #elif defined(_XBOX) || defined(_XENON)
 	XB_s_EngineCheatFinal();
@@ -1858,10 +1263,74 @@ static void s_OneTrame(void)
         SPG2Holder_Modifier_Prepare();
 #endif	
 	}
-
     
 	ENG_gb_NeedToReinit = FALSE;
 
+		if ( TIM_gf_MainClockForTextureScrolling > 1024.0f ) TIM_gf_MainClockForTextureScrolling -= 1024.0f;
+#ifdef JADEFUSION
+#	if defined( _XENON )
+
+	// process any notification we may have received
+	g_XeNotificationManager.CheckForNotifications();
+	g_XeProfile.Pump();
+
+	// update after specified delay, no need to flood the Xbox Live service
+	static float fPrevTime = 0.0f;
+	const float  fCurTime = TIM_gf_MainClock;
+
+	if ( fCurTime - fPrevTime > 1.0f )
+	{
+		// save new tick count
+		fPrevTime = fCurTime;
+
+		// do session processing
+		//g_XeLiveSession.UpdateSession( );
+
+		// check if we need to update rich presence or achievements on Live server
+		UpdateRichPresence();
+		UpdateAchievements();
+	}
+
+#		ifdef _DEBUG
+	// JFP: Removing this reboot option for now since it conflicts with the debug menu.
+	/*
+	// check if user wants to reboot
+	if( INO_b_Joystick_IsButtonDown( eXeButton_Trigger_Left   ) &&
+		INO_b_Joystick_IsButtonDown( eXeButton_Trigger_Right  ) &&
+		INO_b_Joystick_IsButtonDown( eXeButton_Shoulder_Right ) )
+	{
+		DmReboot( DMBOOT_WARM ); // Reboot the dev kit
+	}
+    */
+#		endif// _DEBUG
+
+#	endif// defined(_XENON)
+#else
+	_GSP_EndRaster( 19 );
+#endif
+
+	/* Sound & textures */
+	if ( MAI_gst_MainHandles.pst_DisplayData )
+	{
+		_GSP_BeginRaster( 25 );
+		SND_Update( &MAI_gst_MainHandles.pst_DisplayData->st_Camera.st_Matrix );
+		_GSP_EndRaster( 25 );
+
+		_GSP_BeginRaster( 20 );
+		TEX_Procedural_Update( MAI_gst_MainHandles.pst_DisplayData );
+		_GSP_EndRaster( 20 );
+
+		TEX_Anim_Update( MAI_gst_MainHandles.pst_DisplayData );
+	}
+
+	//static const int maxFPS = 60;
+	//extern float     TIM_gf_realdt;
+	//float            delay = 1000.0f / maxFPS - TIM_gf_realdt;
+	//if ( delay > 0 )
+	//{
+	//	Sleep( ( DWORD ) delay );
+	//}
+	
 #ifdef JADEFUSION
 	// Handle Pause Delay
 
@@ -1876,35 +1345,20 @@ static void s_OneTrame(void)
 		g_iReinitPauseScheduled	= FALSE;
 	}
 #endif
-#ifndef _FINAL_
-	
-	s_EngineCheat();
-	
-#endif
 
-	
+#ifndef _FINAL_
+	s_EngineCheat();
+#endif
     
 #ifndef ACTIVE_EDITORS
 	s_EngineCheatFinal();
 #endif
-	
-    
-#if defined(PSX2_TARGET)
-
-	/* updating IOP state */
-	_GSP_BeginRaster(40);
-	eeRPC_FlushCommandAfterEngine();
-	_GSP_EndRaster(40);
-#endif
-    
 	
 	/* Read inputs */
 	_GSP_BeginRaster(15);
 
 	if(ENG_gp_Input && (!ENG_gb_ForcePauseEngine))    
 	{
-	
-	
 		PRO_StartTrameRaster(&ENG_gpst_RasterEng_Input);
 		PROPS2_StartRaster(&PROPS2_gst_ENG_gp_Input);
 	
@@ -1914,8 +1368,6 @@ static void s_OneTrame(void)
 		PRO_StopTrameRaster(&ENG_gpst_RasterEng_Input);
 	}
 	
-    
-
 	NET_ServerUpdate();
 	NET_PlayerUpdate();
 
@@ -2060,18 +1512,7 @@ static void s_OneTrame(void)
 				CounterR = ENG_gp_DoubleRendering;
 				TIM_gf_dt /= (float)(ENG_gp_DoubleRendering + 1);
 				for (CounterR = 0 ; CounterR < ENG_gp_DoubleRendering ; CounterR++)
-				{
-				
-#ifdef PSX2_TARGET				
-                    {
-                        extern BOOL ps2INO_b_Port0IsKo(void);
-                        extern void INO_Joystick_Update(void);
-                        
-    					if(ps2INO_b_Port0IsKo())
-    					    INO_Joystick_Update();
-    			    }
-#endif					    
-					    
+				{					    
 					MAI_gst_MainHandles.pst_DisplayData->ul_DisplayInfo &= ~(GDI_Cul_DI_DoubleRendering_K | GDI_Cul_DI_DoubleRendering_I);
 					MAI_gst_MainHandles.pst_DisplayData->ul_DisplayInfo |= GDI_Cul_DI_DoubleRendering_I;
     
@@ -2140,72 +1581,7 @@ static void s_OneTrame(void)
 		PRO_StopTrameRaster(&ENG_gpst_RasterEng_Display);
 	}
 	
-
-	if (TIM_gf_MainClockForTextureScrolling > 1024.0f) TIM_gf_MainClockForTextureScrolling -= 1024.0f;
-#ifdef JADEFUSION
-#if defined(_XENON)
-
-	// process any notification we may have received
-	g_XeNotificationManager.CheckForNotifications( );
-	g_XeProfile.Pump( );
-
-	// update after specified delay, no need to flood the Xbox Live service
-	static float fPrevTime = 0.0f;
-	const float fCurTime = TIM_gf_MainClock;
-
-	if( fCurTime - fPrevTime > 1.0f )
-	{
-		// save new tick count
-		fPrevTime = fCurTime;
-
-		// do session processing
-		//g_XeLiveSession.UpdateSession( );
-
-		// check if we need to update rich presence or achievements on Live server
-		UpdateRichPresence( );
-		UpdateAchievements( );
-	}
-
-#ifdef _DEBUG
-    // JFP: Removing this reboot option for now since it conflicts with the debug menu.
-    /*
-	// check if user wants to reboot
-	if( INO_b_Joystick_IsButtonDown( eXeButton_Trigger_Left   ) &&
-		INO_b_Joystick_IsButtonDown( eXeButton_Trigger_Right  ) &&
-		INO_b_Joystick_IsButtonDown( eXeButton_Shoulder_Right ) )
-	{
-		DmReboot( DMBOOT_WARM ); // Reboot the dev kit
-	}
-    */
-#endif // _DEBUG
-
-#endif // defined(_XENON)
-#else
-	_GSP_EndRaster(19);
-#endif
-	/* Sound & textures */
-	if(MAI_gst_MainHandles.pst_DisplayData)
-	{
-    
-	
-		_GSP_BeginRaster(25);
-		SND_Update(&MAI_gst_MainHandles.pst_DisplayData->st_Camera.st_Matrix);
-		_GSP_EndRaster(25);
-
-	
-    
-		_GSP_BeginRaster(20);
-		TEX_Procedural_Update(MAI_gst_MainHandles.pst_DisplayData);
-		_GSP_EndRaster(20);
-    
-	
-
-		TEX_Anim_Update(MAI_gst_MainHandles.pst_DisplayData);
-	}
-	
 	FOGDYN_Reset();
-
-	
 
 	/* Inform editors that a trame is ending... This will not display the rasters ! */
 #ifdef ACTIVE_EDITORS
@@ -2215,45 +1591,21 @@ static void s_OneTrame(void)
 	ENG_bg_FirstFrameSpeedRun = FALSE;
 #endif /* ACTIVE_EDITORS */
 
-#if defined(PSX2_TARGET)
-
-    
-	/* updating IOP state */
-	_GSP_BeginRaster(40);
-	eeRPC_FlushCommandAfterEngine();
-	_GSP_EndRaster(40);
-
-    
-	_GSP_BeginRaster(25);
-	ps2SND_RefreshStatus();
-	_GSP_EndRaster(25);
-#endif
-
-
-	
-    
 	/* Display rasters (engine mode) */
 	PRO_StartTrameRaster(&ENG_gpst_RasterEng_EditorRaster);
 #ifndef _FINAL_
 	s_DisplayRasters();
 #endif
-	
-    
 
 #ifdef ACTIVE_EDITORS
 	LINK_DisplayRasters();
 #endif
 	PRO_StopTrameRaster(&ENG_gpst_RasterEng_EditorRaster);
     
-	
-
-
 #ifndef ACTIVE_EDITORS
 	MEM_Defrag(1);	
 #endif
     
-	
-
 #ifdef _DEBUG
     {
         void MEM_dbg_FindLastAllocatedCluster(void);
@@ -2379,7 +1731,6 @@ _Try_
 
 	while(!sfnb_EndGame())
 	{
-	    
 #if defined(_XBOX)
 		Gx8_ResetFrameMon();
 		Gx8_ResetGPUMon();
@@ -2394,7 +1745,6 @@ _Try_
 		s_InitBeforeTrame();
 		s_OneTrame();
 		s_DesInitAfterTrame();
-
 		
 #if defined(_XBOX)
 		Gx8_StopFrameMon();
