@@ -61,17 +61,6 @@
 //#if defined(PSX2_TARGET) || defined(_GAMECUBE) || defined(_XBOX)
 #include "INOut/INOjoystick.h"
 //#endif
-#if defined(PSX2_TARGET) || defined(_GAMECUBE)
-#include "MEMory/MEMpro.h"
-#endif
-
-/*$2- XBOX -------------------------------------------------------------------------------------------------------*/
-
-#if defined(_XBOX)
-#include <D3d8perf.h>
-#include "xbdm.h"
-#include "GX8/RASter/Gx8_CheatFlags.h"
-#endif
 
 /*$2------------------------------------------------------------------------------------------------------------------*/
 #if defined(_XENON_RENDER)
@@ -267,17 +256,8 @@ static void s_Display(HWND h, GDI_tdst_DisplayData *_pst_DD)
 	_pst_DD->pst_World = MAI_gst_MainHandles.pst_World;
 	if(_pst_DD->pst_World)
 	{
- 
-#ifdef PSX2_TARGET
-		_pst_DD->pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas = GDI_gpst_CurDD;
-		WOR_Render(_pst_DD->pst_World, _pst_DD);
-#elif defined(_GAMECUBE)
-		_pst_DD->pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas = GDI_gpst_CurDD;
-		WOR_Render(_pst_DD->pst_World, _pst_DD);
-#else
 		_pst_DD->pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas = _pst_DD;
 		WOR_Render(_pst_DD->pst_World, _pst_DD);
-#endif
 	}
 
 #ifdef JADEFUSION
@@ -322,9 +302,6 @@ static void s_Display(HWND h, GDI_tdst_DisplayData *_pst_DD)
  */
 void s_CheckResetRequest(void)
 {
-#ifdef _GAMECUBE
-	GC_s_CheckResetRequest();
-#endif
 }
 
 /*
@@ -407,11 +384,6 @@ static BOOL sfnb_EndGame(void)
  */
 void s_HandleWinMessages(void)
 {
-#if defined(PSX2_TARGET) || defined(_GAMECUBE) || defined(_XBOX) || defined(_XENON)
-	return;
-
-	/*~~~~~~~~~~~~~~~~~~~~~~~*/
-#else	/* PS2 + GC + XBOX */
 	MSG		msg;
 	float	f_StartTimeEditors;
 	/*~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -450,7 +422,6 @@ void s_HandleWinMessages(void)
 	TIM_gf_EditorTime += (TIM_f_Clock_TrueRead() - f_StartTimeEditors);
 
 	PRO_StopTrameRaster(&ENG_gpst_RasterEng_WinMsg);
-#endif /* PSX2_TARGET +GC */
 }
 
 /*$2
@@ -1151,14 +1122,6 @@ void ENG_ForceStartRasters(void)
 
 void ENG_vEmergencyFreeMem()
 {
-#ifdef _GAMECUBE
-	if (MEM_uGetFreeMemSize(&MEM_gst_MemoryInfo) < 500000)
-	{
-		extern void SPG2_FreeUnusedCachedData();
-		SPG2_vEmergencyFreeMem();
-	}
-	GXI_FreeTmpDLBuff();
-#endif // _GAMECUBE
 }
 
 
@@ -1401,12 +1364,7 @@ static void s_OneTrame(void)
 #if defined(PSX2_TARGET) || defined(_GAMECUBE) || defined(_XBOX) || defined(_XENON)
 	MAI_gst_MainHandles.pst_DisplayData = GDI_gpst_CurDD;
 #endif
-#ifdef PSX2_TARGET
-	{
-		extern void GSP_Bink_EndLoad_Bis();		
-		GSP_Bink_EndLoad_Bis();		
-	}
-#endif
+
 	/* Display */
 #ifndef JADEFUSION	
 	_GSP_BeginRaster(19);
