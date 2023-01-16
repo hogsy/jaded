@@ -174,11 +174,6 @@ static void s_AnalyseCommandLine(char *_psz_Line)
 
 			_psz_Line += 3;
 		}
-		else if(!L_strnicmp(_psz_Line, "ps2joy", 6))
-		{
-			win32INO_l_Joystick_Mode = INO_Joy_Ps2Mode;
-			_psz_Line += 6;
-		}
 		else if(!L_strnicmp(_psz_Line, "pcjoy", 5))
 		{
 			win32INO_l_Joystick_Mode = INO_Joy_PCMode;

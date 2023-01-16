@@ -556,7 +556,7 @@ void STR_SetSize(OBJ_tdst_GameObject *_pst_GO, int i, int f, int n, MATH_tdst_Ve
 		{
 			STR_M_SetFont(pst_STR, ((pst_Letter->ul_Flags & STR_Cul_LF_PageMask) >> STR_Cul_LF_PageShift));
 
-            if (pst_STR->pst_Font && (v->x < 0) )
+            if ( pst_STR->pst_Font && pst_STR->pst_Font->pst_Letter && ( v->x < 0 ) )
             {
                 pst_FontLetter = pst_STR->pst_Font->pst_Letter + STR_M_A2I(pst_Letter->ul_Flags);
 
@@ -573,7 +573,7 @@ void STR_SetSize(OBJ_tdst_GameObject *_pst_GO, int i, int f, int n, MATH_tdst_Ve
             else
             { 
                 pst_Letter->w = (short) (v->x * pst_STR->uw_SW);
-                if (pst_STR->pst_Font)
+				if ( pst_STR->pst_Font && pst_STR->pst_Font->pst_Letter )
                 {
                     pst_FontLetter = pst_STR->pst_Font->pst_Letter + STR_M_A2I(pst_Letter->ul_Flags);
                     x = v->x * ( ((float) fabs(pst_FontLetter->f_V[1] - pst_FontLetter->f_V[0])) / (float) fabs(pst_FontLetter->f_U[1] - pst_FontLetter->f_U[0]));
