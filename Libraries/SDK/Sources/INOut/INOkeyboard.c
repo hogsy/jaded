@@ -160,14 +160,7 @@ BOOL INO_b_IsKeyJustPressed(unsigned char _uc_Key)
  */
 BOOL INO_b_IsKeyReleased(unsigned char _uc_Key)
 {
-#ifdef _GAMECUBE
-#pragma unused(_uc_Key)
-    return 0;
-#elif defined(PSX2_TARGET) || defined(_XBOX) || defined(_XENON)
-    return 0;
-#else
 	return !(INO_gspc_State[ _uc_Key ] & 0x80);
-#endif
 }
 
 /*
@@ -176,14 +169,7 @@ BOOL INO_b_IsKeyReleased(unsigned char _uc_Key)
  */
 BOOL INO_b_IsKeyJustReleased(unsigned char _uc_Key)
 {
-#ifdef _GAMECUBE
-#pragma unused(_uc_Key)
-    return 0;
-#elif defined(PSX2_TARGET) || defined(_XBOX) || defined(_XENON)
-    return 0;
-#else
     return !(INO_gspc_State[ _uc_Key ] & 0x80) && (INO_gspc_PrevState[ _uc_Key ] & 0x80);
-#endif
 }
 
 

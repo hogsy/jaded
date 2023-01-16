@@ -571,7 +571,13 @@ void EDI_cl_MainFrame::OnAction(ULONG _ul_Action)
 
 			o_Dialog.SetDefault(JoyName[win32INO_l_JoyUSBPS2]);
 
+#if 0
 			if(o_Dialog.DoModal() == IDOK) INO_SelectJoyUSBPS2(o_Dialog.mi_CurSelData);
+#else
+            if ( o_Dialog.DoModal() == IDOK )
+            {
+            }
+#endif
 
 			win32INO_l_Joystick_Mode = INO_Joy_Ps2Mode;
 		}

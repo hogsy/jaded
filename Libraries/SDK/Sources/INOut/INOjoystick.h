@@ -89,7 +89,6 @@ extern LONG win32INO_l_Joystick_YUpStart[2];
 extern LONG win32INO_l_Joystick_YDownStart[2];
 extern LONG win32INO_l_Joystick_YDown[2];
 extern LONG win32INO_l_Joystick_Mode;
-extern void INO_SelectJoyUSBPS2(int);
 #ifdef ACTIVE_EDITORS
 extern LONG INO_l_Joystick_X[2];
 extern LONG INO_l_Joystick_Y[2];
