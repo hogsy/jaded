@@ -1029,7 +1029,7 @@ else
 
 				pst_STR->pst_Font = (STR_tdst_FontDesc *) ul_Font[i];
 				pst_STR->w_FontPage = i;
-				if(!pst_STR->pst_Font) continue;
+				if(!pst_STR->pst_Font || !pst_STR->pst_Font->pst_Letter) continue;
 
 				pst_FontLetter = pst_STR->pst_Font->pst_Letter + STR_M_A2I(pst_Letter->ul_Flags);
 
@@ -1325,33 +1325,39 @@ STRRENDER_ContinueStringAfterDraw:
 			{
 				ul_SpriteFont[i_Font]++;
 				pst_Font = (STR_tdst_FontDesc *) ul_Font[i_Font];
-				pst_FontLetter = pst_Font->pst_Letter + (i_Ascii - 32);
-				if( i_FixedWidth )
-					fX = f_SizeX;
-				else
+				if ( pst_Font->pst_Letter != NULL )
 				{
-					fX = (pst_FontLetter->f_V[1] - pst_FontLetter->f_V[0]);
-					if(fX == 0)
-						fX = 0;
-					else
+					pst_FontLetter = pst_Font->pst_Letter + ( i_Ascii - 32 );
+					if ( pst_FontLetter != NULL )
 					{
-						fX = f_XMul * pst_Font->fWoH * f_SizeY * (pst_FontLetter->f_U[1] - pst_FontLetter->f_U[0]) / fX;
-						(*(ULONG *) &fX) &= 0x7FFFFFFF;
+						if ( i_FixedWidth )
+							fX = f_SizeX;
+						else
+						{
+							fX = ( pst_FontLetter->f_V[ 1 ] - pst_FontLetter->f_V[ 0 ] );
+							if ( fX == 0 )
+								fX = 0;
+							else
+							{
+								fX = f_XMul * pst_Font->fWoH * f_SizeY * ( pst_FontLetter->f_U[ 1 ] - pst_FontLetter->f_U[ 0 ] ) / fX;
+								( *( ULONG * ) &fX ) &= 0x7FFFFFFF;
+							}
+						}
+
+						STR_AddSprite_F1C( i_Sprite, f_PosX, f_PosY, fX, f_SizeY, ul_Color, pst_FontLetter );
+						f_PosX += fX + STR_gst_Data.f_XEcart;
+
+						STR_gst_Data.pul_Sprite[ pc - ( unsigned char * ) STR_gst_Data.pc_Letter ] = ( STR_gst_Data.pul_Sprite[ pc - ( unsigned char * ) STR_gst_Data.pc_Letter ] & 0xFF000000 ) | i_Sprite;
+						STR_gst_Data.pul_Sprite[ i_Sprite ] = ( STR_gst_Data.pul_Sprite[ i_Sprite ] & 0xFFFFFF ) | ( i_Font << 24 );
+						i_Sprite++;
+						i_Font = i_NextFont;
+
+						if ( i_Sprite == MAX_SPRITE )
+						{
+							i_Sprite = i_StringFirstSprite;
+							goto STRRENDER_DrawString;
+						}
 					}
-				}
-
-				STR_AddSprite_F1C(i_Sprite, f_PosX, f_PosY, fX, f_SizeY, ul_Color, pst_FontLetter);
-				f_PosX += fX + STR_gst_Data.f_XEcart;
-
-				STR_gst_Data.pul_Sprite[pc - (unsigned char*)STR_gst_Data.pc_Letter] = (STR_gst_Data.pul_Sprite[pc - (unsigned char*)STR_gst_Data.pc_Letter] & 0xFF000000) | i_Sprite;
-				STR_gst_Data.pul_Sprite[i_Sprite] = (STR_gst_Data.pul_Sprite[i_Sprite] & 0xFFFFFF) | (i_Font << 24);
-				i_Sprite++;
-				i_Font = i_NextFont;
-
-				if(i_Sprite == MAX_SPRITE)
-				{
-					i_Sprite = i_StringFirstSprite;
-					goto STRRENDER_DrawString;
 				}
 			}
 		}
