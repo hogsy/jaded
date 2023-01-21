@@ -8,15 +8,7 @@
 /* Aim: OpenGL render state */
 #include "Precomp.h"
 
-#ifdef PSX2_TARGET
-#include "PS2GL.h"
-#include "PS2GL_Redefine.h"
-
-#else
 #include <gl/gl.h>
-#endif
-
-
 
 #include "OGLinit.h"
 #include "BASe/BAStypes.h"

@@ -9,12 +9,7 @@
 
 #include "Precomp.h"
 
-#ifdef PSX2_TARGET
-#include "PS2GL.h"
-#include "PS2GL_Redefine.h"
-#else
 #include "ddraw.h"
-#endif
 #include "GDInterface/GDInterface.h"
 #include "GDInterface/GDIrequest.h"
 #include "OGLinit.h"
