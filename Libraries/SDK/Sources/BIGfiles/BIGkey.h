@@ -56,8 +56,6 @@ extern ULONG    BIG_ul_SearchKeyToFat(BIG_KEY);
 extern void     BIG_ChangeKey(BIG_INDEX, BIG_KEY);
 extern void		BIG_GetLastKeyForUser(int *,ULONG);
 extern void		BIG_GetLastKey(int *);
-extern void     BIG_SetRegistryBfSize();
-extern ULONG    BIG_ul_GetRegistryBfSize();
 extern ULONG    BIG_ul_GetBFSize();
 #endif
 #if defined (__cplusplus) && !defined(JADEFUSION)

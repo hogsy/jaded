@@ -309,6 +309,7 @@ void ERR_LogPrint(const char *_s_Msg)
  */
 void ERR_TestWarning(void)
 {
+#if 0 // unnecessary imo - let user check manually ~hogsy
     if(ERR_gb_Warning && ERR_gb_WarningBox)
     {
         if(M_MF()->MessageBox
@@ -319,6 +320,7 @@ void ERR_TestWarning(void)
             ) != IDOK)
 			ERR_gb_WarningBox = FALSE;
     }
+#endif
 
     ERR_gb_Warning = FALSE;
 }

@@ -114,6 +114,8 @@ LONG WOR_l_World_SaveWithFileName(WOR_tdst_World *_pst_World, char *_sz_Path, ch
 #endif
 #endif
 
+	float startTime = TIM_f_Counter_TrueRead() / TIM_ul_PreciseGetTicksPerSecond();
+
 	sprintf(asz_Path, "%s %s", ENG_STR_Csz_SaveWorld, _sz_Name);
 	LINK_PrintStatusMsg(asz_Path);
 
@@ -300,6 +302,7 @@ LONG WOR_l_World_SaveWithFileName(WOR_tdst_World *_pst_World, char *_sz_Path, ch
 	SAV_Buffer(&ul_Key, 4);
 
 	/* Save reference on list of networks */
+	LINK_PrintStatusMsg( "Saving network references..." );
 #if !defined(XML_CONV_TOOL)
 	ul_Key = 0;
 	if(_pst_World->pst_AllNetworks)
@@ -398,6 +401,9 @@ LONG WOR_l_World_SaveWithFileName(WOR_tdst_World *_pst_World, char *_sz_Path, ch
 	ul_Key = SAV_ul_End();
 
 	/* Save all game objects */
+	char tmp[ 64 ];
+	snprintf( tmp, sizeof( tmp ), "Saving %u game objects...", _pst_World->st_AllWorldObjects.ul_NbElems );
+	LINK_PrintStatusMsg( tmp );
 	L_strcat(asz_Path, "/");
 	L_strcat(asz_Path, EDI_Csz_Path_GameObject);
 	pst_PFElem = TAB_pst_PFtable_GetFirstElem(&_pst_World->st_AllWorldObjects);
@@ -468,6 +474,8 @@ _End_
 		return ul_Key;
 
 	/* Save all gro */
+	snprintf( tmp, sizeof( tmp ), "Saving %u graphic objects...", _pst_World->st_GraphicObjectsTable.ul_NbElems );
+	LINK_PrintStatusMsg( tmp );
 	GRO_Struct_SaveTable(&_pst_World->st_GraphicObjectsTable);
 	
 #ifdef JADEFUSION
@@ -481,6 +489,11 @@ _End_
 	/* Save networks */
 	if(!(_l_Flags & WOR_C_DoNotSaveNetwork)) 
 	{
+		if ( _pst_World->pst_AllNetworks != NULL )
+		{
+			snprintf( tmp, sizeof( tmp ), "Saving %u networks...", _pst_World->pst_AllNetworks->ul_Num );
+			LINK_PrintStatusMsg( tmp );
+		}
 _Try_
 		WAY_SaveWorldNetworks(_pst_World);
 _Catch_
@@ -488,18 +501,19 @@ _End_
 	}
 
 	/* Save all sprite generators */
+	LINK_PrintStatusMsg( "Saving sprite generators..." );
 _Try_
 	MAT_pst_SaveAllSpritesGenerator();
 _Catch_
 _End_
 
 	/* Save all procedural textures */
+	LINK_PrintStatusMsg( "Saving procedural textures..." );
 _Try_
 	TEX_Procedural_Save();
     TEX_Anim_Save();
 _Catch_
 _End_
-
 
 	/* nothing more to save */
 	_pst_World->c_HaveToBeSaved = 0;
@@ -508,6 +522,9 @@ _End_
 	WORGos_Save(_pst_World);
 #endif
 
+	float endTime = TIM_f_Counter_TrueRead() / TIM_ul_PreciseGetTicksPerSecond();
+	snprintf( tmp, sizeof( tmp ), "World saved successfully! (took %.2f/s)", endTime - startTime );
+	LINK_PrintStatusMsg( tmp );
 
 	return ul_Key;
 }

@@ -283,9 +283,6 @@ void EOUT_cl_Frame::SaveWorld(ULONG _ul_Action)
     }
     if (_ul_Action == EOUT_ACTION_SAVEWORLDDUPLICATERLI )
         OBJ_gb_SaveDuplicateRLI = 0;
-
-    //BIG_bSaveBfSize = TRUE;
-    BIG_SetRegistryBfSize(); 
 }
 
 void EOUT_cl_Frame::OnAction(ULONG _ul_Action)

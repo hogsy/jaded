@@ -780,7 +780,7 @@ BOOL EDI_cl_App::InitInstance(void)
 #if !defined(XML_CONV_TOOL)
     strcpy(EDI_az_LogFileName,"binerr.log");
 
-    ULONG ulRegBFSize = BIG_ul_GetRegistryBfSize();
+    ULONG ulRegBFSize = BIG_ul_GetBFSize();
 
 	/* Test command line */
 	*masz_ToOpen = 0;
@@ -1677,7 +1677,6 @@ BOOL EDI_cl_App::InitInstance(void)
 	{
 	    DAT_CPerforce::GetInstance()->P4FlushBF(DAT_CPerforce::GetInstance()->GetP4Root().c_str());
 		DAT_CPerforce::GetInstance()->P4Disconnect();
-        BIG_SetRegistryBfSize();
     }
 
 	/* One idle */

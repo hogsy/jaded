@@ -883,16 +883,7 @@ void EDI_cl_MainFrame::UpdateMainFrameTitle(void)
 	char	asz_Temp[512];
 	/*~~~~~~~~~~~~~~~~~~*/
 
-#if MONTREAL_SPECIFIC
-	// For the builds in Montreal, display the Montreal build number as well as the Montpellier build number.
-	sprintf(asz_Temp, "JADE Version %03d(%03d)-%03d", BIG_Cu4_MontrealAppVersion, BIG_Cu4_AppVersion, BIG_Cu4_Version);
-#else
-#ifdef JADEFUSION
-	sprintf(asz_Temp, "JADE Version Xe-%03d(%03d,%03d)-%03d", BIG_Cu4_MontrealXeAppVersion, BIG_Cu4_MontrealAppVersion, BIG_Cu4_AppVersion, BIG_Cu4_Version);
-#else
-	sprintf(asz_Temp, "JADE Version %03d-%03d (hogsy's patched release)", BIG_Cu4_AppVersion, BIG_Cu4_Version);
-#endif
-#endif
+	sprintf(asz_Temp, "JADED Editor (Version %03d-%03d)", BIG_Cu4_AppVersion, BIG_Cu4_Version);
 
 #ifdef SPEED_EDITORS
 	L_strcat( asz_Temp, " (R)" );

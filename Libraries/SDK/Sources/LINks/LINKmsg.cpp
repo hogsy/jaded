@@ -123,7 +123,11 @@ void LINK_PrintStatusMsgCanal(char *_psz_Text,int _iCanal)
 		if(LINK_gb_CanLog)
 		{
 			po_Editor = M_MF()->po_GetEditorByType(EDI_IDEDIT_LOGFILE, 0);
-			if(po_Editor) po_Editor->i_OnMessage(ELOG_MESSAGE_ADDLINE|((_iCanal + 1)<<16), (ULONG) _psz_Text, LINK_gul_ColorTxt);
+			if ( po_Editor )
+			{
+				po_Editor->i_OnMessage( ELOG_MESSAGE_ADDLINE | ( ( _iCanal + 1 ) << 16 ), ( ULONG ) _psz_Text, LINK_gul_ColorTxt );
+				po_Editor->UpdateWindow();
+			}
 		}
 	}
 

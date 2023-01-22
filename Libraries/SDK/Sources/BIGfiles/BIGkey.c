@@ -167,28 +167,6 @@ ULONG BIG_ul_GetKeyValue(char *_psz_Value)
 
 /*
  =======================================================================================================================
-    Aim:    To retreive the bfsize value from the registry.
-    Out:    BF size in registry, or 0 if key was not found.
- =======================================================================================================================
- */
-ULONG BIG_ul_GetRegistryBfSize()
-{
-	/*~~~~~~~~~~~~~~~~~~~*/
-	char	asz_Value[100];
-	LONG	l_Len = 99;
-	/*~~~~~~~~~~~~~~~~~~~*/
-
-	if (ERROR_SUCCESS == RegQueryValue(HKEY_CURRENT_USER, KEY_BFSIZE, asz_Value, &l_Len))
-    {
-	    return (ULONG) L_atol(asz_Value);
-    }
-    else
-        return 0;
-}
-
-
-/*
- =======================================================================================================================
     Aim:    To get the bf size.
  =======================================================================================================================
  */
@@ -208,34 +186,6 @@ ULONG BIG_ul_GetBFSize()
         return ulBfSize;
     }
 }
-
-/*
- =======================================================================================================================
-    Aim:    To write the bfsize value in the registry.
- =======================================================================================================================
- */
-BOOL BIG_bSaveBfSize = TRUE;
-void BIG_SetRegistryBfSize()
-{
-	/*~~~~~~~~~~~~~~~~~~*/
-	HKEY	h_Key;
-	char	asz_Value[50];
-    ULONG   ulBFSize;
-	/*~~~~~~~~~~~~~~~~~~*/
-
-    if (!BIG_bSaveBfSize) return;
-
-    ulBFSize = BIG_ul_GetBFSize();
-
-    if (ulBFSize)
-    {
-    	ERR_X_Error(RegCreateKey(HKEY_CURRENT_USER, KEY_BFSIZE, &h_Key) == ERROR_SUCCESS, "Can't create key" , NULL);
-        sprintf(asz_Value, "%d", ulBFSize);
-        RegSetValue(h_Key, NULL, REG_SZ, asz_Value, L_strlen(asz_Value));
-        RegCloseKey(h_Key);
-    }
-}
-
 
 /*
  =======================================================================================================================

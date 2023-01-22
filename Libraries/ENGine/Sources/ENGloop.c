@@ -1292,7 +1292,7 @@ static void s_OneTrame(void)
 			{
 				Sleep( ( DWORD ) delay );
 			}
-	}
+		}
 	}
 	
 #ifdef JADEFUSION
@@ -1356,7 +1356,6 @@ static void s_OneTrame(void)
 	
 		PROPS2_StopRaster(&PROPS2_gst_ENG_gp_Engine);
 		PRO_StopTrameRaster(&ENG_gpst_RasterEng_OneCall);
-	
 	}
 #ifdef JADEFUSION
         _GSP_EndRaster(XE_StartRaster);
@@ -1370,57 +1369,6 @@ static void s_OneTrame(void)
 #ifndef JADEFUSION	
 	_GSP_BeginRaster(19);
 #endif
-#if 0 // (camera tests)
-	{
-		/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-		MATH_tdst_Matrix			*p_Supramat,Loc;
-		WOR_tdst_World				*_pst_World;
-		/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-		_pst_World = GDI_gpst_CurDD->pst_World;
-		if(_pst_World) 
-		{
-			p_Supramat = &GDI_gpst_CurDD->st_Camera.st_Matrix;
-
-			if(_pst_World->pst_View)
-			{
-				p_Supramat = &_pst_World->pst_View->st_ViewPoint;
-			}
-
-			MATH_CopyMatrix(&Loc, p_Supramat);
-#define LIMIT_UP 0.5f
-			if (Loc.Jz < -LIMIT_UP)
-			{
-				float NewJZ;
-				NewJZ = 0.5f *(Loc.Jz + LIMIT_UP) - LIMIT_UP;
-				
-				Loc.Jz = NewJZ;
-				MATH_NormalizeVector(MATH_pst_GetYAxis(&Loc),MATH_pst_GetYAxis(&Loc));
-				Loc.Jz = NewJZ;
-				MATH_NormalizeVector(MATH_pst_GetYAxis(&Loc),MATH_pst_GetYAxis(&Loc));
-				Loc.Jz = NewJZ;
-				MATH_NormalizeVector(MATH_pst_GetYAxis(&Loc),MATH_pst_GetYAxis(&Loc));
-				MATH_CrossProduct(MATH_pst_GetZAxis(&Loc),MATH_pst_GetYAxis(&Loc),MATH_pst_GetXAxis(&Loc));
-				MATH_CopyMatrix(p_Supramat, &Loc);
-			}
-			if (Loc.Jz > LIMIT_UP)
-			{
-				float NewJZ;
-				NewJZ = 0.5f *(Loc.Jz - LIMIT_UP) + LIMIT_UP;
-				
-				Loc.Jz = NewJZ;
-				MATH_NormalizeVector(MATH_pst_GetYAxis(&Loc),MATH_pst_GetYAxis(&Loc));
-				Loc.Jz = NewJZ;
-				MATH_NormalizeVector(MATH_pst_GetYAxis(&Loc),MATH_pst_GetYAxis(&Loc));
-				Loc.Jz = NewJZ;
-				MATH_NormalizeVector(MATH_pst_GetYAxis(&Loc),MATH_pst_GetYAxis(&Loc));
-				MATH_CrossProduct(MATH_pst_GetZAxis(&Loc),MATH_pst_GetYAxis(&Loc),MATH_pst_GetXAxis(&Loc));
-				MATH_CopyMatrix(p_Supramat, &Loc);
-			}
-		}
-		
-	}
-#endif	
 
 #ifdef JADEFUSION
 	bool bUsingSimpleRenderer = false;

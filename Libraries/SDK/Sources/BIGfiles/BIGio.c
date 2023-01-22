@@ -1465,7 +1465,6 @@ int BIG_fwrite(void *_p_Buffer, int _i_Size, L_FILE _h_Handle)
     int iResult;
 	if(!_i_Size) return 1;
 	iResult = L_fwriteA(_p_Buffer, _i_Size, 1, _h_Handle);
-    BIG_SetRegistryBfSize(); // So that we always save the size of the bf in the registry
     return iResult;
 }
 
