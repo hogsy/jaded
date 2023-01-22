@@ -43,13 +43,14 @@ public:
 	EPFB_cl_Frame	*mpo_Editor;
 	
 	int				mi_DisplayComment;
-	int				mi_DisplayPreview;
+	int mi_DisplayPreview{ 0 };
 	
-	ULONG			mul_PreviewIndex;		
-	int				mi_Preview;
-	HBITMAP         mh_PreviewBitmap;
-	int				mi_PreviewWidth;
-	int				mi_PreviewHeight;
+	ULONG			mul_PreviewIndex;
+
+	int mi_Preview{ 0 };
+	HBITMAP mh_PreviewBitmap{ nullptr };
+	int mi_PreviewWidth{ 2 };
+	int mi_PreviewHeight{ 2 };
 
 /*$2
  -----------------------------------------------------------------------------------------------------------------------

@@ -203,11 +203,9 @@ extern void     TIM_Clock_Reset(void);
 extern float    TIM_f_Clock_TrueRead(void);
 extern ULONG    TIM_ul_QuickGetTicksPerSecond(void);
 
-#ifndef PSX2_TARGET
 extern float    TIM_f_Counter_TrueRead(void);
 extern ULONG    TIM_ul_PreciseGetTicksPerSecond(void);
 extern void     TIM_UpdateCPUClockFrequency(void);
-#endif
 
 /*
  ===================================================================================================

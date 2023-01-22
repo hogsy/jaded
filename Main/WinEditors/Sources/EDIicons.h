@@ -46,6 +46,6 @@
 #define EDI_IMAGE_SNDINSERT         37
 #define EDI_IMAGE_SNDFADE			38
 #define EDI_IMAGE_FCTLIB			39
-#define EDI_IMAGE_PREFAB			40
+#define EDI_IMAGE_PREFAB			EDI_IMAGE_GRP
 
 #endif

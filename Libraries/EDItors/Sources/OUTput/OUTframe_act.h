@@ -805,7 +805,7 @@ Switch Translation Linear/No Linear=557=--=0;"
 World=-1=--=0;\
 New World=1=--=0;\
 Save World=2=^S=0;\
-Save World (duplicate RLI file that are outside world dir)=13=--=0;\
+Save World (duplicate external RLI files)=13=--=0;\
 Auto Save World=14=--=0;\
 Sep=0=--=0;\
 Export Only selected=3=--=0;\
