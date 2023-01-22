@@ -418,6 +418,10 @@ void EDI_cl_MainFrame::OnAction(ULONG _ul_Action)
 		EDI_go_TheApp.mb_RunEngine = TRUE;
 		break;
 
+	case EDI_ACTION_LIMITFPS:
+		ENG_gb_LimitFPS = !ENG_gb_LimitFPS;
+		break;
+
 	/*$1-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	case EDI_ACTION_TOGGLEORIENT:
@@ -951,6 +955,11 @@ UINT EDI_cl_MainFrame::ui_OnActionState(ULONG _ul_Action)
 	case EDI_ACTION_TOGGLEENGINE:
 		ui_State = DFCS_BUTTONCHECK;
 		if(EDI_go_TheApp.mb_RunEngine) ui_State |= DFCS_CHECKED;
+		break;
+
+	case EDI_ACTION_LIMITFPS:
+		ui_State = DFCS_BUTTONCHECK;
+		if ( ENG_gb_LimitFPS ) ui_State |= DFCS_CHECKED;
 		break;
 
 	case EDI_ACTION_TOGGLEMENU:

@@ -958,8 +958,6 @@ void s_EngineCheatFinal(void)
 {
 #if defined( ACTIVE_EDITORS )
 	EDI_s_EngineCheatFinal();
-#elif defined(_XBOX) || defined(_XENON)
-	XB_s_EngineCheatFinal();
 #else
 	win32_s_EngineCheatFinal();
 #endif
@@ -1284,15 +1282,18 @@ static void s_OneTrame(void)
 		_GSP_EndRaster( 20 );
 
 		TEX_Anim_Update( MAI_gst_MainHandles.pst_DisplayData );
-	}
 
-	//static const int maxFPS = 60;
-	//extern float     TIM_gf_realdt;
-	//float            delay = 1000.0f / maxFPS - TIM_gf_realdt;
-	//if ( delay > 0 )
-	//{
-	//	Sleep( ( DWORD ) delay );
-	//}
+		if ( ENG_gb_LimitFPS )
+		{
+			static const int maxFPS = 60;
+			extern float TIM_gf_realdt;
+			float delay = 1000.0f / maxFPS - TIM_gf_realdt;
+			if ( delay > 0 )
+			{
+				Sleep( ( DWORD ) delay );
+			}
+	}
+	}
 	
 #ifdef JADEFUSION
 	// Handle Pause Delay

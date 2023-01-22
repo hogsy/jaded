@@ -368,6 +368,7 @@ void ENG_InitEngine(void)
 	/* Give the engine pointer to the main loop interface */
 	ENG_gp_Engine = ENG_EngineCall;
 
+	ENG_gb_LimitFPS = TRUE; // TODO: store in config ~hogsy
 	ENG_gb_FirstFrame = TRUE;
 
 	/* Reset the clock */

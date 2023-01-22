@@ -109,6 +109,8 @@
 
 #define EDI_ACTION_GENMAPLIST       500
 
+#define EDI_ACTION_LIMITFPS 600
+
 /* Base buffer. */
 #ifdef ACTION_GLOBAL
 #define EXTERN
@@ -175,6 +177,7 @@ Engine=-7=--=0;\
 Toggle Engine=2=F5=202;\
 Run Engine (Game Mode)=8=^F5=0;\
 Engine Step=3=PAUSE=0;\
+Limit FPS=600=--=0;\
 Sep=0=--=0;\
 Activate Universe=73=--=0;\
 Set Universe AI Key=71=--=0;\
@@ -269,6 +272,7 @@ Engine=-7=--=0;\
 Toggle Engine=2=F5=202;\
 Run Engine (Game Mode)=8=^F5=0;\
 Engine Step=3=PAUSE=0;\
+Limit FPS=600=--=0;\
 Sep=0=--=0;\
 Activate Universe=73=--=0;\
 Set Universe AI Key=71=--=0;\

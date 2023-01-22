@@ -54,6 +54,7 @@ extern BOOL					ENG_gb_EVERunning;
 extern BOOL					ENG_gb_ANIRunning;
 extern BOOL					ENG_bg_FirstFrameSpeedRun;
 extern BOOL					ENG_gb_FirstFrame;
+extern BOOL                 ENG_gb_LimitFPS;
 
 extern HINSTANCE            MAI_gh_MainInstance;
 extern HWND                 MAI_gh_MainWindow;

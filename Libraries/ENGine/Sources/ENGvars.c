@@ -50,6 +50,7 @@ BOOL				ENG_gb_EVERunning = FALSE;
 BOOL				ENG_gb_ANIRunning = FALSE;
 BOOL				ENG_bg_FirstFrameSpeedRun = FALSE;
 BOOL				ENG_gb_FirstFrame = FALSE;
+BOOL                ENG_gb_LimitFPS = TRUE; // cap/limit the fps to around 60 ~hogsy
 
 HINSTANCE           MAI_gh_MainInstance;
 HWND                MAI_gh_MainWindow;
