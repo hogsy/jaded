@@ -88,7 +88,6 @@
 #define EDI_ACTION_DESK10           109
 
 #define EDI_ACTION_HELPABOUT		200
-#define EDI_ACTION_HELP				201
 #define EDI_ACTION_HELPPATH			202
 
 #define EDI_ACTION_TEXTSTATS		300
@@ -303,8 +302,7 @@ Sep=0=--=0;\
 Set Language=93=--=0;\
 Options=-6=--=0;\
 Help=-7=--=0;\
-Help Path=202=--=0;\
-Content=201=--=0;\
+Visit RayDevWiki=202=--=0;\
 Sep=0=--=0;\
 About=200=--=0;\
 ;\

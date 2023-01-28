@@ -750,21 +750,7 @@ void EDI_cl_MainFrame::OnAction(ULONG _ul_Action)
 		break;
 
 	case EDI_ACTION_HELPPATH:
-		{
-			/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-			EDIA_cl_NameDialog	o_HelpPath("Enter search path for help");
-			/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-			o_HelpPath.mo_Name = M_MF()->mst_ExternIni.asz_PathHelp;
-			if(o_HelpPath.DoModal() == IDOK)
-			{
-				L_strcpy(M_MF()->mst_ExternIni.asz_PathHelp, (char *) (LPCSTR) o_HelpPath.mo_Name);
-			}
-		}
-		break;
-
-	case EDI_ACTION_HELP:
-		EDI_go_TheApp.SearchHelp("JADE");
+		ShellExecute( NULL, "open", "https://raydev.wiki/jade:overview", NULL, NULL, SW_SHOWNORMAL );
 		break;
 	}
 
