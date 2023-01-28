@@ -62,6 +62,10 @@
 #include <afxsock.h>		// MFC socket extensions
 #endif // #ifdef WIN32
 
+#if !defined( NDEBUG )
+#include <DbgHelp.h>
+#endif
+
 // to satisfy p4 crap - should remove p4 ~hogsy
 #undef _tzname
 extern "C" { char* _tzname[2]; }
@@ -712,6 +716,53 @@ extern "C" void					AI2C_UnloadFixModelList(void);
 ULONG gXmlConvRetVal = 0;
 #endif
 
+#if !defined( NDEBUG )
+static LONG WINAPI Win32CrashHandler( EXCEPTION_POINTERS *exception )
+{
+	MessageBox( NULL, "Encountered an exception, attempting to generate dump!", "Error", MB_OK | MB_ICONERROR );
+
+	HMODULE dbgHelpLib = LoadLibrary( "DBGHELP.DLL" );
+	if ( dbgHelpLib == nullptr )
+		return EXCEPTION_CONTINUE_SEARCH;
+
+	typedef BOOL( WINAPI * MINIDUMP_WRITE_DUMP )(
+	        IN HANDLE hProcess,
+	        IN DWORD ProcessId,
+	        IN HANDLE hFile,
+	        IN MINIDUMP_TYPE DumpType,
+	        IN CONST PMINIDUMP_EXCEPTION_INFORMATION ExceptionParam,
+			OPTIONAL IN PMINIDUMP_USER_STREAM_INFORMATION UserStreamParam, 
+			OPTIONAL IN PMINIDUMP_CALLBACK_INFORMATION CallbackParam OPTIONAL );
+
+	MINIDUMP_WRITE_DUMP MiniDumpWriteDump_ = ( MINIDUMP_WRITE_DUMP ) GetProcAddress( dbgHelpLib, "MiniDumpWriteDump" );
+	if ( MiniDumpWriteDump_ == nullptr )
+	{
+		FreeLibrary( dbgHelpLib );
+		return EXCEPTION_CONTINUE_SEARCH;
+	}
+
+	MINIDUMP_EXCEPTION_INFORMATION M;
+	CHAR Dump_Path[ MAX_PATH ];
+
+	M.ThreadId = GetCurrentThreadId();
+	M.ExceptionPointers = exception;
+	M.ClientPointers = 0;
+
+	GetModuleFileName( NULL, Dump_Path, sizeof( Dump_Path ) );
+	lstrcpy( Dump_Path + lstrlen( Dump_Path ) - 3, "dmp" );
+
+	HANDLE fileDump = CreateFile( Dump_Path, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL );
+	if ( fileDump )
+	{
+		MiniDumpWriteDump_( GetCurrentProcess(), GetCurrentProcessId(), fileDump, MiniDumpNormal, ( exception ) ? &M : NULL, NULL, NULL );
+		CloseHandle( fileDump );
+	}
+
+	FreeLibrary( dbgHelpLib );
+	return EXCEPTION_CONTINUE_SEARCH;
+}
+#endif
+
 /*
  =======================================================================================================================
  =======================================================================================================================
@@ -757,6 +808,10 @@ BOOL EDI_cl_App::InitInstance(void)
 
         ERR_OutputDebugString("[Info] Default path is set to '%s'\n", EDI_gsz_StartupPath);
     }
+#endif
+
+#if !defined( NDEBUG )
+	SetUnhandledExceptionFilter( Win32CrashHandler );
 #endif
 
 	_CrtSetAllocHook(HookMem);
@@ -1156,16 +1211,13 @@ BOOL EDI_cl_App::InitInstance(void)
 			case 'n':
 			case 'N':
 				/* /nosound */
-				if(L_strnicmp(psz_Scan, "nosound", 7) == 0) SND_gc_NoSound = 1;
-#ifdef MONTREAL_SPECIFIC
-                 else if(L_strnicmp(psz_Scan, "nocheck", 7) == 0) 
-					EDI_gb_DontCheckVersion = TRUE;
-				else if(L_strnicmp(psz_Scan, "noperforce", 10) == 0) 
+				if ( L_strnicmp( psz_Scan, "nosound", 7 ) == 0 ) SND_gc_NoSound = 1;
+				//else if(L_strnicmp(psz_Scan, "nocheck", 7) == 0)
+				//	EDI_gb_DontCheckVersion = TRUE;
+				else if ( L_strnicmp( psz_Scan, "noperforce", 10 ) == 0 )
 					DAT_CPerforce::GetInstance()->PermanentDisable();
-				else if(L_strnicmp(psz_Scan, "nokeyserver", 11) == 0)
-					EDI_gb_DontCheckKeyServer = TRUE;
-#endif
-				else if(L_strnicmp(psz_Scan, "nop4", 4) == 0) EDI_gb_BatchModeWithoutPerforce = TRUE;
+				else if ( L_strnicmp( psz_Scan, "nop4", 4 ) == 0 )
+					EDI_gb_BatchModeWithoutPerforce = TRUE;
 				break;
 
 			case 'o':

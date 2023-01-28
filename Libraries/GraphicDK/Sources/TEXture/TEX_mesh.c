@@ -7,7 +7,6 @@
 */
 
 #if !defined( PSX2_TARGET ) && !defined( _GAMECUBE ) && !defined( _XBOX ) && !defined( _PC_RETAIL ) && !defined(_XENON)
-
 #define WTR_OGL_VERSION
 #define WTR_ComputeOriginalsUV
 #endif
@@ -21,8 +20,11 @@
 #include "MATHs/MATH.h"
 
 #include "GEOmetric/GEOobject.h"
+
 #include "TEXture/WATER_FFT.h"
 #include "TEXture/TEX_Mesh.h"
+#include "TEXture/TEX_Mesh_internal.h"
+
 #include "SOFT/SOFTzlist.h"
 #include "GDInterface/GDIrasters.h"
 #include "GDInterface/GDIrequest.h"
@@ -30,6 +32,10 @@
 #ifdef WTR_OGL_VERSION
 #define WTR_ComputeOriginalsUV
 #include "..\OpenGL\Sources\OGLinit.h"
+
+// God fucking damn it Ubisoft
+// TODO: consolidate GL specific code into GL specific driver!! ~hogsy
+#include <GL/GL.h>
 #endif
 
 #ifdef _XENON_RENDER
@@ -38,7 +44,7 @@
 #include "../XenonGraphics/XeRenderer.h"
 #endif
 
-#if defined(_M_IX86) && !defined(ACTIVE_EDITORS) && (defined(_PC_RETAIL) || defined(_XBOX) || defined(_XENON))
+#if defined( _M_IX86 ) /* && !defined( ACTIVE_EDITORS ) && ( defined( _PC_RETAIL ) || defined( _XBOX ) || defined( _XENON ) )*/
 #define TEX_MESH_USE_SSE
 #endif
 
@@ -147,41 +153,13 @@ extern int LINK_gi_SpeedDraw;
 #define WTR_SCDPASS_COS_ALP	0.9848077530f * 0.9f // 10°
 #define WTR_SCDPASS_SIN_ALP	0.1736481776f * 0.9f // 10°
 
-#ifdef PSX2_TARGET
-
-#define WTR_PSX2_ASSEMBLY
-
-#define VM_DISCX_DEFAULT 120
-#define VM_DISCY_DEFAULT 150
-#define WTR_ComputeOriginalsUV
-#define WAveMapShift_Default 6
-#define WAveMapDXYShift_Default 6
-
-#elif defined(_GAMECUBE)
-
-#define VM_DISCX_DEFAULT 80
-#define VM_DISCY_DEFAULT 100
-#define WAveMapShift_Default 6
-#define WTR_ComputeOriginalsUV
-#define WAveMapDXYShift_Default 6
-
-#else // XBOX & PC
-
 #define VM_DISCX_DEFAULT 120//50
 #define VM_DISCY_DEFAULT 150//120
 #define WTR_ComputeOriginalsUV
 #define WAveMapShift_Default 6
 #define WAveMapDXYShift_Default 6
 
-#endif
-
-
 #define PSX2_ASM_PREFETCH(a) lq $0 , a//pref 0 , a //lq	$0 , a
-
-#ifdef _GAMECUBE
-extern u32 WTR_GetDL_Size(u32 DX , u32 DY);
-#define WTR_DISPLAYLISTSIZE(VM_DISCX,VM_DISCY) WTR_GetDL_Size(VM_DISCX , VM_DISCY)
-#endif
 
 #ifdef TEX_MESH_USE_SSE
 typedef __m128 GEO_VertexForZmap;
@@ -483,13 +461,6 @@ void WTR_SetExportParams(WATER_Export_Struct *pExp)
 //	pExp->Activate = 0;
 #endif
 
-#ifdef _GAMECUBE
-	{
-		extern u32 ulRealWaterColor;
-		ulRealWaterColor = pExp->WaterCol;
-	}
-#endif	
-	
 	if (!pst_GlobalsWaterParams)
 	{
 		if (!pExp->Activate) return;
@@ -617,10 +588,6 @@ void WTR_SetExportParams(WATER_Export_Struct *pExp)
 	pst_GlobalsWaterParams -> ulTextureRef  = pExp -> ulTextureRef ;
 
 	pst_GlobalsWaterParams -> SclaeUVFactor = pExp -> TextorigFactor ;
-#ifdef PSX2_TARGET
-//	pst_GlobalsWaterParams -> fChoppyFactor	*= 0.5f;
-//	pst_GlobalsWaterParams -> SclaeUVFactor *= 0.5f;
-#endif
 	
 /*#ifdef _GAMECUBE		
 	{
@@ -655,13 +622,6 @@ void WTR_SetExportParams(WATER_Export_Struct *pExp)
 #ifdef ACTIVE_EDITORS
 	pst_GlobalsWaterParams->pBackRef = pExp;
 #endif
-#ifdef _GAMECUBE
-	{
-		extern float GlobalWaterZ;
-		GlobalWaterZ = pst_GlobalsWaterParams -> GlobalWaterZ;
-	}
-#endif
-
 
 //CARLONE
 
@@ -674,19 +634,7 @@ void WTR_SetExportParams(WATER_Export_Struct *pExp)
 
 }
 
-#ifdef WTR_PSX2_ASSEMBLY
-_inline_ void WTR_Preload_MipMap_Texel_Param(register float *pFactor)
-{
-	register int TMP;
-	asm __volatile__ ("
-		lw 	TMP , 0(pFactor)
-		ppacw 	TMP,TMP,TMP
-		ppacw 	TMP,TMP,TMP
-		qmtc2	TMP,$vf20
-	");
-}
-#endif
-_inline_ void WTR_MipMap_Texel(register GEO_VertexForZmap	*pDST , register GEO_VertexForZmap	*pA ,register  GEO_VertexForZmap	*pB)
+static void WTR_MipMap_Texel(GEO_VertexForZmap	*pDST , GEO_VertexForZmap	*pA , GEO_VertexForZmap	*pB)
 {
 #ifdef WTR_PSX2_ASSEMBLY
 	asm __volatile__ ("

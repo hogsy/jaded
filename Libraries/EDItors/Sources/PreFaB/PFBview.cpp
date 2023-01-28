@@ -379,7 +379,7 @@ void EPFB_cl_View::OnSize(UINT nType, int cx, int cy)
  */
 void EPFB_cl_View::OnPaint()
 {
-	CDC					*pDC, dc;
+	CDC					*pDC;
 	CBitmap             *po_Tmp;
 	CRect				o_Rect;
 	float				dx, dy;
@@ -427,14 +427,15 @@ void EPFB_cl_View::OnPaint()
 		x += o_Rect.left;
 		y += o_Rect.top;
 		
-		dc.CreateCompatibleDC(pDC);
+		CDC dc;
+		dc.CreateCompatibleDC( pDC );
 		po_Tmp = (CBitmap *) dc.SelectObject( mh_PreviewBitmap );
 		if ( po_Tmp != nullptr )
 		{
 			pDC->SetStretchBltMode( HALFTONE );
 			pDC->StretchBlt( x, y, cx, cy, &dc, 0, 0, mi_PreviewWidth, mi_PreviewHeight, SRCCOPY );
-			dc.SelectObject( po_Tmp );
 		}
+		dc.DeleteDC();
 	}
 	else
 	{

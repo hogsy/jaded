@@ -797,6 +797,9 @@ int AI_EvalFunc_WORGetNumObject_C(int world)
 	/*~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	pst_World = WOR_pst_Universe_GetWorldPointer(world);
+	if ( pst_World == NULL ) // more horrible hacks ~hogsy
+		return 0;
+
     return pst_World->st_AllWorldObjects.ul_NbElems + pst_World->st_AllWorldObjects.ul_NbHoles;
 }
 /**/
