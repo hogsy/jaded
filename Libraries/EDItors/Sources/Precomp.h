@@ -1,13 +1,11 @@
 #ifndef UBI_INCLUDED_PRECOMP_H__143CF755_1C86_4828_B6D1_E14CE05BBE11
 #define UBI_INCLUDED_PRECOMP_H__143CF755_1C86_4828_B6D1_E14CE05BBE11
 
-#ifdef JADEFUSION
 #pragma message("*******************************************************************************")
 #pragma message("*** EDItors Precompiled Header ************************************************")
 
 #include "projectconfig.h"
 #include "BASe/ERRors/ERR.h"
-#endif
 
 #pragma comment( linker, "/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"" )
 

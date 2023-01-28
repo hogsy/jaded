@@ -9,13 +9,6 @@
 #include "Precomp.h"
 
 #include "BASe/BAStypes.h"
-#ifdef PSX2_TARGET
-#include "PS2GL.h"
-#include "PS2GL_Redefine.h"
-#else
-#include <gl/gl.h>
-#endif
-
 #include "BASe/CLIbrary/CLIstr.h"
 #include "OGLdebugfct.h"
 #include "OGLinit.h"

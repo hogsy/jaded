@@ -29,10 +29,6 @@ Macros
 ***********************************************************************************************************************
 */
 
-#define _SwapBuffers(_a)		SwapBuffers(_a)
-#define _wglMakeCurrent(_a, _b) wglMakeCurrent(_a, _b)
-#define _wglDeleteContext(_a)	wglDeleteContext(_a)
-
 // HARDWARE LIGHT
 //#define Hardware
 
@@ -43,17 +39,12 @@ constant
 ***********************************************************************************************************************
 */
 
-typedef void (APIENTRY * PFNWGLEXTSWAPCONTROLPROC) (int i); 
-typedef void (APIENTRY * PFNGLLOCKARRAYSEXTPROC) (GLint first, GLsizei count);
-typedef void (APIENTRY * PFNGLUNLOCKARRAYSEXTPROC) (void);
-
 /*$4
 ***********************************************************************************************************************
 Private and external function prototype
 ***********************************************************************************************************************
 */
 
-void		OGL_SetDCPixelFormat(HDC);
 void		OGL_SetupRC(OGL_tdst_SpecificData *);
 
 extern void LOA_BeginSpeedMode(BIG_KEY _ul_Key);
@@ -75,8 +66,6 @@ extern int NumberMat;
 //BOOL b_OnlyOneMat;
 #define MAXCLONES 1000
 #define MAXLIGHT 2
-
-#define	Show //ulOGLSetCol |= 0xff000000;//if (slip==1) ulOGLSetCol |= 0x0000ff00; else ulOGLSetCol |= 0x00ff0000;
 
 /*#define OGL_SetColorRGBA(a) \
 	if(pst_Color) \

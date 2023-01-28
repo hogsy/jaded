@@ -8,6 +8,7 @@
 
 
 #include "Precomp.h"
+
 #include "BASe/BAStypes.h"
 #include "BASe/MEMory/MEM.h"
 #include "TIMer/PROfiler/PROPS2.h"
@@ -25,21 +26,11 @@
 #include "ENGine/Sources/WORld/WORaccess.h"
 #endif
 
-#pragma comment(lib,"opengl32.lib")
+#pragma comment( lib, "opengl32.lib" )
+#pragma comment( lib, "glew32s.lib" )
 
 u32 Stats_ulNumberOfTRiangles = 0;
 u32 Stats_ulCallToDrawNb = 0;
-/*$4
- ***********************************************************************************************************************
-    Macros
- ***********************************************************************************************************************
- */
-
-#define _SwapBuffers(_a)		SwapBuffers(_a)
-#define _wglMakeCurrent(_a, _b) wglMakeCurrent(_a, _b)
-#define _wglDeleteContext(_a)	wglDeleteContext(_a)
-
-
 
 /*$4
  ***********************************************************************************************************************
@@ -50,13 +41,6 @@ BOOL		OGL_gb_Init = 0;
 BOOL		OGL_gb_DispStrip = 0;
 BOOL		OGL_gb_DispLOD = 0;
 ULONG       OGL_ulLODAmbient = 0;
-typedef void (APIENTRY * PFNWGLEXTSWAPCONTROLPROC) (int i); 
-typedef void (APIENTRY * PFNGLLOCKARRAYSEXTPROC) (GLint first, GLsizei count);
-typedef void (APIENTRY * PFNGLUNLOCKARRAYSEXTPROC) (void);
-
-PFNWGLEXTSWAPCONTROLPROC    wglSwapControl = NULL;
-PFNGLLOCKARRAYSEXTPROC      glLockArrays = NULL;
-PFNGLUNLOCKARRAYSEXTPROC    glUnlockArrays = NULL;
 
 /*$4
  ***********************************************************************************************************************
@@ -64,7 +48,7 @@ PFNGLUNLOCKARRAYSEXTPROC    glUnlockArrays = NULL;
  ***********************************************************************************************************************
  */
 
-void		OGL_SetDCPixelFormat(HDC);
+static void		OGL_SetDCPixelFormat(HDC);
 void		OGL_SetupRC(OGL_tdst_SpecificData *);
 
 #ifdef JADEFUSION
@@ -137,13 +121,13 @@ HRESULT OGL_l_Close(GDI_tdst_DisplayData *_pst_DD)
 
 	if(pst_SD->h_DC)
 	{
-		_wglMakeCurrent(pst_SD->h_DC, NULL);
+		wglMakeCurrent(pst_SD->h_DC, NULL);
 		pst_SD->h_DC = NULL;
 	}
 
 	if(pst_SD->h_RC)
 	{
-		_wglDeleteContext(pst_SD->h_RC);
+		wglDeleteContext(pst_SD->h_RC);
 		pst_SD->h_RC = NULL;
 	}
 
@@ -161,7 +145,6 @@ LONG OGL_l_Init(HWND _hWnd, GDI_tdst_DisplayData *_pst_DD)
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	RECT					st_Rect;
 	OGL_tdst_SpecificData	*pst_SD;
-    char                    *szExt;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 
@@ -187,14 +170,20 @@ LONG OGL_l_Init(HWND _hWnd, GDI_tdst_DisplayData *_pst_DD)
 	pst_SD->h_RC = wglCreateContext(pst_SD->h_DC);
 	wglMakeCurrent(pst_SD->h_DC, pst_SD->h_RC);
 
-	/* For synchro */
-	wglSwapControl = (PFNWGLEXTSWAPCONTROLPROC) wglGetProcAddress("wglSwapIntervalEXT"); 
+	GLenum err = glewInit();
+	if ( err != GLEW_OK )
+	{
+		MessageBox(
+		        NULL,
+		        "Your desktop must be configured in at least 24bit mode (True colors) for making OPENGL working properly.. \n\n"
+		        "Some graphics features will not be enabled \n\n"
+		        "Jade must be restarted for taking effect of your eventual modification.",
+		        "OpenGL warning",
+		        MB_OK | MB_ICONWARNING | MB_TASKMODAL );
+	}
 
-    szExt = (char *) glGetString( GL_EXTENSIONS );
-    if (szExt && strstr(szExt, "GL_EXT_compiled_vertex_array"))
+    if (GLEW_EXT_compiled_vertex_array)
     {
-        glLockArrays   = (PFNGLLOCKARRAYSEXTPROC)    wglGetProcAddress ("glLockArraysEXT");
-        glUnlockArrays = (PFNGLUNLOCKARRAYSEXTPROC)  wglGetProcAddress ("glUnlockArraysEXT");
         OGL_CALL( glEnableClientState(GL_VERTEX_ARRAY) );
     }	
 		
@@ -270,7 +259,7 @@ void OGL_Flip()
 	OGL_CALL( glFinish() );
 	PRO_StartTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_Flip);
 
-	_SwapBuffers(pst_SD->h_DC);
+	SwapBuffers(pst_SD->h_DC);
 
 	PRO_StopTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_Flip);
 
@@ -297,7 +286,7 @@ void OGL_Clear(LONG _l_Buffer, ULONG _ul_Color)
 #endif
 
 	pst_SD = (OGL_tdst_SpecificData *) GDI_gpst_CurDD->pv_SpecificData;
-	_wglMakeCurrent(pst_SD->h_DC, pst_SD->h_RC);
+	wglMakeCurrent(pst_SD->h_DC, pst_SD->h_RC);
 
 #ifdef ACTIVE_EDITORS
 	if ((GDI_gpst_CurDD->ul_WiredMode & 3) == 2) _ul_Color = 0;
@@ -808,7 +797,6 @@ void OGL_SetViewMatrix_SDW(MATH_tdst_Matrix *_pst_Matrix , float *Limits)
 #define OGL_SetColorRGBA(a) OGL_SetColorRGBABasic(a)
 #endif //ACTIVE_EDITORS
 
-
 #ifdef ACTIVE_EDITORS
 #define OGL_TestHideTriangle(t) if(!((t)->ul_MaxFlags & 0x80000000))
 #else
@@ -820,7 +808,7 @@ void OGL_SetViewMatrix_SDW(MATH_tdst_Matrix *_pst_Matrix , float *Limits)
 #define OGL_RenderSlopeVars\
 	MATH_tdst_Vector	IRSV0, IRSV1, IRSVN,st_CameraDir;\
 	float				IRSVcos, IRSVh;\
-	float				fRedCoef;\
+	float				fRedCoef = 0.0f;\
 	int					IRSVDoit;\
     ULONG               ulSpecialColor;\
     extern ULONG GEO_ulCurrentTriangleNb;\
@@ -1216,7 +1204,6 @@ LONG OGL_l_DrawElementIndexedTriangles
     ULONG ulSaveAmbientColor;
 #endif //ACTIVE_EDITORS
 
-	int n;
 	//MATH_tdst_Matrix mat_save;
 	OGL_RenderSlopeVars
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -2528,11 +2515,35 @@ void OGL_l_DrawSPG2_SPRITES(
 
 /* Aim: Set Device Context pixel format */
 
+static void CreateFakeContext( void )
+{
+	static const PIXELFORMATDESCRIPTOR pfd =
+	        {
+	                sizeof( PIXELFORMATDESCRIPTOR ),
+	                1,
+	                PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,// Flags
+	                PFD_TYPE_RGBA,                                             // The kind of framebuffer. RGBA or palette.
+	                32,                                                        // Colordepth of the framebuffer.
+	                0, 0, 0, 0, 0, 0,
+	                0,
+	                0,
+	                0,
+	                0, 0, 0, 0,
+	                24,// Number of bits for the depthbuffer
+	                8, // Number of bits for the stencilbuffer
+	                0, // Number of Aux buffers in the framebuffer.
+	                PFD_MAIN_PLANE,
+	                0,
+	                0, 0, 0 };
+
+
+}
+
 /*
  =======================================================================================================================
  =======================================================================================================================
  */
-void OGL_SetDCPixelFormat(HDC _hDC)
+static void OGL_SetDCPixelFormat(HDC _hDC)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	LONG						l_PixelFormat;
@@ -2634,6 +2645,3 @@ void OGL_SetupRC(OGL_tdst_SpecificData *_pst_SD)
     glPixelTransferf(GL_ALPHA_SCALE, 4.0f );
     */
 }
-
-#undef _SwapBuffers
-#undef _wglMakeCurrent

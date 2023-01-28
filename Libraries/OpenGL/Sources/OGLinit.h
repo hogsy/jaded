@@ -6,18 +6,7 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  */
 
-#ifndef PSX2_TARGET
 #pragma once
-#if !defined(_XBOX) && !defined(_XENON)
-#ifndef _GAMECUBE
-#include <gl/gl.h>
-#endif
-#endif
-#endif
-
-
-#ifndef __OGLINIT_H__
-#define __OGLINIT_H__
 
 #include "MATHs/MATH.h"
 #include "OGLrenderstate.h"
@@ -35,9 +24,7 @@ extern "C"
  ***************************************************************************************************
  */
 
-#	define GL_CLAMP_TO_EDGE 0x812F
-
-#	define OGL_DEBUG_CALLS
+//#	define OGL_DEBUG_CALLS
 #	if !defined( NDEBUG ) && defined( OGL_DEBUG_CALLS )
 #		include <assert.h>
 #		define OGL_CALL( X )                     \
@@ -187,5 +174,3 @@ LONG                    OGL_l_DrawElementIndexedSprites(struct GEO_tdst_ElementI
 #if defined (__cplusplus) && !defined(JADEFUSION)
 }
 #endif
-
-#endif /* __OGLINIT_H__ */

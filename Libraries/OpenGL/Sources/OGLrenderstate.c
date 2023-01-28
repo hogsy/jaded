@@ -8,8 +8,6 @@
 /* Aim: OpenGL render state */
 #include "Precomp.h"
 
-#include <gl/gl.h>
-
 #include "OGLinit.h"
 #include "BASe/BAStypes.h"
 #include "TEXture/TEXstruct.h"

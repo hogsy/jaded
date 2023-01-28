@@ -8,7 +8,6 @@
 /* Aim: OpenGL render state */
 #include "Precomp.h"
 
-#include "Precomp.h"
 #include "BASe/BAStypes.h"
 #include "BASe/MEMory/MEM.h"
 #include "TIMer/PROfiler/PROPS2.h"

@@ -19,25 +19,9 @@
 
 /*$4
  ***********************************************************************************************************************
-    Macros
- ***********************************************************************************************************************
- */
- 
-#define _SwapBuffers(_a)		SwapBuffers(_a)
-#define _wglMakeCurrent(_a, _b) wglMakeCurrent(_a, _b)
-#define _wglDeleteContext(_a)	wglDeleteContext(_a)
-
-
-
-/*$4
- ***********************************************************************************************************************
     constant
  ***********************************************************************************************************************
  */
-
-typedef void (APIENTRY * PFNWGLEXTSWAPCONTROLPROC) (int i); 
-typedef void (APIENTRY * PFNGLLOCKARRAYSEXTPROC) (GLint first, GLsizei count);
-typedef void (APIENTRY * PFNGLUNLOCKARRAYSEXTPROC) (void);
 
 /*$4
  ***********************************************************************************************************************
@@ -45,7 +29,6 @@ typedef void (APIENTRY * PFNGLUNLOCKARRAYSEXTPROC) (void);
  ***********************************************************************************************************************
  */
 
-void		OGL_SetDCPixelFormat(HDC);
 void		OGL_SetupRC(OGL_tdst_SpecificData *);
 
 extern void LOA_BeginSpeedMode(BIG_KEY _ul_Key);
