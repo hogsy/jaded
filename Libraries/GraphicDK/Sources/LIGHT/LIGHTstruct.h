@@ -47,26 +47,19 @@ extern "C"
 #define LIGHT_Cul_LF_Fog                                0x00000003
 #define LIGHT_Cul_LF_AddMaterial                        0x00000004
 //POPoWARNING marasme JADE/JADE360
-#ifdef JADEFUSION
 #define LIGHT_Cul_LF_LightShaft                         0x00000005
 #define LIGHT_Cul_LF_NumberOfType                       0x00000006
-#endif
 #define LIGHT_Cul_LF_Type                               0x00000007
 #ifdef JADEFUSION
 #define LIGHT_Cul_LF_ExtendedLightType                  0x00000007
 #endif
 
-#ifndef JADEFUSION
-#define LIGHT_Cul_LF_NumberOfType                       0x00000005
-#endif
 #define LIGHT_Cul_LF_Active                             0x00000008
 #define LIGHT_Cul_LF_Paint                              0x00000010
 #define LIGHT_Cul_LF_UseColor                           0x00000020
 #define LIGHT_Cul_LF_UseAlpha                           0x00000040
 #define LIGHT_Cul_LF_Absorb                             0x00000080
-#ifdef JADEFUSION
 #define LIGHT_Cul_LF_Inverted                           LIGHT_Cul_LF_Absorb
-#endif
 #define LIGHT_Cul_LF_RealTimeOnDynam                    0x00000100
 #define LIGHT_Cul_LF_RealTimeOnNonDynam                 0x00000200
 #define LIGHT_Cul_LF_RLIOnDynam                         0x00000400
@@ -95,9 +88,7 @@ extern "C"
 #define LIGHT_Cul_LF_AddMaterialBVMustBeInside          0x02000000
 #define LIGHT_Cul_LF_DoNotSaveObjRef                    0x04000000
 
-#ifdef JADEFUSION
 #define LIGHT_Cul_LF_SpotIsCylindrical                  0x08000000
-#endif
 
 #ifdef JADEFUSION
 #define LIGHT_Cul_LF_RimLight                           0x10000000

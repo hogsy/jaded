@@ -107,11 +107,7 @@ void LIGHT_RenderXenon(OBJ_tdst_GameObject* _pst_GO);
  */
 
 #ifdef ACTIVE_EDITORS
-#ifdef JADEFUSION
 char					*LIGHT_gasz_TypeName[LIGHT_Cul_LF_NumberOfType] = { "Omni", "Direct", "Spot", "Fog", "Add Material", "Light Shaft" };
-#else
-char					*LIGHT_gasz_TypeName[LIGHT_Cul_LF_NumberOfType] = { "Omni", "Direct", "Spot", "Fog", "Add Material" };
-#endif
 LONG					LIGHT_gl_ComputeRLI = 0;
 ULONG                   LIGHT_gul_ComputeRLIMask = 0xFFFFFFFF;
 
@@ -123,10 +119,8 @@ LONG					LIGHT_gl_DebugObject[LIGHT_Cul_LF_NumberOfType] =
 	GEO_DebugObject_Arrow,
 	GEO_DebugObject_LightSpot,
 	GEO_DebugObject_LightOmni,
-    GEO_DebugObject_LightOmni
-#ifdef JADEFUSION
-	,GEO_DebugObject_LightSpot
-#endif
+    GEO_DebugObject_LightOmni,
+    GEO_DebugObject_LightSpot
 };
 
 

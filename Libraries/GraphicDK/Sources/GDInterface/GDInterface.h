@@ -275,24 +275,7 @@ LONG GX8_l_ShiftDrawElementIndexedTrianglesVB(GEO_tdst_ElementIndexedTriangles	*
 
 
 ////////////////////////////////////////////////////////////////////////////////////////
-#ifdef PSX2_TARGET
-////////////////////////////////////////////////////////////////////////////////////////
-extern _inline_ void GSP_SetTextureBlending(ULONG _l_Texture, ULONG BM,ULONG AF);
-extern LONG GSP_l_DrawElementIndexedTriangles(GEO_tdst_ElementIndexedTriangles	*_pst_Element,GEO_Vertex*_pst_Point,GEO_tdst_UV*_pst_UV , ULONG);
-extern LONG GSP_l_DrawElementIndexedTriangles_FUR(GEO_tdst_ElementIndexedTriangles	*_pst_Element,	GEO_Vertex*_pst_Point,GEO_tdst_UV*_pst_UV,ULONG ulNbPoints,	ULONG *pNormals);
-
-extern LONG GSP_l_DrawElementIndexedSprite(GEO_tdst_ElementIndexedSprite	*_pst_Element,GEO_Vertex*_pst_Point,ULONG);
-extern void GSP_SetViewMatrix_SDW(MATH_tdst_Matrix *_pst_Matrix , float *Limits);
-extern void GSP_SetViewMatrix( MATH_tdst_Matrix *_pst_Matrix);
-extern void GSP_SetTextureTarget(ULONG _l_Texture,ULONG);
-#define GDI_DrawIndexedTriangles(GDIi,Tris,Vrtx,Normal, UV,ulNbPoints) 	GSP_l_DrawElementIndexedTriangles(Tris , Vrtx , UV , ulNbPoints)
-#define GDI_DrawIndexedSprites(GDIi,Tris,Vrtx,ulNbPoints) 	GSP_l_DrawElementIndexedSprite	(Tris , Vrtx , ulNbPoints)
-#define GDI_SetTextureBlending(GDIi,VA,VB,VC) 				GSP_SetTextureBlending	(VA , VB , VC)
-#define GDI_SetTextureTarget(GDIi,NST,CL) 				GSP_SetTextureTarget	(NST , CL )
-#define GDI_SetViewMatrix(GDIi,TTMatrix) 				GSP_SetViewMatrix(TTMatrix)
-#define GDI_SetViewMatrix_SDW(GDIi,MAT,Lim) 			GSP_SetViewMatrix_SDW	(MAT , Lim )
-
-#elif defined(_GX8)
+#if defined(_GX8)
 extern LONG Gx8_l_DrawElementIndexedTriangles(GEO_tdst_ElementIndexedTriangles	*_pst_Element,GEO_Vertex*_pst_Point,GEO_tdst_UV*_pst_UV , ULONG);
 extern LONG Gx8_l_DrawElementIndexedSprite(GEO_tdst_ElementIndexedSprite	*_pst_Element,GEO_Vertex*_pst_Point,ULONG);
 extern void Gx8_SetViewMatrix(MATH_tdst_Matrix *);
@@ -317,21 +300,6 @@ extern void Xe_SetTextureBlending(ULONG _l_Texture, ULONG BM, unsigned short s_A
 #define GDI_SetViewMatrix_SDW(GDIi,MAT,Lim) 			Xe_SetViewMatrix_SDW	(MAT , Lim )
 
 
-////////////////////////////////////////////////////////////////////////////////////////
-#elif defined(_GAMECUBE)
-////////////////////////////////////////////////////////////////////////////////////////
-extern void GXI_SetTextureBlending(ULONG _l_Texture, ULONG BM , ULONG AF);
-extern LONG GXI_l_DrawElementIndexedTriangles(GEO_tdst_ElementIndexedTriangles	*_pst_Element,GEO_Vertex*_pst_Point,MATH_tdst_Vector *_pst_Normal,GEO_tdst_UV*_pst_UV , ULONG);
-extern LONG GXI_l_DrawElementIndexedSprite(GEO_tdst_ElementIndexedSprite	*_pst_Element,GEO_Vertex*_pst_Point,ULONG);
-extern void GXI_SetViewMatrix_SDW(MATH_tdst_Matrix *_pst_Matrix , float *Limits);
-extern void GXI_SetViewMatrix( MATH_tdst_Matrix *_pst_Matrix);
-extern void GXI_SetTextureTarget(ULONG _l_Texture,ULONG);
-#define GDI_DrawIndexedTriangles(GDIi,Tris,Vrtx,Normals,UV,ulNbPoints) 	GXI_l_DrawElementIndexedTriangles(Tris , Vrtx , Normals, UV , ulNbPoints)
-#define GDI_DrawIndexedSprites(GDIi,Tris,Vrtx,ulNbPoints) 				GXI_l_DrawElementIndexedSprite	(Tris , Vrtx , ulNbPoints)
-#define GDI_SetTextureBlending(GDIi,VA,VB , VC) 						GXI_SetTextureBlending(VA , VB , VC)
-#define GDI_SetTextureTarget(GDIi,NST,CL) 				GXI_SetTextureTarget(NST , CL )
-#define GDI_SetViewMatrix(GDIi,TTMatrix) 				GXI_SetViewMatrix(TTMatrix)
-#define GDI_SetViewMatrix_SDW(GDIi,MAT,Lim) 			GXI_SetViewMatrix_SDW(MAT , Lim )
 ////////////////////////////////////////////////////////////////////////////////////////
 #else // PC + XBOX
 #ifdef _XBOX
@@ -551,9 +519,11 @@ typedef struct	GDI_tdst_DisplayData_
 	u32									DisplayTriInfo;
 	u32									ColorCostIA;
 	u32									ColorCostIAThresh;
+
+	BOOL b_AntiAliasingBlur;
+
 #ifdef JADEFUSION
     ULONG                               ul_LightCullingFlags;
-    BOOL                                b_AntiAliasingBlur;
     BOOL                                b_DrawWideScreenBands;
     BOOL                                b_EnableColorCorrection;
 

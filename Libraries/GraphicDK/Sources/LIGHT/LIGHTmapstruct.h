@@ -12,7 +12,7 @@ typedef struct _LIGHT_st_LightmapPageInfo
 	int						pageWidth;
 	int						pageHeight;
 #endif
-	_LIGHT_st_LightmapPageInfo* pNextLightmap;
+	struct _LIGHT_st_LightmapPageInfo* pNextLightmap;
 } LIGHT_tdst_LightmapPageInfo;
  
 #ifdef ACTIVE_EDITORS

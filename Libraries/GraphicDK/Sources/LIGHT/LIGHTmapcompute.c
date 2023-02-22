@@ -170,7 +170,7 @@ typedef struct
 	float a;
 }LMColor;
 
-inline void AddLMColor(LMColor* pDest, LMColor* pCol1, LMColor* pCol2)
+inline void AddLMColor(LMColor* pDest, const LMColor* pCol1, const LMColor* pCol2)
 {
 	pDest->r = pCol1->r + pCol2->r;
 	pDest->g = pCol1->g + pCol2->g;
@@ -178,7 +178,7 @@ inline void AddLMColor(LMColor* pDest, LMColor* pCol1, LMColor* pCol2)
 	pDest->a = pCol1->a + pCol2->a;
 }
 
-inline void SubLMColor(LMColor* pDest, LMColor* pCol1, LMColor* pCol2)
+inline void SubLMColor(LMColor* pDest, const LMColor* pCol1, const LMColor* pCol2)
 {
 	pDest->r = pCol1->r - pCol2->r;
 	pDest->g = pCol1->g - pCol2->g;
@@ -186,6 +186,7 @@ inline void SubLMColor(LMColor* pDest, LMColor* pCol1, LMColor* pCol2)
 	pDest->a = pCol1->a - pCol2->a;
 }
 
+#if 0 // they were clearly depending on overloads here and compiling as C++, blergh ~hogsy
 inline void AddLMColor(LMColor* pDest, LMColor* pCol1)
 {
 	pDest->r += pCol1->r;
@@ -193,8 +194,9 @@ inline void AddLMColor(LMColor* pDest, LMColor* pCol1)
 	pDest->b += pCol1->b;
 	pDest->a += pCol1->a;
 }
+#endif
 
-inline void MulLMColor(LMColor* pDest, float val)
+inline void MulLMColorf(LMColor* pDest, float val)
 {
 	pDest->r *= val;
 	pDest->g *= val;
@@ -202,7 +204,7 @@ inline void MulLMColor(LMColor* pDest, float val)
 	pDest->a *= val;
 }
 
-inline void MulLMColor(LMColor* pDest, LMColor* pSrc, float val)
+inline void MulLMColorsf(LMColor* pDest, const LMColor* pSrc, float val)
 {
 	pDest->r = pSrc->r * val;
 	pDest->g = pSrc->g * val;
@@ -210,7 +212,7 @@ inline void MulLMColor(LMColor* pDest, LMColor* pSrc, float val)
 	pDest->a = pSrc->a * val;
 }
 
-inline void MulLMColorClamp(LMColor* pDest, LMColor* pSrc, float val, float clamp)
+inline void MulLMColorClamp(LMColor* pDest, const LMColor* pSrc, float val, float clamp)
 {
 	pDest->r = MATH_Min(pSrc->r * val, clamp);
 	pDest->g = MATH_Min(pSrc->g * val, clamp);
@@ -219,22 +221,13 @@ inline void MulLMColorClamp(LMColor* pDest, LMColor* pSrc, float val, float clam
 }
 
 
-inline void MulLMColor(LMColor* pDest, LMColor* pCol1, LMColor* pCol2)
+inline void MulLMColor(LMColor* pDest, const LMColor* pCol1, const LMColor* pCol2)
 {
 	pDest->r = pCol1->r * pCol2->r;
 	pDest->g = pCol1->g * pCol2->g;
 	pDest->b = pCol1->b * pCol2->b;
 	pDest->a = pCol1->a * pCol2->a;
 }
-
-inline void MulLMColor(LMColor* pDest, LMColor* pCol1)
-{
-	pDest->r *= pCol1->r;
-	pDest->g *= pCol1->g;
-	pDest->b *= pCol1->b;
-	pDest->a *= pCol1->a;
-}
-
 
 typedef struct _tdst_LMFace
 {
@@ -295,7 +288,7 @@ typedef struct _st_LMAxisElement
 	LM_tdst_Vector	 min;
 	LM_tdst_Vector   max;
 	LMColor			 *pMap;	
-	_st_LMAxisElement*	pUseMapFromElement;	
+	struct _st_LMAxisElement*	pUseMapFromElement;	
 	ULONG			 objKey;
 	float			 texelPerMeter;
 } tdst_LMAxisElement;
@@ -1340,7 +1333,7 @@ void ComputeBaryCoords(tdst_LMFace* _pFace, LM_tdst_Vector* _point, LM_tdst_Vect
 #endif
 }
 
-bool intersectTri(LM_tdst_Vector* _rayPos, LM_tdst_Vector* _rayDir, tdst_LMFace* _pFace, LM_tdst_Vector* _bc, LM_tdst_Vector* _hitPos, LMReal* _distance, bool _backFaceCull = false)
+bool intersectTri(LM_tdst_Vector* _rayPos, LM_tdst_Vector* _rayDir, tdst_LMFace* _pFace, LM_tdst_Vector* _bc, LM_tdst_Vector* _hitPos, LMReal* _distance, bool _backFaceCull)
 {
 	LM_tdst_Vector p, pi;
 	LMReal vD, v0;
@@ -1586,7 +1579,7 @@ bool IntersectRay(tdst_LMObj* _pObj, int _faceIndex, LM_tdst_Vector* _rayPos, LM
 		if (face->BSRadiusSquare - LM_f_SqrNormVector(&pc) + (v*v) < 0.0f)
 			continue;
 
-		if (intersectTri(_rayPos, _rayDir, face, &pc, &pc, &v))
+		if (intersectTri(_rayPos, _rayDir, face, &pc, &pc, &v, false))
 		{
 			if (_directLight)
 			{
@@ -1660,7 +1653,7 @@ bool ComputeShadow(LM_tdst_Vector* _texelPos, LM_tdst_Vector* _lightDir, LM_tdst
 		LM_TransformVertex(&lightRayPos, &_pLight->pLastShadowCastingObject->worldToMesh, &worldLightRayPos); 
 		LM_TransformVector(&lightRayDir, &_pLight->pLastShadowCastingObject->worldToMesh, &worldLightRayDir);
 
-		isInShadow = intersectTri(&lightRayPos, &lightRayDir, _pLight->pLastShadowCastingFace, &dummy, &dummy, &dist);
+		isInShadow = intersectTri(&lightRayPos, &lightRayDir, _pLight->pLastShadowCastingFace, &dummy, &dummy, &dist, false);
  
 		// check the face  
 		if (_directLight)
@@ -1835,7 +1828,7 @@ bool  ComputeTexelColor(LMColor* _Color, LM_tdst_Vector*  _texelPos, LM_tdst_Vec
 			}
 #endif
 
-			MulLMColor(_Color, &shadowColor);
+			MulLMColor( _Color, _Color, & shadowColor );
 
             // alpha of the light color is the opacity of the lightmap for this light
             FLOAT fOpacity = 1.0f - (((_lightObj->ul_Color & 0xFF000000) >> 24) * (1.0f/255.0f));
@@ -1893,7 +1886,11 @@ void ComputeLumelColor(LMColor* _color, LM_tdst_Vector* _texelPos, LM_tdst_Vecto
 		lightObj = (LIGHT_tdst_Light*)gameObj->pst_Extended->pst_Light;
 		
 		// check if it's active
+#if 0 //TODO: ~hogsy
 		if (!(lightObj->ul_Flags & LIGHT_Cul_LF_Active) || !(lightObj->ul_Flags & LIGHT_Cul_LF_UseLightMap))
+#else
+		if ( !( lightObj->ul_Flags & LIGHT_Cul_LF_Active ) )
+#endif
 		{
 			continue;
 		}
@@ -1940,19 +1937,19 @@ void ComputeLumelColor(LMColor* _color, LM_tdst_Vector* _texelPos, LM_tdst_Vecto
 		pCurrentLight = gameObj;
 
  		ComputeTexelColor(&lightColor, _texelPos, _normal, &lightDir, &lightPos, lightObj, _pObj, _faceIndex, _pObj->settings.bReceiveShadows && gComputeShadows, pLight); 
-		AddLMColor(_color, &lightColor);
+		AddLMColor( _color, _color, &lightColor );
 
 		if (gShadowMapMode)		
 		{
 			ComputeTexelColor(&lightColor, _texelPos, _normal, &lightDir, &lightPos, lightObj, _pObj, _faceIndex, false, pLight);
-			AddLMColor(&lightNoShadowColor, &lightColor);
+			AddLMColor( &lightNoShadowColor, &lightNoShadowColor, &lightColor );
 		}
 		 	
 	}
  
 	// add ambient	 
-	AddLMColor(&lightNoShadowColor, &_pObj->objAmbient);
-	AddLMColor(_color, &_pObj->objAmbient);	
+	AddLMColor( &lightNoShadowColor, &lightNoShadowColor, &_pObj->objAmbient );
+	AddLMColor( _color, _color, &_pObj->objAmbient );	
 
 	if (gShadowMapMode)	  
 	{
@@ -2142,7 +2139,7 @@ void ComputeLighting(tdst_LMObj* _pObj, int _nbObj, TAB_tdst_Ptable* _pst_LightL
 			for  (y = 0; y < currentHeight; y++)
 			{
 				LM_CopyVector(&rayPos, &origin);
-				LM_MulVector(&temp, &yVect, float(y) * 1.0f/ texelPerMeter);
+				LM_MulVector( &temp, &yVect, ( float ) ( y ) *1.0f / texelPerMeter );
 				LM_SubEqualVector(&rayPos, &temp);
 
 				
@@ -2298,7 +2295,7 @@ void ComputeLighting(tdst_LMObj* _pObj, int _nbObj, TAB_tdst_Ptable* _pst_LightL
  
 								if (newIndex->a > 0.0f)
 								{
- 									AddLMColor(&newColor, newIndex);
+									AddLMColor( &newColor, &newColor, newIndex );
 									numValid++;
 								}
 							}
@@ -4466,7 +4463,11 @@ void LIGHT_ComputeAllLightmaps(WOR_tdst_World*  _pst_World, BIG_KEY _worldKey, t
                     }
                     else
                     {
+#if 0 //TODO: aaahhhh don't have room for another flag, just uh, true for now!? ~hogsy
                         gameObj->pst_Base->pst_Visu->pst_LightmapSettings.bReceiveShadows = ((gameObj->pst_Base->pst_Visu->ul_DrawMask & GDI_Cul_DM_DontReceiveLM) == 0);
+#else
+						gameObj->pst_Base->pst_Visu->pst_LightmapSettings.bReceiveShadows = true;
+#endif
                         gameObj->pst_Base->pst_Visu->pst_LightmapSettings.bCastShadows = false;//popowarning((gameObj->pst_Base->pst_Visu->ul_DrawMask & GDI_Cul_DM_DontCastLM) == 0);
                         gameObj->pst_Base->pst_Visu->pst_LightmapSettings.bUseLightmaps = true; // will become false for unselected objects when doing ligthmaps for selected objects only
                         gameObj->pst_Base->pst_Visu->pst_LightmapSettings.bTemporaryStopUsingLightmaps = false; // will become true/false depending on which world is processed

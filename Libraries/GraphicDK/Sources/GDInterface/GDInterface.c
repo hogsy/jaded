@@ -452,12 +452,12 @@ GDI_tdst_DisplayData *GDI_fnpst_CreateDisplayData(void)
 
 #ifdef JADEFUSION
     pst_DD->ul_LightCullingFlags = (GDI_Cul_Light_Cull_Element | GDI_Cul_Light_Cull_Frustum_Gao | GDI_Cul_Light_Cull_Frustum_Element);
+#endif
 
 #ifdef ACTIVE_EDITORS
-    pst_DD->b_AntiAliasingBlur = FALSE;
+	pst_DD->b_AntiAliasingBlur = FALSE;
 #else
-    pst_DD->b_AntiAliasingBlur = TRUE;
-#endif
+	pst_DD->b_AntiAliasingBlur = TRUE;
 #endif
 
     return pst_DD;
@@ -502,28 +502,7 @@ void GDI_fnv_DestroyDisplayData(GDI_tdst_DisplayData *_pst_DD)
     Aim:    Init interface
  =======================================================================================================================
  */
-#if defined( PSX2_TARGET )
-#define M_INITGDI(GDI,DRV_EXT)\
-    GDI->pfnpv_InitDisplay          = (void * (*)(void)) DRV_EXT##_pst_CreateDevice;\
-    GDI->pfnv_DesinitDisplay        = DRV_EXT##_DestroyDevice;\
-    GDI->pfnl_OpenDisplay           = DRV_EXT##_l_Init;\
-    GDI->pfnl_CloseDisplay          = DRV_EXT##_l_Close;\
-    GDI->pfnl_ReadaptDisplay        = DRV_EXT##_l_ReadaptDisplay;\
-    GDI->pfnv_Clear                 = DRV_EXT##_Clear;\
-    GDI->pfnv_Flip                  = DRV_EXT##_Flip;\
-    GDI->pfnv_SetViewMatrix         = DRV_EXT##_SetViewMatrix;\
-    GDI->pfnv_SetProjectionMatrix   = DRV_EXT##_SetProjectionMatrix;\
-    GDI->pfnl_DrawIndexedTriangles  = DRV_EXT##_l_DrawElementIndexedTriangles;\
-    GDI->pfnl_Request               = DRV_EXT##_l_Request;\
-    GDI->pfnl_InitTexture			= DRV_EXT##_l_Texture_Init;\
-    GDI->pfnv_LoadTexture           = DRV_EXT##_Texture_Load;\
-    GDI->pfnl_StoreTexture          = DRV_EXT##_l_Texture_Store;\
-    GDI->pfnv_LoadPalette           = DRV_EXT##_Palette_Load;\
-    GDI->pfnv_Set_Texture_Palette   = DRV_EXT##_Set_Texture_Palette;\
-    GDI->pfnv_UnloadTexture         = DRV_EXT##_Texture_Unload;\
-    GDI->pfnv_SetTextureTarget      = DRV_EXT##_SetTextureTarget;\
-	GDI->pfnv_SetViewMatrix_SDW		= DRV_EXT##_SetViewMatrix_SDW;
-#elif defined( _GAMECUBE )
+#if defined( _GAMECUBE )
 #define M_INITGDI(GDI,DRV_EXT)\
     GDI->pfnpv_InitDisplay          = NULL;\
     GDI->pfnv_DesinitDisplay        = NULL;\

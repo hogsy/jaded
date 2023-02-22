@@ -14,12 +14,10 @@
 #include "TABles/TABles.h"
 #include "BASe/BAStypes.h"
 
-#ifdef JADEFUSION
 #include "LIGHT/LIGHTmapstruct.h"
-#include <set>
+//#include <set>
 
 struct OBJ_tdst_GameObject_;
-#endif
 
 #if defined (__cplusplus) && !defined(JADEFUSION)
 extern "C"
@@ -175,7 +173,6 @@ typedef struct  GRO_tdst_Visu_
 
 #endif
 
-#ifdef JADEFUSION
 #ifdef _XENON_RENDER
 	ULONG                    ul_VBObjectValidate;
 	LONG                     l_NbXeElements;
@@ -207,7 +204,6 @@ typedef struct  GRO_tdst_Visu_
     ULONG ul_XenonMeshProcessingCRC;
     ULONG ul_XenonMeshProcessingRLIKey;
 #endif
-#endif //jadefusion
 } GRO_tdst_Visu;
 
 /*$4
