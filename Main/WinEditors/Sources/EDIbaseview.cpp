@@ -1240,25 +1240,6 @@ void EDI_cl_BaseView::OnRButtonDown(UINT nID, CPoint pt)
         if(mb_Floating) o_Menu.CheckMenuItem(i_Pos, MF_CHECKED | MF_BYPOSITION);
         i_Pos++;
 
-        if(this != M_MF()->mpo_MenuView)
-        {
-            /* Choose full maximized resolution */
-            if(po_Editor->b_CanHaveMultipleFullScreenResolution())
-            {
-                /*~~~~~~~~~~~~~~~~~~~~~~~*/
-                char    sz_String[100];
-                /*~~~~~~~~~~~~~~~~~~~~~~~*/
-
-                strcpy(sz_String, EDI_STR_Csz_ChooseFullMaximizedRes);
-                strcat(sz_String, " ( ");
-                strcat(sz_String, GDI_sz_Resolution_Desc(po_Editor->mi_FullScreenResolution));
-                strcat(sz_String, " ) ");
-
-                o_Menu.InsertMenu(i_Pos, MF_BYPOSITION, WM_USER + 22, sz_String);
-                i_Pos++;
-            }
-        }
-
         if(po_Editor->b_CanBeLinkedToEngine())
         {
             /* Insert a separator */

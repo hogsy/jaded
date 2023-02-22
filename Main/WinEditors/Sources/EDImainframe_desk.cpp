@@ -1281,91 +1281,54 @@ void EDI_cl_MainFrame::SwapMaximised(EDI_cl_BaseView *_po_View)
 	 -------------------------------------------------------------------------------------------------------------------
 	 */
 
-	if
-	(
-		((_po_View == mo_Splitter1.GetPane(0, 0)) && (cx2 >= 0 || cy12 >= 0))
-	||	((_po_View == mo_Splitter2.GetPane(0, 0)) && (cx1 >= 0 || cy22 >= 0))
-	||	(
-			(mo_Splitter1.GetRowCount() == 2)
-		&&	(_po_View == mo_Splitter1.GetPane(1, 0))
-		&&	(cx2 >= 0 || cy11 >= 0)
-				)
-			||	(
-					(mo_Splitter2.GetRowCount() == 2)
-				&&	(_po_View == mo_Splitter2.GetPane(1, 0))
-				&&	(cx1 >= 0 || cy21 >= 0)
-				)
-			||	(
-					(mo_Splitter1.GetRowCount() == 1)
-				&&	(_po_View == mo_Splitter1.GetPane(0, 1))
-				&&	(cx2 >= 0 || cy11 >= 0)
-				)
-			||	(
-					(mo_Splitter2.GetRowCount() == 1)
-				&&	(_po_View == mo_Splitter2.GetPane(0, 1))
-				&&	(cx1 >= 0 || cy21 >= 0)
-				)
-	)
+	static LONG oldStyle = 0;
+
+	if(!mpo_MaxView)
 	{
-		if(!mpo_MaxView)
+		/* Save left frame visible state */
+		mst_Desktop.b_FSLeftFrameOn = mst_Ini.b_LeftFrameVisible;
+		mst_Desktop.b_FSIsZoomed = 2;
+
+		if(mst_Desktop.b_VeryMaximized)
 		{
-			/* Save left frame visible state */
-			mst_Desktop.b_FSLeftFrameOn = mst_Ini.b_LeftFrameVisible;
-			mst_Desktop.b_FSIsZoomed = 2;
+			/* If full maximised, hide left frame if necessary */
+			if(mst_Desktop.b_VeryMaximized && mst_Ini.b_LeftFrameVisible) OnAction(EDI_ACTION_TOGGLEMENU);
+		}
 
-			if(mst_Desktop.b_VeryMaximized)
-			{
-				/* If full maximised, hide left frame if necessary */
-				if(mst_Desktop.b_VeryMaximized && mst_Ini.b_LeftFrameVisible) OnAction(EDI_ACTION_TOGGLEMENU);
-			}
+		ENG_gb_GlobalLock = FALSE;
+		ForceMaximised(_po_View);
 
-			ENG_gb_GlobalLock = FALSE;
-			ForceMaximised(_po_View);
+		if(mst_Desktop.b_VeryMaximized)
+		{
+			//mpo_MenuBar->HideCaret();
 
-			if(mst_Desktop.b_VeryMaximized)
-			{
-				GetWindowRect(&mst_Desktop.o_FSPos);
-				mst_Desktop.b_FSIsZoomed = IsZoomed() ? 1 : 0;
-				st.ptMaxPosition.x = st.ptMaxPosition.y = -2;
+			st.ptMaxTrackSize.x = st.ptMaxSize.x = GetSystemMetrics( SM_CXSCREEN );
+			st.ptMaxTrackSize.y = st.ptMaxSize.y = GetSystemMetrics( SM_CYSCREEN );
 
-				po_CurrentFrame = _po_View->po_GetActivatedEditor();
-				if(po_CurrentFrame->mi_FullScreenResolution != -1)
-					GDI_Resolution_Change(po_CurrentFrame->mi_FullScreenResolution);
+			LONG lStyle = GetWindowLong( m_hWnd, GWL_STYLE );
+			oldStyle = lStyle;
+			lStyle &= ~( WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU );
+			SetWindowLong( m_hWnd, GWL_STYLE, lStyle );
+			::SetWindowPos( m_hWnd, HWND_TOPMOST, 0, 0, st.ptMaxTrackSize.x, st.ptMaxTrackSize.y, SWP_FRAMECHANGED );
 
-				st.ptMaxTrackSize.x = st.ptMaxSize.x = GetSystemMetrics(SM_CXFULLSCREEN);
-				st.ptMaxTrackSize.y = st.ptMaxSize.y = GetSystemMetrics(SM_CYFULLSCREEN);
-				OnGetMinMaxInfo(&st);
-				o_Rect.left = st.ptMaxPosition.x;
-				o_Rect.top = st.ptMaxPosition.y;
-				o_Rect.right = st.ptMaxTrackSize.x;
-				o_Rect.bottom = st.ptMaxTrackSize.y;
-				MoveWindow(&o_Rect);
-				ShowWindow(SW_SHOWMAXIMIZED);
-				ModifyStyle(0, WS_EX_TOPMOST);
-
-				/* EDI_go_TheApp.SetThreadPriority(THREAD_PRIORITY_TIME_CRITICAL); */
-			}
+			BringWindowToTop();
 		}
 	}
-
-	/*$2
-	 -------------------------------------------------------------------------------------------------------------------
-	    Restore maximised
-	 -------------------------------------------------------------------------------------------------------------------
-	 */
-
 	else
 	{
-		if(mst_Desktop.b_VeryMaximized && (mst_Desktop.b_FSIsZoomed != 2))
+		if(mst_Desktop.b_VeryMaximized)
 		{
-			/* EDI_go_TheApp.SetThreadPriority(THREAD_PRIORITY_NORMAL); */
-			ChangeDisplaySettings(NULL, 0);
 			mst_Desktop.b_VeryMaximized = FALSE;
-			if(mst_Desktop.b_FSIsZoomed)
-				ShowWindow(SW_SHOWMAXIMIZED);
-			else
-				ShowWindow(SW_RESTORE);
-			MoveWindow(&mst_Desktop.o_FSPos);
+			
+			ShowWindow(SW_RESTORE);
+
+			SetWindowLong( m_hWnd, GWL_STYLE, oldStyle );
+			::SetWindowPos( m_hWnd, NULL, 
+				mst_Desktop.o_FSPos.top, 
+				mst_Desktop.o_FSPos.left,
+				mst_Desktop.o_FSPos.right, 
+				mst_Desktop.o_FSPos.bottom, 
+				SWP_FRAMECHANGED );
 		}
 
 		RestoreMenuFrames();
