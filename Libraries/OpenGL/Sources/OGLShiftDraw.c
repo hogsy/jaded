@@ -257,6 +257,7 @@ LONG OGL_l_ShiftDrawElementIndexedTriangles
 			offSetV = OffsetV *i;
 		}
 		glEnable(GL_ALPHA_TEST);
+		//glEnable( GL_SAMPLE_ALPHA_TO_COVERAGE );
 #ifdef LOD_FUR_POPO
         glAlphaFunc(GL_GEQUAL, ((float)(i))/(float)i_NbLayers);
 #else // LOD_FUR_POPO
@@ -609,11 +610,13 @@ LONG OGL_l_ShiftDrawElementIndexedTriangles
 	if ( i_Alphatest )
 	{
 		glEnable( GL_ALPHA_TEST );
+		//glEnable( GL_SAMPLE_ALPHA_TO_COVERAGE );
 		glAlphaFunc( i_Alphafunc, f_Alpharef );
 	}
 	else
 	{
 		glDisable(GL_ALPHA_TEST);	
+		//glDisable( GL_SAMPLE_ALPHA_TO_COVERAGE );
 		glAlphaFunc(GL_ALWAYS, 0 );
 	}
 

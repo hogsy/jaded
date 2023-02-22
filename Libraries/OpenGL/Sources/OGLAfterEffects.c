@@ -432,9 +432,10 @@ void OGL_ES_PushState()
 {
 	OGL_CALL( glPushAttrib(OGL_AE_ATTRIB_SAVE) );
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	glDisable(GL_ALPHA_TEST);
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_CULL_FACE);
+	glDisable( GL_ALPHA_TEST );
+	//glDisable( GL_SAMPLE_ALPHA_TO_COVERAGE );
+	glDisable( GL_DEPTH_TEST );
+	glDisable( GL_CULL_FACE );
 	glDepthMask(GL_FALSE);
 
 	OGL_CALL( glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_FALSE) );

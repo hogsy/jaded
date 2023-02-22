@@ -604,10 +604,7 @@ void OGL_Texture_InternalLoad
 		i_MipmapLevel--;
 	}
 
-    if ( BPP != 32 )
-	{
-		L_free( p_Buf );
-	}
+    L_free( p_Buf );
 
     TEX_SD->dul_Texture[ _ul_Texture ] = ul_Texture;
 }

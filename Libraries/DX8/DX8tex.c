@@ -87,26 +87,24 @@ void DX8_l_Texture_CreateShadowTextures(DX8_tdst_SpecificData *_pst_SD)
 	ULONG	TexCounter;
 	/*~~~~~~~~~~~~~~~*/
 
+    L_zero( _pst_SD->dul_SDW_Texture, sizeof( IDirect3DTexture8 * ) * MaxShadowTexture );
+
 	TexCounter = MaxShadowTexture;
 	while(TexCounter--)
 	{
-#ifdef JADEFUSION
-		p_gDX8SpecificData->mp_D3DDevice->/*lpVtbl->*/CreateTexture
-#else
-			p_gDX8SpecificData->mp_D3DDevice->lpVtbl->CreateTexture
-#endif
-				(
-#ifndef JADEFUSION
-				p_gDX8SpecificData->mp_D3DDevice,
-#endif
-				ShadowTextureSize,
-				ShadowTextureSize,
-				1,
-				D3DUSAGE_RENDERTARGET,
-				D3DFMT_A8R8G8B8 /* | D3DFMT_R8G8B8 */ ,
-				D3DPOOL_DEFAULT /* | D3DPOOL_MANAGED | D3DPOOL_SYSTEMMEM */ ,
-				&_pst_SD->dul_SDW_Texture[TexCounter]
-			);
+		HRESULT err = IDirect3DDevice8_CreateTexture(
+			    p_gDX8SpecificData->mp_D3DDevice,
+			    ShadowTextureSize,
+			    ShadowTextureSize,
+			    1,
+			    D3DUSAGE_RENDERTARGET,
+			    D3DFMT_A8R8G8B8 /* | D3DFMT_R8G8B8 */,
+			    D3DPOOL_DEFAULT /* | D3DPOOL_MANAGED | D3DPOOL_SYSTEMMEM */,
+			    &_pst_SD->dul_SDW_Texture[ TexCounter ] );
+		if ( err != D3D_OK )
+		{
+			_pst_SD->dul_SDW_Texture[ TexCounter ] = NULL;
+		}
 	}
 }
 
@@ -123,11 +121,13 @@ void DX8_l_Texture_DestroyShadowTextures(DX8_tdst_SpecificData *_pst_SD)
 	TexCounter = MaxShadowTexture;
 	while(TexCounter--)
 	{
-#ifdef JADEFUSION
-		_pst_SD->dul_SDW_Texture[TexCounter]->/*lpVtbl->*/Release(/*_pst_SD->dul_SDW_Texture[TexCounter]*/);
-#else
-		_pst_SD->dul_SDW_Texture[TexCounter]->lpVtbl->Release(_pst_SD->dul_SDW_Texture[TexCounter]);
-#endif
+		if ( _pst_SD->dul_SDW_Texture[ TexCounter ] == NULL )
+		{
+			continue;
+		}
+        
+		IDirect3D8_Release( _pst_SD->dul_SDW_Texture[ TexCounter ] );
+		_pst_SD->dul_SDW_Texture[ TexCounter ] = NULL;
 	}
 }
 
@@ -206,7 +206,6 @@ void DX8_Texture_Load
     D3DLOCKED_RECT		    stLockedRect;
     ULONG		            LineCounter;
 	unsigned char		    *BitPtr, *DestPtr;
-    char                    *p_Buf;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	pst_SD = (DX8_tdst_SpecificData *) _pst_DD->pv_SpecificData;
@@ -240,17 +239,55 @@ void DX8_Texture_Load
 
 	pul_ConvertBuffer = (ULONG *) _pst_Tex->p_Bitmap;
 
-	DX8_Texture = DX8_TextureHard = NULL;
+    hr = IDirect3DDevice8_CreateTexture( pst_SD->mp_D3DDevice, TX, TY, i_MipmapLevel, 0, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &DX8_Texture );
+	if ( hr != D3D_OK )
+	{
+		LINK_PrintStatusMsg( "Failed to create D3D8 texture!" );
+		return;
+	}
+	hr = IDirect3DDevice8_CreateTexture( pst_SD->mp_D3DDevice, TX, TY, i_MipmapLevel, 0, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &DX8_TextureHard );
+	if ( hr != D3D_OK )
+	{
+		LINK_PrintStatusMsg( "Failed to create D3D8 texture!" );
+		return;
+	}
+
+    char *p_Buf = NULL;
+    if ( BPP == 4 || BPP == 8 )
+	{
+		size_t size = TX * TY;
+		p_Buf = ( char * ) L_malloc( size * 4 );
+		L_zero( p_Buf, size * 4 );
+
+		// loop through texture to find a good association
+		TEX_tdst_Data *pst_RawPal;
+		if ( _pst_DD->st_TexManager.ul_Flags & TEX_Manager_OneTexForRawPal )
+		{
+			for ( c = 0; c < TEX_gst_GlobalList.l_NumberOfTextures; c++, pst_RawPal++ )
+			{
+			}
+		}
+		else
+		{
+			pst_RawPal = TEX_gst_GlobalList.dst_Texture;
+			for ( c = 0; c < TEX_gst_GlobalList.l_NumberOfTextures; c++, pst_RawPal++ )
+			{
+				if ( ( pst_RawPal->uw_Flags & TEX_uw_RawPal ) && ( pst_RawPal->w_Height == ( SHORT ) _ul_Texture ) )
+					break;
+			}
+		}
+
+		if ( BPP == 4 )
+			TEX_Convert_4To32( ( unsigned char * ) p_Buf, pul_ConvertBuffer, TEX_gst_GlobalList.dst_Palette[ pst_RawPal->w_TexPal ].pul_Color, size );
+		else if ( BPP == 8 )
+			TEX_Convert_8To32( ( unsigned char * ) p_Buf, pul_ConvertBuffer, TEX_gst_GlobalList.dst_Palette[ pst_RawPal->w_TexPal ].pul_Color, size );
+
+        pul_ConvertBuffer = ( ULONG * ) p_Buf;
+		BPP = 32;
+	}
 
 	if(BPP == 32)
 	{
-#ifdef JADEFUSION
-		hr = pst_SD->mp_D3DDevice->/*lpVtbl->*/CreateTexture( /*pst_SD->mp_D3DDevice,*/ TX, TY, i_MipmapLevel, 0, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM , &DX8_Texture );
-		hr = pst_SD->mp_D3DDevice->/*lpVtbl->*/CreateTexture( /*pst_SD->mp_D3DDevice,*/ TX, TY, i_MipmapLevel, 0, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &DX8_TextureHard );
-#else
-		hr = pst_SD->mp_D3DDevice->lpVtbl->CreateTexture( pst_SD->mp_D3DDevice, TX, TY, i_MipmapLevel, 0, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM , &DX8_Texture );
-		hr = pst_SD->mp_D3DDevice->lpVtbl->CreateTexture( pst_SD->mp_D3DDevice, TX, TY, i_MipmapLevel, 0, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &DX8_TextureHard );
-#endif
 		TEX_Convert_32SwapRB(pul_ConvertBuffer, TX * TY);
 
 		while((TX > 0) && (TY > 0))
@@ -344,28 +381,16 @@ void DX8_Texture_Load
 	}
 	else if(BPP == 24)
 	{
-#ifdef JADEFUSION
-		pst_SD->mp_D3DDevice->/*lpVtbl->*/CreateTexture( /*pst_SD->mp_D3DDevice,*/ TX, TY, i_MipmapLevel, 0, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &DX8_Texture );
-		pst_SD->mp_D3DDevice->/*lpVtbl->*/CreateTexture( /*pst_SD->mp_D3DDevice,*/ TX, TY, i_MipmapLevel, 0, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &DX8_TextureHard );
-#else
-		pst_SD->mp_D3DDevice->lpVtbl->CreateTexture( pst_SD->mp_D3DDevice, TX, TY, i_MipmapLevel, 0, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &DX8_Texture );
-		pst_SD->mp_D3DDevice->lpVtbl->CreateTexture( pst_SD->mp_D3DDevice, TX, TY, i_MipmapLevel, 0, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &DX8_TextureHard );
-#endif
         TEX_Convert_24To32SwapRB(pul_ConvertBuffer, TX * TY);
 
 		while((TX > 0) && (TY > 0))
 		{
 			_pst_DD->st_TexManager.l_MemoryTakenByLoading += TX * TY * 3L;
 			{
-#ifdef JADEFUSION
-				DX8_Texture->/*lpVtbl->*/GetSurfaceLevel(/*DX8_Texture,*/ MMC, &DX8_Surface);
-				DX8_Surface->/*lpVtbl->*/LockRect(/*DX8_Surface,*/ &stLockedRect, NULL, 0);
-				BitPtr = (unsigned char*)stLockedRect.pBits;
-#else
 				DX8_Texture->lpVtbl->GetSurfaceLevel(DX8_Texture, MMC, &DX8_Surface);
 				DX8_Surface->lpVtbl->LockRect(DX8_Surface, &stLockedRect, NULL, 0);
 				BitPtr = stLockedRect.pBits;
-#endif
+
 				DestPtr = (unsigned char *) pul_ConvertBuffer;
 				LineCounter = TY;
 				while(LineCounter--)
@@ -374,13 +399,9 @@ void DX8_Texture_Load
 					DestPtr += TX * 4;
 					BitPtr += stLockedRect.Pitch;
 				}
-#ifdef JADEFUSION
-				DX8_Surface->/*lpVtbl->*/UnlockRect(/*DX8_Surface*/);
-				DX8_Surface->/*lpVtbl->*/Release(/*DX8_Surface*/);
-#else
+
 				DX8_Surface->lpVtbl->UnlockRect(DX8_Surface);
 				DX8_Surface->lpVtbl->Release(DX8_Surface);
-#endif
 			}
 
 			if(!(_pst_Tex->st_Params.uw_Flags & TEX_FP_MipmapOn)) break;
@@ -423,105 +444,8 @@ void DX8_Texture_Load
 			i_MipmapLevel--;
 		}
 	}
-	else if ( (BPP == 8) || (BPP == 4) )
-	{
-        if (BPP == 4)
-        {
-            p_Buf = (char *) L_malloc( TX * TY );
-#ifdef JADEFUSION
-			TEX_Convert_4To8( (unsigned char *) p_Buf, (unsigned char *) pul_ConvertBuffer, TX, TY );
-#else
-			 TEX_Convert_4To8( (char *) p_Buf, (char *) pul_ConvertBuffer, TX, TY );
-#endif
-			 pul_ConvertBuffer = (ULONG *) p_Buf;
-        }
 
-        /*
-
-        // loop through texture to find a good association
-        if (TEX_DD->st_TexManager.ul_Flags & TEX_Manager_OneTexForRawPal)
-        {
-            pst_RawPal = TEX_gst_GlobalList.dst_Texture;
-            for (c = 0; c < TEX_gst_GlobalList.l_NumberOfTextures; c++, pst_RawPal++)
-            {
-                if ( (pst_RawPal->uw_Flags & TEX_uw_RawPal) && (pst_RawPal->w_Height == (SHORT) _ul_Texture) )
-                {
-                    // watch if palette is updatable, in such case we have to keep the buffer and association of buffer and palette
-                    if (TEX_gst_GlobalList.dst_Palette[ pst_RawPal->w_Width ].uc_Flags & TEX_uc_UpdatablePal )
-                        OGL_Texture_AddDataForUpdatablePalette( TEX_SD, (short) c, pst_RawPal->w_Width, (short) TX, (short) TY, TX * TY, (char *) pul_ConvertBuffer );
-
-                    LoadCB( c, pst_RawPal->ul_Key, &ul_Texture, 0, 0, BPP, TX, TY, GL_COLOR_INDEX, pul_ConvertBuffer, pst_RawPal->w_Width );
-
-                    TEX_SD->dul_Texture[ c ] = ul_Texture;
-                    ul_Texture = -1;
-                }
-            }
-        }
-        else
-        {
-            pst_RawPal = TEX_gst_GlobalList.dst_Texture;
-            for (c = 0; c < TEX_gst_GlobalList.l_NumberOfTextures; c++, pst_RawPal++)
-            {
-                if ( (pst_RawPal->uw_Flags & TEX_uw_RawPal) && (pst_RawPal->w_Height == (SHORT) _ul_Texture) )
-                    break;
-            }
-
-            // watch if palette is updatable, in such case we have to keep the buffer and association of buffer and palette
-            if (c != TEX_gst_GlobalList.l_NumberOfTextures)
-            {
-                if (TEX_gst_GlobalList.dst_Palette[ pst_RawPal->w_Width ].uc_Flags & TEX_uc_UpdatablePal )
-                    OGL_Texture_AddDataForUpdatablePalette( TEX_SD, _pst_TexData->w_Index, pst_RawPal->w_Width, (short) TX, (short) TY, TX * TY, (char *) pul_ConvertBuffer );
-                w_Pal = pst_RawPal->w_Width;
-            }
-            else
-                w_Pal = -1;
-
-            LoadCB( _ul_Texture, _pst_TexData->ul_Key, &ul_Texture, 0, 0, BPP, TX, TY, GL_COLOR_INDEX, pul_ConvertBuffer, w_Pal );
-        }
-        */
-
-        
-
-		//DX8_Set_Texture_Palette(_pst_DD, 0, 0, 0);
-
-		_pst_DD->st_TexManager.l_MemoryTakenByLoading += TX * TY;
-#ifdef JADEFUSION
-		hr = pst_SD->mp_D3DDevice->/*lpVtbl->*/CreateTexture( /*pst_SD->mp_D3DDevice,*/ TX, TY, 1, 0, D3DFMT_P8, D3DPOOL_SYSTEMMEM, &DX8_Texture );
-		hr = pst_SD->mp_D3DDevice->/*lpVtbl->*/CreateTexture( /*pst_SD->mp_D3DDevice,*/ TX, TY, 1, 0, D3DFMT_P8, D3DPOOL_DEFAULT, &DX8_TextureHard );
-#else
-		hr = pst_SD->mp_D3DDevice->lpVtbl->CreateTexture( pst_SD->mp_D3DDevice, TX, TY, 1, 0, D3DFMT_P8, D3DPOOL_SYSTEMMEM, &DX8_Texture );
-		hr = pst_SD->mp_D3DDevice->lpVtbl->CreateTexture( pst_SD->mp_D3DDevice, TX, TY, 1, 0, D3DFMT_P8, D3DPOOL_DEFAULT, &DX8_TextureHard );
-#endif 
-		//pst_SD->mp_D3DDevice->lpVtbl->SetCurrentTexturePalette( pst_SD->mp_D3DDevice, 0 );
-
-#ifdef JADEFUSION
-		DX8_Texture->/*lpVtbl->*/GetSurfaceLevel(/*DX8_Texture,*/ MMC, &DX8_Surface);
-		DX8_Surface->/*lpVtbl->*/LockRect(/*DX8_Surface,*/ &stLockedRect, NULL, 0);
-		BitPtr = (unsigned char*)stLockedRect.pBits;
-#else
-		DX8_Texture->lpVtbl->GetSurfaceLevel(DX8_Texture, MMC, &DX8_Surface);
-		DX8_Surface->lpVtbl->LockRect(DX8_Surface, &stLockedRect, NULL, 0);
-		BitPtr = stLockedRect.pBits;
-#endif
-		DestPtr = (unsigned char *) pul_ConvertBuffer;
-		LineCounter = TY;
-		while(LineCounter--)
-		{
-		    memcpy(BitPtr, DestPtr, TX);
-			DestPtr += TX;
-			BitPtr += stLockedRect.Pitch;
-		}
- #ifdef JADEFUSION
-		DX8_Surface->/*lpVtbl->*/UnlockRect(/*DX8_Surface*/);
-    	DX8_Surface->/*lpVtbl->*/Release(/*DX8_Surface*/);
-#else
-		DX8_Surface->lpVtbl->UnlockRect(DX8_Surface);
-    	DX8_Surface->lpVtbl->Release(DX8_Surface);
-#endif
-
-        if (BPP == 4) L_free( p_Buf );
-       
-	}
+    L_free( p_Buf );
 
 	if(DX8_TextureHard)
 	{

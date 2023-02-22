@@ -707,92 +707,67 @@ void DX8_SetProjectionMatrix(CAM_tdst_Camera *_pst_Cam)
  =======================================================================================================================
  =======================================================================================================================
  */
-void DX8_SetTextureTarget(ULONG Num, ULONG MustBeCleared)
+void DX8_SetTextureTarget( ULONG Num, ULONG MustBeCleared )
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	IDirect3DSurface8	*ppSurfaceLevel;
+	IDirect3DSurface8 *ppSurfaceLevel;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-	if(Num != 0xffffffff)
+	if ( Num != 0xffffffff )
 	{
+		if ( p_gDX8SpecificData->dul_SDW_Texture[ Num ] == NULL )
+			return;
+
 		/* Select Texture as frame buf frame buffer */
-		if((p_gDX8SpecificData->pBackBuffer_SAVE == NULL) && (p_gDX8SpecificData->pZBuffer_SAVE == NULL))
+		if ( ( p_gDX8SpecificData->pBackBuffer_SAVE == NULL ) && ( p_gDX8SpecificData->pZBuffer_SAVE == NULL ) )
 		{
 #ifdef JADEFUSION
-			p_gDX8SpecificData->mp_D3DDevice->/*lpVtbl->*/GetRenderTarget
+			p_gDX8SpecificData->mp_D3DDevice->/*lpVtbl->*/ GetRenderTarget
 #else
 			p_gDX8SpecificData->mp_D3DDevice->lpVtbl->GetRenderTarget
 #endif
-				(
+			        (
 #ifndef JADEFUSION
-					p_gDX8SpecificData->mp_D3DDevice,
-#endif					
-					&p_gDX8SpecificData->pBackBuffer_SAVE
-				);
+			                p_gDX8SpecificData->mp_D3DDevice,
+#endif
+			                &p_gDX8SpecificData->pBackBuffer_SAVE );
 #ifdef JADEFUSION
-			p_gDX8SpecificData->mp_D3DDevice->/*lpVtbl->*/GetDepthStencilSurface
+			p_gDX8SpecificData->mp_D3DDevice->/*lpVtbl->*/ GetDepthStencilSurface
 #else
 			p_gDX8SpecificData->mp_D3DDevice->lpVtbl->GetDepthStencilSurface
 #endif
-				(
+			        (
 #ifndef JADEFUSION
-					p_gDX8SpecificData->mp_D3DDevice,
-#endif					
-					&p_gDX8SpecificData->pZBuffer_SAVE
-				);
+			                p_gDX8SpecificData->mp_D3DDevice,
+#endif
+			                &p_gDX8SpecificData->pZBuffer_SAVE );
 		}
 
-#ifdef JADEFUSION
-		p_gDX8SpecificData->dul_SDW_Texture[Num]->/*lpVtbl->*/GetSurfaceLevel
-#else
-		p_gDX8SpecificData->dul_SDW_Texture[Num]->lpVtbl->GetSurfaceLevel
-#endif
-			(
-#ifndef JADEFUSION
-			p_gDX8SpecificData->dul_SDW_Texture[Num],
-#endif
-				0,
-				&ppSurfaceLevel
-			);
-#ifdef JADEFUSION
-		p_gDX8SpecificData->mp_D3DDevice->/*lpVtbl->*/SetRenderTarget
-#else
-		p_gDX8SpecificData->mp_D3DDevice->lpVtbl->SetRenderTarget
-#endif
-			(
-#ifndef JADEFUSION
-			p_gDX8SpecificData->mp_D3DDevice,
-#endif
-				ppSurfaceLevel,
-				NULL
-			);
-#ifdef JADEFUSION
-		ppSurfaceLevel->/*lpVtbl->*/Release(/*ppSurfaceLevel*/);
-#else
-		ppSurfaceLevel->lpVtbl->Release(ppSurfaceLevel);
-#endif
-		if(MustBeCleared)
+		p_gDX8SpecificData->dul_SDW_Texture[ Num ]->lpVtbl->GetSurfaceLevel(
+		        p_gDX8SpecificData->dul_SDW_Texture[ Num ],
+		        0,
+		        &ppSurfaceLevel );
+
+		p_gDX8SpecificData->mp_D3DDevice->lpVtbl->SetRenderTarget(
+		        p_gDX8SpecificData->mp_D3DDevice,
+		        ppSurfaceLevel,
+		        NULL );
+
+		ppSurfaceLevel->lpVtbl->Release( ppSurfaceLevel );
+		if ( MustBeCleared )
 		{
-#ifdef JADEFUSION
-			p_gDX8SpecificData->mp_D3DDevice->/*lpVtbl->*/Clear
-#else
-				p_gDX8SpecificData->mp_D3DDevice->lpVtbl->Clear
-#endif
-				(
-#ifndef JADEFUSION 
-				p_gDX8SpecificData->mp_D3DDevice,
-#endif
-				0,
-					NULL,
-					D3DCLEAR_TARGET,
-					0,
-					1.0f,
-					0
-				);
+			p_gDX8SpecificData->mp_D3DDevice->lpVtbl->Clear(
+			        p_gDX8SpecificData->mp_D3DDevice,
+			        0,
+			        NULL,
+			        D3DCLEAR_TARGET,
+			        0,
+			        1.0f,
+			        0 );
 		}
 		{
 			/*~~~~~~~~~~~~~~~~~~*/
-			D3DVIEWPORT8	V8SHD;
+			D3DVIEWPORT8 V8SHD;
 			/*~~~~~~~~~~~~~~~~~~*/
 
 			V8SHD.X = 1;
@@ -802,58 +777,48 @@ void DX8_SetTextureTarget(ULONG Num, ULONG MustBeCleared)
 			V8SHD.MinZ = 0.0f;
 			V8SHD.MaxZ = 1.0f;
 #ifdef JADEFUSION
-			p_gDX8SpecificData->mp_D3DDevice->/*lpVtbl->*/SetViewport(/*p_gDX8SpecificData->mp_D3DDevice,*/ &V8SHD);
+			p_gDX8SpecificData->mp_D3DDevice->/*lpVtbl->*/ SetViewport( /*p_gDX8SpecificData->mp_D3DDevice,*/ &V8SHD );
 #else
-			p_gDX8SpecificData->mp_D3DDevice->lpVtbl->SetViewport(p_gDX8SpecificData->mp_D3DDevice, &V8SHD);
+			p_gDX8SpecificData->mp_D3DDevice->lpVtbl->SetViewport( p_gDX8SpecificData->mp_D3DDevice, &V8SHD );
 #endif
 		}
 
-		DX8_M_RenderState(p_gDX8SpecificData, D3DRS_CULLMODE, D3DCULL_NONE);
+		DX8_M_RenderState( p_gDX8SpecificData, D3DRS_CULLMODE, D3DCULL_NONE );
 	}
 	else
 	{
 		/* restore original frame buffer */
 #ifdef JADEFUSION
-		p_gDX8SpecificData->mp_D3DDevice->/*lpVtbl->*/SetRenderTarget
+		p_gDX8SpecificData->mp_D3DDevice->/*lpVtbl->*/ SetRenderTarget
 #else
-			p_gDX8SpecificData->mp_D3DDevice->lpVtbl->SetRenderTarget
+		p_gDX8SpecificData->mp_D3DDevice->lpVtbl->SetRenderTarget
 #endif
-		(
+		        (
 #ifndef JADEFUSION
-		p_gDX8SpecificData->mp_D3DDevice,
+		                p_gDX8SpecificData->mp_D3DDevice,
 #endif
-				p_gDX8SpecificData->pBackBuffer_SAVE,
-				p_gDX8SpecificData->pZBuffer_SAVE
-			);
-#ifdef JADEFUSION
-			p_gDX8SpecificData->pBackBuffer_SAVE->/*lpVtbl->*/Release(/*p_gDX8SpecificData->pBackBuffer_SAVE*/);
-		p_gDX8SpecificData->pZBuffer_SAVE->/*lpVtbl->*/Release(/*p_gDX8SpecificData->pZBuffer_SAVE*/);
+		                p_gDX8SpecificData->pBackBuffer_SAVE,
+		                p_gDX8SpecificData->pZBuffer_SAVE );
+
+		p_gDX8SpecificData->pBackBuffer_SAVE->lpVtbl->Release( p_gDX8SpecificData->pBackBuffer_SAVE );
+		p_gDX8SpecificData->pZBuffer_SAVE->lpVtbl->Release( p_gDX8SpecificData->pZBuffer_SAVE );
 		p_gDX8SpecificData->pBackBuffer_SAVE = p_gDX8SpecificData->pZBuffer_SAVE = NULL;
-		p_gDX8SpecificData->mp_D3DDevice->/*lpVtbl->*/SetViewport
-#else
-		p_gDX8SpecificData->pBackBuffer_SAVE->lpVtbl->Release(p_gDX8SpecificData->pBackBuffer_SAVE);
-		p_gDX8SpecificData->pZBuffer_SAVE->lpVtbl->Release(p_gDX8SpecificData->pZBuffer_SAVE);
-		p_gDX8SpecificData->pBackBuffer_SAVE = p_gDX8SpecificData->pZBuffer_SAVE = NULL;
-		p_gDX8SpecificData->mp_D3DDevice->lpVtbl->SetViewport
-#endif
-			(
+		p_gDX8SpecificData->mp_D3DDevice->lpVtbl->SetViewport(
 #ifndef JADEFUSION
-			p_gDX8SpecificData->mp_D3DDevice,
-#endif			
-			&p_gDX8SpecificData->V8
-			);
+		        p_gDX8SpecificData->mp_D3DDevice,
+#endif
+		        &p_gDX8SpecificData->V8 );
 #ifdef JADEFUSION
-		p_gDX8SpecificData->mp_D3DDevice->/*lpVtbl->*/SetTransform
+		p_gDX8SpecificData->mp_D3DDevice->/*lpVtbl->*/ SetTransform
 #else
-			p_gDX8SpecificData->mp_D3DDevice->lpVtbl->SetTransform
+		p_gDX8SpecificData->mp_D3DDevice->lpVtbl->SetTransform
 #endif
-		(
+		        (
 #ifndef JADEFUSION
-			p_gDX8SpecificData->mp_D3DDevice,
-#endif			
-			D3DTS_PROJECTION,
-				(const struct _D3DMATRIX *) &p_gDX8SpecificData->SavedProjection
-			);
+		                p_gDX8SpecificData->mp_D3DDevice,
+#endif
+		                D3DTS_PROJECTION,
+		                ( const struct _D3DMATRIX * ) &p_gDX8SpecificData->SavedProjection );
 	}
 }
 

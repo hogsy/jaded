@@ -6,6 +6,10 @@ Summary:
 	- Added improvements to the "Run Engine (Speed)" option
 	- Added "Jade Fusion" clipboard toggle for material editor
 	- Added more information to display upon saving a map (including time taken)
+	- Added shortcut for RayDevWiki under Help menu
+	- Added support for MSAA and alpha-to-coverage if available (OpenGL only + disabled by default)
+	- Added a new "Anti Aliasing" option under 3D View Options
+	- Fixed an issue with paletted textures under the Direct3D 8 renderer
 	- Fixed Prefab browser crash that impacted some folks when previews are enabled
 	- Fixed long save time when saving a world
 	- Fixed flickering with animation graph
@@ -21,8 +25,11 @@ Summary:
 	- Fixed error dialog when performing check on BF
 	- Fixed BF check displaying nothing for some invalid entries, now will display key if no valid name exists
 	- Fixed rotating and moving the camera slowing to a crawl, particularly with the browser open
+	- Fixed "Full Maximized" resulting in menus to no longer be visible, making it hard to switch back
+	- Fixed a possible issue that might arise when using the "Full Maximized" while a frame is already maximized
+	- Changed how 3D View "Full Maximized" works, so it behaves more like a borderless fullscreen mode
 	- A debug dump will automatically be generated, if possible, if and when the application crashes
-	- Renamed editor executable to "JadedEditor" to avoid conflicts with other fan bug-fixes
+	- Renamed editor executable to "Jaded" to avoid conflicts with other fan bug-fixes
 	- Editor will now use newer common controls (i.e. more modern appearance)
 	- Overhauled joystick input to use SDL2's game controller API instead of DirectInput
 	- Disabled prompt if warnings are present in log (obnoxious and unnecessary imo)
@@ -30,9 +37,25 @@ Summary:
 
 -----------------------------------------------------------
 
-2023-01-xx
-- Added support for MSAA and alpha-to-coverage if available (pending)
+2023-02-xx
+- Fixed paletted textures not working for DX8 renderer w/ some GPUs/drivers
+- Fixed a potential issue with pixel format setup relating to MSAA
+- Executable has been renamed, again, for the last time to "Jaded"
+- Disabled Perforce tool panels
+
+2023-01-31
+- Fixed pixel format failing to set for some GPUs (thanks to Nimitz for their help testing!)
+- Fixed a crash that could occur after destroying and creating the GL context
+
+2023-01-30 (big thanks to MaeDaGoof for help with testing!)
+- Added support for MSAA and alpha-to-coverage if available (OpenGL only + disabled by default)
+- Added a new "Anti Aliasing" option under 3D View Options
+- Added shortcut for RayDevWiki under Help menu
 - Fixed Prefab browser crash that impacted some folks when previews are enabled
+- Fixed an issue with paletted textures under the Direct3D 8 renderer
+- Fixed "Full Maximized" resulting in menus to no longer be visible, making it hard to switch back
+- Fixed a possible issue that might arise when using the "Full Maximized" while a frame is already maximized
+- Changed how 3D View "Full Maximized" works, so it behaves more like a borderless fullscreen mode
 - Switched over to using GLEW for handling GL extensions
 - A debug dump will automatically be generated, if possible, if and when the application crashes
 	(this won't catch *all* cases right now but I'll improve on it next time)

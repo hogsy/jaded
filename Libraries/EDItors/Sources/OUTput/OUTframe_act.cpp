@@ -92,9 +92,6 @@
 #include "XenonGraphics/XeGDInterface.h"
 #include "XenonGraphics/XeScreenshotSeqBuilder.h"
 
-#include "DATacontrol/DATCPerforce.h"
-#include "DATacontrol/DATCP4ClientUserHistory.h"
-
 #if defined(ACTIVE_EDITORS)
 #include "GraphicDK/Sources/GEOmetric/GEOstaticLOD.h"
 #endif

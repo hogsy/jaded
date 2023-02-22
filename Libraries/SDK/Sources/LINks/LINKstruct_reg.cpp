@@ -1402,9 +1402,9 @@ void LINK_RegisterAllStructs(void)
 		"Show histogramm",			EVAV_EVVIT_Bool, (void *)((char *)&st_DisplayData.ShowHistogramm -(char *)&st_DisplayData)	, 0, 0, 0, 0, 0	, 0,"",
 #ifdef JADEFUSION
 		"Light Culling Flags",	        EVAV_EVVIT_SubStruct, (void *) ((char *) &st_DisplayData.ul_LightCullingFlags - (char *) &st_DisplayData ), 0, LINK_C_LightCullingFlags, 0, 0, 0, 0, "Light culling flags",
-		"Anti Aliasing Blur",	        EVAV_EVVIT_Bool, (void *) ((char *) &st_DisplayData.b_AntiAliasingBlur - (char *) &st_DisplayData ), 0, 0, 0, 0, 0, 0, "",
 		"Draw WideScreen Bands",        EVAV_EVVIT_Bool, (void *) ((char *) &st_DisplayData.b_DrawWideScreenBands - (char *) &st_DisplayData ), 0, 0, 0, 0, 0, 0, "",
 #endif
+	    "Anti Aliasing", EVAV_EVVIT_Bool, ( void * ) ( ( char * ) &st_DisplayData.b_AntiAliasingBlur - ( char * ) &st_DisplayData ), 0, 0, 0, 0, 0, 0, "",
 		"GlobalXInvert",			EVAV_EVVIT_Bool, (void *)((char *)&st_DisplayData.GlobalXInvert -(char *)&st_DisplayData)	, 0, 0, 0, 0, 0	, 0,"",
 		"DisplayMemInfo",			EVAV_EVVIT_Bool, (void *)((char *)&st_DisplayData.DisplayMemInfo -(char *)&st_DisplayData)	, 0, 0, 0, 0, 0	, 0,"",
 		"DisplayTriInfo",			EVAV_EVVIT_Bool, (void *)((char *)&st_DisplayData.DisplayTriInfo -(char *)&st_DisplayData)	, 0, 0, 0, 0, 0	, 0,"",

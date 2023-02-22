@@ -15,6 +15,7 @@
 
 #define GLEW_STATIC
 #include <GL/glew.h>
+#include <GL/wglew.h>
 
 #endif	//UBI_INCLUDED_PRECOMP_H__E367CE0A_386F_44F2_B62B_40DCC489C3E2
 
