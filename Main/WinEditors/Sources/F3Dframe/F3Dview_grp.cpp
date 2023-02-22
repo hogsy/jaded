@@ -70,23 +70,6 @@ void F3D_cl_View::DropObjGroup(EDI_tdst_DragDrop *_pst_DragDrop)
 	BOOL							b_Skeleton;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-	/* Instanciation, or association ? */
-	b_Associate = FALSE;
-	b_Skeleton = FALSE;
-
-	o_Dialog.AddItem("Group Association");
-	o_Dialog.AddItem("Group Copy");
-	o_Dialog.AddItem("Skeleton");
-	o_Dialog.SetDefault("Skeleton");
-
-	if(o_Dialog.DoModal() == IDOK)
-	{
-		b_Skeleton = (!L_strcmpi((char *) (LPCSTR) o_Dialog.mo_Name, "Skeleton"));
-		if(!b_Skeleton) b_Associate = (!L_strcmpi((char *) (LPCSTR) o_Dialog.mo_Name, "Group Association"));
-	}
-	else
-		return;
-
 	/*$2
 	 -------------------------------------------------------------------------------------------------------------------
 	    Find object to drop group on
@@ -106,6 +89,23 @@ void F3D_cl_View::DropObjGroup(EDI_tdst_DragDrop *_pst_DragDrop)
 	ul_ObjKey = LOA_ul_SearchKeyWithAddress((ULONG) pst_GO);
 	if(ul_ObjKey == BIG_C_InvalidIndex) return;
 	pst_World = mst_WinHandles.pst_World;
+
+	/* Instanciation, or association ? */
+	b_Associate = FALSE;
+	b_Skeleton = FALSE;
+
+	o_Dialog.AddItem( "Group Association" );
+	o_Dialog.AddItem( "Group Copy" );
+	o_Dialog.AddItem( "Skeleton" );
+	o_Dialog.SetDefault( "Skeleton" );
+
+	if ( o_Dialog.DoModal() == IDOK )
+	{
+		b_Skeleton = ( !L_strcmpi( ( char * ) ( LPCSTR ) o_Dialog.mo_Name, "Skeleton" ) );
+		if ( !b_Skeleton ) b_Associate = ( !L_strcmpi( ( char * ) ( LPCSTR ) o_Dialog.mo_Name, "Group Association" ) );
+	}
+	else
+		return;
 
 	/*$2
 	 -------------------------------------------------------------------------------------------------------------------
