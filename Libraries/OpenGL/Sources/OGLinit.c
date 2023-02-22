@@ -2560,13 +2560,13 @@ static bool CreateFakeContext( int *maxAASamples )
 	                1,
 	                PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,// Flags
 	                PFD_TYPE_RGBA,                                             // The kind of framebuffer. RGBA or palette.
-	                32,                                                        // Colordepth of the framebuffer.
+	                24,                                                        // Colordepth of the framebuffer.
 	                0, 0, 0, 0, 0, 0,
 	                0,
 	                0,
 	                0,
 	                0, 0, 0, 0,
-	                24,// Number of bits for the depthbuffer
+	                32,// Number of bits for the depthbuffer
 	                8, // Number of bits for the stencilbuffer
 	                0, // Number of Aux buffers in the framebuffer.
 	                PFD_MAIN_PLANE,
@@ -2625,7 +2625,7 @@ static bool OGL_SetDCPixelFormat(HDC _hDC, int maxAASamples)
 		                WGL_DEPTH_BITS_ARB, 32,
 		                WGL_STENCIL_BITS_ARB, 8,
 		                WGL_SAMPLE_BUFFERS_ARB, maxAASamples > 1 ? 1 : 0,
-		                WGL_SAMPLES_EXT, maxAASamples,
+		                WGL_SAMPLES_ARB, maxAASamples,
 		                0,// End
 		        };
 
