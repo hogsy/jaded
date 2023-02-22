@@ -361,7 +361,6 @@ void ERR_LastException(void)
 
 #endif /* ACTIVE_EDITORS */
 
-#ifdef JADEFUSION
 #if defined(ACTIVE_EDITORS) || defined(PCWIN_TOOL) || (defined(_XENON) && defined(_DEBUG))
 
 // JFP: We got a shader compilation error that was much larger than 16384. Using 64k for now.
@@ -392,7 +391,7 @@ _vsnprintf(Buffer, XEERR_BUFSIZEMSG, _sz_Format, Marker);
 }
 
 #endif // defined(ACTIVE_EDITORS) || (defined(_XENON) && defined(_DEBUG))
-#endif
+
 /*$4
  ***************************************************************************************************
     XBOX DEBUG

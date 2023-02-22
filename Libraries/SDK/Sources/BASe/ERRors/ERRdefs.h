@@ -78,13 +78,11 @@ extern void                 ERR_LogPrint(const char *_s_Msg);
 #define ERR_LogPrint(_s_Msg)
 #endif
 
-#ifdef JADEFUSION
 #if defined(ACTIVE_EDITORS) || defined(PCWIN_TOOL) || (defined(_XENON) && defined(_DEBUG))
 void __stdcall ERR_OutputDebugString(CHAR* _sz_Format, ...);
 #else
 _inline_ void ERR_OutputDebugString(CHAR* _sz_Format, ...) { }
 #endif // defined(ACTIVE_EDITORS) || (defined(_XENON) && defined(_DEBUG))
-#endif
 
 #if defined (__cplusplus) && !defined(JADEFUSION)
 }
