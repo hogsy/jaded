@@ -17,6 +17,7 @@
 #include "ENGine/Sources/EOT/EOTmain.h"
 
 static const double OETWarningTreshold = 0.75;
+#if 0 // original ~hogsy
 static const int OETVisuSize = 2000; // Old 1000
 static const int OETAnimsSize = 500;
 static const int OETDynaSize = 500;
@@ -27,6 +28,18 @@ static const int OETZDESize = 750; // Old 500
 static const int OETEventsSize = 500;
 static const int OETHierarchySize = 750; // Old 500
 static const int OETODESize = 750; // Old 500
+#else // Droolie's changes ~hogsy
+static const int OETVisuSize = 8000;// Old 1000
+static const int OETAnimsSize = 2000;
+static const int OETDynaSize = 2000;
+static const int OETAISize = 3000;    // Old 500
+static const int OETColMapSize = 8000;// Old 500 -> 1000
+static const int OETZDMSize = 3000;   // Old 500
+static const int OETZDESize = 3000;   // Old 500
+static const int OETEventsSize = 2000;
+static const int OETHierarchySize = 3000;// Old 500
+static const int OETODESize = 3000;      // Old 500
+#endif
 
 
 #if defined (__cplusplus) && !defined(JADEFUSION)

@@ -34,7 +34,11 @@
 /*$4 macros */
 
 #define SND_Cte_PS2RamSize	6465252 // => ((0x001C7FBF - 0x00005010) * 2 * 28) / 16
-#define SND_Cte_MaxRamSize	6000000 // let some security space
+#if 0 // original ~hogsy
+#	define SND_Cte_MaxRamSize	6000000 // let some security space
+#else // Droolie's ~hogsy
+#	define SND_Cte_MaxRamSize 60000000
+#endif
 
 /*$4
  ***********************************************************************************************************************

@@ -30,7 +30,7 @@ Macros
 */
 
 // HARDWARE LIGHT
-//#define Hardware
+#define Hardware
 
 extern BOOL			ENG_gb_ActiveSectorization;
 /*$4
@@ -365,6 +365,10 @@ static float pipi=0;
 			bStrip = FALSE;
 	}
 	else
+		bStrip = FALSE;
+
+	// DRL: Prevent using strip data for facemaps
+	if ( bStrip && _pst_UV && !( GDI_gpst_CurDD->ul_DisplayInfo & GDI_Cul_DI_UseOneUVPerPoint ) && ( GDI_gpst_CurDD->ul_DisplayInfo & GDI_Cul_DI_FaceMap ) )
 		bStrip = FALSE;
 
 	_pst_GOChaine = _pst_GO;

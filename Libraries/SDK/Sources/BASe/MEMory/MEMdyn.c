@@ -2364,7 +2364,6 @@ _MEM_p_Realloc(void *_pv_Block, ULONG _ul_BlockSize)
  ***********************************************************************************************************************
  */
 
-#ifndef ACTIVE_EDITORS
 /*$off*/
 #ifdef _DEBUG
 void *_MEM_p_AllocAlign(ULONG _ul_BlockSize, ULONG Alignment, char*_pz_File, int _i_Line)
@@ -2418,7 +2417,6 @@ void *_MEM_p_ReallocAlign(void *_pv, ULONG _ul_BlockSize, ULONG Alignment)
 /*$on*/
 
 
-#endif
 
 /*$4
  ***********************************************************************************************************************

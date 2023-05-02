@@ -791,7 +791,7 @@ void MAT_Validate_Multitexture(MAT_tdst_MultiTexture *_pst_Mat)
 				if (!(pst_MLTTXLVL->ul_Flags & MAT_Cul_Flag_UseLocalAlpha))
 					_pst_Mat -> ul_ValidateMask |= MAT_ValidateMask_RLIAlpha;
 		}
-		if (pst_MLTTXLVL->ul_Flags & MAT_XYZ_Flag_ShiftUsingNormal)
+		if ( pst_MLTTXLVL->s_AditionalFlags & MAT_XYZ_Flag_ShiftUsingNormal )
 			_pst_Mat -> ul_ValidateMask |= MAT_ValidateMask_Fur;
 
         if (MAT_GET_UVSource(pst_MLTTXLVL->ul_Flags) == MAT_Cc_UV_DF_GZMO)

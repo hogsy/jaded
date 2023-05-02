@@ -16,6 +16,7 @@ void    *Mad_malloc(unsigned long size);
 void    *Mad_Realloc(void *address , unsigned long size);
 void    Mad_free(void);
 
+#if 1
 #define MAD_MALLOC(type, address, size) \
     address = (type *) Mad_malloc(sizeof(type) * (size)); 
 
@@ -23,6 +24,11 @@ void    Mad_free(void);
     address = (type *) Mad_Realloc(address , sizeof(type) * (size)); \
 
 #define MAD_FREE()  Mad_free();
+#else // test for tracking down possible memory issue ~hogsy
+#	define MAD_MALLOC( type, address, size ) address = ( type * ) malloc( sizeof( type ) * (size) )
+#	define MAD_REALLOC( type, address, size ) address = ( type * ) realloc( address, sizeof( type ) * (size ) )
+#	define MAD_FREE()                         
+#endif
 
 #if defined (__cplusplus) && !defined(JADEFUSION)
 }

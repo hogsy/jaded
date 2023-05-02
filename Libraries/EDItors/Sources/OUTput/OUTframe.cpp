@@ -291,8 +291,8 @@ void EOUT_cl_Frame::CloseWorld(void)
 			char	sz_Text[256];
 			/*~~~~~~~~~~~~~~~~~*/
 
-			sprintf(sz_Text, "Some changes wasn't saved in World [%s], save now ?", DW()->sz_Name);
-			i_Res = M_MF()->MessageBox(sz_Text, "Warnainges", MB_YESNOCANCEL | MB_ICONQUESTION);
+			sprintf(sz_Text, "Some changes weren't saved in World [%s], save now ?", DW()->sz_Name);
+			i_Res = M_MF()->MessageBox(sz_Text, "Warning", MB_YESNOCANCEL | MB_ICONQUESTION);
 			if(i_Res == IDYES)
 			{
 				DP()->SaveWorld();
@@ -350,13 +350,11 @@ void EOUT_cl_Frame::ChangeWorld(BIG_INDEX _ul_Index, BOOL _b_CanSend)
 	ULONG			ul_IndexW, ul_SaveIndex;
 	BOOL			b_WorldList;
 	BOOL			b_Merge;
-#ifdef JADEFUSION
 	LARGE_INTEGER	Start, End;
 	LARGE_INTEGER	TicksPerSecond;
 	INT64			Ticks;
 	int				i_sec, i_min;
 	char			sz_Msg[256];
-#endif	
 	BOOL            b_LoadSuccessful = TRUE;
 
 
@@ -367,24 +365,24 @@ void EOUT_cl_Frame::ChangeWorld(BIG_INDEX _ul_Index, BOOL _b_CanSend)
 	ul_SaveIndex = _ul_Index;
 	mul_LoadedWorld = _ul_Index;
 
-#ifdef JADEFUSION
 	QueryPerformanceFrequency( &TicksPerSecond );
 	QueryPerformanceCounter( &Start );
 
+#	ifdef JADEFUSION
 	// Set world key that we are loading for light rejection manager
-	//LRL_SetWorldKey(_ul_Index); 
+	//LRL_SetWorldKey(_ul_Index);
 	// First time init of light rejection list for this map (integrated from POP5)
-	LRL_Init(_ul_Index); 
+	LRL_Init( _ul_Index );
 
-#ifdef ACTIVE_EDITORS
-    //Disable Highlight Mode
+#		ifdef ACTIVE_EDITORS
+	//Disable Highlight Mode
 	DDD()->ul_HighlightMode = 0;
 
 	//reset Gao Properties clipboard
 	DDD()->b_PasteGaoProperties = FALSE;
 	F3D_ResetGaoClipboard();
-#endif // ACTIVE_EDITORS
-#endif
+#		endif// ACTIVE_EDITORS
+#	endif    // JADEFUSION
 
 	BAS_binit(&WOR_ListAllKeys, 100);
 
@@ -514,7 +512,6 @@ _End_
     else
         ERR_LogPrint("\nWorld not loaded\n");
 
-#ifdef JADEFUSION
 	// display timing results
 	QueryPerformanceCounter( &End );
 
@@ -525,7 +522,6 @@ _End_
 	
 	sprintf(sz_Msg, "--- Loading Time : %02dm%02ds ---", i_min, i_sec%60);
 	LINK_PrintStatusMsg(sz_Msg);
-#endif
 }
 
 /*

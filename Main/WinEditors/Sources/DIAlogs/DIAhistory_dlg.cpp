@@ -64,6 +64,7 @@ void ReplaceFileNames( std::string& strText )
 			strFilename += results.backref(3).str( );
 
 			std::string strRealFilename = strFilename;
+			#if 0
 			if( DAT_CPerforce::GetInstance( )->P4Connect( ) )
 			{
 				std::vector<DAT_CP4ClientInfoHeader*> vFileInfo;
@@ -77,6 +78,7 @@ void ReplaceFileNames( std::string& strText )
 				for ( UINT ui = 0; ui < vFileInfo.size(); ui++ ) 
 					delete vFileInfo[ui];
 			}
+			#endif
 
 			strNewText += results.backref(1).str( );
 			strNewText += strRealFilename;
@@ -290,6 +292,7 @@ void EDIA_cl_HistoryDialog::OnCancel( )
 
 void EDIA_cl_HistoryDialog::OnView( void )
 {
+#if 0
 	POSITION pos = m_ctlEntries.GetFirstSelectedItemPosition();
 	if( pos )
 	{
@@ -341,6 +344,7 @@ void EDIA_cl_HistoryDialog::OnView( void )
 			o_DescribeDlg.DoModal( );
 		}
 	}
+#endif
 }
 
 void EDIA_cl_HistoryDialog::OnSync( void )
@@ -371,26 +375,6 @@ void EDIA_cl_HistoryDialog::OnSync( void )
 			M_MF( )->MessageBox( "A file with that name already exists in the destination folder.", "Error", MB_OK | MB_ICONERROR );
 			return;
 		}
-
-		// do the sync
-		if ( m_ulKey != BIG_C_InvalidKey) 
-		{
-			std::vector<std::string> vSync;
-			std::string strP4Path; 
-			DAT_CUtils::GetP4FileFromKey(m_ulKey,strP4Path,DAT_CPerforce::GetInstance()->GetP4Root());
-			strP4Path += "#";
-			strP4Path += pInfo->strRevision;
-			vSync.push_back(strP4Path );
-
-			if ( DAT_CPerforce::GetInstance()->P4Connect() ) 
-			{
-				if ( EPER_cl_Frame::IsWorldCurrentlyOpened() )
-					DAT_CPerforce::GetInstance()->P4Sync(vSync);
-				
-				DAT_CPerforce::GetInstance()->P4Disconnect();
-				M_MF()->FatHasChanged();
-			}
-		}
 	}
 }
 
@@ -409,12 +393,6 @@ void EDIA_cl_HistoryDialog::OnDiffRevs( void )
 
 		ULONG ulRev = atol( pInfo[ nNdx ]->strRevision.c_str( ) );
 
-		if( DAT_CPerforce::GetInstance()->P4Connect() ) 
-		{
-			DAT_CPerforce::GetInstance()->P4Print( m_ulKey, ulRev, buffer[ nNdx ], true );
-			DAT_CPerforce::GetInstance()->P4Disconnect();
-		}
-
 		++nNdx;
 	}
 
@@ -432,7 +410,7 @@ void EDIA_cl_HistoryDialog::OnDiffRevs( void )
 	file2.Flush( ); file2.Close( );
 
 	// call comparison tool
-	DAT_CUtils::RunDiff( strFilename1.c_str( ), strFilename2.c_str( ), BIG_C_InvalidKey, m_hWnd );
+	//DAT_CUtils::RunDiff( strFilename1.c_str( ), strFilename2.c_str( ), BIG_C_InvalidKey, m_hWnd );
 }
 
 void EDIA_cl_HistoryDialog::OnDiffVsClient( void )
@@ -450,6 +428,7 @@ void EDIA_cl_HistoryDialog::OnDiffVsClient( void )
 		pInfo = (const DAT_SHistoryInfo*)m_ctlEntries.GetItemData( nItem );
 		const ULONG ulRev = atol( pInfo->strRevision.c_str( ) );
 
+		#if 0
 		if( DAT_CPerforce::GetInstance()->P4Connect( ) )
 		{
 			StrBuf buffer;
@@ -462,6 +441,7 @@ void EDIA_cl_HistoryDialog::OnDiffVsClient( void )
 			file.Flush( );
 			file.Close( );
 		}
+		#endif
 	}
 	else
 	{
@@ -497,7 +477,7 @@ void EDIA_cl_HistoryDialog::OnDiffVsClient( void )
 	}
 
 	// call comparison tool
-	DAT_CUtils::RunDiff( strOutputFilename2.c_str( ), strOutputFilename1.c_str( ), m_ulKey, m_hWnd );
+	//DAT_CUtils::RunDiff( strOutputFilename2.c_str( ), strOutputFilename1.c_str( ), m_ulKey, m_hWnd );
 }
 
 void EDIA_cl_HistoryDialog::OnDescribe( void )
@@ -508,30 +488,6 @@ void EDIA_cl_HistoryDialog::OnDescribe( void )
 	const DAT_SHistoryInfo* pInfo = (const DAT_SHistoryInfo*)m_ctlEntries.GetItemData( nItem );
 
 	const ULONG ulChangelist = atoi( pInfo->strChangelist.c_str( ) );
-
-	// get description
-	std::string strText;
-	if( DAT_CPerforce::GetInstance( )->P4Connect() )
-	{
-		DAT_CPerforce::GetInstance( )->P4DescribeIntegral( ulChangelist, strText );
-		DAT_CPerforce::GetInstance( )->P4Disconnect( );
-
-		size_t nQtyFilenames = CountFileNames( strText );
-
-		if( nQtyFilenames > 60 )
-		{
-			int nAnswer = M_MF( )->MessageBox( "This operation might take a while to execute.  Continue anyway?", "Confirm", MB_YESNO | MB_ICONQUESTION );
-			if( nAnswer != IDYES )
-				return;
-		}
-
-		AfxGetApp()->DoWaitCursor(1);
-		ReplaceFileNames( strText );
-		AfxGetApp()->DoWaitCursor(-1);
-
-		EDIA_cl_P4ViewDialog o_DescribeDlg( "Perforce Changelist Description", strText.c_str( ),FALSE );
-		o_DescribeDlg.DoModal( );
-	}
 }
 
 void EDIA_cl_HistoryDialog::OnRecover( void )
@@ -559,6 +515,7 @@ BOOL EDIA_cl_HistoryDialog::OnInitDialog( )
 
 	// populate list control
 	int nSuccess = 0;
+#	if 0
 	if ( DAT_CPerforce::GetInstance( )->P4Connect( ) ) 
 	{
 		nSuccess = DAT_CPerforce::GetInstance( )->P4History( m_ulKey, m_lstEntries );
@@ -592,6 +549,7 @@ BOOL EDIA_cl_HistoryDialog::OnInitDialog( )
 
 		DAT_CPerforce::GetInstance( )->P4Disconnect( );
 	}
+	#endif
 
 
 	if( !nSuccess )

@@ -71,6 +71,7 @@ extern "C"
 #define SPG2_UseRLIOnly							0x00000020
 #define SPG2_UseLOD								0x00000040
 #define SPG2_UseLOD2							0x00000080
+#define SPG2_HideAlpha                          0x00000100 // Droolie
 
 #ifdef JADEFUSION
 #define SPG2_HeatShimmerEnable					0x00010000			// during merge. This is not nice, but should work.

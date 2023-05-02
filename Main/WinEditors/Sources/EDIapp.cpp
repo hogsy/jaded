@@ -51,7 +51,7 @@
 #include "BIGfiles/LOAding/LOAdefs.h"
 #include "INOut/INO.h"
 #include "DATaControl/DATCUtils.h"
-#include "DATaControl/DATCPerforce.h"
+//#include "DATaControl/DATCPerforce.h"
 
 #if defined(_XENON_RENDER)
 #include "GraphicDK/Sources/TEXture/TEXfile.h"
@@ -310,27 +310,6 @@ void EDI_cl_EnterWnd::Paint(void)
 	pdc->BitBlt(0, 0, windowsizex, windowsizey, &memdc, 0, 0, SRCCOPY);
 	ReleaseDC(pdc);
 }
-
-#ifdef JADEFUSION
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
-void EDI_InitialP4RefreshServerInfo()
-{
-    ULONG ulBFSize = BIG_ul_GetBFSize();
-    ULONG ulRegBFSize = BIG_ul_GetRegistryBfSize();
-
-    if (!EDI_gb_BatchModeWithoutPerforce && 
-        ulBFSize != ulRegBFSize && 
-        DAT_CPerforce::GetInstance()->P4Connect(FALSE)) 
-	{
-	    DAT_CPerforce::GetInstance()->P4FlushBF(DAT_CPerforce::GetInstance()->GetP4Root().c_str());
-		DAT_CPerforce::GetInstance()->P4Disconnect();
-        BIG_SetRegistryBfSize();
-    }
-}
-#endif
 
 /*
  =======================================================================================================================
@@ -953,6 +932,8 @@ BOOL EDI_cl_App::InitInstance(void)
 					EDI_gb_ExportToKeys_Path.erase(EDI_gb_ExportToKeys_Path.find_first_of(' '));
 					EDI_gb_ExportToKeys_Path += '/';
 				}
+				else if ( !L_strnicmp( psz_Scan, "editor", 6 ) )
+					editorMode = true;
 				else
 				{
 					/* /E<n> : set the enabling level for AI source code generation */
@@ -1214,8 +1195,8 @@ BOOL EDI_cl_App::InitInstance(void)
 				if ( L_strnicmp( psz_Scan, "nosound", 7 ) == 0 ) SND_gc_NoSound = 1;
 				//else if(L_strnicmp(psz_Scan, "nocheck", 7) == 0)
 				//	EDI_gb_DontCheckVersion = TRUE;
-				else if ( L_strnicmp( psz_Scan, "noperforce", 10 ) == 0 )
-					DAT_CPerforce::GetInstance()->PermanentDisable();
+				//else if ( L_strnicmp( psz_Scan, "noperforce", 10 ) == 0 )
+				//	DAT_CPerforce::GetInstance()->PermanentDisable();
 				else if ( L_strnicmp( psz_Scan, "nop4", 4 ) == 0 )
 					EDI_gb_BatchModeWithoutPerforce = TRUE;
 				break;
@@ -1526,12 +1507,12 @@ BOOL EDI_cl_App::InitInstance(void)
 	}
 
 	/* Create logo window */
-	EDI_gpo_EnterWnd = new EDI_cl_EnterWnd;
+		EDI_gpo_EnterWnd = new EDI_cl_EnterWnd;
 	EDI_gpo_EnterWnd->Create
 		(
-			NULL,
-			"Jade",
-			WS_VISIBLE | WS_POPUP,
+		        NULL,
+		        "Jade",
+		        WS_VISIBLE | WS_POPUP,
 			CRect
 			(
 				(GetSystemMetrics(SM_CXSCREEN) / 2) - 160,
@@ -1539,7 +1520,7 @@ BOOL EDI_cl_App::InitInstance(void)
 				(GetSystemMetrics(SM_CXSCREEN) / 2) + 160,
 				(GetSystemMetrics(SM_CYSCREEN) / 2) + 274
 			),
-			NULL,
+		        NULL,
 			NULL
 		);
 #endif // XML_CONV_TOOL
@@ -1605,34 +1586,18 @@ BOOL EDI_cl_App::InitInstance(void)
 		);
 	MAI_gst_MainHandles.h_OwnerWindow = mpo_MainFrame->m_hWnd;
 
-#ifdef JADEFUSION
-	// Force 3D view to be active so that the renderer is initialized.
-	EOUT_cl_Frame	*po_Out = (EOUT_cl_Frame *) M_MF()->po_GetEditorByType(EDI_IDEDIT_OUTPUT, 0);
-
-		if(po_Out)
-		{
-			po_Out->mpo_MyView->IWantToBeActive(po_Out);
-		}
-
-#else	
 	/*
 	 * en cas de binarisation : force la vue 3D à étre visible sinon le monde ne sera
 	 * pas attaché à la vue et donc les textures ne seront pas chargées
 	 */
 	if(LOA_gb_SpeedMode)
 	{
-		/*~~~~~~~~~~~~~~~~~~~~*/
-		EOUT_cl_Frame	*po_Out;
-		/*~~~~~~~~~~~~~~~~~~~~*/
-
-		po_Out = (EOUT_cl_Frame *) M_MF()->po_GetEditorByType(EDI_IDEDIT_OUTPUT, 0);
-
+		EOUT_cl_Frame *po_Out = (EOUT_cl_Frame *) M_MF()->po_GetEditorByType(EDI_IDEDIT_OUTPUT, 0);
 		if(po_Out)
 		{
 			po_Out->mpo_MyView->IWantToBeActive(po_Out);
 		}
 	}
-#endif
 
 	/* Clean final */
 	if(EDI_gb_CleanFinal)
@@ -1715,21 +1680,6 @@ BOOL EDI_cl_App::InitInstance(void)
 			AI2C_UnloadFixModelList();
 		}
 	}
-
-    // Refresh P4 server info if the size of the bf is not the same 
-    // as it was last time it was closed (so that bf and server are coherent).
-#ifdef JADEFUSION
-    EDI_InitialP4RefreshServerInfo();
-#endif
-	
-	ULONG ulBFSize = BIG_ul_GetBFSize();
-    if (!EDI_gb_BatchModeWithoutPerforce && 
-        ulBFSize != ulRegBFSize && 
-        DAT_CPerforce::GetInstance()->P4Connect(FALSE)) 
-	{
-	    DAT_CPerforce::GetInstance()->P4FlushBF(DAT_CPerforce::GetInstance()->GetP4Root().c_str());
-		DAT_CPerforce::GetInstance()->P4Disconnect();
-    }
 
 	/* One idle */
 	OnRealIdle();

@@ -9,14 +9,12 @@
 
 #include "Precomp.h"
 #ifdef ACTIVE_EDITORS
-#ifdef JADEFUSION
 #include "selection/selection.h"
 #include "engine/sources/world/worstruct.h"
 #include "DIAlogs/DIALightmaps.h"
 #include "texture/texfile.h"
 #include "texture/texstruct.h"
 #include "RADLM/RADLM.h"
-#endif
 #include "BASe/CLIbrary/CLIstr.h"
 #include "BASe/CLIbrary/CLImem.h"
 #include "BASe/MEMory/MEM.h"
@@ -64,12 +62,10 @@
 #include "DIAlogs/DIAvector_dlg.h"
 #include "DIAlogs/DIArli_dlg.h"
 
-#ifdef JADEFUSION
 #include "LIGHT/LIGHTmapstruct.h"
 #include "LIGHT/LIGHTmapcompute.h"
 #include "LIGHT/LIGHTmap.h"
 #include "DIAlogs/DIA_UPDATE_dlg.h"
-#endif
 
 #if defined(_XENON_RENDER)
 #include "GraphicDK/Sources/GEOmetric/GEOXenonPack.h"
@@ -685,7 +681,7 @@ void F3D_cl_View::RLITool(void)
 	}
     */
 }
-#ifdef JADEFUSION
+
 /*
 =======================================================================================================================
 =======================================================================================================================
@@ -719,11 +715,14 @@ void F3D_cl_View::DestroyLightmaps(void)
     for(; pst_CurrentElem <= pst_EndElem; pst_CurrentElem++)
     {
         pst_Object = (OBJ_tdst_GameObject *) pst_CurrentElem->p_Pointer;
+		ASSERT( pst_Object != nullptr );
+		if ( pst_Object == nullptr )
+			continue;
 
         if(TAB_b_IsAHole(pst_Object)) 
             continue;
 
-        LIGHT_Lightmaps_DestroyGAOLightmaps(pst_Object);
+		LIGHT_Lightmaps_DestroyGAOLightmaps(pst_Object);
     }
 }
 
@@ -886,6 +885,4 @@ void F3D_cl_View::XeSelectionFixRLI(void)
     }
 #endif
 }
-#endif
-
 #endif

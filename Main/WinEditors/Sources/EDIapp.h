@@ -132,6 +132,12 @@ public:
 
 protected:
 	DECLARE_MESSAGE_MAP()
+
+private:
+	bool editorMode{ false };
+
+public:
+	bool IsEditorMode() const { return editorMode; }
 };
 extern EDI_cl_App			EDI_go_TheApp;
 extern BOOL					EDI_gb_LockKeyboard;

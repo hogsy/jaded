@@ -421,6 +421,11 @@ void AI_GeneratedObject_Reset(OBJ_tdst_GameObject *_pst_Dup, OBJ_tdst_GameObject
 	_pst_Dup->ul_StatusAndControlFlags &= ~OBJ_C_CustomBitAll;
 	_pst_Dup->ul_StatusAndControlFlags |= (_pst_Model->ul_StatusAndControlFlags & OBJ_C_CustomBitAll);
 	_pst_Dup->ul_IdentityFlags &= ~OBJ_C_IdentityFlag_Links;
+
+	/* DRL: Reset always visible & always active flags.
+	If these are changed on a generated object, and that object is destroyed and later reused,
+	by default these flags won't disappear. Dev oversight - probably this applies to other flags too... */
+	_pst_Dup->ul_StatusAndControlFlags &= ~( OBJ_C_ControlFlag_AlwaysActive | OBJ_C_ControlFlag_AlwaysVisible );
 	
 	if(OBJ_b_TestControlFlag(_pst_Model, OBJ_C_ControlFlag_RayInsensitive))
 		_pst_Dup->ul_StatusAndControlFlags |= OBJ_C_ControlFlag_RayInsensitive;
@@ -1669,8 +1674,11 @@ AI_tdst_Node *AI_EvalFunc_OBJGetPos(AI_tdst_Node *_pst_Node)
 	/*~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	AI_M_GetCurrentObject(pst_GO);
-	AI_EvalFunc_OBJGetPos_C(pst_GO, &st_Pos);
-	AI_PushVector(&st_Pos);
+	if ( pst_GO != NULL )
+	{
+		AI_EvalFunc_OBJGetPos_C( pst_GO, &st_Pos );
+		AI_PushVector( &st_Pos );
+	}
 	return ++_pst_Node;
 }
 
@@ -3433,8 +3441,11 @@ AI_tdst_Node *AI_EvalFunc_OBJ_BankingSet(AI_tdst_Node *_pst_Node)
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	AI_M_GetCurrentObject(pst_GO);
-	AI_PopVector(&st_Banking);
-	AI_EvalFunc_OBJ_BankingSet_C(pst_GO, &st_Banking);
+	if ( pst_GO != NULL)
+	{
+		AI_PopVector( &st_Banking );
+		AI_EvalFunc_OBJ_BankingSet_C( pst_GO, &st_Banking );
+	}
 	return ++_pst_Node;
 }
 
@@ -3473,8 +3484,11 @@ AI_tdst_Node *AI_EvalFunc_OBJ_BankingGet(AI_tdst_Node *_pst_Node)
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	AI_M_GetCurrentObject(pst_GO);
-	AI_EvalFunc_OBJ_BankingGet_C(pst_GO, &st_Banking);
-	AI_PushVector(&st_Banking);
+	if (pst_GO != NULL )
+	{
+		AI_EvalFunc_OBJ_BankingGet_C( pst_GO, &st_Banking );
+		AI_PushVector( &st_Banking );
+	}
 	return ++_pst_Node;
 }
 
@@ -3505,8 +3519,11 @@ AI_tdst_Node *AI_EvalFunc_OBJ_HorizonGet(AI_tdst_Node *_pst_Node)
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	AI_M_GetCurrentObject(pst_GO);
-	AI_EvalFunc_OBJ_HorizonGet_C(pst_GO, &st_Horizon);
-	AI_PushVector(&st_Horizon);
+	if ( pst_GO != NULL )
+	{
+		AI_EvalFunc_OBJ_HorizonGet_C( pst_GO, &st_Horizon );
+		AI_PushVector( &st_Horizon );
+	}
 	return ++_pst_Node;
 }
 
@@ -3544,8 +3561,11 @@ AI_tdst_Node *AI_EvalFunc_OBJ_ScaleGet(AI_tdst_Node *_pst_Node)
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	AI_M_GetCurrentObject(pst_GO);
-	AI_EvalFunc_OBJ_ScaleGet_C(pst_GO, &st_Scale);
-	AI_PushVector(&st_Scale);
+	if ( pst_GO != NULL )
+	{
+		AI_EvalFunc_OBJ_ScaleGet_C( pst_GO, &st_Scale );
+		AI_PushVector( &st_Scale );
+	}
 
 	return ++_pst_Node;
 }

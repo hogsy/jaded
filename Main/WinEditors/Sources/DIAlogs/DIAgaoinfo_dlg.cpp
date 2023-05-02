@@ -895,16 +895,8 @@ void EDIA_cl_GaoInfo::FillTree(void)
 		FillTree();
 		break;
 	}
-#else
-
-	if ( DAT_CPerforce::GetInstance()->P4Connect( ) )
-	{
-		std::vector<std::string> vFstatPath;
-		DAT_CUtils::GetP4FilesFromVecKey(vFstatKey,vFstatPath,DAT_CPerforce::GetInstance()->GetP4Root().c_str());
-		DAT_CPerforce::GetInstance()->P4Fstat(vFstatPath);
-		DAT_CPerforce::GetInstance()->P4Disconnect( );
-	}
 #endif
+
 	po_Tree->Expand( h_Parent, TVE_EXPAND );
 }
 #ifdef JADEFUSION

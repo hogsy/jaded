@@ -289,18 +289,5 @@ void EBRO_cl_Frame::OnPerforceRevert()
 //------------------------------------------------------------
 void EBRO_cl_Frame::OnPerforceRefreshListCtrl(BIG_INDEX _ul_DirIndex)
 {
-	if ( mb_P4RefreshListCtrl )	
-	{
-		if ( DAT_CPerforce::GetInstance()->P4Connect() ) 
-		{
-			std::vector<std::string> vFiles;
-			DAT_CUtils::GetP4FilesFromDirIndex(_ul_DirIndex,vFiles,NULL,DAT_CPerforce::GetInstance()->GetP4Root().c_str());
-
-			// Query Perforce for information on diretory
-			DAT_CPerforce::GetInstance()->P4Fstat(vFiles);	
-
-			DAT_CPerforce::GetInstance()->P4Disconnect();
-		}
-	}
 }
 #endif /* ACTIVE_EDITORS */

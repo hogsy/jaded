@@ -208,9 +208,8 @@ public:
 	BOOL					mb_AnimOn;
 	BOOL					mb_EditHierarchy;
 	BOOL					mb_SelectionChange;
-#ifdef JADEFUSION
 	BOOL					mb_LightRejectOn;
-#endif
+
 	int						mi_EditedCurve;
 	struct WOR_tdst_Portal_ *mpst_EditedPortal;
 	int						mi_FreezeHelper;
@@ -383,9 +382,8 @@ public:
 	void							  Selection_GAO_Duplicate(MATH_tdst_Vector *, BOOL,OBJ_tdst_GameObject ***,OBJ_tdst_GameObject ***,int *);
 	void							  Selection_CLONE_Duplicate();
 	void							  Selection_GAO_OffsetObjects(void);
-#ifdef JADEFUSION
 	BOOL							  Selection_GAO_CopyProperties(BOOL _b_PasteGaoProperties, CRect* _po_Rect);
-#endif
+
 	/*$2
 	 -------------------------------------------------------------------------------------------------------------------
 	    Zone & BV ( in F3Dview_zonebv )
@@ -555,10 +553,8 @@ public:
 	void							  LIGHT_ChangeOmniNearFar(LIGHT_tdst_Light *, float, float);
 	void							  LIGHT_ChangeSpotAlpha(LIGHT_tdst_Light *, float, float, BOOL);
 	void							  LIGHT_ChangeSpotNearFar(LIGHT_tdst_Light *, float, float);
-#ifdef JADEFUSION
 	void							  LIGHT_ChangeShadowAlpha(LIGHT_tdst_Light *, float, float, BOOL);
 	void							  LIGHT_ChangeShadowNearFar(LIGHT_tdst_Light *, float, float);
-#endif
 
 	void							  LIGHT_Drop(EDI_tdst_DragDrop *);
 
@@ -695,9 +691,7 @@ public:
 	    RLI functions
 	 -------------------------------------------------------------------------------------------------------------------
 	 */
-#ifdef JADEFUSION
     void	RadiosityLightmap(void);
-#endif
 	void	RLITool(void);
 	void	ComputeRLI(ULONG, BOOL, BOOL, BOOL);
 	void	Selection_ResetRLI(ULONG, ULONG, BOOL);
@@ -710,7 +704,6 @@ public:
 	void	Selection_RLIInvertAlpha(void);
 	void	Selection_RLIAddColor(ULONG, ULONG, BOOL);
 
-#ifdef JADEFUSION
     /*$2
     -------------------------------------------------------------------------------------------------------------------
     Lightmaps functions
@@ -719,7 +712,7 @@ public:
     static void	LightMapProgressCallback(float _percent, char* _msg, void* _this);
     void		ComputeLightmaps(SEL_tdst_Selection* pSelection, bool _bNoDialog);
     void		DestroyLightmaps(void);
-#endif
+
 	/*$2
 	 -------------------------------------------------------------------------------------------------------------------
 	    Brick mapper functions
@@ -781,7 +774,6 @@ public:
 	BOOL	PostItPickMouse(void);
 	void	PostItRefresh(F3D_tdst_PostIt *);
 
-#ifdef JADEFUSION
     /*$2
     -------------------------------------------------------------------------------------------------------------------
         Modifier
@@ -802,7 +794,6 @@ public:
     -------------------------------------------------------------------------------------------------------------------
     */
     void    XeSelectionFixRLI(void);
-#endif
 
 /*$2
  -----------------------------------------------------------------------------------------------------------------------

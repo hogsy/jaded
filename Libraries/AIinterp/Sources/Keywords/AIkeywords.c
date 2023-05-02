@@ -43,22 +43,23 @@ AI_tdst_Node *AI_EvalKeyword_Ultra(AI_tdst_Node *_pst_Node)
 __try
 #endif
 {
-
 	/* ul_Key = *(LONG*) &(*((*AI_gpst_CurrentFunction).pst_OtherRootNode)).w_Param; */
 	AI_Check(AI_gpst_CurrentUltra, "Ultra operator is invalid");
-	if((AI_tdst_Instance *) AI_gpst_CurrentUltra == WOR_gst_Universe.pst_AI)
+	if ( AI_gpst_CurrentUltra != NULL )
 	{
-		AI_gpst_CurrentInstanceUltra = WOR_gst_Universe.pst_AI;
-		AI_gpst_CurrentUltra = NULL;
-	}
-	else
-	{
-		if(AI_gpst_CurrentUltra->pst_Extended)
-			AI_gpst_CurrentInstanceUltra = AI_gpst_CurrentUltra->pst_Extended->pst_Ai;
+		if ( ( AI_tdst_Instance * ) AI_gpst_CurrentUltra == WOR_gst_Universe.pst_AI )
+		{
+			AI_gpst_CurrentInstanceUltra = WOR_gst_Universe.pst_AI;
+			AI_gpst_CurrentUltra = NULL;
+		}
 		else
-			AI_gpst_CurrentInstanceUltra = NULL;
+		{
+			if ( AI_gpst_CurrentUltra->pst_Extended )
+				AI_gpst_CurrentInstanceUltra = AI_gpst_CurrentUltra->pst_Extended->pst_Ai;
+			else
+				AI_gpst_CurrentInstanceUltra = NULL;
+		}
 	}
-
 }
 #ifdef ACTIVE_EDITORS
 __except(1)

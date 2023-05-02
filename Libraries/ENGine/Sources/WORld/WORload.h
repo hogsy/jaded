@@ -33,6 +33,12 @@ void                    WOR_World_ResolveAIRef(WOR_tdst_World *);
 void                    WOR_World_AttachGameObject(WOR_tdst_World *, OBJ_tdst_GameObject *);
 WOR_tdst_World          *WOR_pst_World_Load(WOR_tdst_World *, BIG_KEY, BOOL);
 
+// Droolie start
+void WOR_World_AddRefBeforeCheckGroup( WOR_tdst_World *_pst_World );
+void WOR_World_CheckFathersOfWorld( WOR_tdst_World * );
+void WOR_World_CheckGroupOfWorld( WOR_tdst_World * );
+// Droolie end
+
 /*$4
  ***********************************************************************************************************************
  ***********************************************************************************************************************

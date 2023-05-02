@@ -60,9 +60,10 @@ void EDI_cl_MainFrame::RegisterEditors(void)
 	EDI_M_RegisterEditor(EDI_IDEDIT_AI, EAI_cl_Frame, "AI script", PANES_IDD_DIALOGBAR, 0);
 	EDI_M_RegisterEditor(EDI_IDEDIT_MENU, EMEN_cl_Frame, "Menus", 0, 0);
 	EDI_M_RegisterEditor(EDI_IDEDIT_PREFAB, EPFB_cl_Frame, "Prefab", 0, 0);
-	EDI_M_RegisterEditor(EDI_IDEDIT_PENC, EPEN_cl_Frame, "Pending Checkins", 0, EPEN_IDR_TOOLBAR);
-	EDI_M_RegisterEditor(EDI_IDEDIT_PERF, EPER_cl_Frame, "Perforce", EPER_IDR_DIALOGBAR, 0);
-	EDI_M_RegisterEditor(EDI_IDEDIT_PERFCHECK, EPERCheck_cl_Frame, "Check Consistency", EPERCHECK_IDD_DIALOGBAR, 0);
+	// Perforce related shite ~hogsy
+	//EDI_M_RegisterEditor(EDI_IDEDIT_PENC, EPEN_cl_Frame, "Pending Checkins", 0, EPEN_IDR_TOOLBAR);
+	//EDI_M_RegisterEditor(EDI_IDEDIT_PERF, EPER_cl_Frame, "Perforce", EPER_IDR_DIALOGBAR, 0);
+	//EDI_M_RegisterEditor(EDI_IDEDIT_PERFCHECK, EPERCheck_cl_Frame, "Check Consistency", EPERCHECK_IDD_DIALOGBAR, 0);
 #ifdef JADEFUSION
 	EDI_M_RegisterEditor(EDI_IDEDIT_SELECTION, ESELection_cl_Frame, "Selection", 0, 0);
 #endif

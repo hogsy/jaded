@@ -400,29 +400,22 @@ void EPFB_cl_View::OnPaint()
 	
 	if ( mi_Preview )
 	{
-		// added paranoid checks... ~hogsy
-
-		int rw = o_Rect.Width();
-		if ( rw <= 0 ) rw = 1;
-		int rh = o_Rect.Height();
-		if ( rh <= 0 ) rh = 1;
-
-		dx = ((float) mi_PreviewWidth) / (float)rw;
-		dy = ((float) mi_PreviewHeight) / (float)rh;
+		dx = ( ( float ) mi_PreviewWidth ) / ( float ) o_Rect.Width();
+		dy = ( ( float ) mi_PreviewHeight ) / ( float ) o_Rect.Height();
 		
 		if ( dx >= dy )
 		{
 			x = 0;
-			cx = rw;
+			cx = o_Rect.Width();
 			cy = (int) (mi_PreviewHeight * (1/dx));
-			y = (rh - cy) / 2;
+			y = ( o_Rect.Height() - cy ) / 2;
 		}
 		else
 		{
 			y = 0;
-			cy = rh;
+			cy = o_Rect.Height();
 			cx = (int) (mi_PreviewWidth * (1/dy));
-			x = (rw - cx) / 2;
+			x = ( o_Rect.Width() - cx ) / 2;
 		}
 		x += o_Rect.left;
 		y += o_Rect.top;

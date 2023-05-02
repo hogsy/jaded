@@ -32,7 +32,7 @@ public:
 
 	static void Log(const std::string _message) 
 	{
-#ifndef SPEED_EDITORS
+#if 0
 		m_LogFile << "\t" << _message << std::endl;
 #endif
 	}
@@ -46,7 +46,7 @@ public:
 	// private definitions
 	//--------------------------------------------------------------------------
 private:
-#ifndef SPEED_EDITORS
+#if 0
 	std::string CurrentDate() const;
 	std::string CurrentTime() const;
 

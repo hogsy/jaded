@@ -233,24 +233,6 @@ BOOL EAI_cl_Frame::SelData(BIG_INDEX _ul_Param2)
 
         pst_Instance = NULL;
         pst_Model = (AI_tdst_Model *) _ul_Param2;
-
-		/***********************************
-			TODO_Jaffier : The following code should be placed after the "else" statement
-			(out of this "if") but there is a problem with the cursor when the user select
-			a gao in the 3D view : the "wait" cursor keeps being displayed until the user
-			click somewhere.
-		 ***********************************/
-		// Get stats again to be sure the panes are displayed with the right color.
-		if ( DAT_CPerforce::GetInstance()->P4Connect()  )
-		{
-			// Get P4 file path
-			std::vector<std::string> vP4Files;
-			std::string asz_P4FilePath;
-			DAT_CUtils::GetP4FileFromKey(BIG_FileKey(ul_Key), asz_P4FilePath, DAT_CPerforce::GetInstance()->GetP4Root());
-			vP4Files.push_back(asz_P4FilePath);
-			DAT_CPerforce::GetInstance()->P4Fstat(vP4Files);
-			DAT_CPerforce::GetInstance()->P4Disconnect();
-		}
     }
     else
     {

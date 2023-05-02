@@ -602,6 +602,11 @@ _End_
 	/* Set key of wol */
 	pst_World->h_WorldKey = _ul_FileKey;
 
+	/* DRL: Added group & father checking from final game here */
+	WOR_World_AddRefBeforeCheckGroup( pst_World );
+	WOR_World_CheckFathersOfWorld( pst_World );
+	WOR_World_CheckGroupOfWorld( pst_World );
+
 	/* Check all loaded objects */
 #ifdef ACTIVE_EDITORS
 	{

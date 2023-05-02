@@ -438,18 +438,14 @@ enum MEM_Type
 	extern void *_MEM_p_Alloc(ULONG, char *, int);
 	extern void *_MEM_p_Realloc(void *_pv_Block, ULONG _ul_Size, char *, int);
 	extern void *_MEM_p_AllocFromEnd(ULONG _ul_size, char *_str_file, int _i_line);
-    #ifndef ACTIVE_EDITORS
-    	extern void *_MEM_p_AllocAlign(ULONG, ULONG, char*, int);
-    	extern void *_MEM_p_ReallocAlign(void * _pv, ULONG _ul_BlockSize, ULONG Alignment, char*file, int line);
-    #endif //ACTIVE_EDITORS
+    extern void *_MEM_p_AllocAlign(ULONG, ULONG, char*, int);
+    extern void *_MEM_p_ReallocAlign(void * _pv, ULONG _ul_BlockSize, ULONG Alignment, char*file, int line);
 	#else // _DEBUG
 	extern void *_MEM_p_AllocFromEnd(ULONG _ul_size);
 	extern void *_MEM_p_Alloc(ULONG);
 	extern void *_MEM_p_Realloc(void *_pv_Block, ULONG _ul_Size);
-    #ifndef ACTIVE_EDITORS
-    	extern void *_MEM_p_AllocAlign(ULONG, ULONG);
-    	extern void *_MEM_p_ReallocAlign(void * _pv, ULONG _ul_BlockSize, ULONG Alignment);
-    #endif //ACTIVE_EDITORS
+    extern void *_MEM_p_AllocAlign(ULONG, ULONG);
+    extern void *_MEM_p_ReallocAlign(void * _pv, ULONG _ul_BlockSize, ULONG Alignment);
 	#endif /* _DEBUG */
 
 	#ifdef _DEBUG
@@ -461,19 +457,12 @@ enum MEM_Type
 
 	#define MEM_p_AllocFromEnd(_size)		_MEM_p_AllocFromEnd(_size, __FILE__, __LINE__)
 	#define MEM_p_VMAllocFromEnd(_size)		_MEM_p_AllocFromEnd(_size, __FILE__, __LINE__)
-    #ifdef ACTIVE_EDITORS
-    	#define MEM_p_AllocAlign(a, Align)				_MEM_p_Alloc(a,  __FILE__, __LINE__)
-    	#define MEM_p_VMAllocAlign(a, Align)			_MEM_p_Alloc(a,  __FILE__, __LINE__)
 
-    	#define MEM_p_ReallocAlign(a, b, Align) 		_MEM_p_Realloc(a, b,  __FILE__, __LINE__)
-    	#define MEM_p_VMReallocAlign(a, b, Align) 		_MEM_p_Realloc(a, b,  __FILE__, __LINE__)
-    #else // ACTIVE_EDITORS
-    	#define MEM_p_AllocAlign(a, Align)				_MEM_p_AllocAlign(a, Align, __FILE__, __LINE__)
-    	#define MEM_p_VMAllocAlign(a, Align)			_MEM_p_AllocAlign(a, Align, __FILE__, __LINE__)
+    #define MEM_p_AllocAlign(a, Align)				_MEM_p_AllocAlign(a, Align, __FILE__, __LINE__)
+    #define MEM_p_VMAllocAlign(a, Align)			_MEM_p_AllocAlign(a, Align, __FILE__, __LINE__)
 
-    	#define MEM_p_ReallocAlign(a, b, Align) 		_MEM_p_ReallocAlign(a, b, Align, __FILE__, __LINE__)
-    	#define MEM_p_VMReallocAlign(a, b, Align) 		_MEM_p_ReallocAlign(a, b, Align, __FILE__, __LINE__)
-    #endif //ACTIVE_EDITORS
+    #define MEM_p_ReallocAlign(a, b, Align) 		_MEM_p_ReallocAlign(a, b, Align, __FILE__, __LINE__)
+    #define MEM_p_VMReallocAlign(a, b, Align) 		_MEM_p_ReallocAlign(a, b, Align, __FILE__, __LINE__)
 	#else // _DEBUG
 	#define MEM_p_Alloc(a)					_MEM_p_Alloc(a)
 	#define MEM_p_VMAlloc(a)				_MEM_p_Alloc(a)

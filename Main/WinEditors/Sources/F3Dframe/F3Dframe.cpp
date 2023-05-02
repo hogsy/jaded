@@ -107,22 +107,17 @@ LRESULT F3D_cl_Frame::DefWindowProc(UINT message, WPARAM wParam, LPARAM lParam)
     /*~~~~~~~~~~~~~~~~~~~~*/
 
     /* Special case to size selection dialog */
-    if
-    (
-	        ( message == WM_SIZE ) || (message == WM_MOVING) &&
-        (
-			((mpo_DisplayView->mpo_SelectionDialog) && (mpo_DisplayView->mb_SelectOn))
-		||	((mpo_DisplayView->mpo_ToolBoxDialog) && (mpo_DisplayView->mb_ToolBoxOn))
-#ifdef JADEFUSION
-		||	((mpo_DisplayView->mpo_LightRejectDialog) && (mpo_DisplayView->mb_LightRejectOn))
-#endif
-		||	(mpo_DisplayView->mpo_AnimDialog && mpo_DisplayView->mb_AnimOn)
-		)
-    )
+	if (
+	        ( ( message == WM_SIZE ) || ( message == WM_MOVING ) ) &&
+	        ( ( ( mpo_DisplayView->mpo_SelectionDialog ) && ( mpo_DisplayView->mb_SelectOn ) ) || ( ( mpo_DisplayView->mpo_ToolBoxDialog ) && ( mpo_DisplayView->mb_ToolBoxOn ) )
+#	ifdef JADEFUSION
+	          || ( ( mpo_DisplayView->mpo_LightRejectDialog ) && ( mpo_DisplayView->mb_LightRejectOn ) )
+#	endif
+	          || ( mpo_DisplayView->mpo_AnimDialog && mpo_DisplayView->mb_AnimOn ) ) )
     {
-#ifdef JADEFUSION
-		GetClientRect(&o_Rect);
+		GetClientRect( &o_Rect );
 
+#ifdef JADEFUSION
 		// NB: Added Light Rejection dialog - from POP5 Jade Editor
 		// NOTE: Light rejection dialog always goes to the opposite side of selection dialog
 		if(mpo_DisplayView->mb_LightRejectOn)
@@ -150,11 +145,9 @@ LRESULT F3D_cl_Frame::DefWindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 			}
 		}
 #endif		
+
 		if(mb_LeftSel && (mpo_DisplayView->mb_ToolBoxOn || mpo_DisplayView->mb_SelectOn))
         {
-#ifndef JADEFUSION
-			GetClientRect(&o_Rect);
-#endif
 			o_Rect1 = o_Rect;
             o_Rect.right = o_Rect.left + WIDTH_SEL;
 			if(mb_SelMinimize) o_Rect.right -= WIDTH_MINSEL;
@@ -166,9 +159,6 @@ LRESULT F3D_cl_Frame::DefWindowProc(UINT message, WPARAM wParam, LPARAM lParam)
         }
         else if(mpo_DisplayView->mb_ToolBoxOn || mpo_DisplayView->mb_SelectOn)
         {
-#ifndef JADEFUSION
-            GetClientRect(&o_Rect);
-#endif
 			o_Rect1 = o_Rect;
             o_Rect.left = o_Rect.right - WIDTH_SEL;
 			if(mb_SelMinimize) o_Rect.left += WIDTH_MINSEL;
@@ -178,6 +168,10 @@ LRESULT F3D_cl_Frame::DefWindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 			o_Rect.left = o_Rect1.left;
             mpo_DisplayView->MoveWindow(&o_Rect);
         }
+		else
+		{
+			mpo_DisplayView->MoveWindow( &o_Rect );
+		}
 
 		UpdatePosSize();
     }
@@ -242,6 +236,7 @@ void F3D_cl_Frame::UpdatePosSize(void)
         mpo_Parent->GetClientRect(o_Rect);
     else
         GetParent()->GetClientRect(o_Rect);
+
     MoveWindow(o_Rect);
 
 	if ( mpo_DisplayView->mpo_AnimDialog && mpo_DisplayView->mb_AnimOn )
@@ -253,7 +248,6 @@ void F3D_cl_Frame::UpdatePosSize(void)
 #	endif
 		{
 			GetClientRect( &o_Rect );
-			mpo_DisplayView->MoveWindow( &o_Rect );
 		}
 		mpo_DisplayView->GetWindowRect( &o_Rect );
 		mpo_DisplayView->mpo_AnimDialog->MoveWindow( o_Rect.left + 5, o_Rect.bottom - 50, o_Rect.Width() - 10, 40 );

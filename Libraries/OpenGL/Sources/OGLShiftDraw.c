@@ -183,6 +183,10 @@ LONG OGL_l_ShiftDrawElementIndexedTriangles
 	else
 		bStrip = FALSE;
 
+	// DRL: Prevent using strip data for facemaps
+	if ( bStrip && _pst_UV && !( GDI_gpst_CurDD->ul_DisplayInfo & GDI_Cul_DI_UseOneUVPerPoint ) && ( GDI_gpst_CurDD->ul_DisplayInfo & GDI_Cul_DI_FaceMap ) )
+		bStrip = FALSE;
+
 	/* save alpha test context */
 	if ( i_Alphatest = glIsEnabled( GL_ALPHA_TEST ) )
 	{

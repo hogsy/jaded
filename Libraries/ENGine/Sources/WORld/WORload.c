@@ -799,6 +799,24 @@ void WOR_World_CheckFather(OBJ_tdst_GameObject *_pst_GO, WOR_tdst_World *_pst_Wo
 	}
 }
 
+// Droolie start
+void WOR_World_CheckFathersOfWorld( WOR_tdst_World *_pst_World )
+{
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+	TAB_tdst_PFelem *pst_PFElem, *pst_PFLastElem;
+	OBJ_tdst_GameObject *pst_GO;
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+	pst_PFElem = TAB_pst_PFtable_GetFirstElem( &_pst_World->st_AllWorldObjects );
+	pst_PFLastElem = TAB_pst_PFtable_GetLastElem( &_pst_World->st_AllWorldObjects );
+	for ( ; pst_PFElem <= pst_PFLastElem; pst_PFElem++ )
+	{
+		pst_GO = ( OBJ_tdst_GameObject * ) pst_PFElem->p_Pointer;
+		if ( TAB_b_IsAHole( pst_GO ) ) continue;
+		WOR_World_CheckFather( pst_GO, _pst_World );
+	}
+}
+// Droolie end
 
 /*
  =======================================================================================================================
@@ -919,6 +937,25 @@ void WOR_World_CheckGroup(OBJ_tdst_GameObject *_pst_GO, WOR_tdst_World *_pst_Wor
 		}
 	}
 }
+
+// Droolie start
+void WOR_World_CheckGroupOfWorld( WOR_tdst_World *_pst_World )
+{
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+	TAB_tdst_PFelem *pst_PFElem, *pst_PFLastElem;
+	OBJ_tdst_GameObject *pst_GO;
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+	pst_PFElem = TAB_pst_PFtable_GetFirstElem( &_pst_World->st_AllWorldObjects );
+	pst_PFLastElem = TAB_pst_PFtable_GetLastElem( &_pst_World->st_AllWorldObjects );
+	for ( ; pst_PFElem <= pst_PFLastElem; pst_PFElem++ )
+	{
+		pst_GO = ( OBJ_tdst_GameObject * ) pst_PFElem->p_Pointer;
+		if ( TAB_b_IsAHole( pst_GO ) ) continue;
+		WOR_World_CheckGroup( pst_GO, _pst_World );
+	}
+}
+// Droolie end
 
 /*
  =======================================================================================================================
@@ -1582,17 +1619,28 @@ WOR_tdst_World *WOR_pst_World_Load(WOR_tdst_World *_pst_Dest, BIG_KEY _ul_FileKe
 			}
 		}
 
-
-		WOR_World_AddRefBeforeCheckGroup( _pst_Dest );
-
-		pst_PFElem = TAB_pst_PFtable_GetFirstElem(&_pst_Dest->st_AllWorldObjects);
-		pst_PFLastElem = TAB_pst_PFtable_GetLastElem(&_pst_Dest->st_AllWorldObjects);
-		for(; pst_PFElem <= pst_PFLastElem; pst_PFElem++)
+		// DRL: 2 loops instead of one in the final engine code, also under ResolveAIRef
+		if ( _b_ResolveAIRef )
 		{
-			pst_GO = (OBJ_tdst_GameObject *) pst_PFElem->p_Pointer;
-			if(TAB_b_IsAHole(pst_GO)) continue;
-			WOR_World_CheckFather(pst_GO, _pst_Dest);
-			WOR_World_CheckGroup(pst_GO, _pst_Dest);
+			WOR_World_AddRefBeforeCheckGroup( _pst_Dest );
+
+			pst_PFElem = TAB_pst_PFtable_GetFirstElem( &_pst_Dest->st_AllWorldObjects );
+			pst_PFLastElem = TAB_pst_PFtable_GetLastElem( &_pst_Dest->st_AllWorldObjects );
+			for ( ; pst_PFElem <= pst_PFLastElem; pst_PFElem++ )
+			{
+				pst_GO = ( OBJ_tdst_GameObject * ) pst_PFElem->p_Pointer;
+				if ( TAB_b_IsAHole( pst_GO ) ) continue;
+				WOR_World_CheckFather( pst_GO, _pst_Dest );
+			}
+
+			pst_PFElem = TAB_pst_PFtable_GetFirstElem( &_pst_Dest->st_AllWorldObjects );
+			pst_PFLastElem = TAB_pst_PFtable_GetLastElem( &_pst_Dest->st_AllWorldObjects );
+			for ( ; pst_PFElem <= pst_PFLastElem; pst_PFElem++ )
+			{
+				pst_GO = ( OBJ_tdst_GameObject * ) pst_PFElem->p_Pointer;
+				if ( TAB_b_IsAHole( pst_GO ) ) continue;
+				WOR_World_CheckGroup( pst_GO, _pst_Dest );
+			}
 		}
 
 #ifdef ACTIVE_EDITORS

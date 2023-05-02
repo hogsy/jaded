@@ -375,12 +375,6 @@ void EPERCheck_cl_Frame::RefreshNotInBF()
 	std::vector<std::string> vP4Files;
 	std::vector<DAT_CP4ClientInfoHeader*> vFileInfo;
 
-	if ( DAT_CPerforce::GetInstance()->P4Connect() )
-	{	
-		DAT_CPerforce::GetInstance()->P4SyncBFPreview(DAT_CPerforce::GetInstance()->GetP4Root().c_str(), vP4Files);
-		DAT_CPerforce::GetInstance()->P4FileInfo(vP4Files, &vFileInfo);
-		DAT_CPerforce::GetInstance()->P4Disconnect();
-	}
 	GetBottomWindow()->ClearNotInBFTreeCtrl();
 	GetBottomWindow()->FillNotInBFTreeCtrl(vFileInfo);
 
@@ -414,11 +408,6 @@ void EPERCheck_cl_Frame::ExpandNotInBF()
 //------------------------------------------------------------
 void EPERCheck_cl_Frame::RefreshNotInP4()
 {
-	if ( DAT_CPerforce::GetInstance()->P4Connect() )
-	{	
-		DAT_CPerforce::GetInstance()->P4FStatBF(DAT_CPerforce::GetInstance()->GetP4Root().c_str());
-		DAT_CPerforce::GetInstance()->P4Disconnect();
-	}
 	GetBottomWindow()->ClearNotInP4TreeCtrl();
 	GetBottomWindow()->FillNotInP4TreeCtrl();
 }
@@ -481,11 +470,6 @@ void EPERCheck_cl_Frame::RefreshDeleted()
 	BAS_bfree(&arrayDeletedFiles);
 	// --------------------------------------------
 
-	if ( DAT_CPerforce::GetInstance()->P4Connect() )
-	{	
-		DAT_CPerforce::GetInstance()->P4FileInfo(vP4Files, &vFileInfo);
-		DAT_CPerforce::GetInstance()->P4Disconnect();
-	}
 	GetBottomWindow()->ClearDeletedTreeCtrl();
 	GetBottomWindow()->FillDeletedTreeCtrl(vFileInfo);
 

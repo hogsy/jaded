@@ -13,7 +13,7 @@
 #include "Precomp.h"
 #include "DATCP4ClientApi.h"
 
-#ifndef SPEED_EDITORS
+#if 0
 std::ofstream DAT_CP4ClientApi::m_LogFile("P4Log.txt");
 #endif
 
@@ -32,7 +32,7 @@ std::ofstream DAT_CP4ClientApi::m_LogFile("P4Log.txt");
 //------------------------------------------------------------
 DAT_CP4ClientApi::DAT_CP4ClientApi():
 ClientApi()
-#ifndef SPEED_EDITORS
+#if 0
 ,m_nextArgv("")
 #endif
 {
@@ -62,13 +62,13 @@ DAT_CP4ClientApi::~DAT_CP4ClientApi()
 //------------------------------------------------------------
 void DAT_CP4ClientApi::Init(Error* _e)
 {
-#ifndef SPEED_EDITORS
+#if 0
 	m_LogFile << CurrentTime() << ":" << GetTickCount() << " => Init" << std::endl;
 #endif
 
 	ClientApi::Init(_e);
 
-#ifndef SPEED_EDITORS
+#if 0
 	if(_e->Test())
 	{
 		StrBuf msg;
@@ -89,13 +89,13 @@ void DAT_CP4ClientApi::Init(Error* _e)
 //------------------------------------------------------------
 void DAT_CP4ClientApi::Final(Error* _e)
 {
-#ifndef SPEED_EDITORS
+#if 0
 	m_LogFile << CurrentTime() << ":" << GetTickCount() << " => Final" << std::endl;
 #endif
 
 	ClientApi::Final(_e);
 
-#ifndef SPEED_EDITORS
+#if 0
 	if(_e->Test())
 	{
 		StrBuf msg;
@@ -119,7 +119,7 @@ void DAT_CP4ClientApi::SetArgv(int _argc, char* const* _argv)
 {
 	ClientApi::SetArgv(_argc, _argv);
 
-#ifndef SPEED_EDITORS
+#if 0
 	m_nextArgv = " ";
 	for(int i = 0; i < _argc; ++i)
 	{
@@ -140,7 +140,7 @@ void DAT_CP4ClientApi::SetArgv(int _argc, char* const* _argv)
 //------------------------------------------------------------
 void DAT_CP4ClientApi::Run(const char* _cmd, ClientUser* _pClientUser)
 {
-#ifndef SPEED_EDITORS
+#if 0
 	m_LogFile << CurrentTime() << ":" << GetTickCount() << " => p4 " << _cmd;
 	m_LogFile << m_nextArgv << std::endl;
 #endif
@@ -148,7 +148,7 @@ void DAT_CP4ClientApi::Run(const char* _cmd, ClientUser* _pClientUser)
 	ClientApi::Run(_cmd, _pClientUser);
 }
 
-#ifndef SPEED_EDITORS
+#if 0
 //------------------------------------------------------------
 //   DAT_CP4ClientApi::DAT_CP4ClientApi()
 /// \author    SLepasteur

@@ -1845,21 +1845,6 @@ void EOUT_cl_Frame::OnAction(ULONG _ul_Action)
 					vGROIndex.push_back(ul_Index);
 				}
 			}
-
-			//get info from perforce
-			
-			if ( DAT_CPerforce::GetInstance()->P4Connect() ) 
-			{
-				DAT_CUtils::GetP4FilesFromVecIndex(vGROIndex,vFiles,DAT_CPerforce::GetInstance()->GetP4Root().c_str());
-				// Query Perforce for information on all GRO
-				DAT_CPerforce::GetInstance()->P4Fstat(vFiles);	
-
-				DAT_CPerforce::GetInstance()->P4Disconnect();
-			}
-			else
-			{
-				ERR_X_Warning(0,"Problem while connecting to perforce. Highlight Mode will not work!\n", NULL);
-			}
 			break;
 
 		default:
@@ -2669,11 +2654,9 @@ void EOUT_cl_Frame::OnAction(ULONG _ul_Action)
 		DP()->Selection_ComputeNormals();
 		break;
 
-#ifdef JADEFUSION
     case EOUT_ACTION_RADIOSITYLIGHTMAP:
         DP()->RadiosityLightmap();
         break;
-#endif
 
 	case EOUT_ACTION_RLI:
 		DP()->RLITool();
@@ -2719,7 +2702,6 @@ void EOUT_cl_Frame::OnAction(ULONG _ul_Action)
 		DP()->Selection_SetUVs4Text();
 		break;
 
-#ifdef JADEFUSION
     case EOUT_ACTION_COMPUTELIGHTMAPS:
         DP()->ComputeLightmaps(NULL, false);
         break;
@@ -2735,7 +2717,6 @@ void EOUT_cl_Frame::OnAction(ULONG _ul_Action)
     case EOUT_ACTION_DESTROYLIGHTMAPS:
         DP()->DestroyLightmaps();
         break;
-#endif
 
 	case EOUT_ACTION_BRICKMAPPER:
 		DP()->BrickMapper();
@@ -4082,9 +4063,7 @@ BOOL EOUT_cl_Frame::b_OnActionValidate(ULONG _ul_Action, BOOL _b_Disp)
 	/*$1-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	case EOUT_ACTION_COMPUTENORMALS:
-#ifdef JADEFUSION
     case EOUT_ACTION_RADIOSITYLIGHTMAP:
-#endif
 	case EOUT_ACTION_RLI:
 	case EOUT_ACTION_RLIAUTO:
 	case EOUT_ACTION_CHECKBV:

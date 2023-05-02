@@ -2051,6 +2051,12 @@ void ComputeLighting(tdst_LMObj* _pObj, int _nbObj, TAB_tdst_Ptable* _pst_LightL
 
 	// allocate buffer for rendering (we don't render in the page in case we use supersampling)
 	colorBuffer = (LMColor*) LM_Alloc(currentMaxHeight * currentMaxWidth * sizeof(LMColor));
+	if ( colorBuffer == NULL )
+	{
+		ERR_OutputDebugString( "Failed to allocate colour buffer for lightmap, aborting!\n" );
+		LM_Free( elementRenderFaces );
+		return;
+	}
 
 	int elementCounter = 0;
 	// for each object

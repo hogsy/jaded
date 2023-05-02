@@ -68,38 +68,6 @@ void EAI_cl_Frame::RunCommandOnFiles( int nCommand )
 		return;
 	}
 
-	if ( DAT_CPerforce::GetInstance()->P4Connect()  )
-	{
-		std::vector<BIG_INDEX> vFileIndex;
-		std::vector<std::string> vFiles;
-		DAT_CUtils::GetP4FilesFromDirIndex(ulDir,vFiles,&vFileIndex,DAT_CPerforce::GetInstance()->GetP4Root().c_str(),TRUE);
-
-		std::string strP4ModelFile;
-		DAT_CUtils::GetP4FileFromKey(BIG_FileKey(mul_CurrentEditModel),strP4ModelFile,DAT_CPerforce::GetInstance()->GetP4Root());
-		vFiles.push_back(strP4ModelFile);
-		vFileIndex.push_back(mul_CurrentEditModel);
-
-		DAT_CPerforce::GetInstance()->P4Fstat(vFiles);
-		if ( EPER_cl_Frame::PerforceCheckFileUpToDate(vFileIndex) ) 
-		{
-			g_DataCtrlEmulator.Clear( );
-			for( size_t n = 0; n < vFileIndex.size( ); ++n )
-				g_DataCtrlEmulator.AddIndex( vFileIndex[ n ] );
-		}
-
-
-		DAT_CPerforce::GetInstance()->P4Disconnect();
-
-		// as soon as we do a checkout in the ai frame, this option needs to be on 
-		// so we don't close the map when we sync/checkout ai file.
-		mb_P4CloseWorld = FALSE;
-		if( !vFileIndex.empty( ) )
-			LINK_SendMessageToEditors(nCommand, ((ULONG)(dynamic_cast<PER_CDataCtrl*>(&g_DataCtrlEmulator))), 0);
-		mb_P4CloseWorld = TRUE;
-
-		LINK_SendMessageToEditors(EPER_MESSAGE_REFRESH, -1, 0);
-	}
-
 	RefreshDialogBar();
 	DisplayPaneNames();
 	AfxGetApp()->DoWaitCursor(-1);

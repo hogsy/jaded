@@ -814,21 +814,6 @@ void EDI_cl_MainFrame::UpdateMainFrameTitle(void)
 		L_strcat(asz_Temp, mst_ExternIni.asz_DataBigFileName);
 	}
 
-#if 0 // removing perforce ~hogsy
-	L_strcat(asz_Temp, " -- [Perforce: ");
-	if (DAT_CPerforce::GetInstance()->IsEnabled())
-	{	
-		L_strcat(asz_Temp, DAT_CPerforce::GetInstance()->GetPort());
-		L_strcat(asz_Temp, " - ClientView: ");
-		L_strcat(asz_Temp, DAT_CPerforce::GetInstance()->GetClient());
-	}
-	else
-	{
-		L_strcat(asz_Temp, "DISABLED");
-	}
-	L_strcat(asz_Temp, "]");
-#endif
-
 	SetWindowText(asz_Temp);
 }
 

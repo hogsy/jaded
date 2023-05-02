@@ -15,16 +15,25 @@
     void	LIGHT_Lightmaps_CleanUnusedLightmapTextures(void);
 #endif
 
-extern LIGHT_tdst_LightmapPageInfo*	LIGHT_gFirstLightmapPage;
-//extern ULONG	LIGHT_g_NbOfLightMappedObjects;
+#ifdef __cplusplus
+    extern "C"
+    {
+#endif
 
-LIGHT_tdst_LightmapPageInfo* LIGHT_Lightmaps_GetPointerForKey(ULONG _ulKey, bool _bCreateIfNeeded, bool _bAddRefIfPresent, bool _bIsNotaKey);
-void	LIGHT_Lightmaps_RemoveRefLightmapPage(LIGHT_tdst_LightmapPageInfo*);
+	    extern LIGHT_tdst_LightmapPageInfo *LIGHT_gFirstLightmapPage;
+	    //extern ULONG	LIGHT_g_NbOfLightMappedObjects;
 
-void LIGHT_Lightmaps_UsedTexture(char* _pcUsedTextures);
+	    LIGHT_tdst_LightmapPageInfo *LIGHT_Lightmaps_GetPointerForKey( ULONG _ulKey, bool _bCreateIfNeeded, bool _bAddRefIfPresent, bool _bIsNotaKey );
+	    void LIGHT_Lightmaps_RemoveRefLightmapPage( LIGHT_tdst_LightmapPageInfo * );
 
-#if defined(ACTIVE_EDITORS)
-void LIGHT_Lightmaps_DestroyGAOLightmaps(OBJ_tdst_GameObject* _pst_GO);
+	    void LIGHT_Lightmaps_UsedTexture( char *_pcUsedTextures );
+
+#if defined( ACTIVE_EDITORS )
+	    void LIGHT_Lightmaps_DestroyGAOLightmaps( OBJ_tdst_GameObject *_pst_GO );
+#endif
+
+#ifdef __cplusplus
+    };
 #endif
 
 #endif // __LIGHTMAP_H__ 

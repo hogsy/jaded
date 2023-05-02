@@ -51,9 +51,6 @@ ULONG       OGL_ulLODAmbient = 0;
 static bool OGL_SetDCPixelFormat( HDC _hDC, int maxAASamples );
 void		OGL_SetupRC(OGL_tdst_SpecificData *);
 
-#ifdef JADEFUSION
-extern void OGL_AE_Radapt();
-#endif
 extern void LOA_BeginSpeedMode(BIG_KEY _ul_Key);
 extern void LOA_EndSpeedMode(void);
 extern BOOL GDI_gb_WaveSprite;
@@ -1258,6 +1255,10 @@ LONG OGL_l_DrawElementIndexedTriangles
 	else
 		bStrip = FALSE;
 
+	// DRL: Prevent using strip data for facemaps
+	if ( bStrip && _pst_UV && !( GDI_gpst_CurDD->ul_DisplayInfo & GDI_Cul_DI_UseOneUVPerPoint ) && ( GDI_gpst_CurDD->ul_DisplayInfo & GDI_Cul_DI_FaceMap ) )
+		bStrip = FALSE;
+
 	if(bStrip == FALSE)
 	{
         {
@@ -2311,6 +2312,16 @@ void OGL_l_DrawSPG2(	SPG2_CachedPrimitivs				*pCachedLine,
 	ULONG BM,Transparency,Transparency2;
 	ULONG				ulnumberOfPoints;
 	ULONG				NumberOfSegments;
+	
+	// Droolie start
+	BM = 0;
+	Transparency = 0;
+	Transparency2 = 0;
+	pst_SD = NULL;
+	fExtractionOfHorizontalPlane = 0.0;
+	ulnumberOfPoints = 0;
+	NumberOfSegments = 0;
+	// Droolie end
 
 #if defined(_XENON_RENDER_PC)
     // SC: No SPG2 rendering when not using the OpenGL renderer
@@ -2381,6 +2392,11 @@ void OGL_l_DrawSPG2(	SPG2_CachedPrimitivs				*pCachedLine,
 		MAT_SET_FLAG(BM, MAT_Cul_Flag_Bilinear | MAT_Cul_Flag_HideAlpha | MAT_Cul_Flag_TileU | MAT_Cul_Flag_TileV);
 	else
 		MAT_SET_FLAG(BM, MAT_Cul_Flag_Bilinear | MAT_Cul_Flag_AlphaTest | MAT_Cul_Flag_TileU | MAT_Cul_Flag_TileV);
+
+	// DRL: Add this from final game code
+	if ( _pst_SPG2->ulFlags1 & SPG2_HideAlpha )
+		MAT_SET_FLAG( BM, MAT_GET_FLAG( BM ) | MAT_Cul_Flag_HideAlpha );
+
 	MAT_SET_Blending(BM , MAT_Cc_Op_Copy);
 	MAT_SET_AlphaTresh(BM , _pst_SPG2->AlphaThreshold);
 

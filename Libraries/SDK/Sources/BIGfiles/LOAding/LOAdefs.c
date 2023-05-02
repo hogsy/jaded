@@ -333,7 +333,7 @@ char		LOA_SPE_NAME[1024];
 BAS_tdst_barray LOA_gst_RefArray;
 int				LOA_gi_InitRef = 0;
 #endif
-#define LOA_C_MaxStack	5000
+#define LOA_C_MaxStack 10000
 LOA_tdst_Ref	*LOA_gpst_LastRef = NULL;
 
 #define WOR_Cte_MaxFixWorldNb	8

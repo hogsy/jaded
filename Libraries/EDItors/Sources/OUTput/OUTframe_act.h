@@ -1060,8 +1060,14 @@ Set As Root=306=--=0;"
 
 								"Compute=-9=--=0;\
 Normals=351=__=0;\
+Radiosity lightmap=367=^#R=0;\
 RLI Tool=352=^#R=0;\
 RLI (Destroy & Compute Local)=358=--=0;\
+Sep=0=--=0;\
+Compute Lightmaps=363=--=0;\
+Compute Lightmaps On SelectedObjects=364=--=0;\
+Compute Lightmaps (Quick)=365=^L=0;\
+Destroy Lightmaps=366=--=0;\
 Sep=0=--=0;\
 Strip All Objects=353=--=0;\
 UnStrip All Objects=354=--=0;\

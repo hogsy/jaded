@@ -223,7 +223,7 @@ void EMAT_cl_Frame::GRM_To_MUTEX(void)
                 pst_CDO->Dest.AllLine[pst_CDO->Dest.NumberOfSubTextures].bVIsASpeed = 1;
             pst_CDO->Dest.AllLine[pst_CDO->Dest.NumberOfSubTextures].AlphaTestTreshold = (float) MAT_GET_AlphaTresh(MttL->ul_Flags);
 
-			if(MttL->ul_Flags & MAT_XYZ_Flag_ShiftUsingNormal)
+			if ( MttL->s_AditionalFlags & MAT_XYZ_Flag_ShiftUsingNormal )
 				pst_CDO->Dest.AllLine[pst_CDO->Dest.NumberOfSubTextures].ShiftFace = 1;
 			else
 				pst_CDO->Dest.AllLine[pst_CDO->Dest.NumberOfSubTextures].ShiftFace = 0;
@@ -408,9 +408,9 @@ void EMAT_cl_Frame::MUTEX_To_GRM(void)
                 );
 
 				if(pst_CDO->Dest.AllLine[TextureConter].ShiftFace == 1)
-					(*MttL)->ul_Flags |= MAT_XYZ_Flag_ShiftUsingNormal;
+					( *MttL )->s_AditionalFlags |= MAT_XYZ_Flag_ShiftUsingNormal;
 				else
-					(*MttL)->ul_Flags &= ~MAT_XYZ_Flag_ShiftUsingNormal;
+					( *MttL )->s_AditionalFlags &= ~MAT_XYZ_Flag_ShiftUsingNormal;
 
 
 

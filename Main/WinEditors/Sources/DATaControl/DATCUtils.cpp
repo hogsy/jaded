@@ -12,7 +12,7 @@
 //------------------------------------------------------------------------------
 #include "Precomp.h"
 #include "DATCUtils.h"
-#include "DATCPerforce.h"
+//#include "DATCPerforce.h"
 #include "DATCP4BFObject.h"
 #include "DATCP4FileSysSync.h"
 
@@ -33,6 +33,8 @@
 
 #include "sdk/Sources/BIGfiles/BIGgroup.h"
 
+#define FILENAMELENGHT 10
+#define KEYLENGHT      8	
 
 EDIA_cl_UPDATEDialog* DAT_CUtils::ms_pProgress = NULL;
 //extern EDIA_cl_MsgLinkDialog    EDI_go_MsgTruncateFiles;
@@ -326,17 +328,12 @@ void DAT_CUtils::GetP4FilesFromVecKey(const std::vector<BIG_KEY>& vFileKey, std:
 void DAT_CUtils::GetBFFileFromKey(BIG_KEY _ulKey,char* _psz_BFFilePath)
 {
 	ULONG ulIndex = BIG_ul_SearchKeyToFat(_ulKey);
-	
 	if ( ulIndex == BIG_C_InvalidIndex ) 
-	{
-		GetP4FileFromKey(_ulKey, _psz_BFFilePath, DAT_CPerforce::GetInstance()->GetP4Root().c_str());
-	}
-	else
-	{
-		BIG_ComputeFullName(BIG_ParentFile(ulIndex), _psz_BFFilePath);
-		strcat(_psz_BFFilePath,"/");
-		strcat(_psz_BFFilePath,BIG_NameFile(ulIndex));
-	}
+		return;
+
+	BIG_ComputeFullName(BIG_ParentFile(ulIndex), _psz_BFFilePath);
+	strcat(_psz_BFFilePath,"/");
+	strcat(_psz_BFFilePath,BIG_NameFile(ulIndex));
 }
 
 //------------------------------------------------------------
@@ -429,7 +426,7 @@ char* DAT_CUtils::PrepareFileBuffer( BIG_INDEX _ulIndex, DWORD& _ulBufferSize, B
 		pBfBuffer = L_malloc( 8 ); 
 		_ulBufferSize = 8;
 	}
-	else 
+	else
 	{
 		pBfBuffer = BIG_pc_ReadFileTmpMustFree(BIG_PosFile(_ulIndex), &_ulBufferSize);
 		if( pBfBuffer == NULL && ulBfBufferSize == 0 )
@@ -447,7 +444,6 @@ char* DAT_CUtils::PrepareFileBuffer( BIG_INDEX _ulIndex, DWORD& _ulBufferSize, B
 	// setting up the header for the file
 	DAT_CUtils::SetHeader(_ulIndex,ObjectHeader);
 
-#ifdef JADEFUSION
 	// Dont compress the data when exporting to keys if more than 20 000 000 bytes
 	// Because if the data is binarized and is big (like texture files)
 	// the compress will fail to allocate enough memory
@@ -455,15 +451,10 @@ char* DAT_CUtils::PrepareFileBuffer( BIG_INDEX _ulIndex, DWORD& _ulBufferSize, B
 	extern BOOL EDI_gb_ExportToKeys;
 	if (EDI_gb_ExportToKeys && _ulBufferSize > 20000000)
 		compressData = false;
-#endif
 
 	// if we do have a content
-	if( pBfBuffer ) 
-#ifdef JADEFUSION
+	if( pBfBuffer )
 		ObjectData.SetData(pBfBuffer,_ulBufferSize,compressData);
-#else
-		ObjectData.SetData(pBfBuffer,_ulBufferSize,true);
-#endif
 
 	// creation the output buffer
 	char* pBuffer = new char[ObjectHeader.Size() + ObjectData.CompressedSize()];
@@ -828,7 +819,7 @@ ULONG DAT_CUtils::UpdateFileBuffer(BIG_KEY _ulKey, void* _pBuffer,ULONG _ulBuffe
 	if ( pData == NULL && dataSize == 0)
 		pData = _pBuffer; 
 
-	ULONG ulIndex = DAT_CPerforce::UpdateBFFileBuffer(ulHeaderKey,pData,dataSize,str_FileName.c_str());
+	ULONG ulIndex = BIG_C_InvalidIndex; //DAT_CPerforce::UpdateBFFileBuffer(ulHeaderKey,pData,dataSize,str_FileName.c_str());
 	BfObject.Data().Free();
 
 	return ulIndex;

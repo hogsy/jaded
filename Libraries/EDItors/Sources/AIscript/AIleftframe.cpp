@@ -130,21 +130,6 @@ void EAI_cl_LeftFrame::SelectItem(int i_Item)
     ul_File = GetItemData(i_Item);
     if(ul_File != mpo_Parent->mul_CurrentEditFile)
     {
-		// Get stats again to be sure the panes are displayed with the right color.
-		if ( DAT_CPerforce::GetInstance()->P4Connect()  )
-		{
-			// Get P4 file path
-			std::vector<std::string> vP4Files;
-			std::string asz_P4FilePath;
-			DAT_CUtils::GetP4FileFromKey(BIG_FileKey(ul_File), asz_P4FilePath, DAT_CPerforce::GetInstance()->GetP4Root());
-			vP4Files.push_back(asz_P4FilePath);
-			DAT_CPerforce::GetInstance()->P4Fstat(vP4Files);
-			DAT_CPerforce::GetInstance()->P4Disconnect();
-
-			// Sometimes, there is still an hourglass instead of an arrow. So force the cursor
-			//::SetCursor(AfxGetApp()->LoadStandardCursor(IDC_ARROW));
-		}
-
         if(mpo_Parent->b_CanClose())
             mpo_Parent->Load(GetItemData(i_Item));
         else

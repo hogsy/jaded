@@ -945,7 +945,7 @@ void F3D_cl_View::OnLButtonDown(UINT nFlags, CPoint point)
 				ClientToScreen(&DD.o_Pt);
 				DD.ul_FatFile = po_PFBeditor->mul_FileIndex;
 				DropPrefab(&DD);
-				LINK_Refresh();
+				bRefresh = true;
 			}
 
 			// "Select prefab" coche a la creation d'un nouveau prefab
@@ -970,7 +970,7 @@ void F3D_cl_View::OnLButtonDown(UINT nFlags, CPoint point)
 				////select new WP and rename it
 				//Selection_Object(CreateWaypoint(point), SEL_C_SIF_Object);
 				//Rename();
-				LINK_Refresh();
+				bRefresh = true;
 			}
 
 			goto endOnLButtonDown;
@@ -983,7 +983,7 @@ void F3D_cl_View::OnLButtonDown(UINT nFlags, CPoint point)
 			{
 				mst_WinHandles.pst_DisplayData->ul_DisplayFlags |= GDI_Cul_DF_DisplayInvisible;
 				GAO_CreateInvisible(point);
-				LINK_Refresh();
+				bRefresh = true;
 			}
 
 			goto endOnLButtonDown;
@@ -1008,7 +1008,7 @@ void F3D_cl_View::OnLButtonDown(UINT nFlags, CPoint point)
 		/* Test for grid picking */
 		if(mb_GridEdit)
 		{
-			if(Grid_b_Paint(point.x, point.y, 0)) LINK_Refresh();
+			if ( Grid_b_Paint( point.x, point.y, 0 ) ) bRefresh = true;
 			goto endOnLButtonDown;
 		}
 	}
@@ -1159,7 +1159,7 @@ void F3D_cl_View::OnLButtonDown(UINT nFlags, CPoint point)
 					Selection_SubObject_VertexPos();
 			}
 
-			LINK_Refresh();
+			bRefresh = true;
 			goto endOnLButtonDown;
 		}
 		else
@@ -1167,7 +1167,7 @@ void F3D_cl_View::OnLButtonDown(UINT nFlags, CPoint point)
 			if(M_F3D_Helpers->b_CenterLock_On)
 			{
 				M_F3D_Helpers->b_CenterLock_On = 0;
-				LINK_Refresh();
+				bRefresh = true;
 				goto endOnLButtonDown;
 			}
 		}
@@ -1347,25 +1347,18 @@ void F3D_cl_View::OnLButtonDown(UINT nFlags, CPoint point)
 
 	}
 
-
-	
-	
-	if (b_SplitScreen) {
-		WOR_View_SplitView (pst_World);
-	}
-	/* Refresh eventually display and pointers */
-	if(bRefresh || b_ForceRefresh)
-	{
-		LINK_Refresh();
-		LINK_UpdatePointers();
-		if(mpo_AssociatedEditor) mpo_AssociatedEditor->RefreshMenu();
-		if(mpo_AssociatedEditor) mpo_AssociatedEditor->SetFocus();
-	}
-	return;
-
 endOnLButtonDown:
 	if (b_SplitScreen) {
 		WOR_View_SplitView (pst_World);
+	}
+
+	/* Refresh eventually display and pointers */
+	if ( bRefresh || b_ForceRefresh )
+	{
+		LINK_Refresh();
+		LINK_UpdatePointers();
+		if ( mpo_AssociatedEditor ) mpo_AssociatedEditor->RefreshMenu();
+		if ( mpo_AssociatedEditor ) mpo_AssociatedEditor->SetFocus();
 	}
 }
 

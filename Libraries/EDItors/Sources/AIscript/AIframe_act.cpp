@@ -529,6 +529,7 @@ void EAI_cl_Frame::OnAction(ULONG _ul_Action)
 		EDI_gb_NoUpdateVSS = FALSE;
 		break;
 
+#if 0 // remove p4 ~hogsy
 	case EAI_ACTION_P4_EDITMODEL:
 		OnSave();
 		ul_Mod = mul_CurrentEditModel;
@@ -641,12 +642,14 @@ void EAI_cl_Frame::OnAction(ULONG _ul_Action)
 	case EAI_ACTION_P4_SHOWHISTORY:
 		SendP4Message(EPER_MESSAGE_SHOWHISTORY_SELECTED, mpo_ListAI, mul_CurrentEditFile);
 		break;
+#endif
 
 	case EAI_ACTION_CHECKINMODEL:
 		OnSave();
 		CheckIn();
 		break;
 
+#if 0 // remove p4 ~hogsy
 	case EAI_ACTION_P4_CHECKINMODEL:
 		OnSave();
 		AfxGetApp()->DoWaitCursor(1);
@@ -660,6 +663,7 @@ void EAI_cl_Frame::OnAction(ULONG _ul_Action)
 		OnPerforceCheckInOutModel();
 		AfxGetApp()->DoWaitCursor(-1);
 		break;
+#endif
 
 	case EAI_ACTION_CHECKINOUTMODEL:
 		OnSave();
@@ -726,7 +730,7 @@ void EAI_cl_Frame::OnAction(ULONG _ul_Action)
 		break;
 	}
 
-	mb_P4CloseWorld = TRUE;
+	//mb_P4CloseWorld = TRUE;
 }
 
 /*
@@ -872,7 +876,7 @@ BOOL EAI_cl_Frame::b_OnActionValidate(ULONG _ul_Action, BOOL)
 		if(mul_CurrentEditModel == BIG_C_InvalidIndex) return FALSE;
 		return TRUE;
 
-
+#if 0// remove p4 ~hogsy
     case EAI_ACTION_P4_ADD:
     case EAI_ACTION_P4_DELETE:
     case EAI_ACTION_P4_EDIT:
@@ -891,6 +895,7 @@ BOOL EAI_cl_Frame::b_OnActionValidate(ULONG _ul_Action, BOOL)
         if (EDI_gb_BatchModeWithoutPerforce)
             return FALSE;
         return TRUE;
+#endif
 	}
 
 	return TRUE;
@@ -1028,10 +1033,6 @@ int EAI_cl_Frame::i_IsItVarAction(ULONG _ul_Action, EVAV_cl_View *_po_List)
 		_po_List->AddItem("PP defines", EVAV_EVVIT_Color, &mst_Ini.ax_Colors[EAI_C_ColorPPConstants]);
 		_po_List->AddItem("PP macros", EVAV_EVVIT_Color, &mst_Ini.ax_Colors[EAI_C_ColorPPMacros]);
 		_po_List->AddItem("Procedures", EVAV_EVVIT_Color, &mst_Ini.ax_Colors[EAI_C_ColorProcedures]);
-
-		/* Perforce */
-		_po_List->AddItem(EAI_STR_Csz_P4, EVAV_EVVIT_Separator, NULL);
-		_po_List->AddItem(EAI_STR_Csz_P4CloseWorld, EVAV_EVVIT_Bool, &mb_P4CloseWorld);
 		return 1;
 	}
 

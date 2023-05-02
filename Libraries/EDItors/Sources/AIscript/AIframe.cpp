@@ -248,7 +248,7 @@ EAI_cl_Frame::EAI_cl_Frame(void)
 	mpst_Instance = NULL;
 	mb_LockHistory = FALSE;
 
-	mb_P4CloseWorld = TRUE;
+	mb_P4CloseWorld = FALSE;
 
 	/* Add types to list */
 	for(i = 0; i < sizeof(EAI_gast_Types) / sizeof(EAI_gast_Types[0]); i++)
@@ -481,12 +481,14 @@ void EAI_cl_Frame::OnRealIdle(void)
 	char		asz_Path[BIG_C_MaxLenPath];
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+#if 0
 	if(	mpo_Edit->GetModify() && BIG_P4Action(mul_CurrentEditFile)[0] == 0 	)
 	{
 		BOOL isCheckout = FALSE;
 		LINK_SendMessageToEditors(EPER_MESSAGE_AUTOCHECKOUT, mul_CurrentEditFile, ((ULONG)&isCheckout));
 		if (!isCheckout) Load(mul_CurrentEditFile);
 	}
+#endif
 
 	/* Auto compile all models */
 	if(EDI_gb_SlashC)
@@ -997,11 +999,13 @@ void EAI_cl_Frame::OnSave(void)
 	if(!mpo_Edit->GetModify()) return;
 
 	BOOL isCheckout = FALSE;
+#if 0
 	if (	BIG_P4Action(mul_CurrentEditFile)[0] == 0  )
 	{
 		LINK_SendMessageToEditors(EPER_MESSAGE_AUTOCHECKOUT, mul_CurrentEditFile, ((ULONG)&isCheckout));
 	}
 	else 
+#endif
 	{
 		isCheckout = TRUE;
 	}

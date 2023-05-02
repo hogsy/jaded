@@ -1283,7 +1283,8 @@ void LINK_RegisterAllStructs(void)
 		"Damier 2",       				EVAV_EVVIT_Flags, (void *) 0, 0, 4, 4, 0, 0, 0, "", 		
 		"Use RLI(vertex color) only",   EVAV_EVVIT_Flags, (void *) 0, 0, 5, 4, 0, 0, 0, "", 		
 		"Use LOD",						EVAV_EVVIT_Flags, (void *) 0, 0, 6, 4, 0, 0, 0, "", 		
-		"Use LOD2",						EVAV_EVVIT_Flags, (void *) 0, 0, 7, 4, 0, 0, 0, "", 		
+		"Use LOD2",						EVAV_EVVIT_Flags, (void *) 0, 0, 7, 4, 0, 0, 0, "", 
+		"Hide Alpha", EVAV_EVVIT_Flags, ( void * ) 0, 0, 8, 4, 0, 0, 0, "", // Droolie
 #ifdef JADEFUSION
 		"Heat Shimmer Enable",   		EVAV_EVVIT_Flags, (void *) 0, 0, 16, 4, 0, 0, 0, "", 	
 #endif

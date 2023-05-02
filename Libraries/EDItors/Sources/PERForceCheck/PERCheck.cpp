@@ -122,6 +122,8 @@ void EPERCheck_cl_Manager::ClearDiffStruct()
 //------------------------------------------------------------
 void EPERCheck_cl_Manager::FillDiffStruct(BIG_INDEX DirIndex, BOOL bRecursive/*=FALSE*/)
 {
+	return;
+#if 0
 	UINT uiIndexDiff = 0;
 
 	std::vector<std::string> vP4FileToDiff;
@@ -204,6 +206,7 @@ void EPERCheck_cl_Manager::FillDiffStruct(BIG_INDEX DirIndex, BOOL bRecursive/*=
 	// Did the user press escape ?
 	if ( LINK_gb_EscapeDetected )
 		ClearDiffStruct();
+#endif
 }
 
 //------------------------------------------------------------

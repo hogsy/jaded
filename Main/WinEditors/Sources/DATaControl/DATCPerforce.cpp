@@ -70,7 +70,7 @@ m_bIsConnected(FALSE),
 m_ulTotalFile(0),
 m_ulTotalOperationFile(0),
 m_ulOperationFile(0),
-m_bPermanentDisable(0),
+m_bPermanentDisable(true),
 m_bEnable(TRUE),
 m_bRelog(FALSE)
 {

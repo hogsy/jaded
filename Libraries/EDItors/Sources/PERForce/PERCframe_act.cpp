@@ -886,63 +886,6 @@ void EPER_cl_Frame::OnSubmit()
 			bForcedRevertUnchanged = M_MF()->MessageBox(
 				"Revert unchanged file(s) before submitting ?", "Confirm", MB_YESNO | MB_ICONQUESTION ) == IDYES;
 		}
-
-		if ( DAT_CPerforce::GetInstance()->P4Connect() ) 
-		{
-			for ( UINT ui = 0; ui < vSelected.size() ; ui++ ) 
-			{
-				if ( vSelected[ui] != NULL && mpo_TreeView->GetParentItem(vSelected[ui]) == NULL ) 
-				{
-					ULONG ulChangelist = mpo_TreeView->GetItemData(vSelected[ui]) ; 
-					
-					std::string strAdditionnalVersion;
-					BOOL bRevertUnchanged = TRUE;
-					BOOL bVerifyLinks = TRUE;
-					if ( !EditChangelist( ulChangelist,TRUE,strAdditionnalVersion,bVerifyLinks,bRevertUnchanged ) ) 
-							break;
-					
-					if( g_pListFiles != NULL )
-					{
-						std::vector< PerforceFileInfo* >& lstFiles = m_mChangelist[ulChangelist]->vFileInfo;
-						const size_t nQtyFiles = lstFiles.size( );
-						const char* szFilename = NULL;
-						for( size_t nFile = 0; nFile < nQtyFiles; ++nFile )
-						{
-							szFilename = lstFiles[ nFile ]->strFilename.c_str( );
-							BIG_KEY ulKey = DAT_CUtils::GetKeyFromString( szFilename );
-							BIG_INDEX ulIndex = BIG_ul_SearchKeyToFat( ulKey );
-							g_pListFiles->push_back( ulIndex );
-						}
-					}
-
-					if ( bRevertUnchanged && bForcedRevertUnchanged )
-					{
-						for ( UINT ui = 0; ui < vSelected.size() ; ui++ ) 
-						{
-							assert( vSelected [ui] != NULL ) ;
-							DAT_TChangelistInfo::const_iterator iter = m_mChangelist.find(ulChangelist);
-							OnRevertUnchanged((ULONG)mpo_TreeView->GetItemData(vSelected [ui]));
-						}
-					}
-
-					DAT_CPerforce::GetInstance()->SetWorkingChangelist(ulChangelist);
-					if ( DAT_CPerforce::GetInstance()->P4Submit(ulChangelist,bVerifyLinks) ) 
-					{
-						RemoveSelectedItem(vSelected[ui]);
-
-						if ( strAdditionnalVersion != "" ) 
-						{				
-							ReplicateSubmitOnVersion(ulChangelist,strAdditionnalVersion);
-						}
-					}					
-				}
-			}
-			mpo_TreeView->ClearSelection();
-
-			LINK_gb_RefreshOnlyFiles = TRUE;
-			M_MF()->FatHasChanged();
-			DAT_CPerforce::GetInstance()->P4Disconnect();
-		}
 	}
 	Refresh();
 

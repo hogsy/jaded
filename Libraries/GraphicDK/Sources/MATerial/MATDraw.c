@@ -352,7 +352,7 @@ void MAT_DrawIndexedTriangle_MT
 					else
 					if (pst_MLTTX->ul_ValidateMask & MAT_ValidateMask_Fur)
 					{
-						if(pst_MLTTXLVL->ul_Flags & MAT_XYZ_Flag_ShiftUsingNormal)
+						if ( pst_MLTTXLVL->s_AditionalFlags & MAT_XYZ_Flag_ShiftUsingNormal )
 						{
 							GEO_UseNormals(pst_Obj); // 
 							GSP_l_DrawElementIndexedTriangles_FUR(pst_Element,	pst_CurDD->p_Current_Vertex_List,(GEO_tdst_UV *) p_CptBf->Current , pst_Obj->l_NbPoints , pst_Obj->p_CompressedNormals);
@@ -374,7 +374,7 @@ void MAT_DrawIndexedTriangle_MT
 					MAT_ComputeDeductedAlpha(pst_Obj, pst_MLTTXLVL);
 				}
 				*/
-				if(pst_MLTTXLVL->ul_Flags & MAT_XYZ_Flag_ShiftUsingNormal)
+				if ( pst_MLTTXLVL->s_AditionalFlags & MAT_XYZ_Flag_ShiftUsingNormal )
 					renderState_Shfited = 1;
 				else
 					renderState_Shfited = 0;
@@ -580,7 +580,7 @@ void MAT_DrawIndexedTriangleZone
                     }				
                     GDI_SetTextureBlending((*pst_CurDD),pst_MLTTXLVL->s_TextureId, pst_MLTTXLVL->ul_Flags , 0);
                     MAT_ComputeUV(pst_Obj, pst_Element, pst_MLTTXLVL );
-                    if(pst_MLTTXLVL->ul_Flags & MAT_XYZ_Flag_ShiftUsingNormal)
+					if ( pst_MLTTXLVL->s_AditionalFlags & MAT_XYZ_Flag_ShiftUsingNormal )
                         renderState_Shfited = 1;
                     else
                         renderState_Shfited = 0;
