@@ -52,7 +52,13 @@ typedef long SHANDLE_PTR;
 
 #endif 
 
-
+#		if defined( _MSC_VER )
+#			define L_itoa    _itoa
+#			define L_stricmp _stricmp
+#		else
+#			define L_itoa    itoa
+#			define L_stricmp stricmp
+#		endif
 
 #if !defined(_XBOX) && !defined(_XENON)
 #include "mmsystem.h"

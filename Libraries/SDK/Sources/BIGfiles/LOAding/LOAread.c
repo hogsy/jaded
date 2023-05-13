@@ -388,11 +388,7 @@ CHAR *LOA_FetchBuffer(ULONG _ul_Length)
 			/*~~~~~~~~~~~~~~~*/
 
 			ulDiskSize = *(LONG *) (LOA_GetBinaryBuffer() + gl_LastLengthPos);
-#ifdef JADEFUSION
 			p = (ULONG *) (LOA_GetBinaryBuffer() + gl_LastLengthPos);
-#else
-			p = (LONG *) (LOA_GetBinaryBuffer() + gl_LastLengthPos);
-#endif
 			ulNewSize = (ULONG)
 				(
 					LOA_GetCurBinaryBuffer() -

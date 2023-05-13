@@ -624,11 +624,7 @@ OBJ_tdst_GameObject *ANI_pst_GetReference(OBJ_tdst_GameObject *_pst_BoneGO)
 
 	if((!OBJ_b_TestIdentityFlag(_pst_BoneGO, OBJ_C_IdentityFlag_Bone))
 #ifdef ACTIVE_EDITORS
-#ifdef JADEFUSION
 		&& (!(_pst_BoneGO->ul_EditorFlags & OBJ_C_EditFlags_GizmoObject))
-#else
-		&& (!_pst_BoneGO->ul_EditorFlags & OBJ_C_EditFlags_GizmoObject)
-#endif
 #endif
 	) return _pst_BoneGO;
 
@@ -799,7 +795,6 @@ void ANI_CloneSet(OBJ_tdst_GameObject *_pst_GO1, OBJ_tdst_GameObject *_pst_GO2, 
 	ANI_tdst_Shape	*pst_GO2_Shape;
 	OBJ_tdst_Group	*pst_GO2_Skeleton, *pst_GO1_Skeleton;
 	WOR_tdst_World	*pst_World;
-	int				i;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	if

@@ -563,11 +563,7 @@ WAY_tdst_Struct *WAY_pst_CreateStruct(WOR_tdst_World *_pst_World, OBJ_tdst_GameO
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	/* Object has already a link struct */
-#ifdef JADEFUSION
 	if(OBJ_ul_FlagsIdentityGet(_pst_GO) & OBJ_C_IdentityFlag_Links) return (WAY_tdst_Struct*)_pst_GO->pst_Extended->pst_Links;
-#else
-	if(OBJ_ul_FlagsIdentityGet(_pst_GO) & OBJ_C_IdentityFlag_Links) return _pst_GO->pst_Extended->pst_Links;
-#endif
 	/* Get index of world */
 	ul_Index = LOA_ul_SearchKeyWithAddress((ULONG) _pst_World);
 	ERR_X_Assert(ul_Index != BIG_C_InvalidIndex);

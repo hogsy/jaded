@@ -713,7 +713,7 @@ void OBJ_RestoreInitialPos(OBJ_tdst_GameObject *_pst_Object)
 	}
 }
 
-extern	MATH_VecRotate(MATH_tdst_Vector *, MATH_tdst_Vector *, MATH_tdst_Vector *, float f_Angle);
+extern int MATH_VecRotate(MATH_tdst_Vector *, MATH_tdst_Vector *, MATH_tdst_Vector *, float f_Angle);
 
 /*
  =======================================================================================================================

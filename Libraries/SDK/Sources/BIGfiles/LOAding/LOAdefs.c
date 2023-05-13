@@ -928,7 +928,7 @@ void LOA_EndSpeedMode(void)
 
   						st_param.out = (unsigned char *)workBuf;
 #else
-					st_param.in = BIG_gp_ReadBuffer;
+					st_param.in = (u_char*)BIG_gp_ReadBuffer;
 					st_param.uInBufLen = BIG_gi_ReadSize;
 
 					ui_BuffLen = (BIG_gi_ReadSize / BIGcomp_M_BlockSize);

@@ -89,13 +89,8 @@ _Try_
 
 	switch(BIG_specialmode)
 	{
-#ifdef JADEFUSION
 	case BIG_C_SpecialModeLZO:		pc_Buf = BIG_special_LZOsave((char*)BIG_gp_GlobalSaveBuffer, (ULONG*)&sgi_ActualSize); break;
 	default:						pc_Buf = (char*)BIG_gp_GlobalSaveBuffer; break;
-#else
-	case BIG_C_SpecialModeLZO:		pc_Buf = BIG_special_LZOsave(BIG_gp_GlobalSaveBuffer, &sgi_ActualSize); break;
-	default:						pc_Buf = BIG_gp_GlobalSaveBuffer; break;
-#endif
 	}
 
 	BIG_UpdateFileFromBuffer(sgasz_Path, sgasz_File, pc_Buf, sgi_ActualSize);

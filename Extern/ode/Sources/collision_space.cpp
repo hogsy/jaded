@@ -332,15 +332,11 @@ void dxSimpleSpace::collide (void *data, dNearCallback *callback)
 	TAB_tdst_PFelem		*pst_CurrentElem;	
 	TAB_tdst_PFelem		*pst_CurrentElem2;		
 	TAB_tdst_PFelem		*pst_EndElem;
-	COL_tdst_DetectionList	*pst_List;
-	OBJ_tdst_GameObject	**dpst_GO;
 	OBJ_tdst_GameObject	*pst_A, *pst_B;
 	DYN_tdst_ODE		*pst_A_ODE;
 	DYN_tdst_ODE		*pst_B_ODE;
 	int					AHasNoBody, AIsPaused;
 	int					BHasNoBody, BIsPaused;
-	ULONG				i;
-
 
 	dAASSERT (callback);
 

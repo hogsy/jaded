@@ -35,7 +35,6 @@ void UVTexWave_Modifier_Create(OBJ_tdst_GameObject *_pst_GO, MDF_tdst_Modifier *
 
 	if(p_Data == NULL)
 	{
-		int i;
 		//for (i=0;i<5;i++)
 		{
 			p_UVTexWave->MatLevel = 0;
@@ -95,7 +94,6 @@ void UVTexWave_Modifier_Save(MDF_tdst_Modifier *_pst_Mod)
 	ULONG				ul_Size;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-	int i;
 	pst_Data = (UVTexWave_tdst_Modifier *) _pst_Mod->p_Data;
 
 	ul_Size = 4;

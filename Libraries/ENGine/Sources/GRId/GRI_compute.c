@@ -1261,11 +1261,7 @@ int GRI_UpdateCompress(GRID_tdst_World *_pst_Grid)
 	ul_Size = _pst_Grid->c_SizeGroup * _pst_Grid->w_NumGroupsX;
 	ul_Size *= _pst_Grid->c_SizeGroup * _pst_Grid->w_NumGroupsY;
 	ul_Size *= sizeof(GRID_tdst_Elem);
-#ifdef JADEFUSION
 	pc_Buf = (char*)MEM_p_Alloc(2 * ul_Size);
-#else
-	pc_Buf = MEM_p_Alloc(2 * ul_Size);
-#endif
 	_pst_Grid->p_CompressBuf = pc_Buf;
 	LOA_AddAddress(ul_Index, pc_Buf);
 

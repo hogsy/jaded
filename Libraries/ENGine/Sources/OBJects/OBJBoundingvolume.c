@@ -133,7 +133,7 @@ void OBJ_BV_OBBoxMove(OBJ_tdst_GameObject *_pst_GO, MATH_tdst_Vector *_pst_Move)
 	pst_BV = _pst_GO->pst_BV;
 
 #ifdef ACTIVE_EDITORS
-	if(!_pst_GO->ul_EditorFlags & OBJ_C_EditFlags_ShowAltBV) return;
+	if ( !( _pst_GO->ul_EditorFlags & OBJ_C_EditFlags_ShowAltBV ) ) return;
 #endif
 	/* Finally, we move the two points of the OBBox. */
 	MATH_AddEqualVector(OBJ_pst_BV_GetLMin(pst_BV), _pst_Move);

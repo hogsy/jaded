@@ -537,9 +537,7 @@ void GRO_Render(OBJ_tdst_GameObject *_pst_GO)
 void GRO_RenderGro(OBJ_tdst_GameObject *_pst_GO, GRO_tdst_Struct *pst_Obj)
 {
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-#ifdef ACTIVE_EDITORS
-    LONG            l_SpecialPush;
-#endif
+
     GRO_tdst_Visu   st_Visu;
     GEO_tdst_Object *pst_PickableObject;
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -558,6 +556,10 @@ void GRO_RenderGro(OBJ_tdst_GameObject *_pst_GO, GRO_tdst_Struct *pst_Obj)
 
     if(pst_Obj->i->pfnl_HasSomethingToRender(&st_Visu, &pst_PickableObject))
     {
+#ifdef ACTIVE_EDITORS
+		LONG l_SpecialPush;
+#endif
+
         if(!(GDI_gpst_CurDD->ul_DisplayFlags & GDI_Cul_DF_DoNotRender))
         {
             PRO_StartTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GroRender_PushMatrix);
@@ -605,11 +607,11 @@ void GRO_RenderGro(OBJ_tdst_GameObject *_pst_GO, GRO_tdst_Struct *pst_Obj)
 
 	_GSP_EndRaster(24);
 }
-#ifdef JADEFUSION
+
 void GAO_Render(OBJ_tdst_GameObject * _pst_GO )
 {
     // Set up the GDI view matrix 
-    register GDI_tdst_DisplayData    *p_stCurDD = GDI_gpst_CurDD;
+    GDI_tdst_DisplayData    *p_stCurDD = GDI_gpst_CurDD;
 
     SOFT_l_MatrixStack_Push(&p_stCurDD->st_MatrixStack, OBJ_pst_GetAbsoluteMatrix(_pst_GO));
 
@@ -617,9 +619,8 @@ void GAO_Render(OBJ_tdst_GameObject * _pst_GO )
     GDI_SetViewMatrix((*p_stCurDD) , p_stCurDD->st_Camera.pst_ObjectToCameraMatrix);
 
     SOFT_l_MatrixStack_Pop(&GDI_gpst_CurDD->st_MatrixStack);
-
 }
-#endif
+
 /*$4
  ***********************************************************************************************************************
     Private functions

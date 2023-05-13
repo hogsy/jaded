@@ -3162,7 +3162,9 @@ stLocal  = st_CameraX;
 			pBiNormales += 2;
 		}
 	}
-END_OF_GENERATION:
+#ifdef _XENON_RENDER
+	END_OF_GENERATION:
+#endif
 
 	/* DRAW THE REST B */
 	if (p_CachedPrimitiv->a_PtrLA2)

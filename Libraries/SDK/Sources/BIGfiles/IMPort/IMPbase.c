@@ -113,7 +113,6 @@ BOOL IMP_b_SpecialImportFile(char *_psz_BigPathName, char *_psz_BigFileName, cha
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     char                *sz_Ext;
     IMP_tdst_ImportData *pst_ID;
-	short				test;
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
     sz_Ext = strrchr(_psz_ExternName, '.');

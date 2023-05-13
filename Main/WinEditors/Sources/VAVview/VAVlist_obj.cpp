@@ -2121,8 +2121,9 @@ void EVAV_cl_ListBox::OBJAddODE(POSITION pos, void *_pst_ODE)
 		0,
 		1,
 		NULL,
-		(int) "0-No Sound\n0\n1-Terre battue\n1\n2-Végétation\n2\n3-Pierre\n3\n4-Eau/Marécage\n4\n5-Chair\n5\n6-Bois\n6\n7-Metal\n7\n"
-
+		// hogsy: originals
+		//(int) "0-No Sound\n0\n1-Terre battue\n1\n2-Végétation\n2\n3-Pierre\n3\n4-Eau/Marécage\n4\n5-Chair\n5\n6-Bois\n6\n7-Metal\n7\n"
+	    (int) "0-No Sound\n0\n1-Dirt\n1\n2-Vegetation\n2\n3-Stone\n3\n4-Water/Marsh\n4\n5-Chair\n5\n6-Wood\n6\n7-Metal\n7\n"
 	);
 
 //	M_InsertItem123("Sound ID", EVAV_EVVIT_Int, &pst_ODE->uc_Sound, 0, 0, 1, NULL);

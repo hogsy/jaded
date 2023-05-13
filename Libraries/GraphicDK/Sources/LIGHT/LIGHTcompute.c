@@ -972,11 +972,10 @@ extern unsigned int NoLIGH;
 
 #endif
 
-#ifdef JADEFUSION
 //------------------------------------------------
 // BuildSpotLightFrustum
 //------------------------------------------------
-void 
+static void 
 BuildSpotLightFrustum( LIGHT_tdst_SpotFrustum * _pst_Frustum,
                        LIGHT_tdst_Spot *        _pst_Spot,
                        OBJ_tdst_GameObject *    _pst_LightNode,  
@@ -995,8 +994,10 @@ BuildSpotLightFrustum( LIGHT_tdst_SpotFrustum * _pst_Frustum,
     MATH_tdst_Vector vOrigin, vFarCenter, vFarUp, vFarRight;
     MATH_CopyVector( &vOrigin, &pMatrix->T );
     MATH_InitVector( &vFarCenter, 0.0f,                     -_pst_Spot->f_Far,  0.0f );
+#ifdef JADEFUSION
     MATH_InitVector( &vFarUp,     0.0f,                     -_pst_Spot->f_Far,  _pst_Spot->f_FarRadius );
     MATH_InitVector( &vFarRight,  _pst_Spot->f_FarRadius,   -_pst_Spot->f_Far,  0.0f );
+#endif
 
     // Transform light space vertices
     MATH_TransformVertex( &vFarCenter, pMatrix, &vFarCenter );
@@ -1033,8 +1034,7 @@ BuildSpotLightFrustum( LIGHT_tdst_SpotFrustum * _pst_Frustum,
     }
 }
 
-
-bool IsCulledByFrustum( LIGHT_tdst_SpotFrustum *    _pst_Frustum, 
+static bool IsCulledByFrustum( LIGHT_tdst_SpotFrustum *    _pst_Frustum, 
                         MATH_tdst_Vector *          _pvPoints,
                         ULONG                       _ulNbrPoints )
 {
@@ -1060,7 +1060,6 @@ bool IsCulledByFrustum( LIGHT_tdst_SpotFrustum *    _pst_Frustum,
 
     return isCulled;
 }
-#endif
 
 /*
  =======================================================================================================================
@@ -1069,7 +1068,7 @@ bool IsCulledByFrustum( LIGHT_tdst_SpotFrustum *    _pst_Frustum,
  */
 #define LIGHT_ObjSkinFlag   (OBJ_C_IdentityFlag_Bone | OBJ_C_IdentityFlag_Hierarchy | OBJ_C_IdentityFlag_AdditionalMatrix)
 
-LONG LIGHT_l_IsNodeLighted(OBJ_tdst_GameObject *_pst_Node, OBJ_tdst_GameObject *_pst_LightNode, LIGHT_tdst_Light *_pst_Light, BOOL _b_TestBV )
+static LONG LIGHT_l_IsNodeLighted(OBJ_tdst_GameObject *_pst_Node, OBJ_tdst_GameObject *_pst_LightNode, LIGHT_tdst_Light *_pst_Light, BOOL _b_TestBV )
 {
     OBJ_tdst_GameObject *pst_Father;
     MATH_tdst_Vector    v, *pv;
@@ -1131,13 +1130,9 @@ LONG LIGHT_l_IsNodeLighted(OBJ_tdst_GameObject *_pst_Node, OBJ_tdst_GameObject *
 		{
 			if (   
 	                ((_pst_Node->ul_IdentityFlags & (LIGHT_ObjSkinFlag|OBJ_C_IdentityFlag_Hierarchy) ) == (LIGHT_ObjSkinFlag|OBJ_C_IdentityFlag_Hierarchy)) && 
-#ifdef JADEFUSION
                     (_pst_Node->pst_Base->pst_AddMatrix) &&
-#endif
 					(_pst_Node->pst_Base->pst_AddMatrix->l_Number > 1) && 
-#ifdef JADEFUSION
                     ( _pst_Node->pst_Base->pst_Hierarchy) &&
-#endif
 					(pst_Father = _pst_Node->pst_Base->pst_Hierarchy->pst_Father) 
 	           )
 			{
@@ -1249,7 +1244,7 @@ LONG LIGHT_l_IsNodeLighted(OBJ_tdst_GameObject *_pst_Node, OBJ_tdst_GameObject *
  inversion des normales en cas de symétrie
  =======================================================================================================================
  */
-void LIGHT_Invert(MATH_tdst_Vector *pst_Normal,ULONG Number,ULONG InvertSym,ULONG InvertBF)
+static void LIGHT_Invert(MATH_tdst_Vector *pst_Normal,ULONG Number,ULONG InvertSym,ULONG InvertBF)
 {
 	MATH_tdst_Vector *pst_LastNormal;
 	pst_LastNormal = pst_Normal + Number;
@@ -1288,7 +1283,7 @@ void LIGHT_Invert(MATH_tdst_Vector *pst_Normal,ULONG Number,ULONG InvertSym,ULON
  inversion des normales compressées en cas de symétrie
  =======================================================================================================================
  */
-void LIGHT_Invert_C(unsigned int  *pst_Normal,ULONG Number,ULONG InvertSym,ULONG InvertBF)
+static void LIGHT_Invert_C(unsigned int  *pst_Normal,ULONG Number,ULONG InvertSym,ULONG InvertBF)
 {
 	unsigned int *pst_LastNormal;
 	unsigned int XorFlag;
@@ -2871,10 +2866,6 @@ if (_pst_Node->p_CloneNextGao) return;
 	
 	_GSP_EndRaster(1);
     PRO_StopTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_Light_All);
-
-
-	
-
 }
 
 /*

@@ -118,8 +118,6 @@ typedef struct  OGL_tdst_SpecificData_
     LONG                        l_NbBumpTex;
     LONG                        l_MaxBumpTex;
     OGL_tdst_BumpTexture        *dst_BumpTex;
-
-
 } OGL_tdst_SpecificData;
 
 /*$4

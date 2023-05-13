@@ -46,11 +46,7 @@ UCHAR BIG_uc_ComputeKeyID(void)
 	i_Len = 99;
 	uc_Val = 0;
 
-#ifdef JADEFUSION
 	GetComputerName(asz_Name, (LPDWORD)&i_Len);
-#else
-	GetComputerName(asz_Name, &i_Len);
-#endif
 
 	/* A simple hashing routine depending on compute name */
 	uc_Val = 0;

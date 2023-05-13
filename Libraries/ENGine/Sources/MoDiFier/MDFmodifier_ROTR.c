@@ -104,11 +104,10 @@ void GAO_ModifierROTR_Apply (MDF_tdst_Modifier * _pst_Mod, GEO_tdst_Object * _ps
 	GAO_tdst_ModifierROTR	*p_ROTR;
 	float					DT;
 	MATH_tdst_Vector		v2;
-	extern AI_EvalFunc_MATHVecBlendRotate_C(MATH_tdst_Vector *, MATH_tdst_Vector *, float, MATH_tdst_Vector *);
+	extern int AI_EvalFunc_MATHVecBlendRotate_C(MATH_tdst_Vector *, MATH_tdst_Vector *, float, MATH_tdst_Vector *);
 	MATH_tdst_Matrix prev, cur;
 	MATH_tdst_Vector vprev, vcur;
 	MATH_tdst_Vector *pst_XAxis, *pst_YAxis, *pst_ZAxis;
-
 
 	DT = TIM_gf_dt;
 	if(DT == 0.0f) DT = 1.0f / 50.0f;

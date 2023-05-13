@@ -81,13 +81,8 @@ char *BIG_special_LZOsave(char *_pc_Buf, ULONG *_pul_Size)
 	ULONG	ul_Size;
 	/*~~~~~~~~~~~~*/
 
-#ifdef JADEFUSION
 	pbuf = (char*)BIG_p_RequestSpecialBuffer(*_pul_Size + 64);
 	lzo1x_1_compress((const unsigned char*)_pc_Buf, *_pul_Size, (unsigned char*)(pbuf + 12), (lzo_uint*)&ul_Size, adic);
-#else
-	pbuf = BIG_p_RequestSpecialBuffer(*_pul_Size + 64);
-	lzo1x_1_compress(_pc_Buf, *_pul_Size, pbuf + 12, &ul_Size, adic);
-#endif
 	if(ul_Size + 12 < *_pul_Size)
 	{
 		*(int *) pbuf = 0xCBCBCBCB;
@@ -116,13 +111,8 @@ char *BIG_special_LZOload(char *_pc_Buf, ULONG *_pul_Size)
 	BIG_specialmode = 0;
 	if(((int *) _pc_Buf)[0] != 0xCBCBCBCB) return _pc_Buf;	/* Not compressed */
 	if(((int *) _pc_Buf)[1] != 0xC0DE6666) return _pc_Buf;	/* Not compressed */
-#ifdef JADEFUSION
 	pbuf = (char*)BIG_p_RequestSpecialBuffer(((int *) _pc_Buf)[2] + 8);
 	lzo1x_decompress((const unsigned char*)_pc_Buf + 12, *_pul_Size - 12, (unsigned char*)pbuf, (lzo_uint*)&ul_Size, 0);
-#else
-	pbuf = BIG_p_RequestSpecialBuffer(((int *) _pc_Buf)[2] + 8);
-	lzo1x_decompress(_pc_Buf + 12, *_pul_Size - 12, pbuf, &ul_Size, 0);
-#endif
 	*_pul_Size = ul_Size;
 
 	return pbuf;

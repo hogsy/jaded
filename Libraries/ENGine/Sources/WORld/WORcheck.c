@@ -506,11 +506,7 @@ void WORCheck_LoadAllGao_Load(ULONG ul_File)
 	WORCheck_NbGao = 0;
     WORCheck_NbGro = 0;
     WORCheck_NbNetwork = 0;
-#ifdef JADEFUSION
 	if ( WORCheck_LoadAllGao_UpdateRef( pst_Gao ) ) pst_InMem = (OBJ_tdst_GameObject*)1;
-#else
-	if ( WORCheck_LoadAllGao_UpdateRef( pst_Gao ) ) (ULONG) pst_InMem = 1;
-#endif
 	WORCheck_LoadAllGao_Free();
 
 	for (i = 0; i < WORCheck_NbGao; i++)
@@ -1300,7 +1296,7 @@ void WOR_Check(WOR_tdst_World *_pst_World)
 	WOR_Check_Out(1, 0, 0x00800080);
 	sprintf(msg, "%s \n", _pst_World->sz_Name);
 	WOR_Check_Out(1, 1, 0x00800080);
-	sprintf(msg, ">--", _pst_World->sz_Name);
+	sprintf(msg, ">--");
 	WOR_Check_Out(1, 0, 0x00800080);
 
 	sprintf(msg, "--< Game object table >--");

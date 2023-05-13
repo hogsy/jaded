@@ -1,9 +1,6 @@
 #ifndef UBI_INCLUDED_PRECOMP_H__E367CE0A_386F_44F2_B62B_40DCC489C3E2
 #define UBI_INCLUDED_PRECOMP_H__E367CE0A_386F_44F2_B62B_40DCC489C3E2
 
-#pragma message("*******************************************************************************")
-#pragma message("*** OpenGL Precompiled Header *************************************************")
-
 #include "projectconfig.h"
 
 #include "BASe/CLIbrary/CLIwin.h"

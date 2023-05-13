@@ -2433,7 +2433,7 @@ char *ETEXT_cl_Frame::CEL_GetText(int _i_Line, int _i_ColId)
 
 	/* Rank */
 	case en_Rank:
-		return(itoa(_i_Line, sz_Text, 10));
+		return(L_itoa(_i_Line, sz_Text, 10));
 
 	/* ID */
 	case en_ID:
@@ -2499,7 +2499,7 @@ char *ETEXT_cl_Frame::CEL_GetText(int _i_Line, int _i_ColId)
 		if(b_HasUserValue(en_Anims))
 			return p_GetUserValueToName(en_Anims, (ULONG) pst_TextId->c_AnimIdx);
 		else
-			return(itoa(pst_TextId->c_AnimIdx, sz_Text, 10));
+			return(L_itoa(pst_TextId->c_AnimIdx, sz_Text, 10));
 
 	/* Snd Key */
 	case en_SndFileKey:

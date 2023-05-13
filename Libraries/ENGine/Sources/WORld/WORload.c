@@ -2397,13 +2397,10 @@ ULONG WOR_ul_GameObjectGroupCallback(ULONG _ul_PosFile)
 #endif
 		while(pc_Buffer < (pc_BufferInit+ul_Size))
 		{
-#ifdef JADEFUSION
 			pul_Key = (ULONG*) pc_Buffer;
-#else
-			pul_Key = (LONG*) pc_Buffer;
-#endif
 			_LOA_ReadLong(&pc_Buffer, (LONG*)&ul_Key, LOA_eBinLookAheadData);
 			_LOA_ReadLong(&pc_Buffer, NULL, LOA_eBinLookAheadData); // Skip the group element type
+
 			if(!ul_Key) continue;
 #ifdef JADEFUSION			
 			if(BAS_bsearch(ul_Key, &pGOL->m_groupArray) != -1)

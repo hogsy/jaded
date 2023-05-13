@@ -48,8 +48,8 @@
 #include "SouND/Sources/SNDload.h"
 #include "SouND/Sources/SND.h"
 
-#ifdef JADEFUSION
 #include "MoDiFier/MDFmodifier_SPG2.h"
+#ifdef JADEFUSION
 #include "TEXture/TEXcubemap.h"
 #include "Light/LIGHTrejection.h"
 #endif
@@ -153,8 +153,6 @@ extern void  GXI_StartFlip();
 void MEM_ConcatHolesAfterDefrag();
 #endif
 #endif
-
-
 
 /*
  =======================================================================================================================

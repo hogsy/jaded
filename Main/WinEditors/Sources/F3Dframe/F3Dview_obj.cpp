@@ -180,13 +180,10 @@ BOOL F3D_b_PrefabAfterSnap(SEL_tdst_Selection *_pst_Sel, LONG _l_Flag)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	OBJ_tdst_Prefab		*P;
-	EOUT_cl_Frame		*po_Out;
 	EPFB_cl_Frame		*po_PFBeditor;
 	ULONG				ul_Index;
-	int					i,j;
-	MATH_tdst_Matrix	*pst_Matrix;
-	OBJ_tdst_GameObject	*pst_GO, *pst_Father = NULL, *pst_GO2;
-	MATH_tdst_Vector	*pst_Vec;
+	int					i;
+	OBJ_tdst_GameObject	*pst_GO, *pst_Father = NULL;
 	SEL_tdst_SelectedItem	*pst_Item;
 	MATH_tdst_Matrix	*pst_Mat;
 	BOOL				b_DontDestroy = FALSE;
@@ -2891,8 +2888,6 @@ void F3D_cl_View::DropPrefab(EDI_tdst_DragDrop *_pst_DragDrop)
 void F3D_cl_View::BuildGroupFromPrefab(OBJ_tdst_Group *pst_Group, OBJ_tdst_Prefab *_pst_Prefab, int _i_Index, OBJ_tdst_GameObject *_pst_GO)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	OBJ_tdst_GameObject		*pst_Father;
-	OBJ_tdst_GameObject		*pst_Child;
 	ULONG					ul_Index;
 	int						i;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -2910,8 +2905,8 @@ void F3D_cl_View::BuildGroupFromPrefab(OBJ_tdst_Group *pst_Group, OBJ_tdst_Prefa
 		ul_Index = _pst_Prefab->dst_Ref[i].ul_Index;
 		if (ul_Index == BIG_C_InvalidIndex)
 			continue;
-		pst_Child = ((OBJ_tdst_GameObject *) LOA_ul_SearchAddress(BIG_PosFile(ul_Index)));
 
+		OBJ_tdst_GameObject *pst_Child = ( ( OBJ_tdst_GameObject * ) LOA_ul_SearchAddress( BIG_PosFile( ul_Index ) ) );
 		if (pst_Child->ul_IdentityFlags & OBJ_C_IdentityFlag_Hierarchy
 			&& pst_Child->pst_Base->pst_Hierarchy
 			&& pst_Child->pst_Base->pst_Hierarchy->pst_FatherInit)

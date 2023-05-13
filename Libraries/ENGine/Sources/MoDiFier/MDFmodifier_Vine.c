@@ -552,7 +552,7 @@ void MDFModifier_Vine_ApplyForces(VINE_tdst_Modifier * _p_Vine)
         }
 
         // Dampening
-	   if (ul_Dampening == TRUE && _p_Vine->ul_Paused == FALSE)
+		if ( ( ul_Dampening == ( ULONG ) TRUE ) && ( _p_Vine->ul_Paused == ( ULONG ) FALSE ) )
 	   {
             MATH_tdst_Vector DampeningForce;
             

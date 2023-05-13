@@ -138,11 +138,7 @@ void GAO_ModifierXMEN_Create(OBJ_tdst_GameObject *_pst_GO, MDF_tdst_Modifier *_p
 		L_memcpy( _pst_Mod->p_Data, p_Data, sizeof (GAO_tdst_ModifierXMEN) );
 		if (p_XMEN->ulNumber_Of_Chhlaahhh)
 		{
-#ifdef JADEFUSION
 			p_XMEN->p_st_Chhlaahhh = (GAO_tdst_XMEN_Chhlaahhh*)MEM_p_Alloc(p_XMEN->ulNumber_Of_Chhlaahhh * sizeof(GAO_tdst_XMEN_Chhlaahhh));
-#else
-			p_XMEN->p_st_Chhlaahhh = MEM_p_Alloc(p_XMEN->ulNumber_Of_Chhlaahhh * sizeof(GAO_tdst_XMEN_Chhlaahhh));
-#endif
 			memcpy(p_XMEN->p_st_Chhlaahhh ,((GAO_tdst_ModifierXMEN *)p_Data)->p_st_Chhlaahhh, p_XMEN->ulNumber_Of_Chhlaahhh * sizeof(GAO_tdst_XMEN_Chhlaahhh));
 			p_XMEN ->p_stXMEN_MEM = (GAO_tdst_XMEN_Chhlaahhh_Memory *)MEM_p_Alloc(sizeof(GAO_tdst_XMEN_Chhlaahhh_Memory) * (p_XMEN -> ulNumber_Of_Chhlaahhh << XMEN_NumberOfSegs_PO2));		
 			memcpy(p_XMEN ->p_stXMEN_MEM , ((GAO_tdst_ModifierXMEN *)p_Data)->p_stXMEN_MEM , sizeof(GAO_tdst_XMEN_Chhlaahhh_Memory) * (p_XMEN -> ulNumber_Of_Chhlaahhh << XMEN_NumberOfSegs_PO2));
@@ -925,11 +921,7 @@ ULONG GAO_ModifierXMEN_Load(MDF_tdst_Modifier *_pst_Mod, char *_pc_Buffer)
 	/* Chlahhh */
 	p_XMEN->ulNumber_Of_Chhlaahhh = LOA_ReadULong(&_pc_Buffer);
 	p_XMEN->p_st_Chhlaahhh = NULL;
-#ifdef JADEFUSION
 	if(p_XMEN->ulNumber_Of_Chhlaahhh) p_XMEN->p_st_Chhlaahhh = (GAO_tdst_XMEN_Chhlaahhh*)MEM_p_Alloc(p_XMEN->ulNumber_Of_Chhlaahhh * sizeof(GAO_tdst_XMEN_Chhlaahhh));
-#else
-	if(p_XMEN->ulNumber_Of_Chhlaahhh) p_XMEN->p_st_Chhlaahhh = MEM_p_Alloc(p_XMEN->ulNumber_Of_Chhlaahhh * sizeof(GAO_tdst_XMEN_Chhlaahhh));
-#endif
 	{
 		ULONG i;
 		GAO_tdst_XMEN_Chhlaahhh * p;

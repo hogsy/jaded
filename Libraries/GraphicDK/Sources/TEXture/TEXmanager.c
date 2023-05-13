@@ -178,18 +178,12 @@ void TEX_Manager_Init(TEX_tdst_Manager *_pst_TM)
 
 #else
 
+// hogsy: (todo) we could actually easily query the hardware more accurately for this info...
 
-
-    _pst_TM->l_MaxTextureSize = 512;
-    _pst_TM->l_MinTextureSize = 8;
-#if defined(_XENON_RENDER)
-    // JFP: We also want 1024 in the editor for the Xenon version.
-    _pst_TM->l_MaxTextureSize = 1024;
-    _pst_TM->l_VRamAvailable = 512 * 1024 * 1024;
-#else
-	_pst_TM->l_VRamAvailable = 16 * 1024 * 1024;
-#endif
-	_pst_TM->l_RamAvailable = 512 * 1024;
+    _pst_TM->l_MaxTextureSize = 4096;
+	_pst_TM->l_MinTextureSize = 8;
+	_pst_TM->l_VRamAvailable  = 512 * 1024 * 1024;
+	_pst_TM->l_RamAvailable   = 512 * 1024;
     
     _pst_TM->ul_Flags = TEX_Manager_FastCompression;
     _pst_TM->ul_Flags |= TEX_Manager_UseMipmap;
@@ -205,21 +199,10 @@ void TEX_Manager_Init(TEX_tdst_Manager *_pst_TM)
      */
     _pst_TM->ul_Flags  |= TEX_gi_ForceText;
 
-	//_pst_TM->c_TexSlotOrder[ 0 ] = TEX_Manager_SlotPC;
-	//_pst_TM->c_TexSlotOrder[ 1 ] = TEX_Manager_SlotPS2;
-	_pst_TM->c_TexSlotOrder[ 0 ] = TEX_Manager_SlotPS2;
-
-	// changement des slots pour la binarisation
-	if (WOR_gi_CurrentConsole == 2 )
-	{
-		_pst_TM->c_TexSlotOrder[ 0 ] = TEX_Manager_SlotGC;
-		_pst_TM->c_TexSlotOrder[ 1 ] = TEX_Manager_SlotPS2;
-	}
-	else if(WOR_gi_CurrentConsole == 3 )
-	{
-		_pst_TM->c_TexSlotOrder[ 0 ] = TEX_Manager_SlotXBOX;
-		_pst_TM->c_TexSlotOrder[ 1 ] = TEX_Manager_SlotPS2;
-	}
+	_pst_TM->c_TexSlotOrder[ 0 ] = TEX_Manager_SlotPC;
+	_pst_TM->c_TexSlotOrder[ 1 ] = TEX_Manager_SlotXBOX;
+	_pst_TM->c_TexSlotOrder[ 2 ] = TEX_Manager_SlotGC;
+	_pst_TM->c_TexSlotOrder[ 3 ] = TEX_Manager_SlotPS2;
 
 #endif
 }
@@ -298,144 +281,43 @@ void TEX_Manager_Reinit(TEX_tdst_Manager *_pst_TM)
  */
 void TEX_Manager_ComputeCompression(TEX_tdst_Manager *_pst_TM, TEX_tdst_File_Desc *_pst_Tex, LONG _l_Number, char _c_Interface)
 {
-    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-    static LONG         al_QualityCompressionLimit[5] = { 16, 16, 32, 64, 1024 };
-    static LONG         al_QualityCompressionOrder[21] = { 0, 1, 0, 2, 0, 1, 3, 0, 1, 2, 0, 1, 0, 2, 0, 1, 3, 0, 1, 2, 4 };
-    LONG                l_CurrentQualityCompressed, l_Quality, l_CurrentMemoryLeft;
-    TEX_tdst_File_Desc  *pst_CurTex, *pst_LastTex, st_GoodTex;
-    BOOL                b_AcceptNonSquare;
-    LONG                *pl_MemNeeded, *pl_MemLeft, *pl_MemAvailable;
-    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+    // hogsy:   originally, this compressed the textures based on (poor) assumptions about available VRAM/RAM
+    //          in future we'll handle this better, but I doubt we'll go over any limits anytime soon...
 
-    /* First compute needed memory */
-    pst_CurTex = _pst_Tex;
-    pst_LastTex = _pst_Tex + _l_Number;
+	TEX_tdst_File_Desc *pst_CurTex = _pst_Tex;
+	TEX_tdst_File_Desc *pst_LastTex = _pst_Tex + _l_Number;
 
-    if (_c_Interface)
-    {
-        pl_MemNeeded = &_pst_TM->l_RamNeeded;
-        pl_MemAvailable = &_pst_TM->l_RamAvailable;
-        pl_MemLeft = &_pst_TM->l_RamLeft;
+    bool b_AcceptNonSquare = _pst_TM->ul_Flags & TEX_Manager_AcceptNonSquare;
+	for ( ; pst_CurTex < pst_LastTex; pst_CurTex++ )
+	{
+		if ( pst_CurTex->uw_DescFlags & TEX_Cuw_DF_VeryBadBoy ) continue;
 
-#ifdef ACTIVE_EDITORS
+		if ( _c_Interface ^ ( ( ( pst_CurTex->st_Params.uw_Flags & TEX_FP_Interface ) && ( _pst_TM->ul_Flags & TEX_Manager_StoreInterfaceTex ) ) ? 1 : 0 ) )
+			continue;
+
+		pst_CurTex->uw_CompressedHeight = pst_CurTex->uw_Height;
+		pst_CurTex->uw_CompressedWidth  = pst_CurTex->uw_Width;
+		pst_CurTex->uc_FinalBPP         = pst_CurTex->uc_BPP;
+
+        TEX_tdst_File_Desc st_GoodTex;
+        if ( !TEX_l_DimensionAreGood( pst_CurTex, _pst_TM->l_MinTextureSize, _pst_TM->l_MaxTextureSize, b_AcceptNonSquare, &st_GoodTex ) )
 		{
-			if(EDI_gb_ComputeMap && WOR_gi_CurrentConsole == 1)
+			pst_CurTex->uw_CompressedHeight = st_GoodTex.uw_Height;
+			pst_CurTex->uw_CompressedWidth  = st_GoodTex.uw_Width;
+		}
+
+		if ( ( pst_CurTex->uc_BPP == 24 ) && ( !( _pst_TM->ul_Flags & TEX_Manager_Accept24bpp ) ) )
+			pst_CurTex->uc_FinalBPP = 32;
+		else if ( ( pst_CurTex->uc_BPP == 16 ) && ( !( _pst_TM->ul_Flags & TEX_Manager_Accept16bpp_1555 ) ) )
+			pst_CurTex->uc_FinalBPP = 32;
+		else if ( ( pst_CurTex->uc_BPP == 8 ) || ( pst_CurTex->uc_BPP == 4 ) )
+		{
+			if ( pst_CurTex->st_Params.uc_Type == TEX_FP_RawPalFile )
 			{
-				_pst_TM->ul_Flags |= TEX_Manager_StoreInterfaceTex;
+				pst_CurTex->uc_FinalBPP = 32;
 			}
 		}
-#endif
-    }
-    else
-    {
-        pl_MemNeeded = &_pst_TM->l_VRamNeeded;
-        pl_MemAvailable = &_pst_TM->l_VRamAvailable;
-        pl_MemLeft = &_pst_TM->l_VRamLeft;
-
-#ifdef ACTIVE_EDITORS
-		{
-			if(EDI_gb_ComputeMap)
-			{
-                if(WOR_gi_CurrentConsole == 1)//ps2
-                {
-                    _pst_TM->l_VRamAvailable = 2 * 1024 * 1024;
-				    _pst_TM->l_VRamLeft = 2 * 1024 * 1024;
-                }
-                else if(WOR_gi_CurrentConsole == 3) //xbox
-                {
-                    _pst_TM->l_VRamAvailable = 4 * 1024 * 1024;
-				    _pst_TM->l_VRamLeft = 4 * 1024 * 1024;
-                }
-			}
-		}
-#endif
-
-    }
-
-    b_AcceptNonSquare = _pst_TM->ul_Flags & TEX_Manager_AcceptNonSquare;
-    (*pl_MemNeeded) = 0;
-    for(; pst_CurTex < pst_LastTex; pst_CurTex++)
-    {
-        if (pst_CurTex->uw_DescFlags & TEX_Cuw_DF_VeryBadBoy) continue;
-        
-        if ( _c_Interface ^  ( ((pst_CurTex->st_Params.uw_Flags & TEX_FP_Interface) && (_pst_TM->ul_Flags & TEX_Manager_StoreInterfaceTex)) ? 1 : 0) )
-            continue;
-
-        pst_CurTex->uw_CompressedHeight = pst_CurTex->uw_Height;
-        pst_CurTex->uw_CompressedWidth = pst_CurTex->uw_Width;
-        pst_CurTex->uc_FinalBPP = pst_CurTex->uc_BPP;
-
-        if(!TEX_l_DimensionAreGood(pst_CurTex, _pst_TM->l_MinTextureSize, _pst_TM->l_MaxTextureSize, b_AcceptNonSquare, &st_GoodTex))
-        {
-            pst_CurTex->uw_CompressedHeight = st_GoodTex.uw_Height;
-            pst_CurTex->uw_CompressedWidth = st_GoodTex.uw_Width;
-        }
-
-        if ( (pst_CurTex->uc_BPP == 24) && (!(_pst_TM->ul_Flags & TEX_Manager_Accept24bpp) ) )
-            pst_CurTex->uc_FinalBPP = 32;
-        else if ( (pst_CurTex->uc_BPP == 16) && (!(_pst_TM->ul_Flags & TEX_Manager_Accept16bpp_1555) ) )
-            pst_CurTex->uc_FinalBPP = 32;
-        else if ( (pst_CurTex->uc_BPP == 8) || (pst_CurTex->uc_BPP == 4) )
-        {
-            if (pst_CurTex->st_Params.uc_Type == TEX_FP_RawPalFile)
-            {
-                pst_CurTex->uc_FinalBPP = 32;
-            }
-        }
-        (*pl_MemNeeded) += TEX_l_MemoryNeeded(pst_CurTex);
-    }
-
-    (*pl_MemLeft) = (*pl_MemAvailable) - (*pl_MemNeeded);
-
-#if !defined(_XENON_RENDER)
-    /* Compress while needed */
-    l_CurrentQualityCompressed = 0;
-    l_CurrentMemoryLeft = (*pl_MemLeft);
-    while( *pl_MemLeft < 0)
-    {
-        l_Quality = al_QualityCompressionOrder[l_CurrentQualityCompressed];
-        pst_CurTex = _pst_Tex;
-        for(; pst_CurTex < pst_LastTex; pst_CurTex++)
-        {
-            if(pst_CurTex->uw_DescFlags & TEX_Cuw_DF_VeryBadBoy) continue;
-
-            if((LONG) (pst_CurTex->st_Params.uw_Flags & TEX_FP_QualityMask) != l_Quality) continue;
-
-            if
-            (
-                (pst_CurTex->uw_CompressedHeight <= al_QualityCompressionLimit[l_Quality]) &&
-                (pst_CurTex->uw_CompressedWidth <= al_QualityCompressionLimit[l_Quality])
-            ) continue;
-
-#ifdef _GAMECUBE
-			if(_c_Interface ^ (pst_CurTex->st_Params.uw_Flags & TEX_FP_Interface ? 1 : 0))
-				continue;
-#endif			
-
-            (*pl_MemLeft) += TEX_l_MemoryNeeded(pst_CurTex);
-            if(pst_CurTex->uw_CompressedHeight < pst_CurTex->uw_CompressedWidth)
-                pst_CurTex->uw_CompressedWidth >>= 1;
-            else if(pst_CurTex->uw_CompressedHeight > pst_CurTex->uw_CompressedWidth)
-                pst_CurTex->uw_CompressedHeight >>= 1;
-            else
-            {
-                pst_CurTex->uw_CompressedWidth >>= 1;
-                pst_CurTex->uw_CompressedHeight >>= 1;
-            }
-
-            (*pl_MemLeft) -= TEX_l_MemoryNeeded(pst_CurTex);
-            if((*pl_MemLeft) > 0) break;
-        }
-
-        l_CurrentQualityCompressed++;
-        if(l_CurrentQualityCompressed == 21)
-        {
-            l_CurrentQualityCompressed = 0;
-            if((*pl_MemLeft) == l_CurrentMemoryLeft) break;
-            l_CurrentMemoryLeft = (*pl_MemLeft);
-        }
-    }
-#endif
+	}
 }
 
 /*

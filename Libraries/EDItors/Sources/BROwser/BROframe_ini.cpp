@@ -169,7 +169,7 @@ void EBRO_cl_Frame::TreatIni(void)
     }
 
 	/* Set check for Refresh of ListCtrl with P4 */
-	mpo_DialogBar->CheckDlgButton(BROWSER_IDC_P4REFRESHLISTCTRL, mb_P4RefreshListCtrl);
+	//mpo_DialogBar->CheckDlgButton(BROWSER_IDC_P4REFRESHLISTCTRL, mb_P4RefreshListCtrl);
 
     /* Size of pane */
     mpo_InsideSplitter->SetRowInfo(0, mst_Ini.i_HeightFirstPane, 20);

@@ -256,29 +256,17 @@ void EDI_cl_EnterWnd::DisplayMessage(char *_psz_Msg)
 	pdc = GetWindowDC();
 
 	GetClientRect(&o_Rect);
-	o_Rect.left = 10;
 	o_Rect.top = o_Rect.bottom - 17;
-	o_Rect.right -= 10;
 	pdc->SelectObject(&M_MF()->mo_Fnt);
-	pdc->SetTextColor(0x00FFFFFF);
+	pdc->SetTextColor( RGB( 128, 255, 128 ) );
 	pdc->SetBkColor(0x00000000);
-	pdc->ExtTextOut(o_Rect.left, o_Rect.top, ETO_CLIPPED | ETO_OPAQUE, o_Rect, _psz_Msg, L_strlen(_psz_Msg), NULL);
+	pdc->ExtTextOut(o_Rect.left + 10, o_Rect.top, ETO_CLIPPED | ETO_OPAQUE, o_Rect, _psz_Msg, L_strlen(_psz_Msg), NULL);
 
 	/* App version */
 	GetClientRect(&o_Rect);
 	pdc->SetBkMode(TRANSPARENT);
-#if MONTREAL_SPECIFIC
-	// For the builds in Montreal, display the Montreal build number as well as the Montpellier build number.
-	sprintf(asz_Msg, "Version %03d(%03d)-%03d", BIG_Cu4_MontrealAppVersion, BIG_Cu4_AppVersion, BIG_Cu4_Version);
-#else
-#ifdef JADEFUSION
-	// For the builds 360, display the 360 build number as well as the Montpellier build number.
-	sprintf(asz_Msg, "Version Xe-%03d(%03d,%03d)-%03d", BIG_Cu4_MontrealXeAppVersion, BIG_Cu4_MontrealAppVersion, BIG_Cu4_AppVersion, BIG_Cu4_Version);
-#else
-	sprintf(asz_Msg, "Version %03d-%03d", BIG_Cu4_AppVersion, BIG_Cu4_Version);
-#endif
-#endif
-	pdc->SetTextColor(0x00FFFFFF);
+	sprintf( asz_Msg, "Version %03d-%03d(%03d)", BIG_Cu4_AppVersion, BIG_Cu4_Version, BIG_CPJE_AppVersion );
+	pdc->SetTextColor( RGB( 200, 200, 200 ) );
 	pdc->ExtTextOut(o_Rect.left + 10, o_Rect.top, 0, NULL, asz_Msg, L_strlen(asz_Msg), NULL);
 
 	ReleaseDC(pdc);
@@ -1515,10 +1503,10 @@ BOOL EDI_cl_App::InitInstance(void)
 		        WS_VISIBLE | WS_POPUP,
 			CRect
 			(
-				(GetSystemMetrics(SM_CXSCREEN) / 2) - 160,
-				(GetSystemMetrics(SM_CYSCREEN) / 2) - 274,
-				(GetSystemMetrics(SM_CXSCREEN) / 2) + 160,
-				(GetSystemMetrics(SM_CYSCREEN) / 2) + 274
+				(GetSystemMetrics(SM_CXSCREEN) / 2) - 256,
+				(GetSystemMetrics(SM_CYSCREEN) / 2) - 128,
+				(GetSystemMetrics(SM_CXSCREEN) / 2) + 256,
+				(GetSystemMetrics(SM_CYSCREEN) / 2) + 128
 			),
 		        NULL,
 			NULL
@@ -1909,8 +1897,10 @@ int EDI_i_Exception(void)
 		i_Res = MessageBox
 			(
 				NULL,
-				"Un bug ä été détecté.\nAppuyez sur YES pour debugger.\nAppuyer sur NO pour tenter de continuer.",
-				"Jade Meditation !!!",
+				"An exception has been thrown.\n"
+		        "Click YES to diagnose with the debugger.\n"
+		        "Click NO to attempt continuing.",
+				"JADED Exception!",
 				MB_ICONERROR | MB_YESNO | MB_DEFBUTTON2
 			);
 		if(i_Res == IDYES) return 0;

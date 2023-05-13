@@ -159,14 +159,9 @@ void BIG_ReadFatFile(BIG_tdst_FatDes *_pst_Fat)
 	{
 		BIG_special_Decrypt4FAT
 		(
-#ifdef JADEFUSION
 			(char *) (&BIG_gst.dst_FileTable[_pst_Fat->ul_FirstIndex]), 
-#else
-			(UCHAR *) (&BIG_gst.dst_FileTable[_pst_Fat->ul_FirstIndex]), 
-#endif
 			_pst_Fat->ul_MaxFile * sizeof(BIG_tdst_File)
-		);
-				
+		);	
 	}
 
     /* Insert keys in table */

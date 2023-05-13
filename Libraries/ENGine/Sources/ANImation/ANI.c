@@ -66,11 +66,9 @@ BOOL ANI_b_ImportNIMCallback(char *_psz_BigPathName, char *_psz_BigFileName, cha
 	L_fseek(h_File, 0, SEEK_END);
 	l_Size = L_ftell(h_File);
 	L_fseek(h_File, 0, SEEK_SET);
-#ifdef JADEFUSION
+
 	pc_Buffer = (char*)L_malloc(l_Size);
-#else
-	pc_Buffer = L_malloc(l_Size);
-#endif
+
 	L_fread(pc_Buffer, 1, l_Size, h_File);
 	L_fclose(h_File);
 	BIG_UpdateFileFromBuffer(_psz_BigPathName, _psz_BigFileName, pc_Buffer, l_Size);
@@ -144,11 +142,8 @@ BOOL ANI_b_ImportTRLCallBack(char *_psz_BigPathName, char *_psz_BigFileName, cha
 	L_fseek(h_File, 0, SEEK_END);
 	l_Size = L_ftell(h_File);
 	L_fseek(h_File, 0, SEEK_SET);
-#ifdef JADEFUSION
+
 	pc_Buffer = (char*)L_malloc(l_Size + 32);
-#else
-	pc_Buffer = L_malloc(l_Size + 32);
-#endif
 	L_fread(pc_Buffer, 1, l_Size, h_File);
 	L_fclose(h_File);
 

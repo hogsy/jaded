@@ -436,19 +436,12 @@ void MEMpro_Init(void)
 	MEMpro_CreateMemRaster(MEMpro_Id_GSP, "GSP");
 
 	/* read the chain */
-#ifdef JADEFUSION
 	for(int loop = 0; loop < MEMpro_M_Number0fRasters; loop++)
 	{
 		MEMpro_sa_RasterChain[loop][0]->pst_NextRaster = MEMpro_sa_RasterChain[loop][1];
 		MEMpro_sa_RasterChain[loop][0]->pst_NextGroup = MEMpro_sa_RasterChain[loop][2];
 	}
-#else
-	for(i = 0; i < MEMpro_M_Number0fRasters; i++)
-	{
-		MEMpro_sa_RasterChain[i][0]->pst_NextRaster = MEMpro_sa_RasterChain[i][1];
-		MEMpro_sa_RasterChain[i][0]->pst_NextGroup = MEMpro_sa_RasterChain[i][2];
-	}
-#endif
+
 	/* init of heap raster */
 	MEMpro_Update();
 }

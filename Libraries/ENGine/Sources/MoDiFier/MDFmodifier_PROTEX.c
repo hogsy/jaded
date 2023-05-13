@@ -672,29 +672,17 @@ void PROTEX_l_WaterUpdate(PROTEX_tdst_Modifier *_pst_ProTex)
 	}
 
 #endif
-	/* FLip buffer */	
-#ifdef JADEFUSION
+	/* FLip buffer */
 	S1 = (SHORT *)_pst_ProTex->p_Surface0;
-#else
-	S1 = (USHORT *)_pst_ProTex->p_Surface0;
-#endif	
 	_pst_ProTex->p_Surface0 = _pst_ProTex->p_Surface1;
-#ifdef JADEFUSION
 	S1 = (SHORT *)_pst_ProTex->p_Surface0;
-#else
-	(USHORT *)_pst_ProTex->p_Surface1 = S1;
-#endif
 	/* Update VRAM */
 #ifndef PSX2_TARGET
 	{
 		GDI_tdst_Request_ReloadTextureParams	st_RTP;
 		ULONG *p_Convert , *p_ConvertLast;
 		UCHAR *p_Convert_I;
-#ifdef  JADEFUSION
 		S1 = (SHORT *)_pst_ProTex->p_Surface0;
-#else
-		S1 = (USHORT *)_pst_ProTex->p_Surface0;
-#endif
 		{
 			UCHAR *pDest;
 			pDest = (UCHAR *) _pst_ProTex->p_SurfaceTexture;

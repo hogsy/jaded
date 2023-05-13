@@ -13,9 +13,10 @@
 /* App version. Do not change !!! */
 #define BIG_Cu4_AppVersion	3026
 
-
-
 /* Bigfile version */
 #define BIG_Cu4_Version 36
 
 #define BIG_FATChanged_Version36 36
+
+// hogsy: CPJE Version
+#define BIG_CPJE_AppVersion 2

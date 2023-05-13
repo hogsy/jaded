@@ -333,8 +333,8 @@ static bool GetSDLButtonState( SDL_GameController *gameController, INO_tden_Gene
 	                SDL_CONTROLLER_BUTTON_Y,            //eBtn_Triangle
 	                SDL_CONTROLLER_BUTTON_LEFTSHOULDER, //eBtn_L1
 	                SDL_CONTROLLER_BUTTON_RIGHTSHOULDER,//eBtn_R1
-	                0,
-	                0,                               // L+R triggers are special cases
+	                SDL_CONTROLLER_BUTTON_INVALID,
+	                SDL_CONTROLLER_BUTTON_INVALID,   // L+R triggers are special cases
 	                SDL_CONTROLLER_BUTTON_BACK,      //eBtn_Select
 	                SDL_CONTROLLER_BUTTON_START,     //eBtn_Start
 	                SDL_CONTROLLER_BUTTON_RIGHTSTICK,//eBtn_R3
@@ -477,7 +477,7 @@ void INO_Joystick_Update( void )
 
 	for ( unsigned int i = 0; i < eBtn_GenericButtonNb; ++i )
 	{
-		INO_gst_CurrPad[ INO_gi_CurrentPadId ].ac_Button[ i ] = GetSDLButtonState( gameController, i );
+		INO_gst_CurrPad[ INO_gi_CurrentPadId ].ac_Button[ i ] = GetSDLButtonState( gameController, ( INO_tden_GenericButtonId ) i );
 		if ( INO_b_IsKeyPressed( INO_gauc_KeyToPad[ INO_CKPT_ButtonsFirst + i ] ) )
 		{
 			INO_gst_CurrPad[ INO_gi_CurrentPadId ].ac_Button[ i ] = 0xFF;

@@ -1928,7 +1928,7 @@ void OBJ_GameObject_Rename(OBJ_tdst_GameObject *pst_GO, char *asz_Name)
 	char				asz_Name1[BIG_C_MaxLenPath];
     char				asz_OldName[BIG_C_MaxLenPath];
 	LINK_tdst_Pointer	*p2;
-	BOOL				isNewFileName = TRUE;
+	bool				isNewFileName = true;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
     ERR_X_Error(strlen(asz_Name) < BIG_C_MaxLenName, "File name is too long", NULL);

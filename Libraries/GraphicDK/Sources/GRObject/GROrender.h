@@ -34,9 +34,8 @@ void    GRO_RenderPickableObject
             ULONG,
             ULONG
         );
-#ifdef JADEFUSION
+
 void    GAO_Render(OBJ_tdst_GameObject *);
-#endif
 
 #ifdef ACTIVE_EDITORS
 void    GRO_RenderTrace(OBJ_tdst_GameObject *);

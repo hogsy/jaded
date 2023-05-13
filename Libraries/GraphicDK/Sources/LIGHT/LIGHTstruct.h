@@ -145,13 +145,12 @@ extern BOOL LIGHT_gb_DisableXenonSend;
     Structures
  ***************************************************************************************************
  */
-#ifdef JADEFUSION
+
 typedef struct LIGHT_tdst_SpotFrustum_
 {
     MATH_tdst_Vector    m_normal[4];
     float               m_distance[4];
 } LIGHT_tdst_SpotFrustum;
-#endif
 
 typedef struct  LIGHT_tdst_Spot_
 {

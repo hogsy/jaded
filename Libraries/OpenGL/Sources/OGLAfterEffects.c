@@ -1843,15 +1843,15 @@ void OGL_AE_Before2D()
 #endif
 
 	OGL_ES_PushState();
-/*
-	{
-		static float Alpha = 0.0f;
-		OGL_NearBlur(fCos(Alpha) );
-		OGL_NearBlur(fCos(Alpha) );
-		Alpha += 0.125f;
-	}//*/
-//	OGL_FoggyBlur(0.6f)	;
+
 #if 1
+	// hogsy:	this was left out above but seems to work, sorta? implemented here, 
+	//			but still will remain unused for now as Depth_Blur_Near isn't used (yet)
+	if ( OGL_AllAfterEffects.Depth_Blur_Factor && OGL_AllAfterEffects.Depth_Blur_Near ) 
+	{
+		OGL_NearBlur( OGL_AllAfterEffects.Depth_Blur_Near );
+	}
+
 	if (SplashNumber) OGL_DrawSpah();
 	if (OGL_AllAfterEffects.MotionBlurFactor)			OGL_MotionBlur(OGL_AllAfterEffects.MotionBlurFactor);
 	else	LastMotionBlur = 1;
@@ -1882,8 +1882,6 @@ void OGL_AE_Before2D()
 	if (OGL_AllAfterEffects.SpinSmoothFactor)			OGL_ZoomSmooth(OGL_AllAfterEffects.SpinSmoothFactor * 0.1f ,0,0, 1);//*/
 
 	if (OGL_AllAfterEffects.PerfectGow_Factor)			OGL_PerfectGlow(OGL_AllAfterEffects.PerfectGow_Factor,OGL_AllAfterEffects.PerfectGow_Thresh,OGL_AllAfterEffects.PerfectGow_Radius);//*/
-	
-
 #endif
 
 	OGL_ES_PopState();

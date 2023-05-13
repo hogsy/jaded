@@ -1,8 +1,4 @@
-//
-// Created by mark- on 05/05/2023.
-//
+// Created by Mark "hogsy" Sowden, 2023 <hogsy@oldtimes-software.com>
+// https://oldtimes-software.com/jaded/
 
-#ifndef JADED_OGLWATER_H
-#define JADED_OGLWATER_H
-
-#endif //JADED_OGLWATER_H
+#pragma once

@@ -318,10 +318,10 @@ int EDIA_cl_RLIAdjustDialog::Coord2Value( int _i_ValIndex, int _i_Val )
 void EDIA_cl_RLIAdjustDialog::DisplayValues( void )
 {
 	char	str[ 64 ];
-	GetDlgItem( IDC_EDIT_SLIDE0 )->SetWindowText( itoa( mi_Value[ 0 ], str, 10 ) );
-	GetDlgItem( IDC_EDIT_SLIDE1 )->SetWindowText( itoa( mi_Value[ 1 ], str, 10 ) );
-	GetDlgItem( IDC_EDIT_SLIDE2 )->SetWindowText( itoa( mi_Value[ 2 ], str, 10 ) );
-	GetDlgItem( IDC_EDIT_SLIDE3 )->SetWindowText( itoa( mi_Value[ 3 ], str, 10 ) );
+	GetDlgItem( IDC_EDIT_SLIDE0 )->SetWindowText( L_itoa( mi_Value[ 0 ], str, 10 ) );
+	GetDlgItem( IDC_EDIT_SLIDE1 )->SetWindowText( L_itoa( mi_Value[ 1 ], str, 10 ) );
+	GetDlgItem( IDC_EDIT_SLIDE2 )->SetWindowText( L_itoa( mi_Value[ 2 ], str, 10 ) );
+	GetDlgItem( IDC_EDIT_SLIDE3 )->SetWindowText( L_itoa( mi_Value[ 3 ], str, 10 ) );
 	
 	/* AVIRER */
 	if ( (mi_Value[ 0 ] == 3) && (mi_Value[ 1 ] == 1) && (mi_Value[ 2 ] == 6) )

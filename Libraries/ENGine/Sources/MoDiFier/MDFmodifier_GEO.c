@@ -477,11 +477,7 @@ void GEO_ModifierSnap_ComputeWithTresh
 		st_SnapData.p_GameObject = (void *) _pst_ObjTgt;
 		st_SnapData.ul_NbPoints = i_SrcInTgt;
 		pst_NewMod = MDF_pst_Modifier_Create(_pst_ObjSrc, MDF_C_Modifier_Snap, &st_SnapData);
-#ifdef JADEFUSION
 		pst_SnapData = (GEO_tdst_ModifierSnap*)pst_NewMod->p_Data;
-#else
-		(void *) pst_SnapData = pst_NewMod->p_Data;
-#endif
 		for(i = 0; i < i_SrcInTgt; i++)
 		{
 			pst_SnapData->pst_Point[i].ul_IndexSrc = pul_SrcIndex[i];
@@ -3541,9 +3537,9 @@ GEO_tdst_ModifierMorphing_Data *GEO_ModifierMorphing_DuplicateData( GEO_tdst_Mod
 		L_memcpy( p_Ret + i, _pst_Morph->dst_MorphData + i, sizeof( GEO_tdst_ModifierMorphing_Data ) );
         if (p_Ret[i].l_NbVector)
         {
-            p_Ret[i].dl_Index = MEM_p_Alloc( p_Ret[i].l_NbVector * sizeof( LONG ) );
+			p_Ret[ i ].dl_Index = ( LONG * ) MEM_p_Alloc( p_Ret[ i ].l_NbVector * sizeof( LONG ) );
             L_memcpy( p_Ret[i].dl_Index, _pst_Morph->dst_MorphData[i].dl_Index, p_Ret[i].l_NbVector * sizeof( LONG ) );
-            p_Ret[i].dst_Vector = MEM_p_Alloc( p_Ret[i].l_NbVector * sizeof( MATH_tdst_Vector ) );
+			p_Ret[ i ].dst_Vector = ( MATH_tdst_Vector * ) MEM_p_Alloc( p_Ret[ i ].l_NbVector * sizeof( MATH_tdst_Vector ) );
             L_memcpy( p_Ret[i].dst_Vector , _pst_Morph->dst_MorphData[i].dst_Vector, p_Ret[i].l_NbVector * sizeof( MATH_tdst_Vector ) );
         }
 #endif

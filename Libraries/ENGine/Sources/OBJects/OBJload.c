@@ -1721,7 +1721,7 @@ OBJ_tdst_Prefab *OBJ_LoadPrefab(ULONG ul_Index)
 }
 #endif
 
-extern WOR_gb_DoNotLoadLinkedObjects;
+extern int WOR_gb_DoNotLoadLinkedObjects;
 /*
  =======================================================================================================================
  =======================================================================================================================
@@ -1734,8 +1734,7 @@ void OBJ_UpdateGaoGao(WOR_tdst_World *_pst_World, OBJ_tdst_GameObject *_pst_GO, 
 	OBJ_tdst_Prefab		*pst_PrefabRef = NULL;
 	char				az[1024];
 	MDF_tdst_Modifier	*pst_NextMdf, *pst_Modifier;
-	AI_tdst_VarDes		*pst_VarDesSave;
-	int					i;
+	//AI_tdst_VarDes		*pst_VarDesSave;
 	//char				asz_Path[BIG_C_MaxLenPath];
 	//ULONG				ul_GOKey;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

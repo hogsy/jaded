@@ -677,7 +677,7 @@ void EDIA_cl_NameDialogDuplicate::OnBnClickedOk()
 				sprintf(asz_NewName, "%s", (LPSTR)(LPCSTR) strGaoName);
 				
 			// Rename GAO if different
-			if ( stricmp(mpo_Gao->sz_Name, asz_NewName) != 0 )
+			if ( L_stricmp(mpo_Gao->sz_Name, asz_NewName) != 0 )
 				OBJ_GameObject_Rename(mpo_Gao, asz_NewName);
 
 			// If COPY was asked, copy each element of GAO & propose new name (except for materials)

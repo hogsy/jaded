@@ -92,7 +92,7 @@ BEGIN_MESSAGE_MAP(EBRO_cl_Frame, EDI_cl_BaseFrame)
 	ON_COMMAND(IDC_GOPARENT, OnGoParent)
 	ON_COMMAND(IDC_GOROOT, OnGoRoot)
 	ON_UPDATE_COMMAND_UI(IDC_GOPARENT, OnGoParentUI)
-	ON_COMMAND(BROWSER_IDC_P4REFRESHLISTCTRL, OnP4RefreshListCtrl)
+	//ON_COMMAND(BROWSER_IDC_P4REFRESHLISTCTRL, OnP4RefreshListCtrl)
 	ON_CBN_SELENDOK(BROWSER_IDC_COMBOFAVORITES, OnFavoriteChange)
 END_MESSAGE_MAP()
 
@@ -1031,14 +1031,7 @@ _End_
  */
 void EBRO_cl_Frame::OnP4RefreshListCtrl(void)
 {
-	if ( mpo_DialogBar->IsDlgButtonChecked(BROWSER_IDC_P4REFRESHLISTCTRL) == BST_CHECKED )
-	{
-		mb_P4RefreshListCtrl = TRUE;
-	}
-	else if ( mpo_DialogBar->IsDlgButtonChecked(BROWSER_IDC_P4REFRESHLISTCTRL) == BST_UNCHECKED )
-	{
-		mb_P4RefreshListCtrl = FALSE;
-	}
+	mb_P4RefreshListCtrl = FALSE;
 }
 
 /*

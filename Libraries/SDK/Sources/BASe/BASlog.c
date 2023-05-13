@@ -118,7 +118,7 @@ void BAS_UpdateLog(char *_psz_NameLog, char *_psz_String, UCHAR _uc_DateTime)
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     L_FILE      h_LogFile;
     char        asz_Temp[50];
-    static BOOL sb_Lock;
+    static bool sb_Lock;
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
     h_LogFile = NULL;

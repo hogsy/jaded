@@ -940,20 +940,16 @@ void BoneRefineModifier_Save(MDF_tdst_Modifier *_pst_Mod)
 #endif
 ULONG BoneRefineul_Modifier_Load(MDF_tdst_Modifier *_pst_Mod, char *_pc_Buffer)
 {
-#ifdef JADEFUSION
-	char					*pc_Cur;
-#else
-	unsigned char					*pc_Cur;
-#endif	
+	char *pc_Cur;
 	pc_Cur = _pc_Buffer;
-#if defined(XML_CONV_TOOL)
-	gBoneRefineMdfSize = LOA_ReadLong(&pc_Cur);
+#if defined( XML_CONV_TOOL )
+	gBoneRefineMdfSize = LOA_ReadLong( &pc_Cur );
 #else
-	LOA_ReadLong(&pc_Cur); /* Skip size */	
+	LOA_ReadLong( &pc_Cur ); /* Skip size */
 #endif
-	BoneRefineModifier_SaveLoad_Parrams((GAO_tdst_ModifierBoneRefine *) _pst_Mod->p_Data , 2, &pc_Cur);
+	BoneRefineModifier_SaveLoad_Parrams( ( GAO_tdst_ModifierBoneRefine * ) _pst_Mod->p_Data, 2, &pc_Cur );
 	_pst_Mod->ul_Flags = MDF_C_Modifier_ApplyGao;
-	return pc_Cur - _pc_Buffer ;
+	return pc_Cur - _pc_Buffer;
 }
 
 /**********************************************************************************************/

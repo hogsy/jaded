@@ -302,9 +302,10 @@ void ANI_CheckInternalGroups(OBJ_tdst_Group *_pst_Skeleton, char *_psz_Name)
 
 						if(_psz_Name)
 						{
-							sprintf
+							snprintf
 							(
 								asz_Log,
+								sizeof(asz_Log),
 								"%s's group detached because it contains %s in %s",
 								pst_BoneGO->sz_Name,
 								pst_GO->sz_Name,
@@ -313,9 +314,10 @@ void ANI_CheckInternalGroups(OBJ_tdst_Group *_pst_Skeleton, char *_psz_Name)
 						}
 						else
 						{
-							sprintf
+							snprintf
 							(
 								asz_Log,
+								sizeof( asz_Log ),
 								"%s's group detached because it contains %s",
 								pst_BoneGO->sz_Name,
 								pst_GO->sz_Name
@@ -362,13 +364,13 @@ void ANI_CheckInternalGroups(OBJ_tdst_Group *_pst_Skeleton, char *_psz_Name)
 							char	asz_Log[300];
 							/*~~~~~~~~~~~~~~~~~*/
 
-							sprintf
+							snprintf
 							(
 								asz_Log,
+								sizeof(asz_Log),
 								"%s is ponderating by %s which is not in the same Skeleton",
 								pst_VisuGO->sz_Name,
-								pst_PonderationGO->sz_Name,
-								_psz_Name
+								pst_PonderationGO->sz_Name
 							);
 
 							ERR_X_Warning(0, asz_Log, NULL);

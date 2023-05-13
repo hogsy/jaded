@@ -86,19 +86,19 @@ static char     MUTEX_GizmoFrom[][32] =
     ""
 };
 
-
-static char     MUTEX_SoundID[][32] =
-{
-    "No Sound",
-    "Terre battue",
-    "Végétation",
-    "Pierre",
-    "Eau/Marécage",
-	"Chair",
-	"Bois",
-	"Metal",
-	"Crossable",
-	""
+// hogsy: I've translated the below...
+static char MUTEX_SoundID[][ 32 ] =
+        {
+                "No Sound",
+                "Dirt",       //"Terre battue",
+                "Vegetation", //"Végétation",
+                "Stone",      //"Pierre",
+                "Water/Marsh",//"Eau/Marécage",
+                "Chair",
+                "Wood",//"Bois",
+                "Metal",
+                "Crossable",
+                "",
 };
 #define MUTEX_NbSoundID 9
 

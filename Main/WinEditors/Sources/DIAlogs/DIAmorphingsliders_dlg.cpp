@@ -296,7 +296,7 @@ void EDIA_cl_MorphingSlidersDialog::Line_Display( CDC *pDC, int _i_Data, CRect *
 	/* show unit at start */
 	if (ceil(x) == x )
 	{
-		itoa( ((int)x), sz_Name, 10);
+		L_itoa( ( ( int ) x ), sz_Name, 10 );
 		pDC->TextOut( X, _po_Rect->top, sz_Name, strlen( sz_Name ) );
 	}
 	
@@ -314,7 +314,7 @@ void EDIA_cl_MorphingSlidersDialog::Line_Display( CDC *pDC, int _i_Data, CRect *
 		else
 		{
 			/* show unit at end */
-			itoa( ((int) ceil(x+dx)), sz_Name, 10);
+			L_itoa( ( ( int ) ceil( x + dx ) ), sz_Name, 10 );
 			pDC->TextOut( X + DX, _po_Rect->top, sz_Name, strlen( sz_Name ) );
 		}
 
@@ -358,7 +358,7 @@ void EDIA_cl_MorphingSlidersDialog::Line_Display( CDC *pDC, int _i_Data, CRect *
 	/* show unit at start */
 	if (ceil(x) == x )
 	{
-		itoa( ((int)x), sz_Name, 10);
+		L_itoa( ( ( int ) x ), sz_Name, 10 );
 		pDC->TextOut( X, _po_Rect->top, sz_Name, strlen( sz_Name ) );
 	}
 
@@ -375,7 +375,7 @@ void EDIA_cl_MorphingSlidersDialog::Line_Display( CDC *pDC, int _i_Data, CRect *
 		else
 		{
 			/* show unit at end */
-			itoa( ((int)ceil(x+dx)), sz_Name, 10);
+			L_itoa( ( ( int ) ceil( x + dx ) ), sz_Name, 10 );
 			pDC->TextOut( X + DX, _po_Rect->top, sz_Name, strlen( sz_Name ) );
 		}
 
