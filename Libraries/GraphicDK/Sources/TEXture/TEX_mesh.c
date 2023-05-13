@@ -2888,7 +2888,8 @@ u_int WTR_Mesh_Do(WTR_Generator_Struct *pst_Params)
 #elif defined(WTR_OGL_VERSION)
 	/* 1 Preinits */
 	{
-		ULONG ulFlags , TextureIndex;
+		ULONG ulFlags;
+		//, TextureIndex;
 		TEX_tdst_Data *TexFound;
 
 		/*MATH_tdst_Matrix Matrix;
@@ -2941,20 +2942,17 @@ u_int WTR_Mesh_Do(WTR_Generator_Struct *pst_Params)
 		/* 2 Render */
 		{
 			MATH_tdst_Vector *Pvertex,*PvertexLast;
-			SOFT_tdst_UV		*p_UV;
-			SOFT_tdst_UV		*p_UVOriginals;
 			ULONG *pVertexCol;
-			u32 YCounter;
 			Pvertex = pst_Params->pVertexMap;
 			pVertexCol = pst_Params->pColors;
 #ifdef WTR_ComputeNORMALS
-			p_UV = pst_Params->pVertexMap_NRM ; 
+			SOFT_tdst_UV *p_UV = ( SOFT_tdst_UV * ) pst_Params->pVertexMap_NRM;
 #endif
 #ifdef WTR_ComputeOriginalsUV
-			p_UVOriginals = pst_Params->p_VertexMapORIGINALS; 
+			SOFT_tdst_UV *p_UVOriginals = pst_Params->p_VertexMapORIGINALS;
 #endif
 			
-			YCounter = pst_Params->FrustrumMesh_SY - 1;
+			u32 YCounter = pst_Params->FrustrumMesh_SY - 1;
 			for (YCounter = 0 ; YCounter < pst_Params->FrustrumMesh_SY - 1 ; YCounter++ )
 			{
 				glBegin(GL_TRIANGLE_STRIP);

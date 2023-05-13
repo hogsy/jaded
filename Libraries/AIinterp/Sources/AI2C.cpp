@@ -198,7 +198,7 @@ void AI_PrintTriggerDependencies(const char *s_TriggerName)
 {
     char sMsg[256];
     LINK_gul_ColorTxt = 0x00FF0000;
-    sprintf(sMsg,"Trigger %s is used by:",s_TriggerName);
+	snprintf( sMsg, sizeof(sMsg), "Trigger %s is used by:", s_TriggerName );
     LINK_PrintStatusMsgCanal(sMsg,2);
 
     int i;
@@ -213,7 +213,7 @@ void AI_PrintTriggerDependencies(const char *s_TriggerName)
         {
             for (i=0; i<(int)pTriggerDep->a_User.size(); i++)
             {
-                sprintf(sMsg,"%s (%x)",pTriggerDep->a_User[i]->sz_Name,pTriggerDep->a_User[i]->ul_MyKey);
+				snprintf( sMsg, sizeof(sMsg), "%s (%x)", pTriggerDep->a_User[ i ]->sz_Name, pTriggerDep->a_User[ i ]->ul_MyKey );
                 LINK_PrintStatusMsgCanal(sMsg,2);
             }
             break;
@@ -289,10 +289,10 @@ void AI_PrintUnusedGAO()
                 {
                     char asz_Path[256];
                     BIG_ComputeFullName(BIG_ParentFile(ulFat), asz_Path);
-                    sprintf(sMsg,"%s/%s (key %x)",asz_Path,pst_CurrentGO->sz_Name,pst_CurrentGO->ul_MyKey,asz_Path);
+					snprintf( sMsg, sizeof(sMsg), "%s/%s (key %x)", asz_Path, pst_CurrentGO->sz_Name, pst_CurrentGO->ul_MyKey );
                 }
                 else
-                    sprintf(sMsg,"%s (key %x)",pst_CurrentGO->sz_Name,pst_CurrentGO->ul_MyKey);
+					snprintf( sMsg, sizeof(sMsg), "%s (key %x)", pst_CurrentGO->sz_Name, pst_CurrentGO->ul_MyKey );
 
                 LINK_PrintStatusMsgCanal(sMsg,0);
             }
@@ -323,12 +323,12 @@ BOOL bPrintIfComesAnotherWorld(ULONG _ulFat,const char *_sName, const char *_sWo
 
     if (_ulFatGAO == BIG_C_InvalidIndex)
     {
-        sprintf(sMsg,"%s %s/%s comes from another world(dir)",_sName,asz_Path,BIG_NameFile(_ulFat));
+		snprintf( sMsg, sizeof(sMsg), "%s %s/%s comes from another world(dir)", _sName, asz_Path, BIG_NameFile( _ulFat ) );
         LINK_PrintStatusMsgCanal(sMsg,0);
     }
     else
     {
-        sprintf(sMsg,"%s %s/%s used by %s comes from another world(dir)",_sName,asz_Path,BIG_NameFile(_ulFat),BIG_NameFile(_ulFatGAO));
+		snprintf( sMsg, sizeof(sMsg), "%s %s/%s used by %s comes from another world(dir)", _sName, asz_Path, BIG_NameFile( _ulFat ), BIG_NameFile( _ulFatGAO ) );
         LINK_PrintStatusMsgCanal(sMsg,0);
     }
 
@@ -408,9 +408,9 @@ void AI_PrintKeyDependencies(BIG_KEY h_Key)
     char sMsg[256];
 	ULONG ulFat = BIG_ul_SearchKeyToFat(h_Key);
     if(ulFat != BIG_C_InvalidIndex)
-        sprintf(sMsg,"Key %x (%s) is referenced by:",h_Key,BIG_NameFile(ulFat));
+		snprintf( sMsg, sizeof(sMsg), "Key %x (%s) is referenced by:", h_Key, BIG_NameFile( ulFat ) );
     else
-        sprintf(sMsg,"Key %x is referenced by:",h_Key);
+		snprintf( sMsg, sizeof(sMsg), "Key %x is referenced by:", h_Key );
 
     LINK_gul_ColorTxt = 0x00FF0000;
     LINK_PrintStatusMsgCanal(sMsg,2);
@@ -427,12 +427,12 @@ void AI_PrintKeyDependencies(BIG_KEY h_Key)
                 if(ulFat != BIG_C_InvalidIndex)
                 {
                     if (pKeyDep->a_User[i].s_CallBackName)
-                        sprintf(sMsg,"%x (%s) with callback %s",pKeyDep->a_User[i].h_User,BIG_NameFile(ulFat),pKeyDep->a_User[i].s_CallBackName);
+						snprintf( sMsg, sizeof(sMsg), "%x (%s) with callback %s", pKeyDep->a_User[ i ].h_User, BIG_NameFile( ulFat ), pKeyDep->a_User[ i ].s_CallBackName );
                     else
-                        sprintf(sMsg,"%x (%s)",pKeyDep->a_User[i].h_User,BIG_NameFile(ulFat));
+						snprintf( sMsg, sizeof(sMsg), "%x (%s)", pKeyDep->a_User[ i ].h_User, BIG_NameFile( ulFat ) );
                 }
                 else
-                    sprintf(sMsg,"%x",pKeyDep->a_User[i].h_User);
+					snprintf( sMsg, sizeof(sMsg), "%x", pKeyDep->a_User[ i ].h_User );
                 LINK_PrintStatusMsgCanal(sMsg,2);
             }
             break;

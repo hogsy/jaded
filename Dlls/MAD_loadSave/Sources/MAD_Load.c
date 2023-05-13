@@ -579,7 +579,7 @@ MAD_World *MAD_Load(char *FileName,void (*LoadCallback)(FILE *f,int size,char *N
 #endif
 			break;
 		default:
-			sprintf(Texte,"The .MAD that you try to read is more recent \nthan your program(or plugin).\nProgram version is %d \n.MAD file version is %d \nPlease update your .exe(or plugin)!!.\n\n",MAD_WORLD_FILE_LAST_VERION & 0xffff,  Version & 0xffff);
+			snprintf(Texte, sizeof(Texte),"The .MAD that you try to read is more recent \nthan your program(or plugin).\nProgram version is %d \n.MAD file version is %d \nPlease update your .exe(or plugin)!!.\n\n",MAD_WORLD_FILE_LAST_VERION & 0xffff,  Version & 0xffff);
 			MessageBox
 				(
 				NULL,

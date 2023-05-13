@@ -131,7 +131,7 @@ void MAD_MakeNoHinstancesGO(MAD_World *MW)
 					MAD_MALLOC(MAD_ColorARGB, ((MAD_GeometricObject *)MW->AllObjects[NumBerOfObjects])->SecondRLIField , ((MAD_GeometricObject *)MW->AllObjects[NumBerOfObjects])->NumberOfPoints * sizeof(MAD_ColorARGB));
 					memcpy(((MAD_GeometricObject *)MW->AllObjects[NumBerOfObjects])->SecondRLIField , ((MAD_GeometricObject *)MW->AllObjects[NumBerOfObjects])->Colors , ((MAD_GeometricObject *)MW->AllObjects[NumBerOfObjects])->NumberOfPoints * sizeof(MAD_ColorARGB));
 					MW->Hierarchie[Counter].ObjectWithRadiosity = NumBerOfObjects;
-					sprintf (TransformaX,"%s_%s",(char *)MW->Hierarchie[Counter].ID.Name,"radied");
+					snprintf( TransformaX, sizeof(TransformaX), "%s_%s", ( char * ) MW->Hierarchie[ Counter ].ID.Name, "radied" );
 					strcpy(MW->AllObjects[NumBerOfObjects] ->Name , TransformaX);
 					MW->Hierarchie[Counter].NODE_Flags |= MNF_MustBeMadRaded;
 					NumBerOfObjects++;

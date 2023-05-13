@@ -227,7 +227,7 @@ _inline_ AI_tdst_Instance *AI_Mpst_GetCurrentInstance(void)
 	if(!AI_gpst_CurrentInstanceUltra)
 	{
 		char	asz_Msg[256];
-		sprintf(asz_Msg, "Game object doesn't have AI (%s)", AI_gpst_CurrentUltra->sz_Name);
+		snprintf( asz_Msg, sizeof(asz_Msg), "Game object doesn't have AI (%s)", AI_gpst_CurrentUltra->sz_Name );
 		AI_Check(0, asz_Msg);
 	}
 #endif

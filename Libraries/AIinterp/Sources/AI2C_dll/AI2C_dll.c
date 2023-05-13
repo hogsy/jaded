@@ -533,7 +533,7 @@ void AI2C_GenDllSourceFile(void)
 		{
 			/* get dll id */
 			id = AI2C_UpdateModelCrossReference();
-			sprintf(asz_Path, AI2C_Csz_DllSourceName, id);
+			snprintf( asz_Path, sizeof(asz_Path), AI2C_Csz_DllSourceName, id );
 
 			/* generate the file */
 			f = fopen(asz_Path, "wt");
@@ -1149,7 +1149,7 @@ int AI2C_UpdateModelCrossReference(void)
 		/* create all AIdllxxx.c */
 		for(i = 0; i < AI2C_Cte_DllMaxNb; i++)
 		{
-			sprintf(line, AI2C_Csz_DllSourceName, i);
+			snprintf( line, sizeof(line), AI2C_Csz_DllSourceName, i );
 			x = fopen(line, "wt");
 			time(&now);
 			when = *localtime(&now);

@@ -191,7 +191,7 @@ ULONG AI_ul_RealResolveOneRef(int _i_Type, ULONG _ul_Ref)
 				ulFat = BIG_ul_SearchKeyToFat(ulCaller);
 				if(ulFat != BIG_C_InvalidIndex)
 				{
-					sprintf(log, "[LOA]=> %x is referenced by [%08x] %s",LOA_gul_MakeFileRefSpy, ulCaller, BIG_NameFile(ulFat));
+					snprintf( log, sizeof(log), "[LOA]=> %x is referenced by [%08x] %s", LOA_gul_MakeFileRefSpy, ulCaller, BIG_NameFile( ulFat ) );
 
 					LINK_gul_ColorTxt = 0x00FF0000;
 					LINK_PrintStatusMsg(log);
@@ -328,7 +328,7 @@ void AI_ResolveAllFctRef(AI_tdst_Model *_pst_Model)
 					if((pst_Root->w_Param != TYPE_MODEL) && (AI_b_IsARef(pst_Root->w_Param)))
 					{
 						ul_Model = LOA_ul_SearchIndexWithAddress((ULONG) _pst_Model);
-						sprintf(asz_Msg, "%x, model is %s", ul_Ref, BIG_NameFile(ul_Model));
+						snprintf( asz_Msg, sizeof(asz_Msg), "%x, model is %s", ul_Ref, BIG_NameFile( ul_Model ) );
 						ERR_X_Warning(pst_Root->l_Param != BIG_C_InvalidIndex, AI_ERR_Csz_RefNotLoaded, asz_Msg);
 					}
 #endif
@@ -388,7 +388,7 @@ void AI_ResolveAllFctRef(AI_tdst_Model *_pst_Model)
 						if((pst_Root->w_Param != TYPE_MODEL) && (AI_b_IsARef(pst_Root->w_Param)))
 						{
 							ul_Model = LOA_ul_SearchIndexWithAddress((ULONG) _pst_Model);
-							sprintf(asz_Msg, "%x, model is %s (proclist)", ul_Ref, BIG_NameFile(ul_Model));
+							snprintf( asz_Msg, sizeof(asz_Msg), "%x, model is %s (proclist)", ul_Ref, BIG_NameFile( ul_Model ) );
 							ERR_X_Warning(pst_Root->l_Param != BIG_C_InvalidIndex, AI_ERR_Csz_RefNotLoaded, asz_Msg);
 						}
 #endif
@@ -453,9 +453,9 @@ void AI_ResolveMsg(char *name, AI_tdst_Message *msg)
 	{
 		char az[100];
         if (AI_gp_ResolveGO)
-    		sprintf(az, "%s(%08x) : %s", AI_gp_ResolveGO->sz_Name, AI_gp_ResolveGO->ul_MyKey, name ? name : "");
+			snprintf( az, sizeof(az), "%s(%08x) : %s", AI_gp_ResolveGO->sz_Name, AI_gp_ResolveGO->ul_MyKey, name ? name : "" );
         else
-    		sprintf(az, ": %s", name ? name : "");
+			snprintf( az, sizeof(az), ": %s", name ? name : "" );
 		ERR_X_Warning((int) msg->pst_Sender != -1, "Trigger with a bad object", az);
 		ERR_X_Warning((int) msg->pst_GAO1 != -1, "Trigger with a bad object", az);
 		ERR_X_Warning((int) msg->pst_GAO2 != -1, "Trigger with a bad object", az);
@@ -510,7 +510,7 @@ void AI_ResolveVarRef
 				char	az[512];
 				/*~~~~~~~~~~~~*/
 
-				sprintf(az, "%s => %s", AI_gp_ResolveGO->sz_Name, _pst_EdVarsInfos[i].asz_Name);
+				snprintf( az, sizeof(az), "%s => %s", AI_gp_ResolveGO->sz_Name, _pst_EdVarsInfos[ i ].asz_Name );
 				ERR_X_Warning(0, az, NULL);
 			}
 		}
@@ -541,9 +541,9 @@ void AI_ResolveVarRef
 				if(pt_Trigger->az_Name[0] && !pt_Trigger->pt_Proc)
 				{
 					ul_Index = LOA_ul_SearchIndexWithAddress((ULONG) _p_InstModel);
-					sprintf
+					snprintf
 					(
-						asz_Msg,
+						asz_Msg, sizeof(asz_Msg),
 						"%s, file is %s, var is %s",
 						pt_Trigger->az_Name,
 						BIG_NameFile(ul_Index),
@@ -575,7 +575,7 @@ void AI_ResolveVarRef
 					char	az[512];
 					/*~~~~~~~~~~~~*/
 
-					sprintf(az, "%s => %s (ARRAY)", AI_gp_ResolveGO->sz_Name, _pst_EdVarsInfos[i].asz_Name);
+					snprintf( az, sizeof(az), "%s => %s (ARRAY)", AI_gp_ResolveGO->sz_Name, _pst_EdVarsInfos[ i ].asz_Name );
 					ERR_X_Warning(0, az, NULL);
 				}
 #endif
@@ -585,13 +585,13 @@ void AI_ResolveVarRef
 				ul_Index = LOA_ul_SearchIndexWithAddress((ULONG) _p_InstModel);
 				if(ul_Index == BIG_C_InvalidIndex)
 				{
-					sprintf(asz_Msg, "%x, var is %s", ul_Ref, _pst_EdVarsInfos[i].asz_Name);
+					snprintf( asz_Msg, sizeof(asz_Msg), "%x, var is %s", ul_Ref, _pst_EdVarsInfos[ i ].asz_Name );
 				}
 				else
 				{
-					sprintf
+					snprintf
 					(
-						asz_Msg,
+					    asz_Msg, sizeof(asz_Msg),
 						"%x, file is %s, var is %s",
 						ul_Ref,
 						BIG_NameFile(ul_Index),
@@ -618,7 +618,7 @@ void AI_ResolveVarRef
 					char	az[512];
 					/*~~~~~~~~~~~~*/
 
-					sprintf(az, "%s => %s (ARRAY)", AI_gp_ResolveGO->sz_Name, _pst_EdVarsInfos[i].asz_Name);
+					snprintf( az, sizeof(az), "%s => %s (ARRAY)", AI_gp_ResolveGO->sz_Name, _pst_EdVarsInfos[ i ].asz_Name );
 					ERR_X_Warning(0, az, NULL);
 				}
 			}
@@ -884,7 +884,7 @@ void AI_InstanceAfterLoading(AI_tdst_Instance *_pst_Instance)
 		/*~~~~~~~~~~~~~~~~~~~~~*/
 
 		ul_Index = LOA_ul_SearchIndexWithAddress((ULONG) _pst_Instance);
-		sprintf(asz_Msg, "Instance doesn't have a model !!! (%s)", BIG_NameFile(ul_Index));
+		snprintf( asz_Msg, sizeof(asz_Msg), "Instance doesn't have a model !!! (%s)", BIG_NameFile( ul_Index ) );
 		ERR_X_Warning(0, asz_Msg, NULL);
 		return;
 	}

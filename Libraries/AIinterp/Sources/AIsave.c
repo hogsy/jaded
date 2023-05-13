@@ -104,7 +104,7 @@ BIG_KEY AI_ul_CreateInstance
         /* Save dummy instance variable file */
 		while(BIG_ul_SearchFileExt(asz_Path1, asz_Name1) != BIG_C_InvalidIndex)
 		{
-			sprintf(asz_Name2, "_%s", asz_Name1);
+			snprintf( asz_Name2, sizeof(asz_Name2), "_%s", asz_Name1 );
 			L_strcpy(asz_Name1, asz_Name2);
 			ERR_X_Assert(L_strlen(asz_Name1) < BIG_C_MaxLenName);
 		}
@@ -127,7 +127,7 @@ BIG_KEY AI_ul_CreateInstance
 		/* Instance */
 		while(BIG_ul_SearchFileExt(asz_Path1, asz_Name1) != BIG_C_InvalidIndex)
 		{
-			sprintf(asz_Name2, "_%s", asz_Name1);
+			snprintf( asz_Name2, sizeof(asz_Name2), "_%s", asz_Name1 );
 			L_strcpy(asz_Name1, asz_Name2);
 			ERR_X_Assert(L_strlen(asz_Name1) < BIG_C_MaxLenName);
 		}
@@ -457,9 +457,9 @@ _End_
 							{
 								if(*(BIG_KEY *) (pc_Init + ul_Offset + i_Offset) == BIG_C_InvalidKey)
 								{
-									sprintf
+									snprintf
 									(
-										az, 
+										az, sizeof(az),
 										"AI save of %s has converted a pointer to an unknown reference", 
 										((OBJ_tdst_GameObject *) _pst_Instance->pst_GameObject)->sz_Name
 									);

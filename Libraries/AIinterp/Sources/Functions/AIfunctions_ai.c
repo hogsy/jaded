@@ -115,7 +115,7 @@ void AI_EvalFunc_AITrackChange_C(int val2, AI_tdst_Function *pst_Func)
     if (val2 < 0)
     {
         char sMsg[256];
-        sprintf(sMsg,"Index must be >= 0 in %s",pst_Func->az_Name);
+		snprintf( sMsg, sizeof(sMsg), "Index must be >= 0 in %s", pst_Func->az_Name );
         ERR_X_Warning(0,sMsg,NULL);
         val2 = 0;
     }
@@ -123,7 +123,7 @@ void AI_EvalFunc_AITrackChange_C(int val2, AI_tdst_Function *pst_Func)
     if (val2 >= 5)
     {
         char sMsg[256];
-        sprintf(sMsg,"Index must be < 5 in %s",pst_Func->az_Name);
+		snprintf( sMsg, sizeof(sMsg), "Index must be < 5 in %s", pst_Func->az_Name );
         ERR_X_Warning(0,sMsg,NULL);
         val2 = 4;
     }
