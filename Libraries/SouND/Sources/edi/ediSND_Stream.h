@@ -37,6 +37,7 @@ void	ediSND_StreamReinitAndPlay
 		(
 			SND_tdst_SoundBuffer	*_pst_SB,
 			int						_i_Flag,
+			int						_i_FormatTag,
 			int						_i_LoopNb,
 			unsigned int			_ui_Size,
 			unsigned int			_ui_Position,
@@ -55,6 +56,7 @@ void	ediSND_StreamChain
 		(
 			SND_tdst_SoundBuffer	*pSB,
 			int						iFlag,
+			int						iFormatTag,
 			int						iLoop,
 			unsigned int			uiExitPoint,
 			unsigned int			uiEnterPoint,

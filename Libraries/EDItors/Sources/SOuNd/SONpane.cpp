@@ -340,7 +340,7 @@ void ESON_cl_Pane::OnPaint(void)
 					float	f;
 					/*~~~~~~*/
 
-                    if(SND_gst_Params.i_EdiWaveFormat == WAVE_FORMAT_XBOX_ADPCM)
+                    if(mpo_Frame->mst_SDesc.pWave->wFormatTag == WAVE_FORMAT_XBOX_ADPCM)
                         f = (float) dwPlayCursor / (float) SND_ui_GetDecompressedSize(mpo_Frame->mst_SDesc.pWave->ul_DataSize);
                     else
                         f = (float) dwPlayCursor / (float) mpo_Frame->mst_SDesc.pWave->ul_DataSize;

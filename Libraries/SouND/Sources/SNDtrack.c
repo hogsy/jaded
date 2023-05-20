@@ -729,6 +729,7 @@ static void SND_Track_Merge
 	(
 		SND_gdst_TrackPlayingList[_i_TrueTrackId].pst_PlayerSB,
 		_i_NewFlag,
+	    SND_gst_Params.dst_Sound[ _pst_NextPlaying->l_Sound ].pst_Wave->wFormatTag,
 		_i_LoopNb,
 		SND_gst_Params.dst_Sound[_pst_NextPlaying->l_Sound].pst_Wave->ul_DataSize,
 		SND_gst_Params.dst_Sound[_pst_NextPlaying->l_Sound].pst_Wave->ul_DataPosition,
@@ -1427,6 +1428,7 @@ float SND_f_Track_ChainPlayer
 		(
 			pst_Track->pst_PlayerSB,
 			iFlag,
+	        pNewWave->wFormatTag,
 			iLoop,
 			uiExit,
 			uiStart,

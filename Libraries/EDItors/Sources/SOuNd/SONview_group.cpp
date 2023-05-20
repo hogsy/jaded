@@ -65,7 +65,7 @@ ESON_tdst_ViewGroupSliderCtrl	ESON_gdst_ViewGroupSliderCtrl[] =
 	{ IDC_SLIDER_FXVOLGRP6, &SND_gdst_Group[SND_e_GrpInterface].f_FxVolume },
 	{ IDC_SLIDER_FXVOLGRP7, &SND_gdst_Group[SND_e_GrpA].f_FxVolume },
 	{ IDC_SLIDER_FXVOLGRP8, &SND_gdst_Group[SND_e_GrpB].f_FxVolume },
-	{ -1, NULL }
+	{ (UINT)-1, NULL }
 };
 
 typedef struct					ESON_tdst_ViewGroupBtnCtrl_
@@ -87,7 +87,7 @@ ESON_tdst_ViewGroupBtnCtrl	ESON_gdst_ViewGroupBtnCtrl[] =
 	{ IDC_CHECK_BYPASSGRP6, IDC_CHECK_MUTEGRP6, IDC_CHECK_SOLOGRP6, &SND_gdst_Group[SND_e_GrpInterface] },
 	{ IDC_CHECK_BYPASSGRP7, IDC_CHECK_MUTEGRP7, IDC_CHECK_SOLOGRP7, &SND_gdst_Group[SND_e_GrpA] },
 	{ IDC_CHECK_BYPASSGRP8, IDC_CHECK_MUTEGRP8, IDC_CHECK_SOLOGRP8, &SND_gdst_Group[SND_e_GrpB] },
-	{ -1, -1, -1, NULL }
+	{ (UINT)-1, (UINT)-1, (UINT)-1, NULL }
 };
 
 ESON_tdst_ViewGroupBtnCtrl	ESON_gdst_ViewUsrGroupBtnCtrl[] =
@@ -96,7 +96,7 @@ ESON_tdst_ViewGroupBtnCtrl	ESON_gdst_ViewUsrGroupBtnCtrl[] =
 	{ IDC_CHECK_BYPASSGRP11, IDC_CHECK_MUTEGRP11, IDC_CHECK_SOLOGRP11, &SND_gdst_Group[SND_e_UserGrpMusic] },
 	{ IDC_CHECK_BYPASSGRP12, IDC_CHECK_MUTEGRP12, IDC_CHECK_SOLOGRP12, &SND_gdst_Group[SND_e_UserGrpSpecialFX] },
 	{ IDC_CHECK_BYPASSGRP13, IDC_CHECK_MUTEGRP13, IDC_CHECK_SOLOGRP13, &SND_gdst_Group[SND_e_UserGrpDialog] },
-	{ -1, -1, -1, NULL }
+	{ (UINT)-1, (UINT)-1, (UINT)-1, NULL }
 };
 
 typedef struct				ESON_tdst_ViewGroupProgressCtrl_
@@ -111,7 +111,7 @@ ESON_tdst_ViewGroupProgressCtrl ESON_gdst_ViewGroupProgressCtrl[] =
 	{ IDC_PROGRESS2, &SND_gdst_Group[SND_e_UserGrpMusic].f_Volume },
 	{ IDC_PROGRESS3, &SND_gdst_Group[SND_e_UserGrpSpecialFX].f_Volume },
 	{ IDC_PROGRESS4, &SND_gdst_Group[SND_e_UserGrpDialog].f_Volume },
-	{ -1, NULL }
+	{ (UINT)-1, NULL }
 };
 
 
@@ -130,7 +130,7 @@ IDC_CHECK_SOLOGRP10,
 IDC_CHECK_SOLOGRP11,
 IDC_CHECK_SOLOGRP12,
 IDC_CHECK_SOLOGRP13,
--1
+(UINT)-1
 };
 
 UINT ESON_gui_MuteIcon[] = 
@@ -148,7 +148,7 @@ IDC_CHECK_MUTEGRP10,
 IDC_CHECK_MUTEGRP11,
 IDC_CHECK_MUTEGRP12,
 IDC_CHECK_MUTEGRP13,
--1
+(UINT)-1
 };
 
 UINT ESON_gui_BypassIcon[] = 
@@ -166,7 +166,7 @@ IDC_CHECK_BYPASSGRP10,
 IDC_CHECK_BYPASSGRP11,
 IDC_CHECK_BYPASSGRP12,
 IDC_CHECK_BYPASSGRP13,
--1
+(UINT)-1
 };
 /*$4
  ***********************************************************************************************************************

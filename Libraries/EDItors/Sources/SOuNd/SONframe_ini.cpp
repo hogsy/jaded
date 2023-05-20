@@ -255,12 +255,6 @@ void ESON_cl_Frame::TreatIni(void)
 		if(SND_gf_AutoVolumeOff == 0.0f) i_OnMessage(ESON_MESSAGE_AUTOVOLUMEOFF, 0, 0);
 	}
 	
-	if(mst_Ini.i_Option & ESON_Cte_EnablePCM)
-		SND_gst_Params.i_EdiWaveFormat = WAVE_FORMAT_PCM;
-	else
-		SND_gst_Params.i_EdiWaveFormat = WAVE_FORMAT_XBOX_ADPCM;
-
-	
 	if(mst_Ini.i_Option & ESON_Cte_NoSynchro)
 		SND_gst_Params.ul_Flags |= SND_Cte_EdiNoSynchro;
 	else

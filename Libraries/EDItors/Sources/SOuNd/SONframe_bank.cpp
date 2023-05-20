@@ -378,7 +378,7 @@ void ESON_cl_Frame::SoundBank_ContentsReport(void)
 			unsigned int	ui_DataSize;
 			/*~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-			if(SND_gst_Params.i_EdiWaveFormat == WAVE_FORMAT_XBOX_ADPCM)
+			if(pst_Sound->pst_Wave->wFormatTag == WAVE_FORMAT_XBOX_ADPCM)
 				ui_DataSize = SND_ui_GetDecompressedSize(pst_Sound->pst_Wave->ul_DataSize);
 			else
 				ui_DataSize = pst_Sound->pst_Wave->ul_DataSize;

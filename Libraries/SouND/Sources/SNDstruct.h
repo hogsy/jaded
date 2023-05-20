@@ -64,6 +64,7 @@ typedef struct	SND_tdst_SoundBuffer_
 	IDirectSoundBuffer8				*pst_DSB;
 	struct ediSND_tdst_SoundStream_ *pst_SS;
 	int								i_Channel;
+	int								i_Format;
 	int								i_PanIdx;
 	unsigned int					ui_LastStatus;
 	LONG							l_Volume;
@@ -352,6 +353,7 @@ typedef struct	SND_tdst_LowInterface_
 		(
 			struct SND_tdst_SoundBuffer_ *, /* SB */
 			int,							/* flag */
+		    int,                            /* format tag */
 			int,							/* loop nb */
 			unsigned int,					/* DataSize, */
 			unsigned int,					/* DataPosition, */
@@ -369,6 +371,7 @@ typedef struct	SND_tdst_LowInterface_
 		(
 			struct SND_tdst_SoundBuffer_ *, /* SB */
 			int,			/* flag */
+			int,			/* format tag */
 			int,			/* loop number */
 			unsigned int,	/* exit point (oct) */
 			unsigned int,	/* StartOffset (oct) */
@@ -473,7 +476,6 @@ typedef struct	SND_tdst_Parameters_
 #ifdef ACTIVE_EDITORS
 	int							i_EdiCheckError;
 	struct OBJ_tdst_GameObject_ *pst_EdiMicroGao;
-	int							i_EdiWaveFormat;
 #endif
 	SND_tdst_OneSound			dst_Sound[SND_Cte_SoundNbMax];
 	struct SND_tdst_Insert_		dst_Insert[SND_Cte_InsertNbMax];

@@ -257,22 +257,22 @@ extern "C"
 #endif
 
 
-#if defined(PSX2_TARGET)
-#define SND_Cte_DefaultWaveFormat	WAVE_FORMAT_PS2
-#elif defined(_GAMECUBE)
-#define SND_Cte_DefaultWaveFormat	WAVE_FORMAT_GAMECUBE
-#elif defined(_XENON)
-#define SND_Cte_DefaultWaveFormat	WAVE_FORMAT_PCM
-#elif defined(_XBOX)
-#define SND_Cte_DefaultWaveFormat	WAVE_FORMAT_XBOX_ADPCM
-#elif defined(_PC_RETAIL)
-#define SND_Cte_DefaultWaveFormat	WAVE_FORMAT_MSADPCM
-#elif defined(WIN32)
-#define SND_Cte_DefaultWaveFormat	WAVE_FORMAT_XBOX_ADPCM
-#elif defined(ACTIVE_EDITORS)
-#define SND_Cte_DefaultWaveFormat	WAVE_FORMAT_XBOX_ADPCM
+#if defined( PSX2_TARGET )
+#	define SND_Cte_DefaultWaveFormat WAVE_FORMAT_PS2
+#elif defined( _GAMECUBE )
+#	define SND_Cte_DefaultWaveFormat WAVE_FORMAT_GAMECUBE
+#elif defined( _XENON )
+#	define SND_Cte_DefaultWaveFormat WAVE_FORMAT_PCM
+#elif defined( _XBOX )
+#	define SND_Cte_DefaultWaveFormat WAVE_FORMAT_XBOX_ADPCM
+#elif defined( _PC_RETAIL )
+#	define SND_Cte_DefaultWaveFormat WAVE_FORMAT_MSADPCM
+#elif defined( WIN32 )
+#	define SND_Cte_DefaultWaveFormat WAVE_FORMAT_PCM
+#elif defined( ACTIVE_EDITORS )
+#	define SND_Cte_DefaultWaveFormat WAVE_FORMAT_XBOX_ADPCM
 #else
-#error Unknown Platform.
+#	error Unknown Platform.
 #endif
 #define SND_Cte_OneXboxFrameSize			36
 #define SND_Cte_OneXboxFrameSampleNb		64
@@ -281,15 +281,8 @@ extern "C"
 #define SND_Cte_OneGamecubeFrameSize		8
 #define SND_Cte_OneGamecubeFrameSampleNb	14
 
-#ifdef ACTIVE_EDITORS
-#define SND_M_IsGoodFormat(f)	((f) == SND_gst_Params.i_EdiWaveFormat)
-#elif _PC_RETAIL
-#define SND_M_IsGoodFormat(f)	(((f) == SND_Cte_DefaultWaveFormat) || ((f) == WAVE_FORMAT_MSADPCM))
-#elif _XENON
-#define SND_M_IsGoodFormat(f)	(((f) == WAVE_FORMAT_PCM) || ((f) == WAVE_FORMAT_XBOX_ADPCM))
-#else
-#define SND_M_IsGoodFormat(f)	((f) == SND_Cte_DefaultWaveFormat)
-#endif /* ACTIVE_EDITORS */
+// hogsy: let's simplify this...
+#define SND_M_IsGoodFormat( f ) ( ( ( f ) == SND_Cte_DefaultWaveFormat ) || ( ( f ) == WAVE_FORMAT_MSADPCM ) || ( ( f ) == WAVE_FORMAT_XBOX_ADPCM ) )
 
 /*$2- Interface ID ---------------------------------------------------------------------------------------------------*/
 

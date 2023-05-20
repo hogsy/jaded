@@ -203,9 +203,9 @@ void ESON_cl_Frame::Sound_Set(BIG_INDEX _ul_Fat, BOOL _b_Update)
 		return;
 	}
 
-	if(mst_SDesc.pWave->wFormatTag != SND_gst_Params.i_EdiWaveFormat)
+	if ( !SND_M_IsGoodFormat( mst_SDesc.pWave->wFormatTag ) )
 	{
-		ERR_X_Warning(0, "[SND] the sound file has an invalid format", NULL);
+		ERR_X_Warning( 0, "[SND] the sound file has an invalid format", NULL );
 		Sound_Close();
 		return;
 	}
@@ -223,7 +223,7 @@ void ESON_cl_Frame::Sound_Set(BIG_INDEX _ul_Fat, BOOL _b_Update)
 	L_memset(&stDSBUFFERDESC, 0, sizeof(DSBUFFERDESC));
 	stDSBUFFERDESC.dwSize = sizeof(DSBUFFERDESC);
 	stDSBUFFERDESC.dwFlags = (DSBCAPS_CTRLVOLUME | DSBCAPS_CTRLPAN | DSBCAPS_CTRLFREQUENCY);
-	ul_DataSize = stDSBUFFERDESC.dwBufferBytes = SND_gst_Params.i_EdiWaveFormat == WAVE_FORMAT_XBOX_ADPCM ? SND_ui_GetDecompressedSize(mst_SDesc.pWave->ul_DataSize) : mst_SDesc.pWave->ul_DataSize;
+	ul_DataSize = stDSBUFFERDESC.dwBufferBytes = ( mst_SDesc.pWave->wFormatTag == WAVE_FORMAT_XBOX_ADPCM ) ? SND_ui_GetDecompressedSize( mst_SDesc.pWave->ul_DataSize ) : mst_SDesc.pWave->ul_DataSize;
 	stDSBUFFERDESC.lpwfxFormat = &stWAVEFORMATEX;
 	stDSBUFFERDESC.guid3DAlgorithm = GUID_NULL;
 
@@ -255,7 +255,7 @@ void ESON_cl_Frame::Sound_Set(BIG_INDEX _ul_Fat, BOOL _b_Update)
 		return;
 	}
 
-	if(SND_gst_Params.i_EdiWaveFormat == WAVE_FORMAT_XBOX_ADPCM)
+	if ( mst_SDesc.pWave->wFormatTag == WAVE_FORMAT_XBOX_ADPCM )
 	{
 		/*~~~~~~~~~~~*/
 		char	*pTemp;

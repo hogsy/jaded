@@ -182,7 +182,7 @@ void SND_FxUpdate(void)
 	/*~~~~~~~~~~~~~~~~~~~~~~~*/
 	int				core, ctxt;
 	extern float	TIM_gf_dt;
-	float			vol,a,b;
+	float			vol;
 	/*~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	SND_FxValidate();

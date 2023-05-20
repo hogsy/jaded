@@ -93,7 +93,7 @@ UINT	SND_gaui_GrpWatchCheckId[] =
 	IDC_CHECK129,
 	IDC_CHECK130,
 	IDC_CHECK131,
-	-1
+	(UINT)-1
 };
 
 /*

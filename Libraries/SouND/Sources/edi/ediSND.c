@@ -48,11 +48,9 @@
     private prototypes
  ***********************************************************************************************************************
  */
-#ifdef JADEFUSION
-extern void		BIG_ReadNoSeek(ULONG _ul_Pos, void *_p_Buffer, ULONG _ul_Length);
-#else
-extern		BIG_ReadNoSeek(ULONG, void *, ULONG);
-#endif
+
+extern void BIG_ReadNoSeek(ULONG, void *, ULONG);
+
 static int	ediSND_l_InitPrimaryBuffer(SND_tdst_TargetSpecificData *);
 
 /*$4
@@ -109,8 +107,6 @@ int ediSND_l_Init(SND_tdst_TargetSpecificData *_pst_SpecificD)
 	 -------------------------------------------------------------------------------------------------------------------
 	 */
 
-	SND_gst_Params.i_EdiWaveFormat = WAVE_FORMAT_XBOX_ADPCM;
-
 	BAS_binit(&ediSND_gst_PlayingSB, 48);
 	BAS_binit(&ediSND_dst_CoreUser[SND_Cte_FxCoreA], SND_Cte_FxMaxVoiceNbByCore);
 	BAS_binit(&ediSND_dst_CoreUser[SND_Cte_FxCoreB], SND_Cte_FxMaxVoiceNbByCore);
@@ -132,10 +128,18 @@ int ediSND_l_Init(SND_tdst_TargetSpecificData *_pst_SpecificD)
 
 	hr = CoInitialize(NULL);
 	ERR_X_Warning((hr == S_OK), "bad return value (ediSND_l_Init)", NULL);
-	if(hr != S_OK) return 0;
+	// hogsy:	ah windows... 
+	//			because we init this once and then again when switching project
+	//			it returned S_FALSE next time, rather than S_OK, which is FINE!
+	//			so we'll check for all three of these...
+	if(	hr != S_OK && 
+		hr != S_FALSE && 
+		hr != RPC_E_CHANGED_MODE) 
+	{
+		return 0;
+	}
 
 	hr = DirectSoundCreate8(NULL, &_pst_SpecificD->pst_DS, NULL);
-
 	if(hr == DS_OK)
 	{
 		ediSND_gi_DoClose = 1;
@@ -146,7 +150,10 @@ int ediSND_l_Init(SND_tdst_TargetSpecificData *_pst_SpecificD)
 		hr = IDirectSound8_SetCooperativeLevel(_pst_SpecificD->pst_DS, _pst_SpecificD->h_Wnd, DSSCL_PRIORITY);
 		ERR_X_Warning((hr == S_OK), "bad return value (ediSND_l_Init)", NULL);
 
-		if(!ediSND_l_InitPrimaryBuffer(_pst_SpecificD)) return 0;
+		if(!ediSND_l_InitPrimaryBuffer(_pst_SpecificD)) 
+		{
+			return 0;
+		}
 		ediSND_StreamInitModule();
 		return 1;
 	}
@@ -167,14 +174,11 @@ void ediSND_Close(SND_tdst_TargetSpecificData *_pst_SD)
 	BAS_bfree(&ediSND_dst_CoreUser[SND_Cte_FxCoreA]);
 	BAS_bfree(&ediSND_dst_CoreUser[SND_Cte_FxCoreB]);
 
-#ifdef JADEFUSION
     if (_pst_SD->pst_DS)
     {
-	IDirectSound8_Release(_pst_SD->pst_DS);
+		IDirectSound8_Release(_pst_SD->pst_DS);
     }
-#else
-	IDirectSound8_Release(_pst_SD->pst_DS);
-#endif
+
 	CoUninitialize();
 }
 
@@ -261,7 +265,10 @@ SND_tdst_SoundBuffer *ediSND_pst_SB_Create
 	if(!_pst_SpecificD->pst_DS) return NULL;
 	pc_Data = NULL;
 
-	if(!SND_M_IsGoodFormat(_pst_WI->st_WaveFmtx.wFormatTag) && !LOA_gb_SpeedMode) return NULL;
+	if(!SND_M_IsGoodFormat(_pst_WI->st_WaveFmtx.wFormatTag) && !LOA_gb_SpeedMode) 
+	{
+		return NULL;
+	}
 
 	switch(_pst_WI->st_WaveFmtx.wFormatTag)
 	{
@@ -521,10 +528,11 @@ SND_tdst_SoundBuffer *ediSND_pst_SB_Create
 		return NULL;
 	}
 
-	pst_SB->i_Channel = dsbd.lpwfxFormat->nChannels;
+	pst_SB->i_Channel	= dsbd.lpwfxFormat->nChannels;
 	pst_SB->l_Frequency = dsbd.lpwfxFormat->nSamplesPerSec;
-	pst_SB->l_Volume = 0;
-	pst_SB->l_Pan = 0;
+	pst_SB->i_Format    = dsbd.lpwfxFormat->wFormatTag;
+	pst_SB->l_Volume	= 0;
+	pst_SB->l_Pan		= 0;
 
 	if(!ediSND_gb_Duplicate) SND_RamRasterAdd((int) pst_SB->pst_DSB, dsbd.dwBufferBytes);
 
@@ -1277,18 +1285,14 @@ void ediSND_SB_GetCurrPos(SND_tdst_SoundBuffer *_pst_SB, int *_pi_Pos, int *_pi_
 	}
 	else
 	{
-#ifdef JADEFUSION
-		_pst_SB->pst_DSB->GetCurrentPosition((LPDWORD)_pi_Pos, (LPDWORD)_pi_Write);
-#else
-		IDirectSoundBuffer8_GetCurrentPosition(_pst_SB->pst_DSB, _pi_Pos, _pi_Write);
-#endif
+		IDirectSoundBuffer8_GetCurrentPosition( _pst_SB->pst_DSB, ( LPDWORD ) _pi_Pos, ( LPDWORD ) _pi_Write );
 	}
-
+	
 	if(_pi_Pos)
 	{
 		*_pi_Pos = SND_ui_SizeToSample
 			(
-				(unsigned short) SND_gst_Params.i_EdiWaveFormat,
+		        ( unsigned short ) _pst_SB->i_Format,
 				(unsigned short) _pst_SB->i_Channel,
 				*_pi_Pos
 			);
@@ -1298,7 +1302,7 @@ void ediSND_SB_GetCurrPos(SND_tdst_SoundBuffer *_pst_SB, int *_pi_Pos, int *_pi_
 	{
 		*_pi_Write = SND_ui_SizeToSample
 			(
-				(unsigned short) SND_gst_Params.i_EdiWaveFormat,
+		        ( unsigned short ) _pst_SB->i_Format,
 				(unsigned short) _pst_SB->i_Channel,
 				*_pi_Write
 			);
@@ -1365,11 +1369,8 @@ int ediSND_i_ChangeRenderMode(int _i_Mode)
 		if(ediSND_gst_PlayingSB.base[i].ul_Key == -1) continue;
 		pSB = (SND_tdst_SoundBuffer *) ediSND_gst_PlayingSB.base[i].ul_Key;
 
-#ifdef JADEFUSION
-		pSB->pst_DSB->GetVolume((LPLONG)&l_Volume);
-#else
-		IDirectSoundBuffer8_GetVolume(pSB->pst_DSB, &l_Volume);
-#endif
+		IDirectSoundBuffer8_GetVolume( pSB->pst_DSB, ( LPLONG ) &l_Volume );
+
 		idx = pSB->i_PanIdx;
 
 		if(SND_gst_Params.ul_RenderMode == SND_Cte_RenderMono)

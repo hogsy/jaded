@@ -565,16 +565,6 @@ void ESON_cl_Frame::OnAction(ULONG _ul_Action)
 		}
 		break;
 
-	case ESON_ACTION_ENABLE_PCM:
-		mst_Ini.i_Option |= ESON_Cte_EnablePCM;
-		SND_gst_Params.i_EdiWaveFormat = WAVE_FORMAT_PCM;
-		break;
-
-	case ESON_ACTION_ENABLE_ADPCM:
-		mst_Ini.i_Option &= ~ESON_Cte_EnablePCM;
-		SND_gst_Params.i_EdiWaveFormat = WAVE_FORMAT_XBOX_ADPCM;
-		break;
-
 	case ESON_ACTION_ENABLE_DEBUGLOG:
 		mst_Ini.i_Option ^= ESON_Cte_EnableDebugLog;
 #ifdef SND_DEBUG
@@ -849,12 +839,6 @@ UINT ESON_cl_Frame::ui_OnActionState(ULONG _ul_Action)
 	case ESON_ACTION_NO_SYNCHRO:
 		ui_State = DFCS_BUTTONCHECK | ((SND_gst_Params.ul_Flags & SND_Cte_EdiNoSynchro) ? DFCS_CHECKED : 0);
 		break;
-	case ESON_ACTION_ENABLE_PCM:
-		ui_State = DFCS_BUTTONRADIO | ((SND_gst_Params.i_EdiWaveFormat == WAVE_FORMAT_PCM) ? DFCS_CHECKED : 0);
-		break;
-	case ESON_ACTION_ENABLE_ADPCM:
-		ui_State = DFCS_BUTTONRADIO | ((SND_gst_Params.i_EdiWaveFormat == WAVE_FORMAT_XBOX_ADPCM) ? DFCS_CHECKED : 0);
-		break;
 	case ESON_ACTION_CLOSEALLWHENDESTROYWORLD:
 		ui_State = DFCS_BUTTONCHECK | ((mst_Ini.i_Option & ESON_Cte_CloseAllWhenDestroyWorld) ? DFCS_CHECKED : 0);
 		break;
@@ -901,8 +885,6 @@ BOOL ESON_cl_Frame::b_OnActionValidate(ULONG _ul_Action, BOOL)
 	case ESON_ACTION_CLOSEALLWHENDESTROYWORLD:
 	case ESON_ACTION_ENABLE_DEBUGLOG:
 	case ESON_ACTION_NO_SYNCHRO:
-	case ESON_ACTION_ENABLE_PCM:
-	case ESON_ACTION_ENABLE_ADPCM:
 	case ESON_ACTION_AUTOSAVE:
 	case ESON_ACTION_SMODIFIERAUTOOPEN:
 	case ESON_ACTION_VOLUMEOFF:

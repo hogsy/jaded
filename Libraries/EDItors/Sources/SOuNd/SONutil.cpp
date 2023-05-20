@@ -1452,7 +1452,7 @@ void ESON_BankReport(void)
 					}
 					else
 					{
-						if(SND_gst_Params.i_EdiWaveFormat == WAVE_FORMAT_XBOX_ADPCM)
+						if ( pst_Sound->pst_Wave->wFormatTag == WAVE_FORMAT_XBOX_ADPCM )
 							i_FileSize = SND_ui_GetDecompressedSize(pst_Sound->pst_Wave->ul_DataSize);
 						else
 							i_FileSize = pst_Sound->pst_Wave->ul_DataSize;
@@ -1605,7 +1605,7 @@ void ESON_SoundReport(void)
 		else
 		{
 			/* MicrosoftADPCM */
-			if(SND_gst_Params.i_EdiWaveFormat == WAVE_FORMAT_MSADPCM)
+			if(pst_Sound->pst_Wave->wFormatTag == WAVE_FORMAT_MSADPCM)
 			{
 				sprintf
 				(
@@ -1620,7 +1620,7 @@ void ESON_SoundReport(void)
 			}
 
 			/* MicrosoftADPCM */
-			if(SND_gst_Params.i_EdiWaveFormat == WAVE_FORMAT_XBOX_ADPCM)
+			if ( pst_Sound->pst_Wave->wFormatTag == WAVE_FORMAT_XBOX_ADPCM )
 			{
 				sprintf
 				(
@@ -2306,12 +2306,12 @@ BOOL ESON_b_IsFileTruncated(ULONG ul_Key)
 			if(ulFat != BIG_C_InvalidIndex)
 			{
 				BIG_ComputeFullName(BIG_ParentFile(ulFat), asz_Path);
-				sprintf(strtmp, "[SND] File is truncated [%08x] %s\\%s", ul_Key, asz_Path, BIG_NameFile(ulFat));
+				snprintf( strtmp, sizeof(strtmp), "[SND] File is truncated [%08x] %s\\%s", ul_Key, asz_Path, BIG_NameFile( ulFat ) );
 			}
 			else
 			{
 				BIG_ComputeFullName(BIG_ParentFile(ulFat), asz_Path);
-				sprintf(strtmp, "[SND] File is truncated [%08x]", ul_Key);
+				snprintf( strtmp, sizeof(strtmp), "[SND] File is truncated [%08x]", ul_Key );
 			}
 			ERR_X_Warning(0, strtmp, NULL);
 		}
@@ -2320,7 +2320,7 @@ BOOL ESON_b_IsFileTruncated(ULONG ul_Key)
 	}
 	else
 	{
-		sprintf(strtmp, "[SND] Bad file size [%08x] %s", ul_Key);
+		snprintf( strtmp, sizeof(strtmp), "[SND] Bad file size [%08x]", ul_Key );
 		ERR_X_Warning(0, strtmp, NULL);
 	}
 

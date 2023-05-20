@@ -189,8 +189,8 @@ static SND_tdst_SoundBuffer *ediSND_pst_StreamCreate(SND_tdst_TargetSpecificData
 
 /*$1-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-static void ediSND_StreamReadFile(SND_tdst_SoundBuffer *, char *, unsigned int _ui_size, unsigned int *, BOOL);
-static void ediSND_StreamFullfillBuffer(SND_tdst_SoundBuffer *);
+static void ediSND_StreamReadFile( SND_tdst_SoundBuffer *, int format, char *, unsigned int _ui_size, unsigned int *, BOOL );
+static void ediSND_StreamFullfillBuffer(SND_tdst_SoundBuffer *, int format);
 
 /*$1-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -626,6 +626,7 @@ void ediSND_StreamReinitAndPlay
 (
 	SND_tdst_SoundBuffer	*_pst_SB,
 	int						_i_Flag,
+	int						_i_FormatTag,
 	int						_i_LoopNb,
 	unsigned int			_ui_Size,
 	unsigned int			_ui_Position,
@@ -657,7 +658,13 @@ void ediSND_StreamReinitAndPlay
 	else if(ediSND_AllocCoreBuffer(_pst_SB, -1) < 0)
 		return;
 
-	if(SND_gst_Params.i_EdiWaveFormat == WAVE_FORMAT_XBOX_ADPCM)
+	// hogsy: !!HACK!!	the StreamBuffer gets queued up in another thread, 
+	//					but we then don't know what the original
+	//					format was... Urgh. So we'll just set that
+	//					here for now :(
+	_pst_SB->i_Format = _i_FormatTag;
+
+	if(_i_FormatTag == WAVE_FORMAT_XBOX_ADPCM)
 	{
 		_ui_Size = _ui_Size / (36 * _pst_SB->i_Channel);
 		_ui_Size = _ui_Size * (36 * _pst_SB->i_Channel);
@@ -730,7 +737,7 @@ void ediSND_StreamReinitAndPlay
 
 	/*$1- fill buffer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-	ediSND_StreamFullfillBuffer(_pst_SB);
+	ediSND_StreamFullfillBuffer(_pst_SB, _i_FormatTag);
 
 	/*$1- prepare sound buffer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -804,7 +811,7 @@ static int ediSND_i_SetupNotifications(SND_tdst_SoundBuffer *_pst_SB)
  =======================================================================================================================
  =======================================================================================================================
  */
-static void ediSND_StreamFullfillBuffer(SND_tdst_SoundBuffer *_pst_SB)
+static void ediSND_StreamFullfillBuffer(SND_tdst_SoundBuffer *_pst_SB, int format)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	char					*pc_Write1, *pc_Write2;
@@ -819,31 +826,17 @@ static void ediSND_StreamFullfillBuffer(SND_tdst_SoundBuffer *_pst_SB)
 	if(!(p_stream = _pst_SB->pst_SS)) return;
 
 	/*$1- require the write buffer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-#ifdef JADEFUSION
-	hr = _pst_SB->pst_DSB->Lock
-		(
-
-			0,
-			p_stream->ui_BufferSize,
-			(LPVOID*)&pc_Write1,
-			(LPDWORD)&ui_Len1,
-			(LPVOID*)&pc_Write2,
-			(LPDWORD)&ui_Len2,
-			DSBLOCK_ENTIREBUFFER
-		);
-#else
 	hr = IDirectSoundBuffer8_Lock
 		(
 			_pst_SB->pst_DSB,
 			0,
 			p_stream->ui_BufferSize,
-			&pc_Write1,
-			&ui_Len1,
-			&pc_Write2,
-			&ui_Len2,
+	        ( LPVOID * ) &pc_Write1,
+	        ( LPDWORD ) &ui_Len1,
+	        ( LPVOID * ) &pc_Write2,
+	        ( LPDWORD ) &ui_Len2,
 			DSBLOCK_ENTIREBUFFER
 		);
-#endif
 	ediSND_M_Assert(hr == DS_OK);
 	ediSND_M_Assert(pc_Write2 == NULL);
 	ediSND_M_Assert(ui_Len2 == 0);
@@ -854,7 +847,7 @@ static void ediSND_StreamFullfillBuffer(SND_tdst_SoundBuffer *_pst_SB)
 
 	/*$1- rewind the file ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-	if(SND_gst_Params.i_EdiWaveFormat == WAVE_FORMAT_XBOX_ADPCM)
+	if(format == WAVE_FORMAT_XBOX_ADPCM)
 	{
 		SetFilePointer
 		(
@@ -873,7 +866,7 @@ static void ediSND_StreamFullfillBuffer(SND_tdst_SoundBuffer *_pst_SB)
 
 	/*$1- fill in the buffer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-	ediSND_StreamReadFile(_pst_SB, pc_Write1, ui_Len1, &ui_ActualBytesWritten, FALSE);
+	ediSND_StreamReadFile(_pst_SB, format, pc_Write1, ui_Len1, &ui_ActualBytesWritten, FALSE);
 
 	/*$1- check completion ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -884,7 +877,7 @@ static void ediSND_StreamFullfillBuffer(SND_tdst_SoundBuffer *_pst_SB)
 		/* rewind the file */
 		p_stream->ui_FileCurrSeek = p_stream->ui_LoopBegin;
 
-		if(SND_gst_Params.i_EdiWaveFormat == WAVE_FORMAT_XBOX_ADPCM)
+		if ( format == WAVE_FORMAT_XBOX_ADPCM )
             SetFilePointer(p_stream->x_File, p_stream->ui_FilePosition + SND_ui_GetCompressedSize(p_stream->ui_FileCurrSeek), &dwPos, FILE_BEGIN);
         else
             SetFilePointer(p_stream->x_File, p_stream->ui_FilePosition + p_stream->ui_FileCurrSeek, &dwPos, FILE_BEGIN);
@@ -893,6 +886,7 @@ static void ediSND_StreamFullfillBuffer(SND_tdst_SoundBuffer *_pst_SB)
 		ediSND_StreamReadFile
 		(
 			_pst_SB,
+			format,
 			pc_Write1 + ui_ActualBytesWritten,
 			ui_Len1 - ui_ActualBytesWritten,
 			&ui_Written,
@@ -1001,6 +995,7 @@ void ediSND_StreamChainDelayGet(SND_tdst_SoundBuffer *_pSB, float *pf)
 static void ediSND_StreamReadFile
 (
 	SND_tdst_SoundBuffer	*_pSB,
+	int						format,
 	char					*_pc_buffer,
 	unsigned int			_ui_size,
 	unsigned int			*_pui_actual_size,
@@ -1044,7 +1039,7 @@ static void ediSND_StreamReadFile
 		}
 	}
 
-	if(SND_gst_Params.i_EdiWaveFormat == WAVE_FORMAT_XBOX_ADPCM)
+	if ( format == WAVE_FORMAT_XBOX_ADPCM )
 	{
 		/*~~~~~~~~~~~~*/
 		int		newsize;
@@ -1094,7 +1089,7 @@ static void ediSND_StreamReadFile
 		pSS->b_FoundEnd = 0;
 		pSS->b_DonePlaying = FALSE;
 
-		if(SND_gst_Params.i_EdiWaveFormat == WAVE_FORMAT_XBOX_ADPCM)
+		if ( format == WAVE_FORMAT_XBOX_ADPCM )
 		{
 			SetFilePointer
 			(
@@ -1141,7 +1136,7 @@ static void ediSND_StreamReadFile
 			unsigned int	ui_Read;
 			/*~~~~~~~~~~~~~~~~~~~~*/
 
-			if(SND_gst_Params.i_EdiWaveFormat == WAVE_FORMAT_XBOX_ADPCM)
+			if ( format == WAVE_FORMAT_XBOX_ADPCM )
 			{
 				/*~~~~~~~~~~~~*/
 				int		newsize;
@@ -1510,36 +1505,22 @@ DWORD WINAPI __Th_ediSND_ui_StreamThread(LPVOID lpParameter)
 			if(!pst_SS->b_FoundEnd)
 			{
 				M_BeginCriticalSection();
-#ifdef JADEFUSION
-				hr = pst_SB->pst_DSB->Lock
-					(
-
-						pst_SS->ui_WriteCursor,
-						pst_SS->ui_NotifySize,
-						(LPVOID*)&pc_Write1,
-						(LPDWORD)&ui_Write1,
-						NULL,
-						NULL,
-						0
-					);
-#else
 				hr = IDirectSoundBuffer8_Lock
 					(
 						pst_SB->pst_DSB,
 						pst_SS->ui_WriteCursor,
 						pst_SS->ui_NotifySize,
-						&pc_Write1,
-						&ui_Write1,
+					    ( LPVOID * ) &pc_Write1,
+					    ( LPDWORD ) &ui_Write1,
 						NULL,
 						NULL,
 						0
 					);
-#endif
 				ediSND_M_Assert(hr == DS_OK);
 				ediSND_M_Assert(ui_Write1 == pst_SS->ui_NotifySize);
 
 				ui_Actual = 0;
-				ediSND_StreamReadFile(pst_SB, pc_Write1, ui_Write1, &ui_Actual, TRUE);
+				ediSND_StreamReadFile( pst_SB, pst_SB->i_Format, pc_Write1, ui_Write1, &ui_Actual, TRUE );
 
 				while(pst_SS->i_LoopFile && (ui_Actual < ui_Write1))
 				{
@@ -1552,25 +1533,25 @@ DWORD WINAPI __Th_ediSND_ui_StreamThread(LPVOID lpParameter)
                     pst_SS->ui_FileCurrSeek = pst_SS->ui_LoopBegin;
 
 					
-                    if(SND_gst_Params.i_EdiWaveFormat == WAVE_FORMAT_XBOX_ADPCM)
-                        SetFilePointer
-					    (
-						    pst_SS->x_File,
-						    pst_SS->ui_FilePosition + SND_ui_GetCompressedSize(pst_SS->ui_FileCurrSeek),
-						    &dwPos,
-						    FILE_BEGIN
-					    );
+                    if ( pst_SB->i_Format == WAVE_FORMAT_XBOX_ADPCM )
+					{
+						SetFilePointer(
+								pst_SS->x_File,
+								pst_SS->ui_FilePosition + SND_ui_GetCompressedSize( pst_SS->ui_FileCurrSeek ),
+								&dwPos,
+								FILE_BEGIN );
+					}
                     else
-                        SetFilePointer
-					    (
-						    pst_SS->x_File,
-						    pst_SS->ui_FilePosition + pst_SS->ui_FileCurrSeek,
-						    &dwPos,
-						    FILE_BEGIN
-					    );
+					{
+						SetFilePointer(
+								pst_SS->x_File,
+								pst_SS->ui_FilePosition + pst_SS->ui_FileCurrSeek,
+								&dwPos,
+								FILE_BEGIN );
+					}
 
 
-					ediSND_StreamReadFile(pst_SB, pc_Write1 + ui_Actual, ui_Write1 - ui_Actual, &cbWritten, TRUE);
+					ediSND_StreamReadFile( pst_SB, pst_SB->i_Format, pc_Write1 + ui_Actual, ui_Write1 - ui_Actual, &cbWritten, TRUE );
 
 					ui_Actual += cbWritten;
 				}
@@ -1599,31 +1580,18 @@ DWORD WINAPI __Th_ediSND_ui_StreamThread(LPVOID lpParameter)
 			else
 			{
 				ediSND_M_Assert(!pst_SS->i_LoopFile);
-#ifdef JADEFUSION
-				hr = pst_SB->pst_DSB->Lock
-					(
-
-						pst_SS->ui_WriteCursor,
-						pst_SS->ui_NotifySize,
-						(LPVOID*)&pc_Write1,
-						(LPDWORD)&ui_Write1,
-						NULL,
-						NULL,
-						0
-					);
-#else
 				hr = IDirectSoundBuffer8_Lock
 					(
 						pst_SB->pst_DSB,
 						pst_SS->ui_WriteCursor,
 						pst_SS->ui_NotifySize,
-						&pc_Write1,
-						&ui_Write1,
+					    ( LPVOID * ) &pc_Write1,
+					    ( LPDWORD ) &ui_Write1,
 						NULL,
 						NULL,
 						0
 					);
-#endif
+
 				ediSND_M_Assert(hr == DS_OK);
 
 				L_memset(pc_Write1, 0, ui_Write1);
@@ -1784,8 +1752,7 @@ void ediSND_StreamGetCurrPos(SND_tdst_SoundBuffer *pSB, int *_pi_Pos, int *_pi_W
 	*(unsigned int *) _pi_Pos = pSS->ui_Progress;
 	*_pi_Write = *(int *) &pSS->ui_FileCurrSeek;
 
-	
-    if(SND_gst_Params.i_EdiWaveFormat == WAVE_FORMAT_XBOX_ADPCM)
+    if ( pSB->i_Format == WAVE_FORMAT_XBOX_ADPCM )
 	{
 		*_pi_Write = SND_ui_GetCompressedSize(*_pi_Write);
 		*_pi_Pos = SND_ui_GetCompressedSize(*_pi_Pos);
@@ -1802,6 +1769,7 @@ void ediSND_StreamChain
 (
 	SND_tdst_SoundBuffer	*pSB,
 	int						iNewFlag,
+	int						iFormatTag,
 	int						iLoop,
 	unsigned int			uiExitPoint,
 	unsigned int			uiEnterPoint,
@@ -1818,7 +1786,7 @@ void ediSND_StreamChain
 	if(!pSB) return;
 	if(!pSB->pst_SS) return;
 
-	if(SND_gst_Params.i_EdiWaveFormat == WAVE_FORMAT_XBOX_ADPCM)
+	if ( iFormatTag == WAVE_FORMAT_XBOX_ADPCM )
 	{
 		uiExitPoint = uiExitPoint / (36 * pSB->i_Channel);
 		uiExitPoint = uiExitPoint * (36 * pSB->i_Channel);

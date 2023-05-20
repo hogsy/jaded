@@ -65,8 +65,6 @@
 #define ESON_ACTION_INST_SOLOOFF				71
 #define ESON_ACTION_INST_MUTEOFF				72
 #define ESON_ACTION_INST_EDITSMD				73
-#define ESON_ACTION_ENABLE_PCM					74
-#define ESON_ACTION_ENABLE_ADPCM				75
 #define ESON_ACTION_INST_FINDSOUND				76
 #define ESON_ACTION_INST_FINDSMD				77
 #define ESON_ACTION_INST_FINDGAO				78
@@ -172,9 +170,6 @@ Edit=4==0;\
 Reload=5==0;\
 Debug=0=--=0;\
 Enable debug log=54==0;\
-Format=0=--=0;\
-PCM=74==0;\
-ADPCM (PC or XBOX)=75==0;\
 \
 ;\
 "

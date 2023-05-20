@@ -114,11 +114,11 @@ UINT		gui_BtnID[] =
 	IDC_BTN_PLAY_MOVEUP,
 	IDC_BTN_PLAY_MOVEDOWN,
 	IDC_BTN_FXAB,
-	-1
+	( UINT ) -1
 };
 /**/
 UINT		gui_CheckID[] = { IDC_CHECK_DYNPAN, IDC_CHECK_GRPA, IDC_CHECK_GRPB, IDC_CHECKX, IDC_CHECKY,
-		IDC_CHECKZ, -1 };
+		IDC_CHECKZ, ( UINT ) -1 };
 /**/
 UINT		gui_EditID[] =
 {
@@ -139,10 +139,10 @@ UINT		gui_EditID[] =
 	IDC_EDIT_ZF,
 	IDC_EDIT_ZM,
 	IDC_EDIT_ZN,
-	-1
+	( UINT ) -1
 };
 /**/
-UINT		gui_ListID[] = { IDC_LIST_PLAY, IDC_LIST_INSERT, -1 };
+UINT		gui_ListID[] = { IDC_LIST_PLAY, IDC_LIST_INSERT, ( UINT ) -1 };
 /**/
 UINT		gui_RadioID[] =
 {
@@ -157,7 +157,7 @@ UINT		gui_RadioID[] =
 	IDC_RADIO_PLAYRAN,
 	IDC_RADIO_STOPONLASTHIT,
 	IDC_RADIOSPHERIC,
-	-1
+	( UINT ) -1
 };
 /**/
 UINT		gui_SliderID[] =
@@ -169,7 +169,7 @@ UINT		gui_SliderID[] =
 	IDC_SLIDER_PAN,
 	IDC_SLIDER_VOL,
 	IDC_SLIDER_VOL2,
-	-1
+	( UINT ) -1
 };
 
 UINT		gui_3DGroupID[] =
@@ -199,7 +199,7 @@ UINT		gui_3DGroupID[] =
 	IDC_CHECK_DYNPAN,
 	IDC_SLIDER_MINPAN,
 	IDC_SLIDER_MINPAN2,
-	-1
+	( UINT ) -1
 };
 
 /*$4

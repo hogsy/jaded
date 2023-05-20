@@ -130,10 +130,6 @@ void SND_LoadingSoundInitModule(void)
 	st_WaveFile.st_WaveFmtx.cbSize = 0;
 	st_WaveFile.i_Size = SND_Cte_LoadingSoundMaxSize;
 
-#ifdef ACTIVE_EDITORS
-	if(SND_gst_Params.i_EdiWaveFormat == WAVE_FORMAT_XBOX_ADPCM)
-		st_WaveFile.i_Size = SND_ui_GetCompressedSize(st_WaveFile.i_Size);
-#endif
 	st_WaveFile.pbData = 0;
 
 	SND_M_RasterRegisterFile(SND_Cul_SF_LoadingSound);

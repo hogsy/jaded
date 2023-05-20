@@ -1885,7 +1885,7 @@ void ETEXT_cl_Scroll::EditCel(void)
 		{
 			for(ij=0; ij<100; ij++)
 			{
-				itoa(ij, sz_Text, 10);
+				L_itoa(ij, sz_Text, 10);
 				o_Menu.AppendMenu(MF_BYCOMMAND | ((i == ij) ? MF_CHECKED : 0), ij, sz_Text);
 			}
 		}
