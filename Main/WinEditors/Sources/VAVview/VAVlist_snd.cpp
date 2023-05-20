@@ -79,9 +79,9 @@ void EVAV_cl_ListBox::SNDAddBank(POSITION pos, SND_tdun_Main *_pst_Instance)
                 ULONG ul_Fat;
                 ul_Fat = BIG_ul_SearchKeyToFat(SND_gst_Params.dst_Sound[pBank->pi_Bank[i]].ul_FileKey);
                 if(ul_Fat ==BIG_C_InvalidIndex)
-			        sprintf(tmp, "%d - Invalid", i);
+					snprintf( tmp, sizeof(tmp), "%d - Invalid", i );
                 else
-                    sprintf(tmp, "%d - %s", i, BIG_NameFile(ul_Fat));
+					snprintf( tmp, sizeof(tmp), "%d - %s", i, BIG_NameFile( ul_Fat ) );
     			
                 A(
 				    tmp,
