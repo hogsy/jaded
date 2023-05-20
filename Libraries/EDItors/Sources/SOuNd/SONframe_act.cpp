@@ -108,9 +108,9 @@ void OnDisplayDeviceCapacity(void)
 		LINK_PrintStatusMsg(" - stereo supported");
 
 	LINK_PrintStatusMsg("");
-	sprintf
+	snprintf
 	(
-		sz_Log,
+		sz_Log, sizeof(sz_Log),
 		"Freq. range : %d - %d Hz",
 		ediSND_gst_SoundManager.st_DriverCapacity.dwMinSecondarySampleRate,
 		ediSND_gst_SoundManager.st_DriverCapacity.dwMaxSecondarySampleRate
@@ -122,27 +122,27 @@ void OnDisplayDeviceCapacity(void)
 
 	LINK_PrintStatusMsg("");
 	LINK_PrintStatusMsg("Current Hx-mixed buffers allocation :");
-	sprintf
+	snprintf
 	(
-		sz_Log,
+		sz_Log, sizeof(sz_Log),
 		"static %3d (alloc.) %3d (freed)",
 		ediSND_gst_SoundManager.st_DriverCapacity.dwMaxHwMixingStaticBuffers -
 			ediSND_gst_SoundManager.st_DriverCapacity.dwFreeHwMixingStaticBuffers,
 			ediSND_gst_SoundManager.st_DriverCapacity.dwFreeHwMixingStaticBuffers
 	);
 	LINK_PrintStatusMsg(sz_Log);
-	sprintf
+	snprintf
 	(
-		sz_Log,
+		sz_Log, sizeof(sz_Log),
 		"stream %3d          %3d",
 		ediSND_gst_SoundManager.st_DriverCapacity.dwMaxHwMixingStreamingBuffers -
 			ediSND_gst_SoundManager.st_DriverCapacity.dwFreeHwMixingStreamingBuffers,
 			ediSND_gst_SoundManager.st_DriverCapacity.dwFreeHwMixingStreamingBuffers
 	);
 	LINK_PrintStatusMsg(sz_Log);
-	sprintf
+	snprintf
 	(
-		sz_Log,
+		sz_Log, sizeof(sz_Log),
 		"all    %3d          %3d",
 		ediSND_gst_SoundManager.st_DriverCapacity.dwMaxHwMixingAllBuffers -
 			ediSND_gst_SoundManager.st_DriverCapacity.dwFreeHwMixingAllBuffers,
@@ -152,27 +152,27 @@ void OnDisplayDeviceCapacity(void)
 
 	LINK_PrintStatusMsg("");
 	LINK_PrintStatusMsg("Current 3D buffers allocation :");
-	sprintf
+	snprintf
 	(
-		sz_Log,
+		sz_Log, sizeof(sz_Log),
 		"static %3d (alloc.) %3d (freed)",
 		ediSND_gst_SoundManager.st_DriverCapacity.dwMaxHw3DStaticBuffers -
 			ediSND_gst_SoundManager.st_DriverCapacity.dwFreeHw3DStaticBuffers,
 			ediSND_gst_SoundManager.st_DriverCapacity.dwFreeHw3DStaticBuffers
 	);
 	LINK_PrintStatusMsg(sz_Log);
-	sprintf
+	snprintf
 	(
-		sz_Log,
+		sz_Log, sizeof(sz_Log),
 		"stream %3d          %3d",
 		ediSND_gst_SoundManager.st_DriverCapacity.dwMaxHw3DStreamingBuffers -
 			ediSND_gst_SoundManager.st_DriverCapacity.dwFreeHw3DStreamingBuffers,
 			ediSND_gst_SoundManager.st_DriverCapacity.dwFreeHwMixingStreamingBuffers
 	);
 	LINK_PrintStatusMsg(sz_Log);
-	sprintf
+	snprintf
 	(
-		sz_Log,
+		sz_Log, sizeof(sz_Log),
 		"all    %3d          %3d",
 		ediSND_gst_SoundManager.st_DriverCapacity.dwMaxHw3DAllBuffers -
 			ediSND_gst_SoundManager.st_DriverCapacity.dwFreeHw3DAllBuffers,
@@ -185,9 +185,10 @@ void OnDisplayDeviceCapacity(void)
 
 	if(ediSND_gst_SoundManager.st_DriverCapacity.dwTotalHwMemBytes)
 	{
-		sprintf
+		snprintf
 		(
 			sz_Log,
+		    sizeof(sz_Log),
 			"Alloc. %d (%d%%), free %d, all %d (oct)",
 			ediSND_gst_SoundManager.st_DriverCapacity.dwTotalHwMemBytes -
 				ediSND_gst_SoundManager.st_DriverCapacity.dwFreeHwMemBytes,
@@ -203,26 +204,26 @@ void OnDisplayDeviceCapacity(void)
 		LINK_PrintStatusMsg("Alloc. 0 (0%), free 0, all 0 (oct)");
 	}
 
-	sprintf
+	snprintf
 	(
-		sz_Log,
+		sz_Log, sizeof(sz_Log),
 		"Largest contiguous block : %d oct",
 		ediSND_gst_SoundManager.st_DriverCapacity.dwMaxContigFreeHwMemBytes
 	);
 	LINK_PrintStatusMsg(sz_Log);
 
-	sprintf
+	snprintf
 	(
-		sz_Log,
+		sz_Log, sizeof(sz_Log),
 		"Transfert rate           : %d kbytes/s",
 		ediSND_gst_SoundManager.st_DriverCapacity.dwUnlockTransferRateHwBuffers
 	);
 	LINK_PrintStatusMsg(sz_Log);
 
 	LINK_PrintStatusMsg("");
-	sprintf
+	snprintf
 	(
-		sz_Log,
+		sz_Log, sizeof(sz_Log),
 		"CPU overhead for software buffer : %d%%",
 		ediSND_gst_SoundManager.st_DriverCapacity.dwPlayCpuOverheadSwBuffers
 	);

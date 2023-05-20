@@ -711,7 +711,7 @@ ULONG SND_ul_WaveCallback(ULONG _ulFilePos)
 				extern ULONG	LOA_gul_CurrentKey;
 				/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-				sprintf(logg, "One wav file has unknown chunk [%x]", LOA_gul_CurrentKey);
+				snprintf( logg, sizeof(logg), "One wav file has unknown chunk [%x]", LOA_gul_CurrentKey );
 				ERR_X_Warning(!b_SignalUnknown, logg, NULL);
 				b_SignalUnknown = FALSE;
 #endif
@@ -837,7 +837,7 @@ ULONG SND_ul_WaveCallback(ULONG _ulFilePos)
 					extern ULONG	LOA_gul_CurrentKey;
 					/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-					sprintf(log, "One wav file has several loop definition [%x]", LOA_gul_CurrentKey);
+					snprintf( log, sizeof(log), "One wav file has several loop definition [%x]", LOA_gul_CurrentKey );
 					ERR_X_Warning(!pWave->b_HasLoop, log, NULL);
 #endif
 					pWave->b_HasLoop = 1;
@@ -898,7 +898,7 @@ ULONG SND_ul_WaveCallback(ULONG _ulFilePos)
 			extern ULONG	LOA_gul_CurrentKey;
 			/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-			sprintf(log2, "One wav file has small loop size : %d oct [%08x]", pWave->ul_LoopEndOffset-pWave->ul_LoopBeginOffset, LOA_gul_CurrentKey);
+			snprintf( log2, sizeof(log2), "One wav file has small loop size : %d oct [%08x]", pWave->ul_LoopEndOffset - pWave->ul_LoopBeginOffset, LOA_gul_CurrentKey );
 			ERR_X_Warning(0, log2, NULL);
 #endif
 			pWave->ul_LoopBeginOffset = pWave->ul_LoopEndOffset = 0;
