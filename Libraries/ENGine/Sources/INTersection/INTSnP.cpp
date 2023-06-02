@@ -13,7 +13,6 @@
 #include "BASe/MEMory/MEM.h"
 
 #include "INTinit.h"
-#include "INTaccess.h"
 
 #include "OBJects/OBJconst.h"
 #include "OBJects/OBJorient.h"
@@ -27,7 +26,8 @@
 #include "COLlision/COLaccess.h"
 #include "float.h"
 #endif
-#if defined(PSX2_TARGET) && defined(__cplusplus)
+
+#if defined(__cplusplus)
 extern "C"
 {
 #endif
@@ -226,7 +226,6 @@ void INT_SnP_ComputeInversion
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	USHORT	us_HalfElems;
-	ULONG	ul_FlagIndexInLong, ul_Offset;
 	BOOL	b_IsAlreadySet;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -234,48 +233,20 @@ void INT_SnP_ComputeInversion
 
 	if((_b_BIsS) && !(_b_AIsS))
 	{
-		b_IsAlreadySet = INT_SnP_FullSetFlag
-			(
-				(ULONG *) _pst_SnP->apst_AxisTable[_ul_Axis]->al_Flags,
-				_ul_RefA,
-				_ul_RefB,
-				INT_Cul_MaxObjects,
-				&ul_FlagIndexInLong,
-				&ul_Offset,
-				TRUE
-			);
-		if
-		(
+		b_IsAlreadySet = _pst_SnP->apst_AxisTable[ _ul_Axis ]->flags.Set( _ul_RefA, _ul_RefB, true );
+
+		if (
 			!b_IsAlreadySet
-		&&	INT_SnP_GetFlag
-			(
-				(ULONG *) _pst_SnP->apst_AxisTable[(_ul_Axis + 1) % 3]->al_Flags,
-				ul_FlagIndexInLong,
-				ul_Offset
+			&& _pst_SnP->apst_AxisTable[ ( _ul_Axis + 1 ) % 3 ]->flags.Get( _ul_RefA, _ul_RefB )
+			&& _pst_SnP->apst_AxisTable[ ( _ul_Axis + 2 ) % 3 ]->flags.Get( _ul_RefA, _ul_RefB )
 			)
-		&&	INT_SnP_GetFlag
-			(
-				(ULONG *) _pst_SnP->apst_AxisTable[(_ul_Axis + 2) % 3]->al_Flags,
-				ul_FlagIndexInLong,
-				ul_Offset
-			)
-		)
 		{
 			INT_SnP_AddOverlap(_pst_SnP->apst_IndexToObj[_ul_RefA], _pst_SnP->apst_IndexToObj[_ul_RefB]);
 		}
 	}
 	else if(!(_b_BIsS) && (_b_AIsS))
 	{
-		b_IsAlreadySet = INT_SnP_FullSetFlag
-			(
-				(ULONG *) _pst_SnP->apst_AxisTable[_ul_Axis]->al_Flags,
-				_ul_RefA,
-				_ul_RefB,
-				INT_Cul_MaxObjects,
-				&ul_FlagIndexInLong,
-				&ul_Offset,
-				FALSE
-			);
+		b_IsAlreadySet = _pst_SnP->apst_AxisTable[ _ul_Axis ]->flags.Set( _ul_RefA, _ul_RefB, false );
 		if(b_IsAlreadySet)
 			INT_SnP_RemoveOverlap(_pst_SnP->apst_IndexToObj[_ul_RefA], _pst_SnP->apst_IndexToObj[_ul_RefB]);
 	}
@@ -653,7 +624,6 @@ void INT_SnP_UpdateAllDetectionLists(INT_tdst_SnP *_pst_SnP)
 	OBJ_tdst_GameObject		**dpst_First, **dpst_Last;
 	OBJ_tdst_GameObject		**dpst_DL_First, **dpst_DL_Last;
 	COL_tdst_Base			*pst_Base;
-	ULONG					ul_FlagIndexInLong, ul_Offset;
 	USHORT					uw_CurrentRef;
 	BOOL					b_WasSet;
 #ifdef ACTIVE_EDITORS
@@ -689,32 +659,9 @@ void INT_SnP_UpdateAllDetectionLists(INT_tdst_SnP *_pst_SnP)
 				/* Fucking Visual 6 Debugger bug. */
 				sz_Name = (*dpst_DL_First)->sz_Name;
 #endif
-				INT_SnP_FullSetFlag
-				(
-					(ULONG *) _pst_SnP->apst_AxisTable[INT_Cul_AxisX]->al_Flags,
-					(*dpst_First)->us_SnP_Ref,
-					(*dpst_DL_First)->us_SnP_Ref,
-					INT_Cul_MaxObjects,
-					&ul_FlagIndexInLong,
-					&ul_Offset,
-					FALSE
-				);
-
-				INT_SnP_SetFlag
-				(
-					(ULONG *) _pst_SnP->apst_AxisTable[INT_Cul_AxisY]->al_Flags,
-					ul_FlagIndexInLong,
-					ul_Offset,
-					FALSE
-				);
-
-				INT_SnP_SetFlag
-				(
-					(ULONG *) _pst_SnP->apst_AxisTable[INT_Cul_AxisZ]->al_Flags,
-					ul_FlagIndexInLong,
-					ul_Offset,
-					FALSE
-				);
+				_pst_SnP->apst_AxisTable[ INT_Cul_AxisX ]->flags.Set( ( *dpst_First )->us_SnP_Ref, ( *dpst_DL_First )->us_SnP_Ref, false );
+				_pst_SnP->apst_AxisTable[ INT_Cul_AxisY ]->flags.Set( ( *dpst_First )->us_SnP_Ref, ( *dpst_DL_First )->us_SnP_Ref, false );
+				_pst_SnP->apst_AxisTable[ INT_Cul_AxisZ ]->flags.Set( ( *dpst_First )->us_SnP_Ref, ( *dpst_DL_First )->us_SnP_Ref, false );
 
 				if(*dpst_DL_First) INT_SnP_RemoveOverlap(*dpst_First, *dpst_DL_First);
 
@@ -733,54 +680,19 @@ void INT_SnP_UpdateAllDetectionLists(INT_tdst_SnP *_pst_SnP)
 					continue;
 				}
 
+				b_WasSet = _pst_SnP->apst_AxisTable[ INT_Cul_AxisX ]->flags.Set( ( *dpst_First )->us_SnP_Ref, uw_CurrentRef, false );
 
-				b_WasSet = INT_SnP_FullSetFlag
-					(
-						(ULONG *) _pst_SnP->apst_AxisTable[INT_Cul_AxisX]->al_Flags,
-						(*dpst_First)->us_SnP_Ref,
-						uw_CurrentRef,
-						INT_Cul_MaxObjects,
-						&ul_FlagIndexInLong,
-						&ul_Offset,
-						FALSE
-					);
-
-				if
-				(
-					b_WasSet
-				&&	INT_SnP_GetFlag
-					(
-						(ULONG *) _pst_SnP->apst_AxisTable[INT_Cul_AxisY]->al_Flags,
-						ul_FlagIndexInLong,
-						ul_Offset
-					)
-				&&	INT_SnP_GetFlag
-					(
-						(ULONG *) _pst_SnP->apst_AxisTable[INT_Cul_AxisZ]->al_Flags,
-						ul_FlagIndexInLong,
-						ul_Offset
-					)
-				)
+				if (
+				    b_WasSet
+					&& _pst_SnP->apst_AxisTable[ INT_Cul_AxisY ]->flags.Get( ( *dpst_First )->us_SnP_Ref, uw_CurrentRef )
+					&& _pst_SnP->apst_AxisTable[ INT_Cul_AxisZ ]->flags.Get( ( *dpst_First )->us_SnP_Ref, uw_CurrentRef ))
 				{
 					if(_pst_SnP->apst_IndexToObj[uw_CurrentRef])
 						INT_SnP_RemoveOverlap(*dpst_First, _pst_SnP->apst_IndexToObj[uw_CurrentRef]);
 				}
 
-				INT_SnP_SetFlag
-				(
-					(ULONG *) _pst_SnP->apst_AxisTable[INT_Cul_AxisY]->al_Flags,
-					ul_FlagIndexInLong,
-					ul_Offset,
-					FALSE
-				);
-
-				INT_SnP_SetFlag
-				(
-					(ULONG *) _pst_SnP->apst_AxisTable[INT_Cul_AxisZ]->al_Flags,
-					ul_FlagIndexInLong,
-					ul_Offset,
-					FALSE
-				);
+				_pst_SnP->apst_AxisTable[ INT_Cul_AxisY ]->flags.Set( ( *dpst_First )->us_SnP_Ref, uw_CurrentRef, false );
+				_pst_SnP->apst_AxisTable[ INT_Cul_AxisZ ]->flags.Set( ( *dpst_First )->us_SnP_Ref, uw_CurrentRef, false );
 			}
 		}
 	}
@@ -958,37 +870,15 @@ void INT_SnP_UpdateDetectionList(OBJ_tdst_GameObject *_pst_GO, WOR_tdst_World *_
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	INT_tdst_SnP	*pst_SnP;
-	ULONG			ul_FlagIndexInLong, ul_Offset;
 	USHORT			uw_CurrentRef;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	pst_SnP = _pst_World->pst_SnP;
 	for(uw_CurrentRef = 0; uw_CurrentRef < INT_Cul_MaxObjects; uw_CurrentRef++)
 	{
-		if
-		(
-			INT_SnP_FullGetFlag
-			(
-				(ULONG *) pst_SnP->apst_AxisTable[INT_Cul_AxisX]->al_Flags,
-				_pst_GO->us_SnP_Ref,
-				uw_CurrentRef,
-				INT_Cul_MaxObjects,
-				&ul_FlagIndexInLong,
-				&ul_Offset
-			)
-		&&	INT_SnP_GetFlag
-			(
-				(ULONG *) pst_SnP->apst_AxisTable[INT_Cul_AxisY]->al_Flags,
-				ul_FlagIndexInLong,
-				ul_Offset
-			)
-		&&	INT_SnP_GetFlag
-			(
-				(ULONG *) pst_SnP->apst_AxisTable[INT_Cul_AxisZ]->al_Flags,
-				ul_FlagIndexInLong,
-				ul_Offset
-			)
-		)
+		if ( pst_SnP->apst_AxisTable[ INT_Cul_AxisX ]->flags.Get(_pst_GO->us_SnP_Ref, uw_CurrentRef)
+			&& pst_SnP->apst_AxisTable[ INT_Cul_AxisY ]->flags.Get( _pst_GO->us_SnP_Ref, uw_CurrentRef )
+			&& pst_SnP->apst_AxisTable[ INT_Cul_AxisZ ]->flags.Get( _pst_GO->us_SnP_Ref, uw_CurrentRef ) )
 		{
 			if(pst_SnP->apst_IndexToObj[uw_CurrentRef])
 			{
@@ -1105,8 +995,7 @@ void INT_SnP_Check(INT_tdst_SnP *_pst_SnP, TAB_tdst_PFtable *_pst_Table)
 
 #endif
 
-
 #endif
-#if defined(PSX2_TARGET) && defined(__cplusplus)
+#if defined(__cplusplus)
 }
 #endif

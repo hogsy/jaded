@@ -33,7 +33,6 @@
 
 #include "INTersection/INTSnP.h"
 #include "INTersection/INTmain.h"
-#include "INTersection/INTaccess.h"
 
 #include "WORld/WORaccess.h"
 
@@ -57,7 +56,7 @@
 #include "COLsave.h"
 
 /* End Temp */
-#if defined(PSX2_TARGET) && defined(__cplusplus)
+#if defined(__cplusplus)
 extern "C"
 {
 #endif
@@ -243,7 +242,7 @@ BOOL COL_b_BVOverlap
 	if(_b_UseSnP)
 	{
 		/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-		ULONG			ul_RefA, ul_RefB, ul_FlagIndexInLong, ul_Offset;
+		ULONG			ul_RefA, ul_RefB;
 		WOR_tdst_World	*pst_World;
 		INT_tdst_SnP	*pst_SnP;
 		/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -255,30 +254,10 @@ BOOL COL_b_BVOverlap
 		ul_RefB = (ULONG) _pst_B->us_SnP_Ref;
 
 		/*$off*/
-		b_Overlap =
-			(
-				INT_SnP_FullGetFlag
-				(
-					(ULONG *) pst_SnP->apst_AxisTable[0]->al_Flags,
-					ul_RefA,
-					ul_RefB,
-					INT_Cul_MaxObjects,
-					&ul_FlagIndexInLong,
-					&ul_Offset
-				)
-				&& INT_SnP_GetFlag
-				(
-					(ULONG *) pst_SnP->apst_AxisTable[1]->al_Flags,
-					ul_FlagIndexInLong,
-					ul_Offset
-				)
-				&& INT_SnP_GetFlag
-				(
-					(ULONG *) pst_SnP->apst_AxisTable[2]->al_Flags,
-					ul_FlagIndexInLong,
-					ul_Offset
-				)
-			);
+		b_Overlap = pst_SnP->apst_AxisTable[ 0 ]->flags.Get( ul_RefA, ul_RefB )
+			&& pst_SnP->apst_AxisTable[ 1 ]->flags.Get( ul_RefA, ul_RefB )
+			&& pst_SnP->apst_AxisTable[ 2 ]->flags.Get( ul_RefA, ul_RefB );
+
 		/*$on*/
 	}
 	else
@@ -1871,8 +1850,6 @@ void COL_UpdateRealTimeColMaps(WOR_tdst_World *_pst_World)
 	}
 
 }
-
-static toto = 0;
 
 /*
  =======================================================================================================================
@@ -4384,6 +4361,6 @@ void COL_ODEPrimitive_Callback(void *data, dGeomID o1, dGeomID o2)
 
 #endif
 
-#if defined(PSX2_TARGET) && defined(__cplusplus)
+#if defined(__cplusplus)
 }
 #endif

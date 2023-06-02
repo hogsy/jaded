@@ -10,7 +10,6 @@
 #include "Precomp.h"
 #include "INTstruct.h"
 #include "WORld/WORstruct.h"
-#include "INTaccess.h"
 #include "BASe/MEMory/MEM.h"
 #include "BASe/CLIbrary/CLIstr.h"
 #include "BASe/BAStypes.h"
@@ -18,7 +17,7 @@
 #include "OBJects/OBJorient.h"
 #include "OBJects/OBJBoundingVolume.h"
 
-#if defined(PSX2_TARGET) && defined(__cplusplus)
+#if defined(__cplusplus)
 extern "C"
 {
 #endif
@@ -58,9 +57,8 @@ INT_tdst_AxisTable *INT_SnP_pstCreateAxisTable(void)
 	INT_tdst_AxisTable	*pst_NewTable;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-	pst_NewTable = (INT_tdst_AxisTable *) MEM_p_VMAlloc(sizeof(INT_tdst_AxisTable));
+	pst_NewTable = new INT_tdst_AxisTable();
 	LOA_ul_FileTypeSize[38] += sizeof(INT_tdst_AxisTable);
-	L_memset(pst_NewTable, 0, sizeof(INT_tdst_AxisTable));
 	pst_NewTable->pst_Nodes = (INT_tdst_AxisNode *) MEM_p_VMAlloc((INT_Cul_MaxNodes) * sizeof(INT_tdst_AxisNode));
 	LOA_ul_FileTypeSize[38] += (INT_Cul_MaxNodes) * sizeof(INT_tdst_AxisNode);
 	L_memset(pst_NewTable->pst_Nodes, 0, sizeof(INT_tdst_AxisNode));
@@ -74,43 +72,15 @@ INT_tdst_AxisTable *INT_SnP_pstCreateAxisTable(void)
             Ref of another one that has been erased. So, we set to FALSE all the Axis Tables flags concerning this Ref.
  =======================================================================================================================
  */
-void INT_SnP_ResetAllReferenceFlags(INT_tdst_SnP *_pst_SnP, USHORT us_Ref)
+void INT_SnP_ResetAllReferenceFlags( INT_tdst_SnP *_pst_SnP, USHORT us_Ref )
 {
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	USHORT	us_CurrentRef;
-	LONG	ul_FlagIndexInLong, ul_Offset;
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-	for(us_CurrentRef = 0; us_CurrentRef < INT_Cul_MaxObjects; us_CurrentRef++)
+	for ( USHORT us_CurrentRef = 0; us_CurrentRef < INT_Cul_MaxObjects; us_CurrentRef++ )
 	{
-		if(us_Ref == us_CurrentRef) continue;
-		
-		INT_SnP_FullSetFlag
-		(
-			(ULONG *) _pst_SnP->apst_AxisTable[INT_Cul_AxisX]->al_Flags,
-			us_Ref,
-			us_CurrentRef,
-			INT_Cul_MaxObjects,
-			(ULONG *) &ul_FlagIndexInLong,
-			(ULONG *) &ul_Offset,
-			FALSE
-		);
+		if ( us_Ref == us_CurrentRef ) continue;
 
-		INT_SnP_SetFlag
-		(
-			(ULONG *) _pst_SnP->apst_AxisTable[INT_Cul_AxisY]->al_Flags,
-			ul_FlagIndexInLong,
-			ul_Offset,
-			FALSE
-		);
-
-		INT_SnP_SetFlag
-		(
-			(ULONG *) _pst_SnP->apst_AxisTable[INT_Cul_AxisZ]->al_Flags,
-			ul_FlagIndexInLong,
-			ul_Offset,
-			FALSE
-		);
+		_pst_SnP->apst_AxisTable[ INT_Cul_AxisX ]->flags.Set( us_Ref, us_CurrentRef, false );
+		_pst_SnP->apst_AxisTable[ INT_Cul_AxisY ]->flags.Set( us_Ref, us_CurrentRef, false );
+		_pst_SnP->apst_AxisTable[ INT_Cul_AxisZ ]->flags.Set( us_Ref, us_CurrentRef, false );
 	}
 }
 
@@ -263,9 +233,11 @@ void INT_SnP_Alloc(WOR_tdst_World *_pst_World)
 	_pst_World->pst_SnP->pst_Manager = (INT_tdst_SnP_Manager *) MEM_p_Alloc(sizeof(INT_tdst_SnP_Manager));
 	LOA_ul_FileTypeSize[38] += sizeof(INT_tdst_SnP_Manager);
 	L_memset(_pst_World->pst_SnP->pst_Manager, 0, sizeof(INT_tdst_SnP_Manager));
-	_pst_World->pst_SnP->apst_AxisTable[INT_Cul_AxisX] = INT_SnP_pstCreateAxisTable();
-	_pst_World->pst_SnP->apst_AxisTable[INT_Cul_AxisY] = INT_SnP_pstCreateAxisTable();
-	_pst_World->pst_SnP->apst_AxisTable[INT_Cul_AxisZ] = INT_SnP_pstCreateAxisTable();
+
+	for (unsigned int i = 0; i < 3; ++i)
+	{
+		_pst_World->pst_SnP->apst_AxisTable[ i ] = INT_SnP_pstCreateAxisTable();
+	}
 }
 
 /*
@@ -277,12 +249,11 @@ void INT_SnP_DesAlloc(WOR_tdst_World *_pst_World)
 	if(!_pst_World->pst_SnP) return;
 
 	/* Axis Tables Desallocation. */
-	MEM_Free(_pst_World->pst_SnP->apst_AxisTable[INT_Cul_AxisX]->pst_Nodes);
-	MEM_Free(_pst_World->pst_SnP->apst_AxisTable[INT_Cul_AxisX]);
-	MEM_Free(_pst_World->pst_SnP->apst_AxisTable[INT_Cul_AxisY]->pst_Nodes);
-	MEM_Free(_pst_World->pst_SnP->apst_AxisTable[INT_Cul_AxisY]);
-	MEM_Free(_pst_World->pst_SnP->apst_AxisTable[INT_Cul_AxisZ]->pst_Nodes);
-	MEM_Free(_pst_World->pst_SnP->apst_AxisTable[INT_Cul_AxisZ]);
+	for (unsigned int i = 0; i < 3; ++i)
+	{
+		MEM_Free( _pst_World->pst_SnP->apst_AxisTable[ i ]->pst_Nodes );
+		delete _pst_World->pst_SnP->apst_AxisTable[ i ];
+	}
 
 	/* Manager desallocation. */
 	MEM_Free(_pst_World->pst_SnP->pst_Manager);
@@ -318,14 +289,15 @@ void INT_SnP_Reinit(WOR_tdst_World *_pst_World)
 	L_memset(pst_SnP->apst_IndexToObj, 0, INT_Cul_MaxObjects * sizeof(OBJ_tdst_GameObject *));
 
 	/* We reset all the Axis Tables flags. */
-	L_memset(pst_SnP->apst_AxisTable[INT_Cul_AxisX]->al_Flags, 0, INT_Cul_MaxFlags * sizeof(LONG));
-	L_memset(pst_SnP->apst_AxisTable[INT_Cul_AxisY]->al_Flags, 0, INT_Cul_MaxFlags * sizeof(LONG));
-	L_memset(pst_SnP->apst_AxisTable[INT_Cul_AxisZ]->al_Flags, 0, INT_Cul_MaxFlags * sizeof(LONG));
+	for ( unsigned int i = 0; i < 3; ++i )
+	{
+		pst_SnP->apst_AxisTable[ i ]->flags.Clear();
+	}
 
 	/* Force the reconstruction of the SnP after a Reinit. */
 	_pst_World->b_ForceBVRefresh = TRUE;
 }
 
-#if defined(PSX2_TARGET) && defined(__cplusplus)
+#if defined(__cplusplus)
 }
 #endif

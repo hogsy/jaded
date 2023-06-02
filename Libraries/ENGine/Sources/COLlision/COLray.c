@@ -3317,9 +3317,9 @@ ULONG IMG_ModifierObjectAnalyser
 			char	asz_Log[500];
 			/*~~~~~~~~~~~~~~~~~*/
 
-			sprintf
+			snprintf
 			(
-				asz_Log,
+				asz_Log, sizeof( asz_Log ),
 				"[MDF][MISSED] %s [RayCast = %s]",
 				pst_Modifier->pst_GO,
 				pst_RayGO ? pst_RayGO->sz_Name : "NULL"

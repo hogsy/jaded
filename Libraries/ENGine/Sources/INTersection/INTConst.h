@@ -18,7 +18,6 @@ extern "C"
 #endif
 #define INT_Cul_MaxObjects      1536 // old : 1024
 #define INT_Cul_MaxNodes        (2 * INT_Cul_MaxObjects)
-#define INT_Cul_MaxFlags        (INT_Cul_MaxObjects * (INT_Cul_MaxObjects - 1) / 64)
 
 #define INT_Cul_AxisX           0
 #define INT_Cul_AxisY           1

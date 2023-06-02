@@ -17,6 +17,24 @@
 #include "ENGine/Sources/OBJects/OBJstruct.h"
 #include "INTConst.h"
 
+#if defined( __cplusplus )
+class SnPBitVec
+{
+private:
+	size_t maxobjs;
+    // hogsy: discussed set vs. vector - we're going vector as it should be more cpu efficient
+	std::vector< bool > vec;
+
+public:
+	SnPBitVec( size_t maxobjs );
+
+	bool Get( size_t obj_a, size_t obj_b ) const;
+	bool Set( size_t obj_a, size_t obj_b, bool value );
+	void Resize( size_t maxobjs );
+	void Clear();
+};
+#endif
+
 #if defined (__cplusplus) && !defined(JADEFUSION)
 extern "C"
 {
@@ -27,6 +45,9 @@ extern "C"
     Sweep and Prune structures ...
  ---------------------------------------------------------------------------------------------------
  */
+
+#if defined( __cplusplus )
+
 typedef struct  INT_tdst_AxisNode_
 {
     OBJ_tdst_GameObject *pst_Obj;
@@ -43,8 +64,10 @@ typedef struct  INT_tdst_AxisNode_
 
 typedef struct  INT_tdst_AxisTable_
 {
-    INT_tdst_AxisNode   *pst_Nodes;
-    LONG                al_Flags[INT_Cul_MaxFlags];
+	INT_tdst_AxisNode *pst_Nodes{};
+	SnPBitVec flags;
+
+    INT_tdst_AxisTable_() : flags( INT_Cul_MaxObjects ) {}
 } INT_tdst_AxisTable;
 
 typedef struct  INT_tdst_SnP_Manager_
@@ -63,6 +86,15 @@ typedef struct  INT_tdst_SnP_
     INT_tdst_AxisTable      *apst_AxisTable[3];
     OBJ_tdst_GameObject     *apst_IndexToObj[INT_Cul_MaxObjects];
 } INT_tdst_SnP;
+
+#else
+
+typedef struct INT_tdst_AxisNode_ INT_tdst_AxisNode;
+typedef struct INT_tdst_AxisTable_ INT_tdst_AxisTable_;
+typedef struct INT_tdst_SnP_Manager_ INT_tdst_SnP_Manager;
+typedef struct INT_tdst_SnP_ INT_tdst_SnP;
+
+#endif
 
 /* ---------------------------------------------------------------------------------------------------
     Classcial Intersection structures ...

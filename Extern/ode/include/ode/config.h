@@ -115,9 +115,10 @@ typedef unsigned int intP;
 
 #define MMAP_ANONYMOUS
 
-#include "BASe/BAStypes.h"
 #if defined (__cplusplus) && !defined(JADEFUSION)
 }
 #endif
+
+#include "BASe/BAStypes.h"
 
 #endif
