@@ -66,6 +66,11 @@ static void SavePonderations( WOR_tdst_World *_pst_World, MAD_World *st_MadWorld
 			st_MadWorld->AllObjects[ ul ]->IDType = ID_MAD_GeometricObject_V0;
 			continue;
 		}
+		else if ( pst_GaO_Gro->i->ul_Type == GRO_GeoStaticLOD )
+		{
+			st_MadWorld->AllObjects[ ul ]->IDType = ID_MAD_GeometricObjectLOD;
+			continue;
+		}
 
 		// When GaO found.
 
@@ -443,7 +448,11 @@ BOOL WOR_b_World_ExportMadFile( WOR_tdst_World *_pst_World,
 				} while ( pst_Elem <= pst_LastElem && pst_GaO_Gro != pst_Gro );
 
 				// If GaO found and no skinning errors (e.g. skinned GrO's bone).
-				if ( pst_GaO_Gro == pst_Gro && OBJ_b_TestIdentityFlag( pst_GaO, OBJ_C_IdentityFlag_AdditionalMatrix ) && OBJ_b_TestIdentityFlag( pst_GaO, OBJ_C_IdentityFlag_AddMatArePointer ) && pst_GaO->pst_Base->pst_AddMatrix && pst_GaO->pst_Base->pst_AddMatrix->l_Number >= 2 )
+				if ( pst_GaO_Gro == pst_Gro && 
+					OBJ_b_TestIdentityFlag( pst_GaO, OBJ_C_IdentityFlag_AdditionalMatrix ) && 
+					OBJ_b_TestIdentityFlag( pst_GaO, OBJ_C_IdentityFlag_AddMatArePointer ) && 
+					pst_GaO->pst_Base->pst_AddMatrix && 
+					pst_GaO->pst_Base->pst_AddMatrix->l_Number >= 2 )
 				{
 					pst_MadObj->IDType = ID_MAD_SkinnedGeometricObject;
 				}
