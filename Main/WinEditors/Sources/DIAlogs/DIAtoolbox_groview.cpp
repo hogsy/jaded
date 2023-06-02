@@ -1687,7 +1687,7 @@ void EDIA_cl_ToolBox_GROView::On_Adjust4Symetrie(void)
 {
 	if((mpo_ToolBox->mpst_Gro) && (mpo_ToolBox->mpst_Gro->i->ul_Type == GRO_Geometric))
 	{
-		if(M_MF()->MessageBox("Really want to adjust for symetrie ?", "Jade", MB_YESNO) == IDYES)
+		if(M_MF()->MessageBox("Really want to adjust for symetrie ?", "Jaded", MB_YESNO) == IDYES)
 		{
 			GEO_AdjustForSymetrie((GEO_tdst_Object *) mpo_ToolBox->mpst_Gro);
 		}

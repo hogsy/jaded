@@ -5,74 +5,60 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  */
 
-#if !defined(PSX2_TARGET)
-    #pragma once
+#pragma once
+
+#define _WIN32_WINNT 0x0A00
+
+/* hogsy :  I tried to be rid of this; some suggest that it's a fault 
+ *          with the include order due to Windows SDK / DirectX SDK, but
+ *          it straight-up looks like an issue with the Windows SDK headers, 
+ *          full-stop. So we'll keep it for now, but uh, TODO!!!            */
+#ifndef POINTER_64
+#	define POINTER_64
 #endif
 
-#ifndef __CLIWIN_H__
-#define __CLIWIN_H__
-
-#if !defined PSX2_TARGET && !defined _GAMECUBE
-
-
-#if defined(ACTIVE_EDITORS) && defined(__cplusplus)
+#if defined( ACTIVE_EDITORS ) && defined( __cplusplus )
 /*$2
  -----------------------------------------------------------------------------------------------------------------------
     MFC
  -----------------------------------------------------------------------------------------------------------------------
  */
-#if !defined(POINTER_64)
-#define POINTER_64
-#endif
 
-
-#define      OEMRESOURCE
+#	define OEMRESOURCE
 typedef long SHANDLE_PTR;
-#include     "afxwin.h"
-#include     "afxext.h"
-#include     "afxcmn.h"
-#include     "afxcoll.h"
-#include     "afxpriv.h"
-#include     "afxrich.h"
-#include     "afxtempl.h"
-#include     "shlobj.h"
+#	include "afxwin.h"
+#	include "afxext.h"
+#	include "afxcmn.h"
+#	include "afxcoll.h"
+#	include "afxpriv.h"
+#	include "afxrich.h"
+#	include "afxtempl.h"
+#	include "shlobj.h"
 
-#else 
+#else
+
 /*$2
  -----------------------------------------------------------------------------------------------------------------------
     Windows
  -----------------------------------------------------------------------------------------------------------------------
  */
-#if !defined(_XBOX) && !defined(_XENON)
-#if !defined(POINTER_64)
-#define POINTER_64
-#endif
-#include     "windows.h"
-#endif
 
-#endif 
-
-#		if defined( _MSC_VER )
-#			define L_itoa    _itoa
-#			define L_stricmp _stricmp
-#		else
-#			define L_itoa    itoa
-#			define L_stricmp stricmp
-#		endif
-
-#if !defined(_XBOX) && !defined(_XENON)
-#include "mmsystem.h"
-#endif
+#	include <Windows.h>
 
 #endif
 
-#define L_timeGetTime   timeGetTime
-
-#if defined(_XBOX) && !defined(_XENON)
-//#define HWND unsigned long
-#include <xtl.h>
-
+#if defined( _MSC_VER )
+#	define L_access  _access
+#	define L_itoa    _itoa
+#	define L_stricmp _stricmp
+#else
+#	define L_access  access
+#	define L_itoa    itoa
+#	define L_stricmp stricmp
 #endif
 
+#if !defined( _XBOX ) && !defined( _XENON )
+#	include "mmsystem.h"
+#endif
 
-#endif /* __CLIWIN_H__ */
+#define L_timeGetTime timeGetTime

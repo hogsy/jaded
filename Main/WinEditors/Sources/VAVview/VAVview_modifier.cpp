@@ -304,17 +304,17 @@ CString EVAV_Modifier_DrawItem(EVAV_cl_ViewItem *_po_Item, void *_p_Value)
 					pst_GridMdF = (Grid_tdst_Modifier *) pst_Modifier->p_Data;
 					if(pst_GridMdF->pc_Capa && pst_GridMdF->pc_Capa1)
 					{
-						sprintf(asz_Temp, "[Grid0+Grid1] %u cases", pst_GridMdF->ul_Num + pst_GridMdF->ul_Num1);
+						snprintf( asz_Temp, sizeof(asz_Temp), "[Grid0+Grid1] %u cases", pst_GridMdF->ul_Num + pst_GridMdF->ul_Num1 );
 						return asz_Temp;
 					}
 					else if(pst_GridMdF->pc_Capa)
 					{
-						sprintf(asz_Temp, "[Grid0] %u cases", pst_GridMdF->ul_Num);
+						snprintf( asz_Temp, sizeof( asz_Temp ), "[Grid0] %u cases", pst_GridMdF->ul_Num );
 						return asz_Temp;
 					}
 					else if(pst_GridMdF->pc_Capa1)
 					{
-						sprintf(asz_Temp, "[Grid1] %u cases", pst_GridMdF->ul_Num1);
+						snprintf( asz_Temp, sizeof( asz_Temp ), "[Grid1] %u cases", pst_GridMdF->ul_Num1 );
 						return asz_Temp;
 					}
 					else
@@ -328,11 +328,11 @@ CString EVAV_Modifier_DrawItem(EVAV_cl_ViewItem *_po_Item, void *_p_Value)
 					pst_GridMdF = (Grid_tdst_Modifier *) pst_Modifier->p_Data;
 					if(!pst_GridMdF->pc_Capa && !pst_GridMdF->pc_Capa1)
 					{
-						sprintf(asz_Temp, "--¨No Pattern", pst_GridMdF->ul_Rotate);
+						sprintf(asz_Temp, "--¨No Pattern");
 						return asz_Temp;
 					}
 
-					sprintf(asz_Temp, "--Rotate %i°", pst_GridMdF->ul_Rotate);
+					snprintf( asz_Temp, sizeof(asz_Temp), "--Rotate %i°", pst_GridMdF->ul_Rotate );
 					return asz_Temp;
 				}
 

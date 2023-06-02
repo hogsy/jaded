@@ -2832,8 +2832,8 @@ void GEO_SKN_ComputeNormals(GEO_tdst_Object *_pst_Object , GEO_Vertex *pst_Point
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	GEO_Vertex                          *pst_Pt[3],*dstPoints;
 	MATH_tdst_Vector                    *pst_Normal, *pst_LastNormal;
-	u16									*pst_NormalLoc;
-	u32									NbPoints;
+	//u16									*pst_NormalLoc;
+	//u32									NbPoints;
 	MATH_tdst_Vector                    st_TriangleNormal, st_Vect1, st_Vect2;
 	GEO_tdst_ElementIndexedTriangles    *pst_Element, *pst_LastElement;
 	GEO_tdst_IndexedTriangle            *pst_Triangle, *pst_LastTriangle;
@@ -3831,17 +3831,9 @@ asm __volatile__ {"
 #define SKN_CO_Get(pCE,Pos) 	(	pCE[Pos >> (3 + Cache_Granularity_Po2)] & 	(1 << ((Pos >> Cache_Granularity_Po2) & 7)) )
 #define SKN_CO_Set(pCE,Pos) 	 	pCE[Pos >> (3 + Cache_Granularity_Po2)] |=	(1 << ((Pos >> Cache_Granularity_Po2) & 7))
 #define SKN_CO_ReSet(pCE,Pos) 	 	pCE[Pos >> (3 + Cache_Granularity_Po2)] &= ~(1 << ((Pos >> Cache_Granularity_Po2) & 7))
-#ifdef JADEFUSION
 		unsigned int SKN_CO_GetDiff(unsigned char *p1T,unsigned char *p2,unsigned int Number)
-#else
-		u_int SKN_CO_GetDiff(unsigned char *p1T,unsigned char *p2,u_int Number)
-#endif
 		{
-#ifdef JADEFUSION
 			unsigned int ReturnValue;
-#else
-			u_int ReturnValue;
-#endif
 			ReturnValue = 0;
 			while (Number--)
 			{

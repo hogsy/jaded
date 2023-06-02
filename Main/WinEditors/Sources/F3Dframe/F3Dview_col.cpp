@@ -903,7 +903,7 @@ void F3D_cl_View::Zone_Delete(void)
 	/* We cannot delete the last zone of a ColSet */
 	if(pst_ColSet->uc_NbOfZDx > 1)
 	{
-		if(M_MF()->MessageBox("Remove this zone from the current ColSet?", "Jade", MB_YESNO) == IDYES)
+		if(M_MF()->MessageBox("Remove this zone from the current ColSet?", "Jaded", MB_YESNO) == IDYES)
 		{
 			/* We effectively delete the ZDx from the ColSet */
 			COL_ColSet_RemoveZDxWithIndex(pst_ColSet, uc_Index);
@@ -1776,7 +1776,7 @@ void F3D_cl_View::DropZone(EDI_tdst_DragDrop *_pst_DragDrop)
 	pst_ColSet = ((COL_tdst_Base *) pst_ZDx->pst_GO->pst_Extended->pst_Col)->pst_Instance->pst_ColSet;
 	MATH_SubVector(&v2, &v, OBJ_pst_GetAbsolutePosition(pst_GO));
 
-	if(M_MF()->MessageBox("Add a zone to the current ColSet?", "Jade", MB_YESNO) == IDYES)
+	if(M_MF()->MessageBox("Add a zone to the current ColSet?", "Jaded", MB_YESNO) == IDYES)
 		COL_ColSet_AddZDx(pst_ColSet, (USHORT) COL_Zone_GetType(pst_ZDx), pst_ZDx, &v2);
 
 	/* Gets the index of the Zone in the instance's array of pointers. */

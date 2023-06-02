@@ -265,7 +265,7 @@ void EDI_cl_EnterWnd::DisplayMessage(char *_psz_Msg)
 	/* App version */
 	GetClientRect(&o_Rect);
 	pdc->SetBkMode(TRANSPARENT);
-	sprintf( asz_Msg, "Version %03d-%03d(%03d)", BIG_Cu4_AppVersion, BIG_Cu4_Version, BIG_CPJE_AppVersion );
+	snprintf( asz_Msg, sizeof(asz_Msg), "Version %03d-%03d/%s", BIG_Cu4_AppVersion, BIG_Cu4_Version, BIG_CPJE_AppVersion );
 	pdc->SetTextColor( RGB( 200, 200, 200 ) );
 	pdc->ExtTextOut(o_Rect.left + 10, o_Rect.top, 0, NULL, asz_Msg, L_strlen(asz_Msg), NULL);
 
@@ -921,7 +921,9 @@ BOOL EDI_cl_App::InitInstance(void)
 					EDI_gb_ExportToKeys_Path += '/';
 				}
 				else if ( !L_strnicmp( psz_Scan, "editor", 6 ) )
+				{
 					editorMode = true;
+				}
 				else
 				{
 					/* /E<n> : set the enabling level for AI source code generation */
@@ -1499,7 +1501,7 @@ BOOL EDI_cl_App::InitInstance(void)
 	EDI_gpo_EnterWnd->Create
 		(
 		        NULL,
-		        "Jade",
+		        "Jaded",
 		        WS_VISIBLE | WS_POPUP,
 			CRect
 			(
@@ -1566,7 +1568,7 @@ BOOL EDI_cl_App::InitInstance(void)
 	mpo_MainFrame->Create
 		(
 			NULL,
-			"Jade",
+			"Jaded",
 			WS_OVERLAPPEDWINDOW,
 			CRect(0, 0, 400, 400),
 			NULL,
@@ -1718,7 +1720,7 @@ BOOL EDI_cl_App::InitInstance(void)
 				mpo_MainFrame->mst_Ini.ui_NumOpen = 0;
 				mpo_MainFrame->SaveIni();
 				AfxGetApp()->DoWaitCursor(1);
-				if(mpo_MainFrame->MessageBox("Do you want to check the bigfile ?", "Jade", MB_YESNO) == IDYES)
+				if(mpo_MainFrame->MessageBox("Do you want to check the bigfile ?", "Jaded", MB_YESNO) == IDYES)
 					BIG_b_CheckFile(FALSE);
 				AfxGetApp()->DoWaitCursor(-1);
 			}

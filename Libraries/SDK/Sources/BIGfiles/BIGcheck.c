@@ -403,7 +403,7 @@ BOOL BIG_CheckHierarchy(BIG_INDEX ul_Root)
 
 		if(L_strlen(asz_Path1) >= BIG_C_MaxLenPath)
 		{
-			sprintf(asz_Path1, "ERROR : Total dir path name + file is too long !!!!!", asz_Path1);
+			snprintf( asz_Path1, sizeof(asz_Path1), "ERROR : Total dir path name + file is too long (%s)", asz_Path1 );
 			LINK_gul_ColorTxt = 0x000000FF;
 			LINK_PrintStatusMsg(asz_Path1);
 			b_Res = FALSE;
@@ -501,19 +501,22 @@ recom:
 			ul_Next1 = BIG_gst.dst_FileTableExt[ul_Next].st_ToSave.ul_Prev;
 			if(ul_Next1 != i)
 			{
-				const char *fileA = BIG_FileName( i ), fileA_tmp[ 64 ];
+				char fileA_tmp[ 64 ];
+				const char *fileA = BIG_FileName( i );
 				if ( *fileA == '\0' )
 				{
 					snprintf( fileA_tmp, sizeof( fileA_tmp ), "%x", BIG_FileKey( i ) );
 					fileA = fileA_tmp;
 				}
-				const char *fileB = BIG_FileName( ul_Next ), fileB_tmp[ 64 ];
+				char fileB_tmp[ 64 ];
+				const char *fileB = BIG_FileName( ul_Next );
 				if ( *fileB == '\0' )
 				{
 					snprintf( fileB_tmp, sizeof( fileB_tmp ), "%x", BIG_FileKey( ul_Next ) );
 					fileB = fileB_tmp;
 				}
-				const char *fileC = BIG_FileName( ul_Next1 ), fileC_tmp[ 64 ];
+				char fileC_tmp[ 64 ];
+				const char *fileC = BIG_FileName( ul_Next1 );
 				if ( *fileC == '\0' )
 				{
 					snprintf( fileC_tmp, sizeof( fileC_tmp ), "%x", BIG_FileKey( ul_Next1 ) );
@@ -557,19 +560,22 @@ recom:
 			ul_Next1 = BIG_gst.dst_FileTableExt[ul_Next].st_ToSave.ul_Next;
 			if(ul_Next1 != i)
 			{
-				const char *fileA = BIG_FileName( i ), fileA_tmp[ 64 ];
+				char fileA_tmp[ 64 ];
+				const char *fileA = BIG_FileName( i );
 				if ( *fileA == '\0' )
 				{
 					snprintf( fileA_tmp, sizeof( fileA_tmp ), "%x", BIG_FileKey( i ) );
 					fileA = fileA_tmp;
 				}
-				const char *fileB = BIG_FileName( ul_Next ), fileB_tmp[ 64 ];
+				char fileB_tmp[ 64 ];
+				const char *fileB = BIG_FileName( ul_Next );
 				if ( *fileB == '\0' )
 				{
 					snprintf( fileB_tmp, sizeof( fileB_tmp ), "%x", BIG_FileKey( ul_Next ) );
 					fileB = fileB_tmp;
 				}
-				const char *fileC = BIG_FileName( ul_Next1 ), fileC_tmp[ 64 ];
+				char fileC_tmp[ 64 ];
+				const char *fileC = BIG_FileName( ul_Next1 );
 				if ( *fileC == '\0' )
 				{
 					snprintf( fileC_tmp, sizeof( fileC_tmp ), "%x", BIG_FileKey( ul_Next1 ) );
@@ -676,7 +682,8 @@ recom:
 		if(BAS_bsearch(i, &st_PosFile) == -1)
 		{
 			// seems some corrupted files have blank names? ~hogsy
-			const char *fileName = BIG_FileName( i ), tmp[ 64 ];
+			char tmp[ 64 ];
+			const char *fileName = BIG_FileName( i );
 			if ( *fileName == '\0' )
 			{
 				snprintf( tmp, sizeof( tmp ), "%x", BIG_FileKey( i ) );

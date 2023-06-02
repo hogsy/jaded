@@ -481,11 +481,7 @@ ULONG GetSPG2CachePercent()
 	SPG2_CachedPrimitivs *SPG2_FirstFreeLocal;
 	Ret = SPG2_NumberOfCacheLine;
 	SPG2_FirstFreeLocal = SPG2_FirstFree;
-#ifdef JADEFUSION
 	if ((unsigned int)SPG2_FirstFreeLocal != 1)
-#else
-		if ((u_int)SPG2_FirstFreeLocal != 1)
-#endif
 	{
 		while (SPG2_FirstFreeLocal)
 		{

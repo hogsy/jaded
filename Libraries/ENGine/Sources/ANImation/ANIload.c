@@ -158,21 +158,24 @@ void ANI_DestroySkeleton(OBJ_tdst_Group *_pst_Skeleton)
 	if(!_pst_Skeleton->ul_NbObjectsUsingMe)
 	{
 		pst_CurrentElem = TAB_pst_PFtable_GetFirstElem(_pst_Skeleton->pst_AllObjects);
-		pst_EndElem = TAB_pst_PFtable_GetLastElem(_pst_Skeleton->pst_AllObjects);
-		for(; pst_CurrentElem <= pst_EndElem; pst_CurrentElem++)
+		if ( pst_CurrentElem != NULL )
 		{
-			pst_GrpGO = (OBJ_tdst_GameObject *) pst_CurrentElem->p_Pointer;
-			if(TAB_b_IsAHole(pst_GrpGO)) continue;
-			if(!(pst_GrpGO->ul_IdentityFlags & OBJ_C_IdentityFlag_Bone)) break;
+			pst_EndElem = TAB_pst_PFtable_GetLastElem( _pst_Skeleton->pst_AllObjects );
+			for ( ; pst_CurrentElem <= pst_EndElem; pst_CurrentElem++ )
+			{
+				pst_GrpGO = ( OBJ_tdst_GameObject * ) pst_CurrentElem->p_Pointer;
+				if ( TAB_b_IsAHole( pst_GrpGO ) ) continue;
+				if ( !( pst_GrpGO->ul_IdentityFlags & OBJ_C_IdentityFlag_Bone ) ) break;
 
-			TAB_Ptable_RemoveElem((TAB_tdst_Ptable *)(_pst_Skeleton->pst_AllObjects), (void **)(pst_CurrentElem));
+				TAB_Ptable_RemoveElem( ( TAB_tdst_Ptable * ) ( _pst_Skeleton->pst_AllObjects ), ( void ** ) ( pst_CurrentElem ) );
 
-			pst_World = WOR_World_GetWorldOfObject(pst_GrpGO);
-			WOR_World_DetachObject(pst_World, pst_GrpGO);
-			OBJ_GameObject_Remove(pst_GrpGO, 1);
+				pst_World = WOR_World_GetWorldOfObject( pst_GrpGO );
+				WOR_World_DetachObject( pst_World, pst_GrpGO );
+				OBJ_GameObject_Remove( pst_GrpGO, 1 );
 #ifdef ACTIVE_EDITORS
-			SEL_DelItem(pst_World->pst_Selection, pst_GrpGO);
+				SEL_DelItem( pst_World->pst_Selection, pst_GrpGO );
 #endif
+			}
 		}
 
 		OBJ_FreeGroup(_pst_Skeleton);

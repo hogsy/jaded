@@ -485,7 +485,7 @@ void F3D_cl_View::ComputeRLI(ULONG _ul_Mask, BOOL _b_Ask, BOOL _b_Sel, BOOL _b_L
 	int i;
 	/*~~*/
 
-    i = _b_Ask ? (M_MF()->MessageBox("Destroy old RLI ?", "Jade", MB_YESNOCANCEL)) : IDYES;
+    i = _b_Ask ? (M_MF()->MessageBox("Destroy old RLI ?", "Jaded", MB_YESNOCANCEL)) : IDYES;
 	LIGHT_gl_ComputeRLI = (i == IDYES) ? 3 : (i == IDNO) ? 1 : 0;
     if (_b_Sel) LIGHT_gl_ComputeRLI |= 4;
     if (_b_LightSel) LIGHT_gl_ComputeRLI |= 8;

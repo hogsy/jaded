@@ -75,7 +75,7 @@ int STReams_CBigFile::Export(const std::string& strFileExportDir, const std::str
 			CreateDirectoryName(szFilePathForKey, index);
 			
 			// Does Key Dir exists ?
-			if ( access(szFilePathForKey, 00) != 0 )
+			if ( L_access( szFilePathForKey, 00 ) != 0 )
 				CreateDirectoryRecursive(szFilePathForKey);
 
 			// Get the key in the BF
@@ -290,7 +290,7 @@ void STReams_CBigFile::CreateDirectoryRecursive(const char* szDirectory)
 		}
 
 		// Does directory exists ?
-		if ( access(szTempPath, 0) != 0 )
+		if ( L_access( szTempPath, 0 ) != 0 )
 			CreateDirectory(szTempPath, 0);
 
 		// Restore the slash and check if we need to end the recursive creation

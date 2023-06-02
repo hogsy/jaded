@@ -51,7 +51,7 @@ int SetStreamByName(const char* szFileName, const char* szStreamName,const char*
 	wsprintf(szStreamFileName, ("%s:%s"), szFileName, szStreamName);
 
 	// If main stream doesn't exist don't create stream ADS_USER
-	if ( access(szFileName, 0) != -1 )
+	if ( L_access( szFileName, 0 ) != -1 )
 	{	
 		FILE* hFile = fopen(szStreamFileName, "wtc");
 		if(hFile)

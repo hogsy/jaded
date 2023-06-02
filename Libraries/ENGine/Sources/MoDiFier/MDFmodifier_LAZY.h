@@ -143,7 +143,7 @@ int BoneRefineModifier_Copy(MDF_tdst_Modifier *_pst_Dst, MDF_tdst_Modifier *_pst
 
 typedef struct	GAO_tdst_ModifierBoneMecaExcluder_
 {
-	u32				 ulBoneRef;
+	uint32_t ulBoneRef;
 	MATH_tdst_Vector SphereRadius;
 	MATH_tdst_Vector DeltaPos;
 } GAO_tdst_ModifierBoneMecaExcluder;
@@ -151,15 +151,15 @@ typedef struct	GAO_tdst_ModifierBoneMecaExcluder_
 typedef struct	GAO_tdst_ModifierBoneMeca_
 {
 #ifdef ACTIVE_EDITORS
-	ULONG								ulCodeKey;
+	uint32_t ulCodeKey;
 	OBJ_tdst_GameObject					*_pst_GO;
-	U32									ulDrawBones;
+	uint32_t							ulDrawBones;
 #endif
 	/* Saved Parrams */
-	ULONG								ulNumberOfExcluders;
+	uint32_t ulNumberOfExcluders;
 	GAO_tdst_ModifierBoneMecaExcluder	stBM[MAX_BONEMECA_EXCLUDERS];
-	ULONG								ulNumberOfMovers;
-	u32									stBR[MAX_BONEMECA_MOVERS];
+	uint32_t ulNumberOfMovers;
+	uint32_t stBR[ MAX_BONEMECA_MOVERS ];
 	/* Bones speeds */
 	MATH_tdst_Vector					stBS[MAX_BONEMECA_MOVERS];
 
@@ -167,7 +167,7 @@ typedef struct	GAO_tdst_ModifierBoneMeca_
 	float								fFriction;
 	float								fRenormToFatherFactor;
 
-	u32									LastRenderNum;
+	uint32_t LastRenderNum;
 
 } GAO_tdst_ModifierBoneMeca;
 

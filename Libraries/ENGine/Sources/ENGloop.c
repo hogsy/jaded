@@ -1456,11 +1456,7 @@ static void s_OneTrame(void)
 			} else
 #else
 			{
-#ifdef JADEFUSION
-				extern UINT WOR_DetectCameraCut(GDI_tdst_DisplayData*);
-#else
-				extern u_int WOR_DetectCameraCut(GDI_tdst_DisplayData *_pst_DD);
-#endif
+				extern UINT WOR_DetectCameraCut( GDI_tdst_DisplayData * _pst_DD );
 				ENG_gp_CameraCutHasBeenDetected = 0;
 				if (WOR_DetectCameraCut(MAI_gst_MainHandles.pst_DisplayData))
 				{

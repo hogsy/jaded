@@ -45,20 +45,7 @@
 #include "../../MainXenon/Sources/BinarizedBFManager.h"
 #endif // _XENON
 
-
-#if !defined(_XENON)
-#if defined(_XBOX)
-#include "ENGine/Sources/DEModisk/DEModisk.h"
-#endif
-#endif
-
-#ifdef PSX2_TARGET
-#include <eeregs.h>
-#include "IOP/CDV_Manager.h"
-#include "IOP/RPC_Manager.h"
-#else
 #include "TIMer/TIMdefs.h"
-#endif
 #include "BIGfiles/BIGcomp.h"
 #include "TIMer/PROfiler/PROPS2.h"
 
@@ -67,6 +54,7 @@ extern "C"
 {
 #endif
 
+// hogsy: 40 ?? what is this magic number crap... TODO: use an enum for this!
 ULONG LOA_ul_FileTypeSize[40] =
 {
 	0,0,0,0,0,0,0,0,0,0,

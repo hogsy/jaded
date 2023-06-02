@@ -273,14 +273,20 @@ void DX8_Texture_Load
 			for ( c = 0; c < TEX_gst_GlobalList.l_NumberOfTextures; c++, pst_RawPal++ )
 			{
 				if ( ( pst_RawPal->uw_Flags & TEX_uw_RawPal ) && ( pst_RawPal->w_Height == ( SHORT ) _ul_Texture ) )
+				{
 					break;
+				}
 			}
 		}
 
 		if ( BPP == 4 )
-			TEX_Convert_4To32( ( unsigned char * ) p_Buf, pul_ConvertBuffer, TEX_gst_GlobalList.dst_Palette[ pst_RawPal->w_TexPal ].pul_Color, size );
+		{
+			TEX_Convert_4To32( ( ULONG * ) p_Buf, pul_ConvertBuffer, TEX_gst_GlobalList.dst_Palette[ pst_RawPal->w_TexPal ].pul_Color, size );
+		}
 		else if ( BPP == 8 )
-			TEX_Convert_8To32( ( unsigned char * ) p_Buf, pul_ConvertBuffer, TEX_gst_GlobalList.dst_Palette[ pst_RawPal->w_TexPal ].pul_Color, size );
+		{
+			TEX_Convert_8To32( ( ULONG * ) p_Buf, pul_ConvertBuffer, TEX_gst_GlobalList.dst_Palette[ pst_RawPal->w_TexPal ].pul_Color, size );
+		}
 
         pul_ConvertBuffer = ( ULONG * ) p_Buf;
 		BPP = 32;

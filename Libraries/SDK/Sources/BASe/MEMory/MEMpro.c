@@ -405,10 +405,6 @@ static _inline_ void MEMpro_Pop(void)
  */
 void MEMpro_Init(void)
 {
-	/*~~~~~~~~~~~~~~~~~~~~~~*/
-	MEMpro_tden_MemRasterId i;
-	/*~~~~~~~~~~~~~~~~~~~~~~*/
-
 	/* reset stack */
 	L_memset(MEMpro_sa_RasterStack, 0, sizeof(MEMpro_tdst_MemManager) * M_RasterStackDepth);
 	MEMpro_gp_StackPointer = MEMpro_sa_RasterStack;

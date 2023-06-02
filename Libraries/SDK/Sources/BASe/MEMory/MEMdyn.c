@@ -2656,7 +2656,7 @@ void MEM_dbg_FindLastAllocated(void)
 		}
 
 		MEM_gp_LastAllocated = p;
-		sprintf(memlog, "%08x - %d\n", p, *(p + 1));
+		snprintf( memlog, sizeof(memlog), "%08x - %d\n", ( uintptr_t ) p, *( p + 1 ) );
 		_print(memlog);
 	}
 }

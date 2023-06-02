@@ -52,22 +52,22 @@ extern "C"
 
 typedef struct			PROPS2_tdst_RasterStatistics_
 {
-	u_long64	ul_Value;
-	u_long64	ul_Max;
-	u_long64	ul_Min;
-	u_long64	ul_Ave;
+	uint64_t ul_Value;
+	uint64_t ul_Max;
+	uint64_t ul_Min;
+	uint64_t ul_Ave;
 } PROPS2_tdst_RasterStatistics;
 
 typedef struct	PROPS2_tdst_Raster_
 {
 	struct PROPS2_tdst_Raster_		*pst_NextCell;
-	u_long64						ul_Criterion;
+	uint64_t ul_Criterion;
 	struct PROPS2_tdst_Raster_		*pst_NextRaster;
 	struct PROPS2_tdst_Raster_		*pst_NextCalled;
-	u_long64						ul_Nb;
+	uint64_t ul_Nb;
 	PROPS2_tdst_RasterStatistics	st_pc1;
 	PROPS2_tdst_RasterStatistics	st_pc0;
-	long64							l_StartCount;
+	int64_t							l_StartCount;
 	char							asz_Name[PROPS2_M_RasterNameSize];
 } PROPS2_tdst_Raster;
 

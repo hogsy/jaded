@@ -12,7 +12,7 @@
 #define EDI_STR_Csz_OperationAborted        "Operation Aborted..."
 #define EDI_STR_Csz_ReadyStatus             "Ready"
 
-#define EDI_STR_Csz_Title                   "Jade"
+#define EDI_STR_Csz_Title                   "Jaded"
 #define EDI_STR_Csz_TitleChooseProject      "Enter the project file to create"
 #define EDI_STR_Csz_TitleChooseProjectOpen  "Choose the project file to open"
 #define EDI_STR_Csz_TitleConfirm            "Please confirm"

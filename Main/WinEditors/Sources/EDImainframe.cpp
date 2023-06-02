@@ -797,7 +797,7 @@ void EDI_cl_MainFrame::UpdateMainFrameTitle(void)
 	char	asz_Temp[512];
 	/*~~~~~~~~~~~~~~~~~~*/
 
-	sprintf(asz_Temp, "JADED Editor (Version %03d-%03d)", BIG_Cu4_AppVersion, BIG_Cu4_Version);
+	snprintf( asz_Temp, sizeof(asz_Temp), "JADED Editor (Version %03d-%03d/%s)", BIG_Cu4_AppVersion, BIG_Cu4_Version, BIG_CPJE_AppVersion );
 
 #ifdef SPEED_EDITORS
 	L_strcat( asz_Temp, " (R)" );

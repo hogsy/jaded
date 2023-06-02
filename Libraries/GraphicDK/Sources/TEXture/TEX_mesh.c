@@ -2340,11 +2340,7 @@ void SetTextureRefMatrix(int stage)
 
 
 #endif
-#if defined (__cplusplus)
 unsigned int WTR_IsSymetryActive()
-#else
-u_int WTR_IsSymetryActive()
-#endif
 {
 	if (pst_GlobalsWaterParams && pst_GlobalsWaterParams->ulSymetryActive) 
 		return 1;
@@ -2354,11 +2350,7 @@ u_int WTR_IsSymetryActive()
 ////////////////////////////////////////////////////////////////////////////////
 
 ///DRAW WATER MESH
-#if defined (__cplusplus)
 unsigned int WTR_Mesh_Do(WTR_Generator_Struct *pst_Params)
-#else
-u_int WTR_Mesh_Do(WTR_Generator_Struct *pst_Params)
-#endif
 {
 #ifndef PSX2_TARGET
 	extern float TIM_gf_dt;
@@ -3223,11 +3215,7 @@ void GSP_AE_ZListHook(int ZlistNum )
 		_GSP_BeginRaster(43);
         if (pst_GlobalsWaterParams) 
         {
-#if defined (__cplusplus)
 			static unsigned int Workkkk; // E3 slaughter
-#else
-			static u_int Workkkk; // E3 slaughter
-#endif
 #ifdef PSX2_TARGET	
             extern u_int No3DWTR;
 /*            if (Workkkk)
