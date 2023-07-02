@@ -7362,6 +7362,7 @@ LONG GEO_l_SaveInBuffer(GEO_tdst_Object *_pst_Object, void *p_Unused)
 	SAV_Buffer(&_pst_Object->l_NbPoints, 4);
 
     // Warning if too many vertices/triangles
+#	if 0// hogsy: removed per https://github.com/OldTimes-Software/jaded/issues/26
     if(_pst_Object->st_Id.i->ul_Type == GRO_Geometric)
     {
         LONG    l_Nb;
@@ -7379,6 +7380,7 @@ LONG GEO_l_SaveInBuffer(GEO_tdst_Object *_pst_Object, void *p_Unused)
             ERR_X_Warning(0,sz_Msg,_pst_Object->st_Id.sz_Name);
         }
     }
+#	endif
 #if defined(XML_CONV_TOOL)
 	if (gGeoHasCode2002)
 	{

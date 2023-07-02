@@ -46,13 +46,14 @@ BOOL GEO_b_IsInFix = FALSE;
 
 #ifdef ACTIVE_EDITORS
 
-void GEO_WarningIfObjectIsTooBig(GEO_tdst_Object *pst_Object)
+void GEO_WarningIfObjectIsTooBig( GEO_tdst_Object *pst_Object )
 {
+#	if 0// hogsy: removed per https://github.com/OldTimes-Software/jaded/issues/26
     char    *sz_FileName, *sz_Ext;
     char    sz_Msg[256];
     ULONG   ul_Index;
     LONG    l_Nb;
-#if !defined(XML_CONV_TOOL)
+#		if !defined( XML_CONV_TOOL )
     ul_Index = BIG_ul_SearchKeyToFat( LOA_ul_GetCurrentKey() );
     sz_FileName = BIG_NameFile( ul_Index );
     sz_Ext = strrchr( sz_FileName, '.' );
@@ -60,16 +61,16 @@ void GEO_WarningIfObjectIsTooBig(GEO_tdst_Object *pst_Object)
     pst_Object->st_Id.sz_Name = (char *) MEM_p_Alloc(L_strlen(sz_FileName) + 1);
     L_strcpy(pst_Object->st_Id.sz_Name, sz_FileName);
     if (sz_Ext) *sz_Ext = '.';
-#else
+#		else
 		if (st_Id.sz_Name)
 		{
 	        pst_Object->st_Id.sz_Name = (char *) MEM_p_Alloc(L_strlen(st_Id.sz_Name) + 1);
 		    L_strcpy(pst_Object->st_Id.sz_Name, st_Id.sz_Name);
 		}
-#endif
+#		endif
     if(pst_Object->st_Id.i->ul_Type == GRO_Geometric)
     {
-#if !defined(XML_CONV_TOOL)//popoverif
+#		if !defined( XML_CONV_TOOL )//popoverif
 		if ( pst_Object->l_NbPoints > 5000 )
         {
             sprintf( sz_Msg, "[%08X] has more than 5000 vertex (%d)", LOA_ul_GetCurrentKey(), pst_Object->l_NbPoints );
@@ -82,10 +83,11 @@ void GEO_WarningIfObjectIsTooBig(GEO_tdst_Object *pst_Object)
             sprintf( sz_Msg, "[%08X] has more than 3000 triangles (%d)", LOA_ul_GetCurrentKey(), l_Nb );
             ERR_X_Warning(0,sz_Msg,sz_FileName);
         }
-#endif // !defined(XML_CONV_TOOL)
+#		endif                       // !defined(XML_CONV_TOOL)
     }
+#	endif
 }
-#endif //ACTIVE_EDITORS
+#endif//ACTIVE_EDITORS
 
 
 /*
