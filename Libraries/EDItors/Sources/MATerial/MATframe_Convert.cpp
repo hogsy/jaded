@@ -452,7 +452,7 @@ void EMAT_cl_Frame::MUTEX_To_GRM(void)
                 }
 
                 MAT_SET_XYZ((*MttL)->s_AditionalFlags, (unsigned short) pst_CDO->Dest.AllLine[TextureConter].XYZ);
-                (*MttL)->s_AditionalFlags &= ~MAT_Cul_sFlag_MASK;
+               // (*MttL)->s_AditionalFlags &= ~MAT_Cul_sFlag_MASK;
                 if(pst_CDO->Dest.AllLine[TextureConter].Negativ)
                     (*MttL)->s_AditionalFlags |= MAT_Cul_sFlag_USeNegativ;
                 if(pst_CDO->Dest.AllLine[TextureConter].UseScale)

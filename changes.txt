@@ -1,63 +1,21 @@
-hogsy's Jade Engine patches (hogsy@oldtimes-software.com / hogsy#9210)
------------------------------------------------------------
-Summary:
-	- Added a rough FPS cap when running the engine within the editor
-	- Added "Limit FPS" toggle under "Engine" menu
-	- Added improvements to the "Run Engine (Speed)" option
-	- Added "Jade Fusion" clipboard toggle for material editor
-	- Added more information to display upon saving a map (including time taken)
-	- Added shortcut for RayDevWiki under Help menu
-	- Added support for MSAA and alpha-to-coverage if available (OpenGL only + disabled by default)
-	- Added a new "Anti Aliasing" option under 3D View Options
-	- Fixed an issue with paletted textures under the Direct3D 8 renderer
-	- Fixed Prefab browser crash that impacted some folks when previews are enabled
-	- Fixed long save time when saving a world
-	- Fixed flickering with animation graph
-	- Fixed menu string for second "Save World" option
-	- Fixed missing icon for prefabs in browser
-	- Fixed malformed strings in texture editor
-	- Fixed some issues with the OpenGL backend which could potentially cause issues w/ modern drivers
-	- Fixed missing key error by automatically setting it up on launch if it doesn't exist
-	- Fixed an issue with displaying paletted textures on some AMD GPUs / drivers
-	- Fixed an exception that was thrown upon duplicating an object
-	- Fixed a crash that occurred in the last release when opening a material
-	- Fixed a crash when attempting to open a different level from the browser while the engine is active
-	- Fixed error dialog when performing check on BF
-	- Fixed BF check displaying nothing for some invalid entries, now will display key if no valid name exists
-	- Fixed rotating and moving the camera slowing to a crawl, particularly with the browser open
-	- Fixed "Full Maximized" resulting in menus to no longer be visible, making it hard to switch back
-	- Fixed a possible issue that might arise when using the "Full Maximized" while a frame is already maximized
-	- Fixed 3D View objects list not updating when it should
-	- Fixed an oversight with the group association function (thanks to Droolie!)
-	- Fixed audio subsystem not initialising again until restart when switching between projects
-	- Fixed an issue with blurry textures resulting from importing larger textures
-	- It's now possible to mix different PCM formats in the same project
-	- Simplified mipmap generation (works best if you have an OpenGL 3+ capable card)
-	- Introduced a new splash screen
-	- Translated internal exception warning to English
-	- Translated material-type names to English
-	- Removed "Perforce Refresh" option from Browser, given it's redundant now
-	- SSE optimisations are now used by the editor
-	- Bumped engine limits to match Droolie's fork
-	- Changed how 3D View "Full Maximized" works, so it behaves more like a borderless fullscreen mode
-	- Changed drag-camera shortcut to use SHIFT instead of ALT, as ALT is causing problems
-	- A debug dump will automatically be generated, if possible, if and when the application crashes
-	- Renamed editor executable to "Jaded" to avoid conflicts with other fan bug-fixes
-	- Editor will now use newer common controls (i.e. more modern appearance)
-	- Overhauled joystick input to use SDL2's game controller API instead of DirectInput
-	- Disabled prompt if warnings are present in log (obnoxious and unnecessary imo)
-	- Switched over to using GLEW for handling GL extensions
-	- Removed Perforce tool panels and eliminated Perforce-related requests
-
+Jaded - Community Patched Jade Engine
+	Email:		hogsy@oldtimes-software.com
+	Discord:	hogsy
 -----------------------------------------------------------
 
-2023-05-xx (v0.2.0)
+2023-06-xx (v0.2.0)
 - Added support for anisotropic filtering (automatically used if texture is using mipmaps w/ max supported samples)
-- Fixed several potential buffer-overflows
+- Fixed "Export World To Mad..." option causing a crash (https://github.com/OldTimes-Software/jaded/issues/2)
+	~ There appears to be a memory fault when exporting multiple times, will look into this for the next release
+- Fixed several dozen potential buffer-overflows
 - Fixed audio subsystem not initialising again until restart when switching between projects
 - Fixed an issue with blurry textures resulting from very pessimistic assumptions about available VRAM/RAM
-- It's now possible to use both PCM and ADPCM formats in the same project
+- Fixed a crash that occurred when attempting to clean up an object that wasn't loaded correctly
+- Removed object limits in the intersection/collision system (https://github.com/OldTimes-Software/jaded/issues/20)
+	+ Rewrote how collision flags are handled, which should be marginally easier on the CPU
 - Removed "Perforce Refresh" option from Browser, given it's redundant now
+- Removed warning on 3,000 tris / 5,000 vert for geometry per request (https://github.com/OldTimes-Software/jaded/issues/26)
+- It's now possible to use both PCM and ADPCM formats in the same project (https://github.com/OldTimes-Software/jaded/issues/12)
 - Simplified mipmap generation (works best if you have an OpenGL 3+ capable card)
 - Introduced a new splash screen
 - Translated internal exception warning to English

@@ -1979,10 +1979,9 @@ void GDI_SwapCameras( GDI_tdst_DisplayData *_pst_DD)
 	_pst_DD->uc_LockObjectToCam				= _pst_DD->uc_LockObjectToSplitViewCam;
 	_pst_DD->uc_LockObjectToSplitViewCam	= uc_Temp;
 
-	pst_TempObj = _pst_DD->pst_CamTarget;
+	pst_TempObj = ( GEO_tdst_Object * ) _pst_DD->pst_CamTarget;
 	_pst_DD->pst_CamTarget = _pst_DD->pst_SplitViewCamTarget;
-	_pst_DD->pst_SplitViewCamTarget = pst_TempObj;
-
+	_pst_DD->pst_SplitViewCamTarget = ( OBJ_tdst_GameObject * ) pst_TempObj;
 
 	L_memcpy (&st_TempMatrix,							&_pst_DD->st_OffsetToCamTarget,				sizeof(MATH_tdst_Matrix));
 	L_memcpy (&_pst_DD->st_OffsetToCamTarget,			&_pst_DD->st_OffsetToSplitViewCamTarget,	sizeof(MATH_tdst_Matrix));

@@ -18,6 +18,7 @@
 #include <stdbool.h>
 
 #if defined( __cplusplus )
+#	include <cassert>
 #	include <string>
 #	include <vector>
 #	include <map>

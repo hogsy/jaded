@@ -291,9 +291,9 @@ BOOL WOR_b_World_Import(char *_psz_BigPathName, char *_psz_BigFileName, char *_p
     {
         if ( !WOR_b_CheckWorldBeforeMerging( ul_Dir, 0 ) )
         {
-            psz_Text = sz_Text + sprintf(sz_Text, "Warning : there's gameobject outside GameObject dir ?\n", sz_Name, sz_WorldName);
-            psz_Text += sprintf(psz_Text, "If you continue Jade may crash !\n", sz_Name, sz_WorldName);
-            psz_Text += sprintf(psz_Text, "continue anyway ???", sz_Name, sz_WorldName);
+            psz_Text = sz_Text + sprintf(sz_Text, "Warning : there's gameobject outside GameObject dir ?\n");
+            psz_Text += sprintf(psz_Text, "If you continue Jade may crash !\n");
+            psz_Text += sprintf(psz_Text, "continue anyway ???");
             if( MessageBox(MAI_gh_MainWindow, sz_Text, "!!! BIG WARNING !!!", MB_ICONQUESTION | MB_YESNO) == IDNO )
                 return 0;
         }
