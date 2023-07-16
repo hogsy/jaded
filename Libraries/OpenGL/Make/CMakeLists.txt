@@ -656,16 +656,13 @@ elseif("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Win32")
             "${CMAKE_CURRENT_SOURCE_DIR}/../extern/glew/include"
         ">"
         "$<$<CONFIG:ReleaseXProfile>:"
-            "${CMAKE_CURRENT_SOURCE_DIR}/../../../Main/WinEngine/Sources;"
-            "${CMAKE_CURRENT_SOURCE_DIR}/../extern/glew/include"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../../../Main/WinEngine/Sources"
         ">"
         "$<$<CONFIG:SpeedEditors>:"
-            "${CMAKE_CURRENT_SOURCE_DIR}/../../../Main/WinEditors/Sources;"
-            "${CMAKE_CURRENT_SOURCE_DIR}/../extern/glew/include"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../../../Main/WinEditors/Sources"
         ">"
         "$<$<CONFIG:SpeedEditorsXenon>:"
-            "${CMAKE_CURRENT_SOURCE_DIR}/../../../Main/WinEditors/Sources;"
-            "${CMAKE_CURRENT_SOURCE_DIR}/../extern/glew/include"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../../../Main/WinEditors/Sources"
         ">"
         "${CMAKE_CURRENT_SOURCE_DIR}/../../SDK;"
         "${CMAKE_CURRENT_SOURCE_DIR}/../Sources;"
@@ -745,8 +742,7 @@ elseif("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Xbox")
         "${CMAKE_CURRENT_SOURCE_DIR}/../..;"
         "${CMAKE_CURRENT_SOURCE_DIR}/../../GraphicDK/Sources;"
         "${CMAKE_CURRENT_SOURCE_DIR}/../../../Dlls;"
-        "${CMAKE_CURRENT_SOURCE_DIR}/../../../Extern/ode/include;"
-        "${CMAKE_CURRENT_SOURCE_DIR}/../extern/glew/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../../Extern/ode/include"
     )
 elseif("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Xenon")
     target_include_directories(${PROJECT_NAME} PUBLIC
@@ -817,10 +813,12 @@ elseif("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Xenon")
         "${CMAKE_CURRENT_SOURCE_DIR}/../..;"
         "${CMAKE_CURRENT_SOURCE_DIR}/../../GraphicDK/Sources;"
         "${CMAKE_CURRENT_SOURCE_DIR}/../../../Dlls;"
-        "${CMAKE_CURRENT_SOURCE_DIR}/../../../Extern/ode/include;"
-        "${CMAKE_CURRENT_SOURCE_DIR}/../extern/glew/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../../Extern/ode/include"
     )
 endif()
+
+target_include_directories(${PROJECT_NAME} PUBLIC
+        ../../../extern/glew/include)
 
 ################################################################################
 # Compile definitions

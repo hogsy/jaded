@@ -1796,27 +1796,27 @@ endif()
 ################################################################################
 if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Any CPU")
     set(ADDITIONAL_LIBRARY_DEPENDENCIES
-        "$(XEDK)\lib\win32\d3d9;"
-        "$(XEDK)\lib\win32\xgraphics;"
-        "$(XEDK)\lib\win32\d3dx9"
+        "$(XEDK)/lib/win32/d3d9;"
+        "$(XEDK)/lib/win32/xgraphics;"
+        "$(XEDK)/lib/win32/d3dx9"
     )
 elseif("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Win32")
     set(ADDITIONAL_LIBRARY_DEPENDENCIES
-        "$(XEDK)\lib\win32\d3d9;"
-        "$(XEDK)\lib\win32\xgraphics;"
-        "$(XEDK)\lib\win32\d3dx9"
+        "$(XEDK)/lib/win32/d3d9;"
+        "$(XEDK)/lib/win32/xgraphics;"
+        "$(XEDK)/lib/win32/d3dx9"
     )
 elseif("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Xbox")
     set(ADDITIONAL_LIBRARY_DEPENDENCIES
-        "$(XEDK)\lib\win32\d3d9;"
-        "$(XEDK)\lib\win32\xgraphics;"
-        "$(XEDK)\lib\win32\d3dx9"
+        "$(XEDK)/lib/win32/d3d9;"
+        "$(XEDK)/lib/win32/xgraphics;"
+        "$(XEDK)/lib/win32/d3dx9"
     )
 elseif("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Xenon")
     set(ADDITIONAL_LIBRARY_DEPENDENCIES
-        "$(XEDK)\lib\win32\d3d9;"
-        "$(XEDK)\lib\win32\xgraphics;"
-        "$(XEDK)\lib\win32\d3dx9"
+        "$(XEDK)/lib/win32/d3d9;"
+        "$(XEDK)/lib/win32/xgraphics;"
+        "$(XEDK)/lib/win32/d3dx9"
     )
 endif()
 target_link_libraries(${PROJECT_NAME} PUBLIC "${ADDITIONAL_LIBRARY_DEPENDENCIES}")
