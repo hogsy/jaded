@@ -478,10 +478,12 @@ void INO_Joystick_Update( void )
 	for ( unsigned int i = 0; i < eBtn_GenericButtonNb; ++i )
 	{
 		INO_gst_CurrPad[ INO_gi_CurrentPadId ].ac_Button[ i ] = GetSDLButtonState( gameController, ( INO_tden_GenericButtonId ) i );
+#if 0 // hogsy: removed for now
 		if ( INO_b_IsKeyPressed( INO_gauc_KeyToPad[ INO_CKPT_ButtonsFirst + i ] ) )
 		{
 			INO_gst_CurrPad[ INO_gi_CurrentPadId ].ac_Button[ i ] = 0xFF;
 		}
+#endif
 	}
 
 	/*$1
@@ -679,8 +681,8 @@ BOOL INO_b_Joystick_IsButtonDown( LONG _l_ButtonIndex )
 BOOL INO_b_Joystick_IsButtonJustDown( LONG _l_ButtonIndex )
 {
 	if ( INO_gi_CurrentPadId == -1 ) return FALSE;
-	if (
-	        INO_gst_CurrPad[ INO_gi_CurrentPadId ].ac_Button[ _l_ButtonIndex ] && !INO_gst_PrevPad[ INO_gi_CurrentPadId ].ac_Button[ _l_ButtonIndex ] ) return TRUE;
+	if ( INO_gst_CurrPad[ INO_gi_CurrentPadId ].ac_Button[ _l_ButtonIndex ] && !INO_gst_PrevPad[ INO_gi_CurrentPadId ].ac_Button[ _l_ButtonIndex ] ) 
+		return TRUE;
 	return FALSE;
 }
 
@@ -795,6 +797,7 @@ void INO_Joystick_Move( MATH_tdst_Vector *_pst_Move, int _i_Num )
 		_pst_Move->z = 0.0f;
 	}
 
+#if 0 // hogsy: removed for now
 	if ( !_i_Num )
 	{
 		if ( INO_b_IsKeyPressed( INO_gauc_KeyToPad[ INO_CKTP_Left0 ] ) ) _pst_Move->x = -1.0f;
@@ -814,6 +817,7 @@ void INO_Joystick_Move( MATH_tdst_Vector *_pst_Move, int _i_Num )
 		if ( INO_b_IsKeyPressed( INO_gauc_KeyToPad[ INO_CKTP_Right1 ] ) ) _pst_Move->x = 1.0f;
 		if ( INO_b_IsKeyPressed( INO_gauc_KeyToPad[ INO_CKTP_Down1 ] ) ) _pst_Move->y = -1.0f;
 	}
+#endif
 
 	if ( b_InvertX ) _pst_Move->x *= -1;
 	if ( INO_l_JoystickDir & INO_JoyDir_Y0Invert ) _pst_Move->y *= -1;

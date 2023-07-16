@@ -21,14 +21,12 @@
 extern "C" {
 #endif
 
-
-
-#if !defined(PSX2_TARGET) && !defined(_GAMECUBE) && !defined(_XBOX) && !defined(_XENON)/* no keyboard on PS2 or GC or XBOX */
-static char *INO_gspc_State;
-static char *INO_gspc_PrevState;
-UCHAR INO_gauc_KeyToPad[100];
+#if !defined( PSX2_TARGET ) && !defined( _GAMECUBE ) && !defined( _XBOX ) && !defined( _XENON ) /* no keyboard on PS2 or GC or XBOX */
+	static BYTE *INO_gspc_State;
+	static BYTE *INO_gspc_PrevState;
+	UCHAR INO_gauc_KeyToPad[ 100 ];
 #else
-unsigned char ucVirtualPressedKey[3] = {0, 0, 0};
+	unsigned char ucVirtualPressedKey[ 3 ] = { 0, 0, 0 };
 #endif
 
 /*
@@ -38,11 +36,12 @@ unsigned char ucVirtualPressedKey[3] = {0, 0, 0};
 void INO_KeyboardInit(void)
 {
 #if !defined(PSX2_TARGET) && !defined(_GAMECUBE) && !defined(_XBOX) && !defined(_XENON) /* no keyboard on PS2 or GC or XBOX */    
-	INO_gspc_State = (char*)MEM_p_Alloc( 256 );
-    INO_gspc_PrevState = (char*)MEM_p_Alloc( 256 );
+	INO_gspc_State     = ( BYTE *) MEM_p_Alloc( 256 );
+	INO_gspc_PrevState = ( BYTE *) MEM_p_Alloc( 256 );
 
 	/* Default key to pad */
 	memset(INO_gauc_KeyToPad, 0, sizeof(INO_gauc_KeyToPad));
+
 #if 0
 	INO_gauc_KeyToPad[INO_CKTP_Left0] = VK_LEFT;
 	INO_gauc_KeyToPad[INO_CKTP_Up0] = VK_UP;
@@ -87,7 +86,7 @@ void INO_KeyboardClose(void)
 void INO_Keyboard_Update(void)
 {
 #if !defined(PSX2_TARGET) && !defined(_GAMECUBE) && !defined(_XBOX) && !defined(_XENON) /* no keyboard on PS2 or GC or XBOX */
-    char *key;
+    static BYTE *key;
 
     /* swap key state */
     key = INO_gspc_PrevState;
@@ -95,7 +94,9 @@ void INO_Keyboard_Update(void)
     INO_gspc_State = key;
 
 #ifndef INO_JOYSTICK_USE_MOUSE_AND_KEYBOARD
-    GetKeyboardState( (PBYTE)key );
+	if ( !GetKeyboardState( ( PBYTE ) key ) ) {
+		ZeroMemory( key, 256 );
+	}
 #else
 	{
 		extern unsigned char pcINO_gab_LastKeyboardState[];
