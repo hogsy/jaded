@@ -22,6 +22,8 @@
 #	include <string>
 #	include <vector>
 #	include <map>
+#else
+#	include <assert.h>
 #endif
 
 #define BAS_C_Target_PS2   1

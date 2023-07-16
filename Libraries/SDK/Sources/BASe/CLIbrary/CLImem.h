@@ -8,12 +8,6 @@
 
 #pragma once
 
-#ifdef __cplusplus
-#define EXTERN extern "C"
-#else
-#define EXTERN extern
-#endif // __cplusplus
-
 #include "malloc.h"
 #define L_malloc(a)		malloc(a)
 #define L_realloc(a, b) realloc(a, b)
