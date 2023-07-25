@@ -120,6 +120,10 @@ _inline_ void AI_EvalVarArray(AI_tdst_Node *_pst_Node, void *_pv_Addr)
 
 	AI_PopVar(&Val, &st_Var);	/* Get index in array */
 	AI_Check((UINT) Val.i < ((UINT *) _pv_Addr)[0], "Indice too big for array");
+	if ( ( UINT ) Val.i >= ( ( UINT * ) _pv_Addr )[ 0 ] )
+	{
+		( UINT ) Val.i = ( ( UINT * ) _pv_Addr )[ 0 ] - 1;
+	}
 
 	st_Var.w_Type = _pst_Node->w_Param;
 	st_Var.pv_Addr = AI_EvalVarArray_C(st_Var.w_Type, _pv_Addr, Val.i);

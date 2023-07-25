@@ -67,6 +67,31 @@ extern "C" BOOL LOA_gb_SpeedMode ;
 extern "C" char ENG_gaz_SlashL[1024];
 extern "C" int	 ENG_gi_Map2;
 #endif
+
+/**
+ * hogsy: A special version of _ERR_fnb_AssertFailed for handling script-related errors.
+ */
+bool ERR_ScriptAssertFailed( const char *filename, int line, const char *expression, const char *message )
+{
+	std::string tmp = std::string( "A script error was encountered (" ) + filename + ":" + std::to_string( line ) = "):\n";
+	tmp.append( message );
+
+	if ( expression != nullptr )
+	{
+		tmp.append( " (" + std::string( expression ) + ")\n" );
+	}
+
+	tmp.append( "\nClick OK to debug, Cancel to ignore." );
+
+	int result = MessageBox( nullptr, tmp.c_str(), "Script Error", MB_OKCANCEL | MB_ICONWARNING | MB_SETFOREGROUND );
+
+	LINK_gul_ColorTxt = 0x000000FF;
+	LINK_PrintStatusMsg( ( char * ) message );
+	LINK_gul_ColorTxt = 0;
+
+	return ( result == IDOK );
+}
+
 BOOL _ERR_fnb_AssertFailed
 (
     BOOL    _b_Assert,

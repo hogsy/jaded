@@ -148,16 +148,29 @@ extern BOOL					AI_SearchBreakPoint(AI_tdst_Function *, AI_tdst_Model *, AI_tdst
  */
 
 #ifdef ACTIVE_EDITORS
-#define AI_CheckPointer(__Pointer) \
-	{ \
-		if(IsBadReadPtr(__Pointer, 1)) \
-		{ \
-			ERR_X_ForceError("Bad Pointer Detected", NULL); \
-			L_longjmp(AI_gst_ContextCheck, 1); \
-		} \
-	}
+#		define AI_CheckPointer( __Pointer )                          \
+			{                                                         \
+				if ( IsBadReadPtr( __Pointer, 1 ) )                   \
+				{                                                     \
+					ERR_X_ForceError( "Bad Pointer Detected", NULL ); \
+					L_longjmp( AI_gst_ContextCheck, 1 );              \
+				}                                                     \
+			}
 
-#define AI_Check(__Expr, __Str) { if(!(__Expr)) { ERR_X_ForceError(__Str, NULL); L_longjmp(AI_gst_ContextCheck, 1); } }
+#		if 1
+#			define AI_Check( __Expr, __Str )                                                   \
+				{                                                                               \
+					if ( !( __Expr ) )                                                          \
+					{                                                                           \
+						if ( ERR_ScriptAssertFailed( BAS_FILENAME, __LINE__, #__Expr, __Str ) ) \
+						{                                                                       \
+							L_longjmp( AI_gst_ContextCheck, 1 );                                \
+						}                                                                       \
+					}                                                                           \
+				}
+#		else
+#			define AI_Check( __Expr, __Str )
+#		endif
 
 /*$2------------------------------------------------------------------------------------------------------------------*/
 

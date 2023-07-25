@@ -13,7 +13,7 @@
 #define ERR_COMPILER_Csz_BadType            "Bad variable type"
 #define ERR_COMPILER_Csz_DupSymbol          "Symbol already defined"
 #define ERR_COMPILER_Csz_ExpString          "Expected a given string"
-#define ERR_COMPILER_Csz_UnkownID           "Unknow identifier"
+#define ERR_COMPILER_Csz_UnkownID           "Unknown identifier"
 #define ERR_COMPILER_Csz_Syntax             "Syntax error"
 #define ERR_COMPILER_Csz_BadNumPars         "Bad number of parameters"
 #define ERR_COMPILER_Csz_BadTypes           "Incompatible types"

@@ -426,7 +426,7 @@ _inline_ OBJ_tdst_GameObject *AI_PopGameObject(void)
 {
 	AI_gul_SizeGlobalStack -= MINSIZE;
 	--AI_gul_SizeGlobalVarStack;
-	AI_Check((int) * (OBJ_tdst_GameObject **) (AI_gac_GlobalStack + AI_gul_SizeGlobalStack) != -1, "Unkown reference");
+	AI_Check((int) * (OBJ_tdst_GameObject **) (AI_gac_GlobalStack + AI_gul_SizeGlobalStack) != -1, "Unknown reference");
 	return *(OBJ_tdst_GameObject **) (AI_gac_GlobalStack + AI_gul_SizeGlobalStack);
 }
 
@@ -438,7 +438,7 @@ _inline_ WAY_tdst_Network *AI_PopNetwork(void)
 {
 	AI_gul_SizeGlobalStack -= MINSIZE;
 	--AI_gul_SizeGlobalVarStack;
-	AI_Check((int) * (WAY_tdst_Network **) (AI_gac_GlobalStack + AI_gul_SizeGlobalStack) != -1, "Unkown reference");
+	AI_Check((int) * (WAY_tdst_Network **) (AI_gac_GlobalStack + AI_gul_SizeGlobalStack) != -1, "Unknown reference");
 	return *(WAY_tdst_Network **) (AI_gac_GlobalStack + AI_gul_SizeGlobalStack);
 }
 
