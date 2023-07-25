@@ -73,13 +73,19 @@ extern "C" int	 ENG_gi_Map2;
  */
 bool ERR_ScriptAssertFailed( const char *filename, int line, const char *expression, const char *message )
 {
-	std::string tmp = std::string( "A script error was encountered (" ) + filename + ":" + std::to_string( line ) = "):\n";
-	tmp.append( message );
+	std::string tmp = "A script error was encountered:\n  ";
+	tmp.append( std::string( message ) + "\n" );
 
+#if 0 //TODO: display both code and script debug info...
+    if ( filename != nullptr )
+	{
+		tmp.append( std::string( filename ) + ":" + std::to_string( line ) + "\n" );
+	}
 	if ( expression != nullptr )
 	{
-		tmp.append( " (" + std::string( expression ) + ")\n" );
+		tmp.append( std::string( expression ) + "\n" );
 	}
+#endif
 
 	tmp.append( "\nClick OK to debug, Cancel to ignore." );
 

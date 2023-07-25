@@ -1,25 +1,34 @@
 Jaded - Community Patched Jade Engine
 	Email:		hogsy@oldtimes-software.com
 	Discord:	hogsy
+	Mastodon:	@hogsy@mastodon.social 
 -----------------------------------------------------------
 
-2023-06-xx (v0.2.0)
+2023-07-23 (v0.2.0)
 - Added support for anisotropic filtering (automatically used if texture is using mipmaps w/ max supported samples)
+- Added 'legal.txt' that includes a disclaimer, and legal notices for other libraries we're using (or will be using)
 - Fixed "Export World To Mad..." option causing a crash (https://github.com/OldTimes-Software/jaded/issues/2)
 	~ There appears to be a memory fault when exporting multiple times, will look into this for the next release
 - Fixed several dozen potential buffer-overflows
 - Fixed audio subsystem not initialising again until restart when switching between projects
 - Fixed an issue with blurry textures resulting from very pessimistic assumptions about available VRAM/RAM
 - Fixed a crash that occurred when attempting to clean up an object that wasn't loaded correctly
-- Removed object limits in the intersection/collision system (https://github.com/OldTimes-Software/jaded/issues/20)
-	+ Rewrote how collision flags are handled, which should be marginally easier on the CPU
+- Fixed additional flags (such as fur) getting cleared when opening material in editor (https://github.com/OldTimes-Software/jaded/issues/28)
+- Fixed a case where the input handling would interpret a key as always being active, causing controller input to cease working
+- Reintroduced script checks, but clicking 'Cancel' will now ignore the error and attempt to continue limping along (at your own peril)
+- Bumped object limits in the intersection/collision system (https://github.com/OldTimes-Software/jaded/issues/20)
+	+ Rewrote how collision flags are handled, which should be marginally easier on the CPU (and so we can eventually move away from hard-limits)
 - Removed "Perforce Refresh" option from Browser, given it's redundant now
 - Removed warning on 3,000 tris / 5,000 vert for geometry per request (https://github.com/OldTimes-Software/jaded/issues/26)
+- Changed some defaults for view in editor
+	+ Tris/obj warnings are now disabled by default
+	+ AfterEffects in editor are now enabled by default
 - It's now possible to use both PCM and ADPCM formats in the same project (https://github.com/OldTimes-Software/jaded/issues/12)
 - Simplified mipmap generation (works best if you have an OpenGL 3+ capable card)
 - Introduced a new splash screen
 - Translated internal exception warning to English
 - Translated material-type names to English
+- Additional assertions have been introduced to try and catch other faults, with better error handling in these situations
 - Continued massaging in JADEFUSION changes
 
 2023-04-19

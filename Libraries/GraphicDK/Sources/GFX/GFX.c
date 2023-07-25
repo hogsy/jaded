@@ -1267,16 +1267,6 @@ void GFX_NeedGeomEx(ULONG _ul_NbPoints, ULONG _ul_NbUVs, ULONG _ul_NbElements, U
 
 	if(_b_RLI)
 	{
-#ifdef _GAMECUBE
-		if(GFX_ul_MaxRLI == 0)
-		{
-			if(GFX_pul_RLI)
-				GFX_pul_RLI = (ULONG *) MEM_p_Realloc(GFX_pul_RLI, (4000 + 1) * 4);
-			else
-				GFX_pul_RLI = (ULONG *) MEM_p_Alloc((4000 + 1) * 4);
-			GFX_ul_MaxRLI = 4000;
-		}
-#endif
 		if(GFX_ul_MaxRLI < _ul_NbPoints)
 		{
 			if(GFX_pul_RLI)
@@ -1292,34 +1282,17 @@ void GFX_NeedGeomEx(ULONG _ul_NbPoints, ULONG _ul_NbUVs, ULONG _ul_NbElements, U
 
 	if(GFX_gpst_GO == NULL)
 	{
-#ifdef _GAMECUBE
-		_ul_NbPoints = 4000;
-		_ul_NbUVs = 4000;
-		_ul_NbElements = 50;
-		_ul_NbTriangles = 4000;
-#endif
-	
 		for(i = 0; i < 64; i++) GFX_aul_MaxTriangles[i] = 0;
 		
 
 		GEO_b_IsInFix = TRUE;
 		GFX_gpst_Geo = GEO_pst_Create(_ul_NbPoints, _ul_NbUVs, _ul_NbElements, 0);
-		
-#ifdef _GAMECUBE
-		if(_ul_NbElements)
-			L_memset(GFX_gpst_Geo->dst_Element, 0, sizeof(GEO_tdst_ElementIndexedTriangles) * _ul_NbElements);			
-#endif		
-		
 		GEO_b_IsInFix = FALSE;
 
 		pst_Element = GFX_gpst_Geo->dst_Element;
 		pst_Element->l_NbTriangles = _ul_NbTriangles;
 		pst_Element->p_MrmElementAdditionalInfo = NULL;
 		pst_Element->pst_StripData = NULL;
-#ifdef PSX2_TARGET	
-		pst_Element->pst_StripDataPS2 = NULL;
-		pst_Element->p_ElementCache = NULL;
-#endif
 		pst_Element->ul_NumberOfUsedIndex = 0;
 		GEO_AllocElementContent(pst_Element);
 
@@ -1437,12 +1410,7 @@ void GFX_NeedGeomExElem(ULONG _ul_Element, ULONG _ul_NbTriangles)
 		{
 			pst_Element->l_NbTriangles = _ul_NbTriangles;
 			pst_Element->p_MrmElementAdditionalInfo = NULL;
-			pst_Element->pst_StripData = NULL;
-#ifdef PSX2_TARGET	
-			pst_Element->pst_StripDataPS2 = NULL;
-			pst_Element->p_ElementCache = NULL;
-#endif
-			
+			pst_Element->pst_StripData = NULL;			
 			pst_Element->ul_NumberOfUsedIndex = 0;
 			GEO_AllocElementContent(pst_Element);
 		}

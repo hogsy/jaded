@@ -375,8 +375,6 @@ else \
 		_X_ErrorRaised__(FALSE, NULL, __T1, __T2); \
 	}
 
-#				define ERR_X_ScriptError( MSG ) ERR_ScriptAssertFailed( __FILE__, __LINE__, NULL, MSG )
-
 /*$4
  ***********************************************************************************************************************
     Breakpoint definition

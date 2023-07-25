@@ -16,7 +16,7 @@
 extern "C"
 {
 #endif
-#define INT_Cul_MaxObjects      1536 // old : 1024
+#define INT_Cul_MaxObjects      4096 // old : 1024
 #define INT_Cul_MaxNodes        (2 * INT_Cul_MaxObjects)
 
 #define INT_Cul_AxisX           0

@@ -64,7 +64,9 @@ typedef struct  INT_tdst_AxisNode_
 
 typedef struct  INT_tdst_AxisTable_
 {
-	INT_tdst_AxisNode *pst_Nodes{};
+	//INT_tdst_AxisNode *pst_Nodes{};
+	std::array< INT_tdst_AxisNode, INT_Cul_MaxNodes > pst_Nodes;
+
 	SnPBitVec flags;
 
     INT_tdst_AxisTable_() : flags( INT_Cul_MaxObjects ) {}

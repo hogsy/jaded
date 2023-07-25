@@ -1046,9 +1046,6 @@ void SDW_RenderShadow(GDI_tdst_DisplayData *pst_DD, GEO_tdst_Object *pst_Obj , D
 		pst_Elem++;
 	}
 	/* END Render shadow */
-#ifdef _GAMECUBE 
-	GXI_EndShadowRendering();
-#endif
 
 	/* Restore frame buffer target 	*/
 	pst_DD->st_GDI.pfnv_SetTextureTarget(0xffffffff , 0);
@@ -1062,10 +1059,6 @@ void SDW_RenderShadow(GDI_tdst_DisplayData *pst_DD, GEO_tdst_Object *pst_Obj , D
 	Gx8_RS_Lighting(pst_DD->pv_SpecificData, 0);
 
 	GDI_SetTextureBlending((*pst_DD),0xffffffff, 0, 0);
-#ifdef _GAMECUBE
-	GXI_Global_ACCESS(bPutObjectInObjectList) = bInObjectList;
-#endif
-	
 #endif	// #if !defined(_GAMECUBE) || !defined(USE_FULL_SCENE_SHADOWS)
 }
 //#endif 

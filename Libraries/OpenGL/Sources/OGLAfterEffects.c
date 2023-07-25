@@ -29,7 +29,7 @@
 
 	extern void OGL_DrawText(int X,int Y,char *P_String,long Color,float Alpha,float SizeFactor);
 
-static int FBTexture[10] = {0xC0DE2004,0xC0DE2004,0xC0DE2004,0xC0DE2004,0xC0DE2004,0xC0DE2004,0xC0DE2004,0xC0DE2004};
+static GLuint FBTexture[10] = {0xC0DE2004,0xC0DE2004,0xC0DE2004,0xC0DE2004,0xC0DE2004,0xC0DE2004,0xC0DE2004,0xC0DE2004};
 
 static float SKYZ = -0.999999f;
 
@@ -464,14 +464,14 @@ void OGL_AE_SetViewport(float *W , float *H)
 }
 
 
-void OGL_AE_ValidateTexture(int *TexHan,int Mode,int ScreenSize,int ScreenSize_V)
+void OGL_AE_ValidateTexture(GLuint *TexHan,int Mode,int ScreenSize,int ScreenSize_V)
 {
 	u32 Dummy;
 	if((*TexHan == 0xC0DE2004) || (!glAreTexturesResident(1,(GLuint* )TexHan,(GLboolean* )&Dummy )))
 	{
 		int Viewporti[4];
 		OGL_CALL( glGetIntegerv(GL_VIEWPORT  ,  Viewporti) );
-		OGL_CALL( glGenTextures(1, (GLuint*)TexHan) );
+		OGL_CALL( glGenTextures(1, TexHan) );
 		OGL_CALL( glBindTexture(GL_TEXTURE_2D, *TexHan) );
 		OGL_CALL( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP) );
 		OGL_CALL( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP) );
@@ -483,7 +483,7 @@ void OGL_AE_ValidateTexture(int *TexHan,int Mode,int ScreenSize,int ScreenSize_V
 	}
 }
 
-void OGL_AE_CopyTexture(int *TexHan)
+void OGL_AE_CopyTexture(GLuint *TexHan)
 {
 	int Viewporti[4];
 	int XT,YT;
@@ -1774,11 +1774,12 @@ void AFTEREFFX_GlowFromZList()
 
 }
 
+extern u32 GetSPG2CachePercent();
+
 void OGL_AE_Before2D()
 {
 #ifdef ACTIVE_EDITORS
 	extern BOOL ENG_gb_EngineRunning;
-	extern u32 GetSPG2CachePercent();
 	if (!BackIsClear) return;
 
 	/* FogMax Effect */
@@ -1995,10 +1996,10 @@ void OGL_DisplayDebugPerObject(WOR_tdst_World *_pst_World)
 		{
 			if (((!(pst_GO->DrawInfoName & 0xffffff00)) && pst_GO->DrawInfoName) && (ulNumberOfSel < 20))
 			{
-				s32 LX,LY;
+				double LX,LY;
 
-				sprintf((char* )String,"%s",pst_GO->sz_Name);
-#ifdef JADEFUSION
+				snprintf( ( char * ) String, sizeof(String), "%s", pst_GO->sz_Name );
+
 				LX = XX-((float)((L_strlen((char* )String) * 8)>>1)*TEX_SIZE);
 				LY = YY;
 				if (LX < -GDI_gpst_CurDD->st_Device.Vx) 
@@ -2013,35 +2014,18 @@ void OGL_DisplayDebugPerObject(WOR_tdst_World *_pst_World)
 					LY = 0.0f;
 				if (LY > GDI_gpst_CurDD->st_Device.Vy + GDI_gpst_CurDD->st_Device.Vh - GDI_gpst_CurDD->st_Camera.l_ViewportRealTop - 16.f * TEX_SIZE) 
 					LY = GDI_gpst_CurDD->st_Device.Vy + GDI_gpst_CurDD->st_Device.Vh - GDI_gpst_CurDD->st_Camera.l_ViewportRealTop - 16.f * TEX_SIZE;
-				OGL_DrawText_NoRecenter(LX,LY,(char* )String,0x80ffff,3.0f * (float)pst_GO->DrawInfoName / 255.0f,TEX_SIZE);
-#else
-				LX = (s32)(XX-((float)((L_strlen(String) * 8)>>1)*TEX_SIZE));
-				LY = (s32)YY;
-				if (LX < -GDI_gpst_CurDD->st_Device.Vx) 
-					LX = -GDI_gpst_CurDD->st_Device.Vx;
-				if (LX < (s32)0.0f) 
-					LX = (s32)0.0f;
-				if (LX + L_strlen(String) * 8.f * TEX_SIZE > GDI_gpst_CurDD->st_Device.Vx + GDI_gpst_CurDD->st_Device.Vw) 
-					LX = (s32)(GDI_gpst_CurDD->st_Device.Vx + GDI_gpst_CurDD->st_Device.Vw - L_strlen(String) * 8.f * TEX_SIZE);
-				if (LY < -GDI_gpst_CurDD->st_Device.Vy) 
-					LY = -GDI_gpst_CurDD->st_Device.Vy;
-				if (LY < (s32)0.0f) 
-					LY = (s32)0.0f;
-				if (LY > (s32)(GDI_gpst_CurDD->st_Device.Vy + GDI_gpst_CurDD->st_Device.Vh - GDI_gpst_CurDD->st_Camera.l_ViewportRealTop - 16.f * TEX_SIZE)) 
-					LY = (s32)(GDI_gpst_CurDD->st_Device.Vy + GDI_gpst_CurDD->st_Device.Vh - GDI_gpst_CurDD->st_Camera.l_ViewportRealTop - 16.f * TEX_SIZE);
-				OGL_DrawText_NoRecenter(LX,LY,String,0x80ffff,3.0f * (float)pst_GO->DrawInfoName / 255.0f,TEX_SIZE);
-#endif
+				OGL_DrawText_NoRecenter((int)LX,(int)LY,(char* )String,0x80ffff,3.0f * (float)pst_GO->DrawInfoName / 255.0f,TEX_SIZE);
+
 				YY -= 16 * TEX_SIZE;
 			}
 			if (GDI_gpst_CurDD->DisplayTriInfo && pst_GO->NumberOfTris)
 			{
 				/* Project cord.*/
 				u32 ColorAdd;
-				s32 LX,LY;
+				double LX, LY;
 
-				sprintf((char* )String,"%d",pst_GO->NumberOfTris);
+				snprintf( ( char * ) String, sizeof(String), "%d", pst_GO->NumberOfTris );
 
-#ifdef JADEFUSION
 				LX = XX-((float)((L_strlen((char* )String) * 8)>>1)*TEX_SIZE);
 				LY = YY;
 				if (LX < -GDI_gpst_CurDD->st_Device.Vx) 
@@ -2056,29 +2040,13 @@ void OGL_DisplayDebugPerObject(WOR_tdst_World *_pst_World)
 					LY = 0.0f;
 				if (LY > GDI_gpst_CurDD->st_Device.Vy + GDI_gpst_CurDD->st_Device.Vh - GDI_gpst_CurDD->st_Camera.l_ViewportRealTop - 16.f * TEX_SIZE) 
 					LY = GDI_gpst_CurDD->st_Device.Vy + GDI_gpst_CurDD->st_Device.Vh - GDI_gpst_CurDD->st_Camera.l_ViewportRealTop - 16.f * TEX_SIZE;
-#else
-				LX = (s32)(XX-((float)((L_strlen(String) * 8)>>1)*TEX_SIZE));
-				LY = (s32)(YY);
-				if (LX < -GDI_gpst_CurDD->st_Device.Vx) 
-					LX = -GDI_gpst_CurDD->st_Device.Vx;
-				if (LX < 0) 
-					LX = 0;
-				if (LX + L_strlen(String) * 8.f * TEX_SIZE > GDI_gpst_CurDD->st_Device.Vx + GDI_gpst_CurDD->st_Device.Vw) 
-					LX = (s32)(GDI_gpst_CurDD->st_Device.Vx + GDI_gpst_CurDD->st_Device.Vw - L_strlen(String) * 8.f * TEX_SIZE);
-				if (LY < (s32)(-GDI_gpst_CurDD->st_Device.Vy)) 
-					LY = (s32)(-GDI_gpst_CurDD->st_Device.Vy);
-				if (LY < 0) 
-					LY = 0;
-				if (LY > (s32)(GDI_gpst_CurDD->st_Device.Vy + GDI_gpst_CurDD->st_Device.Vh - GDI_gpst_CurDD->st_Camera.l_ViewportRealTop - 16.f * TEX_SIZE)) 
-					LY = (s32)(GDI_gpst_CurDD->st_Device.Vy + GDI_gpst_CurDD->st_Device.Vh - GDI_gpst_CurDD->st_Camera.l_ViewportRealTop - 16.f * TEX_SIZE);
-#endif
 
 				ColorAdd = (u32)(((pst_GO->NumberOfTris / (pst_GO->uc_LOD_Vis + 1)) - StatMin) / (StatMax - StatMin) * 255.0f);
 				if (ColorAdd > 255) ColorAdd = 255;
 				ColorAdd |= ColorAdd << 8;
 				ColorAdd |= 0x800000;
 				ColorAdd ^= 0x00ff00;
-				OGL_DrawText_NoRecenter(LX,LY,(char* )String,ColorAdd,1.0f,TEX_SIZE);
+				OGL_DrawText_NoRecenter((int)LX,(int)LY,(char* )String,ColorAdd,1.0f,TEX_SIZE);
 				pst_GO->NumberOfTris = 0;
 			}
 		}
@@ -2146,23 +2114,14 @@ void OGL_DisplayDebugPerObject(WOR_tdst_World *_pst_World)
 				if (Percent > 1)
 
 				{ 
-#ifdef JADEFUSION
 					LX = (s32)(XX-((float)((L_strlen((char* )String) * 8)>>1)*TEX_SIZE));
-#else
-					LX = (s32)(XX-((float)((L_strlen(String) * 0))*TEX_SIZE));
-#endif
 					LY = (s32)YY;
 					if (LX < -GDI_gpst_CurDD->st_Device.Vx) 
 						LX = -GDI_gpst_CurDD->st_Device.Vx;
 					if (LX < (s32)0.0f) 
 						LX = (s32)0.0f;
-#ifdef JADEFUSION
 					if (LX + L_strlen((char* )String) * 8.f * TEX_SIZE > GDI_gpst_CurDD->st_Device.Vx + GDI_gpst_CurDD->st_Device.Vw) 
 						LX = (s32)(GDI_gpst_CurDD->st_Device.Vx + GDI_gpst_CurDD->st_Device.Vw - L_strlen((char* )String) * 8.f * TEX_SIZE);
-#else
-					if (LX + L_strlen(String) * 8.f * TEX_SIZE > GDI_gpst_CurDD->st_Device.Vx + GDI_gpst_CurDD->st_Device.Vw) 
-						LX = (s32)(GDI_gpst_CurDD->st_Device.Vx + GDI_gpst_CurDD->st_Device.Vw - L_strlen(String) * 8.f * TEX_SIZE);
-#endif
 					if (LY < -GDI_gpst_CurDD->st_Device.Vy) 
 						LY = -GDI_gpst_CurDD->st_Device.Vy;
 					if (LY < (s32)0.0f) 

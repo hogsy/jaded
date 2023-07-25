@@ -46,17 +46,6 @@ extern u_int NoGEODRAW;
 
 #include "BASe/BENch/BENch.h"
 
-#ifdef _GAMECUBE
-#include "GXI_GC/GXI_shadows.h"
-#ifndef _FINAL_
-#include "GXI_GC/GXI_dbg.h"
-#endif
-
-u16 g_SDWClipTexturesMap[4 * 4] ATTRIBUTE_ALIGN(32);
-GXTexObj g_SDWClipTextures;
-u32 g_ShadowPass = 0;
-#endif
-
 #define DBG_SHADOWS_SCREEN_CULLING_ON
 #define DBG_SHADOWS_INTERSETCION_CULLING_ON
 #define DBG_SHADOWS_UV_CULLING_ON

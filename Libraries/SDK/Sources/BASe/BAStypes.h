@@ -19,12 +19,20 @@
 
 #if defined( __cplusplus )
 #	include <cassert>
+#	include <array>
 #	include <string>
 #	include <vector>
 #	include <map>
 #else
 #	include <assert.h>
 #endif
+
+#define BAS_ARRAY_ELEMENTS( a )  ( sizeof( a ) / sizeof( *( a ) ) )// Returns the number of elements within an array.
+#define BAS_MAX_ARRAY_INDEX( a ) ( int ) ( BAS_ARRAY_ELEMENTS( a ) - 1 )
+
+#define BAS_FILENAME ( strrchr( __FILE__, '\\' ) ? strrchr( __FILE__, '\\' ) + 1 : __FILE__ )
+
+#define BAS_ZERO( DATA, SIZE ) memset( ( DATA ), 0, ( SIZE ) )
 
 #define BAS_C_Target_PS2   1
 #define BAS_C_Target_GC    2

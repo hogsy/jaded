@@ -6087,23 +6087,6 @@ void GEO_Render(OBJ_tdst_GameObject *_pst_GO)
 	pst_DD->ul_DisplayInfo &= ~GDI_Cul_DI_ObjectHasBeenZAdded;
 	ul_ValidityMask = MAT_GetValidityMASK((MAT_tdst_Material *) pst_Visu->pst_Material, -1, pst_Obj);
 	
-#ifndef NO_GC_FUR
-#if (defined _GAMECUBE) && (defined _GAMECUBE_DSPLS)
-	if (pst_Obj->dst_Element && pst_Obj->dst_Element->dl_size == 0xFFFFFFFF)
-	{
-#ifdef _DSPL_ALLOC	
-		BOOL bSaveTemp = DoGEOAllocFromEnd;
-	    DoGEOAllocFromEnd = 1;
-#endif // _DSPL_ALLOC	
-		pst_Obj->dst_Element->dl_size = 0;
-		GEO_Optimize_GAMECUBE(pst_Obj);
-#ifdef _DSPL_ALLOC	
-		DoGEOAllocFromEnd = bSaveTemp;
-#endif // _DSPL_ALLOC	
-	}
-#endif // #if (defined _GAMECUBE) && (defined _GAMECUBE_DSPLS)
-#endif // NO_GC_FUR
-	
 	//TESTVINCENT
 #ifdef JADEFUSION
 	if ( !(pst_DD->ul_CurrentDrawMask & GDI_Cul_DM_DontForceSorted) )
@@ -6143,10 +6126,6 @@ void GEO_Render(OBJ_tdst_GameObject *_pst_GO)
 		}
 	}
 	
-#ifdef PSX2_TARGET	
-	GSP_SetCullingMask(OBJ_c_GetCullingMask(_pst_GO));
-#endif
-
 	// AI
 	if(_pst_GO->pst_Extended && _pst_GO->pst_Extended->pst_Ai)
 	{
@@ -6187,12 +6166,10 @@ void GEO_Render(OBJ_tdst_GameObject *_pst_GO)
 	pst_DD->pus_ReorderBuffer = NULL;
     if (pst_Obj->p_MRM_Levels)
     {
-#ifdef ACTIVE_EDITORS
-        extern BOOL	OGL_gb_DispLOD;
-        extern ULONG OGL_ulLODAmbient;
-#endif // ACTIVE_EDITORS
         GEO_MRM_SetLevelFromQuality(pst_Obj,GEO_MRM_GetFloatFromUC((ULONG) _pst_GO->uc_LOD_Vis));
 #ifdef ACTIVE_EDITORS
+		extern BOOL OGL_gb_DispLOD;
+		extern ULONG OGL_ulLODAmbient;
         if (OGL_gb_DispLOD)
         {
             OGL_ulLODAmbient = 0xFF000000 |
@@ -6244,10 +6221,6 @@ void GEO_Render(OBJ_tdst_GameObject *_pst_GO)
 		/*$2- SKIN -------------------------------------------------------------------------------------------------------*/
 		if(GEO_SKN_IsSkinned(pst_Obj) && (GDI_gpst_CurDD ->ul_CurrentDrawMask & GDI_Cul_DM_ActiveSkin))
 		{
-#ifdef PSX2_TARGET	
-	        if (pst_Obj->l_NbPoints > 30)
-			    GSP_SetCullingMask(0);
-#endif
 			GEO_SKN_Compute4Display(_pst_GO, pst_Obj);
 		}
 
@@ -6324,12 +6297,6 @@ void GEO_Render(OBJ_tdst_GameObject *_pst_GO)
 	/*$2- RLI --------------------------------------------------------------------------------------------------------*/
 
 	_GSP_BeginRaster(8);
-
-#ifdef _GAMECUBE
-#ifdef USE_HARDWARE_LIGHTS				
-	GXI_Global_ACCESS(LightMask) = GX_LIGHT_NULL;
-#endif	
-#endif
 
 #if defined(_XBOX)
 	//TURN OFF HW LIGHTS
@@ -6601,12 +6568,6 @@ void GEO_Render(OBJ_tdst_GameObject *_pst_GO)
 	}
 #endif	
 
-#ifdef _GAMECUBE
-#ifdef USE_HARDWARE_LIGHTS				
-	GXI_Global_ACCESS(LightMask) = GX_LIGHT_NULL;
-#endif	
-#endif
-
 	/*$2- Shadows ----------------------------------------------------------------------------------------------------*/
 	if ( (pst_DD->pv_ShadowStack) && (((DD_tdst_ShadowStack *) pst_DD->pv_ShadowStack)->ulNumberOfNodes))
 	{
@@ -6627,40 +6588,6 @@ void GEO_Render(OBJ_tdst_GameObject *_pst_GO)
 
 	/* Water effects */
 	PROTEX_UpdateEarthWindAndFire(GDI_gpst_CurDD ->pst_CurrentGameObject, pst_Obj);
-	
-
-/*#ifdef _GAMECUBE
-	GXI_Global_ACCESS(bPutObjectInObjectList) = FALSE;
-	if(ObjectListDI != -1)
-	pst_DD->ul_DisplayInfo = ObjectListDI;
-#endif */
-
-#ifdef PSX2_TARGET	
-	GSP_SetCullingMask(OBJ_Culling_Z_OverLap|OBJ_Culling_XY_OverLap);
-#ifdef USE_GO_DATA
-	if (!(ul_ValidityMask & MAT_ValidateMask_KingKong))
-		GSP_SaveCachedData(_pst_GO , pst_Obj);
-#endif	
-	if(GDI_gpst_CurDD_SPR.ul_DisplayInfo & GDI_Cul_DI_UseSpecialVertexBuffer)
-	{
-		extern void GSP_FlushGameObject(GEO_tdst_Object *pst_Object);
-		GSP_FlushGameObject(pst_Obj);
-	}
-   	if (p_OriginalPtr_CN)
-   	{
-   		pst_Obj->p_CompressedNormals = (ULONG *)p_OriginalPtr_CN;
-   		p_OriginalPtr_CN = NULL;
-   	}
-#endif
-
-
-#ifdef PSX2_TARGET
-	/*$2- Modifiers --------------------------------------------------------------------------------------------------*/
-	if (_pst_GO->pst_Extended && _pst_GO->pst_Extended->pst_Modifiers) 
-	{
-		MDF_UnApplyAll(_pst_GO, 0);
-	}
-#endif	
 
 	/*$2- AI callback after display ----------------------------------------------------------------------------------*/
 	if(_pst_GO->pst_Extended && _pst_GO->pst_Extended->pst_Ai)
@@ -6699,14 +6626,6 @@ void GEO_Render(OBJ_tdst_GameObject *_pst_GO)
 
 	GEO_Render_SubObjectEnd(_pst_GO, pst_Obj);
 	
-#ifdef _GAMECUBE
-	{
-		extern void GXI_FlushLocalGeom();
-		GXI_FlushLocalGeom();
-	}
-#endif
-
-
 #ifdef _XBOX
 
 	//Disable lighting after draw.

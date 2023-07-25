@@ -1347,6 +1347,12 @@ void MAT_RasterizeUV
     is.dst_UV = (GEO_tdst_UV *) pst_DD->pst_ComputingBuffers->Current;
     is.Focale = fOptCos(is.pst_DD->st_Camera.f_FieldOfVision * 0.5f) * fOptInv(fOptSin(is.pst_DD->st_Camera.f_FieldOfVision * 0.5f));
 	is.p_SpriteGen = *(MAT_tdst_SpriteGen **)&TEX_gst_GlobalList.dst_Texture[_pst_MttxtLvl->s_TextureId].w_Width;
+	assert( is.p_SpriteGen != NULL );
+	if ( is.p_SpriteGen == NULL )
+	{
+		return;
+	}
+
 #ifdef PSX2_TARGET
 	if (is.p_SpriteGen->flags & MAT_SPR_TableMapped) return;
 #endif		

@@ -187,8 +187,8 @@ LONG OGL_l_Init(HWND _hWnd, GDI_tdst_DisplayData *_pst_DD)
 	_pst_DD->GlobalMul2X = TRUE;
 	_pst_DD->GlobalMul2XFactor = 1.f;
 	_pst_DD->ShowAEInEngine = TRUE;
-	_pst_DD->ShowAEEditor = FALSE;
-	_pst_DD->DrawGraphicDebugInfo = TRUE;
+	_pst_DD->ShowAEEditor = TRUE;
+	_pst_DD->DrawGraphicDebugInfo = FALSE;
 	_pst_DD->TRI_ALarm = 30000;
 	_pst_DD->SPG_ALarm = 20000;
 	_pst_DD->DRAW_ALarm = 100;
@@ -2253,15 +2253,15 @@ typedef struct SPG2_CompressedCachedPrimitivs_
 	ULONG				a_ColorLA2[SPG2_PACKET_SIZE]	ONLY_PSX2_ALIGNED(64);*/
 
 	float				LocalSizeMax;
-	U8					WindBase;
+	uint8_t WindBase;
 
-	U32					AllPS[SPG2_PACKET_SIZE]; // << 24 == LocalSizeMax * char
-	U8					AllXA[SPG2_PACKET_SIZE]; // Get It From palette
-	U8					AllYA[SPG2_PACKET_SIZE]; // Get It From palette
-	U8					AllZA[SPG2_PACKET_SIZE]; // Get It From palette
+	uint32_t AllPS[ SPG2_PACKET_SIZE ];          // << 24 == LocalSizeMax * char
+	uint8_t AllXA[ SPG2_PACKET_SIZE ];           // Get It From palette
+	uint8_t AllYA[ SPG2_PACKET_SIZE ];           // Get It From palette
+	uint8_t AllZA[ SPG2_PACKET_SIZE ];           // Get It From palette
 
-	U8					AllLocalSizes[SPG2_PACKET_SIZE >> 1]; // 4 hitgh bits = odd size , 4 lower bits = odd size
-	U16					CompressedColors[SPG2_PACKET_SIZE];
+	uint8_t AllLocalSizes[ SPG2_PACKET_SIZE >> 1 ];// 4 hitgh bits = odd size , 4 lower bits = odd size
+	uint16_t CompressedColors[ SPG2_PACKET_SIZE ];
 
 
 } SPG2_CompressedCachedPrimitivs;

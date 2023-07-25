@@ -350,7 +350,7 @@ void INT_SnP_InsertionSort(INT_tdst_SnP *_pst_SnP, ULONG _ul_UpdateMode)
 
 	for(l_Axis = l_Start; l_Axis <= l_End; l_Axis++)
 	{
-		pst_FirstNode = _pst_SnP->apst_AxisTable[l_Axis]->pst_Nodes;
+		pst_FirstNode = &_pst_SnP->apst_AxisTable[l_Axis]->pst_Nodes[0];
 		pst_LastNode = pst_FirstNode + us_NbElems - 1;
 		pst_NodeUp = pst_FirstNode;
 
@@ -564,7 +564,7 @@ void INT_SnP_UpdateAxisTable(INT_tdst_SnP *_pst_SnP, ULONG _ul_Axis)
 
 	pst_Manager = _pst_SnP->pst_Manager;
 	pst_Manager->us_NbRanks = 0;
-	pst_FirstNode = _pst_SnP->apst_AxisTable[_ul_Axis]->pst_Nodes;
+	pst_FirstNode = &_pst_SnP->apst_AxisTable[_ul_Axis]->pst_Nodes[0];
 	pst_Node = pst_FirstNode;
 	pst_LastNode = pst_Node + _pst_SnP->us_NbElems - 1;
 
@@ -626,10 +626,6 @@ void INT_SnP_UpdateAllDetectionLists(INT_tdst_SnP *_pst_SnP)
 	COL_tdst_Base			*pst_Base;
 	USHORT					uw_CurrentRef;
 	BOOL					b_WasSet;
-#ifdef ACTIVE_EDITORS
-	char					*sz_Name;
-	USHORT					uw_SnP;
-#endif
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	pst_Manager = _pst_SnP->pst_Manager;
@@ -642,11 +638,6 @@ void INT_SnP_UpdateAllDetectionLists(INT_tdst_SnP *_pst_SnP)
 		/* "Bullets" Bug ---> we return; */
 		if(((*dpst_First)->us_SnP_Ref) == 0xFFFF) continue;
 
-#ifdef ACTIVE_EDITORS
-		/* Fucking Visual 6 Debugger bug. */
-		sz_Name = (*dpst_First)->sz_Name;
-		uw_SnP = (*dpst_First)->us_SnP_Ref;
-#endif
 		if(OBJ_b_TestStatusFlag(*dpst_First, OBJ_C_StatusFlag_Detection))
 		{
 			pst_Base = (COL_tdst_Base *) (*dpst_First)->pst_Extended->pst_Col;
@@ -655,10 +646,12 @@ void INT_SnP_UpdateAllDetectionLists(INT_tdst_SnP *_pst_SnP)
 			dpst_DL_Last = dpst_DL_First + pst_Base->pst_List->ul_NbCollidedObjects;
 			for(; dpst_DL_First < dpst_DL_Last; dpst_DL_First++)
 			{
-#ifdef ACTIVE_EDITORS
-				/* Fucking Visual 6 Debugger bug. */
-				sz_Name = (*dpst_DL_First)->sz_Name;
-#endif
+				assert( dpst_DL_First != nullptr );
+				if ( dpst_DL_First == nullptr )
+				{
+					break;
+				}
+
 				_pst_SnP->apst_AxisTable[ INT_Cul_AxisX ]->flags.Set( ( *dpst_First )->us_SnP_Ref, ( *dpst_DL_First )->us_SnP_Ref, false );
 				_pst_SnP->apst_AxisTable[ INT_Cul_AxisY ]->flags.Set( ( *dpst_First )->us_SnP_Ref, ( *dpst_DL_First )->us_SnP_Ref, false );
 				_pst_SnP->apst_AxisTable[ INT_Cul_AxisZ ]->flags.Set( ( *dpst_First )->us_SnP_Ref, ( *dpst_DL_First )->us_SnP_Ref, false );

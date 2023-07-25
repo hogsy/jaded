@@ -64,7 +64,8 @@ extern void                 ERR_LastException(void);
 extern BOOL					ERR_gb_Warning;
 extern BOOL					ERR_gb_WarningBox;
 extern BOOL                 _ERR_fnb_AssertFailed(BOOL, char *, int, char *, char *, char *, BOOL);
-extern struct OBJ_tdst_GameObject_	*ERR_gpst_ContextGAO;
+bool ERR_ScriptAssertFailed( const char *filename, int line, const char *expression, const char *message );
+extern struct OBJ_tdst_GameObject_ *ERR_gpst_ContextGAO;
 extern char							*ERR_gpsz_ContextString;
 
 // Format a message using the printf format, put it in ERR_g_szFormatBuffer and return the string.

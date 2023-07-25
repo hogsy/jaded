@@ -59,9 +59,9 @@ INT_tdst_AxisTable *INT_SnP_pstCreateAxisTable(void)
 
 	pst_NewTable = new INT_tdst_AxisTable();
 	LOA_ul_FileTypeSize[38] += sizeof(INT_tdst_AxisTable);
-	pst_NewTable->pst_Nodes = (INT_tdst_AxisNode *) MEM_p_VMAlloc((INT_Cul_MaxNodes) * sizeof(INT_tdst_AxisNode));
-	LOA_ul_FileTypeSize[38] += (INT_Cul_MaxNodes) * sizeof(INT_tdst_AxisNode);
-	L_memset(pst_NewTable->pst_Nodes, 0, sizeof(INT_tdst_AxisNode));
+	//pst_NewTable->pst_Nodes = (INT_tdst_AxisNode *) MEM_p_VMAlloc((INT_Cul_MaxNodes) * sizeof(INT_tdst_AxisNode));
+	//LOA_ul_FileTypeSize[38] += (INT_Cul_MaxNodes) * sizeof(INT_tdst_AxisNode);
+	//L_memset(pst_NewTable->pst_Nodes, 0, sizeof(INT_tdst_AxisNode));
 
 	return pst_NewTable;
 }
@@ -78,9 +78,10 @@ void INT_SnP_ResetAllReferenceFlags( INT_tdst_SnP *_pst_SnP, USHORT us_Ref )
 	{
 		if ( us_Ref == us_CurrentRef ) continue;
 
-		_pst_SnP->apst_AxisTable[ INT_Cul_AxisX ]->flags.Set( us_Ref, us_CurrentRef, false );
-		_pst_SnP->apst_AxisTable[ INT_Cul_AxisY ]->flags.Set( us_Ref, us_CurrentRef, false );
-		_pst_SnP->apst_AxisTable[ INT_Cul_AxisZ ]->flags.Set( us_Ref, us_CurrentRef, false );
+		for ( unsigned int i = 0; i < 3; ++i )
+		{
+			_pst_SnP->apst_AxisTable[ i ]->flags.Set( us_Ref, us_CurrentRef, false );
+		}
 	}
 }
 
@@ -251,7 +252,6 @@ void INT_SnP_DesAlloc(WOR_tdst_World *_pst_World)
 	/* Axis Tables Desallocation. */
 	for (unsigned int i = 0; i < 3; ++i)
 	{
-		MEM_Free( _pst_World->pst_SnP->apst_AxisTable[ i ]->pst_Nodes );
 		delete _pst_World->pst_SnP->apst_AxisTable[ i ];
 	}
 

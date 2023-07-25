@@ -169,7 +169,7 @@ BOOL INT_AABBoxAABBox( MATH_tdst_Vector	*_pst_MinBox1,
     Aim:    Detects whether 2 spheres are colliding
  =======================================================================================================================
  */
-BOOL INT_SphereSphere(MATH_tdst_Vector *_pst_Center1, float f_Radius1, MATH_tdst_Vector *_pst_Center2, float f_Radius2)
+extern "C" BOOL INT_SphereSphere( MATH_tdst_Vector *_pst_Center1, float f_Radius1, MATH_tdst_Vector *_pst_Center2, float f_Radius2 )
 {
 	return INT_PointSphere(_pst_Center1, f_Radius1 + f_Radius2, _pst_Center2);
 }
@@ -184,8 +184,7 @@ BOOL INT_SphereSphere(MATH_tdst_Vector *_pst_Center1, float f_Radius1, MATH_tdst
  =======================================================================================================================
  */
 
-BOOL INT_FullSphereSphere
-(
+extern "C" BOOL INT_FullSphereSphere(
 	MATH_tdst_Vector	*_pst_Center1,
 	float				_f_Radius1,
 	MATH_tdst_Vector	*_pst_Center2,
@@ -217,8 +216,7 @@ BOOL INT_FullSphereSphere
     Aim:    Detects whether the sphere collides the AABBox.
  =======================================================================================================================
  */
-BOOL INT_SphereAABBox
-(
+extern "C" BOOL INT_SphereAABBox(
 	MATH_tdst_Vector	*_pst_Center,
 	float				f_Radius,
 	MATH_tdst_Vector	*_pst_Min,
@@ -347,8 +345,7 @@ BOOL INT_RaySphere(MATH_tdst_Vector *_pst_Origin, MATH_tdst_Vector *_pst_Directi
     Note:   !!! WORKS !!!
  =======================================================================================================================
  */
-BOOL INT_FullRaySphere
-(
+extern "C" BOOL INT_FullRaySphere(
 	MATH_tdst_Vector	*_pst_Origin,
 	MATH_tdst_Vector	*_pst_Direction,
 	INT_tdst_Sphere		*_pst_Sphere,
@@ -670,8 +667,7 @@ BOOL INT_FullRayAABBox2
 	return TRUE;
 }
 
-BOOL INT_FullRayAABBox
-(
+extern "C" BOOL INT_FullRayAABBox(
 	MATH_tdst_Vector	*_pst_Origin,
 	MATH_tdst_Vector	*_pst_Direction,
 	INT_tdst_Box		*_pst_AABB,
@@ -861,8 +857,7 @@ BOOL INT_FullRayAABBox
             "Real Time Rendering" book, p.305.
  =======================================================================================================================
  */
-BOOL INT_FullRayTriangle
-(
+extern "C" BOOL INT_FullRayTriangle(
 	MATH_tdst_Vector	*_pst_Origin,
 	MATH_tdst_Vector	*_pst_Direction,
 	MATH_tdst_Vector	*_pst_A,
@@ -935,8 +930,7 @@ BOOL INT_FullRayTriangle
     Note:   Base sur la theorie des parcours.
  =======================================================================================================================
  */
-BOOL INT_PointInTriangle
-(
+extern "C" BOOL INT_PointInTriangle(
 	MATH_tdst_Vector	*_pst_M,
 	MATH_tdst_Vector	*_pst_A,
 	MATH_tdst_Vector	*_pst_B,
@@ -1317,8 +1311,7 @@ BOOL INT_FullSegmentSphere
     center onto the Triangle plan. The other 2 have no order.
  =======================================================================================================================
  */
-BOOL INT_FullSphereTriangle
-(
+extern "C" BOOL INT_FullSphereTriangle(
 	MATH_tdst_Vector	*_pst_Center,
 	float				_f_Radius,
 	MATH_tdst_Vector	*_pst_A,
@@ -1515,8 +1508,7 @@ BOOL INT_LowLevel_OBBoxOBBox
  =======================================================================================================================
  =======================================================================================================================
  */
-BOOL INT_HighLevel_OBBoxOBBox
-(
+extern "C" BOOL INT_HighLevel_OBBoxOBBox(
 	MATH_tdst_Vector	*_pst_A_Min,
 	MATH_tdst_Vector	*_pst_A_Max,
 	MATH_tdst_Vector	*_pst_B_Min,
@@ -1573,8 +1565,7 @@ BOOL INT_HighLevel_OBBoxOBBox
  =======================================================================================================================
  */
 
-BOOL INT_SphereOBBox
-(
+extern "C" BOOL INT_SphereOBBox(
 	MATH_tdst_Vector	*_pst_BCS_Center,
 	float				f_BCS_Radius,
 	MATH_tdst_Vector	*_pst_Min,
@@ -1691,8 +1682,7 @@ int	INT_FindClosedBoxPlanFromInsidePoint(MATH_tdst_Vector *_pst_Min, MATH_tdst_V
  =======================================================================================================================
  =======================================================================================================================
  */
-BOOL INT_FullSphereOBBox
-(
+extern "C" BOOL INT_FullSphereOBBox(
 	MATH_tdst_Vector	*_pst_A_BCS_Center,
 	float				_f_A_GCS_Radius,
 	MATH_tdst_Vector	*_pst_B_ScaledMin,
@@ -1845,8 +1835,7 @@ BOOL INT_FullSphereOBBox
  =======================================================================================================================
  =======================================================================================================================
  */
-BOOL INT_b_FullRayCylinder
-(
+extern "C" BOOL INT_b_FullRayCylinder(
 	MATH_tdst_Vector	*_pst_O,	/* Origin of the Ray */
 	MATH_tdst_Vector	*_pst_Ray,	/* Ray */
 	MATH_tdst_Vector	*_pst_A,	/* Basis of the Cylinder */
@@ -1916,8 +1905,7 @@ BOOL INT_b_FullRayCylinder
  =======================================================================================================================
  =======================================================================================================================
  */
-BOOL INT_FullSphereCylinder
-(
+extern "C" BOOL INT_FullSphereCylinder(
 	MATH_tdst_Vector	*_pst_A_BCS_Center,
 	float				_f_A_GCS_Radius,
 	MATH_tdst_Vector	*_pst_B_Center,
@@ -2183,8 +2171,7 @@ void INT_PointTriangleClosestPointGet
  =======================================================================================================================
  =======================================================================================================================
  */
-BOOL INT_DynamicHit
-(
+extern "C" BOOL INT_DynamicHit(
 	MATH_tdst_Vector	*_pst_Dynamic_Center,
 	float				_f_Dynamic_Radius,
 	MATH_tdst_Vector	*_pst_Static_New_Center,
@@ -2317,8 +2304,7 @@ BOOL INT_DynamicHit
  =======================================================================================================================
  =======================================================================================================================
  */
-BOOL INT_FullTriangleTriangle
-(
+extern "C" BOOL INT_FullTriangleTriangle(
 	MATH_tdst_Vector	*_pst_A1,
 	MATH_tdst_Vector	*_pst_A2,
 	MATH_tdst_Vector	*_pst_A3,
@@ -2812,8 +2798,7 @@ int INT_i_IntersectEdgeWithBoxWithHit
     Note:
  =======================================================================================================================
  */
-BOOL INT_FullAABBoxTriangle
-(
+extern "C" BOOL INT_FullAABBoxTriangle(
 	MATH_tdst_Vector	*_pst_A,
 	MATH_tdst_Vector	*_pst_B,
 	MATH_tdst_Vector	*_pst_C,

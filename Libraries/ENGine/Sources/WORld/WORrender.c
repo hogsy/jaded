@@ -1860,11 +1860,7 @@ void WOR_DoubleRenderingCompute(GDI_tdst_DisplayData *_pst_DD, ULONG Mode, float
 	_GSP_EndRaster(41);
 }
 #else // Double rendering
-#ifdef JADEFUSION
 UINT WOR_DetectCameraCut(GDI_tdst_DisplayData *_pst_DD)
-#else
-u_int WOR_DetectCameraCut(GDI_tdst_DisplayData *_pst_DD)
-#endif
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	static MATH_tdst_Matrix		stSavedCameraMatrix;
@@ -1876,11 +1872,7 @@ u_int WOR_DetectCameraCut(GDI_tdst_DisplayData *_pst_DD)
 	MATH_tdst_Matrix			*p_Supramat;
 	static OBJ_tdst_GameObject	*pst_OldFather;
 	WOR_tdst_World				*_pst_World;
-#ifdef JADEFUSION
 	UINT						RetVal;
-#else
-	u_int						RetVal;
-#endif
 	float						*CurrenFOV;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -2138,7 +2130,6 @@ void WOR_Render_One_GO(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD
 #endif
 			}
 		}
-#ifdef JADEFUSION
 		else if( OBJ_b_TestIdentityFlag(pst_GO, OBJ_C_IdentityFlag_ExtendedObject) &&
                  pst_GO->pst_Extended != NULL &&
                  pst_GO->pst_Extended->pst_Modifiers != NULL )
@@ -2147,7 +2138,6 @@ void WOR_Render_One_GO(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD
             GAO_Render(pst_GO);
         }
 
-#endif
 		/* Modifier */
 #if !defined(_XBOX) && !defined(_XENON)
 		PROPS2_StartRaster(&PROPS2_gst_MDF_UnApplyAllGao);
@@ -2847,6 +2837,7 @@ void WOR_Render(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD)
 	//Yoann -->false
 	bSmallViewport = false;
 #endif
+
 #if defined(_PC_RETAIL)
 	pst_SD = (Dx9_tdst_SpecificData *) _pst_DD->pv_SpecificData;
 
@@ -2877,6 +2868,7 @@ void WOR_Render(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD)
 		);
 	}
 #endif
+
 #ifdef _XENON_RENDER
     // set ambient colors for the world
     g_oVertexShaderMgr.SetAmbientColor(0, XeConvertColor(_pst_World->ul_AmbientColor));
@@ -3236,12 +3228,6 @@ void WOR_Render(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD)
 				/*$1- Z list ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 				PROPS2_StartRaster(&PROPS2_gst_SOFT_ZList_Send);
-#ifdef _GAMECUBE
-				/* GXI_ObjectList_Send(eTransparentOnly); */
-#ifdef USE_HARDWARE_LIGHTS
-				GXI_Global_ACCESS(LightMask) = GX_LIGHT_NULL;
-#endif
-#endif
 
 				SOFT_ZList_Send();
 
@@ -3271,15 +3257,6 @@ void WOR_Render(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD)
 				MODIFIER_SPG2_OneFrameCall();
 				MODIFIER_FOGDYN_OneFrameCall();
 
-#ifdef _GAMECUBE
-				/*
-				 * GXI_ObjectList_Send(eNonTransparentOnly); £
-				 * GXI_CompleteShadowRendering();
-				 */
-#ifdef USE_HARDWARE_LIGHTS
-				GXI_Global_ACCESS(LightMask) = GX_LIGHT_NULL;
-#endif
-#endif
 				PROPS2_StopRaster(&PROPS2_gst_SOFT_ZList_Send);
 
 #ifdef _DX8

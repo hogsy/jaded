@@ -43,6 +43,8 @@ static int nkeys = 0;
 static int curcount = 0;
 #endif
 
+static float maxTextureAnistropy = 0.0f;
+
 /*$4
  ***********************************************************************************************************************
     Functions
@@ -76,6 +78,14 @@ LONG OGL_l_Texture_Init( GDI_tdst_DisplayData *_pst_DD, ULONG _ul_NbTextures )
     L_memset(pst_SD->dul_Texture, 0, l_Size);
 	pst_SD->dul_TextureDeltaBlend = (ULONG *) MEM_p_Alloc(l_Size);
     L_memset(pst_SD->dul_TextureDeltaBlend, 0, l_Size);
+
+    // hogsy:   probably put this somewhere else in future - 
+    //          this gets called EVERY time we load a new world,
+    //          and obviously this isn't going to change :p
+    if ( GLEW_ARB_texture_filter_anisotropic )
+	{
+		glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY, &maxTextureAnistropy );
+	}
 
     return 1;
 }
@@ -111,7 +121,7 @@ void OGL_Texture_Unload(GDI_tdst_DisplayData *_pst_DD)
 		{
 			if ( (*pul_Texture) && (*pul_Texture != -1) )
 			{
-				OGL_CALL( glDeleteTextures( 1, pul_Texture ) );
+				OGL_CALL( glDeleteTextures( 1, ( GLuint * ) pul_Texture ) );
 			}
 
 			*pul_Texture = -1;
@@ -347,14 +357,10 @@ ULONG OGL_ul_Texture_Create( ULONG ul_Key, int i_Mipmap )
 	OGL_CALL( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE) );
 	OGL_CALL( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE) );
 	OGL_CALL( glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR) );
-
-    if (i_Mipmap == 0)
+    OGL_CALL( glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, ( i_Mipmap == 0 ) ? GL_LINEAR : GL_LINEAR_MIPMAP_LINEAR ) );
+	if ( GLEW_ARB_texture_filter_anisotropic )
 	{
-		OGL_CALL( glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR ) );
-	}
-    else
-	{
-		OGL_CALL( glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR ) );
+		OGL_CALL( glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, ( i_Mipmap == 0 ) ? 0.0f : maxTextureAnistropy ) );
 	}
 
     return ul_Texture;
@@ -378,6 +384,19 @@ LONG OGL_Texture_LoadCB( ULONG ul_Texture, ULONG _ul_Key, ULONG *_pul_Texture, i
     GDI_M_TimerStart(GDI_f_Delay_AttachWorld_TextureCreate_LoadHard);
 	OGL_CALL( glTexImage2D( GL_TEXTURE_2D, MMC, GL_RGBA, W, H, 0, format, GL_UNSIGNED_BYTE, p_Buffer ) );
     GDI_M_TimerStop(GDI_f_Delay_AttachWorld_TextureCreate_LoadHard);
+
+    // hogsy: we're now just using i_Mipmap as a flag to indicate if we want mipmapping or not...
+    if ( i_Mipmap )
+	{
+		if ( GLEW_ARB_framebuffer_object )
+		{
+			glGenerateMipmap( GL_TEXTURE_2D );
+		}
+		else
+		{
+			glGenerateMipmapEXT( GL_TEXTURE_2D );
+		}
+	}
     
     return 1;
 }
@@ -450,24 +469,13 @@ void OGL_Texture_InternalLoad
 
 )
 {
-    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-    ULONG				    ul_Texture;
-    int                     c;
-    ULONG					TX, TY, MMC , BPP;
-    ULONG					*pul_ConvertBuffer;
-    int                     i_MipmapLevel;
-    ULONG					l_MipmapFlag;
-    TEX_tdst_Data           *pst_RawPal;
-    short                   w_Pal;          
-    UCHAR                   uc_ColorMap;
 #ifdef OPTOGLTEX
 	int						i;
 #endif
-	extern BOOL				EDI_gb_ComputeMap;
-	extern int				WOR_gi_CurrentConsole;
-    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 #ifdef ACTIVE_EDITORS
+	extern int WOR_gi_CurrentConsole;
+	extern BOOL EDI_gb_ComputeMap;
 	if(EDI_gb_ComputeMap)
 	{
 		//no hardware loading while preprocess for PS2 / GC
@@ -478,35 +486,15 @@ void OGL_Texture_InternalLoad
 	
     TEX_SD->dul_Texture[ _ul_Texture ] = -1;
 
-#ifdef OPTOGLTEX
-	if(TEX_DD->st_TexManager.ul_Flags & TEX_Manager_FixVRam)
-	{
-		/* Every X loading, force loading every textures */
-		if(curcount % 20 == 0)
-		{
-			curcount = 0;
-			OGL_Texture_UnLoadCompare();
-		}
-
-		for(i = 0; i < nkeys; i++)
-		{
-			if((ULONG) ikeys[i] == _pst_TexData->ul_Key)
-			{
-				TEX_SD->dul_Texture[ _ul_Texture ] = ibind[i];
-				icount[i] = curcount;
-				return;
-			}
-		}
-	}
-#endif
-
     // calcul du nombre de niveau de mipmapping
+	ULONG TX, TY, MMC, BPP;
     TX = _pst_TexData->w_Width;
     TY = _pst_TexData->w_Height;
     BPP = _pst_Tex->uc_FinalBPP;
     MMC = 0;
-    i_MipmapLevel = 0;
+	int i_MipmapLevel = 0;
 
+    int c;
     if( _pst_Tex->st_Params.uw_Flags & TEX_FP_MipmapOn ) 
     {
         _pst_Tex->uw_FileFlags |= TEX_uw_Mipmap;
@@ -525,14 +513,15 @@ void OGL_Texture_InternalLoad
     // paramètres
     _pst_TexData->uw_Flags = _pst_Tex->uw_FileFlags;
     c = _pst_Tex->st_Params.ul_Color;
-    l_MipmapFlag = _pst_Tex->st_Params.uw_Flags & (TEX_FP_MipmapUseAlpha | TEX_FP_MipmapUseColor | TEX_FP_MipmapKeepBorder);
-    pul_ConvertBuffer = (ULONG *) _pst_Tex->p_Bitmap;
+	ULONG l_MipmapFlag = _pst_Tex->st_Params.uw_Flags & ( TEX_FP_MipmapUseAlpha | TEX_FP_MipmapUseColor | TEX_FP_MipmapKeepBorder );
+	ULONG *pul_ConvertBuffer = ( ULONG * ) _pst_Tex->p_Bitmap;
 
     char *p_Buf = NULL;
     // So it turns out with some drivers (or mine at least), palleted textures don't work so great
     // so we'll do some conversion here - core spec drops support for palleted textures anyway, so ~hogsy
 	if ( BPP != 32 )
 	{
+		TEX_tdst_Data *pst_RawPal;
 		// loop through texture to find a good association
 		if ( TEX_DD->st_TexManager.ul_Flags & TEX_Manager_OneTexForRawPal )
 		{
@@ -576,33 +565,18 @@ void OGL_Texture_InternalLoad
 		L_zero( p_Buf, size * 4 );
 		if ( BPP == 4 )
 		{
-			TEX_Convert_4To32( ( unsigned char * ) p_Buf, pul_ConvertBuffer, TEX_gst_GlobalList.dst_Palette[ pst_RawPal->w_TexPal ].pul_Color, size );
+			TEX_Convert_4To32( ( ULONG * ) p_Buf, ( UCHAR * ) pul_ConvertBuffer, TEX_gst_GlobalList.dst_Palette[ pst_RawPal->w_TexPal ].pul_Color, size );
 			pul_ConvertBuffer = ( ULONG * ) p_Buf;
 		}
 		else if ( BPP == 8 )
 		{
-			TEX_Convert_8To32( ( unsigned char * ) p_Buf, pul_ConvertBuffer, TEX_gst_GlobalList.dst_Palette[ pst_RawPal->w_TexPal ].pul_Color, size );
+			TEX_Convert_8To32( ( ULONG * ) p_Buf, ( UCHAR * ) pul_ConvertBuffer, TEX_gst_GlobalList.dst_Palette[ pst_RawPal->w_TexPal ].pul_Color, size );
 			pul_ConvertBuffer = ( ULONG * ) p_Buf;
 		}
 	}
 
-    while ( ( TX > 0 ) && ( TY > 0 ) )
-	{
-		LoadCB( _ul_Texture, _pst_TexData->ul_Key, &ul_Texture, i_MipmapLevel, MMC, 32, TX, TY, GL_RGBA, pul_ConvertBuffer, -1 );
-
-		if ( !( _pst_Tex->st_Params.uw_Flags & TEX_FP_MipmapOn ) ) 
-        {
-			break;
-		}
-
-		if ( OGL_l_Texture_ComputeNextMipmapLevel_32( l_MipmapFlag, i_MipmapLevel, &TX, &TY, pul_ConvertBuffer, c ) == 0 )
-		{
-			break;
-		}
-
-		MMC++;
-		i_MipmapLevel--;
-	}
+	ULONG ul_Texture;
+    LoadCB( _ul_Texture, _pst_TexData->ul_Key, &ul_Texture, ( _pst_Tex->st_Params.uw_Flags & TEX_FP_MipmapOn ), MMC, 32, TX, TY, GL_RGBA, pul_ConvertBuffer, -1 );
 
     L_free( p_Buf );
 
@@ -659,31 +633,15 @@ LONG OGL_l_Texture_Store
  */
 void OGL_Texture_LoadInterfaceTex( GDI_tdst_DisplayData *_pst_DD )
 {
-    OGL_tdst_InterfaceTexture   *pst_ITex;
-    ULONG                       ul_Texture;
-    int                         i, j, TX, TY;
-
     if ( !(_pst_DD->st_TexManager.ul_Flags & TEX_Manager_LoadStoredITex) ) 
         return;
 
     TEX_SD = (OGL_tdst_SpecificData *) _pst_DD->pv_SpecificData;
-    for (i = 0, pst_ITex = TEX_SD->dst_InterfaceTex; i < TEX_SD->l_NbInterfaceTex; i++, pst_ITex++)
+	OGL_tdst_InterfaceTexture *pst_ITex = TEX_SD->dst_InterfaceTex;
+    for (int i = 0; i < TEX_SD->l_NbInterfaceTex; i++, pst_ITex++)
     {
-        if ( pst_ITex->Mipmap)
-        {
-            TX = pst_ITex->W;
-            TY = pst_ITex->H;
-            for (j = 0 ; j < pst_ITex->Mipmap; j++)
-            {
-                OGL_Texture_LoadCB( pst_ITex->ul_Texture, pst_ITex->ul_Key, &ul_Texture, pst_ITex->Mipmap, j, pst_ITex->BPP, TX, TY, pst_ITex->format, (ULONG*) pst_ITex->ppc_Bufs[ j ], pst_ITex->w_Palette );
-                if (TX > 1) TX >>= 1;
-                if (TY > 1) TY >>= 1;
-            }
-        }
-        else
-        {
-            OGL_Texture_LoadCB( pst_ITex->ul_Texture, pst_ITex->ul_Key, &ul_Texture, 0, 0, pst_ITex->BPP, pst_ITex->W, pst_ITex->H, pst_ITex->format, (ULONG*) pst_ITex->pc_Buf, pst_ITex->w_Palette );
-        }
+		ULONG ul_Texture;
+        OGL_Texture_LoadCB( pst_ITex->ul_Texture, pst_ITex->ul_Key, &ul_Texture, ( pst_ITex->Mipmap > 0 ), 0, pst_ITex->BPP, pst_ITex->W, pst_ITex->H, pst_ITex->format, ( ULONG * ) pst_ITex->pc_Buf, pst_ITex->w_Palette );
         TEX_SD->dul_Texture[ pst_ITex->ul_Texture ] = ul_Texture;
     }
 }
@@ -710,7 +668,7 @@ void OGL_Texture_UnloadInterfaceTex( GDI_tdst_DisplayData *_pst_DD)
         ul_Texture = TEX_SD->dul_Texture[ pst_ITex->ul_Texture ];
         if ( (ul_Texture) && (ul_Texture != -1)) 
         {
-			OGL_CALL( glDeleteTextures(1, &ul_Texture) );
+			OGL_CALL( glDeleteTextures( 1, ( GLuint * ) & ul_Texture ) );
 
             TX = pst_ITex->W;
             TY = pst_ITex->H;
