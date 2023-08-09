@@ -9,6 +9,6 @@
 #pragma once
 
 #include "malloc.h"
-#define L_malloc(a)		malloc(a)
+#define L_malloc(a)		calloc(1, a)
 #define L_realloc(a, b) realloc(a, b)
 #define L_free(a)		free(a)
