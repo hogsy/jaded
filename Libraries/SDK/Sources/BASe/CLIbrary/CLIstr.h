@@ -32,30 +32,13 @@ extern "C"
  ***********************************************************************************************************************
  */
 
-#if defined( PSX2_TARGET )
-#  define L_strcmpi	stricmp
-#  define L_stricmp	stricmp
-#  define L_strnicmp	strnicmp
-#  define L_strupr	strupr
-#  define L_strlwr	strlwr
-#  define L_ltoa		ltoa
-#  define L_atoi		atoi
-#elif defined( _GAMECUBE )
-#  define L_strcmpi	strcmp
-#  define L_stricmp	strcmp
-#  define L_strupr	strupr
-#  define L_strlwr	strlwr
-#  define L_ltoa		ltoa
-#  define L_atoi		atol
-#else
-#  define L_strcmpi	_stricmp
-#  define L_stricmp	_stricmp
-#  define L_strnicmp	_strnicmp
-#  define L_strupr	_strupr
-#  define L_strlwr	_strlwr
-#  define L_ltoa		_ltoa
-#  define L_atoi		atol
-#endif
+#define L_strcmpi  _stricmp
+#define L_stricmp  _stricmp
+#define L_strnicmp _strnicmp
+#define L_strupr   _strupr
+#define L_strlwr   _strlwr
+#define L_ltoa     _ltoa
+#define L_atoi     atol
 
 /*$4
  ***********************************************************************************************************************
