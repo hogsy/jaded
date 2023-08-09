@@ -159,7 +159,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions>/MACHINE:I386 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>oldnames.lib;advapi32.lib;shell32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;winmm.lib;msacm32.lib;comctl32.lib;ws2_32.lib;NAFXCWD.LIB;libcmtd.lib;VFW32.lib;strmiids.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>oldnames.lib;advapi32.lib;shell32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;winmm.lib;msacm32.lib;comctl32.lib;ws2_32.lib;NAFXCWD.LIB;libcmtd.lib;VFW32.lib;strmiids.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ShowProgress>NotSet</ShowProgress>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>../Output/Libs;../../../Extern/sdl2/lib/x86;..\..\..\extern\glew\lib\release\win32;../../../Extern\Greta;../../../Extern\DX8\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -1255,24 +1255,7 @@ devenv /build SpeedEditorsXenon /project XenonMeshProcessing $(SolutionPath)
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\..\Extern\DX8\lib\d3d8.lib" />
-    <CustomBuild Include="..\..\..\Extern\DX8\lib\dinput8.lib">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='SpeedEditorsXenon|Win32'">true</ExcludedFromBuild>
-    </CustomBuild>
-    <CustomBuild Include="..\..\..\Extern\DX8\lib\dxguid.lib">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='SpeedEditorsXenon|Win32'">true</ExcludedFromBuild>
-    </CustomBuild>
     <Library Include="..\..\..\Extern\Greta\greta.lib" />
-    <Library Include="..\..\..\Extern\OPENGL32.LIB">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='SpeedEditorsXenon|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='FINAL XBOX|Win32'">true</ExcludedFromBuild>
-    </Library>
     <Library Include="..\..\..\Extern\p4\libclient.lib" />
     <Library Include="..\..\..\Extern\p4\librpc.lib" />
     <Library Include="..\..\..\Extern\p4\libsupp.lib" />
@@ -1300,10 +1283,6 @@ devenv /build SpeedEditorsXenon /project XenonMeshProcessing $(SolutionPath)
     </ProjectReference>
     <ProjectReference Include="..\..\..\Libraries\AIinterp\Make\AIinterp.vcxproj">
       <Project>{4ebcded3-5373-42e0-9988-f96cda33a547}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\Libraries\DX8\DX8.vcxproj">
-      <Project>{11529394-f9f5-49c4-8b60-d8b8242b67bf}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Libraries\EDItors\Make\EDItors.vcxproj">

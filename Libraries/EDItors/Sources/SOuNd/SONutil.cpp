@@ -16,9 +16,6 @@
  ***********************************************************************************************************************
  */
 
-#ifndef JADEFUSION
-#include "../Extern/DX8/include/dsound.h"
-#endif
 #include "DIAlogs/DIAorder_dlg.h"
 #include "DIAlogs/DIA_UPDATE_dlg.h"
 #include "DIAlogs/DIAsnddisp_dlg.h"

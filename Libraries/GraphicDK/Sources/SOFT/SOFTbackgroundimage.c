@@ -544,8 +544,6 @@ void SOFT_BackgroundImage_Update(SOFT_tdst_BackgroundImage *_pst_BI, GDI_tdst_Di
 	GDI_tdst_Request_ReloadTextureParams	st_RTP;
 	ULONG									ul_SaveDD;
 	ULONG									ul_SaveFC;
-	ULONG									ul_SaveAmbiant;
-	ULONG									ul_SaveAmbiant2;
 	int										i_OldCounter;
 	TEX_tdst_File_Desc						st_Src, st_Tgt;
     CAM_tdst_Camera                         st_Cam;
