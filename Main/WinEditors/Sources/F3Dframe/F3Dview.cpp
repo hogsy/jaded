@@ -106,7 +106,11 @@ F3D_cl_View::F3D_cl_View(void)
 	mb_SelBoxOn = FALSE;
 	mb_AnimOn = FALSE;
 	*msz_AssociatedMadFile = 0;
-    L_strcpy( msz_ExportDir, "X:" );
+
+	char tmp[ MAX_PATH ];
+	getcwd( tmp, sizeof( tmp ) );
+	snprintf( msz_ExportDir, sizeof( msz_ExportDir ), "%s/exports", tmp );
+
 	mi_FreezeHelper = -1;
 
 	mb_BeginModePane = FALSE;
