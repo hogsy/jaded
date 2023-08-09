@@ -13,9 +13,4 @@
 #include "BASe/CLIbrary/CLIxxx.h"
 #include "ENGine/Sources/OBJects/OBJstruct.h"
 
-#if defined(_XENON_RENDER_PC)
-#include <d3d9.h>
-#include <d3dx9.h>
-#endif
 #endif	//UBI_INCLUDED_PRECOMP_H__FFF93259_FD20_466D_B48A_207997027664
-

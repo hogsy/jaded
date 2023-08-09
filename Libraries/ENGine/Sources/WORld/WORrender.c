@@ -182,7 +182,7 @@ extern void			WATER3D_BeforeDraw();
  =======================================================================================================================
  */
 #define M_Clear4View(_View_) \
-	if(_View_ >= 4) _pst_DD->st_GDI.pfnv_Clear(GDI_Cl_ZBuffer, 0);
+	if(_View_ >= 4) OGL_Clear(GDI_Cl_ZBuffer, 0);
 
 /*
  =======================================================================================================================
@@ -3329,7 +3329,7 @@ void WOR_Render(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD)
 #ifndef _XENON 
 						if(!(_pst_DD->ul_DisplayFlags & GDI_cul_DF_DepthReadBeforeFlip))
 						{
-							_pst_DD->st_GDI.pfnv_Clear(GDI_Cl_ZBuffer, 0);
+							OGL_Clear(GDI_Cl_ZBuffer, 0);
 						}
 #endif
 						/* sauve la camera */

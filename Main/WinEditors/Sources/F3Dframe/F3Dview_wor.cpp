@@ -8,60 +8,26 @@
 #include "Precomp.h"
 
 #ifdef ACTIVE_EDITORS
-#include "BASe/CLIbrary/CLIstr.h"
-#include "INOut/INOkeyboard.h"
 #include "LINKs/LINKstruct.h"
-#include "LINKs/LINKstruct_reg.h"
-#include "LINKs/LINKmsg.h"
-#include "TABles/TABles.h"
 #include "CAMera/CAMera.h"
-#include "EDIapp.h"
 #include "EDImainframe.h"
-#include "EDImsg.h"
-#include "LINKs/LINKtoed.h"
-#include "ENGine/Sources/OBJects/OBJstruct.h"
 #include "ENGine/Sources/OBJects/OBJinit.h"
-#include "ENGine/Sources/OBJects/OBJconst.h"
 #include "ENGine/Sources/OBJects/OBJaccess.h"
-#include "ENGine/Sources/OBJects/OBJsave.h"
-#include "ENGine/Sources/OBJects/OBJload.h"
-#include "ENGine/Sources/WORld/WORstruct.h"
-#include "ENGine/Sources/WORld/WORload.h"
 #include "ENGine/Sources/WORld/WORsave.h"
-#include "ENGine/Sources/WORld/WORmain.h"
 #include "ENGine/Sources/WORld/WORinit.h"
 #include "ENGine/Sources/WORld/WORexporttomad.h"
-#include "ENGine/Sources/ENGinit.h"
-#include "BIGfiles/LOAding/LOAdefs.h"
-#include "BIGfiles/BIGkey.h"
-#include "BIGfiles/BIGmdfy_file.h"
 #include "BIGfiles/BIGmdfy_dir.h"
-#include "BIGfiles/SAVing/SAVdefs.h"
 #include "GEOmetric/GEOload.h"
 #include "F3Dframe/F3Dview.h"
 #include "F3Dframe/F3Dview_undo.h"
-#include "F3Dframe/F3Dstrings.h"
-#include "GEOmetric/GEOdebugobject.h"
-#include "GEOmetric/GEOstaticLOD.h"
 #include "SOFT/SOFThelper.h"
 #include "DIAlogs/DIAname_dlg.h"
-#include "BASe/MEMory/MEM.h"
 #include "EDIpaths.h"
 #include "EDItors/Sources/OUTput/OUTframe.h"
 
 #ifdef JADEFUSION
 #include "ENGine/Sources/OBJects/OBJslowaccess.h"
 #include "XenonMeshProcessing/Sources/XMP_XenonMesh.h"
-#endif
-
-#if defined(_XENON_RENDER)
-#include <list>
-#include <vector>
-#include "GraphicDK/Sources/GEOmetric/GEOXenonPack.h"
-#include "ENGine/Sources/OBJects/OBJorient.h"
-#include "ENGine/Sources/OBJects/OBJboundingvolume.h"
-#include "ENGine/Sources/INTersection/INTmain.h"
-#include "GraphicDK/Sources/GEOmetric/GEOobjectcomputing.h"
 #endif
 
 #ifdef JADEFUSION
@@ -1176,6 +1142,7 @@ void F3D_cl_View::AssignMaterial(OBJ_tdst_GameObject* _pst_GO, BIG_INDEX _ul_Ind
 	}
 }
 #endif
+
 /*
  =======================================================================================================================
  =======================================================================================================================

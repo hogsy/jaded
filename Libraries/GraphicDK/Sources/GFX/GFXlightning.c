@@ -6,30 +6,14 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  */
 
-
 #include "Precomp.h"
-#include "BASe/BAStypes.h"
-#include "BASe/MEMory/MEM.h"
-#include "BASe/CLIbrary/CLIstr.h"
-#include "BIGfiles/SAVing/SAVdefs.h"
-#include "BIGfiles/LOAding/LOAdefs.h"
 #include "GDInterface/GDInterface.h"
 #include "GDInterface/GDIrasters.h"
 #include "GFX/GFX.h"
 #include "GFX/GFXlightning.h"
-#include "GEOmetric/GEODebugObject.h"
-#include "SOFT/SOFTcolor.h"
 #include "ENGine/Sources/WORld/WORstruct.h"
-#include "ENGine/Sources/OBJects/OBJconst.h"
-#include "ENGine/Sources/OBJects/OBJinit.h"
 #include "ENGine/Sources/OBJects/OBJorient.h"
-#include "ENGine/Sources/OBJects/OBJslowaccess.h"
 
-#ifdef PSX2_TARGET
-
-/* mamagouille */
-#include "PSX2debug.h"
-#endif
 #if defined (__cplusplus) && !defined(JADEFUSION)
 extern "C"
 {

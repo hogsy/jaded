@@ -214,21 +214,12 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # Sub-projects
 ################################################################################
 #add_subdirectory(../Dlls/MAD_import/Make ${CMAKE_BINARY_DIR}/MAD_import)
+
+add_compile_definitions(-DACTIVE_EDITORS)
+
 add_subdirectory(../Dlls/MAD_loadSave/Make ${CMAKE_BINARY_DIR}/MAD_LoadSave)
 add_subdirectory(../Dlls/MAD_mem/Make ${CMAKE_BINARY_DIR}/Mad_Mem)
 add_subdirectory(../Dlls/MAD_rasterize/Make ${CMAKE_BINARY_DIR}/MAD_Rasterize)
-add_subdirectory(../Libraries/DX8 ${CMAKE_BINARY_DIR}/DX8)
-add_subdirectory(../Libraries/Dx9 ${CMAKE_BINARY_DIR}/Dx9)
 add_subdirectory(../Libraries/EDItors/Make ${CMAKE_BINARY_DIR}/EDItors)
 add_subdirectory(../Libraries/OpenGL/Make ${CMAKE_BINARY_DIR}/OpenGL)
-#add_subdirectory(../Tools/Dashboard/AutoCompiler ${CMAKE_BINARY_DIR}/AutoCompiler)
-#add_subdirectory(../Tools/Dashboard/Cerbere ${CMAKE_BINARY_DIR}/Cerbere)
-#add_subdirectory(../Tools/Dashboard/SelfUpdater ${CMAKE_BINARY_DIR}/SelfUpdater)
-#add_subdirectory(../Tools/GenerateBatch ${CMAKE_BINARY_DIR}/GenerateBatch)
-#add_subdirectory(../Tools/GenerateDll ${CMAKE_BINARY_DIR}/GenerateDll)
-#add_subdirectory(../Tools/Ps2Launcher ${CMAKE_BINARY_DIR}/PS2Launch)
-#add_subdirectory(../Tools/SoundConvert/Make/SoundConvert ${CMAKE_BINARY_DIR}/SoundConvert)
-#add_subdirectory(../Tools/Synchronize/Synchronize ${CMAKE_BINARY_DIR}/Synchronize)
-#add_subdirectory(../Tools/XenonTexture ${CMAKE_BINARY_DIR}/XenonTexture)
 add_subdirectory(WinEditors/Make)
-

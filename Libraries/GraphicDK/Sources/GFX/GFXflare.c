@@ -30,19 +30,6 @@
 #include "ENGine/Sources/OBJects/OBJslowaccess.h"
 #include "ENGine/Sources/COLlision/COLray.h"
 
-#if defined(_XBOX)
-#include "Gx8/Gx8flare.h" 
-#endif
-
-#if defined(_PC_RETAIL)
-//#include "Dx9/Dx9flare.h" 
-#endif
-
-#ifdef PSX2_TARGET
-/* mamagouille */
-#include "PSX2debug.h"
-#endif
-
 #if defined (__cplusplus) && !defined(JADEFUSION)
 extern "C"
 {

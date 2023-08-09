@@ -30,19 +30,6 @@
 #endif
 #include "BIGfiles/LOAding/LOAdefs.h"
 #include "BIGfiles/BIGfat.h"
-#ifdef PSX2_TARGET
-#include <eeregs.h>
-#include <eestruct.h>
-#include <libgraph.h>
-#include <libdma.h>
-#include <libvu0.h>
-#include <sifdev.h>
-#include <libpc.h>
-#include "GS_PS2/Gsp.h"
-#ifdef GSP_PS2_BENCH
-extern u_int NoGEODRAW;
-#endif
-#endif
 
 #include "BASe/BENch/BENch.h"
 

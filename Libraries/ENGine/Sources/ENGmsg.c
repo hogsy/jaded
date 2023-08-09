@@ -289,12 +289,10 @@ BOOL MAI_b_TreatDisplayWndMessages
 		{
 			ph->h_DisplayWindow = hWnd;
 			ph->pst_DisplayData = GDI_pst_GlobalDD = GDI_fnpst_CreateDisplayData();
-#ifndef _DX8
+
 			GDI_fnl_InitInterface(&ph->pst_DisplayData->st_GDI, GDI_gi_GDIType);
-#else
-			GDI_fnl_InitInterface(&ph->pst_DisplayData->st_GDI, 1);
-#endif
-			ph->pst_DisplayData->pv_SpecificData = ph->pst_DisplayData->st_GDI.pfnpv_InitDisplay();
+
+			ph->pst_DisplayData->pv_SpecificData = OGL_pst_CreateDevice();
 
 #ifndef ACTIVE_EDITORS
 #ifdef RASTERS_ON
