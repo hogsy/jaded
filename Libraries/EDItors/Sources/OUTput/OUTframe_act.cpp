@@ -470,8 +470,8 @@ void EOUT_cl_Frame::OnAction(ULONG _ul_Action)
 	case EOUT_ACTION_EXPORTQUICK:
 		i = mst_Ini.uc_ExportOnlySelection;
 		mst_Ini.uc_ExportOnlySelection = 1;
-		sprintf(DP()->msz_AssociatedMadFile, "%s/QuickExport.mad", DP()->msz_ExportDir);
-		DP()->ExportWorldToMad(DP()->msz_AssociatedMadFile, FALSE);
+		snprintf( DP()->msz_AssociatedMadFile, sizeof( DP()->msz_AssociatedMadFile ), "%s/QuickExport.mad", DP()->msz_ExportDir );
+		DP()->ExportWorldToMad(DP()->msz_AssociatedMadFile, true);
 		mst_Ini.uc_ExportOnlySelection = (UCHAR) i;
 		break;
 
@@ -1715,46 +1715,6 @@ void EOUT_cl_Frame::OnAction(ULONG _ul_Action)
 	case EOUT_ACTION_CONSTRAINTYZ:
 		DP()->Helper_SetConstraint(SOFT_Cul_HF_ConstraintYZ);
 		break;
-
-	case EOUT_ACTION_DRV_OPENGL:
-#ifdef JADEFUSION
-        if (!DW())
-        {
-		GDI_ChangeInterface(DP()->mst_WinHandles.pst_DisplayData, 0);
-        }
-        else
-        {
-            M_MF()->MessageBox("Please close the current world before trying to change the rendering engine", 
-                               "OpenGL", MB_OK | MB_ICONINFORMATION);
-        }
-		break;
-#else
-		GDI_ChangeInterface(DP()->mst_WinHandles.pst_DisplayData, 0);
-		break;
-#endif
-
-#ifdef JADEFUSION
-	case EOUT_ACTION_DRV_DIRECTX:
-#if !defined(_XENON_RENDER)
-		GDI_ChangeInterface(DP()->mst_WinHandles.pst_DisplayData, 1);
-#endif
-		break;
-    case EOUT_ACTION_DRV_DX9:
-        if (!DW())
-        {
-            GDI_ChangeInterface(DP()->mst_WinHandles.pst_DisplayData, 2);
-        }
-        else
-        {
-            M_MF()->MessageBox("Please close the current world before trying to change the rendering engine", 
-                               "DirectX 9 (Xenon)", MB_OK | MB_ICONINFORMATION);
-        }
-		break;
-#else //JADEFUSION
-	case EOUT_ACTION_DRV_DIRECTX:
-		GDI_ChangeInterface(DP()->mst_WinHandles.pst_DisplayData, 1);
-		break;
-#endif
 
 	case EOUT_ACTION_OPTIMIZEOMNI:
 		DP()->Optimize_Omni();;
@@ -3336,23 +3296,6 @@ UINT EOUT_cl_Frame::ui_OnActionState(ULONG _ul_Action)
 		ui_State |= (DP()->Helper_b_IsCurrentAxis(SOFT_Cul_HF_SAObject) ? DFCS_CHECKED : 0);
 		break;
 
-	case EOUT_ACTION_DRV_OPENGL:
-		ui_State = DFCS_BUTTONRADIO;
-		if(GDI_GetInterface(DP()->mst_WinHandles.pst_DisplayData) == 0) ui_State |= DFCS_CHECKED;
-		break;
-
-	case EOUT_ACTION_DRV_DIRECTX:
-		ui_State = DFCS_BUTTONRADIO;
-		if(GDI_GetInterface(DP()->mst_WinHandles.pst_DisplayData) == 1) ui_State |= DFCS_CHECKED;
-		break;
-
-#ifdef JADEFUSION
-    case EOUT_ACTION_DRV_DX9:
-        ui_State = DFCS_BUTTONRADIO;
-        if (GDI_GetInterface(DP()->mst_WinHandles.pst_DisplayData) == 2) ui_State |= DFCS_CHECKED;
-        break;
-#endif
-
 	case EOUT_ACTION_CONSTRAINTXY:
 		ui_State = DFCS_BUTTONRADIO;
 		if(DP()->Helper_b_IsCurrentConstraint(SOFT_Cul_HF_ConstraintXY)) ui_State |= DFCS_CHECKED;
@@ -3720,14 +3663,6 @@ BOOL EOUT_cl_Frame::b_OnActionValidate(ULONG _ul_Action, BOOL _b_Disp)
 
 	case EOUT_ACTION_OBJECTSYSTEMAXIS:
 		return DP()->Helper_b_AcceptAxis(SOFT_Cul_HF_SAObject);
-
-	case EOUT_ACTION_DRV_OPENGL:
-		return TRUE;
-		break;
-
-	case EOUT_ACTION_DRV_DIRECTX:
-		return TRUE;
-		break;
 
 #ifdef JADEFUSION
     case EOUT_ACTION_DRV_DX9:

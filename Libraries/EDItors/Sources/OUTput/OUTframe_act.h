@@ -290,9 +290,6 @@
 #define EOUT_ACTION_SETWIDTH					402
 #define EOUT_ACTION_SETHEIGHT					403
 
-#define EOUT_ACTION_DRV_OPENGL					405
-#define EOUT_ACTION_DRV_DIRECTX					406
-
 #define EOUT_ACTION_OPTIMIZEOMNI				407
 
 #ifdef JADEFUSION
@@ -1088,9 +1085,6 @@ Full Maximized=401=^F12=0;\
 Sep=0=--=0;\
 Set Window Width=402=--=0;\
 Set Window Height=403=--=0;\
-Sep=0=--=0;\
-Select OpenGL=405=--=0;\
-Select DirectX 8=406=--=0;\
 Sep=0=--=0;\
 Optimize omni=407=--=0;"
 

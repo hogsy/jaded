@@ -87,7 +87,7 @@ static void SavePonderations( WOR_tdst_World *_pst_World, MAD_World *st_MadWorld
 		        pst_SkndObj->ID,
 		        ID_MAD_SkinnedGeometricObject,
 		        MAD_SkinnedGeometricObject,
-		        pst_Gro->sz_Name );
+		        pst_Gro->sz_Name ? pst_Gro->sz_Name : "NONE" );
 		pst_SkndObj->pst_GeoObj = ( MAD_GeometricObject * ) st_MadWorld->AllObjects[ ul ];
 		pst_SkndObj->us_NumberOfPonderationLists = pst_Object->p_SKN_Objectponderation->NumberPdrtLists;
 
@@ -253,38 +253,6 @@ BOOL WOR_b_World_ExportMadFile( WOR_tdst_World *_pst_World,
 			{
 				if ( _uc_Texture )
 				{
-					//BIG_ComputeFullName( BIG_ParentFile( ul_Index ), sz_Name );
-					//if (L_strnicmp( sz_Name, EDI_Csz_Path_Textures, L_strlen( EDI_Csz_Path_Textures ) ) == 0)
-					//    psz_Name = sz_Name + strlen( EDI_Csz_Path_Textures ) + 1;
-					//else if (L_strnicmp( sz_Name, EDI_Csz_Path_TrashCan_Textures, L_strlen( EDI_Csz_Path_TrashCan_Textures ) ) == 0)
-					//    psz_Name = sz_Name + strlen( EDI_Csz_Path_TrashCan_Textures ) + 1;
-					//else
-					//    psz_Name = NULL;
-
-					//if (psz_Name)
-					//    sprintf( sz_OutName, "%s/Textures/%s/%s", _sz_ExportDir, psz_Name, BIG_NameFile( ul_Index ) );
-					//else
-					//    sprintf( sz_OutName, "%s/Textures/%s", _sz_ExportDir, BIG_NameFile( ul_Index ) );
-
-					///* create directory */
-					//psz_Name = sz_OutName;
-					//while( *psz_Name )
-					//{
-					//    if (*psz_Name == '\\') *psz_Name = '/';
-					//    psz_Name++;
-					//}
-
-					//psz_Name = L_strchr( sz_OutName, '/' );
-					//while( psz_Name )
-					//{
-					//    *psz_Name = 0;
-					//    CreateDirectory( sz_OutName, NULL );
-					//    *psz_Name = '/';
-					//    psz_Name = L_strchr( psz_Name + 1, '/' );
-					//}
-					//BIG_ExportFileToDisk( sz_OutName, sz_Name, BIG_NameFile( ul_Index ) );
-					//L_strcpy(pst_MadTex->Texturefile, sz_OutName );
-
 					L_strcpy( sz_Name, BIG_NameFile( ul_Index ) );
 					psz_Ext = L_strrchr( sz_Name, '.' );
 					if ( psz_Ext )
