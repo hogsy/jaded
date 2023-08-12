@@ -7,6 +7,8 @@
 
 #include "BASe/MEMory/MEMpro.h"
 #include "ENGine/Sources/ENGinit.h"
+#include "ENGine/Sources/ENGvars.h"
+#include "GDInterface/GDIrasters.h"
 
 static SDL_Window *sdlWindow;
 static SDL_GLContext sdlGLContext;
@@ -104,6 +106,15 @@ static SDL_Window *CreateSDLWindow()
 	return sdlWindow;
 }
 
+static void InitializeDisplay()
+{
+	MAI_gst_MainHandles.h_DisplayWindow = nullptr;
+	MAI_gst_MainHandles.pst_DisplayData = GDI_fnpst_CreateDisplayData();
+	GDI_gpst_CurDD = MAI_gst_MainHandles.pst_DisplayData;
+
+	GDI_fnl_InitInterface( &MAI_gst_MainHandles.pst_DisplayData->st_GDI, 1 );
+}
+
 #if defined( _WIN32 )
 int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow )
 #else
@@ -142,10 +153,14 @@ int main( int argc, char **argv )
 	}
 
 	MEMpro_Init();
+	MEMpro_StartMemRaster();
+
 	ENG_InitApplication();
 
-	// blah blah
+	// Default big file name
+	strcpy( MAI_gst_InitStruct.asz_ProjectName, "Rayman4.bf" );
 
+	ENG_CloseEngine();
 	ENG_CloseApplication();
 
 	SDL_DestroyWindow( sdlWindow );
