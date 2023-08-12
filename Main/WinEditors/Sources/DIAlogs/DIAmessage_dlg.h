@@ -23,7 +23,7 @@ class EDIA_cl_MessageDialog : public EDIA_cl_BaseDialog
  */
 
 public:
-    EDIA_cl_MessageDialog (char *, char *, UINT);
+    EDIA_cl_MessageDialog ( const char *_pmo_Text, const char *_pmo_Title, uint32_t );
 
 /*$2
  -----------------------------------------------------------------------------------------------------------------------

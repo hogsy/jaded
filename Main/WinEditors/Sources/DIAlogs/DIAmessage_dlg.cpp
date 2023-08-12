@@ -25,12 +25,12 @@ END_MESSAGE_MAP()
  =======================================================================================================================
  =======================================================================================================================
  */
-EDIA_cl_MessageDialog::EDIA_cl_MessageDialog(char *_pmo_Text, char *_pmo_Title, UINT _ui_Type) :
+EDIA_cl_MessageDialog::EDIA_cl_MessageDialog( const char *_pmo_Text, const char *_pmo_Title, uint32_t _ui_Type) :
     EDIA_cl_BaseDialog(DIALOGS_IDD_MESSAGE)
 {
     mui_Type = _ui_Type;
     mo_Text = _pmo_Text;
-    if(_pmo_Title == NULL)
+    if(_pmo_Title == nullptr)
         mo_Title = "Message";
     else
         mo_Title = _pmo_Title;

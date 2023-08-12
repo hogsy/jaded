@@ -672,7 +672,7 @@ LRESULT EDI_cl_MainFrame::DefWindowProc(UINT message, WPARAM wParam, LPARAM lPar
  =======================================================================================================================
  =======================================================================================================================
  */
-int EDI_cl_MainFrame::MessageBox(char *lpszText, char *lpszCaption, UINT nType)
+int EDI_cl_MainFrame::MessageBox( const char *lpszText, const char *lpszCaption, uint32_t nType)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	EDIA_cl_MessageDialog	o_Dialog(lpszText, lpszCaption, nType);

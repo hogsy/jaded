@@ -419,7 +419,7 @@ public:
 	void				SynchronizeEditorsData(BOOL);
 
 	void				OneActionKeyHasChanged(void)	{ };
-	int					MessageBox(char *, char *, UINT);
+	int					MessageBox( const char *lpszText, const char *lpszCaption, uint32_t );
 
 	BOOL				b_OnActionValidate(ULONG, BOOL _b_Disp = TRUE);
 	void				OnActionUI(ULONG, CString &, CString &);
