@@ -32,9 +32,6 @@
 #include "EDImsg.h"
 #include "DIAlogs\DIAfindfile_dlg.h"
 #include "EDItors/Sources/BROwser/BROframe.h"
-#include "DATaControl/DATCPerforce.h"
-#include "EDItors\Sources\PERForce\PERmsg.h"
-#include "EDItors\Sources\PERForce\PERCframe.h"
 
 extern BOOL	EDI_gb_CheckInDel;
 extern BOOL AI2C_gb_Activated;

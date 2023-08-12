@@ -8,8 +8,9 @@
 #ifndef UBI_PERFORCE_PERFORCEUI_H__INCLUDED
 #define UBI_PERFORCE_PERFORCEUI_H__INCLUDED
 
-#include "p4/clientapi.h"
 #include "Greta/regexpr2.h"
+
+#if 0
 
 using namespace std;
 #include <string>
@@ -982,5 +983,7 @@ protected:
 	bool m_isSame;
     bool m_isNotOpened; // Note: This kind of negative bool is ugly, but it reflects Perforce's corresponding flag
 };
+
+#endif
 
 #endif

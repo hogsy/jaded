@@ -14,7 +14,6 @@
 #include "DATCUtils.h"
 //#include "DATCPerforce.h"
 #include "DATCP4BFObject.h"
-#include "DATCP4FileSysSync.h"
 
 #include "assert.h"
 
@@ -29,7 +28,9 @@
 #include "BASe/CLIbrary/CLIfile.h"
 #include "BASe/CLIbrary/CLIerrid.h"
 #include "EDIpaths.h"
+#include "EDImainframe.h"
 #include "DIAlogs/DIAmsglink_dlg.h"
+#include "DIAlogs/DIA_UPDATE_dlg.h"
 
 #include "sdk/Sources/BIGfiles/BIGgroup.h"
 
@@ -380,29 +381,6 @@ void DAT_CUtils::SetHeader(BIG_INDEX _ulIndex, DAT_CP4BFObjectHeader& _ObjectHea
 }
 
 //------------------------------------------------------------
-//   void DAT_CUtils::GetHeader(DAT_CP4BFObjectHeader& _ObjectHeader, DAT_CP4ClientInfoHeader& _InfoHeader)
-/// \author    YCharbonneau
-/// \date      2005-02-07
-/// \par       Description: 
-///            this function fills up a Fstat info class from a P4BF header object
-///			   We need to have every added info in the file header to be added here. 	
-/// \param     No param description available... 
-/// \see 
-//------------------------------------------------------------
-void DAT_CUtils::GetHeader(DAT_CP4BFObjectHeader& _ObjectHeader, DAT_CP4ClientInfoHeader& _InfoHeader)
-{
-	std::string strPath;	
-	_ObjectHeader.Path(strPath);
-	strncpy(_InfoHeader.aszBFFilename,strPath.c_str(),strPath.length());
-
-	_ObjectHeader.Version(_InfoHeader.uiVersion);
-	_ObjectHeader.JadeKey(_InfoHeader.ulKey);
-
-	_ObjectHeader.IsUniverseKey(_InfoHeader.bIsUniverseKey);
-	if( _InfoHeader.bIsUniverseKey ) BIG_UniverseKey() = _InfoHeader.ulKey;
-}
-
-//------------------------------------------------------------
 //   void DAT_CUtils::PrepareFileBuffer()
 /// \author    FFerland
 /// \date      2005-02-10
@@ -485,7 +463,7 @@ char* DAT_CUtils::PrepareFileBuffer( BIG_INDEX _ulIndex, DWORD& _ulBufferSize, B
 /// \param     No description available... 
 /// \see 
 //------------------------------------------------------------
-int DAT_CUtils::Export(std::string& strFileExportDir, std::string& strBFDirToExport)
+int DAT_CUtils::Export(std::string& strFileExportDir, const std::string &strBFDirToExport)
 {
 	L_FILE h_TmpFile;
 	
@@ -637,7 +615,7 @@ void DAT_CUtils::CountDirs(const std::string& strPath)
 /// \param     No description available... 
 /// \see 
 //------------------------------------------------------------
-int DAT_CUtils::Import(std::string& strFileImportDir, std::string& strBFDirToImport)
+int DAT_CUtils::Import(std::string& strFileImportDir, const std::string &strBFDirToImport)
 {
 	ul_DirsImported = 0;
 	ul_DirsToImport = 0;

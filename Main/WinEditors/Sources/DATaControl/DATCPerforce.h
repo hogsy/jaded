@@ -10,6 +10,8 @@
 
 #ifndef __DATCPERFORCE_H__
 #define __DATCPERFORCE_H__
+
+#if 0
  
 //------------------------------------------------------------------------------
 // Header files
@@ -309,5 +311,8 @@ private:
 		static 	DAT_CPerforce ms_Perforce;
 };
 #endif
+
+#endif
+
 //------------------------------------------------------------------------------
 #endif

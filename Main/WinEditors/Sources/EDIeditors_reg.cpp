@@ -40,8 +40,6 @@
 #include "EDItors/Sources/EVEnts/EVEframe.h"
 #include "EDItors/Sources/PreFaB/PFBframe.h"
 #include "EDItors/Sources/PENdingCheckins/PENCframe.h"
-#include "EDItors/Sources/PERForce/PERCframe.h"
-#include "EDItors/Sources/PERForceCheck/PERCheckframe.h"
 #ifdef JADEFUSION
 #include "EDItors/Sources/SELection/SELectionframe.h"
 #endif

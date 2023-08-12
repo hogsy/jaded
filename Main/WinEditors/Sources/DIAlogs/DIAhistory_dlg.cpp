@@ -7,10 +7,6 @@
 #include "EDImainframe.h"
 #include "BIGfiles/BIGfat.h"
 #include "BIGfiles/BIGexport.h"
-#include "EDItors\Sources\PERForce\PERCframe.h"
-
-#include "DATacontrol/DATCPerforce.h"
-#include "DATacontrol/DATCP4ClientUserHistory.h"
 
 BEGIN_MESSAGE_MAP(EDIA_cl_HistoryDialog, EDIA_cl_BaseDialog)
 	ON_BN_CLICKED(IDC_HISTORY_CLOSE, OnHistoryClose)

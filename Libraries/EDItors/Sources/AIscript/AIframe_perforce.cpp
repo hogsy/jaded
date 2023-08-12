@@ -17,18 +17,12 @@
 #include "BIGfiles/BIGopen.h"
 #include "AIFrame.h"
 
-#include "EDItors/Sources/PERForce/PERmsg.h"
 #include "EDItors/Sources/BROwser/BROframe.h"
-#include "EDItors/Sources/Perforce/PERCframe.h"
-
-#include "DATaControl/DATCPerforce.h"
 
 #include <assert.h>
 
 //////////////////////////////////////////////////////////////////////////
 //
-
-static PER_CDataCtrlEmulator g_DataCtrlEmulator;
 
 //////////////////////////////////////////////////////////////////////////
 //
@@ -71,76 +65,6 @@ void EAI_cl_Frame::RunCommandOnFiles( int nCommand )
 	RefreshDialogBar();
 	DisplayPaneNames();
 	AfxGetApp()->DoWaitCursor(-1);
-}
-
-//------------------------------------------------------------
-//   void EAI_cl_Frame::OnPerforceEditModel()
-/// \author    YCharbonneau
-/// \date      2005-01-17
-/// \par       Description: 
-///            No description available ...
-/// \param     No param description available... 
-/// \see 
-//------------------------------------------------------------
-void EAI_cl_Frame::OnPerforceEditModel()
-{
-	RunCommandOnFiles(EPER_MESSAGE_EDIT_SELECTED);
-}
-
-//------------------------------------------------------------
-//   void EAI_cl_Frame::OnPerforceCheckInModel()
-/// \author    FFerland
-/// \date      2005-03-21
-/// \par       Description: 
-///            No description available ...
-/// \param     No param description available... 
-/// \see 
-//------------------------------------------------------------
-void EAI_cl_Frame::OnPerforceCheckInModel()
-{
-	RunCommandOnFiles(EPER_MESSAGE_SUBMIT_SELECTED);
-}
-
-//------------------------------------------------------------
-//   void EAI_cl_Frame::OnPerforceCheckInOutModel()
-/// \author    FFerland
-/// \date      2005-03-23
-/// \par       Description: 
-///            No description available ...
-/// \param     No param description available... 
-/// \see 
-//------------------------------------------------------------
-void EAI_cl_Frame::OnPerforceCheckInOutModel()
-{
-	RunCommandOnFiles(EPER_MESSAGE_SUBMITEDIT_SELECTED);
-}
-
-//------------------------------------------------------------
-//   void EAI_cl_Frame::OnPerforceRevertModel()
-/// \author    FFerland
-/// \date      2005-03-21
-/// \par       Description: 
-///            No description available ...
-/// \param     No param description available... 
-/// \see 
-//------------------------------------------------------------
-void EAI_cl_Frame::OnPerforceRevertModel()
-{
-	RunCommandOnFiles(EPER_MESSAGE_REVERT_SELECTED);
-}
-
-//------------------------------------------------------------
-//   void EAI_cl_Frame::OnPerforceSyncModel()
-/// \author    FFerland
-/// \date      2005-03-21
-/// \par       Description: 
-///            No description available ...
-/// \param     No param description available... 
-/// \see 
-//------------------------------------------------------------
-void EAI_cl_Frame::OnPerforceSyncModel()
-{
-	RunCommandOnFiles(EPER_MESSAGE_SYNC_SELECTED);
 }
 
 #endif /* ACTIVE_EDITORS */

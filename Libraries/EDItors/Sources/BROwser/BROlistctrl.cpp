@@ -234,34 +234,7 @@ static void s_ComputeColName(BIG_INDEX _ul_File, int _i_NumCol, char *_psz_Out)
 
 	/* Revision (Perforce) */
 	case 7:
-		// If local revision is different from server revision, print it
-        if (BIG_P4RevisionClient(_ul_File) != BIG_TmpRevisionClient(_ul_File))
-        {
-            _psz_Out += sprintf(_psz_Out, "bf%d/", BIG_TmpRevisionClient(_ul_File));
-        }
-
-		// File not present on P4
-		if ( BIG_P4RevisionServer(_ul_File) == 0 && BIG_P4Action(_ul_File)[0] == P4_INVALIDSTRING ) 
-		{
-			sprintf(_psz_Out, P4_ACTION_NEW);	
-			break;
-		}
-		// File being added/edited/deleted/etc... on P4
-		if ( BIG_P4Action(_ul_File)[0] != P4_INVALIDSTRING )
-		{
-			sprintf(_psz_Out, "#%d/%d - %s", BIG_P4RevisionClient(_ul_File), BIG_P4RevisionServer(_ul_File),BIG_P4Action(_ul_File));
-			break;
-		}
-
-		// File has been removed by someone on P4
-		if ( (strcmp(BIG_P4HeadAction(_ul_File), P4_ACTION_DELETE) == 0) && (BIG_P4RevisionClient(_ul_File) == 0) 
-			&& !(BIG_P4RevisionServer(_ul_File) == 0) )
-		{
-			sprintf(_psz_Out, "#%d/%d - %s", BIG_P4RevisionClient(_ul_File), BIG_P4RevisionServer(_ul_File),P4_ACTION_REMOVE);
-			break;
-		}
-		
-		sprintf(_psz_Out, "#%d/%d", BIG_P4RevisionClient(_ul_File), BIG_P4RevisionServer(_ul_File));
+		*_psz_Out = 0;
 		break;
 		
 	/* AI */

@@ -54,7 +54,6 @@
 
 #include "EDImainframe_act.h"
 
-extern CWnd* GetSplashWindow( );
 void DeleteLocalFiles(BIG_INDEX ul_DirIndex);
 
 extern BOOL EDI_gb_BatchModeWithoutPerforce ;

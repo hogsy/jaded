@@ -53,15 +53,14 @@ public:
 
 		static void		ExtractPathAndFileName(const char*, char* szPath, char* szName);
 		static void		SetHeader(BIG_INDEX _ulIndex, DAT_CP4BFObjectHeader& _ObjectHeader);
-		static void		GetHeader(DAT_CP4BFObjectHeader& _ObjectHeader, DAT_CP4ClientInfoHeader& _InfoHeader);
-
+		
 		static char*	PrepareFileBuffer( BIG_INDEX _ulIndex, DWORD& _ulBufferSize,BOOL _bEnableTrucate  = FALSE );
 
 		static void		RunDiff( const char* szFile1, const char* szFile2, BIG_KEY _ul_Key, HWND hWndDlg = NULL );
 		static std::string MakeTempFName( const char* szBaseName, const DAT_CP4ClientInfoHeader& info );
 
-		static int Export(std::string& strFileExportDir, std::string& strBFDirToExport);
-		static int Import(std::string& strFileImportDir, std::string& strBFDirToImport);
+		static int Export(std::string& strFileExportDir, const std::string &strBFDirToExport);
+		static int Import(std::string& strFileImportDir, const std::string &strBFDirToImport);
 		static void CountDirs(const std::string& strPath);
 		static void ImportRecurse(const std::string& strPath);
 		static void GetFileBuffer(const std::string& strFilePath, void*& pFileBuffer, ULONG& ulFileBufferSize);
