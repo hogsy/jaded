@@ -122,6 +122,46 @@ extern void *ps2memcpy(char *dst, char*src, int size);
  ***********************************************************************************************************************
  */
 
+static inline char *L_strtoupper( char *s )
+{
+	for ( size_t i = 0; s[ i ] != '\0'; ++i )
+		s[ i ] = ( char ) toupper( s[ i ] );
+
+	return s;
+}
+
+static inline char *L_strntoupper( char *s, size_t n )
+{
+	for ( size_t i = 0; i < n; ++i )
+	{
+		if ( s[ i ] == '\0' )
+			break;
+
+		s[ i ] = ( char ) toupper( s[ i ] );
+	}
+	return s;
+}
+
+static inline char *L_strtolower( char *s )
+{
+	for ( size_t i = 0; s[ i ] != '\0'; ++i )
+		s[ i ] = ( char ) tolower( s[ i ] );
+
+	return s;
+}
+
+static inline char *L_strntolower( char *s, size_t n )
+{
+	for ( size_t i = 0; i < n; ++i )
+	{
+		if ( s[ i ] == '\0' )
+			break;
+
+		s[ i ] = ( char ) tolower( s[ i ] );
+	}
+	return s;
+}
+
 /*
  =======================================================================================================================
     PS2 and PC

@@ -34,12 +34,6 @@
 
 #define BAS_ZERO( DATA, SIZE ) memset( ( DATA ), 0, ( SIZE ) )
 
-#define BAS_C_Target_PS2   1
-#define BAS_C_Target_GC    2
-#define BAS_C_Target_XBox  3
-#define BAS_C_Target_Pc    4
-#define BAS_C_Target_Xenon 5
-
 //###################################################################################
 //###################################################################################
 #if defined( ACTIVE_EDITORS ) || defined( PCWIN_TOOL )
