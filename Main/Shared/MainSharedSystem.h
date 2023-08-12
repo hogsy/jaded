@@ -1,0 +1,31 @@
+// Created by Mark "hogsy" Sowden, 2023 <hogsy@oldtimes-software.com>
+// https://oldtimes-software.com/jaded/
+
+#pragma once
+
+#include <SDL.h>
+
+namespace jaded
+{
+	namespace sys
+	{
+		enum AlertBoxType : uint8_t
+		{
+			ALERT_BOX_INFO,
+			ALERT_BOX_WARNING,
+			ALERT_BOX_ERROR,
+		};
+
+		enum AlertBoxReturnType : uint8_t
+		{
+			ALERT_BOX_RETURN_INVALID,
+
+			ALERT_BOX_RETURN_OK,
+			ALERT_BOX_RETURN_RETRY,
+			ALERT_BOX_RETURN_CONTINUE,
+			ALERT_BOX_RETURN_CANCEL,
+		};
+
+		AlertBoxReturnType AlertBox( const std::string &message, const std::string &title, AlertBoxType boxType );
+	}
+}

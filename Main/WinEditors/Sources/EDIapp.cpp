@@ -48,9 +48,6 @@
 #		include <afxsock.h>// MFC socket extensions
 #	endif                  // #ifdef WIN32
 
-#	if !defined( NDEBUG )
-#		include <DbgHelp.h>
-#	endif
 
 /*$4
  ***********************************************************************************************************************
@@ -643,53 +640,6 @@ extern "C" void AI2C_UnloadFixModelList( void );
 ULONG gXmlConvRetVal = 0;
 #	endif
 
-#	if !defined( NDEBUG )
-static LONG WINAPI Win32CrashHandler( EXCEPTION_POINTERS *exception )
-{
-	MessageBox( nullptr, "Encountered an exception, attempting to generate dump!", "Error", MB_OK | MB_ICONERROR );
-
-	HMODULE dbgHelpLib = LoadLibrary( "DBGHELP.DLL" );
-	if ( dbgHelpLib == nullptr )
-		return EXCEPTION_CONTINUE_SEARCH;
-
-	typedef BOOL( WINAPI * MINIDUMP_WRITE_DUMP )(
-	        IN HANDLE hProcess,
-	        IN DWORD ProcessId,
-	        IN HANDLE hFile,
-	        IN MINIDUMP_TYPE DumpType,
-	        IN CONST PMINIDUMP_EXCEPTION_INFORMATION ExceptionParam,
-	        OPTIONAL IN PMINIDUMP_USER_STREAM_INFORMATION UserStreamParam,
-	        OPTIONAL IN PMINIDUMP_CALLBACK_INFORMATION CallbackParam OPTIONAL );
-
-	auto MiniDumpWriteDump_ = ( MINIDUMP_WRITE_DUMP ) GetProcAddress( dbgHelpLib, "MiniDumpWriteDump" );
-	if ( MiniDumpWriteDump_ == nullptr )
-	{
-		FreeLibrary( dbgHelpLib );
-		return EXCEPTION_CONTINUE_SEARCH;
-	}
-
-	MINIDUMP_EXCEPTION_INFORMATION M;
-	CHAR Dump_Path[ MAX_PATH ];
-
-	M.ThreadId          = GetCurrentThreadId();
-	M.ExceptionPointers = exception;
-	M.ClientPointers    = 0;
-
-	GetModuleFileName( nullptr, Dump_Path, sizeof( Dump_Path ) );
-	lstrcpy( Dump_Path + lstrlen( Dump_Path ) - 3, "dmp" );
-
-	HANDLE fileDump = CreateFile( Dump_Path, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr );
-	if ( fileDump )
-	{
-		MiniDumpWriteDump_( GetCurrentProcess(), GetCurrentProcessId(), fileDump, MiniDumpNormal, ( exception ) ? &M : nullptr, nullptr, nullptr );
-		CloseHandle( fileDump );
-	}
-
-	FreeLibrary( dbgHelpLib );
-	return EXCEPTION_CONTINUE_SEARCH;
-}
-#	endif
-
 /*
  =======================================================================================================================
  =======================================================================================================================
@@ -737,10 +687,6 @@ BOOL EDI_cl_App::InitInstance()
 	}
 #	endif
 
-#	if !defined( NDEBUG )
-	SetUnhandledExceptionFilter( Win32CrashHandler );
-#	endif
-
 	_CrtSetAllocHook( HookMem );
 	AfxEnableMemoryTracking( FALSE );
 
@@ -761,8 +707,6 @@ BOOL EDI_cl_App::InitInstance()
 
 #	if !defined( XML_CONV_TOOL )
 	strcpy( EDI_az_LogFileName, "binerr.log" );
-
-	ULONG ulRegBFSize = BIG_ul_GetBFSize();
 
 	/* Test command line */
 	*masz_ToOpen = 0;
