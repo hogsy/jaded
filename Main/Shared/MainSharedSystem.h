@@ -27,5 +27,20 @@ namespace jaded
 		};
 
 		AlertBoxReturnType AlertBox( const std::string &message, const std::string &title, AlertBoxType boxType );
-	}
-}
+
+		extern int numLaunchArguments;
+		extern const char *const *launchArguments;
+		struct LaunchOperations
+		{
+			bool editorMode{ false };
+
+			bool clean{ false };
+			bool cleanBinFiles{ false };
+			std::vector< std::string > wolFiles;
+			bool cleanByFat{ false };
+
+			std::vector< std::string > aiMacros;
+		};
+		extern LaunchOperations launchOperations;
+	}// namespace sys
+}// namespace jaded

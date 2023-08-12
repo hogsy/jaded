@@ -5,12 +5,16 @@
 
 #include "MainSharedSystem.h"
 
+int jaded::sys::numLaunchArguments             = 0;
+const char *const *jaded::sys::launchArguments = nullptr;
+jaded::sys::LaunchOperations jaded::sys::launchOperations;
+
 jaded::sys::AlertBoxReturnType jaded::sys::AlertBox( const std::string &message, const std::string &title, AlertBoxType boxType )
 {
 #if defined( _WIN32 )
 
 	uint32_t flags = 0;
-	switch (boxType)
+	switch ( boxType )
 	{
 		default:
 			assert( 0 );
@@ -27,7 +31,7 @@ jaded::sys::AlertBoxReturnType jaded::sys::AlertBox( const std::string &message,
 	}
 
 	int returnVar = MessageBox( nullptr, message.c_str(), title.c_str(), flags );
-	switch (returnVar)
+	switch ( returnVar )
 	{
 		default:
 			assert( 0 );

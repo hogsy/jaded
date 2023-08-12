@@ -8,6 +8,9 @@
 #include "BASe/MEMory/MEMpro.h"
 #include "ENGine/Sources/ENGinit.h"
 
+static SDL_Window *sdlWindow;
+static SDL_GLContext sdlGLContext;
+
 #if defined( _WIN32 ) && !defined( NDEBUG )
 
 #	include <DbgHelp.h>
@@ -59,6 +62,48 @@ static LONG WINAPI Win32CrashHandler( EXCEPTION_POINTERS *exception )
 
 #endif
 
+static void ParseStartupParameters()
+{
+	assert( jaded::sys::launchArguments != nullptr );
+
+	for ( int i = 0; i < jaded::sys::numLaunchArguments; ++i )
+	{
+		if ( *jaded::sys::launchArguments[ i ] != '/' )
+			continue;
+
+		if ( SDL_strcasecmp( jaded::sys::launchArguments[ i ], "/editor" ) == 0 )
+		{
+			jaded::sys::launchOperations.editorMode = true;
+			continue;
+		}
+	}
+}
+
+static SDL_Window *CreateSDLWindow()
+{
+	int flags = SDL_WINDOW_OPENGL;
+	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 5 );
+	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 5 );
+	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 5 );
+	SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 8 );
+	SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY );
+	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 4 );
+	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 3 );
+	SDL_GL_SetAttribute( SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 3 );
+
+	sdlWindow = SDL_CreateWindow( "Jaded", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, flags );
+	if ( sdlWindow == nullptr )
+		return nullptr;
+
+	sdlGLContext = SDL_GL_CreateContext( sdlWindow );
+	if ( sdlGLContext == nullptr )
+		return nullptr;
+
+	SDL_GL_MakeCurrent( sdlWindow, sdlGLContext );
+
+	return sdlWindow;
+}
+
 #if defined( _WIN32 )
 int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow )
 #else
@@ -66,8 +111,20 @@ int main( int argc, char **argv )
 #endif
 {
 #if defined( _WIN32 ) && !defined( NDEBUG )
+
+	jaded::sys::numLaunchArguments = __argc;
+	jaded::sys::launchArguments    = __argv;
+
 	SetUnhandledExceptionFilter( Win32CrashHandler );
+
+#else
+
+	jaded::sys::numLaunchArguments = argc;
+	jaded::sys::launchArguments    = argv;
+
 #endif
+
+	ParseStartupParameters();
 
 	if ( SDL_Init( SDL_INIT_EVERYTHING ) != 0 )
 	{
@@ -77,12 +134,21 @@ int main( int argc, char **argv )
 		return EXIT_FAILURE;
 	}
 
+	if ( CreateSDLWindow() == nullptr )
+	{
+		jaded::sys::AlertBox( "SDL Window fail: " + std::string( SDL_GetError() ),
+		                      "Jaded Error",
+		                      jaded::sys::ALERT_BOX_ERROR );
+	}
+
 	MEMpro_Init();
 	ENG_InitApplication();
 
 	// blah blah
 
 	ENG_CloseApplication();
+
+	SDL_DestroyWindow( sdlWindow );
 
 	return EXIT_SUCCESS;
 }
