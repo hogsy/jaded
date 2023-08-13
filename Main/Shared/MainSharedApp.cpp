@@ -175,8 +175,6 @@ int main( int argc, char **argv )
 		                      jaded::sys::ALERT_BOX_ERROR );
 	}
 
-	printf( "Farts" );
-
 	MEMpro_Init();
 	MEMpro_StartMemRaster();
 

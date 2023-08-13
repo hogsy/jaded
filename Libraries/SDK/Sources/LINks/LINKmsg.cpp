@@ -16,6 +16,8 @@
 #include "EDIstrings.h"
 #include "EDItors/Sources/LOGfile/LOGmsg.h"
 
+#include "../../Shared/MainSharedSystem.h"
+
 /*$4
  ***********************************************************************************************************************
     GLOBAL VARS
@@ -117,17 +119,26 @@ void LINK_PrintStatusMsgCanal(char *_psz_Text,int _iCanal)
 	/* Display message in status */
 	if(_psz_Text)
 	{
-		if(LINK_gb_CanDisplay) M_MF()->mo_Status.SetPaneText(LINK_gb_UseSecond ? 1 : 0, _psz_Text);
-
-		/* Update log editor if present */
-		if(LINK_gb_CanLog)
+		if ( jaded::sys::launchOperations.editorMode )
 		{
-			po_Editor = M_MF()->po_GetEditorByType(EDI_IDEDIT_LOGFILE, 0);
-			if ( po_Editor )
+#if defined( _WIN32 )
+			if ( LINK_gb_CanDisplay ) M_MF()->mo_Status.SetPaneText( LINK_gb_UseSecond ? 1 : 0, _psz_Text );
+
+			/* Update log editor if present */
+			if ( LINK_gb_CanLog )
 			{
-				po_Editor->i_OnMessage( ELOG_MESSAGE_ADDLINE | ( ( _iCanal + 1 ) << 16 ), ( ULONG ) _psz_Text, LINK_gul_ColorTxt );
-				po_Editor->UpdateWindow();
+				po_Editor = M_MF()->po_GetEditorByType( EDI_IDEDIT_LOGFILE, 0 );
+				if ( po_Editor )
+				{
+					po_Editor->i_OnMessage( ELOG_MESSAGE_ADDLINE | ( ( _iCanal + 1 ) << 16 ), ( ULONG ) _psz_Text, LINK_gul_ColorTxt );
+					po_Editor->UpdateWindow();
+				}
 			}
+#endif
+		}
+		else
+		{
+			printf( "%s\n", _psz_Text );
 		}
 	}
 
