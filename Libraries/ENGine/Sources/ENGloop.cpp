@@ -101,9 +101,8 @@ extern void	AI_EvalFunc_WORPause_C(int world, ULONG ul_ID);
 
 void	DisplayAttach(GDI_tdst_DisplayData *);
 void	s_CheckResetRequest(void);
-void	s_HandleWinMessages(void);
 void	ENG_ForceStartRasters(void);
-extern	void FOGDYN_Reset(void);
+extern "C" void FOGDYN_Reset( void );
 
 /*$4
  ***********************************************************************************************************************
@@ -111,8 +110,8 @@ extern	void FOGDYN_Reset(void);
  */
 
 extern void MEM_Defrag(int single);
-extern void SOFT_ZList_Clear(void);
-extern void MSG_GlobalReinit(void);
+extern "C" void SOFT_ZList_Clear(void);
+extern "C" void MSG_GlobalReinit( void );
 
 #if defined ( PCWIN_TOOL )
 extern void GDI_ChangeInterface(GDI_tdst_DisplayData *, ULONG ulNew);
@@ -131,16 +130,16 @@ extern UINT SPG2_gb_Recompute;
 BOOL		sgb_FullScreen = FALSE;
 int			sgi_FullScreenRes = 0;
 #else
-BOOL		sgb_EngineRender = TRUE;
+extern "C" BOOL		sgb_EngineRender = TRUE;
 #endif
-BOOL		ENG_gb_ForceAttach = FALSE;
-BOOL		ENG_gb_NeedToReinit = FALSE;
+extern "C" BOOL		ENG_gb_ForceAttach = FALSE;
+extern "C" BOOL		ENG_gb_NeedToReinit = FALSE;
 #if defined(USE_DOUBLE_RENDERING) || defined(PSX2_TARGET)
 ULONG		ENG_gp_DoubleRendering = 0;
 ULONG		ENG_gp_DoubleRenderingLocker = 0;
 #endif
 
-ULONG		ENG_gp_CameraCutHasBeenDetected = 0;
+extern "C" ULONG		ENG_gp_CameraCutHasBeenDetected = 0;
 
 extern float TIM_gf_SynchroFrequency;
 float TIM_gf_MainClockForTextureScrolling = 0.0f;
@@ -651,6 +650,8 @@ static void XB_s_EngineCheat(void)
  -----------------------------------------------------------------------------------------------------------------------
  */
 
+extern "C" int AI2C_ai2Ccan;
+
 /*
  =======================================================================================================================
  =======================================================================================================================
@@ -692,10 +693,6 @@ static void win32_s_EngineCheat(void)
 #endif
 	if((GetAsyncKeyState(VK_F10) < 0) && (GetAsyncKeyState(VK_SHIFT) < 0) && (GetAsyncKeyState(VK_CONTROL) < 0))
 	{
-		/*~~~~~~~~~~~~~~~~~~~~~*/
-		extern int	AI2C_ai2Ccan;
-		/*~~~~~~~~~~~~~~~~~~~~~*/
-
 		if(AI2C_ai2Ccan == 0)
 			AI2C_ai2Ccan = 1;
 		else
@@ -970,6 +967,8 @@ void s_EngineCheatFinal(void)
 
 #ifndef _FINAL_
 
+extern "C" extern float TIM_gf_realdt;
+
 /*
  =======================================================================================================================
  =======================================================================================================================
@@ -1037,10 +1036,6 @@ static void s_DisplayRasters(void)
 	{
 		if(sbg_FirstDisp)
 		{
-			/*~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-			extern float	TIM_gf_realdt;
-			/*~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
 			SetBkColor(hdc, GetSysColor(COLOR_BTNFACE));
 			ShowWindow(ENG_h_Rasters, SW_SHOW);
 			if(TIM_gf_dt * TIM_gf_SynchroFrequency > 1.0f) SetTextColor(hdc, RGB(255, 0, 0));
@@ -1122,6 +1117,10 @@ void ENG_vEmergencyFreeMem()
 {
 }
 
+extern "C" UINT WOR_DetectCameraCut( GDI_tdst_DisplayData *_pst_DD );
+#ifdef _DEBUG
+extern "C" void MEM_dbg_FindLastAllocatedCluster( void );
+#endif
 
 /*
  =======================================================================================================================
@@ -1456,7 +1455,6 @@ static void s_OneTrame(void)
 			} else
 #else
 			{
-				extern UINT WOR_DetectCameraCut( GDI_tdst_DisplayData * _pst_DD );
 				ENG_gp_CameraCutHasBeenDetected = 0;
 				if (WOR_DetectCameraCut(MAI_gst_MainHandles.pst_DisplayData))
 				{
@@ -1510,10 +1508,7 @@ static void s_OneTrame(void)
 #endif
     
 #ifdef _DEBUG
-    {
-        void MEM_dbg_FindLastAllocatedCluster(void);
         MEM_dbg_FindLastAllocatedCluster();
-    }
 #endif
 
 #ifndef _FINAL_
@@ -1619,6 +1614,7 @@ _Try_
 	}
 
 #endif
+
 	ENG_gb_ExitApplication = FALSE;
 	ENG_gb_ForceEndEngine = FALSE;
 	ENG_gb_ForcePauseEngine = FALSE;

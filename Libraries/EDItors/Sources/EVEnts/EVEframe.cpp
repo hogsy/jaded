@@ -3434,11 +3434,8 @@ void EEVE_cl_Frame::GotoEnd(void)
 	LINK_Refresh();
 }
 
-#ifdef JADEFUSION
 extern void s_HandleWinMessages(void);
-#else
-extern "C" void s_HandleWinMessages(void);
-#endif
+
 /*
  =======================================================================================================================
  =======================================================================================================================
