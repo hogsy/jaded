@@ -113,7 +113,7 @@ static void InitializeDisplay()
 {
 	MAI_gst_MainHandles.h_DisplayWindow = nullptr;
 	MAI_gst_MainHandles.pst_DisplayData = GDI_fnpst_CreateDisplayData();
-	GDI_gpst_CurDD = MAI_gst_MainHandles.pst_DisplayData;
+	GDI_gpst_CurDD                      = MAI_gst_MainHandles.pst_DisplayData;
 
 	GDI_fnl_InitInterface( &MAI_gst_MainHandles.pst_DisplayData->st_GDI, 1 );
 }
@@ -134,12 +134,22 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine
 int main( int argc, char **argv )
 #endif
 {
-#if defined( _WIN32 ) && !defined( NDEBUG )
+#if defined( _WIN32 )
 
 	jaded::sys::numLaunchArguments = __argc;
 	jaded::sys::launchArguments    = __argv;
 
+#	if !defined( NDEBUG )
+
 	SetUnhandledExceptionFilter( Win32CrashHandler );
+
+	AllocConsole();
+	FILE *tmp;
+	freopen_s( &tmp, "CONIN$", "r", stdin );
+	freopen_s( &tmp, "CONOUT$", "w", stderr );
+	freopen_s( &tmp, "CONOUT$", "w", stdout );
+
+#	endif
 
 #else
 
@@ -164,6 +174,8 @@ int main( int argc, char **argv )
 		                      "Jaded Error",
 		                      jaded::sys::ALERT_BOX_ERROR );
 	}
+
+	printf( "Farts" );
 
 	MEMpro_Init();
 	MEMpro_StartMemRaster();
