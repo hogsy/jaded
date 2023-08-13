@@ -16,6 +16,8 @@
 #include "LINKs/LINKmsg.h"
 #endif
 
+#include "../../Shared/MainSharedSystem.h"
+
 /*$4
  ***************************************************************************************************
     GLOBAL VARS
@@ -115,27 +117,6 @@ BOOL _ERR_fnb_AssertFailed
 	BOOL	b_DispMsg;
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-
-
-/*#ifdef ACTIVE_EDITORS
-	if(!_b_Msg && ERR_gpst_ContextGAO)
-	{
-		char	az[500];
-		sprintf(az, "Error contextual object is %s", ERR_gpst_ContextGAO->sz_Name);
-        LINK_PrintStatusMsg(az);
-	}
-
-	if(!_b_Msg && ERR_gpsz_ContextString)
-	{
-		char	az[500];
-		sprintf(az, "Error contextual string is %s", ERR_gpsz_ContextString);
-        LINK_PrintStatusMsg(az);
-	}
-
-	ERR_gpst_ContextGAO = NULL;
-	ERR_gpsz_ContextString = NULL;
-#endif*/
-
     /* Allocate a temporary buffer and fill it with the text. */
 	b_DispMsg = TRUE;
     psz_Temp = NULL;
@@ -211,33 +192,9 @@ BOOL _ERR_fnb_AssertFailed
 	}
 #endif
 
-#if !defined(_XBOX) && !defined(_XENON)
     /* Display error text. */
     if(_b_Msg && b_DispMsg)
-    {
-#ifdef ACTIVE_EDITORS
-        M_MF()->MessageBox(psz_Temp, psz_Title, MB_OK | MB_ICONERROR);
-#else
-
-#if defined(_DEBUG) && defined(PCWIN_TOOL) 
-	{
-		if(ENG_gb_SlashL && LOA_gb_SpeedMode)
-		{
-			FILE *f;
-			f = fopen("binerr.log", "at");
-			if(!f) f = fopen("binerr.log", "wt");
-			fprintf(f, "## %s(%d):\n", _psz_File, _i_Line);
-			fprintf(f, "## \t%s %s\n\n", psz_Temp, psz_Title);
-			fclose(f);
-			ExitProcess(-1);
-		}
-	}
-#endif
-        MessageBox(NULL, psz_Temp, psz_Title, MB_OK | MB_ICONERROR);
-#endif
-    }
-#endif // _XBOX
-
+        jaded::sys::AlertBox( psz_Temp, psz_Title, jaded::sys::ALERT_BOX_ERROR );
 #ifdef ACTIVE_EDITORS
     else if(b_DispMsg)
     {
@@ -245,7 +202,6 @@ BOOL _ERR_fnb_AssertFailed
         LINK_PrintStatusMsg(psz_Temp);
         LINK_gul_ColorTxt = 0;
     }
-
 #endif
 
 #ifdef ACTIVE_EDITORS
