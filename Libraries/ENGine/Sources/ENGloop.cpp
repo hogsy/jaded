@@ -84,6 +84,8 @@
 #include "TEXture/TEXprocedural.h"
 #include "TEXture/TEXanimated.h"
 
+#include "../../Shared/MainSharedSystem.h"
+
 #ifdef JADEFUSION
 /*$2- XENON PROFILING ---------------------------------------------------------------------------------------------*/
 #include "XenonGraphics/XeProfiling.h"
@@ -249,7 +251,6 @@ static void s_Display(HWND h, GDI_tdst_DisplayData *_pst_DD)
 
 	DisplayAttach(_pst_DD);
 
- 
 	GDI_BeforeDisplay(_pst_DD);
 
 	_pst_DD->pst_World = MAI_gst_MainHandles.pst_World;
@@ -314,8 +315,9 @@ static void s_InitBeforeTrame(void)
 #ifndef ACTIVE_EDITORS
 	ENG_gp_Display = s_Display;
 #else
-	ENG_gp_Display = NULL;
+	ENG_gp_Display = jaded::sys::launchOperations.editorMode ? nullptr : s_Display;
 #endif
+
 	ENG_gp_Input = INO_Update;
 	if(UNI_Status() != UNI_Cuc_Ready)
 	{
@@ -854,11 +856,6 @@ static void EDI_s_EngineCheatFinal(void)
 {
 }
 
-#elif defined(_XBOX) || defined(_XENON)
-static void XB_s_EngineCheatFinal(void)
-{
-}
-
 #else
 
 /*
@@ -1113,10 +1110,6 @@ void ENG_ForceStartRasters(void)
 #endif
 }
 
-void ENG_vEmergencyFreeMem()
-{
-}
-
 extern "C" UINT WOR_DetectCameraCut( GDI_tdst_DisplayData *_pst_DD );
 #ifdef _DEBUG
 extern "C" void MEM_dbg_FindLastAllocatedCluster( void );
@@ -1181,8 +1174,6 @@ static void s_OneTrame(void)
 	PRO_StartTrameRaster(&ENG_gpst_RasterEng_OneLoop);
 	s_HandleWinMessages();
 
-    
-
 	/*
 	 * We update the main clock (it calculates the time between two frames and the
 	 * time since last reset of the main clock )
@@ -1196,7 +1187,6 @@ static void s_OneTrame(void)
 		TAB_tdst_PFelem *pst_EndElem;
 		/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-    
 		SOFT_ZList_Clear();
 		MSG_GlobalReinit();
 		AI_ReinitUniverse();
@@ -1467,16 +1457,6 @@ static void s_OneTrame(void)
 				ENG_gp_Display(MAI_gst_MainHandles.h_DisplayWindow, MAI_gst_MainHandles.pst_DisplayData);
 			}
 		}
-		
-#if defined(_XBOX)
-		// Render the frame again if the PIX tool is running and has 
-		// requested us to repeat the frame. Note that we don't move, but
-		// rather re-render the scene exactly as before.
-		if( TRUE == D3DPERF_QueryRepeatFrame() )
-		{
-			ENG_gp_Display(MAI_gst_MainHandles.h_DisplayWindow, MAI_gst_MainHandles.pst_DisplayData);
-		}
-#endif	// defined(_XBOX)
 
 		PROPS2_StopRaster(&PROPS2_gst_ENG_gp_Display);
 		PRO_StopTrameRaster(&ENG_gpst_RasterEng_Display);
@@ -1519,9 +1499,6 @@ static void s_OneTrame(void)
 	}
 #endif // MEM_OPT
 #endif // _FINAL
-	    
-	// Try to free memory if free memory is scarce.
-	ENG_vEmergencyFreeMem();
 
 	/* End of loop */
 	PRO_StopTrameRaster(&ENG_gpst_RasterEng_OneLoop);
