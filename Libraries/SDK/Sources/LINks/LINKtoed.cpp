@@ -15,6 +15,8 @@
 #include "ENGine/Sources/ENGvars.h"
 #include "EDItors/Sources/RASters/RASframe.h"
 
+#include "../../Shared/MainSharedSystem.h"
+
 BOOL					LINK_gb_CanRefresh = TRUE;
 BOOL					LINK_gb_RefreshEnable = TRUE;
 BOOL					LINK_gb_AllRefreshEnable = TRUE;
@@ -35,6 +37,9 @@ extern ERAS_cl_Frame	*gpo_RasterEditor;
  */
 void LINK_SendMessageToEditors(ULONG _ul_Msg, ULONG _ul_Param1, ULONG _ul_Param2)
 {
+	if ( !jaded::sys::launchOperations.editorMode )
+		return;
+
 	if(M_MF()) M_MF()->SendMessageToEditors(_ul_Msg, _ul_Param1, _ul_Param2);
 }
 
@@ -45,6 +50,9 @@ void LINK_SendMessageToEditors(ULONG _ul_Msg, ULONG _ul_Param1, ULONG _ul_Param2
  */
 void LINK_OneTrameEnding(void)
 {
+	if ( !jaded::sys::launchOperations.editorMode )
+		return;
+
 	if(M_MF())
 	{
 		if(!LINK_gi_SpeedDraw) M_MF()->RefreshCheckDlg();
@@ -59,6 +67,9 @@ void LINK_OneTrameEnding(void)
  */
 void LINK_Refresh(void)
 {
+	if ( !jaded::sys::launchOperations.editorMode )
+		return;
+
 	if(!LINK_gb_AllRefreshEnable) return;
 	if(M_MF() && LINK_gb_RefreshEnable)
 	{
@@ -76,6 +87,9 @@ void LINK_Refresh(void)
  */
 void LINK_RefreshMenu(void)
 {
+	if ( !jaded::sys::launchOperations.editorMode )
+		return;
+
 	if(!LINK_gb_AllRefreshEnable) return;
 	if(M_MF()) M_MF()->SendMessageToEditors(EDI_MESSAGE_REFRESHMENU, 0, 0);
 }
@@ -89,6 +103,9 @@ void LINK_RefreshMenu(void)
  */
 BOOL LINK_b_ProcessEngineWndMsg(MSG *_p_Msg)
 {
+	if ( !jaded::sys::launchOperations.editorMode )
+		return FALSE;
+
 	if(EDI_go_TheApp.b_ProcessMouseWheel(_p_Msg)) return FALSE;
 
 	switch(_p_Msg->message)
@@ -108,6 +125,9 @@ BOOL LINK_b_ProcessEngineWndMsg(MSG *_p_Msg)
  */
 void LINK_FatHasChanged(void)
 {
+	if ( !jaded::sys::launchOperations.editorMode )
+		return;
+
 	if(!LINK_gb_AllRefreshEnable) return;
 	if(M_MF()) M_MF()->FatHasChanged();
 }
@@ -118,6 +138,9 @@ void LINK_FatHasChanged(void)
  */
 void LINK_UpdatePointers(void)
 {
+	if ( !jaded::sys::launchOperations.editorMode )
+		return;
+
 	if(!LINK_gb_AllRefreshEnable) return;
 	if(!EDI_gb_DuringInit) M_MF()->DataHasChanged();
 }
@@ -128,6 +151,9 @@ void LINK_UpdatePointers(void)
  */
 void LINK_DisplayRasters(void)
 {
+	if ( !jaded::sys::launchOperations.editorMode )
+		return;
+
 	if(gpo_RasterEditor) gpo_RasterEditor->OneTrameEnding();
 }
 
