@@ -8,6 +8,9 @@
 #include "BASe/MEMory/MEMpro.h"
 #include "ENGine/Sources/ENGinit.h"
 #include "ENGine/Sources/ENGvars.h"
+#include "ENGine/Sources/ENGloop.h"
+#include "ENGine/Sources/WORld/WORinit.h"
+#include "SDK/Sources/BIGfiles/BIGopen.h"
 #include "GDInterface/GDIrasters.h"
 
 static SDL_Window *sdlWindow;
@@ -115,6 +118,16 @@ static void InitializeDisplay()
 	GDI_fnl_InitInterface( &MAI_gst_MainHandles.pst_DisplayData->st_GDI, 1 );
 }
 
+static void ShutdownDisplay()
+{
+	if ( MAI_gst_MainHandles.pst_DisplayData == nullptr )
+		return;
+
+	GDI_DetachDisplay( MAI_gst_MainHandles.pst_DisplayData );
+	MAI_gst_MainHandles.pst_DisplayData->st_GDI.pfnv_DesinitDisplay( MAI_gst_MainHandles.pst_DisplayData->pv_SpecificData );
+	GDI_fnv_DestroyDisplayData( MAI_gst_MainHandles.pst_DisplayData );
+}
+
 #if defined( _WIN32 )
 int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow )
 #else
@@ -159,6 +172,16 @@ int main( int argc, char **argv )
 
 	// Default big file name
 	strcpy( MAI_gst_InitStruct.asz_ProjectName, "Rayman4.bf" );
+	if ( !BIG_Open( MAI_gst_InitStruct.asz_ProjectName ) )
+		return EXIT_FAILURE;
+
+	InitializeDisplay();
+
+	ENG_InitEngine();
+
+	ENG_Loop();
+
+	WOR_Universe_Close( 0 );
 
 	ENG_CloseEngine();
 	ENG_CloseApplication();

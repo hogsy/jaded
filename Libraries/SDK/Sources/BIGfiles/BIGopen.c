@@ -26,18 +26,6 @@
 
 #include "TIMer/PROfiler/PROPS2.h"
 
-#ifdef PSX2_TARGET
-#include "IOP/CDV_Manager.h"
-#endif
-#ifdef PSX2_TARGET
-#include <libgraph.h>
-#include "GS_PS2/Gsp.h"
-#endif
-
-#if defined( _XBOX )
-#  include "Gx8/Gx8FileError.h"
-#endif
-
 BIG_tdst_BigFile	BIG_gst;
 BOOL				BIG_gb_CanOpenFats = TRUE;
 extern BIG_tdst_BigFile BIG_gst1;
@@ -54,12 +42,7 @@ extern BIG_tdst_BigFile BIG_gst1;
     In:     _psz_FileName   Full path of bigfile to load.
  =======================================================================================================================
  */
-#ifdef PSX2_TARGET
-extern int gi_SpecialHandler;
-extern int gi_SpecialHandler2;
-extern int eeRPC_i_OpenBigfile(void);
-#endif
-void BIG_Open(char *_psz_FileName)
+bool BIG_Open(char *_psz_FileName)
 {
 	int r;
 	/* First init global bigfile struct */
@@ -127,6 +110,8 @@ void BIG_Open(char *_psz_FileName)
 #endif
 	r=CLI_FileOpen(BIG_gst.h_CLibFileHandle);
 	ERR_X_Error(r, L_ERR_Csz_FOpen, _psz_FileName);
+	if ( r == NULL )
+		return false;
 
 	/*
 	 * L_setvbuf(BIG_gst.h_CLibFileHandle, NULL, L_IONBF, 0); £
@@ -148,7 +133,7 @@ void BIG_Open(char *_psz_FileName)
 	/* Check current version of bigfile */
 	VERsion_CheckCurrent();
 	
-
+	return true;
 }
 
 /*

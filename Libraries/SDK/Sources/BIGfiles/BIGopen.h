@@ -15,7 +15,7 @@
 extern "C"
 {
 #endif
-extern void             BIG_Open(char *);
+extern bool             BIG_Open(char *);
 extern void             BIG_Close(void);
 extern BIG_tdst_BigFile BIG_gst;
 
