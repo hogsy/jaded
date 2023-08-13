@@ -16,6 +16,12 @@
 static SDL_Window *sdlWindow;
 static SDL_GLContext sdlGLContext;
 
+#if defined( _WIN32 )
+
+static HWND nativeWindowHandle;
+
+#endif
+
 #if defined( _WIN32 ) && !defined( NDEBUG )
 
 #	include <DbgHelp.h>
@@ -106,16 +112,34 @@ static SDL_Window *CreateSDLWindow()
 
 	SDL_GL_MakeCurrent( sdlWindow, sdlGLContext );
 
+#if defined( _WIN32 )
+
+	SDL_SysWMinfo info;
+	SDL_VERSION( &info.version );
+	SDL_GetWindowWMInfo( sdlWindow, &info );
+	nativeWindowHandle = info.info.win.window;
+
+#endif
+
 	return sdlWindow;
 }
 
 static void InitializeDisplay()
 {
-	MAI_gst_MainHandles.h_DisplayWindow = nullptr;
+	MAI_gst_MainHandles.h_DisplayWindow = nativeWindowHandle;
 	MAI_gst_MainHandles.pst_DisplayData = GDI_fnpst_CreateDisplayData();
 	GDI_gpst_CurDD                      = MAI_gst_MainHandles.pst_DisplayData;
 
 	GDI_fnl_InitInterface( &MAI_gst_MainHandles.pst_DisplayData->st_GDI, 1 );
+
+	MAI_gst_MainHandles.pst_DisplayData->pv_SpecificData = MAI_gst_MainHandles.pst_DisplayData->st_GDI.pfnpv_InitDisplay();
+	GDI_AttachDisplay( MAI_gst_MainHandles.pst_DisplayData, MAI_gst_MainHandles.h_DisplayWindow );
+
+#ifdef RASTERS_ON
+
+	GDI_Rasters_Init( MAI_gst_MainHandles.pst_DisplayData->pst_Raster, "Display Data" );
+
+#endif
 }
 
 static void ShutdownDisplay()
@@ -197,6 +221,12 @@ int main( int argc, char **argv )
 	ENG_CloseApplication();
 
 	SDL_DestroyWindow( sdlWindow );
+
+#if defined( _WIN32 ) && !defined( NDEBUG )
+
+	FreeConsole();
+
+#endif
 
 	return EXIT_SUCCESS;
 }
