@@ -34,6 +34,7 @@ namespace jaded
 		struct LaunchOperations
 		{
 			bool editorMode{ false };
+			bool debugConsole{ false };
 
 			bool clean{ false };
 			bool cleanBinFiles{ false };

@@ -22,7 +22,7 @@ static HWND nativeWindowHandle;
 
 #endif
 
-#if defined( _WIN32 ) && !defined( NDEBUG )
+#if defined( _WIN32 )
 
 #	include <DbgHelp.h>
 
@@ -85,6 +85,11 @@ static void ParseStartupParameters()
 		if ( SDL_strcasecmp( jaded::sys::launchArguments[ i ], "/editor" ) == 0 )
 		{
 			jaded::sys::launchOperations.editorMode = true;
+			continue;
+		}
+		else if ( SDL_strcasecmp( jaded::sys::launchArguments[ i ], "/console" ) == 0 )
+		{
+			jaded::sys::launchOperations.debugConsole = true;
 			continue;
 		}
 	}
@@ -163,17 +168,7 @@ int main( int argc, char **argv )
 	jaded::sys::numLaunchArguments = __argc;
 	jaded::sys::launchArguments    = __argv;
 
-#	if !defined( NDEBUG )
-
 	SetUnhandledExceptionFilter( Win32CrashHandler );
-
-	AllocConsole();
-	FILE *tmp;
-	freopen_s( &tmp, "CONIN$", "r", stdin );
-	freopen_s( &tmp, "CONOUT$", "w", stderr );
-	freopen_s( &tmp, "CONOUT$", "w", stdout );
-
-#	endif
 
 #else
 
@@ -183,6 +178,23 @@ int main( int argc, char **argv )
 #endif
 
 	ParseStartupParameters();
+
+#if defined( _WIN32 )
+
+	if ( jaded::sys::launchOperations.debugConsole )
+	{
+		AllocConsole();
+		FILE *tmp;
+		freopen_s( &tmp, "CONIN$", "r", stdin );
+		freopen_s( &tmp, "CONOUT$", "w", stderr );
+		freopen_s( &tmp, "CONOUT$", "w", stdout );
+	}
+
+#endif
+
+	if ( jaded::sys::launchOperations.editorMode )
+	{
+	}
 
 	if ( SDL_Init( SDL_INIT_EVERYTHING ) != 0 )
 	{
@@ -224,7 +236,8 @@ int main( int argc, char **argv )
 
 #if defined( _WIN32 ) && !defined( NDEBUG )
 
-	FreeConsole();
+	if ( jaded::sys::launchOperations.debugConsole )
+		FreeConsole();
 
 #endif
 
