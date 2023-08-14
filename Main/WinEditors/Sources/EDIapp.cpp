@@ -39,6 +39,8 @@
 #	include "INOut/INO.h"
 #	include "DATaControl/DATCUtils.h"
 
+#include "../../Shared/MainSharedSystem.h"
+
 #	if defined( _XENON_RENDER )
 #		include "GraphicDK/Sources/TEXture/TEXfile.h"
 #		include "GraphicDK/Sources/TEXture/TEXxenon.h"
@@ -694,6 +696,8 @@ BOOL EDI_cl_App::InitInstance()
 	AfxSocketInit();
 	AfxInitRichEdit2();
 #	endif// #ifdef WIN32
+
+	jaded::sys::launchOperations.editorMode = true;
 
 	HKEY h_Key;
 	if ( RegOpenKey( HKEY_CURRENT_USER, KEY_ROOT, &h_Key ) != ERROR_SUCCESS )
