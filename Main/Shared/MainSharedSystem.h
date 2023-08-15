@@ -6,6 +6,8 @@
 #include <SDL.h>
 #include <SDL_syswm.h>
 
+#define JADED_USE_WINMAIN_SDL
+
 namespace jaded
 {
 	namespace sys

@@ -18,11 +18,9 @@ static SDL_GLContext sdlGLContext;
 
 #if defined( _WIN32 )
 
+extern int EDI_EditorWin32Execution( HINSTANCE );
+
 static HWND nativeWindowHandle;
-
-#endif
-
-#if defined( _WIN32 )
 
 #	include <DbgHelp.h>
 
@@ -157,29 +155,31 @@ static void ShutdownDisplay()
 	GDI_fnv_DestroyDisplayData( MAI_gst_MainHandles.pst_DisplayData );
 }
 
-#if defined( _WIN32 )
+#if defined( JADED_USE_WINMAIN_SDL )// hogsy: keep this for now, so if we need to, we can revert to the old crap
+
+#	if defined( _WIN32 )
 int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow )
-#else
+#	else
 int main( int argc, char **argv )
-#endif
+#	endif
 {
-#if defined( _WIN32 )
+#	if defined( _WIN32 )
 
 	jaded::sys::numLaunchArguments = __argc;
 	jaded::sys::launchArguments    = __argv;
 
 	SetUnhandledExceptionFilter( Win32CrashHandler );
 
-#else
+#	else
 
 	jaded::sys::numLaunchArguments = argc;
 	jaded::sys::launchArguments    = argv;
 
-#endif
+#	endif
 
 	ParseStartupParameters();
 
-#if defined( _WIN32 )
+#	if defined( _WIN32 )
 
 	if ( jaded::sys::launchOperations.debugConsole )
 	{
@@ -190,11 +190,11 @@ int main( int argc, char **argv )
 		freopen_s( &tmp, "CONOUT$", "w", stdout );
 	}
 
-#endif
-
+	// hogsy: for now we'll only support editor functionality under win32
 	if ( jaded::sys::launchOperations.editorMode )
-	{
-	}
+		return EDI_EditorWin32Execution( hInstance );
+
+#	endif
 
 	if ( SDL_Init( SDL_INIT_EVERYTHING ) != 0 )
 	{
@@ -234,12 +234,14 @@ int main( int argc, char **argv )
 
 	SDL_DestroyWindow( sdlWindow );
 
-#if defined( _WIN32 ) && !defined( NDEBUG )
+#	if defined( _WIN32 ) && !defined( NDEBUG )
 
 	if ( jaded::sys::launchOperations.debugConsole )
 		FreeConsole();
 
-#endif
+#	endif
 
 	return EXIT_SUCCESS;
 }
+
+#endif

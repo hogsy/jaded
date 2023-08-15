@@ -692,12 +692,12 @@ BOOL EDI_cl_App::InitInstance()
 	_CrtSetAllocHook( HookMem );
 	AfxEnableMemoryTracking( FALSE );
 
-#	ifdef WIN32
 	AfxSocketInit();
 	AfxInitRichEdit2();
-#	endif// #ifdef WIN32
 
+#	if !defined( JADED_USE_WINMAIN_SDL )
 	jaded::sys::launchOperations.editorMode = true;
+#	endif
 
 	HKEY h_Key;
 	if ( RegOpenKey( HKEY_CURRENT_USER, KEY_ROOT, &h_Key ) != ERROR_SUCCESS )
@@ -2590,4 +2590,22 @@ void EDI_cl_App::RemoveModeless( HWND _hwnd )
 	pos = APP_go_ModelessDia.Find( _hwnd );
 	if ( pos ) APP_go_ModelessDia.RemoveAt( pos );
 }
+
+/// <summary>
+/// Handles our specific MFC/Afx setup and loop instead.
+/// </summary>
+/// <returns>Exit status, either EXIT_SUCCESS or EXIT_FAILURE.</returns>
+int EDI_EditorWin32Execution( HINSTANCE instance )
+{
+	AfxWinInit( instance, nullptr, "", SW_SHOW );
+
+	EDI_cl_App *app    = ( EDI_cl_App    *) AfxGetApp();
+	CWinThread *thread = AfxGetThread();
+
+	app->InitApplication();
+	thread->InitInstance();
+
+	return EXIT_SUCCESS;
+}
+
 #endif /* ACTIVE_EDITORS */
