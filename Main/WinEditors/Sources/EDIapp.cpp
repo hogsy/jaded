@@ -39,7 +39,7 @@
 #	include "INOut/INO.h"
 #	include "DATaControl/DATCUtils.h"
 
-#include "../../Shared/MainSharedSystem.h"
+#	include "../../Shared/MainSharedSystem.h"
 
 #	if defined( _XENON_RENDER )
 #		include "GraphicDK/Sources/TEXture/TEXfile.h"
@@ -1400,7 +1400,7 @@ BOOL EDI_cl_App::InitInstance()
 	        nullptr );
 #	endif// XML_CONV_TOOL
 
-	      /*
+	/*
 	 * To break system when an allocation with a given number is made. When they are
 	 * memory leaks, the allocation number is given into braces. £
 	 * Set "dbgbreak" to 1 and "val" to the number of the allocation you want to stop.
@@ -1627,7 +1627,7 @@ BOOL EDI_cl_App::InitInstance()
  =======================================================================================================================
  */
 extern EDI_cl_MainFrame *EDI_gpstMainFrame;
-int EDI_cl_App::ExitInstance( )
+int EDI_cl_App::ExitInstance()
 {
 #	if defined( XML_CONV_TOOL )
 	return gXmlConvRetVal;
@@ -2604,6 +2604,9 @@ int EDI_EditorWin32Execution( HINSTANCE instance )
 
 	app->InitApplication();
 	thread->InitInstance();
+
+	for ( ;; )
+		app->Run();
 
 	return EXIT_SUCCESS;
 }
