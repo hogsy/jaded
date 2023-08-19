@@ -2641,7 +2641,7 @@ static bool OGL_SetDCPixelFormat(HDC _hDC, int maxAASamples)
 		                WGL_DEPTH_BITS_ARB, 32,
 		                WGL_STENCIL_BITS_ARB, 8,
 		                WGL_SAMPLE_BUFFERS_ARB, maxAASamples > 1 ? 1 : 0,
-		                WGL_SAMPLES_ARB, maxAASamples,
+		                WGL_SAMPLES_ARB, maxAASamples > 4 ? 4 : maxAASamples,
 		                0,// End
 		        };
 
