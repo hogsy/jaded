@@ -184,17 +184,17 @@ LONG OGL_l_Init(HWND _hWnd, GDI_tdst_DisplayData *_pst_DD)
 	OGL_SetupRC(pst_SD);
 	OGL_RS_Init(&pst_SD->st_RS);
 
-	_pst_DD->GlobalMul2X = TRUE;
-	_pst_DD->GlobalMul2XFactor = 1.f;
-	_pst_DD->ShowAEInEngine = TRUE;
-	_pst_DD->ShowAEEditor = TRUE;
+	_pst_DD->GlobalMul2X          = TRUE;
+	_pst_DD->GlobalMul2XFactor    = 1.f;
+	_pst_DD->ShowAEInEngine       = TRUE;
+	_pst_DD->ShowAEEditor         = TRUE;
 	_pst_DD->DrawGraphicDebugInfo = FALSE;
-	_pst_DD->TRI_ALarm = 30000;
-	_pst_DD->SPG_ALarm = 20000;
-	_pst_DD->DRAW_ALarm = 100;
-	_pst_DD->OBJ_ALarm = 300;
-    _pst_DD->SMALL_ALarm = 0; // Inactive by default.
-	_pst_DD->ColorCostIAThresh = 4;
+	_pst_DD->TRI_ALarm            = 500000;
+	_pst_DD->SPG_ALarm            = 20000;
+	_pst_DD->DRAW_ALarm           = 100;
+	_pst_DD->OBJ_ALarm            = 300;
+	_pst_DD->SMALL_ALarm          = 0;// Inactive by default.
+	_pst_DD->ColorCostIAThresh    = 4;
 
 	OGL_InitAllShadows();
 
@@ -256,8 +256,6 @@ void OGL_Flip()
 	SwapBuffers(pst_SD->h_DC);
 
 	PRO_StopTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_Flip);
-
-
 }
 
 /*
