@@ -90,12 +90,30 @@ static void ParseStartupParameters()
 			jaded::sys::launchOperations.debugConsole = true;
 			continue;
 		}
+		else if ( SDL_strcasecmp( jaded::sys::launchArguments[ i ], "/window" ) == 0 )
+		{
+			jaded::sys::launchOperations.forceWindowed = true;
+			continue;
+		}
+		else if ( SDL_strncasecmp( jaded::sys::launchArguments[ i ], "/width", 6 ) == 0 )
+		{
+			jaded::sys::launchOperations.forcedWidth = strtol( jaded::sys::launchArguments[ i ] + 7, nullptr, 10 );
+			continue;
+		}
+		else if ( SDL_strncasecmp( jaded::sys::launchArguments[ i ], "/height", 7 ) == 0 )
+		{
+			jaded::sys::launchOperations.forcedHeight = strtol( jaded::sys::launchArguments[ i ] + 8, nullptr, 10 );
+			continue;
+		}
 	}
 }
 
 static SDL_Window *CreateSDLWindow()
 {
 	int flags = SDL_WINDOW_OPENGL;
+	if ( !jaded::sys::launchOperations.forceWindowed )
+		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+
 	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 5 );
 	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 5 );
 	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 5 );
@@ -105,7 +123,18 @@ static SDL_Window *CreateSDLWindow()
 	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 3 );
 	SDL_GL_SetAttribute( SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 3 );
 
-	sdlWindow = SDL_CreateWindow( "Jaded", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, flags );
+	SDL_DisplayMode displayMode;
+	if ( SDL_GetDesktopDisplayMode( 0, &displayMode ) != 0 )
+	{
+		printf( "Failed to get desktop display mode: %s\n", SDL_GetError() );
+		displayMode.w = 1024;
+		displayMode.h = 768;
+	}
+
+	if ( jaded::sys::launchOperations.forcedWidth > 0 ) displayMode.w = jaded::sys::launchOperations.forcedWidth;
+	if ( jaded::sys::launchOperations.forcedHeight > 0 ) displayMode.h = jaded::sys::launchOperations.forcedHeight;
+
+	sdlWindow = SDL_CreateWindow( "Jaded", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, displayMode.w, displayMode.h, flags );
 	if ( sdlWindow == nullptr )
 		return nullptr;
 

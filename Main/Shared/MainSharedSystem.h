@@ -38,6 +38,10 @@ namespace jaded
 			bool editorMode{ false };
 			bool debugConsole{ false };
 
+			bool forceWindowed{ false };
+			int forcedWidth{ 0 };
+			int forcedHeight{ 0 };
+
 			bool clean{ false };
 			bool cleanBinFiles{ false };
 			std::vector< std::string > wolFiles;
