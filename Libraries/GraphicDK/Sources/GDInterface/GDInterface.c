@@ -34,7 +34,6 @@
 #include "OpenGL/Sources/OGLtex.h"
 #include "OpenGL/Sources/OGLinit.h"
 #include "OpenGL/Sources/OGLrequest.h"
-#define GD_EXT DX8
 
 #include "SELection/SELection.h"
 #include "SOFT/SOFTzlist.h"
@@ -69,11 +68,6 @@
 #	endif
 #endif
 
-#ifdef PSX2_TARGET
-#	include "PSX2struct.h"
-#endif
-
-
 #if defined( PSX2_TARGET ) && defined( __cplusplus )
 extern "C"
 {
@@ -84,11 +78,7 @@ extern "C"
  ***********************************************************************************************************************
  */
 
-#if defined( _XENON_RENDER ) && ( defined( ACTIVE_EDITORS ) || defined( PCWIN_TOOL ) )
-	int GDI_gi_GDIType = 2;// Xenon rendering
-#else
 int GDI_gi_GDIType = 0;// OpenGL rendering
-#endif
 
 	LONG GDI_gl_ReadaptOperation                     = 0;
 	float GDI_gaf_ScreenRation[ GDI_Cul_SRC_Number ] = { 1.0, 1.0, 0.75, 0.5625 };
@@ -204,45 +194,26 @@ int GDI_gi_GDIType = 0;// OpenGL rendering
 		pst_DD->pv_ShadowStack                           = NULL;
 		pst_DD->pst_AdditionalMaterial                   = NULL;
 
-#ifdef PSX2_TARGETXXX
-		pst_DD->st_ScreenFormat.ul_Flags           = 0;
-		pst_DD->st_ScreenFormat.f_PixelYoverX      = 0.45f;
-		pst_DD->st_ScreenFormat.f_ScreenYoverX     = 0.7f;
-		pst_DD->st_ScreenFormat.l_ScreenRatioConst = 0;
-#elif defined( _XBOX )
-	pst_DD->st_ScreenFormat.ul_Flags           = 0;
-	pst_DD->st_ScreenFormat.f_PixelYoverX      = 1.0f;
-	pst_DD->st_ScreenFormat.f_ScreenYoverX     = 1.0f;
-	pst_DD->st_ScreenFormat.l_ScreenRatioConst = GDI_Cul_SRC_4over3;//GDI_Cul_SRC_16over9;//GDI_Cul_SRC_4over3;
-#else
 	pst_DD->st_ScreenFormat.ul_Flags           = GDI_Cul_SFF_169BlackBand;
 	pst_DD->st_ScreenFormat.f_PixelYoverX      = 1.0f;
 	pst_DD->st_ScreenFormat.f_ScreenYoverX     = 1.0f;
 	pst_DD->st_ScreenFormat.l_ScreenRatioConst = GDI_Cul_SRC_4over3;
 
-#endif
-
 #ifdef ACTIVE_EDITORS
 		CAM_Engine_Init( &pst_DD->st_SplitViewCamera );
 #endif
 		CAM_Engine_Init( &pst_DD->st_Camera );
-#ifdef JADEFUSION
+
 		// ADAVID April 6th 2005
 		// Switched to statically-allocated SOFT MatrixStack to avoid memory alignment issues
 		SOFT_l_MatrixStack_Create( &pst_DD->st_MatrixStack );
-#else
-	SOFT_l_MatrixStack_Create( &pst_DD->st_MatrixStack, 16 );
-#endif
+
 		LIGHT_List_Init( &pst_DD->st_LightList, 256 );
 		TEX_Manager_Init( &pst_DD->st_TexManager );
 
 		//    pst_DD->pst_ComputingBuffers = (SOFT_tdst_ComputingBuffers *) MEM_p_AllocAlign( sizeof( SOFT_tdst_ComputingBuffers ), 64);
 		{
-#ifdef JADEFUSION
 			extern SOFT_tdst_ComputingBuffers *SOFT_gp_Compute;
-#else
-		extern char *SOFT_gp_Compute;
-#endif
 			pst_DD->pst_ComputingBuffers = ( SOFT_tdst_ComputingBuffers * ) SOFT_gp_Compute;
 		}
 		L_memset( pst_DD->pst_ComputingBuffers, 0, sizeof( SOFT_tdst_ComputingBuffers ) );
@@ -255,11 +226,8 @@ int GDI_gi_GDIType = 0;// OpenGL rendering
 
 		WAY_Links_Init( &pst_DD->st_DisplayedLinks );
 		GEO_Zone_Init( &pst_DD->st_DisplayedZones );
-#	ifdef JADEFUSION
-		pst_DD->pst_PickingBuffer = ( SOFT_tdst_PickingBuffer_ * ) MEM_p_Alloc( sizeof( SOFT_tdst_PickingBuffer ) );
-#	else
-		pst_DD->pst_PickingBuffer   = MEM_p_Alloc( sizeof( SOFT_tdst_PickingBuffer ) );
-#	endif
+
+		pst_DD->pst_PickingBuffer = ( struct SOFT_tdst_PickingBuffer_ * ) MEM_p_Alloc( sizeof( SOFT_tdst_PickingBuffer ) );
 		L_memset( pst_DD->pst_PickingBuffer, 0, sizeof( SOFT_tdst_PickingBuffer ) );
 		pst_DD->pst_EditorSplitViewCamObject = NULL;
 		pst_DD->uc_EngineSplitViewCamera     = 0;
@@ -275,24 +243,14 @@ int GDI_gi_GDIType = 0;// OpenGL rendering
 
 		L_strcpy( pst_DD->sz_SnapshotName, "Capture" );
 		pst_DD->uc_SnapshotFlag = GDI_Cc_CaptureType_One;
-#	ifdef JADEFUSION
-		pst_DD->pst_Helpers = ( SOFT_tdst_Helpers_ * ) MEM_p_Alloc( sizeof( SOFT_tdst_Helpers ) );
-#	else
-		pst_DD->pst_Helpers         = MEM_p_Alloc( sizeof( SOFT_tdst_Helpers ) );
-#	endif
+
+		pst_DD->pst_Helpers = ( struct SOFT_tdst_Helpers_ * ) MEM_p_Alloc( sizeof( SOFT_tdst_Helpers ) );
 		SOFT_Helpers_Init( pst_DD->pst_Helpers, pst_DD );
 
-#	ifdef JADEFUSION
-		pst_DD->pst_GridOptions = ( GRID_tdst_DisplayOptions_ * ) MEM_p_Alloc( sizeof( GRID_tdst_DisplayOptions ) );
-#	else
-		pst_DD->pst_GridOptions     = MEM_p_Alloc( sizeof( GRID_tdst_DisplayOptions ) );
-#	endif
+		pst_DD->pst_GridOptions = ( struct GRID_tdst_DisplayOptions_ * ) MEM_p_Alloc( sizeof( GRID_tdst_DisplayOptions ) );
 		L_memset( pst_DD->pst_GridOptions, 0, sizeof( GRID_tdst_DisplayOptions ) );
-#	ifdef JADEFUSION
-		pst_DD->pst_EditOptions = ( GRO_tdst_EditOptions_ * ) MEM_p_Alloc( sizeof( GRO_tdst_EditOptions ) );
-#	else
-		pst_DD->pst_EditOptions     = MEM_p_Alloc( sizeof( GRO_tdst_EditOptions ) );
-#	endif
+
+		pst_DD->pst_EditOptions = ( struct GRO_tdst_EditOptions_ * ) MEM_p_Alloc( sizeof( GRO_tdst_EditOptions ) );
 		L_memset( pst_DD->pst_EditOptions, 0, sizeof( GRO_tdst_EditOptions ) );
 		pst_DD->pst_EditOptions->ul_Flags             = GRO_Cul_EOF_Vertex | GRO_Cul_EOF_ToolAcceptMultiple | GRO_Cul_EOF_SelectVisible;
 		pst_DD->pst_EditOptions->f_VertexBlendColor   = 1.0f;
@@ -372,11 +330,8 @@ int GDI_gi_GDIType = 0;// OpenGL rendering
 
 		pst_DD->l_WPShowStatus  = 0xFFFFFFFF;
 		pst_DD->l_WPShowStatus2 = 0xFFFFFFFF;
-#	ifdef JADEFUSION
-		pst_DD->pst_BackgroundImage = ( SOFT_tdst_BackgroundImage_ * ) MEM_p_Alloc( sizeof( SOFT_tdst_BackgroundImage ) );
-#	else
-		pst_DD->pst_BackgroundImage = MEM_p_Alloc( sizeof( SOFT_tdst_BackgroundImage ) );
-#	endif
+
+		pst_DD->pst_BackgroundImage = ( struct SOFT_tdst_BackgroundImage_ * ) MEM_p_Alloc( sizeof( SOFT_tdst_BackgroundImage ) );
 		pst_DD->pst_BackgroundImage->w_Texture = -1;
 		if ( !( LOA_gb_SpeedMode || LOA_IsBinarizing() || EDI_gb_ComputeMap ) ) SOFT_BackgroundImage_Init( pst_DD->pst_BackgroundImage );
 

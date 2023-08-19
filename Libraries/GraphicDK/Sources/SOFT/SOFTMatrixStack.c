@@ -19,7 +19,6 @@ extern "C" {
  ===================================================================================================
  ===================================================================================================
  */
-#ifdef JADEFUSION
 LONG SOFT_l_MatrixStack_Create(SOFT_tdst_MatrixStack *_pst_MS)
 {
     if(_pst_MS == NULL) 
@@ -28,30 +27,13 @@ LONG SOFT_l_MatrixStack_Create(SOFT_tdst_MatrixStack *_pst_MS)
     SOFT_MatrixStack_Reset(_pst_MS, NULL);
     return MATRIX_STACK_DEPTH;
 }
-#else
-LONG SOFT_l_MatrixStack_Create(SOFT_tdst_MatrixStack *_pst_MS, LONG _l_NumberOfMatrix)
-{
-    if((_l_NumberOfMatrix <= 0) || (_pst_MS == NULL)) return 0;
 
-    _pst_MS->dst_Matrix = (MATH_tdst_Matrix *)
-        L_malloc(_l_NumberOfMatrix * sizeof(MATH_tdst_Matrix));
-    if(_pst_MS->dst_Matrix == NULL) _l_NumberOfMatrix = 0;
-
-    _pst_MS->uw_NumberMaxOfMatrix = (unsigned short) _l_NumberOfMatrix;
-    SOFT_MatrixStack_Reset(_pst_MS, NULL);
-    return _l_NumberOfMatrix;
-}
-#endif
 /*
  ===================================================================================================
  ===================================================================================================
  */
 void SOFT_MatrixStack_Destroy(SOFT_tdst_MatrixStack *_pst_MS)
 {
-#ifndef JADEFUSION
-	if(_pst_MS->dst_Matrix)
-        L_free(_pst_MS->dst_Matrix);
-#endif 
 	_pst_MS->uw_NumberMaxOfMatrix = 0;
 }
 

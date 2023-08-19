@@ -27,17 +27,12 @@ extern "C"
     Structures
  ***************************************************************************************************
  */
-#ifdef JADEFUSION
+
 #define MATRIX_STACK_DEPTH	16
-#endif
 
 typedef struct  SOFT_tdst_MatrixStack_
 {
-#ifdef JADEFUSION
 	MATH_tdst_Matrix    dst_Matrix[MATRIX_STACK_DEPTH];
-#else
-	MATH_tdst_Matrix    *dst_Matrix;
-#endif
 	MATH_tdst_Matrix    *pst_CurrentMatrix;
     unsigned short      uw_NumberMaxOfMatrix;
     unsigned short      uw_IndexOfCurrentMatrix;
@@ -48,11 +43,7 @@ typedef struct  SOFT_tdst_MatrixStack_
     Functions
  ***************************************************************************************************
  */
-#ifdef JADEFUSION
 LONG    SOFT_l_MatrixStack_Create(SOFT_tdst_MatrixStack *);
-#else
-LONG    SOFT_l_MatrixStack_Create(SOFT_tdst_MatrixStack *, LONG);
-#endif
 void    SOFT_MatrixStack_Destroy(SOFT_tdst_MatrixStack *);
 void    SOFT_MatrixStack_Reset(SOFT_tdst_MatrixStack *, MATH_tdst_Matrix *);
 LONG    SOFT_l_MatrixStack_Push(SOFT_tdst_MatrixStack *, MATH_tdst_Matrix *);
