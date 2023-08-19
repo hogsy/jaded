@@ -105,53 +105,6 @@ void OGL_SetFogParams(GDI_tdst_DisplayData *_pst_DD, SOFT_tdst_FogParams *_pst_F
  =======================================================================================================================
  =======================================================================================================================
  */
-void OGL_DrawProjectedTriangle(GDI_tdst_DisplayData *_pst_DD, SOFT_tdst_Vertex *_pst_TV)
-{
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	ULONG	ulBlendingMode, ulOGLSetCol;
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-	ulBlendingMode = 0;
-
-	if(!(_pst_DD->ul_CurrentDrawMask & GDI_Cul_DM_NotWired))
-	{
-		OGL_RS_DrawWired(OGL_M_RS(_pst_DD), 1);
-		OGL_RS_LineWidth(OGL_M_RS(_pst_DD), 1.0f);
-	}
-	else
-	{
-		OGL_RS_DrawWired(OGL_M_RS(_pst_DD), 0);
-	}
-
-	OGL_RS_CullFace(OGL_M_RS(_pst_DD), (_pst_DD->ul_CurrentDrawMask & GDI_Cul_DM_TestBackFace));
-
-	glBegin(GL_TRIANGLES);
-
-	glTexCoord2fv(&_pst_TV[0].u);
-	ulOGLSetCol = _pst_TV[0].color | ((OGL_tdst_SpecificData *) _pst_DD->pv_SpecificData)->ulColorOr;
-	ulOGLSetCol ^= _pst_DD->pst_ComputingBuffers->ulColorXor;
-	OGL_SetColorFor2x((GLubyte *) &ulOGLSetCol);
-	glVertex3fv((float *) &_pst_TV[0]);
-
-	glTexCoord2fv(&_pst_TV[1].u);
-	ulOGLSetCol = _pst_TV[1].color | ((OGL_tdst_SpecificData *) _pst_DD->pv_SpecificData)->ulColorOr;
-	ulOGLSetCol ^= _pst_DD->pst_ComputingBuffers->ulColorXor;
-	OGL_SetColorFor2x((GLubyte *) &ulOGLSetCol);
-	glVertex3fv((float *) &_pst_TV[1]);
-
-	glTexCoord2fv(&_pst_TV[2].u);
-	ulOGLSetCol = _pst_TV[2].color | ((OGL_tdst_SpecificData *) _pst_DD->pv_SpecificData)->ulColorOr;
-	ulOGLSetCol ^= _pst_DD->pst_ComputingBuffers->ulColorXor;
-	OGL_SetColorFor2x((GLubyte *) &ulOGLSetCol);
-	glVertex3fv((float *) &_pst_TV[2]);
-
-	glEnd();
-}
-
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
 void OGL_Draw2DTriangle(GDI_tdst_DisplayData *_pst_DD, SOFT_tdst_Vertex *_pst_TV)
 {
 	/*~~~~~~~~~~~~~~~~~~~*/
@@ -1475,12 +1428,10 @@ LONG OGL_l_Request(ULONG _ul_Request, ULONG _ul_Data)
 	case GDI_Cul_Request_DrawSoftEllipse:			OGL_DrawEllipse(GDI_gpst_CurDD, (SOFT_tdst_Ellipse *) _ul_Data); break;
 	case GDI_Cul_Request_DrawSoftArrow:				OGL_DrawArrow(GDI_gpst_CurDD, (SOFT_tdst_Arrow *) _ul_Data); break;
 	case GDI_Cul_Request_DrawSoftSquare:			OGL_DrawSquare(GDI_gpst_CurDD, (SOFT_tdst_Square *) _ul_Data); break;
-	case GDI_Cul_Request_DrawTransformedTriangle:	OGL_DrawProjectedTriangle(GDI_gpst_CurDD, (SOFT_tdst_Vertex *) _ul_Data); break;
 	case GDI_Cul_Request_DepthTest:					OGL_RS_DepthTest( OGL_M_RS( GDI_gpst_CurDD ), _ul_Data ); break;
 	case GDI_Cul_Request_DepthFunc:					OGL_RS_DepthFunc( OGL_M_RS( GDI_gpst_CurDD ), _ul_Data ? GL_LEQUAL : GL_ALWAYS ); break;
 	case GDI_Cul_Request_DrawPoint:					OGL_DrawPoint( GDI_gpst_CurDD, (MATH_tdst_Vector *) _ul_Data ); break;
 	case GDI_Cul_Request_DrawLine:					OGL_DrawLine( GDI_gpst_CurDD, (MATH_tdst_Vector **) _ul_Data ); break;
-	case GDI_Cul_Request_DrawTriangle:				break;
 	case GDI_Cul_Request_DrawQuad:					OGL_DrawQuad( GDI_gpst_CurDD, (MATH_tdst_Vector **) _ul_Data ); break;
 	case GDI_Cul_Request_ReloadTexture:				OGL_ReloadTexture( GDI_gpst_CurDD, (GDI_tdst_Request_ReloadTextureParams *) _ul_Data); break;
 	case GDI_Cul_Request_ReloadTexture2:			OGL_ReloadTexture2( GDI_gpst_CurDD, (GDI_tdst_Request_ReloadTextureParams *) _ul_Data); break;

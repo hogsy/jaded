@@ -41,12 +41,10 @@ extern "C"
 #define GDI_Cul_Request_DrawSoftEllipse			0x00000002
 #define GDI_Cul_Request_DrawSoftArrow			0x00000003
 #define GDI_Cul_Request_DrawSoftSquare			0x00000004
-#define GDI_Cul_Request_DrawTransformedTriangle 0x00000005
 #define GDI_Cul_Request_DepthTest				0x00000006
 #define GDI_Cul_Request_DepthFunc				0x00000007
 #define GDI_Cul_Request_DrawPoint				0x00000008
 #define GDI_Cul_Request_DrawLine				0x00000009
-#define GDI_Cul_Request_DrawTriangle			0x0000000A
 #define GDI_Cul_Request_DrawQuad				0x0000000B
 #define GDI_Cul_Request_ReloadTexture			0x0000000C
 #define GDI_Cul_Request_SizeOfPoints			0x0000000D
