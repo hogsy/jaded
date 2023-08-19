@@ -66,8 +66,15 @@ void LINK_PrintStatusMsgEOLCanal(char *_psz_Text,int _iCanal)
 		if(pz[0] == '\\' && pz[1] == 'n')
 		{
 			*pz = 0;
-			po_Editor = M_MF()->po_GetEditorByType(EDI_IDEDIT_LOGFILE, 0);
-			if(po_Editor) po_Editor->i_OnMessage(ELOG_MESSAGE_ADDLINE|((_iCanal + 1)<<16), (ULONG) pzb, LINK_gul_ColorTxt);
+			if ( jaded::sys::launchOperations.editorMode )
+			{
+				po_Editor = M_MF()->po_GetEditorByType( EDI_IDEDIT_LOGFILE, 0 );
+				if ( po_Editor ) po_Editor->i_OnMessage( ELOG_MESSAGE_ADDLINE | ( ( _iCanal + 1 ) << 16 ), ( ULONG ) pzb, LINK_gul_ColorTxt );
+			}
+			else
+			{
+				printf( "%s\n", pzb );
+			}
 			pz += 2;
 			pzb = pz;
 			continue;

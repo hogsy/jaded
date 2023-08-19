@@ -590,7 +590,7 @@ void EOUT_cl_Frame::OneTrameEnding(void)
 		DDD()->uc_EngineCamera = 0;
 		OnAction(EOUT_ACTION_ENGINECAM);
 
-		// if no world is loaded, engine the 'active engine display' ~hogsy
+		// if no world is loaded, enable the 'active engine display' ~hogsy
 		if ( !mst_Ini.b_EngineDisplay && DW() == nullptr )
 		{
 			OnAction( EOUT_ACTION_ENGINEDISPLAY );
