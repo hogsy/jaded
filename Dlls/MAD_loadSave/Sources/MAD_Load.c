@@ -10,7 +10,6 @@
 #include <WINDOWS.H>
 #include <COMMCTRL.H>
 
-#ifdef JADEFUSION
 #define MAD_Load_MainStruct(type, address, file) \
     MAD_MALLOC(type, address, 1); \
     if(1 != fread(&(address)->ID.SizeOfThisOne, sizeof(type) - sizeof(ID_MAD_Type), 1, file)) \
@@ -24,17 +23,6 @@
 	}
 
 #define MAD_ERROR_READ "MAD file read error\nCheck the file size of your MAD file"
-#else
-#define MAD_Load_MainStruct(type, address, file) \
-    MAD_MALLOC(type, address, 1); \
-    fread(&(address)->ID.SizeOfThisOne, sizeof(type) - sizeof(ID_MAD_Type), 1, file); \
-    (address)->ID.IDType = IDType;
-
-#define MAD_Load_NormalStruct(type, address, size, file) \
-    MAD_MALLOC(type, address, size); \
-    fread(address, sizeof(type), size, file);
-#endif
-
 
 static char gaz_MAD_CurrentPath[_MAX_PATH] = "";
 
@@ -248,15 +236,11 @@ void MAD_LoadMaterial(MAD_World *MW, MAD_MAT_MatID **MT, FILE *File)
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     MAD_MAT_MatID   NM;
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-#ifdef JADEFUSION    
+ 
     if(1 != fread(&NM, sizeof(MAD_MAT_MatID), 1, File))
 	{
 		MessageBox(NULL, MAD_ERROR_READ, TEXT("MAD Read"), MB_OK | MB_ICONEXCLAMATION | MB_TASKMODAL);
 	}
-#else	
-	fread(&NM, sizeof(MAD_MAT_MatID), 1, File);
-#endif
 	
 	fseek(File, -(long) sizeof(MAD_MAT_MatID), SEEK_CUR);
     switch(NM.MaterialType)
@@ -367,14 +351,11 @@ void MAD_LoadAllObjects(MAD_World *MW, FILE *File)
 
     for(Counter = 0; Counter < MW->NumberOfObjects; Counter++)
     {
-#ifdef JADEFUSION
 		if(1 != fread(&IDType, sizeof(ID_MAD_Type), 1, File))
 		{
 			MessageBox(NULL, MAD_ERROR_READ, TEXT("MAD Read"), MB_OK | MB_ICONEXCLAMATION | MB_TASKMODAL);
 		}
-#else
-		fread(&IDType, sizeof(ID_MAD_Type), 1, File);
-#endif
+
 		switch(IDType)
         {
         case ID_MAD_SkinnedGeometricObject:
@@ -452,14 +433,11 @@ MAD_World *MAD_Load_Version_0(FILE *File, MAD_FileFlag SF)
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
     MAD_MALLOC(MAD_World, MW, 1);
-#ifdef JADEFUSION
     if(1 != fread(MW, sizeof(*MW), 1, File))
 	{
 		MessageBox(NULL, MAD_ERROR_READ, TEXT("MAD Read"), MB_OK | MB_ICONEXCLAMATION | MB_TASKMODAL);
 	}
-#else
-	fread(MW, sizeof(*MW), 1, File);
-#endif
+
 	MAD_MALLOC(MAD_texture *, MW->AllTextures, MW->NumberOftexture);
     MAD_MALLOC(MAD_MAT_MatID *, MW->AllMaterial, MW->NumberOfMaterials);
     MAD_MALLOC(MAD_NodeID *, MW->AllObjects, MW->NumberOfObjects);
@@ -521,9 +499,6 @@ MAD_World *MAD_Load(char *FileName,void (*LoadCallback)(FILE *f,int size,char *N
 	if (!File)
 		return NULL;
 
-#ifdef JADEFUSION
-	size_t ReadLength = 0;
-
     if(1 != fread(&Version, sizeof(unsigned long), 1, File))
 	{
 		MessageBox(NULL, MAD_ERROR_READ, TEXT("MAD Read"), MB_OK | MB_ICONEXCLAMATION | MB_TASKMODAL);
@@ -534,10 +509,6 @@ MAD_World *MAD_Load(char *FileName,void (*LoadCallback)(FILE *f,int size,char *N
 		MessageBox(NULL, MAD_ERROR_READ, TEXT("MAD Read"), MB_OK | MB_ICONEXCLAMATION | MB_TASKMODAL);
 		return NULL;
 	}
-#else
-    fread(&Version, sizeof(unsigned long), 1, File);
-    fread(&FileFlag, sizeof(unsigned long), 1, File);
-#endif
 
 	if (FileFlag & MAD_RelativeTexFileName)
 	{
