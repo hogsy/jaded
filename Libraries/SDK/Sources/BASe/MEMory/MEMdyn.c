@@ -38,15 +38,6 @@
 
 /*$2------------------------------------------------------------------------------------------------------------------*/
 
-#ifdef _GAMECUBE
-#include "GameCube/GC_arammng.h"
-#include "Sound/Sources/gc/gcSND_ARAM.h"
-#endif
-
-#if defined( _XBOX ) || defined( _XENON )
-#  include <XbDm.h>
-#endif
-
 #ifndef MEM_OPT
 #define MEM_USE_TYPES
 
@@ -146,16 +137,7 @@ ULONG MEM_ul_GetRealSize(void *_pv_Block)
  -----------------------------------------------------------------------------------------------------------------------
  */
 
-#if defined(PSX2_TARGET) || defined(_XBOX) || defined(XML_CONV_TOOL)
-
-/*$1- PS2 & Xbox ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-#define MEM_M_InitLock()
-#define MEM_M_BeginCriticalSection()
-#define MEM_M_EndCriticalSection()
-#define MEM_M_DestroyLock()
-
-#elif defined(_XENON_RENDER)
+#if defined(_XENON_RENDER)
 
 static CRITICAL_SECTION s_oMemoryAccessLock;
 
@@ -182,25 +164,6 @@ static CRITICAL_SECTION s_oMemoryAccessLock;
     {                                                       \
         DeleteCriticalSection(&s_oMemoryAccessLock);        \
     } while (0)
-
-/*$1- Gamecube ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-#elif defined(_GAMECUBE)
-static BOOL sh_MultiThreadingLock;
-#define MEM_M_InitLock()
-#define MEM_M_BeginCriticalSection() \
-	do \
-	{ \
-		sh_MultiThreadingLock = OSDisableInterrupts(); \
-	} while(0)
-#define MEM_M_EndCriticalSection() \
-	do \
-	{ \
-		OSRestoreInterrupts(sh_MultiThreadingLock); \
-	} while(0)
-#define MEM_M_DestroyLock()
-
-/*$1- win32 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 #else
 		static HANDLE	sh_MultiThreadingLock;
@@ -237,58 +200,8 @@ static BOOL sh_MultiThreadingLock;
  */
 
 #if defined(_FINAL_)
-
 /*$1- final = no signal ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
 #define MEM_M_SignalFatalError(a, b)
-
-/*$1- PSX2 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-#elif defined(PSX2_TARGET)
-				extern unsigned int Gsp_Crash(unsigned int Address, unsigned char *);
-extern void							Gsp_CrashPrintf(char *);
-extern void							Gsp_FlipFB(void);
-
-#define MEM_M_SignalFatalError(a, b) \
-	do \
-	{ \
-		int		tmp; \
-		char	az[256]; \
-		asm("qmove tmp, ra"); \
-		sprintf(az, "alloc size %d, from 0x%X", a, tmp); \
-		printf("*** No more memory : %s ***\n", az);\
-		Gsp_Crash(0, b); \
-		Gsp_CrashPrintf(b); \
-		Gsp_CrashPrintf(az); \
-		Gsp_FlipFB(); \
-		while(1) \
-		{ \
-		}; \
-	} while(0);
-
-/*$1- Gamecube ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-#elif defined(_GAMECUBE)
-#define MEM_M_SignalFatalError(a, b) \
-	do \
-	{ \
-		char	az[256]; \
-		sprintf(az, b " : %d oct\n", a); \
-		GXI_ErrBegin(); \
-		GXI_ErrPrint(az); \
-		GXI_ErrEnd(); \
-		while(1) \
-		{ \
-		}; \
-	} while(0);
-
-/*$1- others (win32+Xbox) ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-#elif defined(_XBOX) || defined(_XENON)
-#define MEM_M_SignalFatalError(a, b)	ERR_X_Assert(0)
-
-/*$1- others (win32+Xbox) ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
 #else
 #define MEM_M_SignalFatalError(a, b)	MessageBox(0, "No more memory", "No more memory", MB_OK)
 #endif
@@ -298,10 +211,6 @@ extern void							Gsp_FlipFB(void);
     Hole Optimisation
  -----------------------------------------------------------------------------------------------------------------------
  */
-#ifdef _GAMECUBE
-#define USE_HOLE_OPTIM
-#endif
-
 #ifdef USE_HOLE_OPTIM
 
 /*$1- macros ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -406,9 +315,6 @@ void		MEM_Defrag(int single);
 void		MEM_FreeTmp(void *);
 extern void MEM_ComputeMemoryHoleInfo(ULONG *, ULONG *, BOOL);
 
-#ifdef _GAMECUBE
-void		gcMEM_PrepareMemoryPool(void);
-#endif
 #ifdef USE_HOLE_OPTIM
 static void *MEM_p_AllocInOldHoles(ULONG);
 static void MEM_DeleteHoleInChain(ULONG *);
@@ -499,336 +405,8 @@ void MEM_vBuildSummary()
 			}
 }
 #endif
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
-void *L_Dbg_memcpy(void *_pv_Dest, const void *_pv_Src, int i_Size)
-{
-	if(MEM_s_DynamicMemoryCheck)
-	{
-		/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-		ULONG	*_pul_Byte, *_pul_LastByte;
-		ULONG	ul_BlockLength;
-		/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-		if(!_pv_Dest)
-		{
-			if(i_Size)
-			{
-				LINK_PrintStatusMsg("-Memcpy warning (NULL address detected)");
-			}
-
-			return(memcpy(_pv_Dest, _pv_Src, i_Size));
-		}
-
-		/*$F
-		_pul_Byte = (ULONG *) _pv_Src;
-		_pul_LastByte = _pul_Byte + (i_Size >> 2);
-		for(; _pul_Byte < _pul_LastByte; _pul_Byte++)
-		{
-			if(((*_pul_Byte) & 0xFFFFFFFF) == 0xA0110270)
-			{
-				LINK_PrintStatusMsg("- Memcpy copy of Mark ");
-				break;
-			}
-		}
-		*/
-		if(*(((ULONG *) _pv_Dest) - 2) == 0xA0110270)
-		{
-			ul_BlockLength = *(((ULONG *) _pv_Dest) - 1);
-		}
-		else
-		{
-			/*~~*/
-			int i;
-			/*~~*/
-
-			ul_BlockLength = 0;
-			for(i = 2; i < 1024; i++)
-			{
-				if(IsBadReadPtr((((ULONG *) _pv_Dest) - i), 4)) break;
-				if((*(((ULONG *) _pv_Dest) - i)) == 0xA0110270)
-				{
-					ul_BlockLength = *(((ULONG *) _pv_Dest) - (i - 1));
-					break;
-				}
-			}
-
-			if(ul_BlockLength)
-			{
-				if(i_Size + ((i - 2) << 2) > (int) MEM_ul_GetRealSizeFromSize(ul_BlockLength))
-				{
-					LINK_PrintStatusMsg("- Memcpy warning (Length overpass block size)");
-				}
-				else
-				{
-					return(memcpy(_pv_Dest, _pv_Src, i_Size));
-				}
-			}
-		}
-
-		if(ul_BlockLength)
-		{
-			if(i_Size > (int) MEM_ul_GetRealSizeFromSize(ul_BlockLength))
-			{
-				LINK_PrintStatusMsg("- Memcpy warning (Length overpass block size)");
-			}
-			else
-			{
-				return(memcpy(_pv_Dest, _pv_Src, i_Size));
-			}
-		}
-
-		_pul_Byte = (ULONG *) _pv_Dest;
-		_pul_LastByte = _pul_Byte + (i_Size >> 2);
-		for(; _pul_Byte < _pul_LastByte; _pul_Byte++)
-		{
-			if(((*_pul_Byte) & 0xFFFFFFFF) == 0xA0110270)
-			{
-				LINK_PrintStatusMsg("- Memcpy warning (Block mark found)");
-			}
-		}
-	}
-
-	return(memcpy(_pv_Dest, _pv_Src, i_Size));
-}
-
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
-void *L_Dbg_memmove(void *_pv_Dest, const void *_pv_Src, int i_Size)
-{
-	if(MEM_s_DynamicMemoryCheck)
-	{
-		/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-		ULONG	*_pul_Byte, *_pul_LastByte;
-		ULONG	ul_BlockLength;
-		/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-		if(!_pv_Dest)
-		{
-			if(i_Size)
-			{
-				LINK_PrintStatusMsg("-Memmove warning (NULL address detected)");
-			}
-
-			return(memmove(_pv_Dest, _pv_Src, i_Size));
-		}
-
-		/*$F
-		_pul_Byte = (ULONG *) _pv_Src;
-		_pul_LastByte = _pul_Byte + (i_Size >> 2);
-		for(; _pul_Byte < _pul_LastByte; _pul_Byte++)
-		{
-			if(((*_pul_Byte) & 0xFFFFFFFF) == 0xA0110270)
-			{
-				LINK_PrintStatusMsg("-Memcpy copy of Mark ");
-				break;
-			}
-		}
-		*/
-		if(*(((ULONG *) _pv_Dest) - 2) == 0xA0110270)
-		{
-			ul_BlockLength = *(((ULONG *) _pv_Dest) - 1);
-		}
-		else
-		{
-			/*~~*/
-			int i;
-			/*~~*/
-
-			ul_BlockLength = 0;
-			for(i = 2; i < 1024; i++)
-			{
-				if(IsBadReadPtr((((ULONG *) _pv_Dest) - i), 4)) break;
-				if((*(((ULONG *) _pv_Dest) - i)) == 0xA0110270)
-				{
-					ul_BlockLength = *(((ULONG *) _pv_Dest) - (i - 1));
-					break;
-				}
-			}
-
-			if(ul_BlockLength)
-			{
-				if(i_Size + ((i - 2) << 2) > (int) MEM_ul_GetRealSizeFromSize(ul_BlockLength))
-				{
-					LINK_PrintStatusMsg("-Memmove warning (Length overpass block size)");
-				}
-				else
-				{
-					return(memmove(_pv_Dest, _pv_Src, i_Size));
-				}
-			}
-		}
-
-		if(ul_BlockLength)
-		{
-			if(i_Size > (int) MEM_ul_GetRealSizeFromSize(ul_BlockLength))
-			{
-				LINK_PrintStatusMsg("-Memmove warning (Length overpass block size)");
-			}
-			else
-			{
-				return(memmove(_pv_Dest, _pv_Src, i_Size));
-			}
-		}
-
-		_pul_Byte = (ULONG *) _pv_Dest;
-		_pul_LastByte = _pul_Byte + (i_Size >> 2);
-		for(; _pul_Byte < _pul_LastByte; _pul_Byte++)
-		{
-			if(((*_pul_Byte) & 0xFFFFFFFF) == 0xA0110270)
-			{
-				LINK_PrintStatusMsg("Memmove warning (Block mark found)");
-			}
-		}
-	}
-
-	return(memmove(_pv_Dest, _pv_Src, i_Size));
-}
-
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
-void *L_Dbg_memset(void *_pv_Dest, int i_Value, int i_Size)
-{
-	if(MEM_s_DynamicMemoryCheck)
-	{
-		/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-		ULONG	*_pul_Byte, *_pul_LastByte;
-		ULONG	ul_BlockLength;
-		/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-		if(!_pv_Dest)
-		{
-			if(i_Size)
-			{
-				LINK_PrintStatusMsg("-Memset warning (NULL address detected)");
-			}
-
-			return(memset(_pv_Dest, i_Value, i_Size));
-		}
-
-		if(*(((ULONG *) _pv_Dest) - 2) == 0xA0110270)
-		{
-			ul_BlockLength = *(((ULONG *) _pv_Dest) - 1);
-		}
-		else
-		{
-			/*~~*/
-			int i;
-			/*~~*/
-
-			ul_BlockLength = 0;
-			for(i = 2; i < 1024; i++)
-			{
-				if(IsBadReadPtr((((ULONG *) _pv_Dest) - i), 4)) break;
-				if((*(((ULONG *) _pv_Dest) - i)) == 0xA0110270)
-				{
-					ul_BlockLength = *(((ULONG *) _pv_Dest) - (i - 1));
-					break;
-				}
-			}
-
-			if(ul_BlockLength)
-			{
-				if(i_Size + ((i - 2) << 2) > (int) MEM_ul_GetRealSizeFromSize(ul_BlockLength))
-				{
-					LINK_PrintStatusMsg("-Memset warning (Length overpass block size)");
-				}
-				else
-				{
-					return(memset(_pv_Dest, i_Value, i_Size));
-				}
-			}
-		}
-
-		if(ul_BlockLength)
-		{
-			if(i_Size > (int) MEM_ul_GetRealSizeFromSize(ul_BlockLength))
-			{
-				LINK_PrintStatusMsg("-Memset warning (Length overpass block size)");
-			}
-			else
-			{
-				return(memset(_pv_Dest, i_Value, i_Size));
-			}
-		}
-
-		_pul_Byte = (ULONG *) _pv_Dest;
-		_pul_LastByte = _pul_Byte + (i_Size >> 2);
-		for(; _pul_Byte < _pul_LastByte; _pul_Byte++)
-		{
-			if(((*_pul_Byte) & 0xFFFFFFFF) == 0xA0110270)
-			{
-				LINK_PrintStatusMsg("Memset warning (Block mark found)");
-			}
-		}
-	}
-
-	return(memset(_pv_Dest, i_Value, i_Size));
-}
 
 #endif
-
-/*$4
- ***********************************************************************************************************************
-    Game Cube Functions
- ***********************************************************************************************************************
- */
-
-#ifdef _GAMECUBE
-
-#define MEM_GC_SYSTEM_MEMORY (250 * 1024)
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
-void gcMEM_PrepareMemoryPool(void)
-{
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	void	*arenalo, *arenahi;
-	u32		u32GameARAMSize[eARAM_NumberOfARAMHeapTypes] = { 256 * 1024, (3 * 1024 + 3 * 256 ) * 1024 };
-	// must be equal to value in g_u32ARAM_BlocksSize
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-	OSInit();									/* init the memory system */
-
-	arenalo = OSGetArenaLo();
-	arenahi = OSGetArenaHi();
-
-	/* create the heap */
-	arenalo = OSInitAlloc(arenalo, arenahi, 1); /* only one heap */
-	OSSetArenaLo(arenalo);
-	arenalo = (void *) OSRoundUp32B(arenalo);	/* 32 bytes align */
-	arenahi = (void *) OSRoundDown32B(arenahi); /* 32 bytes align */
-
-	GC_OutputDebugString
-	(
-		"\nArena Lo : %x, Arena Hi : %x Total Free mem : %dKb\n",
-		arenalo,
-		arenahi,
-		((u32) arenahi - (u32) arenalo) / 1024
-	);
-
-	OSSetCurrentHeap(OSCreateHeap(arenalo, arenahi));
-
-	/* allouer toute la memoire disponible pour le dynamic */
-	MEM_InitDynamic(OSRoundDown32B(((u32) arenahi - (u32) arenalo - MEM_GC_SYSTEM_MEMORY)));
-
-	/* init aram */
-	ARAM_Init();
-	gcSND_ARAMInit();
-	ARAM_CreateHeaps(eARAM_Game, eARAM_NumberOfARAMHeapTypes, u32GameARAMSize);
-	ARAM_SetDefaultHeap(eARAM_Game, eARAM_Fix);
-	ARAM_gpst_DMA_FIFO = (ARAM_DMA_FIFO *) MEM_p_Alloc(sizeof(ARAM_DMA_FIFO));
-	L_memset(ARAM_gpst_DMA_FIFO, 0, sizeof(ARAM_DMA_FIFO));
-}
-
-#endif /* _GAMECUBE */
 
 /*$4
  ***********************************************************************************************************************
@@ -868,79 +446,7 @@ void MEM_InitModule(void)
     MEM_gst_MemoryInfo.pv_LastFree = NULL;
     MEM_gst_MemoryInfo.ul_RealSize = 0;
 
-#if defined(_GAMECUBE)
-
-	/*$1- GC ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-	gcMEM_PrepareMemoryPool();
-
-#elif defined(PSX2_TARGET)
-
-	/*$1- PS2 engine ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-	{
-		/*~~~~~~~~~~~~~*/
-		ULONG	ul_alloc;
-		/*~~~~~~~~~~~~~*/
-
-		ul_alloc = GetStackStart();
-		ul_alloc = ul_alloc - GetHeapSize();	/* exe size */
-		ul_alloc = ul_alloc - (150 * 1024);		/* secure size */
-		MEM_InitDynamic(ul_alloc);
-		if(!MEM_gst_MemoryInfo.pv_DynamicBloc)
-		{
-			MEM_M_SignalFatalError(ul_alloc, "No more memory to perform init allocation");
-		}
-	}
-
-#elif defined(PCWIN_TOOL)
-
-	/*$1- PC tool engine ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-#ifdef JADEFUSION
-	MEM_InitDynamic(512 * 1024 * 1024)//popowarning;
-#else
-	MEM_InitDynamic(50 * 1024 * 1024);
-#endif
-#elif defined(_XENON)
-
-	/*$1- XENON engine ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-	// Current maximum for dynamic memory set to 96MB
-
-    MEM_InitDynamic(DM_MEM_SIZE);
-
-#elif defined(_XBOX)
-
-	/*$1- XBOX engine ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-    if(LOA_gb_SpeedMode)
-        MEM_InitDynamic( 25*1024*1024 );//26
-    else
-        MEM_InitDynamic( 30*1024*1024 ); // wave files are scanned in this mode, and needed lot of place during map loading
-
-
-#if defined( _DEBUG ) || defined( XBOX_TUNING )
-    //DmRegisterPerformanceCounter( "DynamicMemory", DMCOUNT_VALUE|DMCOUNT_ASYNC32, &MEM_gst_MemoryInfo.ul_DynamicCurrentAllocated );
-#endif
-
-#elif defined(_PC_RETAIL)
-
-	/*$1- PC engine ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-	MEM_InitDynamic( (ULONG) (26.5 * 1024 * 1024) );
-
-#elif defined(ACTIVE_EDITORS)
-
-	/*$1- PC editor ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-#ifdef JADEFUSION
 	MEM_InitDynamic((LONG) 256 * (LONG) 1024 * (LONG) 1024);
-#else
-	MEM_InitDynamic((LONG) 100 * (LONG) 1024 * (LONG) 1024);
-#endif
-
-#else
-#pragma message(__FILE__ ">> error : Target is unknown <<")
-#endif
 
 /*$1-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -1042,19 +548,6 @@ void MEM_CloseDynamic(void)
 	MEM_sFree(MEM_gst_MemoryInfo.pv_DynamicBloc);
 #endif
 }
-
-#ifdef _GAMECUBE
-ULONG MEM_uGetLastBlockSize(MEM_tdst_MainStruct *)
-{
-	u32		Arena;
-	u32		Memory;
-	
-	Arena = (u32) OSGetArenaHi() - (u32) OSGetArenaLo() - MEM_GC_SYSTEM_MEMORY;
-	Memory = (int) MEM_gst_MemoryInfo.pv_DynamicNextFree - (int) MEM_gst_MemoryInfo.pv_DynamicBloc;
-	
-	return (Arena - Memory);	
-}
-#endif //_GAMECUBE
 
 #ifdef MEM_USE_HISTORY
 
@@ -1723,8 +1216,6 @@ void MEM_Free(void *_pv_Block)
 
 	if(!_pv_Block) return;
 
-
-
 	/* Pointeur temporaire ? */
 	if(MEM_IsTmpPointer((char *) _pv_Block))
 	{
@@ -2154,8 +1645,6 @@ pipik:
 	 }
 #endif	
 	
-	
-
 	MEM_M_EndCriticalSection();
 	
 	if(!single) MEM_gp_NextFreeAfterDefrag = MEM_gst_MemoryInfo.pv_DynamicNextFree;
@@ -2429,39 +1918,6 @@ void *_MEM_p_ReallocAlign(void *_pv, ULONG _ul_BlockSize, ULONG Alignment)
 #define MEM_Cte_FromEndMarkFree		0x5A5A5AA5
 ULONG	MEM_gul_FromEndMaxAllocSize = 0;
 
-#ifdef PSX2_TARGET
-/*$off*/
-#ifdef _DEBUG
-void *_MEM_p_AllocFromEndAlign(ULONG _ul_size, ULONG _i_modulo, char *_str_file, int _i_line)
-#else
-void *_MEM_p_AllocFromEndAlign(ULONG _ul_size, ULONG _i_modulo)
-#endif
-/*$on*/
-{
-	ULONG	Allocated, RealPtr;
-
-#ifdef _DEBUG
-	RealPtr = (ULONG) _MEM_p_AllocFromEnd(_ul_size + 2 * _i_modulo, _str_file, _i_line);
-#else
-	RealPtr = (ULONG) _MEM_p_AllocFromEnd(_ul_size + 2 * _i_modulo);
-#endif
-	Allocated = RealPtr &~(_i_modulo - 1);
-	Allocated += _i_modulo;
-	Allocated += _i_modulo;
-	*((ULONG *) Allocated - 1) = RealPtr;
-	return (void *) Allocated;
-}
-
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
-void MEM_FreeFromEndAlign(void *_pv_block)
-{
-	MEM_FreeFromEnd((void *) * ((ULONG *) _pv_block - 1));
-}
-
-#endif
 #ifdef _DEBUG
 /*$off*/
 void *_MEM_p_AllocFromEnd(ULONG _ul_size, char *_str_file, int _i_line)
@@ -2585,11 +2041,7 @@ void MEM_FreeFromEnd(void *_pv_block)
  -----------------------------------------------------------------------------------------------------------------------
  */
 
-#ifdef JADEFUSION
 LONG	*MEM_gp_LastAllocated = ((LONG *) - 1);
-#else
-LONG	*MEM_gp_LastAllocated = ((void *) - 1);
-#endif
 LONG	MEM_gp_PrintCluster = 0;
 void	MEM_dbg_PrintClustersChain(void);
 void	MEM_dbg_PrintMemBlock(void);
@@ -3718,8 +3170,6 @@ void MEM_EmergencyConcat()
 #endif
 }
 	
-
-
 #endif /* USE_HOLE_OPTIM */
 
 #endif // MEM_OPT

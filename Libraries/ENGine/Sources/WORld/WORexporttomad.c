@@ -356,6 +356,7 @@ BOOL WOR_b_World_ExportMadFile( WOR_tdst_World *_pst_World,
 							sprintf( sz_TgaName, "%s/%s", sz_Path, sz_Name );
 							TEX_l_File_SaveTga( sz_TgaName, &st_TgaDesc );
 							L_strcpy( pst_MadTex->Texturefile, sz_TgaName );
+							TEX_File_FreeDescription( &st_TgaDesc );
 						}
 					}
 				}

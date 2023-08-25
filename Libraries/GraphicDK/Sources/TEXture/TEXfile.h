@@ -111,35 +111,33 @@ extern char *TEX_gasz_QualityName[5];
 	{ \
 		p = (t *) MEM_p_AllocAlign(l, 32); \
 	}
+#define TEX_M_File_AllocTmp(p, l, t) \
+    { \
+        p = (t *) MEM_p_AllocTmp(l); \
+    }
 #elif defined(ACTIVE_EDITORS)
 #define TEX_M_File_Alloc(p, l, t) \
 	{ \
 		p = (t *) MEM_p_AllocAlign(l, 64); \
 		MEM_gst_MemoryInfo.ul_TexturesCurrentAllocated += MEM_ul_GetRealSize((void *)p); \
 	}
+#define TEX_M_File_AllocTmp(p, l, t) \
+    { \
+        p = (t *) MEM_p_AllocTmp(l); \
+        MEM_gst_MemoryInfo.ul_TexturesCurrentAllocated += MEM_ul_GetRealSize(p); \
+    }
 #else
 #define TEX_M_File_Alloc(p, l, t) \
 	{ \
 		p = (t *) MEM_p_AllocAlign(l, 64); \
 		MEM_gst_MemoryInfo.ul_TexturesCurrentAllocated += MEM_ul_GetRealSize((void *) *((ULONG **) p - 1)); \
 	}
-#endif
-
-
-#if defined(ACTIVE_EDITORS) && defined(JADEFUSION)
 #define TEX_M_File_AllocTmp(p, l, t) \
-{ \
-    p = (t *) MEM_p_AllocTmp(l); \
-    MEM_gst_MemoryInfo.ul_TexturesCurrentAllocated += MEM_ul_GetRealSize(p); \
-}
-#else
-#define TEX_M_File_AllocTmp(p, l, t) \
-	{ \
-		p = (t *) MEM_p_AllocTmp(l); \
-		MEM_gst_MemoryInfo.ul_TexturesCurrentAllocated += ((ULONG*)(p))[-1]; \
-	}
+    { \
+        p = (t *) MEM_p_AllocTmp(l); \
+        MEM_gst_MemoryInfo.ul_TexturesCurrentAllocated += MEM_ul_GetRealSize((void *) *((ULONG **) p - 1)); \
+    }
 #endif
-
 
 #ifdef MEM_OPT		
 #define TEX_M_File_Realloc(p, l, t) \
@@ -161,8 +159,6 @@ extern char *TEX_gasz_QualityName[5];
 		MEM_gst_MemoryInfo.ul_TexturesCurrentAllocated += MEM_ul_GetRealSize((void *) *((ULONG **) p - 1)); \
 	}
 #endif	
-
-
 
 #ifdef MEM_OPT		
 #define TEX_M_File_Free(p) \
