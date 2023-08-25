@@ -155,6 +155,8 @@ float4 ProcessPixel (	VSOUT Input,
 						iSpecularMapChannel);
 }
 */
+
+/* hogsy: declared under PsGeneric.hlsl, which is included...
 // Shader entry points for various configurations of shaders
 float4 TestPS( VSOUT Input ) : COLOR
 {
@@ -163,3 +165,4 @@ float4 TestPS( VSOUT Input ) : COLOR
 						FOG_OFF,
 						BASEMAP_ON);
 }
+*/

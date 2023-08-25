@@ -56,6 +56,7 @@ PS_OUT ProcessPixel(PSIN Input,
         clip(fDelta);
     }
 
+    float Z = 0;
     float Z2 = Input.TC_LSPos.z / Input.TC_LSPos.w;
     Z2 -= g_vShadowParams.z;
 
