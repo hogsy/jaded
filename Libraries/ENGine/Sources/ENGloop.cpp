@@ -1567,7 +1567,7 @@ _Try_
 		g_MenuManager.Tick( TIM_gf_dt );
 #endif
 
-		if ( ENG_gb_OneStepEngine )
+		if ( !ENG_gb_LimitFPS || ENG_gb_OneStepEngine )
 		{
 			s_OneTrame();
 		}
