@@ -373,9 +373,10 @@ char					*sz_Name;
 #endif	
 #endif
 #ifdef ACTIVE_EDITORS
-	u32		NumberOfTris;
-	u32		DrawInfoName;
-	u32		EngineTicksNumber;
+	u32 NumberOfTris;
+	u32 DrawInfoName;
+	u32 EngineTicksNumber;
+	bool emittedBoneWarning;
 #endif
 
 	ULONG	ul_MyKey;

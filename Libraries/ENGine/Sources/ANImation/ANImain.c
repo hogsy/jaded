@@ -453,20 +453,21 @@ void ANI_ChangeBoneShape(OBJ_tdst_GameObject *_pst_RefGO, UCHAR _uc_Canal, UCHAR
 			if(pst_CurrentVisu > pst_EndVisu)
 			{
 #ifdef ACTIVE_EDITORS
-				/*~~~~~~~~~~~~*/
-				char	az[512];
-				/*~~~~~~~~~~~~*/
-				
 				pst_CurrentVisu = pst_EndVisu;
-				sprintf
-					(
-					az,
-					"SHAPE : Invalid visual number (%d) for bone number (%d) for gao (%s)",
-					_uc_Pos,
-					_uc_Canal,
-					_pst_RefGO->sz_Name
-					);
-				ERR_X_Warning(0, az, NULL);
+				if ( !_pst_RefGO->emittedBoneWarning )
+				{
+					/*~~~~~~~~~~~~*/
+					char az[ 512 ];
+					/*~~~~~~~~~~~~*/
+					snprintf(
+						    az, sizeof(az),
+						    "SHAPE : Invalid visual number (%d) for bone number (%d) for gao (%s)",
+						    _uc_Pos,
+						    _uc_Canal,
+						    _pst_RefGO->sz_Name );
+					ERR_X_Warning( 0, az, NULL );
+					_pst_RefGO->emittedBoneWarning = true;
+				}
 #endif
 				return;
 			}			
