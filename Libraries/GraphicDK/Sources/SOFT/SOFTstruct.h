@@ -61,11 +61,10 @@ extern "C"
 #define SOFT_Cul_Arrow_Cube             0x00000002
 #define SOFT_Cul_Arrow_ForSpot          0x00000004
 #define SOFT_Cul_Arrow_DrawNotLine      0x00000008
-#ifdef JADEFUSION
 #define	SOFT_Cul_Arrow_DrawParallel		0x00000010
 #define SOFT_Cul_Arrow_NoEndPoint		0x00000020
 #define SOFT_Cul_Arrow_ForShadow		0x00000040
-#endif
+
 /*$4
  ***********************************************************************************************************************
     Structures

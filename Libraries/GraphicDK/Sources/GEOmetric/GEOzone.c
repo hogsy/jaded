@@ -114,18 +114,17 @@
 #define GEO_Cul_ZDx 1
 #define GEO_Cul_ODE 2
 
-extern LIGHT_tdst_List	GEO_gst_DebugObject_LightList;
-static void GEO_DrawSoundCapsule(GDI_tdst_DisplayData *_pst_DD, MATH_tdst_Matrix*pMatrix, ULONG ulAxis, float fScale, float fRadius, ULONG ulColor);
-void					GEO_Zone_DisplaySoundInstance(GDI_tdst_DisplayData *, SND_tdst_SoundInstance *);
-void					GEO_Zone_DisplaySoundMicro(GDI_tdst_DisplayData *);
-void					GEO_Zone_DisplaySoundModifier(GDI_tdst_DisplayData *, MDF_tdst_Modifier *);
-void					GEO_Zone_DisplaySoundFxModifier(GDI_tdst_DisplayData *, MDF_tdst_Modifier *);
-void					GEO_Zone_DisplaySoundVolModifier(GDI_tdst_DisplayData *, MDF_tdst_Modifier *);
-void					GEO_Zone_DisplayLoadingSoundModifier(GDI_tdst_DisplayData *, MDF_tdst_Modifier *);
-#ifdef JADEFUSION
-void                    GEO_MDFWind_Display(GDI_tdst_DisplayData *_pst_DD, OBJ_tdst_GameObject *_pst_GO, MDF_tdst_Modifier *pst_MdF);
-void                    GEO_ModifierSoftBody_Display(GDI_tdst_DisplayData *_pst_DD, OBJ_tdst_GameObject *_pst_GO, MDF_tdst_Modifier *pst_MdF );
-#endif
+extern LIGHT_tdst_List GEO_gst_DebugObject_LightList;
+static void GEO_DrawSoundCapsule( GDI_tdst_DisplayData *_pst_DD, MATH_tdst_Matrix *pMatrix, ULONG ulAxis, float fScale, float fRadius, ULONG ulColor );
+void GEO_Zone_DisplaySoundInstance( GDI_tdst_DisplayData *, SND_tdst_SoundInstance * );
+void GEO_Zone_DisplaySoundMicro( GDI_tdst_DisplayData * );
+void GEO_Zone_DisplaySoundModifier( GDI_tdst_DisplayData *, MDF_tdst_Modifier * );
+void GEO_Zone_DisplaySoundFxModifier( GDI_tdst_DisplayData *, MDF_tdst_Modifier * );
+void GEO_Zone_DisplaySoundVolModifier( GDI_tdst_DisplayData *, MDF_tdst_Modifier * );
+void GEO_Zone_DisplayLoadingSoundModifier( GDI_tdst_DisplayData *, MDF_tdst_Modifier * );
+void GEO_MDFWind_Display( GDI_tdst_DisplayData *_pst_DD, OBJ_tdst_GameObject *_pst_GO, MDF_tdst_Modifier *pst_MdF );
+void GEO_ModifierSoftBody_Display( GDI_tdst_DisplayData *_pst_DD, OBJ_tdst_GameObject *_pst_GO, MDF_tdst_Modifier *pst_MdF );
+
 void GEO_DrawSoundBox
 (
 	GDI_tdst_DisplayData	*_pst_DD,

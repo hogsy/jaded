@@ -39,11 +39,9 @@ extern "C"
 #define ZeroMalloc(Ptr , Number)\
 	Ptr = MEM_p_Alloc(sizeof(*Ptr) * Number);\
 	L_memset( (void *)Ptr , 0 , sizeof(*Ptr) * Number);
-#ifdef JADEFUSION
 #define ZeroMallocType(Ptr , Number, Type)\
 	Ptr = (Type*)MEM_p_Alloc(sizeof(*Ptr) * Number);\
 	L_memset( (void *)Ptr , 0 , sizeof(*Ptr) * Number);
-#endif
 #define VERIFY_PROFILER(Ptr)\
 	if (!Ptr->Valid) return;
 
@@ -298,17 +296,12 @@ void GFX_Profiler_Validate(GFX_tdst_Profiler *p_Prof)
 	if (!p_Prof->ulNumberOfPointsPerProfile) return;
 	if (!p_Prof->ulNumberOfLinksPerProfile) return;
 	if (!p_Prof->ulNumberOfProfiles) return;
-#ifdef JADEFUSION
+
 	ZeroMallocType(p_Prof->p_AllLinks , p_Prof->ulNumberOfLinksPerProfile, GFX_tdst_Profiler_Link);
 	ZeroMallocType(p_Prof->p_PointGenerator , p_Prof->ulNumberOfPointsPerProfile, GFX_tdst_Profiler_Point_Generator);
 	ZeroMallocType(p_Prof->p_AllProfileStates , p_Prof->ulNumberOfProfiles, ULONG);
 	ZeroMallocType(p_Prof->p_AllPoints , p_Prof->ulNumberOfPointsPerProfile * p_Prof->ulNumberOfProfiles, GFX_tdst_Profiler_Point);
-#else
-	ZeroMalloc(p_Prof->p_AllLinks , p_Prof->ulNumberOfLinksPerProfile);
-	ZeroMalloc(p_Prof->p_PointGenerator , p_Prof->ulNumberOfPointsPerProfile);
-	ZeroMalloc(p_Prof->p_AllProfileStates , p_Prof->ulNumberOfProfiles);
-	ZeroMalloc(p_Prof->p_AllPoints , p_Prof->ulNumberOfPointsPerProfile * p_Prof->ulNumberOfProfiles);
-#endif
+
 	p_Prof->Valid = 1;
 	p_Prof->UTiler = 4;
 }
@@ -423,11 +416,9 @@ void *GFX_Profiler_Create(void)
 	/*~~~~~~~~~~~~~~~~~~~~~~*/
 	GFX_tdst_Profiler *pst_Data;
 	/*~~~~~~~~~~~~~~~~~~~~~~*/
-#ifdef JADEFUSION
+
 	ZeroMallocType(pst_Data , 1, GFX_tdst_Profiler);
-#else
-	ZeroMalloc(pst_Data , 1);
-#endif
+
 	return (void *) pst_Data;
 }
 

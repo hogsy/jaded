@@ -230,8 +230,6 @@ typedef struct	TEX_tdst_File_TexSlot_
 	ULONG	ul_TC;
 } TEX_tdst_File_TexSlot;
 
-#if defined(_XENON_RENDER)
-
 enum TEX_XenonTextureFormat
 {
     TEX_XTF_AUTO               = 0,
@@ -265,7 +263,6 @@ typedef struct TEX_tdst_XenonFileTex_
     ULONG   ul_FileSize;
 } TEX_tdst_XenonFileTex;
 
-#ifdef JADEFUSION
 typedef struct TEX_tdst_XenonCubeMapFileTex_
 {
 	ULONG   ul_Flags;
@@ -277,8 +274,6 @@ typedef struct TEX_tdst_XenonCubeMapFileTex_
 	ULONG   ul_FileSize;
 } TEX_tdst_XenonCubeMapFileTex;
 
-#endif
-#endif
 typedef struct	TEX_tdst_File_Tex_
 {
 	TEX_tdst_File_TexSlot	ast_Slot[ 4 ];

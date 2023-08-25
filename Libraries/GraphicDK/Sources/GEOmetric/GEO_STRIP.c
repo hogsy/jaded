@@ -331,9 +331,7 @@ static void GEO_STRIP_GenerateStrip(GEO_tdst_Object *__pObject, MAD_GeometricObj
 	while (pElement < pLastElement)
 	{
 		pElement->pst_StripData = (GEO_tdst_StripData*)MEM_p_Alloc(sizeof(GEO_tdst_StripData));
-#ifdef JADEFUSION
 		L_memset(pElement->pst_StripData, 0, sizeof(GEO_tdst_StripData));
-#endif
 		pElement->pst_StripData->ulFlag = 0;
 		pElement->pst_StripData->ulStripNumber = 0;
 		pElement->pst_StripData->ulMaxLength = 0;
@@ -353,9 +351,7 @@ static void GEO_STRIP_GenerateStrip(GEO_tdst_Object *__pObject, MAD_GeometricObj
 	while (Counter--) 
 	{
 		pElement[Counter].pst_StripData->pStripList = (GEO_tdst_OneStrip*)MEM_p_Alloc(sizeof(GEO_tdst_OneStrip) * pElement[Counter].pst_StripData->ulStripNumber);
-#ifdef JADEFUSION
 		L_memset(pElement[Counter].pst_StripData->pStripList, 0, sizeof(GEO_tdst_OneStrip) * pElement[Counter].pst_StripData->ulStripNumber);
-#endif
 		pElement[Counter].pst_StripData->ulStripNumber = 0;
 	}
 

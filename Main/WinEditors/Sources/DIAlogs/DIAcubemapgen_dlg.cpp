@@ -48,7 +48,16 @@ Globals
 ***********************************************************************************************************************
 */
 
-extern char *TEX_XenonTextureFormat_Text[TEX_XTF_COUNT];
+static char *TEX_XenonTextureFormat_Text[ TEX_XTF_COUNT ] =
+        {
+                "Auto",
+                "DXT1    ARGB  (1 bit alpha)",
+                "DXT5    ARGB  (Interpolated Alpha)",
+                "A8      Alpha  (8 bit Alpha Only)",
+                "8:8:8:8 ARGB  (32 bit)",
+                "DXN",
+                "CTX1",
+};
 
 /*
 =======================================================================================================================

@@ -109,13 +109,12 @@ extern "C"
 #define LIGHT_C_fSpecularExp	        2.f
 #define LIGHT_C_OO_fSpecularExp	        0.5f
 
-#ifdef JADEFUSION
 // Light shaft flags
 #define LIGHT_Cul_LightShaft_XXXXXXXXXXXXXXXXXX         0x00000001
 #define LIGHT_Cul_LightShaft_EnableNoise                0x00000002
 #define LIGHT_Cul_LightShaft_Enable2ndNoiseChannel      0x00000004
 #define LIGHT_Cul_LightShaft_DisableFog                 0x00000008
-#endif
+
 /*$4
  ***************************************************************************************************
     Globals
@@ -170,7 +169,6 @@ typedef struct  LIGHT_tdst_Spot_
 #endif
 } LIGHT_tdst_Spot;
 
-#ifdef JADEFUSION
 typedef struct LIGHT_tdst_LightShaft_
 {
     FLOAT   f_Start;
@@ -193,7 +191,6 @@ typedef struct LIGHT_tdst_LightShaft_
     FLOAT   f_SpotInnerAngle;
     ULONG   ul_Color;
 } LIGHT_tdst_LightShaft;
-#endif
 
 typedef struct  LIGHT_tdst_Direct_
 {
@@ -307,16 +304,12 @@ void                LIGHT_List_Init(LIGHT_tdst_List *_pst_LightList, ULONG _ul_M
 void                LIGHT_List_Close(LIGHT_tdst_List *_pst_LightList);
 void                LIGHT_List_Reset(LIGHT_tdst_List *_pst_LightList);
 void                LIGHT_List_AddLight(LIGHT_tdst_List *, OBJ_tdst_GameObject *);
-#ifdef JADEFUSION
 void                LIGHT_List_Sort(LIGHT_tdst_List * _pst_LightList);
-#endif
 LIGHT_tdst_Light    *LIGHT_pst_Create(void);
 void                LIGHT_Free(LIGHT_tdst_Light *);
 
 void                LIGHT_SendObjectToLight( LIGHT_tdst_List *, OBJ_tdst_GameObject * );
-#ifdef JADEFUSION
 void                LIGHT_GetLightShaftFrustum(LIGHT_tdst_LightShaft* _pst_LightShaft, MATH_tdst_Vector* _ast_Frustum);
-#endif
 #ifdef _XBOX
 int                 LIGHT_SendObjectToLight_HW( LIGHT_tdst_List *, OBJ_tdst_GameObject *, ULONG _ulValidityMask ); 
 void                LIGHT_TurnOffObjectLighting( void ); // for DX8 
@@ -361,10 +354,8 @@ void                LIGHT_SubColor(ULONG *, ULONG );
 void                LIGHT_ColorMulAdd(ULONG ,ULONG ,ULONG ,ULONG *,ULONG ,ULONG *);
 void                LIGHT_ColorAdd(ULONG ,ULONG *,ULONG ,ULONG *);
 
-#ifdef JADEFUSION
 void                LIGHT_InitLightShaft(LIGHT_tdst_LightShaft* _pst_LightShaft);
 void                LIGHT_ResetAllSpotCullingBV( LIGHT_tdst_List *_pst_LightList );
-#endif
 
 #if defined (__cplusplus) && !defined(JADEFUSION)
 }
