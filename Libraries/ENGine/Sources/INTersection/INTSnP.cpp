@@ -723,6 +723,11 @@ void INT_SnP_InvalidateRemovedRef(INT_tdst_SnP *_pst_SnP)
  */
 void INT_SnP_Refresh(INT_tdst_SnP *_pst_SnP, TAB_tdst_PFtable *_pst_ActiveObjects)
 {
+	if ( _pst_SnP == nullptr )
+	{
+		return;
+	}
+
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	OBJ_tdst_GameObject		**ppst_Obj, **ppst_Last;
 	INT_tdst_SnP_Manager	*pst_Manager;
