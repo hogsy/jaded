@@ -292,8 +292,8 @@ static void s_Display(HWND h, GDI_tdst_DisplayData *_pst_DD)
 
     }
 #endif
+
 	GDI_AfterDisplay(_pst_DD);
- 
 }
 
 /*
@@ -312,11 +312,7 @@ static void s_InitBeforeTrame(void)
 {
 	s_CheckResetRequest();
 
-#ifndef ACTIVE_EDITORS
-	ENG_gp_Display = s_Display;
-#else
 	ENG_gp_Display = jaded::sys::launchOperations.editorMode ? nullptr : s_Display;
-#endif
 
 	ENG_gp_Input = INO_Update;
 	if(UNI_Status() != UNI_Cuc_Ready)
@@ -693,6 +689,7 @@ static void win32_s_EngineCheat(void)
 	}
 
 #endif
+
 	if((GetAsyncKeyState(VK_F10) < 0) && (GetAsyncKeyState(VK_SHIFT) < 0) && (GetAsyncKeyState(VK_CONTROL) < 0))
 	{
 		if(AI2C_ai2Ccan == 0)
@@ -1130,47 +1127,10 @@ static void s_OneTrame(void)
 	g_oXeProfileManager.BeginProfiling();
 #endif
 
-#if (defined( _XBOX ) || defined( _XENON )) && defined( FAST_CAP )
-    __int64 StartTime, StopTime;
-    static __int64 TimeThresholdMS = 30;
-    static int DumpCount = 0;
-    static int waitFrame = 2;
-    char DumpName[64];
-    bool fastCapEnabled_Stop = false;
-
-	if( g_FastCapEnabled )
-	{
-        if( waitFrame > 0 )
-        {
-            waitFrame--;
-        }
-        else
-        {
-            fastCapEnabled_Stop = true;
-            waitFrame = 2;
-            sprintf(DumpName, "D:\\foo%d.cap", DumpCount);
-
-            DmStartProfiling(DumpName, 0);
-
-#if defined(_XENON)
-            StartTime = TIM_ul_GetLowPartTimerInternalCounter();
-#else
-
-            __asm
-            {
-                rdtsc
-                mov DWORD PTR[StartTime],eax
-                mov DWORD PTR[StartTime+4],edx
-            }
-#endif
-		}
-	}
-#endif  // (defined( _XBOX ) | defined( _XENON) ) && defined( FAST_CAP )
-
-
 #ifdef _FINAL_
 	if(ENG_gb_Raster) ENG_gf_TimeFinal = TIM_f_Clock_TrueRead();
 #endif
+
 	PRO_StartTrameRaster(&ENG_gpst_RasterEng_OneLoop);
 	s_HandleWinMessages();
 
@@ -1199,14 +1159,10 @@ static void s_OneTrame(void)
 		pst_EndElem = TAB_pst_PFtable_GetLastElem(&WOR_gst_Universe.st_WorldsTable);
 		for(; pst_CurrentElem <= pst_EndElem; pst_CurrentElem++)
 		{
-    
-	
 			pst_World = (WOR_tdst_World *) pst_CurrentElem->p_Pointer;
 			if(TAB_b_IsAHole(pst_World)) continue;
 	
 			ENG_ReinitOneWorld(pst_World, UNI_Cuc_TotalInit);
-	
-    
 		}
 #ifdef JADEFUSION
 		void SPG2Holder_Modifier_Prepare();
@@ -1271,17 +1227,6 @@ static void s_OneTrame(void)
 		_GSP_EndRaster( 20 );
 
 		TEX_Anim_Update( MAI_gst_MainHandles.pst_DisplayData );
-
-		if ( ENG_gb_LimitFPS )
-		{
-			static const int maxFPS = 60;
-			extern float TIM_gf_realdt;
-			float delay = 1000.0f / maxFPS - TIM_gf_realdt;
-			if ( delay > 0 )
-			{
-				Sleep( ( DWORD ) delay );
-			}
-		}
 	}
 	
 #ifdef JADEFUSION
@@ -1554,6 +1499,9 @@ static void s_OneTrame(void)
  =======================================================================================================================
  */
 
+#define TICKS_PER_SECOND 60U
+#define SKIP_TICKS       ( 1000U / TICKS_PER_SECOND )
+#define MAX_FRAMESKIP    5U
 
 void ENG_Loop(void)
 {
@@ -1581,11 +1529,16 @@ _Try_
 	{
 		ENG_gb_AIRunning = FALSE;
 		ENG_gb_EngineRunning = FALSE;
-#ifdef ACTIVE_EDITORS
-		ESON_PauseAll(TRUE);
-#else
-		SND_StopAll(0);
-#endif
+
+		if ( jaded::sys::launchOperations.editorMode )
+		{
+			ESON_PauseAll( TRUE );
+		}
+		else
+		{
+			SND_StopAll( 0 );
+		}
+
 		f_StartTimeEngineStopped = TIM_f_Clock_TrueRead();
 		_Return_(;);
 	}
@@ -1600,40 +1553,43 @@ _Try_
 
 	INO_Joystick_Acquire();
 
-#if defined(_XBOX)
-	//yo deactive because call 2 times >>>>DEM_InitDemoDisk();
-	DEM_StartTimer();
-#endif
-
-	while(!sfnb_EndGame())
+	while ( !sfnb_EndGame() )
 	{
-#if defined(_XBOX)
-		Gx8_ResetFrameMon();
-		Gx8_ResetGPUMon();
+		static uint64_t nextTick = 0;
+		if ( nextTick == 0 )
+		{
+			nextTick = SDL_GetTicks64();
+		}
 
-		Gx8_StartFrameMon();
-#endif
-        
-#if defined(_XENON)
-		g_MenuManager.Tick(TIM_gf_dt);
-#endif
-       
 		s_InitBeforeTrame();
-		s_OneTrame();
-		s_DesInitAfterTrame();
-		
-#if defined(_XBOX)
-		Gx8_StopFrameMon();
 
-		Gx8_AdaptToFramerate(Gx8_GetFrameTiming(), Gx8_GetGPUTiming());
+#if defined( _XENON )
+		g_MenuManager.Tick( TIM_gf_dt );
 #endif
+
+		if ( ENG_gb_OneStepEngine )
+		{
+			s_OneTrame();
+		}
+		else
+		{
+			uint64_t loops = 0;
+			while ( SDL_GetTicks64() > nextTick && loops < MAX_FRAMESKIP )
+			{
+				s_OneTrame();
+
+				nextTick += SKIP_TICKS;
+				loops++;
+			}
+		}
+
+		//double delta = ( double ) ( SDL_GetTicks64()  + SKIP_TICKS - nextTick ) / ( double ) ( SKIP_TICKS );
+		// hogsy: TODO - move render loop and other crap down here, so we operate that EVERY tick
+
+		s_DesInitAfterTrame();
 
 #ifdef ACTIVE_EDITORS
-		if(ENG_gb_OneStepEngine) break;
-#endif
-
-#if defined(_XBOX)
-		DEM_ManageDemoDisk();
+		if ( ENG_gb_OneStepEngine ) break;
 #endif
 	}
 
@@ -1657,12 +1613,17 @@ _End_
 	 */
 	f_StartTimeEngineStopped = TIM_f_Clock_TrueRead();
 #endif
-#ifdef ACTIVE_EDITORS
-	ESON_PauseAll(TRUE);
-#else
-	SND_StreamPrefetchFlushAll();
-	SND_StopAll(0);
-#endif
+
+	if ( jaded::sys::launchOperations.editorMode )
+	{
+		ESON_PauseAll( TRUE );
+	}
+	else
+	{
+		SND_StreamPrefetchFlushAll();
+		SND_StopAll( 0 );
+	}
+
 	ENG_gb_EngineRunning = FALSE;
 
 	s_CheckResetRequest();

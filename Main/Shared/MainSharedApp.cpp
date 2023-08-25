@@ -208,6 +208,14 @@ int main( int argc, char **argv )
 
 	ParseStartupParameters();
 
+	if ( SDL_Init( SDL_INIT_EVERYTHING ) != 0 )
+	{
+		jaded::sys::AlertBox( "SDL Init fail: " + std::string( SDL_GetError() ),
+		                      "Jaded Error",
+		                      jaded::sys::ALERT_BOX_ERROR );
+		return EXIT_FAILURE;
+	}
+
 #	if defined( _WIN32 )
 
 	if ( jaded::sys::launchOperations.debugConsole )
@@ -224,14 +232,6 @@ int main( int argc, char **argv )
 		return EDI_EditorWin32Execution( hInstance );
 
 #	endif
-
-	if ( SDL_Init( SDL_INIT_EVERYTHING ) != 0 )
-	{
-		jaded::sys::AlertBox( "SDL Init fail: " + std::string( SDL_GetError() ),
-		                      "Jaded Error",
-		                      jaded::sys::ALERT_BOX_ERROR );
-		return EXIT_FAILURE;
-	}
 
 	if ( CreateSDLWindow() == nullptr )
 	{

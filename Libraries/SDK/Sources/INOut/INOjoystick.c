@@ -222,12 +222,6 @@ void INO_Joystick_Init( HWND _hWnd )
 
 	L_zero( sdlGameControllers, sizeof( SDL_GameController * ) * INO_Cte_PabNumber );
 
-	if ( SDL_Init( SDL_INIT_GAMECONTROLLER ) != 0 )
-	{
-		ERR_X_Warning( 0, "Failed to initialize SDL input!", SDL_GetError() );
-		return;
-	}
-
 	if ( SDL_GameControllerAddMappingsFromFile( "mappings/gamecontrollerdb.txt" ) == -1 )
 	{
 		ERR_X_Warning( 0, "Failed to fetch game controller mappings!", SDL_GetError() );
