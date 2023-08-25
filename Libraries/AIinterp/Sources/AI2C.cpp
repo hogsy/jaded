@@ -233,6 +233,12 @@ void AI_PrintUnusedGAO()
 
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     WOR_tdst_World *pst_World = WOR_pst_Universe_GetActiveWorld(0);
+	if ( pst_World == nullptr )
+	{
+		LINK_PrintStatusMsgCanal( "World must be loaded before unused GAOs can be listed!", 0 );
+		return;
+	}
+
 	TAB_tdst_PFelem		*pst_CurrentElem;
 	TAB_tdst_PFelem		*pst_EndElem;
 	OBJ_tdst_GameObject *pst_CurrentGO;
