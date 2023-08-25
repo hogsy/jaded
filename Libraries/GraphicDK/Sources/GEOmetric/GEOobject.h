@@ -388,7 +388,7 @@ typedef struct	GEO_tdst_ElementIndexedSprite_
 	float					fGlobalRatio;	/* 0.0f mean ratio of 1.0f */
 } GEO_tdst_ElementIndexedSprite;
 
-#if defined(_XBOX) || defined(_M_X86) || defined(_XENON_RENDER)
+#if defined( _M_IX86 ) || defined( _XENON_RENDER )
 typedef struct _CUSTOM_NORMAL
 {
 	float x,y,z,w;
@@ -475,10 +475,8 @@ typedef struct	GEO_tdst_Object_
 
 	ULONG								*pBiNormales;
 
-#if defined(_XBOX)
 	MATH_tdst_Vector					*dst_OriginalPointNormal;
 //	_Custom_Normal_					*dst_OriginalPointNormal;
-#endif
 
 #ifdef _XENON_RENDER
     BOOL                                b_ForceSoftSkinning;
