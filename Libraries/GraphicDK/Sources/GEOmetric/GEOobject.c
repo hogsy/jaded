@@ -1708,9 +1708,7 @@ void GEO_AllocContent(GEO_tdst_Object *_pst_Object)
 #endif
 #endif
 
-#if defined(_XBOX)
 		_pst_Object->dst_OriginalPointNormal = NULL;
-#endif
 
 #ifdef PSX2_TARGET
 		_pst_Object->p_CompressedNormals = NULL;
@@ -1808,16 +1806,8 @@ GEO_tdst_Object *GEO_pst_Create(LONG _l_NbPoints, LONG _l_NbUVs, LONG _l_NbEleme
 	pst_Object->l_NbUVs = _l_NbUVs;
 	pst_Object->l_NbElements = _l_NbElements;
 	pst_Object->dul_PointColors = (ULONG *) _l_NbVertexColors;
-	pst_Object->p_MRM_ObjectAdditionalInfo = NULL;
-	pst_Object->p_SKN_Objectponderation = NULL;
-	pst_Object->ulStripFlag = 0;
-	pst_Object->l_NbSpritesElements = 0;
-#ifdef PSX2_TARGET	
-	pst_Object->p_CompressedNormals = NULL;
-#endif
-#if defined(_XBOX)
-	pst_Object->dst_OriginalPointNormal = NULL;
-#endif
+	// hogsy:	UNDONE - originally was initialising a bunch of data to 0 here, 
+	//			but that's unnecessary given the memset above...
 
 	GEO_AllocContent(pst_Object);
 	return pst_Object;
@@ -1867,14 +1857,11 @@ void GEO_FreeContent(GEO_tdst_Object *_pst_Object)
 		    _pst_Object->pBiNormales = NULL;
         }
 
-
-#if defined(_XBOX)
 		if(_pst_Object->dst_OriginalPointNormal)
 		{
 			MEM_FreeAlign(_pst_Object->dst_OriginalPointNormal);
 			_pst_Object->dst_OriginalPointNormal = NULL;
 		}
-#endif
 
 		_pst_Object->l_NbPoints = 0;
 	}

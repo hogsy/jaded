@@ -88,13 +88,6 @@ const struct
 #include "ENGine/Sources/MoDiFier/MDFstruct.h"
 #include "ENGine/Sources/MoDiFier/MDFmodifier_SPG2.h"
 
-#ifdef _GAMECUBE
-#	include "GEOmetric/GEO_STRIP.h"
-#	ifndef _FINAL_
-#		include "GXI_GC/GXI_dbg.h"
-#	endif// _FINAL_
-#endif    // _GAMECUBE
-
 #ifdef _XENON_RENDER
 #	include "XenonGraphics/XeVertexShaderManager.h"
 #	include "XenonGraphics/XeContextManager.h"
@@ -2203,7 +2196,7 @@ Compute Mesh deformation for display
 
 	unsigned int GEO_SKN_OneOnTwoOptimization = 0;
 
-#if defined( OPT_COMPUTENORMALS )
+#if OPT_COMPUTENORMALS
 
 	extern void GEO_SKN_ComputeNormals_OPT( GEO_tdst_Object *_pst_Object, GEO_Vertex *pst_Point );
 	void GEO_SKN_ComputeNormals( GEO_tdst_Object *_pst_Object, GEO_Vertex *pst_Point )
@@ -2227,7 +2220,7 @@ Compute Mesh deformation for display
 		GEO_tdst_IndexedTriangle *pst_Triangle, *pst_LastTriangle, *pst_NextTriangle;
 		int NormalsArraySize = 0;
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-#	ifdef OPT_COMPUTENORMALS
+#	if OPT_COMPUTENORMALS
 		static bool bNormalize   = true;
 		static bool bZeroNormals = true;
 		static bool bCalcNormal  = true;
@@ -2906,8 +2899,8 @@ void GEO_SKN_ComputeNormals( GEO_tdst_Object *_pst_Object, GEO_Vertex *pst_Point
 
 #if defined( ACTIVE_EDITORS ) && defined( _XENON_RENDER )
 
-	        void
-	        GEO_SKN_ComputeTangents( GEO_tdst_Object *_pst_Geo, GEO_Vertex *_pst_Points, GRO_tdst_Visu *_pst_Visu )
+	void
+	GEO_SKN_ComputeTangents( GEO_tdst_Object *_pst_Geo, GEO_Vertex *_pst_Points, GRO_tdst_Visu *_pst_Visu )
 	{
 		if ( !_pst_Geo || !_pst_Points || !_pst_Geo->l_NbPoints )
 			return;
@@ -2935,10 +2928,10 @@ void GEO_SKN_ComputeNormals( GEO_tdst_Object *_pst_Object, GEO_Vertex *pst_Point
 		GEO_Vertex *p_Src, *p_Dst;
 		ULONG ul_MatrixCounter;
 		GEO_tdst_CompressedVertexPonderation *p_stCP;
-#if defined( OPT_COMPUTENORMALS )
+#if OPT_COMPUTENORMALS
 		__declspec( align( 16 ) ) MATH_tdst_Matrix st_Matrix, *p_UsedMatrix, st_Matrix2;
 		__declspec( align( 16 ) ) MATH_tdst_Matrix st_Matrix3;
-#	if defined( OPT_COMPUTE4DISPLAY )
+#	if OPT_COMPUTE4DISPLAY
 		_Custom_Normal_ *pSourceNormals;
 		MATH_tdst_Vector *pDestNormals;
 		MATH_tdst_Vector *pDstVertex;
@@ -2959,7 +2952,7 @@ void GEO_SKN_ComputeNormals( GEO_tdst_Object *_pst_Object, GEO_Vertex *pst_Point
 		GEO_tdst_CompressedVertexPonderation *p_stCPLst;
 #endif  // #ifndef _GAMECUBE
 		/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-#ifdef OPT_COMPUTE4DISPLAY
+#if OPT_COMPUTE4DISPLAY
 		if ( bFirstTime )
 		{
 			memcpy( ( void * ) &_MASK_0FFF_, &_Mask.i[ 0 ], sizeof( __m128 ) );
@@ -2974,7 +2967,7 @@ void GEO_SKN_ComputeNormals( GEO_tdst_Object *_pst_Object, GEO_Vertex *pst_Point
 
 #ifdef ACTIVE_EDITORS
 		GEO_SKN_Compress( pst_Object );
-#endif// ACTIVE_EDITORS
+#endif  // ACTIVE_EDITORS \
         //	GDI_gpst_CurDD ->ul_CurrentDrawMask |= GDI_Cul_DM_DontRecomputeNormales;
 
 		if ( !( GDI_gpst_CurDD->ul_CurrentDrawMask & GDI_Cul_DM_ActiveSkin ) ) return;
@@ -3025,7 +3018,7 @@ void GEO_SKN_ComputeNormals( GEO_tdst_Object *_pst_Object, GEO_Vertex *pst_Point
 		}//*/
 #endif   // PSX2_TARGET
 
-#if defined( OPT_COMPUTE4DISPLAY )
+#if OPT_COMPUTE4DISPLAY
 		pSourceNormals = pst_Object->dst_OriginalPointNormal;
 		if ( !pSourceNormals )//next time...
 			return;
@@ -3061,7 +3054,7 @@ void GEO_SKN_ComputeNormals( GEO_tdst_Object *_pst_Object, GEO_Vertex *pst_Point
 				NumberOFPonds = ( ULONG ) pst_Object->p_SKN_Objectponderation->pp_PdrtLst[ ul_MatrixCounter ]->us_NumberOfPonderatedVertices;
 				p_stCP        = pst_Object->p_SKN_Objectponderation->pp_PdrtLst[ ul_MatrixCounter ]->p_PdrtVrc_C;
 
-#if defined( OPT_COMPUTE4DISPLAY )
+#if OPT_COMPUTE4DISPLAY
 				p_stCP_Saved = p_stCP;
 #endif// OPT_COMPUTE4DISPLAY
 
@@ -3152,7 +3145,7 @@ void GEO_SKN_ComputeNormals( GEO_tdst_Object *_pst_Object, GEO_Vertex *pst_Point
 				else
 #	endif    // PSX2_SKN_ASSEMBLY
 				{
-#	if defined( OPT_COMPUTE4DISPLAY )
+#	if OPT_COMPUTE4DISPLAY
 					static bool bUpdateSKN = true;
 					__m128 Ixyz;
 					__m128 Jxyz;
@@ -3445,15 +3438,6 @@ void GEO_SKN_ComputeNormals( GEO_tdst_Object *_pst_Object, GEO_Vertex *pst_Point
 	GDI_gpst_CurDD->p_Current_Vertex_List = GDI_gpst_CurDD->pst_ComputingBuffers->ast_SpecialVB;
 #endif
 
-#ifdef PSX2_TARGET
-		if ( !( GDI_gpst_CurDD->ul_CurrentDrawMask & GDI_Cul_DM_DontRecomputeNormales ) )
-		{
-			extern void *p_OriginalPtr_CN;
-			p_OriginalPtr_CN                = pst_Object->p_CompressedNormals;
-			pst_Object->p_CompressedNormals = ( ULONG * ) GDI_gpst_CurDD->pst_ComputingBuffers->ast_3D;
-			GEO_SKN_SerialConvert_Flt2Int( ( u_long64 * ) GDI_gpst_CurDD->pst_ComputingBuffers->ast_3D, pst_Object->l_NbPoints );
-		}
-#endif// PSX2_TARGET
 		_GSP_EndRaster( 2 );
 	}
 

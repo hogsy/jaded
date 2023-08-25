@@ -475,8 +475,7 @@ typedef struct	GEO_tdst_Object_
 
 	ULONG								*pBiNormales;
 
-	MATH_tdst_Vector					*dst_OriginalPointNormal;
-//	_Custom_Normal_					*dst_OriginalPointNormal;
+	_Custom_Normal_ *dst_OriginalPointNormal;
 
 #ifdef _XENON_RENDER
     BOOL                                b_ForceSoftSkinning;

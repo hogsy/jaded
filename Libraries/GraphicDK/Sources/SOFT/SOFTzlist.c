@@ -18,41 +18,16 @@
 #include "AIinterp/Sources/AIengine.h"
 #include "GFX/GFX.h"
 
-#ifdef _GAMECUBE
-#include "GXI_GC/GXI_init.h"
-#endif
-
-#ifdef _GAMECUBE
-#ifndef _FINAL_
-#include "GXI_GC/GXI_dbg.h"
-#endif
-#endif
-
-#ifdef _XBOX
-#include "GX8/RASter/Gx8_CheatFlags.h"
-extern int g_MultipleVBIndex;
-#endif // _XBOX
-
 #if defined(PSX2_TARGET) && defined(__cplusplus)
 extern "C"
 {
 #endif
 
 ////////////////////////////////////////
-#ifdef _GAMECUBE
-extern char *SOFT_gpc_BigBuffer;
-extern SOFT_tdst_ComputingBuffers			*SOFT_gp_Compute;
-extern SOFT_tdst_ZList						*SOFT_gst_ZList;
-extern SOFT_tdst_ZList_CommonParrams		*SOFT_gst_ZList_CP;
-extern void									*g_pstFrameBuffer1;
-extern void									*g_pstFrameBuffer2;
-extern void									*DefaultFifo;
-#else
 char SOFT_gpc_BigBuffer[SIZE_BIG_BUFFER] ONLY_PSX2_ALIGNED(64);
 SOFT_tdst_ComputingBuffers			*SOFT_gp_Compute = (SOFT_tdst_ComputingBuffers *) (SOFT_gpc_BigBuffer);
 SOFT_tdst_ZList						*SOFT_gst_ZList = (SOFT_tdst_ZList *) (SOFT_gpc_BigBuffer+size_SOFT_Compute);
 SOFT_tdst_ZList_CommonParrams		*SOFT_gst_ZList_CP = (SOFT_tdst_ZList_CommonParrams *) (SOFT_gpc_BigBuffer +size_SOFT_Compute+ size_SOFT_gst_ZList);
-#endif
 ////////////////////////////////////////
 
 SOFT_tdst_ZList						*p_Current_SOFT_gst_ZList;
@@ -69,10 +44,6 @@ GEO_Vertex							*ZList_V;
 GEO_tdst_UV							*ZList_UVs;
 MAT_tdst_Material					*ZList_Mat;
 ULONG								*ZList_RLIs;
-
-#ifdef GSP_PS2
-extern u_int						NoZLST;
-#endif
 
 /*
  =======================================================================================================================
@@ -97,7 +68,6 @@ void SOFT_AddCurrentObjectInZList(GDI_tdst_DisplayData *pst_DD, OBJ_tdst_GameObj
 		pst_Node->pst_OC->pst_GO = _pst_GO;
 		MATH_CopyMatrix(&pst_Node->pst_OC->st_Matrix, pst_DD->st_MatrixStack.pst_CurrentMatrix);
 		MATH_CopyMatrix(&pst_Node->pst_OC->st_MatrixGO, pst_DD->pst_CurrentGameObject->pst_GlobalMatrix);
-
 
 #ifdef ACTIVE_EDITORS
 		pst_Node->pst_OC->ulForcedColorSaved = pst_DD->ul_ColorConstant;
@@ -220,9 +190,6 @@ void SOFT_ZList_Init(void)
 	ZList_Obj.dst_Element = &ZList_Element;
 	ZList_Obj.l_NbElements = 1;
 	ZList_Obj.l_NbPoints = 3;
-#ifdef PSX2_TARGET
-	ZList_Obj.p_CompressedNormals = NULL;
-#endif	
 	ZList_Obj.dst_Point = ZList_Points;
 	ZList_Obj.l_NbUVs = 3;
 	ZList_Obj.dst_UV = ZList_UV;
@@ -234,10 +201,6 @@ void SOFT_ZList_Init(void)
 	ZList_Element.l_NbTriangles = 1;
 	ZList_Element.p_MrmElementAdditionalInfo = NULL;
 	ZList_Element.pst_StripData = NULL;
-#ifdef PSX2_TARGET
-	ZList_Element.pst_StripDataPS2 = NULL;
-	ZList_Element.p_ElementCache = NULL;
-#endif
 	ZList_Element.pus_ListOfUsedIndex = NULL;
 	ZList_Element.ul_NumberOfUsedIndex = 0;
 
