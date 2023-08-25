@@ -71,10 +71,10 @@ void LINK_PrintStatusMsgEOLCanal(char *_psz_Text,int _iCanal)
 				po_Editor = M_MF()->po_GetEditorByType( EDI_IDEDIT_LOGFILE, 0 );
 				if ( po_Editor ) po_Editor->i_OnMessage( ELOG_MESSAGE_ADDLINE | ( ( _iCanal + 1 ) << 16 ), ( ULONG ) pzb, LINK_gul_ColorTxt );
 			}
-			else
-			{
+			
+			if ( jaded::sys::launchOperations.debugConsole )
 				printf( "%s\n", pzb );
-			}
+
 			pz += 2;
 			pzb = pz;
 			continue;
@@ -143,10 +143,9 @@ void LINK_PrintStatusMsgCanal(char *_psz_Text,int _iCanal)
 			}
 #endif
 		}
-		else
-		{
+		
+		if ( jaded::sys::launchOperations.debugConsole )
 			printf( "%s\n", _psz_Text );
-		}
 	}
 
 	LINK_gb_UseSecond = FALSE;
