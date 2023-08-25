@@ -2605,8 +2605,10 @@ int EDI_EditorWin32Execution( HINSTANCE instance )
 	app->InitApplication();
 	thread->InitInstance();
 
-	for ( ;; )
-		app->Run();
+	app->Run();
+
+	if ( jaded::sys::launchOperations.debugConsole )
+		FreeConsole();
 
 	return EXIT_SUCCESS;
 }
