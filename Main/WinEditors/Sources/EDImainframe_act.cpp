@@ -752,6 +752,9 @@ void EDI_cl_MainFrame::OnAction(ULONG _ul_Action)
 	case EDI_ACTION_HELPPATH:
 		ShellExecute( NULL, "open", "https://raydev.wiki/jade:overview", NULL, NULL, SW_SHOWNORMAL );
 		break;
+	case EDI_ACTION_REPORTBUG:
+		ShellExecute( NULL, "open", "https://github.com/OldTimes-Software/jaded/issues/new?assignees=&labels=bug&projects=&template=bug_report.md&title=%5BBUG%5D+%3Cshort-description%3E", NULL, NULL, SW_SHOWNORMAL );
+		break;
 	}
 
 	/*$2

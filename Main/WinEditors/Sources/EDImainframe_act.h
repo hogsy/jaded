@@ -89,6 +89,7 @@
 
 #define EDI_ACTION_HELPABOUT		200
 #define EDI_ACTION_HELPPATH			202
+#define EDI_ACTION_REPORTBUG        203
 
 #define EDI_ACTION_TEXTSTATS		300
 #define EDI_ACTION_REFSTATS			301
@@ -303,6 +304,7 @@ Set Language=93=--=0;\
 Options=-6=--=0;\
 Help=-7=--=0;\
 Visit RayDevWiki=202=--=0;\
+Submit Bug Report=203=--=0;\
 Sep=0=--=0;\
 About=200=--=0;\
 ;\
