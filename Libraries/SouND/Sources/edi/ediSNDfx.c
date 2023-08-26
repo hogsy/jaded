@@ -198,6 +198,8 @@ BOOL g_useglobalfx = FALSE;
 DSFXWavesReverb g_reverb;
 DSFXI3DL2Reverb g_i3dl2;
 
+#define DS_INCOMPLETE 0x08780014
+
 void ediSND_FxAdd(SND_tdst_SoundBuffer *_pst_SB, int _i_Core, int _i_FxVol)
 {
 #ifdef USE_FX
@@ -283,6 +285,7 @@ void ediSND_FxAdd(SND_tdst_SoundBuffer *_pst_SB, int _i_Core, int _i_FxVol)
 	case SND_Cte_FxMode_Pipe:
 	case SND_Cte_FxMode_City:
 	case SND_Cte_FxMode_Mountains:
+		L_zero( &ediSND_gast_EffectDesc[ _i_Core ], sizeof( DSEFFECTDESC ) );
         ediSND_gast_EffectDesc[_i_Core].dwSize = sizeof(DSEFFECTDESC);
         ediSND_gast_EffectDesc[_i_Core].dwFlags = 0;
         ediSND_gast_EffectDesc[_i_Core].guidDSFXClass = GUID_DSFX_STANDARD_I3DL2REVERB;
@@ -291,15 +294,12 @@ void ediSND_FxAdd(SND_tdst_SoundBuffer *_pst_SB, int _i_Core, int _i_FxVol)
         ediSND_M_Assert((hr==DS_OK) || (hr==DS_INCOMPLETE));
         ediSND_M_Assert((dwResult!=DSFXR_UNKNOWN) && (dwResult!=DSFXR_FAILED));
         // get Fx interface
-#ifdef JADEFUSION
-		hr = IDirectSoundBuffer8_GetObjectInPath(GetFxSB(_pst_SB)->pst_DSB, GUID_DSFX_STANDARD_I3DL2REVERB, 0, IID_IDirectSoundFXI3DL2Reverb8, &GetFxInterface(_pst_SB));
-#else
-	   hr = IDirectSoundBuffer8_GetObjectInPath(GetFxSB(_pst_SB)->pst_DSB, &GUID_DSFX_STANDARD_I3DL2REVERB, 0, &IID_IDirectSoundFXI3DL2Reverb8, &GetFxInterface(_pst_SB));
-#endif
-	   ediSND_M_Assert(hr==DS_OK);
+	    hr = IDirectSoundBuffer8_GetObjectInPath(GetFxSB(_pst_SB)->pst_DSB, &GUID_DSFX_STANDARD_I3DL2REVERB, 0, &IID_IDirectSoundFXI3DL2Reverb8, &GetFxInterface(_pst_SB));
+	    ediSND_M_Assert(hr==DS_OK);
         break;
     case SND_Cte_FxMode_Delay:
 	case SND_Cte_FxMode_Echo:
+		L_zero( &ediSND_gast_EffectDesc[ _i_Core ], sizeof( DSEFFECTDESC ) );
         ediSND_gast_EffectDesc[_i_Core].dwSize = sizeof(DSEFFECTDESC);
         ediSND_gast_EffectDesc[_i_Core].dwFlags = 0;
         ediSND_gast_EffectDesc[_i_Core].guidDSFXClass = GUID_DSFX_WAVES_REVERB;
@@ -308,11 +308,7 @@ void ediSND_FxAdd(SND_tdst_SoundBuffer *_pst_SB, int _i_Core, int _i_FxVol)
         ediSND_M_Assert((hr==DS_OK) || (hr==DS_INCOMPLETE));
         ediSND_M_Assert((dwResult!=DSFXR_UNKNOWN) && (dwResult!=DSFXR_FAILED));
         // get Fx interface
-#ifdef JADEFUSION
-		hr = IDirectSoundBuffer8_GetObjectInPath(GetFxSB(_pst_SB)->pst_DSB, GUID_DSFX_WAVES_REVERB, 0, IID_IDirectSoundFXWavesReverb8, &GetFxInterface(_pst_SB));
-#else
 		hr = IDirectSoundBuffer8_GetObjectInPath(GetFxSB(_pst_SB)->pst_DSB, &GUID_DSFX_WAVES_REVERB, 0, &IID_IDirectSoundFXWavesReverb8, &GetFxInterface(_pst_SB));
-#endif
 		ediSND_M_Assert(hr==DS_OK);
         break;
     }
