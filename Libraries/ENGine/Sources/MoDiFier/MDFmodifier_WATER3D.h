@@ -19,11 +19,11 @@
 #include "XenonGraphics/XeMesh.h"
 #endif
 
-/*#ifdef __cplusplus
+#ifdef __cplusplus
 extern "C"
 {
 #endif
-*/
+
 /*$4
  ***********************************************************************************************************************
     Modifier const
@@ -180,8 +180,8 @@ extern void		WATER3D_Modifier_Disturb(OBJ_tdst_GameObject *pGO, MATH_tdst_Vector
 extern WATER3D_tdst_Modifier* WATER3D_ModifierFind(OBJ_tdst_GameObject *_pst_GO);
 extern void 	WATER3D_Modifier_Display(OBJ_tdst_GameObject *_pst_GO);
 
-/*#ifdef __cplusplus
+#ifdef __cplusplus
 }
-#endif*/
+#endif
 
 #endif 

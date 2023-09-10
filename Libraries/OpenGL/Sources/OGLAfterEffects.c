@@ -2179,7 +2179,6 @@ void OGL_AE_DebugInfo(WOR_tdst_World *_pst_World)
 		OGL_ES_PopState();
 	}
 
-	
 	if (GDI_gpst_CurDD->DrawGraphicDebugInfo)
 	{
 		u32 TRI_ALarm = GDI_gpst_CurDD->TRI_ALarm;
@@ -2335,6 +2334,7 @@ void OGL_AE_DebugInfo(WOR_tdst_World *_pst_World)
 		}
 	}
 #endif
+
 	OGL_DisplayDebugPerObject(_pst_World);
 }
 

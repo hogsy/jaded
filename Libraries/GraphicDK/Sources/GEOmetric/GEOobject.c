@@ -6197,14 +6197,13 @@ void GEO_Render(OBJ_tdst_GameObject *_pst_GO)
 	 			MDF_ApplyAll(_pst_GO, 0);
 		}
 
-#ifdef _XENON_RENDER
 		if(pst_Visu->ucFlag & GRO_VISU_FLAG_WATERFX)
 		{
 			void WATER3D_Modifier_Display(OBJ_tdst_GameObject *_pst_GO);
 			WATER3D_Modifier_Display(_pst_GO);
 			return;
 		}
-#endif
+
 		/*$2- SKIN -------------------------------------------------------------------------------------------------------*/
 		if(GEO_SKN_IsSkinned(pst_Obj) && (GDI_gpst_CurDD ->ul_CurrentDrawMask & GDI_Cul_DM_ActiveSkin))
 		{

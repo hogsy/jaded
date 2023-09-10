@@ -156,12 +156,10 @@ typedef struct  GRO_tdst_Visu_
     unsigned char				c_LightAttenuation;
     char						c_DisplayOrder;
 
-#ifdef JADEFUSION
 	#define GRO_VISU_FLAG_WATERFX		        0x01
     #define GRO_VISU_FLAG_SYMMETRY              0x02
     #define GRO_VISU_FLAG_HIDE_MESH             0x04
     unsigned char				ucFlag;
-#endif
 
 #if defined(_XBOX)
 	//Tell if color are already filtered for PS2->XBOX

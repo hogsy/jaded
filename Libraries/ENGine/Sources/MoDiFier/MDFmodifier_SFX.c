@@ -213,7 +213,7 @@ void GAO_ModifierSfx_UnApplyHotAir(MDF_tdst_Modifier *_pst_Mod)
 //--------------------------------------------------------
 float GAO_ModifierSfx_RimLightGetMaxBoneHeight( OBJ_tdst_GameObject * _pst_GO )
 {
-    MATH_tdst_Matrix *p_UsedMatrix(NULL), st_Matrix2;
+    MATH_tdst_Matrix *p_UsedMatrix, st_Matrix2;
     MATH_tdst_Matrix st_Matrix3;
   
     ERR_X_Assert( _pst_GO != NULL );
@@ -315,11 +315,11 @@ void GAO_ModifierSfx_ApplyRimLight(GAO_tdst_ModifierSfx * p_Sfx, GEO_tdst_Object
 
         if( pst_BV != NULL )
         {
-            MATH_tdst_Vector & vMin = *OBJ_pst_BV_GetGMin( pst_BV );
-            MATH_tdst_Vector & vMax = *OBJ_pst_BV_GetGMax( pst_BV );
+            MATH_tdst_Vector *vMin = OBJ_pst_BV_GetGMin( pst_BV );
+            MATH_tdst_Vector *vMax = OBJ_pst_BV_GetGMax( pst_BV );
       
-            RimLightHeightWorldMin = vMin.z + _pst_Mod->pst_GO->pst_GlobalMatrix->T.z;
-            RimLightHeightWorldMax = vMax.z + _pst_Mod->pst_GO->pst_GlobalMatrix->T.z;
+            RimLightHeightWorldMin = vMin->z + _pst_Mod->pst_GO->pst_GlobalMatrix->T.z;
+            RimLightHeightWorldMax = vMax->z + _pst_Mod->pst_GO->pst_GlobalMatrix->T.z;
         }
         else
         {

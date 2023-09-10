@@ -55,11 +55,12 @@
 
 #include "BASe/BENch/BENch.h"
 
-#ifdef JADEFUSION
 #include "MDFmodifier_Water3D.h"
 #include "MDFmodifier_Disturber.h"
 #include "MDFmodifier_SFX.h"
 #include "MDFmodifier_Weather.h"
+
+#ifdef JADEFUSION
 #include "MDFmodifier_SoftBody.h"
 #include "MDFmodifier_SPG2_Holder.h"
 #include "ENGine/Sources/MoDiFier/MDFmodifier_Wind.h"
@@ -679,7 +680,6 @@ void MDF_Modifier_Init(void)
 	MDF_gast_ModifierInterface[MDF_C_Modifier_SoundVolume].pfnv_Desactivate = SND_ModifierSoundVol_Desactivate;
 #endif
 
-#ifdef JADEFUSION
 	MDF_gast_ModifierInterface[MDF_C_Modifier_WATER3D].ul_Type = MDF_C_Modifier_WATER3D;
 	MDF_gast_ModifierInterface[MDF_C_Modifier_WATER3D].pfnv_Create = WATER3D_Modifier_Create;
 	MDF_gast_ModifierInterface[MDF_C_Modifier_WATER3D].pfnv_Destroy = WATER3D_Modifier_Destroy;
@@ -687,40 +687,36 @@ void MDF_Modifier_Init(void)
 	MDF_gast_ModifierInterface[MDF_C_Modifier_WATER3D].pfnv_Unapply = WATER3D_Modifier_Unapply;
 	MDF_gast_ModifierInterface[MDF_C_Modifier_WATER3D].pfnul_Load = WATER3D_Modifier_Load;
 	MDF_gast_ModifierInterface[MDF_C_Modifier_WATER3D].pfnv_Reinit = WATER3D_Modifier_Reinit;
-
 #ifdef ACTIVE_EDITORS
 	MDF_gast_ModifierInterface[MDF_C_Modifier_WATER3D].pfnv_Save = WATER3D_Modifier_Save;
 	MDF_gast_ModifierInterface[MDF_C_Modifier_WATER3D].pfnb_CanBeApply = GAO_Modifier_ApplyAlways;
 	MDF_gast_ModifierInterface[MDF_C_Modifier_WATER3D].pfnv_ApplyInGeom = NULL;
 #endif
 
-    MDF_gast_ModifierInterface[MDF_C_Modifier_Disturber].ul_Type = MDF_C_Modifier_Disturber;
-    MDF_gast_ModifierInterface[MDF_C_Modifier_Disturber].pfnv_Create = Disturber_Modifier_Create;
-    MDF_gast_ModifierInterface[MDF_C_Modifier_Disturber].pfnv_Destroy = Disturber_Modifier_Destroy;
-    MDF_gast_ModifierInterface[MDF_C_Modifier_Disturber].pfnv_Apply = Disturber_Modifier_Apply;
-    MDF_gast_ModifierInterface[MDF_C_Modifier_Disturber].pfnv_Unapply = Disturber_Modifier_Unapply;
-    MDF_gast_ModifierInterface[MDF_C_Modifier_Disturber].pfnul_Load = Disturber_Modifier_Load;
-    MDF_gast_ModifierInterface[MDF_C_Modifier_Disturber].pfnv_Reinit = Disturber_Modifier_Reinit;
-
+	MDF_gast_ModifierInterface[ MDF_C_Modifier_Disturber ].ul_Type      = MDF_C_Modifier_Disturber;
+	MDF_gast_ModifierInterface[ MDF_C_Modifier_Disturber ].pfnv_Create  = Disturber_Modifier_Create;
+	MDF_gast_ModifierInterface[ MDF_C_Modifier_Disturber ].pfnv_Destroy = Disturber_Modifier_Destroy;
+	MDF_gast_ModifierInterface[ MDF_C_Modifier_Disturber ].pfnv_Apply   = Disturber_Modifier_Apply;
+	MDF_gast_ModifierInterface[ MDF_C_Modifier_Disturber ].pfnv_Unapply = Disturber_Modifier_Unapply;
+	MDF_gast_ModifierInterface[ MDF_C_Modifier_Disturber ].pfnul_Load   = Disturber_Modifier_Load;
+	MDF_gast_ModifierInterface[ MDF_C_Modifier_Disturber ].pfnv_Reinit  = Disturber_Modifier_Reinit;
 #ifdef ACTIVE_EDITORS
-    MDF_gast_ModifierInterface[MDF_C_Modifier_Disturber].pfnv_Save = Disturber_Modifier_Save;
-    MDF_gast_ModifierInterface[MDF_C_Modifier_Disturber].pfnb_CanBeApply = GAO_Modifier_ApplyAlways;
-    MDF_gast_ModifierInterface[MDF_C_Modifier_Disturber].pfnv_ApplyInGeom = NULL;
+	MDF_gast_ModifierInterface[ MDF_C_Modifier_Disturber ].pfnv_Save        = Disturber_Modifier_Save;
+	MDF_gast_ModifierInterface[ MDF_C_Modifier_Disturber ].pfnb_CanBeApply  = GAO_Modifier_ApplyAlways;
+	MDF_gast_ModifierInterface[ MDF_C_Modifier_Disturber ].pfnv_ApplyInGeom = NULL;
 #endif
 
-    MDF_gast_ModifierInterface[MDF_C_Modifier_Sfx].ul_Type = MDF_C_Modifier_Sfx;
-    MDF_gast_ModifierInterface[MDF_C_Modifier_Sfx].pfnv_Create = GAO_ModifierSfx_Create;
-    MDF_gast_ModifierInterface[MDF_C_Modifier_Sfx].pfnv_Destroy = GAO_ModifierSfx_Destroy;
-    MDF_gast_ModifierInterface[MDF_C_Modifier_Sfx].pfnv_Apply = GAO_ModifierSfx_Apply;
-    MDF_gast_ModifierInterface[MDF_C_Modifier_Sfx].pfnv_Unapply = GAO_ModifierSfx_Unapply;
-    MDF_gast_ModifierInterface[MDF_C_Modifier_Sfx].pfnul_Load = GAO_ModifierSfx_Load;
-    MDF_gast_ModifierInterface[MDF_C_Modifier_Sfx].pfnv_Reinit = GAO_ModifierSfx_Reinit;
-
+	MDF_gast_ModifierInterface[ MDF_C_Modifier_Sfx ].ul_Type      = MDF_C_Modifier_Sfx;
+	MDF_gast_ModifierInterface[ MDF_C_Modifier_Sfx ].pfnv_Create  = GAO_ModifierSfx_Create;
+	MDF_gast_ModifierInterface[ MDF_C_Modifier_Sfx ].pfnv_Destroy = GAO_ModifierSfx_Destroy;
+	MDF_gast_ModifierInterface[ MDF_C_Modifier_Sfx ].pfnv_Apply   = GAO_ModifierSfx_Apply;
+	MDF_gast_ModifierInterface[ MDF_C_Modifier_Sfx ].pfnv_Unapply = GAO_ModifierSfx_Unapply;
+	MDF_gast_ModifierInterface[ MDF_C_Modifier_Sfx ].pfnul_Load   = GAO_ModifierSfx_Load;
+	MDF_gast_ModifierInterface[ MDF_C_Modifier_Sfx ].pfnv_Reinit  = GAO_ModifierSfx_Reinit;
 #ifdef ACTIVE_EDITORS
-    MDF_gast_ModifierInterface[MDF_C_Modifier_Sfx].pfnv_Save = GAO_ModifierSfx_Save;
-    MDF_gast_ModifierInterface[MDF_C_Modifier_Sfx].pfnb_CanBeApply = GAO_Modifier_ApplyAlways;
-    MDF_gast_ModifierInterface[MDF_C_Modifier_Sfx].pfnv_ApplyInGeom = NULL;
-#endif
+	MDF_gast_ModifierInterface[ MDF_C_Modifier_Sfx ].pfnv_Save        = GAO_ModifierSfx_Save;
+	MDF_gast_ModifierInterface[ MDF_C_Modifier_Sfx ].pfnb_CanBeApply  = GAO_Modifier_ApplyAlways;
+	MDF_gast_ModifierInterface[ MDF_C_Modifier_Sfx ].pfnv_ApplyInGeom = NULL;
 #endif
 
     MDF_gast_ModifierInterface[MDF_C_Modifier_RotationPaste].ul_Type      = MDF_C_Modifier_RotationPaste;
@@ -782,7 +778,6 @@ void MDF_Modifier_Init(void)
     MDF_gast_ModifierInterface[MDF_C_Modifier_AnimatedGAO].pfnv_ApplyInGeom = NULL;
 #endif
 
-#ifdef JADEFUSION
     // Weather
     // -------
     MDF_gast_ModifierInterface[MDF_C_Modifier_Weather].ul_Type          = MDF_C_Modifier_Weather;
@@ -798,6 +793,7 @@ void MDF_Modifier_Init(void)
     MDF_gast_ModifierInterface[MDF_C_Modifier_Weather].pfnv_ApplyInGeom = NULL;
 #endif
 
+#ifdef JADEFUSION
     MDF_gast_ModifierInterface[MDF_C_Modifier_SPG2Holder].ul_Type = MDF_C_Modifier_SPG2Holder;
     MDF_gast_ModifierInterface[MDF_C_Modifier_SPG2Holder].pfnv_Create = SPG2Holder_Modifier_Create;
     MDF_gast_ModifierInterface[MDF_C_Modifier_SPG2Holder].pfnv_Destroy = SPG2Holder_Modifier_Destroy;

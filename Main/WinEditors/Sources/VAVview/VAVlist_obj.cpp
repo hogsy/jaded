@@ -55,11 +55,11 @@
 #include "ENGine/Sources/MoDiFier/MDFmodifier_FCLONE.h"
 #include "ENGine/Sources/MoDiFier/MDFmodifier_UVTexWave.h"
 
-#ifdef JADEFUSION
 #include "ENGine/Sources/MoDiFier/MDFmodifier_WATER3D.h"
 #include "ENGine/Sources/MoDiFier/MDFmodifier_Disturber.h"
 #include "ENGine/Sources/MoDiFier/MDFmodifier_SFX.h"
 #include "ENGine/Sources/MoDiFier/MDFmodifier_Weather.h"
+#ifdef JADEFUSION
 #include "ENGine/Sources/MoDiFier/MDFmodifier_SoftBody.h"
 #include "ENGine/Sources/MoDiFier/MDFmodifier_Wind.h"
 #include "ENGine/Sources/MoDiFier/MDFmodifier_SPG2_Holder.h"
@@ -619,7 +619,7 @@ void MDF_SDW_CallBack_Refresh3DEngineAndReloadTExture(void *, void *, void *p_Da
 	LINK_Refresh();
 	EDI_OUT_gl_ForceSetMode = 0;
 }
-#ifdef JADEFUSION
+
 /*
  =======================================================================================================================
  =======================================================================================================================
@@ -666,7 +666,7 @@ void MDF_Disturber_CallBack_Refresh(void *p_Owner, void *_po_Item, void *p_Data,
     Disturber_tdst_Modifier* p_Disturber = (Disturber_tdst_Modifier*) pst_Mdf->p_Data;
     p_Disturber->bActive = FALSE; // force reset
 }
-#endif
+
 /*
  =======================================================================================================================
  =======================================================================================================================
@@ -912,7 +912,7 @@ void MDF_SPG2_CallBack_Refresh(void *, void *, void *p_Data, LONG)
 	LINK_Refresh();
 	EDI_OUT_gl_ForceSetMode = 0;
 }
-#ifdef JADEFUSION
+
 void MDF_Sfx_CallBack_Refresh(void *p_Owner, void *_po_Item, void *p_Data, LONG l_OldData)
 {
     EVAV_cl_ViewItem	*po_Item;
@@ -957,6 +957,7 @@ void MDF_Sfx_CallBack_Refresh(void *p_Owner, void *_po_Item, void *p_Data, LONG 
     }
 }
 
+#ifdef JADEFUSION
 void MDF_SoftBody_CallBack_NbPlanes(void *p_Owner, void *_po_Item, void *p_Data, long l_OldData)
 {
     GAO_tdst_ModifierSoftBody * p_SoftBody;
@@ -3383,11 +3384,9 @@ void EVAV_cl_ListBox::OBJAddModifier(POSITION pos, void *_pst_Mod)
 			&&	((*ppst_Mod)->i->ul_Type != MDF_C_Modifier_SoundFx)
 			&&	((*ppst_Mod)->i->ul_Type != MDF_C_Modifier_SoundVolume)
 			&&	((*ppst_Mod)->i->ul_Type != MDF_C_Modifier_SoundLoading)
-#ifdef JADEFUSION
 			&&  ((*ppst_Mod)->i->ul_Type != MDF_C_Modifier_WATER3D)
 			&&  ((*ppst_Mod)->i->ul_Type != MDF_C_Modifier_Disturber)
             &&  ((*ppst_Mod)->i->ul_Type != MDF_C_Modifier_SPG2Holder)
-#endif
 			)
 			{
 				M_InsertItem("Apply in geometry", EVAV_EVVIT_Modifier, _pst_Mod, NULL);
@@ -3410,7 +3409,6 @@ void EVAV_cl_ListBox::OBJAddModifier(POSITION pos, void *_pst_Mod)
 		switch((*ppst_Mod)->i->ul_Type)
 		{
 		/*$1-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-#ifdef JADEFUSION
 		case MDF_C_Modifier_WATER3D:
 			{
 				WATER3D_tdst_Modifier	*p_WATER3D;
@@ -3574,7 +3572,7 @@ void EVAV_cl_ListBox::OBJAddModifier(POSITION pos, void *_pst_Mod)
                 po_NewItem->psz_Help = "...";
             }
             break;
-
+#ifdef JADEFUSION
         case MDF_C_Modifier_SPG2Holder:
             {
                 SPG2Holder_tdst_Modifier *p_SPG2Holder = (SPG2Holder_tdst_Modifier *) (*ppst_Mod)->p_Data;
@@ -3588,9 +3586,9 @@ void EVAV_cl_ListBox::OBJAddModifier(POSITION pos, void *_pst_Mod)
                 po_NewItem->psz_Help = "...";
             }
             break;
+#endif
         
         /*$1-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-#endif
 		case MDF_C_Modifier_GRID:
 			pst_GridMdF = (Grid_tdst_Modifier *) (*ppst_Mod)->p_Data;
 			M_InsertItem("Copy Grid", EVAV_EVVIT_Modifier, _pst_Mod, NULL);
@@ -5248,7 +5246,6 @@ void EVAV_cl_ListBox::OBJAddModifier(POSITION pos, void *_pst_Mod)
 			po_Item->mi_NumFields++;
 			break;
 
-#ifdef JADEFUSION
         /*$1-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
         case MDF_C_Modifier_Sfx:
             {
@@ -5274,6 +5271,7 @@ void EVAV_cl_ListBox::OBJAddModifier(POSITION pos, void *_pst_Mod)
                     // switch on the type 
                     switch (pst_Sfx->type)
                     {
+#ifdef JADEFUSION
                     case MDF_SFX_HotAir:
                         {
                             M_InsertItem("Offset", EVAV_EVVIT_Vector, &pst_Sfx->hotAirParams.stOffset, NULL);
@@ -5295,6 +5293,7 @@ void EVAV_cl_ListBox::OBJAddModifier(POSITION pos, void *_pst_Mod)
                             po_Item->mi_NumFields++;
                             break;
                         }
+#endif
                     case MDF_SFX_RimLight:
                         {
                             M_InsertItem("Height Attenuation Min", EVAV_EVVIT_Float, &pst_Sfx->rimLightParams.fHeightAttenuationMin, NULL);
@@ -5308,7 +5307,6 @@ void EVAV_cl_ListBox::OBJAddModifier(POSITION pos, void *_pst_Mod)
                 }
 		    }
             break;
-#endif
 
         case MDF_C_Modifier_RotationPaste:
             {
@@ -5594,7 +5592,6 @@ void EVAV_cl_ListBox::OBJAddModifier(POSITION pos, void *_pst_Mod)
                 po_NewItem->psz_Help = "...";
             }
             break;
-#ifdef JADEFUSION
         case MDF_C_Modifier_Weather:
             {
                 MDF_tdst_Weather* pWeather;
@@ -5639,7 +5636,6 @@ void EVAV_cl_ListBox::OBJAddModifier(POSITION pos, void *_pst_Mod)
                 }
             }
             break;
-#endif
         /*$1-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
         case MDF_C_Modifier_Vine: 

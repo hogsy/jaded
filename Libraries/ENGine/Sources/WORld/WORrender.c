@@ -165,9 +165,8 @@ ULONG				WOR_gul_AllPostIt = 0;
 extern BOOL			ENG_gb_ActiveSectorization;
 
 extern void			PROTEX_BeforeDraw(void);
-#ifdef JADEFUSION
 extern void			WATER3D_BeforeDraw();
-#endif
+
 /*$4
  ***********************************************************************************************************************
     Macros for editor purpose
@@ -2609,9 +2608,9 @@ void WOR_Render_3D(int iNumView, WOR_tdst_World *_pst_World, GDI_tdst_DisplayDat
 	PROTEX_BeforeDraw();
 
 	ul_LastGOStackNumber = 0;
-#ifdef XENON_RENDER
+
 	WATER3D_BeforeDraw();
-#endif
+
 	/* Render objects */
 	WOR_Render_All_GO(_pst_World, _pst_DD);
 
@@ -2822,20 +2821,13 @@ void WOR_Render(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD)
 	extern GSP_AfterEffectParams	gAE_Params;
 	extern bool						bSmallViewport;
 #endif
+
 #ifdef XENONVIDEOSTATISTICS
     XeGOStatistics                  *XeStats = XeGOStatistics::Instance();
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
     // Reinit all stats for this frame
     XeStats->InitStats();
-#endif
-
-#if defined(_XBOX)
-	pst_SD = (Gx8_tdst_SpecificData *) _pst_DD->pv_SpecificData;
-
-	/* CARLONE...NO SMALL VIEWPORT FOR SHADOW BUFFER RENDERING...TO BE CHANGED */
-	//Yoann -->false
-	bSmallViewport = false;
 #endif
 
 #if defined(_PC_RETAIL)
@@ -3195,22 +3187,10 @@ void WOR_Render(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD)
 				/* Earth,Wind & fire */
 				PROTEX_BeforeDraw();
 
-#ifdef _XENON_RENDER
 				WATER3D_BeforeDraw();
-#endif
 
 				/* Render */
 				WOR_Render_All_GO(_pst_World, _pst_DD);
-
-#ifdef _GAMECUBE
-				/*
-				 * GXI_ObjectList_Send(eNonTransparentOnly); £
-				 * GXI_PutIntoShadowTexture();
-				 */
-#ifdef USE_HARDWARE_LIGHTS
-				GXI_Global_ACCESS(LightMask) = GX_LIGHT_NULL;
-#endif
-#endif
 
 				/* Graphic FX */
 				GFX_Render(&_pst_World->pst_GFX, 0);
@@ -3259,40 +3239,7 @@ void WOR_Render(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD)
 
 				PROPS2_StopRaster(&PROPS2_gst_SOFT_ZList_Send);
 
-#ifdef _DX8
-				/* after FX DX8 */
-				Gsp_AE();
-#endif
-#ifdef _PC_RETAIL
-				/*
-				 * after FX DX9 £
-				 * Copy render target in back buffer and do other fancy fx
-				 */
-				Gsp_AE();
-#endif
-#ifdef PSX2_TARGET
-				Gsp_Before2D();
-
-#elif defined(_GAMECUBE)
-				GXI_Before2D();
-#elif defined(_XENON)                
-				// before 2d 
-#elif defined(_XBOX)
-				Gx8_Before2D();
-
-				/*
-				 * It would be nice to move the code below somewhere at a lower level £
-				 * 16 / 9th black band
-				 */
-				bSmallViewport = false;
-
-				//IDirect3DDevice8_SetRenderState( pst_SD->mp_D3DDevice, D3DRS_ZENABLE, FALSE );
-				if(_pst_DD->st_ScreenFormat.ul_Flags & GDI_Cul_SFF_169BlackBand)
-				{
-					_pst_DD->st_GDI.pfnl_Request(GDI_Cul_Request_Display169BlackBand, 0);
-				}
-
-#elif defined(ACTIVE_EDITORS) || defined(PCWIN_TOOL)
+#if defined(ACTIVE_EDITORS) || defined(PCWIN_TOOL)
 				OGL_AE_Before2D();
 				/* 16 / 9eme black band */
 				if(_pst_DD->st_ScreenFormat.ul_Flags & GDI_Cul_SFF_169BlackBand)
