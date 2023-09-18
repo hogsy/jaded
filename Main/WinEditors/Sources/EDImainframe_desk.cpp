@@ -722,11 +722,6 @@ l_Ok: ;
 	/* Inform views (to create their editor) */
 	for(i = 0; i < EDI_C_MaxViews; i++) po_GetViewWithNum(i)->OpenProject();
 
-#if defined JADE_KEY_SERVER
-	//Ask JadeKeyServer
-	editorKeyCheck();
-#endif
-
 	/* Create global menu */
 	mpo_MenuFrame = NULL;
 	po_Menu = (EMEN_cl_Frame *) M_MF()->po_GetEditorByType(EDI_IDEDIT_MENU, mst_Ini.i_CountMenu);
