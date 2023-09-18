@@ -128,18 +128,7 @@ typedef LONG LRESULT;
 #	endif
 #	define NULL 0// I thought this was already done somewhere else O:-)
 
-
 //###################################################################################
 //###################################################################################
 // END OF #elif defined( ACTIVE_EDITORS ) || defined( PCWIN_TOOL )
-#else
-//###################################################################################
-//###################################################################################
-#	error TODO: Unsupported platform
 #endif /* platform selection */
-
-#ifdef WIN32
-#	ifndef ACTIVE_EDITORS
-//#define USE_DOUBLE_RENDERING
-#	endif
-#endif
