@@ -1,4 +1,3 @@
-# Jade Library Collection
-
-add_subdirectory(ENGine)
+include_directories(./)
+include_directories(GraphicDK/Sources)
 add_subdirectory(SDK)

@@ -41,5 +41,4 @@ foreach (OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} "${JADE_OUTPUT_DIR}")
 endforeach ()
 
-# Core Jade Libraries
-add_subdirectory(Libraries/SDK)
+add_subdirectory(Libraries) # Core Jade Libraries
