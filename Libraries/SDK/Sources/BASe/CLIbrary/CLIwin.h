@@ -43,8 +43,10 @@ typedef long SHANDLE_PTR;
  -----------------------------------------------------------------------------------------------------------------------
  */
 
-#	include <Windows.h>
-#	include "mmsystem.h"
+#	if defined( _WIN32 )
+#		include <Windows.h>
+#		include "mmsystem.h"
+#	endif
 
 #endif
 

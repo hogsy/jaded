@@ -12,9 +12,7 @@
 #define __MEMPRO_C__
 #endif
 #include "MEM.h"
-#ifdef _GAMECUBE
-#include "GC_arammng.h"
-#endif
+
 #include "BASe/CLIbrary/CLIstr.h"
 #include "BASe/ERRors/ERRasser.h"
 #include "BASe/BAStypes.h"
