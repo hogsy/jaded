@@ -43,6 +43,46 @@
 #	define ONLY_PSX2_ALIGNED( a )
 #	define ONLY_XBOX_ALIGNED( a )
 
+#	ifndef NOMINMAX
+#		ifndef max
+#			define max( a, b ) ( ( ( a ) > ( b ) ) ? ( a ) : ( b ) )
+#		endif
+#		ifndef min
+#			define min( a, b ) ( ( ( a ) < ( b ) ) ? ( a ) : ( b ) )
+#		endif
+#	endif
+
+#	define WM_CLOSE       0x0010
+#	define WM_QUIT        0x0012
+#	define WM_SYSCOMMAND  0x0112
+#	define WM_ACTIVATEAPP 0x001C
+#	define SC_CLOSE       0xF060
+
+//###################################################################################
+//###################################################################################
+// END OF #elif defined( ACTIVE_EDITORS ) || defined( PCWIN_TOOL )
+#endif /* platform selection */
+
+/*$4
+ ***********************************************************************************************************************
+    Other useful types.
+ ***********************************************************************************************************************
+ */
+
+#ifdef FALSE
+#	undef FALSE
+#endif
+#define FALSE false
+#ifdef TRUE
+#	undef TRUE
+#endif
+#define TRUE true
+
+#if defined( NULL )
+#	undef NULL
+#endif
+#define NULL 0// I thought this was already done somewhere else O:-)
+
 // hogsy: !!TODO!! we should eventually get rid of the below and use stdint types instead
 
 typedef char CHAR;
@@ -55,8 +95,8 @@ typedef unsigned long ULONG;
 typedef unsigned int UINT;
 typedef unsigned long DWORD;
 typedef int BOOL;
-typedef __int64 LONG64;
-typedef unsigned __int64 ULONG64;
+typedef int64_t LONG64;
+typedef uint64_t ULONG64;
 
 typedef signed char s8;
 typedef signed short s16;
@@ -76,59 +116,3 @@ typedef LONG HRESULT;
 typedef UINT WPARAM;
 typedef LONG LPARAM;
 typedef LONG LRESULT;
-
-/*
-    typedef struct tagMSG
-    {
-	    HWND	hwnd;
-	    UINT	message;
-	    WPARAM	wParam;
-	    LPARAM	lParam;
-	    UINT	time;
-	    POINT	pt;
-#   ifdef _MAC
-	    UINT	lPrivate;
-#   endif
-    } MSG;
-*/
-
-#	ifndef NOMINMAX
-#		ifndef max
-#			define max( a, b ) ( ( ( a ) > ( b ) ) ? ( a ) : ( b ) )
-#		endif
-#		ifndef min
-#			define min( a, b ) ( ( ( a ) < ( b ) ) ? ( a ) : ( b ) )
-#		endif
-#	endif
-
-#	define WM_CLOSE       0x0010
-#	define WM_QUIT        0x0012
-#	define WM_SYSCOMMAND  0x0112
-#	define WM_ACTIVATEAPP 0x001C
-#	define SC_CLOSE       0xF060
-
-/*$4
- ***********************************************************************************************************************
-    Other useful types.
- ***********************************************************************************************************************
- */
-
-#	ifdef FALSE
-#		undef FALSE
-#	endif
-#	define FALSE false
-
-#	ifdef TRUE
-#		undef TRUE
-#	endif
-#	define TRUE true
-
-#	if defined( NULL )
-#		undef NULL
-#	endif
-#	define NULL 0// I thought this was already done somewhere else O:-)
-
-//###################################################################################
-//###################################################################################
-// END OF #elif defined( ACTIVE_EDITORS ) || defined( PCWIN_TOOL )
-#endif /* platform selection */
