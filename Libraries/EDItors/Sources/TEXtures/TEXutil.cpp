@@ -577,4 +577,26 @@ void Xe_GenerateAllDds()
 }
 #endif
 
+MAIEDITEX_tdst_BitmapDes *TEXUtil_ConvertStbiFile( CView *view, BIG_INDEX fatFile, uint8_t *buffer, unsigned int length, int format )
+{
+	TEX_tdst_File_Desc desc{};
+	desc.uw_DescFlags = TEX_Cuw_DF_Info | TEX_Cuw_DF_Content;
+	TEX_File_LoadStbiFile( buffer, length, &desc );
+
+	MAIEDITEX_tdst_BitmapDes *pDesc = TEXUtil_ConvertRaw(
+	        view,
+	        fatFile,
+	        ( uint8_t * ) desc.p_Bitmap,
+	        ( uint8_t * ) desc.p_Palette,
+	        desc.uw_Width,
+	        desc.uw_Height,
+	        desc.uc_BPP,
+	        format,
+	        false );
+
+	MEM_Free( desc.p_Bitmap );
+
+	return pDesc;
+}
+
 #endif /* ACTIVE_EDITORS */

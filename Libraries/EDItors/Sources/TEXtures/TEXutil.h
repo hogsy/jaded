@@ -20,14 +20,20 @@
     Description of a bitmap
  ---------------------------------------------------------------------------------------------------
  */
-#define MAIEDITEX_C_INVALID	0
-#define MAIEDITEX_C_BMP		1
-#define MAIEDITEX_C_TGA		2
-#define MAIEDITEX_C_JPG		3
-#define MAIEDITEX_C_PALETTE	4
-#define MAIEDITEX_C_RAW		5
-#define MAIEDITEX_C_TEX		6
-#define MAIEDITEX_C_DDS     7
+enum MAIEDITEX_TextureType
+{
+	MAIEDITEX_C_INVALID,
+	MAIEDITEX_C_BMP,
+	MAIEDITEX_C_TGA,
+	MAIEDITEX_C_JPG,
+	MAIEDITEX_C_PALETTE,
+	MAIEDITEX_C_RAW,
+	MAIEDITEX_C_TEX,
+	MAIEDITEX_C_DDS,
+	MAIEDITEX_C_PSD,
+	MAIEDITEX_C_PNG,
+	MAIEDITEX_C_GIF
+};
 
 typedef struct  MAIEDITEX_tdst_Bitmap_
 {
@@ -74,6 +80,7 @@ MAIEDITEX_tdst_BitmapDes *TEXUtil_ConvertJPG(CView *, BIG_INDEX , UCHAR *, ULONG
 MAIEDITEX_tdst_BitmapDes *TEXUtil_ConvertTGA(CView *, BIG_INDEX , UCHAR *);
 MAIEDITEX_tdst_BitmapDes *TEXUtil_ConvertPalette(CView *, BIG_INDEX , UCHAR *);
 MAIEDITEX_tdst_BitmapDes *TEXUtil_ConvertRawFile(CView *, BIG_INDEX , UCHAR *);
+MAIEDITEX_tdst_BitmapDes *TEXUtil_ConvertStbiFile( CView *view, BIG_INDEX fatFile, uint8_t *buffer, unsigned int length, int format );
 
 #if defined(_XENON_RENDER)
 MAIEDITEX_tdst_BitmapDes* TEXUtil_ConvertDDS(CView*, BIG_INDEX, UCHAR*, ULONG);

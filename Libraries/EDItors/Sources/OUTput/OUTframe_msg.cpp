@@ -154,9 +154,12 @@ int EOUT_cl_Frame::i_OnMessage(ULONG _ul_Msg, ULONG _ul_Param1, ULONG _ul_Param2
 
 				if
 				(
-					BIG_b_IsFileExtension(ul_Ref, ".tga")
-				||	BIG_b_IsFileExtension(ul_Ref, ".bmp")
-				||	BIG_b_IsFileExtension(ul_Ref, ".jpg")
+					    BIG_b_IsFileExtension( ul_Ref, ".tga" ) ||
+					    BIG_b_IsFileExtension( ul_Ref, ".bmp" ) ||
+					    BIG_b_IsFileExtension( ul_Ref, ".jpg" ) ||
+					    BIG_b_IsFileExtension( ul_Ref, ".png" ) ||
+					    BIG_b_IsFileExtension( ul_Ref, ".psd" ) ||
+					    BIG_b_IsFileExtension( ul_Ref, ".gif" )
 				)
 				{
 					if(TEX_l_Memory_DeleteTexture(BIG_FileKey(ul_Ref))) b_SetMode = TRUE;

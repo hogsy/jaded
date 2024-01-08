@@ -1037,6 +1037,31 @@ void ChangeTexKey(void *_p_Owner, void *_p_Item, void *_p_Data, long _l_Old )
 	po_Editor->mpo_Parent->Browse();
 }
 
+static const char *StringForImageType( int type )
+{
+	switch ( type )
+	{
+		default:
+			return "Unknown";
+		case MAIEDITEX_C_TGA:
+			return "TGA";
+		case MAIEDITEX_C_PNG:
+			return "PNG";
+		case MAIEDITEX_C_PSD:
+			return "PSD";
+		case MAIEDITEX_C_GIF:
+			return "GIF";
+		case MAIEDITEX_C_RAW:
+			return "RAW";
+		case MAIEDITEX_C_DDS:
+			return "DDS";
+		case MAIEDITEX_C_TEX:
+	        return "TEX";
+		case MAIEDITEX_C_PALETTE:
+			return "Palette";
+	}
+}
+
 /*
  =======================================================================================================================
  =======================================================================================================================
@@ -1066,21 +1091,21 @@ void ETEX_cl_InsideScroll::UpdateInfo( )
 
 	/* add name */
 	mpo_Parent->mpo_DataView->AddItem("Name", EVAV_EVVIT_String, BIG_NameFile( mst_CurDes.ul_FatFile ), EVAV_ReadOnly );
+
+	const char *typeLabel = StringForImageType( mst_CurDes.i_Type );
+	mpo_Parent->mpo_DataView->AddItem( "Type", EVAV_EVVIT_String, ( void * ) typeLabel, EVAV_ReadOnly );
 	
 	switch( mst_CurDes.i_Type )
 	{
 	case MAIEDITEX_C_PALETTE: 
-		mpo_Parent->mpo_DataView->AddItem("Type", EVAV_EVVIT_String, "Palette", EVAV_ReadOnly );
 		mpo_Parent->mpo_DataView->AddItem("Number of Colors", EVAV_EVVIT_String, (mst_CurDes.st_Tex.ast_Slot[0].ul_Pal & TEX_uc_Palette16) ? "16" : "256", EVAV_ReadOnly );
 		mpo_Parent->mpo_DataView->AddItem("Alpha Channel", EVAV_EVVIT_String, (mst_CurDes.st_Tex.ast_Slot[0].ul_Pal & TEX_uc_AlphaPalette) ? "Yes" : "No", EVAV_ReadOnly );
 		break;
 	case MAIEDITEX_C_TGA:
+	case MAIEDITEX_C_PNG:
+	case MAIEDITEX_C_PSD:
+	case MAIEDITEX_C_GIF:
 	case MAIEDITEX_C_RAW:
-		if (mst_CurDes.i_Type == MAIEDITEX_C_RAW )
-			mpo_Parent->mpo_DataView->AddItem("Type", EVAV_EVVIT_String, "raw file", EVAV_ReadOnly );
-		else
-			mpo_Parent->mpo_DataView->AddItem("Type", EVAV_EVVIT_String, "tga file", EVAV_ReadOnly );
-
 		mpo_Parent->mpo_DataView->AddItem( "Width", EVAV_EVVIT_Int, &mst_CurDes.st_Bmp.st_Header.biWidth, EVAV_ReadOnly );
 		mpo_Parent->mpo_DataView->AddItem( "Height", EVAV_EVVIT_Int, &mst_CurDes.st_Bmp.st_Header.biHeight, EVAV_ReadOnly );
 		mpo_Parent->mpo_DataView->AddItem( "Bit per pixel", EVAV_EVVIT_Int, &mst_CurDes.st_Bmp.st_Header.biBitCount, EVAV_ReadOnly );
@@ -1127,7 +1152,7 @@ void ETEX_cl_InsideScroll::UpdateInfo( )
 		po_Item->mpfn_CB = ChangeFlags;
 
 		break;
-#ifdef JADEFUSION
+
     case MAIEDITEX_C_DDS:
         mpo_Parent->mpo_DataView->AddItem( "Width",  EVAV_EVVIT_Int, &mst_CurDes.st_Bmp.st_Header.biWidth,  EVAV_ReadOnly );
         mpo_Parent->mpo_DataView->AddItem( "Height", EVAV_EVVIT_Int, &mst_CurDes.st_Bmp.st_Header.biHeight, EVAV_ReadOnly );
@@ -1143,9 +1168,8 @@ void ETEX_cl_InsideScroll::UpdateInfo( )
             po_Item->mpfn_CB = ChangeFontDesc;
         }
         break;
-#endif
+
 	case MAIEDITEX_C_TEX:
-		mpo_Parent->mpo_DataView->AddItem("Type", EVAV_EVVIT_String, "tex file", EVAV_ReadOnly );
 #if defined(_XENON_RENDER)
         mpo_Parent->mpo_DataView->AddItem("Basic Information", EVAV_EVVIT_Separator, NULL, EVAV_ReadOnly);
 #endif

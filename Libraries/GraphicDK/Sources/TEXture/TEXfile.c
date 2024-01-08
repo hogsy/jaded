@@ -9,6 +9,13 @@
 
 #include "Precomp.h"
 
+#define STB_IMAGE_STATIC
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_NO_BMP
+#define STBI_NO_JPEG
+#define STBI_NO_TGA
+#include "stb_image.h"
+
 #include "BASe/MEMory/MEM.h"
 #include "BASe/CLIbrary/CLIstr.h"
 #include "INOut/INOfile.h"
@@ -41,100 +48,10 @@
 #include "XenonGraphics/XeRenderer.h"
 #endif
 
-#if defined(_XBOX) || defined(_XENON)
-typedef struct	tagBITMAPINFOHEADER
-{
-	DWORD	biSize : 32;
-	LONG	biWidth : 32;
-	LONG	biHeight : 32;
-	WORD	biPlanes : 16;
-	WORD	biBitCount : 16;
-	DWORD	biCompression : 32;
-	DWORD	biSizeImage : 32;
-	LONG	biXPelsPerMeter : 32;
-	LONG	biYPelsPerMeter : 32;
-	DWORD	biClrUsed : 32;
-	DWORD	biClrImportant : 32;
-} BITMAPINFOHEADER;
-
-typedef struct	tagBITMAPFILEHEADER
-{
-	WORD	bfType : 16;
-	DWORD	bfSize : 32;
-	WORD	bfReserved1 : 16;
-	WORD	bfReserved2 : 16;
-	DWORD	bfOffBits : 32;
-} BITMAPFILEHEADER;
-#endif
 #if (defined(PSX2_TARGET) && defined(__cplusplus))
 extern "C"
 {
 #endif
-#if (defined(PSX2_TARGET) || defined(_GAMECUBE))
-#ifdef __CW__
-
-/* CodeWarrior encoding form */
-#pragma pack(1)
-typedef struct	tagBITMAPINFOHEADER
-{
-	DWORD	biSize : 32;
-	LONG	biWidth : 32;
-	LONG	biHeight : 32;
-	WORD	biPlanes : 16;
-	WORD	biBitCount : 16;
-	DWORD	biCompression : 32;
-	DWORD	biSizeImage : 32;
-	LONG	biXPelsPerMeter : 32;
-	LONG	biYPelsPerMeter : 32;
-	DWORD	biClrUsed : 32;
-	DWORD	biClrImportant : 32;
-} BITMAPINFOHEADER;
-
-typedef struct	tagBITMAPFILEHEADER
-{
-	WORD	bfType : 16;
-	DWORD	bfSize : 32;
-	WORD	bfReserved1 : 16;
-	WORD	bfReserved2 : 16;
-	DWORD	bfOffBits : 32;
-} BITMAPFILEHEADER;
-#pragma pack(0)
-#else
-
-/*
- -----------------------------------------------------------------------------------------------------------------------
-    GNU encoding form
- -----------------------------------------------------------------------------------------------------------------------
- */
-typedef struct	tagBITMAPINFOHEADER
-{
-	DWORD biSize			__attribute__((packed));
-	LONG biWidth			__attribute__((packed));
-	LONG biHeight			__attribute__((packed));
-	WORD biPlanes			__attribute__((packed));
-	WORD biBitCount			__attribute__((packed));
-	DWORD biCompression		__attribute__((packed));
-	DWORD biSizeImage		__attribute__((packed));
-	LONG biXPelsPerMeter	__attribute__((packed));
-	LONG biYPelsPerMeter	__attribute__((packed));
-	DWORD biClrUsed			__attribute__((packed));
-	DWORD biClrImportant	__attribute__((packed));
-}
-__attribute__((packed))
-BITMAPINFOHEADER;
-
-typedef struct	tagBITMAPFILEHEADER
-{
-	WORD bfType			__attribute__((packed));
-	DWORD bfSize		__attribute__((packed));
-	WORD bfReserved1	__attribute__((packed));
-	WORD bfReserved2	__attribute__((packed));
-	DWORD bfOffBits		__attribute__((packed));
-}
-__attribute__((packed))
-BITMAPFILEHEADER;
-#endif /* __CW__ */
-#endif /* PSX2_TARGET */
 
 /*$4
  ***********************************************************************************************************************
@@ -514,55 +431,6 @@ LONG TEX_l_File_LoadJpeg(char *_pc_Buffer, TEX_tdst_File_Desc *_pst_TexDesc, ULO
  ***********************************************************************************************************************
  */
 
-#ifdef PSX2_TARGET
-#ifdef __CW__
-
-/* CodeWarrior encoding form */
-#pragma pack(1)
-typedef struct
-{
-	u_long64	uc_Size : 8;
-	u_long64	uc_ColorMapType : 8;
-	u_long64	uc_ImageTypeCode : 8;
-	u_long64	uw_Origin : 16;
-	u_long64	uw_PaletteLength : 16;
-	u_long64	uc_BPCInPalette : 8;
-	u_long64	uw_Left : 16;
-	u_long64	uw_Top : 16;
-	u_long64	uw_Width : 16;
-	u_long64	uw_Height : 16;
-	u_long64	uc_BPP : 8;
-	u_long64	ucDescriptorByte : 8;
-} TEX_tdst_File_TgaHeader;
-#pragma pack(0)
-#else
-
-/*
- -----------------------------------------------------------------------------------------------------------------------
-    GNU encoding form
- -----------------------------------------------------------------------------------------------------------------------
- */
-typedef struct
-{
-	unsigned char uc_Size			__attribute__((packed));
-	unsigned char uc_ColorMapType	__attribute__((packed));
-	unsigned char uc_ImageTypeCode	__attribute__((packed));
-	unsigned short uw_Origin		__attribute__((packed));
-	unsigned short uw_PaletteLength __attribute__((packed));
-	unsigned char uc_BPCInPalette	__attribute__((packed));
-	unsigned short uw_Left			__attribute__((packed));
-	unsigned short uw_Top			__attribute__((packed));
-	unsigned short uw_Width			__attribute__((packed));
-	unsigned short uw_Height		__attribute__((packed));
-	unsigned char uc_BPP			__attribute__((packed));
-	unsigned char ucDescriptorByte	__attribute__((packed));
-}
-__attribute__((packed))
-TEX_tdst_File_TgaHeader;
-#endif /* __CW__ */
-
-#else /* PSX2_TARGET */
-
 /* MSVC encoding form */
 #pragma pack(push, 1)
 typedef struct
@@ -581,7 +449,6 @@ typedef struct
 	unsigned char	ucDescriptorByte;
 } TEX_tdst_File_TgaHeader;
 #pragma pack(pop)
-#endif /* PSX2_TARGET */
 
 /*
  =======================================================================================================================
@@ -1407,6 +1274,73 @@ void TEX_Warning(char _c_Warn, BIG_KEY _ul_FileKey)
  =======================================================================================================================
  */
 
+static void FlipImage( TEX_tdst_File_Desc *fileDesc, unsigned int size )
+{
+	uint8_t *swap = malloc( size );
+	uint8_t *src = fileDesc->p_Bitmap;
+	unsigned int bytesPerRow = fileDesc->uw_Width * 4;
+	for (unsigned int i = 0; i < fileDesc->uw_Height / 2; ++i)
+	{
+		uint8_t *x = src + ( i * bytesPerRow );
+		uint8_t *y = src + ( ( ( fileDesc->uw_Height - 1 ) - i ) * bytesPerRow );
+
+		memcpy( swap, x, bytesPerRow );
+		memcpy( x, y, bytesPerRow );
+		memcpy( y, swap, bytesPerRow );
+	}
+
+	free( swap );
+}
+
+bool TEX_File_LoadStbiFile( uint8_t *buffer, unsigned int length, TEX_tdst_File_Desc *fileDesc )
+{
+	// Seems to be crashing on memory access???
+	//stbi_set_flip_vertically_on_load( true );
+
+	int numChannels;
+	uint8_t *out;
+	if ( !( fileDesc->uw_DescFlags & TEX_Cuw_DF_Content ) )
+	{
+		if ( stbi_info_from_memory( buffer, length, &fileDesc->uw_Width, &fileDesc->uw_Height, &numChannels ) != 1 )
+		{
+			return false;
+		}
+		out = NULL;
+	}
+	else
+	{
+		out = stbi_load_from_memory( buffer, length, &fileDesc->uw_Width, &fileDesc->uw_Height, &numChannels, 4 );
+		if ( out == NULL )
+		{
+			return false;
+		}
+	}
+
+	if ( fileDesc->st_Params.uw_Flags & TEX_FP_MipmapOn )
+	{
+		fileDesc->uw_FileFlags |= TEX_uw_Mipmap;
+	}
+
+	fileDesc->uc_FinalBPP = fileDesc->uc_BPP = 32;
+
+	fileDesc->ul_AMask = 0xFF000000;
+	fileDesc->ul_RMask = 0xFF0000;
+	fileDesc->ul_GMask = 0xFF00;
+	fileDesc->ul_BMask = 0xFF;
+
+	if ( fileDesc->uw_DescFlags & TEX_Cuw_DF_Content )
+	{
+		unsigned int size = ( fileDesc->uw_Width * fileDesc->uw_Height ) * numChannels;
+		TEX_M_File_Alloc( fileDesc->p_Bitmap, size, void );
+		L_memcpy( fileDesc->p_Bitmap, out, size );
+		FlipImage( fileDesc, size );
+	}
+
+	STBI_FREE( out );
+
+	return true;
+}
+
 LONG TEX_l_File_Read(BIG_KEY _ul_FileKey, TEX_tdst_File_Desc *_pst_TexDesc)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -1557,6 +1491,12 @@ LONG TEX_l_File_Read(BIG_KEY _ul_FileKey, TEX_tdst_File_Desc *_pst_TexDesc)
 
     case TEX_FP_AniFile:
 		l_Result = TEX_l_File_LoadAnimated(pc_Buffer, _pst_TexDesc, ul_Size - sizeof(TEX_tdst_File_Params));
+		break;
+
+	case TEX_FP_GifFile:
+	case TEX_FP_PsdFile:
+	case TEX_FP_PngFile:
+		l_Result = TEX_File_LoadStbiFile( pc_Buffer, ul_Size, _pst_TexDesc );
 		break;
 
 #if defined(_XENON_RENDER)
@@ -2604,18 +2544,18 @@ int TEX_i_File_DefaultParams
 	if(_psz_Ext)
 	{
 		_psz_Ext++;
-		if(L_stricmp(_psz_Ext, "tga") == 0)
-		{
-			if(TEX_l_File_LoadTga(_pc_Buffer, &st_Desc)) _pst_FP->uc_Type = TEX_FP_TgaFile;
-		}
-		else if(L_stricmp(_psz_Ext, "bmp") == 0)
-		{
-			if(TEX_l_File_LoadBmp(_pc_Buffer, &st_Desc)) _pst_FP->uc_Type = TEX_FP_BmpFile;
-		}
-		else if(L_stricmp(_psz_Ext, "jpg") == 0)
-		{
-			if(TEX_l_File_LoadJpeg(_pc_Buffer, &st_Desc, _l_Size)) _pst_FP->uc_Type = TEX_FP_JpgFile;
-		}
+		if ( L_stricmp( _psz_Ext, "tga" ) == 0 && TEX_l_File_LoadTga( _pc_Buffer, &st_Desc ) ) 
+			_pst_FP->uc_Type = TEX_FP_TgaFile;
+		else if ( L_stricmp( _psz_Ext, "bmp" ) == 0 && TEX_l_File_LoadBmp( _pc_Buffer, &st_Desc ) )
+			_pst_FP->uc_Type = TEX_FP_BmpFile;
+		else if ( L_stricmp( _psz_Ext, "jpg" ) == 0 && TEX_l_File_LoadJpeg( _pc_Buffer, &st_Desc, _l_Size ) )
+			_pst_FP->uc_Type = TEX_FP_JpgFile;
+		else if ( L_stricmp( _psz_Ext, "png" ) == 0 && TEX_File_LoadStbiFile( _pc_Buffer, _l_Size, &st_Desc ) )
+			_pst_FP->uc_Type = TEX_FP_PngFile;
+		else if ( L_stricmp( _psz_Ext, "psd" ) == 0 && TEX_File_LoadStbiFile( _pc_Buffer, _l_Size, &st_Desc ) )
+			_pst_FP->uc_Type = TEX_FP_PsdFile;
+		else if ( L_stricmp( _psz_Ext, "gif" ) == 0 && TEX_File_LoadStbiFile( _pc_Buffer, _l_Size, &st_Desc ) )
+			_pst_FP->uc_Type = TEX_FP_GifFile;
 #if defined(_XENON_RENDER)
         else if(L_stricmp(_psz_Ext, "dds") == 0)
         {

@@ -1305,18 +1305,24 @@ void ETEX_cl_Frame::Browse(BOOL _b_Del)
 				{
 					/* Get the format */
 					psz_Temp++;
-					if(!L_strcmpi(psz_Temp, "bmp"))
+					if ( !L_strcmpi( psz_Temp, "bmp" ) )
 						i_Format = MAIEDITEX_C_BMP;
-					else if(!L_strcmpi(psz_Temp, "tga"))
+					else if ( !L_strcmpi( psz_Temp, "tga" ) )
 						i_Format = MAIEDITEX_C_TGA;
-					else if(!L_strcmpi(psz_Temp, "jpg"))
+					else if ( !L_strcmpi( psz_Temp, "jpg" ) )
 						i_Format = MAIEDITEX_C_JPG;
-					else if(!L_strcmpi(psz_Temp, "pal"))
+					else if ( !L_strcmpi( psz_Temp, "pal" ) )
 						i_Format = MAIEDITEX_C_PALETTE;
-					else if(!L_strcmpi(psz_Temp, "raw"))
+					else if ( !L_strcmpi( psz_Temp, "raw" ) )
 						i_Format = MAIEDITEX_C_RAW;
-					else if(!L_strcmpi(psz_Temp, "tex"))
+					else if ( !L_strcmpi( psz_Temp, "tex" ) )
 						i_Format = MAIEDITEX_C_TEX;
+					else if ( !L_strcmpi( psz_Temp, "psd" ) )
+						i_Format = MAIEDITEX_C_PSD;
+					else if ( !L_strcmpi( psz_Temp, "png" ) )
+						i_Format = MAIEDITEX_C_PNG;
+					else if ( !L_strcmpi( psz_Temp, "gif" ) )
+						i_Format = MAIEDITEX_C_GIF;
 #if defined(_XENON_RENDER)
                     else if(!L_strcmpi(psz_Temp, "dds"))
                         i_Format = MAIEDITEX_C_DDS;
@@ -1367,6 +1373,12 @@ void ETEX_cl_Frame::Browse(BOOL _b_Del)
 
 							case MAIEDITEX_C_RAW:
 								pdes = TEXUtil_ConvertRawFile(mpo_ScrollView, ul_IndexFile, (UCHAR *) p_Buf);
+								break;
+
+							case MAIEDITEX_C_PSD:
+							case MAIEDITEX_C_PNG:
+							case MAIEDITEX_C_GIF:
+								pdes = TEXUtil_ConvertStbiFile( mpo_ScrollView, ul_IndexFile, ( UCHAR * ) p_Buf, ulLenght, i_Format );
 								break;
 
 							case MAIEDITEX_C_TEX:
