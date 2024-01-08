@@ -600,7 +600,8 @@ LONG TEX_l_File_LoadTga(char *_pc_Buffer, TEX_tdst_File_Desc *_pst_TexDesc)
 	if(st_TgaHeader.uc_ImageTypeCode >= 9)
 	{
 		TEX_l_File_TgaUncompress(st_TgaHeader.uc_BPP, (char *) _pst_TexDesc->p_Bitmap, _pc_Buffer, ul_Length);
-		LOA_ReadCharArray(&_pc_Buffer, NULL, ul_Length); // read the compressed bitmap so it will be written to disk
+		// hogsy: uh, fairly sure this is being called in error??
+		//LOA_ReadCharArray(&_pc_Buffer, NULL, ul_Length); // read the compressed bitmap so it will be written to disk
 	}
 
 	/* Uncompress version */
