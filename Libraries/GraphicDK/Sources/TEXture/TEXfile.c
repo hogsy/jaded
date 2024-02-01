@@ -1277,7 +1277,7 @@ void TEX_Warning(char _c_Warn, BIG_KEY _ul_FileKey)
 
 static void FlipImage( TEX_tdst_File_Desc *fileDesc, unsigned int size )
 {
-	uint8_t *swap = malloc( size );
+	uint8_t *swap = L_malloc( size );
 	uint8_t *src = fileDesc->p_Bitmap;
 	unsigned int bytesPerRow = fileDesc->uw_Width * 4;
 	for (unsigned int i = 0; i < fileDesc->uw_Height / 2; ++i)
@@ -1290,7 +1290,7 @@ static void FlipImage( TEX_tdst_File_Desc *fileDesc, unsigned int size )
 		memcpy( y, swap, bytesPerRow );
 	}
 
-	free( swap );
+	L_free( swap );
 }
 
 bool TEX_File_LoadStbiFile( uint8_t *buffer, unsigned int length, TEX_tdst_File_Desc *fileDesc )
@@ -1325,9 +1325,9 @@ bool TEX_File_LoadStbiFile( uint8_t *buffer, unsigned int length, TEX_tdst_File_
 	fileDesc->uc_FinalBPP = fileDesc->uc_BPP = 32;
 
 	fileDesc->ul_AMask = 0xFF000000;
-	fileDesc->ul_RMask = 0xFF0000;
-	fileDesc->ul_GMask = 0xFF00;
-	fileDesc->ul_BMask = 0xFF;
+	fileDesc->ul_BMask = 0x00FF0000;
+	fileDesc->ul_GMask = 0x0000FF00;
+	fileDesc->ul_RMask = 0x000000FF;
 
 	if ( fileDesc->uw_DescFlags & TEX_Cuw_DF_Content )
 	{
@@ -1335,6 +1335,18 @@ bool TEX_File_LoadStbiFile( uint8_t *buffer, unsigned int length, TEX_tdst_File_
 		TEX_M_File_Alloc( fileDesc->p_Bitmap, size, void );
 		L_memcpy( fileDesc->p_Bitmap, out, size );
 		FlipImage( fileDesc, size );
+
+		// sigh, gotta swap the colours
+		if ( numChannels >= 3 )
+		{
+			uint8_t *bitmap = ( uint8_t * ) fileDesc->p_Bitmap;
+			for ( unsigned int i = 0; i < size; i += numChannels )
+			{
+				uint8_t temp    = bitmap[ i ];
+				bitmap[ i ]     = bitmap[ i + 2 ];
+				bitmap[ i + 2 ] = temp;
+			}
+		}
 	}
 
 	STBI_FREE( out );

@@ -36,11 +36,10 @@ extern "C"
 #define TEX_Cuw_DF_VeryBadBoy			0x0010
 #define TEX_Cuw_DF_SpecialNoLoad        0x0020
 #define TEX_Cuw_DF_Referenced           0x0040
-#ifdef JADEFUSION
 #define TEX_Cuw_DF_ConvertTo32BPP       0x0080
 #define TEX_Cuw_DF_XenonFileAsBitmap    0x0100
 #define TEX_Cuw_DF_EditorUseXenonFile   0x0200
-#endif
+
 /* flags */
 #define TEX_FP_QualityVeryLow		0x0000
 #define TEX_FP_QualityLow			0x0001
