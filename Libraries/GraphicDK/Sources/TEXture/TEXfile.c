@@ -2443,6 +2443,9 @@ void TEX_File_Init(void)
 	IMP_b_AddImportCallback("jpg", TEX_b_File_Import);
 	IMP_b_AddImportCallback("bmp", TEX_b_File_Import);
 	IMP_b_AddImportCallback("pal", TEX_b_File_Import);
+	IMP_b_AddImportCallback( "psd", TEX_b_File_Import );
+	IMP_b_AddImportCallback( "png", TEX_b_File_Import );
+	IMP_b_AddImportCallback( "gif", TEX_b_File_Import );
 #if defined(_XENON_RENDER)
     IMP_b_AddImportCallback("dds", TEX_b_File_Import);
 #endif
