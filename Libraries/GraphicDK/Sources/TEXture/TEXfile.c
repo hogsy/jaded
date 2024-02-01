@@ -1300,9 +1300,11 @@ bool TEX_File_LoadStbiFile( uint8_t *buffer, unsigned int length, TEX_tdst_File_
 
 	int numChannels;
 	uint8_t *out;
+
+	int w, h;
 	if ( !( fileDesc->uw_DescFlags & TEX_Cuw_DF_Content ) )
 	{
-		if ( stbi_info_from_memory( buffer, length, &fileDesc->uw_Width, &fileDesc->uw_Height, &numChannels ) != 1 )
+		if ( stbi_info_from_memory( buffer, length, &w, &h, &numChannels ) != 1 )
 		{
 			return false;
 		}
@@ -1310,12 +1312,15 @@ bool TEX_File_LoadStbiFile( uint8_t *buffer, unsigned int length, TEX_tdst_File_
 	}
 	else
 	{
-		out = stbi_load_from_memory( buffer, length, &fileDesc->uw_Width, &fileDesc->uw_Height, &numChannels, 4 );
+		out = stbi_load_from_memory( buffer, length, &w, &h, &numChannels, 4 );
 		if ( out == NULL )
 		{
 			return false;
 		}
 	}
+
+	fileDesc->uw_Width  = w;
+	fileDesc->uw_Height = h;
 
 	if ( fileDesc->st_Params.uw_Flags & TEX_FP_MipmapOn )
 	{
