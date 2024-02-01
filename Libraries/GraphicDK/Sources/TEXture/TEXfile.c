@@ -2465,6 +2465,9 @@ LONG TEX_l_File_IsFormatSupported(char *_psz_Filename, int i_Type)
 	    if(L_stricmp(psz_Ext, ".pro") == 0) return 1;
         if(L_stricmp(psz_Ext, ".ant") == 0) return 1;
 	    if(L_stricmp(psz_Ext, ".tex") == 0) return 1;
+		if ( L_stricmp( psz_Ext, ".png" ) == 0 ) return 1;
+		if ( L_stricmp( psz_Ext, ".psd" ) == 0 ) return 1;
+		if ( L_stricmp( psz_Ext, ".gif" ) == 0 ) return 1;
  #if defined(_XENON_RENDER)
         if(L_stricmp(psz_Ext, ".dds") == 0) return 1;
 #endif
@@ -2488,6 +2491,9 @@ LONG TEX_l_File_IsFormatSupported(char *_psz_Filename, int i_Type)
 	    if(L_stricmp(psz_Ext, ".tga") == 0) return 1;
 	    if(L_stricmp(psz_Ext, ".bmp") == 0) return 1;
 	    if(L_stricmp(psz_Ext, ".jpg") == 0) return 1;
+		if ( L_stricmp( psz_Ext, ".png" ) == 0 ) return 1;
+		if ( L_stricmp( psz_Ext, ".psd" ) == 0 ) return 1;
+		if ( L_stricmp( psz_Ext, ".gif" ) == 0 ) return 1;
         return 0;
     }
 
@@ -2505,6 +2511,9 @@ LONG TEX_l_File_IsFormatSupported(char *_psz_Filename, int i_Type)
 		if(L_stricmp(psz_Ext, ".tex") == 0) return 1;
 		if(L_stricmp(psz_Ext, ".raw") == 0) return 1;
 		if(L_stricmp(psz_Ext, ".pal") == 0) return 1;
+		if ( L_stricmp( psz_Ext, ".png" ) == 0 ) return 1;
+		if ( L_stricmp( psz_Ext, ".psd" ) == 0 ) return 1;
+		if ( L_stricmp( psz_Ext, ".gif" ) == 0 ) return 1;
 #if defined(_XENON_RENDER)
         if(L_stricmp(psz_Ext, ".dds") == 0) return 1;
 #endif
