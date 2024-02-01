@@ -36,11 +36,10 @@ extern "C"
 #define TEX_Cuw_DF_VeryBadBoy			0x0010
 #define TEX_Cuw_DF_SpecialNoLoad        0x0020
 #define TEX_Cuw_DF_Referenced           0x0040
-#ifdef JADEFUSION
 #define TEX_Cuw_DF_ConvertTo32BPP       0x0080
 #define TEX_Cuw_DF_XenonFileAsBitmap    0x0100
 #define TEX_Cuw_DF_EditorUseXenonFile   0x0200
-#endif
+
 /* flags */
 #define TEX_FP_QualityVeryLow		0x0000
 #define TEX_FP_QualityLow			0x0001
@@ -59,17 +58,24 @@ extern "C"
 #define TEX_FP_NormaleMap1			0x0800
 
 /* type */
-#define TEX_FP_TgaFile				0x01
-#define TEX_FP_BmpFile				0x02
-#define TEX_FP_JpgFile				0x03
-#define TEX_FP_SprFile				0x04
-#define TEX_FP_ProFile				0x05
-#define TEX_FP_RawFile              0x06
-#define TEX_FP_RawPalFile           0x07
-#define TEX_FP_PalFile              0x08
-#define TEX_FP_AniFile              0x09
-#define TEX_FP_DdsFile              0x0A    // XBox compressed texture.
-#define TEX_FP_XeDDSFile            0x0B
+enum TextureFileType
+{
+	TEX_FP_TgaFile    = 0x01,
+	TEX_FP_BmpFile    = 0x02,
+	TEX_FP_JpgFile    = 0x03,
+	TEX_FP_SprFile    = 0x04,
+	TEX_FP_ProFile    = 0x05,
+	TEX_FP_RawFile    = 0x06,
+	TEX_FP_RawPalFile = 0x07,
+	TEX_FP_PalFile    = 0x08,
+	TEX_FP_AniFile    = 0x09,
+	TEX_FP_DdsFile    = 0x0A,// XBox compressed texture.
+	TEX_FP_XeDDSFile  = 0x0B,
+	// hogsy: new formats
+	TEX_FP_GifFile = 0x0C,
+	TEX_FP_PsdFile = 0x0D,
+	TEX_FP_PngFile = 0x0E,
+};
 
 /* format */
 #define TEX_FP_32bpp                0x10
@@ -367,6 +373,8 @@ ULONG   TEX_ul_File_SaveRawInBF(char *, char *, TEX_tdst_File_Desc *, BOOL);
 LONG    TEX_l_File_LoadRawPalette(char *, TEX_tdst_File_Desc *, ULONG );
 
 LONG    TEX_l_File_LoadSpriteGen(ULONG, char *, TEX_tdst_File_Desc *, ULONG );
+
+bool TEX_File_LoadStbiFile( uint8_t *buffer, unsigned int length, TEX_tdst_File_Desc *fileDesc );
 
 #ifdef ACTIVE_EDITORS
 

@@ -1962,9 +1962,14 @@ int EDI_cl_MainFrame::i_GetIconImage(char *_psz_Path, char *_psz_Name, int _i_Si
 		if(!L_strcmpi(psz_Temp, EDI_Csz_ExtCOLObject))			return EDI_IMAGE_GRO;
 		if(!L_strcmpi(psz_Temp, EDI_Csz_ExtGraphicMaterial))	return EDI_IMAGE_GRM;
 		if(!L_strcmpi(psz_Temp, EDI_Csz_ExtCOLGMAT))			return EDI_IMAGE_GRM;
-		if(!L_strcmpi(psz_Temp, EDI_Csz_ExtTexture1))			return EDI_IMAGE_TGA;
-		if(!L_strcmpi(psz_Temp, EDI_Csz_ExtTexture2))			return EDI_IMAGE_TGA;
-		if(!L_strcmpi(psz_Temp, EDI_Csz_ExtTexture3))			return EDI_IMAGE_TGA;
+
+		if ( !L_strcmpi( psz_Temp, EDI_Csz_ExtTexture1 ) ||
+		     !L_strcmpi( psz_Temp, EDI_Csz_ExtTexture2 ) ||
+		     !L_strcmpi( psz_Temp, EDI_Csz_ExtTexture3 ) ||
+		     // hogsy: additional texture formats
+		     !L_strcmpi( psz_Temp, ".png" ) || !L_strcmpi( psz_Temp, ".psd" ) || !L_strcmpi( psz_Temp, ".gif" ) )
+			return EDI_IMAGE_TGA;
+
 		if(!L_strcmpi(psz_Temp, EDI_Csz_ExtGameObject))			return EDI_IMAGE_GAO;
 		if(!L_strcmpi(psz_Temp, EDI_Csz_ExtWorld))				return EDI_IMAGE_WORLD;
 		if(!L_strcmpi(psz_Temp, EDI_Csz_ExtObjModels))			return EDI_IMAGE_OBJMODEL;
