@@ -381,6 +381,11 @@ static BOOL sfnb_EndGame(void)
  */
 void s_HandleWinMessages(void)
 {
+	if ( !jaded::sys::launchOperations.editorMode )
+	{
+		return;
+	}
+
 	MSG		msg;
 	float	f_StartTimeEditors;
 	/*~~~~~~~~~~~~~~~~~~~~~~~*/

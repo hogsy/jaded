@@ -1,4 +1,4 @@
-// Created by Mark "hogsy" Sowden, 2023 <hogsy@oldtimes-software.com>
+// Created by Mark "hogsy" Sowden, 2023-2024 <hogsy@snortysoft.net>
 // https://oldtimes-software.com/jaded/
 
 #include "Precomp.h"
