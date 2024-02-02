@@ -1,4 +1,4 @@
-// Created by Mark "hogsy" Sowden, 2023 <hogsy@oldtimes-software.com>
+// Created by Mark "hogsy" Sowden, 2023-2024 <hogsy@snortysoft.net>
 // https://oldtimes-software.com/jaded/
 
 #include "Precomp.h"
@@ -172,6 +172,8 @@ static void InitializeDisplay()
 	GDI_Rasters_Init( MAI_gst_MainHandles.pst_DisplayData->pst_Raster, "Display Data" );
 
 #endif
+
+	MAI_gst_MainHandles.pst_DisplayData->uc_EngineCamera = TRUE;
 }
 
 static void ShutdownDisplay()
