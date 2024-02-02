@@ -1158,7 +1158,7 @@ void PAG_RenderCommon(OBJ_tdst_GameObject *_pst_Node, PAG_tdst_Struct *pst_P, ch
 	}
 
     /* set material */
-	if(!_pst_Node->pst_Base || !_pst_Node->pst_Base->pst_Visu) return;
+	if ( !_pst_Node->pst_Base || !_pst_Node->pst_Base->pst_Visu || GFX_gpst_GO == NULL) return;
     GFX_gpst_GO->pst_Base->pst_Visu->pst_Material = _pst_Node->pst_Base->pst_Visu->pst_Material;
 
     if (test)
