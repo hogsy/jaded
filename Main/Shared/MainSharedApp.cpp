@@ -173,6 +173,22 @@ static SDL_Window *CreateSDLWindow()
 	return sdlWindow;
 }
 
+static void SetupAspectRatio()
+{
+	int w, h;
+	SDL_GetWindowSizeInPixels( sdlWindow, &w, &h );
+
+	float r = ( ( float ) w / h );
+	if ( fabsf( r - ( 4.0f / 3.0f ) ) < fabsf( r - ( 16.0f / 9.0f ) ) )
+	{
+		MAI_gst_MainHandles.pst_DisplayData->st_ScreenFormat.l_ScreenRatioConst = GDI_Cul_SRC_4over3;
+	}
+	else
+	{
+		MAI_gst_MainHandles.pst_DisplayData->st_ScreenFormat.l_ScreenRatioConst = GDI_Cul_SRC_16over9;
+	}
+}
+
 static void InitializeDisplay()
 {
 	MAI_gst_MainHandles.h_DisplayWindow = nativeWindowHandle;
@@ -192,6 +208,11 @@ static void InitializeDisplay()
 
 	MAI_gst_MainHandles.pst_DisplayData->uc_EngineCamera = TRUE;
 	MAI_gst_MainHandles.pst_DisplayData->ul_DrawMask |= GDI_Cul_DM_NoAutoClone;
+
+	MAI_gst_MainHandles.pst_DisplayData->st_ScreenFormat.ul_Flags           = GDI_Cul_SFF_OccupyAll;
+
+	// Determine aspect ratio - TODO: should get triggered again whenever window-size changes...
+	SetupAspectRatio();
 }
 
 static void ShutdownDisplay()
