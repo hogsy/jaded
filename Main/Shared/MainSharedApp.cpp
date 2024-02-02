@@ -12,9 +12,12 @@
 #include "ENGine/Sources/WORld/WORinit.h"
 #include "SDK/Sources/BIGfiles/BIGopen.h"
 #include "GDInterface/GDIrasters.h"
+#include "GDInterface/GDInterface.h"
 
 static SDL_Window *sdlWindow;
 static SDL_GLContext sdlGLContext;
+
+//#define USE_SDL_GL_CONTEXT
 
 #if defined( _WIN32 )
 
@@ -110,22 +113,28 @@ static void ParseStartupParameters()
 
 static SDL_Window *CreateSDLWindow()
 {
+#if defined( USE_SDL_GL_CONTEXT  )
+
 	int flags = SDL_WINDOW_OPENGL;
 	if ( !jaded::sys::launchOperations.forceWindowed )
 		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 
-	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );
-	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
-	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
-	SDL_GL_SetAttribute( SDL_GL_ALPHA_SIZE, 8 );
-	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 32 );
+	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 5 );
+	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 5 );
+	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 5 );
 	SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 8 );
 
 	SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY );
-	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 4 );
+	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 3 );
 	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 3 );
 
-	SDL_GL_SetAttribute( SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 3 );
+#else
+
+	int flags = 0;
+	if ( !jaded::sys::launchOperations.forceWindowed )
+		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+
+#endif
 
 	SDL_DisplayMode displayMode;
 	if ( SDL_GetDesktopDisplayMode( 0, &displayMode ) != 0 )
@@ -142,11 +151,15 @@ static SDL_Window *CreateSDLWindow()
 	if ( sdlWindow == nullptr )
 		return nullptr;
 
+#if defined( USE_SDL_GL_CONTEXT )
+
 	sdlGLContext = SDL_GL_CreateContext( sdlWindow );
 	if ( sdlGLContext == nullptr )
 		return nullptr;
 
 	SDL_GL_MakeCurrent( sdlWindow, sdlGLContext );
+
+#endif
 
 #if defined( _WIN32 )
 
@@ -178,6 +191,7 @@ static void InitializeDisplay()
 #endif
 
 	MAI_gst_MainHandles.pst_DisplayData->uc_EngineCamera = TRUE;
+	MAI_gst_MainHandles.pst_DisplayData->ul_DrawMask |= GDI_Cul_DM_NoAutoClone;
 }
 
 static void ShutdownDisplay()
