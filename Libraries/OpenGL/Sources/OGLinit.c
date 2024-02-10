@@ -195,6 +195,7 @@ LONG OGL_l_Init(HWND _hWnd, GDI_tdst_DisplayData *_pst_DD)
 	_pst_DD->OBJ_ALarm            = 300;
 	_pst_DD->SMALL_ALarm          = 0;// Inactive by default.
 	_pst_DD->ColorCostIAThresh    = 4;
+	//_pst_DD->b_AntiAliasingBlur   = true;
 
 	OGL_InitAllShadows();
 
@@ -533,7 +534,7 @@ void OGL_SetProjectionMatrix(CAM_tdst_Camera *_pst_Cam)
 
 
 #define SHADOW_TEX_MAX 16
-#define SHADOW_TEX_RESOLUTION 128
+#define SHADOW_TEX_RESOLUTION 512
 
 static GLuint SHADOW_TEX_HANDLE[SHADOW_TEX_MAX + 1];
 static GLclampf SHADOW_TEX_Priority[SHADOW_TEX_MAX + 1];
