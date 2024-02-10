@@ -473,8 +473,8 @@ void OGL_AE_ValidateTexture(GLuint *TexHan,int Mode,int ScreenSize,int ScreenSiz
 		OGL_CALL( glGetIntegerv(GL_VIEWPORT  ,  Viewporti) );
 		OGL_CALL( glGenTextures(1, TexHan) );
 		OGL_CALL( glBindTexture(GL_TEXTURE_2D, *TexHan) );
-		OGL_CALL( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP) );
-		OGL_CALL( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP) );
+		OGL_CALL( glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE ) );
+		OGL_CALL( glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE ) );
 
 		OGL_CALL( glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR) );
 		OGL_CALL( glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR) );
