@@ -178,7 +178,13 @@ void LINK_BeginLongOperation(char *_psz_Name)
  */
 void LINK_EndLongOperation(void)
 {
+	if (sgpsz_LongOperationName == NULL)
+	{
+		return;
+	}
+
 	sgpsz_LongOperationName = NULL;
 	LINK_gb_EscapeDetected = FALSE;
+	LINK_PrintStatusMsg( "Finished operation.\n" );
 }
 #endif /* ACTIVE_EDITORS */

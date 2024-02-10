@@ -438,7 +438,7 @@ void INT_SnP_InsertionSort(INT_tdst_SnP *_pst_SnP, ULONG _ul_UpdateMode)
 void INT_SnP_AddObject(OBJ_tdst_GameObject *_pst_GO, INT_tdst_SnP *_pst_SnP)
 {
 	/* If it is a new object */
-	if((_pst_GO->us_SnP_Ref == 0xFFFF) && (_pst_SnP->us_NbElems < INT_Cul_MaxNodes))
+	if ( ( _pst_GO->us_SnP_Ref == INT_Cul_InvalidObject ) && ( _pst_SnP->us_NbElems < INT_Cul_MaxNodes ) )
 	{
 		/*~~~~~~~~~~~~~~~~~~*/
 		void	*pst_SingleBV;
@@ -636,7 +636,7 @@ void INT_SnP_UpdateAllDetectionLists(INT_tdst_SnP *_pst_SnP)
 	for(; dpst_First < dpst_Last; dpst_First++)
 	{
 		/* "Bullets" Bug ---> we return; */
-		if(((*dpst_First)->us_SnP_Ref) == 0xFFFF) continue;
+		if ( ( ( *dpst_First )->us_SnP_Ref ) == INT_Cul_InvalidObject ) continue;
 
 		if(OBJ_b_TestStatusFlag(*dpst_First, OBJ_C_StatusFlag_Detection))
 		{
@@ -710,8 +710,10 @@ void INT_SnP_InvalidateRemovedRef(INT_tdst_SnP *_pst_SnP)
 
 	for(; dpst_First < dpst_Last; dpst_First++)
 	{
-		if(((*dpst_First)->us_SnP_Ref) != 0xFFFF) *(_pst_SnP->apst_IndexToObj + ((*dpst_First)->us_SnP_Ref)) = NULL;
-		(*dpst_First)->us_SnP_Ref = 0xFFFF;
+		if ( ( ( *dpst_First )->us_SnP_Ref ) != INT_Cul_InvalidObject ) 
+			*( _pst_SnP->apst_IndexToObj + ( ( *dpst_First )->us_SnP_Ref ) ) = NULL;
+
+		( *dpst_First )->us_SnP_Ref = INT_Cul_InvalidObject;
 	}
 }
 
@@ -756,8 +758,7 @@ void INT_SnP_Refresh(INT_tdst_SnP *_pst_SnP, TAB_tdst_PFtable *_pst_ActiveObject
              */
 				if
 				(
-					(TAB_ul_PFtable_GetElemIndexWithPointer(_pst_ActiveObjects, *ppst_Obj) == TAB_Cul_BadIndex)
-				||	((*ppst_Obj)->us_SnP_Ref == 0xFFFF)
+					(TAB_ul_PFtable_GetElemIndexWithPointer(_pst_ActiveObjects, *ppst_Obj) == TAB_Cul_BadIndex) || ( ( *ppst_Obj )->us_SnP_Ref == INT_Cul_InvalidObject )
 				)
 				{
 					INT_RegisterObjectForRemoving(pst_Manager, *ppst_Obj);
@@ -819,7 +820,7 @@ void INT_SnP_DetachObject(OBJ_tdst_GameObject *_pst_GO, WOR_tdst_World *_pst_Wor
 		if(*ppst_Obj == _pst_GO)
 		{
 			*ppst_Obj = NULL;
-			_pst_GO->us_SnP_Ref = 0xFFFF;
+			_pst_GO->us_SnP_Ref = INT_Cul_InvalidObject;
 			pst_SnP->us_NbElems -= pst_Manager->us_NbObjToRemove << 1;
 			return;
 		}
@@ -839,7 +840,7 @@ void INT_SnP_AttachObject(OBJ_tdst_GameObject *_pst_GO, WOR_tdst_World *_pst_Wor
 	pst_SnP = _pst_World->pst_SnP;
 
 	/* If it is a new object */
-	if((_pst_GO->us_SnP_Ref == 0xFFFF) && (OBJ_b_TestControlFlag(_pst_GO, OBJ_C_ControlFlag_EnableSnP)) && (pst_SnP->us_NbElems < INT_Cul_MaxNodes))
+	if ( ( _pst_GO->us_SnP_Ref == INT_Cul_InvalidObject ) && ( OBJ_b_TestControlFlag( _pst_GO, OBJ_C_ControlFlag_EnableSnP ) ) && ( pst_SnP->us_NbElems < INT_Cul_MaxNodes ) )
 	{
 		/*~~~~~~~~~~~~~~~~~~*/
 		void	*pst_SingleBV;

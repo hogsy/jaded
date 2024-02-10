@@ -17,6 +17,11 @@ SnPBitVec::SnPBitVec( size_t maxobjs ) : maxobjs( maxobjs )
 
 bool SnPBitVec::Get( size_t obj_a, size_t obj_b ) const
 {
+	if ( obj_a == INT_Cul_InvalidObject || obj_b == INT_Cul_InvalidObject )
+	{
+		return false;
+	}
+
 	assert( obj_a < maxobjs );
 	assert( obj_b < maxobjs );
 

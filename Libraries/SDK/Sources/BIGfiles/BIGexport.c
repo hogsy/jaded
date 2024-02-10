@@ -108,14 +108,21 @@ _Try_
 
         /* Open file to write */
         h_TmpFile = L_fopen(asz_DestName, L_fopen_WB);
-        ERR_X_Error(CLI_FileOpen(h_TmpFile), L_ERR_Csz_FOpen, asz_DestName);
+		if ( h_TmpFile == NULL )
+		{
+			char tmp[ 1024 ];
+			snprintf( tmp, sizeof( tmp ), "Failed to write file (%s)\n", asz_DestName );
+			LINK_PrintStatusMsg( tmp );
+		}
+		else
+		{
+			/* Write file */
+			p_Buffer = ( void * ) BIG_pc_ReadFileTmp( BIG_PosFile( ul_FileIndex ), &ul_Length );
+			ERR_X_Error( BIG_fwrite( p_Buffer, ul_Length, h_TmpFile ) == 1, L_ERR_Csz_FWrite, NULL );
 
-        /* Write file */
-        p_Buffer = (void *) BIG_pc_ReadFileTmp(BIG_PosFile(ul_FileIndex), &ul_Length);
-        ERR_X_Error(BIG_fwrite(p_Buffer, ul_Length, h_TmpFile) == 1, L_ERR_Csz_FWrite, NULL);
-
-        /* Close file */
-        ERR_X_Error(L_fclose(h_TmpFile) == 0, L_ERR_Csz_FClose, asz_DestName);
+			/* Close file */
+			ERR_X_Error( L_fclose( h_TmpFile ) == 0, L_ERR_Csz_FClose, asz_DestName );
+		}
 
         /* Pass to brother */
         ul_FileIndex = BIG_NextFile(ul_FileIndex);
@@ -171,12 +178,15 @@ _EndThrow_
  */
 void BIG_ExportDirToDisk(char *_psz_RealName, char *_psz_BigPathName)
 {
-    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-    BIG_INDEX   mul_DirIndex;
-    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+    BIG_INDEX mul_DirIndex = BIG_ul_SearchDir( _psz_BigPathName );
+    if (mul_DirIndex == BIG_C_InvalidIndex)
+    {
+		char tmp[ 1024 ];
+		snprintf( tmp, sizeof( tmp ), "Failed to find the given directory (%s)!\n", _psz_BigPathName );
+		LINK_PrintStatusMsg( tmp );
+		return;
+    }
 
-    mul_DirIndex = BIG_ul_SearchDir(_psz_BigPathName);
-    ERR_X_Assert(mul_DirIndex != BIG_C_InvalidIndex);
     s_ExportDir(_psz_RealName, _psz_BigPathName, mul_DirIndex);
 }
 
