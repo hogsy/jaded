@@ -254,7 +254,6 @@ void OGL_DrawText(int X,int Y,char *P_String,long Color,float Alpha,float SizeFa
 {
 	float W , H;
 	float ScreenW,ScreenH;
-	int SaveX;
 	float Viewport[4];
 
 	glGetFloatv(GL_VIEWPORT  ,  Viewport);
