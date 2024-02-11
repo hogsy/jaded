@@ -185,6 +185,6 @@ void LINK_EndLongOperation(void)
 
 	sgpsz_LongOperationName = NULL;
 	LINK_gb_EscapeDetected = FALSE;
-	LINK_PrintStatusMsg( "Finished operation.\n" );
+	LINK_PrintStatusMsg( "Finished operation." );
 }
 #endif /* ACTIVE_EDITORS */
