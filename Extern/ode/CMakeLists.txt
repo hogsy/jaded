@@ -1,0 +1,44 @@
+add_library(Jaded-ODE STATIC
+        Sources/array.cpp
+        Sources/collision_kernel.cpp
+        Sources/collision_quadtreespace.cpp
+        Sources/collision_space.cpp
+        Sources/collision_std.cpp
+        Sources/collision_transform.cpp
+        Sources/collision_util.cpp
+        Sources/dCylinder.cpp
+        Sources/error.cpp
+        Sources/fastdot.c
+        Sources/fastldlt.c
+        Sources/fastlsolve.c
+        Sources/fastltsolve.c
+        Sources/joint.cpp
+        Sources/mass.cpp
+        Sources/mat.cpp
+        Sources/matrix.cpp
+        Sources/memory.cpp
+        Sources/misc.cpp
+        Sources/obstack.cpp
+        Sources/ode.cpp
+        Sources/ode_jade.c
+        Sources/quickstep.cpp
+        Sources/rotation.cpp
+        Sources/step.cpp
+        Sources/stepfast.cpp
+        Sources/util.cpp
+
+        Sources/optim/Lcp/lcp.cpp
+        Sources/optim/Lcp/lcperr.cpp
+        Sources/optim/Lcp/lcpmath.cpp
+        Sources/optim/Lcp/lcptimer.cpp
+        Sources/optim/REAL/preparelcp.cpp
+)
+
+target_include_directories(Jaded-ODE
+        PUBLIC
+        include
+        PRIVATE
+        ../../Libraries
+        ../../Libraries/SDK/Sources
+        ../../Libraries/GraphicDK/Sources
+)

@@ -1,4 +1,4 @@
-add_library(Jaded-Engine STATIC
+add_library(Engine STATIC
         Sources/ENGcall.c
         Sources/ENGinit.c
         Sources/ENGloop.c

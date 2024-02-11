@@ -43,7 +43,10 @@ typedef long SHANDLE_PTR;
  -----------------------------------------------------------------------------------------------------------------------
  */
 
-#	include <Windows.h>
+#	if defined( _WIN32 )
+#		include <Windows.h>
+#		include "mmsystem.h"
+#	endif
 
 #endif
 
@@ -55,10 +58,6 @@ typedef long SHANDLE_PTR;
 #	define L_access  access
 #	define L_itoa    itoa
 #	define L_stricmp stricmp
-#endif
-
-#if !defined( _XBOX ) && !defined( _XENON )
-#	include "mmsystem.h"
 #endif
 
 #define L_timeGetTime timeGetTime
