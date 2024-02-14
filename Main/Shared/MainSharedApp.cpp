@@ -14,6 +14,8 @@
 #include "GDInterface/GDIrasters.h"
 #include "GDInterface/GDInterface.h"
 
+#include "ImGuiInterface.h"
+
 static SDL_Window *sdlWindow;
 static SDL_GLContext sdlGLContext;
 
@@ -281,6 +283,8 @@ int main( int argc, char **argv )
 		                      jaded::sys::ALERT_BOX_ERROR );
 	}
 
+	ImGuiInterface_Initialize( sdlWindow );
+
 	MEMpro_Init();
 	MEMpro_StartMemRaster();
 
@@ -301,6 +305,8 @@ int main( int argc, char **argv )
 
 	ENG_CloseEngine();
 	ENG_CloseApplication();
+
+	ImGuiInterface_Shutdown();
 
 	SDL_DestroyWindow( sdlWindow );
 
