@@ -423,6 +423,8 @@ void INO_Joystick_Update( void )
 	SDL_Event sdlEvent;
 	while ( SDL_PollEvent( &sdlEvent ) )
 	{
+		ImGuiInterface_ProcessEvents( &sdlEvent );
+
 		switch ( sdlEvent.type )
 		{
 			case SDL_CONTROLLERDEVICEREMOVED:

@@ -44,7 +44,12 @@ void ImGuiInterface_Shutdown()
 	}
 }
 
-void ImGuiInterface_NewFrame()
+extern "C" bool ImGuiInterface_ProcessEvents( const SDL_Event *event )
+{
+	return ImGui_ImplSDL2_ProcessEvent( event );
+}
+
+extern "C" void ImGuiInterface_NewFrame()
 {
 	ImGui_ImplOpenGL2_NewFrame();
 	ImGui_ImplSDL2_NewFrame();

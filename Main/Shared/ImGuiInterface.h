@@ -12,9 +12,11 @@ extern "C"
 #endif
 
 	struct SDL_Window;
+	union SDL_Event;
 
 	void ImGuiInterface_Initialize( SDL_Window *window );
 	void ImGuiInterface_Shutdown();
+	bool ImGuiInterface_ProcessEvents( const SDL_Event *event );
 	void ImGuiInterface_NewFrame();
 	void ImGuiInterface_Render();
 
