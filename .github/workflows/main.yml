@@ -30,7 +30,7 @@ jobs:
       run: MSBuild /t:JadeShell /property:Configuration="Debug Editors" /property:Platform=Win32 /maxcpucount Main/Jade.sln
 
     - name: 'Create Release'
-      run: create_release.bat
+      run: zip web/releases/jaded.zip mappings/* changes.txt Jaded.exe run_window.bat run_console.bat run_editor.bat SDL2.dll legal.txt
 
     - name: 'Upload Artifact'
       uses: actions/upload-artifact@v2.2.4
