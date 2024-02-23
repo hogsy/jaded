@@ -1,0 +1,41 @@
+name: Build (Windows MSVC x86)
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: cmd
+    steps:
+    - uses: actions/checkout@v2.4.0
+
+    - name: 'Setup MSBuild'
+      uses: microsoft/setup-msbuild@v2
+      with:
+        vs-prerelease: false
+        msbuild-architecture: "x86"
+
+    - name: Build
+      # Build your program with the given configuration
+      run: MSBuild Main/Jade.sln
+
+    - name: 'Create Release'
+      run: create_release.bat
+
+    - name: 'Upload Artifact'
+      uses: actions/upload-artifact@v2.2.4
+      with:
+        name: jaded-release
+        path: web/releases/
+        retention-days: 30
+      
