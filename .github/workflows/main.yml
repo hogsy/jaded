@@ -29,18 +29,28 @@ jobs:
       # Build your program with the given configuration
       run: MSBuild /t:JadeShell /property:Configuration="Debug Editors" /property:Platform=Win32 /maxcpucount Main/Jade.sln
 
-    - name: 'Create Release'
-      run: |
-        del web\releases\.dummy
-        move /Y Jaded.exe web\releases\Jaded.exe
-        move /Y SDL2.dll web\releases\SDL2.dll
-        move /Y legal.txt web\releases\legal.txt
-        move mappings web\releases\mappings
+    - name: 'Package Release'
+      run: zip web/releases/jaded.zip mappings/* changes.txt Jaded.exe run_window.bat run_console.bat run_editor.bat SDL2.dll legal.txt
 
-    - name: 'Upload Artifact'
-      uses: actions/upload-artifact@v2.2.4
+    - name: 'Upload to Discord'
+      uses: sinshutu/upload-to-discord@master
+      env:
+        DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
       with:
-        name: jaded-release
-        path: web/releases/
-        retention-days: 30
+        args: web/releases/jaded.zip
+
+#    - name: 'Create Release'
+#      run: |
+#        del web\releases\.dummy
+#        move /Y Jaded.exe web\releases\Jaded.exe
+#        move /Y SDL2.dll web\releases\SDL2.dll
+#        move /Y legal.txt web\releases\legal.txt
+#        move mappings web\releases\mappings
+
+#    - name: 'Upload Artifact'
+#      uses: actions/upload-artifact@v2.2.4
+#      with:
+#        name: jaded-release
+#        path: web/releases/
+#        retention-days: 30
       
