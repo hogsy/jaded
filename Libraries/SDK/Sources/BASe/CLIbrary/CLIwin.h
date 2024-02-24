@@ -15,6 +15,7 @@
  *          with the include order due to Windows SDK / DirectX SDK, but
  *          it straight-up looks like an issue with the Windows SDK headers, 
  *          full-stop. So we'll keep it for now, but uh, TODO!!!            */
+#	pragma warning( disable : 4005 )
 #	ifndef POINTER_64
 #		define POINTER_64
 #	endif
