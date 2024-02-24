@@ -90,7 +90,8 @@ extern "C"
 #define MEM_ERR_Csz_JadeMemoryManagementEnd			"================ JADE MEMORY MANAGEMENT END ================\n"
 #define MEM_ERR_Csz_UnvalidPointer					"Unvalid pointer"
 
-#ifdef JADEFUSION
+#ifdef __cplusplus
+
 /*$4
 ***********************************************************************************************************************
     Macros
@@ -120,7 +121,9 @@ extern "C"
     _inline_ void operator delete(void*, void*)                             \
     {                                                                       \
     }
+
 #endif
+
 /*$4
  ***********************************************************************************************************************
     Structures
