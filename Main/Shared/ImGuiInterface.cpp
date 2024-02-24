@@ -6,6 +6,9 @@
 #include "MainSharedSystem.h"
 #include "ImGuiInterface.h"
 
+#include "GDInterface/GDInterface.h"
+#include "BIGfiles/VERsion/VERsion_Number.h"
+
 #include "../Extern/imgui/imgui.cpp"
 #include "../Extern/imgui/imgui_widgets.cpp"
 #include "../Extern/imgui/imgui_draw.cpp"
@@ -33,12 +36,12 @@ static void SetDraculaTheme()
 	colors[ ImGuiCol_TextDisabled ] = ImVec4{ 0.5f, 0.5f, 0.5f, 1.0f };
 
 	// Headers
-	colors[ ImGuiCol_Header ]        = ImVec4{ 0.13f, 0.13f, 0.17, 1.0f };
+	colors[ ImGuiCol_Header ]        = ImVec4{ 0.13f, 0.13f, 0.17f, 1.0f };
 	colors[ ImGuiCol_HeaderHovered ] = ImVec4{ 0.19f, 0.2f, 0.25f, 1.0f };
 	colors[ ImGuiCol_HeaderActive ]  = ImVec4{ 0.16f, 0.16f, 0.21f, 1.0f };
 
 	// Buttons
-	colors[ ImGuiCol_Button ]        = ImVec4{ 0.13f, 0.13f, 0.17, 1.0f };
+	colors[ ImGuiCol_Button ]        = ImVec4{ 0.13f, 0.13f, 0.17f, 1.0f };
 	colors[ ImGuiCol_ButtonHovered ] = ImVec4{ 0.19f, 0.2f, 0.25f, 1.0f };
 	colors[ ImGuiCol_ButtonActive ]  = ImVec4{ 0.16f, 0.16f, 0.21f, 1.0f };
 	colors[ ImGuiCol_CheckMark ]     = ImVec4{ 0.74f, 0.58f, 0.98f, 1.0f };
@@ -124,21 +127,66 @@ void ImGuiInterface_Shutdown()
 
 extern "C" bool ImGuiInterface_ProcessEvents( const SDL_Event *event )
 {
+	// Currently only available outside editor mode...
+	if ( jaded::sys::launchOperations.editorMode )
+	{
+		return false;
+	}
+
 	return ImGui_ImplSDL2_ProcessEvent( event );
+}
+
+static void ShowPerformanceOverlay()
+{
+	const float PAD               = 10.0f;
+	const ImGuiViewport *viewport = ImGui::GetMainViewport();
+	ImVec2 window_pos;
+	window_pos.x = viewport->WorkPos.x + PAD;
+	window_pos.y = viewport->WorkPos.y + PAD;
+	ImGui::SetNextWindowPos( window_pos, ImGuiCond_Always );
+	ImGui::SetNextWindowBgAlpha( 0.35f );// Transparent background
+	if ( ImGui::Begin( "Performance Metrics", nullptr,
+	                   ImGuiWindowFlags_NoDecoration |
+	                           ImGuiWindowFlags_NoMove |
+	                           ImGuiWindowFlags_AlwaysAutoResize |
+	                           ImGuiWindowFlags_NoSavedSettings |
+	                           ImGuiWindowFlags_NoFocusOnAppearing |
+	                           ImGuiWindowFlags_NoNav ) )
+	{
+		ImGui::Text( "Jaded v" BIG_CPJE_AppVersion );
+		ImGui::Separator();
+		ImGui::Text( "Number of GPU batches: %u", GDI_gpst_CurDD->profilingInformation.numBatches );
+		ImGui::Text( "Number of GDI requests: %u", GDI_gpst_CurDD->profilingInformation.numRequests );
+	}
+	ImGui::End();
 }
 
 extern "C" void ImGuiInterface_NewFrame()
 {
+	// Currently only available outside editor mode...
+	if ( jaded::sys::launchOperations.editorMode )
+	{
+		return;
+	}
+
 	ImGui_ImplOpenGL2_NewFrame();
 	ImGui_ImplSDL2_NewFrame();
 
 	ImGui::NewFrame();
 
-	ImGui::ShowDemoWindow();
+	//ImGui::ShowDemoWindow();
+
+	ShowPerformanceOverlay();
 }
 
 extern "C" void ImGuiInterface_Render()
 {
+	// Currently only available outside editor mode...
+	if ( jaded::sys::launchOperations.editorMode )
+	{
+		return;
+	}
+
 	ImGui::Render();
 
 	ImGui_ImplOpenGL2_RenderDrawData( ImGui::GetDrawData() );

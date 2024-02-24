@@ -636,6 +636,7 @@ static float pipi=0;
 				{
 					PRO_StartTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_Begin);
 
+					GDI_gpst_CurDD->profilingInformation.numBatches++;
 					glBegin(GL_TRIANGLES);
 					PRO_StopTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_Begin);
 
@@ -742,6 +743,7 @@ static float pipi=0;
 						}
 
 						PRO_StartTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_Begin);
+						GDI_gpst_CurDD->profilingInformation.numBatches++;
 						glBegin(GL_TRIANGLE_STRIP/*GL_TRIANGLE_FAN/*GL_TRIANGLE_STRIP*/);
 						PRO_StopTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_Begin);
 
@@ -797,6 +799,7 @@ static float pipi=0;
 					for(; pStrip < pStripEnd; pStrip++)
 					{
 						PRO_StartTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_Begin);
+						GDI_gpst_CurDD->profilingInformation.numBatches++;
 						glBegin(GL_TRIANGLE_STRIP/*GL_TRIANGLE_FAN/*GL_TRIANGLE_STRIP*/);
 						PRO_StopTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_Begin);
 

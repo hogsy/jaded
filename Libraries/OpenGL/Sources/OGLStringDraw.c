@@ -178,6 +178,8 @@ void OGL_DrawChar(float X,float Y,u8 Letter,ULONG Color,float SizeFactor)
 	v0 = ((float)(Letter >> 5)) * 16.0f / font_texture_size_V;
 	u1 = u0 +  8.0f / font_texture_size_H;
 	v1 = v0 +  16.0f / font_texture_size_V;
+
+	GDI_gpst_CurDD->profilingInformation.numBatches++;
 	glBegin(GL_POLYGON); 
 	glColor4ubv((GLubyte *) &Color);
 	glTexCoord2f(u0,v0);

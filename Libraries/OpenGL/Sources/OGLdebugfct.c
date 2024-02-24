@@ -108,6 +108,7 @@ void OGL_DrawEllipse(GDI_tdst_DisplayData *_pst_DD, SOFT_tdst_Ellipse *_pst_Elli
     
     /* Draw ellipse */
     OGL_RS_LineWidth( OGL_M_RS( _pst_DD ), 1.0f );
+	GDI_gpst_CurDD->profilingInformation.numBatches++;
     glBegin(GL_LINES);
 
     OGL_M_GetEllipsePoint(Cf_2Pi - .1f);
@@ -136,6 +137,8 @@ void OGL_DrawEllipse(GDI_tdst_DisplayData *_pst_DD, SOFT_tdst_Ellipse *_pst_Elli
     {
         /* Draw alpha start point */
         OGL_RS_PointSize( OGL_M_RS( _pst_DD ), 10.0f );
+
+		GDI_gpst_CurDD->profilingInformation.numBatches++;
         glBegin(GL_POINTS);
 		if (!GDI_gpst_CurDD->GlobalMul2X) 
 		     glColor4ub(0x80, 0x80, 0x80, 0xFF);
@@ -205,6 +208,7 @@ void OGL_DrawArrow(GDI_tdst_DisplayData *_pst_DD, SOFT_tdst_Arrow *_pst_Arrow)
 
     if ( !(_pst_Arrow->l_Flag & SOFT_Cul_Arrow_DrawNotLine) )
     {
+		GDI_gpst_CurDD->profilingInformation.numBatches++;
         glBegin(GL_LINES);
         if ( _pst_Arrow->l_Flag & SOFT_Cul_Arrow_ForSpot )
         {
@@ -258,6 +262,7 @@ void OGL_DrawArrow(GDI_tdst_DisplayData *_pst_DD, SOFT_tdst_Arrow *_pst_Arrow)
         MATH_AddVector(&pt[6], &pt[2], &i);
         MATH_AddVector(&pt[7], &pt[3], &i);
 
+        GDI_gpst_CurDD->profilingInformation.numBatches++;
         glBegin(GL_TRIANGLES);
         OGL_M_DrawLightedTriangle( pt + 0, pt + 2, pt + 1);
         OGL_M_Send3Vertex( pt + 0, pt + 3, pt + 2);
@@ -276,6 +281,7 @@ void OGL_DrawArrow(GDI_tdst_DisplayData *_pst_DD, SOFT_tdst_Arrow *_pst_Arrow)
     else
     {
         MATH_AddVector(&pt[4], &b, &i);
+		GDI_gpst_CurDD->profilingInformation.numBatches++;
         glBegin(GL_TRIANGLES);
         OGL_M_DrawLightedTriangle( pt + 0, pt + 1, pt + 4 );
         OGL_M_DrawLightedTriangle( pt + 1, pt + 2, pt + 4 );
@@ -320,6 +326,7 @@ void OGL_DrawSquare(GDI_tdst_DisplayData *_pst_DD, SOFT_tdst_Square *_pst_Square
     OGL_RS_CullFace(OGL_M_RS( _pst_DD), 1);
     OGL_RS_CullFaceInverted(OGL_M_RS( _pst_DD), 0);
 
+    GDI_gpst_CurDD->profilingInformation.numBatches++;
     glBegin(GL_QUADS);
     _pst_Square->st_Pos.color &= 0x80FFFFFF;
     OGL_SetColorFor2xDBG((GLubyte*) &_pst_Square->st_Pos.color);
@@ -337,6 +344,7 @@ void OGL_DrawSquare(GDI_tdst_DisplayData *_pst_DD, SOFT_tdst_Square *_pst_Square
     OGL_RS_DrawWired( OGL_M_RS( _pst_DD), 1);
     OGL_RS_LineWidth( OGL_M_RS( _pst_DD ), 1.0f );
     ul_Color = 0xFF000000;
+	GDI_gpst_CurDD->profilingInformation.numBatches++;
     glBegin(GL_QUADS);
     OGL_SetColorFor2xDBG((GLubyte*) &ul_Color);
     glVertex3fv((float *) (ast_Sqr + 0));
@@ -359,6 +367,7 @@ void OGL_DrawSquare(GDI_tdst_DisplayData *_pst_DD, SOFT_tdst_Square *_pst_Square
         OGL_SetTextureBlending((ULONG)-1, ulBlendingMode);
         OGL_RS_DepthFunc( OGL_M_RS( _pst_DD), GL_ALWAYS );
 
+        GDI_gpst_CurDD->profilingInformation.numBatches++;
         glBegin(GL_TRIANGLES);
 		if (!GDI_gpst_CurDD->GlobalMul2X) 
 	        glColor4ub(255, 255, 0, 64);

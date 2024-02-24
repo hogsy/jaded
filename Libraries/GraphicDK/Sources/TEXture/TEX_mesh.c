@@ -2903,6 +2903,8 @@ unsigned int WTR_Mesh_Do(WTR_Generator_Struct *pst_Params)
 		MAT_SET_FLAG(ulFlags, MAT_Cul_Flag_NoZWrite|MAT_Cul_Flag_Bilinear);
 		glDisable(GL_CULL_FACE);
 		GDI_SetTextureBlending((*GDI_gpst_CurDD),0xffffffff, ulFlags , 0);
+
+		GDI_gpst_CurDD->profilingInformation.numBatches++;
 		glBegin(GL_TRIANGLE_STRIP);
 		glColor4ubv((unsigned char *)(&pst_Params->BottomCol));
 		glVertex3fv((float *)&T4DirsSubPlane[0] );//*/
@@ -2947,6 +2949,7 @@ unsigned int WTR_Mesh_Do(WTR_Generator_Struct *pst_Params)
 			u32 YCounter = pst_Params->FrustrumMesh_SY - 1;
 			for (YCounter = 0 ; YCounter < pst_Params->FrustrumMesh_SY - 1 ; YCounter++ )
 			{
+				GDI_gpst_CurDD->profilingInformation.numBatches++;
 				glBegin(GL_TRIANGLE_STRIP);
 				PvertexLast = Pvertex + (pst_Params->FrustrumMesh_SX >> 1);
 				while (Pvertex < PvertexLast)
@@ -2974,6 +2977,8 @@ unsigned int WTR_Mesh_Do(WTR_Generator_Struct *pst_Params)
 					p_UV++;
 				}
 				glEnd();
+
+				GDI_gpst_CurDD->profilingInformation.numBatches++;
 				glBegin(GL_TRIANGLE_STRIP);
 				PvertexLast = Pvertex + (pst_Params->FrustrumMesh_SX >> 1);
 				Pvertex--;

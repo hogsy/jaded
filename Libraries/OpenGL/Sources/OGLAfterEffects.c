@@ -516,6 +516,7 @@ void OGL_2dSend(float X,float Y,float U,float V)
 }
 void OGL_DrawQUADZ(float W,float H,float Z,ULONG Color)
 {
+	GDI_gpst_CurDD->profilingInformation.numBatches++;
 	glBegin(GL_POLYGON); 
 	glColor4ubv((GLubyte *) &Color);
 	OGL_2dSendZ(0,0,Z);
@@ -526,6 +527,7 @@ void OGL_DrawQUADZ(float W,float H,float Z,ULONG Color)
 }
 void OGL_DrawQUAD_FH(float W,float H,ULONG Color)
 {
+	GDI_gpst_CurDD->profilingInformation.numBatches++;
 	glBegin(GL_POLYGON); 
 	glColor4ubv((GLubyte *) &Color);
 	glTexCoord2f(0,0);
@@ -549,6 +551,8 @@ void OGL_DrawDisc(float W,float H,float Radius,u32 Color)
 	Counter = DISC_DISCREET + 1;
 	X = Radius;
 	Y = 0.0f;
+
+	GDI_gpst_CurDD->profilingInformation.numBatches++;
 	glBegin(GL_TRIANGLE_FAN); 
 	glColor4ubv((GLubyte *) &Color);
 	OGL_2dSend(W,H,W,H);
@@ -577,6 +581,7 @@ void OGL_2dSend_E(float X,float Y , float E )
 }
 void OGL_DrawQUAD_E(float W,float H,float E , ULONG Color)
 {
+	GDI_gpst_CurDD->profilingInformation.numBatches++;
 	glBegin(GL_POLYGON); 
 	glColor4ubv((GLubyte *) &Color);
 	OGL_2dSend_E(0,0,E);
@@ -619,6 +624,7 @@ void OGL_2dSend_WRAP(float X,float Y,float W, float H, float Factor)
 
 void OGL_DrawQUAD_BOX(float W0,float H0,float W1,float H1,float W,float H, ULONG Color , float Factor)
 {
+	GDI_gpst_CurDD->profilingInformation.numBatches++;
 	glBegin(GL_POLYGON); 
 	glColor4ubv((GLubyte *) &Color);
 	OGL_2dSend_WRAP(W0,H0,W,H,Factor);
@@ -630,6 +636,7 @@ void OGL_DrawQUAD_BOX(float W0,float H0,float W1,float H1,float W,float H, ULONG
 
 void OGL_DrawQUAD_FBOX(float W0,float H0,float W1,float H1,float WT,float HT, ULONG Color )
 {
+	GDI_gpst_CurDD->profilingInformation.numBatches++;
 	glBegin(GL_POLYGON); 
 	glColor4ubv((GLubyte *) &Color);
 	glTexCoord2f(0,0);
@@ -652,6 +659,7 @@ void OGL_DrawQUAD_Rotate(float W,float H,ULONG Color,float Factor)
 	YK = fSin(Factor);
 	W *= 0.5f;
 	H *= 0.5f;
+	GDI_gpst_CurDD->profilingInformation.numBatches++;
 	glBegin(GL_POLYGON); 
 	glColor4ubv((GLubyte *) &Color);
 	glTexCoord2f(0,0);
@@ -672,6 +680,7 @@ void OGL_DrawVertexZoom(float X,float Y,float CX,float CY,float Factor)
 }
 void OGL_DrawQUAD_Zoom(float W,float H,float XC,float YC,ULONG Color,float Factor)
 {
+	GDI_gpst_CurDD->profilingInformation.numBatches++;
 	glBegin(GL_POLYGON); 
 	glColor4ubv((GLubyte *) &Color);
 	glTexCoord2f(0,0);
@@ -689,6 +698,7 @@ void OGL_DrawQUAD_MS(float W,float H,ULONG Color,float FactorX,float FactorY)
 	float XK,YK;
 	XK = W * FactorX;
 	YK = H * FactorY;	
+	GDI_gpst_CurDD->profilingInformation.numBatches++;
 	glBegin(GL_POLYGON); 
 	glColor4ubv((GLubyte *) &Color);
 	glTexCoord2f(0,0);
@@ -778,6 +788,7 @@ void OGL_BorderBrightness(float Factor)
 		Hb = 0.0f;
 		while(CounterY--)
 		{
+			GDI_gpst_CurDD->profilingInformation.numBatches++;
 			glBegin(GL_POLYGON); 
 			COMPUTE_COLOR_BB(Wb,Hb);
 			COMPUTE_COLOR_BB(Wb+Wi,Hb);
