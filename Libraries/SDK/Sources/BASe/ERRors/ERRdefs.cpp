@@ -11,6 +11,13 @@
 #include "BASe/CLIbrary/CLImem.h"
 #include "BASe/CLIbrary/CLIstr.h"
 
+#include "AIinterp/Sources/AI.h"
+#include "AIinterp/Sources/AIstruct.h"
+#include "AIinterp/Sources/AIengine.h"
+#include "AIinterp/Sources/AIdebug.h"
+
+#include "BIGfiles/BIGfat.h"
+
 #ifdef ACTIVE_EDITORS
 #include "EDImainframe.h"
 #include "LINKs/LINKmsg.h"
@@ -75,29 +82,43 @@ extern "C" int	 ENG_gi_Map2;
  */
 bool ERR_ScriptAssertFailed( const char *filename, int line, const char *expression, const char *message )
 {
-	std::string tmp = "A script error was encountered:\n  ";
-	tmp.append( std::string( message ) + "\n" );
+	std::string tmp;
+	AI_tdst_BreakPoint bp = {};
+	AI_FillBreakPoint( &bp, -1 );
 
-#if 0 //TODO: display both code and script debug info...
-    if ( filename != nullptr )
+	char scriptPath[ BIG_C_MaxLenPath + 1 ] = "unknown";
+	if ( bp.ul_File != BIG_C_InvalidIndex )
 	{
-		tmp.append( std::string( filename ) + ":" + std::to_string( line ) + "\n" );
+		snprintf( scriptPath, sizeof( scriptPath ), "%s", BIG_NameFile( bp.ul_File ) );
 	}
+
+	tmp.append( "script: " + std::string( scriptPath ) + "\n" );
+	tmp.append( "line: " + std::to_string( bp.i_Line ) + "\n" );
+
 	if ( expression != nullptr )
 	{
-		tmp.append( std::string( expression ) + "\n" );
+		tmp.append( "expression: " + std::string( expression ) + "\n\n" );
 	}
-#endif
+	if ( message != nullptr )
+	{
+		tmp.append( std::string( message ) + "\n" );
+	}
+
+	tmp.append( "\n(" + std::string( filename ) + " : " + std::to_string( line ) + ")\n" );
+
+	LINK_gul_ColorTxt = 0x000000FF;
+	LINK_PrintStatusMsg( ( char * ) tmp.c_str() );
+	LINK_gul_ColorTxt = 0;
 
 	tmp.append( "\nClick OK to debug, Cancel to ignore." );
 
-	int result = MessageBox( nullptr, tmp.c_str(), "Script Error", MB_OKCANCEL | MB_ICONWARNING | MB_SETFOREGROUND );
+	if ( MessageBox( nullptr, tmp.c_str(), "Script Error", MB_OKCANCEL | MB_ICONWARNING | MB_SETFOREGROUND ) == IDOK )
+	{
+		L_longjmp( AI_gst_ContextCheck, 1 );
+		return true;
+	}
 
-	LINK_gul_ColorTxt = 0x000000FF;
-	LINK_PrintStatusMsg( ( char * ) message );
-	LINK_gul_ColorTxt = 0;
-
-	return ( result == IDOK );
+    return false;
 }
 
 BOOL _ERR_fnb_AssertFailed

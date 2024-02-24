@@ -19,7 +19,7 @@
 #include "BASe/CLIbrary/CLIxxx.h"
 #include "BASe/MEMory/MEM.h"
 
-#if defined (__cplusplus) && !defined(JADEFUSION)
+#if defined (__cplusplus)
 extern "C"
 {
 #endif
@@ -84,6 +84,8 @@ extern void					AI_DelBreakListForModel(AI_tdst_Model *);
 extern void					AI_AddBreakPoint(ULONG, ULONG, AI_tdst_Model *, AI_tdst_Instance *, int);
 extern BOOL					AI_SearchBreakPoint(AI_tdst_Function *, AI_tdst_Model *, AI_tdst_Instance *, int);
 
+AI_tdst_BreakPoint *AI_FillBreakPoint( AI_tdst_BreakPoint *self, int node );
+
 /*$4
  ***********************************************************************************************************************
  ***********************************************************************************************************************
@@ -136,7 +138,7 @@ extern BOOL					AI_SearchBreakPoint(AI_tdst_Function *, AI_tdst_Model *, AI_tdst
 	_asm label22##a:
 
 /*$on*/
-#if defined (__cplusplus) && !defined(JADEFUSION)
+#if defined (__cplusplus)
 }
 #endif
 #endif
@@ -158,19 +160,26 @@ extern BOOL					AI_SearchBreakPoint(AI_tdst_Function *, AI_tdst_Model *, AI_tdst
 			}
 
 #		if 1
-#			define AI_Check( __Expr, __Str )                                                   \
-				{                                                                               \
-					if ( !( __Expr ) )                                                          \
-					{                                                                           \
-						if ( ERR_ScriptAssertFailed( BAS_FILENAME, __LINE__, #__Expr, __Str ) ) \
-						{                                                                       \
-							L_longjmp( AI_gst_ContextCheck, 1 );                                \
-						}                                                                       \
-					}                                                                           \
+#			define AI_Check( __Expr, __Str )                                             \
+				{                                                                         \
+					if ( !( __Expr ) )                                                    \
+					{                                                                     \
+						ERR_ScriptAssertFailed( BAS_FILENAME, __LINE__, #__Expr, __Str ); \
+					}                                                                     \
 				}
 #		else
 #			define AI_Check( __Expr, __Str )
 #		endif
+
+#		define AI_CheckArrayBounds( VALUE, MAX )                                                   \
+			{                                                                                       \
+				if ( ( VALUE ) >= ( MAX ) )                                                         \
+				{                                                                                   \
+					char _EXPR[ 256 ];                                                              \
+					snprintf( _EXPR, sizeof( _EXPR ), "%u >= %u", ( VALUE ), ( MAX ) );             \
+					ERR_ScriptAssertFailed( BAS_FILENAME, __LINE__, _EXPR, "Bounds check failed!" ); \
+				}                                                                                   \
+			}
 
 /*$2------------------------------------------------------------------------------------------------------------------*/
 
