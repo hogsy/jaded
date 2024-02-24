@@ -7,35 +7,38 @@
 
 #pragma once
 
-#define _WIN32_WINNT 0x0A00
+#if defined( _WIN32 )
+
+#	define _WIN32_WINNT 0x0A00
 
 /* hogsy :  I tried to be rid of this; some suggest that it's a fault 
  *          with the include order due to Windows SDK / DirectX SDK, but
  *          it straight-up looks like an issue with the Windows SDK headers, 
  *          full-stop. So we'll keep it for now, but uh, TODO!!!            */
-#ifndef POINTER_64
-#	define POINTER_64
-#endif
+#	pragma warning( disable : 4005 )
+#	ifndef POINTER_64
+#		define POINTER_64
+#	endif
 
-#if defined( ACTIVE_EDITORS ) && defined( __cplusplus )
+#	if defined( ACTIVE_EDITORS ) && defined( __cplusplus )
 /*$2
  -----------------------------------------------------------------------------------------------------------------------
     MFC
  -----------------------------------------------------------------------------------------------------------------------
  */
 
-#	define OEMRESOURCE
+#		define OEMRESOURCE
 typedef long SHANDLE_PTR;
-#	include "afxwin.h"
-#	include "afxext.h"
-#	include "afxcmn.h"
-#	include "afxcoll.h"
-#	include "afxpriv.h"
-#	include "afxrich.h"
-#	include "afxtempl.h"
-#	include "shlobj.h"
+#		include "afxwin.h"
+#		include "afxext.h"
+#		include "afxcmn.h"
+#		include "afxcoll.h"
+#		include "afxpriv.h"
+#		include "afxrich.h"
+#		include "afxtempl.h"
+#		include "shlobj.h"
 
-#else
+#	else
 
 /*$2
  -----------------------------------------------------------------------------------------------------------------------
@@ -43,22 +46,22 @@ typedef long SHANDLE_PTR;
  -----------------------------------------------------------------------------------------------------------------------
  */
 
-#	include <Windows.h>
+#		include <Windows.h>
 
-#endif
+#	endif
 
-#if defined( _MSC_VER )
-#	define L_access  _access
-#	define L_itoa    _itoa
-#	define L_stricmp _stricmp
-#else
-#	define L_access  access
-#	define L_itoa    itoa
-#	define L_stricmp stricmp
-#endif
+#	if defined( _MSC_VER )
+#		define L_access  _access
+#		define L_itoa    _itoa
+#		define L_stricmp _stricmp
+#	else
+#		define L_access  access
+#		define L_itoa    itoa
+#		define L_stricmp stricmp
+#	endif
 
-#if !defined( _XBOX ) && !defined( _XENON )
 #	include "mmsystem.h"
-#endif
 
-#define L_timeGetTime timeGetTime
+#	define L_timeGetTime timeGetTime
+
+#endif

@@ -4,11 +4,35 @@ Jaded - Community Patched Jade Engine
 	Mastodon:	@hogsy@mastodon.social
 -----------------------------------------------------------
 
-2023-08-xx (v0.3.0)
-- Fixed a crash when exporting some skinned meshes
+2024-02-10 (v0.3.0)
+- Jaded will now launch directly into the game, use '/editor' launch argument to start with editor (https://github.com/hogsy/jaded/issues/8)
+	+ Added '/console' launch option, which will show an external console window for debugging/troubleshooting without the editor
+	+ Added '/width <value>' and '/height <value>' which can be used to force a specific width/height for the game window
+	~ Sound doesn't currently work outside the editor and some textures may display incorrectly
+- Performance has been significantly improved with framerate cap enabled (https://github.com/hogsy/jaded/issues/10)
+- Added error alerts on MAD file read failure
+- Added shortcut under Help menu to submit a bug report
+- Added some additional modifiers that weren't available before
+- Added experimental support for PNG, PSD and GIF formats
+	~ In the next release, these will be converted to TEX on import instead, rather than the native support I've done here
+- Fixed a regression that resulted in a crash when applying an OMD onto an object (https://github.com/hogsy/jaded/issues/37)
+- Fixed crash when importing TGA using RLE compression (https://github.com/hogsy/jaded/issues/38)
+- Fixed crash when exporting some skinned meshes
+- Fixed crash when opening some worlds in the editor
+- Fixed a crash that resulted from draw requests before certain elements were initialized
+- Fixed crash if user attempts to list unused GAOs without loading world first
+- Fixed memory leak in MAD exporter (https://github.com/hogsy/jaded/issues/27)
+- Fixed invalid uses of GL_CLAMP instead of GL_CLAMP_TO_EDGE for texture wrap
+- Bumped shadow-map resolution to 512 on request (please use sparingly for now, this needs optimising...) (https://github.com/hogsy/jaded/issues/36)
+- If a resource fails to export, it will no longer abort the rest of the export
+- Significant operations will now automatically display a notice in the log/console on completion
+- Invalid visual error will only display once per object (https://github.com/hogsy/jaded/issues/30)
+- Enabled support for audio effects (reverb, etc.); this depends on hardware support, or you can try using a wrapper
 - Default export path is now relative to the current working directory (<dir>/exports)
 	~ You'll need to create the 'exports' directory if it doesn't exist, of course (or just choose a different directory)
-- Removed DirectX 8 renderer (https://github.com/OldTimes-Software/jaded/issues/24)
+- Clamped maximum MSAA samples to 4 for now, until we have a proper way to set this
+- Removed DirectX 8 renderer (https://github.com/hogsy/jaded/issues/24)
+- Removed P4 library dependencies
 
 2023-07-23 (v0.2.0)
 - Added support for anisotropic filtering (automatically used if texture is using mipmaps w/ max supported samples)

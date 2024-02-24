@@ -119,6 +119,7 @@ void OGL_Draw2DTriangle(GDI_tdst_DisplayData *_pst_DD, SOFT_tdst_Vertex *_pst_TV
 		MAT_SET_Blending(ulBlendingMode, MAT_Cc_Op_Alpha);
 	OGL_SetTextureBlending((ULONG) - 1, ulBlendingMode);
 
+	GDI_gpst_CurDD->profilingInformation.numBatches++;
 	glBegin(GL_TRIANGLES);
 
 	glTexCoord2fv(&_pst_TV[0].u);
@@ -152,6 +153,7 @@ void OGL_DrawPoint(GDI_tdst_DisplayData *_pst_DD, MATH_tdst_Vector *v)
 	OGL_SetTextureBlending((ULONG) - 1, ulBlendingMode);
 
 	OGL_RS_PointSize(OGL_M_RS(_pst_DD), 5.0f);
+	GDI_gpst_CurDD->profilingInformation.numBatches++;
 	glBegin(GL_POINTS);
 	OGL_SetColorFor2x((GLubyte *) &_pst_DD->ul_ColorConstant);
 	glVertex3fv((float *) v);
@@ -174,6 +176,7 @@ void OGL_DrawPointMin(GDI_tdst_DisplayData *_pst_DD, MATH_tdst_Vector *v)
 	OGL_SetTextureBlending((ULONG) - 1, ulBlendingMode);
 
 	OGL_RS_PointSize(OGL_M_RS(_pst_DD), 3.0f);
+	GDI_gpst_CurDD->profilingInformation.numBatches++;
 	glBegin(GL_POINTS);
 	OGL_SetColorFor2x((GLubyte *) &_pst_DD->ul_ColorConstant);
 	glVertex3fv((float *) v);
@@ -202,6 +205,7 @@ void OGL_DrawPoint_Size(GDI_tdst_DisplayData *_pst_DD, void **peewee)
 	OGL_SetTextureBlending((ULONG) - 1, ulBlendingMode);
 
 	OGL_RS_PointSize(OGL_M_RS(_pst_DD), *Size);
+	GDI_gpst_CurDD->profilingInformation.numBatches++;
 	glBegin(GL_POINTS);
 	OGL_SetColorFor2x((GLubyte *) &_pst_DD->ul_ColorConstant);
 	glVertex3fv((float *) v);
@@ -225,6 +229,7 @@ void OGL_DrawPointEx(GDI_tdst_DisplayData *_pst_DD, GDI_tdst_Request_DrawPointEx
 	OGL_SetTextureBlending((ULONG) - 1, ulBlendingMode);
 
 	OGL_RS_PointSize(OGL_M_RS(_pst_DD), _pst_Data->f_Size);
+	GDI_gpst_CurDD->profilingInformation.numBatches++;
 	glBegin(GL_POINTS);
 	OGL_SetColorFor2x((GLubyte *) &_pst_Data->ul_Color);
 	glVertex3fv((float *) _pst_Data->A);
@@ -261,6 +266,7 @@ void OGL_DrawLine(GDI_tdst_DisplayData *_pst_DD, MATH_tdst_Vector **v)
 	OGL_SetTextureBlending((ULONG) - 1, ulBlendingMode);
 
 	OGL_RS_LineWidth(OGL_M_RS(_pst_DD), 1.0f);
+	GDI_gpst_CurDD->profilingInformation.numBatches++;
 	glBegin(GL_LINES);
 	OGL_SetColorFor2x((GLubyte *) &_pst_DD->ul_ColorConstant);
 	glVertex3fv((float *) v[0]);
@@ -292,6 +298,7 @@ void OGL_DrawLineEx(GDI_tdst_DisplayData *_pst_DD, GDI_tdst_Request_DrawLineEx *
 	OGL_SetTextureBlending((ULONG) - 1, ulBlendingMode);
 
 	OGL_RS_LineWidth(OGL_M_RS(_pst_DD), _pst_Data->f_Width);
+	GDI_gpst_CurDD->profilingInformation.numBatches++;
 	glBegin(GL_LINES);
 	OGL_SetColorFor2x((GLubyte *) &_pst_Data->ul_Color);
 	glVertex3fv((float *) _pst_Data->A);
@@ -330,6 +337,7 @@ void OGL_DrawLineEx(GDI_tdst_DisplayData *_pst_DD, GDI_tdst_Request_DrawLineEx *
 			MATH_SubVector(V + 3, &Z, &Y);
 
 			OGL_RS_DrawWired(OGL_M_RS(_pst_DD), 0);
+			GDI_gpst_CurDD->profilingInformation.numBatches++;
 			glBegin(GL_TRIANGLE_FAN);
 			glVertex3fv((float *) _pst_Data->B);
 			glVertex3fv((float *) V);
@@ -339,6 +347,7 @@ void OGL_DrawLineEx(GDI_tdst_DisplayData *_pst_DD, GDI_tdst_Request_DrawLineEx *
 			glVertex3fv((float *) V);
 			glEnd();
 			
+			GDI_gpst_CurDD->profilingInformation.numBatches++;
 			glBegin(GL_TRIANGLE_FAN);
 			glVertex3fv((float *) V);
 			glVertex3fv((float *) (V + 3));
@@ -390,6 +399,8 @@ void OGL_DrawQuad(GDI_tdst_DisplayData *_pst_DD, MATH_tdst_Vector **v)
 	OGL_RS_CullFace(&OGL_M_SD(_pst_DD)->st_RS, 0);
 
 	OGL_RS_LineWidth(OGL_M_RS(_pst_DD), 1.0f);
+
+	GDI_gpst_CurDD->profilingInformation.numBatches++;
 	glBegin(GL_QUADS);
 	OGL_SetColorFor2x((GLubyte *) &_pst_DD->ul_ColorConstant);
 	glVertex3fv((float *) v[0]);
@@ -434,6 +445,8 @@ void OGL_PushZBuffer(GDI_tdst_DisplayData *_pst_DD, float Z)
 	glDepthFunc(GL_GEQUAL);
 	OGL_RS_CullFace(&OGL_M_SD(_pst_DD)->st_RS, 0);
 	ColorRGBA = 0;
+
+	GDI_gpst_CurDD->profilingInformation.numBatches++;
 	glBegin(GL_QUADS);
 	glColor4ubv((GLubyte *)&ColorRGBA);
 	glVertex3fv((float *) &QUAD[0]);
@@ -498,6 +511,8 @@ void OGL_DrawQuadEx(GDI_tdst_DisplayData *_pst_DD, GDI_tdst_Request_DrawQuad *qu
 		OGL_RS_DrawWired(OGL_M_RS(_pst_DD), 0);
 
 		OGL_RS_LineWidth(OGL_M_RS(_pst_DD), 1.0f);
+
+		GDI_gpst_CurDD->profilingInformation.numBatches++;
 		glBegin(GL_QUADS);
 		OGL_SetColorFor2x((GLubyte *) &quad->ul_SolidColor);
 		glVertex3fv((float *) quad->V[0]);
@@ -513,6 +528,8 @@ void OGL_DrawQuadEx(GDI_tdst_DisplayData *_pst_DD, GDI_tdst_Request_DrawQuad *qu
 		MAT_SET_Blending(ulBlendingMode, MAT_Cc_Op_Copy);
 		OGL_SetTextureBlending((ULONG) - 1, ulBlendingMode);
 		OGL_RS_LineWidth(OGL_M_RS(_pst_DD), quad->f_LineWidth);
+
+		GDI_gpst_CurDD->profilingInformation.numBatches++;
 		glBegin(GL_LINES);
 		OGL_SetColorFor2x((GLubyte *) &quad->ul_EdgeColor);
 		
@@ -578,6 +595,8 @@ void OGL_BeforeDrawSprite(GDI_tdst_DisplayData *_pst_DD)
 	OGL_RS_DrawWired(OGL_M_RS(_pst_DD), 0);
 #endif
 	OGL_RS_CullFaceInverted(OGL_M_RS(_pst_DD), 0);
+
+	GDI_gpst_CurDD->profilingInformation.numBatches++;
 	glBegin(GL_QUADS);
 }
 
@@ -647,6 +666,7 @@ void OGL_DrawBox(GDI_tdst_DisplayData *_pst_DD, GDI_tdst_Request_DrawBox *_pst_B
 		Quad[2] = V + aac_Face[i][2];
 		Quad[3] = V + aac_Face[i][3];
 
+		GDI_gpst_CurDD->profilingInformation.numBatches++;
 		glBegin(GL_QUADS);
 		OGL_SetColorFor2x((GLubyte *) &_pst_Box->ul_SolidColor);
 		glVertex3fv((float *) Quad[0]);
@@ -721,6 +741,7 @@ void OGL_DrawSphere(GDI_tdst_DisplayData *_pst_DD, GDI_tdst_Request_DrawSphere *
 	OGL_RS_CullFace(OGL_M_RS(_pst_DD), 1);
 	OGL_RS_DrawWired(OGL_M_RS(_pst_DD), 0);
 
+	GDI_gpst_CurDD->profilingInformation.numBatches++;
 	glBegin(GL_TRIANGLES);
 	OGL_SetColorFor2x((GLubyte *) &_pst_Sphere->ul_SolidColor);
 
@@ -839,6 +860,7 @@ void OGL_DrawCone(GDI_tdst_DisplayData *_pst_DD, GDI_tdst_Request_DrawCone *_pst
 	OGL_RS_CullFace(OGL_M_RS(_pst_DD), 0);
 	OGL_RS_DrawWired(OGL_M_RS(_pst_DD), 0);
 
+	GDI_gpst_CurDD->profilingInformation.numBatches++;
 	glBegin(GL_TRIANGLE_FAN);
 	OGL_SetColorFor2x((GLubyte *) &_pst_Cone->ul_SolidColor);
 	glVertex3fv((float *) _pst_Cone->pst_Pos);
@@ -851,6 +873,7 @@ void OGL_DrawCone(GDI_tdst_DisplayData *_pst_DD, GDI_tdst_Request_DrawCone *_pst
 	OGL_SetTextureBlending((ULONG) - 1, ulBlendingMode);
 
 	OGL_RS_LineWidth(OGL_M_RS(_pst_DD), _pst_Cone->f_LineWidth);
+	GDI_gpst_CurDD->profilingInformation.numBatches++;
 	glBegin(GL_LINES);
 	OGL_SetColorFor2x((GLubyte *) &_pst_Cone->ul_EdgeColor);
 
@@ -960,6 +983,7 @@ void OGL_DrawCylinder(GDI_tdst_DisplayData *_pst_DD, GDI_tdst_Request_DrawCylind
 		OGL_RS_DrawWired(OGL_M_RS(_pst_DD), 0);
 		OGL_RS_DepthMask(OGL_M_RS(_pst_DD), (_pst_Cyl->ul_Flags & GDI_Request_DrawCylinder_NoZWrite ? 0 : 1));
 
+		GDI_gpst_CurDD->profilingInformation.numBatches++;
 		glBegin(GL_TRIANGLE_FAN);
 		OGL_SetColorFor2x((GLubyte *) &_pst_Cyl->ul_SolidColor);
 		glVertex3fv((float *) &V[0]);
@@ -967,6 +991,7 @@ void OGL_DrawCylinder(GDI_tdst_DisplayData *_pst_DD, GDI_tdst_Request_DrawCylind
 		for(i = CYL_SEG; i > 0; i--) glVertex3fv((float *) &V[i]);
 		glEnd();
 
+		GDI_gpst_CurDD->profilingInformation.numBatches++;
 		glBegin(GL_TRIANGLES);
 		for(i = 0; i < (2 * cap) - 1; i++)
 		{
@@ -994,6 +1019,7 @@ void OGL_DrawCylinder(GDI_tdst_DisplayData *_pst_DD, GDI_tdst_Request_DrawCylind
 
 		glEnd();
 
+		GDI_gpst_CurDD->profilingInformation.numBatches++;
 		glBegin(GL_TRIANGLE_FAN);
 		j = ((CYL_SEG * cap + 1) * 2) - 1;
 		glVertex3fv((float *) &V[j]);
@@ -1009,6 +1035,7 @@ void OGL_DrawCylinder(GDI_tdst_DisplayData *_pst_DD, GDI_tdst_Request_DrawCylind
 		MAT_SET_Blending(ulBlendingMode, MAT_Cc_Op_Copy);
 		OGL_SetTextureBlending((ULONG) - 1, ulBlendingMode);
 		OGL_RS_LineWidth(OGL_M_RS(_pst_DD), _pst_Cyl->f_LineWidth);
+		GDI_gpst_CurDD->profilingInformation.numBatches++;
 		glBegin(GL_LINES);
 		OGL_SetColorFor2x((GLubyte *) &_pst_Cyl->ul_EdgeColor);
 
@@ -1291,6 +1318,7 @@ void OGL_Display169BlackBand(GDI_tdst_DisplayData *_pst_DD)
 	OGL_RS_CullFace(&OGL_M_SD(_pst_DD)->st_RS, 0);
 	OGL_RS_DrawWired(OGL_M_RS(_pst_DD), 0);
 
+	GDI_gpst_CurDD->profilingInformation.numBatches++;
 	glBegin(GL_QUADS);
 
 	glColor3ub(0, 0, 0);
@@ -1421,6 +1449,8 @@ static float polygon_unit;
 
 LONG OGL_l_Request(ULONG _ul_Request, ULONG _ul_Data)
 {
+	GDI_gpst_CurDD->profilingInformation.numRequests++;
+
 	/*$off*/
 	switch(_ul_Request)
 	{

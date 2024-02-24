@@ -568,10 +568,6 @@ public:
 
 	void				SendMsg(void);
 	void				DisplayMsg(void);
-#if MONTREAL_SPECIFIC
-    BOOL                editorVersionCheck(void);
-	void				editorKeyCheck(void);
-#endif
 
 /*$2
  -----------------------------------------------------------------------------------------------------------------------

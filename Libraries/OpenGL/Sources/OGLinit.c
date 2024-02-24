@@ -615,6 +615,10 @@ void OGL_ShadowImgLoad(u32 TexNum)
 	glMatrixMode(GL_MODELVIEW);
 	glGetFloatv(GL_MODELVIEW_MATRIX, (GLfloat *) &st_SavedMatrix);
 	glLoadIdentity();
+	if ( GDI_gpst_CurDD != NULL )
+	{
+		GDI_gpst_CurDD->profilingInformation.numBatches++;
+	}
 	glBegin(GL_POLYGON);
 	glColor4ubv((GLubyte *) &Color);
 	glTexCoord2f(0,0);
@@ -677,6 +681,7 @@ void OGL_SetTextureTarget(ULONG Num , ULONG Clear)
 		{
 			u32 ulColor;
 			ulColor = 0x0;
+			GDI_gpst_CurDD->profilingInformation.numBatches++;
 			OGL_CALL( glBegin(GL_POLYGON) ); 
 			glColor4ubv((GLubyte *) &ulColor);
 			glVertex3f ( 10000, 10000,0);
@@ -1061,6 +1066,7 @@ LONG OGL_l_DrawSlopeTriangle
 
 	GDI_gpst_CurDD->LastDrawMask = GDI_gpst_CurDD->ul_CurrentDrawMask;
 
+	GDI_gpst_CurDD->profilingInformation.numBatches++;
 	glBegin(GL_TRIANGLES);
 
 	OGL_TestHideTriangle(t)
@@ -1138,6 +1144,7 @@ LONG OGL_l_DrawTriangle
 	/* if there is no strip */
 	if(bStrip == FALSE)
 	{
+		GDI_gpst_CurDD->profilingInformation.numBatches++;
 		    glBegin(GL_TRIANGLES);
 
 		    if(pst_Color == NULL)
@@ -1264,7 +1271,7 @@ LONG OGL_l_DrawElementIndexedTriangles
 			OGL_InitRenderSlope
 
 		    PRO_StartTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_Begin);
-			
+			GDI_gpst_CurDD->profilingInformation.numBatches++;
 			OGL_CALL( glBegin(GL_TRIANGLES) );
 		    PRO_StopTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_Begin);
 
@@ -1389,6 +1396,7 @@ LONG OGL_l_DrawElementIndexedTriangles
 				}
 
 				PRO_StartTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_Begin);
+				GDI_gpst_CurDD->profilingInformation.numBatches++;
 				OGL_CALL( glBegin(GL_TRIANGLE_STRIP/*GL_TRIANGLE_FAN/*GL_TRIANGLE_STRIP*/ ));
 				PRO_StopTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_Begin);
 
@@ -1437,6 +1445,7 @@ LONG OGL_l_DrawElementIndexedTriangles
 			for(; pStrip < pStripEnd; pStrip++)
 			{
 				PRO_StartTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_Begin);
+				GDI_gpst_CurDD->profilingInformation.numBatches++;
 				OGL_CALL( glBegin(GL_TRIANGLE_STRIP/*GL_TRIANGLE_FAN/*GL_TRIANGLE_STRIP*/) );
 				PRO_StopTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GL_Begin);
 
@@ -2044,6 +2053,7 @@ void OGL_l_DrawSPG2_2X(
 
 		fColorBlenderAcc = 255.0f;
 		fColorBlenderAdd = -fOoNumOfSeg * 255.0f;
+		GDI_gpst_CurDD->profilingInformation.numBatches++;
 		OGL_CALL( glBegin(GL_TRIANGLE_STRIP) );
 		ulColor  =0 ;
 		if (p_stII->GlobalColor) 
@@ -2165,6 +2175,7 @@ void OGL_l_DrawSPG2_SPRITES_2X(
 
 		Counter = ulNumberOfSprites;
 
+		GDI_gpst_CurDD->profilingInformation.numBatches++;
 		glBegin(GL_QUADS);
 		
 		Interpolator = fEOHP * (float)ulNumberOfSprites * InterpolatorIntensity;

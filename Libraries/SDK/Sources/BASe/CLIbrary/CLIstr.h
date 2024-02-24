@@ -6,27 +6,23 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  */
 
-
-#ifndef __CLISTR_H__
-#define __CLISTR_H__
+#pragma once
 
 #include "BASe/BASsys.h"
 #include <ctype.h>
 #include <string.h>
 
-#if !defined( PSX2_TARGET ) && !defined( _GAMECUBE )
-#  include <memory.h>
-#endif
+#include <memory.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "BASe/BAStypes.h"
 
-#if defined (__cplusplus) && !defined(JADEFUSION)
+#if defined( __cplusplus ) && !defined( JADEFUSION )
 extern "C"
 {
 #endif
 
-/*$4
+	/*$4
  ***********************************************************************************************************************
     target specific definitions
  ***********************************************************************************************************************
@@ -40,172 +36,131 @@ extern "C"
 #define L_ltoa     _ltoa
 #define L_atoi     atol
 
-/*$4
+	/*$4
  ***********************************************************************************************************************
     common definitions
  ***********************************************************************************************************************
  */
 
-#define L_strncmp		strncmp
-#define L_strcmp		strcmp
-#define L_strcat		strcat
-#define L_strlen		strlen
-#define L_strcpy		strcpy
-#define L_strrchr		strrchr
-#define L_strstr		strstr
-#define L_size_t		size_t
-#define L_memcmp		memcmp
-#define L_atol			atoi
-#define L_atof			atof
-#define L_toupper(c)	(((UCHAR) (c) >= 'a') && ((UCHAR) (c) <= 'z') ? (UCHAR) (c) - ('a' - 'A') : toupper((UCHAR) (c)))
-#define L_isalnum(a)	(((UCHAR) (a) == '_') || isalnum((UCHAR) (a)))
-#define L_isprint(a)	isprint((UCHAR) (a))
-#define L_isspace(a)	isspace((UCHAR) (a))
-#define L_isalpha(a)	isalpha((UCHAR) (a))
-#define L_isdigit(a)	isdigit((UCHAR) (a))
-#define L_isxdigit(a)	isxdigit((UCHAR) (a))
-#define L_isbinary(a)	(((UCHAR) (a) == '0') || ((UCHAR) (a) == '1'))
-/*$4
+#define L_strncmp       strncmp
+#define L_strcmp        strcmp
+#define L_strcat        strcat
+#define L_strlen        strlen
+#define L_strcpy        strcpy
+#define L_strrchr       strrchr
+#define L_strstr        strstr
+#define L_size_t        size_t
+#define L_memcmp        memcmp
+#define L_atol          atoi
+#define L_atof          atof
+#define L_toupper( c )  ( ( ( unsigned char ) ( c ) >= 'a' ) && ( ( unsigned char ) ( c ) <= 'z' ) ? ( unsigned char ) ( c ) - ( 'a' - 'A' ) : toupper( ( unsigned char ) ( c ) ) )
+#define L_isalnum( a )  ( ( ( unsigned char ) ( a ) == '_' ) || isalnum( ( unsigned char ) ( a ) ) )
+#define L_isprint( a )  isprint( ( unsigned char ) ( a ) )
+#define L_isspace( a )  isspace( ( unsigned char ) ( a ) )
+#define L_isalpha( a )  isalpha( ( unsigned char ) ( a ) )
+#define L_isdigit( a )  isdigit( ( unsigned char ) ( a ) )
+#define L_isxdigit( a ) isxdigit( ( unsigned char ) ( a ) )
+#define L_isbinary( a ) ( ( ( unsigned char ) ( a ) == '0' ) || ( ( unsigned char ) ( a ) == '1' ) )
+	/*$4
  ***********************************************************************************************************************
     target specific functions
  ***********************************************************************************************************************
  */
 
-#if defined(PSX2_TARGET) && defined(__GNUC__)
-#define __EXTERN	extern
-#else
-#define __EXTERN
-#endif	/* PSX2_TARGET & __GNUC__ */
-#ifdef PSX2_TARGET
-
-/*
- =======================================================================================================================
-    only PS2 because the C lib. function contains bugs
- =======================================================================================================================
- */
-__EXTERN _inline_ char *L_strchr(const char *string, int c)
-{
-	/*~~~~~~~~~*/
-	char	*asz;
-	/*~~~~~~~~~*/
-
-	for(asz = (char *) string; (*asz != '\0' && *asz != (char) c); asz++)
-	{
-	};
-
-	return(*asz == '\0' ? (char *) NULL : asz);
-}
-
-extern void *ps2memmove(char*dst, char*src, int size);
-extern void *ps2memset(char *dst, unsigned char c, int size);
-extern void *ps2memcpy(char *dst, char*src, int size);
-
-#define L_memmove		ps2memmove
-#define L_memset		ps2memset
-#define L_memcpy	    ps2memcpy
-#else
-#define L_strchr	strchr
-#define L_memmove		memmove
-#define L_memset		memset
-#ifdef _GAMECUBE
-/* on game cube memmove is 4x faster than memcpy */
-#define L_memcpy	    memmove
-#else
-#define L_memcpy	    memcpy
-#endif
-#endif	/* PSX2_TARGET */
+#define L_strchr            strchr
+#define L_memmove           memmove
+#define L_memset            memset
+#define L_memcpy            memcpy
 #define L_zero( PTR, SIZE ) L_memset( ( PTR ), 0, ( SIZE ) )
 
-/*$4
+	/*$4
  ***********************************************************************************************************************
     common functions
  ***********************************************************************************************************************
  */
 
-static inline char *L_strtoupper( char *s )
-{
-	for ( size_t i = 0; s[ i ] != '\0'; ++i )
-		s[ i ] = ( char ) toupper( s[ i ] );
-
-	return s;
-}
-
-static inline char *L_strntoupper( char *s, size_t n )
-{
-	for ( size_t i = 0; i < n; ++i )
+	static inline char *L_strtoupper( char *s )
 	{
-		if ( s[ i ] == '\0' )
-			break;
+		for ( size_t i = 0; s[ i ] != '\0'; ++i )
+			s[ i ] = ( char ) toupper( s[ i ] );
 
-		s[ i ] = ( char ) toupper( s[ i ] );
+		return s;
 	}
-	return s;
-}
 
-static inline char *L_strtolower( char *s )
-{
-	for ( size_t i = 0; s[ i ] != '\0'; ++i )
-		s[ i ] = ( char ) tolower( s[ i ] );
-
-	return s;
-}
-
-static inline char *L_strntolower( char *s, size_t n )
-{
-	for ( size_t i = 0; i < n; ++i )
+	static inline char *L_strntoupper( char *s, size_t n )
 	{
-		if ( s[ i ] == '\0' )
-			break;
+		for ( size_t i = 0; i < n; ++i )
+		{
+			if ( s[ i ] == '\0' )
+				break;
 
-		s[ i ] = ( char ) tolower( s[ i ] );
+			s[ i ] = ( char ) toupper( s[ i ] );
+		}
+		return s;
 	}
-	return s;
-}
 
-/*
+	static inline char *L_strtolower( char *s )
+	{
+		for ( size_t i = 0; s[ i ] != '\0'; ++i )
+			s[ i ] = ( char ) tolower( s[ i ] );
+
+		return s;
+	}
+
+	static inline char *L_strntolower( char *s, size_t n )
+	{
+		for ( size_t i = 0; i < n; ++i )
+		{
+			if ( s[ i ] == '\0' )
+				break;
+
+			s[ i ] = ( char ) tolower( s[ i ] );
+		}
+		return s;
+	}
+
+	/*
  =======================================================================================================================
     PS2 and PC
  =======================================================================================================================
  */
-__EXTERN _inline_ char *L_strdup(const char *_pc_Str)
-{
-	/*~~~~~~~*/
-	char	*p;
-	/*~~~~~~~*/
+	extern _inline_ char *L_strdup( const char *_pc_Str )
+	{
+		/*~~~~~~~*/
+		char *p;
+		/*~~~~~~~*/
 
-	p = (char *) malloc(L_strlen(_pc_Str) + 1);
-	L_strcpy(p, _pc_Str);
-	return p;
-}
+		p = ( char * ) malloc( L_strlen( _pc_Str ) + 1 );
+		L_strcpy( p, _pc_Str );
+		return p;
+	}
 
-/*
+	/*
  =======================================================================================================================
     PS2 and PC
  =======================================================================================================================
  */
-__EXTERN _inline_ char *L_strstri(char *_psz_Ref, char *_psz_Src)
-{
-	while((*_psz_Src == *_psz_Ref) || (L_toupper(*_psz_Src) == L_toupper(*_psz_Ref)))
+	extern _inline_ char *L_strstri( char *_psz_Ref, char *_psz_Src )
 	{
-		if(!(*_psz_Src))
+		while ( ( *_psz_Src == *_psz_Ref ) || ( L_toupper( *_psz_Src ) == L_toupper( *_psz_Ref ) ) )
+		{
+			if ( !( *_psz_Src ) )
+			{
+				return _psz_Ref;
+			}
+
+			_psz_Src++;
+			_psz_Ref++;
+		}
+
+		if ( !( *_psz_Src ) )
 		{
 			return _psz_Ref;
 		}
 
-		_psz_Src++;
-		_psz_Ref++;
+		return ( char * ) NULL;
 	}
 
-	if(!(*_psz_Src))
-	{
-		return _psz_Ref;
-	}
-
-	return (char *) NULL;
-}
-
-#if defined (__cplusplus) && !defined(JADEFUSION)
+#if defined( __cplusplus ) && !defined( JADEFUSION )
 }
 #endif
-#undef __EXTERN
-#endif	/* __CLISTR_H__ */

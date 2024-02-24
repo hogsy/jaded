@@ -339,6 +339,12 @@ extern BOOL OGL_gb_Init;
 		ULONG ul_Colors[ 5 ];
 	} GDI_tdst_HighlightColors;
 
+	typedef struct GDI_tdst_ProfilingInformation_
+	{
+		unsigned int numBatches;
+		unsigned int numRequests;
+	} GDI_tdst_ProfilingInformation_;
+
 	/*
  -----------------------------------------------------------------------------------------------------------------------
     Display data
@@ -504,6 +510,7 @@ extern BOOL OGL_gb_Init;
 #	endif
 #endif
 
+		GDI_tdst_ProfilingInformation_ profilingInformation;
 	} GDI_tdst_DisplayData ONLY_PSX2_ALIGNED( 64 );
 
 	extern GDI_tdst_DisplayData *GDI_gpst_CurDD;

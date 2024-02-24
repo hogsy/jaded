@@ -17,35 +17,24 @@
  */
 #define EFFICIENT_ALIGNMENT 16
 
-// round something up to be a multiple of the EFFICIENT_ALIGNMENT 
+// round something up to be a multiple of the EFFICIENT_ALIGNMENT
 #define dEFFICIENT_SIZE(x) ((((x)-1)|(EFFICIENT_ALIGNMENT-1))+1)
 
 // alloca aligned to the EFFICIENT_ALIGNMENT. note that this can waste
-// up to 15 bytes per allocation, depending on what alloca() returns. 
+// up to 15 bytes per allocation, depending on what alloca() returns.
 //#define dALLOCA16(n) \
 //  ((char*)dEFFICIENT_SIZE(((int)(alloca((n)+(EFFICIENT_ALIGNMENT-1))))))
 
-#if defined(WIN32) || defined (_XBOX) || defined(_XENON)
-    #define __dALLOCA16(n) \
-      ((char*)dEFFICIENT_SIZE(((int)(malloc((n)+(EFFICIENT_ALIGNMENT-1))))))
-	#define FREE(n) free(n)
+#if defined( WIN32 ) || defined( _XBOX ) || defined( _XENON )
+#	define __dALLOCA16( n ) \
+		( ( char * ) dEFFICIENT_SIZE( ( ( int ) ( malloc( ( n ) + ( EFFICIENT_ALIGNMENT - 1 ) ) ) ) ) )
+#	define FREE( n ) free( n )
+#else
+#	define __dALLOCA16( n ) aligned_alloc( EFFICIENT_ALIGNMENT, n )
+#	define FREE( n )        free( n )
 #endif
 
 #include "BASe/MEMory/MEM.h"
-
-#ifdef PS2
-//    #include "mmry.h"
-#include "BASe/MEMory/MEM.h"
-    #define __dALLOCA16(n) pAlloc(n)
-	#define FREE(n) vFree(n)
-#endif
-
-#ifdef GCN
-//    #include "mmry.h"
-#include "BASe/MEMory/MEM.h"
-    #define __dALLOCA16(n) pAlloc(n)
-	#define FREE(n) vFree(n)
-#endif
 
 #define __ALLOCA __dALLOCA16
 

@@ -49,7 +49,7 @@
 #ifdef _DEBUG
 #include "MATHs/MATHdebug.h"
 #endif
-#endif JADEFUSION
+#endif //JADEFUSION
 /*
  ===================================================================================================
     Initialisation générale du module math

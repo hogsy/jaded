@@ -696,13 +696,12 @@ LONG GDI_AttachDisplay( GDI_tdst_DisplayData *_pst_DD, HWND _h_Wnd )
 	{
 		ULONG ul_Color;
 
-		PRO_StartTrameRaster( &_pst_DD->pst_Raster->st_BeforeDisplay );
 		GDI_gpst_CurDD = _pst_DD;
 
+		ImGuiInterface_NewFrame();
 
-#ifdef _GAMECUBE
-		GXI_BeforeDisplay();
-#endif
+		PRO_StartTrameRaster( &_pst_DD->pst_Raster->st_BeforeDisplay );
+
 #ifdef _XENON_RENDER
 #	if defined( ACTIVE_EDITORS )
 		if ( GDI_b_IsXenonGraphics() )
@@ -711,6 +710,9 @@ LONG GDI_AttachDisplay( GDI_tdst_DisplayData *_pst_DD, HWND _h_Wnd )
 			Xe_BeforeDisplay();
 		}
 #endif
+
+		// Clear the profiling information
+		memset( &_pst_DD->profilingInformation, 0, sizeof( GDI_tdst_ProfilingInformation_ ) );
 
 		if ( !( _pst_DD->ul_DisplayFlags & GDI_Cul_DF_DoNotRender ) )
 		{
@@ -862,6 +864,8 @@ LONG GDI_AttachDisplay( GDI_tdst_DisplayData *_pst_DD, HWND _h_Wnd )
 		if ( _pst_DD->ul_DisplayFlags & GDI_cul_DF_DepthReadBeforeFlip )
 			if ( _pst_DD->pst_World )
 				GFX_Test( _pst_DD->pst_World->pst_GFX );
+
+		ImGuiInterface_Render();
 
 		/* flip */
 		if ( !( _pst_DD->ul_DisplayFlags & ( GDI_Cul_DF_DoNotRender | GDI_Cul_DF_DoNotFlip ) ) )

@@ -123,6 +123,7 @@ extern "C"
  */
 _inline_ ULONG _fastcall_ TIM_ul_GetLowPartTimerInternalCounter(void)
 {
+#if defined( _MSC_VER ) && defined( _WIN32 )
 	int r;
     __asm
     {
@@ -134,6 +135,13 @@ _inline_ ULONG _fastcall_ TIM_ul_GetLowPartTimerInternalCounter(void)
 		pop eax
     }
 	return r;
+#elif defined( _WIN32 )
+	return GetTickCount();
+#else
+	struct timespec ts;
+	clock_gettime( CLOCK_MONOTONIC, &ts );
+	return ( ts.tv_sec ) * 1000 + ( ts.tv_nsec ) / 1000;
+#endif
 }
 
 #pragma warning(default: 4035)
@@ -145,6 +153,7 @@ _inline_ ULONG _fastcall_ TIM_ul_GetLowPartTimerInternalCounter(void)
  */
 _inline_ void _fastcall_ TIM_GetTimerInternalCounter(void *_p_Res)
 {
+#if defined( _MSC_VER ) && defined( _WIN32 )
     __asm
     {
 		push eax
@@ -158,6 +167,17 @@ _inline_ void _fastcall_ TIM_GetTimerInternalCounter(void *_p_Res)
 		pop ebx
 		pop eax
     }
+#elif defined( _WIN32 )
+	if (_p_Res)
+		*(DWORD*)_p_Res = GetTickCount();
+#else
+	if ( _p_Res == NULL )
+		return;
+
+	struct timespec ts;
+	clock_gettime( CLOCK_MONOTONIC, &ts );
+	*( DWORD * ) _p_Res = TIM_ul_GetLowPartTimerInternalCounter();
+#endif
 }
 #endif //XENON
 #endif

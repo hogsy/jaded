@@ -1,1 +1,1 @@
-#include "optim/lcp/lcp.h"
+#include "optim/Lcp/lcp.h"

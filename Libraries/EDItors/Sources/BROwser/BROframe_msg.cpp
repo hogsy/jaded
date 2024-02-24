@@ -248,9 +248,9 @@ int EBRO_cl_Frame::i_OnMessage(ULONG _ul_Msg, ULONG _ul_Param1, ULONG _ul_Param2
         if(i_Pane == 1)
         {
             mpo_TreeCtrl->GetWindowRect(&o_Rect);
-			if(timeGetTime() - dw_TimeScroll > 300)
+			if ( L_timeGetTime() - dw_TimeScroll > 300 )
 			{
-				dw_TimeScroll = timeGetTime();
+				dw_TimeScroll = L_timeGetTime();
 				h_Item = mpo_TreeCtrl->GetFirstVisibleItem();
 				if(pst_DragDrop->o_Pt.y < o_Rect.top + 20)
 				{
@@ -276,9 +276,9 @@ int EBRO_cl_Frame::i_OnMessage(ULONG _ul_Msg, ULONG _ul_Param1, ULONG _ul_Param2
             if(pst_DragDrop->ul_FatFile != BIG_C_InvalidIndex)
                 return TRUE;
 
-			if(timeGetTime() - dw_TimeScroll > 300)
+			if ( L_timeGetTime() - dw_TimeScroll > 300 )
 			{
-				dw_TimeScroll = timeGetTime();
+				dw_TimeScroll = L_timeGetTime();
 				mpo_ListCtrl->GetWindowRect(&o_Rect);
 				i_Item = mpo_ListCtrl->GetTopIndex();
 				if(pst_DragDrop->o_Pt.y < o_Rect.top + 20)
