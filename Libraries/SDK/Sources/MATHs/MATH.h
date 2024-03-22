@@ -44,17 +44,27 @@
 /* Fonctions pour debugger */
 
 #ifdef JADEFUSION
-#include "MATHs/MATHdebug.h"
+#	include "MATHs/MATHdebug.h"
 #else
-#ifdef _DEBUG
-#include "MATHs/MATHdebug.h"
+#	ifdef _DEBUG
+#		include "MATHs/MATHdebug.h"
+#	endif
+#endif//JADEFUSION
+
+#if defined( __cplusplus )
+extern "C"
+{
 #endif
-#endif //JADEFUSION
-/*
+
+	/*
  ===================================================================================================
     Initialisation générale du module math
  ===================================================================================================
  */
-void    MATH_InitModule(void);
+	void MATH_InitModule( void );
+
+#if defined( __cplusplus )
+};
+#endif
 
 #endif

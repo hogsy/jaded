@@ -42,6 +42,8 @@ namespace jaded
 			int forcedWidth{ 0 };
 			int forcedHeight{ 0 };
 
+			bool profile{ false };
+
 			bool clean{ false };
 			bool cleanBinFiles{ false };
 			std::vector< std::string > wolFiles;
