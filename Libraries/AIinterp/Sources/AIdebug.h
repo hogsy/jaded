@@ -159,26 +159,22 @@ AI_tdst_BreakPoint *AI_FillBreakPoint( AI_tdst_BreakPoint *self, int node );
 				}                                                     \
 			}
 
-#		if 1
-#			define AI_Check( __Expr, __Str )                                             \
-				{                                                                         \
-					if ( !( __Expr ) )                                                    \
-					{                                                                     \
-						ERR_ScriptAssertFailed( BAS_FILENAME, __LINE__, #__Expr, __Str ); \
-					}                                                                     \
-				}
-#		else
-#			define AI_Check( __Expr, __Str )
-#		endif
+#		define AI_Check( __Expr, __Str )                                             \
+			{                                                                         \
+				if ( !( __Expr ) )                                                    \
+				{                                                                     \
+					ERR_ScriptAssertFailed( BAS_FILENAME, __LINE__, #__Expr, __Str ); \
+				}                                                                     \
+			}
 
-#		define AI_CheckArrayBounds( VALUE, MAX )                                                   \
-			{                                                                                       \
-				if ( ( VALUE ) >= ( MAX ) )                                                         \
-				{                                                                                   \
-					char _EXPR[ 256 ];                                                              \
-					snprintf( _EXPR, sizeof( _EXPR ), "%u >= %u", ( VALUE ), ( MAX ) );             \
+#		define AI_CheckArrayBounds( VALUE, MAX )                                                    \
+			{                                                                                        \
+				if ( ( VALUE ) >= ( MAX ) )                                                          \
+				{                                                                                    \
+					char _EXPR[ 256 ];                                                               \
+					snprintf( _EXPR, sizeof( _EXPR ), "%u >= %u", ( VALUE ), ( MAX ) );              \
 					ERR_ScriptAssertFailed( BAS_FILENAME, __LINE__, _EXPR, "Bounds check failed!" ); \
-				}                                                                                   \
+				}                                                                                    \
 			}
 
 /*$2------------------------------------------------------------------------------------------------------------------*/
