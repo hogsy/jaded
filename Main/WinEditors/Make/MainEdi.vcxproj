@@ -17,6 +17,10 @@
       <Configuration>FINAL XBOX</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Speed Editors|Win32">
       <Configuration>Speed Editors</Configuration>
       <Platform>Win32</Platform>
@@ -65,6 +69,11 @@
     <PlatformToolset>v143</PlatformToolset>
     <UseOfMfc>Static</UseOfMfc>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v143</PlatformToolset>
+    <UseOfMfc>Static</UseOfMfc>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
@@ -92,11 +101,21 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>17.0.33205.214</_ProjectFileVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">
+    <OutDir>..\..\..\</OutDir>
+    <IntDir>.\../../../Output/Tmp/MainEdi___ed\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+    <TargetName>Jaded</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>..\..\..\</OutDir>
     <IntDir>.\../../../Output/Tmp/MainEdi___ed\</IntDir>
     <LinkIncremental>false</LinkIncremental>
@@ -168,6 +187,48 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Midl>
+      <TypeLibraryName>.\../../../Output/ExeDlls/MainEdi.tlb</TypeLibraryName>
+    </Midl>
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <AdditionalIncludeDirectories>..\..\..\Libraries\SDK\Sources;..\..\..\Libraries\GraphicDK\Sources;..\..\..\Extern;..\..\..\Libraries;..\Sources;..\..\..\Main\WinEditors\Sources;..\..\..\Dlls;..\..\..\Extern\ode\Sources;..\..\..\Extern\ode\include;..\..\..\Extern\sdl2\include;..\..\..\Extern\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_DEBUG;ACTIVE_EDITORS;WIN32;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;_USE_32BIT_TIME_T;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>Precomp.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>.\../../../Output/Tmp/MainEdi___ed/MainEdi.pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>.\../../../Output/Tmp/MainEdi___ed/</AssemblerListingLocation>
+      <ObjectFileName>.\../../../Output/Tmp/MainEdi___ed/</ObjectFileName>
+      <ProgramDataBaseFileName>.\../../../Output/Tmp/MainEdi___ed/</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CompileAs>Default</CompileAs>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x040c</Culture>
+    </ResourceCompile>
+    <Link>
+      <AdditionalOptions>/MACHINE:I386 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>oldnames.lib;advapi32.lib;shell32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;winmm.lib;msacm32.lib;comctl32.lib;ws2_32.lib;VFW32.lib;strmiids.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ShowProgress>NotSet</ShowProgress>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <AdditionalLibraryDirectories>../Output/Libs;../../../Extern/sdl2/lib/x86;..\..\..\extern\glew\lib\release\win32;../../../Extern\Greta;../../../Extern\DX8\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>libcd.lib;libc.lib;libcmt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">
@@ -377,6 +438,8 @@ devenv /build SpeedEditorsXenon /project XenonMeshProcessing $(SolutionPath)
       </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">
       </PrecompiledHeader>
       <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">OldStyle</DebugInformationFormat>
@@ -395,6 +458,8 @@ devenv /build SpeedEditorsXenon /project XenonMeshProcessing $(SolutionPath)
       </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">CompileAsC</CompileAs>
@@ -410,6 +475,8 @@ devenv /build SpeedEditorsXenon /project XenonMeshProcessing $(SolutionPath)
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">
       </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">
       </PrecompiledHeader>
@@ -427,6 +494,8 @@ devenv /build SpeedEditorsXenon /project XenonMeshProcessing $(SolutionPath)
       </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">CompileAsC</CompileAs>
@@ -442,6 +511,8 @@ devenv /build SpeedEditorsXenon /project XenonMeshProcessing $(SolutionPath)
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">
       </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">
       </PrecompiledHeader>
@@ -459,6 +530,8 @@ devenv /build SpeedEditorsXenon /project XenonMeshProcessing $(SolutionPath)
       </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">CompileAsC</CompileAs>
@@ -474,6 +547,8 @@ devenv /build SpeedEditorsXenon /project XenonMeshProcessing $(SolutionPath)
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">
       </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">
       </PrecompiledHeader>
@@ -491,6 +566,8 @@ devenv /build SpeedEditorsXenon /project XenonMeshProcessing $(SolutionPath)
       </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">CompileAsC</CompileAs>
@@ -506,6 +583,8 @@ devenv /build SpeedEditorsXenon /project XenonMeshProcessing $(SolutionPath)
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">
       </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">
       </PrecompiledHeader>
@@ -523,6 +602,8 @@ devenv /build SpeedEditorsXenon /project XenonMeshProcessing $(SolutionPath)
       </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">CompileAsC</CompileAs>
@@ -538,6 +619,8 @@ devenv /build SpeedEditorsXenon /project XenonMeshProcessing $(SolutionPath)
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">
       </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">
       </PrecompiledHeader>
@@ -555,6 +638,8 @@ devenv /build SpeedEditorsXenon /project XenonMeshProcessing $(SolutionPath)
       </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">CompileAsC</CompileAs>
@@ -571,6 +656,8 @@ devenv /build SpeedEditorsXenon /project XenonMeshProcessing $(SolutionPath)
       </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">CompileAsC</CompileAs>
@@ -585,6 +672,7 @@ devenv /build SpeedEditorsXenon /project XenonMeshProcessing $(SolutionPath)
     <ClCompile Include="..\..\..\Libraries\EDItors\Sources\Precomp.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='FINAL XBOX|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">Create</PrecompiledHeader>
@@ -613,6 +701,7 @@ devenv /build SpeedEditorsXenon /project XenonMeshProcessing $(SolutionPath)
     <ClCompile Include="..\Sources\DIAlogs\DIAcreategeometry_inside.cpp" />
     <ClCompile Include="..\Sources\DIAlogs\DIAcubemapgen_dlg.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\DIAlogs\DIAdropgro_dlg.cpp" />
@@ -634,10 +723,12 @@ devenv /build SpeedEditorsXenon /project XenonMeshProcessing $(SolutionPath)
     <ClCompile Include="..\Sources\DIAlogs\DIAlang_dlg.cpp" />
     <ClCompile Include="..\Sources\DIAlogs\DIALightmaps.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\DIAlogs\DIAlightrej_dlg.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='SpeedEditorsXenon|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">true</ExcludedFromBuild>
@@ -662,6 +753,7 @@ devenv /build SpeedEditorsXenon /project XenonMeshProcessing $(SolutionPath)
     <ClCompile Include="..\Sources\DIAlogs\DIAradiosity_dlg.cpp" />
     <ClCompile Include="..\Sources\DIAlogs\DIAreplace_dlg.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\DIAlogs\DIArliadjust_dlg.cpp" />
@@ -670,6 +762,7 @@ devenv /build SpeedEditorsXenon /project XenonMeshProcessing $(SolutionPath)
     <ClCompile Include="..\Sources\DIAlogs\DIAsaveaddmatrix_dlg.cpp" />
     <ClCompile Include="..\Sources\DIAlogs\DIAScreenshotSeqBuilder_dlg.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\DIAlogs\DIAsecto_dlg.cpp" />
@@ -696,11 +789,13 @@ devenv /build SpeedEditorsXenon /project XenonMeshProcessing $(SolutionPath)
     <ClCompile Include="..\Sources\DIAlogs\DIAvector_dlg.cpp" />
     <ClCompile Include="..\Sources\DIAlogs\diawindcurve_dlg.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\DIAlogs\DIAwpshowstatus_dlg.cpp" />
     <ClCompile Include="..\Sources\DIAlogs\DIAXeMergeFlags.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\DIAlogs\DIA_RADIOSTY2.cpp" />
@@ -713,6 +808,7 @@ devenv /build SpeedEditorsXenon /project XenonMeshProcessing $(SolutionPath)
     <ClCompile Include="..\Sources\DIAlogs\ListCtrlStyled.cpp" />
     <ClCompile Include="..\Sources\DIAlogs\NumEdit.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\DIAlogs\ProSliderCtrl.cpp" />
@@ -728,6 +824,7 @@ devenv /build SpeedEditorsXenon /project XenonMeshProcessing $(SolutionPath)
     <ClCompile Include="..\Sources\EDIeditors_reg.cpp" />
     <ClCompile Include="..\Sources\EDIFileFilters.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\EDImainframe.cpp" />
@@ -1085,6 +1182,7 @@ devenv /build SpeedEditorsXenon /project XenonMeshProcessing $(SolutionPath)
     <ResourceCompile Include="..\Sources\Res\Res.rc">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">\Jade2\Main\WinEditors\Sources\Res</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">\Jade2\Main\WinEditors\Sources\Res</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">\Jade2\Main\WinEditors\Sources\Res</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">\Jade2\Main\WinEditors\Sources\Res</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='FINAL XBOX|Win32'">\Jade2\Main\WinEditors\Sources\Res</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">\Jade2\Main\WinEditors\Sources\Res</AdditionalIncludeDirectories>

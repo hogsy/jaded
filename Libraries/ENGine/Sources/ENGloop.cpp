@@ -1177,48 +1177,10 @@ static void s_OneTrame(void)
     
 	ENG_gb_NeedToReinit = FALSE;
 
-		if ( TIM_gf_MainClockForTextureScrolling > 1024.0f ) TIM_gf_MainClockForTextureScrolling -= 1024.0f;
-#ifdef JADEFUSION
-#	if defined( _XENON )
+		if ( TIM_gf_MainClockForTextureScrolling > 1024.0f ) 
+			TIM_gf_MainClockForTextureScrolling -= 1024.0f;
 
-	// process any notification we may have received
-	g_XeNotificationManager.CheckForNotifications();
-	g_XeProfile.Pump();
-
-	// update after specified delay, no need to flood the Xbox Live service
-	static float fPrevTime = 0.0f;
-	const float  fCurTime = TIM_gf_MainClock;
-
-	if ( fCurTime - fPrevTime > 1.0f )
-	{
-		// save new tick count
-		fPrevTime = fCurTime;
-
-		// do session processing
-		//g_XeLiveSession.UpdateSession( );
-
-		// check if we need to update rich presence or achievements on Live server
-		UpdateRichPresence();
-		UpdateAchievements();
-	}
-
-#		ifdef _DEBUG
-	// JFP: Removing this reboot option for now since it conflicts with the debug menu.
-	/*
-	// check if user wants to reboot
-	if( INO_b_Joystick_IsButtonDown( eXeButton_Trigger_Left   ) &&
-		INO_b_Joystick_IsButtonDown( eXeButton_Trigger_Right  ) &&
-		INO_b_Joystick_IsButtonDown( eXeButton_Shoulder_Right ) )
-	{
-		DmReboot( DMBOOT_WARM ); // Reboot the dev kit
-	}
-    */
-#		endif// _DEBUG
-
-#	endif// defined(_XENON)
-#else
 	_GSP_EndRaster( 19 );
-#endif
 
 	/* Sound & textures */
 	if ( MAI_gst_MainHandles.pst_DisplayData )

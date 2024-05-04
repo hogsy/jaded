@@ -82,7 +82,7 @@
 #include "Xenon/MenuManager/MenuManager.h"
 #endif
 
-extern AI_tdst_GlobalMessageList	gast_GlobalMessages[C_GM_MaxTypes];
+extern "C" AI_tdst_GlobalMessageList gast_GlobalMessages[ C_GM_MaxTypes ];
 
 #include "Sound/Sources/SNDstruct.h"
 #include "SouND/Sources/SNDload.h"
@@ -113,25 +113,17 @@ extern AI_tdst_GlobalMessageList	gast_GlobalMessages[C_GM_MaxTypes];
 #include "XenonGraphics/XeWeatherManager.h"
 #endif
 
-#if defined(PSX2_TARGET) && defined(__cplusplus)
-extern "C"
-{
-#endif
-extern COL_tdst_GlobalVars	COL_gst_GlobalVars;
-extern int					GRID_gi_Current;
-extern float				TIM_gf_SpeedFactor;
+#include "../../Shared/MainSharedSystem.h"
 
-#ifdef JADEFUSION
-extern BOOL EDI_gb_ComputeMap;
-#endif
+extern "C" COL_tdst_GlobalVars COL_gst_GlobalVars;
+extern "C" int GRID_gi_Current;
+extern "C" float TIM_gf_SpeedFactor;
 
 /* désolé */
-extern void STR_3DStringList_Clear( void );
-extern void WOR_SectoReinit(WOR_tdst_World *);
-extern void AI_GeneratedObject_Reinit( void );
+extern "C" void STR_3DStringList_Clear( void );
+extern "C" void WOR_SectoReinit( WOR_tdst_World * );
+extern "C" void AI_GeneratedObject_Reinit( void );
 /* vraiment, vraiment */
-
-
 
 #if defined(_XBOX) || defined(_XENON)
 HANDLE g_hHeap = NULL;
@@ -222,7 +214,7 @@ static void s_CreateRasters(void)
 #endif /* RASTERS_ON */
 
 #ifdef ODE_INSIDE
-extern  void LCP_StaticInit(void);
+extern "C" void LCP_StaticInit( void );
 #endif
 /*
  =======================================================================================================================
@@ -368,7 +360,7 @@ void ENG_InitEngine(void)
 	/* Give the engine pointer to the main loop interface */
 	ENG_gp_Engine = ENG_EngineCall;
 
-	ENG_gb_LimitFPS = TRUE; // TODO: store in config ~hogsy
+	ENG_gb_LimitFPS   = jaded::sys::launchOperations.profile;// TODO: store in config ~hogsy
 	ENG_gb_FirstFrame = TRUE;
 
 	/* Reset the clock */
@@ -424,6 +416,8 @@ void ENG_Desinit(void)
  ***********************************************************************************************************************
  ***********************************************************************************************************************
  */
+
+extern "C" void AI_EvalFunc_MSGClear_C( OBJ_tdst_GameObject * );
 
 /*
  =======================================================================================================================
@@ -492,7 +486,6 @@ void ENG_ReinitOneObject(OBJ_tdst_GameObject *_pst_GO, int _i_Type)
 	/* Messages */
 	if(OBJ_b_TestIdentityFlag(_pst_GO, OBJ_C_IdentityFlag_Msg))
 	{
-		extern void AI_EvalFunc_MSGClear_C(OBJ_tdst_GameObject *);
 		AI_EvalFunc_MSGClear_C(_pst_GO);
 	}
 
@@ -546,8 +539,7 @@ void ENG_ReinitOneObject(OBJ_tdst_GameObject *_pst_GO, int _i_Type)
 	SND_DetachObject(_pst_GO);
 }
 
-extern float	AI_gf_Epsilon;
-extern COL_tdst_GlobalVars COL_gst_GlobalVars;
+extern "C" float AI_gf_Epsilon;
 
 /*
  =======================================================================================================================
@@ -582,7 +574,11 @@ void ENG_InitOneWorld(WOR_tdst_World *_pst_World)
 	COL_gst_GlobalVars.f_CornerCosAngle = 0.6f;
 }
 
-extern void MEM_Defrag(int);
+extern "C" void MEM_Defrag( int );
+extern "C" void ResetPreloadTexAll( void );
+#ifdef ACTIVE_EDITORS
+extern "C" void OGL_AE_Reinit();
+#endif
 
 /*
  =======================================================================================================================
@@ -595,10 +591,7 @@ void ENG_ReinitOneWorld(WOR_tdst_World *_pst_World, int _i_Type)
 	OBJ_tdst_GameObject *pst_GO;
 	ULONG				i;
 	char				c_Pause;
-	extern void			ResetPreloadTexAll(void);
-#ifdef ACTIVE_EDITORS
-	extern void			OGL_AE_Reinit();
-#endif
+
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	if(!_pst_World) return;
@@ -607,7 +600,6 @@ void ENG_ReinitOneWorld(WOR_tdst_World *_pst_World, int _i_Type)
 #ifdef ACTIVE_EDITORS
 	OGL_AE_Reinit();
 #endif
-
 
 	/* Sector */
 	WOR_SectoReinit(_pst_World);

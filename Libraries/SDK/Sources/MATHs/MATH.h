@@ -42,19 +42,22 @@
 #include "MATHs/MATHquat.h"
 
 /* Fonctions pour debugger */
+#include "MATHs/MATHdebug.h"
 
-#ifdef JADEFUSION
-#include "MATHs/MATHdebug.h"
-#else
-#ifdef _DEBUG
-#include "MATHs/MATHdebug.h"
+#if defined( __cplusplus )
+extern "C"
+{
 #endif
-#endif //JADEFUSION
-/*
+
+	/*
  ===================================================================================================
     Initialisation générale du module math
  ===================================================================================================
  */
-void    MATH_InitModule(void);
+	void MATH_InitModule( void );
+
+#if defined( __cplusplus )
+};
+#endif
 
 #endif

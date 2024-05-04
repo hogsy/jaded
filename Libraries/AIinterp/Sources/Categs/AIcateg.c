@@ -119,7 +119,7 @@ _inline_ void AI_EvalVarArray(AI_tdst_Node *_pst_Node, void *_pv_Addr)
 	/*~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	AI_PopVar(&Val, &st_Var);	/* Get index in array */
-	AI_Check((UINT) Val.i < ((UINT *) _pv_Addr)[0], "Indice too big for array");
+	AI_CheckArrayBounds( ( UINT ) Val.i, ( ( UINT * ) _pv_Addr )[ 0 ] );
 	if ( ( UINT ) Val.i >= ( ( UINT * ) _pv_Addr )[ 0 ] )
 	{
 		( UINT ) Val.i = ( ( UINT * ) _pv_Addr )[ 0 ] - 1;
@@ -158,8 +158,9 @@ _inline_ void AI_EvalVarArray2(AI_tdst_Node *_pst_Node, void *_pv_Addr)
 
 	AI_PopVar(&Val1, &st_Var1); /* Get index in array */
 	AI_PopVar(&Val2, &st_Var2); /* Get index in array */
-	AI_Check((UINT) Val1.i < ((UINT *) _pv_Addr)[1], "Indice too big for array");
-	AI_Check((UINT) Val2.i < ((UINT *) _pv_Addr)[0], "Indice too big for array");
+
+	AI_CheckArrayBounds( ( UINT ) Val1.i, ( ( UINT * ) _pv_Addr )[ 1 ] );
+	AI_CheckArrayBounds( ( UINT ) Val2.i, ( ( UINT * ) _pv_Addr )[ 0 ] );
 
 	/* Get address of array in local stack */
 	st_Var1.w_Type = _pst_Node->w_Param;
@@ -196,9 +197,10 @@ _inline_ void AI_EvalVarArray3(AI_tdst_Node *_pst_Node, void *_pv_Addr)
 	AI_PopVar(&Val1, &st_Var1); /* Get index in array */
 	AI_PopVar(&Val2, &st_Var2); /* Get index in array */
 	AI_PopVar(&Val3, &st_Var3); /* Get index in array */
-	AI_Check((UINT) Val1.i < ((UINT *) _pv_Addr)[2], "Indice too big for array");
-	AI_Check((UINT) Val2.i < ((UINT *) _pv_Addr)[1], "Indice too big for array");
-	AI_Check((UINT) Val3.i < ((UINT *) _pv_Addr)[0], "Indice too big for array");
+
+	AI_CheckArrayBounds( ( UINT ) Val1.i, ( ( UINT * ) _pv_Addr )[ 2 ] );
+	AI_CheckArrayBounds( ( UINT ) Val2.i, ( ( UINT * ) _pv_Addr )[ 1 ] );
+	AI_CheckArrayBounds( ( UINT ) Val3.i, ( ( UINT * ) _pv_Addr )[ 0 ] );
 
 	/* Get address of array in local stack */
 	st_Var1.w_Type = _pst_Node->w_Param;

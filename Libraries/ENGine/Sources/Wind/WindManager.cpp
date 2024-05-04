@@ -454,7 +454,6 @@ CWindSource * CWindManager::AffectedBy(OBJ_tdst_GameObject * _p_Gao, BAS_tdst_ba
 // Description		
 // 
 //------------------------------------------------------------------------
-void WOR_MakeSureGAOIsInAllThisWOW(OBJ_tdst_GameObject *pst_FatherGAO, OBJ_tdst_GameObject *pst_ChildGAO, CHAR *sz_Type);
 
 void WIND_PreCompute(WOR_tdst_World * _pst_World, BOOL _b_Save /*= FALSE*/)
 {

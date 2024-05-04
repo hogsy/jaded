@@ -110,12 +110,17 @@ static void ParseStartupParameters()
 			jaded::sys::launchOperations.forcedHeight = strtol( jaded::sys::launchArguments[ i ] + 8, nullptr, 10 );
 			continue;
 		}
+		else if ( SDL_strncasecmp( jaded::sys::launchArguments[ i ], "/profile", 8 ) == 0 )
+		{
+			jaded::sys::launchOperations.profile = true;
+			continue;
+		}
 	}
 }
 
 static SDL_Window *CreateSDLWindow()
 {
-#if defined( USE_SDL_GL_CONTEXT  )
+#if defined( USE_SDL_GL_CONTEXT )
 
 	int flags = SDL_WINDOW_OPENGL;
 	if ( !jaded::sys::launchOperations.forceWindowed )
@@ -211,7 +216,7 @@ static void InitializeDisplay()
 	MAI_gst_MainHandles.pst_DisplayData->uc_EngineCamera = TRUE;
 	MAI_gst_MainHandles.pst_DisplayData->ul_DrawMask |= GDI_Cul_DM_NoAutoClone;
 
-	MAI_gst_MainHandles.pst_DisplayData->st_ScreenFormat.ul_Flags           = GDI_Cul_SFF_OccupyAll;
+	MAI_gst_MainHandles.pst_DisplayData->st_ScreenFormat.ul_Flags = GDI_Cul_SFF_OccupyAll;
 
 	// Determine aspect ratio - TODO: should get triggered again whenever window-size changes...
 	SetupAspectRatio();

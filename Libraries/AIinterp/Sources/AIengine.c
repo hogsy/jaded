@@ -673,6 +673,37 @@ void AI_RunNode(AI_tdst_Node *_pst_Node)
 	}
 }
 
+static AI_tdst_Node *currentExecutionNode = NULL;
+
+/**
+ * hogsy: Fills and returns a breakpoint based on the current execution state.
+ */
+AI_tdst_BreakPoint *AI_FillBreakPoint( AI_tdst_BreakPoint *self, int node )
+{
+	if ( node == -1 )
+	{
+		if ( currentExecutionNode == NULL )
+		{
+			currentExecutionNode = *AI_gppst_CurrentJumpNode;
+		}
+
+		node = currentExecutionNode - AI_gpst_CurrentFunction->pst_RootNode;
+		while ( ( node > 0 ) && ( AI_gpst_CurrentFunction->pst_OtherRootNode[ node ].l_Param == -1 ) ) node--;
+		assert( node >= 0 );
+	}
+
+	self->i_Line  = AI_gpst_CurrentFunction->pst_OtherRootNode[ node ].l_Param;
+	self->ul_File = BIG_ul_SearchKeyToFat( *( ( LONG * ) &AI_gpst_CurrentFunction->pst_OtherRootNode[ node ].w_Param ) );
+
+	/* Engine context */
+	self->pst_Function = AI_gpst_CurrentFunction;
+	self->pst_Model    = AI_gpst_CurrentInstance->pst_Model;
+	self->pst_Instance = AI_gpst_CurrentInstance;
+	self->pt_Node      = AI_gpst_CurrentFunction->pst_RootNode;
+
+	return self;
+}
+
 /*
  =======================================================================================================================
     Aim:    To interpret an IA function.
@@ -717,23 +748,22 @@ AI_tdst_Node *AI_pst_RunFunction(AI_tdst_Function *_pst_Function, AI_tdst_Node *
 
 #ifdef AI_FULL_RASTERS
 	if(AI_gb_FullRasters)
-	if(!_pst_Function->aaa)
 	{
-		PRO_FirstInitTrameRaster
-		(
-			&_pst_Function->st_Raster,
-			"Trame Loop",
-			"AI Functions",
-			L_strdup(_pst_Function->az_Name),
-			PRO_E_Time,
-			0
-		);
+		if ( !_pst_Function->aaa )
+		{
+			PRO_FirstInitTrameRaster(
+			        &_pst_Function->st_Raster,
+			        "Trame Loop",
+			        "AI Functions",
+			        L_strdup( _pst_Function->az_Name ),
+			        PRO_E_Time,
+			        0 );
 
-		_pst_Function->aaa = 1;
+			_pst_Function->aaa = 1;
+		}
+
+		PRO_StartTrameRaster( &_pst_Function->st_Raster );
 	}
-
-	if(AI_gb_FullRasters)
-	PRO_StartTrameRaster(&_pst_Function->st_Raster);
 #endif
 
 	/* Local stack size */
@@ -748,13 +778,9 @@ AI_tdst_Node *AI_pst_RunFunction(AI_tdst_Function *_pst_Function, AI_tdst_Node *
 		/* Save informations in global vars */
 		AI_gppst_CurrentJumpNode = _ppst_JumpNode;
 
-/*$2
- -----------------------------------------------------------------------------------------------------------------------
- -----------------------------------------------------------------------------------------------------------------------
- */
-
 #ifdef ACTIVE_EDITORS
-		pst_BkpNode = pst_CurrentNode;
+		pst_BkpNode          = pst_CurrentNode;
+		currentExecutionNode = pst_BkpNode;
 
 		/* Test for infinite loops */
 		if(i_StartTime >= 10000000)
@@ -807,14 +833,8 @@ com_break:
 					i = line;
 				}
 
-				AI_gst_BreakInfo.i_Line = AI_gpst_CurrentFunction->pst_OtherRootNode[i].l_Param;
-				AI_gst_BreakInfo.ul_File = BIG_ul_SearchKeyToFat(*((LONG *) &AI_gpst_CurrentFunction->pst_OtherRootNode[i].w_Param));
+				AI_FillBreakPoint( &AI_gst_BreakInfo, i );
 
-				/* Engine context */
-				AI_gst_BreakInfo.pst_Function = AI_gpst_CurrentFunction;
-				AI_gst_BreakInfo.pst_Model = AI_gpst_CurrentInstance->pst_Model;
-				AI_gst_BreakInfo.pst_Instance = AI_gpst_CurrentInstance;
-				AI_gst_BreakInfo.pt_Node = AI_gpst_CurrentFunction->pst_RootNode;
 				AI_gb_ExitByBreak = TRUE;
 				AI_gi_FctLevelWhenBreak = AI_gi_RunFctLevel;
 
