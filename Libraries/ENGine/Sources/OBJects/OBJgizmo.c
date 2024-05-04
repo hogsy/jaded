@@ -40,7 +40,7 @@
 extern "C"
 {
 #endif
-extern BOOL ENG_gb_EngineRunning;
+	extern bool ENG_gb_EngineRunning;
 
 /*
  =======================================================================================================================

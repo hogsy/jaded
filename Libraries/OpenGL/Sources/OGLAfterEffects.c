@@ -1790,7 +1790,7 @@ extern u32 GetSPG2CachePercent();
 void OGL_AE_Before2D()
 {
 #ifdef ACTIVE_EDITORS
-	extern BOOL ENG_gb_EngineRunning;
+	extern bool ENG_gb_EngineRunning;
 	if (!BackIsClear) return;
 
 	/* FogMax Effect */

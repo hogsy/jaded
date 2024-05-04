@@ -40,7 +40,7 @@ extern "C"
 extern void ANI_PlayBlendAnimationWithoutMagicBox(OBJ_tdst_GameObject *, ANI_st_GameObjectAnim *, ANI_tdst_Anim *);
 extern BOOL sgb_EngineRender;
 extern BOOL GRO_gb_ResetGhost;
-extern BOOL ENG_gb_ANIRunning;
+extern bool ENG_gb_ANIRunning;
 
 ULONG				PushedStack = 0;
 OBJ_tdst_GameObject *pst_RenderingStack[256];

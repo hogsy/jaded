@@ -34,7 +34,7 @@ extern "C"
 
 /* For AI */
 extern L_jmp_buf	AI_gst_ContextCheck;
-extern BOOL			ENG_gb_AIRunning;
+extern bool ENG_gb_AIRunning;
 
 #ifdef ACTIVE_EDITORS
 

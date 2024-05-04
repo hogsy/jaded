@@ -37,8 +37,8 @@
 int ControlMode = 2;
 //#define JAPANESE_VERSION
 static BOOL           IO_bJAPANESE_MENU = FALSE;
-extern BOOL           ENG_gb_InPause;
-extern BOOL           ENG_gb_ForcePauseEngine;
+extern bool ENG_gb_InPause;
+extern bool ENG_gb_ForcePauseEngine;
 extern unsigned short Demo_gus_language;
 
 /*$4

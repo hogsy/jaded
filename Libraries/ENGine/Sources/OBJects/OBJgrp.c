@@ -92,8 +92,8 @@ void OBJ_FreeGroup(OBJ_tdst_Group *_pst_Group)
 #ifdef ACTIVE_EDITORS
 	if(_pst_Group->sz_Name) MEM_Free(_pst_Group->sz_Name);
 #endif
+	LOA_DeleteAddress( _pst_Group );
 	MEM_Free(_pst_Group);
-	LOA_DeleteAddress(_pst_Group);
 }
 
 /*
