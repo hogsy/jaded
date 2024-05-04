@@ -42,19 +42,19 @@ extern void (*ENG_gp_Display) (HWND, GDI_tdst_DisplayData *);
  -----------------------------------------------------------------------------------------------------------------------
  */
 
-extern BOOL                 ENG_gb_ExitApplication;     /* When force exiting application */
-extern BOOL                 ENG_gb_ForceEndEngine;      /* To exit engine, but for pause (editors) */
-extern BOOL                 ENG_gb_ForcePauseEngine;    /* To pause engine */
-extern BOOL                 ENG_gb_OneStepEngine;       /* One step of the engine */
-extern BOOL                 ENG_gb_ActivateUniverse;    /* Universe can be executed */
-extern BOOL					ENG_gb_MustRebuildDyn;		/* Must rebuild dynamic in trame */
-extern BOOL					ENG_gb_EngineRunning;
-extern BOOL					ENG_gb_AIRunning;
-extern BOOL					ENG_gb_EVERunning;
-extern BOOL					ENG_gb_ANIRunning;
-extern BOOL					ENG_bg_FirstFrameSpeedRun;
-extern BOOL					ENG_gb_FirstFrame;
-extern BOOL                 ENG_gb_LimitFPS;
+extern bool ENG_gb_ExitApplication;                     /* When force exiting application */
+extern bool ENG_gb_ForceEndEngine;                      /* To exit engine, but for pause (editors) */
+extern bool ENG_gb_ForcePauseEngine;                    /* To pause engine */
+extern bool ENG_gb_OneStepEngine;                       /* One step of the engine */
+extern bool ENG_gb_ActivateUniverse;                    /* Universe can be executed */
+extern bool ENG_gb_MustRebuildDyn;                      /* Must rebuild dynamic in trame */
+extern bool ENG_gb_EngineRunning;
+extern bool ENG_gb_AIRunning;
+extern bool ENG_gb_EVERunning;
+extern bool ENG_gb_ANIRunning;
+extern bool ENG_bg_FirstFrameSpeedRun;
+extern bool ENG_gb_FirstFrame;
+extern bool ENG_gb_LimitFPS;
 
 extern HINSTANCE            MAI_gh_MainInstance;
 extern HWND                 MAI_gh_MainWindow;

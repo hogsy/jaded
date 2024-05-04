@@ -25,9 +25,9 @@ extern "C"
  -----------------------------------------------------------------------------------------------------------------------
  */
 
-extern BOOL     ENG_gb_ExitApplication;
-extern BOOL     ENG_gb_ForceEndEngine;
-extern BOOL     ENG_gb_ForcePauseEngine;
+extern bool ENG_gb_ExitApplication;
+extern bool ENG_gb_ForceEndEngine;
+extern bool ENG_gb_ForcePauseEngine;
 
 #ifndef ACTIVE_EDITORS
 extern BOOL     sgb_DisplayRasters;

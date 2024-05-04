@@ -112,7 +112,7 @@ static void ParseStartupParameters()
 		}
 		else if ( SDL_strncasecmp( jaded::sys::launchArguments[ i ], "/profile", 8 ) == 0 )
 		{
-			jaded::sys::launchOperations.profile = true;
+			ENG_gb_LimitFPS = false;
 			continue;
 		}
 	}

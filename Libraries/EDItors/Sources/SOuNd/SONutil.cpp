@@ -180,19 +180,11 @@ typedef struct	SND_tdst_RiffHeader_
 
 extern tdListItems	*EVAV_gpo_ListItems;
 
-#ifdef JADEFUSION
-extern BOOL		ENG_gb_AIRunning;
-extern BOOL		EDI_gb_ComputeMap;
-extern BOOL		EDI_gb_NoVerbose;
-extern int		SND_RamRasterGetFree(void);
-extern int		SND_RamRasterGetTotal(void);
-#else
-extern "C" BOOL		ENG_gb_AIRunning;
+extern "C" bool ENG_gb_AIRunning;
 extern "C" BOOL		EDI_gb_ComputeMap;
 extern "C" BOOL		EDI_gb_NoVerbose;
 extern "C" int		SND_RamRasterGetFree(void);
 extern "C" int		SND_RamRasterGetTotal(void);
-#endif
 
 #ifdef JADEFUSION
 extern BOOL		LOA_gb_SpeedMode;
