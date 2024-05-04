@@ -768,9 +768,9 @@ void GFX_Explode_Destroy(void *p_Data)
     if (pExplode->p_usRotation) MEM_FreeAlign(pExplode->p_usRotation);
     if (pExplode->p_fAngularSpeed) MEM_FreeAlign(pExplode->p_fAngularSpeed);
 #ifdef JADEFUSION
-	if (pExplode->p_Colors)   MEM_Free((void *)((ULONG)pExplode->p_Colors - 32));//popoverif
+	if ( pExplode->p_Colors ) MEM_FreeAlign( ( void * ) ( ( ULONG ) pExplode->p_Colors - 32 ) );//popoverif
 #else
-	if (pExplode->p_Colors)   MEM_Free((void *)((ULONG)pExplode->p_Colors - 16));
+	if ( pExplode->p_Colors ) MEM_FreeAlign( ( void * ) ( ( ULONG ) pExplode->p_Colors - 16 ) );
 #endif
 	/*
     if

@@ -129,7 +129,7 @@ void TEX_File_LoadPalette( TEX_tdst_Palette *_pst_Palette, BOOL _b_SwapRB )
         return;
     }
 
-    TEX_M_File_AllocTmp(_pst_Palette->pul_Color, ul_BufSize, ULONG);     
+    TEX_M_File_Alloc(_pst_Palette->pul_Color, ul_BufSize, ULONG);     
 
 	LOA_ReadCharArray(&pc_Buffer, (CHAR*) _pst_Palette->pul_Color, ul_Size);
 
@@ -592,7 +592,7 @@ LONG TEX_l_File_LoadTga(char *_pc_Buffer, TEX_tdst_File_Desc *_pst_TexDesc)
 
 	LOA_ReadCharArray_Ed(&_pc_Buffer, NULL, st_TgaHeader.uw_PaletteLength * (_pst_TexDesc->uc_PaletteBPC >> 3)); // skip the palette, it is not needed right now
 
-	TEX_M_File_AllocTmp(_pst_TexDesc->p_Bitmap, ul_Length * (_pst_TexDesc->uc_FinalBPP >> 3), void);    
+	TEX_M_File_Alloc( _pst_TexDesc->p_Bitmap, ul_Length * ( _pst_TexDesc->uc_FinalBPP >> 3 ), void );    
 
 	ul_Length *= _pst_TexDesc->uc_BPP >> 3;
 
