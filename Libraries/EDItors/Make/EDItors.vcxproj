@@ -17,6 +17,10 @@
       <Configuration>FINAL XBOX</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Speed Editors|Win32">
       <Configuration>Speed Editors</Configuration>
       <Platform>Win32</Platform>
@@ -62,6 +66,11 @@
     <PlatformToolset>v143</PlatformToolset>
     <UseOfMfc>Static</UseOfMfc>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v143</PlatformToolset>
+    <UseOfMfc>Static</UseOfMfc>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
@@ -89,11 +98,19 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>17.0.33205.214</_ProjectFileVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">
+    <OutDir>.\../../../Output/Libs\</OutDir>
+    <IntDir>.\../../../Output/Tmp/EDI___ed\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>.\../../../Output/Libs\</OutDir>
     <IntDir>.\../../../Output/Tmp/EDI___ed\</IntDir>
   </PropertyGroup>
@@ -133,6 +150,34 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAs>Default</CompileAs>
+    </ClCompile>
+    <ResourceCompile>
+      <Culture>0x040c</Culture>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>../../../Output\Libs\EDI___ed.lib</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <AdditionalIncludeDirectories>..\..\..\Extern\DX8\include;..\..\..\Libraries\SDK\Sources;..\..\..\Libraries\GraphicDK\Sources;..\..\..\Extern;..\..\..\Libraries;..\Sources;..\..\..\Main\WinEditors\Sources;..\..\..\Libraries\Engine\Sources;..\..\..\Dlls;..\..\..\Extern\ode\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_DEBUG;ACTIVE_EDITORS;WIN32;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;_USE_32BIT_TIME_T;_USE_32BIT_TIME_T;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>Precomp.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>.\../../../Output/Tmp/EDI___ed/EDItors.pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>.\../../../Output/Tmp/EDI___ed/</AssemblerListingLocation>
+      <ObjectFileName>.\../../../Output/Tmp/EDI___ed/</ObjectFileName>
+      <ProgramDataBaseFileName>.\../../../Output/Tmp/EDI___ed/</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CompileAs>Default</CompileAs>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
     </ClCompile>
     <ResourceCompile>
       <Culture>0x040c</Culture>
@@ -460,11 +505,13 @@
     <ClCompile Include="..\Sources\PERForce\EditLog.cpp" />
     <ClCompile Include="..\Sources\PERForce\PERtreectrl.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\PERForce\SubclassWnd.cpp" />
     <ClCompile Include="..\Sources\Precomp.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='FINAL XBOX|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">Create</PrecompiledHeader>
@@ -485,103 +532,126 @@
     <ClCompile Include="..\Sources\RASters\RASframe_msg.cpp" />
     <ClCompile Include="..\Sources\SELection\GridCtrl\BtnDataBase.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\SELection\GridCtrl\GridBtnCell.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\SELection\GridCtrl\GridBtnCellBase.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\SELection\GridCtrl\GridCell.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\SELection\GridCtrl\GridCellBase.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\SELection\GridCtrl\GridCellCheck.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\SELection\GridCtrl\GridCellCombo.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\SELection\GridCtrl\GridCellNumeric.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\SELection\GridCtrl\GridCtrl.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\SELection\GridCtrl\GridDropTarget.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\SELection\GridCtrl\InPlaceEdit.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\SELection\GridCtrl\InPlaceEditNumeric.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\SELection\GridCtrl\TitleTip.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\SELection\SELectionframe.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\SELection\SELectionframe_act.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\SELection\SELectionframe_ini.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\SELection\SELectionframe_msg.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\SELection\SELectionGridCtrl.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\SELection\SELectionGridCtrlCell.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\SELection\SELectionHelper.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\SELection\SELectionHelper_CellToData.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\SELection\SELectionHelper_DataToCell.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\SELection\SELectionHelper_ValidateData.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\Sources\SOuNd\SONframe.cpp" />

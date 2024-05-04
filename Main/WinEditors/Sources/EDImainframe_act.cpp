@@ -378,21 +378,25 @@ void EDI_cl_MainFrame::OnAction(ULONG _ul_Action)
 		break;
 
 	/*$1-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
 	case EDI_ACTION_CHECKMEMORY:
-		MEM_CheckAllocatedBlocks(1);
+#	if !defined( NDEBUG )
+		MEM_CheckAllocatedBlocks( 1 );
+#	endif
 		break;
 
 	/*$1-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
 	case EDI_ACTION_CHECKMEMONTRAME:
+#	if !defined( NDEBUG )
 		ENG_gb_TestMemory = !ENG_gb_TestMemory;
+#	endif
 		break;
 
 	/*$1-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	case EDI_ACTION_DUMPMEMORY:
-		MEM_CheckAllocatedBlocks(3);
+#	if !defined( NDEBUG )
+		MEM_CheckAllocatedBlocks( 3 );
+#	endif
 		break;
 
 	/*$1-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -977,7 +981,9 @@ UINT EDI_cl_MainFrame::ui_OnActionState(ULONG _ul_Action)
 		break;
 
 	case EDI_ACTION_CHECKMEMONTRAME:
+#	if !defined( NDEBUG )
 		ui_State = DFCS_BUTTONCHECK | ((ENG_gb_TestMemory) ? DFCS_CHECKED : 0);
+#	endif
 		break;
 
 	/*
