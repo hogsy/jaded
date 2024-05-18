@@ -2298,6 +2298,10 @@ void OGL_AE_DebugInfo(WOR_tdst_World *_pst_World)
 	WOR_TimeSinceLastWorldLoad = 0.00001f;
 	SupraDT += 1.0f / 30.0f;
 #endif	
+
+	#if 0
+
+#	if !defined( NDEBUG )
 	if (GDI_gpst_CurDD->DisplayMemInfo)
 		AlphaMEM = 1.0f;
 	else
@@ -2306,6 +2310,7 @@ void OGL_AE_DebugInfo(WOR_tdst_World *_pst_World)
 #else
 		AlphaMEM = 0.0f;//10.0f - (TIM_gf_MainClock - WOR_TimeSinceLastWorldLoad);
 #endif
+
 	if (AlphaMEM > 1.0f) AlphaMEM = 1.0f;
 	if (AlphaMEM > 0.0f)
 	{
@@ -2345,6 +2350,9 @@ void OGL_AE_DebugInfo(WOR_tdst_World *_pst_World)
 		}
 	}
 #endif
+#endif
+
+	#endif
 
 	OGL_DisplayDebugPerObject(_pst_World);
 }
