@@ -523,7 +523,7 @@ void AI_FreeModel(AI_tdst_Model *_pst_Model)
 		if(!_pst_Model->ppst_Functions[i]->uw_NbRefs)
 		{
 			if(_pst_Model->ppst_Functions[i]->pst_RootNode)
-				MEM_FreeAlign(_pst_Model->ppst_Functions[i]->pst_RootNode);
+				MEM_Free(_pst_Model->ppst_Functions[i]->pst_RootNode);
 #ifdef ACTIVE_EDITORS
 			if(_pst_Model->ppst_Functions[i]->pst_OtherRootNode)
 				MEM_Free(_pst_Model->ppst_Functions[i]->pst_OtherRootNode);

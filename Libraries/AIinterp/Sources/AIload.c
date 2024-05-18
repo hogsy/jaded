@@ -1370,7 +1370,7 @@ ULONG AI_ul_CallbackLoadFunction(ULONG _ul_PosFile)
 #ifndef ACTIVE_EDITORS
 			if(!pst_Func->pfn_CFunc)
 #endif
-				pst_Func->pst_RootNode = (AI_tdst_Node *) MEM_p_VMAllocAlign(ul_Mem, 64);
+				pst_Func->pst_RootNode = (AI_tdst_Node *) MEM_p_VMAlloc(ul_Mem);
 
 			for(i = 0, p = pst_Func->pst_RootNode; i < ul_Mem / sizeof(AI_tdst_Node); ++i)
 			{

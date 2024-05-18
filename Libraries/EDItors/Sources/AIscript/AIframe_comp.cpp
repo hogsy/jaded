@@ -365,7 +365,7 @@ void EAI_cl_Frame::UpdateEngineNodes(EAI_cl_Compiler *_po_Compiler, BIG_INDEX _u
 				ERR_X_Error(pst_Func, "A function does not exists in model", BIG_NameFile(mul_CurrentEditModel));
 
 				/* Free actual node list of function */
-				if(pst_Func->pst_RootNode) MEM_FreeAlign(pst_Func->pst_RootNode);
+				if(pst_Func->pst_RootNode) MEM_Free(pst_Func->pst_RootNode);
 
 				/* Free actual node list of function */
 				if(pst_Func->pst_OtherRootNode) MEM_Free(pst_Func->pst_OtherRootNode);
