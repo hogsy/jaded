@@ -42,11 +42,9 @@ typedef struct	LOA_tdst_Ref_
 	ULONG					*pul_Res;		/* To store the result of the loading */
 	LOA_tdpfnul_CallBack	pfnul_CallBack; /* Callback to call */
 	char					c_Type;			/* Type for reference */
-#ifdef _DEBUG
     char					*s_CallbackName;
 	char					*psz_File;
 	int						i_NumLine;
-#endif
 } LOA_tdst_Ref;
 
 /*$2
