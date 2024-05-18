@@ -287,8 +287,7 @@ void OBJ_VertexColor_Free( OBJ_tdst_GameObject *_pst_GO )
 	LOA_DeleteAddress(pst_Visu->dul_VertexColors);
 //#endif
 
-	MEM_Free(pst_Visu->dul_VertexColors);
-	pst_Visu->dul_VertexColors = NULL;
+	MEM_SafeFree( pst_Visu->dul_VertexColors );
 }
 
 #if defined(PSX2_TARGET) && defined(__cplusplus)

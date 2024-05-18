@@ -522,9 +522,8 @@ void OBJ_ChangeIdentityFlags(OBJ_tdst_GameObject *_pst_Object, ULONG _ul_Flag, U
 #if defined(_XBOX) || defined(_XENON)
 		MEM_FreeAlign(_pst_Object->pst_Base->pst_Hierarchy);
 #else
-		MEM_Free(_pst_Object->pst_Base->pst_Hierarchy);
+		MEM_SafeFree(_pst_Object->pst_Base->pst_Hierarchy);
 #endif
-		_pst_Object->pst_Base->pst_Hierarchy = NULL;
 	}
 
 	/*$2
@@ -556,8 +555,7 @@ void OBJ_ChangeIdentityFlags(OBJ_tdst_GameObject *_pst_Object, ULONG _ul_Flag, U
 		_pst_Object->ul_IdentityFlags |= OBJ_C_IdentityFlag_AdditionalMatrix;
 		OBJ_Gizmo_DelEditObject(_pst_Object);
 		if(_pst_Object->pst_Base->pst_AddMatrix->l_Number) MEM_Free(_pst_Object->pst_Base->pst_AddMatrix->dst_Gizmo);
-		MEM_Free(_pst_Object->pst_Base->pst_AddMatrix);
-		_pst_Object->pst_Base->pst_AddMatrix = NULL;
+		MEM_SafeFree(_pst_Object->pst_Base->pst_AddMatrix);
 	}
 
 	/* Convert matrix to pointers */
@@ -618,8 +616,7 @@ void OBJ_ChangeIdentityFlags(OBJ_tdst_GameObject *_pst_Object, ULONG _ul_Flag, U
 	}
 	else if(_ul_OldFlags & OBJ_C_IdentityFlag_DesignStruct)
 	{
-		MEM_Free(_pst_Object->pst_Extended->pst_Design);
-		_pst_Object->pst_Extended->pst_Design = NULL;
+		MEM_SafeFree( _pst_Object->pst_Extended->pst_Design );
 	}
 
 	/*$2
@@ -639,8 +636,7 @@ void OBJ_ChangeIdentityFlags(OBJ_tdst_GameObject *_pst_Object, ULONG _ul_Flag, U
 	else if(_ul_OldFlags & OBJ_C_IdentityFlag_Msg)
 	{
 		AI_EvalFunc_MSGClear_C(_pst_Object);
-		MEM_Free(_pst_Object->pst_Extended->pst_Msg);
-		_pst_Object->pst_Extended->pst_Msg = NULL;
+		MEM_SafeFree( _pst_Object->pst_Extended->pst_Msg );
 	}
 
 	/*$2

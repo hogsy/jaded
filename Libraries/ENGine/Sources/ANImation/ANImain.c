@@ -572,12 +572,10 @@ void ANI_ChangeBoneShape(OBJ_tdst_GameObject *_pst_RefGO, UCHAR _uc_Canal, UCHAR
 			{
 				if(pst_BoneGO->pst_Base->pst_AddMatrix->dst_Gizmo)
 				{
-					MEM_Free(pst_BoneGO->pst_Base->pst_AddMatrix->dst_Gizmo);
-					pst_BoneGO->pst_Base->pst_AddMatrix->dst_Gizmo = NULL;
+					MEM_SafeFree(pst_BoneGO->pst_Base->pst_AddMatrix->dst_Gizmo);
 				}
 
-				MEM_Free(pst_BoneGO->pst_Base->pst_AddMatrix);
-				pst_BoneGO->pst_Base->pst_AddMatrix = NULL;
+				MEM_SafeFree(pst_BoneGO->pst_Base->pst_AddMatrix);
 				pst_BoneGO->ul_IdentityFlags &= ~OBJ_C_IdentityFlag_AdditionalMatrix;
 				pst_BoneGO->ul_IdentityFlags &= ~OBJ_C_IdentityFlag_AddMatArePointer;
 			}

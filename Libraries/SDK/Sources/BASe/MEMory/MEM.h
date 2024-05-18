@@ -772,11 +772,12 @@ ULONG MEM_ul_GetRealSize(void *_pv_Block);
  ***********************************************************************************************************************
  */
 
-#if defined(_DEBUG) || defined(ACTIVE_EDITORS)
+#if defined(_DEBUG)
 
 void	MEM_CheckDynamicBlocEmpty(void);
 void	MEM_CheckAllocatedBlocks(char);
 char	MEM_b_CheckPointer(void *p);
+
 #else
 
 /*

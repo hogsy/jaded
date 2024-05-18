@@ -286,8 +286,7 @@ void WOR_World_DetachObject(WOR_tdst_World *_pst_World, OBJ_tdst_GameObject *_ps
 						pst_CurrentGO->pst_Base->pst_Hierarchy->pst_Father = NULL;
 						pst_CurrentGO->pst_Base->pst_Hierarchy->pst_FatherInit = NULL;
 						pst_CurrentGO->ul_IdentityFlags &= ~OBJ_C_IdentityFlag_Hierarchy;
-						MEM_Free(pst_CurrentGO->pst_Base->pst_Hierarchy);
-						pst_CurrentGO->pst_Base->pst_Hierarchy = NULL;
+						MEM_SafeFree(pst_CurrentGO->pst_Base->pst_Hierarchy);
 					}
 				}
 				else
@@ -374,6 +373,9 @@ void WOR_World_DetachObject(WOR_tdst_World *_pst_World, OBJ_tdst_GameObject *_ps
 		}
 	}
 #endif
+
+	// hogsy: HACK - set the world to null, as after detatch this will be accessed again per GameObject_Remove after the fact which causes issues...
+	_pst_GO->pst_World = NULL;
 }
 
 /*

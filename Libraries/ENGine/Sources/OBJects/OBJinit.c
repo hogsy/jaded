@@ -1422,16 +1422,14 @@ void OBJ_GameObject_RemoveButEnFaitNon(OBJ_tdst_GameObject *pst_Object, char _c_
 		/* Design struct */
 		if(OBJ_b_TestIdentityFlag(pst_Object, OBJ_C_IdentityFlag_DesignStruct))
 		{
-			MEM_Free(pst_Object->pst_Extended->pst_Design);
-			pst_Object->pst_Extended->pst_Design = NULL;
+			MEM_SafeFree( pst_Object->pst_Extended->pst_Design );
 		}
 
 		/* Object with an msg struct */
 		if(OBJ_b_TestIdentityFlag(pst_Object, OBJ_C_IdentityFlag_Msg))
 		{
 			AI_EvalFunc_MSGClear_C(pst_Object);
-			MEM_Free(pst_Object->pst_Extended->pst_Msg);
-			pst_Object->pst_Extended->pst_Msg = NULL;
+			MEM_SafeFree( pst_Object->pst_Extended->pst_Msg );
 		}
 
 		/* Free the Col structure */
@@ -1655,7 +1653,10 @@ void OBJ_GameObject_Remove(OBJ_tdst_GameObject *pst_Object, char _c_DecGroRef )
 
 		/* Object with AI */
 		if(OBJ_b_TestIdentityFlag(pst_Object, OBJ_C_IdentityFlag_AI))
-			AI_FreeInstance((AI_tdst_Instance *) pst_Object->pst_Extended->pst_Ai);
+		{
+			AI_FreeInstance( ( AI_tdst_Instance * ) pst_Object->pst_Extended->pst_Ai );
+			pst_Object->pst_Extended->pst_Ai = NULL;
+		}
 
 		/* Events */
 		if(OBJ_b_TestIdentityFlag(pst_Object, OBJ_C_IdentityFlag_Events)) EVE_FreeMainStruct(pst_Object);
@@ -1683,16 +1684,14 @@ void OBJ_GameObject_Remove(OBJ_tdst_GameObject *pst_Object, char _c_DecGroRef )
 		/* Design struct */
 		if(OBJ_b_TestIdentityFlag(pst_Object, OBJ_C_IdentityFlag_DesignStruct))
 		{
-			MEM_Free(pst_Object->pst_Extended->pst_Design);
-			pst_Object->pst_Extended->pst_Design = NULL;
+			MEM_SafeFree( pst_Object->pst_Extended->pst_Design );
 		}
 
 		/* Object with an msg struct */
 		if(OBJ_b_TestIdentityFlag(pst_Object, OBJ_C_IdentityFlag_Msg))
 		{
 			AI_EvalFunc_MSGClear_C(pst_Object);
-			MEM_Free(pst_Object->pst_Extended->pst_Msg);
-			pst_Object->pst_Extended->pst_Msg = NULL;
+			MEM_SafeFree( pst_Object->pst_Extended->pst_Msg );
 		}
 
 		/* Free the Col structure */

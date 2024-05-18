@@ -339,12 +339,6 @@ static void s_InitBeforeTrame(void)
 
 		UNI_Status() = UNI_Cuc_Ready;
 	}
-
-#if defined(_DEBUG) && ( defined(ACTIVE_EDITORS) || defined(PCWIN_TOOL) )
-#ifndef MEM_OPT
-	if(ENG_gb_TestMemory) MEM_CheckAllocatedBlocks(0);
-#endif
-#endif
 }
 
 /*
