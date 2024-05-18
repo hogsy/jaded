@@ -602,16 +602,22 @@ BOOL WOR_World_Destroy(WOR_tdst_World *_pst_World)
 	LINK_DelRegisterPointer(_pst_World);
 
 	/* Close and destroy world */
-	MEM_Free(_pst_World);
 
-#if !defined(XML_CONV_TOOL)
+	if (WOR_gpst_CurrentWorld == _pst_World)
+	{
+		WOR_gpst_CurrentWorld = NULL;
+	}
+
+#if !defined( XML_CONV_TOOL )
 	/* Is it current active world ? */
-	if(MAI_gst_MainHandles.pst_World == _pst_World)
+	if ( MAI_gst_MainHandles.pst_World == _pst_World )
 	{
 		MAI_gst_MainHandles.pst_World = NULL;
-		if(MAI_gst_MainHandles.pst_DisplayData) MAI_gst_MainHandles.pst_DisplayData->pst_World = NULL;
+		if ( MAI_gst_MainHandles.pst_DisplayData ) MAI_gst_MainHandles.pst_DisplayData->pst_World = NULL;
 	}
 #endif
+
+	MEM_Free(_pst_World);
 
 #ifdef ACTIVE_EDITORS
 	ERR_gpst_ContextGAO = NULL;
