@@ -2070,10 +2070,6 @@ BOOL EDI_cl_App::OnIdle( LONG _l_Count )
 		M_MF()->SetWindowText(o_Str);
 	}*/
 
-#	ifdef _DEBUG
-	if ( ENG_gb_TestMemory ) MEM_CheckAllocatedBlocks( 0 );
-#	endif
-
 	/*
 	 * Force pane to be ready, and to erase last message. That means that status must
 	 * not be used to set persistent text. A long operation will terminate here...
