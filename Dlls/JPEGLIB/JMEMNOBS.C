@@ -20,25 +20,9 @@
 #include "JPEGLIB.H"
 #include "JMEMSYS.H"		/* import the system-dependent declarations */
 
+#define _MEM_p_Alloc( _SIZE ) calloc( 1, ( _SIZE ) )
+#define MEM_Free( _PTR )      free( ( _PTR ) )
 
-#ifndef HAVE_STDLIB_H		/* <stdlib.h> should declare malloc(),free() */
-extern void * malloc JPP((size_t size));
-extern void free JPP((void *ptr));
-#endif
-
-#ifndef JADEFUSION
-extern void * _MEM_p_Alloc(size_t sizeofobject);
-#else //JADEFUSION
-#ifdef _DEBUG
-extern void *_MEM_p_Alloc(unsigned long _ul_BlockSize, char *_psz_File, int _i_Line);
-#define MEM_p_Alloc_Custom(BlockSize) _MEM_p_Alloc(BlockSize, "", 0)
-#else
-extern void *_MEM_p_Alloc(unsigned long _ul_BlockSize);
-#define MEM_p_Alloc_Custom(BlockSize) _MEM_p_Alloc(BlockSize)
-#endif
-#endif //JADEFUSION
-
-extern void MEM_Free(void *object);
 void *jpgHightPointer = NULL;
 #define jpgHightPointer_BASE (1024*1024*100)
 
