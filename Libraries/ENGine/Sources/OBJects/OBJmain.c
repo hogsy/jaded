@@ -565,7 +565,7 @@ void OBJ_ChangeIdentityFlags(OBJ_tdst_GameObject *_pst_Object, ULONG _ul_Flag, U
 		{
 			if(_pst_Object->pst_Base->pst_AddMatrix->l_Number)
 			{
-				MEM_Free(_pst_Object->pst_Base->pst_AddMatrix->dst_Gizmo);
+				MEM_SafeFree(_pst_Object->pst_Base->pst_AddMatrix->dst_Gizmo);
 				_pst_Object->pst_Base->pst_AddMatrix->dst_GizmoPtr = (OBJ_tdst_GizmoPtr *) MEM_p_Alloc(_pst_Object->pst_Base->pst_AddMatrix->l_Number * sizeof(OBJ_tdst_GizmoPtr));
 				for(i = 0; i < _pst_Object->pst_Base->pst_AddMatrix->l_Number; i++)
 				{
@@ -584,7 +584,7 @@ void OBJ_ChangeIdentityFlags(OBJ_tdst_GameObject *_pst_Object, ULONG _ul_Flag, U
 	{
 		if(_pst_Object->pst_Base->pst_AddMatrix->l_Number)
 		{
-			MEM_Free(_pst_Object->pst_Base->pst_AddMatrix->dst_GizmoPtr);
+			MEM_SafeFree(_pst_Object->pst_Base->pst_AddMatrix->dst_GizmoPtr);
 #if defined(_XBOX) || defined(_XENON)
 			_pst_Object->pst_Base->pst_AddMatrix->dst_Gizmo = (OBJ_tdst_Gizmo *) MEM_p_AllocAlign(_pst_Object->pst_Base->pst_AddMatrix->l_Number * sizeof(OBJ_tdst_Gizmo),16);
 #else

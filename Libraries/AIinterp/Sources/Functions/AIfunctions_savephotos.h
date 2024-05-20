@@ -17,13 +17,6 @@
 #include <time.h>
 #include "INOut/INOsaving.h"
 
-
-#ifdef _GAMECUBE
-#include "SDK/Sources/GameCube/GC_arammng.h"
-#include "SDK/Sources/GameCube/GC_aramheap.h"
-#endif
-
-
 #define SAV_PhotoFirstInit()
 #define SAV_PhotoInit()
 #define SAV_PhotoReinit()

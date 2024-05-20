@@ -606,7 +606,11 @@ void AI_FreeInstance(AI_tdst_Instance *_pst_Instance)
 	}
 
 	_pst_Instance->pst_Model->uw_NbInstances--;
-	if(!_pst_Instance->pst_Model->uw_NbInstances) AI_FreeModel(_pst_Instance->pst_Model);
+	if ( !_pst_Instance->pst_Model->uw_NbInstances )
+	{
+		AI_FreeModel( _pst_Instance->pst_Model );
+		_pst_Instance->pst_Model = NULL;
+	}
 
 	/* Unregister pointer */
 	LOA_DeleteAddress(_pst_Instance);

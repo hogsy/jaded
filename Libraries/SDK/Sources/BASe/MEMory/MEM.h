@@ -29,10 +29,6 @@ extern "C"
 {
 #endif
 
-#ifndef ACTIVE_EDITORS
-#define MEM_OPT
-#endif
-
 #if (defined MEM_OPT) && !(defined _FINAL_)
 #define MEM_MEASURES
 #endif // if (defined MEM_OPT) && !(defined _FINAL_)
@@ -299,24 +295,20 @@ extern void MEM_CloseModule(void);
     Allocation / Free (normal, aligned, from end)
  ***********************************************************************************************************************
  */
-extern void MEM_Free(void *_pv_Block);
-extern void MEM_FreeFromEnd(void *_pv_block);
 
-#define MEM_FreeAlign(a)		MEM_Free(a)
-#ifdef JADEFUSION
-#define MEM_SafeFree(Ptr)		\
-    do { \
-    if(NULL != Ptr)\
-{\
-    MEM_Free(Ptr);\
-    Ptr = NULL;\
-} \
-    } \
-    while(0)
-#else
-#define MEM_SafeFree(a)		do { MEM_Free(a); (a) = NULL;} while(0)
-#endif
-#define MEM_SetNextType(a) 
+#	define MEM_Free( a )        free( a )
+#	define MEM_FreeFromEnd( a ) free( a )
+#	define MEM_FreeAlign( a )   _aligned_free( a )
+
+#	define MEM_SafeFree( a )  \
+		do {                   \
+			if ( a != NULL )   \
+			{                  \
+				MEM_Free( a ); \
+				( a ) = NULL;  \
+			}                  \
+		} while ( 0 )
+#	define MEM_SetNextType( a )
 
 enum MEM_Type
 {
@@ -423,6 +415,7 @@ enum MEM_Type
 
 #else // MEM_OPT
 
+#		if 0
 	#ifdef PSX2_TARGET
 	#ifdef _DEBUG
 	extern void *_MEM_p_AllocFromEndAlign(ULONG _ul_size, ULONG _i_modulo, char *_str_file, int _i_line);
@@ -450,6 +443,20 @@ enum MEM_Type
     extern void *_MEM_p_AllocAlign(ULONG, ULONG);
     extern void *_MEM_p_ReallocAlign(void * _pv, ULONG _ul_BlockSize, ULONG Alignment);
 	#endif /* _DEBUG */
+#else
+
+#			define _MEM_p_Alloc( _SIZE, ... )           calloc( 1, ( _SIZE ) )
+#			define _MEM_p_Realloc( _BLOCK, _SIZE, ... ) realloc( ( _BLOCK ), ( _SIZE ) )
+
+#			define _MEM_p_AllocFromEnd( _SIZE, ... ) calloc( 1, ( _SIZE ) )
+
+#			define _MEM_p_AllocAlign( _SIZE, _ALIGN, ... )           memset( _aligned_malloc( _SIZE, _ALIGN ), 0, _SIZE )
+#			define _MEM_p_ReallocAlign( _BLOCK, _SIZE, _ALIGN, ... ) _aligned_realloc( _BLOCK, _SIZE, _ALIGN )
+
+#			define MEM_p_AllocFromEndAlign( _SIZE, _ALIGN ) _MEM_p_AllocAlign( _SIZE, _ALIGN )
+#			define MEM_FreeFromEndAlign( _PTR )             _aligned_free( ( _PTR ) )
+
+#endif
 
 	#ifdef _DEBUG
 	#define MEM_p_Alloc(a)		   			_MEM_p_Alloc(a, __FILE__, __LINE__)
@@ -601,7 +608,7 @@ extern ULONG MEM_uGetLastBlockSize(MEM_tdst_MainStruct *_pMem);
  */
 
 #ifdef _DEBUG
-#define MEM_CHECK
+//#define MEM_CHECK
 #endif // _DEBUG
 
 #ifdef MEM_CHECK

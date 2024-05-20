@@ -613,6 +613,7 @@ int AI_EvalFunc_WORLoadList_C(int i)
 #endif
 
 	WOR_gi_IsLoading = 1;
+
 	LOA_StartLoadRaster(LOA_Cte_LDI_AddWorldList);
 
 #ifdef JADEFUSION
@@ -629,6 +630,7 @@ int AI_EvalFunc_WORLoadList_C(int i)
 	pst_World = WOR_pst_Universe_AddWorldList(NULL, i, 0);
 	WOR_l_Universe_GetWorldIndex(pst_World);
 	LOA_StopLoadRaster(LOA_Cte_LDI_AddWorldList);
+
 	WOR_gi_IsLoading = 0;
 	
 	return WOR_l_Universe_GetWorldIndex(pst_World);

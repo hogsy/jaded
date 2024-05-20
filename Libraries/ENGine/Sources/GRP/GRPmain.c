@@ -696,6 +696,8 @@ void GRP_ObjDetachGroup(OBJ_tdst_GameObject *_pst_GO)
 						if(!(pst_GrpGO->ul_IdentityFlags & OBJ_C_IdentityFlag_Bone)) continue;
 						if(pst_GrpGO == _pst_GO) continue;
 
+						//TAB_Ptable_RemoveElem( ( TAB_tdst_Ptable * ) ( pst_Group->pst_AllObjects ), ( void ** ) ( pst_CurrentElem ) );
+
 						pst_World = WOR_World_GetWorldOfObject(pst_GrpGO);
 						WOR_World_DetachObject(pst_World, pst_GrpGO);
 						OBJ_GameObject_Remove(pst_GrpGO, 1);

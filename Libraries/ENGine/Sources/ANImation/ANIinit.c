@@ -83,8 +83,8 @@ void ANI_Free(ANI_st_GameObjectAnim *pst_GOAnim)
 					MEM_FreeAlign(pst_GOAnim->apst_Anim[i]->pst_Data);
 					MEM_FreeAlign(pst_GOAnim->apst_Anim[i]);
 #else
-					MEM_Free(pst_GOAnim->apst_Anim[i]->pst_Data);
-					MEM_Free(pst_GOAnim->apst_Anim[i]);
+					MEM_SafeFree( pst_GOAnim->apst_Anim[ i ]->pst_Data );
+					MEM_SafeFree( pst_GOAnim->apst_Anim[ i ] );
 #endif
 				}
 			}
@@ -102,8 +102,8 @@ void ANI_Free(ANI_st_GameObjectAnim *pst_GOAnim)
 					MEM_FreeAlign(pst_GOAnim->apst_PartialAnim[i]->pst_Data);
 					MEM_FreeAlign(pst_GOAnim->apst_PartialAnim[i]);
 #else
-					MEM_Free(pst_GOAnim->apst_PartialAnim[i]->pst_Data);
-					MEM_Free(pst_GOAnim->apst_PartialAnim[i]);
+					MEM_SafeFree( pst_GOAnim->apst_PartialAnim[ i ]->pst_Data );
+					MEM_SafeFree( pst_GOAnim->apst_PartialAnim[ i ] );
 #endif
 				}
 			}

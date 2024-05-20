@@ -125,12 +125,10 @@ extern char *TEX_gasz_QualityName[5];
 #define TEX_M_File_Alloc(p, l, t) \
 	{ \
 		p = (t *) MEM_p_AllocAlign(l, 64); \
-		MEM_gst_MemoryInfo.ul_TexturesCurrentAllocated += MEM_ul_GetRealSize((void *)p); \
 	}
 #define TEX_M_File_AllocTmp(p, l, t) \
     { \
         p = (t *) MEM_p_AllocTmp(l); \
-        MEM_gst_MemoryInfo.ul_TexturesCurrentAllocated += MEM_ul_GetRealSize(p); \
     }
 #else
 #define TEX_M_File_Alloc(p, l, t) \
@@ -153,16 +151,12 @@ extern char *TEX_gasz_QualityName[5];
 #elif defined(ACTIVE_EDITORS)
 #define TEX_M_File_Realloc(p, l, t) \
 	{ \
-		MEM_gst_MemoryInfo.ul_TexturesCurrentAllocated -= MEM_ul_GetRealSize((void *) p); \
 		p = (t *) MEM_p_ReallocAlign(p, l, 64); \
-		MEM_gst_MemoryInfo.ul_TexturesCurrentAllocated += MEM_ul_GetRealSize((void *) p); \
 	}
 #else
 #define TEX_M_File_Realloc(p, l, t) \
 	{ \
-		MEM_gst_MemoryInfo.ul_TexturesCurrentAllocated -= MEM_ul_GetRealSize((void *) *((ULONG **) p - 1)); \
 		p = (t *) MEM_p_ReallocAlign(p, l, 64); \
-		MEM_gst_MemoryInfo.ul_TexturesCurrentAllocated += MEM_ul_GetRealSize((void *) *((ULONG **) p - 1)); \
 	}
 #endif	
 
@@ -174,19 +168,11 @@ extern char *TEX_gasz_QualityName[5];
 #elif defined(ACTIVE_EDITORS)
 #define TEX_M_File_Free(p) \
 	{ \
-        if(MEM_IsTmpPointer((char*)(p)))\
-            MEM_gst_MemoryInfo.ul_TexturesCurrentAllocated -= ((ULONG*)(p))[-1]; \
-        else\
-		    MEM_gst_MemoryInfo.ul_TexturesCurrentAllocated -= MEM_ul_GetRealSize((void *)p); \
 		MEM_FreeAlign(p); \
 	}
 #else
 #define TEX_M_File_Free(p) \
 	{ \
-        if(MEM_IsTmpPointer((char*)(p)))\
-            MEM_gst_MemoryInfo.ul_TexturesCurrentAllocated -= ((ULONG*)(p))[-1]; \
-        else\
-		    MEM_gst_MemoryInfo.ul_TexturesCurrentAllocated -= MEM_ul_GetRealSize((void *) *((ULONG **) p - 1)); \
 		MEM_FreeAlign(p); \
 	}
 #endif
