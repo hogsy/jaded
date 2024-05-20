@@ -42,14 +42,7 @@
 #include "MATHs/MATHquat.h"
 
 /* Fonctions pour debugger */
-
-#ifdef JADEFUSION
-#	include "MATHs/MATHdebug.h"
-#else
-#	ifdef _DEBUG
-#		include "MATHs/MATHdebug.h"
-#	endif
-#endif//JADEFUSION
+#include "MATHs/MATHdebug.h"
 
 #if defined( __cplusplus )
 extern "C"

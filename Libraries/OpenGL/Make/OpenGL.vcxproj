@@ -9,20 +9,12 @@
       <Configuration>DebugEditorsXenon</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Debug|Win32">
-      <Configuration>Debug</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="DEMO XBOX|Win32">
       <Configuration>DEMO XBOX</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="FINAL XBOX|Win32">
       <Configuration>FINAL XBOX</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Final|Win32">
-      <Configuration>Final</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release|Win32">
@@ -65,16 +57,6 @@
     <PlatformToolset>v143</PlatformToolset>
     <UseOfMfc>Static</UseOfMfc>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Final|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
-    <PlatformToolset>v143</PlatformToolset>
-    <UseOfMfc>false</UseOfMfc>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
-    <PlatformToolset>v143</PlatformToolset>
-    <UseOfMfc>false</UseOfMfc>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <PlatformToolset>v143</PlatformToolset>
@@ -109,14 +91,6 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
   </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Final|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
-  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
@@ -144,14 +118,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>.\../../../Output/Libs\</OutDir>
     <IntDir>.\../../../Output/Tmp/OGL___r\</IntDir>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>.\../../../Output/Libs\</OutDir>
-    <IntDir>.\../../../Output/Tmp/OGL___d\</IntDir>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Final|Win32'">
-    <OutDir>.\../../../Output/Libs\</OutDir>
-    <IntDir>.\../../../Output/Tmp/OGL___f\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">
     <OutDir>$(Configuration)\</OutDir>
@@ -223,13 +189,12 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>..\..\..\Libraries\SDK;..\..\..\Main\WinEngine\Sources;..\..\..\Libraries\SDK\Sources;..\..\..\Extern;..\..\..\Libraries;..\Sources;..\..\..\Libraries\GraphicDK\Sources;..\..\..\Dlls;..\..\..\extern\ode\Include;%(AdditionalIncludeDirectories);..\extern\glew\include</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>RELEASE;_WINDOWS;WIN32;NDEBUG;PCWIN_TOOL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <AdditionalIncludeDirectories>..\..\..\Libraries\SDK;..\..\..\Main\WinEngine\Sources;..\..\..\Libraries\SDK\Sources;..\..\..\Extern;..\..\..\Libraries;..\Sources;..\..\..\Libraries\GraphicDK\Sources;..\..\..\Dlls;..\..\..\extern\ode\Include;..\..\..\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>RELEASE;ACTIVE_EDITORS;_WINDOWS;WIN32;NDEBUG;PCWIN_TOOL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>Precomp.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>.\../../../Output/Tmp/OGL___r/OpenGL.pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>.\../../../Output/Tmp/OGL___r/</AssemblerListingLocation>
@@ -239,65 +204,15 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat />
       <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
     </ClCompile>
     <ResourceCompile>
       <Culture>0x040c</Culture>
     </ResourceCompile>
     <Lib>
       <OutputFile>../../../Output\Libs\OGL___r.lib</OutputFile>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <AdditionalLibraryDirectories>..\extern\glew\lib\release\win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-    </Lib>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <ClCompile>
-      <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\..\Libraries\SDK;..\..\..\Main\WinEngine\Sources;..\..\..\Libraries\SDK\Sources;..\..\..\Extern;..\..\..\Libraries;..\Sources;..\..\..\Libraries\GraphicDK\Sources;..\..\..\Dlls;..\..\..\extern\ode\Include;%(AdditionalIncludeDirectories);..\extern\glew\include</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_WINDOWS;WIN32;_DEBUG;PCWIN_TOOL;_CRT_SECURE_NO_DEPRECATE;_USE_32BIT_TIME_T;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>Precomp.h</PrecompiledHeaderFile>
-      <PrecompiledHeaderOutputFile>.\../../../Output/Tmp/OGL___d/OpenGL.pch</PrecompiledHeaderOutputFile>
-      <AssemblerListingLocation>.\../../../Output/Tmp/OGL___d/</AssemblerListingLocation>
-      <ObjectFileName>.\../../../Output/Tmp/OGL___d/</ObjectFileName>
-      <ProgramDataBaseFileName>.\../../../Output/Tmp/OGL___d/</ProgramDataBaseFileName>
-      <WarningLevel>Level3</WarningLevel>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <LanguageStandard_C>stdc17</LanguageStandard_C>
-    </ClCompile>
-    <ResourceCompile>
-      <Culture>0x040c</Culture>
-    </ResourceCompile>
-    <Lib>
-      <OutputFile>../../../Output\Libs\OGL___d.lib</OutputFile>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <AdditionalLibraryDirectories>..\extern\glew\lib\release\win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-    </Lib>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Final|Win32'">
-    <ClCompile>
-      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>..\..\..\Libraries\SDK;..\..\..\Main\WinEngine\Sources;..\..\..\Libraries\SDK\Sources;..\..\..\Extern;..\..\..\Libraries;..\Sources;..\..\..\Libraries\GraphicDK\Sources;..\..\..\Dlls;..\..\..\extern\ode\Include;%(AdditionalIncludeDirectories);..\extern\glew\include</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;RELEASE;_WINDOWS;_FINAL_;PCWIN_TOOL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <StringPooling>true</StringPooling>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>Precomp.h</PrecompiledHeaderFile>
-      <PrecompiledHeaderOutputFile>.\../../../Output/Tmp/OGL___f/OpenGL.pch</PrecompiledHeaderOutputFile>
-      <AssemblerListingLocation>.\../../../Output/Tmp/OGL___f/</AssemblerListingLocation>
-      <ObjectFileName>.\../../../Output/Tmp/OGL___f/</ObjectFileName>
-      <ProgramDataBaseFileName>.\../../../Output/Tmp/OGL___f/</ProgramDataBaseFileName>
-      <WarningLevel>Level3</WarningLevel>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <LanguageStandard_C>stdc17</LanguageStandard_C>
-    </ClCompile>
-    <ResourceCompile>
-      <Culture>0x040c</Culture>
-    </ResourceCompile>
-    <Lib>
-      <OutputFile>../../../Output\Libs\OGL___f.lib</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>..\extern\glew\lib\release\win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
@@ -431,9 +346,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='FINAL XBOX|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Final|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='SpeedEditorsXenon|Win32'">Create</PrecompiledHeader>
@@ -448,22 +361,6 @@
     <ClInclude Include="..\Sources\OGLtex.h" />
     <ClInclude Include="..\Sources\OGLWater.h" />
     <ClInclude Include="..\Sources\Precomp.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <CustomBuild Include="..\..\..\Extern\DDRAW.LIB">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='FINAL XBOX|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Final|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Speed Editors|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='SpeedEditorsXenon|Win32'">true</ExcludedFromBuild>
-    </CustomBuild>
-    <Library Include="..\..\..\Extern\OPENGL32.LIB">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
-    </Library>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
