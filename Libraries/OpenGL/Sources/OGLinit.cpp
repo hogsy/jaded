@@ -1630,6 +1630,7 @@ void OGL_SetTextureBlending( ULONG _l_Texture, ULONG BM )
 				glAlphaFunc( GL_LESS, 1.0f / 256.0f * ( float ) MAT_GET_AlphaTresh( BM ) );
 			else
 				glAlphaFunc( GL_GREATER, 1.0f / 256.0f * ( float ) MAT_GET_AlphaTresh( BM ) );
+
 			glEnable( GL_ALPHA_TEST );
 			//glEnable( GL_SAMPLE_ALPHA_TO_COVERAGE );
 		}
@@ -1647,6 +1648,7 @@ void OGL_SetTextureBlending( ULONG _l_Texture, ULONG BM )
 
 	OGL_RS_DepthFunc( &pst_SD->st_RS, ( Flag & MAT_Cul_Flag_ZEqual ) ? GL_EQUAL : GL_LEQUAL );
 	OGL_RS_DepthMask( &pst_SD->st_RS, ( Flag & MAT_Cul_Flag_NoZWrite ) ? 0 : 1 );
+
 #ifdef ACTIVE_EDITORS
 	if ( restore_polygon_offset )
 	{
@@ -2242,63 +2244,6 @@ void OGL_l_DrawSPG2_SPRITES_2X(
 #define SinAlpha 0.9396926207859083840541092773247f
 
 #define U32 ULONG
-/*
-p_CachedPrimitiv->a_ColorLA2[p_CachedPrimitiv->a_PtrLA2 >> 2] = Color | 0xff000000;
-p_CachedPrimitiv->a_PointLA2[p_CachedPrimitiv->a_PtrLA2++] = *(SOFT_tdst_AVertex*)&Place;
-p_CachedPrimitiv->a_PointLA2[p_CachedPrimitiv->a_PtrLA2++] = *(SOFT_tdst_AVertex	*)&XA;
-p_CachedPrimitiv->a_PointLA2[p_CachedPrimitiv->a_PtrLA2] = *(SOFT_tdst_AVertex	*)&YA;
-p_CachedPrimitiv->a_PointLA2[p_CachedPrimitiv->a_PtrLA2++].w = LocalSize;
-p_CachedPrimitiv->a_PointLA2[p_CachedPrimitiv->a_PtrLA2] = *(SOFT_tdst_AVertex	*)&ZA;
-p_CachedPrimitiv->a_PointLA2[p_CachedPrimitiv->a_PtrLA2++].c = (WindSelector ++) & (SPG2_WindNumbers - 1);
-*/
-typedef struct SPG2_CompressedCachedPrimitivs_
-{
-	/*	SOFT_tdst_AVertex	a_PointLA2[SPG2_PACKET_SIZE<<2]	ONLY_PSX2_ALIGNED(64);
-	ULONG				a_ColorLA2[SPG2_PACKET_SIZE]	ONLY_PSX2_ALIGNED(64);*/
-
-	float LocalSizeMax;
-	uint8_t WindBase;
-
-	uint32_t AllPS[ SPG2_PACKET_SIZE ];// << 24 == LocalSizeMax * char
-	uint8_t AllXA[ SPG2_PACKET_SIZE ]; // Get It From palette
-	uint8_t AllYA[ SPG2_PACKET_SIZE ]; // Get It From palette
-	uint8_t AllZA[ SPG2_PACKET_SIZE ]; // Get It From palette
-
-	uint8_t AllLocalSizes[ SPG2_PACKET_SIZE >> 1 ];// 4 hitgh bits = odd size , 4 lower bits = odd size
-	uint16_t CompressedColors[ SPG2_PACKET_SIZE ];
-
-
-} SPG2_CompressedCachedPrimitivs;
-// size = 64 * (4 + 3 + 0.5 + 2) = 64 * (9.5) = 608
-#if 0
-typedef struct SPG2_CompressedCachedPrimitivs_
-{
-/*	SOFT_tdst_AVertex	a_PointLA2[SPG2_PACKET_SIZE<<2]	ONLY_PSX2_ALIGNED(64);
-	ULONG				a_ColorLA2[SPG2_PACKET_SIZE]	ONLY_PSX2_ALIGNED(64);*/
-
-	u16					indexT[SPG2_PACKET_SIZE];
-	u8					Weight1[SPG2_PACKET_SIZE];
-	u8					Weight2[SPG2_PACKET_SIZE];
-
-
-
-
-} SPG2_CompressedCachedPrimitivs;
- // size = 64 * (4) = 256
-#endif
-/*
-	SOFT_tdst_AVertex	a_PointLA2[SPG2_PACKET_SIZE<<2]	ONLY_PSX2_ALIGNED(64);
-	ULONG				a_ColorLA2[SPG2_PACKET_SIZE]	ONLY_PSX2_ALIGNED(64);
-	ULONG				a_PtrLA2;
-	ULONG				ulFlags; /* 0 = Turned , 1 = Used */
-// size = 256 * 16 + 64 * 4 = 4352
-
-void OGL_CompresseCachedPrim( SPG2_CompressedCachedPrimitivs *p_Compressed, SPG2_CachedPrimitivs *pCachedLine )
-{
-}
-void OGL_UnCompresseCachedPrim( SPG2_CompressedCachedPrimitivs *p_Compressed, SPG2_CachedPrimitivs *pCachedLine )
-{
-}
 
 extern "C" void OGL_l_DrawSPG2( SPG2_CachedPrimitivs *pCachedLine,
                                 ULONG *ulTextureID,
