@@ -16,6 +16,10 @@
 
 #include "ImGuiInterface.h"
 
+#include "Profiler.h"
+
+jaded::sys::Profiler jaded::sys::profiler;
+
 static SDL_Window *sdlWindow;
 static SDL_GLContext sdlGLContext;
 
