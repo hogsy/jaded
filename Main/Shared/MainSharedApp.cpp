@@ -25,6 +25,41 @@ static SDL_GLContext sdlGLContext;
 
 //#define USE_SDL_GL_CONTEXT
 
+/******************************************************************/
+/******************************************************************/
+
+void jaded::sys::Profiler::StartProfiling( const std::string &set )
+{
+	if ( !isActive )
+	{
+		return;
+	}
+
+	auto i = profSets.find( set );
+	if ( i == profSets.end() )
+	{
+		profSets.emplace( set, Profile() );
+		return;
+	}
+
+	i->second.Start();
+}
+
+void jaded::sys::Profiler::EndProfiling( const std::string &set )
+{
+	if ( !isActive )
+	{
+		return;
+	}
+
+	auto i = profSets.find( set );
+	assert( i != profSets.end() );
+	i->second.End();
+}
+
+/******************************************************************/
+/******************************************************************/
+
 #if defined( _WIN32 )
 
 extern int EDI_EditorWin32Execution( HINSTANCE );

@@ -36,7 +36,6 @@ namespace jaded
 					return false;
 				}
 
-				static constexpr LONGLONG POW10_7 = 10000000;
 				static constexpr LONGLONG POW10_9 = 1000000000;
 
 				ts->tv_sec  = pc.QuadPart / pf.QuadPart;
@@ -77,13 +76,21 @@ namespace jaded
 				return TimespecToDouble( &ts );
 			}
 
-			double timeStarted{};
-			double timeTaken{};
-			double oldTimeTaken{};
+			double timeStarted{}; // time current frame started
+			double timeTaken{};   // time current frame took
+			double oldTimeTaken{};// time of previous frame
+
+			float colour[ 3 ]{};// colours for ui
 
 		public:
 			inline Profile()
 			{
+				// setup colour that we'll display in the profiler UI
+				for ( uint8_t i = 0; i < 3; ++i )
+				{
+					colour[ i ] = ( ( rand() % 200 ) + 50 ) / 255;
+				}
+
 				Start();
 			}
 
@@ -100,37 +107,34 @@ namespace jaded
 
 			inline double GetTimeTaken() const
 			{
-				return timeTaken;
+				return oldTimeTaken;
 			}
 		};
 
 		class Profiler
 		{
+		private:
+			bool isActive{ true };
+
 		public:
-			inline void StartProfiling( const std::string &set )
-			{
-				auto i = profSets.find( set );
-				if ( i == profSets.end() )
-				{
-					profSets.emplace( set, Profile() );
-					return;
-				}
+			Profiler()  = default;
+			~Profiler() = default;
 
-				i->second.Start();
+			inline void SetActive( bool state )
+			{
+				isActive = state;
 			}
 
-			inline void EndProfiling( const std::string &set )
-			{
-				auto i = profSets.find( set );
-				assert( i != profSets.end() );
-				i->second.End();
-			}
+			void StartProfiling( const std::string &set );
+			void EndProfiling( const std::string &set );
+
+			typedef std::map< std::string, Profile > ProfileMap;
 
 		private:
-			std::map< std::string, Profile > profSets;
+			ProfileMap profSets;
 
 		public:
-			const std::map< std::string, Profile > &GetProfilerSets()
+			const ProfileMap &GetProfilerSets()
 			{
 				return profSets;
 			}
@@ -142,3 +146,9 @@ namespace jaded
 
 #define JADED_PROFILER_START() jaded::sys::profiler.StartProfiling( __FUNCTION__ )
 #define JADED_PROFILER_END()   jaded::sys::profiler.EndProfiling( __FUNCTION__ )
+#define JADED_PROFILER_CALL( X )                   \
+	{                                              \
+		jaded::sys::profiler.StartProfiling( #X ); \
+		X;                                         \
+		jaded::sys::profiler.EndProfiling( #X );   \
+	}

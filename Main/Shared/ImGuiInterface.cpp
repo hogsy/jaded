@@ -5,6 +5,7 @@
 
 #include "MainSharedSystem.h"
 #include "ImGuiInterface.h"
+#include "Profiler.h"
 
 #include "GDInterface/GDInterface.h"
 #include "BIGfiles/VERsion/VERsion_Number.h"
@@ -146,17 +147,22 @@ static void ShowPerformanceOverlay()
 	ImGui::SetNextWindowPos( window_pos, ImGuiCond_Always );
 	ImGui::SetNextWindowBgAlpha( 0.35f );// Transparent background
 	if ( ImGui::Begin( "Performance Metrics", nullptr,
-	                   ImGuiWindowFlags_NoDecoration |
-	                           ImGuiWindowFlags_NoMove |
+	                   ImGuiWindowFlags_NoMove |
 	                           ImGuiWindowFlags_AlwaysAutoResize |
 	                           ImGuiWindowFlags_NoSavedSettings |
 	                           ImGuiWindowFlags_NoFocusOnAppearing |
 	                           ImGuiWindowFlags_NoNav ) )
 	{
-		ImGui::Text( "Jaded v" BIG_CPJE_AppVersion );
-		ImGui::Separator();
 		ImGui::Text( "Number of GPU batches: %u", GDI_gpst_CurDD->profilingInformation.numBatches );
 		ImGui::Text( "Number of GDI requests: %u", GDI_gpst_CurDD->profilingInformation.numRequests );
+
+		// temp crap...
+		ImGui::Separator();
+		const jaded::sys::Profiler::ProfileMap &profSets = jaded::sys::profiler.GetProfilerSets();
+		for ( auto i : profSets )
+		{
+			ImGui::Text( "%s : %f", i.first.c_str(), i.second.GetTimeTaken() );
+		}
 	}
 	ImGui::End();
 }
@@ -175,6 +181,26 @@ extern "C" void ImGuiInterface_NewFrame()
 	ImGui::NewFrame();
 
 	//ImGui::ShowDemoWindow();
+
+	if ( ImGui::BeginMainMenuBar() )
+	{
+		if ( ImGui::BeginMenu( "File" ) )
+		{
+			ShowExampleMenuFile();
+			ImGui::EndMenu();
+		}
+		if ( ImGui::BeginMenu( "Edit" ) )
+		{
+			if ( ImGui::MenuItem( "Undo", "CTRL+Z" ) ) {}
+			if ( ImGui::MenuItem( "Redo", "CTRL+Y", false, false ) ) {}// Disabled item
+			ImGui::Separator();
+			if ( ImGui::MenuItem( "Cut", "CTRL+X" ) ) {}
+			if ( ImGui::MenuItem( "Copy", "CTRL+C" ) ) {}
+			if ( ImGui::MenuItem( "Paste", "CTRL+V" ) ) {}
+			ImGui::EndMenu();
+		}
+		ImGui::EndMainMenuBar();
+	}
 
 	ShowPerformanceOverlay();
 }
