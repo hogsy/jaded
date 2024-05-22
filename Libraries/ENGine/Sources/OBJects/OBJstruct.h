@@ -316,18 +316,7 @@ typedef struct	OBJ_tdst_GameObject_
 	UCHAR					uc_DesignFlags;				/* Design Flags */
 	char					c_FixFlags;					/* Flags for fix */
 
-/*#ifndef JADEFUSION
-#ifdef _DEBUG
 	char					*sz_Name;
-#endif
-#else
-#ifndef _FINAL
-	char					*sz_Name;
-#endif
-#endif*/
-#if (defined JADEFUSION && !defined _FINAL) || (!defined JADEFUSION && defined _DEBUG)
-char					*sz_Name;
-#endif
 
 #ifdef ACTIVE_EDITORS
 	ULONG					ul_EditorFlags;
