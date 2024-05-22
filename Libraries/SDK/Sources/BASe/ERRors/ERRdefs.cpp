@@ -131,11 +131,11 @@ bool ERR_ScriptAssertFailed( const char *filename, int line, const char *express
 
 BOOL _ERR_fnb_AssertFailed(
         BOOL _b_Assert,
-        char *_psz_File,
+        const char *_psz_File,
         int _i_Line,
-        char *_psz_Expression,
-        char *_psz_Text1,
-        char *_psz_Text2,
+        const char *_psz_Expression,
+        const char *_psz_Text1,
+        const char *_psz_Text2,
         BOOL _b_Msg )
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

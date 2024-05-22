@@ -357,7 +357,7 @@ ULONG OGL_ul_Texture_Create( ULONG ul_Key, int i_Mipmap )
 	OGL_CALL( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE) );
 	OGL_CALL( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE) );
 	OGL_CALL( glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR) );
-    OGL_CALL( glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, ( i_Mipmap == 0 ) ? GL_LINEAR : GL_LINEAR_MIPMAP_LINEAR ) );
+    OGL_CALL( glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, ( i_Mipmap == 0 ) ? GL_LINEAR : GL_LINEAR_MIPMAP_LINEAR ) );
 	if ( GLEW_ARB_texture_filter_anisotropic )
 	{
 		OGL_CALL( glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, ( i_Mipmap == 0 ) ? 0.0f : maxTextureAnistropy ) );

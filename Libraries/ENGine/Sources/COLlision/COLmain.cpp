@@ -75,7 +75,7 @@ UCHAR		COL_s_GhostOptimisation = 0;
 #endif
 
 extern void MATH_CheckFloat(float *, char *);
-extern void MATH_CheckVector(struct MATH_tdst_Vector_ *, char *);
+extern void MATH_CheckVector(struct MATH_tdst_Vector_ *, const char *);
 extern void MATH_CheckMatrix(struct MATH_tdst_Matrix_ *, char *);
 
 

@@ -891,7 +891,7 @@ extern BOOL MEM_b_FindOldHole(ULONG);
  =======================================================================================================================
  */
 #ifdef _DEBUG
-	void *_MEM_p_Alloc(ULONG _ul_BlockSize, char *_psz_File, int _i_Line)
+	void *_MEM_p_Alloc(ULONG _ul_BlockSize, const char *_psz_File, int _i_Line)
 #else
 	void *_MEM_p_Alloc(ULONG _ul_BlockSize)
 #endif
@@ -1773,7 +1773,7 @@ void MEM_ResetTmpMemory(void)
 
 #ifdef _DEBUG
 void	*
-_MEM_p_Realloc(void *_pv_Block, ULONG _ul_BlockSize, char *_psz_File, int _i_Line)
+_MEM_p_Realloc(void *_pv_Block, ULONG _ul_BlockSize, const char *_psz_File, int _i_Line)
 #else
 void *
 _MEM_p_Realloc(void *_pv_Block, ULONG _ul_BlockSize)

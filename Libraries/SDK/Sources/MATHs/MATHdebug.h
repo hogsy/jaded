@@ -17,7 +17,7 @@ extern "C"
 #endif
 
 void MATH_CheckFloat(float *, char *);
-void MATH_CheckVector(MATH_tdst_Vector *, char *);
+void MATH_CheckVector(MATH_tdst_Vector *, const char *);
 void MATH_CheckMatrix(MATH_tdst_Matrix *, char *);
 void MATH_CheckQuaternion(MATH_tdst_Quaternion *, char *);
 
