@@ -35,21 +35,18 @@ jobs:
     - name: 'Upload to Discord'
       uses: tsickert/discord-webhook@v5.3.0
       with:
-        webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
+        webhook-url: ${{ secrets.DISCORD }}
         filename: web/releases/jaded.zip
 
-#    - name: 'Create Release'
-#      run: |
-#        del web\releases\.dummy
-#        move /Y Jaded.exe web\releases\Jaded.exe
-#        move /Y SDL2.dll web\releases\SDL2.dll
-#        move /Y legal.txt web\releases\legal.txt
-#        move mappings web\releases\mappings
+    - name: 'Create Release'
+      uses: lgvalle/create-release-action@release/v0.4.3
+      with:
+        branch-name: master
+        github-token: ${{ secrets.AUTHKEY }}
 
-#    - name: 'Upload Artifact'
-#      uses: actions/upload-artifact@v2.2.4
-#      with:
-#        name: jaded-release
-#        path: web/releases/
-#        retention-days: 30
-      
+    - name: 'Upload Artifact'
+      uses: actions/upload-artifact@v2.2.4
+      with:
+        name: jaded-release
+        path: web/releases/jaded.zip
+        retention-days: 30
