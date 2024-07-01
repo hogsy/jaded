@@ -2486,12 +2486,11 @@ void OGL_l_DrawSPG2_SPRITES(
 
 static bool CreateFakeContext( int *maxAASamples )
 {
-	WNDCLASSA windowClass = {
-	        .style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC,
-	        .lpfnWndProc   = DefWindowProcA,
-	        .hInstance     = GetModuleHandle( 0 ),
-	        .lpszClassName = "DummyWGLClass",
-	};
+	WNDCLASSA windowClass     = {};
+	windowClass.style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+	windowClass.lpfnWndProc   = DefWindowProcA;
+	windowClass.hInstance     = GetModuleHandle( 0 );
+	windowClass.lpszClassName = "DummyWGLClass";
 
 	if ( !RegisterClassA( &windowClass ) )
 	{

@@ -182,16 +182,20 @@ static void ConvGao(char *az, OBJ_tdst_GameObject *pst_GAO)
 	{
 		if((int) pst_GAO == AI_C_MainActor0) pst_GAO = AI_gpst_MainActors[0];
 		if((int) pst_GAO == AI_C_MainActor1) pst_GAO = AI_gpst_MainActors[1];
+#	if !defined(NDEBUG)
 		if(pst_GAO && !OBJ_IsValidGAO(pst_GAO))
+
 		{
 			sprintf(az, "INVALID GAO");
 		}
-		else if(pst_GAO)
+		else 
+#	endif
+			if(pst_GAO)
 		{
 			if(pst_GAO->sz_Name)
 				sprintf(az, pst_GAO->sz_Name);
 			else
-				sprintf(az, "I'me here but without name...");
+				sprintf(az, "I'm here but without name...");
 		}
 		else
 			sprintf(az, "None");
@@ -312,11 +316,14 @@ __try
 		{
 			if((int) pst_GAO == AI_C_MainActor0) pst_GAO = AI_gpst_MainActors[0];
 			if((int) pst_GAO == AI_C_MainActor1) pst_GAO = AI_gpst_MainActors[1];
-			if(pst_GAO && !OBJ_IsValidGAO(pst_GAO))
+#	if !defined( NDEBUG )
+			if ( pst_GAO && !OBJ_IsValidGAO( pst_GAO ) )
 			{
-				sprintf(asz_Msg1, "INVALID GAO");
+				sprintf( asz_Msg1, "INVALID GAO" );
 			}
-			else if(pst_GAO)
+			else
+#	endif
+				if(pst_GAO)
 			{
 				if(pst_GAO->sz_Name)
 					sprintf(asz_Msg1, pst_GAO->sz_Name);

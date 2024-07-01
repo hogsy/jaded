@@ -55,13 +55,13 @@ static void SetDraculaTheme()
 	colors[ ImGuiCol_SliderGrabActive ] = ImVec4{ 0.74f, 0.58f, 0.98f, 0.54f };
 
 	// Frame BG
-	colors[ ImGuiCol_FrameBg ]        = ImVec4{ 0.13f, 0.13, 0.17, 1.0f };
+	colors[ ImGuiCol_FrameBg ]        = ImVec4{ 0.13f, 0.13f, 0.17f, 1.0f };
 	colors[ ImGuiCol_FrameBgHovered ] = ImVec4{ 0.19f, 0.2f, 0.25f, 1.0f };
 	colors[ ImGuiCol_FrameBgActive ]  = ImVec4{ 0.16f, 0.16f, 0.21f, 1.0f };
 
 	// Tabs
 	colors[ ImGuiCol_Tab ]                = ImVec4{ 0.16f, 0.16f, 0.21f, 1.0f };
-	colors[ ImGuiCol_TabHovered ]         = ImVec4{ 0.24, 0.24f, 0.32f, 1.0f };
+	colors[ ImGuiCol_TabHovered ]         = ImVec4{ 0.24f, 0.24f, 0.32f, 1.0f };
 	colors[ ImGuiCol_TabActive ]          = ImVec4{ 0.2f, 0.22f, 0.27f, 1.0f };
 	colors[ ImGuiCol_TabUnfocused ]       = ImVec4{ 0.16f, 0.16f, 0.21f, 1.0f };
 	colors[ ImGuiCol_TabUnfocusedActive ] = ImVec4{ 0.16f, 0.16f, 0.21f, 1.0f };

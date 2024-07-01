@@ -400,7 +400,7 @@ void EDIA_cl_ListDialog::SelectMultipleLangage( void )
 	
 	for(i = 0; i < INO_e_MaxLangNb; i++)
 	{
-		sprintf (sz_Text, "%02d - %s", i, INO_dst_LanguageName[i].az_LongName );
+		snprintf( sz_Text, sizeof(sz_Text), "%02d - %s", i, INO_dst_LanguageName[ i ].az_LongName );
 		res = p_List->AddString( sz_Text );
 		p_List->SetItemData(res, i);
 	}
@@ -425,7 +425,7 @@ void EDIA_cl_ListDialog::SelectMultipleTxg( void )
 		if(BIG_FileKey(ul_Index) == BIG_C_InvalidKey) continue;
 		if(!BIG_b_IsFileExtension(ul_Index, EDI_Csz_ExtTextLang)) continue;
 		
-		sprintf (sz_Text, "%02d - %s", i, BIG_NameFile(ul_Index));
+		snprintf( sz_Text, sizeof(sz_Text), "%02d - %s", i, BIG_NameFile( ul_Index ) );
 		res = p_List->AddString( sz_Text );
 		p_List->SetItemData(res, ul_Index);
 		i++;
