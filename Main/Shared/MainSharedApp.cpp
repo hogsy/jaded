@@ -57,6 +57,18 @@ void jaded::sys::Profiler::EndProfiling( const std::string &set )
 	i->second.End();
 }
 
+// The below should work with the old BeginRaster / EndRaster macros
+
+extern "C" void Jaded_Profiler_StartProfiling( unsigned int set )
+{
+	jaded::sys::profiler.StartProfiling( std::to_string( set ) );
+}
+
+extern "C" void Jaded_Profiler_EndProfiling( unsigned int set )
+{
+	jaded::sys::profiler.EndProfiling( std::to_string( set ) );
+}
+
 /******************************************************************/
 /******************************************************************/
 

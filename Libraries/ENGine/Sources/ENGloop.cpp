@@ -1088,8 +1088,6 @@ static void s_OneTrame( void )
 	if ( TIM_gf_MainClockForTextureScrolling > 1024.0f )
 		TIM_gf_MainClockForTextureScrolling -= 1024.0f;
 
-	_GSP_EndRaster( 19 );
-
 	/* Sound & textures */
 	if ( MAI_gst_MainHandles.pst_DisplayData )
 	{
