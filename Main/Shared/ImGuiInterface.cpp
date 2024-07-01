@@ -139,6 +139,11 @@ extern "C" bool ImGuiInterface_ProcessEvents( const SDL_Event *event )
 
 static void ShowPerformanceOverlay()
 {
+	if ( !jaded::sys::profiler.GetState() )
+	{
+		return;
+	}
+
 	const float PAD               = 10.0f;
 	const ImGuiViewport *viewport = ImGui::GetMainViewport();
 	ImVec2 window_pos;
@@ -180,8 +185,7 @@ extern "C" void ImGuiInterface_NewFrame()
 
 	ImGui::NewFrame();
 
-	//ImGui::ShowDemoWindow();
-
+#if 0
 	if ( ImGui::BeginMainMenuBar() )
 	{
 		if ( ImGui::BeginMenu( "File" ) )
@@ -201,6 +205,7 @@ extern "C" void ImGuiInterface_NewFrame()
 		}
 		ImGui::EndMainMenuBar();
 	}
+#endif
 
 	ShowPerformanceOverlay();
 }

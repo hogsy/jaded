@@ -67,33 +67,6 @@ extern "C" int NumberMat;
 #define MAXCLONES 1000
 #define MAXLIGHT 2
 
-/*#define OGL_SetColorRGBA(a) \
-	if(pst_Color) \
-	{ \
-		ulOGLSetCol = pst_Color[a] | ulOGLSetCol_Or; \
-		ulOGLSetCol ^= ulOGLSetCol_XOr; \
-		if(pst_Alpha) \
-		{ \
-			ulOGLSetCol &= 0x00ffffff; \
-			ulOGLSetCol |= pst_Alpha[a]; \
-		} \
-		glColor4ubv((GLubyte *) &ulOGLSetCol); \
-	} \
-	else if(pst_Alpha) \
-	{ \
-		ulOGLSetCol &= 0x00ffffff; \
-		ulOGLSetCol |= pst_Alpha[a]; \
-		glColor4ubv((GLubyte *) &ulOGLSetCol); \       
-	}*/
-/*#define OGL_SetColorRGBA(a) \
-	if(pst_Color) \
-	{ \
-		ulOGLSetCol = pst_Color[a] | ulOGLSetCol_Or; \
-		ulOGLSetCol ^= ulOGLSetCol_XOr; \
-		ulOGLSetCol &= 0x00ffffff; \
-		glColor4ubv((GLubyte *) &ulOGLSetCol); \
-	} \
-*/
 #define OGL_SetColorRGBA(a) \
 	if(pst_Color) \
 	{ \
@@ -101,17 +74,6 @@ extern "C" int NumberMat;
 		glColor4ubv((GLubyte *) &ulOGLSetCol); \
 	} \
 
-/*#define OGL_SetColorRGBA(a) \
-	if(pst_Color) \
-	{ \
-		ulOGLSetCol = pst_Color[a] | ulOGLSetCol_Or; \
-		ulOGLSetCol ^= ulOGLSetCol_XOr; \
-		ulOGLSetCol &= 0x00ffffff; \
-		if ( ulOGLSetColRLI )\
-		ulOGLSetCol |= ulOGLSetColRLI[a] & AlphaLight; \
-		glColor4ubv((GLubyte *) &ulOGLSetCol); \
-	} \
-*/
 #define dRAW_Normal(a) \
 	if(_pst_Normal && Lighted) \
 	glNormal3fv((float *) &_pst_Normal[a]); \

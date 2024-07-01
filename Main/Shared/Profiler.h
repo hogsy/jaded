@@ -125,6 +125,11 @@ namespace jaded
 				isActive = state;
 			}
 
+			inline bool GetState() const
+			{
+				return isActive;
+			}
+
 			void StartProfiling( const std::string &set );
 			void EndProfiling( const std::string &set );
 
