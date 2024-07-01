@@ -52,7 +52,7 @@ ULONG					XMEN_STACK_PTR = 0;
 
 static ULONG	bIsMaterialTransparent = 1;
 static ULONG 	g_ulFrameCounter = 0;
-extern BOOL     ENG_gb_ForcePauseEngine;
+extern bool ENG_gb_ForcePauseEngine;
 
 #ifdef JADEFUSION
 class XeMesh            *g_pXmenMesh;

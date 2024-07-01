@@ -38,19 +38,19 @@ void (*ENG_gp_Display) (HWND, GDI_tdst_DisplayData *) = NULL;
  ---------------------------------------------------------------------------------------------------
  */
 
-BOOL                ENG_gb_ExitApplication = FALSE;     /* When force exiting application */
-BOOL                ENG_gb_ForceEndEngine = FALSE;      /* To exit engine, but for pause (editors) */
-BOOL                ENG_gb_ForcePauseEngine = FALSE;    /* To pause engine */
-BOOL                ENG_gb_OneStepEngine = FALSE;       /* One step of the engine */
-BOOL                ENG_gb_ActivateUniverse = TRUE;     /* Universe can be executed */
-BOOL				ENG_gb_MustRebuildDyn = FALSE;		/* Must rebuild dynamic in trame */
-BOOL				ENG_gb_EngineRunning = FALSE;
-BOOL				ENG_gb_AIRunning = FALSE;
-BOOL				ENG_gb_EVERunning = FALSE;
-BOOL				ENG_gb_ANIRunning = FALSE;
-BOOL				ENG_bg_FirstFrameSpeedRun = FALSE;
-BOOL				ENG_gb_FirstFrame = FALSE;
-BOOL                ENG_gb_LimitFPS = TRUE; // cap/limit the fps to around 60 ~hogsy
+bool ENG_gb_ExitApplication                 = FALSE;     /* When force exiting application */
+bool ENG_gb_ForceEndEngine                  = FALSE;      /* To exit engine, but for pause (editors) */
+bool ENG_gb_ForcePauseEngine                = FALSE;     /* To pause engine */
+bool ENG_gb_OneStepEngine                   = FALSE;      /* One step of the engine */
+bool ENG_gb_ActivateUniverse                = TRUE;     /* Universe can be executed */
+bool ENG_gb_MustRebuildDyn                  = FALSE;       /* Must rebuild dynamic in trame */
+bool ENG_gb_EngineRunning                   = FALSE;
+bool ENG_gb_AIRunning                       = FALSE;
+bool ENG_gb_EVERunning                      = FALSE;
+bool ENG_gb_ANIRunning                      = FALSE;
+bool ENG_bg_FirstFrameSpeedRun              = FALSE;
+bool ENG_gb_FirstFrame                      = FALSE;
+bool ENG_gb_LimitFPS                        = TRUE;// cap/limit the fps to around 60 ~hogsy
 
 HINSTANCE           MAI_gh_MainInstance;
 HWND                MAI_gh_MainWindow;

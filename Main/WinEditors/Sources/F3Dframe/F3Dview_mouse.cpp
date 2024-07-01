@@ -38,7 +38,7 @@
 extern "C"
 {
 #endif
-	extern BOOL ENG_gb_EngineRunning;
+	extern bool ENG_gb_EngineRunning;
 	extern SOFT_tdst_PickingBuffer *pPickForZCull;
 	// -- Bug: modif temporaire --
 	extern MATH_tdst_Vector mst_MoveBugLocal;

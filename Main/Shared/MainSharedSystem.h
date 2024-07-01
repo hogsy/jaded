@@ -1,4 +1,4 @@
-// Created by Mark "hogsy" Sowden, 2023 <hogsy@oldtimes-software.com>
+// Created by Mark "hogsy" Sowden, 2023-2024 <hogsy@oldtimes-software.com>
 // https://oldtimes-software.com/jaded/
 
 #pragma once
@@ -41,8 +41,6 @@ namespace jaded
 			bool forceWindowed{ false };
 			int forcedWidth{ 0 };
 			int forcedHeight{ 0 };
-
-			bool profile{ false };
 
 			bool clean{ false };
 			bool cleanBinFiles{ false };

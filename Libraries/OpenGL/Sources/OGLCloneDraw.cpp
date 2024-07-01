@@ -49,51 +49,24 @@ void		OGL_SetupRC(OGL_tdst_SpecificData *);
 
 extern void LOA_BeginSpeedMode(BIG_KEY _ul_Key);
 extern void LOA_EndSpeedMode(void);
-extern BOOL GDI_gb_WaveSprite;
+extern "C" BOOL GDI_gb_WaveSprite;
 
 // -- UV --
-extern void MAT_UV_Compute_PLANAR_GIZMO(GDI_tdst_DisplayData	*pst_CurDD,GEO_tdst_Object	*pst_Obj,GEO_tdst_ElementIndexedTriangles	*pst_Element,ULONG CurrentAddFlag , ULONG StoreUV);
-_inline_ BOOL MAT_VUISIdentity_i(MAT_tdst_MTLevel *p_tdstLevel);
+extern "C" void MAT_UV_Compute_PLANAR_GIZMO( GDI_tdst_DisplayData *pst_CurDD, GEO_tdst_Object *pst_Obj, GEO_tdst_ElementIndexedTriangles *pst_Element, ULONG CurrentAddFlag, ULONG StoreUV );
+extern "C" BOOL MAT_VUISIdentity_i(MAT_tdst_MTLevel *p_tdstLevel);
 
 
 extern BOOL		OGL_gb_DispStrip;
-extern BOOL		OGL_gb_DispLOD;
-extern ULONG	OGL_ulLODAmbient;
+extern "C" BOOL OGL_gb_DispLOD;
+extern "C" ULONG OGL_ulLODAmbient;
 
 //extern int NbrObjectClone;
 extern BOOL b_CloneLighted[MAXCLONE];
-extern int NumberMat;
+extern "C" int NumberMat;
 //BOOL b_OnlyOneMat;
 #define MAXCLONES 1000
 #define MAXLIGHT 2
 
-/*#define OGL_SetColorRGBA(a) \
-	if(pst_Color) \
-	{ \
-		ulOGLSetCol = pst_Color[a] | ulOGLSetCol_Or; \
-		ulOGLSetCol ^= ulOGLSetCol_XOr; \
-		if(pst_Alpha) \
-		{ \
-			ulOGLSetCol &= 0x00ffffff; \
-			ulOGLSetCol |= pst_Alpha[a]; \
-		} \
-		glColor4ubv((GLubyte *) &ulOGLSetCol); \
-	} \
-	else if(pst_Alpha) \
-	{ \
-		ulOGLSetCol &= 0x00ffffff; \
-		ulOGLSetCol |= pst_Alpha[a]; \
-		glColor4ubv((GLubyte *) &ulOGLSetCol); \       
-	}*/
-/*#define OGL_SetColorRGBA(a) \
-	if(pst_Color) \
-	{ \
-		ulOGLSetCol = pst_Color[a] | ulOGLSetCol_Or; \
-		ulOGLSetCol ^= ulOGLSetCol_XOr; \
-		ulOGLSetCol &= 0x00ffffff; \
-		glColor4ubv((GLubyte *) &ulOGLSetCol); \
-	} \
-*/
 #define OGL_SetColorRGBA(a) \
 	if(pst_Color) \
 	{ \
@@ -101,17 +74,6 @@ extern int NumberMat;
 		glColor4ubv((GLubyte *) &ulOGLSetCol); \
 	} \
 
-/*#define OGL_SetColorRGBA(a) \
-	if(pst_Color) \
-	{ \
-		ulOGLSetCol = pst_Color[a] | ulOGLSetCol_Or; \
-		ulOGLSetCol ^= ulOGLSetCol_XOr; \
-		ulOGLSetCol &= 0x00ffffff; \
-		if ( ulOGLSetColRLI )\
-		ulOGLSetCol |= ulOGLSetColRLI[a] & AlphaLight; \
-		glColor4ubv((GLubyte *) &ulOGLSetCol); \
-	} \
-*/
 #define dRAW_Normal(a) \
 	if(_pst_Normal && Lighted) \
 	glNormal3fv((float *) &_pst_Normal[a]); \
@@ -178,8 +140,8 @@ void ComputeUvClone(GEO_tdst_Object *_pst_Geo,GEO_tdst_ElementIndexedTriangles	*
 }
 
 #ifdef ACTIVE_EDITORS
-extern BOOL OGL_bCountTriangles;
-extern u32 Stats_ulNumberOfTRiangles;
+extern "C" BOOL OGL_bCountTriangles;
+extern "C" u32 Stats_ulNumberOfTRiangles;
 #endif //ACTIVE_EDITORS
 
 

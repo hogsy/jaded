@@ -18,6 +18,7 @@
 #include "INOut/INOjoystick.h"
 #include "INOut/INOfile.h"
 #include "INOut/INO.h"
+#include "ENGine/Sources/ENGvars.h"
 
 #ifdef PSX2_TARGET
 #include <libscf.h>
@@ -432,9 +433,6 @@ AI_tdst_Node *AI_EvalFunc_IoIsMouseBeingUsed(AI_tdst_Node *_pst_Node)
 	AI_PushInt(INO_i_IsMouseBeingUsed());
 	return ++_pst_Node;
 }
-
-extern BOOL ENG_gb_ExitApplication;
-extern BOOL ENG_gb_ForceEndEngine;
 
 /*
  =======================================================================================================================

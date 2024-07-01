@@ -438,8 +438,8 @@ enum MEM_Type
 	#endif /* PSX2_TARGET */
 
 	#ifdef _DEBUG
-	extern void *_MEM_p_Alloc(ULONG, char *, int);
-	extern void *_MEM_p_Realloc(void *_pv_Block, ULONG _ul_Size, char *, int);
+	extern void *_MEM_p_Alloc(ULONG, const char *, int);
+	extern void *_MEM_p_Realloc(void *_pv_Block, ULONG _ul_Size, const char *, int);
 	extern void *_MEM_p_AllocFromEnd(ULONG _ul_size, char *_str_file, int _i_line);
     extern void *_MEM_p_AllocAlign(ULONG, ULONG, char*, int);
     extern void *_MEM_p_ReallocAlign(void * _pv, ULONG _ul_BlockSize, ULONG Alignment, char*file, int line);

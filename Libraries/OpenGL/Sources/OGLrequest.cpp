@@ -281,7 +281,7 @@ void OGL_DrawLine(GDI_tdst_DisplayData *_pst_DD, MATH_tdst_Vector **v)
  =======================================================================================================================
  */
 
-void OGL_DrawLineEx(GDI_tdst_DisplayData *_pst_DD, GDI_tdst_Request_DrawLineEx *_pst_Data)
+extern "C" void OGL_DrawLineEx( GDI_tdst_DisplayData *_pst_DD, GDI_tdst_Request_DrawLineEx *_pst_Data )
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	ULONG				ulBlendingMode;
@@ -1191,8 +1191,8 @@ void OGL_ReloadPalette(GDI_tdst_DisplayData *_pst_DD, short _w_Palette)
 	if(!uc_ColorMap) glPixelTransferi(GL_MAP_COLOR, FALSE);
 }
 
-extern float	GFXF_f_depth;
-extern ULONG	GFXF_ul_Color;
+extern "C" float GFXF_f_depth;
+extern "C" ULONG GFXF_ul_Color;
 
 /*
  =======================================================================================================================

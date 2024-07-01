@@ -46,7 +46,7 @@ void MATH_CheckMatrix(MATH_tdst_Matrix *_pst_Matrix, char *psz_Text)
 	}
 }
 
-void MATH_CheckVector(MATH_tdst_Vector *_pst_Vector, char *psz_Text)
+void MATH_CheckVector(MATH_tdst_Vector *_pst_Vector, const char *psz_Text)
 {
 	if(!_pst_Vector) return;
 	if((_isnan(_pst_Vector->x)) || (_isnan(_pst_Vector->y)) || (_isnan(_pst_Vector->z)))
