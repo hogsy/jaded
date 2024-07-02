@@ -541,7 +541,7 @@ void LOA_PrintRefToLog()
 #ifdef _DEBUG
         AI_vAddKeyDependency(_ul_Key,LOA_gul_CurrentKey,_s_CallbackName);
 #else // _DEBUG
-        AI_vAddKeyDependency(_ul_Key,LOA_gul_CurrentKey,"");
+        AI_vAddKeyDependency(_ul_Key,LOA_gul_CurrentKey,NULL);
 #endif // _DEBUG
 
 #endif // ACTIVE_EDITORS
