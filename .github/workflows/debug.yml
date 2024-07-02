@@ -1,4 +1,4 @@
-name: Build (Windows MSVC x86)
+name: Build Debug (Windows MSVC x86)
 
 on:
   push:
@@ -30,26 +30,17 @@ jobs:
       run: MSBuild /t:JadeShell /property:Configuration="Debug Editors" /property:Platform=Win32 /maxcpucount Main/Jade.sln
 
     - name: 'Package Release'
-      run: zip web/releases/jaded.zip mappings/* changes.txt Jaded.exe run_window.bat run_console.bat run_editor.bat SDL2.dll legal.txt
+      run: zip web/releases/jaded-debug.zip mappings/* changes.txt Jaded.exe run_window.bat run_console.bat run_editor.bat SDL2.dll legal.txt
 
     - name: 'Upload to Discord'
       uses: tsickert/discord-webhook@v5.3.0
       with:
-        webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
-        filename: web/releases/jaded.zip
+        webhook-url: ${{ secrets.DISCORD }}
+        filename: web/releases/jaded-debug.zip
 
-#    - name: 'Create Release'
-#      run: |
-#        del web\releases\.dummy
-#        move /Y Jaded.exe web\releases\Jaded.exe
-#        move /Y SDL2.dll web\releases\SDL2.dll
-#        move /Y legal.txt web\releases\legal.txt
-#        move mappings web\releases\mappings
-
-#    - name: 'Upload Artifact'
-#      uses: actions/upload-artifact@v2.2.4
-#      with:
-#        name: jaded-release
-#        path: web/releases/
-#        retention-days: 30
-      
+    - name: 'Upload Artifact'
+      uses: actions/upload-artifact@v2.2.4
+      with:
+        name: jaded-release
+        path: web/releases/jaded-debug.zip
+        retention-days: 30
