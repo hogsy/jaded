@@ -749,6 +749,13 @@ _End_
 	return(1);
 }
 
+#else
+
+char MEM_b_CheckPointer( void *p )
+{
+	return ( p != NULL );
+}
+
 #endif /* _DEBUG */
 
 /*

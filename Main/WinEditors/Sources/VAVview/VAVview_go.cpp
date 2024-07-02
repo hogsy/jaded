@@ -45,7 +45,9 @@ CString EVAV_GO_DrawItem(EVAV_cl_ViewItem *_po_Item, void *_p_Value)
 	pst_GO = *(OBJ_tdst_GameObject **) _p_Value;
 	if((int) pst_GO == -1) return "INVALID REFERENCE";
 	if(!pst_GO) return "None";
+#	if !defined( NDEBUG )
 	if(!OBJ_IsValidGAO(pst_GO)) return "INVALID GAO";
+#	endif
 	return pst_GO->sz_Name;
 }
 

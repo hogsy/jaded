@@ -149,7 +149,7 @@ AI_tdst_BreakPoint *AI_FillBreakPoint( AI_tdst_BreakPoint *self, int node );
  -----------------------------------------------------------------------------------------------------------------------
  */
 
-#ifdef ACTIVE_EDITORS
+#	if defined( ACTIVE_EDITORS ) && !defined(NDEBUG)
 #		define AI_CheckPointer( __Pointer )                          \
 			{                                                         \
 				if ( IsBadReadPtr( __Pointer, 1 ) )                   \
@@ -191,5 +191,6 @@ AI_tdst_BreakPoint *AI_FillBreakPoint( AI_tdst_BreakPoint *self, int node );
 #else
 #define AI_CheckPointer(a)
 #define AI_Check(a, b)
+#define AI_CheckArrayBounds( VALUE, MAX )
 #endif
 #endif /* __AIDEBUG_H__ */

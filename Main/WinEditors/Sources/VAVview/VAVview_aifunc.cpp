@@ -37,7 +37,9 @@ CString GaoName(OBJ_tdst_GameObject *pst_GO)
 
 	if((int) pst_GO == -1) return "";
 	if(!pst_GO) return "";
+#	if !defined( NDEBUG )
 	if(!OBJ_IsValidGAO(pst_GO)) return "";
+#	endif
 	L_strcpy(az, pst_GO->sz_Name);
 	if(L_strrchr(az, '.')) *L_strrchr(az, '.') = 0;
 	str = az + CString("  -  ");

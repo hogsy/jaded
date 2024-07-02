@@ -294,11 +294,14 @@ static void ConvGao(char *az, OBJ_tdst_GameObject *pst_GAO)
 	{
 		if((int) pst_GAO == AI_C_MainActor0) pst_GAO = AI_gpst_MainActors[0];
 		if((int) pst_GAO == AI_C_MainActor1) pst_GAO = AI_gpst_MainActors[1];
-		if(pst_GAO && !OBJ_IsValidGAO(pst_GAO))
+#					if !defined( NDEBUG )
+		if ( pst_GAO && !OBJ_IsValidGAO( pst_GAO ) )
 		{
-			sprintf(az, "INVALID GAO");
+			sprintf( az, "INVALID GAO" );
 		}
-		else if(pst_GAO)
+		else
+#					endif
+            if(pst_GAO)
 		{
 			if(pst_GAO->sz_Name)
 				sprintf(az, pst_GAO->sz_Name);

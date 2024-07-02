@@ -1093,8 +1093,10 @@ void LOA_Resolve(void)
 		{
 			sprintf(asz_Msg, "A key does not exist in that bigfile !!! (%08x)", pst_Ref->ul_Key);
 			ERR_X_Warning(0, asz_Msg, NULL);
+#	if !defined(NDEBUG)
 			sprintf(asz_Msg, "=> Source file is %s, line %d", pst_Ref->psz_File, pst_Ref->i_NumLine);
 			ERR_X_Warning(0, asz_Msg, NULL);
+#	endif
 			if(pst_Ref->pul_Res) *pst_Ref->pul_Res = NULL;
 			LOA_gi_CurRef = (LOA_gi_CurRef + 1) % LOA_C_MaxStack;
 			continue;
@@ -1199,8 +1201,10 @@ void LOA_Resolve(void)
 			{
 				sprintf(asz_Msg, "A key is referencing a null pointer !!! (%08x)", pst_Ref->ul_Key);
 				ERR_X_Warning(0, asz_Msg, NULL);
+#	if !defined( NDEBUG )
 				sprintf(asz_Msg, "=> Source file is %s, line %d", pst_Ref->psz_File, pst_Ref->i_NumLine);
 				ERR_X_Warning(0, asz_Msg, NULL);
+#	endif
 				LOA_gi_CurRef = (LOA_gi_CurRef + 1) % LOA_C_MaxStack;
 				continue;
 			}
