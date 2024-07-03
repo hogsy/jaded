@@ -121,7 +121,7 @@ extern int		WOR_i_GetAllChildsOf(WOR_tdst_World	*, OBJ_tdst_GameObject *, OBJ_td
 extern BOOL		COL_gb_SoundColorDisplay;
 extern BOOL		OBJ_gb_SaveDuplicateRLI;
 #else
-extern "C" BOOL		OGL_gb_DispStrip;
+extern BOOL		OGL_gb_DispStrip;
 extern "C" BOOL		OGL_gb_DispLOD;
 extern "C" BOOL		ENG_gb_ActiveSectorization;
 extern "C" ULONG	GDI_GetInterface(GDI_tdst_DisplayData *);

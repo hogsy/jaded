@@ -84,10 +84,10 @@ void Weather_Modifier_Destroy(MDF_tdst_Modifier* _pst_Mod)
 
 void Weather_Modifier_Apply(MDF_tdst_Modifier* _pst_Mod, struct GEO_tdst_Object_* _pst_Geo)
 {
+#if defined( _XENON_RENDER )
+
     MDF_tdst_Weather*      pWeather = (MDF_tdst_Weather*)_pst_Mod->p_Data;
     MAT_tdst_MultiTexture* pMultiTex;
-
-#if defined(_XENON_RENDER)
 
 #if defined(ACTIVE_EDITORS)
     if (!GDI_b_IsXenonGraphics())
@@ -117,10 +117,10 @@ void Weather_Modifier_Apply(MDF_tdst_Modifier* _pst_Mod, struct GEO_tdst_Object_
 
 void Weather_Modifier_Unapply(MDF_tdst_Modifier* _pst_Mod, struct GEO_tdst_Object_* _pst_Geo)
 {
+#if defined( _XENON_RENDER )
+
     MDF_tdst_Weather*      pWeather = (MDF_tdst_Weather*)_pst_Mod->p_Data;
     MAT_tdst_MultiTexture* pMultiTex;
-
-#if defined(_XENON_RENDER)
 
 #if defined(ACTIVE_EDITORS)
     if (!GDI_b_IsXenonGraphics())

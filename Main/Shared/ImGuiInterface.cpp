@@ -5,6 +5,7 @@
 
 #include "MainSharedSystem.h"
 #include "ImGuiInterface.h"
+#include "Profiler.h"
 
 #include "GDInterface/GDInterface.h"
 #include "BIGfiles/VERsion/VERsion_Number.h"
@@ -54,13 +55,13 @@ static void SetDraculaTheme()
 	colors[ ImGuiCol_SliderGrabActive ] = ImVec4{ 0.74f, 0.58f, 0.98f, 0.54f };
 
 	// Frame BG
-	colors[ ImGuiCol_FrameBg ]        = ImVec4{ 0.13f, 0.13, 0.17, 1.0f };
+	colors[ ImGuiCol_FrameBg ]        = ImVec4{ 0.13f, 0.13f, 0.17f, 1.0f };
 	colors[ ImGuiCol_FrameBgHovered ] = ImVec4{ 0.19f, 0.2f, 0.25f, 1.0f };
 	colors[ ImGuiCol_FrameBgActive ]  = ImVec4{ 0.16f, 0.16f, 0.21f, 1.0f };
 
 	// Tabs
 	colors[ ImGuiCol_Tab ]                = ImVec4{ 0.16f, 0.16f, 0.21f, 1.0f };
-	colors[ ImGuiCol_TabHovered ]         = ImVec4{ 0.24, 0.24f, 0.32f, 1.0f };
+	colors[ ImGuiCol_TabHovered ]         = ImVec4{ 0.24f, 0.24f, 0.32f, 1.0f };
 	colors[ ImGuiCol_TabActive ]          = ImVec4{ 0.2f, 0.22f, 0.27f, 1.0f };
 	colors[ ImGuiCol_TabUnfocused ]       = ImVec4{ 0.16f, 0.16f, 0.21f, 1.0f };
 	colors[ ImGuiCol_TabUnfocusedActive ] = ImVec4{ 0.16f, 0.16f, 0.21f, 1.0f };
@@ -138,6 +139,11 @@ extern "C" bool ImGuiInterface_ProcessEvents( const SDL_Event *event )
 
 static void ShowPerformanceOverlay()
 {
+	if ( !jaded::sys::profiler.GetState() )
+	{
+		return;
+	}
+
 	const float PAD               = 10.0f;
 	const ImGuiViewport *viewport = ImGui::GetMainViewport();
 	ImVec2 window_pos;
@@ -146,17 +152,22 @@ static void ShowPerformanceOverlay()
 	ImGui::SetNextWindowPos( window_pos, ImGuiCond_Always );
 	ImGui::SetNextWindowBgAlpha( 0.35f );// Transparent background
 	if ( ImGui::Begin( "Performance Metrics", nullptr,
-	                   ImGuiWindowFlags_NoDecoration |
-	                           ImGuiWindowFlags_NoMove |
+	                   ImGuiWindowFlags_NoMove |
 	                           ImGuiWindowFlags_AlwaysAutoResize |
 	                           ImGuiWindowFlags_NoSavedSettings |
 	                           ImGuiWindowFlags_NoFocusOnAppearing |
 	                           ImGuiWindowFlags_NoNav ) )
 	{
-		ImGui::Text( "Jaded v" BIG_CPJE_AppVersion );
-		ImGui::Separator();
 		ImGui::Text( "Number of GPU batches: %u", GDI_gpst_CurDD->profilingInformation.numBatches );
 		ImGui::Text( "Number of GDI requests: %u", GDI_gpst_CurDD->profilingInformation.numRequests );
+
+		// temp crap...
+		ImGui::Separator();
+		const jaded::sys::Profiler::ProfileMap &profSets = jaded::sys::profiler.GetProfilerSets();
+		for ( auto i : profSets )
+		{
+			ImGui::Text( "%s : %f", i.first.c_str(), i.second.GetTimeTaken() );
+		}
 	}
 	ImGui::End();
 }
@@ -174,7 +185,27 @@ extern "C" void ImGuiInterface_NewFrame()
 
 	ImGui::NewFrame();
 
-	//ImGui::ShowDemoWindow();
+#if 0
+	if ( ImGui::BeginMainMenuBar() )
+	{
+		if ( ImGui::BeginMenu( "File" ) )
+		{
+			ShowExampleMenuFile();
+			ImGui::EndMenu();
+		}
+		if ( ImGui::BeginMenu( "Edit" ) )
+		{
+			if ( ImGui::MenuItem( "Undo", "CTRL+Z" ) ) {}
+			if ( ImGui::MenuItem( "Redo", "CTRL+Y", false, false ) ) {}// Disabled item
+			ImGui::Separator();
+			if ( ImGui::MenuItem( "Cut", "CTRL+X" ) ) {}
+			if ( ImGui::MenuItem( "Copy", "CTRL+C" ) ) {}
+			if ( ImGui::MenuItem( "Paste", "CTRL+V" ) ) {}
+			ImGui::EndMenu();
+		}
+		ImGui::EndMainMenuBar();
+	}
+#endif
 
 	ShowPerformanceOverlay();
 }

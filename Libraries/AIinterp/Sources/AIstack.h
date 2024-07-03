@@ -66,7 +66,7 @@ _inline_ void _MATH_CheckFloat(float *val, char *msg)
 	AI_Check(!_isnan(*val), msg);
 }
 
-_inline_ void _MATH_CheckVector(MATH_tdst_Vector *val, char *msg)
+_inline_ void _MATH_CheckVector(MATH_tdst_Vector *val, const char *msg)
 {
 	AI_Check(!_isnan(val->x), msg);
 	AI_Check(!_isnan(val->y), msg);

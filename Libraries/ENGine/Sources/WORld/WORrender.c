@@ -2813,83 +2813,6 @@ void WOR_Render(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD)
 	LIGHT_tdst_Light				*pst_Light;
 	//SOFT_tdst_FogParams				st_Fog;
 	OBJ_tdst_GameObject				*pst_GO;
-#if defined(_XBOX)
-	Gx8_tdst_SpecificData			*pst_SD;
-	MATH_tdst_Matrix				m_cameraViewPoint;
-	int								iNumSBLight;
-	extern u_int					gAE_Status;
-	extern GSP_AfterEffectParams	gAE_Params;
-	extern bool						bSmallViewport;
-#endif
-
-#ifdef XENONVIDEOSTATISTICS
-    XeGOStatistics                  *XeStats = XeGOStatistics::Instance();
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-    // Reinit all stats for this frame
-    XeStats->InitStats();
-#endif
-
-#if defined(_PC_RETAIL)
-	pst_SD = (Dx9_tdst_SpecificData *) _pst_DD->pv_SpecificData;
-
-	/* set render target to textures */
-	{
-		/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-		IDirect3DSurface9	*pImageSurface;
-		IDirect3DSurface9	*pDepthStencilSurface;
-		/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-		IDirect3DTexture9_GetSurfaceLevel(pst_SD->pImageRenderTarget, 0, /* level */ &pImageSurface);
-		CHK_D3D(IDirect3DDevice9_SetRenderTarget(pst_SD->pD3DDevice, 0, /* first render target */ pImageSurface));
-
-		CHK_D3D(IDirect3DDevice9_SetDepthStencilSurface(pst_SD->pD3DDevice, pst_SD->pDepthStencilSurface, ));
-
-		CHK_D3D
-		(
-			IDirect3DDevice9_Clear
-				(
-					pst_SD->pD3DDevice,
-					0,		/* rects count */
-					NULL,	/* rects ptr */
-					D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, /* TODO: try to avoid D3DCLEAR_TARGET */
-					0,		/* color */
-					1.0f,	/* z */
-					0		/* stencil */
-				)
-		);
-	}
-#endif
-
-#ifdef _XENON_RENDER
-    // set ambient colors for the world
-    g_oVertexShaderMgr.SetAmbientColor(0, XeConvertColor(_pst_World->ul_AmbientColor));
-    g_oVertexShaderMgr.SetAmbientColor(1, XeConvertColor(_pst_World->ul_AmbientColor2));
-
-    // set global mul 2X
-    g_oPixelShaderMgr.EnableGlobalMul2X(_pst_DD->GlobalMul2X != 0);
-    g_oPixelShaderMgr.SetGlobalMul2XFactor(_pst_DD->GlobalMul2XFactor);
-
-    // set global RLI scale/offset
-    g_pXeContextManagerEngine->SetGlobalRLIScaleAndOffset(_pst_World->f_XeRLIScale, _pst_World->f_XeRLIOffset);
-
-    g_oXeShadowManager.ClearLights();
-    g_oXeShadowManager.SetGaussianStrength(_pst_World->f_XeGaussianStrength);
-    BOOL isGlowActivated = _pst_World->f_XeGlowIntensity > 0.0f;
-    g_oAfterEffectManager.SetParams( AE_COLORDIFFUSION, isGlowActivated, 0, _pst_World->f_XeGlowLuminosityMin );
-    g_oAfterEffectManager.SetParams( AE_COLORDIFFUSION, isGlowActivated, 1, _pst_World->f_XeGlowLuminosityMax );
-    g_oAfterEffectManager.SetParams( AE_COLORDIFFUSION, isGlowActivated, 2, _pst_World->f_XeGlowIntensity );
-    g_oAfterEffectManager.SetParams( AE_COLORDIFFUSION, isGlowActivated, 3, *((float*)&_pst_World->ul_XeGlowColor) );
-    g_oAfterEffectManager.SetParams( AE_COLORDIFFUSION, isGlowActivated, 4, _pst_World->f_XeGlowZNear );
-    g_oAfterEffectManager.SetParams( AE_COLORDIFFUSION, isGlowActivated, 5, _pst_World->f_XeGlowZFar );
-    g_oAfterEffectManager.SetGodRayIntensity( _pst_World->f_XeGodRayIntensity, _pst_World->ul_XeGodRayIntensityColor );
-    g_oAfterEffectManager.SetParams( AE_XINVERT, _pst_DD->GlobalXInvert, 0, 0.0f);
-
-    // default fog
-    //modif Yoann le fog default est st_Fog1
-	_pst_DD->st_GDI.pfnl_Request(GDI_Cul_Request_SetFogParams, (ULONG) & _pst_DD->st_Fog);//temporaire2
-	//_pst_DD->st_GDI.pfnl_Request(GDI_Cul_Request_SetFogParams, (ULONG) & _pst_DD->st_Fog);
-#endif
 
 	MAI_gst_MainHandles.pst_DisplayData = _pst_DD;
 	PROPS2_StartRaster(&PROPS2_gst_WOR_Render);
@@ -2900,28 +2823,6 @@ void WOR_Render(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD)
 #endif
 		GDI_gpst_CurDD = _pst_DD;
 		iNumView = 0;
-
-		/* CARLONE...THIS IS NEW "SHADOW BUFFER" CODE!! */
-#if defined(_XBOX)
-		{
-#if defined(USE_SHADOW_BUFFER)
-			SaveDeviceSettings();
-
-			/* Render all the shadow buffers */
-			WOR_RenderAllShadowBuffer(_pst_World, _pst_DD);
-
-			/* Render the "diffuse" shadow buffer texture */
-			WOR_RenderShawowBufferDiffuse(_pst_World, _pst_DD);
-
-			RestoreDeviceSettings();
-#endif
-		}
-#endif
-#if defined(_XBOX)
-		/* CARLONE...RETURN TO SMALL VIEPORT */
-		//Yoann -->false
-		bSmallViewport = false;
-#endif
 
 		/* END OF NEW "SHADOW BUFFER" CODE BY PHILLIPPE!! */
 		pst_View = _pst_World->pst_View;

@@ -228,7 +228,7 @@ extern "C"
 	{
 		void *( *pfnpv_InitDisplay )( void );
 		void ( *pfnv_DesinitDisplay )( void * );
-		LONG ( *pfnl_OpenDisplay )
+		LONG( *pfnl_OpenDisplay )
 		( HWND, void * );
 		LONG( *pfnl_CloseDisplay )
 		( void * );
@@ -264,41 +264,19 @@ extern "C"
 	LONG OGL_l_DrawElementIndexedTriangles( GEO_tdst_ElementIndexedTriangles *_pst_Element, GEO_Vertex *_pst_Point, GEO_tdst_UV *_pst_UV, ULONG ulnumberOfPoints );
 	LONG OGL_l_ShiftDrawElementIndexedTriangles( GEO_tdst_ElementIndexedTriangles *_pst_Element, GEO_Vertex *_pst_Point, MATH_tdst_Vector *_pst_Normal, GEO_tdst_UV *_pst_UV, ULONG ulnumberOfPoints );
 	LONG OGL_l_CloneDrawElementIndexedTriangles( GEO_tdst_ElementIndexedTriangles *_pst_Element, GEO_Vertex *_pst_Point, MATH_tdst_Vector *_pst_Normal, GEO_tdst_UV *_pst_UV, ULONG ulnumberOfPoints );
-#ifdef _XBOX
-	extern u_int32 NoFUR;
-	extern u_int32 FurMethod;
-	LONG GX8_l_ShiftDrawElementIndexedTriangles( GEO_tdst_ElementIndexedTriangles *_pst_Element, GEO_Vertex *_pst_Point, MATH_tdst_Vector *_pst_Normal, GEO_tdst_UV *_pst_UV, ULONG ulnumberOfPoints );
-	LONG GX8_l_ShiftDrawElementIndexedTrianglesVB( GEO_tdst_ElementIndexedTriangles *_pst_Element, GEO_Vertex *_pst_Point, MATH_tdst_Vector *_pst_Normal, GEO_tdst_UV *_pst_UV, ULONG ulnumberOfPoints );
-#endif
 	/*$on*/
 
 
 	////////////////////////////////////////////////////////////////////////////////////////
 
-#ifdef _XBOX
-#	define GDI_DrawIndexedTriangles( GDIi, Tris, Vrtx, Normals, UV, ulNbPoints )                \
-		if ( renderState_Shfited && !NoFUR )                                                     \
-		{                                                                                        \
-			GEO_UseNormals( pst_Obj );                                                           \
-			if ( FurMethod )                                                                     \
-				GX8_l_ShiftDrawElementIndexedTriangles( Tris, Vrtx, Normals, UV, ulNbPoints );   \
-			else                                                                                 \
-				GX8_l_ShiftDrawElementIndexedTrianglesVB( Tris, Vrtx, Normals, UV, ulNbPoints ); \
-		}                                                                                        \
-		else                                                                                     \
-			GDIi.st_GDI.pfnl_DrawIndexedTriangles( Tris, Vrtx, UV, ulNbPoints );
-#else// PC
-
-extern BOOL OGL_gb_Init;
-#	define GDI_DrawIndexedTriangles( GDIi, Tris, Vrtx, Normals, UV, ulNbPoints )          \
-		if ( renderState_Shfited )                                                         \
-			OGL_l_ShiftDrawElementIndexedTriangles( Tris, Vrtx, Normals, UV, ulNbPoints ); \
-		else if ( renderState_Cloned )                                                     \
-			OGL_l_CloneDrawElementIndexedTriangles( Tris, Vrtx, Normals, UV, ulNbPoints ); \
-		else                                                                               \
-			GDIi.st_GDI.pfnl_DrawIndexedTriangles( Tris, Vrtx, UV, ulNbPoints );
-
-#endif// End PC only
+	extern BOOL OGL_gb_Init;
+#define GDI_DrawIndexedTriangles( GDIi, Tris, Vrtx, Normals, UV, ulNbPoints )          \
+	if ( renderState_Shfited )                                                         \
+		OGL_l_ShiftDrawElementIndexedTriangles( Tris, Vrtx, Normals, UV, ulNbPoints ); \
+	else if ( renderState_Cloned )                                                     \
+		OGL_l_CloneDrawElementIndexedTriangles( Tris, Vrtx, Normals, UV, ulNbPoints ); \
+	else                                                                               \
+		GDIi.st_GDI.pfnl_DrawIndexedTriangles( Tris, Vrtx, UV, ulNbPoints );
 
 #define GDI_DrawIndexedSprites( GDIi, Tris, Vrtx, ulNbPoints ) GDIi.st_GDI.pfnl_DrawIndexedSprites( Tris, Vrtx, ulNbPoints )
 #define GDI_SetTextureBlending( GDIi, VA, VB, VC )             GDIi.st_GDI.pfnv_SetTextureBlending( VA, VB, VC )

@@ -118,11 +118,18 @@ extern "C"
 
 class AI_tdUser
 {
-public :
-    AI_tdUser() {h_User = 0; s_CallBackName = 0;}
-    BIG_KEY h_User;
-    char *s_CallBackName;
-    bool operator == (const AI_tdUser _sUser) {return (_sUser.h_User == h_User) && (0 == strcmp(_sUser.s_CallBackName,s_CallBackName));}
+public:
+	AI_tdUser()
+	{
+		h_User         = 0;
+		s_CallBackName = 0;
+	}
+	BIG_KEY h_User;
+	char *s_CallBackName;
+	bool operator==( const AI_tdUser _sUser )
+	{
+		return ( _sUser.h_User == h_User ) && ( ( s_CallBackName != nullptr && _sUser.s_CallBackName != nullptr && ( 0 == strcmp( _sUser.s_CallBackName, s_CallBackName ) ) ) || s_CallBackName == _sUser.s_CallBackName );
+	}
 };
 
 

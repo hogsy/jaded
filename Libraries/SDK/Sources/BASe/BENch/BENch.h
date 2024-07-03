@@ -36,8 +36,22 @@
 #define _GSP_EndRaster(a)
 
 #else
-#define _GSP_BeginRaster(az)	
-#define _GSP_EndRaster(az)		
+
+#	if defined __cplusplus
+extern "C"
+{
+#	endif
+
+	// See 'MainSharedApp.cpp'
+	void Jaded_Profiler_StartProfiling( unsigned int set );
+	void Jaded_Profiler_EndProfiling( unsigned int set );
+
+#	if defined __cplusplus
+};
+#	endif
+
+#	define _GSP_BeginRaster( az ) Jaded_Profiler_StartProfiling( ( az ) )
+#	define _GSP_EndRaster( az )   Jaded_Profiler_EndProfiling( (az ) );
 #define PIX_XeBeginEventSpecific(a,b)
 #define PIX_XeEndEventSpecific(a)
 #endif

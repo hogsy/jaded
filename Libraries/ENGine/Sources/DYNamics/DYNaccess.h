@@ -32,12 +32,6 @@ extern "C"
 {
 #endif
 
-#ifdef JADEFUSION
-#ifdef ACTIVE_EDITORS
-    extern void MATH_CheckVector(MATH_tdst_Vector *, char *);
-#endif
-#endif
-
 /*$4
  ***************************************************************************************************
     Access functions

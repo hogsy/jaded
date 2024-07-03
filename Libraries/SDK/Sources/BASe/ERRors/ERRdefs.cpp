@@ -92,19 +92,24 @@ bool ERR_ScriptAssertFailed( const char *filename, int line, const char *express
 		snprintf( scriptPath, sizeof( scriptPath ), "%s", BIG_NameFile( bp.ul_File ) );
 	}
 
-	tmp.append( "script: " + std::string( scriptPath ) + "\n" );
-	tmp.append( "line: " + std::to_string( bp.i_Line ) + "\n" );
+	OBJ_tdst_GameObject *object = AI_Mpst_GetCurrentObject();
+	const char *objectName      = ( object != nullptr ) ? object->sz_Name : "unknown";
+	tmp.append( "Object:\t" + std::string( objectName ) + "\n" );
+	tmp.append( "Script:\t" + std::string( scriptPath ) + "\n" );
+	tmp.append( "Line:\t" + std::to_string( bp.i_Line ) + "\n\n" );
 
-	if ( expression != nullptr )
-	{
-		tmp.append( "expression: " + std::string( expression ) + "\n\n" );
-	}
 	if ( message != nullptr )
 	{
-		tmp.append( std::string( message ) + "\n" );
+		tmp.append( std::string( message ) + "\n\n" );
 	}
 
-	tmp.append( "\n(" + std::string( filename ) + " : " + std::to_string( line ) + ")\n" );
+#if !defined( NDEBUG )
+	if ( expression != nullptr )
+	{
+		tmp.append( std::string( filename ) + ":" + std::to_string( line ) + "\n" );
+		tmp.append( std::string( expression ) + "\n\n" );
+	}
+#endif
 
 	LINK_gul_ColorTxt = 0x000000FF;
 	LINK_PrintStatusMsg( ( char * ) tmp.c_str() );
@@ -126,11 +131,11 @@ bool ERR_ScriptAssertFailed( const char *filename, int line, const char *express
 
 BOOL _ERR_fnb_AssertFailed(
         BOOL _b_Assert,
-        char *_psz_File,
+        const char *_psz_File,
         int _i_Line,
-        char *_psz_Expression,
-        char *_psz_Text1,
-        char *_psz_Text2,
+        const char *_psz_Expression,
+        const char *_psz_Text1,
+        const char *_psz_Text2,
         BOOL _b_Msg )
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

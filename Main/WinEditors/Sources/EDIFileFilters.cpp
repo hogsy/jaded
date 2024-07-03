@@ -6,11 +6,11 @@
 */
 
 #include "Precomp.h"
+
+#include <regex>
+
 #ifdef ACTIVE_EDITORS
 #include "EDIFileFilters.h"
-#include "Greta/regexpr2.h"
-
-
 
 /*
 ===================================================================================================
@@ -79,18 +79,15 @@ void EDI_cl_FileFilter::SetFilter(const CString& strFilter, eFilterType FilterTy
 ===================================================================================================
 ===================================================================================================
 */
-BOOL EDI_cl_FileFilter::RunFilter( const char* szFileName )
+BOOL EDI_cl_FileFilter::RunFilter( const char *szFileName )
 {
-	if ( m_bFilterEnable && ! m_strRegularEx.IsEmpty() )
+	if ( m_bFilterEnable && !m_strRegularEx.IsEmpty() )
 	{
-		regex::rpattern patternPending(m_strRegularEx.GetBuffer());
-		regex::match_results results;
+		std::regex patternPending( m_strRegularEx.GetBuffer() );
+		BOOL bResults = std::regex_match( szFileName, patternPending );
+		if ( m_FilterType == Filter_RemoveOnly )
+			return !bResults;
 
-		BOOL bResults = patternPending.match(szFileName, results).matched;
-
-		if ( m_FilterType == Filter_RemoveOnly)
-			return ! bResults;
-		
 		return bResults;
 	}
 	return TRUE;

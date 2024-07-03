@@ -16,10 +16,61 @@
 
 #include "ImGuiInterface.h"
 
+#include "Profiler.h"
+
+jaded::sys::Profiler jaded::sys::profiler;
+
 static SDL_Window *sdlWindow;
 static SDL_GLContext sdlGLContext;
 
 //#define USE_SDL_GL_CONTEXT
+
+/******************************************************************/
+/******************************************************************/
+
+void jaded::sys::Profiler::StartProfiling( const std::string &set )
+{
+	if ( !isActive )
+	{
+		return;
+	}
+
+	auto i = profSets.find( set );
+	if ( i == profSets.end() )
+	{
+		profSets.emplace( set, Profile() );
+		return;
+	}
+
+	i->second.Start();
+}
+
+void jaded::sys::Profiler::EndProfiling( const std::string &set )
+{
+	if ( !isActive )
+	{
+		return;
+	}
+
+	auto i = profSets.find( set );
+	assert( i != profSets.end() );
+	i->second.End();
+}
+
+// The below should work with the old BeginRaster / EndRaster macros
+
+extern "C" void Jaded_Profiler_StartProfiling( unsigned int set )
+{
+	jaded::sys::profiler.StartProfiling( std::to_string( set ) );
+}
+
+extern "C" void Jaded_Profiler_EndProfiling( unsigned int set )
+{
+	jaded::sys::profiler.EndProfiling( std::to_string( set ) );
+}
+
+/******************************************************************/
+/******************************************************************/
 
 #if defined( _WIN32 )
 

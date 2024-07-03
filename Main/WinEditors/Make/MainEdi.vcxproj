@@ -35,7 +35,6 @@
     <ProjectGuid>{970FD387-D91E-45EC-AC9F-5166DA3CE244}</ProjectGuid>
     <RootNamespace>MainEdi</RootNamespace>
     <Keyword>MFCProj</Keyword>
-    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <ProjectName>JadeShell</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -160,7 +159,6 @@
       <AdditionalIncludeDirectories>..\..\..\Libraries\SDK\Sources;..\..\..\Libraries\GraphicDK\Sources;..\..\..\Extern;..\..\..\Libraries;..\Sources;..\..\..\Main\WinEditors\Sources;..\..\..\Dlls;..\..\..\Extern\ode\Sources;..\..\..\Extern\ode\include;..\..\..\Extern\sdl2\include;..\..\..\Extern\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>ACTIVE_EDITORS;_DEBUG;WIN32;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;_USE_32BIT_TIME_T;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>Precomp.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>.\../../../Output/Tmp/MainEdi___ed/MainEdi.pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>.\../../../Output/Tmp/MainEdi___ed/</AssemblerListingLocation>
@@ -170,7 +168,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAs>Default</CompileAs>
-      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -196,7 +194,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <AdditionalIncludeDirectories>..\..\..\Libraries\SDK\Sources;..\..\..\Libraries\GraphicDK\Sources;..\..\..\Extern;..\..\..\Libraries;..\Sources;..\..\..\Main\WinEditors\Sources;..\..\..\Dlls;..\..\..\Extern\ode\Sources;..\..\..\Extern\ode\include;..\..\..\Extern\sdl2\include;..\..\..\Extern\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_DEBUG;ACTIVE_EDITORS;WIN32;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;_USE_32BIT_TIME_T;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;ACTIVE_EDITORS;WIN32;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;_USE_32BIT_TIME_T;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>Precomp.h</PrecompiledHeaderFile>
@@ -208,9 +206,9 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAs>Default</CompileAs>
-      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
       <WholeProgramOptimization>true</WholeProgramOptimization>
     </ClCompile>
     <ResourceCompile>
@@ -224,7 +222,6 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>../Output/Libs;../../../Extern/sdl2/lib/x86;..\..\..\extern\glew\lib\release\win32;../../../Extern\Greta;../../../Extern\DX8\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
-      <IgnoreSpecificDefaultLibraries>libcd.lib;libc.lib;libcmt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
@@ -432,7 +429,6 @@ devenv /build SpeedEditorsXenon /project XenonMeshProcessing $(SolutionPath)
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\Extern\Greta\regexpr2.cpp" />
     <ClCompile Include="..\..\..\Extern\zlib\adler32.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">
       </PrecompiledHeader>
@@ -917,6 +913,7 @@ devenv /build SpeedEditorsXenon /project XenonMeshProcessing $(SolutionPath)
     <ClInclude Include="..\..\Shared\ImGuiInterface.h" />
     <ClInclude Include="..\..\Shared\MainSharedApp.h" />
     <ClInclude Include="..\..\Shared\MainSharedSystem.h" />
+    <ClInclude Include="..\..\Shared\Profiler.h" />
     <ClInclude Include="..\Sources\DATaControl\DATCCompression.h" />
     <ClInclude Include="..\Sources\DATaControl\DATCP4BFObject.h" />
     <ClInclude Include="..\Sources\DATaControl\DATCP4ClientApi.h" />
