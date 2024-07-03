@@ -152,10 +152,6 @@ static int s_SkipSoundFile(char *_psz_PathName, char *_psz_FileName)
  */
 static void SoundFile(BIG_INDEX _ul_File)
 {
-	/*~~~~*/
-	int res;
-	/*~~~~*/
-
 	if
 	(
 		(BIG_b_IsFileExtension(_ul_File, EDI_Csz_ExtSoundMusic))

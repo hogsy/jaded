@@ -953,7 +953,6 @@ ULONG GLV_OriginalPointAreCompatible( tdst_GLV_Point *p_1 , tdst_GLV_Point *p_2 
 
 ULONG GLV_OriginalPointAreCompatible_UV( tdst_GLV_Point *p_1 , tdst_GLV_Point *p_2 )
 {
-	float UVDistance;
 	if (p_1->ulFlags != p_2->ulFlags) return 0;
 	if (p_1->stUVInfo.MaterialNum != p_2->stUVInfo.MaterialNum) return 0;
 	if (p_1->ulSurfaceOwner != p_2->ulSurfaceOwner) return 0;
@@ -997,7 +996,7 @@ if ulMode = 2 it will collapse all point with Color, UV & elementjade
 */
 void GLD_SortOverX( tdst_GLV * p_GLV )
 {
-	ULONG Counter,Counter2,*pRedir;
+	ULONG Counter,*pRedir;
 	GLV_Verify(p_GLV);
 	if (!p_GLV->ulNumberOfPoints) return;
 	pRedir		 = (ULONG*)GLV_ALLOC(4L * p_GLV->ulNumberOfPoints);
@@ -1990,9 +1989,6 @@ void GLV_IsPassive(tdst_GLV * p_GLV , ULONG C1 , ULONG C2 )
 		if ((p_GLV->p_stFaces[C2].PassivityFlags & 0xff00) == 0xff00) BigOr |= 0xff00;
 		p_GLV->p_stFaces[C2].PassivityFlags = Blur | BigOr; // Else don't blur
 	}
-#ifndef JADEFUSION
-	return 1;
-#endif
 }
 
 void GLV_MergeColors(tdst_GLV * p_GLV , ULONG CDest , ULONG CSrc )
@@ -3016,11 +3012,7 @@ void GLV_MaxColors(tdst_GLV * p_GLV , ULONG CDest , ULONG CSrc )
 	if (p_GLV->p_stFaces[CSrc].Nghbr[0] == CDest) I2 = 0;
 	if (p_GLV->p_stFaces[CSrc].Nghbr[1] == CDest) I2 = 1;
 	if (p_GLV->p_stFaces[CSrc].Nghbr[2] == CDest) I2 = 2;
-#ifdef JADEFUSION
 	if ((I1 | I2) == 0xffffffff) return;
-#else
-	if ((I1 | I2) == 0xffffffff) return 0;
-#endif
 	/* Colors Merge */
 	if ((p_GLV->p_stFaces[CDest].Colours[(I1 + 0) % 3] & 0xff) < (p_GLV->p_stFaces[CSrc].Colours[(I2 + 1) % 3] & 0xff))
 	{
@@ -3215,7 +3207,6 @@ void GLV_OptimizeHardBorders(tdst_GLV *p_stGLV)
 		for (Counter = 0 ; Counter < p_stGLV->ulNumberOfFaces ; Counter ++)
 		{
 			u32 IndexD;
-			MATHD_tdst_Vector p3;
 			GLV_Scalar Coef;
 			// 1 First Candidate, the surface of the triangle divided by surface of hist channele is < to a coeficient
 			Coef = GLV_GetSurf( p_stGLV , &p_stGLV->p_stFaces[Counter]) / pChannelNumSurfaces[p_stGLV->p_stFaces[Counter].ulSurfaceNumber & 0x00ffffff];
