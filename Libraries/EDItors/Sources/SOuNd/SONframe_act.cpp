@@ -190,12 +190,10 @@ void OnDisplayDeviceCapacity(void)
 			sz_Log,
 		    sizeof(sz_Log),
 			"Alloc. %d (%d%%), free %d, all %d (oct)",
-			ediSND_gst_SoundManager.st_DriverCapacity.dwTotalHwMemBytes -
-				ediSND_gst_SoundManager.st_DriverCapacity.dwFreeHwMemBytes,
-				100 -
-				(ediSND_gst_SoundManager.st_DriverCapacity.dwFreeHwMemBytes * 100) /
-				ediSND_gst_SoundManager.st_DriverCapacity.dwTotalHwMemBytes,
-				ediSND_gst_SoundManager.st_DriverCapacity.dwTotalHwMemBytes
+			ediSND_gst_SoundManager.st_DriverCapacity.dwTotalHwMemBytes - ediSND_gst_SoundManager.st_DriverCapacity.dwFreeHwMemBytes,
+			100 - (ediSND_gst_SoundManager.st_DriverCapacity.dwFreeHwMemBytes * 100) / ediSND_gst_SoundManager.st_DriverCapacity.dwTotalHwMemBytes,
+			ediSND_gst_SoundManager.st_DriverCapacity.dwFreeHwMemBytes,
+			ediSND_gst_SoundManager.st_DriverCapacity.dwTotalHwMemBytes
 		);
 		LINK_PrintStatusMsg(sz_Log);
 	}

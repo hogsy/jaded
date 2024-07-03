@@ -46,7 +46,6 @@ enum {
 // base class that does correct object allocation / deallocation
 
 struct dBase {
-#if !defined( NDEBUG ) // hogsy: causes memory allocation issues on release, so fuck it
   void *operator new( size_t size )
   {
 	  return dAlloc( size );
@@ -54,7 +53,6 @@ struct dBase {
   void operator delete( void *ptr, size_t size ) { dFree( ptr, size ); }
   void *operator new[]( size_t size ) { return dAlloc( size ); }
   void operator delete[]( void *ptr, size_t size ) { dFree( ptr, size ); }
-#endif
 };
 
 

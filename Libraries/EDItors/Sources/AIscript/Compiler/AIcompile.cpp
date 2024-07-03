@@ -3060,7 +3060,7 @@ int EAI_cl_Compiler::i_Compile(BIG_INDEX _ul_Model, BIG_INDEX _ul_File, char *_p
 					/* Code begin */
 					if(i == gi_FirstCode)
 					{
-						sprintf(name, "/*FIRST_CODE*/", p);
+						sprintf(name, "/*FIRST_CODE*/");
 						SAV_Buffer(name, strlen(name));
 					}
 				}
@@ -3091,11 +3091,11 @@ int EAI_cl_Compiler::i_Compile(BIG_INDEX _ul_Model, BIG_INDEX _ul_File, char *_p
 					{
 						switch(p)
 						{
-						case TYPE_INT:			sprintf(name, " int", p); break;
-						case TYPE_FLOAT:		sprintf(name, " float", p); break;
-						case TYPE_VECTOR:		sprintf(name, " vec", p); break;
-						case TYPE_GAMEOBJECT:	sprintf(name, " obj", p); break;
-						case TYPE_MESSAGEID:	sprintf(name, " msgid", p); break;
+						case TYPE_INT:			sprintf(name, " int"); break;
+						case TYPE_FLOAT:		sprintf(name, " float"); break;
+						case TYPE_VECTOR:		sprintf(name, " vec"); break;
+						case TYPE_GAMEOBJECT:	sprintf(name, " obj"); break;
+						case TYPE_MESSAGEID:	sprintf(name, " msgid"); break;
 						}
 
 						SAV_Buffer(name, strlen(name));

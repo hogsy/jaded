@@ -1238,7 +1238,6 @@ void EDI_cl_MainFrame::SwapMaximised(EDI_cl_BaseView *_po_View)
 	CRect				o_Rect;
 	MINMAXINFO			st;
 	CWnd				*po_Focus;
-	EDI_cl_BaseFrame	*po_CurrentFrame;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	po_Focus = GetFocus();
