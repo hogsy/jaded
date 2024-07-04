@@ -161,22 +161,19 @@ void TAB_DLlist_RemoveElem(TAB_tdst_DLlist *_pst_List, TAB_tdst_DLlistElem *_pst
     Aim:    Check if a Ptable or a PFtable is OK
  =======================================================================================================================
  */
-char TAB_b_Check(void *p_CurrentTable)
+char TAB_b_Check( TAB_tdst_Ptable *pst_CurrentTable )
 {
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     char            b_BadCheck;
 
-    TAB_tdst_Ptable *pst_CurrentTable;
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
     b_BadCheck = 0;
-    if(!MEM_b_CheckPointer(p_CurrentTable))
+    if ( !MEM_b_CheckPointer( pst_CurrentTable ) )
     {
         b_BadCheck++;
         goto _end;
     }
-
-    pst_CurrentTable = (TAB_tdst_Ptable *) p_CurrentTable;
 
     if(!TAB_b_CheckType(pst_CurrentTable->uc_Type))
     {
@@ -374,7 +371,7 @@ void TAB_Ptable_Init(TAB_tdst_Ptable *_pst_Table, ULONG _ul_NbElems, float _f_Ma
         _ul_NbElems = 2;
     }
 
-    _pst_Table->p_Table = (void **) MEM_p_Alloc(_ul_NbElems * 4);
+    _pst_Table->p_Table = (void **) MEM_p_Alloc(_ul_NbElems * sizeof(void*));
     _pst_Table->p_LastPointer = (_pst_Table->p_Table) + (_ul_NbElems - 1);
     _pst_Table->p_NextElem = (_pst_Table->p_Table);
     _pst_Table->ul_NbHoles = 0;
@@ -650,75 +647,6 @@ void **TAB_ppv_Ptable_GetElemWithPointer(TAB_tdst_Ptable *_pst_Table, void *_p_P
     }
 
     return NULL;
-}
-
-/*
- =======================================================================================================================
-    Aim:    Move an Elem from a table to another
- =======================================================================================================================
- */
-void TAB_Ptable_AddElemFromOtherPtableAtIndex
-(
-    TAB_tdst_Ptable *_pst_DstTable,
-    TAB_tdst_Ptable *_pst_SrcTable,
-    ULONG   _ul_SrcIndex
-)
-{
-    TAB_Ptable_AddElem(_pst_DstTable, _pst_SrcTable->p_Table[_ul_SrcIndex]);
-    TAB_Ptable_RemoveElemAtIndex(_pst_SrcTable, _ul_SrcIndex);
-}
-
-/*
- =======================================================================================================================
-    Aim:    Fills a table with random pointers (for tests only)
- =======================================================================================================================
- */
-void TAB_Ptable_TestFill(TAB_tdst_Ptable *_pst_Table)
-{
-    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-    void    **pElem1Pointer;
-    void    **pLastLoopPointer;
-    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-    pElem1Pointer = _pst_Table->p_Table;
-    pLastLoopPointer = _pst_Table->p_LastPointer;
-
-    for(; pElem1Pointer <= pLastLoopPointer; pElem1Pointer++)
-    {
-        /* Simule une adresse bidon alignee sur 4 octets */
-        *pElem1Pointer = (void *) (rand() & 0xFFFC);
-        _pst_Table->p_NextElem++;
-        _pst_Table->ul_NbElems++;
-    }
-}
-
-/*
- =======================================================================================================================
-    Aim:    Merge two tables:: For each element of the Src table, add it into the Dst table if it is not already into
-
-    Note:   The Dst table is automatically resized if it becomes full
- =======================================================================================================================
- */
-void TAB_Ptable_Merge(TAB_tdst_Ptable *_pst_Dst, TAB_tdst_Ptable *_pst_Src)
-{
-    /*~~~~~~~~~~~~~~~~~~~~~~*/
-    void    **pp_Elem;
-    void    **pp_LastElem;
-    /*~~~~~~~~~~~~~~~~~~~~~~*/
-
-    pp_Elem = _pst_Src->p_Table;
-    pp_LastElem = _pst_Src->p_NextElem;
-
-    for(; pp_Elem < pp_LastElem; pp_Elem++)
-    {
-        /* For each element of the Dst table */
-        if(!TAB_b_IsAHole(*pp_Elem))
-        {
-            /* If it is not into the Dst table, add it */
-            if(TAB_ul_Ptable_GetElemIndexWithPointer(_pst_Dst, *pp_Elem) == TAB_Cul_BadIndex)
-                TAB_Ptable_AddElemAndResize(_pst_Dst, *pp_Elem);
-        }
-    }
 }
 
 /*$4

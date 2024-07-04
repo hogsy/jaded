@@ -170,11 +170,7 @@ void	TAB_Ptable_RemoveElemWithPointer(TAB_tdst_Ptable *, void *);
 ULONG	TAB_ul_Ptable_GetElemIndexWithPointer(TAB_tdst_Ptable *, void *);
 void	**TAB_ppv_Ptable_GetElemWithPointer(TAB_tdst_Ptable *, void *);
 
-void	TAB_Ptable_AddElemFromOtherPTable(TAB_tdst_Ptable *, TAB_tdst_Ptable *, ULONG);
-void	TAB_Ptable_TestFill(TAB_tdst_Ptable *);
 void	TAB_Ptable_Resize(TAB_tdst_Ptable *, ULONG _ul_NbElems);
-
-void	TAB_Ptable_Merge(TAB_tdst_Ptable *, TAB_tdst_Ptable *);
 
 /*
  =======================================================================================================================
@@ -554,81 +550,6 @@ _inline_ int TAB_b_PFtable_isFull(const TAB_tdst_PFtable *_pst_Table)
 
 /*$4
  ***********************************************************************************************************************
-    Functions Related to both Ptable & PFtable
- ***********************************************************************************************************************
- */
-
-/*
- =======================================================================================================================
-    Aim:    Move an element of a Ptable to a PFtable
- =======================================================================================================================
- */
-_inline_ void TAB_MoveElementFromPtableToPFtable
-(
-	TAB_tdst_Ptable		*_pst_SrcPtable,	/* Source table */
-	TAB_tdst_PFtable	*_pst_DestPFtable,	/* Destination Table */
-	void				**_ppv_Element,		/* Pointer to the element */
-	ULONG				_ul_Flags			/* Flags to set (copy of the identity flags) */
-)
-{
-	/*~~~~~~~~~~~~~~~~~~~*/
-	TAB_tdst_PFelem p_Elem;
-	/*~~~~~~~~~~~~~~~~~~~*/
-
-	p_Elem.p_Pointer = *_ppv_Element;
-	p_Elem.ul_Flags = _ul_Flags;
-	TAB_PFtable_AddElem(_pst_DestPFtable, &p_Elem);
-	TAB_Ptable_RemoveElem(_pst_SrcPtable, _ppv_Element);
-}
-
-/*
- =======================================================================================================================
-    Aim:    Copy an element from a Ptable to a PFtable
- =======================================================================================================================
- */
-_inline_ void TAB_CopyElementFromPtableToPFtable
-(
-	TAB_tdst_Ptable		*_pst_SrcPtable,	/* Source table */
-	TAB_tdst_PFtable	*_pst_DestPFtable,	/* Destination Table */
-	void				**_ppv_Element,		/* Pointer to the element */
-	ULONG				_ul_Flags			/* Flags to set (copy of the identity flags) */
-)
-{
-	/*~~~~~~~~~~~~~~~~~~~*/
-	TAB_tdst_PFelem p_Elem;
-	/*~~~~~~~~~~~~~~~~~~~*/
-
-#ifdef _GAMECUBE
-#pragma unused(_pst_SrcPtable)
-#endif
-
-#if defined(_PC_RETAIL)
-(void) _pst_SrcPtable;
-#endif
-
-	p_Elem.p_Pointer = *_ppv_Element;
-	p_Elem.ul_Flags = _ul_Flags;
-	TAB_PFtable_AddElem(_pst_DestPFtable, &p_Elem);
-}
-
-/*
- =======================================================================================================================
-    Aim:    Move an element of a Ptable to another Ptable
- =======================================================================================================================
- */
-_inline_ void TAB_MoveElementFromPtableToPtable
-(
-	TAB_tdst_Ptable *_pst_SrcPtable,	/* Source table */
-	TAB_tdst_Ptable *_pst_DestPFtable,	/* Destination Table */
-	void			**_ppv_Element		/* Pointer to the element */
-)
-{
-	TAB_Ptable_AddElem(_pst_DestPFtable, *_ppv_Element);
-	TAB_Ptable_RemoveElem(_pst_SrcPtable, _ppv_Element);
-}
-
-/*$4
- ***********************************************************************************************************************
     Functions related to link list
  ***********************************************************************************************************************
  */
@@ -699,7 +620,7 @@ _inline_ char TAB_b_CheckType(unsigned char _uc_type)
 		return 0;
 }
 
-char	TAB_b_Check(void *);
+char TAB_b_Check( TAB_tdst_Ptable *pst_CurrentTable );
 #endif
 #if defined (__cplusplus) && !defined(JADEFUSION)
 }
