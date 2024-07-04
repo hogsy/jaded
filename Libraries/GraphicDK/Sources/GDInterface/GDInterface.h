@@ -257,10 +257,10 @@ extern "C"
 
 	} GDI_tdst_Interface;
 
-#ifndef __MATDRAW_C__
+//#ifndef __MATDRAW_C__
 	extern int renderState_Shfited;
 	extern int renderState_Cloned;
-#endif
+//#endif
 	LONG OGL_l_DrawElementIndexedTriangles( GEO_tdst_ElementIndexedTriangles *_pst_Element, GEO_Vertex *_pst_Point, GEO_tdst_UV *_pst_UV, ULONG ulnumberOfPoints );
 	LONG OGL_l_ShiftDrawElementIndexedTriangles( GEO_tdst_ElementIndexedTriangles *_pst_Element, GEO_Vertex *_pst_Point, MATH_tdst_Vector *_pst_Normal, GEO_tdst_UV *_pst_UV, ULONG ulnumberOfPoints );
 	LONG OGL_l_CloneDrawElementIndexedTriangles( GEO_tdst_ElementIndexedTriangles *_pst_Element, GEO_Vertex *_pst_Point, MATH_tdst_Vector *_pst_Normal, GEO_tdst_UV *_pst_UV, ULONG ulnumberOfPoints );

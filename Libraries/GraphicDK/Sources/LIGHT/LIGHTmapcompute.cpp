@@ -1,6 +1,8 @@
-#include "Precomp.h"
+// #include "Precomp.h"
 
 #ifdef ACTIVE_EDITORS
+
+#include <vector>
 
 #include "SELection/SELection.h"
 #include "texture/texfile.h"
@@ -133,8 +135,7 @@ typedef struct
 //#define LM_Epsilon 0.1f
 #define LM_Epsilon 0.001f
 
-extern void OBJ_BV_AddPointToAABBox
-(
+extern "C" void OBJ_BV_AddPointToAABBox(
 	void				*_pst_BV,
 	MATH_tdst_Matrix	*_pst_AbsoluteMatrix,
 	MATH_tdst_Vector	*_pst_Point,
@@ -1855,12 +1856,11 @@ bool  ComputeTexelColor(LMColor* _Color, LM_tdst_Vector*  _texelPos, LM_tdst_Vec
 	return inShadow;
 }
 
-void ComputeLumelColor(LMColor* _color, LM_tdst_Vector* _texelPos, LM_tdst_Vector* _normal, tdst_LMObj* _pObj, int _faceIndex, bool _computeShadows, TAB_tdst_Ptable* _pst_LightList)
+void ComputeLumelColor( LMColor *_color, LM_tdst_Vector *_texelPos, LM_tdst_Vector *_normal, tdst_LMObj *_pObj, int _faceIndex, bool _computeShadows, std::vector< tdst_LMLight > *_pst_LightList )
 {
 	OBJ_tdst_GameObject* gameObj;
 	OBJ_tdst_GameObject* gameGeoObj;
 	LIGHT_tdst_Light* lightObj;
-	tdst_LMLight* pLight;
 	LM_tdst_Vector temp, lightDir, lightPos;
 	ULONG i;
 	LMColor	lightColor;
@@ -1872,12 +1872,9 @@ void ComputeLumelColor(LMColor* _color, LM_tdst_Vector* _texelPos, LM_tdst_Vecto
 	lightNoShadowColor.a = lightNoShadowColor.r = lightNoShadowColor.g = lightNoShadowColor.b = 0.0f;
 
 	// loop on all lights of the scene
-	for (i = 0; i < TAB_ul_Ptable_GetMaxNbElems(_pst_LightList); i++)
+	for (i = 0; i < _pst_LightList->size(); i++)
 	{
-		pLight = (tdst_LMLight*) _pst_LightList->p_Table[i];
-
-		if (TAB_b_IsAHole(pLight))
-			continue;
+		tdst_LMLight *pLight = &((*_pst_LightList)[ i ]);
 
 		gameObj = pLight->pLight;
 		goToNextLight = false;
@@ -1982,7 +1979,7 @@ void ComputeLumelColor(LMColor* _color, LM_tdst_Vector* _texelPos, LM_tdst_Vecto
 
 #define MAX_ELEMENT_RENDERFACES 5000
 
-void ComputeLighting(tdst_LMObj* _pObj, int _nbObj, TAB_tdst_Ptable* _pst_LightList)
+void ComputeLighting( tdst_LMObj *_pObj, int _nbObj, std::vector< tdst_LMLight > *_pst_LightList )
 {
 	int i, k,x, y, y1, x1;
 	UINT j;
@@ -4081,10 +4078,8 @@ void SaveLightmapsToBigFile(BIG_KEY _worldKey)
 	}
 }
 
-void ComputeLightMaps(TAB_tdst_Ptable* _pst_LMUsers, TAB_tdst_Ptable* _pst_ShadowCasters, TAB_tdst_Ptable* _pst_LightList, int _nbElem, int _nbFaces, BIG_KEY _worldKey, SEL_tdst_Selection* _pSelection)
+void ComputeLightMaps( const std::vector< OBJ_tdst_GameObject * > &_pst_LMUsers, std::vector< tdst_LMLight > *_pst_LightList, int _nbElem, int _nbFaces, BIG_KEY _worldKey, SEL_tdst_Selection *_pSelection )
 {
-	OBJ_tdst_GameObject* gameObj;
-	GEO_tdst_Object* geoObj;
 	int j, k, v;
 	UINT i;
 	tdst_LMFace* p_tdst_SceneFaces;
@@ -4106,7 +4101,7 @@ void ComputeLightMaps(TAB_tdst_Ptable* _pst_LMUsers, TAB_tdst_Ptable* _pst_Shado
 	// Clear the current lightmaps
 	//LIGHT_Lightmaps_DestroyLightmaps(gCurrentWorld);
 
-	if (TAB_ul_Ptable_GetNbElems(_pst_LMUsers) == 0)
+	if (_pst_LMUsers.empty())
 	{
 		return;
 	}
@@ -4114,10 +4109,10 @@ void ComputeLightMaps(TAB_tdst_Ptable* _pst_LMUsers, TAB_tdst_Ptable* _pst_Shado
 	// Generate our lists
 	p_tdst_SceneFaces = (tdst_LMFace*)LM_Alloc(sizeof(tdst_LMFace) * _nbFaces);
 	p_tdst_SceneElements = (tdst_LMElement*)LM_Alloc(sizeof(tdst_LMElement) * _nbElem);
-	p_tdst_SceneObjects = (tdst_LMObj*)LM_Alloc(sizeof(tdst_LMObj) * TAB_ul_Ptable_GetNbElems(_pst_LMUsers));
+	p_tdst_SceneObjects = (tdst_LMObj*)LM_Alloc(sizeof(tdst_LMObj) * _pst_LMUsers.size());
 
 	gObjList = p_tdst_SceneObjects;
-	gNbObj = TAB_ul_Ptable_GetNbElems(_pst_LMUsers);
+	gNbObj = _pst_LMUsers.size();
 	gFaceList = p_tdst_SceneFaces;
 	gNbFace = _nbFaces;
 	gTotalNbAxisElement = 0;
@@ -4125,14 +4120,9 @@ void ComputeLightMaps(TAB_tdst_Ptable* _pst_LMUsers, TAB_tdst_Ptable* _pst_Shado
 	gGlobalLMCallback(0, "Precomputing bounding volumes", gGlobalThis);
 
 	// precomputing bounding volumes and other stuff
-    for (i =0; i < TAB_ul_Ptable_GetMaxNbElems(_pst_LMUsers); i++)
+    for (i =0; i < _pst_LMUsers.size(); i++)
 	{
-		gameObj = (OBJ_tdst_GameObject*)_pst_LMUsers->p_Table[i];
-
-		// skip holes
-		if (TAB_b_IsAHole(gameObj))
-			continue;
-
+		OBJ_tdst_GameObject *gameObj = _pst_LMUsers[ i ];
 
 		// get ambient for this object
 		// DJ_TEMP : no ambient... ambient is in the lighting equation ... objAmbient = LIGHT_GetAmbientForGAO(gameObj, &gameObj->pst_Base->pst_Visu->lInfo, gameObj->pst_Base->pst_Visu->pst_AmbientOfGAO, gameObj->pst_Base->pst_Visu->ul_DrawMask, NULL, NULL);
@@ -4142,7 +4132,7 @@ void ComputeLightMaps(TAB_tdst_Ptable* _pst_LMUsers, TAB_tdst_Ptable* _pst_Shado
 		p_tdst_SceneObjects[i].objAmbient.b = (((objAmbient & 0x00FF0000) >> 16) * (1.0f/255.0f));
 		p_tdst_SceneObjects[i].objAmbient.a = 1.0f;
 		
-		geoObj = (GEO_tdst_Object*)gameObj->pst_Base->pst_Visu->pst_Object;
+		GEO_tdst_Object *geoObj = ( GEO_tdst_Object * ) gameObj->pst_Base->pst_Visu->pst_Object;
 
 		// BV is a bounding sphere set the info
 		float radius;
@@ -4283,33 +4273,32 @@ void ComputeLightMaps(TAB_tdst_Ptable* _pst_LMUsers, TAB_tdst_Ptable* _pst_Shado
 
 		// Do the lighting
 		gGlobalLMCallback(0.2f, "Computing lighting", gGlobalThis);
-		ComputeLighting(p_tdst_SceneObjects, TAB_ul_Ptable_GetNbElems(_pst_LMUsers), _pst_LightList);
+		ComputeLighting(p_tdst_SceneObjects, _pst_LMUsers.size(), _pst_LightList);
 
 		// Do the packing and equivalent axis page computation
 		gGlobalLMCallback(0.9f, "Packing elements", gGlobalThis);
 #if defined(PACK_PER_OBJECT)
 		DoElementPackingAndCompressionPerObject(p_tdst_SceneObjects, TAB_ul_Ptable_GetNbElems(_pst_LMUsers));
 #elif defined (PACK_ONE_PAGE_PER_WORLD)
-		DoElementPackingAndCompressionPerWorld(p_tdst_SceneObjects, TAB_ul_Ptable_GetNbElems(_pst_LMUsers));
+		DoElementPackingAndCompressionPerWorld(p_tdst_SceneObjects, _pst_LMUsers.size());
 #else
 		DoElementPackingAndCompression(p_tdst_SceneObjects, TAB_ul_Ptable_GetNbElems(_pst_LMUsers));
 #endif
 		
 		// Generate the UV coords for the elements
 		gGlobalLMCallback(0.95f, "Generating UV coords", gGlobalThis);
-		GenerateUVCoords(p_tdst_SceneObjects, TAB_ul_Ptable_GetNbElems(_pst_LMUsers));
+		GenerateUVCoords(p_tdst_SceneObjects, _pst_LMUsers.size());
 
 		// Save the lightmaps textures in the bigfile
 		SaveLightmapsToBigFile(_worldKey);		 
 	}
 
 	// Free up the stuff
-	for (i =0; i < TAB_ul_Ptable_GetMaxNbElems(_pst_LMUsers); i++)
+	for (i =0; i < _pst_LMUsers.size(); i++)
 	{
-		if (!TAB_b_IsAHole(_pst_LMUsers->p_Table[i])) 
-			if ((p_tdst_SceneObjects[i].settings.bReceiveShadows && p_tdst_SceneObjects[i].settings.bUseLightmaps)
-				&& !p_tdst_SceneObjects[i].settings.bTemporaryStopUsingLightmaps)
-				FreeAxisElements(&p_tdst_SceneObjects[i]);
+		if ((p_tdst_SceneObjects[i].settings.bReceiveShadows && p_tdst_SceneObjects[i].settings.bUseLightmaps)
+			&& !p_tdst_SceneObjects[i].settings.bTemporaryStopUsingLightmaps)
+			FreeAxisElements(&p_tdst_SceneObjects[i]);
 	}
 	
 	LM_Free(p_tdst_SceneFaces);
@@ -4383,7 +4372,6 @@ void LIGHT_ComputeAllLightmaps(WOR_tdst_World*  _pst_World, BIG_KEY _worldKey, t
 	unsigned int i, j;
 	OBJ_tdst_GameObject* gameObj; 
 	LIGHT_tdst_Light* lightObj; 
-	tdst_LMLight*	pLight;
 	int	nbFaces = 0;
 	int nbElem = 0;
 	bool	bComputeForWorld;
@@ -4410,19 +4398,18 @@ void LIGHT_ComputeAllLightmaps(WOR_tdst_World*  _pst_World, BIG_KEY _worldKey, t
 
 	// scan all the GO in the map to find who need to have his lightmaps computed
 	// and also get the list of static lights
-	TAB_tdst_Ptable shadowCastersList;	// will contain OBJ_tdst_GameObject*
-	TAB_tdst_Ptable lightmapUsersList; // will contain OBJ_tdst_GameObject*
-	TAB_tdst_Ptable lightList; // will contain OBJ_tdst_GameObject*
-
 
 	// THIS IS AN UGLY PATCH UNTIL I'M SURE IT'S THE WAY IT'S GOING TO WORK
 	do
 	{
 		currentWorld = BIG_C_InvalidKey;
 
-		TAB_Ptable_Init(&shadowCastersList, TAB_ul_Ptable_GetNbElems(&_pst_World->st_GraphicObjectsTable) , 2.0f);
-		TAB_Ptable_Init(&lightmapUsersList, TAB_ul_Ptable_GetNbElems(&_pst_World->st_GraphicObjectsTable) , 2.0f);
-		TAB_Ptable_Init(&lightList, TAB_ul_Ptable_GetNbElems(&_pst_World->st_GraphicObjectsTable) , 2.0f);
+		std::vector< OBJ_tdst_GameObject * > lightmapUsersList;
+		lightmapUsersList.reserve( TAB_ul_Ptable_GetNbElems( &_pst_World->st_GraphicObjectsTable ) );
+
+		std::vector< tdst_LMLight > lightList;
+		lightList.reserve( TAB_ul_Ptable_GetNbElems( &_pst_World->st_GraphicObjectsTable ) );
+
 		nbFaces = 0;
 		nbElem = 0;
 		bComputeForWorld = false;
@@ -4567,7 +4554,7 @@ void LIGHT_ComputeAllLightmaps(WOR_tdst_World*  _pst_World, BIG_KEY _worldKey, t
 							gameObj->pst_Base->pst_Visu->pst_LightmapSettings.bTemporaryStopUsingLightmaps = true;
 						}
 
-						TAB_Ptable_AddElemAndResize(&lightmapUsersList, gameObj);
+						lightmapUsersList.push_back(gameObj);
 					}
 				}
 			}
@@ -4586,13 +4573,13 @@ void LIGHT_ComputeAllLightmaps(WOR_tdst_World*  _pst_World, BIG_KEY _worldKey, t
 							(lightObj->ul_Flags & LIGHT_Cul_LF_Type) == LIGHT_Cul_LF_Spot ||
 							(lightObj->ul_Flags & LIGHT_Cul_LF_Type) == LIGHT_Cul_LF_Direct )
 						{
-							pLight = (tdst_LMLight*) LM_Alloc(sizeof(tdst_LMLight));
-							pLight->pLight = gameObj; 
-							pLight->pLastShadowCastingFace = NULL;
-							pLight->pLastShadowCastingObject = NULL;
+							tdst_LMLight light;
+							light.pLight = gameObj; 
+							light.pLastShadowCastingFace = NULL;
+							light.pLastShadowCastingObject = NULL;
 
 							// add to list						
-							TAB_Ptable_AddElemAndResize(&lightList, pLight);
+							lightList.push_back(light);
 						}
 					}
 				}
@@ -4601,21 +4588,7 @@ void LIGHT_ComputeAllLightmaps(WOR_tdst_World*  _pst_World, BIG_KEY _worldKey, t
 
 		// start computing the lightmaps 
 		if (currentWorld != BIG_C_InvalidKey && bComputeForWorld) 
-			ComputeLightMaps(&lightmapUsersList, &shadowCastersList, &lightList, nbElem, nbFaces, currentWorld, _pSelection);
-		
-		// unalloc all the lights
-		for(i = 0; i < TAB_ul_Ptable_GetMaxNbElems(&lightList); i++)
-		{
-			if (TAB_b_IsAHole(lightList.p_Table[i]))
-				continue;
-
-			LM_Free(lightList.p_Table[i]);
-		}
-
-		// clean up
-		TAB_Ptable_Close(&shadowCastersList);
-		TAB_Ptable_Close(&lightmapUsersList);
-		TAB_Ptable_Close(&lightList);		 
+			ComputeLightMaps(lightmapUsersList, &lightList, nbElem, nbFaces, currentWorld, _pSelection);
 		
 	} while (currentWorld != BIG_C_InvalidKey);
 
