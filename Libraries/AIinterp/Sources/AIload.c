@@ -906,7 +906,8 @@ void AI_InstanceAfterLoading(AI_tdst_Instance *_pst_Instance)
 
 	if(AI_gb_Optim2)
 	{
-		int		i, j, dec, size1;
+		unsigned int i = 0, j;
+		int dec, size1;
 		short	w_TypeIndex;
 		int		i_NumElem;
 
@@ -985,14 +986,13 @@ void AI_InstanceAfterLoading(AI_tdst_Instance *_pst_Instance)
 
 	if(AI_gb_Optim2)
 	{
-		int		i;
 		int		i_Offset2;
 		char	*p;
 		short	w_TypeIndex;
 		int		i_NumElem;
 
 		/* Allocation des tableaux */
-		for(i = 0; i < pst_Model->pst_VarDes->ul_NbVars; i++)
+		for(unsigned int i = 0; i < pst_Model->pst_VarDes->ul_NbVars; i++)
 		{
 			if(!(pst_Model->pst_VarDes->pst_VarsInfos[i].w_Flags & AI_CVF_Pointer)) continue;
 

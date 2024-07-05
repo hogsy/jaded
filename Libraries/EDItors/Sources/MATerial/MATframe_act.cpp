@@ -557,7 +557,7 @@ void EMAT_cl_Frame::GenerateHtml( void )
 							fprintf( hp_File, "<p>........ Texture [%08X] %s/%s</p>\n", pst_TexData->ul_Key, sz_Path, BIG_NameFile( ul_Index ) );
 							if ( TEX_i_4Edit_CreateBitmap( ul_Index, 0, this->GetDC()->GetSafeHdc() , &st_Res) )
 							{
-								fprintf( hp_File, "<p align=center >", sz_Name );
+								fprintf( hp_File, "<p align=center >" );
 								if( h_RGB )
 								{
 									sprintf( sz_Name, "%s/%s", sz_ExternPath, BIG_NameFile( ul_Index ) );
@@ -578,7 +578,7 @@ void EMAT_cl_Frame::GenerateHtml( void )
 									DeleteObject( h_A );
 									fprintf( hp_File, "<img src=\"%s\">", sz_Name );
 								}
-								fprintf( hp_File, "</p>\n", sz_Name );
+								fprintf( hp_File, "</p>\n" );
 							}
 						}
 					}
@@ -627,7 +627,7 @@ void EMAT_cl_Frame::GenerateHtml( void )
 								
 								if ( TEX_i_4Edit_CreateBitmap( ul_Index, 0, this->GetDC()->GetSafeHdc() , &st_Res) )
 								{
-									fprintf( hp_File, "<p align=center >", sz_Name );
+									fprintf( hp_File, "<p align=center >" );
 									if( h_RGB )
 									{
 										sprintf( sz_Name, "%s/%s", sz_ExternPath, BIG_NameFile( ul_Index ) );
@@ -648,7 +648,7 @@ void EMAT_cl_Frame::GenerateHtml( void )
 										DeleteObject( h_A );
 										fprintf( hp_File, "<img src=\"%s\">", sz_Name );
 									}
-									fprintf( hp_File, "</p>\n", sz_Name );
+									fprintf( hp_File, "</p>\n" );
 								}
 							}
 						}

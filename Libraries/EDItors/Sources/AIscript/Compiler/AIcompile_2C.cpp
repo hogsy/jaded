@@ -698,7 +698,7 @@ void AI2C_GenerateVars(BIG_INDEX ul_Model, BIG_INDEX ul_File)
 	fputs(az_Tmp, f);
 	fputs("\n\n", f);
 
-	sprintf(az_Tmp, "#endif /* __%s_H__ */\n", az_NameModel, az_NameModel);
+	sprintf(az_Tmp, "#endif /* __%s_H__ */\n", az_NameModel);
 	fputs(az_Tmp, f);
 
 	fclose(f);
@@ -977,7 +977,7 @@ void AI2C_GenFunc(BIG_INDEX ul_Model, BIG_INDEX ul_File)
 	PUTS(az_Tmp);
 	sprintf(az_Tmp, "\t%s_Vars\t*DV = (%s_Vars *) (AI_gpst_CurrentInstance->pc_VarsBuffer);\n", az_Cast, az_Cast);
 	PUTS(az_Tmp);
-	sprintf(az_Tmp, "\tOBJ_tdst_GameObject\t*__who = AI_gpst_CurrentGameObject;\n", az_Cast, az_Cast);
+	sprintf(az_Tmp, "\tOBJ_tdst_GameObject\t*__who = AI_gpst_CurrentGameObject;\n");
 	PUTS(az_Tmp);
 	PUTS("\tint\t__resexec__;\n");
 	PUTS("\n");

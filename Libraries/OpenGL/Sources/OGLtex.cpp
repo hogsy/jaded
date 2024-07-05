@@ -392,7 +392,7 @@ LONG OGL_Texture_LoadCB( ULONG ul_Texture, ULONG _ul_Key, ULONG *_pul_Texture, i
 		{
 			glGenerateMipmap( GL_TEXTURE_2D );
 		}
-		else
+		else if ( GLEW_EXT_framebuffer_object )
 		{
 			glGenerateMipmapEXT( GL_TEXTURE_2D );
 		}
