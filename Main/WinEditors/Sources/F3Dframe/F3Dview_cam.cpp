@@ -909,9 +909,7 @@ void F3D_cl_View::ZoomExtendSelected(CAM_tdst_Camera *pst_Camera, WOR_tdst_World
 void F3D_cl_View::ZoomExtendAll(CAM_tdst_Camera *pst_Camera, WOR_tdst_World *pst_World)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	TAB_tdst_PFelem		*pst_Elem, *pst_LastElem;
 	MATH_tdst_Vector	st_Min, st_Max;
-	OBJ_tdst_GameObject *pst_Obj;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	TestLockCam();
@@ -920,25 +918,27 @@ void F3D_cl_View::ZoomExtendAll(CAM_tdst_Camera *pst_Camera, WOR_tdst_World *pst
 	st_Max.x = st_Max.y = st_Max.z = -EOUT_INFINITE;
 	
 	MATH_InvertMatrix(&pst_Camera->st_InverseMatrix, &pst_Camera->st_Matrix);
-	
-	pst_Elem = TAB_pst_PFtable_GetFirstElem(&pst_World->st_VisibleObjects);
-	pst_LastElem = TAB_pst_PFtable_GetLastElem(&pst_World->st_VisibleObjects);
-	for(; pst_Elem <= pst_LastElem; pst_Elem++)
+
 	{
-		pst_Obj = (OBJ_tdst_GameObject *) pst_Elem->p_Pointer;
-		if(TAB_b_IsAHole(pst_Obj)) continue;
-		
-		if(pst_Obj->ul_StatusAndControlFlags & OBJ_C_ControlFlag_ForceInvisibleInit) continue;
-		if(pst_Obj->ul_StatusAndControlFlags & OBJ_C_ControlFlag_ForceInvisible) continue;
-		if(pst_Obj->ul_IdentityFlags & OBJ_C_IdentityFlag_Anims) continue;
-		if(pst_Obj->c_FixFlags & OBJ_C_HasBeenMerge) continue;
-		if(!pst_Obj->pst_Base) continue;
-		if(!pst_Obj->pst_Base->pst_Visu) continue;
-		
-		if(!(pst_Camera->ul_Flags & CAM_Cul_Flags_Perspective))
-			F3D_Add2DBoundingVolume(pst_Obj, &st_Min, &st_Max, pst_Camera);
-		else
-			OUT_b_ComputeSelectedBoudingVolume(pst_Elem->p_Pointer, 0, (ULONG) & st_Min, (ULONG) & st_Max);
+		WOR_World_VisibleObjectsIteratorGuard vo_guard( pst_World );
+		WOR_World_VisibleObjectsVector *w_visible_objects = ( WOR_World_VisibleObjectsVector * ) ( pst_World->st_VisibleObjects );
+
+		for ( auto it = w_visible_objects->begin(); it != w_visible_objects->end(); ++it )
+		{
+			OBJ_tdst_GameObject *pst_Obj = *it;
+
+			if ( pst_Obj->ul_StatusAndControlFlags & OBJ_C_ControlFlag_ForceInvisibleInit ) continue;
+			if ( pst_Obj->ul_StatusAndControlFlags & OBJ_C_ControlFlag_ForceInvisible ) continue;
+			if ( pst_Obj->ul_IdentityFlags & OBJ_C_IdentityFlag_Anims ) continue;
+			if ( pst_Obj->c_FixFlags & OBJ_C_HasBeenMerge ) continue;
+			if ( !pst_Obj->pst_Base ) continue;
+			if ( !pst_Obj->pst_Base->pst_Visu ) continue;
+
+			if ( !( pst_Camera->ul_Flags & CAM_Cul_Flags_Perspective ) )
+				F3D_Add2DBoundingVolume( pst_Obj, &st_Min, &st_Max, pst_Camera );
+			else
+				OUT_b_ComputeSelectedBoudingVolume( pst_Obj, 0, ( ULONG ) &st_Min, ( ULONG ) &st_Max );
+		}
 	}
 		
 	if(st_Min.x != EOUT_INFINITE)

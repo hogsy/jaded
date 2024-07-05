@@ -166,8 +166,12 @@ typedef struct WOR_SelectionGroup_
 #endif
 
 #ifdef __cplusplus
+typedef std::vector< OBJ_tdst_GameObject * > WOR_World_VisibleObjectsVector;
 typedef std::vector< OBJ_tdst_GameObject * > WOR_World_LightsVector;
 #endif
+
+struct WOR_WORLD_VisibleObjectsVectorCRef;
+typedef struct WOR_WORLD_VisibleObjectsVectorCRef WOR_WORLD_VisibleObjectsVectorCRef;
 
 struct WOR_World_LightsVectorCRef;
 typedef struct WOR_World_LightsVectorCRef WOR_World_LightsVectorCRef; /**< Opaque reference to a WOR_World_LightsVector */
@@ -191,10 +195,13 @@ typedef struct	WOR_tdst_World_
 	struct WOR_tdst_View_		*pst_View;								/* The table of world views */
 	struct WOR_tdst_View_		*pst_CurrentView;						/* Current view treated */
 
-	TAB_tdst_PFtable			st_VisibleObjects;						/* Visible objects. Updated by the visibility system */
+	WOR_WORLD_VisibleObjectsVectorCRef *st_VisibleObjects; /**< Visible objects. Updated by the visibility system */
 	TAB_tdst_PFtable			st_ActivObjects;						/* The table pointers on activ objects */
-
 	WOR_World_LightsVectorCRef *st_Lights; /**< Objects that have a light (or are a light) */
+
+	#ifndef NDEBUG
+	int st_VisibleObjects_ActiveIterators;
+	#endif
 
 	EOT_tdst_SetOfEOT			st_EOT;									/* All the engine objects tables of the world */
 
@@ -330,6 +337,39 @@ typedef struct	WOR_tdst_World_
 	int							i_SplitViewIdx;
 #endif
 } WOR_tdst_World;
+
+#ifdef __cplusplus
+/**
+ * @brief Guard object for iterating the world visible objects vector.
+ *
+ * While instantiated, any attempts to modify the WOR_tdst_World::st_VisibleObjects member in a way
+ * that may invalidate iterators (e.g. adding/removing elements) should trigger a debug assertion.
+*/
+class WOR_World_VisibleObjectsIteratorGuard
+{
+private:
+#ifndef NDEBUG
+	WOR_tdst_World *world;
+#endif
+
+public:
+	inline WOR_World_VisibleObjectsIteratorGuard( WOR_tdst_World *world ) : world(world)
+	{
+#ifndef NDEBUG
+		assert( world->st_VisibleObjects_ActiveIterators >= 0 );
+		++(world->st_VisibleObjects_ActiveIterators);
+#endif
+	}
+
+	inline ~WOR_World_VisibleObjectsIteratorGuard()
+	{
+#ifndef NDEBUG
+		assert( world->st_VisibleObjects_ActiveIterators > 0 );
+		--( world->st_VisibleObjects_ActiveIterators );
+#endif
+	}
+};
+#endif
 
 /*$4
  ***********************************************************************************************************************

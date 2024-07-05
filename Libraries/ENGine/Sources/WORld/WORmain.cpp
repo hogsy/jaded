@@ -131,12 +131,11 @@ void WOR_MakeObjectVisibleIfFlagsAllow(OBJ_tdst_GameObject *_pst_Object, WOR_tds
 			AI_ExecCallback(_pst_Object, AI_C_Callback_SectoVisOff);
 
 		_pst_Object->ul_StatusAndControlFlags &= ~OBJ_C_ControlFlag_SectoInvisible;
-		TAB_PFtable_AddElemWithData
-		(
-			&_pst_World->st_VisibleObjects,
-			(void *) _pst_Object,
-			_pst_Object->ul_IdentityFlags
-		);
+
+		assert( _pst_World->st_VisibleObjects_ActiveIterators == 0 );
+
+		WOR_World_VisibleObjectsVector *w_visible_objects = ( WOR_World_VisibleObjectsVector * ) ( _pst_World->st_VisibleObjects );
+		w_visible_objects->push_back( _pst_Object );
 
 		OBJ_SetStatusFlag(_pst_Object, OBJ_C_StatusFlag_Visible);
 		if(_pst_Object->ul_IdentityFlags & OBJ_C_IdentityFlag_Lights)
@@ -207,7 +206,9 @@ void WOR_World_MakeObjectsVisible(WOR_tdst_World *_pst_World)
 #ifdef RASTERS_ON
 	PRO_StartTrameRaster(&ENG_gpst_RasterEng_Visibility);
 #endif
-	TAB_PFtable_Clear(&_pst_World->st_VisibleObjects);
+	assert( _pst_World->st_VisibleObjects_ActiveIterators == 0 );
+	WOR_World_VisibleObjectsVector *w_visible_objects = ( WOR_World_VisibleObjectsVector * ) ( _pst_World->st_VisibleObjects );
+	w_visible_objects->clear();
 
 	WOR_World_LightsVector *world_lights = ( WOR_World_LightsVector * ) ( _pst_World->st_Lights );
 	world_lights->clear();
@@ -307,7 +308,12 @@ void WOR_World_DetachObject(WOR_tdst_World *_pst_World, OBJ_tdst_GameObject *_ps
 	TAB_PFtable_RemoveElemWithPointer(&_pst_World->st_ActivObjects, _pst_GO);
 
 	/* Delete object in Visible list */
-	TAB_PFtable_RemoveElemWithPointer(&_pst_World->st_VisibleObjects, _pst_GO);
+	{
+		assert( _pst_World->st_VisibleObjects_ActiveIterators == 0 );
+
+		WOR_World_VisibleObjectsVector *w_visible_objects = ( WOR_World_VisibleObjectsVector * ) ( _pst_World->st_VisibleObjects );
+		w_visible_objects->erase( std::remove( w_visible_objects->begin(), w_visible_objects->end(), _pst_GO ), w_visible_objects->end() );
+	}
 
 	/* Delete object in Light list */
 	if ( OBJ_b_TestIdentityFlag( _pst_GO, OBJ_C_IdentityFlag_Lights ) )

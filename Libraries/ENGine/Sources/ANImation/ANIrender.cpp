@@ -37,14 +37,17 @@ extern "C"
 #include "BASe/BENch/BENch.h"
 
 /* external / prototypes */
-extern void ANI_PlayBlendAnimationWithoutMagicBox(OBJ_tdst_GameObject *, ANI_st_GameObjectAnim *, ANI_tdst_Anim *);
-extern BOOL sgb_EngineRender;
-extern BOOL GRO_gb_ResetGhost;
-extern bool ENG_gb_ANIRunning;
+extern "C"
+{
+	void ANI_PlayBlendAnimationWithoutMagicBox( OBJ_tdst_GameObject *, ANI_st_GameObjectAnim *, ANI_tdst_Anim * );
+	extern BOOL sgb_EngineRender;
+	extern BOOL GRO_gb_ResetGhost;
+	extern bool ENG_gb_ANIRunning;
+}
 
 ULONG				PushedStack = 0;
 OBJ_tdst_GameObject *pst_RenderingStack[256];
-ULONG				AI_C_Callback = 0;
+extern "C" ULONG AI_C_Callback = 0;
 
 
 #ifdef ACTIVE_EDITORS
@@ -234,10 +237,9 @@ _inline_ void ANI_RenderBone(OBJ_tdst_GameObject *_pst_BoneGO)
 #endif
 }
 
-extern void ANI_PlayLeadAnimation(OBJ_tdst_GameObject *, ANI_st_GameObjectAnim *, ANI_tdst_Anim *);
+extern "C" void ANI_PlayLeadAnimation( OBJ_tdst_GameObject *, ANI_st_GameObjectAnim *, ANI_tdst_Anim * );
 
-extern void AI_EvalFunc_MATHVecBlendRotate_C
-(
+extern "C" void AI_EvalFunc_MATHVecBlendRotate_C(
 	MATH_tdst_Vector	*,
 	MATH_tdst_Vector	*,
 	float				,
@@ -474,31 +476,23 @@ void ANI_BeforeRender(OBJ_tdst_GameObject *_pst_GO)
  =======================================================================================================================
  =======================================================================================================================
  */
-void ANI_BeforeRendering(WOR_tdst_World *_pst_World)
+extern "C" void ANI_BeforeRendering( WOR_tdst_World *_pst_World )
 {
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	TAB_tdst_PFelem			*pst_CurrentElem;
-	TAB_tdst_PFelem			*pst_EndElem;
-	OBJ_tdst_GameObject		*pst_GO;
-	ANI_st_GameObjectAnim	*pst_GOAnim;
-	OBJ_tdst_Group			*pst_Skeleton;
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+	WOR_World_VisibleObjectsIteratorGuard vo_guard( _pst_World );
+	WOR_World_VisibleObjectsVector *w_visible_objects = ( WOR_World_VisibleObjectsVector * ) ( _pst_World->st_VisibleObjects );
 
-	pst_CurrentElem = TAB_pst_PFtable_GetFirstElem(&_pst_World->st_VisibleObjects);
-	pst_EndElem = TAB_pst_PFtable_GetLastElem(&_pst_World->st_VisibleObjects);
-
-	for(; pst_CurrentElem <= pst_EndElem; pst_CurrentElem++)
+	for (auto it = w_visible_objects->begin(); it != w_visible_objects->end(); ++it)
 	{
-		pst_GO = (OBJ_tdst_GameObject *) pst_CurrentElem->p_Pointer;
-		if(TAB_b_IsAHole(pst_GO)) continue;
+		OBJ_tdst_GameObject *pst_GO = *it;
+
 		if(!pst_GO->pst_Extended || !(pst_GO->pst_Extended->uw_ExtraFlags & OBJ_C_ExtraFlag_AlwaysPlay))
 		{
 			if(pst_GO->ul_StatusAndControlFlags & OBJ_C_StatusFlag_Culled) continue;
 		}
 		if(!(pst_GO->ul_IdentityFlags & OBJ_C_IdentityFlag_Anims)) continue;
 
-		pst_GOAnim = pst_GO->pst_Base->pst_GameObjectAnim;	
-		pst_Skeleton = pst_GOAnim->pst_Skeleton;
+		ANI_st_GameObjectAnim *pst_GOAnim = pst_GO->pst_Base->pst_GameObjectAnim;	
+		OBJ_tdst_Group *pst_Skeleton      = pst_GOAnim->pst_Skeleton;
 		if(!pst_Skeleton) continue;
 
 		ANI_BeforeRender(pst_GO);
@@ -510,7 +504,7 @@ void ANI_BeforeRendering(WOR_tdst_World *_pst_World)
     Aim:    Render an GameObject that has gizmos, with or without an anim.
  =======================================================================================================================
  */
-void ANI_Render(OBJ_tdst_GameObject *_pst_GO)
+void ANI_Render( OBJ_tdst_GameObject *_pst_GO )
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	TAB_tdst_PFelem			*pst_CurrentBone, *pst_EndBone;

@@ -15,6 +15,7 @@
 #include "ENGine/Sources/OBJects/OBJorient.h"
 #include "ENGine/Sources/OBJects/OBJslowaccess.h"
 #include "ENGine/Sources/ANImation/ANIstruct.h"
+#include "ENGine/Sources/ANImation/ANImain.h"
 #include "BASe/BAStypes.h"
 #include "BIGfiles/BIGio.h"
 
@@ -54,11 +55,13 @@ typedef struct	COL_tdst_Ray
 	int					SoundIDFilter;
 };
 
-int	NumEmptyBox = 0;
-USHORT				COL_guw_UserCrossable;
-ULONG				COL_gul_SoundFilter = -1;
-float				COL_gf_MinDistance = 0.0f;
-BOOL				COL_gb_UseMinDistance = FALSE;
+extern "C"
+{
+	USHORT COL_guw_UserCrossable;
+	ULONG COL_gul_SoundFilter  = -1;
+	float COL_gf_MinDistance   = 0.0f;
+	BOOL COL_gb_UseMinDistance = FALSE;
+}
 
 struct COL_tdst_Ray COL_gst_Ray;
 
@@ -67,9 +70,12 @@ struct COL_tdst_Ray COL_gst_Ray;
 #ifdef ACTIVE_EDITORS
 BOOL						COL_b_LogPhoto = FALSE;
 #endif
-extern MDF_tdst_Modifier	*GAO_ModifierPhoto_Get(OBJ_tdst_GameObject *, BOOL);
-extern BOOL					GAO_ModifierPhoto_LODAndFrameareOK(GAO_tdst_ModifierPhoto *);
-extern OBJ_tdst_GameObject	*GAO_ModifierPhoto_SnapGOGet(OBJ_tdst_GameObject *, GAO_tdst_ModifierPhoto *, int);
+extern "C"
+{
+	MDF_tdst_Modifier *GAO_ModifierPhoto_Get( OBJ_tdst_GameObject *, BOOL );
+	BOOL GAO_ModifierPhoto_LODAndFrameareOK( GAO_tdst_ModifierPhoto * );
+	OBJ_tdst_GameObject *GAO_ModifierPhoto_SnapGOGet( OBJ_tdst_GameObject *, GAO_tdst_ModifierPhoto *, int );
+}
 
 /*$F		
 					------------------	
@@ -234,8 +240,7 @@ _inline_ BOOL COL_RayAABBox
     Note:   !!! WARNING !!!The direction vector must be normalized.
  =======================================================================================================================
  */
-OBJ_tdst_GameObject *COL_RayBV
-(
+extern "C" OBJ_tdst_GameObject *COL_RayBV(
 	TAB_tdst_PFtable	*_pst_Table,
 	MATH_tdst_Vector	*_pst_Origin,
 	MATH_tdst_Vector	*_pst_Direction,
@@ -1110,7 +1115,7 @@ BOOL COL_ColMap_Cylinder_RayCast(OBJ_tdst_GameObject *_pst_GO, COL_tdst_Mathemat
 
  ===================================================================================================
  */
-BOOL COL_Visual_RayCast_OneBone(OBJ_tdst_GameObject *_pst_GO)
+extern "C" BOOL COL_Visual_RayCast_OneBone( OBJ_tdst_GameObject *_pst_GO )
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	MATH_tdst_Matrix	st_33_InvertMatrix, st_33_GlobalMatrix;
@@ -1266,7 +1271,7 @@ BOOL COL_Visual_RayCast_OneBone(OBJ_tdst_GameObject *_pst_GO)
  ===================================================================================================
  */
 
-void COL_Visual_RayCast_OneSkeleton(OBJ_tdst_GameObject *_pst_GO)
+extern "C" void COL_Visual_RayCast_OneSkeleton( OBJ_tdst_GameObject *_pst_GO )
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	TAB_tdst_PFelem			*pst_CurrentBone, *pst_EndBone;
@@ -1304,8 +1309,7 @@ void COL_Visual_RayCast_OneSkeleton(OBJ_tdst_GameObject *_pst_GO)
 
  =======================================================================================================================
  */
-OBJ_tdst_GameObject *COL_ColMap_RayCast_OneObject
-(
+extern "C" OBJ_tdst_GameObject *COL_ColMap_RayCast_OneObject(
 	OBJ_tdst_GameObject *pst_GO,
 	MATH_tdst_Vector	*_pst_Orig,
 	MATH_tdst_Vector	*_pst_Dir,
@@ -1488,8 +1492,7 @@ OBJ_tdst_GameObject *COL_ColMap_RayCast_OneObject
  =======================================================================================================================
  */
 
-OBJ_tdst_GameObject *COL_ColMap_RayCast
-(
+extern "C" OBJ_tdst_GameObject *COL_ColMap_RayCast(
 	WOR_tdst_World		*_pst_World,
 	OBJ_tdst_GameObject *_pst_GO,
 	MATH_tdst_Vector	*_pst_Orig,
@@ -1784,7 +1787,6 @@ BOOL COL_OK3Box_RayTouch
 	
 	if(!pst_Box->ul_NumElement)
 	{
-		NumEmptyBox ++;
 		return TRUE;
 	}
 
@@ -2564,8 +2566,7 @@ void COL_Visual_Triangles_RayCast(OBJ_tdst_GameObject *_pst_GO, GEO_tdst_Object 
  ===================================================================================================
  */
 
-OBJ_tdst_GameObject *COL_Visual_RayCast_OneObject
-(
+extern "C" OBJ_tdst_GameObject *COL_Visual_RayCast_OneObject(
 	OBJ_tdst_GameObject *_pst_GO,
 	MATH_tdst_Vector	*_pst_Orig,
 	MATH_tdst_Vector	*_pst_Dir,
@@ -2735,8 +2736,7 @@ int NumColMathCast = 0;
  ===================================================================================================
  */
 
-OBJ_tdst_GameObject *COL_Visual_RayCast
-(
+extern "C" OBJ_tdst_GameObject *COL_Visual_RayCast(
 	WOR_tdst_World		*_pst_World,
 	OBJ_tdst_GameObject *_pst_GO,
 	MATH_tdst_Vector	*_pst_Orig,
@@ -2772,7 +2772,6 @@ OBJ_tdst_GameObject *COL_Visual_RayCast
 #endif
 */
 
-	NumEmptyBox = 0;
 	NumBoxTested = 0;
 	NumBoxTouched = 0;
 	NumTriTested = 0;
@@ -3011,20 +3010,19 @@ OneMoreTime:
 
  ===================================================================================================
  */
-extern void							OBJ_UpdateCullingVars(CAM_tdst_Camera *);
-extern BOOL							OBJ_Frame_CullingAABBox
-									(
-										MATH_tdst_Vector *,
-										MATH_tdst_Vector *,
-										CAM_tdst_Camera *,
-										LONG,
-										LONG,
-										float *,
-										float *
-									);
-extern BOOL							OBJ_Frame_CullingPoint(MATH_tdst_Vector *, CAM_tdst_Camera *, LONG, LONG);
-extern OBJ_tdst_GameObject			*ANI_pst_GetObjectByAICanal(OBJ_tdst_GameObject *, UCHAR);
-extern struct OBJ_tdst_GameObject_	**AI_gpst_MainActors;
+
+extern "C"
+{
+	extern BOOL OBJ_Frame_CullingAABBox(
+		    MATH_tdst_Vector *,
+		    MATH_tdst_Vector *,
+		    CAM_tdst_Camera *,
+		    LONG,
+		    LONG,
+		    float *,
+		    float * );
+	extern struct OBJ_tdst_GameObject_ **AI_gpst_MainActors;
+}
 
 #define IMG_FotoScreenX 512
 #define IMG_FotoScreenY 256
@@ -3338,7 +3336,7 @@ ULONG IMG_ModifierObjectAnalyser
  =======================================================================================================================
  =======================================================================================================================
  */
-ULONG IMG_ObjectAnalyser
+extern "C" ULONG IMG_ObjectAnalyser
 (
 	OBJ_tdst_GameObject		*_pst_GO,
 	WOR_tdst_World			*_pst_World,
@@ -3647,14 +3645,10 @@ ULONG	IMG_Gao;
  =======================================================================================================================
  =======================================================================================================================
  */
-ULONG IMG_Analyser(WOR_tdst_World *_pst_World, int _i_Mission)
+extern "C" ULONG IMG_Analyser( WOR_tdst_World *_pst_World, int _i_Mission )
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	GDI_tdst_DisplayData	*pst_DD;
-	TAB_tdst_PFtable		*pst_Table;
-	TAB_tdst_PFelem			*pst_CurrentElem;
-	TAB_tdst_PFelem			*pst_EndElem;
-	OBJ_tdst_GameObject		*pst_CurrentGO;
 	ULONG					ul_Mask, ul_GOMask;
 	ULONG					ul_MissionMask;
 	UCHAR					uc_Tiny, uc_Center;
@@ -3696,16 +3690,14 @@ ULONG IMG_Analyser(WOR_tdst_World *_pst_World, int _i_Mission)
 	pst_DD = (GDI_tdst_DisplayData*)_pst_World->pst_View[0].st_DisplayInfo.pst_DisplayDatas;
 
 	/* We want to loop thru all the Visible objects of this world. */
-	pst_Table = &_pst_World->st_VisibleObjects;
 
-	pst_CurrentElem = TAB_pst_PFtable_GetFirstElem(pst_Table);
-	pst_EndElem = TAB_pst_PFtable_GetLastElem(pst_Table);
+	WOR_World_VisibleObjectsIteratorGuard vo_guard( _pst_World );
+	WOR_World_VisibleObjectsVector *w_visible_objects = ( WOR_World_VisibleObjectsVector * ) ( _pst_World->st_VisibleObjects );
 
-	for(; pst_CurrentElem <= pst_EndElem; pst_CurrentElem++)
+	for(auto it = w_visible_objects->begin(); it != w_visible_objects->end(); ++it)
 	{
-		pst_CurrentGO = (OBJ_tdst_GameObject *) pst_CurrentElem->p_Pointer;
+		OBJ_tdst_GameObject *pst_CurrentGO = *it;
 
-		if(TAB_b_IsAHole(pst_CurrentGO)) continue;
 		if((pst_CurrentGO->ul_StatusAndControlFlags & OBJ_C_StatusFlag_Culled)) continue;
 
 		ul_GOMask = IMG_ObjectAnalyser
@@ -4006,7 +3998,7 @@ ULONG IMG_ModifierObjectAnalyser_Bis
  =======================================================================================================================
  =======================================================================================================================
  */
-ULONG IMG_ObjectAnalyser_Bis
+extern "C" ULONG IMG_ObjectAnalyser_Bis
 (
 	OBJ_tdst_GameObject		*_pst_GO,
 	WOR_tdst_World			*_pst_World,
@@ -4189,14 +4181,10 @@ ULONG IMG_ObjectAnalyser_Bis
  =======================================================================================================================
  =======================================================================================================================
  */
-ULONG IMG_Analyser_Bis(WOR_tdst_World *_pst_World, int _i_Request)
+extern "C" ULONG IMG_Analyser_Bis(WOR_tdst_World *_pst_World, int _i_Request)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	GDI_tdst_DisplayData	*pst_DD;
-	TAB_tdst_PFtable		*pst_Table;
-	TAB_tdst_PFelem			*pst_CurrentElem;
-	TAB_tdst_PFelem			*pst_EndElem;
-	OBJ_tdst_GameObject		*pst_CurrentGO;
 	ULONG					ul_Mask, ul_GOMask;
 	UCHAR					uc_Tiny, uc_Center;
 	CHAR					c_Report, ac_Type[3]; //, ac_Number[3];
@@ -4233,14 +4221,14 @@ ULONG IMG_Analyser_Bis(WOR_tdst_World *_pst_World, int _i_Request)
 
 #endif
 	/* We want to loop thru all the Visible objects of this world. */
-	pst_Table = &_pst_World->st_VisibleObjects;
-	pst_CurrentElem = TAB_pst_PFtable_GetFirstElem(pst_Table);
-	pst_EndElem = TAB_pst_PFtable_GetLastElem(pst_Table);
-	for(; pst_CurrentElem <= pst_EndElem; pst_CurrentElem++)
-	{
-		pst_CurrentGO = (OBJ_tdst_GameObject *) pst_CurrentElem->p_Pointer;
 
-		if(TAB_b_IsAHole(pst_CurrentGO)) continue;
+	WOR_World_VisibleObjectsIteratorGuard vo_guard( _pst_World );
+	WOR_World_VisibleObjectsVector *w_visible_objects = ( WOR_World_VisibleObjectsVector * ) ( _pst_World->st_VisibleObjects );
+
+	for (auto it = w_visible_objects->begin(); it != w_visible_objects->end(); ++it )
+	{
+		OBJ_tdst_GameObject *pst_CurrentGO = *it;
+
 		if(pst_CurrentGO->ul_StatusAndControlFlags & OBJ_C_StatusFlag_Culled) continue;
 		if(!(pst_CurrentGO->ul_StatusAndControlFlags & OBJ_C_StatusFlag_Visible)) continue;
 

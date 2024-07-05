@@ -92,12 +92,16 @@ extern "C"
 {
 #endif
 
-extern ULONG		LOA_ul_FileTypeSize[40];
-extern void AI_EvalFunc_MSGClear_C(OBJ_tdst_GameObject *);
+extern "C"
+{
+	extern ULONG LOA_ul_FileTypeSize[ 40 ];
+	void AI_EvalFunc_MSGClear_C( OBJ_tdst_GameObject * );
 
-BOOL OBJ_gb_DuplicateAI = FALSE;	/* True when duplication occurs in AI */
-extern	BOOL	EDI_gb_ComputeMap;
-extern OBJ_tdst_GameObject *AI_gp_ResolveGO;
+	BOOL OBJ_gb_DuplicateAI = FALSE; /* True when duplication occurs in AI */
+	extern BOOL EDI_gb_ComputeMap;
+	extern OBJ_tdst_GameObject *AI_gp_ResolveGO;
+}
+
 static int i_CloneIdenticNumber=0;
 
 //#if !defined(XML_CONV_TOOL)//popoverif il y etait plus
@@ -1245,7 +1249,7 @@ void OBJ_GameObject_FreeXenonVisu(GRO_tdst_Visu* _pst_Visu)
     Aim:    Removes a Game object but keep its highlest level structure ...
  =======================================================================================================================
  */
-void OBJ_GameObject_RemoveButEnFaitNon(OBJ_tdst_GameObject *pst_Object, char _c_DecGroRef )
+extern "C" void OBJ_GameObject_RemoveButEnFaitNon( OBJ_tdst_GameObject *pst_Object, char _c_DecGroRef )
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	GRO_tdst_Struct			*pst_Gro;
@@ -2470,7 +2474,7 @@ void StockCloneLight(OBJ_tdst_GameObject *Obj)
 		}
 }
 
-extern ULONG MAT_GetFirstTransparentMaterialIndex(MAT_tdst_Material *pst_GRO, GEO_tdst_Object *_pst_Obj );
+extern "C" ULONG MAT_GetFirstTransparentMaterialIndex( MAT_tdst_Material *pst_GRO, GEO_tdst_Object *_pst_Obj );
 
 BOOL OBJ_b_CanBeCloned(OBJ_tdst_GameObject *_pst_GO)
 {
@@ -2508,79 +2512,76 @@ BOOL OBJ_b_CanBeCloned(OBJ_tdst_GameObject *_pst_GO)
 void OBJ_GameObject_UpdateCloneListe()
 {
 	WOR_tdst_World *_pst_World;
-	TAB_tdst_PFelem		*pst_Elem, *pst_LastElem;
-	TAB_tdst_PFelem		*pst_ElemScan;
-	OBJ_tdst_GameObject *pst_TempGO,*pst_TempGOScan,*pst_TempCurGO;
-	//BOOL b_Find;
-	//return;
+	OBJ_tdst_GameObject *pst_TempGO, *pst_TempGOScan, *pst_TempCurGO;
 
 	_pst_World = GDI_gpst_CurDD->pst_World;
-	if (!_pst_World) return;
+	if ( !_pst_World ) return;
 
-	pst_Elem = TAB_pst_PFtable_GetFirstElem(&_pst_World->st_VisibleObjects);
-	pst_LastElem = TAB_pst_PFtable_GetLastElem(&_pst_World->st_VisibleObjects);
-	if ((pst_LastElem - pst_Elem)== i_CloneIdenticNumber) return;
-		
-	i_CloneIdenticNumber=pst_LastElem - pst_Elem;
+	WOR_World_VisibleObjectsIteratorGuard vo_guard( _pst_World );
+	WOR_World_VisibleObjectsVector *w_visible_objects = ( WOR_World_VisibleObjectsVector * ) ( _pst_World->st_VisibleObjects );
 
-	for(; pst_Elem <= pst_LastElem; pst_Elem++)
+	/* BUG: i_CloneIdenticNumber is probably a recursion guard? But the way its written will only
+	 * handle loops one level deep, and falsely trigger if two worlds exist with the same number
+	 * of visible objects... I think?
+	*/
+
+	int vo_max_idx = ( ( int ) ( w_visible_objects->size() ) ) - 1;
+	if ( vo_max_idx == i_CloneIdenticNumber )
 	{
-		pst_TempGO = (OBJ_tdst_GameObject *) pst_Elem->p_Pointer;
-		if(TAB_b_IsAHole(pst_TempGO)) continue;
-		pst_TempGO->p_CloneNextGao=NULL;
+		return;
 	}
 
+	i_CloneIdenticNumber = vo_max_idx;
 
-	pst_Elem = TAB_pst_PFtable_GetFirstElem(&_pst_World->st_VisibleObjects);
-	for(; pst_Elem <= pst_LastElem; pst_Elem++)
+	for ( auto it = w_visible_objects->begin(); it != w_visible_objects->end(); ++it )
 	{
-		pst_TempGO = (OBJ_tdst_GameObject *) pst_Elem->p_Pointer;
-		if(TAB_b_IsAHole(pst_TempGO)) continue;
-	
+		( *it )->p_CloneNextGao = NULL;
+	}
+
+	for ( auto it = w_visible_objects->begin(); it != w_visible_objects->end(); ++it )
+	{
+		pst_TempGO = *it;
+
 		//1) recherche un premier objet flagé pour creer la chaine
-		if ( pst_TempGO->p_CloneNextGao )  continue;
-		
+		if ( pst_TempGO->p_CloneNextGao ) continue;
+
 		// No flag -> continue
-		if(!OBJ_b_TestIdentityFlag(pst_TempGO, OBJ_C_IdentityFlag_Visu)) continue;
-		if ( (pst_TempGO->pst_Base->pst_Visu->ul_DrawMask & GDI_Cul_DM_NoAutoClone) ) continue;
-		if (!pst_TempGO->pst_Base->pst_Visu->pst_Object) continue;
-		if ((pst_TempGO->pst_Base->pst_Visu->pst_Object->i->ul_Type == GRO_Geometric) ||
-			(pst_TempGO->pst_Base->pst_Visu->pst_Object->i->ul_Type == GRO_GeoStaticLOD)) 
+		if ( !OBJ_b_TestIdentityFlag( pst_TempGO, OBJ_C_IdentityFlag_Visu ) ) continue;
+		if ( ( pst_TempGO->pst_Base->pst_Visu->ul_DrawMask & GDI_Cul_DM_NoAutoClone ) ) continue;
+		if ( !pst_TempGO->pst_Base->pst_Visu->pst_Object ) continue;
+		if ( ( pst_TempGO->pst_Base->pst_Visu->pst_Object->i->ul_Type == GRO_Geometric ) ||
+			 ( pst_TempGO->pst_Base->pst_Visu->pst_Object->i->ul_Type == GRO_GeoStaticLOD ) )
 		{
-			
-            // On applique les contraintes sur les clones : pas de fur ni de première couche en alpha.
-            if (!OBJ_b_CanBeCloned(pst_TempGO))
-                continue;
 
-			//recherche les copy de geo ---->
-			pst_ElemScan = TAB_pst_PFtable_GetFirstElem(&_pst_World->st_VisibleObjects);
+			// On applique les contraintes sur les clones : pas de fur ni de première couche en alpha.
+			if ( !OBJ_b_CanBeCloned( pst_TempGO ) )
+				continue;
 
-			//b_Find = FALSE;
 			pst_TempCurGO = pst_TempGO;
 
-			for(pst_ElemScan = pst_Elem+1; pst_ElemScan <= pst_LastElem; pst_ElemScan++)
+			for ( auto jt = std::next( it ); jt != w_visible_objects->end(); ++jt )
 			{
-				pst_TempGOScan = (OBJ_tdst_GameObject *) pst_ElemScan->p_Pointer;
+				pst_TempGOScan = *jt;
 
 				// pas flag => continue ...
-				if(!OBJ_b_TestIdentityFlag(pst_TempGOScan, OBJ_C_IdentityFlag_Visu)) continue;
-				if ( (pst_TempGOScan->pst_Base->pst_Visu->ul_DrawMask & GDI_Cul_DM_NoAutoClone) ) continue;
-				
+				if ( !OBJ_b_TestIdentityFlag( pst_TempGOScan, OBJ_C_IdentityFlag_Visu ) ) continue;
+				if ( ( pst_TempGOScan->pst_Base->pst_Visu->ul_DrawMask & GDI_Cul_DM_NoAutoClone ) ) continue;
+
 				// pas même geométrie => continue ...
-				if (pst_TempGO->pst_Base->pst_Visu->pst_Object != pst_TempGOScan->pst_Base->pst_Visu->pst_Object) continue;
+				if ( pst_TempGO->pst_Base->pst_Visu->pst_Object != pst_TempGOScan->pst_Base->pst_Visu->pst_Object ) continue;
 
 				// pas même matériau => continue ...
-                if (pst_TempGO->pst_Base->pst_Visu->pst_Material != pst_TempGOScan->pst_Base->pst_Visu->pst_Material) continue;
+				if ( pst_TempGO->pst_Base->pst_Visu->pst_Material != pst_TempGOScan->pst_Base->pst_Visu->pst_Material ) continue;
 
 				pst_TempCurGO->p_CloneNextGao = pst_TempGOScan;
-				
-				StockCloneLight(pst_TempGOScan);
 
-				pst_TempCurGO = pst_TempCurGO-> p_CloneNextGao;
-				pst_TempCurGO-> p_CloneNextGao = pst_TempGO;
+				StockCloneLight( pst_TempGOScan );
+
+				pst_TempCurGO                 = pst_TempCurGO->p_CloneNextGao;
+				pst_TempCurGO->p_CloneNextGao = pst_TempGO;
 			}
 		}
-		if (pst_TempGO->p_CloneNextGao) StockCloneLight(pst_TempGO);
+		if ( pst_TempGO->p_CloneNextGao ) StockCloneLight( pst_TempGO );
 	}
 }
 

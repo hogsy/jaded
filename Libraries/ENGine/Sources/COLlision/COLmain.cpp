@@ -3963,26 +3963,16 @@ ULONG COL_VisibleObjectListCreate
 	ULONG			*_pul_Array
 )
 {
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	TAB_tdst_PFelem		*pst_CurrentElem;
-	TAB_tdst_PFelem		*pst_EndElem;
-	OBJ_tdst_GameObject *pst_CurrentGO;
-	OBJ_tdst_GameObject **dpst_Result;
-	ULONG				ul_NbVisible;
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+	OBJ_tdst_GameObject **dpst_Result = ( ( OBJ_tdst_GameObject ** ) _pul_Array );
+	ULONG ul_NbVisible = 0;
 
-	dpst_Result = ((OBJ_tdst_GameObject **) _pul_Array);
-	ul_NbVisible = 0;
+	WOR_World_VisibleObjectsIteratorGuard vo_guard( _pst_World );
+	WOR_World_VisibleObjectsVector *w_visible_objects = ( WOR_World_VisibleObjectsVector * ) ( _pst_World->st_VisibleObjects );
 
-	pst_CurrentElem = TAB_pst_PFtable_GetFirstElem(&_pst_World->st_VisibleObjects);
-	pst_EndElem = TAB_pst_PFtable_GetLastElem(&_pst_World->st_VisibleObjects);
-
-	for(; pst_CurrentElem <= pst_EndElem; pst_CurrentElem++)
+	for (auto it = w_visible_objects->begin(); it != w_visible_objects->end(); ++it)
 	{
 		/* We get the current Game Object. */
-		pst_CurrentGO = (OBJ_tdst_GameObject *) pst_CurrentElem->p_Pointer;
-
-		if(TAB_b_IsAHole(pst_CurrentGO)) continue;
+		OBJ_tdst_GameObject *pst_CurrentGO = *it;
 
 		/* Object BV is not visible --> Culled. */
 		if(pst_CurrentGO->uc_LOD_Vis == 0) continue;

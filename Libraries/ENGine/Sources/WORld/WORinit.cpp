@@ -663,8 +663,12 @@ void WOR_World_Init(WOR_tdst_World *_pst_World, ULONG _ul_NbObjects)
 	TAB_Ptable_Init(&_pst_World->st_GraphicMaterialsTable, 0, 0.1f);
 
 	TAB_PFtable_Init(&_pst_World->st_ActivObjects, WOR_C_MaxNbActObjects, TAB_Cf_IgnoreHoles);
-	TAB_PFtable_Init(&_pst_World->st_VisibleObjects, WOR_C_MaxNbVisObjects, TAB_Cf_IgnoreHoles);
+	_pst_World->st_VisibleObjects = (WOR_WORLD_VisibleObjectsVectorCRef*)(new WOR_World_VisibleObjectsVector);
 	_pst_World->st_Lights = (WOR_World_LightsVectorCRef*)(new WOR_World_LightsVector);
+
+#ifndef NDEBUG
+	_pst_World->st_VisibleObjects_ActiveIterators = 0;
+#endif
 
 	/*$2
 	 -------------------------------------------------------------------------------------------------------------------
@@ -926,10 +930,16 @@ BOOL WOR_World_Close(WOR_tdst_World *_pst_World)
 	TAB_PFtable_Close(&_pst_World->st_ActivObjects);
 
 	/* Remove all the activ objects */
-	TAB_PFtable_Close(&_pst_World->st_VisibleObjects);
+	delete ( WOR_World_VisibleObjectsVector * ) ( _pst_World->st_VisibleObjects );
+	_pst_World->st_VisibleObjects = NULL;
 	
 	/* Remove all the activ objects */
-	delete (WOR_World_LightsVector*)(_pst_World->st_Lights);
+	delete ( WOR_World_LightsVector * ) ( _pst_World->st_Lights );
+	_pst_World->st_Lights = NULL;
+
+#ifndef NDEBUG
+	_pst_World->st_VisibleObjects_ActiveIterators = -1;
+#endif
 
 	/* Remove all the Engine Objects Tables of the World */
 	EOT_SetOfEOT_Close(&_pst_World->st_EOT);

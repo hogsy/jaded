@@ -2256,9 +2256,6 @@ extern "C" u32 Stats_ulNumberOfTRiangles;
 void WOR_Render_All_GO(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	TAB_tdst_PFelem		*pst_Elem, *pst_LastElem;
-	OBJ_tdst_GameObject *pst_GO = NULL;
-	TAB_tdst_PFelem		*pst_LasPreviousElem;
 #ifdef PSX2_TARGET
 #ifdef GSP_PS2_BENCH
 		extern ULONG ShowNormals;
@@ -2297,17 +2294,17 @@ void WOR_Render_All_GO(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD
         g_oXeLightUsageLogger.BeginLog( szLogFileName, _pst_World->sz_Name );
     }
 #endif
+    
+    WOR_World_VisibleObjectsIteratorGuard vo_guard(_pst_World);
+    WOR_World_VisibleObjectsVector *w_visible_objects = ( WOR_World_VisibleObjectsVector * ) ( _pst_World->st_VisibleObjects );
 
 	/* Render GameObject */
 	if(!(_pst_DD->ul_DisplayInfo & GDI_Cul_DI_DoubleRendering_I))
 	{
-		pst_Elem = TAB_pst_PFtable_GetFirstElem(&_pst_World->st_VisibleObjects);
-		pst_LastElem = TAB_pst_PFtable_GetLastElem(&_pst_World->st_VisibleObjects);
-		for(; pst_Elem <= pst_LastElem; pst_Elem++)
+		for (auto it = w_visible_objects->begin(); it != w_visible_objects->end(); ++it)
 		{
 			/* get and test game object */
-			pst_GO = (OBJ_tdst_GameObject *) pst_Elem->p_Pointer;
-			if(TAB_b_IsAHole(pst_GO)) continue;
+			OBJ_tdst_GameObject *pst_GO = *it;
 			
 			OBJ_M_EdAddFlags_RefreshBeforeDisplay( pst_GO );
 
@@ -2474,7 +2471,6 @@ void WOR_Render_All_GO(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD
 #endif
 #endif
 
-	pst_LasPreviousElem = NULL;
 #ifdef PSX2_TARGET
 #ifdef GSP_PS2_BENCH
 	SaveShowNormals = ShowNormals;
@@ -2482,9 +2478,7 @@ void WOR_Render_All_GO(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD
 #endif
 	ul_LastGOStackNumber = 0;
 
-	pst_Elem = TAB_pst_PFtable_GetFirstElem(&_pst_World->st_VisibleObjects);
-	pst_LastElem = TAB_pst_PFtable_GetLastElem(&_pst_World->st_VisibleObjects);
-	for(; pst_Elem <= pst_LastElem; pst_Elem++)
+	for (auto it = w_visible_objects->begin(); it != w_visible_objects->end(); ++it)
 	{
 #ifdef PSX2_TARGET
 #ifdef GSP_PS2_BENCH
@@ -2499,12 +2493,8 @@ void WOR_Render_All_GO(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD
 #ifdef ACTIVE_EDITORS
 		u32			CurrentNumberOfTris;
 #endif
-		/* DJ TEMP */
-		pst_LastElem = TAB_pst_PFtable_GetLastElem(&_pst_World->st_VisibleObjects);
 
-		pst_GO = (OBJ_tdst_GameObject *) pst_Elem->p_Pointer;
-
-		if(TAB_b_IsAHole(pst_GO)) continue;
+		OBJ_tdst_GameObject *pst_GO = *it;
 
 		/* Philippe BEGIN */
 		/* Philippe Special draw for JAKE */
