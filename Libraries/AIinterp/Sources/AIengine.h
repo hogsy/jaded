@@ -260,26 +260,26 @@ typedef struct AI_Watch_
  ***********************************************************************************************************************
  */
 
-extern void			AI_Reset(void);
-extern void			AI_ResolveEnums(void);
-extern void			AI_FreeVarDes(AI_tdst_VarDes *);
-extern void			AI_FreeModel(AI_tdst_Model *);
-extern void			AI_FreeInstance(AI_tdst_Instance *);
-extern AI_tdst_Node *AI_pst_RunFunction(AI_tdst_Function *, AI_tdst_Node **, int);
-extern void			AI_RunNode(AI_tdst_Node *);
-extern BOOL			AI_RunInstance(AI_tdst_Instance *);
-extern void			AI_MainCall(WOR_tdst_World *);
-extern void			AI_ReinitInstance(AI_tdst_Instance *);
-extern void			AI_ReinitUniverse(void);
-extern void			AI_DuplicateInstance(OBJ_tdst_GameObject *, OBJ_tdst_GameObject *, BOOL);
-extern void			AI_ExecCallbackAll(WOR_tdst_World *, int);
-extern void			AI_RunContext(WOR_tdst_World *, int);
-extern void			AI_DeleteFromRunContext( OBJ_tdst_GameObject * );
-extern void			AI_ExecCallback(OBJ_tdst_GameObject *, int);
-extern BOOL         AI_bIsWatched(void *);
-extern void         AI_RemoveWatch(void *);
-extern void         AI_RemoveWatchOnAddressRange(void *,void *);
-extern void         AI_AddWatch(void *, int );
+void			AI_Reset(void);
+void			AI_ResolveEnums(void);
+void			AI_FreeVarDes(AI_tdst_VarDes *);
+void			AI_FreeModel(AI_tdst_Model *);
+void			AI_FreeInstance(AI_tdst_Instance *);
+AI_tdst_Node *AI_pst_RunFunction(AI_tdst_Function *, AI_tdst_Node **, int);
+void			AI_RunNode(AI_tdst_Node *);
+BOOL			AI_RunInstance(AI_tdst_Instance *);
+void			AI_MainCall(WOR_tdst_World *);
+void			AI_ReinitInstance(AI_tdst_Instance *);
+void			AI_ReinitUniverse(void);
+void			AI_DuplicateInstance(OBJ_tdst_GameObject *, OBJ_tdst_GameObject *, BOOL);
+void			AI_ExecCallbackAll(WOR_tdst_World *, int);
+void			AI_RunContext(WOR_tdst_World *, int);
+void			AI_DeleteFromRunContext( OBJ_tdst_GameObject * );
+void			AI_ExecCallback(OBJ_tdst_GameObject *, int);
+BOOL         AI_bIsWatched(void *);
+void         AI_RemoveWatch(void *);
+void         AI_RemoveWatchOnAddressRange(void *,void *);
+void         AI_AddWatch(void *, int );
 
 
 extern OBJ_tdst_GameObject *AI_gapst_Differed[AI_CXT_Max][1000];

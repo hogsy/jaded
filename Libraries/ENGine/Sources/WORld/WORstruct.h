@@ -23,6 +23,11 @@
 #ifndef __WOR_STRUCT_H__
 #define __WOR_STRUCT_H__
 
+#ifdef __cplusplus
+#include <utility>
+#include <vector>
+#endif
+
 #ifndef PSX2_TARGET
 #pragma once
 #endif
@@ -160,6 +165,13 @@ typedef struct WOR_SelectionGroup_
 } WOR_SelectionGroup;
 #endif
 
+#ifdef __cplusplus
+typedef std::vector< OBJ_tdst_GameObject * > WOR_World_LightsVector;
+#endif
+
+struct WOR_World_LightsVectorCRef;
+typedef struct WOR_World_LightsVectorCRef WOR_World_LightsVectorCRef; /**< Opaque reference to a WOR_World_LightsVector */
+
 typedef struct	WOR_tdst_World_
 {
 	ULONG						ul_NbTotalGameObjects;					/* Total number of objects in the world */
@@ -181,7 +193,8 @@ typedef struct	WOR_tdst_World_
 
 	TAB_tdst_PFtable			st_VisibleObjects;						/* Visible objects. Updated by the visibility system */
 	TAB_tdst_PFtable			st_ActivObjects;						/* The table pointers on activ objects */
-	TAB_tdst_PFtable			st_Lights;								/* Objects that have a light (or are a light) */
+
+	WOR_World_LightsVectorCRef *st_Lights; /**< Objects that have a light (or are a light) */
 
 	EOT_tdst_SetOfEOT			st_EOT;									/* All the engine objects tables of the world */
 

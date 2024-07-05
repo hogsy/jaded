@@ -6,9 +6,9 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  */
 
+#include <algorithm>
 
 /* Aim: Main functions of the world module */
-#include "Precomp.h"
 #include "ENGine/Sources/WORld/WOR.h"
 #include "ENGine/Sources/WORld/WORsecto.h"
 #include "ENGine/Sources/OBJects/OBJ.h"
@@ -19,6 +19,7 @@
 #include "ENGine/Sources/ENGvars.h"
 #include "ENGine/Sources/ENGinit.h"
 #include "ENGine/Sources/EOT/EOT.h"
+#include "AIinterp/Sources/AIengine.h"
 
 #ifdef ACTIVE_EDITORS
 #include "SOFT/SOFTHelper.h"
@@ -38,7 +39,6 @@ extern "C"
 #include "TIMer/PROfiler/PROdefs.h"
 
 extern BOOL ENG_gb_ActiveSectorization;
-extern void	AI_ExecCallback(OBJ_tdst_GameObject *, int);
 
 /*
  =======================================================================================================================
@@ -141,7 +141,8 @@ void WOR_MakeObjectVisibleIfFlagsAllow(OBJ_tdst_GameObject *_pst_Object, WOR_tds
 		OBJ_SetStatusFlag(_pst_Object, OBJ_C_StatusFlag_Visible);
 		if(_pst_Object->ul_IdentityFlags & OBJ_C_IdentityFlag_Lights)
 		{
-			TAB_PFtable_AddElemWithDataAndResize(&_pst_World->st_Lights, _pst_Object, _pst_Object->ul_IdentityFlags);
+			WOR_World_LightsVector *world_lights = ( WOR_World_LightsVector * ) ( _pst_World->st_Lights );
+			world_lights->push_back(_pst_Object);
 		}
 	}
 	else
@@ -207,7 +208,9 @@ void WOR_World_MakeObjectsVisible(WOR_tdst_World *_pst_World)
 	PRO_StartTrameRaster(&ENG_gpst_RasterEng_Visibility);
 #endif
 	TAB_PFtable_Clear(&_pst_World->st_VisibleObjects);
-	TAB_PFtable_Clear(&_pst_World->st_Lights);
+
+	WOR_World_LightsVector *world_lights = ( WOR_World_LightsVector * ) ( _pst_World->st_Lights );
+	world_lights->clear();
 
 	/* Recreate the Active Objects table from the AllWorldObjects table. */
 	pst_CurrentElem = TAB_pst_PFtable_GetFirstElem(&_pst_World->st_AllWorldObjects);
@@ -307,8 +310,16 @@ void WOR_World_DetachObject(WOR_tdst_World *_pst_World, OBJ_tdst_GameObject *_ps
 	TAB_PFtable_RemoveElemWithPointer(&_pst_World->st_VisibleObjects, _pst_GO);
 
 	/* Delete object in Light list */
-	if(OBJ_b_TestIdentityFlag(_pst_GO, OBJ_C_IdentityFlag_Lights))
-		TAB_PFtable_RemoveElemWithPointer(&_pst_World->st_Lights, _pst_GO);
+	if ( OBJ_b_TestIdentityFlag( _pst_GO, OBJ_C_IdentityFlag_Lights ) )
+	{
+		WOR_World_LightsVector *world_lights = ( WOR_World_LightsVector * ) ( _pst_World->st_Lights );
+
+		auto it = std::find_if( world_lights->begin(), world_lights->end(), [ & ]( OBJ_tdst_GameObject * &elem )
+			                    { return elem == _pst_GO; } );
+
+		assert( it != world_lights->end() );
+		world_lights->erase( it );
+	}
 
 	/* Delete object from EOT tables. */
 	if(OBJ_b_TestIdentityFlag(_pst_GO, OBJ_C_IdentityFlag_Visu))

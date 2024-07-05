@@ -6,8 +6,6 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  */
 
-
-#include "Precomp.h"
 #include "ENGine/Sources/WORld/WORaccess.h"
 #include "ENGine/Sources/WORld/WORrender.h"
 #include "ENGine/Sources/OBJects/OBJconst.h"
@@ -107,24 +105,28 @@ extern void					GXI_Before2D(void);
 #endif
 #if !defined(PSX2_TARGET) && !defined(_XBOX) && !defined(_GAMECUBE) && !defined(_XENON)
 #include <gl/gl.h>
+#include "OpenGL/Sources/OGLInit.h"
 #endif
 #ifdef ACTIVE_EDITORS
-extern BOOL					sgb_EngineRender;
-extern BOOL					OBJ_gb_DebugPhotoMode;
+extern "C" BOOL sgb_EngineRender;
+extern "C" BOOL OBJ_gb_DebugPhotoMode;
 #endif
 
-extern void					OGL_AE_Before2D();
-extern void					OGL_AE_DebugInfo(WOR_tdst_World *_pst_World);
+extern "C" void OGL_AE_Before2D();
+extern "C" void OGL_AE_DebugInfo( WOR_tdst_World *_pst_World );
 
 #if defined(USE_DOUBLE_RENDERING)
 extern GDI_tdst_DisplayData gpst_GSP_stDD;
 #endif
-extern MATH_tdst_Vector		g_stGlobalNormPlaneUp;
-extern MATH_tdst_Vector		g_stGlobalNormPlaneDown;
-extern MATH_tdst_Vector		g_stGlobalNormPlaneLeft;
-extern MATH_tdst_Vector		g_stGlobalNormPlaneRight;
-extern void MODIFIER_SPG2_OneFrameCall();
-extern void MODIFIER_FOGDYN_OneFrameCall();
+extern "C"
+{
+	extern MATH_tdst_Vector g_stGlobalNormPlaneUp;
+	extern MATH_tdst_Vector g_stGlobalNormPlaneDown;
+	extern MATH_tdst_Vector g_stGlobalNormPlaneLeft;
+	extern MATH_tdst_Vector g_stGlobalNormPlaneRight;
+	void MODIFIER_SPG2_OneFrameCall();
+	void MODIFIER_FOGDYN_OneFrameCall();
+}
 #ifdef _GAMECUBE
 #include "GXI_GC/GXI_def.h"
 #include "GXI_GC/GXI_init.h"
@@ -151,21 +153,27 @@ bool				WOR_CheckIfCasShadows(OBJ_tdst_GameObject *pst_GO);
  ***********************************************************************************************************************
  */
 
+extern "C"
+{
 #ifdef ACTIVE_EDITORS
-int					i_NumberOfSelectedLinks;
-OBJ_tdst_GameObject *apst_Gizmo[500];
-OBJ_tdst_GameObject *apst_Skels[500];
-int					i_NumGizmos;
-int					i_NumSkels;
-ULONG				ul_SaveDrawMask;
-BOOL				ENG_gb_DistCompute = TRUE;
-F3D_tdst_PostIt		**WOR_gpt_AllPostIt = NULL;
-ULONG				WOR_gul_AllPostIt = 0;
+	int i_NumberOfSelectedLinks;
+	OBJ_tdst_GameObject *apst_Gizmo[ 500 ];
+	OBJ_tdst_GameObject *apst_Skels[ 500 ];
+	int i_NumGizmos;
+	int i_NumSkels;
+	ULONG ul_SaveDrawMask;
+	BOOL ENG_gb_DistCompute             = TRUE;
+	F3D_tdst_PostIt **WOR_gpt_AllPostIt = NULL;
+	ULONG WOR_gul_AllPostIt             = 0;
 #endif
-extern BOOL			ENG_gb_ActiveSectorization;
+	extern BOOL ENG_gb_ActiveSectorization;
+}
 
-extern void			PROTEX_BeforeDraw(void);
-extern void			WATER3D_BeforeDraw();
+extern "C"
+{
+	void PROTEX_BeforeDraw( void );
+	void WATER3D_BeforeDraw();
+}
 
 /*$4
  ***********************************************************************************************************************
@@ -363,7 +371,7 @@ void WOR_SetCam(WOR_tdst_View *pst_View)
 #ifdef ACTIVE_EDITORS
 
 #ifdef ODE_INSIDE
-extern UCHAR	COL_s_GhostOptimisation;
+extern "C" UCHAR COL_s_GhostOptimisation;
 #endif
 
 /*
@@ -415,10 +423,13 @@ BOOL WOR_b_MustRenderVisuGO(OBJ_tdst_GameObject *_pst_GO, GDI_tdst_DisplayData *
 #define WOR_b_MustRenderVisuGO(a, b)	OBJ_b_TestIdentityFlag(a, OBJ_C_IdentityFlag_Visu)
 #endif
 #ifdef ACTIVE_EDITORS
-extern void					GEO_OK3_Display(GDI_tdst_DisplayData *, OBJ_tdst_GameObject *, BOOL);
-extern MDF_tdst_Modifier	*GAO_ModifierPhoto_Get(OBJ_tdst_GameObject *, BOOL);
-extern BOOL					GAO_ModifierPhoto_LODAndFrameareOK(GAO_tdst_ModifierPhoto *);
-extern OBJ_tdst_GameObject	*GAO_ModifierPhoto_SnapGOGet(OBJ_tdst_GameObject *, GAO_tdst_ModifierPhoto *, int);
+extern "C"
+{
+	void GEO_OK3_Display( GDI_tdst_DisplayData *, OBJ_tdst_GameObject *, BOOL );
+	MDF_tdst_Modifier *GAO_ModifierPhoto_Get( OBJ_tdst_GameObject *, BOOL );
+	BOOL GAO_ModifierPhoto_LODAndFrameareOK( GAO_tdst_ModifierPhoto * );
+	OBJ_tdst_GameObject *GAO_ModifierPhoto_SnapGOGet( OBJ_tdst_GameObject *, GAO_tdst_ModifierPhoto *, int );
+}
 
 /*
  =======================================================================================================================
@@ -487,7 +498,8 @@ void WOR_RenderFakePhotoFrame(GDI_tdst_DisplayData *_pst_DD)
 	_pst_DD->ul_ColorConstant = ul_SaveColorconstant;
 }
 
-extern void SOFT_TransformAndProject(MATH_tdst_Vector *, MATH_tdst_Vector *, LONG, CAM_tdst_Camera *);
+extern "C" void SOFT_TransformAndProject(MATH_tdst_Vector *, MATH_tdst_Vector *, LONG, CAM_tdst_Camera *);
+extern "C" void AI_EvalFunc_VIEWSnapshot_DoIt( void );
 
 /*
  =======================================================================================================================
@@ -1325,9 +1337,9 @@ void WOR_InterpoleMatrix_XX(MATH_tdst_Matrix *p_Dst, MATH_tdst_Matrix *p_Src1, M
  =======================================================================================================================
  */
 #ifdef JADEFUSION
-UINT WOR_DetectCameraCut(GDI_tdst_DisplayData *_pst_DD)
+extern "C" UINT WOR_DetectCameraCut( GDI_tdst_DisplayData *_pst_DD )
 #else
-u_int WOR_DetectCameraCut(GDI_tdst_DisplayData *_pst_DD)
+extern "C" u_int WOR_DetectCameraCut( GDI_tdst_DisplayData *_pst_DD )
 #endif
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -1859,7 +1871,7 @@ void WOR_DoubleRenderingCompute(GDI_tdst_DisplayData *_pst_DD, ULONG Mode, float
 	_GSP_EndRaster(41);
 }
 #else // Double rendering
-UINT WOR_DetectCameraCut(GDI_tdst_DisplayData *_pst_DD)
+extern "C" UINT WOR_DetectCameraCut( GDI_tdst_DisplayData *_pst_DD )
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	static MATH_tdst_Matrix		stSavedCameraMatrix;
@@ -2232,6 +2244,11 @@ u32 WOR_MUST_BE_SWAP(OBJ_tdst_GameObject *pA,OBJ_tdst_GameObject *pB)
 	} 
 	return 0;
 }
+
+#ifdef ACTIVE_EDITORS
+extern "C" u32 Stats_ulNumberOfTRiangles;
+#endif
+
 /*
  =======================================================================================================================
  =======================================================================================================================
@@ -2481,7 +2498,6 @@ void WOR_Render_All_GO(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD
 #endif
 #ifdef ACTIVE_EDITORS
 		u32			CurrentNumberOfTris;
-		extern u32 Stats_ulNumberOfTRiangles;
 #endif
 		/* DJ TEMP */
 		pst_LastElem = TAB_pst_PFtable_GetLastElem(&_pst_World->st_VisibleObjects);
@@ -2806,7 +2822,6 @@ void WOR_CheckForShadowBuffer(GDI_tdst_DisplayData *_pst_DD, Gx8_tdst_SpecificDa
 void WOR_Render(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	TAB_tdst_PFelem					*pst_Elem, *pst_LastElem;
 	WOR_tdst_View					*pst_View;
 	WOR_tdst_View					*pst_LastView;
 	int								iNumView;
@@ -2873,21 +2888,14 @@ void WOR_Render(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD)
 				 */
 				LIGHT_List_Reset(&_pst_DD->st_LightList);
 
-				pst_Elem = TAB_pst_PFtable_GetFirstElem(&_pst_World->st_Lights);
-				pst_LastElem = TAB_pst_PFtable_GetLastElem(&_pst_World->st_Lights);
+				WOR_World_LightsVector *world_lights = ( WOR_World_LightsVector * ) ( _pst_World->st_Lights );
 				
 				{
 				//bool FIRSTFog = 0;
 				_pst_DD->st_Fog2.c_Flag = 0;
-				for(; pst_Elem <= pst_LastElem; pst_Elem++)
+				for (auto it = world_lights->begin(); it != world_lights->end(); ++it)
 				{
-					pst_GO = (OBJ_tdst_GameObject *) pst_Elem->p_Pointer;
-					if(TAB_b_IsAHole(pst_GO)) {
-#ifdef ACTIVE_EDITORS
-						if (pst_View->uc_Flags & WOR_Cuc_View_SplitView) GDI_SwapCameras( GDI_gpst_CurDD );
-#endif
-						continue;
-					}
+					pst_GO = *it;
 
 					pst_Light = (LIGHT_tdst_Light *) pst_GO->pst_Extended->pst_Light;
 					if(pst_Light && (pst_Light->ul_Flags & LIGHT_Cul_LF_Active))
@@ -3156,13 +3164,7 @@ void WOR_Render(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD)
 
 				/*$1- take a snap ? ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-				{
-					/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-					extern void AI_EvalFunc_VIEWSnapshot_DoIt(void);
-					/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-					AI_EvalFunc_VIEWSnapshot_DoIt();
-				}
+				AI_EvalFunc_VIEWSnapshot_DoIt();
 
 				/*$1- Graphic FX for interface ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

@@ -6,6 +6,8 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  */
 
+#include <utility>
+#include <vector>
 
 #include "Precomp.h"
 #include "BASe/BAStypes.h"
@@ -62,17 +64,15 @@
 
 #include "INOut/INOsaving.h"
 
+extern "C" BOOL WOR_gb_FinalWorld;
+extern "C" BOOL WOR_gb_RealAllocWorld;
 
+extern "C" OBJ_tdst_GameObject **AI_gppst_GeneratedObject_Destroyed;
+extern "C" int AI_gi_GeneratedObject_Destroyed;
 
-extern BOOL WOR_gb_FinalWorld;
-extern BOOL WOR_gb_RealAllocWorld;
-
-extern OBJ_tdst_GameObject **AI_gppst_GeneratedObject_Destroyed;
-extern int AI_gi_GeneratedObject_Destroyed;
-
-extern BOOL		GDI_gb_IsSplitScreen;
-extern int		GDI_gi_SplitViewIdx;
-
+extern "C" void AI_EvalFunc_WORPreLoadTex_C( OBJ_tdst_GameObject *_pt_Ref );
+extern "C" void STR_3DStringList_Clear( void );
+extern "C" void WTR_BeginLoadWorldHook( void );
 
 /*$4
  ***********************************************************************************************************************
@@ -542,7 +542,6 @@ BOOL WOR_World_Destroy(WOR_tdst_World *_pst_World)
 	WOR_tdst_WorldRasters	*pst_Rasters;
 #endif
 #endif
-	extern void STR_3DStringList_Clear( void );
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 #if defined(_XBOX)
@@ -553,10 +552,7 @@ BOOL WOR_World_Destroy(WOR_tdst_World *_pst_World)
 	
 	STR_3DStringList_Clear();
 
-	{
-		extern void WTR_BeginLoadWorldHook(void);
-		WTR_BeginLoadWorldHook();
-	}
+	WTR_BeginLoadWorldHook();
 
 //#ifdef ODE_INSIDE && !defined(XML_CONV_TOOL)
 #if defined(ODE_INSIDE) && !defined(XML_CONV_TOOL)
@@ -668,7 +664,7 @@ void WOR_World_Init(WOR_tdst_World *_pst_World, ULONG _ul_NbObjects)
 
 	TAB_PFtable_Init(&_pst_World->st_ActivObjects, WOR_C_MaxNbActObjects, TAB_Cf_IgnoreHoles);
 	TAB_PFtable_Init(&_pst_World->st_VisibleObjects, WOR_C_MaxNbVisObjects, TAB_Cf_IgnoreHoles);
-	TAB_PFtable_Init(&_pst_World->st_Lights, WOR_C_MaxNbLights, TAB_Cf_IgnoreHoles);
+	_pst_World->st_Lights = (WOR_World_LightsVectorCRef*)(new WOR_World_LightsVector);
 
 	/*$2
 	 -------------------------------------------------------------------------------------------------------------------
@@ -849,8 +845,6 @@ void WOR_World_KillRasters(WOR_tdst_World *_pst_World)
 #endif
 #endif
 
-extern void AI_EvalFunc_WORPreLoadTex_C(OBJ_tdst_GameObject *_pt_Ref);
-
 /*
  =======================================================================================================================
     Aim:    Removes a whole world from the memory
@@ -933,9 +927,9 @@ BOOL WOR_World_Close(WOR_tdst_World *_pst_World)
 
 	/* Remove all the activ objects */
 	TAB_PFtable_Close(&_pst_World->st_VisibleObjects);
-
+	
 	/* Remove all the activ objects */
-	TAB_PFtable_Close(&_pst_World->st_Lights);
+	delete (WOR_World_LightsVector*)(_pst_World->st_Lights);
 
 	/* Remove all the Engine Objects Tables of the World */
 	EOT_SetOfEOT_Close(&_pst_World->st_EOT);

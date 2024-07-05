@@ -5,7 +5,6 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  */
 
-#include "Precomp.h"
 #include "AIinterp/Sources/AIengine.h"
 #include "AIinterp/Sources/AIstack.h"
 #include "ENGine/Sources/OBJects/OBJstruct.h"
@@ -511,33 +510,28 @@ AI_tdst_Node *AI_EvalFunc_LightFogState(AI_tdst_Node *_pst_Node)
  =======================================================================================================================
  =======================================================================================================================
  */
-OBJ_tdst_GameObject *AI_EvalFunc_LightGetFog_C(OBJ_tdst_GameObject *_pst_GO)
+OBJ_tdst_GameObject *AI_EvalFunc_LightGetFog_C( OBJ_tdst_GameObject *_pst_GO )
 {
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	OBJ_tdst_GameObject     *pst_LightGO;
-    LIGHT_tdst_Light	    *pst_Light;
-    TAB_tdst_PFelem		    *pst_Elem, *pst_LastElem;
-    WOR_tdst_World			*pst_World;
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+	WOR_tdst_World *pst_World = WOR_World_GetWorldOfObject( _pst_GO );
+	assert( pst_World != NULL );
 
-	pst_World = WOR_World_GetWorldOfObject(_pst_GO);
+	WOR_World_LightsVector *world_lights = ( WOR_World_LightsVector * ) ( pst_World->st_Lights );
 
-    pst_Elem = TAB_pst_PFtable_GetFirstElem(&pst_World->st_Lights);
-    pst_LastElem = TAB_pst_PFtable_GetLastElem(&pst_World->st_Lights);
-    for(; pst_Elem <= pst_LastElem; pst_Elem++)
-    {
-        pst_LightGO = (OBJ_tdst_GameObject *) pst_Elem->p_Pointer;
-	    if(TAB_b_IsAHole(pst_LightGO)) continue;
+	for ( auto it = world_lights->begin(); it != world_lights->end(); ++it )
+	{
+		OBJ_tdst_GameObject *pst_LightGO = *it;
 
-	    pst_Light = (LIGHT_tdst_Light *) pst_LightGO->pst_Extended->pst_Light;
-	    if(pst_Light && (pst_Light->ul_Flags & LIGHT_Cul_LF_Active))
-	    {
-	        if((pst_Light->ul_Flags & LIGHT_Cul_LF_Type) == LIGHT_Cul_LF_Fog)
-                return pst_LightGO;
-        }
-    }
-    return NULL;
+		LIGHT_tdst_Light *pst_Light = ( LIGHT_tdst_Light * ) pst_LightGO->pst_Extended->pst_Light;
+		if ( pst_Light && ( pst_Light->ul_Flags & LIGHT_Cul_LF_Active ) )
+		{
+			if ( ( pst_Light->ul_Flags & LIGHT_Cul_LF_Type ) == LIGHT_Cul_LF_Fog )
+				return pst_LightGO;
+		}
+	}
+
+	return NULL;
 }
+
 /**/
 AI_tdst_Node *AI_EvalFunc_LightGetFog(AI_tdst_Node *_pst_Node)
 {

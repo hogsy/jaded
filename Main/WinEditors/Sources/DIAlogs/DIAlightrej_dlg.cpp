@@ -92,20 +92,16 @@ void EDIA_cl_LightRejectDialog::Refresh()
 	// no world loaded
 	if ( (*mpo_View).mst_WinHandles.pst_World == NULL) 
 		return;
+
+	const WOR_World_LightsVector *world_lights = ( WOR_World_LightsVector * ) ( mpo_View->mst_WinHandles.pst_World->st_Lights );
 		
 	// no lights
-	if ( mpo_View->mst_WinHandles.pst_World->st_Lights.ul_NbElems == 0 )
+	if ( world_lights->empty() )
 		return;
 
-	// Get all the lights contained in the world
-	TAB_tdst_PFelem		*pst_Elem, *pst_LastElem;
-	pst_Elem = TAB_pst_PFtable_GetFirstElem(&mpo_View->mst_WinHandles.pst_World->st_Lights);
-	pst_LastElem = TAB_pst_PFtable_GetLastElem(&mpo_View->mst_WinHandles.pst_World->st_Lights);
-
-	OBJ_tdst_GameObject *pst_LightGO = NULL;
-	for(; pst_Elem <= pst_LastElem; pst_Elem++)
+	for ( auto it = world_lights->begin(); it != world_lights->end(); ++it )
 	{
-		pst_LightGO = (OBJ_tdst_GameObject*) pst_Elem->p_Pointer;
+		OBJ_tdst_GameObject *pst_LightGO = it->first;
 
 		LIGHT_tdst_Light* pst_Light = (LIGHT_tdst_Light*)pst_LightGO->pst_Extended->pst_Light;
 		if ( ! (pst_Light->ul_Flags & LIGHT_Cul_LF_ExtendedLight) ) 
