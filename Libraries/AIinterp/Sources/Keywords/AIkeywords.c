@@ -54,6 +54,13 @@ __try
 		}
 		else
 		{
+			AI_tdst_Node *old = AI_gpst_CurrentUltra;
+
+			AI_gpst_CurrentUltra = AI_ul_ResolveOneRef( _pst_Node->w_Param, AI_gpst_CurrentUltra );
+			assert( AI_gpst_CurrentUltra == old );
+			//fprintf( stderr, "%p => %p\n", old, AI_gpst_CurrentUltra );
+			OBJ_GameObject_Check( AI_gpst_CurrentUltra );
+
 			if ( AI_gpst_CurrentUltra->pst_Extended )
 				AI_gpst_CurrentInstanceUltra = AI_gpst_CurrentUltra->pst_Extended->pst_Ai;
 			else

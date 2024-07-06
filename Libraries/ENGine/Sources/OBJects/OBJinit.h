@@ -45,10 +45,19 @@ extern void					OBJ_Reinit(OBJ_tdst_GameObject *);
 extern void					OBJ_SetInactive(OBJ_tdst_GameObject *);
 extern OBJ_tdst_GameObject	*OBJ_GameObject_Create(ULONG);
 extern OBJ_tdst_GameObject	*OBJ_GameObject_Duplicate(WOR_tdst_World *, OBJ_tdst_GameObject *, BOOL, BOOL, MATH_tdst_Vector *, ULONG, char * asz_NewName);
-extern void					OBJ_GameObject_Remove(OBJ_tdst_GameObject *, char);
+extern void					OBJ_GameObject_Remove_actual( OBJ_tdst_GameObject *, char, const char *caller_file, int caller_line );
 extern void					OBJ_GameObject_CreateExtendedIfNot(OBJ_tdst_GameObject *);
 extern void					OBJ_GameObject_CreateExtended(OBJ_tdst_GameObject *);
 extern void					OBJ_GameObject_AllocateGizmo(OBJ_tdst_GameObject *, ULONG, BOOL);
+
+#define OBJ_GameObject_Remove( pst_Object, _c_DecGroRef, __FILE__, __LINE__ )
+
+#ifndef NDEBUG
+#define OBJ_GameObject_Check( pst_Object ) \
+	assert( pst_Object->obj_FreeRecord.magic == OBJ_LIVE_MAGIC );
+#else
+#define OBJ_GameObject_Check( pst_Object )
+#endif
 
 #if defined(_XENON_RENDER)
 void                        OBJ_UpdateXenonVisu(GRO_tdst_Visu* _pst_DestVisu, GRO_tdst_Visu* _pst_SrcVisu, BOOL _b_Copy);

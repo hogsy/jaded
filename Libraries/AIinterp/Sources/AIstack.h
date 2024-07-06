@@ -16,6 +16,7 @@
 #include "AIerrid.h"
 #include "AIdebug.h"
 #include "ENGine/Sources/TEXT/TEXTstruct.h"
+#include "ENGine/Sources/OBJects/OBJinit.h"
 
 #if defined (__cplusplus) && !defined(JADEFUSION)
 extern "C"
@@ -198,6 +199,11 @@ _inline_ void AI_PushVector(MATH_tdst_Vector *_pst_Val)
  */
 _inline_ void AI_PushGameObject(OBJ_tdst_GameObject *_pst_Val)
 {
+	if ( _pst_Val != NULL )
+	{
+		OBJ_GameObject_Check( _pst_Val );
+	}
+
 	AI_PushVal(&_pst_Val, AI_gaw_EnumLink[TYPE_GAMEOBJECT]);
 }
 

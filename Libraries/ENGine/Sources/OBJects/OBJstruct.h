@@ -288,6 +288,19 @@ typedef struct	LightCloneListeGao_
 	struct LightCloneListeGao_ *p_Next;
 }LightCloneListeGao;
 
+#ifndef NDEBUG
+static const unsigned int OBJ_LIVE_MAGIC = 0x21022003;
+static const unsigned int OBJ_DEAD_MAGIC = 0xDEADBEEF;
+
+typedef struct OBJ_FreeRecord
+{
+	unsigned int magic;
+
+	const char *free_site_file;
+	int free_site_line;
+} OBJ_FreeRecord;
+#endif
+
 #endif
 /*
  -----------------------------------------------------------------------------------------------------------------------
@@ -378,6 +391,9 @@ typedef struct	OBJ_tdst_GameObject_
 #endif
 	u8						ucCullingVisibility;
 
+	#ifndef NDEBUG
+	OBJ_FreeRecord obj_FreeRecord;
+	#endif
 }OBJ_tdst_GameObject;
 
 #if defined (__cplusplus) && !defined(JADEFUSION)

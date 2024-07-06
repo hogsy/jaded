@@ -502,6 +502,12 @@ OBJ_tdst_GameObject *OBJ_GameObject_Create(ULONG _ulIdentityFlags)
 #endif
 	L_memset(pst_Object, 0, sizeof(struct OBJ_tdst_GameObject_));
 
+	#ifndef NDEBUG
+	pst_Object->obj_FreeRecord.magic = OBJ_LIVE_MAGIC;
+	pst_Object->obj_FreeRecord.free_site_file = NULL;
+	pst_Object->obj_FreeRecord.free_site_line = 0;
+	#endif
+
 	/*$2
 	 -------------------------------------------------------------------------------------------------------------------
 	    Depending on the identity flags we allocate what is needed
@@ -1487,8 +1493,16 @@ extern "C" void OBJ_GameObject_RemoveButEnFaitNon( OBJ_tdst_GameObject *pst_Obje
     Aim:    Removes a Game object
  =======================================================================================================================
  */
-void OBJ_GameObject_Remove(OBJ_tdst_GameObject *pst_Object, char _c_DecGroRef )
+void OBJ_GameObject_Remove_actual( OBJ_tdst_GameObject *pst_Object, char _c_DecGroRef, const char *caller_file, int caller_line )
 {
+	OBJ_GameObject_Check( pst_Object );
+
+	#ifndef NDEBUG
+	pst_Object->obj_FreeRecord.magic = OBJ_DEAD_MAGIC;
+	pst_Object->obj_FreeRecord.free_site_file = caller_file;
+	pst_Object->obj_FreeRecord.free_site_line = caller_line;
+	#endif
+
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	GRO_tdst_Struct			*pst_Gro;
 	MDF_tdst_Modifier		*pst_NextMdf, *pst_Modifier;
@@ -1752,7 +1766,9 @@ void OBJ_GameObject_Remove(OBJ_tdst_GameObject *pst_Object, char _c_DecGroRef )
 	LOA_DeleteAddress(pst_Object);
 
 	/* Finally, we free the object */
+	#ifdef NDEBUG
 	MEM_Free(pst_Object);
+	#endif
 	
 	#ifdef _GAMECUBE
 //	MEM_Defrag(0);	
