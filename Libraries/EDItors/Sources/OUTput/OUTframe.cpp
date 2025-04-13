@@ -633,9 +633,46 @@ void EOUT_cl_Frame::OneTrameEnding(void)
  =======================================================================================================================
  =======================================================================================================================
  */
-void EOUT_cl_Frame::OnActivate(void)
+void EOUT_cl_Frame::OnActivate( void )
 {
 	EDI_cl_BaseFrame::OnActivate();
+
+	if ( mpo_EngineFrame == nullptr )
+	{
+		return;
+	}
+
+	F3D_cl_View *view = mpo_EngineFrame->mpo_DisplayView;
+	if ( view == nullptr )
+	{
+		return;
+	}
+
+	if ( view->mpo_AnimDialog && view->mb_AnimOn )
+	{
+		view->mpo_AnimDialog->ShowWindow( SW_SHOW );
+	}
+}
+
+void EOUT_cl_Frame::OnDisactivate()
+{
+	EDI_cl_BaseFrame::OnDisactivate();
+
+	if ( mpo_EngineFrame == nullptr )
+	{
+		return;
+	}
+
+	F3D_cl_View *view = mpo_EngineFrame->mpo_DisplayView;
+	if ( view == nullptr )
+	{
+		return;
+	}
+
+	if ( view->mpo_AnimDialog )
+	{
+		view->mpo_AnimDialog->ShowWindow( SW_HIDE );
+	}
 }
 
 /*$4

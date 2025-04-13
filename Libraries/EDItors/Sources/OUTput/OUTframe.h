@@ -253,7 +253,9 @@ public:
 	void	SaveIni(void);
     void    IniUpdate_0to1( void );
 
-	void	OnActivate(void);
+	void OnActivate( void ) override;
+	void OnDisactivate() override;
+
 	BOOL	b_CanHaveMultipleFullScreenResolution(void)		{ return TRUE; };
 	void	OnToolBarCommand(UINT);
 	void	OnToolBarCommandUI(UINT, CCmdUI *);
