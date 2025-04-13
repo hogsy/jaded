@@ -2404,17 +2404,22 @@ void EDI_cl_BaseView::SetFloating(BOOL _b_Float)
         M_MF()->ScreenToClient(&o_Rect);
         o_Rect.top += GetSystemMetrics(SM_CYCAPTION);
         o_Rect.bottom += GetSystemMetrics(SM_CYCAPTION);
+
+        // hogsy: this works around an internal assertion in the Afx library regarding a lack of WS_CHILD flag; which we can't combine with WS_POPUP!
+        // additionally, this will return the same class each time rather than registering a new one, due to the same arguments... in theory win-win?
+        const char *wndClass = AfxRegisterWndClass( CS_VREDRAW | CS_HREDRAW | CS_DBLCLKS, ::LoadCursor( NULL, IDC_ARROW ), ( HBRUSH )::GetStockObject( WHITE_BRUSH ), NULL );
         p1->CreateEx
             (
                 WS_EX_TOOLWINDOW,
-                NULL,
+		        wndClass,
                 "Floating Editors",
-                WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_CHILD | WS_CAPTION | WS_THICKFRAME | WS_POPUP,
+		        WS_POPUP | WS_SYSMENU | WS_CAPTION | WS_THICKFRAME,
                 o_Rect,
                 M_MF(),
                 NULL,
                 NULL
             );
+
         SetParent(p1);
         p1->GetWindowRect(&o_Rect);
         o_Rect.top--;
