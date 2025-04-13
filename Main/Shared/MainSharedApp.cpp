@@ -166,6 +166,20 @@ static void ParseStartupParameters()
 			ENG_gb_LimitFPS = false;
 			continue;
 		}
+		else if ( SDL_strncasecmp( jaded::sys::launchArguments[ i ], "/bf", 3 ) == 0 )
+		{
+			if ( ++i >= jaded::sys::numLaunchArguments )
+			{
+				break;
+			}
+
+#if 0// init occurs after we parse launch arguments, and resets this...
+			snprintf( MAI_gst_InitStruct.asz_ProjectName, sizeof( MAI_gst_InitStruct.asz_ProjectName ), "%s", jaded::sys::launchArguments[ i ] );
+#else
+			jaded::sys::launchOperations.projectFile = jaded::sys::launchArguments[ i ];
+#endif
+			continue;
+		}
 	}
 }
 
@@ -347,7 +361,12 @@ int main( int argc, char **argv )
 	ENG_InitApplication();
 
 	// Default big file name
-	strcpy( MAI_gst_InitStruct.asz_ProjectName, "Rayman4.bf" );
+	const char *projectFile = "Rayman4.bf";
+	if ( !jaded::sys::launchOperations.projectFile.empty() )
+	{
+		projectFile = jaded::sys::launchOperations.projectFile.c_str();
+	}
+	snprintf( MAI_gst_InitStruct.asz_ProjectName, sizeof( MAI_gst_InitStruct.asz_ProjectName ), "%s", projectFile );
 	if ( !BIG_Open( MAI_gst_InitStruct.asz_ProjectName ) )
 		return EXIT_FAILURE;
 

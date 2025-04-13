@@ -47,6 +47,8 @@ namespace jaded
 			std::vector< std::string > wolFiles;
 			bool cleanByFat{ false };
 
+			std::string projectFile;
+
 			std::vector< std::string > aiMacros;
 		};
 		extern LaunchOperations launchOperations;
