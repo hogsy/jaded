@@ -997,12 +997,12 @@ void EDI_cl_MainFrame::OnExit(void)
     Aim:    To open an existing project.
  =======================================================================================================================
  */
-void EDI_cl_MainFrame::OpenProject(char *_psz_Name)
+void EDI_cl_MainFrame::OpenProject(const char *_psz_Name)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	char	asz_Name[255];
 	char	asz_NameR[L_MAX_PATH];
-	char	*psz_Temp;
+	const char	*psz_Temp;
 	char	az[512];
 	FILE	*f;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -1296,31 +1296,19 @@ void EDI_cl_MainFrame::OnProjectNew(void)
  */
 void EDI_cl_MainFrame::OnProjectOpen(void)
 {
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	EDIA_cl_FileDialog	mo_File(EDI_STR_Csz_TitleChooseProjectOpen, 1);
-	char				asz_Temp[BIG_C_MaxLenPath];
-	char				*psz_Temp;
-	CString				o_Temp;
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
+	CFileDialog mo_File( TRUE, _T("bf"), 0, 0, _T("Big Files (*.bf)|*.bf|All Files (*.*)|*.*||"), this );
 	if(mo_File.DoModal() == IDOK)
 	{
 		M_MF()->LockDisplay(&mo_BigSplitter);
 		AfxGetApp()->DoWaitCursor(1);
 
-		/* Get file name */
-		mo_File.GetItem(mo_File.mo_File, 1, o_Temp);
-		psz_Temp = (char *) (LPCSTR) o_Temp;
-
-		/* Compute full name on disk of current file */
-		L_strcpy(asz_Temp, mo_File.masz_FullPath);
-		if(asz_Temp[L_strlen(asz_Temp) - 1] != '\\') L_strcat(asz_Temp, "\\");
-		L_strcat(asz_Temp, psz_Temp);
+		CString filePath = mo_File.GetPathName();
+		const char *pathPtr = filePath.GetString();
 
 		/* Test if file exists */
-		if(L_access(asz_Temp, 0))
+		if(L_access(pathPtr, 0))
 		{
-			ERR_X_ForceError(EDI_ERR_Csz_UnknowFile, asz_Temp);
+			ERR_X_ForceError(EDI_ERR_Csz_UnknowFile, pathPtr);
 		}
 
 		/* If valid, open project */
@@ -1328,7 +1316,7 @@ void EDI_cl_MainFrame::OnProjectOpen(void)
 		{
 			if(b_CloseProject(FALSE))
 			{
-				OpenProject(asz_Temp);
+				OpenProject( pathPtr );
 			}
 		}
 

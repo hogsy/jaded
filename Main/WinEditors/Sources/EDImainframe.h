@@ -458,7 +458,7 @@ public:
 	void				SaveIni(void);
 
 	void				UpdateMainFrameTitle(void);
-	void				OpenProject(char *);
+	void				OpenProject(const char *);
 	BOOL				b_CloseProject(BOOL);
 
 	void				BeforeEngine(void);
@@ -543,7 +543,7 @@ public:
 	void				VssUpdateStatus(void);
 
 	void				ComputeLockedFileName(char *, char *);
-	void				ComputeLockedFileOpen(char *, char *);
+	void				ComputeLockedFileOpen(const char *, char *);
 	BOOL				b_LockBigFile();
 	void				UnLockBigFile();
 	void				OnLinkControl(void);

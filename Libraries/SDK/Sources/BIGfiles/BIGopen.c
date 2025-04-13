@@ -42,7 +42,7 @@ extern BIG_tdst_BigFile BIG_gst1;
     In:     _psz_FileName   Full path of bigfile to load.
  =======================================================================================================================
  */
-bool BIG_Open(char *_psz_FileName)
+bool BIG_Open(const char *_psz_FileName)
 {
 	int r;
 	/* First init global bigfile struct */

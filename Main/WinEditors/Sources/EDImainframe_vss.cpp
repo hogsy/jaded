@@ -186,7 +186,7 @@ static void SoundFile(BIG_INDEX _ul_File)
  =======================================================================================================================
  =======================================================================================================================
  */
-void EDI_cl_MainFrame::ComputeLockedFileOpen(char *_psz_Ref, char *_psz_NameR)
+void EDI_cl_MainFrame::ComputeLockedFileOpen(const char *_psz_Ref, char *_psz_NameR)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	char	asz_Temp[L_MAX_PATH];
