@@ -127,7 +127,6 @@ int ediSND_l_Init(SND_tdst_TargetSpecificData *_pst_SpecificD)
 	if(ediSND_gi_DoClose) ediSND_Close(SND_gst_Params.pst_SpecificD);
 
 	hr = CoInitialize(NULL);
-	ERR_X_Warning((hr == S_OK), "bad return value (ediSND_l_Init)", NULL);
 	// hogsy:	ah windows... 
 	//			because we init this once and then again when switching project
 	//			it returned S_FALSE next time, rather than S_OK, which is FINE!
@@ -136,6 +135,7 @@ int ediSND_l_Init(SND_tdst_TargetSpecificData *_pst_SpecificD)
 		hr != S_FALSE && 
 		hr != RPC_E_CHANGED_MODE) 
 	{
+		ERR_X_Warning( ( hr == S_OK ), "bad return value (ediSND_l_Init)", NULL );
 		return 0;
 	}
 
