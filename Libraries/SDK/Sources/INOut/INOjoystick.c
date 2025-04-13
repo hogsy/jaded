@@ -222,7 +222,18 @@ void INO_Joystick_Init( HWND _hWnd )
 
 	L_zero( sdlGameControllers, sizeof( SDL_GameController * ) * INO_Cte_PabNumber );
 
-	if ( SDL_GameControllerAddMappingsFromFile( "mappings/gamecontrollerdb.txt" ) == -1 )
+	char path[ MAX_PATH ];
+	const char *basePath;
+	if ( ( basePath = SDL_GetBasePath() ) != NULL )
+	{
+		snprintf( path, sizeof( path ), "%s/mappings/gamecontrollerdb.txt", basePath );
+	}
+	else
+	{
+		snprintf( path, sizeof( path ), "mappings/gamecontrollerdb.txt" );
+	}
+
+	if ( SDL_GameControllerAddMappingsFromFile( path ) == -1 )
 	{
 		ERR_X_Warning( 0, "Failed to fetch game controller mappings!", SDL_GetError() );
 		// not a problem if it's missing, mappings are just going to be lame ~hogsy
