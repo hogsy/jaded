@@ -17,38 +17,38 @@ jobs:
       run:
         shell: cmd
     steps:
-    - uses: actions/checkout@v2.4.0
+      - uses: actions/checkout@v2.4.0
 
-    - name: 'Setup MSBuild'
-      uses: microsoft/setup-msbuild@v2
-      with:
-        vs-prerelease: false
-        msbuild-architecture: "x86"
+      - name: 'Setup MSBuild'
+        uses: microsoft/setup-msbuild@v2
+        with:
+          vs-prerelease: false
+          msbuild-architecture: "x86"
 
-    - name: Build
-      # Build your program with the given configuration
-      run: MSBuild /t:JadeShell /property:Configuration="Release" /property:Platform=Win32 /maxcpucount Main/Jade.sln
+      - name: Build
+        # Build your program with the given configuration
+        run: MSBuild /t:JadeShell /property:Configuration="Release" /property:Platform=Win32 /maxcpucount Main/Jade.sln
 
-    - name: 'Check for commit number'
-      if: github.event_name != 'pull_request'
-      run: echo "COMMIT_COUNT=$(git rev-list --count HEAD)" >> $GITHUB_ENV
+      - name: 'Check for commit number'
+        if: github.event_name != 'pull_request'
+        run: echo "COMMIT_COUNT=$(git rev-list --count HEAD)" >> $GITHUB_ENV
 
-    - name: 'Package Release'
-      if: github.event_name != 'pull_request'
-      run: zip web/releases/jaded-${COMMIT_COUNT}-release.zip mappings/* changes.txt Jaded.exe run_window.bat run_console.bat run_editor.bat SDL2.dll legal.txt
+      - name: 'Package Release'
+        if: github.event_name != 'pull_request'
+        run: zip web/releases/jaded-${COMMIT_COUNT}-release.zip mappings/* changes.txt Jaded.exe run_window.bat run_console.bat run_editor.bat SDL2.dll legal.txt
 
-    - name: 'Upload to Discord'
-      if: github.event_name != 'pull_request'
-      uses: tsickert/discord-webhook@v5.3.0
-      continue-on-error: true
-      with:
-        webhook-url: ${{ secrets.DISCORD }}
-        filename: web/releases/jaded-${COMMIT_COUNT}-release.zip
+      - name: 'Upload to Discord'
+        if: github.event_name != 'pull_request'
+        uses: tsickert/discord-webhook@v5.3.0
+        continue-on-error: true
+        with:
+          webhook-url: ${{ secrets.DISCORD }}
+          filename: web/releases/jaded-${COMMIT_COUNT}-release.zip
 
-    - name: 'Upload Artifact'
-      if: github.event_name != 'pull_request'
-      uses: actions/upload-artifact@v2.2.4
-      with:
-        name: jaded-release
-        path: web/releases/jaded-${COMMIT_COUNT}-release.zip
-        retention-days: 30
+      - name: 'Upload Artifact'
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: jaded-release
+          path: web/releases/jaded-${COMMIT_COUNT}-release.zip
+          retention-days: 30
