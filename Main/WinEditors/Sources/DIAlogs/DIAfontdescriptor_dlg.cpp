@@ -1515,7 +1515,7 @@ void EDIA_cl_FontDescriptorDialog::OnButton_GenerateDesc( void )
 
 			fprintf( hp_File, "<tr>\n");
 			fprintf( hp_File, "<td width=76  valign=center style='border:solid windowtext .5pt'> <p align=center>%d</p></td>\n", i );
-			fprintf( hp_File, "<td width=76  valign=center style='border:solid windowtext .5pt'> <p align=center>&#%d;</p></td>\n", i,i );
+			fprintf( hp_File, "<td width=76  valign=center style='border:solid windowtext .5pt'> <p align=center>&#%d;</p></td>\n", i );
 			/*
 			if ( i < 256 )
 				fprintf( hp_File, "<td width=76  valign=center style='border:solid windowtext .5pt'> <p align=center>%c</p></td>\n", i );
@@ -1620,7 +1620,7 @@ void EDIA_cl_FontDescriptorDialog::UpdateLetterList(void)
 
 	for(i = 32; i < mi_LetterNb; i++)
 	{
-		sz_Cur = sz_Text + sprintf(sz_Text, "%4d", i, i);
+		sz_Cur = sz_Text + sprintf(sz_Text, "%4d", i);
 		j = po_LB->AddString(sz_Text);
 		po_LB->SetItemData(j, i);
 	}
