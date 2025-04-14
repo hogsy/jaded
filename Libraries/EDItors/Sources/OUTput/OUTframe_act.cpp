@@ -225,7 +225,7 @@ void EOUT_cl_Frame::UpdateShowAiVectors()
     }
 }
 
-void EOUT_cl_Frame::SaveWorld(ULONG _ul_Action)
+void EOUT_cl_Frame::SaveWorld(ULONG _ul_Action, bool onlySelected)
 {
     //BIG_bSaveBfSize = FALSE;
     if(DP()->mb_GridEdit)
@@ -272,7 +272,7 @@ void EOUT_cl_Frame::SaveWorld(ULONG _ul_Action)
         mb_LockUpdate = TRUE;
         M_MF()->SendMessageToEditors(EOUT_MESSAGE_SAVEWORLD, (ULONG) DW(), 0);
         EBRO_gb_CanRefresh = FALSE;
-        DP()->SaveWorld();
+        DP()->SaveWorld(onlySelected);
         M_MF()->FatHasChanged();
         EBRO_gb_CanRefresh = TRUE;
         M_MF()->DataHasChanged();
@@ -346,7 +346,12 @@ void EOUT_cl_Frame::OnAction(ULONG _ul_Action)
 		OBJ_gb_SaveDuplicateRLI = 1;
 		
 	case EOUT_ACTION_SAVEWORLD:
-        SaveWorld(_ul_Action);
+        SaveWorld(_ul_Action, false);
+		break;
+		
+	// showin added save only selected option
+	case EOUT_ACTION_SAVEWORLDONLYSELECTED:
+		SaveWorld(_ul_Action, true);
 		break;
 
     case EOUT_ACTION_AUTOSAVEWORLD:

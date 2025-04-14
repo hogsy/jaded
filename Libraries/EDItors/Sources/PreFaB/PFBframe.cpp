@@ -1037,7 +1037,7 @@ void EPFB_cl_Frame::Prefab_MoveToMapExt(WOR_tdst_World *_pst_World, OBJ_tdst_Pre
 	/* Parcequ'on a recalculé les matrices/BV */
 	Prefab_b_ComputeBV(P, FALSE);
 	Prefab_ul_Save(P);
-	WOR_l_World_Save( _pst_World );
+	WOR_l_World_Save( _pst_World, 0 );
 }
 
 

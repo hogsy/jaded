@@ -205,10 +205,10 @@ void F3D_cl_View::OneGraphicMaterialChanged(BIG_INDEX _ul_Ref, ULONG _ul_Address
  =======================================================================================================================
  =======================================================================================================================
  */
-void F3D_cl_View::SaveWorld(void)
+void F3D_cl_View::SaveWorld(bool onlySelected)
 {
     if(mst_WinHandles.pst_World == NULL) return;
-    WOR_l_World_Save(mst_WinHandles.pst_World);
+    WOR_l_World_Save(mst_WinHandles.pst_World, onlySelected ? WOR_C_SaveSelected : 0);
     mo_UndoManager.mi_MarkedIndex = mo_UndoManager.mi_CurrentIndex;
 }
 

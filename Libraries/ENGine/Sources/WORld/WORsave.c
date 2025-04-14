@@ -452,13 +452,41 @@ LONG WOR_l_World_SaveWithFileName(WOR_tdst_World *_pst_World, char *_sz_Path, ch
 		{
 			ul_GOKey = LOA_ul_SearchIndexWithAddress((ULONG) pst_GO);
 		}
-		else
+		// showin makes sure it only saves selected objects
+		// we have to do it here so it actually keeps all other objects in the gol file
+		else if ( ( ( _l_Flags & WOR_C_SaveSelected ) && ( pst_GO->ul_EditorFlags & OBJ_C_EditFlags_Selected ) ) || !( _l_Flags & WOR_C_SaveSelected ) )
 		{
 _Try_
 			ul_GOKey = OBJ_ul_GameObject_Save(_pst_World, pst_GO, asz_Path1);
 _Catch_
 			ul_GOKey = LOA_ul_SearchIndexWithAddress((ULONG) pst_GO);
 _End_
+
+			// Showin also makes it so it manually saves the gro for selected object
+			if ( ( _l_Flags & WOR_C_SaveSelected ) && ( pst_GO->ul_IdentityFlags & OBJ_C_IdentityFlag_Visu ) )
+			{
+				GRO_tdst_Struct *pst_Gro    = pst_GO->pst_Base->pst_Visu->pst_Object;
+				if ( pst_Gro != NULL )
+				{
+					GRO_tdst_Struct **ppst_First = ( GRO_tdst_Struct ** ) TAB_ppv_Ptable_GetElemWithPointer( &_pst_World->st_GraphicObjectsTable, pst_Gro );
+					if ( ppst_First != NULL )
+					{
+						ULONG ul_Value = LOA_ul_SearchKeyWithAddress( ( ULONG ) *ppst_First );
+						if ( ul_Value != BIG_C_InvalidKey )
+						{
+							ul_Value = BIG_ul_SearchKeyToFat( ul_Value );
+							if ( ul_Value != BIG_C_InvalidKey )
+							{
+								char sz_Path[ BIG_C_MaxLenPath ];
+								BIG_ComputeFullName( BIG_ParentFile( ul_Value ), sz_Path );
+								SAV_Begin( sz_Path, BIG_NameFile( ul_Value ) );
+								( *ppst_First )->i->pfnl_SaveInBuffer( ( *ppst_First ), &TEX_gst_GlobalList );
+								SAV_ul_End();
+							}
+						}
+					}
+				}
+			}
 		}
         
 		if(ul_GOKey != BIG_C_InvalidIndex)
@@ -472,18 +500,21 @@ _End_
 	
 	if( _l_Flags & WOR_C_SaveJustWolAndGol ) 
 		return ul_Key;
-
-	/* Save all gro */
-	snprintf( tmp, sizeof( tmp ), "Saving %u graphic objects...", _pst_World->st_GraphicObjectsTable.ul_NbElems );
-	LINK_PrintStatusMsg( tmp );
-	GRO_Struct_SaveTable(&_pst_World->st_GraphicObjectsTable);
 	
-#ifdef JADEFUSION
-		// SC: Only save the materials when the texture list is not empty
-	if (TEX_gst_GlobalList.l_NumberMaxOfTextures > 0)
-#endif	
+	if ( !( _l_Flags & WOR_C_SaveSelected ) )
 	{
-		GRO_Struct_SaveTable(&_pst_World->st_GraphicMaterialsTable);
+		/* Save all gro */
+		snprintf( tmp, sizeof( tmp ), "Saving %u graphic objects...", _pst_World->st_GraphicObjectsTable.ul_NbElems );
+		LINK_PrintStatusMsg( tmp );
+		GRO_Struct_SaveTable( &_pst_World->st_GraphicObjectsTable );
+
+#	ifdef JADEFUSION
+		// SC: Only save the materials when the texture list is not empty
+		if ( TEX_gst_GlobalList.l_NumberMaxOfTextures > 0 )
+#	endif
+		{
+			GRO_Struct_SaveTable( &_pst_World->st_GraphicMaterialsTable );
+		}
 	}
 	
 	/* Save networks */
@@ -500,27 +531,33 @@ _Catch_
 _End_
 	}
 
-	/* Save all sprite generators */
-	LINK_PrintStatusMsg( "Saving sprite generators..." );
-_Try_
-	MAT_pst_SaveAllSpritesGenerator();
-_Catch_
-_End_
+	if ( !( _l_Flags & WOR_C_SaveSelected ) )
+	{
+		/* Save all sprite generators */
+		LINK_PrintStatusMsg( "Saving sprite generators..." );
+		_Try_
+			MAT_pst_SaveAllSpritesGenerator();
+		_Catch_
+		_End_
 
-	/* Save all procedural textures */
-	LINK_PrintStatusMsg( "Saving procedural textures..." );
-_Try_
-	TEX_Procedural_Save();
-    TEX_Anim_Save();
-_Catch_
-_End_
+        /* Save all procedural textures */
+		LINK_PrintStatusMsg( "Saving procedural textures..." );
+		_Try_
+			TEX_Procedural_Save();
+			TEX_Anim_Save();
+		_Catch_
+		_End_
+	}
 
 	/* nothing more to save */
 	_pst_World->c_HaveToBeSaved = 0;
 
-#ifdef ACTIVE_EDITORS && !defined(XML_CONV_TOOL)
-	WORGos_Save(_pst_World);
-#endif
+	if ( !( _l_Flags & WOR_C_SaveSelected ) )
+	{
+#	ifdef ACTIVE_EDITORS && !defined( XML_CONV_TOOL )
+		WORGos_Save( _pst_World );
+#	endif
+	}
 
 	float endTime = TIM_f_Counter_TrueRead() / TIM_ul_PreciseGetTicksPerSecond();
 	snprintf( tmp, sizeof( tmp ), "World saved successfully! (took %.2f/s)", endTime - startTime );
@@ -536,13 +573,12 @@ _End_
  */
 #define EDI_Csz_Path_Cines BIG_Csz_Root "/EngineDatas/07 Cinematiques"
 
-LONG WOR_l_World_Save(WOR_tdst_World *_pst_World)
+LONG WOR_l_World_Save(WOR_tdst_World *_pst_World, unsigned int flags)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	BIG_KEY		ul_FileKey;
 	BIG_INDEX	ul_FileIndex;
 	BIG_INDEX	ul_DirIndex;
-	LONG		l_Flag;
 	char		asz_Path[BIG_C_MaxLenPath];
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -555,16 +591,15 @@ LONG WOR_l_World_Save(WOR_tdst_World *_pst_World)
 	if(ul_FileIndex == BIG_C_InvalidIndex) return BIG_C_InvalidKey;
 
 	ul_DirIndex = BIG_ul_CreateDir(EDI_Csz_Path_Levels);
-	if(BIG_b_IsFileInDirRec(ul_DirIndex, ul_FileIndex) || 
-       BIG_b_IsFileInDirRec(BIG_ul_CreateDir(EDI_Csz_Path_Cines),ul_FileIndex))
+	if(BIG_b_IsFileInDirRec(ul_DirIndex, ul_FileIndex) || BIG_b_IsFileInDirRec(BIG_ul_CreateDir(EDI_Csz_Path_Cines),ul_FileIndex))
 	{
-		l_Flag = 0;
+		// hogsy: just leave this empty for now
 	}
 	else
 	{
 		ul_DirIndex = BIG_ul_CreateDir(EDI_Csz_Path_Objects);
 		if(BIG_b_IsFileInDirRec(ul_DirIndex, ul_FileIndex))
-			l_Flag = WOR_C_IsABank;
+			flags |= WOR_C_IsABank;
 		else
 		{
 			ERR_X_Warning(0, "World is not in Levels or Objects dir => stop saving operation", NULL);
@@ -574,7 +609,7 @@ LONG WOR_l_World_Save(WOR_tdst_World *_pst_World)
 
 	/* Save world in file associated with world */
 	BIG_ComputeFullName(BIG_ParentFile(ul_FileIndex), asz_Path);
-	return WOR_l_World_SaveWithFileName(_pst_World, asz_Path, BIG_NameFile(ul_FileIndex), l_Flag);
+	return WOR_l_World_SaveWithFileName(_pst_World, asz_Path, BIG_NameFile(ul_FileIndex), flags );
 }
 
 /*$4

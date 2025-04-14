@@ -36,6 +36,7 @@ namespace jaded
 		struct LaunchOperations
 		{
 			bool editorMode{ false };
+			bool popupError{ false }; // Showin added Param for PopUp Script Errors (if off it uses console)
 			bool debugConsole{ false };
 
 			bool forceWindowed{ false };

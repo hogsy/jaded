@@ -141,6 +141,11 @@ static void ParseStartupParameters()
 			jaded::sys::launchOperations.editorMode = true;
 			continue;
 		}
+		else if ( SDL_strcasecmp( jaded::sys::launchArguments[ i ], "/popupError" ) == 0 ) // Showin added Param for PopUp Script Errors (if off it uses console)
+		{
+			jaded::sys::launchOperations.popupError = true;
+			continue;
+		}
 		else if ( SDL_strcasecmp( jaded::sys::launchArguments[ i ], "/console" ) == 0 )
 		{
 			jaded::sys::launchOperations.debugConsole = true;
