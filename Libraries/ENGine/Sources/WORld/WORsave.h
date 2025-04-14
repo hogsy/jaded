@@ -40,6 +40,8 @@ extern "C"
 
 LONG    WOR_l_World_SaveWithFileName(WOR_tdst_World *, char *, char *, LONG);
 LONG    WOR_l_World_Save(WOR_tdst_World *);
+LONG    WOR_l_World_Save_ONLYSELECTED( WOR_tdst_World * ); // showin added
+LONG    WOR_l_World_SaveWithFileName_SELECTED_ONLY( WOR_tdst_World *, char *, char *, LONG ); // showin added
 
 void    WOR_GetGroPath(WOR_tdst_World *, char *);
 void    WOR_GetGroPathWithKey(BIG_KEY _ul_WorldKey, char *_sz_Path);

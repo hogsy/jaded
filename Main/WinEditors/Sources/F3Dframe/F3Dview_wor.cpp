@@ -212,6 +212,14 @@ void F3D_cl_View::SaveWorld(void)
     mo_UndoManager.mi_MarkedIndex = mo_UndoManager.mi_CurrentIndex;
 }
 
+// showin added
+void F3D_cl_View::SaveWorldOnlySelected( void )
+{
+	if ( mst_WinHandles.pst_World == NULL ) return;
+	WOR_l_World_Save_ONLYSELECTED( mst_WinHandles.pst_World );
+	mo_UndoManager.mi_MarkedIndex = mo_UndoManager.mi_CurrentIndex;
+}
+
 #ifdef JADEFUSION
 /*
  =======================================================================================================================

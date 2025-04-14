@@ -318,6 +318,7 @@ public:
 #endif
 	void							  LogUnCollidable(void);
 	void							  SaveWorld(void);
+	void							  SaveWorldOnlySelected( void );// showin added
 	void							  NewWorld(void);
 	void							  ExportWorldToMad(char *, BOOL);
 	void							  DropMaterial(EDI_tdst_DragDrop *);
