@@ -28,20 +28,22 @@ extern "C"
  ***********************************************************************************************************************
  */
 
-#define WOR_C_IsABank           0x00000001
-#define WOR_C_DoNotSaveNetwork  0x00000002
-#define WOR_C_SaveJustWolAndGol	0x00000004
+enum
+{
+	BAS_BITFLAG( WOR_C_IsABank, 0 ),
+	BAS_BITFLAG( WOR_C_DoNotSaveNetwork, 1 ),
+	BAS_BITFLAG( WOR_C_SaveJustWolAndGol, 2 ),
+	BAS_BITFLAG( WOR_C_SaveSelected, 3 ),
+};
 
-/*$4
+	/*$4
  ***********************************************************************************************************************
     Svae a world
  ***********************************************************************************************************************
  */
 
 LONG    WOR_l_World_SaveWithFileName(WOR_tdst_World *, char *, char *, LONG);
-LONG    WOR_l_World_Save(WOR_tdst_World *);
-LONG    WOR_l_World_Save_ONLYSELECTED( WOR_tdst_World * ); // showin added
-LONG    WOR_l_World_SaveWithFileName_SELECTED_ONLY( WOR_tdst_World *, char *, char *, LONG ); // showin added
+LONG    WOR_l_World_Save(WOR_tdst_World *, unsigned int flags);
 
 void    WOR_GetGroPath(WOR_tdst_World *, char *);
 void    WOR_GetGroPathWithKey(BIG_KEY _ul_WorldKey, char *_sz_Path);

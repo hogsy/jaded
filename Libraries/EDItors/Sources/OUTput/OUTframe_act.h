@@ -27,6 +27,7 @@
 #define EOUT_ACTION_WORLD_CHECK					10
 #define EOUT_ACTION_ENGINEDISPLAY				11
 #define EOUT_ACTION_WORLD1						12
+#define EOUT_ACTION_SAVEWORLDONLYSELECTED		15
 
 #ifdef JADEFUSION
 #define EOUT_ACTION_LOG_LIGHT_USAGE  		    15
@@ -791,6 +792,7 @@ World=-1=--=0;\
 New World=1=--=0;\
 Save World=2=^S=0;\
 Save World (duplicate external RLI files)=13=--=0;\
+Save Selection=15=--=0;\
 Auto Save World=14=--=0;\
 Sep=0=--=0;\
 Export Only selected=3=--=0;\

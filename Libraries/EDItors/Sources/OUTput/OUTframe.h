@@ -219,7 +219,7 @@ public:
  */
 
 public:
-    void    SaveWorld(ULONG _ul_Action);
+    void    SaveWorld(ULONG _ul_Action, bool onlySelected = false);
 	void	CloseWorld(void);
 	void	ChangeWorld(BIG_INDEX, BOOL _b_CanSend = TRUE);
 	void	SetWidth(int);

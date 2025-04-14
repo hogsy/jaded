@@ -225,7 +225,7 @@ void EOUT_cl_Frame::UpdateShowAiVectors()
     }
 }
 
-void EOUT_cl_Frame::SaveWorld(ULONG _ul_Action)
+void EOUT_cl_Frame::SaveWorld(ULONG _ul_Action, bool onlySelected)
 {
     //BIG_bSaveBfSize = FALSE;
     if(DP()->mb_GridEdit)
@@ -272,7 +272,7 @@ void EOUT_cl_Frame::SaveWorld(ULONG _ul_Action)
         mb_LockUpdate = TRUE;
         M_MF()->SendMessageToEditors(EOUT_MESSAGE_SAVEWORLD, (ULONG) DW(), 0);
         EBRO_gb_CanRefresh = FALSE;
-        DP()->SaveWorld();
+        DP()->SaveWorld(onlySelected);
         M_MF()->FatHasChanged();
         EBRO_gb_CanRefresh = TRUE;
         M_MF()->DataHasChanged();
@@ -280,56 +280,6 @@ void EOUT_cl_Frame::SaveWorld(ULONG _ul_Action)
     }
     if (_ul_Action == EOUT_ACTION_SAVEWORLDDUPLICATERLI )
         OBJ_gb_SaveDuplicateRLI = 0;
-}
-
-// showin added save only selected option
-void EOUT_cl_Frame::SaveWorldOnlySelected( ULONG _ul_Action )
-{
-	//BIG_bSaveBfSize = FALSE;
-	if ( DP()->mb_GridEdit )
-	{
-		if ( DW()->pst_Grid1 ) GRI_SaveGrid( DW()->pst_Grid1 );
-		if ( DW()->pst_Grid ) GRI_SaveGrid( DW()->pst_Grid );
-		LINK_PrintStatusMsg( "Grid is saved" );
-		M_MF()->FlashJade();
-	}
-	else
-	{
-		if ( GRI_gb_Modified )
-		{
-			if (
-			        MessageBox(
-			                "Grid(s) has been changed. Do you want to update them ?",
-			                "Please confirm",
-			                MB_YESNO ) == IDYES )
-			{
-				if ( DW()->pst_Grid ) GRI_UpdateCompress( DW()->pst_Grid );
-				if ( DW()->pst_Grid1 ) GRI_UpdateCompress( DW()->pst_Grid1 );
-			}
-
-			GRI_gb_Modified = FALSE;
-		}
-
-		if ( DW()->pst_Grid ) GRI_SaveGrid( DW()->pst_Grid );
-		if ( DW()->pst_Grid1 ) GRI_SaveGrid( DW()->pst_Grid1 );
-
-		if (
-		        DP()->mpo_GameMaterialDialog && DP()->mpo_GameMaterialDialog->mpo_View && DP()->mpo_GameMaterialDialog->mpo_View->mpst_GameMatList )
-		{
-			COL_SaveGameMaterial( DP()->mpo_GameMaterialDialog->mpo_View->mpst_GameMatList, BIG_C_InvalidIndex );
-		}
-
-		mb_LockUpdate = TRUE;
-		M_MF()->SendMessageToEditors( EOUT_MESSAGE_SAVEWORLD, ( ULONG ) DW(), 0 );
-		EBRO_gb_CanRefresh = FALSE;
-		DP()->SaveWorldOnlySelected();
-		M_MF()->FatHasChanged();
-		EBRO_gb_CanRefresh = TRUE;
-		M_MF()->DataHasChanged();
-		M_MF()->FlashJade();
-	}
-	if ( _ul_Action == EOUT_ACTION_SAVEWORLDDUPLICATERLI )
-		OBJ_gb_SaveDuplicateRLI = 0;
 }
 
 void EOUT_cl_Frame::OnAction(ULONG _ul_Action)
@@ -396,12 +346,12 @@ void EOUT_cl_Frame::OnAction(ULONG _ul_Action)
 		OBJ_gb_SaveDuplicateRLI = 1;
 		
 	case EOUT_ACTION_SAVEWORLD:
-        SaveWorld(_ul_Action);
+        SaveWorld(_ul_Action, false);
 		break;
 		
 	// showin added save only selected option
 	case EOUT_ACTION_SAVEWORLDONLYSELECTED:
-		SaveWorldOnlySelected( _ul_Action );
+		SaveWorld(_ul_Action, true);
 		break;
 
     case EOUT_ACTION_AUTOSAVEWORLD:

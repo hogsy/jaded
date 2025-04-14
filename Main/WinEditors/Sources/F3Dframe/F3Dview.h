@@ -317,8 +317,7 @@ public:
 	void							  SetCameraMatrix(MATH_tdst_Matrix* _pst_Matrix);
 #endif
 	void							  LogUnCollidable(void);
-	void							  SaveWorld(void);
-	void							  SaveWorldOnlySelected( void );// showin added
+	void							  SaveWorld(bool onlySelected = false);
 	void							  NewWorld(void);
 	void							  ExportWorldToMad(char *, BOOL);
 	void							  DropMaterial(EDI_tdst_DragDrop *);
