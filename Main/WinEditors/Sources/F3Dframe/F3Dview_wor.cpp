@@ -16,6 +16,7 @@
 #include "ENGine/Sources/WORld/WORsave.h"
 #include "ENGine/Sources/WORld/WORinit.h"
 #include "ENGine/Sources/WORld/WORexporttomad.h"
+#include "ENGine/Sources/WORld/WORexport.h"
 #include "BIGfiles/BIGmdfy_dir.h"
 #include "GEOmetric/GEOload.h"
 #include "F3Dframe/F3Dview.h"
@@ -1147,19 +1148,38 @@ void F3D_cl_View::AssignMaterial(OBJ_tdst_GameObject* _pst_GO, BIG_INDEX _ul_Ind
  =======================================================================================================================
  =======================================================================================================================
  */
-void F3D_cl_View::ExportWorldToMad(char *_sz_FileName, BOOL _b_ExportSkin)
+void F3D_cl_View::ExportWorldToMad(const char *_sz_FileName, BOOL _b_ExportSkin)
 {
     if(mst_WinHandles.pst_World == NULL) return;
-    strcpy(msz_AssociatedMadFile, _sz_FileName);
-    WOR_b_World_ExportMadFile
-        (
-            mst_WinHandles.pst_World, 
-            msz_AssociatedMadFile, 
-            msz_ExportDir, 
-            ((EOUT_cl_Frame *) mpo_AssociatedEditor)->mst_Ini.uc_ExportOnlySelection, 
-            ((EOUT_cl_Frame *) mpo_AssociatedEditor)->mst_Ini.uc_ExportTexture,
-            _b_ExportSkin
-        );
+	snprintf( msz_AssociatedMadFile, sizeof( msz_AssociatedMadFile ), "%s", _sz_FileName );
+	if (!WOR_b_World_ExportMadFile
+	(
+		mst_WinHandles.pst_World,
+		msz_AssociatedMadFile,
+		msz_ExportDir,
+		((EOUT_cl_Frame*)mpo_AssociatedEditor)->mst_Ini.uc_ExportOnlySelection,
+		((EOUT_cl_Frame*)mpo_AssociatedEditor)->mst_Ini.uc_ExportTexture,
+		_b_ExportSkin
+	))
+	{
+		MessageBox( "MAD export failed! Check console for details.", "Warning", MB_OK | MB_ICONWARNING );
+	}
+}
+
+void F3D_cl_View::ExportWorldToSmd( const char *filename, bool skin )
+{
+	if ( mst_WinHandles.pst_World == nullptr )
+	{
+		return;
+	}
+
+	SMDExporter smdExport;
+	if ( !smdExport.ExportFile( mst_WinHandles.pst_World, nullptr, filename,
+		((EOUT_cl_Frame*)mpo_AssociatedEditor)->mst_Ini.uc_ExportOnlySelection,
+		((EOUT_cl_Frame*)mpo_AssociatedEditor)->mst_Ini.uc_ExportTexture))
+	{
+		MessageBox( "SMD export failed! Check console for details.", "Warning", MB_OK | MB_ICONWARNING );
+	}
 }
 
 /*

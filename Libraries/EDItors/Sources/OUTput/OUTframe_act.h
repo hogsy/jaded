@@ -373,6 +373,8 @@
 #define EOUT_ACTION_COMPUTETSS_GROUP4            826
 #define EOUT_ACTION_COMPUTEFIX_RLI               827
 
+#define EOUT_ACTION_EXPORT_SMD	900
+
 /* dynamic menu id */
 #define EOUT_SEPACTION_WORLD	- 1
 #define EOUT_SEPACTION_CAMERA	- 2
@@ -801,6 +803,7 @@ Export Dir =5=--=0;\
 Old Export World To Mad...=6=--=0;\
 Export World To Mad...=705=--=0;\
 Export World To =7=--=0;\
+Export To SMD...=900=--=0;\
 Quick Export=8=--=0;\
 Sep=0=--=0;\
 Close World=9=^F4=0;\

@@ -415,54 +415,34 @@ void EOUT_cl_Frame::OnAction(ULONG _ul_Action)
 
 	/*$1-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-	case EOUT_ACTION_EXPORTWORLDTOMAD:
+		case EOUT_ACTION_EXPORTWORLDTOMADSKIN:
+		case EOUT_ACTION_EXPORTWORLDTOMAD:
 		{
-			if(cl_ChooseFile.DoModal() == IDOK)
+			CFileDialog file( FALSE, _T("mad"), 0, 0, _T("Mad Files (*.mad)|*.mad|All Files (*.*)|*.*||"), this );
+			if ( file.DoModal() == IDOK )
 			{
-				L_strcpy(sz_FileName, cl_ChooseFile.masz_FullPath);
-				psz_EndPath = sz_FileName + L_strlen(sz_FileName);
-				if(*(psz_EndPath - 1) != '/') *psz_EndPath++ = '/';
-
-				cl_ChooseFile.GetItem(cl_ChooseFile.mo_File, 1, o_Temp);
-				strcpy(psz_EndPath, (char *) (LPCSTR) o_Temp);
-
-				psz_EndPath = strrchr(sz_FileName, '.');
-				if(!psz_EndPath || (L_stricmp(psz_EndPath, ".mad")))
+				CString filePath = file.GetPathName();
+				if ( !filePath.IsEmpty() )
 				{
-					psz_EndPath = sz_FileName + L_strlen(sz_FileName);
-					strcpy(psz_EndPath, ".mad");
+					DP()->ExportWorldToMad( filePath.GetString(), ( _ul_Action == EOUT_ACTION_EXPORTWORLDTOMADSKIN ) );
 				}
-
-				DP()->ExportWorldToMad(sz_FileName, FALSE);
 			}
+			break;
 		}
-		break;
 
-	/*$1-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-	case EOUT_ACTION_EXPORTWORLDTOMADSKIN:
+		case EOUT_ACTION_EXPORT_SMD:
 		{
-			if(cl_ChooseFile.DoModal() == IDOK)
+			CFolderPickerDialog file( nullptr, 0, this );
+			if ( file.DoModal() == IDOK )
 			{
-				L_strcpy(sz_FileName, cl_ChooseFile.masz_FullPath);
-				psz_EndPath = sz_FileName + L_strlen(sz_FileName);
-				if(*(psz_EndPath - 1) != '/') *psz_EndPath++ = '/';
-
-				cl_ChooseFile.GetItem(cl_ChooseFile.mo_File, 1, o_Temp);
-				strcpy(psz_EndPath, (char *) (LPCSTR) o_Temp);
-
-				psz_EndPath = strrchr(sz_FileName, '.');
-				if(!psz_EndPath || (L_stricmp(psz_EndPath, ".mad")))
+				CString folder = file.GetPathName();
+				if ( !folder.IsEmpty() )
 				{
-					psz_EndPath = sz_FileName + L_strlen(sz_FileName);
-					strcpy(psz_EndPath, ".mad");
+					DP()->ExportWorldToSmd( folder.GetString(), true );
 				}
-
-				DP()->ExportWorldToMad(sz_FileName, TRUE);
 			}
+			break;
 		}
-		break;
-
 
 	/*$1-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -3551,12 +3531,14 @@ BOOL EOUT_cl_Frame::b_OnActionValidate(ULONG _ul_Action, BOOL _b_Disp)
 
 	case EOUT_ACTION_SAVEWORLD:
 	case EOUT_ACTION_SAVEWORLDDUPLICATERLI:
+	case EOUT_ACTION_SAVEWORLDONLYSELECTED:
 	case EOUT_ACTION_EXPORTWORLDTOMAD:
 	case EOUT_ACTION_EXPORTWORLDTOMADSKIN:
 	case EOUT_ACTION_EXPORTONLYSELECTED:
 	case EOUT_ACTION_EXPORTTEXTURE:
 	case EOUT_ACTION_EXPORTQUICK:
 	case EOUT_ACTION_EXPORTDIR:
+	case EOUT_ACTION_EXPORT_SMD:
 		return(DW() != NULL);
 
 	case EOUT_ACTION_EXPORTWORLDTOASSOCIATEDMAD:
