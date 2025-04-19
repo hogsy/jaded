@@ -6,32 +6,11 @@
 #include "BIGfiles/BIGfat.h"
 #include "TEXture/TEXfile.h"
 #include "WOR.h"
+#include "WORexport.h"
+#include "MAD_loadsave/Sources/MAD_Struct_V0.h"
+#include "MAD_mem/Sources/MAD_mem.h"
 
-namespace eng
-{
-	namespace wor
-	{
-		class Exporter
-		{
-		public:
-			virtual bool ExportFile( WOR_tdst_World *world, const char *filename, const char *exportDir, unsigned char sel, bool textures ) = 0;
-
-			static void ExportTextures( const char *outDir );
-		};
-
-		class SMDExporter : public Exporter
-		{
-			bool ExportFile( WOR_tdst_World *world, const char *filename, const char *exportDir, unsigned char sel, bool textures ) override;
-		};
-
-		class GLTFExporter : public Exporter
-		{
-			bool ExportFile( WOR_tdst_World *world, const char *filename, const char *exportDir, unsigned char sel, bool textures ) override;
-		};
-	}// namespace wor
-}// namespace eng
-
-void eng::wor::Exporter::ExportTextures( const char *outDir )
+void WorldExporter::ExportTextures( const char *outDir )
 {
 	for ( unsigned int i = 0; i < TEX_gst_GlobalList.l_NumberOfTextures; ++i )
 	{
@@ -63,6 +42,14 @@ void eng::wor::Exporter::ExportTextures( const char *outDir )
 			outPath += "/" + std::string( name );
 			TEX_l_File_SaveTga( ( char * ) outPath.c_str(), &desc );
 		}
+		else if ( stricmp( extension, ".spr" ) == 0 )
+		{
+			//TODO
+		}
+		else if (stricmp(extension, ".raw") == 0)
+		{
+			//TODO
+		}
 		else
 		{
 			// some unsupported type ... ??
@@ -72,12 +59,21 @@ void eng::wor::Exporter::ExportTextures( const char *outDir )
 	}
 }
 
-bool eng::wor::GLTFExporter::ExportFile( WOR_tdst_World *world, const char *filename, const char *exportDir, unsigned char sel, bool textures )
+bool MADExporter::ExportFile( WOR_tdst_World *world, const char *filename, const char *exportDir, unsigned char sel, bool textures )
+{
+	Mad_meminit();
+
+	//TODO: eventually migrate the existing WORexporttomad implementation here...
+
+	return false;
+}
+
+bool GLTFExporter::ExportFile( WOR_tdst_World *world, const char *filename, const char *exportDir, unsigned char sel, bool textures )
 {
 	return false;
 }
 
-bool eng::wor::SMDExporter::ExportFile( WOR_tdst_World *world, const char *filename, const char *exportDir, unsigned char sel, bool textures )
+bool SMDExporter::ExportFile( WOR_tdst_World *world, const char *filename, const char *exportDir, unsigned char sel, bool textures )
 {
 	TAB_PFtable_RemoveHoles( &world->st_AllWorldObjects );
 	TAB_tdst_PFelem *element    = TAB_pst_PFtable_GetFirstElem( &world->st_AllWorldObjects );
@@ -85,9 +81,105 @@ bool eng::wor::SMDExporter::ExportFile( WOR_tdst_World *world, const char *filen
 	for ( unsigned int i = 0; element <= endElement; element++, i++ )
 	{
 		OBJ_tdst_GameObject *gameObject = ( OBJ_tdst_GameObject * ) element->p_Pointer;
-		assert( gameObject != nullptr );
-		if ( gameObject == NULL )
+		if ( gameObject == nullptr )
+		{
 			continue;
+		}
+
+		std::string name    = gameObject->sz_Name;
+		OBJ_tdst_Base *base = gameObject->pst_Base;
+		if ( base == nullptr )
+		{
+			continue;
+		}
+
+		GEO_tdst_Object *graphics;
+		MAT_tdst_Multi *material;
+		if ( OBJ_b_TestIdentityFlag( gameObject, OBJ_C_IdentityFlag_Visu ) )
+		{
+			graphics = ( GEO_tdst_Object * ) base->pst_Visu->pst_Object;
+			if ( graphics == nullptr || graphics->st_Id.i->ul_Type != GRO_Geometric )
+			{
+				continue;
+			}
+
+			material = ( MAT_tdst_Multi * ) base->pst_Visu->pst_Material;
+			if ( material == nullptr || material->st_Id.i->ul_Type != GRO_MaterialMulti )
+			{
+				continue;
+			}
+		}
+		else
+		{
+			// nothing we can convert to SMD (yet)
+			continue;
+		}
+
+		if ( graphics->l_NbPoints <= 0 || graphics->l_NbElements <= 0 )
+		{
+			continue;
+		}
+
+		//TEMP: as the name implies, this is just temporary for testing!!!
+		std::string tmp = "./" + name + ".smd";
+
+		FILE *out = fopen( tmp.c_str(), "w" );
+		if ( out == nullptr )
+		{
+			std::string msg = "Failed to create SMD file (" + tmp + ")!";
+			LINK_PrintStatusMsg( ( char * ) msg.c_str() );
+			continue;
+		}
+
+		fprintf( out, "version 1\n" );
+
+		//TEMP: we'll worry about bones after geom
+		fprintf( out, "nodes\n" );
+		fprintf( out, "0 \"root\" -1\n" );
+		fprintf( out, "end\n" );
+
+		fprintf( out, "triangles\n" );
+		for ( unsigned int j = 0; j < graphics->l_NbElements; ++j )
+		{
+			const GEO_tdst_ElementIndexedTriangles *element = &graphics->dst_Element[ j ];
+
+			for ( unsigned int k = 0; k < element->l_NbTriangles; ++k )
+			{
+				fprintf( out, "test.bmp\n" );
+				const GEO_tdst_IndexedTriangle *tri = &element->dst_Triangle[ k ];
+				for ( unsigned int l = 0; l < 3; ++l )
+				{
+					// bone index
+					fprintf( out, "0 " );
+					// position
+					fprintf( out, "%f %f %f ",
+					         graphics->dst_Point[ tri->auw_Index[ l ] ].x,
+					         graphics->dst_Point[ tri->auw_Index[ l ] ].y,
+					         graphics->dst_Point[ tri->auw_Index[ l ] ].z );
+					// normal
+					MATH_tdst_Vector normal;
+					BAS_ZERO( &normal, sizeof( normal ) );
+					if ( graphics->dst_PointNormal != nullptr )
+					{
+						normal = graphics->dst_PointNormal[ tri->auw_Index[ l ] ];
+					}
+					fprintf( out, "%f %f %f ", normal.x, normal.y, normal.z );
+					// uv
+					GEO_tdst_UV uv;
+					BAS_ZERO( &uv, sizeof( uv ) );
+					if ( graphics->dst_UV != nullptr )
+					{
+						uv = graphics->dst_UV[ tri->auw_UV[ l ] ];
+					}
+					fprintf( out, "%f %f ", uv.fU, uv.fV );
+					// extras
+					fprintf( out, "0 0 0\n" );
+				}
+			}
+		}
+		fprintf( out, "end\n" );
+
+		fclose( out );
 	}
 
 	if ( textures )
