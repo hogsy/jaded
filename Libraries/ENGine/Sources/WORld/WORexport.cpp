@@ -17,23 +17,32 @@ void WorldExporter::ExportTextures( const char *outDir )
 		TEX_tdst_Data *textureData = &TEX_gst_GlobalList.dst_Texture[ i ];
 		unsigned int index         = BIG_ul_SearchKeyToFat( textureData->ul_Key );
 		if ( index == BIG_C_InvalidKey )
+		{
 			continue;
+		}
 
 		const char *name = BIG_NameFile( index );
 		assert( name != nullptr );
 		if ( name == nullptr )
+		{
 			continue;
+		}
 
 		const char *extension = strrchr( name, '.' );
 		assert( extension != nullptr );
 		if ( extension == nullptr )
+		{
 			continue;
+		}
+
+		TEX_tdst_File_Desc desc;
+		BAS_ZERO( &desc, sizeof( desc ) );
 
 		std::string outPath = outDir;
 		if ( stricmp( extension, ".tex" ) == 0 )
 		{
-			TEX_tdst_File_Desc desc;
 			TEX_l_File_GetInfoAndContent( textureData->ul_Key, &desc );
+			//TODO
 		}
 		else if ( stricmp( extension, ".tga" ) == 0 )
 		{
@@ -56,6 +65,8 @@ void WorldExporter::ExportTextures( const char *outDir )
 			assert( 0 );
 			continue;
 		}
+
+		TEX_File_FreeDescription( &desc );
 	}
 }
 
