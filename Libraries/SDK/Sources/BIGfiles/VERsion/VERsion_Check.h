@@ -10,7 +10,7 @@ extern "C"
 {
 #endif
 #ifdef ACTIVE_EDITORS
-extern void VERsion_CheckCurrent(void);
+extern bool VERsion_CheckCurrent(void);
 #else
 #define VERsion_CheckCurrent()
 #endif

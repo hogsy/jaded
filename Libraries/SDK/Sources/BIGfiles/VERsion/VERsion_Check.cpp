@@ -89,7 +89,7 @@ void VERsion_Change(ULONG _ul_Before, BIG_INDEX _ul_Dir)
  =======================================================================================================================
  */
 
-void VERsion_CheckCurrent(void)
+bool VERsion_CheckCurrent(void)
 {
 	/*~~~~~~~~~~~~~~~~~*/
 	int		i_Res;
@@ -97,19 +97,14 @@ void VERsion_CheckCurrent(void)
 	/*~~~~~~~~~~~~~~~~~*/
 
 	/* Same version, do nothing */
-	if(BIG_Version() == BIG_Cu4_Version) return;
+	if(BIG_Version() == BIG_Cu4_Version) return true;
 
 	/* Newer version, error */
-	if(BIG_Version() >= BIG_Cu4_Version)
+	if ( BIG_Version() >= BIG_Cu4_Version )
 	{
-		sprintf
-		(
-			asz_Msg,
-			"Version of BigFile \"%s\" is invalid.\nYour version of Jade is too old.\nExit.",
-			BIG_gst.asz_Name
-		);
-		ERR_X_ForceError(asz_Msg, NULL);
-		exit(-1);
+		snprintf( asz_Msg, sizeof( asz_Msg ), "Version of BigFile \"%s\" is invalid (%u >= %u).\nYour version of Jade is too old.", BIG_gst.asz_Name, BIG_Version(), BIG_Cu4_Version );
+		ERR_X_ForceError( asz_Msg, NULL );
+		return false;
 	}
 
 	sprintf
@@ -120,7 +115,7 @@ void VERsion_CheckCurrent(void)
 		BIG_Cu4_Version
 	);
 	i_Res = M_MF()->MessageBox(asz_Msg, "Please Confirm", MB_ICONQUESTION | MB_YESNO);
-	if(i_Res == IDNO) exit(-1);
+	if ( i_Res == IDNO ) return false;
 
 	
 	/* Change version */
@@ -139,8 +134,7 @@ void VERsion_CheckCurrent(void)
 			// this is a special case because it updates the fat 
 			VERsion_UpdateVersion36();
 			M_MF()->MessageBox("FAT Conversion has been done for version 36, reopen the _convert.bf to continue\n Exiting...", "Operation succeded", MB_OK);
-			exit(1);
-			return;
+			return false;
 		}
 
 		VERsion_Change(BIG_Version(), BIG_Root());
@@ -151,6 +145,8 @@ void VERsion_CheckCurrent(void)
 	BIG_Version() = BIG_Cu4_Version;
 
 	BIG_WriteHeader();
+
+	return true;
 }
 
 #endif

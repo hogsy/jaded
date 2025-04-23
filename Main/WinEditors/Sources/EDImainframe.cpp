@@ -1098,7 +1098,10 @@ _Try_
 	L_fclose(f);
 
 	/* Open bigfile */
-	BIG_Open(_psz_Name);
+	if (!BIG_Open(_psz_Name))
+	{
+		return;
+	}
 
 	/* Create base hierarchy */
 	BIG_ul_CreateDir(EDI_Csz_Path_GameData);

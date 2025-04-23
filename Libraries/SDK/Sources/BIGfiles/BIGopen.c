@@ -131,7 +131,11 @@ bool BIG_Open(const char *_psz_FileName)
 	L_strcpy(BIG_gst.asz_Name, _psz_FileName);
 
 	/* Check current version of bigfile */
-	VERsion_CheckCurrent();
+	if ( !VERsion_CheckCurrent() )
+	{
+		BIG_Close();
+		return false;
+	}
 	
 	return true;
 }
