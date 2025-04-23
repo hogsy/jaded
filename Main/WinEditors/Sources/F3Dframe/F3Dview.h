@@ -319,7 +319,10 @@ public:
 	void							  LogUnCollidable(void);
 	void							  SaveWorld(bool onlySelected = false);
 	void							  NewWorld(void);
-	void							  ExportWorldToMad(char *, BOOL);
+
+	void ExportWorldToMad( const char *, BOOL );
+	void ExportWorldToSmd( const char *, bool );
+
 	void							  DropMaterial(EDI_tdst_DragDrop *);
 
 	void							  DropGameObject(EDI_tdst_DragDrop *,BOOL);

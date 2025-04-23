@@ -17,23 +17,32 @@ void WorldExporter::ExportTextures( const char *outDir )
 		TEX_tdst_Data *textureData = &TEX_gst_GlobalList.dst_Texture[ i ];
 		unsigned int index         = BIG_ul_SearchKeyToFat( textureData->ul_Key );
 		if ( index == BIG_C_InvalidKey )
+		{
 			continue;
+		}
 
 		const char *name = BIG_NameFile( index );
 		assert( name != nullptr );
 		if ( name == nullptr )
+		{
 			continue;
+		}
 
 		const char *extension = strrchr( name, '.' );
 		assert( extension != nullptr );
 		if ( extension == nullptr )
+		{
 			continue;
+		}
+
+		TEX_tdst_File_Desc desc;
+		BAS_ZERO( &desc, sizeof( desc ) );
 
 		std::string outPath = outDir;
 		if ( stricmp( extension, ".tex" ) == 0 )
 		{
-			TEX_tdst_File_Desc desc;
 			TEX_l_File_GetInfoAndContent( textureData->ul_Key, &desc );
+			//TODO
 		}
 		else if ( stricmp( extension, ".tga" ) == 0 )
 		{
@@ -46,7 +55,7 @@ void WorldExporter::ExportTextures( const char *outDir )
 		{
 			//TODO
 		}
-		else if (stricmp(extension, ".raw") == 0)
+		else if ( stricmp( extension, ".raw" ) == 0 )
 		{
 			//TODO
 		}
@@ -56,10 +65,12 @@ void WorldExporter::ExportTextures( const char *outDir )
 			assert( 0 );
 			continue;
 		}
+
+		TEX_File_FreeDescription( &desc );
 	}
 }
 
-bool MADExporter::ExportFile( WOR_tdst_World *world, const char *filename, const char *exportDir, unsigned char sel, bool textures )
+bool MADExporter::ExportFile( WOR_tdst_World *world, const char *filename, const char *exportDir, bool selected, bool textures )
 {
 	Mad_meminit();
 
@@ -68,25 +79,28 @@ bool MADExporter::ExportFile( WOR_tdst_World *world, const char *filename, const
 	return false;
 }
 
-bool GLTFExporter::ExportFile( WOR_tdst_World *world, const char *filename, const char *exportDir, unsigned char sel, bool textures )
+bool GLTFExporter::ExportFile( WOR_tdst_World *world, const char *filename, const char *exportDir, bool selected, bool textures )
 {
 	return false;
 }
 
-bool SMDExporter::ExportFile( WOR_tdst_World *world, const char *filename, const char *exportDir, unsigned char sel, bool textures )
+bool SMDExporter::ExportFile( WOR_tdst_World *world, const char *filename, const char *exportDir, bool selected, bool textures )
 {
+	//TODO: bones + animations aren't currently dealt with here, I'd decided it wasn't yet worth the effort so I'll look at it later
+
+	assert( exportDir != nullptr );
+
 	TAB_PFtable_RemoveHoles( &world->st_AllWorldObjects );
 	TAB_tdst_PFelem *element    = TAB_pst_PFtable_GetFirstElem( &world->st_AllWorldObjects );
 	TAB_tdst_PFelem *endElement = TAB_pst_PFtable_GetLastElem( &world->st_AllWorldObjects );
 	for ( unsigned int i = 0; element <= endElement; element++, i++ )
 	{
 		OBJ_tdst_GameObject *gameObject = ( OBJ_tdst_GameObject * ) element->p_Pointer;
-		if ( gameObject == nullptr )
+		if ( gameObject == nullptr || ( selected && !( gameObject->ul_EditorFlags & OBJ_C_EditFlags_Selected ) ) )
 		{
 			continue;
 		}
 
-		std::string name    = gameObject->sz_Name;
 		OBJ_tdst_Base *base = gameObject->pst_Base;
 		if ( base == nullptr )
 		{
@@ -120,13 +134,13 @@ bool SMDExporter::ExportFile( WOR_tdst_World *world, const char *filename, const
 			continue;
 		}
 
-		//TEMP: as the name implies, this is just temporary for testing!!!
-		std::string tmp = "./" + name + ".smd";
+		// assumed to be a dir here, due to the fact that an SMD can't hold multiple meshes!
+		std::string outname = std::string( exportDir ) + "/" + std::string( gameObject->sz_Name ) + ".smd";
 
-		FILE *out = fopen( tmp.c_str(), "w" );
+		FILE *out = fopen( outname.c_str(), "w" );
 		if ( out == nullptr )
 		{
-			std::string msg = "Failed to create SMD file (" + tmp + ")!";
+			std::string msg = "Failed to create SMD file (" + outname + ")!";
 			LINK_PrintStatusMsg( ( char * ) msg.c_str() );
 			continue;
 		}
@@ -145,7 +159,10 @@ bool SMDExporter::ExportFile( WOR_tdst_World *world, const char *filename, const
 
 			for ( unsigned int k = 0; k < element->l_NbTriangles; ++k )
 			{
-				fprintf( out, "test.bmp\n" );
+				const char *materialName = GRO_sz_Struct_GetName( &material->st_Id );
+				assert( materialName != nullptr );
+				fprintf( out, "%s.bmp\n", materialName );
+
 				const GEO_tdst_IndexedTriangle *tri = &element->dst_Triangle[ k ];
 				for ( unsigned int l = 0; l < 3; ++l )
 				{
