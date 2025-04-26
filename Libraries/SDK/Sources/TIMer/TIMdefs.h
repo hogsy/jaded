@@ -123,7 +123,7 @@ extern "C"
  */
 _inline_ ULONG _fastcall_ TIM_ul_GetLowPartTimerInternalCounter(void)
 {
-#if defined( _MSC_VER ) && defined( _WIN32 )
+#if defined( _MSC_VER ) && !defined( _WIN64 )
 	int r;
     __asm
     {

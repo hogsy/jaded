@@ -54,12 +54,6 @@
 #		endif
 #	endif
 
-#	define WM_CLOSE       0x0010
-#	define WM_QUIT        0x0012
-#	define WM_SYSCOMMAND  0x0112
-#	define WM_ACTIVATEAPP 0x001C
-#	define SC_CLOSE       0xF060
-
 //###################################################################################
 //###################################################################################
 // END OF #elif defined( ACTIVE_EDITORS ) || defined( PCWIN_TOOL )
@@ -88,17 +82,9 @@
 // hogsy: !!TODO!! we should eventually get rid of the below and use stdint types instead
 
 typedef char CHAR;
-typedef short SHORT;
 typedef long LONG; /* specific */
-typedef int INT;
-typedef unsigned char UCHAR;
-typedef unsigned short USHORT;
 typedef unsigned long ULONG;
-typedef unsigned int UINT;
-typedef unsigned long DWORD;
 typedef int BOOL;
-typedef int64_t LONG64;
-typedef uint64_t ULONG64;
 
 typedef signed char s8;
 typedef signed short s16;
@@ -107,14 +93,3 @@ typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned int u32;
 typedef float f32;
-
-typedef uint8_t BYTE;
-typedef uint16_t WORD;
-typedef DWORD *LPDWORD;
-typedef void *LPVOID;
-typedef LONG HRESULT;
-
-/* Types use for passing & returning polymorphic values */
-typedef UINT WPARAM;
-typedef LONG LPARAM;
-typedef LONG LRESULT;
