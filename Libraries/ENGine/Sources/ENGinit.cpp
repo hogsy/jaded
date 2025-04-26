@@ -9,6 +9,9 @@
 
 /* Initialisations of the application and the engine */
 #include "Precomp.h"
+
+#include "../../Shared/MainSharedSystem.h"
+
 #include "ENGine/Sources/OBJects/OBJstruct.h"
 #include "BASe/BAS.h"
 #include "SDK/Sources/LINks/LINK.h"
@@ -112,8 +115,6 @@ extern "C" AI_tdst_GlobalMessageList gast_GlobalMessages[ C_GM_MaxTypes ];
 #if defined(_XENON_RENDER)
 #include "XenonGraphics/XeWeatherManager.h"
 #endif
-
-#include "../../Shared/MainSharedSystem.h"
 
 extern "C" COL_tdst_GlobalVars COL_gst_GlobalVars;
 extern "C" int GRID_gi_Current;

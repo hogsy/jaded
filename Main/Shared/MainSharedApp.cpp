@@ -141,7 +141,7 @@ static void ParseStartupParameters()
 			jaded::sys::launchOperations.editorMode = true;
 			continue;
 		}
-		else if ( SDL_strcasecmp( jaded::sys::launchArguments[ i ], "/popupError" ) == 0 ) // Showin added Param for PopUp Script Errors (if off it uses console)
+		else if ( SDL_strcasecmp( jaded::sys::launchArguments[ i ], "/popupError" ) == 0 )// Showin added Param for PopUp Script Errors (if off it uses console)
 		{
 			jaded::sys::launchOperations.popupError = true;
 			continue;
@@ -208,25 +208,36 @@ static SDL_Window *CreateSDLWindow()
 #else
 
 	int flags = 0;
-	if ( !jaded::sys::launchOperations.forceWindowed )
-		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 
 #endif
 
-	SDL_DisplayMode displayMode;
-	if ( SDL_GetDesktopDisplayMode( 0, &displayMode ) != 0 )
+	int w, h;
+	const SDL_DisplayMode *displayMode;
+	if ( ( displayMode = SDL_GetDesktopDisplayMode( 0 ) ) != nullptr )
+	{
+		w = displayMode->w;
+		h = displayMode->h;
+	}
+	else
 	{
 		printf( "Failed to get desktop display mode: %s\n", SDL_GetError() );
-		displayMode.w = 1024;
-		displayMode.h = 768;
+		w = 1024;
+		h = 768;
 	}
 
-	if ( jaded::sys::launchOperations.forcedWidth > 0 ) displayMode.w = jaded::sys::launchOperations.forcedWidth;
-	if ( jaded::sys::launchOperations.forcedHeight > 0 ) displayMode.h = jaded::sys::launchOperations.forcedHeight;
+	if ( jaded::sys::launchOperations.forcedWidth > 0 ) w = jaded::sys::launchOperations.forcedWidth;
+	if ( jaded::sys::launchOperations.forcedHeight > 0 ) h = jaded::sys::launchOperations.forcedHeight;
 
-	sdlWindow = SDL_CreateWindow( "Jaded", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, displayMode.w, displayMode.h, flags );
+	sdlWindow = SDL_CreateWindow( "Jaded", w, h, flags );
 	if ( sdlWindow == nullptr )
+	{
 		return nullptr;
+	}
+
+	if ( !jaded::sys::launchOperations.forceWindowed )
+	{
+		SDL_SetWindowFullscreen( sdlWindow, true );
+	}
 
 #if defined( USE_SDL_GL_CONTEXT )
 
@@ -240,10 +251,7 @@ static SDL_Window *CreateSDLWindow()
 
 #if defined( _WIN32 )
 
-	SDL_SysWMinfo info;
-	SDL_VERSION( &info.version );
-	SDL_GetWindowWMInfo( sdlWindow, &info );
-	nativeWindowHandle = info.info.win.window;
+	nativeWindowHandle = ( HWND ) SDL_GetPointerProperty( SDL_GetWindowProperties( sdlWindow ), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr );
 
 #endif
 
@@ -326,7 +334,7 @@ int main( int argc, char **argv )
 
 	ParseStartupParameters();
 
-	if ( SDL_Init( SDL_INIT_EVERYTHING ) != 0 )
+	if ( !SDL_Init( SDL_INIT_GAMEPAD | SDL_INIT_VIDEO ) )
 	{
 		jaded::sys::AlertBox( "SDL Init fail: " + std::string( SDL_GetError() ),
 		                      "Jaded Error",

@@ -32,7 +32,7 @@
 
 #define BAS_FILENAME ( strrchr( __FILE__, '\\' ) ? strrchr( __FILE__, '\\' ) + 1 : __FILE__ )
 
-#define BAS_ZERO( DATA, SIZE ) memset( ( DATA ), 0, ( SIZE ) )
+#define BAS_ZERO( DATA, SIZE ) memset( ( DATA ), 0, ( SIZE ) )//TODO: replace with L_zero ?
 
 #define BAS_BITFLAG( A, B ) A = ( 1U << B )
 

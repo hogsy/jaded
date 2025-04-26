@@ -6,8 +6,8 @@
 // !!! Nowadays, prefer using GLFW or SDL instead!
 
 // Implemented features:
-//  [X] Platform: Partial keyboard support. Since 1.87 we are using the io.AddKeyEvent() function. Pass ImGuiKey values to all key functions e.g. ImGui::IsKeyPressed(ImGuiKey_Space). [Legacy GLUT values will also be supported unless IMGUI_DISABLE_OBSOLETE_KEYIO is set]
-// Issues:
+//  [X] Platform: Partial keyboard support. Since 1.87 we are using the io.AddKeyEvent() function. Pass ImGuiKey values to all key functions e.g. ImGui::IsKeyPressed(ImGuiKey_Space). [Legacy GLUT values are obsolete since 1.87 and not supported since 1.91.5]
+// Missing features or Issues:
 //  [ ] Platform: GLUT is unable to distinguish e.g. Backspace from CTRL+H or TAB from CTRL+I
 //  [ ] Platform: Missing horizontal mouse wheel support.
 //  [ ] Platform: Missing mouse cursor shape/visibility support.
@@ -16,8 +16,11 @@
 
 // You can use unmodified imgui_impl_* files in your project. See examples/ folder for examples of using this.
 // Prefer including the entire imgui/ repository into your project (either as a copy or as a submodule), and only build the backends you need.
-// If you are new to Dear ImGui, read documentation from the docs/ folder + read the top of imgui.cpp.
-// Read online: https://github.com/ocornut/imgui/tree/master/docs
+// Learn about Dear ImGui:
+// - FAQ                  https://dearimgui.com/faq
+// - Getting Started      https://dearimgui.com/getting-started
+// - Documentation        https://dearimgui.com/docs (same as your local docs/ folder).
+// - Introduction, links and more at the top of imgui.cpp
 
 // CHANGELOG
 // (minor and older changes stripped away, please see git history for details)
@@ -32,6 +35,7 @@
 //  2018-03-22: Added GLUT Platform binding.
 
 #include "imgui.h"
+#ifndef IMGUI_DISABLE
 #include "imgui_impl_glut.h"
 #define GL_SILENCE_DEPRECATION
 #ifdef __APPLE__
@@ -46,7 +50,7 @@
 
 static int g_Time = 0;          // Current time, in milliseconds
 
-// Glut has 1 function for characters and one for "special keys". We map the characters in the 0..255 range and the keys above.
+// Glut has one function for characters and one for "special keys". We map the characters in the 0..255 range and the keys above.
 static ImGuiKey ImGui_ImplGLUT_KeyToImGuiKey(int key)
 {
     switch (key)
@@ -163,6 +167,7 @@ static ImGuiKey ImGui_ImplGLUT_KeyToImGuiKey(int key)
 bool ImGui_ImplGLUT_Init()
 {
     ImGuiIO& io = ImGui::GetIO();
+    IMGUI_CHECKVERSION();
 
 #ifdef FREEGLUT
     io.BackendPlatformName = "imgui_impl_glut (freeglut)";
@@ -298,3 +303,7 @@ void ImGui_ImplGLUT_MotionFunc(int x, int y)
     ImGuiIO& io = ImGui::GetIO();
     io.AddMousePosEvent((float)x, (float)y);
 }
+
+//-----------------------------------------------------------------------------
+
+#endif // #ifndef IMGUI_DISABLE

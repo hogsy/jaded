@@ -9,7 +9,7 @@
 
 #include "Precomp.h"
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 /*$4
  ***********************************************************************************************************************
@@ -125,7 +125,7 @@ static INO_tdst_GenericPad INO_gst_PrevPad[ INO_Cte_PabNumber ];
 static int                 INO_gi_CurrentPadId;
 int                        INO_gi_PadConnectedNb = 0;
 
-static SDL_GameController *sdlGameControllers[ INO_Cte_PabNumber ];
+static SDL_Gamepad *sdlGameControllers[ INO_Cte_PabNumber ];
 
 // assorted crap that can eventually be removed ~hogsy
 LONG win32INO_l_Joystick_Mode = INO_Joy_Ps2Mode;
@@ -220,7 +220,7 @@ void INO_Joystick_Init( HWND _hWnd )
 	L_memset( INO_gst_CurrPad, 0, INO_Cte_PabNumber * sizeof( INO_tdst_GenericPad ) );
 	L_memset( INO_gst_PrevPad, 0, INO_Cte_PabNumber * sizeof( INO_tdst_GenericPad ) );
 
-	L_zero( sdlGameControllers, sizeof( SDL_GameController * ) * INO_Cte_PabNumber );
+	L_zero( sdlGameControllers, sizeof( SDL_Gamepad * ) * INO_Cte_PabNumber );
 
 	char path[ MAX_PATH ];
 	const char *basePath;
@@ -233,13 +233,14 @@ void INO_Joystick_Init( HWND _hWnd )
 		snprintf( path, sizeof( path ), "mappings/gamecontrollerdb.txt" );
 	}
 
-	if ( SDL_GameControllerAddMappingsFromFile( path ) == -1 )
+	if ( SDL_AddGamepadMappingsFromFile( path ) == -1 )
 	{
 		ERR_X_Warning( 0, "Failed to fetch game controller mappings!", SDL_GetError() );
 		// not a problem if it's missing, mappings are just going to be lame ~hogsy
 	}
 
-	int numControllers = SDL_NumJoysticks();
+	int numControllers;
+	SDL_JoystickID *joysticks = SDL_GetJoysticks( &numControllers );
 	if ( numControllers > INO_Cte_PabNumber )
 	{
 		numControllers = INO_Cte_PabNumber;
@@ -247,12 +248,12 @@ void INO_Joystick_Init( HWND _hWnd )
 
 	for ( int i = 0; i < numControllers; ++i )
 	{
-		if ( !SDL_IsGameController( i ) )
+		if ( !SDL_IsGamepad( joysticks[ i ] ) )
 		{
 			continue;
 		}
 
-		if ( ( sdlGameControllers[ i ] = SDL_GameControllerOpen( i ) ) == NULL )
+		if ( ( sdlGameControllers[ i ] = SDL_OpenGamepad( joysticks[ i ] ) ) == NULL )
 		{
 			ERR_X_Warning( 0, "Failed to open game controller!", SDL_GetError() );
 			continue;
@@ -260,8 +261,8 @@ void INO_Joystick_Init( HWND _hWnd )
 
 		char tmp[ 512 ];
 		snprintf( tmp, sizeof( tmp ), "Opened controller %i: %s (%s)", i,
-		          SDL_GameControllerName( sdlGameControllers[ i ] ),
-		          SDL_GameControllerGetSerial( sdlGameControllers[ i ] ) );
+		          SDL_GetGamepadName( sdlGameControllers[ i ] ),
+		          SDL_GetGamepadSerial( sdlGameControllers[ i ] ) );
 		LINK_PrintStatusMsg( tmp );
 
 		INO_gi_PadConnectedNb++;
@@ -311,18 +312,18 @@ void INO_Joystick_Close( void )
 			continue;
 		}
 
-		SDL_GameControllerClose( sdlGameControllers[ i ] );
+		SDL_CloseGamepad( sdlGameControllers[ i ] );
 		sdlGameControllers[ i ] = NULL;
 	}
 
 	INO_l_Joystick_Enable = false;
 }
 
-static bool GetSDLButtonState( SDL_GameController *gameController, INO_tden_GenericButtonId button )
+static bool GetSDLButtonState( SDL_Gamepad *gameController, INO_tden_GenericButtonId button )
 {
 	if ( button == eBtn_L2 || button == eBtn_R2 )
 	{
-		if ( SDL_GameControllerGetAxis( gameController, ( button == eBtn_L2 ) ? SDL_CONTROLLER_AXIS_TRIGGERLEFT : SDL_CONTROLLER_AXIS_TRIGGERRIGHT ) != 0 )
+		if ( SDL_GetGamepadAxis( gameController, ( button == eBtn_L2 ) ? SDL_GAMEPAD_AXIS_LEFT_TRIGGER : SDL_GAMEPAD_AXIS_RIGHT_TRIGGER ) != 0 )
 		{
 			return true;
 		}
@@ -330,27 +331,27 @@ static bool GetSDLButtonState( SDL_GameController *gameController, INO_tden_Gene
 		return false;
 	}
 
-	static const SDL_GameControllerButton buttonMappings[ eBtn_GenericButtonNb ] =
+	static const SDL_GamepadButton buttonMappings[ eBtn_GenericButtonNb ] =
 	        {
-	                SDL_CONTROLLER_BUTTON_A,            //eBtn_Cross
-	                SDL_CONTROLLER_BUTTON_B,            //eBtn_Circle
-	                SDL_CONTROLLER_BUTTON_X,            //eBtn_Square
-	                SDL_CONTROLLER_BUTTON_Y,            //eBtn_Triangle
-	                SDL_CONTROLLER_BUTTON_LEFTSHOULDER, //eBtn_L1
-	                SDL_CONTROLLER_BUTTON_RIGHTSHOULDER,//eBtn_R1
-	                SDL_CONTROLLER_BUTTON_INVALID,
-	                SDL_CONTROLLER_BUTTON_INVALID,   // L+R triggers are special cases
-	                SDL_CONTROLLER_BUTTON_BACK,      //eBtn_Select
-	                SDL_CONTROLLER_BUTTON_START,     //eBtn_Start
-	                SDL_CONTROLLER_BUTTON_RIGHTSTICK,//eBtn_R3
-	                SDL_CONTROLLER_BUTTON_LEFTSTICK, //eBtn_L3
-	                SDL_CONTROLLER_BUTTON_DPAD_UP,   //eBtn_Up
-	                SDL_CONTROLLER_BUTTON_DPAD_RIGHT,//eBtn_Right
-	                SDL_CONTROLLER_BUTTON_DPAD_DOWN, //eBtn_Down
-	                SDL_CONTROLLER_BUTTON_DPAD_LEFT, //eBtn_Left
+	                SDL_GAMEPAD_BUTTON_SOUTH,            //eBtn_Cross
+	                SDL_GAMEPAD_BUTTON_EAST,            //eBtn_Circle
+	                SDL_GAMEPAD_BUTTON_WEST,            //eBtn_Square
+	                SDL_GAMEPAD_BUTTON_NORTH,            //eBtn_Triangle
+	                SDL_GAMEPAD_BUTTON_LEFT_SHOULDER, //eBtn_L1
+	                SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER,//eBtn_R1
+	                SDL_GAMEPAD_BUTTON_INVALID,
+	                SDL_GAMEPAD_BUTTON_INVALID,   // L+R triggers are special cases
+	                SDL_GAMEPAD_BUTTON_BACK,      //eBtn_Select
+	                SDL_GAMEPAD_BUTTON_START,     //eBtn_Start
+	                SDL_GAMEPAD_BUTTON_RIGHT_STICK,//eBtn_R3
+	                SDL_GAMEPAD_BUTTON_LEFT_STICK, //eBtn_L3
+	                SDL_GAMEPAD_BUTTON_DPAD_UP,   //eBtn_Up
+	                SDL_GAMEPAD_BUTTON_DPAD_RIGHT,//eBtn_Right
+	                SDL_GAMEPAD_BUTTON_DPAD_DOWN, //eBtn_Down
+	                SDL_GAMEPAD_BUTTON_DPAD_LEFT, //eBtn_Left
 	        };
 
-	return SDL_GameControllerGetButton( gameController, buttonMappings[ button ] );
+	return SDL_GetGamepadButton( gameController, buttonMappings[ button ] );
 }
 
 /*
@@ -428,7 +429,7 @@ void INO_Joystick_Update( void )
 #endif
 
 	INO_gi_CurrentPadId = 0;//TODO: temporary crud... ~hogsy
-	SDL_GameController *gameController = sdlGameControllers[ INO_gi_CurrentPadId ];
+	SDL_Gamepad *gameController = sdlGameControllers[ INO_gi_CurrentPadId ];
 
 	LONG      buttonState = 0;
 	SDL_Event sdlEvent;
@@ -438,28 +439,28 @@ void INO_Joystick_Update( void )
 
 		switch ( sdlEvent.type )
 		{
-			case SDL_CONTROLLERDEVICEREMOVED:
+			case SDL_EVENT_GAMEPAD_REMOVED:
 			{
 				if ( gameController == NULL )
 				{
 					break;
 				}
 
-				if ( !SDL_GameControllerGetAttached( gameController ) )
+				if ( !SDL_GamepadConnected( gameController ) )
 				{
-					SDL_GameControllerClose( gameController );
+					SDL_CloseGamepad( gameController );
 					gameController = NULL;
 				}
 				break;
 			}
-			case SDL_CONTROLLERDEVICEADDED:
+			case SDL_EVENT_GAMEPAD_ADDED:
 			{
 				if ( gameController != NULL )
 				{
 					break;
 				}
 
-				gameController = SDL_GameControllerOpen( sdlEvent.cdevice.which );
+				gameController = SDL_OpenGamepad( sdlEvent.cdevice.which );
 				break;
 			}
 			default:
@@ -475,11 +476,11 @@ void INO_Joystick_Update( void )
 
 #if defined( ACTIVE_EDITORS )
 	// left stick
-	INO_l_Joystick_X[ 0 ] = INT16_MAX + SDL_GameControllerGetAxis( gameController, SDL_CONTROLLER_AXIS_LEFTX );
-	INO_l_Joystick_Y[ 0 ] = INT16_MAX + SDL_GameControllerGetAxis( gameController, SDL_CONTROLLER_AXIS_LEFTY );
+	INO_l_Joystick_X[ 0 ] = INT16_MAX + SDL_GetGamepadAxis( gameController, SDL_GAMEPAD_AXIS_LEFTX );
+	INO_l_Joystick_Y[ 0 ] = INT16_MAX + SDL_GetGamepadAxis( gameController, SDL_GAMEPAD_AXIS_LEFTY );
 	// right stick
-	INO_l_Joystick_X[ 1 ] = INT16_MAX + SDL_GameControllerGetAxis( gameController, SDL_CONTROLLER_AXIS_RIGHTX );
-	INO_l_Joystick_Y[ 1 ] = INT16_MAX + SDL_GameControllerGetAxis( gameController, SDL_CONTROLLER_AXIS_RIGHTY );
+	INO_l_Joystick_X[ 1 ] = INT16_MAX + SDL_GetGamepadAxis( gameController, SDL_GAMEPAD_AXIS_RIGHTX );
+	INO_l_Joystick_Y[ 1 ] = INT16_MAX + SDL_GetGamepadAxis( gameController, SDL_GAMEPAD_AXIS_RIGHTY );
 #endif
 
 	for ( unsigned int i = 0; i < eBtn_GenericButtonNb; ++i )
@@ -567,7 +568,7 @@ void INO_Joystick_Update( void )
 		INO_gf_PifDuration -= TIM_gf_dt;
 		if ( INO_gf_PifDuration <= 0.0f )
 		{
-			SDL_GameControllerRumble( sdlGameControllers[ INO_gi_CurrentPadId ], 0, 0, 0 );
+			SDL_RumbleGamepad( sdlGameControllers[ INO_gi_CurrentPadId ], 0, 0, 0 );
 			INO_gf_PifDuration = 0.0f;
 		}
 	}
@@ -581,7 +582,7 @@ void INO_Joystick_Update( void )
 			INO_gf_PafDuration -= TIM_gf_dt;
 		if ( INO_gf_PafDuration <= 0.0f )
 		{
-			SDL_GameControllerRumble( sdlGameControllers[ INO_gi_CurrentPadId ], 0, 0, 0 );
+			SDL_RumbleGamepad( sdlGameControllers[ INO_gi_CurrentPadId ], 0, 0, 0 );
 			INO_gf_PafDuration = 0.0f;
 		}
 	}
@@ -607,7 +608,7 @@ int INO_i_PifPafEnable( int _i_Enable )
 			INO_gi_PifPafEnable = 0;
 			INO_gf_PifDuration = 0.0f;
 			INO_gf_PafDuration = 0.0f;
-			SDL_GameControllerRumble( sdlGameControllers[ INO_gi_CurrentPadId ], 0, 0, 0 );
+			SDL_RumbleGamepad( sdlGameControllers[ INO_gi_CurrentPadId ], 0, 0, 0 );
 		}
 	}
 
@@ -657,7 +658,7 @@ void INO_PafSet( int _i_Intensity, int _i_FrameDuration )
 		return;
 	}
 
-	SDL_GameController *controller = sdlGameControllers[ INO_gi_CurrentPadId ];
+	SDL_Gamepad *controller = sdlGameControllers[ INO_gi_CurrentPadId ];
 	if ( controller == NULL )
 	{
 		return;
@@ -667,7 +668,7 @@ void INO_PafSet( int _i_Intensity, int _i_FrameDuration )
 	{
 		INO_gf_PafDuration = fLongToFloat( lAbs( _i_FrameDuration ) ) * 0.032f;
 		INO_gi_PafIntensity = ( _i_Intensity > 0xff ) ? 0xFF : _i_Intensity;
-		SDL_GameControllerRumble( controller, _i_Intensity, _i_Intensity, _i_FrameDuration );
+		SDL_RumbleGamepad( controller, _i_Intensity, _i_Intensity, _i_FrameDuration );
 	}
 }
 
@@ -785,13 +786,13 @@ void INO_Joystick_Move( MATH_tdst_Vector *_pst_Move, int _i_Num )
 		int x, y;
 		if ( _i_Num == 0 )
 		{
-			x = INT16_MAX + SDL_GameControllerGetAxis( sdlGameControllers[ INO_gi_CurrentPadId ], SDL_CONTROLLER_AXIS_LEFTX );
-			y = INT16_MAX + SDL_GameControllerGetAxis( sdlGameControllers[ INO_gi_CurrentPadId ], SDL_CONTROLLER_AXIS_LEFTY );
+			x = INT16_MAX + SDL_GetGamepadAxis( sdlGameControllers[ INO_gi_CurrentPadId ], SDL_GAMEPAD_AXIS_LEFTX );
+			y = INT16_MAX + SDL_GetGamepadAxis( sdlGameControllers[ INO_gi_CurrentPadId ], SDL_GAMEPAD_AXIS_LEFTY );
 		}
 		else
 		{
-			x = INT16_MAX + SDL_GameControllerGetAxis( sdlGameControllers[ INO_gi_CurrentPadId ], SDL_CONTROLLER_AXIS_RIGHTX );
-			y = INT16_MAX + SDL_GameControllerGetAxis( sdlGameControllers[ INO_gi_CurrentPadId ], SDL_CONTROLLER_AXIS_RIGHTY );
+			x = INT16_MAX + SDL_GetGamepadAxis( sdlGameControllers[ INO_gi_CurrentPadId ], SDL_GAMEPAD_AXIS_RIGHTX );
+			y = INT16_MAX + SDL_GetGamepadAxis( sdlGameControllers[ INO_gi_CurrentPadId ], SDL_GAMEPAD_AXIS_RIGHTY );
 		}
 
 		_pst_Move->x = ( float ) x / ( float ) ( win32INO_l_Joystick_XRight[ _i_Num ] - win32INO_l_Joystick_XLeft[ _i_Num ] );
