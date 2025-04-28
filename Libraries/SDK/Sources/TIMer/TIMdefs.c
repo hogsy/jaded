@@ -586,6 +586,17 @@ float TIM_f_Counter_TrueRead(void)
 
 #else
 
+ULONG _fastcall_ TIM_ul_GetLowPartTimerInternalCounter( void )
+{
+#	if defined( _WIN32 )
+	return GetTickCount();
+#	else
+	struct timespec ts;
+	clock_gettime( CLOCK_MONOTONIC, &ts );
+	return ( ts.tv_sec ) * 1000 + ( ts.tv_nsec ) / 1000;
+#	endif
+}
+
 /*
  =======================================================================================================================
     Aim:    Determins the frequency of the current CPU clock.

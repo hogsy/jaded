@@ -272,6 +272,8 @@ void INO_Joystick_Init( HWND _hWnd )
 		}
 	}
 
+	SDL_free( joysticks );
+
 	INO_l_Joystick_Enable = TRUE;
 
 	LINK_PrintStatusMsg( "SDL controller input initialized." );
