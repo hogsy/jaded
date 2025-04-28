@@ -16,7 +16,7 @@
 #include "../Extern/imgui/imgui_tables.cpp"
 #include "../Extern/imgui/imgui_demo.cpp"
 
-#include "../Extern/imgui/backends/imgui_impl_sdl2.cpp"
+#include "../Extern/imgui/backends/imgui_impl_sdl3.cpp"
 #include "../Extern/imgui/backends/imgui_impl_opengl2.cpp"
 
 static ImGuiContext *context;
@@ -110,7 +110,7 @@ void ImGuiInterface_Initialize( SDL_Window *window )
 	io.Fonts->AddFontFromFileTTF( "C:\\Windows\\Fonts\\Tahoma.ttf", 14.0f );
 
 	// GL context is actually unused here, so just pass null
-	ImGui_ImplSDL2_InitForOpenGL( window, nullptr );
+	ImGui_ImplSDL3_InitForOpenGL( window, nullptr );
 	ImGui_ImplOpenGL2_Init();
 }
 
@@ -119,7 +119,7 @@ void ImGuiInterface_Shutdown()
 	if ( context != nullptr )
 	{
 		ImGui_ImplOpenGL2_Shutdown();
-		ImGui_ImplSDL2_Shutdown();
+		ImGui_ImplSDL3_Shutdown();
 
 		ImGui::DestroyContext( context );
 		context = nullptr;
@@ -134,7 +134,7 @@ extern "C" bool ImGuiInterface_ProcessEvents( const SDL_Event *event )
 		return false;
 	}
 
-	return ImGui_ImplSDL2_ProcessEvent( event );
+	return ImGui_ImplSDL3_ProcessEvent( event );
 }
 
 static void ShowPerformanceOverlay()
@@ -181,7 +181,7 @@ extern "C" void ImGuiInterface_NewFrame()
 	}
 
 	ImGui_ImplOpenGL2_NewFrame();
-	ImGui_ImplSDL2_NewFrame();
+	ImGui_ImplSDL3_NewFrame();
 
 	ImGui::NewFrame();
 

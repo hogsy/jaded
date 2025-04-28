@@ -531,9 +531,9 @@ typedef struct	SND_tdst_DataChunk_
  */
 
 #if defined(PSX2_TARGET) || defined(_GAMECUBE)
-#pragma pack(1)
+#pragma pack(0)
 #else
-#pragma pack(pop, 1)
+#pragma pack(pop)
 #endif
 
 /*$4

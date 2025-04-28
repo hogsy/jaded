@@ -121,28 +121,7 @@ extern "C"
     Aim:    To get pentium internal counter low part
  ===================================================================================================
  */
-_inline_ ULONG _fastcall_ TIM_ul_GetLowPartTimerInternalCounter(void)
-{
-#if defined( _MSC_VER ) && defined( _WIN32 )
-	int r;
-    __asm
-    {
-		push eax
-        push edx
-        RDTSC
-		mov r, eax
-        pop edx
-		pop eax
-    }
-	return r;
-#elif defined( _WIN32 )
-	return GetTickCount();
-#else
-	struct timespec ts;
-	clock_gettime( CLOCK_MONOTONIC, &ts );
-	return ( ts.tv_sec ) * 1000 + ( ts.tv_nsec ) / 1000;
-#endif
-}
+ULONG _fastcall_ TIM_ul_GetLowPartTimerInternalCounter( void );
 
 #pragma warning(default: 4035)
 

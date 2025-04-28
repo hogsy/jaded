@@ -3,8 +3,7 @@
 
 #pragma once
 
-#include <SDL.h>
-#include <SDL_syswm.h>
+#include <SDL3/SDL.h>
 
 #define JADED_USE_WINMAIN_SDL
 

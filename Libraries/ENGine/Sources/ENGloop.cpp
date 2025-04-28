@@ -6,8 +6,11 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  */
 
-
 #include "Precomp.h"
+
+#include "../../Shared/MainSharedSystem.h"
+#include "../../Shared/Profiler.h"
+
 #include "BASe/CLIbrary/CLIwin.h"
 #include "TABles/TABles.h"
 #include "BIGfiles/BIGfat.h"
@@ -83,9 +86,6 @@
 #include "TIMer/PROfiler/PROPS2.h"
 #include "TEXture/TEXprocedural.h"
 #include "TEXture/TEXanimated.h"
-
-#include "../../Shared/MainSharedSystem.h"
-#include "../../Shared/Profiler.h"
 
 /*$4
  ***********************************************************************************************************************
@@ -1371,7 +1371,7 @@ void ENG_Loop( void )
 		static uint64_t nextTick = 0;
 		if ( nextTick == 0 )
 		{
-			nextTick = SDL_GetTicks64();
+			nextTick = SDL_GetTicks();
 		}
 
 		s_InitBeforeTrame();
@@ -1383,7 +1383,7 @@ void ENG_Loop( void )
 		else
 		{
 			uint64_t loops = 0;
-			while ( SDL_GetTicks64() > nextTick && loops < MAX_FRAMESKIP )
+			while ( SDL_GetTicks() > nextTick && loops < MAX_FRAMESKIP )
 			{
 				s_OneTrame();
 
