@@ -48,7 +48,6 @@ extern "C"
 #pragma always_inline off			/* can't pass with CW */
 #endif
 static ULONG SDW_TextNUm = 0;
-extern ULONG GDI_GetInterface(GDI_tdst_DisplayData *_pst_DD );
 #define DEF_fCoefAlpha 0.2f
 	ULONG SDW_ul_Interpol2Colors(ULONG ulP2, float fZClipLocalCoef)
 	{

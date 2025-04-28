@@ -931,33 +931,17 @@ void LIGHT_Init(void)
 	/* Init light object interface */
 	i = &GRO_gast_Interface[GRO_Light];
 	i->pfnp_CreateDefault = (void *(*) (void)) LIGHT_pst_Create;
-#if defined (JADEFUSION)
 	i->pfnp_CreateFromBuffer = (void *(__cdecl *)(GRO_tdst_Struct_ *,char ** ,void *))LIGHT_p_CreateFromBuffer;
     i->pfnp_Duplicate = (void *(__cdecl *)(void *,char *, char*, ULONG))LIGHT_p_Duplicate;
 	i->pfn_Destroy = (void (__cdecl *)(void *))LIGHT_Free;
 	i->pfnl_HasSomethingToRender = (LONG (__cdecl *)(void *,void *))LIGHT_l_HasSomethingToRender;
-#else
-	i->pfnp_CreateFromBuffer = LIGHT_p_CreateFromBuffer;
-    i->pfnp_Duplicate = LIGHT_p_Duplicate;
-	i->pfn_Destroy = LIGHT_Free;
-	i->pfnl_HasSomethingToRender = LIGHT_l_HasSomethingToRender;
-#endif
 #ifdef ACTIVE_EDITORS
-#if defined (JADEFUSION)
 	i->pfnl_SaveInBuffer = (LONG (__cdecl *)(void *,void *))LIGHT_l_SaveInBuffer;
 	i->pfnp_CreateFromMad = LIGHT_p_CreateFromMad;
 	i->pfnp_ToMad = (void* (__cdecl *)(void *,void *))LIGHT_p_ToMad;
     i->pfnsz_FileExtension = LIGHT_sz_FileExtension;
 	i->pfnl_PushSpecialMatrix = (LONG (__cdecl *)(void *))GRO_PushSpecialMatrixForProportionnal;
     i->pfn_Render = (void (__cdecl *)(void *))LIGHT_Render;
-#else
-	i->pfnl_SaveInBuffer = LIGHT_l_SaveInBuffer;
-	i->pfnp_CreateFromMad = LIGHT_p_CreateFromMad;
-	i->pfnp_ToMad = LIGHT_p_ToMad;
-    i->pfnsz_FileExtension = LIGHT_sz_FileExtension;
-	i->pfnl_PushSpecialMatrix = GRO_PushSpecialMatrixForProportionnal;
-    i->pfn_Render = LIGHT_Render;
-#endif
 #endif
 
 #if defined(_XENON) || (defined(_XENON_RENDER) && !defined(ACTIVE_EDITORS))

@@ -1277,8 +1277,8 @@ void TEX_Warning(char _c_Warn, BIG_KEY _ul_FileKey)
 
 static void FlipImage( TEX_tdst_File_Desc *fileDesc, unsigned int size )
 {
-	uint8_t *swap = L_malloc( size );
-	uint8_t *src = fileDesc->p_Bitmap;
+	uint8_t *swap = (uint8_t*)L_malloc( size );
+	uint8_t *src = (uint8_t*)fileDesc->p_Bitmap;
 	unsigned int bytesPerRow = fileDesc->uw_Width * 4;
 	for (unsigned int i = 0; i < fileDesc->uw_Height / 2; ++i)
 	{
@@ -1514,7 +1514,7 @@ LONG TEX_l_File_Read(BIG_KEY _ul_FileKey, TEX_tdst_File_Desc *_pst_TexDesc)
 	case TEX_FP_GifFile:
 	case TEX_FP_PsdFile:
 	case TEX_FP_PngFile:
-		l_Result = TEX_File_LoadStbiFile( pc_Buffer, ul_Size, _pst_TexDesc );
+		l_Result = TEX_File_LoadStbiFile( ( uint8_t * ) pc_Buffer, ul_Size, _pst_TexDesc );
 		break;
 
 #if defined(_XENON_RENDER)
@@ -2580,11 +2580,11 @@ int TEX_i_File_DefaultParams
 			_pst_FP->uc_Type = TEX_FP_BmpFile;
 		else if ( L_stricmp( _psz_Ext, "jpg" ) == 0 && TEX_l_File_LoadJpeg( _pc_Buffer, &st_Desc, _l_Size ) )
 			_pst_FP->uc_Type = TEX_FP_JpgFile;
-		else if ( L_stricmp( _psz_Ext, "png" ) == 0 && TEX_File_LoadStbiFile( _pc_Buffer, _l_Size, &st_Desc ) )
+		else if ( L_stricmp( _psz_Ext, "png" ) == 0 && TEX_File_LoadStbiFile( ( uint8_t * ) _pc_Buffer, _l_Size, &st_Desc ) )
 			_pst_FP->uc_Type = TEX_FP_PngFile;
-		else if ( L_stricmp( _psz_Ext, "psd" ) == 0 && TEX_File_LoadStbiFile( _pc_Buffer, _l_Size, &st_Desc ) )
+		else if ( L_stricmp( _psz_Ext, "psd" ) == 0 && TEX_File_LoadStbiFile( ( uint8_t * ) _pc_Buffer, _l_Size, &st_Desc ) )
 			_pst_FP->uc_Type = TEX_FP_PsdFile;
-		else if ( L_stricmp( _psz_Ext, "gif" ) == 0 && TEX_File_LoadStbiFile( _pc_Buffer, _l_Size, &st_Desc ) )
+		else if ( L_stricmp( _psz_Ext, "gif" ) == 0 && TEX_File_LoadStbiFile( ( uint8_t * ) _pc_Buffer, _l_Size, &st_Desc ) )
 			_pst_FP->uc_Type = TEX_FP_GifFile;
 #if defined(_XENON_RENDER)
         else if(L_stricmp(_psz_Ext, "dds") == 0)

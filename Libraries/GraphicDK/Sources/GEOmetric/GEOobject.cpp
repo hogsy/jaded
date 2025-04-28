@@ -91,7 +91,7 @@
 
 #ifdef ACTIVE_EDITORS
 // For special display mode
-#include "GEOmetric/GEOstaticLOD.c"
+#include "GEOmetric/GEOstaticLOD.cpp"
 ULONG GAODisplayFlag;
 #endif
 
@@ -3424,11 +3424,7 @@ void *GEO_p_Duplicate(GEO_tdst_Object *_pst_Geo, char *_asz_Path, char *_sz_Name
 	{
 		pst_NewGeo->p_MRM_ObjectAdditionalInfo = (GEO_tdst_MRM_Object *) MEM_GEO_p_Alloc(sizeof(GEO_tdst_MRM_Object));
 		*pst_NewGeo->p_MRM_ObjectAdditionalInfo = *_pst_Geo->p_MRM_ObjectAdditionalInfo;
-#ifdef JADEFUSION
 		pst_NewGeo->p_MRM_ObjectAdditionalInfo->Absorbers = (short *) MEM_GEO_p_Alloc(sizeof(unsigned short) * _pst_Geo->p_MRM_ObjectAdditionalInfo->RealNumberOfPoints);
-#else
-		pst_NewGeo->p_MRM_ObjectAdditionalInfo->Absorbers = (unsigned short *) MEM_GEO_p_Alloc(sizeof(unsigned short) * _pst_Geo->p_MRM_ObjectAdditionalInfo->RealNumberOfPoints);
-#endif
 		l_Size = pst_NewGeo->p_MRM_ObjectAdditionalInfo->RealNumberOfPoints * sizeof(unsigned short);
 		if(l_Size)
 		{
@@ -3440,11 +3436,7 @@ void *GEO_p_Duplicate(GEO_tdst_Object *_pst_Geo, char *_asz_Path, char *_sz_Name
 			);
 			if(_pst_Geo->p_MRM_ObjectAdditionalInfo->p_us_ReorderBuffer)
 			{
-#ifdef JADEFUSION
 				pst_NewGeo->p_MRM_ObjectAdditionalInfo->p_us_ReorderBuffer = (short *) MEM_GEO_p_Alloc(sizeof(unsigned short) * _pst_Geo->p_MRM_ObjectAdditionalInfo->RealNumberOfPoints);
-#else
-				pst_NewGeo->p_MRM_ObjectAdditionalInfo->p_us_ReorderBuffer = (unsigned short *) MEM_GEO_p_Alloc(sizeof(unsigned short) * _pst_Geo->p_MRM_ObjectAdditionalInfo->RealNumberOfPoints);
-#endif
 				L_memcpy
 				(
 					pst_NewGeo->p_MRM_ObjectAdditionalInfo->p_us_ReorderBuffer,
@@ -6777,6 +6769,12 @@ void GEO_Render_TransparentTrianglesZone(GDI_tdst_DisplayData *_pst_DD ,
 	}
 }
 
+// sigh...
+extern void MAT_DrawIndexedTriangleZone(
+        GEO_tdst_Object *pst_Obj,
+        GEO_tdst_ElementIndexedTriangles *pst_Element,
+        BOOL bHasTransparency );
+
 void GEO_RenderZone(OBJ_tdst_GameObject *_pst_GO)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -7523,29 +7521,15 @@ void GEO_Init(void)
 	/*~~~~~~~~~~~~~~~~~~~*/
 
 	i = &GRO_gast_Interface[GRO_Geometric];
-#ifdef JADEFUSION
 	i->pfnp_CreateFromBuffer = (void *(__cdecl *)(GRO_tdst_Struct *,char ** ,void *))GEO_p_CreateFromBuffer;
 	i->pfnp_Duplicate = (void *(__cdecl *)(void *,char *,char*,ULONG))GEO_p_Duplicate;
 	i->pfn_Destroy = (void (__cdecl *)(void *))GEO_Free;
 	i->pfnl_HasSomethingToRender = (LONG (__cdecl *)(void *,void *))GEO_l_HasSomethingToRender;
 	i->pfn_Render = (void (__cdecl *)(void *))GEO_Render;
-#else
-	i->pfnp_CreateFromBuffer = GEO_p_CreateFromBuffer;
-	i->pfnp_Duplicate = GEO_p_Duplicate;
-	i->pfn_Destroy = GEO_Free;
-	i->pfnl_HasSomethingToRender = GEO_l_HasSomethingToRender;
-	i->pfn_Render = GEO_Render;
-#endif
 #ifdef ACTIVE_EDITORS
-#ifdef JADEFUSION
 	i->pfnl_SaveInBuffer = (LONG (__cdecl *)(void *,void *))GEO_l_SaveInBuffer;
 	i->pfnp_CreateFromMad = (void*(__cdecl*)(void*))GEO_p_CreateFromMad;
 	i->pfnp_ToMad = (void* (__cdecl *)(void *,void *))GEO_p_ToMad;
-#else
-	i->pfnl_SaveInBuffer = GEO_l_SaveInBuffer;
-	i->pfnp_CreateFromMad = GEO_p_CreateFromMad;
-	i->pfnp_ToMad = GEO_p_ToMad;
-#endif
 #endif
 }
 

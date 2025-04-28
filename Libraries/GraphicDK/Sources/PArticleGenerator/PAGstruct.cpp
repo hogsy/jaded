@@ -1032,7 +1032,7 @@ void PAG_RenderCommon(OBJ_tdst_GameObject *_pst_Node, PAG_tdst_Struct *pst_P, ch
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 
-    static test = 1;
+    static int test = 1;
 
 	if (pst_P->ul_Flags & PAG_Flags_DontSortParticles)
 		_c_SortParticles = 0;
@@ -1440,31 +1440,15 @@ void PAG_Init(void)
 
 	/* Init light object interface */
 	i = &GRO_gast_Interface[GRO_ParticleGenerator];
-#if defined (JADEFUSION)
 	i->pfnp_CreateFromBuffer = (void *(__cdecl *)(GRO_tdst_Struct *,char ** ,void *))PAG_p_CreateFromBuffer;
 	i->pfn_Destroy = (void (__cdecl *)(void *))PAG_Free;
 	i->pfnl_HasSomethingToRender = (LONG (__cdecl *)(void *,void *))PAG_l_HasSomethingToRender;
 	i->pfn_Render = (void (__cdecl *)(void *))PAG_Render;
-#else
-	i->pfnp_CreateFromBuffer = PAG_p_CreateFromBuffer;
-	i->pfn_Destroy = PAG_Free;
-	i->pfnl_HasSomethingToRender = PAG_l_HasSomethingToRender;
-	i->pfn_Render = PAG_Render;
-#endif
 	i->pfn_Reinit = PAG_Reinit;
-#if defined (JADEFUSION)
     i->pfnp_Duplicate = (void *(__cdecl *)(void *,char *, char*, ULONG))PAG_p_Duplicate;
-#else
-	i->pfnp_Duplicate = PAG_p_Duplicate;
-#endif
 #ifdef ACTIVE_EDITORS
-#if defined (JADEFUSION)
 	i->pfnl_SaveInBuffer = (LONG (__cdecl *)(void *,void *))PAG_l_SaveInBuffer;
     i->pfnl_PushSpecialMatrix = (LONG (__cdecl *)(void *))GRO_PushSpecialMatrixForProportionnal;
-#else
-	i->pfnl_SaveInBuffer = PAG_l_SaveInBuffer;
-    i->pfnl_PushSpecialMatrix = GRO_PushSpecialMatrixForProportionnal;
-#endif
 #endif
 }
 

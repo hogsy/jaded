@@ -183,7 +183,7 @@ void GLV_ComputeMiddleFace(tdst_GLV *p_stGLV , ULONG FaceNum , tdst_GLV_Face *ps
 	for (Counter = 0 ; Counter < 3 ; Counter ++)
 	{
 		pstMiddleFace->Colours[Counter] = ((pFace->Colours[Counter] >> 1) & 0x7f7f7f7f) + ((pFace->Colours[(Counter + 1) % 3] >> 1) & 0x7f7f7f7f);
-		pstMiddleFace->falpha[Counter] = (pFace->falpha[Counter] + pFace->falpha[(Counter + 1) % 3]) * 0.5;
+		pstMiddleFace->falpha[Counter] = (pFace->falpha[Counter] + pFace->falpha[(Counter + 1) % 3]) * 0.5f;
 		pstMiddleFace->UV[Counter << 1] = (pFace->UV[Counter << 1] + pFace->UV[(( Counter + 1 ) % 3 ) << 1]) * 0.5;
 		pstMiddleFace->UV[(Counter << 1) + 1] = (pFace->UV[(Counter << 1) + 1] + pFace->UV[((( Counter + 1 ) % 3 ) << 1) + 1]) * 0.5;
 		if (bNormalFace)
@@ -1305,13 +1305,8 @@ void GLV_ComputeColors(tdst_GLV *p_stGLV , ULONG SmoothFronteer , ULONG (*Seprog
 		GLV_Scalar		*pColors;
 		ULONG			*p_Counter;
 		GLV_Scalar	Col[4] ;
-#ifdef JADEFUSION
 		pColors = (double*)GLV_ALLOC(sizeof(GLV_Scalar) * p_stGLV->ulNumberOfPoints * 4L);
 		p_Counter = (ULONG*)GLV_ALLOC(p_stGLV->ulNumberOfPoints * 4L);
-#else
-		pColors = GLV_ALLOC(sizeof(GLV_Scalar) * p_stGLV->ulNumberOfPoints * 4L);
-		p_Counter = GLV_ALLOC(p_stGLV->ulNumberOfPoints * 4L);
-#endif
 		for (C1 = 0 ; C1 < p_stGLV->ulNumberOfPoints ; C1 ++)
 		{
 			pColors[(C1 << 2) + 0] = 

@@ -419,11 +419,7 @@ void GLV_Octree_DiveAndCompute_REC(GLV_OCtreeNode *p_Octree , ULONG MAXDepth , U
 	for (Counter = 0 ; Counter < 8 ; Counter++)
 	{
 		p_Octree->ulNumberOfSubNodes = 8;
-#ifdef JADEFUSION
 		p_Octree->p_SubOcTree[Counter] = (GLV_OCtreeNode_*)GLV_ALLOC(sizeof (GLV_OCtreeNode));
-#else
-		p_Octree->p_SubOcTree[Counter] = GLV_ALLOC(sizeof (GLV_OCtreeNode));
-#endif
 		L_memset(p_Octree->p_SubOcTree[Counter] , 0 , sizeof (GLV_OCtreeNode));
 		p_Octree->p_SubOcTree[Counter]->p_OctreeFather = p_Octree;
 		p_Octree->p_SubOcTree[Counter]->stAxisMin = p_Octree->stAxisMin;
@@ -483,11 +479,7 @@ void GLV_Octree_DiveAndCompute_for_edges_REC(GLV_OCtreeNode *p_Octree , ULONG MA
 	for (Counter = 0 ; Counter < 8 ; Counter++)
 	{
 		p_Octree->ulNumberOfSubNodes = 8;
-#ifdef JADEFUSION
 		p_Octree->p_SubOcTree[Counter] = (GLV_OCtreeNode_*)GLV_ALLOC(sizeof (GLV_OCtreeNode));
-#else
-		p_Octree->p_SubOcTree[Counter] = GLV_ALLOC(sizeof (GLV_OCtreeNode));
-#endif
 		L_memset(p_Octree->p_SubOcTree[Counter] , 0 , sizeof (GLV_OCtreeNode));
 		p_Octree->p_SubOcTree[Counter]->p_OctreeFather = p_Octree;
 		p_Octree->p_SubOcTree[Counter]->stAxisMin = p_Octree->stAxisMin;

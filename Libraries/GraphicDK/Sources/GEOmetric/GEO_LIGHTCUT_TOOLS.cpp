@@ -441,11 +441,7 @@ void GLV_Clip(tdst_GLV *p_GLV,tdst_GLV_Plane *p_Plane)
 	ULONG ulCounter,ulCounter2,Index[3];
 	tdst_GLV_Point *p_PF,*p_PL;
 	tdst_GLV_Face *p_FF ;
-#ifdef JADEFUSION
 	p_Crnt = p_Result = (double*)GLV_ALLOC(sizeof(GLV_Scalar) * p_GLV->ulNumberOfPoints);
-#else
-	p_Crnt = p_Result = GLV_ALLOC(sizeof(GLV_Scalar) * p_GLV->ulNumberOfPoints);
-#endif
 	p_PF = p_GLV ->p_stPoints;
 	p_PL = p_PF + p_GLV->ulNumberOfPoints;
 	while (p_PF < p_PL) *(p_Crnt++) = MATHD_f_DotProduct(&(p_PF++)->P3D , &p_Plane->Normale) - p_Plane->fDistanceTo0;
@@ -2002,11 +1998,7 @@ void GLV_MergeColors(tdst_GLV * p_GLV , ULONG CDest , ULONG CSrc )
 	if (p_GLV->p_stFaces[CSrc].Nghbr[0] == CDest) I2 = 0;
 	if (p_GLV->p_stFaces[CSrc].Nghbr[1] == CDest) I2 = 1;
 	if (p_GLV->p_stFaces[CSrc].Nghbr[2] == CDest) I2 = 2;
-#ifdef JADEFUSION
 	if ((I1 | I2) == 0xffffffff) return;
-#else
-	if ((I1 | I2) == 0xffffffff) return 0;
-#endif
 	/* Colors Merge */
 	p_GLV->p_stFaces[CDest].Colours[(I1 + 0) % 3] = p_GLV->p_stFaces[CSrc].Colours[(I2 + 1) % 3];
 	p_GLV->p_stFaces[CDest].Colours[(I1 + 1) % 3] = p_GLV->p_stFaces[CSrc].Colours[(I2 + 0) % 3];

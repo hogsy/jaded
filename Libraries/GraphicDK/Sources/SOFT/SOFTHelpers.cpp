@@ -2735,11 +2735,7 @@ void SOFT_Helpers_CurveRenderBone(OBJ_tdst_GameObject *_pst_GO, struct GDI_tdst_
 
 	pst_Visu = _pst_GO->pst_Base->pst_Visu;
 	pst_Obj = pst_Visu->pst_Object;
-#ifdef JADEFUSION
 	pst_Obj->i->pfnl_PushSpecialMatrix = (LONG (__cdecl *)(void *))GRO_PushSpecialMatrixForProportionnalBone;
-#else
-	pst_Obj->i->pfnl_PushSpecialMatrix = GRO_PushSpecialMatrixForProportionnalBone;
-#endif
 	GRO_Render(_pst_GO);
 
 	pst_Obj->i->pfnl_PushSpecialMatrix = GRO_UnknowPushSpecialMatrix;

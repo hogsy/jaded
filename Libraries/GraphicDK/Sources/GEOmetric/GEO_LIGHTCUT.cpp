@@ -56,9 +56,7 @@
 #include "GEOmetric/GEO_LODCmpt.h"
 
 #define GLV_REMOVE_FLAG (OBJ_C_IdentityFlag_Dyna|OBJ_C_IdentityFlag_Anims|OBJ_C_IdentityFlag_Bone|OBJ_C_IdentityFlag_Generated|OBJ_C_IdentityFlag_AI)
-#ifdef JADEFUSION
 void GLV_ComputeRadiosity_Compute_FF_Fast_RT (tdst_GLV *p_stGLV ,  ULONG RadiosityColor , ULONG bSmoothResult , ULONG bUseFastRadio , ULONG (*SeprogressPos) (float F01, char *));
-#endif
 #define GLV_MAX_GO 2048
 static OBJ_tdst_GameObject *p_AllComputedGO[GLV_MAX_GO];
 static ULONG				ulNumberOfGO = 0;
@@ -756,7 +754,7 @@ void	GLV_AddGRO(tdst_GLV *p_KiltGLV , OBJ_tdst_GameObject *p_stGRO , ULONG (*Sep
 }
 static ULONG (*SeprogressPosReal) (float F01, char *);
 static float gs_f_LASTPOS;
-static MUSTRETUNR = 0;
+static unsigned int MUSTRETUNR = 0;
 static ULONG LastGetTime;
 ULONG SeprogressPos(float F01, char *DD)
 {

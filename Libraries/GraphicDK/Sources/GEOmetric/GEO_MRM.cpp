@@ -342,7 +342,7 @@ void GEO_MRM_SetCurve(GEO_tdst_Object *pst_Object, float fExp , float fMin)
 	if (fExp <= 0.1f) fExp = 0.1f;
 	if (fExp >= 6.0f) fExp = 6.0f;
 	for (Counter = 0 ; Counter < 8 ; Counter ++)
-        GEO_gdf_MRMQualityCurve[Counter] = L_pow(Counter * 0.125f, fExp);
+        GEO_gdf_MRMQualityCurve[Counter] = powf(Counter * 0.125f, fExp);
 	
     if (fMin < 0.1f) fMin = 0.1f;
 	if (fMin > 1.0f) fMin = 1.0f;
@@ -815,11 +815,7 @@ BOOL GEO_MRM_Compute(OBJ_tdst_GameObject *pst_GAO,GEO_tdst_Object *pst_12Object,
 	pst_12Object -> p_MRM_ObjectAdditionalInfo -> MinimumNumberOfPoints= 8;
 	pst_12Object -> p_MRM_ObjectAdditionalInfo -> df_Errors = df_Errors;
 
-#ifdef JADEFUSION
 	pst_12Object -> p_MRM_ObjectAdditionalInfo -> Absorbers			= (short *) MEM_p_Alloc((LONG)2 * pst_12Object ->p_MRM_ObjectAdditionalInfo->RealNumberOfPoints );
-#else
-	pst_12Object -> p_MRM_ObjectAdditionalInfo -> Absorbers			= (unsigned short *) MEM_p_Alloc((LONG)2 * pst_12Object ->p_MRM_ObjectAdditionalInfo->RealNumberOfPoints );
-#endif
 	{
 		ULONG Counter;
 		Counter = pst_12Object -> p_MRM_ObjectAdditionalInfo -> RealNumberOfPoints ;

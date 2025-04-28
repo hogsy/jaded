@@ -402,65 +402,28 @@ int GDI_gi_GDIType = 0;// OpenGL rendering
  =======================================================================================================================
  */
 
-#define M_INITGDI( GDI, DRV_EXT )                                                                        \
-	GDI->pfnpv_InitDisplay         = ( void *(         *) ( void ) ) DRV_EXT##_pst_CreateDevice;                \
-	GDI->pfnv_DesinitDisplay       = DRV_EXT##_DestroyDevice;                                            \
-	GDI->pfnl_OpenDisplay          = DRV_EXT##_l_Init;                                                   \
-	GDI->pfnl_CloseDisplay         = DRV_EXT##_l_Close;                                                  \
-	GDI->pfnl_ReadaptDisplay       = DRV_EXT##_l_ReadaptDisplay;                                         \
-	GDI->pfnv_SetViewMatrix        = DRV_EXT##_SetViewMatrix;                                            \
-	GDI->pfnv_SetProjectionMatrix  = DRV_EXT##_SetProjectionMatrix;                                      \
-	GDI->pfnl_DrawIndexedTriangles = DRV_EXT##_l_DrawElementIndexedTriangles;                            \
-	GDI->pfnl_DrawIndexedSprites   = DRV_EXT##_l_DrawElementIndexedSprites;                              \
-	GDI->pfnl_Request              = DRV_EXT##_l_Request;                                                \
-	GDI->pfnv_SetTextureBlending   = ( void (   *)( ULONG, ULONG, ULONG ) ) DRV_EXT##_SetTextureBlending; \
-	GDI->pfnl_InitTexture          = DRV_EXT##_l_Texture_Init;                                           \
-	GDI->pfnv_LoadTexture          = DRV_EXT##_Texture_Load;                                             \
-	GDI->pfnl_StoreTexture         = DRV_EXT##_l_Texture_Store;                                          \
-	GDI->pfnv_LoadPalette          = DRV_EXT##_Palette_Load;                                             \
-	GDI->pfnv_Set_Texture_Palette  = DRV_EXT##_Set_Texture_Palette;                                      \
-	GDI->pfnv_SetTextureTarget     = DRV_EXT##_SetTextureTarget;                                         \
-	GDI->pfnv_SetViewMatrix_SDW    = DRV_EXT##_SetViewMatrix_SDW;
-
 	LONG GDI_fnl_InitInterface( GDI_tdst_Interface *pst_GDI, LONG _l_GDIType )
 	{
-		M_INITGDI( pst_GDI, OGL );
+		pst_GDI->pfnpv_InitDisplay         = ( void *( * ) ( void ) ) OGL_pst_CreateDevice;
+		pst_GDI->pfnv_DesinitDisplay       = OGL_DestroyDevice;
+		pst_GDI->pfnl_OpenDisplay          = ( LONG( __cdecl * )( HWND, void * ) ) OGL_l_Init;
+		pst_GDI->pfnl_CloseDisplay         = ( LONG( __cdecl * )( void * ) ) OGL_l_Close;
+		pst_GDI->pfnl_ReadaptDisplay       = ( LONG( __cdecl * )( HWND, void * ) ) OGL_l_ReadaptDisplay;
+		pst_GDI->pfnv_SetViewMatrix        = OGL_SetViewMatrix;
+		pst_GDI->pfnv_SetProjectionMatrix  = OGL_SetProjectionMatrix;
+		pst_GDI->pfnl_DrawIndexedTriangles = OGL_l_DrawElementIndexedTriangles;
+		pst_GDI->pfnl_DrawIndexedSprites   = ( void( __cdecl * )( GEO_tdst_ElementIndexedSprite_ *, MATH_tdst_Vector *, ULONG ) ) OGL_l_DrawElementIndexedSprites;
+		pst_GDI->pfnl_Request              = OGL_l_Request;
+		pst_GDI->pfnv_SetTextureBlending   = ( void ( * )( ULONG, ULONG, ULONG ) ) OGL_SetTextureBlending;
+		pst_GDI->pfnl_InitTexture          = OGL_l_Texture_Init;
+		pst_GDI->pfnv_LoadTexture          = OGL_Texture_Load;
+		pst_GDI->pfnl_StoreTexture         = OGL_l_Texture_Store;
+		pst_GDI->pfnv_LoadPalette          = OGL_Palette_Load;
+		pst_GDI->pfnv_Set_Texture_Palette  = OGL_Set_Texture_Palette;
+		pst_GDI->pfnv_SetTextureTarget     = OGL_SetTextureTarget;
+		pst_GDI->pfnv_SetViewMatrix_SDW    = OGL_SetViewMatrix_SDW;
 		return 1;
 	}
-
-#if defined( ACTIVE_EDITORS ) || defined( PCWIN_TOOL )
-
-	void GDI_ChangeInterface( GDI_tdst_DisplayData *_pst_DD, ULONG ulNew )
-	{
-		GDI_tdst_Interface *pst_GDI;
-		WOR_tdst_World *pst_SaveWorld;
-		pst_GDI = &_pst_DD->st_GDI;
-
-		pst_SaveWorld = _pst_DD->pst_World;
-		GDI_l_DetachWorld( _pst_DD );
-
-		pst_GDI->pfnl_CloseDisplay( _pst_DD );
-		pst_GDI->pfnv_DesinitDisplay( _pst_DD->pv_SpecificData );
-
-		switch ( ulNew )
-		{
-			case 0:
-				M_INITGDI( pst_GDI, OGL );
-				break;
-		}
-		_pst_DD->pv_SpecificData = OGL_pst_CreateDevice();
-		_pst_DD->st_GDI.pfnl_OpenDisplay( _pst_DD->h_Wnd, _pst_DD );
-
-		GDI_l_AttachWorld( _pst_DD, pst_SaveWorld );
-	}
-
-	ULONG GDI_GetInterface( GDI_tdst_DisplayData *_pst_DD )
-	{
-		GDI_tdst_Interface *pst_GDI;
-		pst_GDI = &_pst_DD->st_GDI;
-		return 0;
-	}
-#endif// defined( ACTIVE_EDITORS ) || defined( PCWIN_TOOL )
 
 /*
  =======================================================================================================================
@@ -675,12 +638,8 @@ LONG GDI_AttachDisplay( GDI_tdst_DisplayData *_pst_DD, HWND _h_Wnd )
 		if ( _pst_DD->st_TexManager.ul_Flags & TEX_Manager_ForceReload )
 #endif
 		{
-#if defined( ACTIVE_EDITORS ) || defined( PCWIN_TOOL )
-			if ( !GDI_b_IsXenonGraphics() )
-#endif
-			{
-				GDI_l_AttachWorld( _pst_DD, pst_SaveWorld );
-			}
+			// Removed Xenon graphics check here; redundant since we're not supporting it!
+			GDI_l_AttachWorld( _pst_DD, pst_SaveWorld );
 		}
 		return 1;
 	}
@@ -689,9 +648,9 @@ LONG GDI_AttachDisplay( GDI_tdst_DisplayData *_pst_DD, HWND _h_Wnd )
  =======================================================================================================================
  =======================================================================================================================
  */
-#ifdef _GAMECUBE
-	extern void GXI_BeforeDisplay( void );
-#endif
+
+	extern void ImGuiInterface_NewFrame();
+	extern void ImGuiInterface_Render();
 	void GDI_BeforeDisplay( GDI_tdst_DisplayData *_pst_DD )
 	{
 		ULONG ul_Color;

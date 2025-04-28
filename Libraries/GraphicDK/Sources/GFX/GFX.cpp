@@ -818,11 +818,7 @@ void GFX_Render(GFX_tdst_List **_ppst_GFX, char _c_Sorted )
                                     break;
 			case GFX_BorderFade:	if(!GFX_i_BorderFade_Render(pst_GFX->p_Data)) pst_GFX->c_Flags |= GFX_Terminated; break;
 			case GFX_Diaphragm:		if(!GFX_i_Diaphragm_Render(pst_GFX->p_Data)) pst_GFX->c_Flags |= GFX_Terminated; break;
-#ifdef JADEFUSION
 			case GFX_Carte:			if(!GFX_i_Carte_Render(pst_GFX->p_Data, pst_GFX->p_Material, (OBJ_tdst_GameObject_*)pst_GFX->p_Owner)) pst_GFX->c_Flags |= GFX_Terminated; break;
-#else
-			case GFX_Carte:			if(!GFX_i_Carte_Render(pst_GFX->p_Data, pst_GFX->p_Material, pst_GFX->p_Owner)) pst_GFX->c_Flags |= GFX_Terminated; break;
-#endif
 			case GFX_Gao:
 				{
 #ifdef PSX2_TARGET
@@ -853,11 +849,7 @@ GFXRender_endofgao:
 				}
             case GFX_Sun:           GFX_Sun_Render( pst_GFX->p_Data ); break;
             case GFX_String:        if (!GFX_i_Str_Render( pst_GFX->p_Data )) pst_GFX->c_Flags |= GFX_Terminated; break;
-#ifdef JADEFUSION
 			case GFX_Ripple:        if (!GFX_i_Ripple_Render( pst_GFX->p_Data, (OBJ_tdst_GameObject_*)pst_GFX->p_Owner )) pst_GFX->c_Flags |= GFX_Terminated; break;
-#else
-			case GFX_Ripple:        if (!GFX_i_Ripple_Render( pst_GFX->p_Data, pst_GFX->p_Owner )) pst_GFX->c_Flags |= GFX_Terminated; break;
-#endif
 			case GFX_AnotherFlare:  if (!GFX_i_AnotherFlare_Render( pst_GFX->p_Data )) pst_GFX->c_Flags |= GFX_Terminated; break;
             case GFX_Tetris:        GFX_Tetris_Render(pst_GFX->p_Data); break;
 			}
@@ -1035,21 +1027,11 @@ int GFX_i_Add(GFX_tdst_List **_ppst_GFX, char _c_Type, void *_p_Owner)
 	case GFX_BorderFade:	p_Data = GFX_BorderFade_Create(); c_Flags = GFX_AutoDestruct; break;
 	case GFX_Diaphragm:		p_Data = GFX_Diaphragm_Create(); c_Flags = GFX_AutoDestruct; break;
 	case GFX_Carte:			p_Data = GFX_Carte_Create(); break;
-#if defined (JADEFUSION) 
 	case GFX_Gao:		    p_Data = GFX_Gao_Create((OBJ_tdst_GameObject_*)_p_Owner); c_Flags = GFX_Active; break;
-#else
-    case GFX_Gao:		    p_Data = GFX_Gao_Create(_p_Owner); c_Flags = GFX_Active; break;
-#endif
 	case GFX_Sun:		    p_Data = GFX_Sun_Create(); c_Flags = GFX_Active; break;
-#if defined (JADEFUSION)
     case GFX_String:        p_Data = GFX_Str_Create((OBJ_tdst_GameObject_*)_p_Owner); c_Flags = GFX_Active | GFX_AutoDestruct; break;
     case GFX_Ripple:        p_Data = GFX_Ripple_Create((OBJ_tdst_GameObject_*)_p_Owner); c_Flags = GFX_Transparent | GFX_Active | GFX_AutoDestruct; break;
     case GFX_AnotherFlare:  p_Data = GFX_AnotherFlare_Create( (OBJ_tdst_GameObject_*)_p_Owner ); c_Flags = GFX_Transparent | GFX_Active | GFX_AutoDestruct; break;
-#else
-	case GFX_String:        p_Data = GFX_Str_Create(_p_Owner); c_Flags = GFX_Active | GFX_AutoDestruct; break;
-    case GFX_Ripple:        p_Data = GFX_Ripple_Create(_p_Owner); c_Flags = GFX_Transparent | GFX_Active | GFX_AutoDestruct; break;
-    case GFX_AnotherFlare:  p_Data = GFX_AnotherFlare_Create( _p_Owner ); c_Flags = GFX_Transparent | GFX_Active | GFX_AutoDestruct; break;
-#endif
 	case GFX_Tetris:        p_Data = GFX_Tetris_Create(); c_Flags = GFX_Active; break;
     default:                p_Data = NULL;
 	}
@@ -1124,21 +1106,11 @@ int GFX_i_AddSorted(GFX_tdst_List **_ppst_GFX, char _c_Type, USHORT _uw_Order, v
 	case GFX_BorderFade:	p_Data = GFX_BorderFade_Create(); c_Flags = GFX_AutoDestruct; break;
 	case GFX_Diaphragm:		p_Data = GFX_Diaphragm_Create(); c_Flags = GFX_AutoDestruct; break;
 	case GFX_Carte:			p_Data = GFX_Carte_Create(); break;
-#if defined (JADEFUSION)
 	case GFX_Gao:		    p_Data = GFX_Gao_Create( (OBJ_tdst_GameObject_*)_p_Owner ); c_Flags = GFX_Active; break;
-#else
-	case GFX_Gao:		    p_Data = GFX_Gao_Create( _p_Owner ); c_Flags = GFX_Active; break;
-#endif
 	case GFX_Sun:		    p_Data = GFX_Sun_Create(); c_Flags = GFX_Active; break;
-#if defined (JADEFUSION)
 	case GFX_String:		p_Data = GFX_Str_Create( (OBJ_tdst_GameObject_*)_p_Owner ); c_Flags = GFX_Active | GFX_AutoDestruct; break;
     case GFX_Ripple:        p_Data = GFX_Ripple_Create((OBJ_tdst_GameObject_*)_p_Owner); c_Flags = GFX_Transparent | GFX_Active | GFX_AutoDestruct; break;
     case GFX_AnotherFlare:  p_Data = GFX_AnotherFlare_Create( (OBJ_tdst_GameObject_*)_p_Owner ); c_Flags = GFX_Transparent | GFX_Active | GFX_AutoDestruct; break;
-#else
-	case GFX_String:		p_Data = GFX_Str_Create( _p_Owner ); c_Flags = GFX_Active | GFX_AutoDestruct; break;
-    case GFX_Ripple:        p_Data = GFX_Ripple_Create(_p_Owner); c_Flags = GFX_Transparent | GFX_Active | GFX_AutoDestruct; break;
-    case GFX_AnotherFlare:  p_Data = GFX_AnotherFlare_Create( _p_Owner ); c_Flags = GFX_Transparent | GFX_Active | GFX_AutoDestruct; break;
-#endif
 	case GFX_Tetris:        p_Data = GFX_Tetris_Create(); c_Flags = GFX_Active; break;
 	}
 

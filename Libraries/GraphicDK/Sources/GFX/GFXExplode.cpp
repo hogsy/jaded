@@ -443,7 +443,7 @@ void *GFX_Explode_Create(void)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~*/
 	GFX_tdst_Explode *pst_Data;
-	static bFirst = 1;
+	static int bFirst = 1;
 	/*~~~~~~~~~~~~~~~~~~~~~~*/
 	pst_Data = (GFX_tdst_Explode*)MEM_p_AllocAlign(sizeof(GFX_tdst_Explode) , 16);
 	L_memset(pst_Data , 0 , sizeof(GFX_tdst_Explode));
@@ -837,7 +837,7 @@ void GFX_SetNumberOfSprites(GFX_tdst_Explode *p_Expld , ULONG ulNumberOfSprites)
 	*(ULONG *)&p_Expld->p_Colors += 32;
 #else
 	if (p_Expld->p_Colors) MEM_Free((void *)((ULONG)p_Expld->p_Colors - 16));
-	p_Expld->p_Colors = MEM_p_AllocAlign(sizeof(ULONG) * (p_Expld->ulNumberOfSprites + 8) + 16, 16);
+	p_Expld->p_Colors = (ULONG*)MEM_p_AllocAlign(sizeof(ULONG) * (p_Expld->ulNumberOfSprites + 8) + 16, 16);
 	*(ULONG *)&p_Expld->p_Colors += 16;
 	p_Expld->p_Colors[-1] = ulNumberOfSprites;
 #endif	

@@ -108,7 +108,6 @@ extern "C" void SOFT_ZList_Clear( void );
 extern "C" void MSG_GlobalReinit( void );
 
 #if defined( PCWIN_TOOL )
-extern void GDI_ChangeInterface( GDI_tdst_DisplayData *, ULONG ulNew );
 extern int GDI_gi_GDIType;
 #endif
 
@@ -196,10 +195,6 @@ void DisplayAttach( GDI_tdst_DisplayData *_pst_DD )
 static void s_Display( HWND h, GDI_tdst_DisplayData *_pst_DD )
 {
 	JADED_PROFILER_START();
-
-	/*~~~~~~~~~~~~~~~~~~~~~~~~*/
-	extern void MEM_Defrag( int );
-	/*~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	/* Attach world */
 

@@ -549,15 +549,11 @@ void GLV_ComputeRadiosity_Compute_FF_Fast_RT (tdst_GLV *p_stGLV ,  ULONG Radiosi
  
 
 	GLV_RDIO_InitGeosphere();
-#ifdef JADEFUSION	
+
 	p_TempBuffer			= (float*)GLV_ALLOC(3l * 4l * p_stGLV ->ulNumberOfFaces);
 	p_stGLV->p_FormFactors	= (ULONG**)GLV_ALLOC(3l * 4l * p_stGLV ->ulNumberOfFaces);
 	p_Bulle					= (float*)GLV_ALLOC(GEOSPHERE_NUM * 4L);
-#else
-	p_TempBuffer			= GLV_ALLOC(3l * 4l * p_stGLV ->ulNumberOfFaces);
-	p_stGLV->p_FormFactors	= GLV_ALLOC(3l * 4l * p_stGLV ->ulNumberOfFaces);
-	p_Bulle					= GLV_ALLOC(GEOSPHERE_NUM * 4L);
-#endif
+
 	L_memset(p_stGLV->p_FormFactors , 0 , 3l * 4l * p_stGLV ->ulNumberOfFaces);
 	Integration = 0.0f;
 
@@ -989,8 +985,6 @@ void GLV_ComputeRadiosity_Compute_FF (tdst_GLV *p_stGLV ,  ULONG RadiosityColor 
 	sprintf(Text , "Culling effcient factor: %d %%" , (ULONG)(100.0f - 100.0f * (float)Culled / (float)Drawed));
 	GLV_BUG(0 , Text);
 }
-#else
-static float Integration;
 #endif
 
 
@@ -1024,15 +1018,11 @@ void GLV_ComputeRadiosity_Use_FF(tdst_GLV *p_stGLV ,  ULONG RadiosityColor , ULO
 	
 
 	MAD_Rasterize_Init();
-#ifdef JADEFUSION
+
 	p_EmitColors	= (unsigned long*)GLV_ALLOC(3l * 4l * p_stGLV ->ulNumberOfFaces);
 	p_EmitColors2	= (unsigned long*)GLV_ALLOC(3l * 4l * p_stGLV ->ulNumberOfFaces);
 	p_Receipted		= (float*)GLV_ALLOC(3l * 4l * 4l * p_stGLV ->ulNumberOfFaces);
-#else
-	p_EmitColors	= GLV_ALLOC(3l * 4l * p_stGLV ->ulNumberOfFaces);
-	p_EmitColors2	= GLV_ALLOC(3l * 4l * p_stGLV ->ulNumberOfFaces);
-	p_Receipted		= GLV_ALLOC(3l * 4l * 4l * p_stGLV ->ulNumberOfFaces);
-#endif
+
 	L_memset(p_Receipted , 0 , 3l * 4l * 4l * p_stGLV ->ulNumberOfFaces );
 	L_memset(p_EmitColors , 0 , 3l * 4l * p_stGLV ->ulNumberOfFaces );
 	L_memset(p_EmitColors2 , 0 , 3l * 4l * p_stGLV ->ulNumberOfFaces );

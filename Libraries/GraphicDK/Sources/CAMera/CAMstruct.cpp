@@ -228,30 +228,16 @@ void CAM_Init(void)
 
     /* Init light object interface */
     i = &GRO_gast_Interface[GRO_Camera];
-#ifdef JADEFUSION
 	i->pfnp_CreateFromBuffer = (void *(__cdecl *)(GRO_tdst_Struct *,char ** ,void *))CAM_p_CreateFromBuffer;
     i->pfn_Destroy = (void (__cdecl *)(void *))CAM_Free;
     i->pfnl_HasSomethingToRender = (LONG (__cdecl *)(void *,void *))CAM_l_HasSomethingToRender;
-#else 
-	i->pfnp_CreateFromBuffer = CAM_p_CreateFromBuffer;
-    i->pfn_Destroy = CAM_Free;
-    i->pfnl_HasSomethingToRender = CAM_l_HasSomethingToRender;
-#endif
 
 #ifdef ACTIVE_EDITORS
-#ifdef JADEFUSION
 	i->pfnl_SaveInBuffer = (LONG (__cdecl *)(void *,void *))CAM_l_SaveInBuffer;
     i->pfnp_CreateFromMad = CAM_p_CreateFromMad;
     i->pfnp_ToMad = (void* (__cdecl *)(void *,void *))CAM_p_ToMad;
     i->pfnl_PushSpecialMatrix = (LONG (__cdecl *)(void *))GRO_PushSpecialMatrixForProportionnal;
     i->pfn_Render = (void (__cdecl *)(void *))CAM_Render;
-#else
-	i->pfnl_SaveInBuffer = CAM_l_SaveInBuffer;
-    i->pfnp_CreateFromMad = CAM_p_CreateFromMad;
-    i->pfnp_ToMad = CAM_p_ToMad;
-    i->pfnl_PushSpecialMatrix = GRO_PushSpecialMatrixForProportionnal;
-    i->pfn_Render = CAM_Render;
-#endif
 #endif
 
     /* Init global camera */

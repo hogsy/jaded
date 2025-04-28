@@ -562,78 +562,42 @@ void MAT_Init(void)
 	i = &GRO_gast_Interface[GRO_MaterialSingle];
 
     i->pfnp_CreateDefault = MAT_p_CreateSingleDefault;
-#if defined (JADEFUSION)
 	i->pfnp_CreateFromBuffer = (void *(__cdecl *)(GRO_tdst_Struct *,char ** ,void *))MAT_pst_CreateSingleFromBuffer;
     i->pfnp_Duplicate = (void *(__cdecl *)(void *,char *,char *,ULONG))MAT_p_SingleDuplicate;
 	i->pfn_Destroy = (void (__cdecl *)(void *))MAT_DestroyMaterial;
-#else
-	i->pfnp_CreateFromBuffer = MAT_pst_CreateSingleFromBuffer;
-    i->pfnp_Duplicate = MAT_p_SingleDuplicate;
-	i->pfn_Destroy = MAT_DestroyMaterial;
-#endif
 	i->pfn_User_0 = MAT_GetValidatedMask_SIN;
 
 #ifdef ACTIVE_EDITORS
-#if defined (JADEFUSION)
 	i->pfnl_SaveInBuffer = (LONG (__cdecl *)(void *,void *))MAT_l_SaveSingleInBuffer;
 	i->pfnp_CreateFromMad = (void* (__cdecl *)(void *))MAT_p_CreateSingleFromMad;
 	i->pfnp_ToMad = (void* (__cdecl *)(void *,void *))MAT_p_SingleToMad;
-#else
-	i->pfnl_SaveInBuffer = MAT_l_SaveSingleInBuffer;
-	i->pfnp_CreateFromMad = MAT_p_CreateSingleFromMad;
-	i->pfnp_ToMad = MAT_p_SingleToMad;
-#endif
 	i->pfnsz_FileExtension = MAT_sz_FileExtension;
 #endif
 
 	i = &GRO_gast_Interface[GRO_MaterialMulti];
     i->pfnp_CreateDefault = MAT_p_CreateMultiDefault;
 
-#if defined (JADEFUSION)
 	i->pfnp_Duplicate = (void*(__cdecl*)(void*,char*,char *,ULONG))MAT_p_MultiDuplicate;
 	i->pfnp_CreateFromBuffer = (void *(__cdecl *)(GRO_tdst_Struct *,char ** ,void *))MAT_pst_CreateMultiFromBuffer;
 	i->pfn_Destroy = (void (__cdecl *)(void *))MAT_DestroyMaterial;
-#else
-	i->pfnp_Duplicate = MAT_p_MultiDuplicate;
-	i->pfnp_CreateFromBuffer = MAT_pst_CreateMultiFromBuffer;
-	i->pfn_Destroy = MAT_DestroyMaterial;
-#endif
 	i->pfn_User_0 = MAT_GetValidatedMask_MSM;
 #ifdef ACTIVE_EDITORS
-#if defined (JADEFUSION)
 	i->pfnl_SaveInBuffer = (LONG (__cdecl *)(void *,void *))MAT_l_SaveMultiInBuffer;
 	i->pfnp_CreateFromMad = (void* (__cdecl *)(void *))MAT_p_CreateMultiFromMad;
 	i->pfnp_ToMad = (void* (__cdecl *)(void *,void *))MAT_p_MultiToMad;
-#else
-	i->pfnl_SaveInBuffer = MAT_l_SaveMultiInBuffer;
-	i->pfnp_CreateFromMad = MAT_p_CreateMultiFromMad;
-	i->pfnp_ToMad = MAT_p_MultiToMad;
-#endif
 	i->pfnsz_FileExtension = MAT_sz_FileExtension;
 #endif
 
 	i = &GRO_gast_Interface[GRO_MaterialMultiTexture];
-#if defined (JADEFUSION)
 	i->pfnp_CreateFromBuffer = (void *(__cdecl *)(GRO_tdst_Struct *,char ** ,void *))MAT_pst_CreateMultiTextureFromBuffer;
     i->pfnp_Duplicate = (void *(__cdecl *)(void *,char *,char *,ULONG))MAT_p_MultiTextureDuplicate;
 	i->pfn_Destroy = (void (__cdecl *)(void *))MAT_DestroyMaterial;
-#else
-	i->pfnp_CreateFromBuffer = MAT_pst_CreateMultiTextureFromBuffer;
-    i->pfnp_Duplicate = MAT_p_MultiTextureDuplicate;
-	i->pfn_Destroy = MAT_DestroyMaterial;
-#endif
 
 	i->pfn_User_0 = MAT_GetValidatedMask_MTT;
 #ifdef ACTIVE_EDITORS
-#if defined (JADEFUSION)
 	i->pfnl_SaveInBuffer = (LONG (__cdecl *)(void *,void *))MAT_l_SaveMultiTextureInBuffer;
 	i->pfnp_CreateFromMad = (void* (__cdecl *)(void *))MAT_p_CreateMultiTextureFromMad;
 	i->pfnp_ToMad = (void* (__cdecl *)(void *,void *))MAT_p_MultiTextureToMad;
-#else
-	i->pfnl_SaveInBuffer = MAT_l_SaveMultiTextureInBuffer;
-	i->pfnp_CreateFromMad = MAT_p_CreateMultiTextureFromMad;
-	i->pfnp_ToMad = MAT_p_MultiTextureToMad;
-#endif
 	i->pfnsz_FileExtension = MAT_sz_FileExtension;
 #endif
 

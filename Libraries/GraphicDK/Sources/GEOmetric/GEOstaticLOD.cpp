@@ -458,26 +458,16 @@ void GEO_StaticLOD_Init(void)
     GRO_tdst_Interface  *i;
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     i = &GRO_gast_Interface[GRO_GeoStaticLOD];
-#ifdef JADEFUSION
     i->pfnp_CreateFromBuffer = (void *(__cdecl *)(GRO_tdst_Struct *,char ** ,void *))GEO_p_StaticLOD_CreateFromBuffer;
     i->pfn_Destroy = (void (__cdecl *)(void *))GEO_StaticLOD_Free;
     i->pfnl_HasSomethingToRender = (LONG (__cdecl *)(void *,void *))GEO_l_StaticLOD_HasSomethingToRender;
     i->pfn_Render = (void (__cdecl *)(void *))GEO_StaticLOD_Render;
-#else
-	i->pfnp_CreateFromBuffer = GEO_p_StaticLOD_CreateFromBuffer;
-    i->pfn_Destroy = GEO_StaticLOD_Free;
-    i->pfnl_HasSomethingToRender = GEO_l_StaticLOD_HasSomethingToRender;
-    i->pfn_Render = GEO_StaticLOD_Render;
-#endif
 
 #ifdef ACTIVE_EDITORS
-#ifdef JADEFUSION
+
 	i->pfnl_SaveInBuffer = (LONG (__cdecl *)(void *,void *))GEO_l_StaticLOD_SaveInBuffer;
     i->pfnp_ToMad = (void* (__cdecl *)(void *,void *))GEO_p_StaticLOD_ToMad;
-#else
-	i->pfnl_SaveInBuffer = GEO_l_StaticLOD_SaveInBuffer;
-    i->pfnp_ToMad = GEO_p_StaticLOD_ToMad;
-#endif
+
 #endif
 }
 

@@ -692,11 +692,7 @@ LONG GEO_l_SubObject_GetNbPickedVertices(GEO_tdst_Object *_pst_Obj)
 LONG GEO_l_SubObject_GetNbPickedVerticesAndOneIndex(GEO_tdst_Object *_pst_Obj, int *_i_Index)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~*/
-#ifdef JADEFUSION
 	CHAR	*puc_Sel, *puc_Last;
-#else
-	UCHAR	*puc_Sel, *puc_Last;
-#endif
 	LONG	l_Number;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -7060,9 +7056,8 @@ void GEO_SubObject_UVCenterWithMaterial(GEO_tdst_Object *_pst_Object, MAT_tdst_M
 					pst_MTLevelBest = NULL;
 					break;
 				}
-#ifdef JADEFUSION
+
 				extern BOOL MAT_VUISIdentity_i(MAT_tdst_MTLevel *p_tdstLevel);
-#endif
 				if(!MAT_VUISIdentity_i(pst_MTLevel))
 				{
 					MAT_VUDecompress(pst_MTLevel, &st_UVTrans);
@@ -7080,9 +7075,8 @@ void GEO_SubObject_UVCenterWithMaterial(GEO_tdst_Object *_pst_Object, MAT_tdst_M
 				pst_MTLevel = pst_MTLevel->pst_NextLevel;
 			}
 		}
-#ifdef JADEFUSION
+
 		extern BOOL MAT_VUISIdentity_i(MAT_tdst_MTLevel *p_tdstLevel);
-#endif
 		if ( !pst_MTLevelBest || MAT_VUISIdentity_i(pst_MTLevelBest))
 		{
 			L_memset( &UVMat[ i_Elem ], 0, sizeof(MAT_tdst_Decompressed_UVMatrix) );

@@ -111,20 +111,12 @@ LONG SOFT_l_PickingBuffer_QueryAddInList
 		if(_pst_PBQ->l_NumberMax == 0)
 		{
 			l_Size = sizeof(SOFT_tdst_PickingBuffer_Pixel) * 64;
-#ifdef JADEFUSION
 			_pst_PBQ->dst_List = (SOFT_tdst_PickingBuffer_Pixel*)L_malloc(l_Size);
-#else
-			(void *) _pst_PBQ->dst_List = L_malloc(l_Size);
-#endif
 		}
 		else
 		{
 			l_Size = sizeof(SOFT_tdst_PickingBuffer_Pixel) * (64 + _pst_PBQ->l_NumberMax);
-#ifdef JADEFUSION
 			_pst_PBQ->dst_List = (SOFT_tdst_PickingBuffer_Pixel*)L_realloc(_pst_PBQ->dst_List, l_Size);
-#else
-			(void *) _pst_PBQ->dst_List = L_realloc(_pst_PBQ->dst_List, l_Size);
-#endif
 		}
 
 		_pst_PBQ->l_NumberMax += 64;
