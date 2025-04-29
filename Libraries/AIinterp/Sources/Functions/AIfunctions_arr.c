@@ -860,11 +860,7 @@ AI_tdst_Node *AI_EvalFunc_ARRBitClearRange(AI_tdst_Node *_pst_Node)
 	}
 	else
 	{
-#ifdef JADEFUSION
 		*(p1++) &= ~(0x100000000 - (__int64)(1 << (i_Set1 & 31)));
-#else
-		*(p1++) &= ~(0x100000000 - (1 << (i_Set1 & 31)));
-#endif
 		*p2 &= ~((2 << (i_Set2 & 31)) - 1);
 		while(p1 != p2) *(p1++) = 0;
 	}
@@ -897,11 +893,7 @@ AI_tdst_Node *AI_EvalFunc_ARRBitSetRange(AI_tdst_Node *_pst_Node)
 	}
 	else
 	{
-#ifdef JADEFUSION
 		*(p1++) |= 0x100000000 - (__int64)(1 << (i_Set1 & 31));
-#else
-		*(p1++) |= 0x100000000 - (1 << (i_Set1 & 31));
-#endif
 		*p2 |= (2 << (i_Set2 & 31)) - 1;
 		while(p1 != p2) *(p1++) = 0xFFFFFFFF;
 	}

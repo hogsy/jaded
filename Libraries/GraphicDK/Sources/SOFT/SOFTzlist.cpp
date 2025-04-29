@@ -18,32 +18,34 @@
 #include "AIinterp/Sources/AIengine.h"
 #include "GFX/GFX.h"
 
+static char SOFT_gpc_BigBuffer[ SIZE_BIG_BUFFER ] ONLY_PSX2_ALIGNED( 64 );
+SOFT_tdst_ZList_CommonParrams *SOFT_gst_ZList_CP = ( SOFT_tdst_ZList_CommonParrams * ) ( SOFT_gpc_BigBuffer + size_SOFT_Compute + size_SOFT_gst_ZList );
+SOFT_tdst_ComputingBuffers *SOFT_gp_Compute      = ( SOFT_tdst_ComputingBuffers * ) ( SOFT_gpc_BigBuffer );
+SOFT_tdst_ZList *SOFT_gst_ZList                  = ( SOFT_tdst_ZList * ) ( SOFT_gpc_BigBuffer + size_SOFT_Compute );
+SOFT_tdst_ZList *p_Current_SOFT_gst_ZList;
+
+static GEO_tdst_Object ZList_Obj;
+static GEO_tdst_ElementIndexedTriangles ZList_Element;
+static GEO_tdst_IndexedTriangle ZList_Triangle;
+
+static GEO_Vertex ZList_Points[ 3 ];
+static GEO_tdst_UV ZList_UV[ 3 ];
+static ULONG ZList_RLI[ 3 ];
+static ULONG ZList_Locked;
+
+GEO_tdst_IndexedTriangle *ZList_T;
+static GEO_Vertex *ZList_V;
+static GEO_tdst_UV *ZList_UVs;
+static MAT_tdst_Material *ZList_Mat;
+static ULONG *ZList_RLIs;
+
 #if defined(PSX2_TARGET) && defined(__cplusplus)
 extern "C"
 {
 #endif
 
 ////////////////////////////////////////
-char SOFT_gpc_BigBuffer[SIZE_BIG_BUFFER] ONLY_PSX2_ALIGNED(64);
-SOFT_tdst_ComputingBuffers			*SOFT_gp_Compute = (SOFT_tdst_ComputingBuffers *) (SOFT_gpc_BigBuffer);
-SOFT_tdst_ZList						*SOFT_gst_ZList = (SOFT_tdst_ZList *) (SOFT_gpc_BigBuffer+size_SOFT_Compute);
-SOFT_tdst_ZList_CommonParrams		*SOFT_gst_ZList_CP = (SOFT_tdst_ZList_CommonParrams *) (SOFT_gpc_BigBuffer +size_SOFT_Compute+ size_SOFT_gst_ZList);
 ////////////////////////////////////////
-
-SOFT_tdst_ZList						*p_Current_SOFT_gst_ZList;
-GEO_tdst_Object						ZList_Obj;
-GEO_tdst_ElementIndexedTriangles	ZList_Element;
-GEO_tdst_IndexedTriangle			ZList_Triangle;
-GEO_Vertex							ZList_Points[3];
-GEO_tdst_UV							ZList_UV[3];
-ULONG								ZList_RLI[3];
-ULONG								ZList_Locked;
-
-GEO_tdst_IndexedTriangle			*ZList_T;
-GEO_Vertex							*ZList_V;
-GEO_tdst_UV							*ZList_UVs;
-MAT_tdst_Material					*ZList_Mat;
-ULONG								*ZList_RLIs;
 
 /*
  =======================================================================================================================
@@ -166,12 +168,12 @@ void SOFT_ZList_Unlock(void)
  =======================================================================================================================
  =======================================================================================================================
  */
+extern "C" char *MEM_gp_AllocTmpNext;
 void SOFT_ZList_Init(void)
 {
 	ULONG	ZListesCounter;
 
 #ifndef _GAMECUBE 
-	extern char *MEM_gp_AllocTmpNext;
 	/* Memoire temporaire = computing buffer */
 	MEM_gp_AllocTmpFirst = MEM_gp_AllocTmpNext = SOFT_gpc_BigBuffer + 60;
 	MEM_gp_AllocTmpLast = MEM_gp_AllocTmpFirst + SIZE_BIG_BUFFER - 64;
@@ -262,6 +264,7 @@ static int	i_Identity;
  =======================================================================================================================
  =======================================================================================================================
  */
+extern "C" u32 Stats_ulNumberOfTRiangles;
 #ifdef JADEFUSION
 void SOFT_ZList_Draw(CHAR _c_BaseDisplayOrder)
 #else
@@ -377,7 +380,6 @@ void SOFT_ZList_Draw(void)
 				{
 #ifdef ACTIVE_EDITORS
 					u32 CurrentNumberOfTRris;
-					extern u32 Stats_ulNumberOfTRiangles;
 #endif
 					MATH_tdst_Matrix *p_SaveOriginalMTX;
 					if(ZList_V != GFX_gpst_Geo->dst_Point)
@@ -494,7 +496,8 @@ void SOFT_ZList_Draw(void)
 
 extern void GSP_AE_ZListHook(int ZlistNum );
 
-extern void	GAO_ModifierXMEN_DRAW_ALL(void);
+extern "C" void GAO_ModifierXMEN_DRAW_ALL( void );
+void AFTEREFFX_GlowFromZList();
 
 void SOFT_ZList_Send(void)
 {
@@ -502,7 +505,6 @@ void SOFT_ZList_Send(void)
 	ULONG	ZListesCounter;
 	/*~~~~~~~~~~~~~~~~~~~*/
 #ifdef ACTIVE_EDITORS
-	extern void AFTEREFFX_GlowFromZList();
 	AFTEREFFX_GlowFromZList();
 #endif
 #ifdef PSX2_TARGET

@@ -27,6 +27,7 @@
 #	include "EDItors/Sources/MENu/MENmenu.h"
 #	include "EDItors/Sources/MENu/MENin.h"
 #	include "EDItors/Sources/OUTput/OUTframe.h"
+#	include "ENGine/Sources/WORld/WORload.h"
 #	include "EDImainframe_act.h"
 #	include "F3DFrame/F3Dview.h"
 #	include "LINKs/LINKtoed.h"
@@ -105,7 +106,6 @@ extern void BIG_MakeWolList( char *_asz_Path );
 extern ULONG AI2C_gul_MinInstanceNbForGeneration;
 #	else
 extern "C" int EDI_gi_GenSpe;
-extern "C" int WOR_gi_CurrentConsole;
 extern "C" void BIG_MakeWolList( char *_asz_Path );
 extern "C" ULONG AI2C_gul_MinInstanceNbForGeneration;
 #	endif
@@ -623,7 +623,7 @@ extern int TEX_gi_ForceText;
 extern "C" BOOL LOA_gb_SpeedMode;
 extern "C" BOOL LOA_gb_SlashY;
 extern "C" int BIG_gi_SpecialRead;
-extern "C" int TEX_gi_ForceText;
+extern int TEX_gi_ForceText;
 #	endif
 extern CList< CString, CString > go_IfDefConsts;
 extern char *AI_PATH;

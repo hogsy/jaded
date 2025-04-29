@@ -260,10 +260,6 @@ EVAV_cl_ViewItem *EDIA_cl_CheckListDialog::AddItem
     return po_Item;
 }
 
-#ifndef JADEFUSION
-extern "C"
-{
-#endif
 // Returned value : bit 1 means "copy RLI", bit 2 means "copy SPG2"
 ULONG F3D_ulGetCopyMask(BOOL _bCopySPG2)
 {
@@ -291,8 +287,5 @@ ULONG F3D_ulGetCopyMask(BOOL _bCopySPG2)
 
 	return ulReturn ;
 }
-#ifndef JADEFUSION
-}
-#endif
 
 #endif /* ACTIVE_EDITORS */

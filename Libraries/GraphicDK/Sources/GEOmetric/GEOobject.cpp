@@ -57,6 +57,7 @@
 #include "ENGine/Sources/COLlision/COLload.h"
 
 #include "ENGine/Sources/WORld/WORstruct.h"
+#include "ENGine/Sources/WORld/WORload.h"
 #include "ENGine/Sources/MODifier/MDFstruct.h"
 #include "ENGine/Sources/MoDiFier/MDFmodifier_SDW.h"
 #include "ENGine/Sources/MoDiFier/MDFmodifier_PROTEX.h"
@@ -165,7 +166,7 @@ extern Gx8_tdst_SpecificData   * p_gGx8SpecificData;
 #endif
 #endif
 
-extern ULONG				AI_C_Callback;
+extern "C" ULONG				AI_C_Callback;
 
 #ifdef Active_CloneListe		
 		extern int renderState_Cloned;
@@ -204,9 +205,8 @@ extern u_int32 g_iNewLight;
  ***********************************************************************************************************************
  */
 extern BOOL GEO_b_IsInFix;
-extern ULONG		LOA_ul_FileTypeSize[40];
-extern int WOR_gi_CurrentConsole;
-extern BOOL EDI_gb_ComputeMap;
+extern "C" ULONG		LOA_ul_FileTypeSize[40];
+extern "C" BOOL EDI_gb_ComputeMap;
 extern BOOL LOA_gb_SpeedMode;
 
 #ifdef GSP_PS2_BENCH
@@ -510,7 +510,7 @@ void GEO_OptimzeCache(GEO_tdst_Object *_pst_Object)
  =======================================================================================================================
  =======================================================================================================================
  */
-void GEO_ResetUncacheObjectList(void)
+extern "C" void GEO_ResetUncacheObjectList(void)
 {
 #if defined(PSX2_TARGET) || defined(ACTIVE_EDITORS)
     L_memset(GEO_gast_ObjectList, 0, GEO_Cte_ObjectListSize*sizeof(GEO_tdst_Object*));
@@ -1095,9 +1095,9 @@ void GEO_Optimize_GAMECUBE(GEO_tdst_Object *_pst_Object)
 #define MICRO_FREEZE_OPTMIS_STACK_SIZE 256
 GEO_tdst_ElementIndexedTriangles    *MICRO_FREEZE_OPTMIS_STACK[MICRO_FREEZE_OPTMIS_STACK_SIZE];
 ULONG MICRO_FREEZE_OPTMIS_STACK_NUM = 0;
-ULONG MICRO_FREEZE_OPTMIS = 0;
+extern "C" ULONG MICRO_FREEZE_OPTMIS = 0;
 void GEO_I_Need_The_Triangles_End_Element(GEO_tdst_ElementIndexedTriangles    *pst_Element , ULONG FromEnd);
-void GEO_I_Need_The_Triangles_FlushAll()
+extern "C" void GEO_I_Need_The_Triangles_FlushAll()
 {
 	MICRO_FREEZE_OPTMIS = 0;
 	while (MICRO_FREEZE_OPTMIS_STACK_NUM --)
@@ -1813,7 +1813,7 @@ GEO_tdst_Object *GEO_pst_Create(LONG _l_NbPoints, LONG _l_NbUVs, LONG _l_NbEleme
 	return pst_Object;
 }
 
-extern void COL_OK3_RecursiveFree(COL_tdst_OK3_Node *);
+extern "C" void COL_OK3_RecursiveFree(COL_tdst_OK3_Node *);
 
 /*
  =======================================================================================================================
@@ -2903,7 +2903,7 @@ BOOL gGeoHasCode2002;
 int  gGeoVersion;
 #endif
 
-extern void COL_Load_Nodes_Recursively(COL_tdst_OK3_Node *, COL_tdst_OK3 *, char **);
+extern "C" void COL_Load_Nodes_Recursively(COL_tdst_OK3_Node *, COL_tdst_OK3 *, char **);
 
 
 /*
@@ -6027,6 +6027,7 @@ void GEO_Render(OBJ_tdst_GameObject *_pst_GO)
  =======================================================================================================================
  =======================================================================================================================
  */
+extern "C" void WATER3D_Modifier_Display( OBJ_tdst_GameObject *_pst_GO );
 #ifdef USE_GO_DATA
 	u_int								ulPs2CacheFlags;
 #endif
@@ -6191,7 +6192,6 @@ void GEO_Render(OBJ_tdst_GameObject *_pst_GO)
 
 		if(pst_Visu->ucFlag & GRO_VISU_FLAG_WATERFX)
 		{
-			void WATER3D_Modifier_Display(OBJ_tdst_GameObject *_pst_GO);
 			WATER3D_Modifier_Display(_pst_GO);
 			return;
 		}
@@ -7149,7 +7149,7 @@ GEO_tdst_Object *GEO_p_CreateFromMad(MAD_NodeID *_pst_MadObject)
 
 #endif /* ACTIVE_EDITORS */
 
-extern void COL_Save_Nodes_Recursively(COL_tdst_OK3_Node *, COL_tdst_OK3 *);
+extern "C" void COL_Save_Nodes_Recursively(COL_tdst_OK3_Node *, COL_tdst_OK3 *);
 
 #ifdef ACTIVE_EDITORS
 
@@ -7227,7 +7227,7 @@ void GEO_v_SaveElementsInBuffer(ULONG l_NbElements, GEO_tdst_ElementIndexedTrian
  =======================================================================================================================
  =======================================================================================================================
  */
-LONG GEO_l_SaveInBuffer(GEO_tdst_Object *_pst_Object, void *p_Unused)
+extern "C" LONG GEO_l_SaveInBuffer(GEO_tdst_Object *_pst_Object, void *p_Unused)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 #ifdef ACTIVE_EDITORS

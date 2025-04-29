@@ -29,17 +29,6 @@
 #include "BASe/BENch/BENch.h"
 #include "SOFT/SOFTzlist.h"
 
-#ifdef PSX2_TARGET
-
-
-/* mamagouille */
-#include "PSX2debug.h"
-#endif
-#if defined (__cplusplus) && !defined(JADEFUSION)
-extern "C"
-{
-#endif
-
 #define ZeroMalloc(Ptr , Number)\
 	(void *)Ptr = MEM_p_Alloc(sizeof(*Ptr) * Number);\
 	L_memset( (void *)Ptr , 0 , sizeof(*Ptr) * Number);
@@ -478,7 +467,7 @@ int GFX_i_Explode_Render(void *p_Data,GRO_tdst_Struct *p_Material)
 
 
     ULONG TriCounter,ElementCounter;
-    extern SOFT_tdst_ZList_CommonParrams		*SOFT_gst_ZList_CP;
+	extern SOFT_tdst_ZList_CommonParrams *SOFT_gst_ZList_CP;
 
 	pExplode = (GFX_tdst_Explode *)p_Data;
 
@@ -1181,7 +1170,7 @@ void    GFX_Explode_Setv( void *p_Data, int i_Param, MATH_tdst_Vector *V )
 	}
 }
 
-void GFX_CreateExplosion(float sizecoef, float Speedcoef , MATH_tdst_Vector *Position , OBJ_tdst_GameObject *pst_GO , void *p_Material )
+extern "C" void GFX_CreateExplosion( float sizecoef, float Speedcoef, MATH_tdst_Vector *Position, OBJ_tdst_GameObject *pst_GO, void *p_Material )
 {
 	WOR_tdst_World		*pst_World;
 	MATH_tdst_Vector stLocal;
@@ -1327,9 +1316,3 @@ void GFX_CreateExplosion(float sizecoef, float Speedcoef , MATH_tdst_Vector *Pos
 	GFX_FlagSet(pst_World->pst_GFX , GFX, 2 , 1);
 
 }
-
-#if defined (__cplusplus) && !defined(JADEFUSION)
-}
-#endif
-
-

@@ -133,7 +133,7 @@ typedef struct
 //#define LM_Epsilon 0.1f
 #define LM_Epsilon 0.001f
 
-extern void OBJ_BV_AddPointToAABBox
+extern "C" void OBJ_BV_AddPointToAABBox
 (
 	void				*_pst_BV,
 	MATH_tdst_Matrix	*_pst_AbsoluteMatrix,
@@ -876,7 +876,7 @@ void GenerateAxisElements(tdst_LMObj* _pObj)
 		axisElement->elemAxis = (tdeFaceAxis) maxaxis;
 
 		// ugly, but this sets 1 or -1 in the right coordinate depending on the max axis of the vector
-		*(((LMReal*)&camOrientation) + (maxaxis >> 1)) = ((maxaxis&0x1)? -1.0: 1.0);
+		*(((LMReal*)&camOrientation) + (maxaxis >> 1)) = ((maxaxis&0x1)? -1.0f: 1.0f);
 
 		LM_NormalizeVector(&norm, &norm);
 
@@ -4058,7 +4058,7 @@ void SaveLightmapsToBigFile(BIG_KEY _worldKey)
 			texParams.uw_Width = pPage->pageWidth;
 
 			// create the file
-			sprintf(temp, "Lightmap%i.tga", i, pPage->pageWidth, pPage->pageHeight);
+			snprintf( temp, sizeof( temp ), "Lightmap%i.tga", i );
 
 			// write the header
 			SAV_Begin(lmTempDirName, temp);

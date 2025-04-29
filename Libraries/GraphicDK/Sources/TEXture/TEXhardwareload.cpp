@@ -40,9 +40,9 @@ extern "C"
 #endif
 
 extern BOOL LOA_gb_SpeedMode;
-#ifdef JADEFUSION
-extern BOOL	EDI_gb_ComputeMap;
-#endif
+	extern "C" BOOL EDI_gb_ComputeMap;
+	extern "C" ULONG WOR_gul_WorldKey;
+
 /*
  =======================================================================================================================
     Aim:    Create a texture from given texture data
@@ -252,12 +252,6 @@ hardwareload_endofload:
 		char			az_Path[BIG_C_MaxLenPath];
 		char			az_File[BIG_C_MaxLenName];
 		TEX_tdst_File_Desc	t_Desc;
-		extern BOOL		EDI_gb_ComputeMap;
-#ifdef JADEFUSION
-		extern unsigned int	WOR_gul_WorldKey;
-#else
-		extern ULONG	WOR_gul_WorldKey;
-#endif
 		ULONG			ul_World;
 		char			*pz;
 

@@ -1191,8 +1191,8 @@ void OGL_ReloadPalette(GDI_tdst_DisplayData *_pst_DD, short _w_Palette)
 	if(!uc_ColorMap) glPixelTransferi(GL_MAP_COLOR, FALSE);
 }
 
-extern "C" float GFXF_f_depth;
-extern "C" ULONG GFXF_ul_Color;
+extern float GFXF_f_depth;
+extern ULONG GFXF_ul_Color;
 
 /*
  =======================================================================================================================

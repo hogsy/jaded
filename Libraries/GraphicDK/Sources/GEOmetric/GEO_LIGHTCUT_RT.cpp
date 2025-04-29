@@ -229,7 +229,7 @@ ULONG GLV_RemoveOverlapedEdges(tdst_GLV *p_stGLV , ULONG (*SeprogressPos) (float
 	GLD_RemoveDoubleEdges( p_stGLV );
 	GLD_RemoveUnusedIndexes( p_stGLV );
 	GLD_Weld( p_stGLV , GLV_WELD_FCT , 0);
-	sprintf (Text , "Culling Edges...", p_stGLV->ulNumberOfFaces);
+	snprintf( Text, sizeof( Text ), "Culling %u Edges...", p_stGLV->ulNumberOfEdges );
 	
 	
 	for (C1 = 0 ; C1 < p_stGLV->ulNumberOfEdges ; C1 ++) p_stGLV->p_stEdges[C1].ulFlags &= ~GLV_FLGS_DeleteIt;

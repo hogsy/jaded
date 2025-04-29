@@ -269,7 +269,7 @@ void GEO_MRM_v_ApplyReorder(LONG *_pValues, unsigned short *_pIndirection, LONG 
     MEM_FreeFromEnd(pVectorSrc);
 }
 
-extern WOR_tdst_World	*WOR_gpst_CurrentWorld;
+extern "C" WOR_tdst_World *WOR_gpst_CurrentWorld;
 void GEO_MRM_DeleteLevels(GEO_tdst_Object *pst_Object)
 {
     if (pst_Object->p_MRM_Levels)

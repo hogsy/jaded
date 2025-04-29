@@ -1283,6 +1283,7 @@ void TEXPRO_MpegSave(TEX_tdst_Procedural *_pst_Pro)
  =======================================================================================================================
  =======================================================================================================================
  */
+extern "C" int win32INO_i_FileGetSize( char * );
 LONG TEXPRO_l_PhotoUpdate(TEX_tdst_Procedural *_pst_Pro)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -1416,8 +1417,6 @@ LONG TEXPRO_l_PhotoUpdate(TEX_tdst_Procedural *_pst_Pro)
 	if(pst_Photo->c_Photo > 100)
 	{
 #ifdef ACTIVE_EDITORS
-		extern int win32INO_i_FileGetSize(char*);
-
 		sprintf(sz_Name, "photo%03d.jpg", pst_Photo->c_Photo);
 
 		l_Size = win32INO_i_FileGetSize(sz_Name);

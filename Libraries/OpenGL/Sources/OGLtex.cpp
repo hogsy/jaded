@@ -12,6 +12,7 @@
 #include "BASe/CLIbrary/CLImem.h"
 #include "BASe/BAStypes.h"
 #include "ENGine/Sources/WORld/WORstruct.h"
+#include "ENGine/Sources/WORld/WORload.h"
 #include "GDInterface/GDInterface.h"
 #include "GDInterface/GDIrasters.h"
 #include "TEXture/TEXconvert.h"
@@ -474,7 +475,6 @@ void OGL_Texture_InternalLoad
 #endif
 
 #ifdef ACTIVE_EDITORS
-	extern int WOR_gi_CurrentConsole;
 	extern BOOL EDI_gb_ComputeMap;
 	if(EDI_gb_ComputeMap)
 	{

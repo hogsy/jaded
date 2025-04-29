@@ -30,10 +30,6 @@
 #include "ENGine/Sources/OBJects/OBJslowaccess.h"
 #include "ENGine/Sources/COLlision/COLray.h"
 
-#if defined (__cplusplus) && !defined(JADEFUSION)
-extern "C"
-{
-#endif
 extern GFX_tdst_List	**GFX_ppst_CurrentList;
 
 /*$4
@@ -1295,10 +1291,3 @@ void GFX_Sun_Render(void *p_Data)
 	GFX_gpst_Geo->st_Id.i->pfn_Render(GFX_gpst_GO);
 	GDI_gpst_CurDD->ul_CurrentDrawMask = DM;
 }
-
-#if defined (__cplusplus) && !defined(JADEFUSION)
-}
-#endif
-
-
-

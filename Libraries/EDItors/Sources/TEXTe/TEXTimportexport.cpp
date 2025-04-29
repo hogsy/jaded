@@ -503,7 +503,7 @@ void ETEXT_cl_Frame::OnExportHtml( char *_sz_FileName )
 						else
 						{
 							o_Unicode += "&#";
-							o_Unicode += itoa( puw_CT[ *puc_Char ], sz_Val, 10 );
+							o_Unicode += L_itoa( puw_CT[ *puc_Char ], sz_Val, 10 );
 							o_Unicode += ";";
 						}
 						puc_Char++;

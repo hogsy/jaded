@@ -61,6 +61,8 @@ extern u_int NoGEODRAW;
 #include "XenonGraphics/XeShadowManager.h"
 #endif
 
+#include "ENGine/Sources/MoDiFier/MDFmodifier_SDW.h"
+
 #include "BASe/BENch/BENch.h"
 
 #if defined(PSX2_TARGET) && defined(__cplusplus)
@@ -161,7 +163,7 @@ ULONG MAT_GetValidityMASK(MAT_tdst_Material *pst_GRO, LONG Submat, GEO_tdst_Obje
 		return pst_GRO->st_Id.i->pfn_User_0((GRO_tdst_Struct *)pst_GRO , Submat);
 }
 
-ULONG MAT_GetFirstTransparentMaterialIndex(MAT_tdst_Material *pst_GRO, GEO_tdst_Object *_pst_Obj )
+extern "C" ULONG MAT_GetFirstTransparentMaterialIndex( MAT_tdst_Material *pst_GRO, GEO_tdst_Object *_pst_Obj )
 {
     ULONG                               Mask;
     GEO_tdst_ElementIndexedTriangles    *p_Elements, *p_ElementsLast;
@@ -680,8 +682,6 @@ void MAT_TestUsedForMat(GRO_tdst_Struct *_pst_GRO, char *pc_UsedIndex)
 		}
 	}
 }
-
-extern void GAO_ModifierShadow_DetectUsedTextures(char *);
 
 /*
  =======================================================================================================================

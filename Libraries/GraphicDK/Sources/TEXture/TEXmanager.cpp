@@ -27,7 +27,6 @@
  */
 
 extern BOOL EDI_gb_ComputeMap;
-extern BOOL WOR_gi_CurrentConsole;
 
 #ifdef _GAMECUBE
 int	mem_available;

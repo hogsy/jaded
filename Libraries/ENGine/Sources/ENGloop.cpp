@@ -118,7 +118,7 @@ extern int GDI_gi_GDIType;
 
 BOOL sgb_DisplayRasters = FALSE;
 BOOL sbg_FirstDisp      = FALSE;
-extern UINT SPG2_gb_Recompute;
+extern "C" UINT SPG2_gb_Recompute;
 #ifndef ACTIVE_EDITORS
 BOOL sgb_FullScreen   = FALSE;
 int sgi_FullScreenRes = 0;

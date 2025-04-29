@@ -39,23 +39,23 @@ void WorldExporter::ExportTextures( const char *outDir )
 		BAS_ZERO( &desc, sizeof( desc ) );
 
 		std::string outPath = outDir;
-		if ( stricmp( extension, ".tex" ) == 0 )
+		if ( L_stricmp( extension, ".tex" ) == 0 )
 		{
 			TEX_l_File_GetInfoAndContent( textureData->ul_Key, &desc );
 			//TODO
 		}
-		else if ( stricmp( extension, ".tga" ) == 0 )
+		else if ( L_stricmp( extension, ".tga" ) == 0 )
 		{
 			TEX_tdst_File_Desc desc;
 			TEX_l_File_GetInfoAndContent( textureData->ul_Key, &desc );
 			outPath += "/" + std::string( name );
 			TEX_l_File_SaveTga( ( char * ) outPath.c_str(), &desc );
 		}
-		else if ( stricmp( extension, ".spr" ) == 0 )
+		else if ( L_stricmp( extension, ".spr" ) == 0 )
 		{
 			//TODO
 		}
-		else if ( stricmp( extension, ".raw" ) == 0 )
+		else if ( L_stricmp( extension, ".raw" ) == 0 )
 		{
 			//TODO
 		}

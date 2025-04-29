@@ -213,7 +213,7 @@ void GEO_BoundingVolume_DisplaySphere(GDI_tdst_DisplayData *_pst_DD, OBJ_tdst_Ga
  */
 extern ULONG OGL_EditorInfoCorrectMul2X(ULONG Color);
 
-void GEO_BoundingVolume_Display(GDI_tdst_DisplayData *_pst_DD, OBJ_tdst_GameObject *_pst_GO)
+extern "C" void GEO_BoundingVolume_Display( GDI_tdst_DisplayData *_pst_DD, OBJ_tdst_GameObject *_pst_GO )
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	ULONG	ul_CurrentDrawMask;

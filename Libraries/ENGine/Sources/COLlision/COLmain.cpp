@@ -555,11 +555,7 @@ void COL_UpdateOldMatrix(WOR_tdst_World *_pst_World)
 		}
 	}
 }
-#ifdef JADEFUSION
-extern void COL_OK3_Build(void *_p_Data, BOOL _b_ColMap, BOOL _b_ReBuild);
-#else
-extern void	COL_OK3_Build(void  *, BOOL, BOOL);
-#endif
+
 /*
  =======================================================================================================================
  =======================================================================================================================

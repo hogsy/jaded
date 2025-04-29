@@ -38,7 +38,7 @@
 #include "PSX2debug.h"
 #endif
 
-extern int                          TEXT_i_GetLang(void);
+extern "C" int TEXT_i_GetLang( void );
 
 #if defined (__cplusplus) && !defined(JADEFUSION)
 extern "C"

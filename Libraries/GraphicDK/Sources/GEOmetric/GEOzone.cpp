@@ -1156,7 +1156,7 @@ void GEO_Zone_DisplayCylinder
  =======================================================================================================================
  =======================================================================================================================
  */
-void GEO_CreateGeoFromCob(OBJ_tdst_GameObject *_pst_GO, GEO_tdst_Object *_pst_Geo, COL_tdst_Cob *_pst_Cob)
+extern "C" void GEO_CreateGeoFromCob( OBJ_tdst_GameObject *_pst_GO, GEO_tdst_Object *_pst_Geo, COL_tdst_Cob *_pst_Cob )
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	COL_tdst_IndexedTriangles			*pst_CobObj;
@@ -1247,7 +1247,7 @@ void GEO_CreateGeoFromCob(OBJ_tdst_GameObject *_pst_GO, GEO_tdst_Object *_pst_Ge
 	GEO_ComputeNormals(_pst_Geo);
 }
 
-void	GEO_OK3_Display(GDI_tdst_DisplayData *, OBJ_tdst_GameObject *, BOOL);
+extern "C" void GEO_OK3_Display( GDI_tdst_DisplayData *, OBJ_tdst_GameObject *, BOOL );
 
 /*
  =======================================================================================================================
@@ -1718,7 +1718,7 @@ void GEO_Zone_Display(GDI_tdst_DisplayData *_pst_DD, OBJ_tdst_GameObject *_pst_G
  =======================================================================================================================
  =======================================================================================================================
  */
-void GEO_OK3_Display(GDI_tdst_DisplayData *_pst_DD, OBJ_tdst_GameObject *_pst_GO, BOOL _b_ColMap)
+extern "C" void GEO_OK3_Display( GDI_tdst_DisplayData *_pst_DD, OBJ_tdst_GameObject *_pst_GO, BOOL _b_ColMap )
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	COL_tdst_OK3		*pst_OK3;
@@ -2218,7 +2218,7 @@ void GEO_DrawOneSoundBox
 	_pst_DD->st_GDI.pfnl_Request(GDI_Cul_Request_DrawBox, (ULONG) &st_Box);    
 }
 
-
+extern "C" GEN_tdst_ModifierSoundFx *SND_p_FxNetworkGetMaster( int id );
 
 /*
  =======================================================================================================================
@@ -2227,7 +2227,6 @@ void GEO_DrawOneSoundBox
 void GEO_Zone_DisplaySoundFxModifier(GDI_tdst_DisplayData *_pst_DD, MDF_tdst_Modifier *pst_MdF)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-    extern GEN_tdst_ModifierSoundFx *SND_p_FxNetworkGetMaster(int id);
 	ULONG						ul_SaveColor;
 	MATH_tdst_Matrix			st_NoScaleMatrix;
 	GEN_tdst_ModifierSoundFx	*pst_SndMdF;

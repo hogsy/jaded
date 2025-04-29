@@ -43,6 +43,8 @@
 #include "MATerial/MATSprite.h"
 #include "STRing/STRstruct.h"
 
+#include "ENGine/Sources/WORld/WORload.h"
+
 #if defined(_XENON_RENDER)
 #include "XenonGraphics/XeGDInterface.h"
 #include "XenonGraphics/XeRenderer.h"
@@ -75,7 +77,7 @@ extern BOOL EDI_gb_ComputeMap;
     palette functions
  ***********************************************************************************************************************
  */
-extern void BIG_ReadNoSeek(ULONG _ul_Pos, void *_p_Buffer, ULONG _ul_Length);
+extern "C" void BIG_ReadNoSeek(ULONG _ul_Pos, void *_p_Buffer, ULONG _ul_Length);
 
 
 /*
@@ -1085,6 +1087,7 @@ ULONG TEX_ul_File_SaveRawInBF(char *_sz_Path, char *_sz_Name, TEX_tdst_File_Desc
  =======================================================================================================================
  */
 #ifdef ACTIVE_EDITORS
+extern "C" ULONG WOR_gul_WorldKey;
 ULONG TEX_l_FileFindReplacement(ULONG _ul_FileKey)
 {
 #if defined(_XENON_RENDER)
@@ -1102,11 +1105,6 @@ ULONG TEX_l_FileFindReplacement(ULONG _ul_FileKey)
 
 #else
 	ULONG			ul_World;
-#if defined (JADEFUSION)
-	extern unsigned int	WOR_gul_WorldKey;
-#else
-	extern ULONG	WOR_gul_WorldKey;
-#endif
 	char			az_Path[BIG_C_MaxLenPath];
 	char			az_File[BIG_C_MaxLenName];
 	ULONG			ul_File;
@@ -2732,12 +2730,11 @@ BOOL TEX_b_File_GetName(int _i_Index, char *_sz_Name )
  =======================================================================================================================
  =======================================================================================================================
  */
+extern "C" BOOL EDI_gb_ComputeMap;
 LONG TEX_l_MemoryNeeded(TEX_tdst_File_Desc *_pst_FD)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	LONG	l_Size, l_SizeRef, l_Ref;
-extern BOOL EDI_gb_ComputeMap;
-extern BOOL WOR_gi_CurrentConsole;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	l_Size = (LONG) _pst_FD->uw_CompressedHeight * (LONG) _pst_FD->uw_CompressedWidth;

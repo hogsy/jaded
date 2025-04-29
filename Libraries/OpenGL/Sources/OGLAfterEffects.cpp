@@ -1753,7 +1753,7 @@ extern "C"
 #ifdef ACTIVE_EDITORS
 	int BackIsClear, FrontIsClear;
 #endif
-	extern "C" void AFTEREFFX_GlowFromZList()
+	void AFTEREFFX_GlowFromZList()
 	{
 		MATH_tdst_Matrix st_SavedProjection;
 		MATH_tdst_Matrix st_SavedMV;
@@ -1784,7 +1784,7 @@ extern "C"
 	}
 
 	extern "C" u32 GetSPG2CachePercent();
-	extern "C" float NotRunningTimer;
+	extern float NotRunningTimer;
 
 	extern "C" void OGL_AE_Before2D()
 	{

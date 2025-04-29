@@ -17,6 +17,8 @@
 #ifndef _GAMECUBE
 #if !defined(_XBOX) && !defined(_XENON)
 
+#include <signal.h>
+
 /*$2
  -----------------------------------------------------------------------------------------------------------------------
  if !PSX2_TARGET
@@ -382,10 +384,7 @@ else \
  */
 
 #ifdef _DEBUG
-#define _breakpoint_	__asm \
-	{ \
-		int 0x03 \
-	}
+#define _breakpoint_ raise(SIGABRT)
 #else /* _DEBUG */
 #define _breakpoint_
 #endif /* _DEBUG */

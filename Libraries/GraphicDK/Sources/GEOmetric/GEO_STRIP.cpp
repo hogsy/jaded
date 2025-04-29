@@ -30,11 +30,8 @@
 #include "ENGine/Sources/MoDiFier/MDFmodifier_SPG2.h"
 #include "ENGine/Sources/OBJects/OBJconst.h"
 #include "ENGine/Sources/OBJects/OBJaccess.h"
+#include "ENGine/Sources/COLlision/COLload.h"
 
-#if defined (__cplusplus) && !defined(JADEFUSION)
-extern "C"
-{
-#endif
 #define GEO_STRIP_VERSION_MASK	0xff000000
 #define GEO_STRIP_VERSION		0x02000000
 
@@ -478,11 +475,6 @@ void RestoreNonMagnifoldIndexes(GEO_tdst_Object *__pst_Object ,ULONG *p_Reorder)
     the strip list
  =======================================================================================================================
  */
-#ifdef JADEFUSION
-extern void COL_OK3_Build(void *_p_Data, BOOL _b_ColMap, BOOL _b_ReBuild);
-#else
-extern void COL_OK3_Build(void *, BOOL,BOOL);
-#endif
 void GEO_STRIP_ComputeTrianglesFromStrips(GEO_tdst_Object *_pst_Object)
 {
 	GEO_tdst_ElementIndexedTriangles	*pst_Element , *pst_ElementLast;
@@ -556,6 +548,7 @@ void GEO_STRIP_ComputeTrianglesFromStrips(GEO_tdst_Object *_pst_Object)
 	}
 }
 
+void GEO_Clean_After_strips( OBJ_tdst_GameObject *pst_GO, GEO_tdst_Object *__pst_Object, ULONG *p_AdditionalVertexColor );
 
 /*
  =======================================================================================================================
@@ -563,11 +556,6 @@ void GEO_STRIP_ComputeTrianglesFromStrips(GEO_tdst_Object *_pst_Object)
     the strip list
  =======================================================================================================================
  */
-#ifdef JADEFUSION
-extern void COL_OK3_Build(void *_p_Data, BOOL _b_ColMap, BOOL _b_ReBuild);
-#else
-extern void COL_OK3_Build(void *, BOOL,BOOL);
-#endif
 BOOL GEO_STRIP_ComputeLevel(OBJ_tdst_GameObject *pst_GAO,GEO_tdst_Object *__pst_Object , ULONG *p_AdditionalVertexColor , BOOL _b_Msg , void (*SetpercentOfJob)(float))
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -578,7 +566,6 @@ BOOL GEO_STRIP_ComputeLevel(OBJ_tdst_GameObject *pst_GAO,GEO_tdst_Object *__pst_
 	MATH_tdst_Vector	*p_SaveNormals;
 	ULONG		*pReorder;
 	ULONG		ulSavedulNBPoint;
-	extern void GEO_Clean_After_strips(OBJ_tdst_GameObject *pst_GO , GEO_tdst_Object *__pst_Object , ULONG *p_AdditionalVertexColor);
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     if (!__pst_Object->l_NbElements) return FALSE;
 	if (!__pst_Object->l_NbPoints) return FALSE;
@@ -1083,9 +1070,5 @@ void GEO_STRIP_UnSetFlag(LONG __command, GEO_tdst_Object *__pst_Object)
 			__pst_Object->dst_Element[i].pst_StripData->ulFlag &= ~__command;
 	}
 }
-
-#if defined (__cplusplus) && !defined(JADEFUSION)
-}
-#endif
 
 #endif /* ACTIVE_EDITORS */

@@ -1078,7 +1078,7 @@ void EDIA_cl_MixerDialog::DrawFaderControl(void *pv_Data)
             uIndex = (i * cMultipleItems) + j;
             nValue = (int)MulDiv(pmxcd_u[uIndex].dwValue, nRange, 0xFFFF);
 
-            sprintf(asz, "channel %d : %d %",i, MulDiv(100,nValue,nRange));
+            sprintf(asz, "channel %d : %d \%",i, MulDiv(100,nValue,nRange));
             apo_Edit[uIndex]->SetWindowText(asz);
             apo_Edit[uIndex]->ShowWindow(SW_SHOW);
 

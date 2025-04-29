@@ -23,7 +23,7 @@
 LONG				GDI_Resolution_Number;
 GDI_tdst_Resolution *GDI_gdst_Resolution;
 char				GDI_gsz_Resolution_Desc[32];
-extern float		TIM_gf_SynchroFrequency;
+extern "C" float TIM_gf_SynchroFrequency;
 
 /*$4
  ***********************************************************************************************************************

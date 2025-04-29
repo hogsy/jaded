@@ -1039,7 +1039,6 @@ void GLV_ComputeRadiosity_Use_FF(tdst_GLV *p_stGLV ,  ULONG RadiosityColor , ULO
 #endif
 				{
 					GLV_Scalar f4Color[4];
-					GLV_Scalar f4ColorLocal[4];
 					float Coef;
 					GLV_ULto4Scalar(p_stGLV ->p_stPoints[p_stGLV ->p_stFaces[C1].Index[ulCornerCounter]].ulColor,f4Color);
 					Coef = GLV_RadProp;
@@ -1287,7 +1286,7 @@ void GLV_ComputeRadiosity_Use_FF(tdst_GLV *p_stGLV ,  ULONG RadiosityColor , ULO
 
 void GLV_BlurMesh(tdst_GLV *p_stGLV)
 {
-	ULONG C1 , C2 , ulCornerCounter;
+	ULONG C1 , C2;
 	float *p_FPointCounter;
 	float *p_ReceiptedPoints , *p_ReceiptedPoints2 ;
 
@@ -1315,7 +1314,7 @@ void GLV_BlurMesh(tdst_GLV *p_stGLV)
 			{
 				for (C2 = 0 ; C2 < 3 ; C2 ++)
 				{
-					float Balance1,Balance2,Balance3,CoefBal;
+					float Balance1,Balance2,CoefBal;
 					Balance1 = MATHD_f_Distance(&p_stGLV ->p_stPoints[p_stGLV ->p_stFaces[C1].Index[(C2 + 1) % 3]].P3D , &p_stGLV ->p_stPoints[p_stGLV ->p_stFaces[C1].Index[C2]].P3D);
 					Balance2 = MATHD_f_Distance(&p_stGLV ->p_stPoints[p_stGLV ->p_stFaces[C1].Index[(C2 + 2) % 3]].P3D , &p_stGLV ->p_stPoints[p_stGLV ->p_stFaces[C1].Index[C2]].P3D);
 					CoefBal = Balance2 / (Balance1 + Balance2);

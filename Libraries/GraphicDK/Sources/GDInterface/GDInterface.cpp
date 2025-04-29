@@ -87,7 +87,7 @@ int GDI_gi_GDIType = 0;// OpenGL rendering
 	extern BOOL LOA_gb_SpeedMode;
 	extern void LOA_BeginSpeedMode( BIG_KEY _ul_Key );
 	extern void LOA_EndSpeedMode( void );
-	extern UINT SPG2_gb_Recompute;
+	extern "C" UINT SPG2_gb_Recompute;
 
 	/*$4
  ***********************************************************************************************************************
@@ -173,12 +173,12 @@ int GDI_gi_GDIType = 0;// OpenGL rendering
     Aim:    Create and initialize display data structure
  =======================================================================================================================
  */
+	extern "C" WATER_Export_Struct stExportWaterParrams;
+	extern "C" BOOL EDI_gb_ComputeMap;
 	GDI_tdst_DisplayData *GDI_fnpst_CreateDisplayData( void )
 	{
 		/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 		GDI_tdst_DisplayData *pst_DD;
-		extern BOOL EDI_gb_ComputeMap;
-		extern WATER_Export_Struct stExportWaterParrams;
 		/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 		MEMpro_StartMemRaster();
@@ -649,8 +649,8 @@ LONG GDI_AttachDisplay( GDI_tdst_DisplayData *_pst_DD, HWND _h_Wnd )
  =======================================================================================================================
  */
 
-	extern void ImGuiInterface_NewFrame();
-	extern void ImGuiInterface_Render();
+	extern "C" void ImGuiInterface_NewFrame();
+	extern "C" void ImGuiInterface_Render();
 	void GDI_BeforeDisplay( GDI_tdst_DisplayData *_pst_DD )
 	{
 		ULONG ul_Color;
@@ -808,6 +808,7 @@ LONG GDI_AttachDisplay( GDI_tdst_DisplayData *_pst_DD, HWND _h_Wnd )
 	ULONG g_ul_BIG_SNAPSHOT_COUNTER = 0;
 #endif
 
+	extern "C" void SPG2_SpecialGridHasChanged();
 	void GDI_AfterDisplay( GDI_tdst_DisplayData *_pst_DD )
 	{
 #if !defined( _XENON ) && defined( _XBOX )
@@ -836,7 +837,6 @@ LONG GDI_AttachDisplay( GDI_tdst_DisplayData *_pst_DD, HWND _h_Wnd )
 		SPG2_gb_Recompute--;
 		if ( SPG2_gb_Recompute == 0 )
 		{
-			extern void SPG2_SpecialGridHasChanged();
 			SPG2_SpecialGridHasChanged();
 		}
 		else if ( SPG2_gb_Recompute < 0 )

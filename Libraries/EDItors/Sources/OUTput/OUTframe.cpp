@@ -1229,7 +1229,7 @@ extern "C" void LOA_AddRefInLoadedList(void);
 extern "C" BOOL LOA_gb_SpeedMode;
 extern "C" void WOR_Check_InfoPhoto( WOR_tdst_World *, int );
 extern "C" void AI2C_GenDllSourceFile(void);
-extern "C" void GEO_DoOptimzeCacheForPS2(void);
+extern void GEO_DoOptimzeCacheForPS2(void);
 extern "C" int WOR_gi_CurrentConsole ;
 extern "C" void AI2C_SaveCurrentModelsList(void);
 extern "C" void INO_SaveLanguageFile(void);

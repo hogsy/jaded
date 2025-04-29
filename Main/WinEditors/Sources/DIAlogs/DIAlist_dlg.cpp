@@ -414,7 +414,7 @@ void EDIA_cl_ListDialog::SelectMultipleTxg( void )
 {
 	/*~~~~~~~~~~~~~~~~*/
 	CListBox	*p_List;
-	int			i, res;
+	int			res;
 	char		sz_Text[ 256 ];
 	/*~~~~~~~~~~~~~~~~*/
 	

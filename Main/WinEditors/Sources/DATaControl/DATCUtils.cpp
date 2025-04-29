@@ -488,7 +488,7 @@ int DAT_CUtils::Export(std::string& strFileExportDir, const std::string &strBFDi
 			strFilePathForKey.erase(strFilePathForKey.size() - FILENAMELENGHT -1);	// remote filename from path
 
 			// Does Key Dir exists ?
-			if ( access(strFilePathForKey.c_str(), 00) != 0 )
+			if ( L_access(strFilePathForKey.c_str(), 00) != 0 )
 				CreateDirectoryRecursive(strFilePathForKey.c_str());
 
 			// Open file
@@ -552,7 +552,7 @@ void DAT_CUtils::CreateDirectoryRecursive(const char* szDirectory)
 		}
 
 		// Does directory exists ?
-		if ( access(szTempPath, 0) != 0 )
+		if ( L_access(szTempPath, 0) != 0 )
 			CreateDirectory(szTempPath, 0);
 
 		// Restore the slash and check if we need to end the recursive creation

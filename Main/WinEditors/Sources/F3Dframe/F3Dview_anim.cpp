@@ -49,11 +49,7 @@
 #include "EDItors/Sources/MENu/MENsubmenu.h"
 #include "DIAlogs/DIAname_dlg.h"
 
-#ifdef JADEFUSION
 extern char SOFT_gac_BoneCurveStatus[64];
-#else
-extern "C" char SOFT_gac_BoneCurveStatus[64];
-#endif
 /*
  =======================================================================================================================
  =======================================================================================================================

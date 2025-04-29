@@ -58,11 +58,7 @@
 #define M_pst_PB()	(mst_WinHandles.pst_DisplayData->pst_PickingBuffer)
 #define M_pst_PQ()	(&mst_WinHandles.pst_DisplayData->pst_PickingBuffer->st_Query)
 
-#ifdef JADEFUSION
 extern BOOL SOFT_gb_WindowSel;
-#else
-extern "C" BOOL SOFT_gb_WindowSel;
-#endif
 /*$4
  ***********************************************************************************************************************
     Functions

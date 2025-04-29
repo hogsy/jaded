@@ -120,19 +120,19 @@ extern BOOL		COL_gb_SoundColorDisplay;
 extern BOOL		OBJ_gb_SaveDuplicateRLI;
 #else
 extern BOOL		OGL_gb_DispStrip;
-extern "C" BOOL		OGL_gb_DispLOD;
+extern BOOL		OGL_gb_DispLOD;
 extern "C" BOOL		ENG_gb_ActiveSectorization;
 extern "C" BOOL		ENG_gb_DistCompute;
 extern "C" BOOL		GRO_gb_ResetGhost;
 extern "C" BOOL		OBJ_gb_DebugPhotoMode;
 extern "C" BOOL		OBJ_gb_DebugPhotoMode;
 extern "C" UCHAR	COL_s_GhostOptimisation;
-extern "C" ULONG	g_ul_BIG_SNAPSHOT_COUNTER;
+extern ULONG	g_ul_BIG_SNAPSHOT_COUNTER;
 extern "C" BOOL		GRI_gb_Modified;
 extern "C" int		GRI_UpdateCompress(struct GRID_tdst_World_ *);
 extern "C" void		COL_SaveGameMaterial(COL_tdst_GameMatList *, BIG_KEY);
 extern "C" int		WOR_i_GetAllChildsOf(WOR_tdst_World	*, OBJ_tdst_GameObject *, OBJ_tdst_GameObject **, BOOL);
-extern "C" BOOL		COL_gb_SoundColorDisplay;
+extern BOOL		COL_gb_SoundColorDisplay;
 extern "C" BOOL		OBJ_gb_SaveDuplicateRLI;
 //extern "C" BOOL     BIG_bSaveBfSize;
 #endif //JADEFUSION

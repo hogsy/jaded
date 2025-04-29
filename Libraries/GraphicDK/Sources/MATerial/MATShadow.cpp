@@ -184,7 +184,7 @@ static int SDW_RDR_AND   = 0x3;
 	=======================================================================================================================
 	=======================================================================================================================
 	*/
-	extern void GAO_ModifierShadow_Apply_All();
+	extern "C" void GAO_ModifierShadow_Apply_All();
 	void SDW_UpdatePositions()
 	{
 		DD_tdst_ShadowStack *p_ShadowStack;

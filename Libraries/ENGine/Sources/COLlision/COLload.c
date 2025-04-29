@@ -40,6 +40,8 @@
 
 #include "INTersection/INTmain.h"
 
+#include "COLload.h"
+
 #ifdef ACTIVE_EDITORS
 #include "COLset.h"
 #include "WORld/WORsave.h"
@@ -56,11 +58,6 @@ extern		COL_ColMap_Check(OBJ_tdst_GameObject *);
 extern char *BIG_FileName(BIG_INDEX);
 #endif
 
-#ifdef JADEFUSION
-void COL_OK3_Build(void *_p_Data, BOOL _b_ColMap, BOOL _b_ReBuild);
-#else
-void		COL_OK3_Build(void *, BOOL, BOOL);
-#endif
 /*
  =======================================================================================================================
  =======================================================================================================================

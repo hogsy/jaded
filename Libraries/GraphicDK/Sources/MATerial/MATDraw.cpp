@@ -174,7 +174,7 @@ extern unsigned int NoSPR;
 #endif
 
 
-void MAT_DrawIndexedTriangle_MT(
+extern "C" void MAT_DrawIndexedTriangle_MT(
         GDI_tdst_DisplayData *pst_CurDD,
         GEO_tdst_Object *pst_Obj,
         MAT_tdst_Material *_pst_Material,

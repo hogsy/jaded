@@ -328,7 +328,7 @@ int ETEXT_cl_Frame::Column_GetUsed( BOOL *_pb_UsedCol, int _i_Flags )
 		i = en_UserData;
 		while(i < COLMAX)
 		{
-			if ( (mst_Ini.ai_ColSize[i] <= 0) &&	!strnicmp(mst_Ini.asz_ColName[i], "UserData ", 9) ) 
+			if ( (mst_Ini.ai_ColSize[i] <= 0) &&	!L_strnicmp(mst_Ini.asz_ColName[i], "UserData ", 9) ) 
 				break;
 			_pb_UsedCol[i++] = 1;
 		}

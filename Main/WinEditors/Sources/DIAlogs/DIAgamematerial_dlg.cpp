@@ -18,11 +18,7 @@
 #include "EDIpaths.h"
 #include "Res/Res.h"
 
-#ifdef JADEFUSION
 extern BOOL	COL_gb_SoundColorDisplay;
-#else
-extern "C" BOOL	COL_gb_SoundColorDisplay;
-#endif
 
 BEGIN_MESSAGE_MAP(EDIA_cl_GameMaterial, EDIA_cl_BaseDialog)
 	ON_WM_SIZE()

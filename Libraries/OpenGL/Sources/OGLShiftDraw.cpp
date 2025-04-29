@@ -36,8 +36,8 @@ extern void LOA_EndSpeedMode( void );
 extern "C" BOOL GDI_gb_WaveSprite;
 
 extern BOOL OGL_gb_DispStrip;
-extern "C" BOOL OGL_gb_DispLOD;
-extern "C" ULONG OGL_ulLODAmbient;
+extern BOOL OGL_gb_DispLOD;
+extern ULONG OGL_ulLODAmbient;
 
 
 /*$4
@@ -49,11 +49,11 @@ extern "C" int NbrFurLayers;
 extern "C" float OffsetNormal;
 extern "C" float OffsetU;
 extern "C" float OffsetV;
-extern int FurInvertAlpha;
+extern "C" int FurInvertAlpha;
 extern "C" int renderState_OutLine;
 extern "C" int DontDrawFirstLayer;
 extern "C" ULONG exLineColor;
-extern int i_FurNearLod;
+extern "C" int i_FurNearLod;
 
 #define OGL_SetColorRGBA( a )                          \
 	if ( pst_Color )                                   \
@@ -108,7 +108,7 @@ extern int i_FurNearLod;
 
 // sigh...
 extern "C" u32 Stats_ulNumberOfTRiangles;
-extern "C" BOOL OGL_bCountTriangles;
+extern BOOL OGL_bCountTriangles;
 
 LONG OGL_l_ShiftDrawElementIndexedTriangles(
         GEO_tdst_ElementIndexedTriangles *_pst_Element,

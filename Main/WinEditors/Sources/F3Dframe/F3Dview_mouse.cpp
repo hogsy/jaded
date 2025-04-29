@@ -34,15 +34,15 @@
 /* TEST PREFAB */
 #include "EDItors/Sources/PreFab/PFBframe.h"
 
+extern SOFT_tdst_PickingBuffer *pPickForZCull;
+// -- Bug: modif temporaire --
+extern MATH_tdst_Vector mst_MoveBugLocal;
+// ---------------------------
 #ifndef JADEFUSION
 extern "C"
 {
 #endif
 	extern bool ENG_gb_EngineRunning;
-	extern SOFT_tdst_PickingBuffer *pPickForZCull;
-	// -- Bug: modif temporaire --
-	extern MATH_tdst_Vector mst_MoveBugLocal;
-	// ---------------------------
 #ifndef JADEFUSION
 }
 #endif
@@ -56,11 +56,7 @@ extern "C"
 	}
 extern void				EDI_Tooltip_DisplayMessage(char *, ULONG ulSpeed = 200);
 extern EDI_cl_BaseFrame *gpo_AssociatedEditor;
-#ifdef JADEFUSION
-extern BOOL			SOFT_gb_ForceStartPicking;
-#else
-extern "C" BOOL			SOFT_gb_ForceStartPicking;
-#endif
+extern BOOL				SOFT_gb_ForceStartPicking;
 extern BOOL				LINK_gb_EditRefresh;
 
 /*

@@ -1,6 +1,11 @@
 
 #pragma once
 
+#if defined( __cplusplus )
+#	include <map>
+#	include <set>
+#endif
+
 #include "BASe/CLIbrary/CLIwin.h"
 #include "BASe/CLIbrary/CLIfile.h"
 #include "BASe/CLIbrary/CLIstr.h"

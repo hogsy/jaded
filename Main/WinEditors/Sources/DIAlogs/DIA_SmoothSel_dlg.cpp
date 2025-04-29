@@ -16,18 +16,18 @@
 #include "LINKs/LINKtoed.h"
 #include "DIAlogs/DIAname_dlg.h"
 
+extern ULONG SmoothSelIsActivate;
+extern ULONG InvertSel;
+extern float DistanceMax;
+extern ULONG SmoothSelMustBeUpdate;
+extern float topologicCare;
+extern ULONG SmoothSelMode;
 #ifndef JADEFUSION 
 extern "C" 
 {
 #endif
-extern ULONG SmoothSelIsActivate ;
-extern ULONG InvertSel ;
-extern float DistanceMax ;
-extern ULONG SmoothSelMustBeUpdate;
 float BaseAngle = 0.0f;
 float EndAngle = 0.0f;
-extern float topologicCare;
-extern ULONG SmoothSelMode;
 #ifndef JADEFUSION 
 }
 #endif

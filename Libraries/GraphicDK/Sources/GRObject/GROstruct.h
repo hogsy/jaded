@@ -223,17 +223,6 @@ extern GRO_tdst_Struct      GRO_gst_Unknown;
  ***********************************************************************************************************************
  */
 
-#if (defined(PSX2_TARGET) || defined(_GAMECUBE))
-struct OBJ_tdst_GameObject_;
-struct GDI_tdst_DisplayData_;
-extern LONG GRO_PushSpecialMatrixForProportionnal(struct OBJ_tdst_GameObject_ *);
-#elif defined (JADEFUSION)
-struct OBJ_tdst_GameObject_;
-extern LONG GRO_PushSpecialMatrixForProportionnal(struct OBJ_tdst_GameObject_ *_pst_Node);
-#else
-extern LONG GRO_PushSpecialMatrixForProportionnal(void *);
-#endif
-
 /*$4
  ***********************************************************************************************************************
     Functions
@@ -266,4 +255,11 @@ extern BOOL     GRO_b_IsAMaterial( GRO_tdst_Struct * );
 #if defined (__cplusplus) && !defined(JADEFUSION)
 }
 #endif
+
+#	if defined( __cplusplus )
+struct OBJ_tdst_GameObject_;
+LONG GRO_PushSpecialMatrixForProportionnal( OBJ_tdst_GameObject_ *_pst_Node );
+LONG GRO_PushSpecialMatrixForProportionnalBone( OBJ_tdst_GameObject_ *_pst_Node );
+#	endif
+
 #endif /* __GROSTRUCT_H__ */

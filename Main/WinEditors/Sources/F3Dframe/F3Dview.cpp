@@ -83,7 +83,7 @@ END_MESSAGE_MAP()
 extern ULONG g_ul_BIG_SNAPSHOT_COUNTER;
 extern BOOL GRI_gb_Edit;
 #else
-extern "C" ULONG g_ul_BIG_SNAPSHOT_COUNTER;
+extern ULONG g_ul_BIG_SNAPSHOT_COUNTER;
 extern "C" BOOL GRI_gb_Edit;
 #endif
 /*

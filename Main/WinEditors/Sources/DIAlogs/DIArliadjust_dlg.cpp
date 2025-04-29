@@ -38,11 +38,8 @@
 #include "GEOmetric/GEOsubobject.h"
 #include "SOFT/SOFTcolor.h"
 
-#ifdef JADEFUSION
 extern void	(*GEO_gpfnv_AdjustRLI) (ULONG *);
-#else
-extern "C" void	(*GEO_gpfnv_AdjustRLI) (ULONG *);
-#endif
+
 /*$2
  -----------------------------------------------------------------------------------------------------------------------
     MESSAGE MAP.

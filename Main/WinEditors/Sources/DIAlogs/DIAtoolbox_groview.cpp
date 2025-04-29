@@ -78,16 +78,9 @@ static char *gasz_ColorModeName[3] = { "Off", "FaceId", "Alpha" };
 static char *gasz_SymOpShortName[GRO_Cul_EOSYM_Number] = { "Sym X", "Sym Y", "Sym Z", "Sym PX", "Sym PY", "Sym PZ", "Sym HX", "Sym HY", "Sym HZ", "Sym PC", "Sym HC"  };
 static char *gasz_SymOpLongName[GRO_Cul_EOSYM_Number] = { "Sym (Pivot+Local) X", "Sym (Pivot+Local) Y", "Sym (Pivot + Local) Z", "Sym (Pivot + Helper) X", "Sym (Pivot  Helper) Y", "Sym (Pivot + Helper) Z", "Sym (Helper) X", "Sym (Helper) Y", "Sym (Herlper) Z", "Sym (Pivot) centrale", "Sym (helper) centrale"  };
 
-#ifndef JADEFUSION
-extern "C"  /* Philippe Vimont Code comme oun pork ! */
-{
-#endif
-	extern ULONG SmoothSelIsActivate ;
-	extern ULONG InvertSel ;
-	extern float DistanceMax ;
-#ifndef JADEFUSION
-}
-#endif
+extern ULONG SmoothSelIsActivate;
+extern ULONG InvertSel;
+extern float DistanceMax;
 
 /*
  =======================================================================================================================

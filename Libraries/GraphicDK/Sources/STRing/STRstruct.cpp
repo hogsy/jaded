@@ -21,6 +21,7 @@
 #include "GFX/GFX.h"
 #include "ENGine/Sources/WORld/WORstruct.h"
 #include "ENGine/Sources/WORld/WORaccess.h"
+#include "ENGine/Sources/WORld/WORload.h"
 #include "ENGine/Sources/OBJects/OBJconst.h"
 #include "ENGine/Sources/OBJects/OBJinit.h"
 #include "ENGine/Sources/OBJects/OBJorient.h"
@@ -60,8 +61,6 @@ extern "C"
 #ifdef PSX2_TARGET
 extern BOOL	ps2MAI_gb_VideoModeNTSC;
 #endif /*PSX2_TARGET*/
-
-extern int	WOR_gi_CurrentConsole;
 
 /*$4
  ***********************************************************************************************************************

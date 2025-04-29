@@ -682,15 +682,9 @@ void F3D_cl_View::CreateColMap(void)
  =======================================================================================================================
  =======================================================================================================================
  */
-#ifdef JADEFUSION
 extern void				*GEO_gpst_SnapshotGAOSrc;
 extern GEO_tdst_Object  *GEO_gpst_SnapshotSrc;
 extern GEO_tdst_Object  *GEO_gpst_SnapshotTgt;
-#else
-extern "C" void				*GEO_gpst_SnapshotGAOSrc;
-extern "C" GEO_tdst_Object  *GEO_gpst_SnapshotSrc;
-extern "C" GEO_tdst_Object  *GEO_gpst_SnapshotTgt;
-#endif
 
 void F3D_cl_View::Selection_SnapGeo()
 {

@@ -18,6 +18,7 @@
 
 #include "ENGine/Sources/WORld/WORstruct.h"
 #include "ENGine/Sources/WORld/WORload.h"
+#include "ENGine/Sources/COLlision/COLload.h"
 
 #include "GRObject/GROstruct.h"
 #include "LIGHT/LIGHTstruct.h"
@@ -29,12 +30,6 @@ extern "C" {
 
 #ifndef KER_IS_NOT_A_CHEVRE
 #define KER_IS_NOT_A_CHEVRE
-#endif
-
-#ifdef JADEFUSION
-void COL_OK3_Build(void *_p_Data, BOOL _b_ColMap, BOOL _b_ReBuild);
-#else
-void	COL_OK3_Build(void  *, BOOL, BOOL);
 #endif
 
 /*$4
@@ -94,7 +89,7 @@ void GEO_WarningIfObjectIsTooBig( GEO_tdst_Object *pst_Object )
  ===================================================================================================
  ===================================================================================================
  */
-ULONG GEO_ul_Load_ObjectCallback(ULONG _ul_PosFile)
+extern "C" ULONG GEO_ul_Load_ObjectCallback( ULONG _ul_PosFile )
 {
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     GEO_tdst_Object *pst_Object;
@@ -143,7 +138,7 @@ ULONG GEO_ul_Load_ObjectCallback(ULONG _ul_PosFile)
  ===================================================================================================
  ===================================================================================================
  */
-GRO_tdst_Struct *GEO_pst_Object_Load(BIG_INDEX _ul_Index, WOR_tdst_World *_pst_World)
+extern "C" GRO_tdst_Struct *GEO_pst_Object_Load( BIG_INDEX _ul_Index, WOR_tdst_World *_pst_World )
 {
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     BIG_KEY         ul_Key;

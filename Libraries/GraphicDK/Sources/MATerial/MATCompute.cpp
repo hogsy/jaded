@@ -40,6 +40,7 @@ extern "C"
 
 #include "ENGine/Sources/MoDiFier/MDFstruct.h"
 #include "ENGine/Sources/MoDiFier/MDFmodifier_UVTexWave.h"
+#include "ENGine/Sources/ENGvars.h"
 
 #ifdef ACTIVE_EDITORS
 #include "LINks/LINKtoed.h"
@@ -102,7 +103,7 @@ static float			        MAT_SinTable[16] =
 #define ILAF		fInterpretLongAsFloat
 
 extern OBJ_tdst_GameObject    *LIGHT_gpst_Bump;
-BOOL GDI_gb_WaveSprite = FALSE;
+extern "C" BOOL GDI_gb_WaveSprite = FALSE;
 
 /*
  =======================================================================================================================
@@ -445,16 +446,11 @@ _inline_ float MAT_GetSpeed_i(ULONG ul_ScaleSPeedPosU)
 #ifdef ACTIVE_EDITORS
 float NotRunningTimer = 0;
 #endif
-void MAT_VUDecompressSpeed(MAT_tdst_MTLevel *p_tdstCompressedUV, MAT_tdst_Decompressed_UVMatrix *p_tdstDecompressedUV)
+	void MAT_VUDecompressSpeed(MAT_tdst_MTLevel *p_tdstCompressedUV, MAT_tdst_Decompressed_UVMatrix *p_tdstDecompressedUV)
 {	
 
 #ifdef ACTIVE_EDITORS
 #define TIM_MAIN_CLOCK_4TS NotRunningTimer
-#ifdef JADEFUSION
-	extern BOOL ENG_gb_EngineRunning;
-#else
-	extern ULONG ENG_gb_EngineRunning;
-#endif
 	if (ENG_gb_EngineRunning) 
 		NotRunningTimer = TIM_gf_MainClock;
 #else
@@ -541,8 +537,6 @@ void MAT_VUDecompress(MAT_tdst_MTLevel *p_tdstCompressedUV, MAT_tdst_Decompresse
 	/*~~~~~~~~~~~~~~~~~~~~~*/
 //	register ULONG	Alpha;
 	register ULONG	*pMatrix;
-	MAT_tdst_MultiTexture	*pst_MLTTX;
-	MAT_tdst_MTLevel		*pst_MLTTXLVL;
 	extern int NumberMat;
 	/*~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -572,11 +566,6 @@ void MAT_VUDecompress(MAT_tdst_MTLevel *p_tdstCompressedUV, MAT_tdst_Decompresse
 
 	#ifdef ACTIVE_EDITORS
 #define TIM_MAIN_CLOCK_4TS NotRunningTimer
-#ifdef JADEFUSION
-	extern BOOL ENG_gb_EngineRunning;
-#else
-	extern ULONG ENG_gb_EngineRunning;
-#endif
 	if (ENG_gb_EngineRunning) 
 		NotRunningTimer = TIM_gf_MainClock;
 #else
@@ -1136,7 +1125,8 @@ void MAT_UV_Compute_PLANAR_GIZMO(GDI_tdst_DisplayData	*pst_CurDD,GEO_tdst_Object
 		
 #endif // #if !defined(_GAMECUBE) || defined(USE_SOFT_UV_MATRICES)		
 }
-void MAT_UV_COMPUTE_GetMAtrix(GDI_tdst_DisplayData	*pst_CurDD,OBJ_tdst_GameObject *_pst_GO , ULONG CurrentAddFlag , MATH_tdst_Matrix	*p_MatrixDSt)
+
+extern "C" void MAT_UV_COMPUTE_GetMAtrix( GDI_tdst_DisplayData *pst_CurDD, OBJ_tdst_GameObject *_pst_GO, ULONG CurrentAddFlag, MATH_tdst_Matrix *p_MatrixDSt )
 {
 	if ((MAT_GET_MatrixFrom(CurrentAddFlag) == MAT_CC_GIZMO) &&	(pst_CurDD->pst_CurrentGameObject->ul_IdentityFlags & OBJ_C_IdentityFlag_AdditionalMatrix))
 	{

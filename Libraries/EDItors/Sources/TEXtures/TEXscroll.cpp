@@ -1451,8 +1451,8 @@ void ETEX_cl_InsideScroll::ImportAlphaMask( MAIEDITEX_tdst_BitmapDes *_pst_BD, i
 	TEX_tdst_Palette    st_Pal;
 	ULONG               W, H, ul_Size, ul_Key, ul_Index;
     TEX_tdst_File_Desc  st_RawDesc, st_TgaDesc;
-    int                 i, j, k, i_Already8,l;
-    char                sz_Name[ BIG_C_MaxLenName ], sz_Path[ BIG_C_MaxLenPath ], sz_Text[ 256 ];
+    int                 i, j, k, i_Already8;
+    char                sz_Path[ BIG_C_MaxLenPath ], sz_Text[ 256 ];
     EDIA_cl_FileDialog	*po_FileDlg;
     FILE				*hp_File;
     CString				o_FileName;

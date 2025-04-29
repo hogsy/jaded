@@ -87,6 +87,7 @@ const struct
 
 #include "ENGine/Sources/MoDiFier/MDFstruct.h"
 #include "ENGine/Sources/MoDiFier/MDFmodifier_SPG2.h"
+#include "ENGine/Sources/MoDiFier/MDFmodifier_LAZY.h"
 
 #ifdef _XENON_RENDER
 #	include "XenonGraphics/XeVertexShaderManager.h"
@@ -98,7 +99,7 @@ extern "C"
 {
 #endif
 
-	extern ULONG LOA_ul_FileTypeSize[ 40 ];
+	extern "C" ULONG LOA_ul_FileTypeSize[ 40 ];
 
 	void GEO_SKN_SymetriseMatrix( MATH_tdst_Matrix *pst_Matrix )
 	{
@@ -1961,7 +1962,6 @@ Flash or restore the specifief matrix - WORK ON COMPRESSED OR EXPANDED SKIN
 					if ( ( _pst_GizmoGO->ul_IdentityFlags & OBJ_C_IdentityFlag_ExtendedObject ) && ( _pst_GizmoGO->pst_Extended ) )
 					{
 						MDF_tdst_Modifier *pst_Modifier;
-						extern void GAO_ModifierBoneRefineApply( MDF_tdst_Modifier * _pst_Mod, GEO_tdst_Object * _pst_Obj );
 						pst_Modifier = _pst_GizmoGO->pst_Extended->pst_Modifiers;
 						while ( pst_Modifier )
 						{
@@ -3079,8 +3079,6 @@ void GEO_SKN_ComputeNormals( GEO_tdst_Object *_pst_Object, GEO_Vertex *pst_Point
 									if ( ( _pst_GizmoGO->ul_IdentityFlags & OBJ_C_IdentityFlag_ExtendedObject ) && ( _pst_GizmoGO->pst_Extended ) )
 									{
 										MDF_tdst_Modifier *pst_Modifier;
-										extern void GAO_ModifierLazy_Apply( MDF_tdst_Modifier * _pst_Mod, GEO_tdst_Object * _pst_Obj );
-										extern void GAO_ModifierBoneRefineApply( MDF_tdst_Modifier * _pst_Mod, GEO_tdst_Object * _pst_Obj );
 										pst_Modifier = _pst_GizmoGO->pst_Extended->pst_Modifiers;
 										while ( pst_Modifier )
 										{

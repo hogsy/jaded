@@ -241,11 +241,7 @@ int SOFT_i_BI_InBF_Read2048(int Ptr)
  =======================================================================================================================
  =======================================================================================================================
  */
-#ifdef JADEFUSION
-void SOFT_BackgroundImage_AddTexture( /*SOFT_tdst_BackgroundImage *_pst_BI*/ )
-#else
-void SOFT_BackgroundImage_AddTexture( SOFT_tdst_BackgroundImage *_pst_BI )
-#endif
+extern "C" void SOFT_BackgroundImage_AddTexture( void )
 {
     SOFT_gw_BI_Texture = TEX_w_List_AddTexture(&TEX_gst_GlobalList, 0xFFFFFFF0, 0);
 }
@@ -266,12 +262,8 @@ void SOFT_BackgroundImage_Init(SOFT_tdst_BackgroundImage *_pst_BI)
 	_pst_BI->ul_MpegKey = (ULONG) - 1;
 
 	SOFT_BackGroundImage_MoveWindow(_pst_BI, 0, 0, .4f, .4f, 1.0f);
-
-#ifdef JADEFUSION
     SOFT_BackgroundImage_AddTexture();
-#else
-	SOFT_BackgroundImage_AddTexture(_pst_BI);
-#endif
+
     _pst_BI->w_Texture = SOFT_gw_BI_Texture;
 
 	_pst_BI->pst_MpegIO = (MPG_IOStruct *) L_malloc(sizeof(MPG_IOStruct));

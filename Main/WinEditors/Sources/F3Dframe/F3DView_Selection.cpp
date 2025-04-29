@@ -48,17 +48,16 @@
 #include "DIAlogs/DIAbrickmapper_dlg.h"
 #include "F3Dframe/F3Dframe.h"
 
+extern BOOL SOFT_gb_WindowSel;
 
 #ifdef JADEFUSION
 #include "DIAlogs/DIAreplace_dlg.h"
 #include "DIAlogs/DIAlightrej_dlg.h"
 #include "DIAlogs/DIAcubemapgen_dlg.h"
 
-extern BOOL SOFT_gb_WindowSel;
 extern SOFT_tdst_PickingBuffer *pPickForZCull;
 #else
-extern "C" BOOL SOFT_gb_WindowSel;
-extern "C" SOFT_tdst_PickingBuffer *pPickForZCull;
+extern SOFT_tdst_PickingBuffer *pPickForZCull;
 #endif
 /*$4
  ***********************************************************************************************************************

@@ -292,7 +292,7 @@ ULONG OGL_EditorInfoCorrectMul2X(ULONG Color)
 	return Color;
 }
 
-BOOL GRO_gb_ResetGhost = FALSE;
+extern "C" BOOL GRO_gb_ResetGhost = FALSE;
 
 void GRO_RenderWired(OBJ_tdst_GameObject *_pst_GO, GRO_tdst_Struct *pst_Obj , GDI_tdst_DisplayData   *_pst_CurDD)
 {

@@ -32,6 +32,8 @@
 #include "AIinterp/Sources/Events/EVEnt_interpolationkey.h"
 
 #include "GRObject/GROedit.h"
+#include "GRObject/GROstruct.h"
+
 #include "GEOmetric/GEOobject.h"
 #include "GEOmetric/GEOsubobject.h"
 
@@ -2701,7 +2703,6 @@ void SOFT_Helpers_CurveRenderBone(OBJ_tdst_GameObject *_pst_GO, struct GDI_tdst_
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	extern BOOL			SOFT_gb_NoDepthTest;
-	extern LONG			GRO_PushSpecialMatrixForProportionnalBone(OBJ_tdst_GameObject *);
 	extern LONG			GRO_UnknowPushSpecialMatrix(void *);
 	OBJ_tdst_GameObject *pst_Father;
 	GRO_tdst_Visu		*pst_Visu;

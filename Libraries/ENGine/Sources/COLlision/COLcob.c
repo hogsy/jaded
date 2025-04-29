@@ -48,12 +48,6 @@
 
 extern COL_tdst_GlobalVars COL_gst_GlobalVars;
 
-#ifdef JADEFUSION
-extern void COL_OK3_Build(void *_p_Data, BOOL _b_ColMap, BOOL _b_ReBuild);
-#else
-extern void	COL_OK3_Build(void *, BOOL, BOOL);
-#endif
-
 #ifdef ACTIVE_EDITORS
 #include "EDIpaths.h"
 #include "LINKs/LINKstruct_reg.h"

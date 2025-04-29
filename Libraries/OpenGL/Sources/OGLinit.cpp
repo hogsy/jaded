@@ -30,17 +30,17 @@
 #pragma comment( lib, "glew32s.lib" )
 
 extern "C" u32 Stats_ulNumberOfTRiangles = 0;
-extern "C" u32 Stats_ulCallToDrawNb      = 0;
+u32 Stats_ulCallToDrawNb      = 0;
 
 /*$4
  ***********************************************************************************************************************
     constant
  ***********************************************************************************************************************
  */
-BOOL OGL_gb_Init                  = 0;
-BOOL OGL_gb_DispStrip             = 0;
-extern "C" BOOL OGL_gb_DispLOD    = 0;
-extern "C" ULONG OGL_ulLODAmbient = 0;
+BOOL OGL_gb_Init       = 0;
+BOOL OGL_gb_DispStrip  = 0;
+BOOL OGL_gb_DispLOD    = 0;
+ULONG OGL_ulLODAmbient = 0;
 
 /*$4
  ***********************************************************************************************************************
@@ -51,8 +51,8 @@ extern "C" ULONG OGL_ulLODAmbient = 0;
 static bool OGL_SetDCPixelFormat( HDC _hDC, int maxAASamples );
 void OGL_SetupRC( OGL_tdst_SpecificData * );
 
-extern void LOA_BeginSpeedMode( BIG_KEY _ul_Key );
-extern void LOA_EndSpeedMode( void );
+void LOA_BeginSpeedMode( BIG_KEY _ul_Key );
+void LOA_EndSpeedMode( void );
 extern "C" BOOL GDI_gb_WaveSprite;
 #ifdef ACTIVE_EDITORS
 extern "C" COL_tdst_GlobalVars COL_gst_GlobalVars;
@@ -345,7 +345,7 @@ void OGL_SetViewMatrix( MATH_tdst_Matrix *_pst_Matrix )
 	}
 }
 
-extern "C" ULONG g_ul_BIG_SNAPSHOT_COUNTER;
+extern ULONG g_ul_BIG_SNAPSHOT_COUNTER;
 
 /*
  =======================================================================================================================
@@ -811,8 +811,8 @@ void OGL_SetViewMatrix_SDW( MATH_tdst_Matrix *_pst_Matrix, float *Limits )
 #	define OGL_TestHideTriangle( t )
 #endif
 
-extern "C" ULONG GEO_ulCurrentTriangleNb;
-extern "C" ULONG GAODisplayFlag;
+extern ULONG GEO_ulCurrentTriangleNb;
+extern ULONG GAODisplayFlag;
 
 #ifdef ACTIVE_EDITORS
 
@@ -999,7 +999,7 @@ extern COL_tdst_GlobalVars COL_gst_GlobalVars;
  =======================================================================================================================
  =======================================================================================================================
  */
-extern "C" LONG OGL_l_DrawSlopeTriangle(
+LONG OGL_l_DrawSlopeTriangle(
         GEO_tdst_ElementIndexedTriangles *_pst_Element,
         GEO_Vertex *_pst_Point,
         int i_NumTriangle,
@@ -1182,7 +1182,7 @@ LONG OGL_l_DrawTriangle(
  =======================================================================================================================
  */
 #ifdef ACTIVE_EDITORS
-extern "C" BOOL OGL_bCountTriangles = TRUE;
+BOOL OGL_bCountTriangles = TRUE;
 #endif//ACTIVE_EDITORS
 
 LONG OGL_l_DrawElementIndexedTriangles(
@@ -1521,7 +1521,7 @@ static int restore_polygon_offset;
 #	define M4Edit_RestorePolygonOffset
 #endif
 
-extern "C" ULONG OpenglCorrectBugMul2X;
+extern ULONG OpenglCorrectBugMul2X;
 void OGL_SetTextureBlending( ULONG _l_Texture, ULONG BM )
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

@@ -1642,13 +1642,13 @@ void	GLV_ComputeAnObject(WOR_tdst_World *_pst_World , ULONG OnlySel , ULONG OPTI
 
 void GLV_AdjustRadiosity(WOR_tdst_World *_pst_World , ULONG OnlySel , ULONG OPTIMIZE , ULONG BreakEdge , float BreakEdgeThresh , ULONG bEnablePenombria , ULONG SmooothFronteer , ULONG ComputeRadiosity , ULONG RadiosityColor , ULONG bSmoothRadioResult , ULONG bSubdivideForRadiosity, ULONG (*SeprogressPosEXTERN) (float F01, char *))
 {
+#	if defined( _GLV_KEEP_LAST )//POPO WARNING rajout
+
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     OBJ_tdst_GameObject *pst_GO;
 	GRO_tdst_Struct		*pst_Gro;
 	ULONG				ulMARK ;
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-#if defined(_GLV_KEEP_LAST)//POPO WARNING rajout
 
 	if (p_LastGLV)
 	{

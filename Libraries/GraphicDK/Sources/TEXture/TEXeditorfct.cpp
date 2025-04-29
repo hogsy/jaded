@@ -42,7 +42,7 @@ extern "C"
 {
 #endif
 
-extern BAS_tdst_barray WOR_ListAllKeys;
+extern "C" BAS_tdst_barray WOR_ListAllKeys;
 
 /*
  =======================================================================================================================

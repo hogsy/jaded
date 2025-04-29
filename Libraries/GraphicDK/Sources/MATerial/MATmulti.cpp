@@ -21,6 +21,7 @@
 #include "MATerial/MATmulti.h"
 #include "GRObject/GROstruct.h"
 #include "ENGine/Sources/WORld/WORload.h"
+#include "GEOmetric/GEOload.h"
 #ifdef JADEFUSION
 #include "DIAlogs/DIAname_dlg.h"
 #endif
@@ -126,8 +127,6 @@ void MAT_FreeMultiMaterial(MAT_tdst_Material *_pst_Material)
 		pst_MultiMat->l_NumberOfSubMaterials = 0;
 	}
 }
-
-extern ULONG	GEO_ul_Load_ObjectCallback(ULONG _ul_PosFile);
 
 /*
  =======================================================================================================================

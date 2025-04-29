@@ -49,8 +49,8 @@ extern BOOL	COL_gb_SoundColorDisplay;
 #else
 extern "C" void COL_SortGameMaterial(COL_tdst_GameMatList *);
 extern "C" void GEO_CreateGeoFromCob(OBJ_tdst_GameObject *, GEO_tdst_Object *, COL_tdst_Cob *);
-extern "C" BOOL	COL_gb_OnMaterialPaint;
-extern "C" BOOL	COL_gb_SoundColorDisplay;
+extern BOOL	COL_gb_OnMaterialPaint;
+extern BOOL	COL_gb_SoundColorDisplay;
 #endif
 
 IMPLEMENT_DYNCREATE(EDIA_cl_GameMaterialView, CFormView)

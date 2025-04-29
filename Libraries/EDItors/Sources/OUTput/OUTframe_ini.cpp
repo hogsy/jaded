@@ -22,7 +22,7 @@
 extern int		TEX_gi_ForceText;
 extern BOOL		ENG_gb_DistCompute;
 #else
-extern "C" int		TEX_gi_ForceText;
+extern int		TEX_gi_ForceText;
 extern "C" BOOL		ENG_gb_DistCompute;
 #endif
 /*

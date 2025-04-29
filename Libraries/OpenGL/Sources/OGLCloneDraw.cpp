@@ -52,17 +52,17 @@ extern void LOA_EndSpeedMode(void);
 extern "C" BOOL GDI_gb_WaveSprite;
 
 // -- UV --
-extern "C" void MAT_UV_Compute_PLANAR_GIZMO( GDI_tdst_DisplayData *pst_CurDD, GEO_tdst_Object *pst_Obj, GEO_tdst_ElementIndexedTriangles *pst_Element, ULONG CurrentAddFlag, ULONG StoreUV );
-extern "C" BOOL MAT_VUISIdentity_i(MAT_tdst_MTLevel *p_tdstLevel);
+void MAT_UV_Compute_PLANAR_GIZMO( GDI_tdst_DisplayData *pst_CurDD, GEO_tdst_Object *pst_Obj, GEO_tdst_ElementIndexedTriangles *pst_Element, ULONG CurrentAddFlag, ULONG StoreUV );
+BOOL MAT_VUISIdentity_i(MAT_tdst_MTLevel *p_tdstLevel);
 
 
 extern BOOL		OGL_gb_DispStrip;
-extern "C" BOOL OGL_gb_DispLOD;
-extern "C" ULONG OGL_ulLODAmbient;
+extern BOOL OGL_gb_DispLOD;
+extern ULONG OGL_ulLODAmbient;
 
 //extern int NbrObjectClone;
 extern BOOL b_CloneLighted[MAXCLONE];
-extern "C" int NumberMat;
+extern int NumberMat;
 //BOOL b_OnlyOneMat;
 #define MAXCLONES 1000
 #define MAXLIGHT 2
@@ -140,7 +140,7 @@ void ComputeUvClone(GEO_tdst_Object *_pst_Geo,GEO_tdst_ElementIndexedTriangles	*
 }
 
 #ifdef ACTIVE_EDITORS
-extern "C" BOOL OGL_bCountTriangles;
+extern BOOL OGL_bCountTriangles;
 extern "C" u32 Stats_ulNumberOfTRiangles;
 #endif //ACTIVE_EDITORS
 

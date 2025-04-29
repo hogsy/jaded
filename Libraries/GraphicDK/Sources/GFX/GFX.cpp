@@ -58,11 +58,6 @@
 #  error unsupported platform
 #endif
 
-#if defined (__cplusplus) && !defined(JADEFUSION)
-extern "C"
-{
-#endif
-
 /*$4
  ***********************************************************************************************************************
     Globals
@@ -1717,7 +1712,3 @@ void GFX_Setv(GFX_tdst_List *_pst_GFX, USHORT _uw_Id, int _i_Param, MATH_tdst_Ve
     else if (GFX_gpst_Current->c_Type == GFX_Table) 
         GFX_Table_Setv(GFX_gpst_Current->p_Data, _i_Param, v);
 }
-
-#if defined (__cplusplus) && !defined(JADEFUSION)
-}
-#endif

@@ -41,11 +41,11 @@
 #include "DIAlogs/DIAname_dlg.h"
 #include "DIAlogs/DIAgrovertexpos_dlg.h"
 
+extern SOFT_tdst_PickingBuffer *pPickForZCull;
 #ifndef JADEFUSION
 extern "C"
 {
 #endif
-	extern SOFT_tdst_PickingBuffer *pPickForZCull;
 	extern void GEO_CreateGeoFromCob(OBJ_tdst_GameObject *, GEO_tdst_Object *, COL_tdst_Cob *);
 #ifndef JADEFUSION
 }

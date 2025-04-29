@@ -91,9 +91,8 @@ void TEX_List_Free(TEX_tdst_List *_pst_TexList)
  =======================================================================================================================
  =======================================================================================================================
  */
-//extern int	WOR_gi_CurrentConsole;
 static	int si_SpecialLangageVersion = -1;
-extern  int AI_EvalFunc_IoGameLangGet_C(void);
+extern "C" int AI_EvalFunc_IoGameLangGet_C( void );
 
 #define SPECIALLANG_POLISH	(1 << 10)
 #define SPECIALLANG_RUSSE	(1 << 11)

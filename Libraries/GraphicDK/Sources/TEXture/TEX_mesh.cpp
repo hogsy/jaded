@@ -398,7 +398,7 @@ WTR_Generator_Struct *WTR_Mesh_Create()
 
 WTR_Generator_Struct *pst_GlobalsWaterParams = NULL;
 WTR_Generator_Struct *pst_GlobalsWaterParams_Save = NULL;
-WATER_Export_Struct stExportWaterParrams;
+extern "C" WATER_Export_Struct stExportWaterParrams = {};
 
 void WTR_Mesh_Destroy(WTR_Generator_Struct *pst_WaterParams)
 {
@@ -3181,7 +3181,7 @@ void WTR_Get_A_DifVector(MATH_tdst_Vector *pSrc , MATH_tdst_Vector *pDst , u32 C
 	}
 }
 
-void WTR_Get_A_MrmVector(MATH_tdst_Vector *pSrc , MATH_tdst_Vector *pDst)
+extern "C" void WTR_Get_A_MrmVector(MATH_tdst_Vector *pSrc , MATH_tdst_Vector *pDst)
 {
 	MATH_tdst_Vector iP0,iP1,iPL;
 	MATH_InitVector( pDst , 0.0f , 0.0f , 1.0f );
@@ -3199,7 +3199,8 @@ void WTR_Get_A_MrmVector(MATH_tdst_Vector *pSrc , MATH_tdst_Vector *pDst)
 	MATH_CrossProduct(&iP0 , &iPL , &iP1);
 	MATH_NormalizeVector(pDst , &iP0 );
 }
-void WTR_BeginLoadWorldHook()
+
+extern "C" void WTR_BeginLoadWorldHook()
 {
 	if (pst_GlobalsWaterParams) WTR_Mesh_Destroy(pst_GlobalsWaterParams);
 	pst_GlobalsWaterParams = NULL;

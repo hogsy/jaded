@@ -1,6 +1,5 @@
 /*$T SND.c GC 1.138 06/22/04 15:50:04 */
 
-#define POINTER_64
 #include "Precomp.h"
 
 /*$6
