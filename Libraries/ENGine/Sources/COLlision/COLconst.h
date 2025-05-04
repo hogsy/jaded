@@ -26,11 +26,7 @@ extern "C"
 #define COL_Cul_MaxDefaultCollidedObjects	150
 #define COL_Cf_Infinite						1E6
 
-#ifdef JADEFUSION
 #define COL_Cul_MaxNbOfCollision			1500
-#else
-#define COL_Cul_MaxNbOfCollision			1000
-#endif
 #define COL_Cul_MaxNbOfZDx					16
 #define COL_Cul_MaxNbOfCob					8
 #define COL_Cul_ColMap						0
