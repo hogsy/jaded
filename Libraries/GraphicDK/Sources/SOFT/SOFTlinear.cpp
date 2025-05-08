@@ -346,7 +346,7 @@ void SOFT_ComputeSpecularVectors(GEO_tdst_Object *pst_Obj)
     float               Norm, Norm2;
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-	_GSP_BeginRaster(9);
+	JADED_PROFILER_START();
 
     CamPos.x = CamPos.y = CamPos.z = 0.0f;
     MATH_InvertMatrix(&Matrix, GDI_gpst_CurDD->st_MatrixStack.pst_CurrentMatrix);
@@ -407,7 +407,7 @@ void SOFT_ComputeSpecularVectors(GEO_tdst_Object *pst_Obj)
 
     GDI_gpst_CurDD->pst_ComputingBuffers->ul_Flags |= SOFT_Cul_CB_SpecularField;
 
-	_GSP_EndRaster(9);
+	JADED_PROFILER_END();
 }
 
 /*

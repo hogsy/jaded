@@ -1123,8 +1123,6 @@ static void s_OneTrame( void )
 #endif
 
 	/* Read inputs */
-	_GSP_BeginRaster( 15 );
-
 	if ( ENG_gp_Input && ( !ENG_gb_ForcePauseEngine ) )
 	{
 		PRO_StartTrameRaster( &ENG_gpst_RasterEng_Input );
@@ -1139,11 +1137,7 @@ static void s_OneTrame( void )
 	NET_ServerUpdate();
 	NET_PlayerUpdate();
 
-	_GSP_EndRaster( 15 );
-
 	/* Engine */
-
-	_GSP_BeginRaster( 18 );
 	if ( ( ENG_gp_Engine ) && ( !ENG_gb_ForcePauseEngine ) )
 	{
 
@@ -1155,13 +1149,8 @@ static void s_OneTrame( void )
 		PROPS2_StopRaster( &PROPS2_gst_ENG_gp_Engine );
 		PRO_StopTrameRaster( &ENG_gpst_RasterEng_OneCall );
 	}
-	_GSP_EndRaster( 18 );
 
 	/* Display */
-#ifndef JADEFUSION
-	_GSP_BeginRaster( 19 );
-#endif
-
 	if ( ENG_gp_Display && MAI_gst_MainHandles.pst_DisplayData )
 	{
 

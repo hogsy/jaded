@@ -6040,6 +6040,8 @@ void GEO_Render_Default(OBJ_tdst_GameObject *_pst_GO)
 void GEO_Render(OBJ_tdst_GameObject *_pst_GO)
 #endif
 {
+	JADED_PROFILER_START();
+
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	GRO_tdst_Visu						*pst_Visu;
 	GEO_tdst_Object						*pst_Obj;
@@ -6055,11 +6057,6 @@ void GEO_Render(OBJ_tdst_GameObject *_pst_GO)
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	/* TEST TEMP PHIL */
 	
-	
-
-	/*$2--------------------------------------------------------------------------------------------------------------*/
-	_GSP_BeginRaster(23);
-
 	pst_DD = &GDI_gpst_CurDD_SPR;
 	pst_Visu = _pst_GO->pst_Base->pst_Visu;
 	pst_Obj = (GEO_tdst_Object *) pst_Visu->pst_Object;
@@ -6274,8 +6271,6 @@ void GEO_Render(OBJ_tdst_GameObject *_pst_GO)
     
 	/*$2- RLI --------------------------------------------------------------------------------------------------------*/
 
-	_GSP_BeginRaster(8);
-
 #if defined(_XBOX)
 	//TURN OFF HW LIGHTS
 	LIGHT_TurnOffObjectLighting();
@@ -6395,8 +6390,6 @@ void GEO_Render(OBJ_tdst_GameObject *_pst_GO)
 
 	}  
 	
-	_GSP_EndRaster(8);
-
 /*$2- COB ------------------------------------------------------------------------------------------------------------*/
 
 #ifdef ACTIVE_EDITORS
@@ -6622,7 +6615,7 @@ void GEO_Render(OBJ_tdst_GameObject *_pst_GO)
 		renderState_Cloned = 0;
 #endif
 
-	_GSP_EndRaster(23);
+	JADED_PROFILER_END();
 }
 
 //***************** FIN DU RENDER JADE NORMAL ************
@@ -6789,9 +6782,6 @@ void GEO_RenderZone(OBJ_tdst_GameObject *_pst_GO)
 
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-	/*$2--------------------------------------------------------------------------------------------------------------*/
-	_GSP_BeginRaster(23);
-
 	pst_DD = &GDI_gpst_CurDD_SPR;
 	pst_Visu = _pst_GO->pst_Base->pst_Visu;
 	pst_Obj = (GEO_tdst_Object *) pst_Visu->pst_Object;
@@ -6848,8 +6838,6 @@ void GEO_RenderZone(OBJ_tdst_GameObject *_pst_GO)
     
 	/*$2- RLI --------------------------------------------------------------------------------------------------------*/
 
-	_GSP_BeginRaster(8);
-
     GEO_Render_InitRLI(pst_DD , pst_Obj, pst_Visu);
     if (ul_ValidityMask & (MAT_ValidateMask_Diffuse	|MAT_ValidateMask_Specular_Color))
     {
@@ -6870,8 +6858,6 @@ void GEO_RenderZone(OBJ_tdst_GameObject *_pst_GO)
 
     }
     LIGHT_ComputeVertexColor(pst_Obj->l_NbPoints);
-	
-	_GSP_EndRaster(8);
 
 /*$2- COB ------------------------------------------------------------------------------------------------------------*/
 
@@ -6944,8 +6930,6 @@ void GEO_RenderZone(OBJ_tdst_GameObject *_pst_GO)
 	/*$2- Sub object -------------------------------------------------------------------------------------------------*/
 
 	GEO_Render_SubObjectEnd(_pst_GO, pst_Obj);
-
-	_GSP_EndRaster(23);
 }
 
 

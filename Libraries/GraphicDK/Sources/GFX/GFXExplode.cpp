@@ -533,7 +533,6 @@ int GFX_i_Explode_Render(void *p_Data,GRO_tdst_Struct *p_Material)
 	if (!pExplode->ulSortEnable/* && !pExplode->ulRotationEnable*/)
 	{
 nosort:
-		_GSP_EndRaster(7); 
 		if ((pExplode->p_Owner) &&
 			(pExplode->p_Owner->pst_Base) &&
 			(pExplode->p_Owner->pst_Base->pst_Visu))
@@ -542,7 +541,6 @@ nosort:
 			pExplode->p_Owner->pst_Base->pst_Visu->ul_DrawMask &= ~(GDI_Cul_DM_TestBackFace | GDI_Cul_DM_UseAmbient | GDI_Cul_DM_Lighted | GDI_Cul_DM_UseRLI);
 			GRO_Render(pExplode->p_Owner);
 		}
-		_GSP_BeginRaster(7);
 	}
 //*/
 	else

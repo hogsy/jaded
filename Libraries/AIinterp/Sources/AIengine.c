@@ -737,6 +737,8 @@ AI_tdst_Node *AI_pst_RunFunction(AI_tdst_Function *_pst_Function, AI_tdst_Node *
 
 #endif /* AI2C */
 
+	JADED_PROFILER_START();
+
 #ifdef BENCH_IA_TEST
 	AIBnch_BeforeRunFunc(_pst_Function);
 #endif
@@ -952,6 +954,8 @@ onestep:
 	if(AI_gb_FullRasters) 
 	PRO_StopTrameRaster(&_pst_Function->st_Raster);
 #endif
+
+	JADED_PROFILER_END();
 
 	return pst_CurrentNode;
 }
@@ -1199,6 +1203,8 @@ void AI_MainCall(WOR_tdst_World *_pst_World)
  */
 void AI_ExecCallbackAll(WOR_tdst_World *_pst_World, int _i_Num)
 {
+	JADED_PROFILER_START();
+
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	TAB_tdst_PFtable	*pst_AIEOT;
 	TAB_tdst_PFelem		*pst_CurrentElem;
@@ -1240,6 +1246,8 @@ void AI_ExecCallbackAll(WOR_tdst_World *_pst_World, int _i_Num)
 #endif
 		
 	}
+
+	JADED_PROFILER_END();
 }
 
 /*
@@ -1379,6 +1387,8 @@ void AI_ExecCallback(OBJ_tdst_GameObject *_pst_GO, int _i_Num)
 	if(pst_Instance->pst_Model->c_ModelInvalid) return;
 #endif
 
+	JADED_PROFILER_START();
+
 	/* Save context */
 	pst_SGAO = AI_gpst_CurrentGameObject;
 	pst_SInstance = AI_gpst_CurrentInstance;
@@ -1393,7 +1403,6 @@ void AI_ExecCallback(OBJ_tdst_GameObject *_pst_GO, int _i_Num)
 	AI_gi_OneStepMode = 0;
 #endif
 
-	_GSP_BeginRaster(14);
 	for(i = 0; i < pst_Instance->i_NumCB; i++)
 	{
 		if(pst_Instance->pst_CB[i].pst_Func && (pst_Instance->pst_CB[i].i_Type == _i_Num))
@@ -1412,7 +1421,6 @@ void AI_ExecCallback(OBJ_tdst_GameObject *_pst_GO, int _i_Num)
 	}
 
 	/* Restore context */
-	_GSP_EndRaster(14);
 	ENG_gb_AIRunning = FALSE;
 	AI_gpst_CurrentGameObject = AI_gpst_CurrentUltra = pst_SGAO;
 	AI_gpst_CurrentInstance = AI_gpst_CurrentInstanceUltra = pst_SInstance;
@@ -1424,6 +1432,8 @@ void AI_ExecCallback(OBJ_tdst_GameObject *_pst_GO, int _i_Num)
 #ifdef ACTIVE_EDITORS
 	AI_gi_OneStepMode = i_OneStep;
 #endif
+
+	JADED_PROFILER_END();
 }
 
 /*

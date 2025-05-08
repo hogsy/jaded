@@ -296,6 +296,8 @@ extern "C" BOOL GRO_gb_ResetGhost = FALSE;
 
 void GRO_RenderWired(OBJ_tdst_GameObject *_pst_GO, GRO_tdst_Struct *pst_Obj , GDI_tdst_DisplayData   *_pst_CurDD)
 {
+	JADED_PROFILER_START();
+
 	ULONG Mode;
 	ULONG savesave, saveC;
 
@@ -387,6 +389,8 @@ void GRO_RenderWired(OBJ_tdst_GameObject *_pst_GO, GRO_tdst_Struct *pst_Obj , GD
 	_pst_CurDD->ul_DisplayInfo &= ~GDI_Cul_DI_ShowSlope;
 	_pst_CurDD->ul_CurrentDrawMask = savesave;
 	_pst_CurDD->ul_ColorConstant = saveC;
+
+	JADED_PROFILER_END();
 }
 #else
 #define GRO_RenderWired(_pst_GO, pst_Obj , p_stCurDD) pst_Obj->i->pfn_Render(_pst_GO);
@@ -461,9 +465,9 @@ void GRO_Render(OBJ_tdst_GameObject *_pst_GO)
     if(!pst_Obj->i) return;
     if(!pst_Obj->i->pfn_Render) return;
 
-	SOFT_ZList_SelectZListe(ZListesBase + pst_Visu->c_DisplayOrder);
+	JADED_PROFILER_START();
 
-	_GSP_BeginRaster(24);
+	SOFT_ZList_SelectZListe(ZListesBase + pst_Visu->c_DisplayOrder);
 
     p_stCurDD->ul_DisplayInfo &= GDI_Cul_DI_ComputeShadowMap | GDI_Cul_DI_DoubleRendering_I | GDI_Cul_DI_DoubleRendering_K | GDI_Cul_DI_RenderingTransparency | GDI_Cul_DI_RenderingInterface;
     p_stCurDD->ul_CurrentDrawMask = p_stCurDD->ul_DrawMask & pst_Visu->ul_DrawMask;
@@ -495,11 +499,8 @@ void GRO_Render(OBJ_tdst_GameObject *_pst_GO)
             PRO_StopTrameRaster(&p_stCurDD->pst_Raster->st_GroRender_SetViewMatrix);
             PRO_StartTrameRaster(&p_stCurDD->pst_Raster->st_GroRender_Render);
 
-			_GSP_EndRaster(24);
-
 			GRO_RenderWired(_pst_GO, pst_Obj , p_stCurDD);
 
-			_GSP_BeginRaster(24);
             PRO_StopTrameRaster(&p_stCurDD->pst_Raster->st_GroRender_Render);
 	        M_4Edit_RenderPickable( _pst_GO, pst_PickableObject );
 	        M_4Edit_SpecialPush_End();
@@ -528,7 +529,7 @@ void GRO_Render(OBJ_tdst_GameObject *_pst_GO)
     p_stCurDD->ul_DisplayInfo &= ~GDI_Cul_DI_UseSpecialVertexBuffer;
 	SOFT_ZList_SelectZListe(ZListesBase);
 
-	_GSP_EndRaster(24);
+	JADED_PROFILER_END();
 }
 /*
  =======================================================================================================================
@@ -543,8 +544,6 @@ void GRO_RenderGro(OBJ_tdst_GameObject *_pst_GO, GRO_tdst_Struct *pst_Obj)
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
     if(pst_Obj == NULL) return;
-
-	_GSP_BeginRaster(24);
 
     st_Visu.pst_Object = pst_Obj;
 
@@ -575,11 +574,7 @@ void GRO_RenderGro(OBJ_tdst_GameObject *_pst_GO, GRO_tdst_Struct *pst_Obj)
 
             PRO_StartTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GroRender_Render);
 
-			_GSP_EndRaster(24);
-
 			pst_Obj->i->pfn_Render(_pst_GO);
-
-			_GSP_BeginRaster(24);
 
             PRO_StopTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GroRender_Render);
         }
@@ -604,8 +599,6 @@ void GRO_RenderGro(OBJ_tdst_GameObject *_pst_GO, GRO_tdst_Struct *pst_Obj)
         M_4Edit_SpecialPush_End();
         SOFT_l_MatrixStack_Pop(&GDI_gpst_CurDD->st_MatrixStack);
     }
-
-	_GSP_EndRaster(24);
 }
 
 void GAO_Render(OBJ_tdst_GameObject * _pst_GO )

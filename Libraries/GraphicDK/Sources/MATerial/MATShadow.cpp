@@ -1204,7 +1204,7 @@ void SDW_DisplayShadowsOnCurrentObject(GEO_tdst_Object *pst_Obj)
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY ,GX_FALSE, GX_PTIDENTITY);
 #endif 
 
-	_GSP_BeginRaster(3);
+	JADED_PROFILER_START();
 	
 	ulFlags = MAT_Cul_Flag_Bilinear ;
 	ulFlags |= MAT_Cul_Flag_NoZWrite;
@@ -1323,7 +1323,7 @@ NEXT_SHADOW:
 		p_SdwNode++;
 	}
 
-	_GSP_EndRaster(3);
+	JADED_PROFILER_END();
 	
 #endif	//#if !defined(_GAMECUBE) || !defined(USE_FULL_SCENE_SHADOWS)
 }

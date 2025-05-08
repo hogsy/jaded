@@ -2554,7 +2554,8 @@ if (_pst_Node->p_CloneNextGao) return;
 #endif
 
     PRO_StartTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_Light_All);
-	_GSP_BeginRaster(1);
+	
+	JADED_PROFILER_START();
 		
     M_TestGameCubeHardwareLights
 	{
@@ -2864,8 +2865,9 @@ if (_pst_Node->p_CloneNextGao) return;
     }
 #endif
 	
-	_GSP_EndRaster(1);
     PRO_StopTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_Light_All);
+
+	JADED_PROFILER_END();
 }
 
 /*

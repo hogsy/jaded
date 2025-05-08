@@ -57,13 +57,6 @@
 
 #include "BASe/BENch/BENch.h"
 
-#ifdef _FINAL_
-#define M_StartRaster()
-#define M_StopRaster()
-#else
-#define M_StartRaster() _GSP_BeginRaster(39)
-#define M_StopRaster()	_GSP_EndRaster(39)
-#endif
 #if defined(PSX2_TARGET) && defined(__cplusplus)
 extern "C"
 {
@@ -725,9 +718,7 @@ int AI_EvalFunc_OBJDestroy_C(OBJ_tdst_GameObject *pst_GO)
 	BOOL			b_RealDestroy;
 	/*~~~~~~~~~~~~~~~~~~~~~~~*/
 
-	_GSP_EndRaster(14);
 	AI_ExecCallback(pst_GO, AI_C_Callback_WhenDestroy);
-	_GSP_BeginRaster(14);
 
 	/* Register killed GO */
 	if(WOR_gi_NumKilledGO < WOR_C_MaxKilledGO)
@@ -748,9 +739,7 @@ int AI_EvalFunc_OBJDestroy_C(OBJ_tdst_GameObject *pst_GO)
 		b_RealDestroy = FALSE;
 
 	/* inactive sound */
-	M_StartRaster();
 	SND_DestroyInstanceOfGao(pst_GO);
-	M_StopRaster();
 
 	/* Object must have been generated to be destroy */
 	//if(!(pst_GO->ul_IdentityFlags & OBJ_C_IdentityFlag_Generated))
@@ -2590,9 +2579,7 @@ ULONG AI_EvalFunc_OBJ_FlagsControlSet_C(OBJ_tdst_GameObject *_pst_GO, ULONG _ul_
 
 	if(_ul_On & OBJ_C_ControlFlag_ForceInactive)
 	{
-		M_StartRaster();
 		SND_RegisterInactiveGAO(_pst_GO);
-		M_StopRaster();
 	}
 
 #ifdef ACTIVE_EDITORS
@@ -2618,7 +2605,6 @@ ULONG AI_EvalFunc_OBJ_FlagsControlSet_C(OBJ_tdst_GameObject *_pst_GO, ULONG _ul_
 		_pst_GO->ul_StatusAndControlFlags |= OBJ_C_StatusFlag_Visible;
 		_pst_GO->ul_StatusAndControlFlags &= ~OBJ_C_StatusFlag_Culled;
 	}
-
 
 	/* We return the control flags */
 	return(ul_ControlFlags & 0xffff0000);

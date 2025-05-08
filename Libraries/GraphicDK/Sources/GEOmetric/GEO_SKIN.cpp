@@ -2618,8 +2618,6 @@ void GEO_SKN_ComputeNormals( GEO_tdst_Object *_pst_Object, GEO_Vertex *pst_Point
 
 	if ( !_pst_Object->l_NbPoints ) return;
 
-	_GSP_BeginRaster( 2 );
-
 	GEO_UseNormals( _pst_Object );// OK
 	pst_Normal     = _pst_Object->dst_PointNormal;
 	pst_LastNormal = pst_Normal + _pst_Object->l_NbPoints;
@@ -2893,7 +2891,6 @@ void GEO_SKN_ComputeNormals( GEO_tdst_Object *_pst_Object, GEO_Vertex *pst_Point
 			MATH_NormalizeAnyVector( pst_Normal, pst_Normal );
 	}
 #	endif    // #else PSX2_TARGET
-	_GSP_EndRaster( 2 );
 }
 #endif        //OPT_COMPUTENORMALS
 
@@ -2980,8 +2977,6 @@ void GEO_SKN_ComputeNormals( GEO_tdst_Object *_pst_Object, GEO_Vertex *pst_Point
         return;
 */
 		if ( !( _pst_GO->ul_IdentityFlags & OBJ_C_IdentityFlag_AdditionalMatrix ) ) return;
-
-		_GSP_BeginRaster( 2 );
 
 		ul_MatrixCounter = pst_Object->p_SKN_Objectponderation->NumberPdrtLists;
 		if ( GDI_gpst_CurDD->ul_DisplayInfo & GDI_Cul_DI_UseSpecialVertexBuffer )
@@ -3435,8 +3430,6 @@ void GEO_SKN_ComputeNormals( GEO_tdst_Object *_pst_Object, GEO_Vertex *pst_Point
 	GDI_gpst_CurDD->ul_DisplayInfo |= GDI_Cul_DI_UseSpecialVertexBuffer;
 	GDI_gpst_CurDD->p_Current_Vertex_List = GDI_gpst_CurDD->pst_ComputingBuffers->ast_SpecialVB;
 #endif
-
-		_GSP_EndRaster( 2 );
 	}
 
 

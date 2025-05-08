@@ -747,7 +747,6 @@ void SPG_Modifier_Unapply
 #endif
 	}
 
-_GSP_BeginRaster(42);
 	pst_Point = GDI_gpst_CurDD->p_Current_Vertex_List;
 
 	pst_CurrentObj = _pst_Obj;
@@ -1097,8 +1096,6 @@ _GSP_BeginRaster(42);
 #ifdef _XENON_RENDER
 	GDI_gpst_CurDD->pst_ComputingBuffers->ComputedColors = pOldColorBuffer;
 #endif
-
-_GSP_EndRaster(42);
 }
 
 

@@ -526,8 +526,6 @@ void ANI_Render(OBJ_tdst_GameObject *_pst_GO)
 	MATH_tdst_Matrix		*pst_BoneGizmo;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-	_GSP_BeginRaster(5);
-
 	b_SkinBone = FALSE;
 	pst_GOAnim = _pst_GO->pst_Base->pst_GameObjectAnim;
 
@@ -575,7 +573,6 @@ void ANI_Render(OBJ_tdst_GameObject *_pst_GO)
 	if(!pst_Skeleton)
 	{
 		_pst_GO->pst_Base->pst_GameObjectAnim->uc_Signal = 0;
-		_GSP_EndRaster(5);
 		return;
 	}
 
@@ -622,7 +619,6 @@ void ANI_Render(OBJ_tdst_GameObject *_pst_GO)
 			ANI_RenderBone(pst_BoneGO);
 	}
 
-	_GSP_EndRaster(5);
 	if (PushedStack) 
 	{
 		/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

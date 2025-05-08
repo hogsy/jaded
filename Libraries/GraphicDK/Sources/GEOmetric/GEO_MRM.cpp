@@ -242,15 +242,11 @@ void GEO_MRM_SetNumberOfPoints_Percent(GEO_tdst_Object *pst_Object, float Qualit
 {
     if(!GEO_MRM_ul_IsMrmObject(pst_Object)) return;
 
-	_GSP_BeginRaster(22);
-
     GEO_MRM_SetNumberOfPoints_Number
     (
         pst_Object,
         GEO_MRM_GetNumberOfPoints_Curved(pst_Object, Quality)
     );
-
-	_GSP_EndRaster(22);
 }
 
 void GEO_MRM_v_ApplyReorder(LONG *_pValues, unsigned short *_pIndirection, LONG _lElementNb)

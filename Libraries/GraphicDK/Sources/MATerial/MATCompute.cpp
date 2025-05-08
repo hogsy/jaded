@@ -128,14 +128,13 @@ void MAT_ComputeDeductedAlpha(GEO_tdst_Object *pst_Obj, MAT_tdst_MTLevel *pst_ML
 	MATH_tdst_Vector	Local;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-	_GSP_BeginRaster(10);
-
 	if
 	(
 		(MAT_GET_UVSource(pst_MLTTXLVL->ul_Flags) != MAT_Cc_UV_Phong_GZMO)
 	&&	(MAT_GET_UVSource(pst_MLTTXLVL->ul_Flags) != MAT_Cc_UV_Planar_GZMO)
 	)	return;
 
+	JADED_PROFILER_START();
 
 	if(bFirst)
 	{
@@ -257,7 +256,7 @@ void MAT_ComputeDeductedAlpha(GEO_tdst_Object *pst_Obj, MAT_tdst_MTLevel *pst_ML
 		}
 	}
 
-	_GSP_EndRaster(10);	
+	JADED_PROFILER_END();
 }
 
 

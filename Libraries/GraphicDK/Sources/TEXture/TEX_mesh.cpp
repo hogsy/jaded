@@ -3216,9 +3216,10 @@ extern void GSP_AE_OldZListHook(int ZlistNum , float Z , float fHeight );
 #endif
 void GSP_AE_ZListHook(int ZlistNum )
 {
+	JADED_PROFILER_START();
+
 	if (ZlistNum == 0)
 	{
-		_GSP_BeginRaster(43);
         if (pst_GlobalsWaterParams) 
         {
 			static unsigned int Workkkk; // E3 slaughter
@@ -3236,8 +3237,8 @@ void GSP_AE_ZListHook(int ZlistNum )
 		else
 			GSP_AE_OldZListHook( ZlistNum ,0.0f , 0.0f);
 #endif		*/
-		_GSP_EndRaster(43);
 	}
 	
+	JADED_PROFILER_END();
 }//*/
 #endif

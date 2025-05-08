@@ -43,15 +43,6 @@
 
 #include "BASe/BENch/BENch.h"
 
-#ifdef _FINAL_
-#define M_StartRaster()
-#define M_StopRaster()
-#else
-#define M_StartRaster() _GSP_BeginRaster(39)
-#define M_StopRaster()	_GSP_EndRaster(39)
-#endif
-
-
 /*$4
  ***********************************************************************************************************************
     prototypes
@@ -173,14 +164,12 @@ int AI_EvalFunc_SNDRequest_C(OBJ_tdst_GameObject *_pst_GO, int _i_Sound, ULONG _
 
 	AI_Check((_ul_Flags != -1), "Invalid parameter");
 
-	M_StartRaster();
 	pst_Pos = _pst_GO->pst_GlobalMatrix;
 
 	if(SND_Cul_GlobalSoundReferencing & _ul_Flags)
 		SND_gst_Params.ul_Flags |= SND_Cte_UseGlobalIndex;
 
 	i = SND_l_Request((void *) _pst_GO, _i_Sound);
-
 
 	SND_gst_Params.ul_Flags &= ~SND_Cte_UseGlobalIndex;
 	_ul_Flags &= ~SND_Cul_GlobalSoundReferencing;
@@ -192,7 +181,6 @@ int AI_EvalFunc_SNDRequest_C(OBJ_tdst_GameObject *_pst_GO, int _i_Sound, ULONG _
 		if(_ul_Flags & SND_Cul_DSF_AutoPlay) SND_PlaySound(i);
 	}
 
-	M_StopRaster();
 	return i;
 }
 
@@ -516,9 +504,7 @@ AI_tdst_Node *AI_EvalFunc_SNDSetFreq(AI_tdst_Node *_pst_Node)
 
 	i_Freq = AI_PopInt();
 	i_Sound = AI_PopInt();
-	M_StartRaster();
 	SND_SetFreq(i_Sound, i_Freq);
-	M_StopRaster();
 	return ++_pst_Node;
 }
 
@@ -578,13 +564,11 @@ void AI_EvalFunc_SNDUltraPlaySoundLooped_C(OBJ_tdst_GameObject *pst_GO, int inde
 
 	if(SND_i_IsPlaying(index)) return;
 
-	M_StartRaster();
 	SND_i_CheckOrInitGAO(pst_GO);
 	pst_SI->p_GameObject = (void *) (pst_GO);
 	pst_Pos = pst_GO->pst_GlobalMatrix;
 	SND_SetPos((void *) pst_GO, index, pst_Pos);
 	SND_PlaySoundLooping(index, nb);
-	M_StopRaster();
 }
 
 /*
@@ -620,13 +604,11 @@ void AI_EvalFunc_SNDUltraPlaySound_C(OBJ_tdst_GameObject *pst_GO, int index)
 	if(index < 0) return;
 	if(SND_i_IsPlaying(index)) return;
 
-	M_StartRaster();
 	SND_i_CheckOrInitGAO(pst_GO);
 	SND_gst_Params.dst_Instance[index].p_GameObject = (void *) (pst_GO);
 	pst_Pos = pst_GO->pst_GlobalMatrix;
 	SND_SetPos((void *) pst_GO, index, pst_Pos);
 	SND_PlaySound(index);
-	M_StopRaster();
 }
 
 /*
@@ -902,7 +884,6 @@ int AI_EvalFunc_SNDGetInstanceModifier_C(OBJ_tdst_GameObject *_pst_GAO, int _i_i
 	if(_pst_GAO->pst_Extended->pst_Modifiers == NULL) return -1;
 	if(_i_id < 0) return -1;
 
-	M_StartRaster();
 	pst_MdF = _pst_GAO->pst_Extended->pst_Modifiers;
 
 	while(pst_MdF)
@@ -921,7 +902,6 @@ int AI_EvalFunc_SNDGetInstanceModifier_C(OBJ_tdst_GameObject *_pst_GAO, int _i_i
 		pst_MdF = pst_MdF->pst_Next;
 	}
 
-	M_StopRaster();
 	return -1;
 }
 
@@ -942,7 +922,6 @@ void AI_EvalFunc_SNDPlayModifier_C(OBJ_tdst_GameObject *_pst_GAO, int _i_id)
 	if(_pst_GAO->pst_Extended->pst_Modifiers == NULL) return;
 	if(_i_id == -10) return;
 
-	M_StartRaster();
 	pst_MdF = _pst_GAO->pst_Extended->pst_Modifiers;
 
 	if(_i_id == -1)
@@ -975,8 +954,6 @@ void AI_EvalFunc_SNDPlayModifier_C(OBJ_tdst_GameObject *_pst_GAO, int _i_id)
 			pst_MdF = pst_MdF->pst_Next;
 		}
 	}
-
-	M_StopRaster();
 }
 
 /*
@@ -1015,7 +992,6 @@ void AI_EvalFunc_SNDPauseModifier_C(OBJ_tdst_GameObject *_pst_GAO, int _i_id)
 	if(_pst_GAO->pst_Extended->pst_Modifiers == NULL) return;
 	if(_i_id == -10) return;
 
-	M_StartRaster();
 	pst_MdF = _pst_GAO->pst_Extended->pst_Modifiers;
 
 	if(_i_id == -1)
@@ -1048,8 +1024,6 @@ void AI_EvalFunc_SNDPauseModifier_C(OBJ_tdst_GameObject *_pst_GAO, int _i_id)
 			pst_MdF = pst_MdF->pst_Next;
 		}
 	}
-
-	M_StopRaster();
 }
 
 /*
@@ -1088,7 +1062,6 @@ void AI_EvalFunc_SNDStopModifier_C(OBJ_tdst_GameObject *_pst_GAO, int _i_id)
 	if(_pst_GAO->pst_Extended->pst_Modifiers == NULL) return;
 	if(_i_id == -10) return;
 
-	M_StartRaster();
 	pst_MdF = _pst_GAO->pst_Extended->pst_Modifiers;
 
 	if(_i_id == -1)
@@ -1121,8 +1094,6 @@ void AI_EvalFunc_SNDStopModifier_C(OBJ_tdst_GameObject *_pst_GAO, int _i_id)
 			pst_MdF = pst_MdF->pst_Next;
 		}
 	}
-
-	M_StopRaster();
 }
 
 /*
@@ -1149,7 +1120,6 @@ void AI_EvalFunc_SNDActiveInsertModifier_C
 	if(_pst_GAO->pst_Extended->pst_Modifiers == NULL) return;
 	if(_i_id == -10) return;
 
-	M_StartRaster();
 	pst_MdF = _pst_GAO->pst_Extended->pst_Modifiers;
 
 	if(_i_id == -1)
@@ -1182,8 +1152,6 @@ void AI_EvalFunc_SNDActiveInsertModifier_C
 			pst_MdF = pst_MdF->pst_Next;
 		}
 	}
-
-	M_StopRaster();
 }
 
 /*
@@ -1245,7 +1213,6 @@ int AI_EvalFunc_SNDGetStatusModifier_C(OBJ_tdst_GameObject *_pst_GAO, int _i_id)
 	if(_pst_GAO->pst_Extended == NULL) return 0;
 	if(_pst_GAO->pst_Extended->pst_Modifiers == NULL) return 0;
 
-	M_StartRaster();
 	pst_MdF = _pst_GAO->pst_Extended->pst_Modifiers;
 	tmp2 = tmp = 0;
 
@@ -1269,7 +1236,6 @@ int AI_EvalFunc_SNDGetStatusModifier_C(OBJ_tdst_GameObject *_pst_GAO, int _i_id)
 			if(pst_MdF->i->ul_Type == MDF_C_Modifier_Sound)
 			{
 				pst_SndMdF = (GEN_tdst_ModifierSound *) pst_MdF->p_Data;
-				M_StopRaster();
 				if(pst_SndMdF->ui_Id == (unsigned int) _i_id) return MDF_M_SndGetState(pst_SndMdF);
 			}
 
@@ -1277,7 +1243,6 @@ int AI_EvalFunc_SNDGetStatusModifier_C(OBJ_tdst_GameObject *_pst_GAO, int _i_id)
 		}
 	}
 
-	M_StopRaster();
 	return 0;
 }
 
@@ -1512,7 +1477,6 @@ void AI_EvalFunc_SNDPrefetchModifier_C(OBJ_tdst_GameObject *_pst_GAO, int _i_id)
 	if(_pst_GAO->pst_Extended == NULL) return;
 	if(_pst_GAO->pst_Extended->pst_Modifiers == NULL) return;
 
-	M_StartRaster();
 	pst_MdF = _pst_GAO->pst_Extended->pst_Modifiers;
 
 	if(_i_id == -1)
@@ -1541,8 +1505,6 @@ void AI_EvalFunc_SNDPrefetchModifier_C(OBJ_tdst_GameObject *_pst_GAO, int _i_id)
 			pst_MdF = pst_MdF->pst_Next;
 		}
 	}
-
-	M_StopRaster();
 }
 
 /*
@@ -1670,7 +1632,6 @@ void AI_EvalFunc_SNDFlushModifier_C(OBJ_tdst_GameObject *_pst_GAO, int _i_id)
 	if(_pst_GAO->pst_Extended == NULL) return;
 	if(_pst_GAO->pst_Extended->pst_Modifiers == NULL) return;
 
-	M_StartRaster();
 	pst_MdF = _pst_GAO->pst_Extended->pst_Modifiers;
 
 	if(_i_id == -1)
@@ -1699,8 +1660,6 @@ void AI_EvalFunc_SNDFlushModifier_C(OBJ_tdst_GameObject *_pst_GAO, int _i_id)
 			pst_MdF = pst_MdF->pst_Next;
 		}
 	}
-
-	M_StopRaster();
 }
 
 /*

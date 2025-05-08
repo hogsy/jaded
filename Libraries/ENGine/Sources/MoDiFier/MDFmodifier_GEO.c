@@ -1793,7 +1793,7 @@ void GEO_ModifierMorphing_Apply(MDF_tdst_Modifier *_pst_Mod, GEO_tdst_Object *_p
     if ( _pst_Obj->st_Id.i->ul_Type != GRO_Geometric )
         return;
         
-	_GSP_BeginRaster(52);
+	JADED_PROFILER_START();
         
 #ifdef JADEFUSION
     // Allocate elements if needed
@@ -2017,7 +2017,8 @@ void GEO_ModifierMorphing_Apply(MDF_tdst_Modifier *_pst_Mod, GEO_tdst_Object *_p
 
     _pst_Obj->b_CreateMorphedMesh = TRUE;
 #endif
-	_GSP_EndRaster(52);
+
+	JADED_PROFILER_END();
 }
 
 /*

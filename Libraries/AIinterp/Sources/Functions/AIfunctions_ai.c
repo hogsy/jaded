@@ -686,9 +686,7 @@ void AI_EvalFunc_AICBExecuteAll_C(int type, int param)
 	AI_M_GetCurrentObject(pst_GO);
 	pst_World = WOR_World_GetWorldOfObject(pst_GO);
 	AICB_Param = param;
-	_GSP_EndRaster(14);
 	AI_ExecCallbackAll(pst_World, type);
-	_GSP_BeginRaster(14);
 }
 /**/
 AI_tdst_Node *AI_EvalFunc_AICBExecuteAll(AI_tdst_Node *_pst_Node)
@@ -710,9 +708,7 @@ AI_tdst_Node *AI_EvalFunc_AICBExecuteAll(AI_tdst_Node *_pst_Node)
 void AI_EvalFunc_AICBExecute_C(OBJ_tdst_GameObject *pst_GAO, int type, int param)
 {
 	AICB_Param = param;
-	_GSP_EndRaster(14);
 	AI_ExecCallback(pst_GAO, type);
-	_GSP_BeginRaster(14);
 }
 /**/
 AI_tdst_Node *AI_EvalFunc_AICBExecute(AI_tdst_Node *_pst_Node)

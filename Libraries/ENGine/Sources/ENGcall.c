@@ -96,8 +96,6 @@ void ENG_OneWorldEngineCall(WOR_tdst_World *_pst_World)
 	}
 #endif
 
-	 _GSP_BeginRaster(0);
-	 
 	/* For loop thru activators */
 	WOR_gpst_CurrentWorld = _pst_World;
 
@@ -130,13 +128,11 @@ void ENG_OneWorldEngineCall(WOR_tdst_World *_pst_World)
 	 */
 	
 	ENG_gb_MustRebuildDyn = FALSE;
-	_GSP_EndRaster(0);
 	
 	if(_pst_World->b_ForceActivationRefresh)
 	{
 		if(ENG_gb_ForceUnPause)
 		{
-			 _GSP_BeginRaster(0);
 			/* Reset pause mode for all objects */
 			pst_Elem = _pst_World->st_AllWorldObjects.p_Table;
 			pst_LastElem = _pst_World->st_AllWorldObjects.p_NextElem;
@@ -152,20 +148,12 @@ void ENG_OneWorldEngineCall(WOR_tdst_World *_pst_World)
 					OBJ_SetStatusFlag((OBJ_tdst_GameObject *) (pst_Elem->p_Pointer), OBJ_C_StatusFlag_Active);
 						
 			}
-			_GSP_EndRaster(0);
 		}
 	
-
-		_GSP_BeginRaster(28);
-		
 		PROPS2_StartRaster(&PROPS2_gst_WOR_World_ActivateObjects);
 		WOR_World_ActivateObjects(_pst_World);
 		PROPS2_StopRaster(&PROPS2_gst_WOR_World_ActivateObjects);
 		
-		_GSP_EndRaster(28);
-
-	
-
 		/*$2
 		 ---------------------------------------------------------------------------------------------------------------
 		    4: We build the Engine Objects Tables (EOT) or (Tableaux d'objets moteurs (TOM) in french), but only when the activ
@@ -173,41 +161,29 @@ void ENG_OneWorldEngineCall(WOR_tdst_World *_pst_World)
 		 ---------------------------------------------------------------------------------------------------------------
 		 */
 
-		_GSP_BeginRaster(29);
 		PROPS2_StartRaster(&PROPS2_gst_EOT_SetOfEOT_Build);
 		EOT_SetOfEOT_Build(&_pst_World->st_EOT, &_pst_World->st_ActivObjects);
-		PROPS2_StopRaster(&PROPS2_gst_EOT_SetOfEOT_Build);
-		_GSP_EndRaster(29);
-	
+		PROPS2_StopRaster(&PROPS2_gst_EOT_SetOfEOT_Build);	
 
 		_pst_World->b_ForceActivationRefresh = FALSE;
-		
 	}
 
 	
 
 	ENG_gb_ForceUnPause = FALSE;
 
-	_GSP_BeginRaster(30);
-	
 	/* First Frame, we force the SnP Computation for AI first Frame. */
 	if(ENG_gb_FirstFrame) 
 	{
 		INT_SnP_InsertionSort(_pst_World->pst_SnP, 0);
 	}
-	_GSP_EndRaster(30);
-
 	
 	PRO_StartTrameRaster(&ENG_gpst_RasterEng_SnP);
 	PROPS2_StartRaster(&PROPS2_gst_ENG_OneWorldEngineCall1);
 
     /*$2 apply all generic modifier */
-    _GSP_BeginRaster(31);
-    MDF_MainApplyGen(&_pst_World->st_ActivObjects);
-    _GSP_EndRaster(31);
-   
+    MDF_MainApplyGen(&_pst_World->st_ActivObjects);   
 	
-	_GSP_BeginRaster(30);
 	if(_pst_World->b_ForceBVRefresh)
 	{
 	
@@ -215,8 +191,6 @@ void ENG_OneWorldEngineCall(WOR_tdst_World *_pst_World)
 		_pst_World->b_ForceBVRefresh = FALSE;
 	
 	}
-	_GSP_EndRaster(30);
-
 	
 	PROPS2_StopRaster(&PROPS2_gst_ENG_OneWorldEngineCall1);
 	PRO_StopTrameRaster(&ENG_gpst_RasterEng_SnP);
@@ -227,7 +201,6 @@ void ENG_OneWorldEngineCall(WOR_tdst_World *_pst_World)
 	 -------------------------------------------------------------------------------------------------------------------
 	 */
 
-	_GSP_BeginRaster(32);
 //	PRO_StartTrameRaster(&ENG_gpst_RasterEng_Events);
 	ENG_gb_EVERunning = TRUE;
 	PROPS2_StartRaster(&PROPS2_gst_EVE_MainCall);
@@ -235,7 +208,6 @@ void ENG_OneWorldEngineCall(WOR_tdst_World *_pst_World)
 	PROPS2_StopRaster(&PROPS2_gst_EVE_MainCall);
 	ENG_gb_EVERunning = FALSE;
 //	PRO_StopTrameRaster(&ENG_gpst_RasterEng_Events);
-	_GSP_EndRaster(32);
 	
 	/*$2
 	 -------------------------------------------------------------------------------------------------------------------
@@ -243,7 +215,6 @@ void ENG_OneWorldEngineCall(WOR_tdst_World *_pst_World)
 	 -------------------------------------------------------------------------------------------------------------------
 	 */
 	 
-	_GSP_BeginRaster(11);
 	PRO_StartTrameRaster(&ENG_gpst_RasterEng_ANI);
 	PROPS2_StartRaster(&PROPS2_gst_ANI_MainCall);
 	ENG_gb_ANIRunning = TRUE;
@@ -251,7 +222,6 @@ void ENG_OneWorldEngineCall(WOR_tdst_World *_pst_World)
 	ENG_gb_ANIRunning = FALSE;
 	PROPS2_StopRaster(&PROPS2_gst_ANI_MainCall);
 	PRO_StopTrameRaster(&ENG_gpst_RasterEng_ANI);
-	 _GSP_EndRaster(11);
 
 	
 	/*$2
@@ -259,7 +229,6 @@ void ENG_OneWorldEngineCall(WOR_tdst_World *_pst_World)
 	    We call AI for each object
 	 -------------------------------------------------------------------------------------------------------------------
 	 */
-    _GSP_BeginRaster(14);
 	PRO_StartTrameRaster(&ENG_gpst_RasterEng_AI);
 	ENG_gb_AIRunning = TRUE;
 	PROPS2_StartRaster(&PROPS2_gst_AI_MainCall);		
@@ -267,7 +236,6 @@ void ENG_OneWorldEngineCall(WOR_tdst_World *_pst_World)
 	PROPS2_StopRaster(&PROPS2_gst_AI_MainCall);
 	ENG_gb_AIRunning = FALSE;
 	PRO_StopTrameRaster(&ENG_gpst_RasterEng_AI);
-    _GSP_EndRaster(14);
 
 	
 	/*$2
@@ -275,11 +243,9 @@ void ENG_OneWorldEngineCall(WOR_tdst_World *_pst_World)
 	    Hierarchy
 	 -------------------------------------------------------------------------------------------------------------------
 	 */
-	_GSP_BeginRaster(33);
 	PROPS2_StartRaster(&PROPS2_gst_OBJ_HierarchyMainCall);
 	OBJ_HierarchyMainCall(_pst_World);
 	PROPS2_StopRaster(&PROPS2_gst_OBJ_HierarchyMainCall);
-	_GSP_EndRaster(33);
 
 	
 	/*$2
@@ -289,7 +255,6 @@ void ENG_OneWorldEngineCall(WOR_tdst_World *_pst_World)
 	 */
 
 	/* In case of dynamic allocation or reallocation of dynamic struct in AI */
-	_GSP_BeginRaster(29);
 	if(ENG_gb_MustRebuildDyn)
 	{
 	
@@ -297,19 +262,15 @@ void ENG_OneWorldEngineCall(WOR_tdst_World *_pst_World)
 	
 		ENG_gb_MustRebuildDyn = FALSE;
 	}
-	_GSP_EndRaster(29);
-
 	
 	PRO_StartTrameRaster(&ENG_gpst_RasterEng_DYN);
 	PROPS2_StartRaster(&PROPS2_gst_DYN_MainCall);
-	_GSP_BeginRaster(34);
 	DYN_MainCall(_pst_World);
 #ifdef ODE_INSIDE
 	PRO_StartTrameRaster(&ENG_gpst_RasterEng_ODE_SOLVER);
 	ODE_MainCall(_pst_World);
 	PRO_StopTrameRaster(&ENG_gpst_RasterEng_ODE_SOLVER);
 #endif
-	_GSP_EndRaster(34);
 	PROPS2_StopRaster(&PROPS2_gst_DYN_MainCall);
 	PRO_StartTrameRaster(&ENG_gpst_RasterEng_DYN);
 
@@ -319,25 +280,21 @@ void ENG_OneWorldEngineCall(WOR_tdst_World *_pst_World)
 	 -------------------------------------------------------------------------------------------------------------------
 	 */
 //	WatchDog_Start();	
-    _GSP_BeginRaster(16);
 	PRO_StartTrameRaster(&ENG_gpst_RasterEng_COL);
 	PROPS2_StartRaster(&PROPS2_gst_COL_MainCall);
 	COL_MainCall(_pst_World);
 	PROPS2_StopRaster(&PROPS2_gst_COL_MainCall);
 	PRO_StopTrameRaster(&ENG_gpst_RasterEng_COL);
-    _GSP_EndRaster(16);   
     
 //	WatchDog_End();
     
 
 #ifdef ODE_INSIDE
-	_GSP_BeginRaster(34);
 	PRO_StartTrameRaster(&ENG_gpst_RasterEng_ODE_COL);
 	dJointGroupEmpty (_pst_World->ode_joint_col_ode);
 	_pst_World->ode_contacts_num_ode = 0;
 	dSpaceCollide(_pst_World->ode_id_space, (void *) _pst_World, COL_ODEPrimitive_Callback);
 	PRO_StopTrameRaster(&ENG_gpst_RasterEng_ODE_COL);
-	_GSP_EndRaster(34);
 #endif
 
 	
@@ -346,13 +303,11 @@ void ENG_OneWorldEngineCall(WOR_tdst_World *_pst_World)
 	    Recalage
 	 -------------------------------------------------------------------------------------------------------------------
 	 */
-    _GSP_BeginRaster(17);
 	PRO_StartTrameRaster(&ENG_gpst_RasterEng_REC);
 	PROPS2_StartRaster(&PROPS2_gst_REC_MainCall);
 	REC_MainCall(_pst_World, REC_ComputeAllReports);
 	PROPS2_StopRaster(&PROPS2_gst_REC_MainCall);
 	PRO_StopTrameRaster(&ENG_gpst_RasterEng_REC);
-    _GSP_EndRaster(17);
 
 	
 	/*$2
@@ -360,29 +315,23 @@ void ENG_OneWorldEngineCall(WOR_tdst_World *_pst_World)
 	    Hierarchy
 	 -------------------------------------------------------------------------------------------------------------------
 	 */
-	
-	_GSP_BeginRaster(33);
 	PROPS2_StartRaster(&PROPS2_gst_OBJ_HierarchyMainCall);
 	OBJ_HierarchyMainCall(_pst_World);
 	PROPS2_StopRaster(&PROPS2_gst_OBJ_HierarchyMainCall);
-	_GSP_EndRaster(33);
 	
 	
 	/*$2
 	 -------------------------------------------------------------------------------------------------------------------
 	 -------------------------------------------------------------------------------------------------------------------
 	 */
-    _GSP_BeginRaster(14);
 	PRO_StartTrameRaster(&ENG_gpst_RasterEng_AI);
 	PROPS2_StartRaster(&PROPS2_gst_AI_ExecCallbackAll);
 	AI_ExecCallbackAll(_pst_World, AI_C_Callback_AfterRec);
  	AI_RunContext(_pst_World, AI_C_Callback_AfterRec);
 	PROPS2_StopRaster(&PROPS2_gst_AI_ExecCallbackAll);
 	PRO_StopTrameRaster(&ENG_gpst_RasterEng_AI);
-    _GSP_EndRaster(14);
 
 	/* In case of dynamic allocation or reallocation of dynamic struct in AI */
-	_GSP_BeginRaster(29);
 	if(ENG_gb_MustRebuildDyn)
 	{
 	
@@ -390,18 +339,15 @@ void ENG_OneWorldEngineCall(WOR_tdst_World *_pst_World)
 		ENG_gb_MustRebuildDyn = FALSE;
 	
 	}
-	_GSP_EndRaster(29);
 
 	/*$2
 	 -------------------------------------------------------------------------------------------------------------------
 	    Hierarchy
 	 -------------------------------------------------------------------------------------------------------------------
 	 */
-	_GSP_BeginRaster(33);
 	PROPS2_StartRaster(&PROPS2_gst_OBJ_HierarchyMainCall);
 	OBJ_HierarchyMainCall(_pst_World);
 	PROPS2_StopRaster(&PROPS2_gst_OBJ_HierarchyMainCall);
-	_GSP_EndRaster(33);
 	
 
 	/*$2
@@ -410,7 +356,6 @@ void ENG_OneWorldEngineCall(WOR_tdst_World *_pst_World)
 	 -------------------------------------------------------------------------------------------------------------------
 	 */
 
-	_GSP_BeginRaster(35);
 	pst_View = _pst_World->pst_View;
 
 	pst_LastView = pst_View + _pst_World->ul_NbViews;
@@ -421,17 +366,10 @@ void ENG_OneWorldEngineCall(WOR_tdst_World *_pst_World)
 		if((pst_View->st_DisplayInfo.pst_DisplayDatas) && (pst_View->pfnv_ViewPointModificator))
 			pst_View->pfnv_ViewPointModificator(pst_View);
 	}
-	
-
 	PROPS2_StopRaster(&PROPS2_gst_ViewPointModificator);
-	_GSP_EndRaster(35);
-
-	_GSP_BeginRaster(31);
 
     /*$2 unapply all generic modifier */
     MDF_MainUnApplyGen(&_pst_World->st_ActivObjects);
-    _GSP_EndRaster(31);
-	
 	
     /*$2
 	 -------------------------------------------------------------------------------------------------------------------
@@ -439,7 +377,6 @@ void ENG_OneWorldEngineCall(WOR_tdst_World *_pst_World)
 	    this is done only if the Visibility Refresh Time has been reached
 	 -------------------------------------------------------------------------------------------------------------------
 	 */
-	_GSP_BeginRaster(36);
 	if(_pst_World->b_ForceVisibilityRefresh)
 	{
 		/* We make the objects visible */
@@ -449,7 +386,6 @@ void ENG_OneWorldEngineCall(WOR_tdst_World *_pst_World)
 		_pst_World->b_ForceVisibilityRefresh = FALSE;
 	
 	}
-	_GSP_EndRaster(36);
 	
     /*$2
 	 -------------------------------------------------------------------------------------------------------------------
@@ -462,7 +398,6 @@ void ENG_OneWorldEngineCall(WOR_tdst_World *_pst_World)
 	 -------------------------------------------------------------------------------------------------------------------
 	 -------------------------------------------------------------------------------------------------------------------
 	 */
-    _GSP_BeginRaster(14);
 	PRO_StartTrameRaster(&ENG_gpst_RasterEng_AI);
 	PROPS2_StartRaster(&PROPS2_gst_AI_ExecCallbackAll);
 	AI_C_Callback = 1;
@@ -470,7 +405,6 @@ void ENG_OneWorldEngineCall(WOR_tdst_World *_pst_World)
 	AI_C_Callback = 0; 	
 	PROPS2_StopRaster(&PROPS2_gst_AI_ExecCallbackAll);
 	PRO_StopTrameRaster(&ENG_gpst_RasterEng_AI);
-    _GSP_EndRaster(14);
 
 	/* Si la secto est en mode spécial, besoin de refresh maintenant (HACK KONG DEGEULASSE) */
 	/*if(_pst_World->ul_CurrentSector == 667 && _pst_World->b_ForceVisibilityRefresh)
@@ -489,7 +423,6 @@ void ENG_OneWorldEngineCall(WOR_tdst_World *_pst_World)
 	 -------------------------------------------------------------------------------------------------------------------
 	 */
 
-	_GSP_BeginRaster(35);
 	pst_View = _pst_World->pst_View;
 
 	pst_LastView = pst_View + _pst_World->ul_NbViews;
@@ -500,11 +433,7 @@ void ENG_OneWorldEngineCall(WOR_tdst_World *_pst_World)
 		if((pst_View->st_DisplayInfo.pst_DisplayDatas) && (pst_View->pfnv_ViewPointModificator))
 			pst_View->pfnv_ViewPointModificator(pst_View);
 	}
-	
-
 	PROPS2_StopRaster(&PROPS2_gst_ViewPointModificator);
-	_GSP_EndRaster(35);
-
 
 	ENG_gul_Loop++;	
 }
@@ -535,14 +464,8 @@ void ENG_EngineCall(void)
 	 */
 	PRO_StartTrameRaster(&ENG_gpst_RasterEng_TablesManager);
     
-
-	_GSP_BeginRaster(0);
-
-	_GSP_BeginRaster(26);
 	TAB_TablesManager_Call();
-	_GSP_EndRaster(26);
 
-	
 	/* Update if necessary the value of the CPU clock */
 #if !defined(PSX2_TARGET) && !defined(_GAMECUBE) /* CPU clock update is made with TIM_Clock_Update */
 	TIM_UpdateCPUClockFrequency();
@@ -554,8 +477,6 @@ void ENG_EngineCall(void)
 	PROPS2_StartRaster(&PROPS2_gst_ENG_EngineCall2);
 
 	/* Total reinit */
-	_GSP_EndRaster(0);
-	_GSP_BeginRaster(14);
 
 	/* Execute universe AI */
 	if(ENG_gb_ActivateUniverse && WOR_gst_Universe.pst_AI)
@@ -568,7 +489,6 @@ void ENG_EngineCall(void)
 	
 	}
 
-	_GSP_EndRaster(14);
 	PROPS2_StopRaster(&PROPS2_gst_ENG_EngineCall2);
 	PROPS2_StartRaster(&PROPS2_gst_ENG_EngineCall3);
 

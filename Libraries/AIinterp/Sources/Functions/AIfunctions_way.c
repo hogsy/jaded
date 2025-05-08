@@ -1022,12 +1022,10 @@ int AI_EvalFunc_WAYShortWay_C
 					MATH_SubVector(&t_Tmp1, OBJ_pst_GetAbsolutePosition(_pst_2), OBJ_pst_GetAbsolutePosition(pst_Link->pst_Next));
 					pound += MATH_f_NormVector(&t_Tmp1);
 
-					_GSP_EndRaster(14);
 					WAY_Params[0] = pst_Explored[i_NbElemInExplored - 1];
 					WAY_Params[1] = pst_Link->pst_Next;
 					WAY_Pound[0] = 0;
 					AI_ExecCallback(_pst_GO, AI_C_Callback_ShortWay);
-					_GSP_BeginRaster(14);
 					if(WAY_Pound[0] == -1) continue;
 					pound += WAY_Pound[0];
 				}

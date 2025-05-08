@@ -2250,11 +2250,12 @@ void WOR_Render_All_GO(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD
 #endif
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+	JADED_PROFILER_START();
+
 #ifdef ACTIVE_EDITORS
 	ERR_gpst_ContextGAO = NULL;
 	ERR_gpsz_ContextString = "Render pass 1";
 #endif
-	_GSP_BeginRaster(41);
 
 #if defined(_XENON_RENDER) && defined(ACTIVE_EDITORS)
     if( _pst_DD->bLogLightUsage )
@@ -2377,8 +2378,6 @@ void WOR_Render_All_GO(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD
 			pst_GO->ul_StatusAndControlFlags &= ~OBJ_C_StatusFlag_Culled;
 		}
 	}
-
-	_GSP_EndRaster(41);
 
 	/* : : */
 #ifdef ACTIVE_EDITORS
@@ -2580,6 +2579,8 @@ void WOR_Render_All_GO(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD
         _pst_DD->bLogLightUsage = false;
     }
 #endif	
+
+	JADED_PROFILER_END();
 }
 
 /*
@@ -2588,6 +2589,8 @@ void WOR_Render_All_GO(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD
  */
 void WOR_Render_3D(int iNumView, WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD)
 {
+	JADED_PROFILER_START();
+
 	/* We update the culling variables. */
 	CAM_Engine_ComputePlans(&_pst_DD->st_Camera);
 	OBJ_UpdateCullingVars(&_pst_DD->st_Camera);
@@ -2613,12 +2616,6 @@ void WOR_Render_3D(int iNumView, WOR_tdst_World *_pst_World, GDI_tdst_DisplayDat
 
 	/* Render objects */
 	WOR_Render_All_GO(_pst_World, _pst_DD);
-
-#ifdef _GAMECUBE
-#ifdef USE_HARDWARE_LIGHTS
-	GXI_Global_ACCESS(LightMask) = GX_LIGHT_NULL;
-#endif
-#endif
 
 	/* Graphic FX */
 	GFX_Render(&_pst_World->pst_GFX, 0);
@@ -2652,6 +2649,8 @@ void WOR_Render_3D(int iNumView, WOR_tdst_World *_pst_World, GDI_tdst_DisplayDat
 	GAO_ModifierLazy_UnapplyAll();
 	MODIFIER_SPG2_OneFrameCall();
 	MODIFIER_FOGDYN_OneFrameCall();
+
+	JADED_PROFILER_END();
 }
 
 #if defined(_XBOX)

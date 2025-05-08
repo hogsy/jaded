@@ -366,10 +366,9 @@ void SPG2_GRID_UpdateColors(SPG2_GridMazpper *st_GridMapper )
 	if (st_GridMapper ->ulNumbeOfNode== 0) return;
 	if (st_GridMapper ->p_AllNodes == NULL) return;
 //	MEM_vCheckMem(&MEM_gst_MemoryInfo);
-_GSP_BeginRaster(55);
+
 	MaxValue = st_GridMapper ->_pst_GridUsed->w_NumRealGroupsX * st_GridMapper ->_pst_GridUsed->w_NumRealGroupsY * st_GridMapper ->_pst_GridUsed->c_SizeGroup * st_GridMapper ->_pst_GridUsed->c_SizeGroup;
 	
-
 	p_Node = st_GridMapper ->p_AllNodes;
 	p_LastNode = p_Node + st_GridMapper ->ulNumbeOfNode;
 	if (st_GridMapper ->_pst_Grid2Used)
@@ -407,7 +406,6 @@ _GSP_BeginRaster(55);
 		p_Node ++;
 	}
 //	MEM_vCheckMem(&MEM_gst_MemoryInfo);
-_GSP_EndRaster(55);
 }
 
 void SPG2_AddASphere(MATH_tdst_Vector	*Pos , float Radius)
@@ -2123,7 +2121,6 @@ void SPG2_Modifier_Unapply
 #endif
 #endif
 
-	_GSP_BeginRaster(55);
 //	MEM_vCheckMem(&MEM_gst_MemoryInfo);
 
 	if (WindWavesBase == 0xffffffff)
@@ -2369,7 +2366,6 @@ stLocal  = st_CameraX;
 	if (_pst_SPG2 ->f_Density <= 0.0f)
 	{
 		_pst_SPG2 ->f_Density = 0.0f;
-		_GSP_EndRaster(55);
 		return;
 	}
 
@@ -2554,7 +2550,6 @@ stLocal  = st_CameraX;
 		if (SPG2_Repartiteur > 2) 
 		{
 #endif
-			_GSP_EndRaster(55);
 			return;
 		}
 		if (!LoadingHasBeenDetected)
@@ -3680,8 +3675,6 @@ GRID_GEN:
 #ifdef _GAMECUBE
 	GX_GXSetCurrentMtx(GX_PNMTX0);
 #endif //_GAMECUBE
-
-	_GSP_EndRaster(55);
 
 //	MEM_vCheckMem(&MEM_gst_MemoryInfo);
 }

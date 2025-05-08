@@ -436,7 +436,7 @@ void MAT_DrawIndexedTriangleZone(
 {
 	MAT_tdst_Material *pst_Material;
 
-	_GSP_BeginRaster( 12 );
+	JADED_PROFILER_START();
 
 	pst_Material = ( MAT_tdst_Material * ) &MAT_gst_DefaultSingleMaterial;
 
@@ -567,9 +567,10 @@ void MAT_DrawIndexedTriangleZone(
 		p_CptBf->Current = NULL;
 		pst_CurDD->st_GDI.pfnv_SetTextureBlending( ( ULONG ) -1, MAT_C_DefaultFlag, 0 );
 	}
-	_GSP_EndRaster( 12 );
 
 	GDI_gpst_CurDD_SPR.pst_ComputingBuffers->ulColorXor = 0;
+
+	JADED_PROFILER_END();
 }
 
 #endif//ACTIVE_EDITORS
@@ -586,7 +587,7 @@ void MAT_DrawIndexedTriangle(
 {
 	if ( !pst_Element->l_NbTriangles ) return;
 
-	_GSP_BeginRaster( 12 );
+	JADED_PROFILER_START();
 
 	PRO_StartTrameRaster( &GDI_gpst_CurDD_SPR.pst_Raster->st_MatDIT_PrepareMaterial );
 
@@ -608,18 +609,12 @@ void MAT_DrawIndexedTriangle(
 		if ( MAT_IsMaterialTransparent( _pst_Material, -1, GDI_gpst_CurDD_SPR.ul_CurrentDrawMask, NULL ) )
 		{
 			PRO_StopTrameRaster( &GDI_gpst_CurDD_SPR.pst_Raster->st_MatDIT_PrepareMaterial );
-
-			_GSP_EndRaster( 12 );
-
 			return;
 		}
 	}
 	else if ( !MAT_IsMaterialTransparent( _pst_Material, -1, GDI_gpst_CurDD_SPR.ul_CurrentDrawMask, NULL ) )
 	{
 		PRO_StopTrameRaster( &GDI_gpst_CurDD_SPR.pst_Raster->st_MatDIT_PrepareMaterial );
-
-		_GSP_EndRaster( 12 );
-
 		return;
 	}
 	//#endif//*/
@@ -656,11 +651,10 @@ void MAT_DrawIndexedTriangle(
 		MAT_DrawIndexedTriangle_ST( &GDI_gpst_CurDD_SPR, pst_Obj, _pst_Material, pst_Element );
 	}
 
-	_GSP_EndRaster( 12 );
-
 	GDI_gpst_CurDD_SPR.pst_ComputingBuffers->ulColorXor = 0;
-}
 
+	JADED_PROFILER_END();
+}
 
 void MAT_DrawIndexedSprites_MT(
         GDI_tdst_DisplayData *pst_CurDD,
@@ -778,8 +772,6 @@ void MAT_DrawIndexedSprites(
 	if ( !pst_Element->l_NbSprites )
 		return;
 
-	_GSP_BeginRaster( 12 );
-
 	PRO_StartTrameRaster( &GDI_gpst_CurDD_SPR.pst_Raster->st_MatDIT_PrepareMaterial );
 
 	if ( _pst_Material && ( _pst_Material->st_Id.i->ul_Type == GRO_MaterialMulti ) )
@@ -797,6 +789,4 @@ void MAT_DrawIndexedSprites(
 		MAT_DrawIndexedSprites_MT( &GDI_gpst_CurDD_SPR, pst_Obj, _pst_Material, pst_Element );
 	}
 	GDI_gpst_CurDD_SPR.pst_ComputingBuffers->ulColorXor = 0;
-
-	_GSP_EndRaster( 12 );
 }

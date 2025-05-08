@@ -701,9 +701,6 @@ void GFX_Render(GFX_tdst_List **_ppst_GFX, char _c_Sorted )
         return;
 #endif
 
-
-	_GSP_BeginRaster(7);
-
     PRO_StartTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GFX );
 
 	GFX_ppst_CurrentList = _ppst_GFX;
@@ -866,8 +863,6 @@ GFXRender_endofgao:
         SOFT_ZList_Unlock();
 
     //FLARE_M_UpdateCounter();
-    
-	_GSP_EndRaster(7);
 	
     PRO_StopTrameRaster(&GDI_gpst_CurDD->pst_Raster->st_GFX);
 }

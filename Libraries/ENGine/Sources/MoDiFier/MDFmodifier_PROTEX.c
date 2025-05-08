@@ -797,11 +797,7 @@ void PROTEX_UpdateWaterEffect(PROTEX_tdst_Modifier *p_Protex)
 
 void PROTEX_BeforeDraw()
 {
-	PROTEX_tdst_Modifier **pp_ProTxParser;
-
-	_GSP_BeginRaster(20);
-
-	pp_ProTxParser = &p_FirstActiveProtex;
+	PROTEX_tdst_Modifier **pp_ProTxParser = &p_FirstActiveProtex;
 	while (*pp_ProTxParser)
 	{
 		if ((*pp_ProTxParser)->ulFlags & PRTX_HasBeenUsedInFrame)
@@ -819,9 +815,6 @@ void PROTEX_BeforeDraw()
 			(*pp_ProTxParser) = (*pp_ProTxParser)->p_NextAcitveProtex;
 		}
 	}
-
-	_GSP_EndRaster(20);
-
 }
 
 

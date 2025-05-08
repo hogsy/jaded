@@ -287,7 +287,8 @@ void SOFT_ZList_Draw(void)
 #if defined(GSP_PS2) || (defined(_GAMECUBE) && !defined(_FINAL_))
 	if(NoZLST) return;
 #endif
-	_GSP_BeginRaster(13);
+	
+	JADED_PROFILER_START();
 
 	GDI_gpst_CurDD->ul_DisplayInfo |= GDI_Cul_DI_RenderingTransparency;
 
@@ -486,7 +487,7 @@ void SOFT_ZList_Draw(void)
 
 	GDI_gpst_CurDD->ul_DisplayInfo &= ~GDI_Cul_DI_RenderingTransparency;
 
-	_GSP_EndRaster(13);
+	JADED_PROFILER_END();
 }
 
 /*
