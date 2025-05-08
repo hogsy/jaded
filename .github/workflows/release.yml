@@ -35,7 +35,7 @@ jobs:
 
       - name: 'Package Release'
         if: github.event_name != 'pull_request'
-        run: zip web/releases/jaded-${COMMIT_COUNT}-release.zip mappings/* changes.txt Jaded.exe run_window.bat run_console.bat run_editor.bat SDL3.dll legal.txt
+        run: zip web/releases/jaded-release.zip mappings/* changes.txt Jaded.exe run_window.bat run_console.bat run_editor.bat SDL3.dll legal.txt
 
       - name: 'Upload to Discord'
         if: github.event_name != 'pull_request'
@@ -43,12 +43,12 @@ jobs:
         continue-on-error: true
         with:
           webhook-url: ${{ secrets.DISCORD }}
-          filename: web/releases/jaded-${COMMIT_COUNT}-release.zip
+          filename: web/releases/jaded-release.zip
 
       - name: 'Upload Artifact'
         if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4.6.2
         with:
           name: jaded-release
-          path: web/releases/jaded-${COMMIT_COUNT}-release.zip
+          path: web/releases/jaded-release.zip
           retention-days: 30
