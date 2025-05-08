@@ -20,7 +20,7 @@
 
 jaded::sys::Profiler jaded::sys::profiler;
 
-static SDL_Window *sdlWindow;
+static SDL_Window   *sdlWindow;
 static SDL_GLContext sdlGLContext;
 
 //#define USE_SDL_GL_CONTEXT
@@ -89,12 +89,12 @@ static LONG WINAPI Win32CrashHandler( EXCEPTION_POINTERS *exception )
 		return EXCEPTION_CONTINUE_SEARCH;
 
 	typedef BOOL( WINAPI * MINIDUMP_WRITE_DUMP )(
-	        IN HANDLE hProcess,
-	        IN DWORD ProcessId,
-	        IN HANDLE hFile,
-	        IN MINIDUMP_TYPE DumpType,
-	        IN CONST PMINIDUMP_EXCEPTION_INFORMATION ExceptionParam,
-	        OPTIONAL IN PMINIDUMP_USER_STREAM_INFORMATION UserStreamParam,
+	        IN HANDLE                                                hProcess,
+	        IN DWORD                                                 ProcessId,
+	        IN HANDLE                                                hFile,
+	        IN MINIDUMP_TYPE                                         DumpType,
+	        IN CONST PMINIDUMP_EXCEPTION_INFORMATION                 ExceptionParam,
+	        OPTIONAL IN PMINIDUMP_USER_STREAM_INFORMATION            UserStreamParam,
 	        OPTIONAL IN PMINIDUMP_CALLBACK_INFORMATION CallbackParam OPTIONAL );
 
 	auto MiniDumpWriteDump_ = ( MINIDUMP_WRITE_DUMP ) GetProcAddress( dbgHelpLib, "MiniDumpWriteDump" );
@@ -105,7 +105,7 @@ static LONG WINAPI Win32CrashHandler( EXCEPTION_POINTERS *exception )
 	}
 
 	MINIDUMP_EXCEPTION_INFORMATION M;
-	CHAR Dump_Path[ MAX_PATH ];
+	CHAR                           Dump_Path[ MAX_PATH ];
 
 	M.ThreadId          = GetCurrentThreadId();
 	M.ExceptionPointers = exception;
@@ -168,6 +168,7 @@ static void ParseStartupParameters()
 		}
 		else if ( SDL_strncasecmp( jaded::sys::launchArguments[ i ], "/profile", 8 ) == 0 )
 		{
+			jaded::sys::profiler.SetActive( true );
 			ENG_gb_LimitFPS = false;
 			continue;
 		}
@@ -211,7 +212,7 @@ static SDL_Window *CreateSDLWindow()
 
 #endif
 
-	int w, h;
+	int                    w, h;
 	const SDL_DisplayMode *displayMode;
 	if ( ( displayMode = SDL_GetDesktopDisplayMode( 0 ) ) != nullptr )
 	{

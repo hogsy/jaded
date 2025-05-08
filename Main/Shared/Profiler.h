@@ -114,7 +114,7 @@ namespace jaded
 		class Profiler
 		{
 		private:
-			bool isActive{ true };
+			bool isActive{};
 
 		public:
 			Profiler()  = default;
