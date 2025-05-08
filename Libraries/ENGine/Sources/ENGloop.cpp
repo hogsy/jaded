@@ -273,14 +273,6 @@ static void s_InitBeforeTrame( void )
  =======================================================================================================================
  =======================================================================================================================
  */
-static void s_DesInitAfterTrame( void )
-{
-}
-
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
 static BOOL sfnb_EndGame( void )
 {
 	if ( ENG_gb_ExitApplication )
@@ -1366,20 +1358,27 @@ void ENG_Loop( void )
 		}
 		else
 		{
-			uint64_t loops = 0;
-			while ( SDL_GetTicks() > nextTick && loops < MAX_FRAMESKIP )
+			uint64_t loops = 0, now;
+			while ( ( now = SDL_GetTicks() ) > nextTick && loops <= MAX_FRAMESKIP )
 			{
 				s_OneTrame();
 
 				nextTick += SKIP_TICKS;
 				loops++;
 			}
+
+			if (now < nextTick)
+			{
+				Sleep( nextTick - now );
+			}
+			else
+			{
+				nextTick = now;
+			}
 		}
 
 		//double delta = ( double ) ( SDL_GetTicks64()  + SKIP_TICKS - nextTick ) / ( double ) ( SKIP_TICKS );
 		// hogsy: TODO - move render loop and other crap down here, so we operate that EVERY tick
-
-		s_DesInitAfterTrame();
 
 		jaded::sys::profiler.EndProfiling( "Main Loop" );
 

@@ -17,6 +17,8 @@
  ***********************************************************************************************************************
  */
 
+#include "LINks/LINKmsg.h"
+
 #include "SouND/Sources/SNDstruct.h"
 #include "SouND/Sources/SNDconst.h"
 #include "SouND/Sources/SND.h"
@@ -291,11 +293,13 @@ void ediSND_FxAdd(SND_tdst_SoundBuffer *_pst_SB, int _i_Core, int _i_FxVol)
         ediSND_gast_EffectDesc[_i_Core].guidDSFXClass = GUID_DSFX_STANDARD_I3DL2REVERB;
         // set Fx to wet buffer
         hr = IDirectSoundBuffer8_SetFX(GetFxSB(_pst_SB)->pst_DSB, 1, &ediSND_gast_EffectDesc[_i_Core], &dwResult);
-        ediSND_M_Assert((hr==DS_OK) || (hr==DS_INCOMPLETE));
-        ediSND_M_Assert((dwResult!=DSFXR_UNKNOWN) && (dwResult!=DSFXR_FAILED));
-        // get Fx interface
-	    hr = IDirectSoundBuffer8_GetObjectInPath(GetFxSB(_pst_SB)->pst_DSB, &GUID_DSFX_STANDARD_I3DL2REVERB, 0, &IID_IDirectSoundFXI3DL2Reverb8, &GetFxInterface(_pst_SB));
-	    ediSND_M_Assert(hr==DS_OK);
+		if ( hr == DS_OK )
+		{
+			ediSND_M_Assert( ( dwResult != DSFXR_UNKNOWN ) && ( dwResult != DSFXR_FAILED ) );
+			// get Fx interface
+			hr = IDirectSoundBuffer8_GetObjectInPath( GetFxSB( _pst_SB )->pst_DSB, &GUID_DSFX_STANDARD_I3DL2REVERB, 0, &IID_IDirectSoundFXI3DL2Reverb8, &GetFxInterface( _pst_SB ) );
+			ediSND_M_Assert( hr == DS_OK );
+		}
         break;
     case SND_Cte_FxMode_Delay:
 	case SND_Cte_FxMode_Echo:
@@ -305,15 +309,23 @@ void ediSND_FxAdd(SND_tdst_SoundBuffer *_pst_SB, int _i_Core, int _i_FxVol)
         ediSND_gast_EffectDesc[_i_Core].guidDSFXClass = GUID_DSFX_WAVES_REVERB;
         // set Fx to wet buffer
         hr = IDirectSoundBuffer8_SetFX(GetFxSB(_pst_SB)->pst_DSB, 1, &ediSND_gast_EffectDesc[_i_Core], &dwResult);
-        ediSND_M_Assert((hr==DS_OK) || (hr==DS_INCOMPLETE));
-        ediSND_M_Assert((dwResult!=DSFXR_UNKNOWN) && (dwResult!=DSFXR_FAILED));
-        // get Fx interface
-		hr = IDirectSoundBuffer8_GetObjectInPath(GetFxSB(_pst_SB)->pst_DSB, &GUID_DSFX_WAVES_REVERB, 0, &IID_IDirectSoundFXWavesReverb8, &GetFxInterface(_pst_SB));
-		ediSND_M_Assert(hr==DS_OK);
+		if ( hr == DS_OK )
+		{
+			ediSND_M_Assert( ( dwResult != DSFXR_UNKNOWN ) && ( dwResult != DSFXR_FAILED ) );
+			// get Fx interface
+			hr = IDirectSoundBuffer8_GetObjectInPath( GetFxSB( _pst_SB )->pst_DSB, &GUID_DSFX_WAVES_REVERB, 0, &IID_IDirectSoundFXWavesReverb8, &GetFxInterface( _pst_SB ) );
+			ediSND_M_Assert( hr == DS_OK );
+		}
         break;
     }
 
-
+	if ( hr != DS_OK )
+	{
+		char buf[ 64 ];
+		snprintf( buf, sizeof( buf ), "Failed to set audio effect (%u)!", hr );
+		LINK_PrintStatusMsg( buf );
+		return;
+	}
 
     switch(ediSND_dst_FxDesc[_i_Core].st_Settings.i_Mode)
 	{

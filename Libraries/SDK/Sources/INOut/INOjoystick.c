@@ -669,7 +669,7 @@ void INO_PafSet( int _i_Intensity, int _i_FrameDuration )
 	if ( _i_FrameDuration > 0 )
 	{
 		INO_gf_PafDuration = fLongToFloat( lAbs( _i_FrameDuration ) ) * 0.032f;
-		INO_gi_PafIntensity = ( _i_Intensity > 0xff ) ? 0xFF : _i_Intensity;
+		INO_gi_PafIntensity = ( _i_Intensity > 0xFFFF ) ? 0xFFFF : _i_Intensity;
 		SDL_RumbleGamepad( controller, _i_Intensity, _i_Intensity, _i_FrameDuration );
 	}
 }
