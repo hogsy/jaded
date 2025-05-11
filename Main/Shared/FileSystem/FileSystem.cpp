@@ -109,11 +109,21 @@ void jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 		dstPath.erase( p + 1 );
 	}
 
+	std::string bigPath = NormalizePath( bf->asz_Name );
+	p                   = bigPath.find_last_of( '/' );
+
+	std::string keyName = ( p != std::string::npos ) ? &bigPath[ p + 1 ] : bigPath;
+	if ( ( p = keyName.find_last_of( '.' ) ) != std::string::npos )
+	{
+		keyName.erase( p );
+	}
+
+	std::string keyPath = dstPath + keyName + ".key";
+
 	IndexBFSubDirectory( BIG_Root() );
 
 	// now proceed with the creation
-	std::string keyPath = dstPath + KEY_REPOSITORY;
-	FILE       *file    = fopen( keyPath.c_str(), "w" );
+	FILE *file = fopen( keyPath.c_str(), "w" );
 	if ( file == nullptr )
 	{
 		std::string msg = "Failed to create key repository per \"" + keyPath + "\"!";
@@ -154,7 +164,7 @@ void jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 		if ( file == nullptr )
 		{
 			// TODO: this should throw a more meaningful error in future
-			std::string msg = "Failed to create file (" + path + ")!";
+			std::string msg = "Failed to create file (" + path + ") (" + std::to_string( i.second.key ) + ")!";
 			LINK_PrintStatusMsg( msg.c_str() );
 			break;
 		}
@@ -168,7 +178,7 @@ void jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 		if ( size != 1 )
 		{
 			// TODO: this should throw a more meaningful error in future
-			std::string msg = "Failed to write file data (" + path + ")!";
+			std::string msg = "Failed to write file data (" + path + ") (" + std::to_string( i.second.key ) + ")!";
 			LINK_PrintStatusMsg( msg.c_str() );
 			break;
 		}
@@ -196,6 +206,17 @@ void jaded::FileSystem::IndexBFSubDirectory( unsigned int curDir )
 		file.key      = BIG_FileKey( fileIndex );
 		file.filename = NormalizePath( BIG_NameFile( fileIndex ) );
 		file.dir      = NormalizePath( dir );
+
+		// HACKS!!
+		//TODO: check something other than just the key here, just to be safe!!
+		if ( file.key == 134265554 )
+		{
+			file.filename = "[0800bab3] [7200a600] OBJ_Grille_Sol_Bar.gao";
+		}
+		else if (file.key == 503325600)
+		{
+			file.filename = "1E0023A0_CopyOf_ButNotReally_Arbre_Mort_Couch_Ptite_Branche.gao";
+		}
 
 		fileTable.emplace( file.key, file );
 
