@@ -102,7 +102,7 @@ void LINK_PrintStatusMsgEOL(char *_psz_Text)
     Aim: To print a message in the status bar. In: _psz_Text Text to display.
  =======================================================================================================================
  */
-void LINK_PrintStatusMsgCanal(char *_psz_Text,int _iCanal)
+void LINK_PrintStatusMsgCanal(const char *_psz_Text,int _iCanal)
 {
 #if !defined(XML_CONV_TOOL)
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -152,7 +152,7 @@ void LINK_PrintStatusMsgCanal(char *_psz_Text,int _iCanal)
 #endif
 }
 
-void LINK_PrintStatusMsg(char *_psz_Text)
+void LINK_PrintStatusMsg(const char *_psz_Text)
 {
 #if !defined(XML_CONV_TOOL)
     LINK_PrintStatusMsgCanal(_psz_Text,1);

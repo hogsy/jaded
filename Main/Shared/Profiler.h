@@ -18,7 +18,7 @@ namespace jaded
 		class Profile
 		{
 		private:
-			inline bool GetTime( struct timespec *ts )
+			inline static bool GetTime( struct timespec *ts )
 			{
 #if defined( _MSC_VER )
 				/* based on public-domain implementation here;
@@ -59,13 +59,14 @@ namespace jaded
 			 *  \brief Converts a timespec to a fractional number of seconds.
 			 *  Originally written by Daniel Collins (2017), used with permission.
 			 */
-			inline double TimespecToDouble( const struct timespec *ts )
+			inline static double TimespecToDouble( const struct timespec *ts )
 			{
 				static constexpr unsigned int NSEC_PER_SEC = 1000000000;
 				return ( ( double ) ( ts->tv_sec ) + ( ( double ) ( ts->tv_nsec ) / NSEC_PER_SEC ) );
 			}
 
-			inline double GetSeconds()
+		public:
+			inline static double GetSeconds()
 			{
 				struct timespec ts;
 				if ( !GetTime( &ts ) )
@@ -76,9 +77,9 @@ namespace jaded
 				return TimespecToDouble( &ts );
 			}
 
-			double timeStarted{}; // time current frame started
-			double timeTaken{};   // time current frame took
-			double oldTimeTaken{};// time of previous frame
+		private:
+			double timeStarted{};// time current frame started
+			double timeTaken{};  // time current frame took
 
 			float colour[ 3 ]{};// colours for ui
 
@@ -101,13 +102,12 @@ namespace jaded
 
 			inline void End()
 			{
-				oldTimeTaken = timeTaken;
-				timeTaken    = ( GetSeconds() * 1000.0 ) - timeStarted;
+				timeTaken = ( GetSeconds() * 1000.0 ) - timeStarted;
 			}
 
 			inline double GetTimeTaken() const
 			{
-				return oldTimeTaken;
+				return timeTaken;
 			}
 		};
 
@@ -130,8 +130,8 @@ namespace jaded
 				return isActive;
 			}
 
-			void StartProfiling( const std::string &set );
-			void EndProfiling( const std::string &set );
+			void   StartProfiling( const std::string &set );
+			double EndProfiling( const std::string &set );
 
 			typedef std::map< std::string, Profile > ProfileMap;
 

@@ -45,16 +45,18 @@ void jaded::sys::Profiler::StartProfiling( const std::string &set )
 	i->second.Start();
 }
 
-void jaded::sys::Profiler::EndProfiling( const std::string &set )
+double jaded::sys::Profiler::EndProfiling( const std::string &set )
 {
 	if ( !isActive )
 	{
-		return;
+		return 0;
 	}
 
 	auto i = profSets.find( set );
 	assert( i != profSets.end() );
 	i->second.End();
+
+	return i->second.GetTimeTaken();
 }
 
 // The below should work with the old BeginRaster / EndRaster macros

@@ -26,6 +26,8 @@
 
 #include "TIMer/PROfiler/PROPS2.h"
 
+#include "../Main/Shared/FileSystem/FileSystem.h"
+
 BIG_tdst_BigFile	BIG_gst;
 BOOL				BIG_gb_CanOpenFats = TRUE;
 extern BIG_tdst_BigFile BIG_gst1;
@@ -51,72 +53,21 @@ bool BIG_Open(const char *_psz_FileName)
 	/* Open the bigfile on disk */
 	
 	/* EDITOR */
-#if defined(ACTIVE_EDITORS)
 	BIG_gst.h_CLibFileHandle = L_fopen(_psz_FileName, "r+bR");
-
-    /* PSX2 AND CD */
-#elif defined(PSX2_TARGET)
-
-#if defined(PSX2_USE_iopCDV)
-	BIG_gst.h_CLibFileHandle = eeCDV_i_OpenFile(_psz_FileName);
-	gi_SpecialHandler = eeRPC_i_OpenBigfile();
-	gi_SpecialHandler2 = eeRPC_i_OpenBigfile();
-    /* PSX2 AND HOST */
-#else
-	BIG_gst.h_CLibFileHandle = L_fopen(_psz_FileName, L_fopen_RPB);
-	gi_SpecialHandler = eeRPC_i_OpenBigfile();
-	gi_SpecialHandler2 = eeRPC_i_OpenBigfile();
-
-	/* OTHERS CASE */
-#endif
-#else
-
-#ifdef  _XBOX 
-	BIG_gst.h_CLibFileHandle = XBCompositeFile_Open(_psz_FileName, FILE_ATTRIBUTE_NORMAL, Gx8_FileError );
-#  ifdef _XBOX_ASYNCLOAD
-	{
-		//extern BIGFileHandle gi_SpecialHandler;
-		//gi_SpecialHandler = BIG_gst.h_CLibFileHandle;
-	}
-#  endif
-#else
-	BIG_gst.h_CLibFileHandle = L_fopen(_psz_FileName, "rbS" );
-#endif
-
-#endif 
-
-
 	if(!CLI_FileOpen(BIG_gst.h_CLibFileHandle))
 	{
 		if(L_access(_psz_FileName, 2))
 		{
 			L_chmod(_psz_FileName, L_S_IWRITE);
-#if defined(PSX2_USE_iopCDV)
-			BIG_gst.h_CLibFileHandle = eeCDV_i_OpenFile(_psz_FileName);
-#elif defined( _XBOX )
-			BIG_gst.h_CLibFileHandle = XBCompositeFile_Open(_psz_FileName, FILE_ATTRIBUTE_NORMAL, Gx8_FileError );
-#else
-			BIG_gst.h_CLibFileHandle = L_fopen(_psz_FileName, L_fopen_RPB);
-#endif			
+			BIG_gst.h_CLibFileHandle = L_fopen(_psz_FileName, L_fopen_RPB);	
 		}
 	}
-#if defined(_XENON) && !defined(_FINAL_)
-	if(!CLI_FileOpen(BIG_gst.h_CLibFileHandle))
-	{
-		char sz_Msg[256];
-		sprintf(sz_Msg, "Unable to open file %s\n", _psz_FileName);
-		OutputDebugString(sz_Msg);
-	}
-#endif
+
 	r=CLI_FileOpen(BIG_gst.h_CLibFileHandle);
 	ERR_X_Error(r, L_ERR_Csz_FOpen, _psz_FileName);
 	if ( r == NULL )
 		return false;
 
-	/*
-	 * L_setvbuf(BIG_gst.h_CLibFileHandle, NULL, L_IONBF, 0); £
-	 * L_setvbuf(BIG_gst.h_CLibFileHandle, NULL, _IOFBF, 4000000);
-	 */
 	MEMpro_StartMemRaster();
 
 	/* Read header of bigfile */
@@ -136,6 +87,8 @@ bool BIG_Open(const char *_psz_FileName)
 		BIG_Close();
 		return false;
 	}
+
+	Jaded_FileSystem_CreateKeyRepository( &BIG_gst );
 	
 	return true;
 }

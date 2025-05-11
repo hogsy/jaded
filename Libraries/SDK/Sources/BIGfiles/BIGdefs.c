@@ -55,7 +55,7 @@ void BIG_ComputeFullName(BIG_INDEX _ul_Dir, char *_psz_Ext)
     while(_ul_Dir != BIG_C_InvalidIndex)
     {
         mpsz_Name = BIG_NameDir(_ul_Dir);
-        sprintf(asz_Name, "%s/%s", mpsz_Name, _psz_Ext);
+		snprintf( asz_Name, sizeof( asz_Name ), "%s/%s", mpsz_Name, _psz_Ext );
         L_strcpy(_psz_Ext, asz_Name);
         _ul_Dir = BIG_ParentDir(_ul_Dir);
     }

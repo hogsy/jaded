@@ -10,15 +10,18 @@
 #include "BIGfiles/BIGdefs.h"
 #include "BIGfiles/BIGopen.h"
 
-#if defined (__cplusplus) && !defined(JADEFUSION)
+#if defined( __cplusplus ) && !defined( JADEFUSION )
 extern "C"
 {
 #endif
-extern BOOL BIG_gb_CanClean;
-extern void BIG_RestoreDeleted(void);
-extern BOOL BIG_b_CheckFile(BOOL);
-extern void BIG_Clean(BOOL);
+	extern BOOL BIG_gb_CanClean;
+	extern void BIG_RestoreDeleted( void );
+	extern BOOL BIG_b_CheckFile( BOOL );
+	extern void BIG_Clean( BOOL );
 
-#if defined (__cplusplus) && !defined(JADEFUSION)
+	char *BIG_FileName( BIG_INDEX _ul_Index );
+	char *BIG_DirName( BIG_INDEX _ul_Index );
+
+#if defined( __cplusplus ) && !defined( JADEFUSION )
 }
 #endif
