@@ -16,6 +16,8 @@ namespace jaded
 		std::string GetExecutablePath();
 		std::string NormalizePath( std::string path );
 
+		bool DoesFileExist( const std::string &path );
+
 		bool CreatePath( const std::string &path );
 
 		void CreateKeyRepository( const BIG_tdst_BigFile *bf );

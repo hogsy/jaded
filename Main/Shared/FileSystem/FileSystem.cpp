@@ -32,7 +32,33 @@ std::string jaded::FileSystem::GetExecutablePath()
 std::string jaded::FileSystem::NormalizePath( std::string path )
 {
 	std::replace( path.begin(), path.end(), '\\', '/' );
+
+	size_t p;
+	if ( path.size() >= 2 && std::isalpha( path[ 0 ] ) && path[ 1 ] == ':' )
+	{
+		p = 2;
+	}
+	else
+	{
+		p = 0;
+	}
+
+	for ( size_t i = p; i < path.size(); ++i )
+	{
+		static const std::string forbiddenChars = "<>:\"|?*";
+		if ( forbiddenChars.find( path[ i ] ) != std::string::npos )
+		{
+			path[ i ] = '_';
+		}
+	}
+
 	return path;
+}
+
+bool jaded::FileSystem::DoesFileExist( const std::string &path )
+{
+	struct _stat buf;
+	return ( _stat( path.c_str(), &buf ) == 0 );
 }
 
 bool jaded::FileSystem::CreatePath( const std::string &path )
@@ -69,15 +95,6 @@ void jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 	{
 		return;
 	}
-
-#if 0
-	// check if the file exists first
-	struct _stat buf;
-	if ( _stat( KEY_REPOSITORY, &buf ) == 0 )
-	{
-		return;
-	}
-#endif
 
 	//TODO: this shouldn't be an automatic operation!
 
@@ -128,6 +145,11 @@ void jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 		}
 
 		path += "/" + i.second.filename;
+		if ( DoesFileExist( path ) )
+		{
+			continue;
+		}
+
 		file = fopen( path.c_str(), "wb" );
 		if ( file == nullptr )
 		{
@@ -172,7 +194,7 @@ void jaded::FileSystem::IndexBFSubDirectory( unsigned int curDir )
 		KeyFile file{};
 		file.index    = fileIndex;
 		file.key      = BIG_FileKey( fileIndex );
-		file.filename = BIG_NameFile( fileIndex );
+		file.filename = NormalizePath( BIG_NameFile( fileIndex ) );
 		file.dir      = NormalizePath( dir );
 
 		fileTable.emplace( file.key, file );
