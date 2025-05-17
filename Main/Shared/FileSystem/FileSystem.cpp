@@ -2,8 +2,14 @@
 // https://oldtimes-software.com/jaded/
 
 #include <algorithm>
+#include <iostream>
+#include <string>
 
 #include "Precomp.h"
+
+#if defined( _WIN32 )
+#	include <wincrypt.h>
+#endif
 
 #include "../MainSharedSystem.h"
 #include "../Profiler.h"
@@ -17,8 +23,6 @@
 #include "BIGfiles/BIGread.h"
 
 #include "LINks/LINKmsg.h"
-
-static constexpr const char *KEY_REPOSITORY = "jaded.key";
 
 jaded::FileSystem jaded::filesystem;
 
@@ -53,6 +57,15 @@ std::string jaded::FileSystem::NormalizePath( std::string path )
 	}
 
 	return path;
+}
+
+void jaded::FileSystem::PrintKeyTable()
+{
+	for ( const auto &i : fileTable )
+	{
+		std::string msg = std::to_string( i.second.key ) + " " + i.second.dir->name + i.second.name;
+		LINK_PrintStatusMsg( msg.c_str() );
+	}
 }
 
 bool jaded::FileSystem::DoesFileExist( const std::string &path )
@@ -134,7 +147,7 @@ void jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 	fprintf( file, "%u\n", fileTable.size() );
 	for ( const auto &i : fileTable )
 	{
-		std::string path = i.second.dir + "/" + i.second.filename;
+		std::string path = i.second.dir->name + "/" + i.second.name;
 		fprintf( file, "%x \"%s\"\n", i.first, path.c_str() );
 	}
 	fclose( file );
@@ -145,7 +158,7 @@ void jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 	for ( const auto &i : fileTable )
 	{
 		// export it too
-		std::string path = dstPath + i.second.dir;
+		std::string path = dstPath + i.second.dir->name;
 		if ( !CreatePath( path ) )
 		{
 			// TODO: this should throw a more meaningful error in future
@@ -154,7 +167,7 @@ void jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 			break;
 		}
 
-		path += "/" + i.second.filename;
+		path += "/" + i.second.name;
 		if ( DoesFileExist( path ) )
 		{
 			continue;
@@ -193,37 +206,111 @@ void jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 	LINK_PrintStatusMsg( msg.c_str() );
 }
 
+void jaded::FileSystem::ParseKeyRepository( const std::string &path )
+{
+	//TODO: parse the key file - format is subject to change, so not done yet
+}
+
+jaded::FileSystem::Key jaded::FileSystem::GenerateFileKey( const std::string &path )
+{
+	Key key = 0;
+
+#if defined( _WIN32 )
+	HCRYPTPROV cProv = 0;
+	HCRYPTHASH cHash = 0;
+	try
+	{
+		if ( !CryptAcquireContext( &cProv, nullptr, nullptr, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT ) )
+		{
+			throw std::runtime_error( "Failed to acquire crypto provider: " + std::to_string( GetLastError() ) );
+		}
+
+		if ( !CryptCreateHash( cProv, CALG_MD5, 0, 0, &cHash ) )
+		{
+			throw std::runtime_error( "Failed to create hash: " + std::to_string( GetLastError() ) );
+		}
+
+		const BYTE *data = ( BYTE * ) path.c_str();
+		if ( !CryptHashData( cHash, data, path.size(), 0 ) )
+		{
+			throw std::runtime_error( "Failed to hash data: " + std::to_string( GetLastError() ) );
+		}
+
+		DWORD hashSize = sizeof( Key );
+		if ( !CryptGetHashParam( cHash, HP_HASHVAL, ( BYTE * ) &key, &hashSize, 0 ) )
+		{
+			throw std::runtime_error( "Failed to get hash: " + std::to_string( GetLastError() ) );
+		}
+	}
+	catch ( const std::exception &e )
+	{
+		LINK_PrintStatusMsg( e.what() );
+	}
+
+	if ( cProv != 0 ) CryptReleaseContext( cProv, 0 );
+	if ( cHash != 0 ) CryptDestroyHash( cHash );
+#endif
+
+	return key;
+}
+
+jaded::FileSystem::Index jaded::FileSystem::LookupFile( const std::string &dir, const std::string &filename )
+{
+	std::string path = dir + "/" + filename;
+	const auto &i    = dirLookup.find( path );
+	if ( i == dirLookup.end() )
+	{
+		return BIG_C_InvalidIndex;
+	}
+
+	const auto &j = fileTable.find( i->second );
+	if ( j == fileTable.end() )
+	{
+		return BIG_C_InvalidIndex;
+	}
+
+	return j->second.index;
+}
+
 void jaded::FileSystem::IndexBFSubDirectory( unsigned int curDir )
 {
 	char dir[ BIG_C_MaxLenPath ];
 	BIG_ComputeFullName( curDir, dir );
 
-	unsigned int fileIndex = BIG_FirstFile( curDir );
+	KeyDir directory{};
+	directory.name  = dir;
+	directory.index = curDir;
+	directories.push_back( directory );
+
+	Index fileIndex = BIG_FirstFile( curDir );
 	while ( fileIndex != BIG_C_InvalidIndex )
 	{
 		KeyFile file{};
-		file.index    = fileIndex;
-		file.key      = BIG_FileKey( fileIndex );
-		file.filename = NormalizePath( BIG_NameFile( fileIndex ) );
-		file.dir      = NormalizePath( dir );
+		file.index = fileIndex;
+		file.key   = BIG_FileKey( fileIndex );
+		file.name  = NormalizePath( BIG_NameFile( fileIndex ) );
+		file.dir   = &directories.back();
 
 		// HACKS!!
 		//TODO: check something other than just the key here, just to be safe!!
 		if ( file.key == 134265554 )
 		{
-			file.filename = "[0800bab3] [7200a600] OBJ_Grille_Sol_Bar.gao";
+			file.name = "[0800bab3] [7200a600] OBJ_Grille_Sol_Bar.gao";
 		}
-		else if (file.key == 503325600)
+		else if ( file.key == 503325600 )
 		{
-			file.filename = "1E0023A0_CopyOf_ButNotReally_Arbre_Mort_Couch_Ptite_Branche.gao";
+			file.name = "1E0023A0_CopyOf_ButNotReally_Arbre_Mort_Couch_Ptite_Branche.gao";
 		}
 
+		file.dir->files.push_back( file );
+
 		fileTable.emplace( file.key, file );
+		dirLookup.emplace( file.dir->name + "/" + file.name, file.key );
 
 		fileIndex = BIG_NextFile( fileIndex );
 	}
 
-	unsigned int subDir = BIG_SubDir( curDir );
+	Index subDir = BIG_SubDir( curDir );
 	while ( subDir != BIG_C_InvalidIndex )
 	{
 		IndexBFSubDirectory( subDir );
@@ -231,7 +318,19 @@ void jaded::FileSystem::IndexBFSubDirectory( unsigned int curDir )
 	}
 }
 
+// C interface for legacy BIG API
+
 extern "C" void Jaded_FileSystem_CreateKeyRepository( const BIG_tdst_BigFile *bf )
 {
 	jaded::filesystem.CreateKeyRepository( bf );
+}
+
+extern "C" uint32_t Jaded_FileSystem_GenerateFileKey( const char *path )
+{
+	return jaded::filesystem.GenerateFileKey( path );
+}
+
+extern "C" uint32_t Jaded_FileSystem_SearchFileExt( const char *dir, const char *filename )
+{
+	return jaded::filesystem.LookupFile( dir, filename );
 }
