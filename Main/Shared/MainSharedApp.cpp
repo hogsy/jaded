@@ -358,7 +358,9 @@ int main( int argc, char **argv )
 
 	// hogsy: for now we'll only support editor functionality under win32
 	if ( jaded::sys::launchOperations.editorMode )
+	{
 		return EDI_EditorWin32Execution( hInstance );
+	}
 
 #	endif
 

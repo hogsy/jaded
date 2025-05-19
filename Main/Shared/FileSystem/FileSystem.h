@@ -35,8 +35,6 @@ namespace jaded
 		/// <returns>Key based on the path. Returns 0 on fail.</returns>
 		uint32_t GenerateFileKey( const std::string &path );
 
-		void IndexFile( Key key, const std::string &dir, const std::string &filename );
-
 		/// <summary>
 		///		Lookup a file by dir and filename, and return its index.
 		/// </summary>
@@ -51,13 +49,15 @@ namespace jaded
 	private:
 		std::string dataPath;// this is where the data should be stored
 
-		struct KeyDir;
 		struct KeyFile
 		{
-			std::string name; // name of the file, without directory (see dir)
-			KeyDir     *dir;  // directory it exists under
-			Index       index;// its original index in the big file
-			Key         key;  // key
+			std::string name;   // name of the file, without directory (see dir)
+			Index       dir;    // index into the directory table
+			Index       index;  // index into the files table
+			Index       bfIndex;// used during extraction
+			Key         key;    // key
+
+			bool markedForDeletion;
 		};
 
 		struct KeyDir
@@ -65,14 +65,16 @@ namespace jaded
 			std::string name;
 			Index       index;
 
-			std::vector< KeyFile >       files;
-			std::map< std::string, Key > fileLookup;
+			std::vector< Index > files;
 		};
 
-		std::map< Key, KeyFile > fileTable;// table of all key'd files, for lookup
+		std::map< std::string, Index > dirLookup;// and lookup by name
+		std::vector< KeyDir >          directories;
 
-		std::vector< KeyDir >        directories;
-		std::map< std::string, Key > dirLookup;// and lookup by name
+		std::map< std::string, Index > fileLookup;
+		std::vector< KeyFile >         files;
+
+		std::map< Key, Index > keys;// table of all key'd files, for lookup
 	};
 
 	extern FileSystem filesystem;

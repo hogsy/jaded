@@ -481,15 +481,6 @@ void EAI_cl_Frame::OnRealIdle(void)
 	char		asz_Path[BIG_C_MaxLenPath];
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-#if 0
-	if(	mpo_Edit->GetModify() && BIG_P4Action(mul_CurrentEditFile)[0] == 0 	)
-	{
-		BOOL isCheckout = FALSE;
-		LINK_SendMessageToEditors(EPER_MESSAGE_AUTOCHECKOUT, mul_CurrentEditFile, ((ULONG)&isCheckout));
-		if (!isCheckout) Load(mul_CurrentEditFile);
-	}
-#endif
-
 	/* Auto compile all models */
 	if(EDI_gb_SlashC)
 	{

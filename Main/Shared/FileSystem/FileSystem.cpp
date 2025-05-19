@@ -24,6 +24,9 @@
 
 #include "LINks/LINKmsg.h"
 
+// sigh... we need access to the splash screen
+#include "../Main/WinEditors/Sources/EDIapp.h"
+
 jaded::FileSystem jaded::filesystem;
 
 std::string jaded::FileSystem::GetExecutablePath()
@@ -61,9 +64,9 @@ std::string jaded::FileSystem::NormalizePath( std::string path )
 
 void jaded::FileSystem::PrintKeyTable()
 {
-	for ( const auto &i : fileTable )
+	for ( const auto &i : files )
 	{
-		std::string msg = std::to_string( i.second.key ) + " " + i.second.dir->name + i.second.name;
+		std::string msg = std::to_string( i.key ) + " " + directories[ i.dir ].name + "/" + i.name;
 		LINK_PrintStatusMsg( msg.c_str() );
 	}
 }
@@ -133,6 +136,15 @@ void jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 
 	std::string keyPath = dstPath + keyName + ".key";
 
+	if ( jaded::sys::AlertBox( "Jaded will now proceed to extract the BF and generate a " +
+	                                   keyName +
+	                                   ".key file. This can be a long operation.\n\n"
+	                                   "Do you wish to proceed?",
+	                           "Jaded", jaded::sys::ALERT_BOX_INFO ) == jaded::sys::ALERT_BOX_RETURN_CANCEL )
+	{
+		return;
+	}
+
 	IndexBFSubDirectory( BIG_Root() );
 
 	// now proceed with the creation
@@ -144,10 +156,13 @@ void jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 		return;
 	}
 
-	fprintf( file, "%u\n", fileTable.size() );
-	for ( const auto &i : fileTable )
+	fprintf( file, "%u\n", keys.size() );
+	for ( const auto &i : keys )
 	{
-		std::string path = i.second.dir->name + "/" + i.second.name;
+		const KeyFile *fPtr = &files[ i.second ];
+		const KeyDir  *dPtr = &directories[ fPtr->dir ];
+
+		std::string path = dPtr->name + "/" + fPtr->name;
 		fprintf( file, "%x \"%s\"\n", i.first, path.c_str() );
 	}
 	fclose( file );
@@ -155,10 +170,10 @@ void jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 	LINK_PrintStatusMsg( "Exporting content from Big File..." );
 
 	// now attempt to export all the files
-	for ( const auto &i : fileTable )
+	for ( const auto &i : files )
 	{
 		// export it too
-		std::string path = dstPath + i.second.dir->name;
+		std::string path = dstPath + directories[ i.dir ].name;
 		if ( !CreatePath( path ) )
 		{
 			// TODO: this should throw a more meaningful error in future
@@ -167,7 +182,18 @@ void jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 			break;
 		}
 
-		path += "/" + i.second.name;
+		path += "/" + i.name;
+
+		// spit out the information so the user knows something is happening
+		std::string msg = std::to_string( i.index ) + "/" + std::to_string( keys.size() ) + ": " + path;
+		LINK_PrintStatusMsg( msg.c_str() );
+		if ( EDI_gpo_EnterWnd != nullptr )
+		{
+			// use a shorter name for the UI just to make it easier to see
+			msg = std::to_string( i.index ) + "/" + std::to_string( keys.size() ) + ": " + directories[ i.dir ].name + "/" + i.name;
+			EDI_gpo_EnterWnd->DisplayMessage( msg.c_str() );
+		}
+
 		if ( DoesFileExist( path ) )
 		{
 			continue;
@@ -177,13 +203,13 @@ void jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 		if ( file == nullptr )
 		{
 			// TODO: this should throw a more meaningful error in future
-			std::string msg = "Failed to create file (" + path + ") (" + std::to_string( i.second.key ) + ")!";
+			std::string msg = "Failed to create file (" + path + ") (" + std::to_string( i.key ) + ")!";
 			LINK_PrintStatusMsg( msg.c_str() );
 			break;
 		}
 
 		ULONG size;
-		char *p = BIG_pc_ReadFileTmp( BIG_PosFile( i.second.index ), &size );
+		char *p = BIG_pc_ReadFileTmp( BIG_PosFile( i.bfIndex ), &size );
 		size    = BIG_fwrite( p, size, file );
 
 		fclose( file );
@@ -191,13 +217,10 @@ void jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 		if ( size != 1 )
 		{
 			// TODO: this should throw a more meaningful error in future
-			std::string msg = "Failed to write file data (" + path + ") (" + std::to_string( i.second.key ) + ")!";
+			std::string msg = "Failed to write file data (" + path + ") (" + std::to_string( i.key ) + ")!";
 			LINK_PrintStatusMsg( msg.c_str() );
 			break;
 		}
-
-		std::string msg = std::to_string( i.second.index ) + "/" + std::to_string( fileTable.size() ) + ": " + path;
-		LINK_PrintStatusMsg( msg.c_str() );
 	}
 
 	double timeTaken = sys::Profile::GetSeconds() - startTime;
@@ -256,6 +279,7 @@ jaded::FileSystem::Key jaded::FileSystem::GenerateFileKey( const std::string &pa
 
 jaded::FileSystem::Index jaded::FileSystem::LookupFile( const std::string &dir, const std::string &filename )
 {
+#if 0
 	std::string path = dir + "/" + filename;
 	const auto &i    = dirLookup.find( path );
 	if ( i == dirLookup.end() )
@@ -263,13 +287,18 @@ jaded::FileSystem::Index jaded::FileSystem::LookupFile( const std::string &dir, 
 		return BIG_C_InvalidIndex;
 	}
 
-	const auto &j = fileTable.find( i->second );
+	const auto &j = fileTable.find( i->second->name );
 	if ( j == fileTable.end() )
 	{
 		return BIG_C_InvalidIndex;
 	}
 
 	return j->second.index;
+#else
+
+	return BIG_C_InvalidIndex;
+
+#endif
 }
 
 void jaded::FileSystem::IndexBFSubDirectory( unsigned int curDir )
@@ -279,17 +308,21 @@ void jaded::FileSystem::IndexBFSubDirectory( unsigned int curDir )
 
 	KeyDir directory{};
 	directory.name  = dir;
-	directory.index = curDir;
-	directories.push_back( directory );
+	directory.index = directories.size();
+	directories.emplace_back( directory );
+
+	// ensure that it's in our lookup table
+	dirLookup.emplace( directory.name, directory.index );
 
 	Index fileIndex = BIG_FirstFile( curDir );
 	while ( fileIndex != BIG_C_InvalidIndex )
 	{
 		KeyFile file{};
-		file.index = fileIndex;
-		file.key   = BIG_FileKey( fileIndex );
-		file.name  = NormalizePath( BIG_NameFile( fileIndex ) );
-		file.dir   = &directories.back();
+		file.index   = files.size();
+		file.bfIndex = fileIndex;
+		file.key     = BIG_FileKey( fileIndex );
+		file.name    = NormalizePath( BIG_NameFile( fileIndex ) );
+		file.dir     = directory.index;
 
 		// HACKS!!
 		//TODO: check something other than just the key here, just to be safe!!
@@ -302,10 +335,23 @@ void jaded::FileSystem::IndexBFSubDirectory( unsigned int curDir )
 			file.name = "1E0023A0_CopyOf_ButNotReally_Arbre_Mort_Couch_Ptite_Branche.gao";
 		}
 
-		file.dir->files.push_back( file );
+		files.emplace_back( file );
 
-		fileTable.emplace( file.key, file );
-		dirLookup.emplace( file.dir->name + "/" + file.name, file.key );
+		// add the file under the directory files listing too
+		KeyDir *dirPtr = &directories.back();
+		dirPtr->files.emplace_back( file.index );
+
+		fileLookup.emplace( directory.name + "/" + file.name, file.index );
+
+		// check if it's a duplicate key first (it could happen...)
+		auto &i = keys.find( file.key );
+		if ( i != keys.end() )
+		{
+			std::string msg = "Found duplicate key (" + std::to_string( i->first ) + ")";
+			LINK_PrintStatusMsg( msg.c_str() );
+		}
+
+		keys.emplace( file.key, file.index );
 
 		fileIndex = BIG_NextFile( fileIndex );
 	}
