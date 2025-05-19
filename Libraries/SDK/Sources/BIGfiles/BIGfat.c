@@ -954,7 +954,9 @@ BIG_INDEX BIG_ul_SearchDirInDir(BIG_INDEX _ul_Ref, const char *_psz_Name)
 BIG_INDEX BIG_ul_SearchFileExt( const char *_psz_PathName, const char *_psz_FileName )
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	ULONG ul_Index = Jaded_FileSystem_SearchFileExt( _psz_PathName, _psz_FileName );
+	char buf[ L_MAX_PATH ];
+	snprintf( buf, sizeof( buf ), "%s/%s", _psz_PathName, _psz_FileName );
+	ULONG ul_Index = Jaded_FileSystem_SearchFileExt( buf );
 	if ( ul_Index != BIG_C_InvalidIndex )
 	{
 		return ul_Index;

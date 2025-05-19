@@ -26,22 +26,11 @@ namespace jaded
 		bool CreatePath( const std::string &path );
 
 		void CreateKeyRepository( const BIG_tdst_BigFile *bf );
-		void ParseKeyRepository( const std::string &path );
+		bool ParseKeyRepository( const std::string &path );
 
-		/// <summary>
-		///		Geneate a key from the given path.
-		/// </summary>
-		/// <param name="path">Path of the file; the key is hashed from this.</param>
-		/// <returns>Key based on the path. Returns 0 on fail.</returns>
 		uint32_t GenerateFileKey( const std::string &path );
 
-		/// <summary>
-		///		Lookup a file by dir and filename, and return its index.
-		/// </summary>
-		/// <param name="dir">Directory to lookup.</param>
-		/// <param name="filename">Filename to lookup.</param>
-		/// <returns>File index on success, otherwise invalid index on fail.</returns>
-		Index LookupFile( const std::string &dir, const std::string &filename );
+		Index LookupFile( const std::string &path );
 
 	private:
 		void IndexBFSubDirectory( unsigned int curDir );
@@ -84,6 +73,6 @@ namespace jaded
 
 void     Jaded_FileSystem_CreateKeyRepository( const BIG_tdst_BigFile *bf );
 uint32_t Jaded_FileSystem_GenerateFileKey( const char *path );
-uint32_t Jaded_FileSystem_SearchFileExt( const char *dir, const char *filename );
+uint32_t Jaded_FileSystem_SearchFileExt( const char *path );
 
 #endif

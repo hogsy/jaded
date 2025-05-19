@@ -1,11 +1,14 @@
 // Created by Mark "hogsy" Sowden, 2023-2025 <hogsy@snortysoft.net>
 // https://oldtimes-software.com/jaded/
 
+#include "Precomp.h"
+
 #include <algorithm>
 #include <iostream>
 #include <string>
 
-#include "Precomp.h"
+#include <stdlib.h>
+#include <stdio.h>
 
 #if defined( _WIN32 )
 #	include <wincrypt.h>
@@ -136,6 +139,13 @@ void jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 
 	std::string keyPath = dstPath + keyName + ".key";
 
+	if ( DoesFileExist( keyPath ) )
+	{
+		LINK_PrintStatusMsg( "Key file already exists! Skipping extraction." );
+		ParseKeyRepository( keyPath );
+		return;
+	}
+
 	if ( jaded::sys::AlertBox( "Jaded will now proceed to extract the BF and generate a " +
 	                                   keyName +
 	                                   ".key file. This can be a long operation.\n\n"
@@ -229,9 +239,111 @@ void jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 	LINK_PrintStatusMsg( msg.c_str() );
 }
 
-void jaded::FileSystem::ParseKeyRepository( const std::string &path )
+bool jaded::FileSystem::ParseKeyRepository( const std::string &path )
 {
-	//TODO: parse the key file - format is subject to change, so not done yet
+	bool  status{};
+	FILE *file{};
+
+	try
+	{
+		file = fopen( path.c_str(), "r" );
+		if ( file == nullptr )
+		{
+			throw std::runtime_error( "Failed to open key repository per \"" + path + "\"!" );
+		}
+
+		//TODO: I'm being lazy here, fgets is prone to failure, I know, I'll be back!!!
+
+		char buf[ 1024 ];
+		if ( fgets( buf, sizeof( buf ), file ) == nullptr )
+		{
+			throw std::runtime_error( "Failed to get number of keys per \"" + path + "\"!" );
+		}
+
+		unsigned int numKeys = std::strtoul( buf, nullptr, 10 );
+		for ( unsigned int i = 0; i < numKeys; ++i )
+		{
+			if ( fgets( buf, sizeof( buf ), file ) == nullptr )
+			{
+				throw std::runtime_error( "Failed to read line per \"" + path + "\"!" );
+			}
+
+			// pull the key from the start
+			char *c = strchr( buf, ' ' );
+			char  kbuf[ 16 ]{};
+			strncpy( kbuf, buf, c - buf );
+
+			Key key = strtoul( kbuf, nullptr, 16 );
+			if ( key == 0 )
+			{
+				throw std::runtime_error( "Invalid key (" + std::string( buf ) + ")!" );
+			}
+
+			// and now pull the path
+			char *openPos = strchr( buf, '"' );
+			if ( openPos == nullptr )
+			{
+				throw std::runtime_error( "Failed to find opening quote (" + std::string( buf ) + ")!" );
+			}
+			char *closePos = strrchr( buf, '"' );
+			if ( openPos == closePos )
+			{
+				throw std::runtime_error( "Failed to find closing quote (" + std::string( buf ) + ")!" );
+			}
+			char pbuf[ L_MAX_PATH ]{};
+			strncpy( pbuf, openPos + 1, ( closePos - 1 ) - openPos );
+
+			char *filename = strrchr( pbuf, '/' );
+			if ( filename == nullptr )
+			{
+				throw std::runtime_error( "Failed to fetch filename (" + std::string( buf ) + ")!" );
+			}
+
+			KeyFile keyFile{};
+			keyFile.name  = filename + 1;
+			keyFile.key   = key;
+			keyFile.index = files.size();
+
+			*filename = '\0';
+
+			auto &dir = dirLookup.find( pbuf );
+			if ( dir != dirLookup.end() )
+			{
+				// existing directory
+				keyFile.dir = directories[ dir->second ].index;
+				directories[ dir->second ].files.emplace_back( keyFile.index );
+			}
+			else
+			{
+				// new directory
+				KeyDir keyDir{};
+				keyDir.name  = pbuf;
+				keyDir.index = directories.size();
+				directories.emplace_back( keyDir );
+
+				// add the file under the directory files listing too
+				KeyDir *dirPtr = &directories.back();
+				dirPtr->files.emplace_back( keyFile.index );
+
+				keyFile.dir = keyDir.index;
+			}
+
+			files.emplace_back( keyFile );
+		}
+
+		status = true;
+	}
+	catch ( const std::exception &e )
+	{
+		LINK_PrintStatusMsg( e.what() );
+	}
+
+	if ( file != nullptr )
+	{
+		fclose( file );
+	}
+
+	return status;
 }
 
 jaded::FileSystem::Key jaded::FileSystem::GenerateFileKey( const std::string &path )
@@ -277,28 +389,15 @@ jaded::FileSystem::Key jaded::FileSystem::GenerateFileKey( const std::string &pa
 	return key;
 }
 
-jaded::FileSystem::Index jaded::FileSystem::LookupFile( const std::string &dir, const std::string &filename )
+jaded::FileSystem::Index jaded::FileSystem::LookupFile( const std::string &path )
 {
-#if 0
-	std::string path = dir + "/" + filename;
-	const auto &i    = dirLookup.find( path );
-	if ( i == dirLookup.end() )
+	const auto &i = fileLookup.find( path );
+	if ( i == fileLookup.end() )
 	{
 		return BIG_C_InvalidIndex;
 	}
 
-	const auto &j = fileTable.find( i->second->name );
-	if ( j == fileTable.end() )
-	{
-		return BIG_C_InvalidIndex;
-	}
-
-	return j->second.index;
-#else
-
-	return BIG_C_InvalidIndex;
-
-#endif
+	return files[ i->second ].index;
 }
 
 void jaded::FileSystem::IndexBFSubDirectory( unsigned int curDir )
@@ -376,7 +475,7 @@ extern "C" uint32_t Jaded_FileSystem_GenerateFileKey( const char *path )
 	return jaded::filesystem.GenerateFileKey( path );
 }
 
-extern "C" uint32_t Jaded_FileSystem_SearchFileExt( const char *dir, const char *filename )
+extern "C" uint32_t Jaded_FileSystem_SearchFileExt( const char *path )
 {
-	return jaded::filesystem.LookupFile( dir, filename );
+	return jaded::filesystem.LookupFile( path );
 }
