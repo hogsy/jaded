@@ -1,10 +1,6 @@
 name: Build Release (Windows MSVC x86)
 
-on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+on: [ push, pull_request ]
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
@@ -27,7 +23,7 @@ jobs:
 
       - name: Build
         # Build your program with the given configuration
-        run: MSBuild /t:JadeShell /property:Configuration="Release" /property:Platform=Win32 /maxcpucount Main/Jade.sln
+        run: MSBuild /t:JadeShell /property:Configuration="Release" /property:Platform=Win32 /p:JadedBuildID="Commit ${{ github.sha }} (${{ github.workflow }} \#$${{github.run_number}})" /maxcpucount Main/Jade.sln
 
       - name: 'Check for commit number'
         if: github.event_name != 'pull_request'
@@ -38,7 +34,7 @@ jobs:
         run: zip web/releases/jaded-release.zip mappings/* changes.txt Jaded.exe run_window.bat run_console.bat run_editor.bat SDL3.dll legal.txt
 
       - name: 'Upload to Discord'
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
         uses: tsickert/discord-webhook@v5.3.0
         continue-on-error: true
         with:

@@ -287,6 +287,7 @@
 #define IDB_P4CHECK_SAME                394
 #define IDB_P4CHECK_MOVE                395
 #define IDB_P4CHECK_DELETE              396
+#define DIALOGS_IDD_CRASH_REPORT        396
 #define IDB_P4CHECK_NEWP4               397
 #define DIALOGS_IDD_NAMEREPLACE         398
 #define IDC_P4REFRESHDEPOTS             400
@@ -2088,23 +2089,17 @@
 #define IDC_P4SAVEHOST                  1887
 #define IDC_SELECTION_NOTINSECTO        1888
 #define IDC_CHECK_0                     1889
-//#define _0                              1890
-//#define _1                              1891
 #define IDC_STATIC_0                    1891
 #define IDC_STATIC_SECT                 1891
 #define IDC_CHECK_1                     1892
 #define IDC_STATIC_VIS                  1892
-//#define _2                              1893
 #define IDC_STATIC_ACT                  1893
 #define IDC_CHECK_2                     1894
 #define IDC_STATIC_PORTAL               1894
-//#define _3                              1895
 #define IDC_STATIC_OBJ                  1895
 #define IDC_CHECK_3                     1896
 #define IDC_P4TEXT                      1896
-//#define _4                              1897
 #define IDC_CHECK_4                     1898
-//#define _5                              1899
 #define IDC_ENABLE_ADDITIONNAL_VERSION  1899
 #define IDC_P4ENABLE_ADDITIONNAL_VERSION 1899
 #define DIALOGS_IDD_ANIMVIEWER          1900
@@ -2113,12 +2108,10 @@
 #define DIALOGS_IDD_TEST_ET             1901
 #define DIALOGS_IDD_NAMECOMBO1          1901
 #define DIALOGS_IDD_STOCKOFCOLOR        1901
-//#define _6                              1901
 #define IDC_P4CHECKLINKS                1901
 #define DIALOGS_IDD_MORPHING1           1902
 #define DIALOGS_IDD_MORPHINGSLIDERS     1902
 #define IDC_CHECK_6                     1902
-//#define _7                              1903
 #define IDC_CHECK_7                     1904
 #define IDC_CHECKVOL                    1908
 #define IDC_CHECK114                    1909
@@ -2460,7 +2453,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        394
+#define _APS_NEXT_RESOURCE_VALUE        398
 #define _APS_NEXT_COMMAND_VALUE         40153
 #define _APS_NEXT_CONTROL_VALUE         2187
 #define _APS_NEXT_SYMED_VALUE           209
