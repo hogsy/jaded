@@ -71,7 +71,6 @@ extern "C"
  */
 
 #define BIG_MAX_FAT     (LONG)10000
-#define GRAN_READFAT    100 /* Granularity to load fat file in engine */
 
 /*$2
  ---------------------------------------------------------------------------------------------------
@@ -92,7 +91,6 @@ extern "C"
  */
 
 extern void         BIG_ReadHeader(void);
-extern void         BIG_ReadFatFile(BIG_tdst_FatDes *);
 extern void         BIG_ReadAllFats(void);
 extern void         BIG_ResetFat(void);
 

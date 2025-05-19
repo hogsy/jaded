@@ -33,7 +33,7 @@ void	*BIG_gp_GlobalSpecialBuffer = NULL;
  =======================================================================================================================
  =======================================================================================================================
  */
-void *BIG_p_RequestSpecialBuffer(int _i_Size)
+static void *BIG_p_RequestSpecialBuffer(int _i_Size)
 {
 	if(_i_Size > BIG_gi_GlobalSpecialBufferSize)
 	{
@@ -61,41 +61,6 @@ void BIG_FreeSpecialBuffer(void)
 	BIG_gp_GlobalSpecialBuffer = NULL;
 	BIG_gi_GlobalSpecialBufferSize = 0;
 }
-
-/*$4
- ***********************************************************************************************************************
- ***********************************************************************************************************************
- */
-
-#ifdef ACTIVE_EDITORS
-char	adic[65535];
-
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
-char *BIG_special_LZOsave(char *_pc_Buf, ULONG *_pul_Size)
-{
-	/*~~~~~~~~~~~~*/
-	char	*pbuf;
-	ULONG	ul_Size;
-	/*~~~~~~~~~~~~*/
-
-	pbuf = (char*)BIG_p_RequestSpecialBuffer(*_pul_Size + 64);
-	lzo1x_1_compress((const unsigned char*)_pc_Buf, *_pul_Size, (unsigned char*)(pbuf + 12), (lzo_uint*)&ul_Size, adic);
-	if(ul_Size + 12 < *_pul_Size)
-	{
-		*(int *) pbuf = 0xCBCBCBCB;
-		((int *) pbuf)[1] = 0xC0DE6666;
-		((int *) pbuf)[2] = *_pul_Size;
-		*_pul_Size = ul_Size + 12;
-		return pbuf;
-	}
-
-	return _pc_Buf;
-}
-
-#endif
 
 /*
  =======================================================================================================================
@@ -317,55 +282,6 @@ void compress_image(char *pin, char *pout)
 
 	*(pout++) = thebyte;
 	compress_charcount = ++curbyte;
-}
-
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
-char *BIG_special_HUFsave(char *_pc_Buf, ULONG *_pul_Size)
-{
-	/*~~~~~~~~~~*/
-	char	*pbuf;
-	int		ii;
-	/*~~~~~~~~~~*/
-
-	BIG_specialmode = 0;
-	if(*_pul_Size < 12 + 516 + 256) return _pc_Buf;
-
-	L_memset(father, 0, sizeof(father));
-	L_memset(code, 0, sizeof(code));
-	heap_length = 0;
-	compress_charcount = 0;
-	file_size = 0;
-	L_memset(heap, 0, sizeof(heap));
-	L_memset(code_length, 0, sizeof(code_length));
-	L_memset(frequency_count, 0, sizeof(frequency_count));
-
-	file_size = *_pul_Size;
-	get_frequency_count(_pc_Buf);
-	build_initial_heap();
-	build_code_tree();
-	if(generate_code_table())
-	{
-		pbuf = (char*)BIG_p_RequestSpecialBuffer(*_pul_Size * 4);
-		*(int *) pbuf = 0xCBCBCBCB;
-		((int *) pbuf)[1] = 0xC0DE6667;
-		((int *) pbuf)[2] = *_pul_Size;
-
-		L_memcpy(pbuf + 12, code, 512);
-		L_memcpy(pbuf + 12 + 512, code_length, 256);
-
-		compress_image(_pc_Buf, pbuf + 12 + 512 + 256);
-		if(compress_charcount + 12 + 512 + 256 > *_pul_Size) return _pc_Buf;
-
-		ii = compress_charcount + 12 + 512 + 256;
-
-		*_pul_Size = ii;
-		return pbuf;
-	}
-
-	return _pc_Buf;
 }
 
 #endif

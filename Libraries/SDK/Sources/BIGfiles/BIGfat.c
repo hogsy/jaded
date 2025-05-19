@@ -28,6 +28,8 @@
 
 #include "TIMer/PROfiler/PROPS2.h"
 
+#include "../Main/Shared/FileSystem/FileSystem.h"
+
 #ifdef ACTIVE_EDITORS
 #include "VERsion/VERsion_Number.h"
 #endif // ACTIVE_EDITORS
@@ -121,8 +123,6 @@ void BIG_ReadHeader(void)
     );
 }
 
-#ifdef ACTIVE_EDITORS
-
 /*
  ===================================================================================================
     Aim:    Read fat of file. In engine mode, the fat is not read in memory. It is read in a
@@ -132,7 +132,7 @@ void BIG_ReadHeader(void)
             depending of its name.
  ===================================================================================================
  */
-void BIG_ReadFatFile(BIG_tdst_FatDes *_pst_Fat)
+static void BIG_ReadFatFile(BIG_tdst_FatDes *_pst_Fat)
 {
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     ULONG   i;
@@ -174,84 +174,6 @@ void BIG_ReadFatFile(BIG_tdst_FatDes *_pst_Fat)
     }
 }
 
-#else /* !ACTIVE_EDITORS */
-
-/*
- ===================================================================================================
- ===================================================================================================
- */
-void BIG_ReadFatFile(BIG_tdst_FatDes *_pst_Fat)
-{
-    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-    ULONG   ul_TotalRead, ul_NumRead;
-    ULONG   i;
-    CHAR* 	pc_Buf;
-    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-    /* No file in bigfile !. No need to continue. */
-	if(!_pst_Fat->ul_MaxFile) return;
-
-    /* Seek to the beginning of extended fat */
-	i = L_fseek(BIG_Handle(), _pst_Fat->ul_PosFat + BIG_PosFatFile, L_SEEK_SET);
-    ERR_X_Error(i == 0, L_ERR_Csz_FSeek,NULL);
-
-
-    /* Read fat with a granularity. */
-    ul_TotalRead = 0;
-    while(ul_TotalRead < (ULONG) _pst_Fat->ul_MaxFile)
-    {
-        ul_NumRead = GRAN_READFAT;
-        if(ul_TotalRead + GRAN_READFAT > _pst_Fat->ul_MaxFile)
-            ul_NumRead = _pst_Fat->ul_MaxFile - ul_TotalRead;
-
-        /* Read the fats (read totally in editor mode) */
-		i = BIG_fread
-            (
-                (UCHAR *) BIG_gst.dst_FileTable,
-                ul_NumRead * sizeof(BIG_tdst_File),
-                BIG_Handle()
-            );
-        ERR_X_Error( i == 1,L_ERR_Csz_FRead,NULL);
-
-		/* La FAT est cryptée .. je décrypte */
-		if(BIG_b_FAT_is_Crypted)
-		{
-			BIG_special_Decrypt4FAT
-			(
-#ifdef JADEFUSION
-				(char *) BIG_gst.dst_FileTable, 
-#else
-				(UCHAR *) BIG_gst.dst_FileTable, 
-#endif
-				ul_NumRead * sizeof(BIG_tdst_File)
-			);
-		}
-
-
-		pc_Buf = (CHAR *) BIG_gst.dst_FileTable;
-
-        /* Insert keys in table */
-#ifndef ACTIVE_EDITORS
-        for(i = 0; i < ul_NumRead; i++)
-        {
-        	BIG_gst.dst_FileTable[i].ul_Pos 		= LOA_ReadULong(&pc_Buf);
-			BIG_gst.dst_FileTable[i].ul_Key 		= LOA_ReadULong(&pc_Buf);
-						
-						
-            if(BIG_gst.dst_FileTable[i].ul_Key != BIG_C_InvalidKey)
-                BIG_InsertKeyToPos
-                (
-                    BIG_gst.dst_FileTable[i].ul_Key,
-                    BIG_gst.dst_FileTable[i].ul_Pos
-                );
-        }
-#endif
-
-        ul_TotalRead += GRAN_READFAT;
-    }
-}
-
-#endif
 #ifdef ACTIVE_EDITORS
 
 /*
@@ -512,7 +434,6 @@ void BIG_ReadAllFats(void)
     }
 
     /* Allocate all fats */
-#ifdef ACTIVE_EDITORS
     BIG_gst.dst_FileTable = (BIG_tdst_File*)L_malloc(BIG_NumFat() * BIG_SizeFat() * sizeof(BIG_tdst_File));
     ERR_X_Error(BIG_gst.dst_FileTable != NULL, L_ERR_Csz_NotEnoughMemory, NULL);
 
@@ -521,16 +442,7 @@ void BIG_ReadAllFats(void)
 
     BIG_gst.dst_DirTable = (BIG_tdst_Directory*)L_malloc(BIG_NumFat() * BIG_SizeFat() * sizeof(BIG_tdst_Directory));
     ERR_X_Error(BIG_gst.dst_DirTable != NULL, L_ERR_Csz_NotEnoughMemory, NULL);
-#else
-    /*
-     * In engine mode, the buffer will be released at the end of that function. So we only
-     * allocate a temporary buffer to read fat, and to construct key table. GRAN_READFAT will
-     * determin the number of file we will read in one time. If it is big, this will increase
-     * speed of loading, but will need more memory.
-     */
-    BIG_gst.dst_FileTable = (BIG_tdst_File*) MEM_p_Alloc(GRAN_READFAT * sizeof(BIG_tdst_File));
-    ERR_X_Error(BIG_gst.dst_FileTable != NULL, L_ERR_Csz_NotEnoughMemory, NULL);
-#endif
+
     /*
      * In editor mode, we need to associated keys to the corresponding position in the fat. This
      * table is named st_KeyTableToFat.
@@ -1039,22 +951,25 @@ BIG_INDEX BIG_ul_SearchDirInDir(BIG_INDEX _ul_Ref, const char *_psz_Name)
     Out:    Returns index in fat file of the file, or BIG_C_InvalidIndex.
  ===================================================================================================
  */
-BIG_INDEX BIG_ul_SearchFileExt( const char *_psz_PathName, const char *_psz_FileName)
+BIG_INDEX BIG_ul_SearchFileExt( const char *_psz_PathName, const char *_psz_FileName )
 {
-    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-    ULONG   ul_Index;
-    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+	ULONG ul_Index = Jaded_FileSystem_SearchFileExt( _psz_PathName, _psz_FileName );
+	if ( ul_Index != BIG_C_InvalidIndex )
+	{
+		return ul_Index;
+	}
 
-    /* Retrieve index of parent directory */
-    ul_Index = BIG_ul_SearchDir(_psz_PathName);
-    if(ul_Index == BIG_C_InvalidIndex)
-    {
-        return(BIG_C_InvalidIndex);
-    }
+	/* Retrieve index of parent directory */
+	ul_Index = BIG_ul_SearchDir( _psz_PathName );
+	if ( ul_Index == BIG_C_InvalidIndex )
+	{
+		return ( BIG_C_InvalidIndex );
+	}
 
-    /* Retrieve index of file in parent directory */
-    ul_Index = BIG_ul_SearchFile(ul_Index, _psz_FileName);
-    return ul_Index;
+	/* Retrieve index of file in parent directory */
+	ul_Index = BIG_ul_SearchFile( ul_Index, _psz_FileName );
+	return ul_Index;
 }
 
 /*

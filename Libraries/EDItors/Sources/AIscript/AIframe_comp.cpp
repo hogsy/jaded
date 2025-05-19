@@ -1639,9 +1639,7 @@ void EAI_cl_Frame::SaveColors(void)
 			SAV_Buffer(pt_ProcEd->pt_Parameters, pt_ProcEd->u32_NumParameters * sizeof(SCR_sc_ProcedureParam));
 	}
 
-	BIG_specialmode = BIG_C_SpecialModeLZO;
 	SAV_ul_End();
-	BIG_specialmode = 0;
 }
 
 /*

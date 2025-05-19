@@ -1192,7 +1192,7 @@ static void UnloadUniversRef(void)
 }
     
 
-BOOL b_DummyFile(BIG_INDEX ul_Index, BOOL *_pb_Univ)
+static BOOL b_DummyFile(BIG_INDEX ul_Index, BOOL *_pb_Univ)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	BOOL		b_Can;

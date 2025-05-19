@@ -201,9 +201,6 @@ typedef struct  BIG_tdst_BigFile_
 
     char                asz_Name[L_MAX_PATH];   /* Complete name of the bigfile */
     L_FILE              h_CLibFileHandle;       /* Real file handle. NULL if invalid bigfile */
-#ifndef ACTIVE_EDITORS
-    BAS_tdst_barray     st_KeyTableToPos;       /* Key table for loading */
-#endif
     BIG_tdst_File       *dst_FileTable;         /* Minimal fat is kept loaded in editor mode */
     BIG_tdst_FatDes     *dst_FatTable;          /* All fats in the bigfile */
 

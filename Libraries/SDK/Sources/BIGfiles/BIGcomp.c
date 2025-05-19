@@ -81,7 +81,7 @@ unsigned int BIGcomp_M_CompressedSize = 1024 * 1024;
  */
 
 /* caution : only one work memory area => no paralel compression */
-char	s_WorkMemory[BIGcomp_M_WorkMemoryLength];
+static char	s_WorkMemory[BIGcomp_M_WorkMemoryLength];
 
 /*$4
  ***********************************************************************************************************************
@@ -381,42 +381,3 @@ int BIGcomp_CheckBuffer(u_char *_p_StartBlockAddr, u_int _ui_FreeLength)
     else
         return(_ui_FreeLength >= BIGcomp_M_BlockSize);
 }
-/*
- =======================================================================================================================
- =======================================================================================================================
-*/
-void LZO_UseIndication(char *Src,ULONG SrcLen,ULONG Indication)
-{
-	char *Src2,*Src3,*LastSrc;
-	if (!Indication) return;
-	Src3 = Src2 = Src + Indication;
-	LastSrc = Src + SrcLen;
-	while (Src2 < LastSrc)
-	{
-		*(Src2++) ^= *(Src++);
-		if (Src3 == Src) Src -= Indication;
-	}
-}
-/*
- =======================================================================================================================
- =======================================================================================================================
-*/
-void LZO_Compress(void *Src,void *Dst,ULONG SrcLen,ULONG *DstLen,ULONG Indication)
-{
-	LZO_UseIndication((char*)Src,SrcLen,Indication);
-	L_memset(s_WorkMemory, 0, BIGcomp_M_WorkMemoryLength);
-	lzo1x_1_compress((const unsigned char*)Src, SrcLen, (unsigned char*)Dst, (lzo_uint*)DstLen, s_WorkMemory);
-	if (*DstLen >= SrcLen) *DstLen = SrcLen;
-	LZO_UseIndication((char*)Src,SrcLen,Indication);
-}
-
-/*
- =======================================================================================================================
- =======================================================================================================================
-*/
-void LZO_DeCompress(void *Src,void *Dst,ULONG SrcLen,ULONG *DstLen,ULONG Indication)
-{
-	L_memset(s_WorkMemory, 0, BIGcomp_M_WorkMemoryLength);	
-	lzo1x_decompress((const unsigned char*)Src, SrcLen,(unsigned char*)Dst,(lzo_uint*)DstLen,s_WorkMemory);
-}
-

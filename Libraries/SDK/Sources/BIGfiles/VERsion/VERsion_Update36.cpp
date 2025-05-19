@@ -31,7 +31,6 @@
 
 static void LoadUniversRef(void);
 extern "C" BOOL b_CanOuputFinal(char *psz_Name);
-extern "C" BOOL b_DummyFile(BIG_INDEX ul_Index, BOOL *_pb_Univ);
 static void UnloadUniversRef(void);
 
 #define EBRO_C_ListCtrlMaxColumnsOld    8
@@ -495,14 +494,6 @@ static void LoadUniversRef(void)
 			BIG_gb_UniversRefLoaded = TRUE;
 		}
 	}
-}
-
-static BOOL b_IsUniversFile(BIG_INDEX ul_Index)
-{    
-	if(ul_Index == BIG_C_InvalidIndex) return FALSE;
-	if(!BIG_gb_UniversRefLoaded) return FALSE;
-	if(BAS_bsearch(BIG_FileKey(ul_Index),&BIG_gst_UniversRef)!=-1) return TRUE;
-	return FALSE;
 }
 
 static void UnloadUniversRef(void)

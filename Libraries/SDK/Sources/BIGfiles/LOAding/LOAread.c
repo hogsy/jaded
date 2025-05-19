@@ -77,27 +77,6 @@ void *LOA_FetchFile(ULONG *_pul_Length)
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	LOA_tdstBinFileHeader	stBinFileHeader;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-#ifdef PSX2_TARGET
-	/* Philippe : Read PAD during loading */
-	/* */
-	{
-		static u32 LastVBlankCounter = 0;
-		extern void INO_Update();
-		u_int volatile VBlankCounter;
-		extern u32 BinkVideoWith;
-		 // Avoid to call it each time.
-		if ((BinkVideoWith) &&(LastVBlankCounter != VBlankCounter))
-		{
-			BOOL SaveLoading;
-			extern BOOL LOA_gb_Loading;
-			SaveLoading = LOA_gb_Loading;
-			LOA_gb_Loading = FALSE;
-			INO_Update();
-			LOA_gb_Loading = SaveLoading;
-			LastVBlankCounter = VBlankCounter;
-		}
-	}//*/
-#endif	
 
 #ifdef LOA_BINARIZATION
 	if(LOA_IsBinarizing())

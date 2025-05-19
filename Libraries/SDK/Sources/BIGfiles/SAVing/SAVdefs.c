@@ -89,7 +89,6 @@ _Try_
 
 	switch(BIG_specialmode)
 	{
-	case BIG_C_SpecialModeLZO:		pc_Buf = BIG_special_LZOsave((char*)BIG_gp_GlobalSaveBuffer, (ULONG*)&sgi_ActualSize); break;
 	default:						pc_Buf = (char*)BIG_gp_GlobalSaveBuffer; break;
 	}
 

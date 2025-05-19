@@ -373,66 +373,6 @@ char *BIG_pc_ReadFileTmp(ULONG _ul_Pos, ULONG *_pul_Length)
 
 /*
  =======================================================================================================================
- =======================================================================================================================
- */
-char *BIG_pc_ReadPartOfFileTmp(ULONG _ul_Pos, ULONG ul_ReadSize)
-{
-	/*~~~~~~~~~~~~~~*/
-	void	*p_Buffer;
-	ULONG	ul_Length,r;
-	/*~~~~~~~~~~~~~~*/
-
-	p_Buffer = NULL;
-
-#ifdef ACTIVE_EDITORS
-	{
-		/*~~~~~~~~~~~~~~~*/
-		BIG_INDEX	ul_Fat;
-		/*~~~~~~~~~~~~~~~*/
-
-		ul_Fat = BAS_bsearch(_ul_Pos, &BIG_gst.st_PosTableToFat);
-		if(ul_Fat != BIG_C_InvalidIndex) BIG_FileChanged(ul_Fat) |= EDI_FHC_Loaded;
-	}
-
-#endif
-	if(BIG_gi_ReadMode == 2)
-	{
-		/*~~~~~~~~~~~~~*/
-		void	*pNewBuf;
-		/*~~~~~~~~~~~~~*/
-
-		pNewBuf = NULL;
-
-		ul_Length = 0;
-		pNewBuf = LOA_FetchFile(&ul_Length);
-		if(pNewBuf) return (char *) pNewBuf;
-	}
-	else
-	{
-		/* Seek to the beginning of the file */
-		r=SeekSeek(BIG_Handle(), _ul_Pos, L_SEEK_SET);
-		ERR_X_Error(r == 0, L_ERR_Csz_FSeek, NULL);
-
-		LOA_FetchFile(&ul_ReadSize);
-
-		/* Allocate temporary buffer to receive file. We store a 0 at the end of the file. */
-		p_Buffer = BIG_p_RequestBuffer(ul_ReadSize + 1);
-		ERR_X_Error(p_Buffer != NULL, L_ERR_Csz_NotEnoughMemory, NULL);
-
-		if(ul_ReadSize)
-		{
-			/* Read content of file */
-			r=ReadRead((UCHAR *) p_Buffer, ul_ReadSize, BIG_Handle());
-			ERR_X_Error(r == 1, L_ERR_Csz_FRead, NULL);
-			((UCHAR *) p_Buffer)[ul_ReadSize] = 0;
-		}
-	}
-
-	return (char *) p_Buffer;
-}
-
-/*
- =======================================================================================================================
     Aim:    The same as previous function. But the return pointer must be free by caller cause it is not shared with
             other read and write operations.
  =======================================================================================================================

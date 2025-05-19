@@ -19,7 +19,6 @@ extern "C"
  ***********************************************************************************************************************
  */
 
-#define BIG_C_SpecialModeLZO	1
 extern int	BIG_specialmode;
 extern void BIG_FreeSpecialBuffer(void);
 
@@ -28,10 +27,6 @@ extern void BIG_FreeSpecialBuffer(void);
  ***********************************************************************************************************************
  */
 
-#ifdef ACTIVE_EDITORS
-extern char *BIG_special_LZOsave(char *, ULONG *);
-extern char *BIG_special_HUFsave(char *, ULONG *);
-#endif
 extern char *BIG_special_LZOload(char *, ULONG *);
 extern char *BIG_special_HUFload(char *, ULONG *);
 
