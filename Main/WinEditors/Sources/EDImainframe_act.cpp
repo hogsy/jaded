@@ -47,6 +47,8 @@
 #include "Dialogs/DIAspeedact_dlg.h"
 #include "TIMer/TIMdefs.h"
 
+#include "../Main/Shared/FileSystem/FileSystem.h"
+
 #ifdef JADEFUSION
 extern int		SpecialFlags_b_ActiveTracer;
 extern int		SpecialFlags_b_Init;
@@ -79,7 +81,6 @@ extern "C" void		BIG_CleanByFat(void);
 extern "C" void		BIG_CleanLoaded(void);
 extern "C" int		AI_gi_TestContent;
 extern "C" ULONG	SPG2_PrimitivLimit;
-extern "C" void		BIG_GetAllIdKey(void);
 extern "C" BOOL		BIG_gb_CleanFatEmpty;
 #endif
 
@@ -298,24 +299,11 @@ void EDI_cl_MainFrame::OnAction(ULONG _ul_Action)
 		break;
 
     case EDI_ACTION_GETLASTKEYUSER:
-        {
-        EDIA_cl_NameDialog o_Dialog("Enter a user ID (in decimal)");
-        if(o_Dialog.DoModal() == IDOK)
-        {
-            ULONG ulUserID = atoi((char *) (LPCSTR) o_Dialog.mo_Name);
-
-            if (ulUserID)
-            {
-                BIG_GetLastKeyForUser(&key,ulUserID);
-	        	sprintf(asz_Msg, "Last Key for User 0x%x (%d) is 0x%x (%d)", ulUserID, ulUserID, key, key);
-		        LINK_PrintStatusMsg(asz_Msg);
-            }
-        }
-        }
+        //TODO: obsolete!
 		break;
 
     case EDI_ACTION_GETALLIDKEY:
-		BIG_GetAllIdKey();
+		jaded::filesystem.PrintKeyTable();
 		break;
 
 	/*$1-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
