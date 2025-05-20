@@ -23,12 +23,14 @@ namespace jaded
 
 		bool DoesFileExist( const std::string &path );
 
-		bool CreatePath( const std::string &path );
+		bool CreateLocalPath( const std::string &path );
 
 		void CreateKeyRepository( const BIG_tdst_BigFile *bf );
 		bool ParseKeyRepository( const std::string &path );
 
 		uint32_t GenerateFileKey( const std::string &path );
+
+		Index CreatePath( const std::string &path );
 
 		Index LookupFile( const std::string &path );
 
@@ -76,5 +78,7 @@ namespace jaded
 void     Jaded_FileSystem_CreateKeyRepository( const BIG_tdst_BigFile *bf );
 uint32_t Jaded_FileSystem_GenerateFileKey( const char *path );
 uint32_t Jaded_FileSystem_SearchFileExt( const char *path );
+
+uint32_t Jaded_FileSystem_CreatePath( const char *path );
 
 #endif

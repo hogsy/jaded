@@ -80,7 +80,7 @@ bool jaded::FileSystem::DoesFileExist( const std::string &path )
 	return ( _stat( path.c_str(), &buf ) == 0 );
 }
 
-bool jaded::FileSystem::CreatePath( const std::string &path )
+bool jaded::FileSystem::CreateLocalPath( const std::string &path )
 {
 	// path is assumed to have been normalised prior...
 
@@ -90,18 +90,7 @@ bool jaded::FileSystem::CreatePath( const std::string &path )
 		dir.push_back( i );
 		if ( dir.size() > 1 && i == '/' || dir.size() == path.size() )
 		{
-#if 0
-			if ( L_mkdir( dir.c_str() ) != 0 )
-			{
-				if ( errno == EEXIST )
-				{
-					continue;
-				}
-				return false;
-			}
-#else
 			L_mkdir( dir.c_str() );
-#endif
 		}
 	}
 
@@ -186,7 +175,7 @@ void jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 	{
 		// export it too
 		std::string path = dstPath + directories[ i.dir ].name;
-		if ( !CreatePath( path ) )
+		if ( !CreateLocalPath( path ) )
 		{
 			// TODO: this should throw a more meaningful error in future
 			std::string msg = "Failed to create directory (" + path + ")!";
@@ -393,6 +382,47 @@ jaded::FileSystem::Key jaded::FileSystem::GenerateFileKey( const std::string &pa
 	return key;
 }
 
+jaded::FileSystem::Index jaded::FileSystem::CreatePath( const std::string &path )
+{
+	std::string npath = NormalizePath( path );
+
+	// attempt to create the physical location first
+	if ( !CreateLocalPath( npath ) )
+	{
+		return BIG_C_InvalidIndex;
+	}
+
+	// now work our way through
+	std::string dir;
+	for ( unsigned int i = 0; i < npath.size(); ++i )
+	{
+		dir.push_back( npath[ i ] );
+		if ( dir.size() == npath.size() || dir.size() > 1 && npath[ i + 1 ] == '/' )
+		{
+			auto &j = dirLookup.find( dir );
+			if ( j != dirLookup.end() )
+			{
+				continue;
+			}
+
+			KeyDir directory{};
+			directory.index = directories.size();
+			directory.name  = dir;
+
+			directories.emplace_back( directory );
+			dirLookup.emplace( directory.name, directory.index );
+		}
+	}
+
+	auto &j = dirLookup.find( dir );
+	if ( j == dirLookup.end() )
+	{
+		return BIG_C_InvalidIndex;
+	}
+
+	return j->second;
+}
+
 jaded::FileSystem::Index jaded::FileSystem::LookupFile( const std::string &path )
 {
 	const auto &i = fileLookup.find( path );
@@ -493,4 +523,9 @@ extern "C" uint32_t Jaded_FileSystem_GenerateFileKey( const char *path )
 extern "C" uint32_t Jaded_FileSystem_SearchFileExt( const char *path )
 {
 	return jaded::filesystem.LookupFile( path );
+}
+
+extern "C" uint32_t Jaded_FileSystem_CreatePath( const char *path )
+{
+	return jaded::filesystem.CreatePath( path );
 }
