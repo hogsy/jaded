@@ -15,36 +15,6 @@ namespace jaded
 		typedef uint32_t FileIndex;
 		typedef uint32_t DirIndex;
 
-		FileSystem()  = default;
-		~FileSystem() = default;
-
-		std::string GetExecutablePath();
-		std::string NormalizePath( std::string path );
-
-		void PrintKeyTable();
-
-		bool DoesFileExist( const std::string &path );
-
-		bool CreateLocalPath( const std::string &path );
-
-		void CreateKeyRepository( const BIG_tdst_BigFile *bf );
-		bool ParseKeyRepository( const std::string &path );
-
-		uint32_t GenerateFileKey( const std::string &path );
-
-		DirIndex CreatePath( const std::string &path );
-		DirIndex LookupDirectory( const std::string &path );
-
-		FileIndex LookupFile( const std::string &path );
-
-	private:
-		void IndexBFSubDirectory( unsigned int curDir );
-
-		void ClearTables();
-
-	private:
-		std::string dataPath;// this is where the data should be stored
-
 		struct KeyFile
 		{
 			std::string name;   // name of the file, without directory (see dir)
@@ -64,6 +34,46 @@ namespace jaded
 			std::vector< FileIndex > files;
 		};
 
+		FileSystem()  = default;
+		~FileSystem() = default;
+
+		std::string GetExecutablePath();
+		std::string NormalizePath( std::string path );
+
+		void PrintKeyTable();
+
+		bool DoesFileExist( const std::string &path );
+
+		bool CreateLocalPath( const std::string &path );
+
+		size_t GetLocalFileSize( const std::string &path );
+
+		bool ReadFileByIndex( FileIndex index, std::vector< uint8_t > &dst );
+
+		void CreateKeyRepository( const BIG_tdst_BigFile *bf );
+		bool ParseKeyRepository( const std::string &path );
+
+		Key GenerateFileKey( const std::string &path );
+
+		// A lot of this is dumb, and index-driven, so we can use
+
+		KeyDir *CreatePath( const std::string &path );
+		KeyDir *GetDirByName( const std::string &path );
+
+		KeyFile *GetFileByName( const std::string &path );
+		KeyFile *GetFileByIndex( FileIndex index );
+
+		std::string GetFilePathByIndex( FileIndex index );
+
+	private:
+		void IndexBFSubDirectory( unsigned int curDir );
+
+		void ClearTables();
+
+	private:
+		std::string dataPath;// this is where the data should be stored
+
+	private:
 		std::map< std::string, DirIndex > dirLookup;// and lookup by name
 		std::vector< KeyDir >             directories;
 
