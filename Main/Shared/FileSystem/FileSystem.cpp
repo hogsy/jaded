@@ -155,6 +155,8 @@ void jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 		return;
 	}
 
+	ClearTables();
+
 	IndexBFSubDirectory( BIG_Root() );
 
 	// now proceed with the creation
@@ -241,6 +243,8 @@ void jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 
 bool jaded::FileSystem::ParseKeyRepository( const std::string &path )
 {
+	ClearTables();
+
 	bool  status{};
 	FILE *file{};
 
@@ -461,6 +465,17 @@ void jaded::FileSystem::IndexBFSubDirectory( unsigned int curDir )
 		IndexBFSubDirectory( subDir );
 		subDir = BIG_NextDir( subDir );
 	}
+}
+
+void jaded::FileSystem::ClearTables()
+{
+	dirLookup.clear();
+	directories.clear();
+
+	fileLookup.clear();
+	files.clear();
+
+	keys.clear();
 }
 
 // C interface for legacy BIG API

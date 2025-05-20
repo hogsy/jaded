@@ -35,6 +35,8 @@ namespace jaded
 	private:
 		void IndexBFSubDirectory( unsigned int curDir );
 
+		void ClearTables();
+
 	private:
 		std::string dataPath;// this is where the data should be stored
 
