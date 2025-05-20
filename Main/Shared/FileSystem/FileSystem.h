@@ -11,7 +11,9 @@ namespace jaded
 	{
 	public:
 		typedef uint32_t Key;
-		typedef uint32_t Index;
+
+		typedef uint32_t FileIndex;
+		typedef uint32_t DirIndex;
 
 		FileSystem()  = default;
 		~FileSystem() = default;
@@ -30,9 +32,10 @@ namespace jaded
 
 		uint32_t GenerateFileKey( const std::string &path );
 
-		Index CreatePath( const std::string &path );
+		DirIndex CreatePath( const std::string &path );
+		DirIndex LookupDirectory( const std::string &path );
 
-		Index LookupFile( const std::string &path );
+		FileIndex LookupFile( const std::string &path );
 
 	private:
 		void IndexBFSubDirectory( unsigned int curDir );
@@ -45,9 +48,9 @@ namespace jaded
 		struct KeyFile
 		{
 			std::string name;   // name of the file, without directory (see dir)
-			Index       dir;    // index into the directory table
-			Index       index;  // index into the files table
-			Index       bfIndex;// used during extraction
+			DirIndex    dir;    // index into the directory table
+			FileIndex   index;  // index into the files table
+			FileIndex   bfIndex;// used during extraction
 			Key         key;    // key
 
 			bool markedForDeletion;
@@ -56,18 +59,18 @@ namespace jaded
 		struct KeyDir
 		{
 			std::string name;
-			Index       index;
+			DirIndex    index;
 
-			std::vector< Index > files;
+			std::vector< FileIndex > files;
 		};
 
-		std::map< std::string, Index > dirLookup;// and lookup by name
-		std::vector< KeyDir >          directories;
+		std::map< std::string, DirIndex > dirLookup;// and lookup by name
+		std::vector< KeyDir >             directories;
 
-		std::map< std::string, Index > fileLookup;
-		std::vector< KeyFile >         files;
+		std::map< std::string, FileIndex > fileLookup;
+		std::vector< KeyFile >             files;
 
-		std::map< Key, Index > keys;// table of all key'd files, for lookup
+		std::map< Key, FileIndex > keys;// table of all key'd files, for lookup
 	};
 
 	extern FileSystem filesystem;
@@ -80,5 +83,6 @@ uint32_t Jaded_FileSystem_GenerateFileKey( const char *path );
 uint32_t Jaded_FileSystem_SearchFileExt( const char *path );
 
 uint32_t Jaded_FileSystem_CreatePath( const char *path );
+uint32_t Jaded_FileSystem_LookupDirectory( const char *path );
 
 #endif

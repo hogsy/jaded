@@ -382,7 +382,7 @@ jaded::FileSystem::Key jaded::FileSystem::GenerateFileKey( const std::string &pa
 	return key;
 }
 
-jaded::FileSystem::Index jaded::FileSystem::CreatePath( const std::string &path )
+jaded::FileSystem::DirIndex jaded::FileSystem::CreatePath( const std::string &path )
 {
 	std::string npath = NormalizePath( path );
 
@@ -414,7 +414,7 @@ jaded::FileSystem::Index jaded::FileSystem::CreatePath( const std::string &path 
 		}
 	}
 
-	auto &j = dirLookup.find( dir );
+	const auto &j = dirLookup.find( dir );
 	if ( j == dirLookup.end() )
 	{
 		return BIG_C_InvalidIndex;
@@ -423,7 +423,18 @@ jaded::FileSystem::Index jaded::FileSystem::CreatePath( const std::string &path 
 	return j->second;
 }
 
-jaded::FileSystem::Index jaded::FileSystem::LookupFile( const std::string &path )
+jaded::FileSystem::DirIndex jaded::FileSystem::LookupDirectory( const std::string &path )
+{
+	const auto &i = dirLookup.find( path );
+	if ( i == dirLookup.end() )
+	{
+		return BIG_C_InvalidIndex;
+	}
+
+	return i->second;
+}
+
+jaded::FileSystem::FileIndex jaded::FileSystem::LookupFile( const std::string &path )
 {
 	const auto &i = fileLookup.find( path );
 	if ( i == fileLookup.end() )
@@ -447,7 +458,7 @@ void jaded::FileSystem::IndexBFSubDirectory( unsigned int curDir )
 	// ensure that it's in our lookup table
 	dirLookup.emplace( directory.name, directory.index );
 
-	Index fileIndex = BIG_FirstFile( curDir );
+	FileIndex fileIndex = BIG_FirstFile( curDir );
 	while ( fileIndex != BIG_C_InvalidIndex )
 	{
 		KeyFile file{};
@@ -489,7 +500,7 @@ void jaded::FileSystem::IndexBFSubDirectory( unsigned int curDir )
 		fileIndex = BIG_NextFile( fileIndex );
 	}
 
-	Index subDir = BIG_SubDir( curDir );
+	DirIndex subDir = BIG_SubDir( curDir );
 	while ( subDir != BIG_C_InvalidIndex )
 	{
 		IndexBFSubDirectory( subDir );
@@ -528,4 +539,9 @@ extern "C" uint32_t Jaded_FileSystem_SearchFileExt( const char *path )
 extern "C" uint32_t Jaded_FileSystem_CreatePath( const char *path )
 {
 	return jaded::filesystem.CreatePath( path );
+}
+
+extern "C" uint32_t Jaded_FileSystem_LookupDirectory( const char *path )
+{
+	return jaded::filesystem.LookupDirectory( path );
 }
