@@ -1217,16 +1217,10 @@ zappreload:
 #ifndef _GAMECUBE
 				MEM_FreeFromEndAlign(BIG_gp_ReadBuffer);
 #endif
-#ifdef _GAMECUBE
-				tmp = (char *) MEM_p_AllocTmp(_i_Size);
-#else
 				tmp = (char *) MEM_p_AllocFromEndAlign(_i_Size, 64);
-#endif				
 
 				L_memmove(tmp, BIG_gp_ReadBuffer, BIG_gi_ReadSize);
-#ifdef _GAMECUBE
-				MEM_Free(BIG_gp_ReadBuffer);
-#endif
+
 				BIG_gp_ReadBuffer = tmp;
 				BIG_gi_ReadSize = _i_Size;
 				BIG_gi_ReadSeek = 0;
@@ -1281,10 +1275,6 @@ zappreload:
 					BIG_si_BinFileReadSize = min(BIG_si_BinFileSize, (int) BIGcomp_M_CompressedSize - saved_size);
 					BIG_si_CompressedSize = BIG_si_BinFileReadSize;
 
-					/* set pos */
-					/*CDV_i_DirectSeekFile(_h_Handle, L_SEEK_SET, BIG_gul_ReadPos + BIG_gi_RealSeek + saved_size);
-					CDV_i_DirectReadFile(_h_Handle, &BIG_gp_CompressedBuffer, BIG_si_CompressedSize);*/
-    				
     				/* Lecture */
     				BIG_CacheRead(_h_Handle, BIG_gul_ReadPos + BIG_gi_RealSeek + saved_size, (void**)&BIG_gp_CompressedBuffer, BIG_si_CompressedSize);
 					
@@ -1371,48 +1361,12 @@ zappreload:
 	}
 	else
 	{
-		/*~~~~~~~~~~~*/
-#ifdef _XBOX
-		DWORD iBytesRead;
-#elif defined(_XENON)
-		int iBytesRead;
-#endif
-		/*~~~~~~~~~~~*/
-
-	/* _XBOX */
-#if defined(PSX2_USE_iopCDV)
 		LOA_StartLoadRaster_r(LOA_Cte_LDI_fRead);
-		ret = eeCDV_i_ReadFile(_h_Handle, _p_Buffer, _i_Size);
-		LOA_StopLoadRaster_r(LOA_Cte_LDI_fRead);
-		if(ret)
-			ret = 0;
-		else
-			ret = 1;
-#else
-		LOA_StartLoadRaster_r(LOA_Cte_LDI_fRead);
-#if defined(_XBOX)
-		ret = XBCompositeFile_Read(_h_Handle, _p_Buffer, _i_Size, &iBytesRead, 0);
-#elif defined(_XENON)
-		ret = ReadFile(_h_Handle, _p_Buffer, _i_Size, (LPDWORD)&iBytesRead, 0);
 
-#if !defined(_FINAL_)
-		int nRetryNum = 0;
-		while( ret == FALSE )
-		{
-			char szMessage[ 64 ];
-			sprintf( szMessage, "=== Read error!  Retrying (%d)...\n", ++nRetryNum );
-			OutputDebugString( szMessage );
-
-			ret = ReadFile(_h_Handle, _p_Buffer, _i_Size, (LPDWORD)&iBytesRead, 0);
-			if( nRetryNum >= 10 )
-				break;
-		}
-#endif // !defined(_FINAL_)
-#else
 		ret = L_freadA(_p_Buffer, _i_Size, 1, _h_Handle);
-#endif /* _XBOX */
+
 		LOA_StopLoadRaster_r(LOA_Cte_LDI_fRead);
-#endif
+
 #ifdef ACTIVE_EDITORS
 		if((BIG_gi_ReadMode == 1) && (_i_Size))
 		{
@@ -1469,41 +1423,3 @@ int BIG_fwrite(void *_p_Buffer, int _i_Size, L_FILE _h_Handle)
 }
 
 #endif /* ACTIVE_EDITORS */
-
-#if defined(_XBOX) || defined(_XENON)
-
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
-int XB_fWrite(void *_p_Buffer, int _i_Size, L_FILE _h_Handle)
-{
-	/*~~~~~~~~~~~~~~~~~~~~~*/
-	DWORD	dwNbBytesWritten;
-	/*~~~~~~~~~~~~~~~~~~~~~*/
-
-	if(!_i_Size) return 1;
-
-	WriteFile(_h_Handle, _p_Buffer, _i_Size, &dwNbBytesWritten, NULL);
-	return dwNbBytesWritten;
-}
-
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
-int XB_fRead(void *_p_Buffer, int _i_Size, L_FILE _h_Handle)
-{
-	/*~~~~~~~~~~~~~~~~~~*/
-	DWORD	dwNbBytesRead;
-	/*~~~~~~~~~~~~~~~~~~*/
-
-	if(!_i_Size) return 1;
-
-	ReadFile(_h_Handle, _p_Buffer, _i_Size, &dwNbBytesRead, NULL);
-	return dwNbBytesRead;
-}
-
-#endif /* _XBOX */ 
- 
- 

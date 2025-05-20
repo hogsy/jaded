@@ -261,37 +261,6 @@ void BIG_ReadFatFileExt(BIG_tdst_FatDes *_pst_Fat)
 		}
 		L_free(p);
 	}
-#if 0
-    /*
-     * Read file one per one, cause the fat saved in the bigfile is not the exact copy of the
-     * structure in memory.
-     */
-    for(i = _pst_Fat->ul_FirstIndex; i < _pst_Fat->ul_FirstIndex + _pst_Fat->ul_MaxFile; i++)
-    {
-        L_memset(&(BIG_gst.dst_FileTableExt[i]), 0, sizeof(BIG_tdst_FileExt));
-        r = BIG_fread
-        (
-            (UCHAR *) &(BIG_gst.dst_FileTableExt[i].st_ToSave),
-            sizeof(BIG_gst.dst_FileTableExt[i].st_ToSave),
-            BIG_Handle()
-        );
-        ERR_X_Error(r == 1, L_ERR_Csz_FRead,NULL);
-
-		if(BIG_b_FAT_is_Crypted)
-		{
-			BIG_special_Decrypt4FAT
-			(
-#ifdef JADEFUSION
-				(char *) &(BIG_gst.dst_FileTableExt[i].st_ToSave), 
-#else
-				(UCHAR *) &(BIG_gst.dst_FileTableExt[i].st_ToSave), 
-#endif
-				sizeof(BIG_gst.dst_FileTableExt[i].st_ToSave)
-			);
-		}
-
-    }
-#endif
 }
 
 /*
@@ -306,12 +275,6 @@ void BIG_ReadFatDir(BIG_tdst_FatDes *_pst_Fat)
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	if(!_pst_Fat->ul_MaxDir) return;
-
-    /* Seek to the beginning of the fat in the bigfile */
-#if defined(_XBOX) || defined(_XENON)
-	r = L_fseek(BIG_Handle(), _pst_Fat->ul_PosFat + BIG_PosFatDir, L_SEEK_SET);
-    ERR_X_Error(r != L_SEEK_ERROR,L_ERR_Csz_FSeek,NULL);
-#else // _XBOX
 
 	if ( BIG_Version() < 36 )
 	{
@@ -331,7 +294,6 @@ void BIG_ReadFatDir(BIG_tdst_FatDes *_pst_Fat)
 		r = L_fseek(BIG_Handle(), _pst_Fat->ul_PosFat + BIG_PosFatDir, L_SEEK_SET);
 		ERR_X_Error(r == 0,L_ERR_Csz_FSeek,NULL);
 	}
-#endif // _XBOX
 
     /*
      * Read dir one per one, cause the fat saved in the bigfile is not the exact copy of the
@@ -460,18 +422,6 @@ void BIG_ReadAllFats(void)
     BIG_gst.st_PosTableToFat.base = (BAS_tdst_Key*)L_malloc(BIG_gst.st_PosTableToFat.size * sizeof(BAS_tdst_Key));
     ERR_X_Error(BIG_gst.st_PosTableToFat.base != NULL, L_ERR_Csz_NotEnoughMemory, NULL);
 #endif
-    /*
-     * Allocate key table. In editor mode, we allocate one key per possible file (BIG_MAX_FAT)
-     * cause we will create keys later. In engine mode, we only allocate necessary memory to
-     * receive the keys that are really in the bigfile.
-     */
-#ifndef ACTIVE_EDITORS
-    BAS_binit(&BIG_gst.st_KeyTableToPos, 0);
-    BIG_gst.st_KeyTableToPos.gran = 200;
-    BIG_gst.st_KeyTableToPos.size = BIG_MaxFile() + 1;
-    BIG_gst.st_KeyTableToPos.base = (BAS_tdst_Key *) MEM_p_VMAlloc(BIG_gst.st_KeyTableToPos.size * sizeof(BAS_tdst_Key));
-    ERR_X_Error(BIG_gst.st_KeyTableToPos.base != NULL, L_ERR_Csz_NotEnoughMemory, NULL);
-#endif
 
     /* Will be reinit by loading */
     BIG_MaxKey() = 0;
@@ -499,19 +449,8 @@ void BIG_ReadAllFats(void)
 
 	/* Sort array */
 	BAS_bsortmode = TRUE;
-#ifdef ACTIVE_EDITORS
 	BAS_bsort(&BIG_gst.st_KeyTableToFat);
 	BAS_bsort(&BIG_gst.st_PosTableToFat);
-#else
-	BAS_bsort(&BIG_gst.st_KeyTableToPos);
-#endif
-
-#ifndef ACTIVE_EDITORS
-
-    /* Free temporary buffer */
-    MEM_Free(BIG_gst.dst_FileTable);
-    BIG_gst.dst_FileTable = NULL;
-#endif
 }
 
 /*
