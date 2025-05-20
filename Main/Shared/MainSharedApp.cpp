@@ -279,9 +279,9 @@ static void SetupAspectRatio()
 
 static void InitializeDisplay()
 {
-	MAI_gst_MainHandles.h_DisplayWindow = nativeWindowHandle;
-	MAI_gst_MainHandles.pst_DisplayData = GDI_fnpst_CreateDisplayData();
-	GDI_gpst_CurDD                      = MAI_gst_MainHandles.pst_DisplayData;
+	MAI_gh_MainWindow = MAI_gst_MainHandles.h_DisplayWindow = nativeWindowHandle;
+	MAI_gst_MainHandles.pst_DisplayData                     = GDI_fnpst_CreateDisplayData();
+	GDI_gpst_CurDD                                          = MAI_gst_MainHandles.pst_DisplayData;
 
 	GDI_fnl_InitInterface( &MAI_gst_MainHandles.pst_DisplayData->st_GDI, 1 );
 
