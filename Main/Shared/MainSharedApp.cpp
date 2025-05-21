@@ -17,6 +17,7 @@
 #include "ImGuiInterface.h"
 
 #include "Profiler.h"
+#include "FileSystem/FileSystem.h"
 
 jaded::sys::Profiler jaded::sys::profiler;
 
@@ -337,6 +338,15 @@ int main( int argc, char **argv )
 
 	ParseStartupParameters();
 
+	// start off with the working directory set to our launch location
+	std::string exePath = jaded::filesystem.GetExecutablePath();
+	size_t      p       = exePath.find_last_of( '/' );
+	if ( p != std::string::npos )
+	{
+		exePath.erase( p );
+	}
+	jaded::filesystem.SetWorkingDirectory( exePath );
+
 	if ( !SDL_Init( SDL_INIT_GAMEPAD | SDL_INIT_VIDEO ) )
 	{
 		jaded::sys::AlertBox( "SDL Init fail: " + std::string( SDL_GetError() ),
@@ -385,8 +395,10 @@ int main( int argc, char **argv )
 		projectFile = jaded::sys::launchOperations.projectFile.c_str();
 	}
 	snprintf( MAI_gst_InitStruct.asz_ProjectName, sizeof( MAI_gst_InitStruct.asz_ProjectName ), "%s", projectFile );
-	if ( !BIG_Open( MAI_gst_InitStruct.asz_ProjectName ) )
+	if ( !jaded::filesystem.SetProject( MAI_gst_InitStruct.asz_ProjectName ) )
+	{
 		return EXIT_FAILURE;
+	}
 
 	InitializeDisplay();
 

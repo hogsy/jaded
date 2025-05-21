@@ -40,6 +40,10 @@ namespace jaded
 		std::string GetExecutablePath();
 		std::string NormalizePath( std::string path );
 
+		std::string GetFilenameExtension( const std::string &filename );
+
+		bool SetWorkingDirectory( const std::string &path );
+
 		void PrintKeyTable();
 
 		bool DoesFileExist( const std::string &path );
@@ -48,17 +52,23 @@ namespace jaded
 
 		size_t GetLocalFileSize( const std::string &path );
 
-		bool ReadFileByIndex( FileIndex index, std::vector< uint8_t > &dst );
+		bool ReadFileByIndex( FileIndex index, std::vector< uint8_t > *dst );
+		bool ReadFileByName( const std::string &path, std::vector< uint8_t > *dst );
 
-		void CreateKeyRepository( const BIG_tdst_BigFile *bf );
+		bool SetProject( const std::string &path );
+
+		bool CreateKeyRepository( const BIG_tdst_BigFile *bf );
 		bool ParseKeyRepository( const std::string &path );
 
 		Key GenerateFileKey( const std::string &path );
 
+		const std::vector< FileIndex > &GetDirFiles( const std::string &path );
+
 		// A lot of this is dumb, and index-driven, so we can use
 
-		KeyDir *CreatePath( const std::string &path );
-		KeyDir *GetDirByName( const std::string &path );
+		DirIndex CreatePath( const std::string &path );
+		DirIndex IndexPath( const std::string &path );
+		KeyDir  *GetDirByName( const std::string &path );
 
 		KeyFile *GetFileByName( const std::string &path );
 		KeyFile *GetFileByIndex( FileIndex index );

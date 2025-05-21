@@ -23,6 +23,8 @@
 #include "EDIapp.h"
 #include "BASe/CLIbrary/CLImem.h"
 
+#include "../Main/Shared/FileSystem/FileSystem.h"
+
 /*$4
  ***********************************************************************************************************************
  ***********************************************************************************************************************
@@ -225,56 +227,58 @@ void LINK_ReadNameKits(void)
         LINK_gast_StructTypes[i_Struct].i_MaxNameKit = 0;
     }
 
-    /* Read all */
-    ul_Index = BIG_ul_SearchDir(EDI_Csz_Ini_NameKits);
-    if(ul_Index == BIG_C_InvalidIndex) return;
-    ul_Index = BIG_FirstFile(ul_Index);
-    while(ul_Index != BIG_C_InvalidIndex)
-    {
-        pc_Buf = BIG_pc_ReadFileTmp(BIG_PosFile(ul_Index), &ul_Size);
-        pc_Beg = pc_Buf;
-        while(*pc_Buf && L_isdigit(*pc_Buf)) pc_Buf++;
-        if(!*pc_Buf) break;
+	std::vector< jaded::FileSystem::FileIndex > files;
+    files = jaded::filesystem.GetDirFiles( EDI_Csz_Ini_NameKits );
+	for ( auto &i : files )
+	{
+		std::vector< uint8_t > buf;
+		if ( !jaded::filesystem.ReadFileByIndex( i, &buf ) )
+		{
+			continue;
+		}
 
-        /* Structure number */
-        *pc_Buf = 0;
-        i_Struct = L_atoi(pc_Beg);
-        pc_Buf++;
-        while(*pc_Buf && L_isspace(*pc_Buf)) pc_Buf++;
-        if(!*pc_Buf) break;
-        pc_Beg = pc_Buf;
+		pc_Buf = ( char * ) &buf[ 0 ];
+		pc_Beg = pc_Buf;
+		while ( *pc_Buf && L_isdigit( *pc_Buf ) ) pc_Buf++;
+		if ( !*pc_Buf ) break;
 
-        LINK_gast_StructTypes[i_Struct].i_MaxNameKit++;
-        ERR_X_Assert(LINK_gast_StructTypes[i_Struct].i_MaxNameKit < MAX_NAME_KIT);
+		/* Structure number */
+		*pc_Buf  = 0;
+		i_Struct = L_atoi( pc_Beg );
+		pc_Buf++;
+		while ( *pc_Buf && L_isspace( *pc_Buf ) ) pc_Buf++;
+		if ( !*pc_Buf ) break;
+		pc_Beg = pc_Buf;
 
-        i_Count = 0;
-        while(1)
-        {
-            while(*pc_Buf && (*pc_Buf != '\n')) 
+		LINK_gast_StructTypes[ i_Struct ].i_MaxNameKit++;
+		ERR_X_Assert( LINK_gast_StructTypes[ i_Struct ].i_MaxNameKit < MAX_NAME_KIT );
+
+		i_Count = 0;
+		while ( 1 )
+		{
+			while ( *pc_Buf && ( *pc_Buf != '\n' ) )
 			{
-				if(*pc_Buf == '\r') *pc_Buf = ' ';
+				if ( *pc_Buf == '\r' ) *pc_Buf = ' ';
 				pc_Buf++;
 			}
 
-            if(!*pc_Buf) break;
-            *pc_Buf = 0;
+			if ( !*pc_Buf ) break;
+			*pc_Buf = 0;
 
-            ERR_X_Assert(i_Count < MAX_KIT_PER_NAME);
-            LINK_gast_StructTypes[i_Struct].apsz_NameKits[LINK_gast_StructTypes[i_Struct].i_MaxNameKit - 1][i_Count++] = L_strdup(pc_Beg);
+			ERR_X_Assert( i_Count < MAX_KIT_PER_NAME );
+			LINK_gast_StructTypes[ i_Struct ].apsz_NameKits[ LINK_gast_StructTypes[ i_Struct ].i_MaxNameKit - 1 ][ i_Count++ ] = L_strdup( pc_Beg );
 
-            pc_Buf++;
-            while(*pc_Buf && L_isspace(*pc_Buf))
+			pc_Buf++;
+			while ( *pc_Buf && L_isspace( *pc_Buf ) )
 			{
-				if(*pc_Buf == '\r') *pc_Buf = ' ';
+				if ( *pc_Buf == '\r' ) *pc_Buf = ' ';
 				pc_Buf++;
 			}
 
-            if(!*pc_Buf) break;
-            pc_Beg = pc_Buf;
-        }
-
-        ul_Index = BIG_NextFile(ul_Index);
-    }
+			if ( !*pc_Buf ) break;
+			pc_Beg = pc_Buf;
+		}
+	}
 }
 
 /*

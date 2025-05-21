@@ -31,6 +31,8 @@
 #include "EDIapp_options.h"
 #include "MATHs/MATH.h"
 
+#include "../Main/Shared/FileSystem/FileSystem.h"
+
 #define ACTION_GLOBAL
 
 #include "EDImainframe_act.h"
@@ -1098,7 +1100,7 @@ _Try_
 	L_fclose(f);
 
 	/* Open bigfile */
-	if (!BIG_Open(_psz_Name))
+	if ( !jaded::filesystem.SetProject( _psz_Name ) )
 	{
 		return;
 	}
