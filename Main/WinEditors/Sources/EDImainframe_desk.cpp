@@ -37,6 +37,8 @@
 #include "EDItors/Sources/MENu/MENmenu.h"
 #include "EDIeditors_infos.h"
 
+#include "../Main/Shared/FileSystem/FileSystem.h"
+
 /*
  =======================================================================================================================
     Aim: First init a desktop with default values
@@ -130,41 +132,16 @@ void EDI_cl_MainFrame::LoadDesktop(char *_psz_Name, EDI_tdst_Desktop *_pst_Desk)
 	    Load desktop
 	 -------------------------------------------------------------------------------------------------------------------
 	 */
-#if 0
-	if(M_MF()->mst_ExternIni.b_SynchroEditorsData)
+
+	o_Name += "/" EDI_Csz_NameDesktop;
+
+	std::vector< uint8_t > buf;
+	if ( jaded::filesystem.ReadFileByName( ( LPCSTR ) o_Name, &buf ) )
 	{
-		FILE	*f;
-		int		len;
+		memcpy( _pst_Desk, buf.data(), buf.size() );
 
-		strcpy(asz_Name, EDI_go_TheApp.m_pszHelpFilePath);
-		*strrchr(asz_Name, '\\') = 0;
-		strcat(asz_Name, "/EditorDatas/Ini/Desktop/");
-		strcat(asz_Name, _psz_Name);
-		strcat(asz_Name, "/");
-		CreateDirectory(asz_Name, NULL);
-		strcat(asz_Name, EDI_Csz_NameDesktop);
-		f = fopen(asz_Name, "rb");
-		if(f)
-		{
-			fseek(f, 0, SEEK_END);
-			len = ftell(f);
-			rewind(f);
-			fread(_pst_Desk, len, 1, f);
-			fclose(f);
-			return;
-		}
+		InitDesktop( _pst_Desk );
 	}
-#endif
-
-	ul_File = BIG_ul_SearchFileExt((char *) (LPCSTR) o_Name, EDI_Csz_NameDesktop);
-	if(ul_File == BIG_C_InvalidIndex) return;
-
-_Try_	
-	ul_Len = BIG_ul_ReadFile(BIG_PosFile(ul_File), (UCHAR *) _pst_Desk);
-	ERR_X_Error((int) ul_Len == sizeof(EDI_tdst_Desktop), EDI_ERR_Csz_DesktopCorrupt, _psz_Name);
-_Catch_ 
-	InitDesktop(_pst_Desk);
-_End_
 
 #ifdef JADEFUSION
 	/* Load Features Mgr infos */

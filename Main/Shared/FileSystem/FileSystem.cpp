@@ -253,17 +253,11 @@ bool jaded::FileSystem::SetProject( const std::string &path )
 
 bool jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 {
-	if ( !jaded::sys::launchOperations.editorMode )
-	{
-		return false;
-	}
-
 	//TODO: this shouldn't be an automatic operation!
 
 	double startTime = sys::Profile::GetSeconds();
 
 	LINK_PrintStatusMsg( "Converting Big File to key repository..." );
-
 
 	std::string bigPath = NormalizePath( bf->asz_Name );
 	size_t      p;
@@ -473,6 +467,8 @@ bool jaded::FileSystem::ParseKeyRepository( const std::string &path )
 
 			files.emplace_back( keyFile );
 			fileLookup.emplace( directories[ dirIndex ].name + "/" + keyFile.name, keyFile.index );
+
+			keys.emplace( key, keyFile.index );
 		}
 
 		status = true;
@@ -597,6 +593,17 @@ jaded::FileSystem::KeyDir *jaded::FileSystem::GetDirByName( const std::string &p
 	return i != dirLookup.end() ? &directories[ i->second ] : nullptr;
 }
 
+jaded::FileSystem::FileIndex jaded::FileSystem::GetFileIndexByKey( Key key )
+{
+	const auto &i = keys.find( key );
+	if ( i == keys.end() )
+	{
+		return BIG_C_InvalidIndex;
+	}
+
+	return i->second;
+}
+
 jaded::FileSystem::KeyFile *jaded::FileSystem::GetFileByName( const std::string &path )
 {
 	const auto &i = fileLookup.find( path );
@@ -694,6 +701,7 @@ void jaded::FileSystem::ClearTables()
 	keys.clear();
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////////
 // C interface for legacy BIG API
 
 extern "C" uint32_t Jaded_FileSystem_GenerateFileKey( const char *path )
@@ -717,3 +725,21 @@ extern "C" uint32_t Jaded_FileSystem_LookupDirectory( const char *path )
 	jaded::FileSystem::KeyDir *dir = jaded::filesystem.GetDirByName( path );
 	return dir != nullptr ? dir->index : BIG_C_InvalidIndex;
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+extern "C" uint32_t Jaded_FileSystem_GetFileIndexByKey( uint32_t key )
+{
+	return jaded::filesystem.GetFileIndexByKey( key );
+}
+
+extern "C" const char *Jaded_FileSystem_GetFilePathByIndex( uint32_t index )
+{
+	//TODO: urgh...
+	static std::string tmp;
+	tmp = jaded::filesystem.GetFilePathByIndex( index ).c_str();
+	return tmp.c_str();
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////

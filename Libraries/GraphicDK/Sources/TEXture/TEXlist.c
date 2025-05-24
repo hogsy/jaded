@@ -18,6 +18,8 @@
 #include "GraphicDK/Sources/MATerial/MATSprite.h"
 #include "BIGfiles/BIGfat.h"
 
+#include "../Main/Shared/FileSystem/FileSystem.h"
+
 /*$4
  ***********************************************************************************************************************
     Globals
@@ -207,22 +209,22 @@ short TEX_w_List_AddTexture(TEX_tdst_List *_pst_TexList, BIG_KEY _ul_FileKey, ch
     {
         ULONG   ul_Index;
 
-        ul_Index = BIG_ul_SearchKeyToFat( _ul_FileKey );
+        ul_Index = Jaded_FileSystem_GetFileIndexByKey( _ul_FileKey );
         if (ul_Index == BIG_C_InvalidIndex ) 
         {
+			extern ULONG LOA_gul_CurrentKey;
+
             char sz_Text[ 256 ];
-#ifdef JADEFUSION
-			sprintf( sz_Text, "[%08X] is an invalid key, associated with [%08X]", _ul_FileKey, LOA_gul_CurrentKey );
-#else
-			sprintf( sz_Text, "[%08X] is an invalid key", _ul_FileKey );
-#endif
+			snprintf( sz_Text, sizeof( sz_Text ), "[%08X] is an invalid key, associated with [%08X]", _ul_FileKey, LOA_gul_CurrentKey );
 			ERR_X_Warning( 0, sz_Text, NULL );
             return -1;
         }
-        if ( !TEX_l_File_IsFormatSupported( BIG_NameFile( ul_Index ), -1) )
+
+		const char *filename = Jaded_FileSystem_GetFilePathByIndex( ul_Index );
+        if ( !TEX_l_File_IsFormatSupported( filename, -1) )
         {
             char sz_Text[ 256 ];
-            sprintf( sz_Text, "[%08X] is referenced as a real texture but isn't ! - CHECK TEXTURE REF", _ul_FileKey );
+			snprintf( sz_Text, sizeof( sz_Text ), "[%08X] is referenced as a real texture but isn't ! - CHECK TEXTURE REF", _ul_FileKey );
             ERR_X_Warning( 0, sz_Text, NULL );
             return -1;
         }

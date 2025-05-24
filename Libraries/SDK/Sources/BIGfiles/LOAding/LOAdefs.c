@@ -99,27 +99,10 @@ extern void eeSND_StopScheduler(int);
  ***********************************************************************************************************************
  */
 
-#if defined(PSX2_USE_iopCDV) //PS2 + CD
-#define M_OpenFile(_file)			eeCDV_i_OpenFile(_file)
-#define M_GetFileSize(_size, _id)	(_size) = eeCDV_i_GetFileSize(_id)
-#define M_ReadFile(_id, _buf, _len)	eeCDV_i_ReadFile(_id, _buf, _len)
-#define M_CloseFile(_id)			eeCDV_i_CloseFile(_id)
-
-#else
 #define M_OpenFile(_file)			L_fopen(_file, L_fopen_RB)
 #define M_ReadFile(_id, _buf, _len)	L_fread(_buf, _len, 1, _id)
 #define M_CloseFile(_id)			L_fclose(_id)
-
-
-#ifdef PSX2_TARGET
-#define M_GetFileSize(_size, _id)   ((_size) = sceLseek(_id, 0, SEEK_END), sceLseek(_id, 0, SEEK_SET))
-#elif defined(_XBOX)
-#define M_GetFileSize(_size, _id)   _size = GetFileSize(_id, NULL);
-#else
 #define M_GetFileSize(_size, _id) 	do{L_fseek(_id, 0, SEEK_END); _size = L_ftell(_id); L_fseek(_id, 0, SEEK_SET);}while(0)
-#endif
-
-#endif
 
 /*$4
  ***********************************************************************************************************************
@@ -150,19 +133,7 @@ static int	LOA_si_SaveReadMode = -1;
 BOOL		LOA_gb_CompressBin = TRUE;
 BOOL		LOA_sb_ActivateSoundLoadAfterBin = FALSE;
 
-#ifdef PSX2_TARGET
-#ifdef PSX2_USE_iopCDV
-#define LOA_SPE_NAME	CDV_Cte_SpeFile
-#else
-char		LOA_SPE_NAME[1024];
-#endif
-#else
-#if defined(_XBOX) || defined(_XENON)
-#define LOA_SPE_NAME	"D:\\jade.spe"
-#else
 #define LOA_SPE_NAME	"jade.spe"
-#endif /* _XBOX */
-#endif
 
 /*$4
  ***********************************************************************************************************************
@@ -610,16 +581,6 @@ void LOA_BeginSpeedMode(BIG_KEY _ul_Key)
 #if !defined(MAX_PLUGIN)
 			SND_NotifyNewLoading();
 #endif // !defined(MAX_PLUGIN)
-
-#ifdef PSX2_TARGET
-			/* this can not be activated during bin process */
-			if(AllPreloadDone())
-			{
-				
-				LOA_ul_BinKey = 0xFF000000 | (_ul_Key & 0x0007FFFF);
-			
-			}
-#endif
 
 #ifdef JADEFUSION
 			{
@@ -1727,112 +1688,6 @@ void LOA_KillSpecialArray(void)
 	BAS_bfree(&LOA_gst_SpecialArrayAddrToDestroy);
 #endif
 }
-
-/*$2
- -----------------------------------------------------------------------------------------------------------------------
-    loading duration rasters
- -----------------------------------------------------------------------------------------------------------------------
- */
-
-#ifdef LOA_DEFINE_LOAD_RASTER
-extern float	TIM_f_Clock_TrueRead(void);
-
-#ifdef PSX2_TARGET
-extern void		GSP_OutputConsole(char *);
-#define LDI_Display GSP_OutputConsole
-#else
-#define fOoGlobalAcc	1.0f
-#define LDI_Display		printf
-#endif
-float			LOA_gaf_StartTime[LOA_Cte_LDI_Number];
-float			LOA_gaf_Duration[LOA_Cte_LDI_Number];
-
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
-void LOA_InitLoadRaster(void)
-{
-	L_memset(LOA_gaf_StartTime, 0, LOA_Cte_LDI_Number * sizeof(float));
-	L_memset(LOA_gaf_Duration, 0, LOA_Cte_LDI_Number * sizeof(float));
-}
-
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
- 
-void LOA_DisplayDuration(void)
-{
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	char				tmp[128];
-	extern unsigned int gui_SaveStrip;
-	extern unsigned int gui_SaveTriangle;
-	extern unsigned int WOR_gul_WorldKey;
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-	sprintf(tmp, "\n-- Loading Durations %08x ---\n", WOR_gul_WorldKey);
-	LDI_Display(tmp);
-	
-	sprintf(tmp, "WOR-AddWorldList : %3.3f\n", LOA_gaf_Duration[LOA_Cte_LDI_AddWorldList]);
-	LDI_Display(tmp);
-	
-	sprintf(tmp, "(WOR-destruction): %3.3f\n", LOA_gaf_Duration[LOA_Cte_LDI_res3]);
-	LDI_Display(tmp);
-
-	LDI_Display("-- bin details ---------\n");
-	sprintf(tmp, "Bin Engine       : %3.3f\n", LOA_gaf_Duration[LOA_Cte_LDI_SpeedMode_Engine]);
-	LDI_Display(tmp);
-	sprintf(tmp, "Bin Text         : %3.3f\n", LOA_gaf_Duration[LOA_Cte_LDI_SpeedMode_Text]);
-	LDI_Display(tmp);
-	sprintf(tmp, "Bin Display      : %3.3f\n", LOA_gaf_Duration[LOA_Cte_LDI_SpeedMode_Display]);
-	LDI_Display(tmp);
-	sprintf(tmp, "Bin Sound        : %3.3f\n", LOA_gaf_Duration[LOA_Cte_LDI_SpeedMode_Sound]);
-	LDI_Display(tmp);
-	sprintf(tmp, "Bin Sound2       : %3.3f\n", LOA_gaf_Duration[LOA_Cte_LDI_SpeedMode_Sound2]);
-	LDI_Display(tmp);
-	sprintf
-	(
-		tmp,
-		"Bin Total =      : %3.3f\n",
-		LOA_gaf_Duration[LOA_Cte_LDI_SpeedMode_Engine] +
-			LOA_gaf_Duration[LOA_Cte_LDI_SpeedMode_Text] +
-			LOA_gaf_Duration[LOA_Cte_LDI_SpeedMode_Display] +
-			LOA_gaf_Duration[LOA_Cte_LDI_SpeedMode_Sound] +
-			LOA_gaf_Duration[LOA_Cte_LDI_SpeedMode_Sound2]
-	);
-	LDI_Display(tmp);
-
-	LDI_Display("-- low level funct -----\n");
-
-	sprintf(tmp, "bin read         : %3.3f\n", LOA_gaf_Duration[LOA_Cte_LDI_BinRead]);
-	LDI_Display(tmp);
-
-	sprintf(tmp, "bin seek         : %3.3f\n", LOA_gaf_Duration[LOA_Cte_LDI_BinSeek]);
-	LDI_Display(tmp);
-	
-
-	sprintf(tmp, "nobin fread      : %3.3f\n", LOA_gaf_Duration[LOA_Cte_LDI_fRead]);
-	LDI_Display(tmp);
-	
-
-	sprintf(tmp, "res1             : %3.3f\n", LOA_gaf_Duration[LOA_Cte_LDI_res1]);
-	LDI_Display(tmp);
-
-	sprintf(tmp, "res4             : %3.3f\n", LOA_gaf_Duration[LOA_Cte_LDI_res4]);
-	LDI_Display(tmp);
-
-	sprintf(tmp, "res2             : %3.3f\n", LOA_gaf_Duration[LOA_Cte_LDI_res2]);
-	LDI_Display(tmp);
-
-	LDI_Display("------------------------\n");
-
-#if defined(PSX2_TARGET1) && !defined(_FINAL_)
-	LOA_PrintCBRaster();
-#endif
-}
-#endif
-
 
 /*$4
  ***********************************************************************************************************************
