@@ -80,7 +80,7 @@ namespace jaded
 			double timeTaken{};   // time current frame took
 			double oldTimeTaken{};// time of previous frame
 
-			float colour[ 3 ]{};// colours for ui
+			uint8_t colour[ 3 ]{};// colours for ui
 
 		public:
 			inline Profile()
