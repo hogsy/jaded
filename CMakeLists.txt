@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.23)
-project(Jaded LANGUAGES C CXX)
+project(Jaded
+        DESCRIPTION "Community patched version of Ubisoft's Jade engine."
+        HOMEPAGE_URL "https://jaded.oldtimes-software.com/"
+        LANGUAGES C CXX)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -41,5 +44,6 @@ foreach (OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} "${JADE_OUTPUT_DIR}")
 endforeach ()
 
-add_subdirectory(Extern/ode)
-#add_subdirectory(Libraries) # Core Jade Libraries
+#add_subdirectory(Extern/ode)
+
+add_subdirectory(Libraries) # Core Jade Libraries
