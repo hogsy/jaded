@@ -2745,7 +2745,7 @@ extern BOOL WOR_gi_CurrentConsole;
 
 	if(!(_pst_FD->st_Params.uw_Flags & TEX_FP_MipmapOn)) return l_Size;
 #ifdef ACTIVE_EDITORS
-	if(EDI_gb_ComputeMap && WOR_gi_CurrentConsole == 1) return l_Size;
+	if(EDI_gb_ComputeMap && WOR_gi_CurrentConsole) return l_Size;
 #endif
 
 	l_SizeRef = l_Size;

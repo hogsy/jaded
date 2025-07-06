@@ -541,8 +541,6 @@ void MAT_VUDecompress(MAT_tdst_MTLevel *p_tdstCompressedUV, MAT_tdst_Decompresse
 	/*~~~~~~~~~~~~~~~~~~~~~*/
 //	register ULONG	Alpha;
 	register ULONG	*pMatrix;
-	MAT_tdst_MultiTexture	*pst_MLTTX;
-	MAT_tdst_MTLevel		*pst_MLTTXLVL;
 	extern int NumberMat;
 	/*~~~~~~~~~~~~~~~~~~~~~*/
 

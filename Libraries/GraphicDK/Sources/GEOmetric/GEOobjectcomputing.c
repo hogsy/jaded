@@ -780,9 +780,8 @@ void GEO_ComputeNormals_OBBBOX_CORRECTION(GEO_tdst_Object *_pst_Object)
     GEO_Vertex                          *pst_Point,*pst_LastPoint;
     GEO_Vertex                          *pst_Pt[3];
 	GEO_Vertex                          MAX,MIN;
-    MATH_tdst_Vector                    *pst_Normal, *pst_LastNormal;
+    MATH_tdst_Vector                    *pst_Normal;
     MATH_tdst_Vector                    *pst_Normal2, *pst_LastNormal2;
-    MATH_tdst_Vector                    st_TriangleNormal, st_Vect1, st_Vect2;
     GEO_tdst_ElementIndexedTriangles    *pst_Element, *pst_LastElement;
     GEO_tdst_IndexedTriangle            *pst_Triangle, *pst_LastTriangle;
 	u32 Modulo;

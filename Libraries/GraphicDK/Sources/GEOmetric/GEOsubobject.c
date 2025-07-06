@@ -7060,14 +7060,13 @@ void GEO_SubObject_UVCenterWithMaterial(GEO_tdst_Object *_pst_Object, MAT_tdst_M
 					pst_MTLevelBest = NULL;
 					break;
 				}
-#ifdef JADEFUSION
+
 				extern BOOL MAT_VUISIdentity_i(MAT_tdst_MTLevel *p_tdstLevel);
-#endif
 				if(!MAT_VUISIdentity_i(pst_MTLevel))
 				{
 					MAT_VUDecompress(pst_MTLevel, &st_UVTrans);
 					for (fVal = 0, i=0; i < 4; i++ )
-						fVal += (float) fabs( st_UVTrans.UVMatrix[ i ] );
+						fVal += fabsf( st_UVTrans.UVMatrix[ i ] );
 				}
 				else
 					fVal = 2.0f;
@@ -7080,9 +7079,8 @@ void GEO_SubObject_UVCenterWithMaterial(GEO_tdst_Object *_pst_Object, MAT_tdst_M
 				pst_MTLevel = pst_MTLevel->pst_NextLevel;
 			}
 		}
-#ifdef JADEFUSION
+
 		extern BOOL MAT_VUISIdentity_i(MAT_tdst_MTLevel *p_tdstLevel);
-#endif
 		if ( !pst_MTLevelBest || MAT_VUISIdentity_i(pst_MTLevelBest))
 		{
 			L_memset( &UVMat[ i_Elem ], 0, sizeof(MAT_tdst_Decompressed_UVMatrix) );

@@ -2002,11 +2002,8 @@ void GLV_MergeColors(tdst_GLV * p_GLV , ULONG CDest , ULONG CSrc )
 	if (p_GLV->p_stFaces[CSrc].Nghbr[0] == CDest) I2 = 0;
 	if (p_GLV->p_stFaces[CSrc].Nghbr[1] == CDest) I2 = 1;
 	if (p_GLV->p_stFaces[CSrc].Nghbr[2] == CDest) I2 = 2;
-#ifdef JADEFUSION
 	if ((I1 | I2) == 0xffffffff) return;
-#else
-	if ((I1 | I2) == 0xffffffff) return 0;
-#endif
+
 	/* Colors Merge */
 	p_GLV->p_stFaces[CDest].Colours[(I1 + 0) % 3] = p_GLV->p_stFaces[CSrc].Colours[(I2 + 1) % 3];
 	p_GLV->p_stFaces[CDest].Colours[(I1 + 1) % 3] = p_GLV->p_stFaces[CSrc].Colours[(I2 + 0) % 3];
@@ -2982,7 +2979,6 @@ void GLV_ComputeDistanceToNearestBorder(tdst_GLV *p_stGLV,u32 FaceNum,MATHD_tdst
 
 void GLV_Clear0x1(tdst_GLV *p_stGLV,u32 FaceNum)
 {
-	GLV_Scalar	LocalDistance;
 	u32 Counter;
 	if (!(p_stGLV->p_stFaces[FaceNum].ulSurfaceNumber & 0x10000000)) return;
 	p_stGLV->p_stFaces[FaceNum].ulSurfaceNumber &= ~0x10000000;
@@ -3003,7 +2999,7 @@ u32 ColorTEst(u32 C)
 }
 void GLV_MaxColors(tdst_GLV * p_GLV , ULONG CDest , ULONG CSrc )
 {
-	ULONG I1, I2 , Color;
+	ULONG I1, I2;
 	I1 = I2 = 0xffffffff;
 	if (CSrc & 0xff000000) return;
 	if (p_GLV->p_stFaces[CDest].Nghbr[0] == CSrc) I1 = 0;
@@ -3049,7 +3045,6 @@ void GLV_MaxColors(tdst_GLV * p_GLV , ULONG CDest , ULONG CSrc )
 
 void GLV_RecursiveClearOne(tdst_GLV *p_stGLV,u32 FaceNum)
 {
-	GLV_Scalar ReturnV;
 	if (!(p_stGLV->p_stFaces[FaceNum].ulSurfaceNumber & 0x01000000)) return;
 	p_stGLV->p_stFaces[FaceNum].ulSurfaceNumber &= ~0x01000000;
 	if (!(p_stGLV->p_stFaces[FaceNum].Nghbr[0] & 0xff000000)) GLV_RecursiveClearOne(p_stGLV,p_stGLV->p_stFaces[FaceNum].Nghbr[0]);
@@ -3072,7 +3067,7 @@ void GLV_ClearSurfaces(tdst_GLV *p_stGLV )
 }
 void GLV_ComputeSurfaces(tdst_GLV *p_stGLV , u32 ulColorCompatible)
 {
-	ULONG Counter,ChannelNum,CornerCounter,Counter2;
+	ULONG Counter,ChannelNum,CornerCounter;
 	tdst_GLV *p_stGLVDetector;
 	
 	p_stGLVDetector = GLV_Duplicate(p_stGLV);
@@ -3206,7 +3201,6 @@ void GLV_OptimizeHardBorders(tdst_GLV *p_stGLV)
 		Merge = 0;
 		for (Counter = 0 ; Counter < p_stGLV->ulNumberOfFaces ; Counter ++)
 		{
-			u32 IndexD;
 			GLV_Scalar Coef;
 			// 1 First Candidate, the surface of the triangle divided by surface of hist channele is < to a coeficient
 			Coef = GLV_GetSurf( p_stGLV , &p_stGLV->p_stFaces[Counter]) / pChannelNumSurfaces[p_stGLV->p_stFaces[Counter].ulSurfaceNumber & 0x00ffffff];
@@ -3215,7 +3209,6 @@ void GLV_OptimizeHardBorders(tdst_GLV *p_stGLV)
 				// 2: The 3 neighbour must be correct
 				if (((p_stGLV->p_stFaces[Counter].Nghbr[0] | p_stGLV->p_stFaces[Counter].Nghbr[1] | p_stGLV->p_stFaces[Counter].Nghbr[2]) & 0xff000000) == 0)
 				{
-					ULONG Color[6];
 					ULONG Compatible[3];
 					Compatible[0] = GLV_b_IsCompatibleColors(p_stGLV , Counter , p_stGLV->p_stFaces[Counter].Nghbr[0] );
 					Compatible[1] = GLV_b_IsCompatibleColors(p_stGLV , Counter , p_stGLV->p_stFaces[Counter].Nghbr[1] );
@@ -3351,7 +3344,7 @@ void GLV_EraseUnderPoys(tdst_GLV *p_stGLV)
 }
 void GLV_SmoothHardBorders(tdst_GLV *p_stGLV )
 {
-	ULONG Merge,Counter,ChannelNum,CornerCounter;
+	ULONG Merge,Counter,CornerCounter;
 
 	GLV_ComputeSurfaces(p_stGLV , 0);
 	GLV_BreakUncompatibleLinks_JadeElement_and_UV(p_stGLV);
