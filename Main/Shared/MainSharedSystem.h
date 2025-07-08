@@ -52,5 +52,7 @@ namespace jaded
 			std::vector< std::string > aiMacros;
 		};
 		extern LaunchOperations launchOperations;
+
+		SDL_Window *GetMainWindow();
 	}// namespace sys
 }// namespace jaded

@@ -27,8 +27,6 @@ jaded::sys::Profiler jaded::sys::profiler;
 static SDL_Window   *sdlWindow;
 static SDL_GLContext sdlGLContext;
 
-//#define USE_SDL_GL_CONTEXT
-
 /******************************************************************/
 /******************************************************************/
 
@@ -376,7 +374,7 @@ static bool Win32SendCrashReport(const std::string &details, const char *dump_pa
 	if ( hConnect ) WinHttpCloseHandle( hConnect );
 	if ( hSession ) WinHttpCloseHandle( hSession );
 
-	return bSuccess == TRUE && dwStatusCode == 201;
+	return bSuccess && dwStatusCode == 201;
 }
 
 static int CALLBACK Win32CrashReporter( HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM lParam )
@@ -507,26 +505,9 @@ static void ParseStartupParameters()
 
 static SDL_Window *CreateSDLWindow()
 {
-#if defined( USE_SDL_GL_CONTEXT )
-
 	int flags = SDL_WINDOW_OPENGL;
 	if ( !jaded::sys::launchOperations.forceWindowed )
-		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
-
-	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 5 );
-	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 5 );
-	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 5 );
-	SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 8 );
-
-	SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY );
-	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 3 );
-	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 3 );
-
-#else
-
-	int flags = 0;
-
-#endif
+		flags |= SDL_WINDOW_FULLSCREEN;
 
 	int                    w, h;
 	const SDL_DisplayMode *displayMode;
@@ -556,22 +537,17 @@ static SDL_Window *CreateSDLWindow()
 		SDL_SetWindowFullscreen( sdlWindow, true );
 	}
 
-#if defined( USE_SDL_GL_CONTEXT )
-
-	sdlGLContext = SDL_GL_CreateContext( sdlWindow );
-	if ( sdlGLContext == nullptr )
-		return nullptr;
-
-	SDL_GL_MakeCurrent( sdlWindow, sdlGLContext );
-
-#endif
-
 #if defined( _WIN32 )
 
 	nativeWindowHandle = ( HWND ) SDL_GetPointerProperty( SDL_GetWindowProperties( sdlWindow ), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr );
 
 #endif
 
+	return sdlWindow;
+}
+
+SDL_Window *jaded::sys::GetMainWindow()
+{
 	return sdlWindow;
 }
 

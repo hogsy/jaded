@@ -6,6 +6,7 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  */
 
+#include <SDL3/SDL.h>
 
 #include "Precomp.h"
 
@@ -19,6 +20,8 @@
 #include "OGLtex.h"
 #include "GEOmetric/GEO_STRIP.h"
 #include "ENGine/Sources/MoDiFier/MDFmodifier_SPG2.h"
+
+#include "../Main/Shared/MainSharedSystem.h"
 
 #ifdef ACTIVE_EDITORS
 #	include "ENGine/Sources/COLlision/COLvars.h"
@@ -116,16 +119,34 @@ HRESULT OGL_l_Close( GDI_tdst_DisplayData *_pst_DD )
 
 	pst_SD = ( OGL_tdst_SpecificData * ) _pst_DD->pv_SpecificData;
 
-	if ( pst_SD->h_DC )
+	if (!jaded::sys::launchOperations.editorMode)
 	{
-		wglMakeCurrent( pst_SD->h_DC, NULL );
-		pst_SD->h_DC = NULL;
-	}
+		SDL_Window *window = jaded::sys::GetMainWindow();
+		if (pst_SD->h_DC != nullptr)
+		{
+			SDL_GL_MakeCurrent( window, nullptr );
+			pst_SD->h_DC = nullptr;
+		}
 
-	if ( pst_SD->h_RC )
+		if (pst_SD->h_RC != nullptr)
+		{
+			SDL_GL_DestroyContext( ( SDL_GLContext ) pst_SD->h_RC );
+			pst_SD->h_RC = nullptr;
+		}
+	}
+	else
 	{
-		wglDeleteContext( pst_SD->h_RC );
-		pst_SD->h_RC = NULL;
+		if ( pst_SD->h_DC )
+		{
+			wglMakeCurrent( pst_SD->h_DC, NULL );
+			pst_SD->h_DC = NULL;
+		}
+
+		if ( pst_SD->h_RC )
+		{
+			wglDeleteContext( pst_SD->h_RC );
+			pst_SD->h_RC = NULL;
+		}
 	}
 
 	return S_OK;
@@ -162,19 +183,45 @@ LONG OGL_l_Init( HWND _hWnd, GDI_tdst_DisplayData *_pst_DD )
 
 	GetClientRect( _hWnd, &pst_SD->rcViewportRect );
 
-	int maxAASamples;
-	if ( !CreateFakeContext( &maxAASamples ) )
-		return S_FALSE;
-
-	/* Select the pixel format */
-	if ( !OGL_SetDCPixelFormat( pst_SD->h_DC, maxAASamples ) )
+	if ( !jaded::sys::launchOperations.editorMode )
 	{
-		MessageBox( NULL, "Failed to set OpenGL pixel format!", "OpenGL warning", MB_OK | MB_ICONWARNING | MB_TASKMODAL );
-		return S_FALSE;
-	}
+		SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 5 );
+		SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 5 );
+		SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 5 );
+		SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 8 );
+		SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
 
-	pst_SD->h_RC = wglCreateContext( pst_SD->h_DC );
-	wglMakeCurrent( pst_SD->h_DC, pst_SD->h_RC );
+		SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY );
+		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 4 );
+		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 1 );
+
+		SDL_Window *sdlWindow = jaded::sys::GetMainWindow();
+
+		pst_SD->h_RC = SDL_GL_CreateContext( sdlWindow );
+		if (pst_SD->h_RC == nullptr)
+		{
+			jaded::sys::AlertBox( "Failed to create GL context: " + std::string( SDL_GetError() ), "OpenGL warning", jaded::sys::ALERT_BOX_ERROR );
+			return S_FALSE;
+		}
+		
+		SDL_GL_MakeCurrent( sdlWindow, (SDL_GLContext) pst_SD->h_RC );
+	}
+	else
+	{
+		int maxAASamples;
+		if ( !CreateFakeContext( &maxAASamples ) )
+			return S_FALSE;
+
+		/* Select the pixel format */
+		if ( !OGL_SetDCPixelFormat( pst_SD->h_DC, maxAASamples ) )
+		{
+			MessageBox( NULL, "Failed to set OpenGL pixel format!", "OpenGL warning", MB_OK | MB_ICONWARNING | MB_TASKMODAL );
+			return S_FALSE;
+		}
+
+		pst_SD->h_RC = wglCreateContext( pst_SD->h_DC );
+		wglMakeCurrent( pst_SD->h_DC, pst_SD->h_RC );
+	}
 
 	if ( GLEW_EXT_compiled_vertex_array )
 	{
