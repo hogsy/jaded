@@ -173,7 +173,7 @@ static bool QueryGLSupport()
 	windowClass.lpszClassName = "DummyWGLClass";
 	if ( !RegisterClassA( &windowClass ) )
 	{
-		MessageBox( NULL, "Failed to register dummy OpenGL class!", "OpenGL warning", MB_OK | MB_ICONWARNING | MB_TASKMODAL );
+		jaded::sys::AlertBox( "Failed to register dummy OpenGL class!", "OpenGL warning", jaded::sys::ALERT_BOX_ERROR );
 		return false;
 	}
 
@@ -191,7 +191,7 @@ static bool QueryGLSupport()
 	if ( dummyWindow == nullptr )
 	{
 		UnregisterClass( "DummyWGLClass", windowClass.hInstance );
-		MessageBox( nullptr, "Failed to create dummy OpenGL window!", "OpenGL warning", MB_OK | MB_ICONWARNING | MB_TASKMODAL );
+		jaded::sys::AlertBox( "Failed to create dummy OpenGL window!", "OpenGL warning", jaded::sys::ALERT_BOX_ERROR );
 		return false;
 	}
 
@@ -284,9 +284,7 @@ static bool QueryGLSupport()
 	}
 	catch (const std::exception& e)
 	{
-		std::string msg = "Failed to query GL features: " + std::string( e.what() );
-		MessageBox( NULL, msg.c_str(), "OpenGL warning", MB_OK | MB_ICONWARNING | MB_TASKMODAL );
-		status = false;
+		jaded::sys::AlertBox( "Failed to query GL features: " + std::string( e.what() ), "OpenGL warning", jaded::sys::ALERT_BOX_ERROR );
 	}
 
 	// cleanup
@@ -363,13 +361,12 @@ static bool OGL_SetDCPixelFormat( HDC _hDC )
 	DescribePixelFormat( _hDC, pixelFormat, sizeof( pfd ), &pfd );
 	if ( ( pfd.cColorBits < 24 ) && ( first ) )
 	{
-		MessageBox(
-		        NULL,
+		jaded::sys::AlertBox(
 		        "Your desktop must be configured in at least 24bit mode (True colors) for making OPENGL working properly.. \n\n"
 		        "Some graphics features will not be enabled \n\n"
 		        "Jade must be restarted for taking effect of your eventual modification.",
 		        "OpenGL warning",
-		        MB_OK | MB_ICONWARNING | MB_TASKMODAL );
+		        jaded::sys::ALERT_BOX_ERROR );
 		first = false;
 	}
 #endif
@@ -410,7 +407,7 @@ LONG OGL_l_Init( HWND _hWnd, GDI_tdst_DisplayData *_pst_DD )
 	/* Select the pixel format */
 	if ( !OGL_SetDCPixelFormat( pst_SD->h_DC ) )
 	{
-		MessageBox( NULL, "Failed to set OpenGL pixel format!", "OpenGL warning", MB_OK | MB_ICONWARNING | MB_TASKMODAL );
+		jaded::sys::AlertBox( "Failed to set OpenGL pixel format!", "OpenGL warning", jaded::sys::ALERT_BOX_ERROR );
 		return S_FALSE;
 	}
 
@@ -430,7 +427,7 @@ LONG OGL_l_Init( HWND _hWnd, GDI_tdst_DisplayData *_pst_DD )
 	pst_SD->h_RC = wglCreateContextAttribsARB( pst_SD->h_DC, 0, attribs );
 	if (pst_SD->h_RC == nullptr)
 	{
-		MessageBox( NULL, "Failed to create OpenGL context!", "OpenGL warning", MB_OK | MB_ICONWARNING | MB_TASKMODAL );
+		jaded::sys::AlertBox( "Failed to create OpenGL context!", "OpenGL warning", jaded::sys::ALERT_BOX_ERROR );
 		return S_FALSE;
 	}
 
