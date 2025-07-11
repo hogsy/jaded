@@ -25,7 +25,7 @@ extern "C"
  */
 
 #if !defined( NDEBUG )
-#	define OGL_DEBUG
+//#	define OGL_DEBUG
 #	if defined( OGL_DEBUG_CALLS )
 #		include <assert.h>
 #		define OGL_CALL( X )                     \
