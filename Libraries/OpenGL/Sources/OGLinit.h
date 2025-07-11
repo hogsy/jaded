@@ -134,11 +134,7 @@ typedef struct  OGL_tdst_SpecificData_
 OGL_tdst_SpecificData   *OGL_pst_CreateDevice(void);
 void                    OGL_DestroyDevice(void *);
 LONG                    OGL_l_Close(struct GDI_tdst_DisplayData_ *);
-#ifdef PSX2_TARGET
-LONG                    OGL_l_Init(struct GDI_tdst_DisplayData_ *);
-#else
 LONG                    OGL_l_Init(HWND _hWnd, struct GDI_tdst_DisplayData_ *);
-#endif
 LONG                    OGL_l_ReadaptDisplay(HWND, struct GDI_tdst_DisplayData_ *);
 
 /*
@@ -168,6 +164,10 @@ void					OGL_SetViewMatrix_SDW(struct MATH_tdst_Matrix_ *_pst_Matrix , float *Li
  */
 LONG                    OGL_l_DrawElementIndexedTriangles( struct GEO_tdst_ElementIndexedTriangles_ *, GEO_Vertex *, struct GEO_tdst_UV_ * , ULONG);
 LONG                    OGL_l_DrawElementIndexedSprites(struct GEO_tdst_ElementIndexedSprite_		*_pst_Element,GEO_Vertex	*,	ULONG);
+
+extern int OGL_versionMinor;
+extern int OGL_versionMajor;
+#define OGL_VERSION( MAJ, MIN ) ( ( ( MAJ ) == OGL_versionMajor && ( MIN ) <= OGL_versionMinor ) || ( MAJ ) < OGL_versionMajor )
 
 #if defined (__cplusplus) && !defined(JADEFUSION)
 }

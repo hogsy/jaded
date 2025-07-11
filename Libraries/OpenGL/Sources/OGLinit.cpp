@@ -6,7 +6,7 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  */
 
-#include <SDL3/SDL.h>
+#include <stdexcept>
 
 #include "Precomp.h"
 
@@ -31,6 +31,12 @@
 
 #pragma comment( lib, "opengl32.lib" )
 #pragma comment( lib, "glew32s.lib" )
+
+extern int OGL_versionMinor = 0;
+extern int OGL_versionMajor = 0;
+
+static constexpr int minimumGLVersionMajor = 4;
+static constexpr int minimunGLVersionMinor = 1;
 
 extern "C" u32 Stats_ulNumberOfTRiangles = 0;
 extern "C" u32 Stats_ulCallToDrawNb      = 0;
@@ -157,7 +163,220 @@ HRESULT OGL_l_Close( GDI_tdst_DisplayData *_pst_DD )
  =======================================================================================================================
  =======================================================================================================================
  */
-static bool CreateFakeContext( int *maxAASamples );
+
+static bool QueryGLSupport()
+{
+	WNDCLASSA windowClass     = {};
+	windowClass.style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+	windowClass.lpfnWndProc   = DefWindowProcA;
+	windowClass.hInstance     = GetModuleHandle( 0 );
+	windowClass.lpszClassName = "DummyWGLClass";
+	if ( !RegisterClassA( &windowClass ) )
+	{
+		MessageBox( NULL, "Failed to register dummy OpenGL class!", "OpenGL warning", MB_OK | MB_ICONWARNING | MB_TASKMODAL );
+		return false;
+	}
+
+	HWND dummyWindow = CreateWindowExA(
+	        0,
+	        windowClass.lpszClassName,
+	        "Dummy WGL Window",
+	        0,
+	        CW_USEDEFAULT, CW_USEDEFAULT,
+	        CW_USEDEFAULT, CW_USEDEFAULT,
+	        0,
+	        0,
+	        windowClass.hInstance,
+	        0 );
+	if ( dummyWindow == nullptr )
+	{
+		UnregisterClass( "DummyWGLClass", windowClass.hInstance );
+		MessageBox( nullptr, "Failed to create dummy OpenGL window!", "OpenGL warning", MB_OK | MB_ICONWARNING | MB_TASKMODAL );
+		return false;
+	}
+
+	static const PIXELFORMATDESCRIPTOR pfd =
+	        {
+	                sizeof( PIXELFORMATDESCRIPTOR ),
+	                1,
+	                PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,// Flags
+	                PFD_TYPE_RGBA,                                             // The kind of framebuffer. RGBA or palette.
+	                24,                                                        // Colordepth of the framebuffer.
+	                0, 0, 0, 0, 0, 0,
+	                0,
+	                0,
+	                0,
+	                0, 0, 0, 0,
+	                32,// Number of bits for the depthbuffer
+	                8, // Number of bits for the stencilbuffer
+	                0, // Number of Aux buffers in the framebuffer.
+	                PFD_MAIN_PLANE,
+	                0,
+	                0, 0, 0 };
+
+	HDC dc = GetDC( dummyWindow );
+
+	int l_PixelFormat = ChoosePixelFormat( dc, &pfd );
+	SetPixelFormat( dc, l_PixelFormat, &pfd );
+
+	bool status = false;
+
+	HGLRC fakeContext = nullptr;
+	try
+	{
+		fakeContext = wglCreateContext( dc );
+		if (fakeContext == nullptr)
+		{
+			throw std::runtime_error( "failed to create fake context" );
+		}
+
+		wglMakeCurrent( dc, fakeContext );
+
+		GLenum err = glewInit();
+		if ( err != GLEW_OK )
+		{
+			std::string msg = "glew init failed (";
+			msg += ( const char * ) glewGetErrorString( err );
+			msg += ")";
+
+			throw std::runtime_error( msg );
+		}
+
+		std::string glVersion   = ( const char * ) glGetString( GL_VERSION );
+		std::string glVendor    = ( const char * ) glGetString( GL_VENDOR );
+		std::string glRenderer  = ( const char * ) glGetString( GL_RENDERER );
+		std::string glSLVersion = ( const char * ) glGetString( GL_SHADING_LANGUAGE_VERSION );
+
+		// for troubleshooting
+		printf( "GL Version: %s\nGL Vendor: %s\nGL Renderer: %s\nGL SL Version: %s\n",
+		        glVersion.c_str(),
+		        glVendor.c_str(),
+		        glRenderer.c_str(),
+		        glSLVersion.c_str() );
+
+		// store the gl version so we can access it later
+		glGetIntegerv( GL_MAJOR_VERSION, &OGL_versionMajor );
+		glGetIntegerv( GL_MINOR_VERSION, &OGL_versionMinor );
+		if ( OGL_versionMajor <= 0 )
+		{
+			// uh oh, that's probably not a good sign - likely an older GL version
+			// fallback to pulling the version from the string
+			//TODO: also this is a dumb way to do this, fix it...
+			OGL_versionMajor = glVersion.c_str()[ 0 ] - '0';
+			OGL_versionMinor = glVersion.c_str()[ 2 ] - '0';
+		}
+
+		if ( !OGL_VERSION( minimumGLVersionMajor, minimunGLVersionMinor ) )
+		{
+			throw std::runtime_error( "unsupported version (" + glVersion + ")" );
+		}
+
+		if ( !WGLEW_ARB_create_context )
+		{
+			throw std::runtime_error( "WGL_ARB_create_context unsupported" );
+		}
+		if ( !WGLEW_ARB_pixel_format )
+		{
+			throw std::runtime_error( "WGLEW_ARB_pixel_format unsupported" );
+		}
+
+		status = true;
+	}
+	catch (const std::exception& e)
+	{
+		std::string msg = "Failed to query GL features: " + std::string( e.what() );
+		MessageBox( NULL, msg.c_str(), "OpenGL warning", MB_OK | MB_ICONWARNING | MB_TASKMODAL );
+		status = false;
+	}
+
+	// cleanup
+
+	if ( fakeContext != nullptr )
+	{
+		wglMakeCurrent( dc, 0 );
+		wglDeleteContext( fakeContext );
+	}
+
+	ReleaseDC( dummyWindow, dc );
+
+	DestroyWindow( dummyWindow );
+	UnregisterClass( "DummyWGLClass", windowClass.hInstance );
+
+	return status;
+}
+
+static bool OGL_SetDCPixelFormat( HDC _hDC )
+{
+	// rewritten ~hogsy
+
+	int       pixelFormat;
+	const int attribList[] =
+	        {
+	                WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
+	                WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
+	                WGL_DOUBLE_BUFFER_ARB, GL_TRUE,
+	                WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
+	                WGL_COLOR_BITS_ARB, 24,
+	                WGL_DEPTH_BITS_ARB, 32,
+	                WGL_STENCIL_BITS_ARB, 8,
+	                0,// End
+	        };
+
+	unsigned int numFormats;
+	wglChoosePixelFormatARB( _hDC, attribList, 0, 1, &pixelFormat, &numFormats );
+	if ( numFormats > 0 )
+	{
+		PIXELFORMATDESCRIPTOR pfd;
+		DescribePixelFormat( _hDC, pixelFormat, sizeof( pfd ), &pfd );
+		if ( SetPixelFormat( _hDC, pixelFormat, &pfd ) )
+			return true;
+	}
+
+	// if this fails, attempt fallback ~hogsy
+
+	PIXELFORMATDESCRIPTOR pfd =
+	        {
+	                sizeof( PIXELFORMATDESCRIPTOR ), /* Size of this structure */
+	                1,                               /* Version of this structure */
+	                PFD_DRAW_TO_WINDOW |             /* Draw to Window (not to bitmap) */
+	                        PFD_SUPPORT_OPENGL |     /* Support OpenGL calls in window */
+	                        PFD_DOUBLEBUFFER |       /* Double buffered */
+	                        PFD_SWAP_EXCHANGE | PFD_GENERIC_ACCELERATED,
+	                PFD_TYPE_RGBA,    /* RGBA Color mode */
+	                24,               /* Want 24bit color */
+	                0, 0, 0, 0, 0, 0, /* Not used to select mode */
+	                1, 0,             /* Not used to select mode */
+	                0, 0, 0, 0, 0,    /* Accumulation buffer */
+	                32,               /* Size of depth buffer */
+	                0,                /* Not used to select mode */
+	                0,                /* Not used to select mode */
+	                PFD_MAIN_PLANE,   /* Draw in main plane */
+	                0,                /* Not used to select mode */
+	                0, 0, 0           /* Not used to select mode */
+	        };
+
+	pixelFormat = ChoosePixelFormat( _hDC, &pfd );
+	SetPixelFormat( _hDC, pixelFormat, &pfd );
+
+#ifdef ACTIVE_EDITORS
+	static bool first = true;
+	DescribePixelFormat( _hDC, pixelFormat, sizeof( pfd ), &pfd );
+	if ( ( pfd.cColorBits < 24 ) && ( first ) )
+	{
+		MessageBox(
+		        NULL,
+		        "Your desktop must be configured in at least 24bit mode (True colors) for making OPENGL working properly.. \n\n"
+		        "Some graphics features will not be enabled \n\n"
+		        "Jade must be restarted for taking effect of your eventual modification.",
+		        "OpenGL warning",
+		        MB_OK | MB_ICONWARNING | MB_TASKMODAL );
+		first = false;
+	}
+#endif
+
+	return true;
+}
+
 void OGL_InitAllShadows( void );
 LONG OGL_l_Init( HWND _hWnd, GDI_tdst_DisplayData *_pst_DD )
 {
@@ -183,45 +402,39 @@ LONG OGL_l_Init( HWND _hWnd, GDI_tdst_DisplayData *_pst_DD )
 
 	GetClientRect( _hWnd, &pst_SD->rcViewportRect );
 
-	if ( !jaded::sys::launchOperations.editorMode )
+	// Creates a fake context and 
+	// fetches some GL information
+	// to ensure we do all we want
+	QueryGLSupport();
+
+	/* Select the pixel format */
+	if ( !OGL_SetDCPixelFormat( pst_SD->h_DC ) )
 	{
-		SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 5 );
-		SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 5 );
-		SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 5 );
-		SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 8 );
-		SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
-
-		SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY );
-		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 4 );
-		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 1 );
-
-		SDL_Window *sdlWindow = jaded::sys::GetMainWindow();
-
-		pst_SD->h_RC = SDL_GL_CreateContext( sdlWindow );
-		if (pst_SD->h_RC == nullptr)
-		{
-			jaded::sys::AlertBox( "Failed to create GL context: " + std::string( SDL_GetError() ), "OpenGL warning", jaded::sys::ALERT_BOX_ERROR );
-			return S_FALSE;
-		}
-		
-		SDL_GL_MakeCurrent( sdlWindow, (SDL_GLContext) pst_SD->h_RC );
+		MessageBox( NULL, "Failed to set OpenGL pixel format!", "OpenGL warning", MB_OK | MB_ICONWARNING | MB_TASKMODAL );
+		return S_FALSE;
 	}
-	else
+
+	int attribs[] = {
+	        WGL_CONTEXT_MAJOR_VERSION_ARB,
+	        4,
+
+	        WGL_CONTEXT_MINOR_VERSION_ARB,
+	        1,
+
+	        WGL_CONTEXT_PROFILE_MASK_ARB,
+	        WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB,
+
+			0,
+	};
+
+	pst_SD->h_RC = wglCreateContextAttribsARB( pst_SD->h_DC, 0, attribs );
+	if (pst_SD->h_RC == nullptr)
 	{
-		int maxAASamples;
-		if ( !CreateFakeContext( &maxAASamples ) )
-			return S_FALSE;
-
-		/* Select the pixel format */
-		if ( !OGL_SetDCPixelFormat( pst_SD->h_DC, maxAASamples ) )
-		{
-			MessageBox( NULL, "Failed to set OpenGL pixel format!", "OpenGL warning", MB_OK | MB_ICONWARNING | MB_TASKMODAL );
-			return S_FALSE;
-		}
-
-		pst_SD->h_RC = wglCreateContext( pst_SD->h_DC );
-		wglMakeCurrent( pst_SD->h_DC, pst_SD->h_RC );
+		MessageBox( NULL, "Failed to create OpenGL context!", "OpenGL warning", MB_OK | MB_ICONWARNING | MB_TASKMODAL );
+		return S_FALSE;
 	}
+
+	wglMakeCurrent( pst_SD->h_DC, pst_SD->h_RC );
 
 	if ( GLEW_EXT_compiled_vertex_array )
 	{
@@ -2531,168 +2744,10 @@ void OGL_l_DrawSPG2_SPRITES(
 
 /* Aim: Set Device Context pixel format */
 
-static bool CreateFakeContext( int *maxAASamples )
-{
-	WNDCLASSA windowClass     = {};
-	windowClass.style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-	windowClass.lpfnWndProc   = DefWindowProcA;
-	windowClass.hInstance     = GetModuleHandle( 0 );
-	windowClass.lpszClassName = "DummyWGLClass";
-
-	if ( !RegisterClassA( &windowClass ) )
-	{
-		MessageBox( NULL, "Failed to register dummy OpenGL class!", "OpenGL warning", MB_OK | MB_ICONWARNING | MB_TASKMODAL );
-		return false;
-	}
-
-	HWND dummyWindow = CreateWindowExA(
-	        0,
-	        windowClass.lpszClassName,
-	        "Dummy WGL Window",
-	        0,
-	        CW_USEDEFAULT, CW_USEDEFAULT,
-	        CW_USEDEFAULT, CW_USEDEFAULT,
-	        0,
-	        0,
-	        windowClass.hInstance,
-	        0 );
-	if ( dummyWindow == NULL )
-	{
-		MessageBox( NULL, "Failed to create dummy OpenGL window!", "OpenGL warning", MB_OK | MB_ICONWARNING | MB_TASKMODAL );
-		return false;
-	}
-
-	static const PIXELFORMATDESCRIPTOR pfd =
-	        {
-	                sizeof( PIXELFORMATDESCRIPTOR ),
-	                1,
-	                PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,// Flags
-	                PFD_TYPE_RGBA,                                             // The kind of framebuffer. RGBA or palette.
-	                24,                                                        // Colordepth of the framebuffer.
-	                0, 0, 0, 0, 0, 0,
-	                0,
-	                0,
-	                0,
-	                0, 0, 0, 0,
-	                32,// Number of bits for the depthbuffer
-	                8, // Number of bits for the stencilbuffer
-	                0, // Number of Aux buffers in the framebuffer.
-	                PFD_MAIN_PLANE,
-	                0,
-	                0, 0, 0 };
-
-	HDC dc = GetDC( dummyWindow );
-
-	int l_PixelFormat = ChoosePixelFormat( dc, &pfd );
-	SetPixelFormat( dc, l_PixelFormat, &pfd );
-
-	HGLRC fakeContext = wglCreateContext( dc );
-	wglMakeCurrent( dc, fakeContext );
-
-	glGetIntegerv( GL_MAX_SAMPLES, ( GLint * ) maxAASamples );
-
-	GLenum err = glewInit();
-
-	wglMakeCurrent( dc, 0 );
-	wglDeleteContext( fakeContext );
-
-	ReleaseDC( dummyWindow, dc );
-
-	DestroyWindow( dummyWindow );
-	UnregisterClass( "DummyWGLClass", windowClass.hInstance );
-
-	if ( err != GLEW_OK )
-	{
-		char tmp[ 256 ];
-		snprintf( tmp, sizeof( tmp ), "Failed to initialize GLEW: %s", glewGetErrorString( err ) );
-		MessageBox( NULL, tmp, "OpenGL warning", MB_OK | MB_ICONWARNING | MB_TASKMODAL );
-		return false;
-	}
-
-	return true;
-}
-
 /*
  =======================================================================================================================
  =======================================================================================================================
  */
-static bool OGL_SetDCPixelFormat( HDC _hDC, int maxAASamples )
-{
-	// rewritten ~hogsy
-
-	int pixelFormat;
-	if ( WGLEW_ARB_pixel_format )
-	{
-		const int attribList[] =
-		        {
-		                WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
-		                WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
-		                WGL_DOUBLE_BUFFER_ARB, GL_TRUE,
-		                WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
-		                WGL_COLOR_BITS_ARB, 24,
-		                WGL_DEPTH_BITS_ARB, 32,
-		                WGL_STENCIL_BITS_ARB, 8,
-		                WGL_SAMPLE_BUFFERS_ARB, maxAASamples > 1 ? 1 : 0,
-		                WGL_SAMPLES_ARB, maxAASamples > 4 ? 4 : maxAASamples,
-		                0,// End
-		        };
-
-		unsigned int numFormats;
-		wglChoosePixelFormatARB( _hDC, attribList, 0, 1, &pixelFormat, &numFormats );
-		if ( numFormats > 0 )
-		{
-			PIXELFORMATDESCRIPTOR pfd;
-			DescribePixelFormat( _hDC, pixelFormat, sizeof( pfd ), &pfd );
-			if ( SetPixelFormat( _hDC, pixelFormat, &pfd ) )
-				return true;
-		}
-	}
-
-	// if this fails, attempt fallback ~hogsy
-
-	PIXELFORMATDESCRIPTOR pfd =
-	        {
-	                sizeof( PIXELFORMATDESCRIPTOR ), /* Size of this structure */
-	                1,                               /* Version of this structure */
-	                PFD_DRAW_TO_WINDOW |             /* Draw to Window (not to bitmap) */
-	                        PFD_SUPPORT_OPENGL |     /* Support OpenGL calls in window */
-	                        PFD_DOUBLEBUFFER |       /* Double buffered */
-	                        PFD_SWAP_EXCHANGE | PFD_GENERIC_ACCELERATED,
-	                PFD_TYPE_RGBA,    /* RGBA Color mode */
-	                24,               /* Want 24bit color */
-	                0, 0, 0, 0, 0, 0, /* Not used to select mode */
-	                1, 0,             /* Not used to select mode */
-	                0, 0, 0, 0, 0,    /* Accumulation buffer */
-	                32,               /* Size of depth buffer */
-	                0,                /* Not used to select mode */
-	                0,                /* Not used to select mode */
-	                PFD_MAIN_PLANE,   /* Draw in main plane */
-	                0,                /* Not used to select mode */
-	                0, 0, 0           /* Not used to select mode */
-	        };
-
-	pixelFormat = ChoosePixelFormat( _hDC, &pfd );
-	SetPixelFormat( _hDC, pixelFormat, &pfd );
-
-#ifdef ACTIVE_EDITORS
-	static bool first = true;
-	DescribePixelFormat( _hDC, pixelFormat, sizeof( pfd ), &pfd );
-	if ( ( pfd.cColorBits < 24 ) && ( first ) )
-	{
-		MessageBox(
-		        NULL,
-		        "Your desktop must be configured in at least 24bit mode (True colors) for making OPENGL working properly.. \n\n"
-		        "Some graphics features will not be enabled \n\n"
-		        "Jade must be restarted for taking effect of your eventual modification.",
-		        "OpenGL warning",
-		        MB_OK | MB_ICONWARNING | MB_TASKMODAL );
-		first = false;
-	}
-#endif
-
-	return true;
-}
-
 /*
  =======================================================================================================================
     Aim:    Setup rendering context
