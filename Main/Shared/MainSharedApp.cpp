@@ -520,9 +520,12 @@ static SDL_Window *CreateSDLWindow()
 	if ( !jaded::sys::launchOperations.forceWindowed )
 		flags |= SDL_WINDOW_FULLSCREEN;
 
+	int            numDisplays;
+	SDL_DisplayID *displays = SDL_GetDisplays( &numDisplays );
+
 	int                    w, h;
 	const SDL_DisplayMode *displayMode;
-	if ( ( displayMode = SDL_GetDesktopDisplayMode( 0 ) ) != nullptr )
+	if ( ( displayMode = SDL_GetDesktopDisplayMode( displays[ 0 ] ) ) != nullptr )
 	{
 		w = displayMode->w;
 		h = displayMode->h;
@@ -533,6 +536,8 @@ static SDL_Window *CreateSDLWindow()
 		w = 1024;
 		h = 768;
 	}
+
+	SDL_free( displays );
 
 	if ( jaded::sys::launchOperations.forcedWidth > 0 ) w = jaded::sys::launchOperations.forcedWidth;
 	if ( jaded::sys::launchOperations.forcedHeight > 0 ) h = jaded::sys::launchOperations.forcedHeight;
@@ -690,8 +695,6 @@ int main( int argc, char **argv )
 		                      jaded::sys::ALERT_BOX_ERROR );
 	}
 
-	ImGuiInterface_Initialize( sdlWindow );
-
 	MEMpro_Init();
 	MEMpro_StartMemRaster();
 
@@ -708,6 +711,8 @@ int main( int argc, char **argv )
 		return EXIT_FAILURE;
 
 	InitializeDisplay();
+
+	ImGuiInterface_Initialize( sdlWindow );
 
 	ENG_InitEngine();
 
