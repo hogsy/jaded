@@ -272,14 +272,11 @@ static bool QueryGLSupport()
 			throw std::runtime_error( "unsupported version (" + glVersion + ")" );
 		}
 
-		if ( !WGLEW_ARB_create_context )
-		{
-			throw std::runtime_error( "WGL_ARB_create_context unsupported" );
-		}
-		if ( !WGLEW_ARB_pixel_format )
-		{
-			throw std::runtime_error( "WGLEW_ARB_pixel_format unsupported" );
-		}
+		if ( !WGLEW_ARB_create_context ) throw std::runtime_error( "WGL_ARB_create_context unsupported" );
+		if ( !WGLEW_ARB_pixel_format ) throw std::runtime_error( "WGL_ARB_pixel_format unsupported" );
+#if 0 // sad, this isn't widely supported still...
+		if ( !GLEW_ARB_shading_language_include ) throw std::runtime_error( "GL_ARB_shading_language_include unsupported" );
+#endif
 
 		status = true;
 	}
@@ -375,6 +372,7 @@ static bool OGL_SetDCPixelFormat( HDC _hDC )
 	return true;
 }
 
+#if defined( OGL_DEBUG )
 // stolen from my prior impl. here: 
 // https://github.com/QuartermindGames/hei/blob/5ad3e9997d8f7f5657c0cf4d46e22b2b592f00cc/plugins/driver_opengl/opengl.c#L1940C1-L1994C2
 static void MessageCallback(
@@ -438,6 +436,7 @@ static void MessageCallback(
 		LINK_PrintStatusMsg( msg.c_str() );
 	}
 }
+#endif
 
 void OGL_InitAllShadows( void );
 LONG OGL_l_Init( HWND _hWnd, GDI_tdst_DisplayData *_pst_DD )
@@ -464,10 +463,13 @@ LONG OGL_l_Init( HWND _hWnd, GDI_tdst_DisplayData *_pst_DD )
 
 	GetClientRect( _hWnd, &pst_SD->rcViewportRect );
 
-	// Creates a fake context and 
+	// Creates a fake context and
 	// fetches some GL information
 	// to ensure we do all we want
-	QueryGLSupport();
+	if ( !QueryGLSupport() )
+	{
+		return S_FALSE;
+	}
 
 	/* Select the pixel format */
 	if ( !OGL_SetDCPixelFormat( pst_SD->h_DC ) )
