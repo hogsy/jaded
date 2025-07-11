@@ -233,7 +233,8 @@ static bool QueryGLSupport()
 		wglMakeCurrent( dc, fakeContext );
 
 		GLenum err = glewInit();
-		if ( err != GLEW_OK )
+		// under wayland, glx requests aren't available; https://github.com/nigels-com/glew/issues/172
+		if ( err != GLEW_OK && err != GLEW_ERROR_NO_GLX_DISPLAY )
 		{
 			std::string msg = "glew init failed (";
 			msg += ( const char * ) glewGetErrorString( err );
@@ -374,6 +375,70 @@ static bool OGL_SetDCPixelFormat( HDC _hDC )
 	return true;
 }
 
+// stolen from my prior impl. here: 
+// https://github.com/QuartermindGames/hei/blob/5ad3e9997d8f7f5657c0cf4d46e22b2b592f00cc/plugins/driver_opengl/opengl.c#L1940C1-L1994C2
+static void MessageCallback(
+        GLenum        source,
+        GLenum        type,
+        GLuint        id,
+        GLenum        severity,
+        GLsizei       length,
+        const GLchar *message,
+        void         *param )
+{
+	// silence warnings
+	( void ) ( source );
+	( void ) ( id );
+	( void ) ( length );
+	( void ) ( param );
+
+	const char *s_severity;
+	switch ( severity )
+	{
+		case GL_DEBUG_SEVERITY_HIGH:
+			s_severity = "HIGH";
+			break;
+		case GL_DEBUG_SEVERITY_MEDIUM:
+			s_severity = "MEDIUM";
+			break;
+		case GL_DEBUG_SEVERITY_LOW:
+			s_severity = "LOW";
+			break;
+
+		default:
+			return;
+	}
+
+	const char *s_type;
+	switch ( type )
+	{
+		case GL_DEBUG_TYPE_ERROR:
+			s_type = "ERROR";
+			break;
+		case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+			s_type = "DEPRECATED";
+			break;
+		case GL_DEBUG_TYPE_MARKER:
+			s_type = "MARKER";
+			break;
+		case GL_DEBUG_TYPE_PERFORMANCE:
+			s_type = "PERFORMANCE";
+			break;
+		case GL_DEBUG_TYPE_PORTABILITY:
+			s_type = "PORTABILITY";
+			break;
+		default:
+			s_type = "OTHER";
+			break;
+	}
+
+	if ( message != NULL && message[ 0 ] != '\0' )
+	{
+		std::string msg = "(" + std::string( s_type ) + ") " + std::string( s_severity ) + " - " + std::string( message );
+		LINK_PrintStatusMsg( msg.c_str() );
+	}
+}
+
 void OGL_InitAllShadows( void );
 LONG OGL_l_Init( HWND _hWnd, GDI_tdst_DisplayData *_pst_DD )
 {
@@ -432,6 +497,14 @@ LONG OGL_l_Init( HWND _hWnd, GDI_tdst_DisplayData *_pst_DD )
 	}
 
 	wglMakeCurrent( pst_SD->h_DC, pst_SD->h_RC );
+
+#if defined( OGL_DEBUG  )
+	glEnable( GL_DEBUG_OUTPUT );
+	glEnable( GL_DEBUG_OUTPUT_SYNCHRONOUS );
+
+	glDebugMessageControl( GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE );
+	glDebugMessageCallback( ( GLDEBUGPROC ) MessageCallback, nullptr );
+#endif
 
 	if ( GLEW_EXT_compiled_vertex_array )
 	{

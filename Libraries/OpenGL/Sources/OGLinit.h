@@ -24,8 +24,9 @@ extern "C"
  ***************************************************************************************************
  */
 
-//#	define OGL_DEBUG_CALLS
-#	if !defined( NDEBUG ) && defined( OGL_DEBUG_CALLS )
+#if !defined( NDEBUG )
+#	define OGL_DEBUG
+#	if defined( OGL_DEBUG_CALLS )
 #		include <assert.h>
 #		define OGL_CALL( X )                     \
 			{                                     \
@@ -37,6 +38,7 @@ extern "C"
 #	else
 #		define OGL_CALL( X ) X
 #	endif
+#endif
 
 #define OGL_M_SD(_pst_DD)   ((OGL_tdst_SpecificData *) _pst_DD->pv_SpecificData)
 #define OGL_M_RS(_pst_DD)   (&((OGL_tdst_SpecificData *) _pst_DD->pv_SpecificData)->st_RS)
