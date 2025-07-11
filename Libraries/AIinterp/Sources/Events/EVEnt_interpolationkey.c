@@ -1967,22 +1967,11 @@ EVE_tdst_Event *EVE_Event_InterpolationKey_Play(EVE_tdst_Event *_pst_Event)
 			&&	((COL_tdst_Base *) pst_GO->pst_Extended->pst_Col)->pst_Instance->pst_OldGlobalMatrix
 			)
 			{
-				if(b_HierarchyGO)
-				{
-					MATH_CopyVector
-					(
-						&(((COL_tdst_Base *) pst_GO->pst_Extended->pst_Col)->pst_Instance->pst_OldGlobalMatrix->T),
-						&st_Pos
-					);
-				}
-				else
-				{
-					MATH_CopyVector
-					(
-						&(((COL_tdst_Base *) pst_GO->pst_Extended->pst_Col)->pst_Instance->pst_OldGlobalMatrix->T),
-						&st_Pos
-					);
-				}
+				MATH_CopyVector
+				(
+					&(((COL_tdst_Base *) pst_GO->pst_Extended->pst_Col)->pst_Instance->pst_OldGlobalMatrix->T),
+					&st_Pos
+				);
 			}
 		}
 		else
@@ -2195,6 +2184,11 @@ float EVE_f_Event_InterpolationKey_InterpolateTime(EVE_tdst_Event *_pst_Evt, flo
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	pf_Start = pf_TimeKey = EVE_pf_Event_InterpolationKey_GetTime(_pst_Evt);
+	if (pf_TimeKey == NULL)
+	{
+		return 0.0f;
+	}
+
 	i_Number = *(int *) pf_TimeKey;
 	*pf_TimeKey = 0;
 	pf_Last = pf_TimeKey + (i_Number - 1) * 2;
@@ -3343,7 +3337,7 @@ void EVE_Event_InterpolationKey_UpdateNextValue
 	int						i;
 	ANI_st_GameObjectAnim	*pst_GOAnim;
 	TAB_tdst_PFelem			*pst_CurrentBone;
-	OBJ_tdst_GameObject		*pst_BoneGO;
+	OBJ_tdst_GameObject		*pst_BoneGO = NULL;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	pst_GOAnim = _pst_GO->pst_Base->pst_GameObjectAnim;
@@ -3359,7 +3353,8 @@ void EVE_Event_InterpolationKey_UpdateNextValue
 		if((EVE_w_Event_InterpolationKey_GetFlags(pst_Evt) & EVE_C_EventFlag_Type) != EVE_C_EventFlag_InterpolationKey) continue;
 		w_Type = EVE_w_Event_InterpolationKey_GetType(pst_Evt);
 
-		if(EVE_Event_InterpolationKey_TransitionIK(_pst_Track, pst_Evt, TRUE))
+		assert( pst_BoneGO != NULL );
+		if ( EVE_Event_InterpolationKey_TransitionIK( _pst_Track, pst_Evt, TRUE ) )
 		{
 			EVE_Event_InterpolationKey_ComputeNextValue
 			(

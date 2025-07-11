@@ -54,7 +54,7 @@ DAT_CP4BFObject::DAT_CP4BFObject(void* buff, size_t buffSize)
 DAT_CP4BFObject::~DAT_CP4BFObject()
 {
 	// If we received a filename, we allocated a buffer to hold the data
-	if (m_FileName != "")	
+	if (!m_FileName.empty())	
 		free(m_Buff);
 }
 
@@ -63,8 +63,8 @@ bool DAT_CP4BFObject::Write(std::string& fileName)
 	FILE* fp;
 	bool  bOk = true;
 
-	if (fileName == "")
-		fileName == m_FileName;
+	if (fileName.empty())
+		fileName = m_FileName;
 
 	fp = fopen(fileName.c_str(), "wb");
 	if (fp)
@@ -276,7 +276,7 @@ bool DAT_CP4BFObjectHeader::PathExt(std::string& strExt)
 	if (pos != std::string::npos)
 		strExt = m_Path.substr(pos);
 	else
-		strExt = "";
+		strExt.clear();
 
 	return m_PathIsSet;
 }

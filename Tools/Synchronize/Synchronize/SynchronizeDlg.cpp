@@ -79,8 +79,8 @@ CSynchronizeDlg::CSynchronizeDlg(CWnd* pParent /*=NULL*/)
 
 CSynchronizeDlg::~CSynchronizeDlg(void)
 {
-    if(mpo_RefRoot) delete mpo_RefRoot ;
-    if(mpo_InRoot) delete mpo_InRoot ;
+    delete mpo_RefRoot ;
+    delete mpo_InRoot ;
 }
 
 void CSynchronizeDlg::DoDataExchange(CDataExchange* pDX)
@@ -259,10 +259,10 @@ void CSynchronizeDlg::OnBnClickedButton1()
     po_List->SetRedraw(FALSE);
     po_List->DeleteAllItems();
 
-    if(mpo_RefRoot) delete mpo_RefRoot;    
+    delete mpo_RefRoot;    
     mpo_RefRoot = NULL;
 
-    if(mpo_InRoot) delete mpo_InRoot;    
+    delete mpo_InRoot;    
     mpo_InRoot = NULL;
 
     GetDlgItem(IDC_ED_INPUT)->GetWindowText(mo_InPath);

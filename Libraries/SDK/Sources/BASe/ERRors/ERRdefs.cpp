@@ -149,7 +149,6 @@ BOOL _ERR_fnb_AssertFailed(
 
 	/* Allocate a temporary buffer and fill it with the text. */
 	b_DispMsg = TRUE;
-	psz_Temp  = NULL;
 	psz_Temp  = ( char  *) L_malloc( 2048L );
 	if ( psz_Temp == NULL )
 	{
@@ -243,10 +242,7 @@ BOOL _ERR_fnb_AssertFailed(
 #endif
 
 	/* Free temporary buffer. */
-	if ( psz_Temp )
-	{
-		L_free( psz_Temp );
-	}
+	L_free( psz_Temp );
 
 	/* In engine mode, only assert in debug mode are not fatal. */
 #if !defined( ACTIVE_EDITORS )

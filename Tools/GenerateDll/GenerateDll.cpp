@@ -61,7 +61,7 @@ void AddIfNotPresent(std::vector<std::string> &_asStrings,const char *_sNewStrin
 		if (!strcmp(_asStrings[i].c_str(),_sNewString))
 			return;
 	}
-	_asStrings.push_back(std::string(_sNewString));
+	_asStrings.emplace_back(std::string(_sNewString));
 }
 
 void AddIfNotPresent(std::vector<std::string> &_asStringsToCheck,std::vector<std::string> &_asWhereToAdd,const char *_sNewString)
@@ -72,7 +72,7 @@ void AddIfNotPresent(std::vector<std::string> &_asStringsToCheck,std::vector<std
 		if (!strcmp(_asStringsToCheck[i].c_str(),_sNewString))
 			return;
 	}
-	_asWhereToAdd.push_back(std::string(_sNewString));
+	_asWhereToAdd.emplace_back(std::string(_sNewString));
 }
 
 void CatPathFile(const char *_sPath,const char *_sFile,char *_sResult)
@@ -346,14 +346,15 @@ void TreatAIdll(const char *_sSrcPath,const char *_sDestPath, const char *_sFile
     char *entryPointStopInclude = strstr(srcBuffer,"#endif /* GAMECUBE_USE_AI2C_DLL */"); 
 
     // Search functions
-	currentBuffer = strstr(srcBuffer,"Close(void)\n{"); 
-	currentBuffer = strstr(currentBuffer,"AI2C_pfi_");
+	currentBuffer       = strstr( srcBuffer, "Close(void)\n{" ); 
+	currentBuffer       = strstr( currentBuffer, "AI2C_pfi_" );
+	size_t prefixLength = strlen( "AI2C_pfi_" );
 	while (currentBuffer)
     {
 		char sFuncName[260];
 
 		// Find function name
-		currentBuffer += strlen("AI2C_pfi_");
+		currentBuffer += prefixLength;
 
         for (i = 0; currentBuffer[i] != ' '; i++)
 		{

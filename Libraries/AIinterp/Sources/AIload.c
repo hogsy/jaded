@@ -913,9 +913,6 @@ void AI_InstanceAfterLoading(AI_tdst_Instance *_pst_Instance)
 
 		if(pst_Model->c_SecondPassDone != 0x66)
 		{
-			if(pst_Model->pst_VarDes->ul_NbVars == 16)
-				i = i;
-
 			/* On comptabilise la vraie taille, chaque tableau ne prenant plus que 4 (le pointeur) plus un int par dimension. */
 			size = 0;
 			for(i = 0; i < pst_Model->pst_VarDes->ul_NbVars; i++)
