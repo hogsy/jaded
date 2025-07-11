@@ -7,6 +7,8 @@
 #include <Windowsx.h>
 
 #include "MainSharedSystem.h"
+#include "FileSystem/FileSystem.h"
+
 #include "Res/Res.h"
 
 #include "BASe/MEMory/MEMpro.h"
@@ -84,7 +86,7 @@ static HWND nativeWindowHandle;
 
 #	include <DbgHelp.h>
 
-static char *CreateCrashReporterEnvironment(const char *dump_path)
+static char *CreateCrashReporterEnvironment( const char *dump_path )
 {
 	/* Create a copy of our environment block with the JADED_CRASH_DUMP_PATH variable added. */
 
@@ -119,13 +121,13 @@ static char *CreateCrashReporterEnvironment(const char *dump_path)
 	        crash_reporter_env_size,
 	        NULL );
 
-	if(crash_reporter_env_map == NULL)
+	if ( crash_reporter_env_map == NULL )
 	{
 		return NULL;
 	}
 
 	char *crash_reporter_env = ( char * ) ( MapViewOfFile( crash_reporter_env_map, ( FILE_MAP_READ | FILE_MAP_WRITE ), 0, 0, crash_reporter_env_size ) );
-	if(crash_reporter_env == NULL)
+	if ( crash_reporter_env == NULL )
 	{
 		return NULL;
 	}
@@ -202,22 +204,23 @@ static LONG WINAPI Win32CrashHandler( EXCEPTION_POINTERS *exception )
 
 	PROCESS_INFORMATION pi;
 
-	if(CreateProcess(
-		Exe_Path,
-		NULL,
-		NULL,
-		NULL,
-		FALSE,
-		0,
-		crash_reporter_env,
-		NULL,
-		&si,
-		&pi))
+	if ( CreateProcess(
+	             Exe_Path,
+	             NULL,
+	             NULL,
+	             NULL,
+	             FALSE,
+	             0,
+	             crash_reporter_env,
+	             NULL,
+	             &si,
+	             &pi ) )
 	{
 		CloseHandle( pi.hThread );
 		CloseHandle( pi.hProcess );
 	}
-	else {
+	else
+	{
 		MessageBox( nullptr, "Encountered an exception, launching the crash reporter failed!", "Error", MB_OK | MB_ICONERROR );
 	}
 
@@ -228,12 +231,12 @@ static LONG WINAPI Win32CrashHandler( EXCEPTION_POINTERS *exception )
 static const wchar_t *JADED_CRASH_REPORT_HOST = L"www.solemnwarning.net";
 static const wchar_t *JADED_CRASH_REPORT_PATH = L"/jaded-crash.cgi";
 
-static bool Win32SendCrashReport(const std::string &details, const char *dump_path)
+static bool Win32SendCrashReport( const std::string &details, const char *dump_path )
 {
 	/* Read in the crash dump. */
 
 	FILE *dump_fh = fopen( dump_path, "rb" );
-	if(dump_fh == NULL)
+	if ( dump_fh == NULL )
 	{
 		return false;
 	}
@@ -243,12 +246,12 @@ static bool Win32SendCrashReport(const std::string &details, const char *dump_pa
 	std::vector< char > read_buf( 8192 );
 	size_t              read_len;
 
-	while((read_len = fread(read_buf.data(), 1, read_buf.size(), dump_fh)) > 0)
+	while ( ( read_len = fread( read_buf.data(), 1, read_buf.size(), dump_fh ) ) > 0 )
 	{
 		dump_data.insert( dump_data.end(), read_buf.begin(), std::next( read_buf.begin(), read_len ) );
 	}
 
-	if(ferror(dump_fh))
+	if ( ferror( dump_fh ) )
 	{
 		fclose( dump_fh );
 		return false;
@@ -329,7 +332,7 @@ static bool Win32SendCrashReport(const std::string &details, const char *dump_pa
 	HINTERNET hRequest = NULL;
 	BOOL      bSuccess = FALSE;
 	DWORD     dwStatusCode;
-	
+
 	hSession = WinHttpOpen( L"Jaded Crash Reporter/1.0",
 	                        WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
 	                        WINHTTP_NO_PROXY_NAME,
@@ -362,14 +365,14 @@ static bool Win32SendCrashReport(const std::string &details, const char *dump_pa
 		bSuccess = WinHttpReceiveResponse( hRequest, NULL );
 	}
 
-	if(bSuccess)
+	if ( bSuccess )
 	{
 		DWORD dwSize = sizeof( dwStatusCode );
 
 		bSuccess = WinHttpQueryHeaders( hRequest,
-		                     WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
-		                     WINHTTP_HEADER_NAME_BY_INDEX,
-		                     &dwStatusCode, &dwSize, WINHTTP_NO_HEADER_INDEX );
+		                                WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
+		                                WINHTTP_HEADER_NAME_BY_INDEX,
+		                                &dwStatusCode, &dwSize, WINHTTP_NO_HEADER_INDEX );
 	}
 
 	if ( hRequest ) WinHttpCloseHandle( hRequest );
@@ -411,12 +414,13 @@ static int CALLBACK Win32CrashReporter( HWND hDlg, UINT iMsg, WPARAM wParam, LPA
 				std::vector< char > details_buf( Edit_GetTextLength( details_input ) + 1 );
 				Edit_GetText( details_input, details_buf.data(), details_buf.size() );
 
-				if(Win32SendCrashReport(details_buf.data(), getenv("JADED_CRASH_DUMP_PATH")))
+				if ( Win32SendCrashReport( details_buf.data(), getenv( "JADED_CRASH_DUMP_PATH" ) ) )
 				{
 					MessageBox( hDlg, "Crash report submitted, thank you!", "Crash Report", MB_OK );
 					EndDialog( hDlg, 0 );
 				}
-				else {
+				else
+				{
 					MessageBox( hDlg, "Error sending crash report", "Crash Report", MB_OK );
 				}
 			}
@@ -455,6 +459,11 @@ static void ParseStartupParameters()
 		if ( SDL_strcasecmp( jaded::sys::launchArguments[ i ], "/editor" ) == 0 )
 		{
 			jaded::sys::launchOperations.editorMode = true;
+			continue;
+		}
+		else if ( SDL_strcasecmp( jaded::sys::launchArguments[ i ], "/portable" ) == 0 )
+		{
+			jaded::sys::launchOperations.portableMode = true;
 			continue;
 		}
 		else if ( SDL_strcasecmp( jaded::sys::launchArguments[ i ], "/popupError" ) == 0 )// Showin added Param for PopUp Script Errors (if off it uses console)
@@ -616,9 +625,9 @@ int main( int argc, char **argv )
 #	if defined( _WIN32 )
 
 	const char *dump = getenv( "JADED_CRASH_DUMP_PATH" );
-	if(dump != NULL)
+	if ( dump != NULL )
 	{
-		DialogBox( NULL, MAKEINTRESOURCE(DIALOGS_IDD_CRASH_REPORT), NULL, &Win32CrashReporter );
+		DialogBox( NULL, MAKEINTRESOURCE( DIALOGS_IDD_CRASH_REPORT ), NULL, &Win32CrashReporter );
 		return EXIT_SUCCESS;
 	}
 
@@ -653,6 +662,19 @@ int main( int argc, char **argv )
 		freopen_s( &tmp, "CONIN$", "r", stdin );
 		freopen_s( &tmp, "CONOUT$", "w", stderr );
 		freopen_s( &tmp, "CONOUT$", "w", stdout );
+	}
+
+	std::string localAppData = jaded::filesystem.GetAppDataPath();
+	if ( localAppData.empty() )
+	{
+		jaded::sys::AlertBox( "Failed to get local app data path!", "Jaded Error", jaded::sys::ALERT_BOX_ERROR );
+		return EXIT_FAILURE;
+	}
+
+	if ( !jaded::filesystem.CreateLocalPath( localAppData ) )
+	{
+		jaded::sys::AlertBox( "Failed to create local app data path (" + localAppData + ")!", "Jaded Error", jaded::sys::ALERT_BOX_ERROR );
+		return EXIT_FAILURE;
 	}
 
 	// hogsy: for now we'll only support editor functionality under win32

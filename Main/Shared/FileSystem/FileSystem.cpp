@@ -39,6 +39,22 @@ std::string jaded::FileSystem::GetExecutablePath()
 	return NormalizePath( filename );
 }
 
+std::string jaded::FileSystem::GetAppDataPath()
+{
+	if ( jaded::sys::launchOperations.portableMode )
+	{
+		return ".";
+	}
+
+	char home[ MAX_PATH ];
+	if ( SUCCEEDED( SHGetFolderPath( NULL, CSIDL_APPDATA, NULL, 0, home ) ) )
+	{
+		return NormalizePath( home ) + "/" + APP_NAME;
+	}
+
+	return {};
+}
+
 std::string jaded::FileSystem::NormalizePath( std::string path )
 {
 	std::replace( path.begin(), path.end(), '\\', '/' );
