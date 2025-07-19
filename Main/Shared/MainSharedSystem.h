@@ -1,4 +1,4 @@
-// Created by Mark "hogsy" Sowden, 2023-2024 <hogsy@oldtimes-software.com>
+// Created by Mark "hogsy" Sowden, 2023-2025 <hogsy@oldtimes-software.com>
 // https://oldtimes-software.com/jaded/
 
 #pragma once
@@ -56,7 +56,5 @@ namespace jaded
 			bool portableMode{ false };// save to the current directory, rather than app data path
 		};
 		extern LaunchOperations launchOperations;
-
-		SDL_Window *GetMainWindow();
 	}// namespace sys
 }// namespace jaded

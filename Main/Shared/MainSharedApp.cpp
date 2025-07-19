@@ -562,11 +562,6 @@ static SDL_Window *CreateSDLWindow()
 	return sdlWindow;
 }
 
-SDL_Window *jaded::sys::GetMainWindow()
-{
-	return sdlWindow;
-}
-
 static void SetupAspectRatio()
 {
 	int w, h;
@@ -658,7 +653,7 @@ int main( int argc, char **argv )
 		return EXIT_FAILURE;
 	}
 
-#	if defined( _WIN32 )
+#	if defined( _WIN32 ) && !defined( NDEBUG )
 
 	if ( jaded::sys::launchOperations.debugConsole )
 	{
@@ -668,6 +663,8 @@ int main( int argc, char **argv )
 		freopen_s( &tmp, "CONOUT$", "w", stderr );
 		freopen_s( &tmp, "CONOUT$", "w", stdout );
 	}
+
+#	endif
 
 	std::string localAppData = jaded::filesystem.GetAppDataPath();
 	if ( localAppData.empty() )
@@ -682,6 +679,8 @@ int main( int argc, char **argv )
 		return EXIT_FAILURE;
 	}
 
+#	if defined( _WIN32 )
+
 	// hogsy: for now we'll only support editor functionality under win32
 	if ( jaded::sys::launchOperations.editorMode )
 		return EDI_EditorWin32Execution( hInstance );
@@ -693,6 +692,7 @@ int main( int argc, char **argv )
 		jaded::sys::AlertBox( "SDL Window fail: " + std::string( SDL_GetError() ),
 		                      "Jaded Error",
 		                      jaded::sys::ALERT_BOX_ERROR );
+		return EXIT_FAILURE;
 	}
 
 	MEMpro_Init();

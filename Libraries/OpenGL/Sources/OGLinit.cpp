@@ -57,11 +57,6 @@ extern "C" ULONG OGL_ulLODAmbient = 0;
  ***********************************************************************************************************************
  */
 
-static bool OGL_SetDCPixelFormat( HDC _hDC, int maxAASamples );
-void OGL_SetupRC( OGL_tdst_SpecificData * );
-
-extern void LOA_BeginSpeedMode( BIG_KEY _ul_Key );
-extern void LOA_EndSpeedMode( void );
 extern "C" BOOL GDI_gb_WaveSprite;
 #ifdef ACTIVE_EDITORS
 extern "C" COL_tdst_GlobalVars COL_gst_GlobalVars;
@@ -117,42 +112,20 @@ void OGL_DestroyDevice( void *_pst_SD )
  */
 HRESULT OGL_l_Close( GDI_tdst_DisplayData *_pst_DD )
 {
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	OGL_tdst_SpecificData *pst_SD;
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+	OGL_gb_Init = false;
 
-	OGL_gb_Init = 0;
-
-	pst_SD = ( OGL_tdst_SpecificData * ) _pst_DD->pv_SpecificData;
-
-	if (!jaded::sys::launchOperations.editorMode)
+	OGL_tdst_SpecificData *pst_SD = ( OGL_tdst_SpecificData * ) _pst_DD->pv_SpecificData;
+	
+	if ( pst_SD->h_DC )
 	{
-		SDL_Window *window = jaded::sys::GetMainWindow();
-		if (pst_SD->h_DC != nullptr)
-		{
-			SDL_GL_MakeCurrent( window, nullptr );
-			pst_SD->h_DC = nullptr;
-		}
-
-		if (pst_SD->h_RC != nullptr)
-		{
-			SDL_GL_DestroyContext( ( SDL_GLContext ) pst_SD->h_RC );
-			pst_SD->h_RC = nullptr;
-		}
+		wglMakeCurrent( pst_SD->h_DC, NULL );
+		pst_SD->h_DC = NULL;
 	}
-	else
-	{
-		if ( pst_SD->h_DC )
-		{
-			wglMakeCurrent( pst_SD->h_DC, NULL );
-			pst_SD->h_DC = NULL;
-		}
 
-		if ( pst_SD->h_RC )
-		{
-			wglDeleteContext( pst_SD->h_RC );
-			pst_SD->h_RC = NULL;
-		}
+	if ( pst_SD->h_RC )
+	{
+		wglDeleteContext( pst_SD->h_RC );
+		pst_SD->h_RC = NULL;
 	}
 
 	return S_OK;
@@ -441,29 +414,73 @@ static void MessageCallback(
 #endif
 
 void OGL_InitAllShadows( void );
+
+/*
+ =======================================================================================================================
+    Aim:    Setup rendering context
+ =======================================================================================================================
+ */
+static void OGL_SetupRC( OGL_tdst_SpecificData *_pst_SD )
+{
+	/*~~~~~~~~~*/
+	LONG w, h;
+	/*~~~~~~~~~*/
+
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+	OGL_CALL( glClearColor( 1.0f, .5f, .25f, 1.0f ) );
+
+	w = _pst_SD->rcViewportRect.right - _pst_SD->rcViewportRect.left;
+	h = _pst_SD->rcViewportRect.bottom - _pst_SD->rcViewportRect.top;
+	OGL_CALL( glViewport( 0, ( h - w ) / 2, w, w ) );
+
+	/* Reset coordinate system */
+	OGL_CALL( glMatrixMode( GL_PROJECTION ) );
+
+	/* Establish clipping volume (left, right, bottom, top, near, far) */
+	_pst_SD->pst_ProjMatrix->Jy  = -1.0f;
+	_pst_SD->pst_ProjMatrix->Sz  = 1.0f;
+	_pst_SD->pst_ProjMatrix->T.z = -0.1f;
+	_pst_SD->pst_ProjMatrix->w   = 0.0f;// MATRIX W!
+
+	OGL_CALL( glLoadMatrixf( ( float * ) ( _pst_SD->pst_ProjMatrix ) ) );
+	glMatrixMode( GL_MODELVIEW );
+	glLoadIdentity();
+
+	glEnable( GL_DEPTH_TEST );
+	glEnable( GL_CULL_FACE ); /* Do not calculate inside of solid object */
+	glCullFace( GL_BACK );
+	glDepthFunc( GL_LEQUAL );
+	glDepthMask( GL_TRUE );
+	glFrontFace( GL_CCW );
+
+	OGL_InitAllShadows();
+
+	/*$F
+    glPixelTransferf(GL_RED_SCALE, 4.0f );
+    glPixelTransferf(GL_GREEN_SCALE, 4.0f );
+    glPixelTransferf(GL_BLUE_SCALE, 4.0f );
+    glPixelTransferf(GL_ALPHA_SCALE, 4.0f );
+    */
+}
+
 LONG OGL_l_Init( HWND _hWnd, GDI_tdst_DisplayData *_pst_DD )
 {
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	RECT st_Rect;
-	OGL_tdst_SpecificData *pst_SD;
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-
 	/* Cleanup any objects that might've been created before */
-	if ( OGL_l_Close( _pst_DD ) != S_OK ) return E_FAIL;
+	if ( OGL_l_Close( _pst_DD ) != S_OK ) 
+		return E_FAIL;
 
-	OGL_gb_Init = 1;
+	OGL_tdst_SpecificData *pst_SD = ( OGL_tdst_SpecificData * ) _pst_DD->pv_SpecificData;
+	pst_SD->h_Wnd                 = _hWnd;
+	pst_SD->h_DC                  = GetDC( _hWnd );
+	pst_SD->pst_ProjMatrix        = &_pst_DD->st_Camera.st_ProjectionMatrix;
 
-	/* Check window size */
-	GetClientRect( _hWnd, &st_Rect );
-	if ( ( st_Rect.top >= st_Rect.bottom ) || ( st_Rect.left >= st_Rect.right ) ) return S_OK;
-
-	pst_SD                 = ( OGL_tdst_SpecificData                 *) _pst_DD->pv_SpecificData;
-	pst_SD->h_Wnd          = _hWnd;
-	pst_SD->h_DC           = GetDC( _hWnd );
-	pst_SD->pst_ProjMatrix = &_pst_DD->st_Camera.st_ProjectionMatrix;
-
-	GetClientRect( _hWnd, &pst_SD->rcViewportRect );
+	if ( !GetClientRect( _hWnd, &pst_SD->rcViewportRect ) )
+	{
+		jaded::sys::AlertBox( "Failed to get window area!", "OpenGL warning", jaded::sys::ALERT_BOX_ERROR );
+		return S_FALSE;
+	}
 
 	// Creates a fake context and
 	// fetches some GL information
@@ -529,9 +546,8 @@ LONG OGL_l_Init( HWND _hWnd, GDI_tdst_DisplayData *_pst_DD )
 	_pst_DD->OBJ_ALarm            = 300;
 	_pst_DD->SMALL_ALarm          = 0;// Inactive by default.
 	_pst_DD->ColorCostIAThresh    = 4;
-	//_pst_DD->b_AntiAliasingBlur   = true;
 
-	OGL_InitAllShadows();
+	OGL_gb_Init = true;
 
 	return S_OK;
 }
@@ -645,12 +661,6 @@ void OGL_Clear( LONG _l_Buffer, ULONG _ul_Color )
 	pst_SD->st_RS.l_LastTexture = -2;
 
 	PRO_StopTrameRaster( &GDI_gpst_CurDD->pst_Raster->st_GL_Clear );
-
-	// gross place to shove this, but hey ho! ~hogsy
-	if ( GDI_gpst_CurDD->b_AntiAliasingBlur )
-		glEnable( GL_MULTISAMPLE );
-	else
-		glDisable( GL_MULTISAMPLE );
 }
 
 /*
@@ -2808,70 +2818,3 @@ void OGL_l_DrawSPG2_SPRITES(
 /**********************************************************************************************************************/
 /* SPG2 specific functions END ****************************************************************************************/
 /**********************************************************************************************************************/
-
-
-/*$4
- ***********************************************************************************************************************
-    Private function
- ***********************************************************************************************************************
- */
-
-/* Aim: Set Device Context pixel format */
-
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
-/*
- =======================================================================================================================
-    Aim:    Setup rendering context
- =======================================================================================================================
- */
-void OGL_SetupRC( OGL_tdst_SpecificData *_pst_SD )
-{
-	/*~~~~~~~~~*/
-	LONG w, h;
-	/*~~~~~~~~~*/
-
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-	OGL_CALL( glClearColor( 1.0f, .5f, .25f, 1.0f ) );
-
-	w = _pst_SD->rcViewportRect.right - _pst_SD->rcViewportRect.left;
-	h = _pst_SD->rcViewportRect.bottom - _pst_SD->rcViewportRect.top;
-	OGL_CALL( glViewport( 0, ( h - w ) / 2, w, w ) );
-
-	/* Reset coordinate system */
-	OGL_CALL( glMatrixMode( GL_PROJECTION ) );
-
-	/* Establish clipping volume (left, right, bottom, top, near, far) */
-	_pst_SD->pst_ProjMatrix->Jy  = -1.0f;
-	_pst_SD->pst_ProjMatrix->Sz  = 1.0f;
-	_pst_SD->pst_ProjMatrix->T.z = -0.1f;
-	_pst_SD->pst_ProjMatrix->w   = 0.0f;// MATRIX W!
-
-	OGL_CALL( glLoadMatrixf( ( float * ) ( _pst_SD->pst_ProjMatrix ) ) );
-	glMatrixMode( GL_MODELVIEW );
-	glLoadIdentity();
-
-	glEnable( GL_DEPTH_TEST );
-	glEnable( GL_CULL_FACE ); /* Do not calculate inside of solid object */
-	glCullFace( GL_BACK );
-	glDepthFunc( GL_LEQUAL );
-	glDepthMask( GL_TRUE );
-	glFrontFace( GL_CCW );
-
-	glDisable( GL_MULTISAMPLE );
-
-	//glSampleCoverage( 0.5f, GL_FALSE );
-
-	OGL_InitAllShadows();
-
-	/*$F
-    glPixelTransferf(GL_RED_SCALE, 4.0f );
-    glPixelTransferf(GL_GREEN_SCALE, 4.0f );
-    glPixelTransferf(GL_BLUE_SCALE, 4.0f );
-    glPixelTransferf(GL_ALPHA_SCALE, 4.0f );
-    */
-}
