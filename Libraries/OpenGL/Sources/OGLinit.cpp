@@ -315,6 +315,8 @@ static bool OGL_SetDCPixelFormat( HDC _hDC )
 	                WGL_COLOR_BITS_ARB, 24,
 	                WGL_DEPTH_BITS_ARB, 32,
 	                WGL_STENCIL_BITS_ARB, 8,
+					WGL_SAMPLE_BUFFERS_ARB, 0,
+					WGL_SAMPLES_ARB, 4,
 	                0,// End
 	        };
 
