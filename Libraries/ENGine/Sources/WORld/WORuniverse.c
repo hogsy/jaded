@@ -875,10 +875,6 @@ WOR_tdst_World *WOR_pst_Universe_MergeWorld
 		EOT_SetOfEOT_Build(&_pst_World->st_EOT, &_pst_World->st_ActivObjects);
 	}
 
-#ifdef ACTIVE_EDITORS
-	LINK_RefreshMenu();
-#endif
-
 	return _pst_World;
 }
 
