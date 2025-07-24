@@ -310,10 +310,9 @@ void GEO_DebugObject_Draw
     int					i_SaveSpeedDraw;
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-	L_memset(&st_GO, 0, sizeof(OBJ_tdst_GameObject));
-#ifdef JADEFUSION
-	L_memset(&st_Visu, 0, sizeof(GRO_tdst_Visu));
-#endif
+	L_zero(&st_GO, sizeof(OBJ_tdst_GameObject));
+	L_zero(&st_Visu, sizeof(GRO_tdst_Visu));
+
 	st_GO.pst_GlobalMatrix = _pst_NodeMatrix;
     st_GO.pst_Base = &st_Base;
     st_Base.pst_Visu = &st_Visu;
