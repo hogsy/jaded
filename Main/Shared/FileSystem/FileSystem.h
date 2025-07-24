@@ -37,9 +37,9 @@ namespace jaded
 		FileSystem()  = default;
 		~FileSystem() = default;
 
-		std::string GetExecutablePath();
-		std::string GetAppDataPath();
-		std::string NormalizePath( std::string path );
+		static std::string GetExecutablePath();
+		static std::string GetAppDataPath();
+		static std::string NormalizePath( std::string path );
 
 		std::string GetFilenameExtension( const std::string &filename );
 

@@ -150,9 +150,6 @@ bool jaded::FileSystem::CreateLocalPath( const std::string &path )
 
 size_t jaded::FileSystem::GetLocalFileSize( const std::string &path )
 {
-	char dumb[ 2048 ];
-	assert( _getcwd( dumb, sizeof( dumb ) ) != nullptr );
-
 	FILE *file = fopen( path.c_str(), "rb" );
 	if ( file == nullptr )
 	{
@@ -160,7 +157,7 @@ size_t jaded::FileSystem::GetLocalFileSize( const std::string &path )
 	}
 
 	struct stat buf;
-	int         fd = fileno( file );
+	int         fd = _fileno( file );
 	fstat( fd, &buf );
 
 	fclose( file );
@@ -204,7 +201,7 @@ bool jaded::FileSystem::ReadFileByIndex( FileIndex index, std::vector< uint8_t >
 	catch ( const std::exception &e )
 	{
 		std::string msg = "Failed to read file: " + std::string( e.what() );
-		LINK_PrintStatusMsg( e.what() );
+		LINK_PrintStatusMsg( msg.c_str() );
 		status = false;
 	}
 
@@ -276,10 +273,10 @@ bool jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 	LINK_PrintStatusMsg( "Converting Big File to key repository..." );
 
 	std::string bigPath = NormalizePath( bf->asz_Name );
-	size_t      p;
-	p = bigPath.find_last_of( '/' );
 
-	std::string keyName = ( p != std::string::npos ) ? &bigPath[ p + 1 ] : bigPath;
+	size_t p = bigPath.find_last_of( '/' );
+
+	std::string keyName = ( p != std::string::npos ) ? bigPath.substr( p + 1 ) : bigPath;
 	if ( ( p = keyName.find_last_of( '.' ) ) != std::string::npos )
 	{
 		keyName.erase( p );
@@ -323,7 +320,7 @@ bool jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 		return false;
 	}
 
-	fprintf( file, "%u\n", keys.size() );
+	fprintf( file, "%zu\n", keys.size() );
 	for ( const auto &i : keys )
 	{
 		const KeyFile *fPtr = &files[ i.second ];
