@@ -653,7 +653,7 @@ int main( int argc, char **argv )
 		return EXIT_FAILURE;
 	}
 
-#	if defined( _WIN32 ) && !defined( NDEBUG )
+#	if defined( _WIN32 )
 
 	if ( jaded::sys::launchOperations.debugConsole )
 	{
@@ -727,7 +727,7 @@ int main( int argc, char **argv )
 
 	SDL_DestroyWindow( sdlWindow );
 
-#	if defined( _WIN32 ) && !defined( NDEBUG )
+#	if defined( _WIN32 )
 
 	if ( jaded::sys::launchOperations.debugConsole )
 		FreeConsole();
