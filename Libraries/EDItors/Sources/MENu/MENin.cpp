@@ -365,55 +365,52 @@ void EMEN_cl_FrameIn::OnSize(UINT, int cx, int cy)
  */
 EDI_cl_Action *EMEN_cl_FrameIn::FillList(void)
 {
-    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-    POSITION            pos, ppos, pos1;
-    EDI_cl_BaseFrame    *po_Editor;
-    EDI_cl_ConfigList   *po_List;
-    EDI_cl_Action       *po_Action, *po_Action1;
-    EDI_cl_Action       *po_ActionSel, *po_LastAction;
-    LV_ITEM             st_ListCtrlItem;
-    int                 i, num, i_Sel;
-    int                 i_FillDown;
-    CString             o_String;
-    CSize               o_Size;
-    CDC                 *pDC;
-    int                 i_Num, i_ValidNum, i_VarAct;
-    BOOL                b_LastSep;
-    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+	if ( mpo_ListUp == nullptr || mpo_ListDown == nullptr )
+	{
+		return nullptr;
+	}
 
-    po_ActionSel = NULL;
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
     /* Get current up list selected item */
-    i_FillDown = 0;
+    int i_FillDown = 0;
 
-	if (!mpo_ListUp) return NULL;
-	if (!mpo_ListDown) return NULL;
-
-	i_Sel = mpo_ListUp->GetNextItem(-1, LVNI_SELECTED);
+	int i_Sel = mpo_ListUp->GetNextItem(-1, LVNI_SELECTED);
 	
 	/* Delete content of lists */
 	mpo_ListUp->DeleteAllItems();
 	mpo_ListDown->DeleteAllItems();
 
-    if(!mpo_Actions) return NULL;
+	if ( mpo_Actions == nullptr )
+	{
+		return nullptr;
+	}
 
     /* Get current selected action list */
-    pos = mpo_Actions->mo_List.FindIndex(mpo_Actions->mi_CurrentList);
-    if(!pos) return NULL;
-
-    /* Delete all dynamics actions */
-    po_List = mpo_Actions->mo_List.GetAt(pos);
-    pos = po_List->mo_List.GetHeadPosition();
-    while(pos)
+	POSITION pos = mpo_Actions->mo_List.FindIndex( mpo_Actions->mi_CurrentList );
+    if(!pos) 
     {
-        ppos = pos;
-        po_Action = po_List->mo_List.GetNext(pos);
-        if(po_Action->mb_Dyn)
-        {
-            delete po_List->mo_List.GetAt(ppos);
-            po_List->mo_List.RemoveAt(ppos);
-        }
+		return nullptr;
+	}
+
+	EDI_cl_ConfigList *po_List = mpo_Actions->mo_List.GetAt( pos );
+    if (po_List == nullptr)
+    {
+		return nullptr;
     }
+
+	/* Delete all dynamics actions */
+	pos = po_List->mo_List.GetHeadPosition();
+	while ( pos )
+	{
+		POSITION       ppos      = pos;
+		EDI_cl_Action *po_Action = po_List->mo_List.GetNext( pos );
+		if ( po_Action->mb_Dyn )
+		{
+			delete po_Action;
+			po_List->mo_List.RemoveAt( ppos );
+		}
+	}
 
     /*$2
      -----------------------------------------------------------------------------------------------
@@ -421,25 +418,37 @@ EDI_cl_Action *EMEN_cl_FrameIn::FillList(void)
      -----------------------------------------------------------------------------------------------
      */
 
-    pos = mpo_Actions->mo_List.FindIndex(mpo_Actions->mi_CurrentList);
-    po_List = mpo_Actions->mo_List.GetAt(pos);
+    
+	EDI_cl_Action *po_ActionSel = nullptr;
+	POSITION       actionSelPos = 0;
+
+    int num = 0;
+
+	pos     = mpo_Actions->mo_List.FindIndex( mpo_Actions->mi_CurrentList );
+	po_List = mpo_Actions->mo_List.GetAt( pos );
+	if ( po_List == nullptr )
+	{
+		return nullptr;
+	}
+
+    EDI_cl_Action *po_LastAction = nullptr;
+	CString        o_String;
+
     pos = po_List->mo_List.GetHeadPosition();
-    i = num = 0;
-    i_ValidNum = 0;
-    pDC = GetDC();
-    b_LastSep = FALSE;
-    while(pos)
-    {
-        po_Action = po_List->mo_List.GetNext(pos);
+	for ( int i = 0, i_Num = 0; pos; ++i )
+	{
+		POSITION       ppos      = pos;
+		EDI_cl_Action *po_Action = po_List->mo_List.GetNext( pos );
 
         /* Name */
+		LV_ITEM st_ListCtrlItem;
+		L_zero( &st_ListCtrlItem, sizeof( LV_ITEM ) );
         st_ListCtrlItem.mask = LVIF_TEXT | LVIF_PARAM;
         st_ListCtrlItem.iItem = i;
         st_ListCtrlItem.iSubItem = 0;
 
-        /* Action for an editor. */
 		po_Action->mb_Disabled = FALSE;
-        if(mpo_Actions->mpo_Editor)
+        if(mpo_Actions->mpo_Editor) /* Action for an editor. */
         {
             /* Does the action validate ? */
             if(!mpo_Actions->mpo_Editor->b_OnActionValidate(po_Action->mul_Action)) 
@@ -461,11 +470,10 @@ EDI_cl_Action *EMEN_cl_FrameIn::FillList(void)
 				/* Ask editor for action state */
 	            po_Action->mui_State = mpo_Actions->mpo_Editor->ui_OnActionState(po_Action->mul_Action);
 			}
-            st_ListCtrlItem.pszText = (char *) (LPCSTR) o_String;
-        }
 
-        /* Global action (mainframe). */
-        else
+            st_ListCtrlItem.pszText = ( char * ) o_String.GetString();
+        }
+        else /* Global action (mainframe). */
         {
             /* Does the action validate ? */
             if(!M_MF()->b_OnActionValidate(po_Action->mul_Action))
@@ -477,13 +485,13 @@ EDI_cl_Action *EMEN_cl_FrameIn::FillList(void)
 			else
 			{
 				/* Ask main frame to construct string to display */
-				M_MF()->OnActionUI(po_Action->mul_Action, po_Action->mo_DisplayName, o_String);
-
+				M_MF()->OnActionUI( po_Action->mul_Action, po_Action->mo_DisplayName, o_String );
+				
 				/* Ask mainframe for action state */
 				po_Action->mui_State = M_MF()->ui_OnActionState(po_Action->mul_Action);
 			}
 
-            st_ListCtrlItem.pszText = (char *) (LPCSTR) o_String;
+            st_ListCtrlItem.pszText = ( char * ) o_String.GetString();
         }
 
         /* Reached another category ? */
@@ -503,11 +511,13 @@ EDI_cl_Action *EMEN_cl_FrameIn::FillList(void)
                 st_ListCtrlItem.mask |= LVIF_STATE;
                 st_ListCtrlItem.state = LVIS_SELECTED;
                 i_FillDown = 1;
+
                 po_ActionSel = po_Action;
+				actionSelPos = ppos;
             }
 
             /* Request for varview or normal menu */
-            po_Editor = mpo_Actions->mpo_Editor;
+			EDI_cl_BaseFrame *po_Editor = mpo_Actions->mpo_Editor;
             if
             (
                 ((po_Editor && po_Editor->i_IsItVarAction(po_Action->mul_Action, NULL))) ||
@@ -517,12 +527,21 @@ EDI_cl_Action *EMEN_cl_FrameIn::FillList(void)
                 po_LastAction->mui_NumDown++;   /* Simulate an action count */
                 if(num == i_Sel)
                 {
+					int i_VarAct;
                     if(po_Editor)
-                        i_VarAct = po_Editor->i_IsItVarAction(po_Action->mul_Action, mpo_VarsView);
+					{
+						i_VarAct = po_Editor->i_IsItVarAction( po_Action->mul_Action, mpo_VarsView );
+					}
                     else
-                        i_VarAct = M_MF()->i_IsItVarAction(po_Action->mul_Action, mpo_VarsView);
+					{
+						i_VarAct = M_MF()->i_IsItVarAction( po_Action->mul_Action, mpo_VarsView );
+					}
+
                     if(i_VarAct == 1)
-                        mpo_VarsView->mpo_ListBox->SetItemList(&mo_ListItems);
+					{
+						mpo_VarsView->mpo_ListBox->SetItemList( &mo_ListItems );
+					}
+
                     mpo_VarsView->SetParent(&mo_Splitter);
                     mpo_VarsView->Invalidate();
                     mpo_VarsView->ShowWindow(SW_SHOW);
@@ -546,33 +565,32 @@ EDI_cl_Action *EMEN_cl_FrameIn::FillList(void)
         }
 
         /* Count action */
-        if((int) po_Action->mul_Action > 0)
-            po_LastAction->mui_NumDown++;
+        if(po_LastAction != nullptr && (int) po_Action->mul_Action > 0)
+		{
+			po_LastAction->mui_NumDown++;
+		}
 
         /* Action */
         if((i_FillDown == 1) && ((int) po_Action->mul_Action >= 0))
         {
-            if((int) po_Action->mul_Action > 0) i_ValidNum++;
-            if(i_ValidNum)
-            {
-                mpo_ListDown->InsertItem(&st_ListCtrlItem);
-
-                if(po_Action->mul_Action == 0)
-                    b_LastSep = TRUE;
-                else
-                    b_LastSep = FALSE;
-            }
+            mpo_ListDown->InsertItem(&st_ListCtrlItem);
         }
 
         /* Count dynamic actions */
-        pos1 = po_List->mo_List.Find(po_LastAction);
+        //pos1 = po_List->mo_List.Find(po_LastAction);
         if(mpo_Actions->mpo_Editor)
-            i_Num = mpo_Actions->mpo_Editor->ui_ActionFillDynamic(po_List, pos1);
+		{
+			i_Num = mpo_Actions->mpo_Editor->ui_ActionFillDynamic( po_List, ppos );
+		}
         else
-            i_Num = M_MF()->ui_ActionFillDynamic(po_List, pos1);
-        po_LastAction->mui_NumDown += i_Num;
+		{
+			i_Num = M_MF()->ui_ActionFillDynamic( po_List, ppos );
+		}
 
-        i++;
+        if ( po_LastAction != nullptr )
+		{
+			po_LastAction->mui_NumDown += i_Num;
+		}
     }
 
     /*$2
@@ -581,67 +599,63 @@ EDI_cl_Action *EMEN_cl_FrameIn::FillList(void)
      -----------------------------------------------------------------------------------------------
      */
 
-    if(po_ActionSel)
-    {
-        pos = po_List->mo_List.Find(po_ActionSel);
-        if(mpo_Actions->mpo_Editor)
-            i_Num = mpo_Actions->mpo_Editor->ui_ActionFillDynamic(po_List, pos);
-        else
-            i_Num = M_MF()->ui_ActionFillDynamic(po_List, pos);
+	if ( po_ActionSel )
+	{
+		unsigned int num;
+		if ( mpo_Actions->mpo_Editor )
+		{
+			num = mpo_Actions->mpo_Editor->ui_ActionFillDynamic( po_List, actionSelPos );
+		}
+		else
+		{
+			num = M_MF()->ui_ActionFillDynamic( po_List, actionSelPos );
+		}
 
-        if(i_Num)
-        {
-            i_ValidNum += i_Num;
+		if ( num )
+		{
+			po_List->mo_List.GetNext( actionSelPos );
+			int i = mpo_ListDown->GetItemCount();
+			while ( num )
+			{
+				EDI_cl_Action *action = po_List->mo_List.GetNext( actionSelPos );
 
-            po_List->mo_List.GetNext(pos);
-            i = mpo_ListDown->GetItemCount();
-            while(i_Num)
-            {
-                po_Action = po_List->mo_List.GetNext(pos);
+				LV_ITEM st_ListCtrlItem;
+				L_zero( &st_ListCtrlItem, sizeof( LV_ITEM ) );
+				st_ListCtrlItem.mask       = LVIF_TEXT | LVIF_PARAM;
+				st_ListCtrlItem.iItem      = i++;
+				st_ListCtrlItem.iSubItem   = 0;
+				st_ListCtrlItem.pszText    = ( char * ) ( LPCSTR ) action->mo_DisplayName;
+				st_ListCtrlItem.cchTextMax = L_strlen( st_ListCtrlItem.pszText );
+				st_ListCtrlItem.lParam     = ( ULONG ) action;
+				mpo_ListDown->InsertItem( &st_ListCtrlItem );
+				
+				num--;
+			}
+		}
+	}
 
-                st_ListCtrlItem.mask = LVIF_TEXT | LVIF_PARAM;
-                st_ListCtrlItem.iItem = i++;
-                st_ListCtrlItem.iSubItem = 0;
-                st_ListCtrlItem.pszText = (char *) (LPCSTR) po_Action->mo_DisplayName;
-                st_ListCtrlItem.cchTextMax = L_strlen(st_ListCtrlItem.pszText);
-                st_ListCtrlItem.lParam = (ULONG) po_Action;
-                mpo_ListDown->InsertItem(&st_ListCtrlItem);
-                if(po_Action->mul_Action == 0)
-                    b_LastSep = TRUE;
-                else
-                    b_LastSep = FALSE;
-
-                i_Num--;
-            }
-        }
-    }
-
-    /* Delete unused sep */
-    for(i = 0; i < mpo_ListDown->GetItemCount(); i++)
-    {
-        po_Action = (EDI_cl_Action *) mpo_ListDown->GetItemData(i);
-        if(po_Action->mul_Action == 0)
-        {
-            if(i < mpo_ListDown->GetItemCount() - 1)
-            {
-                po_Action1 = (EDI_cl_Action *) mpo_ListDown->GetItemData(i + 1);
-                if(po_Action1->mul_Action == 0)
-                {
-                    mpo_ListDown->DeleteItem(i);
-                    i--;
-                    continue;
-                }
-            }
-            else if(po_Action->mul_Action == 0)
-                mpo_ListDown->DeleteItem(i);
-        }
-    }
-
-    ReleaseDC(pDC);
-
-    /* If there's no valid item in down list (for example only separators), delete all */
-    if(!i_ValidNum)
-        mpo_ListDown->DeleteAllItems();
+	/* Delete unused sep */
+	for ( int i = 0; i < mpo_ListDown->GetItemCount(); i++ )
+	{
+		EDI_cl_Action *action = ( EDI_cl_Action * ) mpo_ListDown->GetItemData( i );
+		if ( action->mul_Action == 0 )
+		{
+			if ( i < mpo_ListDown->GetItemCount() - 1 )
+			{
+				EDI_cl_Action *action1 = ( EDI_cl_Action * ) mpo_ListDown->GetItemData( i + 1 );
+				if ( action1->mul_Action == 0 )
+				{
+					mpo_ListDown->DeleteItem( i );
+					i--;
+					continue;
+				}
+			}
+			else if ( action->mul_Action == 0 )
+			{
+				mpo_ListDown->DeleteItem( i );
+			}
+		}
+	}
 
     /* Invalidate now */
     mpo_ListUp->RedrawWindow(NULL, NULL, RDW_UPDATENOW);

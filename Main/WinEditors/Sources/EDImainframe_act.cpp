@@ -868,19 +868,11 @@ EDI_cl_Action *EDI_cl_MainFrame::po_ActionGetSetDynKey(EDI_cl_ActionList *_po_Li
 		case 2:		po_NewAct = _po_List->po_GetActionById(EDI_ACTION_DESK3); break;
 		case 3:		po_NewAct = _po_List->po_GetActionById(EDI_ACTION_DESK4); break;
 		case 4:		po_NewAct = _po_List->po_GetActionById(EDI_ACTION_DESK5); break;
-#ifdef JADEFUSION //POPOWARNING ?? ?? ??
 		case 5:		po_NewAct = _po_List->po_GetActionById(EDI_ACTION_DESK6); break;
 		case 6:		po_NewAct = _po_List->po_GetActionById(EDI_ACTION_DESK7); break;
 		case 7:		po_NewAct = _po_List->po_GetActionById(EDI_ACTION_DESK8); break;
 		case 8:		po_NewAct = _po_List->po_GetActionById(EDI_ACTION_DESK9); break;
 		case 9:	    po_NewAct = _po_List->po_GetActionById(EDI_ACTION_DESK10); break;
-#else
-		case 6:		po_NewAct = _po_List->po_GetActionById(EDI_ACTION_DESK6); break;
-		case 7:		po_NewAct = _po_List->po_GetActionById(EDI_ACTION_DESK7); break;
-		case 8:		po_NewAct = _po_List->po_GetActionById(EDI_ACTION_DESK8); break;
-		case 9:		po_NewAct = _po_List->po_GetActionById(EDI_ACTION_DESK9); break;
-		case 10:	po_NewAct = _po_List->po_GetActionById(EDI_ACTION_DESK10); break;
-#endif
 		}
 	}
 
@@ -900,7 +892,7 @@ void EDI_cl_MainFrame::OnActionUI(ULONG _ul_Action, CString &_o_Ref, CString &o_
 	o_Ret = _o_Ref;
 	switch(_ul_Action)
 	{
-	case EDI_ACTION_JOYSTICKPS2:	sprintf(sz_Value, " (%d)", win32INO_l_JoyUSBPS2); o_Ret += sz_Value; break;
+	case EDI_ACTION_JOYSTICKPS2:	snprintf(sz_Value, sizeof( sz_Value ), " (%d)", win32INO_l_JoyUSBPS2); o_Ret += sz_Value; break;
 	}
 }
 
@@ -1005,16 +997,7 @@ UINT EDI_cl_MainFrame::ui_OnActionState(ULONG _ul_Action)
  */
 UINT EDI_cl_MainFrame::ui_ActionFillDynamic(EDI_cl_ConfigList *_po_List, POSITION _pos)
 {
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	EDI_cl_Action		*po_Action;
-	EDI_cl_BaseView		*po_View;
-	EDI_cl_BaseFrame	*po_Editor;
-	int					i, j, num, numsep;
-	BOOL				bFirst;
-	BIG_INDEX			ul_Dir;
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-	po_Action = _po_List->mo_List.GetAt(_pos);
+	EDI_cl_Action *po_Action = _po_List->mo_List.GetAt( _pos );
 	switch((int) po_Action->mul_Action)
 	{
 
@@ -1025,54 +1008,66 @@ UINT EDI_cl_MainFrame::ui_ActionFillDynamic(EDI_cl_ConfigList *_po_List, POSITIO
 	 */
 
 	case EDI_SEPACTION_EDITORS:
-		num = 0;
-		numsep = 0;
-
-		for(i = 0; i < EDI_C_MaxViews; i++)
 		{
-			po_View = po_GetViewWithNum(i);
-			bFirst = TRUE;
-			for(j = 0; j < M_CurNumEd(po_View->mi_NumPane); j++)
-			{
-				po_Editor = M_CurEd(po_View->mi_NumPane, j).po_Editor;
-				if(!po_Editor) continue;
-				if(!po_Editor->b_CanActivate()) continue;
+			int num    = 0;
+			int numsep = 0;
 
-				/* Insert a separator the first time we add an editor */
-				if(i && bFirst)
+			BOOL bFirst;
+			for ( int i = 0; i < EDI_C_MaxViews; i++ )
+			{
+				EDI_cl_BaseView *po_View = po_GetViewWithNum( i );
+				if ( po_View == nullptr )
 				{
-					bFirst = FALSE;
-					po_Action = new EDI_cl_Action;
-					po_Action->mo_DisplayName = "";
-					po_Action->mo_Key = "";
-					po_Action->muw_Key = 0;
-					po_Action->mui_Resource = 0;
-					po_Action->mui_State = 0;
-					po_Action->mul_Action = 0;
-					_po_List->mo_List.InsertAfter(_pos, po_Action);
-					_po_List->mo_List.GetNext(_pos);
-					numsep++;
+					continue;
 				}
 
-				/* Insert the editor */
-				po_Action = new EDI_cl_Action;
+				bFirst = TRUE;
+				for ( int j = 0; j < M_CurNumEd( po_View->mi_NumPane ); j++ )
+				{
+					EDI_cl_BaseFrame *po_Editor = M_CurEd( po_View->mi_NumPane, j ).po_Editor;
+					if ( !po_Editor || !po_Editor->b_CanActivate() ) 
+					{
+						continue;
+					}
 
-				po_Action->mo_DisplayName = po_Editor->mst_Def.asz_Name;
-				po_Action->mo_Key = "";
-				po_Action->muw_Key = 0;
-				po_Action->mui_Resource = 0;
+					/* Insert a separator the first time we add an editor */
+					if ( i && bFirst )
+					{
+						bFirst                    = FALSE;
+						po_Action                 = new EDI_cl_Action;
+						po_Action->mo_DisplayName = "";
+						po_Action->mo_Key         = "";
+						po_Action->muw_Key        = 0;
+						po_Action->mui_Resource   = 0;
+						po_Action->mui_State      = 0;
+						po_Action->mul_Action     = 0;
+						po_Action->mb_Dyn         = TRUE;
+						_po_List->mo_List.InsertAfter( _pos, po_Action );
+						_po_List->mo_List.GetNext( _pos );
+						numsep++;
+					}
 
-				po_Action->mui_State = DFCS_BUTTONCHECK;
-				if(po_Editor->mst_BaseIni.b_IsVisible) po_Action->mui_State |= DFCS_CHECKED;
+					/* Insert the editor */
+					po_Action = new EDI_cl_Action;
 
-				po_Action->mul_Action = WM_USER + num++;
+					po_Action->mo_DisplayName = po_Editor->mst_Def.asz_Name;
+					po_Action->mo_Key         = "";
+					po_Action->muw_Key        = 0;
+					po_Action->mui_Resource   = 0;
+					po_Action->mb_Dyn         = TRUE;
 
-				_po_List->mo_List.InsertAfter(_pos, po_Action);
-				_po_List->mo_List.GetNext(_pos);
+					po_Action->mui_State = DFCS_BUTTONCHECK;
+					if ( po_Editor->mst_BaseIni.b_IsVisible ) po_Action->mui_State |= DFCS_CHECKED;
+
+					po_Action->mul_Action = WM_USER + num++;
+
+					_po_List->mo_List.InsertAfter( _pos, po_Action );
+					_po_List->mo_List.GetNext( _pos );
+				}
 			}
-		}
 
-		return num + numsep;
+			return num + numsep;
+		}
 
 	/*$2
 	 -------------------------------------------------------------------------------------------------------------------
@@ -1081,47 +1076,55 @@ UINT EDI_cl_MainFrame::ui_ActionFillDynamic(EDI_cl_ConfigList *_po_List, POSITIO
 	 */
 
 	case EDI_SEPACTION_DESKTOP:
-		ul_Dir = BIG_ul_SearchDir(EDI_Csz_Ini_Desktop);
-		if(ul_Dir == BIG_C_InvalidIndex) break;
-		ul_Dir = BIG_SubDir(ul_Dir);
-		num = 0;
-
-		/* Separator */
-		if(ul_Dir != BIG_C_InvalidIndex)
 		{
-			po_Action = new EDI_cl_Action;
-			po_Action->mo_DisplayName = "User Desktops";
-			po_Action->mo_Key = "";
-			po_Action->muw_Key = 0;
-			po_Action->mui_Resource = 0;
-			po_Action->mui_State = 0;
-			po_Action->mul_Action = 0;
-			_po_List->mo_List.InsertAfter(_pos, po_Action);
-			_po_List->mo_List.GetNext(_pos);
+			int num = 0;
+
+			BIG_INDEX ul_Dir = BIG_ul_SearchDir( EDI_Csz_Ini_Desktop );
+			if ( ul_Dir == BIG_C_InvalidIndex ) 
+			{
+				break;
+			}
+
+			ul_Dir = BIG_SubDir( ul_Dir );
+			/* Separator */
+			if ( ul_Dir != BIG_C_InvalidIndex )
+			{
+				po_Action                 = new EDI_cl_Action;
+				po_Action->mo_DisplayName = "User Desktops";
+				po_Action->mo_Key         = "";
+				po_Action->muw_Key        = 0;
+				po_Action->mui_Resource   = 0;
+				po_Action->mui_State      = 0;
+				po_Action->mul_Action     = 0;
+				po_Action->mb_Dyn         = TRUE;
+				_po_List->mo_List.InsertAfter( _pos, po_Action );
+				_po_List->mo_List.GetNext( _pos );
+			}
+
+			/* Add all subdirs (desktop names) */
+			while ( ul_Dir != BIG_C_InvalidIndex )
+			{
+				po_Action = new EDI_cl_Action;
+
+				po_Action->mo_DisplayName = BIG_NameDir( ul_Dir );
+				po_Action->mo_Key         = "";
+				po_Action->muw_Key        = 0;
+				po_Action->mui_Resource   = 0;
+				po_Action->mb_Dyn         = TRUE;
+
+				po_Action->mui_State = DFCS_BUTTONRADIO;
+				if ( !L_strcmpi( BIG_NameDir( ul_Dir ), mst_Ini.asz_CurrentDeskName ) ) po_Action->mui_State |= DFCS_CHECKED;
+
+				po_Action->mul_Action = WM_USER + 200 + num++;
+
+				_po_List->mo_List.InsertAfter( _pos, po_Action );
+				_po_List->mo_List.GetNext( _pos );
+
+				ul_Dir = BIG_NextDir( ul_Dir );
+			}
+
+			return num + 1 /* + 1 cause of separator */;
 		}
-
-		/* Add all subdirs (desktop names) */
-		while(ul_Dir != BIG_C_InvalidIndex)
-		{
-			po_Action = new EDI_cl_Action;
-
-			po_Action->mo_DisplayName = BIG_NameDir(ul_Dir);
-			po_Action->mo_Key = "";
-			po_Action->muw_Key = 0;
-			po_Action->mui_Resource = 0;
-
-			po_Action->mui_State = DFCS_BUTTONRADIO;
-			if(!L_strcmpi(BIG_NameDir(ul_Dir), mst_Ini.asz_CurrentDeskName)) po_Action->mui_State |= DFCS_CHECKED;
-
-			po_Action->mul_Action = WM_USER + 200 + num++;
-
-			_po_List->mo_List.InsertAfter(_pos, po_Action);
-			_po_List->mo_List.GetNext(_pos);
-
-			ul_Dir = BIG_NextDir(ul_Dir);
-		}
-
-		return num + 1 /* + 1 cause of separator */ ;
 	}
 
 	return 0;

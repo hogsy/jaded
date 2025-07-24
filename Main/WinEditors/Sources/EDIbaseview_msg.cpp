@@ -52,11 +52,7 @@ void EDI_cl_BaseView::SendMessageToEditors(ULONG ul_Message, ULONG ul_Param1, UL
  */
 void EDI_cl_BaseView::OnRealIdle(void)
 {
-	/*~~*/
-	int i;
-	/*~~*/
-
-	for(i = 0; i < M_CurNumEd(mi_NumPane); i++)
+	for(int i = 0; i < M_CurNumEd(mi_NumPane); i++)
 	{
 		if(M_CurEd(mi_NumPane, i).po_Editor) M_CurEd(mi_NumPane, i).po_Editor->OnRealIdle();
 	}

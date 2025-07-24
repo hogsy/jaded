@@ -4180,6 +4180,7 @@ UINT EOUT_cl_Frame::ui_ActionFillDynamic(EDI_cl_ConfigList *_po_List, POSITION _
 						po_Action->mui_Resource = 0;
 						po_Action->mui_State = 0;
 						po_Action->mul_Action = 0;
+						po_Action->mb_Dyn         = TRUE;
 						_po_List->mo_List.InsertAfter(_pos, po_Action);
 						_po_List->mo_List.GetNext(_pos);
 						numsep++;
@@ -4191,6 +4192,7 @@ UINT EOUT_cl_Frame::ui_ActionFillDynamic(EDI_cl_ConfigList *_po_List, POSITION _
 					po_Action->mo_Key = "";
 					po_Action->muw_Key = 0;
 					po_Action->mui_Resource = 0;
+					po_Action->mb_Dyn       = TRUE;
 
 					/* To display */
 					if(i == 0)
