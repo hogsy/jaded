@@ -131,6 +131,11 @@ extern "C"
 		/*~~~~~~~*/
 
 		p = ( char * ) malloc( L_strlen( _pc_Str ) + 1 );
+		if (p == NULL)
+		{
+			return ( char * ) NULL;
+		}
+
 		L_strcpy( p, _pc_Str );
 		return p;
 	}

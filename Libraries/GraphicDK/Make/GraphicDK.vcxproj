@@ -46,6 +46,7 @@
     <VCProjectVersion>17.0</VCProjectVersion>
     <ProjectGuid>{926F958D-D122-4EC0-9223-876BADE84B61}</ProjectGuid>
     <Keyword>MFCProj</Keyword>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SpeedEditorsXenon|Win32'" Label="Configuration">
@@ -69,19 +70,19 @@
     <UseOfMfc>false</UseOfMfc>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='FINAL XBOX|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release XBOX|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug XBOX|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'" Label="Configuration">
@@ -182,11 +183,9 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\..\Libraries\SDK;..\..\..\Main\WinEditors\Sources;..\..\..\Libraries\SDK\Sources;..\..\..\Extern;..\..\..\Libraries;..\Sources;..\..\..\Dlls;..\..\..\extern\dx8\Include;..\..\..\extern\ode\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\Libraries\SDK;..\..\..\Main\WinEditors\Sources;..\..\..\Libraries\SDK\Sources;..\..\..\Extern;..\..\..\Libraries;..\Sources;..\..\..\Dlls;..\..\..\extern\dx8\Include;..\..\..\extern\ode\Include;..\..\..\extern\glew\include;..\..\..\extern\sdl3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_DEBUG;ACTIVE_EDITORS;WIN32;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;_USE_32BIT_TIME_T;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>Precomp.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>.\../../../Output/Tmp/GDK___ed/GraphicDK.pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>.\../../../Output/Tmp/GDK___ed/</AssemblerListingLocation>
       <ObjectFileName>.\../../../Output/Tmp/GDK___ed/</ObjectFileName>
@@ -203,16 +202,15 @@
     <Lib>
       <OutputFile>../../../Output\Libs\GDK___ed.lib</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
+      <AdditionalLibraryDirectories>..\extern\glew\lib\release\win32</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
-      <AdditionalIncludeDirectories>..\..\..\Libraries\SDK;..\..\..\Main\WinEditors\Sources;..\..\..\Libraries\SDK\Sources;..\..\..\Extern;..\..\..\Libraries;..\Sources;..\..\..\Dlls;..\..\..\extern\dx8\Include;..\..\..\extern\ode\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\Libraries\SDK;..\..\..\Main\WinEditors\Sources;..\..\..\Libraries\SDK\Sources;..\..\..\Extern;..\..\..\Libraries;..\Sources;..\..\..\Dlls;..\..\..\extern\dx8\Include;..\..\..\extern\ode\Include;..\..\..\extern\glew\include;..\..\..\extern\sdl3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NDEBUG;ACTIVE_EDITORS;WIN32;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;_USE_32BIT_TIME_T;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>Precomp.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>.\../../../Output/Tmp/GDK___ed/GraphicDK.pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>.\../../../Output/Tmp/GDK___ed/</AssemblerListingLocation>
       <ObjectFileName>.\../../../Output/Tmp/GDK___ed/</ObjectFileName>
@@ -233,58 +231,65 @@
     <Lib>
       <OutputFile>../../../Output\Libs\GDK___ed.lib</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
+      <AdditionalLibraryDirectories>..\extern\glew\lib\release\win32</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug XBOX|Win32'">
     <ClCompile>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>Precomp.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>.\../../../Output/Tmp/GDK___xd/GraphicDK.pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>.\../../../Output/Tmp/GDK___xd/</AssemblerListingLocation>
       <ObjectFileName>.\../../../Output/Tmp/GDK___xd/</ObjectFileName>
       <ProgramDataBaseFileName>.\../../../Output/Tmp/GDK___xd/</ProgramDataBaseFileName>
+      <AdditionalIncludeDirectories>..\..\..\Libraries\SDK;..\..\..\Main\WinEditors\Sources;..\..\..\Libraries\SDK\Sources;..\..\..\Extern;..\..\..\Libraries;..\Sources;..\..\..\Dlls;..\..\..\extern\dx8\Include;..\..\..\extern\ode\Include;..\..\..\extern\glew\include;..\..\..\extern\sdl3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <Lib>
+      <AdditionalLibraryDirectories>..\extern\glew\lib\release\win32</AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release XBOX|Win32'">
     <ClCompile>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>Precomp.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>.\../../../Output/Tmp/GDK___xd/GraphicDK.pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>.\../../../Output/Tmp/GDK___xd/</AssemblerListingLocation>
       <ObjectFileName>.\../../../Output/Tmp/GDK___xd/</ObjectFileName>
       <ProgramDataBaseFileName>.\../../../Output/Tmp/GDK___xd/</ProgramDataBaseFileName>
+      <AdditionalIncludeDirectories>..\..\..\Libraries\SDK;..\..\..\Main\WinEditors\Sources;..\..\..\Libraries\SDK\Sources;..\..\..\Extern;..\..\..\Libraries;..\Sources;..\..\..\Dlls;..\..\..\extern\dx8\Include;..\..\..\extern\ode\Include;..\..\..\extern\glew\include;..\..\..\extern\sdl3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <Lib>
+      <AdditionalLibraryDirectories>..\extern\glew\lib\release\win32</AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">
     <ClCompile>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>Precomp.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>.\../../../Output/Tmp/GDK___xd/GraphicDK.pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>.\../../../Output/Tmp/GDK___xd/</AssemblerListingLocation>
       <ObjectFileName>.\../../../Output/Tmp/GDK___xd/</ObjectFileName>
       <ProgramDataBaseFileName>.\../../../Output/Tmp/GDK___xd/</ProgramDataBaseFileName>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalIncludeDirectories>..\..\..\Libraries\SDK;..\..\..\Main\WinEditors\Sources;..\..\..\Libraries\SDK\Sources;..\..\..\Extern;..\..\..\Libraries;..\Sources;..\..\..\Dlls;..\..\..\extern\dx8\Include;..\..\..\extern\ode\Include;..\..\..\extern\glew\include;..\..\..\extern\sdl3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <Lib>
+      <AdditionalLibraryDirectories>..\extern\glew\lib\release\win32</AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='FINAL XBOX|Win32'">
     <ClCompile>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>Precomp.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>.\../../../Output/Tmp/GDK___xd/GraphicDK.pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>.\../../../Output/Tmp/GDK___xd/</AssemblerListingLocation>
       <ObjectFileName>.\../../../Output/Tmp/GDK___xd/</ObjectFileName>
       <ProgramDataBaseFileName>.\../../../Output/Tmp/GDK___xd/</ProgramDataBaseFileName>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalIncludeDirectories>..\..\..\Libraries\SDK;..\..\..\Main\WinEditors\Sources;..\..\..\Libraries\SDK\Sources;..\..\..\Extern;..\..\..\Libraries;..\Sources;..\..\..\Dlls;..\..\..\extern\dx8\Include;..\..\..\extern\ode\Include;..\..\..\extern\glew\include;..\..\..\extern\sdl3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <Lib>
+      <AdditionalLibraryDirectories>..\extern\glew\lib\release\win32</AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugXenon|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\..\Main\WinEngine\Sources;..\..\..\Libraries\SDK;..\..\..\Main\WinEditors\Sources;..\..\..\Libraries\SDK\Sources;..\..\..\Extern;..\..\..\Libraries;..\Sources;..\..\..\Dlls;..\..\..\extern\dx8\Include;..\..\..\extern\ode\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\Libraries\SDK;..\..\..\Main\WinEditors\Sources;..\..\..\Libraries\SDK\Sources;..\..\..\Extern;..\..\..\Libraries;..\Sources;..\..\..\Dlls;..\..\..\extern\dx8\Include;..\..\..\extern\ode\Include;..\..\..\extern\glew\include;..\..\..\extern\sdl3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_WINDOWS;WIN32;_DEBUG;PCWIN_TOOL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>Precomp.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>.\../../../Output/Tmp/GDK___d/GraphicDK.pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>.\../../../Output/Tmp/GDK___d/</AssemblerListingLocation>
       <ObjectFileName>.\../../../Output/Tmp/GDK___d/</ObjectFileName>
@@ -300,16 +305,15 @@
     <Lib>
       <OutputFile>../../../Output\Libs\GDK___d.lib</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
+      <AdditionalLibraryDirectories>..\extern\glew\lib\release\win32</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\Sources;..\..\..\Libraries\SDK;..\..\..\Main\WinEditors\Sources;..\..\..\Libraries\SDK\Sources;..\..\..\Extern;..\..\..\Libraries;..\..\..\Dlls;..\..\..\extern\dx8\Include;..\..\..\extern\ode\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\Libraries\SDK;..\..\..\Main\WinEditors\Sources;..\..\..\Libraries\SDK\Sources;..\..\..\Extern;..\..\..\Libraries;..\Sources;..\..\..\Dlls;..\..\..\extern\dx8\Include;..\..\..\extern\ode\Include;..\..\..\extern\glew\include;..\..\..\extern\sdl3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_DEBUG;ACTIVE_EDITORS;WIN32;_WINDOWS;_XENON_RENDER;JADEFUSION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>Precomp.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>$(IntDir)$(TargetName).pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation />
       <ObjectFileName>$(IntDir)</ObjectFileName>
@@ -326,16 +330,15 @@
     <Lib>
       <OutputFile>$(OutDir)../Libs/$(ProjectName).lib</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
+      <AdditionalLibraryDirectories>..\extern\glew\lib\release\win32</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseXenon|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\..\Main\WinEngine\Sources;..\..\..\Libraries\SDK;..\..\..\Main\WinEditors\Sources;..\..\..\Libraries\SDK\Sources;..\..\..\Extern;..\..\..\Libraries;..\Sources;..\..\..\Dlls;..\..\..\extern\dx8\Include;..\..\..\extern\ode\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\Libraries\SDK;..\..\..\Main\WinEditors\Sources;..\..\..\Libraries\SDK\Sources;..\..\..\Extern;..\..\..\Libraries;..\Sources;..\..\..\Dlls;..\..\..\extern\dx8\Include;..\..\..\extern\ode\Include;..\..\..\extern\glew\include;..\..\..\extern\sdl3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_WINDOWS;WIN32;_DEBUG;PCWIN_TOOL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>Precomp.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>.\../../../Output/Tmp/GDK___d/GraphicDK.pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>.\../../../Output/Tmp/GDK___d/</AssemblerListingLocation>
       <ObjectFileName>.\../../../Output/Tmp/GDK___d/</ObjectFileName>
@@ -351,6 +354,7 @@
     <Lib>
       <OutputFile>../../../Output\Libs\GDK___d.lib</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
+      <AdditionalLibraryDirectories>..\extern\glew\lib\release\win32</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='SpeedEditorsXenon|Win32'">
@@ -358,13 +362,11 @@
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>..\Sources;..\..\..\Libraries\SDK;..\..\..\Main\WinEditors\Sources;..\..\..\Libraries\SDK\Sources;..\..\..\Extern;..\..\..\Libraries;..\..\..\Dlls;..\..\..\extern\dx8\Include;..\..\..\extern\ode\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\Libraries\SDK;..\..\..\Main\WinEditors\Sources;..\..\..\Libraries\SDK\Sources;..\..\..\Extern;..\..\..\Libraries;..\Sources;..\..\..\Dlls;..\..\..\extern\dx8\Include;..\..\..\extern\ode\Include;..\..\..\extern\glew\include;..\..\..\extern\sdl3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_DEBUG;ACTIVE_EDITORS;WIN32;_WINDOWS;_XENON_RENDER;JADEFUSION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>Precomp.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>$(IntDir)$(TargetName).pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation />
       <ObjectFileName>$(IntDir)</ObjectFileName>
@@ -381,9 +383,31 @@
     <Lib>
       <OutputFile>$(OutDir)../Libs/$(ProjectName).lib</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
+      <AdditionalLibraryDirectories>..\extern\glew\lib\release\win32</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\OpenGL\Sources\OGLAfterEffects.cpp" />
+    <ClCompile Include="..\..\OpenGL\Sources\OGLCloneDraw.cpp" />
+    <ClCompile Include="..\..\OpenGL\Sources\OGLdebugfct.cpp" />
+    <ClCompile Include="..\..\OpenGL\Sources\OGLinit.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='DebugXenon|Win32'">MaxSpeed</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug XBOX|Win32'">MaxSpeed</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='FINAL XBOX|Win32'">MaxSpeed</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='SpeedEditorsXenon|Win32'">MaxSpeed</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='ReleaseXenon|Win32'">MaxSpeed</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">MaxSpeed</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release XBOX|Win32'">MaxSpeed</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MaxSpeed</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">MaxSpeed</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">MaxSpeed</Optimization>
+    </ClCompile>
+    <ClCompile Include="..\..\OpenGL\Sources\OGLrenderstate.cpp" />
+    <ClCompile Include="..\..\OpenGL\Sources\OGLrequest.cpp" />
+    <ClCompile Include="..\..\OpenGL\Sources\OGLShiftDraw.cpp" />
+    <ClCompile Include="..\..\OpenGL\Sources\OGLStringDraw.cpp" />
+    <ClCompile Include="..\..\OpenGL\Sources\OGLtex.cpp" />
+    <ClCompile Include="..\..\OpenGL\Sources\OGLWater.cpp" />
     <ClCompile Include="..\Sources\CAMera\CAMera.c" />
     <ClCompile Include="..\Sources\CAMera\CAMstruct.c" />
     <ClCompile Include="..\Sources\GDInterface\GDInterface.c" />
@@ -497,6 +521,7 @@
     </ClCompile>
     <ClCompile Include="..\Sources\MATerial\MATSprite_Load.c" />
     <ClCompile Include="..\Sources\MATerial\MATstruct.c" />
+    <ClCompile Include="..\Sources\MATerial\ShaderManager.cpp" />
     <ClCompile Include="..\Sources\MATerial\xbox\MATCompute.c">
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">$(IntDir)%(Filename)1.obj</ObjectFileName>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
@@ -570,66 +595,6 @@
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='SpeedEditorsXenon|Win32'">$(IntDir)%(Filename)1.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\Sources\PArticleGenerator\PAGstruct.c" />
-    <ClCompile Include="..\Sources\Precomp.c">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DEMO XBOX|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug XBOX|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DebugEditorsXenon|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DebugXenon|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='FINAL XBOX|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release XBOX|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='ReleaseXenon|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='SpeedEditorsXenon|Win32'">Create</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="..\Sources\Radlm\FSRad\BeamTree.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\Sources\Radlm\FSRad\BSP.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\Sources\Radlm\FSRad\GeomDB.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\Sources\Radlm\FSRad\geom\3dutils.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\Sources\Radlm\FSRad\geom\primitive.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\Sources\Radlm\FSRad\LMapGen.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\Sources\Radlm\FSRad\PolarQuadtree.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\Sources\Radlm\FSRad\RadGen.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\Sources\Radlm\FSRad\RadLMap.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\Sources\Radlm\FSRad\RadPrim.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\Sources\Radlm\FSRad\SOctree.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\Sources\Radlm\RADLM.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Editors|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\Sources\SELection\SELection.c" />
     <ClCompile Include="..\Sources\SOFT\SOFTbackgroundimage.c" />
     <ClCompile Include="..\Sources\SOFT\SOFTcolor.c" />
@@ -684,6 +649,13 @@
     <ClCompile Include="..\Sources\WAYpoint\WAYpoint.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\OpenGL\Sources\OGLAfterEffects.h" />
+    <ClInclude Include="..\..\OpenGL\Sources\OGLdebugfct.h" />
+    <ClInclude Include="..\..\OpenGL\Sources\OGLinit.h" />
+    <ClInclude Include="..\..\OpenGL\Sources\OGLrenderstate.h" />
+    <ClInclude Include="..\..\OpenGL\Sources\OGLrequest.h" />
+    <ClInclude Include="..\..\OpenGL\Sources\OGLtex.h" />
+    <ClInclude Include="..\..\OpenGL\Sources\OGLWater.h" />
     <ClInclude Include="..\Sources\CAMera\CAMera.h" />
     <ClInclude Include="..\Sources\CAMera\CAMstruct.h" />
     <ClInclude Include="..\Sources\GDInterface\GDInterface.h" />
@@ -743,33 +715,6 @@
     <ClInclude Include="..\Sources\MATerial\MATSprite.h" />
     <ClInclude Include="..\Sources\MATerial\MATstruct.h" />
     <ClInclude Include="..\Sources\PArticleGenerator\PAGstruct.h" />
-    <ClInclude Include="..\Sources\Precomp.h" />
-    <ClInclude Include="..\Sources\Radlm\FSRad\BeamTree.h" />
-    <ClInclude Include="..\Sources\Radlm\FSRad\BSP.h" />
-    <ClInclude Include="..\Sources\Radlm\FSRad\Fstl\array.h" />
-    <ClInclude Include="..\Sources\Radlm\FSRad\Fstl\common.h" />
-    <ClInclude Include="..\Sources\Radlm\FSRad\Fstl\error.h" />
-    <ClInclude Include="..\Sources\Radlm\FSRad\Fstl\fstl.h" />
-    <ClInclude Include="..\Sources\Radlm\FSRad\Fstl\hash.h" />
-    <ClInclude Include="..\Sources\Radlm\FSRad\Fstl\list.h" />
-    <ClInclude Include="..\Sources\Radlm\FSRad\Fstl\reservoir.h" />
-    <ClInclude Include="..\Sources\Radlm\FSRad\Fstl\string.h" />
-    <ClInclude Include="..\Sources\Radlm\FSRad\Fstl\util.h" />
-    <ClInclude Include="..\Sources\Radlm\FSRad\GeomDB.h" />
-    <ClInclude Include="..\Sources\Radlm\FSRad\geom\3dutils.h" />
-    <ClInclude Include="..\Sources\Radlm\FSRad\geom\common.h" />
-    <ClInclude Include="..\Sources\Radlm\FSRad\geom\geom.h" />
-    <ClInclude Include="..\Sources\Radlm\FSRad\geom\primitive.h" />
-    <ClInclude Include="..\Sources\Radlm\FSRad\geom\rayplaneline.h" />
-    <ClInclude Include="..\Sources\Radlm\FSRad\geom\vmath.h" />
-    <ClInclude Include="..\Sources\Radlm\FSRad\LMapGen.h" />
-    <ClInclude Include="..\Sources\Radlm\FSRad\PolarQuadtree.h" />
-    <ClInclude Include="..\Sources\Radlm\FSRad\RadGen.h" />
-    <ClInclude Include="..\Sources\Radlm\FSRad\RadLMap.h" />
-    <ClInclude Include="..\Sources\Radlm\FSRad\RadPatch.h" />
-    <ClInclude Include="..\Sources\Radlm\FSRad\RadPrim.h" />
-    <ClInclude Include="..\Sources\Radlm\FSRad\SOctree.h" />
-    <ClInclude Include="..\Sources\Radlm\RADLM.h" />
     <ClInclude Include="..\Sources\SELection\SELection.h" />
     <ClInclude Include="..\Sources\SOFT\SOFTbackgroundimage.h" />
     <ClInclude Include="..\Sources\SOFT\SOFTcolor.h" />

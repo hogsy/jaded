@@ -17,7 +17,7 @@
 #include "../Extern/imgui/imgui_demo.cpp"
 
 #include "../Extern/imgui/backends/imgui_impl_sdl3.cpp"
-#include "../Extern/imgui/backends/imgui_impl_opengl2.cpp"
+#include "../Extern/imgui/backends/imgui_impl_opengl3.cpp"
 
 static ImGuiContext *context;
 
@@ -111,14 +111,14 @@ void ImGuiInterface_Initialize( SDL_Window *window )
 
 	// GL context is actually unused here, so just pass null
 	ImGui_ImplSDL3_InitForOpenGL( window, nullptr );
-	ImGui_ImplOpenGL2_Init();
+	ImGui_ImplOpenGL3_Init();
 }
 
 void ImGuiInterface_Shutdown()
 {
 	if ( context != nullptr )
 	{
-		ImGui_ImplOpenGL2_Shutdown();
+		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplSDL3_Shutdown();
 
 		ImGui::DestroyContext( context );
@@ -180,7 +180,7 @@ extern "C" void ImGuiInterface_NewFrame()
 		return;
 	}
 
-	ImGui_ImplOpenGL2_NewFrame();
+	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplSDL3_NewFrame();
 
 	ImGui::NewFrame();
@@ -220,5 +220,5 @@ extern "C" void ImGuiInterface_Render()
 
 	ImGui::Render();
 
-	ImGui_ImplOpenGL2_RenderDrawData( ImGui::GetDrawData() );
+	ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );
 }

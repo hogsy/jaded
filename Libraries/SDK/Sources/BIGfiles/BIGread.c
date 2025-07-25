@@ -569,23 +569,9 @@ void BIG_FreeGlobalBuffer(void)
 	extern BOOL ENG_gb_ExitApplication;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-#ifndef ACTIVE_EDITORS
-
-	/* if(!ENG_gb_ExitApplication) return; */
-#endif
-	if(BIG_gp_GlobalBuffer)
-	{
 #ifdef ACTIVE_EDITORS
-		L_free(BIG_gp_GlobalBuffer);
-#else
-#ifdef _GAMECUBE
-		MEM_Free(BIG_gp_GlobalBuffer);
-#else // _GAMECUBE
-		if(MEM_gp_AllocTmpFirst) 
-			MEM_Free(BIG_gp_GlobalBuffer);
-#endif // _GAMECUBE
+	L_free(BIG_gp_GlobalBuffer);
 #endif
-	}
 
 	BIG_gp_GlobalBuffer = NULL;
 	BIG_gi_GlobalBufferSize = 0;

@@ -1,4 +1,4 @@
-// Created by Mark "hogsy" Sowden, 2023-2024 <hogsy@oldtimes-software.com>
+// Created by Mark "hogsy" Sowden, 2023-2025 <hogsy@oldtimes-software.com>
 // https://oldtimes-software.com/jaded/
 
 #pragma once
@@ -9,6 +9,8 @@
 
 namespace jaded
 {
+	static constexpr const char *APP_NAME = "jaded";
+
 	namespace sys
 	{
 		enum AlertBoxType : uint8_t
@@ -30,26 +32,28 @@ namespace jaded
 
 		AlertBoxReturnType AlertBox( const std::string &message, const std::string &title, AlertBoxType boxType );
 
-		extern int numLaunchArguments;
+		extern int                numLaunchArguments;
 		extern const char *const *launchArguments;
 		struct LaunchOperations
 		{
 			bool editorMode{ false };
-			bool popupError{ false }; // Showin added Param for PopUp Script Errors (if off it uses console)
+			bool popupError{ false };// Showin added Param for PopUp Script Errors (if off it uses console)
 			bool debugConsole{ false };
 
 			bool forceWindowed{ false };
-			int forcedWidth{ 0 };
-			int forcedHeight{ 0 };
+			int  forcedWidth{ 0 };
+			int  forcedHeight{ 0 };
 
-			bool clean{ false };
-			bool cleanBinFiles{ false };
+			bool                       clean{ false };
+			bool                       cleanBinFiles{ false };
 			std::vector< std::string > wolFiles;
-			bool cleanByFat{ false };
+			bool                       cleanByFat{ false };
 
 			std::string projectFile;
 
 			std::vector< std::string > aiMacros;
+
+			bool portableMode{ false };// save to the current directory, rather than app data path
 		};
 		extern LaunchOperations launchOperations;
 	}// namespace sys

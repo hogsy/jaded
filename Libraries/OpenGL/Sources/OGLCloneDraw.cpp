@@ -45,8 +45,6 @@ Private and external function prototype
 ***********************************************************************************************************************
 */
 
-void		OGL_SetupRC(OGL_tdst_SpecificData *);
-
 extern void LOA_BeginSpeedMode(BIG_KEY _ul_Key);
 extern void LOA_EndSpeedMode(void);
 extern "C" BOOL GDI_gb_WaveSprite;

@@ -24,7 +24,7 @@ public:
 	CString			mo_Msg;
 
 public:
-	void			DisplayMessage(char *);
+	void			DisplayMessage(const char *);
 	BOOL			PreCreateWindow(CREATESTRUCT &);
 	void			Paint(void);
 	afx_msg int		OnCreate(LPCREATESTRUCT);

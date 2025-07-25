@@ -4058,7 +4058,7 @@ void SaveLightmapsToBigFile(BIG_KEY _worldKey)
 			texParams.uw_Width = pPage->pageWidth;
 
 			// create the file
-			sprintf(temp, "Lightmap%i.tga", i, pPage->pageWidth, pPage->pageHeight);
+			sprintf(temp, "Lightmap%i.tga", i);
 
 			// write the header
 			SAV_Begin(lmTempDirName, temp);

@@ -566,10 +566,6 @@ void EDIA_cl_BrickMapper::OnBnMap(void)
 	o_ComboGraph = (CComboBox *) GetDlgItem(IDC_COMBO_GRAPH_THEME);
 	CString **strTemp = (CString **) o_ComboGraph->GetItemDataPtr(o_ComboGraph->GetCurSel());
 	CString *abbrev = strTemp[0];
-	CString *pathGraphTemp = strTemp[1];	
-	CString *pathLDTemp = strTemp[2];
-	CString pathGraph(EDI_Csz_Path_Prefab + CString('/') + *pathGraphTemp);
-	CString pathLD(EDI_Csz_Path_Prefab + CString('/') + *pathLDTemp);
 
 	// Get selected alternative
 	o_ComboAlt = (CComboBox *) GetDlgItem(IDC_COMBO_GRAPH_ALTERNATIVE);
@@ -598,10 +594,14 @@ void EDIA_cl_BrickMapper::OnBnMap(void)
 	/* If ambience "LD" is selected, search graph bricks in LD directory */
 	if (!L_strcmp(selectedAmbience, "LD") && p_Sel)
 	{
+		CString *pathLDTemp = strTemp[ 2 ];
+		CString pathLD( EDI_Csz_Path_Prefab + CString( '/' ) + *pathLDTemp );
 		h_Dir = BIG_ul_SearchDir(pathLD);
 	}
 	else
 	{
+		CString *pathGraphTemp = strTemp[ 1 ];	
+		CString pathGraph( EDI_Csz_Path_Prefab + CString( '/' ) + *pathGraphTemp );
 		h_Dir = BIG_ul_SearchDir(pathGraph);
 	}
 	if (h_Dir == BIG_C_InvalidIndex)
