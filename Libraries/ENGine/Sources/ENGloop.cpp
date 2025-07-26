@@ -1356,15 +1356,13 @@ void ENG_Loop( void )
 
 	INO_Joystick_Acquire();
 
+	uint64_t nextTick = SDL_GetTicks();
 	while ( !sfnb_EndGame() )
 	{
 		jaded::sys::profiler.StartProfiling( "Main Loop" );
 
-		static uint64_t nextTick = 0;
-		if ( nextTick == 0 )
-		{
-			nextTick = SDL_GetTicks();
-		}
+		uint64_t now   = SDL_GetTicks();
+		uint32_t loops = 0;
 
 		s_InitBeforeTrame();
 
@@ -1374,27 +1372,28 @@ void ENG_Loop( void )
 		}
 		else
 		{
-			uint64_t loops = 0, now;
-			while ( ( now = SDL_GetTicks() ) > nextTick && loops <= MAX_FRAMESKIP )
+			while ( now > nextTick && loops++ < MAX_FRAMESKIP )
 			{
 				s_OneTrame();
-
 				nextTick += SKIP_TICKS;
-				loops++;
 			}
 
-			if (now < nextTick)
+			now = SDL_GetTicks();
+			if ( now < nextTick )
 			{
-				Sleep( nextTick - now );
+				uint32_t sleepTime = ( uint32_t ) ( nextTick - now );
+				if ( sleepTime > 2 )
+				{
+					SDL_Delay( sleepTime - 1 );
+				}
 			}
-			else
+
+			if ( loops == 0 && now >= nextTick )
 			{
-				nextTick = now;
+				s_OneTrame();
+				nextTick = now + SKIP_TICKS;
 			}
 		}
-
-		//double delta = ( double ) ( SDL_GetTicks64()  + SKIP_TICKS - nextTick ) / ( double ) ( SKIP_TICKS );
-		// hogsy: TODO - move render loop and other crap down here, so we operate that EVERY tick
 
 		jaded::sys::profiler.EndProfiling( "Main Loop" );
 
