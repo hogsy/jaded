@@ -174,13 +174,13 @@ static bool QueryGLSupport()
 	                1,
 	                PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,// Flags
 	                PFD_TYPE_RGBA,                                             // The kind of framebuffer. RGBA or palette.
-	                24,                                                        // Colordepth of the framebuffer.
+	                32,                                                        // Colordepth of the framebuffer.
 	                0, 0, 0, 0, 0, 0,
 	                0,
 	                0,
 	                0,
 	                0, 0, 0, 0,
-	                32,// Number of bits for the depthbuffer
+	                24,// Number of bits for the depthbuffer
 	                8, // Number of bits for the stencilbuffer
 	                0, // Number of Aux buffers in the framebuffer.
 	                PFD_MAIN_PLANE,
@@ -276,75 +276,54 @@ static bool QueryGLSupport()
 
 static bool OGL_SetDCPixelFormat( HDC _hDC )
 {
-	// rewritten ~hogsy
-
-	int       pixelFormat;
-	const int attribList[] =
+	static constexpr int attribList[] =
 	        {
 	                WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
 	                WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
 	                WGL_DOUBLE_BUFFER_ARB, GL_TRUE,
 	                WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
-	                WGL_COLOR_BITS_ARB, 24,
-	                WGL_DEPTH_BITS_ARB, 32,
+	                WGL_COLOR_BITS_ARB, 32,
+	                WGL_DEPTH_BITS_ARB, 24,
 	                WGL_STENCIL_BITS_ARB, 8,
-					WGL_SAMPLE_BUFFERS_ARB, 0,
-					WGL_SAMPLES_ARB, 4,
 	                0,// End
 	        };
 
+	int          pixelFormat;
 	unsigned int numFormats;
-	wglChoosePixelFormatARB( _hDC, attribList, 0, 1, &pixelFormat, &numFormats );
-	if ( numFormats > 0 )
+	// don't need to check this is available, as we did it earlier :)
+	if ( wglChoosePixelFormatARB( _hDC, attribList, nullptr, 1, &pixelFormat, &numFormats ) )
 	{
-		PIXELFORMATDESCRIPTOR pfd;
-		DescribePixelFormat( _hDC, pixelFormat, sizeof( pfd ), &pfd );
-		if ( SetPixelFormat( _hDC, pixelFormat, &pfd ) )
-			return true;
+		PIXELFORMATDESCRIPTOR pfd = {
+		        sizeof( pfd ),// size
+		        1,            // version
+		};
+
+		if ( DescribePixelFormat( _hDC, pixelFormat, sizeof( pfd ), &pfd ) )
+		{
+			if ( SetPixelFormat( _hDC, pixelFormat, &pfd ) )
+			{
+				return true;
+			}
+
+			DWORD       err = GetLastError();
+			std::string msg = "Failed to set desired pixel format, using fallback! ";
+			msg.append( "(" + std::to_string( err ) + ")" );
+			LINK_PrintStatusMsg( msg.c_str() );
+		}
+		else
+		{
+			DWORD       err = GetLastError();
+			std::string msg = "Failed to describe pixel format, using fallback! ";
+			msg.append( "(" + std::to_string( err ) + ")" );
+			LINK_PrintStatusMsg( msg.c_str() );
+		}
+	}
+	else
+	{
+		LINK_PrintStatusMsg( "Failed to choose the desired pixel format, using fallback!" );
 	}
 
-	// if this fails, attempt fallback ~hogsy
-
-	PIXELFORMATDESCRIPTOR pfd =
-	        {
-	                sizeof( PIXELFORMATDESCRIPTOR ), /* Size of this structure */
-	                1,                               /* Version of this structure */
-	                PFD_DRAW_TO_WINDOW |             /* Draw to Window (not to bitmap) */
-	                        PFD_SUPPORT_OPENGL |     /* Support OpenGL calls in window */
-	                        PFD_DOUBLEBUFFER |       /* Double buffered */
-	                        PFD_SWAP_EXCHANGE | PFD_GENERIC_ACCELERATED,
-	                PFD_TYPE_RGBA,    /* RGBA Color mode */
-	                24,               /* Want 24bit color */
-	                0, 0, 0, 0, 0, 0, /* Not used to select mode */
-	                1, 0,             /* Not used to select mode */
-	                0, 0, 0, 0, 0,    /* Accumulation buffer */
-	                32,               /* Size of depth buffer */
-	                0,                /* Not used to select mode */
-	                0,                /* Not used to select mode */
-	                PFD_MAIN_PLANE,   /* Draw in main plane */
-	                0,                /* Not used to select mode */
-	                0, 0, 0           /* Not used to select mode */
-	        };
-
-	pixelFormat = ChoosePixelFormat( _hDC, &pfd );
-	SetPixelFormat( _hDC, pixelFormat, &pfd );
-
-#ifdef ACTIVE_EDITORS
-	static bool first = true;
-	DescribePixelFormat( _hDC, pixelFormat, sizeof( pfd ), &pfd );
-	if ( ( pfd.cColorBits < 24 ) && ( first ) )
-	{
-		jaded::sys::AlertBox(
-		        "Your desktop must be configured in at least 24bit mode (True colors) for making OPENGL working properly.. \n\n"
-		        "Some graphics features will not be enabled \n\n"
-		        "Jade must be restarted for taking effect of your eventual modification.",
-		        "OpenGL warning",
-		        jaded::sys::ALERT_BOX_ERROR );
-		first = false;
-	}
-#endif
-
-	return true;
+	return false;
 }
 
 #if defined( OGL_DEBUG )

@@ -516,7 +516,7 @@ static void ParseStartupParameters()
 
 static SDL_Window *CreateSDLWindow()
 {
-	int flags = SDL_WINDOW_OPENGL;
+	int flags = 0;
 	if ( !jaded::sys::launchOperations.forceWindowed )
 		flags |= SDL_WINDOW_FULLSCREEN;
 
