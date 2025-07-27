@@ -1,4 +1,4 @@
-// Created by Mark "hogsy" Sowden, 2023-2024 <hogsy@snortysoft.net>
+// Created by Mark "hogsy" Sowden, 2023-2025 <hogsy@snortysoft.net>
 // https://oldtimes-software.com/jaded/
 
 #include "Precomp.h"
@@ -16,7 +16,12 @@
 #include "../Extern/imgui/imgui_tables.cpp"
 #include "../Extern/imgui/imgui_demo.cpp"
 
-#include "../Extern/imgui/backends/imgui_impl_sdl3.cpp"
+//#define IMGUI_USE_SDL3
+#ifdef IMGUI_USE_SDL3
+#	include "../Extern/imgui/backends/imgui_impl_sdl3.cpp"
+#else
+#	include "../Extern/imgui/backends/imgui_impl_win32.cpp"
+#endif
 #include "../Extern/imgui/backends/imgui_impl_opengl3.cpp"
 
 static ImGuiContext *context;
@@ -97,8 +102,13 @@ static void SetDraculaTheme()
 	style.ChildRounding     = 4;
 }
 
-void ImGuiInterface_Initialize( SDL_Window *window )
+void ImGuiInterface_Initialize( void *windowPtr )
 {
+	if ( context != nullptr )
+	{
+		return;
+	}
+
 	IMGUI_CHECKVERSION();
 	context = ImGui::CreateContext();
 
@@ -109,8 +119,12 @@ void ImGuiInterface_Initialize( SDL_Window *window )
 
 	io.Fonts->AddFontFromFileTTF( "C:\\Windows\\Fonts\\Tahoma.ttf", 14.0f );
 
+#ifdef IMGUI_USE_SDL3
 	// GL context is actually unused here, so just pass null
-	ImGui_ImplSDL3_InitForOpenGL( window, nullptr );
+	ImGui_ImplSDL3_InitForOpenGL( ( SDL_Window * ) windowPtr, nullptr );
+#else
+	ImGui_ImplWin32_InitForOpenGL( windowPtr );
+#endif
 	ImGui_ImplOpenGL3_Init();
 }
 
@@ -119,7 +133,11 @@ void ImGuiInterface_Shutdown()
 	if ( context != nullptr )
 	{
 		ImGui_ImplOpenGL3_Shutdown();
+#ifdef IMGUI_USE_SDL3
 		ImGui_ImplSDL3_Shutdown();
+#else
+		ImGui_ImplWin32_Shutdown();
+#endif
 
 		ImGui::DestroyContext( context );
 		context = nullptr;
@@ -128,6 +146,7 @@ void ImGuiInterface_Shutdown()
 
 extern "C" bool ImGuiInterface_ProcessEvents( const SDL_Event *event )
 {
+#ifdef IMGUI_USE_SDL3
 	// Currently only available outside editor mode...
 	if ( jaded::sys::launchOperations.editorMode )
 	{
@@ -135,6 +154,9 @@ extern "C" bool ImGuiInterface_ProcessEvents( const SDL_Event *event )
 	}
 
 	return ImGui_ImplSDL3_ProcessEvent( event );
+#else
+	return false;
+#endif
 }
 
 static void ShowPerformanceOverlay()
@@ -144,9 +166,9 @@ static void ShowPerformanceOverlay()
 		return;
 	}
 
-	const float PAD               = 10.0f;
+	const float          PAD      = 10.0f;
 	const ImGuiViewport *viewport = ImGui::GetMainViewport();
-	ImVec2 window_pos;
+	ImVec2               window_pos;
 	window_pos.x = viewport->WorkPos.x + PAD;
 	window_pos.y = viewport->WorkPos.y + PAD;
 	ImGui::SetNextWindowPos( window_pos, ImGuiCond_Always );
@@ -174,14 +196,12 @@ static void ShowPerformanceOverlay()
 
 extern "C" void ImGuiInterface_NewFrame()
 {
-	// Currently only available outside editor mode...
-	if ( jaded::sys::launchOperations.editorMode )
-	{
-		return;
-	}
-
 	ImGui_ImplOpenGL3_NewFrame();
+#ifdef IMGUI_USE_SDL3
 	ImGui_ImplSDL3_NewFrame();
+#else
+	ImGui_ImplWin32_NewFrame();
+#endif
 
 	ImGui::NewFrame();
 
@@ -212,12 +232,6 @@ extern "C" void ImGuiInterface_NewFrame()
 
 extern "C" void ImGuiInterface_Render()
 {
-	// Currently only available outside editor mode...
-	if ( jaded::sys::launchOperations.editorMode )
-	{
-		return;
-	}
-
 	ImGui::Render();
 
 	ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );

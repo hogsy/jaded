@@ -448,7 +448,7 @@ LONG OGL_l_Init( HWND _hWnd, GDI_tdst_DisplayData *_pst_DD )
 {
 	/* Cleanup any objects that might've been created before */
 	if ( OGL_l_Close( _pst_DD ) != S_OK ) 
-		return E_FAIL;
+		return FALSE;
 
 	OGL_tdst_SpecificData *pst_SD = ( OGL_tdst_SpecificData * ) _pst_DD->pv_SpecificData;
 	pst_SD->h_Wnd                 = _hWnd;
@@ -458,7 +458,7 @@ LONG OGL_l_Init( HWND _hWnd, GDI_tdst_DisplayData *_pst_DD )
 	if ( !GetClientRect( _hWnd, &pst_SD->rcViewportRect ) )
 	{
 		jaded::sys::AlertBox( "Failed to get window area!", "OpenGL warning", jaded::sys::ALERT_BOX_ERROR );
-		return S_FALSE;
+		return FALSE;
 	}
 
 	// Creates a fake context and
@@ -466,14 +466,14 @@ LONG OGL_l_Init( HWND _hWnd, GDI_tdst_DisplayData *_pst_DD )
 	// to ensure we do all we want
 	if ( !QueryGLSupport() )
 	{
-		return S_FALSE;
+		return FALSE;
 	}
 
 	/* Select the pixel format */
 	if ( !OGL_SetDCPixelFormat( pst_SD->h_DC ) )
 	{
 		jaded::sys::AlertBox( "Failed to set OpenGL pixel format!", "OpenGL warning", jaded::sys::ALERT_BOX_ERROR );
-		return S_FALSE;
+		return FALSE;
 	}
 
 	int attribs[] = {
@@ -493,7 +493,7 @@ LONG OGL_l_Init( HWND _hWnd, GDI_tdst_DisplayData *_pst_DD )
 	if (pst_SD->h_RC == nullptr)
 	{
 		jaded::sys::AlertBox( "Failed to create OpenGL context!", "OpenGL warning", jaded::sys::ALERT_BOX_ERROR );
-		return S_FALSE;
+		return FALSE;
 	}
 
 	wglMakeCurrent( pst_SD->h_DC, pst_SD->h_RC );
@@ -528,7 +528,7 @@ LONG OGL_l_Init( HWND _hWnd, GDI_tdst_DisplayData *_pst_DD )
 
 	OGL_gb_Init = true;
 
-	return S_OK;
+	return TRUE;
 }
 
 /*

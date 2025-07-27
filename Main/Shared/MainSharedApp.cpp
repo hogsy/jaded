@@ -712,7 +712,9 @@ int main( int argc, char **argv )
 
 	InitializeDisplay();
 
+#	ifdef IMGUI_USE_SDL3
 	ImGuiInterface_Initialize( sdlWindow );
+#	endif
 
 	ENG_InitEngine();
 
