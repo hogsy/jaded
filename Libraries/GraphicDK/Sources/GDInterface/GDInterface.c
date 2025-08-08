@@ -428,40 +428,6 @@ int GDI_gi_GDIType = 0;// OpenGL rendering
 		return 1;
 	}
 
-#if defined( ACTIVE_EDITORS ) || defined( PCWIN_TOOL )
-
-	void GDI_ChangeInterface( GDI_tdst_DisplayData *_pst_DD, ULONG ulNew )
-	{
-		GDI_tdst_Interface *pst_GDI;
-		WOR_tdst_World *pst_SaveWorld;
-		pst_GDI = &_pst_DD->st_GDI;
-
-		pst_SaveWorld = _pst_DD->pst_World;
-		GDI_l_DetachWorld( _pst_DD );
-
-		pst_GDI->pfnl_CloseDisplay( _pst_DD );
-		pst_GDI->pfnv_DesinitDisplay( _pst_DD->pv_SpecificData );
-
-		switch ( ulNew )
-		{
-			case 0:
-				M_INITGDI( pst_GDI, OGL );
-				break;
-		}
-		_pst_DD->pv_SpecificData = OGL_pst_CreateDevice();
-		_pst_DD->st_GDI.pfnl_OpenDisplay( _pst_DD->h_Wnd, _pst_DD );
-
-		GDI_l_AttachWorld( _pst_DD, pst_SaveWorld );
-	}
-
-	ULONG GDI_GetInterface( GDI_tdst_DisplayData *_pst_DD )
-	{
-		GDI_tdst_Interface *pst_GDI;
-		pst_GDI = &_pst_DD->st_GDI;
-		return 0;
-	}
-#endif// defined( ACTIVE_EDITORS ) || defined( PCWIN_TOOL )
-
 /*
  =======================================================================================================================
  =======================================================================================================================
@@ -589,7 +555,13 @@ LONG GDI_AttachDisplay( GDI_tdst_DisplayData *_pst_DD, HWND _h_Wnd )
 		return lRetVal;
 	}
 #			else
-	return _pst_DD->st_GDI.pfnl_OpenDisplay( _h_Wnd, _pst_DD );
+	LONG status = _pst_DD->st_GDI.pfnl_OpenDisplay( _h_Wnd, _pst_DD );
+	if (status)
+	{
+		ImGuiInterface_Initialize( _h_Wnd );
+	}
+
+	return status;
 #			endif
 }
 
@@ -644,11 +616,12 @@ LONG GDI_AttachDisplay( GDI_tdst_DisplayData *_pst_DD, HWND _h_Wnd )
 		/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 		GDI_gl_ReadaptOperation = 1;
-#if ( defined( PSX2_TARGET ) || defined( _GAMECUBE ) )
-		GDI_AttachDisplay( _pst_DD );
-#else
-	GDI_AttachDisplay( _pst_DD, _h_Wnd );
-#endif
+
+		if (!GDI_AttachDisplay(_pst_DD, _h_Wnd))
+		{
+			return FALSE;
+		}
+
 		GDI_gl_ReadaptOperation = 0;
 #ifdef ACTIVE_EDITORS
 		SOFT_PickingBuffer_Reinit( _pst_DD->pst_PickingBuffer, _pst_DD->st_Device.l_Width, _pst_DD->st_Device.l_Height );

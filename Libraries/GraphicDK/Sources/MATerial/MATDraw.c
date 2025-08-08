@@ -384,7 +384,6 @@ void MAT_DrawIndexedTriangle_MT(
 					{
 						GEO_UseNormals( pst_Obj );// OK
 						GDI_DrawIndexedTriangles( ( *pst_CurDD ), pst_Element, pst_CurDD->p_Current_Vertex_List, pst_Obj->dst_PointNormal, ( GEO_tdst_UV * ) p_CptBf->Current, pst_Obj->l_NbPoints );
-#	ifndef _GAMECUBE
 						if ( ( ( MAT_GET_ColorOp( pst_MLTTXLVL->ul_Flags ) ) == MAT_Cc_ColorOp_Diffuse2X ) && ( !GDI_gpst_CurDD->GlobalMul2X ) )
 						{
 #		ifdef ACTIVE_EDITORS
@@ -399,7 +398,6 @@ void MAT_DrawIndexedTriangle_MT(
 								OpenglCorrectBugMul2X = 0;
 							}
 						}
-#	endif
 					}
 				}
 #endif

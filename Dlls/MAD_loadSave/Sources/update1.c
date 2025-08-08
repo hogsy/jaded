@@ -37,10 +37,10 @@ typedef unsigned long   MAD_0_ColorARGB;
 #define MAD_Getgreen(CARGB)		(((CARGB) & 0xff00) >> 8)
 #define MAD_GetBlue(CARGB)		(((CARGB) & 0xff) >> 0)
 #define MAD_GetAlpha(CARGB)		(((CARGB) & 0xff000000) >> 24)
-#define MAD_SetRed(CARGB,Val) (CARGB) = ((CARGB) & 0xFF00ffff) | ((Val & 0xff) << 16)
-#define MAD_Setgreen(CARGB,Val) (CARGB) = ((CARGB) & 0xFFff00ff) | ((Val & 0xff) << 8)
-#define MAD_SetBlue(CARGB,Val) (CARGB) = ((CARGB) & 0xFFffff00) | ((Val & 0xff) << 0)
-#define MAD_SetAlpha(CARGB,Val) (CARGB) = ((CARGB) & 0x00ffffff) | ((Val & 0xff) << 24)
+#define MAD_SetRed( CARGB, Val )   ( CARGB ) = ( ( CARGB ) & 0xFF00ffff ) | ( ( ( Val ) & 0xff ) << 16 )
+#define MAD_Setgreen( CARGB, Val ) ( CARGB ) = ( ( CARGB ) & 0xFFff00ff ) | ( ( ( Val ) & 0xff ) << 8 )
+#define MAD_SetBlue( CARGB, Val )  ( CARGB ) = ( ( CARGB ) & 0xFFffff00 ) | ( ( ( Val ) & 0xff ) << 0 )
+#define MAD_SetAlpha( CARGB, Val ) ( CARGB ) = ( ( CARGB ) & 0x00ffffff ) | ( ( ( Val ) & 0xff ) << 24 )
 
 #define MAD_ColorARGB_to_MAD_Vertex(MV,CARGB)\
 {\
