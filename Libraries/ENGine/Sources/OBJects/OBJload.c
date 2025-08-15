@@ -1355,9 +1355,6 @@ ULONG OBJ_ul_GameObjectCallback(ULONG _ul_PosFile)
 	 */
 
 	ul_Size = LOA_ReadULong(&pc_Buffer);
-
-#ifdef _DEBUG
-//#ifndef _FINAL //xenon
 	if(ul_Size)
 	{
 		pst_GO->sz_Name = (char*)MEM_p_Alloc(ul_Size);
@@ -1365,12 +1362,7 @@ ULONG OBJ_ul_GameObjectCallback(ULONG _ul_PosFile)
 	}
 	else
 		pst_GO->sz_Name = NULL;
-#else
-	if(ul_Size) LOA_ReadString(&pc_Buffer, NULL, ul_Size);	/* skip the string when not in debug mode (it's still there
-															 * in the binary data */
-#endif /* #ifdef _DEBUG */
  
-
 	{
 		u32 DummyVersion,Readed;
 		DummyVersion = LOA_ReadLong(&pc_Buffer);						/* read version */
