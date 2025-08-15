@@ -195,19 +195,6 @@ static CRITICAL_SECTION s_oMemoryAccessLock;
 
 /*$2
  -----------------------------------------------------------------------------------------------------------------------
-    signal fatal error
- -----------------------------------------------------------------------------------------------------------------------
- */
-
-#if defined(_FINAL_)
-/*$1- final = no signal ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-#define MEM_M_SignalFatalError(a, b)
-#else
-#define MEM_M_SignalFatalError(a, b)	MessageBox(0, "No more memory", "No more memory", MB_OK)
-#endif
-
-/*$2
- -----------------------------------------------------------------------------------------------------------------------
     Hole Optimisation
  -----------------------------------------------------------------------------------------------------------------------
  */
@@ -1004,12 +991,6 @@ hole:
 #endif	
 	else
 	{
-#ifndef PSX2_TARGET
-		ULONG		ul_NumHoles;
-		ULONG		ul_SizeOfHoles;
-		char		asz_Buf[1000];
-#endif		
-		
 #ifdef USE_HOLE_OPTIM
 nohole:
 #endif
@@ -1042,11 +1023,16 @@ nohole:
 			MEM_M_EndCriticalSection();
 
 
-#ifndef PSX2_TARGET
+#if 0 // unused??? maybe the intention was to log this??
+			
+			ULONG		ul_NumHoles;
+			ULONG		ul_SizeOfHoles;
+			char		asz_Buf[1000];
+
 			MEM_ComputeMemoryHoleInfo(&ul_NumHoles, &ul_SizeOfHoles, FALSE);
-			sprintf
+			snprintf
 				(
-					asz_Buf, "[Engine %u ko -- Textures %u ko -- WH %u ko -- Gran %u ko -- Holes %u -- Size Holes %u ko]", MEM_gst_MemoryInfo.ul_DynamicCurrentAllocated /
+					asz_Buf, sizeof( asz_Buf ), "[Engine %u ko -- Textures %u ko -- WH %u ko -- Gran %u ko -- Holes %u -- Size Holes %u ko]", MEM_gst_MemoryInfo.ul_DynamicCurrentAllocated /
 					1024, MEM_gst_MemoryInfo.ul_TexturesCurrentAllocated /
 					1024,
 							((char *) MEM_gst_MemoryInfo.pv_DynamicNextFree - (char *) MEM_gst_MemoryInfo.pv_DynamicBloc) /
@@ -1054,9 +1040,13 @@ nohole:
 						1024, ul_NumHoles, ul_SizeOfHoles /
 						1024
 				);
+
 #endif
 
-			MEM_M_SignalFatalError(_ul_BlockSize, MEM_ERR_Csz_NoMoreMemoryToPerformAllocation);
+			char tmp[ 32 ];
+			snprintf( tmp, sizeof( tmp ), "%ul", _ul_BlockSize );
+			ERR_X_ForceError( MEM_ERR_Csz_NoMoreMemoryToPerformAllocation, tmp );
+
 			return NULL;
 		}
 
