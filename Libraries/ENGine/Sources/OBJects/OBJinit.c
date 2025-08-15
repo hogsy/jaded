@@ -1456,9 +1456,8 @@ void OBJ_GameObject_RemoveButEnFaitNon(OBJ_tdst_GameObject *pst_Object, char _c_
 	/* Free : Bounding Volume. No Test: All the objects have a bounding volume. */
 	MEM_Free(pst_Object->pst_BV);
 
-#ifdef _DEBUG
-	if(pst_Object->sz_Name) MEM_Free(pst_Object->sz_Name);
-#endif
+	MEM_Free(pst_Object->sz_Name);
+
 #ifdef ACTIVE_EDITORS
 //	LINK_DelRegisterPointer(pst_Object);
 	if(pst_Object->pst_Trace)
@@ -1733,9 +1732,8 @@ void OBJ_GameObject_Remove(OBJ_tdst_GameObject *pst_Object, char _c_DecGroRef )
 	//-----------
 #endif
 
-#ifdef _DEBUG
-	if(pst_Object->sz_Name) MEM_Free(pst_Object->sz_Name);
-#endif
+	MEM_Free(pst_Object->sz_Name);
+
 #ifdef ACTIVE_EDITORS
 	LINK_DelRegisterPointer(pst_Object);
 	if(pst_Object->pst_Trace)
