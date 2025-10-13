@@ -94,7 +94,6 @@
  */
 
 void DisplayAttach( GDI_tdst_DisplayData * );
-void s_CheckResetRequest( void );
 void ENG_ForceStartRasters( void );
 extern "C" void FOGDYN_Reset( void );
 
@@ -219,13 +218,7 @@ static void s_Display( HWND h, GDI_tdst_DisplayData *_pst_DD )
 	JADED_PROFILER_END();
 }
 
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
-void s_CheckResetRequest( void )
-{
-}
+extern "C" bool ImGuiInterface_ProcessEvents( const SDL_Event *event );
 
 /*
  =======================================================================================================================
@@ -235,11 +228,41 @@ static void s_InitBeforeTrame( void )
 {
 	JADED_PROFILER_START();
 
-	s_CheckResetRequest();
-
 	ENG_gp_Display = jaded::sys::launchOperations.editorMode ? nullptr : s_Display;
+	ENG_gp_Input   = INO_Update;
 
-	ENG_gp_Input = INO_Update;
+	SDL_Event sdlEvent;
+	while ( SDL_PollEvent( &sdlEvent ) )
+	{
+		ImGuiInterface_ProcessEvents( &sdlEvent );
+
+		switch ( sdlEvent.type )
+		{
+			case SDL_EVENT_GAMEPAD_REMOVED:
+				INO_Joystick_Remove();
+				break;
+			case SDL_EVENT_GAMEPAD_ADDED:
+				INO_Joystick_Add( sdlEvent.cdevice.which );
+				break;
+			case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+			{
+				ENG_gb_ExitApplication = TRUE;
+				break;
+			}
+			case SDL_EVENT_WINDOW_RESIZED:
+			{
+				if ( ENG_gp_Display == nullptr )
+				{
+					break;
+				}
+
+				GDI_ReadaptDisplay( MAI_gst_MainHandles.pst_DisplayData,
+				                    MAI_gst_MainHandles.h_DisplayWindow );
+				break;
+			}
+		}
+	}
+
 	if ( UNI_Status() != UNI_Cuc_Ready )
 	{
 		switch ( UNI_Status() )
@@ -1434,8 +1457,6 @@ void ENG_Loop( void )
 	}
 
 	ENG_gb_EngineRunning = FALSE;
-
-	s_CheckResetRequest();
 }
 
 /*$4
