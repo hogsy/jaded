@@ -1369,7 +1369,7 @@ static bool HandleEvents()
 		}
 	}
 
-	return shouldTick;
+	return shouldTick || !ENG_gb_LimitFPS;
 }
 
 void ENG_Loop( void )
