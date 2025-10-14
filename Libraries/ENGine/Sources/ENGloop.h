@@ -48,4 +48,11 @@ extern void (*ENG_p_Display) (HWND, GDI_tdst_DisplayData *);
 }
 #endif
 
+#	if defined( __cplusplus )
+
+bool ENG_InitLoop();
+void ENG_CloseLoop();
+
+#	endif
+
 #endif /* __ENGLOOP_H__ */

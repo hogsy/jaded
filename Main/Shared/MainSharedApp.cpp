@@ -645,7 +645,7 @@ int main( int argc, char **argv )
 
 	ParseStartupParameters();
 
-	if ( !SDL_Init( SDL_INIT_GAMEPAD | SDL_INIT_VIDEO ) )
+	if ( !SDL_Init( SDL_INIT_GAMEPAD | SDL_INIT_VIDEO | SDL_INIT_EVENTS ) )
 	{
 		jaded::sys::AlertBox( "SDL Init fail: " + std::string( SDL_GetError() ),
 		                      "Jaded Error",
