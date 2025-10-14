@@ -542,7 +542,21 @@ LONG GDI_AttachDisplay( GDI_tdst_DisplayData *_pst_DD, HWND _h_Wnd )
 }
 
 #		else
-LONG GDI_AttachDisplay( GDI_tdst_DisplayData *_pst_DD, HWND _h_Wnd )
+
+    static void SetupAspectRatio( GDI_tdst_DisplayData *display )
+    {
+	    float r = ( ( float ) display->st_Device.l_Width / display->st_Device.l_Height );
+	    if ( fabsf( r - ( 4.0f / 3.0f ) ) < fabsf( r - ( 16.0f / 9.0f ) ) )
+	    {
+		    display->st_ScreenFormat.l_ScreenRatioConst = GDI_Cul_SRC_4over3;
+	    }
+	    else
+	    {
+		    display->st_ScreenFormat.l_ScreenRatioConst = GDI_Cul_SRC_16over9;
+	    }
+    }
+
+    LONG GDI_AttachDisplay( GDI_tdst_DisplayData *_pst_DD, HWND _h_Wnd )
 {
 	/*~~~~~~~~~~~~~~~~*/
 	RECT st_Rect;
@@ -572,6 +586,8 @@ LONG GDI_AttachDisplay( GDI_tdst_DisplayData *_pst_DD, HWND _h_Wnd )
 	if ( !_pst_DD->pst_PickingBuffer->dst_Pixel )
 		SOFT_PickingBuffer_Init( _pst_DD->pst_PickingBuffer, _pst_DD->st_Device.l_Width, _pst_DD->st_Device.l_Height );
 #			endif
+
+	SetupAspectRatio( _pst_DD );
 
 	if ( GDI_gl_ReadaptOperation && !i_OpenDisplay ) return 1;
 
@@ -644,12 +660,9 @@ LONG GDI_AttachDisplay( GDI_tdst_DisplayData *_pst_DD, HWND _h_Wnd )
 		/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 		GDI_gl_ReadaptOperation = 1;
-#if ( defined( PSX2_TARGET ) || defined( _GAMECUBE ) )
-		GDI_AttachDisplay( _pst_DD );
-#else
-	GDI_AttachDisplay( _pst_DD, _h_Wnd );
-#endif
+		GDI_AttachDisplay( _pst_DD, _h_Wnd );
 		GDI_gl_ReadaptOperation = 0;
+
 #ifdef ACTIVE_EDITORS
 		SOFT_PickingBuffer_Reinit( _pst_DD->pst_PickingBuffer, _pst_DD->st_Device.l_Width, _pst_DD->st_Device.l_Height );
 #endif
@@ -682,6 +695,7 @@ LONG GDI_AttachDisplay( GDI_tdst_DisplayData *_pst_DD, HWND _h_Wnd )
 				GDI_l_AttachWorld( _pst_DD, pst_SaveWorld );
 			}
 		}
+
 		return 1;
 	}
 
