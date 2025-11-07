@@ -64,6 +64,7 @@
 #include "ENGine/Sources/MoDiFier/MDFmodifier_SPG2.h"
 #include "ENGvars.h"
 #include "ENGcall.h"
+#include "ENGloop.h"
 #include "TIMer/PROfiler/PRO.h"
 #include "BASe/MEMory/MEM.h"
 #include "BASe/MEMory/MEMpro.h"
@@ -106,15 +107,6 @@ extern "C" AI_tdst_GlobalMessageList gast_GlobalMessages[ C_GM_MaxTypes ];
 #include "TIMer/TIMdefs.h"
 #include "NETwork/Sources/NET.h"
 #include "MC/MC_Manager.h"
-
-#ifdef _GAMECUBE
-#include "GameCube/GC_Stream.h"
-#include "GXI_GC/GXI_init.h"
-#endif
-
-#if defined(_XENON_RENDER)
-#include "XenonGraphics/XeWeatherManager.h"
-#endif
 
 extern "C" COL_tdst_GlobalVars COL_gst_GlobalVars;
 extern "C" int GRID_gi_Current;
@@ -224,14 +216,6 @@ extern "C" void LCP_StaticInit( void );
  */
 void ENG_InitApplication(void)
 {
-#if defined(_XBOX) || defined(_XENON)
-	g_hHeap = HeapCreate (HEAP_GENERATE_EXCEPTIONS, 0xFFFF, 0);
-#endif // _XBOX
-
-#ifdef _GAMECUBE
-    GC_StreamInitModule();
-#endif
-    
 	/* Global structures */
 #if defined(PSX2_TARGET) && defined(__CW__)
 	BIG_gst.h_CLibFileHandle = (LONG) NULL;
@@ -243,12 +227,7 @@ void ENG_InitApplication(void)
 
 	/* SDK modules */
 	MEM_InitModule();
-	
 	PRO_InitModule();
-#if defined(_XENON_PROFILE)
-    XEInitializeProfile();
-#endif
-
 	BAS_InitModule();
 	BIG_InitModule();
 	INO_InitModule();
@@ -267,6 +246,8 @@ void ENG_InitApplication(void)
 	LOA_LoadSpecialArray();
 	MSG_GlobalFirstInit();
 
+	ENG_InitLoop();
+
 	/* Initialise the Universe, the worlds... */
 	WOR_InitModule();
 
@@ -277,7 +258,6 @@ void ENG_InitApplication(void)
 	LINK_InitModule();
 #endif
     MTX_InitModule();
-
 
 #ifdef ODE_INSIDE
 	LCP_StaticInit();
@@ -343,6 +323,9 @@ void ENG_CloseApplication(void)
 #ifdef ACTIVE_EDITORS
 	LINK_CloseModule();
 #endif
+
+	ENG_CloseLoop();
+
 	MEM_CloseModule();
 
 #ifdef _XENON

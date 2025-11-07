@@ -59,7 +59,7 @@ GRO_tdst_Struct *MAT_ValidateSUBMAT_C(OBJ_tdst_GameObject *pst_GO, ULONG ul_Key)
 	else
 	{
 		/* It's a submaterial number */
-		if(OBJ_b_TestIdentityFlag(pst_GO, OBJ_C_IdentityFlag_Visu))
+		if ( pst_GO != NULL && OBJ_b_TestIdentityFlag( pst_GO, OBJ_C_IdentityFlag_Visu ) )
 		{
 			if(pst_GO->pst_Base->pst_Visu)
 			{

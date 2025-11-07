@@ -2679,6 +2679,11 @@ AI_tdst_Node *AI_EvalFunc_OBJ_FlagsControlGet(AI_tdst_Node *_pst_Node)
  */
 void AI_EvalFunc_OBJ_FlagInvisibleSet_C(OBJ_tdst_GameObject *_pst_GO, int _i_Invisible)
 {
+	if (_pst_GO == NULL)
+	{
+		return;
+	}
+
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	WOR_tdst_World	*pst_World;
 	ULONG			ul_ControlFlags;

@@ -516,7 +516,7 @@ static void ParseStartupParameters()
 
 static SDL_Window *CreateSDLWindow()
 {
-	int flags = 0;
+	int flags = SDL_WINDOW_RESIZABLE;
 	if ( !jaded::sys::launchOperations.forceWindowed )
 		flags |= SDL_WINDOW_FULLSCREEN;
 
@@ -562,22 +562,6 @@ static SDL_Window *CreateSDLWindow()
 	return sdlWindow;
 }
 
-static void SetupAspectRatio()
-{
-	int w, h;
-	SDL_GetWindowSizeInPixels( sdlWindow, &w, &h );
-
-	float r = ( ( float ) w / h );
-	if ( fabsf( r - ( 4.0f / 3.0f ) ) < fabsf( r - ( 16.0f / 9.0f ) ) )
-	{
-		MAI_gst_MainHandles.pst_DisplayData->st_ScreenFormat.l_ScreenRatioConst = GDI_Cul_SRC_4over3;
-	}
-	else
-	{
-		MAI_gst_MainHandles.pst_DisplayData->st_ScreenFormat.l_ScreenRatioConst = GDI_Cul_SRC_16over9;
-	}
-}
-
 static void InitializeDisplay()
 {
 	MAI_gh_MainWindow = MAI_gst_MainHandles.h_DisplayWindow = nativeWindowHandle;
@@ -599,9 +583,6 @@ static void InitializeDisplay()
 	MAI_gst_MainHandles.pst_DisplayData->ul_DrawMask |= GDI_Cul_DM_NoAutoClone;
 
 	MAI_gst_MainHandles.pst_DisplayData->st_ScreenFormat.ul_Flags = GDI_Cul_SFF_OccupyAll;
-
-	// Determine aspect ratio - TODO: should get triggered again whenever window-size changes...
-	SetupAspectRatio();
 }
 
 static void ShutdownDisplay()
@@ -645,7 +626,7 @@ int main( int argc, char **argv )
 
 	ParseStartupParameters();
 
-	if ( !SDL_Init( SDL_INIT_GAMEPAD | SDL_INIT_VIDEO ) )
+	if ( !SDL_Init( SDL_INIT_GAMEPAD | SDL_INIT_VIDEO | SDL_INIT_EVENTS ) )
 	{
 		jaded::sys::AlertBox( "SDL Init fail: " + std::string( SDL_GetError() ),
 		                      "Jaded Error",

@@ -155,6 +155,10 @@ void			INO_Joystick_Move(MATH_tdst_Vector *, int);
 
 void			INO_Joystick_Init(HWND _hWnd);
 void			INO_Joystick_Close(void);
+
+void INO_Joystick_Add( unsigned int id );
+void INO_Joystick_Remove( void );
+
 void			INO_Joystick_Update(void);
 BOOL			INO_b_Joystick_IsButtonJustDown(LONG);
 BOOL			INO_b_Joystick_IsButtonDown(LONG);

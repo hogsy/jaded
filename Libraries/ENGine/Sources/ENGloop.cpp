@@ -94,7 +94,6 @@
  */
 
 void DisplayAttach( GDI_tdst_DisplayData * );
-void s_CheckResetRequest( void );
 void ENG_ForceStartRasters( void );
 extern "C" void FOGDYN_Reset( void );
 
@@ -148,6 +147,45 @@ BOOL ENG_gb_Raster = FALSE;
 #ifdef JADEFUSION
 extern BOOL ENG_gb_InPause;
 #endif
+
+static constexpr unsigned int ENGINE_LOOP_FREQUENCY = 1000 / 60;
+
+static SDL_TimerID engineLoopTimer;
+
+static unsigned int TimerCallback(void*, SDL_TimerID id, uint32_t interval)
+{
+	SDL_UserEvent userEvent = {};
+	userEvent.type          = SDL_EVENT_USER;
+
+	SDL_Event event = {};
+	event.type      = SDL_EVENT_USER;
+	event.user      = userEvent;
+
+	SDL_PushEvent( &event );
+
+	return ENGINE_LOOP_FREQUENCY;
+}
+
+bool ENG_InitLoop()
+{
+	if ( ( engineLoopTimer = SDL_AddTimer( ENGINE_LOOP_FREQUENCY, TimerCallback, nullptr ) ) == 0 )
+	{
+		jaded::sys::AlertBox( "Failed to create SDL timer: " + std::string( SDL_GetError() ),
+		                      "Error",
+		                      jaded::sys::ALERT_BOX_ERROR );
+		return false;
+	}
+
+	return true;
+}
+
+void ENG_CloseLoop()
+{
+	if ( engineLoopTimer != 0 )
+	{
+		SDL_RemoveTimer( engineLoopTimer );
+	}
+}
 
 /*$4
  ***********************************************************************************************************************
@@ -219,13 +257,7 @@ static void s_Display( HWND h, GDI_tdst_DisplayData *_pst_DD )
 	JADED_PROFILER_END();
 }
 
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
-void s_CheckResetRequest( void )
-{
-}
+extern "C" bool ImGuiInterface_ProcessEvents( const SDL_Event *event );
 
 /*
  =======================================================================================================================
@@ -235,11 +267,9 @@ static void s_InitBeforeTrame( void )
 {
 	JADED_PROFILER_START();
 
-	s_CheckResetRequest();
-
 	ENG_gp_Display = jaded::sys::launchOperations.editorMode ? nullptr : s_Display;
+	ENG_gp_Input   = INO_Update;
 
-	ENG_gp_Input = INO_Update;
 	if ( UNI_Status() != UNI_Cuc_Ready )
 	{
 		switch ( UNI_Status() )
@@ -300,48 +330,43 @@ static BOOL sfnb_EndGame( void )
  */
 void s_HandleWinMessages( void )
 {
-	if ( !jaded::sys::launchOperations.editorMode )
-	{
-		return;
-	}
-
 	JADED_PROFILER_START();
 
-	MSG msg;
-	float f_StartTimeEditors;
-	/*~~~~~~~~~~~~~~~~~~~~~~~*/
+	float f_StartTimeEditors = TIM_f_Clock_TrueRead();
 
-	/* Windows messages */
-	PRO_StartTrameRaster( &ENG_gpst_RasterEng_WinMsg );
-	f_StartTimeEditors = TIM_f_Clock_TrueRead();
-
-#ifdef ACTIVE_EDITORS
 	sgb_EngineRender = FALSE;
+
+	MSG msg;
 	while ( PeekMessage( &msg, 0, 0, 0xFFFFFFFF, PM_REMOVE ) )
 	{
-		if ( !LINK_b_ProcessEngineWndMsg( &msg ) ) break;
-		if ( !LINK_PreTranslateMessage( &msg ) )
+		if ( jaded::sys::launchOperations.editorMode )
 		{
-			TranslateMessage( &msg );
-			DispatchMessage( &msg );
+			if ( !LINK_b_ProcessEngineWndMsg( &msg ) )
+			{
+				break;
+			}
+
+			if ( LINK_PreTranslateMessage( &msg ) )
+			{
+				continue;
+			}
+
+			if ( ( ( GetAsyncKeyState( VK_LBUTTON ) < 0 ) || ( GetAsyncKeyState( VK_RBUTTON ) < 0 ) ) && ( GetAsyncKeyState( VK_SPACE ) >= 0 ) )
+			{
+				break;
+			}
 		}
 
-		if (
-		        ( ( GetAsyncKeyState( VK_LBUTTON ) < 0 ) || ( GetAsyncKeyState( VK_RBUTTON ) < 0 ) ) && ( GetAsyncKeyState( VK_SPACE ) >= 0 ) ) break;
-	}
-
-	sgb_EngineRender = TRUE;
-#else /* EDITOR */
-	while ( PeekMessage( &msg, 0, 0, 0xFFFFFFFF, PM_REMOVE ) )
-	{
 		TranslateMessage( &msg );
 		DispatchMessage( &msg );
 	}
 
-#endif /* EDITOR */
-	TIM_gf_EditorTime += ( TIM_f_Clock_TrueRead() - f_StartTimeEditors );
+	if ( jaded::sys::launchOperations.editorMode )
+	{
+		TIM_gf_EditorTime += ( TIM_f_Clock_TrueRead() - f_StartTimeEditors );
+	}
 
-	PRO_StopTrameRaster( &ENG_gpst_RasterEng_WinMsg );
+	sgb_EngineRender = TRUE;
 
 	JADED_PROFILER_END();
 }
@@ -1037,6 +1062,7 @@ static void s_OneTrame( void )
 #endif
 
 	PRO_StartTrameRaster( &ENG_gpst_RasterEng_OneLoop );
+
 	s_HandleWinMessages();
 
 	/*
@@ -1302,9 +1328,49 @@ static void s_OneTrame( void )
  =======================================================================================================================
  */
 
-#define TICKS_PER_SECOND 60U
-#define SKIP_TICKS       ( 1000U / TICKS_PER_SECOND )
-#define MAX_FRAMESKIP    5U
+static bool HandleEvents()
+{
+	bool shouldTick = false;
+
+	SDL_Event sdlEvent;
+	while ( SDL_PollEvent( &sdlEvent ) )
+	{
+		ImGuiInterface_ProcessEvents( &sdlEvent );
+
+		switch ( sdlEvent.type )
+		{
+			case SDL_EVENT_GAMEPAD_REMOVED:
+				INO_Joystick_Remove();
+				break;
+			case SDL_EVENT_GAMEPAD_ADDED:
+				INO_Joystick_Add( sdlEvent.cdevice.which );
+				break;
+
+			case SDL_EVENT_USER:
+				shouldTick = true;
+				break;
+
+			case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+			{
+				ENG_gb_ExitApplication = TRUE;
+				break;
+			}
+			case SDL_EVENT_WINDOW_RESIZED:
+			{
+				if ( jaded::sys::launchOperations.editorMode )
+				{
+					break;
+				}
+
+				GDI_ReadaptDisplay( MAI_gst_MainHandles.pst_DisplayData,
+				                    MAI_gst_MainHandles.h_DisplayWindow );
+				break;
+			}
+		}
+	}
+
+	return shouldTick || !ENG_gb_LimitFPS;
+}
 
 void ENG_Loop( void )
 {
@@ -1361,38 +1427,12 @@ void ENG_Loop( void )
 	{
 		jaded::sys::profiler.StartProfiling( "Main Loop" );
 
-		uint64_t now   = SDL_GetTicks();
-		uint32_t loops = 0;
-
 		s_InitBeforeTrame();
 
-		if ( !ENG_gb_LimitFPS || ENG_gb_OneStepEngine )
+		bool shouldTick = HandleEvents();
+		if ( shouldTick )
 		{
 			s_OneTrame();
-		}
-		else
-		{
-			while ( now > nextTick && loops++ < MAX_FRAMESKIP )
-			{
-				s_OneTrame();
-				nextTick += SKIP_TICKS;
-			}
-
-			now = SDL_GetTicks();
-			if ( now < nextTick )
-			{
-				uint32_t sleepTime = ( uint32_t ) ( nextTick - now );
-				if ( sleepTime > 2 )
-				{
-					SDL_Delay( sleepTime - 1 );
-				}
-			}
-
-			if ( loops == 0 && now >= nextTick )
-			{
-				s_OneTrame();
-				nextTick = now + SKIP_TICKS;
-			}
 		}
 
 		jaded::sys::profiler.EndProfiling( "Main Loop" );
@@ -1434,8 +1474,6 @@ void ENG_Loop( void )
 	}
 
 	ENG_gb_EngineRunning = FALSE;
-
-	s_CheckResetRequest();
 }
 
 /*$4
