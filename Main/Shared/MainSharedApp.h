@@ -3,6 +3,11 @@
 
 #pragma once
 
+#include <vector>
+#include <string>
+#include <map>
+#include <stdexcept>
+
 namespace jaded
 {
 	namespace app
