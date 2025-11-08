@@ -44,11 +44,9 @@
 #include "BIGfiles/LOAding/LOAread.h"
 #include "BIGfiles/BIGfat.h"
 
-#define MAX_XMEN_NODES 96
 #define XMEN_SMOOTH_DEPTH 2
 
-GAO_tdst_ModifierXMEN	*p_XMEN_STACK[MAX_XMEN_NODES];
-ULONG					XMEN_STACK_PTR = 0;
+static std::vector< GAO_tdst_ModifierXMEN * > p_XMEN_STACK;
 
 static ULONG	bIsMaterialTransparent = 1;
 static ULONG 	g_ulFrameCounter = 0;
@@ -172,23 +170,18 @@ void GAO_ModifierXMEN_Destroy(MDF_tdst_Modifier *_pst_Mod)
 {
 	if (_pst_Mod->p_Data)
 	{
+		GAO_tdst_ModifierXMEN *p_XMEN = ( GAO_tdst_ModifierXMEN * ) _pst_Mod->p_Data;
+
+		p_XMEN_STACK.erase(
+			    std::remove( p_XMEN_STACK.begin(), p_XMEN_STACK.end(), p_XMEN ),
+			    p_XMEN_STACK.end() );
+
+		if ( p_XMEN->p_MaterialUsed )
 		{
-			GAO_tdst_ModifierXMEN *p_XMEN;
-			ULONG XStackCounter;
-
-			p_XMEN =  (GAO_tdst_ModifierXMEN*)_pst_Mod->p_Data;
-			XStackCounter = XMEN_STACK_PTR;
-			while (XStackCounter --)
-			{
-				if (p_XMEN_STACK[XStackCounter ] == p_XMEN) p_XMEN_STACK[XStackCounter ] = NULL;
-			}
-
-			if(p_XMEN->p_MaterialUsed)
-			{
-				p_XMEN->p_MaterialUsed->st_Id.i->pfn_AddRef(p_XMEN->p_MaterialUsed, -1);
-				p_XMEN->p_MaterialUsed->st_Id.i->pfn_Destroy(p_XMEN->p_MaterialUsed);
-			}
+			p_XMEN->p_MaterialUsed->st_Id.i->pfn_AddRef( p_XMEN->p_MaterialUsed, -1 );
+			p_XMEN->p_MaterialUsed->st_Id.i->pfn_Destroy( p_XMEN->p_MaterialUsed );
 		}
+
 		if (((GAO_tdst_ModifierXMEN *)_pst_Mod->p_Data) -> ulNumber_Of_Chhlaahhh)
 		{
 			MEM_Free(((GAO_tdst_ModifierXMEN *)_pst_Mod->p_Data) ->p_st_Chhlaahhh );
@@ -809,40 +802,33 @@ void GAO_ModifierXMEN_DRAW(GAO_tdst_ModifierXMEN *p_XMEN)
 	}
 	SOFT_MatrixStack_Reset(&GDI_gpst_CurDD->st_MatrixStack, &GDI_gpst_CurDD->st_Camera.st_InverseMatrix);		
 }
-void GAO_ModifierXMEN_DRAW_ALL(void)
-{
 
+extern "C" void GAO_ModifierXMEN_DRAW_ALL( void )
+{
 	GDI_gpst_CurDD_SPR.pus_ReorderBuffer = NULL;
 	GDI_gpst_CurDD_SPR.ul_DisplayInfo &= ~GDI_Cul_DI_UseSpecialVertexBuffer;
 	GDI_gpst_CurDD_SPR.ul_CurrentDrawMask &= ~GDI_Cul_DM_TestBackFace;
 	GDI_gpst_CurDD_SPR.ul_DisplayInfo |= GDI_Cul_DI_UseOneUVPerPoint;
 	
-
 	g_ulFrameCounter ++;
-	while (XMEN_STACK_PTR--)
+
+	for ( auto *xmen : p_XMEN_STACK )
 	{
-		if (p_XMEN_STACK[XMEN_STACK_PTR])	
+		if ( xmen && xmen->ulFrameCounter != g_ulFrameCounter )
 		{
-			if (p_XMEN_STACK[XMEN_STACK_PTR]->ulFrameCounter != g_ulFrameCounter)
-			{
-				GAO_ModifierXMEN_DRAW(p_XMEN_STACK[XMEN_STACK_PTR]);//*/
-			}
-			p_XMEN_STACK[XMEN_STACK_PTR]->ulFrameCounter = g_ulFrameCounter;
+			GAO_ModifierXMEN_DRAW( xmen );
+			xmen->ulFrameCounter = g_ulFrameCounter;
 		}
 	}
-	XMEN_STACK_PTR = 0;
-}
 
+	p_XMEN_STACK.clear();
+}
 
 void GAO_ModifierXMEN_Apply(MDF_tdst_Modifier *_pst_Mod, GEO_tdst_Object *_pst_Obj)
 {
-	GAO_tdst_ModifierXMEN *p_XMEN;
-
-	p_XMEN = (GAO_tdst_ModifierXMEN *)_pst_Mod->p_Data;
-
-	/* Update Positions */
-	p_XMEN_STACK[(XMEN_STACK_PTR++) & (MAX_XMEN_NODES - 1)] = p_XMEN;
+	p_XMEN_STACK.push_back( ( GAO_tdst_ModifierXMEN * ) _pst_Mod->p_Data );
 }
+
 /*
 =======================================================================================================================
 =======================================================================================================================
@@ -880,7 +866,6 @@ void GAO_ModifierXMEN_Reinit(MDF_tdst_Modifier *_pst_Mod)
 			{
 				p_XMEN ->p_XmenLocalLenght = (float *)MEM_p_Alloc(sizeof(float) * (p_XMEN -> ulNumber_Of_Chhlaahhh  << XMEN_NumberOfSegs_PO2));		
 			}
-			
 		}
 		else
 		{
