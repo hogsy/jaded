@@ -323,10 +323,8 @@ Redraw_Label:
 
 	if((!mb_ZoomOn) && (!mb_SelBoxOn))
 	{
-#ifndef _XENON_RENDER
-		if(!LINK_gb_EditRefresh) GDI_AfterDisplay(mst_WinHandles.pst_DisplayData);
-#endif
 		GDI_BeforeDisplay(mst_WinHandles.pst_DisplayData);
+
         SOFT_Helpers_Reset(M_F3D_Helpers);
 
 		pst_World = mst_WinHandles.pst_DisplayData->pst_World;
@@ -402,10 +400,8 @@ Redraw_Label:
 		}
 
 		Helper_Render();
-#ifndef _XENON_RENDER
-		if(LINK_gb_EditRefresh)
-#endif
-			GDI_AfterDisplay(mst_WinHandles.pst_DisplayData);
+
+		GDI_AfterDisplay(mst_WinHandles.pst_DisplayData);
 
         /* procedural texture */
         TEX_Procedural_Update( mst_WinHandles.pst_DisplayData );
