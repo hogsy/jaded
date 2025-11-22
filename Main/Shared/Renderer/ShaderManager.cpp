@@ -59,7 +59,7 @@ void jaded::renderer::GLShaderProgram::Reload()
 	bool reload = false;
 	for ( auto &i : stages_ )
 	{
-		std::string path = i.GetPath();
+		std::string path = i.path_;
 		if ( path.empty() )
 		{
 			continue;
@@ -73,7 +73,7 @@ void jaded::renderer::GLShaderProgram::Reload()
 			continue;
 		}
 
-		if ( time != i.GetLastUpdateTime() )
+		if ( time != i.lastUpdateTime_ )
 		{
 			reload = true;
 			break;
@@ -393,18 +393,27 @@ void jaded::renderer::GLShaderManager::SetProgram( GLShaderProgram *program )
 
 bool jaded::renderer::GLShaderManager::Initialize()
 {
-	static constexpr char DEFAULTS[][ 64 ] = {
-	        "default",
+	struct Shader
+	{
+		const char *name;
+		const char *vert;
+		const char *frag;
 	};
 
-	for ( const auto &i : DEFAULTS )
+	static constexpr Shader shaders[] = {
+	        { "default", "default.frag.glsl", "default.vert.glsl" },
+	};
+
+	for ( const auto &i : shaders )
 	{
-		GLShaderProgram *program = CacheProgram( i );
+		GLShaderProgram *program = CacheProgram( i.vert, i.frag );
 		if ( program == nullptr )
 		{
 			printf( "Failed to load shader program (%s)!\n", i );
 			return false;
 		}
+
+		programs_.emplace( i.name, program );
 	}
 
 	return true;

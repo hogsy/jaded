@@ -8,6 +8,7 @@ namespace jaded
 	namespace renderer
 	{
 		class GLShaderManager;
+		class GLShaderProgram;
 
 		// originally the plan here was to make this an interface, and then
 		// build API-specific classes on top, but we'll consider this later...
@@ -25,10 +26,7 @@ namespace jaded
 			GLShaderProgramStage( GLenum type, const std::string &path );
 			~GLShaderProgramStage();
 
-		public:
-			inline time_t GetLastUpdateTime() const { return lastUpdateTime_; }
-
-			inline std::string GetPath() const { return path_; }
+			friend GLShaderProgram;
 		};
 
 		union GLShaderProgramValue
