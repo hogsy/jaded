@@ -52,6 +52,7 @@ namespace jaded
 		bool CreateLocalPath( const std::string &path );
 
 		size_t GetLocalFileSize( const std::string &path );
+		time_t GetLocalFileTimestamp( const std::string &path );
 
 		bool ReadFileByIndex( FileIndex index, std::vector< uint8_t > *dst );
 		bool ReadFileByName( const std::string &path, std::vector< uint8_t > *dst );
@@ -63,7 +64,7 @@ namespace jaded
 
 		Key GenerateFileKey( const std::string &path );
 
-		const std::vector< FileIndex > &GetDirFiles( const std::string &path );
+		std::vector< FileIndex > GetDirFiles( const std::string &path );
 
 		// A lot of this is dumb, and index-driven, so we can use
 

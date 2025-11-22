@@ -22,6 +22,7 @@
 #include "ENGine/Sources/MoDiFier/MDFmodifier_SPG2.h"
 
 #include "../Main/Shared/MainSharedSystem.h"
+#include "../Main/Shared/Renderer/ShaderManager.h"
 
 #ifdef ACTIVE_EDITORS
 #	include "ENGine/Sources/COLlision/COLvars.h"
@@ -31,6 +32,8 @@
 
 #pragma comment( lib, "opengl32.lib" )
 #pragma comment( lib, "glew32s.lib" )
+
+static jaded::renderer::GLShaderManager shaderManager;
 
 extern int OGL_versionMinor = 0;
 extern int OGL_versionMajor = 0;
@@ -146,7 +149,7 @@ static bool QueryGLSupport()
 	windowClass.lpszClassName = "DummyWGLClass";
 	if ( !RegisterClassA( &windowClass ) )
 	{
-		jaded::sys::AlertBox( "Failed to register dummy OpenGL class!", "OpenGL warning", jaded::sys::ALERT_BOX_ERROR );
+		jaded::sys::AlertBox( "Failed to register dummy OpenGL class!", JADED_MODULE_NAME " Error", jaded::sys::ALERT_BOX_ERROR );
 		return false;
 	}
 
@@ -164,7 +167,7 @@ static bool QueryGLSupport()
 	if ( dummyWindow == nullptr )
 	{
 		UnregisterClass( "DummyWGLClass", windowClass.hInstance );
-		jaded::sys::AlertBox( "Failed to create dummy OpenGL window!", "OpenGL warning", jaded::sys::ALERT_BOX_ERROR );
+		jaded::sys::AlertBox( "Failed to create dummy OpenGL window!", JADED_MODULE_NAME " Error", jaded::sys::ALERT_BOX_ERROR );
 		return false;
 	}
 
@@ -255,7 +258,7 @@ static bool QueryGLSupport()
 	}
 	catch (const std::exception& e)
 	{
-		jaded::sys::AlertBox( "Failed to query GL features: " + std::string( e.what() ), "OpenGL warning", jaded::sys::ALERT_BOX_ERROR );
+		jaded::sys::AlertBox( "Failed to query GL features: " + std::string( e.what() ), JADED_MODULE_NAME " Error", jaded::sys::ALERT_BOX_ERROR );
 	}
 
 	// cleanup
@@ -457,7 +460,7 @@ LONG OGL_l_Init( HWND _hWnd, GDI_tdst_DisplayData *_pst_DD )
 
 	if ( !GetClientRect( _hWnd, &pst_SD->rcViewportRect ) )
 	{
-		jaded::sys::AlertBox( "Failed to get window area!", "OpenGL warning", jaded::sys::ALERT_BOX_ERROR );
+		jaded::sys::AlertBox( "Failed to get window area!", JADED_MODULE_NAME " Error", jaded::sys::ALERT_BOX_ERROR );
 		return FALSE;
 	}
 
@@ -472,7 +475,7 @@ LONG OGL_l_Init( HWND _hWnd, GDI_tdst_DisplayData *_pst_DD )
 	/* Select the pixel format */
 	if ( !OGL_SetDCPixelFormat( pst_SD->h_DC ) )
 	{
-		jaded::sys::AlertBox( "Failed to set OpenGL pixel format!", "OpenGL warning", jaded::sys::ALERT_BOX_ERROR );
+		jaded::sys::AlertBox( "Failed to set OpenGL pixel format!", JADED_MODULE_NAME " Error", jaded::sys::ALERT_BOX_ERROR );
 		return FALSE;
 	}
 
@@ -492,7 +495,7 @@ LONG OGL_l_Init( HWND _hWnd, GDI_tdst_DisplayData *_pst_DD )
 	pst_SD->h_RC = wglCreateContextAttribsARB( pst_SD->h_DC, 0, attribs );
 	if (pst_SD->h_RC == nullptr)
 	{
-		jaded::sys::AlertBox( "Failed to create OpenGL context!", "OpenGL warning", jaded::sys::ALERT_BOX_ERROR );
+		jaded::sys::AlertBox( "Failed to create OpenGL context!", JADED_MODULE_NAME " Error", jaded::sys::ALERT_BOX_ERROR );
 		return FALSE;
 	}
 
@@ -509,6 +512,12 @@ LONG OGL_l_Init( HWND _hWnd, GDI_tdst_DisplayData *_pst_DD )
 	if ( GLEW_EXT_compiled_vertex_array )
 	{
 		OGL_CALL( glEnableClientState( GL_VERTEX_ARRAY ) );
+	}
+
+	if ( !shaderManager.Initialize() )
+	{
+		jaded::sys::AlertBox( "Failed to initialize shader manager!", JADED_MODULE_NAME " Error", jaded::sys::ALERT_BOX_ERROR );
+		return FALSE;
 	}
 
 	OGL_SetupRC( pst_SD );
@@ -2765,33 +2774,6 @@ extern "C" void OGL_l_DrawSPG2( SPG2_CachedPrimitivs *pCachedLine,
 			OGL_l_DrawSPG2_SPRITES_2X( pCachedLine->a_PointLA2, XCam, YCam, pCachedLine->a_ColorLA2, ulnumberOfPoints, _pst_SPG2->NumberOfSprites, CA, SA, _pst_SPG2->f_SpriteGeneratorRadius, fExtractionOfHorizontalPlane, _pst_SPG2->f_GlobalRatio, pWind, p_stII );
 		}
 	}
-}
-
-void OGL_l_DrawSPG2_Alpha(
-        SOFT_tdst_AVertex *Coordinates,
-        ULONG *pColors,
-        ULONG ulTextureID,
-        ULONG ulnumberOfPoints,
-        ULONG ulNumberOfSegments,
-        ULONG AlphaT,
-        float fTrapeze,
-        ULONG TileNumber,
-        ULONG ulMode )
-{
-}
-
-void OGL_l_DrawSPG2_SPRITES(
-        SOFT_tdst_AVertex *Coordinates,
-        GEO_Vertex *XCam,
-        GEO_Vertex *YCam,
-        ULONG *pColors,
-        ULONG ulTextureID,
-        ULONG ulnumberOfPoints,
-        ULONG ulNumberOfSprites,
-        ULONG AlphaT )
-{
-	/*	OGL_l_DrawSPG2_SPRITES_2X(Coordinates,XCam,YCam,pColors,ulTextureID,ulnumberOfPoints,ulNumberOfSprites,AlphaT,MAT_Cc_Op_Copy);
-	OGL_l_DrawSPG2_SPRITES_2X(Coordinates,XCam,YCam,pColors,ulTextureID,ulnumberOfPoints,ulNumberOfSprites,AlphaT,MAT_Cc_Op_Add);*/
 }
 
 /**********************************************************************************************************************/

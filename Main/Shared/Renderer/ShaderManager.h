@@ -7,6 +7,8 @@ namespace jaded
 {
 	namespace renderer
 	{
+		class GLShaderManager;
+
 		// originally the plan here was to make this an interface, and then
 		// build API-specific classes on top, but we'll consider this later...
 
@@ -14,12 +16,19 @@ namespace jaded
 		{
 			int id_{};
 
+			time_t lastUpdateTime_{};// when we were last loaded from disc
+
 			GLenum type_{ 0 };
 
 			std::string path_;
 
 			GLShaderProgramStage( GLenum type, const std::string &path );
 			~GLShaderProgramStage();
+
+		public:
+			inline time_t GetLastUpdateTime() const { return lastUpdateTime_; }
+
+			inline std::string GetPath() const { return path_; }
 		};
 
 		union GLShaderProgramValue
@@ -41,6 +50,8 @@ namespace jaded
 		class GLShaderProgram
 		{
 			int id_{};
+
+			std::vector< GLShaderProgramStage > stages_;
 
 			struct Uniform
 			{
@@ -66,7 +77,6 @@ namespace jaded
 			std::map< std::string, Uniform >   uniforms_;
 			std::map< std::string, Attribute > attributes_;
 
-		public:
 			GLShaderProgram();
 			~GLShaderProgram();
 
@@ -76,31 +86,38 @@ namespace jaded
 			int GetUniform( const std::string &name );
 			int GetAttribute( const std::string &name );
 
-		private:
 			bool Link();
 
 			void PopulateUniforms();
 			void PopulateAttributes();
 
-		public:
+			friend GLShaderManager;
 		};
 
 		class GLShaderManager
 		{
-			static constexpr unsigned int HOT_RELOAD_TIMER = 60;
+			static constexpr unsigned int HOT_RELOAD_TIMER = 400;
 
 			bool         hotReload_{ false };
 			unsigned int incHotReloadTicks_{ HOT_RELOAD_TIMER };
 			unsigned int hotReloadTicks_{ HOT_RELOAD_TIMER };
 
 			std::map< std::string, GLShaderProgram * > programs_;
+			GLShaderProgram                           *activeProgram_{};
 
 		public:
 			void HotReloadPrograms();
-
 			void SetupDefaults();
 
+		private:
+			GLShaderProgram *CacheProgram( const std::string &vert, const std::string &frag );
 			GLShaderProgram *GetProgram( const std::string &name );
+
+		public:
+			void SetProgram( const std::string &name );
+			void SetProgram( GLShaderProgram *program );
+
+			bool Initialize();
 		};
 	}// namespace renderer
 }// namespace jaded

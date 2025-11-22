@@ -4,13 +4,16 @@
 #include <GL/glew.h>
 
 #include "../MainSharedApp.h"
-
-#include "LINks/LINKmsg.h"
+#include "../FileSystem/FileSystem.h"
 
 #include "ShaderManager.h"
 
+// Legacy includes
+#include "LINks/LINKmsg.h"
+#include "TIMer/TIM.h"
+
 ///////////////////////////////////////////////////////////////////
-// Shader Program
+// Shader Program Stage
 ///////////////////////////////////////////////////////////////////
 
 jaded::renderer::GLShaderProgramStage::GLShaderProgramStage( GLenum type, const std::string &path ) : type_( type ), path_( path )
@@ -24,7 +27,15 @@ jaded::renderer::GLShaderProgramStage::GLShaderProgramStage( GLenum type, const 
 
 jaded::renderer::GLShaderProgramStage::~GLShaderProgramStage()
 {
+	if ( id_ != 0 )
+	{
+		glDeleteShader( id_ );
+	}
 }
+
+///////////////////////////////////////////////////////////////////
+// Shader Program
+///////////////////////////////////////////////////////////////////
 
 jaded::renderer::GLShaderProgram::GLShaderProgram()
 {
@@ -43,10 +54,60 @@ jaded::renderer::GLShaderProgram::~GLShaderProgram()
 	}
 }
 
+void jaded::renderer::GLShaderProgram::Reload()
+{
+	bool reload = false;
+	for ( auto &i : stages_ )
+	{
+		std::string path = i.GetPath();
+		if ( path.empty() )
+		{
+			continue;
+		}
+
+		time_t time = filesystem.GetLocalFileTimestamp( path );
+		if ( time == ( time_t ) -1 )
+		{
+			// maybe this should be an assert or something?
+			// as it shouldn't really fail...
+			continue;
+		}
+
+		if ( time != i.GetLastUpdateTime() )
+		{
+			reload = true;
+			break;
+		}
+	}
+
+	if ( !reload )
+	{
+		return;
+	}
+
+	//TODO: io crap
+}
+
+void jaded::renderer::GLShaderProgram::MakeActive()
+{
+	glUseProgram( id_ );
+}
+
 int jaded::renderer::GLShaderProgram::GetUniform( const std::string &name )
 {
 	auto &i = uniforms_.find( name );
 	if ( i == uniforms_.end() )
+	{
+		return -1;
+	}
+
+	return i->second.id;
+}
+
+int jaded::renderer::GLShaderProgram::GetAttribute( const std::string &name )
+{
+	auto &i = attributes_.find( name );
+	if ( i == attributes_.end() )
 	{
 		return -1;
 	}
@@ -250,10 +311,34 @@ void jaded::renderer::GLShaderProgram::PopulateAttributes()
 
 void jaded::renderer::GLShaderManager::HotReloadPrograms()
 {
+	//TODO: replace with something better, this is temp!!!
+	hotReloadTicks_++;
+	if ( hotReloadTicks_ < HOT_RELOAD_TIMER )
+	{
+		return;
+	}
+
+	for ( auto &i : programs_ )
+	{
+		i.second->Reload();
+	}
+
+	hotReloadTicks_ = 0;
 }
 
 void jaded::renderer::GLShaderManager::SetupDefaults()
 {
+}
+
+jaded::renderer::GLShaderProgram *jaded::renderer::GLShaderManager::CacheProgram( const std::string &vert, const std::string &frag )
+{
+	//TODO: need to handle the following...
+	//	- automatically prefix #version to input
+	//	- handle #include ourselves (and discard so driver ignores)
+
+	static constexpr const char BASE_PATH[] = "shaders/glsl/";
+
+	return nullptr;
 }
 
 jaded::renderer::GLShaderProgram *jaded::renderer::GLShaderManager::GetProgram( const std::string &name )
@@ -265,4 +350,62 @@ jaded::renderer::GLShaderProgram *jaded::renderer::GLShaderManager::GetProgram( 
 	}
 
 	return i->second;
+}
+
+void jaded::renderer::GLShaderManager::SetProgram( const std::string &name )
+{
+	// an empty name indicates we should clear the active program
+	// (this API kinda sucks but I just want to get this crap done)
+	if ( name.empty() )
+	{
+		SetProgram( nullptr );
+		return;
+	}
+
+	GLShaderProgram *program = GetProgram( name );
+	if ( program == nullptr )
+	{
+		printf( "Failed to set shader program \"%s\"!\n", name.c_str() );
+		return;
+	}
+
+	SetProgram( program );
+}
+
+void jaded::renderer::GLShaderManager::SetProgram( GLShaderProgram *program )
+{
+	if ( program == activeProgram_ )
+	{
+		return;
+	}
+
+	if ( program != nullptr )
+	{
+		program->MakeActive();
+	}
+	else
+	{
+		glUseProgram( 0 );
+	}
+
+	activeProgram_ = program;
+}
+
+bool jaded::renderer::GLShaderManager::Initialize()
+{
+	static constexpr char DEFAULTS[][ 64 ] = {
+	        "default",
+	};
+
+	for ( const auto &i : DEFAULTS )
+	{
+		GLShaderProgram *program = CacheProgram( i );
+		if ( program == nullptr )
+		{
+			printf( "Failed to load shader program (%s)!\n", i );
+			return false;
+		}
+	}
+
+	return true;
 }

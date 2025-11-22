@@ -165,6 +165,23 @@ size_t jaded::FileSystem::GetLocalFileSize( const std::string &path )
 	return buf.st_size;
 }
 
+time_t jaded::FileSystem::GetLocalFileTimestamp( const std::string &path )
+{
+	FILE *file = fopen( path.c_str(), "rb" );
+	if ( file == nullptr )
+	{
+		return ( time_t ) -1;
+	}
+
+	struct stat buf;
+	int         fd = _fileno( file );
+	fstat( fd, &buf );
+
+	fclose( file );
+
+	return buf.st_mtime;
+}
+
 bool jaded::FileSystem::ReadFileByIndex( FileIndex index, std::vector< uint8_t > *dst )
 {
 	bool  status;
@@ -542,7 +559,7 @@ jaded::FileSystem::Key jaded::FileSystem::GenerateFileKey( const std::string &pa
 	return key;
 }
 
-const std::vector< jaded::FileSystem::FileIndex > &jaded::FileSystem::GetDirFiles( const std::string &path )
+std::vector< jaded::FileSystem::FileIndex > jaded::FileSystem::GetDirFiles( const std::string &path )
 {
 	auto &i = dirLookup.find( path );
 	if ( i == dirLookup.end() )

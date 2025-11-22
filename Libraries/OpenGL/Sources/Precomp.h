@@ -14,5 +14,10 @@
 #include <GL/glew.h>
 #include <GL/wglew.h>
 
+#ifdef JADED_MODULE_NAME
+#	undef JADED_MODULE_NAME
+#endif
+#define JADED_MODULE_NAME "GraphicDK"
+
 #endif	//UBI_INCLUDED_PRECOMP_H__E367CE0A_386F_44F2_B62B_40DCC489C3E2
 
