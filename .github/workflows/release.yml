@@ -31,7 +31,7 @@ jobs:
 
       - name: 'Package Release'
         if: github.event_name != 'pull_request'
-        run: zip -9 web/releases/jaded-release.zip mappings/* changes.txt Jaded.exe Jaded.pdb run_window.bat run_console.bat run_editor.bat SDL3.dll legal.txt
+        run: zip -9 jaded-release.zip mappings/* changes.txt Jaded.exe Jaded.pdb run_window.bat run_console.bat run_editor.bat SDL3.dll legal.txt
 
       #- name: 'Upload to Discord'
       #  if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
@@ -46,5 +46,5 @@ jobs:
         uses: actions/upload-artifact@v4.6.2
         with:
           name: jaded-release
-          path: web/releases/jaded-release.zip
+          path: jaded-release.zip
           retention-days: 30
