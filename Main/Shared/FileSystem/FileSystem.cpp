@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <iostream>
 #include <string>
+#include <sstream>
+#include <fstream>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -239,6 +241,19 @@ bool jaded::FileSystem::ReadFileByName( const std::string &path, std::vector< ui
 	}
 
 	return ReadFileByIndex( i->second, dst );
+}
+
+std::string jaded::FileSystem::ReadFileToString( const std::string &path )
+{
+	std::ifstream file( path );
+	if ( !file.is_open() )
+	{
+		throw std::runtime_error( "Failed to open file: " + path );
+	}
+
+	std::stringstream buf;
+	buf << file.rdbuf();
+	return buf.str();
 }
 
 bool jaded::FileSystem::SetProject( const std::string &path )

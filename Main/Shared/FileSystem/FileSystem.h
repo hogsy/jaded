@@ -5,6 +5,11 @@
 
 #if defined( __cplusplus )
 
+extern "C"
+{
+	typedef struct BIG_tdst_BigFile_ BIG_tdst_BigFile;
+}
+
 namespace jaded
 {
 	class FileSystem
@@ -55,7 +60,8 @@ namespace jaded
 		time_t GetLocalFileTimestamp( const std::string &path );
 
 		bool ReadFileByIndex( FileIndex index, std::vector< uint8_t > *dst );
-		bool ReadFileByName( const std::string &path, std::vector< uint8_t > *dst );
+		bool        ReadFileByName( const std::string &path, std::vector< uint8_t > *dst );
+		std::string ReadFileToString( const std::string &path );
 
 		bool SetProject( const std::string &path );
 

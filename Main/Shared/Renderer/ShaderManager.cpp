@@ -8,15 +8,11 @@
 
 #include "ShaderManager.h"
 
-// Legacy includes
-#include "LINks/LINKmsg.h"
-#include "TIMer/TIM.h"
-
 ///////////////////////////////////////////////////////////////////
 // Shader Program Stage
 ///////////////////////////////////////////////////////////////////
 
-jaded::renderer::GLShaderProgramStage::GLShaderProgramStage( GLenum type, const std::string &path ) : type_( type ), path_( path )
+jaded::renderer::GLShaderProgram::Stage::Stage( GLenum type, const std::string &path ) : type_( type ), path_( path )
 {
 	id_ = glCreateShader( type );
 	if ( id_ == 0 )
@@ -25,12 +21,60 @@ jaded::renderer::GLShaderProgramStage::GLShaderProgramStage( GLenum type, const 
 	}
 }
 
-jaded::renderer::GLShaderProgramStage::~GLShaderProgramStage()
+jaded::renderer::GLShaderProgram::Stage::~Stage()
 {
 	if ( id_ != 0 )
 	{
 		glDeleteShader( id_ );
 	}
+}
+
+bool jaded::renderer::GLShaderProgram::Stage::Reload()
+{
+	time_t time = filesystem.GetLocalFileTimestamp( path_ );
+	if ( time == ( time_t ) -1 )
+	{
+		throw std::runtime_error( "failed to get timestamp for " + path_ );
+	}
+
+	return Compile();
+}
+
+bool jaded::renderer::GLShaderProgram::Stage::Compile()
+{
+	const char *src = source_.c_str();
+	glShaderSource( id_, 1, &src, nullptr );
+	glCompileShader( id_ );
+
+	// check if it succeeded or not
+	GLint status;
+	glGetShaderiv( id_, GL_COMPILE_STATUS, &status );
+	if ( !status )
+	{
+		GLint logLength;
+		glGetShaderiv( id_, GL_INFO_LOG_LENGTH, &logLength );
+		if ( logLength <= 0 )
+		{
+			printf( "Unknown compile error!\n" );
+			return false;
+		}
+
+		std::string log;
+		log.resize( logLength );
+
+		glGetShaderInfoLog( id_, logLength, nullptr, &log[ 0 ] );
+
+		printf( "Shader compilation error (%s): %s\n", path_.c_str(), log.c_str() );
+
+		return false;
+	}
+
+	return true;
+}
+
+bool jaded::renderer::GLShaderProgram::Stage::LoadAndCompile()
+{
+	return false;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -80,12 +124,28 @@ void jaded::renderer::GLShaderProgram::Reload()
 		}
 	}
 
-	if ( !reload )
+	if ( reload )
 	{
-		return;
-	}
+		for ( auto &stage : stages_ )
+		{
+			glDetachShader( id_, stage.id_ );
+		}
 
-	//TODO: io crap
+		//TODO: do reload
+
+		for ( auto &stage : stages_ )
+		{
+			glAttachShader( id_, stage.id_ );
+		}
+
+		if ( !Link() )
+		{
+			return;
+		}
+
+		PopulateUniforms();
+		PopulateAttributes();
+	}
 }
 
 void jaded::renderer::GLShaderProgram::MakeActive()
@@ -123,20 +183,20 @@ bool jaded::renderer::GLShaderProgram::Link()
 	glGetProgramiv( id_, GL_LINK_STATUS, &status );
 	if ( status == 0 )
 	{
-		int slength;
-		glGetProgramiv( id_, GL_INFO_LOG_LENGTH, &slength );
-		if ( slength <= 0 )
+		int logLength;
+		glGetProgramiv( id_, GL_INFO_LOG_LENGTH, &logLength );
+		if ( logLength <= 0 )
 		{
 			printf( "Unknown link error!\n" );
 			return false;
 		}
 
-		char *buf = new char[ slength ];
-		glGetProgramInfoLog( id_, slength, nullptr, buf );
+		std::string log;
+		log.resize( logLength );
 
-		printf( "%s\n", buf );
+		glGetShaderInfoLog( id_, logLength, nullptr, &log[ 0 ] );
 
-		delete[] buf;
+		printf( "Shader link error: %s\n", log.c_str() );
 
 		return false;
 	}
@@ -153,13 +213,13 @@ void jaded::renderer::GLShaderProgram::PopulateUniforms()
 {
 	uniforms_.clear();
 
-	int numUniforms;
+	GLint numUniforms;
 	glGetProgramiv( id_, GL_ACTIVE_UNIFORMS, &numUniforms );
 	if ( numUniforms > 0 )
 	{
 		printf( "Found %d uniforms in shader\n", numUniforms );
 
-		for ( unsigned int i = 0; i < numUniforms; ++i )
+		for ( unsigned int i = 0; i < ( unsigned int ) numUniforms; ++i )
 		{
 			GLsizei maxUniformNameLength;
 			glGetActiveUniformsiv( id_, 1, &i, GL_UNIFORM_NAME_LENGTH, &maxUniformNameLength );
@@ -229,7 +289,7 @@ void jaded::renderer::GLShaderProgram::PopulateAttributes()
 {
 	attributes_.clear();
 
-	int numAttributes;
+	GLint numAttributes;
 	glGetProgramiv( id_, GL_ACTIVE_ATTRIBUTES, &numAttributes );
 	if ( numAttributes > 0 )
 	{
@@ -241,7 +301,7 @@ void jaded::renderer::GLShaderProgram::PopulateAttributes()
 
 		std::vector< GLchar > attributeName( maxNameLength );
 
-		for ( unsigned int i = 0; i < numAttributes; ++i )
+		for ( int i = 0; i < numAttributes; ++i )
 		{
 			attributeName.clear();
 
@@ -409,7 +469,7 @@ bool jaded::renderer::GLShaderManager::Initialize()
 		GLShaderProgram *program = CacheProgram( i.vert, i.frag );
 		if ( program == nullptr )
 		{
-			printf( "Failed to load shader program (%s)!\n", i );
+			printf( "Failed to load shader program (%s)!\n", i.name );
 			return false;
 		}
 

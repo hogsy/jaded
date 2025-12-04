@@ -13,22 +13,6 @@ namespace jaded
 		// originally the plan here was to make this an interface, and then
 		// build API-specific classes on top, but we'll consider this later...
 
-		class GLShaderProgramStage
-		{
-			int id_{};
-
-			time_t lastUpdateTime_{};// when we were last loaded from disc
-
-			GLenum type_{ 0 };
-
-			std::string path_;
-
-			GLShaderProgramStage( GLenum type, const std::string &path );
-			~GLShaderProgramStage();
-
-			friend GLShaderProgram;
-		};
-
 		union GLShaderProgramValue
 		{
 			int32_t i32;
@@ -47,9 +31,28 @@ namespace jaded
 
 		class GLShaderProgram
 		{
+			struct Stage
+			{
+				int id_{};
+
+				time_t lastUpdateTime_{};// when we were last loaded from disc
+
+				GLenum type_{ 0 };
+
+				std::string path_;
+				std::string source_;
+
+				Stage( GLenum type, const std::string &path );
+				~Stage();
+
+				bool Reload();
+				bool Compile();
+				bool LoadAndCompile();
+			};
+
 			int id_{};
 
-			std::vector< GLShaderProgramStage > stages_;
+			std::vector< Stage > stages_;
 
 			struct Uniform
 			{

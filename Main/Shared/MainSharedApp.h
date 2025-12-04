@@ -6,6 +6,8 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <memory>
+
 #include <stdexcept>
 
 namespace jaded
