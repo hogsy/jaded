@@ -24,6 +24,10 @@
 
 #include "Profiler.h"
 
+#if defined( _MSC_VER )
+#	pragma comment( lib, "SDL3.lib" )
+#endif
+
 jaded::sys::Profiler jaded::sys::profiler;
 
 static SDL_Window   *sdlWindow;
