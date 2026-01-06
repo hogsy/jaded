@@ -82,10 +82,8 @@ namespace jaded
 
 		void ClearTables();
 
-	private:
 		std::string dataPath;// this is where the data should be stored
 
-	private:
 		std::map< std::string, DirIndex > dirLookup;// and lookup by name
 		std::vector< KeyDir >             directories;
 

@@ -382,10 +382,7 @@ else \
  */
 
 #ifdef _DEBUG
-#define _breakpoint_	__asm \
-	{ \
-		int 0x03 \
-	}
+#define _breakpoint_ __debugbreak()
 #else /* _DEBUG */
 #define _breakpoint_
 #endif /* _DEBUG */

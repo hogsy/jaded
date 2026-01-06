@@ -60,10 +60,10 @@ extern "C"
 typedef void (*BIG_tdpfnv_Callback) (ULONG, ULONG);
 
 /* Bigfile handle on file and dir */
-#define BIG_INDEX   ULONG
+typedef ULONG BIG_INDEX;
 
 /* Key */
-#define BIG_KEY ULONG
+typedef ULONG BIG_KEY;
 
 #ifdef ACTIVE_EDITORS
 

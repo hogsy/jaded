@@ -38,7 +38,7 @@ namespace jaded
 
 				static constexpr LONGLONG POW10_9 = 1000000000;
 
-				ts->tv_sec  = pc.QuadPart / pf.QuadPart;
+				ts->tv_sec  = ( time_t ) ( pc.QuadPart / pf.QuadPart );
 				ts->tv_nsec = ( int ) ( ( ( pc.QuadPart % pf.QuadPart ) * POW10_9 + ( pf.QuadPart >> 1 ) ) / pf.QuadPart );
 				if ( ts->tv_nsec >= POW10_9 )
 				{
@@ -89,7 +89,7 @@ namespace jaded
 				// setup colour that we'll display in the profiler UI
 				for ( uint8_t i = 0; i < 3; ++i )
 				{
-					colour[ i ] = ( ( rand() % 200 ) + 50 ) / 255;
+					colour[ i ] = ( float ) ( ( rand() % 200 ) + 50 ) / 255;
 				}
 
 				Start();
