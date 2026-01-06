@@ -3,6 +3,9 @@
 // Purpose: Pak Loader, for BGE 20th Anniversary.
 //			Attempts to internally convert the PAK to something we can use.
 
+#include <sstream>
+#include <ios>
+
 #include "Precomp.h"
 
 #include "BASe/BAStypes.h"
@@ -58,7 +61,8 @@ struct Pak
 {
 	PakHeader header;
 
-	std::vector< PakFileTableEntry > files;
+	std::vector< PakFileTableEntry >          files;
+	std::map< uint32_t, PakFileTableEntry * > fileKeyLookup;
 };
 
 static std::vector< char > Pak_ReadFile( Pak *pak, PakFileInfo *info, FILE *file )
@@ -143,10 +147,6 @@ static bool Pak_ReadFileTable( Pak *pak, FILE *file )
 		if ( entry.isKeyID )
 		{
 			fread( &entry.ident.key, sizeof( uint32_t ), 1, file );
-
-#if 0
-			printf( "key: %u\n", entry.ident.key );
-#endif
 		}
 		else
 		{
@@ -161,10 +161,6 @@ static bool Pak_ReadFileTable( Pak *pak, FILE *file )
 			}
 
 			fread( entry.ident.name, sizeof( char ), nameLength, file );
-
-#if 0
-			printf( "name: %s\n", entry.ident.name );
-#endif
 		}
 
 		fread( &entry.info, sizeof( PakFileInfo ), 1, file );
@@ -181,9 +177,53 @@ static bool Pak_ReadFileTable( Pak *pak, FILE *file )
 #endif
 
 		pak->files.push_back( entry );
+
+		if ( entry.isKeyID )
+		{
+			pak->fileKeyLookup.emplace( entry.ident.key, &pak->files.back() );
+		}
 	}
 
 	return true;
+}
+
+/**
+ * Attempts to provide an appropriate extension, by figuring out the
+ * type of file being dealt with.
+ */
+static std ::string Pak_DetermineFileType( const void *buf, size_t size )
+{
+	// they were nice enough to give *some* formats
+	// something easy to identify with...
+	if ( *( ( uint32_t * ) buf ) == 0x6f61672e )
+	{
+		return ".gao";
+	}
+	if ( *( ( uint32_t * ) buf ) == 0x61672e63 )// seems specific to 20th?
+	{
+		return ".cgao";
+	}
+	if ( *( ( uint32_t * ) buf ) == 0x776f772e )
+	{
+		return ".wow";
+	}
+	if ( *( ( uint32_t * ) buf ) == 0x494c5280 )
+	{
+		return ".rli";
+	}
+
+	// and now we get into cursed territory...
+
+	if ( size >= 8 && *( ( ( uint32_t * ) buf ) + 1 ) == 0x6f61672e )
+	{
+		return ".gol";
+	}
+	if ( size >= 8 && *( ( ( uint32_t * ) buf ) + 1 ) == 0x776f772e )
+	{
+		return ".wol";
+	}
+
+	return ".bin";
 }
 
 bool Pak_Open( const char *path )
@@ -210,20 +250,25 @@ bool Pak_Open( const char *path )
 		goto cleanup;
 	}
 
-#if 0
 	for ( auto &i : pak.files )
 	{
-		if ( i.isKeyID )
-		{
-			continue;
-		}
-
 		std::vector< char > buffer = Pak_ReadFile( &pak, &i.info, file );
 		if ( !buffer.empty() )
 		{
 			if ( jaded::filesystem.CreateLocalPath( "dump" ) )
 			{
-				std::string name = i.isKeyID ? std::to_string( i.ident.key ) + ".bin" : i.ident.name;
+				std::string name;
+				if ( i.isKeyID )
+				{
+					std::stringstream sstream;
+					sstream << std::hex << i.ident.key;
+					name = sstream.str() + Pak_DetermineFileType( &buffer[ 0 ], buffer.size() );
+				}
+				else
+				{
+					name = i.ident.name;
+				}
+
 				std::string path = "dump/" + name;
 
 				FILE *out = fopen( path.c_str(), "wb" );
@@ -235,7 +280,6 @@ bool Pak_Open( const char *path )
 			}
 		}
 	}
-#endif
 
 cleanup:
 	fclose( file );
