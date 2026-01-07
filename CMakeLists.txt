@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.23)
 project(Jaded
         DESCRIPTION "Community patched version of Ubisoft's Jade engine."
-        HOMEPAGE_URL "https://jaded.oldtimes-software.com/"
+        HOMEPAGE_URL "https://hogsy.me/jaded.htm"
         LANGUAGES C CXX)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -37,13 +37,17 @@ message("GIT COMMIT COUNT: ${GIT_COMMIT_COUNT}")
 add_definitions(-DGIT_BRANCH="${GIT_BRANCH}")
 message("GIT BRANCH: ${GIT_BRANCH}")
 
-set(JADE_OUTPUT_DIR "${CMAKE_SOURCE_DIR}}/deploy/")
+set(JADE_OUTPUT_DIR "${CMAKE_SOURCE_DIR}}/runtime/")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${JADE_OUTPUT_DIR}")
 foreach (OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
     string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} "${JADE_OUTPUT_DIR}")
 endforeach ()
 
+add_compile_options(/MTd /MP)
+add_definitions(-DACTIVE_EDITORS)
+
 #add_subdirectory(Extern/ode)
 
 add_subdirectory(Libraries) # Core Jade Libraries
+#add_subdirectory(Main)
