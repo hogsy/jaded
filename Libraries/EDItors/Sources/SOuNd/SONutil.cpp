@@ -1977,7 +1977,7 @@ int ESON_i_CheckSmd(ULONG _ul_FilePos, ULONG _ul_SmdFileKey)
 		if(stExtPlay.st_PlayList.us_Size)
 		{
 			stExtPlay.st_PlayList.aul_KeyList = (BIG_KEY *) L_malloc(stExtPlay.st_PlayList.us_Size * sizeof(BIG_KEY));
-			stExtPlay.st_PlayList.aul_FlagList = (BIG_KEY *) L_malloc(stExtPlay.st_PlayList.us_Size * sizeof(ULONG));
+			stExtPlay.st_PlayList.aul_FlagList = (ULONG *) L_malloc(stExtPlay.st_PlayList.us_Size * sizeof(ULONG));
 
 			L_memset(stExtPlay.st_PlayList.aul_KeyList, -1, stExtPlay.st_PlayList.us_Size * sizeof(BIG_KEY));
 			L_memset(stExtPlay.st_PlayList.aul_FlagList, 0, stExtPlay.st_PlayList.us_Size * sizeof(ULONG));

@@ -300,7 +300,7 @@ bool DAT_CP4BFObjectHeader::Version(UINT& version)
 // RetVal : 
 // Descr. : 
 // ------------------------------------------------------------------------------------------------
-bool DAT_CP4BFObjectHeader::JadeKey(ULONG& key)
+bool DAT_CP4BFObjectHeader::JadeKey( BIG_KEY &key )
 { 
 	key     = m_JadeKey; 
 

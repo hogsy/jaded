@@ -470,7 +470,7 @@ void ESON_cl_Frame::SModifier_CreateAss(BIG_INDEX _ul_SoundFileFat)
         st_Player.st_PlayList.aul_FlagList = new ULONG[1];
         st_Player.st_PlayList.aul_FlagList[0] = SND_gst_Params.dst_Sound[i_SoundFile].ul_Flags & SND_Cul_SF_MaskFlagsFromSoundToInstance;
 
-        st_Player.st_PlayList.aul_KeyList = new ULONG[1];
+        st_Player.st_PlayList.aul_KeyList = new BIG_KEY[1];
         st_Player.st_PlayList.aul_KeyList[0] = BIG_FileKey(_ul_SoundFileFat);
 
         st_Player.st_PlayList.us_Idx = 0;

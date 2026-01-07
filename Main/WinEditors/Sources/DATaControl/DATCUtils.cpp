@@ -155,7 +155,7 @@ ULONG DAT_CUtils::GetKeyFromExactString(const char* _psz_filename)
 /// \param     No param description available... 
 /// \see 
 //------------------------------------------------------------
-void DAT_CUtils::GetP4FileFromKey(ULONG ul_Key,char* _psz_filename,const char* _pszP4Root)
+void DAT_CUtils::GetP4FileFromKey(BIG_KEY ul_Key,char* _psz_filename,const char* _pszP4Root)
 {
 	char asz_FirstPath[MAX_PATH] = {0};
 	char asz_SecondPath[MAX_PATH] = {0};
@@ -301,8 +301,8 @@ void DAT_CUtils::GetP4FilesFromVecIndex(const std::vector<BIG_INDEX>& vFileIndex
 //------------------------------------------------------------
 void DAT_CUtils::GetP4FilesFromVecKey(const std::vector<BIG_KEY>& vFileKey, std::vector<std::string>& vP4Files, const char* _pszP4Root)
 {
-	std::vector<BIG_INDEX>::const_iterator Iter = vFileKey.begin();
-	std::vector<BIG_INDEX>::const_iterator IterEnd = vFileKey.end();
+	std::vector<BIG_KEY>::const_iterator Iter = vFileKey.begin();
+	std::vector< BIG_KEY >::const_iterator IterEnd = vFileKey.end();
 
 	for ( ; Iter < IterEnd ; Iter++ )
 	{

@@ -13,21 +13,21 @@
 
 #ifndef __AISTRUCT_H__
 #define __AISTRUCT_H__
-#include "BASe/BAStypes.h"
 
+#include "BASe/BAStypes.h"
+#include "BIGfiles/BIGdefs.h"
 
 #if defined (__cplusplus) && !defined(JADEFUSION)
 extern "C"
 {
 #endif
-//#define BENCH_IA_TEST
 
-void AI_vAddKeyDependency(ULONG h_Used,ULONG h_User,char *_s_CallbackName);
+//#define BENCH_IA_TEST
+void AI_vAddKeyDependency(BIG_KEY h_Used,ULONG h_User,char *_s_CallbackName);
 extern void AI_ResolveTrigger(struct SCR_tt_Trigger_ *, BOOL);
 extern BOOL			AI_gb_Optim2;
 extern BOOL			AI_gb_GenOptim2;
 
-#include "BIGfiles/BIGdefs.h"
 #include "AIinterp/Sources/AImsg.h"
 
 /*$4

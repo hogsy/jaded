@@ -29,7 +29,7 @@ public:
 	// Get the BFObjectHeader attributes
 	bool Path(std::string& strPath);
 	bool Version(UINT& version);
-	bool JadeKey(ULONG& key);
+	bool JadeKey(BIG_KEY& key);
 	bool IsUniverseKey(UINT& isUniverseKey);
 
 	// Set the BFObjectHeader attributes
@@ -55,7 +55,7 @@ private:
 
 	std::string	m_Path;		// Object's path in BF structure
 	UINT		m_Version;	// BF version in which this object was saved
-	ULONG		m_JadeKey;	// BF Key for that object
+	BIG_KEY		m_JadeKey;	// BF Key for that object
 	UINT		m_IsUniverseKey; // if the file is the universe key
 
 	bool		m_PathIsSet;
