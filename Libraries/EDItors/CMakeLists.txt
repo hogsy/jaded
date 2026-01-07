@@ -300,3 +300,4 @@ target_include_directories(Jaded-Editors
 )
 
 target_link_libraries(Jaded-Editors Jaded-SDK Jaded-Engine)
+set_target_properties(Jaded-Editors PROPERTIES FOLDER "Libraries")

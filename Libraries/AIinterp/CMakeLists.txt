@@ -168,3 +168,4 @@ target_include_directories(Jaded-AI
 )
 
 target_link_libraries(Jaded-AI Jaded-SDK Jaded-Engine)
+set_target_properties(Jaded-AI PROPERTIES FOLDER "Libraries")
