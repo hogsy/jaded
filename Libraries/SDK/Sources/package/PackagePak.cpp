@@ -61,11 +61,11 @@ struct Pak
 {
 	PakHeader header;
 
-	std::vector< PakFileTableEntry >          files;
-	std::map< uint32_t, PakFileTableEntry * > fileKeyLookup;
+	std::vector< PakFileTableEntry >   files;
+	std::map< uint32_t, unsigned int > fileKeyLookup;
 };
 
-static std::vector< char > Pak_ReadFile( Pak *pak, PakFileInfo *info, FILE *file )
+static std::vector< char > Pak_ReadFile( Pak *pak, const PakFileInfo *info, FILE *file )
 {
 	if ( info->compressedSize == 0 && info->size == 0 )
 	{
@@ -180,7 +180,7 @@ static bool Pak_ReadFileTable( Pak *pak, FILE *file )
 
 		if ( entry.isKeyID )
 		{
-			pak->fileKeyLookup.emplace( entry.ident.key, &pak->files.back() );
+			pak->fileKeyLookup.emplace( entry.ident.key, pak->files.size() - 1 );
 		}
 	}
 
@@ -191,7 +191,7 @@ static bool Pak_ReadFileTable( Pak *pak, FILE *file )
  * Attempts to provide an appropriate extension, by figuring out the
  * type of file being dealt with.
  */
-static std ::string Pak_DetermineFileType( const void *buf, size_t size )
+static std::string Pak_DetermineFileType( const void *buf, size_t size )
 {
 	// they were nice enough to give *some* formats
 	// something easy to identify with...
@@ -226,6 +226,34 @@ static std ::string Pak_DetermineFileType( const void *buf, size_t size )
 	return ".bin";
 }
 
+// Hacky gross crap ...
+
+static const PakFileTableEntry *GetWowForWol( const Pak *pak, const void *buf, size_t size )
+{
+	// so from what I can tell, we can get the primary wow as the last key from the wol...
+	// this is a little dumb, but hey, we're trying to figure out what's what from a mess
+
+	struct Index
+	{
+		BIG_KEY  key;
+		uint32_t magic;
+	};
+
+	Index *index = ( Index * ) ( ( char * ) buf ) + size - sizeof( Index );
+	if ( index->magic != 0x776f772e )
+	{
+		return nullptr;
+	}
+
+	auto &i = pak->fileKeyLookup.find( index->key );
+	if ( i == pak->fileKeyLookup.end() )
+	{
+		return nullptr;
+	}
+
+	return &pak->files[ i->second ];
+}
+
 bool Pak_Open( const char *path )
 {
 	FILE *file = fopen( path, "r+bR" );
@@ -255,28 +283,79 @@ bool Pak_Open( const char *path )
 		std::vector< char > buffer = Pak_ReadFile( &pak, &i.info, file );
 		if ( !buffer.empty() )
 		{
-			if ( jaded::filesystem.CreateLocalPath( "dump" ) )
+			std::string dir, name;
+			if ( i.isKeyID )
 			{
-				std::string name;
-				if ( i.isKeyID )
+				std::string ident = Pak_DetermineFileType( &buffer[ 0 ], buffer.size() );
+				if ( ident == ".wow" )
+				{
+					// we can pull the original filename from a wow :)
+					// this should be safe; size is technically 60,
+					// but last four bytes are unused and string is
+					// null-terminated
+					char buf[ 64 ] = {};
+					memcpy( buf, &buffer[ 16 ], 60 );
+
+					dir  = "ROOT/06 Levels/" + std::string( buf );
+					name = std::string( buf ) + ".wow";
+				}
+				else if ( ident == ".wol" )
+				{
+					//TODO: this shit doesn't work...
+					const PakFileTableEntry *entry = GetWowForWol( &pak, &buffer[ 0 ], buffer.size() );
+					if ( entry != nullptr )
+					{
+						std::vector< char > wowBuf = Pak_ReadFile( &pak, &entry->info, file );
+						assert( !wowBuf.empty() );
+
+						std::string wowIdent = Pak_DetermineFileType( &wowBuf[ 0 ], wowBuf.size() );
+						assert( wowIdent == ".wow" );
+
+						char buf[ 64 ] = {};
+						memcpy( buf, &wowBuf[ 16 ], 60 );
+
+						dir  = "ROOT/06 Levels/" + std::string( buf );
+						name = std::string( buf ) + ".wol";
+					}
+				}
+
+				if ( dir.empty() )
+				{
+					dir = "ROOT/Unsorted";
+				}
+
+				if ( name.empty() )
 				{
 					std::stringstream sstream;
 					sstream << std::hex << i.ident.key;
-					name = sstream.str() + Pak_DetermineFileType( &buffer[ 0 ], buffer.size() );
+					name = sstream.str() + ident;
 				}
-				else
-				{
-					name = i.ident.name;
-				}
+			}
+			else
+			{
+				name = i.ident.name;
+				dir  = "ROOT/Unsorted";
+			}
 
-				std::string path = "dump/" + name;
+			std::string path = dir + "/" + name;
+			if ( jaded::filesystem.DoesFileExist( path ) )
+			{
+				continue;
+			}
 
-				FILE *out = fopen( path.c_str(), "wb" );
-				if ( out != nullptr )
-				{
-					fwrite( &buffer[ 0 ], sizeof( char ), buffer.size(), out );
-					fclose( out );
-				}
+			if ( !jaded::filesystem.CreateLocalPath( dir ) )
+			{
+				char tmp[ 32 ];
+				snprintf( tmp, sizeof( tmp ), "Failed to create destination (%s)!", dir.c_str() );
+				ERR_X_ForceError( tmp, nullptr );
+				continue;
+			}
+
+			FILE *out = fopen( path.c_str(), "wb" );
+			if ( out != nullptr )
+			{
+				fwrite( &buffer[ 0 ], sizeof( char ), buffer.size(), out );
+				fclose( out );
 			}
 		}
 	}
