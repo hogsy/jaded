@@ -576,7 +576,9 @@ target_link_directories(Jaded
 target_link_libraries(Jaded
         Jaded-ODE
 
-        Jaded-Mad_Mem
+        Jaded-MAD_loadSave
+        Jaded-MAD_mem
+        Jaded-MAD_rasterize
 
         Jaded-SDK
         Jaded-Engine
@@ -587,6 +589,29 @@ target_link_libraries(Jaded
         Jaded-Sound
 
         OpenGL32
-        glew32
-        Winhttp
+        glew32s
+
+        oldnames
+        advapi32
+        shell32
+        kernel32
+        user32
+        gdi32
+        winspool
+        comdlg32
+        ole32
+        oleaut32
+        uuid
+        odbc32
+        odbccp32
+        winmm
+        msacm32
+        comctl32
+        ws2_32
+        NAFXCWD
+        libcmtd
+        VFW32
+        strmiids
+        dxguid
+        winhttp
 )

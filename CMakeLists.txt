@@ -48,6 +48,9 @@ endforeach ()
 add_compile_options(/MTd /MP)
 add_definitions(-DACTIVE_EDITORS)
 
+# sigh...
+include_directories(Dlls)
+
 ###################################################################################
 # External Libraries
 
@@ -56,7 +59,9 @@ add_subdirectory(Extern/ode)    # ODE physics engine
 ###################################################################################
 # Libraries
 
+add_subdirectory(Dlls/MAD_loadSave)
 add_subdirectory(Dlls/MAD_mem)
+add_subdirectory(Dlls/MAD_rasterize)
 
 add_subdirectory(Libraries)     # Core Jade Libraries
 
