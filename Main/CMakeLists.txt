@@ -576,6 +576,8 @@ target_link_directories(Jaded
 target_link_libraries(Jaded
         Jaded-ODE
 
+        Jaded-Mad_Mem
+
         Jaded-SDK
         Jaded-Engine
         Jaded-Editors

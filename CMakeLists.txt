@@ -9,6 +9,8 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 include(CMake/DetermineTargetArchitecture.cmake)
 determine_target_architecture(JADE_SYSTEM_ARCH)
 
+###################################################################################
+
 # Get the current working branch
 execute_process(
         COMMAND git rev-parse --abbrev-ref HEAD
@@ -31,11 +33,10 @@ execute_process(
         OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 add_definitions(-DGIT_COMMIT_HASH="${GIT_COMMIT_HASH}")
-message("GIT HASH: ${GIT_COMMIT_HASH}")
 add_definitions(-DGIT_COMMIT_COUNT="${GIT_COMMIT_COUNT}")
-message("GIT COMMIT COUNT: ${GIT_COMMIT_COUNT}")
 add_definitions(-DGIT_BRANCH="${GIT_BRANCH}")
-message("GIT BRANCH: ${GIT_BRANCH}")
+
+###################################################################################
 
 set(JADE_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/runtime/")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${JADE_OUTPUT_DIR}")
@@ -54,6 +55,8 @@ add_subdirectory(Extern/ode)    # ODE physics engine
 
 ###################################################################################
 # Libraries
+
+add_subdirectory(Dlls/MAD_mem)
 
 add_subdirectory(Libraries)     # Core Jade Libraries
 
