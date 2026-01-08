@@ -568,14 +568,23 @@ target_include_directories(Jaded
 
 target_link_directories(Jaded
         PRIVATE
+        ../Extern/glew/lib/Release/Win32
         ../Extern/sdl3/lib/x86
         ../Extern/lz4/static
 )
 
 target_link_libraries(Jaded
+        Jaded-ODE
+
         Jaded-SDK
         Jaded-Engine
+        Jaded-Editors
         Jaded-AI
         Jaded-Gfx
+        Jaded-Net
         Jaded-Sound
+
+        OpenGL32
+        glew32
+        Winhttp
 )

@@ -153,5 +153,10 @@ target_include_directories(Jaded-Sound
         ../../Dlls
 )
 
-target_link_libraries(Jaded-Sound Jaded-SDK Jaded-Engine)
+target_link_libraries(Jaded-Sound
+        Jaded-SDK
+        Jaded-Engine
+
+        Dsound
+)
 set_target_properties(Jaded-Sound PROPERTIES FOLDER "Libraries")

@@ -1,37 +1,74 @@
-add_library(Jaded-ODE STATIC
+add_library(Jaded-ODE OBJECT
         Sources/array.cpp
+        Sources/array.h
         Sources/collision_kernel.cpp
+        Sources/collision_kernel.h
         Sources/collision_quadtreespace.cpp
         Sources/collision_space.cpp
+        Sources/collision_space_internal.h
         Sources/collision_std.cpp
+        Sources/collision_std.h
         Sources/collision_transform.cpp
+        Sources/collision_transform.h
+        Sources/collision_trimesh_internal.h
         Sources/collision_util.cpp
+        Sources/collision_util.h
         Sources/dCylinder.cpp
+        Sources/dCylinder.h
         Sources/error.cpp
         Sources/fastdot.c
         Sources/fastldlt.c
         Sources/fastlsolve.c
         Sources/fastltsolve.c
+        #Sources/geom.cpp
+        Sources/geom_internal.h
         Sources/joint.cpp
+        Sources/joint.h
+        #Sources/lcp.cpp
+        #Sources/lcp.h
         Sources/mass.cpp
         Sources/mat.cpp
+        Sources/mat.h
         Sources/matrix.cpp
         Sources/memory.cpp
         Sources/misc.cpp
+        Sources/objects.h
         Sources/obstack.cpp
+        Sources/obstack.h
         Sources/ode.cpp
+        Sources/odemath.cpp
         Sources/ode_jade.c
+        Sources/Precomp.c
+        Sources/Precomp.h
         Sources/quickstep.cpp
+        Sources/quickstep.h
         Sources/rotation.cpp
+        #Sources/space.cpp
+        #Sources/stack.cpp
+        #Sources/stack.h
         Sources/step.cpp
+        Sources/step.h
         Sources/stepfast.cpp
+        Sources/testing.cpp
+        Sources/testing.h
+        #Sources/timer.cpp
         Sources/util.cpp
-
+        Sources/util.h
+        Sources/optim/Lcp/dsolve1.vsm
         Sources/optim/Lcp/lcp.cpp
+        Sources/optim/Lcp/lcp.dsm
+        Sources/optim/Lcp/lcp.h
         Sources/optim/Lcp/lcperr.cpp
+        Sources/optim/Lcp/lcperr.h
         Sources/optim/Lcp/lcpmath.cpp
+        Sources/optim/Lcp/lcpmath.h
+        Sources/optim/Lcp/lcpmem.h
         Sources/optim/Lcp/lcptimer.cpp
+        Sources/optim/Lcp/lcptimer.h
+        #Sources/optim/Lcp/lcp_vu0.cpp
+        #Sources/optim/Lcp/lcp_vu0.h
         Sources/optim/REAL/preparelcp.cpp
+        #Sources/optim/REAL/preparelcpGCN.cpp
 )
 
 target_include_directories(Jaded-ODE
@@ -42,3 +79,9 @@ target_include_directories(Jaded-ODE
         ../../Libraries/SDK/Sources
         ../../Libraries/GraphicDK/Sources
 )
+
+target_link_libraries(Jaded-ODE
+        Jaded-Engine
+)
+
+set_target_properties(Jaded-ODE PROPERTIES FOLDER "External")

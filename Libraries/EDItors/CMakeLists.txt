@@ -188,50 +188,50 @@ add_library(Jaded-Editors OBJECT
     #Sources/RASters/RASframe_act.h
     #Sources/RASters/RASframe_ini.cpp
     Sources/RASters/RASframe_msg.cpp
-    Sources/SELection/SELectionframe.cpp
-    Sources/SELection/SELectionframe.h
-    Sources/SELection/SELectionframe_act.cpp
-    Sources/SELection/SELectionframe_act.h
-    Sources/SELection/SELectionframe_ini.cpp
-    Sources/SELection/SELectionframe_msg.cpp
+    #Sources/SELection/SELectionframe.cpp
+    #Sources/SELection/SELectionframe.h
+    #Sources/SELection/SELectionframe_act.cpp
+    #Sources/SELection/SELectionframe_act.h
+    #Sources/SELection/SELectionframe_ini.cpp
+    #Sources/SELection/SELectionframe_msg.cpp
     #Sources/SELection/SELectionGridCtrl.cpp
     #Sources/SELection/SELectionGridCtrl.h
-    Sources/SELection/SELectionGridCtrlCell.cpp
-    Sources/SELection/SELectionGridCtrlCell.h
-    Sources/SELection/SELectionGridData.h
+    #Sources/SELection/SELectionGridCtrlCell.cpp
+    #Sources/SELection/SELectionGridCtrlCell.h
+    #Sources/SELection/SELectionGridData.h
     #Sources/SELection/SELectionHelper.cpp
     #Sources/SELection/SELectionHelper.h
     #Sources/SELection/SELectionHelper_CellToData.cpp
     #Sources/SELection/SELectionHelper_DataToCell.cpp
-    Sources/SELection/SELectionHelper_ValidateData.cpp
-    Sources/SELection/GridCtrl/BtnDataBase.cpp
-    Sources/SELection/GridCtrl/BtnDataBase.h
-    Sources/SELection/GridCtrl/CellRange.h
-    Sources/SELection/GridCtrl/GridBtnCell.cpp
-    Sources/SELection/GridCtrl/GridBtnCell.h
-    Sources/SELection/GridCtrl/GridBtnCellBase.cpp
-    Sources/SELection/GridCtrl/GridBtnCellBase.h
-    Sources/SELection/GridCtrl/GridCell.cpp
-    Sources/SELection/GridCtrl/GridCell.h
-    Sources/SELection/GridCtrl/GridCellBase.cpp
-    Sources/SELection/GridCtrl/GridCellBase.h
-    Sources/SELection/GridCtrl/GridCellCheck.cpp
-    Sources/SELection/GridCtrl/GridCellCheck.h
-    Sources/SELection/GridCtrl/GridCellCombo.cpp
-    Sources/SELection/GridCtrl/GridCellCombo.h
-    Sources/SELection/GridCtrl/GridCellNumeric.cpp
-    Sources/SELection/GridCtrl/GridCellNumeric.h
+    #Sources/SELection/SELectionHelper_ValidateData.cpp
+    #Sources/SELection/GridCtrl/BtnDataBase.cpp
+    #Sources/SELection/GridCtrl/BtnDataBase.h
+    #Sources/SELection/GridCtrl/CellRange.h
+    #Sources/SELection/GridCtrl/GridBtnCell.cpp
+    #Sources/SELection/GridCtrl/GridBtnCell.h
+    #Sources/SELection/GridCtrl/GridBtnCellBase.cpp
+    #Sources/SELection/GridCtrl/GridBtnCellBase.h
+    #Sources/SELection/GridCtrl/GridCell.cpp
+    #Sources/SELection/GridCtrl/GridCell.h
+    #Sources/SELection/GridCtrl/GridCellBase.cpp
+    #Sources/SELection/GridCtrl/GridCellBase.h
+    #Sources/SELection/GridCtrl/GridCellCheck.cpp
+    #Sources/SELection/GridCtrl/GridCellCheck.h
+    #Sources/SELection/GridCtrl/GridCellCombo.cpp
+    #Sources/SELection/GridCtrl/GridCellCombo.h
+    #Sources/SELection/GridCtrl/GridCellNumeric.cpp
+    #Sources/SELection/GridCtrl/GridCellNumeric.h
     #Sources/SELection/GridCtrl/GridCtrl.cpp
     #Sources/SELection/GridCtrl/GridCtrl.h
-    Sources/SELection/GridCtrl/GridDropTarget.cpp
-    Sources/SELection/GridCtrl/GridDropTarget.h
-    Sources/SELection/GridCtrl/InPlaceEdit.cpp
-    Sources/SELection/GridCtrl/InPlaceEdit.h
-    Sources/SELection/GridCtrl/InPlaceEditNumeric.cpp
-    Sources/SELection/GridCtrl/InPlaceEditNumeric.h
-    Sources/SELection/GridCtrl/MemDC.h
-    Sources/SELection/GridCtrl/TitleTip.cpp
-    Sources/SELection/GridCtrl/TitleTip.h
+    #Sources/SELection/GridCtrl/GridDropTarget.cpp
+    #Sources/SELection/GridCtrl/GridDropTarget.h
+    #Sources/SELection/GridCtrl/InPlaceEdit.cpp
+    #Sources/SELection/GridCtrl/InPlaceEdit.h
+    #Sources/SELection/GridCtrl/InPlaceEditNumeric.cpp
+    #Sources/SELection/GridCtrl/InPlaceEditNumeric.h
+    #Sources/SELection/GridCtrl/MemDC.h
+    #Sources/SELection/GridCtrl/TitleTip.cpp
+    #Sources/SELection/GridCtrl/TitleTip.h
     Sources/SOuNd/SONerrid.h
     Sources/SOuNd/SONframe.cpp
     Sources/SOuNd/SONframe.h

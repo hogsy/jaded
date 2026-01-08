@@ -69,8 +69,8 @@ add_library(Jaded-Engine OBJECT
         Sources/COLlision/COLvars.h
         Sources/COLlision/COLzdx.c
         Sources/COLlision/COLzdx.h
-        Sources/DEModisk/DEModisk.c
-        Sources/DEModisk/DEModisk.h
+        #Sources/DEModisk/DEModisk.c
+        #Sources/DEModisk/DEModisk.h
         Sources/DYNamics/DYN.c
         Sources/DYNamics/DYN.h
         Sources/DYNamics/DYNaccess.c

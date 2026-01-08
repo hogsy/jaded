@@ -47,7 +47,17 @@ endforeach ()
 add_compile_options(/MTd /MP)
 add_definitions(-DACTIVE_EDITORS)
 
-#add_subdirectory(Extern/ode)
+###################################################################################
+# External Libraries
+
+add_subdirectory(Extern/ode)    # ODE physics engine
+
+###################################################################################
+# Libraries
 
 add_subdirectory(Libraries)     # Core Jade Libraries
+
+###################################################################################
+# Apps
+
 add_subdirectory(Main)          # Main Program

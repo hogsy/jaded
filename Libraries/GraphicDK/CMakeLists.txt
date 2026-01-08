@@ -205,6 +205,26 @@ add_library(Jaded-Gfx OBJECT
     Sources/WAYpoint/WAYlink.h
     Sources/WAYpoint/WAYpoint.c
     Sources/WAYpoint/WAYpoint.h
+
+    ../OpenGL/Sources/OGLAfterEffects.cpp
+    ../OpenGL/Sources/OGLAfterEffects.h
+    ../OpenGL/Sources/OGLCloneDraw.cpp
+    ../OpenGL/Sources/OGLdebugfct.cpp
+    ../OpenGL/Sources/OGLdebugfct.h
+    ../OpenGL/Sources/OGLinit.cpp
+    ../OpenGL/Sources/OGLinit.h
+    ../OpenGL/Sources/OGLrenderstate.cpp
+    ../OpenGL/Sources/OGLrenderstate.h
+    ../OpenGL/Sources/OGLrequest.cpp
+    ../OpenGL/Sources/OGLrequest.h
+    ../OpenGL/Sources/OGLShiftDraw.cpp
+    ../OpenGL/Sources/OGLStringDraw.cpp
+    ../OpenGL/Sources/OGLtex.cpp
+    ../OpenGL/Sources/OGLtex.h
+    ../OpenGL/Sources/OGLWater.cpp
+    ../OpenGL/Sources/OGLWater.h
+    ../OpenGL/Sources/Precomp.cpp
+    ../OpenGL/Sources/Precomp.h
 )
 
 target_include_directories(Jaded-Gfx
@@ -213,8 +233,9 @@ target_include_directories(Jaded-Gfx
 
         PRIVATE
         #TODO: clean this up
+        ../../Extern/glew/include
         ../../Extern/ode/include
-        #../../Extern/sdl3/include
+        ../../Extern/sdl3/include
         ../../Main/WinEditors/Sources
         ../../Dlls
 )
