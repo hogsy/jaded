@@ -318,3 +318,5 @@ target_include_directories(Jaded-SDK
         ../../Main/Shared
         ../../Dlls
 )
+
+set_target_properties(Jaded-SDK PROPERTIES FOLDER "Libraries")

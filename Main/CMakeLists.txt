@@ -1,225 +1,581 @@
-cmake_minimum_required(VERSION 3.16.0 FATAL_ERROR)
-
-set(CMAKE_SYSTEM_VERSION 10.0 CACHE STRING "" FORCE)
-
-project(Jade C CXX)
-
-################################################################################
-# Set target arch type if empty. Visual studio solution generator provides it.
-################################################################################
-if(NOT CMAKE_VS_PLATFORM_NAME)
-    set(CMAKE_VS_PLATFORM_NAME "x64")
-endif()
-message("${CMAKE_VS_PLATFORM_NAME} architecture in use")
-
-if(NOT ("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Any CPU"
-     OR "${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Win32"
-     OR "${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Xbox"
-     OR "${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Xenon"))
-    message(FATAL_ERROR "${CMAKE_VS_PLATFORM_NAME} arch is not supported!")
-endif()
-
-################################################################################
-# Global configuration types
-################################################################################
-set(CMAKE_CONFIGURATION_TYPES
-    "BFObjectTools"
-    "Debug"
-    "DebugEditors"
-    "DEBUGMAX8"
-    "DebugPC"
-    "Final"
-    "MAX25"
-    "MAX3"
-    "MAX5"
-    "MAX7"
-    "MAX8"
-    "Profile"
-    "Profile_FastCap"
-    "Release"
-    "Release_LTCG"
-    "ReleasePC"
-    "ReleaseXProfile"
-    "ReleaseXProfile_Fast"
-    "SpeedEditors"
-    "SpeedEditorsXenon"
-    CACHE STRING "" FORCE
+add_executable(Jaded WIN32
+        Shared/ImGuiInterface.cpp
+        Shared/ImGuiInterface.h
+        Shared/MainSharedApp.cpp
+        Shared/MainSharedApp.h
+        Shared/MainSharedSystem.cpp
+        Shared/MainSharedSystem.h
+        Shared/Profiler.h
+        Shared/FileSystem/FileSystem.cpp
+        Shared/FileSystem/FileSystem.h
+        Shared/Renderer/ShaderManager.cpp
+        Shared/Renderer/ShaderManager.h
+        WinEditors/Sources/EDIaction.cpp
+        WinEditors/Sources/EDIaction.h
+        WinEditors/Sources/EDIapp.cpp
+        WinEditors/Sources/EDIapp.h
+        WinEditors/Sources/EDIapp_help.cpp
+        WinEditors/Sources/EDIapp_options.h
+        WinEditors/Sources/EDIbaseframe.cpp
+        WinEditors/Sources/EDIbaseframe.h
+        WinEditors/Sources/EDIbaseframe_ini.cpp
+        WinEditors/Sources/EDIbaseview.cpp
+        WinEditors/Sources/EDIbaseview.h
+        WinEditors/Sources/EDIbaseview_game.cpp
+        WinEditors/Sources/EDIbaseview_ini.cpp
+        WinEditors/Sources/EDIbaseview_msg.cpp
+        WinEditors/Sources/EDIeditors_infos.h
+        WinEditors/Sources/EDIeditors_reg.cpp
+        WinEditors/Sources/EDIerrid.h
+        WinEditors/Sources/EDIFileFilters.cpp
+        WinEditors/Sources/EDIFileFilters.h
+        WinEditors/Sources/EDIicons.h
+        WinEditors/Sources/EDImainframe.cpp
+        WinEditors/Sources/EDImainframe.h
+        WinEditors/Sources/EDImainframe_act.cpp
+        WinEditors/Sources/EDImainframe_act.h
+        WinEditors/Sources/EDImainframe_dd.cpp
+        WinEditors/Sources/EDImainframe_desk.cpp
+        WinEditors/Sources/EDImainframe_ini.cpp
+        WinEditors/Sources/EDImainframe_msg.cpp
+        WinEditors/Sources/EDImainframe_universe.cpp
+        WinEditors/Sources/EDImainframe_vss.cpp
+        WinEditors/Sources/EDImsg.h
+        WinEditors/Sources/EDIpaths.h
+        WinEditors/Sources/EDIsplitter.cpp
+        WinEditors/Sources/EDIsplitter.h
+        WinEditors/Sources/EDIstrings.h
+        WinEditors/Sources/EDIundo.cpp
+        WinEditors/Sources/EDIundo.h
+        WinEditors/Sources/DATaControl/DATCCompression.h
+        WinEditors/Sources/DATaControl/DATCLzo.h
+        WinEditors/Sources/DATaControl/DATCP4BFObject.cpp
+        WinEditors/Sources/DATaControl/DATCP4BFObject.h
+        #WinEditors/Sources/DATaControl/DATCP4ClientApi.cpp
+        #WinEditors/Sources/DATaControl/DATCP4ClientApi.h
+        #WinEditors/Sources/DATaControl/DATCP4ClientInfo.h
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserAdd.h
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserAttribute.h
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserChange.h
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserChanges.cpp
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserChanges.h
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserDelete.h
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserDescribe.h
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserDiff.cpp
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserDiff.h
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserEdit.h
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserFiles.h
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserFlush.cpp
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserFlush.h
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserFStat.cpp
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserFStat.h
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserFStatBF.h
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserHeader.h
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserHistory.cpp
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserHistory.h
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserIntegrate.h
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserLogin.h
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserOpened.cpp
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserOpened.h
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserPrint.cpp
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserPrint.h
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserReopen.h
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserResolve.h
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserRevert.h
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserSubmit.h
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserSync.h
+        #WinEditors/Sources/DATaControl/DATCP4ClientUserSyncPreview.h
+        #WinEditors/Sources/DATaControl/DATCP4FileSys.cpp
+        #WinEditors/Sources/DATaControl/DATCP4FileSys.h
+        #WinEditors/Sources/DATaControl/DATCP4FileSysDelete.h
+        #WinEditors/Sources/DATaControl/DATCP4FileSysDiff.cpp
+        #WinEditors/Sources/DATaControl/DATCP4FileSysDiff.h
+        #WinEditors/Sources/DATaControl/DATCP4FileSysHeader.h
+        #WinEditors/Sources/DATaControl/DATCP4FileSysSubmit.cpp
+        #WinEditors/Sources/DATaControl/DATCP4FileSysSubmit.h
+        #WinEditors/Sources/DATaControl/DATCP4FileSysSync.cpp
+        #WinEditors/Sources/DATaControl/DATCP4FileSysSync.h
+        #WinEditors/Sources/DATaControl/DATCP4Message.cpp
+        #WinEditors/Sources/DATaControl/DATCP4Message.h
+        #WinEditors/Sources/DATaControl/DATCPerforce.cpp
+        #WinEditors/Sources/DATaControl/DATCPerforce.h
+        #WinEditors/Sources/DATaControl/DATCPerforceAdd.cpp
+        #WinEditors/Sources/DATaControl/DATCPerforceChange.cpp
+        #WinEditors/Sources/DATaControl/DATCPerforceClient.cpp
+        #WinEditors/Sources/DATaControl/DATCPerforceDelete.cpp
+        #WinEditors/Sources/DATaControl/DATCPerforceDepots.cpp
+        #WinEditors/Sources/DATaControl/DATCPerforceDescribe.cpp
+        #WinEditors/Sources/DATaControl/DATCPerforceDiff.cpp
+        #WinEditors/Sources/DATaControl/DATCPerforceDirs.cpp
+        #WinEditors/Sources/DATaControl/DATCPerforceEdit.cpp
+        #WinEditors/Sources/DATaControl/DATCPerforceFileInfo.cpp
+        #WinEditors/Sources/DATaControl/DATCPerforceFiles.cpp
+        #WinEditors/Sources/DATaControl/DATCPerforceFlush.cpp
+        #WinEditors/Sources/DATaControl/DATCPerforceFStat.cpp
+        #WinEditors/Sources/DATaControl/DATCPerforceHistory.cpp
+        #WinEditors/Sources/DATaControl/DATCPerforceIntegrate.cpp
+        #WinEditors/Sources/DATaControl/DATCPerforceOpened.cpp
+        #WinEditors/Sources/DATaControl/DATCPerforcePrint.cpp
+        #WinEditors/Sources/DATaControl/DATCPerforceReopen.cpp
+        #WinEditors/Sources/DATaControl/DATCPerforceResolve.cpp
+        #WinEditors/Sources/DATaControl/DATCPerforceRevert.cpp
+        #WinEditors/Sources/DATaControl/DATCPerforceSubmit.cpp
+        #WinEditors/Sources/DATaControl/DATCPerforceSync.cpp
+        #WinEditors/Sources/DATaControl/DATCPerforceUsers.cpp
+        #WinEditors/Sources/DATaControl/DATCPerforceVerifyLinks.cpp
+        WinEditors/Sources/DATaControl/DATCUserBreak.h
+        WinEditors/Sources/DATaControl/DATCUtils.cpp
+        WinEditors/Sources/DATaControl/DATCUtils.h
+        #WinEditors/Sources/DATaControl/DATCUtilsDiff.cpp
+        #WinEditors/Sources/DATaControl/perforceui.cpp
+        #WinEditors/Sources/DATaControl/perforceui.h
+        WinEditors/Sources/DIAlogs/BaseTabCtrl.cpp
+        WinEditors/Sources/DIAlogs/BaseTabCtrl.h
+        WinEditors/Sources/DIAlogs/BtnST.cpp
+        WinEditors/Sources/DIAlogs/BtnST.h
+        WinEditors/Sources/DIAlogs/CCheckList.cpp
+        WinEditors/Sources/DIAlogs/CCheckList.h
+        #WinEditors/Sources/DIAlogs/DATCP4ChangelistComment.cpp
+        #WinEditors/Sources/DIAlogs/DATCP4ChangelistComment.h
+        #WinEditors/Sources/DIAlogs/DATCP4FileFilter.cpp
+        #WinEditors/Sources/DIAlogs/DATCP4FileFilter.h
+        #WinEditors/Sources/DIAlogs/DATCP4SettingsDlg.cpp
+        #WinEditors/Sources/DIAlogs/DATCP4SettingsDlg.h
+        #WinEditors/Sources/DIAlogs/DATCP4View.cpp
+        #WinEditors/Sources/DIAlogs/DATCP4View.h
+        WinEditors/Sources/DIAlogs/DIAanim_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAanim_dlg.h
+        WinEditors/Sources/DIAlogs/DIAbackgroundimage_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAbackgroundimage_dlg.h
+        WinEditors/Sources/DIAlogs/DIAbase.cpp
+        WinEditors/Sources/DIAlogs/DIAbase.h
+        WinEditors/Sources/DIAlogs/DIAbrickmapper_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAbrickmapper_dlg.h
+        WinEditors/Sources/DIAlogs/DIAbrofilter_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAbrofilter_dlg.h
+        WinEditors/Sources/DIAlogs/DIAchecklist_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAchecklist_dlg.h
+        WinEditors/Sources/DIAlogs/DIAcheckworld_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAcheckworld_dlg.h
+        WinEditors/Sources/DIAlogs/DIACOLOR_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIACOLOR_dlg.h
+        WinEditors/Sources/DIAlogs/DIAComboBoxCompletion.cpp
+        WinEditors/Sources/DIAlogs/DIAComboBoxCompletion.h
+        WinEditors/Sources/DIAlogs/DIAcompletion_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAcompletion_dlg.h
+        WinEditors/Sources/DIAlogs/DIAcopymatrixfrom_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAcopymatrixfrom_dlg.h
+        WinEditors/Sources/DIAlogs/DIAcreategeometry_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAcreategeometry_dlg.h
+        WinEditors/Sources/DIAlogs/DIAcreategeometry_inside.cpp
+        WinEditors/Sources/DIAlogs/DIAcreategeometry_inside.h
+        #WinEditors/Sources/DIAlogs/DIAcubemapgen_dlg.cpp
+        #WinEditors/Sources/DIAlogs/DIAcubemapgen_dlg.h
+        WinEditors/Sources/DIAlogs/DIAdropgro_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAdropgro_dlg.h
+        WinEditors/Sources/DIAlogs/DIAfavorites_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAfavorites_dlg.h
+        WinEditors/Sources/DIAlogs/DIAfile_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAfile_dlg.h
+        WinEditors/Sources/DIAlogs/DIAfindai_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAfindai_dlg.h
+        WinEditors/Sources/DIAlogs/DIAfindfile_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAfindfile_dlg.h
+        WinEditors/Sources/DIAlogs/DIAfontdescriptor_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAfontdescriptor_dlg.h
+        WinEditors/Sources/DIAlogs/DIAgamematerial_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAgamematerial_dlg.h
+        WinEditors/Sources/DIAlogs/DIAgamematerial_inside.cpp
+        WinEditors/Sources/DIAlogs/DIAgamematerial_inside.h
+        WinEditors/Sources/DIAlogs/DIAgaoinfo_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAgaoinfo_dlg.h
+        WinEditors/Sources/DIAlogs/DIAgraphchoose_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAgraphchoose_dlg.h
+        WinEditors/Sources/DIAlogs/DIAgrid_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAgrid_dlg.h
+        WinEditors/Sources/DIAlogs/DIAgromodifiersnap_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAgromodifiersnap_dlg.h
+        WinEditors/Sources/DIAlogs/DIAgromodifier_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAgromodifier_dlg.h
+        WinEditors/Sources/DIAlogs/DIAgrovertexpos_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAgrovertexpos_dlg.h
+        #WinEditors/Sources/DIAlogs/DIAhistory_dlg.cpp
+        #WinEditors/Sources/DIAlogs/DIAhistory_dlg.h
+        WinEditors/Sources/DIAlogs/DIAjoystick_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAjoystick_dlg.h
+        WinEditors/Sources/DIAlogs/DIAkeyboard_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAkeyboard_dlg.h
+        WinEditors/Sources/DIAlogs/DIAlang_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAlang_dlg.h
+        WinEditors/Sources/DIAlogs/DIALightmaps.cpp
+        WinEditors/Sources/DIAlogs/DIALightmaps.h
+        #WinEditors/Sources/DIAlogs/DIAlightrej_dlg.cpp
+        #WinEditors/Sources/DIAlogs/DIAlightrej_dlg.h
+        WinEditors/Sources/DIAlogs/DIAlink_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAlink_dlg.h
+        WinEditors/Sources/DIAlogs/DIAlist2_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAlist2_dlg.h
+        WinEditors/Sources/DIAlogs/DIAlist_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAlist_dlg.h
+        WinEditors/Sources/DIAlogs/DIAmatrix_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAmatrix_dlg.h
+        WinEditors/Sources/DIAlogs/DIAmessage_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAmessage_dlg.h
+        WinEditors/Sources/DIAlogs/DIAmixer_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAmixer_dlg.h
+        WinEditors/Sources/DIAlogs/DIAmorphedit_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAmorphedit_dlg.h
+        WinEditors/Sources/DIAlogs/DIAmorphing3Dview.cpp
+        WinEditors/Sources/DIAlogs/DIAmorphing3Dview.h
+        WinEditors/Sources/DIAlogs/DIAmorphingsliders_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAmorphingsliders_dlg.h
+        WinEditors/Sources/DIAlogs/DIAmorphing_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAmorphing_dlg.h
+        WinEditors/Sources/DIAlogs/DIAmsglink_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAmsglink_dlg.h
+        WinEditors/Sources/DIAlogs/DIAmtx_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAmtx_dlg.h
+        WinEditors/Sources/DIAlogs/DIAname_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAname_dlg.h
+        WinEditors/Sources/DIAlogs/DIAorder_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAorder_dlg.h
+        WinEditors/Sources/DIAlogs/DIApalette_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIApalette_dlg.h
+        WinEditors/Sources/DIAlogs/DIApostit_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIApostit_dlg.h
+        WinEditors/Sources/DIAlogs/DIAradiosity_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAradiosity_dlg.h
+        #WinEditors/Sources/DIAlogs/DIAreplace_dlg.cpp
+        #WinEditors/Sources/DIAlogs/DIAreplace_dlg.h
+        WinEditors/Sources/DIAlogs/DIArliadjust_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIArliadjust_dlg.h
+        WinEditors/Sources/DIAlogs/DIArlicarte_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIArlicarte_dlg.h
+        WinEditors/Sources/DIAlogs/DIArli_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIArli_dlg.h
+        WinEditors/Sources/DIAlogs/DIAsaveaddmatrix_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAsaveaddmatrix_dlg.h
+        #WinEditors/Sources/DIAlogs/DIAScreenshotSeqBuilder_dlg.cpp
+        #WinEditors/Sources/DIAlogs/DIAScreenshotSeqBuilder_dlg.h
+        WinEditors/Sources/DIAlogs/DIAsecto_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAsecto_dlg.h
+        WinEditors/Sources/DIAlogs/DIAselection_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAselection_dlg.h
+        WinEditors/Sources/DIAlogs/DIAsetTextureFilter_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAsetTextureFilter_dlg.h
+        WinEditors/Sources/DIAlogs/DIAshape_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAshape_dlg.h
+        WinEditors/Sources/DIAlogs/DIAsmodifier_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAsmodifier_dlg.h
+        WinEditors/Sources/DIAlogs/DIAsnddisp_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAsnddisp_dlg.h
+        WinEditors/Sources/DIAlogs/DIAsndgenplayer_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAsndgenplayer_dlg.h
+        WinEditors/Sources/DIAlogs/DIAsndgroupwatcher_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAsndgroupwatcher_dlg.h
+        WinEditors/Sources/DIAlogs/DIAsndinsert_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAsndinsert_dlg.h
+        WinEditors/Sources/DIAlogs/DIAsndinstance_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAsndinstance_dlg.h
+        WinEditors/Sources/DIAlogs/DIAsndmute_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAsndmute_dlg.h
+        WinEditors/Sources/DIAlogs/DIAsndtrans_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAsndtrans_dlg.h
+        WinEditors/Sources/DIAlogs/DIAsndvumeter.cpp
+        WinEditors/Sources/DIAlogs/DIAsndvumeter.h
+        WinEditors/Sources/DIAlogs/DIAsndvumeterset.cpp
+        WinEditors/Sources/DIAlogs/DIAsndvumeterset.h
+        WinEditors/Sources/DIAlogs/DIAspeedact_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAspeedact_dlg.h
+        WinEditors/Sources/DIAlogs/DIAstockofcolor_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAstockofcolor_dlg.h
+        WinEditors/Sources/DIAlogs/DIAstrings.h
+        WinEditors/Sources/DIAlogs/DIAtextfile_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAtextfile_dlg.h
+        WinEditors/Sources/DIAlogs/DIAtexture_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAtexture_dlg.h
+        WinEditors/Sources/DIAlogs/DIAtimeinterpolation_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAtimeinterpolation_dlg.h
+        WinEditors/Sources/DIAlogs/DIAtoolbox_curveview.cpp
+        WinEditors/Sources/DIAlogs/DIAtoolbox_curveview.h
+        WinEditors/Sources/DIAlogs/DIAtoolbox_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAtoolbox_dlg.h
+        WinEditors/Sources/DIAlogs/DIAtoolbox_goview.cpp
+        WinEditors/Sources/DIAlogs/DIAtoolbox_goview.h
+        WinEditors/Sources/DIAlogs/DIAtoolbox_groview.cpp
+        WinEditors/Sources/DIAlogs/DIAtoolbox_groview.h
+        WinEditors/Sources/DIAlogs/DIAundo_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAundo_dlg.h
+        WinEditors/Sources/DIAlogs/DIAuvmapper_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAuvmapper_dlg.h
+        WinEditors/Sources/DIAlogs/DIAvector_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAvector_dlg.h
+        WinEditors/Sources/DIAlogs/diawindcurve_dlg.cpp
+        WinEditors/Sources/DIAlogs/diawindcurve_dlg.h
+        WinEditors/Sources/DIAlogs/DIAwpshowstatus_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIAwpshowstatus_dlg.h
+        #WinEditors/Sources/DIAlogs/DIAXeMergeFlags.cpp
+        #WinEditors/Sources/DIAlogs/DIAXeMergeFlags.h
+        WinEditors/Sources/DIAlogs/DIA_RADIOSTY2.cpp
+        WinEditors/Sources/DIAlogs/DIA_RADIOSTY2.h
+        WinEditors/Sources/DIAlogs/DIA_SKN_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIA_SKN_dlg.h
+        WinEditors/Sources/DIAlogs/DIA_SmoothSel_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIA_SmoothSel_dlg.h
+        WinEditors/Sources/DIAlogs/DIA_UPDATE_dlg.cpp
+        WinEditors/Sources/DIAlogs/DIA_UPDATE_dlg.h
+        WinEditors/Sources/DIAlogs/EasySize.h
+        WinEditors/Sources/DIAlogs/EnTabCtrl.cpp
+        WinEditors/Sources/DIAlogs/EnTabCtrl.h
+        WinEditors/Sources/DIAlogs/FlatHeaderCtrl.cpp
+        WinEditors/Sources/DIAlogs/FlatHeaderCtrl.h
+        WinEditors/Sources/DIAlogs/HScrollListBox.cpp
+        WinEditors/Sources/DIAlogs/HScrollListBox.h
+        WinEditors/Sources/DIAlogs/ListCtrlStyled.cpp
+        WinEditors/Sources/DIAlogs/ListCtrlStyled.h
+        WinEditors/Sources/DIAlogs/MemDC.h
+        WinEditors/Sources/DIAlogs/NumEdit.cpp
+        WinEditors/Sources/DIAlogs/NumEdit.h
+        WinEditors/Sources/DIAlogs/ProSliderCtrl.cpp
+        WinEditors/Sources/DIAlogs/ProSliderCtrl.h
+        WinEditors/Sources/F3Dframe/F3Dframe.cpp
+        WinEditors/Sources/F3Dframe/F3Dframe.h
+        WinEditors/Sources/F3Dframe/F3Dstrings.h
+        WinEditors/Sources/F3Dframe/F3Dview.cpp
+        WinEditors/Sources/F3Dframe/F3Dview.h
+        WinEditors/Sources/F3Dframe/F3Dview_action.cpp
+        WinEditors/Sources/F3Dframe/F3Dview_ai.cpp
+        WinEditors/Sources/F3Dframe/F3Dview_anim.cpp
+        WinEditors/Sources/F3Dframe/F3Dview_brickmapper.cpp
+        WinEditors/Sources/F3Dframe/F3Dview_cam.cpp
+        WinEditors/Sources/F3Dframe/F3Dview_col.cpp
+        WinEditors/Sources/F3Dframe/F3Dview_curve.cpp
+        WinEditors/Sources/F3Dframe/F3DView_grid.cpp
+        WinEditors/Sources/F3Dframe/F3Dview_gro.cpp
+        WinEditors/Sources/F3Dframe/F3Dview_grp.cpp
+        WinEditors/Sources/F3Dframe/F3Dview_helpers.cpp
+        WinEditors/Sources/F3Dframe/F3Dview_mouse.cpp
+        WinEditors/Sources/F3Dframe/F3Dview_obj.cpp
+        WinEditors/Sources/F3Dframe/F3Dview_ode.cpp
+        WinEditors/Sources/F3Dframe/F3Dview_op.cpp
+        WinEditors/Sources/F3Dframe/F3DView_pick.cpp
+        WinEditors/Sources/F3Dframe/F3Dview_portal.cpp
+        WinEditors/Sources/F3Dframe/F3Dview_postit.cpp
+        WinEditors/Sources/F3Dframe/F3Dview_postit.h
+        WinEditors/Sources/F3Dframe/F3Dview_rli.cpp
+        WinEditors/Sources/F3Dframe/F3DView_Selection.cpp
+        WinEditors/Sources/F3Dframe/F3DView_subobject.cpp
+        WinEditors/Sources/F3Dframe/F3Dview_undo.cpp
+        WinEditors/Sources/F3Dframe/F3Dview_undo.h
+        WinEditors/Sources/F3Dframe/F3Dview_way.cpp
+        WinEditors/Sources/F3Dframe/F3Dview_wor.cpp
+        WinEditors/Sources/F3Dframe/F3Dview_wow.cpp
+        WinEditors/Sources/F3Dframe/F3Dview_zonebv.cpp
+        WinEditors/Sources/Res/ALPHA.bmp
+        WinEditors/Sources/Res/bigfile.ico
+        WinEditors/Sources/Res/bitmap1.bmp
+        WinEditors/Sources/Res/bitmap2.bmp
+        WinEditors/Sources/Res/bitmap6.bmp
+        WinEditors/Sources/Res/bitmap7.bmp
+        WinEditors/Sources/Res/bmppropexp.bmp
+        WinEditors/Sources/Res/cadenasferme.bmp
+        WinEditors/Sources/Res/cadenasouvert.bmp
+        WinEditors/Sources/Res/cam.cur
+        WinEditors/Sources/Res/campane.cur
+        WinEditors/Sources/Res/camtgt.cur
+        WinEditors/Sources/Res/camzoom.cur
+        WinEditors/Sources/Res/camzoom1.cur
+        WinEditors/Sources/Res/checkoff.bmp
+        WinEditors/Sources/Res/checkon1.bmp
+        WinEditors/Sources/Res/COLOR.bmp
+        WinEditors/Sources/Res/cur00001.cur
+        WinEditors/Sources/Res/cur00002.cur
+        WinEditors/Sources/Res/cur00003.cur
+        WinEditors/Sources/Res/cur00004.cur
+        WinEditors/Sources/Res/cursor2.cur
+        WinEditors/Sources/Res/cursor3.cur
+        WinEditors/Sources/Res/cursor4.cur
+        WinEditors/Sources/Res/cursor5.cur
+        WinEditors/Sources/Res/cursor6.cur
+        WinEditors/Sources/Res/cursor7.cur
+        WinEditors/Sources/Res/dragcopy.cur
+        WinEditors/Sources/Res/dragdel.cur
+        WinEditors/Sources/Res/dragmove.cur
+        WinEditors/Sources/Res/dragnone.cur
+        WinEditors/Sources/Res/dragquest.cur
+        WinEditors/Sources/Res/eai_break.ico
+        WinEditors/Sources/Res/eai_break1.ico
+        WinEditors/Sources/Res/eai_breakstop.ico
+        WinEditors/Sources/Res/eai_error.ico
+        WinEditors/Sources/Res/eai_idi_.ico
+        WinEditors/Sources/Res/ebro_idr.bmp
+        WinEditors/Sources/Res/ebro_tb.bmp
+        WinEditors/Sources/Res/EDITEX_bumpoff.bmp
+        WinEditors/Sources/Res/EDITEX_bumpon.bmp
+        WinEditors/Sources/Res/EDITEX_fontoff.bmp
+        WinEditors/Sources/Res/EDITEX_fonton.bmp
+        WinEditors/Sources/Res/EDITEX_interfaceoff.bmp
+        WinEditors/Sources/Res/EDITEX_interfaceon.bmp
+        WinEditors/Sources/Res/EDITEX_mipmapalphaoff.bmp
+        WinEditors/Sources/Res/EDITEX_mipmapalphaon.bmp
+        WinEditors/Sources/Res/EDITEX_mipmapcoloroff.bmp
+        WinEditors/Sources/Res/EDITEX_mipmapcoloron.bmp
+        WinEditors/Sources/Res/EDITEX_mipmapkeepborderoff.bmp
+        WinEditors/Sources/Res/EDITEX_mipmapkeepborderon.bmp
+        WinEditors/Sources/Res/EDITEX_mipmapoff.bmp
+        WinEditors/Sources/Res/EDITEX_MipmapOn.bmp
+        WinEditors/Sources/Res/EDITEX_updatefonton.bmp
+        WinEditors/Sources/Res/EDITEX_updatepaloff.bmp
+        WinEditors/Sources/Res/edi_about.bmp
+        WinEditors/Sources/Res/edi_idr_.bmp
+        WinEditors/Sources/Res/edi_image.bmp
+        WinEditors/Sources/Res/edi_image1.bmp
+        WinEditors/Sources/Res/edi_image2.bmp
+        WinEditors/Sources/Res/edi_intro.bmp
+        WinEditors/Sources/Res/edi_intro360.bmp
+        WinEditors/Sources/Res/edi_tb.bmp
+        WinEditors/Sources/Res/elog_tb.bmp
+        WinEditors/Sources/Res/eout_idr.bmp
+        WinEditors/Sources/Res/epro_idr.bmp
+        WinEditors/Sources/Res/eson_idr.bmp
+        WinEditors/Sources/Res/eson_toolbar.bmp
+        WinEditors/Sources/Res/eve_idi_.ico
+        WinEditors/Sources/Res/fileadd.bmp
+        WinEditors/Sources/Res/filechangelist.bmp
+        WinEditors/Sources/Res/filedelete.bmp
+        WinEditors/Sources/Res/fileedit.bmp
+        WinEditors/Sources/Res/goparent.ico
+        WinEditors/Sources/Res/Gro_ChangeId.bmp
+        WinEditors/Sources/Res/Gro_FlipNormals.bmp
+        WinEditors/Sources/Res/hand.cur
+        WinEditors/Sources/Res/ico00001.ico
+        WinEditors/Sources/Res/ico00002.ico
+        WinEditors/Sources/Res/ico00003.ico
+        WinEditors/Sources/Res/ico00004.ico
+        WinEditors/Sources/Res/ico00005.ico
+        WinEditors/Sources/Res/ico00006.ico
+        WinEditors/Sources/Res/ico00007.ico
+        WinEditors/Sources/Res/icon1.ico
+        WinEditors/Sources/Res/icon2.ico
+        WinEditors/Sources/Res/icon3.ico
+        WinEditors/Sources/Res/iconPick.ico
+        WinEditors/Sources/Res/icon_bru.ico
+        WinEditors/Sources/Res/icon_byp.ico
+        WinEditors/Sources/Res/icon_cur.ico
+        WinEditors/Sources/Res/icon_edi.ico
+        WinEditors/Sources/Res/icon_fxa.ico
+        WinEditors/Sources/Res/icon_mut.ico
+        WinEditors/Sources/Res/icon_sol.ico
+        WinEditors/Sources/Res/icon_up.ico
+        WinEditors/Sources/Res/icon_uvmapper_alpha.ico
+        WinEditors/Sources/Res/icon_uvmapper_gizmobox.ico
+        WinEditors/Sources/Res/icon_uvmapper_gizmocylindre.ico
+        WinEditors/Sources/Res/icon_uvmapper_gizmoplanar.ico
+        WinEditors/Sources/Res/icon_uvmapper_gizmosphere.ico
+        WinEditors/Sources/Res/icon_uvmapper_grid.ico
+        WinEditors/Sources/Res/icon_uvmapper_hidesubobject.ico
+        WinEditors/Sources/Res/icon_uvmapper_lockratio.ico
+        WinEditors/Sources/Res/icon_uvmapper_showoriginico.ico
+        WinEditors/Sources/Res/icon_uvmapper_useuvtransform.ico
+        WinEditors/Sources/Res/icon_uvmapper_zoom.ico
+        WinEditors/Sources/Res/idimain.ico
+        WinEditors/Sources/Res/lckmenu.bmp
+        WinEditors/Sources/Res/LUMIN.bmp
+        WinEditors/Sources/Res/main_idc.cur
+        WinEditors/Sources/Res/Morph_delete.bmp
+        WinEditors/Sources/Res/morph_down.bmp
+        WinEditors/Sources/Res/morph_first.bmp
+        WinEditors/Sources/Res/morph_last.bmp
+        WinEditors/Sources/Res/morph_up.bmp
+        WinEditors/Sources/Res/P4CheckDELETE.bmp
+        WinEditors/Sources/Res/p4checkMODIFY.bmp
+        WinEditors/Sources/Res/P4CheckMOVE.bmp
+        WinEditors/Sources/Res/P4CheckNEW.bmp
+        WinEditors/Sources/Res/P4CheckP4NEW.bmp
+        WinEditors/Sources/Res/p4checkRENAME.bmp
+        WinEditors/Sources/Res/P4CheckSAME.bmp
+        WinEditors/Sources/Res/P4CheckSort.bmp
+        WinEditors/Sources/Res/P4CheckTree.bmp
+        WinEditors/Sources/Res/Perforce.bmp
+        WinEditors/Sources/Res/pipe.cur
+        WinEditors/Sources/Res/radiooff.bmp
+        WinEditors/Sources/Res/rarrow.cur
+        WinEditors/Sources/Res/Res.clw
+        WinEditors/Sources/Res/Res.h
+        WinEditors/Sources/Res/Res.rc
+        WinEditors/Sources/Res/selection_crossing.bmp
+        WinEditors/Sources/Res/selection_window.bmp
+        WinEditors/Sources/Res/unlckmenu.bmp
+        WinEditors/Sources/Res/xmlconv.ico
+        WinEditors/Sources/VAVview/VAVlist.cpp
+        WinEditors/Sources/VAVview/VAVlist.h
+        WinEditors/Sources/VAVview/VAVlist_action.cpp
+        WinEditors/Sources/VAVview/VAVlist_ai.cpp
+        WinEditors/Sources/VAVview/VAVlist_anim.cpp
+        WinEditors/Sources/VAVview/VAVlist_col.cpp
+        WinEditors/Sources/VAVview/VAVlist_msg.cpp
+        WinEditors/Sources/VAVview/VAVlist_obj.cpp
+        WinEditors/Sources/VAVview/VAVlist_snd.cpp
+        WinEditors/Sources/VAVview/VAVtypes.h
+        WinEditors/Sources/VAVview/VAVview.cpp
+        WinEditors/Sources/VAVview/VAVview.h
+        WinEditors/Sources/VAVview/VAVview_aifunc.cpp
+        #WinEditors/Sources/VAVview/VAVview_aiinit.cpp
+        WinEditors/Sources/VAVview/VAVview_anim.cpp
+        WinEditors/Sources/VAVview/VAVview_bool.cpp
+        WinEditors/Sources/VAVview/VAVview_bounding.cpp
+        WinEditors/Sources/VAVview/VAVview_color.cpp
+        WinEditors/Sources/VAVview/VAVview_constfloat.cpp
+        WinEditors/Sources/VAVview/VAVview_constint.cpp
+        WinEditors/Sources/VAVview/VAVview_custsep.cpp
+        WinEditors/Sources/VAVview/VAVview_file.cpp
+        WinEditors/Sources/VAVview/VAVview_flags.cpp
+        WinEditors/Sources/VAVview/VAVview_float.cpp
+        WinEditors/Sources/VAVview/VAVview_go.cpp
+        WinEditors/Sources/VAVview/VAVview_grotype.cpp
+        WinEditors/Sources/VAVview/VAVview_grp.cpp
+        WinEditors/Sources/VAVview/VAVview_hexa.cpp
+        WinEditors/Sources/VAVview/VAVview_int.cpp
+        WinEditors/Sources/VAVview/VAVview_key.cpp
+        WinEditors/Sources/VAVview/VAVview_matrix.cpp
+        WinEditors/Sources/VAVview/VAVview_modifier.cpp
+        WinEditors/Sources/VAVview/VAVview_network.cpp
+        WinEditors/Sources/VAVview/VAVview_smodifier.cpp
+        WinEditors/Sources/VAVview/VAVview_sndkey.cpp
+        WinEditors/Sources/VAVview/VAVview_string.cpp
+        WinEditors/Sources/VAVview/VAVview_text.cpp
+        WinEditors/Sources/VAVview/VAVview_vector.cpp
+        WinEditors/Sources/VAVview/VAVview_zone.cpp
+        WinEngine/Sources/MAIwind.c
 )
 
-################################################################################
-# Global compiler options
-################################################################################
-if(MSVC)
-    # remove default flags provided with CMake for MSVC
-    set(CMAKE_C_FLAGS "")
-    set(CMAKE_C_FLAGS_BFOBJECTTOOLS "")
-    set(CMAKE_C_FLAGS_DEBUG "")
-    set(CMAKE_C_FLAGS_DEBUGEDITORS "")
-    set(CMAKE_C_FLAGS_DEBUGMAX8 "")
-    set(CMAKE_C_FLAGS_DEBUGPC "")
-    set(CMAKE_C_FLAGS_FINAL "")
-    set(CMAKE_C_FLAGS_MAX25 "")
-    set(CMAKE_C_FLAGS_MAX3 "")
-    set(CMAKE_C_FLAGS_MAX5 "")
-    set(CMAKE_C_FLAGS_MAX7 "")
-    set(CMAKE_C_FLAGS_MAX8 "")
-    set(CMAKE_C_FLAGS_PROFILE "")
-    set(CMAKE_C_FLAGS_PROFILE_FASTCAP "")
-    set(CMAKE_C_FLAGS_RELEASE "")
-    set(CMAKE_C_FLAGS_RELEASE_LTCG "")
-    set(CMAKE_C_FLAGS_RELEASEPC "")
-    set(CMAKE_C_FLAGS_RELEASEXPROFILE "")
-    set(CMAKE_C_FLAGS_RELEASEXPROFILE_FAST "")
-    set(CMAKE_C_FLAGS_SPEEDEDITORS "")
-    set(CMAKE_C_FLAGS_SPEEDEDITORSXENON "")
-    set(CMAKE_CXX_FLAGS "")
-    set(CMAKE_CXX_FLAGS_BFOBJECTTOOLS "")
-    set(CMAKE_CXX_FLAGS_DEBUG "")
-    set(CMAKE_CXX_FLAGS_DEBUGEDITORS "")
-    set(CMAKE_CXX_FLAGS_DEBUGMAX8 "")
-    set(CMAKE_CXX_FLAGS_DEBUGPC "")
-    set(CMAKE_CXX_FLAGS_FINAL "")
-    set(CMAKE_CXX_FLAGS_MAX25 "")
-    set(CMAKE_CXX_FLAGS_MAX3 "")
-    set(CMAKE_CXX_FLAGS_MAX5 "")
-    set(CMAKE_CXX_FLAGS_MAX7 "")
-    set(CMAKE_CXX_FLAGS_MAX8 "")
-    set(CMAKE_CXX_FLAGS_PROFILE "")
-    set(CMAKE_CXX_FLAGS_PROFILE_FASTCAP "")
-    set(CMAKE_CXX_FLAGS_RELEASE "")
-    set(CMAKE_CXX_FLAGS_RELEASE_LTCG "")
-    set(CMAKE_CXX_FLAGS_RELEASEPC "")
-    set(CMAKE_CXX_FLAGS_RELEASEXPROFILE "")
-    set(CMAKE_CXX_FLAGS_RELEASEXPROFILE_FAST "")
-    set(CMAKE_CXX_FLAGS_SPEEDEDITORS "")
-    set(CMAKE_CXX_FLAGS_SPEEDEDITORSXENON "")
-endif()
+target_compile_definitions(Jaded PRIVATE JADED_BUILD_ID="")
 
-################################################################################
-# Global linker options
-################################################################################
-if(MSVC)
-    # remove default flags provided with CMake for MSVC
-    set(CMAKE_EXE_LINKER_FLAGS "")
-    set(CMAKE_MODULE_LINKER_FLAGS "")
-    set(CMAKE_SHARED_LINKER_FLAGS "")
-    set(CMAKE_STATIC_LINKER_FLAGS "")
-    set(CMAKE_EXE_LINKER_FLAGS_BFOBJECTTOOLS "${CMAKE_EXE_LINKER_FLAGS}")
-    set(CMAKE_MODULE_LINKER_FLAGS_BFOBJECTTOOLS "${CMAKE_MODULE_LINKER_FLAGS}")
-    set(CMAKE_SHARED_LINKER_FLAGS_BFOBJECTTOOLS "${CMAKE_SHARED_LINKER_FLAGS}")
-    set(CMAKE_STATIC_LINKER_FLAGS_BFOBJECTTOOLS "${CMAKE_STATIC_LINKER_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS}")
-    set(CMAKE_MODULE_LINKER_FLAGS_DEBUG "${CMAKE_MODULE_LINKER_FLAGS}")
-    set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS}")
-    set(CMAKE_STATIC_LINKER_FLAGS_DEBUG "${CMAKE_STATIC_LINKER_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS_DEBUGEDITORS "${CMAKE_EXE_LINKER_FLAGS}")
-    set(CMAKE_MODULE_LINKER_FLAGS_DEBUGEDITORS "${CMAKE_MODULE_LINKER_FLAGS}")
-    set(CMAKE_SHARED_LINKER_FLAGS_DEBUGEDITORS "${CMAKE_SHARED_LINKER_FLAGS}")
-    set(CMAKE_STATIC_LINKER_FLAGS_DEBUGEDITORS "${CMAKE_STATIC_LINKER_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS_DEBUGMAX8 "${CMAKE_EXE_LINKER_FLAGS}")
-    set(CMAKE_MODULE_LINKER_FLAGS_DEBUGMAX8 "${CMAKE_MODULE_LINKER_FLAGS}")
-    set(CMAKE_SHARED_LINKER_FLAGS_DEBUGMAX8 "${CMAKE_SHARED_LINKER_FLAGS}")
-    set(CMAKE_STATIC_LINKER_FLAGS_DEBUGMAX8 "${CMAKE_STATIC_LINKER_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS_DEBUGPC "${CMAKE_EXE_LINKER_FLAGS}")
-    set(CMAKE_MODULE_LINKER_FLAGS_DEBUGPC "${CMAKE_MODULE_LINKER_FLAGS}")
-    set(CMAKE_SHARED_LINKER_FLAGS_DEBUGPC "${CMAKE_SHARED_LINKER_FLAGS}")
-    set(CMAKE_STATIC_LINKER_FLAGS_DEBUGPC "${CMAKE_STATIC_LINKER_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS_FINAL "${CMAKE_EXE_LINKER_FLAGS}")
-    set(CMAKE_MODULE_LINKER_FLAGS_FINAL "${CMAKE_MODULE_LINKER_FLAGS}")
-    set(CMAKE_SHARED_LINKER_FLAGS_FINAL "${CMAKE_SHARED_LINKER_FLAGS}")
-    set(CMAKE_STATIC_LINKER_FLAGS_FINAL "${CMAKE_STATIC_LINKER_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS_MAX25 "${CMAKE_EXE_LINKER_FLAGS}")
-    set(CMAKE_MODULE_LINKER_FLAGS_MAX25 "${CMAKE_MODULE_LINKER_FLAGS}")
-    set(CMAKE_SHARED_LINKER_FLAGS_MAX25 "${CMAKE_SHARED_LINKER_FLAGS}")
-    set(CMAKE_STATIC_LINKER_FLAGS_MAX25 "${CMAKE_STATIC_LINKER_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS_MAX3 "${CMAKE_EXE_LINKER_FLAGS}")
-    set(CMAKE_MODULE_LINKER_FLAGS_MAX3 "${CMAKE_MODULE_LINKER_FLAGS}")
-    set(CMAKE_SHARED_LINKER_FLAGS_MAX3 "${CMAKE_SHARED_LINKER_FLAGS}")
-    set(CMAKE_STATIC_LINKER_FLAGS_MAX3 "${CMAKE_STATIC_LINKER_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS_MAX5 "${CMAKE_EXE_LINKER_FLAGS}")
-    set(CMAKE_MODULE_LINKER_FLAGS_MAX5 "${CMAKE_MODULE_LINKER_FLAGS}")
-    set(CMAKE_SHARED_LINKER_FLAGS_MAX5 "${CMAKE_SHARED_LINKER_FLAGS}")
-    set(CMAKE_STATIC_LINKER_FLAGS_MAX5 "${CMAKE_STATIC_LINKER_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS_MAX7 "${CMAKE_EXE_LINKER_FLAGS}")
-    set(CMAKE_MODULE_LINKER_FLAGS_MAX7 "${CMAKE_MODULE_LINKER_FLAGS}")
-    set(CMAKE_SHARED_LINKER_FLAGS_MAX7 "${CMAKE_SHARED_LINKER_FLAGS}")
-    set(CMAKE_STATIC_LINKER_FLAGS_MAX7 "${CMAKE_STATIC_LINKER_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS_MAX8 "${CMAKE_EXE_LINKER_FLAGS}")
-    set(CMAKE_MODULE_LINKER_FLAGS_MAX8 "${CMAKE_MODULE_LINKER_FLAGS}")
-    set(CMAKE_SHARED_LINKER_FLAGS_MAX8 "${CMAKE_SHARED_LINKER_FLAGS}")
-    set(CMAKE_STATIC_LINKER_FLAGS_MAX8 "${CMAKE_STATIC_LINKER_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS_PROFILE "${CMAKE_EXE_LINKER_FLAGS}")
-    set(CMAKE_MODULE_LINKER_FLAGS_PROFILE "${CMAKE_MODULE_LINKER_FLAGS}")
-    set(CMAKE_SHARED_LINKER_FLAGS_PROFILE "${CMAKE_SHARED_LINKER_FLAGS}")
-    set(CMAKE_STATIC_LINKER_FLAGS_PROFILE "${CMAKE_STATIC_LINKER_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS_PROFILE_FASTCAP "${CMAKE_EXE_LINKER_FLAGS}")
-    set(CMAKE_MODULE_LINKER_FLAGS_PROFILE_FASTCAP "${CMAKE_MODULE_LINKER_FLAGS}")
-    set(CMAKE_SHARED_LINKER_FLAGS_PROFILE_FASTCAP "${CMAKE_SHARED_LINKER_FLAGS}")
-    set(CMAKE_STATIC_LINKER_FLAGS_PROFILE_FASTCAP "${CMAKE_STATIC_LINKER_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS}")
-    set(CMAKE_MODULE_LINKER_FLAGS_RELEASE "${CMAKE_MODULE_LINKER_FLAGS}")
-    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS}")
-    set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS_RELEASE_LTCG "${CMAKE_EXE_LINKER_FLAGS}")
-    set(CMAKE_MODULE_LINKER_FLAGS_RELEASE_LTCG "${CMAKE_MODULE_LINKER_FLAGS}")
-    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE_LTCG "${CMAKE_SHARED_LINKER_FLAGS}")
-    set(CMAKE_STATIC_LINKER_FLAGS_RELEASE_LTCG "${CMAKE_STATIC_LINKER_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS_RELEASEPC "${CMAKE_EXE_LINKER_FLAGS}")
-    set(CMAKE_MODULE_LINKER_FLAGS_RELEASEPC "${CMAKE_MODULE_LINKER_FLAGS}")
-    set(CMAKE_SHARED_LINKER_FLAGS_RELEASEPC "${CMAKE_SHARED_LINKER_FLAGS}")
-    set(CMAKE_STATIC_LINKER_FLAGS_RELEASEPC "${CMAKE_STATIC_LINKER_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS_RELEASEXPROFILE "${CMAKE_EXE_LINKER_FLAGS}")
-    set(CMAKE_MODULE_LINKER_FLAGS_RELEASEXPROFILE "${CMAKE_MODULE_LINKER_FLAGS}")
-    set(CMAKE_SHARED_LINKER_FLAGS_RELEASEXPROFILE "${CMAKE_SHARED_LINKER_FLAGS}")
-    set(CMAKE_STATIC_LINKER_FLAGS_RELEASEXPROFILE "${CMAKE_STATIC_LINKER_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS_RELEASEXPROFILE_FAST "${CMAKE_EXE_LINKER_FLAGS}")
-    set(CMAKE_MODULE_LINKER_FLAGS_RELEASEXPROFILE_FAST "${CMAKE_MODULE_LINKER_FLAGS}")
-    set(CMAKE_SHARED_LINKER_FLAGS_RELEASEXPROFILE_FAST "${CMAKE_SHARED_LINKER_FLAGS}")
-    set(CMAKE_STATIC_LINKER_FLAGS_RELEASEXPROFILE_FAST "${CMAKE_STATIC_LINKER_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS_SPEEDEDITORS "${CMAKE_EXE_LINKER_FLAGS}")
-    set(CMAKE_MODULE_LINKER_FLAGS_SPEEDEDITORS "${CMAKE_MODULE_LINKER_FLAGS}")
-    set(CMAKE_SHARED_LINKER_FLAGS_SPEEDEDITORS "${CMAKE_SHARED_LINKER_FLAGS}")
-    set(CMAKE_STATIC_LINKER_FLAGS_SPEEDEDITORS "${CMAKE_STATIC_LINKER_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS_SPEEDEDITORSXENON "${CMAKE_EXE_LINKER_FLAGS}")
-    set(CMAKE_MODULE_LINKER_FLAGS_SPEEDEDITORSXENON "${CMAKE_MODULE_LINKER_FLAGS}")
-    set(CMAKE_SHARED_LINKER_FLAGS_SPEEDEDITORSXENON "${CMAKE_SHARED_LINKER_FLAGS}")
-    set(CMAKE_STATIC_LINKER_FLAGS_SPEEDEDITORSXENON "${CMAKE_STATIC_LINKER_FLAGS}")
-endif()
+target_include_directories(Jaded
+        PRIVATE
+        #TODO: clean this up
+        ../Extern/glew/include
+        ../Extern/ode/include
+        ../Extern/sdl3/include
+        ../Extern/imgui
+        #../../Extern/sdl3/include
+        ../Main/WinEditors/Sources
 
-################################################################################
-# Nuget packages function stub.
-################################################################################
-function(use_package TARGET PACKAGE VERSION)
-    message(WARNING "No implementation of use_package. Create yours. "
-                    "Package \"${PACKAGE}\" with version \"${VERSION}\" "
-                    "for target \"${TARGET}\" is ignored!")
-endfunction()
+        ../Dlls
+        ../Extern
+        ../Libraries
+)
 
-################################################################################
-# Common utils
-################################################################################
-include(CMake/Utils.cmake)
+target_link_directories(Jaded
+        PRIVATE
+        ../Extern/sdl3/lib/x86
+        ../Extern/lz4/static
+)
 
-################################################################################
-# Additional Global Settings(add specific info there)
-################################################################################
-include(CMake/GlobalSettingsInclude.cmake OPTIONAL)
-
-################################################################################
-# Use solution folders feature
-################################################################################
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-
-################################################################################
-# Sub-projects
-################################################################################
-#add_subdirectory(../Dlls/MAD_import/Make ${CMAKE_BINARY_DIR}/MAD_import)
-
-add_compile_definitions(-DACTIVE_EDITORS)
-
-add_subdirectory(../Dlls/MAD_loadSave/Make ${CMAKE_BINARY_DIR}/MAD_LoadSave)
-add_subdirectory(../Dlls/MAD_mem/Make ${CMAKE_BINARY_DIR}/Mad_Mem)
-add_subdirectory(../Dlls/MAD_rasterize/Make ${CMAKE_BINARY_DIR}/MAD_Rasterize)
-add_subdirectory(../Libraries/EDItors/Make ${CMAKE_BINARY_DIR}/EDItors)
-add_subdirectory(../Libraries/OpenGL/Make ${CMAKE_BINARY_DIR}/OpenGL)
-add_subdirectory(WinEditors/Make)
+target_link_libraries(Jaded
+        Jaded-SDK
+        Jaded-Engine
+        Jaded-AI
+        Jaded-Gfx
+        Jaded-Sound
+)

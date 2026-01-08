@@ -37,7 +37,7 @@ message("GIT COMMIT COUNT: ${GIT_COMMIT_COUNT}")
 add_definitions(-DGIT_BRANCH="${GIT_BRANCH}")
 message("GIT BRANCH: ${GIT_BRANCH}")
 
-set(JADE_OUTPUT_DIR "${CMAKE_SOURCE_DIR}}/runtime/")
+set(JADE_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/runtime/")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${JADE_OUTPUT_DIR}")
 foreach (OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
     string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG)
@@ -49,5 +49,5 @@ add_definitions(-DACTIVE_EDITORS)
 
 #add_subdirectory(Extern/ode)
 
-add_subdirectory(Libraries) # Core Jade Libraries
-#add_subdirectory(Main)
+add_subdirectory(Libraries)     # Core Jade Libraries
+add_subdirectory(Main)          # Main Program
