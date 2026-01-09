@@ -55,6 +55,7 @@ include_directories(Dlls)
 # External Libraries
 
 add_subdirectory(Dlls/JPEGLIB)
+add_subdirectory(Dlls/MPEGLIB)
 add_subdirectory(Extern/ode)    # ODE physics engine
 
 ###################################################################################

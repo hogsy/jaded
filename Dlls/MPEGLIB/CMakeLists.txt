@@ -1,0 +1,19 @@
+add_library(MPEGLIB OBJECT
+        config.h
+        display.c
+        getbits.c
+        getblk.c
+        gethdr.c
+        getpic.c
+        getvlc.c
+        getvlc.h
+        global.h
+        idct.c
+        motion.c
+        mpeg2dec.c
+        mpeg2dec.h
+        MPG_EXPORT.H
+        recon.c
+        store.c
+        systems.c
+)
