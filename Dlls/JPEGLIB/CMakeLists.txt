@@ -1,0 +1,52 @@
+set(JPEGLIB_SOURCES
+        INTERFCE.C
+        JCAPIMIN.C
+        JCAPISTD.C
+        JCCOEFCT.C
+        JCCOLOR.C
+        JCDCTMGR.C
+        JCHUFF.C
+        JCINIT.C
+        JCMAINCT.C
+        JCMARKER.C
+        JCMASTER.C
+        JCOMAPI.C
+        JCPARAM.C
+        JCPHUFF.C
+        JCPREPCT.C
+        JCSAMPLE.C
+        JCTRANS.C
+        JDAPIMIN.C
+        JDAPISTD.C
+        JDATADST.C
+        JDATASRC.C
+        JDCOEFCT.C
+        JDCOLOR.C
+        JDDCTMGR.C
+        JDHUFF.C
+        JDINPUT.C
+        JDMAINCT.C
+        JDMARKER.C
+        JDMASTER.C
+        JDMERGE.C
+        JDPHUFF.C
+        JDPOSTCT.C
+        JDSAMPLE.C
+        JDTRANS.C
+        JERROR.C
+        JFDCTFLT.C
+        JFDCTFST.C
+        JFDCTINT.C
+        JIDCTFLT.C
+        JIDCTFST.C
+        JIDCTINT.C
+        JIDCTRED.C
+        JMEMMGR.C
+        JMEMNOBS.C
+        JQUANT1.C
+        JQUANT2.C
+        JUTILS.C
+)
+
+add_library(JPEGLIB OBJECT ${JPEGLIB_SOURCES})
+set_source_files_properties(${JPEGLIB_SOURCES} PROPERTIES LANGUAGE C)

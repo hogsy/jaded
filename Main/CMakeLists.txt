@@ -574,6 +574,7 @@ target_link_directories(Jaded
 )
 
 target_link_libraries(Jaded
+        JPEGLIB
         Jaded-ODE
 
         Jaded-MAD_loadSave
