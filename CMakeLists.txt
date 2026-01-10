@@ -45,8 +45,24 @@ foreach (OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} "${JADE_OUTPUT_DIR}")
 endforeach ()
 
-add_compile_options(/MTd /MP)
+add_compile_options(/MT /MP)
+
 add_definitions(-DACTIVE_EDITORS)
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message("Configuring for debug compilation")
+
+    # good fucking grief, so /MT flag seems to exclude _DEBUG
+    # despite us compiling for a debug target? but it looks like
+    # for /MTd it gets added automatically (by CMake?)
+    # so we've got to define it here I guess...
+    add_definitions(-D_DEBUG)
+
+    # ideally the solution here is to use the correct /MTd
+    # or whatever, but that's been giving me issues due to
+    # some other crap. we'll sort this out later.
+else ()
+    message("Configuring for release compilation")
+endif ()
 
 # sigh...
 include_directories(Dlls)
@@ -57,6 +73,7 @@ include_directories(Dlls)
 add_subdirectory(Dlls/JPEGLIB)
 add_subdirectory(Dlls/MPEGLIB)
 add_subdirectory(Extern/ode)    # ODE physics engine
+add_subdirectory(Extern/zlib)
 
 ###################################################################################
 # Libraries

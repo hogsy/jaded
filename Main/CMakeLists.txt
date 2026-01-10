@@ -578,6 +578,7 @@ target_link_libraries(Jaded
         JPEGLIB
 
         Jaded-ODE
+        zlib
 
         Jaded-MAD_loadSave
         Jaded-MAD_mem
@@ -594,27 +595,7 @@ target_link_libraries(Jaded
         OpenGL32
         glew32s
 
-        oldnames
-        advapi32
-        shell32
-        kernel32
-        user32
-        gdi32
-        winspool
-        comdlg32
-        ole32
-        oleaut32
-        uuid
-        odbc32
-        odbccp32
-        winmm
-        msacm32
-        comctl32
-        ws2_32
-        NAFXCWD
-        libcmtd
-        VFW32
-        strmiids
         dxguid
         winhttp
+        vcruntime
 )
