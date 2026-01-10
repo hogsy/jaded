@@ -47,7 +47,7 @@ endforeach ()
 
 add_compile_options(/MT /MP)
 
-add_definitions(-DACTIVE_EDITORS)
+add_definitions(-DACTIVE_EDITORS -D_USE_32BIT_TIME_T)
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     message("Configuring for debug compilation")
 
