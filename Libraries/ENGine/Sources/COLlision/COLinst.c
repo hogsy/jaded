@@ -2,6 +2,7 @@
 
 /*$F GC Dependencies 11/22/99 */
 
+#include "Precomp.h"
 #include "COLstruct.h"
 #include "COLconst.h"
 #include "COLaccess.h"

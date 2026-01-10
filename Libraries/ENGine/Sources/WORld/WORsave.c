@@ -554,7 +554,7 @@ _End_
 
 	if ( !( _l_Flags & WOR_C_SaveSelected ) )
 	{
-#	ifdef ACTIVE_EDITORS && !defined( XML_CONV_TOOL )
+#	if defined( ACTIVE_EDITORS ) && !defined( XML_CONV_TOOL )
 		WORGos_Save( _pst_World );
 #	endif
 	}

@@ -13,12 +13,11 @@
 #define __CURRENTWIND_H__INCLUDED
 
 #include "ENGine/Sources/Wind/WindSource.h"
+#include "TIMer/TIMdefs.h"
 
 #define CurrentStaticWind_C_VersionNumber 0
 
 #define WIND_C_MaxCurrentSource  2
-
-extern float    TIM_gf_MainClock;
 
 class CCurrentWind
 {

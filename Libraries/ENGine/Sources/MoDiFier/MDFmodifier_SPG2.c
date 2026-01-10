@@ -87,6 +87,11 @@ UINT SPG2_gb_Recompute = FALSE;
 static float					WindWaves[256];
 static ULONG					WindWavesBase = 0xffffffff;
 
+// These were originally under OGLinit.cpp but
+// they make more sense here
+ULONG SPG2_PrimitivCounter = 0;
+ULONG SPG2_PrimitivLimit   = 100000;
+
 #ifdef JADEFUSION
 FakeStr					Fake[MAX_RND + 1] = 
 #else

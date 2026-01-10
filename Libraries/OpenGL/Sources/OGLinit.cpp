@@ -564,14 +564,6 @@ HRESULT OGL_l_ReadaptDisplay( HWND _hWnd, GDI_tdst_DisplayData *_pst_DD )
     Aim:    Flip buffer
  =======================================================================================================================
  */
-#ifdef ACTIVE_EDITORS
-extern "C"
-{
-	ULONG SPG2_PrimitivCounter = 0;
-	ULONG SPG2_PrimitivLimit   = 100000;
-};
-#endif
-
 
 void OGL_Flip()
 {
@@ -589,6 +581,12 @@ void OGL_Flip()
 	SwapBuffers( pst_SD->h_DC );
 
 	PRO_StopTrameRaster( &GDI_gpst_CurDD->pst_Raster->st_GL_Flip );
+}
+
+extern "C"
+{
+	extern ULONG SPG2_PrimitivCounter;
+	extern ULONG SPG2_PrimitivLimit;
 }
 
 /*
@@ -1244,7 +1242,7 @@ extern "C" ULONG GAODisplayFlag;
 
 
 /*
-Version du mode facet avec lumière omni provenant de la caméra (pas terrible)
+Version du mode facet avec lumiï¿½re omni provenant de la camï¿½ra (pas terrible)
 #define OGL_RenderSlopeVars\
 	MATH_tdst_Vector	IRSV0, IRSV1, IRSVN;\
     MATH_tdst_Vector    st_CameraPos;\
@@ -2352,7 +2350,7 @@ void OGL_l_DrawSPG2_2X(
 		{
 			/*	
 			F'(X) = 2AX + B
-			F(X) = AX² + BX + C
+			F(X) = AXï¿½ + BX + C
 
 			X E [0,1]
 			C = Position(x) de dep
@@ -2537,7 +2535,7 @@ void OGL_l_DrawSPG2_SPRITES_2X(
 			Interpolator += InterpolatorIntensity * ( 1.0f - fEOHP );
 			Interpolator = fMin( Interpolator, 1.0f );
 
-			// Helicoïdal effect
+			// Helicoï¿½dal effect
 			MATH_ScaleVector( ( MATH_tdst_Vector * ) &LocalX, ( MATH_tdst_Vector * ) &Xa, CosAlpha );
 			MATH_AddScaleVector( ( MATH_tdst_Vector * ) &LocalX, ( MATH_tdst_Vector * ) &LocalX, ( MATH_tdst_Vector * ) &Ya, SinAlpha );
 			MATH_ScaleVector( ( MATH_tdst_Vector * ) &LocalY, ( MATH_tdst_Vector * ) &Ya, CosAlpha );
@@ -2545,7 +2543,7 @@ void OGL_l_DrawSPG2_SPRITES_2X(
 			Xa = LocalX;
 			Ya = LocalY;
 
-			// Helicoïdal effect
+			// Helicoï¿½dal effect
 			MATH_ScaleVector( ( MATH_tdst_Vector * ) &LocalX, ( MATH_tdst_Vector * ) &XCam, CosAlpha2 );
 			MATH_AddScaleVector( ( MATH_tdst_Vector * ) &LocalX, ( MATH_tdst_Vector * ) &LocalX, ( MATH_tdst_Vector * ) &YCam, SinAlpha2 );
 			MATH_ScaleVector( ( MATH_tdst_Vector * ) &LocalY, ( MATH_tdst_Vector * ) &YCam, CosAlpha2 );

@@ -5,9 +5,7 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  */
 
-
-#ifndef __TIMDEF_H__
-#define __TIMDEF_H__
+#pragma once
 
 #include "BASe/BASsys.h"
 #include "BASe/BAStypes.h"
@@ -110,7 +108,6 @@ extern "C"
 {
 #endif
 
-#pragma once
 /* To get pentium internal counter low part */
 #pragma warning(disable : 4035)
 
@@ -232,5 +229,3 @@ _inline_ float TIM_f_Clock_Read(void)
 #if defined (__cplusplus) && !defined(JADEFUSION)
 }
 #endif
-
-#endif /* __TIMDEF_H__ */
