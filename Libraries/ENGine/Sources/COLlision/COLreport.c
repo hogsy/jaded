@@ -1358,7 +1358,6 @@ void COL_ReportCollision
 	ULONG				ul_ReportIndex;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-#ifdef JADEFUSION
 	// - NOTE -
 	// COL_Cul_MaxNbOfCollision has been incremented from 1000 to 1500. In 03C, the assert occured
 	// a few times, without being able to reproduce it in debug. The ERR_X_Warning should be able to
@@ -1366,13 +1365,10 @@ void COL_ReportCollision
 	
 	ERR_X_Assert(_pst_GlobalVars->ul_ReportIndex < COL_Cul_MaxNbOfCollision);
 	ERR_X_Warning(_pst_GlobalVars->ul_ReportIndex <= 0.8 * COL_Cul_MaxNbOfCollision, "Max number of collision reports (COL_tdst_GlobalVars::ul_ReportIndex) is nearly reached - Contact Programming Team.", NULL);
-#endif
-#ifdef _DEBUG
-	ERR_X_Assert(_pst_GlobalVars->ul_ReportIndex < COL_Cul_MaxNbOfCollision);
-	if(_pst_GlobalVars->ul_ReportIndex >= COL_Cul_MaxNbOfCollision) return;
-#else
-	if(_pst_GlobalVars->ul_ReportIndex >= COL_Cul_MaxNbOfCollision) return;
-#endif
+
+	if(_pst_GlobalVars->ul_ReportIndex >= COL_Cul_MaxNbOfCollision) 
+		return;
+
 	ul_ReportIndex = _pst_GlobalVars->ul_ReportIndex;
 	pst_World = _pst_GlobalVars->pst_World;
 	pst_World->ast_Reports[ul_ReportIndex].st_CollidedPoint = *_pst_Global_CollidedPoint;

@@ -172,8 +172,8 @@ void GFX_Line_Render(void *p_Data)
     GDI_gpst_CurDD->ul_CurrentDrawMask = DM;
 }
 
-//#define CODE_TO_PLAY_CHESS
 #ifdef USE_DOUBLE_RENDERING	
+
 void  GFX_Line_Interpolate( void *p_Data , u_int Mode , float fInterpoler)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -211,9 +211,8 @@ void  GFX_Line_Interpolate( void *p_Data , u_int Mode , float fInterpoler)
 	(*(ULONG *)&pst_AF->st_A2.z) |= 1;
     
 }
-#endif
 
-#ifndef CODE_TO_PLAY_CHESS
+#endif
 
 /*
  =======================================================================================================================
@@ -224,75 +223,11 @@ int GFX_i_Line_Request(int a, int b, int c, int d)
 	return 0;
 }
 
-#else
-
-#include "e:/myprojects/Chess2/Chess/Chess_Interface.h"
-
-/*$4
- ***********************************************************************************************************************
-    chess
- ***********************************************************************************************************************
- */
-
 /*
  =======================================================================================================================
  =======================================================================================================================
  */
-int GFX_i_Line_Request(int a, int b, int c, int d)
-{
-    char type, color;
-
-	switch(a)
-	{
-	case 1000:
-        Chess_p_Log = LINK_PrintStatusMsg;
-		Chess_NewGame();
-        if (GetAsyncKeyState( VK_SHIFT ) < 0)
-            Chess_Bench();
-		break; 
-
-	case 1003:
-        if ( (c >= 0) && ( c < 8) )
-            b = c * 8 + b;
-
-        type = Chess_GetInfos( (char) b, &color );
-        return (d == 0) ? color : type;
-
-	case 1004:
-		//Chess_BuildAllMoves();
-		break;
-
-	case 1005:
-		if((c >= 0) && (c < 8)) b = c * 8 + b;
-		return Chess_CanBeMoved((char) b);
-
-	case 1006:
-		return Chess_IsAMove((char) b, (char) c);
-
-	case 1007:
-		return Chess_MakeMove((char) b, (char) c, (char) d);
-
-	case 1010:
-		return Chess_CurrentSide();;
-
-    case 1011:
-        Chess_TakeBack();
-        break;
-
-    case 1100:
-        Chess_ComputerPlay();
-        break;
-	}
-
-	return 0;
-}
-
-#endif
-
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
+//TODO: any point in keeping this???
 void *GFX_Tetris_Create(void)
 {
 #if 0

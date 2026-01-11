@@ -269,13 +269,8 @@ void BIG_ReadFatFileExt(BIG_tdst_FatDes *_pst_Fat)
 	if(!_pst_Fat->ul_MaxFile) return;
 
     /* Seek to the beginning of extended fat */
-#if defined(_XBOX) || defined(_XENON)
-	r = L_fseek(BIG_Handle(), _pst_Fat->ul_PosFat + BIG_PosFatFileExt, L_SEEK_SET);
-    ERR_X_Error( r != L_SEEK_ERROR,L_ERR_Csz_FSeek,NULL);
-#else // _XBOX
 	r=L_fseek(BIG_Handle(), _pst_Fat->ul_PosFat + BIG_PosFatFileExt, L_SEEK_SET);
     ERR_X_Error( r == 0, L_ERR_Csz_FSeek, NULL );
-#endif // _XBOX
 	
 	// -------------------------------------------------------
 	// NOTE:
@@ -385,12 +380,6 @@ void BIG_ReadFatDir(BIG_tdst_FatDes *_pst_Fat)
 
 	if(!_pst_Fat->ul_MaxDir) return;
 
-    /* Seek to the beginning of the fat in the bigfile */
-#if defined(_XBOX) || defined(_XENON)
-	r = L_fseek(BIG_Handle(), _pst_Fat->ul_PosFat + BIG_PosFatDir, L_SEEK_SET);
-    ERR_X_Error(r != L_SEEK_ERROR,L_ERR_Csz_FSeek,NULL);
-#else // _XBOX
-
 	if ( BIG_Version() < 36 )
 	{
 		// -------------------------------------------------------
@@ -409,7 +398,6 @@ void BIG_ReadFatDir(BIG_tdst_FatDes *_pst_Fat)
 		r = L_fseek(BIG_Handle(), _pst_Fat->ul_PosFat + BIG_PosFatDir, L_SEEK_SET);
 		ERR_X_Error(r == 0,L_ERR_Csz_FSeek,NULL);
 	}
-#endif // _XBOX
 
     /*
      * Read dir one per one, cause the fat saved in the bigfile is not the exact copy of the
@@ -431,11 +419,7 @@ void BIG_ReadFatDir(BIG_tdst_FatDes *_pst_Fat)
 		{
 			BIG_special_Decrypt4FAT
 			(
-#ifdef JADEFUSION
 				(char *) &(BIG_gst.dst_DirTable[i].st_ToSave), 
-#else
-				(UCHAR *) &(BIG_gst.dst_DirTable[i].st_ToSave), 
-#endif
 				sizeof(BIG_gst.dst_DirTable[i].st_ToSave)
 			);
 		}
@@ -481,11 +465,7 @@ void BIG_ReadAllFats(void)
 		{
 			BIG_special_Decrypt4FAT
 			(
-#ifdef JADEFUSION
 				(char *) &(BIG_gst.dst_FatTable[i]), 
-#else
-				(UCHAR *) &(BIG_gst.dst_FatTable[i]), 
-#endif
 				sizeof(BIG_gst.dst_FatTable[i])
 			);
 		}
@@ -658,11 +638,7 @@ void BIG_WriteHeader(void)
 	/* Marque indiquant que la FAT est cryptée */
 	if(!L_strcmp(BIG_gst.st_ToSave.ac_Def, BIG_Csz_HeaderCrypted))
 	{
-#ifdef JADEFUSION
 		pc_Buf = (UCHAR* )MEM_p_Alloc(sizeof(BIG_gst.st_ToSave));
-#else
-		pc_Buf = MEM_p_Alloc(sizeof(BIG_gst.st_ToSave));
-#endif
 		L_memcpy(pc_Buf, (UCHAR *) &(BIG_gst.st_ToSave), sizeof(BIG_gst.st_ToSave));
 
 		/* Universe Key is used to crypt the FAT */
@@ -670,11 +646,7 @@ void BIG_WriteHeader(void)
 
 		BIG_special_Encrypt4FAT
 		(
-#ifdef JADEFUSION
-		(char* )(pc_Buf + 4), 
-#else
-			pc_Buf + 4, 
-#endif
+		    (char* )(pc_Buf + 4), 
 			sizeof(BIG_gst.st_ToSave) - 4
 		);
 

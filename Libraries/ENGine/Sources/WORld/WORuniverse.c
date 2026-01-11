@@ -54,10 +54,6 @@
 #include "Light/LIGHTrejection.h"
 #endif
 
-#ifdef _GAMECUBE
-#include "SDK/Sources/GameCube/GC_arammng.h"
-#endif
-
 #if defined(_PC_RETAIL)
 #include "Dx9/Dx9buffer.h"
 #endif	// defined(_PC_RETAIL)
@@ -131,28 +127,6 @@ extern void				ResetPreloadTexAll(void);
 extern BOOL				WOR_gb_FinalWorld;
 extern BOOL				WOR_gb_RealAllocWorld;
 extern void				GEO_DebugObject_Destroy(void);
-
-#ifdef PSX2_TARGET
-extern void GSP_BeginWorldLoad();
-extern void GSP_EndWorldLoad();
-#endif
-
-#ifdef _XBOX
-extern void  Gx8_BeginWorldLoad();
-extern void Gx8_EndWorldLoad();
-ULONG h_SaveWorldKey;
-#endif
-
-#ifdef _GAMECUBE
-extern void  GXI_StopFlip();
-extern void  GXI_StartFlip();
-#ifndef MEM_OPT
-#define USE_HOLE_OPTIM 
-#endif // MEM_OPT
-#ifdef USE_HOLE_OPTIM
-void MEM_ConcatHolesAfterDefrag();
-#endif
-#endif
 
 /*
  =======================================================================================================================
@@ -260,11 +234,6 @@ WOR_tdst_World *WOR_pst_Universe_AddWorldList(WOR_tdst_World *_pst_Dest, BIG_KEY
 #ifdef BENCH_IA_TEST
 	AIBnch_BeginWorldLoad(_ul_FileKey);
 #endif
-#ifdef _GAMECUBE
-	GXI_StopFlip(_ul_FileKey);
-#endif
-	
-    
     
 #ifdef PSX2_TARGET
     ps2SND_i_ChangePriority(-3);
@@ -413,14 +382,6 @@ _Try_
 #ifdef ACTIVE_EDITORS
 	GEO_DebugObject_Destroy();
 #endif
-
-
-#ifdef _GAMECUBE
-    {
-        void AI2C_UnloadDll(void);
-        AI2C_UnloadDll();
-    }
-#endif
  
 #ifdef MEM_OPT 
     MEM_vManageSnapShot();
@@ -504,14 +465,7 @@ _Try_
     }
 #endif
 
-	LOA_StartLoadRaster(LOA_Cte_LDI_SpeedMode_Engine);	
-
-#ifdef _GAMECUBE
-    {	
-        void AI2C_LoadAIForWorld(ULONG);
-        AI2C_LoadAIForWorld(_ul_FileKey);
-    }
-#endif    
+	LOA_StartLoadRaster(LOA_Cte_LDI_SpeedMode_Engine);
 	
 	LOA_BeginSpeedMode(_ul_FileKey);
 
@@ -706,17 +660,6 @@ _End_
 
 #ifndef ACTIVE_EDITORS
 	ResetPreloadTexAll();
-#endif
-
-#ifdef PSX2_TARGET
-	GSP_EndWorldLoad();
-#endif
-#ifdef _XBOX
-		h_SaveWorldKey = pst_World->h_WorldKey;
-		Gx8_EndWorldLoad();
-#endif	
-#ifdef _GAMECUBE
-	GXI_StartFlip();
 #endif
 
 /*

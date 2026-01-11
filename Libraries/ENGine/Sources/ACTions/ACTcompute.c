@@ -24,12 +24,6 @@
 #include "AIinterp/Sources/AIstruct.h"
 #include "AIinterp/Sources/AIdebug.h"
 
-#ifdef _GAMECUBE
-#include "SDK/Sources/GameCube/GC_arammng.h"
-#include "SDK/Sources/GameCube/GC_aramheap.h"
-int ARAM_Anims_RAM = 0;
-int ARAM_Anims_ARAM = 0;
-#endif
 #if defined(PSX2_TARGET) && defined(__cplusplus)
 extern "C"
 {

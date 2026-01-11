@@ -16,10 +16,6 @@
 #include "ENGine/Sources/ACTions/ACTload.h"
 #include "ENGine/Sources/ANImation/ANIinit.h"
 #include "AIinterp/Sources/Events/EVEinit.h"
-#ifdef _GAMECUBE
-#include "SDK/Sources/GameCube/GC_arammng.h"
-#include "SDK/Sources/GameCube/GC_aramheap.h"
-#endif
 
 #if defined (__cplusplus) && !defined(JADEFUSION)
 extern "C"

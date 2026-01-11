@@ -31,17 +31,11 @@
 
 #ifdef WTR_OGL_VERSION
 #define WTR_ComputeOriginalsUV
-#include "..\..\OpenGL\Sources\OGLinit.h"
+#include "backends/gl/OGLinit.h"
 
 // God fucking damn it Ubisoft
 // TODO: consolidate GL specific code into GL specific driver!! ~hogsy
 #include <GL/GL.h>
-#endif
-
-#ifdef _XENON_RENDER
-#include "../XenonGraphics/XeMesh.h"
-#include "../XenonGraphics/XeDynVertexBuffer.h"
-#include "../XenonGraphics/XeRenderer.h"
 #endif
 
 #if defined( _M_IX86 ) /* && !defined( ACTIVE_EDITORS ) && ( defined( _PC_RETAIL ) || defined( _XBOX ) || defined( _XENON ) )*/
@@ -270,13 +264,6 @@ void WTR_AllocSubStruct(WTR_Generator_Struct *pst_Params)
 #ifdef WTR_ComputeOriginalsUV
 	pst_Params ->p_VertexMapORIGINALS  = (SOFT_tdst_UV*)WTR_AllocAlign(pst_Params->FrustrumMesh_SX * (pst_Params->FrustrumMesh_SY + 1) * sizeof(SOFT_tdst_UV) , 16);
 #endif
-#ifdef _GAMECUBE
-	{
-		extern void WATER_ComputeDisplayList(unsigned char *pDL , u32 SX , u32 SY);
-		pst_Params ->ucWATER_DisplayList = WTR_AllocAlign(WTR_DISPLAYLISTSIZE(pst_Params->FrustrumMesh_SX , pst_Params->FrustrumMesh_SY) + 32, 32);
-		WATER_ComputeDisplayList(pst_Params ->ucWATER_DisplayList , pst_Params->FrustrumMesh_SX , pst_Params->FrustrumMesh_SY);
-	}
-#endif
 
 	pst_Params ->pColors 		= (ULONG*)WTR_AllocAlign(pst_Params->FrustrumMesh_SX * (pst_Params->FrustrumMesh_SY + 1) * sizeof(ULONG) , 16);
 
@@ -305,10 +292,6 @@ void WTR_FreeSubStruct(WTR_Generator_Struct *pst_Params)
 #ifdef WTR_ComputeOriginalsUV
 	if (pst_Params ->p_VertexMapORIGINALS )		MEM_FreeAlign(pst_Params ->p_VertexMapORIGINALS );
 	pst_Params ->p_VertexMapORIGINALS = NULL;
-#endif
-
-#ifdef _GAMECUBE
-	if (pst_Params ->ucWATER_DisplayList )		MEM_FreeAlign(pst_Params ->ucWATER_DisplayList );
 #endif
 
 	if (pst_Params ->pColors )		MEM_FreeAlign(pst_Params ->pColors);

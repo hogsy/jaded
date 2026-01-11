@@ -30,11 +30,6 @@
 #include "LINks/LINKstruct_reg.h"
 #include "EDIpaths.h"
 
-
-#ifdef _GAMECUBE
-#include "SDK/Sources/GameCube/GC_arammng.h"
-#include "SDK/Sources/GameCube/GC_aramheap.h"
-#endif
 #ifdef PSX2_TARGET
 #include "MainPsx2/Sources/PSX2debug.h"
 #define _ReadLong(_a)	ReadLong((char *) _a)
@@ -334,11 +329,6 @@ ULONG ACT_ul_ActionKitCallback(ULONG _ul_PosFile)
 		}
 	}
 
-#ifdef _GAMECUBE
-	pst_ActionKit->w_NumCacheLines = 10;
-	pst_ActionKit->w_NextIndex = 0;
-	L_memset(pst_ActionKit->al_CacheIndexes, -1, ACT_CacheLinesPerActionKit * sizeof(LONG));
-#endif
 #ifdef ACTIVE_EDITORS
 	ul_Fat = BIG_ul_SearchKeyToFat(LOA_ul_GetCurrentKey());
 	BIG_ComputeFullName(BIG_ParentFile(ul_Fat), asz_Path);

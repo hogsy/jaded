@@ -53,12 +53,6 @@ extern EVE_tdst_ListTracks 	*EVE_gpst_CurrentListTracks;
 extern void				AI_Debug_Move(OBJ_tdst_GameObject *, char *);
 #endif
 
-#ifdef _GAMECUBE
-#include "GXI_GC/GXI_Bench.h"
-
-#endif
-
-
 ULONG				Event_SizeOf_Ram;
 extern ULONG		LOA_ul_FileTypeSize[40];
 

@@ -31,9 +31,9 @@
 #include "MATerial/MATstruct.h"
 #include "TEXture/TEXcubemap.h"
 
-#include "OpenGL/Sources/OGLtex.h"
-#include "OpenGL/Sources/OGLinit.h"
-#include "OpenGL/Sources/OGLrequest.h"
+#include "backends/gl/OGLtex.h"
+#include "backends/gl/OGLinit.h"
+#include "backends/gl/OGLrequest.h"
 
 #include "SELection/SELection.h"
 #include "SOFT/SOFTzlist.h"

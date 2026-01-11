@@ -26,9 +26,6 @@
 #include "LINks/LINKstruct_reg.h"
 #include "ENGine/Sources/ACTions/ACTstruct.h"
 
-#ifdef _GAMECUBE
-#include "SDK/Sources/GameCube/GC_arammng.h"
-#endif
 #if defined(PSX2_TARGET) && defined(__cplusplus)
 extern "C"
 {

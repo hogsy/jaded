@@ -33,10 +33,6 @@ extern void GSP_OutputConsole(char *);
 #endif
 #define ReadLong(_a)	*(int *) _a
 #endif
-#ifdef _GAMECUBE
-#define max(a, b)	(((a) > (b)) ? (a) : (b))
-#define min(a, b)	(((a) < (b)) ? (a) : (b))
-#endif
 
 extern void eeRPC_RefreshAsyncStatus(void);
 
@@ -1064,14 +1060,10 @@ int BIG_fread(void *_p_Buffer, int _i_Size, BIGFileHandle _h_Handle)
 			BIGcomp_tdst_DecompressParams	st_Decomp;
 			char							*tmp;
 			/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-#ifdef _GAMECUBE
-			tmp = BIG_gp_ReadBuffer = (char *) MEM_p_AllocTmp(BIG_gi_ReadSize);
-#else
 #if defined(ACTIVE_EDITORS) && defined(JADEFUSION)
 			tmp = BIG_gp_ReadBuffer = (char *) L_malloc(READ_BUFFER_SIZE);
 #else
 			tmp = BIG_gp_ReadBuffer = (char *) MEM_p_AllocFromEndAlign(BIG_gi_ReadSize, 64);
-#endif
 #endif
 			/* Preload ? */
 			i_Finished = 0;
@@ -1095,17 +1087,6 @@ int BIG_fread(void *_p_Buffer, int _i_Size, BIGFileHandle _h_Handle)
 					ioffsetbuf = gai_CurSize[gi_TestBin];
 					ioffsetbuf = (ioffsetbuf > initsize) ? initsize : ioffsetbuf;
 
-#if defined(PSX2_TARGET) && !defined(_FINAL_)
-					{
-						/*~~~~~~~~~~~~*/
-						char	tmp[64];
-						/*~~~~~~~~~~~~*/
-
-						sprintf(tmp, "-- Preload %d Ko\n", ioffsetbuf / 1024);
-						GSP_OutputConsole(tmp);
-					}
-
-#endif
 					preload = 1;
 					goto zappreload;
 				}
@@ -1116,11 +1097,7 @@ int BIG_fread(void *_p_Buffer, int _i_Size, BIGFileHandle _h_Handle)
 			CDV_i_DirectSeekFile(_h_Handle, L_SEEK_SET, BIG_gul_ReadPos);
 			CDV_i_DirectReadFile(_h_Handle, &BIG_gp_ReadBuffer, CDV_Cte_SectorSize);
 			BIG_si_BinFileSize = ReadLong(BIG_gp_ReadBuffer);
-#if defined(_GAMECUBE) || defined(_XENON)
 
-			SwapDWord((LONG *) &BIG_si_BinFileSize);
-#endif /* #ifdef _GAMECUBE */
-			
 			BIG_gf_DispBinProgress = 0.0f;
 			BIG_gui_DispBinProgressSize = BIG_si_BinFileSize;
 			
@@ -1214,19 +1191,12 @@ zappreload:
 				char	*tmp;
 				/*~~~~~~~~~*/
 
-#ifndef _GAMECUBE
 				MEM_FreeFromEndAlign(BIG_gp_ReadBuffer);
-#endif
-#ifdef _GAMECUBE
-				tmp = (char *) MEM_p_AllocTmp(_i_Size);
-#else
+
 				tmp = (char *) MEM_p_AllocFromEndAlign(_i_Size, 64);
-#endif				
 
 				L_memmove(tmp, BIG_gp_ReadBuffer, BIG_gi_ReadSize);
-#ifdef _GAMECUBE
-				MEM_Free(BIG_gp_ReadBuffer);
-#endif
+
 				BIG_gp_ReadBuffer = tmp;
 				BIG_gi_ReadSize = _i_Size;
 				BIG_gi_ReadSeek = 0;

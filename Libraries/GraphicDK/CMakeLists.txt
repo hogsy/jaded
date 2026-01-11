@@ -206,25 +206,25 @@ add_library(Jaded-Gfx OBJECT
     Sources/WAYpoint/WAYpoint.c
     Sources/WAYpoint/WAYpoint.h
 
-    ../OpenGL/Sources/OGLAfterEffects.cpp
-    ../OpenGL/Sources/OGLAfterEffects.h
-    ../OpenGL/Sources/OGLCloneDraw.cpp
-    ../OpenGL/Sources/OGLdebugfct.cpp
-    ../OpenGL/Sources/OGLdebugfct.h
-    ../OpenGL/Sources/OGLinit.cpp
-    ../OpenGL/Sources/OGLinit.h
-    ../OpenGL/Sources/OGLrenderstate.cpp
-    ../OpenGL/Sources/OGLrenderstate.h
-    ../OpenGL/Sources/OGLrequest.cpp
-    ../OpenGL/Sources/OGLrequest.h
-    ../OpenGL/Sources/OGLShiftDraw.cpp
-    ../OpenGL/Sources/OGLStringDraw.cpp
-    ../OpenGL/Sources/OGLtex.cpp
-    ../OpenGL/Sources/OGLtex.h
-    ../OpenGL/Sources/OGLWater.cpp
-    ../OpenGL/Sources/OGLWater.h
-    ../OpenGL/Sources/Precomp.cpp
-    ../OpenGL/Sources/Precomp.h
+    Sources/backends/gl/OGLAfterEffects.cpp
+    Sources/backends/gl/OGLAfterEffects.h
+    Sources/backends/gl/OGLCloneDraw.cpp
+    Sources/backends/gl/OGLdebugfct.cpp
+    Sources/backends/gl/OGLdebugfct.h
+    Sources/backends/gl/OGLinit.cpp
+    Sources/backends/gl/OGLinit.h
+    Sources/backends/gl/OGLrenderstate.cpp
+    Sources/backends/gl/OGLrenderstate.h
+    Sources/backends/gl/OGLrequest.cpp
+    Sources/backends/gl/OGLrequest.h
+    Sources/backends/gl/OGLShiftDraw.cpp
+    Sources/backends/gl/OGLStringDraw.cpp
+    Sources/backends/gl/OGLtex.cpp
+    Sources/backends/gl/OGLtex.h
+    Sources/backends/gl/OGLWater.cpp
+    Sources/backends/gl/OGLWater.h
+    Sources/backends/gl/Precomp.cpp
+    Sources/backends/gl/Precomp.h
 )
 
 target_include_directories(Jaded-Gfx

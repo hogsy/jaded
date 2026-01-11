@@ -78,10 +78,6 @@ typedef struct	EVE_tdst_Track_
 typedef struct	EVE_tdst_ListTracks_
 {
 	EVE_tdst_Track				*pst_AllTracks;		/* List of all tracks */
-#ifdef _GAMECUBE
-	struct ACT_tdst_CacheNode_ *pst_Cache;
-	ULONG						ul_GC_Flags;
-#endif
 	USHORT						uw_NumTracks;		/* Number of tracks for that object */
 	USHORT						uw_Flags;
 	ULONG						ul_NbOfInstances;	/* Number of instances that share the same List of Tracks */

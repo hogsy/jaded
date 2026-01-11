@@ -1,10 +1,6 @@
 #include "Precomp.h"
 
-#ifdef _GAMECUBE
-#include <dolphin.h>
-#else
 #include <vector>
-#endif
 
 #include "AI2C_fctheader.h"
 #include "AI2C_mdlheader.h"

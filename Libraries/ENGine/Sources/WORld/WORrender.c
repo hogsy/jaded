@@ -125,13 +125,6 @@ extern MATH_tdst_Vector		g_stGlobalNormPlaneLeft;
 extern MATH_tdst_Vector		g_stGlobalNormPlaneRight;
 extern void MODIFIER_SPG2_OneFrameCall();
 extern void MODIFIER_FOGDYN_OneFrameCall();
-#ifdef _GAMECUBE
-#include "GXI_GC/GXI_def.h"
-#include "GXI_GC/GXI_init.h"
-#include "GXI_GC/GXI_shadows.h"
-#endif
-
-
 
 /* XBOX ONLY SHADOW BUFFER FUNCTIONS */
 #if defined(_XBOX) || defined(_XENON)
