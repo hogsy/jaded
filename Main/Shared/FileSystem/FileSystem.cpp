@@ -542,12 +542,12 @@ jaded::FileSystem::Key jaded::FileSystem::GenerateFileKey( const std::string &pa
 	return key;
 }
 
-const std::vector< jaded::FileSystem::FileIndex > &jaded::FileSystem::GetDirFiles( const std::string &path )
+const std::vector< jaded::FileSystem::FileIndex > jaded::FileSystem::GetDirFiles( const std::string &path )
 {
-	auto &i = dirLookup.find( path );
+	const auto i = dirLookup.find( path );
 	if ( i == dirLookup.end() )
 	{
-		std::string msg = "Failed to find directory (" + path + ")!";
+		const std::string msg = "Failed to find directory (" + path + ")!";
 		LINK_PrintStatusMsg( msg.c_str() );
 		return {};
 	}

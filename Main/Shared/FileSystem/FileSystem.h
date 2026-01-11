@@ -63,7 +63,7 @@ namespace jaded
 
 		Key GenerateFileKey( const std::string &path );
 
-		const std::vector< FileIndex > &GetDirFiles( const std::string &path );
+		const std::vector< FileIndex > GetDirFiles( const std::string &path );
 
 		// A lot of this is dumb, and index-driven, so we can use
 
