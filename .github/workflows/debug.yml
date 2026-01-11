@@ -3,8 +3,10 @@ name: Build Debug (Windows MSVC x86)
 on: [ push, pull_request ]
 
 env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
-  BUILD_TYPE: Release
+  BUILD_TYPE: Debug
+  CMAKE_GENERATOR: "Visual Studio 17 2022"
+  CMAKE_ARCH: "Win32"
+  PROJECT_NAME: Jaded
 
 jobs:
   build:
@@ -14,19 +16,24 @@ jobs:
         shell: cmd
     steps:
       - uses: actions/checkout@v2.4.0
-
       - name: 'Setup MSBuild'
         uses: microsoft/setup-msbuild@v2
         with:
           vs-prerelease: false
-          msbuild-architecture: "x86"
 
-      - name: Build
-        # Build your program with the given configuration
-        run: MSBuild /t:JadeShell /property:Configuration="Debug Editors" /property:Platform=Win32 /p:JadedBuildID="Commit ${{ github.sha }} (${{ github.workflow }} \#$${{github.run_number}})" /maxcpucount Main/Jade.sln
+      - name: Configure CMake
+        run: |
+          mkdir build
+          cd build
+          cmake .. -G "%CMAKE_GENERATOR%" -A "%CMAKE_ARCH%"
 
-      - name: 'Package Release'
-        run: zip -9 jaded-debug.zip mappings/* changes.txt Jaded.exe Jaded.pdb run_window.bat run_console.bat run_editor.bat SDL3.dll legal.txt
+      - name: Build Project
+        run: |
+          cd build
+          cmake --build . --config %BUILD_TYPE% --target %PROJECT_NAME%
+
+      - name: 'Package Debug Build'
+        run: zip -9 jaded-debug.zip runtime/* runtime/mappings/* changes.txt
 
       #- name: 'Upload to Discord'
       #  if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
