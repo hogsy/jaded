@@ -6,7 +6,7 @@ project(Jaded
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-include(CMake/DetermineTargetArchitecture.cmake)
+include(DetermineTargetArchitecture.cmake)
 determine_target_architecture(JADE_SYSTEM_ARCH)
 
 ###################################################################################
@@ -64,28 +64,4 @@ else ()
     message("Configuring for release compilation")
 endif ()
 
-# sigh...
-include_directories(Dlls)
-
-###################################################################################
-# External Libraries
-
-add_subdirectory(Dlls/JPEGLIB)
-add_subdirectory(Dlls/MPEGLIB)
-add_subdirectory(Extern/ode)
-add_subdirectory(Extern/lz4/build/cmake)
-add_subdirectory(Extern/zlib)
-
-###################################################################################
-# Libraries
-
-add_subdirectory(Dlls/MAD_loadSave)
-add_subdirectory(Dlls/MAD_mem)
-add_subdirectory(Dlls/MAD_rasterize)
-
-add_subdirectory(Libraries)     # Core Jade Libraries
-
-###################################################################################
-# Apps
-
-add_subdirectory(Main)          # Main Program
+add_subdirectory(src)

@@ -21,9 +21,9 @@ This project is not designed to be used with the original prototype Rayman 4 BF 
 While there's nothing to _prevent_ you from using it, just mind that fur will not be displayed correctly until you modify the materials again.
 
 Essentially the flag toggling the fur was set incorrectly internally, which was rectified by Droolie.
-Instead please use the BF created by Droolie, [here](https://www.raymanpc.com/forum/viewtopic.php?t=75066).
+Instead, please use the BF created by Droolie, [here](https://www.raymanpc.com/forum/viewtopic.php?t=75066).
 
-In hindsight we probably could've fixed this through some sort of migration, but it's a bit late for it now.
+In hindsight, we probably could've fixed this through some sort of migration, but it's a bit late for it now.
 
 Alternatively, the editor does technically allow you to create a completely from-scratch project if you want to, but you're very much on your own there.
 
@@ -40,26 +40,20 @@ Once you've accessed the page linked, click on the latest run and at the bottom 
 
 ### Compiling
 
-Currently Jaded will only compile on Windows, and has only been tested on Windows 10 onwards.
+Currently Jaded will only compile on Windows and for the x86 target architecture, and has only been tested on Windows 10 onwards.
 Debug builds are recommended instead of release, purely as these can be more stable and will provide you with more information if something goes wrong.
 
-While there are CMake files, **these are currently incomplete** and instead you'll need to use the Visual Studio project located under `Main/Jade.sln`.
+The project has been updated to use utilise [CMake](https://cmake.org/), so compilation will naturally require that to be installed before you can proceed. Once done, you can do the following.
 
-1. Open the solution (`Main/Jade.sln`) in Visual Studio (2022+)
-2. Set the active configuration to either `Release` or `Debug Editors`
-3. Go ahead and build the `JadeShell` project (projects under the `Tools` directory aren't necessary)
-4. You should end up with a `Jaded.exe` in the main project directory
+1. Use the `create_project_*` batch. As of Jan. 2026, you'll want the one targeting x86.
+2. Navigate into the [solutions](solutions) directory, and open `Jaded.sln`.
+3. You should be able to build the project successfully (if not, open a ticket).
+4. Output should be found under [runtime](runtime), under the root directory.
 
-If instead you would prefer to compile the project via the command-line, you can execute the following.
+If instead you would prefer to compile the project via the command-line, you can then execute the following from under the [solutions](solutions) directory.
 
-**Debug**
 ```
-MSBuild /t:JadeShell /property:Configuration="Debug Editors" /property:Platform=Win32 /maxcpucount Main/Jade.sln
-```
-
-**Release** 
-```
-MSBuild /t:JadeShell /property:Configuration="Release" /property:Platform=Win32 /maxcpucount Main/Jade.sln
+cmake --build . --config Debug --target Jaded --parallel 8
 ```
 
 ## Contributing
