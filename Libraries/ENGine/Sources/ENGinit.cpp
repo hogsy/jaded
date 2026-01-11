@@ -106,7 +106,6 @@ extern "C" AI_tdst_GlobalMessageList gast_GlobalMessages[ C_GM_MaxTypes ];
 #include "SouND/Sources/SNDstream.h"
 #include "TIMer/TIMdefs.h"
 #include "NETwork/Sources/NET.h"
-#include "MC/MC_Manager.h"
 
 extern "C" COL_tdst_GlobalVars COL_gst_GlobalVars;
 extern "C" int GRID_gi_Current;

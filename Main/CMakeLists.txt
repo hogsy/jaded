@@ -546,7 +546,6 @@ add_executable(Jaded WIN32
         WinEditors/Sources/VAVview/VAVview_text.cpp
         WinEditors/Sources/VAVview/VAVview_vector.cpp
         WinEditors/Sources/VAVview/VAVview_zone.cpp
-        WinEngine/Sources/MAIwind.c
 )
 
 target_compile_definitions(Jaded PRIVATE JADED_BUILD_ID="")

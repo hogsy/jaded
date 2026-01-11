@@ -131,15 +131,6 @@ add_library(Jaded-SDK OBJECT
         Sources/BIGfiles/VERsion/VERsion_Update7.cpp
         Sources/BIGfiles/VERsion/VERsion_Update8.cpp
         Sources/BIGfiles/VERsion/VERsion_Update9.cpp
-        #Sources/BIGfiles/Xbox/xboxStreamingEmul.c
-        #Sources/BIGfiles/Xbox/xboxStreamingEmul.h
-        #Sources/GameCube/GC_aramheap.c
-        #Sources/GameCube/GC_aramheap.h
-        #Sources/GameCube/GC_arammng.c
-        #Sources/GameCube/GC_arammng.h
-        #Sources/GameCube/GC_File.c
-        #Sources/GameCube/GC_File.h
-        #Sources/GameCube/GC_Stream.h
         Sources/INOut/INO.c
         Sources/INOut/INO.h
         Sources/INOut/INOfile.c
@@ -152,31 +143,10 @@ add_library(Jaded-SDK OBJECT
         Sources/INOut/INOsaving.c
         Sources/INOut/INOsaving.h
         Sources/INOut/INOstruct.h
-        #Sources/INOut/gc/gcINOsaving.c
-        #Sources/INOut/gc/gcINOsaving.h
-        #Sources/INOut/ps2/ps2INOsaving.c
-        #Sources/INOut/ps2/ps2INOsaving.h
         Sources/INOut/win32/win32INOsaving.c
         Sources/INOut/win32/win32INOsaving.h
-        #Sources/INOut/xbox/xbINOsaving.c
-        #Sources/INOut/xbox/xbINOsaving.h
-        #Sources/INOut/xenon/sg.png
-        #Sources/INOut/xenon/XeINOjoystick.c
-        #Sources/INOut/xenon/XeINOjoystick.h
-        #Sources/INOut/xenon/XeINOsaving.c
-        #Sources/INOut/xenon/XeINOsaving.h
         Sources/IOP/CDV_Manager.h
         Sources/IOP/RPC_Manager.h
-        #Sources/IOP/ee/eeCDV_Manager.c
-        #Sources/IOP/ee/eeCDV_Manager.h
-        #Sources/IOP/ee/eeDebug.h
-        #Sources/IOP/ee/eeIOP_RamManager.c
-        #Sources/IOP/ee/eeIOP_RamManager.h
-        #Sources/IOP/ee/eekernel.h
-        #Sources/IOP/ee/eeRPC_Debug.c
-        #Sources/IOP/ee/eeRPC_Debug.h
-        #Sources/IOP/ee/eeRPC_Manager.c
-        #Sources/IOP/ee/eeRPC_Manager.h
         Sources/IOP/iop/iopBAStypes.h
         Sources/IOP/iop/iopCDV_Manager.c
         Sources/IOP/iop/iopCDV_Manager.h
@@ -202,8 +172,6 @@ add_library(Jaded-SDK OBJECT
         Sources/IOP/iop/iopSND_Hard.c
         Sources/IOP/iop/iopSND_Hard.h
         Sources/IOP/iop/iopSND_libsd.h
-        #Sources/IOP/iop/iopSND_Stream.c
-        #Sources/IOP/iop/iopSND_Stream.h
         Sources/IOP/iop/iopSND_Voice.c
         Sources/IOP/iop/iopSND_Voice.h
         Sources/LINks/LINK.cpp
@@ -247,32 +215,10 @@ add_library(Jaded-SDK OBJECT
         Sources/MATHs/MATHvector_ALIGNED.h
         Sources/MATHs/MATH_MEM.c
         Sources/MATHs/MATH_MEM.h
-        #Sources/MATHs/GC/GCMATHfloat.h
-        #Sources/MATHs/GC/GCMATHgector.h
-        #Sources/MATHs/GC/GCMATHmatrix.h
-        #Sources/MATHs/GC/GCMATHmatrixTransform.c
-        #Sources/MATHs/GC/GCMATHvector.h
         Sources/MATHs/ix86/ix86MATHfloat.h
-        #Sources/MATHs/PS2/ps2MATHfloat.h
-        #Sources/MATHs/PS2/ps2MATHmatrixBase.h
-        #Sources/MATHs/PS2/ps2MATHmatrixTransform.c
-        #Sources/MATHs/PS2/ps2MATHmatrixTransform_s.s
-        #Sources/MATHs/PS2/ps2MATHopt.h
-        #Sources/MATHs/PS2/ps2MATHopt_c.c
-        #Sources/MATHs/PS2/ps2MATHopt_dsm.dsm
-        #Sources/MATHs/PS2/ps2MATHopt_s.s
-        #Sources/MATHs/PS2/ps2MATHopt_vsm.vsm
-        #Sources/MATHs/PS2/ps2MATHvector.c
-        #Sources/MATHs/PS2/ps2MATHvector.h
-        #Sources/MATHs/PS2/ps2MATHvector_ALIGNED.h
-        #Sources/MATHs/PS2/vumacros.h
-        #Sources/MATHs/Xenon/xeMATHfloat.h
-        Sources/MC/MC_Manager.c
-        Sources/MC/MC_Manager.h
         Sources/package/PackagePak.cpp
         Sources/package/PackagePak.h
         Sources/Random/PerlinNoise.c
-        #Sources/Random/PerlinNoise.cpp
         Sources/Random/PerlinNoise.h
         Sources/Random/random.h
         Sources/TABles/TABles.c
@@ -292,18 +238,6 @@ add_library(Jaded-SDK OBJECT
         Sources/TIMer/PROfiler/PROPS2.c
         Sources/TIMer/PROfiler/PROPS2.h
         Sources/TIMer/PROfiler/PROPS2_def.h
-        #Sources/TIMer/PROfiler/xbox/font.xpr
-        #Sources/TIMer/PROfiler/xbox/PerfTest.cpp
-        #Sources/TIMer/PROfiler/xbox/PRO_xb.h
-        #Sources/TIMer/PROfiler/xbox/xbapp.h
-        #Sources/TIMer/PROfiler/xbox/XbFont.Cpp
-        #Sources/TIMer/PROfiler/xbox/XbFont.h
-        #Sources/TIMer/PROfiler/xbox/xbinput.h
-        #Sources/TIMer/PROfiler/xbox/XBInterface.Cpp
-        #Sources/TIMer/PROfiler/xbox/XbResource.Cpp
-        #Sources/TIMer/PROfiler/xbox/XbResource.h
-        #Sources/TIMer/PROfiler/xbox/XbUtil.Cpp
-        #Sources/TIMer/PROfiler/xbox/XbUtil.h
 )
 
 target_include_directories(Jaded-SDK
