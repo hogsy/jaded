@@ -500,11 +500,7 @@ BOOL MAT_VUISIdentity(MAT_tdst_MTLevel *p_tdstLevel)
 #endif	
 }
 #ifndef PSX2_TARGET
-#ifdef JADEFUSION
 BOOL MAT_VUISIdentity_i(MAT_tdst_MTLevel *p_tdstLevel)
-#else
-_inline_ BOOL MAT_VUISIdentity_i(MAT_tdst_MTLevel *p_tdstLevel)
-#endif
 {
 #ifdef PSX2_TARGET
 	if (p_tdstLevel->ScaleSPeedPosU == 0) return TRUE;
