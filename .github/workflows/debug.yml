@@ -30,7 +30,7 @@ jobs:
       - name: Build Project
         run: |
           cd build
-          cmake --build . --config %BUILD_TYPE% --target %PROJECT_NAME%
+          cmake --build . --config %BUILD_TYPE% --target %PROJECT_NAME% --parallel 8
 
       - name: 'Package Debug Build'
         run: zip -9 jaded-debug.zip runtime/* runtime/mappings/* changes.txt
