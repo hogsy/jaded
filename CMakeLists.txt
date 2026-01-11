@@ -72,7 +72,8 @@ include_directories(Dlls)
 
 add_subdirectory(Dlls/JPEGLIB)
 add_subdirectory(Dlls/MPEGLIB)
-add_subdirectory(Extern/ode)    # ODE physics engine
+add_subdirectory(Extern/ode)
+add_subdirectory(Extern/lz4/build/cmake)
 add_subdirectory(Extern/zlib)
 
 ###################################################################################

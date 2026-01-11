@@ -570,7 +570,6 @@ target_link_directories(Jaded
         PRIVATE
         ../Extern/glew/lib/Release/Win32
         ../Extern/sdl3/lib/x86
-        ../Extern/lz4/static
 )
 
 target_link_libraries(Jaded
@@ -578,6 +577,7 @@ target_link_libraries(Jaded
         JPEGLIB
 
         Jaded-ODE
+        lz4_static
         zlib
 
         Jaded-MAD_loadSave
@@ -597,5 +597,4 @@ target_link_libraries(Jaded
 
         dxguid
         winhttp
-        vcruntime
 )

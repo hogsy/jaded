@@ -15,9 +15,6 @@
 #include "PackagePak.h"
 
 #include "../Extern/lz4/lib/lz4.h"
-#if defined( _MSC_VER )
-#	pragma comment( lib, "liblz4_static.lib" )
-#endif
 
 // Much of the below wouldn't have been possible without the work of Droolie!
 // https://github.com/BinarySerializer/Ray1Map
