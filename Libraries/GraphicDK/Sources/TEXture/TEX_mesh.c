@@ -31,7 +31,7 @@
 
 #ifdef WTR_OGL_VERSION
 #define WTR_ComputeOriginalsUV
-#include "..\OpenGL\Sources\OGLinit.h"
+#include "..\..\OpenGL\Sources\OGLinit.h"
 
 // God fucking damn it Ubisoft
 // TODO: consolidate GL specific code into GL specific driver!! ~hogsy

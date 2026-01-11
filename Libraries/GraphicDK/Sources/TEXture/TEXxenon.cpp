@@ -21,8 +21,8 @@
 #include "TEXture/TEXxenon.h"
 #include "BIGfiles/BIGread.h"
 #include "BIGfiles/LOAding/LOAread.h"
-#include "../../Dlls/JPEGLIB/INTERFCE.H"
 
+#include "JPEGLIB/INTERFCE.H"
 
 #ifdef ACTIVE_EDITORS
 #include "BIGfiles/IMPort/IMPbase.h"

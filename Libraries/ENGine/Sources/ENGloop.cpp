@@ -31,21 +31,6 @@
 #include "BASe/MEMory/MEMpro.h"
 #include "BIGfiles/LOAding/LOAdefs.h"
 #include "NETwork/sources/NET.h"
-#if defined( _XBOX ) || defined( _XENON )
-#	include "GX8/Gx8GPUMon.h"
-#endif
-#if defined( _XBOX )
-#	include "DEModisk/DEModisk.h"
-#endif
-
-#if defined( _XENON )
-#	include "Xenon/MenuManager/MenuManager.h"
-#	include "Xenon/Live/RichPresence.h"
-#	include "Xenon/Live/Notifications.h"
-#	include "Xenon/Live/Achievements.h"
-#	include "Xenon/Live/Session.h"
-#	include "Xenon/Profile/Profile.h"
-#endif
 
 #ifdef JADEFUSION
 #	include "BASe/BENch/BENch.h"
@@ -66,14 +51,6 @@
 //#endif
 
 /*$2------------------------------------------------------------------------------------------------------------------*/
-#if defined( _XENON_RENDER )
-#	include "XenonGraphics/XeBufferMgr.h"
-#	include "XenonGraphics/XeRenderer.h"
-#	include "XenonGraphics/XeSimpleRenderer.h"
-#	include "XenonGraphics/XeGDInterface.h"
-
-#	include "XenonGraphics/XeTrigger.h"
-#endif
 
 #include "BASe/BENch/BENch.h"
 #include "INOut/INOkeyboard.h"
@@ -140,7 +117,6 @@ float TIM_gf_MainClockForTextureScrolling = 0.0f;
 HWND ENG_h_Rasters = 0;
 #endif
 #ifdef _FINAL_
-float ENG_gf_TimeFinal;
 BOOL ENG_gb_Raster = FALSE;
 #endif
 
@@ -1056,10 +1032,6 @@ extern "C" void MEM_dbg_FindLastAllocatedCluster( void );
 static void s_OneTrame( void )
 {
 	JADED_PROFILER_START();
-
-#ifdef _FINAL_
-	if ( ENG_gb_Raster ) ENG_gf_TimeFinal = TIM_f_Clock_TrueRead();
-#endif
 
 	PRO_StartTrameRaster( &ENG_gpst_RasterEng_OneLoop );
 

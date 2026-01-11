@@ -12,8 +12,11 @@
     headers
  ***********************************************************************************************************************
  */
+
 #include "Precomp.h"
 #ifdef ACTIVE_EDITORS
+
+#	include <dsound.h>
 
 #include "SouND/Sources/edi/ediSNDdebug.h"
 

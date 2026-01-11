@@ -16,7 +16,8 @@
 #include "TEXture/TEXprocedural.h"
 #include "TEXture/TEXfile.h"
 #include "BIGfiles/BIGread.h"
-#include "../../Dlls/JPEGLIB/INTERFCE.H"
+
+#include "JPEGLIB/INTERFCE.H"
 
 #ifdef ACTIVE_EDITORS
 #include "BIGfiles/IMPort/IMPbase.h"

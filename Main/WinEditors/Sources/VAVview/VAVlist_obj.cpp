@@ -97,7 +97,7 @@
 #endif
 
 #ifdef ODE_INSIDE
-#include "objects.h"
+#include "ode/Sources/objects.h"
 #endif
 
 #ifdef JADEFUSION

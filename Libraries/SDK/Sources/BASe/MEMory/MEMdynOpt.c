@@ -772,7 +772,7 @@ BOOL MEM_bIsElement(char *_sFile, int _iLine, ULONG _ulKey )
     }
 }
 
-char *MEM_FormatString(char *Letter)
+static char *MEM_FormatString(char *Letter)
 {
 	char *Base;
 	Base = Letter;

@@ -329,7 +329,7 @@ static MEM_stSummaryElement MEM_SummaryTable[MEM_ulSummaryTableSize];
 MEM_stSummaryElement *MEM_SortSummaryTable[MEM_ulSummaryTableSize];
 ULONG MEM_ulSummaryNb = -1;
 
-char *MEM_FormatString(char *Letter)
+static char *MEM_FormatString(char *Letter)
 {
 	char *Base;
 	Base = Letter;
