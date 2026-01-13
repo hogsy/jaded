@@ -53,8 +53,9 @@ extern "C"
 		} \
 	} while(0);
 
-void	ediSND_CheckHRESULT(HRESULT hr);
-void	ediSND_Assert(char *, char *, int line);
+const char *ediSND_GetErrorString( HRESULT hr );
+void        ediSND_CheckHRESULT( HRESULT hr );
+void        ediSND_Assert( char *, char *, int line );
 #else
 
 /*$2

@@ -180,16 +180,16 @@ static void SND_FxValidate(void)
 void SND_FxUpdate(void)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~*/
-	int				core, ctxt;
-	extern float	TIM_gf_dt;
-	float			vol;
+	int             ctxt;
 	/*~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	SND_FxValidate();
 
-	for(core = 0; core < SND_Cte_FxCoreNb; core++)
+	float vol = 0.0f;
+	for( int core = 0; core < SND_Cte_FxCoreNb; core++)
 	{
-		if(!SND_dst_FxCrossFade[core].f_FadeFactor) continue;
+		extern float TIM_gf_dt;
+		if (!SND_dst_FxCrossFade[core].f_FadeFactor) continue;
 
 		/*$1
 		 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -31,6 +31,70 @@ void ediSND_Assert(char*pz_Cond, char*file,int line)
 	sprintf(asz_log, "[SND] assertion failed : %s %s(%d)\n",pz_Cond, file, line);
 	OutputDebugString(asz_log);
 }
+
+const char *ediSND_GetErrorString( HRESULT hr )
+{
+	switch(hr)
+	{
+		case DS_OK:
+			return "DS_OK";
+		case DSERR_ALLOCATED:
+			return "DSERR_ALLOCATED";
+		case DSERR_CONTROLUNAVAIL:
+			return "DSERR_CONTROLUNAVAIL";
+		case DSERR_INVALIDPARAM:
+			return "DSERR_INVALIDPARAM";
+		case DSERR_INVALIDCALL:
+			return "DSERR_INVALIDCALL";
+		case DSERR_GENERIC:
+			return "DSERR_GENERIC";
+		case DSERR_PRIOLEVELNEEDED:
+			return "DSERR_PRIOLEVELNEEDED";
+		case DSERR_OUTOFMEMORY:
+			return "DSERR_OUTOFMEMORY";
+		case DSERR_BADFORMAT:
+			return "DSERR_BADFORMAT";
+		case DSERR_UNSUPPORTED:
+			return "DSERR_UNSUPPORTED";
+		case DSERR_NODRIVER:
+			return "DSERR_NODRIVER";
+		case DSERR_ALREADYINITIALIZED:
+			return "DSERR_ALREADYINITIALIZED";
+		case DSERR_NOAGGREGATION:
+			return "DSERR_NOAGGREGATION";
+		case DSERR_BUFFERLOST:
+			return "DSERR_BUFFERLOST";
+		case DSERR_OTHERAPPHASPRIO:
+			return "DSERR_OTHERAPPHASPRIO";
+		case DSERR_UNINITIALIZED:
+			return "DSERR_UNINITIALIZED";
+		case DSERR_NOINTERFACE:
+			return "DSERR_NOINTERFACE";
+		case DS_NO_VIRTUALIZATION:
+			return "DS_NO_VIRTUALIZATION";
+			/*No longer defined in DirectX 9
+			case DS_INCOMPLETE:
+				strcpy(asz_cause, "DS_INCOMPLETE");
+				break;*/
+		case DSERR_ACCESSDENIED:
+			return "DSERR_ACCESSDENIED";
+		case DSERR_BUFFERTOOSMALL:
+			return "DSERR_BUFFERTOOSMALL";
+		case DSERR_DS8_REQUIRED:
+			return "DSERR_DS8_REQUIRED";
+		case DSERR_SENDLOOP:
+			return "DSERR_SENDLOOP";
+		case DSERR_BADSENDBUFFERGUID:
+			return "DSERR_BADSENDBUFFERGUID";
+		case DSERR_OBJECTNOTFOUND:
+			return "DSERR_OBJECTNOTFOUND";
+		case CO_E_NOTINITIALIZED:
+			return "CO_E_NOTINITIALIZED";
+		default:
+			return "Unknown";
+	}
+}
+
 /*
  =======================================================================================================================
  =======================================================================================================================
@@ -39,92 +103,15 @@ void ediSND_CheckHRESULT(HRESULT hr)
 {
 	/*~~~~~~~~~~~~~~~~~~~*/
 	char	asz_log[512];
-	char	asz_cause[128];
 	/*~~~~~~~~~~~~~~~~~~~*/
 
-	switch(hr)
+	if ( hr == DS_OK )
 	{
-	case DS_OK:
 		return;
-	case DSERR_ALLOCATED:
-		strcpy(asz_cause, "DSERR_ALLOCATED");
-		break;
-	case DSERR_CONTROLUNAVAIL:
-		strcpy(asz_cause, "DSERR_CONTROLUNAVAIL");
-		break; 
-	case DSERR_INVALIDPARAM:
-		strcpy(asz_cause, "DSERR_INVALIDPARAM");
-		break;
-	case DSERR_INVALIDCALL:
-		strcpy(asz_cause, "DSERR_INVALIDCALL");
-		break;
-	case DSERR_GENERIC:
-		strcpy(asz_cause, "DSERR_GENERIC");
-		break;
-	case DSERR_PRIOLEVELNEEDED:
-		strcpy(asz_cause, "DSERR_PRIOLEVELNEEDED");
-		break;
-	case DSERR_OUTOFMEMORY:
-		strcpy(asz_cause, "DSERR_OUTOFMEMORY");
-		break;
-	case DSERR_BADFORMAT:
-		strcpy(asz_cause, "DSERR_BADFORMAT");
-		break;
-	case DSERR_UNSUPPORTED:
-		strcpy(asz_cause, "DSERR_UNSUPPORTED");
-		break;
-	case DSERR_NODRIVER:
-		strcpy(asz_cause, "DSERR_NODRIVER");
-		break;
-	case DSERR_ALREADYINITIALIZED:
-		strcpy(asz_cause, "DSERR_ALREADYINITIALIZED");
-		break;
-	case DSERR_NOAGGREGATION:
-		strcpy(asz_cause, "DSERR_NOAGGREGATION");
-		break;
-	case DSERR_BUFFERLOST:
-		strcpy(asz_cause, "DSERR_BUFFERLOST");
-		break;
-	case DSERR_OTHERAPPHASPRIO:
-		strcpy(asz_cause, "DSERR_OTHERAPPHASPRIO");
-		break;
-	case DSERR_UNINITIALIZED:
-		strcpy(asz_cause, "DSERR_UNINITIALIZED");
-		break;
-	case DSERR_NOINTERFACE:
-		strcpy(asz_cause, "DSERR_NOINTERFACE");
-		break;
-	case DS_NO_VIRTUALIZATION:
-		strcpy(asz_cause, "DS_NO_VIRTUALIZATION");
-		break;
-	/*No longer defined in DirectX 9
-	case DS_INCOMPLETE:
-		strcpy(asz_cause, "DS_INCOMPLETE");
-		break;*/
-	case DSERR_ACCESSDENIED:
-		strcpy(asz_cause, "DSERR_ACCESSDENIED");
-		break;
-	case DSERR_BUFFERTOOSMALL:
-		strcpy(asz_cause, "DSERR_BUFFERTOOSMALL");
-		break;
-	case DSERR_DS8_REQUIRED:
-		strcpy(asz_cause, "DSERR_DS8_REQUIRED");
-		break;
-	case DSERR_SENDLOOP:
-		strcpy(asz_cause, "DSERR_SENDLOOP");
-		break;
-	case DSERR_BADSENDBUFFERGUID:
-		strcpy(asz_cause, "DSERR_BADSENDBUFFERGUID");
-		break;
-	case DSERR_OBJECTNOTFOUND:
-		strcpy(asz_cause, "DSERR_OBJECTNOTFOUND");
-		break;
-	default:
-		strcpy(asz_cause, "other code");
-		break;
 	}
 
-	sprintf(asz_log, "bad DirectSound return value %x, %s", hr, asz_cause);
+	const char *cause = ediSND_GetErrorString( hr );
+	snprintf(asz_log, sizeof( asz_log ), "bad DirectSound return value %x, %s", hr, cause);
 	MessageBox(0, asz_log, "SND error", MB_OK);
 }
 

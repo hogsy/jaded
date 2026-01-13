@@ -325,8 +325,8 @@ void ediSND_FxAdd(SND_tdst_SoundBuffer *_pst_SB, int _i_Core, int _i_FxVol)
 
 	if ( hr != DS_OK )
 	{
-		char buf[ 64 ];
-		snprintf( buf, sizeof( buf ), "Failed to set audio effect (%ld)!", hr );
+		char buf[ 128 ];
+		snprintf( buf, sizeof( buf ), "Failed to set audio effect (%s)!", ediSND_GetErrorString( hr ) );
 		LINK_PrintStatusMsg( buf );
 		return;
 	}
