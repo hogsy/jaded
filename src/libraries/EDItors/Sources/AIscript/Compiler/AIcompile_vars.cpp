@@ -76,6 +76,10 @@ int EAI_cl_Compiler::DoField(int _i_Type)
  */
 int EAI_cl_Compiler::DoVariable(void)
 {
+#	if defined( JADED_AI_COMPILE_DEBUG )
+	printf( "%s %s %d %u\n", __FUNCTION__, e.o_Value.GetString(), e.i_Value, mst_LocalVars.o_Vars.GetCount() );
+#	endif
+
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	EAI_cl_Variable *po_Var;
 	int				i_Type, i_Pos;
@@ -653,15 +657,19 @@ recom:
 void EAI_cl_Compiler::RemoveVarStmt(int _i_Level)
 {
 	/*~~~~~~~~~~~~~~~~~~~~*/
-	POSITION		pos;
-	EAI_cl_Variable *po_Var;
 	CString			o_Str;
 	/*~~~~~~~~~~~~~~~~~~~~*/
 
-	pos = mst_LocalVars.o_Vars.GetStartPosition();
+	POSITION pos = mst_LocalVars.o_Vars.GetStartPosition();
 	while(pos)
 	{
+		EAI_cl_Variable *po_Var;
 		mst_LocalVars.o_Vars.GetNextAssoc(pos, o_Str, (void * &) po_Var);
+
+#	if defined( JADED_AI_COMPILE_DEBUG )
+		printf( "%s: var level %d, level %d (%s)\n", __FUNCTION__, po_Var->StmtLevel, _i_Level, o_Str.GetString() );
+#	endif
+
 		if(po_Var->StmtLevel == _i_Level)
 		{
 			mst_LocalVars.o_Vars.RemoveKey(o_Str);

@@ -15,6 +15,10 @@
 #include "BIGfiles/BIGgroup.h"
 #include "AIinterp/Sources/AIengine.h"
 
+#if !defined( NDEBUG )
+//#	define JADED_AI_COMPILE_DEBUG
+#endif
+
 #define TOKEN_NAME				1
 #define TOKEN_NUMBER			2
 #define TOKEN_TYPE				3

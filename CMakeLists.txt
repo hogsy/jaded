@@ -45,9 +45,20 @@ foreach (OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} "${JADE_OUTPUT_DIR}")
 endforeach ()
 
-add_compile_options(/MT /MP)
+add_compile_options(/MT /MP /W4 #[[/sdl]] $<$<NOT:$<CONFIG:Debug>>:/Zi>)
 
-add_definitions(-DACTIVE_EDITORS -D_USE_32BIT_TIME_T)
+#add_link_options(
+#        "$<$<NOT:$<CONFIG:Debug>>:/DEBUG>"
+#        "$<$<NOT:$<CONFIG:Debug>>:/OPT:REF>"
+#        "$<$<NOT:$<CONFIG:Debug>>:/OPT:ICF>"
+#)
+
+add_definitions(
+        -DACTIVE_EDITORS
+        -D_USE_32BIT_TIME_T
+        -D_CRT_SECURE_NO_WARNINGS
+        -D_CRT_NONSTDC_NO_WARNINGS
+)
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     message("Configuring for debug compilation")
 
@@ -60,8 +71,12 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     # ideally the solution here is to use the correct /MTd
     # or whatever, but that's been giving me issues due to
     # some other crap. we'll sort this out later.
+
+    add_compile_options(/RTC1)
 else ()
     message("Configuring for release compilation")
+
+    add_compile_options(/O2)
 endif ()
 
 add_subdirectory(src)

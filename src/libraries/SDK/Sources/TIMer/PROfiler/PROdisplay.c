@@ -395,7 +395,6 @@ int PRO_i_DisplayOneRaster(HWND _hwnd, HDC _hdc, int _i_Y, PRO_tdst_TrameRaster 
 #ifdef ACTIVE_EDITORS
         /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 		int					i;
-		AI_tdst_Message		*pst_Msg;
 		char				asz_Msg1[1000];
 		char				asz_Msg2[256];
 		char				asz_Msg3[256];
@@ -405,10 +404,14 @@ int PRO_i_DisplayOneRaster(HWND _hwnd, HDC _hdc, int _i_Y, PRO_tdst_TrameRaster 
 		char				asz_Msg7[256];
         /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-		for(i = 0; i < gast_GlobalMessages[_pst_Current->ul_UserData].num; i++, pst_Msg++)
+		for(i = 0; i < gast_GlobalMessages[_pst_Current->ul_UserData].num; i++ )
 		{
-			if(gast_GlobalMessages[_pst_Current->ul_UserData].msg[i].flags & C_GM_Deleted) continue;
-			pst_Msg = &gast_GlobalMessages[_pst_Current->ul_UserData].msg[i].msg;
+			if(gast_GlobalMessages[_pst_Current->ul_UserData].msg[i].flags & C_GM_Deleted)
+				continue;
+
+			const AI_tdst_Message *pst_Msg = &gast_GlobalMessages[_pst_Current->ul_UserData].msg[i].msg;
+			assert( pst_Msg != NULL );
+
 			SetBkColor(_hdc, GetSysColor(COLOR_BTNFACE));
 			rect1.left = i_X + 5;
 			rect1.top = _i_Y;

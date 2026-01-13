@@ -855,7 +855,7 @@ void LINK_Callback_SaveAnimated( void *, void *, void *, LONG )
 void LINK_CallBack_ChangeMatrix(void *p_Owner, void *_po_Item, void *p_Data, LONG l_OldData)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	MATH_tdst_Matrix	*pst_Matrix;
+	MATH_tdst_Matrix	*pst_Matrix = NULL;
 	EVAV_cl_ViewItem	*po_Parent;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -904,12 +904,21 @@ void LINK_CallBack_ChangeMatrix(void *p_Owner, void *_po_Item, void *p_Data, LON
 	if(M_NameEqual(MATH_Csz_ScaleY)) pst_Matrix = (MATH_tdst_Matrix *) ((char *) p_Data - MATH_Cul_OffsetScaleY);
 	if(M_NameEqual(MATH_Csz_ScaleZ)) pst_Matrix = (MATH_tdst_Matrix *) ((char *) p_Data - MATH_Cul_OffsetScaleZ);
 
+	if ( pst_Matrix == nullptr )
+	{
+		ERR_X_ForceError( "Change matrix request failed, likely programming error!", nullptr );
+		return;
+	}
+
 	/* Set the correct type of the matrix */
 	MATH_SetCorrectType(pst_Matrix);
 
 	/* In case the matrix is the global position, recompute local if necessary */
 	po_Parent = gpo_CurVavListBox->po_GetParentGAO((EVAV_cl_ViewItem *) _po_Item);
-	if(po_Parent) OBJ_ComputeLocalWhenHie((OBJ_tdst_GameObject *) po_Parent->mp_Data);
+	if(po_Parent)
+	{
+		OBJ_ComputeLocalWhenHie((OBJ_tdst_GameObject *) po_Parent->mp_Data);
+	}
 
 	LINK_Refresh();
 }

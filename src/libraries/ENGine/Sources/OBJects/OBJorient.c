@@ -811,7 +811,7 @@ void OBJ_EyeFollow
 )
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	OBJ_tdst_GameObject		*pst_HeadGO, *pst_TorsoGO, *pst_PelvisGO, *pst_BellyGO;
+	OBJ_tdst_GameObject		*pst_HeadGO, *pst_TorsoGO, *pst_PelvisGO, *pst_BellyGO = NULL;
 	OBJ_tdst_GameObject		*pst_Father;
 	MATH_tdst_Matrix		st_Temp;
 	MATH_tdst_Vector		st_Actor_Sight;

@@ -14,7 +14,7 @@ add_library(zlib OBJECT
         inflate.h
         inftrees.c
         inftrees.h
-        minigzip.c
+        #minigzip.c
         trees.c
         trees.h
         uncompr.c

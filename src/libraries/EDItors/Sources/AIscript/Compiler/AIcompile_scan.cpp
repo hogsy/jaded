@@ -60,6 +60,10 @@ void EAI_cl_Compiler::GetField(void)
  */
 void EAI_cl_Compiler::GetName(BOOL _b_Scan)
 {
+#	if defined( JADED_AI_COMPILE_DEBUG )
+	printf( "%s %s %d %u\n", __FUNCTION__, e.o_Value.GetString(), e.i_Value, mst_LocalVars.o_Vars.GetCount() );
+#	endif
+
     /*~~~~~~~~~~~~~~~~*/
 	char	asz[512];
 	int		i;
@@ -85,6 +89,10 @@ void EAI_cl_Compiler::GetName(BOOL _b_Scan)
 	asz[i] = 0;
 	e.o_Value = asz;
     if(_b_Scan) Scan();
+
+#	if defined( JADED_AI_COMPILE_DEBUG )
+	printf( "pop %s %s %d %u\n", __FUNCTION__, e.o_Value.GetString(), e.i_Value, mst_LocalVars.o_Vars.GetCount() );
+#	endif
 }
 
 /*
@@ -93,6 +101,10 @@ void EAI_cl_Compiler::GetName(BOOL _b_Scan)
  */
 void EAI_cl_Compiler::GetPP(void)
 {
+#	if defined( JADED_AI_COMPILE_DEBUG )
+	printf( "%s %s %d %u\n", __FUNCTION__, e.o_Value.GetString(), e.i_Value, mst_LocalVars.o_Vars.GetCount() );
+#	endif
+
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     char    *psz_Temp, *psz_Temp1;
 	int		mempv;
@@ -415,6 +427,10 @@ void EAI_cl_Compiler::GetOp(void)
  */
 void EAI_cl_Compiler::Scan(void)
 {
+#	if defined( JADED_AI_COMPILE_DEBUG )
+	printf( "%s %s %d %u\n", __FUNCTION__, e.o_Value.GetString(), e.i_Value, mst_LocalVars.o_Vars.GetCount() );
+#	endif
+
     /*~~~~~~~~~~~~~~~~~~~~~~~~*/
     int             i_Index;
     EAI_cl_Variable *po_Var;
@@ -457,6 +473,9 @@ void EAI_cl_Compiler::Scan(void)
         {
             e.c_Token = TOKEN_LOCALVAR;
             e.i_Value = (int) po_Var;
+#	if defined( JADED_AI_COMPILE_DEBUG )
+        	printf( "pop local %s %s %d %u\n", __FUNCTION__, e.o_Value.GetString(), e.i_Value, mst_LocalVars.o_Vars.GetCount() );
+#	endif
             return;
         }
 
@@ -504,6 +523,10 @@ void EAI_cl_Compiler::Scan(void)
         /* Dummy value for the moment */
         e.c_Token = TOKEN_GLOBALVAR;
         e.i_Value = -1;
+
+#	if defined( JADED_AI_COMPILE_DEBUG )
+    	printf( "pop global %s %s %d %u\n", __FUNCTION__, e.o_Value.GetString(), e.i_Value, mst_LocalVars.o_Vars.GetCount() );
+#	endif
     }
 }
 

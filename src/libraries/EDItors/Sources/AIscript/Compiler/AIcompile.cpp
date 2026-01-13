@@ -92,17 +92,16 @@ EAI_cl_Compiler::~EAI_cl_Compiler(void)
 void EAI_cl_Compiler::ResetVars(EAI_tdst_Vars *_pst_Vars)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	POSITION		x_Pos;
-	CString			o_String;
-	EAI_cl_Variable *po_Variable;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	/* Delete local variables */
 	if(!_pst_Vars->o_Vars.IsEmpty())
 	{
-		x_Pos = _pst_Vars->o_Vars.GetStartPosition();
+		CString o_String;
+		POSITION x_Pos = _pst_Vars->o_Vars.GetStartPosition();
 		while(x_Pos)
 		{
+			EAI_cl_Variable *po_Variable;
 			_pst_Vars->o_Vars.GetNextAssoc(x_Pos, o_String, (void * &) po_Variable);
 			if(po_Variable->mpac_InitValue) L_free(po_Variable->mpac_InitValue);
 			delete po_Variable;
@@ -176,7 +175,6 @@ void EAI_cl_Compiler::Reset(BOOL _b_All)
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	POSITION			pos;
 	CString				name;
-	SCR_sc_Procedure	*pt_ProcEd;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	ResetVars(&mst_LocalVars);
@@ -194,6 +192,7 @@ void EAI_cl_Compiler::Reset(BOOL _b_All)
 	pos = mo_ProcList.GetStartPosition();
 	while(pos)
 	{
+		SCR_sc_Procedure *pt_ProcEd;
 		mo_ProcList.GetNextAssoc(pos, name, (void * &) pt_ProcEd);
 		if(pt_ProcEd->pt_Parameters) MEM_Free(pt_ProcEd->pt_Parameters);
 		delete pt_ProcEd;
@@ -442,6 +441,10 @@ void EAI_cl_Compiler::SkipWhite(void)
  */
 void EAI_cl_Compiler::MatchString(char *string)
 {
+#	if defined( JADED_AI_COMPILE_DEBUG )
+	printf( "%s %s %d %u\n", __FUNCTION__, e.o_Value.GetString(), e.i_Value, mst_LocalVars.o_Vars.GetCount() );
+#	endif
+
 	ERR_X_Error(!L_strcmp((char *) (LPCSTR) e.o_Value, string), ERR_COMPILER_Csz_ExpString, string);
 	Next();
 }
@@ -452,6 +455,10 @@ void EAI_cl_Compiler::MatchString(char *string)
  */
 void EAI_cl_Compiler::Next(BOOL _b_Scan)
 {
+#	if defined( JADED_AI_COMPILE_DEBUG )
+	printf( "%s %s %d %u\n", __FUNCTION__, e.o_Value.GetString(), e.i_Value, mst_LocalVars.o_Vars.GetCount() );
+#	endif
+
 	gi_PPAllPVBeforeNext = gi_PPAllPV;
 	e.b_Ultra = FALSE;
 	e.psz_Before = e.psz_Text;
@@ -498,6 +505,10 @@ void EAI_cl_Compiler::Next(BOOL _b_Scan)
 			break;
 		}
 	}
+
+#	if defined( JADED_AI_COMPILE_DEBUG )
+	printf( "pop %s %s %d %u\n", __FUNCTION__, e.o_Value.GetString(), e.i_Value, mst_LocalVars.o_Vars.GetCount() );
+#	endif
 }
 
 /*$4
@@ -574,6 +585,10 @@ void EAI_cl_Compiler::AssertScalarType(int _i_Type1)
  */
 int EAI_cl_Compiler::DoString(void)
 {
+#	if defined( JADED_AI_COMPILE_DEBUG )
+	printf( "%s %s %d %u\n", __FUNCTION__, e.o_Value.GetString(), e.i_Value, mst_LocalVars.o_Vars.GetCount() );
+#	endif
+
 	/*~~~~~~*/
 	int i_Mem;
 	/*~~~~~~*/
@@ -610,6 +625,10 @@ int EAI_cl_Compiler::DoString(void)
  */
 int EAI_cl_Compiler::DoNumber(void)
 {
+#	if defined( JADED_AI_COMPILE_DEBUG )
+	printf( "%s %s %d %u\n", __FUNCTION__, e.o_Value.GetString(), e.i_Value, mst_LocalVars.o_Vars.GetCount() );
+#	endif
+
 	/*~~~~~~~~~~~~~~~~*/
 	int		i_Param;
 	char	*psz_String;
@@ -685,6 +704,10 @@ int EAI_cl_Compiler::DoNumber(void)
  */
 void EAI_cl_Compiler::ParamList(void)
 {
+#	if defined( JADED_AI_COMPILE_DEBUG )
+	printf( "%s %s %d %u\n", __FUNCTION__, e.o_Value.GetString(), e.i_Value, mst_LocalVars.o_Vars.GetCount() );
+#	endif
+
 	/*~~~~~~~~~~~~~*/
 	int		i_Num;
 	CString o_Name;
@@ -799,6 +822,10 @@ void EAI_cl_Compiler::ParamList(void)
  */
 int EAI_cl_Compiler::DoUltra(int _i_PosUltra, int _i_NumUltra, BOOL output)
 {
+#	if defined( JADED_AI_COMPILE_DEBUG )
+	printf( "%s %s %d %u\n", __FUNCTION__, e.o_Value.GetString(), e.i_Value, mst_LocalVars.o_Vars.GetCount() );
+#	endif
+
 	/*~~~~~~~~~*/
 	int i;
 	int iRes;
@@ -850,6 +877,10 @@ int EAI_cl_Compiler::DoUltra(int _i_PosUltra, int _i_NumUltra, BOOL output)
  */
 int EAI_cl_Compiler::DoCall(void)
 {
+#	if defined( JADED_AI_COMPILE_DEBUG )
+	printf( "%s %s %d %u\n", __FUNCTION__, e.o_Value.GetString(), e.i_Value, mst_LocalVars.o_Vars.GetCount() );
+#	endif
+
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	int		i_SavFct, i_SavIndex, i_PosUltra;
 	int		i_Type, i_NumUltra;
@@ -1072,11 +1103,13 @@ int EAI_cl_Compiler::DoTriggerCall(void)
  */
 void EAI_cl_Compiler::DoProcedure(int trigger, int local, int ultra = 0)
 {
+#	if defined( JADED_AI_COMPILE_DEBUG )
+	printf( "%s %s %d %u\n", __FUNCTION__, e.o_Value.GetString(), e.i_Value, mst_LocalVars.o_Vars.GetCount() );
+#	endif
+
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	int						RetType;
 	SCR_sc_Procedure		*pt_Proc;
 	EAI_cl_Variable			*po_Var;
-	SCR_sc_ProcedureParam	*pt_Param;
 	BOOL					already;
 	int						i;
 	int						save_param;
@@ -1084,21 +1117,18 @@ void EAI_cl_Compiler::DoProcedure(int trigger, int local, int ultra = 0)
 	BOOL					byref;
 	BOOL					byrefarr;
 	CString					str;
-	int						line;
-	CString					o_Cmt;
-	BOOL					alreadydef;
 	CString					oalready;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-	mb_ProcListLocal = local;
-	line = e.i_NumLine;
-	o_Cmt = e.o_LastComment;
-	alreadydef = FALSE;
+	mb_ProcListLocal   = local;
+	int     line       = e.i_NumLine;
+	CString o_Cmt      = e.o_LastComment;
+	BOOL    alreadydef = FALSE;
 
 	/* Type retour */
 	Next();
 	ERR_X_Error(e.c_Token == TOKEN_TYPE, "Need return type", NULL);
-	RetType = e.i_Value;
+	int RetType = e.i_Value;
 	ERR_X_Error(!trigger || RetType == TYPE_INT, "Bad return type for trigger", NULL);
 
 	/* Nom */
@@ -1198,26 +1228,27 @@ void EAI_cl_Compiler::DoProcedure(int trigger, int local, int ultra = 0)
 				);
 		}
 
-		pt_Param = pt_Proc->pt_Parameters + pt_Proc->u32_NumParameters - 1;
+		SCR_sc_ProcedureParam *pt_Param = pt_Proc->pt_Parameters + pt_Proc->u32_NumParameters - 1;
 		pt_Param->u32_Type = e.i_Value;
 		pt_Param->byref = byref ? 1 : byrefarr ? 2 : 0;
 
 		/* Parametre */
 		Next(FALSE);
 		ERR_X_Error(e.c_Token == TOKEN_NAME, "Need a parameter name", "");
-		L_strcpy(pt_Param->az_Name, (char *) (LPCSTR) e.o_Value);
+		snprintf( pt_Param->az_Name, sizeof( pt_Param->az_Name), "%s", e.o_Value.GetString() );
 
 		/* Variable déjà présente ? */
 		ERR_X_Error
 		(
-			!mst_LocalVars.o_Vars.Lookup((char *) (LPCSTR) e.o_Value, (void * &) po_Var),
+			!mst_LocalVars.o_Vars.Lookup(pt_Param->az_Name, (void * &) po_Var),
 			"Variable already defined",
-			(char *) (LPCSTR) e.o_Value
+			pt_Param->az_Name
 		);
 
 		/* Nouvelle variable locale */
 		po_Var = new EAI_cl_Variable(pt_Param->u32_Type, mst_LocalVars.i_LastPosVar);
-		mst_LocalVars.o_Vars.SetAt((LPCSTR) e.o_Value, po_Var);
+		mst_LocalVars.o_Vars.SetAt( pt_Param->az_Name, po_Var);
+		po_Var->StmtLevel = e.StmtLevel + 1;
 		po_Var->byref = byref;
 		po_Var->byrefarr = byrefarr;
 		if(byref || byrefarr)
@@ -1228,6 +1259,14 @@ void EAI_cl_Compiler::DoProcedure(int trigger, int local, int ultra = 0)
 		pt_Param->u32_Size = po_Var->TotalSize;
 		if(byref || byrefarr) pt_Param->u32_Size |= 0x80000000;
 		mst_LocalVars.i_LastPosVar += po_Var->TotalSize;
+
+#	if defined( JADED_AI_COMPILE_DEBUG )
+		printf( "Pushed local var %u: name( %s ) pos( %u ) size( %u )\n",
+		        mst_LocalVars.o_Vars.GetCount(),
+		        pt_Param->az_Name,
+		        pt_Param->u32_Pos,
+		        pt_Param->u32_Size );
+#	endif
 
 		ERR_X_Error(!trigger || byref, "Trigger need a byref parameter", NULL);
 
@@ -1341,23 +1380,21 @@ void EAI_cl_Compiler::DoProcedure(int trigger, int local, int ultra = 0)
 	/* Local vars information */
 	{
 		/*~~~~~~~~~~~~~~~~~*/
-		int			i, i_Num;
-		POSITION	pos;
-		CString		o_Name;
 		/*~~~~~~~~~~~~~~~~~*/
 
 		pt_Proc->i_NumLocalVar = mst_LocalVars.o_Vars.GetCount();
-		i_Num = mst_LocalVars.o_Vars.GetCount() * sizeof(AI_tdst_Local);
+		int i_Num              = mst_LocalVars.o_Vars.GetCount() * sizeof( AI_tdst_Local );
 		if(i_Num)
 		{
+			CString o_Name;
 			pt_Proc->pst_LocalVar = (AI_tdst_Local *) MEM_p_Alloc(i_Num);
-			pos = mst_LocalVars.o_Vars.GetStartPosition();
-			i = 0;
+			POSITION pos          = mst_LocalVars.o_Vars.GetStartPosition();
+			int      i            = 0;
 			while(pos)
 			{
 				mst_LocalVars.o_Vars.GetNextAssoc(pos, o_Name, (void * &) po_Var);
 				if(po_Var->byref || po_Var->byrefarr) o_Name = "@" + o_Name;
-				L_strcpy(pt_Proc->pst_LocalVar[i].asz_Name, (char *) (LPCSTR) o_Name);
+				snprintf( pt_Proc->pst_LocalVar[ i ].asz_Name, sizeof( pt_Proc->pst_LocalVar[ i ].asz_Name ), "%s", o_Name.GetString() );
 				pt_Proc->pst_LocalVar[i].i_Offset = po_Var->mi_Pos;
 				pt_Proc->pst_LocalVar[i].i_Type = po_Var->mi_Type;
 				i++;
@@ -1372,6 +1409,10 @@ void EAI_cl_Compiler::DoProcedure(int trigger, int local, int ultra = 0)
  */
 void EAI_cl_Compiler::DoSwitch(void)
 {
+#	if defined( JADED_AI_COMPILE_DEBUG )
+	printf( "%s %s %d %u\n", __FUNCTION__, e.o_Value.GetString(), e.i_Value, mst_LocalVars.o_Vars.GetCount() );
+#	endif
+
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	int				i_Pos, i_Pos1, i_Type, i_First;
 	int				i_Count;
@@ -2086,6 +2127,10 @@ void EAI_cl_Compiler::DoAffectCom(int i_Type1)
  */
 int EAI_cl_Compiler::Factor(void)
 {
+#	if defined( JADED_AI_COMPILE_DEBUG )
+	printf( "%s %s %d %u\n", __FUNCTION__, e.o_Value.GetString(), e.i_Value, mst_LocalVars.o_Vars.GetCount() );
+#	endif
+
 	/*~~~~~~~~~~~~~~~~~*/
 	int			i_Type;
 	BIG_INDEX	ul_Model;
@@ -2232,6 +2277,10 @@ int EAI_cl_Compiler::Factor(void)
  */
 int EAI_cl_Compiler::Expression(void)
 {
+#	if defined( JADED_AI_COMPILE_DEBUG )
+	printf( "%s %s %d %u\n", __FUNCTION__, e.o_Value.GetString(), e.i_Value, mst_LocalVars.o_Vars.GetCount() );
+#	endif
+
 	/*~~~~~~~~~~~~~~~~~~~~~*/
 	char	c_Mem;
 	int		i_Type1, i_Type2;
@@ -2393,6 +2442,10 @@ int EAI_cl_Compiler::Expression(void)
  */
 int EAI_cl_Compiler::Relation(void)
 {
+#	if defined( JADED_AI_COMPILE_DEBUG )
+	printf( "%s %s %d %u\n", __FUNCTION__, e.o_Value.GetString(), e.i_Value, mst_LocalVars.o_Vars.GetCount() );
+#	endif
+
 	/*~~~~~~~~~~~~~~~~~~~~~*/
 	char	c_Mem, c_Next;
 	int		i_Type1, i_Type2;
@@ -2511,6 +2564,10 @@ int EAI_cl_Compiler::Relation(void)
  */
 int EAI_cl_Compiler::BoolExpression(void)
 {
+#	if defined( JADED_AI_COMPILE_DEBUG )
+	printf( "%s %s %d %u\n", __FUNCTION__, e.o_Value.GetString(), e.i_Value, mst_LocalVars.o_Vars.GetCount() );
+#	endif
+
 	/*~~~~~~~~~~~*/
 	char	c_Mem;
 	int		i_Pos;
@@ -2588,6 +2645,10 @@ POSITION EAI_cl_Compiler::x_SearchLabel(CString &name)
  */
 void EAI_cl_Compiler::Statement(BOOL remstmt)
 {
+#	if defined( JADED_AI_COMPILE_DEBUG )
+	printf( "%s %s %d %u\n", __FUNCTION__, e.o_Value.GetString(), e.i_Value, mst_LocalVars.o_Vars.GetCount() );
+#	endif
+
 	/*~~~~~~~*/
 	int				i_Type;
 	EAI_tdst_Vars	cpy;
@@ -2999,7 +3060,7 @@ int EAI_cl_Compiler::i_Compile(BIG_INDEX _ul_Model, BIG_INDEX _ul_File, char *_p
 					mst_LocalVars.o_Vars.GetNextAssoc(pos, str, (void * &) po_Var);
 					if(!po_Var->mb_HasBeenUsed)
 					{
-						str1.Format("Function %s : Local variable %s is not used", BIG_NameFile(_ul_File), str);
+						str1.Format("Function %s : Local variable %s is not used", BIG_NameFile(_ul_File), str.GetString());
 						ERR_X_Warning(0, (char *) (LPCSTR) str1, 0);
 					}
 				}

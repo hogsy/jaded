@@ -295,7 +295,7 @@ static int	truc_nul = 0;
 char *BIG_pc_ReadFileTmp(ULONG _ul_Pos, ULONG *_pul_Length)
 {
 	/*~~~~~~~~~~~~~~*/
-	void	*p_Buffer;
+	void	*p_Buffer = NULL;
 	ULONG	ul_Length,r;
 	/*~~~~~~~~~~~~~~*/
 
@@ -367,7 +367,7 @@ char *BIG_pc_ReadFileTmp(ULONG _ul_Pos, ULONG *_pul_Length)
         }
 	}
 
-	return (char *) p_Buffer;
+	return p_Buffer;
 }
 #endif // XML_CONV_TOOL
 

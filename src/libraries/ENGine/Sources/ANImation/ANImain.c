@@ -304,7 +304,7 @@ OBJ_tdst_GameObject *ANI_pst_GetClosestObjCanal(OBJ_tdst_GameObject *_pst_RefGO,
 	float				f_BestDist;
 	float				f_Dist;
 	MATH_tdst_Vector	st_Temp;
-	OBJ_tdst_GameObject *pst_BestGO;
+	OBJ_tdst_GameObject *pst_BestGO = NULL;
 	int					i;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
