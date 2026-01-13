@@ -22,7 +22,6 @@
 #include "BIGfiles/BIGopen.h"
 #include "BIGfiles/BIGdefs.h"
 #include "BIGfiles/BIGfat.h"
-#include "BIGfiles/BIGcheck.h"
 #include "BIGfiles/BIGread.h"
 
 #include "LINks/LINKmsg.h"

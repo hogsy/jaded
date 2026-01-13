@@ -73,7 +73,7 @@ void CCheckList::AddString(CString s, int i, BOOL b)
  =======================================================================================================================
  =======================================================================================================================
  */
-BOOL CCheckList::Do(CRect *rect, int width, CWnd *parent, int max, char *_pz_Caption)
+BOOL CCheckList::Do(CRect *rect, int width, CWnd *parent, int max, const char *_pz_Caption)
 {
 	/*~~~~~~~~~~~~~~~*/
 	CRect		o_Rect;

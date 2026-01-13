@@ -29,7 +29,7 @@ class CCheckList : CFrameWnd
  */
 public:
 	CCheckList(void);
-	BOOL					Do(CRect *, int, CWnd *, int = 15, char * = NULL);
+	BOOL					Do(CRect *, int, CWnd *, int = 15, const char * = NULL);
 	int						i_GetHeight(void);
 	static LRESULT CALLBACK x_Hook(int, WPARAM, LPARAM);
 	void					AddString(CString s, int i = -1, BOOL = TRUE);

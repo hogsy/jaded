@@ -23,7 +23,7 @@
 #include "BIGfiles/BIGfat.h"
 #include "GraphicDK/Sources/TEXture/TEXstruct.h"
 
-extern void EDI_Tooltip_DisplayMessage(char *,ULONG ulSpeed = 200);
+extern void EDI_Tooltip_DisplayMessage( const char *,ULONG ulSpeed = 200);
 extern float MAtClippoardProp;
 #ifdef JADEFUSION
 extern BOOL		b_AutoSetNormalMap;

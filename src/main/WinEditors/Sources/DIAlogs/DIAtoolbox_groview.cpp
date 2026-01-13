@@ -66,7 +66,7 @@
 #endif
 
 IMPLEMENT_DYNCREATE(EDIA_cl_ToolBox_GROView, CFormView)
-extern void					EDI_Tooltip_DisplayMessage(char *, ULONG ulSpeed = 200);
+extern void					EDI_Tooltip_DisplayMessage( const char *, ULONG ulSpeed = 200);
 static EDIA_cl_UPDATEDialog *po_Dial = NULL;
 
 static int LODCTRL_Name[] = { IDC_BUTTON_LOD0, IDC_BUTTON_LOD1, IDC_BUTTON_LOD2, IDC_BUTTON_LOD3, IDC_BUTTON_LOD4, IDC_BUTTON_LOD5 };

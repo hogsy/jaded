@@ -50,7 +50,7 @@
 #include "MATHs/MATH.h"
 #include "EDItors/Sources/OUTput/OUTframe.h"
 
-extern void					EDI_Tooltip_DisplayMessage(char *, ULONG ulSpeed = 200);
+extern void					EDI_Tooltip_DisplayMessage( const char *, ULONG ulSpeed = 200);
 /*$4
  ***********************************************************************************************************************
     Private function prototype

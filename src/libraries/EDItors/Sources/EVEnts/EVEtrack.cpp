@@ -29,7 +29,7 @@
 #include "LINks/LINKstruct.h"
 #include "AIinterp/Sources/Events/EVEnt_interpolationkey.h"
 
-extern void		EDI_Tooltip_DisplayMessage(char *, ULONG ulSpeed = 200);
+extern void		EDI_Tooltip_DisplayMessage( const char *, ULONG ulSpeed = 200);
 #ifdef JADEFUSION
 extern BOOL EVE_gb_CanFlash;
 extern BOOL EVE_gb_EndNeedToRecomputeSND;

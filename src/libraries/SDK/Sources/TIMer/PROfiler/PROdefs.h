@@ -58,9 +58,9 @@ typedef struct	PRO_tdst_TrameRaster_
 	PRO_tde_Type					e_Type;
 	ULONG							ul_UserData;
 	USHORT							uw_StartCount;
-	char							*psz_Category;
-	char							*psz_SubCategory;
-	char							*psz_Name;
+	const char                     *psz_Category;
+	const char                     *psz_SubCategory;
+	const char                     *psz_Name;
 	BOOL							b_NeedDisplay;
 	ULONG							ul_StartValue;
 	ULONG							ul_CurrentValue;

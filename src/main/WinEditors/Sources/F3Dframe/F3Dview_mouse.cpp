@@ -54,7 +54,7 @@ extern "C"
 		pDC->LineTo(o.left, o.bottom); \
 		pDC->LineTo(o.left, o.top); \
 	}
-extern void				EDI_Tooltip_DisplayMessage(char *, ULONG ulSpeed = 200);
+extern void				EDI_Tooltip_DisplayMessage( const char *, ULONG ulSpeed = 200);
 extern EDI_cl_BaseFrame *gpo_AssociatedEditor;
 #ifdef JADEFUSION
 extern BOOL			SOFT_gb_ForceStartPicking;

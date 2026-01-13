@@ -368,7 +368,7 @@ END_MESSAGE_MAP()
  =======================================================================================================================
  =======================================================================================================================
  */
-void EDI_Tooltip_DisplayMessage( char *p_str, ULONG ulSpeed = 200 )
+void EDI_Tooltip_DisplayMessage( const char *p_str, ULONG ulSpeed = 200 )
 {
 	if ( EDI_go_TheApp.EDI_gpo_EnterWnd2 ) EDI_go_TheApp.EDI_gpo_EnterWnd2->DisplayMessage( p_str, ulSpeed );
 }
@@ -377,21 +377,24 @@ void EDI_Tooltip_DisplayMessage( char *p_str, ULONG ulSpeed = 200 )
  =======================================================================================================================
  =======================================================================================================================
  */
-void EDI_cl_ToolTipWnd::DisplayMessage( char *_psz_Msg, ULONG ulSpeedEx )
+void EDI_cl_ToolTipWnd::DisplayMessage( const char *_psz_Msg, ULONG ulSpeedEx )
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	char *psz_Dec1, *psz_Dec2;
-	int i_Len;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	ulNumberOfLines  = 0;
 	mo_Msg[ 0 ][ 0 ] = 0;
-	if ( !_psz_Msg ) return;
-	ulSpeed   = ulSpeedEx;
-	psz_Dec1  = _psz_Msg;
-	psz_Dec2  = &mo_Msg[ 0 ][ 0 ];
-	*psz_Dec2 = 0;
-	i_Len     = 0;
+
+	if ( !_psz_Msg )
+		return;
+
+	ulSpeed = ulSpeedEx;
+
+	const char *psz_Dec1 = _psz_Msg;
+	char       *psz_Dec2 = &mo_Msg[ 0 ][ 0 ];
+	*psz_Dec2            = 0;
+
+	int i_Len = 0;
 
 	/* Count number of '10' == number of lines */
 	while ( *psz_Dec1 != 0 )

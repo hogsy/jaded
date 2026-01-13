@@ -68,7 +68,7 @@ class EDIA_cl_NameDialogCombo : public EDIA_cl_BaseDialog
  */
 
 public:
-	EDIA_cl_NameDialogCombo (char *, int _i_MaxLen = 100);
+	EDIA_cl_NameDialogCombo (const char *, int _i_MaxLen = 100);
 
 /*$2
  -----------------------------------------------------------------------------------------------------------------------
@@ -82,7 +82,7 @@ public:
 	int						mi_MaxLen;
 	CList<char *, char *>	mo_List;
 	CList<int, int>			mo_ListDatas;
-	int						mi_CurSelData;
+	int						mi_CurSelData{};
 
 /*$2
  -----------------------------------------------------------------------------------------------------------------------

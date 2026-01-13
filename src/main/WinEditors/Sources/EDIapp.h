@@ -46,7 +46,7 @@ public:
 	ULONG			ulSpeed;
 
 public:
-	void			DisplayMessage(char *,ULONG ulSpeed);
+	void			DisplayMessage( const char *,ULONG ulSpeed);
 	void			Display();
 	BOOL			PreCreateWindow(CREATESTRUCT &);
 	void			Paint(void);

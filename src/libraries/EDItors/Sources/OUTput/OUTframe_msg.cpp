@@ -53,7 +53,7 @@ extern ULONG	EDI_OUT_gl_ForceSetMode;
 };
 #endif
 
-extern void EDI_Tooltip_DisplayMessage(char *, ULONG ulSpeed = 200);
+extern void EDI_Tooltip_DisplayMessage( const char *, ULONG ulSpeed = 200);
 
 /*
  =======================================================================================================================

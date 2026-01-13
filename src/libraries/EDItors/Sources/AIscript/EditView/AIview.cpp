@@ -43,7 +43,7 @@ extern CMapStringToPtr							go_DefineMacroNames;
 extern CList<tdst_PPMacro *, tdst_PPMacro *>	go_DefineMacros;
 extern CMapStringToPtr							go_PPMacros;
 extern CMapStringToPtr							go_PPMacrosLines;
-extern void										EDI_Tooltip_DisplayMessage(char *, ULONG ulSpeed = 200);
+extern void										EDI_Tooltip_DisplayMessage( const char *, ULONG ulSpeed = 200);
 
 #ifdef JADEFUSION
 extern void									AI_AddWatch(void *, int);

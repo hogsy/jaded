@@ -445,9 +445,8 @@ void ERAS_cl_Frame::FillComboSubCategory(void)
 	CComboBox				*po_ComboSubCategory;
 	int						i_Num, i_Res, i_Sel;
 	int						i_Find;
-	CList<char *, char *>	o_Lst;
+	CList<const char *, const char *>	o_Lst;
 	POSITION				pos;
-	char					*pz;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	i_Num = 0;
@@ -475,7 +474,7 @@ void ERAS_cl_Frame::FillComboSubCategory(void)
             pos = o_Lst.GetHeadPosition();
             while(pos)
             {
-                pz = o_Lst.GetNext(pos);
+                const char *pz = o_Lst.GetNext( pos );
                 if(!L_strcmpi(pz, _pst_Current->psz_SubCategory))
                 {
                     i_Find = 1;

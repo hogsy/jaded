@@ -30,7 +30,7 @@ BOOL		LINK_gb_CanLog = TRUE;
 BOOL		LINK_gb_CanDisplay = TRUE;
 BOOL		LINK_gb_CanAbort = TRUE;
 BOOL		LINK_gb_UseSecond = FALSE;
-static char *sgpsz_LongOperationName = NULL;
+static const char *sgpsz_LongOperationName = NULL;
 BOOL		LINK_gb_OnSameLine = FALSE;
 COLORREF	LINK_gul_ColorTxt = 0;
 
@@ -46,7 +46,7 @@ COLORREF	LINK_gul_ColorTxt = 0;
     Aim: To print a message in the status bar. In: _psz_Text Text to display.
  =======================================================================================================================
  */
-void LINK_PrintStatusMsgEOLCanal(char *_psz_Text,int _iCanal)
+void LINK_PrintStatusMsgEOLCanal( const char *_psz_Text,int _iCanal)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	static char msg[4096] = { 0 };
@@ -92,7 +92,7 @@ void LINK_PrintStatusMsgEOLCanal(char *_psz_Text,int _iCanal)
 	}
 }
 
-void LINK_PrintStatusMsgEOL(char *_psz_Text)
+void LINK_PrintStatusMsgEOL( const char *_psz_Text)
 {
     LINK_PrintStatusMsgEOLCanal(_psz_Text,0);
 }

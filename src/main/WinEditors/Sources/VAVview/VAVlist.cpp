@@ -47,7 +47,7 @@
 
 
 #define INDENT_C_STEP	9
-extern void EDI_Tooltip_DisplayMessage(char *, ULONG ulSpeed = 200);
+extern void EDI_Tooltip_DisplayMessage( const char *, ULONG ulSpeed = 200);
 extern void BRO_OrderGroupFile(ULONG _ul_Group);
 
 #ifdef JADEFUSION

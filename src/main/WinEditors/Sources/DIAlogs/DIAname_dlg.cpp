@@ -102,7 +102,7 @@ void EDIA_cl_NameDialog::DoDataExchange(CDataExchange *pDX)
  =======================================================================================================================
  =======================================================================================================================
  */
-EDIA_cl_NameDialogCombo::EDIA_cl_NameDialogCombo(char *_psz_Title, int _mi_MaxLen) :
+EDIA_cl_NameDialogCombo::EDIA_cl_NameDialogCombo(const char *_psz_Title, int _mi_MaxLen) :
 	EDIA_cl_BaseDialog(DIALOGS_IDD_NAMECOMBO)
 {
 	mo_Title = _psz_Title;

@@ -96,7 +96,7 @@
 		((CEdit *) GetDlgItem(__id))->SetWindowText(""); \
 	} while(0);
 
-extern void EDI_Tooltip_DisplayMessage(char *, ULONG ulSpeed = 200);
+extern void EDI_Tooltip_DisplayMessage( const char *, ULONG ulSpeed = 200);
 
 UINT		gui_BtnID[] =
 {

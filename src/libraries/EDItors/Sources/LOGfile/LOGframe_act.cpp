@@ -20,7 +20,7 @@ extern float TIM_gf_SynchroFrequency;
 extern BOOL LOA_bLogLoad;
 #else // JADEFUSION
 extern "C" ULONG LOA_ul_FileTypeSize[40];
-extern "C" void LINK_PrintStatusMsgEOL(char *);
+extern "C" void LINK_PrintStatusMsgEOL( const char *);
 extern "C" float TIM_gf_SynchroFrequency;
 extern "C" BOOL LOA_bLogLoad;
 #endif // JADEFUSION

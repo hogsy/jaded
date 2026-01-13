@@ -14,7 +14,7 @@ extern "C"
 {
 #endif
 
-extern void LINK_PrintStatusMsgEOLCanal(char *,int);
+extern void LINK_PrintStatusMsgEOLCanal( const char *,int);
 
 #include "AIinterp/Sources/AIengine.h"
 #include "AIinterp/Sources/AIstruct.h"

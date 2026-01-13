@@ -34,7 +34,7 @@
 #include "LINks/LINKtoed.h"
 #include "LINks/LINKstruct.h"
 
-extern void EDI_Tooltip_DisplayMessage(char *, ULONG ulSpeed = 200);
+extern void EDI_Tooltip_DisplayMessage( const char *, ULONG ulSpeed = 200);
 
 /*$4
  ***********************************************************************************************************************

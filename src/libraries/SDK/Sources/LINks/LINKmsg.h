@@ -26,8 +26,8 @@ extern BOOL     LINK_gb_OnSameLine;
 extern ULONG	LINK_gul_ColorTxt;
 extern void     LINK_PrintStatusMsg(const char *);
 extern void     LINK_PrintStatusMsgCanal(const char *,int);
-extern void     LINK_PrintStatusMsgEOL(char *);
-extern void     LINK_PrintStatusMsgEOLCanal(char *,int);
+extern void     LINK_PrintStatusMsgEOL( const char *);
+extern void     LINK_PrintStatusMsgEOLCanal( const char *,int);
 extern void     LINK_BeginLongOperation(char *);
 extern void     LINK_EndLongOperation(void);
 

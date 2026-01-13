@@ -30,7 +30,7 @@
 #define A(a, b, c, d, e, f, g, h) \
 	mo_ListItems.AddTail(po_NewItem = new EVAV_cl_ViewItem(a, b, c, d, e, f, g, h)); \
 	
-extern void EDI_Tooltip_DisplayMessage(char *, ULONG ulSpeed = 200);
+extern void EDI_Tooltip_DisplayMessage( const char *, ULONG ulSpeed = 200);
 
 /*$4-******************************************************************************************************************/
 
