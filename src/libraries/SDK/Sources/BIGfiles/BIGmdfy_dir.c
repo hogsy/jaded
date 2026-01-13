@@ -11,9 +11,7 @@
 #ifdef ACTIVE_EDITORS
 #include "LINKs/LINKmsg.h"
 #include "BASe/CLIbrary/CLIstr.h"
-#include "BASe/CLIbrary/CLIerrid.h"
 #include "BASe/ERRors/ERRasser.h"
-#include "BASe/MEMory/MEM.h"
 #include "BIGfiles/BIGdefs.h"
 #include "BIGfiles/BIGerrid.h"
 #include "BIGfiles/BIGmdfy_dir.h"
@@ -140,11 +138,10 @@ BOOL BIG_b_CanImportFile(char *_psz_Name)
  =======================================================================================================================
  =======================================================================================================================
  */
-static void s_CreateDirFromDisk(char *_psz_RealName, char *_psz_BigName)
+static void s_CreateDirFromDisk( const char *_psz_RealName, char *_psz_BigName)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	struct L_finddata_t st_FileInfo;
-	ULONG				ul_Handle;
 	char				asz_Temp[BIG_C_MaxLenPath];
 	char				asz_RealName[BIG_C_MaxLenPath];
 	char				asz_BigName[BIG_C_MaxLenPath];
@@ -161,7 +158,7 @@ static void s_CreateDirFromDisk(char *_psz_RealName, char *_psz_BigName)
 	/* Find all files for that dir */
 	L_strcpy(asz_Temp, _psz_RealName);
 	L_strcat(asz_Temp, "/*.*");
-	ul_Handle = L_findfirst(asz_Temp, &st_FileInfo);
+	ULONG ul_Handle = L_findfirst( asz_Temp, &st_FileInfo );
 	if(ul_Handle != -1)
 	{
 		do
@@ -360,15 +357,15 @@ BIG_INDEX BIG_ul_CreateDir(char *_psz_PathName)
  =======================================================================================================================
  =======================================================================================================================
  */
-void BIG_DelDir(char *_psz_Name)
+void BIG_DelDir( const char *_psz_Name)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	BIG_INDEX	ul_Parent, ul_Index, ul_Memo;
+	BIG_INDEX   ul_Memo;
 	char		asz_Path[BIG_C_MaxLenPath];
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	/* Retrieve index of directory to check if it exists */
-	ul_Index = BIG_ul_SearchDir(_psz_Name);
+	BIG_INDEX ul_Index = BIG_ul_SearchDir( _psz_Name );
 	ERR_X_Assert(ul_Index != BIG_C_InvalidIndex);
 
 	/* Recurse delete */
@@ -376,7 +373,7 @@ void BIG_DelDir(char *_psz_Name)
 	s_RecurseDeleteDir(asz_Path, ul_Index);
 
 	/* Unlink dir of list */
-	ul_Parent = BIG_ParentDir(ul_Index);
+	BIG_INDEX ul_Parent = BIG_ParentDir( ul_Index );
 	if((ul_Parent != BIG_C_InvalidIndex) && (BIG_SubDir(ul_Parent) == ul_Index))
 	{
 		BIG_SubDir(ul_Parent) = BIG_NextDir(ul_Index);
