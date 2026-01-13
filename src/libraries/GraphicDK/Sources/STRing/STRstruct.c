@@ -410,7 +410,6 @@ void STR_InitGlobal( void )
 void STR_Init(void)
 {
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-    GRO_tdst_Interface                  *i;
 	int									j;
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     
@@ -447,31 +446,19 @@ void STR_Init(void)
 	*/
 
     /* Init string object interface */
-    i = &GRO_gast_Interface[GRO_2DText];
-#if defined (__cplusplus)
-	i->pfnp_CreateFromBuffer = (void *(__cdecl *)(GRO_tdst_Struct *,char ** ,void *))STR_p_CreateFromBuffer;
-    i->pfn_Destroy = (void (__cdecl *)(void *))STR_Free;
-    i->pfnl_HasSomethingToRender = (LONG (__cdecl *)(void *,void *))STR_l_HasSomethingToRender;
-    i->pfn_Render = (void (__cdecl *)(void *))STR_Render;
-#else
-	i->pfnp_CreateFromBuffer = STR_p_CreateFromBuffer;
-    i->pfn_Destroy = STR_Free;
-    i->pfnl_HasSomethingToRender = STR_l_HasSomethingToRender;
-    i->pfn_Render = STR_Render;
-#endif
-	i->pfn_Reinit = STR_Reinit;
+    GRO_tdst_Interface *i = &GRO_gast_Interface[ GRO_2DText ];
 
+	i->pfnp_CreateFromBuffer     = ( void *( __cdecl * ) ( GRO_tdst_Struct *, char **, void * ) ) STR_p_CreateFromBuffer;
+	i->pfn_Destroy               = ( void( __cdecl * )( void * ) ) STR_Free;
+	i->pfnl_HasSomethingToRender = ( LONG( __cdecl * )( void *, void * ) ) STR_l_HasSomethingToRender;
+	i->pfn_Render                = ( void( __cdecl * )( void * ) ) STR_Render;
+	i->pfn_Reinit                = STR_Reinit;
 #ifdef ACTIVE_EDITORS
-#if defined (__cplusplus)
-    i->pfnl_SaveInBuffer = (LONG (__cdecl *)(void *,void *))STR_l_SaveInBuffer;
-    i->pfnl_PushSpecialMatrix = (LONG (__cdecl *)(void *))GRO_PushSpecialMatrixForProportionnal;
-#else
-	i->pfnl_SaveInBuffer = STR_l_SaveInBuffer;
-    i->pfnl_PushSpecialMatrix = GRO_PushSpecialMatrixForProportionnal;
-#endif
+	i->pfnl_SaveInBuffer      = ( LONG( __cdecl * )( void *, void * ) ) STR_l_SaveInBuffer;
+	i->pfnl_PushSpecialMatrix = ( LONG( __cdecl * )( void * ) ) GRO_PushSpecialMatrixForProportionnal;
 #endif
 
-    STR_sgpst_GO = OBJ_GameObject_Create(OBJ_C_IdentityFlag_BaseObject | OBJ_C_IdentityFlag_Visu);
+	STR_sgpst_GO = OBJ_GameObject_Create(OBJ_C_IdentityFlag_BaseObject | OBJ_C_IdentityFlag_Visu);
     STR_sgpst_GO->pst_Base->pst_Visu->ul_DrawMask &= ~(GDI_Cul_DM_TestBackFace | GDI_Cul_DM_ReceiveDynSdw);
 
     STR_sgl_NumberOfFont = 0;
@@ -1228,48 +1215,36 @@ void STR_SetStringExt(OBJ_tdst_GameObject *_pst_GO, int i, int flags, char *_sz_
  */
 void STR_InsertString(OBJ_tdst_GameObject *_pst_GO, int i, int _i_From, char *_sz_String)
 {
-    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-#ifdef JADEFUSION
-	STR_tdst_Struct *pst_STR(NULL);
-    STR_tdst_String *pst_String(NULL);
-    LONG            l_Length(0);
-    STR_tdst_Letter *pst_Letter(NULL), *pst_Next(NULL);
-    ULONG           ul_OldNumber(0), ul_Color(0);
-    float           w(0), h(0);
-#else
-	STR_tdst_Struct *pst_STR;
-    STR_tdst_String *pst_String;
-    LONG            l_Length;
-    STR_tdst_Letter *pst_Letter, *pst_Next;
-    ULONG           ul_OldNumber, ul_Color;
-    float           w, h;
-#endif 
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+    if(_sz_String == NULL)
+    	return;
 
-    if(_sz_String == NULL) return;
-
-    pst_STR = STR_pst_Get(_pst_GO);
-    if(!pst_STR) return;
+    STR_tdst_Struct *pst_STR = STR_pst_Get( _pst_GO );
+    if(!pst_STR)
+    	return;
     
     STR_M_SetMaterial(_pst_GO);
     STR_M_ResetFont(pst_STR);
 
+	STR_tdst_String *pst_String;
     if((pst_String = STR_pst_GetString(pst_STR, i)) == NULL)
         return;
 
-    l_Length = STR_l_GetStringLength(_sz_String);
+    LONG l_Length = STR_l_GetStringLength( _sz_String );
     if(l_Length == 0) return;
 
     _i_From = STR_l_GetValidIndex(pst_STR, pst_String, _i_From);
 
-    ul_OldNumber = pst_String->uw_Number;
+    ULONG ul_OldNumber = pst_String->uw_Number;
     STR_ChangeStringLength(pst_STR, i, pst_String->uw_Number + l_Length);
 
-    pst_Letter = pst_STR->dst_Letter + pst_String->uw_First + _i_From;
+	ULONG ul_Color;
+	float w = 0.0f, h = 0.0f;
+
+    STR_tdst_Letter *pst_Letter = pst_STR->dst_Letter + pst_String->uw_First + _i_From;
     if ( (_i_From != (int) ul_OldNumber) && (pst_String->uw_Number > l_Length) )
     {
-        ul_Color = pst_Letter->ul_Color;
-        pst_Next = pst_Letter + l_Length;
+		ul_Color = pst_Letter->ul_Color;
+        STR_tdst_Letter *pst_Next = pst_Letter + l_Length;
         L_memmove(pst_Next, pst_Letter, (pst_String->uw_Number - _i_From - l_Length) * sizeof(STR_tdst_Letter));
     }
     else if(_i_From != 0)
