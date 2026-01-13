@@ -870,7 +870,7 @@ BOOL F3D_DisableDepthPickingIfNeeded(SEL_tdst_Selection *_pst_Sel, BOOL *_pb_Ena
 void F3D_cl_View::OnLButtonDown(UINT nFlags, CPoint point)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	BOOL							bRefresh, b_ForceRefresh;
+	BOOL							bRefresh = false, b_ForceRefresh = false;
 	struct WOR_tdst_World_			*pst_World;
 	SOFT_tdst_PickingBuffer_Query	*pst_Query;
 	SOFT_tdst_PickingBuffer			*pst_PB;
