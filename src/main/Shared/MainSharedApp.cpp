@@ -460,48 +460,62 @@ static void ParseStartupParameters()
 		if ( *jaded::sys::launchArguments[ i ] != '/' )
 			continue;
 
-		if ( SDL_strcasecmp( jaded::sys::launchArguments[ i ], "/editor" ) == 0 )
+		if ( jaded::sys::launchArguments[ i ] == std::string( "/editor" ) )
 		{
 			jaded::sys::launchOperations.editorMode = true;
 			continue;
 		}
-		else if ( SDL_strcasecmp( jaded::sys::launchArguments[ i ], "/portable" ) == 0 )
+
+		if ( jaded::sys::launchArguments[ i ] == std::string( "/portable" ) )
 		{
 			jaded::sys::launchOperations.portableMode = true;
 			continue;
 		}
-		else if ( SDL_strcasecmp( jaded::sys::launchArguments[ i ], "/popupError" ) == 0 )// Showin added Param for PopUp Script Errors (if off it uses console)
+
+		if ( jaded::sys::launchArguments[ i ] == std::string( "/popuperror" ) )// Showin added Param for PopUp Script Errors (if off it uses console)
 		{
 			jaded::sys::launchOperations.popupError = true;
 			continue;
 		}
-		else if ( SDL_strcasecmp( jaded::sys::launchArguments[ i ], "/console" ) == 0 )
+
+		if ( jaded::sys::launchArguments[ i ] == std::string( "/console" ) )
 		{
 			jaded::sys::launchOperations.debugConsole = true;
 			continue;
 		}
-		else if ( SDL_strcasecmp( jaded::sys::launchArguments[ i ], "/window" ) == 0 )
+
+		if ( jaded::sys::launchArguments[ i ] == std::string( "/window" ) )
 		{
 			jaded::sys::launchOperations.forceWindowed = true;
 			continue;
 		}
-		else if ( SDL_strncasecmp( jaded::sys::launchArguments[ i ], "/width", 6 ) == 0 )
+
+		if ( SDL_strncasecmp( jaded::sys::launchArguments[ i ], "/width", 6 ) == 0 )
 		{
 			jaded::sys::launchOperations.forcedWidth = strtol( jaded::sys::launchArguments[ i ] + 7, nullptr, 10 );
 			continue;
 		}
-		else if ( SDL_strncasecmp( jaded::sys::launchArguments[ i ], "/height", 7 ) == 0 )
+
+		if ( SDL_strncasecmp( jaded::sys::launchArguments[ i ], "/height", 7 ) == 0 )
 		{
 			jaded::sys::launchOperations.forcedHeight = strtol( jaded::sys::launchArguments[ i ] + 8, nullptr, 10 );
 			continue;
 		}
-		else if ( SDL_strncasecmp( jaded::sys::launchArguments[ i ], "/profile", 8 ) == 0 )
+
+		if ( jaded::sys::launchArguments[ i ] == std::string( "/uncap" ) )
+		{
+			ENG_gb_LimitFPS = false;
+			continue;
+		}
+
+		if ( SDL_strncasecmp( jaded::sys::launchArguments[ i ], "/profile", 8 ) == 0 )
 		{
 			jaded::sys::profiler.SetActive( true );
 			ENG_gb_LimitFPS = false;
 			continue;
 		}
-		else if ( SDL_strncasecmp( jaded::sys::launchArguments[ i ], "/bf", 3 ) == 0 )
+
+		if ( SDL_strncasecmp( jaded::sys::launchArguments[ i ], "/bf", 3 ) == 0 )
 		{
 			if ( ++i >= jaded::sys::numLaunchArguments )
 			{
