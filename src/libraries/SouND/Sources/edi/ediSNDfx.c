@@ -212,7 +212,11 @@ void ediSND_FxAdd(SND_tdst_SoundBuffer *_pst_SB, int _i_Core, int _i_FxVol)
     
     // delete the previous one
     ediSND_FxDel(_pst_SB);
-    
+
+	if ( ediSND_dst_FxDesc[_i_Core].st_Settings.i_Mode == SND_Cte_FxMode_Off )
+	{
+		return;
+	}
 
     // create the wet buffer
     ediSND_gb_FxAlloc = TRUE;
@@ -272,11 +276,11 @@ void ediSND_FxAdd(SND_tdst_SoundBuffer *_pst_SB, int _i_Core, int _i_FxVol)
         return;
     }
 
-    switch(ediSND_dst_FxDesc[_i_Core].st_Settings.i_Mode)
+	switch ( ediSND_dst_FxDesc[ _i_Core ].st_Settings.i_Mode )
 	{
-    default:
-	case SND_Cte_FxMode_Off:
-        break;
+		default:
+			ERR_X_ForceError( "Unhandled fx mode chosen for sample!", NULL );
+			return;
 
 	case SND_Cte_FxMode_Room:
 	case SND_Cte_FxMode_StudioA:
@@ -322,16 +326,21 @@ void ediSND_FxAdd(SND_tdst_SoundBuffer *_pst_SB, int _i_Core, int _i_FxVol)
 	if ( hr != DS_OK )
 	{
 		char buf[ 64 ];
-		snprintf( buf, sizeof( buf ), "Failed to set audio effect (%u)!", hr );
+		snprintf( buf, sizeof( buf ), "Failed to set audio effect (%ld)!", hr );
 		LINK_PrintStatusMsg( buf );
 		return;
 	}
 
-    switch(ediSND_dst_FxDesc[_i_Core].st_Settings.i_Mode)
+	if ( GetFxInterface(_pst_SB) == NULL )
 	{
-    default:
-	case SND_Cte_FxMode_Off:
-        break;
+		return;
+	}
+
+	switch ( ediSND_dst_FxDesc[ _i_Core ].st_Settings.i_Mode )
+	{
+		default:
+			ERR_X_ForceError( "Unhandled fx mode chosen for sample!", NULL );
+			break;
 
 	case SND_Cte_FxMode_Room:
         IDirectSoundFXI3DL2Reverb_SetPreset((IDirectSoundFXI3DL2Reverb8*)GetFxInterface(_pst_SB), DSFX_I3DL2_ENVIRONMENT_PRESET_ROOM);
@@ -385,11 +394,7 @@ void ediSND_FxDel(SND_tdst_SoundBuffer *_pst_SB)
         ediSND_gb_FxAlloc = TRUE;
         ediSND_SB_Release(GetFxSB(_pst_SB));
         ediSND_gb_FxAlloc = FALSE;
-#ifdef JADEFUSION
 		_pst_SB->pst_Fx = NULL;
-#else
-		GetFxSB(_pst_SB) = NULL;
-#endif
 }
 
     _pst_SB->i_HasFx = 0;
