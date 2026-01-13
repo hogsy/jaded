@@ -16,6 +16,7 @@
 
 #include "../MainSharedSystem.h"
 #include "../Profiler.h"
+#include "../AppVersion.h"
 
 #include "FileSystem.h"
 
@@ -48,7 +49,7 @@ std::string jaded::FileSystem::GetAppDataPath()
 	char home[ MAX_PATH ];
 	if ( SUCCEEDED( SHGetFolderPath( NULL, CSIDL_APPDATA, NULL, 0, home ) ) )
 	{
-		return NormalizePath( home ) + "/" + APP_NAME;
+		return NormalizePath( home ) + std::string( "/" ) + APP_NAME;
 	}
 
 	return {};
@@ -304,7 +305,7 @@ bool jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 	                                   keyName +
 	                                   ".key file. This can be a long operation.\n\n"
 	                                   "Do you wish to proceed?",
-	                           "Jaded", jaded::sys::ALERT_BOX_INFO ) == jaded::sys::ALERT_BOX_RETURN_CANCEL )
+	                           APP_NAME, sys::ALERT_BOX_INFO ) == sys::ALERT_BOX_RETURN_CANCEL )
 	{
 		return false;
 	}

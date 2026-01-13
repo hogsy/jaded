@@ -19,6 +19,7 @@
 #include "SDK/Sources/BIGfiles/BIGopen.h"
 #include "GDInterface/GDIrasters.h"
 #include "GDInterface/GDInterface.h"
+#include "AppVersion.h"
 
 #include "ImGuiInterface.h"
 
@@ -560,7 +561,9 @@ static SDL_Window *CreateSDLWindow()
 	if ( jaded::sys::launchOperations.forcedWidth > 0 ) w = jaded::sys::launchOperations.forcedWidth;
 	if ( jaded::sys::launchOperations.forcedHeight > 0 ) h = jaded::sys::launchOperations.forcedHeight;
 
-	sdlWindow = SDL_CreateWindow( "Jaded", w, h, flags );
+	static const std::string title = jaded::APP_NAME + std::string( " " ) + jaded::GetReleaseVersion();
+
+	sdlWindow = SDL_CreateWindow( title.c_str(), w, h, flags );
 	if ( sdlWindow == nullptr )
 	{
 		return nullptr;

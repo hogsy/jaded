@@ -58,6 +58,8 @@
 #include "BIGFiles/STReams/STReamaccess.h"
 #include "BIGFiles/STReams/STReamBigFile.h"
 
+#include "../main/Shared/AppVersion.h"
+
 #include "DATaControl/DATCPerforce.h"
 /*$4
  ***********************************************************************************************************************
@@ -96,7 +98,7 @@ extern BOOL EDI_gb_ImportFromKeys;
 #ifdef MONTREAL_SPECIFIC
 extern BOOL EDI_gb_DontCheckVersion;
 extern BOOL EDI_gb_DontCheckKeyServer;
-#endif 
+#endif
 
 bool g_bNewlyCreatedBF = false;
 
@@ -409,7 +411,7 @@ _End_
 _Try_
 	ENG_gb_GlobalLock = TRUE;
 
-	// If we are running in automatic mode and importing from keys in P4, 
+	// If we are running in automatic mode and importing from keys in P4,
 	// we need to create a new bf...
 	if (EDI_gb_Automated && EDI_gb_ImportFromKeys)
 	{
@@ -791,30 +793,20 @@ void EDI_cl_MainFrame::LockWindowUpdate(CWnd *_po_Wnd)
     Aim:    To update frame title of the application depending on current data file.
  =======================================================================================================================
  */
-void EDI_cl_MainFrame::UpdateMainFrameTitle(void)
+void EDI_cl_MainFrame::UpdateMainFrameTitle( void )
 {
-	/*~~~~~~~~~~~~~~~~~~*/
-	char	asz_Temp[512];
-	/*~~~~~~~~~~~~~~~~~~*/
+	std::string title = jaded::APP_NAME + std::string( " " ) + jaded::GetReleaseVersion() + " | ";
 
-	snprintf( asz_Temp, sizeof(asz_Temp), "JADED Editor (Version %03d-%03d/%s)", BIG_Cu4_AppVersion, BIG_Cu4_Version, BIG_CPJE_AppVersion );
-
-#ifdef SPEED_EDITORS
-	L_strcat( asz_Temp, " (R)" );
-#endif
-	L_strcat( asz_Temp, " -- " );
-	L_strcat(asz_Temp, __DATE__);
-	L_strcat(asz_Temp, "  --  ");
-	if(mst_ExternIni.asz_DataBigFileName[0] == '\0')
+	if ( mst_ExternIni.asz_DataBigFileName[ 0 ] == '\0' )
 	{
-		L_strcat(asz_Temp, "No Open Project");
+		title += "No Open Project";
 	}
 	else
 	{
-		L_strcat(asz_Temp, mst_ExternIni.asz_DataBigFileName);
+		title += mst_ExternIni.asz_DataBigFileName;
 	}
 
-	SetWindowText(asz_Temp);
+	SetWindowText( title.c_str() );
 }
 
 /*
@@ -1129,7 +1121,7 @@ _Try_
 	L_strcpy(mst_ExternIni.asz_DataBigFileName, _psz_Name);
 
 	/* Init for engine */
-	if(EDI_gpo_EnterWnd) 
+	if(EDI_gpo_EnterWnd)
 		EDI_gpo_EnterWnd->DisplayMessage("Engine Init");
 	else
 		LINK_PrintStatusMsg("Engine Init");
@@ -1516,7 +1508,7 @@ void EDI_cl_MainFrame::OnHistory(void)
 					) ui_State = 0x80000000;
 					if(BIG_b_IsFileExtension(ul_File, EDI_Csz_ExtSoundBank)) ui_State = 0x40000000;
 					if(BIG_b_IsFileExtension(ul_File, EDI_Csz_ExtSModifier)) ui_State = 0x80000000;
-					
+
 					M_MF()->AddPopupMenuAction(NULL, &o_Menu, ul_File, TRUE, BIG_NameFile(ul_File), ui_State);
 					i_Pos++;
 				}
@@ -1592,7 +1584,7 @@ void EDI_cl_MainFrame::AddHistoryFile(EDI_cl_BaseFrame *_po_Ed, BIG_KEY _ul_Key)
 	/* Search for the same key */
 	for(i = 0; i < EDI_C_MaxHistory; i++)
 	{
-		if(_po_Ed->mst_BaseIni.aul_History[i] == _ul_Key) 
+		if(_po_Ed->mst_BaseIni.aul_History[i] == _ul_Key)
 		{
 			h = _po_Ed->mst_BaseIni.aul_History[0];
 			_po_Ed->mst_BaseIni.aul_History[0] = _po_Ed->mst_BaseIni.aul_History[i];
@@ -1875,8 +1867,8 @@ void EDI_cl_MainFrame::FlashJade(void)
 		{
 			for(i = 0; i < 10; i++)
 			{
-                ast_Vit[imax + i].x = fRand(-3.0f, 3.0f); 
-                ast_Vit[imax + i].y = fRand(-3.0f, 3.0f);                
+                ast_Vit[imax + i].x = fRand(-3.0f, 3.0f);
+                ast_Vit[imax + i].y = fRand(-3.0f, 3.0f);
                 ast_Pos[imax + i].x = (float) pt.x;
 				ast_Pos[imax + i].y = (float) pt.y;
 			}
@@ -2265,7 +2257,7 @@ void EDI_cl_MainFrame::OnSetLanguage(void)
 	EDIA_cl_Lang *po_Dialog;
 
 	po_Dialog= new EDIA_cl_Lang;
-	
+
 	if(IDOK==po_Dialog->DoModal())
 	{
 		TEXT_ChangeLang(po_Dialog->mi_Lang);

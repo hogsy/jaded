@@ -9,8 +9,6 @@
 
 namespace jaded
 {
-	static constexpr const char *APP_NAME = "jaded";
-
 	namespace sys
 	{
 		enum AlertBoxType : uint8_t

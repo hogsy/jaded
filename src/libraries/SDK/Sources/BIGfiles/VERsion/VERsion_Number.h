@@ -17,6 +17,3 @@
 #define BIG_Cu4_Version 36
 
 #define BIG_FATChanged_Version36 36
-
-// hogsy: CPJE Version
-#define BIG_CPJE_AppVersion "0.3.0"

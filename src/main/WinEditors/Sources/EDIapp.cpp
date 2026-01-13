@@ -18,10 +18,8 @@
 #	include "EDIapp.h"
 #	include "EDImainframe.h"
 #	include "EDIeditors_infos.h"
-#	include "Res/Res.h"
 #	include "ENGine/Sources/ENGloop.h"
 #	include "ENGine/Sources/ENGinit.h"
-#	include "ENGine/Sources/ENGmsg.h"
 #	include "ENGine/Sources/ENGvars.h"
 #	include "EDItors/Sources/EVEnts/EVEframe_act.h"
 #	include "EDItors/Sources/MENu/MENmenu.h"
@@ -39,7 +37,8 @@
 #	include "INOut/INO.h"
 #	include "DATaControl/DATCUtils.h"
 
-#	include "../../Shared/MainSharedSystem.h"
+#	include "../main/Shared/MainSharedSystem.h"
+#	include "../main/Shared/AppVersion.h"
 
 #	if defined( _XENON_RENDER )
 #		include "GraphicDK/Sources/TEXture/TEXfile.h"
@@ -235,7 +234,7 @@ void EDI_cl_EnterWnd::DisplayMessage( const char *_psz_Msg )
 	/* App version */
 	GetClientRect( &o_Rect );
 	pdc->SetBkMode( TRANSPARENT );
-	snprintf( asz_Msg, sizeof( asz_Msg ), "Version %03d-%03d/%s", BIG_Cu4_AppVersion, BIG_Cu4_Version, BIG_CPJE_AppVersion );
+	snprintf( asz_Msg, sizeof( asz_Msg ), "%s", jaded::GetReleaseVersion().c_str() );
 	pdc->SetTextColor( RGB( 200, 200, 200 ) );
 	pdc->ExtTextOut( o_Rect.left + 10, o_Rect.top, 0, NULL, asz_Msg, L_strlen( asz_Msg ), NULL );
 
