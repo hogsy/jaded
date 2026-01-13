@@ -695,6 +695,7 @@ LONG STR_l_Effect_Treat(STR_tdst_Struct *_pst_STR, STR_tdst_Effect *_pst_Effect)
 	else
 	{
 		framenbsprite = 0;
+		framesprite = 0;
 		if (n == 0 ) return STR_Cul_ER_Terminated;
 	}
 
