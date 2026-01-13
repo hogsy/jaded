@@ -75,7 +75,7 @@ namespace jaded
 		KeyFile  *GetFileByName( const std::string &path );
 		KeyFile  *GetFileByIndex( FileIndex index );
 
-		std::string GetFilePathByIndex( FileIndex index );
+		std::string GetFilePathByIndex( FileIndex index ) const;
 
 	private:
 		void IndexBFSubDirectory( unsigned int curDir );

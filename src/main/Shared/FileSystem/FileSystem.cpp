@@ -140,7 +140,10 @@ bool jaded::FileSystem::CreateLocalPath( const std::string &path )
 		dir.push_back( i );
 		if ( dir.size() > 1 && i == '/' || dir.size() == path.size() )
 		{
-			L_mkdir( dir.c_str() );
+			if ( L_mkdir( dir.c_str() ) == -1 && errno == ENOENT )
+			{
+				return false;
+			}
 		}
 	}
 
@@ -214,7 +217,7 @@ bool jaded::FileSystem::ReadFileByIndex( FileIndex index, std::vector< uint8_t >
 
 bool jaded::FileSystem::ReadFileByName( const std::string &path, std::vector< uint8_t > *dst )
 {
-	auto &i = fileLookup.find( path );
+	const auto i = fileLookup.find( path );
 	if ( i == fileLookup.end() )
 	{
 		return false;
@@ -225,10 +228,10 @@ bool jaded::FileSystem::ReadFileByName( const std::string &path, std::vector< ui
 
 bool jaded::FileSystem::SetProject( const std::string &path )
 {
-	std::string npath = NormalizePath( path );
+	const std::string npath = NormalizePath( path );
 
-	std::string wd = npath;
-	size_t      p  = wd.find_last_of( '/' );
+	std::string  wd = npath;
+	const size_t p  = wd.find_last_of( '/' );
 	if ( p != std::string::npos )
 	{
 		wd.erase( p );
@@ -241,21 +244,21 @@ bool jaded::FileSystem::SetProject( const std::string &path )
 	{
 		if ( !BIG_Open( path.c_str() ) )
 		{
-			std::string msg = "Failed to open big file (" + npath + ")!";
+			const std::string msg = "Failed to open big file (" + npath + ")!";
 			LINK_PrintStatusMsg( msg.c_str() );
 			return false;
 		}
 
 		if ( !CreateKeyRepository( &BIG_gst ) )
 		{
-			std::string msg = "Failed to create key repository (" + npath + ")!";
+			const std::string msg = "Failed to create key repository (" + npath + ")!";
 			LINK_PrintStatusMsg( msg.c_str() );
 			return false;
 		}
 	}
 	else if ( !ParseKeyRepository( npath ) )
 	{
-		std::string msg = "Failed to open key file (" + npath + ")!";
+		const std::string msg = "Failed to open key file (" + npath + ")!";
 		LINK_PrintStatusMsg( msg.c_str() );
 		return false;
 	}
@@ -340,7 +343,7 @@ bool jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 		if ( !CreateLocalPath( path ) )
 		{
 			// TODO: this should throw a more meaningful error in future
-			std::string msg = "Failed to create directory (" + path + ")!";
+			const std::string msg = "Failed to create directory (" + path + ")!";
 			LINK_PrintStatusMsg( msg.c_str() );
 			break;
 		}
@@ -366,21 +369,21 @@ bool jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 		if ( file == nullptr )
 		{
 			// TODO: this should throw a more meaningful error in future
-			std::string msg = "Failed to create file (" + path + ") (" + std::to_string( i.key ) + ")!";
+			msg = "Failed to create file (" + path + ") (" + std::to_string( i.key ) + ")!";
 			LINK_PrintStatusMsg( msg.c_str() );
 			break;
 		}
 
 		ULONG size;
-		char *p = BIG_pc_ReadFileTmp( BIG_PosFile( i.bfIndex ), &size );
-		size    = BIG_fwrite( p, size, file );
+		char *buf = BIG_pc_ReadFileTmp( BIG_PosFile( i.bfIndex ), &size );
+		size      = BIG_fwrite( buf, size, file );
 
 		fclose( file );
 
 		if ( size != 1 )
 		{
 			// TODO: this should throw a more meaningful error in future
-			std::string msg = "Failed to write file data (" + path + ") (" + std::to_string( i.key ) + ")!";
+			msg = "Failed to write file data (" + path + ") (" + std::to_string( i.key ) + ")!";
 			LINK_PrintStatusMsg( msg.c_str() );
 			break;
 		}
@@ -575,7 +578,7 @@ jaded::FileSystem::DirIndex jaded::FileSystem::IndexPath( const std::string &pat
 		dir.push_back( path[ i ] );
 		if ( dir.size() == path.size() || dir.size() > 1 && path[ i + 1 ] == '/' )
 		{
-			auto &j = dirLookup.find( dir );
+			const auto j = dirLookup.find( dir );
 			if ( j != dirLookup.end() )
 			{
 				continue;
@@ -634,7 +637,7 @@ jaded::FileSystem::KeyFile *jaded::FileSystem::GetFileByIndex( FileIndex index )
 	return &files[ index ];
 }
 
-std::string jaded::FileSystem::GetFilePathByIndex( FileIndex index )
+std::string jaded::FileSystem::GetFilePathByIndex( const FileIndex index ) const
 {
 	return directories[ files[ index ].dir ].name + "/" + files[ index ].name;
 }
@@ -682,7 +685,7 @@ void jaded::FileSystem::IndexBFSubDirectory( unsigned int curDir )
 		fileLookup.emplace( directory.name + "/" + file.name, file.index );
 
 		// check if it's a duplicate key first (it could happen...)
-		auto &i = keys.find( file.key );
+		const auto i = keys.find( file.key );
 		if ( i != keys.end() )
 		{
 			std::string msg = "Found duplicate key (" + std::to_string( i->first ) + ")";
