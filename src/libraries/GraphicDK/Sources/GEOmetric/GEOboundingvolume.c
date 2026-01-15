@@ -63,6 +63,10 @@ void GEO_BoundingVolume_DisplayOBBox(GDI_tdst_DisplayData *_pst_DD, OBJ_tdst_Gam
 		_pst_DD->ul_ColorConstant = 0x000000FF; /* Rouge */
 		b_SelectedBV = TRUE;
 	}
+	else
+	{
+		b_SelectedBV = false;
+	}
 
     GEO_DebugObject_Draw(_pst_DD, GEO_DebugObject_Box, GEO_Cul_BV_DrawMask, 0, NULL);
 
