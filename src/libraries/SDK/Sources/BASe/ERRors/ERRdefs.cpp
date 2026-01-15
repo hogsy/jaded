@@ -93,8 +93,11 @@ bool ERR_ScriptAssertFailed( const char *filename, int line, const char *express
 	}
 
 	OBJ_tdst_GameObject *object = AI_Mpst_GetCurrentObject();
-	const char *objectName      = ( object != nullptr ) ? object->sz_Name : "unknown";
-	tmp.append( "Object:\t" + std::string( objectName ) + "\n" );
+	if ( OBJ_IsNullOrValidGAO( object ) )
+	{
+		tmp.append( "Object:\t" + std::string( object->sz_Name ) + "\n" );
+	}
+
 	tmp.append( "Script:\t" + std::string( scriptPath ) + "\n" );
 	tmp.append( "Line:\t" + std::to_string( bp.i_Line ) + "\n\n" );
 
