@@ -92,11 +92,13 @@ bool ERR_ScriptAssertFailed( const char *filename, int line, const char *express
 		snprintf( scriptPath, sizeof( scriptPath ), "%s", BIG_NameFile( bp.ul_File ) );
 	}
 
+#if !defined( NDEBUG )
 	OBJ_tdst_GameObject *object = AI_Mpst_GetCurrentObject();
 	if ( OBJ_IsNullOrValidGAO( object ) )
 	{
 		tmp.append( "Object:\t" + std::string( object->sz_Name ) + "\n" );
 	}
+#endif
 
 	tmp.append( "Script:\t" + std::string( scriptPath ) + "\n" );
 	tmp.append( "Line:\t" + std::to_string( bp.i_Line ) + "\n\n" );
