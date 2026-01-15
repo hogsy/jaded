@@ -1467,6 +1467,8 @@ BOOL EVE_b_RunAllTracks(EVE_tdst_Data *_pst_Data, float *_pf_RestTime)
 
 	if(b_AnimCase)
 		c_LOD = EVE_c_UpdateLOD(EVE_gpst_CurrentGAO, FALSE);
+	else
+		c_LOD = 0;
 
 	for(i = 0; i < pst_ListTracks->uw_NumTracks; i++)
 	{
