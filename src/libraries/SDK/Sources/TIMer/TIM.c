@@ -54,7 +54,7 @@ void TIM_InitModule(void)
 	PRO_InitModule();
 #endif
 	/* Quick Compute CPU ticks per second */
-    TIM_gul_TicksPerSecond = TIM_ul_QuickGetTicksPerSecond();
+    TIM_gul_TicksPerSecond = TIM_ul_PreciseGetTicksPerSecond();
 
 	/* Reads the system clock at the start of the application */
 	TIM_gul_SystemStartTime = L_timeGetTime();

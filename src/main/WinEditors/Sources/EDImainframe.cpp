@@ -1291,7 +1291,7 @@ void EDI_cl_MainFrame::OnProjectNew(void)
  */
 void EDI_cl_MainFrame::OnProjectOpen(void)
 {
-	CFileDialog mo_File( TRUE, _T("bf"), 0, 0, _T("Big Files (*.bf)|*.bf|All Files (*.*)|*.*||"), this );
+	CFileDialog mo_File( TRUE, _T("bf"), nullptr, 0, _T("Big Files (*.bf)|*.bf|All Files (*.*)|*.*||"), this );
 	if(mo_File.DoModal() == IDOK)
 	{
 		M_MF()->LockDisplay(&mo_BigSplitter);

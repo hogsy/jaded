@@ -1394,7 +1394,6 @@ void ENG_Loop( void )
 
 	INO_Joystick_Acquire();
 
-	uint64_t nextTick = SDL_GetTicks();
 	while ( !sfnb_EndGame() )
 	{
 		jaded::sys::profiler.StartProfiling( "Main Loop" );

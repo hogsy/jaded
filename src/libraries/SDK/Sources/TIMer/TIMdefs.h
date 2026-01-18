@@ -111,8 +111,6 @@ extern "C"
 /* To get pentium internal counter low part */
 #pragma warning(disable : 4035)
 
-#define RDTSC   __asm _emit 0x0F __asm _emit 0x31
-
 /*
  ===================================================================================================
     Aim:    To get pentium internal counter low part
@@ -135,21 +133,7 @@ _inline_ void _fastcall_ TIM_GetTimerInternalCounter(void *_p_Res)
 		return;
 	}
 
-#if defined( _MSC_VER ) && defined( _WIN32 ) && !defined( _WIN64 )
-    __asm
-    {
-		push eax
-		push ebx
-		push edx
-        RDTSC
-        mov ebx, dword ptr _p_Res
-        mov[ebx], eax
-        mov[ebx + 4], edx
-		pop edx
-		pop ebx
-		pop eax
-    }
-#elif defined( _WIN32 )
+#if defined( _WIN32 )
 
 	LARGE_INTEGER i;
 	if ( QueryPerformanceCounter( &i ) )
@@ -210,7 +194,6 @@ extern ULONG    TIM_gul_SystemStartTime;
 extern void     TIM_Clock_Update(void);
 extern void     TIM_Clock_Reset(void);
 extern float    TIM_f_Clock_TrueRead(void);
-extern ULONG    TIM_ul_QuickGetTicksPerSecond(void);
 
 extern float    TIM_f_Counter_TrueRead(void);
 extern ULONG    TIM_ul_PreciseGetTicksPerSecond(void);

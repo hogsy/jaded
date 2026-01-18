@@ -599,50 +599,6 @@ ULONG _fastcall_ TIM_ul_GetLowPartTimerInternalCounter( void )
 
 /*
  =======================================================================================================================
-    Aim:    Determins the frequency of the current CPU clock.
-
-    Note:   That function has 2 modes:: - PC mode waits for 1/4 second before returning,
-
-    Out:    Processor clock frequency (per second)
- =======================================================================================================================
- */
-ULONG TIM_ul_QuickGetTicksPerSecond(void)
-{
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	ULONG	ul_Count1, ul_Count2;
-	ULONG	ul_Time;
-	ULONG	ul_Return;
-#ifdef ACTIVE_EDITORS
-	char	asz_Tmp[255];
-#endif
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-	/* ACTIVE_EDITORS */
-	timeBeginPeriod(1);
-	ul_Time = L_timeGetTime();
-	ul_Count1 = TIM_ul_GetLowPartTimerInternalCounter();
-
-	/* Wait for 1/4 second */
-	while(L_timeGetTime() - ul_Time < 250);
-
-	ul_Count2 = TIM_ul_GetLowPartTimerInternalCounter();
-	timeEndPeriod(1);
-
-	if(ul_Count2 > ul_Count1)
-		ul_Return = (ul_Count2 - ul_Count1) * 4;
-	else
-		ul_Return = ((ul_Count2 + 0xFFFFFFFF - ul_Count1 + 1) * 4);
-
-#ifdef ACTIVE_EDITORS
-	sprintf(asz_Tmp, "Aproximate processor frequency calculated: %.2f MHz", fLongToFloat(ul_Return) / 1000000.0f);
-	LINK_PrintStatusMsg(asz_Tmp);
-#endif /* ACTIVE_EDITORS */
-
-	return ul_Return;
-}
-
-/*
- =======================================================================================================================
     Aim:    Calculates the time in seconds since the start of the application. Calculates the time since the last call
             of this function £
 
@@ -717,8 +673,7 @@ void TIM_Clock_Update(void)
 	TIM_gf_MainClock += TIM_gf_dt;
 
     if (INO_b_RecordInput || INO_b_PlayInput)    
-        TIM_gf_MainClock = INO_n_FrameCounter * 0.0333333f;   
-
+        TIM_gf_MainClock = INO_n_FrameCounter * 0.0333333f;
 }
 
 /*
@@ -729,23 +684,13 @@ void TIM_Clock_Update(void)
 float TIM_f_Clock_TrueRead(void)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	ULONG	ul_CurrentCounter[2];
-	float	f_Result;
+	uint64_t	ul_CurrentCounter;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	/* Read the full ticks counter */
-	TIM_GetTimerInternalCounter(&ul_CurrentCounter[0]);
+	TIM_GetTimerInternalCounter(&ul_CurrentCounter);
 
-	/* First calculate using hi part of the counter */
-	f_Result = fLongToFloat(ul_CurrentCounter[1]) - fLongToFloat(TIM_gul_StartCounter[1]);
-	f_Result *= Cf_2exp32;
-
-	/* Then precise using lo part */
-	f_Result += fLongToFloat(ul_CurrentCounter[0]) - fLongToFloat(TIM_gul_StartCounter[0]);
-
-	/* From clocks to seconds... */
-	f_Result = fDiv(f_Result, TIM_gul_TicksPerSecond);
-
+	float f_Result = ( ( double ) ( ul_CurrentCounter ) - ( double ) ( *( uint64_t * ) ( TIM_gul_StartCounter ) ) ) / ( double ) TIM_gul_TicksPerSecond;
     if (INO_b_RecordInput || INO_b_PlayInput)    
         f_Result = INO_n_FrameCounter * 0.0333333f;
 
@@ -778,20 +723,15 @@ void TIM_Clock_Reset(void)
     Out:    Processor clock frequency (in hertz)
  =======================================================================================================================
  */
-ULONG TIM_ul_PreciseGetTicksPerSecond(void)
+ULONG TIM_ul_PreciseGetTicksPerSecond( void )
 {
-	/*~~~~~~~~~~~~~~~~~~*/
-	float	f_DeltaCycles;
-	ULONG	ul_DeltaMs;
-	/*~~~~~~~~~~~~~~~~~~*/
-
-	/* Time (in milliseconds) since the begining */
-	ul_DeltaMs = L_timeGetTime() - TIM_gul_SystemStartTime;
-
-	/* Cycles since the begining */
-	f_DeltaCycles = TIM_f_Counter_TrueRead();
-
-	return(lFloatToLong((f_DeltaCycles / fLongToFloat(ul_DeltaMs)) * 1000.0f));
+#	if defined( _WIN32 )
+	LARGE_INTEGER i;
+	QueryPerformanceFrequency( &i );
+	return i.QuadPart;
+#	else
+#		error "Implement me!"
+#	endif
 }
 
 /*
