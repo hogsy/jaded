@@ -18,7 +18,7 @@ namespace jaded
 	static constexpr char APP_NAME[] = "Jaded";
 
 	static constexpr char VERSION_STRING[] = "v" JADED_TOSTRING( JADED_VERSION_MAJOR ) "." JADED_TOSTRING( JADED_VERSION_MINOR ) "." JADED_TOSTRING( JADED_VERSION_PATCH );
-	static constexpr char BUILD_STRING[]   = "(" GIT_BRANCH ":" GIT_COMMIT_COUNT ")";
+	static constexpr char BUILD_STRING[]   = "(" GIT_COMMIT_HASH ")";
 
 	static const std::string &GetReleaseVersion()
 	{
