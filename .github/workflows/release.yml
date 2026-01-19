@@ -45,13 +45,13 @@ jobs:
         if: github.event_name != 'pull_request'
         run: zip -9 jaded-release.zip runtime/* runtime/mappings/* changes.txt
 
-      #- name: 'Upload to Discord'
-      #  if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
-      #  uses: tsickert/discord-webhook@v5.3.0
-      #  continue-on-error: true
-      #  with:
-      #    webhook-url: ${{ secrets.DISCORD }}
-      #    filename: web/releases/jaded-release.zip
+      - name: 'Upload to Discord'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+        uses: tsickert/discord-webhook@v5.3.0
+        continue-on-error: true
+        with:
+          webhook-url: ${{ secrets.DISCORD }}
+          filename: web/releases/jaded-release.zip
 
       - name: 'Upload Artifact'
         if: github.event_name != 'pull_request'
