@@ -1044,7 +1044,7 @@ nohole:
 #endif
 
 			char tmp[ 32 ];
-			snprintf( tmp, sizeof( tmp ), "%ul", _ul_BlockSize );
+			snprintf( tmp, sizeof( tmp ), "%lu", _ul_BlockSize );
 			ERR_X_ForceError( MEM_ERR_Csz_NoMoreMemoryToPerformAllocation, tmp );
 
 			return NULL;
