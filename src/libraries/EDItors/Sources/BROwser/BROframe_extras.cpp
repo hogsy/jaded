@@ -232,7 +232,6 @@ void EBRO_cl_Frame::FindCheckWorld(void)
 void EBRO_cl_Frame::CreateCob(void)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	COL_tdst_Cob		st_Cob;
 	OBJ_tdst_GameObject *pst_GO;
 	GRO_tdst_Struct		*pst_GroStruct;
 	BIG_INDEX			ul_GroFile, ul_CobFile;
@@ -247,7 +246,8 @@ void EBRO_cl_Frame::CreateCob(void)
 	LOA_MakeFileRef(BIG_FileKey(ul_GroFile), (ULONG *) &pst_GroStruct, GEO_ul_Load_ObjectCallback, LOA_C_MustExists);
 	LOA_Resolve();
 
-	COL_ColMap_AddGeometric(&st_Cob, (GEO_tdst_Object *) pst_GroStruct, (MATH_tdst_Vector *) pst_GO);
+	COL_tdst_Cob st_Cob = {};
+	COL_ColMap_AddGeometric( &st_Cob, ( GEO_tdst_Object * ) pst_GroStruct, ( MATH_tdst_Vector * ) pst_GO );
 
 	BIG_ComputeFullName(BIG_ParentDir(BIG_ParentFile(ul_GroFile)), asz_PathToCob);
 	L_strcat(asz_PathToCob, "/");

@@ -26,7 +26,7 @@ extern "C"
 #define COL_Cul_MaxDefaultCollidedObjects	150
 #define COL_Cf_Infinite						1E6
 
-#define COL_Cul_MaxNbOfCollision			1500
+#define COL_Cul_MaxNbOfCollision			3000
 #define COL_Cul_MaxNbOfZDx					16
 #define COL_Cul_MaxNbOfCob					8
 #define COL_Cul_ColMap						0

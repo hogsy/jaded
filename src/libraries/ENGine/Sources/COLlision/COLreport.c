@@ -490,6 +490,11 @@ BOOL COL_b_IsARealTopologicEdge
 	MATH_TransformVector(&st_BCS_InvUnitG, &_pst_GlobalVars->st_B_InvGlobalMatrix, _pst_GlobalVars->pst_InvUnitG);
 	MATH_AddVector(&_pst_GlobalVars->st_B_Edge_Normal, pst_Face1, pst_Face2);
 
+	if ( !( _pst_GlobalVars->st_B_Edge_Normal.x != 0 || _pst_GlobalVars->st_B_Edge_Normal.y != 0 || _pst_GlobalVars->st_B_Edge_Normal.z != 0 ) )
+	{
+		MATH_CopyVector( &_pst_GlobalVars->st_B_Edge_Normal, pst_Face1 );
+	}
+
 	if(b_VerticalColMap)
 	{
 		b_Face1IsAWall = (MATH_f_DotProduct(&st_BCS_InvUnitG, pst_Face1) < _pst_GlobalVars->f_WallCosAngle);
@@ -1237,6 +1242,12 @@ BOOL COL_ComputeReport
 		pst_World->ast_Reports[ul_ReportIndex].pst_GM = pst_GMat;
 
 		_pst_GlobalVars->ul_ReportIndex++;
+	}
+
+	//TODO: how are we ended up with a nan value in the first place!?
+	if ( isnan( f_Recalage ) )
+	{
+		f_Recalage = 0.0f;
 	}
 
 	/* If the recalage is < 1 mm, we skip it, to avoid useless Collision loops. */
