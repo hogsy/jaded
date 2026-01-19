@@ -82,25 +82,24 @@ extern "C" int ENG_gi_Map2;
  */
 bool ERR_ScriptAssertFailed( const char *filename, int line, const char *expression, const char *message )
 {
-	std::string tmp;
 	AI_tdst_BreakPoint bp = {};
 	AI_FillBreakPoint( &bp, -1 );
 
-	char scriptPath[ BIG_C_MaxLenPath + 1 ] = "unknown";
+	std::string scriptPath = "unknown";
 	if ( bp.ul_File != BIG_C_InvalidIndex )
 	{
-		snprintf( scriptPath, sizeof( scriptPath ), "%s", BIG_NameFile( bp.ul_File ) );
+		scriptPath = BIG_NameFile( bp.ul_File );
 	}
 
-#if !defined( NDEBUG )
-	OBJ_tdst_GameObject *object = AI_Mpst_GetCurrentObject();
-	if ( OBJ_IsNullOrValidGAO( object ) )
+	std::string tmp;
+
+	OBJ_tdst_GameObject *object = AI_gpst_CurrentUltra;
+	if ( object != nullptr && OBJ_IsValidGAO( object ) )
 	{
 		tmp.append( "Object:\t" + std::string( object->sz_Name ) + "\n" );
 	}
-#endif
 
-	tmp.append( "Script:\t" + std::string( scriptPath ) + "\n" );
+	tmp.append( "Script:\t" + scriptPath + "\n" );
 	tmp.append( "Line:\t" + std::to_string( bp.i_Line ) + "\n\n" );
 
 	if ( message != nullptr )
@@ -108,16 +107,14 @@ bool ERR_ScriptAssertFailed( const char *filename, int line, const char *express
 		tmp.append( std::string( message ) + "\n\n" );
 	}
 
-#if !defined( NDEBUG )
 	if ( expression != nullptr )
 	{
 		tmp.append( std::string( filename ) + ":" + std::to_string( line ) + "\n" );
 		tmp.append( std::string( expression ) + "\n\n" );
 	}
-#endif
 
 	LINK_gul_ColorTxt = 0x000000FF;
-	LINK_PrintStatusMsg( ( char * ) tmp.c_str() );
+	LINK_PrintStatusMsg( tmp.c_str() );
 	LINK_gul_ColorTxt = 0;
 
 	// Showin added this option so the user has more control over how errors appear.

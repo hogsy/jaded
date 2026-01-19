@@ -26,49 +26,24 @@
  ***********************************************************************************************************************
  */
 
-#if defined(_DEBUG)
-static char c_SkipTest = 0;
-
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
-_inline_ BOOL OBJ_IsNullOrValidGAO(OBJ_tdst_GameObject *_pst_GAO)
+_inline_ BOOL OBJ_IsNullOrValidGAO( OBJ_tdst_GameObject *_pst_GAO )
 {
-#ifndef PSX2_TARGET
-#ifndef _GAMECUBE
-    if(!c_SkipTest)
-	{
-		if(!_pst_GAO) return TRUE;
-		if(IsBadReadPtr(_pst_GAO, sizeof(OBJ_tdst_GameObject))) return FALSE;
-		if(IsBadWritePtr(_pst_GAO, sizeof(OBJ_tdst_GameObject))) return FALSE;
-		if(_pst_GAO->sz_Name && IsBadStringPtr(_pst_GAO->sz_Name, 128)) return FALSE;
-	}	
-#endif
-#endif
+	if ( !_pst_GAO ) return TRUE;
+	if ( IsBadReadPtr( _pst_GAO, sizeof( OBJ_tdst_GameObject ) ) ) return FALSE;
+	if ( IsBadWritePtr( _pst_GAO, sizeof( OBJ_tdst_GameObject ) ) ) return FALSE;
+	if ( _pst_GAO->sz_Name && IsBadStringPtr( _pst_GAO->sz_Name, 128 ) ) return FALSE;
+
 	return TRUE;
 }
 
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
-_inline_ BOOL OBJ_IsValidGAO(OBJ_tdst_GameObject *_pst_GAO)
+_inline_ BOOL OBJ_IsValidGAO( OBJ_tdst_GameObject *_pst_GAO )
 {
-#ifndef PSX2_TARGET
-#ifndef _GAMECUBE
-	if(!c_SkipTest)
-	{
-		if(IsBadReadPtr(_pst_GAO, sizeof(OBJ_tdst_GameObject))) return FALSE;
-		if(IsBadWritePtr(_pst_GAO, sizeof(OBJ_tdst_GameObject))) return FALSE;
-		if(_pst_GAO->sz_Name && IsBadStringPtr(_pst_GAO->sz_Name, 128)) return FALSE;
-	}
-#endif
-#endif
+	if ( IsBadReadPtr( _pst_GAO, sizeof( OBJ_tdst_GameObject ) ) ) return FALSE;
+	if ( IsBadWritePtr( _pst_GAO, sizeof( OBJ_tdst_GameObject ) ) ) return FALSE;
+	if ( _pst_GAO->sz_Name && IsBadStringPtr( _pst_GAO->sz_Name, 128 ) ) return FALSE;
+
 	return TRUE;
 }
-
-#endif
 
 /*$4
  ***********************************************************************************************************************
