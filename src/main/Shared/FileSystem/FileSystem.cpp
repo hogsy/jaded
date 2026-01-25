@@ -451,7 +451,7 @@ bool jaded::FileSystem::ParseKeyRepository( const std::string &path )
 			char kbuf[ 16 ]{};
 			strncpy( kbuf, buf, c - buf );
 			Key key = strtoul( kbuf, nullptr, 16 );
-			if ( key == 0 )
+			if ( key == BIG_C_InvalidKey )
 			{
 				throw std::runtime_error( "Invalid key (" + std::string( buf ) + ")!" );
 			}
@@ -641,7 +641,7 @@ jaded::FileSystem::KeyFile *jaded::FileSystem::GetFileByIndex( FileIndex index )
 {
 	if ( index >= files.size() )
 	{
-		std::string msg = "Attempted to address an OOB file index (" + std::to_string( index ) + ")!";
+		const std::string msg = "Attempted to address an OOB file index (" + std::to_string( index ) + ")!";
 		LINK_PrintStatusMsg( msg.c_str() );
 		return nullptr;
 	}
@@ -654,7 +654,7 @@ std::string jaded::FileSystem::GetFilePathByIndex( const FileIndex index ) const
 	return directories[ files[ index ].dir ].name + "/" + files[ index ].name;
 }
 
-void jaded::FileSystem::IndexBFSubDirectory( unsigned int curDir )
+void jaded::FileSystem::IndexBFSubDirectory( const unsigned int curDir )
 {
 	char dir[ BIG_C_MaxLenPath ];
 	BIG_ComputeFullName( curDir, dir );

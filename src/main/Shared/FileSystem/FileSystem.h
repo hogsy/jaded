@@ -94,7 +94,7 @@ namespace jaded
 
 		std::map< Key, FileIndex > keys;// table of all key'd files, for lookup
 
-		Key universeKey{};
+		Key universeKey{ BIG_C_InvalidKey };
 
 	public:
 		const Key &GetUniverseKey() const;
