@@ -260,7 +260,7 @@ void BIG_UpdateDirFromDisk(char *_psz_RealName, char *_psz_BigName)
  =======================================================================================================================
  =======================================================================================================================
  */
-BIG_INDEX BIG_ul_CreateDir(char *_psz_PathName)
+BIG_INDEX BIG_ul_CreateDir( const char *_psz_PathName)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	BIG_INDEX	ul_NewIndex, ul_ParentIndex, ul_Memo;

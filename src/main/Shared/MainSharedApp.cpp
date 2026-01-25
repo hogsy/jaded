@@ -627,7 +627,7 @@ int main( int argc, char **argv )
 #	if defined( _WIN32 )
 
 	const char *dump = getenv( "JADED_CRASH_DUMP_PATH" );
-	if ( dump != NULL )
+	if ( dump != nullptr )
 	{
 		DialogBox( NULL, MAKEINTRESOURCE( DIALOGS_IDD_CRASH_REPORT ), NULL, &Win32CrashReporter );
 		return EXIT_SUCCESS;
@@ -649,9 +649,8 @@ int main( int argc, char **argv )
 
 	if ( !SDL_Init( SDL_INIT_GAMEPAD | SDL_INIT_VIDEO | SDL_INIT_EVENTS ) )
 	{
-		jaded::sys::AlertBox( "SDL Init fail: " + std::string( SDL_GetError() ),
-		                      "Jaded Error",
-		                      jaded::sys::ALERT_BOX_ERROR );
+		const std::string msg = "SDL initialisation failed: " + std::string( SDL_GetError() );
+		SDL_ShowSimpleMessageBox( SDL_MESSAGEBOX_ERROR, "Jaded Error", msg.c_str(), nullptr );
 		return EXIT_FAILURE;
 	}
 
@@ -668,16 +667,17 @@ int main( int argc, char **argv )
 
 #	endif
 
-	std::string localAppData = jaded::filesystem.GetAppDataPath();
+	const std::string localAppData = jaded::filesystem.GetAppDataPath();
 	if ( localAppData.empty() )
 	{
-		jaded::sys::AlertBox( "Failed to get local app data path!", "Jaded Error", jaded::sys::ALERT_BOX_ERROR );
+		SDL_ShowSimpleMessageBox( SDL_MESSAGEBOX_ERROR, "Jaded Error", "Failed to get local app data path!", nullptr );
 		return EXIT_FAILURE;
 	}
 
 	if ( !jaded::filesystem.CreateLocalPath( localAppData ) )
 	{
-		jaded::sys::AlertBox( "Failed to create local app data path (" + localAppData + ")!", "Jaded Error", jaded::sys::ALERT_BOX_ERROR );
+		const std::string msg = "Failed to create local app data path (" + localAppData + ")!";
+		SDL_ShowSimpleMessageBox( SDL_MESSAGEBOX_ERROR, "Jaded Error", msg.c_str(), nullptr );
 		return EXIT_FAILURE;
 	}
 
@@ -685,15 +685,16 @@ int main( int argc, char **argv )
 
 	// hogsy: for now we'll only support editor functionality under win32
 	if ( jaded::sys::launchOperations.editorMode )
+	{
 		return EDI_EditorWin32Execution( hInstance );
+	}
 
 #	endif
 
 	if ( CreateSDLWindow() == nullptr )
 	{
-		jaded::sys::AlertBox( "SDL Window fail: " + std::string( SDL_GetError() ),
-		                      "Jaded Error",
-		                      jaded::sys::ALERT_BOX_ERROR );
+		const std::string msg = "SDL Window fail: " + std::string( SDL_GetError() );
+		SDL_ShowSimpleMessageBox( SDL_MESSAGEBOX_ERROR, "Jaded Error", msg.c_str(), nullptr );
 		return EXIT_FAILURE;
 	}
 

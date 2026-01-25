@@ -47,7 +47,7 @@ std::string jaded::FileSystem::GetAppDataPath()
 	}
 
 	char home[ MAX_PATH ];
-	if ( SUCCEEDED( SHGetFolderPath( NULL, CSIDL_APPDATA, NULL, 0, home ) ) )
+	if ( SUCCEEDED( SHGetFolderPath( nullptr, CSIDL_APPDATA, nullptr, 0, home ) ) )
 	{
 		return NormalizePath( home ) + std::string( "/" ) + APP_NAME;
 	}
@@ -159,7 +159,7 @@ size_t jaded::FileSystem::GetLocalFileSize( const std::string &path )
 		return ( size_t ) -1;
 	}
 
-	struct stat buf;
+	struct stat buf = {};
 	int         fd = _fileno( file );
 	fstat( fd, &buf );
 
@@ -168,7 +168,7 @@ size_t jaded::FileSystem::GetLocalFileSize( const std::string &path )
 	return buf.st_size;
 }
 
-bool jaded::FileSystem::ReadFileByIndex( FileIndex index, std::vector< uint8_t > *dst )
+bool jaded::FileSystem::ReadFileByIndex( FileIndex index, std::vector< uint8_t > *dst ) const
 {
 	bool  status;
 	FILE *file{};

@@ -25,7 +25,7 @@ extern BOOL         BIG_gb_ImportDirOnlyLoaded;
 extern BOOL         BIG_gb_ImportDirOnlyTruncated;
 
 extern void         BIG_UpdateDirFromDisk(char *, char *);
-extern BIG_INDEX    BIG_ul_CreateDir(char *);
+extern BIG_INDEX    BIG_ul_CreateDir( const char *);
 extern void         BIG_RenDir(char *, char *);
 extern void         BIG_DelDir( const char *);
 extern void         BIG_CopyDir(char *, char *);

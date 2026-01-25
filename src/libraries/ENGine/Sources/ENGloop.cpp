@@ -146,9 +146,8 @@ bool ENG_InitLoop()
 {
 	if ( ( engineLoopTimer = SDL_AddTimer( ENGINE_LOOP_FREQUENCY, TimerCallback, nullptr ) ) == 0 )
 	{
-		jaded::sys::AlertBox( "Failed to create SDL timer: " + std::string( SDL_GetError() ),
-		                      "Error",
-		                      jaded::sys::ALERT_BOX_ERROR );
+		const std::string msg = "Failed to create SDL timer: " + std::string( SDL_GetError() );
+		SDL_ShowSimpleMessageBox( SDL_MESSAGEBOX_ERROR, "Jaded Error", msg.c_str(), nullptr );
 		return false;
 	}
 

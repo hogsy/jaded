@@ -41,19 +41,19 @@ namespace jaded
 		static std::string GetAppDataPath();
 		static std::string NormalizePath( std::string path );
 
-		std::string GetFilenameExtension( const std::string &filename );
+		static std::string GetFilenameExtension( const std::string &filename );
 
-		bool SetWorkingDirectory( const std::string &path );
+		static bool SetWorkingDirectory( const std::string &path );
 
 		void PrintKeyTable();
 
-		bool DoesFileExist( const std::string &path );
+		static bool DoesFileExist( const std::string &path );
 
-		bool CreateLocalPath( const std::string &path );
+		static bool CreateLocalPath( const std::string &path );
 
-		size_t GetLocalFileSize( const std::string &path );
+		static size_t GetLocalFileSize( const std::string &path );
 
-		bool ReadFileByIndex( FileIndex index, std::vector< uint8_t > *dst );
+		bool ReadFileByIndex( FileIndex index, std::vector< uint8_t > *dst ) const;
 		bool ReadFileByName( const std::string &path, std::vector< uint8_t > *dst );
 
 		bool SetProject( const std::string &path );
