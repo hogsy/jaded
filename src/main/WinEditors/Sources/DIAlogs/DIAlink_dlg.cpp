@@ -26,11 +26,8 @@
 #include "DIAlogs/DIAname_dlg.h"
 #include "DIAlogs/DIAfile_dlg.h"
 
-#ifdef JADEFUSION
 extern BOOL BIG_gb_CanOpenFats;
-#else
-extern "C" BOOL BIG_gb_CanOpenFats;
-#endif
+
 /*$4
  ***********************************************************************************************************************
  ***********************************************************************************************************************

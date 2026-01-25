@@ -24,11 +24,11 @@
 #include "BIGfiles/VERsion/VERsion_Number.h"
 #include "BIGfiles/VERsion/VERsion_Check.h"
 
-#include "TIMer/PROfiler/PROPS2.h"
+#include "FileSystem/FileSystem.h"
 
-BIG_tdst_BigFile	BIG_gst;
-BOOL				BIG_gb_CanOpenFats = TRUE;
-extern BIG_tdst_BigFile BIG_gst1;
+BIG_tdst_BigFile            BIG_gst;
+BOOL                        BIG_gb_CanOpenFats = TRUE;
+extern "C" BIG_tdst_BigFile BIG_gst1;
 
 
 /*
@@ -44,7 +44,12 @@ extern BIG_tdst_BigFile BIG_gst1;
  */
 bool BIG_Open(const char *_psz_FileName)
 {
-	int r;
+	const std::string extension = jaded::filesystem.GetFilenameExtension( _psz_FileName );
+	if ( extension == "key" )
+	{
+		return jaded::filesystem.ParseKeyRepository( _psz_FileName );
+	}
+
 	/* First init global bigfile struct */
 	L_memset(&BIG_gst, 0, sizeof(BIG_tdst_BigFile));
 
@@ -60,15 +65,11 @@ bool BIG_Open(const char *_psz_FileName)
 		}
 	}
 
-	r=CLI_FileOpen(BIG_gst.h_CLibFileHandle);
+	int r = CLI_FileOpen( BIG_gst.h_CLibFileHandle );
 	ERR_X_Error(r, L_ERR_Csz_FOpen, _psz_FileName);
 	if ( r == NULL )
 		return false;
 
-	/*
-	 * L_setvbuf(BIG_gst.h_CLibFileHandle, NULL, L_IONBF, 0); £
-	 * L_setvbuf(BIG_gst.h_CLibFileHandle, NULL, _IOFBF, 4000000);
-	 */
 	MEMpro_StartMemRaster();
 
 	/* Read header of bigfile */
@@ -89,7 +90,7 @@ bool BIG_Open(const char *_psz_FileName)
 		return false;
 	}
 	
-	return true;
+	return jaded::filesystem.CreateKeyRepository( &BIG_gst );
 }
 
 /*
@@ -100,7 +101,8 @@ bool BIG_Open(const char *_psz_FileName)
  */
 void BIG_Close(void)
 {
-	int r;
+	jaded::filesystem.ClearTables();
+
 	/* Delete fat file, delete list of keys */
 	BIG_ResetFat();
 
@@ -113,7 +115,7 @@ void BIG_Close(void)
 	/* Really close the file */
 	if(BIG_gst.h_CLibFileHandle)
 	{
-		r=L_fclose(BIG_gst.h_CLibFileHandle);
+		int r = L_fclose( BIG_gst.h_CLibFileHandle );
 		ERR_X_Error(r == 0, L_ERR_Csz_FClose, NULL);
 	}
 }
