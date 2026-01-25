@@ -287,12 +287,6 @@ LRESULT F3D_cl_View::DefWindowProc(UINT message, WPARAM wParam, LPARAM lParam)
             pc_Cur = strrchr( M_F3D_DD->sz_SnapshotName, '\\' );
         if (pc_Cur == NULL)
             L_strcpy(M_F3D_DD->sz_SnapshotName, "Capture");
-        else
-        {
-            strcpy( pc_Cur + 1, "Capture" );
-            CreateDirectory( M_F3D_DD->sz_SnapshotName, NULL );
-            strcpy( pc_Cur + 8, "\\Capture" );
-        }
 	}
 
 	return CWnd::DefWindowProc(message, wParam, lParam);
