@@ -58,12 +58,10 @@ extern "C"
 #define BIG_P4OwnerName(d)        (BIG_gst.dst_FileTableExt[d].asz_P4OwnerName)
 #define BIG_P4RevisionServer(d)   (BIG_gst.dst_FileTableExt[d].ul_P4RevisionServer)
 #define BIG_P4RevisionClient(d)   (BIG_gst.dst_FileTableExt[d].st_ToSave.ul_P4RevisionClient)
-#define BIG_P4Time(d)			  (BIG_gst.dst_FileTableExt[d].x_P4Time)	
-#define BIG_P4ChangeList(d)		  (BIG_gst.dst_FileTableExt[d].ul_P4ChangeList)	
+#define BIG_P4ChangeList(d)		  (BIG_gst.dst_FileTableExt[d].ul_P4ChangeList)
 #define BIG_P4HeadAction(d)		  (BIG_gst.dst_FileTableExt[d].asz_P4HeadAction)	
 #define BIG_P4Action(d)			  (BIG_gst.dst_FileTableExt[d].asz_P4Action)	
 
-#define BIG_TmpRevisionClient(d)  (BIG_gst.dst_FileTableExt[d].ul_TmpRevisionClient)
 /*$2
  ---------------------------------------------------------------------------------------------------
     Constants

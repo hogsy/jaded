@@ -416,7 +416,6 @@ l_Write:
 	if ( b_Create )
 	{
 		BIG_P4RevisionClient(ul_NewIndex) = BIG_gx_GlobalClientRev;
-		BIG_P4Time(ul_NewIndex) = 0xFFFFFFFF;
 	}
 
 	/* Write length at the beginning of the file */

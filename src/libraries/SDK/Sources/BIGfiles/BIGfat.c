@@ -328,9 +328,6 @@ void BIG_ReadFatFileExt(BIG_tdst_FatDes *_pst_Fat)
 		for(i = _pst_Fat->ul_FirstIndex; i < _pst_Fat->ul_FirstIndex + _pst_Fat->ul_MaxFile; i++)
 		{
 			L_memcpy(&(BIG_gst.dst_FileTableExt[i].st_ToSave), p + (sizeof(BIG_gst.dst_FileTableExt[0].st_ToSave) * (i - _pst_Fat->ul_FirstIndex)), sizeof(BIG_gst.dst_FileTableExt[0].st_ToSave));
-
-			// Keep copy revision stored in BF to be able to compared to revision on P4 before it is flushed when validating BF with Perforce
-			BIG_TmpRevisionClient(i) = BIG_P4RevisionClient(i);
 		}
 		L_free(p);
 	}
