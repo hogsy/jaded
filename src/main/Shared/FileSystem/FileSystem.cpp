@@ -160,7 +160,7 @@ size_t jaded::FileSystem::GetLocalFileSize( const std::string &path )
 	}
 
 	struct stat buf = {};
-	int         fd = _fileno( file );
+	int         fd  = _fileno( file );
 	fstat( fd, &buf );
 
 	fclose( file );
@@ -312,6 +312,8 @@ bool jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 
 	ClearTables();
 
+	universeKey = BIG_gst.st_ToSave.ul_UniverseKey;
+
 	IndexBFSubDirectory( BIG_Root() );
 
 	// now proceed with the creation
@@ -323,6 +325,7 @@ bool jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 		return false;
 	}
 
+	fprintf( file, "%x\n", universeKey );
 	fprintf( file, "%zu\n", keys.size() );
 	for ( const auto &i : keys )
 	{
@@ -416,12 +419,20 @@ bool jaded::FileSystem::ParseKeyRepository( const std::string &path )
 		//TODO: I'm being lazy here, fgets is prone to failure, I know, I'll be back!!!
 
 		char buf[ 1024 ];
+
+		if ( fgets( buf, sizeof( buf ), file ) == nullptr )
+		{
+			throw std::runtime_error( "Failed to get universe key per \"" + path + "\"!" );
+		}
+
+		universeKey = std::strtoul( buf, nullptr, 16 );
+
 		if ( fgets( buf, sizeof( buf ), file ) == nullptr )
 		{
 			throw std::runtime_error( "Failed to get number of keys per \"" + path + "\"!" );
 		}
 
-		unsigned int numKeys = std::strtoul( buf, nullptr, 10 );
+		const unsigned int numKeys = std::strtoul( buf, nullptr, 10 );
 		for ( unsigned int i = 0; i < numKeys; ++i )
 		{
 			if ( fgets( buf, sizeof( buf ), file ) == nullptr )
@@ -431,7 +442,7 @@ bool jaded::FileSystem::ParseKeyRepository( const std::string &path )
 
 			// pull the key from the start
 
-			char *c = strchr( buf, ' ' );
+			const char *c = strchr( buf, ' ' );
 			if ( c == nullptr )
 			{
 				throw std::runtime_error( "Failed to fetch key (" + std::string( buf ) + ")!" );
@@ -446,12 +457,12 @@ bool jaded::FileSystem::ParseKeyRepository( const std::string &path )
 			}
 
 			// and now pull the path
-			char *openPos = strchr( buf, '"' );
+			const char *openPos = strchr( buf, '"' );
 			if ( openPos == nullptr )
 			{
 				throw std::runtime_error( "Failed to find opening quote (" + std::string( buf ) + ")!" );
 			}
-			char *closePos = strrchr( buf, '"' );
+			const char *closePos = strrchr( buf, '"' );
 			if ( openPos == closePos )
 			{
 				throw std::runtime_error( "Failed to find closing quote (" + std::string( buf ) + ")!" );
@@ -472,7 +483,7 @@ bool jaded::FileSystem::ParseKeyRepository( const std::string &path )
 
 			*filename = '\0';
 
-			DirIndex dirIndex = IndexPath( pbuf );
+			const DirIndex dirIndex = IndexPath( pbuf );
 			if ( dirIndex == BIG_C_InvalidIndex )
 			{
 				throw std::runtime_error( "Failed to create directory (" + std::string( pbuf ) + ")!" );
@@ -545,7 +556,7 @@ jaded::FileSystem::Key jaded::FileSystem::GenerateFileKey( const std::string &pa
 	return key;
 }
 
-const std::vector< jaded::FileSystem::FileIndex > jaded::FileSystem::GetDirFiles( const std::string &path )
+std::vector< jaded::FileSystem::FileIndex > jaded::FileSystem::GetDirFiles( const std::string &path )
 {
 	const auto i = dirLookup.find( path );
 	if ( i == dirLookup.end() )
@@ -717,6 +728,11 @@ void jaded::FileSystem::ClearTables()
 	keys.clear();
 }
 
+const jaded::FileSystem::Key &jaded::FileSystem::GetUniverseKey() const
+{
+	return universeKey;
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
 // C interface for legacy BIG API
 
@@ -727,7 +743,7 @@ extern "C" uint32_t Jaded_FileSystem_GenerateFileKey( const char *path )
 
 extern "C" uint32_t Jaded_FileSystem_SearchFileExt( const char *path )
 {
-	jaded::FileSystem::KeyFile *file = jaded::filesystem.GetFileByName( path );
+	const jaded::FileSystem::KeyFile *file = jaded::filesystem.GetFileByName( path );
 	return file != nullptr ? file->index : BIG_C_InvalidIndex;
 }
 

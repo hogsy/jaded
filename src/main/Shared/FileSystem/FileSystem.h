@@ -61,9 +61,9 @@ namespace jaded
 		bool CreateKeyRepository( const BIG_tdst_BigFile *bf );
 		bool ParseKeyRepository( const std::string &path );
 
-		Key GenerateFileKey( const std::string &path );
+		static Key GenerateFileKey( const std::string &path );
 
-		const std::vector< FileIndex > GetDirFiles( const std::string &path );
+		std::vector< FileIndex > GetDirFiles( const std::string &path );
 
 		// A lot of this is dumb, and index-driven, so we can use
 
@@ -80,8 +80,10 @@ namespace jaded
 	private:
 		void IndexBFSubDirectory( unsigned int curDir );
 
+	public:
 		void ClearTables();
 
+	private:
 		std::string dataPath;// this is where the data should be stored
 
 		std::map< std::string, DirIndex > dirLookup;// and lookup by name
@@ -91,6 +93,11 @@ namespace jaded
 		std::vector< KeyFile >             files;
 
 		std::map< Key, FileIndex > keys;// table of all key'd files, for lookup
+
+		Key universeKey{};
+
+	public:
+		const Key &GetUniverseKey() const;
 	};
 
 	extern FileSystem filesystem;
