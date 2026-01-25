@@ -42,7 +42,7 @@ add_library(Jaded-SDK OBJECT
         #Sources/BASe/XBox/XBCompositeFile.h
         Sources/BIGfiles/BIG.c
         Sources/BIGfiles/BIG.h
-        Sources/BIGfiles/BIGcheck.c
+        Sources/BIGfiles/BIGcheck.cpp
         Sources/BIGfiles/BIGcheck.h
         Sources/BIGfiles/BIGchecksum.c
         Sources/BIGfiles/BIGchecksum.h
@@ -53,7 +53,7 @@ add_library(Jaded-SDK OBJECT
         Sources/BIGfiles/BIGerrid.h
         Sources/BIGfiles/BIGexport.c
         Sources/BIGfiles/BIGexport.h
-        Sources/BIGfiles/BIGfat.c
+        Sources/BIGfiles/BIGfat.cpp
         Sources/BIGfiles/BIGfat.h
         Sources/BIGfiles/BIGgroup.c
         Sources/BIGfiles/BIGgroup.h
@@ -61,15 +61,15 @@ add_library(Jaded-SDK OBJECT
         Sources/BIGfiles/BIGio.h
         Sources/BIGfiles/BIGkey.c
         Sources/BIGfiles/BIGkey.h
-        Sources/BIGfiles/BIGmdfy_dir.c
+        Sources/BIGfiles/BIGmdfy_dir.cpp
         Sources/BIGfiles/BIGmdfy_dir.h
-        Sources/BIGfiles/BIGmdfy_file.c
+        Sources/BIGfiles/BIGmdfy_file.cpp
         Sources/BIGfiles/BIGmdfy_file.h
         Sources/BIGfiles/BIGmerge.c
         Sources/BIGfiles/BIGmerge.h
         Sources/BIGfiles/BIGopen.cpp
         Sources/BIGfiles/BIGopen.h
-        Sources/BIGfiles/BIGread.c
+        Sources/BIGfiles/BIGread.cpp
         Sources/BIGfiles/BIGread.h
         Sources/BIGfiles/BIGspecial.c
         Sources/BIGfiles/BIGspecial.h
@@ -82,7 +82,6 @@ add_library(Jaded-SDK OBJECT
         Sources/BIGfiles/LOAding/LOA.h
         Sources/BIGfiles/LOAding/LOAdefs.c
         Sources/BIGfiles/LOAding/LOAdefs.h
-        Sources/BIGfiles/LOAding/LOAerrid.h
         Sources/BIGfiles/LOAding/LOAread.c
         Sources/BIGfiles/LOAding/LOAread.h
         Sources/BIGfiles/SAVing/SAVdefs.c

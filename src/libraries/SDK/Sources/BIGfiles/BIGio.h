@@ -38,18 +38,6 @@ extern "C"
 #define PRELOAD_GRAN	30 * 1024
 #define PRELOAD_MAXTAB	100
 
-extern int	*gap_PreLoadArray[PRELOAD_MAXTAB];
-extern int	*gap_PreLoadArrayPtrFree[PRELOAD_MAXTAB];
-extern int	gai_PreLoadArrayOk[PRELOAD_MAXTAB];
-extern int	gai_PreLoadArrayFree[PRELOAD_MAXTAB];
-extern int	gi_PreLoadNum;
-extern int	*gpi_PreLoadBuf;
-extern int	*gpi_PreLoadBufPtrFree;
-#ifdef PSX2_TARGET
-extern int	gi_PreLoadFinished;
-#else
-extern volatile int	gi_PreLoadFinished;
-#endif
 extern void PreLoad_Finished(int *);
 
 /*$4

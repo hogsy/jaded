@@ -68,7 +68,7 @@ extern BIG_KEY					BIG_gul_CanAskKey;
 extern BOOL						EDI_gb_NoVerbose;
 extern BOOL							EDI_gb_SlashC;
 #else
-extern "C" BOOL						BIG_gb_WarningTime;
+extern BOOL						BIG_gb_WarningTime;
 extern "C" BOOL						BIG_ul_MaxSizeFile;
 extern "C" BIG_KEY					BIG_gul_CanAskKey;
 extern "C" BOOL						EDI_gb_NoVerbose;

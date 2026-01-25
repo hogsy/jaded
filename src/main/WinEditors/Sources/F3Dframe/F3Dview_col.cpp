@@ -90,7 +90,7 @@ char	*F3D_STR_Csz_Zone_AI[16] =
 extern BIG_INDEX    BIG_CopyFile(char *, char *, char *);
 extern void GEO_CreateGeoFromCob(OBJ_tdst_GameObject *, GEO_tdst_Object *, COL_tdst_Cob *);
 #else
-extern "C" BIG_INDEX    BIG_CopyFile(char *, char *, char *);
+extern "C" BIG_INDEX    BIG_CopyFile(char *, const char *, char *);
 extern "C" void GEO_CreateGeoFromCob(OBJ_tdst_GameObject *, GEO_tdst_Object *, COL_tdst_Cob *);
 #endif
 

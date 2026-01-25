@@ -45,13 +45,8 @@
  ***********************************************************************************************************************
  */
 
-#ifdef JADEFUSION
 extern BOOL BIG_b_CheckAllSoundFiles(void);
-extern float SND_gf_AutoVolumeOff;
-#else
-extern "C" BOOL BIG_b_CheckAllSoundFiles(void);
 extern "C" float SND_gf_AutoVolumeOff;
-#endif
 
 /*
  =======================================================================================================================

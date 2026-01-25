@@ -413,10 +413,6 @@ l_Write:
 	BIG_FileChanged(ul_NewIndex) = (BIG_FileChanged(ul_NewIndex) & EDI_FHC_Loaded) | EDI_FHC_AddUpdate | EDI_FHC_Touch;
 	if(b_Create) BIG_FileChanged(ul_NewIndex) |= EDI_FHC_Create;
 	BIG_TimeFile(ul_NewIndex) = BIG_gx_GlobalTime;
-	if ( b_Create )
-	{
-		BIG_P4RevisionClient(ul_NewIndex) = BIG_gx_GlobalClientRev;
-	}
 
 	/* Write length at the beginning of the file */
 	r=BIG_fwrite(&BIG_gul_Length, sizeof(ULONG), BIG_Handle());
@@ -717,29 +713,26 @@ void BIG_RenFile(char *_psz_NewName, char *_psz_PathName, char *_psz_OldName)
             _psz_File   Name of file to copy.
  =======================================================================================================================
  */
-BIG_INDEX BIG_CopyFile(char *_psz_Dest, char *_psz_Src, char *_psz_File)
+BIG_INDEX BIG_CopyFile(char *_psz_Dest, const char *_psz_Src, char *_psz_File)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	BIG_INDEX	ul_Index;
-	BIG_INDEX	ul_DestPath, ul_SrcPath, ul_File;
-	char		*pc_Buf;
 	ULONG		ul_Length;
 	char		asz_Name[BIG_C_MaxLenName];
 	char		asz_Name1[BIG_C_MaxLenName];
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 _Try_
-	ul_DestPath = BIG_ul_SearchDir(_psz_Dest);
+	BIG_INDEX ul_DestPath = BIG_ul_SearchDir( _psz_Dest );
 	ERR_X_Assert(ul_DestPath != BIG_C_InvalidIndex);
-	ul_SrcPath = BIG_ul_SearchDir(_psz_Src);
+	BIG_INDEX ul_SrcPath = BIG_ul_SearchDir( _psz_Src );
 	ERR_X_Assert(ul_SrcPath != BIG_C_InvalidIndex);
-	ul_File = BIG_ul_SearchFile(ul_SrcPath, _psz_File);
+	BIG_INDEX ul_File = BIG_ul_SearchFile( ul_SrcPath, _psz_File );
 	ERR_X_Assert(ul_File != BIG_C_InvalidIndex);
 
 	/* Check if file already exists in dest. If yes, try to rename it */
 	L_strcpy(asz_Name, _psz_File);
 
-	ul_Index = BIG_ul_SearchFile(ul_DestPath, asz_Name);
+	BIG_INDEX ul_Index = BIG_ul_SearchFile( ul_DestPath, asz_Name );
 	while(ul_Index != BIG_C_InvalidIndex)
 	{
 		if(L_strlen(asz_Name) == BIG_C_MaxLenName)
@@ -755,7 +748,7 @@ _Try_
 	}
 
 	/* Load the file */
-	pc_Buf = BIG_pc_ReadFileTmp(BIG_PosFile(ul_File), &ul_Length);
+	char *pc_Buf = BIG_pc_ReadFileTmp( BIG_PosFile( ul_File ), &ul_Length );
 
 	/* No key creation for ini files */
 	BIG_UpdateFileFromBuffer(_psz_Dest, asz_Name, pc_Buf, ul_Length);
@@ -777,25 +770,23 @@ _End_
             _psz_File   Atomic file name.
  =======================================================================================================================
  */
-void BIG_MoveFile(char *_psz_Dest, char *_psz_Src, char *_psz_File)
+void BIG_MoveFile( const char *_psz_Dest, const char *_psz_Src, const char *_psz_File)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	BIG_INDEX	ul_Index;
-	BIG_INDEX	ul_DestPath, ul_SrcPath, ul_File;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 _Try_
-	ul_DestPath = BIG_ul_CreateDir(_psz_Dest);
+	BIG_INDEX ul_DestPath = BIG_ul_CreateDir( _psz_Dest );
 	ERR_X_Assert(ul_DestPath != BIG_C_InvalidIndex);
-	ul_SrcPath = BIG_ul_SearchDir(_psz_Src);
+	BIG_INDEX ul_SrcPath = BIG_ul_SearchDir( _psz_Src );
 	ERR_X_Assert(ul_SrcPath != BIG_C_InvalidIndex);
-	ul_File = BIG_ul_SearchFile(ul_SrcPath, _psz_File);
+	BIG_INDEX ul_File = BIG_ul_SearchFile( ul_SrcPath, _psz_File );
 	ERR_X_Assert(ul_File != BIG_C_InvalidIndex);
 
 	if(ul_DestPath == ul_SrcPath) _Return_(;);
 
 	/* Check if file already exists in dest */
-	ul_Index = BIG_ul_SearchFile(ul_DestPath, BIG_NameFile(ul_File));
+	BIG_INDEX ul_Index = BIG_ul_SearchFile( ul_DestPath, BIG_NameFile( ul_File ) );
 	ERR_X_Error(ul_Index == BIG_C_InvalidIndex, ERR_BIG_Csz_CantMoveFile, BIG_NameFile(ul_File));
 
 	/* Unlink file from current path */

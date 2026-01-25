@@ -80,15 +80,9 @@ BOOL        EDI_gb_FIM_Mirror = TRUE;
 BOOL        BIG_gb_IgnoreRecent_Sav;
 BOOL        BIG_gb_WarningTime_Sav;
 
-#ifdef JADEFUSION
-extern BOOL		BIG_gb_WarningTime ;
-extern BOOL		BIG_gb_IgnoreRecent ;
-extern BOOL		BIG_gb_IgnoreDateExt ;
-#else
-extern "C" BOOL		BIG_gb_WarningTime ;
-extern "C" BOOL		BIG_gb_IgnoreRecent ;
-extern "C" BOOL		BIG_gb_IgnoreDateExt ;
-#endif
+extern BOOL BIG_gb_WarningTime;
+extern BOOL BIG_gb_IgnoreRecent;
+extern BOOL BIG_gb_IgnoreDateExt;
 
 extern BOOL EDI_gb_EdiMerge;
 extern char EDI_gaz_EdiMergeDir[];

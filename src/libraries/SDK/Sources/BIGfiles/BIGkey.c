@@ -163,51 +163,6 @@ ULONG BIG_ul_GetKeyValue(char *_psz_Value)
 
 /*
  =======================================================================================================================
-    Aim:    To get the bf size.
- =======================================================================================================================
- */
-extern BIG_tdst_BigFile	BIG_gst;
-
-ULONG BIG_ul_GetBFSize()
-{
-    int fh = _open( BIG_gst.asz_Name, _O_RDONLY, _S_IREAD);
-    if (fh == -1)
-    {
-        return 0;
-    }
-    else
-    {
-        ULONG ulBfSize = _filelength(fh);
-        _close( fh );
-        return ulBfSize;
-    }
-}
-
-/*
- =======================================================================================================================
-    Aim:    Determins if the windows registry table has informations for keys of application. This will seach KEY_ROOT
-            string in HKEY_CURRENT_USER path.
-
-    Out:    TRUE if registry is OK, FALSE else.
- =======================================================================================================================
- */
-BOOL BIG_b_IsKeyExists(void)
-{
-	/*~~~~~~~~~~*/
-	HKEY	h_Key;
-	/*~~~~~~~~~~*/
-
-	if(RegOpenKey(HKEY_CURRENT_USER, KEY_ROOT, &h_Key) == ERROR_SUCCESS)
-	{
-		RegCloseKey(h_Key);
-		return TRUE;
-	}
-
-	return FALSE;
-}
-
-/*
- =======================================================================================================================
     Aim:    To compute a new key for a given file. This function will be called when a new file is created.
 
     In:     _ul_Fat     Position of the file in the fat. It is used to retreive the position of the file in the

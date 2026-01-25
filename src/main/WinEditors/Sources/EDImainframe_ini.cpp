@@ -35,13 +35,8 @@
 #include "INOut/INOjoystick.h"
 #include "EDIapp.h"
 
-#ifdef JADEFUSION
-extern BOOL BIG_gb_IgnoreDateExt;
-extern BOOL EDI_gb_NoVerbose;
-#else
-extern "C" BOOL BIG_gb_IgnoreDateExt;
+extern BOOL     BIG_gb_IgnoreDateExt;
 extern "C" BOOL EDI_gb_NoVerbose;
-#endif
 
 /*$4
  ***********************************************************************************************************************
@@ -96,7 +91,7 @@ void EDI_cl_MainFrame::BaseLoadIni(char *_psz_IniFile, UCHAR *_puc_IniStruct, in
 	/* Read the .ini if it exists. */
 	o_Name = _psz_IniFile;
 	o_Name += EDI_Csz_ExtIni;
-	ul_Index = BIG_ul_SearchFileExt(EDI_Csz_Ini, (char *) (LPCSTR) o_Name);
+	ul_Index = BIG_ul_SearchFileExt(EDI_Csz_Ini, o_Name );
 	if(ul_Index != BIG_C_InvalidIndex)
 	{
 		ul_Size = BIG_ul_ReadFile(BIG_PosFile(ul_Index), _puc_IniStruct);
@@ -119,7 +114,7 @@ void EDI_cl_MainFrame::BaseLoadIni(char *_psz_IniFile, UCHAR *_puc_IniStruct, in
 		o_Name += EDI_Csz_ExtIni;
 
 		/* Try to load */
-		ul_Index = BIG_ul_SearchFileExt(EDI_Csz_Ini, (char *) (LPCSTR) o_Name);
+		ul_Index = BIG_ul_SearchFileExt(EDI_Csz_Ini, o_Name );
 		if(ul_Index != BIG_C_InvalidIndex)
 		{
 			ul_Size = BIG_ul_ReadFile(BIG_PosFile(ul_Index), _puc_IniStruct);

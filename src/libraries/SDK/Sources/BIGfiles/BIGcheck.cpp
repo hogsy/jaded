@@ -35,23 +35,23 @@
 #include "INOut/INO.h"
 
 #ifdef ACTIVE_EDITORS
-#include "EDIpaths.h"
+#	include "EDIpaths.h"
 #endif
 #ifdef ACTIVE_EDITORS
-BOOL			BIG_gb_CanClean = FALSE;
+BOOL            BIG_gb_CanClean = FALSE;
 BAS_tdst_barray BIG_gst_DeletedFiles;
 BAS_tdst_barray BIG_gst_DeletedDirs;
 BAS_tdst_barray BIG_gst_TouchedFiles;
 BAS_tdst_barray BIG_gst_TouchedDirs;
-extern int		WOR_gi_CurrentConsole;
-BOOL			BIG_gb_CleanFatEmpty = FALSE;
-extern BOOL    EDI_gb_NoVerbose;
+extern "C" int  WOR_gi_CurrentConsole;
+BOOL            BIG_gb_CleanFatEmpty = FALSE;
+extern "C" BOOL EDI_gb_NoVerbose;
 
 /*
  =======================================================================================================================
  =======================================================================================================================
  */
-char *BIG_FileName(BIG_INDEX _ul_Index)
+extern "C" char *BIG_FileName(BIG_INDEX _ul_Index)
 {
 	if(_ul_Index == BIG_C_InvalidIndex) return "NULL";
 	return BIG_NameFile(_ul_Index);
@@ -1051,11 +1051,9 @@ void BIG_RestoreDeleted(void)
 		{
 			sprintf(asz_Msg, "Restoring deleted file %s in ROOT", BIG_NameFile(i));
 			LINK_PrintStatusMsg(asz_Msg);
-#ifdef JADEFUSION
+
 			pi = (ULONG *) (BIG_NameFile(i) + BIG_C_MaxLenName - sizeof(int) - 2);
-#else
-			pi = (int *) (BIG_NameFile(i) + BIG_C_MaxLenName - sizeof(int) - 2);
-#endif
+
 			BIG_FileKey(i) = *pi;
 			BIG_InsertKeyToFat(BIG_FileKey(i), i);
 
@@ -1271,9 +1269,12 @@ BOOL b_DummyFile(BIG_INDEX ul_Index, BOOL *_pb_Univ)
  =======================================================================================================================
  =======================================================================================================================
  */
-extern BOOL LOA_b_FileIsInLoadedList(ULONG _h_Key);
-extern void LOA_FreeLoadedFileList(void);
-extern void LOA_LoadLoadedFileList(void);
+
+extern "C" BOOL LOA_b_FileIsInLoadedList( ULONG _h_Key );
+extern "C" void LOA_FreeLoadedFileList( void );
+extern "C" void LOA_LoadLoadedFileList( void );
+
+extern "C" BOOL BIG_gb_AlignFile;
 
 void BIG_CleanFinal(void)
 {
@@ -1282,8 +1283,6 @@ void BIG_CleanFinal(void)
 	char		asz_Path[BIG_C_MaxLenPath];
 	char		asz_Path2[BIG_C_MaxLenPath];
 	char		*psz_Name;
-	extern BOOL BIG_gb_NoMerge;
-	extern BOOL BIG_gb_AlignFile;
 	char		asz_Msg[512];
 	BOOL		b_Univ;
 	int			pos;
@@ -1476,7 +1475,7 @@ void BIG_CleanFinal(void)
 }
 
 
-extern void BIG_CallbackLoadFileFromBigFile(BIG_INDEX, BIG_INDEX);
+extern "C" void BIG_CallbackLoadFileFromBigFile(BIG_INDEX, BIG_INDEX);
 extern BOOL BIG_gb_CheckSameName;
 
 /*
@@ -1692,7 +1691,7 @@ void BIG_CleanLoaded(void)
     BIG_gb_CleanLoaded = FALSE;
 }
 
-extern BOOL SND_b_CheckSoundFiles(ULONG _ul_FileNb, ULONG *_pul_KeyList, ULONG *_pul_TypeList);
+extern "C" BOOL SND_b_CheckSoundFiles(ULONG _ul_FileNb, ULONG *_pul_KeyList, ULONG *_pul_TypeList);
 
 /*
  =======================================================================================================================

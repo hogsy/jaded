@@ -240,7 +240,7 @@ bool jaded::FileSystem::SetProject( const std::string &path )
 
 	SetWorkingDirectory( wd );
 
-	std::string extension = GetFilenameExtension( npath );
+	const std::string extension = GetFilenameExtension( npath );
 	if ( extension == "bf" || extension == "BF" )
 	{
 		if ( !BIG_Open( path.c_str() ) )
@@ -433,6 +433,9 @@ bool jaded::FileSystem::ParseKeyRepository( const std::string &path )
 		}
 
 		const unsigned int numKeys = std::strtoul( buf, nullptr, 10 );
+
+		files.reserve( numKeys );
+
 		for ( unsigned int i = 0; i < numKeys; ++i )
 		{
 			if ( fgets( buf, sizeof( buf ), file ) == nullptr )
@@ -556,6 +559,11 @@ jaded::FileSystem::Key jaded::FileSystem::GenerateFileKey( const std::string &pa
 	return key;
 }
 
+bool jaded::FileSystem::IsKeyTablePopulated() const
+{
+	return !keys.empty();
+}
+
 std::vector< jaded::FileSystem::FileIndex > jaded::FileSystem::GetDirFiles( const std::string &path )
 {
 	const auto i = dirLookup.find( path );
@@ -572,7 +580,7 @@ std::vector< jaded::FileSystem::FileIndex > jaded::FileSystem::GetDirFiles( cons
 jaded::FileSystem::DirIndex jaded::FileSystem::CreatePath( const std::string &path )
 {
 	// attempt to create the physical location first
-	std::string npath = NormalizePath( path );
+	const std::string npath = NormalizePath( path );
 	if ( !CreateLocalPath( npath ) )
 	{
 		return BIG_C_InvalidIndex;

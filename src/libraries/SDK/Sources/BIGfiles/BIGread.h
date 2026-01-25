@@ -6,12 +6,7 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  */
 
-
-#ifndef PSX2_TARGET
 #pragma once
-#endif
-#ifndef __BIGREAD_H__
-#define __BIGREAD_H__
 
 #include "BASe/BAStypes.h"
 #include "BIGfiles/BIGdefs.h"
@@ -19,42 +14,38 @@
 #include "BIGfiles/BIGopen.h"
 #include "BIGfiles/BIGio.h"
 
-#if defined (__cplusplus) && !defined(JADEFUSION)
+#if defined( __cplusplus ) && !defined( JADEFUSION )
 extern "C"
 {
 #endif
 
-/*$2
+	/*$2
  -----------------------------------------------------------------------------------------------------------------------
  -----------------------------------------------------------------------------------------------------------------------
  */
 
-extern void		*BIG_gp_GlobalBuffer;
-extern int		BIG_gi_GlobalBufferSize;
 #ifdef ACTIVE_EDITORS
-extern void		*BIG_gp_GlobalSaveBuffer;
-extern int		BIG_gi_GlobalSaveBufferSize;
+	extern void *BIG_gp_GlobalSaveBuffer;
 #endif
 
-/*$2
+	/*$2
  -----------------------------------------------------------------------------------------------------------------------
  -----------------------------------------------------------------------------------------------------------------------
  */
 
-extern ULONG	BIG_ul_GetLengthFile(ULONG);
-extern void		BIG_Read(ULONG, void *, ULONG);
-extern ULONG	BIG_ul_ReadFile(ULONG, void *);
-extern char		*BIG_pc_ReadFileTmp(ULONG, ULONG *);
-extern char		*BIG_pc_ReadFileTmpMustFree(ULONG, ULONG *);
-extern void		*BIG_p_RequestBuffer(int);
+	ULONG BIG_ul_GetLengthFile( ULONG );
+	void  BIG_Read( ULONG, void *, ULONG );
+	ULONG BIG_ul_ReadFile( ULONG, void * );
+	char *BIG_pc_ReadFileTmp( ULONG, ULONG * );
+	char *BIG_pc_ReadFileTmpMustFree( ULONG, ULONG * );
+	void *BIG_p_RequestBuffer( int );
 #ifdef ACTIVE_EDITORS
-extern void		*BIG_p_RequestSaveBuffer(int);
-extern ULONG	BIG_ul_EditorGetSizeOfFile(ULONG ul_FileKey);
+	void *BIG_p_RequestSaveBuffer( int );
 #endif
-extern void		BIG_FreeGlobalBuffer(void);
+	void BIG_FreeGlobalBuffer( void );
 
-#if defined (__cplusplus) && !defined(JADEFUSION)
+#if defined( __cplusplus ) && !defined( JADEFUSION )
 }
 #endif
-#endif /* __BIGREAD_H__ */ 
- 
+
+ULONG BIG_ul_EditorGetSizeOfFile( ULONG ul_FileKey );

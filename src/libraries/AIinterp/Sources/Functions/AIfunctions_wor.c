@@ -140,7 +140,7 @@ void PreloadCancel(void)
  =======================================================================================================================
  =======================================================================================================================
  */
-void PreLoadTex_Load(ULONG _ul_Pos, ULONG _ul_Size, void *p_Buf)
+static void PreLoadTex_Load(ULONG _ul_Pos, ULONG _ul_Size, void *p_Buf)
 {
 #ifdef PSX2_TARGET
     extern u_int NoPreload;

@@ -43,7 +43,7 @@ struct WndFreezer
 static HANDLE g_hThread = NULL;
 static DWORD g_dwThreadId = 0;
 static bool g_bDiffInProgress = false;
-extern "C" BOOL BIG_gb_IgnoreRecent;
+extern BOOL BIG_gb_IgnoreRecent;
 
 
 //------------------------------------------------------------------------------
