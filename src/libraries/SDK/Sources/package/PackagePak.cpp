@@ -334,21 +334,21 @@ bool Pak_Open( const char *path )
 				dir  = "ROOT/Unsorted";
 			}
 
-			std::string path = dir + "/" + name;
-			if ( jaded::filesystem.DoesFileExist( path ) )
+			std::string cpath = dir + "/" + name;
+			if ( jaded::filesystem.DoesFileExist( cpath ) )
 			{
 				continue;
 			}
 
 			if ( !jaded::filesystem.CreateLocalPath( dir ) )
 			{
-				char tmp[ 32 ];
+				char tmp[ 128 ];
 				snprintf( tmp, sizeof( tmp ), "Failed to create destination (%s)!", dir.c_str() );
 				ERR_X_ForceError( tmp, nullptr );
 				continue;
 			}
 
-			FILE *out = fopen( path.c_str(), "wb" );
+			FILE *out = fopen( cpath.c_str(), "wb" );
 			if ( out != nullptr )
 			{
 				fwrite( &buffer[ 0 ], sizeof( char ), buffer.size(), out );
