@@ -35,7 +35,18 @@ extern "C"
 
 	ULONG BIG_ul_GetLengthFile( ULONG );
 	void  BIG_Read( ULONG, void *, ULONG );
-	ULONG BIG_ul_ReadFile( ULONG, void * );
+
+	/**
+	 * A replacement for BIG_ul_ReadFile with bound checking.
+	 * It uses the index, rather than an explicit position into the file.
+	 *
+	 * @param index			Index of the file.
+	 * @param dstBuffer		Buffer the file is being copied into.
+	 * @param bufferSize	Size of the destination buffer.
+	 * @return				0 on failure, otherwise the size of the read.
+	 */
+	size_t BIG_ReadFileToDst( BIG_INDEX index, void *dstBuffer, size_t bufferSize );
+
 	char *BIG_pc_ReadFileTmp( ULONG, ULONG * );
 	char *BIG_pc_ReadFileTmpMustFree( ULONG, ULONG * );
 	void *BIG_p_RequestBuffer( int );

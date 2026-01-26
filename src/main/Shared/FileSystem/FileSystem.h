@@ -24,6 +24,10 @@ namespace jaded
 			Key         key;    // key
 
 			bool markedForDeletion;
+
+			std::vector< uint8_t > Read() const;
+
+			std::string GetPath() const;
 		};
 
 		struct KeyDir
@@ -45,18 +49,13 @@ namespace jaded
 
 		static bool SetWorkingDirectory( const std::string &path );
 
-		void PrintKeyTable();
+		void PrintKeyTable() const;
 
 		static bool DoesFileExist( const std::string &path );
 
 		static bool CreateLocalPath( const std::string &path );
 
 		static size_t GetLocalFileSize( const std::string &path );
-
-		bool ReadFileByIndex( FileIndex index, std::vector< uint8_t > *dst ) const;
-		bool ReadFileByName( const std::string &path, std::vector< uint8_t > *dst );
-
-		bool SetProject( const std::string &path );
 
 		bool CreateKeyRepository( const BIG_tdst_BigFile *bf );
 		bool ParseKeyRepository( const std::string &path );
@@ -76,8 +75,6 @@ namespace jaded
 		FileIndex GetFileIndexByKey( Key key );
 		KeyFile  *GetFileByName( const std::string &path );
 		KeyFile  *GetFileByIndex( FileIndex index );
-
-		std::string GetFilePathByIndex( FileIndex index ) const;
 
 	private:
 		void IndexBFSubDirectory( unsigned int curDir );
@@ -114,6 +111,5 @@ uint32_t Jaded_FileSystem_CreatePath( const char *path );
 uint32_t Jaded_FileSystem_LookupDirectory( const char *path );
 
 uint32_t    Jaded_FileSystem_GetFileIndexByKey( uint32_t key );
-const char *Jaded_FileSystem_GetFilePathByIndex( uint32_t index );
 
 #endif

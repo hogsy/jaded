@@ -32,6 +32,68 @@
 
 jaded::FileSystem jaded::filesystem;
 
+//////////////////////////////////////////////////////////////////////////////////////////
+//
+//	Key File
+//
+
+std::vector< uint8_t > jaded::FileSystem::KeyFile::Read() const
+{
+	std::vector< uint8_t > buffer;
+
+	FILE *file = {};
+	try
+	{
+		const std::string path = GetPath();
+
+		const size_t size = GetLocalFileSize( path );
+		if ( size == ( size_t ) -1 )
+		{
+			throw std::runtime_error( "failed to get file size" );
+		}
+
+		buffer.resize( size );
+
+		file = fopen( path.c_str(), "rb" );
+		if ( file == nullptr )
+		{
+			throw std::runtime_error( "failed to open file" );
+		}
+
+		if ( fread( &buffer[ 0 ], sizeof( uint8_t ), size, file ) != size )
+		{
+			throw std::runtime_error( "failed to read entire file" );
+		}
+	}
+	catch ( const std::exception &e )
+	{
+		const std::string msg = "Failed to read file: " + std::string( e.what() );
+		LINK_PrintStatusMsg( msg.c_str() );
+	}
+
+	if ( file != nullptr )
+	{
+		fclose( file );
+	}
+
+	return buffer;
+}
+
+std::string jaded::FileSystem::KeyFile::GetPath() const
+{
+	return filesystem.directories[ dir ].name + "/" + name;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////
+//
+//	Key Dir
+//
+
+//////////////////////////////////////////////////////////////////////////////////////////
+//
+//	FileSystem API
+//
+
 std::string jaded::FileSystem::GetExecutablePath()
 {
 	char filename[ MAX_PATH ];
@@ -83,7 +145,7 @@ std::string jaded::FileSystem::NormalizePath( std::string path )
 
 std::string jaded::FileSystem::GetFilenameExtension( const std::string &filename )
 {
-	size_t pos = filename.rfind( '.' );
+	const size_t pos = filename.rfind( '.' );
 	if ( pos == std::string::npos || pos == 0 )
 	{
 		return {};
@@ -116,7 +178,7 @@ bool jaded::FileSystem::SetWorkingDirectory( const std::string &path )
 	return true;
 }
 
-void jaded::FileSystem::PrintKeyTable()
+void jaded::FileSystem::PrintKeyTable() const
 {
 	for ( const auto &i : files )
 	{
@@ -160,111 +222,12 @@ size_t jaded::FileSystem::GetLocalFileSize( const std::string &path )
 	}
 
 	struct stat buf = {};
-	int         fd  = _fileno( file );
+	const int   fd  = _fileno( file );
 	fstat( fd, &buf );
 
 	fclose( file );
 
 	return buf.st_size;
-}
-
-bool jaded::FileSystem::ReadFileByIndex( FileIndex index, std::vector< uint8_t > *dst ) const
-{
-	bool  status;
-	FILE *file{};
-	try
-	{
-		std::string path = GetFilePathByIndex( index );
-		if ( path.empty() )
-		{
-			throw std::runtime_error( "failed to get filename" );
-		}
-
-		size_t size = GetLocalFileSize( path );
-		if ( size == ( size_t ) -1 )
-		{
-			throw std::runtime_error( "failed to get file size" );
-		}
-
-		dst->resize( size );
-
-		file = fopen( path.c_str(), "rb" );
-		if ( file == nullptr )
-		{
-			throw std::runtime_error( "failed to open file" );
-		}
-
-		if ( fread( dst->data(), sizeof( uint8_t ), size, file ) != size )
-		{
-			throw std::runtime_error( "failed to read entire file" );
-		}
-
-		status = true;
-	}
-	catch ( const std::exception &e )
-	{
-		std::string msg = "Failed to read file: " + std::string( e.what() );
-		LINK_PrintStatusMsg( msg.c_str() );
-		status = false;
-	}
-
-	if ( file != nullptr )
-	{
-		fclose( file );
-	}
-
-	return status;
-}
-
-bool jaded::FileSystem::ReadFileByName( const std::string &path, std::vector< uint8_t > *dst )
-{
-	const auto i = fileLookup.find( path );
-	if ( i == fileLookup.end() )
-	{
-		return false;
-	}
-
-	return ReadFileByIndex( i->second, dst );
-}
-
-bool jaded::FileSystem::SetProject( const std::string &path )
-{
-	const std::string npath = NormalizePath( path );
-
-	std::string  wd = npath;
-	const size_t p  = wd.find_last_of( '/' );
-	if ( p != std::string::npos )
-	{
-		wd.erase( p );
-	}
-
-	SetWorkingDirectory( wd );
-
-	const std::string extension = GetFilenameExtension( npath );
-	if ( extension == "bf" || extension == "BF" )
-	{
-		if ( !BIG_Open( path.c_str() ) )
-		{
-			const std::string msg = "Failed to open big file (" + npath + ")!";
-			LINK_PrintStatusMsg( msg.c_str() );
-			return false;
-		}
-
-		if ( !CreateKeyRepository( &BIG_gst ) )
-		{
-			const std::string msg = "Failed to create key repository (" + npath + ")!";
-			LINK_PrintStatusMsg( msg.c_str() );
-			return false;
-		}
-	}
-	else if ( !ParseKeyRepository( npath ) )
-	{
-		const std::string msg = "Failed to open key file (" + npath + ")!";
-		LINK_PrintStatusMsg( msg.c_str() );
-		return false;
-	}
-
-	return true;
 }
 
 bool jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
@@ -311,8 +274,6 @@ bool jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 	}
 
 	ClearTables();
-
-	universeKey = BIG_gst.st_ToSave.ul_UniverseKey;
 
 	IndexBFSubDirectory( BIG_Root() );
 
@@ -379,7 +340,7 @@ bool jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 		}
 
 		ULONG size;
-		char *buf = BIG_pc_ReadFileTmp( BIG_PosFile( i.bfIndex ), &size );
+		char *buf = BIG_pc_ReadFileTmp( BIG_gst.dst_FileTable[ i.bfIndex ].ul_Pos, &size );
 		size      = BIG_fwrite( buf, size, file );
 
 		fclose( file );
@@ -392,6 +353,8 @@ bool jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 			break;
 		}
 	}
+
+	universeKey = BIG_gst.st_ToSave.ul_UniverseKey;
 
 	double timeTaken = sys::Profile::GetSeconds() - startTime;
 
@@ -657,11 +620,6 @@ jaded::FileSystem::KeyFile *jaded::FileSystem::GetFileByIndex( FileIndex index )
 	return &files[ index ];
 }
 
-std::string jaded::FileSystem::GetFilePathByIndex( const FileIndex index ) const
-{
-	return directories[ files[ index ].dir ].name + "/" + files[ index ].name;
-}
-
 void jaded::FileSystem::IndexBFSubDirectory( const unsigned int curDir )
 {
 	char dir[ BIG_C_MaxLenPath ];
@@ -771,14 +729,6 @@ extern "C" uint32_t Jaded_FileSystem_LookupDirectory( const char *path )
 extern "C" uint32_t Jaded_FileSystem_GetFileIndexByKey( uint32_t key )
 {
 	return jaded::filesystem.GetFileIndexByKey( key );
-}
-
-extern "C" const char *Jaded_FileSystem_GetFilePathByIndex( uint32_t index )
-{
-	//TODO: urgh...
-	static std::string tmp;
-	tmp = jaded::filesystem.GetFilePathByIndex( index ).c_str();
-	return tmp.c_str();
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

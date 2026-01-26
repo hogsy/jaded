@@ -159,14 +159,14 @@ void EDI_cl_MainFrame::LoadDesktop(char *_psz_Name, EDI_tdst_Desktop *_pst_Desk)
 	ul_File = BIG_ul_SearchFileExt((char *) (LPCSTR) o_Name, EDI_Csz_NameDesktop);
 	if(ul_File == BIG_C_InvalidIndex) return;
 
-_Try_	
-	ul_Len = BIG_ul_ReadFile(BIG_PosFile(ul_File), (UCHAR *) _pst_Desk);
-	ERR_X_Error((int) ul_Len == sizeof(EDI_tdst_Desktop), EDI_ERR_Csz_DesktopCorrupt, _psz_Name);
-_Catch_ 
-	InitDesktop(_pst_Desk);
-_End_
+	_Try_
+	        ul_Len = BIG_ReadFileToDst( ul_File, _pst_Desk, sizeof( EDI_tdst_Desktop ) );
+	ERR_X_Error( ( int ) ul_Len == sizeof( EDI_tdst_Desktop ), EDI_ERR_Csz_DesktopCorrupt, _psz_Name );
+	_Catch_
+	        InitDesktop( _pst_Desk );
+	_End_
 
-#ifdef JADEFUSION
+#	ifdef JADEFUSION
 	/* Load Features Mgr infos */
 	ul_Index = BIG_ul_SearchFileExt((char *) (LPCSTR) o_Name, EDI_MTL_FEATURE_INI_FILENAME);
 	if(ul_Index != BIG_C_InvalidIndex)
