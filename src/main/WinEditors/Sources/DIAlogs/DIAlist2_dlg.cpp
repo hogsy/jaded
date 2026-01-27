@@ -298,8 +298,6 @@ void EDIA_cl_List2Dialog::OnSelChange2(void)
 	SCR_tt_Procedure		*pt_Proc;
 	SCR_tt_ProcedureList	*pt_ProcList;
 	EVAV_cl_ViewItem		*po_NewItem;
-	char					*p;
-	BIG_KEY					pos;
 	ULONG					len;
 	char					*pz1;
 	CString					str, str1;
@@ -321,8 +319,7 @@ void EDIA_cl_List2Dialog::OnSelChange2(void)
 		po_NewItem->psz_NameKit = pt_Proc->asz_Comment;
 		mpo_VarsView->SetItemList(&mo_ListItems);
 
-		pos = BIG_PosFile(BIG_ul_SearchKeyToFat(pt_ProcList->h_SourceFile));
-		p = BIG_pc_ReadFileTmp(pos, &len);
+		char *p = ( char * ) BIG_ReadFileToTmp( BIG_ul_SearchKeyToFat( pt_ProcList->h_SourceFile ), &len );
 		GetDlgItem(IDC_STATIC)->SetWindowText("");
 
 		pz1 = pt_ProcList->pt_All[sel2].pz_Name + 1;

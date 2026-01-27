@@ -3464,7 +3464,7 @@ void F3D_cl_View::DropObjectModel(EDI_tdst_DragDrop *_pst_DragDrop)
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	po_Out = (EOUT_cl_Frame *) mpo_AssociatedEditor;
-	pst_Buf = (BIG_tdst_GroupElem *) BIG_pc_ReadFileTmpMustFree(BIG_PosFile(_pst_DragDrop->ul_FatFile), &ul_Size);
+	pst_Buf = (BIG_tdst_GroupElem *) BIG_ReadFile(_pst_DragDrop->ul_FatFile, &ul_Size);
 
 	/* Scan all group */
 	i_Want = 0;
@@ -3763,7 +3763,7 @@ void F3D_cl_View::DropMorphData(EDI_tdst_DragDrop *_pst_DragDrop)
 	}
 
 	/* load data */
-	pc_Buffer = BIG_pc_ReadFileTmp(BIG_PosFile(_pst_DragDrop->ul_FatFile), &ul_Length);
+	pc_Buffer = ( char * ) BIG_ReadFileToTmp(_pst_DragDrop->ul_FatFile, &ul_Length);
 	GEO_ModifierMorphing_Create(pst_GO, &st_Mod, NULL);
 	GEO_ul_ModifierMorphing_Load(&st_Mod, pc_Buffer);
 

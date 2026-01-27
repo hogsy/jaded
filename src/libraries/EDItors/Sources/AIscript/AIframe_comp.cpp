@@ -800,7 +800,7 @@ void EAI_cl_Frame::OnCompileCurrentFile(void)
 	pst_Buf = NULL;
 	if(mul_CurrentEditModel != BIG_C_InvalidIndex)
 	{
-		pst_Buf = (BIG_tdst_GroupElem *) BIG_pc_ReadFileTmpMustFree(BIG_PosFile(mul_CurrentEditModel), &ul_SizeModel);
+		pst_Buf = (BIG_tdst_GroupElem *) BIG_ReadFile(mul_CurrentEditModel, &ul_SizeModel);
 		mo_Compiler.mpst_CurrentModel = pst_Buf;
 		mo_Compiler.mi_SizeModel = ul_SizeModel / sizeof(BIG_tdst_GroupElem);
 	}
@@ -982,7 +982,7 @@ int EAI_cl_Frame::i_GetVarOfModel(BIG_KEY _ul_Model, char *_psz_NameVar, BOOL _b
 		po->Reset(FALSE);
 
 		/* Read editor model and compile variables */
-		pst_Buf = (BIG_tdst_GroupElem *) BIG_pc_ReadFileTmpMustFree(BIG_PosFile(_ul_Model), &ul_SizeModel);
+		pst_Buf = (BIG_tdst_GroupElem *) BIG_ReadFile(_ul_Model, &ul_SizeModel);
 		po->mpst_CurrentModel = pst_Buf;
 		po->mi_SizeModel = ul_SizeModel / sizeof(BIG_tdst_GroupElem);
 		po->mb_CanOutput = FALSE;
@@ -1079,7 +1079,7 @@ BOOL EAI_cl_Frame::OnCompileVarsOfModel(EAI_cl_Compiler *_po_Compiler, BIG_INDEX
 				mo_ModelDateList.SetAt((void *) pst_Buf[i].ul_Key, (void *) BIG_TimeFile(ul_File));
 			}
 
-			psz_Temp1 = BIG_pc_ReadFileTmpMustFree(BIG_PosFile(ul_File), &ul_Size);
+			psz_Temp1 = ( char * ) BIG_ReadFile(ul_File, &ul_Size);
 			if(psz_Temp1)
 			{
 				_po_Compiler->mb_ForceGenPP = AI2C_gb_Activated;
@@ -1200,7 +1200,7 @@ BOOL EAI_cl_Frame::OnCompileCurrentModel(void)
 	}
 
 	/* Read model in a temporary buffer */
-	pst_Buf = (BIG_tdst_GroupElem *) BIG_pc_ReadFileTmpMustFree(BIG_PosFile(mul_CurrentEditModel), &ul_SizeModel);
+	pst_Buf = (BIG_tdst_GroupElem *) BIG_ReadFile(mul_CurrentEditModel, &ul_SizeModel);
 
 	/* Save current model in compiler */
 	mo_Compiler.mpst_CurrentModel = pst_Buf;
@@ -1289,7 +1289,7 @@ BOOL EAI_cl_Frame::OnCompileCurrentModel(void)
 		/* Is it a function file ? */
 		if(!L_strcmpi(psz_Temp, EDI_Csz_ExtAIEditorFctLib))
 		{
-			psz_Temp1 = BIG_pc_ReadFileTmpMustFree(BIG_PosFile(ul_File), &ul_Size);
+			psz_Temp1 = (char * ) BIG_ReadFile(ul_File, &ul_Size);
 			if(!psz_Temp1) psz_Temp1 = L_strdup(" ");
 			mo_Compiler.ResetVars(&mo_Compiler.mst_LocalVars);
 			mo_Compiler.mb_ProcList = TRUE;
@@ -1335,7 +1335,7 @@ BOOL EAI_cl_Frame::OnCompileCurrentModel(void)
 				mo_ModelDateList.SetAt((void *) pst_Buf[i].ul_Key, (void *) BIG_TimeFile(ul_File));
 			}
 
-			psz_Temp1 = BIG_pc_ReadFileTmpMustFree(BIG_PosFile(ul_File), &ul_Size);
+			psz_Temp1 = ( char * ) BIG_ReadFile(ul_File, &ul_Size);
 			if(!psz_Temp1) psz_Temp1 = L_strdup(" ");
 			mo_Compiler.ResetVars(&mo_Compiler.mst_LocalVars);
 			b_Ok = OnCompileFile(&mo_Compiler, mul_CurrentEditModel, ul_File, psz_Temp1);
@@ -1499,7 +1499,7 @@ void EAI_cl_Frame::LoadColors(void)
 	ul_File = BIG_ul_SearchFileExt(path, name);
 	if(ul_File == BIG_C_InvalidIndex) return;
 
-	pc_Tmp = BIG_pc_ReadFileTmp(BIG_PosFile(ul_File), &ul_Size);
+	pc_Tmp = ( char * ) BIG_ReadFileToTmp(ul_File, &ul_Size);
 
 	go_PPConstants.RemoveAll();
 	go_PPConstantsFiles.RemoveAll();
@@ -1705,7 +1705,7 @@ void EAI_cl_Frame::OnCompileCurrentModelDep(void)
 
 		/* Parse all models of dependencie list */
 		mb_ListMode = TRUE;
-		pst_Buf = (BIG_tdst_GroupElem *) BIG_pc_ReadFileTmpMustFree(BIG_PosFile(ul_File), &ul_Size);
+		pst_Buf = (BIG_tdst_GroupElem *) BIG_ReadFile(ul_File, &ul_Size);
 		for(i = 0; i < (ul_Size / sizeof(BIG_tdst_GroupElem)); i++)
 		{
 			if(!pst_Buf[i].ul_Key) continue;
@@ -2027,7 +2027,7 @@ void EAI_cl_Frame::GenerateEngineModel(BIG_INDEX _ul_Model)
 	b_CanVar = TRUE;
 
 	/* Load editor model */
-	pst_Buf = (BIG_tdst_GroupElem *) BIG_pc_ReadFileTmpMustFree(BIG_PosFile(_ul_Model), &ul_Size);
+	pst_Buf = (BIG_tdst_GroupElem *) BIG_ReadFile(_ul_Model, &ul_Size);
 	for(i = 0; i < (ul_Size / sizeof(BIG_tdst_GroupElem)); i++)
 	{
 		if(!pst_Buf[i].ul_Key) continue;
@@ -2162,7 +2162,7 @@ BOOL EAI_cl_Frame::SetCurrentInstance(BIG_INDEX _ul_Index)
 	if(mul_CurrentEditInstance == _ul_Index) return TRUE;
 
 	/* Read reference to model, and load it */
-	pul_Buf = (ULONG *) BIG_pc_ReadFileTmpMustFree(BIG_PosFile(_ul_Index), &ul_Size);
+	pul_Buf = (ULONG *) BIG_ReadFile(_ul_Index, &ul_Size);
 	ul_EngModel = BIG_ul_SearchKeyToFat(*pul_Buf);
 	if(ul_EngModel == BIG_C_InvalidIndex)
 	{
@@ -2498,7 +2498,7 @@ BOOL EAI_cl_Frame::SetCurrentModel(BIG_INDEX _ul_Index)
 	InitListAI();
 
 	/* Read model, and add each function/var in AI list */
-	pst_Buf = (BIG_tdst_GroupElem *) BIG_pc_ReadFileTmpMustFree(BIG_PosFile(mul_CurrentEditModel), &ul_SizeModel);
+	pst_Buf = (BIG_tdst_GroupElem *) BIG_ReadFile(mul_CurrentEditModel, &ul_SizeModel);
 
 	/* Compile variable to get description */
 	if(!mb_CompileAll && !mb_CompileDep) ResetRefCompilers();

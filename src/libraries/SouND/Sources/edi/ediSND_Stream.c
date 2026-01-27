@@ -388,12 +388,20 @@ void ediSND_CreateTrackSB(SND_tdst_SoundBuffer **_ppst_MonoSB, SND_tdst_SoundBuf
 
 	/* alloc mono stream SB */
 	*_ppst_MonoSB = ediSND_pst_StreamCreate(SND_gst_Params.pst_SpecificD, &stWave, SND_Cte_StreamedFile);
+	if ( *_ppst_MonoSB == NULL )
+	{
+		return;
+	}
 
 	/* alloc stereo stream SB */
 	stWave.st_WaveFmtx.nChannels = 2;
 	stWave.st_WaveFmtx.nBlockAlign <<= 1;
 	stWave.st_WaveFmtx.nAvgBytesPerSec <<= 1;
 	*_ppst_StereoSB = ediSND_pst_StreamCreate(SND_gst_Params.pst_SpecificD, &stWave, SND_Cte_StreamedFile);
+	if ( *_ppst_StereoSB == NULL )
+	{
+		return;
+	}
 
 	/* this SB must not be counted in raster (win32 specific, only one mono SB on PSX2) */
 	SND_RamRastersDel((int) (*_ppst_StereoSB)->pst_DSB);
@@ -495,9 +503,11 @@ static SND_tdst_SoundBuffer *ediSND_pst_StreamCreate
 			FILE_ATTRIBUTE_NORMAL | FILE_FLAG_RANDOM_ACCESS,
 			NULL
 		);
+	if ( pst_SS->x_File == INVALID_HANDLE_VALUE )
+	{
 
-	ediSND_M_Assert(pst_SS->x_File != INVALID_HANDLE_VALUE);
-
+		return NULL;
+	}
 
 	return(pst_SB);
 }

@@ -226,7 +226,6 @@ void WORGos_Load(WOR_tdst_World *_pst_Dest)
 	char			FileName12[1024];
 	BIG_INDEX		GosPos;
 	ULONG			ul_Length,KeyCounter;
-	char			*pc_Buffer ;
 
 	WORGos_GetFileFromAddresse(_pst_Dest, asz_Path12, FileName12);
 	
@@ -235,9 +234,8 @@ void WORGos_Load(WOR_tdst_World *_pst_Dest)
 
 	GosPos = BIG_ul_SearchFileExt(asz_Path12, FileName12);
 	if (GosPos == BIG_C_InvalidIndex) return;
-	GosPos = BIG_PosFile(GosPos);
 
-	pc_Buffer = BIG_pc_ReadFileTmp(GosPos, &ul_Length);
+	char *pc_Buffer = BIG_ReadFileToTmp( GosPos, &ul_Length );
 	/* Read NumberOfGroups */
 	ul_Length = *(ULONG *)pc_Buffer;
 	pc_Buffer += 4;

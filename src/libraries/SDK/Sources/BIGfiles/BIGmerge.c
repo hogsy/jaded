@@ -74,7 +74,7 @@ void BIG_CallbackLoadFileFromBigFile(BIG_INDEX _ul_Dir, BIG_INDEX _ul_File)
 	}
 	else
 	{
-		BIG_gp_Buffer = BIG_pc_ReadFileTmp(BIG_PosFile(_ul_File), &BIG_gul_Length);
+		BIG_gp_Buffer = ( char * ) BIG_ReadFileToTmp(_ul_File, &BIG_gul_Length);
 
 		/* Max size for content (for sound checkin) */
 		if(BIG_ul_MaxSizeFile && BIG_gul_Length > BIG_ul_MaxSizeFile)

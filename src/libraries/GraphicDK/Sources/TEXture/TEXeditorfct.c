@@ -446,7 +446,7 @@ int TEX_i_WhoUseTexture(ULONG _ul_Index, ULONG *pul_Data)
 
 	if(BIG_b_IsFileExtensionIn(_ul_Index, ".tex"))
 	{
-		pc_Buffer = BIG_pc_ReadFileTmp(BIG_PosFile(_ul_Index), &ul_Size);
+		pc_Buffer = ( char * ) BIG_ReadFileToTmp(_ul_Index, &ul_Size);
 		if(TEX_l_File_LoadRawPalette(pc_Buffer, &st_TexDesc, ul_Size))
 		{
 			if
@@ -459,7 +459,7 @@ int TEX_i_WhoUseTexture(ULONG _ul_Index, ULONG *pul_Data)
 	}
 	else if(BIG_b_IsFileExtensionIn(_ul_Index, ".spr"))
 	{
-		pc_Buffer = BIG_pc_ReadFileTmp(BIG_PosFile(_ul_Index), &ul_Size);
+		pc_Buffer = ( char * ) BIG_ReadFileToTmp(_ul_Index, &ul_Size);
 		if(TEX_l_File_LoadSpriteGen(BIG_FileKey(_ul_Index), pc_Buffer, &st_TexDesc, ul_Size - 32))
 		{
 			if(TEX_gst_GlobalList.dst_Texture[((MAT_tdst_SpriteGen *) st_TexDesc.st_Params.ul_Params[0])->s_TextureIndex].ul_Key != ul_Key) return 1;
@@ -786,7 +786,7 @@ int TEX_i_CheckMatTexture(ULONG _ul_Index, ULONG *pul_Data)
 
     if(BIG_b_IsFileExtensionIn(_ul_Index, ".tex"))
 	{
-		pc_Buffer = BIG_pc_ReadFileTmp(BIG_PosFile(_ul_Index), &ul_Size);
+		pc_Buffer = ( char * ) BIG_ReadFileToTmp(_ul_Index, &ul_Size);
 
 		if(TEX_l_File_LoadRawPalette(pc_Buffer, &st_TexDesc, ul_Size))
 		{
@@ -872,7 +872,7 @@ int TEX_i_CheckMatTexture(ULONG _ul_Index, ULONG *pul_Data)
 
 	if(BIG_b_IsFileExtensionIn(_ul_Index, ".spr"))
 	{
-		pc_Buffer = BIG_pc_ReadFileTmp(BIG_PosFile(_ul_Index), &ul_Size);
+		pc_Buffer = ( char * ) BIG_ReadFileToTmp(_ul_Index, &ul_Size);
 		if(TEX_l_File_LoadSpriteGen(BIG_FileKey(_ul_Index), pc_Buffer, &st_TexDesc, ul_Size - 32))
 		{
 			s_Index = ((MAT_tdst_SpriteGen *) st_TexDesc.st_Params.ul_Params[0])->s_TextureIndex;
@@ -920,7 +920,7 @@ int TEX_i_CheckMatTexture(ULONG _ul_Index, ULONG *pul_Data)
         LONG    l_Length;
 
 
-        pul_Buffer = (ULONG *) BIG_pc_ReadFileTmp( BIG_PosFile( _ul_Index ), (ULONG*)&l_Length);
+        pul_Buffer = (ULONG *) BIG_ReadFileToTmp( _ul_Index, (ULONG*)&l_Length);
         if (*pul_Buffer == GRO_MaterialMulti) 
             return 1;
     }

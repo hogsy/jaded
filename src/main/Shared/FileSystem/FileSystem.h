@@ -71,8 +71,10 @@ namespace jaded
 		DirIndex CreatePath( const std::string &path );
 		DirIndex IndexPath( const std::string &path );
 		KeyDir  *GetDirByName( const std::string &path );
+		KeyDir  *GetDirByIndex( DirIndex index );
 
 		FileIndex GetFileIndexByKey( Key key );
+		KeyFile  *GetFileByKey( Key key );
 		KeyFile  *GetFileByName( const std::string &path );
 		KeyFile  *GetFileByIndex( FileIndex index );
 
@@ -110,6 +112,6 @@ uint32_t Jaded_FileSystem_SearchFileExt( const char *path );
 uint32_t Jaded_FileSystem_CreatePath( const char *path );
 uint32_t Jaded_FileSystem_LookupDirectory( const char *path );
 
-uint32_t    Jaded_FileSystem_GetFileIndexByKey( uint32_t key );
+uint32_t Jaded_FileSystem_GetFileIndexByKey( uint32_t key );
 
 #endif

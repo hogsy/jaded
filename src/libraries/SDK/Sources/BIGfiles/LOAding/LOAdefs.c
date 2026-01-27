@@ -798,8 +798,8 @@ void LOA_BeginSpeedMode(BIG_KEY _ul_Key)
 
 		BIG_DeleteKeyToFat(BIG_FileKey(ul_Pos));
 
-		BIG_FileKey(ul_Pos) = _ul_Key;
-		BIG_UpdateOneFileInFat(ul_Pos);
+		BIG_gst.dst_FileTable[ ul_Pos ].ul_Key = _ul_Key;
+		BIG_UpdateOneFileInFat( ul_Pos );
 
 		BIG_InsertKeyToFat(_ul_Key, ul_Pos);
 

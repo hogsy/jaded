@@ -591,6 +591,23 @@ jaded::FileSystem::KeyDir *jaded::FileSystem::GetDirByName( const std::string &p
 	return i != dirLookup.end() ? &directories[ i->second ] : nullptr;
 }
 
+jaded::FileSystem::KeyDir *jaded::FileSystem::GetDirByIndex( const DirIndex index )
+{
+	if ( !jaded::filesystem.IsKeyTablePopulated() )
+	{
+		return nullptr;
+	}
+
+	if ( index >= directories.size() )
+	{
+		const std::string msg = "Attempted to address an OOB dir index (" + std::to_string( index ) + ")!";
+		LINK_PrintStatusMsg( msg.c_str() );
+		return nullptr;
+	}
+
+	return &directories[ index ];
+}
+
 jaded::FileSystem::FileIndex jaded::FileSystem::GetFileIndexByKey( Key key )
 {
 	const auto &i = keys.find( key );
@@ -602,14 +619,30 @@ jaded::FileSystem::FileIndex jaded::FileSystem::GetFileIndexByKey( Key key )
 	return i->second;
 }
 
+jaded::FileSystem::KeyFile *jaded::FileSystem::GetFileByKey( Key key )
+{
+	const auto &i = keys.find( key );
+	if ( i == keys.end() )
+	{
+		return nullptr;
+	}
+
+	return &files[ i->second ];
+}
+
 jaded::FileSystem::KeyFile *jaded::FileSystem::GetFileByName( const std::string &path )
 {
 	const auto &i = fileLookup.find( path );
 	return i != fileLookup.end() ? &files[ i->second ] : nullptr;
 }
 
-jaded::FileSystem::KeyFile *jaded::FileSystem::GetFileByIndex( FileIndex index )
+jaded::FileSystem::KeyFile *jaded::FileSystem::GetFileByIndex( const FileIndex index )
 {
+	if ( !jaded::filesystem.IsKeyTablePopulated() )
+	{
+		return nullptr;
+	}
+
 	if ( index >= files.size() )
 	{
 		const std::string msg = "Attempted to address an OOB file index (" + std::to_string( index ) + ")!";

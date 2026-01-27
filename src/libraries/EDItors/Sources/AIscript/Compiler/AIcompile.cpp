@@ -3086,18 +3086,17 @@ int EAI_cl_Compiler::i_Compile(BIG_INDEX _ul_Model, BIG_INDEX _ul_File, char *_p
 	{
 		/*~~~~~~~~~~~~~~~~~~~~~*/
 		char		name[512];
-		BIG_INDEX	h_PP;
-		char		*pc_Buf, *pz;
+		char		*pc_Buf;
 		ULONG		ul_Size;
 		char		path[512];
-		int			i, p;
+		int			i;
 		/*~~~~~~~~~~~~~~~~~~~~~*/
 
 		L_strcpy(name, BIG_NameFile(_ul_File));
 		L_strcat(name, ".pp");
 		BIG_ComputeFullName(BIG_ParentFile(_ul_File), path);
-		h_PP = BIG_ul_SearchFile(BIG_ParentFile(_ul_File), name);
-		pz = pc_Buf = BIG_pc_ReadFileTmpMustFree(BIG_PosFile(h_PP), &ul_Size);
+		BIG_INDEX h_PP = BIG_ul_SearchFile( BIG_ParentFile( _ul_File ), name );
+		char *pz = pc_Buf = ( char * ) BIG_ReadFile( h_PP, &ul_Size );
 		if(pz)
 		{
 			/* Vire cmt */
@@ -3131,6 +3130,7 @@ int EAI_cl_Compiler::i_Compile(BIG_INDEX _ul_Model, BIG_INDEX _ul_File, char *_p
 
 				if(!mb_ForceGenPP)
 				{
+					int p;
 					/* Put all ';' in PP file */
 					if(go_PPAllPV.Lookup((void *) i, (void * &) p)) SAV_Buffer(";", 1);
 

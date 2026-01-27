@@ -102,7 +102,7 @@ void EDIA_cl_FindFileDialog::SearchInFile(char *az1, BIG_INDEX _h_File)
 	return;
 
 ok:
-	p_buf = (char *) BIG_pc_ReadFileTmpMustFree(BIG_PosFile(_h_File), &len);
+	p_buf = (char *) BIG_ReadFile(_h_File, &len);
 	if (!p_buf) return;
 	MatchWord1(az1, _h_File, p_buf, FALSE);
 	L_free(p_buf);

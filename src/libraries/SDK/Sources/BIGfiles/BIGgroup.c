@@ -30,14 +30,13 @@
 int BIG_i_IsRefInGroup(BIG_INDEX _ul_Group, BIG_KEY _ul_Ref)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	BIG_tdst_GroupElem	*pst_Buf;
-	ULONG				ul_Size, i;
+	ULONG				ul_Size;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-	pst_Buf = (BIG_tdst_GroupElem *) BIG_pc_ReadFileTmp(BIG_PosFile(_ul_Group), &ul_Size);
+	const BIG_tdst_GroupElem *pst_Buf = ( BIG_tdst_GroupElem * ) BIG_ReadFileToTmp( _ul_Group, &ul_Size );
 
 	/* Test if key is already here */
-	for(i = 0; i < (ul_Size / sizeof(BIG_tdst_GroupElem)); i++)
+	for( ULONG i = 0; i < (ul_Size / sizeof(BIG_tdst_GroupElem)); i++)
 		if(pst_Buf[i].ul_Key == _ul_Ref) return i;
 
 	return -1;
@@ -48,11 +47,10 @@ int BIG_i_IsRefInGroup(BIG_INDEX _ul_Group, BIG_KEY _ul_Ref)
 ULONG BIG_ul_GetRefInGroupAtRank(BIG_INDEX _ul_Group, int _i_Rank)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	BIG_tdst_GroupElem	*pst_Buf;
 	int					i_Size;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-	pst_Buf = (BIG_tdst_GroupElem *) BIG_pc_ReadFileTmp(BIG_PosFile(_ul_Group), (ULONG*)&i_Size);
+	const BIG_tdst_GroupElem *pst_Buf = ( BIG_tdst_GroupElem * ) BIG_ReadFileToTmp( _ul_Group, ( ULONG * ) &i_Size );
 	i_Size /= sizeof(BIG_tdst_GroupElem);
 
 
@@ -247,7 +245,7 @@ void BIG_DelRefFromGroup(BIG_INDEX _ul_Group, BIG_KEY _ul_Ref)
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	ERR_X_Assert(BIG_b_IsGrpFile(_ul_Group));
-	pst_Buf = (BIG_tdst_GroupElem *) BIG_pc_ReadFileTmp(BIG_PosFile(_ul_Group), &ul_Size);
+	pst_Buf = (BIG_tdst_GroupElem *) BIG_ReadFileToTmp(_ul_Group, &ul_Size);
 
 	/* Test if key is already here */
 	pst_Hole = NULL;

@@ -325,7 +325,7 @@ void EDIA_cl_ListDialog::SpeedSelectFCT(void)
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	p_List = (CListBox *) GetDlgItem(IDC_LIST1);
-	pst_Buf = (BIG_tdst_GroupElem *) BIG_pc_ReadFileTmpMustFree(BIG_PosFile(mul_Model), &ul_Size);
+	pst_Buf = (BIG_tdst_GroupElem *) BIG_ReadFile(mul_Model, &ul_Size);
 	for(i = 0; i < (ul_Size / sizeof(BIG_tdst_GroupElem)); i++)
 	{
 		if(!pst_Buf[i].ul_Key) continue;

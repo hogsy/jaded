@@ -254,7 +254,7 @@ recom:
 					);
 					ERR_X_Warning(0, asz_Msg, NULL);
 					BIG_DeleteKeyToFat(BIG_FileKey(ul_NewIndex));
-					BIG_FileKey(ul_NewIndex) = BIG_gul_GlobalKey;
+					BIG_gst.dst_FileTable[ul_NewIndex].ul_Key = BIG_gul_GlobalKey;
 					BIG_InsertKeyToFat(BIG_gul_GlobalKey, ul_NewIndex);
 				}
 					else
@@ -308,7 +308,7 @@ recom:
 			ul_Dir = BIG_ParentFile(ul_NewIndex);
 
 			/* Rename file with source name */
-			L_strcpy(BIG_NameFile(ul_NewIndex), BIG_gpsz_GlobalName);
+			L_strcpy(BIG_gst.dst_FileTableExt[ul_NewIndex].st_ToSave.asz_Name, BIG_gpsz_GlobalName);
 		}
 	}
 
@@ -352,14 +352,14 @@ _Try_
 _Catch_
 _EndThrow_
 	/* Copy current key if we do not want another one */
-	if(!_b_AskKey) BIG_FileKey(ul_NewIndex) = BIG_gul_GlobalKey;
+	if(!_b_AskKey) BIG_gst.dst_FileTable[ul_NewIndex].ul_Key = BIG_gul_GlobalKey;
 
 	/* Update parent directory and file links */
 	ul_Memo = BIG_FirstFile(ul_Dir);
 	BIG_FirstFile(ul_Dir) = ul_NewIndex;
 	BIG_NextFile(ul_NewIndex) = ul_Memo;
 	BIG_PrevFile(ul_NewIndex) = BIG_C_InvalidIndex;
-	BIG_ParentFile(ul_NewIndex) = ul_Dir;
+	BIG_gst.dst_FileTableExt[ ul_NewIndex ].st_ToSave.ul_Parent = ul_Dir;
 	if(ul_Memo != BIG_C_InvalidIndex) BIG_PrevFile(ul_Memo) = ul_NewIndex;
 
 	/* "Big Name" of the new file */
@@ -536,7 +536,7 @@ void BIG_DeleteFile(BIG_INDEX _ul_DirIndex, BIG_INDEX _ul_FileIndex)
 	*pi = BIG_FileKey(_ul_FileIndex);
 	BIG_NameFile(_ul_FileIndex)[BIG_C_MaxLenName - 1] = 0;
 
-	BIG_FileKey(_ul_FileIndex) = BIG_C_InvalidKey;
+	BIG_gst.dst_FileTable[_ul_FileIndex].ul_Key = BIG_C_InvalidKey;
 
 	/* Remember operation */
 	BIG_FileChanged(_ul_FileIndex) = EDI_FHC_Delete;
@@ -631,7 +631,7 @@ void BIG_UpdateFileFromBufferWithDate
             _psz_FileName   Name of file to delete.
  =======================================================================================================================
  */
-void BIG_DelFile(char *_psz_PathName, char *_psz_FileName)
+void BIG_DelFile( const char *_psz_PathName, const char *_psz_FileName)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	BIG_INDEX	ul_FileIndex, mul_DirIndex;
@@ -713,7 +713,7 @@ void BIG_RenFile(char *_psz_NewName, char *_psz_PathName, char *_psz_OldName)
             _psz_File   Name of file to copy.
  =======================================================================================================================
  */
-BIG_INDEX BIG_CopyFile(char *_psz_Dest, const char *_psz_Src, char *_psz_File)
+BIG_INDEX BIG_CopyFile(char *_psz_Dest, const char *_psz_Src, const char *_psz_File)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	ULONG		ul_Length;
@@ -819,7 +819,7 @@ _Try_
 
 	BIG_FirstFile(ul_DestPath) = ul_File;
 	BIG_NextFile(ul_File) = ul_Index;
-	BIG_ParentFile(ul_File) = ul_DestPath;
+	BIG_gst.dst_FileTableExt[ ul_File ].st_ToSave.ul_Parent = ul_DestPath;
 	BIG_PrevFile(ul_File) = BIG_C_InvalidIndex;
 
 	/* Update fat */

@@ -542,7 +542,7 @@ struct ANI_st_Data *ANI_pst_NIMLoad(BIG_INDEX ul_DataIndex)
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 #ifdef ACTIVE_EDITORS
-	pc_buf = BIG_pc_ReadFileTmpMustFree(BIG_PosFile(ul_DataIndex), &ul_Size);
+	pc_buf = BIG_ReadFile(ul_DataIndex, &ul_Size);
 
 	pst_Data = (struct ANI_st_Data *) MEM_p_Alloc(ul_Size);
 	L_memset(pst_Data, 0, ul_Size);

@@ -740,7 +740,7 @@ void SOFT_BackgroundImage_Load( SOFT_tdst_BackgroundImage *_pst_BI, ULONG _ul_Ke
     if (L_stricmp( pc_Buf, ".bid") ) return;
     *pc_Buf = 0;
     
-    pc_Buf = BIG_pc_ReadFileTmp( BIG_PosFile(ul_Index) , &ul_Size );
+    pc_Buf = ( char * ) BIG_ReadFileToTmp( ul_Index, &ul_Size );
 
     if (L_strncmp( pc_Buf, ".BID", 4) ) return;
     pc_Buf += 4;

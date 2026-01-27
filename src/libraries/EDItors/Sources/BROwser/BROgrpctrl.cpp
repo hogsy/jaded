@@ -321,8 +321,7 @@ void EBRO_cl_GrpCtrl::FillGameObject(EDI_cl_BaseView *, OBJ_tdst_GameObject *pst
 void EBRO_cl_GrpCtrl::FillGrp(EDI_cl_BaseView *, BIG_INDEX _ul_Group)
 {
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-    BIG_KEY     *pul_Buf;
-    ULONG       ul_Size, i, j;
+	ULONG       ul_Size, i, j;
     LV_ITEM     st_ListCtrlItem;
     BIG_KEY     ul_Key;
     BIG_INDEX   ul_Index;
@@ -338,7 +337,7 @@ void EBRO_cl_GrpCtrl::FillGrp(EDI_cl_BaseView *, BIG_INDEX _ul_Group)
     else
         i_Size = 16;
 
-    pul_Buf = (BIG_KEY *) BIG_pc_ReadFileTmpMustFree(BIG_PosFile(_ul_Group), &ul_Size);
+    BIG_KEY *pul_Buf = ( BIG_KEY * ) BIG_ReadFile( _ul_Group, &ul_Size );
 	if(ul_Size % 4) return;
     sgul_Group = _ul_Group;
 

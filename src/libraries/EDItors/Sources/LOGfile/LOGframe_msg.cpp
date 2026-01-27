@@ -215,7 +215,7 @@ int ELOG_cl_Frame::i_OnMessage(ULONG _ul_Msg, ULONG _ul_Param1, ULONG _ul_Param2
 
 	case EDI_MESSAGE_ENDDRAGDROP:
 		pst_DragDrop = (EDI_tdst_DragDrop *) _ul_Param1;
-		pc_Temp = BIG_pc_ReadFileTmpMustFree(BIG_PosFile(pst_DragDrop->ul_FatFile), &ul_Size);
+		pc_Temp = ( char * ) BIG_ReadFile(pst_DragDrop->ul_FatFile, &ul_Size);
 		AddText(pc_Temp, TRUE, 0,iCanal);
 		L_free(pc_Temp);
 		break;

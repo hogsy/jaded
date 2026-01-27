@@ -133,8 +133,15 @@ BIG_KEY AI_ul_CreateInstance
 		}
 
         SAV_Begin(asz_Path1, asz_Name1);
-        SAV_Buffer(&BIG_FileKey(ul_File), 4);   /* Model */
-        SAV_Buffer(&BIG_FileKey(ul_File1), 4);
+
+    	BIG_KEY key;
+
+    	key = BIG_FileKey( ul_File );
+        SAV_Buffer(&key, 4);   /* Model */
+
+    	key = BIG_FileKey( ul_File1 );
+        SAV_Buffer(&key, 4);
+
         ul_File = SAV_ul_End();
 
         LINK_FatHasChanged();
@@ -566,7 +573,10 @@ l_Err:
     L_strcat(asz_Name, EDI_Csz_ExtAIEngineModel);
     ul_File = BIG_ul_SearchFileExt(asz_Path, asz_Name);
 
-    SAV_Buffer(&BIG_FileKey(ul_File), 4);
+	BIG_KEY key;
+
+	key = BIG_FileKey(ul_File);
+    SAV_Buffer(&key, 4);
 
     /* Compute var file name and save key */
     BIG_ComputeFullName(BIG_ParentFile(ul_CurrentInstance), asz_Path);
@@ -576,7 +586,8 @@ l_Err:
     L_strcat(asz_Name, EDI_Csz_ExtAIEngineVars);
     ul_File = BIG_ul_SearchFileExt(asz_Path, asz_Name);
 
-    SAV_Buffer(&BIG_FileKey(ul_File), 4);
+	key = BIG_FileKey(ul_File);
+    SAV_Buffer(&key, 4);
 
     SAV_ul_End();
 }

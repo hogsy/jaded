@@ -172,7 +172,7 @@ void EDI_cl_MainFrame::LoadDesktop(char *_psz_Name, EDI_tdst_Desktop *_pst_Desk)
 	if(ul_Index != BIG_C_InvalidIndex)
 	{
 _Try_
-		pc_Buf = BIG_pc_ReadFileTmp(BIG_PosFile(ul_Index), NULL);
+		pc_Buf = ( char * ) BIG_ReadFileToTmp(ul_Index, NULL);
 		for(int i = 0; i < EDI_MTL_MAX_FEATURES; i++)
 			ab_MtlFeatures[i] = LOA_ReadInt(&pc_Buf);
 _Catch_

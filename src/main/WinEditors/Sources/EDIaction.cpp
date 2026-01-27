@@ -138,20 +138,17 @@ EDI_cl_ActionList::~EDI_cl_ActionList(void)
 void EDI_cl_ActionList::ReadFile(char *_psz_Name)
 {
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-    BIG_INDEX   ul_Index;
-    char        *pc_Buf;
-    CString     o_String;
-    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
     /* Be sure that current lists are empty */
     mo_Name = _psz_Name;
-    o_String = mo_Name + EDI_Csz_ExtEdiAction;
+    CString o_String = mo_Name + EDI_Csz_ExtEdiAction;
 
-    ul_Index = BIG_ul_SearchFileExt(EDI_Csz_Ini_Keyboard, (char *) (LPCSTR) o_String);
+    BIG_INDEX ul_Index = BIG_ul_SearchFileExt( EDI_Csz_Ini_Keyboard, o_String );
     if(ul_Index == BIG_C_InvalidIndex) return;
 
 _Try_
-    pc_Buf = BIG_pc_ReadFileTmp(BIG_PosFile(ul_Index), NULL);
+    char *pc_Buf = ( char * ) BIG_ReadFileToTmp( ul_Index, nullptr );
     ParseBuffer(pc_Buf);
 
 _Catch_

@@ -660,7 +660,7 @@ void WORCheck_LoadAllGroup_Load( ULONG _ul_Group )
     if (BIG_gst.dst_FileTableExt[ _ul_Group ].st_ToSave.ul_LengthOnDisk > 200000 )
         return;
     
-    pst_Buf = (BIG_tdst_GroupElem *) BIG_pc_ReadFileTmp(BIG_PosFile(_ul_Group), &ul_Size);
+    pst_Buf = (BIG_tdst_GroupElem *) BIG_ReadFileToTmp(_ul_Group, &ul_Size);
     pst_CGrp = (WORCheck_tdst_Group*)L_malloc(sizeof(WORCheck_tdst_Group));
     pst_CGrp->i_NbRefs = ul_Size / sizeof( BIG_tdst_GroupElem );
     pst_CGrp->dul_Ref = (ULONG*)L_malloc( 4 * pst_CGrp->i_NbRefs );

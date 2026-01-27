@@ -12,6 +12,7 @@
 #include "BIGfiles/BIGerrid.h"
 #include "BIGfiles/BIGdefs.h"
 #include "BIGfiles/BIGopen.h"
+#include "FileSystem/FileSystem.h"
 
 #ifdef ACTIVE_EDITORS
 
@@ -44,23 +45,38 @@ BOOL BIG_b_CheckName(char *_psz_Name)
             _psz_Ext    Return full path string.
  =======================================================================================================================
  */
-void BIG_ComputeFullName(BIG_INDEX _ul_Dir, char *_psz_Ext)
+void BIG_ComputeFullName( BIG_INDEX _ul_Dir, char *_psz_Ext )
 {
-    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-    char    *mpsz_Name;
-    char    asz_Name[BIG_C_MaxLenPath];
-    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-#if !defined(XML_CONV_TOOL)
-    L_strcpy(_psz_Ext, BIG_NameDir(_ul_Dir));
-    _ul_Dir = BIG_ParentDir(_ul_Dir);
-    while(_ul_Dir != BIG_C_InvalidIndex)
-    {
-        mpsz_Name = BIG_NameDir(_ul_Dir);
-        sprintf(asz_Name, "%s/%s", mpsz_Name, _psz_Ext);
-        L_strcpy(_psz_Ext, asz_Name);
-        _ul_Dir = BIG_ParentDir(_ul_Dir);
-    }
-#endif // XML_CONV_TOOL
+	// with the new api, the directories just always have the full path...
+	jaded::FileSystem::KeyDir *dir;
+	if ( ( dir = jaded::filesystem.GetDirByIndex( _ul_Dir ) ) != nullptr )
+	{
+		// ah classic, no bound checking! Fuck sake!!
+		assert( dir->name.size() < BIG_C_MaxLenPath );// best we can do for now
+		strcpy( _psz_Ext, dir->name.c_str() );
+		return;
+	}
+
+	if ( BIG_gst.h_CLibFileHandle == nullptr )
+	{
+		return;
+	}
+
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+	char *mpsz_Name;
+	char  asz_Name[ BIG_C_MaxLenPath ];
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+#	if !defined( XML_CONV_TOOL )
+	L_strcpy( _psz_Ext, BIG_NameDir( _ul_Dir ) );
+	_ul_Dir = BIG_ParentDir( _ul_Dir );
+	while ( _ul_Dir != BIG_C_InvalidIndex )
+	{
+		mpsz_Name = BIG_NameDir( _ul_Dir );
+		sprintf( asz_Name, "%s/%s", mpsz_Name, _psz_Ext );
+		L_strcpy( _psz_Ext, asz_Name );
+		_ul_Dir = BIG_ParentDir( _ul_Dir );
+	}
+#	endif// XML_CONV_TOOL
 }
 
 /*
@@ -68,7 +84,7 @@ void BIG_ComputeFullName(BIG_INDEX _ul_Dir, char *_psz_Ext)
     Aim:    Determin if a file has a given extension.
  =======================================================================================================================
  */
-BOOL BIG_b_IsFileExtension(BIG_INDEX _ul_File, char *_psz_Ext)
+BOOL BIG_b_IsFileExtension(BIG_INDEX _ul_File, const char *_psz_Ext)
 {
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     char    asz_Name[BIG_C_MaxLenName];

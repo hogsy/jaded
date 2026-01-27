@@ -928,7 +928,7 @@ void EBRO_cl_Frame::ReadLinkedPath(void)
 	ul_Index = BIG_ul_SearchFileExt(EDI_Csz_Ini, asz_Name);
 	if(ul_Index != BIG_C_InvalidIndex)
 	{
-		pc_Buf = BIG_pc_ReadFileTmp(BIG_PosFile(ul_Index), &ul_Size);
+		pc_Buf = ( char * ) BIG_ReadFileToTmp(ul_Index, &ul_Size);
 		if(!ul_Size) return;
 
 		/* Number of linked paths */
@@ -1761,7 +1761,7 @@ ULONG BRO_ul_LoadFilter(char* _asz_FilterFileName)
     EDI_gb_FIM_Mirror = TRUE;
     EDI_gb_FIM_TestDate = FALSE;
 
-    pz =pc = BIG_pc_ReadFileTmp(BIG_PosFile(ul_Index), &ul_Size);
+    pz =pc = ( char * ) BIG_ReadFileToTmp(ul_Index, &ul_Size);
     
     while(*pc && ((ULONG)(pc-pz) <= ul_Size))
     {

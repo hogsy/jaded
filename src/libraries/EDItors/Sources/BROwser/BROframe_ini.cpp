@@ -117,8 +117,7 @@ void EBRO_cl_Frame::TreatIni(void)
     CComboBox   *po_Combo;
     char        asz_Name[BIG_C_MaxLenName];
     ULONG       *pul_Buf, ul_Size;
-    BIG_INDEX   ul_Index;
-    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
     /*$2
      -------------------------------------------------------------------------------------------------------------------
@@ -187,10 +186,10 @@ void EBRO_cl_Frame::TreatIni(void)
     /* Load expanded infos */
     L_strcpy(asz_Name, mst_Def.asz_Name);
     L_strcat(asz_Name, EDI_Csz_ExtTree);
-    ul_Index = BIG_ul_SearchFileExt(EDI_Csz_Ini, asz_Name);
+    BIG_INDEX ul_Index = BIG_ul_SearchFileExt( EDI_Csz_Ini, asz_Name );
     if(ul_Index != BIG_C_InvalidIndex)
     {
-        pul_Buf = (ULONG *) BIG_pc_ReadFileTmp(BIG_PosFile(ul_Index), &ul_Size);
+        pul_Buf = (ULONG *) BIG_ReadFileToTmp(ul_Index, &ul_Size);
         while(ul_Size)
         {
 			if(*pul_Buf < BIG_gst.st_ToSave.ul_MaxDir)

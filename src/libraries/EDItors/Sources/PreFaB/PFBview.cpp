@@ -651,10 +651,8 @@ void EPFB_cl_View::CreatePreview( OBJ_tdst_Prefab *_pst_Prefab, BOOL _b_Force )
 {
 	char						asz_Name[ BIG_C_MaxLenName ];
 	char						*sz_Ext;
-	MAIEDITEX_tdst_BitmapDes	*pst_Des; 
 	ULONG						ulLength;
-	void						*p_Buf;
-	
+
 	if (mh_PreviewBitmap)
 	{
 		DeleteObject(mh_PreviewBitmap);
@@ -674,8 +672,8 @@ void EPFB_cl_View::CreatePreview( OBJ_tdst_Prefab *_pst_Prefab, BOOL _b_Force )
 	mul_PreviewIndex = BIG_ul_SearchFile( BIG_ParentFile(_pst_Prefab->ul_Index), asz_Name );
 	if (mul_PreviewIndex != BIG_C_InvalidIndex )
 	{
-		p_Buf = (void *) BIG_pc_ReadFileTmpMustFree(BIG_PosFile(mul_PreviewIndex), &ulLength);
-		pst_Des = TEXUtil_ConvertTGA( this, mul_PreviewIndex, (UCHAR *) p_Buf);
+		void *p_Buf = BIG_ReadFile( mul_PreviewIndex, &ulLength );
+		MAIEDITEX_tdst_BitmapDes *pst_Des = TEXUtil_ConvertTGA( this, mul_PreviewIndex, ( UCHAR * ) p_Buf );
 		L_free(p_Buf);
 		
 		if ( pst_Des )

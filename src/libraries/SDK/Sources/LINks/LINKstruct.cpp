@@ -176,7 +176,7 @@ void LINK_LoadKitNumbers(void)
     ul_Index = BIG_ul_SearchFileExt(EDI_Csz_Ini, EDI_Csz_DefaultKitNames);
     if(ul_Index == BIG_C_InvalidIndex) return;
 
-    pc_Buf = BIG_pc_ReadFileTmp(BIG_PosFile(ul_Index), &ul_Size);
+    pc_Buf = ( char * ) BIG_ReadFileToTmp(ul_Index, &ul_Size);
     for(i = 0; i < MAX_STRUCT; i++)
     {
         LINK_gast_StructTypes[i].i_NameKit = *(int *) pc_Buf;
@@ -206,12 +206,9 @@ void LINK_SaveKitNumbers(void)
 void LINK_ReadNameKits(void)
 {
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-    BIG_INDEX   ul_Index;
-    int         i_Struct;
-    char        *pc_Buf, *pc_Beg;
-    ULONG       ul_Size;
-    int         i_Count;
-    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+	int         i_Struct;
+	ULONG       ul_Size;
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
     /* Reset all */
     for(i_Struct = 0; i_Struct < MAX_STRUCT; i_Struct++)
@@ -226,13 +223,13 @@ void LINK_ReadNameKits(void)
     }
 
     /* Read all */
-    ul_Index = BIG_ul_SearchDir(EDI_Csz_Ini_NameKits);
+    BIG_INDEX ul_Index = BIG_ul_SearchDir( EDI_Csz_Ini_NameKits );
     if(ul_Index == BIG_C_InvalidIndex) return;
-    ul_Index = BIG_FirstFile(ul_Index);
+    ul_Index = BIG_ul_GetFirstFile(ul_Index);
     while(ul_Index != BIG_C_InvalidIndex)
     {
-        pc_Buf = BIG_pc_ReadFileTmp(BIG_PosFile(ul_Index), &ul_Size);
-        pc_Beg = pc_Buf;
+        char *pc_Buf = ( char * ) BIG_ReadFileToTmp( ul_Index, &ul_Size );
+		const char *pc_Beg = pc_Buf;
         while(*pc_Buf && L_isdigit(*pc_Buf)) pc_Buf++;
         if(!*pc_Buf) break;
 
@@ -247,7 +244,7 @@ void LINK_ReadNameKits(void)
         LINK_gast_StructTypes[i_Struct].i_MaxNameKit++;
         ERR_X_Assert(LINK_gast_StructTypes[i_Struct].i_MaxNameKit < MAX_NAME_KIT);
 
-        i_Count = 0;
+        int i_Count = 0;
         while(1)
         {
             while(*pc_Buf && (*pc_Buf != '\n')) 
@@ -273,7 +270,7 @@ void LINK_ReadNameKits(void)
             pc_Beg = pc_Buf;
         }
 
-        ul_Index = BIG_NextFile(ul_Index);
+        ul_Index = BIG_ul_GetNextFile(ul_Index);
     }
 }
 

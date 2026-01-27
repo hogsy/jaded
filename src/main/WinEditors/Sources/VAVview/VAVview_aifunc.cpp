@@ -133,8 +133,7 @@ void EVAV_AIFunc_FillSelect(CWnd *_po_Wnd, EVAV_cl_ViewItem *_po_Data, void *_p_
 	CComboBox			*po_Combo;
 	BIG_INDEX			ul_Model, ul_File;
 	BIG_KEY				ul_SelKey;
-	BIG_tdst_GroupElem	*pst_Buf;
-	ULONG				ul_SizeModel, i;
+	ULONG				ul_SizeModel;
 	char				*psz_Temp;
 	char				asz_Name[BIG_C_MaxLenName];
 	char				asz_Sel[BIG_C_MaxLenName];
@@ -170,8 +169,8 @@ void EVAV_AIFunc_FillSelect(CWnd *_po_Wnd, EVAV_cl_ViewItem *_po_Data, void *_p_
 		po_Combo->SetItemData(iIndex, BIG_C_InvalidIndex);
 
 		/* Add all functions of model */
-		pst_Buf = (BIG_tdst_GroupElem *) BIG_pc_ReadFileTmpMustFree(BIG_PosFile(ul_Model), &ul_SizeModel);
-		for(i = 0; i < (ul_SizeModel / sizeof(BIG_tdst_GroupElem)); i++)
+		BIG_tdst_GroupElem *pst_Buf = ( BIG_tdst_GroupElem * ) BIG_ReadFile( ul_Model, &ul_SizeModel );
+		for( ULONG i = 0; i < (ul_SizeModel / sizeof(BIG_tdst_GroupElem)); i++)
 		{
 			if(!pst_Buf[i].ul_Key) continue;
 			ul_File = BIG_ul_SearchKeyToFat(pst_Buf[i].ul_Key);

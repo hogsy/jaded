@@ -70,7 +70,7 @@ extern BOOL							EDI_gb_SlashC;
 #else
 extern BOOL						BIG_gb_WarningTime;
 extern "C" BOOL						BIG_ul_MaxSizeFile;
-extern "C" BIG_KEY					BIG_gul_CanAskKey;
+extern BIG_KEY					BIG_gul_CanAskKey;
 extern "C" BOOL						EDI_gb_NoVerbose;
 extern "C" BOOL							EDI_gb_SlashC;
 #endif

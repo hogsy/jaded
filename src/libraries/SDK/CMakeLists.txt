@@ -48,7 +48,7 @@ add_library(Jaded-SDK OBJECT
         Sources/BIGfiles/BIGchecksum.h
         Sources/BIGfiles/BIGcomp.c
         Sources/BIGfiles/BIGcomp.h
-        Sources/BIGfiles/BIGdefs.c
+        Sources/BIGfiles/BIGdefs.cpp
         Sources/BIGfiles/BIGdefs.h
         Sources/BIGfiles/BIGerrid.h
         Sources/BIGfiles/BIGexport.c
@@ -59,7 +59,7 @@ add_library(Jaded-SDK OBJECT
         Sources/BIGfiles/BIGgroup.h
         Sources/BIGfiles/BIGio.c
         Sources/BIGfiles/BIGio.h
-        Sources/BIGfiles/BIGkey.c
+        Sources/BIGfiles/BIGkey.cpp
         Sources/BIGfiles/BIGkey.h
         Sources/BIGfiles/BIGmdfy_dir.cpp
         Sources/BIGfiles/BIGmdfy_dir.h

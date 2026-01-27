@@ -227,9 +227,7 @@ char *EAI_cl_Compiler::PPInclude(char *psz_Scan)
 	char		asz_Path1[BIG_C_MaxLenPath];
 	char		asz_File[BIG_C_MaxLenPath];
 	char		asz_File1[BIG_C_MaxLenPath];
-	BIG_INDEX	ul_File;
 	ULONG		ul_Size;
-	char		*pc_BufInclude;
 	int			iSizeInit;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -282,9 +280,9 @@ char *EAI_cl_Compiler::PPInclude(char *psz_Scan)
 	ERR_X_Error(psz_Last, ERR_PP_Csz_InvalidPath, NULL);
 
 	/* Open and read include file */
-	ul_File = BIG_ul_SearchFileExt(psz_Mem, psz_Last);
+	BIG_INDEX ul_File = BIG_ul_SearchFileExt( psz_Mem, psz_Last );
 	ERR_X_Error(ul_File != BIG_C_InvalidIndex, ERR_PP_Csz_UnkownFile, NULL);
-	pc_BufInclude = BIG_pc_ReadFileTmpMustFree(BIG_PosFile(ul_File), &ul_Size);
+	char *pc_BufInclude = ( char * ) BIG_ReadFile( ul_File, &ul_Size );
 	if(!pc_BufInclude) 
 	{
 		*psz_Scan = '\"';

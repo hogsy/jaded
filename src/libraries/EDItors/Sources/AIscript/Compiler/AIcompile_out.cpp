@@ -964,7 +964,8 @@ void EAI_cl_Compiler::OutputProcList(BIG_INDEX _h_File)
 	SAV_Buffer(&e.i_NumStringBuf, 4);
 	SAV_Buffer(e.pc_StringBuf, e.i_NumStringBuf);
 
-	SAV_Buffer(&BIG_FileKey(e.ul_File), 4);
+	BIG_KEY key = BIG_FileKey(e.ul_File);
+	SAV_Buffer(&key, 4);
 	SAV_ul_End();
 }
 

@@ -43,12 +43,12 @@ static ULONG BIG_ul_FAT_GetCryptKey()
 {
 	if(BIG_gst.st_ToSave.ul_UniverseKey && (BIG_gst.st_ToSave.ul_UniverseKey != 0xFFFFFFFF))
 		return BIG_gst.st_ToSave.ul_UniverseKey;
-	
+
 #ifdef ACTIVE_EDITORS
 
 	if(BIG_gst1.st_ToSave.ul_UniverseKey && (BIG_gst1.st_ToSave.ul_UniverseKey != 0xFFFFFFFF))
 		return BIG_gst1.st_ToSave.ul_UniverseKey;
-#endif	
+#endif
 
 	ERR_X_Assert(0);
 	return 0;
@@ -91,9 +91,9 @@ void BIG_special_Encrypt4FAT(char * _pc_Buf, ULONG _ul_Size)
 void BIG_ReadHeader(void)
 {
 	CHAR * pc_Buf;
-	ULONG	ul_Key;	
+	ULONG	ul_Key;
 	int r;
-	
+
     /* Read header struct */
 	r = BIG_fread(&BIG_gst.st_ToSave, sizeof(BIG_gst.st_ToSave), BIG_Handle());
     ERR_X_Error
@@ -102,7 +102,7 @@ void BIG_ReadHeader(void)
         L_ERR_Csz_FRead,
         NULL
     );
-   
+
 	pc_Buf = (CHAR *) &BIG_gst.st_ToSave;
 
 	LOA_ReadCharArray(&pc_Buf, BIG_gst.st_ToSave.ac_Def, 4);
@@ -111,10 +111,10 @@ void BIG_ReadHeader(void)
 	/* La FAT est cryptée .. je décrypte */
 	if(BIG_b_FAT_is_Crypted)
 	{
-#ifdef _GAMECUBE	
+#ifdef _GAMECUBE
 		SwapDWord(&BIG_gst.st_ToSave.ul_UniverseKey);
-#endif		
-		
+#endif
+
 		ul_Key = BIG_ul_FAT_GetCryptKey();
 		BIG_special_Decrypt4FAT(pc_Buf, sizeof(BIG_gst.st_ToSave) - 4);
 	}
@@ -187,9 +187,9 @@ static void BIG_ReadFatFile(BIG_tdst_FatDes *_pst_Fat)
 	{
 		BIG_special_Decrypt4FAT
 		(
-			(char *) (&BIG_gst.dst_FileTable[_pst_Fat->ul_FirstIndex]), 
+			(char *) (&BIG_gst.dst_FileTable[_pst_Fat->ul_FirstIndex]),
 			_pst_Fat->ul_MaxFile * sizeof(BIG_tdst_File)
-		);	
+		);
 	}
 
     /* Insert keys in table */
@@ -247,9 +247,9 @@ static void BIG_ReadFatFile(BIG_tdst_FatDes *_pst_Fat)
 			BIG_special_Decrypt4FAT
 			(
 #ifdef JADEFUSION
-				(char *) BIG_gst.dst_FileTable, 
+				(char *) BIG_gst.dst_FileTable,
 #else
-				(UCHAR *) BIG_gst.dst_FileTable, 
+				(UCHAR *) BIG_gst.dst_FileTable,
 #endif
 				ul_NumRead * sizeof(BIG_tdst_File)
 			);
@@ -264,8 +264,8 @@ static void BIG_ReadFatFile(BIG_tdst_FatDes *_pst_Fat)
         {
         	BIG_gst.dst_FileTable[i].ul_Pos 		= LOA_ReadULong(&pc_Buf);
 			BIG_gst.dst_FileTable[i].ul_Key 		= LOA_ReadULong(&pc_Buf);
-						
-						
+
+
             if(BIG_gst.dst_FileTable[i].ul_Key != BIG_C_InvalidKey)
                 BIG_InsertKeyToPos
                 (
@@ -299,13 +299,13 @@ static void BIG_ReadFatFileExt(BIG_tdst_FatDes *_pst_Fat)
     /* Seek to the beginning of extended fat */
 	r=L_fseek(BIG_Handle(), _pst_Fat->ul_PosFat + BIG_PosFatFileExt, L_SEEK_SET);
     ERR_X_Error( r == 0, L_ERR_Csz_FSeek, NULL );
-	
+
 	// -------------------------------------------------------
 	// NOTE:
 	// Some new variables have been added in BIG_tdst_FileExt structure.
-	// To be able to read the FatFileExt in a BF prior to version 36, we 
-	// need to remove those variables from the calculation of the size 
-	// of the BIG_tdst_FileExt structure. 
+	// To be able to read the FatFileExt in a BF prior to version 36, we
+	// need to remove those variables from the calculation of the size
+	// of the BIG_tdst_FileExt structure.
 	if ( BIG_Version() < BIG_FATChanged_Version36 )
 	{
 		UINT StructToSaveSize = sizeof(BIG_gst.dst_FileTableExt[0].st_ToSave);
@@ -314,7 +314,7 @@ static void BIG_ReadFatFileExt(BIG_tdst_FatDes *_pst_Fat)
 		p = (char* )L_malloc(_pst_Fat->ul_MaxFile * oldStructToSaveSize);
 		r = BIG_fread(p, _pst_Fat->ul_MaxFile * oldStructToSaveSize, BIG_Handle());
 		ERR_X_Error	(r == 1, L_ERR_Csz_FRead, NULL	);
-		
+
 		L_memset(&(BIG_gst.dst_FileTableExt[_pst_Fat->ul_FirstIndex]), 0, _pst_Fat->ul_MaxFile * (sizeof(BIG_tdst_FileExt)));
 		for(i = _pst_Fat->ul_FirstIndex; i < _pst_Fat->ul_FirstIndex + _pst_Fat->ul_MaxFile; i++)
 		{
@@ -340,7 +340,7 @@ static void BIG_ReadFatFileExt(BIG_tdst_FatDes *_pst_Fat)
 		{
 			BIG_special_Decrypt4FAT
 			(
-				p, 
+				p,
 				_pst_Fat->ul_MaxFile * sizeof(BIG_gst.dst_FileTableExt[0].st_ToSave)
 			);
 		}
@@ -373,9 +373,9 @@ static void BIG_ReadFatFileExt(BIG_tdst_FatDes *_pst_Fat)
 			BIG_special_Decrypt4FAT
 			(
 #ifdef JADEFUSION
-				(char *) &(BIG_gst.dst_FileTableExt[i].st_ToSave), 
+				(char *) &(BIG_gst.dst_FileTableExt[i].st_ToSave),
 #else
-				(UCHAR *) &(BIG_gst.dst_FileTableExt[i].st_ToSave), 
+				(UCHAR *) &(BIG_gst.dst_FileTableExt[i].st_ToSave),
 #endif
 				sizeof(BIG_gst.dst_FileTableExt[i].st_ToSave)
 			);
@@ -403,9 +403,9 @@ void BIG_ReadFatDir(BIG_tdst_FatDes *_pst_Fat)
 		// -------------------------------------------------------
 		// NOTE:
 		// Some new variables have been added in BIG_tdst_FileExt.st_ToSave structure.
-		// To be able to seek to the proper position for FatDir in a BF prior 
+		// To be able to seek to the proper position for FatDir in a BF prior
 		// to version 36, we need to remove those variables from the calculation
-		// of the size of the BIG_tdst_FileExt.st_ToSave structure. 
+		// of the size of the BIG_tdst_FileExt.st_ToSave structure.
 		UINT oldStructToSaveSize = sizeof(BIG_gst.dst_FileTableExt[0].st_ToSave)-sizeof(BIG_gst.dst_FileTableExt[0].st_ToSave.ul_P4RevisionClient);
 		ULONG PosFatDir = BIG_PosFatFileExt + (BIG_SizeFat() * oldStructToSaveSize);
 		r = L_fseek(BIG_Handle(), _pst_Fat->ul_PosFat + PosFatDir, L_SEEK_SET);
@@ -422,7 +422,7 @@ void BIG_ReadFatDir(BIG_tdst_FatDes *_pst_Fat)
      * structure in memory.
      */
     for(i = _pst_Fat->ul_FirstIndex; i < _pst_Fat->ul_FirstIndex + _pst_Fat->ul_MaxDir; i++)
-    {		
+    {
 		L_memset(&(BIG_gst.dst_DirTable[i]), 0, sizeof(BIG_tdst_Directory));
 
         r = BIG_fread
@@ -437,7 +437,7 @@ void BIG_ReadFatDir(BIG_tdst_FatDes *_pst_Fat)
 		{
 			BIG_special_Decrypt4FAT
 			(
-				(char *) &(BIG_gst.dst_DirTable[i].st_ToSave), 
+				(char *) &(BIG_gst.dst_DirTable[i].st_ToSave),
 				sizeof(BIG_gst.dst_DirTable[i].st_ToSave)
 			);
 		}
@@ -483,7 +483,7 @@ void BIG_ReadAllFats(void)
 		{
 			BIG_special_Decrypt4FAT
 			(
-				(char *) &(BIG_gst.dst_FatTable[i]), 
+				(char *) &(BIG_gst.dst_FatTable[i]),
 				sizeof(BIG_gst.dst_FatTable[i])
 			);
 		}
@@ -495,7 +495,7 @@ void BIG_ReadAllFats(void)
 		BIG_gst.dst_FatTable[i].ul_NextPosFat 	= LOA_ReadULong(&pc_Buf);
 		BIG_gst.dst_FatTable[i].ul_FirstIndex 	= LOA_ReadULong(&pc_Buf);
 		BIG_gst.dst_FatTable[i].ul_LastIndex 	= LOA_ReadULong(&pc_Buf);
-		
+
         /* Goes to next fat */
         if((int) BIG_gst.dst_FatTable[i].ul_NextPosFat != -1)
         {
@@ -664,7 +664,7 @@ void BIG_WriteHeader(void)
 
 		BIG_special_Encrypt4FAT
 		(
-		    (char* )(pc_Buf + 4), 
+		    (char* )(pc_Buf + 4),
 			sizeof(BIG_gst.st_ToSave) - 4
 		);
 
@@ -695,7 +695,7 @@ void BIG_WriteHeader(void)
     Aim:    Convert an index in fat into an index in fat des (for a given index, determins which is
             the corresponding fat).
 
-    In:     _ul_Index   Bigfile index in fat to convert. 
+    In:     _ul_Index   Bigfile index in fat to convert.
 
     Out:    Return the fat des index (in BIG_gst.dst_FatTable table).
  ===================================================================================================
@@ -867,7 +867,7 @@ void BIG_UpdateOneDirInFat(BIG_INDEX _ul_Index)
 
     In:     _ul_Dir     Index in fat of the directory to search the file. This index can be
                         retreive with BIG_ul_SearchDir function.
-            _psz_Name   Name of file to retreive (the atomic file name). 
+            _psz_Name   Name of file to retreive (the atomic file name).
 
     Out:    Return the index in the fat of the file, or BIG_C_InvalidIndex if the file has not been
             found.
@@ -912,7 +912,7 @@ BIG_INDEX BIG_ul_SearchFile(BIG_INDEX _ul_Dir, const char *_psz_Name)
             searched in all the fat, depending on its full name. To search a directory in a known
             parent directory, call BIG_ul_SearchDirInDir function.
 
-    In:     _psz_Name   Name of the directory to retreive (full part). 
+    In:     _psz_Name   Name of the directory to retreive (full part).
 
     Note:   The path must be specified with '/', and not '\'. For example, "Root/Dr/Try" is a valid
             path. The '/' must not be present at the end of the name (like "Root/Dr/Try/ that is
@@ -928,6 +928,13 @@ BIG_INDEX BIG_ul_SearchDir(const char *_psz_Name)
 	{
 		return dir->index;
 	}
+
+	if ( BIG_gst.h_CLibFileHandle == nullptr )
+	{
+		return BIG_C_InvalidIndex;
+	}
+
+	// otherwise fallback to BF
 
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     ULONG   ul_ReturnIndex;
@@ -951,7 +958,7 @@ BIG_INDEX BIG_ul_SearchDir(const char *_psz_Name)
         if((*psz_Temp == '/') && (*psz_Cur == '\0'))
         {
             ul_ReturnIndex = BIG_SubDir(ul_ReturnIndex);
-			if(ul_ReturnIndex > BIG_MaxDir()) 
+			if(ul_ReturnIndex > BIG_MaxDir())
 				return BIG_C_InvalidIndex;
 
             /* Pass the '/' */
@@ -984,7 +991,7 @@ BIG_INDEX BIG_ul_SearchDir(const char *_psz_Name)
     Aim:    To search a sub-directory in a parent one.
 
     In:     _ul_Ref     Index in fat of dirs of the parent dir.
-            _psz_Name   Name of the directory to search (atomic part). 
+            _psz_Name   Name of the directory to search (atomic part).
 
     Out:    Returns the index of the sub-directory, BIG_C_InvalidIndex if it does not exists.
  ===================================================================================================
@@ -1007,7 +1014,7 @@ BIG_INDEX BIG_ul_SearchDirInDir(BIG_INDEX _ul_Ref, const char *_psz_Name)
     Aim:    Search a file depending on a full path name, and an atomic file name.
 
     In:     _psz_PathName   Full path name of dir to search.
-            _psz_FileName   Atomic file name. 
+            _psz_FileName   Atomic file name.
 
     Out:    Returns index in fat file of the file, or BIG_C_InvalidIndex.
  ===================================================================================================
@@ -1019,6 +1026,13 @@ BIG_INDEX BIG_ul_SearchFileExt( const char *_psz_PathName, const char *_psz_File
 	{
 		return file->index;
 	}
+
+	if ( BIG_gst.h_CLibFileHandle == nullptr )
+	{
+		return BIG_C_InvalidIndex;
+	}
+
+	// otherwise fallback to BF
 
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     ULONG   ul_Index;
@@ -1041,7 +1055,7 @@ BIG_INDEX BIG_ul_SearchFileExt( const char *_psz_PathName, const char *_psz_File
     Aim:    To search a sub-directory in a parent one.
 
     In:     _ul_Ref     Index in fat of dirs of the parent dir.
-            _psz_Name   Name of the directory to search (atomic part). 
+            _psz_Name   Name of the directory to search (atomic part).
 
     Out:    Returns the index of the sub-directory, BIG_C_InvalidIndex if it does not exists.
  ===================================================================================================
@@ -1071,7 +1085,7 @@ BIG_INDEX BIG_ul_SearchFileInDirRec(BIG_INDEX _ul_Ref, const char *_psz_Name)
     Aim:    To search a sub-directory in a parent one.
 
     In:     _ul_Ref Index in fat of dirs of the parent dir. _psz_Name Name of the directory to
-                            search (atomic part). 
+                            search (atomic part).
 
     Out:    Returns the index of the sub-directory, BIG_C_InvalidIndex if it does not exists.
  ===================================================================================================
@@ -1096,7 +1110,7 @@ BOOL BIG_b_IsFileInDirRec(BIG_INDEX _ul_RefDir, BIG_INDEX _ul_RefFile)
     Aim:    To search a sub-directory in a parent one.
 
     In:     _ul_Ref Index in fat of dirs of the parent dir. _psz_Name Name of the directory to
-                            search (atomic part). 
+                            search (atomic part).
 
     Out:    Returns the index of the sub-directory, BIG_C_InvalidIndex if it does not exists.
  ===================================================================================================
@@ -1125,7 +1139,7 @@ BOOL BIG_b_IsDirInDirRec(BIG_INDEX _ul_RefDir, BIG_INDEX _ul_RefSubDir)
     In:     _ul_Length          Minimal length of the free position.
             _pul_LengthDisk     If a free pos is found, this will contains the real length on disk
                                 of the free pos.
-            _pul_Fat            To receive index in fat of choosen file. 
+            _pul_Fat            To receive index in fat of choosen file.
 
     Out:    Returnd the position in fat of file that can be used to store the new file.
             BIG_C_InvalidIndex if there's no free place, or if there's no free place with enough
@@ -1368,7 +1382,7 @@ static BIG_INDEX sul_GetNewFile(void)
     In:     _ul_Length
             _pul_Pos
             _pul_LengthDisk
-            _b_AskKey           
+            _b_AskKey
 
     Out:    Index, in fat files, of the new file.
  ===================================================================================================
@@ -1423,7 +1437,7 @@ _Try_
 
     /* A new key is requested ? */
     if(_b_AskKey)
-        BIG_FileKey(ul_Res) = BIG_ul_GetNewKey(ul_Res);
+        BIG_gst.dst_FileTable[ul_Res].ul_Key = BIG_ul_GetNewKey(ul_Res);
 
 _Catch_
     _Return_(BIG_C_InvalidIndex);
@@ -1488,3 +1502,170 @@ BIG_INDEX BIG_ul_AddDirInTable(void)
 }
 
 #endif /* ACTIVE_EDITORS */
+
+BIG_INDEX BIG_ul_GetFirstFile( BIG_INDEX dirIndex )
+{
+	jaded::FileSystem::KeyDir *dir;
+	if ( ( dir = jaded::filesystem.GetDirByIndex( dirIndex ) ) != nullptr )
+	{
+		if ( dir->files.empty() )
+		{
+			return BIG_C_InvalidIndex;
+		}
+
+		return dir->files[ 0 ];
+	}
+
+	if ( BIG_gst.h_CLibFileHandle == nullptr )
+	{
+		return BIG_C_InvalidIndex;
+	}
+
+	// otherwise fallback to BF
+	return BIG_FirstFile( dirIndex );
+}
+
+BIG_INDEX BIG_ul_GetPrevFile( BIG_INDEX fileIndex )
+{
+	jaded::FileSystem::KeyFile *file;
+	if ( ( file = jaded::filesystem.GetFileByIndex( fileIndex ) ) != nullptr )
+	{
+		const jaded::FileSystem::KeyDir *dir = jaded::filesystem.GetDirByIndex( file->dir );
+		if ( dir == nullptr || dir->files.empty() )
+		{
+			return BIG_C_InvalidIndex;
+		}
+
+		// this isn't quite as fancy yet as the original method to do this
+		// first we need to find the index in the dir listing, and then return the next
+		// this should eventually use some sort of faster lookup, but meh
+
+		auto it = std::find( dir->files.begin(), dir->files.end(), fileIndex );
+		if ( it != dir->files.begin() )
+		{
+			--it;
+			return *it;
+		}
+
+		return BIG_C_InvalidIndex;
+	}
+
+	if ( BIG_gst.h_CLibFileHandle == nullptr )
+	{
+		return BIG_C_InvalidIndex;
+	}
+
+	// otherwise fallback to BF
+	return BIG_PrevFile( fileIndex );
+}
+
+BIG_INDEX BIG_ul_GetNextFile( BIG_INDEX fileIndex )
+{
+	jaded::FileSystem::KeyFile *file;
+	if ( ( file = jaded::filesystem.GetFileByIndex( fileIndex ) ) != nullptr )
+	{
+		const jaded::FileSystem::KeyDir *dir = jaded::filesystem.GetDirByIndex( file->dir );
+		if ( dir == nullptr || dir->files.empty() )
+		{
+			return BIG_C_InvalidIndex;
+		}
+
+		// this isn't quite as fancy yet as the original method to do this
+		// first we need to find the index in the dir listing, and then return the next
+		// this should eventually use some sort of faster lookup, but meh
+
+		auto it = std::find( dir->files.begin(), dir->files.end(), fileIndex );
+		if ( it != dir->files.end() )
+		{
+			++it;
+			if ( it != dir->files.end() )
+			{
+				return *it;
+			}
+		}
+
+		return BIG_C_InvalidIndex;
+	}
+
+	if ( BIG_gst.h_CLibFileHandle == nullptr )
+	{
+		return BIG_C_InvalidIndex;
+	}
+
+	// otherwise fallback to BF
+	return BIG_NextFile( fileIndex );
+}
+
+BIG_KEY BIG_ul_GetKey( BIG_INDEX index )
+{
+	jaded::FileSystem::KeyFile *file;
+	if ( ( file = jaded::filesystem.GetFileByIndex( index ) ) != nullptr )
+	{
+		return file->key;
+	}
+
+	if ( BIG_gst.h_CLibFileHandle == nullptr )
+	{
+		return BIG_C_InvalidKey;
+	}
+
+	// otherwise fallback to BF
+	return BIG_gst.dst_FileTable[ index ].ul_Key;
+}
+
+const char *BIG_GetFileName( BIG_INDEX index )
+{
+	jaded::FileSystem::KeyFile *file;
+	if ( ( file = jaded::filesystem.GetFileByIndex( index ) ) != nullptr )
+	{
+		return file->name.c_str();
+	}
+
+	if ( BIG_gst.h_CLibFileHandle == nullptr )
+	{
+		return nullptr;
+	}
+
+	// otherwise fallback to BF
+	return BIG_gst.dst_FileTableExt[ index ].st_ToSave.asz_Name;
+}
+
+BIG_KEY BIG_GetUniverseKey()
+{
+	const jaded::FileSystem::Key key = jaded::filesystem.GetUniverseKey();
+	if ( key != BIG_C_InvalidKey )
+	{
+		return key;
+	}
+
+	if ( BIG_gst.h_CLibFileHandle == nullptr )
+	{
+		return BIG_C_InvalidKey;
+	}
+
+	// otherwise fallback to BF
+	return BIG_gst.st_ToSave.ul_UniverseKey;
+}
+
+BIG_INDEX BIG_GetFileParentDir( BIG_INDEX index )
+{
+	jaded::FileSystem::KeyFile *file;
+	if ( ( file = jaded::filesystem.GetFileByIndex( index ) ) != nullptr )
+	{
+		const jaded::FileSystem::KeyDir *dir = jaded::filesystem.GetDirByIndex( file->dir );
+		if ( dir == nullptr || dir->files.empty() )
+		{
+			return BIG_C_InvalidIndex;
+		}
+
+		return dir->index;
+	}
+
+	if ( BIG_gst.h_CLibFileHandle == nullptr )
+	{
+		return BIG_C_InvalidKey;
+	}
+
+	// otherwise fallback to BF
+	return BIG_gst.dst_FileTableExt[ index ].st_ToSave.ul_Parent;
+}

@@ -47,8 +47,25 @@ extern "C"
 	 */
 	size_t BIG_ReadFileToDst( BIG_INDEX index, void *dstBuffer, size_t bufferSize );
 
+	/**
+	 * A replacement for BIG_pc_ReadFileTmp, which takes the index rather than pos.
+	 *
+	 * @param index		Index of the file.
+	 * @param size		Returned size.
+	 * @return			Pointer to the temporary buffer.
+	 */
+	void *BIG_ReadFileToTmp( BIG_INDEX index, ULONG *size );
+
+	/**
+	 * A replacement for BIG_pc_ReadFileTmpMustFree, which takes the index rather than pos.
+	 *
+	 * @param index		Index of the file.
+	 * @param size		Returned size.
+	 * @return			Pointer to a newly allocated buffer.
+	 */
+	void *BIG_ReadFile( BIG_INDEX index, ULONG *size );
+
 	char *BIG_pc_ReadFileTmp( ULONG, ULONG * );
-	char *BIG_pc_ReadFileTmpMustFree( ULONG, ULONG * );
 	void *BIG_p_RequestBuffer( int );
 #ifdef ACTIVE_EDITORS
 	void *BIG_p_RequestSaveBuffer( int );

@@ -842,7 +842,8 @@ BIG_KEY COL_ul_CreateColMapFile(WOR_tdst_World *_pst_World, BIG_INDEX _ul_Cob, c
 	SAV_Begin(asz_PathToColMap, asz_ColMapName);
 
 	/* We save the key of the Cob. */
-	SAV_Buffer(&BIG_FileKey(_ul_Cob), 4);
+	BIG_KEY key = BIG_FileKey( _ul_Cob );
+	SAV_Buffer(&key, 4);
 
 	ul_File = SAV_ul_End();
 	return BIG_FileKey(ul_File);

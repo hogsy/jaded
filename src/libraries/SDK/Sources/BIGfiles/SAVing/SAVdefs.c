@@ -41,7 +41,7 @@ static char sgasz_File[BIG_C_MaxLenName];
             _psz_Name   Atomic part of the file name to save.
  =======================================================================================================================
  */
-void SAV_Begin(char *_psz_Path, char *_psz_Name)
+void SAV_Begin( const char *_psz_Path, const char *_psz_Name)
 {
 	sgi_ActualSize = 0;
 	L_strcpy(sgasz_Path, _psz_Path);
@@ -59,7 +59,7 @@ void SAV_Begin(char *_psz_Path, char *_psz_Name)
             _i_Size     The number of bytes to save.
  =======================================================================================================================
  */
-void SAV_Buffer(void *_p_Buffer, int _i_Size)
+void SAV_Buffer( const void *_p_Buffer, int _i_Size)
 {
 	/*~~~~~~~~~~~~*/
 	char	*pc_Buf;

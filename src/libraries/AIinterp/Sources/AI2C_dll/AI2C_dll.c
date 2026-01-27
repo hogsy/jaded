@@ -114,7 +114,6 @@ void AI2C_LoadDisableCModelList(void)
 	/*~~~~~~~~~~~~*/
 	ULONG	ul_fat;
 	ULONG	ul_size;
-	char	*pc;
 	/*~~~~~~~~~~~~*/
 
 	if(AI2C_gb_DisableCModelsListLoaded) return;
@@ -124,7 +123,7 @@ void AI2C_LoadDisableCModelList(void)
 
 	if(ul_fat != BIG_C_InvalidIndex)
 	{
-		pc = BIG_pc_ReadFileTmp(BIG_PosFile(ul_fat), &ul_size);
+		char *pc = BIG_ReadFileToTmp( ul_fat, &ul_size );
 		ul_size = ul_size / 8;
 		BAS_binit(&AI2C_gst_DisableCModelsList, 100);
 		while(ul_size)
@@ -383,7 +382,7 @@ void AI2C_vInsertFCLFunctions(ULONG _ulFat)
     }
 #endif //DLL_DEBUG
 
-    buffer_fcl_begin = buffer_fcl = BIG_pc_ReadFileTmpMustFree(BIG_PosFile(ofc_fat_fcl),&size_fcl);
+    buffer_fcl_begin = buffer_fcl = BIG_ReadFile(ofc_fat_fcl,&size_fcl);
 
     // parse the fcl file.
     procedureName = L_strstr(buffer_fcl,"procedure_trigger");
@@ -460,8 +459,8 @@ void AI2C_AddModelInDllContents(void)
         }
 #endif //DLL_DEBUG
 
-		pc_begin = pc = BIG_pc_ReadFileTmpMustFree(BIG_ul_SearchKeyToPos(key), &size);
 		fat = BIG_ul_SearchKeyToFat(key);
+		pc_begin = pc = BIG_ReadFile(fat, &size);
 
         if (AI2C_bInsertModel(fat))
         {
@@ -750,7 +749,7 @@ void AI2C_LoadFixModelList(void)
 
 	if(ul_fat != BIG_C_InvalidIndex)
 	{
-		pc = BIG_pc_ReadFileTmp(BIG_PosFile(ul_fat), &ul_size);
+		pc = ( char * ) BIG_ReadFileToTmp(ul_fat, &ul_size);
 		ul_size = ul_size / 8;
 		BAS_binit(&AI2C_gst_FixModelsList, 100);
 		while(ul_size)

@@ -1900,7 +1900,7 @@ ULONG TEX_ul_File_CreatePaletteRawTexture(char *_sz_Path, char *_sz_Name, ULONG 
     ul_File = BIG_ul_SearchFileExt( _sz_Path, sz_TexName);
     if (ul_File != BIG_C_InvalidIndex)
     {
-        puc_Buf = (UCHAR *) BIG_pc_ReadFileTmp(BIG_PosFile(ul_File), &ul_Size);
+        puc_Buf = (UCHAR *) BIG_ReadFileToTmp(ul_File, &ul_Size);
        
         L_memcpy( &st_Params, puc_Buf + ul_Size - 32, 32);
         if (_ul_Raw == -2) _ul_Raw = *(ULONG *) puc_Buf;
@@ -2091,8 +2091,8 @@ ULONG TEX_ul_File_CreateTexRawPal( char *_sz_Path, char *_sz_Name, TEX_tdst_File
     {
         /* swap tga and tex key */
         ul_Pal = BIG_FileKey( ul_Tga );
-        BIG_FileKey( ul_Tga ) = BIG_FileKey( ul_Tex );
-        BIG_FileKey( ul_Tex ) = ul_Pal;
+        BIG_gst.dst_FileTable[ul_Tga].ul_Key = BIG_FileKey( ul_Tex );
+        BIG_gst.dst_FileTable[ul_Tex].ul_Key = ul_Pal;
 
         /* update files */
         BIG_UpdateOneFileInFat( ul_Tga );
@@ -2468,13 +2468,9 @@ void TEX_File_Init(void)
 		5	file type Drag'n dropable dans l'éditeur de texture (depuis le meme éditeur )
  =======================================================================================================================
  */
-LONG TEX_l_File_IsFormatSupported(char *_psz_Filename, int i_Type)
+LONG TEX_l_File_IsFormatSupported( const char *_psz_Filename, int i_Type)
 {
-	/*~~~~~~~~~~~~~*/
-	char	*psz_Ext;
-	/*~~~~~~~~~~~~~*/
-
-	psz_Ext = strrchr(_psz_Filename, '.');
+	char *psz_Ext = strrchr( _psz_Filename, '.' );
 	if(psz_Ext == NULL) return 0;
     if (i_Type == -1)
     {

@@ -406,7 +406,7 @@ char* DAT_CUtils::PrepareFileBuffer( BIG_INDEX _ulIndex, DWORD& _ulBufferSize, B
 	}
 	else
 	{
-		pBfBuffer = BIG_pc_ReadFileTmpMustFree(BIG_PosFile(_ulIndex), &_ulBufferSize);
+		pBfBuffer = BIG_ReadFile(_ulIndex, &_ulBufferSize);
 		if( pBfBuffer == NULL && ulBfBufferSize == 0 )
 		{
 			// Bug fix: Allocate memory anyway, otherwise some code exists early later on because 'pBfBuffer' is NULL.
@@ -784,7 +784,7 @@ ULONG DAT_CUtils::UpdateFileBuffer(BIG_KEY _ulKey, void* _pBuffer,ULONG _ulBuffe
 	// if its the univers key we set it 
 	UINT IsUniverse = FALSE;
 	BfObject.Header().IsUniverseKey(IsUniverse);
-	if(IsUniverse) BIG_UniverseKey() = _ulKey;
+	if(IsUniverse) BIG_gst.st_ToSave.ul_UniverseKey = _ulKey;
 
 	void* pData = NULL;
 	size_t dataSize = 0;
@@ -865,13 +865,11 @@ BOOL DAT_CUtils::GetTruncateFile(BIG_INDEX _ul_File)
 BOOL DAT_CUtils::GetGroupReferences(BIG_INDEX _ul_File,std::vector<BIG_KEY>& _vGroup )
 {
 	if ( !BIG_b_IsGrpFile(_ul_File ) ) 
-		return FALSE;	
+		return FALSE;
 
-	char	*pst_Buf;
 	ULONG ulSize;
-	
 
-	pst_Buf = BIG_pc_ReadFileTmpMustFree(BIG_PosFile(_ul_File), &ulSize);
+	char *pst_Buf = ( char * ) BIG_ReadFile( _ul_File, &ulSize );
 	DAT_CUtils::GetGroupReferences(pst_Buf,ulSize,_vGroup );
 	L_free(pst_Buf);
 	return TRUE;

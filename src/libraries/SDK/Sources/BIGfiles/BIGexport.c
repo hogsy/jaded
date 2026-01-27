@@ -54,8 +54,7 @@ static void s_ExportDir(char *_psz_RealName, char *_psz_BigPathName, BIG_INDEX _
     char        asz_TmpName[BIG_C_MaxLenPath];
     char        asz_SrcName[BIG_C_MaxLenPath];
     char        asz_DestName[BIG_C_MaxLenPath];
-    void        *p_Buffer;
-    L_FILE      h_TmpFile;
+	L_FILE      h_TmpFile;
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
     h_TmpFile = NULL;
@@ -117,7 +116,7 @@ _Try_
 		else
 		{
 			/* Write file */
-			p_Buffer = ( void * ) BIG_pc_ReadFileTmp( BIG_PosFile( ul_FileIndex ), &ul_Length );
+			void *p_Buffer = BIG_ReadFileToTmp( ul_FileIndex, &ul_Length );
 			ERR_X_Error( BIG_fwrite( p_Buffer, ul_Length, h_TmpFile ) == 1, L_ERR_Csz_FWrite, NULL );
 
 			/* Close file */
@@ -161,7 +160,7 @@ _Try_
     ERR_X_Error(CLI_FileOpen(h_TmpFile), L_ERR_Csz_FOpen, _psz_RealName);
 
     /* Write file */
-    p_Buffer = (void *) BIG_pc_ReadFileTmp(BIG_PosFile(ul_Index), &ul_Length);
+    p_Buffer = BIG_ReadFileToTmp(ul_Index, &ul_Length);
     ERR_X_Error(BIG_fwrite(p_Buffer, ul_Length, h_TmpFile) == 1, L_ERR_Csz_FWrite, NULL);
 
     /* Close file */

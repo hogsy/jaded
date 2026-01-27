@@ -12,6 +12,7 @@
 #include "BIGfiles/BIGkey.h"
 #include "BIGfiles/BIGerrid.h"
 #include "BASe/BAStypes.h"
+#include "FileSystem/FileSystem.h"
 #include "LOAding/LOAdefs.h"
 
 #if defined ACTIVE_EDITORS
@@ -235,6 +236,8 @@ void BIG_DeleteKeyToPos(BIG_KEY _ul_Key)
 
 #endif
 
+extern "C" ULONG LOA_ul_ExFileKey(ULONG);
+
 /*
  =======================================================================================================================
     Aim:    Search a given key in global table.
@@ -251,8 +254,7 @@ ULONG BIG_ul_SearchKeyToPos(BIG_KEY _ul_Key)
 #else
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	ULONG	h;
-	extern BOOL LOA_gb_SpeedMode; 
-	extern ULONG LOA_ul_ExFileKey(ULONG);
+	extern BOOL LOA_gb_SpeedMode;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 #ifdef ACTIVE_EDITORS
 	// can exchange the key with another one
@@ -294,9 +296,8 @@ void BIG_InsertKeyToFat(BIG_KEY _ul_Key, BIG_INDEX _ul_Fat)
  */
 void BIG_DeleteKeyToFat(BIG_KEY _ul_Key)
 {
-	BIG_INDEX	ul;
-	if(_ul_Key == BIG_C_InvalidKey) return;
-	ul = BIG_ul_SearchKeyToFat(_ul_Key);
+	if (_ul_Key == BIG_C_InvalidKey) return;
+	BIG_INDEX ul = BIG_ul_SearchKeyToFat( _ul_Key );
 	BAS_bdelete(BIG_PosFile(ul), &BIG_gst.st_PosTableToFat);
 	BAS_bdelete(_ul_Key, &BIG_gst.st_KeyTableToFat);
 }
@@ -312,11 +313,13 @@ void BIG_DeleteKeyToFat(BIG_KEY _ul_Key)
  */
 ULONG BIG_ul_SearchKeyToFat(BIG_KEY _ul_Key)
 {
-#if !defined(XML_CONV_TOOL)
+	jaded::FileSystem::FileIndex index;
+	if ( ( index = jaded::filesystem.GetFileIndexByKey( _ul_Key ) ) != BIG_C_InvalidIndex )
+	{
+		return index;
+	}
+
 	return BAS_bsearch(_ul_Key, &BIG_gst.st_KeyTableToFat);
-#else
-	return 0;
-#endif // XML_CONV_TOOL
 }
 
 /*
@@ -325,9 +328,9 @@ ULONG BIG_ul_SearchKeyToFat(BIG_KEY _ul_Key)
  */
 void BIG_ChangeKey(BIG_INDEX _ul_Index, BIG_KEY _ul_NewKey)
 {
-	BIG_DeleteKeyToFat(BIG_FileKey(_ul_Index));
+	BIG_DeleteKeyToFat( BIG_gst.dst_FileTable[ _ul_Index ].ul_Key );
 
-	BIG_FileKey(_ul_Index) = _ul_NewKey;
+	BIG_gst.dst_FileTable[ _ul_Index ].ul_Key = _ul_NewKey;
 	BIG_InsertKeyToFat(_ul_NewKey, _ul_Index);
 	BIG_UpdateOneFileInFat(_ul_Index);
 }

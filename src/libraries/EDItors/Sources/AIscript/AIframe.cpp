@@ -725,7 +725,6 @@ void EAI_cl_Frame::ForceRefresh(void)
 void EAI_cl_Frame::InitListAI(void)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	BIG_tdst_GroupElem	*pst_Buf;
 	ULONG				ul_SizeModel;
 	ULONG				i, i_Res;
 	BIG_INDEX			ul_File;
@@ -740,7 +739,7 @@ void EAI_cl_Frame::InitListAI(void)
 	if(mul_CurrentEditModel == BIG_C_InvalidIndex) return;
 
 	/* Read model, and add each function/var in AI list */
-	pst_Buf = (BIG_tdst_GroupElem *) BIG_pc_ReadFileTmpMustFree(BIG_PosFile(mul_CurrentEditModel), &ul_SizeModel);
+	BIG_tdst_GroupElem *pst_Buf = ( BIG_tdst_GroupElem * ) BIG_ReadFile( mul_CurrentEditModel, &ul_SizeModel );
 
 	mpo_ListAI->DeleteAllItems();
 	for(i = 0; i < (ul_SizeModel / sizeof(BIG_tdst_GroupElem)); i++)
@@ -886,7 +885,6 @@ void EAI_cl_Frame::DisplayPaneNames(void)
 void EAI_cl_Frame::Load(BIG_INDEX _ul_Index)
 {
 	/*~~~~~~~~~~~~~~~~*/
-	char		*pc_Buf;
 	ULONG		ul_Size;
 	POSITION	pos;
 	CHARRANGE	cr;
@@ -944,7 +942,7 @@ void EAI_cl_Frame::Load(BIG_INDEX _ul_Index)
 	/* Read the file */
 	mul_CurrentEditFile = _ul_Index;
 	mpo_ListAI->SelectFromFile();
-	pc_Buf = BIG_pc_ReadFileTmpMustFree(BIG_PosFile(_ul_Index), &ul_Size);
+	char *pc_Buf = ( char * ) BIG_ReadFile( _ul_Index, &ul_Size );
 
 	mpo_Edit->Init();
 	mpo_Edit->LimitText(ul_Size * 2);

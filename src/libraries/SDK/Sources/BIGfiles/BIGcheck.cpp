@@ -362,7 +362,7 @@ BOOL BIG_CheckHierarchy(BIG_INDEX ul_Root)
 				LINK_gul_ColorTxt = 0x00FF0000;
 				sprintf(asz_Msg, "=> Restoring parent to dir %s", BIG_DirName(ul_Root));
 				LINK_PrintStatusMsg(asz_Msg);
-				BIG_ParentFile(ul_File) = ul_Root;
+				BIG_gst.dst_FileTableExt[ ul_File ].st_ToSave.ul_Parent = ul_Root;
 				BIG_UpdateOneFileInFat(ul_File);
 			}
 		}
@@ -703,7 +703,7 @@ recom:
 				if(ul_Next != BIG_C_InvalidIndex) BIG_PrevFile(ul_Next) = i;
 				BIG_NextFile(i) = ul_Next;
 				BIG_PrevFile(i) = BIG_C_InvalidIndex;
-				BIG_ParentFile(i) = BIG_Root();
+				BIG_gst.dst_FileTableExt[ i ].st_ToSave.ul_Parent = BIG_Root();
 				BIG_UpdateOneFileInFat(i);
 				if(ul_Next != BIG_C_InvalidIndex) BIG_UpdateOneFileInFat(ul_Next);
 				BIG_UpdateOneDirInFat(BIG_Root());
@@ -1054,7 +1054,7 @@ void BIG_RestoreDeleted(void)
 
 			pi = (ULONG *) (BIG_NameFile(i) + BIG_C_MaxLenName - sizeof(int) - 2);
 
-			BIG_FileKey(i) = *pi;
+			BIG_gst.dst_FileTable[i].ul_Key = *pi;
 			BIG_InsertKeyToFat(BIG_FileKey(i), i);
 
 			if(BIG_NextFile(i) != BIG_C_InvalidIndex) BIG_PrevFile(BIG_NextFile(i)) = BIG_PrevFile(i);
@@ -1067,7 +1067,7 @@ void BIG_RestoreDeleted(void)
 			BIG_NextFile(i) = BIG_FirstFile(BIG_Root());
 			if(BIG_FirstFile(BIG_Root()) != BIG_C_InvalidIndex) BIG_PrevFile(BIG_FirstFile(BIG_Root())) = i;
 			BIG_FirstFile(BIG_Root()) = i;
-			BIG_ParentFile(i) = BIG_Root();
+			BIG_gst.dst_FileTableExt[ i ].st_ToSave.ul_Parent = BIG_Root();
 			BIG_UpdateOneFileInFat(i);
 			if(BIG_NextFile(i) != BIG_C_InvalidIndex) BIG_UpdateOneFileInFat(BIG_NextFile(i));
 		}
@@ -1091,13 +1091,12 @@ void BIG_RestoreDeleted(void)
  =======================================================================================================================
  =======================================================================================================================
  */
-BOOL b_CanOuputFinal(char *psz_Name)
+BOOL b_CanOuputFinal( const char *psz_Name )
 {
 	/*~~~~~~~~~~~~~*/
-	char	*pz_Temp;
 	/*~~~~~~~~~~~~~*/
 
-	pz_Temp = L_strrchr(psz_Name, '.');
+	const char *pz_Temp = L_strrchr( psz_Name, '.' );
 	if(!pz_Temp) return FALSE;
 
 	if
@@ -1194,20 +1193,17 @@ BOOL b_DummyFile(BIG_INDEX ul_Index, BOOL *_pb_Univ)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	BOOL		b_Can;
-	char		*pz_Temp;
 	char		az_UnivPath[BIG_C_MaxLenPath];
 	char		az_UnivPath1[BIG_C_MaxLenPath];
 	BIG_INDEX	ul_Univ;
 	char		*pz;
 	char		asz_Path[BIG_C_MaxLenPath];
-	char		*psz_Name;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	*_pb_Univ = FALSE;
 	BIG_ComputeFullName(BIG_ParentFile(ul_Index), asz_Path);
-	psz_Name = BIG_NameFile(ul_Index);
-
-	pz_Temp = L_strrchr(psz_Name, '.');
+	const char *psz_Name = BIG_NameFile( ul_Index );
+	const char *pz_Temp = L_strrchr( psz_Name, '.' );
 	if(!pz_Temp) return TRUE;
 
 	/* Universe */

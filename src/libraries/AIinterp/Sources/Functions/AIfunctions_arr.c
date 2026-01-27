@@ -27,6 +27,7 @@ int			*ARR_gpi_Global = NULL;
 #include "BIGfiles/BIGopen.h"
 #include "BIGfiles/BIGfat.h"
 #include "BIGfiles/BIGio.h"
+#include "BIGfiles/BIGread.h"
 
 extern char *BIG_pc_ReadFileTmp(ULONG, ULONG *);
 
@@ -1337,7 +1338,7 @@ void SpecialFlags_Init(void)
 	}
 	else
 	{
-		pc_Buffer = BIG_pc_ReadFileTmp(BIG_PosFile(ul_File), NULL);
+		pc_Buffer = ( char * ) BIG_ReadFileToTmp(ul_File, NULL);
 		b_FileInBigFile = TRUE;
 	}
 
