@@ -19,67 +19,24 @@
 // Much of the below wouldn't have been possible without the work of Droolie!
 // https://github.com/BinarySerializer/Ray1Map
 
-static constexpr uint32_t PAK_MAGIC   = 'KAPB';
-static constexpr uint32_t PAK_VERSION = 1;
-
-struct PakHeader
+std::vector< char > Pak::FileInfo::Read( FILE *file ) const
 {
-	uint32_t magic;
-	uint32_t version;
-	uint32_t priority;
-	uint32_t unk0;
-	uint32_t numEntries;
-	uint32_t footerSize;
-};
-static_assert( sizeof( PakHeader ) == 24, "invalid struct size" );
-
-struct PakFileInfo
-{
-	uint32_t size;
-	uint32_t compressedSize;
-	uint32_t metaSize;
-	uint32_t unk0;
-	uint64_t offset;
-};
-
-struct PakFileTableEntry
-{
-	bool isKeyID;
-	union
-	{
-		uint32_t key;
-		char     name[ BIG_C_MaxLenPath ];
-	} ident;
-
-	PakFileInfo info{};
-};
-
-struct Pak
-{
-	PakHeader header;
-
-	std::vector< PakFileTableEntry >   files;
-	std::map< uint32_t, unsigned int > fileKeyLookup;
-};
-
-static std::vector< char > Pak_ReadFile( Pak *pak, const PakFileInfo *info, FILE *file )
-{
-	if ( info->compressedSize == 0 && info->size == 0 )
+	if ( compressedSize == 0 && size == 0 )
 	{
 		return {};
 	}
 
-	uint64_t offset = sizeof( PakHeader ) + info->offset;
-	if ( _fseeki64( file, offset, SEEK_SET ) == -1 )
+	const uint64_t offs = sizeof( Header ) + offset;
+	if ( _fseeki64( file, offs, SEEK_SET ) == -1 )
 	{
 		char tmp[ 64 ];
-		snprintf( tmp, sizeof( tmp ), "Failed to seek to file (%llu)!", offset );
+		snprintf( tmp, sizeof( tmp ), "Failed to seek to file (%llu)!", offs );
 		ERR_X_ForceError( tmp, nullptr );
 		return {};
 	}
 
-	bool   isCompressed = info->compressedSize > 0;
-	size_t readSize     = isCompressed ? info->compressedSize : info->size;
+	const bool   isCompressed = compressedSize > 0;
+	const size_t readSize     = isCompressed ? compressedSize : size;
 
 	std::vector< char > buffer;
 	buffer.resize( readSize );
@@ -88,11 +45,11 @@ static std::vector< char > Pak_ReadFile( Pak *pak, const PakFileInfo *info, FILE
 	if ( isCompressed )
 	{
 		std::vector< char > decompBuf;
-		decompBuf.resize( info->size );
-		if ( LZ4_decompress_safe( &buffer[ 0 ], &decompBuf[ 0 ], info->compressedSize, info->size ) == 0 )
+		decompBuf.resize( size );
+		if ( LZ4_decompress_safe( &buffer[ 0 ], &decompBuf[ 0 ], compressedSize, size ) == 0 )
 		{
 			char tmp[ 64 ];
-			snprintf( tmp, sizeof( tmp ), "Failed to decompress file (%llu)!", offset );
+			snprintf( tmp, sizeof( tmp ), "Failed to decompress file (%llu)!", offs );
 			ERR_X_ForceError( tmp, nullptr );
 			return {};
 		}
@@ -101,24 +58,32 @@ static std::vector< char > Pak_ReadFile( Pak *pak, const PakFileInfo *info, FILE
 	return buffer;
 }
 
-static bool Pak_ReadHeader( Pak *pak, FILE *file )
+Pak::~Pak()
+{
+	if ( handle != nullptr )
+	{
+		fclose( handle );
+	}
+}
+
+bool Pak::Validate()
 {
 	// not going to worry about endianness for now...
 	// hardly think anyone is planning on getting this built on anything else right now
-	fread( &pak->header, sizeof( PakHeader ), 1, file );
+	fread( &header, sizeof( Header ), 1, handle );
 
-	if ( pak->header.magic != PAK_MAGIC )
+	if ( header.magic != MAGIC )
 	{
 		char tmp[ 32 ];
-		snprintf( tmp, sizeof( tmp ), "Invalid Pak file (%u != %u)!", pak->header.magic, PAK_MAGIC );
+		snprintf( tmp, sizeof( tmp ), "Invalid Pak file (%u != %u)!", header.magic, MAGIC );
 		ERR_X_ForceError( tmp, nullptr );
 		return false;
 	}
 
-	if ( pak->header.version != PAK_VERSION )
+	if ( header.version != VERSION )
 	{
 		char tmp[ 64 ];
-		snprintf( tmp, sizeof( tmp ), "Unsupported Pak version (%u != %u)!", pak->header.version, PAK_VERSION );
+		snprintf( tmp, sizeof( tmp ), "Unsupported Pak version (%u != %u)!", header.version, VERSION );
 		ERR_X_ForceError( tmp, nullptr );
 		return false;
 	}
@@ -126,96 +91,136 @@ static bool Pak_ReadHeader( Pak *pak, FILE *file )
 	return true;
 }
 
-static bool Pak_ReadFileTable( Pak *pak, FILE *file )
+bool Pak::ParseTableOfContents()
 {
 	// need to determine size, do the ol' seeky doodle
-	fseek( file, 0, SEEK_END );
-	uint64_t size = _ftelli64( file );
+	fseek( handle, 0, SEEK_END );
+	const uint64_t size = _ftelli64( handle );
 
 	// seek to the end where the file table actually is
-	uint64_t fileTableOffset = size - pak->header.footerSize;
-	_fseeki64( file, fileTableOffset, SEEK_SET );
-
-	for ( unsigned int i = 0; i < pak->header.numEntries; ++i )
+	const uint64_t fileTableOffset = size - header.footerSize;
+	if ( _fseeki64( handle, fileTableOffset, SEEK_SET ) != 0 )
 	{
-		PakFileTableEntry entry = {};
+		const std::string msg = "Failed to seek to table offset (" + std::to_string( fileTableOffset ) + ")!";
+		ERR_X_ForceError( msg.c_str(), nullptr );
+		return false;
+	}
 
-		entry.isKeyID = fgetc( file );
+	for ( unsigned int i = 0; i < header.numEntries; ++i )
+	{
+		FileTableEntry entry = {};
+
+		entry.isKeyID = fgetc( handle );
 		if ( entry.isKeyID )
 		{
-			fread( &entry.ident.key, sizeof( uint32_t ), 1, file );
+			fread( &entry.ident.key, sizeof( uint32_t ), 1, handle );
 		}
 		else
 		{
 			uint32_t nameLength;
-			fread( &nameLength, sizeof( uint32_t ), 1, file );
+			fread( &nameLength, sizeof( uint32_t ), 1, handle );
 			if ( nameLength >= sizeof( entry.ident.name ) )
 			{
 				char tmp[ 64 ];
 				snprintf( tmp, sizeof( tmp ), "Unexpected name length in file table (%u >= %u)!", nameLength, sizeof( entry.ident.name ) );
 				ERR_X_ForceError( tmp, nullptr );
-				break;
+				return false;
 			}
 
-			fread( entry.ident.name, sizeof( char ), nameLength, file );
+			fread( entry.ident.name, sizeof( char ), nameLength, handle );
 		}
 
-		fread( &entry.info, sizeof( PakFileInfo ), 1, file );
+		fread( &entry.info, sizeof( FileInfo ), 1, handle );
 
 #if 0
 		printf( "meta size: %u\n"
-		        "offset: %llu\n"
-		        "size: %u\n"
-		        "compressed size: %u\n",
-		        entry.info.metaSize,
-		        entry.info.offset,
-		        entry.info.size,
-		        entry.info.compressedSize );
+				"offset: %llu\n"
+				"size: %u\n"
+				"compressed size: %u\n",
+				entry.info.metaSize,
+				entry.info.offset,
+				entry.info.size,
+				entry.info.compressedSize );
 #endif
 
-		pak->files.push_back( entry );
+		files.push_back( entry );
 
 		if ( entry.isKeyID )
 		{
-			pak->fileKeyLookup.emplace( entry.ident.key, pak->files.size() - 1 );
+			fileKeyLookup.emplace( entry.ident.key, files.size() - 1 );
 		}
 	}
 
 	return true;
+}
+
+bool Pak::Open( const std::string &path )
+{
+	handle = fopen( path.c_str(), "r+bR" );
+	if ( handle == nullptr )
+	{
+		char tmp[ 32 ];
+		snprintf( tmp, sizeof( tmp ), "Failed to open Pak file!" );
+		ERR_X_ForceError( tmp, nullptr );
+		return false;
+	}
+
+	if ( !Validate() )
+	{
+		return false;
+	}
+
+	if ( !ParseTableOfContents() )
+	{
+		return false;
+	}
+
+	return true;
+}
+
+const Pak::FileTableEntry *Pak::FindEntry( const uint32_t key ) const
+{
+	const auto i = fileKeyLookup.find( key );
+	if ( i == fileKeyLookup.end() )
+	{
+		return nullptr;
+	}
+
+	return &files[ i->second ];
 }
 
 /**
  * Attempts to provide an appropriate extension, by figuring out the
  * type of file being dealt with.
  */
-static std::string Pak_DetermineFileType( const void *buf, size_t size )
+static std::string DetermineFileType( const void *buf, const size_t size )
 {
 	// they were nice enough to give *some* formats
 	// something easy to identify with...
-	if ( *( ( uint32_t * ) buf ) == 0x6f61672e )
+	if ( *( uint32_t * ) buf == 0x6f61672e )
 	{
 		return ".gao";
 	}
-	if ( *( ( uint32_t * ) buf ) == 0x61672e63 )// seems specific to 20th?
+	if ( *( uint32_t * ) buf == 0x61672e63 )// seems specific to 20th?
 	{
 		return ".cgao";
 	}
-	if ( *( ( uint32_t * ) buf ) == 0x776f772e )
+	if ( *( uint32_t * ) buf == 0x776f772e )
 	{
 		return ".wow";
 	}
-	if ( *( ( uint32_t * ) buf ) == 0x494c5280 )
+	if ( *( uint32_t * ) buf == 0x494c5280 )
 	{
 		return ".rli";
 	}
 
 	// and now we get into cursed territory...
 
-	if ( size >= 8 && *( ( ( uint32_t * ) buf ) + 1 ) == 0x6f61672e )
+	if ( size >= 8 && *( ( uint32_t * ) buf + 1 ) == 0x6f61672e )
 	{
 		return ".gol";
 	}
-	if ( size >= 8 && *( ( ( uint32_t * ) buf ) + 1 ) == 0x776f772e )
+	if ( size >= 8 && *( ( uint32_t * ) buf + 1 ) == 0x776f772e )
 	{
 		return ".wol";
 	}
@@ -225,7 +230,7 @@ static std::string Pak_DetermineFileType( const void *buf, size_t size )
 
 // Hacky gross crap ...
 
-static const PakFileTableEntry *GetWowForWol( const Pak *pak, const void *buf, size_t size )
+static const Pak::FileTableEntry *GetWowForWol( const Pak *pak, const void *buf, size_t size )
 {
 	// so from what I can tell, we can get the primary wow as the last key from the wol...
 	// this is a little dumb, but hey, we're trying to figure out what's what from a mess
@@ -236,54 +241,26 @@ static const PakFileTableEntry *GetWowForWol( const Pak *pak, const void *buf, s
 		uint32_t magic;
 	};
 
-	Index *index = ( Index * ) ( ( char * ) buf ) + size - sizeof( Index );
+	const Index *index = ( Index * ) ( char * ) buf + size - sizeof( Index );
 	if ( index->magic != 0x776f772e )
 	{
 		return nullptr;
 	}
 
-	auto &i = pak->fileKeyLookup.find( index->key );
-	if ( i == pak->fileKeyLookup.end() )
-	{
-		return nullptr;
-	}
-
-	return &pak->files[ i->second ];
+	return pak->FindEntry( index->key );
 }
 
-bool Pak_Open( const char *path )
+void Pak::Export( const std::string &destination ) const
 {
-	FILE *file = fopen( path, "r+bR" );
-	if ( file == nullptr )
+	for ( auto &i : files )
 	{
-		char tmp[ 32 ];
-		snprintf( tmp, sizeof( tmp ), "Failed to open Pak file!" );
-		ERR_X_ForceError( tmp, nullptr );
-		return false;
-	}
-
-	bool status = false;
-
-	Pak pak = {};
-	if ( !Pak_ReadHeader( &pak, file ) )
-	{
-		goto cleanup;
-	}
-
-	if ( !Pak_ReadFileTable( &pak, file ) )
-	{
-		goto cleanup;
-	}
-
-	for ( auto &i : pak.files )
-	{
-		std::vector< char > buffer = Pak_ReadFile( &pak, &i.info, file );
+		std::vector< char > buffer = i.info.Read( handle );
 		if ( !buffer.empty() )
 		{
 			std::string dir, name;
 			if ( i.isKeyID )
 			{
-				std::string ident = Pak_DetermineFileType( &buffer[ 0 ], buffer.size() );
+				std::string ident = DetermineFileType( &buffer[ 0 ], buffer.size() );
 				if ( ident == ".wow" )
 				{
 					// we can pull the original filename from a wow :)
@@ -299,13 +276,13 @@ bool Pak_Open( const char *path )
 				else if ( ident == ".wol" )
 				{
 					//TODO: this shit doesn't work...
-					const PakFileTableEntry *entry = GetWowForWol( &pak, &buffer[ 0 ], buffer.size() );
+					const FileTableEntry *entry = GetWowForWol( this, &buffer[ 0 ], buffer.size() );
 					if ( entry != nullptr )
 					{
-						std::vector< char > wowBuf = Pak_ReadFile( &pak, &entry->info, file );
+						std::vector< char > wowBuf = entry->info.Read( handle );
 						assert( !wowBuf.empty() );
 
-						std::string wowIdent = Pak_DetermineFileType( &wowBuf[ 0 ], wowBuf.size() );
+						std::string wowIdent = DetermineFileType( &wowBuf[ 0 ], wowBuf.size() );
 						assert( wowIdent == ".wow" );
 
 						char buf[ 64 ] = {};
@@ -334,6 +311,8 @@ bool Pak_Open( const char *path )
 				dir  = "ROOT/Unsorted";
 			}
 
+			dir = jaded::FileSystem::NormalizePath( destination + "/" + dir );
+
 			std::string cpath = dir + "/" + name;
 			if ( jaded::filesystem.DoesFileExist( cpath ) )
 			{
@@ -356,9 +335,4 @@ bool Pak_Open( const char *path )
 			}
 		}
 	}
-
-cleanup:
-	fclose( file );
-
-	return status;
 }
