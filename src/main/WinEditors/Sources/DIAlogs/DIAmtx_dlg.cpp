@@ -22,7 +22,6 @@
 #include "BIGfiles/BIGfat.h"
 
 #include "Sound/Sources/SND.h"
-#include "IOP/RPC_Manager.h"
 
 BEGIN_MESSAGE_MAP(EDIA_cl_MtxDialog, EDIA_cl_BaseDialog)
 	ON_COMMAND(IDC_BUTTON_CHOOSEVIDEO, OnSelectVideoFile)

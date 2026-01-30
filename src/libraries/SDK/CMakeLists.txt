@@ -143,35 +143,6 @@ add_library(Jaded-SDK OBJECT
         Sources/INOut/INOstruct.h
         Sources/INOut/win32/win32INOsaving.c
         Sources/INOut/win32/win32INOsaving.h
-        Sources/IOP/CDV_Manager.h
-        Sources/IOP/RPC_Manager.h
-        Sources/IOP/iop/iopBAStypes.h
-        Sources/IOP/iop/iopCDV_Manager.c
-        Sources/IOP/iop/iopCDV_Manager.h
-        Sources/IOP/iop/iopCLI.c
-        Sources/IOP/iop/iopCLI.h
-        Sources/IOP/iop/iopDebug.c
-        Sources/IOP/iop/iopDebug.h
-        Sources/IOP/iop/iopKernel.h
-        Sources/IOP/iop/iopMain.c
-        Sources/IOP/iop/iopMain.h
-        Sources/IOP/iop/iopMEM.c
-        Sources/IOP/iop/iopMEM.h
-        Sources/IOP/iop/iopMTX.c
-        Sources/IOP/iop/iopMTX.h
-        Sources/IOP/iop/iopSND.c
-        Sources/IOP/iop/iopSND.h
-        Sources/IOP/iop/iopSND_Debug.c
-        Sources/IOP/iop/iopSND_Debug.h
-        Sources/IOP/iop/iopSND_DmaScheduler.c
-        Sources/IOP/iop/iopSND_DmaScheduler.h
-        Sources/IOP/iop/iopSND_Fx.c
-        Sources/IOP/iop/iopSND_Fx.h
-        Sources/IOP/iop/iopSND_Hard.c
-        Sources/IOP/iop/iopSND_Hard.h
-        Sources/IOP/iop/iopSND_libsd.h
-        Sources/IOP/iop/iopSND_Voice.c
-        Sources/IOP/iop/iopSND_Voice.h
         Sources/LINks/LINK.cpp
         Sources/LINks/LINK.h
         Sources/LINks/LINKmsg.cpp

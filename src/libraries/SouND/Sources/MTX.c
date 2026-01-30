@@ -20,7 +20,6 @@
 #include "BIGfiles/LOAding/LOAread.h"
 #include "BIGfiles/BIGread.h"
 #include "BASe/MEMory/MEM.h"
-#include "IOP/RPC_Manager.h"
 #include "BIGfiles/BIGkey.h"
 
 #ifdef ACTIVE_EDITORS
