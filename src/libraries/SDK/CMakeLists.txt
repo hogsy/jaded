@@ -1,5 +1,4 @@
 add_library(Jaded-SDK OBJECT
-        Sources/Precomp.c
         Sources/Precomp.h
         Sources/projectconfig.h
         Sources/BASe/BAS.c
