@@ -7,23 +7,18 @@
 #include <iostream>
 #include <string>
 
-#include <stdlib.h>
-#include <stdio.h>
-
 #if defined( _WIN32 )
 #	include <wincrypt.h>
 #endif
+
+#include "BIGfiles/BIGread.h"
+#include "BIGfiles/BIGkey.h"
 
 #include "../MainSharedSystem.h"
 #include "../Profiler.h"
 #include "../AppVersion.h"
 
 #include "FileSystem.h"
-
-#include "BIGfiles/BIGopen.h"
-#include "BIGfiles/BIGdefs.h"
-#include "BIGfiles/BIGfat.h"
-#include "BIGfiles/BIGread.h"
 
 #include "LINks/LINKmsg.h"
 
@@ -151,7 +146,10 @@ std::string jaded::FileSystem::GetFilenameExtension( const std::string &filename
 		return {};
 	}
 
-	return filename.substr( pos + 1 );
+	std::string ext = filename.substr( pos + 1 );
+	std::transform( ext.begin(), ext.end(), ext.begin(), []( char c )
+	                { return ( char ) std::tolower( c ); } );
+	return ext;
 }
 
 bool jaded::FileSystem::SetWorkingDirectory( const std::string &path )
@@ -593,7 +591,7 @@ jaded::FileSystem::KeyDir *jaded::FileSystem::GetDirByName( const std::string &p
 
 jaded::FileSystem::KeyDir *jaded::FileSystem::GetDirByIndex( const DirIndex index )
 {
-	if ( !jaded::filesystem.IsKeyTablePopulated() )
+	if ( !filesystem.IsKeyTablePopulated() )
 	{
 		return nullptr;
 	}
@@ -638,7 +636,7 @@ jaded::FileSystem::KeyFile *jaded::FileSystem::GetFileByName( const std::string 
 
 jaded::FileSystem::KeyFile *jaded::FileSystem::GetFileByIndex( const FileIndex index )
 {
-	if ( !jaded::filesystem.IsKeyTablePopulated() )
+	if ( !filesystem.IsKeyTablePopulated() )
 	{
 		return nullptr;
 	}
@@ -731,38 +729,3 @@ const jaded::FileSystem::Key &jaded::FileSystem::GetUniverseKey() const
 {
 	return universeKey;
 }
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-// C interface for legacy BIG API
-
-extern "C" uint32_t Jaded_FileSystem_GenerateFileKey( const char *path )
-{
-	return jaded::filesystem.GenerateFileKey( path );
-}
-
-extern "C" uint32_t Jaded_FileSystem_SearchFileExt( const char *path )
-{
-	const jaded::FileSystem::KeyFile *file = jaded::filesystem.GetFileByName( path );
-	return file != nullptr ? file->index : BIG_C_InvalidIndex;
-}
-
-extern "C" uint32_t Jaded_FileSystem_CreatePath( const char *path )
-{
-	return jaded::filesystem.CreatePath( path );
-}
-
-extern "C" uint32_t Jaded_FileSystem_LookupDirectory( const char *path )
-{
-	jaded::FileSystem::KeyDir *dir = jaded::filesystem.GetDirByName( path );
-	return dir != nullptr ? dir->index : BIG_C_InvalidIndex;
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
-extern "C" uint32_t Jaded_FileSystem_GetFileIndexByKey( uint32_t key )
-{
-	return jaded::filesystem.GetFileIndexByKey( key );
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////

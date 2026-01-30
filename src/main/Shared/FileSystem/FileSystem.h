@@ -3,8 +3,6 @@
 
 #pragma once
 
-#if defined( __cplusplus )
-
 namespace jaded
 {
 	class FileSystem
@@ -45,6 +43,11 @@ namespace jaded
 		static std::string GetAppDataPath();
 		static std::string NormalizePath( std::string path );
 
+		/**
+		 * Fetch the extension of the filename, in a lowercase form.
+		 * @param filename	Name of the file you want the extension from.
+		 * @return			Returns the extension, if found. Will be converted to lowercase.
+		 */
 		static std::string GetFilenameExtension( const std::string &filename );
 
 		static bool SetWorkingDirectory( const std::string &path );
@@ -103,15 +106,3 @@ namespace jaded
 
 	extern FileSystem filesystem;
 }// namespace jaded
-
-#else// C interface
-
-uint32_t Jaded_FileSystem_GenerateFileKey( const char *path );
-uint32_t Jaded_FileSystem_SearchFileExt( const char *path );
-
-uint32_t Jaded_FileSystem_CreatePath( const char *path );
-uint32_t Jaded_FileSystem_LookupDirectory( const char *path );
-
-uint32_t Jaded_FileSystem_GetFileIndexByKey( uint32_t key );
-
-#endif
