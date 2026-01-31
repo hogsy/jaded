@@ -499,4 +499,5 @@ target_link_libraries(Jaded
 
         dxguid
         winhttp
+        Winmm
 )

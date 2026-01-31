@@ -47,7 +47,7 @@ foreach (OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} "${JADE_OUTPUT_DIR}")
 endforeach ()
 
-add_compile_options(/MT /MP /W4 #[[/sdl]] $<$<NOT:$<CONFIG:Debug>>:/Zi>)
+add_compile_options(/MP /W4 #[[/sdl]] $<$<NOT:$<CONFIG:Debug>>:/Zi>)
 
 #add_link_options(
 #        "$<$<NOT:$<CONFIG:Debug>>:/DEBUG>"
@@ -60,6 +60,7 @@ add_definitions(
         -D_USE_32BIT_TIME_T
         -D_CRT_SECURE_NO_WARNINGS
         -D_CRT_NONSTDC_NO_WARNINGS
+        -D_AFXDLL
 )
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     message("Configuring for debug compilation")
