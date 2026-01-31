@@ -41,6 +41,8 @@ std::vector< char > core::fs::Pak::FileInfo::Read( FILE *file ) const
 		{
 			throw std::runtime_error( "failed to decompress file (" + std::to_string( offs ) + ")" );
 		}
+
+		return decompBuf;
 	}
 
 	return buffer;
@@ -104,7 +106,15 @@ bool core::fs::Pak::ParseTableOfContents()
 			fread( &nameLength, sizeof( uint32_t ), 1, handle );
 
 			char *tmp = ( char * ) _malloca( nameLength + 1 );
+			if ( tmp == nullptr )
+			{
+				printf( "Failed to allocate storage for name!\n" );
+				return false;
+			}
+
 			fread( tmp, sizeof( char ), nameLength, handle );
+			tmp[ nameLength ] = '\0';
+
 			entry.name = tmp;
 			_freea( tmp );
 		}
@@ -167,9 +177,9 @@ static std::string DetermineFileType( const void *buf, const size_t size )
 	{
 		return ".gao";
 	}
-	if ( *( uint32_t * ) buf == 0x61672e63 )// seems specific to 20th?
+	if ( *( uint32_t * ) buf == 0x474e5089 )
 	{
-		return ".cgao";
+		return ".png";
 	}
 	if ( *( uint32_t * ) buf == 0x776f772e )
 	{
@@ -198,6 +208,14 @@ void core::fs::Pak::DetermineEntryPaths()
 {
 	for ( auto &i : files )
 	{
+		if ( !i.name.empty() && !i.path.empty() )
+		{
+			// okay, we've probably done this
+			// already while dealing with the
+			// relationship of another file
+			continue;
+		}
+
 		std::vector< char > buffer = i.info.Read( handle );
 		if ( buffer.empty() )
 		{
@@ -227,8 +245,8 @@ void core::fs::Pak::DetermineEntryPaths()
 				FileTableEntry *group = FindEntry( groupKey );
 				if ( group != nullptr )
 				{
-					group->dstPath = dir;
-					group->name    = std::string( buf ) + ".gol";
+					group->path = dir;
+					group->name = std::string( buf ) + ".gol";
 				}
 			}
 		}
@@ -271,8 +289,8 @@ void core::fs::Pak::DetermineEntryPaths()
 			}
 		}
 
-		i.dstPath = dir;
-		i.name    = name;
+		i.path = dir;
+		i.name = name;
 	}
 }
 
@@ -318,15 +336,15 @@ void core::fs::Pak::Export( const std::string &destination ) const
 			continue;
 		}
 
-		std::string path = destination + "/" + i.dstPath + "/" + i.name;
+		std::string path = destination + "/" + i.path + "/" + i.name;
 		if ( FileSystem::DoesLocalFileExist( path ) )
 		{
 			continue;
 		}
 
-		if ( !FileSystem::CreateLocalPath( destination + "/" + i.dstPath ) )
+		if ( !FileSystem::CreateLocalPath( destination + "/" + i.path ) )
 		{
-			printf( "Failed to create destination (%s)!\n", i.dstPath.c_str() );
+			printf( "Failed to create destination (%s)!\n", i.path.c_str() );
 			continue;
 		}
 

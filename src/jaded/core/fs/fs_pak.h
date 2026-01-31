@@ -28,11 +28,11 @@ namespace core::fs
 			uint32_t size;
 			uint32_t compressedSize;
 			uint32_t metaSize;
-			uint32_t unk0;
 			uint64_t offset;
 
 			std::vector< char > Read( FILE *file ) const;
 		};
+		static_assert( sizeof( FileInfo ) == 24, "invalid struct size" );
 
 		struct FileTableEntry
 		{
@@ -40,7 +40,7 @@ namespace core::fs
 
 			uint32_t key;
 
-			std::string dstPath;
+			std::string path;
 			std::string name;
 
 			FileInfo info{};
