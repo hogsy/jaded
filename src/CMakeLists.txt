@@ -19,13 +19,18 @@ add_subdirectory(extern/zlib)
 add_subdirectory(jaded/core)
 
 ###################################################################################
+# Tools
+
+add_subdirectory(tools/unpacker)
+
+###################################################################################
 # Libraries
 
 add_subdirectory(dlls/MAD_loadSave)
 add_subdirectory(dlls/MAD_mem)
 add_subdirectory(dlls/MAD_rasterize)
 
-add_subdirectory(libraries)     # Core Jade Libraries
+add_subdirectory(libraries)
 
 ###################################################################################
 # Apps
