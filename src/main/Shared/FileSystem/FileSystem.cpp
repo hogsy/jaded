@@ -79,6 +79,16 @@ std::string jaded::FileSystem::KeyFile::GetPath() const
 	return filesystem.directories[ dir ].name + "/" + name;
 }
 
+size_t jaded::FileSystem::KeyFile::GetSize() const
+{
+	return GetLocalFileSize( GetPath() );
+}
+
+time_t jaded::FileSystem::KeyFile::GetTimestamp() const
+{
+	return GetLocalFileTimestamp( GetPath() );
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////
 //
 //	Key Dir
@@ -98,7 +108,7 @@ std::string jaded::FileSystem::GetExecutablePath()
 
 std::string jaded::FileSystem::GetAppDataPath()
 {
-	if ( jaded::sys::launchOperations.portableMode )
+	if ( sys::launchOperations.portableMode )
 	{
 		return ".";
 	}
@@ -187,8 +197,8 @@ void jaded::FileSystem::PrintKeyTable() const
 
 bool jaded::FileSystem::DoesFileExist( const std::string &path )
 {
-	struct _stat buf;
-	return ( _stat( path.c_str(), &buf ) == 0 );
+	struct stat buf = {};
+	return stat( path.c_str(), &buf ) == 0;
 }
 
 bool jaded::FileSystem::CreateLocalPath( const std::string &path )
@@ -213,19 +223,16 @@ bool jaded::FileSystem::CreateLocalPath( const std::string &path )
 
 size_t jaded::FileSystem::GetLocalFileSize( const std::string &path )
 {
-	FILE *file = fopen( path.c_str(), "rb" );
-	if ( file == nullptr )
-	{
-		return ( size_t ) -1;
-	}
+	struct stat attr = {};
+	stat( path.c_str(), &attr );
+	return attr.st_size;
+}
 
-	struct stat buf = {};
-	const int   fd  = _fileno( file );
-	fstat( fd, &buf );
-
-	fclose( file );
-
-	return buf.st_size;
+time_t jaded::FileSystem::GetLocalFileTimestamp( const std::string &path )
+{
+	struct stat attr = {};
+	stat( path.c_str(), &attr );
+	return attr.st_mtime;
 }
 
 bool jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )

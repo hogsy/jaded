@@ -26,6 +26,9 @@ namespace jaded
 			std::vector< uint8_t > Read() const;
 
 			std::string GetPath() const;
+
+			size_t GetSize() const;
+			time_t GetTimestamp() const;
 		};
 
 		struct KeyDir
@@ -59,6 +62,7 @@ namespace jaded
 		static bool CreateLocalPath( const std::string &path );
 
 		static size_t GetLocalFileSize( const std::string &path );
+		static time_t GetLocalFileTimestamp( const std::string &path );
 
 		bool CreateKeyRepository( const BIG_tdst_BigFile *bf );
 		bool ParseKeyRepository( const std::string &path );
