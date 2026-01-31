@@ -270,7 +270,6 @@ BIG_INDEX BIG_ul_CreateDir( const char *_psz_PathName)
 			return dir->index;
 		}
 
-		//TODO: should we not just index it for now? And then we only call create during file creation
 		return jaded::filesystem.CreatePath( _psz_PathName );
 	}
 

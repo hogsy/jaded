@@ -53,21 +53,48 @@ extern "C" BOOL EDI_gb_NoVerbose;
             _i_SizeOfIniStruct  Size of structure to be retreive from file.
  =======================================================================================================================
  */
-void EDI_cl_MainFrame::BaseLoadIni( const char *_psz_IniFile, UCHAR *_puc_IniStruct, int _i_SizeOfIniStruct )
+void EDI_cl_MainFrame::BaseLoadIni(char *_psz_IniFile, UCHAR *_puc_IniStruct, int _i_SizeOfIniStruct)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	ULONG ul_Size;
-	char  asz_Name[ BIG_C_MaxLenPath ];
+	ULONG		ul_Size;
+	BIG_INDEX	ul_Index;
+	CString		o_Name;
+	char		asz_Name[BIG_C_MaxLenPath];
+	char		*psz_Temp;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-	/* Read the .ini if it exists. */
-	CString o_Name = _psz_IniFile;
-	o_Name += EDI_Csz_ExtIni;
-	BIG_INDEX ul_Index = BIG_ul_SearchFileExt( EDI_Csz_Ini, o_Name );
-	if ( ul_Index != BIG_C_InvalidIndex )
+	/* Read from disk */
+#if 0
+	if(M_MF()->mst_ExternIni.b_SynchroEditorsData)
 	{
-		ul_Size = BIG_ReadFileToDst( ul_Index, _puc_IniStruct, _i_SizeOfIniStruct );
-		ERR_X_Error( ul_Size == _i_SizeOfIniStruct, "invalid struct size", nullptr );
+		FILE	*f;
+		int		len;
+
+		strcpy(asz_Name, EDI_go_TheApp.m_pszHelpFilePath);
+		*strrchr(asz_Name, '\\') = 0;
+		strcat(asz_Name, "/EditorDatas/Ini/");
+		strcat(asz_Name, _psz_IniFile);
+		strcat(asz_Name, EDI_Csz_ExtIni);
+ 		f = fopen(asz_Name, "rb");
+		if(f)
+		{
+			fseek(f, 0, SEEK_END);
+			len = ftell(f);
+			rewind(f);
+			fread(_puc_IniStruct, len, 1, f);
+			fclose(f);
+			return;
+		}
+	}
+#endif
+
+	/* Read the .ini if it exists. */
+	o_Name = _psz_IniFile;
+	o_Name += EDI_Csz_ExtIni;
+	ul_Index = BIG_ul_SearchFileExt(EDI_Csz_Ini, o_Name );
+	if(ul_Index != BIG_C_InvalidIndex)
+	{
+		ul_Size = BIG_ul_ReadFile(BIG_PosFile(ul_Index), _puc_IniStruct);
 	}
 
 	/*
@@ -78,20 +105,19 @@ void EDI_cl_MainFrame::BaseLoadIni( const char *_psz_IniFile, UCHAR *_puc_IniStr
 	else
 	{
 		/* Compute file name */
-		L_strcpy( asz_Name, _psz_IniFile );
-		char *psz_Temp = asz_Name;
-		while ( !L_isspace( *psz_Temp ) && *psz_Temp ) psz_Temp++;
+		L_strcpy(asz_Name, _psz_IniFile);
+		psz_Temp = asz_Name;
+		while(!L_isspace(*psz_Temp) && *psz_Temp) psz_Temp++;
 		*psz_Temp = 0;
-		o_Name    = asz_Name;
+		o_Name = asz_Name;
 		o_Name += EDI_Csz_ExtIniDef;
 		o_Name += EDI_Csz_ExtIni;
 
 		/* Try to load */
-		ul_Index = BIG_ul_SearchFileExt( EDI_Csz_Ini, o_Name );
-		if ( ul_Index != BIG_C_InvalidIndex )
+		ul_Index = BIG_ul_SearchFileExt(EDI_Csz_Ini, o_Name );
+		if(ul_Index != BIG_C_InvalidIndex)
 		{
-			ul_Size = BIG_ReadFileToDst( ul_Index, _puc_IniStruct, _i_SizeOfIniStruct );
-			ERR_X_Error( ul_Size == _i_SizeOfIniStruct, "invalid struct size", nullptr );
+			ul_Size = BIG_ul_ReadFile(BIG_PosFile(ul_Index), _puc_IniStruct);
 		}
 	}
 }

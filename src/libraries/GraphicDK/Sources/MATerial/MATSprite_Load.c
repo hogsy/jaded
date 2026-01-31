@@ -168,8 +168,8 @@ MAT_SPR_tdst_BumpMap *MAT_pst_BumpMap_Add( ULONG _ul_Key )
         MAT_gst_BumpMapList.dpst_BM[ i ]->Semaphore = 1;
         MAT_gst_BumpMapList.dpst_BM[ i ]->Size = (USHORT) (ul_Size >> 1L);
 
-		MAT_gst_BumpMapList.dpst_BM[ i ]->p_Pixels = ( ULONG * ) MEM_p_Alloc( ul_Length );
-		BIG_ReadFileToDst( ul_Pos, MAT_gst_BumpMapList.dpst_BM[ i ]->p_Pixels, ul_Length );
+        MAT_gst_BumpMapList.dpst_BM[ i ]->p_Pixels = (ULONG*) MEM_p_Alloc ( ul_Length );
+	    BIG_ul_ReadFile(ul_Pos, MAT_gst_BumpMapList.dpst_BM[ i ]->p_Pixels );
     }
     else
     {

@@ -451,7 +451,7 @@ public:
 	void				UnlockDisplay(CWnd *, CRect * = NULL, BOOL _b_Update = TRUE);
 	void				LockWindowUpdate(CWnd *);
 
-	void				BaseLoadIni( const char *, UCHAR *, int);
+	void				BaseLoadIni(char *, UCHAR *, int);
 	void				BaseSaveIni(char *, UCHAR *, int);
 	void				ReinitIni(void);
 	void				LoadIni(void);

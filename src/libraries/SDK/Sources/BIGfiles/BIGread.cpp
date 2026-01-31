@@ -17,7 +17,6 @@
 #include "BIGfiles/BIGfat.h"
 #include "BIGfiles/BIGspecial.h"
 #include "BIGfiles/LOAding/LOAread.h"
-#include "FileSystem/FileSystem.h"
 
 /*$4
  ***********************************************************************************************************************
@@ -57,7 +56,7 @@ ULONG		BIG_gul_Miss = 0;
  =======================================================================================================================
  =======================================================================================================================
  */
-static ULONG
+static ULONG 
 SeekSeek(BIGFileHandle h, ULONG pos, ULONG what)
 {
 	BIG_gul_SeekCur = pos;
@@ -84,7 +83,7 @@ SeekSeek(BIGFileHandle h, ULONG pos, ULONG what)
  =======================================================================================================================
  =======================================================================================================================
  */
-static ULONG
+static ULONG 
 ReadRead(char *p, ULONG size, BIGFileHandle h)
 {
 	if((!BIG_gp_Cache) || (!BIG_gb_CanCache) || (size > SIZE_CACHE) || (BIG_gul_SeekCur < BIG_gul_SeekCache))
@@ -235,45 +234,43 @@ extern "C" void BIG_ReadNoSeek(ULONG _ul_Pos, void *_p_Buffer, ULONG _ul_Length)
 	ERR_X_Error(r == 1, L_ERR_Csz_FRead, NULL);
 }
 
-size_t BIG_ReadFileToDst( const BIG_INDEX index, void *dstBuffer, const size_t bufferSize )
+/*
+ =======================================================================================================================
+    Aim:    Read a file in a given buffer. Be carreful cause the buffer must be big enough to get the while file. In:
+            _ul_Pos Position of the file in bigfile (not in FAT). _p_Buffer Buffer where the file will be loaded.
+
+    Out:    Return the length of the file readen.
+ =======================================================================================================================
+ */
+ULONG BIG_ul_ReadFile(ULONG _ul_Pos, void *_p_Buffer)
 {
-	const jaded::FileSystem::KeyFile *file;
-	if ( ( file = jaded::filesystem.GetFileByIndex( index ) ) != nullptr )
+	/*~~~~~~~~~~~~~~*/
+	ULONG	ul_Length,r;
+	/*~~~~~~~~~~~~~~*/
+
+	/* Seek to the beginning of the file */
+	if(BIG_gi_ReadMode != 2)
 	{
-		const std::vector< uint8_t > buffer = file->Read();
-
-		// bound check it, like a normal sane person
-		ERR_X_Error( buffer.size() <= bufferSize, "Invalid buffer size on read", nullptr );
-
-		std::copy( buffer.begin(), buffer.end(), ( uint8_t * ) dstBuffer );
-
-		return buffer.size();
+		r=SeekSeek(BIG_Handle(), _ul_Pos, L_SEEK_SET);
+		ERR_X_Error(r == 0, L_ERR_Csz_FSeek, NULL);
 	}
 
-	if ( BIG_gi_ReadMode != 2 )
+	/*
+	 * Read length of file. The length of the file is saved at the beginning of the
+	 * file buffer.
+	 */
+	r=ReadRead((UCHAR *) &ul_Length, sizeof(ULONG), BIG_Handle());
+	ERR_X_Error(r == 1, L_ERR_Csz_FRead, NULL);
+	if(LOA_IsSwapperActive()) SwapDWord(&ul_Length);
+
+	if(ul_Length)
 	{
-		const unsigned int r = L_fseek( BIG_gst.h_CLibFileHandle, BIG_PosFile( index ), SEEK_SET );
-		ERR_X_Error( r == 0, L_ERR_Csz_FSeek, nullptr );
+		/* Read file */
+		r=ReadRead((UCHAR *) _p_Buffer, ul_Length & 0x7FFFFFFF, BIG_Handle());
+		ERR_X_Error(r == 1, L_ERR_Csz_FRead, NULL);
 	}
 
-	unsigned int size;
-	unsigned int r = BIG_fread( &size, sizeof( uint32_t ), BIG_gst.h_CLibFileHandle );
-	ERR_X_Error( r == 1, L_ERR_Csz_FRead, nullptr );
-	if ( LOA_IsSwapperActive() )
-	{
-		SwapDWord( &size );
-	}
-
-	// bound check it, like a normal sane person
-	ERR_X_Error( size <= bufferSize, "Invalid buffer size on read", nullptr );
-
-	if ( size > 0 )
-	{
-		r = BIG_fread( dstBuffer, size & 0x7FFFFFFF, BIG_gst.h_CLibFileHandle );
-		ERR_X_Error( r == 1, L_ERR_Csz_FRead, nullptr );
-	}
-
-	return size;
+	return(ul_Length);
 }
 
 /*
@@ -296,20 +293,21 @@ static int	truc_nul = 0;
 char *BIG_pc_ReadFileTmp(ULONG _ul_Pos, ULONG *_pul_Length)
 {
 	/*~~~~~~~~~~~~~~*/
-	void	*p_Buffer = nullptr;
-	ULONG	ul_Length;
+	void	*p_Buffer = NULL;
+	ULONG	ul_Length,r;
 	/*~~~~~~~~~~~~~~*/
 
 
 #ifdef ACTIVE_EDITORS
 	{
 		/*~~~~~~~~~~~~~~~*/
+		BIG_INDEX	ul_Fat;
 		/*~~~~~~~~~~~~~~~*/
 
-		BIG_INDEX ul_Fat = BAS_bsearch( _ul_Pos, &BIG_gst.st_PosTableToFat );
+		ul_Fat = BAS_bsearch(_ul_Pos, &BIG_gst.st_PosTableToFat);
 
         // Set the "loaded" flag
-		if(ul_Fat != BIG_C_InvalidIndex)
+		if(ul_Fat != BIG_C_InvalidIndex) 
             BIG_FileChanged(ul_Fat) |= EDI_FHC_Loaded;
 	}
 #endif
@@ -318,21 +316,27 @@ char *BIG_pc_ReadFileTmp(ULONG _ul_Pos, ULONG *_pul_Length)
 
 	if(BIG_gi_ReadMode == 2)
 	{
+		/*~~~~~~~~~~~~~*/
+		void	*pNewBuf;
+		/*~~~~~~~~~~~~~*/
+
+		pNewBuf = NULL;
+
 		ul_Length = 0;
-		void *pNewBuf = LOA_FetchFile(_pul_Length);
+		pNewBuf = LOA_FetchFile(_pul_Length);
 		if(pNewBuf) return (char *) pNewBuf;
 	}
 	else
 	{
 		/* Seek to the beginning of the file */
-		ULONG r = SeekSeek( BIG_Handle(), _ul_Pos, L_SEEK_SET );
+		r=SeekSeek(BIG_Handle(), _ul_Pos, L_SEEK_SET);
 		ERR_X_Error(r == 0, L_ERR_Csz_FSeek, NULL);
 
 		/*
 		 * Read length of file. The length of the file is saved at the beginning of the
 		 * file buffer.
 		 */
-		r=ReadRead( &ul_Length, sizeof(ULONG), BIG_Handle());
+		r=ReadRead((UCHAR *) &ul_Length, sizeof(ULONG), BIG_Handle());
 		ERR_X_Error(r == 1, L_ERR_Csz_FRead, NULL);
 		if(LOA_IsSwapperActive()) SwapDWord(&ul_Length);
 
@@ -347,7 +351,7 @@ char *BIG_pc_ReadFileTmp(ULONG _ul_Pos, ULONG *_pul_Length)
 			ERR_X_Error(p_Buffer != NULL, L_ERR_Csz_NotEnoughMemory, NULL);
 
 			/* Read content of file */
-			r=ReadRead(p_Buffer, ul_Length, BIG_Handle());
+			r=ReadRead((UCHAR *) p_Buffer, ul_Length, BIG_Handle());
 			ERR_X_Error(r == 1, L_ERR_Csz_FRead, NULL);
 			((UCHAR *) p_Buffer)[ul_Length] = 0;
 
@@ -602,7 +606,7 @@ ULONG BIG_ul_EditorGetSizeOfFile(ULONG ul_FileKey)
 
 
 	fgetpos(BIG_Handle(), &pos);
-
+	
 	pos2 = (fpos_t)ul_Pos ;
 	fsetpos(BIG_Handle(), &pos2);
 
@@ -613,5 +617,6 @@ ULONG BIG_ul_EditorGetSizeOfFile(ULONG ul_FileKey)
 	return ul_Length;
 }
 
-#endif
-
+#endif 
+ 
+ 
