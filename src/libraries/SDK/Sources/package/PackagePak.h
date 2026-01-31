@@ -40,6 +40,9 @@ public:
 			char     name[ BIG_C_MaxLenPath ];
 		} ident;
 
+		std::string dstPath;
+		std::string dstName;
+
 		FileInfo info{};
 	};
 
@@ -59,10 +62,16 @@ private:
 	bool Validate();
 	bool ParseTableOfContents();
 
+	FileTableEntry *GetWowForWol( const void *buf, size_t size );
+
+	void DetermineEntryPaths();
+
 public:
 	bool Open( const std::string &path );
 
-	const FileTableEntry *FindEntry( uint32_t key ) const;
+private:
+	FileTableEntry *FindEntry( uint32_t key );
 
+public:
 	void Export( const std::string &destination ) const;
 };

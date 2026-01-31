@@ -151,42 +151,29 @@ bool Pak::ParseTableOfContents()
 		}
 	}
 
-	return true;
-}
-
-bool Pak::Open( const std::string &path )
-{
-	handle = fopen( path.c_str(), "r+bR" );
-	if ( handle == nullptr )
-	{
-		char tmp[ 32 ];
-		snprintf( tmp, sizeof( tmp ), "Failed to open Pak file!" );
-		ERR_X_ForceError( tmp, nullptr );
-		return false;
-	}
-
-	if ( !Validate() )
-	{
-		return false;
-	}
-
-	if ( !ParseTableOfContents() )
-	{
-		return false;
-	}
+	DetermineEntryPaths();
 
 	return true;
 }
 
-const Pak::FileTableEntry *Pak::FindEntry( const uint32_t key ) const
+Pak::FileTableEntry *Pak::GetWowForWol( const void *buf, size_t size )
 {
-	const auto i = fileKeyLookup.find( key );
-	if ( i == fileKeyLookup.end() )
+	// so from what I can tell, we can get the primary wow as the last key from the wol...
+	// this is a little dumb, but hey, we're trying to figure out what's what from a mess
+
+	struct Index
+	{
+		BIG_KEY  key;
+		uint32_t magic;
+	};
+
+	const Index *index = ( Index * ) ( char * ) buf + size - sizeof( Index );
+	if ( index->magic != 0x776f772e )
 	{
 		return nullptr;
 	}
 
-	return &files[ i->second ];
+	return FindEntry( index->key );
 }
 
 /**
@@ -228,26 +215,121 @@ static std::string DetermineFileType( const void *buf, const size_t size )
 	return ".bin";
 }
 
-// Hacky gross crap ...
-
-static const Pak::FileTableEntry *GetWowForWol( const Pak *pak, const void *buf, size_t size )
+void Pak::DetermineEntryPaths()
 {
-	// so from what I can tell, we can get the primary wow as the last key from the wol...
-	// this is a little dumb, but hey, we're trying to figure out what's what from a mess
-
-	struct Index
+	for ( auto &i : files )
 	{
-		BIG_KEY  key;
-		uint32_t magic;
-	};
+		std::vector< char > buffer = i.info.Read( handle );
+		if ( buffer.empty() )
+		{
+			continue;
+		}
 
-	const Index *index = ( Index * ) ( char * ) buf + size - sizeof( Index );
-	if ( index->magic != 0x776f772e )
+		std::string dir, name;
+
+		std::string ident = DetermineFileType( &buffer[ 0 ], buffer.size() );
+		if ( ident == ".wow" )
+		{
+			// we can pull the original filename from a wow :)
+			// this should be safe; size is technically 60,
+			// but last four bytes are unused and string is
+			// null-terminated
+			char buf[ 64 ] = {};
+			memcpy( buf, &buffer[ 16 ], 60 );
+
+			dir  = "ROOT/06 Levels/" + std::string( buf );
+			name = std::string( buf ) + ".wow";
+
+			// now fetch the game group key
+			uint32_t groupKey;
+			memcpy( &groupKey, &buffer[ 216 ], sizeof( uint32_t ) );
+			if ( groupKey != BIG_C_InvalidKey && groupKey != 0 )
+			{
+				FileTableEntry *group = FindEntry( groupKey );
+				if ( group != nullptr )
+				{
+					group->dstPath = dir;
+					group->dstName = std::string( buf ) + ".gol";
+				}
+			}
+		}
+		else if ( ident == ".wol" )
+		{
+			//TODO: this shit doesn't work...
+			const FileTableEntry *entry = GetWowForWol( &buffer[ 0 ], buffer.size() );
+			if ( entry != nullptr )
+			{
+				std::vector< char > wowBuf = entry->info.Read( handle );
+				assert( !wowBuf.empty() );
+
+				std::string wowIdent = DetermineFileType( &wowBuf[ 0 ], wowBuf.size() );
+				assert( wowIdent == ".wow" );
+
+				char buf[ 64 ] = {};
+				memcpy( buf, &wowBuf[ 16 ], 60 );
+
+				dir  = "ROOT/06 Levels/" + std::string( buf );
+				name = std::string( buf ) + ".wol";
+			}
+		}
+
+		if ( dir.empty() )
+		{
+			dir = "ROOT/Unsorted";
+		}
+
+		if ( name.empty() && i.isKeyID )
+		{
+			if ( i.isKeyID )
+			{
+				std::stringstream sstream;
+				sstream << std::hex << i.ident.key;
+				name = sstream.str() + ident;
+			}
+			else
+			{
+				name = i.ident.name;
+			}
+		}
+
+		i.dstPath = dir;
+		i.dstName = name;
+	}
+}
+
+bool Pak::Open( const std::string &path )
+{
+	handle = fopen( path.c_str(), "r+bR" );
+	if ( handle == nullptr )
+	{
+		char tmp[ 32 ];
+		snprintf( tmp, sizeof( tmp ), "Failed to open Pak file!" );
+		ERR_X_ForceError( tmp, nullptr );
+		return false;
+	}
+
+	if ( !Validate() )
+	{
+		return false;
+	}
+
+	if ( !ParseTableOfContents() )
+	{
+		return false;
+	}
+
+	return true;
+}
+
+Pak::FileTableEntry *Pak::FindEntry( const uint32_t key )
+{
+	const auto i = fileKeyLookup.find( key );
+	if ( i == fileKeyLookup.end() )
 	{
 		return nullptr;
 	}
 
-	return pak->FindEntry( index->key );
+	return &files[ i->second ];
 }
 
 void Pak::Export( const std::string &destination ) const
@@ -255,84 +337,30 @@ void Pak::Export( const std::string &destination ) const
 	for ( auto &i : files )
 	{
 		std::vector< char > buffer = i.info.Read( handle );
-		if ( !buffer.empty() )
+		if ( buffer.empty() )
 		{
-			std::string dir, name;
-			if ( i.isKeyID )
-			{
-				std::string ident = DetermineFileType( &buffer[ 0 ], buffer.size() );
-				if ( ident == ".wow" )
-				{
-					// we can pull the original filename from a wow :)
-					// this should be safe; size is technically 60,
-					// but last four bytes are unused and string is
-					// null-terminated
-					char buf[ 64 ] = {};
-					memcpy( buf, &buffer[ 16 ], 60 );
+			continue;
+		}
 
-					dir  = "ROOT/06 Levels/" + std::string( buf );
-					name = std::string( buf ) + ".wow";
-				}
-				else if ( ident == ".wol" )
-				{
-					//TODO: this shit doesn't work...
-					const FileTableEntry *entry = GetWowForWol( this, &buffer[ 0 ], buffer.size() );
-					if ( entry != nullptr )
-					{
-						std::vector< char > wowBuf = entry->info.Read( handle );
-						assert( !wowBuf.empty() );
+		std::string path = destination + "/" + i.dstPath + "/" + i.dstName;
+		if ( jaded::filesystem.DoesFileExist( path ) )
+		{
+			continue;
+		}
 
-						std::string wowIdent = DetermineFileType( &wowBuf[ 0 ], wowBuf.size() );
-						assert( wowIdent == ".wow" );
+		if ( !jaded::filesystem.CreateLocalPath( destination + "/" + i.dstPath ) )
+		{
+			char tmp[ 128 ];
+			snprintf( tmp, sizeof( tmp ), "Failed to create destination (%s)!", i.dstPath.c_str() );
+			ERR_X_ForceError( tmp, nullptr );
+			continue;
+		}
 
-						char buf[ 64 ] = {};
-						memcpy( buf, &wowBuf[ 16 ], 60 );
-
-						dir  = "ROOT/06 Levels/" + std::string( buf );
-						name = std::string( buf ) + ".wol";
-					}
-				}
-
-				if ( dir.empty() )
-				{
-					dir = "ROOT/Unsorted";
-				}
-
-				if ( name.empty() )
-				{
-					std::stringstream sstream;
-					sstream << std::hex << i.ident.key;
-					name = sstream.str() + ident;
-				}
-			}
-			else
-			{
-				name = i.ident.name;
-				dir  = "ROOT/Unsorted";
-			}
-
-			dir = jaded::FileSystem::NormalizePath( destination + "/" + dir );
-
-			std::string cpath = dir + "/" + name;
-			if ( jaded::filesystem.DoesFileExist( cpath ) )
-			{
-				continue;
-			}
-
-			if ( !jaded::filesystem.CreateLocalPath( dir ) )
-			{
-				char tmp[ 128 ];
-				snprintf( tmp, sizeof( tmp ), "Failed to create destination (%s)!", dir.c_str() );
-				ERR_X_ForceError( tmp, nullptr );
-				continue;
-			}
-
-			FILE *out = fopen( cpath.c_str(), "wb" );
-			if ( out != nullptr )
-			{
-				fwrite( &buffer[ 0 ], sizeof( char ), buffer.size(), out );
-				fclose( out );
-			}
+		FILE *out = fopen( path.c_str(), "wb" );
+		if ( out != nullptr )
+		{
+			fwrite( &buffer[ 0 ], sizeof( char ), buffer.size(), out );
+			fclose( out );
 		}
 	}
 }
