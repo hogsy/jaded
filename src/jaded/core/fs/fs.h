@@ -1,18 +1,22 @@
-// Created by Mark "hogsy" Sowden, 2023-2025 <hogsy@snortysoft.net>
-// https://oldtimes-software.com/jaded/
+// File created for Jaded, the community patched Jade engine
 
 #pragma once
 
-namespace jaded
+#include "../core.h"
+
+namespace core::fs
 {
+	typedef uint32_t Key;
+
+	typedef uint32_t FileIndex;
+	typedef uint32_t DirIndex;
+
+	static constexpr Key       INVALID_KEY   = 0xFFFFFFFF;
+	static constexpr FileIndex INVALID_INDEX = 0xFFFFFFFF;
+
 	class FileSystem
 	{
 	public:
-		typedef uint32_t Key;
-
-		typedef uint32_t FileIndex;
-		typedef uint32_t DirIndex;
-
 		struct KeyFile
 		{
 			std::string name;   // name of the file, without directory (see dir)
@@ -43,7 +47,7 @@ namespace jaded
 		~FileSystem() = default;
 
 		static std::string GetExecutablePath();
-		static std::string GetAppDataPath();
+		static std::string GetAppDataPath( const std::string &appName );
 		static std::string NormalizePath( std::string path );
 
 		/**
@@ -57,15 +61,17 @@ namespace jaded
 
 		void PrintKeyTable() const;
 
-		static bool DoesFileExist( const std::string &path );
+		static bool DoesLocalFileExist( const std::string &path );
 
 		static bool CreateLocalPath( const std::string &path );
 
 		static size_t GetLocalFileSize( const std::string &path );
 		static time_t GetLocalFileTimestamp( const std::string &path );
 
+#if 0//TODO: move this out
 		bool CreateKeyRepository( const BIG_tdst_BigFile *bf );
-		bool ParseKeyRepository( const std::string &path );
+#endif
+		void ParseKeyRepository( const std::string &path );
 
 		static Key GenerateFileKey( const std::string &path );
 
@@ -86,7 +92,9 @@ namespace jaded
 		KeyFile  *GetFileByIndex( FileIndex index );
 
 	private:
+#if 0//TODO: move this out
 		void IndexBFSubDirectory( unsigned int curDir );
+#endif
 
 	public:
 		void ClearTables();
@@ -102,11 +110,11 @@ namespace jaded
 
 		std::map< Key, FileIndex > keys;// table of all key'd files, for lookup
 
-		Key universeKey{ BIG_C_InvalidKey };
+		Key universeKey{ INVALID_KEY };
 
 	public:
 		const Key &GetUniverseKey() const;
 	};
 
 	extern FileSystem filesystem;
-}// namespace jaded
+}// namespace core::fs

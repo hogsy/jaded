@@ -6,6 +6,8 @@ project(Jaded
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
+set(CMAKE_CXX_STANDARD 17)
+
 include(DetermineTargetArchitecture.cmake)
 determine_target_architecture(JADE_SYSTEM_ARCH)
 

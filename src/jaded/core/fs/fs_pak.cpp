@@ -1,25 +1,19 @@
-// Created by Mark "hogsy" Sowden, 2023-2026 <hogsy@snortysoft.net>
-// https://oldtimes-software.com/jaded/
-// Purpose: Pak Loader, for BGE 20th Anniversary.
-//			Attempts to internally convert the PAK to something we can use.
+// File created for Jaded, the community patched Jade engine
+// Purpose: Pak loader, for BGE 20th Anniversary format.
+// Author:  Mark E. Sowden
 
-#include <sstream>
 #include <ios>
+#include <sstream>
 
-#include "Precomp.h"
+#include "fs.h"
+#include "fs_pak.h"
 
-#include "BASe/BAStypes.h"
-#include "BIGfiles/BIGdefs.h"
-#include "FileSystem/FileSystem.h"
-
-#include "PackagePak.h"
-
-#include "../Extern/lz4/lib/lz4.h"
+#include "Extern/lz4/lib/lz4.h"
 
 // Much of the below wouldn't have been possible without the work of Droolie!
 // https://github.com/BinarySerializer/Ray1Map
 
-std::vector< char > Pak::FileInfo::Read( FILE *file ) const
+std::vector< char > core::fs::Pak::FileInfo::Read( FILE *file ) const
 {
 	if ( compressedSize == 0 && size == 0 )
 	{
@@ -29,10 +23,7 @@ std::vector< char > Pak::FileInfo::Read( FILE *file ) const
 	const uint64_t offs = sizeof( Header ) + offset;
 	if ( _fseeki64( file, offs, SEEK_SET ) == -1 )
 	{
-		char tmp[ 64 ];
-		snprintf( tmp, sizeof( tmp ), "Failed to seek to file (%llu)!", offs );
-		ERR_X_ForceError( tmp, nullptr );
-		return {};
+		throw std::runtime_error( "failed to seek to file (" + std::to_string( offs ) + ")" );
 	}
 
 	const bool   isCompressed = compressedSize > 0;
@@ -48,17 +39,14 @@ std::vector< char > Pak::FileInfo::Read( FILE *file ) const
 		decompBuf.resize( size );
 		if ( LZ4_decompress_safe( &buffer[ 0 ], &decompBuf[ 0 ], compressedSize, size ) == 0 )
 		{
-			char tmp[ 64 ];
-			snprintf( tmp, sizeof( tmp ), "Failed to decompress file (%llu)!", offs );
-			ERR_X_ForceError( tmp, nullptr );
-			return {};
+			throw std::runtime_error( "failed to decompress file (" + std::to_string( offs ) + ")" );
 		}
 	}
 
 	return buffer;
 }
 
-Pak::~Pak()
+core::fs::Pak::~Pak()
 {
 	if ( handle != nullptr )
 	{
@@ -66,7 +54,7 @@ Pak::~Pak()
 	}
 }
 
-bool Pak::Validate()
+bool core::fs::Pak::Validate()
 {
 	// not going to worry about endianness for now...
 	// hardly think anyone is planning on getting this built on anything else right now
@@ -74,24 +62,20 @@ bool Pak::Validate()
 
 	if ( header.magic != MAGIC )
 	{
-		char tmp[ 32 ];
-		snprintf( tmp, sizeof( tmp ), "Invalid Pak file (%u != %u)!", header.magic, MAGIC );
-		ERR_X_ForceError( tmp, nullptr );
+		printf( "Invalid Pak file (%u != %u)!\n", header.magic, MAGIC );
 		return false;
 	}
 
 	if ( header.version != VERSION )
 	{
-		char tmp[ 64 ];
-		snprintf( tmp, sizeof( tmp ), "Unsupported Pak version (%u != %u)!", header.version, VERSION );
-		ERR_X_ForceError( tmp, nullptr );
+		printf( "Unsupported Pak version (%u != %u)!\n", header.version, VERSION );
 		return false;
 	}
 
 	return true;
 }
 
-bool Pak::ParseTableOfContents()
+bool core::fs::Pak::ParseTableOfContents()
 {
 	// need to determine size, do the ol' seeky doodle
 	fseek( handle, 0, SEEK_END );
@@ -101,8 +85,7 @@ bool Pak::ParseTableOfContents()
 	const uint64_t fileTableOffset = size - header.footerSize;
 	if ( _fseeki64( handle, fileTableOffset, SEEK_SET ) != 0 )
 	{
-		const std::string msg = "Failed to seek to table offset (" + std::to_string( fileTableOffset ) + ")!";
-		ERR_X_ForceError( msg.c_str(), nullptr );
+		printf( "Failed to seek to table offset (%llu)!\n", fileTableOffset );
 		return false;
 	}
 
@@ -113,21 +96,17 @@ bool Pak::ParseTableOfContents()
 		entry.isKeyID = fgetc( handle );
 		if ( entry.isKeyID )
 		{
-			fread( &entry.ident.key, sizeof( uint32_t ), 1, handle );
+			fread( &entry.key, sizeof( uint32_t ), 1, handle );
 		}
 		else
 		{
 			uint32_t nameLength;
 			fread( &nameLength, sizeof( uint32_t ), 1, handle );
-			if ( nameLength >= sizeof( entry.ident.name ) )
-			{
-				char tmp[ 64 ];
-				snprintf( tmp, sizeof( tmp ), "Unexpected name length in file table (%u >= %u)!", nameLength, sizeof( entry.ident.name ) );
-				ERR_X_ForceError( tmp, nullptr );
-				return false;
-			}
 
-			fread( entry.ident.name, sizeof( char ), nameLength, handle );
+			char *tmp = ( char * ) _malloca( nameLength + 1 );
+			fread( tmp, sizeof( char ), nameLength, handle );
+			entry.name = tmp;
+			_freea( tmp );
 		}
 
 		fread( &entry.info, sizeof( FileInfo ), 1, handle );
@@ -147,7 +126,7 @@ bool Pak::ParseTableOfContents()
 
 		if ( entry.isKeyID )
 		{
-			fileKeyLookup.emplace( entry.ident.key, files.size() - 1 );
+			fileKeyLookup.emplace( entry.key, files.size() - 1 );
 		}
 	}
 
@@ -156,14 +135,14 @@ bool Pak::ParseTableOfContents()
 	return true;
 }
 
-Pak::FileTableEntry *Pak::GetWowForWol( const void *buf, size_t size )
+core::fs::Pak::FileTableEntry *core::fs::Pak::GetWowForWol( const void *buf, size_t size )
 {
 	// so from what I can tell, we can get the primary wow as the last key from the wol...
 	// this is a little dumb, but hey, we're trying to figure out what's what from a mess
 
 	struct Index
 	{
-		BIG_KEY  key;
+		Key      key;
 		uint32_t magic;
 	};
 
@@ -215,7 +194,7 @@ static std::string DetermineFileType( const void *buf, const size_t size )
 	return ".bin";
 }
 
-void Pak::DetermineEntryPaths()
+void core::fs::Pak::DetermineEntryPaths()
 {
 	for ( auto &i : files )
 	{
@@ -243,13 +222,13 @@ void Pak::DetermineEntryPaths()
 			// now fetch the game group key
 			uint32_t groupKey;
 			memcpy( &groupKey, &buffer[ 216 ], sizeof( uint32_t ) );
-			if ( groupKey != BIG_C_InvalidKey && groupKey != 0 )
+			if ( groupKey != INVALID_KEY && groupKey != 0 )
 			{
 				FileTableEntry *group = FindEntry( groupKey );
 				if ( group != nullptr )
 				{
 					group->dstPath = dir;
-					group->dstName = std::string( buf ) + ".gol";
+					group->name    = std::string( buf ) + ".gol";
 				}
 			}
 		}
@@ -278,50 +257,47 @@ void Pak::DetermineEntryPaths()
 			dir = "ROOT/Unsorted";
 		}
 
-		if ( name.empty() && i.isKeyID )
+		if ( name.empty() )
 		{
 			if ( i.isKeyID )
 			{
 				std::stringstream sstream;
-				sstream << std::hex << i.ident.key;
+				sstream << std::hex << i.key;
 				name = sstream.str() + ident;
 			}
 			else
 			{
-				name = i.ident.name;
+				name = i.name;
 			}
 		}
 
 		i.dstPath = dir;
-		i.dstName = name;
+		i.name    = name;
 	}
 }
 
-bool Pak::Open( const std::string &path )
+bool core::fs::Pak::Open( const std::string &path )
 {
 	handle = fopen( path.c_str(), "r+bR" );
 	if ( handle == nullptr )
 	{
-		char tmp[ 32 ];
-		snprintf( tmp, sizeof( tmp ), "Failed to open Pak file!" );
-		ERR_X_ForceError( tmp, nullptr );
-		return false;
+		throw std::runtime_error( "failed to open Pak file" );
 	}
 
 	if ( !Validate() )
 	{
-		return false;
+		throw std::runtime_error( "validation failed" );
 	}
 
 	if ( !ParseTableOfContents() )
 	{
-		return false;
+		throw std::runtime_error( "failed to parse table of contents" );
 	}
 
 	return true;
 }
 
-Pak::FileTableEntry *Pak::FindEntry( const uint32_t key )
+core::fs::Pak::FileTableEntry *core::fs::Pak::FindEntry( const uint32_t key )
 {
 	const auto i = fileKeyLookup.find( key );
 	if ( i == fileKeyLookup.end() )
@@ -332,7 +308,7 @@ Pak::FileTableEntry *Pak::FindEntry( const uint32_t key )
 	return &files[ i->second ];
 }
 
-void Pak::Export( const std::string &destination ) const
+void core::fs::Pak::Export( const std::string &destination ) const
 {
 	for ( auto &i : files )
 	{
@@ -342,17 +318,15 @@ void Pak::Export( const std::string &destination ) const
 			continue;
 		}
 
-		std::string path = destination + "/" + i.dstPath + "/" + i.dstName;
-		if ( jaded::filesystem.DoesFileExist( path ) )
+		std::string path = destination + "/" + i.dstPath + "/" + i.name;
+		if ( FileSystem::DoesLocalFileExist( path ) )
 		{
 			continue;
 		}
 
-		if ( !jaded::filesystem.CreateLocalPath( destination + "/" + i.dstPath ) )
+		if ( !FileSystem::CreateLocalPath( destination + "/" + i.dstPath ) )
 		{
-			char tmp[ 128 ];
-			snprintf( tmp, sizeof( tmp ), "Failed to create destination (%s)!", i.dstPath.c_str() );
-			ERR_X_ForceError( tmp, nullptr );
+			printf( "Failed to create destination (%s)!\n", i.dstPath.c_str() );
 			continue;
 		}
 

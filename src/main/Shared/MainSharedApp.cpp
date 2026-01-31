@@ -7,7 +7,8 @@
 #include <Windowsx.h>
 
 #include "MainSharedSystem.h"
-#include "FileSystem/FileSystem.h"
+
+#include "jaded/core/fs/fs.h"
 
 #include "Res/Res.h"
 
@@ -667,14 +668,22 @@ int main( int argc, char **argv )
 
 #	endif
 
-	const std::string localAppData = jaded::filesystem.GetAppDataPath();
-	if ( localAppData.empty() )
+	std::string localAppData;
+	if ( !jaded::sys::launchOperations.portableMode )
 	{
-		SDL_ShowSimpleMessageBox( SDL_MESSAGEBOX_ERROR, "Jaded Error", "Failed to get local app data path!", nullptr );
-		return EXIT_FAILURE;
+		localAppData = core::fs::FileSystem::GetAppDataPath( jaded::APP_NAME );
+		if ( localAppData.empty() )
+		{
+			SDL_ShowSimpleMessageBox( SDL_MESSAGEBOX_ERROR, "Jaded Error", "Failed to get local app data path!", nullptr );
+			return EXIT_FAILURE;
+		}
+	}
+	else
+	{
+		localAppData = ".";
 	}
 
-	if ( !jaded::filesystem.CreateLocalPath( localAppData ) )
+	if ( !core::fs::FileSystem::CreateLocalPath( localAppData ) )
 	{
 		const std::string msg = "Failed to create local app data path (" + localAppData + ")!";
 		SDL_ShowSimpleMessageBox( SDL_MESSAGEBOX_ERROR, "Jaded Error", msg.c_str(), nullptr );

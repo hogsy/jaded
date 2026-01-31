@@ -1,5 +1,6 @@
 
 # sigh...
+include_directories(.)
 include_directories(dlls)
 
 ###################################################################################
@@ -11,6 +12,11 @@ add_subdirectory(dlls/MPEGLIB)
 add_subdirectory(extern/ode)
 add_subdirectory(extern/lz4/build/cmake)
 add_subdirectory(extern/zlib)
+
+###################################################################################
+# Jaded
+
+add_subdirectory(jaded/core)
 
 ###################################################################################
 # Libraries

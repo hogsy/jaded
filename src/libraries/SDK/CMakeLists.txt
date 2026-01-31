@@ -186,8 +186,6 @@ add_library(Jaded-SDK OBJECT
         Sources/MATHs/MATH_MEM.c
         Sources/MATHs/MATH_MEM.h
         Sources/MATHs/ix86/ix86MATHfloat.h
-        Sources/package/PackagePak.cpp
-        Sources/package/PackagePak.h
         Sources/Random/PerlinNoise.c
         Sources/Random/PerlinNoise.h
         Sources/Random/random.h

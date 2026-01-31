@@ -1,90 +1,65 @@
-// Created by Mark "hogsy" Sowden, 2023-2025 <hogsy@snortysoft.net>
-// https://oldtimes-software.com/jaded/
+// File created for Jaded, the community patched Jade engine
+// Purpose: Filesystem API for Jaded.
+// Author:  Mark E. Sowden
 
-#include "Precomp.h"
+#include <ShlObj.h>
 
-#include <algorithm>
-#include <iostream>
-#include <string>
+#include <direct.h>
 
-#if defined( _WIN32 )
-#	include <wincrypt.h>
-#endif
+#include "fs.h"
 
-#include "BIGfiles/BIGread.h"
-#include "BIGfiles/BIGkey.h"
-
-#include "../MainSharedSystem.h"
-#include "../Profiler.h"
-#include "../AppVersion.h"
-
-#include "FileSystem.h"
-
-#include "LINks/LINKmsg.h"
-
-// sigh... we need access to the splash screen
-#include "../Main/WinEditors/Sources/EDIapp.h"
-
-jaded::FileSystem jaded::filesystem;
+core::fs::FileSystem core::fs::filesystem = {};
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //
 //	Key File
 //
 
-std::vector< uint8_t > jaded::FileSystem::KeyFile::Read() const
+std::vector< uint8_t > core::fs::FileSystem::KeyFile::Read() const
 {
 	std::vector< uint8_t > buffer;
 
 	FILE *file = {};
-	try
+
+	const std::string path = GetPath();
+
+	const size_t size = GetLocalFileSize( path );
+	if ( size == ( size_t ) -1 )
 	{
-		const std::string path = GetPath();
-
-		const size_t size = GetLocalFileSize( path );
-		if ( size == ( size_t ) -1 )
-		{
-			throw std::runtime_error( "failed to get file size" );
-		}
-
-		buffer.resize( size );
-
-		file = fopen( path.c_str(), "rb" );
-		if ( file == nullptr )
-		{
-			throw std::runtime_error( "failed to open file" );
-		}
-
-		if ( fread( &buffer[ 0 ], sizeof( uint8_t ), size, file ) != size )
-		{
-			throw std::runtime_error( "failed to read entire file" );
-		}
-	}
-	catch ( const std::exception &e )
-	{
-		const std::string msg = "Failed to read file: " + std::string( e.what() );
-		LINK_PrintStatusMsg( msg.c_str() );
+		throw std::runtime_error( "failed to get file size" );
 	}
 
-	if ( file != nullptr )
+	buffer.resize( size );
+
+	file = fopen( path.c_str(), "rb" );
+	if ( file == nullptr )
 	{
-		fclose( file );
+		throw std::runtime_error( "failed to open file" );
+	}
+
+	const size_t r = fread( &buffer[ 0 ], sizeof( uint8_t ), size, file );
+
+	fclose( file );
+
+	if ( r != size )
+	{
+		throw std::runtime_error( "failed to read entire file" );
 	}
 
 	return buffer;
 }
 
-std::string jaded::FileSystem::KeyFile::GetPath() const
+std::string core::fs::FileSystem::KeyFile::GetPath() const
 {
 	return filesystem.directories[ dir ].name + "/" + name;
 }
 
-size_t jaded::FileSystem::KeyFile::GetSize() const
+size_t core::fs::FileSystem::KeyFile::GetSize() const
 {
 	return GetLocalFileSize( GetPath() );
 }
 
-time_t jaded::FileSystem::KeyFile::GetTimestamp() const
+time_t core::fs::FileSystem::KeyFile::GetTimestamp() const
 {
 	return GetLocalFileTimestamp( GetPath() );
 }
@@ -99,30 +74,25 @@ time_t jaded::FileSystem::KeyFile::GetTimestamp() const
 //	FileSystem API
 //
 
-std::string jaded::FileSystem::GetExecutablePath()
+std::string core::fs::FileSystem::GetExecutablePath()
 {
-	char filename[ MAX_PATH ];
+	char filename[ 255 ];
 	GetModuleFileName( nullptr, filename, sizeof( filename ) );
 	return NormalizePath( filename );
 }
 
-std::string jaded::FileSystem::GetAppDataPath()
+std::string core::fs::FileSystem::GetAppDataPath( const std::string &appName )
 {
-	if ( sys::launchOperations.portableMode )
-	{
-		return ".";
-	}
-
 	char home[ MAX_PATH ];
 	if ( SUCCEEDED( SHGetFolderPath( nullptr, CSIDL_APPDATA, nullptr, 0, home ) ) )
 	{
-		return NormalizePath( home ) + std::string( "/" ) + APP_NAME;
+		return NormalizePath( home ) + "/" + appName;
 	}
 
 	return {};
 }
 
-std::string jaded::FileSystem::NormalizePath( std::string path )
+std::string core::fs::FileSystem::NormalizePath( std::string path )
 {
 	std::replace( path.begin(), path.end(), '\\', '/' );
 
@@ -148,7 +118,7 @@ std::string jaded::FileSystem::NormalizePath( std::string path )
 	return path;
 }
 
-std::string jaded::FileSystem::GetFilenameExtension( const std::string &filename )
+std::string core::fs::FileSystem::GetFilenameExtension( const std::string &filename )
 {
 	const size_t pos = filename.rfind( '.' );
 	if ( pos == std::string::npos || pos == 0 )
@@ -162,10 +132,11 @@ std::string jaded::FileSystem::GetFilenameExtension( const std::string &filename
 	return ext;
 }
 
-bool jaded::FileSystem::SetWorkingDirectory( const std::string &path )
+bool core::fs::FileSystem::SetWorkingDirectory( const std::string &path )
 {
 	if ( _chdir( path.c_str() ) != 0 )
 	{
+#if 0
 		std::string msg = "Failed to set working directory: ";
 		switch ( errno )
 		{
@@ -179,29 +150,30 @@ bool jaded::FileSystem::SetWorkingDirectory( const std::string &path )
 				msg += "invalid buffer";
 				break;
 		}
-		LINK_PrintStatusMsg( msg.c_str() );
+#endif
+		//TODO:err
 		return false;
 	}
 
 	return true;
 }
 
-void jaded::FileSystem::PrintKeyTable() const
+void core::fs::FileSystem::PrintKeyTable() const
 {
 	for ( const auto &i : files )
 	{
 		std::string msg = std::to_string( i.key ) + " " + directories[ i.dir ].name + "/" + i.name;
-		LINK_PrintStatusMsg( msg.c_str() );
+		printf( "%s\n", msg.c_str() );
 	}
 }
 
-bool jaded::FileSystem::DoesFileExist( const std::string &path )
+bool core::fs::FileSystem::DoesLocalFileExist( const std::string &path )
 {
 	struct stat buf = {};
 	return stat( path.c_str(), &buf ) == 0;
 }
 
-bool jaded::FileSystem::CreateLocalPath( const std::string &path )
+bool core::fs::FileSystem::CreateLocalPath( const std::string &path )
 {
 	// path is assumed to have been normalised prior...
 
@@ -211,7 +183,7 @@ bool jaded::FileSystem::CreateLocalPath( const std::string &path )
 		dir.push_back( i );
 		if ( dir.size() > 1 && i == '/' || dir.size() == path.size() )
 		{
-			if ( L_mkdir( dir.c_str() ) == -1 && errno == ENOENT )
+			if ( mkdir( dir.c_str() ) == -1 && errno == ENOENT )
 			{
 				return false;
 			}
@@ -221,21 +193,22 @@ bool jaded::FileSystem::CreateLocalPath( const std::string &path )
 	return true;
 }
 
-size_t jaded::FileSystem::GetLocalFileSize( const std::string &path )
+size_t core::fs::FileSystem::GetLocalFileSize( const std::string &path )
 {
 	struct stat attr = {};
 	stat( path.c_str(), &attr );
 	return attr.st_size;
 }
 
-time_t jaded::FileSystem::GetLocalFileTimestamp( const std::string &path )
+time_t core::fs::FileSystem::GetLocalFileTimestamp( const std::string &path )
 {
 	struct stat attr = {};
 	stat( path.c_str(), &attr );
 	return attr.st_mtime;
 }
 
-bool jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
+#if 0//TODO: move this out
+bool core::fs::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 {
 	//TODO: this shouldn't be an automatic operation!
 
@@ -262,7 +235,7 @@ bool jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 
 	std::string keyPath = dstPath + keyName + ".key";
 
-	if ( DoesFileExist( keyPath ) )
+	if ( DoesLocalFileExist( keyPath ) )
 	{
 		LINK_PrintStatusMsg( "Key file already exists! Skipping extraction." );
 		ParseKeyRepository( keyPath );
@@ -330,7 +303,7 @@ bool jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 			EDI_gpo_EnterWnd->DisplayMessage( msg.c_str() );
 		}
 
-		if ( DoesFileExist( path ) )
+		if ( DoesLocalFileExist( path ) )
 		{
 			continue;
 		}
@@ -368,20 +341,20 @@ bool jaded::FileSystem::CreateKeyRepository( const BIG_tdst_BigFile *bf )
 
 	return true;
 }
+#endif
 
-bool jaded::FileSystem::ParseKeyRepository( const std::string &path )
+void core::fs::FileSystem::ParseKeyRepository( const std::string &path )
 {
 	ClearTables();
 
-	bool  status{};
-	FILE *file{};
+	FILE *file = {};
 
 	try
 	{
 		file = fopen( path.c_str(), "r" );
 		if ( file == nullptr )
 		{
-			throw std::runtime_error( "Failed to open key repository per \"" + path + "\"!" );
+			throw std::runtime_error( "failed to open key repository per \"" + path + "\"" );
 		}
 
 		//TODO: I'm being lazy here, fgets is prone to failure, I know, I'll be back!!!
@@ -390,14 +363,14 @@ bool jaded::FileSystem::ParseKeyRepository( const std::string &path )
 
 		if ( fgets( buf, sizeof( buf ), file ) == nullptr )
 		{
-			throw std::runtime_error( "Failed to get universe key per \"" + path + "\"!" );
+			throw std::runtime_error( "failed to get universe key per \"" + path + "\"" );
 		}
 
 		universeKey = std::strtoul( buf, nullptr, 16 );
 
 		if ( fgets( buf, sizeof( buf ), file ) == nullptr )
 		{
-			throw std::runtime_error( "Failed to get number of keys per \"" + path + "\"!" );
+			throw std::runtime_error( "failed to get number of keys per \"" + path + "\"" );
 		}
 
 		const unsigned int numKeys = std::strtoul( buf, nullptr, 10 );
@@ -408,7 +381,7 @@ bool jaded::FileSystem::ParseKeyRepository( const std::string &path )
 		{
 			if ( fgets( buf, sizeof( buf ), file ) == nullptr )
 			{
-				throw std::runtime_error( "Failed to read line per \"" + path + "\"!" );
+				throw std::runtime_error( "failed to read line per \"" + path + "\"" );
 			}
 
 			// pull the key from the start
@@ -416,35 +389,35 @@ bool jaded::FileSystem::ParseKeyRepository( const std::string &path )
 			const char *c = strchr( buf, ' ' );
 			if ( c == nullptr )
 			{
-				throw std::runtime_error( "Failed to fetch key (" + std::string( buf ) + ")!" );
+				throw std::runtime_error( "failed to fetch key (" + std::string( buf ) + ")" );
 			}
 
 			char kbuf[ 16 ]{};
 			strncpy( kbuf, buf, c - buf );
 			Key key = strtoul( kbuf, nullptr, 16 );
-			if ( key == BIG_C_InvalidKey )
+			if ( key == INVALID_KEY )
 			{
-				throw std::runtime_error( "Invalid key (" + std::string( buf ) + ")!" );
+				throw std::runtime_error( "invalid key (" + std::string( buf ) + ")" );
 			}
 
 			// and now pull the path
 			const char *openPos = strchr( buf, '"' );
 			if ( openPos == nullptr )
 			{
-				throw std::runtime_error( "Failed to find opening quote (" + std::string( buf ) + ")!" );
+				throw std::runtime_error( "failed to find opening quote (" + std::string( buf ) + ")" );
 			}
 			const char *closePos = strrchr( buf, '"' );
 			if ( openPos == closePos )
 			{
-				throw std::runtime_error( "Failed to find closing quote (" + std::string( buf ) + ")!" );
+				throw std::runtime_error( "failed to find closing quote (" + std::string( buf ) + ")" );
 			}
-			char pbuf[ L_MAX_PATH ]{};
-			strncpy( pbuf, openPos + 1, ( closePos - 1 ) - openPos );
+			char pbuf[ MAX_PATH ] = {};
+			strncpy( pbuf, openPos + 1, closePos - 1 - openPos );
 
 			char *filename = strrchr( pbuf, '/' );
 			if ( filename == nullptr )
 			{
-				throw std::runtime_error( "Failed to fetch filename (" + std::string( buf ) + ")!" );
+				throw std::runtime_error( "failed to fetch filename (" + std::string( buf ) + ")" );
 			}
 
 			KeyFile keyFile{};
@@ -455,9 +428,9 @@ bool jaded::FileSystem::ParseKeyRepository( const std::string &path )
 			*filename = '\0';
 
 			const DirIndex dirIndex = IndexPath( pbuf );
-			if ( dirIndex == BIG_C_InvalidIndex )
+			if ( dirIndex == INVALID_INDEX )
 			{
-				throw std::runtime_error( "Failed to create directory (" + std::string( pbuf ) + ")!" );
+				throw std::runtime_error( "failed to create directory (" + std::string( pbuf ) + ")" );
 			}
 
 			keyFile.dir = dirIndex;
@@ -468,56 +441,58 @@ bool jaded::FileSystem::ParseKeyRepository( const std::string &path )
 
 			keys.emplace( key, keyFile.index );
 		}
-
-		status = true;
 	}
-	catch ( const std::exception &e )
+	catch ( const std::exception & )
 	{
-		LINK_PrintStatusMsg( e.what() );
+		if ( file != nullptr )
+		{
+			fclose( file );
+		}
+
+		throw;
 	}
 
-	if ( file != nullptr )
-	{
-		fclose( file );
-	}
-
-	return status;
+	fclose( file );
 }
 
-jaded::FileSystem::Key jaded::FileSystem::GenerateFileKey( const std::string &path )
+core::fs::Key core::fs::FileSystem::GenerateFileKey( const std::string &path )
 {
 	Key key = 0;
 
 #if defined( _WIN32 )
 	HCRYPTPROV cProv = 0;
 	HCRYPTHASH cHash = 0;
+
 	try
 	{
 		if ( !CryptAcquireContext( &cProv, nullptr, nullptr, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT ) )
 		{
-			throw std::runtime_error( "Failed to acquire crypto provider: " + std::to_string( GetLastError() ) );
+			throw std::runtime_error( "failed to acquire crypto provider: " + std::to_string( GetLastError() ) );
 		}
 
 		if ( !CryptCreateHash( cProv, CALG_MD5, 0, 0, &cHash ) )
 		{
-			throw std::runtime_error( "Failed to create hash: " + std::to_string( GetLastError() ) );
+			throw std::runtime_error( "failed to create hash: " + std::to_string( GetLastError() ) );
 		}
 
 		const BYTE *data = ( BYTE * ) path.c_str();
 		if ( !CryptHashData( cHash, data, path.size(), 0 ) )
 		{
-			throw std::runtime_error( "Failed to hash data: " + std::to_string( GetLastError() ) );
+			throw std::runtime_error( "failed to hash data: " + std::to_string( GetLastError() ) );
 		}
 
 		DWORD hashSize = sizeof( Key );
 		if ( !CryptGetHashParam( cHash, HP_HASHVAL, ( BYTE * ) &key, &hashSize, 0 ) )
 		{
-			throw std::runtime_error( "Failed to get hash: " + std::to_string( GetLastError() ) );
+			throw std::runtime_error( "failed to get hash: " + std::to_string( GetLastError() ) );
 		}
 	}
-	catch ( const std::exception &e )
+	catch ( const std::exception & )
 	{
-		LINK_PrintStatusMsg( e.what() );
+		if ( cProv != 0 ) CryptReleaseContext( cProv, 0 );
+		if ( cHash != 0 ) CryptDestroyHash( cHash );
+
+		throw;
 	}
 
 	if ( cProv != 0 ) CryptReleaseContext( cProv, 0 );
@@ -527,37 +502,35 @@ jaded::FileSystem::Key jaded::FileSystem::GenerateFileKey( const std::string &pa
 	return key;
 }
 
-bool jaded::FileSystem::IsKeyTablePopulated() const
+bool core::fs::FileSystem::IsKeyTablePopulated() const
 {
 	return !keys.empty();
 }
 
-std::vector< jaded::FileSystem::FileIndex > jaded::FileSystem::GetDirFiles( const std::string &path )
+std::vector< core::fs::FileIndex > core::fs::FileSystem::GetDirFiles( const std::string &path )
 {
 	const auto i = dirLookup.find( path );
 	if ( i == dirLookup.end() )
 	{
-		const std::string msg = "Failed to find directory (" + path + ")!";
-		LINK_PrintStatusMsg( msg.c_str() );
 		return {};
 	}
 
 	return directories[ i->second ].files;
 }
 
-jaded::FileSystem::DirIndex jaded::FileSystem::CreatePath( const std::string &path )
+core::fs::DirIndex core::fs::FileSystem::CreatePath( const std::string &path )
 {
 	// attempt to create the physical location first
 	const std::string npath = NormalizePath( path );
 	if ( !CreateLocalPath( npath ) )
 	{
-		return BIG_C_InvalidIndex;
+		return INVALID_INDEX;
 	}
 
 	return IndexPath( path );
 }
 
-jaded::FileSystem::DirIndex jaded::FileSystem::IndexPath( const std::string &path )
+core::fs::DirIndex core::fs::FileSystem::IndexPath( const std::string &path )
 {
 	// now work our way through
 	std::string dir;
@@ -584,19 +557,19 @@ jaded::FileSystem::DirIndex jaded::FileSystem::IndexPath( const std::string &pat
 	const auto &j = dirLookup.find( dir );
 	if ( j == dirLookup.end() )
 	{
-		return BIG_C_InvalidIndex;
+		return INVALID_INDEX;
 	}
 
 	return j->second;
 }
 
-jaded::FileSystem::KeyDir *jaded::FileSystem::GetDirByName( const std::string &path )
+core::fs::FileSystem::KeyDir *core::fs::FileSystem::GetDirByName( const std::string &path )
 {
 	const auto &i = dirLookup.find( path );
 	return i != dirLookup.end() ? &directories[ i->second ] : nullptr;
 }
 
-jaded::FileSystem::KeyDir *jaded::FileSystem::GetDirByIndex( const DirIndex index )
+core::fs::FileSystem::KeyDir *core::fs::FileSystem::GetDirByIndex( const DirIndex index )
 {
 	if ( !filesystem.IsKeyTablePopulated() )
 	{
@@ -605,26 +578,24 @@ jaded::FileSystem::KeyDir *jaded::FileSystem::GetDirByIndex( const DirIndex inde
 
 	if ( index >= directories.size() )
 	{
-		const std::string msg = "Attempted to address an OOB dir index (" + std::to_string( index ) + ")!";
-		LINK_PrintStatusMsg( msg.c_str() );
-		return nullptr;
+		throw std::runtime_error( "attempted to address an OOB dir index (" + std::to_string( index ) + ")" );
 	}
 
 	return &directories[ index ];
 }
 
-jaded::FileSystem::FileIndex jaded::FileSystem::GetFileIndexByKey( Key key )
+core::fs::FileIndex core::fs::FileSystem::GetFileIndexByKey( Key key )
 {
 	const auto &i = keys.find( key );
 	if ( i == keys.end() )
 	{
-		return BIG_C_InvalidIndex;
+		return INVALID_INDEX;
 	}
 
 	return i->second;
 }
 
-jaded::FileSystem::KeyFile *jaded::FileSystem::GetFileByKey( Key key )
+core::fs::FileSystem::KeyFile *core::fs::FileSystem::GetFileByKey( Key key )
 {
 	const auto &i = keys.find( key );
 	if ( i == keys.end() )
@@ -635,13 +606,13 @@ jaded::FileSystem::KeyFile *jaded::FileSystem::GetFileByKey( Key key )
 	return &files[ i->second ];
 }
 
-jaded::FileSystem::KeyFile *jaded::FileSystem::GetFileByName( const std::string &path )
+core::fs::FileSystem::KeyFile *core::fs::FileSystem::GetFileByName( const std::string &path )
 {
 	const auto &i = fileLookup.find( path );
 	return i != fileLookup.end() ? &files[ i->second ] : nullptr;
 }
 
-jaded::FileSystem::KeyFile *jaded::FileSystem::GetFileByIndex( const FileIndex index )
+core::fs::FileSystem::KeyFile *core::fs::FileSystem::GetFileByIndex( const FileIndex index )
 {
 	if ( !filesystem.IsKeyTablePopulated() )
 	{
@@ -650,15 +621,14 @@ jaded::FileSystem::KeyFile *jaded::FileSystem::GetFileByIndex( const FileIndex i
 
 	if ( index >= files.size() )
 	{
-		const std::string msg = "Attempted to address an OOB file index (" + std::to_string( index ) + ")!";
-		LINK_PrintStatusMsg( msg.c_str() );
-		return nullptr;
+		throw std::runtime_error( "attempted to address an OOB file index (" + std::to_string( index ) + ")" );
 	}
 
 	return &files[ index ];
 }
 
-void jaded::FileSystem::IndexBFSubDirectory( const unsigned int curDir )
+#if 0//TODO: move this out
+void core::fs::FileSystem::IndexBFSubDirectory( const unsigned int curDir )
 {
 	char dir[ BIG_C_MaxLenPath ];
 	BIG_ComputeFullName( curDir, dir );
@@ -720,8 +690,9 @@ void jaded::FileSystem::IndexBFSubDirectory( const unsigned int curDir )
 		subDir = BIG_NextDir( subDir );
 	}
 }
+#endif
 
-void jaded::FileSystem::ClearTables()
+void core::fs::FileSystem::ClearTables()
 {
 	dirLookup.clear();
 	directories.clear();
@@ -732,7 +703,7 @@ void jaded::FileSystem::ClearTables()
 	keys.clear();
 }
 
-const jaded::FileSystem::Key &jaded::FileSystem::GetUniverseKey() const
+const core::fs::Key &core::fs::FileSystem::GetUniverseKey() const
 {
 	return universeKey;
 }

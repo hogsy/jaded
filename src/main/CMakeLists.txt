@@ -6,8 +6,6 @@ add_executable(Jaded WIN32
         Shared/MainSharedSystem.cpp
         Shared/MainSharedSystem.h
         Shared/Profiler.h
-        Shared/FileSystem/FileSystem.cpp
-        Shared/FileSystem/FileSystem.h
         Shared/Renderer/ShaderManager.cpp
         Shared/Renderer/ShaderManager.h
         WinEditors/Sources/EDIaction.cpp
@@ -51,98 +49,15 @@ add_executable(Jaded WIN32
         WinEditors/Sources/DATaControl/DATCLzo.h
         WinEditors/Sources/DATaControl/DATCP4BFObject.cpp
         WinEditors/Sources/DATaControl/DATCP4BFObject.h
-        #WinEditors/Sources/DATaControl/DATCP4ClientApi.cpp
-        #WinEditors/Sources/DATaControl/DATCP4ClientApi.h
-        #WinEditors/Sources/DATaControl/DATCP4ClientInfo.h
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserAdd.h
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserAttribute.h
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserChange.h
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserChanges.cpp
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserChanges.h
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserDelete.h
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserDescribe.h
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserDiff.cpp
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserDiff.h
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserEdit.h
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserFiles.h
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserFlush.cpp
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserFlush.h
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserFStat.cpp
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserFStat.h
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserFStatBF.h
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserHeader.h
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserHistory.cpp
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserHistory.h
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserIntegrate.h
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserLogin.h
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserOpened.cpp
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserOpened.h
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserPrint.cpp
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserPrint.h
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserReopen.h
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserResolve.h
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserRevert.h
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserSubmit.h
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserSync.h
-        #WinEditors/Sources/DATaControl/DATCP4ClientUserSyncPreview.h
-        #WinEditors/Sources/DATaControl/DATCP4FileSys.cpp
-        #WinEditors/Sources/DATaControl/DATCP4FileSys.h
-        #WinEditors/Sources/DATaControl/DATCP4FileSysDelete.h
-        #WinEditors/Sources/DATaControl/DATCP4FileSysDiff.cpp
-        #WinEditors/Sources/DATaControl/DATCP4FileSysDiff.h
-        #WinEditors/Sources/DATaControl/DATCP4FileSysHeader.h
-        #WinEditors/Sources/DATaControl/DATCP4FileSysSubmit.cpp
-        #WinEditors/Sources/DATaControl/DATCP4FileSysSubmit.h
-        #WinEditors/Sources/DATaControl/DATCP4FileSysSync.cpp
-        #WinEditors/Sources/DATaControl/DATCP4FileSysSync.h
-        #WinEditors/Sources/DATaControl/DATCP4Message.cpp
-        #WinEditors/Sources/DATaControl/DATCP4Message.h
-        #WinEditors/Sources/DATaControl/DATCPerforce.cpp
-        #WinEditors/Sources/DATaControl/DATCPerforce.h
-        #WinEditors/Sources/DATaControl/DATCPerforceAdd.cpp
-        #WinEditors/Sources/DATaControl/DATCPerforceChange.cpp
-        #WinEditors/Sources/DATaControl/DATCPerforceClient.cpp
-        #WinEditors/Sources/DATaControl/DATCPerforceDelete.cpp
-        #WinEditors/Sources/DATaControl/DATCPerforceDepots.cpp
-        #WinEditors/Sources/DATaControl/DATCPerforceDescribe.cpp
-        #WinEditors/Sources/DATaControl/DATCPerforceDiff.cpp
-        #WinEditors/Sources/DATaControl/DATCPerforceDirs.cpp
-        #WinEditors/Sources/DATaControl/DATCPerforceEdit.cpp
-        #WinEditors/Sources/DATaControl/DATCPerforceFileInfo.cpp
-        #WinEditors/Sources/DATaControl/DATCPerforceFiles.cpp
-        #WinEditors/Sources/DATaControl/DATCPerforceFlush.cpp
-        #WinEditors/Sources/DATaControl/DATCPerforceFStat.cpp
-        #WinEditors/Sources/DATaControl/DATCPerforceHistory.cpp
-        #WinEditors/Sources/DATaControl/DATCPerforceIntegrate.cpp
-        #WinEditors/Sources/DATaControl/DATCPerforceOpened.cpp
-        #WinEditors/Sources/DATaControl/DATCPerforcePrint.cpp
-        #WinEditors/Sources/DATaControl/DATCPerforceReopen.cpp
-        #WinEditors/Sources/DATaControl/DATCPerforceResolve.cpp
-        #WinEditors/Sources/DATaControl/DATCPerforceRevert.cpp
-        #WinEditors/Sources/DATaControl/DATCPerforceSubmit.cpp
-        #WinEditors/Sources/DATaControl/DATCPerforceSync.cpp
-        #WinEditors/Sources/DATaControl/DATCPerforceUsers.cpp
-        #WinEditors/Sources/DATaControl/DATCPerforceVerifyLinks.cpp
         WinEditors/Sources/DATaControl/DATCUserBreak.h
         WinEditors/Sources/DATaControl/DATCUtils.cpp
         WinEditors/Sources/DATaControl/DATCUtils.h
-        #WinEditors/Sources/DATaControl/DATCUtilsDiff.cpp
-        #WinEditors/Sources/DATaControl/perforceui.cpp
-        #WinEditors/Sources/DATaControl/perforceui.h
         WinEditors/Sources/DIAlogs/BaseTabCtrl.cpp
         WinEditors/Sources/DIAlogs/BaseTabCtrl.h
         WinEditors/Sources/DIAlogs/BtnST.cpp
         WinEditors/Sources/DIAlogs/BtnST.h
         WinEditors/Sources/DIAlogs/CCheckList.cpp
         WinEditors/Sources/DIAlogs/CCheckList.h
-        #WinEditors/Sources/DIAlogs/DATCP4ChangelistComment.cpp
-        #WinEditors/Sources/DIAlogs/DATCP4ChangelistComment.h
-        #WinEditors/Sources/DIAlogs/DATCP4FileFilter.cpp
-        #WinEditors/Sources/DIAlogs/DATCP4FileFilter.h
-        #WinEditors/Sources/DIAlogs/DATCP4SettingsDlg.cpp
-        #WinEditors/Sources/DIAlogs/DATCP4SettingsDlg.h
-        #WinEditors/Sources/DIAlogs/DATCP4View.cpp
-        #WinEditors/Sources/DIAlogs/DATCP4View.h
         WinEditors/Sources/DIAlogs/DIAanim_dlg.cpp
         WinEditors/Sources/DIAlogs/DIAanim_dlg.h
         WinEditors/Sources/DIAlogs/DIAbackgroundimage_dlg.cpp
@@ -169,8 +84,6 @@ add_executable(Jaded WIN32
         WinEditors/Sources/DIAlogs/DIAcreategeometry_dlg.h
         WinEditors/Sources/DIAlogs/DIAcreategeometry_inside.cpp
         WinEditors/Sources/DIAlogs/DIAcreategeometry_inside.h
-        #WinEditors/Sources/DIAlogs/DIAcubemapgen_dlg.cpp
-        #WinEditors/Sources/DIAlogs/DIAcubemapgen_dlg.h
         WinEditors/Sources/DIAlogs/DIAdropgro_dlg.cpp
         WinEditors/Sources/DIAlogs/DIAdropgro_dlg.h
         WinEditors/Sources/DIAlogs/DIAfavorites_dlg.cpp
@@ -199,8 +112,6 @@ add_executable(Jaded WIN32
         WinEditors/Sources/DIAlogs/DIAgromodifier_dlg.h
         WinEditors/Sources/DIAlogs/DIAgrovertexpos_dlg.cpp
         WinEditors/Sources/DIAlogs/DIAgrovertexpos_dlg.h
-        #WinEditors/Sources/DIAlogs/DIAhistory_dlg.cpp
-        #WinEditors/Sources/DIAlogs/DIAhistory_dlg.h
         WinEditors/Sources/DIAlogs/DIAjoystick_dlg.cpp
         WinEditors/Sources/DIAlogs/DIAjoystick_dlg.h
         WinEditors/Sources/DIAlogs/DIAkeyboard_dlg.cpp
@@ -209,8 +120,6 @@ add_executable(Jaded WIN32
         WinEditors/Sources/DIAlogs/DIAlang_dlg.h
         WinEditors/Sources/DIAlogs/DIALightmaps.cpp
         WinEditors/Sources/DIAlogs/DIALightmaps.h
-        #WinEditors/Sources/DIAlogs/DIAlightrej_dlg.cpp
-        #WinEditors/Sources/DIAlogs/DIAlightrej_dlg.h
         WinEditors/Sources/DIAlogs/DIAlink_dlg.cpp
         WinEditors/Sources/DIAlogs/DIAlink_dlg.h
         WinEditors/Sources/DIAlogs/DIAlist2_dlg.cpp
@@ -245,8 +154,6 @@ add_executable(Jaded WIN32
         WinEditors/Sources/DIAlogs/DIApostit_dlg.h
         WinEditors/Sources/DIAlogs/DIAradiosity_dlg.cpp
         WinEditors/Sources/DIAlogs/DIAradiosity_dlg.h
-        #WinEditors/Sources/DIAlogs/DIAreplace_dlg.cpp
-        #WinEditors/Sources/DIAlogs/DIAreplace_dlg.h
         WinEditors/Sources/DIAlogs/DIArliadjust_dlg.cpp
         WinEditors/Sources/DIAlogs/DIArliadjust_dlg.h
         WinEditors/Sources/DIAlogs/DIArlicarte_dlg.cpp
@@ -255,8 +162,6 @@ add_executable(Jaded WIN32
         WinEditors/Sources/DIAlogs/DIArli_dlg.h
         WinEditors/Sources/DIAlogs/DIAsaveaddmatrix_dlg.cpp
         WinEditors/Sources/DIAlogs/DIAsaveaddmatrix_dlg.h
-        #WinEditors/Sources/DIAlogs/DIAScreenshotSeqBuilder_dlg.cpp
-        #WinEditors/Sources/DIAlogs/DIAScreenshotSeqBuilder_dlg.h
         WinEditors/Sources/DIAlogs/DIAsecto_dlg.cpp
         WinEditors/Sources/DIAlogs/DIAsecto_dlg.h
         WinEditors/Sources/DIAlogs/DIAselection_dlg.cpp
@@ -314,8 +219,6 @@ add_executable(Jaded WIN32
         WinEditors/Sources/DIAlogs/diawindcurve_dlg.h
         WinEditors/Sources/DIAlogs/DIAwpshowstatus_dlg.cpp
         WinEditors/Sources/DIAlogs/DIAwpshowstatus_dlg.h
-        #WinEditors/Sources/DIAlogs/DIAXeMergeFlags.cpp
-        #WinEditors/Sources/DIAlogs/DIAXeMergeFlags.h
         WinEditors/Sources/DIAlogs/DIA_RADIOSTY2.cpp
         WinEditors/Sources/DIAlogs/DIA_RADIOSTY2.h
         WinEditors/Sources/DIAlogs/DIA_SKN_dlg.cpp
@@ -520,7 +423,6 @@ add_executable(Jaded WIN32
         WinEditors/Sources/VAVview/VAVview.cpp
         WinEditors/Sources/VAVview/VAVview.h
         WinEditors/Sources/VAVview/VAVview_aifunc.cpp
-        #WinEditors/Sources/VAVview/VAVview_aiinit.cpp
         WinEditors/Sources/VAVview/VAVview_anim.cpp
         WinEditors/Sources/VAVview/VAVview_bool.cpp
         WinEditors/Sources/VAVview/VAVview_bounding.cpp
@@ -583,6 +485,7 @@ target_link_libraries(Jaded
         Jaded-MAD_mem
         Jaded-MAD_rasterize
 
+        Jaded-Core
         Jaded-SDK
         Jaded-Engine
         Jaded-Editors
