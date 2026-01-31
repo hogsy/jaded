@@ -79,6 +79,7 @@ OBJ_tdst_Prefab *Prefab_pst_Load(ULONG ul_Index, OBJ_tdst_Prefab *_pst_Prefab)
 	LONG			l_Length;
 	ULONG			ul_Chunk;
 	LONG			i, l_Size, l_CurRef;
+	char			*pc_Buffer;
 	OBJ_tdst_Prefab *P;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -90,7 +91,7 @@ OBJ_tdst_Prefab *Prefab_pst_Load(ULONG ul_Index, OBJ_tdst_Prefab *_pst_Prefab)
 	}
 
 	/* get content of file */
-	char *pc_Buffer = ( char * ) BIG_ReadFileToTmp( ul_Index, ( ULONG * ) &l_Length );
+	pc_Buffer = BIG_pc_ReadFileTmp(BIG_PosFile(ul_Index), (ULONG *) &l_Length);
 
 	/* check file length */
 	if(l_Length == 0)

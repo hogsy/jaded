@@ -129,7 +129,7 @@ BOOL OBJ_b_AllGao_GetBV(ULONG _ul_Index, MATH_tdst_Vector *_pst_Min, MATH_tdst_V
 	}
 
 	/* gao not loaded : load buffer, and get BV inside */
-	pc_Buffer = ( char * ) BIG_ReadFileToTmp(_ul_Index, &ul_Size);
+	pc_Buffer = BIG_pc_ReadFileTmp(BIG_PosFile(_ul_Index), &ul_Size);
 
 	LOA_ReadCharArray(&pc_Buffer, (CHAR *) &ul_Key, 4);
 	if(strncmp((CHAR *) &ul_Key, EDI_Csz_ExtGameObject, 4)) return FALSE;

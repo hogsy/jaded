@@ -1451,6 +1451,7 @@ void EEVE_cl_Frame::LoadTre(void)
 	char	az_Name[BIG_C_MaxLenName];
 	char	az_Path[BIG_C_MaxLenPath];
 	ULONG	ul_Len;
+	char	*pz;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	L_memset(&mt_Tre, 0, sizeof(mt_Tre));
@@ -1469,7 +1470,7 @@ void EEVE_cl_Frame::LoadTre(void)
 	}
 
 	if(mul_Tre == BIG_C_InvalidIndex) return;
-	char *pz = ( char * ) BIG_ReadFileToTmp( mul_Tre, &ul_Len );
+	pz = BIG_pc_ReadFileTmp(BIG_PosFile(mul_Tre), &ul_Len);
 	if(ul_Len >= sizeof(mt_Tre)) L_memcpy(&mt_Tre, pz, sizeof(mt_Tre));
 }
 

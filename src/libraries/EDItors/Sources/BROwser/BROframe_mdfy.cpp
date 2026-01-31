@@ -783,7 +783,7 @@ void EBRO_cl_Frame::OnCleanGroup(void)
 	/* Destroy holes */
 	ul_Group = mpo_ListCtrl->GetItemData(mpo_ListCtrl->GetNextItem(-1, LVIS_SELECTED));
 	BIG_ComputeFullName(BIG_ParentFile(ul_Group), asz_Path);
-	gpst_OrderBuf = (BIG_tdst_GroupElem *) BIG_ReadFileToTmp(ul_Group, &gul_OrderSize);
+	gpst_OrderBuf = (BIG_tdst_GroupElem *) BIG_pc_ReadFileTmp(BIG_PosFile(ul_Group), &gul_OrderSize);
 	SAV_Begin(asz_Path, BIG_NameFile(ul_Group));
 	for(i = 0; i < (gul_OrderSize / sizeof(BIG_tdst_GroupElem)); i++)
 	{
@@ -820,7 +820,7 @@ void BRO_OrderGroupFile(ULONG _ul_Group)
 	po_Dlg = new EDIA_cl_OrderDialog(BIG_NameFile(_ul_Group), TRUE);
 
 	/* Add all references */
-	gpst_OrderBuf = (BIG_tdst_GroupElem *) BIG_ReadFileToTmp(_ul_Group, &gul_OrderSize);
+	gpst_OrderBuf = (BIG_tdst_GroupElem *) BIG_pc_ReadFileTmp(BIG_PosFile(_ul_Group), &gul_OrderSize);
 	for(i = 0; i < (gul_OrderSize / sizeof(BIG_tdst_GroupElem)); i++)
 	{
 		if((gpst_OrderBuf[i].ul_Key == 0) || (gpst_OrderBuf[i].ul_Key == BIG_C_InvalidKey))

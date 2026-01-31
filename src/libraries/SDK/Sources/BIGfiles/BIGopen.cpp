@@ -44,7 +44,7 @@ extern "C" BIG_tdst_BigFile BIG_gst1;
  */
 bool BIG_Open(const char *_psz_FileName)
 {
-	const std::string extension = jaded::FileSystem::GetFilenameExtension( _psz_FileName );
+	const std::string extension = jaded::filesystem.GetFilenameExtension( _psz_FileName );
 	if ( extension == "key" )
 	{
 		return jaded::filesystem.ParseKeyRepository( _psz_FileName );
@@ -89,12 +89,8 @@ bool BIG_Open(const char *_psz_FileName)
 		BIG_Close();
 		return false;
 	}
-
-#ifdef JADED_LOOSE_FILES
+	
 	return jaded::filesystem.CreateKeyRepository( &BIG_gst );
-#else
-	return true;
-#endif
 }
 
 /*
@@ -167,7 +163,7 @@ _Try_
 	BIG_FreeDir() = BIG_C_InvalidIndex;
 	BIG_SizeFat() = _ul_SizeFat < BIG_MAX_FAT ? BIG_MAX_FAT : _ul_SizeFat;
 	BIG_NumFat() = 1;
-	BIG_gst.st_ToSave.ul_UniverseKey = BIG_C_InvalidKey;
+	BIG_UniverseKey() = BIG_C_InvalidKey;
 
 	/* Open the filename for writing */
 	BIG_gst.h_CLibFileHandle = L_fopen(_psz_Name, L_fopen_WB);

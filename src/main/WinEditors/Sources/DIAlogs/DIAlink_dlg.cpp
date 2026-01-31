@@ -399,7 +399,7 @@ BOOL EDIA_cl_LinkControlDialog::b_GetUser(char *_psz_UserName, char *_psz_PassWo
 	}
 
 	/* Read password */
-	pc_Buffer = ( char * ) BIG_ReadFileToTmp(ul_Index, &ul_Size);
+	pc_Buffer = BIG_pc_ReadFileTmp(BIG_PosFile(ul_Index), &ul_Size);
 	L_strcpy(_psz_PassWord, pc_Buffer);
 
 	/* Right */
@@ -804,7 +804,7 @@ _Try_
 		while(ul_File != BIG_C_InvalidIndex)
 		{
 			/* Read password */
-			pc_Buffer = ( char * ) BIG_ReadFileToTmp(ul_File, &ul_Size);
+			pc_Buffer = BIG_pc_ReadFileTmp(BIG_PosFile(ul_File), &ul_Size);
 			L_strcpy(asz_PassWord, pc_Buffer);
 
 			/* Can write */

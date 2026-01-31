@@ -861,7 +861,7 @@ void EDIA_cl_TimeInter::OnListFileChange()
 
     ul_Index = (ULONG ) ((CListBox *) GetDlgItem( IDC_LIST_FILE ))->GetItemData( i );
 
-    pf_Data = (float *) BIG_ReadFileToTmp( ul_Index, &ul_Size);
+    pf_Data = (float *) BIG_pc_ReadFileTmp( BIG_PosFile(ul_Index), &ul_Size);
     if ( L_strncmp( (char *) pf_Data, ".TIK", 4 ) )
         return;
     pf_Data ++;

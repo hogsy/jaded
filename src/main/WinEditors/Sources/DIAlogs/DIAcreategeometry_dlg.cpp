@@ -122,7 +122,7 @@ BOOL EDIA_cl_CreateGeometry::OnInitDialog(void)
     ul_Index = BIG_ul_SearchFileExt( EDI_Csz_Ini, "CreateGeometry.ini" );
     if (ul_Index != BIG_C_InvalidIndex)
     {
-        pc_Buf = ( char * ) BIG_ReadFileToTmp( ul_Index, &ul_Index);
+        pc_Buf = BIG_pc_ReadFileTmp( BIG_PosFile( ul_Index ), &ul_Index);
         if ( *(ULONG *) pc_Buf == CreateGeometry_IniVersion )
         {
             pc_Buf += 4;

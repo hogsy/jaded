@@ -380,7 +380,7 @@ bool TEX_File_LoadStbiFile( uint8_t *buffer, unsigned int length, TEX_tdst_File_
 
 BOOL    TEX_b_File_GetName(int, char *);
 void	TEX_File_Init(void);
-LONG	TEX_l_File_IsFormatSupported( const char *, int);
+LONG	TEX_l_File_IsFormatSupported(char *, int);
 int     TEX_i_File_DefaultParams(TEX_tdst_File_Params *, char *, char *, char *, LONG );
 void	TEX_File_SetParams(TEX_tdst_File_Params *, BIG_INDEX, BOOL );
 void    TEX_File_InitParams( TEX_tdst_File_Params * );

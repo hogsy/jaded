@@ -1673,7 +1673,7 @@ LONG WOR_l_World_MergeGameObjects(WOR_tdst_World *_pst_World, char *_sz_Path)
     ul_File = BIG_ul_SearchFile(ul_Dir, sz_Name);
     if(ul_File == BIG_C_InvalidIndex) return 0;
 
-    pul_BufferStart = pul_Buffer = (ULONG *) BIG_ReadFile(ul_File, &ul_Size);
+    pul_BufferStart = pul_Buffer = (ULONG *) BIG_pc_ReadFileTmpMustFree(BIG_PosFile(ul_File), &ul_Size);
     ul_Size >>= 3;
 
     for(ul_Index = 0; ul_Index < ul_Size; ul_Index++, pul_Buffer += 2)

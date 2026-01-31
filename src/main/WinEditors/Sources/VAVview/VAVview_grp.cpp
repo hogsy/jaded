@@ -68,6 +68,7 @@ void EVAV_Grp_FillSelect(CWnd *_po_Wnd, EVAV_cl_ViewItem *_po_Data, void *_p_Val
 	char			asz_Name[BIG_C_MaxLenName];
 	char			asz_World[BIG_C_MaxLenName];
 	CString			o_Name;
+	ULONG			*pul_Buffer;
 	ULONG			l_Length;
 	ULONG			i;
 	char			*psz_Temp;
@@ -108,7 +109,7 @@ void EVAV_Grp_FillSelect(CWnd *_po_Wnd, EVAV_cl_ViewItem *_po_Data, void *_p_Val
 
 		if(ul_Fat != BIG_C_InvalidIndex)
 		{			
-			ULONG *pul_Buffer = ( ULONG * ) BIG_ReadFileToTmp( ul_Fat, &l_Length );
+			pul_Buffer = (ULONG *) BIG_pc_ReadFileTmp(BIG_PosFile(ul_Fat), &l_Length);
 			for(i = 0; i < l_Length >> 3; i++)
 			{
 				ul_Key = pul_Buffer[0];

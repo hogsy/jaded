@@ -219,7 +219,7 @@ short TEX_w_List_AddTexture(TEX_tdst_List *_pst_TexList, BIG_KEY _ul_FileKey, ch
 			ERR_X_Warning( 0, sz_Text, NULL );
             return -1;
         }
-        if ( !TEX_l_File_IsFormatSupported( BIG_GetFileName( ul_Index ), -1) )
+        if ( !TEX_l_File_IsFormatSupported( BIG_NameFile( ul_Index ), -1) )
         {
             char sz_Text[ 256 ];
             sprintf( sz_Text, "[%08X] is referenced as a real texture but isn't ! - CHECK TEXTURE REF", _ul_FileKey );

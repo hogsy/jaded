@@ -1768,7 +1768,7 @@ void EDIA_cl_MorphingDialog::OnButton_Load()
     EDIA_cl_FileDialog	        o_File("Choose file", 3, TRUE, TRUE, NULL, "*.mor" );
     CString				        o_Temp;
     BIG_INDEX			        ul_Index;
-    char                        *sz_Ext;
+    char                        *sz_Ext, *pc_Buffer;
     ULONG                       ul_Length;
     GEO_tdst_ModifierMorphing	*pst_Morph;
     GEO_tdst_Object             *pst_Geo;
@@ -1803,7 +1803,7 @@ void EDIA_cl_MorphingDialog::OnButton_Load()
         return;
     }
 
-    char *pc_Buffer = ( char * ) BIG_ReadFileToTmp( ul_Index, &ul_Length );
+    pc_Buffer = BIG_pc_ReadFileTmp( BIG_PosFile( ul_Index ), &ul_Length );
 
     // create new morph data
     GEO_ModifierMorphing_Create( mpst_Modifier->pst_GO, mpst_Modifier, NULL );

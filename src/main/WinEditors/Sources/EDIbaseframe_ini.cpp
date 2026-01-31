@@ -125,7 +125,7 @@ char *EDI_cl_BaseFrame::BaseLoadIniDesktop
     ul_Index = BIG_ul_SearchFileExt(asz_PathIni, (char *) (LPCSTR) o_Name);
     if(ul_Index != BIG_C_InvalidIndex)
     {
-        puc_TempBuf = (UCHAR *) BIG_ReadFileToTmp(ul_Index, &ul_Size);
+        puc_TempBuf = (UCHAR *) BIG_pc_ReadFileTmp(BIG_PosFile(ul_Index), &ul_Size);
 
         /* Is visible */
         L_memcpy

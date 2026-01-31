@@ -218,7 +218,7 @@ typedef struct  BIG_tdst_BigFile_
 #ifdef ACTIVE_EDITORS
 extern BOOL BIG_b_CheckName(char *);
 extern void BIG_ComputeFullName(BIG_INDEX, char *);
-extern BOOL BIG_b_IsFileExtension(BIG_INDEX, const char *);
+extern BOOL BIG_b_IsFileExtension(BIG_INDEX, char *);
 extern BOOL BIG_b_IsFileExtensionIn(BIG_INDEX, char *);
 #endif
 #if defined (__cplusplus) && !defined(JADEFUSION)

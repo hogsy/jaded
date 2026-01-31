@@ -15,8 +15,8 @@ extern "C"
 {
 #endif
 
-extern void         SAV_Begin( const char *, const char *);
-extern void         SAV_Buffer( const void *, int);
+extern void         SAV_Begin(char *, char *);
+extern void         SAV_Buffer(void *, int);
 extern BIG_INDEX    SAV_ul_End(void);
 
 #if defined (__cplusplus) && !defined(JADEFUSION)

@@ -552,7 +552,7 @@ void AI2C_GenerateVars(BIG_INDEX ul_Model, BIG_INDEX ul_File)
 	L_strcpy(az_Name, BIG_NameFile(ul_File));
 	L_strcat(az_Name, ".pp");
 	ul_File = BIG_ul_SearchFile(BIG_ParentFile(ul_File), az_Name);
-	pc_Buf = ( char * ) BIG_ReadFileToTmp(ul_File, &ul_Size);
+	pc_Buf = BIG_pc_ReadFileTmp(BIG_PosFile(ul_File), &ul_Size);
 
 	/* Struct variables */
 	sprintf(az_Tmp, "#ifndef __%s_H__\n#define __%s_H__\n", az_NameModel, az_NameModel);
@@ -954,6 +954,7 @@ void AI2C_GenFunc(BIG_INDEX ul_Model, BIG_INDEX ul_File)
 	char	az_Cast[128];
 	char	az_Tmp[1024];
 	char	az_Name[128];
+	char	*pc_Buf;
 	ULONG	ul_Size;
 	char	az_Model[64];
 	int		firstlabel;
@@ -986,7 +987,7 @@ void AI2C_GenFunc(BIG_INDEX ul_Model, BIG_INDEX ul_File)
 	L_strcpy(az_Name, BIG_NameFile(ul_File));
 	L_strcat(az_Name, ".pp");
 	ul_File = BIG_ul_SearchFile(BIG_ParentFile(ul_File), az_Name);
-	char *pc_Buf = ( char * ) BIG_ReadFileToTmp( ul_File, &ul_Size );
+	pc_Buf = BIG_pc_ReadFileTmp(BIG_PosFile(ul_File), &ul_Size);
 
 	AI2C_FirstScanFile(pc_Buf, FALSE);
 	PUTS(";\n");
@@ -2043,13 +2044,14 @@ void AI2C_EndCompute(EAI_cl_Compiler *po_Compiler, BIG_INDEX ul_Model, BOOL proc
 void AI2C_GenerateLib(EAI_cl_Compiler *po_Compiler, BIG_INDEX ul_Model, BIG_INDEX ul_File)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	char       *pz, *pz1;
+	char		*pc_Buf, *pz, *pz1;
 	ULONG		ul_Size;
 	char		az_Path[1024];
 	char		az_Name[1024];
 	char		az_NameModel[1024];
 	char		az_Tmp[1024];
 	char		az_Cast[1024];
+	BIG_INDEX	ul_File1;
 	POSITION	pos;
 	int			numtrigger;
 	char		az_NameProc[128];
@@ -2083,8 +2085,8 @@ void AI2C_GenerateLib(EAI_cl_Compiler *po_Compiler, BIG_INDEX ul_Model, BIG_INDE
 	/* Get PP file */
 	L_strcpy(az_Name, BIG_NameFile(ul_File));
 	L_strcat(az_Name, ".pp");
-	BIG_INDEX ul_File1 = BIG_ul_SearchFile( BIG_ParentFile( ul_File ), az_Name );
-	char *pc_Buf = ( char * ) BIG_ReadFile( ul_File1, &ul_Size );
+	ul_File1 = BIG_ul_SearchFile(BIG_ParentFile(ul_File), az_Name);
+	pc_Buf = BIG_pc_ReadFileTmpMustFree(BIG_PosFile(ul_File1), &ul_Size);
 
 	AI2C_FirstScanFile(pc_Buf, TRUE);
 	free(pc_Buf);
@@ -2289,7 +2291,9 @@ void AI2C_Reinit(void)
 void AI2C_ModelToC(EAI_cl_Compiler *po_Compiler, BIG_INDEX ul_File)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~*/
+	char		*pc_Buf;
 	ULONG		i, ul_Size;
+	ULONG		*pul_Buf;
 	ULONG		ul_FileExt;
 	BIG_INDEX	ul_Var;
 	char		az_Tmp[1024];
@@ -2318,8 +2322,8 @@ void AI2C_ModelToC(EAI_cl_Compiler *po_Compiler, BIG_INDEX ul_File)
 	AI2C_AddToDef(ul_File);
 
 	/* Fctdefs */
-	char *pc_Buf = ( char * ) BIG_ReadFile( ul_File, &ul_Size );
-	const ULONG *pul_Buf = ( ULONG * ) pc_Buf;
+	pc_Buf = BIG_pc_ReadFileTmpMustFree(BIG_PosFile(ul_File), &ul_Size);
+	pul_Buf = (ULONG *) pc_Buf;
 	for(i = 0; i < (ul_Size >> 3); ++i)
 	{
 		ul_Var = *pul_Buf++;
@@ -2372,7 +2376,7 @@ void AI2C_ModelToC(EAI_cl_Compiler *po_Compiler, BIG_INDEX ul_File)
 
 	AI2C_gi_GlInsert = gpi_GlobalSize;
 
-	pc_Buf = ( char * ) BIG_ReadFile(ul_File, &ul_Size);
+	pc_Buf = BIG_pc_ReadFileTmpMustFree(BIG_PosFile(ul_File), &ul_Size);
 	pul_Buf = (ULONG *) pc_Buf;
 	for(i = 0; i < (ul_Size >> 3); ++i)
 	{

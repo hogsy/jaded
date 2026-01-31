@@ -925,7 +925,7 @@ void EPFB_cl_Frame::Prefab_MoveToMapExt(WOR_tdst_World *_pst_World, OBJ_tdst_Pre
 	OBJ_tdst_GameObject		*pst_DupGO;
 	int						i_First;
 	TAB_tdst_PFelem			*pst_Cur, *pst_End;
-	char                    *sz_Ext, sz_GroupName[ BIG_C_MaxLenName ];
+	char					*pc_Buffer, *sz_Ext, sz_GroupName[ BIG_C_MaxLenName ];
 	char					sz_PathPrefab[ BIG_C_MaxLenPath ];
 	char					sz_WorldPath[ BIG_C_MaxLenPath ];
 	ULONG					ul_Key, ul_Length, ul_WorldIndex;
@@ -1011,7 +1011,7 @@ void EPFB_cl_Frame::Prefab_MoveToMapExt(WOR_tdst_World *_pst_World, OBJ_tdst_Pre
 		ul_GolIndex = BIG_ul_SearchFile( _ul_Dir, sz_GroupName);
 		if ( ul_GolIndex && (ul_GolIndex != BIG_C_InvalidIndex) )
 		{
-			char *pc_Buffer = ( char * ) BIG_ReadFileToTmp( ul_GolIndex, &ul_Length );
+			pc_Buffer = BIG_pc_ReadFileTmp( BIG_PosFile( ul_GolIndex), &ul_Length );
 			SAV_Begin( sz_PathPrefab, sz_GroupName );
 			SAV_Buffer( pc_Buffer, ul_Length );
 			

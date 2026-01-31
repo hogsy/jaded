@@ -1001,7 +1001,7 @@ void ETEX_cl_Frame::ConvertTex(BIG_INDEX _ul_FatFile, UCHAR *_puc_Buf, ULONG _ul
         char* pcDDSBuf;
 
         ul_Index = BIG_ul_SearchKeyToFat(pst_Des->st_Tex.st_XeProperties.ul_OriginalTexture);
-        pcDDSBuf = BIG_ReadFile(ul_Index, &ulLength);
+        pcDDSBuf = BIG_pc_ReadFileTmpMustFree(BIG_PosFile(ul_Index), &ulLength);
         if (pcDDSBuf != NULL)
         {
             L_memset(&st_Des, 0, sizeof(TEX_tdst_File_Desc));
@@ -1066,7 +1066,7 @@ void ETEX_cl_Frame::ConvertTex(BIG_INDEX _ul_FatFile, UCHAR *_puc_Buf, ULONG _ul
             ul_Index = BIG_ul_SearchKeyToFat(pst_Des->st_Tex.st_XeProperties.ul_OriginalTexture);
         }
 
-        pcDDSBuf = BIG_ReadFile(ul_Index, &ulLength);
+        pcDDSBuf = BIG_pc_ReadFileTmpMustFree(BIG_PosFile(ul_Index), &ulLength);
         if (pcDDSBuf != NULL)
         {
             L_memset(&st_Des, 0, sizeof(TEX_tdst_File_Desc));
@@ -1256,6 +1256,7 @@ void ETEX_cl_Frame::Browse(BOOL _b_Del)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	BIG_INDEX					ul_IndexFile;
+	void						*p_Buf;
 	char						*psz_Name, *psz_Temp;
 	int							i_Format, i_Num;
 	BOOL						b_KeepSelection;
@@ -1341,7 +1342,7 @@ void ETEX_cl_Frame::Browse(BOOL _b_Del)
 						if(ul_IndexFile == mpo_ScrollView->mul_Selected) b_KeepSelection = TRUE;
 
 						/* Read the file */
-						void *p_Buf = BIG_ReadFile( ul_IndexFile, &ulLenght );
+						p_Buf = (void *) BIG_pc_ReadFileTmpMustFree(BIG_PosFile(ul_IndexFile), &ulLenght);
 						if(p_Buf)
 						{
 							/* Treat the file */

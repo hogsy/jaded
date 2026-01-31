@@ -91,7 +91,7 @@ BOOL EDIA_cl_BrickMapper::OnInitDialog(void)
 	}
 	else
 	{
-		pc_Buffer = ( char * ) BIG_ReadFileToTmp(h_File, NULL);
+		pc_Buffer = BIG_pc_ReadFileTmp(BIG_PosFile(h_File), NULL);
 	}
 	while (*pc_Buffer != NULL)
 	{

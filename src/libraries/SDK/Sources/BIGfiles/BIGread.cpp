@@ -250,13 +250,6 @@ size_t BIG_ReadFileToDst( const BIG_INDEX index, void *dstBuffer, const size_t b
 		return buffer.size();
 	}
 
-	if ( BIG_gst.h_CLibFileHandle == nullptr )
-	{
-		return BIG_C_InvalidIndex;
-	}
-
-	// otherwise fallback to BF
-
 	if ( BIG_gi_ReadMode != 2 )
 	{
 		const unsigned int r = L_fseek( BIG_gst.h_CLibFileHandle, BIG_PosFile( index ), SEEK_SET );
@@ -281,109 +274,6 @@ size_t BIG_ReadFileToDst( const BIG_INDEX index, void *dstBuffer, const size_t b
 	}
 
 	return size;
-}
-
-void *BIG_ReadFileToTmp( BIG_INDEX index, ULONG *size )
-{
-	const jaded::FileSystem::KeyFile *file;
-	if ( ( file = jaded::filesystem.GetFileByIndex( index ) ) != nullptr )
-	{
-		const std::vector< uint8_t > buffer = file->Read();
-
-		void *dstBuffer = BIG_p_RequestBuffer( buffer.size() + 1 );
-		ERR_X_Error( dstBuffer != nullptr, L_ERR_Csz_NotEnoughMemory, nullptr );
-
-		std::copy( buffer.begin(), buffer.end(), ( uint8_t * ) dstBuffer );
-
-		*size = buffer.size();
-		return dstBuffer;
-	}
-
-	if ( BIG_gst.h_CLibFileHandle == nullptr )
-	{
-		*size = 0;
-		return nullptr;
-	}
-
-	// otherwise fallback to BF
-
-	return BIG_pc_ReadFileTmp( BIG_PosFile( index ), size );
-}
-
-/*
- =======================================================================================================================
-	Aim:    The same as previous function. But the return pointer must be free by caller cause it is not shared with
-			other read and write operations.
- =======================================================================================================================
- */
-static char *BIG_pc_ReadFileTmpMustFree(ULONG _ul_Pos, ULONG *_pul_Length)
-{
-	/*~~~~~~~~~~~~~~*/
-	void	*p_Buffer;
-	ULONG	ul_Length,r;
-	/*~~~~~~~~~~~~~~*/
-
-#ifdef ACTIVE_EDITORS
-		BIG_INDEX ul_Fat = BAS_bsearch( _ul_Pos, &BIG_gst.st_PosTableToFat );
-		if(ul_Fat != BIG_C_InvalidIndex) BIG_FileChanged(ul_Fat) |= EDI_FHC_Loaded;
-#endif
-
-	/* Seek to the beginning of the file */
-	r=L_fseek((BIG_gst.h_CLibFileHandle), _ul_Pos, 0);
-	ERR_X_Error(r == 0, L_ERR_Csz_FSeek, NULL);
-
-	/*
-	 * Read length of file. The length of the file is saved at the beginning of the
-	 * file buffer.
-	 */
-	r=BIG_fread( &ul_Length, sizeof(ULONG), (BIG_gst.h_CLibFileHandle));
-	ERR_X_Error(r == 1, L_ERR_Csz_FRead, NULL);
-	if(LOA_IsSwapperActive()) SwapDWord(&ul_Length);
-
-	/* Eventually save size for caller */
-	if(_pul_Length) *_pul_Length = ul_Length;
-
-	/* Allocate temporary buffer to receive file. We store a 0 at the end of the file. */
-	p_Buffer = nullptr;
-	if(ul_Length)
-	{
-		p_Buffer = L_malloc( ul_Length + 1 );
-		ERR_X_Error(p_Buffer != NULL, L_ERR_Csz_NotEnoughMemory, NULL);
-
-		/* Read content of file */
-		r=BIG_fread(p_Buffer, ul_Length, (BIG_gst.h_CLibFileHandle));
-		ERR_X_Error(r == 1, L_ERR_Csz_FRead, NULL);
-		((UCHAR *) p_Buffer)[ul_Length] = 0;
-	}
-
-	return (char *) p_Buffer;
-}
-
-void *BIG_ReadFile( BIG_INDEX index, ULONG *size )
-{
-	const jaded::FileSystem::KeyFile *file;
-	if ( ( file = jaded::filesystem.GetFileByIndex( index ) ) != nullptr )
-	{
-		const std::vector< uint8_t > buffer = file->Read();
-
-		void *dstBuffer = calloc( 1, buffer.size() + 1 );
-		ERR_X_Error( dstBuffer != nullptr, L_ERR_Csz_NotEnoughMemory, nullptr );
-
-		std::copy( buffer.begin(), buffer.end(), ( uint8_t * ) dstBuffer );
-
-		*size = buffer.size();
-		return dstBuffer;
-	}
-
-	if ( BIG_gst.h_CLibFileHandle == nullptr )
-	{
-		*size = 0;
-		return nullptr;
-	}
-
-	// otherwise fallback to BF
-
-	return BIG_pc_ReadFileTmpMustFree( BIG_PosFile( index ), size );
 }
 
 /*
@@ -435,14 +325,14 @@ char *BIG_pc_ReadFileTmp(ULONG _ul_Pos, ULONG *_pul_Length)
 	else
 	{
 		/* Seek to the beginning of the file */
-		ULONG r = L_fseek((BIG_gst.h_CLibFileHandle), _ul_Pos, 0);
+		ULONG r = SeekSeek( BIG_Handle(), _ul_Pos, L_SEEK_SET );
 		ERR_X_Error(r == 0, L_ERR_Csz_FSeek, NULL);
 
 		/*
 		 * Read length of file. The length of the file is saved at the beginning of the
 		 * file buffer.
 		 */
-		r=BIG_fread(&ul_Length, sizeof(ULONG), (BIG_gst.h_CLibFileHandle));
+		r=ReadRead( &ul_Length, sizeof(ULONG), BIG_Handle());
 		ERR_X_Error(r == 1, L_ERR_Csz_FRead, NULL);
 		if(LOA_IsSwapperActive()) SwapDWord(&ul_Length);
 
@@ -457,7 +347,7 @@ char *BIG_pc_ReadFileTmp(ULONG _ul_Pos, ULONG *_pul_Length)
 			ERR_X_Error(p_Buffer != NULL, L_ERR_Csz_NotEnoughMemory, NULL);
 
 			/* Read content of file */
-			r=BIG_fread(p_Buffer, ul_Length, (BIG_gst.h_CLibFileHandle));
+			r=ReadRead(p_Buffer, ul_Length, BIG_Handle());
 			ERR_X_Error(r == 1, L_ERR_Csz_FRead, NULL);
 			((UCHAR *) p_Buffer)[ul_Length] = 0;
 
@@ -514,7 +404,7 @@ char *BIG_pc_ReadPartOfFileTmp(ULONG _ul_Pos, ULONG ul_ReadSize)
 	else
 	{
 		/* Seek to the beginning of the file */
-		r=L_fseek((BIG_gst.h_CLibFileHandle), _ul_Pos, 0);
+		r=SeekSeek(BIG_Handle(), _ul_Pos, L_SEEK_SET);
 		ERR_X_Error(r == 0, L_ERR_Csz_FSeek, NULL);
 
 		LOA_FetchFile(&ul_ReadSize);
@@ -526,10 +416,65 @@ char *BIG_pc_ReadPartOfFileTmp(ULONG _ul_Pos, ULONG ul_ReadSize)
 		if(ul_ReadSize)
 		{
 			/* Read content of file */
-			r=BIG_fread(p_Buffer, ul_ReadSize, (BIG_gst.h_CLibFileHandle));
+			r=ReadRead((UCHAR *) p_Buffer, ul_ReadSize, BIG_Handle());
 			ERR_X_Error(r == 1, L_ERR_Csz_FRead, NULL);
 			((UCHAR *) p_Buffer)[ul_ReadSize] = 0;
 		}
+	}
+
+	return (char *) p_Buffer;
+}
+
+/*
+ =======================================================================================================================
+    Aim:    The same as previous function. But the return pointer must be free by caller cause it is not shared with
+            other read and write operations.
+ =======================================================================================================================
+ */
+char *BIG_pc_ReadFileTmpMustFree(ULONG _ul_Pos, ULONG *_pul_Length)
+{
+	/*~~~~~~~~~~~~~~*/
+	void	*p_Buffer;
+	ULONG	ul_Length,r;
+	/*~~~~~~~~~~~~~~*/
+
+#ifdef ACTIVE_EDITORS
+	{
+		/*~~~~~~~~~~~~~~~*/
+		BIG_INDEX	ul_Fat;
+		/*~~~~~~~~~~~~~~~*/
+
+		ul_Fat = BAS_bsearch(_ul_Pos, &BIG_gst.st_PosTableToFat);
+		if(ul_Fat != BIG_C_InvalidIndex) BIG_FileChanged(ul_Fat) |= EDI_FHC_Loaded;
+	}
+
+#endif
+	/* Seek to the beginning of the file */
+	r=SeekSeek(BIG_Handle(), _ul_Pos, L_SEEK_SET);
+	ERR_X_Error(r == 0, L_ERR_Csz_FSeek, NULL);
+
+	/*
+	 * Read length of file. The length of the file is saved at the beginning of the
+	 * file buffer.
+	 */
+	r=ReadRead((UCHAR *) &ul_Length, sizeof(ULONG), BIG_Handle());
+	ERR_X_Error(r == 1, L_ERR_Csz_FRead, NULL);
+	if(LOA_IsSwapperActive()) SwapDWord(&ul_Length);
+
+	/* Eventually save size for caller */
+	if(_pul_Length) *_pul_Length = ul_Length;
+
+	/* Allocate temporary buffer to receive file. We store a 0 at the end of the file. */
+	p_Buffer = NULL;
+	if(ul_Length)
+	{
+		p_Buffer = (void *) L_malloc(ul_Length + 1);
+		ERR_X_Error(p_Buffer != NULL, L_ERR_Csz_NotEnoughMemory, NULL);
+
+		/* Read content of file */
+		r=ReadRead((UCHAR *) p_Buffer, ul_Length, BIG_Handle());
+		ERR_X_Error(r == 1, L_ERR_Csz_FRead, NULL);
+		((UCHAR *) p_Buffer)[ul_Length] = 0;
 	}
 
 	return (char *) p_Buffer;
@@ -614,6 +559,10 @@ void *BIG_p_RequestSaveBuffer(int _i_Size)
  */
 void BIG_FreeGlobalBuffer(void)
 {
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+	extern BOOL ENG_gb_ExitApplication;
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
 #ifdef ACTIVE_EDITORS
 	L_free(BIG_gp_GlobalBuffer);
 #endif
@@ -638,42 +587,31 @@ void BIG_FreeGlobalBuffer(void)
  */
 ULONG BIG_ul_EditorGetSizeOfFile(ULONG ul_FileKey)
 {
-	jaded::FileSystem::KeyFile *file;
-	if ( ( file = jaded::filesystem.GetFileByKey( ul_FileKey ) ) != nullptr )
-	{
-		return jaded::filesystem.GetLocalFileSize( file->GetPath() );
-	}
-
-	if ( BIG_gst.h_CLibFileHandle == nullptr )
-	{
-		return BIG_C_InvalidIndex;
-	}
-
-	// otherwise fallback to BF
-
 	/*~~~~~~~~~~~~~~*/
+	ULONG	ul_Pos;
 	ULONG	ul_Length;
  	fpos_t	pos;
  	fpos_t	pos2;
 
 
 	if(ul_FileKey == -1) return 0;
-	ULONG ul_Pos = BIG_ul_SearchKeyToPos( ul_FileKey );
+	ul_Pos = BIG_ul_SearchKeyToPos(ul_FileKey);
 	if(ul_Pos == -1) return 0;
 	if(ul_Pos == 0) return 0;
 	if(ul_Pos == ul_FileKey) return 0;
 
 
-	fgetpos( BIG_gst.h_CLibFileHandle, &pos);
+	fgetpos(BIG_Handle(), &pos);
 
 	pos2 = (fpos_t)ul_Pos ;
-	fsetpos( BIG_gst.h_CLibFileHandle, &pos2);
+	fsetpos(BIG_Handle(), &pos2);
 
-	fread( &ul_Length, sizeof(ULONG),1, BIG_gst.h_CLibFileHandle );
+	fread((UCHAR *) &ul_Length, sizeof(ULONG),1, BIG_Handle());
 
-	fsetpos( BIG_gst.h_CLibFileHandle, &pos);
+	fsetpos(BIG_Handle(), &pos);
 
 	return ul_Length;
 }
 
 #endif
+

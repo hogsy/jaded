@@ -32,14 +32,15 @@ void VERsion_UpdateFile(ULONG _ul_Before, BIG_INDEX _ul_File)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	char	asz_Path[BIG_C_MaxLenPath];
+	char	*pc_Tmp;
 	ULONG	ul_Length;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-	BIG_ComputeFullName( BIG_ParentFile( _ul_File ), asz_Path );
-	char *pc_Tmp               = ( char * ) BIG_ReadFile( _ul_File, &ul_Length );
+	BIG_ComputeFullName(BIG_ParentFile(_ul_File), asz_Path);
+	pc_Tmp = BIG_pc_ReadFileTmpMustFree(BIG_PosFile(_ul_File), &ul_Length);
 	BIG_VERSION_ul_CurrentFile = _ul_File;
-	if ( pc_Tmp ) VERsion_UpdateOneFile( _ul_Before, pc_Tmp, ul_Length, asz_Path, BIG_NameFile( _ul_File ) );
-	L_free( pc_Tmp );
+	if(pc_Tmp) VERsion_UpdateOneFile(_ul_Before, pc_Tmp, ul_Length, asz_Path, BIG_NameFile(_ul_File));
+	L_free(pc_Tmp);
 }
 
 /*

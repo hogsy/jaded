@@ -100,7 +100,7 @@ extern "C" void		TEXT_FreeAll(void);
 extern "C" BAS_tdst_barray WOR_ListAllKeys;
 extern "C" BOOL		EDI_gb_ComputeMap;
 extern "C" BOOL		EDI_gb_NoVerbose;
-extern ULONG	BIG_gul_CanAskKey;
+extern "C" ULONG	BIG_gul_CanAskKey;
 extern "C" int		EDI_gi_GenSpe;
 #endif
 
@@ -1245,11 +1245,13 @@ void EOUT_cl_Frame::OnRealIdle(void)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	BIG_INDEX	ul_File;
+	FILE		*file;
 	char		asz_Path[BIG_C_MaxLenPath];
 	extern BOOL EDI_gb_CanBin;
 	extern BOOL EDI_gb_CleanBinFiles;
     int			i;
-	ULONG        len;
+	char		*pc;
+	ULONG		len;
 	char		c, *p;
 	static int	log = 0;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -1299,8 +1301,8 @@ void EOUT_cl_Frame::OnRealIdle(void)
 	        ExitProcess(0);
 		}
 
-		char *pc = ( char * ) BIG_ReadFileToTmp( ul_File, &len );
-		FILE *file = fopen( "Pach Log.txt", "wb" );
+		pc = BIG_pc_ReadFileTmp(BIG_PosFile(ul_File), &len);
+		file = fopen("Pach Log.txt", "wb");
 		if(!file) ExitProcess(0);
 
 		// Mark

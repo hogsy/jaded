@@ -79,7 +79,7 @@ extern void		BIG_CleanByFat(void);
 extern void		BIG_CleanLoaded(void);
 extern "C" int		AI_gi_TestContent;
 extern "C" ULONG	SPG2_PrimitivLimit;
-extern void		BIG_GetAllIdKey(void);
+extern "C" void		BIG_GetAllIdKey(void);
 extern BOOL		BIG_gb_CleanFatEmpty;
 #endif
 

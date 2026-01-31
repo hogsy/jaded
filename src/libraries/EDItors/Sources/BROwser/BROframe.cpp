@@ -12,13 +12,11 @@
 #include "BASe/CLIbrary/CLIstr.h"
 #include "BASe/ERRors/ERRasser.h"
 #include "EDIapp.h"
-#	include "BIGfiles/BIGfat.h"
-#	include "BIGfiles/BIGgroup.h"
-#	include "BIGfiles/LOAding/LOAdefs.h"
-#	include "BIGFiles/IMPort/IMPbase.h"
-#	include "BIGfiles/BIGread.h"
+#include "BIGfiles/BIGfat.h"
+#include "BIGfiles/BIGgroup.h"
+#include "BIGfiles/LOAding/LOAdefs.h"
 
-#	define ACTION_GLOBAL
+#define ACTION_GLOBAL
 
 #include "BROframe_act.h"
 #include "BROframe.h"
@@ -37,7 +35,8 @@
 #include "LINKs/LINKstruct_reg.h"
 #include "LINKs/LINKtoed.h"
 
-#	include "DIAlogs/DIAname_dlg.h"
+#include "BIGFiles/IMPort/IMPbase.h"
+#include "DIAlogs/DIAname_dlg.h"
 
 #ifdef JADEFUSION
 extern IMP_tdst_ImportDialog	IMP_gst_ImportDialog_Interface;
@@ -198,7 +197,7 @@ int ImportDialog_Request(char *sz_Ext)
 		{
 			/*~~~~~~~~~~~~~~~~~~~~~~~~*/
 			ULONG	ul_File, ul_Length;
-			char   *pc_Buf;
+			char	*pc_Buffer, *pc_Buf;
 			char	asz_Name[256];
 			float	f_Scale;
 			/*~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -208,7 +207,7 @@ int ImportDialog_Request(char *sz_Ext)
 			ul_File = BIG_ul_SearchFileExt("Root/EngineDatas/03 Animation Bank", "AnimScale.ini");
 			if(ul_File == BIG_C_InvalidIndex) return 0;
 
-			char *pc_Buffer = ( char * ) BIG_ReadFileToTmp( ul_File, &ul_Length );
+			pc_Buffer = BIG_pc_ReadFileTmp(BIG_PosFile(ul_File), &ul_Length);
 
 			pc_Buf = pc_Buffer;
 			while(pc_Buffer - pc_Buf < (int) ul_Length)
@@ -245,7 +244,8 @@ int ImportDialog_Request(char *sz_Ext)
 		/* KEEP T IMPORTATION */
 		{
 			/*~~~~~~~~~~~~~~~~~~~~~~~~*/
-			ULONG   ul_Length;
+			ULONG	ul_File, ul_Length;
+			char	*pc_Buffer, *pc_Buf;
 			char	asz_Name[256];
 			int		i, j, i_Gizmo;
 			/*~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -260,12 +260,12 @@ int ImportDialog_Request(char *sz_Ext)
 			IMP_AnimKeepT_Num = 0;
 
 
-			ULONG ul_File = BIG_ul_SearchFileExt( "Root/EngineDatas/03 Animation Bank", "KeepTranslation.ini" );
+			ul_File = BIG_ul_SearchFileExt("Root/EngineDatas/03 Animation Bank", "KeepTranslation.ini");
 			if(ul_File == BIG_C_InvalidIndex) return 0;
 
-			char *pc_Buffer = ( char * ) BIG_ReadFileToTmp( ul_File, &ul_Length );
+			pc_Buffer = BIG_pc_ReadFileTmp(BIG_PosFile(ul_File), &ul_Length);
 
-			char *pc_Buf = pc_Buffer;
+			pc_Buf = pc_Buffer;
 			while(pc_Buffer - pc_Buf < (int) ul_Length)
 			{
 				while((*pc_Buffer == '\n') || (*pc_Buffer == '\r') || (*pc_Buffer == '\t') || (*pc_Buffer == ' ')) pc_Buffer++;

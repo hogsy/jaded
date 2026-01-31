@@ -30,7 +30,7 @@
 #include "DIAlogs/DIA_UPDATE_dlg.h"
 
 static void LoadUniversRef(void);
-extern "C" BOOL b_CanOuputFinal( const char *psz_Name );
+extern "C" BOOL b_CanOuputFinal(char *psz_Name);
 extern "C" BOOL b_DummyFile(BIG_INDEX ul_Index, BOOL *_pb_Univ);
 static void UnloadUniversRef(void);
 
@@ -257,7 +257,7 @@ void VERsion_ConvertBrowserIni(BIG_INDEX ul_Index,char* _psz_Path,char* _psz_Nam
 	SBrowserIniNew BrowserIniNew;
 
 	/* Read the file in the buffer */
-	BIG_gp_Buffer = ( char * ) BIG_ReadFileToTmp(ul_Index, &BIG_gul_Length);
+	BIG_gp_Buffer = BIG_pc_ReadFileTmp(BIG_PosFile(ul_Index), &BIG_gul_Length);
 	memcpy(&BrowserIniOld,BIG_gp_Buffer,BIG_gul_Length);
 
 	memcpy(&BrowserIniNew.mst_base,&BrowserIniOld.mst_base,sizeof(BrowserIniOld.mst_base));

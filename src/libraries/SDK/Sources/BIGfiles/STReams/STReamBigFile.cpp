@@ -88,7 +88,7 @@ int STReams_CBigFile::Export(const std::string& strFileExportDir, const std::str
 
 			// Write file 
 			ULONG ul_Length;
-			void *p_Buffer = BIG_ReadFileToTmp(index, &ul_Length);
+			void *p_Buffer = (void *) BIG_pc_ReadFileTmp(BIG_PosFile(index), &ul_Length);
 			r=BIG_fwrite(p_Buffer, ul_Length, h_TmpFile);
 			ERR_X_Error(r == 1, L_ERR_Csz_FWrite, NULL);
 

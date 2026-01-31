@@ -63,7 +63,7 @@ void EDI_cl_MainFrame::Universe_SetAIKey(void)
     if(cl_GetKey.DoModal() == IDOK)
     {
         WOR_Universe_Close(0);
-        sscanf(cl_GetKey.mo_Name, "%x", &BIG_gst.st_ToSave.ul_UniverseKey);
+        sscanf(cl_GetKey.mo_Name, "%x", &BIG_UniverseKey());
         BIG_WriteHeader();
     }
 }
