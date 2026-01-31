@@ -66,7 +66,7 @@ add_library(Jaded-SDK OBJECT
         Sources/BIGfiles/BIGmdfy_file.h
         Sources/BIGfiles/BIGmerge.c
         Sources/BIGfiles/BIGmerge.h
-        Sources/BIGfiles/BIGopen.cpp
+        Sources/BIGfiles/BIGopen.c
         Sources/BIGfiles/BIGopen.h
         Sources/BIGfiles/BIGread.c
         Sources/BIGfiles/BIGread.h
