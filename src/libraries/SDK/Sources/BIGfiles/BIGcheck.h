@@ -6,13 +6,19 @@
  */
 
 #pragma once
-
 #include "BASe/BAStypes.h"
 #include "BIGfiles/BIGdefs.h"
 #include "BIGfiles/BIGopen.h"
 
+#if defined (__cplusplus) && !defined(JADEFUSION)
+extern "C"
+{
+#endif
 extern BOOL BIG_gb_CanClean;
+extern void BIG_RestoreDeleted(void);
+extern BOOL BIG_b_CheckFile(BOOL);
+extern void BIG_Clean(BOOL);
 
-void BIG_RestoreDeleted(void);
-BOOL BIG_b_CheckFile(BOOL);
-void BIG_Clean(BOOL);
+#if defined (__cplusplus) && !defined(JADEFUSION)
+}
+#endif

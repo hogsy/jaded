@@ -11,7 +11,6 @@
 #include "BIGfiles/BIGfat.h"
 #include "BIGfiles/BIGerrid.h"
 #include "BIGfiles/BIGdefs.h"
-#include "BIGfiles/BIGopen.h"
 
 #ifdef ACTIVE_EDITORS
 

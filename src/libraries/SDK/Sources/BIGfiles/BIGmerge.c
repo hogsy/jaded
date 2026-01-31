@@ -63,6 +63,7 @@ void BIG_CallbackLoadFileFromBigFile(BIG_INDEX _ul_Dir, BIG_INDEX _ul_File)
     BIG_gul_GlobalKey = BIG_FileKey(_ul_File);
     BIG_gx_GlobalTime = BIG_TimeFile(_ul_File);
 	BIG_gpsz_GlobalName = BIG_NameFile(_ul_File);
+	BIG_gx_GlobalClientRev = BIG_P4RevisionClient(_ul_File);
 
     BIG_gp_Buffer = NULL;
 

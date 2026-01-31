@@ -454,7 +454,44 @@ _inline_ void BIG_ComputeKey(char *Key, char *pc_Buf, ULONG ul_Size)
 	Key[ENCRYPT_KEY_SIZE + 3 + 20] = (char) ((ul_CRC[5] & 0xFF000000) >> 24);
 }
 
-	void BIG_special_Encrypt4FAT(char * _pc_Buf, ULONG _ul_Size);
+
+
+/*
+ =======================================================================================================================
+ =======================================================================================================================
+ */
+_inline_ void BIG_special_Encrypt4FAT(char * _pc_Buf, ULONG _ul_Size)
+{
+	ULONG	i;
+	ULONG	ul_Key;
+	extern ULONG BIG_ul_FAT_GetCryptKey();	
+
+	ul_Key = BIG_ul_FAT_GetCryptKey();
+
+	for(i = 0; i < _ul_Size; i++)
+	{
+		_pc_Buf[i] ^= (ul_Key << ((_ul_Size - i) % 4));
+	}
+}
+
+/*
+ =======================================================================================================================
+ =======================================================================================================================
+ */
+_inline_ void BIG_special_Decrypt4FAT(char * _pc_Buf, ULONG _ul_Size)
+{
+	ULONG	i;
+	ULONG	ul_Key;
+	extern ULONG BIG_ul_FAT_GetCryptKey();	
+
+	ul_Key = BIG_ul_FAT_GetCryptKey();
+
+	for(i = 0; i < _ul_Size; i++)
+	{
+		_pc_Buf[i] ^= (ul_Key << ((_ul_Size - i) % 4));
+	}
+}
+
 
 #if defined (__cplusplus) && !defined(JADEFUSION)
 }

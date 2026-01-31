@@ -92,7 +92,7 @@ extern BOOL		EDI_gb_NoVerbose;
 extern ULONG	BIG_gul_CanAskKey;
 extern int		EDI_gi_GenSpe;
 #else
-extern void BIG_CleanBinFiles(ULONG);
+extern "C" void BIG_CleanBinFiles(ULONG);
 
 extern char			*F3D_STR_Csz_Zone_AI[16];
 extern "C" BOOL		ENG_gb_ActiveSectorization;

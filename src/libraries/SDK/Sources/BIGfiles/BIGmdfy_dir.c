@@ -12,17 +12,13 @@
 #include "LINKs/LINKmsg.h"
 #include "BASe/CLIbrary/CLIstr.h"
 #include "BASe/ERRors/ERRasser.h"
-
-#	include "BIGfiles/BIGdefs.h"
-#	include "BIGfiles/BIGerrid.h"
-#	include "BIGfiles/BIGmdfy_dir.h"
-#	include "BIGfiles/BIGread.h"
-#	include "BIGfiles/BIGmdfy_file.h"
-#	include "BIGfiles/BIGopen.h"
-#	include "BIGfiles/BIGfat.h"
-
-#	include "EDIpaths.h"
-#	include "FileSystem/FileSystem.h"
+#include "BIGfiles/BIGdefs.h"
+#include "BIGfiles/BIGerrid.h"
+#include "BIGfiles/BIGmdfy_dir.h"
+#include "BIGfiles/BIGmdfy_file.h"
+#include "BIGfiles/BIGopen.h"
+#include "BIGfiles/BIGfat.h"
+#include "EDIpaths.h"
 
 /* If TRUE, s_CreateDirFromDisk will be recursive */
 BOOL	BIG_gb_ImportRecurse = TRUE;
@@ -213,6 +209,10 @@ static void s_CreateDirFromDisk( const char *_psz_RealName, char *_psz_BigName)
 
 						if(ul_File != BIG_C_InvalidIndex)
 						{
+							/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+							extern ULONG	BIG_ul_EditorGetSizeOfFile(ULONG);
+							/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
 							if(BIG_gb_ImportDirOnlyLoaded && ((BIG_FileChanged(ul_File) & EDI_FHC_Loaded) == 0))
 							{
 								b_DoImport = FALSE;
@@ -262,17 +262,6 @@ void BIG_UpdateDirFromDisk(char *_psz_RealName, char *_psz_BigName)
  */
 BIG_INDEX BIG_ul_CreateDir( const char *_psz_PathName)
 {
-	if ( jaded::filesystem.IsKeyTablePopulated() )
-	{
-		const jaded::FileSystem::KeyDir *dir = jaded::filesystem.GetDirByName( _psz_PathName );
-		if ( dir != nullptr )
-		{
-			return dir->index;
-		}
-
-		return jaded::filesystem.CreatePath( _psz_PathName );
-	}
-
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	BIG_INDEX	ul_NewIndex, ul_ParentIndex, ul_Memo;
 	char		asz_TempName[BIG_C_MaxLenPath];

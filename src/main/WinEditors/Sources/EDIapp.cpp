@@ -105,7 +105,7 @@ extern ULONG AI2C_gul_MinInstanceNbForGeneration;
 #	else
 extern "C" int EDI_gi_GenSpe;
 extern "C" int WOR_gi_CurrentConsole;
-extern void BIG_MakeWolList( char *_asz_Path );
+extern "C" void BIG_MakeWolList( char *_asz_Path );
 extern "C" ULONG AI2C_gul_MinInstanceNbForGeneration;
 #	endif
 
@@ -182,7 +182,11 @@ BOOL EDI_gb_ImportFromKeys = FALSE;
 std::string EDI_gb_ExportToKeys_Path;
 std::string EDI_gb_ImportFromKeys_Path;
 
+#	ifdef JADEFUSION
 extern void BIG_CleanByFat();
+#	else
+extern "C" void BIG_CleanByFat();
+#	endif
 
 /*$4
  ***********************************************************************************************************************

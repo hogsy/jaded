@@ -41,6 +41,7 @@ extern void     BIG_SetKeyID(UCHAR);
 extern UCHAR    BIG_uc_GetKeyID(char *);
 extern void     BIG_SetKeyValue(ULONG);
 extern ULONG    BIG_ul_GetKeyValue(char *);
+extern BOOL     BIG_b_IsKeyExists(void);
 extern BIG_KEY  BIG_ul_GetNewKey(BIG_INDEX);
 
 #define BIG_C_InvalidKey    0xFFFFFFFF
@@ -55,6 +56,7 @@ extern ULONG    BIG_ul_SearchKeyToFat(BIG_KEY);
 extern void     BIG_ChangeKey(BIG_INDEX, BIG_KEY);
 extern void		BIG_GetLastKeyForUser(int *,ULONG);
 extern void		BIG_GetLastKey(int *);
+extern ULONG    BIG_ul_GetBFSize();
 #endif
 #if defined (__cplusplus) && !defined(JADEFUSION)
 }

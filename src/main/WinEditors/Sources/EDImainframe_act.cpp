@@ -73,14 +73,14 @@ extern "C" int		SpecialFlags_FlagToTrace;
 extern "C" void		SpecialFlags_Init(void);
 extern "C" int		*SpecialFlags_Array;
 extern "C" float	TIM_gf_SynchroFrequency;
-extern void		BIG_MakeWolList(char *);
+extern "C" void		BIG_MakeWolList(char *);
 extern "C" int		AI_EvalFunc_ARRBitTest_C(int *, int);
-extern void		BIG_CleanByFat(void);
-extern void		BIG_CleanLoaded(void);
+extern "C" void		BIG_CleanByFat(void);
+extern "C" void		BIG_CleanLoaded(void);
 extern "C" int		AI_gi_TestContent;
 extern "C" ULONG	SPG2_PrimitivLimit;
 extern "C" void		BIG_GetAllIdKey(void);
-extern BOOL		BIG_gb_CleanFatEmpty;
+extern "C" BOOL		BIG_gb_CleanFatEmpty;
 #endif
 
 /*

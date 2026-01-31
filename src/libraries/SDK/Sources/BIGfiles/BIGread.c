@@ -17,6 +17,9 @@
 #include "BIGfiles/BIGfat.h"
 #include "BIGfiles/BIGspecial.h"
 #include "BIGfiles/LOAding/LOAread.h"
+#include "TIMer/PROfiler/PROPS2.h"
+#include "LOAding/LOAdefs.h"
+#include "LINKs/LINKmsg.h"
 
 /*$4
  ***********************************************************************************************************************
@@ -24,17 +27,16 @@
  ***********************************************************************************************************************
  */
 
-static void *BIG_gp_GlobalBuffer;     /* Address of temporary global buffer for bigfiles */
-static int   BIG_gi_GlobalBufferSize; /* The actual length of that buffer */
-
+void		*BIG_gp_GlobalBuffer = NULL;	/* Address of temporary global buffer for bigfiles */
+int			BIG_gi_GlobalBufferSize = 0;	/* The actual length of that buffer */
+extern char *BIG_gp_ReadBuffer;				/* Temps buffer for special read/write mode */
 extern int	BIG_gi_ReadMode;				/* 0 normal, 1 write, 2 read buffer */
-
+extern int	BIG_gi_ReadSeek;				/* Current seek */
 #ifdef ACTIVE_EDITORS
-void      *BIG_gp_GlobalSaveBuffer = NULL;
-static int BIG_gi_GlobalSaveBufferSize;
+void		*BIG_gp_GlobalSaveBuffer = NULL;
+int			BIG_gi_GlobalSaveBufferSize = 0;
 #endif
-
-extern "C" void *LOA_FetchFile(ULONG *_pul_Length);
+extern void *LOA_FetchFile(ULONG *_pul_Length);
 extern BOOL LOA_gb_SpeedMode;
 
 /*$4
@@ -42,7 +44,7 @@ extern BOOL LOA_gb_SpeedMode;
  ***********************************************************************************************************************
  */
 
-extern "C" BOOL	BIG_gb_CanCache = FALSE;
+BOOL		BIG_gb_CanCache = FALSE;
 
 /* #define BIG_CACHE */
 #ifdef BIG_CACHE
@@ -217,7 +219,7 @@ void BIG_Read(ULONG _ul_Pos, void *_p_Buffer, ULONG _ul_Length)
  =======================================================================================================================
  =======================================================================================================================
  */
-extern "C" void BIG_ReadNoSeek(ULONG _ul_Pos, void *_p_Buffer, ULONG _ul_Length)
+void BIG_ReadNoSeek(ULONG _ul_Pos, void *_p_Buffer, ULONG _ul_Length)
 {
 	int r;
 	if(!_ul_Length) return;
@@ -282,7 +284,7 @@ ULONG BIG_ul_ReadFile(ULONG _ul_Pos, void *_p_Buffer)
  * Out: Return the address of the temporary buffer. Always return the value of
  * BIG_gp_GlobalBuffer.
  */
-
+extern int	BIG_SpeedMode_fread(void **_p_Buffer, int _i_Size, BIGFileHandle _h_Handle);
 static int	truc_nul = 0;
 
 /*
@@ -365,7 +367,7 @@ char *BIG_pc_ReadFileTmp(ULONG _ul_Pos, ULONG *_pul_Length)
         }
 	}
 
-	return ( char * ) p_Buffer;
+	return p_Buffer;
 }
 #endif // XML_CONV_TOOL
 

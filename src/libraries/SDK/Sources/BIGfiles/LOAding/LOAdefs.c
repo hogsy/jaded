@@ -20,6 +20,7 @@
 #include "BASe/MEMory/MEMpro.h"
 #include "LINks/LINKmsg.h"
 #include "BIGfiles/LOAding/LOAdefs.h"
+#include "BIGfiles/LOAding/LOAerrid.h"
 #include "BIGfiles/LOAding/LOAread.h"
 #include "BIGfiles/BIGkey.h"
 #include "BIGfiles/BIGopen.h"
@@ -231,6 +232,13 @@ void LOA_PrintCBRaster(void)
 
 
 extern void WORCheck_AllRef_AddRef(ULONG, ULONG);
+#ifdef PSX2_TARGET
+extern void eeSND_StartScheduler(int);
+extern void eeSND_StopScheduler(int);
+#else
+#define eeSND_StartScheduler(_a)
+#define eeSND_StopScheduler(_a)
+#endif
 
 /*$4
  ***********************************************************************************************************************
@@ -238,12 +246,26 @@ extern void WORCheck_AllRef_AddRef(ULONG, ULONG);
  ***********************************************************************************************************************
  */
 
+#if defined(PSX2_USE_iopCDV) //PS2 + CD
+#define M_OpenFile(_file)			eeCDV_i_OpenFile(_file)
+#define M_GetFileSize(_size, _id)	(_size) = eeCDV_i_GetFileSize(_id)
+#define M_ReadFile(_id, _buf, _len)	eeCDV_i_ReadFile(_id, _buf, _len)
+#define M_CloseFile(_id)			eeCDV_i_CloseFile(_id)
+
+#else
+#define M_OpenFile(_file)			L_fopen(_file, L_fopen_RB)
+#define M_ReadFile(_id, _buf, _len)	L_fread(_buf, _len, 1, _id)
+#define M_CloseFile(_id)			L_fclose(_id)
+
+
 #ifdef PSX2_TARGET
 #define M_GetFileSize(_size, _id)   ((_size) = sceLseek(_id, 0, SEEK_END), sceLseek(_id, 0, SEEK_SET))
 #elif defined(_XBOX)
 #define M_GetFileSize(_size, _id)   _size = GetFileSize(_id, NULL);
 #else
 #define M_GetFileSize(_size, _id) 	do{L_fseek(_id, 0, SEEK_END); _size = L_ftell(_id); L_fseek(_id, 0, SEEK_SET);}while(0)
+#endif
+
 #endif
 
 /*$4
@@ -615,6 +637,8 @@ void LOA_BeginSpeedMode(BIG_KEY _ul_Key)
 	gi_TestBin = -1;
 #endif // !defined(MAX_PLUGIN)
 
+	eeSND_StopScheduler(_ul_Key);
+
 	if
 	(
 		(_ul_Key == 0xFF800000)
@@ -844,6 +868,9 @@ void LOA_ResumeSpeedMode(void)
  */
 void LOA_EndSpeedMode(void)
 {
+
+	eeSND_StartScheduler(LOA_ul_BinKey);
+
 	if(LOA_gb_SpeedMode)
 	{
 		/* printf("[EE] EndSpeedMode 0x%x\n", LOA_ul_BinKey); */
@@ -1663,7 +1690,7 @@ void LOA_LoadSpecialArray(void)
 	}
 	
 
-	file = L_fopen("jade.spe", L_fopen_RB);
+	file = M_OpenFile(LOA_SPE_NAME);
 	if(!CLI_FileOpen(file)) return;
 
 	ulFileKey = ulFixKey = prev = 0;
@@ -1671,11 +1698,11 @@ void LOA_LoadSpecialArray(void)
 	M_GetFileSize(size, file);
 	while(size > 0)
 	{
-		L_fread(&ulFileKey, sizeof(ULONG), 1, file);
+		M_ReadFile(file, &ulFileKey, sizeof(ULONG));
 		size -= sizeof(ULONG);
 		
 		prev = ulFixKey;
-		L_fread(&ulFixKey, sizeof(ULONG), 1, file);
+		M_ReadFile(file, &ulFixKey, sizeof(ULONG));
 		size -= sizeof(ULONG);
 
 		// new fix list
@@ -1686,10 +1713,15 @@ void LOA_LoadSpecialArray(void)
 			continue;
 		}
 
+#if defined (_GAMECUBE) || defined (_XENON)
+		SwapDWord(&ulFileKey);
+		SwapDWord(&ulFixKey);
+#endif
+
 		BAS_binsert(ulFileKey, ulFixKey, &LOA_gst_SpecialArrayKey[LOA_gi_SpecialArrayNb]);
 	}
 
-	L_fclose(file);
+	M_CloseFile(file);
 }
 
 

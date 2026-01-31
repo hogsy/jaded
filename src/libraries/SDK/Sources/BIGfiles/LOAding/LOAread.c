@@ -15,7 +15,8 @@
 #include "BASe/ERRors/ERRasser.h"
 #include "BASe/CLIbrary/CLIfile.h"
 #include "BIGfiles/BIGfat.h"
-#include "BIGfiles/BIGopen.h"
+
+#include "LOAdefs.h"
 
 extern int	BIG_SpeedMode_fread(void **, int _i_Size, L_FILE _h_Handle);
 

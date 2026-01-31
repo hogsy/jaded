@@ -44,10 +44,16 @@
 
 
 
+
+#ifdef JADEFUSION
 extern BOOL BIG_gb_IgnoreRecent;
+extern int	ANI_gi_ImportMode;
+extern ULONG LOA_gul_MakeFileRefSpy ;
+#else
+extern "C" BOOL BIG_gb_IgnoreRecent;
 extern "C" int	ANI_gi_ImportMode;
 extern "C" ULONG LOA_gul_MakeFileRefSpy ;
-
+#endif
 /*
  =======================================================================================================================
  =======================================================================================================================

@@ -10,7 +10,6 @@
 #endif
 
 #include "BASe/BAStypes.h"
-
 #include "BIGfiles/BIGdefs.h"
 #include "BIGfiles/BIGopen.h"
 
@@ -58,6 +57,7 @@ extern "C"
 
 #define BIG_P4OwnerName(d)        (BIG_gst.dst_FileTableExt[d].asz_P4OwnerName)
 #define BIG_P4RevisionServer(d)   (BIG_gst.dst_FileTableExt[d].ul_P4RevisionServer)
+#define BIG_P4RevisionClient(d)   (BIG_gst.dst_FileTableExt[d].st_ToSave.ul_P4RevisionClient)
 #define BIG_P4ChangeList(d)		  (BIG_gst.dst_FileTableExt[d].ul_P4ChangeList)
 #define BIG_P4HeadAction(d)		  (BIG_gst.dst_FileTableExt[d].asz_P4HeadAction)	
 #define BIG_P4Action(d)			  (BIG_gst.dst_FileTableExt[d].asz_P4Action)	
@@ -90,10 +90,14 @@ extern "C"
  */
 
 extern void         BIG_ReadHeader(void);
+extern void         BIG_ReadFatFile(BIG_tdst_FatDes *);
 extern void         BIG_ReadAllFats(void);
 extern void         BIG_ResetFat(void);
 
 #ifdef ACTIVE_EDITORS
+extern void         BIG_ReadFatFileExt(BIG_tdst_FatDes *);
+extern void         BIG_ReadFatDir(BIG_tdst_FatDes *);
+
 extern void         BIG_WriteHeader(void);
 extern void         BIG_UpdateOneFileInFat(BIG_INDEX);
 extern void         BIG_UpdateOneDirInFat(BIG_INDEX);

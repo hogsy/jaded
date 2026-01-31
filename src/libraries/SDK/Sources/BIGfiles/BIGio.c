@@ -20,11 +20,19 @@
 #include "AIinterp/Sources/AIengine.h"
 #include "AIinterp/Sources/AIstack.h"
 
+#ifdef PSX2_TARGET
+#include "CDV_Manager.h"
+#include "PSX2debug.h"
+extern void GSP_OutputConsole(char *);
+#else
 #ifndef CDV_Cte_SectorSize
 #define CDV_Cte_SectorSize	2048
 #endif
-
+#if defined(_GAMECUBE) || defined(_XENON)
+#include "BIGfiles/LOAding/LOAread.h"
+#endif
 #define ReadLong(_a)	*(int *) _a
+#endif
 
 extern void eeRPC_RefreshAsyncStatus(void);
 
@@ -66,6 +74,24 @@ static int	BIG_si_DecompressedSize = 0;
 
 static int	BIG_si_BinFileSize = 0;
 static int	BIG_si_BinFileReadSize = 0;
+
+/*$4
+ ***********************************************************************************************************************
+ ***********************************************************************************************************************
+ */
+
+#ifdef PSX2_TARGET
+int				gi_PreLoadFinished = 1;
+#else
+volatile int	gi_PreLoadFinished = 1;
+#endif
+int				*gpi_PreLoadBuf = NULL;
+int				*gpi_PreLoadBufPtrFree = NULL;
+int				*gap_PreLoadArray[PRELOAD_MAXTAB];
+int				*gap_PreLoadArrayPtrFree[PRELOAD_MAXTAB];
+int				gai_PreLoadArrayOk[PRELOAD_MAXTAB];
+int				gai_PreLoadArrayFree[PRELOAD_MAXTAB];
+int				gi_PreLoadNum = 0;
 
 /*$4
  ***********************************************************************************************************************
@@ -434,18 +460,18 @@ int BIG_fread_UncompressedBin(void **_p_Buffer, int _i_Size, L_FILE _h_Handle)
 
 #define PRELOADTEXGRAN (40 * 1024)
 
-static char *BIG_CachePointers[ 200 ];
-static ULONG BIG_CachePos[ 200 ];
-static int   BIG_i_CacheNumPointers = 0;
-static ULONG BIG_ul_CachePos        = 0;
-static ULONG BIG_ul_CacheNum        = 0;
-
-extern int          PreLoadTex_Finished( int *, int );
-extern int          AllPreloadDone( void );
-extern BIG_KEY      LOA_ul_BinKey;
-extern int          gai_CurBinFileSize[];
+char	*BIG_CachePointers[200];
+ULONG   BIG_CachePos[200];
+int		BIG_i_CacheNumPointers = 0;
+ULONG	BIG_ul_CachePos = 0;
+ULONG	BIG_ul_CacheNum = 0;
+extern int PreLoadTex_Finished(int *, int);
+extern void PreLoadTex_Load(ULONG, ULONG, void *);
+extern int AllPreloadDone(void);
+volatile int BIG_gi_AsyncReadIsFinished=1;
+extern BIG_KEY LOA_ul_BinKey;
+extern int gai_CurBinFileSize[];
 extern unsigned int gaui_CurBinFilePos[];
-
 /*
  =======================================================================================================================
  =======================================================================================================================

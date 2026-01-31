@@ -24,7 +24,6 @@
 #include "BIGfiles/BIGspecial.h"
 #include "BIGfiles/LOAding/LOAread.h"
 #include "BIGfiles/SAVing/SAVdefs.h"
-#include "FileSystem/FileSystem.h"
 #include "LINks/LINKmsg.h"
 
 #include "TIMer/PROfiler/PROPS2.h"
@@ -39,7 +38,7 @@
  ===================================================================================================
  ===================================================================================================
  */
-static ULONG BIG_ul_FAT_GetCryptKey()
+ULONG	BIG_ul_FAT_GetCryptKey()
 {
 	if(BIG_gst.st_ToSave.ul_UniverseKey && (BIG_gst.st_ToSave.ul_UniverseKey != 0xFFFFFFFF))
 		return BIG_gst.st_ToSave.ul_UniverseKey;
@@ -54,33 +53,6 @@ static ULONG BIG_ul_FAT_GetCryptKey()
 	return 0;
 }
 
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
-static void BIG_special_Decrypt4FAT(char * _pc_Buf, ULONG _ul_Size)
-{
-	ULONG ul_Key = BIG_ul_FAT_GetCryptKey();
-
-	for( ULONG i = 0; i < _ul_Size; i++)
-	{
-		_pc_Buf[i] ^= (ul_Key << ((_ul_Size - i) % 4));
-	}
-}
-
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
-void BIG_special_Encrypt4FAT(char * _pc_Buf, ULONG _ul_Size)
-{
-	ULONG ul_Key = BIG_ul_FAT_GetCryptKey();
-
-	for( ULONG i = 0; i < _ul_Size; i++)
-	{
-		_pc_Buf[i] ^= (ul_Key << ((_ul_Size - i) % 4));
-	}
-}
 
 /*
  ===================================================================================================
@@ -160,7 +132,7 @@ void BIG_ReadHeader(void)
             depending of its name.
  ===================================================================================================
  */
-static void BIG_ReadFatFile(BIG_tdst_FatDes *_pst_Fat)
+void BIG_ReadFatFile(BIG_tdst_FatDes *_pst_Fat)
 {
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     ULONG   i;
@@ -208,7 +180,7 @@ static void BIG_ReadFatFile(BIG_tdst_FatDes *_pst_Fat)
  ===================================================================================================
  ===================================================================================================
  */
-static void BIG_ReadFatFile(BIG_tdst_FatDes *_pst_Fat)
+void BIG_ReadFatFile(BIG_tdst_FatDes *_pst_Fat)
 {
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     ULONG   ul_TotalRead, ul_NumRead;
@@ -287,7 +259,7 @@ static void BIG_ReadFatFile(BIG_tdst_FatDes *_pst_Fat)
     Aim:    In editor mode, load the extended fat file.
  ===================================================================================================
  */
-static void BIG_ReadFatFileExt(BIG_tdst_FatDes *_pst_Fat)
+void BIG_ReadFatFileExt(BIG_tdst_FatDes *_pst_Fat)
 {
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     ULONG   i,r;
@@ -310,8 +282,11 @@ static void BIG_ReadFatFileExt(BIG_tdst_FatDes *_pst_Fat)
 	{
 		UINT StructToSaveSize = sizeof(BIG_gst.dst_FileTableExt[0].st_ToSave);
 		UINT oldStructToSaveSize = StructToSaveSize-sizeof(BIG_gst.dst_FileTableExt[0].st_ToSave.ul_P4RevisionClient);
-
+#ifdef JADEFUSION
 		p = (char* )L_malloc(_pst_Fat->ul_MaxFile * oldStructToSaveSize);
+#else
+		p = L_malloc(_pst_Fat->ul_MaxFile * oldStructToSaveSize);
+#endif		
 		r = BIG_fread(p, _pst_Fat->ul_MaxFile * oldStructToSaveSize, BIG_Handle());
 		ERR_X_Error	(r == 1, L_ERR_Csz_FRead, NULL	);
 		
@@ -325,7 +300,11 @@ static void BIG_ReadFatFileExt(BIG_tdst_FatDes *_pst_Fat)
 	}
 	else
 	{
+#ifdef JADEFUSION
 		p = (char*)L_malloc(_pst_Fat->ul_MaxFile * sizeof(BIG_gst.dst_FileTableExt[0].st_ToSave));
+#else
+		p = L_malloc(_pst_Fat->ul_MaxFile * sizeof(BIG_gst.dst_FileTableExt[0].st_ToSave));
+#endif
 		r = BIG_fread
 			(
 				p,
@@ -746,12 +725,20 @@ void BIG_UpdateOneFileInFat(BIG_INDEX _ul_Index)
 	/* Marque indiquant que la FAT est cryptée */
 	if(!L_strcmp(BIG_gst.st_ToSave.ac_Def, BIG_Csz_HeaderCrypted))
 	{
+#ifdef JADEFUSION
 		pc_Buf = (char* )MEM_p_Alloc(sizeof(BIG_tdst_File));
+#else
+		pc_Buf = MEM_p_Alloc(sizeof(BIG_tdst_File));
+#endif
 		L_memcpy(pc_Buf, &(BIG_gst.dst_FileTable[_ul_Index]), sizeof(BIG_tdst_File));
 		BIG_special_Encrypt4FAT(pc_Buf, sizeof(BIG_tdst_File));
 	}
 	else
+#ifdef JADEFUSION
 		pc_Buf = (char *)&(BIG_gst.dst_FileTable[_ul_Index]);
+#else
+	pc_Buf = (UCHAR *)&(BIG_gst.dst_FileTable[_ul_Index]);
+#endif
 
     /* Update fat */
     r=BIG_fwrite
@@ -782,13 +769,20 @@ void BIG_UpdateOneFileInFat(BIG_INDEX _ul_Index)
 	/* Marque indiquant que la FAT est cryptée */
 	if(!L_strcmp(BIG_gst.st_ToSave.ac_Def, BIG_Csz_HeaderCrypted))
 	{
+#ifdef JADEFUSION
 		pc_Buf = (char* )MEM_p_Alloc(sizeof(BIG_gst.dst_FileTableExt[0].st_ToSave));
+#else
+		pc_Buf = MEM_p_Alloc(sizeof(BIG_gst.dst_FileTableExt[0].st_ToSave));
+#endif
 		L_memcpy(pc_Buf, &(BIG_gst.dst_FileTableExt[_ul_Index].st_ToSave), sizeof(BIG_gst.dst_FileTableExt[0].st_ToSave));
 		BIG_special_Encrypt4FAT(pc_Buf, sizeof(BIG_gst.dst_FileTableExt[0].st_ToSave));
 	}
 	else
+#ifdef JADEFUSION
 		pc_Buf = (char *) &(BIG_gst.dst_FileTableExt[_ul_Index].st_ToSave);
-
+#else
+		pc_Buf = (UCHAR *) &(BIG_gst.dst_FileTableExt[_ul_Index].st_ToSave);
+#endif
     /* Update fat */
 	r=BIG_fwrite
         (
@@ -836,12 +830,20 @@ void BIG_UpdateOneDirInFat(BIG_INDEX _ul_Index)
 	/* Marque indiquant que la FAT est cryptée */
 	if(!L_strcmp(BIG_gst.st_ToSave.ac_Def, BIG_Csz_HeaderCrypted))
 	{
+#ifdef JADEFUSION
 		pc_Buf = (char* )MEM_p_Alloc(sizeof(BIG_gst.dst_DirTable[0].st_ToSave));
+#else
+		pc_Buf = MEM_p_Alloc(sizeof(BIG_gst.dst_DirTable[0].st_ToSave));
+#endif
 		L_memcpy(pc_Buf, &(BIG_gst.dst_DirTable[_ul_Index].st_ToSave), sizeof(BIG_gst.dst_DirTable[0].st_ToSave));
 		BIG_special_Encrypt4FAT(pc_Buf, sizeof(BIG_gst.dst_DirTable[0].st_ToSave));
 	}
 	else
+#ifdef JADEFUSION
 		pc_Buf = (char *) &(BIG_gst.dst_DirTable[_ul_Index].st_ToSave);
+#else
+	pc_Buf = (UCHAR *) &(BIG_gst.dst_DirTable[_ul_Index].st_ToSave);
+#endif
 
     /* Update fat */
 	r=BIG_fwrite
@@ -923,12 +925,6 @@ BIG_INDEX BIG_ul_SearchFile(BIG_INDEX _ul_Dir, const char *_psz_Name)
  */
 BIG_INDEX BIG_ul_SearchDir(const char *_psz_Name)
 {
-	const jaded::FileSystem::KeyDir *dir = jaded::filesystem.GetDirByName(_psz_Name);
-	if ( dir != nullptr )
-	{
-		return dir->index;
-	}
-
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     ULONG   ul_ReturnIndex;
     const char    *psz_Temp, *psz_Beg, *psz_Cur;
@@ -1014,12 +1010,6 @@ BIG_INDEX BIG_ul_SearchDirInDir(BIG_INDEX _ul_Ref, const char *_psz_Name)
  */
 BIG_INDEX BIG_ul_SearchFileExt( const char *_psz_PathName, const char *_psz_FileName)
 {
-	const jaded::FileSystem::KeyFile *file = jaded::filesystem.GetFileByName( std::string( _psz_PathName ) + "/" + std::string( _psz_FileName ) );
-	if ( file != nullptr )
-	{
-		return file->index;
-	}
-
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     ULONG   ul_Index;
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -1211,12 +1201,20 @@ void BIG_UpdateFatDes(ULONG _ul_Fat)
 	/* Marque indiquant que la FAT est cryptée */
 	if(!L_strcmp(BIG_gst.st_ToSave.ac_Def, BIG_Csz_HeaderCrypted))
 	{
+#ifdef JADEFUSION
 		pc_Buf = (char* )MEM_p_Alloc(sizeof(BIG_tdst_FatDes));
+#else
+		pc_Buf = MEM_p_Alloc(sizeof(BIG_tdst_FatDes));
+#endif
 		L_memcpy(pc_Buf, &(BIG_gst.dst_FatTable[_ul_Fat]), sizeof(BIG_tdst_FatDes));
 		BIG_special_Encrypt4FAT(pc_Buf, sizeof(BIG_tdst_FatDes));
 	}
 	else
+#ifdef JADEFUSION
 		pc_Buf = (char *) &(BIG_gst.dst_FatTable[_ul_Fat]);
+#else
+	pc_Buf = (UCHAR *) &(BIG_gst.dst_FatTable[_ul_Fat]);
+#endif
 
     /* Write fat des */
 	r=BIG_fwrite

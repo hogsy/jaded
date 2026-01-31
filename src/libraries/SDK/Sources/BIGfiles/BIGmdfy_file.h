@@ -58,8 +58,8 @@ extern void         BIG_UpdateFileFromBuffer(char *, char *, void *, ULONG);
 extern void         BIG_UpdateFileFromBufferWithDate(char *, char *, void *, ULONG, L_time_t);
 extern void         BIG_RenFile(char *, char *, char *);
 extern void         BIG_DelFile(char *, char *);
-extern BIG_INDEX    BIG_CopyFile(char *, const char *, char *);
-extern void         BIG_MoveFile( const char *, const char *, const char *);
+extern BIG_INDEX    BIG_CopyFile(char *, char *, char *);
+extern void         BIG_MoveFile(char *, char *, char *);
 extern BIG_INDEX    BIG_ul_CreateFile(char *, char *);
 extern void         BIG_BuildNewName( char *, char *, char *);
 
