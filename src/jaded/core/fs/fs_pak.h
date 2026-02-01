@@ -64,6 +64,8 @@ namespace core::fs
 
 		FileTableEntry *GetWowForWol( const void *buf, size_t size );
 
+		void ProcessWow( FileTableEntry *entry );
+
 		void DetermineEntryPaths();
 
 	public:

@@ -7,6 +7,7 @@
 
 #include "fs.h"
 #include "fs_pak.h"
+#include "fs_project.h"
 
 #include "Extern/lz4/lib/lz4.h"
 
@@ -189,6 +190,15 @@ static std::string DetermineFileType( const void *buf, const size_t size )
 	{
 		return ".rli";
 	}
+	// we don't get any hits for these, meh...
+	if ( *( uint16_t * ) buf == 0x4d42 )
+	{
+		return ".bmp";
+	}
+	if ( *( uint32_t * ) buf == 0xe0ffd8ff )
+	{
+		return ".jpg";
+	}
 
 	// and now we get into cursed territory...
 
@@ -202,6 +212,80 @@ static std::string DetermineFileType( const void *buf, const size_t size )
 	}
 
 	return ".bin";
+}
+
+void core::fs::Pak::ProcessWow( FileTableEntry *entry )
+{
+	std::vector< char > buffer = entry->info.Read( handle );
+	if ( buffer.empty() )
+	{
+		return;
+	}
+
+	// we can pull the original filename from a wow :)
+	// this should be safe; size is technically 60,
+	// but last four bytes are unused and string is
+	// null-terminated
+	char name[ 64 ] = {};
+	memcpy( name, &buffer[ 16 ], 60 );
+
+	std::string rootDir = "ROOT/06 Levels/";
+	if ( strncmp( name, "_basic", 6 ) == 0 )
+	{
+		rootDir += "_basic/";
+	}
+	else if ( strncmp( name, "_main", 5 ) == 0 || strncmp( name, "_Main", 5 ) == 0 )
+	{
+		rootDir += "_main/";
+	}
+
+	entry->path = rootDir + std::string( name );
+	entry->name = std::string( name ) + ".wow";
+
+	// now fetch the game group key
+	uint32_t groupKey;
+	memcpy( &groupKey, &buffer[ 216 ], sizeof( uint32_t ) );
+	if ( groupKey != INVALID_KEY && groupKey != 0 )
+	{
+		FileTableEntry *group = FindEntry( groupKey );
+		if ( group == nullptr )
+		{
+			printf( "Failed to find game object list (%u)!\n", groupKey );
+			return;
+		}
+
+		group->path = entry->path;
+		group->name = std::string( name ) + ".gol";
+
+		// operate over the gol
+		struct GroupEntry
+		{
+			Key      key;
+			uint32_t identifer;
+		};
+
+		buffer = group->info.Read( handle );
+
+		const unsigned int numEntries = buffer.size() / sizeof( GroupEntry );
+		for ( unsigned int j = 0; j < numEntries; ++j )
+		{
+			const GroupEntry *groupEntry = ( GroupEntry * ) &buffer[ sizeof( GroupEntry ) * j ];
+			FileTableEntry   *gaoEntry   = FindEntry( groupEntry->key );
+			if ( gaoEntry == nullptr )
+			{
+				printf( "Failed to find gol entry (%u)!\n", groupEntry->key );
+				continue;
+			}
+
+			gaoEntry->path = entry->path + "/" + "Game Objects";
+
+			std::stringstream sstream;
+			sstream << std::hex << gaoEntry->key;
+			gaoEntry->name = sstream.str() + ".gao";
+
+			//TODO: parse in each gao, find the dependencies of that, rename and organise as necessary!
+		}
+	}
 }
 
 void core::fs::Pak::DetermineEntryPaths()
@@ -227,30 +311,11 @@ void core::fs::Pak::DetermineEntryPaths()
 		std::string ident = DetermineFileType( &buffer[ 0 ], buffer.size() );
 		if ( ident == ".wow" )
 		{
-			// we can pull the original filename from a wow :)
-			// this should be safe; size is technically 60,
-			// but last four bytes are unused and string is
-			// null-terminated
-			char buf[ 64 ] = {};
-			memcpy( buf, &buffer[ 16 ], 60 );
-
-			dir  = "ROOT/06 Levels/" + std::string( buf );
-			name = std::string( buf ) + ".wow";
-
-			// now fetch the game group key
-			uint32_t groupKey;
-			memcpy( &groupKey, &buffer[ 216 ], sizeof( uint32_t ) );
-			if ( groupKey != INVALID_KEY && groupKey != 0 )
-			{
-				FileTableEntry *group = FindEntry( groupKey );
-				if ( group != nullptr )
-				{
-					group->path = dir;
-					group->name = std::string( buf ) + ".gol";
-				}
-			}
+			ProcessWow( &i );
+			continue;
 		}
-		else if ( ident == ".wol" )
+
+		if ( ident == ".wol" )
 		{
 			//TODO: this shit doesn't work...
 			const FileTableEntry *entry = GetWowForWol( &buffer[ 0 ], buffer.size() );
