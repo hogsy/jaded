@@ -576,7 +576,7 @@ void OGL_Texture_InternalLoad
 	}
 
 	ULONG ul_Texture;
-    LoadCB( _ul_Texture, _pst_TexData->ul_Key, &ul_Texture, ( _pst_Tex->st_Params.uw_Flags & TEX_FP_MipmapOn ), MMC, 32, TX, TY, GL_RGBA, pul_ConvertBuffer, -1 );
+    LoadCB( _ul_Texture, _pst_TexData->ul_Key, &ul_Texture, _pst_Tex->uw_FileFlags & TEX_uw_Mipmap, MMC, 32, TX, TY, GL_RGBA, pul_ConvertBuffer, -1 );
 
     L_free( p_Buf );
 

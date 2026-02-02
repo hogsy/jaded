@@ -20,8 +20,7 @@ static char     MUTEX_Flags[][32] =
 {
     "Tile U",
     "Tile V",
-    "Bilinear",
-    "Trilinear",
+    "Smooth", //"Bilinear",
     "Alpha test",
     "Hide Alpha",
     "Hide Color",
@@ -30,7 +29,7 @@ static char     MUTEX_Flags[][32] =
     "No Z Write",
     "Use Local Alpha",
     "Cull UV",
-    "Fur"
+    "Fur",
     ""
 };
 static char     MUTEX_BlendingTypes[][32] =

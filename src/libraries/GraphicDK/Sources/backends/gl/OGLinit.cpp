@@ -1846,16 +1846,13 @@ extern "C" ULONG OpenglCorrectBugMul2X;
 void OGL_SetTextureBlending( ULONG _l_Texture, ULONG BM )
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	ULONG Flag;
-	ULONG Delta;
-	OGL_tdst_SpecificData *pst_SD;
 
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-	Delta = 0;
+	ULONG Delta = 0;
 
-	Flag   = MAT_GET_FLAG( BM );
-	pst_SD = ( OGL_tdst_SpecificData * ) GDI_gpst_CurDD->pv_SpecificData;
+	ULONG Flag = MAT_GET_FLAG( BM );
+	OGL_tdst_SpecificData *pst_SD = ( OGL_tdst_SpecificData * ) GDI_gpst_CurDD->pv_SpecificData;
 
 	_l_Texture = OGL_RS_UseTexture( pst_SD, _l_Texture );
 
@@ -1886,28 +1883,27 @@ void OGL_SetTextureBlending( ULONG _l_Texture, ULONG BM )
 		if ( Delta & MAT_Cul_Flag_Bilinear )
 		{
 			if ( Flag & MAT_Cul_Flag_Bilinear )
-				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-			else
-				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-		}
-
-		if ( Delta & ( MAT_Cul_Flag_Trilinear | MAT_Cul_Flag_Bilinear ) )
-		{
-			if ( TEX_gst_GlobalList.dst_Texture[ _l_Texture ].uw_Flags & TEX_uw_Mipmap )
 			{
-				if ( Flag & MAT_Cul_Flag_Bilinear )
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+				if ( TEX_gst_GlobalList.dst_Texture[ _l_Texture ].uw_Flags & TEX_uw_Mipmap )
 				{
-					if ( Flag & MAT_Cul_Flag_Trilinear )
-						glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
-					else
-						glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST );
+					glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
 				}
 				else
 				{
-					if ( Flag & MAT_Cul_Flag_Trilinear )
-						glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR );
-					else
-						glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST );
+					glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+				}
+			}
+			else
+			{
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+				if ( TEX_gst_GlobalList.dst_Texture[ _l_Texture ].uw_Flags & TEX_uw_Mipmap )
+				{
+					glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST );
+				}
+				else
+				{
+					glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
 				}
 			}
 		}

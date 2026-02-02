@@ -82,6 +82,7 @@ void MAT_CheckForTGAMapping(BIG_KEY _ul_TextureKey, const CHAR* _psz_Type)
 #if defined(PSX2_TARGET) && defined(__cplusplus)
 extern "C" {
 #endif
+
 /*
  =======================================================================================================================
  =======================================================================================================================
@@ -105,7 +106,6 @@ MAT_tdst_MultiTexture *MAT_pst_CreateMultiTextureFromBuffer
     L_memset(pst_Material, 0, sizeof(MAT_tdst_MultiTexture));
 
     GRO_Struct_Init(&pst_Material->st_Id, _pst_Id->i->ul_Type);
- 
 
 	pst_Material->ul_Ambiant = LOA_ReadULong(ppc_Buffer);
 	pst_Material->ul_Diffuse = LOA_ReadULong(ppc_Buffer);
@@ -167,11 +167,20 @@ MAT_tdst_MultiTexture *MAT_pst_CreateMultiTextureFromBuffer
 		(*pst_MLTTXLVL)->ScaleSPeedPosU = LOA_ReadULong(ppc_Buffer);
 		(*pst_MLTTXLVL)->ScaleSPeedPosV = LOA_ReadULong(ppc_Buffer);
 		(*pst_MLTTXLVL)->pst_NextLevel = (MAT_tdst_MTLevel *) LOA_ReadULong(ppc_Buffer);
-		 	
+
+    	extern bool jaded_enableLeakBehaviour;
+		// awful botch to deal with the messed up flag from the original
+		// leaked alpha, so we can support the original leaked content
+		if ( jaded_enableLeakBehaviour && ( *pst_MLTTXLVL )->ul_Flags & MAT_XYZ_Flag_ShiftUsingNormal )
+		{
+			( *pst_MLTTXLVL )->s_AditionalFlags |= MAT_XYZ_Flag_ShiftUsingNormal;
+			( *pst_MLTTXLVL )->ul_Flags &= ~MAT_XYZ_Flag_ShiftUsingNormal;
+		}
+
 #if defined(_XENON)
 		// Initialize TextureID Cache
 		memset((*pst_MLTTXLVL)->al_TextureIDCache, -1, sizeof((*pst_MLTTXLVL)->al_TextureIDCache));
-#endif		
+#endif
         /* Load each texture */
         Swap = (LONG) (*pst_MLTTXLVL)->s_TextureId;
  #if defined(XML_CONV_TOOL)

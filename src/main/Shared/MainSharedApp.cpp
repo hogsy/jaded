@@ -453,6 +453,7 @@ static int CALLBACK Win32CrashReporter( HWND hDlg, UINT iMsg, WPARAM wParam, LPA
 
 #endif
 
+extern "C" bool jaded_enableLeakBehaviour = false;
 static void ParseStartupParameters()
 {
 	assert( jaded::sys::launchArguments != nullptr );
@@ -529,6 +530,12 @@ static void ParseStartupParameters()
 #else
 			jaded::sys::launchOperations.projectFile = jaded::sys::launchArguments[ i ];
 #endif
+			continue;
+		}
+
+		if ( jaded::sys::launchArguments[ i ] == std::string( "/leak" ) )
+		{
+			jaded_enableLeakBehaviour = true;
 			continue;
 		}
 	}

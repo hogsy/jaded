@@ -33,7 +33,7 @@ extern "C"
 #define MAT_Cul_Flag_TileU				0x00000001
 #define MAT_Cul_Flag_TileV				0x00000002
 #define MAT_Cul_Flag_Bilinear			0x00000004
-#define MAT_Cul_Flag_Trilinear			0x00000008
+//#define MAT_Cul_Flag_Trilinear		0x00000008 // do NOT use this flag!!
 #define MAT_Cul_Flag_AlphaTest			0x00000010
 #define MAT_Cul_Flag_HideAlpha			0x00000020
 #define MAT_Cul_Flag_HideColor			0x00000040

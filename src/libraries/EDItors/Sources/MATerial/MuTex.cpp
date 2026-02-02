@@ -2034,7 +2034,6 @@ void TextureLineToWindow(HWND hwndDlg, MUTEX_TextureLine *Line)
 	ShowWindow(GetDlgItem(hwndDlg, IDC_CHECKU), SW_HIDE);
 	ShowWindow(GetDlgItem(hwndDlg, IDC_CHECK2), SW_HIDE);
 	ShowWindow(GetDlgItem(hwndDlg, IDC_CHECK3), SW_HIDE);
-	ShowWindow(GetDlgItem(hwndDlg, IDC_CHECK4), SW_HIDE);
 	ShowWindow(GetDlgItem(hwndDlg, IDC_CHECK5), SW_HIDE);
 	ShowWindow(GetDlgItem(hwndDlg, IDC_CHECK7), SW_HIDE);
 	ShowWindow(GetDlgItem(hwndDlg, IDC_CHECK8), SW_HIDE);
@@ -2047,7 +2046,6 @@ void TextureLineToWindow(HWND hwndDlg, MUTEX_TextureLine *Line)
 	CheckDlgButton(hwndDlg, IDC_CHECKU, BST_UNCHECKED);
 	CheckDlgButton(hwndDlg, IDC_CHECK2, BST_UNCHECKED);
 	CheckDlgButton(hwndDlg, IDC_CHECK3, BST_UNCHECKED);
-	CheckDlgButton(hwndDlg, IDC_CHECK4, BST_UNCHECKED);
 	CheckDlgButton(hwndDlg, IDC_CHECK5, BST_UNCHECKED);
 	CheckDlgButton(hwndDlg, IDC_CHECK7, BST_UNCHECKED);
 	CheckDlgButton(hwndDlg, IDC_CHECK8, BST_UNCHECKED);
@@ -2061,7 +2059,6 @@ void TextureLineToWindow(HWND hwndDlg, MUTEX_TextureLine *Line)
 	if(Line->TextureFlags & 1) CheckDlgButton(hwndDlg, IDC_CHECKU, BST_CHECKED);
 	if(Line->TextureFlags & 2) CheckDlgButton(hwndDlg, IDC_CHECK2, BST_CHECKED);
 	if(Line->TextureFlags & 4) CheckDlgButton(hwndDlg, IDC_CHECK3, BST_CHECKED);
-	if(Line->TextureFlags & 8) CheckDlgButton(hwndDlg, IDC_CHECK4, BST_CHECKED);
 	if(Line->TextureFlags & 16) CheckDlgButton(hwndDlg, IDC_CHECK5, BST_CHECKED);
 	if(Line->TextureFlags & 32) CheckDlgButton(hwndDlg, IDC_CHECK7, BST_CHECKED);
 	if(Line->TextureFlags & 64) CheckDlgButton(hwndDlg, IDC_CHECK8, BST_CHECKED);
@@ -2085,9 +2082,12 @@ void TextureLineToWindow(HWND hwndDlg, MUTEX_TextureLine *Line)
 	SetDlgItemText(hwndDlg, IDC_CHECK3, MUTEX_Flags[Add++]);
 	ShowWindow(GetDlgItem(hwndDlg, IDC_CHECK3), SW_SHOW);
 
+#if 0
+	// we're ignoring the trilinear flag now
 	if(MUTEX_Flags[Add][0] == 0) goto EndCheck;
 	SetDlgItemText(hwndDlg, IDC_CHECK4, MUTEX_Flags[Add++]);
 	ShowWindow(GetDlgItem(hwndDlg, IDC_CHECK4), SW_SHOW);
+#endif
 
 	if(MUTEX_Flags[Add][0] == 0) goto EndCheck;
 	SetDlgItemText(hwndDlg, IDC_CHECK5, MUTEX_Flags[Add++]);
