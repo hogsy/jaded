@@ -475,17 +475,11 @@ enum MEM_Type
 
     #define MEM_p_AllocFromEnd(_size)		_MEM_p_AllocFromEnd(_size)
 	#define MEM_p_VMAllocFromEnd(_size)		_MEM_p_AllocFromEnd(_size)
-    #ifdef ACTIVE_EDITORS
-        #define MEM_p_AllocAlign(a, Align)				_MEM_p_Alloc(a)
-	    #define MEM_p_VMAllocAlign(a, Align)			_MEM_p_Alloc(a)
-    	#define MEM_p_ReallocAlign(a, b, Align)	 		_MEM_p_Realloc(a, b)
-    	#define MEM_p_VMReallocAlign(a, b, Align) 		_MEM_p_Realloc(a, b)
-    #else // ACTIVE_EDITORS
-        #define MEM_p_AllocAlign(a, Align)				_MEM_p_AllocAlign(a, Align)
-	    #define MEM_p_VMAllocAlign(a, Align)			_MEM_p_AllocAlign(a, Align)
-    	#define MEM_p_ReallocAlign(a, b, Align) 		_MEM_p_ReallocAlign(a, b, Align)
-    	#define MEM_p_VMReallocAlign(a, b, Align) 		_MEM_p_ReallocAlign(a, b, Align)
-    #endif //ACTIVE_EDITORS
+
+    #define MEM_p_AllocAlign(a, Align)				_MEM_p_AllocAlign(a, Align)
+	#define MEM_p_VMAllocAlign(a, Align)			_MEM_p_AllocAlign(a, Align)
+    #define MEM_p_ReallocAlign(a, b, Align) 		_MEM_p_ReallocAlign(a, b, Align)
+    #define MEM_p_VMReallocAlign(a, b, Align) 		_MEM_p_ReallocAlign(a, b, Align)
 	#endif /* _DEBUG */
 
 #ifdef JADEFUSION

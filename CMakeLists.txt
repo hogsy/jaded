@@ -47,13 +47,7 @@ foreach (OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} "${JADE_OUTPUT_DIR}")
 endforeach ()
 
-add_compile_options(/MP /W4 #[[/sdl]] $<$<NOT:$<CONFIG:Debug>>:/Zi>)
-
-#add_link_options(
-#        "$<$<NOT:$<CONFIG:Debug>>:/DEBUG>"
-#        "$<$<NOT:$<CONFIG:Debug>>:/OPT:REF>"
-#        "$<$<NOT:$<CONFIG:Debug>>:/OPT:ICF>"
-#)
+add_compile_options(/MP /W4)
 
 add_definitions(
         -DACTIVE_EDITORS
@@ -62,6 +56,11 @@ add_definitions(
         -D_CRT_NONSTDC_NO_WARNINGS
         -D_AFXDLL
 )
+
+# To be clear, I'm aware CMake supports $<$<NOT:$<CONFIG:Blah>>:Blah for compilation options, but the syntax is gross
+# and not fantastically clear from a glance in my opinion - hence why we've got the blocks below for the different
+# targets w/ messages for clarity during generation.
+
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     message("Configuring for debug compilation")
 
@@ -76,6 +75,11 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     # some other crap. we'll sort this out later.
 
     add_compile_options(/RTC1)
+elseif( CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    message("Configuring for release w/ debug compilation")
+
+    add_compile_options(-Od /Zi /RTC1)
+    add_link_options(/DEBUG /OPT:REF /OPT:ICF)
 else ()
     message("Configuring for release compilation")
 
