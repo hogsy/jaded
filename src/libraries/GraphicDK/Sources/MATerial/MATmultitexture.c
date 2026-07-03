@@ -168,10 +168,10 @@ MAT_tdst_MultiTexture *MAT_pst_CreateMultiTextureFromBuffer
 		(*pst_MLTTXLVL)->ScaleSPeedPosV = LOA_ReadULong(ppc_Buffer);
 		(*pst_MLTTXLVL)->pst_NextLevel = (MAT_tdst_MTLevel *) LOA_ReadULong(ppc_Buffer);
 
-    	extern bool jaded_enableLeakBehaviour;
+    	extern bool jaded_enableLegacyBehaviour;
 		// awful botch to deal with the messed up flag from the original
 		// leaked alpha, so we can support the original leaked content
-		if ( jaded_enableLeakBehaviour && ( *pst_MLTTXLVL )->ul_Flags & MAT_XYZ_Flag_ShiftUsingNormal )
+		if ( jaded_enableLegacyBehaviour && ( *pst_MLTTXLVL )->ul_Flags & MAT_XYZ_Flag_ShiftUsingNormal )
 		{
 			( *pst_MLTTXLVL )->s_AditionalFlags |= MAT_XYZ_Flag_ShiftUsingNormal;
 			( *pst_MLTTXLVL )->ul_Flags &= ~MAT_XYZ_Flag_ShiftUsingNormal;

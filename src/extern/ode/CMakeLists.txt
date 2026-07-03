@@ -1,3 +1,5 @@
+set(CMAKE_CXX_STANDARD 98)
+
 add_library(Jaded-ODE OBJECT
         Sources/array.cpp
         Sources/array.h

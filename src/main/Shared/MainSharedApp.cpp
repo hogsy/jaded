@@ -90,7 +90,9 @@ extern int EDI_EditorWin32Execution( HINSTANCE );
 
 static HWND nativeWindowHandle;
 
-#	include <DbgHelp.h>
+#	if defined( JADED_CRASH_REPORTER )
+
+#		include <DbgHelp.h>
 
 static char *CreateCrashReporterEnvironment( const char *dump_path )
 {
@@ -451,10 +453,11 @@ static int CALLBACK Win32CrashReporter( HWND hDlg, UINT iMsg, WPARAM wParam, LPA
 	return TRUE;
 }
 
+#	endif
 #endif
 
-extern "C" bool jaded_enableLeakBehaviour = false;
-static void ParseStartupParameters()
+extern "C" bool jaded_enableLegacyBehaviour = false;
+static void     ParseStartupParameters()
 {
 	assert( jaded::sys::launchArguments != nullptr );
 
@@ -511,7 +514,7 @@ static void ParseStartupParameters()
 			continue;
 		}
 
-		if ( SDL_strncasecmp( jaded::sys::launchArguments[ i ], "/profile", 8 ) == 0 )
+		if ( jaded::sys::launchArguments[ i ] == std::string( "/profile" ) )
 		{
 			jaded::sys::profiler.SetActive( true );
 			ENG_gb_LimitFPS = false;
@@ -533,9 +536,9 @@ static void ParseStartupParameters()
 			continue;
 		}
 
-		if ( jaded::sys::launchArguments[ i ] == std::string( "/leak" ) )
+		if ( jaded::sys::launchArguments[ i ] == std::string( "/legacy" ) )
 		{
-			jaded_enableLeakBehaviour = true;
+			jaded_enableLegacyBehaviour = true;
 			continue;
 		}
 	}
@@ -634,17 +637,21 @@ int main( int argc, char **argv )
 {
 #	if defined( _WIN32 )
 
+#		if defined( JADED_CRASH_REPORTER )
 	const char *dump = getenv( "JADED_CRASH_DUMP_PATH" );
 	if ( dump != nullptr )
 	{
 		DialogBox( NULL, MAKEINTRESOURCE( DIALOGS_IDD_CRASH_REPORT ), NULL, &Win32CrashReporter );
 		return EXIT_SUCCESS;
 	}
+#		endif
 
 	jaded::sys::numLaunchArguments = __argc;
 	jaded::sys::launchArguments    = __argv;
 
+#		if defined( JADED_CRASH_REPORTER )
 	SetUnhandledExceptionFilter( Win32CrashHandler );
+#		endif
 
 #	else
 
@@ -742,6 +749,8 @@ int main( int argc, char **argv )
 	ENG_Loop();
 
 	WOR_Universe_Close( 0 );
+
+	ShutdownDisplay();
 
 	ENG_CloseEngine();
 	ENG_CloseApplication();

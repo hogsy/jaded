@@ -1,3 +1,5 @@
+option(JADED_CRASH_REPORTER "Include crash reporter." OFF)
+
 add_executable(Jaded WIN32
         Shared/ImGuiInterface.cpp
         Shared/ImGuiInterface.h
@@ -451,6 +453,9 @@ add_executable(Jaded WIN32
 )
 
 target_compile_definitions(Jaded PRIVATE JADED_BUILD_ID="")
+if ( JADED_CRASH_REPORTER )
+    target_compile_definitions(Jaded PRIVATE JADED_CRASH_REPORTER)
+endif ()
 
 target_include_directories(Jaded
         PRIVATE
