@@ -10,7 +10,7 @@
 
 #define JADED_VERSION_MAJOR 0
 #define JADED_VERSION_MINOR 4
-#define JADED_VERSION_PATCH 0
+#define JADED_VERSION_PATCH 1
 
 namespace jaded
 {
