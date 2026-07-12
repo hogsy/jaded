@@ -17,13 +17,11 @@ This project is still very much a work-in-progress and there's a long way to go.
 
 ## Instructions
 
-This project is not designed to be used with the original prototype Rayman 4 BF data.
-While there's nothing to _prevent_ you from using it, just mind that fur will not be displayed correctly until you modify the materials again.
+Using this software will require you to provide a BF package. While you might be able to open BF packages from other games, such as Beyond Good & Evil, these have gone through a process called _binarization_ that makes them useless with the editor as they are.
 
-Essentially the flag toggling the fur was set incorrectly internally, which was rectified by Droolie.
-Instead, please use the BF created by Droolie, [here](https://www.raymanpc.com/forum/viewtopic.php?t=75066).
+It's **highly** recommended that you use the BF created by Droolie, [here](https://www.raymanpc.com/forum/viewtopic.php?t=75066). They've fixed a significant number of issues that often resulted in crashes or other odd behaviour.
 
-In hindsight, we probably could've fixed this through some sort of migration, but it's a bit late for it now.
+You can also use the BF included in the leak [here](https://archive.org/details/rayman-4-prototype-source-code), though this will require using the `/legacy` launch argument, otherwise features such as fur will appear incorrectly on existing content. Just mind you will still encounter other general issues (due to incorrect scripts or other broken data).
 
 Alternatively, the editor does technically allow you to create a completely from-scratch project if you want to, but you're very much on your own there.
 
