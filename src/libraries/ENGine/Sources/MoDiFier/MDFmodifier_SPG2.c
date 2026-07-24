@@ -3713,22 +3713,17 @@ ULONG SPG2_Modifier_SaveLoad_Parrams(SPG2_tdst_Modifier *_pst_SPG2 , ULONG Flags
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	Dummy = 0;
 	ulSize = 0;
-#ifdef JADEFUSION
-	if (!Flags || (Flags & 1)) // Save or Query size
-	{
-		//ulVersion = 0x0113; // Increment Last version Here // should be 13 but to make sure we see a change if montpellier change it
-		ulVersion = 0x0113;
-	}
-#else
-	if (Flags & 1) // Save
+
+	if (!Flags || Flags & 1) // Save
 	{
 		ulVersion = 13; // Increment Last version Here
 	}
-#endif
+
 	if (Flags & 2) // Read
 	{
 		SPG2_InitModifier(_pst_SPG2);
 	}
+
 #ifdef JADEFUSION
 // Beginning of minor HACK
 // -----------------------
