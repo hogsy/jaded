@@ -5,3 +5,4 @@ add_library(Jaded-MAD_loadSave OBJECT
         Sources/MAD_Util.c
         Sources/update1.c
 )
+set_target_properties(Jaded-MAD_loadSave PROPERTIES FOLDER "Libraries")

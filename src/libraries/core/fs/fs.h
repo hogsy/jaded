@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "../core.h"
+#include "core/core.h"
 
 namespace core::fs
 {

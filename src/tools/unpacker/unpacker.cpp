@@ -1,4 +1,4 @@
-#include "jaded/core/fs/fs_pak.h"
+#include "core/fs/fs_pak.h"
 
 int main( int argc, char **argv )
 {
