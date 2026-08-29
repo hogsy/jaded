@@ -1,4 +1,12 @@
 
+if (MSVC)
+    add_compile_options(
+            /wd4201 # nameless struct/union
+            /wd4100 # unreferenced formal parameter
+            /wd4115 # named type definition in parentheses
+    )
+endif ()
+
 # sigh...
 include_directories(.)
 include_directories(dlls)
