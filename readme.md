@@ -60,3 +60,5 @@ cmake --build . --config Debug --target Jaded --parallel 8
 
 Interested in helping out?
 Feel free to fork and open a pull-request, or get in touch!
+
+See the [contributing](CONTRIBUTING.md) guide for more information.
