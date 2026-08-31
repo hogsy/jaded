@@ -81,6 +81,16 @@ extern "C" void Jaded_Profiler_EndProfiling( unsigned int set )
 	jaded::sys::profiler.EndProfiling( std::to_string( set ) );
 }
 
+extern "C" void Jaded_Profiler_StartProfilingS( const char *name )
+{
+	jaded::sys::profiler.StartProfiling( name );
+}
+
+extern "C" void Jaded_Profiler_EndProfilingS( const char *name )
+{
+	jaded::sys::profiler.EndProfiling( name );
+}
+
 /******************************************************************/
 /******************************************************************/
 

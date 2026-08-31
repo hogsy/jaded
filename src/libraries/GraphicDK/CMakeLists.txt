@@ -1,6 +1,7 @@
 add_library(Jaded-Gfx OBJECT
         Sources/Precomp.c
         Sources/Precomp.h
+
         Sources/CAMera/CAMera.c
         Sources/CAMera/CAMera.h
         Sources/CAMera/CAMstruct.c
@@ -240,6 +241,7 @@ add_library(Jaded-Gfx OBJECT
         Sources/backends/gl/OGLdebugfct.h
         Sources/backends/gl/OGLinit.cpp
         Sources/backends/gl/OGLinit.h
+        Sources/backends/gl/OGLOcclusion.cpp
         Sources/backends/gl/OGLrenderstate.cpp
         Sources/backends/gl/OGLrenderstate.h
         Sources/backends/gl/OGLrequest.cpp
@@ -252,6 +254,7 @@ add_library(Jaded-Gfx OBJECT
         Sources/backends/gl/OGLWater.h
         Sources/backends/gl/Precomp.cpp
         Sources/backends/gl/Precomp.h
+        Sources/backends/gl/ShaderManager.cpp
 )
 
 target_include_directories(Jaded-Gfx

@@ -3,7 +3,7 @@
 
 #include <GL/glew.h>
 
-#include "../MainSharedApp.h"
+#include "../Main/Shared/MainSharedApp.h"
 
 #include "LINks/LINKmsg.h"
 
@@ -13,7 +13,7 @@
 // Shader Program
 ///////////////////////////////////////////////////////////////////
 
-jaded::renderer::GLShaderProgramStage::GLShaderProgramStage( GLenum type, const std::string &path ) : type_( type ), path_( path )
+GLShaderProgramStage::GLShaderProgramStage( GLenum type, const std::string &path ) : type_( type ), path_( path )
 {
 	id_ = glCreateShader( type );
 	if ( id_ == 0 )
@@ -22,11 +22,9 @@ jaded::renderer::GLShaderProgramStage::GLShaderProgramStage( GLenum type, const 
 	}
 }
 
-jaded::renderer::GLShaderProgramStage::~GLShaderProgramStage()
-{
-}
+GLShaderProgramStage::~GLShaderProgramStage() = default;
 
-jaded::renderer::GLShaderProgram::GLShaderProgram()
+GLShaderProgram::GLShaderProgram()
 {
 	id_ = glCreateProgram();
 	if ( id_ == 0 )
@@ -35,7 +33,7 @@ jaded::renderer::GLShaderProgram::GLShaderProgram()
 	}
 }
 
-jaded::renderer::GLShaderProgram::~GLShaderProgram()
+GLShaderProgram::~GLShaderProgram()
 {
 	if ( id_ != 0 )
 	{
@@ -43,9 +41,23 @@ jaded::renderer::GLShaderProgram::~GLShaderProgram()
 	}
 }
 
-int jaded::renderer::GLShaderProgram::GetUniform( const std::string &name )
+void GLShaderProgram::Reload()
 {
-	auto &i = uniforms_.find( name );
+}
+
+void GLShaderProgram::Enable() const
+{
+	glUseProgram( id_ );
+}
+
+void GLShaderProgram::Disable() const
+{
+	glUseProgram( 0 );
+}
+
+int GLShaderProgram::GetUniform( const std::string &name )
+{
+	const auto i = uniforms_.find( name );
 	if ( i == uniforms_.end() )
 	{
 		return -1;
@@ -54,7 +66,7 @@ int jaded::renderer::GLShaderProgram::GetUniform( const std::string &name )
 	return i->second.id;
 }
 
-bool jaded::renderer::GLShaderProgram::Link()
+bool GLShaderProgram::Link()
 {
 	glLinkProgram( id_ );
 
@@ -88,7 +100,7 @@ bool jaded::renderer::GLShaderProgram::Link()
 	return true;
 }
 
-void jaded::renderer::GLShaderProgram::PopulateUniforms()
+void GLShaderProgram::PopulateUniforms()
 {
 	uniforms_.clear();
 
@@ -164,7 +176,7 @@ void jaded::renderer::GLShaderProgram::PopulateUniforms()
 	}
 }
 
-void jaded::renderer::GLShaderProgram::PopulateAttributes()
+void GLShaderProgram::PopulateAttributes()
 {
 	attributes_.clear();
 
@@ -248,17 +260,38 @@ void jaded::renderer::GLShaderProgram::PopulateAttributes()
 // Manages all of the loaded shaders
 ///////////////////////////////////////////////////////////////////
 
-void jaded::renderer::GLShaderManager::HotReloadPrograms()
+bool GLShaderManager::Initialize()
+{
+	struct ShaderEntry
+	{
+		const char *frag;
+		const char *vert;
+	};
+
+	static constexpr ShaderEntry SHADERS_DEFAULT[] = {
+	        { "shaders/glsl/default.frag.glsl", "shaders/glsl/default.vert.glsl" },
+	};
+	static constexpr unsigned int SHADERS_NUM_DEFAULT = std::size( SHADERS_DEFAULT );
+
+	for ( unsigned int i = 0; i < SHADERS_NUM_DEFAULT; ++i )
+	{
+		GLShaderProgram *program = new GLShaderProgram();
+	}
+
+	return true;
+}
+
+void GLShaderManager::HotReloadPrograms()
 {
 }
 
-void jaded::renderer::GLShaderManager::SetupDefaults()
+void GLShaderManager::SetupDefaults()
 {
 }
 
-jaded::renderer::GLShaderProgram *jaded::renderer::GLShaderManager::GetProgram( const std::string &name )
+GLShaderProgram *GLShaderManager::GetProgram( const std::string &name )
 {
-	auto &i = programs_.find( name );
+	const auto i = programs_.find( name );
 	if ( i == programs_.end() )
 	{
 		return nullptr;

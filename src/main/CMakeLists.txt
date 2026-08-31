@@ -8,8 +8,7 @@ add_executable(Jaded WIN32
         Shared/MainSharedSystem.cpp
         Shared/MainSharedSystem.h
         Shared/Profiler.h
-        Shared/Renderer/ShaderManager.cpp
-        Shared/Renderer/ShaderManager.h
+
         WinEditors/Sources/EDIaction.cpp
         WinEditors/Sources/EDIaction.h
         WinEditors/Sources/EDIapp.cpp

@@ -15,7 +15,6 @@
 #include "BASe/BAStypes.h"
 
 #include "LIGHT/LIGHTmapstruct.h"
-//#include <set>
 
 struct OBJ_tdst_GameObject_;
 
@@ -49,17 +48,6 @@ extern "C"
 #define GRO_DisplayPos_Normal       0
 #define GRO_DisplayPos_Interface    1   
 
-#ifdef JADEFUSION
-// Xenon mesh processing flags
-#define GRO_XMPF_EnableTessellation     0x00000001
-#define GRO_XMPF_EnableDisplacement     0x00000002
-#define GRO_XMPF_EnableChamfer          0x00000004
-#define GRO_XMPF_IgnoreWeights          0x00000008
-#define GRO_XMPF_SafeMode               0x00000010
-#define GRO_XMPF_SmoothGroupMask        0x00ff0000
-#define GRO_XMPF_SmoothGroupShift       16
-#define GRO_XMPF_ConsistencyFailed      0x80000000
-#endif
 /*$4
  ***********************************************************************************************************************
     Structures
@@ -161,16 +149,6 @@ typedef struct  GRO_tdst_Visu_
     #define GRO_VISU_FLAG_HIDE_MESH             0x04
     unsigned char				ucFlag;
 
-#if defined(_XBOX)
-	//Tell if color are already filtered for PS2->XBOX
-	int colorAlreadyFiltered;
-	int	IndexInMultipleVBList;
-
-	//tell if already rendered in this frame
-	int playSkinning;
-
-#endif
-
 #ifdef _XENON_RENDER
 	ULONG                    ul_VBObjectValidate;
 	LONG                     l_NbXeElements;
@@ -196,12 +174,7 @@ typedef struct  GRO_tdst_Visu_
     LIGHT_tdst_LightmapSettings pst_LightmapSettings;
 #endif
 
-#if defined(ACTIVE_EDITORS)
-    // Xenon automatic mesh processing
-    ULONG ul_XenonMeshProcessingFlags;
-    ULONG ul_XenonMeshProcessingCRC;
-    ULONG ul_XenonMeshProcessingRLIKey;
-#endif
+
 } GRO_tdst_Visu;
 
 /*$4

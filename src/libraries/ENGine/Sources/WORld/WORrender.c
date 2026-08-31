@@ -2225,6 +2225,64 @@ u32 WOR_MUST_BE_SWAP(OBJ_tdst_GameObject *pA,OBJ_tdst_GameObject *pB)
 	} 
 	return 0;
 }
+
+/*
+ =======================================================================================================================
+    Aim: Returns the % of screen covered by the BV of an object in the given view Note: 0= culled; 255= full screen or
+    bigger
+ =======================================================================================================================
+ */
+static UCHAR OBJ_uc_CalcLODVis( OBJ_tdst_GameObject *_pst_GO, const WOR_tdst_View *_pst_View )
+{
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+	MATH_tdst_Vector      st_Dist, st_Center;
+	MATH_tdst_Vector      st_Diag;
+	GDI_tdst_DisplayData *pst_DD;
+#ifndef _GAMECUBE
+	float f_Result;
+#endif
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+	pst_DD = ( GDI_tdst_DisplayData * ) _pst_View->st_DisplayInfo.pst_DisplayDatas;
+	if ( pst_DD )
+	{
+		UCHAR uc_Result;
+		/* Distance camera / object */
+		OBJ_BV_ComputeCenter( _pst_GO, &st_Center );
+		MATH_SubVector( &st_Dist, &st_Center, &_pst_View->st_ViewPoint.T );
+		float f_SqrObjDist = MATH_f_SqrNormVector( &st_Dist );
+
+		float f_SqrProjRadius;
+		void *pst_BV = _pst_GO->pst_BV;
+		if ( OBJ_BV_IsSphere( pst_BV ) )
+		{
+			f_SqrProjRadius = ( fSqr( OBJ_f_BV_GetRadius( pst_BV ) ) * fSqr( pst_DD->st_Camera.f_FactorX ) ) / f_SqrObjDist;
+		}
+		else
+		{
+			MATH_SubVector( &st_Diag, OBJ_pst_BV_GetGMax( pst_BV ), OBJ_pst_BV_GetGMin( pst_BV ) );
+			f_SqrProjRadius = MATH_f_SqrNormVector( &st_Diag ) * fSqr( pst_DD->st_Camera.f_FactorX ) / f_SqrObjDist;
+		}
+
+		float f_ProjRadius = pst_DD->f_LODVal * fOptSqrt( f_SqrProjRadius );
+		if ( _pst_GO->uc_LOD_Dist ) f_ProjRadius *= _pst_GO->uc_LOD_Dist / 255.0f;
+
+#if defined( _GAMECUBE ) || defined( _XENON )
+		uc_Result = ( UCHAR ) fMin( 255.0f, f_ProjRadius );
+#else
+		f_Result  = fMin( 255.0f, f_ProjRadius ) + 12533760.0f;
+		uc_Result = *( UCHAR * ) &f_Result;
+#endif
+
+		/* We want to keep the 0 value for culled object only. */
+		if ( uc_Result == 0 ) uc_Result = 1;
+
+		return uc_Result;
+	}
+
+	return 255U;
+}
+
 /*
  =======================================================================================================================
  =======================================================================================================================
@@ -2234,44 +2292,12 @@ void WOR_Render_All_GO(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	TAB_tdst_PFelem		*pst_Elem, *pst_LastElem;
 	OBJ_tdst_GameObject *pst_GO = NULL;
-	TAB_tdst_PFelem		*pst_LasPreviousElem;
-#ifdef PSX2_TARGET
-#ifdef GSP_PS2_BENCH
-		extern ULONG ShowNormals;
-		ULONG SaveShowNormals;
-#endif
-#endif
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 #ifdef ACTIVE_EDITORS
-	ERR_gpst_ContextGAO = NULL;
+	ERR_gpst_ContextGAO    = NULL;
 	ERR_gpsz_ContextString = "Render pass 1";
-#endif
-	_GSP_BeginRaster(41);
-
-#if defined(_XENON_RENDER) && defined(ACTIVE_EDITORS)
-    if( _pst_DD->bLogLightUsage )
-    {
-        // Put the log in the same folder as a frame capture
-        char * pc_Cur = NULL;
-        char szLogFileName[256];
-
-        strcpy( szLogFileName, _pst_DD->sz_SnapshotName );
-
-        pc_Cur = strrchr( szLogFileName, '/' );
-        if (pc_Cur == NULL)
-            pc_Cur = strrchr( szLogFileName, '\\' );
-        if (pc_Cur == NULL)
-            L_strcpy(szLogFileName, "light_usage_log.txt");
-        else
-        {
-            *(pc_Cur+1) = 0;
-            CreateDirectory( szLogFileName, NULL );
-            strcpy( pc_Cur + 1, "light_usage_log.txt" );
-        }
-
-        g_oXeLightUsageLogger.BeginLog( szLogFileName, _pst_World->sz_Name );
-    }
+	Jaded_Profiler_StartProfilingS( ERR_gpsz_ContextString );
 #endif
 
 	/* Render GameObject */
@@ -2293,40 +2319,34 @@ void WOR_Render_All_GO(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD
 			pst_GO->ul_StatusAndControlFlags |= OBJ_C_StatusFlag_Culled;
 
 			/* compute culling */
+			if ( M4Edit_IfNotLinks )
 			{
-				/*~~~~~~~~~~~~~~~~~~~~~~~~~*/
-				MATH_tdst_Vector	st_Dist;
-				float				f_Dist;
-				BOOL				b_Culled;
-				/*~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-				if(M4Edit_IfNotLinks)
+				BOOL b_Culled = OBJ_CullingObject( pst_GO, &_pst_DD->st_Camera );
+				if ( !OBJ_b_TestControlFlag( pst_GO, OBJ_C_ControlFlag_AlwaysVisible ) && b_Culled )
 				{
-					/* Distance camera / object */
-					MATH_SubVector(&st_Dist, &pst_GO->pst_GlobalMatrix->T, &_pst_World->pst_View->st_ViewPoint.T);
-					f_Dist = MATH_f_SqrNormVector(&st_Dist);
-
-					b_Culled = OBJ_CullingObject(pst_GO, &_pst_DD->st_Camera);
-					if(!OBJ_b_TestControlFlag(pst_GO, OBJ_C_ControlFlag_AlwaysVisible) && b_Culled)
+					pst_GO->uc_LOD_Vis = 0;
+					if ( M4Edit_IfEngineRender )
 					{
-						pst_GO->uc_LOD_Vis = 0;
-						if(M4Edit_IfEngineRender) continue;
-					}
-					else
-					{
-						pst_GO->uc_LOD_Vis = OBJ_uc_CalcLODVis
-							(
-								pst_GO,
-								_pst_World->pst_View,
-#ifdef JADEFUSION
-								0.0f // not used in the function : MATH_f_SqrNormVector(&st_Dist)
-#else
-								MATH_f_SqrNormVector(&st_Dist)
-#endif
-							);
+						continue;
 					}
 				}
+				else
+				{
+					pst_GO->uc_LOD_Vis = OBJ_uc_CalcLODVis( pst_GO, _pst_World->pst_View );
+				}
 			}
+
+#if 0
+			// Check if we need to leave it culled due to fogging
+			if ( _pst_DD->ul_DrawMask & GDI_Cul_DM_Fogged )
+			{
+				float distance = MATH_f_Distance( &pst_GO->pst_GlobalMatrix->T, &_pst_World->pst_View->st_ViewPoint.T );
+				if ( distance > _pst_DD->st_Fog1.f_End )
+				{
+					continue;
+				}
+			}
+#endif
 
 			if(M4Edit_IfEngineRender)
 			{	/* Hierarchy */
@@ -2361,117 +2381,28 @@ void WOR_Render_All_GO(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD
 				continue;
 			}
 #endif
-#ifdef PSX2_TARGET
-			if(!OBJ_b_TestControlFlag(pst_GO, OBJ_C_ControlFlag_AlwaysVisible))
-				if (pst_GO->uc_LOD_Vis < 5) continue;
-#endif
+
 			if (pst_GO->ucCullingVisibility > pst_GO->uc_LOD_Vis) continue;
 
 			pst_GO->ul_StatusAndControlFlags &= ~OBJ_C_StatusFlag_Culled;
 		}
 	}
 
-	_GSP_EndRaster(41);
 
 	/* : : */
 #ifdef ACTIVE_EDITORS
+	Jaded_Profiler_EndProfilingS( ERR_gpsz_ContextString );
+
 	ERR_gpsz_ContextString = "Render pass 2";
+	Jaded_Profiler_StartProfilingS( ERR_gpsz_ContextString );
 #endif
 
-#ifdef PSX2_TARGET
-#ifdef GSP_PS2_BENCH
-	if (ShowNormals) 
-	{
-		extern u32 ColorCost_GlobalTime_IA;
-		extern u32 ColorCost_MaxTime_IA;
-
-		extern u32 ColorCost_GlobalTime_GRAPHIC;
-		extern u32 ColorCost_MaxTime_GRAPHIC;
-
-	
-		ULONG MAXTICK_E,MAXTICK_G,MAXTICK_GL;
-		
-		ColorCost_GlobalTime_IA = ColorCost_GlobalTime_GRAPHIC = 0;
-		MAXTICK_E = MAXTICK_G = 0;
-		/* 1 - Compute max GRAPHIC */
-		pst_LastElem = TAB_pst_PFtable_GetLastElem(&_pst_World->st_VisibleObjects);
-		pst_Elem = TAB_pst_PFtable_GetFirstElem(&_pst_World->st_VisibleObjects);
-		for(; pst_Elem <= pst_LastElem; pst_Elem++)
-		{
-			pst_GO = (OBJ_tdst_GameObject *) pst_Elem->p_Pointer;
-			if(TAB_b_IsAHole(pst_GO)) continue;
-			ColorCost_GlobalTime_GRAPHIC += pst_GO->DrawTick;
-			ColorCost_MaxTime_GRAPHIC = MAXTICK_G = lMax(MAXTICK_G , pst_GO->DrawTick);
-			pst_GO->NumberOfTris = 0;
-		}
-		/* 2 - Compute max AI */
-		pst_LastElem = TAB_pst_PFtable_GetLastElem(&(_pst_World->st_EOT.st_AI));
-		pst_Elem = TAB_pst_PFtable_GetFirstElem(&(_pst_World->st_EOT.st_AI));
-		for(; pst_Elem <= pst_LastElem; pst_Elem++)
-		{
-			pst_GO = (OBJ_tdst_GameObject *) pst_Elem->p_Pointer;
-			if(TAB_b_IsAHole(pst_GO)) continue;
-			ColorCost_GlobalTime_IA += pst_GO->EngineTick;
-			ColorCost_MaxTime_IA = MAXTICK_E = lMax(MAXTICK_E , pst_GO->EngineTick);
-		}
-		if (!MAXTICK_E) MAXTICK_E = 1;
-		if (!MAXTICK_G) MAXTICK_G = 1;
-		MAXTICK_GL = MAXTICK_E + MAXTICK_G;
-		/* 2 - Compute pst_GO->LastDrawTick */
-		pst_LastElem = TAB_pst_PFtable_GetLastElem(&_pst_World->st_VisibleObjects);
-		pst_Elem = TAB_pst_PFtable_GetFirstElem(&_pst_World->st_VisibleObjects);
-		for(; pst_Elem <= pst_LastElem; pst_Elem++)
-		{
-			ULONG Results;
-			pst_GO = (OBJ_tdst_GameObject *) pst_Elem->p_Pointer;
-			if(TAB_b_IsAHole(pst_GO)) continue;
-#define COLORCOST_BLENDER 2
-			Results = pst_GO->LastDrawTick;
-			Results -= Results >> COLORCOST_BLENDER;
-			Results += ((pst_GO->DrawTick << 8) / MAXTICK_G)>>COLORCOST_BLENDER;
-			pst_GO->LastDrawTick = lMin(Results , 255);
-			pst_GO->DrawTick = 0;
-		}
-		/* 2 - Compute pst_GO->LastEngineTick */
-		pst_LastElem = TAB_pst_PFtable_GetLastElem(&(_pst_World->st_EOT.st_AI));
-		pst_Elem = TAB_pst_PFtable_GetFirstElem(&(_pst_World->st_EOT.st_AI));
-		for(; pst_Elem <= pst_LastElem; pst_Elem++)
-		{
-			ULONG Results;
-			pst_GO = (OBJ_tdst_GameObject *) pst_Elem->p_Pointer;
-			if(TAB_b_IsAHole(pst_GO)) continue;
-			Results = pst_GO->LastEngineTick;
-			Results -= Results >> COLORCOST_BLENDER;
-			Results += ((pst_GO->EngineTick << 8) / MAXTICK_E)>>COLORCOST_BLENDER;
-			pst_GO->LastEngineTick = lMin(Results , 255);
-			pst_GO->EngineTick = 0;
-		}
-	}
-#endif
-#endif
-
-	pst_LasPreviousElem = NULL;
-#ifdef PSX2_TARGET
-#ifdef GSP_PS2_BENCH
-	SaveShowNormals = ShowNormals;
-#endif
-#endif
 	ul_LastGOStackNumber = 0;
 
 	pst_Elem = TAB_pst_PFtable_GetFirstElem(&_pst_World->st_VisibleObjects);
 	pst_LastElem = TAB_pst_PFtable_GetLastElem(&_pst_World->st_VisibleObjects);
 	for(; pst_Elem <= pst_LastElem; pst_Elem++)
 	{
-#ifdef PSX2_TARGET
-#ifdef GSP_PS2_BENCH
-		extern u8	CurrentTicksInGlobals;
-		extern u8	CurrentTicksInDraw;
-		extern u8	CurrentTicksInEngine;
-		ULONG 		CurrentTicksNum;
-		u32			CurrentNumberOfTris;
-		static ULONG LASTMAXTICK = 0;
-#endif
-#endif
 #ifdef ACTIVE_EDITORS
 		u32			CurrentNumberOfTris;
 		extern u32 Stats_ulNumberOfTRiangles;
@@ -2500,54 +2431,16 @@ void WOR_Render_All_GO(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD
 		/* Philippe END */
 #ifdef ACTIVE_EDITORS
 		CurrentNumberOfTris = Stats_ulNumberOfTRiangles;
-#endif		
-#ifdef PSX2_TARGET
-#ifdef GSP_PS2_BENCH
-		ShowNormals = SaveShowNormals;
-		if (ShowNormals) 
-		{
-			extern void ColorCost_AE_AddAnObject(OBJ_tdst_GameObject *p_GO);
-			CurrentTicksInDraw = pst_GO->LastDrawTick;
-			CurrentTicksInEngine = pst_GO->LastEngineTick;
-			CurrentTicksInGlobals = lMin(pst_GO->LastEngineTick + pst_GO->LastDrawTick , 255);
-			CurrentTicksNum = scePcGetCounter0(); // Not closed
-			CurrentNumberOfTris = GspGlobal_ACCESS(Tnum);
-			if ((ShowNormals & 3) == 3) // Global
-			{
-				if (CurrentTicksInGlobals < 100) ShowNormals = 0;
-				else ColorCost_AE_AddAnObject(pst_GO);
-			} else 
-			if ((ShowNormals & 3) == 2) // Draw
-			{
-				if (CurrentTicksInGlobals < 50) ShowNormals = 0;
-				else ColorCost_AE_AddAnObject(pst_GO);
-			} else 
-			if ((ShowNormals & 3) == 1) // Engine
-			{
-				if (CurrentTicksInEngine < 10) ShowNormals = 0;
-				else ColorCost_AE_AddAnObject(pst_GO);
-			}
-		}
 #endif
-#endif
-		
+
 		WOR_Render_One_GO(_pst_World, _pst_DD, pst_GO);
 #ifdef ACTIVE_EDITORS
 		if(OBJ_gb_DebugPhotoMode) WOR_RenderFakePhotoFrame(_pst_DD);
 		pst_GO->NumberOfTris = Stats_ulNumberOfTRiangles - CurrentNumberOfTris;
+
+		Jaded_Profiler_EndProfilingS( ERR_gpsz_ContextString );
 #endif
 
-#ifdef PSX2_TARGET
-#ifdef GSP_PS2_BENCH
-		ShowNormals = SaveShowNormals;
-		if (ShowNormals) 
-		{
-			CurrentTicksNum = scePcGetCounter0() - CurrentTicksNum; // Not closed
-			pst_GO->DrawTick += CurrentTicksNum;
-			pst_GO->NumberOfTris = GspGlobal_ACCESS(Tnum) - CurrentNumberOfTris;		
-		}
-#endif
-#endif
 /*		if (pst_LasPreviousElem)
 		{
 			if (WOR_MUST_BE_SWAP((OBJ_tdst_GameObject *) pst_LasPreviousElem->p_Pointer,pst_GO))
@@ -2561,18 +2454,6 @@ void WOR_Render_All_GO(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD
 		}
 		pst_LasPreviousElem = pst_Elem;//*/
 	}
-#ifdef PSX2_TARGET
-#ifdef GSP_PS2_BENCH
-		ShowNormals = SaveShowNormals;
-#endif
-#endif
-#if defined(_XENON_RENDER) && defined(ACTIVE_EDITORS)
-    if( _pst_DD->bLogLightUsage )
-    {
-        g_oXeLightUsageLogger.EndLog( );
-        _pst_DD->bLogLightUsage = false;
-    }
-#endif	
 }
 
 /*
@@ -2952,125 +2833,20 @@ void WOR_Render(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD)
 					}
 				}
 				}//light
+
 #ifdef JADEFUSION
                 LIGHT_ResetAllSpotCullingBV( &_pst_DD->st_LightList );
                 LIGHT_List_Sort(&_pst_DD->st_LightList );
 #endif
+
 				PRO_StopTrameRaster(&_pst_DD->pst_Raster->st_BuildLightList);
 				PRO_SetRasterLong(&_pst_DD->pst_Raster->st_NbLights, _pst_DD->st_LightList.ul_Current);
 				PROPS2_StopRaster(&PROPS2_gst_WOR_Render1);
-
-#if defined(_XBOX)
-				/*
-				 * NO MORE SHADOW BUFFERE HERE WOR_CheckForShadowBuffer(_pst_DD, pst_SD); // ...
-				 * if is it so ... if (pst_SD->bShadowBuffer) { MATH_tdst_Matrix mTmp; // ... for
-				 * each light render the scene with black shadows
-				 * for(iNumSBLight=0;iNumSBLight<pst_SD->iNOfSBLights;iNumSBLight++) { // set
-				 * light POV MATH_CopyMatrix( &m_cameraViewPoint, &pst_View->st_ViewPoint);
-				 * MATH_CopyMatrix( &pst_View->st_ViewPoint, &pst_SD->mLightMatrix[iNumSBLight]);
-				 * PROPS2_StartRaster(&PROPS2_gst_WOR_SetCam); WOR_SetCam(pst_View);
-				 * PROPS2_StopRaster(&PROPS2_gst_WOR_SetCam); // direct x initialization
-				 * Gx8_ShadowBuffer_LightRender_Init(pst_SD); // render in the SB
-				 * pst_SD->bRenderingFromLight=true; WOR_Render_3D(iNumView,_pst_World,_pst_DD);
-				 * pst_SD->bRenderingFromLight=false; // restore camera POV MATH_CopyMatrix(
-				 * &pst_View->st_ViewPoint, &m_cameraViewPoint);
-				 * PROPS2_StartRaster(&PROPS2_gst_WOR_SetCam); WOR_SetCam(pst_View);
-				 * PROPS2_StopRaster(&PROPS2_gst_WOR_SetCam); // compute UV matrix
-				 * CAM_SetObjectMatrixFromCam( &mTmp, &pst_SD->mLightMatrix[iNumSBLight] );
-				 * MATH_InvertMatrix( &pst_SD->mSBTextureMatrix, &mTmp ); // directx init
-				 * Gx8_ShadowBuffer_CameraRender_Init(pst_SD,
-				 * pst_SD->pShadowBufferSpot[iNumSBLight]); // render with black shadows
-				 * WOR_Render_3D(iNumView,_pst_World,_pst_DD); // restore directx state
-				 * Gx8_ShadowBuffer_ResetRenderStates(pst_SD); } }
-				 */
-				AE_ManageAETexturesAllocation(pst_SD);
-				
-				if(gAE_Status & GSP_Status_AE_DB)
-				{
-					/*~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-					float	f_SaveNear, f_SaveFar;
-					/*~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-					Gx8_DepthBlurZBufferRender_Init(pst_SD);
-
-					f_SaveNear = _pst_DD->st_Camera.f_NearPlane;
-					f_SaveFar = _pst_DD->st_Camera.f_FarPlane;
-
-					/* pst_DD->st_Camera.f_NearPlane=gAE_Params.Depth_Blur_ZStart + 0.5f; */
-					_pst_DD->st_Camera.f_NearPlane = 20.0f; /* setprojection divide it by 20 = 1 */
-
-					_pst_DD->st_Camera.f_FarPlane = gAE_Params.Depth_Blur_ZEnd * 2;
-
-					/* Compute current camera */
-					PROPS2_StartRaster(&PROPS2_gst_WOR_SetCam);
-					WOR_SetCam(pst_View);
-					PROPS2_StopRaster(&PROPS2_gst_WOR_SetCam);
-
-					WOR_Render_3D(iNumView, _pst_World, _pst_DD);
-
-					_pst_DD->st_Camera.f_NearPlane = f_SaveNear;
-					_pst_DD->st_Camera.f_FarPlane = f_SaveFar;
-
-					Gx8_DepthBlurZBufferRender_ResetStates(pst_SD);
-				}
-
-				// deactive pour kingkong cet effet...
-				/*if(gAE_Status & GSP_Status_AE_DBN)
-				{
-					//~~~~~~~~~~~~~~~~~~~~~~~~~~//
-					float	f_SaveNear, f_SaveFar;
-					//~~~~~~~~~~~~~~~~~~~~~~~~~~//
-
-					Gx8_NearBlurZBufferRender_Init(pst_SD);
-
-					f_SaveNear = _pst_DD->st_Camera.f_NearPlane;
-					f_SaveFar = _pst_DD->st_Camera.f_FarPlane;
-
-					_pst_DD->st_Camera.f_NearPlane = 10.0f; // setprojection divide it by 20 = 0.5
-					_pst_DD->st_Camera.f_FarPlane = gAE_Params.Depth_Blur_Near;
-
-					// Compute current camera
-					PROPS2_StartRaster(&PROPS2_gst_WOR_SetCam);
-					WOR_SetCam(pst_View);
-					PROPS2_StopRaster(&PROPS2_gst_WOR_SetCam);
-
-					WOR_Render_3D(iNumView, _pst_World, _pst_DD);
-
-					_pst_DD->st_Camera.f_NearPlane = f_SaveNear;
-					_pst_DD->st_Camera.f_FarPlane = f_SaveFar;
-
-					Gx8_NearBlurZBufferRender_ResetStates(pst_SD);
-				}*/
-#endif /* XBOX */
 
 				/* Compute current camera */
 				PROPS2_StartRaster(&PROPS2_gst_WOR_SetCam);
 				WOR_SetCam(pst_View);
 				PROPS2_StopRaster(&PROPS2_gst_WOR_SetCam);
-
-#ifdef _XBOX
-				if(GetCastingShadows())
-				{
-					Gx8_PrepareMatrixDiffuseRendering();
-				}
-
-				/* Prepare stuff for water reflection map */
-				Gx8_BeginReflectionDraw();
-
-				/*
-				 * Prepare stuff for water refraction mapping £
-				 * Gx8_BeginRefractionDraw();
-				 */
-#endif
-#ifdef _PC_RETAIL
-				{
-					/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-					void	Dx9_ResetDrawReflection(void);
-					/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-					Dx9_ResetDrawReflection();
-				}
-#endif
 
 				/*
 				 * WOR_Render_3D(iNumView,_pst_World,_pst_DD); £
@@ -3167,12 +2943,11 @@ void WOR_Render(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD)
 						_pst_DD->st_GDI.pfnl_Request(GDI_Cul_Request_LoadInterfaceTex, 0);
 
 						/* Clear le ZBuffer */
-#ifndef _XENON 
 						if(!(_pst_DD->ul_DisplayFlags & GDI_cul_DF_DepthReadBeforeFlip))
 						{
 							OGL_Clear(GDI_Cl_ZBuffer, 0);
 						}
-#endif
+
 						/* sauve la camera */
 						L_memcpy(&GDI_gpst_CurDD->st_SaveCamera, &GDI_gpst_CurDD->st_Camera, sizeof(CAM_tdst_Camera));
 
@@ -3189,19 +2964,10 @@ void WOR_Render(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD)
 						/* display interface */
 						_pst_DD->ul_DisplayInfo |= GDI_Cul_DI_RenderingInterface;
 
-#ifdef _XENON_RENDER
-						// interface is on top of all
-						GDI_gpst_CurDD->g_cZListCurrentDisplayOrder = XERENDER_INTERFACE_DEPTH;
-#endif
-
 						if(_pst_World->pst_GFXInterface) GFX_Render(&(_pst_World->pst_GFXInterface), 1);
 
 						/* display strings */
 						STRDATA_Render();
-
-#ifdef _XENON_RENDER
-						GDI_gpst_CurDD->g_cZListCurrentDisplayOrder = 0;
-#endif
 
 						_pst_DD->ul_DisplayInfo &= ~GDI_Cul_DI_RenderingInterface;
 
@@ -3231,78 +2997,12 @@ void WOR_Render(WOR_tdst_World *_pst_World, GDI_tdst_DisplayData *_pst_DD)
 	}
 
 	PROPS2_StopRaster(&PROPS2_gst_WOR_Render);
-#ifdef XENONVIDEOSTATISTICS
-    XeStats->SortAndCleanStats();
-#endif
-}
-
-/*
- =======================================================================================================================
-    Aim: Returns the % of screen covered by the BV of an object in the given view Note: 0= culled; 255= full screen or
-    bigger
- =======================================================================================================================
- */
-UCHAR OBJ_uc_CalcLODVis(OBJ_tdst_GameObject *_pst_GO, WOR_tdst_View *_pst_View, float _f_SqrObjDist)
-{
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	MATH_tdst_Vector		st_Dist, st_Center;
-	float					f_SqrProjRadius;
-	float					f_ProjRadius;
-	float					f_SqrObjDist;
-	MATH_tdst_Vector		st_Diag;
-	GDI_tdst_DisplayData	*pst_DD;
-	void					*pst_BV;
-	UCHAR					uc_Result;
-#ifndef _GAMECUBE
-	float					f_Result;
-#endif
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-#if defined(PSX2_TARGET) || defined(_GAMECUBE)
-	pst_DD = GDI_gpst_CurDD;
-#else
-	pst_DD = (GDI_tdst_DisplayData *) _pst_View->st_DisplayInfo.pst_DisplayDatas;
-#endif
-	if(pst_DD)
-	{
-		/* Distance camera / object */
-		OBJ_BV_ComputeCenter(_pst_GO, &st_Center);
-		MATH_SubVector(&st_Dist, &st_Center, &_pst_View->st_ViewPoint.T);
-		f_SqrObjDist = MATH_f_SqrNormVector(&st_Dist);
-
-		pst_BV = _pst_GO->pst_BV;
-		if(OBJ_BV_IsSphere(pst_BV))
-		{
-			f_SqrProjRadius = (fSqr(OBJ_f_BV_GetRadius(pst_BV)) * fSqr(pst_DD->st_Camera.f_FactorX)) / f_SqrObjDist;
-		}
-		else
-		{
-			MATH_SubVector(&st_Diag, OBJ_pst_BV_GetGMax(pst_BV), OBJ_pst_BV_GetGMin(pst_BV));
-			f_SqrProjRadius = MATH_f_SqrNormVector(&st_Diag) * fSqr(pst_DD->st_Camera.f_FactorX) / f_SqrObjDist;
-		}
-
-		f_ProjRadius = pst_DD->f_LODVal * fOptSqrt(f_SqrProjRadius);
-		if(_pst_GO->uc_LOD_Dist) f_ProjRadius *= _pst_GO->uc_LOD_Dist / 255.0f;
-
-#if defined(_GAMECUBE) || defined(_XENON)
-		uc_Result = (UCHAR) fMin(255.0f, f_ProjRadius);
-#else
-		f_Result = fMin(255.0f, f_ProjRadius) + 12533760.0f;
-		uc_Result = *(UCHAR *) &f_Result;
-#endif
-
-		/* We want to keep the 0 value for culled object only. */
-		if(uc_Result == 0) uc_Result = 1;
-
-		return uc_Result;
-	}
-	else
-		return(UCHAR) 255;
 }
 
 #if defined(PSX2_TARGET) && defined(__cplusplus)
 }
 #endif
+
 #ifdef _XBOX
 
 /*

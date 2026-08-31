@@ -284,18 +284,6 @@ _inline_ float OBJ_f_CalcDistFromLODDist(UCHAR _uc_dist)
         return(fLongToFloat(((LONG) (_uc_dist)) << 3));
 }
 
-/*
- =======================================================================================================================
-    Aim:    Returns the % of screen covered by the BV of an object in the given view
-
-    Note:   0= less than 1 % of the screen surface; 255= full screen or bigger
- =======================================================================================================================
- */
- /* 
- 	Philippe : Je l'ai déinliné dans wor_render.c, 
- */
-UCHAR OBJ_uc_CalcLODVis(OBJ_tdst_GameObject *_pst_GO, WOR_tdst_View *_pst_View, float _f_SqrObjDist);
-
 #if defined (__cplusplus) && !defined(JADEFUSION)
 }
 #endif

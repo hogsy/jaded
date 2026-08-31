@@ -45,7 +45,7 @@ void OBJ_SymetriseMatrix(MATH_tdst_Matrix *pst_Matrix)
     Aim:    Returns wether the BV of the Object is sperical or not.
  =======================================================================================================================
  */
-BOOL OBJ_BV_IsSphere(void *_pst_BV)
+BOOL OBJ_BV_IsSphere( const void *_pst_BV )
 {
 	return(*(LONG *) &((OBJ_tdst_SingleBV *) _pst_BV)->st_GMax.z == -1);
 }
@@ -55,7 +55,7 @@ BOOL OBJ_BV_IsSphere(void *_pst_BV)
     Aim:    Returns wether the BV of the Object is a AABBox or not.
  =======================================================================================================================
  */
-BOOL OBJ_BV_IsAABBox(void *_pst_BV)
+BOOL OBJ_BV_IsAABBox( const void *_pst_BV )
 {
 	return(*(LONG *) &((OBJ_tdst_SingleBV *) _pst_BV)->st_GMax.z != -1);
 }
@@ -145,7 +145,7 @@ void OBJ_BV_OBBoxMove(OBJ_tdst_GameObject *_pst_GO, MATH_tdst_Vector *_pst_Move)
     Aim:    Has the object a valid BV ?
  =======================================================================================================================
  */
-BOOL OBJ_HasNoBV(OBJ_tdst_GameObject *_pst_Obj)
+BOOL OBJ_HasNoBV( const OBJ_tdst_GameObject *_pst_Obj)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	MATH_tdst_Vector	*pst_GMax;
@@ -1113,7 +1113,7 @@ void OBJ_ComputeBV(OBJ_tdst_GameObject *_pst_Obj, BOOL _b_Force, BOOL _b_Type)
 	}
 	else
 	{
-		
+
 		/* Waypoints */
 		if(OBJ_b_TestIdentityFlag(_pst_Obj, OBJ_C_IdentityFlag_Waypoints))
 		{

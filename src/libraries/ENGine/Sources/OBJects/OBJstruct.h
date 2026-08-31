@@ -136,7 +136,7 @@ typedef struct	OBJ_tdst_Hierarchy_
 #ifdef USE_DOUBLE_RENDERING
 	MATH_tdst_Matrix			st_LocalMatrix_A;
 	MATH_tdst_Matrix			st_LocalMatrix_B;
-#endif	
+#endif
 }__declspec(align(16)) OBJ_tdst_Hierarchy;
 #else
 typedef struct	OBJ_tdst_Hierarchy_
@@ -147,7 +147,7 @@ typedef struct	OBJ_tdst_Hierarchy_
 #ifdef USE_DOUBLE_RENDERING
 	MATH_tdst_Matrix			st_LocalMatrix_A;
 	MATH_tdst_Matrix			st_LocalMatrix_B;
-#endif	
+#endif
 }OBJ_tdst_Hierarchy;
 #endif
 /*
@@ -289,6 +289,9 @@ typedef struct	LightCloneListeGao_
 }LightCloneListeGao;
 
 #endif
+
+typedef struct GfxOcclusionQuery GfxOcclusionQuery;
+
 /*
  -----------------------------------------------------------------------------------------------------------------------
     Aim:    Definition of a game object
@@ -334,33 +337,10 @@ typedef struct	OBJ_tdst_GameObject_
 
 #ifdef JADEFUSION
 	struct OBJ_tdst_GameObject_	*apst_IsLightBy[VS_MAX_LIGHTS];	/* array of pointer to all the lights that's affect the GAO */
-	ULONG					ul_XeMergeFlags;			// -NOTE- Added a bitfield to know if this GAO's properties 
+	ULONG					ul_XeMergeFlags;			// -NOTE- Added a bitfield to know if this GAO's properties
 #endif
 #endif
 
-
-#ifdef _XBOX
-
-	//Tell if a game object as been already drawn
-	int playSkinning;
-	
-	//Tell if a game object is in light or not
-	int IsInLight;
-
-#endif
-
-
-#ifdef PSX2_TARGET
-	struct GSP_GO_DataCache_ *DataCacheOptimization;
-#ifndef _FINAL_
-	u8		LastGlobalsTick;
-	u8		LastDrawTick;
-	u8		LastEngineTick;
-	u32		DrawTick;
-	u32		EngineTick;
-	u32		NumberOfTris;
-#endif	
-#endif
 #ifdef ACTIVE_EDITORS
 	u32 NumberOfTris;
 	u32 DrawInfoName;
@@ -376,8 +356,9 @@ typedef struct	OBJ_tdst_GameObject_
 	LightCloneListeGao		*CloneLightList;
 	ULONG					ulMoreCloneInfo; // Philippe add for LOD
 #endif
-	u8						ucCullingVisibility;
 
+	u8                 ucCullingVisibility;
+	GfxOcclusionQuery *occlusionQuery;
 }OBJ_tdst_GameObject;
 
 #if defined (__cplusplus) && !defined(JADEFUSION)

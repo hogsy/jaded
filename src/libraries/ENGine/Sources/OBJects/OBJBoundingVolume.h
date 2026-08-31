@@ -19,9 +19,9 @@
 extern "C"
 {
 #endif
-extern BOOL OBJ_BV_IsSphere(void *);
-extern BOOL OBJ_BV_IsAABBox(void *);
-extern BOOL OBJ_HasNoBV(OBJ_tdst_GameObject *);
+extern BOOL OBJ_BV_IsSphere( const void * );
+extern BOOL OBJ_BV_IsAABBox( const void * );
+extern BOOL OBJ_HasNoBV( const OBJ_tdst_GameObject *);
 extern void OBJ_BV_Move(OBJ_tdst_GameObject *, MATH_tdst_Vector *, BOOL);
 extern void OBJ_BV_OBBoxMove(OBJ_tdst_GameObject *, MATH_tdst_Vector *);
 extern void OBJ_BV_ComputeCenter(OBJ_tdst_GameObject *, MATH_tdst_Vector *);
