@@ -149,7 +149,7 @@ AI_tdst_BreakPoint *AI_FillBreakPoint( AI_tdst_BreakPoint *self, int node );
  -----------------------------------------------------------------------------------------------------------------------
  */
 
-#	if defined( ACTIVE_EDITORS ) && !defined(NDEBUG)
+#	if !defined( NDEBUG )
 #		define AI_CheckPointer( __Pointer )                          \
 			{                                                         \
 				if ( IsBadReadPtr( __Pointer, 1 ) )                   \
@@ -158,39 +158,26 @@ AI_tdst_BreakPoint *AI_FillBreakPoint( AI_tdst_BreakPoint *self, int node );
 					L_longjmp( AI_gst_ContextCheck, 1 );              \
 				}                                                     \
 			}
+#	else
+#		define AI_CheckPointer( __Pointer )
+#	endif
 
-#		define AI_Check( __Expr, __Str )                                             \
-			{                                                                         \
-				if ( !( __Expr ) )                                                    \
-				{                                                                     \
-					ERR_ScriptAssertFailed( BAS_FILENAME, __LINE__, #__Expr, __Str ); \
-				}                                                                     \
-			}
+#	define AI_Check( __Expr, __Str )                                             \
+		{                                                                         \
+			if ( !( __Expr ) )                                                    \
+			{                                                                     \
+				ERR_ScriptAssertFailed( BAS_FILENAME, __LINE__, #__Expr, __Str ); \
+			}                                                                     \
+		}
 
-#		define AI_CheckArrayBounds( VALUE, MAX )                                                    \
-			{                                                                                        \
-				if ( ( VALUE ) >= ( MAX ) )                                                          \
-				{                                                                                    \
-					char _EXPR[ 256 ];                                                               \
-					snprintf( _EXPR, sizeof( _EXPR ), "%u >= %u", ( VALUE ), ( MAX ) );              \
-					ERR_ScriptAssertFailed( BAS_FILENAME, __LINE__, _EXPR, "Bounds check failed!" ); \
-				}                                                                                    \
-			}
+#	define AI_CheckArrayBounds( VALUE, MAX )                                                    \
+		{                                                                                        \
+			if ( ( VALUE ) >= ( MAX ) )                                                          \
+			{                                                                                    \
+				char _EXPR[ 256 ];                                                               \
+				snprintf( _EXPR, sizeof( _EXPR ), "%u >= %u", ( VALUE ), ( MAX ) );              \
+				ERR_ScriptAssertFailed( BAS_FILENAME, __LINE__, _EXPR, "Bounds check failed!" ); \
+			}                                                                                    \
+		}
 
-/*$2------------------------------------------------------------------------------------------------------------------*/
-
-#elif defined(_DEBUG)
-#ifdef PSX2_TARGET
-#define IsBadReadPtr(_p, _s)	!((int) _p > 0x200000 && (int) _p < 0x8000000)	/* s */
-#endif
-#define AI_CheckPointer(__Pointer)	{ if(IsBadReadPtr(__Pointer, 1)) { ERR_X_ForceError("Bad Pointer Detected", NULL); } }
-#define AI_Check(__Expr, __Str)		{ if(!(__Expr)) { ERR_X_ForceError(__Str, NULL); } }
-
-/*$2------------------------------------------------------------------------------------------------------------------*/
-
-#else
-#define AI_CheckPointer(a)
-#define AI_Check(a, b)
-#define AI_CheckArrayBounds( VALUE, MAX )
-#endif
 #endif /* __AIDEBUG_H__ */
