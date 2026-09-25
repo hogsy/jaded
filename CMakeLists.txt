@@ -11,6 +11,8 @@ set(CMAKE_CXX_STANDARD 17)
 include(DetermineTargetArchitecture.cmake)
 determine_target_architecture(JADE_SYSTEM_ARCH)
 
+option(JADED_BUILD_TOOLS "Build tools" ON)
+
 ###################################################################################
 
 # Get the current working branch

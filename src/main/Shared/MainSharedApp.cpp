@@ -8,7 +8,7 @@
 
 #include "MainSharedSystem.h"
 
-#include "jaded/core/fs/fs.h"
+#include "core/fs/fs.h"
 
 #include "Res/Res.h"
 
