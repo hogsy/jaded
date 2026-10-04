@@ -665,6 +665,11 @@ AI_tdst_Node *AI_EvalFunc_IoJoySetVibration(AI_tdst_Node *_pst_Node)
 	return ++_pst_Node;
 }
 
+int AI_EvalFunc_IoJoyGetType_C( int index )
+{
+	return INO_Joystick_GetType( index );
+}
+
 /*$4
  ***********************************************************************************************************************
     LANGUAGE

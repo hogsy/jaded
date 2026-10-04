@@ -660,6 +660,44 @@ void INO_PafSet( int _i_Intensity, int _i_FrameDuration )
 	}
 }
 
+int INO_Joystick_GetType( unsigned int index )
+{
+	SDL_Gamepad *controller = sdlGameControllers[ index ];
+	if ( controller == nullptr )
+	{
+		return -1;
+	}
+
+	// from some digging, we might be able to pick up a Wii controller like this?
+	// mind this is untested for now...
+	const char *name = SDL_GetGamepadName( controller );
+	if ( name != NULL && strcmp( name, "Nintendo Wii Remote" ) == 0 )
+	{
+		return INO_JOYSTICK_TYPE_WII;
+	}
+
+	const SDL_GamepadType type = SDL_GetGamepadType( controller );
+	switch ( type )
+	{
+		default:
+			return INO_JOYSTICK_TYPE_GENERIC;
+		case SDL_GAMEPAD_TYPE_XBOX360:
+		case SDL_GAMEPAD_TYPE_XBOXONE:
+			return INO_JOYSTICK_TYPE_XBOX;
+		case SDL_GAMEPAD_TYPE_PS3:
+		case SDL_GAMEPAD_TYPE_PS4:
+		case SDL_GAMEPAD_TYPE_PS5:
+			return INO_JOYSTICK_TYPE_PS;
+		case SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_PRO:
+		case SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_LEFT:
+		case SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_RIGHT:
+		case SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_PAIR:
+			return INO_JOYSTICK_TYPE_NS;
+		case SDL_GAMEPAD_TYPE_GAMECUBE:
+			return INO_JOYSTICK_TYPE_GC;
+	}
+}
+
 /*
  =======================================================================================================================
  =======================================================================================================================
