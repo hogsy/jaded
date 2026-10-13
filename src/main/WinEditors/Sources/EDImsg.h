@@ -36,7 +36,5 @@
 #define EDI_MESSAGE_HASBEENLINKED       EDI_MSG_EDI + 0x20
 #define EDI_MESSAGE_HASBEENUNLINKED     EDI_MSG_EDI + 0x21
 
-#ifdef JADEFUSION
-// Used by SELection GRID to refresh the data stored in the MATerial Editor
+// Used by SELection GRID and Properties to refresh the data stored in the MATerial Editor
 #define EDI_MESSAGE_REFRESHDATA			EDI_MSG_EDI + 0x22
-#endif
