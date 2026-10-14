@@ -2227,6 +2227,17 @@ void EVAV_cl_ListBox::OBJAddODE(POSITION pos, void *_pst_ODE)
  =======================================================================================================================
  =======================================================================================================================
  */
+static void MAT_CallBack_Refresh(void *, void *_po_Item, void *p_Data, LONG)
+{
+	EVAV_cl_ViewItem *po_Item = (EVAV_cl_ViewItem *) _po_Item;
+	void *pst_Material = (char *) p_Data - po_Item->mul_Offset;
+	M_MF()->SendMessageToEditors(EDI_MESSAGE_REFRESHDATA, 0, (ULONG) pst_Material);
+}
+
+/*
+ =======================================================================================================================
+ =======================================================================================================================
+ */
 void EVAV_cl_ListBox::OBJAddGraphicObject(POSITION pos, void *_pst_Gro)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -2261,7 +2272,7 @@ void EVAV_cl_ListBox::OBJAddGraphicObject(POSITION pos, void *_pst_Gro)
 		po_Item->mi_NumFields += OBJ_i_AddGraphicObject_MaterialMulti(pos, po_Item, pst_Gro);
 		break;
 	case GRO_MaterialMultiTexture:
-		M_InsertItem123("Sound ID", EVAV_EVVIT_Int, &((MAT_tdst_MultiTexture *)pst_Gro)->uc_Sound, 0, 0, 1, NULL);
+		M_InsertItem123("Sound ID", EVAV_EVVIT_Int, &((MAT_tdst_MultiTexture *)pst_Gro)->uc_Sound, 0, 0, 1, MAT_CallBack_Refresh);
 		po_Item->mi_NumFields ++;
 		break;
 	case GRO_Camera:

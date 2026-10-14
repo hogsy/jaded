@@ -124,14 +124,18 @@ int EMAT_cl_Frame::i_OnMessage(ULONG _ul_Msg, ULONG _ul_Param1, ULONG _ul_Param2
         }
 		return TRUE;
 
-#ifdef JADEFUSION
 	/*$1-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	case EDI_MESSAGE_REFRESHDATA:
+		if(!st_CDO.pst_ACTIVE_GRO) return FALSE;
+		if(_ul_Param2 && _ul_Param2 != (ULONG) st_CDO.pst_ACTIVE_GRO) return FALSE;
+#ifdef JADEFUSION
 		GRM_To_MUTEX(&st_CDO, pst_Multi_Sample);
 		OnDo();
+#else
+		GRM_To_MUTEX();
+#endif
 		MUTEX_SetMat(m_hWnd, &st_CDO.Dest);
 		return TRUE;
-#endif
     /*$1-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     case EDI_MESSAGE_CANSELDATA:
         p2 = (LINK_tdst_Pointer *) LINK_p_SearchPointer((void *) _ul_Param2);

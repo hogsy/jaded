@@ -1161,7 +1161,7 @@ int EPRO_cl_Frame::i_OnMessage(ULONG _ul_Msg, ULONG _ul_Param1, ULONG _ul_Param2
 
     /*$1-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     case EDI_MESSAGE_REFRESH:
-        mpo_VarsView->mpo_ListBox->Invalidate();
+        mpo_VarsView->mpo_ListBox->RedrawWindow(NULL, NULL, RDW_INVALIDATE | RDW_UPDATENOW);
         return FALSE;
 
     /*$1-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
