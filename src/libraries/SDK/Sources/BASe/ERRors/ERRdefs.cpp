@@ -387,7 +387,7 @@ void ERR_LastException( void )
 // RetVal : None
 // Descr. : Debug output
 // ------------------------------------------------------------------------------------------------
-void __stdcall ERR_OutputDebugString( CHAR *_sz_Format, ... )
+void ERR_OutputDebugString( CHAR *_sz_Format, ... )
 
 {
 	va_list Marker;
@@ -402,7 +402,11 @@ void __stdcall ERR_OutputDebugString( CHAR *_sz_Format, ... )
 #	endif
 	va_end( Marker );
 
+#if CORE_SYSTEM == CORE_SYSTEM_WINDOWS
 	OutputDebugString( Buffer );
+#else
+	fprintf( stderr, "%s", Buffer );
+#endif
 }
 
 #endif// defined(ACTIVE_EDITORS) || (defined(_XENON) && defined(_DEBUG))

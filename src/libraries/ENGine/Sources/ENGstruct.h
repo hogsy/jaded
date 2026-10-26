@@ -28,10 +28,10 @@ typedef struct  MAI_tdst_InitStruct_
 
 typedef struct
 {
-    HWND                    h_OwnerWindow;
-    HWND                    h_DisplayWindow;
-    struct WOR_tdst_World_  *pst_World;
-    GDI_tdst_DisplayData    *pst_DisplayData;
+	void                   *h_OwnerWindow;
+	void                   *h_DisplayWindow;
+	struct WOR_tdst_World_ *pst_World;
+	GDI_tdst_DisplayData   *pst_DisplayData;
 } MAI_tdst_WinHandles;
 
 #if defined (__cplusplus) && !defined(JADEFUSION)

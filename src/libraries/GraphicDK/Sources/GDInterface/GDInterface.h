@@ -506,9 +506,9 @@ extern "C"
 	void GDI_fnv_DestroyDisplayData( GDI_tdst_DisplayData * );
 	LONG GDI_fnl_InitInterface( GDI_tdst_Interface *, LONG _l_GDIType );
 
-	LONG GDI_AttachDisplay( GDI_tdst_DisplayData *, HWND );
+	LONG GDI_AttachDisplay( GDI_tdst_DisplayData *, void *_h_Wnd );
 	LONG GDI_DetachDisplay( GDI_tdst_DisplayData * );
-	LONG GDI_ReadaptDisplay( GDI_tdst_DisplayData *, HWND );
+	LONG GDI_ReadaptDisplay( GDI_tdst_DisplayData *, void *_h_Wnd );
 
 	void GDI_InitModule( void );
 	void GDI_CloseModule( void );

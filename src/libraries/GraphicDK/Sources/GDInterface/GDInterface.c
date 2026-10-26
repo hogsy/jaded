@@ -522,7 +522,7 @@ LONG GDI_AttachDisplay( GDI_tdst_DisplayData *_pst_DD, HWND _h_Wnd )
 	    }
     }
 
-    LONG GDI_AttachDisplay( GDI_tdst_DisplayData *_pst_DD, HWND _h_Wnd )
+    LONG GDI_AttachDisplay( GDI_tdst_DisplayData *_pst_DD, void *_h_Wnd )
 {
 	/*~~~~~~~~~~~~~~~~*/
 	RECT st_Rect;
@@ -625,7 +625,7 @@ LONG GDI_AttachDisplay( GDI_tdst_DisplayData *_pst_DD, HWND _h_Wnd )
  =======================================================================================================================
  */
 
-	LONG GDI_ReadaptDisplay( GDI_tdst_DisplayData *_pst_DD, HWND _h_Wnd )
+	LONG GDI_ReadaptDisplay( GDI_tdst_DisplayData *_pst_DD, void *_h_Wnd )
 	{
 		/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 		WOR_tdst_World *pst_SaveWorld;
@@ -633,7 +633,7 @@ LONG GDI_AttachDisplay( GDI_tdst_DisplayData *_pst_DD, HWND _h_Wnd )
 
 		GDI_gl_ReadaptOperation = 1;
 
-		if (!GDI_AttachDisplay(_pst_DD, _h_Wnd))
+		if (!GDI_AttachDisplay( _pst_DD, _h_Wnd ) )
 		{
 			return FALSE;
 		}

@@ -3,14 +3,18 @@
 
 #include "Precomp.h"
 
-#include <winhttp.h>
-#include <Windowsx.h>
+#if CORE_SYSTEM == CORE_SYSTEM_WINDOWS
+#	include <winhttp.h>
+#	include <Windowsx.h>
+#endif
 
 #include "MainSharedSystem.h"
 
 #include "core/fs/fs.h"
 
-#include "Res/Res.h"
+#if CORE_SYSTEM == CORE_SYSTEM_WINDOWS
+#	include "Res/Res.h"
+#endif
 
 #include "BASe/MEMory/MEMpro.h"
 #include "ENGine/Sources/ENGinit.h"
@@ -84,11 +88,11 @@ extern "C" void Jaded_Profiler_EndProfiling( unsigned int set )
 /******************************************************************/
 /******************************************************************/
 
+static void *nativeWindowHandle;
+
 #if defined( _WIN32 )
 
 extern int EDI_EditorWin32Execution( HINSTANCE );
-
-static HWND nativeWindowHandle;
 
 #	if defined( JADED_CRASH_REPORTER )
 
@@ -646,38 +650,21 @@ static void OpenBFCallback( void *userdata, const char *const *filelist, int )
 	*status = true;
 }
 
-#if defined( JADED_USE_WINMAIN_SDL )// hogsy: keep this for now, so if we need to, we can revert to the old crap
-
-#	if defined( _WIN32 )
-int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow )
-#	else
-int main( int argc, char **argv )
-#	endif
+static int core_main( int argc, char **argv )
 {
-#	if defined( _WIN32 )
-
-#		if defined( JADED_CRASH_REPORTER )
+#if defined( JADED_CRASH_REPORTER )
 	const char *dump = getenv( "JADED_CRASH_DUMP_PATH" );
 	if ( dump != nullptr )
 	{
 		DialogBox( NULL, MAKEINTRESOURCE( DIALOGS_IDD_CRASH_REPORT ), NULL, &Win32CrashReporter );
 		return EXIT_SUCCESS;
 	}
-#		endif
 
-	jaded::sys::numLaunchArguments = __argc;
-	jaded::sys::launchArguments    = __argv;
-
-#		if defined( JADED_CRASH_REPORTER )
 	SetUnhandledExceptionFilter( Win32CrashHandler );
-#		endif
-
-#	else
+#endif
 
 	jaded::sys::numLaunchArguments = argc;
 	jaded::sys::launchArguments    = argv;
-
-#	endif
 
 	ParseStartupParameters();
 
@@ -688,8 +675,7 @@ int main( int argc, char **argv )
 		return EXIT_FAILURE;
 	}
 
-#	if defined( _WIN32 )
-
+#if CORE_SYSTEM == CORE_SYSTEM_WINDOWS
 	if ( jaded::sys::launchOperations.debugConsole )
 	{
 		AllocConsole();
@@ -698,8 +684,7 @@ int main( int argc, char **argv )
 		freopen_s( &tmp, "CONOUT$", "w", stderr );
 		freopen_s( &tmp, "CONOUT$", "w", stdout );
 	}
-
-#	endif
+#endif
 
 	std::string localAppData;
 	if ( !jaded::sys::launchOperations.portableMode )
@@ -723,15 +708,13 @@ int main( int argc, char **argv )
 		return EXIT_FAILURE;
 	}
 
-#	if defined( _WIN32 )
-
+#if CORE_SYSTEM == CORE_SYSTEM_WINDOWS
 	// hogsy: for now we'll only support editor functionality under win32
 	if ( jaded::sys::launchOperations.editorMode )
 	{
 		return EDI_EditorWin32Execution( hInstance );
 	}
-
-#	endif
+#endif
 
 	if ( CreateSDLWindow() == nullptr )
 	{
@@ -777,9 +760,9 @@ int main( int argc, char **argv )
 
 	InitializeDisplay();
 
-#	ifdef IMGUI_USE_SDL3
+#ifdef IMGUI_USE_SDL3
 	ImGuiInterface_Initialize( sdlWindow );
-#	endif
+#endif
 
 	ENG_InitEngine();
 
@@ -796,14 +779,14 @@ int main( int argc, char **argv )
 
 	SDL_DestroyWindow( sdlWindow );
 
-#	if defined( _WIN32 )
-
+#if CORE_SYSTEM == CORE_SYSTEM_WINDOWS
 	if ( jaded::sys::launchOperations.debugConsole )
+	{
 		FreeConsole();
-
-#	endif
+	}
+#endif
 
 	return EXIT_SUCCESS;
 }
 
-#endif
+CORE_SYSTEM_IMPLEMENT_MAIN()
