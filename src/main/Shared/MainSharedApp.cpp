@@ -627,6 +627,25 @@ static void ShutdownDisplay()
 	GDI_fnv_DestroyDisplayData( MAI_gst_MainHandles.pst_DisplayData );
 }
 
+static void OpenBFCallback( void *userdata, const char *const *filelist, int )
+{
+	bool *status = static_cast< bool * >( userdata );
+	if ( filelist[ 0 ] == nullptr )
+	{
+		*status = true;
+		return;
+	}
+
+	if ( !BIG_Open( filelist[ 0 ] ) )
+	{
+		*status = true;
+		return;
+	}
+
+	snprintf( MAI_gst_InitStruct.asz_ProjectName, sizeof( MAI_gst_InitStruct.asz_ProjectName ), "%s", filelist[ 0 ] );
+	*status = true;
+}
+
 #if defined( JADED_USE_WINMAIN_SDL )// hogsy: keep this for now, so if we need to, we can revert to the old crap
 
 #	if defined( _WIN32 )
@@ -732,10 +751,28 @@ int main( int argc, char **argv )
 	{
 		projectFile = jaded::sys::launchOperations.projectFile.c_str();
 	}
+
 	snprintf( MAI_gst_InitStruct.asz_ProjectName, sizeof( MAI_gst_InitStruct.asz_ProjectName ), "%s", projectFile );
 	if ( !BIG_Open( MAI_gst_InitStruct.asz_ProjectName ) )
 	{
-		return EXIT_FAILURE;
+		static constexpr SDL_DialogFileFilter FILTERS[] = {
+		        { "BIG Files", "bf" }
+        };
+		static constexpr unsigned int NUM_FILTERS = std::size( FILTERS );
+
+		bool status = false;
+		SDL_ShowOpenFileDialog( OpenBFCallback, &status, nullptr, FILTERS, NUM_FILTERS, nullptr, false );
+
+		while ( !status )
+		{
+			SDL_PumpEvents();
+		}
+
+		if ( BIG_gst.h_CLibFileHandle == nullptr )
+		{
+			SDL_ShowSimpleMessageBox( SDL_MESSAGEBOX_ERROR, "Jaded Error", "Please select a valid BF!", nullptr );
+			return EXIT_FAILURE;
+		}
 	}
 
 	InitializeDisplay();

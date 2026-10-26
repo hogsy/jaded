@@ -115,6 +115,7 @@ void BIG_Close(void)
 	{
 		r=L_fclose(BIG_gst.h_CLibFileHandle);
 		ERR_X_Error(r == 0, L_ERR_Csz_FClose, NULL);
+		BIG_gst.h_CLibFileHandle = NULL;
 	}
 }
 
