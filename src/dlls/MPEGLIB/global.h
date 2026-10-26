@@ -3,16 +3,12 @@
 #include <malloc.h>
 #include <memory.h>
 #include "mpeg2dec.h"
-#include "MPG_EXPORT.h"
+#include "MPG_EXPORT.H"
 /* choose between declaration (GLOBAL undefined)
 * and definition (GLOBAL defined)
 * GLOBAL is defined in exactly one file mpeg2dec.c)
 */
-#ifdef JADEFUSION
 __inline void *MPG_MALLOC(int a)
-#else
-__inline void *MPG_MALLOC(a)
-#endif
 {
 	void *M;
 	M = (void *)malloc(a);

@@ -30,10 +30,10 @@ extern "C"
 
 enum
 {
-	BAS_BITFLAG( WOR_C_IsABank, 0 ),
-	BAS_BITFLAG( WOR_C_DoNotSaveNetwork, 1 ),
-	BAS_BITFLAG( WOR_C_SaveJustWolAndGol, 2 ),
-	BAS_BITFLAG( WOR_C_SaveSelected, 3 ),
+	CORE_BIT_FLAG( WOR_C_IsABank, 0 ),
+	CORE_BIT_FLAG( WOR_C_DoNotSaveNetwork, 1 ),
+	CORE_BIT_FLAG( WOR_C_SaveJustWolAndGol, 2 ),
+	CORE_BIT_FLAG( WOR_C_SaveSelected, 3 ),
 };
 
 	/*$4

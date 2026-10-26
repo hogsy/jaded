@@ -382,7 +382,11 @@ else \
  */
 
 #ifdef _DEBUG
+#if CORE_SYSTEM == CORE_SYSTEM_WINDOWS
 #define _breakpoint_ __debugbreak()
+#else
+#define _breakpoint_ raise(SIGTRAP)
+#endif
 #else /* _DEBUG */
 #define _breakpoint_
 #endif /* _DEBUG */

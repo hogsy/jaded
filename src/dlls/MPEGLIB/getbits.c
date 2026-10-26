@@ -132,12 +132,7 @@ void Flush_Buffer(int N)
 
 /* return next n bits (right adjusted) */
 
-#ifdef JADEFUSION
 unsigned int Get_Bits(int N)
-#else
-unsigned int Get_Bits(N)
-int N;
-#endif
 {
   unsigned int Val;
 

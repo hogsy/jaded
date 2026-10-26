@@ -258,12 +258,7 @@ static void Initialize_Sequence()
 	
 }
 
-#ifdef JADEFUSION
 void Error(char *text)
-#else
-void Error(text)
-char *text;
-#endif
 {
 	exit(1);
 }

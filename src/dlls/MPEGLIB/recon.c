@@ -17,16 +17,7 @@ static void form_prediction (unsigned char *src[], int sfield,
 static void form_component_prediction (unsigned char *src, unsigned char *dst,
   int lx, int lx2, int w, int h, int x, int y, int dx, int dy, int average_flag);
 
-#ifdef JADEFUSION
 void form_predictions(int bx, int by, int macroblock_type, int motion_type, int PMV[2][2][2], int motion_vertical_field_select[2][2], int dmvector[2], int stwtype)
-#else
-void form_predictions(bx,by,macroblock_type,motion_type,PMV,motion_vertical_field_select,dmvector,stwtype)
-int bx, by;
-int macroblock_type;
-int motion_type;
-int PMV[2][2][2], motion_vertical_field_select[2][2], dmvector[2];
-int stwtype;
-#endif
 {
   int currentfield;
   unsigned char **predframe;
@@ -223,7 +214,6 @@ int stwtype;
   }
 }
 
-#ifdef JADEFUSION
 static void form_prediction(
 unsigned char *src[], /* prediction source buffer */
 int sfield,           /* prediction source field number (0 or 1) */
@@ -234,18 +224,6 @@ int w, int h,         /* prediction block/sub-block width, height */
 int x, int y,         /* pixel co-ordinates of top-left sample in current MB */
 int dx, int dy,       /* horizontal, vertical prediction address */
 int average_flag)     /* add prediction error to prediction ? */
-#else
-static void form_prediction(src,sfield,dst,dfield,lx,lx2,w,h,x,y,dx,dy,average_flag)
-unsigned char *src[]; /* prediction source buffer */
-int sfield;           /* prediction source field number (0 or 1) */
-unsigned char *dst[]; /* prediction destination buffer */
-int dfield;           /* prediction destination field number (0 or 1)*/
-int lx,lx2;           /* line strides */
-int w,h;              /* prediction block/sub-block width, height */
-int x,y;              /* pixel co-ordinates of top-left sample in current MB */
-int dx,dy;            /* horizontal, vertical prediction address */
-int average_flag;     /* add prediction error to prediction ? */
-#endif
 {
   /* Y */
   /*MAX_SPD*/
@@ -298,7 +276,6 @@ int average_flag;     /* add prediction error to prediction ? */
  *  was chosen for its elegance.
 */
 
-#ifdef JADEFUSION
 static void form_component_prediction(
 unsigned char *src,
 unsigned char *dst,
@@ -307,21 +284,7 @@ int lx2,
 int w, int h,
 int x, int y,
 int dx, int dy,
-int average_flag)      
-#else
-static void form_component_prediction(src,dst,lx,lx2,w,h,x,y,dx,dy,average_flag)
-unsigned char *src;
-unsigned char *dst;
-int lx;          /* raster line increment */ 
-int lx2;
-int w,h;
-int x,y;
-int dx,dy;
-int average_flag;      /* flag that signals bi-directional or Dual-Prime 
-                          averaging (7.6.7.1 and 7.6.7.4). if average_flag==1,
-                          a previously formed prediction has been stored in 
-                          pel_pred[] */
-#endif
+int average_flag)
 {
   int xint;      /* horizontal integer sample vector: analogous to int_vec[0] */
   int yint;      /* vertical integer sample vectors: analogous to int_vec[1] */

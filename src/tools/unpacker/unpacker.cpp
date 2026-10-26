@@ -1,6 +1,6 @@
 #include "core/fs/fs_pak.h"
 
-int main( int argc, char **argv )
+static int core_main( int argc, char **argv )
 {
 	if ( argc <= 1 )
 	{
@@ -20,3 +20,5 @@ int main( int argc, char **argv )
 
 	return EXIT_SUCCESS;
 }
+
+CORE_SYSTEM_IMPLEMENT_MAIN()

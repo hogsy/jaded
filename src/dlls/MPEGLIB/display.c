@@ -341,13 +341,8 @@ static void Dither_Frame(unsigned char **src)
   }
 
 }
-#ifdef JADEFUSION
+
 static void Dither_Top_Field(unsigned char *src[], Pxl_32 *dst)
-#else
-static void Dither_Top_Field(src,dst)
-unsigned char *src[];
-Pxl_32 *dst;
-#endif
 {
   int i,j;
 
@@ -485,13 +480,7 @@ Pxl_32 *dst;
   }
 }
 
-#ifdef JADEFUSION
 static void Dither_Bottom_Field(unsigned char *src[], Pxl_32 *dst)
-#else
-static void Dither_Bottom_Field(src,dst)
-unsigned char *src[];
-Pxl_32 *dst;
-#endif
 {
   int i,j;
   int y,Y2,u,v;
@@ -622,13 +611,7 @@ Pxl_32 *dst;
   }
 }
 
-#ifdef JADEFUSION
 static void Dither_Top_Field420(unsigned char *src[], Pxl_32 *dst)
-#else
-static void Dither_Top_Field420(src,dst)
-unsigned char *src[];
-Pxl_32 *dst;
-#endif
 {
   int i,j;
   int Y1,Cb1,Cr1,Y2,Cb2,Cr2;
@@ -757,13 +740,7 @@ Pxl_32 *dst;
   }
 }
 
-#ifdef JADEFUSION
 static void Dither_Bottom_Field420(unsigned char *src[], Pxl_32 *dst)
-#else
-static void Dither_Bottom_Field420(src,dst)
-unsigned char *src[];
-Pxl_32 *dst;
-#endif
 {
   int i,j;
   int Y1,Cb1,Cr1,Y2,Cb2,Cr2;

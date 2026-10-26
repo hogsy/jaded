@@ -36,7 +36,7 @@ void WorldExporter::ExportTextures( const char *outDir )
 		}
 
 		TEX_tdst_File_Desc desc;
-		BAS_ZERO( &desc, sizeof( desc ) );
+		CORE_ZERO( &desc, sizeof( desc ) );
 
 		std::string outPath = outDir;
 		if ( stricmp( extension, ".tex" ) == 0 )
@@ -175,7 +175,7 @@ bool SMDExporter::ExportFile( WOR_tdst_World *world, const char *filename, const
 					         graphics->dst_Point[ tri->auw_Index[ l ] ].z );
 					// normal
 					MATH_tdst_Vector normal;
-					BAS_ZERO( &normal, sizeof( normal ) );
+					CORE_ZERO( &normal, sizeof( normal ) );
 					if ( graphics->dst_PointNormal != nullptr )
 					{
 						normal = graphics->dst_PointNormal[ tri->auw_Index[ l ] ];
@@ -183,7 +183,7 @@ bool SMDExporter::ExportFile( WOR_tdst_World *world, const char *filename, const
 					fprintf( out, "%f %f %f ", normal.x, normal.y, normal.z );
 					// uv
 					GEO_tdst_UV uv;
-					BAS_ZERO( &uv, sizeof( uv ) );
+					CORE_ZERO( &uv, sizeof( uv ) );
 					if ( graphics->dst_UV != nullptr )
 					{
 						uv = graphics->dst_UV[ tri->auw_UV[ l ] ];

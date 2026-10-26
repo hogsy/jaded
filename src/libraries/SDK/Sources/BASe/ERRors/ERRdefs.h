@@ -80,7 +80,7 @@ extern void                 ERR_LogPrint(const char *_s_Msg);
 #endif
 
 #if defined(ACTIVE_EDITORS) || defined(PCWIN_TOOL) || (defined(_XENON) && defined(_DEBUG))
-void __stdcall ERR_OutputDebugString(CHAR* _sz_Format, ...);
+void ERR_OutputDebugString(CHAR* _sz_Format, ...);
 #else
 _inline_ void ERR_OutputDebugString(CHAR* _sz_Format, ...) { }
 #endif // defined(ACTIVE_EDITORS) || (defined(_XENON) && defined(_DEBUG))

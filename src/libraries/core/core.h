@@ -14,6 +14,8 @@
 #	include <map>
 #endif
 
+#include <stdbool.h>
+
 /////////////////////////////////////////////////////////////////////////////////////
 // System Macros
 /////////////////////////////////////////////////////////////////////////////////////
@@ -133,11 +135,23 @@ enum
 
 // horrible gross disgusting poopy windows types :(
 #if CORE_SYSTEM != CORE_SYSTEM_WINDOWS
+typedef int            BOOL;
 typedef char           CHAR;
 typedef unsigned char  UCHAR;
 typedef short          SHORT;
 typedef unsigned short USHORT;
+typedef long           LONG;
+typedef unsigned long  ULONG;
 #endif
+
+// snuff these
+typedef int8_t   s8;
+typedef int16_t  s16;
+typedef int32_t  s32;
+typedef uint8_t  u8;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef float    f32;
 
 #define CORE_ZERO( DATA, SIZE ) memset( ( DATA ), 0, ( SIZE ) )
 #define CORE_ZERO_( DATA )      memset( &( DATA ), 0, sizeof( ( DATA ) ) )
