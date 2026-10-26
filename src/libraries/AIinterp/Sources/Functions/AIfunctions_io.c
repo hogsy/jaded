@@ -670,6 +670,14 @@ int AI_EvalFunc_IoJoyGetType_C( int index )
 	return INO_Joystick_GetType( index );
 }
 
+AI_tdst_Node *AI_EvalFunc_IoJoyGetType( AI_tdst_Node *node )
+{
+	const int index = AI_PopInt();
+	const int type  = AI_EvalFunc_IoJoyGetType_C( index );
+	AI_PushInt( type );
+	return ++node;
+}
+
 /*$4
  ***********************************************************************************************************************
     LANGUAGE

@@ -663,7 +663,7 @@ void INO_PafSet( int _i_Intensity, int _i_FrameDuration )
 int INO_Joystick_GetType( unsigned int index )
 {
 	SDL_Gamepad *controller = sdlGameControllers[ index ];
-	if ( controller == nullptr )
+	if ( controller == NULL )
 	{
 		return -1;
 	}
@@ -693,8 +693,10 @@ int INO_Joystick_GetType( unsigned int index )
 		case SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_RIGHT:
 		case SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_PAIR:
 			return INO_JOYSTICK_TYPE_NS;
+#if 0
 		case SDL_GAMEPAD_TYPE_GAMECUBE:
 			return INO_JOYSTICK_TYPE_GC;
+#endif
 	}
 }
 
