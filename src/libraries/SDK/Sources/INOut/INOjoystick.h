@@ -159,6 +159,27 @@ void			INO_Joystick_Close(void);
 void INO_Joystick_Add( unsigned int id );
 void INO_Joystick_Remove( void );
 
+////////////////////////////////////////////////////////////////////////////////
+
+typedef enum INO_JoystickType
+{
+	INO_JOYSTICK_TYPE_GENERIC,
+	INO_JOYSTICK_TYPE_XBOX,
+	INO_JOYSTICK_TYPE_PS,
+	INO_JOYSTICK_TYPE_NS,
+	INO_JOYSTICK_TYPE_GC,
+	INO_JOYSTICK_TYPE_WII,
+} INO_JoystickType;
+
+/**
+ * Queries the type of joystick based on the index provided.
+ * If it fails for any reason, it returns -1 but otherwise will return one of
+ * INO_JoystickType.
+ */
+int INO_Joystick_GetType( unsigned int index );
+
+////////////////////////////////////////////////////////////////////////////////
+
 void			INO_Joystick_Update(void);
 BOOL			INO_b_Joystick_IsButtonJustDown(LONG);
 BOOL			INO_b_Joystick_IsButtonDown(LONG);
