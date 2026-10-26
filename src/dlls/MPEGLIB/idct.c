@@ -300,12 +300,7 @@ static void idctcol(short *blk)
 }
 
 /* two dimensional inverse discrete cosine transform */
-#ifdef JADEFUSION
 void Fast_IDCT(short *block)
-#else
-void Fast_IDCT(block)
-short *block;
-#endif
 {
   int i;
   if (gst_AllGloballs.ulFLAGS & MPEG_Mode_BigDots)

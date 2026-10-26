@@ -9,15 +9,7 @@
 static void decode_motion_vector (int *pred, int r_size, int motion_code,
   int motion_residualesidual, int full_pel_vector);
 
-#ifdef JADEFUSION
 void motion_vectors(int PMV[2][2][2], int dmvector[2], int motion_vertical_field_select[2][2], int s, int motion_vector_count, int mv_format, int h_r_size, int v_r_size, int dmv, int mvscale)
-#else
-void motion_vectors(PMV,dmvector,motion_vertical_field_select,s,motion_vector_count,mv_format,h_r_size,v_r_size,dmv,mvscale)
-int PMV[2][2][2];
-int dmvector[2];
-int motion_vertical_field_select[2][2];
-int s, motion_vector_count, mv_format, h_r_size, v_r_size, dmv, mvscale;
-#endif
 {
   if (motion_vector_count==1)
   {
@@ -44,19 +36,7 @@ int s, motion_vector_count, mv_format, h_r_size, v_r_size, dmv, mvscale;
 
 /* get and decode motion vector and differential motion vector 
    for one prediction */
-#ifdef JADEFUSION
 void motion_vector(int *PMV, int *dmvector, int h_r_size, int v_r_size, int dmv, int mvscale, int full_pel_vector) /* MPEG-1 only */
-#else
-void motion_vector(PMV,dmvector,
-  h_r_size,v_r_size,dmv,mvscale,full_pel_vector)
-int *PMV;
-int *dmvector;
-int h_r_size;
-int v_r_size;
-int dmv; /* MPEG-2 only: get differential motion vectors */
-int mvscale; /* MPEG-2 only: field vector in frame pic */
-int full_pel_vector; /* MPEG-1 only */
-#endif
 {
   int motion_code, motion_residual;
 
@@ -93,14 +73,7 @@ int full_pel_vector; /* MPEG-1 only */
 /* ISO/IEC 13818-2 section 7.6.3.1: Decoding the motion vectors */
 /* Note: the arithmetic here is more elegant than that which is shown 
    in 7.6.3.1.  The end results (PMV[][][]) should, however, be the same.  */
-#ifdef JADEFUSION
 static void decode_motion_vector(int *pred, int r_size, int motion_code, int motion_residual, int full_pel_vector) /* MPEG-1 (ISO/IEC 11172-1) support */
-#else
-static void decode_motion_vector(pred,r_size,motion_code,motion_residual,full_pel_vector)
-int *pred;
-int r_size, motion_code, motion_residual;
-int full_pel_vector; /* MPEG-1 (ISO/IEC 11172-1) support */
-#endif
 {
   int lim, vec;
 
@@ -124,14 +97,7 @@ int full_pel_vector; /* MPEG-1 (ISO/IEC 11172-1) support */
 
 
 /* ISO/IEC 13818-2 section 7.6.3.6: Dual prime additional arithmetic */
-#ifdef JADEFUSION
 void Dual_Prime_Arithmetic(int DMV[][2], int *dmvector, int mvx, int mvy)
-#else
-void Dual_Prime_Arithmetic(DMV,dmvector,mvx,mvy)
-int DMV[][2];
-int *dmvector; /* differential motion vector */
-int mvx, mvy;  /* decoded mv components (always in field format) */
-#endif
 {
   if (gst_AllGloballs.picture_structure==FRAME_PICTURE)
   {

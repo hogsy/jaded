@@ -632,12 +632,7 @@ static int extra_bit_information()
 /* ISO/IEC 13818-2 section 5.3 */
 /* Purpose: this function is mainly designed to aid in bitstream conformance
    testing.  A simple Flush_Buffer(1) would do */
-#ifdef JADEFUSION
 void marker_bit(char *text)
-#else
-void marker_bit(text)
-char *text;
-#endif
 {
   int marker;
 

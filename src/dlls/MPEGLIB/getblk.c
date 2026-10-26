@@ -18,13 +18,7 @@ extern DCTtab DCTtab0a[],DCTtab1a[];
 
 /* decode one intra coded MPEG-1 block */
 
-#ifdef JADEFUSION
 void Decode_MPEG1_Intra_Block(int comp, int dc_dct_pred[])
-#else
-void Decode_MPEG1_Intra_Block(comp,dc_dct_pred)
-int comp;
-int dc_dct_pred[];
-#endif
 {
   int val, i, j, sign;
   unsigned int code;
@@ -122,12 +116,7 @@ int dc_dct_pred[];
 
 
 /* decode one non-intra coded MPEG-1 block */
-#ifdef JADEFUSION
 void Decode_MPEG1_Non_Intra_Block(int comp)
-#else
-void Decode_MPEG1_Non_Intra_Block(comp)
-int comp;
-#endif
 {
   int val, i, j, sign;
   unsigned int code;
@@ -215,13 +204,7 @@ int comp;
 
 
 /* decode one intra coded MPEG-2 block */
-#ifdef JADEFUSION
 void Decode_MPEG2_Intra_Block(int comp, int dc_dct_pred[])
-#else
-void Decode_MPEG2_Intra_Block(comp,dc_dct_pred)
-int comp;
-int dc_dct_pred[];
-#endif
 {
   int val, i, j, sign, nc, cc, run;
   unsigned int code;
@@ -340,12 +323,7 @@ int dc_dct_pred[];
 
 
 /* decode one non-intra coded MPEG-2 block */
-#ifdef JADEFUSION
 void Decode_MPEG2_Non_Intra_Block(int comp)
-#else
-void Decode_MPEG2_Non_Intra_Block(comp)
-int comp;
-#endif
 {
   int val, i, j, sign, nc, run;
   unsigned int code;

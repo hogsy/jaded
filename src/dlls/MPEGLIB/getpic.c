@@ -43,12 +43,7 @@ static int decode_macroblock (int *macroblock_type,
 
 
 /* decode one frame or field picture */
-#ifdef JADEFUSION
 void Decode_Picture(int bitstream_framenum, int sequence_framenum)
-#else
-void Decode_Picture(bitstream_framenum, sequence_framenum)
-int bitstream_framenum, sequence_framenum;
-#endif
 {
 
   if (gst_AllGloballs.picture_structure==FRAME_PICTURE && gst_AllGloballs.Second_Field)
@@ -79,12 +74,7 @@ NEXT_FRM:
 
 /* decode all macroblocks of the current picture */
 /* stages described in ISO/IEC 13818-2 section 7 */
-#ifdef JADEFUSION
 static void picture_data(int framenum)
-#else
-static void picture_data(framenum)
-int framenum;
-#endif
 {
   int MBAmax;
   int ret;
@@ -107,12 +97,7 @@ int framenum;
 
 /* decode all macroblocks of the current picture */
 /* ISO/IEC 13818-2 section 6.3.16 */
-#ifdef JADEFUSION
 static int slice(int framenum, int MBAmax)
-#else
-static int slice(framenum, MBAmax)
-int framenum, MBAmax;
-#endif
 {
   int MBA; 
   int MBAinc, macroblock_type, motion_type, dct_type;
@@ -216,15 +201,7 @@ resync: /* if gst_AllGloballs.Fault_Flag: resynchronize to next next_start_code 
 
  
 /* ISO/IEC 13818-2 section 6.3.17.1: Macroblock modes */
-#ifdef JADEFUSION
 static void macroblock_modes(int *pmacroblock_type, int *pstwtype, int *pstwclass, int *pmotion_type, int *pmotion_vector_count, int *pmv_format, int *pdmv, int *pmvscale, int *pdct_type)
-#else
-static void macroblock_modes(pmacroblock_type,pstwtype,pstwclass,
-  pmotion_type,pmotion_vector_count,pmv_format,pdmv,pmvscale,pdct_type)
-  int *pmacroblock_type, *pstwtype, *pstwclass;
-  int *pmotion_type, *pmotion_vector_count, *pmv_format, *pdmv, *pmvscale;
-  int *pdct_type;
-#endif
 {
   int macroblock_type;
   int stwtype, stwcode, stwclass;
@@ -328,12 +305,7 @@ static void macroblock_modes(pmacroblock_type,pstwtype,pstwclass,
  *   - ISO/IEC 13818-2 section 7.6.7: Combining predictions
  *   - ISO/IEC 13818-2 section 6.1.3: Macroblock
 */
-#ifdef JADEFUSION
 static void Add_Block(int comp, int bx, int by, int dct_type, int addflag)
-#else
-static void Add_Block(comp,bx,by,dct_type,addflag)
-int comp,bx,by,dct_type,addflag;
-#endif
 {
   int cc,i, j, iincr;
   unsigned char *rfp;
@@ -432,14 +404,7 @@ int comp,bx,by,dct_type,addflag;
 
 
 /* ISO/IEC 13818-2 section 7.8 */
-#ifdef JADEFUSION
 static void Decode_SNR_Macroblock(int *SNRMBA, int *SNRMBAinc, int MBA, int MBAmax, int *dct_type)
-#else
-static void Decode_SNR_Macroblock(SNRMBA, SNRMBAinc, MBA, MBAmax, dct_type)
-  int *SNRMBA, *SNRMBAinc;
-  int MBA, MBAmax;
-  int *dct_type;
-#endif
 {
   int SNRmacroblock_type, SNRcoded_block_pattern, SNRdct_type, dummy; 
   int slice_vert_pos_ext, quantizer_scale_code, comp, code;
@@ -555,12 +520,7 @@ static void Clear_Block(int comp)
 
 /* SCALABILITY: add SNR enhancement layer block data to gst_AllGloballs.base layer */
 /* ISO/IEC 13818-2 section 7.8.3.4: Addition of coefficients from the two layes */
-#ifdef JADEFUSION
 static void Sum_Block(int comp)
-#else
-static void Sum_Block(comp)
-int comp;
-#endif
 {
   short *Block_Ptr1, *Block_Ptr2;
   int i;
@@ -575,12 +535,7 @@ int comp;
 
 /* limit coefficients to -2048..2047 */
 /* ISO/IEC 13818-2 section 7.4.3 and 7.4.4: Saturation and Mismatch control */
-#ifdef JADEFUSION
 static void Saturate(short *Block_Ptr)
-#else
-static void Saturate(Block_Ptr)
-short *Block_Ptr;
-#endif
 {
   int i, sum, val;
 
@@ -655,24 +610,13 @@ static void Update_Picture_Buffers()
 
 
 /* store last frame */
-#ifdef JADEFUSION
 void Output_Last_Frame_of_Sequence(int Framenum)
-#else
-void Output_Last_Frame_of_Sequence(Framenum)
-int Framenum;
-#endif
 {
   if (!gst_AllGloballs.Second_Field)
     Write_Frame(gst_AllGloballs.backward_reference_frame,Framenum-1);
 }
 
-
-#ifdef JADEFUSION
 static void frame_reorder(int Bitstream_Framenum, int Sequence_Framenum)
-#else
-static void frame_reorder(Bitstream_Framenum, Sequence_Framenum)
-int Bitstream_Framenum, Sequence_Framenum;
-#endif
 {
   /* tracking variables to insure proper output in spatial scalability */
   static int Oldref_progressive_frame, Newref_progressive_frame;
@@ -704,20 +648,7 @@ int Bitstream_Framenum, Sequence_Framenum;
 
 
 /* ISO/IEC 13818-2 section 7.6 */
-#ifdef JADEFUSION
 static void motion_compensation(int MBA, int macroblock_type, int motion_type, int PMV[2][2][2], int motion_vertical_field_select[2][2], int dmvector[2], int stwtype, int dct_type)
-#else
-static void motion_compensation(MBA, macroblock_type, motion_type, PMV, 
-  motion_vertical_field_select, dmvector, stwtype, dct_type)
-int MBA;
-int macroblock_type;
-int motion_type;
-int PMV[2][2][2];
-int motion_vertical_field_select[2][2];
-int dmvector[2];
-int stwtype;
-int dct_type;
-#endif
 {
   int bx, by;
   int comp;
@@ -753,18 +684,7 @@ int dct_type;
 
 
 /* ISO/IEC 13818-2 section 7.6.6 */
-#ifdef JADEFUSION
 static void skipped_macroblock(int dc_dct_pred[3], int PMV[2][2][2], int *motion_type, int motion_vertical_field_select[2][2], int *stwtype, int *macroblock_type)
-#else
-static void skipped_macroblock(dc_dct_pred, PMV, motion_type, 
-  motion_vertical_field_select, stwtype, macroblock_type)
-int dc_dct_pred[3];
-int PMV[2][2][2];
-int *motion_type;
-int motion_vertical_field_select[2][2];
-int *stwtype;
-int *macroblock_type;
-#endif
 {
   int comp;
   
@@ -812,17 +732,7 @@ int *macroblock_type;
 /* return==-1 means go to next picture */
 /* the expression "start of slice" is used throughout the normative
    body of the MPEG specification */
-#ifdef JADEFUSION
 static int start_of_slice(int MBAmax, int *MBA, int *MBAinc, int dc_dct_pred[3], int PMV[2][2][2])
-#else
-static int start_of_slice(MBAmax, MBA, MBAinc, 
-  dc_dct_pred, PMV)
-int MBAmax;
-int *MBA;
-int *MBAinc;
-int dc_dct_pred[3];
-int PMV[2][2][2];
-#endif
 {
   unsigned int code;
   int slice_vert_pos_ext;
@@ -899,22 +809,7 @@ int PMV[2][2][2];
 
 
 /* ISO/IEC 13818-2 sections 7.2 through 7.5 */
-#ifdef JADEFUSION
 static int decode_macroblock(int *macroblock_type, int *stwtype, int *stwclass, int *motion_type, int *dct_type, int PMV[2][2][2], int dc_dct_pred[3], int motion_vertical_field_select[2][2], int dmvector[2])
-#else
-static int decode_macroblock(macroblock_type, stwtype, stwclass,
-  motion_type, dct_type, PMV, dc_dct_pred, 
-  motion_vertical_field_select, dmvector)
-int *macroblock_type; 
-int *stwtype;
-int *stwclass;
-int *motion_type; 
-int *dct_type;
-int PMV[2][2][2]; 
-int dc_dct_pred[3]; 
-int motion_vertical_field_select[2][2];
-int dmvector[2];
-#endif
 {
   /* locals */
   int quantizer_scale_code; 
