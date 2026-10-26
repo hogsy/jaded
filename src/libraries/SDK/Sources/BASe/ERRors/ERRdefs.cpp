@@ -120,7 +120,7 @@ bool ERR_ScriptAssertFailed( const char *filename, int line, const char *express
 	// Showin added this option so the user has more control over how errors appear.
 	// By default we can have it be a bit less disruptive in the editor by having it input these errors to the console instead.
 	// This still shows the error to the user without disrupting the game.
-	if ( jaded::sys::launchOperations.editorMode && jaded::sys::launchOperations.popupError )
+	if ( jaded::sys::launchOperations.editorMode || jaded::sys::launchOperations.popupError )
 	{
 		tmp.append( "\nClick OK to debug, Cancel to ignore." );
 
