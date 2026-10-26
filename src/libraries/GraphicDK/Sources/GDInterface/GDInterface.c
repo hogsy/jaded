@@ -906,7 +906,7 @@ LONG GDI_AttachDisplay( GDI_tdst_DisplayData *_pst_DD, HWND _h_Wnd )
 			f_StartTimeEditors = TIM_f_Clock_TrueRead();
 
 			l_width = _pst_DD->st_Device.Vw;
-			BAS_ZERO( &st_BmpInfo, sizeof( BITMAPINFO ) );
+			CORE_ZERO( &st_BmpInfo, sizeof( BITMAPINFO ) );
 			st_BmpInfo.bmiHeader.biWidth       = l_width & ( ~3 );
 			st_BmpInfo.bmiHeader.biHeight      = _pst_DD->st_Device.Vh;
 			st_BmpInfo.bmiHeader.biPlanes      = 1;
