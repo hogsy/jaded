@@ -10,6 +10,7 @@
 #elif CORE_SYSTEM == CORE_SYSTEM_LINUX
 #	include <unistd.h>
 #	include <sys/stat.h>
+#	include <pwd.h>
 #endif
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -40,12 +41,25 @@ std::string core::fs::FileSystem::GetAppDataPath( const std::string &appName )
 	{
 		return NormalizePath( home ) + "/" + appName;
 	}
+
+	return {};
 #elif CORE_SYSTEM == CORE_SYSTEM_LINUX
+	const char *home;
+	if ( ( home = getenv( "HOME" ) ) == nullptr )
+	{
+		const struct passwd *pw = getpwuid( getuid() );
+		home                    = pw->pw_dir;
+	}
+
+	if ( home == nullptr )
+	{
+		return {};
+	}
+
+	return std::string( home ) + "/.config/" + appName;
 #else
 #	error "IMPLEMENT ME!"
 #endif
-
-	return {};
 }
 
 std::string core::fs::FileSystem::NormalizePath( std::string path )
