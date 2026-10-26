@@ -4,6 +4,20 @@
 
 #include "core/core.h"
 
+#if CORE_SYSTEM == CORE_SYSTEM_WINDOWS
+#	define fs_chdir( PATH )             _chdir( PATH )
+#	define fs_mkdir( PATH )             mkdir( PATH )
+#	define fs_fseek( HANDLE, POS, DIR ) _fseeki64( HANDLE, POS, DIR )
+#	define fs_ftell( HANDLE )           _ftelli64( HANDLE )
+#elif CORE_SYSTEM == CORE_SYSTEM_LINUX
+#	define fs_chdir( PATH )             chdir( PATH )
+#	define fs_mkdir( PATH )             mkdir( PATH, 0777 )
+#	define fs_fseek( HANDLE, POS, DIR ) fseeko( HANDLE, POS, DIR )
+#	define fs_ftell( HANDLE )           ftello( HANDLE )
+#else
+#	error "IMPLEMENT ME!"
+#endif
+
 namespace core::fs
 {
 	class FileSystem

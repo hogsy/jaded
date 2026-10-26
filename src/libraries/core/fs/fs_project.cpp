@@ -4,10 +4,14 @@
 //			externally while allowing for a lot of that behaviour.
 // Author:  Mark E. Sowden
 
-#include <ShlObj.h>
+#include <string.h>
 
 #include "fs.h"
 #include "fs_project.h"
+
+#if CORE_SYSTEM == CORE_SYSTEM_WINDOWS
+#	include <ShlObj.h>
+#endif
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -145,7 +149,10 @@ void core::fs::Project::ParseKeyRepository( const std::string &path )
 			{
 				throw std::runtime_error( "failed to find closing quote (" + std::string( buf ) + ")" );
 			}
-			char pbuf[ MAX_PATH ] = {};
+
+			size_t bufSize = closePos - openPos + 1;
+			char pbuf[ bufSize ];
+			CORE_ZERO_( pbuf );
 			strncpy( pbuf, openPos + 1, closePos - 1 - openPos );
 
 			char *filename = strrchr( pbuf, '/' );

@@ -49,7 +49,9 @@ foreach (OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} "${JADE_OUTPUT_DIR}")
 endforeach ()
 
-add_compile_options(/MP /W4)
+if (MSVC)
+    add_compile_options(/MP /W4)
+endif ()
 
 add_definitions(
         -DACTIVE_EDITORS
@@ -72,20 +74,25 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     # so we've got to define it here I guess...
     add_definitions(-D_DEBUG)
 
-    # ideally the solution here is to use the correct /MTd
-    # or whatever, but that's been giving me issues due to
-    # some other crap. we'll sort this out later.
-
-    add_compile_options(/RTC1)
-elseif( CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    if (MSVC)
+        # ideally the solution here is to use the correct /MTd
+        # or whatever, but that's been giving me issues due to
+        # some other crap. we'll sort this out later.
+        add_compile_options(/RTC1)
+    endif ()
+elseif (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
     message("Configuring for release w/ debug compilation")
 
-    add_compile_options(-Od /Zi /RTC1)
-    add_link_options(/DEBUG /OPT:REF /OPT:ICF)
+    if (MSVC)
+        add_compile_options(-Od /Zi /RTC1)
+        add_link_options(/DEBUG /OPT:REF /OPT:ICF)
+    endif ()
 else ()
     message("Configuring for release compilation")
 
-    add_compile_options(/O2)
+    if (MSVC)
+        add_compile_options(/O2)
+    endif ()
 endif ()
 
 add_subdirectory(src)

@@ -2,11 +2,15 @@
 // Purpose: Filesystem API for Jaded.
 // Author:  Mark E. Sowden
 
-#include <ShlObj.h>
-
-#include <direct.h>
-
 #include "fs.h"
+
+#if CORE_SYSTEM == CORE_SYSTEM_WINDOWS
+#	include <ShlObj.h>
+#	include <direct.h>
+#elif CORE_SYSTEM == CORE_SYSTEM_LINUX
+#	include <unistd.h>
+#	include <sys/stat.h>
+#endif
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -15,18 +19,31 @@
 
 std::string core::fs::FileSystem::GetExecutablePath()
 {
+#if CORE_SYSTEM == CORE_SYSTEM_WINDOWS
 	char filename[ 255 ];
 	GetModuleFileName( nullptr, filename, sizeof( filename ) );
 	return NormalizePath( filename );
+#elif CORE_SYSTEM == CORE_SYSTEM_LINUX
+	char filename[ 255 ];
+	readlink( "/proc/self/exe", filename, sizeof( filename ) );
+	return NormalizePath( filename );
+#else
+#	error "IMPLEMENT ME!"
+#endif
 }
 
 std::string core::fs::FileSystem::GetAppDataPath( const std::string &appName )
 {
+#if CORE_SYSTEM == CORE_SYSTEM_WINDOWS
 	char home[ MAX_PATH ];
 	if ( SUCCEEDED( SHGetFolderPath( nullptr, CSIDL_APPDATA, nullptr, 0, home ) ) )
 	{
 		return NormalizePath( home ) + "/" + appName;
 	}
+#elif CORE_SYSTEM == CORE_SYSTEM_LINUX
+#else
+#	error "IMPLEMENT ME!"
+#endif
 
 	return {};
 }
@@ -73,7 +90,7 @@ std::string core::fs::FileSystem::GetFilenameExtension( const std::string &filen
 
 bool core::fs::FileSystem::SetWorkingDirectory( const std::string &path )
 {
-	if ( _chdir( path.c_str() ) != 0 )
+	if ( fs_chdir( path.c_str() ) != 0 )
 	{
 #if 0
 		std::string msg = "Failed to set working directory: ";
@@ -113,7 +130,7 @@ bool core::fs::FileSystem::CreateLocalPath( const std::string &path )
 		dir.push_back( i );
 		if ( dir.size() > 1 && i == '/' || dir.size() == path.size() )
 		{
-			if ( mkdir( dir.c_str() ) == -1 && errno == ENOENT )
+			if ( fs_mkdir( dir.c_str() ) == -1 && errno == ENOENT )
 			{
 				return false;
 			}

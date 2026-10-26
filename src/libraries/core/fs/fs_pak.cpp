@@ -5,11 +5,13 @@
 #include <ios>
 #include <sstream>
 
+#include <string.h>
+
 #include "fs.h"
 #include "fs_pak.h"
 #include "fs_project.h"
 
-#include "Extern/lz4/lib/lz4.h"
+#include "extern/lz4/lib/lz4.h"
 
 // Much of the below wouldn't have been possible without the work of Droolie!
 // https://github.com/BinarySerializer/Ray1Map
@@ -22,7 +24,7 @@ std::vector< char > core::fs::Pak::FileInfo::Read( FILE *file ) const
 	}
 
 	const uint64_t offs = sizeof( Header ) + offset;
-	if ( _fseeki64( file, offs, SEEK_SET ) == -1 )
+	if ( fs_fseek( file, offs, SEEK_SET ) == -1 )
 	{
 		throw std::runtime_error( "failed to seek to file (" + std::to_string( offs ) + ")" );
 	}
@@ -82,13 +84,13 @@ bool core::fs::Pak::ParseTableOfContents()
 {
 	// need to determine size, do the ol' seeky doodle
 	fseek( handle, 0, SEEK_END );
-	const uint64_t size = _ftelli64( handle );
+	const uint64_t size = fs_ftell( handle );
 
 	// seek to the end where the file table actually is
 	const uint64_t fileTableOffset = size - header.footerSize;
-	if ( _fseeki64( handle, fileTableOffset, SEEK_SET ) != 0 )
+	if ( fs_fseek( handle, fileTableOffset, SEEK_SET ) != 0 )
 	{
-		printf( "Failed to seek to table offset (%llu)!\n", fileTableOffset );
+		printf( "Failed to seek to table offset (%lu)!\n", fileTableOffset );
 		return false;
 	}
 
@@ -106,7 +108,7 @@ bool core::fs::Pak::ParseTableOfContents()
 			uint32_t nameLength;
 			fread( &nameLength, sizeof( uint32_t ), 1, handle );
 
-			char *tmp = ( char * ) _malloca( nameLength + 1 );
+			char *tmp = ( char * ) malloc( nameLength + 1 );
 			if ( tmp == nullptr )
 			{
 				printf( "Failed to allocate storage for name!\n" );
@@ -117,7 +119,7 @@ bool core::fs::Pak::ParseTableOfContents()
 			tmp[ nameLength ] = '\0';
 
 			entry.name = tmp;
-			_freea( tmp );
+			free( tmp );
 		}
 
 		fread( &entry.info, sizeof( FileInfo ), 1, handle );
