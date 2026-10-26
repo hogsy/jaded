@@ -2,19 +2,16 @@
 
 #pragma once
 
-#include <cstdint>
-#include <cassert>
+#ifdef __cplusplus
+#	include <cstdint>
+#	include <cassert>
 
-#include <stdexcept>
+#	include <stdexcept>
 
-#include <algorithm>
-#include <string>
-#include <vector>
-#include <map>
-
-#if defined( _WIN32 )
-#	define WIN32_LEAN_AND_MEAN
-#	include <windows.h>
+#	include <algorithm>
+#	include <string>
+#	include <vector>
+#	include <map>
 #endif
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -26,6 +23,8 @@
 #define CORE_SYSTEM_MACOS   3
 
 #if defined( __linux__ )
+#	include <signal.h>
+
 #	define CORE_SYSTEM_NAME    "Linux"
 #	define CORE_SYSTEM         CORE_SYSTEM_LINUX
 #	define CORE_SYSTEM_EXE_EXT ""
@@ -42,6 +41,9 @@
 #	define CORE_SYSTEM_IMPLEMENT_MAIN() \
 		int main( int argc, char **argv ) { return core_main( argc, argv ); }
 #elif defined( _WIN32 )
+#	define WIN32_LEAN_AND_MEAN
+#	include <windows.h>
+
 #	define CORE_SYSTEM_NAME    "Windows"
 #	define CORE_SYSTEM         CORE_SYSTEM_WINDOWS
 #	define CORE_SYSTEM_EXE_EXT ".exe"
@@ -128,6 +130,14 @@ enum
 /////////////////////////////////////////////////////////////////////////////////////
 // Helper Macros
 /////////////////////////////////////////////////////////////////////////////////////
+
+// horrible gross disgusting poopy windows types :(
+#if CORE_SYSTEM != CORE_SYSTEM_WINDOWS
+typedef char           CHAR;
+typedef unsigned char  UCHAR;
+typedef short          SHORT;
+typedef unsigned short USHORT;
+#endif
 
 #define CORE_ZERO( DATA, SIZE ) memset( ( DATA ), 0, ( SIZE ) )
 #define CORE_ZERO_( DATA )      memset( &( DATA ), 0, sizeof( ( DATA ) ) )
