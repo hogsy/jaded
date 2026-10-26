@@ -11,6 +11,7 @@
 
 #if CORE_SYSTEM == CORE_SYSTEM_WINDOWS
 #	include <ShlObj.h>
+#	include <wincrypt.h>
 #endif
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -151,13 +152,14 @@ void core::fs::Project::ParseKeyRepository( const std::string &path )
 			}
 
 			size_t bufSize = closePos - openPos + 1;
-			char pbuf[ bufSize ];
-			CORE_ZERO_( pbuf );
+			char  *pbuf    = new char[ bufSize ];
+			CORE_ZERO( pbuf, bufSize );
 			strncpy( pbuf, openPos + 1, closePos - 1 - openPos );
 
 			char *filename = strrchr( pbuf, '/' );
 			if ( filename == nullptr )
 			{
+				delete[] pbuf;
 				throw std::runtime_error( "failed to fetch filename (" + std::string( buf ) + ")" );
 			}
 
@@ -169,6 +171,9 @@ void core::fs::Project::ParseKeyRepository( const std::string &path )
 			*filename = '\0';
 
 			const DirIndex dirIndex = IndexPath( pbuf );
+
+			delete[] pbuf;
+
 			if ( dirIndex == INVALID_INDEX )
 			{
 				throw std::runtime_error( "failed to create directory (" + std::string( pbuf ) + ")" );
