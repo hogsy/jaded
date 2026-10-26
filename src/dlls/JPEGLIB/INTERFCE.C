@@ -11,7 +11,7 @@
 //-----------------------------------------------------------------------------
         
 #define  STRICT
-#if (defined(PSX2_TARGET) || defined(_GAMECUBE) || defined(_XBOX) || defined(_XENON))
+#ifndef _WIN32
 #include "JINCLUDE.H"
 #else
 #include <windows.h>
