@@ -1,9 +1,9 @@
 // Created by Mark "hogsy" Sowden, 2025 <hogsy@oldtimes-software.com>
 // https://oldtimes-software.com/jaded/
 
-#include <GL/glew.h>
+#include "Precomp.h"
 
-#include "../MainSharedApp.h"
+#include <GL/glew.h>
 
 #include "LINks/LINKmsg.h"
 

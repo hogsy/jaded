@@ -190,7 +190,7 @@ LONG OGL_l_ShiftDrawElementIndexedTriangles(
 		bStrip = FALSE;
 
 	/* save alpha test context */
-	if ( i_Alphatest = glIsEnabled( GL_ALPHA_TEST ) )
+	if ( ( i_Alphatest = glIsEnabled( GL_ALPHA_TEST ) ) )
 	{
 		glGetIntegerv( GL_ALPHA_TEST_FUNC, &i_Alphafunc );
 		glGetFloatv( GL_ALPHA_TEST_REF, &f_Alpharef );

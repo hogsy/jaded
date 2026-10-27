@@ -201,7 +201,7 @@ void F3D_cl_View::Selection_Object(OBJ_tdst_GameObject *_pst_Obj, ULONG _ul_Para
 	if(SEL_l_CountItem(pst_Sel, SEL_C_SIF_Cob))
 	{
 		pst_Sel->l_Flag &= ~SEL_C_SF_Editable;
-		while(pst_SelItem = pst_Sel->pst_FirstItem)
+		while((pst_SelItem = pst_Sel->pst_FirstItem))
 		{
 			Selection_Unselect(pst_SelItem->p_Content, pst_SelItem->l_Flag);
 			mb_SelectionChange = TRUE;
@@ -503,12 +503,12 @@ void F3D_cl_View::Selection_EndBox(CPoint pt, BOOL _b_CanSel, BOOL _b_Add, BOOL 
 				switch(ul_Ext & SOFT_Cul_PBQF_TypeMask)
 				{
 				case SOFT_Cuc_PBQF_GameObject:
-					if(pst_Sel = Selection_pst_RetrieveItem(p, SEL_C_SIF_Object))
+					if((pst_Sel = Selection_pst_RetrieveItem(p, SEL_C_SIF_Object)))
 						pst_Sel->l_Flag &= ~SEL_C_SIF_Delete;
 					break;
 
 				case SOFT_Cuc_PBQF_Link:
-					if(pst_Sel = Selection_pst_RetrieveItem(p, SEL_C_SIF_Link)) pst_Sel->l_Flag &= ~SEL_C_SIF_Delete;
+					if((pst_Sel = Selection_pst_RetrieveItem(p, SEL_C_SIF_Link))) pst_Sel->l_Flag &= ~SEL_C_SIF_Delete;
 					break;
 
 				case SOFT_Cuc_PBQF_Zone:
@@ -516,12 +516,12 @@ void F3D_cl_View::Selection_EndBox(CPoint pt, BOOL _b_CanSel, BOOL _b_Add, BOOL 
 					switch(pst_Zone->uc_Type)
 					{
 					case GEO_Cul_GraphicZDx:
-						if(pst_Sel = Selection_pst_RetrieveItem(pst_Zone, SEL_C_SIF_ZDx))
+						if((pst_Sel = Selection_pst_RetrieveItem(pst_Zone, SEL_C_SIF_ZDx)))
 							pst_Sel->l_Flag &= ~SEL_C_SIF_Delete;
 						break;
 
 					case GEO_Cul_GraphicCob:
-						if(pst_Sel = Selection_pst_RetrieveItem(pst_Zone, SEL_C_SIF_Cob))
+						if((pst_Sel = Selection_pst_RetrieveItem(pst_Zone, SEL_C_SIF_Cob)))
 							pst_Sel->l_Flag &= ~SEL_C_SIF_Delete;
 						break;
 					}
@@ -948,7 +948,7 @@ BOOL F3D_cl_View::Selection_b_Treat(void *p, long _l_Param, long _l_Flag, BOOL _
 	if(b_DelAll)
 	{
 		pst_Sel->l_Flag &= ~SEL_C_SF_Editable;
-		while(pst_SelItem = pst_Sel->pst_FirstItem)
+		while((pst_SelItem = pst_Sel->pst_FirstItem))
 		{
 			Selection_Unselect(pst_SelItem->p_Content, pst_SelItem->l_Flag);
 			mb_SelectionChange = TRUE;
