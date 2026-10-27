@@ -51,15 +51,14 @@ endforeach ()
 
 if (MSVC)
     add_compile_options(/MP /W4)
+    add_definitions(
+            -DACTIVE_EDITORS
+            -D_USE_32BIT_TIME_T
+            -D_CRT_SECURE_NO_WARNINGS
+            -D_CRT_NONSTDC_NO_WARNINGS
+            -D_AFXDLL
+    )
 endif ()
-
-add_definitions(
-        -DACTIVE_EDITORS
-        -D_USE_32BIT_TIME_T
-        -D_CRT_SECURE_NO_WARNINGS
-        -D_CRT_NONSTDC_NO_WARNINGS
-        -D_AFXDLL
-)
 
 # To be clear, I'm aware CMake supports $<$<NOT:$<CONFIG:Blah>>:Blah for compilation options, but the syntax is gross
 # and not fantastically clear from a glance in my opinion - hence why we've got the blocks below for the different

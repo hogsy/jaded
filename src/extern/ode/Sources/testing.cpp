@@ -20,6 +20,8 @@
  *                                                                       *
  *************************************************************************/
 
+#include "Precomp.h"
+
 #include <ode/config.h>
 #include <ode/misc.h>
 #include <ode/memory.h>

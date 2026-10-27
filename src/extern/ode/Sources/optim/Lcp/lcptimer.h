@@ -4,14 +4,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-/* stop watch objects */
-//#ifndef JADEFUSION
-typedef struct dStopwatch {
-  double time;			/* total clock count */
-  ULONG cc[2];		/* clock count since last `start' */
-} dStopwatch;
-//#endif
-
 void dStopwatchReset (dStopwatch *);
 void dStopwatchStart (dStopwatch *);
 void dStopwatchStop  (dStopwatch *);

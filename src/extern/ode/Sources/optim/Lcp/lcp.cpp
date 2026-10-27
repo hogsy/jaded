@@ -108,18 +108,7 @@ submatrix of A. there are two ways we could arrange the rows/columns in AC.
 
 */
 
-//#include "Precomp.h"
-#ifdef JADEFUSION
-#include "projectconfig.h"
-#include "BASe/CLIbrary/CLIwin.h"
-#include "BASe/CLIbrary/CLIfile.h"
-#include "BASe/CLIbrary/CLIstr.h"
-#include "BASe/CLIbrary/CLImem.h"
-#include "BASe/CLIbrary/CLIxxx.h"
-#endif
-
-//#endif
-//#include <ode/common.h>
+#include "Precomp.h"
 
 #include "lcp.h"
 #include "lcperr.h" // dMessage()

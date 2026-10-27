@@ -28,7 +28,7 @@
 // Note that this source file duplicates a lot of stuff from step.cpp,
 // eventually we should move the common code to a third file.
 
-//#include "Precomp.h"
+#include "Precomp.h"
 
 #include "objects.h"
 #include <ode/ode.h>

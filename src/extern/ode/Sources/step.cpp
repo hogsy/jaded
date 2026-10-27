@@ -20,7 +20,7 @@
  *                                                                       *
  *************************************************************************/
 
-//#include "Precomp.h"
+#include "Precomp.h"
 
 #include "objects.h"
 #include <ode/ode.h>

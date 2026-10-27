@@ -1,16 +1,4 @@
-
-#ifdef JADEFUSION
-#include "projectconfig.h"
-#include "BASe/CLIbrary/CLIwin.h"
-#include "BASe/CLIbrary/CLIfile.h"
-#include "BASe/CLIbrary/CLIstr.h"
-#include "BASe/CLIbrary/CLImem.h"
-#include "BASe/CLIbrary/CLIxxx.h"
-#endif
-
-//#include "Precomp.h"
-//#include "ode\timer.h"
-//#endif
+#include "Precomp.h"
 
 #include "BASe/BAStypes.h"
 #include "lcptimer.h"
