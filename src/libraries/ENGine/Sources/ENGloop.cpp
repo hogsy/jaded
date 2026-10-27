@@ -1241,7 +1241,7 @@ static void s_OneTrame( void )
 #endif
 			{
 				TIM_gf_MainClockForTextureScrolling += TIM_gf_dt;
-				ENG_gp_Display( MAI_gst_MainHandles.h_DisplayWindow, MAI_gst_MainHandles.pst_DisplayData );
+				ENG_gp_Display( ( HWND ) MAI_gst_MainHandles.h_DisplayWindow, MAI_gst_MainHandles.pst_DisplayData );
 			}
 		}
 

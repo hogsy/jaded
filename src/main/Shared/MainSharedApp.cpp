@@ -589,10 +589,8 @@ static SDL_Window *CreateSDLWindow()
 		SDL_SetWindowFullscreen( sdlWindow, true );
 	}
 
-#if defined( _WIN32 )
-
-	nativeWindowHandle = ( HWND ) SDL_GetPointerProperty( SDL_GetWindowProperties( sdlWindow ), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr );
-
+#if CORE_SYSTEM == CORE_SYSTEM_WINDOWS
+	nativeWindowHandle = SDL_GetPointerProperty( SDL_GetWindowProperties( sdlWindow ), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr );
 #endif
 
 	return sdlWindow;
@@ -600,9 +598,9 @@ static SDL_Window *CreateSDLWindow()
 
 static void InitializeDisplay()
 {
-	MAI_gh_MainWindow = MAI_gst_MainHandles.h_DisplayWindow = nativeWindowHandle;
-	MAI_gst_MainHandles.pst_DisplayData                     = GDI_fnpst_CreateDisplayData();
-	GDI_gpst_CurDD                                          = MAI_gst_MainHandles.pst_DisplayData;
+	MAI_gh_MainWindow                   = ( HWND ) ( MAI_gst_MainHandles.h_DisplayWindow = nativeWindowHandle );
+	MAI_gst_MainHandles.pst_DisplayData = GDI_fnpst_CreateDisplayData();
+	GDI_gpst_CurDD                      = MAI_gst_MainHandles.pst_DisplayData;
 
 	GDI_fnl_InitInterface( &MAI_gst_MainHandles.pst_DisplayData->st_GDI, 1 );
 
@@ -712,7 +710,8 @@ static int core_main( int argc, char **argv )
 	// hogsy: for now we'll only support editor functionality under win32
 	if ( jaded::sys::launchOperations.editorMode )
 	{
-		return EDI_EditorWin32Execution( hInstance );
+		const HINSTANCE instance = GetModuleHandle( nullptr );
+		return EDI_EditorWin32Execution( instance );
 	}
 #endif
 
