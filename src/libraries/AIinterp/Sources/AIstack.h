@@ -100,7 +100,7 @@ _inline_ void AI_PushVal(void *_pv_Src, short _w_Type)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	char						*p;
-	register AI_tdst_PushVar	*pa;
+	AI_tdst_PushVar	*pa;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	/* Store value in global stack */
@@ -134,7 +134,7 @@ _inline_ void AI_PushInt(int _i_Val)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	char						*p;
-	register AI_tdst_PushVar	*pa;
+	AI_tdst_PushVar	*pa;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	/* Store value in global stack */
@@ -156,7 +156,7 @@ _inline_ void AI_PushFloat(float _f_Val)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	char						*p;
-	register AI_tdst_PushVar	*pa;
+	AI_tdst_PushVar	*pa;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	/* Store value in global stack */
@@ -178,7 +178,7 @@ _inline_ void AI_PushVector(MATH_tdst_Vector *_pst_Val)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	char						*p;
-	register AI_tdst_PushVar	*pa;
+	AI_tdst_PushVar	*pa;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	/* Store value in global stack */
@@ -236,7 +236,7 @@ _inline_ void AI_PushVar(AI_tdst_PushVar *_pst_Var)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	char						*p;
-	register AI_tdst_PushVar	*pa;
+	AI_tdst_PushVar	*pa;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	/* Get value of var */
@@ -455,7 +455,7 @@ _inline_ void AI_PushUserVal(void *_pv_Src, short _w_Type)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	char						*p;
-	register AI_tdst_PushVar	*pa;
+	AI_tdst_PushVar	*pa;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	/* Store value in global stack */
@@ -484,7 +484,7 @@ _inline_ void AI_PushUserVar(AI_tdst_PushVar *_pst_Var)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	char						*p;
-	register AI_tdst_PushVar	*pa;
+	AI_tdst_PushVar	*pa;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	/* Get value of var */

@@ -216,7 +216,7 @@ FLOAT PerlinNoise_2D(FLOAT x, FLOAT y, FLOAT persistence, INT Number_Of_Octaves)
 // Description      Generate a pseudo-random number [0,1] from an integer seeds
 //
 //***********************************************************************
-FLOAT PseudoRandom(register INT s)
+FLOAT PseudoRandom(INT s)
 {
     s = s<<13 ^ s;
     return ( (s * (s * s * 15731 + 789221) + 1376312589) & 0x7fffffff) / 2147483648.0f;    

@@ -105,7 +105,7 @@ FLOAT PerlinNoise_2D(FLOAT x, FLOAT y, FLOAT persistence, INT Number_Of_Octaves)
 // Description      Generate a pseudo-random number [0,1] from an integer seeds
 //
 //***********************************************************************
-FLOAT PseudoRandom(register INT s);
+FLOAT PseudoRandom(INT s);
 
 //***********************************************************************
 //
