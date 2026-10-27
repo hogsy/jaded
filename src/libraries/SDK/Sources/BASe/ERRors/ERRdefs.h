@@ -13,6 +13,8 @@
 #ifndef __ERRDEFS_H__
 #define __ERRDEFS_H__
 
+#include "core/core.h"
+
 #include "BASe/BASsys.h"
 #include "BASe/BAStypes.h"
 #include "BASe/CLIbrary/CLIxxx.h"

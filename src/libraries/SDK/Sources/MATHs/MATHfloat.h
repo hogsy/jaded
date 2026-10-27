@@ -9,6 +9,8 @@
 #ifndef     _MATHFLOAT_H_
 #define     _MATHFLOAT_H_
 
+#include "core/core.h"
+
 #include <stdlib.h>
 #include <math.h>
 
