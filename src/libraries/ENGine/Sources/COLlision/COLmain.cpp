@@ -4173,7 +4173,6 @@ int COL_TriangleCollision
 void COL_ODEPrimitive_Callback(void *data, dGeomID o1, dGeomID o2)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	struct dContact			*pcontact;
 	dJointID				contact_id;
 	WOR_tdst_World			*pst_World;
 	OBJ_tdst_GameObject		*pst_A, *pst_B;
@@ -4306,8 +4305,8 @@ void COL_ODEPrimitive_Callback(void *data, dGeomID o1, dGeomID o2)
 	else
 		pst_ODE_B = pst_B->pst_Base->pst_ODE;
 
-	numcol = dCollide(o1, o2, 5, &pst_World->ode_contacts_ode[pst_World->ode_contacts_num_ode].geom, sizeof(dContactGeom) + sizeof(dVector3) + sizeof(dSurfaceParameters));
-
+	struct dContact *pcontact = nullptr;
+	numcol                    = dCollide( o1, o2, 5, &pst_World->ode_contacts_ode[ pst_World->ode_contacts_num_ode ].geom, sizeof( dContactGeom ) + sizeof( dVector3 ) + sizeof( dSurfaceParameters ) );
 	for(i = 0; i < numcol; i++)
 	{
 		pcontact = &pst_World->ode_contacts_ode[pst_World->ode_contacts_num_ode];
@@ -4329,6 +4328,11 @@ void COL_ODEPrimitive_Callback(void *data, dGeomID o1, dGeomID o2)
 		dJointAttach(contact_id, pst_A->pst_Base->pst_ODE->ode_id_body, pst_B->pst_Base->pst_ODE->ode_id_body);
 
 		pst_World->ode_contacts_num_ode ++;
+	}
+
+	if ( pcontact == nullptr )
+	{
+		return;
 	}
 
 	/* Create a "Fake" Collision report to allow IA to access ODE Collisions */
