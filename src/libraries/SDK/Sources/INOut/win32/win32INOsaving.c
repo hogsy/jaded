@@ -529,29 +529,23 @@ int	win32INO_i_SavDbgSeti(int rq,int val)
  ***********************************************************************************************************************
  */
 
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
-int win32INO_i_FileGetSize(char *_sz_Name)
-{
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	L_FILE		x_File;
-	LONG		l_Size;
-	char		sz[L_MAX_PATH];
-	extern int	BIG_fseek(L_FILE _hfile, unsigned int _offset, int _origin);
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+extern int BIG_fseek( L_FILE _hfile, unsigned int _offset, int _origin );
 
-	sprintf(sz, "%s", _sz_Name);
-	x_File = L_fopen(sz, L_fopen_RB);
-	if(CLI_FileOpen(x_File))
+int win32INO_i_FileGetSize( char *_sz_Name )
+{
+	char sz[ L_MAX_PATH ];
+	snprintf( sz, sizeof( sz ), "%s", _sz_Name );
+
+	const L_FILE x_File = L_fopen( sz, L_fopen_RB );
+	if ( CLI_FileOpen( x_File ) )
 	{
-		L_fseek(x_File, 0, SEEK_END);
-		l_Size = ftell(x_File);
-		L_fclose(x_File);
+		L_fseek( x_File, 0, SEEK_END );
+		const LONG l_Size = ftell( x_File );
+		L_fclose( x_File );
+		return l_Size;
 	}
 
-	return l_Size;
+	return -1;
 }
 
 /*$4
