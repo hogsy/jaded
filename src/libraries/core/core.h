@@ -3,9 +3,6 @@
 #pragma once
 
 #ifdef __cplusplus
-#	include <cstdint>
-#	include <cassert>
-
 #	include <stdexcept>
 
 #	include <algorithm>
@@ -14,7 +11,9 @@
 #	include <map>
 #endif
 
+#include <assert.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 /////////////////////////////////////////////////////////////////////////////////////
 // System Macros
@@ -43,8 +42,17 @@
 #	define CORE_SYSTEM_IMPLEMENT_MAIN() \
 		int main( int argc, char **argv ) { return core_main( argc, argv ); }
 #elif defined( _WIN32 )
-#	define WIN32_LEAN_AND_MEAN
+#	ifndef ACTIVE_EDITORS
+#		define WIN32_LEAN_AND_MEAN
+#	endif
+#	include <WinSock2.h>
 #	include <windows.h>
+
+//TODO: figure out why we're not getting these???
+#	define OIC_QUES        32514
+#	define OIC_WARNING     32515
+#	define OIC_ERROR       32513
+#	define OIC_INFORMATION 32516
 
 #	define CORE_SYSTEM_NAME    "Windows"
 #	define CORE_SYSTEM         CORE_SYSTEM_WINDOWS
