@@ -18,7 +18,11 @@ add_subdirectory(dlls/JPEGLIB)
 add_subdirectory(dlls/MPEGLIB)
 
 add_subdirectory(extern/ode)
+
+set(LZ4_BUILD_CLI OFF CACHE BOOL "")
 add_subdirectory(extern/lz4/build/cmake)
+set_target_properties(lz4_static PROPERTIES FOLDER "External")
+
 add_subdirectory(extern/zlib)
 
 ###################################################################################

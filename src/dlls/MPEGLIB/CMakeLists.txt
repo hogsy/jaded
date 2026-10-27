@@ -17,3 +17,5 @@ add_library(MPEGLIB OBJECT
         store.c
         systems.c
 )
+
+set_target_properties(MPEGLIB PROPERTIES FOLDER "External")

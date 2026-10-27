@@ -23,3 +23,5 @@ add_library(zlib OBJECT
         zutil.c
         zutil.h
 )
+
+set_target_properties(zlib PROPERTIES FOLDER "External")

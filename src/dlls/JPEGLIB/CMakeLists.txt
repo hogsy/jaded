@@ -50,3 +50,4 @@ set(JPEGLIB_SOURCES
 
 add_library(JPEGLIB OBJECT ${JPEGLIB_SOURCES})
 set_source_files_properties(${JPEGLIB_SOURCES} PROPERTIES LANGUAGE C)
+set_target_properties(JPEGLIB PROPERTIES FOLDER "External")
