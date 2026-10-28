@@ -1,5 +1,6 @@
-// Created by Mark "hogsy" Sowden, 2023-2025 <hogsy@snortysoft.net>
-// https://oldtimes-software.com/jaded/
+// File created for Jaded, the community patched Jade engine
+// Purpose: ImGui interface
+// Author:  Mark E. Sowden
 
 #include "Precomp.h"
 
@@ -8,21 +9,24 @@
 #include "Profiler.h"
 
 #include "GDInterface/GDInterface.h"
-#include "BIGfiles/VERsion/VERsion_Number.h"
 
-#include "../Extern/imgui/imgui.cpp"
-#include "../Extern/imgui/imgui_widgets.cpp"
-#include "../Extern/imgui/imgui_draw.cpp"
-#include "../Extern/imgui/imgui_tables.cpp"
-#include "../Extern/imgui/imgui_demo.cpp"
+#define IMGUI_DEFINE_MATH_OPERATORS
+#include "extern/imgui/imgui.cpp"
+#include "extern/imgui/imgui_widgets.cpp"
+#include "extern/imgui/imgui_draw.cpp"
+#include "extern/imgui/imgui_tables.cpp"
+#include "extern/imgui/imgui_demo.cpp"
+
+#include "extern/imguinotify/ImGuiNotify.hpp"
+#include "extern/imguinotify/fa-solid-900.h"
 
 //#define IMGUI_USE_SDL3
 #ifdef IMGUI_USE_SDL3
-#	include "../Extern/imgui/backends/imgui_impl_sdl3.cpp"
+#	include "extern/imgui/backends/imgui_impl_sdl3.cpp"
 #else
-#	include "../Extern/imgui/backends/imgui_impl_win32.cpp"
+#	include "extern/imgui/backends/imgui_impl_win32.cpp"
 #endif
-#include "../Extern/imgui/backends/imgui_impl_opengl3.cpp"
+#include "extern/imgui/backends/imgui_impl_opengl3.cpp"
 
 static ImGuiContext *context;
 
@@ -102,6 +106,22 @@ static void SetDraculaTheme()
 	style.ChildRounding     = 4;
 }
 
+constexpr float BASE_FONT_SIZE = 14.0f;
+
+static void ImGuiInterface_SetupNotify()
+{
+	const ImGuiIO &io = ImGui::GetIO();
+
+	constexpr float ICON_FONT_SIZE = BASE_FONT_SIZE + 3.0f;
+
+	static constexpr ImWchar ICON_RANGES[] = { ICON_MIN_FA, ICON_MAX_16_FA, 0 };
+	ImFontConfig             iconsConfig;
+	iconsConfig.MergeMode        = true;
+	iconsConfig.PixelSnapH       = true;
+	iconsConfig.GlyphMinAdvanceX = ICON_FONT_SIZE;
+	io.Fonts->AddFontFromMemoryCompressedTTF( fa_solid_900_compressed_data, fa_solid_900_compressed_size, ICON_FONT_SIZE, &iconsConfig, ICON_RANGES );
+}
+
 void ImGuiInterface_Initialize( void *windowPtr )
 {
 	if ( context != nullptr )
@@ -117,7 +137,7 @@ void ImGuiInterface_Initialize( void *windowPtr )
 
 	SetDraculaTheme();
 
-	io.Fonts->AddFontFromFileTTF( "C:\\Windows\\Fonts\\Tahoma.ttf", 14.0f );
+	io.Fonts->AddFontFromFileTTF( "C:\\Windows\\Fonts\\Tahoma.ttf", BASE_FONT_SIZE );
 
 #ifdef IMGUI_USE_SDL3
 	// GL context is actually unused here, so just pass null
@@ -126,6 +146,8 @@ void ImGuiInterface_Initialize( void *windowPtr )
 	ImGui_ImplWin32_InitForOpenGL( windowPtr );
 #endif
 	ImGui_ImplOpenGL3_Init();
+
+	ImGuiInterface_SetupNotify();
 }
 
 void ImGuiInterface_Shutdown()
@@ -166,7 +188,7 @@ static void ShowPerformanceOverlay()
 		return;
 	}
 
-	const float          PAD      = 10.0f;
+	constexpr float      PAD      = 10.0f;
 	const ImGuiViewport *viewport = ImGui::GetMainViewport();
 	ImVec2               window_pos;
 	window_pos.x = viewport->WorkPos.x + PAD;
@@ -194,6 +216,26 @@ static void ShowPerformanceOverlay()
 	ImGui::End();
 }
 
+extern "C" void ImGuiInterface_PushError( const char *message )
+{
+	ImGui::InsertNotification( ImGuiToast( ImGuiToastType::Error, NOTIFY_DEFAULT_DISMISS, message ) );
+}
+
+void ImGuiInterface_PushScriptError( const char *message )
+{
+	ImGui::InsertNotification( ImGuiToast( ImGuiToastType::Error, NOTIFY_DEFAULT_DISMISS, "Inspect", []{}, message ) );
+}
+
+extern "C" void ImGuiInterface_PushWarning( const char *message )
+{
+	ImGui::InsertNotification( ImGuiToast( ImGuiToastType::Warning, NOTIFY_DEFAULT_DISMISS, message ) );
+}
+
+extern "C" void ImGuiInterface_PushInfo( const char *message )
+{
+	ImGui::InsertNotification( ImGuiToast( ImGuiToastType::Info, NOTIFY_DEFAULT_DISMISS, message ) );
+}
+
 extern "C" void ImGuiInterface_NewFrame()
 {
 	ImGui_ImplOpenGL3_NewFrame();
@@ -205,7 +247,7 @@ extern "C" void ImGuiInterface_NewFrame()
 
 	ImGui::NewFrame();
 
-#if 0
+#if 1
 	if ( ImGui::BeginMainMenuBar() )
 	{
 		if ( ImGui::BeginMenu( "File" ) )
@@ -228,6 +270,8 @@ extern "C" void ImGuiInterface_NewFrame()
 #endif
 
 	ShowPerformanceOverlay();
+
+	ImGui::RenderNotifications();
 }
 
 extern "C" void ImGuiInterface_Render()
