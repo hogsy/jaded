@@ -9,11 +9,13 @@
 #	include <string>
 #	include <vector>
 #	include <map>
+#	include <array>
 #endif
 
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 /////////////////////////////////////////////////////////////////////////////////////
 // System Macros
