@@ -1,13 +1,17 @@
 // File created for Jaded, the community patched Jade engine
 #pragma once
 
+#include <functional>
 #include <list>
-#include <bits/std_function.h>
+
+// fuck you Windows!!! >:(
+#undef ERROR
 
 namespace core
 {
 	class Logger
 	{
+	public:
 		struct Channel
 		{
 			enum Type : unsigned char
@@ -20,12 +24,16 @@ namespace core
 				MAX
 			};
 
+		private:
 			bool isActive{};
 
 			typedef std::function< void( Type, const char * ) > Callback;
 			std::vector< Callback >                             callbacks;
+
+			friend Logger;
 		};
 
+	private:
 		struct Message
 		{
 			Message( const std::string &_string, time_t _timestamp, Channel::Type _type ) : string( _string ), timestamp( _timestamp ), type( _type ) {}
