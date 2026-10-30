@@ -72,12 +72,12 @@ bool core::Logger::SetOutputFile( const std::string &path )
 	return true;
 }
 
-void core::Logger::DumpOutput( const std::string &path ) const
+bool core::Logger::DumpOutput( const std::string &path ) const
 {
 	FILE *file = fopen( path.c_str(), "w" );
 	if ( file == nullptr )
 	{
-		return;
+		return false;
 	}
 
 	for ( const auto &i : messages )
@@ -86,4 +86,6 @@ void core::Logger::DumpOutput( const std::string &path ) const
 	}
 
 	fclose( file );
+
+	return true;
 }

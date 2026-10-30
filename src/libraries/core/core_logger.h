@@ -96,6 +96,6 @@ namespace core
 		/**
 		 * Outputs all current messages to the specified file.
 		 */
-		void DumpOutput( const std::string &path ) const;
+		bool DumpOutput( const std::string &path ) const;
 	};
 }// namespace core

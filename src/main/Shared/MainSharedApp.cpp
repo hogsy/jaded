@@ -3,6 +3,9 @@
 
 #include "Precomp.h"
 
+#include <iomanip>
+#include <sstream>
+
 #if CORE_SYSTEM == CORE_SYSTEM_WINDOWS
 #	include <winhttp.h>
 #	include <Windowsx.h>
@@ -91,13 +94,8 @@ extern "C" void Jaded_Profiler_EndProfiling( unsigned int set )
 
 static void *nativeWindowHandle;
 
-#if defined( _WIN32 )
-
-extern int EDI_EditorWin32Execution( HINSTANCE );
-
-#	if defined( JADED_CRASH_REPORTER )
-
-#		include <DbgHelp.h>
+#if defined( JADED_CRASH_REPORTER )
+#	include <DbgHelp.h>
 
 static char *CreateCrashReporterEnvironment( const char *dump_path )
 {
@@ -167,9 +165,24 @@ static char *CreateCrashReporterEnvironment( const char *dump_path )
 
 	return crash_reporter_env;
 }
+#endif
 
 static LONG WINAPI Win32CrashHandler( EXCEPTION_POINTERS *exception )
 {
+	const time_t t         = time( nullptr );
+	const tm     localTime = *localtime( &t );
+
+	std::ostringstream ss;
+	ss << "crash log (" << std::put_time( &localTime, "%d-%m-%Y %H-%M-%S" ) << ").txt";
+	const std::string crashLogFilename = ss.str();
+
+	if ( !core::Logger::GetInstance().DumpOutput( crashLogFilename ) )
+	{
+		const std::string appData = core::fs::FileSystem::GetAppDataPath( jaded::APP_NAME );
+		core::Logger::GetInstance().DumpOutput( appData + "/" + crashLogFilename );
+	}
+
+#if defined( JADED_CRASH_REPORTER )
 	HMODULE dbgHelpLib = LoadLibrary( "DBGHELP.DLL" );
 	if ( dbgHelpLib == nullptr )
 		return EXCEPTION_CONTINUE_SEARCH;
@@ -238,9 +251,12 @@ static LONG WINAPI Win32CrashHandler( EXCEPTION_POINTERS *exception )
 	}
 
 	FreeLibrary( dbgHelpLib );
+#endif
+
 	return EXCEPTION_CONTINUE_SEARCH;
 }
 
+#if defined( JADED_CRASH_REPORTER )
 static const wchar_t *JADED_CRASH_REPORT_HOST = L"www.solemnwarning.net";
 static const wchar_t *JADED_CRASH_REPORT_PATH = L"/jaded-crash.cgi";
 
@@ -458,7 +474,6 @@ static int CALLBACK Win32CrashReporter( HWND hDlg, UINT iMsg, WPARAM wParam, LPA
 	return TRUE;
 }
 
-#	endif
 #endif
 
 static std::string optionLogPath;
@@ -658,6 +673,10 @@ static void OpenBFCallback( void *userdata, const char *const *filelist, int )
 	*status = true;
 }
 
+#if CORE_SYSTEM == CORE_SYSTEM_WINDOWS
+extern int EDI_EditorWin32Execution( HINSTANCE );
+#endif
+
 static int core_main( int argc, char **argv )
 {
 #if defined( JADED_CRASH_REPORTER )
@@ -667,7 +686,9 @@ static int core_main( int argc, char **argv )
 		DialogBox( NULL, MAKEINTRESOURCE( DIALOGS_IDD_CRASH_REPORT ), NULL, &Win32CrashReporter );
 		return EXIT_SUCCESS;
 	}
+#endif
 
+#if CORE_SYSTEM == CORE_SYSTEM_WINDOWS
 	SetUnhandledExceptionFilter( Win32CrashHandler );
 #endif
 
