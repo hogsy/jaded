@@ -34,24 +34,24 @@ namespace jaded
 		extern const char *const *launchArguments;
 		struct LaunchOperations
 		{
-			bool editorMode{ false };
-			bool popupError{ false };// Showin added Param for PopUp Script Errors (if off it uses console)
-			bool debugConsole{ false };
+			bool editorMode{};
+			bool popupError{};// Showin added Param for PopUp Script Errors (if off it uses console)
+			bool debugConsole{};
 
-			bool forceWindowed{ false };
-			int  forcedWidth{ 0 };
-			int  forcedHeight{ 0 };
+			bool forceWindowed{};
+			int  forcedWidth{};
+			int  forcedHeight{};
 
-			bool                       clean{ false };
-			bool                       cleanBinFiles{ false };
+			bool                       clean{};
+			bool                       cleanBinFiles{};
 			std::vector< std::string > wolFiles;
-			bool                       cleanByFat{ false };
+			bool                       cleanByFat{};
 
 			std::string projectFile;
 
 			std::vector< std::string > aiMacros;
 
-			bool portableMode{ false };// save to the current directory, rather than app data path
+			bool portableMode{};// save to the current directory, rather than app data path
 		};
 		extern LaunchOperations launchOperations;
 	}// namespace sys

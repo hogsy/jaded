@@ -11,6 +11,7 @@
 #include "MainSharedSystem.h"
 
 #include "core/fs/fs.h"
+#include "core/core_logger.h"
 
 #if CORE_SYSTEM == CORE_SYSTEM_WINDOWS
 #	include "Res/Res.h"
@@ -460,6 +461,8 @@ static int CALLBACK Win32CrashReporter( HWND hDlg, UINT iMsg, WPARAM wParam, LPA
 #	endif
 #endif
 
+static std::string optionLogPath;
+
 extern "C" bool jaded_enableLegacyBehaviour = false;
 static void     ParseStartupParameters()
 {
@@ -532,17 +535,24 @@ static void     ParseStartupParameters()
 				break;
 			}
 
-#if 0// init occurs after we parse launch arguments, and resets this...
-			snprintf( MAI_gst_InitStruct.asz_ProjectName, sizeof( MAI_gst_InitStruct.asz_ProjectName ), "%s", jaded::sys::launchArguments[ i ] );
-#else
 			jaded::sys::launchOperations.projectFile = jaded::sys::launchArguments[ i ];
-#endif
 			continue;
 		}
 
 		if ( jaded::sys::launchArguments[ i ] == std::string( "/legacy" ) )
 		{
 			jaded_enableLegacyBehaviour = true;
+			continue;
+		}
+
+		if ( SDL_strncasecmp( jaded::sys::launchArguments[ i ], "/log", 4 ) == 0 )
+		{
+			if ( ++i >= jaded::sys::numLaunchArguments )
+			{
+				break;
+			}
+
+			optionLogPath = jaded::sys::launchArguments[ i ];
 			continue;
 		}
 	}
@@ -665,6 +675,15 @@ static int core_main( int argc, char **argv )
 	jaded::sys::launchArguments    = argv;
 
 	ParseStartupParameters();
+
+	if ( !optionLogPath.empty() )
+	{
+		if ( !core::Logger::GetInstance().SetOutputFile( optionLogPath ) )
+		{
+			core::Logger::GetInstance().PushMessage( core::Logger::Channel::Type::WARN,
+			                                         "Failed to set output file for logs (%s)!\n", optionLogPath.c_str() );
+		}
+	}
 
 	if ( !SDL_Init( SDL_INIT_GAMEPAD | SDL_INIT_VIDEO | SDL_INIT_EVENTS ) )
 	{
