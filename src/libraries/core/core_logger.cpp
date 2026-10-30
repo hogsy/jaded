@@ -15,7 +15,7 @@ void core::Logger::WriteMessage( FILE *file, const std::string &msg, const time_
 	fprintf( file, "[%s] %s", buf, msg.c_str() );
 }
 
-void core::Logger::PushMessage( const Channel::Type type, const char *msg, ... )
+void core::Logger::PushMessage( const Channel::Type type, const bool notify, const char *msg, ... )
 {
 	va_list args;
 	va_start( args, msg );
@@ -34,7 +34,7 @@ void core::Logger::PushMessage( const Channel::Type type, const char *msg, ... )
 
 		for ( const auto &callback : channels[ type ].callbacks )
 		{
-			callback( type, arr.data() );
+			callback( type, notify, arr.data() );
 		}
 
 		if ( out != nullptr )

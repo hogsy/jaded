@@ -16,7 +16,8 @@
 #include "EDIstrings.h"
 #include "EDItors/Sources/LOGfile/LOGmsg.h"
 
-#include "../../Shared/MainSharedSystem.h"
+#	include "MainSharedSystem.h"
+#	include "core/core_logger.h"
 
 /*$4
  ***********************************************************************************************************************
@@ -102,54 +103,52 @@ void LINK_PrintStatusMsgEOL( const char *_psz_Text)
     Aim: To print a message in the status bar. In: _psz_Text Text to display.
  =======================================================================================================================
  */
-void LINK_PrintStatusMsgCanal(const char *_psz_Text,int _iCanal)
+void LINK_PrintStatusMsgCanal( const char *_psz_Text, int _iCanal )
 {
-#if !defined(XML_CONV_TOOL)
+#	if !defined( XML_CONV_TOOL )
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	CString				o_Msg;
-	EDI_cl_BaseFrame	*po_Editor;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	LINK_gb_CanAbort = TRUE;
 
 	/* Add LONG operation name before the text */
-	if(LINK_gb_CanDisplay && _psz_Text && sgpsz_LongOperationName && !LINK_gb_OnSameLine)
+	CString o_Msg;
+	if ( LINK_gb_CanDisplay && _psz_Text && sgpsz_LongOperationName && !LINK_gb_OnSameLine )
 	{
 		o_Msg += sgpsz_LongOperationName;
 		o_Msg += "  ";
 		o_Msg += _psz_Text;
-		_psz_Text = (char *) (LPCSTR) o_Msg;
+		_psz_Text = ( char * ) ( LPCSTR ) o_Msg;
 	}
 
 	LINK_gb_OnSameLine = FALSE;
 
 	/* Display message in status */
-	if(_psz_Text)
+	if ( _psz_Text )
 	{
 		if ( jaded::sys::launchOperations.editorMode )
 		{
-#if defined( _WIN32 )
+#		if defined( _WIN32 )
 			if ( LINK_gb_CanDisplay ) M_MF()->mo_Status.SetPaneText( LINK_gb_UseSecond ? 1 : 0, _psz_Text );
 
 			/* Update log editor if present */
 			if ( LINK_gb_CanLog )
 			{
-				po_Editor = M_MF()->po_GetEditorByType( EDI_IDEDIT_LOGFILE, 0 );
+				EDI_cl_BaseFrame *po_Editor = M_MF()->po_GetEditorByType( EDI_IDEDIT_LOGFILE, 0 );
 				if ( po_Editor )
 				{
 					po_Editor->i_OnMessage( ELOG_MESSAGE_ADDLINE | ( ( _iCanal + 1 ) << 16 ), ( ULONG ) _psz_Text, LINK_gul_ColorTxt );
 					po_Editor->UpdateWindow();
 				}
 			}
-#endif
+#		endif
 		}
-		
-		if ( jaded::sys::launchOperations.debugConsole )
-			printf( "%s\n", _psz_Text );
+
+		CORE_LOGGER_INFO( "%s\n", _psz_Text );
 	}
 
 	LINK_gb_UseSecond = FALSE;
-#endif
+#	endif
 }
 
 void LINK_PrintStatusMsg(const char *_psz_Text)

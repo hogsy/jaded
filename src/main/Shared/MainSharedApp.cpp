@@ -701,8 +701,7 @@ static int core_main( int argc, char **argv )
 	{
 		if ( !core::Logger::GetInstance().SetOutputFile( optionLogPath ) )
 		{
-			core::Logger::GetInstance().PushMessage( core::Logger::Channel::Type::WARN,
-			                                         "Failed to set output file for logs (%s)!\n", optionLogPath.c_str() );
+			CORE_LOGGER_WARN( "Failed to set output file for logs (%s)!\n", optionLogPath.c_str() );
 		}
 	}
 

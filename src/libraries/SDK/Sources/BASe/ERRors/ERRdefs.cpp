@@ -23,7 +23,8 @@
 #	include "LINKs/LINKmsg.h"
 #endif
 
-#include "../../Shared/MainSharedSystem.h"
+#include "MainSharedSystem.h"
+#include "core/core_logger.h"
 
 /*$4
  ***************************************************************************************************
@@ -324,18 +325,10 @@ void ERR_LogPrint( const char *_s_Msg )
  */
 void ERR_TestWarning( void )
 {
-#	if 0// unnecessary imo - let user check manually ~hogsy
-    if(ERR_gb_Warning && ERR_gb_WarningBox)
-    {
-        if(M_MF()->MessageBox
-            (
-				"There's warning(s). Watch LOG window",
-                "Warning(s) detected",
-                MB_OKCANCEL | MB_ICONERROR
-            ) != IDOK)
-			ERR_gb_WarningBox = FALSE;
-    }
-#	endif
+	if ( ERR_gb_Warning )
+	{
+		CORE_LOGGER_NOTIF_WARN( "Warning(s) detected! Check log for details." );
+	}
 
 	ERR_gb_Warning = FALSE;
 }
