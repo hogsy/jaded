@@ -10,6 +10,8 @@
 
 #include "GDInterface/GDInterface.h"
 
+#include "core/core_logger.h"
+
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "extern/imgui/imgui.cpp"
 #include "extern/imgui/imgui_widgets.cpp"
@@ -27,6 +29,8 @@
 #	include "extern/imgui/backends/imgui_impl_win32.cpp"
 #endif
 #include "extern/imgui/backends/imgui_impl_opengl3.cpp"
+
+using namespace core;
 
 static ImGuiContext *context;
 
@@ -122,6 +126,35 @@ static void ImGuiInterface_SetupNotify()
 	io.Fonts->AddFontFromMemoryCompressedTTF( fa_solid_900_compressed_data, fa_solid_900_compressed_size, ICON_FONT_SIZE, &iconsConfig, ICON_RANGES );
 }
 
+static void ImGuiInterface_PushScriptError( const char *message )
+{
+	ImGui::InsertNotification( ImGuiToast( ImGuiToastType::Error, NOTIFY_DEFAULT_DISMISS, "Inspect", [] {}, message ) );
+}
+
+static void ImGuiInterface_NotificationCallback( const Logger::Channel::Type type, const bool notify, const char *msg )
+{
+	if ( !notify )
+	{
+		return;
+	}
+
+	ImGuiToastType toastType;
+	switch ( type )
+	{
+		default:
+			toastType = ImGuiToastType::Info;
+			break;
+		case Logger::Channel::WARN:
+			toastType = ImGuiToastType::Warning;
+			break;
+		case Logger::Channel::ERROR:
+			toastType = ImGuiToastType::Error;
+			break;
+	}
+
+	ImGui::InsertNotification( ImGuiToast( toastType, NOTIFY_DEFAULT_DISMISS, msg ) );
+}
+
 void ImGuiInterface_Initialize( void *windowPtr )
 {
 	if ( context != nullptr )
@@ -147,7 +180,16 @@ void ImGuiInterface_Initialize( void *windowPtr )
 #endif
 	ImGui_ImplOpenGL3_Init();
 
-	ImGuiInterface_SetupNotify();
+	// for now we'll only support notifications in the editor, but in the long-term we might want to allow in debug builds or something
+	if ( jaded::sys::launchOperations.editorMode )
+	{
+		ImGuiInterface_SetupNotify();
+
+		Logger::GetInstance().AddCallback( Logger::Channel::Type::INFO, ImGuiInterface_NotificationCallback );
+		Logger::GetInstance().AddCallback( Logger::Channel::Type::WARN, ImGuiInterface_NotificationCallback );
+		Logger::GetInstance().AddCallback( Logger::Channel::Type::ERROR, ImGuiInterface_NotificationCallback );
+		Logger::GetInstance().AddCallback( Logger::Channel::Type::VERBOSE, ImGuiInterface_NotificationCallback );
+	}
 }
 
 void ImGuiInterface_Shutdown()
@@ -214,26 +256,6 @@ static void ShowPerformanceOverlay()
 		}
 	}
 	ImGui::End();
-}
-
-extern "C" void ImGuiInterface_PushError( const char *message )
-{
-	ImGui::InsertNotification( ImGuiToast( ImGuiToastType::Error, NOTIFY_DEFAULT_DISMISS, message ) );
-}
-
-void ImGuiInterface_PushScriptError( const char *message )
-{
-	ImGui::InsertNotification( ImGuiToast( ImGuiToastType::Error, NOTIFY_DEFAULT_DISMISS, "Inspect", []{}, message ) );
-}
-
-extern "C" void ImGuiInterface_PushWarning( const char *message )
-{
-	ImGui::InsertNotification( ImGuiToast( ImGuiToastType::Warning, NOTIFY_DEFAULT_DISMISS, message ) );
-}
-
-extern "C" void ImGuiInterface_PushInfo( const char *message )
-{
-	ImGui::InsertNotification( ImGuiToast( ImGuiToastType::Info, NOTIFY_DEFAULT_DISMISS, message ) );
 }
 
 extern "C" void ImGuiInterface_NewFrame()

@@ -43,7 +43,7 @@ namespace core
 		static constexpr unsigned int MAX_MESSAGES = 4096;
 		std::list< Message >          messages;
 
-		typedef std::function< void( Channel::Type, const char * ) > Callback;
+		typedef std::function< void( Channel::Type, bool, const char * ) > Callback;
 		std::vector< Callback >                                      callbacks;
 
 		Channel channels[ Channel::Type::MAX ];
@@ -80,7 +80,7 @@ namespace core
 		 * Mind that even if a channel is disabled, the message will still be logged in-case
 		 * it's enabled for display later.
 		 */
-		void PushMessage( Channel::Type type, const char *msg, ... );
+		void PushMessage( Channel::Type type, bool notify, const char *msg, ... );
 
 		/**
 		 * Provides an interface for messages to be piped elsewhere, mostly for compatibility
@@ -99,3 +99,11 @@ namespace core
 		bool DumpOutput( const std::string &path ) const;
 	};
 }// namespace core
+
+#define CORE_LOGGER_INFO( ... )  core::Logger::GetInstance().PushMessage( core::Logger::Channel::Type::INFO, false, __VA_ARGS__ )
+#define CORE_LOGGER_WARN( ... )  core::Logger::GetInstance().PushMessage( core::Logger::Channel::Type::WARN, false, __VA_ARGS__ )
+#define CORE_LOGGER_ERROR( ... ) core::Logger::GetInstance().PushMessage( core::Logger::Channel::Type::ERROR, false, __VA_ARGS__ )
+
+#define CORE_LOGGER_NOTIF_INFO( ... )  core::Logger::GetInstance().PushMessage( core::Logger::Channel::Type::INFO, true, __VA_ARGS__ )
+#define CORE_LOGGER_NOTIF_WARN( ... )  core::Logger::GetInstance().PushMessage( core::Logger::Channel::Type::WARN, true, __VA_ARGS__ )
+#define CORE_LOGGER_NOTIF_ERROR( ... ) core::Logger::GetInstance().PushMessage( core::Logger::Channel::Type::ERROR, true, __VA_ARGS__ )
