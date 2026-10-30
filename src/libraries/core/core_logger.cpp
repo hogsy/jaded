@@ -43,6 +43,8 @@ void core::Logger::PushMessage( const Channel::Type type, const char *msg, ... )
 			WriteMessage( out, message.string, message.timestamp );
 		}
 
+		fprintf( type == Channel::Type::ERROR ? stderr : stdout, "%s", arr.data() );
+
 		if ( messages.size() >= MAX_MESSAGES )
 		{
 			messages.erase( messages.begin() );
