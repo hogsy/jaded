@@ -308,16 +308,8 @@ CHAR *ERR_szFormatMessage( CHAR *_szFormat, ... )
  */
 void ERR_LogPrint( const char *_s_Msg )
 {
-	if ( ERR_gb_Log )
-	{
-		FILE *f;
-		f = fopen( EDI_az_LogFileName, "at" );
-		if ( !f ) f = fopen( EDI_az_LogFileName, "wt" );
-		fprintf( f, _s_Msg );
-		fclose( f );
-	}
+	CORE_LOGGER_WARN( _s_Msg );
 }
-
 
 /*
  ===================================================================================================
@@ -327,7 +319,7 @@ void ERR_TestWarning( void )
 {
 	if ( ERR_gb_Warning )
 	{
-		CORE_LOGGER_NOTIF_WARN( "Warning(s) detected! Check log for details." );
+		CORE_LOGGER_NOTIF_WARN( "Warning(s) detected! Check log for details.\n" );
 	}
 
 	ERR_gb_Warning = FALSE;

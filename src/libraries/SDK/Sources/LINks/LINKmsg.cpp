@@ -51,7 +51,6 @@ void LINK_PrintStatusMsgEOLCanal( const char *_psz_Text,int _iCanal)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	static char msg[4096] = { 0 };
-	EDI_cl_BaseFrame	*po_Editor;
 	char *pz, *pzb;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -69,7 +68,7 @@ void LINK_PrintStatusMsgEOLCanal( const char *_psz_Text,int _iCanal)
 			*pz = 0;
 			if ( jaded::sys::launchOperations.editorMode )
 			{
-				po_Editor = M_MF()->po_GetEditorByType( EDI_IDEDIT_LOGFILE, 0 );
+				EDI_cl_BaseFrame *po_Editor = M_MF()->po_GetEditorByType( EDI_IDEDIT_LOGFILE, 0 );
 				if ( po_Editor ) po_Editor->i_OnMessage( ELOG_MESSAGE_ADDLINE | ( ( _iCanal + 1 ) << 16 ), ( ULONG ) pzb, LINK_gul_ColorTxt );
 			}
 			

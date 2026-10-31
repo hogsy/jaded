@@ -54,7 +54,7 @@
 #include "DIAlogs/DIAname_dlg.h"
 #include "DIAlogs/DIAuvmapper_dlg.h"
 #include "DIAlogs/DIAselection_dlg.h"
-#ifdef JADEFUSION
+#	ifdef JADEFUSION
 #include "DIAlogs/DIAlightrej_dlg.h"
 #endif
 #include "DIAlogs/DIAgamematerial_dlg.h"
@@ -79,6 +79,8 @@
 #include "GEOmetric/GEOstaticLOD.h"
 
 #include "DIAlogs/DIAmorphing3Dview.h"
+
+#	include "core/core_logger.h"
 
 #ifdef JADEFUSION
 extern void BIG_CleanBinFiles(ULONG);
@@ -507,10 +509,14 @@ _Catch_
 _End_
 	AfxGetApp()->DoWaitCursor(-1);
 
-    if (b_LoadSuccessful)
-        ERR_LogPrint("\nWorld loaded successfully\n");
-    else
-        ERR_LogPrint("\nWorld not loaded\n");
+	if ( b_LoadSuccessful )
+	{
+		CORE_LOGGER_NOTIF_INFO( "World loaded successfully!\n" );
+	}
+	else
+	{
+		CORE_LOGGER_NOTIF_WARN( "World not loaded!\n" );
+	}
 
 	// display timing results
 	QueryPerformanceCounter( &End );

@@ -746,41 +746,38 @@ void WOR_World_CheckFather(OBJ_tdst_GameObject *_pst_GO, WOR_tdst_World *_pst_Wo
 					) == TAB_Cul_BadIndex
 			)
 			{
-				/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-				OBJ_tdst_GameObject *pst_Father;
-				/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-				pst_Father = _pst_GO->pst_Base->pst_Hierarchy->pst_Father;
+				OBJ_tdst_GameObject *pst_Father = _pst_GO->pst_Base->pst_Hierarchy->pst_Father;
 #ifdef ACTIVE_EDITORS
 				if(!(_pst_GO->ul_IdentityFlags & OBJ_C_IdentityFlag_Bone))
 				{
 					L_strcpy(asz_Name, BIG_NameFile(LOA_ul_SearchIndexWithAddress((ULONG) _pst_GO)));
 					L_strcpy(asz_FatherName, BIG_NameFile(LOA_ul_SearchIndexWithAddress((ULONG) pst_Father)));
 
-					sprintf
+					snprintf
 					(
-						asz_Log,
-						"[WARNING] The Father [%s] of the GameObject [%s] was not in the World and has been removed",
+						asz_Log, sizeof( asz_Log ),
+						"The Father [%s] of the GameObject [%s] was not in the World and has been removed\n",
 						asz_FatherName,
 						asz_Name
 					);
-					LINK_PrintStatusMsg(asz_Log);
 				}
 				else
 				{
 					L_strcpy(asz_Name, BIG_NameFile(LOA_ul_SearchIndexWithAddress((ULONG) _pst_GO)));
                     L_strcpy(asz_FatherName, BIG_NameFile(LOA_ul_SearchIndexWithAddress((ULONG) pst_Father)));
 
-					sprintf
+					snprintf
 					(
-						asz_Log,
-						"[WARNING] The Father [%s] of the Bone [%s] was not in the World and has been removed",
+						asz_Log, sizeof( asz_Log ),
+						"The Father [%s] of the Bone [%s] was not in the World and has been removed\n",
 						asz_FatherName,
 						asz_Name
 					);
-					LINK_PrintStatusMsg(asz_Log);
 				}
+
+				ERR_LogPrint( asz_Log );
 #endif
+
 				WOR_World_DetachObject(_pst_World, pst_Father);
 				OBJ_GameObject_Remove(pst_Father, 0);
 			}
@@ -789,9 +786,10 @@ void WOR_World_CheckFather(OBJ_tdst_GameObject *_pst_GO, WOR_tdst_World *_pst_Wo
 		{
 #ifdef ACTIVE_EDITORS
 			L_strcpy(asz_Name, BIG_NameFile(LOA_ul_SearchIndexWithAddress((ULONG) _pst_GO)));
-			sprintf(asz_Log, "[WARNING] [%s] has the Hierarchy Identity Flag but has no Father. Flag erased", asz_Name);
-			LINK_PrintStatusMsg(asz_Log);
+			sprintf(asz_Log, "[%s] has the Hierarchy Identity Flag but has no Father. Flag erased", asz_Name);
+			ERR_X_Warning( 0, NULL, asz_Log );
 #endif
+
 			_pst_GO->ul_IdentityFlags &= ~OBJ_C_IdentityFlag_Hierarchy;
 			if(_pst_GO->pst_Base->pst_Hierarchy) MEM_Free(_pst_GO->pst_Base->pst_Hierarchy);
 			_pst_GO->pst_Base->pst_Hierarchy = NULL;
