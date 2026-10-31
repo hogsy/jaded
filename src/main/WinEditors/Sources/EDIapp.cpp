@@ -1800,17 +1800,11 @@ int EDI_i_Exception( void )
 BOOL EDI_cl_App::PumpMessage( void )
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	int i, j;
-	EDI_cl_BaseView *po_View;
-	EDI_cl_BaseFrame *po_Editor, *po_OneEd, *po_FirstEd;
 	_AFX_THREAD_STATE *pState = AfxGetThreadState();
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	/* If keyboard is locked, considered it's for a normal dialog box */
 	if ( EDI_gb_LockKeyboard ) return CWinApp::PumpMessage();
-
-	/* Exit */
-	if ( !::GetMessage( &( GE_MFC_MSG ), NULL, NULL, NULL ) ) return FALSE;
 
 	/*
 	 * Send mousewheel to 3D view under mouse. This is done here and not if mouse hook
@@ -1819,7 +1813,7 @@ BOOL EDI_cl_App::PumpMessage( void )
 	if ( b_ProcessMouseWheel( &( GE_MFC_MSG ) ) ) return TRUE;
 
 	/* Translate and dispatch message */
-	if ( ( GE_MFC_MSG ).message != WM_KICKIDLE && !PreTranslateMessage( &( GE_MFC_MSG ) ) )
+	if ( GE_MFC_MSG.message != WM_KICKIDLE && !PreTranslateMessage( &GE_MFC_MSG ) )
 	{
 		__try
 		{
@@ -1840,34 +1834,11 @@ BOOL EDI_cl_App::PumpMessage( void )
 	/* Test to run engine */
 	if ( mb_RunEngine )
 	{
-		/* Force a 3D view to have the focus */
-		po_FirstEd = GetFocusedEditor();
-		if ( !po_FirstEd || po_FirstEd->mst_Def.i_Type != EDI_IDEDIT_OUTPUT )
+		const EOUT_cl_Frame *frame = ( EOUT_cl_Frame * ) M_MF()->po_GetEditorByType( EDI_IDEDIT_OUTPUT, 0 );
+		if ( frame != nullptr )
 		{
-			po_FirstEd = po_OneEd = NULL;
-			for ( i = 0; i < EDI_C_MaxViews; i++ )
-			{
-				po_View = M_MF()->po_GetViewWithNum( i );
-				for ( j = 0; j < M_CurNumEd( po_View->mi_NumPane ); j++ )
-				{
-					po_Editor = M_CurEd( po_View->mi_NumPane, j ).po_Editor;
-					if ( po_Editor && po_Editor->mst_Def.i_Type == EDI_IDEDIT_OUTPUT )
-					{
-						if ( po_Editor->mb_IsPresent )
-						{
-							po_OneEd = po_Editor;
-							if ( !po_Editor->mpo_Original ) po_FirstEd = po_Editor;
-						}
-					}
-				}
-			}
-		}
-
-		if ( !po_FirstEd ) po_FirstEd = po_OneEd;
-		if ( po_FirstEd )
-		{
-			po_FirstEd->mpo_MyView->IWantToBeActive( po_FirstEd );
-			po_FirstEd->mpo_MyView->SetFocus();
+			frame->mpo_MyView->IWantToBeActive( ( EDI_cl_BaseFrame * ) frame );
+			frame->mpo_MyView->SetFocus();
 		}
 
 		/* Run engine */
@@ -1901,18 +1872,24 @@ BOOL EDI_cl_App::PumpMessage( void )
 int EDI_cl_App::Run( void )
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	BOOL bIdle;
-	LONG lIdleCount;
 	_AFX_THREAD_STATE *pState = AfxGetThreadState();
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	__try
 	{
-		bIdle      = TRUE;
-		lIdleCount = 0;
+		BOOL bIdle      = TRUE;
+		LONG lIdleCount = 0;
 
 		for ( ;; )
 		{
+			const EOUT_cl_Frame *frame = ( EOUT_cl_Frame * ) M_MF()->po_GetEditorByType( EDI_IDEDIT_OUTPUT, 0 );
+			if ( frame != nullptr )
+			{
+				frame->mpo_EngineFrame->mpo_DisplayView->Refresh();
+			}
+
+			//TODO: determine if we want to keep the below...
+
 			while ( bIdle && !::PeekMessage( &( GE_MFC_MSG ), NULL, NULL, NULL, PM_NOREMOVE ) )
 			{
 				if ( !OnIdle( lIdleCount++ ) ) bIdle = FALSE;
@@ -1923,10 +1900,13 @@ int EDI_cl_App::Run( void )
 				OnRealIdle();
 			}
 
-			do
+			while ( ::PeekMessage( &GE_MFC_MSG, nullptr, NULL, NULL, PM_REMOVE ) )
 			{
 				/* Process message */
-				if ( !PumpMessage() ) return ExitInstance();
+				if ( !PumpMessage() )
+				{
+					return ExitInstance();
+				}
 
 				/* Idle init */
 				if ( IsIdleMessage( &( GE_MFC_MSG ) ) )
@@ -1934,7 +1914,7 @@ int EDI_cl_App::Run( void )
 					bIdle      = TRUE;
 					lIdleCount = 0;
 				}
-			} while ( ::PeekMessage( &( GE_MFC_MSG ), nullptr, NULL, NULL, PM_NOREMOVE ) );
+			}
 		}
 	}
 
