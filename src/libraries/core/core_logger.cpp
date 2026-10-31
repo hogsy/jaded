@@ -32,7 +32,7 @@ void core::Logger::PushMessage( const Channel::Type type, const char *msg, ... )
 		vsnprintf( arr.data(), arr.size(), msg, argsc );
 		messages.emplace_back( arr.data(), time( nullptr ), type );
 
-		for ( const auto &callback : channels[ type ].callbacks )
+		for ( const auto &callback : callbacks )
 		{
 			callback( type, arr.data() );
 		}
@@ -52,9 +52,9 @@ void core::Logger::PushMessage( const Channel::Type type, const char *msg, ... )
 	va_end( argsc );
 }
 
-void core::Logger::AddCallback( const Channel::Type type, const Channel::Callback &callback )
+void core::Logger::AddCallback( const Channel::Type type, const Callback &callback )
 {
-	channels[ type ].callbacks.push_back( callback );
+	callbacks.push_back( callback );
 }
 
 bool core::Logger::SetOutputFile( const std::string &path )

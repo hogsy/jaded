@@ -27,9 +27,6 @@ namespace core
 		private:
 			bool isActive{};
 
-			typedef std::function< void( Type, const char * ) > Callback;
-			std::vector< Callback >                             callbacks;
-
 			friend Logger;
 		};
 
@@ -45,6 +42,9 @@ namespace core
 
 		static constexpr unsigned int MAX_MESSAGES = 4096;
 		std::list< Message >          messages;
+
+		typedef std::function< void( Channel::Type, const char * ) > Callback;
+		std::vector< Callback >                                      callbacks;
 
 		Channel channels[ Channel::Type::MAX ];
 
@@ -86,7 +86,7 @@ namespace core
 		 * Provides an interface for messages to be piped elsewhere, mostly for compatibility
 		 * sake with Jade's existing mess.
 		 */
-		void AddCallback( Channel::Type type, const Channel::Callback &callback );
+		void AddCallback( Channel::Type type, const Callback &callback );
 
 		/**
 		 * Sets an output file to write to as new messages are pumped.
