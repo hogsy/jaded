@@ -786,8 +786,8 @@ void WOR_World_CheckFather(OBJ_tdst_GameObject *_pst_GO, WOR_tdst_World *_pst_Wo
 		{
 #ifdef ACTIVE_EDITORS
 			L_strcpy(asz_Name, BIG_NameFile(LOA_ul_SearchIndexWithAddress((ULONG) _pst_GO)));
-			sprintf(asz_Log, "[%s] has the Hierarchy Identity Flag but has no Father. Flag erased", asz_Name);
-			ERR_X_Warning( 0, NULL, asz_Log );
+			snprintf(asz_Log, sizeof( asz_Log ), "[%s] has the Hierarchy Identity Flag but has no Father. Flag erased", asz_Name);
+			ERR_LogPrint( asz_Log );
 #endif
 
 			_pst_GO->ul_IdentityFlags &= ~OBJ_C_IdentityFlag_Hierarchy;
