@@ -697,12 +697,9 @@ static int core_main( int argc, char **argv )
 
 	ParseStartupParameters();
 
-	if ( !optionLogPath.empty() )
+	if ( !optionLogPath.empty() && !core::Logger::GetInstance().SetOutputFile( optionLogPath ) )
 	{
-		if ( !core::Logger::GetInstance().SetOutputFile( optionLogPath ) )
-		{
-			CORE_LOGGER_WARN( "Failed to set output file for logs (%s)!\n", optionLogPath.c_str() );
-		}
+		CORE_LOGGER_WARN( "Failed to set output file for logs (%s)!\n", optionLogPath.c_str() );
 	}
 
 	if ( !SDL_Init( SDL_INIT_GAMEPAD | SDL_INIT_VIDEO | SDL_INIT_EVENTS ) )

@@ -86,7 +86,7 @@ namespace core
 		 * Provides an interface for messages to be piped elsewhere, mostly for compatibility
 		 * sake with Jade's existing mess.
 		 */
-		void AddCallback( Channel::Type type, const Callback &callback );
+		void AddCallback( const Callback &callback );
 
 		/**
 		 * Sets an output file to write to as new messages are pumped.

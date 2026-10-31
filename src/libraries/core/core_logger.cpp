@@ -54,7 +54,7 @@ void core::Logger::PushMessage( const Channel::Type type, const bool notify, con
 	va_end( argsc );
 }
 
-void core::Logger::AddCallback( const Channel::Type type, const Callback &callback )
+void core::Logger::AddCallback( const Callback &callback )
 {
 	callbacks.push_back( callback );
 }

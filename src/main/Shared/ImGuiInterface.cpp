@@ -185,10 +185,7 @@ void ImGuiInterface_Initialize( void *windowPtr )
 	{
 		ImGuiInterface_SetupNotify();
 
-		Logger::GetInstance().AddCallback( Logger::Channel::Type::INFO, ImGuiInterface_NotificationCallback );
-		Logger::GetInstance().AddCallback( Logger::Channel::Type::WARN, ImGuiInterface_NotificationCallback );
-		Logger::GetInstance().AddCallback( Logger::Channel::Type::ERROR, ImGuiInterface_NotificationCallback );
-		Logger::GetInstance().AddCallback( Logger::Channel::Type::VERBOSE, ImGuiInterface_NotificationCallback );
+		Logger::GetInstance().AddCallback( ImGuiInterface_NotificationCallback );
 	}
 }
 
