@@ -43,13 +43,13 @@ Sep=0=--=0;\
 Log Mem Load=10=--=0;\
 Log Rasters=11=--=0;\
 \
-Canal=-2=--=0;\
-Canal 0 (default)=20==0;\
-Canal 1 (error)=21==0;\
-Canal 2 (AI 1)=22==0;\
-Canal 3 (AI 2)=23==0;\
-Canal 4 (AI 3)=24==0;\
-Canal 5 (AI 4)=25==0;\
+Channel=-2=--=0;\
+Channel 0 (default)=20==0;\
+Channel 1 (error)=21==0;\
+Channel 2 (AI 1)=22==0;\
+Channel 3 (AI 2)=23==0;\
+Channel 4 (AI 3)=24==0;\
+Channel 5 (AI 4)=25==0;\
 ;\
 "
 #endif
