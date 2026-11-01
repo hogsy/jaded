@@ -128,22 +128,31 @@ void LINK_PrintStatusMsgCanal( const char *_psz_Text, int _iCanal )
 		if ( jaded::sys::launchOperations.editorMode )
 		{
 #		if defined( _WIN32 )
-			if ( LINK_gb_CanDisplay ) M_MF()->mo_Status.SetPaneText( LINK_gb_UseSecond ? 1 : 0, _psz_Text );
+		if ( LINK_gb_CanDisplay ) M_MF()->mo_Status.SetPaneText( LINK_gb_UseSecond ? 1 : 0, _psz_Text );
 
-			/* Update log editor if present */
-			if ( LINK_gb_CanLog )
+		/* Update log editor if present */
+		if ( LINK_gb_CanLog )
+		{
+			EDI_cl_BaseFrame *po_Editor = M_MF()->po_GetEditorByType( EDI_IDEDIT_LOGFILE, 0 );
+			if ( po_Editor )
 			{
-				EDI_cl_BaseFrame *po_Editor = M_MF()->po_GetEditorByType( EDI_IDEDIT_LOGFILE, 0 );
-				if ( po_Editor )
-				{
-					po_Editor->i_OnMessage( ELOG_MESSAGE_ADDLINE | ( ( _iCanal + 1 ) << 16 ), ( ULONG ) _psz_Text, LINK_gul_ColorTxt );
-					po_Editor->UpdateWindow();
-				}
+				po_Editor->i_OnMessage( ELOG_MESSAGE_ADDLINE | ( ( _iCanal + 1 ) << 16 ), ( ULONG ) _psz_Text, LINK_gul_ColorTxt );
+				po_Editor->UpdateWindow();
 			}
+		}
 #		endif
 		}
 
-		CORE_LOGGER_INFO( "%s\n", _psz_Text );
+		// urgh this is a horrible botch for now, as nearly all messages are piped
+		// through this function but we don't necessarily know what they are...
+		if ( LINK_gul_ColorTxt == 0x000000FF )
+		{
+			CORE_LOGGER_WARN( "%s\n", _psz_Text );
+		}
+		else
+		{
+			CORE_LOGGER_INFO( "%s\n", _psz_Text );
+		}
 	}
 
 	LINK_gb_UseSecond = FALSE;

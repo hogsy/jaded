@@ -145,14 +145,12 @@ BOOL _ERR_fnb_AssertFailed(
         BOOL _b_Msg )
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	char *psz_Temp;
 	char *psz_Title;
-	BOOL b_DispMsg;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	/* Allocate a temporary buffer and fill it with the text. */
-	b_DispMsg = TRUE;
-	psz_Temp  = ( char  *) L_malloc( 2048L );
+	BOOL  b_DispMsg = TRUE;
+	char *psz_Temp = ( char * ) L_malloc( 2048L );
 	if ( psz_Temp == NULL )
 	{
 		psz_Temp = "XXX";
@@ -208,25 +206,11 @@ BOOL _ERR_fnb_AssertFailed(
 		psz_Title = "Error detected";
 	}
 
-	/* Log ? */
-#ifdef ACTIVE_EDITORS
-	if ( ERR_gb_Log )
-	{
-		FILE *f;
-		f = fopen( EDI_az_LogFileName, "at" );
-		if ( !f ) f = fopen( EDI_az_LogFileName, "wt" );
-		fwrite( psz_Title, 1, strlen( psz_Title ), f );
-		fwrite( "  --  ", 1, 6, f );
-		fwrite( psz_Temp, 1, strlen( psz_Temp ), f );
-		fwrite( "\n\r", 1, 2, f );
-		fclose( f );
-		b_DispMsg = FALSE;
-	}
-#endif
-
 	/* Display error text. */
 	if ( _b_Msg && b_DispMsg )
+	{
 		jaded::sys::AlertBox( psz_Temp, psz_Title, jaded::sys::ALERT_BOX_ERROR );
+	}
 #ifdef ACTIVE_EDITORS
 	else if ( b_DispMsg )
 	{
