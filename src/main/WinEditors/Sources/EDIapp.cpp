@@ -1882,14 +1882,6 @@ int EDI_cl_App::Run( void )
 
 		for ( ;; )
 		{
-			const EOUT_cl_Frame *frame = ( EOUT_cl_Frame * ) M_MF()->po_GetEditorByType( EDI_IDEDIT_OUTPUT, 0 );
-			if ( frame != nullptr )
-			{
-				frame->mpo_EngineFrame->mpo_DisplayView->Refresh();
-			}
-
-			//TODO: determine if we want to keep the below...
-
 			while ( bIdle && !::PeekMessage( &( GE_MFC_MSG ), NULL, NULL, NULL, PM_NOREMOVE ) )
 			{
 				if ( !OnIdle( lIdleCount++ ) ) bIdle = FALSE;
@@ -1898,6 +1890,12 @@ int EDI_cl_App::Run( void )
 			if ( !::PeekMessage( &( GE_MFC_MSG ), NULL, NULL, NULL, PM_NOREMOVE ) )
 			{
 				OnRealIdle();
+			}
+
+			const EOUT_cl_Frame *frame = ( EOUT_cl_Frame * ) M_MF()->po_GetEditorByType( EDI_IDEDIT_OUTPUT, 0 );
+			if ( frame != nullptr )
+			{
+				frame->mpo_EngineFrame->mpo_DisplayView->Refresh();
 			}
 
 			while ( ::PeekMessage( &GE_MFC_MSG, nullptr, NULL, NULL, PM_REMOVE ) )
@@ -2017,40 +2015,10 @@ void EDI_cl_App::SetFocusPaneColor()
  */
 BOOL EDI_cl_App::OnIdle( LONG _l_Count )
 {
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	CString o_Str;
-	//	char			*psz_Tmp;
-	//	char			asz_Tmp[255];
-	//	char			asz_Buf[255];
-	static ULONG ul_LastMem  = 0;
-	static int i_LastRealMem = 0;
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
 	if ( ENG_gb_ForcePauseEngine ) return CWinApp::OnIdle( _l_Count );
 
 	/* Test if there's warnings */
 	if ( !EDI_gb_NoVerbose ) ERR_TestWarning();
-
-		/* Display allocated memory in window title */
-		/*	if
-	(
-		((ul_LastMem & 0xFFFFC000) != (MEM_gst_MemoryInfo.ul_DynamicCurrentAllocated & 0xFFFFC000))
-	||	((i_LastRealMem & 0xFFFFC000) != (MEM_gi_AllocatedMemory & 0xFFFFC000))
-	)
-	{
-		ul_LastMem = MEM_gst_MemoryInfo.ul_DynamicCurrentAllocated;
-		i_LastRealMem = MEM_gi_AllocatedMemory;
-
-		M_MF()->GetWindowText(o_Str);
-		psz_Tmp = (char *) (LPCSTR) o_Str;
-		L_strcpy(asz_Tmp, psz_Tmp);
-		psz_Tmp = L_strchr(asz_Tmp, '[');
-		if(psz_Tmp) *(psz_Tmp - 5) = 0;
-		MEM_MakeAllocatedMemoryString(asz_Buf);
-		o_Str = asz_Tmp;
-		o_Str += asz_Buf;
-		M_MF()->SetWindowText(o_Str);
-	}*/
 
 #	ifdef _DEBUG
 	if ( ENG_gb_TestMemory ) MEM_CheckAllocatedBlocks( 0 );
