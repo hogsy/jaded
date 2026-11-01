@@ -292,7 +292,11 @@ CHAR *ERR_szFormatMessage( CHAR *_szFormat, ... )
  */
 void ERR_LogPrint( const char *_s_Msg )
 {
-	CORE_LOGGER_WARN( _s_Msg );
+	LINK_gul_ColorTxt = 0x000000FF;
+	LINK_PrintStatusMsg( _s_Msg );
+	LINK_gul_ColorTxt = 0;
+
+	ERR_gb_Warning = true;
 }
 
 /*

@@ -1799,9 +1799,11 @@ int EDI_i_Exception( void )
  */
 BOOL EDI_cl_App::PumpMessage( void )
 {
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	_AFX_THREAD_STATE *pState = AfxGetThreadState();
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+	if ( GE_MFC_MSG.message == WM_QUIT || GE_MFC_MSG.message == WM_CLOSE )
+	{
+		return false;
+	}
 
 	/* If keyboard is locked, considered it's for a normal dialog box */
 	if ( EDI_gb_LockKeyboard ) return CWinApp::PumpMessage();
@@ -1893,7 +1895,7 @@ int EDI_cl_App::Run( void )
 			}
 
 			const EOUT_cl_Frame *frame = ( EOUT_cl_Frame * ) M_MF()->po_GetEditorByType( EDI_IDEDIT_OUTPUT, 0 );
-			if ( frame != nullptr )
+			if ( !ENG_gb_ExitApplication && frame != nullptr )
 			{
 				frame->mpo_EngineFrame->mpo_DisplayView->Refresh();
 			}
