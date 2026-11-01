@@ -261,6 +261,8 @@ F3D_cl_View::~F3D_cl_View(void)
  ***********************************************************************************************************************
  */
 
+extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 /*
  =======================================================================================================================
     Aim:    Window callback
@@ -273,6 +275,11 @@ LRESULT F3D_cl_View::DefWindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 	/*~~~~~~~~~~~*/
 
 	if(MAI_b_TreatDisplayWndMessages(m_hWnd, &mst_WinHandles, message, wParam, lParam, &result)) return result;
+
+	if ( ( result = ImGui_ImplWin32_WndProcHandler( m_hWnd, message, wParam, lParam ) ) )
+	{
+		return result;
+	}
 
 	/* Init rasters */
 	if(message == WM_CREATE)
@@ -300,17 +307,13 @@ LRESULT F3D_cl_View::DefWindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 void F3D_cl_View::Refresh(void)
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	ULONG			ulDM;
-	WOR_tdst_World	*pst_World;
-	EOUT_cl_Frame	*po_Out;
-	extern BOOL		LINK_gb_EditRefresh;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	if(!LINK_gb_CanRefresh) return;
 	if(!mb_CanRefresh || mb_LinkOn || mb_SubObject_LinkOn) mst_WinHandles.pst_DisplayData->ul_DisplayFlags |= GDI_Cul_DF_DoNotRender;
 
 	/* Get out editor */
-	po_Out = (EOUT_cl_Frame *) mpo_AssociatedEditor;
+	const EOUT_cl_Frame *po_Out = ( EOUT_cl_Frame * ) mpo_AssociatedEditor;
 	if(!mst_WinHandles.pst_DisplayData->h_Wnd) return;
 
 Redraw_Label:
@@ -321,7 +324,7 @@ Redraw_Label:
 
         SOFT_Helpers_Reset(M_F3D_Helpers);
 
-		pst_World = mst_WinHandles.pst_DisplayData->pst_World;
+		WOR_tdst_World *pst_World = mst_WinHandles.pst_DisplayData->pst_World;
 		if(pst_World)
 		{
 			/* Associate a display data with the view */
@@ -370,17 +373,18 @@ Redraw_Label:
 				}
 
 				/* Sinon ca clear le Z buffer */
-				if(M_F3D_Helpers->pv_Prefab)
+				ULONG ulDM;
+				if ( M_F3D_Helpers->pv_Prefab )
 				{
 					ulDM = mst_WinHandles.pst_DisplayData->ul_DisplayFlags;
 					mst_WinHandles.pst_DisplayData->ul_DisplayFlags |= GDI_Cul_DF_HideInterface;
 				}
 
 				CreatePostIt();
-				WOR_Render(pst_World, mst_WinHandles.pst_DisplayData);
+				WOR_Render( pst_World, mst_WinHandles.pst_DisplayData );
 				DestroyPostIt();
 
-				if(M_F3D_Helpers->pv_Prefab)
+				if ( M_F3D_Helpers->pv_Prefab )
 				{
 					mst_WinHandles.pst_DisplayData->ul_DisplayFlags = ulDM;
 				}
