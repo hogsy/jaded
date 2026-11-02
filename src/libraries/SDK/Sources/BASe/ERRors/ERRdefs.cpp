@@ -23,6 +23,7 @@
 #	include "LINKs/LINKmsg.h"
 #endif
 
+#include "ImGuiInterface.h"
 #include "MainSharedSystem.h"
 #include "core/core_logger.h"
 
@@ -35,8 +36,8 @@
 #ifdef ACTIVE_EDITORS
 _ERR_tdst_Exception *_ERR_gpst_LastException = NULL;
 OBJ_tdst_GameObject *ERR_gpst_ContextGAO     = NULL;
-char *ERR_gpsz_ContextString                 = NULL;
-extern char EDI_az_LogFileName[ L_MAX_PATH ];
+char                *ERR_gpsz_ContextString  = NULL;
+extern char          EDI_az_LogFileName[ L_MAX_PATH ];
 #endif
 BOOL ERR_gb_Warning    = FALSE;
 BOOL ERR_gb_WarningBox = TRUE;
@@ -70,12 +71,12 @@ CHAR ERR_g_szFormatBuffer[ ERR_BUFSIZEMSG ];// Buffer Used by ERR_vFormatMessage
 extern BOOL ENG_gb_SlashL;
 extern BOOL LOA_gb_SpeedMode;
 extern char ENG_gaz_SlashL[ 1024 ];
-extern int ENG_gi_Map2;
+extern int  ENG_gi_Map2;
 #else
 extern "C" BOOL ENG_gb_SlashL;
 extern "C" BOOL LOA_gb_SpeedMode;
 extern "C" char ENG_gaz_SlashL[ 1024 ];
-extern "C" int ENG_gi_Map2;
+extern "C" int  ENG_gi_Map2;
 #endif
 
 /**
@@ -121,28 +122,32 @@ bool ERR_ScriptAssertFailed( const char *filename, int line, const char *express
 	// Showin added this option so the user has more control over how errors appear.
 	// By default we can have it be a bit less disruptive in the editor by having it input these errors to the console instead.
 	// This still shows the error to the user without disrupting the game.
-	if ( jaded::sys::launchOperations.editorMode || jaded::sys::launchOperations.popupError )
+
+	if ( jaded::sys::launchOperations.popupError )
 	{
 		tmp.append( "\nClick OK to debug, Cancel to ignore." );
-
 		if ( MessageBox( nullptr, tmp.c_str(), "Script Error", MB_OKCANCEL | MB_ICONWARNING | MB_SETFOREGROUND ) == IDOK )
 		{
 			L_longjmp( AI_gst_ContextCheck, 1 );
 			return true;
 		}
 	}
+	else if ( jaded::sys::launchOperations.editorMode )
+	{
+		ImGuiInterface_NotifyScriptError( tmp.c_str() );
+	}
 
 	return false;
 }
 
 BOOL _ERR_fnb_AssertFailed(
-        BOOL _b_Assert,
+        BOOL        _b_Assert,
         const char *_psz_File,
-        int _i_Line,
+        int         _i_Line,
         const char *_psz_Expression,
         const char *_psz_Text1,
         const char *_psz_Text2,
-        BOOL _b_Msg )
+        BOOL        _b_Msg )
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	char *psz_Title;
@@ -150,7 +155,7 @@ BOOL _ERR_fnb_AssertFailed(
 
 	/* Allocate a temporary buffer and fill it with the text. */
 	BOOL  b_DispMsg = TRUE;
-	char *psz_Temp = ( char * ) L_malloc( 2048L );
+	char *psz_Temp  = ( char * ) L_malloc( 2048L );
 	if ( psz_Temp == NULL )
 	{
 		psz_Temp = "XXX";
@@ -356,7 +361,7 @@ void ERR_OutputDebugString( CHAR *_sz_Format, ... )
 
 {
 	va_list Marker;
-	CHAR Buffer[ XEERR_BUFSIZEMSG ];
+	CHAR    Buffer[ XEERR_BUFSIZEMSG ];
 
 	// Processing the Variable Arguments
 	va_start( Marker, _sz_Format );
@@ -367,11 +372,11 @@ void ERR_OutputDebugString( CHAR *_sz_Format, ... )
 #	endif
 	va_end( Marker );
 
-#if CORE_SYSTEM == CORE_SYSTEM_WINDOWS
+#	if CORE_SYSTEM == CORE_SYSTEM_WINDOWS
 	OutputDebugString( Buffer );
-#else
+#	else
 	fprintf( stderr, "%s", Buffer );
-#endif
+#	endif
 }
 
 #endif// defined(ACTIVE_EDITORS) || (defined(_XENON) && defined(_DEBUG))

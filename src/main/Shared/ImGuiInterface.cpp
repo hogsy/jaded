@@ -10,6 +10,11 @@
 
 #include "GDInterface/GDInterface.h"
 
+#include "AIengine.h"
+#include "AIdebug.h"
+
+#include "EDIapp.h"
+
 #include "core/core_logger.h"
 
 #define IMGUI_DEFINE_MATH_OPERATORS
@@ -126,11 +131,6 @@ static void ImGuiInterface_SetupNotify()
 	io.Fonts->AddFontFromMemoryCompressedTTF( fa_solid_900_compressed_data, fa_solid_900_compressed_size, ICON_FONT_SIZE, &iconsConfig, ICON_RANGES );
 }
 
-static void ImGuiInterface_PushScriptError( const char *message )
-{
-	ImGui::InsertNotification( ImGuiToast( ImGuiToastType::Error, NOTIFY_DEFAULT_DISMISS, "Inspect", [] {}, message ) );
-}
-
 static void ImGuiInterface_NotificationCallback( const Logger::Channel::Type type, const bool notify, const char *msg )
 {
 	if ( !notify )
@@ -205,6 +205,80 @@ void ImGuiInterface_Shutdown()
 	}
 }
 
+/////////////////////////////////////////////////////////////////////////////////////
+// Script Error Handler
+/////////////////////////////////////////////////////////////////////////////////////
+
+static std::string scriptErrorMessage;
+static bool        scriptIsIgnoring;
+static bool        scriptShowError;
+
+extern "C" void ImGuiInterface_NotifyScriptError( const char *message )
+{
+	if ( scriptIsIgnoring )
+	{
+		ImGui::InsertNotification( ImGuiToast( ImGuiToastType::Error, NOTIFY_DEFAULT_DISMISS, "A script error occured during execution.\n"
+		                                                                                      "Check log for details." ) );
+		return;
+	}
+
+	scriptShowError    = true;
+	scriptErrorMessage = message;
+
+	AI_gb_ExitByBreak       = TRUE;
+	AI_gi_FctLevelWhenBreak = AI_gi_RunFctLevel;
+
+	EDI_go_TheApp.mb_RunEngine = false;
+
+	AI_M_DebugInStack( a );
+	if ( L_setjmp( AI_gst_ContextIn ) == 0 )
+	{
+		L_longjmp( AI_gst_ContextOut, 1 );
+	}
+
+	// restore stack content
+	AI_M_DebugOutStack( a );
+	AI_gb_ExitByBreak = FALSE;
+
+	// restore global
+	AI_gpst_CurrentFunction = AI_gst_BreakInfo.pst_Function;
+	AI_gpst_CurrentInstance = AI_gpst_CurrentInstanceUltra = AI_gst_BreakInfo.pst_Instance;
+}
+
+static void ShowScriptErrorModal()
+{
+	if ( scriptShowError )
+	{
+		ImGui::OpenPopup( "Script Error" );
+		scriptShowError = false;
+	}
+
+	if ( ImGui::BeginPopupModal( "Script Error" ) )
+	{
+		ImGui::Text( scriptErrorMessage.c_str() );
+		if ( ImGui::Button( "Debug" ) )
+		{
+			ImGui::CloseCurrentPopup();
+		}
+		if ( ImGui::Button( "Ignore" ) )
+		{
+			EDI_go_TheApp.mb_RunEngine = !EDI_go_TheApp.mb_RunEngine;
+			ImGui::CloseCurrentPopup();
+		}
+		if ( ImGui::Button( "Ignore All" ) )
+		{
+			EDI_go_TheApp.mb_RunEngine = !EDI_go_TheApp.mb_RunEngine;
+			scriptIsIgnoring           = true;
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
+	}
+}
+
+/////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////
+
 extern "C" bool ImGuiInterface_ProcessEvents( const SDL_Event *event )
 {
 #ifdef IMGUI_USE_SDL3
@@ -266,28 +340,7 @@ extern "C" void ImGuiInterface_NewFrame()
 
 	ImGui::NewFrame();
 
-#if 1
-	if ( ImGui::BeginMainMenuBar() )
-	{
-		if ( ImGui::BeginMenu( "File" ) )
-		{
-			ShowExampleMenuFile();
-			ImGui::EndMenu();
-		}
-		if ( ImGui::BeginMenu( "Edit" ) )
-		{
-			if ( ImGui::MenuItem( "Undo", "CTRL+Z" ) ) {}
-			if ( ImGui::MenuItem( "Redo", "CTRL+Y", false, false ) ) {}// Disabled item
-			ImGui::Separator();
-			if ( ImGui::MenuItem( "Cut", "CTRL+X" ) ) {}
-			if ( ImGui::MenuItem( "Copy", "CTRL+C" ) ) {}
-			if ( ImGui::MenuItem( "Paste", "CTRL+V" ) ) {}
-			ImGui::EndMenu();
-		}
-		ImGui::EndMainMenuBar();
-	}
-#endif
-
+	ShowScriptErrorModal();
 	ShowPerformanceOverlay();
 
 	ImGui::RenderNotifications();

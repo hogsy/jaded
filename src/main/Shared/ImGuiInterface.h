@@ -13,6 +13,9 @@ extern "C"
 
 	void ImGuiInterface_Initialize( void *windowPtr );
 	void ImGuiInterface_Shutdown();
+
+	void ImGuiInterface_NotifyScriptError( const char *message );
+
 	bool ImGuiInterface_ProcessEvents( const SDL_Event *event );
 
 	void ImGuiInterface_NewFrame();
