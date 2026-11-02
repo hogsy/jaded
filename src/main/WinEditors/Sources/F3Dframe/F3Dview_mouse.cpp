@@ -891,6 +891,8 @@ void F3D_cl_View::OnLButtonDown(UINT nFlags, CPoint point)
 	bool							b_SplitScreen = false;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+	pst_World = mst_WinHandles.pst_DisplayData->pst_World;
+
 	bool mouseCapture, keyboardCapture;
 	ImGuiInterface_GetCaptureState( &mouseCapture, &keyboardCapture );
 	if ( mouseCapture || keyboardCapture )
@@ -900,7 +902,6 @@ void F3D_cl_View::OnLButtonDown(UINT nFlags, CPoint point)
 	}
 
 	/* Check for world */
-    pst_World = mst_WinHandles.pst_DisplayData->pst_World;
 	if(!pst_World)
 	{
 		::SetCursor(AfxGetApp()->LoadStandardCursor(IDC_ARROW));
