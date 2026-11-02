@@ -22,17 +22,17 @@
 #include "DIAlogs/DIAtoolbox_dlg.h"
 #include "DIAlogs/DIAtoolbox_groview.h"
 #include "ENGine/Sources/ANImation/ANIinit.h"
-#include "ENGine/Sources/ANImation/ANIstruct.h"
 #include "SOFT/SOFThelper.h"
 #include "SOFT/SOFTbackgroundimage.h"
 #include "SELection/SELection.h"
 
-#include "EDItors/Sources/OUTput/OUTframe.h"
 #include "ENGine/Sources/WORld/WORinit.h"
 #include "ENGine/Sources/WORld/WORaccess.h"
 
 /* TEST PREFAB */
 #include "EDItors/Sources/PreFab/PFBframe.h"
+
+#include "main/Shared/ImGuiInterface.h"
 
 #ifndef JADEFUSION
 extern "C"
@@ -127,6 +127,14 @@ void F3D_cl_View::OnMouseMove(UINT nFlags, CPoint point)
 
 	/* Curseur spécial */
 	CWnd::OnMouseMove(nFlags, point);
+
+	bool mouseCapture, keyboardCapture;
+	ImGuiInterface_GetCaptureState( &mouseCapture, &keyboardCapture );
+	if ( mouseCapture || keyboardCapture )
+	{
+		return;
+	}
+
 	if(mst_WinHandles.pst_World == NULL)
 	{
 		::SetCursor(AfxGetApp()->LoadStandardCursor(IDC_ARROW));
@@ -203,8 +211,6 @@ void F3D_cl_View::OnMouseMove(UINT nFlags, CPoint point)
 			LINK_Refresh();
 		}
 	}
-
-
 
 	/* PREFAB */
 	c_Refresh = 0;
@@ -885,6 +891,13 @@ void F3D_cl_View::OnLButtonDown(UINT nFlags, CPoint point)
 	bool							b_SplitScreen = false;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+	bool mouseCapture, keyboardCapture;
+	ImGuiInterface_GetCaptureState( &mouseCapture, &keyboardCapture );
+	if ( mouseCapture || keyboardCapture )
+	{
+		CWnd::OnLButtonDown(nFlags, point);
+		goto endOnLButtonDown;
+	}
 
 	/* Check for world */
     pst_World = mst_WinHandles.pst_DisplayData->pst_World;
@@ -1368,6 +1381,13 @@ endOnLButtonDown:
  */
 void F3D_cl_View::OnLButtonDblClk(UINT nFlags, CPoint point)
 {
+	bool mouseCapture, keyboardCapture;
+	ImGuiInterface_GetCaptureState( &mouseCapture, &keyboardCapture );
+	if ( mouseCapture || keyboardCapture )
+	{
+		return;
+	}
+
 	mb_LButtonDblclk = TRUE;
 	OnLButtonDown(nFlags, point);
 	mb_LButtonDblclk = FALSE;
@@ -1379,15 +1399,24 @@ void F3D_cl_View::OnLButtonDblClk(UINT nFlags, CPoint point)
  */
 void F3D_cl_View::OnLButtonUp(UINT nFlags, CPoint point)
 {
+	bool b_SplitScreen = false;
+
+	struct WOR_tdst_World_ *pst_World = mst_WinHandles.pst_DisplayData->pst_World;
+
+	bool mouseCapture, keyboardCapture;
+	ImGuiInterface_GetCaptureState( &mouseCapture, &keyboardCapture );
+	if ( mouseCapture || keyboardCapture )
+	{
+		CWnd::OnLButtonUp( nFlags, point );
+		goto endOnLButtonUp;
+	}
+
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	char							sz_Text[100];
 	BOOL							b_Refresh;
-	struct WOR_tdst_World_			*pst_World;
-	bool							b_SplitScreen = false;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	/* Check for world */
-	pst_World = mst_WinHandles.pst_DisplayData->pst_World;
 	if(!pst_World)
 	{
 		::SetCursor(AfxGetApp()->LoadStandardCursor(IDC_ARROW));
@@ -1489,14 +1518,23 @@ endOnLButtonUp:
  */
 void F3D_cl_View::OnRButtonDown(UINT nFlags, CPoint point)
 {
+	bool b_SplitScreen = false;
+
+	struct WOR_tdst_World_ *pst_World = mst_WinHandles.pst_DisplayData->pst_World;
+
+	bool mouseCapture, keyboardCapture;
+	ImGuiInterface_GetCaptureState( &mouseCapture, &keyboardCapture );
+	if ( mouseCapture || keyboardCapture )
+	{
+		CWnd::OnRButtonDown( nFlags, point );
+		goto endOnRButtonDown;
+	}
+
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	char							sz_Text[100];
-	struct WOR_tdst_World_			*pst_World;
-	bool							b_SplitScreen = false;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	/* Check for world */
-	pst_World = mst_WinHandles.pst_DisplayData->pst_World;
 	if(!pst_World)
 	{
 		::SetCursor(AfxGetApp()->LoadStandardCursor(IDC_ARROW));
@@ -1612,20 +1650,30 @@ endOnRButtonDown:
  */
 void F3D_cl_View::OnMButtonDown(UINT nFlags, CPoint point)
 {
+	bool b_SplitScreen = false;
+
+	struct WOR_tdst_World_ *pst_World = mst_WinHandles.pst_DisplayData->pst_World;
+
+	bool mouseCapture, keyboardCapture;
+	ImGuiInterface_GetCaptureState( &mouseCapture, &keyboardCapture );
+	if ( mouseCapture || keyboardCapture )
+	{
+		CWnd::OnMButtonDown( nFlags, point );
+		goto endOnMButtonDown;
+	}
+
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	RECT				st_Rect;
 	MATH_tdst_Vector	v;
-	struct WOR_tdst_World_			*pst_World;
-	bool							b_SplitScreen = false;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	/* Check for world */
-	pst_World = mst_WinHandles.pst_DisplayData->pst_World;
 	if(!pst_World)
 	{
 		::SetCursor(AfxGetApp()->LoadStandardCursor(IDC_ARROW));
 		goto endOnMButtonDown;
 	}
+
 	if (pst_World->b_IsSplitScreen) {
 		CRect   o_Rect;
 
@@ -1761,6 +1809,14 @@ endOnMButtonDown:
 void F3D_cl_View::OnMButtonUp(UINT nFlags, CPoint point)
 {
 	CWnd::OnMButtonUp(nFlags, point);
+
+	bool mouseCapture, keyboardCapture;
+	ImGuiInterface_GetCaptureState( &mouseCapture, &keyboardCapture );
+	if ( mouseCapture || keyboardCapture )
+	{
+		return;
+	}
+
 	if(mst_WinHandles.pst_DisplayData->uc_EngineCamera) return;
 	if(mst_WinHandles.pst_DisplayData->uc_EditorCamera) return;
 	if(mb_ZoomOn) EndZoom(point);
@@ -1773,17 +1829,25 @@ void F3D_cl_View::OnMButtonUp(UINT nFlags, CPoint point)
  */
 BOOL F3D_cl_View::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 {
+	bool b_SplitScreen = false;
+
+	struct WOR_tdst_World_ *pst_World = mst_WinHandles.pst_DisplayData->pst_World;
+
+	bool mouseCapture, keyboardCapture;
+	ImGuiInterface_GetCaptureState( &mouseCapture, &keyboardCapture );
+	if ( mouseCapture || keyboardCapture )
+	{
+		goto endOnMouseWheel;
+	}
+
 	/*~~~~~~~~~~~~~~~~~~~~~~~~*/
 	MATH_tdst_Vector	v;
 	RECT				st_Rect;
 	EOUT_cl_Frame		*po_Out;
 	float				f_Rot;
-	struct WOR_tdst_World_			*pst_World;
-	bool							b_SplitScreen = false;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	/* Check for world */
-	pst_World = mst_WinHandles.pst_DisplayData->pst_World;
 	if(!pst_World)
 	{
 		::SetCursor(AfxGetApp()->LoadStandardCursor(IDC_ARROW));
@@ -1915,14 +1979,12 @@ BOOL F3D_cl_View::PickPoint3D(MATH_tdst_Vector *v, OBJ_tdst_GameObject **pobj)
 	MSG					msg;
 	CPoint				pt;
 	MATH_tdst_Vector	vpos;
-	BOOL				ok;
 	GDI_tdst_Device		*pst_Dev;
 	CAM_tdst_Camera		*pst_Cam;
 	CRect				rect;
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	/* Picking position */
-	ok = FALSE;
 	SetCapture();
 	::SetCursor(AfxGetApp()->LoadCursor(MAIN_IDC_PICK));
 	while(1)
@@ -1950,8 +2012,7 @@ BOOL F3D_cl_View::PickPoint3D(MATH_tdst_Vector *v, OBJ_tdst_GameObject **pobj)
 			vpos.y = (float) pt.y;
 			CAM_2Dto3D(pst_Cam, &vpos, &vpos);
 			MATH_CopyVector(v, &vpos);
-			ok = TRUE;
-			if(pobj) *pobj = 0;
+			if(pobj) *pobj = nullptr;
 			break;
 		}
 	}

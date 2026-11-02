@@ -293,6 +293,13 @@ extern "C" void ImGuiInterface_NewFrame()
 	ImGui::RenderNotifications();
 }
 
+extern "C" void ImGuiInterface_GetCaptureState( bool *mouseState, bool *keyboardState )
+{
+	const ImGuiIO &io = ImGui::GetIO();
+	*mouseState       = io.WantCaptureMouse;
+	*keyboardState    = io.WantCaptureKeyboard;
+}
+
 extern "C" void ImGuiInterface_Render()
 {
 	ImGui::Render();

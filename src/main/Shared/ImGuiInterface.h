@@ -16,6 +16,13 @@ extern "C"
 	bool ImGuiInterface_ProcessEvents( const SDL_Event *event );
 
 	void ImGuiInterface_NewFrame();
+
+	/**
+	 * Gross method to expose ImGui's capture state, given we don't want to expose
+	 * the entire API.
+	 */
+	void ImGuiInterface_GetCaptureState( bool *mouseState, bool *keyboardState );
+
 	void ImGuiInterface_Render();
 
 #ifdef __cplusplus
