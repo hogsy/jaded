@@ -320,11 +320,11 @@ public:
     {
         const int64_t elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(getElapsedTime()).count();
 
-        if (elapsed > NOTIFY_FADE_IN_OUT_TIME + this->dismissTime + NOTIFY_FADE_IN_OUT_TIME)
+        if (this->dismissTime != -1 && elapsed > NOTIFY_FADE_IN_OUT_TIME + this->dismissTime + NOTIFY_FADE_IN_OUT_TIME)
         {
             return ImGuiToastPhase::Expired;
         } else 
-        if (elapsed > NOTIFY_FADE_IN_OUT_TIME + this->dismissTime)
+        if (this->dismissTime != -1 && elapsed > NOTIFY_FADE_IN_OUT_TIME + this->dismissTime)
         {
             return ImGuiToastPhase::FadeOut;
         } else 
