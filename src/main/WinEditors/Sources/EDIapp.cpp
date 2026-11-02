@@ -1223,7 +1223,7 @@ BOOL EDI_cl_App::InitInstance()
 				case 'T':
 					/*$F
 				 *
-				 * /T<tag> : force the capacities of texture manager 
+				 * /T<tag> : force the capacities of texture manager
 				 *   <tag> : 4 enable 4bpp loading
 				 *           8 enable 8bpp loading
 				 *           A enable alpha palette loading
@@ -1712,60 +1712,6 @@ BOOL EDI_cl_App::b_ProcessMouseWheel( MSG *_p_Msg )
  =======================================================================================================================
  =======================================================================================================================
  */
-void EDI_LogBug( char *_psz_Add )
-{
-	/*~~~~~~~~~~~~~~~~~~~~~~*/
-#	if 0
-	FILE		*f;
-	char		asz_Name[128];
-	char		asz_Msg[512];
-	char		asz_Buf[512];
-	ULONG		i_Len;
-	int			i_T;
-	static int	i_Time = 0;
-	/*~~~~~~~~~~~~~~~~~~~~~~*/
-
-	i_T = timeGetTime();
-	if(i_T - i_Time < 3000) return;
-	i_Time = i_T;
-
-	i_Len = 128;
-	GetComputerName(asz_Name, &i_Len);
-	_strtime(asz_Buf);
-#		if MONTREAL_SPECIFIC
-	// For the builds in Montreal, display the Montreal build number as well as the Montpellier build number.
-	sprintf(asz_Msg, "%s  Version %d(%d)  %s  %s", asz_Name, BIG_Cu4_MontrealAppVersion, BIG_Cu4_AppVersion, asz_Buf, _psz_Add);
-#		else
-#			ifdef JADEFUSION
-	sprintf(asz_Msg, "%s  Version Xe-%d(%d,%d)  %s  %s", asz_Name, BIG_Cu4_MontrealXeAppVersion, BIG_Cu4_MontrealAppVersion, BIG_Cu4_AppVersion, asz_Buf, _psz_Add);
-#			else
-	sprintf(asz_Msg, "%s  Version %d  %s  %s", asz_Name, BIG_Cu4_AppVersion, asz_Buf, _psz_Add);
-#			endif
-#		endif
-
-	f = fopen("\\\\mtp-cbeaudet\\bigfiles\\jade.bug", "r+b");
-	if(!f)
-	{
-		f = fopen("\\\\mtp-cbeaudet\\bigfiles\\jade.bug", "wb");
-		if(f)
-		{
-			fprintf(f, "%s\n", asz_Msg);
-			fclose(f);
-		}
-	}
-	else
-	{
-		fseek(f, 0, SEEK_END);
-		fprintf(f, "%s\n", asz_Msg);
-		fclose(f);
-	}
-#	endif
-}
-
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
 int EDI_i_Exception( void )
 {
 	/*~~~~~~*/
@@ -1779,7 +1725,7 @@ int EDI_i_Exception( void )
 	}
 	else
 	{
-		EDI_LogBug( "Exception" );
+		ERR_LogPrint( "Exception" );
 		i_Res = MessageBox(
 		        NULL,
 		        "An exception has been thrown.\n"
@@ -1897,7 +1843,16 @@ int EDI_cl_App::Run( void )
 			const EOUT_cl_Frame *frame = ( EOUT_cl_Frame * ) M_MF()->po_GetEditorByType( EDI_IDEDIT_OUTPUT, 0 );
 			if ( !ENG_gb_ExitApplication && frame != nullptr )
 			{
-				frame->mpo_EngineFrame->mpo_DisplayView->Refresh();
+				F3D_cl_View *view = frame->mpo_EngineFrame->mpo_DisplayView;
+
+				// unfortunately forcing refresh to only occur here breaks the mouse wheel
+				// at some point i should investigate why the mouse wheel is as slow as it
+				// is...
+				//view->mb_CanRefresh = true;
+
+				view->Refresh();
+
+				//view->mb_CanRefresh = false;
 			}
 
 			while ( ::PeekMessage( &GE_MFC_MSG, nullptr, NULL, NULL, PM_REMOVE ) )

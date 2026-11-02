@@ -220,14 +220,6 @@ BOOL _ERR_fnb_AssertFailed(
 	}
 #endif
 
-#ifdef ACTIVE_EDITORS
-	if ( _b_Assert )
-	{
-		extern void EDI_LogBug( char * );
-		EDI_LogBug( psz_Temp );
-	}
-#endif
-
 	/* Free temporary buffer. */
 	L_free( psz_Temp );
 
