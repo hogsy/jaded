@@ -95,10 +95,12 @@ bool ERR_ScriptAssertFailed( const char *filename, int line, const char *express
 
 	std::string tmp;
 
+	std::string          objectName;
 	OBJ_tdst_GameObject *object = AI_gpst_CurrentUltra;
 	if ( object != nullptr && OBJ_IsValidGAO( object ) )
 	{
-		tmp.append( "Object:\t" + std::string( object->sz_Name ) + "\n" );
+		objectName = object->sz_Name;
+		tmp.append( "Object:\t" + objectName + "\n" );
 	}
 
 	tmp.append( "Script:\t" + scriptPath + "\n" );
@@ -134,7 +136,7 @@ bool ERR_ScriptAssertFailed( const char *filename, int line, const char *express
 	}
 	else if ( jaded::sys::launchOperations.editorMode )
 	{
-		ImGuiInterface_NotifyScriptError( tmp.c_str() );
+		ImGuiInterface_ScriptError( scriptPath, bp.i_Line, expression, objectName, message != nullptr ? message : "" );
 	}
 
 	return false;
