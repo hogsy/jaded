@@ -366,7 +366,7 @@ Redraw_Label:
 					WOR_World_MakeObjectsVisible(pst_World);
 				}
 
-				if(!AI_gb_ExitByBreak || AI_gb_ErrorWhenBreak)
+				if(!AI_guc_ExitByBreak || AI_gb_ErrorWhenBreak)
 				{
 					WOR_World_ActivateObjects(pst_World);
 					EOT_SetOfEOT_Build(&pst_World->st_EOT, &pst_World->st_ActivObjects);

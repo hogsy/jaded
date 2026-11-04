@@ -499,7 +499,7 @@ void EAI_cl_Frame::AfterEngine(void)
 	NNN_ForceNow = b;
 
 	ConnectToEngine();
-	if(AI_gb_ExitByBreak && mst_BaseIni.b_EngineRefresh)
+	if(AI_guc_ExitByBreak == AI_EXIT_BREAK_EDITOR && mst_BaseIni.b_EngineRefresh)
 	{
 		M_MF()->LockDisplay(mpo_Edit);
 

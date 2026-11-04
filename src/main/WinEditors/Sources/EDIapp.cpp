@@ -1841,18 +1841,10 @@ int EDI_cl_App::Run( void )
 			}
 
 			const EOUT_cl_Frame *frame = ( EOUT_cl_Frame * ) M_MF()->po_GetEditorByType( EDI_IDEDIT_OUTPUT, 0 );
-			if ( !ENG_gb_ExitApplication && frame != nullptr )
+			if ( !mb_RunEngine && frame != nullptr )
 			{
 				F3D_cl_View *view = frame->mpo_EngineFrame->mpo_DisplayView;
-
-				// unfortunately forcing refresh to only occur here breaks the mouse wheel
-				// at some point i should investigate why the mouse wheel is as slow as it
-				// is...
-				//view->mb_CanRefresh = true;
-
 				view->Refresh();
-
-				//view->mb_CanRefresh = false;
 			}
 
 			while ( ::PeekMessage( &GE_MFC_MSG, nullptr, NULL, NULL, PM_REMOVE ) )
