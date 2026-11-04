@@ -167,6 +167,7 @@ void ImGuiInterface_Initialize( void *windowPtr )
 
 	ImGuiIO &io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	io.IniFilename = "";
 
 	SetDraculaTheme();
 
