@@ -29,6 +29,7 @@
 #include "BIGfiles/BIGkey.h"
 #include "EDIapp.h"
 #include "LINKs/LINKmsg.h"
+#include "OUTput/OUTframe.h"
 
 /*
  =======================================================================================================================
@@ -499,36 +500,49 @@ void EAI_cl_Frame::AfterEngine(void)
 	NNN_ForceNow = b;
 
 	ConnectToEngine();
-	if(AI_guc_ExitByBreak == AI_EXIT_BREAK_EDITOR && mst_BaseIni.b_EngineRefresh)
+	if ( AI_guc_ExitByBreak && mst_BaseIni.b_EngineRefresh )
 	{
-		M_MF()->LockDisplay(mpo_Edit);
+		M_MF()->LockDisplay( mpo_Edit );
 
 		mb_UpdateOwner = FALSE;
-		if(AI_gst_BreakInfo.pst_Instance)
-			i_OnMessage(EDI_MESSAGE_SELDATA, 0, (ULONG) AI_gst_BreakInfo.pst_Instance);
+		if ( AI_gst_BreakInfo.pst_Instance )
+			i_OnMessage( EDI_MESSAGE_SELDATA, 0, ( ULONG ) AI_gst_BreakInfo.pst_Instance );
 		else
-			i_OnMessage(EDI_MESSAGE_SELDATA, 0, (ULONG) AI_gst_BreakInfo.pst_Model);
+			i_OnMessage( EDI_MESSAGE_SELDATA, 0, ( ULONG ) AI_gst_BreakInfo.pst_Model );
 		mb_UpdateOwner = TRUE;
 
 		/* Load the good file */
-		if(AI_gst_BreakInfo.ul_File == BIG_C_InvalidIndex)
+		if ( AI_gst_BreakInfo.ul_File == BIG_C_InvalidIndex )
 		{
-			M_MF()->UnlockDisplay(mpo_Edit);
+			M_MF()->UnlockDisplay( mpo_Edit );
 			return;
 		}
 
-		if(mul_CurrentEditFile != AI_gst_BreakInfo.ul_File) Load(AI_gst_BreakInfo.ul_File);
+		if ( mul_CurrentEditFile != AI_gst_BreakInfo.ul_File ) Load( AI_gst_BreakInfo.ul_File );
 
 		/* Place on good line */
-		ConnectToLine(AI_gst_BreakInfo.i_Line);
+		ConnectToLine( AI_gst_BreakInfo.i_Line );
 
-		M_MF()->UnlockDisplay(mpo_Edit);
+		M_MF()->UnlockDisplay( mpo_Edit );
 
-		/* Force show editor */
-		mpo_MyView->IWantToBeActive(this);
+		if ( AI_guc_ExitByBreak == AI_EXIT_BREAK_ERROR )
+		{
+			const EOUT_cl_Frame *frame = ( EOUT_cl_Frame * ) M_MF()->po_GetEditorByType( EDI_IDEDIT_OUTPUT, 0 );
+			if ( frame != nullptr )
+			{
+				frame->mpo_MyView->IWantToBeActive( ( EDI_cl_BaseFrame * ) frame );
+			}
+		}
+		else
+		{
+			/* Force show editor */
+			mpo_MyView->IWantToBeActive( this );
+		}
 	}
 	else
+	{
 		mpo_LeftView->mi_LineBreak = -1;
+	}
 
 	mpo_LeftView->Invalidate();
 }
