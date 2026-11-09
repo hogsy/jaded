@@ -6,6 +6,8 @@
  */
 #include "Precomp.h"
 
+#include <SDL3/SDL.h>
+
 #include "BASe/BASlog.h"
 #include "BASe/ERRors/ERRdefs.h"
 #include "BASe/CLIbrary/CLImem.h"
@@ -23,8 +25,8 @@
 #	include "LINKs/LINKmsg.h"
 #endif
 
-#include "ImGuiInterface.h"
 #include "MainSharedSystem.h"
+
 #include "core/core_logger.h"
 
 /*$4
@@ -79,6 +81,8 @@ extern "C" char ENG_gaz_SlashL[ 1024 ];
 extern "C" int  ENG_gi_Map2;
 #endif
 
+static bool ignoreAll;
+
 /**
  * hogsy: A special version of _ERR_fnb_AssertFailed for handling script-related errors.
  */
@@ -124,19 +128,37 @@ bool ERR_ScriptAssertFailed( const char *filename, int line, const char *express
 	// Showin added this option so the user has more control over how errors appear.
 	// By default we can have it be a bit less disruptive in the editor by having it input these errors to the console instead.
 	// This still shows the error to the user without disrupting the game.
+	if ( !ignoreAll && ( jaded::sys::launchOperations.editorMode || jaded::sys::launchOperations.popupError ) )
+	{
+		static constexpr SDL_MessageBoxButtonData BUTTONS[] = {
+		        {SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 0, "Debug"     },
+		        {SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 1, "Ignore"    },
+		        {0,		                               2, "Ignore All"},
+		};
 
-	if ( jaded::sys::launchOperations.popupError )
-	{
-		tmp.append( "\nClick OK to debug, Cancel to ignore." );
-		if ( MessageBox( nullptr, tmp.c_str(), "Script Error", MB_OKCANCEL | MB_ICONWARNING | MB_SETFOREGROUND ) == IDOK )
+		SDL_MessageBoxData messageBox = {};
+		messageBox.title              = "Script Error";
+		messageBox.flags              = SDL_MESSAGEBOX_WARNING | SDL_MESSAGEBOX_BUTTONS_LEFT_TO_RIGHT;
+		messageBox.message            = tmp.c_str();
+		messageBox.numbuttons         = std::size( BUTTONS );
+		messageBox.buttons            = BUTTONS;
+
+		int button;
+		if ( SDL_ShowMessageBox( &messageBox, &button ) )
 		{
-			L_longjmp( AI_gst_ContextCheck, 1 );
-			return true;
+			switch ( button )
+			{
+				case 0:// debug
+					L_longjmp( AI_gst_ContextCheck, 1 );
+					return true;
+				default:
+				case 1:
+					break;
+				case 2:
+					ignoreAll = true;
+					break;
+			}
 		}
-	}
-	else if ( jaded::sys::launchOperations.editorMode )
-	{
-		ImGuiInterface_ScriptError( scriptPath, bp.i_Line, expression, objectName, message != nullptr ? message : "" );
 	}
 
 	return false;
