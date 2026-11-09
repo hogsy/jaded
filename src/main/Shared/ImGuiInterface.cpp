@@ -317,7 +317,6 @@ extern "C" void ImGuiInterface_NewFrame()
 
 	ImGui::NewFrame();
 
-	ShowScriptErrorModal();
 	ShowPerformanceOverlay();
 
 	ImGui::RenderNotifications();
