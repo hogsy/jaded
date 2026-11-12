@@ -1223,7 +1223,7 @@ BOOL EDI_cl_App::InitInstance()
 				case 'T':
 					/*$F
 				 *
-				 * /T<tag> : force the capacities of texture manager 
+				 * /T<tag> : force the capacities of texture manager
 				 *   <tag> : 4 enable 4bpp loading
 				 *           8 enable 8bpp loading
 				 *           A enable alpha palette loading
@@ -1712,60 +1712,6 @@ BOOL EDI_cl_App::b_ProcessMouseWheel( MSG *_p_Msg )
  =======================================================================================================================
  =======================================================================================================================
  */
-void EDI_LogBug( char *_psz_Add )
-{
-	/*~~~~~~~~~~~~~~~~~~~~~~*/
-#	if 0
-	FILE		*f;
-	char		asz_Name[128];
-	char		asz_Msg[512];
-	char		asz_Buf[512];
-	ULONG		i_Len;
-	int			i_T;
-	static int	i_Time = 0;
-	/*~~~~~~~~~~~~~~~~~~~~~~*/
-
-	i_T = timeGetTime();
-	if(i_T - i_Time < 3000) return;
-	i_Time = i_T;
-
-	i_Len = 128;
-	GetComputerName(asz_Name, &i_Len);
-	_strtime(asz_Buf);
-#		if MONTREAL_SPECIFIC
-	// For the builds in Montreal, display the Montreal build number as well as the Montpellier build number.
-	sprintf(asz_Msg, "%s  Version %d(%d)  %s  %s", asz_Name, BIG_Cu4_MontrealAppVersion, BIG_Cu4_AppVersion, asz_Buf, _psz_Add);
-#		else
-#			ifdef JADEFUSION
-	sprintf(asz_Msg, "%s  Version Xe-%d(%d,%d)  %s  %s", asz_Name, BIG_Cu4_MontrealXeAppVersion, BIG_Cu4_MontrealAppVersion, BIG_Cu4_AppVersion, asz_Buf, _psz_Add);
-#			else
-	sprintf(asz_Msg, "%s  Version %d  %s  %s", asz_Name, BIG_Cu4_AppVersion, asz_Buf, _psz_Add);
-#			endif
-#		endif
-
-	f = fopen("\\\\mtp-cbeaudet\\bigfiles\\jade.bug", "r+b");
-	if(!f)
-	{
-		f = fopen("\\\\mtp-cbeaudet\\bigfiles\\jade.bug", "wb");
-		if(f)
-		{
-			fprintf(f, "%s\n", asz_Msg);
-			fclose(f);
-		}
-	}
-	else
-	{
-		fseek(f, 0, SEEK_END);
-		fprintf(f, "%s\n", asz_Msg);
-		fclose(f);
-	}
-#	endif
-}
-
-/*
- =======================================================================================================================
- =======================================================================================================================
- */
 int EDI_i_Exception( void )
 {
 	/*~~~~~~*/
@@ -1779,7 +1725,7 @@ int EDI_i_Exception( void )
 	}
 	else
 	{
-		EDI_LogBug( "Exception" );
+		ERR_LogPrint( "Exception" );
 		i_Res = MessageBox(
 		        NULL,
 		        "An exception has been thrown.\n"
@@ -1799,18 +1745,14 @@ int EDI_i_Exception( void )
  */
 BOOL EDI_cl_App::PumpMessage( void )
 {
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	int i, j;
-	EDI_cl_BaseView *po_View;
-	EDI_cl_BaseFrame *po_Editor, *po_OneEd, *po_FirstEd;
 	_AFX_THREAD_STATE *pState = AfxGetThreadState();
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+	if ( GE_MFC_MSG.message == WM_QUIT || GE_MFC_MSG.message == WM_CLOSE )
+	{
+		return false;
+	}
 
 	/* If keyboard is locked, considered it's for a normal dialog box */
 	if ( EDI_gb_LockKeyboard ) return CWinApp::PumpMessage();
-
-	/* Exit */
-	if ( !::GetMessage( &( GE_MFC_MSG ), NULL, NULL, NULL ) ) return FALSE;
 
 	/*
 	 * Send mousewheel to 3D view under mouse. This is done here and not if mouse hook
@@ -1819,7 +1761,7 @@ BOOL EDI_cl_App::PumpMessage( void )
 	if ( b_ProcessMouseWheel( &( GE_MFC_MSG ) ) ) return TRUE;
 
 	/* Translate and dispatch message */
-	if ( ( GE_MFC_MSG ).message != WM_KICKIDLE && !PreTranslateMessage( &( GE_MFC_MSG ) ) )
+	if ( GE_MFC_MSG.message != WM_KICKIDLE && !PreTranslateMessage( &GE_MFC_MSG ) )
 	{
 		__try
 		{
@@ -1840,34 +1782,11 @@ BOOL EDI_cl_App::PumpMessage( void )
 	/* Test to run engine */
 	if ( mb_RunEngine )
 	{
-		/* Force a 3D view to have the focus */
-		po_FirstEd = GetFocusedEditor();
-		if ( !po_FirstEd || po_FirstEd->mst_Def.i_Type != EDI_IDEDIT_OUTPUT )
+		const EOUT_cl_Frame *frame = ( EOUT_cl_Frame * ) M_MF()->po_GetEditorByType( EDI_IDEDIT_OUTPUT, 0 );
+		if ( frame != nullptr )
 		{
-			po_FirstEd = po_OneEd = NULL;
-			for ( i = 0; i < EDI_C_MaxViews; i++ )
-			{
-				po_View = M_MF()->po_GetViewWithNum( i );
-				for ( j = 0; j < M_CurNumEd( po_View->mi_NumPane ); j++ )
-				{
-					po_Editor = M_CurEd( po_View->mi_NumPane, j ).po_Editor;
-					if ( po_Editor && po_Editor->mst_Def.i_Type == EDI_IDEDIT_OUTPUT )
-					{
-						if ( po_Editor->mb_IsPresent )
-						{
-							po_OneEd = po_Editor;
-							if ( !po_Editor->mpo_Original ) po_FirstEd = po_Editor;
-						}
-					}
-				}
-			}
-		}
-
-		if ( !po_FirstEd ) po_FirstEd = po_OneEd;
-		if ( po_FirstEd )
-		{
-			po_FirstEd->mpo_MyView->IWantToBeActive( po_FirstEd );
-			po_FirstEd->mpo_MyView->SetFocus();
+			frame->mpo_MyView->IWantToBeActive( ( EDI_cl_BaseFrame * ) frame );
+			frame->mpo_MyView->SetFocus();
 		}
 
 		/* Run engine */
@@ -1901,15 +1820,13 @@ BOOL EDI_cl_App::PumpMessage( void )
 int EDI_cl_App::Run( void )
 {
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	BOOL bIdle;
-	LONG lIdleCount;
 	_AFX_THREAD_STATE *pState = AfxGetThreadState();
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 	__try
 	{
-		bIdle      = TRUE;
-		lIdleCount = 0;
+		BOOL bIdle      = TRUE;
+		LONG lIdleCount = 0;
 
 		for ( ;; )
 		{
@@ -1923,10 +1840,20 @@ int EDI_cl_App::Run( void )
 				OnRealIdle();
 			}
 
-			do
+			const EOUT_cl_Frame *frame = ( EOUT_cl_Frame * ) M_MF()->po_GetEditorByType( EDI_IDEDIT_OUTPUT, 0 );
+			if ( !mb_RunEngine && frame != nullptr )
+			{
+				F3D_cl_View *view = frame->mpo_EngineFrame->mpo_DisplayView;
+				view->Refresh();
+			}
+
+			while ( ::PeekMessage( &GE_MFC_MSG, nullptr, NULL, NULL, PM_REMOVE ) )
 			{
 				/* Process message */
-				if ( !PumpMessage() ) return ExitInstance();
+				if ( !PumpMessage() )
+				{
+					return ExitInstance();
+				}
 
 				/* Idle init */
 				if ( IsIdleMessage( &( GE_MFC_MSG ) ) )
@@ -1934,7 +1861,7 @@ int EDI_cl_App::Run( void )
 					bIdle      = TRUE;
 					lIdleCount = 0;
 				}
-			} while ( ::PeekMessage( &( GE_MFC_MSG ), nullptr, NULL, NULL, PM_NOREMOVE ) );
+			}
 		}
 	}
 
@@ -2037,40 +1964,10 @@ void EDI_cl_App::SetFocusPaneColor()
  */
 BOOL EDI_cl_App::OnIdle( LONG _l_Count )
 {
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	CString o_Str;
-	//	char			*psz_Tmp;
-	//	char			asz_Tmp[255];
-	//	char			asz_Buf[255];
-	static ULONG ul_LastMem  = 0;
-	static int i_LastRealMem = 0;
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
 	if ( ENG_gb_ForcePauseEngine ) return CWinApp::OnIdle( _l_Count );
 
 	/* Test if there's warnings */
 	if ( !EDI_gb_NoVerbose ) ERR_TestWarning();
-
-		/* Display allocated memory in window title */
-		/*	if
-	(
-		((ul_LastMem & 0xFFFFC000) != (MEM_gst_MemoryInfo.ul_DynamicCurrentAllocated & 0xFFFFC000))
-	||	((i_LastRealMem & 0xFFFFC000) != (MEM_gi_AllocatedMemory & 0xFFFFC000))
-	)
-	{
-		ul_LastMem = MEM_gst_MemoryInfo.ul_DynamicCurrentAllocated;
-		i_LastRealMem = MEM_gi_AllocatedMemory;
-
-		M_MF()->GetWindowText(o_Str);
-		psz_Tmp = (char *) (LPCSTR) o_Str;
-		L_strcpy(asz_Tmp, psz_Tmp);
-		psz_Tmp = L_strchr(asz_Tmp, '[');
-		if(psz_Tmp) *(psz_Tmp - 5) = 0;
-		MEM_MakeAllocatedMemoryString(asz_Buf);
-		o_Str = asz_Tmp;
-		o_Str += asz_Buf;
-		M_MF()->SetWindowText(o_Str);
-	}*/
 
 #	ifdef _DEBUG
 	if ( ENG_gb_TestMemory ) MEM_CheckAllocatedBlocks( 0 );

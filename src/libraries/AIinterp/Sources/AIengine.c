@@ -835,7 +835,7 @@ com_break:
 
 				AI_FillBreakPoint( &AI_gst_BreakInfo, i );
 
-				AI_gb_ExitByBreak = TRUE;
+				AI_guc_ExitByBreak = AI_EXIT_BREAK_EDITOR;
 				AI_gi_FctLevelWhenBreak = AI_gi_RunFctLevel;
 
 				/* Save stack content */
@@ -844,7 +844,7 @@ com_break:
 
 				/* Restore stack content */
 				AI_M_DebugOutStack(a);
-				AI_gb_ExitByBreak = FALSE;
+				AI_guc_ExitByBreak = AI_EXIT_BREAK_DISABLED;
 
 				/* Restore global */
 				AI_gpst_CurrentFunction = AI_gst_BreakInfo.pst_Function;

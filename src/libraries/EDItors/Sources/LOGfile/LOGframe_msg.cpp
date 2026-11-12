@@ -35,7 +35,6 @@ void ELOG_cl_Frame::AddText(const char *_psz_Text, BOOL _bAddToStrings, COLORREF
 	L_FILE		f;
 	char		asz_Path[512];
 	char		*psz_Temp;
-	char		VisualNET_TaMere[2048];
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
     if (_bAddToStrings)
@@ -129,17 +128,10 @@ end:
         }
         else
         {
-            /* BEFORE VISUAL 7 ... GREAT CODE ...
-
-            mpo_Edit->ReplaceSel(_psz_Text);
-            mpo_Edit->SendMessage(WM_CHAR, VK_RETURN, 0);
-            LINK_gb_OnSameLine = FALSE;
-            */
-
-            /* AFTER VISUAL 7 --> SHIT */
-            sprintf(VisualNET_TaMere, "%s\n", psz_Cpy );
-            mpo_Edit->ReplaceSel(VisualNET_TaMere);
-            LINK_gb_OnSameLine = FALSE;
+			char VisualNET_TaMere[ 2048 ];
+			snprintf( VisualNET_TaMere, sizeof( VisualNET_TaMere ), "%s\n", psz_Cpy );
+			mpo_Edit->ReplaceSel( VisualNET_TaMere );
+			LINK_gb_OnSameLine = FALSE;
         }
 
         L_free(psz_Cpy);

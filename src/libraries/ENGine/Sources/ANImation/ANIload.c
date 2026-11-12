@@ -923,14 +923,11 @@ void ANI_ResolveRefs(OBJ_tdst_GameObject *_pst_GO)
 	ul_Model = (BIG_KEY) pst_GOAnim->pst_SkeletonModel;
 
 #ifdef ACTIVE_EDITORS
-	if(ul_Model == BIG_C_InvalidIndex)
+	if ( ul_Model == BIG_C_InvalidIndex )
 	{
-		/*~~~~~~~~~~~~~~~~~*/
-		char	asz_Log[100];
-		/*~~~~~~~~~~~~~~~~~*/
-
-		sprintf(asz_Log, "[Warning] No Skeleton for %s ...", _pst_GO->sz_Name);
-		LINK_PrintStatusMsg(asz_Log);
+		char asz_Log[ 100 ];
+		snprintf( asz_Log, sizeof( asz_Log ), "No Skeleton for %s ...\n", _pst_GO->sz_Name );
+		ERR_LogPrint( asz_Log );
 	}
 
 #endif

@@ -358,7 +358,7 @@ _inline_ BOOL	AI_CamCastProcessObject(WOR_tdst_World	* _pst_World, OBJ_tdst_Game
 			}
 			else
 			{
-				ERR_X_ErrorAssert(0,"[Warning] Assertion failed: '(uc_TmpNumberOfCobToBeParsed < CAM_COB_MAX) && (uc_NumberOfObjToBeParsed < CAM_OBJ_MAX)'\n","WTF ?");	
+				ERR_X_ErrorAssert(0,"Assertion failed: '(uc_TmpNumberOfCobToBeParsed < CAM_COB_MAX) && (uc_NumberOfObjToBeParsed < CAM_OBJ_MAX)'\n","WTF ?");
 				i_ReturnValue = FALSE;
 			}
 		}
@@ -374,7 +374,7 @@ _inline_ BOOL	AI_CamCastProcessObject(WOR_tdst_World	* _pst_World, OBJ_tdst_Game
 		}
 		else
 		{
-			ERR_X_ErrorAssert(0,"[Warning] Assertion failed: 'uc_NumberOfObjToBeParsed < CAM_OBJ_MAX'\n","WTF ?");
+			ERR_X_ErrorAssert(0,"Assertion failed: 'uc_NumberOfObjToBeParsed < CAM_OBJ_MAX'\n","WTF ?");
 			i_ReturnValue = FALSE;
 		}
 		CAM_guc_TotalNumberOfCobToBeParsed += uc_CurrentNumberOfCobToBeParsed;

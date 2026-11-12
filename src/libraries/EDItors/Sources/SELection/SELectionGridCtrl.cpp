@@ -219,8 +219,8 @@ void SELectionGridCtrl::SetMaterialMultiToGrid(GRO_tdst_Struct* _pst_Gmt)
 		if(pst_Mtt->dpst_SubMaterial[indexMTT] == NULL)
 		{
 			char szMessage[MAX_PATH];
-			sprintf(szMessage, "[WARNING] Invalid reference detected in multi-material %s", _pst_Gmt->sz_Name);
-			LINK_PrintStatusMsg(szMessage);
+			snprintf(szMessage, sizeof( szMessage ), "Invalid reference detected in multi-material %s\n", _pst_Gmt->sz_Name);
+			ERR_LogPrint( szMessage );
 		}
 		else
 		{
