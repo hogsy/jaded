@@ -1360,7 +1360,7 @@ void ENG_Loop( void )
 	        if ( f_StartTimeEngineStopped ) TIM_gf_EditorTime += ( TIM_f_Clock_TrueRead() - f_StartTimeEngineStopped );
 
 	/* When break or step by step, change context */
-	if ( AI_guc_ExitByBreak && !AI_gb_ErrorWhenBreak ) L_longjmp( AI_gst_ContextIn, 1 );
+	if ( AI_guc_ExitByBreak != AI_EXIT_BREAK_DISABLED && !AI_gb_ErrorWhenBreak ) L_longjmp( AI_gst_ContextIn, 1 );
 	AI_guc_ExitByBreak   = AI_EXIT_BREAK_DISABLED;
 	AI_gb_ErrorWhenBreak = FALSE;
 

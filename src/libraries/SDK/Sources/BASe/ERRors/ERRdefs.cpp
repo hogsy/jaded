@@ -81,7 +81,7 @@ extern "C" char ENG_gaz_SlashL[ 1024 ];
 extern "C" int  ENG_gi_Map2;
 #endif
 
-static bool ignoreAll;
+static bool ignoreAllErrors;
 
 /**
  * hogsy: A special version of _ERR_fnb_AssertFailed for handling script-related errors.
@@ -99,12 +99,10 @@ bool ERR_ScriptAssertFailed( const char *filename, int line, const char *express
 
 	std::string tmp;
 
-	std::string          objectName;
 	OBJ_tdst_GameObject *object = AI_gpst_CurrentUltra;
 	if ( object != nullptr && OBJ_IsValidGAO( object ) )
 	{
-		objectName = object->sz_Name;
-		tmp.append( "Object:\t" + objectName + "\n" );
+		tmp.append( "Object:\t" + std::string( object->sz_Name ) + "\n" );
 	}
 
 	tmp.append( "Script:\t" + scriptPath + "\n" );
@@ -128,7 +126,7 @@ bool ERR_ScriptAssertFailed( const char *filename, int line, const char *express
 	// Showin added this option so the user has more control over how errors appear.
 	// By default we can have it be a bit less disruptive in the editor by having it input these errors to the console instead.
 	// This still shows the error to the user without disrupting the game.
-	if ( !ignoreAll && ( jaded::sys::launchOperations.editorMode || jaded::sys::launchOperations.popupError ) )
+	if ( !ignoreAllErrors && ( jaded::sys::launchOperations.editorMode || jaded::sys::launchOperations.popupError ) )
 	{
 		static constexpr SDL_MessageBoxButtonData BUTTONS[] = {
 		        {SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 0, "Debug"     },
@@ -155,7 +153,7 @@ bool ERR_ScriptAssertFailed( const char *filename, int line, const char *express
 				case 1:
 					break;
 				case 2:
-					ignoreAll = true;
+					ignoreAllErrors = true;
 					break;
 			}
 		}

@@ -476,7 +476,7 @@ static int CALLBACK Win32CrashReporter( HWND hDlg, UINT iMsg, WPARAM wParam, LPA
 
 #endif
 
-static std::string optionLogPath;
+static std::string logPath;
 
 extern "C" bool jaded_enableLegacyBehaviour = false;
 static void     ParseStartupParameters()
@@ -567,7 +567,7 @@ static void     ParseStartupParameters()
 				break;
 			}
 
-			optionLogPath = jaded::sys::launchArguments[ i ];
+			logPath = jaded::sys::launchArguments[ i ];
 			continue;
 		}
 	}
@@ -697,9 +697,14 @@ static int core_main( int argc, char **argv )
 
 	ParseStartupParameters();
 
-	if ( !optionLogPath.empty() && !core::Logger::GetInstance().SetOutputFile( optionLogPath ) )
+	if ( logPath.empty() )
 	{
-		CORE_LOGGER_WARN( "Failed to set output file for logs (%s)!\n", optionLogPath.c_str() );
+		logPath = core::fs::FileSystem::GetTemporaryPath() + "log";
+	}
+
+	if ( !core::Logger::GetInstance().SetOutputFile( logPath ) )
+	{
+		CORE_LOGGER_WARN( "Failed to set output file for logs (%s)!\n", logPath.c_str() );
 	}
 
 	if ( !SDL_Init( SDL_INIT_GAMEPAD | SDL_INIT_VIDEO | SDL_INIT_EVENTS ) )

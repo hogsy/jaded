@@ -45,5 +45,11 @@ namespace core::fs
 
 		static size_t GetLocalFileSize( const std::string &path );
 		static time_t GetLocalFileTimestamp( const std::string &path );
+
+		/**
+		 * Creates a temporary location files can be written out to.
+		 * Paths end with a forward slash.
+		 */
+		static std::string GetTemporaryPath();
 	};
 }// namespace core::fs
