@@ -90,7 +90,7 @@ bool core::fs::Pak::ParseTableOfContents()
 	const uint64_t fileTableOffset = size - header.footerSize;
 	if ( fs_fseek( handle, fileTableOffset, SEEK_SET ) != 0 )
 	{
-		printf( "Failed to seek to table offset (%lu)!\n", fileTableOffset );
+		printf( "Failed to seek to table offset (%llu)!\n", fileTableOffset );
 		return false;
 	}
 

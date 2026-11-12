@@ -92,14 +92,17 @@ extern "C" void Jaded_Profiler_EndProfiling( unsigned int set )
 /******************************************************************/
 /******************************************************************/
 
+static std::string logPath;
+
 static void *nativeWindowHandle;
 
-#if defined( JADED_CRASH_REPORTER )
+#if CORE_SYSTEM == CORE_SYSTEM_WINDOWS
+
 #	include <DbgHelp.h>
 
 static char *CreateCrashReporterEnvironment( const char *dump_path )
 {
-	/* Create a copy of our environment block with the JADED_CRASH_DUMP_PATH variable added. */
+	/* Create a copy of our environment block with the JADED_LOG_PATH variable added. */
 
 	const char *our_env = GetEnvironmentStrings();
 
@@ -113,7 +116,7 @@ static char *CreateCrashReporterEnvironment( const char *dump_path )
 		s += ss;
 	}
 
-	crash_reporter_env_size += strlen( "JADED_CRASH_DUMP_PATH=" );
+	crash_reporter_env_size += strlen( "JADED_LOG_PATH=" );
 	crash_reporter_env_size += strlen( dump_path );
 	crash_reporter_env_size += 1;
 
@@ -124,23 +127,22 @@ static char *CreateCrashReporterEnvironment( const char *dump_path )
 	 * This memory is never freed, but then again, the game is in the process of dying anyway.
 	*/
 
-	HANDLE crash_reporter_env_map = CreateFileMapping(
+	const HANDLE crash_reporter_env_map = CreateFileMapping(
 	        INVALID_HANDLE_VALUE,
-	        NULL,
+	        nullptr,
 	        PAGE_READWRITE,
 	        0,
 	        crash_reporter_env_size,
-	        NULL );
-
-	if ( crash_reporter_env_map == NULL )
+	        nullptr );
+	if ( crash_reporter_env_map == nullptr )
 	{
-		return NULL;
+		return nullptr;
 	}
 
 	char *crash_reporter_env = ( char * ) ( MapViewOfFile( crash_reporter_env_map, ( FILE_MAP_READ | FILE_MAP_WRITE ), 0, 0, crash_reporter_env_size ) );
-	if ( crash_reporter_env == NULL )
+	if ( crash_reporter_env == nullptr )
 	{
-		return NULL;
+		return nullptr;
 	}
 
 	crash_reporter_env_size = 0;
@@ -154,8 +156,8 @@ static char *CreateCrashReporterEnvironment( const char *dump_path )
 		s += ss;
 	}
 
-	strcpy( ( crash_reporter_env + crash_reporter_env_size ), "JADED_CRASH_DUMP_PATH=" );
-	crash_reporter_env_size += strlen( "JADED_CRASH_DUMP_PATH=" );
+	strcpy( ( crash_reporter_env + crash_reporter_env_size ), "JADED_LOG_PATH=" );
+	crash_reporter_env_size += strlen( "JADED_LOG_PATH=" );
 
 	strcpy( ( crash_reporter_env + crash_reporter_env_size ), dump_path );
 	crash_reporter_env_size += strlen( dump_path ) + 1;
@@ -165,27 +167,14 @@ static char *CreateCrashReporterEnvironment( const char *dump_path )
 
 	return crash_reporter_env;
 }
-#endif
 
 static LONG WINAPI Win32CrashHandler( EXCEPTION_POINTERS *exception )
 {
-	const time_t t         = time( nullptr );
-	const tm     localTime = *localtime( &t );
-
-	std::ostringstream ss;
-	ss << "crash log (" << std::put_time( &localTime, "%d-%m-%Y %H-%M-%S" ) << ").txt";
-	const std::string crashLogFilename = ss.str();
-
-	if ( !core::Logger::GetInstance().DumpOutput( crashLogFilename ) )
-	{
-		const std::string appData = core::fs::FileSystem::GetAppDataPath( jaded::APP_NAME );
-		core::Logger::GetInstance().DumpOutput( appData + "/" + crashLogFilename );
-	}
-
-#if defined( JADED_CRASH_REPORTER )
-	HMODULE dbgHelpLib = LoadLibrary( "DBGHELP.DLL" );
+	const HMODULE dbgHelpLib = LoadLibrary( "DBGHELP.DLL" );
 	if ( dbgHelpLib == nullptr )
+	{
 		return EXCEPTION_CONTINUE_SEARCH;
+	}
 
 	typedef BOOL( WINAPI * MINIDUMP_WRITE_DUMP )(
 	        IN HANDLE                                                hProcess,
@@ -215,30 +204,29 @@ static LONG WINAPI Win32CrashHandler( EXCEPTION_POINTERS *exception )
 	lstrcpy( Dump_Path, Exe_Path );
 	lstrcpy( Dump_Path + lstrlen( Dump_Path ) - 3, "dmp" );
 
-	HANDLE fileDump = CreateFile( Dump_Path, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr );
+	const HANDLE fileDump = CreateFile( Dump_Path, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr );
 	if ( fileDump )
 	{
 		MiniDumpWriteDump_( GetCurrentProcess(), GetCurrentProcessId(), fileDump, MiniDumpNormal, ( exception ) ? &M : nullptr, nullptr, nullptr );
 		CloseHandle( fileDump );
 	}
 
-	char *crash_reporter_env = CreateCrashReporterEnvironment( Dump_Path );
+	char *crash_reporter_env = CreateCrashReporterEnvironment( logPath.c_str() );
 
-	STARTUPINFO si;
-	memset( &si, 0, sizeof( si ) );
-	si.cb = sizeof( si );
+	STARTUPINFO si = {};
+	si.cb          = sizeof( si );
 
 	PROCESS_INFORMATION pi;
 
 	if ( CreateProcess(
 	             Exe_Path,
-	             NULL,
-	             NULL,
-	             NULL,
+	             nullptr,
+	             nullptr,
+	             nullptr,
 	             FALSE,
 	             0,
 	             crash_reporter_env,
-	             NULL,
+	             nullptr,
 	             &si,
 	             &pi ) )
 	{
@@ -251,232 +239,11 @@ static LONG WINAPI Win32CrashHandler( EXCEPTION_POINTERS *exception )
 	}
 
 	FreeLibrary( dbgHelpLib );
-#endif
 
 	return EXCEPTION_CONTINUE_SEARCH;
 }
 
-#if defined( JADED_CRASH_REPORTER )
-static const wchar_t *JADED_CRASH_REPORT_HOST = L"www.solemnwarning.net";
-static const wchar_t *JADED_CRASH_REPORT_PATH = L"/jaded-crash.cgi";
-
-static bool Win32SendCrashReport( const std::string &details, const char *dump_path )
-{
-	/* Read in the crash dump. */
-
-	FILE *dump_fh = fopen( dump_path, "rb" );
-	if ( dump_fh == NULL )
-	{
-		return false;
-	}
-
-	std::string dump_data;
-
-	std::vector< char > read_buf( 8192 );
-	size_t              read_len;
-
-	while ( ( read_len = fread( read_buf.data(), 1, read_buf.size(), dump_fh ) ) > 0 )
-	{
-		dump_data.insert( dump_data.end(), read_buf.begin(), std::next( read_buf.begin(), read_len ) );
-	}
-
-	if ( ferror( dump_fh ) )
-	{
-		fclose( dump_fh );
-		return false;
-	}
-
-	read_buf.clear();
-	read_buf.shrink_to_fit();
-
-	fclose( dump_fh );
-	dump_fh = NULL;
-
-	/* Brute force loop of possible alphanumeric boundary strings to find one that doesn't
-	 * appear in any of the data we want to submit.
-	*/
-
-	std::string boundary( 70, '0' );
-
-	while ( dump_data.find( "--" + boundary ) != std::string::npos || details
-	                                                                                  .find( "--" + boundary ) != std::string::npos )
-	{
-		bool bi_done = false;
-
-		for ( size_t i = 0; i < boundary.length() && !bi_done; ++i )
-		{
-			switch ( boundary[ i ] )
-			{
-				default:
-					boundary[ i ] += 1;
-					bi_done = true;
-					break;
-
-				case '9':
-					boundary[ i ] = 'A';
-					bi_done       = true;
-					break;
-
-				case 'Z':
-					boundary[ i ] = 'a';
-					bi_done       = true;
-					break;
-
-				case 'z':
-					boundary[ i ] = '0';
-					break;
-			}
-
-			if ( !bi_done && i == ( boundary.length() - 1 ) )
-			{
-				return false;
-			}
-		}
-	}
-
-	std::wstring wide_boundary( boundary.begin(), boundary.end() );
-
-	/* Pack the crash dump and details into a multipart/form-data body. */
-
-	std::string request_body =
-	        "--" + boundary + "\r\n" +
-	        "Content-Disposition: form-data; name=\"details\"\r\n" +
-	        "\r\n" +
-	        details + "\r\n" +
-	        "--" + boundary + "\r\n" +
-	        "Content-Disposition: form-data; name=\"dump\"\r\n" +
-	        "Content-Type: application/octet-stream\r\n" +
-	        "\r\n" +
-	        dump_data + "\r\n" +
-	        "--" + boundary + "\r\n" +
-	        "Content-Disposition: form-data; name=\"build\"\r\n" +
-	        "\r\n" +
-	        JADED_BUILD_ID + "\r\n" +
-	        "--" + boundary + "\r\n";
-
-	/* Upload the crash dump and details. */
-
-	HINTERNET hSession = NULL;
-	HINTERNET hConnect = NULL;
-	HINTERNET hRequest = NULL;
-	BOOL      bSuccess = FALSE;
-	DWORD     dwStatusCode;
-
-	hSession = WinHttpOpen( L"Jaded Crash Reporter/1.0",
-	                        WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
-	                        WINHTTP_NO_PROXY_NAME,
-	                        WINHTTP_NO_PROXY_BYPASS, 0 );
-
-	if ( hSession )
-	{
-		hConnect = WinHttpConnect( hSession, JADED_CRASH_REPORT_HOST,
-		                           INTERNET_DEFAULT_PORT, 0 );
-	}
-
-	if ( hConnect )
-	{
-		hRequest = WinHttpOpenRequest( hConnect, L"POST", JADED_CRASH_REPORT_PATH,
-		                               NULL, WINHTTP_NO_REFERER,
-		                               WINHTTP_DEFAULT_ACCEPT_TYPES,
-		                               WINHTTP_FLAG_SECURE );
-	}
-
-	if ( hRequest )
-	{
-		bSuccess = WinHttpSendRequest( hRequest,
-		                               ( L"Content-Type:multipart/form-data; boundary=" + wide_boundary ).c_str(), -1,
-		                               ( void * ) ( request_body.data() ), request_body.size(),
-		                               request_body.size(), 0 );
-	}
-
-	if ( bSuccess )
-	{
-		bSuccess = WinHttpReceiveResponse( hRequest, NULL );
-	}
-
-	if ( bSuccess )
-	{
-		DWORD dwSize = sizeof( dwStatusCode );
-
-		bSuccess = WinHttpQueryHeaders( hRequest,
-		                                WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
-		                                WINHTTP_HEADER_NAME_BY_INDEX,
-		                                &dwStatusCode, &dwSize, WINHTTP_NO_HEADER_INDEX );
-	}
-
-	if ( hRequest ) WinHttpCloseHandle( hRequest );
-	if ( hConnect ) WinHttpCloseHandle( hConnect );
-	if ( hSession ) WinHttpCloseHandle( hSession );
-
-	return bSuccess && dwStatusCode == 201;
-}
-
-static int CALLBACK Win32CrashReporter( HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM lParam )
-{
-	switch ( iMsg )
-	{
-		case WM_INITDIALOG:
-		{
-			/* Center the crash reporter dialog on the primary display. */
-
-			int pm_w = GetSystemMetrics( SM_CXSCREEN );
-			int pm_h = GetSystemMetrics( SM_CYSCREEN );
-
-			RECT r;
-			GetWindowRect( hDlg, &r );
-
-			int dlg_w = r.right - r.left + 1;
-			int dlg_h = r.bottom - r.top + 1;
-
-			MoveWindow( hDlg, ( ( pm_w / 2 ) - ( dlg_w / 2 ) ), ( ( pm_h / 2 ) - ( dlg_h / 2 ) ), dlg_w, dlg_h, FALSE );
-
-			break;
-		}
-
-		case WM_COMMAND:
-		{
-			if ( wParam == IDOK )
-			{
-				HWND details_input = GetDlgItem( hDlg, IDC_EDIT2 );
-				assert( details_input != NULL );
-
-				std::vector< char > details_buf( Edit_GetTextLength( details_input ) + 1 );
-				Edit_GetText( details_input, details_buf.data(), details_buf.size() );
-
-				if ( Win32SendCrashReport( details_buf.data(), getenv( "JADED_CRASH_DUMP_PATH" ) ) )
-				{
-					MessageBox( hDlg, "Crash report submitted, thank you!", "Crash Report", MB_OK );
-					EndDialog( hDlg, 0 );
-				}
-				else
-				{
-					MessageBox( hDlg, "Error sending crash report", "Crash Report", MB_OK );
-				}
-			}
-			else if ( wParam == IDCANCEL )
-			{
-				EndDialog( hDlg, 0 );
-			}
-
-			break;
-		}
-
-		case WM_CLOSE:
-		{
-			EndDialog( hDlg, 0 );
-			break;
-		}
-
-		default:
-			return FALSE;
-	}
-
-	return TRUE;
-}
-
 #endif
-
-static std::string logPath;
 
 extern "C" bool jaded_enableLegacyBehaviour = false;
 static void     ParseStartupParameters()
@@ -679,14 +446,24 @@ extern int EDI_EditorWin32Execution( HINSTANCE );
 
 static int core_main( int argc, char **argv )
 {
-#if defined( JADED_CRASH_REPORTER )
-	const char *dump = getenv( "JADED_CRASH_DUMP_PATH" );
+	const char *dump = getenv( "JADED_LOG_PATH" );
 	if ( dump != nullptr )
 	{
-		DialogBox( NULL, MAKEINTRESOURCE( DIALOGS_IDD_CRASH_REPORT ), NULL, &Win32CrashReporter );
+		const time_t t         = time( nullptr );
+		const tm     localTime = *localtime( &t );
+
+		std::ostringstream ss;
+		ss << "crash (" << std::put_time( &localTime, "%d-%m-%Y %H-%M-%S" ) << ").txt";
+		const std::string crashLogFilename = ss.str();
+
+		if ( !core::fs::FileSystem::CopyFile( dump, crashLogFilename ) )
+		{
+			const std::string appData = core::fs::FileSystem::GetAppDataPath( jaded::APP_NAME );
+			core::Logger::GetInstance().DumpOutput( appData + "/" + crashLogFilename );
+		}
+
 		return EXIT_SUCCESS;
 	}
-#endif
 
 #if CORE_SYSTEM == CORE_SYSTEM_WINDOWS
 	SetUnhandledExceptionFilter( Win32CrashHandler );
@@ -697,14 +474,10 @@ static int core_main( int argc, char **argv )
 
 	ParseStartupParameters();
 
-	if ( logPath.empty() )
-	{
-		logPath = core::fs::FileSystem::GetTemporaryPath() + "log";
-	}
-
-	if ( !core::Logger::GetInstance().SetOutputFile( logPath ) )
+	if ( !logPath.empty() && !core::Logger::GetInstance().SetOutputFile( logPath ) )
 	{
 		CORE_LOGGER_WARN( "Failed to set output file for logs (%s)!\n", logPath.c_str() );
+		logPath.clear();
 	}
 
 	if ( !SDL_Init( SDL_INIT_GAMEPAD | SDL_INIT_VIDEO | SDL_INIT_EVENTS ) )

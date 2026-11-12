@@ -154,6 +154,15 @@ bool core::fs::FileSystem::CreateLocalPath( const std::string &path )
 	return true;
 }
 
+bool core::fs::FileSystem::CopyFile( const std::string &src, const std::string &dst )
+{
+#if CORE_SYSTEM == CORE_SYSTEM_WINDOWS
+	return CopyFileA( src.c_str(), dst.c_str(), false );
+#else
+#	error "IMPLEMENT ME!"
+#endif
+}
+
 size_t core::fs::FileSystem::GetLocalFileSize( const std::string &path )
 {
 	struct stat attr = {};
@@ -170,7 +179,7 @@ time_t core::fs::FileSystem::GetLocalFileTimestamp( const std::string &path )
 
 std::string core::fs::FileSystem::GetTemporaryPath()
 {
-#if ( QM_OS_SYSTEM == QM_OS_SYSTEM_LINUX )
+#if ( CORE_SYSTEM == CORE_SYSTEM_LINUX )
 
 	char dir[] = "/tmp/jadedXXXXXX";
 	if ( mkdtemp( dir ) == nullptr )
@@ -180,9 +189,9 @@ std::string core::fs::FileSystem::GetTemporaryPath()
 
 	return NormalizePath( dir ) + "/";
 
-#elif ( QM_OS_SYSTEM == QM_OS_SYSTEM_WINDOWS )
+#elif ( CORE_SYSTEM == CORE_SYSTEM_WINDOWS )
 
-	DWORD size = GetTempPath( 0, nullptr );
+	const DWORD size = GetTempPath( 0, nullptr );
 	if ( size == 0 )
 	{
 		return "";

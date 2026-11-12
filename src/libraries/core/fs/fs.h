@@ -4,6 +4,8 @@
 
 #include "core/core.h"
 
+#undef CopyFile
+
 #if CORE_SYSTEM == CORE_SYSTEM_WINDOWS
 #	define fs_chdir( PATH )             _chdir( PATH )
 #	define fs_mkdir( PATH )             mkdir( PATH )
@@ -42,6 +44,8 @@ namespace core::fs
 		static bool DoesLocalFileExist( const std::string &path );
 
 		static bool CreateLocalPath( const std::string &path );
+
+		static bool CopyFile( const std::string &src, const std::string &dst );
 
 		static size_t GetLocalFileSize( const std::string &path );
 		static time_t GetLocalFileTimestamp( const std::string &path );
