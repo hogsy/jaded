@@ -1445,10 +1445,6 @@ BOOL EDI_cl_App::InitInstance()
 	mpo_FocusWndWhenDlg = nullptr;
 	EDI_gb_LockKeyboard = FALSE;
 
-	/* Simu */
-	mp_SimuMsg    = nullptr;
-	mi_NumSimuMsg = mi_MaxSimuMsg = 0;
-
 	/* Create and display main frame. Window if forced to be maximized. */
 	m_pMainWnd = mpo_MainFrame = new ( EDI_cl_MainFrame );
 	mpo_MainFrame->Create(
@@ -1745,35 +1741,14 @@ int EDI_i_Exception( void )
  */
 BOOL EDI_cl_App::PumpMessage( void )
 {
-	_AFX_THREAD_STATE *pState = AfxGetThreadState();
-	if ( GE_MFC_MSG.message == WM_QUIT || GE_MFC_MSG.message == WM_CLOSE )
+	if ( !CWinApp::PumpMessage() )
 	{
-		return false;
+		return FALSE;
 	}
 
-	/* If keyboard is locked, considered it's for a normal dialog box */
-	if ( EDI_gb_LockKeyboard ) return CWinApp::PumpMessage();
-
-	/*
-	 * Send mousewheel to 3D view under mouse. This is done here and not if mouse hook
-	 * cause I don't know of to get message wParam and lParam in hook !!!
-	 */
-	if ( b_ProcessMouseWheel( &( GE_MFC_MSG ) ) ) return TRUE;
-
-	/* Translate and dispatch message */
-	if ( GE_MFC_MSG.message != WM_KICKIDLE && !PreTranslateMessage( &GE_MFC_MSG ) )
+	if ( EDI_gb_LockKeyboard )
 	{
-		__try
-		{
-			_Try_ ::TranslateMessage( &( GE_MFC_MSG ) );
-			::DispatchMessage( &( GE_MFC_MSG ) );
-			_Catch_
-			        _End_
-		}
-
-		__except ( EDI_i_Exception() )
-		{
-		}
+		return TRUE;
 	}
 
 	/* Update the CPU Clock Frequency if necessary */
@@ -1847,7 +1822,7 @@ int EDI_cl_App::Run( void )
 				view->Refresh();
 			}
 
-			while ( ::PeekMessage( &GE_MFC_MSG, nullptr, NULL, NULL, PM_REMOVE ) )
+			while ( ::PeekMessage( &GE_MFC_MSG, nullptr, NULL, NULL, PM_NOREMOVE ) )
 			{
 				/* Process message */
 				if ( !PumpMessage() )
@@ -1991,10 +1966,6 @@ BOOL EDI_cl_App::OnIdle( LONG _l_Count )
  */
 void EDI_cl_App::OnRealIdle()
 {
-	/*~~*/
-	int i;
-	/*~~*/
-
 	/* MSG */
 	M_MF()->DisplayMsg();
 
@@ -2015,7 +1986,7 @@ void EDI_cl_App::OnRealIdle()
 	M_MF()->VssUpdateStatus();
 
 	/* Inform all editors about idle */
-	for ( i = 0; i < EDI_C_MaxViews; i++ )
+	for ( int i = 0; i < EDI_C_MaxViews; i++ )
 	{
 		if ( M_MF()->po_GetViewWithNum( i ) ) M_MF()->po_GetViewWithNum( i )->OnRealIdle();
 	}
