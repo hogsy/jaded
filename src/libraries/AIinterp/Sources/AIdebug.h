@@ -56,18 +56,29 @@ typedef struct	AI_tdst_CallStack_
  -----------------------------------------------------------------------------------------------------------------------
  */
 
-extern L_jmp_buf			AI_gst_ContextIn;
-extern L_jmp_buf			AI_gst_ContextOut;
-extern L_jmp_buf			AI_gst_ContextCheck;
-extern char					*AI_gpc_StackIn;
-extern int					AI_gi_SizeStackIn;
-extern int					AI_gi_NumBreak;
-extern BOOL					AI_gb_ExitByBreak;
-extern BOOL					AI_gb_ErrorWhenBreak;
-extern int					AI_gi_OneStepMode;
-extern int					AI_gi_FctLevelWhenBreak;
-extern AI_tdst_BreakPoint	AI_gst_BreakInfo;
-extern AI_tdst_CallStack	AI_gst_CallStack[1000];
+/**
+ * These control how AI_gui_ExitByBreak operates; if it's EDITOR then we eject to
+ * the script editor but otherwise on ERROR, we switch to the 3D view.
+ */
+enum
+{
+	AI_EXIT_BREAK_DISABLED,
+	AI_EXIT_BREAK_EDITOR,
+	AI_EXIT_BREAK_ERROR,
+};
+
+extern L_jmp_buf          AI_gst_ContextIn;
+extern L_jmp_buf          AI_gst_ContextOut;
+extern L_jmp_buf          AI_gst_ContextCheck;
+extern char              *AI_gpc_StackIn;
+extern int                AI_gi_SizeStackIn;
+extern int                AI_gi_NumBreak;
+extern unsigned char      AI_guc_ExitByBreak;
+extern BOOL               AI_gb_ErrorWhenBreak;
+extern int                AI_gi_OneStepMode;
+extern int                AI_gi_FctLevelWhenBreak;
+extern AI_tdst_BreakPoint AI_gst_BreakInfo;
+extern AI_tdst_CallStack  AI_gst_CallStack[ 1000 ];
 
 #define AI_C_MaxBreakPoint	100
 extern AI_tdst_BreakPoint	AI_gast_BreakList[AI_C_MaxBreakPoint];

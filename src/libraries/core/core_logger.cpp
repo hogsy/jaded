@@ -15,7 +15,7 @@ void core::Logger::WriteMessage( FILE *file, const std::string &msg, const time_
 	fprintf( file, "[%s] %s", buf, msg.c_str() );
 }
 
-void core::Logger::PushMessage( const Channel::Type type, const char *msg, ... )
+void core::Logger::PushMessage( const Channel::Type type, const bool notify, const char *msg, ... )
 {
 	va_list args;
 	va_start( args, msg );
@@ -34,7 +34,7 @@ void core::Logger::PushMessage( const Channel::Type type, const char *msg, ... )
 
 		for ( const auto &callback : callbacks )
 		{
-			callback( type, arr.data() );
+			callback( type, notify, arr.data() );
 		}
 
 		if ( out != nullptr )
@@ -42,6 +42,8 @@ void core::Logger::PushMessage( const Channel::Type type, const char *msg, ... )
 			const Message &message = messages.back();
 			WriteMessage( out, message.string, message.timestamp );
 		}
+
+		fprintf( type == Channel::Type::ERROR ? stderr : stdout, "%s", arr.data() );
 
 		if ( messages.size() >= MAX_MESSAGES )
 		{
@@ -52,7 +54,7 @@ void core::Logger::PushMessage( const Channel::Type type, const char *msg, ... )
 	va_end( argsc );
 }
 
-void core::Logger::AddCallback( const Channel::Type type, const Callback &callback )
+void core::Logger::AddCallback( const Callback &callback )
 {
 	callbacks.push_back( callback );
 }
@@ -70,12 +72,12 @@ bool core::Logger::SetOutputFile( const std::string &path )
 	return true;
 }
 
-void core::Logger::DumpOutput( const std::string &path ) const
+bool core::Logger::DumpOutput( const std::string &path ) const
 {
 	FILE *file = fopen( path.c_str(), "w" );
 	if ( file == nullptr )
 	{
-		return;
+		return false;
 	}
 
 	for ( const auto &i : messages )
@@ -84,4 +86,6 @@ void core::Logger::DumpOutput( const std::string &path ) const
 	}
 
 	fclose( file );
+
+	return true;
 }

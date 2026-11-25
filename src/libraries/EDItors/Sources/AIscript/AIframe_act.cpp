@@ -808,7 +808,7 @@ BOOL EAI_cl_Frame::b_OnActionValidate(ULONG _ul_Action, BOOL)
 	case EAI_ACTION_ONESTEPIN:
 		ConnectToEngine();
 		if(!mpst_Model) return FALSE;
-		if(!AI_gb_ExitByBreak) return FALSE;
+		if(AI_guc_ExitByBreak == AI_EXIT_BREAK_DISABLED) return FALSE;
 		break;
 
 	case EAI_ACTION_SAVE:

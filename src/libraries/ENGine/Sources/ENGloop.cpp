@@ -1360,8 +1360,8 @@ void ENG_Loop( void )
 	        if ( f_StartTimeEngineStopped ) TIM_gf_EditorTime += ( TIM_f_Clock_TrueRead() - f_StartTimeEngineStopped );
 
 	/* When break or step by step, change context */
-	if ( AI_gb_ExitByBreak && !AI_gb_ErrorWhenBreak ) L_longjmp( AI_gst_ContextIn, 1 );
-	AI_gb_ExitByBreak    = FALSE;
+	if ( AI_guc_ExitByBreak != AI_EXIT_BREAK_DISABLED && !AI_gb_ErrorWhenBreak ) L_longjmp( AI_gst_ContextIn, 1 );
+	AI_guc_ExitByBreak   = AI_EXIT_BREAK_DISABLED;
 	AI_gb_ErrorWhenBreak = FALSE;
 
 	/* When a break is raised, go here */
@@ -1414,8 +1414,8 @@ void ENG_Loop( void )
 
 	_Catch_
 #ifdef ACTIVE_EDITORS
-	        AI_gb_ExitByBreak = FALSE;
-	AI_gb_ErrorWhenBreak      = TRUE;
+	AI_guc_ExitByBreak		= AI_EXIT_BREAK_DISABLED;
+	AI_gb_ErrorWhenBreak	= TRUE;
 #endif
 	_End_
 #ifdef ACTIVE_EDITORS

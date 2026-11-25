@@ -82,9 +82,6 @@ public:
 	CWnd				*mpo_FocusWndWhenDlg;
 	EDI_cl_BaseView		*mpo_LastView;
 
-	MSG					*mp_SimuMsg;
-	int					mi_NumSimuMsg;
-	int					mi_MaxSimuMsg;
 	char				masz_ToOpen[L_MAX_PATH];
 
 	EDI_cl_ToolTipWnd	*EDI_gpo_EnterWnd2; /* Philippe Tipwindow */

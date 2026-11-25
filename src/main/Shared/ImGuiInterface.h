@@ -1,11 +1,8 @@
-// Created by Mark "hogsy" Sowden, 2023-2024 <hogsy@snortysoft.net>
-// https://oldtimes-software.com/jaded/
+// File created for Jaded, the community patched Jade engine
 
 #pragma once
 
 #ifdef __cplusplus
-#	define IMGUI_DEFINE_MATH_OPERATORS
-#	include "imgui/imgui.h"
 
 extern "C"
 {
@@ -16,8 +13,17 @@ extern "C"
 
 	void ImGuiInterface_Initialize( void *windowPtr );
 	void ImGuiInterface_Shutdown();
+
 	bool ImGuiInterface_ProcessEvents( const SDL_Event *event );
+
 	void ImGuiInterface_NewFrame();
+
+	/**
+	 * Gross method to expose ImGui's capture state, given we don't want to expose
+	 * the entire API.
+	 */
+	void ImGuiInterface_GetCaptureState( bool *mouseState, bool *keyboardState );
+
 	void ImGuiInterface_Render();
 
 #ifdef __cplusplus

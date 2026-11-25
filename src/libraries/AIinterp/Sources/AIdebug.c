@@ -32,15 +32,15 @@ extern "C" {
  ***************************************************************************************************
  */
 
-L_jmp_buf           AI_gst_ContextIn;
-L_jmp_buf           AI_gst_ContextOut;
-L_jmp_buf           AI_gst_ContextCheck;
-char                *AI_gpc_StackIn = NULL;
-int                 AI_gi_SizeStackIn = 0;
-BOOL                AI_gb_ExitByBreak = FALSE;
-BOOL				AI_gb_ErrorWhenBreak = FALSE;
-int                 AI_gi_OneStepMode = 0;
-int                 AI_gi_FctLevelWhenBreak = 0;
+L_jmp_buf     AI_gst_ContextIn;
+L_jmp_buf     AI_gst_ContextOut;
+L_jmp_buf     AI_gst_ContextCheck;
+char         *AI_gpc_StackIn          = NULL;
+int           AI_gi_SizeStackIn       = 0;
+unsigned char AI_guc_ExitByBreak      = AI_EXIT_BREAK_DISABLED;
+BOOL          AI_gb_ErrorWhenBreak    = FALSE;
+int           AI_gi_OneStepMode       = 0;
+int           AI_gi_FctLevelWhenBreak = 0;
 
 int                 AI_gi_NumBreak = 0;
 AI_tdst_BreakPoint  AI_gast_BreakList[AI_C_MaxBreakPoint];
@@ -70,7 +70,7 @@ void AI_InitBreakList(void)
 void AI_ReinitBreakMode(void)
 {
     L_memset(&AI_gst_BreakInfo, 0, sizeof(AI_tdst_BreakPoint));
-    AI_gb_ExitByBreak = FALSE;
+    AI_guc_ExitByBreak = AI_EXIT_BREAK_DISABLED;
     AI_gi_OneStepMode = 0;
     AI_gi_FctLevelWhenBreak = 0;
 }
