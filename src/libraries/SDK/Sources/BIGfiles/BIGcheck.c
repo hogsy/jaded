@@ -990,9 +990,9 @@ BOOL BIG_b_CheckFile(BOOL _b_Stats)
 
 	if(_b_Stats)
 	{
-		sprintf(asz_Text, "Total file size on disk : %d bytes", ul_TotalSize);
+		sprintf(asz_Text, "Total file size on disk : %lu bytes", ul_TotalSize);
 		LINK_PrintStatusMsg(asz_Text);
-		sprintf(asz_Text, "Total file size         : %d bytes", ul_RealTotalSize);
+		sprintf(asz_Text, "Total file size         : %lu bytes", ul_RealTotalSize);
 		LINK_PrintStatusMsg(asz_Text);
 	}
 
